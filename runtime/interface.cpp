@@ -8,6 +8,7 @@
 #include <cassert>
 #include <clocale>
 #include <csignal>
+#include <csetjmp>
 #include <fstream>
 #include <functional>
 #include <getopt.h>
@@ -75,6 +76,9 @@ static int ob_cur_buffer;
 static string_buffer oub[OB_MAX_BUFFERS];
 string_buffer *coub;
 static int http_need_gzip;
+
+static bool running_shutdown_functions = false;
+static jmp_buf shutdown_function_exit;
 
 static bool is_utf8_enabled = false;
 bool is_json_log_on_timeout_enabled = true;
@@ -552,16 +556,35 @@ bool f$set_wait_all_forks_on_finish(bool wait) noexcept {
   return wait;
 }
 
+void run_shutdown_functions() {
+  if (shutdown_functions_count == 0) {
+    return;
+  }
+
+  ShutdownProfiler shutdown_profiler;
+
+  // when we execute shutdown functions, the running context could be in any state (e.g. it could
+  // switch from a signal handler due to timeout)
+  // shutdown handlers can have exit() calls inside them which should terminate the shutdown handlers
+  // execution, but with the default exit behavior, it could try doing a finish_request in the middle
+  // of request error termination (due to timeout)
+  // to avoid that, we override the exit behavior so it jumps back here
+  // exceptions could be an alternative way to do this non-local jump, but we may crash our program
+  // due to some unexpected noexcept along the way
+
+  running_shutdown_functions = true;
+  if (setjmp(shutdown_function_exit) == 0) {
+    for (int i = 0; i < shutdown_functions_count; i++) {
+      shutdown_functions[i]();
+    }
+  }
+}
+
 void finish(int64_t exit_code, bool allow_forks_waiting) {
   if (!finished) {
+    // shutdown functions are executed later, see php_script_run_shutdown_functions usages
     finished = true;
     forcibly_stop_profiler();
-    if (shutdown_functions_count) {
-      ShutdownProfiler shutdown_profiler;
-      for (int i = 0; i < shutdown_functions_count; i++) {
-        shutdown_functions[i]();
-      }
-    }
     if (allow_forks_waiting && wait_all_forks_on_finish) {
       wait_all_forks();
     }
@@ -576,6 +599,10 @@ void finish(int64_t exit_code, bool allow_forks_waiting) {
 }
 
 void f$exit(const mixed &v) {
+  if (running_shutdown_functions) {
+    longjmp(shutdown_function_exit, 1);
+  }
+
   if (v.is_string()) {
     *coub << v;
     finish(0, false);
@@ -2143,6 +2170,7 @@ static void init_interface_lib() {
   shutdown_functions_count = 0;
   finished = false;
   flushed = false;
+  running_shutdown_functions = false;
 
   php_warning_level = std::max(2, php_warning_minimum_level);
   php_disable_warnings = 0;

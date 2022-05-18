@@ -295,6 +295,13 @@ void php_worker_run(php_worker *worker) {
       }
       case run_state_t::error: {
         vkprintf (2, "php script [req_id = %016llx]: ERROR (probably timeout)\n", worker->req_id);
+        // see #504: we need to call shutdown handlers during the timeout to make cleanup code more
+        // reliable and to stay more compatible to the way PHP works; running shutdown handlers
+        // for some other error kinds could be possible, but this should be done with care
+        // (it could be dangerous to call a PHP code in case of the memory limit being reached)
+        if (php_script_get_error_type(php_script) == script_error_t::timeout) {
+          php_script_run_shutdown_functions();
+        }
         php_script_finish(php_script);
 
         if (worker->conn != nullptr) {
@@ -326,6 +333,7 @@ void php_worker_run(php_worker *worker) {
       }
       case run_state_t::finished: {
         vkprintf (2, "php script [req_id = %016llx]: OK (still can return RPC_ERROR)\n", worker->req_id);
+        php_script_run_shutdown_functions();
         script_result *res = php_script_get_res(php_script);
         php_worker_set_result(worker, res);
         php_script_finish(php_script);

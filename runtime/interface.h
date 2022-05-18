@@ -52,6 +52,8 @@ void f$fastcgi_finish_request(int64_t exit_code = 0);
 __attribute__((noreturn))
 void finish(int64_t exit_code, bool allow_forks_waiting);
 
+void run_shutdown_functions();
+
 __attribute__((noreturn))
 void f$exit(const mixed &v = 0);
 

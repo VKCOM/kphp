@@ -56,6 +56,7 @@ extern long long query_stats_id;
 void dump_query_stats();
 
 void init_handlers();
+void php_script_run_shutdown_functions();
 void php_script_finish(void *ptr);
 void php_script_free(void *ptr);
 void php_script_clear(void *ptr);

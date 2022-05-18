@@ -601,6 +601,10 @@ void init_handlers() {
   dl_signal(SIGABRT, sigabrt_handler);
 }
 
+void php_script_run_shutdown_functions() {
+  run_shutdown_functions();
+}
+
 void php_script_finish(void *ptr) {
   ((PHPScriptBase *)ptr)->finish();
 }
