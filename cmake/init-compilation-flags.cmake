@@ -24,7 +24,7 @@ if(APPLE)
         link_directories(/opt/homebrew/lib)
     endif()
     # if your mac doesn't have openssl here, you could just make a symbolic link like
-    # sudo ln -s /opt/homebrew/Cellar/openssl@1.1/1.1.1l /usr/local/opt/openssl
+    # sudo ln -s /opt/homebrew/Cellar/openssl@1.1/1.1.1o /usr/local/opt/openssl
     set(OPENSSL_ROOT_DIR "/usr/local/opt/openssl" CACHE INTERNAL "")
 endif()
 
