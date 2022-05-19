@@ -44,6 +44,9 @@ string f$strftime(const string &format, int64_t timestamp = std::numeric_limits<
 
 Optional<int64_t> f$strtotime(const string &time_str, int64_t timestamp = std::numeric_limits<int64_t>::min());
 
+array<mixed> f$date_parse(const string &time_str);
+array<mixed> f$date_parse_from_format(const string &format, const string &time_str);
+
 int64_t f$time();
 
 mixed f$hrtime(bool as_number = false);

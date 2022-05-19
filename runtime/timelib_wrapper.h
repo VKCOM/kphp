@@ -15,4 +15,7 @@ int php_timelib_days_in_month(int64_t month, int64_t year);
 
 std::pair<int64_t, bool> php_timelib_strtotime(const string &timezone, const string &time_str, int64_t timestamp);
 
+array<mixed> php_timelib_date_parse(const string &time_str);
+array<mixed> php_timelib_date_parse_from_format(const string &format, const string &time_str);
+
 bool php_timelib_is_valid_date(int64_t month, int64_t day, int64_t year);

@@ -5,12 +5,113 @@
 #include "common/containers/final_action.h"
 #include "common/smart_ptrs/singleton.h"
 
+// these constants are a part of the private timelib API, but PHP uses them internally;
+// we define them here locally
+constexpr int TIMELIB_SPECIAL_WEEKDAY = 0x01;
+constexpr int TIMELIB_SPECIAL_FIRST_DAY_OF_MONTH = 0x01;
+
 namespace {
+
 timelib_tzinfo *get_timezone_info(const char *tz_name) {
   int dummy_error_code = 0;
   timelib_tzinfo *info = timelib_parse_tzfile(tz_name, timelib_builtin_db(), &dummy_error_code);
   return info;
 }
+
+void set_time_value(array<mixed> &dst, const char *name, int64_t value) {
+  // PHP7.4 and earlier version of PHP8 use false as the default value;
+  // PHP master sources use false too, but some versions of PHP8
+  // used 0 as default (that could be a bug in PHP, but we may need to pay attention
+  // to that when making a transition to PHP8)
+  if (value == TIMELIB_UNSET) {
+    dst.set_value(string(name), false);
+  } else {
+    dst.set_value(string(name), value);
+  }
+}
+
+array<mixed> create_date_parse_array(timelib_time *t, timelib_error_container *error) {
+  array<mixed> result;
+
+  // note: we're setting the result array keys in the same order as PHP does
+
+  set_time_value(result, "year", t->y);
+  set_time_value(result, "month", t->m);
+  set_time_value(result, "day", t->d);
+  set_time_value(result, "hour", t->h);
+  set_time_value(result, "minute", t->i);
+  set_time_value(result, "second", t->s);
+
+  if (t->us == TIMELIB_UNSET) {
+    result.set_value(string("fraction"), false);
+  } else {
+    result.set_value(string("fraction"), static_cast<double>(t->us) / 1000000.0);
+  }
+
+  array<string> result_warnings;
+  result_warnings.reserve(error->warning_count, 0, false);
+  for (int i = 0; i < error->warning_count; i++) {
+    result_warnings.set_value(error->warning_messages[i].position, string(error->warning_messages[i].message));
+  }
+  result.set_value(string("warning_count"), error->warning_count);
+  result.set_value(string("warnings"), result_warnings);
+
+  array<string> result_errors;
+  result_errors.reserve(error->error_count, 0, false);
+  for (int i = 0; i < error->error_count; i++) {
+    result_errors.set_value(error->error_messages[i].position, string(error->error_messages[i].message));
+  }
+  result.set_value(string("error_count"), error->error_count);
+  result.set_value(string("errors"), result_errors);
+
+  result.set_value(string("is_localtime"), static_cast<bool>(t->is_localtime));
+
+  if (t->is_localtime) {
+    set_time_value(result, "zone_type", t->zone_type);
+    switch (t->zone_type) {
+      case TIMELIB_ZONETYPE_OFFSET:
+        set_time_value(result, "zone", t->z);
+        result.set_value(string("is_dst"), static_cast<bool>(t->dst));
+        break;
+      case TIMELIB_ZONETYPE_ID:
+        if (t->tz_abbr) {
+          result.set_value(string("tz_abbr"), string(t->tz_abbr));
+        }
+        if (t->tz_info) {
+          result.set_value(string("tz_id"), string(t->tz_info->name));
+        }
+        break;
+      case TIMELIB_ZONETYPE_ABBR:
+        set_time_value(result, "zone", t->z);
+        result.set_value(string("is_dst"), static_cast<bool>(t->dst));
+        result.set_value(string("tz_abbr"), string(t->tz_abbr));
+        break;
+    }
+  }
+  if (t->have_relative) {
+    array<mixed> relative;
+    relative.set_value(string("year"), t->relative.y);
+    relative.set_value(string("month"), t->relative.m);
+    relative.set_value(string("day"), t->relative.d);
+    relative.set_value(string("hour"), t->relative.h);
+    relative.set_value(string("minute"), t->relative.i);
+    relative.set_value(string("second"), t->relative.s);
+    if (t->relative.have_weekday_relative) {
+      relative.set_value(string("weekday"), t->relative.weekday);
+    }
+    if (t->relative.have_special_relative && (t->relative.special.type == TIMELIB_SPECIAL_WEEKDAY)) {
+      relative.set_value(string("weekdays"), t->relative.special.amount);
+    }
+    if (t->relative.first_last_day_of) {
+      string key = string(t->relative.first_last_day_of == TIMELIB_SPECIAL_FIRST_DAY_OF_MONTH ? "first_day_of_month" : "last_day_of_month");
+      relative.set_value(key, true);
+    }
+    result.set_value(string("relative"), relative);
+  }
+
+  return result;
+}
+
 } // namespace
 
 struct TzinfoCache : private vk::not_copyable {
@@ -54,6 +155,22 @@ int php_timelib_days_in_month(int64_t m, int64_t y) {
 
 bool php_timelib_is_valid_date(int64_t m, int64_t d, int64_t y) {
   return y >= 1 && y <= 32767 && timelib_valid_date(y, m, d);
+}
+
+array<mixed> php_timelib_date_parse(const string &time_str) {
+  timelib_error_container *error = nullptr;
+  timelib_time *t = timelib_strtotime(time_str.c_str(), time_str.size(), &error, timelib_builtin_db(), timelib_parse_tzfile);
+  auto t_deleter = vk::finally([t]() { timelib_time_dtor(t); });
+  auto error_deleter = vk::finally([error]() { timelib_error_container_dtor(error); });
+  return create_date_parse_array(t, error);
+}
+
+array<mixed> php_timelib_date_parse_from_format(const string &format, const string &time_str) {
+  timelib_error_container *error = nullptr;
+  timelib_time *t = timelib_parse_from_format(format.c_str(), time_str.c_str(), time_str.size(), &error, timelib_builtin_db(), timelib_parse_tzfile);
+  auto t_deleter = vk::finally([t]() { timelib_time_dtor(t); });
+  auto error_deleter = vk::finally([error]() { timelib_error_container_dtor(error); });
+  return create_date_parse_array(t, error);
 }
 
 std::pair<int64_t, bool> php_timelib_strtotime(const string &tz_name, const string &times, int64_t preset_ts) {
