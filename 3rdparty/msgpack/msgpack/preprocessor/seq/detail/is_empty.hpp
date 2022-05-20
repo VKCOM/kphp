@@ -12,11 +12,11 @@
 # ifndef MSGPACK_PREPROCESSOR_SEQ_DETAIL_IS_EMPTY_HPP
 # define MSGPACK_PREPROCESSOR_SEQ_DETAIL_IS_EMPTY_HPP
 #
-# include <msgpack/preprocessor/config/config.hpp>
-# include <msgpack/preprocessor/arithmetic/dec.hpp>
-# include <msgpack/preprocessor/logical/bool.hpp>
-# include <msgpack/preprocessor/logical/compl.hpp>
-# include <msgpack/preprocessor/seq/size.hpp>
+# include "msgpack/preprocessor/config/config.hpp"
+# include "msgpack/preprocessor/arithmetic/dec.hpp"
+# include "msgpack/preprocessor/logical/bool.hpp"
+# include "msgpack/preprocessor/logical/compl.hpp"
+# include "msgpack/preprocessor/seq/size.hpp"
 #
 /* An empty seq is one that is just MSGPACK_PP_SEQ_NIL */
 #

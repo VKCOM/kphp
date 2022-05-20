@@ -8,8 +8,8 @@ http://www.boost.org/LICENSE_1_0.txt)
 #ifndef MSGPACK_PREDEF_COMPILER_MICROTEC_H
 #define MSGPACK_PREDEF_COMPILER_MICROTEC_H
 
-#include <msgpack/predef/version_number.h>
-#include <msgpack/predef/make.h>
+#include "msgpack/predef/version_number.h"
+#include "msgpack/predef/make.h"
 
 /*`
 [heading `MSGPACK_COMP_MRI`]
@@ -37,17 +37,17 @@ http://www.boost.org/LICENSE_1_0.txt)
 #       define MSGPACK_COMP_MRI MSGPACK_COMP_MRI_DETECTION
 #   endif
 #   define MSGPACK_COMP_MRI_AVAILABLE
-#   include <msgpack/predef/detail/comp_detected.h>
+#   include "msgpack/predef/detail/comp_detected.h"
 #endif
 
 #define MSGPACK_COMP_MRI_NAME "Microtec C/C++"
 
 #endif
 
-#include <msgpack/predef/detail/test.h>
+#include "msgpack/predef/detail/test.h"
 MSGPACK_PREDEF_DECLARE_TEST(MSGPACK_COMP_MRI,MSGPACK_COMP_MRI_NAME)
 
 #ifdef MSGPACK_COMP_MRI_EMULATED
-#include <msgpack/predef/detail/test.h>
+#include "msgpack/predef/detail/test.h"
 MSGPACK_PREDEF_DECLARE_TEST(MSGPACK_COMP_MRI_EMULATED,MSGPACK_COMP_MRI_NAME)
 #endif

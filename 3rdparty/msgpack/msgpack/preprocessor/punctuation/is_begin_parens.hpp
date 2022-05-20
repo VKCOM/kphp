@@ -12,11 +12,11 @@
 # ifndef MSGPACK_PREPROCESSOR_IS_BEGIN_PARENS_HPP
 # define MSGPACK_PREPROCESSOR_IS_BEGIN_PARENS_HPP
 
-# include <msgpack/preprocessor/config/config.hpp>
+# include "msgpack/preprocessor/config/config.hpp"
 
 #if MSGPACK_PP_VARIADICS
 
-#include <msgpack/preprocessor/punctuation/detail/is_begin_parens.hpp>
+#include "msgpack/preprocessor/punctuation/detail/is_begin_parens.hpp"
 
 #if MSGPACK_PP_VARIADICS_MSVC && _MSC_VER <= 1400
 

@@ -8,8 +8,8 @@ http://www.boost.org/LICENSE_1_0.txt)
 #ifndef MSGPACK_PREDEF_OS_SOLARIS_H
 #define MSGPACK_PREDEF_OS_SOLARIS_H
 
-#include <msgpack/predef/version_number.h>
-#include <msgpack/predef/make.h>
+#include "msgpack/predef/version_number.h"
+#include "msgpack/predef/make.h"
 
 /*`
 [heading `MSGPACK_OS_SOLARIS`]
@@ -35,12 +35,12 @@ http://www.boost.org/LICENSE_1_0.txt)
 
 #if MSGPACK_OS_SOLARIS
 #   define MSGPACK_OS_SOLARIS_AVAILABLE
-#   include <msgpack/predef/detail/os_detected.h>
+#   include "msgpack/predef/detail/os_detected.h"
 #endif
 
 #define MSGPACK_OS_SOLARIS_NAME "Solaris"
 
 #endif
 
-#include <msgpack/predef/detail/test.h>
+#include "msgpack/predef/detail/test.h"
 MSGPACK_PREDEF_DECLARE_TEST(MSGPACK_OS_SOLARIS,MSGPACK_OS_SOLARIS_NAME)

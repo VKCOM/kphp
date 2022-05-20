@@ -9,9 +9,9 @@ http://www.boost.org/LICENSE_1_0.txt)
 #ifndef MSGPACK_PREDEF_PLAT_WINDOWS_RUNTIME_H
 #define MSGPACK_PREDEF_PLAT_WINDOWS_RUNTIME_H
 
-#include <msgpack/predef/version_number.h>
-#include <msgpack/predef/make.h>
-#include <msgpack/predef/os/windows.h>
+#include "msgpack/predef/version_number.h"
+#include "msgpack/predef/make.h"
+#include "msgpack/predef/os/windows.h"
 
 /*`
 [heading `MSGPACK_PLAT_WINDOWS_RUNTIME`]
@@ -34,12 +34,12 @@ http://www.boost.org/LICENSE_1_0.txt)
  
 #if MSGPACK_PLAT_WINDOWS_RUNTIME
 #   define MSGPACK_PLAT_WINDOWS_RUNTIME_AVAILABLE
-#   include <msgpack/predef/detail/platform_detected.h>
+#   include "msgpack/predef/detail/platform_detected.h"
 #endif
 
 #define MSGPACK_PLAT_WINDOWS_RUNTIME_NAME "Windows Runtime"
 
 #endif
 
-#include <msgpack/predef/detail/test.h>
+#include "msgpack/predef/detail/test.h"
 MSGPACK_PREDEF_DECLARE_TEST(MSGPACK_PLAT_WINDOWS_RUNTIME,MSGPACK_PLAT_WINDOWS_RUNTIME_NAME)

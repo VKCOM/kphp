@@ -10,7 +10,7 @@ http://www.boost.org/LICENSE_1_0.txt)
 #define MSGPACK_PREDEF_OTHER_H
 #endif
 
-#include <msgpack/predef/other/endian.h>
-/*#include <msgpack/predef/other/.h>*/
+#include "msgpack/predef/other/endian.h"
+/*#include "msgpack/predef/other/.h"*/
 
 #endif

@@ -14,9 +14,9 @@
 # ifndef MSGPACK_PREPROCESSOR_REPETITION_ENUM_PARAMS_HPP
 # define MSGPACK_PREPROCESSOR_REPETITION_ENUM_PARAMS_HPP
 #
-# include <msgpack/preprocessor/config/config.hpp>
-# include <msgpack/preprocessor/punctuation/comma_if.hpp>
-# include <msgpack/preprocessor/repetition/repeat.hpp>
+# include "msgpack/preprocessor/config/config.hpp"
+# include "msgpack/preprocessor/punctuation/comma_if.hpp"
+# include "msgpack/preprocessor/repetition/repeat.hpp"
 #
 # /* MSGPACK_PP_ENUM_PARAMS */
 #

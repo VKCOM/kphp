@@ -8,8 +8,8 @@ http://www.boost.org/LICENSE_1_0.txt)
 #ifndef MSGPACK_PREDEF_ARCHITECTURE_BLACKFIN_H
 #define MSGPACK_PREDEF_ARCHITECTURE_BLACKFIN_H
 
-#include <msgpack/predef/version_number.h>
-#include <msgpack/predef/make.h>
+#include "msgpack/predef/version_number.h"
+#include "msgpack/predef/make.h"
 
 /*`
 [heading `MSGPACK_ARCH_BLACKFIN`]
@@ -42,5 +42,5 @@ Blackfin Processors from Analog Devices.
 
 #endif
 
-#include <msgpack/predef/detail/test.h>
+#include "msgpack/predef/detail/test.h"
 MSGPACK_PREDEF_DECLARE_TEST(MSGPACK_ARCH_BLACKFIN,MSGPACK_ARCH_BLACKFIN_NAME)

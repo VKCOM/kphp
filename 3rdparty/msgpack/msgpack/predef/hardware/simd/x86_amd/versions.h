@@ -9,7 +9,7 @@ http://www.boost.org/LICENSE_1_0.txt)
 #ifndef MSGPACK_PREDEF_HARDWARE_SIMD_X86_AMD_VERSIONS_H
 #define MSGPACK_PREDEF_HARDWARE_SIMD_X86_AMD_VERSIONS_H
 
-#include <msgpack/predef/version_number.h>
+#include "msgpack/predef/version_number.h"
 
 /*`
  Those defines represent x86 (AMD specific) SIMD extensions versions.

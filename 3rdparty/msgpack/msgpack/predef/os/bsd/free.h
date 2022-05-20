@@ -8,7 +8,7 @@ http://www.boost.org/LICENSE_1_0.txt)
 #ifndef MSGPACK_PREDEF_OS_BSD_FREE_H
 #define MSGPACK_PREDEF_OS_BSD_FREE_H
 
-#include <msgpack/predef/os/bsd.h>
+#include "msgpack/predef/os/bsd.h"
 
 /*`
 [heading `MSGPACK_OS_BSD_FREE`]
@@ -49,12 +49,12 @@ http://www.boost.org/LICENSE_1_0.txt)
 
 #if MSGPACK_OS_BSD_FREE
 #   define MSGPACK_OS_BSD_FREE_AVAILABLE
-#   include <msgpack/predef/detail/os_detected.h>
+#   include "msgpack/predef/detail/os_detected.h"
 #endif
 
 #define MSGPACK_OS_BSD_FREE_NAME "Free BSD"
 
 #endif
 
-#include <msgpack/predef/detail/test.h>
+#include "msgpack/predef/detail/test.h"
 MSGPACK_PREDEF_DECLARE_TEST(MSGPACK_OS_BSD_FREE,MSGPACK_OS_BSD_FREE_NAME)

@@ -10,15 +10,15 @@ http://www.boost.org/LICENSE_1_0.txt)
 #define MSGPACK_PREDEF_H
 #endif
 
-#include <msgpack/predef/language.h>
-#include <msgpack/predef/architecture.h>
-#include <msgpack/predef/compiler.h>
-#include <msgpack/predef/library.h>
-#include <msgpack/predef/os.h>
-#include <msgpack/predef/other.h>
-#include <msgpack/predef/platform.h>
-#include <msgpack/predef/hardware.h>
+#include "msgpack/predef/language.h"
+#include "msgpack/predef/architecture.h"
+#include "msgpack/predef/compiler.h"
+#include "msgpack/predef/library.h"
+#include "msgpack/predef/os.h"
+#include "msgpack/predef/other.h"
+#include "msgpack/predef/platform.h"
+#include "msgpack/predef/hardware.h"
 
-#include <msgpack/predef/version.h>
+#include "msgpack/predef/version.h"
 
 #endif

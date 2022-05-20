@@ -10,10 +10,10 @@ http://www.boost.org/LICENSE_1_0.txt)
 
 /* Other compilers that emulate this one need to be detected first. */
 
-#include <msgpack/predef/compiler/clang.h>
+#include "msgpack/predef/compiler/clang.h"
 
-#include <msgpack/predef/version_number.h>
-#include <msgpack/predef/make.h>
+#include "msgpack/predef/version_number.h"
+#include "msgpack/predef/make.h"
 
 /*`
 [heading `MSGPACK_COMP_GNUC`]
@@ -52,17 +52,17 @@ Version number available as major, minor, and patch (if available).
 #       define MSGPACK_COMP_GNUC MSGPACK_COMP_GNUC_DETECTION
 #   endif
 #   define MSGPACK_COMP_GNUC_AVAILABLE
-#   include <msgpack/predef/detail/comp_detected.h>
+#   include "msgpack/predef/detail/comp_detected.h"
 #endif
 
 #define MSGPACK_COMP_GNUC_NAME "Gnu GCC C/C++"
 
 #endif
 
-#include <msgpack/predef/detail/test.h>
+#include "msgpack/predef/detail/test.h"
 MSGPACK_PREDEF_DECLARE_TEST(MSGPACK_COMP_GNUC,MSGPACK_COMP_GNUC_NAME)
 
 #ifdef MSGPACK_COMP_GNUC_EMULATED
-#include <msgpack/predef/detail/test.h>
+#include "msgpack/predef/detail/test.h"
 MSGPACK_PREDEF_DECLARE_TEST(MSGPACK_COMP_GNUC_EMULATED,MSGPACK_COMP_GNUC_NAME)
 #endif

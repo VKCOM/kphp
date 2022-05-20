@@ -14,10 +14,10 @@ http://www.boost.org/LICENSE_1_0.txt)
  but only if we detect iOS first. Hence we will force include iOS detection
  * before doing any MacOS detection.
  */
-#include <msgpack/predef/os/ios.h>
+#include "msgpack/predef/os/ios.h"
 
-#include <msgpack/predef/version_number.h>
-#include <msgpack/predef/make.h>
+#include "msgpack/predef/version_number.h"
+#include "msgpack/predef/make.h"
 
 /*`
 [heading `MSGPACK_OS_MACOS`]
@@ -54,12 +54,12 @@ http://www.boost.org/LICENSE_1_0.txt)
 
 #if MSGPACK_OS_MACOS
 #   define MSGPACK_OS_MACOS_AVAILABLE
-#   include <msgpack/predef/detail/os_detected.h>
+#   include "msgpack/predef/detail/os_detected.h"
 #endif
 
 #define MSGPACK_OS_MACOS_NAME "Mac OS"
 
 #endif
 
-#include <msgpack/predef/detail/test.h>
+#include "msgpack/predef/detail/test.h"
 MSGPACK_PREDEF_DECLARE_TEST(MSGPACK_OS_MACOS,MSGPACK_OS_MACOS_NAME)

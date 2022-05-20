@@ -13,9 +13,9 @@
 # ifndef MSGPACK_PREPROCESSOR_ARRAY_ENUM_HPP
 # define MSGPACK_PREPROCESSOR_ARRAY_ENUM_HPP
 #
-# include <msgpack/preprocessor/cat.hpp>
-# include <msgpack/preprocessor/config/config.hpp>
-# include <msgpack/preprocessor/tuple/rem.hpp>
+# include "msgpack/preprocessor/cat.hpp"
+# include "msgpack/preprocessor/config/config.hpp"
+# include "msgpack/preprocessor/tuple/rem.hpp"
 #
 # /* MSGPACK_PP_ARRAY_ENUM */
 #

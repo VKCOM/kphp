@@ -12,14 +12,14 @@
 # ifndef MSGPACK_PREPROCESSOR_SEQ_REPLACE_HPP
 # define MSGPACK_PREPROCESSOR_SEQ_REPLACE_HPP
 #
-# include <msgpack/preprocessor/arithmetic/dec.hpp>
-# include <msgpack/preprocessor/arithmetic/inc.hpp>
-# include <msgpack/preprocessor/config/config.hpp>
-# include <msgpack/preprocessor/comparison/equal.hpp>
-# include <msgpack/preprocessor/control/iif.hpp>
-# include <msgpack/preprocessor/seq/first_n.hpp>
-# include <msgpack/preprocessor/seq/rest_n.hpp>
-# include <msgpack/preprocessor/seq/size.hpp>
+# include "msgpack/preprocessor/arithmetic/dec.hpp"
+# include "msgpack/preprocessor/arithmetic/inc.hpp"
+# include "msgpack/preprocessor/config/config.hpp"
+# include "msgpack/preprocessor/comparison/equal.hpp"
+# include "msgpack/preprocessor/control/iif.hpp"
+# include "msgpack/preprocessor/seq/first_n.hpp"
+# include "msgpack/preprocessor/seq/rest_n.hpp"
+# include "msgpack/preprocessor/seq/size.hpp"
 #
 # /* MSGPACK_PP_SEQ_REPLACE */
 #

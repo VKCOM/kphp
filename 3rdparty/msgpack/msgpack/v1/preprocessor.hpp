@@ -14,6 +14,6 @@
 # ifndef MSGPACK_PREPROCESSOR_HPP
 # define MSGPACK_PREPROCESSOR_HPP
 #
-# include <msgpack/preprocessor/library.hpp>
+# include "msgpack/preprocessor/library.hpp"
 #
 # endif

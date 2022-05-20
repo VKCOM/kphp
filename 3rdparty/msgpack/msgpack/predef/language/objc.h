@@ -8,8 +8,8 @@ http://www.boost.org/LICENSE_1_0.txt)
 #ifndef MSGPACK_PREDEF_LANGUAGE_OBJC_H
 #define MSGPACK_PREDEF_LANGUAGE_OBJC_H
 
-#include <msgpack/predef/version_number.h>
-#include <msgpack/predef/make.h>
+#include "msgpack/predef/version_number.h"
+#include "msgpack/predef/make.h"
 
 /*`
 [heading `MSGPACK_LANG_OBJC`]
@@ -38,5 +38,5 @@ http://www.boost.org/LICENSE_1_0.txt)
 
 #endif
 
-#include <msgpack/predef/detail/test.h>
+#include "msgpack/predef/detail/test.h"
 MSGPACK_PREDEF_DECLARE_TEST(MSGPACK_LANG_OBJC,MSGPACK_LANG_OBJC_NAME)

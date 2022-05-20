@@ -6,15 +6,15 @@ Distributed under the Boost Software License, Version 1.0.
 http://www.boost.org/LICENSE_1_0.txt)
 */
 
-#include <msgpack/predef/hardware/simd/x86.h>
-#include <msgpack/predef/hardware/simd/x86_amd.h>
-#include <msgpack/predef/hardware/simd/arm.h>
-#include <msgpack/predef/hardware/simd/ppc.h>
+#include "msgpack/predef/hardware/simd/x86.h"
+#include "msgpack/predef/hardware/simd/x86_amd.h"
+#include "msgpack/predef/hardware/simd/arm.h"
+#include "msgpack/predef/hardware/simd/ppc.h"
 
 #ifndef MSGPACK_PREDEF_HARDWARE_SIMD_H
 #define MSGPACK_PREDEF_HARDWARE_SIMD_H
 
-#include <msgpack/predef/version_number.h>
+#include "msgpack/predef/version_number.h"
 
 /*`
  [section Using the `MSGPACK_HW_SIMD_*` predefs]
@@ -115,5 +115,5 @@ http://www.boost.org/LICENSE_1_0.txt)
 
 #endif
 
-#include <msgpack/predef/detail/test.h>
+#include "msgpack/predef/detail/test.h"
 MSGPACK_PREDEF_DECLARE_TEST(MSGPACK_HW_SIMD, MSGPACK_HW_SIMD_NAME)

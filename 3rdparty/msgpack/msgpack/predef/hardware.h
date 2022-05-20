@@ -11,6 +11,6 @@ http://www.boost.org/LICENSE_1_0.txt)
 #define MSGPACK_PREDEF_HARDWARE_H
 #endif
 
-#include <msgpack/predef/hardware/simd.h>
+#include "msgpack/predef/hardware/simd.h"
 
 #endif

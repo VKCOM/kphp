@@ -8,12 +8,12 @@ http://www.boost.org/LICENSE_1_0.txt)
 #ifndef MSGPACK_PREDEF_ENDIAN_H
 #define MSGPACK_PREDEF_ENDIAN_H
 
-#include <msgpack/predef/version_number.h>
-#include <msgpack/predef/make.h>
-#include <msgpack/predef/library/c/gnu.h>
-#include <msgpack/predef/os/macos.h>
-#include <msgpack/predef/os/bsd.h>
-#include <msgpack/predef/os/android.h>
+#include "msgpack/predef/version_number.h"
+#include "msgpack/predef/make.h"
+#include "msgpack/predef/library/c/gnu.h"
+#include "msgpack/predef/os/macos.h"
+#include "msgpack/predef/os/bsd.h"
+#include "msgpack/predef/os/android.h"
 
 /*`
 [heading `MSGPACK_ENDIAN_*`]
@@ -138,7 +138,7 @@ information and acquired knowledge:
  */
 #if !MSGPACK_ENDIAN_BIG_BYTE && !MSGPACK_ENDIAN_BIG_WORD && \
     !MSGPACK_ENDIAN_LITTLE_BYTE && !MSGPACK_ENDIAN_LITTLE_WORD
-#   include <msgpack/predef/architecture.h>
+#   include "msgpack/predef/architecture.h"
 #   if MSGPACK_ARCH_M68K || \
         MSGPACK_ARCH_PARISC || \
         MSGPACK_ARCH_SPARC || \
@@ -163,7 +163,7 @@ information and acquired knowledge:
 #if !MSGPACK_ENDIAN_BIG_BYTE && !MSGPACK_ENDIAN_BIG_WORD && \
     !MSGPACK_ENDIAN_LITTLE_BYTE && !MSGPACK_ENDIAN_LITTLE_WORD
 #   if MSGPACK_ARCH_ARM
-#       include <msgpack/predef/os/windows.h>
+#       include "msgpack/predef/os/windows.h"
 #       if MSGPACK_OS_WINDOWS
 #           undef MSGPACK_ENDIAN_LITTLE_BYTE
 #           define MSGPACK_ENDIAN_LITTLE_BYTE MSGPACK_VERSION_NUMBER_AVAILABLE
@@ -191,14 +191,14 @@ information and acquired knowledge:
 
 #endif
 
-#include <msgpack/predef/detail/test.h>
+#include "msgpack/predef/detail/test.h"
 MSGPACK_PREDEF_DECLARE_TEST(MSGPACK_ENDIAN_BIG_BYTE,MSGPACK_ENDIAN_BIG_BYTE_NAME)
 
-#include <msgpack/predef/detail/test.h>
+#include "msgpack/predef/detail/test.h"
 MSGPACK_PREDEF_DECLARE_TEST(MSGPACK_ENDIAN_BIG_WORD,MSGPACK_ENDIAN_BIG_WORD_NAME)
 
-#include <msgpack/predef/detail/test.h>
+#include "msgpack/predef/detail/test.h"
 MSGPACK_PREDEF_DECLARE_TEST(MSGPACK_ENDIAN_LITTLE_BYTE,MSGPACK_ENDIAN_LITTLE_BYTE_NAME)
 
-#include <msgpack/predef/detail/test.h>
+#include "msgpack/predef/detail/test.h"
 MSGPACK_PREDEF_DECLARE_TEST(MSGPACK_ENDIAN_LITTLE_WORD,MSGPACK_ENDIAN_LITTLE_WORD_NAME)

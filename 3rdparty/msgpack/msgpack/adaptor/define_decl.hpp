@@ -18,7 +18,7 @@
 #define MSGPACK_PP_VARIADICS
 #endif
 
-#include <msgpack/preprocessor.hpp>
+#include "msgpack/preprocessor.hpp"
 
 #include "msgpack/versioning.hpp"
 

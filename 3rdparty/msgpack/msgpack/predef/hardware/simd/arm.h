@@ -9,8 +9,8 @@ http://www.boost.org/LICENSE_1_0.txt)
 #ifndef MSGPACK_PREDEF_HARDWARE_SIMD_ARM_H
 #define MSGPACK_PREDEF_HARDWARE_SIMD_ARM_H
 
-#include <msgpack/predef/version_number.h>
-#include <msgpack/predef/hardware/simd/arm/versions.h>
+#include "msgpack/predef/version_number.h"
+#include "msgpack/predef/hardware/simd/arm/versions.h"
 
 /*`
  [heading `MSGPACK_HW_SIMD_ARM`]
@@ -53,5 +53,5 @@ http://www.boost.org/LICENSE_1_0.txt)
 
 #endif
 
-#include <msgpack/predef/detail/test.h>
+#include "msgpack/predef/detail/test.h"
 MSGPACK_PREDEF_DECLARE_TEST(MSGPACK_HW_SIMD_ARM, MSGPACK_HW_SIMD_ARM_NAME)

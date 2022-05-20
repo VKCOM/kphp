@@ -12,7 +12,7 @@
 # ifndef MSGPACK_PREPROCESSOR_SELECTION_HPP
 # define MSGPACK_PREPROCESSOR_SELECTION_HPP
 #
-# include <msgpack/preprocessor/selection/max.hpp>
-# include <msgpack/preprocessor/selection/min.hpp>
+# include "msgpack/preprocessor/selection/max.hpp"
+# include "msgpack/preprocessor/selection/min.hpp"
 #
 # endif

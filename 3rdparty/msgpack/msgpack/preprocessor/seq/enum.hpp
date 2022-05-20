@@ -12,9 +12,9 @@
 # ifndef MSGPACK_PREPROCESSOR_SEQ_ENUM_HPP
 # define MSGPACK_PREPROCESSOR_SEQ_ENUM_HPP
 #
-# include <msgpack/preprocessor/cat.hpp>
-# include <msgpack/preprocessor/config/config.hpp>
-# include <msgpack/preprocessor/seq/size.hpp>
+# include "msgpack/preprocessor/cat.hpp"
+# include "msgpack/preprocessor/config/config.hpp"
+# include "msgpack/preprocessor/seq/size.hpp"
 #
 # /* MSGPACK_PP_SEQ_ENUM */
 #

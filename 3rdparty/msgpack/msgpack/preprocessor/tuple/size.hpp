@@ -13,9 +13,9 @@
 # ifndef MSGPACK_PREPROCESSOR_TUPLE_SIZE_HPP
 # define MSGPACK_PREPROCESSOR_TUPLE_SIZE_HPP
 #
-# include <msgpack/preprocessor/cat.hpp>
-# include <msgpack/preprocessor/config/config.hpp>
-# include <msgpack/preprocessor/variadic/size.hpp>
+# include "msgpack/preprocessor/cat.hpp"
+# include "msgpack/preprocessor/config/config.hpp"
+# include "msgpack/preprocessor/variadic/size.hpp"
 #
 # if MSGPACK_PP_VARIADICS
 #    if MSGPACK_PP_VARIADICS_MSVC

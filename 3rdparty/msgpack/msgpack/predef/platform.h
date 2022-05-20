@@ -11,11 +11,11 @@ http://www.boost.org/LICENSE_1_0.txt)
 #define MSGPACK_PREDEF_PLATFORM_H
 #endif
 
-#include <msgpack/predef/platform/mingw.h>
-#include <msgpack/predef/platform/windows_desktop.h>
-#include <msgpack/predef/platform/windows_store.h>
-#include <msgpack/predef/platform/windows_phone.h>
-#include <msgpack/predef/platform/windows_runtime.h>
-/*#include <msgpack/predef/platform/.h>*/
+#include "msgpack/predef/platform/mingw.h"
+#include "msgpack/predef/platform/windows_desktop.h"
+#include "msgpack/predef/platform/windows_store.h"
+#include "msgpack/predef/platform/windows_phone.h"
+#include "msgpack/predef/platform/windows_runtime.h"
+/*#include "msgpack/predef/platform/.h"*/
 
 #endif

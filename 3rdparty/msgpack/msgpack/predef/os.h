@@ -11,23 +11,23 @@ http://www.boost.org/LICENSE_1_0.txt)
 #define MSGPACK_PREDEF_OS_H
 #endif
 
-#include <msgpack/predef/os/aix.h>
-#include <msgpack/predef/os/amigaos.h>
-#include <msgpack/predef/os/android.h>
-#include <msgpack/predef/os/beos.h>
-#include <msgpack/predef/os/bsd.h>
-#include <msgpack/predef/os/cygwin.h>
-#include <msgpack/predef/os/haiku.h>
-#include <msgpack/predef/os/hpux.h>
-#include <msgpack/predef/os/irix.h>
-#include <msgpack/predef/os/ios.h>
-#include <msgpack/predef/os/linux.h>
-#include <msgpack/predef/os/macos.h>
-#include <msgpack/predef/os/os400.h>
-#include <msgpack/predef/os/qnxnto.h>
-#include <msgpack/predef/os/solaris.h>
-#include <msgpack/predef/os/unix.h>
-#include <msgpack/predef/os/vms.h>
-#include <msgpack/predef/os/windows.h>
+#include "msgpack/predef/os/aix.h"
+#include "msgpack/predef/os/amigaos.h"
+#include "msgpack/predef/os/android.h"
+#include "msgpack/predef/os/beos.h"
+#include "msgpack/predef/os/bsd.h"
+#include "msgpack/predef/os/cygwin.h"
+#include "msgpack/predef/os/haiku.h"
+#include "msgpack/predef/os/hpux.h"
+#include "msgpack/predef/os/irix.h"
+#include "msgpack/predef/os/ios.h"
+#include "msgpack/predef/os/linux.h"
+#include "msgpack/predef/os/macos.h"
+#include "msgpack/predef/os/os400.h"
+#include "msgpack/predef/os/qnxnto.h"
+#include "msgpack/predef/os/solaris.h"
+#include "msgpack/predef/os/unix.h"
+#include "msgpack/predef/os/vms.h"
+#include "msgpack/predef/os/windows.h"
 
 #endif

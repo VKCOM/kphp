@@ -12,13 +12,13 @@
 # ifndef MSGPACK_PREPROCESSOR_SEQ_CAT_HPP
 # define MSGPACK_PREPROCESSOR_SEQ_CAT_HPP
 #
-# include <msgpack/preprocessor/arithmetic/dec.hpp>
-# include <msgpack/preprocessor/config/config.hpp>
-# include <msgpack/preprocessor/control/if.hpp>
-# include <msgpack/preprocessor/seq/fold_left.hpp>
-# include <msgpack/preprocessor/seq/seq.hpp>
-# include <msgpack/preprocessor/seq/size.hpp>
-# include <msgpack/preprocessor/tuple/eat.hpp>
+# include "msgpack/preprocessor/arithmetic/dec.hpp"
+# include "msgpack/preprocessor/config/config.hpp"
+# include "msgpack/preprocessor/control/if.hpp"
+# include "msgpack/preprocessor/seq/fold_left.hpp"
+# include "msgpack/preprocessor/seq/seq.hpp"
+# include "msgpack/preprocessor/seq/size.hpp"
+# include "msgpack/preprocessor/tuple/eat.hpp"
 #
 # /* MSGPACK_PP_SEQ_CAT */
 #

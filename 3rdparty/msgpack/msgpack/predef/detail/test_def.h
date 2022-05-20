@@ -4,20 +4,20 @@ Distributed under the Boost Software License, Version 1.0.
 (See accompanying file LICENSE_1_0.txt or copy at
 http://www.boost.org/LICENSE_1_0.txt)
 */
-#include <msgpack/predef.h>
+#include "msgpack/predef.h"
 
 #define MSGPACK_PREDEF_INTERNAL_GENERATE_TESTS
 
 void * add_predef_entry(const char * name, const char * description, unsigned value)
 #undef MSGPACK_PREDEF_DECLARE_TEST
 #define MSGPACK_PREDEF_DECLARE_TEST(x,s) void predef_entry_##x() { add_predef_entry(#x, s, x) }
-#include <msgpack/predef.h>
+#include "msgpack/predef.h"
 
 #undef MSGPACK_PREDEF_DECLARE_TEST
 #define MSGPACK_PREDEF_DECLARE_TEST(x,s) predef_entry_##x()
 void create_predef_entries()
 {
-#include <msgpack/predef.h>
+#include "msgpack/predef.h"
 }
 
 #ifdef __cplusplus

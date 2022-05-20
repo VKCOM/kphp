@@ -13,8 +13,8 @@
 # ifndef MSGPACK_PREPROCESSOR_VARIADIC_ELEM_HPP
 # define MSGPACK_PREPROCESSOR_VARIADIC_ELEM_HPP
 #
-# include <msgpack/preprocessor/cat.hpp>
-# include <msgpack/preprocessor/config/config.hpp>
+# include "msgpack/preprocessor/cat.hpp"
+# include "msgpack/preprocessor/config/config.hpp"
 #
 # /* MSGPACK_PP_VARIADIC_ELEM */
 #
