@@ -56,6 +56,16 @@ function test2() {
     var_dump($u64->cdata);
 }
 
+function test3() {
+  $lib = FFI::scope('pointers');
+  $i64 = $lib->new('int64_t');
+  $i64->cdata = 240;
+  $voidptr = $lib->new('VoidPtr');
+  $lib->set_void_ptr(FFI::addr($voidptr), FFI::addr($i64));
+  var_dump($lib->read_int64_from_void($voidptr));
+}
+
 test();
 test2();
 test_ptr2_out_param();
+test3();
