@@ -8,6 +8,7 @@
 #include <cassert>
 #include <clocale>
 #include <csignal>
+#include <csetjmp>
 #include <fstream>
 #include <functional>
 #include <getopt.h>
@@ -454,14 +455,20 @@ static const string_buffer *get_headers(int content_length) {//can't use static_
 }
 
 constexpr uint32_t MAX_SHUTDOWN_FUNCTIONS = 256;
+
+namespace {
+
 // i don't want destructors of this array to be called
 int shutdown_functions_count = 0;
 char shutdown_function_storage[MAX_SHUTDOWN_FUNCTIONS * sizeof(shutdown_function_type)];
 shutdown_function_type *shutdown_functions = reinterpret_cast<shutdown_function_type *>(shutdown_function_storage);
-static bool finished = false;
-static bool flushed = false;
-static bool wait_all_forks_on_finish = false;
+shutdown_functions_status shutdown_functions_status_value = shutdown_functions_status::not_executed;
+jmp_buf timeout_exit;
+bool finished = false;
+bool flushed = false;
+bool wait_all_forks_on_finish = false;
 
+} // namespace
 
 void f$fastcgi_finish_request(int64_t exit_code) {
   if (flushed) {
@@ -538,6 +545,43 @@ void f$fastcgi_finish_request(int64_t exit_code) {
   coub->clean();
 }
 
+void run_shutdown_functions() {
+  ShutdownProfiler shutdown_profiler;
+  for (int i = 0; i < shutdown_functions_count; i++) {
+    shutdown_functions[i]();
+  }
+}
+
+shutdown_functions_status get_shutdown_functions_status() {
+  return shutdown_functions_status_value;
+}
+
+int get_shutdown_functions_count() {
+  return shutdown_functions_count;
+}
+
+void run_shutdown_functions_from_timeout() {
+  // to safely run the shutdown handlers in the timeout context, we set
+  // a recovery point to be used from the user-called die/exit;
+  // without that, exit would lead to a finished state instead of the error state
+  // we were about to enter (since timeout is an error state)
+  shutdown_functions_status_value = shutdown_functions_status::running_from_timeout;
+  if (setjmp(timeout_exit) == 0) {
+    run_shutdown_functions();
+  }
+}
+
+void run_shutdown_functions_from_script() {
+  shutdown_functions_status_value = shutdown_functions_status::running;
+  // when running shutdown functions from a normal (non-timeout) context,
+  // reset the timer to give shutdown functions a new span of time to avoid
+  // prematurely terminated shutdown functions for long running scripts;
+  // if shutdown functions can't finish with that time quota, they will
+  // be interrupted as usual
+  reset_script_timeout();
+  run_shutdown_functions();
+}
+
 void f$register_shutdown_function(const shutdown_function_type &f) {
   if (shutdown_functions_count == MAX_SHUTDOWN_FUNCTIONS) {
     php_warning("Too many shutdown functions registered, ignore next one\n");
@@ -556,11 +600,8 @@ void finish(int64_t exit_code, bool allow_forks_waiting) {
   if (!finished) {
     finished = true;
     forcibly_stop_profiler();
-    if (shutdown_functions_count) {
-      ShutdownProfiler shutdown_profiler;
-      for (int i = 0; i < shutdown_functions_count; i++) {
-        shutdown_functions[i]();
-      }
+    if (shutdown_functions_count != 0) {
+      run_shutdown_functions_from_script();
     }
     if (allow_forks_waiting && wait_all_forks_on_finish) {
       wait_all_forks();
@@ -576,6 +617,10 @@ void finish(int64_t exit_code, bool allow_forks_waiting) {
 }
 
 void f$exit(const mixed &v) {
+  if (shutdown_functions_status_value == shutdown_functions_status::running_from_timeout) {
+    longjmp(timeout_exit, 1);
+  }
+
   if (v.is_string()) {
     *coub << v;
     finish(0, false);
@@ -2141,6 +2186,7 @@ static void reset_global_interface_vars() {
 
 static void init_interface_lib() {
   shutdown_functions_count = 0;
+  shutdown_functions_status_value = shutdown_functions_status::not_executed;
   finished = false;
   flushed = false;
 

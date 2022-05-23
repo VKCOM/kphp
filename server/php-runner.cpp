@@ -1,4 +1,4 @@
-// Compiler for PHP (aka KPHP)
+﻿// Compiler for PHP (aka KPHP)
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
@@ -36,6 +36,34 @@
 
 query_stats_t query_stats;
 long long query_stats_id = 1;
+
+namespace {
+//TODO: sometimes I need to call old handlers
+//TODO: recheck!
+void kwrite_str(int fd, const char *s) noexcept {
+  kwrite(fd, s, static_cast<int>(strlen(s)));
+}
+
+bool check_signal_critical_section(int sig_num, const char *sig_name) {
+  if (dl::in_critical_section) {
+    char message_1kw[100];
+    sprintf(message_1kw, "in critical section: pending %s caught\n", sig_name);
+    kwrite_str(2, message_1kw);
+    dl::pending_signals = dl::pending_signals | (1 << sig_num);
+    return false;
+  }
+  dl::pending_signals = 0;
+  return true;
+}
+
+void perform_error_if_running(const char *msg, script_error_t error_type) {
+  if (PHPScriptBase::is_running) {
+    kwrite_str(2, msg);
+    PHPScriptBase::error(msg, error_type);
+    assert ("unreachable point" && 0);
+  }
+}
+} // namespace
 
 void PHPScriptBase::error(const char *error_message, script_error_t error_type) {
   assert (is_running == true);
@@ -149,6 +177,39 @@ void PHPScriptBase::init(script_t *script, php_query_data *data_to_set) {
   memset(&query_stats, 0, sizeof(query_stats));
 
   PHPScriptBase::ml_flag = false;
+}
+
+// asan_stack_unpoison marks the script stack memory as no longer in use,
+// making it possible to do a longjmp up the stack;
+// if ASAN is disabled, this function does nothing
+// use this function right before doing a longjmp
+void PHPScriptBase::asan_stack_unpoison() {
+#if ASAN7_ENABLED
+  ASAN_UNPOISON_MEMORY_REGION(run_stack, stack_size);
+#endif
+}
+
+void PHPScriptBase::on_request_timeout_error() {
+  // note: this function runs only when is_running=true
+
+  // we can get here from a normal timeout *or* a timeout that happens after
+  // we tried to execute the shutdown functions from the timeout context;
+  // in the latter case, we should skip all everything here and go straight to the
+  // timeout exit context switching
+  auto shutdown_functions_status = get_shutdown_functions_status();
+  if (shutdown_functions_status != shutdown_functions_status::running_from_timeout) {
+    if (is_json_log_on_timeout_enabled) {
+      vk::singleton<JsonLogger>::get().write_log_with_backtrace("Maximum execution time exceeded", E_ERROR);
+    }
+    if (get_shutdown_functions_count() != 0 && get_shutdown_functions_status() == shutdown_functions_status::not_executed) {
+      // resetting a timer here will cause another SIGALRM to be received later
+      // that will bring us to this function again in case if we haven't finished
+      // executing shutdown functions yet
+      current_script->reset_script_timeout();
+      run_shutdown_functions_from_timeout();
+    }
+  }
+  perform_error_if_running("timeout exit\n", script_error_t::timeout);
 }
 
 int PHPScriptBase::swapcontext_helper(ucontext_t_portable *oucp, const ucontext_t_portable *ucp) {
@@ -365,13 +426,40 @@ void PHPScriptBase::run() {
   assert (run_main->run != nullptr);
 
   init_runtime_environment(data, run_mem, mem_size);
+  if (sigsetjmp(timeout_handler, true) != 0) { // set up a timeout recovery point
+    on_request_timeout_error(); // this call will not return (it changes the context)
+  }
   CurException = Optional<bool>{};
   run_main->run();
   if (CurException.is_null()) {
     set_script_result(nullptr);
   } else {
+    // we can reach this point during normal script execution or during the shutdown functions execution
+    // (they can start normally or from a timeout context);
+    // execute the shutdown functions only if we're here outside the shutdown functions context
+    // also note that we're running shutdown functions normally (like from the exit) and that will rewind the timeout timer to 0
+    //
+    // why not calling shutdown functions from error() functions itself?
+    // most errors are not recoverable and may happen from signal handler
+    // PHP can't run shutdown functions in case of the stack overflow or when heap allocations limit is exceeded,
+    // therefore we shouldn't bother either;
+    // we handle exception script error here as it's clearly the script context while error() could be called
+    // from a signal handler
+    if (get_shutdown_functions_count() != 0 && get_shutdown_functions_status() == shutdown_functions_status::not_executed) {
+      // run shutdown functions with an empty exception context; then recover it before we proceed
+      auto saved_exception = CurException;
+      CurException = Optional<bool>{};
+      run_shutdown_functions_from_script();
+      // only nothrow shutdown callbacks are allowed by the compiler, so the CurException should be null
+      php_assert(CurException.is_null());
+      CurException = saved_exception;
+    }
     error(php_uncaught_exception_error(CurException), script_error_t::exception);
   }
+}
+
+void PHPScriptBase::reset_script_timeout() {
+  php_script_set_timeout(script_timeout);
 }
 
 double PHPScriptBase::get_net_time() const {
@@ -399,47 +487,31 @@ volatile bool PHPScriptBase::is_running = false;
 volatile bool PHPScriptBase::tl_flag = false;
 volatile bool PHPScriptBase::ml_flag = false;
 
-//TODO: sometimes I need to call old handlers
-//TODO: recheck!
-void kwrite_str(int fd, const char *s) noexcept {
-  kwrite(fd, s, static_cast<int>(strlen(s)));
-}
-
 void write_str(int fd, const char *s) noexcept {
   write(fd, s, std::min(strlen(s), size_t{1000}));
 }
 
 namespace kphp_runtime_signal_handlers {
-namespace {
-bool check_signal_critical_section(int sig_num, const char *sig_name) {
-  if (dl::in_critical_section) {
-    char message_1kw[100];
-    sprintf(message_1kw, "in critical section: pending %s caught\n", sig_name);
-    kwrite_str(2, message_1kw);
-    dl::pending_signals = dl::pending_signals | (1 << sig_num);
-    return false;
-  }
-  dl::pending_signals = 0;
-  return true;
-}
-
-void perform_error_if_running(const char *msg, script_error_t error_type) {
-  if (PHPScriptBase::is_running) {
-    kwrite_str(2, msg);
-    PHPScriptBase::error(msg, error_type);
-    assert ("unreachable point" && 0);
-  }
-}
-} // namespace
 
 static void sigalrm_handler(int signum) {
   kwrite_str(2, "in sigalrm_handler\n");
   if (check_signal_critical_section(signum, "SIGALRM")) {
     PHPScriptBase::tl_flag = true;
-    if (PHPScriptBase::is_running && is_json_log_on_timeout_enabled) {
-      vk::singleton<JsonLogger>::get().write_log_with_backtrace("Maximum execution time exceeded", E_ERROR);
+    // if script is not actually running, don't bother (sigalrm handler is called
+    // even if timeout happens after the script already finished its execution)
+    if (PHPScriptBase::is_running) {
+      // we need to (in that order):
+      // [1] run the shutdown handlers
+      // [2] change the context to the worker
+      // [3] execute the error handling state
+      // previously, we performed [2] and [3] right here,
+      // but now we also need to run the shutdown handlers which is
+      // can contain arbitrary code and should not be executed from the signal handler;
+      // therefore, we break out of this signal handler to a prepared recovery point
+      // (without changing the script context) and then do all required steps
+      PHPScriptBase::current_script->asan_stack_unpoison();
+      siglongjmp(PHPScriptBase::current_script->timeout_handler, 1);
     }
-    perform_error_if_running("timeout exit\n", script_error_t::timeout);
   }
 }
 
