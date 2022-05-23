@@ -56,6 +56,7 @@ int force_clear_sql_connection = 0;
 long long static_buffer_length_limit = -1;
 int use_madvise_dontneed = 0;
 long long memory_used_to_recreate_script = LLONG_MAX;
+double sigterm_wait_timeout = 0.1;
 
 /***
   save of stdout/stderr fd

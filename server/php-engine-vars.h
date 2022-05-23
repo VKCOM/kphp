@@ -66,8 +66,8 @@ extern long long static_buffer_length_limit;
 extern int use_madvise_dontneed;
 extern long long memory_used_to_recreate_script;
 
-#define SIGTERM_MAX_TIMEOUT 10
-#define SIGTERM_WAIT_TIMEOUT 0.1
+extern double sigterm_wait_timeout;
+constexpr double SIGTERM_MAX_TIMEOUT = 10.0;
 
 #if defined(__APPLE__)
 #define SIGPHPASSERT (SIGCONT)
