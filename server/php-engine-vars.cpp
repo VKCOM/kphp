@@ -38,7 +38,7 @@ long long rpc_client_actor = -1;
 
 /** sigterm **/
 double sigterm_time = 0;
-int sigterm_on = 0;
+bool sigterm_on = false;
 int rpc_stopped = 0;
 
 /** master **/

@@ -1376,9 +1376,9 @@ static void sigint_handler(const int sig) {
 }
 
 void turn_sigterm_on() {
-  if (sigterm_on != 1) {
+  if (!sigterm_on) {
     sigterm_time = precise_now + SIGTERM_MAX_TIMEOUT;
-    sigterm_on = 1;
+    sigterm_on = true;
   }
 }
 

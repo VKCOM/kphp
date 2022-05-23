@@ -52,7 +52,7 @@ extern int master_sfd_inited;
 
 /** sigterm **/
 extern double sigterm_time;
-extern int sigterm_on;
+extern bool sigterm_on;
 extern int rpc_stopped;
 
 /***
