@@ -12,6 +12,4 @@
 
 #include "msgpack/adaptor/define_decl.hpp"
 
-#include "msgpack/v1/adaptor/define.hpp"
-
 #endif // MSGPACK_DEFINE_HPP
