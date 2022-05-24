@@ -487,7 +487,7 @@ void hts_stop() {
     epoll_close(http_sfd);
     close(http_sfd);
   }
-  sigterm_time = get_utime_monotonic() + SIGTERM_WAIT_TIMEOUT;
+  sigterm_time = get_utime_monotonic() + sigterm_wait_timeout;
   hts_stopped = 1;
 }
 
@@ -791,7 +791,7 @@ int rpcc_func_ready(connection *c) {
 void rpcc_stop() {
   lease_on_stop();
   rpc_stopped = 1;
-  sigterm_time = precise_now + SIGTERM_WAIT_TIMEOUT;
+  sigterm_time = precise_now + sigterm_wait_timeout;
 }
 
 void rpcx_at_query_end(connection *c) {
@@ -1376,9 +1376,9 @@ static void sigint_handler(const int sig) {
 }
 
 void turn_sigterm_on() {
-  if (sigterm_on != 1) {
+  if (!sigterm_on) {
     sigterm_time = precise_now + SIGTERM_MAX_TIMEOUT;
-    sigterm_on = 1;
+    sigterm_on = true;
   }
 }
 
@@ -2106,6 +2106,9 @@ int main_args_handler(int i, const char *long_option) {
       return 0;
 #endif
     }
+    case 2029: {
+      return read_option_to(long_option, 0.0, SIGTERM_MAX_TIMEOUT, sigterm_wait_timeout);
+    }
     default:
       return -1;
   }
@@ -2194,6 +2197,7 @@ void parse_main_args(int argc, char *argv[]) {
                                                               "Supported polices:\n"
                                                               "'local' - bind to local numa node, in case out of memory take memory from the other nearest node (default)\n"
                                                               "'bind' - bind to the specified node, in case out of memory raise a fatal error");
+  parse_option("sigterm-wait-time", required_argument, 2029, "Time to wait before termination on SIGTERM");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
 }
