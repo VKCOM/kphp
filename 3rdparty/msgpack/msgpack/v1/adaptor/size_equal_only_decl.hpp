@@ -12,7 +12,6 @@
 
 #include "msgpack/versioning.hpp"
 #include "msgpack/adaptor/adaptor_base.hpp"
-#include "msgpack/adaptor/msgpack_tuple.hpp"
 
 namespace msgpack {
 

@@ -21,6 +21,5 @@
 #include "adaptor/vector_bool.hpp"
 #include "adaptor/vector_char.hpp"
 #include "adaptor/vector_unsigned_char.hpp"
-#include "adaptor/define.hpp"
 
 #include "adaptor/cpp11/tuple.hpp"
