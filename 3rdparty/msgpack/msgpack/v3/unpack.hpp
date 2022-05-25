@@ -11,7 +11,6 @@
 #define MSGPACK_V3_UNPACK_HPP
 
 #include "msgpack/unpack_decl.hpp"
-#include "msgpack/parse.hpp"
 
 namespace msgpack {
 
