@@ -104,6 +104,8 @@ struct C$KphpJobWorkerResponseError: public refcountable_polymorphic_php_classes
     return generic_accept(visitor);
   }
 
+  void accept(InstanceMemoryEstimateVisitor &visitor) noexcept;
+
   size_t virtual_builtin_sizeof() const  noexcept {
     return sizeof(*this);
   }

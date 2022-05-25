@@ -96,3 +96,7 @@ class_instance<C$KphpJobWorkerResponseError> create_error_on_other_memory(int32_
   dl::restore_default_script_allocator(false);
   return error;
 }
+
+void C$KphpJobWorkerResponseError::accept(InstanceMemoryEstimateVisitor &visitor) noexcept {
+  return generic_accept(visitor);
+}

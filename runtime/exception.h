@@ -6,6 +6,7 @@
 
 #include "common/algorithms/hashes.h"
 #include "common/wrappers/string_view.h"
+#include "runtime/dummy-visitor-methods.h"
 #include "runtime/instance-copy-processor.h"
 #include "runtime/to-array-processor.h"
 #include "runtime/kphp_core.h"
@@ -94,7 +95,7 @@ struct C$Error : public C$Throwable {
   const char *get_class() const noexcept override { return "Error"; }
 };
 
-struct C$CompileTimeLocation : public refcountable_php_classes<C$CompileTimeLocation> {
+struct C$CompileTimeLocation : public refcountable_php_classes<C$CompileTimeLocation>, private DummyVisitorMethods {
   string $file;
   string $function;
   int64_t $line;
@@ -102,6 +103,8 @@ struct C$CompileTimeLocation : public refcountable_php_classes<C$CompileTimeLoca
   ~C$CompileTimeLocation() = default;
 
   const char *get_class() const noexcept { return "CompileTimeLocation"; }
+
+  using DummyVisitorMethods::accept;
 };
 
 using Throwable = class_instance<C$Throwable>;
