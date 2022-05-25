@@ -34,42 +34,6 @@ using v2::unpack_limit;
 
 namespace detail {
 
-using v2::detail::unpack_user;
-
-using v2::detail::unpack_uint8;
-using v2::detail::unpack_uint16;
-using v2::detail::unpack_uint32;
-using v2::detail::unpack_uint64;
-
-using v2::detail::unpack_int8;
-using v2::detail::unpack_int16;
-using v2::detail::unpack_int32;
-using v2::detail::unpack_int64;
-
-using v2::detail::unpack_float;
-using v2::detail::unpack_double;
-
-using v2::detail::unpack_nil;
-
-using v2::detail::unpack_true;
-using v2::detail::unpack_false;
-
-using v2::detail::unpack_array;
-using v2::detail::unpack_array_item;
-using v2::detail::unpack_map;
-using v2::detail::unpack_map_item;
-using v2::detail::unpack_str;
-using v2::detail::unpack_bin;
-using v2::detail::unpack_ext;
-
-using  v2::detail::unpack_stack;
-
-using v2::detail::init_count;
-using v2::detail::decr_count;
-using v2::detail::incr_count;
-
-using v2::detail::get_count;
-
 using v2::detail::fix_tag;
 
 using v2::detail::value;
@@ -78,8 +42,6 @@ using v2::detail::load;
 
 } // detail
 
-
-using v2::unpacked;
 
 namespace detail {
 
