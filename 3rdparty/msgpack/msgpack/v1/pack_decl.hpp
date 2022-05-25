@@ -51,7 +51,6 @@ void pack(Stream* s, const T& v);
 template <typename Stream, typename T>
 void pack(Stream& s, const T& v);
 
-#if MSGPACK_ENDIAN_LITTLE_BYTE
 template <typename T>
 char take8_8(T d);
 
@@ -64,23 +63,6 @@ char take8_32(T d);
 template <typename T>
 char take8_64(T d);
 
-#elif MSGPACK_ENDIAN_BIG_BYTE
-
-template <typename T>
-char take8_8(T d);
-
-template <typename T>
-char take8_16(T d);
-
-template <typename T>
-char take8_32(T d);
-
-template <typename T>
-char take8_64(T d);
-
-#else
-#error msgpack-c supports only big endian and little endian
-#endif
 
 /// @cond
 }  // MSGPACK_API_VERSION_NAMESPACE(v1)

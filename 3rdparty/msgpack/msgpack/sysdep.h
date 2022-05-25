@@ -10,8 +10,6 @@
 #ifndef MSGPACK_SYSDEP_H
 #define MSGPACK_SYSDEP_H
 
-#include "msgpack/predef.h"
-
 #include <stdlib.h>
 #include <stddef.h>
 
@@ -86,7 +84,8 @@
 
 #endif
 
-#if MSGPACK_ENDIAN_LITTLE_BYTE
+#include <endian.h>
+static_assert(BYTE_ORDER == LITTLE_ENDIAN);
 
 #   if defined(unix) || defined(__unix) || defined(__APPLE__) || defined(__OpenBSD__)
 #       define _msgpack_be16(x) ntohs(x)
@@ -135,16 +134,6 @@
                ((((uint64_t)x) >> 40) & 0x000000000000ff00ULL ) | \
                ((((uint64_t)x) >> 56)                         ) )
 #   endif
-
-#elif MSGPACK_ENDIAN_BIG_BYTE
-
-#   define _msgpack_be16(x) (x)
-#   define _msgpack_be32(x) (x)
-#   define _msgpack_be64(x) (x)
-
-#else
-#   error msgpack-c supports only big endian and little endian
-#endif /* MSGPACK_ENDIAN_LITTLE_BYTE */
 
 #define _msgpack_load16(cast, from, to) do {       \
         memcpy((cast*)(to), (from), sizeof(cast)); \
