@@ -97,7 +97,7 @@ inline void register_tl_storers_table_and_fetcher(const array<tl_storer_ptr> &ge
   tl_fetch_wrapper = gen$t_ReqResult_fetch;
 };
 
-struct C$RpcConnection final : public refcountable_php_classes<C$RpcConnection>, public DummyVisitorMethods {
+struct C$RpcConnection final : public refcountable_php_classes<C$RpcConnection>, private DummyVisitorMethods {
   int32_t host_num{-1};
   int32_t port{-1};
   int32_t timeout_ms{-1};

@@ -10,11 +10,13 @@
 #include "runtime/refcountable_php_classes.h"
 
 template<class T>
-struct C$FFI$CData: public refcountable_php_classes<C$FFI$CData<T>>, public DummyVisitorMethods {
+struct C$FFI$CData: public refcountable_php_classes<C$FFI$CData<T>>, private DummyVisitorMethods {
   T c_value;
 
   const char *get_class() const noexcept { return "FFI\\CData"; }
   int get_hash() const noexcept { return 1945543994; }
+
+  using DummyVisitorMethods::accept;
 };
 
 // Maybe CDataRef is enough for both field/array references,

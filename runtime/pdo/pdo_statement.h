@@ -16,7 +16,7 @@
 #include "runtime/pdo/abstract_pdo_statement.h"
 
 
-struct C$PDOStatement : public refcountable_polymorphic_php_classes<abstract_refcountable_php_interface>, public DummyVisitorMethods {
+struct C$PDOStatement : public refcountable_polymorphic_php_classes<abstract_refcountable_php_interface>, private DummyVisitorMethods {
   std::unique_ptr<pdo::AbstractPdoStatement> statement;
   int64_t timeout_sec{-1};
 
@@ -29,6 +29,8 @@ struct C$PDOStatement : public refcountable_polymorphic_php_classes<abstract_ref
   virtual int32_t get_hash() const noexcept {
     return static_cast<int32_t>(vk::std_hash(vk::string_view(C$PDOStatement::get_class())));
   }
+
+  using DummyVisitorMethods::accept;
 };
 
 bool f$PDOStatement$$execute(const class_instance<C$PDOStatement> &v$this, const Optional<array<mixed>> &params = {}) noexcept;

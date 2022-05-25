@@ -95,7 +95,7 @@ struct C$Error : public C$Throwable {
   const char *get_class() const noexcept override { return "Error"; }
 };
 
-struct C$CompileTimeLocation : public refcountable_php_classes<C$CompileTimeLocation>, public DummyVisitorMethods {
+struct C$CompileTimeLocation : public refcountable_php_classes<C$CompileTimeLocation>, private DummyVisitorMethods {
   string $file;
   string $function;
   int64_t $line;
@@ -103,6 +103,8 @@ struct C$CompileTimeLocation : public refcountable_php_classes<C$CompileTimeLoca
   ~C$CompileTimeLocation() = default;
 
   const char *get_class() const noexcept { return "CompileTimeLocation"; }
+
+  using DummyVisitorMethods::accept;
 };
 
 using Throwable = class_instance<C$Throwable>;

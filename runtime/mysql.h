@@ -9,7 +9,7 @@
 #include "runtime/memory_usage.h"
 #include "runtime/refcountable_php_classes.h"
 
-class C$mysqli : public refcountable_php_classes<C$mysqli>, public DummyVisitorMethods {
+class C$mysqli : public refcountable_php_classes<C$mysqli>, private DummyVisitorMethods {
 public:
   int32_t connection_id = -1;
   int32_t connected = 0; // K.O.T.: 1 = connected, -1 = error, -2 = down

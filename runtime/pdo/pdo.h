@@ -15,7 +15,7 @@
 #include "runtime/pdo/abstract_pdo_driver.h"
 #include "runtime/refcountable_php_classes.h"
 
-struct C$PDO : public refcountable_polymorphic_php_classes<abstract_refcountable_php_interface>, public DummyVisitorMethods {
+struct C$PDO : public refcountable_polymorphic_php_classes<abstract_refcountable_php_interface>, private DummyVisitorMethods {
   static constexpr int ATTR_TIMEOUT = 2;
 
   std::unique_ptr<pdo::AbstractPdoDriver> driver;
@@ -30,6 +30,8 @@ struct C$PDO : public refcountable_polymorphic_php_classes<abstract_refcountable
   virtual int32_t get_hash() const noexcept {
     return static_cast<int32_t>(vk::std_hash(vk::string_view(C$PDO::get_class())));
   }
+
+  using DummyVisitorMethods::accept;
 };
 
 class_instance<C$PDO> f$PDO$$__construct(class_instance<C$PDO> const &v$this, const string &dsn, const Optional<string> &username = {},

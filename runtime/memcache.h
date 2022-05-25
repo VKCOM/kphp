@@ -36,7 +36,7 @@ public:
   virtual int32_t get_hash() const = 0;
 };
 
-class C$McMemcache final : public refcountable_polymorphic_php_classes<C$Memcache>, public DummyVisitorMethods {
+class C$McMemcache final : public refcountable_polymorphic_php_classes<C$Memcache>, private DummyVisitorMethods {
 public:
   class host {
   public:
