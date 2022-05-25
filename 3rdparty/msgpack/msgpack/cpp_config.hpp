@@ -10,8 +10,24 @@
 #ifndef MSGPACK_CPP_CONFIG_HPP
 #define MSGPACK_CPP_CONFIG_HPP
 
-#include "msgpack/cpp_config_decl.hpp"
+#define MSGPACK_NULLPTR nullptr
+#define MSGPACK_DEPRECATED(msg) [[deprecated(msg)]]
 
-#include "msgpack/v1/cpp_config.hpp"
+#include <memory>
+#include <tuple>
+
+namespace msgpack {
+using std::unique_ptr;
+using std::move;
+using std::swap;
+using std::enable_if;
+using std::is_same;
+using std::underlying_type;
+using std::is_array;
+using std::remove_const;
+using std::remove_volatile;
+using std::remove_cv;
+using std::is_pointer;
+} // namespace msgpack
 
 #endif // MSGPACK_CPP_CONFIG_HPP
