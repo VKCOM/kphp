@@ -512,6 +512,9 @@ mixed f$microtime(bool get_as_float) {
   }
 }
 
+double f$microtime_float() { return microtime(); }
+string f$microtime_string() { return microtime_string(); }
+
 int64_t f$mktime(int64_t h, int64_t m, int64_t s, int64_t month, int64_t day, int64_t year) {
   tm t;
   time_t timestamp_t = time(nullptr);
@@ -581,16 +584,27 @@ int64_t f$time() {
   return time(nullptr);
 }
 
-mixed f$hrtime(bool as_number) {
+int64_t hrtime_int() {
+  return std::chrono::steady_clock::now().time_since_epoch().count();
+}
+
+array<int64_t> hrtime_array() {
   auto since_epoch = std::chrono::steady_clock::now().time_since_epoch();
-  if (as_number) {
-    return since_epoch.count();
-  }
-  return array<mixed>::create(
+  return array<int64_t>::create(
     std::chrono::duration_cast<std::chrono::seconds>(since_epoch).count(),
     std::chrono::nanoseconds{since_epoch % std::chrono::seconds{1}}.count()
   );
 }
+
+mixed f$hrtime(bool as_number) {
+  if (as_number) {
+    return hrtime_int();
+  }
+  return hrtime_array();
+}
+
+array<int64_t> f$hrtime_array() { return hrtime_array(); }
+int64_t f$hrtime_int() { return hrtime_int(); }
 
 void init_datetime_lib() {
   dl::enter_critical_section();//OK

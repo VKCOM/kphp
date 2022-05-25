@@ -14,6 +14,8 @@ class CheckFuncCallsAndVarargPass final : public FunctionPassBase {
 
   VertexPtr create_CompileTimeLocation_call_arg(const Location &call_location);
 
+  VertexAdaptor<op_func_call> maybe_replace_extern_func_call(VertexAdaptor<op_func_call> call, FunctionPtr f_called);
+
 public:
   std::string get_description() override {
     return "Check func calls and vararg";
