@@ -22,14 +22,6 @@ using v2::packer;
 
 using v2::pack;
 
-using v2::take8_8;
-
-using v2::take8_16;
-
-using v2::take8_32;
-
-using v2::take8_64;
-
 /// @cond
 }  // MSGPACK_API_VERSION_NAMESPACE(v3)
 /// @endcond

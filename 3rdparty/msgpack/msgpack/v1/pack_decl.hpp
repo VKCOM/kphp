@@ -51,18 +51,6 @@ void pack(Stream* s, const T& v);
 template <typename Stream, typename T>
 void pack(Stream& s, const T& v);
 
-template <typename T>
-char take8_8(T d);
-
-template <typename T>
-char take8_16(T d);
-
-template <typename T>
-char take8_32(T d);
-
-template <typename T>
-char take8_64(T d);
-
 
 /// @cond
 }  // MSGPACK_API_VERSION_NAMESPACE(v1)
