@@ -70,12 +70,6 @@ struct object {
     msgpack::type::object_type type;
     union_type via;
 
-    /// Cheking nil
-    /**
-     * @return If the object is nil, then return true, else return false.
-     */
-    bool is_nil() const { return type == msgpack::type::NIL; }
-
     /// Get value as T
     /**
      * If the object can't be converted to T, msgpack::type_error would be thrown.
@@ -98,19 +92,6 @@ struct object {
         T&
     >::type
     convert(T& v) const;
-
-    template <typename T, std::size_t N>
-    T (&convert(T(&v)[N]) const)[N];
-
-    /// Convert the object if not nil
-    /**
-     * If the object is not nil and can't be converted to T, msgpack::type_error would be thrown.
-     * @tparam T The type of v.
-     * @param v The value you want to get. `v` is output parameter. `v` is overwritten by converted value from the object if the object is not nil.
-     * @return If the object is nil, then return false, else return true.
-     */
-    template <typename T>
-    bool convert_if_not_nil(T& v) const;
 
     /// Default constructor. The object is set to nil.
     object();

@@ -39,33 +39,13 @@ struct pack {
 // operators
 
 template <typename T>
-inline
-typename msgpack::enable_if<
-    !is_array<T>::value,
-    msgpack::object const&
->::type
-operator>> (msgpack::object const& o, T& v) {
+inline msgpack::object const& operator>> (msgpack::object const& o, T& v) {
     return msgpack::adaptor::convert<T>()(o, v);
-}
-template <typename T, std::size_t N>
-inline
-msgpack::object const& operator>> (msgpack::object const& o, T(&v)[N]) {
-    return msgpack::adaptor::convert<T[N]>()(o, v);
 }
 
 template <typename Stream, typename T>
-inline
-typename msgpack::enable_if<
-    !is_array<T>::value,
-    msgpack::packer<Stream>&
->::type
-operator<< (msgpack::packer<Stream>& o, T const& v) {
+inline msgpack::packer<Stream>& operator<< (msgpack::packer<Stream>& o, T const& v) {
     return msgpack::adaptor::pack<T>()(o, v);
-}
-template <typename Stream, typename T, std::size_t N>
-inline
-msgpack::packer<Stream>& operator<< (msgpack::packer<Stream>& o, const T(&v)[N]) {
-    return msgpack::adaptor::pack<T[N]>()(o, v);
 }
 
 /// @cond

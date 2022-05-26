@@ -12,8 +12,6 @@
 
 #include "msgpack/versioning.hpp"
 #include "msgpack/adaptor/adaptor_base.hpp"
-#include "msgpack/adaptor/check_container_size.hpp"
-#include "msgpack/meta.hpp"
 
 #include <tuple>
 
@@ -22,42 +20,6 @@ namespace msgpack {
 /// @cond
 MSGPACK_API_VERSION_NAMESPACE(v1) {
 /// @endcond
-
-// --- Pack from tuple to packer stream ---
-template <typename Stream, typename Tuple, std::size_t N>
-struct StdTuplePacker {
-    static void pack(
-        msgpack::packer<Stream>& o,
-        const Tuple& v) {
-        StdTuplePacker<Stream, Tuple, N-1>::pack(o, v);
-        o.pack(std::get<N-1>(v));
-    }
-};
-
-template <typename Stream, typename Tuple>
-struct StdTuplePacker<Stream, Tuple, 0> {
-    static void pack (
-        msgpack::packer<Stream>&,
-        const Tuple&) {
-    }
-};
-
-namespace adaptor {
-
-template <typename... Args>
-struct pack<std::tuple<Args...>> {
-    template <typename Stream>
-    msgpack::packer<Stream>& operator()(
-        msgpack::packer<Stream>& o,
-        const std::tuple<Args...>& v) const {
-        uint32_t size = checked_get_container_size(sizeof...(Args));
-        o.pack_array(size);
-        StdTuplePacker<Stream, decltype(v), sizeof...(Args)>::pack(o, v);
-        return o;
-    }
-};
-
-} // namespace adaptor
 
 template <typename Tuple, std::size_t N>
 struct StdTupleConverter {

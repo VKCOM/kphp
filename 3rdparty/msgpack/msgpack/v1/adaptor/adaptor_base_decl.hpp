@@ -38,22 +38,10 @@ struct pack;
 // operators
 
 template <typename T>
-typename msgpack::enable_if<
-    !is_array<T>::value,
-    msgpack::object const&
->::type
-operator>> (msgpack::object const& o, T& v);
-template <typename T, std::size_t N>
-msgpack::object const& operator>> (msgpack::object const& o, T(&v)[N]);
+msgpack::object const& operator>> (msgpack::object const& o, T& v);
 
 template <typename Stream, typename T>
-typename msgpack::enable_if<
-    !is_array<T>::value,
-    msgpack::packer<Stream>&
->::type
-operator<< (msgpack::packer<Stream>& o, T const& v);
-template <typename Stream, typename T, std::size_t N>
-msgpack::packer<Stream>& operator<< (msgpack::packer<Stream>& o, const T(&v)[N]);
+msgpack::packer<Stream>& operator<< (msgpack::packer<Stream>& o, T const& v);
 
 /// @cond
 } // MSGPACK_API_VERSION_NAMESPACE(v1)

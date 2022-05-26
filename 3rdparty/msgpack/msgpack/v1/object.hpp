@@ -11,7 +11,6 @@
 #define MSGPACK_V1_OBJECT_HPP
 
 #include "msgpack/object_decl.hpp"
-#include "msgpack/adaptor/check_container_size.hpp"
 
 #include <cstring>
 #include <cassert>
@@ -118,7 +117,7 @@ template <typename Stream>
 inline
 msgpack::packer<Stream>&
 adaptor::pack<T, Enabler>::operator()(msgpack::packer<Stream>& o, T const& v) const {
-    return msgpack::detail::packer_serializer<Stream, T>::pack(o, v);
+    return detail::packer_serializer<Stream, T>::pack(o, v);
 }
 
 // Adaptor functor specialization to object
@@ -160,23 +159,6 @@ object::convert(T& v) const
 {
     msgpack::operator>>(*this, v);
     return v;
-}
-
-template <typename T, std::size_t N>
-inline T(&object::convert(T(&v)[N]) const)[N]
-{
-    msgpack::operator>>(*this, v);
-    return v;
-}
-
-template <typename T>
-inline bool object::convert_if_not_nil(T& v) const
-{
-    if (is_nil()) {
-        return false;
-    }
-    convert(v);
-    return true;
 }
 
 template <typename T>

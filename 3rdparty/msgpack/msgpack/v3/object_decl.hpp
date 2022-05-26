@@ -21,12 +21,6 @@ MSGPACK_API_VERSION_NAMESPACE(v3) {
 
 using v2::object_handle;
 
-namespace detail {
-
-using v2::detail::packer_serializer;
-
-} // namespace detail
-
 /// @cond
 }  // MSGPACK_API_VERSION_NAMESPACE(v3)
 /// @endcond

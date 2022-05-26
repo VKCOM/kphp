@@ -32,13 +32,6 @@ MSGPACK_API_VERSION_NAMESPACE(v1) {
 /// The class holds object and zone
 class object_handle;
 
-namespace detail {
-
-template <typename Stream, typename T>
-struct packer_serializer;
-
-} // namespace detail
-
 /// @cond
 }  // MSGPACK_API_VERSION_NAMESPACE(v1)
 /// @endcond
