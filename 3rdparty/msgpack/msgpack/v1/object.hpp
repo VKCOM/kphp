@@ -10,7 +10,8 @@
 #ifndef MSGPACK_V1_OBJECT_HPP
 #define MSGPACK_V1_OBJECT_HPP
 
-#include "msgpack/object_decl.hpp"
+#include "msgpack/v1/adaptor/adaptor_base.hpp"
+#include "msgpack/v1/object_fwd.hpp"
 
 #include <cstring>
 #include <cassert>
@@ -24,7 +25,7 @@
 namespace msgpack {
 
 /// @cond
-MSGPACK_API_VERSION_NAMESPACE(v1) {
+MSGPACK_API_VERSION_NAMESPACE(v3) {
 /// @endcond
 
 struct object_kv {

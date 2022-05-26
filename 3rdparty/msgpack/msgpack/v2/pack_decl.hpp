@@ -12,20 +12,4 @@
 
 #include "msgpack/v1/pack_decl.hpp"
 
-namespace msgpack {
-
-/// @cond
-MSGPACK_API_VERSION_NAMESPACE(v2) {
-/// @endcond
-
-using v1::packer;
-
-using v1::pack;
-
-/// @cond
-}  // MSGPACK_API_VERSION_NAMESPACE(v2)
-/// @endcond
-
-}  // namespace msgpack
-
 #endif // MSGPACK_V2_PACK_DECL_HPP

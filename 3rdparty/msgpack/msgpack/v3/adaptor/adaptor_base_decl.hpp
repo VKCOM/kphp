@@ -12,35 +12,4 @@
 
 #include "msgpack/v2/adaptor/adaptor_base_decl.hpp"
 
-namespace msgpack {
-
-/// @cond
-MSGPACK_API_VERSION_NAMESPACE(v3) {
-/// @endcond
-
-using v2::packer;
-
-namespace adaptor {
-
-// Adaptor functors
-
-template <typename T, typename Enabler = void>
-struct convert;
-
-template <typename T, typename Enabler = void>
-struct pack;
-
-} // namespace adaptor
-
-// operators
-
-using v2::operator>>;
-using v2::operator<<;
-
-/// @cond
-} // MSGPACK_API_VERSION_NAMESPACE(v3)
-/// @endcond
-
-} // namespace msgpack
-
 #endif // MSGPACK_V3_ADAPTOR_BASE_DECL_HPP

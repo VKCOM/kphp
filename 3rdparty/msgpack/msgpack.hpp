@@ -7,7 +7,6 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //    http://www.boost.org/LICENSE_1_0.txt)
 //
-#include "msgpack/object.hpp"
 #include "msgpack/zone.hpp"
 #include "msgpack/pack.hpp"
 #include "msgpack/null_visitor.hpp"

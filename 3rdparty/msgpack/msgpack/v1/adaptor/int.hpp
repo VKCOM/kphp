@@ -11,14 +11,14 @@
 #define MSGPACK_V1_TYPE_INT_HPP
 
 #include "msgpack/v1/adaptor/int_decl.hpp"
-#include "msgpack/object.hpp"
+#include "msgpack/v1/object.hpp"
 
 #include <limits>
 
 namespace msgpack {
 
 /// @cond
-MSGPACK_API_VERSION_NAMESPACE(v1){
+MSGPACK_API_VERSION_NAMESPACE(v3){
 /// @endcond
 
 namespace type {

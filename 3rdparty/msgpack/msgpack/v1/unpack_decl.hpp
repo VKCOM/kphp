@@ -12,7 +12,7 @@
 
 #include "msgpack/versioning.hpp"
 #include "msgpack/unpack_define.h"
-#include "msgpack/object.hpp"
+#include "msgpack/v1/object.hpp"
 #include "msgpack/zone.hpp"
 #include "msgpack/cpp_config.hpp"
 #include "msgpack/sysdep.h"

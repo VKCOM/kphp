@@ -11,13 +11,13 @@
 #define MSGPACK_V1_TYPE_FLOAT_HPP
 
 #include "msgpack/versioning.hpp"
-#include "msgpack/object_fwd.hpp"
+#include "msgpack/v1/object_fwd.hpp"
 #include <vector>
 
 namespace msgpack {
 
 /// @cond
-MSGPACK_API_VERSION_NAMESPACE(v1) {
+MSGPACK_API_VERSION_NAMESPACE(v3) {
 /// @endcond
 
 // FIXME check overflow, underflow

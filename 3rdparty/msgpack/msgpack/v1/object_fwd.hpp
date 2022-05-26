@@ -11,13 +11,65 @@
 #ifndef MSGPACK_V1_OBJECT_FWD_HPP
 #define MSGPACK_V1_OBJECT_FWD_HPP
 
-#include "msgpack/object_fwd_decl.hpp"
+#include "msgpack/versioning.hpp"
 
 namespace msgpack {
 
 /// @cond
-MSGPACK_API_VERSION_NAMESPACE(v1) {
+MSGPACK_API_VERSION_NAMESPACE(v3) {
 /// @endcond
+
+enum {
+  MSGPACK_OBJECT_NIL                  = 0x00,
+  MSGPACK_OBJECT_BOOLEAN              = 0x01,
+  MSGPACK_OBJECT_POSITIVE_INTEGER     = 0x02,
+  MSGPACK_OBJECT_NEGATIVE_INTEGER     = 0x03,
+  MSGPACK_OBJECT_FLOAT32              = 0x0a,
+  MSGPACK_OBJECT_FLOAT64              = 0x04,
+  MSGPACK_OBJECT_FLOAT                = 0x04,
+#if defined(MSGPACK_USE_LEGACY_NAME_AS_FLOAT)
+  MSGPACK_OBJECT_DOUBLE               = MSGPACK_OBJECT_FLOAT, /* obsolete */
+#endif /* MSGPACK_USE_LEGACY_NAME_AS_FLOAT */
+  MSGPACK_OBJECT_STR                  = 0x05,
+  MSGPACK_OBJECT_ARRAY                = 0x06,
+  MSGPACK_OBJECT_MAP                  = 0x07,
+  MSGPACK_OBJECT_BIN                  = 0x08,
+  MSGPACK_OBJECT_EXT                  = 0x09
+};
+
+
+namespace type {
+enum object_type {
+  NIL                 = MSGPACK_OBJECT_NIL,
+  BOOLEAN             = MSGPACK_OBJECT_BOOLEAN,
+  POSITIVE_INTEGER    = MSGPACK_OBJECT_POSITIVE_INTEGER,
+  NEGATIVE_INTEGER    = MSGPACK_OBJECT_NEGATIVE_INTEGER,
+  FLOAT32             = MSGPACK_OBJECT_FLOAT32,
+  FLOAT64             = MSGPACK_OBJECT_FLOAT64,
+  FLOAT               = MSGPACK_OBJECT_FLOAT,
+#if defined(MSGPACK_USE_LEGACY_NAME_AS_FLOAT)
+  DOUBLE              = MSGPACK_DEPRECATED("please use FLOAT64 instead") MSGPACK_OBJECT_DOUBLE, // obsolete
+#endif // MSGPACK_USE_LEGACY_NAME_AS_FLOAT
+  STR                 = MSGPACK_OBJECT_STR,
+  BIN                 = MSGPACK_OBJECT_BIN,
+  ARRAY               = MSGPACK_OBJECT_ARRAY,
+  MAP                 = MSGPACK_OBJECT_MAP,
+  EXT                 = MSGPACK_OBJECT_EXT
+};
+}
+
+
+struct object;
+struct object_kv;
+
+struct object_array;
+struct object_map;
+struct object_str;
+struct object_bin;
+struct object_ext;
+
+
+class type_error;
 
 struct object_array {
     uint32_t size;

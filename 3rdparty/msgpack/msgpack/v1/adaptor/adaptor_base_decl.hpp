@@ -11,13 +11,13 @@
 #define MSGPACK_V1_ADAPTOR_BASE_DECL_HPP
 
 #include "msgpack/versioning.hpp"
-#include "msgpack/object_fwd.hpp"
+#include "msgpack/v1/object_fwd.hpp"
 #include "msgpack/pack.hpp"
 
 namespace msgpack {
 
 /// @cond
-MSGPACK_API_VERSION_NAMESPACE(v1) {
+MSGPACK_API_VERSION_NAMESPACE(v3) {
 /// @endcond
 
 template <typename Stream>
