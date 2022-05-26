@@ -51,21 +51,6 @@ using v2::object_ext;
 
 using v2::type_error;
 
-
-#if !defined(MSGPACK_USE_CPP03)
-
-namespace adaptor {
-
-template <typename T, typename Enabler = void>
-struct as;
-
-} // namespace adaptor
-
-template <typename T>
-struct has_as;
-
-#endif // !defined(MSGPACK_USE_CPP03)
-
 /// @cond
 } // MSGPACK_API_VERSION_NAMESPACE(v3)
 /// @endcond

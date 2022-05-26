@@ -59,34 +59,6 @@ struct pack<std::tuple<Args...>> {
 
 } // namespace adaptor
 
-// --- Convert from tuple to object ---
-
-template <typename... Args>
-struct StdTupleAs;
-
-template <typename T, typename... Args>
-struct StdTupleAsImpl {
-    static std::tuple<T, Args...> as(msgpack::object const& o) {
-        return std::tuple_cat(
-            std::make_tuple(o.via.array.ptr[o.via.array.size - sizeof...(Args) - 1].as<T>()),
-            StdTupleAs<Args...>::as(o));
-    }
-};
-
-template <typename... Args>
-struct StdTupleAs {
-    static std::tuple<Args...> as(msgpack::object const& o) {
-        return StdTupleAsImpl<Args...>::as(o);
-    }
-};
-
-template <>
-struct StdTupleAs<> {
-    static std::tuple<> as (msgpack::object const&) {
-        return std::tuple<>();
-    }
-};
-
 template <typename Tuple, std::size_t N>
 struct StdTupleConverter {
     static void convert(
@@ -107,15 +79,6 @@ struct StdTupleConverter<Tuple, 0> {
 };
 
 namespace adaptor {
-
-template <typename... Args>
-struct as<std::tuple<Args...>, typename std::enable_if<msgpack::any_of<msgpack::has_as, Args...>::value>::type>  {
-    std::tuple<Args...> operator()(
-        msgpack::object const& o) const {
-        if (o.type != msgpack::type::ARRAY) { throw msgpack::type_error(); }
-        return StdTupleAs<Args...>::as(o);
-    }
-};
 
 template <typename... Args>
 struct convert<std::tuple<Args...>> {

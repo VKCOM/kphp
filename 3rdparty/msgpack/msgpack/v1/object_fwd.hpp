@@ -46,28 +46,6 @@ struct object_ext {
     const char* ptr;
 };
 
-
-#if !defined(MSGPACK_USE_CPP03)
-
-template <typename T>
-struct has_as {
-private:
-    template <typename U>
-    static auto check(U*) ->
-        // Check v1 specialization
-        typename std::is_same<
-            decltype(adaptor::as<U>()(std::declval<msgpack::object>())),
-            T
-        >::type;
-    template <typename...>
-    static std::false_type check(...);
-public:
-    using type = decltype(check<T>(MSGPACK_NULLPTR));
-    static constexpr bool value = type::value;
-};
-
-#endif // !defined(MSGPACK_USE_CPP03)
-
 /// Object class that corresponding to MessagePack format object
 /**
  * See https://github.com/msgpack/msgpack-c/wiki/v1_1_cpp_object
@@ -98,8 +76,6 @@ struct object {
      */
     bool is_nil() const { return type == msgpack::type::NIL; }
 
-#if defined(MSGPACK_USE_CPP03)
-
     /// Get value as T
     /**
      * If the object can't be converted to T, msgpack::type_error would be thrown.
@@ -108,28 +84,6 @@ struct object {
      */
     template <typename T>
     T as() const;
-
-#else  // defined(MSGPACK_USE_CPP03)
-
-    /// Get value as T
-    /**
-     * If the object can't be converted to T, msgpack::type_error would be thrown.
-     * @tparam T The type you want to get.
-     * @return The converted object.
-     */
-    template <typename T>
-    typename std::enable_if<msgpack::has_as<T>::value, T>::type as() const;
-
-    /// Get value as T
-    /**
-     * If the object can't be converted to T, msgpack::type_error would be thrown.
-     * @tparam T The type you want to get.
-     * @return The converted object.
-     */
-    template <typename T>
-    typename std::enable_if<!msgpack::has_as<T>::value, T>::type as() const;
-
-#endif // defined(MSGPACK_USE_CPP03)
 
     /// Convert the object
     /**

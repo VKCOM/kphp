@@ -55,18 +55,6 @@ struct object_bin;
 struct object_ext;
 
 
-#if !defined(MSGPACK_USE_CPP03)
-
-namespace adaptor {
-template <typename T, typename Enabler = void>
-struct as;
-} // namespace adaptor
-
-template <typename T>
-struct has_as;
-
-#endif // !defined(MSGPACK_USE_CPP03)
-
 class type_error;
 
 /// @cond

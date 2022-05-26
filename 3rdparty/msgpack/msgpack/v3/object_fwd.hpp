@@ -20,47 +20,6 @@ namespace msgpack {
 MSGPACK_API_VERSION_NAMESPACE(v3) {
 /// @endcond
 
-#if !defined(MSGPACK_USE_CPP03)
-
-namespace adaptor {
-
-// If v2 has as specialization for T, then dispatch v2::adaptor::as<T>.
-// So I call v2::has_as<T> meta function intentionally.
-template <typename T>
-struct as<T, typename std::enable_if<v2::has_as<T>::value>::type> : v2::adaptor::as<T> {
-};
-
-} // namespace adaptor
-
-template <typename T>
-struct has_as {
-private:
-    template <typename U>
-    static auto check(U*) ->
-        typename std::enable_if<
-            // check v3 specialization
-            std::is_same<
-                decltype(adaptor::as<U>()(std::declval<msgpack::object>())),
-                U
-            >::value
-            ||
-            // check v2 specialization
-            v2::has_as<U>::value
-            ||
-            // check v1 specialization
-            v1::has_as<U>::value,
-            std::true_type
-        >::type;
-    template <typename...>
-    static std::false_type check(...);
-public:
-    using type = decltype(check<T>(MSGPACK_NULLPTR));
-    static constexpr bool value = type::value;
-};
-
-#endif // !defined(MSGPACK_USE_CPP03)
-
-
 /// @cond
 } // MSGPACK_API_VERSION_NAMESPACE(v3)
 /// @endcond
