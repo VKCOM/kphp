@@ -80,11 +80,6 @@ struct null_visitor {
     }
     void insufficient_bytes(size_t /*parsed_offset*/, size_t /*error_offset*/) {
     }
-    bool referenced() const {
-        return false;
-    }
-    void set_referenced(bool /*referenced*/) {
-    }
 };
 
 /// @cond

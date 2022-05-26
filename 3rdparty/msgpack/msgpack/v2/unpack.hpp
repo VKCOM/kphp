@@ -10,16 +10,13 @@
 #ifndef MSGPACK_V2_UNPACK_HPP
 #define MSGPACK_V2_UNPACK_HPP
 
-#if MSGPACK_DEFAULT_API_VERSION >= 2
-
-#include "msgpack/unpack_decl.hpp"
 #include "parse.hpp"
 #include "create_object_visitor.hpp"
 
 namespace msgpack {
 
 /// @cond
-MSGPACK_API_VERSION_NAMESPACE(v2) {
+MSGPACK_API_VERSION_NAMESPACE(v3) {
 /// @endcond
 
 
@@ -27,21 +24,38 @@ namespace detail {
 
 inline parse_return
 unpack_imp(const char* data, std::size_t len, std::size_t& off,
-           msgpack::zone& result_zone, msgpack::object& result, bool& referenced,
-           unpack_reference_func f = MSGPACK_NULLPTR, void* user_data = MSGPACK_NULLPTR,
+           msgpack::zone& result_zone, msgpack::object& result,
            unpack_limit const& limit = unpack_limit())
 {
-    create_object_visitor v(f, user_data, limit);
+    create_object_visitor v{limit};
     v.set_zone(result_zone);
-    referenced = false;
-    v.set_referenced(referenced);
-    parse_return ret = parse_imp(data, len, off, v);
-    referenced = v.referenced();
+    parse_return ret = v2::detail::parse_imp(data, len, off, v);
     result = v.data();
     return ret;
 }
 
 } // namespace detail
+
+inline msgpack::object_handle unpack(
+  const char* data, std::size_t len, std::size_t& off,
+  msgpack::unpack_limit const& limit
+)
+{
+  msgpack::object obj;
+  msgpack::unique_ptr<msgpack::zone> z(new msgpack::zone);
+  parse_return ret = detail::unpack_imp(
+    data, len, off, *z, obj, limit);
+
+  switch(ret) {
+    case msgpack::PARSE_SUCCESS:
+      return msgpack::object_handle(obj, msgpack::move(z));
+    case msgpack::PARSE_EXTRA_BYTES:
+      return msgpack::object_handle(obj, msgpack::move(z));
+    default:
+      break;
+  }
+  return msgpack::object_handle();
+}
 
 
 /// @cond
@@ -49,7 +63,5 @@ unpack_imp(const char* data, std::size_t len, std::size_t& off,
 /// @endcond
 
 }  // namespace msgpack
-
-#endif // MSGPACK_DEFAULT_API_VERSION >= 2
 
 #endif // MSGPACK_V2_UNPACK_HPP

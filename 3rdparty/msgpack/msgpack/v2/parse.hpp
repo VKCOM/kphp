@@ -10,14 +10,11 @@
 #ifndef MSGPACK_V2_PARSE_HPP
 #define MSGPACK_V2_PARSE_HPP
 
-#if MSGPACK_DEFAULT_API_VERSION >= 2
-
 #include <cstddef>
 
-#include "msgpack/unpack_define.h"
 #include "msgpack/parse_return.hpp"
-#include "msgpack/unpack_exception.hpp"
-#include "msgpack/unpack_decl.hpp"
+#include "msgpack/v2/unpack_exception.hpp"
+#include "msgpack/v2/unpack_decl.hpp"
 
 namespace msgpack {
 
@@ -27,9 +24,97 @@ MSGPACK_API_VERSION_NAMESPACE(v2) {
 
 namespace detail {
 
-using v1::detail::fix_tag;
-using v1::detail::value;
-using v1::detail::load;
+struct fix_tag {
+  char f1[65]; // FIXME unique size is required. or use is_same meta function.
+};
+
+template <typename T>
+struct value {
+  typedef T type;
+};
+template <>
+struct value<fix_tag> {
+  typedef uint32_t type;
+};
+
+template <typename T>
+inline typename msgpack::enable_if<sizeof(T) == sizeof(fix_tag)>::type load(uint32_t& dst, const char* n) {
+  dst = static_cast<uint32_t>(*reinterpret_cast<const uint8_t*>(n)) & 0x0f;
+}
+
+template <typename T>
+inline typename msgpack::enable_if<sizeof(T) == 1>::type load(T& dst, const char* n) {
+  dst = static_cast<T>(*reinterpret_cast<const uint8_t*>(n));
+}
+
+template <typename T>
+inline typename msgpack::enable_if<sizeof(T) == 2>::type load(T& dst, const char* n) {
+  _msgpack_load16(T, n, &dst);
+}
+
+template <typename T>
+inline typename msgpack::enable_if<sizeof(T) == 4>::type load(T& dst, const char* n) {
+  _msgpack_load32(T, n, &dst);
+}
+
+template <typename T>
+inline typename msgpack::enable_if<sizeof(T) == 8>::type load(T& dst, const char* n) {
+  _msgpack_load64(T, n, &dst);
+}
+
+typedef enum {
+  MSGPACK_CS_HEADER            = 0x00,  // nil
+
+  //MSGPACK_CS_                = 0x01,
+  //MSGPACK_CS_                = 0x02,  // false
+  //MSGPACK_CS_                = 0x03,  // true
+
+  MSGPACK_CS_BIN_8             = 0x04,
+  MSGPACK_CS_BIN_16            = 0x05,
+  MSGPACK_CS_BIN_32            = 0x06,
+
+  MSGPACK_CS_EXT_8             = 0x07,
+  MSGPACK_CS_EXT_16            = 0x08,
+  MSGPACK_CS_EXT_32            = 0x09,
+
+  MSGPACK_CS_FLOAT             = 0x0a,
+  MSGPACK_CS_DOUBLE            = 0x0b,
+  MSGPACK_CS_UINT_8            = 0x0c,
+  MSGPACK_CS_UINT_16           = 0x0d,
+  MSGPACK_CS_UINT_32           = 0x0e,
+  MSGPACK_CS_UINT_64           = 0x0f,
+  MSGPACK_CS_INT_8             = 0x10,
+  MSGPACK_CS_INT_16            = 0x11,
+  MSGPACK_CS_INT_32            = 0x12,
+  MSGPACK_CS_INT_64            = 0x13,
+
+  MSGPACK_CS_FIXEXT_1          = 0x14,
+  MSGPACK_CS_FIXEXT_2          = 0x15,
+  MSGPACK_CS_FIXEXT_4          = 0x16,
+  MSGPACK_CS_FIXEXT_8          = 0x17,
+  MSGPACK_CS_FIXEXT_16         = 0x18,
+
+  MSGPACK_CS_STR_8             = 0x19, // str8
+  MSGPACK_CS_STR_16            = 0x1a, // str16
+  MSGPACK_CS_STR_32            = 0x1b, // str32
+  MSGPACK_CS_ARRAY_16          = 0x1c,
+  MSGPACK_CS_ARRAY_32          = 0x1d,
+  MSGPACK_CS_MAP_16            = 0x1e,
+  MSGPACK_CS_MAP_32            = 0x1f,
+
+  //MSGPACK_ACS_BIG_INT_VALUE,
+  //MSGPACK_ACS_BIG_FLOAT_VALUE,
+  MSGPACK_ACS_STR_VALUE,
+  MSGPACK_ACS_BIN_VALUE,
+  MSGPACK_ACS_EXT_VALUE
+} msgpack_unpack_state;
+
+
+typedef enum {
+  MSGPACK_CT_ARRAY_ITEM,
+  MSGPACK_CT_MAP_KEY,
+  MSGPACK_CT_MAP_VALUE
+} msgpack_container_type;
 
 template <typename VisitorHolder>
 class context {
@@ -670,7 +755,5 @@ parse_imp(const char* data, size_t len, size_t& off, Visitor& v) {
 /// @endcond
 
 }  // namespace msgpack
-
-#endif // MSGPACK_DEFAULT_API_VERSION >= 2
 
 #endif // MSGPACK_V2_PARSE_HPP

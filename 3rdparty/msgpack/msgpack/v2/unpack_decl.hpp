@@ -10,50 +10,66 @@
 #ifndef MSGPACK_V2_UNPACK_DECL_HPP
 #define MSGPACK_V2_UNPACK_DECL_HPP
 
-#include "msgpack/v1/unpack_decl.hpp"
+#include "msgpack/v1/object.hpp"
 
 namespace msgpack {
 
 /// @cond
-MSGPACK_API_VERSION_NAMESPACE(v2) {
+MSGPACK_API_VERSION_NAMESPACE(v3) {
 /// @endcond
 
-using v1::unpack_reference_func;
 
-using v1::unpack_error;
-using v1::parse_error;
-using v1::insufficient_bytes;
-using v1::size_overflow;
-using v1::array_size_overflow;
-using v1::map_size_overflow;
-using v1::str_size_overflow;
-using v1::bin_size_overflow;
-using v1::ext_size_overflow;
-using v1::depth_size_overflow;
-using v1::unpack_limit;
-
-namespace detail {
-
-using v1::detail::fix_tag;
-
-using v1::detail::value;
-
-using v1::detail::load;
-
-} // detail
+#ifndef MSGPACK_EMBED_STACK_SIZE
+#define MSGPACK_EMBED_STACK_SIZE 32
+#endif
 
 
+class unpack_limit {
+public:
+  unpack_limit(
+    std::size_t array = 0xffffffff,
+    std::size_t map = 0xffffffff,
+    std::size_t str = 0xffffffff,
+    std::size_t bin = 0xffffffff,
+    std::size_t ext = 0xffffffff,
+    std::size_t depth = 0xffffffff)
+    :array_(array),
+    map_(map),
+    str_(str),
+    bin_(bin),
+    ext_(ext),
+    depth_(depth) {}
+  std::size_t array() const { return array_; }
+  std::size_t map() const { return map_; }
+  std::size_t str() const { return str_; }
+  std::size_t bin() const { return bin_; }
+  std::size_t ext() const { return ext_; }
+  std::size_t depth() const { return depth_; }
 
-namespace detail {
+private:
+  std::size_t array_;
+  std::size_t map_;
+  std::size_t str_;
+  std::size_t bin_;
+  std::size_t ext_;
+  std::size_t depth_;
+};
 
-parse_return
-unpack_imp(const char* data, std::size_t len, std::size_t& off,
-           msgpack::zone& result_zone, msgpack::object& result, bool& referenced,
-           unpack_reference_func f, void* user_data,
-           unpack_limit const& limit);
-
-
-} // detail
+/// Unpack msgpack::object from a buffer.
+/**
+ * @param data The pointer to the buffer.
+ * @param len The length of the buffer.
+ * @param off The offset position of the buffer. It is read and overwritten.
+ * @param f A judging function that msgpack::object refer to the buffer.
+ * @param user_data This parameter is passed to f.
+ * @param limit The size limit information of msgpack::object.
+ *
+ * @return object_handle that contains unpacked data.
+ *
+ */
+msgpack::object_handle unpack(
+  const char* data, std::size_t len, std::size_t& off,
+  msgpack::unpack_limit const& limit = unpack_limit());
 
 /// @cond
 }  // MSGPACK_API_VERSION_NAMESPACE(v2)
