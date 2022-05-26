@@ -67,7 +67,7 @@ struct object {
         msgpack::object_ext ext;
     };
 
-    msgpack::type::object_type type;
+    msgpack::type::object_type type{type::NIL};
     union_type via;
 
     /// Get value as T
@@ -92,43 +92,9 @@ struct object {
         T&
     >::type
     convert(T& v) const;
-
-    /// Default constructor. The object is set to nil.
-    object();
-
-    /// Construct object from T
-    /**
-     * If `v` is the type that is corresponding to MessegePack format str, bin, ext, array, or map,
-     * you need to call `object(const T& v, msgpack::zone& z)` instead of this constructor.
-     *
-     * @tparam T The type of `v`.
-     * @param v The value you want to convert.
-     */
-    template <typename T>
-    explicit object(const T& v);
-
-    template <typename T>
-    object& operator=(const T& v);
-
-protected:
-    struct implicit_type;
-
-public:
-    implicit_type convert() const;
 };
 
 class type_error : public std::bad_cast { };
-
-struct object::implicit_type {
-    implicit_type(object const& o) : obj(o) { }
-    ~implicit_type() { }
-
-    template <typename T>
-    operator T();
-
-private:
-    object const& obj;
-};
 
 /// @cond
 } // MSGPACK_API_VERSION_NAMESPACE(v1)

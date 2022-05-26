@@ -90,9 +90,6 @@ private:
     msgpack::unique_ptr<msgpack::zone> m_zone;
 };
 
-template <typename T>
-inline object::implicit_type::operator T() { return obj.as<T>(); }
-
 namespace detail {
 template <typename Stream, typename T>
 struct packer_serializer {
@@ -108,7 +105,7 @@ template <typename T, typename Enabler>
 inline
 msgpack::object const&
 adaptor::convert<T, Enabler>::operator()(msgpack::object const& o, T& v) const {
-    v.msgpack_unpack(o.convert());
+    v.msgpack_unpack(o);
     return o;
 }
 
@@ -120,20 +117,6 @@ adaptor::pack<T, Enabler>::operator()(msgpack::packer<Stream>& o, T const& v) co
     return detail::packer_serializer<Stream, T>::pack(o, v);
 }
 
-// Adaptor functor specialization to object
-namespace adaptor {
-
-template <>
-struct convert<msgpack::object> {
-    msgpack::object const& operator()(msgpack::object const& o, msgpack::object& v) const {
-        v = o;
-        return o;
-    }
-};
-
-
-} // namespace adaptor
-
 // deconvert operator
 
 template <typename Stream>
@@ -142,11 +125,6 @@ inline msgpack::packer<Stream>& packer<Stream>::pack(const T& v)
 {
     msgpack::operator<<(*this, v);
     return *this;
-}
-
-inline object::implicit_type object::convert() const
-{
-    return object::implicit_type(*this);
 }
 
 template <typename T>
@@ -166,24 +144,6 @@ inline T object::as() const {
     T v;
     convert(v);
     return v;
-}
-
-inline object::object()
-{
-    type = msgpack::type::NIL;
-}
-
-template <typename T>
-inline object::object(const T& v)
-{
-    *this << v;
-}
-
-template <typename T>
-inline object& object::operator=(const T& v)
-{
-    *this = object(v);
-    return *this;
 }
 
 /// @cond
