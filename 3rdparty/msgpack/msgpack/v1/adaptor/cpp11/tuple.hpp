@@ -93,42 +93,6 @@ struct convert<std::tuple<Args...>> {
 
 } // namespace adaptor
 
-// --- Convert from tuple to object with zone ---
-template <typename Tuple, std::size_t N>
-struct StdTupleToObjectWithZone {
-    static void convert(
-        msgpack::object::with_zone& o,
-        const Tuple& v) {
-        StdTupleToObjectWithZone<Tuple, N-1>::convert(o, v);
-        o.via.array.ptr[N-1] = msgpack::object(std::get<N-1>(v), o.zone);
-    }
-};
-
-template <typename Tuple>
-struct StdTupleToObjectWithZone<Tuple, 0> {
-    static void convert (
-        msgpack::object::with_zone&,
-        const Tuple&) {
-    }
-};
-
-namespace adaptor {
-
-template <typename... Args>
-struct object_with_zone<std::tuple<Args...>> {
-    void operator()(
-        msgpack::object::with_zone& o,
-        std::tuple<Args...> const& v) const {
-        uint32_t size = checked_get_container_size(sizeof...(Args));
-        o.type = msgpack::type::ARRAY;
-        o.via.array.ptr = static_cast<msgpack::object*>(o.zone.allocate_align(sizeof(msgpack::object)*size, MSGPACK_ZONE_ALIGNOF(msgpack::object)));
-        o.via.array.size = size;
-        StdTupleToObjectWithZone<decltype(v), sizeof...(Args)>::convert(o, v);
-    }
-};
-
-} // namespace adaptor
-
 /// @cond
 } // MSGPACK_API_VERSION_NAMESPACE(v1)
 /// @endcond

@@ -81,37 +81,6 @@ struct pack<double> {
     }
 };
 
-
-template <>
-struct object<float> {
-    void operator()(msgpack::object& o, float v) const {
-        o.type = msgpack::type::FLOAT32;
-        o.via.f64 = static_cast<double>(v);
-    }
-};
-
-template <>
-struct object<double> {
-    void operator()(msgpack::object& o, double v) const {
-        o.type = msgpack::type::FLOAT64;
-        o.via.f64 = v;
-    }
-};
-
-template <>
-struct object_with_zone<float> {
-    void operator()(msgpack::object::with_zone& o, float v) const {
-        static_cast<msgpack::object&>(o) << v;
-    }
-};
-
-template <>
-struct object_with_zone<double> {
-    void operator()(msgpack::object::with_zone& o, double v) const {
-        static_cast<msgpack::object&>(o) << v;
-    }
-};
-
 } // namespace adaptor
 
 /// @cond

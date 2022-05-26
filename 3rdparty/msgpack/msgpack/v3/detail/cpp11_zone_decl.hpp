@@ -20,8 +20,6 @@ MSGPACK_API_VERSION_NAMESPACE(v3) {
 
 using v2::zone;
 
-using v2::aligned_size;
-
 /// @cond
 }  // MSGPACK_API_VERSION_NAMESPACE(v3)
 /// @endcond

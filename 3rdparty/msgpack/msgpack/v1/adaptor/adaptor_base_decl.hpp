@@ -33,12 +33,6 @@ struct convert;
 template <typename T, typename Enabler = void>
 struct pack;
 
-template <typename T, typename Enabler = void>
-struct object;
-
-template <typename T, typename Enabler = void>
-struct object_with_zone;
-
 } // namespace adaptor
 
 // operators
@@ -60,22 +54,6 @@ typename msgpack::enable_if<
 operator<< (msgpack::packer<Stream>& o, T const& v);
 template <typename Stream, typename T, std::size_t N>
 msgpack::packer<Stream>& operator<< (msgpack::packer<Stream>& o, const T(&v)[N]);
-
-template <typename T>
-typename msgpack::enable_if<
-    !is_array<T>::value
->::type
-operator<< (msgpack::object& o, T const& v);
-template <typename T, std::size_t N>
-void operator<< (msgpack::object& o, const T(&v)[N]);
-
-template <typename T>
-typename msgpack::enable_if<
-    !is_array<T>::value
->::type
-operator<< (msgpack::object::with_zone& o, T const& v);
-template <typename T, std::size_t N>
-void operator<< (msgpack::object::with_zone& o, const T(&v)[N]);
 
 /// @cond
 } // MSGPACK_API_VERSION_NAMESPACE(v1)

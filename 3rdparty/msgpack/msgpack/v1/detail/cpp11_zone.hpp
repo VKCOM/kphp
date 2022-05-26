@@ -351,12 +351,6 @@ T* zone::allocate(Args... args)
     }
 }
 
-inline std::size_t aligned_size(
-    std::size_t size,
-    std::size_t align) {
-    return (size + align - 1) / align * align;
-}
-
 /// @cond
 }  // MSGPACK_API_VERSION_NAMESPACE(v1)
 /// @endcond

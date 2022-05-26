@@ -59,7 +59,6 @@ public:
     template <typename T>
     T& convert(T& v) const { return v1::object::convert(v); }
 
-    using v1::object::with_zone;
     implicit_type convert() const;
 };
 

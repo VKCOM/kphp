@@ -31,21 +31,6 @@ template <typename T, typename Enabler>
 struct pack : v1::adaptor::pack<T, Enabler> {
 };
 
-template <typename T, typename Enabler>
-struct object<
-    T,
-    Enabler,
-    typename msgpack::enable_if<
-        !msgpack::is_same<T, std::string>::value &&
-        !msgpack::is_array<T>::value
-    >::type>
-    : v1::adaptor::object<T, Enabler> {
-};
-
-template <typename T, typename Enabler>
-struct object_with_zone : v1::adaptor::object_with_zone<T, Enabler> {
-};
-
 } // namespace adaptor
 
 /// @cond

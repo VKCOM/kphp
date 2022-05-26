@@ -40,21 +40,6 @@ struct pack<bool> {
     }
 };
 
-template <>
-struct object<bool> {
-    void operator()(msgpack::object& o, bool v) const {
-        o.type = msgpack::type::BOOLEAN;
-        o.via.boolean = v;
-    }
-};
-
-template <>
-struct object_with_zone<bool> {
-    void operator()(msgpack::object::with_zone& o, bool v) const {
-        static_cast<msgpack::object&>(o) << v;
-    }
-};
-
 } // namespace adaptor
 
 /// @cond

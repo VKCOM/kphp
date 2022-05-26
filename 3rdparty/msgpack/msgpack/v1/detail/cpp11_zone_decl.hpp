@@ -42,10 +42,6 @@ MSGPACK_API_VERSION_NAMESPACE(v1) {
 
 class zone;
 
-std::size_t aligned_size(
-    std::size_t size,
-    std::size_t align = MSGPACK_ZONE_ALIGN);
-
 /// @cond
 }  // MSGPACK_API_VERSION_NAMESPACE(v1)
 /// @endcond

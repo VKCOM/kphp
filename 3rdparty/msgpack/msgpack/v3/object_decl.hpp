@@ -23,26 +23,9 @@ using v2::object_handle;
 
 namespace detail {
 
-using v2::detail::add_ext_type_size;
-
-} // namespace detail
-
-using v2::aligned_zone_size;
-
-using v2::clone;
-
-namespace detail {
-
 using v2::detail::packer_serializer;
 
 } // namespace detail
-
-using v2::object_parser;
-using v2::object_pack_visitor;
-using v2::object_stringize_visitor;
-
-using v2::operator==;
-using v2::operator!=;
 
 /// @cond
 }  // MSGPACK_API_VERSION_NAMESPACE(v3)

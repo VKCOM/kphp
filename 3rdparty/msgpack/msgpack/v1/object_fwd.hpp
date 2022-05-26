@@ -126,22 +126,8 @@ struct object {
     template <typename T>
     explicit object(const T& v);
 
-    /// Construct object from T
-    /**
-     * The object is constructed on the zone `z`.
-     * See https://github.com/msgpack/msgpack-c/wiki/v1_1_cpp_object
-     *
-     * @tparam T The type of `v`.
-     * @param v The value you want to convert.
-     * @param z The zone that is used by the object.
-     */
-    template <typename T>
-    object(const T& v, msgpack::zone& z);
-
     template <typename T>
     object& operator=(const T& v);
-
-    struct with_zone;
 
 protected:
     struct implicit_type;
