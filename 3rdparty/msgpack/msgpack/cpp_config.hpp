@@ -11,7 +11,6 @@
 #define MSGPACK_CPP_CONFIG_HPP
 
 #define MSGPACK_NULLPTR nullptr
-#define MSGPACK_DEPRECATED(msg) [[deprecated(msg)]]
 
 #include <memory>
 #include <tuple>

@@ -841,28 +841,6 @@ struct object_with_zone<msgpack::object::with_zone> {
 
 } // namespace adaptor
 
-
-// obsolete
-template <typename Type>
-class define : public Type {
-public:
-    typedef Type msgpack_type;
-    typedef define<Type> define_type;
-    define() {}
-    define(const msgpack_type& v) : msgpack_type(v) {}
-
-    template <typename Packer>
-    void msgpack_pack(Packer& o) const
-    {
-        msgpack::operator<<(o, static_cast<const msgpack_type&>(*this));
-    }
-
-    void msgpack_unpack(object const& o)
-    {
-        msgpack::operator>>(o, static_cast<msgpack_type&>(*this));
-    }
-};
-
 // deconvert operator
 
 template <typename Stream>
@@ -1081,20 +1059,6 @@ inline T(&object::convert(T(&v)[N]) const)[N]
     return v;
 }
 
-#if !defined(MSGPACK_DISABLE_LEGACY_CONVERT)
-template <typename T>
-inline
-typename msgpack::enable_if<
-    msgpack::is_pointer<T>::value,
-    T
->::type
-object::convert(T v) const
-{
-    convert(*v);
-    return v;
-}
-#endif // !defined(MSGPACK_DISABLE_LEGACY_CONVERT)
-
 template <typename T>
 inline bool object::convert_if_not_nil(T& v) const
 {
@@ -1137,37 +1101,6 @@ inline object::object(const T& v, msgpack::zone& z)
     msgpack::operator<<(oz, v);
     type = oz.type;
     via = oz.via;
-}
-
-template <typename T>
-inline object::object(const T& v, msgpack::zone* z)
-{
-    with_zone oz(*z);
-    msgpack::operator<<(oz, v);
-    type = oz.type;
-    via = oz.via;
-}
-
-
-// obsolete
-template <typename T>
-inline void convert(T& v, msgpack::object const& o)
-{
-    o.convert(v);
-}
-
-// obsolete
-template <typename Stream, typename T>
-inline void pack(msgpack::packer<Stream>& o, const T& v)
-{
-    o.pack(v);
-}
-
-// obsolete
-template <typename Stream, typename T>
-inline void pack_copy(msgpack::packer<Stream>& o, T v)
-{
-    pack(o, v);
 }
 
 template <typename Stream>

@@ -102,24 +102,6 @@ struct object {
     template <typename T, std::size_t N>
     T (&convert(T(&v)[N]) const)[N];
 
-
-#if !defined(MSGPACK_DISABLE_LEGACY_CONVERT)
-    /// Convert the object (obsolete)
-    /**
-     * If the object can't be converted to T, msgpack::type_error would be thrown.
-     * @tparam T The type of v.
-     * @param v The pointer of the value you want to get. `v` is output parameter. `*v` is overwritten by converted value from the object.
-     * @return The pointer of `v`.
-     */
-    template <typename T>
-    MSGPACK_DEPRECATED("please use reference version instead")
-    typename msgpack::enable_if<
-        msgpack::is_pointer<T>::value,
-        T
-    >::type
-    convert(T v) const;
-#endif // !defined(MSGPACK_DISABLE_LEGACY_CONVERT)
-
     /// Convert the object if not nil
     /**
      * If the object is not nil and can't be converted to T, msgpack::type_error would be thrown.
@@ -155,20 +137,6 @@ struct object {
      */
     template <typename T>
     object(const T& v, msgpack::zone& z);
-
-    /// Construct object from T (obsolete)
-    /**
-     * The object is constructed on the zone `z`.
-     * Use `object(const T& v, msgpack::zone& z)` instead of this constructor.
-     * See https://github.com/msgpack/msgpack-c/wiki/v1_1_cpp_object
-     *
-     * @tparam T The type of `v`.
-     * @param v The value you want to convert.
-     * @param z The pointer to the zone that is used by the object.
-     */
-    template <typename T>
-    MSGPACK_DEPRECATED("please use zone reference version instead of the pointer version")
-    object(const T& v, msgpack::zone* z);
 
     template <typename T>
     object& operator=(const T& v);

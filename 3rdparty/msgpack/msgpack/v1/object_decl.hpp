@@ -61,10 +61,6 @@ struct packer_serializer;
 
 } // namespace detail
 
-// obsolete
-template <typename Type>
-class define;
-
 bool operator==(const msgpack::object& x, const msgpack::object& y);
 
 template <typename T>
@@ -87,21 +83,6 @@ template <typename Stream>
 struct object_pack_visitor;
 
 struct object_stringize_visitor;
-
-// obsolete
-template <typename T>
-MSGPACK_DEPRECATED("please use member function version of object::convert(T&)")
-void convert(T& v, msgpack::object const& o);
-
-// obsolete
-template <typename Stream, typename T>
-MSGPACK_DEPRECATED("please use member function version of packer::pack(const T&)")
-void pack(msgpack::packer<Stream>& o, const T& v);
-
-// obsolete
-template <typename Stream, typename T>
-MSGPACK_DEPRECATED("please use member function version of packer::pack(const T&)")
-void pack_copy(msgpack::packer<Stream>& o, T v);
 
 template <typename Stream>
 msgpack::packer<Stream>& operator<< (msgpack::packer<Stream>& o, const msgpack::object& v);
