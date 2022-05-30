@@ -7,11 +7,46 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //    http://www.boost.org/LICENSE_1_0.txt)
 //
-#ifndef MSGPACK_ADAPTOR_BASE_DECL_HPP
-#define MSGPACK_ADAPTOR_BASE_DECL_HPP
+#ifndef MSGPACK_V1_ADAPTOR_BASE_DECL_HPP
+#define MSGPACK_V1_ADAPTOR_BASE_DECL_HPP
 
-#include "msgpack/v1/adaptor/adaptor_base_decl.hpp"
-#include "msgpack/v2/adaptor/adaptor_base_decl.hpp"
-#include "msgpack/v3/adaptor/adaptor_base_decl.hpp"
+#include "msgpack/versioning.hpp"
+#include "msgpack/v1/object_fwd.hpp"
+#include "msgpack/pack.hpp"
 
-#endif // MSGPACK_ADAPTOR_BASE_DECL_HPP
+namespace msgpack {
+
+/// @cond
+MSGPACK_API_VERSION_NAMESPACE(v3) {
+/// @endcond
+
+template <typename Stream>
+class packer;
+
+namespace adaptor {
+
+// Adaptor functors
+
+template <typename T, typename Enabler = void>
+struct convert;
+
+template <typename T, typename Enabler = void>
+struct pack;
+
+} // namespace adaptor
+
+// operators
+
+template <typename T>
+msgpack::object const& operator>> (msgpack::object const& o, T& v);
+
+template <typename Stream, typename T>
+msgpack::packer<Stream>& operator<< (msgpack::packer<Stream>& o, T const& v);
+
+/// @cond
+} // MSGPACK_API_VERSION_NAMESPACE(v1)
+/// @endcond
+
+} // namespace msgpack
+
+#endif // MSGPACK_V1_ADAPTOR_BASE_DECL_HPP

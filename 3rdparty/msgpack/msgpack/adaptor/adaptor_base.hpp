@@ -7,13 +7,52 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //    http://www.boost.org/LICENSE_1_0.txt)
 //
-#ifndef MSGPACK_ADAPTOR_BASE_HPP
-#define MSGPACK_ADAPTOR_BASE_HPP
+#ifndef MSGPACK_V1_ADAPTOR_BASE_HPP
+#define MSGPACK_V1_ADAPTOR_BASE_HPP
 
 #include "msgpack/adaptor/adaptor_base_decl.hpp"
 
-#include "msgpack/v1/adaptor/adaptor_base.hpp"
-#include "msgpack/v2/adaptor/adaptor_base.hpp"
-#include "msgpack/v3/adaptor/adaptor_base.hpp"
+namespace msgpack {
 
-#endif // MSGPACK_ADAPTOR_BASE_HPP
+/// @cond
+MSGPACK_API_VERSION_NAMESPACE(v3) {
+/// @endcond
+
+
+namespace adaptor {
+
+// Adaptor functors
+
+template <typename T, typename Enabler>
+struct convert {
+    msgpack::object const& operator()(msgpack::object const& o, T& v) const;
+};
+
+template <typename T, typename Enabler>
+struct pack {
+    template <typename Stream>
+    msgpack::packer<Stream>& operator()(msgpack::packer<Stream>& o, T const& v) const;
+};
+
+} // namespace adaptor
+
+// operators
+
+template <typename T>
+inline msgpack::object const& operator>> (msgpack::object const& o, T& v) {
+    return msgpack::adaptor::convert<T>()(o, v);
+}
+
+template <typename Stream, typename T>
+inline msgpack::packer<Stream>& operator<< (msgpack::packer<Stream>& o, T const& v) {
+    return msgpack::adaptor::pack<T>()(o, v);
+}
+
+/// @cond
+} // MSGPACK_API_VERSION_NAMESPACE(v1)
+/// @endcond
+
+} // namespace msgpack
+
+
+#endif // MSGPACK_V1_ADAPTOR_BASE_HPP

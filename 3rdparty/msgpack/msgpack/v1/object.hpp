@@ -10,7 +10,7 @@
 #ifndef MSGPACK_V1_OBJECT_HPP
 #define MSGPACK_V1_OBJECT_HPP
 
-#include "msgpack/v1/adaptor/adaptor_base.hpp"
+#include "msgpack/adaptor/adaptor_base.hpp"
 #include "msgpack/v1/object_fwd.hpp"
 
 #include <cstring>
