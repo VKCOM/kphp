@@ -1,17 +1,51 @@
 //
 // MessagePack for C++ memory pool
 //
-// Copyright (C) 2016 KONDO Takatoshi
+// Copyright (C) 2008-2016 FURUHASHI Sadayuki and KONDO Takatoshi
 //
 //    Distributed under the Boost Software License, Version 1.0.
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //    http://www.boost.org/LICENSE_1_0.txt)
 //
-#ifndef MSGPACK_ZONE_DECL_HPP
-#define MSGPACK_ZONE_DECL_HPP
+#ifndef MSGPACK_V1_CPP11_ZONE_DECL_HPP
+#define MSGPACK_V1_CPP11_ZONE_DECL_HPP
 
-#include "msgpack/v1/zone_decl.hpp"
-#include "msgpack/v2/zone_decl.hpp"
-#include "msgpack/v3/zone_decl.hpp"
+#include "msgpack/versioning.hpp"
 
-#endif // MSGPACK_ZONE_DECL_HPP
+#include <cstdlib>
+#include <memory>
+#include <vector>
+
+#include "msgpack/cpp_config.hpp"
+
+#ifndef MSGPACK_ZONE_CHUNK_SIZE
+#define MSGPACK_ZONE_CHUNK_SIZE 8192
+#endif
+
+#ifndef MSGPACK_ZONE_ALIGN
+#define MSGPACK_ZONE_ALIGN sizeof(void*)
+#endif
+
+#if defined(_MSC_VER)
+#define MSGPACK_ZONE_ALIGNOF(type) __alignof(type)
+#else
+#define MSGPACK_ZONE_ALIGNOF(type) __alignof__(type)
+#endif
+// For a compiler that doesn't support __alignof__:
+// #define MSGPACK_ZONE_ALIGNOF(type) MSGPACK_ZONE_ALIGN
+
+namespace msgpack {
+
+/// @cond
+MSGPACK_API_VERSION_NAMESPACE(v3) {
+/// @endcond
+
+class zone;
+
+/// @cond
+}  // MSGPACK_API_VERSION_NAMESPACE(v1)
+/// @endcond
+
+}  // namespace msgpack
+
+#endif // MSGPACK_V1_CPP11_ZONE_DECL_HPP
