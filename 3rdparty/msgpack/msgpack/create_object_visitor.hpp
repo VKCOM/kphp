@@ -11,8 +11,6 @@
 #define MSGPACK_V2_CREATE_OBJECT_VISITOR_HPP
 
 #include "msgpack/unpack_decl.hpp"
-#include "msgpack/v2/create_object_visitor_decl.hpp"
-#include "msgpack/v2/null_visitor.hpp"
 
 namespace msgpack {
 
@@ -22,7 +20,7 @@ MSGPACK_API_VERSION_NAMESPACE(v3) {
 
 namespace detail {
 
-class create_object_visitor : public msgpack::v2::null_visitor {
+class create_object_visitor {
 public:
     explicit create_object_visitor(unpack_limit const& limit)
         :m_limit(limit) {
