@@ -29,7 +29,7 @@ unpack_imp(const char* data, std::size_t len, std::size_t& off,
 {
     create_object_visitor v{limit};
     v.set_zone(result_zone);
-    parse_return ret = v2::detail::parse_imp(data, len, off, v);
+    parse_return ret = parse_imp(data, len, off, v);
     result = v.data();
     return ret;
 }

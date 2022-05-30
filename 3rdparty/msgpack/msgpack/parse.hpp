@@ -20,7 +20,7 @@
 namespace msgpack {
 
 /// @cond
-MSGPACK_API_VERSION_NAMESPACE(v2) {
+MSGPACK_API_VERSION_NAMESPACE(v3) {
 /// @endcond
 
 namespace detail {
