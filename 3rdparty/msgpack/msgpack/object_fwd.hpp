@@ -11,39 +11,22 @@
 #pragma once
 
 namespace msgpack {
-
-enum {
-  MSGPACK_OBJECT_NIL                  = 0x00,
-  MSGPACK_OBJECT_BOOLEAN              = 0x01,
-  MSGPACK_OBJECT_POSITIVE_INTEGER     = 0x02,
-  MSGPACK_OBJECT_NEGATIVE_INTEGER     = 0x03,
-  MSGPACK_OBJECT_FLOAT32              = 0x0a,
-  MSGPACK_OBJECT_FLOAT64              = 0x04,
-  MSGPACK_OBJECT_FLOAT                = 0x04,
-  MSGPACK_OBJECT_STR                  = 0x05,
-  MSGPACK_OBJECT_ARRAY                = 0x06,
-  MSGPACK_OBJECT_MAP                  = 0x07,
-  MSGPACK_OBJECT_BIN                  = 0x08,
-  MSGPACK_OBJECT_EXT                  = 0x09
-};
-
-
 namespace type {
 enum object_type {
-  NIL                 = MSGPACK_OBJECT_NIL,
-  BOOLEAN             = MSGPACK_OBJECT_BOOLEAN,
-  POSITIVE_INTEGER    = MSGPACK_OBJECT_POSITIVE_INTEGER,
-  NEGATIVE_INTEGER    = MSGPACK_OBJECT_NEGATIVE_INTEGER,
-  FLOAT32             = MSGPACK_OBJECT_FLOAT32,
-  FLOAT64             = MSGPACK_OBJECT_FLOAT64,
-  FLOAT               = MSGPACK_OBJECT_FLOAT,
-  STR                 = MSGPACK_OBJECT_STR,
-  BIN                 = MSGPACK_OBJECT_BIN,
-  ARRAY               = MSGPACK_OBJECT_ARRAY,
-  MAP                 = MSGPACK_OBJECT_MAP,
-  EXT                 = MSGPACK_OBJECT_EXT
+  NIL                 = 0x00,
+  BOOLEAN             = 0x01,
+  POSITIVE_INTEGER    = 0x02,
+  NEGATIVE_INTEGER    = 0x03,
+  FLOAT32             = 0x0a,
+  FLOAT64             = 0x04,
+  FLOAT               = 0x04,
+  STR                 = 0x05,
+  ARRAY               = 0x06,
+  MAP                 = 0x07,
+  BIN                 = 0x08,
+  EXT                 = 0x09
 };
-}
+} // namespace type
 
 
 struct object;
