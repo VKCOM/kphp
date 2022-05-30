@@ -9,8 +9,6 @@
 //
 #pragma once
 
-#include "msgpack/zone_decl.hpp"
-
 #include <cstdlib>
 #include <memory>
 
@@ -161,10 +159,10 @@ private:
     finalizer_array m_finalizer_array;
 
 public:
-    zone(size_t chunk_size = MSGPACK_ZONE_CHUNK_SIZE) noexcept;
+    zone(size_t chunk_size = 8192) noexcept;
 
 public:
-    void* allocate_align(size_t size, size_t align = MSGPACK_ZONE_ALIGN);
+    void* allocate_align(size_t size, size_t align = sizeof(void*));
     void* allocate_no_align(size_t size);
 
     void push_finalizer(void (*func)(void*), void* data);
@@ -327,7 +325,7 @@ inline void zone::undo_allocate(size_t size)
 template <typename T, typename... Args>
 T* zone::allocate(Args... args)
 {
-    void* x = allocate_align(sizeof(T), MSGPACK_ZONE_ALIGNOF(T));
+    void* x = allocate_align(sizeof(T), alignof(T));
     try {
         m_finalizer_array.push(&zone::object_destruct<T>, x);
     } catch (...) {

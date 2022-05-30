@@ -81,7 +81,7 @@ public:
         if (size > m_limit.str()) throw msgpack::str_size_overflow("str size overflow");
         msgpack::object* obj = m_stack.back();
         obj->type = msgpack::type::STR;
-        char* tmp = static_cast<char*>(zone().allocate_align(size, MSGPACK_ZONE_ALIGNOF(char)));
+        char* tmp = static_cast<char*>(zone().allocate_align(size, alignof(char)));
         std::memcpy(tmp, v, size);
         obj->via.str.ptr = tmp;
 
@@ -92,7 +92,7 @@ public:
         if (size > m_limit.bin()) throw msgpack::bin_size_overflow("bin size overflow");
         msgpack::object* obj = m_stack.back();
         obj->type = msgpack::type::BIN;
-        char* tmp = static_cast<char*>(zone().allocate_align(size, MSGPACK_ZONE_ALIGNOF(char)));
+        char* tmp = static_cast<char*>(zone().allocate_align(size, alignof(char)));
         std::memcpy(tmp, v, size);
         obj->via.bin.ptr = tmp;
 
@@ -103,7 +103,7 @@ public:
         if (size > m_limit.ext()) throw msgpack::ext_size_overflow("ext size overflow");
         msgpack::object* obj = m_stack.back();
         obj->type = msgpack::type::EXT;
-        char* tmp = static_cast<char*>(zone().allocate_align(size, MSGPACK_ZONE_ALIGNOF(char)));
+        char* tmp = static_cast<char*>(zone().allocate_align(size, alignof(char)));
         std::memcpy(tmp, v, size);
         obj->via.ext.ptr = tmp;
 
@@ -125,7 +125,7 @@ public:
                 throw msgpack::array_size_overflow("array size overflow");
             }
             obj->via.array.ptr =
-                static_cast<msgpack::object*>(m_zone->allocate_align(size, MSGPACK_ZONE_ALIGNOF(msgpack::object)));
+                static_cast<msgpack::object*>(m_zone->allocate_align(size, alignof(msgpack::object)));
         }
         m_stack.push_back(obj->via.array.ptr);
         return true;
@@ -156,7 +156,7 @@ public:
                 throw msgpack::map_size_overflow("map size overflow");
             }
             obj->via.map.ptr =
-                static_cast<msgpack::object_kv*>(m_zone->allocate_align(size, MSGPACK_ZONE_ALIGNOF(msgpack::object_kv)));
+                static_cast<msgpack::object_kv*>(m_zone->allocate_align(size, alignof(msgpack::object_kv)));
         }
         m_stack.push_back(reinterpret_cast<msgpack::object*>(obj->via.map.ptr));
         return true;
