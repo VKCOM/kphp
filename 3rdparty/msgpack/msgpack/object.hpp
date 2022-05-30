@@ -11,7 +11,7 @@
 #define MSGPACK_V1_OBJECT_HPP
 
 #include "msgpack/adaptor/adaptor_base.hpp"
-#include "msgpack/v1/object_fwd.hpp"
+#include "msgpack/object_fwd.hpp"
 
 #include <cstring>
 #include <cassert>

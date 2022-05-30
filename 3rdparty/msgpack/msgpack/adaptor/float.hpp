@@ -11,7 +11,7 @@
 #define MSGPACK_V1_TYPE_FLOAT_HPP
 
 #include "msgpack/versioning.hpp"
-#include "msgpack/v1/object_fwd.hpp"
+#include "msgpack/object_fwd.hpp"
 #include <vector>
 
 namespace msgpack {
