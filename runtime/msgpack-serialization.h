@@ -65,9 +65,7 @@ inline void pack_value(bool as_float32, msgpack::packer<StreamT> &packer, const 
   }
 }
 
-namespace msgpack {
-MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
-namespace adaptor {
+namespace msgpack::adaptor {
 
 // string
 template<>
@@ -347,9 +345,7 @@ struct pack<class_instance<T>> {
   }
 };
 
-} // namespace adaptor
-} // MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS)
-} // namespace msgpack
+} // namespace msgpack::adaptor
 
 template<class T>
 inline Optional<string> f$msgpack_serialize(const T &value, string *out_err_msg = nullptr) noexcept {

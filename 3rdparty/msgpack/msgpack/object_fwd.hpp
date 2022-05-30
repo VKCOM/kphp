@@ -8,16 +8,9 @@
 //    http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef MSGPACK_V1_OBJECT_FWD_HPP
-#define MSGPACK_V1_OBJECT_FWD_HPP
-
-#include "msgpack/versioning.hpp"
+#pragma once
 
 namespace msgpack {
-
-/// @cond
-MSGPACK_API_VERSION_NAMESPACE(v3) {
-/// @endcond
 
 enum {
   MSGPACK_OBJECT_NIL                  = 0x00,
@@ -145,10 +138,4 @@ struct object {
 
 class type_error : public std::bad_cast { };
 
-/// @cond
-} // MSGPACK_API_VERSION_NAMESPACE(v1)
-/// @endcond
-
 } // namespace msgpack
-
-#endif // MSGPACK_V1_OBJECT_FWD_HPP

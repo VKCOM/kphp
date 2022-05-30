@@ -7,19 +7,13 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //    http://www.boost.org/LICENSE_1_0.txt)
 //
-#ifndef MSGPACK_V1_TYPE_CPP11_TUPLE_HPP
-#define MSGPACK_V1_TYPE_CPP11_TUPLE_HPP
+#pragma once
 
-#include "msgpack/versioning.hpp"
 #include "msgpack/adaptor/adaptor_base.hpp"
 
 #include <tuple>
 
 namespace msgpack {
-
-/// @cond
-MSGPACK_API_VERSION_NAMESPACE(v3) {
-/// @endcond
 
 template <typename Tuple, std::size_t N>
 struct StdTupleConverter {
@@ -55,10 +49,4 @@ struct convert<std::tuple<Args...>> {
 
 } // namespace adaptor
 
-/// @cond
-} // MSGPACK_API_VERSION_NAMESPACE(v1)
-/// @endcond
-
 } // namespace msgpack
-
-#endif // MSGPACK_V1_TYPE_CPP11_TUPLE_HPP

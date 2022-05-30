@@ -7,20 +7,13 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //    http://www.boost.org/LICENSE_1_0.txt)
 //
-#ifndef MSGPACK_V1_UNPACK_EXCEPTION_HPP
-#define MSGPACK_V1_UNPACK_EXCEPTION_HPP
-
-#include "msgpack/versioning.hpp"
+#pragma once
 
 #include <string>
 #include <stdexcept>
 
 
 namespace msgpack {
-
-/// @cond
-MSGPACK_API_VERSION_NAMESPACE(v3) {
-/// @endcond
 
 struct unpack_error : public std::runtime_error {
     explicit unpack_error(const std::string& msg)
@@ -72,11 +65,4 @@ struct depth_size_overflow : public size_overflow {
         :size_overflow(msg) {}
 };
 
-/// @cond
-}  // MSGPACK_API_VERSION_NAMESPACE(v1)
-/// @endcond
-
 }  // namespace msgpack
-
-
-#endif // MSGPACK_V1_UNPACK_EXCEPTION_HPP

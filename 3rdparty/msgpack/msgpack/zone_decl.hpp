@@ -7,10 +7,7 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //    http://www.boost.org/LICENSE_1_0.txt)
 //
-#ifndef MSGPACK_V1_CPP11_ZONE_DECL_HPP
-#define MSGPACK_V1_CPP11_ZONE_DECL_HPP
-
-#include "msgpack/versioning.hpp"
+#pragma once
 
 #include <cstdlib>
 #include <memory>
@@ -34,16 +31,6 @@
 
 namespace msgpack {
 
-/// @cond
-MSGPACK_API_VERSION_NAMESPACE(v3) {
-/// @endcond
-
 class zone;
 
-/// @cond
-}  // MSGPACK_API_VERSION_NAMESPACE(v1)
-/// @endcond
-
 }  // namespace msgpack
-
-#endif // MSGPACK_V1_CPP11_ZONE_DECL_HPP

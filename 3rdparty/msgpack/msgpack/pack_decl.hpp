@@ -7,17 +7,11 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //    http://www.boost.org/LICENSE_1_0.txt)
 //
-#ifndef MSGPACK_V1_PACK_DECL_HPP
-#define MSGPACK_V1_PACK_DECL_HPP
+#pragma once
 
-#include "msgpack/versioning.hpp"
 #include "msgpack/sysdep.h"
 
 namespace msgpack {
-
-/// @cond
-MSGPACK_API_VERSION_NAMESPACE(v3) {
-/// @endcond
 
 /// The class template that supports continuous packing.
 /**
@@ -50,11 +44,4 @@ void pack(Stream* s, const T& v);
 template <typename Stream, typename T>
 void pack(Stream& s, const T& v);
 
-
-/// @cond
-}  // MSGPACK_API_VERSION_NAMESPACE(v1)
-/// @endcond
-
 }  // namespace msgpack
-
-#endif // MSGPACK_V1_PACK_DECL_HPP

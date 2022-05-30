@@ -7,8 +7,7 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //    http://www.boost.org/LICENSE_1_0.txt)
 //
-#ifndef MSGPACK_V1_OBJECT_HPP
-#define MSGPACK_V1_OBJECT_HPP
+#pragma once
 
 #include "msgpack/adaptor/adaptor_base.hpp"
 #include "msgpack/object_fwd.hpp"
@@ -24,10 +23,6 @@
 #include <memory>
 
 namespace msgpack {
-
-/// @cond
-MSGPACK_API_VERSION_NAMESPACE(v3) {
-/// @endcond
 
 struct object_kv {
     msgpack::object key;
@@ -144,10 +139,4 @@ inline T object::as() const {
     return v;
 }
 
-/// @cond
-}  // MSGPACK_API_VERSION_NAMESPACE(v1)
-/// @endcond
-
 }  // namespace msgpack
-
-#endif // MSGPACK_V1_OBJECT_HPP

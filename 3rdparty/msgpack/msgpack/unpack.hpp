@@ -7,19 +7,13 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //    http://www.boost.org/LICENSE_1_0.txt)
 //
-#ifndef MSGPACK_V2_UNPACK_HPP
-#define MSGPACK_V2_UNPACK_HPP
+#pragma once
 
 #include <memory>
 #include "msgpack/parse.hpp"
 #include "msgpack/create_object_visitor.hpp"
 
 namespace msgpack {
-
-/// @cond
-MSGPACK_API_VERSION_NAMESPACE(v3) {
-/// @endcond
-
 
 namespace detail {
 
@@ -57,11 +51,4 @@ inline msgpack::object_handle unpack(
   return msgpack::object_handle();
 }
 
-
-/// @cond
-}  // MSGPACK_API_VERSION_NAMESPACE(v2)
-/// @endcond
-
 }  // namespace msgpack
-
-#endif // MSGPACK_V2_UNPACK_HPP

@@ -7,17 +7,9 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //    http://www.boost.org/LICENSE_1_0.txt)
 //
-#ifndef MSGPACK_PARSE_RETURN_HPP
-#define MSGPACK_PARSE_RETURN_HPP
-
-#include "msgpack/versioning.hpp"
+#pragma once
 
 namespace msgpack {
-
-/// @cond
-MSGPACK_API_VERSION_NAMESPACE(v3) {
-/// @endcond
-
 
 // for internal use
 enum parse_return {
@@ -28,11 +20,4 @@ enum parse_return {
     PARSE_STOP_VISITOR         = -2
 };
 
-/// @cond
-}  // MSGPACK_API_VERSION_NAMESPACE(v1)
-/// @endcond
-
 }  // namespace msgpack
-
-
-#endif // MSGPACK_PARSE_RETURN_HPP

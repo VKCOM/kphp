@@ -7,8 +7,7 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //    http://www.boost.org/LICENSE_1_0.txt)
 //
-#ifndef MSGPACK_V2_PARSE_HPP
-#define MSGPACK_V2_PARSE_HPP
+#pragma once
 
 #include <cstddef>
 #include <vector>
@@ -18,10 +17,6 @@
 #include "msgpack/unpack_decl.hpp"
 
 namespace msgpack {
-
-/// @cond
-MSGPACK_API_VERSION_NAMESPACE(v3) {
-/// @endcond
 
 namespace detail {
 
@@ -750,11 +745,4 @@ parse_imp(const char* data, size_t len, size_t& off, Visitor& v) {
 
 } // detail
 
-
-/// @cond
-}  // MSGPACK_API_VERSION_NAMESPACE(v2)
-/// @endcond
-
 }  // namespace msgpack
-
-#endif // MSGPACK_V2_PARSE_HPP

@@ -7,16 +7,11 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //    http://www.boost.org/LICENSE_1_0.txt)
 //
-#ifndef MSGPACK_V2_CREATE_OBJECT_VISITOR_HPP
-#define MSGPACK_V2_CREATE_OBJECT_VISITOR_HPP
+#pragma once
 
 #include "msgpack/unpack_decl.hpp"
 
 namespace msgpack {
-
-/// @cond
-MSGPACK_API_VERSION_NAMESPACE(v3) {
-/// @endcond
 
 namespace detail {
 
@@ -200,10 +195,4 @@ public:
 
 } // detail
 
-/// @cond
-}  // MSGPACK_API_VERSION_NAMESPACE(v2)
-/// @endcond
-
 }  // namespace msgpack
-
-#endif // MSGPACK_V2_CREATE_OBJECT_VISITOR_HPP

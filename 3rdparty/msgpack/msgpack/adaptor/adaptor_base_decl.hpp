@@ -7,18 +7,12 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //    http://www.boost.org/LICENSE_1_0.txt)
 //
-#ifndef MSGPACK_V1_ADAPTOR_BASE_DECL_HPP
-#define MSGPACK_V1_ADAPTOR_BASE_DECL_HPP
+#pragma once
 
-#include "msgpack/versioning.hpp"
 #include "msgpack/object_fwd.hpp"
 #include "msgpack/pack.hpp"
 
 namespace msgpack {
-
-/// @cond
-MSGPACK_API_VERSION_NAMESPACE(v3) {
-/// @endcond
 
 template <typename Stream>
 class packer;
@@ -43,10 +37,4 @@ msgpack::object const& operator>> (msgpack::object const& o, T& v);
 template <typename Stream, typename T>
 msgpack::packer<Stream>& operator<< (msgpack::packer<Stream>& o, T const& v);
 
-/// @cond
-} // MSGPACK_API_VERSION_NAMESPACE(v1)
-/// @endcond
-
 } // namespace msgpack
-
-#endif // MSGPACK_V1_ADAPTOR_BASE_DECL_HPP

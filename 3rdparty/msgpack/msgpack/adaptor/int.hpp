@@ -7,8 +7,7 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //    http://www.boost.org/LICENSE_1_0.txt)
 //
-#ifndef MSGPACK_V1_TYPE_INT_HPP
-#define MSGPACK_V1_TYPE_INT_HPP
+#pragma once
 
 #include "msgpack/adaptor/int_decl.hpp"
 #include "msgpack/object.hpp"
@@ -16,10 +15,6 @@
 #include <limits>
 
 namespace msgpack {
-
-/// @cond
-MSGPACK_API_VERSION_NAMESPACE(v3){
-/// @endcond
 
 namespace type {
 namespace detail {
@@ -244,10 +239,4 @@ struct pack<unsigned long long> {
 
 } // namespace adaptor
 
-/// @cond
-}  // MSGPACK_API_VERSION_NAMESPACE(v1)
-/// @endcond
-
 }  // namespace msgpack
-
-#endif // MSGPACK_V1_TYPE_INT_HPP

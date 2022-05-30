@@ -7,17 +7,11 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //    http://www.boost.org/LICENSE_1_0.txt)
 //
-#ifndef MSGPACK_V2_UNPACK_DECL_HPP
-#define MSGPACK_V2_UNPACK_DECL_HPP
+#pragma once
 
 #include "msgpack/object.hpp"
 
 namespace msgpack {
-
-/// @cond
-MSGPACK_API_VERSION_NAMESPACE(v3) {
-/// @endcond
-
 
 #ifndef MSGPACK_EMBED_STACK_SIZE
 #define MSGPACK_EMBED_STACK_SIZE 32
@@ -71,10 +65,4 @@ msgpack::object_handle unpack(
   const char* data, std::size_t len, std::size_t& off,
   msgpack::unpack_limit const& limit = unpack_limit());
 
-/// @cond
-}  // MSGPACK_API_VERSION_NAMESPACE(v2)
-/// @endcond
-
 }  // namespace msgpack
-
-#endif // MSGPACK_V2_UNPACK_DECL_HPP

@@ -10,5 +10,4 @@
 #include "msgpack/zone.hpp"
 #include "msgpack/pack.hpp"
 #include "msgpack/unpack.hpp"
-#include "msgpack/version.hpp"
 #include "msgpack/type.hpp"

@@ -7,8 +7,7 @@
  *    (See accompanying file LICENSE_1_0.txt or copy at
  *    http://www.boost.org/LICENSE_1_0.txt)
  */
-#ifndef MSGPACK_SYSDEP_H
-#define MSGPACK_SYSDEP_H
+#pragma once
 
 #include <stdlib.h>
 #include <stddef.h>
@@ -170,5 +169,3 @@ static_assert(BYTE_ORDER == LITTLE_ENDIAN);
 #ifdef __APPLE__
 #  include <TargetConditionals.h>
 #endif
-
-#endif /* msgpack/sysdep.h */

@@ -7,8 +7,7 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //    http://www.boost.org/LICENSE_1_0.txt)
 //
-#ifndef MSGPACK_V1_PACK_HPP
-#define MSGPACK_V1_PACK_HPP
+#pragma once
 
 #include "msgpack/pack_decl.hpp"
 
@@ -18,10 +17,6 @@
 #include <climits>
 
 namespace msgpack {
-
-/// @cond
-MSGPACK_API_VERSION_NAMESPACE(v3) {
-/// @endcond
 
 /// The class template that supports continuous packing.
 /**
@@ -1569,10 +1564,4 @@ inline void packer<Stream>::pack_imp_int64(T d)
     }
 }
 
-/// @cond
-}  // MSGPACK_API_VERSION_NAMESPACE(v1)
-/// @endcond
-
 }  // namespace msgpack
-
-#endif // MSGPACK_V1_PACK_HPP
