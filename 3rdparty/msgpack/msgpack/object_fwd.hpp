@@ -20,9 +20,6 @@ enum {
   MSGPACK_OBJECT_FLOAT32              = 0x0a,
   MSGPACK_OBJECT_FLOAT64              = 0x04,
   MSGPACK_OBJECT_FLOAT                = 0x04,
-#if defined(MSGPACK_USE_LEGACY_NAME_AS_FLOAT)
-  MSGPACK_OBJECT_DOUBLE               = MSGPACK_OBJECT_FLOAT, /* obsolete */
-#endif /* MSGPACK_USE_LEGACY_NAME_AS_FLOAT */
   MSGPACK_OBJECT_STR                  = 0x05,
   MSGPACK_OBJECT_ARRAY                = 0x06,
   MSGPACK_OBJECT_MAP                  = 0x07,
@@ -40,9 +37,6 @@ enum object_type {
   FLOAT32             = MSGPACK_OBJECT_FLOAT32,
   FLOAT64             = MSGPACK_OBJECT_FLOAT64,
   FLOAT               = MSGPACK_OBJECT_FLOAT,
-#if defined(MSGPACK_USE_LEGACY_NAME_AS_FLOAT)
-  DOUBLE              = MSGPACK_DEPRECATED("please use FLOAT64 instead") MSGPACK_OBJECT_DOUBLE, // obsolete
-#endif // MSGPACK_USE_LEGACY_NAME_AS_FLOAT
   STR                 = MSGPACK_OBJECT_STR,
   BIN                 = MSGPACK_OBJECT_BIN,
   ARRAY               = MSGPACK_OBJECT_ARRAY,
@@ -100,10 +94,6 @@ struct object {
         bool boolean;
         uint64_t u64;
         int64_t  i64;
-#if defined(MSGPACK_USE_LEGACY_NAME_AS_FLOAT)
-        MSGPACK_DEPRECATED("please use f64 instead")
-        double   dec; // obsolete
-#endif // MSGPACK_USE_LEGACY_NAME_AS_FLOAT
         double   f64;
         msgpack::object_array array;
         msgpack::object_map map;
