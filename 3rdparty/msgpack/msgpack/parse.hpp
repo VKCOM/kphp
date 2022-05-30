@@ -11,10 +11,11 @@
 #define MSGPACK_V2_PARSE_HPP
 
 #include <cstddef>
+#include <vector>
 
 #include "msgpack/parse_return.hpp"
-#include "msgpack/v2/unpack_exception.hpp"
-#include "msgpack/v2/unpack_decl.hpp"
+#include "msgpack/unpack_exception.hpp"
+#include "msgpack/unpack_decl.hpp"
 
 namespace msgpack {
 
