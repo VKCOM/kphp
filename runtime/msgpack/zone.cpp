@@ -10,15 +10,14 @@
 
 #include "runtime/msgpack/zone.h"
 
-#include <cstdlib>
 #include <memory>
 
 namespace msgpack {
 
 zone::chunk_list::chunk_list(size_t chunk_size) {
-  chunk *c = static_cast<chunk *>(::malloc(sizeof(chunk) + chunk_size));
+  auto *c = static_cast<chunk *>(::malloc(sizeof(chunk) + chunk_size));
   if (!c) {
-    throw std::bad_alloc();
+    throw std::bad_alloc{};
   }
 
   m_head = c;
@@ -36,11 +35,11 @@ zone::chunk_list::~chunk_list() {
   }
 }
 
-zone::zone(size_t chunk_size) noexcept
+zone::zone(size_t chunk_size)
   : m_chunk_size(chunk_size)
   , m_chunk_list(m_chunk_size) {}
 
-char *zone::get_aligned(char *ptr, size_t align) {
+static char *get_aligned(const char *ptr, size_t align) noexcept {
   return reinterpret_cast<char *>(reinterpret_cast<size_t>((ptr + (align - 1))) / align * align);
 }
 
@@ -72,9 +71,10 @@ char *zone::allocate_expand(size_t size) {
     sz = tmp_sz;
   }
 
-  chunk *c = static_cast<chunk *>(::malloc(sizeof(chunk) + sz));
-  if (!c)
-    throw std::bad_alloc();
+  auto *c = static_cast<chunk *>(::malloc(sizeof(chunk) + sz));
+  if (!c) {
+    throw std::bad_alloc{};
+  }
 
   char *ptr = reinterpret_cast<char *>(c) + sizeof(chunk);
 
@@ -84,18 +84,6 @@ char *zone::allocate_expand(size_t size) {
   cl->m_ptr = ptr;
 
   return ptr;
-}
-
-void *zone::operator new(std::size_t size) {
-  void *p = ::malloc(size);
-  if (!p) {
-    throw std::bad_alloc();
-  }
-  return p;
-}
-
-void zone::operator delete(void *p) noexcept {
-  ::free(p);
 }
 
 } // namespace msgpack

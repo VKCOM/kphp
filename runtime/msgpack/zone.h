@@ -16,6 +16,10 @@
 namespace msgpack {
 
 class zone : private vk::not_copyable {
+public:
+  explicit zone(size_t chunk_size = 8192);
+  void *allocate_align(size_t size, size_t align);
+
 private:
   struct chunk {
     chunk *m_next{nullptr};
@@ -29,22 +33,10 @@ private:
     chunk *m_head{nullptr};
   };
 
+  char *allocate_expand(size_t size);
+
   size_t m_chunk_size{0};
   chunk_list m_chunk_list;
-
-public:
-  explicit zone(size_t chunk_size = 8192) noexcept;
-
-  void *allocate_align(size_t size, size_t align);
-
-  static void *operator new(std::size_t size);
-  static void operator delete(void *p) noexcept;
-  static void *operator new(std::size_t /*size*/, void *mem) noexcept { return mem; }
-  static void operator delete(void * /*p*/, void * /*mem*/) noexcept {}
-
-private:
-  static char *get_aligned(char *ptr, size_t align);
-  char *allocate_expand(size_t size);
 };
 
 } // namespace msgpack
