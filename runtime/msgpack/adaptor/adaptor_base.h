@@ -9,7 +9,8 @@
 //
 #pragma once
 
-#include "runtime/msgpack/adaptor/adaptor_base_decl.h"
+#include "runtime/msgpack/object_fwd.h"
+#include "runtime/msgpack/pack.h"
 
 namespace msgpack {
 
@@ -17,29 +18,17 @@ namespace adaptor {
 
 // Adaptor functors
 
-template <typename T, typename Enabler>
+template <typename T, typename Enabler = void>
 struct convert {
     msgpack::object const& operator()(msgpack::object const& o, T& v) const;
 };
 
-template <typename T, typename Enabler>
+template <typename T, typename Enabler = void>
 struct pack {
     template <typename Stream>
     msgpack::packer<Stream>& operator()(msgpack::packer<Stream>& o, T const& v) const;
 };
 
 } // namespace adaptor
-
-// operators
-
-template <typename T>
-inline msgpack::object const& operator>> (msgpack::object const& o, T& v) {
-    return msgpack::adaptor::convert<T>()(o, v);
-}
-
-template <typename Stream, typename T>
-inline msgpack::packer<Stream>& operator<< (msgpack::packer<Stream>& o, T const& v) {
-    return msgpack::adaptor::pack<T>()(o, v);
-}
 
 } // namespace msgpack

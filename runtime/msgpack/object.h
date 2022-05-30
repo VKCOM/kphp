@@ -119,18 +119,15 @@ adaptor::pack<T, Enabler>::operator()(msgpack::packer<Stream>& o, T const& v) co
 
 template <typename Stream>
 template <typename T>
-inline msgpack::packer<Stream>& packer<Stream>::pack(const T& v)
-{
-    msgpack::operator<<(*this, v);
-    return *this;
+inline msgpack::packer<Stream>& packer<Stream>::pack(const T& v) {
+    return adaptor::pack<T>{}(*this, v);
 }
 
 template <typename T>
 inline std::enable_if_t<!std::is_array_v<T> && !std::is_pointer_v<T>, T&>
-object::convert(T& v) const
-{
-    msgpack::operator>>(*this, v);
-    return v;
+object::convert(T& v) const {
+  adaptor::convert<T>{}(*this, v);
+  return v;
 }
 
 template <typename T>

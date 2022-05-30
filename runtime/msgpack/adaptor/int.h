@@ -9,7 +9,7 @@
 //
 #pragma once
 
-#include "runtime/msgpack/adaptor/int_decl.h"
+#include "runtime/msgpack/adaptor/adaptor_base.h"
 #include "runtime/msgpack/object.h"
 
 #include <limits>
@@ -18,6 +18,9 @@ namespace msgpack {
 
 namespace type {
 namespace detail {
+
+template <typename T, bool Signed>
+struct convert_integer_sign;
 
 template <typename T>
 struct convert_integer_sign<T, true> {
@@ -57,6 +60,9 @@ inline T convert_integer(msgpack::object const& o)
 {
     return detail::convert_integer_sign<T, is_signed<T>::value>::convert(o);
 }
+
+template <bool Signed>
+struct object_char_sign;
 
 template <>
 struct object_char_sign<true> {
