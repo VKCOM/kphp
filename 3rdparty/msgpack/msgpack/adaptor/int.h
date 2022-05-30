@@ -9,8 +9,8 @@
 //
 #pragma once
 
-#include "msgpack/adaptor/int_decl.hpp"
-#include "msgpack/object.hpp"
+#include "msgpack/adaptor/int_decl.h"
+#include "msgpack/object.h"
 
 #include <limits>
 

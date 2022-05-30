@@ -9,7 +9,7 @@
 //
 #pragma once
 
-#include "msgpack/adaptor/adaptor_base.hpp"
+#include "msgpack/adaptor/adaptor_base.h"
 
 namespace msgpack {
 

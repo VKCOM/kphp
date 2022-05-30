@@ -12,9 +12,9 @@
 #include <cstddef>
 #include <vector>
 
-#include "msgpack/parse_return.hpp"
-#include "msgpack/unpack_exception.hpp"
-#include "msgpack/unpack_decl.hpp"
+#include "msgpack/parse_return.h"
+#include "msgpack/unpack_exception.h"
+#include "msgpack/unpack_decl.h"
 
 namespace msgpack {
 

@@ -9,8 +9,7 @@
 //
 #pragma once
 
-#include "msgpack/object_fwd.hpp"
-#include <vector>
+#include "msgpack/object_fwd.h"
 
 namespace msgpack {
 

@@ -9,7 +9,7 @@
 //
 #pragma once
 
-#include "msgpack/unpack_decl.hpp"
+#include "msgpack/unpack_decl.h"
 
 namespace msgpack {
 

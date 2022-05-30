@@ -9,8 +9,8 @@
 //
 #pragma once
 
-#include "msgpack/adaptor/adaptor_base.hpp"
-#include "msgpack/object_fwd.hpp"
+#include "msgpack/adaptor/adaptor_base.h"
+#include "msgpack/object_fwd.h"
 
 #include <cstring>
 #include <cassert>

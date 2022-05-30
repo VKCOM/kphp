@@ -10,8 +10,8 @@
 #pragma once
 
 #include <memory>
-#include "msgpack/parse.hpp"
-#include "msgpack/create_object_visitor.hpp"
+#include "msgpack/parse.h"
+#include "msgpack/create_object_visitor.h"
 
 namespace msgpack {
 
