@@ -9,7 +9,7 @@
 //
 #pragma once
 
-#include "msgpack/pack_decl.h"
+#include "runtime/msgpack/pack_decl.h"
 
 #include <stdexcept>
 #include <limits>

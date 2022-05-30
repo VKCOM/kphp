@@ -10,6 +10,10 @@
 
 #pragma once
 
+#include <cstdint>
+#include <type_traits>
+#include <stdexcept>
+
 namespace msgpack {
 namespace type {
 enum object_type {

@@ -276,7 +276,6 @@ void CompilerSettings::init() {
   std::stringstream ss;
   ss << extra_cxx_flags.get();
   ss << " -iquote" << kphp_src_path.get()
-     << " -iquote " << kphp_src_path.get() << "3rdparty/msgpack"
      << " -iquote " << kphp_src_path.get() << "objs/generated/auto/runtime";
   ss << " -Wall -fwrapv -Wno-parentheses -Wno-trigraphs";
   ss << " -fno-strict-aliasing -fno-omit-frame-pointer";

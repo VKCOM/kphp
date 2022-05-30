@@ -4,7 +4,9 @@
 
 #pragma once
 
-#include "msgpack.h"
+#include "msgpack/type.h"
+#include "msgpack/pack.h"
+#include "msgpack/unpack.h"
 
 #include "common/containers/final_action.h"
 

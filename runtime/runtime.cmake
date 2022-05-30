@@ -100,7 +100,7 @@ allow_deprecated_declarations(${BASE_DIR}/runtime/allocator.cpp ${BASE_DIR}/runt
 allow_deprecated_declarations_for_apple(${BASE_DIR}/runtime/inter-process-mutex.cpp)
 
 vk_add_library(kphp_runtime OBJECT ${KPHP_RUNTIME_ALL_SOURCES})
-target_include_directories(kphp_runtime PUBLIC ${BASE_DIR} ${BASE_DIR}/3rdparty/msgpack /opt/curl7600/include)
+target_include_directories(kphp_runtime PUBLIC ${BASE_DIR} /opt/curl7600/include)
 
 add_dependencies(kphp_runtime kphp-timelib)
 
@@ -135,7 +135,7 @@ file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/php_lib_version.cpp
 ]])
 
 add_library(php_lib_version_j OBJECT ${CMAKE_CURRENT_BINARY_DIR}/php_lib_version.cpp)
-target_compile_options(php_lib_version_j PRIVATE -I. -I/${BASE_DIR}/3rdparty/msgpack -E)
+target_compile_options(php_lib_version_j PRIVATE -I. -E)
 add_dependencies(php_lib_version_j kphp-full-runtime)
 
 add_custom_command(OUTPUT ${OBJS_DIR}/php_lib_version.sha256
