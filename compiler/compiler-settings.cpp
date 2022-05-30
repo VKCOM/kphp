@@ -130,9 +130,6 @@ void append_curl(std::string &cxx_flags, std::string &ld_flags) noexcept {
 #if defined(__APPLE__)
     static_cast<void>(cxx_flags);
     ld_flags += " -lcurl";
-#elif defined(__aarch64__)
-    static_cast<void>(cxx_flags);
-    ld_flags += " -lcurl";
 #else
     // TODO make it as an option?
     const std::string curl_dir = "/opt/curl7600";
