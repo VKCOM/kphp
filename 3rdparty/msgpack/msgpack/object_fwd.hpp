@@ -139,10 +139,7 @@ struct object {
      * @return The reference of `v`.
      */
     template <typename T>
-    typename msgpack::enable_if<
-        !msgpack::is_array<T>::value && !msgpack::is_pointer<T>::value,
-        T&
-    >::type
+    std::enable_if_t<!std::is_array_v<T> && !std::is_pointer_v<T>, T&>
     convert(T& v) const;
 };
 

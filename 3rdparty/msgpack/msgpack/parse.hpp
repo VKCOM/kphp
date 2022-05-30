@@ -39,27 +39,27 @@ struct value<fix_tag> {
 };
 
 template <typename T>
-inline typename msgpack::enable_if<sizeof(T) == sizeof(fix_tag)>::type load(uint32_t& dst, const char* n) {
+inline typename std::enable_if<sizeof(T) == sizeof(fix_tag)>::type load(uint32_t& dst, const char* n) {
   dst = static_cast<uint32_t>(*reinterpret_cast<const uint8_t*>(n)) & 0x0f;
 }
 
 template <typename T>
-inline typename msgpack::enable_if<sizeof(T) == 1>::type load(T& dst, const char* n) {
+inline typename std::enable_if<sizeof(T) == 1>::type load(T& dst, const char* n) {
   dst = static_cast<T>(*reinterpret_cast<const uint8_t*>(n));
 }
 
 template <typename T>
-inline typename msgpack::enable_if<sizeof(T) == 2>::type load(T& dst, const char* n) {
+inline typename std::enable_if<sizeof(T) == 2>::type load(T& dst, const char* n) {
   _msgpack_load16(T, n, &dst);
 }
 
 template <typename T>
-inline typename msgpack::enable_if<sizeof(T) == 4>::type load(T& dst, const char* n) {
+inline typename std::enable_if<sizeof(T) == 4>::type load(T& dst, const char* n) {
   _msgpack_load32(T, n, &dst);
 }
 
 template <typename T>
-inline typename msgpack::enable_if<sizeof(T) == 8>::type load(T& dst, const char* n) {
+inline typename std::enable_if<sizeof(T) == 8>::type load(T& dst, const char* n) {
   _msgpack_load64(T, n, &dst);
 }
 
@@ -325,7 +325,7 @@ inline parse_return context<VisitorHolder>::execute(const char* data, std::size_
     m_start = data;
     m_current = data + off;
     const char* const pe = data + len;
-    const char* n = MSGPACK_NULLPTR;
+    const char* n = nullptr;
 
     msgpack::object obj;
 

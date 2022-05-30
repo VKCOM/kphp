@@ -11,7 +11,6 @@
 #define MSGPACK_V1_PACK_DECL_HPP
 
 #include "msgpack/versioning.hpp"
-#include "msgpack/cpp_config.hpp"
 #include "msgpack/sysdep.h"
 
 namespace msgpack {

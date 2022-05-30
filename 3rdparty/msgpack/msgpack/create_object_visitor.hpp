@@ -122,7 +122,7 @@ public:
         obj->type = msgpack::type::ARRAY;
         obj->via.array.size = num_elements;
         if (num_elements == 0) {
-            obj->via.array.ptr = MSGPACK_NULLPTR;
+            obj->via.array.ptr = nullptr;
         }
         else {
             size_t size = num_elements*sizeof(msgpack::object);
@@ -153,7 +153,7 @@ public:
         obj->type = msgpack::type::MAP;
         obj->via.map.size = num_kv_pairs;
         if (num_kv_pairs == 0) {
-            obj->via.map.ptr = MSGPACK_NULLPTR;
+            obj->via.map.ptr = nullptr;
         }
         else {
             size_t size = num_kv_pairs*sizeof(msgpack::object_kv);

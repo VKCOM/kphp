@@ -16,8 +16,6 @@
 #include <memory>
 #include <vector>
 
-#include "msgpack/cpp_config.hpp"
-
 #ifndef MSGPACK_ZONE_CHUNK_SIZE
 #define MSGPACK_ZONE_CHUNK_SIZE 8192
 #endif

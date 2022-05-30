@@ -66,7 +66,7 @@ inline T convert_integer(msgpack::object const& o)
 template <>
 struct object_char_sign<true> {
     template <typename T>
-    static typename msgpack::enable_if<msgpack::is_same<T, char>::value>::type
+    static typename std::enable_if<std::is_same<T, char>::value>::type
     make(msgpack::object& o, T v) {
         if (v < 0) {
             o.type = msgpack::type::NEGATIVE_INTEGER;

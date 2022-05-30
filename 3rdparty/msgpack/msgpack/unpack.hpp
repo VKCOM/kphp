@@ -10,6 +10,7 @@
 #ifndef MSGPACK_V2_UNPACK_HPP
 #define MSGPACK_V2_UNPACK_HPP
 
+#include <memory>
 #include "msgpack/parse.hpp"
 #include "msgpack/create_object_visitor.hpp"
 
@@ -42,15 +43,14 @@ inline msgpack::object_handle unpack(
 )
 {
   msgpack::object obj;
-  msgpack::unique_ptr<msgpack::zone> z(new msgpack::zone);
-  parse_return ret = detail::unpack_imp(
-    data, len, off, *z, obj, limit);
+  auto z = std::make_unique<msgpack::zone>();
+  parse_return ret = detail::unpack_imp(data, len, off, *z, obj, limit);
 
   switch(ret) {
     case msgpack::PARSE_SUCCESS:
-      return msgpack::object_handle(obj, msgpack::move(z));
+      return msgpack::object_handle(obj, std::move(z));
     case msgpack::PARSE_EXTRA_BYTES:
-      return msgpack::object_handle(obj, msgpack::move(z));
+      return msgpack::object_handle(obj, std::move(z));
     default:
       break;
   }

@@ -11,12 +11,10 @@
 #define MSGPACK_CPP11_ZONE_HPP
 
 #include "msgpack/versioning.hpp"
-#include "msgpack/cpp_config.hpp"
 #include "msgpack/zone_decl.hpp"
 
 #include <cstdlib>
 #include <memory>
-#include <vector>
 
 namespace msgpack {
 
@@ -33,7 +31,7 @@ private:
         void* m_data;
     };
     struct finalizer_array {
-        finalizer_array():m_tail(MSGPACK_NULLPTR), m_end(MSGPACK_NULLPTR), m_array(MSGPACK_NULLPTR) {}
+        finalizer_array():m_tail(nullptr), m_end(nullptr), m_array(nullptr) {}
         void call() {
             finalizer* fin = m_tail;
             for(; fin != m_array; --fin) (*(fin-1))();
@@ -84,9 +82,9 @@ private:
         finalizer_array(finalizer_array&& other) noexcept
             :m_tail(other.m_tail), m_end(other.m_end), m_array(other.m_array)
         {
-            other.m_tail = MSGPACK_NULLPTR;
-            other.m_end = MSGPACK_NULLPTR;
-            other.m_array = MSGPACK_NULLPTR;
+            other.m_tail = nullptr;
+            other.m_end = nullptr;
+            other.m_array = nullptr;
         }
         finalizer_array& operator=(finalizer_array&& other) noexcept
         {
@@ -117,7 +115,7 @@ private:
             m_head = c;
             m_free = chunk_size;
             m_ptr  = reinterpret_cast<char*>(c) + sizeof(chunk);
-            c->m_next = MSGPACK_NULLPTR;
+            c->m_next = nullptr;
         }
         ~chunk_list()
         {
@@ -141,14 +139,14 @@ private:
                     break;
                 }
             }
-            m_head->m_next = MSGPACK_NULLPTR;
+            m_head->m_next = nullptr;
             m_free = chunk_size;
             m_ptr  = reinterpret_cast<char*>(m_head) + sizeof(chunk);
         }
         chunk_list(chunk_list&& other) noexcept
             :m_free(other.m_free), m_ptr(other.m_ptr), m_head(other.m_head)
         {
-            other.m_head = MSGPACK_NULLPTR;
+            other.m_head = nullptr;
         }
         chunk_list& operator=(chunk_list&& other) noexcept
         {
@@ -178,7 +176,7 @@ public:
     void push_finalizer(void (*func)(void*), void* data);
 
     template <typename T>
-    void push_finalizer(msgpack::unique_ptr<T> obj);
+    void push_finalizer(std::unique_ptr<T> obj);
 
     void clear();
 
@@ -297,7 +295,7 @@ inline void zone::push_finalizer(void (*func)(void*), void* data)
 }
 
 template <typename T>
-inline void zone::push_finalizer(msgpack::unique_ptr<T> obj)
+inline void zone::push_finalizer(std::unique_ptr<T> obj)
 {
     m_finalizer_array.push(&zone::object_delete<T>, obj.release());
 }

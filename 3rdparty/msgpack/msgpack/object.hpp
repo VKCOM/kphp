@@ -21,6 +21,7 @@
 #include <ostream>
 #include <typeinfo>
 #include <iomanip>
+#include <memory>
 
 namespace msgpack {
 
@@ -46,9 +47,9 @@ public:
      */
     object_handle(
         msgpack::object const& obj,
-        msgpack::unique_ptr<msgpack::zone>&& z
+        std::unique_ptr<msgpack::zone>&& z
     ) :
-        m_obj(obj), m_zone(msgpack::move(z)) { }
+        m_obj(obj), m_zone(std::move(z)) { }
 
     void set(msgpack::object const& obj)
         { m_obj = obj; }
@@ -76,19 +77,19 @@ public:
     /**
      * @return unique_ptr reference of zone
      */
-    msgpack::unique_ptr<msgpack::zone>& zone()
+    std::unique_ptr<msgpack::zone>& zone()
         { return m_zone; }
 
     /// Get unique_ptr const reference of zone.
     /**
      * @return unique_ptr const reference of zone
      */
-    const msgpack::unique_ptr<msgpack::zone>& zone() const
+    const std::unique_ptr<msgpack::zone>& zone() const
         { return m_zone; }
 
 private:
     msgpack::object m_obj;
-    msgpack::unique_ptr<msgpack::zone> m_zone;
+    std::unique_ptr<msgpack::zone> m_zone;
 };
 
 namespace detail {
@@ -129,11 +130,7 @@ inline msgpack::packer<Stream>& packer<Stream>::pack(const T& v)
 }
 
 template <typename T>
-inline
-typename msgpack::enable_if<
-    !msgpack::is_array<T>::value && !msgpack::is_pointer<T>::value,
-    T&
->::type
+inline std::enable_if_t<!std::is_array_v<T> && !std::is_pointer_v<T>, T&>
 object::convert(T& v) const
 {
     msgpack::operator>>(*this, v);
