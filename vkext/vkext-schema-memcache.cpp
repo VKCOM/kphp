@@ -417,8 +417,7 @@ int get_full_tree_type_name(char *dst, struct tl_tree_type *tree, const char *co
       // 1) Optional<T::PhpType> -- Maybe_T::PhpType
       // 2) T::PhpType          -- T::PhpType
       struct tl_tree_type *child = (struct tl_tree_type *)tree->children[0];
-      if (is_php_array(child->type) || cur_type->name == TL_INT || cur_type->name == TL_DOUBLE || cur_type->name == TL_FLOAT || cur_type->name == TL_STRING
-                                    || cur_type->name == TL_LONG) {
+      if (is_php_array(child->type) || vk::any_of_equal(child->type->name, TL_INT, TL_DOUBLE, TL_FLOAT, TL_STRING, TL_LONG)) {
         // php_field_type::t_int    || php_field_type::t_double
         // php_field_type::t_string || php_field_type::t_array
         dst += make_tl_class_name(dst, "", "maybe", "", '\0');

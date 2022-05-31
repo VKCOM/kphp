@@ -177,7 +177,10 @@ static zend_always_inline zend_class_entry *vk_get_class(const char *class_name)
   zend_string *zend_str_class_name = zend_string_init(class_name, strlen(class_name), 0);
   zend_class_entry *res_class_entry = zend_lookup_class(zend_str_class_name);
   zend_string_release(zend_str_class_name);
-  assert(res_class_entry);
+  if (!res_class_entry) {
+    fprintf(stderr, "Class '%s' not found\n", class_name);
+    assert(res_class_entry);
+  }
   return res_class_entry;
 }
 
