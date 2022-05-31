@@ -18,19 +18,17 @@
 
 namespace msgpack {
 
-namespace detail {
-
 struct fix_tag {
   char f1[65]; // FIXME unique size is required. or use is_same meta function.
 };
 
 template<typename T>
 struct value {
-  typedef T type;
+  using type = T;
 };
 template<>
 struct value<fix_tag> {
-  typedef uint32_t type;
+  using type = uint32_t;
 };
 
 template<typename T>
@@ -58,7 +56,7 @@ inline typename std::enable_if<sizeof(T) == 8>::type load(T &dst, const char *n)
   _msgpack_load64(T, n, &dst);
 }
 
-typedef enum {
+enum {
   MSGPACK_CS_HEADER = 0x00, // nil
 
   // MSGPACK_CS_                = 0x01,
@@ -103,14 +101,14 @@ typedef enum {
   MSGPACK_ACS_STR_VALUE,
   MSGPACK_ACS_BIN_VALUE,
   MSGPACK_ACS_EXT_VALUE
-} msgpack_unpack_state;
+};
 
-typedef enum { MSGPACK_CT_ARRAY_ITEM, MSGPACK_CT_MAP_KEY, MSGPACK_CT_MAP_VALUE } msgpack_container_type;
+enum msgpack_container_type { MSGPACK_CT_ARRAY_ITEM, MSGPACK_CT_MAP_KEY, MSGPACK_CT_MAP_VALUE };
 
 template<typename Visitor>
-class context {
+class parser {
 public:
-  explicit context(Visitor &visitor) noexcept
+  explicit parser(Visitor &visitor) noexcept
     : visitor_(visitor) {}
 
   parse_return execute(const char *data, std::size_t len, std::size_t &off);
@@ -314,7 +312,7 @@ inline void check_ext_size<4>(std::size_t size) {
 }
 
 template<typename Visitor>
-inline parse_return context<Visitor>::execute(const char *data, std::size_t len, std::size_t &off) {
+inline parse_return parser<Visitor>::execute(const char *data, std::size_t len, std::size_t &off) {
   assert(len >= off);
 
   m_start = data;
@@ -735,10 +733,6 @@ inline parse_return context<Visitor>::execute(const char *data, std::size_t len,
   return PARSE_CONTINUE;
 }
 
-} // namespace detail
-
-namespace detail {
-
 template<typename Visitor>
 inline parse_return parse_imp(const char *data, size_t len, size_t &off, Visitor &v) {
   std::size_t noff = off;
@@ -748,7 +742,7 @@ inline parse_return parse_imp(const char *data, size_t len, size_t &off, Visitor
     v.insufficient_bytes(noff, noff);
     return PARSE_CONTINUE;
   }
-  detail::context h{v};
+  parser h{v};
   parse_return ret = h.execute(data, len, noff);
   switch (ret) {
     case PARSE_CONTINUE:
@@ -765,7 +759,5 @@ inline parse_return parse_imp(const char *data, size_t len, size_t &off, Visitor
       return ret;
   }
 }
-
-} // namespace detail
 
 } // namespace msgpack
