@@ -161,20 +161,20 @@ private:
 
 struct unpack_stack {
   struct stack_elem {
-    stack_elem(msgpack_container_type type, uint32_t rest)
+    stack_elem(msgpack_container_type type, uint32_t rest) noexcept
       : m_type(type)
       , m_rest(rest) {}
     msgpack_container_type m_type;
     uint32_t m_rest;
   };
 
-  unpack_stack() {
+  unpack_stack() noexcept {
     m_stack.reserve(MSGPACK_EMBED_STACK_SIZE);
   }
 
   template<typename Visitor>
   parse_return push(Visitor &visitor, msgpack_container_type type, uint32_t rest) {
-    m_stack.push_back(stack_elem(type, rest));
+    m_stack.emplace_back(type, rest);
     switch (type) {
       case MSGPACK_CT_ARRAY_ITEM:
         return visitor.start_array_item() ? PARSE_CONTINUE : PARSE_STOP_VISITOR;
@@ -230,14 +230,6 @@ struct unpack_stack {
       }
     }
     return PARSE_SUCCESS;
-  }
-
-  bool empty() const noexcept {
-    return m_stack.empty();
-  }
-
-  void clear() noexcept {
-    m_stack.clear();
   }
 
 private:
