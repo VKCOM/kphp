@@ -10,14 +10,15 @@
 #pragma once
 
 #include <memory>
+
 #include "runtime/msgpack/parse.h"
-#include "runtime/msgpack/create_object_visitor.h"
+#include "runtime/msgpack/object_visitor.h"
 
 namespace msgpack {
 
 inline msgpack::object_handle unpack(const char* data, std::size_t len, std::size_t& off) {
   auto z = std::make_unique<msgpack::zone>();
-  create_object_visitor visitor{*z};
+  object_visitor visitor{*z};
   parse_return ret = detail::parse_imp(data, len, off, visitor);
 
   switch(ret) {
