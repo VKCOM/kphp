@@ -19,10 +19,9 @@ namespace detail {
 
 inline parse_return
 unpack_imp(const char* data, std::size_t len, std::size_t& off,
-           msgpack::zone& result_zone, msgpack::object& result,
-           unpack_limit const& limit = unpack_limit())
+           msgpack::zone& result_zone, msgpack::object& result)
 {
-    create_object_visitor v{limit};
+    create_object_visitor v;
     v.set_zone(result_zone);
     parse_return ret = parse_imp(data, len, off, v);
     result = v.data();
@@ -31,14 +30,10 @@ unpack_imp(const char* data, std::size_t len, std::size_t& off,
 
 } // namespace detail
 
-inline msgpack::object_handle unpack(
-  const char* data, std::size_t len, std::size_t& off,
-  msgpack::unpack_limit const& limit
-)
-{
+inline msgpack::object_handle unpack(const char* data, std::size_t len, std::size_t& off) {
   msgpack::object obj;
   auto z = std::make_unique<msgpack::zone>();
-  parse_return ret = detail::unpack_imp(data, len, off, *z, obj, limit);
+  parse_return ret = detail::unpack_imp(data, len, off, *z, obj);
 
   switch(ret) {
     case msgpack::PARSE_SUCCESS:

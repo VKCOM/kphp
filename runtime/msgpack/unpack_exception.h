@@ -37,19 +37,7 @@ struct map_size_overflow : public size_overflow {
   using size_overflow::size_overflow;
 };
 
-struct str_size_overflow : public size_overflow {
-  using size_overflow::size_overflow;
-};
-
-struct bin_size_overflow : public size_overflow {
-  using size_overflow::size_overflow;
-};
-
 struct ext_size_overflow : public size_overflow {
-  using size_overflow::size_overflow;
-};
-
-struct depth_size_overflow : public size_overflow {
   using size_overflow::size_overflow;
 };
 

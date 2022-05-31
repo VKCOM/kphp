@@ -17,8 +17,7 @@ namespace detail {
 
 class create_object_visitor {
 public:
-    explicit create_object_visitor(unpack_limit const& limit)
-        :m_limit(limit) {
+    explicit create_object_visitor() noexcept {
         m_stack.reserve(MSGPACK_EMBED_STACK_SIZE);
         m_stack.push_back(&m_obj);
     }
@@ -78,7 +77,6 @@ public:
         return true;
     }
     bool visit_str(const char* v, uint32_t size) {
-        if (size > m_limit.str()) throw msgpack::str_size_overflow("str size overflow");
         msgpack::object* obj = m_stack.back();
         obj->type = msgpack::type::STR;
         char* tmp = static_cast<char*>(zone().allocate_align(size, alignof(char)));
@@ -89,7 +87,6 @@ public:
         return true;
     }
     bool visit_bin(const char* v, uint32_t size) {
-        if (size > m_limit.bin()) throw msgpack::bin_size_overflow("bin size overflow");
         msgpack::object* obj = m_stack.back();
         obj->type = msgpack::type::BIN;
         char* tmp = static_cast<char*>(zone().allocate_align(size, alignof(char)));
@@ -100,7 +97,6 @@ public:
         return true;
     }
     bool visit_ext(const char* v, uint32_t size) {
-        if (size > m_limit.ext()) throw msgpack::ext_size_overflow("ext size overflow");
         msgpack::object* obj = m_stack.back();
         obj->type = msgpack::type::EXT;
         char* tmp = static_cast<char*>(zone().allocate_align(size, alignof(char)));
@@ -111,8 +107,6 @@ public:
         return true;
     }
     bool start_array(uint32_t num_elements) {
-        if (num_elements > m_limit.array()) throw msgpack::array_size_overflow("array size overflow");
-        if (m_stack.size() > m_limit.depth()) throw msgpack::depth_size_overflow("depth size overflow");
         msgpack::object* obj = m_stack.back();
         obj->type = msgpack::type::ARRAY;
         obj->via.array.size = num_elements;
@@ -142,8 +136,6 @@ public:
         return true;
     }
     bool start_map(uint32_t num_kv_pairs) {
-        if (num_kv_pairs > m_limit.map()) throw msgpack::map_size_overflow("map size overflow");
-        if (m_stack.size() > m_limit.depth()) throw msgpack::depth_size_overflow("depth size overflow");
         msgpack::object* obj = m_stack.back();
         obj->type = msgpack::type::MAP;
         obj->via.map.size = num_kv_pairs;
@@ -185,9 +177,8 @@ public:
     void insufficient_bytes(size_t /*parsed_offset*/, size_t /*error_offset*/) {
         throw msgpack::insufficient_bytes("insufficient bytes");
     }
+
 private:
-public:
-    unpack_limit m_limit;
     msgpack::object m_obj;
     std::vector<msgpack::object*> m_stack;
     msgpack::zone* m_zone;
