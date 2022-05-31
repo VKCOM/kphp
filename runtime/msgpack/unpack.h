@@ -11,7 +11,7 @@
 
 #include <memory>
 
-#include "runtime/msgpack/parse.h"
+#include "runtime/msgpack/parser.h"
 #include "runtime/msgpack/object_visitor.h"
 
 namespace msgpack {
