@@ -8,17 +8,21 @@
 //    http://www.boost.org/LICENSE_1_0.txt)
 //
 
+#include <cstring>
+
 #include "runtime/msgpack/object_visitor.h"
 
-#include "runtime/msgpack/unpack_decl.h"
+#include "runtime/msgpack/object.h"
 #include "runtime/msgpack/unpack_exception.h"
 #include "runtime/msgpack/zone.h"
 
 namespace msgpack {
 
+constexpr static std::size_t STACK_SIZE = 32;
+
 object_visitor::object_visitor(msgpack::zone &zone) noexcept
   : m_zone(zone) {
-  m_stack.reserve(MSGPACK_EMBED_STACK_SIZE);
+  m_stack.reserve(STACK_SIZE);
   m_stack.push_back(&m_obj);
 }
 

@@ -11,8 +11,8 @@
 #include <type_traits>
 
 #include "runtime/msgpack/object_visitor.h"
+#include "runtime/msgpack/object.h"
 #include "runtime/msgpack/parser.h"
-#include "runtime/msgpack/unpack_decl.h"
 #include "runtime/msgpack/unpack_exception.h"
 
 namespace msgpack {
@@ -122,7 +122,8 @@ private:
 } // namespace
 
 unpack_stack::unpack_stack() noexcept {
-  m_stack.reserve(MSGPACK_EMBED_STACK_SIZE);
+  constexpr static std::size_t STACK_SIZE = 32;
+  m_stack.reserve(STACK_SIZE);
 }
 
 template<typename Visitor>

@@ -30,64 +30,6 @@ struct object_kv {
     msgpack::object val;
 };
 
-/// The class holds object and zone
-class object_handle {
-public:
-    /// Constructor that creates nil object and null zone.
-    object_handle() {}
-
-    /// Constructor that creates an object_handle holding object `obj` and zone `z`.
-    /**
-     * @param obj object
-     * @param z zone
-     */
-    object_handle(
-        msgpack::object const& obj,
-        std::unique_ptr<msgpack::zone>&& z
-    ) :
-        m_obj(obj), m_zone(std::move(z)) { }
-
-    void set(msgpack::object const& obj)
-        { m_obj = obj; }
-
-    /// Get object reference
-    /**
-     * @return object
-     */
-    const msgpack::object& get() const
-        { return m_obj; }
-
-    /**
-     * @return object (to mimic smart pointers).
-     */
-    const msgpack::object& operator*() const
-        { return get(); }
-
-    /**
-     * @return the address of the object (to mimic smart pointers).
-     */
-    const msgpack::object* operator->() const
-        { return &get(); }
-
-    /// Get unique_ptr reference of zone.
-    /**
-     * @return unique_ptr reference of zone
-     */
-    std::unique_ptr<msgpack::zone>& zone()
-        { return m_zone; }
-
-    /// Get unique_ptr const reference of zone.
-    /**
-     * @return unique_ptr const reference of zone
-     */
-    const std::unique_ptr<msgpack::zone>& zone() const
-        { return m_zone; }
-
-private:
-    msgpack::object m_obj;
-    std::unique_ptr<msgpack::zone> m_zone;
-};
-
 namespace detail {
 template <typename Stream, typename T>
 struct packer_serializer {

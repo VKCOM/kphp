@@ -6,7 +6,7 @@
 
 #include "msgpack/type.h"
 #include "msgpack/pack.h"
-#include "msgpack/unpack.h"
+#include "msgpack/unpacker.h"
 #include "msgpack/unpack_exception.h"
 
 #include "common/containers/final_action.h"
@@ -420,14 +420,11 @@ inline ResultType f$msgpack_deserialize(const string &buffer, string *out_err_ms
   const auto malloc_replacement_guard = make_malloc_replacement_with_script_allocator();
   string err_msg;
   try {
-    size_t off{0};
-    msgpack::object_handle oh = msgpack::unpack(buffer.c_str(), buffer.size(), off);
-    msgpack::object obj = oh.get();
+    msgpack::unpacker unpacker{buffer};
+    msgpack::object obj = unpacker.unpack();
 
-    if (off != buffer.size()) {
-      err_msg.append("Consumed only first ").append(static_cast<int64_t>(off))
-             .append(" characters of ").append(static_cast<int64_t>(buffer.size()))
-             .append(" during deserialization");
+    if (unpacker.has_error()) {
+      err_msg = unpacker.get_error_msg();
     } else {
       return obj.as<ResultType>();
     }
