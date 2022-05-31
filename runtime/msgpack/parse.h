@@ -106,6 +106,145 @@ enum {
 enum msgpack_container_type { MSGPACK_CT_ARRAY_ITEM, MSGPACK_CT_MAP_KEY, MSGPACK_CT_MAP_VALUE };
 
 template<typename Visitor>
+struct array_sv {
+  explicit array_sv(Visitor &visitor) noexcept
+    : visitor_(visitor) {}
+  bool operator()(uint32_t size) const {
+    return visitor_.start_array(size);
+  }
+  msgpack_container_type type() const {
+    return MSGPACK_CT_ARRAY_ITEM;
+  }
+
+private:
+  Visitor &visitor_;
+};
+
+template<typename Visitor>
+struct array_ev {
+  explicit array_ev(Visitor &visitor) noexcept
+    : visitor_(visitor) {}
+  bool operator()() const {
+    return visitor_.end_array();
+  }
+
+private:
+  Visitor &visitor_;
+};
+
+template<typename Visitor>
+struct map_sv {
+  explicit map_sv(Visitor &visitor) noexcept
+    : visitor_(visitor) {}
+  bool operator()(uint32_t size) const {
+    return visitor_.start_map(size);
+  }
+  msgpack_container_type type() const {
+    return MSGPACK_CT_MAP_KEY;
+  }
+
+private:
+  Visitor &visitor_;
+};
+
+template<typename Visitor>
+struct map_ev {
+  explicit map_ev(Visitor &visitor) noexcept
+    : visitor_(visitor) {}
+  bool operator()() const {
+    return visitor_.end_map();
+  }
+
+private:
+  Visitor &visitor_;
+};
+
+struct unpack_stack {
+  struct stack_elem {
+    stack_elem(msgpack_container_type type, uint32_t rest)
+      : m_type(type)
+      , m_rest(rest) {}
+    msgpack_container_type m_type;
+    uint32_t m_rest;
+  };
+
+  unpack_stack() {
+    m_stack.reserve(MSGPACK_EMBED_STACK_SIZE);
+  }
+
+  template<typename Visitor>
+  parse_return push(Visitor &visitor, msgpack_container_type type, uint32_t rest) {
+    m_stack.push_back(stack_elem(type, rest));
+    switch (type) {
+      case MSGPACK_CT_ARRAY_ITEM:
+        return visitor.start_array_item() ? PARSE_CONTINUE : PARSE_STOP_VISITOR;
+      case MSGPACK_CT_MAP_KEY:
+        return visitor.start_map_key() ? PARSE_CONTINUE : PARSE_STOP_VISITOR;
+      case MSGPACK_CT_MAP_VALUE:
+        assert(0);
+        return PARSE_STOP_VISITOR;
+    }
+    assert(0);
+    return PARSE_STOP_VISITOR;
+  }
+
+  template<typename Visitor>
+  parse_return consume(Visitor &visitor) {
+    while (!m_stack.empty()) {
+      stack_elem &e = m_stack.back();
+      switch (e.m_type) {
+        case MSGPACK_CT_ARRAY_ITEM:
+          if (!visitor.end_array_item())
+            return PARSE_STOP_VISITOR;
+          if (--e.m_rest == 0) {
+            m_stack.pop_back();
+            if (!visitor.end_array())
+              return PARSE_STOP_VISITOR;
+          } else {
+            if (!visitor.start_array_item())
+              return PARSE_STOP_VISITOR;
+            return PARSE_CONTINUE;
+          }
+          break;
+        case MSGPACK_CT_MAP_KEY:
+          if (!visitor.end_map_key())
+            return PARSE_STOP_VISITOR;
+          if (!visitor.start_map_value())
+            return PARSE_STOP_VISITOR;
+          e.m_type = MSGPACK_CT_MAP_VALUE;
+          return PARSE_CONTINUE;
+        case MSGPACK_CT_MAP_VALUE:
+          if (!visitor.end_map_value())
+            return PARSE_STOP_VISITOR;
+          if (--e.m_rest == 0) {
+            m_stack.pop_back();
+            if (!visitor.end_map())
+              return PARSE_STOP_VISITOR;
+          } else {
+            e.m_type = MSGPACK_CT_MAP_KEY;
+            if (!visitor.start_map_key())
+              return PARSE_STOP_VISITOR;
+            return PARSE_CONTINUE;
+          }
+          break;
+      }
+    }
+    return PARSE_SUCCESS;
+  }
+
+  bool empty() const noexcept {
+    return m_stack.empty();
+  }
+
+  void clear() noexcept {
+    m_stack.clear();
+  }
+
+private:
+  std::vector<stack_elem> m_stack;
+};
+
+template<typename Visitor>
 class parser {
 public:
   explicit parser(Visitor &visitor) noexcept
@@ -166,131 +305,6 @@ private:
     m_cs = MSGPACK_CS_HEADER;
     return ret;
   }
-
-  struct array_sv {
-    explicit array_sv(Visitor &visitor) noexcept
-      : visitor_(visitor) {}
-    bool operator()(uint32_t size) const {
-      return visitor_.start_array(size);
-    }
-    msgpack_container_type type() const {
-      return MSGPACK_CT_ARRAY_ITEM;
-    }
-
-  private:
-    Visitor &visitor_;
-  };
-  struct array_ev {
-    explicit array_ev(Visitor &visitor) noexcept
-      : visitor_(visitor) {}
-    bool operator()() const {
-      return visitor_.end_array();
-    }
-
-  private:
-    Visitor &visitor_;
-  };
-  struct map_sv {
-    explicit map_sv(Visitor &visitor) noexcept
-      : visitor_(visitor) {}
-    bool operator()(uint32_t size) const {
-      return visitor_.start_map(size);
-    }
-    msgpack_container_type type() const {
-      return MSGPACK_CT_MAP_KEY;
-    }
-
-  private:
-    Visitor &visitor_;
-  };
-  struct map_ev {
-    explicit map_ev(Visitor &visitor) noexcept
-      : visitor_(visitor) {}
-    bool operator()() const {
-      return visitor_.end_map();
-    }
-
-  private:
-    Visitor &visitor_;
-  };
-
-  struct unpack_stack {
-    struct stack_elem {
-      stack_elem(msgpack_container_type type, uint32_t rest)
-        : m_type(type)
-        , m_rest(rest) {}
-      msgpack_container_type m_type;
-      uint32_t m_rest;
-    };
-    unpack_stack() {
-      m_stack.reserve(MSGPACK_EMBED_STACK_SIZE);
-    }
-    parse_return push(Visitor &visitor, msgpack_container_type type, uint32_t rest) {
-      m_stack.push_back(stack_elem(type, rest));
-      switch (type) {
-        case MSGPACK_CT_ARRAY_ITEM:
-          return visitor.start_array_item() ? PARSE_CONTINUE : PARSE_STOP_VISITOR;
-        case MSGPACK_CT_MAP_KEY:
-          return visitor.start_map_key() ? PARSE_CONTINUE : PARSE_STOP_VISITOR;
-        case MSGPACK_CT_MAP_VALUE:
-          assert(0);
-          return PARSE_STOP_VISITOR;
-      }
-      assert(0);
-      return PARSE_STOP_VISITOR;
-    }
-    parse_return consume(Visitor &visitor) {
-      while (!m_stack.empty()) {
-        stack_elem &e = m_stack.back();
-        switch (e.m_type) {
-          case MSGPACK_CT_ARRAY_ITEM:
-            if (!visitor.end_array_item())
-              return PARSE_STOP_VISITOR;
-            if (--e.m_rest == 0) {
-              m_stack.pop_back();
-              if (!visitor.end_array())
-                return PARSE_STOP_VISITOR;
-            } else {
-              if (!visitor.start_array_item())
-                return PARSE_STOP_VISITOR;
-              return PARSE_CONTINUE;
-            }
-            break;
-          case MSGPACK_CT_MAP_KEY:
-            if (!visitor.end_map_key())
-              return PARSE_STOP_VISITOR;
-            if (!visitor.start_map_value())
-              return PARSE_STOP_VISITOR;
-            e.m_type = MSGPACK_CT_MAP_VALUE;
-            return PARSE_CONTINUE;
-          case MSGPACK_CT_MAP_VALUE:
-            if (!visitor.end_map_value())
-              return PARSE_STOP_VISITOR;
-            if (--e.m_rest == 0) {
-              m_stack.pop_back();
-              if (!visitor.end_map())
-                return PARSE_STOP_VISITOR;
-            } else {
-              e.m_type = MSGPACK_CT_MAP_KEY;
-              if (!visitor.start_map_key())
-                return PARSE_STOP_VISITOR;
-              return PARSE_CONTINUE;
-            }
-            break;
-        }
-      }
-      return PARSE_SUCCESS;
-    }
-    bool empty() const {
-      return m_stack.empty();
-    }
-    void clear() {
-      m_stack.clear();
-    }
-
-  private:
-    std::vector<stack_elem> m_stack;
-  };
 
   Visitor &visitor_;
 
