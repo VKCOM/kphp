@@ -19,7 +19,7 @@ namespace msgpack {
 inline msgpack::object_handle unpack(const char* data, std::size_t len, std::size_t& off) {
   auto z = std::make_unique<msgpack::zone>();
   object_visitor visitor{*z};
-  parse_return ret = parse_imp(data, len, off, visitor);
+  parse_return ret = parser<object_visitor>::parse(data, len, off, visitor);
 
   switch(ret) {
     case msgpack::PARSE_SUCCESS:

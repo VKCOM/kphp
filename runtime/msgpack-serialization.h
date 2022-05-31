@@ -7,6 +7,7 @@
 #include "msgpack/type.h"
 #include "msgpack/pack.h"
 #include "msgpack/unpack.h"
+#include "msgpack/unpack_exception.h"
 
 #include "common/containers/final_action.h"
 

@@ -8,17 +8,15 @@
 //    http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include <cstddef>
-#include <vector>
+#include <type_traits>
 
 #include "runtime/msgpack/object_visitor.h"
 #include "runtime/msgpack/parser.h"
-#include "runtime/msgpack/parse_return.h"
 #include "runtime/msgpack/unpack_decl.h"
 #include "runtime/msgpack/unpack_exception.h"
 
 namespace msgpack {
-
+namespace {
 struct fix_tag {
   char f1[65]; // FIXME unique size is required. or use is_same meta function.
 };
@@ -27,34 +25,45 @@ template<typename T>
 struct value {
   using type = T;
 };
+
 template<>
 struct value<fix_tag> {
   using type = uint32_t;
 };
 
 template<typename T>
-inline typename std::enable_if<sizeof(T) == sizeof(fix_tag)>::type load(uint32_t &dst, const char *n) {
+std::enable_if_t<sizeof(T) == sizeof(fix_tag)> load(uint32_t &dst, const char *n) noexcept {
   dst = static_cast<uint32_t>(*reinterpret_cast<const uint8_t *>(n)) & 0x0f;
 }
 
 template<typename T>
-inline typename std::enable_if<sizeof(T) == 1>::type load(T &dst, const char *n) {
+std::enable_if_t<sizeof(T) == 1> load(T &dst, const char *n) noexcept {
   dst = static_cast<T>(*reinterpret_cast<const uint8_t *>(n));
 }
 
 template<typename T>
-inline typename std::enable_if<sizeof(T) == 2>::type load(T &dst, const char *n) {
+std::enable_if_t<sizeof(T) == 2> load(T &dst, const char *n) noexcept {
   _msgpack_load16(T, n, &dst);
 }
 
 template<typename T>
-inline typename std::enable_if<sizeof(T) == 4>::type load(T &dst, const char *n) {
+std::enable_if_t<sizeof(T) == 4> load(T &dst, const char *n) noexcept {
   _msgpack_load32(T, n, &dst);
 }
 
 template<typename T>
-inline typename std::enable_if<sizeof(T) == 8>::type load(T &dst, const char *n) {
+std::enable_if_t<sizeof(T) == 8> load(T &dst, const char *n) noexcept {
   _msgpack_load64(T, n, &dst);
+}
+
+template<std::size_t N>
+void check_ext_size(std::size_t /*size*/) {}
+
+template<>
+[[maybe_unused]] void check_ext_size<4>(std::size_t size) {
+  if (size == 0xffffffff) {
+    throw msgpack::ext_size_overflow("ext size overflow");
+  }
 }
 
 template<typename Visitor>
@@ -110,6 +119,11 @@ struct map_ev {
 private:
   Visitor &visitor_;
 };
+} // namespace
+
+unpack_stack::unpack_stack() noexcept {
+  m_stack.reserve(MSGPACK_EMBED_STACK_SIZE);
+}
 
 template<typename Visitor>
 parse_return unpack_stack::push(Visitor &visitor, msgpack_container_type type, uint32_t rest) {
@@ -221,13 +235,10 @@ parse_return parser<Visitor>::after_visit_proc(bool visit_result, std::size_t &o
   return ret;
 }
 
-template<std::size_t N>
-inline void check_ext_size(std::size_t /*size*/) {}
-
-template<>
-inline void check_ext_size<4>(std::size_t size) {
-  if (size == 0xffffffff)
-    throw msgpack::ext_size_overflow("ext size overflow");
+template<typename Visitor>
+template<typename T>
+uint32_t parser<Visitor>::next_cs(T p) noexcept {
+  return static_cast<uint32_t>(*p) & 0x1f;
 }
 
 template<typename Visitor>
@@ -653,7 +664,7 @@ parse_return parser<Visitor>::execute(const char *data, std::size_t len, std::si
 }
 
 template<typename Visitor>
-parse_return parse_imp(const char *data, size_t len, size_t &off, Visitor &v) {
+parse_return parser<Visitor>::parse(const char *data, size_t len, size_t &off, Visitor &v) {
   std::size_t noff = off;
 
   if (len <= noff) {
@@ -679,5 +690,5 @@ parse_return parse_imp(const char *data, size_t len, size_t &off, Visitor &v) {
   }
 }
 
-template parse_return parse_imp<object_visitor>(const char *data, size_t len, size_t &off, object_visitor &v);
+template parse_return parser<object_visitor>::parse(const char *data, size_t len, size_t &off, object_visitor &v);
 } // namespace msgpack

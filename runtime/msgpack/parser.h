@@ -9,12 +9,7 @@
 //
 #pragma once
 
-#include <cstddef>
 #include <vector>
-
-#include "runtime/msgpack/parse_return.h"
-#include "runtime/msgpack/unpack_decl.h"
-#include "runtime/msgpack/unpack_exception.h"
 
 namespace msgpack {
 
@@ -67,18 +62,24 @@ enum {
 
 enum msgpack_container_type { MSGPACK_CT_ARRAY_ITEM, MSGPACK_CT_MAP_KEY, MSGPACK_CT_MAP_VALUE };
 
+enum parse_return {
+  PARSE_SUCCESS              =  2,
+  PARSE_EXTRA_BYTES          =  1,
+  PARSE_CONTINUE             =  0,
+  PARSE_PARSE_ERROR          = -1,
+  PARSE_STOP_VISITOR         = -2
+};
+
 struct unpack_stack {
   struct stack_elem {
     stack_elem(msgpack_container_type type, uint32_t rest) noexcept
       : m_type(type)
       , m_rest(rest) {}
-    msgpack_container_type m_type;
-    uint32_t m_rest;
+    msgpack_container_type m_type{};
+    uint32_t m_rest{0};
   };
 
-  unpack_stack() noexcept {
-    m_stack.reserve(MSGPACK_EMBED_STACK_SIZE);
-  }
+  unpack_stack() noexcept;
 
   template<typename Visitor>
   parse_return push(Visitor &visitor, msgpack_container_type type, uint32_t rest);
@@ -93,16 +94,16 @@ private:
 template<typename Visitor>
 class parser {
 public:
+  static parse_return parse(const char *data, size_t len, size_t &off, Visitor &v);
+
+private:
   explicit parser(Visitor &visitor) noexcept
     : visitor_(visitor) {}
 
   parse_return execute(const char *data, std::size_t len, std::size_t &off);
 
-private:
   template<typename T>
-  static uint32_t next_cs(T p) {
-    return static_cast<uint32_t>(*p) & 0x1f;
-  }
+  static uint32_t next_cs(T p) noexcept;
 
   template<typename T, typename StartVisitor, typename EndVisitor>
   parse_return start_aggregate(const StartVisitor &sv, const EndVisitor &ev, const char *load_pos, std::size_t &off);
@@ -118,8 +119,5 @@ private:
   uint32_t m_cs{MSGPACK_CS_HEADER};
   unpack_stack m_stack;
 };
-
-template<typename Visitor>
-parse_return parse_imp(const char *data, size_t len, size_t &off, Visitor &v);
 
 } // namespace msgpack
