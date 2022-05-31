@@ -9,60 +9,48 @@
 //
 #pragma once
 
-#include <string>
 #include <stdexcept>
-
 
 namespace msgpack {
 
 struct unpack_error : public std::runtime_error {
-    explicit unpack_error(const std::string& msg)
-        :std::runtime_error(msg) {}
+  using std::runtime_error::runtime_error;
 };
 
 struct parse_error : public unpack_error {
-    explicit parse_error(const std::string& msg)
-        :unpack_error(msg) {}
+  using unpack_error::unpack_error;
 };
 
 struct insufficient_bytes : public unpack_error {
-    explicit insufficient_bytes(const std::string& msg)
-        :unpack_error(msg) {}
+  using unpack_error::unpack_error;
 };
 
 struct size_overflow : public unpack_error {
-    explicit size_overflow(const std::string& msg)
-        :unpack_error(msg) {}
+  using unpack_error::unpack_error;
 };
 
 struct array_size_overflow : public size_overflow {
-    array_size_overflow(const std::string& msg)
-        :size_overflow(msg) {}
+  using size_overflow::size_overflow;
 };
 
 struct map_size_overflow : public size_overflow {
-    map_size_overflow(const std::string& msg)
-        :size_overflow(msg) {}
+  using size_overflow::size_overflow;
 };
 
 struct str_size_overflow : public size_overflow {
-    str_size_overflow(const std::string& msg)
-        :size_overflow(msg) {}
+  using size_overflow::size_overflow;
 };
 
 struct bin_size_overflow : public size_overflow {
-    bin_size_overflow(const std::string& msg)
-        :size_overflow(msg) {}
+  using size_overflow::size_overflow;
 };
 
 struct ext_size_overflow : public size_overflow {
-    ext_size_overflow(const std::string& msg)
-        :size_overflow(msg) {}
+  using size_overflow::size_overflow;
 };
 
 struct depth_size_overflow : public size_overflow {
-    depth_size_overflow(const std::string& msg)
-        :size_overflow(msg) {}
+  using size_overflow::size_overflow;
 };
 
-}  // namespace msgpack
+} // namespace msgpack
