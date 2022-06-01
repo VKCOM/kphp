@@ -4,6 +4,8 @@
 
 #include "runtime/msgpack-serialization.h"
 
+#include "msgpack/adaptors.h"
+
 uint32_t serialize_as_float32{0};
 
 namespace msgpack::adaptor {

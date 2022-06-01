@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include "msgpack/type.h"
 #include "msgpack/packer.h"
 #include "msgpack/unpacker.h"
 #include "msgpack/unpack_exception.h"
