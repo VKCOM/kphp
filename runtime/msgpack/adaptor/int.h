@@ -87,16 +87,16 @@ struct convert<signed short> {
 };
 
 template<>
-struct convert<signed int> {
-  void operator()(const msgpack::object &o, signed int &v) const {
-    v = detail::convert_integer<signed int>(o);
+struct convert<int32_t> {
+  void operator()(const msgpack::object &o, int32_t &v) const {
+    v = detail::convert_integer<int32_t>(o);
   }
 };
 
 template<>
-struct convert<signed long> {
-  void operator()(const msgpack::object &o, signed long &v) const {
-    v = detail::convert_integer<signed long>(o);
+struct convert<int64_t> {
+  void operator()(const msgpack::object &o, int64_t &v) const {
+    v = detail::convert_integer<int64_t>(o);
   }
 };
 
@@ -108,9 +108,9 @@ struct convert<signed long long> {
 };
 
 template<>
-struct convert<unsigned char> {
-  void operator()(const msgpack::object &o, unsigned char &v) const {
-    v = detail::convert_integer<unsigned char>(o);
+struct convert<uint8_t> {
+  void operator()(const msgpack::object &o, uint8_t &v) const {
+    v = detail::convert_integer<uint8_t>(o);
   }
 };
 
@@ -122,16 +122,16 @@ struct convert<unsigned short> {
 };
 
 template<>
-struct convert<unsigned int> {
-  void operator()(const msgpack::object &o, unsigned int &v) const {
-    v = detail::convert_integer<unsigned int>(o);
+struct convert<uint32_t> {
+  void operator()(const msgpack::object &o, uint32_t &v) const {
+    v = detail::convert_integer<uint32_t>(o);
   }
 };
 
 template<>
-struct convert<unsigned long> {
-  void operator()(const msgpack::object &o, unsigned long &v) const {
-    v = detail::convert_integer<unsigned long>(o);
+struct convert<uint64_t> {
+  void operator()(const msgpack::object &o, uint64_t &v) const {
+    v = detail::convert_integer<uint64_t>(o);
   }
 };
 
@@ -167,18 +167,18 @@ struct pack<signed short> {
 };
 
 template<>
-struct pack<signed int> {
+struct pack<int32_t> {
   template<typename Stream>
-  void operator()(msgpack::packer<Stream> &o, signed int v) const {
-    o.pack_int(v);
+  void operator()(msgpack::packer<Stream> &o, int32_t v) const {
+    o.pack_int32(v);
   }
 };
 
 template<>
-struct pack<signed long> {
+struct pack<int64_t> {
   template<typename Stream>
-  void operator()(msgpack::packer<Stream> &o, signed long v) const {
-    o.pack_long(v);
+  void operator()(msgpack::packer<Stream> &o, int64_t v) const {
+    o.pack_int64(v);
   }
 };
 
@@ -191,10 +191,10 @@ struct pack<signed long long> {
 };
 
 template<>
-struct pack<unsigned char> {
+struct pack<uint8_t> {
   template<typename Stream>
-  void operator()(msgpack::packer<Stream> &o, unsigned char v) const {
-    o.pack_unsigned_char(v);
+  void operator()(msgpack::packer<Stream> &o, uint8_t v) const {
+    o.pack_uint8(v);
   }
 };
 
@@ -207,18 +207,18 @@ struct pack<unsigned short> {
 };
 
 template<>
-struct pack<unsigned int> {
+struct pack<uint32_t> {
   template<typename Stream>
-  void operator()(msgpack::packer<Stream> &o, unsigned int v) const {
-    o.pack_unsigned_int(v);
+  void operator()(msgpack::packer<Stream> &o, uint32_t v) const {
+    o.pack_uint32(v);
   }
 };
 
 template<>
-struct pack<unsigned long> {
+struct pack<uint64_t> {
   template<typename Stream>
-  void operator()(msgpack::packer<Stream> &o, unsigned long v) const {
-    o.pack_unsigned_long(v);
+  void operator()(msgpack::packer<Stream> &o, uint64_t v) const {
+    o.pack_uint64(v);
   }
 };
 
