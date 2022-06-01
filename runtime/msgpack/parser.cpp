@@ -73,8 +73,8 @@ struct array_sv {
   bool operator()(uint32_t size) const {
     return visitor_.start_array(size);
   }
-  msgpack_container_type type() const {
-    return MSGPACK_CT_ARRAY_ITEM;
+  container_type type() const {
+    return container_type::ARRAY_ITEM;
   }
 
 private:
@@ -100,8 +100,8 @@ struct map_sv {
   bool operator()(uint32_t size) const {
     return visitor_.start_map(size);
   }
-  msgpack_container_type type() const {
-    return MSGPACK_CT_MAP_KEY;
+  container_type type() const {
+    return container_type::MAP_KEY;
   }
 
 private:
@@ -127,14 +127,14 @@ unpack_stack::unpack_stack() noexcept {
 }
 
 template<typename Visitor>
-parse_return unpack_stack::push(Visitor &visitor, msgpack_container_type type, uint32_t rest) {
+parse_return unpack_stack::push(Visitor &visitor, container_type type, uint32_t rest) {
   m_stack.emplace_back(type, rest);
   switch (type) {
-    case MSGPACK_CT_ARRAY_ITEM:
+    case container_type::ARRAY_ITEM:
       return visitor.start_array_item() ? PARSE_CONTINUE : PARSE_STOP_VISITOR;
-    case MSGPACK_CT_MAP_KEY:
+    case container_type::MAP_KEY:
       return visitor.start_map_key() ? PARSE_CONTINUE : PARSE_STOP_VISITOR;
-    case MSGPACK_CT_MAP_VALUE:
+    case container_type::MAP_VALUE:
       assert(0);
       return PARSE_STOP_VISITOR;
   }
@@ -147,7 +147,7 @@ parse_return unpack_stack::consume(Visitor &visitor) {
   while (!m_stack.empty()) {
     stack_elem &e = m_stack.back();
     switch (e.m_type) {
-      case MSGPACK_CT_ARRAY_ITEM:
+      case container_type::ARRAY_ITEM:
         if (!visitor.end_array_item())
           return PARSE_STOP_VISITOR;
         if (--e.m_rest == 0) {
@@ -160,14 +160,14 @@ parse_return unpack_stack::consume(Visitor &visitor) {
           return PARSE_CONTINUE;
         }
         break;
-      case MSGPACK_CT_MAP_KEY:
+      case container_type::MAP_KEY:
         if (!visitor.end_map_key())
           return PARSE_STOP_VISITOR;
         if (!visitor.start_map_value())
           return PARSE_STOP_VISITOR;
-        e.m_type = MSGPACK_CT_MAP_VALUE;
+        e.m_type = container_type::MAP_VALUE;
         return PARSE_CONTINUE;
-      case MSGPACK_CT_MAP_VALUE:
+      case container_type::MAP_VALUE:
         if (!visitor.end_map_value())
           return PARSE_STOP_VISITOR;
         if (--e.m_rest == 0) {
@@ -175,7 +175,7 @@ parse_return unpack_stack::consume(Visitor &visitor) {
           if (!visitor.end_map())
             return PARSE_STOP_VISITOR;
         } else {
-          e.m_type = MSGPACK_CT_MAP_KEY;
+          e.m_type = container_type::MAP_KEY;
           if (!visitor.start_map_key())
             return PARSE_STOP_VISITOR;
           return PARSE_CONTINUE;

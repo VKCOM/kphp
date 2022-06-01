@@ -13,7 +13,7 @@
 
 namespace msgpack {
 
-enum msgpack_container_type { MSGPACK_CT_ARRAY_ITEM, MSGPACK_CT_MAP_KEY, MSGPACK_CT_MAP_VALUE };
+enum class container_type { ARRAY_ITEM, MAP_KEY, MAP_VALUE };
 
 enum parse_return {
   PARSE_SUCCESS              =  2,
@@ -25,17 +25,17 @@ enum parse_return {
 
 struct unpack_stack {
   struct stack_elem {
-    stack_elem(msgpack_container_type type, uint32_t rest) noexcept
+    stack_elem(container_type type, uint32_t rest) noexcept
       : m_type(type)
       , m_rest(rest) {}
-    msgpack_container_type m_type{};
+    container_type m_type{};
     uint32_t m_rest{0};
   };
 
   unpack_stack() noexcept;
 
   template<typename Visitor>
-  parse_return push(Visitor &visitor, msgpack_container_type type, uint32_t rest);
+  parse_return push(Visitor &visitor, container_type type, uint32_t rest);
 
   template<typename Visitor>
   parse_return consume(Visitor &visitor);
