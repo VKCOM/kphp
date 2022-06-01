@@ -186,6 +186,53 @@ parse_return unpack_stack::consume(Visitor &visitor) {
   return PARSE_SUCCESS;
 }
 
+enum class msgpack_cs : uint32_t {
+  HEADER = 0x00, // nil
+
+  // MSGPACK_CS_                = 0x01,
+  // MSGPACK_CS_                = 0x02,  // false
+  // MSGPACK_CS_                = 0x03,  // true
+
+  BIN_8 = 0x04,
+  BIN_16 = 0x05,
+  BIN_32 = 0x06,
+
+  EXT_8 = 0x07,
+  EXT_16 = 0x08,
+  EXT_32 = 0x09,
+
+  FLOAT = 0x0a,
+  DOUBLE = 0x0b,
+  UINT_8 = 0x0c,
+  UINT_16 = 0x0d,
+  UINT_32 = 0x0e,
+  UINT_64 = 0x0f,
+  INT_8 = 0x10,
+  INT_16 = 0x11,
+  INT_32 = 0x12,
+  INT_64 = 0x13,
+
+  FIXEXT_1 = 0x14,
+  FIXEXT_2 = 0x15,
+  FIXEXT_4 = 0x16,
+  FIXEXT_8 = 0x17,
+  FIXEXT_16 = 0x18,
+
+  STR_8 = 0x19,  // str8
+  STR_16 = 0x1a, // str16
+  STR_32 = 0x1b, // str32
+  ARRAY_16 = 0x1c,
+  ARRAY_32 = 0x1d,
+  MAP_16 = 0x1e,
+  MAP_32 = 0x1f,
+
+  // ACS_BIG_INT_VALUE,
+  // ACS_BIG_FLOAT_VALUE,
+  ACS_STR_VALUE,
+  ACS_BIN_VALUE,
+  ACS_EXT_VALUE
+};
+
 template<typename Visitor>
 template<typename T, typename StartVisitor, typename EndVisitor>
 parse_return parser<Visitor>::start_aggregate(const StartVisitor &sv, const EndVisitor &ev, const char *load_pos, std::size_t &off) {
@@ -661,6 +708,11 @@ parse_return parser<Visitor>::execute(const char *data, std::size_t len, std::si
   off = m_current - m_start;
   return PARSE_CONTINUE;
 }
+
+template<typename Visitor>
+parser<Visitor>::parser(Visitor &visitor) noexcept
+  : visitor_(visitor)
+  , m_cs(msgpack_cs::HEADER) {}
 
 template<typename Visitor>
 parse_return parser<Visitor>::parse(const char *data, size_t len, size_t &off, Visitor &v) {
