@@ -10,9 +10,9 @@
 #pragma once
 
 #include "common/mixin/not_copyable.h"
+#include "runtime/kphp_core.h"
 #include "runtime/msgpack/object.h"
 #include "runtime/msgpack/zone.h"
-#include "runtime/kphp_core.h"
 
 namespace msgpack {
 
@@ -31,4 +31,4 @@ private:
   msgpack::zone zone_;
 };
 
-}  // namespace msgpack
+} // namespace msgpack

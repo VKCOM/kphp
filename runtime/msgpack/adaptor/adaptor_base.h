@@ -18,15 +18,15 @@ namespace adaptor {
 
 // Adaptor functors
 
-template <typename T, typename Enabler = void>
+template<typename T, typename Enabler = void>
 struct convert {
-    msgpack::object const& operator()(msgpack::object const& o, T& v) const;
+  msgpack::object const &operator()(msgpack::object const &o, T &v) const;
 };
 
-template <typename T, typename Enabler = void>
+template<typename T, typename Enabler = void>
 struct pack {
-    template <typename Stream>
-    msgpack::packer<Stream>& operator()(msgpack::packer<Stream>& o, T const& v) const;
+  template<typename Stream>
+  msgpack::packer<Stream> &operator()(msgpack::packer<Stream> &o, T const &v) const;
 };
 
 } // namespace adaptor

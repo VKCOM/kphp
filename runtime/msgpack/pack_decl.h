@@ -18,7 +18,7 @@ namespace msgpack {
  * @tparam Stream  Any type that have a member function `Stream write(const char*, size_t s)`
  *
  */
-template <typename Stream>
+template<typename Stream>
 class packer;
 
 /// Pack the value as MessagePack format into the stream
@@ -31,8 +31,8 @@ class packer;
  * @param s The pointer to packing destination stream
  * @param v Packing value
  */
-template <typename Stream, typename T>
-void pack(Stream* s, const T& v);
+template<typename Stream, typename T>
+void pack(Stream *s, const T &v);
 
 /// Pack the value as MessagePack format into the stream
 /**
@@ -41,7 +41,7 @@ void pack(Stream* s, const T& v);
  * @param s Packing destination stream
  * @param v Packing value
  */
-template <typename Stream, typename T>
-void pack(Stream& s, const T& v);
+template<typename Stream, typename T>
+void pack(Stream &s, const T &v);
 
-}  // namespace msgpack
+} // namespace msgpack

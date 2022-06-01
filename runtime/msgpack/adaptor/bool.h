@@ -15,25 +15,30 @@ namespace msgpack {
 
 namespace adaptor {
 
-template <>
+template<>
 struct convert<bool> {
-    msgpack::object const& operator()(msgpack::object const& o, bool& v) const {
-        if(o.type != msgpack::type::BOOLEAN) { throw msgpack::type_error(); }
-        v = o.via.boolean;
-        return o;
+  msgpack::object const &operator()(msgpack::object const &o, bool &v) const {
+    if (o.type != msgpack::type::BOOLEAN) {
+      throw msgpack::type_error();
     }
+    v = o.via.boolean;
+    return o;
+  }
 };
 
-template <>
+template<>
 struct pack<bool> {
-    template <typename Stream>
-    msgpack::packer<Stream>& operator()(msgpack::packer<Stream>& o, const bool& v) const {
-        if(v) { o.pack_true(); }
-        else { o.pack_false(); }
-        return o;
+  template<typename Stream>
+  msgpack::packer<Stream> &operator()(msgpack::packer<Stream> &o, const bool &v) const {
+    if (v) {
+      o.pack_true();
+    } else {
+      o.pack_false();
     }
+    return o;
+  }
 };
 
 } // namespace adaptor
 
-}  // namespace msgpack
+} // namespace msgpack
