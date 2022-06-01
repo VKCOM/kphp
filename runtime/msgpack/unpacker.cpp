@@ -20,8 +20,8 @@ msgpack::object unpacker::unpack() {
   parse_return ret = parser<object_visitor>::parse(input_.c_str(), input_.size(), bytes_consumed_, visitor);
 
   switch(ret) {
-    case msgpack::PARSE_SUCCESS:
-    case msgpack::PARSE_EXTRA_BYTES:
+    case parse_return::SUCCESS:
+    case parse_return::EXTRA_BYTES:
       return std::move(visitor).flush();
     default:
       return {};

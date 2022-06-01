@@ -15,13 +15,7 @@ namespace msgpack {
 
 enum class container_type { ARRAY_ITEM, MAP_KEY, MAP_VALUE };
 
-enum parse_return {
-  PARSE_SUCCESS              =  2,
-  PARSE_EXTRA_BYTES          =  1,
-  PARSE_CONTINUE             =  0,
-  PARSE_PARSE_ERROR          = -1,
-  PARSE_STOP_VISITOR         = -2
-};
+enum class parse_return { SUCCESS = 2, EXTRA_BYTES = 1, CONTINUE = 0, PARSE_ERROR = -1, STOP_VISITOR = -2 };
 
 struct unpack_stack {
   struct stack_elem {
