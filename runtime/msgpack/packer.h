@@ -69,9 +69,4 @@ private:
   Stream &stream_;
 };
 
-template<typename Stream, typename T>
-void pack(Stream &s, const T &v) {
-  packer<Stream>{s}.pack(v);
-}
-
 } // namespace msgpack

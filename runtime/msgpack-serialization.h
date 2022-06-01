@@ -360,7 +360,7 @@ inline Optional<string> f$msgpack_serialize(const T &value, string *out_err_msg 
     string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_OFF;
   });
 
-  msgpack::pack(*coub, value);
+  msgpack::packer{*coub}.pack(value);
 
   if (string_buffer::string_buffer_error_flag == STRING_BUFFER_ERROR_FLAG_FAILED) {
     string err_msg{"msgpacke_serialize buffer overflow"};
