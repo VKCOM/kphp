@@ -23,19 +23,6 @@ class packer;
 
 /// Pack the value as MessagePack format into the stream
 /**
- * This function template is left for compatibility.
- * Use `void pack(Stream& s, const T& v)` instead of the function template.
- *
- * @tparam Stream Any type that have a member function `Stream write(const char*, size_t s)`
- * @tparam T Any type that is adapted to MessagePack
- * @param s The pointer to packing destination stream
- * @param v Packing value
- */
-template<typename Stream, typename T>
-void pack(Stream *s, const T &v);
-
-/// Pack the value as MessagePack format into the stream
-/**
  * @tparam Stream Any type that have a member function `Stream write(const char*, size_t s)`
  * @tparam T Any type that is adapted to MessagePack
  * @param s Packing destination stream
