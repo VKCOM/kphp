@@ -23,7 +23,7 @@ namespace msgpack {
 template<typename Stream>
 class packer : private vk::not_copyable {
 public:
-  explicit packer(Stream &s)
+  explicit packer(Stream &s) noexcept
     : stream_(s) {}
 
   template<typename T>
@@ -31,42 +31,40 @@ public:
     adaptor::pack<T>{}(*this, v);
   }
 
-  void pack_uint8(uint8_t d);
-  void pack_uint32(uint32_t d);
-  void pack_uint64(uint64_t d);
+  void pack_uint8(uint8_t d) noexcept;
+  void pack_uint32(uint32_t d) noexcept;
+  void pack_uint64(uint64_t d) noexcept;
 
-  void pack_int32(int32_t d);
-  void pack_int64(int64_t d);
+  void pack_int32(int32_t d) noexcept;
+  void pack_int64(int64_t d) noexcept;
 
-  void pack_float(float d);
-  void pack_double(double d);
+  void pack_float(float d) noexcept;
+  void pack_double(double d) noexcept;
 
-  void pack_nil();
+  void pack_nil() noexcept;
 
-  void pack_true();
-  void pack_false();
+  void pack_true() noexcept;
+  void pack_false() noexcept;
 
-  void pack_array(uint32_t n);
-  void pack_map(uint32_t n);
+  void pack_array(uint32_t n) noexcept;
+  void pack_map(uint32_t n) noexcept;
 
-  void pack_str(uint32_t l);
-  void pack_str_body(const char *b, uint32_t l);
+  void pack_str(uint32_t l) noexcept;
+  void pack_str_body(const char *b, uint32_t l) noexcept;
 
 private:
   template<typename T>
-  void pack_imp_uint8(T d);
+  void pack_imp_uint8(T d) noexcept;
   template<typename T>
-  void pack_imp_uint32(T d);
+  void pack_imp_uint32(T d) noexcept;
   template<typename T>
-  void pack_imp_uint64(T d);
+  void pack_imp_uint64(T d) noexcept;
   template<typename T>
-  void pack_imp_int32(T d);
+  void pack_imp_int32(T d) noexcept;
   template<typename T>
-  void pack_imp_int64(T d);
+  void pack_imp_int64(T d) noexcept;
 
-  void append_buffer(const char *buf, size_t len) {
-    stream_.write(buf, len);
-  }
+  void append_buffer(const char *buf, size_t len) noexcept;
 
   Stream &stream_;
 };

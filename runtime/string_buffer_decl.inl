@@ -15,8 +15,8 @@ class string_buffer {
   char *buffer_begin;
   string::size_type buffer_len;
 
-  inline void resize(string::size_type new_buffer_len);
-  inline void reserve_at_least(string::size_type new_buffer_len);
+  inline void resize(string::size_type new_buffer_len) noexcept;
+  inline void reserve_at_least(string::size_type new_buffer_len) noexcept;
   string_buffer(const string_buffer &other) = delete;
   string_buffer &operator=(const string_buffer &other) = delete;
 
@@ -24,7 +24,7 @@ public:
   static int string_buffer_error_flag;
   explicit string_buffer(string::size_type buffer_len = 4000) noexcept;
 
-  inline string_buffer &clean();
+  inline string_buffer &clean() noexcept;
 
   friend inline string_buffer &operator<<(string_buffer &sb, char c);
   friend inline string_buffer &operator<<(string_buffer &sb, const char *s);
@@ -35,8 +35,8 @@ public:
   friend inline string_buffer &operator<<(string_buffer &sb, uint32_t x);
   friend inline string_buffer &operator<<(string_buffer &sb, int64_t x);
 
-  inline string_buffer &append(const char *str, size_t len);
-  inline void write(const char *str, int len);
+  inline string_buffer &append(const char *str, size_t len) noexcept;
+  inline void write(const char *str, int len) noexcept;
 
   inline void append_unsafe(const char *str, int len);
 
@@ -44,7 +44,7 @@ public:
 
   inline void reserve(int len);
 
-  inline string::size_type size() const;
+  inline string::size_type size() const noexcept;
 
   inline char *buffer();
   inline const char *buffer() const;

@@ -6,7 +6,7 @@
   #error "this file must be included only from kphp_core.h"
 #endif
 
-inline void string_buffer::resize(string::size_type new_buffer_len) {
+inline void string_buffer::resize(string::size_type new_buffer_len) noexcept {
   if (new_buffer_len < MIN_BUFFER_LEN) {
     new_buffer_len = MIN_BUFFER_LEN;
   }
@@ -32,14 +32,14 @@ inline void string_buffer::resize(string::size_type new_buffer_len) {
   }
 }
 
-inline void string_buffer::reserve_at_least(string::size_type need) {
+inline void string_buffer::reserve_at_least(string::size_type need) noexcept {
   string::size_type new_buffer_len = need + size();
   while (unlikely (buffer_len < new_buffer_len && string_buffer_error_flag != STRING_BUFFER_ERROR_FLAG_FAILED)) {
     resize(((new_buffer_len * 2 + 1 + 64) | 4095) - 64);
   }
 }
 
-string_buffer &string_buffer::clean() {
+string_buffer &string_buffer::clean() noexcept {
   buffer_end = buffer_begin;
   return *this;
 }
@@ -108,7 +108,7 @@ string_buffer &operator<<(string_buffer &sb, int64_t x) {
   return sb;
 }
 
-string::size_type string_buffer::size() const {
+string::size_type string_buffer::size() const noexcept {
   return static_cast<string::size_type>(buffer_end - buffer_begin);
 }
 
@@ -138,7 +138,7 @@ bool string_buffer::set_pos(int64_t pos) {
   return true;
 }
 
-string_buffer &string_buffer::append(const char *str, size_t len) {
+string_buffer &string_buffer::append(const char *str, size_t len) noexcept {
   reserve_at_least(static_cast<string::size_type>(len));
 
   if (unlikely (string_buffer_error_flag == STRING_BUFFER_ERROR_FLAG_FAILED)) {
@@ -150,7 +150,7 @@ string_buffer &string_buffer::append(const char *str, size_t len) {
   return *this;
 }
 
-void string_buffer::write(const char *str, int len) {
+void string_buffer::write(const char *str, int len) noexcept {
   append(str, len);
 }
 

@@ -36,32 +36,32 @@ static char take8_64(T d) noexcept {
 }
 
 template<typename Stream>
-void packer<Stream>::pack_uint8(uint8_t d) {
+void packer<Stream>::pack_uint8(uint8_t d) noexcept {
   pack_imp_uint8(d);
 }
 
 template<typename Stream>
-void packer<Stream>::pack_uint32(uint32_t d) {
+void packer<Stream>::pack_uint32(uint32_t d) noexcept {
   pack_imp_uint32(d);
 }
 
 template<typename Stream>
-void packer<Stream>::pack_uint64(uint64_t d) {
+void packer<Stream>::pack_uint64(uint64_t d) noexcept {
   pack_imp_uint64(d);
 }
 
 template<typename Stream>
-void packer<Stream>::pack_int32(int32_t d) {
+void packer<Stream>::pack_int32(int32_t d) noexcept {
   pack_imp_int32(d);
 }
 
 template<typename Stream>
-void packer<Stream>::pack_int64(int64_t d) {
+void packer<Stream>::pack_int64(int64_t d) noexcept {
   pack_imp_int64(d);
 }
 
 template<typename Stream>
-void packer<Stream>::pack_float(float d) {
+void packer<Stream>::pack_float(float d) noexcept {
   union {
     float f;
     uint32_t i;
@@ -74,7 +74,7 @@ void packer<Stream>::pack_float(float d) {
 }
 
 template<typename Stream>
-void packer<Stream>::pack_double(double d) {
+void packer<Stream>::pack_double(double d) noexcept {
   union {
     double f;
     uint64_t i;
@@ -94,25 +94,25 @@ void packer<Stream>::pack_double(double d) {
 }
 
 template<typename Stream>
-void packer<Stream>::pack_nil() {
+void packer<Stream>::pack_nil() noexcept {
   const char d = static_cast<char>(0xc0u);
   append_buffer(&d, 1);
 }
 
 template<typename Stream>
-void packer<Stream>::pack_true() {
+void packer<Stream>::pack_true() noexcept {
   const char d = static_cast<char>(0xc3u);
   append_buffer(&d, 1);
 }
 
 template<typename Stream>
-void packer<Stream>::pack_false() {
+void packer<Stream>::pack_false() noexcept {
   const char d = static_cast<char>(0xc2u);
   append_buffer(&d, 1);
 }
 
 template<typename Stream>
-void packer<Stream>::pack_array(uint32_t n) {
+void packer<Stream>::pack_array(uint32_t n) noexcept {
   if (n < 16) {
     char d = static_cast<char>(0x90u | n);
     append_buffer(&d, 1);
@@ -130,7 +130,7 @@ void packer<Stream>::pack_array(uint32_t n) {
 }
 
 template<typename Stream>
-void packer<Stream>::pack_map(uint32_t n) {
+void packer<Stream>::pack_map(uint32_t n) noexcept {
   if (n < 16) {
     unsigned char d = static_cast<unsigned char>(0x80u | n);
     char buf = take8_8(d);
@@ -149,7 +149,7 @@ void packer<Stream>::pack_map(uint32_t n) {
 }
 
 template<typename Stream>
-void packer<Stream>::pack_str(uint32_t l) {
+void packer<Stream>::pack_str(uint32_t l) noexcept {
   if (l < 32) {
     unsigned char d = static_cast<uint8_t>(0xa0u | l);
     char buf = take8_8(d);
@@ -173,13 +173,13 @@ void packer<Stream>::pack_str(uint32_t l) {
 }
 
 template<typename Stream>
-void packer<Stream>::pack_str_body(const char *b, uint32_t l) {
+void packer<Stream>::pack_str_body(const char *b, uint32_t l) noexcept {
   append_buffer(b, l);
 }
 
 template<typename Stream>
 template<typename T>
-void packer<Stream>::pack_imp_uint8(T d) {
+void packer<Stream>::pack_imp_uint8(T d) noexcept {
   if (d < (1 << 7)) {
     /* fixnum */
     char buf = take8_8(d);
@@ -193,7 +193,7 @@ void packer<Stream>::pack_imp_uint8(T d) {
 
 template<typename Stream>
 template<typename T>
-void packer<Stream>::pack_imp_uint32(T d) {
+void packer<Stream>::pack_imp_uint32(T d) noexcept {
   if (d < (1 << 8)) {
     if (d < (1 << 7)) {
       /* fixnum */
@@ -223,7 +223,7 @@ void packer<Stream>::pack_imp_uint32(T d) {
 
 template<typename Stream>
 template<typename T>
-void packer<Stream>::pack_imp_uint64(T d) {
+void packer<Stream>::pack_imp_uint64(T d) noexcept {
   if (d < (1ULL << 8)) {
     if (d < (1ULL << 7)) {
       /* fixnum */
@@ -259,7 +259,7 @@ void packer<Stream>::pack_imp_uint64(T d) {
 
 template<typename Stream>
 template<typename T>
-void packer<Stream>::pack_imp_int32(T d) {
+void packer<Stream>::pack_imp_int32(T d) noexcept {
   if (d < -(1 << 5)) {
     if (d < -(1 << 15)) {
       /* signed 32 */
@@ -305,7 +305,7 @@ void packer<Stream>::pack_imp_int32(T d) {
 
 template<typename Stream>
 template<typename T>
-void packer<Stream>::pack_imp_int64(T d) {
+void packer<Stream>::pack_imp_int64(T d) noexcept {
   if (d < -(1LL << 5)) {
     if (d < -(1LL << 15)) {
       if (d < -(1LL << 31)) {
@@ -367,6 +367,12 @@ void packer<Stream>::pack_imp_int64(T d) {
       }
     }
   }
+}
+
+template<typename Stream>
+void packer<Stream>::append_buffer(const char *buf, size_t len) noexcept {
+  static_assert(noexcept(std::declval<Stream>().write(buf, len)), "require Stream::write() to be noxecept");
+  stream_.write(buf, len);
 }
 
 template class packer<string_buffer>;
