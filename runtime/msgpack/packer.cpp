@@ -40,37 +40,32 @@ packer<Stream>::packer(Stream &s)
   : m_stream(s) {}
 
 template<typename Stream>
-packer<Stream> &packer<Stream>::pack_uint8(uint8_t d) {
+void packer<Stream>::pack_uint8(uint8_t d) {
   pack_imp_uint8(d);
-  return *this;
 }
 
 template<typename Stream>
-packer<Stream> &packer<Stream>::pack_uint32(uint32_t d) {
+void packer<Stream>::pack_uint32(uint32_t d) {
   pack_imp_uint32(d);
-  return *this;
 }
 
 template<typename Stream>
-packer<Stream> &packer<Stream>::pack_uint64(uint64_t d) {
+void packer<Stream>::pack_uint64(uint64_t d) {
   pack_imp_uint64(d);
-  return *this;
 }
 
 template<typename Stream>
-packer<Stream> &packer<Stream>::pack_int32(int32_t d) {
+void packer<Stream>::pack_int32(int32_t d) {
   pack_imp_int32(d);
-  return *this;
 }
 
 template<typename Stream>
-packer<Stream> &packer<Stream>::pack_int64(int64_t d) {
+void packer<Stream>::pack_int64(int64_t d) {
   pack_imp_int64(d);
-  return *this;
 }
 
 template<typename Stream>
-packer<Stream> &packer<Stream>::pack_float(float d) {
+void packer<Stream>::pack_float(float d) {
   union {
     float f;
     uint32_t i;
@@ -80,11 +75,10 @@ packer<Stream> &packer<Stream>::pack_float(float d) {
   buf[0] = static_cast<char>(0xcau);
   _msgpack_store32(&buf[1], mem.i);
   append_buffer(buf, 5);
-  return *this;
 }
 
 template<typename Stream>
-packer<Stream> &packer<Stream>::pack_double(double d) {
+void packer<Stream>::pack_double(double d) {
   union {
     double f;
     uint64_t i;
@@ -101,32 +95,28 @@ packer<Stream> &packer<Stream>::pack_double(double d) {
 #endif
   _msgpack_store64(&buf[1], mem.i);
   append_buffer(buf, 9);
-  return *this;
 }
 
 template<typename Stream>
-packer<Stream> &packer<Stream>::pack_nil() {
+void packer<Stream>::pack_nil() {
   const char d = static_cast<char>(0xc0u);
   append_buffer(&d, 1);
-  return *this;
 }
 
 template<typename Stream>
-packer<Stream> &packer<Stream>::pack_true() {
+void packer<Stream>::pack_true() {
   const char d = static_cast<char>(0xc3u);
   append_buffer(&d, 1);
-  return *this;
 }
 
 template<typename Stream>
-packer<Stream> &packer<Stream>::pack_false() {
+void packer<Stream>::pack_false() {
   const char d = static_cast<char>(0xc2u);
   append_buffer(&d, 1);
-  return *this;
 }
 
 template<typename Stream>
-packer<Stream> &packer<Stream>::pack_array(uint32_t n) {
+void packer<Stream>::pack_array(uint32_t n) {
   if (n < 16) {
     char d = static_cast<char>(0x90u | n);
     append_buffer(&d, 1);
@@ -141,11 +131,10 @@ packer<Stream> &packer<Stream>::pack_array(uint32_t n) {
     _msgpack_store32(&buf[1], static_cast<uint32_t>(n));
     append_buffer(buf, 5);
   }
-  return *this;
 }
 
 template<typename Stream>
-packer<Stream> &packer<Stream>::pack_map(uint32_t n) {
+void packer<Stream>::pack_map(uint32_t n) {
   if (n < 16) {
     unsigned char d = static_cast<unsigned char>(0x80u | n);
     char buf = take8_8(d);
@@ -161,11 +150,10 @@ packer<Stream> &packer<Stream>::pack_map(uint32_t n) {
     _msgpack_store32(&buf[1], static_cast<uint32_t>(n));
     append_buffer(buf, 5);
   }
-  return *this;
 }
 
 template<typename Stream>
-packer<Stream> &packer<Stream>::pack_str(uint32_t l) {
+void packer<Stream>::pack_str(uint32_t l) {
   if (l < 32) {
     unsigned char d = static_cast<uint8_t>(0xa0u | l);
     char buf = take8_8(d);
@@ -186,13 +174,11 @@ packer<Stream> &packer<Stream>::pack_str(uint32_t l) {
     _msgpack_store32(&buf[1], static_cast<uint32_t>(l));
     append_buffer(buf, 5);
   }
-  return *this;
 }
 
 template<typename Stream>
-packer<Stream> &packer<Stream>::pack_str_body(const char *b, uint32_t l) {
+void packer<Stream>::pack_str_body(const char *b, uint32_t l) {
   append_buffer(b, l);
-  return *this;
 }
 
 template<typename Stream>

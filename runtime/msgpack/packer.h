@@ -30,26 +30,26 @@ public:
     adaptor::pack<T>{}(*this, v);
   }
 
-  packer<Stream> &pack_uint8(uint8_t d);
-  packer<Stream> &pack_uint32(uint32_t d);
-  packer<Stream> &pack_uint64(uint64_t d);
+  void pack_uint8(uint8_t d);
+  void pack_uint32(uint32_t d);
+  void pack_uint64(uint64_t d);
 
-  packer<Stream> &pack_int32(int32_t d);
-  packer<Stream> &pack_int64(int64_t d);
+  void pack_int32(int32_t d);
+  void pack_int64(int64_t d);
 
-  packer<Stream> &pack_float(float d);
-  packer<Stream> &pack_double(double d);
+  void pack_float(float d);
+  void pack_double(double d);
 
-  packer<Stream> &pack_nil();
+  void pack_nil();
 
-  packer<Stream> &pack_true();
-  packer<Stream> &pack_false();
+  void pack_true();
+  void pack_false();
 
-  packer<Stream> &pack_array(uint32_t n);
-  packer<Stream> &pack_map(uint32_t n);
+  void pack_array(uint32_t n);
+  void pack_map(uint32_t n);
 
-  packer<Stream> &pack_str(uint32_t l);
-  packer<Stream> &pack_str_body(const char *b, uint32_t l);
+  void pack_str(uint32_t l);
+  void pack_str_body(const char *b, uint32_t l);
 
 private:
   template<typename T>
@@ -72,7 +72,7 @@ private:
 
 template<typename Stream, typename T>
 void pack(Stream &s, const T &v) {
-  packer<Stream>(s).pack(v);
+  packer<Stream>{s}.pack(v);
 }
 
 } // namespace msgpack
