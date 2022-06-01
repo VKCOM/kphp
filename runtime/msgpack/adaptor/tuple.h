@@ -17,7 +17,7 @@ namespace msgpack {
 
 template<typename Tuple, std::size_t N>
 struct StdTupleConverter {
-  static void convert(msgpack::object const &o, Tuple &v) {
+  static void convert(const msgpack::object &o, Tuple &v) {
     StdTupleConverter<Tuple, N - 1>::convert(o, v);
     if (o.via.array.size >= N)
       o.via.array.ptr[N - 1].convert<typename std::remove_reference<decltype(std::get<N - 1>(v))>::type>(std::get<N - 1>(v));
@@ -26,14 +26,14 @@ struct StdTupleConverter {
 
 template<typename Tuple>
 struct StdTupleConverter<Tuple, 0> {
-  static void convert(msgpack::object const &, Tuple &) {}
+  static void convert(const msgpack::object &, Tuple &) {}
 };
 
 namespace adaptor {
 
 template<typename... Args>
 struct convert<std::tuple<Args...>> {
-  msgpack::object const &operator()(msgpack::object const &o, std::tuple<Args...> &v) const {
+  const msgpack::object &operator()(const msgpack::object &o, std::tuple<Args...> &v) const {
     if (o.type != msgpack::type::ARRAY) {
       throw msgpack::type_error();
     }

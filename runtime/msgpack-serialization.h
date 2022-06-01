@@ -96,7 +96,7 @@ struct pack<string> {
 // array<T>
 template<class T>
 struct convert<array<T>> {
-  msgpack::object const &operator()(msgpack::object const &obj, array<T> &res_arr) const {
+  const msgpack::object &operator()(const msgpack::object &obj, array<T> &res_arr) const {
     if (obj.type == msgpack::type::ARRAY) {
       res_arr.reserve(obj.via.array.size, 0, true);
 

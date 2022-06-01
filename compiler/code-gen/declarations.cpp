@@ -670,11 +670,11 @@ void ClassDeclaration::compile_serialize(CodeGenerator &W, ClassPtr klass) {
 }
 
 void ClassDeclaration::compile_deserialize(CodeGenerator &W, ClassPtr klass) {
-  //if (msgpack_o.type != msgpack::type::ARRAY) { throw msgpack::type_error(); }
+  //if (msgpack_o.type != msgpack::type::ARRAY) { throw msgpack::type_error{}; }
   //auto arr = msgpack_o.via.array;
   //for (size_t i = 0; i < arr.size; i += 2) {
   //  auto tag = arr.ptr[i].as<uint8_t>();
-  //  auto elem = arr.ptr[i + 1];
+  //  [[maybe_unused]] auto elem = arr.ptr[i + 1];
   //  switch (tag) {
   //    case tag_x: elem.convert(x); break;
   //    case tag_s: elem.convert(s); break;
@@ -692,13 +692,12 @@ void ClassDeclaration::compile_deserialize(CodeGenerator &W, ClassPtr klass) {
 
   cases.emplace_back("default: break;");
 
-  W << "void msgpack_unpack(msgpack::object const &msgpack_o)" << BEGIN
-      << "if (msgpack_o.type != msgpack::type::ARRAY) { throw msgpack::type_error(); }" << NL
+  W << "void msgpack_unpack(const msgpack::object &msgpack_o)" << BEGIN
+      << "if (msgpack_o.type != msgpack::type::ARRAY) { throw msgpack::type_error{}; }" << NL
       << "auto arr = msgpack_o.via.array;" << NL
       << "for (size_t i = 0; i < arr.size; i += 2)" << BEGIN
         << "auto tag = arr.ptr[i].as<uint8_t>();" << NL
-        << "auto elem = arr.ptr[i + 1];" << NL
-        << "(void) elem;" << NL
+        << "[[maybe_unused]] auto elem = arr.ptr[i + 1];" << NL
         << "switch (tag)" << BEGIN
           << JoinValues(cases, "", join_mode::multiple_lines) << NL
         << END << NL
