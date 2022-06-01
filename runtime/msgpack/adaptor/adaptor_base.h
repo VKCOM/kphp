@@ -20,16 +20,14 @@ class packer;
 
 namespace adaptor {
 
-// Adaptor functors
-
-template<typename T, typename Enabler = void>
+template<typename T>
 struct convert {
   void operator()(const msgpack::object &o, T &v) const {
     v.msgpack_unpack(o);
   }
 };
 
-template<typename T, typename Enabler = void>
+template<typename T>
 struct pack {
   template<typename Stream>
   void operator()(msgpack::packer<Stream> &o, const T &v) const {
