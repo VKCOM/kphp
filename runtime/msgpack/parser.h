@@ -13,51 +13,51 @@
 
 namespace msgpack {
 
-enum {
-  MSGPACK_CS_HEADER = 0x00, // nil
+enum class msgpack_cs : uint32_t {
+  HEADER = 0x00, // nil
 
   // MSGPACK_CS_                = 0x01,
   // MSGPACK_CS_                = 0x02,  // false
   // MSGPACK_CS_                = 0x03,  // true
 
-  MSGPACK_CS_BIN_8 = 0x04,
-  MSGPACK_CS_BIN_16 = 0x05,
-  MSGPACK_CS_BIN_32 = 0x06,
+  BIN_8 = 0x04,
+  BIN_16 = 0x05,
+  BIN_32 = 0x06,
 
-  MSGPACK_CS_EXT_8 = 0x07,
-  MSGPACK_CS_EXT_16 = 0x08,
-  MSGPACK_CS_EXT_32 = 0x09,
+  EXT_8 = 0x07,
+  EXT_16 = 0x08,
+  EXT_32 = 0x09,
 
-  MSGPACK_CS_FLOAT = 0x0a,
-  MSGPACK_CS_DOUBLE = 0x0b,
-  MSGPACK_CS_UINT_8 = 0x0c,
-  MSGPACK_CS_UINT_16 = 0x0d,
-  MSGPACK_CS_UINT_32 = 0x0e,
-  MSGPACK_CS_UINT_64 = 0x0f,
-  MSGPACK_CS_INT_8 = 0x10,
-  MSGPACK_CS_INT_16 = 0x11,
-  MSGPACK_CS_INT_32 = 0x12,
-  MSGPACK_CS_INT_64 = 0x13,
+  FLOAT = 0x0a,
+  DOUBLE = 0x0b,
+  UINT_8 = 0x0c,
+  UINT_16 = 0x0d,
+  UINT_32 = 0x0e,
+  UINT_64 = 0x0f,
+  INT_8 = 0x10,
+  INT_16 = 0x11,
+  INT_32 = 0x12,
+  INT_64 = 0x13,
 
-  MSGPACK_CS_FIXEXT_1 = 0x14,
-  MSGPACK_CS_FIXEXT_2 = 0x15,
-  MSGPACK_CS_FIXEXT_4 = 0x16,
-  MSGPACK_CS_FIXEXT_8 = 0x17,
-  MSGPACK_CS_FIXEXT_16 = 0x18,
+  FIXEXT_1 = 0x14,
+  FIXEXT_2 = 0x15,
+  FIXEXT_4 = 0x16,
+  FIXEXT_8 = 0x17,
+  FIXEXT_16 = 0x18,
 
-  MSGPACK_CS_STR_8 = 0x19,  // str8
-  MSGPACK_CS_STR_16 = 0x1a, // str16
-  MSGPACK_CS_STR_32 = 0x1b, // str32
-  MSGPACK_CS_ARRAY_16 = 0x1c,
-  MSGPACK_CS_ARRAY_32 = 0x1d,
-  MSGPACK_CS_MAP_16 = 0x1e,
-  MSGPACK_CS_MAP_32 = 0x1f,
+  STR_8 = 0x19,  // str8
+  STR_16 = 0x1a, // str16
+  STR_32 = 0x1b, // str32
+  ARRAY_16 = 0x1c,
+  ARRAY_32 = 0x1d,
+  MAP_16 = 0x1e,
+  MAP_32 = 0x1f,
 
-  // MSGPACK_ACS_BIG_INT_VALUE,
-  // MSGPACK_ACS_BIG_FLOAT_VALUE,
-  MSGPACK_ACS_STR_VALUE,
-  MSGPACK_ACS_BIN_VALUE,
-  MSGPACK_ACS_EXT_VALUE
+  // ACS_BIG_INT_VALUE,
+  // ACS_BIG_FLOAT_VALUE,
+  ACS_STR_VALUE,
+  ACS_BIN_VALUE,
+  ACS_EXT_VALUE
 };
 
 enum msgpack_container_type { MSGPACK_CT_ARRAY_ITEM, MSGPACK_CT_MAP_KEY, MSGPACK_CT_MAP_VALUE };
@@ -103,7 +103,7 @@ private:
   parse_return execute(const char *data, std::size_t len, std::size_t &off);
 
   template<typename T>
-  static uint32_t next_cs(T p) noexcept;
+  static msgpack_cs next_cs(T p) noexcept;
 
   template<typename T, typename StartVisitor, typename EndVisitor>
   parse_return start_aggregate(const StartVisitor &sv, const EndVisitor &ev, const char *load_pos, std::size_t &off);
@@ -116,7 +116,7 @@ private:
   const char *m_current{nullptr};
 
   std::size_t m_trail{0};
-  uint32_t m_cs{MSGPACK_CS_HEADER};
+  msgpack_cs m_cs{msgpack_cs::HEADER};
   unpack_stack m_stack;
 };
 
