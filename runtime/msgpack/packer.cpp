@@ -36,10 +36,6 @@ static char take8_64(T d) noexcept {
 }
 
 template<typename Stream>
-packer<Stream>::packer(Stream &s)
-  : m_stream(s) {}
-
-template<typename Stream>
 void packer<Stream>::pack_uint8(uint8_t d) {
   pack_imp_uint8(d);
 }

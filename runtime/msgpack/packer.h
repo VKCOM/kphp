@@ -9,8 +9,8 @@
 //
 #pragma once
 
-#include <cstdint>
 #include <cstddef>
+#include <cstdint>
 
 #include "common/mixin/not_copyable.h"
 
@@ -23,7 +23,8 @@ namespace msgpack {
 template<typename Stream>
 class packer : private vk::not_copyable {
 public:
-  explicit packer(Stream &s);
+  explicit packer(Stream &s)
+    : stream_(s) {}
 
   template<typename T>
   void pack(const T &v) {
@@ -64,10 +65,10 @@ private:
   void pack_imp_int64(T d);
 
   void append_buffer(const char *buf, size_t len) {
-    m_stream.write(buf, len);
+    stream_.write(buf, len);
   }
 
-  Stream &m_stream;
+  Stream &stream_;
 };
 
 template<typename Stream, typename T>
