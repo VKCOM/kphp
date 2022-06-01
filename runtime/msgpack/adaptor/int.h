@@ -61,35 +61,6 @@ inline T convert_integer(const msgpack::object &o) {
   return detail::convert_integer_sign<T, is_signed<T>::value>::convert(o);
 }
 
-template<bool Signed>
-struct object_char_sign;
-
-template<>
-struct object_char_sign<true> {
-  template<typename T>
-  static typename std::enable_if<std::is_same<T, char>::value>::type make(msgpack::object &o, T v) {
-    if (v < 0) {
-      o.type = msgpack::type::NEGATIVE_INTEGER;
-      o.via.i64 = v;
-    } else {
-      o.type = msgpack::type::POSITIVE_INTEGER;
-      o.via.u64 = v;
-    }
-  }
-};
-
-template<>
-struct object_char_sign<false> {
-  static void make(msgpack::object &o, char v) {
-    o.type = msgpack::type::POSITIVE_INTEGER;
-    o.via.u64 = v;
-  }
-};
-
-inline void object_char(msgpack::object &o, char v) {
-  return object_char_sign<is_signed<char>::value>::make(o, v);
-}
-
 } // namespace detail
 
 namespace adaptor {
