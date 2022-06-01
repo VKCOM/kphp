@@ -9,9 +9,10 @@
 //
 
 #include <type_traits>
+#include <vector>
 
-#include "runtime/msgpack/object_visitor.h"
 #include "runtime/msgpack/object.h"
+#include "runtime/msgpack/object_visitor.h"
 #include "runtime/msgpack/parser.h"
 #include "runtime/msgpack/unpack_exception.h"
 
@@ -65,6 +66,8 @@ template<>
     throw msgpack::ext_size_overflow("ext size overflow");
   }
 }
+
+enum class container_type { ARRAY_ITEM, MAP_KEY, MAP_VALUE };
 
 template<typename Visitor>
 struct array_sv {
@@ -120,6 +123,27 @@ private:
   Visitor &visitor_;
 };
 } // namespace
+
+struct unpack_stack {
+  struct stack_elem {
+    stack_elem(container_type type, uint32_t rest) noexcept
+      : m_type(type)
+      , m_rest(rest) {}
+    container_type m_type{};
+    uint32_t m_rest{0};
+  };
+
+  unpack_stack() noexcept;
+
+  template<typename Visitor>
+  parse_return push(Visitor &visitor, container_type type, uint32_t rest);
+
+  template<typename Visitor>
+  parse_return consume(Visitor &visitor);
+
+private:
+  std::vector<stack_elem> m_stack;
+};
 
 unpack_stack::unpack_stack() noexcept {
   constexpr static std::size_t STACK_SIZE = 32;
@@ -248,7 +272,7 @@ parse_return parser<Visitor>::start_aggregate(const StartVisitor &sv, const EndV
       off = m_current - m_start;
       return parse_return::STOP_VISITOR;
     }
-    parse_return ret = m_stack.consume(visitor_);
+    parse_return ret = stack_.consume(visitor_);
     if (ret != parse_return::CONTINUE) {
       off = m_current - m_start;
       return ret;
@@ -258,7 +282,7 @@ parse_return parser<Visitor>::start_aggregate(const StartVisitor &sv, const EndV
       off = m_current - m_start;
       return parse_return::STOP_VISITOR;
     }
-    parse_return ret = m_stack.push(visitor_, sv.type(), static_cast<uint32_t>(size));
+    parse_return ret = stack_.push(visitor_, sv.type(), static_cast<uint32_t>(size));
     if (ret != parse_return::CONTINUE) {
       off = m_current - m_start;
       return ret;
@@ -275,7 +299,7 @@ parse_return parser<Visitor>::after_visit_proc(bool visit_result, std::size_t &o
     off = m_current - m_start;
     return parse_return::STOP_VISITOR;
   }
-  parse_return ret = m_stack.consume(visitor_);
+  parse_return ret = stack_.consume(visitor_);
   if (ret != parse_return::CONTINUE) {
     off = m_current - m_start;
   }
@@ -710,8 +734,9 @@ parse_return parser<Visitor>::execute(const char *data, std::size_t len, std::si
 }
 
 template<typename Visitor>
-parser<Visitor>::parser(Visitor &visitor) noexcept
+parser<Visitor>::parser(Visitor &visitor, unpack_stack &stack) noexcept
   : visitor_(visitor)
+  , stack_(stack)
   , m_cs(msgpack_cs::HEADER) {}
 
 template<typename Visitor>
@@ -723,8 +748,9 @@ parse_return parser<Visitor>::parse(const char *data, size_t len, size_t &off, V
     v.insufficient_bytes(noff, noff);
     return parse_return::CONTINUE;
   }
-  parser h{v};
-  parse_return ret = h.execute(data, len, noff);
+  unpack_stack stack;
+  parser parse{v, stack};
+  parse_return ret = parse.execute(data, len, noff);
   switch (ret) {
     case parse_return::CONTINUE:
       off = noff;

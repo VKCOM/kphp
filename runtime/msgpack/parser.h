@@ -9,34 +9,13 @@
 //
 #pragma once
 
-#include <vector>
+#include <cstdint>
 
 namespace msgpack {
 
-enum class container_type { ARRAY_ITEM, MAP_KEY, MAP_VALUE };
-
 enum class parse_return { SUCCESS = 2, EXTRA_BYTES = 1, CONTINUE = 0, PARSE_ERROR = -1, STOP_VISITOR = -2 };
 
-struct unpack_stack {
-  struct stack_elem {
-    stack_elem(container_type type, uint32_t rest) noexcept
-      : m_type(type)
-      , m_rest(rest) {}
-    container_type m_type{};
-    uint32_t m_rest{0};
-  };
-
-  unpack_stack() noexcept;
-
-  template<typename Visitor>
-  parse_return push(Visitor &visitor, container_type type, uint32_t rest);
-
-  template<typename Visitor>
-  parse_return consume(Visitor &visitor);
-
-private:
-  std::vector<stack_elem> m_stack;
-};
+struct unpack_stack;
 
 enum class msgpack_cs : uint32_t;
 
@@ -46,7 +25,7 @@ public:
   static parse_return parse(const char *data, size_t len, size_t &off, Visitor &v);
 
 private:
-  explicit parser(Visitor &visitor) noexcept;
+  explicit parser(Visitor &visitor, unpack_stack &stack) noexcept;
 
   parse_return execute(const char *data, std::size_t len, std::size_t &off);
 
@@ -59,13 +38,13 @@ private:
   parse_return after_visit_proc(bool visit_result, std::size_t &off);
 
   Visitor &visitor_;
+  unpack_stack &stack_;
 
   const char *m_start{nullptr};
   const char *m_current{nullptr};
 
   std::size_t m_trail{0};
   msgpack_cs m_cs{};
-  unpack_stack m_stack;
 };
 
 } // namespace msgpack
