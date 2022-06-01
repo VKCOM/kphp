@@ -9,6 +9,7 @@ prepend(KPHP_RUNTIME_MEMORY_RESOURCE_SOURCES memory_resource/
 
 prepend(KPHP_RUNTIME_MSGPACK_SOURCES msgpack/
         object_visitor.cpp
+        packer.cpp
         parser.cpp
         unpacker.cpp
         zone.cpp)
