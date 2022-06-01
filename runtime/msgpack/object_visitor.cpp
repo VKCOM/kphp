@@ -12,7 +12,6 @@
 
 #include "runtime/msgpack/object_visitor.h"
 
-#include "runtime/msgpack/object.h"
 #include "runtime/msgpack/unpack_exception.h"
 #include "runtime/msgpack/zone.h"
 

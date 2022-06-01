@@ -13,6 +13,8 @@
 #include <cstdint>
 #include <type_traits>
 
+#include "runtime/msgpack/adaptor/adaptor_base.h"
+
 namespace msgpack {
 namespace type {
 enum object_type {
@@ -92,7 +94,11 @@ struct object {
    * @return The converted object.
    */
   template<typename T>
-  T as() const;
+  T as() const {
+    T v;
+    convert(v);
+    return v;
+  }
 
   /// Convert the object
   /**
@@ -102,7 +108,15 @@ struct object {
    * @return The reference of `v`.
    */
   template<typename T>
-  std::enable_if_t<!std::is_array_v<T> && !std::is_pointer_v<T>, T &> convert(T &v) const;
+  std::enable_if_t<!std::is_array_v<T> && !std::is_pointer_v<T>, T &> convert(T &v) const {
+    adaptor::convert<T>{}(*this, v);
+    return v;
+  }
+};
+
+struct object_kv {
+  msgpack::object key;
+  msgpack::object val;
 };
 
 } // namespace msgpack

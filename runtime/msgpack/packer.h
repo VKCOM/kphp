@@ -14,6 +14,8 @@
 
 #include "common/mixin/not_copyable.h"
 
+#include "runtime/msgpack/adaptor/adaptor_base.h"
+
 namespace msgpack {
 
 /// The class template that supports continuous packing.
@@ -40,7 +42,9 @@ public:
    * @return The reference of `*this`.
    */
   template<typename T>
-  packer<Stream> &pack(const T &v);
+  packer<Stream> &pack(const T &v) {
+    return adaptor::pack<T>{}(*this, v);
+  }
 
   /// Packing uint8
   /**

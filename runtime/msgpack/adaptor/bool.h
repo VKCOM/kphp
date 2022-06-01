@@ -10,6 +10,7 @@
 #pragma once
 
 #include "runtime/msgpack/adaptor/adaptor_base.h"
+#include "runtime/msgpack/object_fwd.h"
 
 namespace msgpack {
 

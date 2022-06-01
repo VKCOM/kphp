@@ -11,10 +11,12 @@
 
 #include <stdexcept>
 
-#include "runtime/msgpack/object_fwd.h"
-#include "runtime/msgpack/packer.h"
-
 namespace msgpack {
+
+struct object;
+
+template<typename Stream>
+class packer;
 
 namespace adaptor {
 
@@ -22,13 +24,19 @@ namespace adaptor {
 
 template<typename T, typename Enabler = void>
 struct convert {
-  msgpack::object const &operator()(msgpack::object const &o, T &v) const;
+  msgpack::object const &operator()(msgpack::object const &o, T &v) const {
+    v.msgpack_unpack(o);
+    return o;
+  }
 };
 
 template<typename T, typename Enabler = void>
 struct pack {
   template<typename Stream>
-  msgpack::packer<Stream> &operator()(msgpack::packer<Stream> &o, T const &v) const;
+  msgpack::packer<Stream> &operator()(msgpack::packer<Stream> &o, const T &v) const {
+    v.msgpack_pack(o);
+    return o;
+  }
 };
 
 } // namespace adaptor

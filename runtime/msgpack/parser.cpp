@@ -8,10 +8,11 @@
 //    http://www.boost.org/LICENSE_1_0.txt)
 //
 
+#include <cassert>
+#include <cstring>
 #include <type_traits>
 #include <vector>
 
-#include "runtime/msgpack/object.h"
 #include "runtime/msgpack/object_visitor.h"
 #include "runtime/msgpack/parser.h"
 #include "runtime/msgpack/sysdep.h"
