@@ -11,7 +11,7 @@
 
 #include "common/mixin/not_copyable.h"
 #include "runtime/kphp_core.h"
-#include "runtime/msgpack/object_fwd.h"
+#include "runtime/msgpack/object.h"
 #include "runtime/msgpack/zone.h"
 
 namespace msgpack {
