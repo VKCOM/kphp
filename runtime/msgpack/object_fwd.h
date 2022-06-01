@@ -16,8 +16,7 @@
 #include "runtime/msgpack/adaptor/adaptor_base.h"
 
 namespace msgpack {
-namespace type {
-enum object_type {
+enum class type {
   NIL = 0x00,
   BOOLEAN = 0x01,
   POSITIVE_INTEGER = 0x02,
@@ -31,19 +30,18 @@ enum object_type {
   BIN = 0x08,
   EXT = 0x09
 };
-} // namespace type
 
 struct object;
 struct object_kv;
 
 struct object_array {
   uint32_t size;
-  msgpack::object *ptr;
+  object *ptr;
 };
 
 struct object_map {
   uint32_t size;
-  msgpack::object_kv *ptr;
+  object_kv *ptr;
 };
 
 struct object_str {
@@ -77,19 +75,19 @@ struct object {
     uint64_t u64;
     int64_t i64;
     double f64;
-    msgpack::object_array array;
-    msgpack::object_map map;
-    msgpack::object_str str;
-    msgpack::object_bin bin;
-    msgpack::object_ext ext;
+    object_array array;
+    object_map map;
+    object_str str;
+    object_bin bin;
+    object_ext ext;
   };
 
-  msgpack::type::object_type type{type::NIL};
-  union_type via;
+  type type{type::NIL};
+  union_type via{};
 
   /// Get value as T
   /**
-   * If the object can't be converted to T, msgpack::type_error would be thrown.
+   * If the object can't be converted to T, type_error would be thrown.
    * @tparam T The type you want to get.
    * @return The converted object.
    */
@@ -102,7 +100,7 @@ struct object {
 
   /// Convert the object
   /**
-   * If the object can't be converted to T, msgpack::type_error would be thrown.
+   * If the object can't be converted to T, type_error would be thrown.
    * @tparam T The type of v.
    * @param v The value you want to get. `v` is output parameter. `v` is overwritten by converted value from the object.
    * @return The reference of `v`.
@@ -115,8 +113,8 @@ struct object {
 };
 
 struct object_kv {
-  msgpack::object key;
-  msgpack::object val;
+  object key;
+  object val;
 };
 
 } // namespace msgpack

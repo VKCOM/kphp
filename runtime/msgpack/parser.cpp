@@ -324,8 +324,6 @@ parse_return parser<Visitor>::execute(const char *data, std::size_t len, std::si
   const char *const pe = data + len;
   const char *n = nullptr;
 
-  msgpack::object obj;
-
   if (m_current == pe) {
     off = m_current - m_start;
     return parse_return::CONTINUE;

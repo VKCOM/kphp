@@ -15,7 +15,6 @@
 
 namespace msgpack {
 
-namespace type {
 namespace detail {
 
 template<typename T, bool Signed>
@@ -92,14 +91,13 @@ inline void object_char(msgpack::object &o, char v) {
 }
 
 } // namespace detail
-} // namespace type
 
 namespace adaptor {
 
 template<>
 struct convert<char> {
   msgpack::object const &operator()(msgpack::object const &o, char &v) const {
-    v = type::detail::convert_integer<char>(o);
+    v = detail::convert_integer<char>(o);
     return o;
   }
 };
@@ -107,7 +105,7 @@ struct convert<char> {
 template<>
 struct convert<signed char> {
   msgpack::object const &operator()(msgpack::object const &o, signed char &v) const {
-    v = type::detail::convert_integer<signed char>(o);
+    v = detail::convert_integer<signed char>(o);
     return o;
   }
 };
@@ -115,7 +113,7 @@ struct convert<signed char> {
 template<>
 struct convert<signed short> {
   msgpack::object const &operator()(msgpack::object const &o, signed short &v) const {
-    v = type::detail::convert_integer<signed short>(o);
+    v = detail::convert_integer<signed short>(o);
     return o;
   }
 };
@@ -123,7 +121,7 @@ struct convert<signed short> {
 template<>
 struct convert<signed int> {
   msgpack::object const &operator()(msgpack::object const &o, signed int &v) const {
-    v = type::detail::convert_integer<signed int>(o);
+    v = detail::convert_integer<signed int>(o);
     return o;
   }
 };
@@ -131,7 +129,7 @@ struct convert<signed int> {
 template<>
 struct convert<signed long> {
   msgpack::object const &operator()(msgpack::object const &o, signed long &v) const {
-    v = type::detail::convert_integer<signed long>(o);
+    v = detail::convert_integer<signed long>(o);
     return o;
   }
 };
@@ -139,7 +137,7 @@ struct convert<signed long> {
 template<>
 struct convert<signed long long> {
   msgpack::object const &operator()(msgpack::object const &o, signed long long &v) const {
-    v = type::detail::convert_integer<signed long long>(o);
+    v = detail::convert_integer<signed long long>(o);
     return o;
   }
 };
@@ -147,7 +145,7 @@ struct convert<signed long long> {
 template<>
 struct convert<unsigned char> {
   msgpack::object const &operator()(msgpack::object const &o, unsigned char &v) const {
-    v = type::detail::convert_integer<unsigned char>(o);
+    v = detail::convert_integer<unsigned char>(o);
     return o;
   }
 };
@@ -155,7 +153,7 @@ struct convert<unsigned char> {
 template<>
 struct convert<unsigned short> {
   msgpack::object const &operator()(msgpack::object const &o, unsigned short &v) const {
-    v = type::detail::convert_integer<unsigned short>(o);
+    v = detail::convert_integer<unsigned short>(o);
     return o;
   }
 };
@@ -163,7 +161,7 @@ struct convert<unsigned short> {
 template<>
 struct convert<unsigned int> {
   msgpack::object const &operator()(msgpack::object const &o, unsigned int &v) const {
-    v = type::detail::convert_integer<unsigned int>(o);
+    v = detail::convert_integer<unsigned int>(o);
     return o;
   }
 };
@@ -171,7 +169,7 @@ struct convert<unsigned int> {
 template<>
 struct convert<unsigned long> {
   msgpack::object const &operator()(msgpack::object const &o, unsigned long &v) const {
-    v = type::detail::convert_integer<unsigned long>(o);
+    v = detail::convert_integer<unsigned long>(o);
     return o;
   }
 };
@@ -179,7 +177,7 @@ struct convert<unsigned long> {
 template<>
 struct convert<unsigned long long> {
   msgpack::object const &operator()(msgpack::object const &o, unsigned long long &v) const {
-    v = type::detail::convert_integer<unsigned long long>(o);
+    v = detail::convert_integer<unsigned long long>(o);
     return o;
   }
 };
