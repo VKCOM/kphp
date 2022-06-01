@@ -24,18 +24,16 @@ namespace adaptor {
 
 template<typename T, typename Enabler = void>
 struct convert {
-  const msgpack::object &operator()(const msgpack::object &o, T &v) const {
+  void operator()(const msgpack::object &o, T &v) const {
     v.msgpack_unpack(o);
-    return o;
   }
 };
 
 template<typename T, typename Enabler = void>
 struct pack {
   template<typename Stream>
-  msgpack::packer<Stream> &operator()(msgpack::packer<Stream> &o, const T &v) const {
+  void operator()(msgpack::packer<Stream> &o, const T &v) const {
     v.msgpack_pack(o);
-    return o;
   }
 };
 

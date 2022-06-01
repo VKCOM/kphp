@@ -33,12 +33,11 @@ namespace adaptor {
 
 template<typename... Args>
 struct convert<std::tuple<Args...>> {
-  const msgpack::object &operator()(const msgpack::object &o, std::tuple<Args...> &v) const {
+  void operator()(const msgpack::object &o, std::tuple<Args...> &v) const {
     if (o.type != msgpack::type::ARRAY) {
       throw msgpack::type_error();
     }
     StdTupleConverter<decltype(v), sizeof...(Args)>::convert(o, v);
-    return o;
   }
 };
 

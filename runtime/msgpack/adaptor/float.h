@@ -19,7 +19,7 @@ namespace adaptor {
 
 template<>
 struct convert<float> {
-  const msgpack::object &operator()(const msgpack::object &o, float &v) const {
+  void operator()(const msgpack::object &o, float &v) const {
     if (o.type == msgpack::type::FLOAT32 || o.type == msgpack::type::FLOAT64) {
       v = static_cast<float>(o.via.f64);
     } else if (o.type == msgpack::type::POSITIVE_INTEGER) {
@@ -29,22 +29,20 @@ struct convert<float> {
     } else {
       throw msgpack::type_error();
     }
-    return o;
   }
 };
 
 template<>
 struct pack<float> {
   template<typename Stream>
-  msgpack::packer<Stream> &operator()(msgpack::packer<Stream> &o, const float &v) const {
+  void operator()(msgpack::packer<Stream> &o, const float &v) const {
     o.pack_float(v);
-    return o;
   }
 };
 
 template<>
 struct convert<double> {
-  const msgpack::object &operator()(const msgpack::object &o, double &v) const {
+  void operator()(const msgpack::object &o, double &v) const {
     if (o.type == msgpack::type::FLOAT32 || o.type == msgpack::type::FLOAT64) {
       v = o.via.f64;
     } else if (o.type == msgpack::type::POSITIVE_INTEGER) {
@@ -54,16 +52,14 @@ struct convert<double> {
     } else {
       throw msgpack::type_error();
     }
-    return o;
   }
 };
 
 template<>
 struct pack<double> {
   template<typename Stream>
-  msgpack::packer<Stream> &operator()(msgpack::packer<Stream> &o, const double &v) const {
+  void operator()(msgpack::packer<Stream> &o, const double &v) const {
     o.pack_double(v);
-    return o;
   }
 };
 

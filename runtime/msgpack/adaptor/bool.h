@@ -18,25 +18,23 @@ namespace adaptor {
 
 template<>
 struct convert<bool> {
-  const msgpack::object &operator()(const msgpack::object &o, bool &v) const {
+  void operator()(const msgpack::object &o, bool &v) const {
     if (o.type != msgpack::type::BOOLEAN) {
       throw msgpack::type_error();
     }
     v = o.via.boolean;
-    return o;
   }
 };
 
 template<>
 struct pack<bool> {
   template<typename Stream>
-  msgpack::packer<Stream> &operator()(msgpack::packer<Stream> &o, const bool &v) const {
+  void operator()(msgpack::packer<Stream> &o, const bool &v) const {
     if (v) {
       o.pack_true();
     } else {
       o.pack_false();
     }
-    return o;
   }
 };
 

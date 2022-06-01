@@ -42,8 +42,8 @@ public:
    * @return The reference of `*this`.
    */
   template<typename T>
-  packer<Stream> &pack(const T &v) {
-    return adaptor::pack<T>{}(*this, v);
+  void pack(const T &v) {
+    adaptor::pack<T>{}(*this, v);
   }
 
   /// Packing uint8

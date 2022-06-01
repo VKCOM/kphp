@@ -96,188 +96,166 @@ namespace adaptor {
 
 template<>
 struct convert<char> {
-  const msgpack::object &operator()(const msgpack::object &o, char &v) const {
+  void operator()(const msgpack::object &o, char &v) const {
     v = detail::convert_integer<char>(o);
-    return o;
   }
 };
 
 template<>
 struct convert<signed char> {
-  const msgpack::object &operator()(const msgpack::object &o, signed char &v) const {
+  void operator()(const msgpack::object &o, signed char &v) const {
     v = detail::convert_integer<signed char>(o);
-    return o;
   }
 };
 
 template<>
 struct convert<signed short> {
-  const msgpack::object &operator()(const msgpack::object &o, signed short &v) const {
+  void operator()(const msgpack::object &o, signed short &v) const {
     v = detail::convert_integer<signed short>(o);
-    return o;
   }
 };
 
 template<>
 struct convert<signed int> {
-  const msgpack::object &operator()(const msgpack::object &o, signed int &v) const {
+  void operator()(const msgpack::object &o, signed int &v) const {
     v = detail::convert_integer<signed int>(o);
-    return o;
   }
 };
 
 template<>
 struct convert<signed long> {
-  const msgpack::object &operator()(const msgpack::object &o, signed long &v) const {
+  void operator()(const msgpack::object &o, signed long &v) const {
     v = detail::convert_integer<signed long>(o);
-    return o;
   }
 };
 
 template<>
 struct convert<signed long long> {
-  const msgpack::object &operator()(const msgpack::object &o, signed long long &v) const {
+  void operator()(const msgpack::object &o, signed long long &v) const {
     v = detail::convert_integer<signed long long>(o);
-    return o;
   }
 };
 
 template<>
 struct convert<unsigned char> {
-  const msgpack::object &operator()(const msgpack::object &o, unsigned char &v) const {
+  void operator()(const msgpack::object &o, unsigned char &v) const {
     v = detail::convert_integer<unsigned char>(o);
-    return o;
   }
 };
 
 template<>
 struct convert<unsigned short> {
-  const msgpack::object &operator()(const msgpack::object &o, unsigned short &v) const {
+  void operator()(const msgpack::object &o, unsigned short &v) const {
     v = detail::convert_integer<unsigned short>(o);
-    return o;
   }
 };
 
 template<>
 struct convert<unsigned int> {
-  const msgpack::object &operator()(const msgpack::object &o, unsigned int &v) const {
+  void operator()(const msgpack::object &o, unsigned int &v) const {
     v = detail::convert_integer<unsigned int>(o);
-    return o;
   }
 };
 
 template<>
 struct convert<unsigned long> {
-  const msgpack::object &operator()(const msgpack::object &o, unsigned long &v) const {
+  void operator()(const msgpack::object &o, unsigned long &v) const {
     v = detail::convert_integer<unsigned long>(o);
-    return o;
   }
 };
 
 template<>
 struct convert<unsigned long long> {
-  const msgpack::object &operator()(const msgpack::object &o, unsigned long long &v) const {
+  void operator()(const msgpack::object &o, unsigned long long &v) const {
     v = detail::convert_integer<unsigned long long>(o);
-    return o;
   }
 };
 
 template<>
 struct pack<char> {
   template<typename Stream>
-  msgpack::packer<Stream> &operator()(msgpack::packer<Stream> &o, char v) const {
+  void operator()(msgpack::packer<Stream> &o, char v) const {
     o.pack_char(v);
-    return o;
   }
 };
 
 template<>
 struct pack<signed char> {
   template<typename Stream>
-  msgpack::packer<Stream> &operator()(msgpack::packer<Stream> &o, signed char v) const {
+  void operator()(msgpack::packer<Stream> &o, signed char v) const {
     o.pack_signed_char(v);
-    return o;
   }
 };
 
 template<>
 struct pack<signed short> {
   template<typename Stream>
-  msgpack::packer<Stream> &operator()(msgpack::packer<Stream> &o, signed short v) const {
+  void operator()(msgpack::packer<Stream> &o, signed short v) const {
     o.pack_short(v);
-    return o;
   }
 };
 
 template<>
 struct pack<signed int> {
   template<typename Stream>
-  msgpack::packer<Stream> &operator()(msgpack::packer<Stream> &o, signed int v) const {
+  void operator()(msgpack::packer<Stream> &o, signed int v) const {
     o.pack_int(v);
-    return o;
   }
 };
 
 template<>
 struct pack<signed long> {
   template<typename Stream>
-  msgpack::packer<Stream> &operator()(msgpack::packer<Stream> &o, signed long v) const {
+  void operator()(msgpack::packer<Stream> &o, signed long v) const {
     o.pack_long(v);
-    return o;
   }
 };
 
 template<>
 struct pack<signed long long> {
   template<typename Stream>
-  msgpack::packer<Stream> &operator()(msgpack::packer<Stream> &o, signed long long v) const {
+  void operator()(msgpack::packer<Stream> &o, signed long long v) const {
     o.pack_long_long(v);
-    return o;
   }
 };
 
 template<>
 struct pack<unsigned char> {
   template<typename Stream>
-  msgpack::packer<Stream> &operator()(msgpack::packer<Stream> &o, unsigned char v) const {
+  void operator()(msgpack::packer<Stream> &o, unsigned char v) const {
     o.pack_unsigned_char(v);
-    return o;
   }
 };
 
 template<>
 struct pack<unsigned short> {
   template<typename Stream>
-  msgpack::packer<Stream> &operator()(msgpack::packer<Stream> &o, unsigned short v) const {
+  void operator()(msgpack::packer<Stream> &o, unsigned short v) const {
     o.pack_unsigned_short(v);
-    return o;
   }
 };
 
 template<>
 struct pack<unsigned int> {
   template<typename Stream>
-  msgpack::packer<Stream> &operator()(msgpack::packer<Stream> &o, unsigned int v) const {
+  void operator()(msgpack::packer<Stream> &o, unsigned int v) const {
     o.pack_unsigned_int(v);
-    return o;
   }
 };
 
 template<>
 struct pack<unsigned long> {
   template<typename Stream>
-  msgpack::packer<Stream> &operator()(msgpack::packer<Stream> &o, unsigned long v) const {
+  void operator()(msgpack::packer<Stream> &o, unsigned long v) const {
     o.pack_unsigned_long(v);
-    return o;
   }
 };
 
 template<>
 struct pack<unsigned long long> {
   template<typename Stream>
-  msgpack::packer<Stream> &operator()(msgpack::packer<Stream> &o, unsigned long long v) const {
+  void operator()(msgpack::packer<Stream> &o, unsigned long long v) const {
     o.pack_unsigned_long_long(v);
-    return o;
   }
 };
 
