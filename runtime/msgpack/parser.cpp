@@ -14,6 +14,7 @@
 #include "runtime/msgpack/object.h"
 #include "runtime/msgpack/object_visitor.h"
 #include "runtime/msgpack/parser.h"
+#include "runtime/msgpack/sysdep.h"
 #include "runtime/msgpack/unpack_exception.h"
 
 namespace msgpack {

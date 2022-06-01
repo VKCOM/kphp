@@ -9,9 +9,10 @@
 //
 #pragma once
 
-#include "common/mixin/not_copyable.h"
+#include <cstdint>
+#include <cstddef>
 
-#include "runtime/msgpack/sysdep.h"
+#include "common/mixin/not_copyable.h"
 
 namespace msgpack {
 
@@ -28,7 +29,7 @@ public:
   /**
    * @param s Packing destination stream object.
    */
-  packer(Stream &s);
+  explicit packer(Stream &s);
 
   /// Packing function template
   /**
@@ -596,7 +597,7 @@ private:
  * @param v Packing value
  */
 template<typename Stream, typename T>
-inline void pack(Stream &s, const T &v) {
+void pack(Stream &s, const T &v) {
   packer<Stream>(s).pack(v);
 }
 

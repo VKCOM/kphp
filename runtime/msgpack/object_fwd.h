@@ -11,7 +11,6 @@
 #pragma once
 
 #include <cstdint>
-#include <stdexcept>
 #include <type_traits>
 
 namespace msgpack {
@@ -34,14 +33,6 @@ enum object_type {
 
 struct object;
 struct object_kv;
-
-struct object_array;
-struct object_map;
-struct object_str;
-struct object_bin;
-struct object_ext;
-
-class type_error;
 
 struct object_array {
   uint32_t size;
@@ -113,7 +104,5 @@ struct object {
   template<typename T>
   std::enable_if_t<!std::is_array_v<T> && !std::is_pointer_v<T>, T &> convert(T &v) const;
 };
-
-class type_error : public std::bad_cast {};
 
 } // namespace msgpack

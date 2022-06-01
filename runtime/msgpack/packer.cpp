@@ -11,28 +11,27 @@
 #include "runtime/msgpack/packer.h"
 
 #include "runtime/kphp_core.h"
-
-#include <climits>
-#include <cstring>
-#include <limits>
-#include <stdexcept>
+#include "runtime/msgpack/sysdep.h"
 
 namespace msgpack {
 
 template<typename T>
-inline char take8_8(T d) {
+static char take8_8(T d) noexcept {
   return static_cast<char>(reinterpret_cast<uint8_t *>(&d)[0]);
 }
+
 template<typename T>
-inline char take8_16(T d) {
+static char take8_16(T d) noexcept {
   return static_cast<char>(reinterpret_cast<uint8_t *>(&d)[0]);
 }
+
 template<typename T>
-inline char take8_32(T d) {
+static char take8_32(T d) noexcept {
   return static_cast<char>(reinterpret_cast<uint8_t *>(&d)[0]);
 }
+
 template<typename T>
-inline char take8_64(T d) {
+static char take8_64(T d) noexcept {
   return static_cast<char>(reinterpret_cast<uint8_t *>(&d)[0]);
 }
 

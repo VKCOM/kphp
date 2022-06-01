@@ -9,6 +9,8 @@
 //
 #pragma once
 
+#include <stdexcept>
+
 #include "runtime/msgpack/object_fwd.h"
 #include "runtime/msgpack/packer.h"
 
@@ -30,5 +32,7 @@ struct pack {
 };
 
 } // namespace adaptor
+
+class type_error : public std::bad_cast {};
 
 } // namespace msgpack
