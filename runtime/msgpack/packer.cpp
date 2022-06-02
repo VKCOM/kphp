@@ -377,4 +377,6 @@ void packer<Stream>::append_buffer(const char *buf, size_t len) noexcept {
 
 template class packer<string_buffer>;
 
+uint32_t packer_float32_decorator::serialize_as_float32_ = 0;
+
 } // namespace msgpack
