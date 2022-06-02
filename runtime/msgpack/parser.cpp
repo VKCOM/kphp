@@ -205,15 +205,15 @@ parse_return unpack_stack::consume(Visitor &visitor) {
 enum class msgpack_cs : uint32_t {
   HEADER = 0x00, // nil
 
-  // MSGPACK_CS_                = 0x01,
-  // MSGPACK_CS_                = 0x02,  // false
-  // MSGPACK_CS_                = 0x03,  // true
+// MSGPACK_CS_ = 0x01,
+// MSGPACK_CS_ = 0x02,  // false
+// MSGPACK_CS_ = 0x03,  // true
 
-  BIN_8 = 0x04,
-  BIN_16 = 0x05,
-  BIN_32 = 0x06,
-
-//  ext support is removed
+//  bin and ext support is removed
+//
+//  BIN_8 = 0x04,
+//  BIN_16 = 0x05,
+//  BIN_32 = 0x06,
 //
 //  EXT_8 = 0x07,
 //  EXT_16 = 0x08,
@@ -248,8 +248,7 @@ enum class msgpack_cs : uint32_t {
 
   // ACS_BIG_INT_VALUE,
   // ACS_BIG_FLOAT_VALUE,
-  ACS_STR_VALUE,
-  ACS_BIN_VALUE
+  ACS_STR_VALUE
 };
 
 template<typename Visitor>
@@ -531,20 +530,6 @@ parse_return parser<Visitor>::execute(const char *data, std::size_t len, std::si
             fixed_trail_again = true;
           }
         } break;
-        case msgpack_cs::BIN_8: {
-          uint8_t tmp;
-          load<uint8_t>(tmp, n);
-          m_trail = tmp;
-          if (m_trail == 0) {
-            bool visret = visitor_.visit_bin(n, static_cast<uint32_t>(m_trail));
-            parse_return upr = after_visit_proc(visret, off);
-            if (upr != parse_return::CONTINUE)
-              return upr;
-          } else {
-            m_cs = msgpack_cs::ACS_BIN_VALUE;
-            fixed_trail_again = true;
-          }
-        } break;
         case msgpack_cs::STR_16: {
           uint16_t tmp;
           load<uint16_t>(tmp, n);
@@ -556,20 +541,6 @@ parse_return parser<Visitor>::execute(const char *data, std::size_t len, std::si
               return upr;
           } else {
             m_cs = msgpack_cs::ACS_STR_VALUE;
-            fixed_trail_again = true;
-          }
-        } break;
-        case msgpack_cs::BIN_16: {
-          uint16_t tmp;
-          load<uint16_t>(tmp, n);
-          m_trail = tmp;
-          if (m_trail == 0) {
-            bool visret = visitor_.visit_bin(n, static_cast<uint32_t>(m_trail));
-            parse_return upr = after_visit_proc(visret, off);
-            if (upr != parse_return::CONTINUE)
-              return upr;
-          } else {
-            m_cs = msgpack_cs::ACS_BIN_VALUE;
             fixed_trail_again = true;
           }
         } break;
@@ -587,28 +558,8 @@ parse_return parser<Visitor>::execute(const char *data, std::size_t len, std::si
             fixed_trail_again = true;
           }
         } break;
-        case msgpack_cs::BIN_32: {
-          uint32_t tmp;
-          load<uint32_t>(tmp, n);
-          m_trail = tmp;
-          if (m_trail == 0) {
-            bool visret = visitor_.visit_bin(n, static_cast<uint32_t>(m_trail));
-            parse_return upr = after_visit_proc(visret, off);
-            if (upr != parse_return::CONTINUE)
-              return upr;
-          } else {
-            m_cs = msgpack_cs::ACS_BIN_VALUE;
-            fixed_trail_again = true;
-          }
-        } break;
         case msgpack_cs::ACS_STR_VALUE: {
           bool visret = visitor_.visit_str(n, static_cast<uint32_t>(m_trail));
-          parse_return upr = after_visit_proc(visret, off);
-          if (upr != parse_return::CONTINUE)
-            return upr;
-        } break;
-        case msgpack_cs::ACS_BIN_VALUE: {
-          bool visret = visitor_.visit_bin(n, static_cast<uint32_t>(m_trail));
           parse_return upr = after_visit_proc(visret, off);
           if (upr != parse_return::CONTINUE)
             return upr;

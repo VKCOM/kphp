@@ -82,17 +82,6 @@ bool object_visitor::visit_str(const char *v, uint32_t size) {
   return true;
 }
 
-bool object_visitor::visit_bin(const char *v, uint32_t size) {
-  auto *obj = m_stack.back();
-  obj->type = msgpack::type::BIN;
-  char *tmp = static_cast<char *>(m_zone.allocate_align(size, alignof(char)));
-  std::memcpy(tmp, v, size);
-  obj->via.bin.ptr = tmp;
-
-  obj->via.bin.size = size;
-  return true;
-}
-
 bool object_visitor::start_array(uint32_t num_elements) {
   auto *obj = m_stack.back();
   obj->type = msgpack::type::ARRAY;

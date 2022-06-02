@@ -26,8 +26,7 @@ enum class type {
   FLOAT = 0x04,
   STR = 0x05,
   ARRAY = 0x06,
-  MAP = 0x07,
-  BIN = 0x08
+  MAP = 0x07
 };
 
 struct object;
@@ -48,11 +47,6 @@ struct object_str {
   const char *ptr;
 };
 
-struct object_bin {
-  uint32_t size;
-  const char *ptr;
-};
-
 /// Object class that corresponding to MessagePack format object
 /**
  * See https://github.com/msgpack/msgpack-c/wiki/v1_1_cpp_object
@@ -66,7 +60,6 @@ struct object {
     object_array array;
     object_map map;
     object_str str;
-    object_bin bin;
   };
 
   type type{type::NIL};
