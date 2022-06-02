@@ -7,6 +7,7 @@ on:
 
 env:
   kphp_root_dir: /home/kitten/kphp
+  kphp_polyfills_dir: /home/kitten/kphp/kphp-polyfills
   kphp_build_dir: /home/kitten/kphp/build
 
 jobs:
@@ -41,6 +42,12 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - name: Get polyfills repo
+      uses: actions/checkout@v3
+      with:
+        repository: 'VKCOM/kphp-polyfills'
+        path: 'kphp-polyfills'
+
     - name: Cache docker image
       uses: actions/cache@v3
       id: docker-image-cache
@@ -57,7 +64,7 @@ jobs:
     - name: Load docker image from cache
       if: steps.docker-image-cache.outputs.cache-hit == 'true'
       run: docker load --input kphp-build-env-${{matrix.os}}.tar
-      
+
     - name: Start docker container
       run: |
         docker run -dt --name kphp-build-container-${{matrix.os}} kphp-build-img-${{matrix.os}}
@@ -79,11 +86,15 @@ jobs:
       run: docker exec kphp-build-container-${{matrix.os}} bash -c 
               "cd ${{env.kphp_build_dir}} && echo 'hello world' > demo.php && ${{env.kphp_root_dir}}/objs/bin/kphp2cpp --cxx ${{matrix.compiler}} demo.php && kphp_out/server -o"
 
+    - name: Polyfills composer install
+      run: docker exec kphp-build-container-${{matrix.os}} bash -c
+              "composer install -d ${{env.kphp_polyfills_dir}}"
+
     - name: Run python tests
       id: python_tests
       continue-on-error: true
       run: docker exec kphp-build-container-${{matrix.os}} bash -c
-              "chown -R kitten /home && su kitten -c 'GITHUB_ACTIONS=1 KPHP_CXX=${{matrix.compiler}} python3 -m pytest --tb=native -n$(nproc) ${{env.kphp_root_dir}}/tests/python/'"
+              "chown -R kitten /home && su kitten -c 'GITHUB_ACTIONS=1 KPHP_TESTS_POLYFILLS_REPO=${{env.kphp_polyfills_dir}} KPHP_CXX=${{matrix.compiler}} python3 -m pytest --tb=native -n$(nproc) ${{env.kphp_root_dir}}/tests/python/'"
 
     - name: Prepare python tests artifacts
       if: steps.python_tests.outcome == 'failure'
