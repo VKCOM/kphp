@@ -8,7 +8,7 @@
 
 #include "common/mixin/not_copyable.h"
 
-namespace msgpack {
+namespace vk::msgpack {
 
 class zone : private vk::not_copyable {
 public:
@@ -34,4 +34,4 @@ private:
   chunk_list m_chunk_list;
 };
 
-} // namespace msgpack
+} // namespace vk::msgpack

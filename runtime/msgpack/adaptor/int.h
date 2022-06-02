@@ -9,7 +9,7 @@
 
 #include <limits>
 
-namespace msgpack {
+namespace vk::msgpack {
 
 namespace detail {
 
@@ -138,4 +138,4 @@ struct pack<uint64_t> {
 
 } // namespace adaptor
 
-} // namespace msgpack
+} // namespace vk::msgpack

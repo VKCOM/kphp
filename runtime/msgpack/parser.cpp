@@ -11,7 +11,7 @@
 #include "runtime/msgpack/parser.h"
 #include "runtime/msgpack/sysdep.h"
 
-namespace msgpack {
+namespace vk::msgpack {
 namespace {
 struct fix_tag {
   char f1[65]; // FIXME unique size is required. or use is_same meta function.
@@ -625,4 +625,4 @@ parse_return parser<Visitor>::parse(const char *data, size_t len, size_t &off, V
 }
 
 template parse_return parser<object_visitor>::parse(const char *data, size_t len, size_t &off, object_visitor &v);
-} // namespace msgpack
+} // namespace vk::msgpack

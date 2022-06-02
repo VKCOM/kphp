@@ -9,7 +9,7 @@
 
 #include <tuple>
 
-namespace msgpack {
+namespace vk::msgpack {
 
 template<typename Tuple, std::size_t N>
 struct StdTupleConverter {
@@ -63,4 +63,4 @@ struct pack<std::tuple<Args...>> {
 
 } // namespace adaptor
 
-} // namespace msgpack
+} // namespace vk::msgpack

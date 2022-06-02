@@ -6,7 +6,7 @@
 
 #include <stdexcept>
 
-namespace msgpack {
+namespace vk::msgpack {
 
 struct object;
 
@@ -34,4 +34,4 @@ struct pack {
 
 class type_error : public std::bad_cast {};
 
-} // namespace msgpack
+} // namespace vk::msgpack

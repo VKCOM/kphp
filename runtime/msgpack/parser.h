@@ -6,7 +6,7 @@
 
 #include <cstdint>
 
-namespace msgpack {
+namespace vk::msgpack {
 
 enum class parse_return { SUCCESS = 2, EXTRA_BYTES = 1, CONTINUE = 0, PARSE_ERROR = -1, STOP_VISITOR = -2 };
 
@@ -42,4 +42,4 @@ private:
   msgpack_cs m_cs{};
 };
 
-} // namespace msgpack
+} // namespace vk::msgpack

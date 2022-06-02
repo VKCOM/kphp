@@ -6,7 +6,7 @@
 
 #include "runtime/msgpack/object.h"
 
-namespace msgpack {
+namespace vk::msgpack {
 
 // FIXME check overflow, underflow
 
@@ -60,4 +60,4 @@ struct pack<double> {
 
 } // namespace adaptor
 
-} // namespace msgpack
+} // namespace vk::msgpack

@@ -8,7 +8,7 @@
 #include "runtime/msgpack/adaptor/adaptor_base.h"
 #include "runtime/msgpack/object.h"
 
-namespace msgpack::adaptor {
+namespace vk::msgpack::adaptor {
 
 template<>
 struct convert<string> {
@@ -32,4 +32,4 @@ struct pack<string> {
   }
 };
 
-} // namespace msgpack::adaptor
+} // namespace vk::msgpack::adaptor

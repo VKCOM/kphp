@@ -6,7 +6,7 @@
 
 #include <stdexcept>
 
-namespace msgpack {
+namespace vk::msgpack {
 
 struct unpack_error : public std::runtime_error {
   using std::runtime_error::runtime_error;
@@ -36,4 +36,4 @@ struct ext_size_overflow : public size_overflow {
   using size_overflow::size_overflow;
 };
 
-} // namespace msgpack
+} // namespace vk::msgpack

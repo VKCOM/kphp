@@ -9,7 +9,7 @@
 #include "runtime/msgpack/unpack_exception.h"
 #include "runtime/msgpack/zone.h"
 
-namespace msgpack {
+namespace vk::msgpack {
 
 constexpr static std::size_t STACK_SIZE = 32;
 
@@ -117,4 +117,4 @@ void object_visitor::insufficient_bytes(size_t /*parsed_offset*/, size_t /*error
   throw msgpack::insufficient_bytes("insufficient bytes");
 }
 
-} // namespace msgpack
+} // namespace vk::msgpack

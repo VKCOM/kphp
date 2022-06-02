@@ -7,7 +7,7 @@
 #include "runtime/msgpack/object_visitor.h"
 #include "runtime/msgpack/parser.h"
 
-namespace msgpack {
+namespace vk::msgpack {
 
 msgpack::object unpacker::unpack() {
   object_visitor visitor{zone_};
@@ -38,4 +38,4 @@ string unpacker::get_error_msg() const noexcept {
   return error;
 }
 
-} // namespace msgpack
+} // namespace vk::msgpack

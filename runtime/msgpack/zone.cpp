@@ -6,7 +6,7 @@
 
 #include <memory>
 
-namespace msgpack {
+namespace vk::msgpack {
 
 zone::chunk_list::chunk_list(size_t chunk_size) {
   auto *c = static_cast<chunk *>(::malloc(sizeof(chunk) + chunk_size));
@@ -80,4 +80,4 @@ char *zone::allocate_expand(size_t size) {
   return ptr;
 }
 
-} // namespace msgpack
+} // namespace vk::msgpack

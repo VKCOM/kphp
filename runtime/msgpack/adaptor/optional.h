@@ -8,7 +8,7 @@
 #include "runtime/msgpack/adaptor/adaptor_base.h"
 #include "runtime/msgpack/object.h"
 
-namespace msgpack::adaptor {
+namespace vk::msgpack::adaptor {
 
 template<class T>
 struct convert<Optional<T>> {
@@ -58,4 +58,4 @@ struct pack<Optional<T>> {
   }
 };
 
-} // namespace msgpack::adaptor
+} // namespace vk::msgpack::adaptor

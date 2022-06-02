@@ -9,7 +9,7 @@
 
 #include "runtime/msgpack/adaptor/adaptor_base.h"
 
-namespace msgpack {
+namespace vk::msgpack {
 enum class type {
   NIL = 0x00,
   BOOLEAN = 0x01,
@@ -91,4 +91,4 @@ struct object_kv {
   object val;
 };
 
-} // namespace msgpack
+} // namespace vk::msgpack

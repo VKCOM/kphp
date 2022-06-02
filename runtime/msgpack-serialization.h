@@ -28,7 +28,7 @@ inline Optional<string> f$msgpack_serialize(const T &value, string *out_err_msg 
     string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_OFF;
   });
 
-  msgpack::packer{*coub}.pack(value);
+  vk::msgpack::packer{*coub}.pack(value);
 
   if (string_buffer::string_buffer_error_flag == STRING_BUFFER_ERROR_FLAG_FAILED) {
     string err_msg{"msgpacke_serialize buffer overflow"};
@@ -56,11 +56,11 @@ inline string f$msgpack_serialize_safe(const T &value) noexcept {
 
 template<class InstanceClass>
 inline Optional<string> f$instance_serialize(const class_instance<InstanceClass> &instance) noexcept {
-  msgpack::packer_float32_decorator::clear();
-  msgpack::adaptor::CheckInstanceDepth::depth = 0;
+  vk::msgpack::packer_float32_decorator::clear();
+  vk::msgpack::adaptor::CheckInstanceDepth::depth = 0;
   string err_msg;
   auto result = f$msgpack_serialize(instance, &err_msg);
-  if (msgpack::adaptor::CheckInstanceDepth::is_exceeded()) {
+  if (vk::msgpack::adaptor::CheckInstanceDepth::is_exceeded()) {
     f$warning(string("maximum depth of nested instances exceeded"));
     return {};
   } else if (!err_msg.empty()) {
@@ -87,17 +87,17 @@ inline ResultType f$msgpack_deserialize(const string &buffer, string *out_err_ms
   const auto malloc_replacement_guard = make_malloc_replacement_with_script_allocator();
   string err_msg;
   try {
-    msgpack::unpacker unpacker{buffer};
-    msgpack::object obj = unpacker.unpack();
+    vk::msgpack::unpacker unpacker{buffer};
+    vk::msgpack::object obj = unpacker.unpack();
 
     if (unpacker.has_error()) {
       err_msg = unpacker.get_error_msg();
     } else {
       return obj.as<ResultType>();
     }
-  } catch (msgpack::type_error &e) {
+  } catch (vk::msgpack::type_error &e) {
     err_msg = string("Unknown type found during deserialization");
-  } catch (msgpack::unpack_error &e) {
+  } catch (vk::msgpack::unpack_error &e) {
     err_msg = string(e.what());
   } catch (...) {
     err_msg = string("something went wrong in deserialization, pass it to KPHP|Team");

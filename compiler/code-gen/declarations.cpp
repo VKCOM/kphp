@@ -657,21 +657,21 @@ void ClassDeclaration::compile_serialize(CodeGenerator &W, ClassPtr klass) {
 
   klass->members.for_each([&](ClassMemberInstanceField &field) {
     if (field.serialization_tag != -1) {
-      auto func_name = fmt_format("msgpack::packer_float32_decorator::pack_value{}", field.serialize_as_float32 ? "_float32" : "");
+      auto func_name = fmt_format("vk::msgpack::packer_float32_decorator::pack_value{}", field.serialize_as_float32 ? "_float32" : "");
       body += fmt_format("packer.pack({}); {}(packer, ${});\n", field.serialization_tag, func_name, field.var->name);
       cnt_fields += 2;
     }
   });
 
   FunctionSignatureGenerator(W).set_const_this()
-    << "void msgpack_pack(msgpack::packer<string_buffer> &packer)" << BEGIN
+    << "void msgpack_pack(vk::msgpack::packer<string_buffer> &packer)" << BEGIN
     << "packer.pack_array(" << cnt_fields << ");" << NL
     << body << NL
     << END << NL;
 }
 
 void ClassDeclaration::compile_deserialize(CodeGenerator &W, ClassPtr klass) {
-  //if (msgpack_o.type != msgpack::type::ARRAY) { throw msgpack::type_error{}; }
+  //if (msgpack_o.type != vk::msgpack::type::ARRAY) { throw vk::msgpack::type_error{}; }
   //auto arr = msgpack_o.via.array;
   //for (size_t i = 0; i < arr.size; i += 2) {
   //  auto tag = arr.ptr[i].as<uint8_t>();
@@ -693,8 +693,8 @@ void ClassDeclaration::compile_deserialize(CodeGenerator &W, ClassPtr klass) {
 
   cases.emplace_back("default: break;");
 
-  W << "void msgpack_unpack(const msgpack::object &msgpack_o)" << BEGIN
-      << "if (msgpack_o.type != msgpack::type::ARRAY) { throw msgpack::type_error{}; }" << NL
+  W << "void msgpack_unpack(const vk::msgpack::object &msgpack_o)" << BEGIN
+      << "if (msgpack_o.type != vk::msgpack::type::ARRAY) { throw vk::msgpack::type_error{}; }" << NL
       << "auto arr = msgpack_o.via.array;" << NL
       << "for (size_t i = 0; i < arr.size; i += 2)" << BEGIN
         << "auto tag = arr.ptr[i].as<uint8_t>();" << NL

@@ -9,7 +9,7 @@
 #include "runtime/msgpack/object.h"
 #include "runtime/msgpack/unpack_exception.h"
 
-namespace msgpack::adaptor {
+namespace vk::msgpack::adaptor {
 struct CheckInstanceDepth {
   static size_t depth;
   static constexpr size_t max_depth = 20;
@@ -69,4 +69,4 @@ struct pack<class_instance<T>> {
   }
 };
 
-} // namespace msgpack::adaptor
+} // namespace vk::msgpack::adaptor

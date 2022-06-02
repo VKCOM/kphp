@@ -9,7 +9,7 @@
 #include "runtime/msgpack/object.h"
 #include "runtime/msgpack/zone.h"
 
-namespace msgpack {
+namespace vk::msgpack {
 
 class unpacker : private vk::not_copyable {
 public:
@@ -26,4 +26,4 @@ private:
   msgpack::zone zone_;
 };
 
-} // namespace msgpack
+} // namespace vk::msgpack

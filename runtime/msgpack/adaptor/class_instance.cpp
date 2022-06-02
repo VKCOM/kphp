@@ -4,6 +4,6 @@
 
 #include "runtime/msgpack/adaptor/class_instance.h"
 
-namespace msgpack::adaptor {
+namespace vk::msgpack::adaptor {
 size_t CheckInstanceDepth::depth = 0;
-} // namespace msgpack::adaptor
+} // namespace vk::msgpack::adaptor

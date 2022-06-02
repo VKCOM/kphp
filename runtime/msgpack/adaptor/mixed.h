@@ -8,7 +8,7 @@
 #include "runtime/msgpack/object.h"
 #include "runtime/kphp_core.h"
 
-namespace msgpack::adaptor {
+namespace vk::msgpack::adaptor {
 
 template<>
 struct convert<mixed> {
@@ -76,4 +76,4 @@ struct pack<mixed> {
   }
 };
 
-} // namespace msgpack::adaptor
+} // namespace vk::msgpack::adaptor

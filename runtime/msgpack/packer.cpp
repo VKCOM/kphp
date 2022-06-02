@@ -7,7 +7,7 @@
 #include "runtime/kphp_core.h"
 #include "runtime/msgpack/sysdep.h"
 
-namespace msgpack {
+namespace vk::msgpack {
 
 template<typename T>
 static char take8_8(T d) noexcept {
@@ -373,4 +373,4 @@ template class packer<string_buffer>;
 
 uint32_t packer_float32_decorator::serialize_as_float32_ = 0;
 
-} // namespace msgpack
+} // namespace vk::msgpack

@@ -10,7 +10,7 @@
 #include "runtime/msgpack/packer.h"
 #include "runtime/msgpack/unpack_exception.h"
 
-namespace msgpack::adaptor {
+namespace vk::msgpack::adaptor {
 
 template<class T>
 struct convert<array<T>> {
@@ -90,4 +90,4 @@ struct pack<array<T>> {
   }
 };
 
-} // namespace msgpack::adaptor
+} // namespace vk::msgpack::adaptor

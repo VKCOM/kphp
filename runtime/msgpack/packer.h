@@ -11,7 +11,7 @@
 
 #include "runtime/msgpack/adaptor/adaptor_base.h"
 
-namespace msgpack {
+namespace vk::msgpack {
 
 // this class supports packing into a Stream according to msgpack format.
 // See https://github.com/msgpack/msgpack/blob/master/spec.md
@@ -95,4 +95,4 @@ private:
   static uint32_t serialize_as_float32_;
 };
 
-} // namespace msgpack
+} // namespace vk::msgpack

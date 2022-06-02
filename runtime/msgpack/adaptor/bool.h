@@ -7,9 +7,7 @@
 #include "runtime/msgpack/adaptor/adaptor_base.h"
 #include "runtime/msgpack/object.h"
 
-namespace msgpack {
-
-namespace adaptor {
+namespace vk::msgpack::adaptor {
 
 template<>
 struct convert<bool> {
@@ -33,6 +31,4 @@ struct pack<bool> {
   }
 };
 
-} // namespace adaptor
-
-} // namespace msgpack
+} // namespace vk::msgpack::adaptor
