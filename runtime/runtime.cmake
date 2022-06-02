@@ -8,6 +8,7 @@ prepend(KPHP_RUNTIME_MEMORY_RESOURCE_SOURCES memory_resource/
         unsynchronized_pool_resource.cpp)
 
 prepend(KPHP_RUNTIME_MSGPACK_SOURCES msgpack/
+        adaptor/class_instance.cpp
         object_visitor.cpp
         packer.cpp
         parser.cpp
@@ -60,7 +61,6 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         migration_php8.cpp
         misc.cpp
         mixed.cpp
-        msgpack-serialization.cpp
         mysql.cpp
         net_events.cpp
         on_kphp_warning_callback.cpp

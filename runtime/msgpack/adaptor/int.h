@@ -10,6 +10,7 @@
 #pragma once
 
 #include "runtime/msgpack/adaptor/adaptor_base.h"
+#include "runtime/msgpack/object.h"
 
 #include <limits>
 
@@ -139,7 +140,6 @@ struct pack<uint64_t> {
     o.pack_uint64(v);
   }
 };
-
 
 } // namespace adaptor
 
