@@ -1,12 +1,6 @@
-//
-// MessagePack for C++ deserializing routine
-//
-// Copyright (C) 2016-2017 KONDO Takatoshi
-//
-//    Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//    http://www.boost.org/LICENSE_1_0.txt)
-//
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2022 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include <cassert>
 #include <cstring>
@@ -16,7 +10,6 @@
 #include "runtime/msgpack/object_visitor.h"
 #include "runtime/msgpack/parser.h"
 #include "runtime/msgpack/sysdep.h"
-#include "runtime/msgpack/unpack_exception.h"
 
 namespace msgpack {
 namespace {
