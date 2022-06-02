@@ -337,7 +337,7 @@ inline string f$msgpack_serialize_safe(const T &value) noexcept {
 
 template<class InstanceClass>
 inline Optional<string> f$instance_serialize(const class_instance<InstanceClass> &instance) noexcept {
-  serialize_as_float32 = 0;
+  msgpack::packer_float32_decorator::clear();
   msgpack::adaptor::CheckInstanceDepth::depth = 0;
   string err_msg;
   auto result = f$msgpack_serialize(instance, &err_msg);

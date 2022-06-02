@@ -26,7 +26,22 @@ struct StdTupleConverter {
 
 template<typename Tuple>
 struct StdTupleConverter<Tuple, 0> {
-  static void convert(const msgpack::object &, Tuple &) {}
+  static void convert(const msgpack::object & /*o*/, Tuple & /*v*/) {}
+};
+
+template<size_t N>
+struct PackValueHelper {
+  template<class StreamT, class TupleT>
+  static void convert(packer<StreamT> &packer, const TupleT &value) {
+    PackValueHelper<N - 1>::convert(packer, value);
+    packer_float32_decorator::pack_value(packer, std::get<N - 1>(value));
+  }
+};
+
+template<>
+struct PackValueHelper<0> {
+  template<class StreamT, class TupleT>
+  static void convert(packer<StreamT> & /*o*/, const TupleT & /*v*/) {}
 };
 
 namespace adaptor {
@@ -38,6 +53,15 @@ struct convert<std::tuple<Args...>> {
       throw msgpack::type_error();
     }
     StdTupleConverter<decltype(v), sizeof...(Args)>::convert(o, v);
+  }
+};
+
+template<typename... Args>
+struct pack<std::tuple<Args...>> {
+  template<typename Stream>
+  void operator()(msgpack::packer<Stream> &o, const std::tuple<Args...> &v) const {
+    o.pack_array(sizeof...(Args));
+    PackValueHelper<sizeof...(Args)>::convert(o, v);
   }
 };
 

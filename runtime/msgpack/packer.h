@@ -11,7 +11,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <tuple>
 
 #include "common/mixin/not_copyable.h"
 
@@ -72,6 +71,10 @@ private:
 
 class packer_float32_decorator {
 public:
+  static void clear() noexcept {
+    serialize_as_float32_ = 0;
+  }
+
   template<class StreamT, class T>
   static void pack_value(bool as_float32, packer<StreamT> &packer, const T& value) {
     if (as_float32) {
@@ -84,12 +87,12 @@ public:
   }
 
   template<class StreamT, class T>
-  static void pack_value(msgpack::packer<StreamT> &packer, const T& value) {
+  static void pack_value(packer<StreamT> &packer, const T& value) {
     packer.pack(value);
   }
 
   template<class StreamT>
-  static void pack_value(msgpack::packer<StreamT> &packer, double value) {
+  static void pack_value(packer<StreamT> &packer, double value) {
     if (serialize_as_float32_ > 0) {
       packer.pack(static_cast<float>(value));
     } else {
@@ -98,27 +101,6 @@ public:
   }
 
 private:
-  template<size_t N>
-  struct PackValueHelper {
-    template<class StreamT, class TupleT>
-    static void convert(packer<StreamT> &packer, const TupleT &value) {
-      PackValueHelper<N - 1>::convert(packer, value);
-      pack_value(packer, std::get<N - 1>(value));
-    }
-  };
-
-  template<>
-  struct PackValueHelper<0> {
-    template<class StreamT, class TupleT>
-    static void convert(packer<StreamT> &, const TupleT &) {}
-  };
-
-  template<class StreamT, class... Args>
-  static void pack_value(packer<StreamT> &packer, const std::tuple<Args...> &value) {
-    packer.pack_array(sizeof...(Args));
-    PackValueHelper<sizeof...(Args)>::convert(packer, value);
-  }
-
   static uint32_t serialize_as_float32_;
 };
 
