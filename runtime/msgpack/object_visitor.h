@@ -34,7 +34,6 @@ public:
   bool visit_float64(double v) noexcept;
   bool visit_str(const char *v, uint32_t size);
   bool visit_bin(const char *v, uint32_t size);
-  bool visit_ext(const char *v, uint32_t size);
   bool start_array(uint32_t num_elements);
   bool start_map(uint32_t num_kv_pairs);
   bool start_array_item() const noexcept {

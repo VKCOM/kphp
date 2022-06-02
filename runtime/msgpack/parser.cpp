@@ -59,16 +59,6 @@ std::enable_if_t<sizeof(T) == 8> load(T &dst, const char *n) noexcept {
   _msgpack_load64(T, n, &dst);
 }
 
-template<std::size_t N>
-void check_ext_size(std::size_t /*size*/) {}
-
-template<>
-[[maybe_unused]] void check_ext_size<4>(std::size_t size) {
-  if (size == 0xffffffff) {
-    throw msgpack::ext_size_overflow("ext size overflow");
-  }
-}
-
 enum class container_type { ARRAY_ITEM, MAP_KEY, MAP_VALUE };
 
 template<typename Visitor>
@@ -223,9 +213,11 @@ enum class msgpack_cs : uint32_t {
   BIN_16 = 0x05,
   BIN_32 = 0x06,
 
-  EXT_8 = 0x07,
-  EXT_16 = 0x08,
-  EXT_32 = 0x09,
+//  ext support is removed
+//
+//  EXT_8 = 0x07,
+//  EXT_16 = 0x08,
+//  EXT_32 = 0x09,
 
   FLOAT = 0x0a,
   DOUBLE = 0x0b,
@@ -238,11 +230,13 @@ enum class msgpack_cs : uint32_t {
   INT_32 = 0x12,
   INT_64 = 0x13,
 
-  FIXEXT_1 = 0x14,
-  FIXEXT_2 = 0x15,
-  FIXEXT_4 = 0x16,
-  FIXEXT_8 = 0x17,
-  FIXEXT_16 = 0x18,
+//  ext support is removed
+//
+//  FIXEXT_1 = 0x14,
+//  FIXEXT_2 = 0x15,
+//  FIXEXT_4 = 0x16,
+//  FIXEXT_8 = 0x17,
+//  FIXEXT_16 = 0x18,
 
   STR_8 = 0x19,  // str8
   STR_16 = 0x1a, // str16
@@ -255,8 +249,7 @@ enum class msgpack_cs : uint32_t {
   // ACS_BIG_INT_VALUE,
   // ACS_BIG_FLOAT_VALUE,
   ACS_STR_VALUE,
-  ACS_BIN_VALUE,
-  ACS_EXT_VALUE
+  ACS_BIN_VALUE
 };
 
 template<typename Visitor>
@@ -524,36 +517,6 @@ parse_return parser<Visitor>::execute(const char *data, std::size_t len, std::si
           if (upr != parse_return::CONTINUE)
             return upr;
         } break;
-        case msgpack_cs::FIXEXT_1: {
-          bool visret = visitor_.visit_ext(n, 1 + 1);
-          parse_return upr = after_visit_proc(visret, off);
-          if (upr != parse_return::CONTINUE)
-            return upr;
-        } break;
-        case msgpack_cs::FIXEXT_2: {
-          bool visret = visitor_.visit_ext(n, 2 + 1);
-          parse_return upr = after_visit_proc(visret, off);
-          if (upr != parse_return::CONTINUE)
-            return upr;
-        } break;
-        case msgpack_cs::FIXEXT_4: {
-          bool visret = visitor_.visit_ext(n, 4 + 1);
-          parse_return upr = after_visit_proc(visret, off);
-          if (upr != parse_return::CONTINUE)
-            return upr;
-        } break;
-        case msgpack_cs::FIXEXT_8: {
-          bool visret = visitor_.visit_ext(n, 8 + 1);
-          parse_return upr = after_visit_proc(visret, off);
-          if (upr != parse_return::CONTINUE)
-            return upr;
-        } break;
-        case msgpack_cs::FIXEXT_16: {
-          bool visret = visitor_.visit_ext(n, 16 + 1);
-          parse_return upr = after_visit_proc(visret, off);
-          if (upr != parse_return::CONTINUE)
-            return upr;
-        } break;
         case msgpack_cs::STR_8: {
           uint8_t tmp;
           load<uint8_t>(tmp, n);
@@ -579,20 +542,6 @@ parse_return parser<Visitor>::execute(const char *data, std::size_t len, std::si
               return upr;
           } else {
             m_cs = msgpack_cs::ACS_BIN_VALUE;
-            fixed_trail_again = true;
-          }
-        } break;
-        case msgpack_cs::EXT_8: {
-          uint8_t tmp;
-          load<uint8_t>(tmp, n);
-          m_trail = tmp + 1;
-          if (m_trail == 0) {
-            bool visret = visitor_.visit_ext(n, static_cast<uint32_t>(m_trail));
-            parse_return upr = after_visit_proc(visret, off);
-            if (upr != parse_return::CONTINUE)
-              return upr;
-          } else {
-            m_cs = msgpack_cs::ACS_EXT_VALUE;
             fixed_trail_again = true;
           }
         } break;
@@ -624,20 +573,6 @@ parse_return parser<Visitor>::execute(const char *data, std::size_t len, std::si
             fixed_trail_again = true;
           }
         } break;
-        case msgpack_cs::EXT_16: {
-          uint16_t tmp;
-          load<uint16_t>(tmp, n);
-          m_trail = tmp + 1;
-          if (m_trail == 0) {
-            bool visret = visitor_.visit_ext(n, static_cast<uint32_t>(m_trail));
-            parse_return upr = after_visit_proc(visret, off);
-            if (upr != parse_return::CONTINUE)
-              return upr;
-          } else {
-            m_cs = msgpack_cs::ACS_EXT_VALUE;
-            fixed_trail_again = true;
-          }
-        } break;
         case msgpack_cs::STR_32: {
           uint32_t tmp;
           load<uint32_t>(tmp, n);
@@ -666,22 +601,6 @@ parse_return parser<Visitor>::execute(const char *data, std::size_t len, std::si
             fixed_trail_again = true;
           }
         } break;
-        case msgpack_cs::EXT_32: {
-          uint32_t tmp;
-          load<uint32_t>(tmp, n);
-          check_ext_size<sizeof(std::size_t)>(tmp);
-          m_trail = tmp;
-          ++m_trail;
-          if (m_trail == 0) {
-            bool visret = visitor_.visit_ext(n, static_cast<uint32_t>(m_trail));
-            parse_return upr = after_visit_proc(visret, off);
-            if (upr != parse_return::CONTINUE)
-              return upr;
-          } else {
-            m_cs = msgpack_cs::ACS_EXT_VALUE;
-            fixed_trail_again = true;
-          }
-        } break;
         case msgpack_cs::ACS_STR_VALUE: {
           bool visret = visitor_.visit_str(n, static_cast<uint32_t>(m_trail));
           parse_return upr = after_visit_proc(visret, off);
@@ -690,12 +609,6 @@ parse_return parser<Visitor>::execute(const char *data, std::size_t len, std::si
         } break;
         case msgpack_cs::ACS_BIN_VALUE: {
           bool visret = visitor_.visit_bin(n, static_cast<uint32_t>(m_trail));
-          parse_return upr = after_visit_proc(visret, off);
-          if (upr != parse_return::CONTINUE)
-            return upr;
-        } break;
-        case msgpack_cs::ACS_EXT_VALUE: {
-          bool visret = visitor_.visit_ext(n, static_cast<uint32_t>(m_trail));
           parse_return upr = after_visit_proc(visret, off);
           if (upr != parse_return::CONTINUE)
             return upr;

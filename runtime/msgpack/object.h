@@ -27,8 +27,7 @@ enum class type {
   STR = 0x05,
   ARRAY = 0x06,
   MAP = 0x07,
-  BIN = 0x08,
-  EXT = 0x09
+  BIN = 0x08
 };
 
 struct object;
@@ -54,17 +53,6 @@ struct object_bin {
   const char *ptr;
 };
 
-struct object_ext {
-  int8_t type() const {
-    return ptr[0];
-  }
-  const char *data() const {
-    return &ptr[1];
-  }
-  uint32_t size;
-  const char *ptr;
-};
-
 /// Object class that corresponding to MessagePack format object
 /**
  * See https://github.com/msgpack/msgpack-c/wiki/v1_1_cpp_object
@@ -79,7 +67,6 @@ struct object {
     object_map map;
     object_str str;
     object_bin bin;
-    object_ext ext;
   };
 
   type type{type::NIL};
