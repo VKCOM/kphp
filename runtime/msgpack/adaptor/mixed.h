@@ -14,27 +14,27 @@ template<>
 struct convert<mixed> {
   const msgpack::object &operator()(const msgpack::object &obj, mixed &v) const {
     switch (obj.type) {
-      case msgpack::type::STR:
+      case stored_type::STR:
         v = obj.as<string>();
         break;
-      case msgpack::type::ARRAY:
+      case stored_type::ARRAY:
         v = obj.as<array<mixed>>();
         break;
-      case msgpack::type::NEGATIVE_INTEGER:
-      case msgpack::type::POSITIVE_INTEGER:
+      case stored_type::NEGATIVE_INTEGER:
+      case stored_type::POSITIVE_INTEGER:
         v = obj.as<int64_t>();
         break;
-      case msgpack::type::FLOAT32:
-      case msgpack::type::FLOAT64:
+      case stored_type::FLOAT32:
+      case stored_type::FLOAT64:
         v = obj.as<double>();
         break;
-      case msgpack::type::BOOLEAN:
+      case stored_type::BOOLEAN:
         v = obj.as<bool>();
         break;
-      case msgpack::type::MAP:
+      case stored_type::MAP:
         v = obj.as<array<mixed>>();
         break;
-      case msgpack::type::NIL:
+      case stored_type::NIL:
         v = mixed{};
         break;
       default:

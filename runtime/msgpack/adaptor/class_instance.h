@@ -36,10 +36,10 @@ template<class T>
 struct convert<class_instance<T>> {
   const msgpack::object &operator()(const msgpack::object &obj, class_instance<T> &instance) const {
     switch (obj.type) {
-      case msgpack::type::NIL:
+      case stored_type::NIL:
         instance = class_instance<T>{};
         break;
-      case msgpack::type::ARRAY:
+      case stored_type::ARRAY:
         instance = class_instance<T>{}.alloc();
         obj.convert(*instance.get());
         break;

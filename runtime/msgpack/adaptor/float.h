@@ -15,11 +15,11 @@ namespace adaptor {
 template<>
 struct convert<float> {
   void operator()(const msgpack::object &o, float &v) const {
-    if (o.type == msgpack::type::FLOAT32 || o.type == msgpack::type::FLOAT64) {
+    if (o.type == stored_type::FLOAT32 || o.type == stored_type::FLOAT64) {
       v = static_cast<float>(o.via.f64);
-    } else if (o.type == msgpack::type::POSITIVE_INTEGER) {
+    } else if (o.type == stored_type::POSITIVE_INTEGER) {
       v = static_cast<float>(o.via.u64);
-    } else if (o.type == msgpack::type::NEGATIVE_INTEGER) {
+    } else if (o.type == stored_type::NEGATIVE_INTEGER) {
       v = static_cast<float>(o.via.i64);
     } else {
       throw msgpack::type_error();
@@ -38,11 +38,11 @@ struct pack<float> {
 template<>
 struct convert<double> {
   void operator()(const msgpack::object &o, double &v) const {
-    if (o.type == msgpack::type::FLOAT32 || o.type == msgpack::type::FLOAT64) {
+    if (o.type == stored_type::FLOAT32 || o.type == stored_type::FLOAT64) {
       v = o.via.f64;
-    } else if (o.type == msgpack::type::POSITIVE_INTEGER) {
+    } else if (o.type == stored_type::POSITIVE_INTEGER) {
       v = static_cast<double>(o.via.u64);
-    } else if (o.type == msgpack::type::NEGATIVE_INTEGER) {
+    } else if (o.type == stored_type::NEGATIVE_INTEGER) {
       v = static_cast<double>(o.via.i64);
     } else {
       throw msgpack::type_error();

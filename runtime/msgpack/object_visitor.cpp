@@ -21,20 +21,20 @@ object_visitor::object_visitor(msgpack::zone &zone) noexcept
 
 bool object_visitor::visit_nil() noexcept {
   auto *obj = m_stack.back();
-  obj->type = msgpack::type::NIL;
+  obj->type = stored_type::NIL;
   return true;
 }
 
 bool object_visitor::visit_boolean(bool v) noexcept {
   auto *obj = m_stack.back();
-  obj->type = msgpack::type::BOOLEAN;
+  obj->type = stored_type::BOOLEAN;
   obj->via.boolean = v;
   return true;
 }
 
 bool object_visitor::visit_positive_integer(uint64_t v) noexcept {
   auto *obj = m_stack.back();
-  obj->type = msgpack::type::POSITIVE_INTEGER;
+  obj->type = stored_type::POSITIVE_INTEGER;
   obj->via.u64 = v;
   return true;
 }
@@ -42,10 +42,10 @@ bool object_visitor::visit_positive_integer(uint64_t v) noexcept {
 bool object_visitor::visit_negative_integer(int64_t v) noexcept {
   auto *obj = m_stack.back();
   if (v >= 0) {
-    obj->type = msgpack::type::POSITIVE_INTEGER;
+    obj->type = stored_type::POSITIVE_INTEGER;
     obj->via.u64 = v;
   } else {
-    obj->type = msgpack::type::NEGATIVE_INTEGER;
+    obj->type = stored_type::NEGATIVE_INTEGER;
     obj->via.i64 = v;
   }
   return true;
@@ -53,21 +53,21 @@ bool object_visitor::visit_negative_integer(int64_t v) noexcept {
 
 bool object_visitor::visit_float32(float v) noexcept {
   auto *obj = m_stack.back();
-  obj->type = msgpack::type::FLOAT32;
+  obj->type = stored_type::FLOAT32;
   obj->via.f64 = v;
   return true;
 }
 
 bool object_visitor::visit_float64(double v) noexcept {
   auto *obj = m_stack.back();
-  obj->type = msgpack::type::FLOAT64;
+  obj->type = stored_type::FLOAT64;
   obj->via.f64 = v;
   return true;
 }
 
 bool object_visitor::visit_str(const char *v, uint32_t size) {
   auto *obj = m_stack.back();
-  obj->type = msgpack::type::STR;
+  obj->type = stored_type::STR;
   char *tmp = static_cast<char *>(m_zone.allocate_align(size, alignof(char)));
   std::memcpy(tmp, v, size);
   obj->via.str.ptr = tmp;
@@ -78,7 +78,7 @@ bool object_visitor::visit_str(const char *v, uint32_t size) {
 
 bool object_visitor::start_array(uint32_t num_elements) {
   auto *obj = m_stack.back();
-  obj->type = msgpack::type::ARRAY;
+  obj->type = stored_type::ARRAY;
   obj->via.array.size = num_elements;
   if (num_elements == 0) {
     obj->via.array.ptr = nullptr;
@@ -95,7 +95,7 @@ bool object_visitor::start_array(uint32_t num_elements) {
 
 bool object_visitor::start_map(uint32_t num_kv_pairs) {
   auto *obj = m_stack.back();
-  obj->type = msgpack::type::MAP;
+  obj->type = stored_type::MAP;
   obj->via.map.size = num_kv_pairs;
   if (num_kv_pairs == 0) {
     obj->via.map.ptr = nullptr;

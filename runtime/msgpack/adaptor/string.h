@@ -13,7 +13,7 @@ namespace vk::msgpack::adaptor {
 template<>
 struct convert<string> {
   const msgpack::object &operator()(const msgpack::object &obj, string &res_s) const {
-    if (obj.type != msgpack::type::STR) {
+    if (obj.type != stored_type::STR) {
       throw msgpack::type_error();
     }
     res_s = string(obj.via.str.ptr, obj.via.str.size);

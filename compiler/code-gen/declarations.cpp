@@ -671,7 +671,7 @@ void ClassDeclaration::compile_serialize(CodeGenerator &W, ClassPtr klass) {
 }
 
 void ClassDeclaration::compile_deserialize(CodeGenerator &W, ClassPtr klass) {
-  //if (msgpack_o.type != vk::msgpack::type::ARRAY) { throw vk::msgpack::type_error{}; }
+  //if (msgpack_o.type != vk::msgpack::stored_type::ARRAY) { throw vk::msgpack::type_error{}; }
   //auto arr = msgpack_o.via.array;
   //for (size_t i = 0; i < arr.size; i += 2) {
   //  auto tag = arr.ptr[i].as<uint8_t>();
@@ -694,7 +694,7 @@ void ClassDeclaration::compile_deserialize(CodeGenerator &W, ClassPtr klass) {
   cases.emplace_back("default: break;");
 
   W << "void msgpack_unpack(const vk::msgpack::object &msgpack_o)" << BEGIN
-      << "if (msgpack_o.type != vk::msgpack::type::ARRAY) { throw vk::msgpack::type_error{}; }" << NL
+      << "if (msgpack_o.type != vk::msgpack::stored_type::ARRAY) { throw vk::msgpack::type_error{}; }" << NL
       << "auto arr = msgpack_o.via.array;" << NL
       << "for (size_t i = 0; i < arr.size; i += 2)" << BEGIN
         << "auto tag = arr.ptr[i].as<uint8_t>();" << NL

@@ -12,7 +12,7 @@ namespace vk::msgpack::adaptor {
 template<>
 struct convert<bool> {
   void operator()(const msgpack::object &o, bool &v) const {
-    if (o.type != msgpack::type::BOOLEAN) {
+    if (o.type != stored_type::BOOLEAN) {
       throw msgpack::type_error();
     }
     v = o.via.boolean;

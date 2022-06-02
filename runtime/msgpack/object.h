@@ -10,7 +10,7 @@
 #include "runtime/msgpack/adaptor/adaptor_base.h"
 
 namespace vk::msgpack {
-enum class type {
+enum class stored_type {
   NIL = 0x00,
   BOOLEAN = 0x01,
   POSITIVE_INTEGER = 0x02,
@@ -56,7 +56,7 @@ struct object {
     object_str str;
   };
 
-  type type{type::NIL};
+  stored_type type{stored_type::NIL};
   union_type via{};
 
   /// Get value as T

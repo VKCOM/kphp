@@ -14,7 +14,7 @@ template<class T>
 struct convert<Optional<T>> {
   const msgpack::object &operator()(const msgpack::object &obj, Optional<T> &v) const {
     switch (obj.type) {
-      case msgpack::type::BOOLEAN: {
+      case stored_type::BOOLEAN: {
         bool value = obj.as<bool>();
         if (!std::is_same<T, bool>{} && value) {
           char err_msg[256];
@@ -24,7 +24,7 @@ struct convert<Optional<T>> {
         v = value;
         break;
       }
-      case msgpack::type::NIL:
+      case stored_type::NIL:
         v = Optional<T>{};
         break;
       default:

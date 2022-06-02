@@ -15,7 +15,7 @@ namespace vk::msgpack::adaptor {
 template<class T>
 struct convert<array<T>> {
   const msgpack::object &operator()(const msgpack::object &obj, array<T> &res_arr) const {
-    if (obj.type == msgpack::type::ARRAY) {
+    if (obj.type == stored_type::ARRAY) {
       res_arr.reserve(obj.via.array.size, 0, true);
 
       for (uint32_t i = 0; i < obj.via.array.size; ++i) {
@@ -25,7 +25,7 @@ struct convert<array<T>> {
       return obj;
     }
 
-    if (obj.type == msgpack::type::MAP) {
+    if (obj.type == stored_type::MAP) {
       array_size size(0, 0, false);
       run_callbacks_on_map(obj.via.map,
         [&size](int64_t, msgpack::object &) { size.int_size++; },
@@ -50,11 +50,11 @@ private:
       auto &value = obj_map.ptr[i].val;
 
       switch (key.type) {
-        case msgpack::type::POSITIVE_INTEGER:
-        case msgpack::type::NEGATIVE_INTEGER:
+        case stored_type::POSITIVE_INTEGER:
+        case stored_type::NEGATIVE_INTEGER:
           on_integer(key.as<int64_t>(), value);
           break;
-        case msgpack::type::STR:
+        case stored_type::STR:
           on_string(key.as<string>(), value);
           break;
         default:

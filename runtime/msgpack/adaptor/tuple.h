@@ -45,7 +45,7 @@ namespace adaptor {
 template<typename... Args>
 struct convert<std::tuple<Args...>> {
   void operator()(const msgpack::object &o, std::tuple<Args...> &v) const {
-    if (o.type != msgpack::type::ARRAY) {
+    if (o.type != stored_type::ARRAY) {
       throw msgpack::type_error();
     }
     StdTupleConverter<decltype(v), sizeof...(Args)>::convert(o, v);
