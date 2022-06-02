@@ -76,18 +76,14 @@ public:
   }
 
   template<class StreamT, class T>
-  static void pack_value(bool as_float32, packer<StreamT> &packer, const T& value) {
-    if (as_float32) {
-      ++serialize_as_float32_;
-      pack_value(packer, value);
-      --serialize_as_float32_;
-    } else {
-      pack_value(packer, value);
-    }
+  static void pack_value_float32(packer<StreamT> &packer, const T &value) {
+    ++serialize_as_float32_;
+    pack_value(packer, value);
+    --serialize_as_float32_;
   }
 
   template<class StreamT, class T>
-  static void pack_value(packer<StreamT> &packer, const T& value) {
+  static void pack_value(packer<StreamT> &packer, const T &value) {
     packer.pack(value);
   }
 

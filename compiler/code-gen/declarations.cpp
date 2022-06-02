@@ -657,7 +657,8 @@ void ClassDeclaration::compile_serialize(CodeGenerator &W, ClassPtr klass) {
 
   klass->members.for_each([&](ClassMemberInstanceField &field) {
     if (field.serialization_tag != -1) {
-      body += fmt_format("packer.pack({}); msgpack::packer_float32_decorator::pack_value({}, packer, ${});\n", field.serialization_tag, field.serialize_as_float32, field.var->name);
+      auto func_name = fmt_format("msgpack::packer_float32_decorator::pack_value{}", field.serialize_as_float32 ? "_float32" : "");
+      body += fmt_format("packer.pack({}); {}(packer, ${});\n", field.serialization_tag, func_name, field.var->name);
       cnt_fields += 2;
     }
   });
