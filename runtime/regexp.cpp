@@ -64,6 +64,19 @@ void regexp::check_pattern_compilation_warning() const noexcept {
   }
 }
 
+int64_t regexp::skip_utf8_subsequent_bytes(int64_t offset, const string &subject) const noexcept {
+  if (!is_utf8) {
+    return offset;
+  }
+  // all multibyte utf8 runes consist of subsequent bytes,
+  // these subsequent bytes start with 10 bit pattern
+  // 0xc0 selects the two most significant bits, then we compare it to 0x80 (0b10000000)
+  while (offset < int64_t{subject.size()} && ((static_cast<unsigned char>(subject[offset])) & 0xc0) == 0x80) {
+    offset++;
+  }
+  return offset;
+}
+
 bool regexp::is_valid_RE2_regexp(const char *regexp_string, int64_t regexp_len, bool is_utf8, const char *function, const char *file) noexcept {
 //  return false;
   int64_t brackets_depth = 0;
@@ -662,9 +675,7 @@ Optional<int64_t> regexp::match(const string &subject, bool all_matches) const {
     if (exec(subject, offset, second_try) == 0) {
       if (second_try) {
         second_try = false;
-        do {
-          offset++;
-        } while (is_utf8 && offset < int64_t{subject.size()} && (((unsigned char)subject[static_cast<string::size_type>(offset)]) & 0xc0) == 0x80);
+        offset = skip_utf8_subsequent_bytes(offset + 1, subject);
         continue;
       }
 
@@ -730,9 +741,7 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, bool all_
     if (count == 0) {
       if (second_try) {
         second_try = false;
-        do {
-          offset++;
-        } while (is_utf8 && offset < int64_t{subject.size()} && (((unsigned char)subject[static_cast<string::size_type>(offset)]) & 0xc0) == 0x80);
+        offset = skip_utf8_subsequent_bytes(offset + 1, subject);
         continue;
       }
 
@@ -847,9 +856,7 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, int64_t f
     if (count == 0) {
       if (second_try) {
         second_try = false;
-        do {
-          offset++;
-        } while (is_utf8 && offset < int64_t{subject.size()} && (((unsigned char)subject[static_cast<string::size_type>(offset)]) & 0xc0) == 0x80);
+        offset = skip_utf8_subsequent_bytes(offset + 1, subject);
         continue;
       }
 
@@ -962,9 +969,7 @@ Optional<array<mixed>> regexp::split(const string &subject, int64_t limit, int64
     if (count == 0) {
       if (second_try) {
         second_try = false;
-        do {
-          offset++;
-        } while (is_utf8 && offset < int64_t{subject.size()} && (((unsigned char)subject[static_cast<string::size_type>(offset)]) & 0xc0) == 0x80);
+        offset = skip_utf8_subsequent_bytes(offset + 1, subject);
         continue;
       }
 

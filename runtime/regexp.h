@@ -71,6 +71,8 @@ private:
 
   void check_pattern_compilation_warning() const noexcept;
 
+  int64_t skip_utf8_subsequent_bytes(int64_t offset, const string &subject) const noexcept;
+
 public:
   regexp() = default;
 
