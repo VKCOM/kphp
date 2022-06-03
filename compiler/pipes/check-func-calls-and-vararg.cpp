@@ -284,6 +284,8 @@ VertexPtr CheckFuncCallsAndVarargPass::on_func_call(VertexAdaptor<op_func_call> 
 
     if (call_arg->type() == op_varg) {
       kphp_error(f->has_variadic_param, "Unpacking an argument to a non-variadic param");
+    } else if (auto conv = call_arg.try_as<op_conv_array>(); conv && conv->expr()->type() == op_varg) {
+      kphp_error(f->has_variadic_param, "Unpacking an argument to a non-variadic param");
     }
   }
 
