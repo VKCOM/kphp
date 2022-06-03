@@ -79,7 +79,10 @@ class KphpRunOnce(KphpBuilder):
         self._php_stdout, php_stderr = self._wait_proc(php_proc)
 
         if php_stderr:
-            self._move_to_artifacts("php_stderr", php_proc.returncode, content=php_stderr)
+            if 'GITHUB_ACTIONS' in os.environ:
+                print("php_stderr: " + str(php_stderr))
+            else:
+                self._move_to_artifacts("php_stderr", php_proc.returncode, content=php_stderr)
 
         if not os.listdir(self._php_tmp_dir):
             shutil.rmtree(self._php_tmp_dir, ignore_errors=True)
@@ -131,5 +134,9 @@ class KphpRunOnce(KphpBuilder):
 
         with open(diff_artifact.file, 'wb') as f:
             subprocess.call(["diff", "--text", "-ud", php_stdout_file, kphp_server_stdout_file], stdout=f)
+            if 'GITHUB_ACTIONS' in os.environ:
+                # just open and read the file - it's easier than messing with popen, etc.
+                with open(diff_artifact.file, 'r') as f:
+                    print('diff: ' + f.read())
 
         return False
