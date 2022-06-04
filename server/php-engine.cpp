@@ -462,12 +462,6 @@ static char no_cache_headers[] =
   "Pragma: no-cache\r\n"
   "Cache-Control: no-store\r\n";
 
-#define HTTP_RESULT_SIZE  (4 << 20)
-
-//static char http_body_buffer[HTTP_RESULT_SIZE], *http_w;
-//#define http_w_end  (http_body_buffer + HTTP_RESULT_SIZE - 16384)
-//void http_return (connection *c, const char *str, int len);
-
 void http_return(connection *c, const char *str, int len) {
   if (len < 0) {
     len = (int)strlen(str);

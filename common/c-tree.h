@@ -290,19 +290,6 @@
   typedef void (*tree_##name##_act_ex2_t)(value_t x, void *extra, void *extra2);                                                                               \
   typedef bool (*tree_##name##_act_stop_t)(value_t x, void *extra);
 
-#define __DECLARE_TREE_TYPE_CNT(name, value_t, y_t)                                                                                                            \
-  struct tree_##name {                                                                                                                                         \
-    struct tree_##name *left, *right;                                                                                                                          \
-    value_t x;                                                                                                                                                 \
-    y_t y;                                                                                                                                                     \
-    int count;                                                                                                                                                 \
-  };                                                                                                                                                           \
-  typedef struct tree_##name tree_##name##_t;                                                                                                                  \
-  typedef void (*tree_##name##_act_t)(value_t x);                                                                                                              \
-  typedef void (*tree_##name##_act_ex_t)(value_t x, void *extra);                                                                                              \
-  typedef void (*tree_##name##_act_ex2_t)(value_t x, void *extra, void *extra2);                                                                               \
-  typedef bool (*tree_##name##_act_stop_t)(value_t x, void *extra);
-
 #define __DECLARE_TREE(prefix, name, value_t, y_t)                                                                                                             \
   prefix tree_##name##_t *tree_lookup_##name(tree_##name##_t *T, value_t x) __attribute__((unused));                                                           \
   prefix tree_##name##_t *tree_lookup_p_##name(tree_##name##_t *T, value_t *x) __attribute__((unused));                                                        \

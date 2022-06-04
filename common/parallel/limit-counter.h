@@ -72,14 +72,6 @@ static inline uint64_t parallel_limit_counter_read_approx(const parallel_limit_c
   static __thread parallel_limit_counter_tls_t parallel_limit_counter_##name##_tls;                                                                            \
   static parallel_limit_counter_t parallel_limit_counter_##name;
 
-#define PARALLEL_LIMIT_COUNTER_EXTERN(name)                                                                                                                    \
-  __thread parallel_limit_counter_tls_t parallel_limit_counter_##name##_tls;                                                                                   \
-  parallel_limit_counter_t parallel_limit_counter_##name;
-
-#define DECLARE_PARALLEL_LIMIT_COUNTER(name)                                                                                                                   \
-  extern __thread parallel_limit_counter_tls_t parallel_limit_counter_##name##_tls;                                                                            \
-  extern parallel_limit_counter_t parallel_limit_counter_##name;
-
 #define PARALLEL_LIMIT_COUNTER_REGISTER_THREAD(name) parallel_limit_counter_register_thread(&parallel_limit_counter_##name, &parallel_limit_counter_##name##_tls)
 #define PARALLEL_LIMIT_COUNTER_INIT(name, global_limit, thread_max) parallel_limit_counter_init(&parallel_limit_counter_##name, global_limit, thread_max)
 #define PARALLEL_LIMIT_COUNTER_UNREGISTER_THREAD(name) parallel_limit_counter_unregister_thread(&parallel_limit_counter_##name, &parallel_limit_counter_##name##_tls)

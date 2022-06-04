@@ -52,14 +52,6 @@ uint64_t parallel_counter_read(parallel_counter_t *counter);
   static __thread parallel_counter_tls_t parallel_counter_##name##_tls;                                                                                        \
   static parallel_counter_t parallel_counter_##name;
 
-#define PARALLEL_COUNTER_EXTERN(name)                                                                                                                          \
-  __thread parallel_counter_tls_t parallel_counter_##name##_tls;                                                                                               \
-  parallel_counter_t parallel_counter_##name;
-
-#define DECLARE_PARALLEL_COUNTER(name)                                                                                                                         \
-  extern __thread parallel_counter_tls_t parallel_counter_##name##_tls;                                                                                        \
-  extern parallel_counter_t parallel_counter_##name;
-
 #define PARALLEL_COUNTER_REGISTER_THREAD(name) parallel_counter_register_thread(&parallel_counter_##name, &parallel_counter_##name##_tls)
 #define PARALLEL_COUNTER_INIT(name) parallel_counter_init(&parallel_counter_##name)
 #define PARALLEL_COUNTER_UNREGISTER_THREAD(name) parallel_counter_unregister_thread(&parallel_counter_##name, &parallel_counter_##name##_tls)

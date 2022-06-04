@@ -20,8 +20,6 @@
 
 DECLARE_VERBOSITY(binlog_buffers);
 
-#define UPDATE_OLD_BINLOG_VARS
-
 typedef struct {
   bool need_to_free;
   int attempts;
