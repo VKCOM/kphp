@@ -8,7 +8,7 @@ prepend(KPHP_RUNTIME_MEMORY_RESOURCE_SOURCES memory_resource/
         unsynchronized_pool_resource.cpp)
 
 prepend(KPHP_RUNTIME_MSGPACK_SOURCES msgpack/
-        adaptor/class_instance.cpp
+        check_instance_depth.cpp
         object_visitor.cpp
         packer.cpp
         parser.cpp

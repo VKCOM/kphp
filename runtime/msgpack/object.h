@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <type_traits>
 
-#include "runtime/msgpack/adaptor/adaptor_base.h"
+#include "runtime/msgpack/adaptor_base.h"
 
 namespace vk::msgpack {
 enum class stored_type {

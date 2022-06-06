@@ -9,7 +9,7 @@
 
 #include "common/mixin/not_copyable.h"
 
-#include "runtime/msgpack/adaptor/adaptor_base.h"
+#include "runtime/msgpack/adaptor_base.h"
 
 namespace vk::msgpack {
 

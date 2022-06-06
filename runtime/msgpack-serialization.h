@@ -57,10 +57,10 @@ inline string f$msgpack_serialize_safe(const T &value) noexcept {
 template<class InstanceClass>
 inline Optional<string> f$instance_serialize(const class_instance<InstanceClass> &instance) noexcept {
   vk::msgpack::packer_float32_decorator::clear();
-  vk::msgpack::adaptor::CheckInstanceDepth::depth = 0;
+  vk::msgpack::CheckInstanceDepth::depth = 0;
   string err_msg;
   auto result = f$msgpack_serialize(instance, &err_msg);
-  if (vk::msgpack::adaptor::CheckInstanceDepth::is_exceeded()) {
+  if (vk::msgpack::CheckInstanceDepth::is_exceeded()) {
     f$warning(string("maximum depth of nested instances exceeded"));
     return {};
   } else if (!err_msg.empty()) {

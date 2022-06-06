@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <stdexcept>
-
 namespace vk::msgpack {
 
 struct object;
@@ -31,7 +29,5 @@ struct pack {
 };
 
 } // namespace adaptor
-
-class type_error : public std::bad_cast {};
 
 } // namespace vk::msgpack

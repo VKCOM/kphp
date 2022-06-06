@@ -2,8 +2,8 @@
 // Copyright (c) 2022 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime/msgpack/adaptor/class_instance.h"
+#include "runtime/msgpack/check_instance_depth.h"
 
-namespace vk::msgpack::adaptor {
+namespace vk::msgpack {
 size_t CheckInstanceDepth::depth = 0;
-} // namespace vk::msgpack::adaptor
+} // namespace vk::msgpack
