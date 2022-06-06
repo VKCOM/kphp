@@ -6,10 +6,7 @@
 
 #include <assert.h>
 #include <stdarg.h>
-#include <stdio.h>
 #include <stdlib.h>
-
-#include "vkext/vkext.h"
 
 #define ERROR_BUFFER_SIZE 16384
 static char vkext_error_buffer[ERROR_BUFFER_SIZE + 1];

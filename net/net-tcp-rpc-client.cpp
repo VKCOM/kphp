@@ -5,11 +5,9 @@
 #include "net/net-tcp-rpc-client.h"
 
 #include <assert.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
 
 #include "common/crc32.h"
 #include "common/crc32c.h"
@@ -17,7 +15,6 @@
 #include "common/precise-time.h"
 #include "common/tl/constants/common.h"
 
-#include "net/net-buffers.h"
 #include "net/net-crypto-aes.h"
 #include "net/net-dc.h"
 #include "net/net-events.h"

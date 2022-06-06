@@ -7,7 +7,6 @@
 #include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
 #include "compiler/gentree.h"
-#include "compiler/vertex.h"
 
 is_func_id_t get_ifi_id(VertexPtr v) {
   if (v->type() == op_unset) {

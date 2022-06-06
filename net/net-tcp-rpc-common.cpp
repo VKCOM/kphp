@@ -5,8 +5,6 @@
 #include "net/net-tcp-rpc-common.h"
 
 #include <assert.h>
-#include <stdio.h>
-#include <sys/uio.h>
 
 #include "common/kprintf.h"
 #include "common/options.h"

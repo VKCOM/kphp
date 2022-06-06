@@ -4,7 +4,6 @@
 
 #include "compiler/pipes/remove-empty-function-calls.h"
 
-#include "compiler/vertex.h"
 #include "compiler/data/src-file.h"
 #include "compiler/compiler-core.h"
 

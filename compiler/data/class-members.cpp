@@ -17,7 +17,6 @@
 #include "compiler/phpdoc.h"
 #include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
-#include "compiler/vertex.h"
 
 vk::string_view ClassMemberStaticMethod::global_name() const & {
   return function->name;

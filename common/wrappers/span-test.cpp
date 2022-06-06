@@ -6,7 +6,6 @@
 #include <gtest/gtest.h>
 
 #include "common/wrappers/span.h"
-#include "common/wrappers/string_view.h"
 
 TEST(span_tests, empty) {
   {

@@ -2,8 +2,6 @@
 // Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include <assert.h>
-
 #include "common/crc32.h"
 
 void __attribute__((constructor(101))) crc32_init() {

@@ -7,14 +7,16 @@
 #include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <string.h>
 
-#include "common/cpuid.h"
-#include "common/crypto/aes256-aarch64.h"
 #include "common/crypto/aes256-generic.h"
+#ifdef __x86_64__
 #include "common/crypto/aes256-x86_64.h"
+#elifdef __arm64__
 #include "common/crypto/aes256-arm64.h"
+#elifdef __aarch64__
+#include "common/crypto/aes256-aarch64.h"
+#endif
 #include "common/secure-bzero.h"
 
 static bool use_hw_acceleration = true;

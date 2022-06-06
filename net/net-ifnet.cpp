@@ -7,7 +7,6 @@
 #include <ifaddrs.h>
 #include <memory.h>
 #include <netinet/in.h>
-#include <unistd.h>
 
 #include "common/kprintf.h"
 #include "common/options.h"

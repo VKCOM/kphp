@@ -5,7 +5,6 @@
 #include "compiler/pipes/preprocess-eq3.h"
 
 #include "common/algorithms/contains.h"
-#include "common/wrappers/likely.h"
 
 VertexPtr PreprocessEq3Pass::on_exit_vertex(VertexPtr root) {
   if (root->type() == op_eq3) {

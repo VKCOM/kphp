@@ -7,7 +7,6 @@
 #include "compiler/data/src-file.h"
 #include "compiler/lexer.h"
 #include "compiler/stage.h"
-#include "compiler/threading/profiler.h"
 
 void FileToTokensF::execute(SrcFilePtr file, DataStream<std::pair<SrcFilePtr, std::vector<Token>>> &os) {
   stage::set_name("Split file to tokens");

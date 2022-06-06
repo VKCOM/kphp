@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 
 #include "compiler/lexer.h"
-#include "compiler/debug.h"
 
 TEST(lexer_test, test_php_tokens) {
   std::string debugTokenName(TokenType t);  // implemented in debug.cpp

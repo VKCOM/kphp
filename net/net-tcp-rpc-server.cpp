@@ -5,11 +5,9 @@
 #include "net/net-tcp-rpc-server.h"
 
 #include <cassert>
-#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
-#include <unistd.h>
 
 #include "common/crc32.h"
 #include "common/crc32c.h"

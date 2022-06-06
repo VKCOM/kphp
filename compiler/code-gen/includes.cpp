@@ -5,11 +5,8 @@
 #include "compiler/code-gen/includes.h"
 
 #include "compiler/code-gen/common.h"
-#include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/namespace.h"
-#include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
-#include "compiler/data/var-data.h"
 
 ExternInclude::ExternInclude(vk::string_view file_name) :
   file_name(file_name) {

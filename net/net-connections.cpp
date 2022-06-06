@@ -4,14 +4,12 @@
 
 #include "net/net-connections.h"
 
-#include <arpa/inet.h>
 #include <assert.h>
 #include <cinttypes>
 #include <errno.h>
 #include <fcntl.h>
 #include <math.h>
 #include <netinet/in.h>
-#include <netinet/tcp.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,9 +17,7 @@
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <sys/uio.h>
-#include <time.h>
 #include <unistd.h>
 
 #include "common/container_of.h"
@@ -34,15 +30,11 @@
 #include "common/server/limits.h"
 #include "common/server/relogin.h"
 #include "common/stats/provider.h"
-#include "common/tl/constants/common.h"
-#include "common/tl/constants/net.h"
-#include "common/tl/parse.h"
 
 #include "net/net-buffers.h"
 #include "net/net-crypto-aes.h"
 #include "net/net-events.h"
 #include "net/net-ifnet.h"
-#include "net/net-msg-buffers.h"
 #include "net/net-sockaddr-storage.h"
 #include "net/net-socket-options.h"
 #include "net/net-socket.h"

@@ -8,7 +8,6 @@
 #include <math.h>
 #include <stdlib.h>
 
-#include "common/cpuid.h"
 #include "common/kprintf.h"
 
 const unsigned int crc32_table[256] =

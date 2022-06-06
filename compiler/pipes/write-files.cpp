@@ -4,8 +4,6 @@
 
 #include "compiler/pipes/write-files.h"
 
-#include "common/crc32.h"
-
 #include "compiler/compiler-core.h"
 #include "compiler/stage.h"
 

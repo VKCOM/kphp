@@ -11,7 +11,6 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <unistd.h>
-#include <unordered_set>
 
 #include "common/kprintf.h"
 #include "common/macos-ports.h"

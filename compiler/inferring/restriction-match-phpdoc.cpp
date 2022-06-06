@@ -12,7 +12,6 @@
 #include "compiler/inferring/expr-node.h"
 #include "compiler/inferring/public.h"
 #include "compiler/inferring/restriction-stacktrace-finder.h"
-#include "compiler/inferring/type-node.h"
 #include "compiler/inferring/var-node.h"
 
 // see comments in var-node.cpp and collect-main-edges.cpp

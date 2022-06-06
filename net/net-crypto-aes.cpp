@@ -7,8 +7,6 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -18,11 +16,8 @@
 #include "common/kprintf.h"
 #include "common/md5.h"
 #include "common/options.h"
-#include "common/precise-time.h"
 #include "common/secure-bzero.h"
-#include "common/server/signals.h"
 #include "common/sha1.h"
-#include "common/wrappers/memory-utils.h"
 
 #include "net/net-aes-keys.h"
 #include "net/net-connections.h"

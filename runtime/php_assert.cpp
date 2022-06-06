@@ -7,11 +7,9 @@
 #include <algorithm>
 #include <cstdarg>
 #include <cstdio>
-#include <cstdlib>
 #include <cstring>
 #include <csignal>
 #include <ctime>
-#include <cxxabi.h>
 #include <execinfo.h>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -21,7 +19,6 @@
 #include "common/wrappers/pathname.h"
 
 #include "runtime/critical_section.h"
-#include "runtime/datetime.h"
 #include "runtime/exception.h"
 #include "runtime/kphp-backtrace.h"
 #include "runtime/on_kphp_warning_callback.h"

@@ -4,8 +4,6 @@
 
 #include "vkext/vkext-json.h"
 
-#include <stdbool.h>
-
 #include "vkext/vkext.h"
 
 static void json_escape_string(const char *s, size_t len);

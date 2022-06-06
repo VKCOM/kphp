@@ -4,7 +4,6 @@
 
 #include <gtest/gtest.h>
 
-#include "common/parallel/thread-id.h"
 #include "net/net-msg-buffers.h"
 #include "net/net-msg.h"
 

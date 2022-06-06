@@ -4,12 +4,10 @@
 
 #include "net/net-socket-options.h"
 
-#include <errno.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <stdio.h>
 #include <sys/socket.h>
-#include <sys/types.h>
 
 #include "common/kprintf.h"
 

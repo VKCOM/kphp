@@ -5,7 +5,6 @@
 #include "runtime/vkext_stats.h"
 
 #include <assert.h>
-#include <limits.h>
 #include <string.h>
 
 #define HLL_FIRST_RANK_CHAR 0x30

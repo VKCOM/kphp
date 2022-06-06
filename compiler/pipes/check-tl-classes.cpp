@@ -5,7 +5,6 @@
 #include "compiler/pipes/check-tl-classes.h"
 
 #include "compiler/compiler-core.h"
-#include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/phpdoc.h"
 

@@ -13,7 +13,6 @@
 
 #include "server/job-workers/job-message.h"
 #include "server/job-workers/job-worker-client.h"
-#include "server/job-workers/job-stats.h"
 #include "server/job-workers/shared-memory-manager.h"
 #include "server/php-engine-vars.h"
 #include "server/server-stats.h"

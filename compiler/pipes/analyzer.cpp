@@ -7,11 +7,9 @@
 #include "common/algorithms/string-algorithms.h"
 
 #include "compiler/compiler-core.h"
-#include "compiler/data/class-data.h"
 #include "compiler/data/define-data.h"
 #include "compiler/data/var-data.h"
 #include "compiler/inferring/public.h"
-#include "compiler/utils/string-utils.h"
 
 namespace {
 

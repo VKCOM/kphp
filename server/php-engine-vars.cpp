@@ -5,7 +5,6 @@
 #include "server/php-engine-vars.h"
 
 #include <limits.h>
-#include <stdlib.h>
 
 /***
  DEFAULT GLOBAL VARIABLES

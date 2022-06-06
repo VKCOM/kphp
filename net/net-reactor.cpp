@@ -14,7 +14,6 @@
 #include "common/kernel-version.h"
 #include "common/kprintf.h"
 #include "common/options.h"
-#include "common/parallel/thread-id.h"
 #include "common/precise-time.h"
 #include "common/server/signals.h"
 

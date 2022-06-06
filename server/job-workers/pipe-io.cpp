@@ -6,7 +6,6 @@
 #include <cerrno>
 #include <unistd.h>
 
-#include "common/kprintf.h"
 #include "server/job-workers/pipe-io.h"
 #include "server/server-log.h"
 

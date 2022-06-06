@@ -10,7 +10,6 @@
 #include <unistd.h>
 
 #include "common/algorithms/arithmetic.h"
-#include "common/container_of.h"
 #include "common/md5.h"
 #include "common/precise-time.h"
 #include "common/wrappers/likely.h"

@@ -4,8 +4,6 @@
 
 #include "common/unicode/utf8-utils.h"
 
-#include <assert.h>
-#include <stdlib.h>
 #include <string.h>
 
 void string_to_utf8 (const char *s, int *v) {

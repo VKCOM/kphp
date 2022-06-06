@@ -5,10 +5,8 @@
 #include "server/php-query-data.h"
 
 #include <cassert>
-#include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <unistd.h>
 
 #include "common/dl-utils-lite.h"
 

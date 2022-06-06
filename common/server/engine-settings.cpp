@@ -6,7 +6,6 @@
 
 #include <assert.h>
 
-#include "common/options.h"
 #include "common/version-string.h"
 
 static engine_settings_t *engine_settings;

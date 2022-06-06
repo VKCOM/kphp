@@ -9,6 +9,7 @@
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
+#include <map>
 #include <type_traits>
 
 #include "common/precise-time.h"
@@ -70,10 +71,6 @@ int http_load_long_query(char *buf, int min_len, int max_len) {
 /***
  QUERY MEMORY ALLOCATOR
  ***/
-
-#include <map>
-
-#include <cassert>
 
 long long qmem_generation = 0;
 

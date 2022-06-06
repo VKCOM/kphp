@@ -5,7 +5,6 @@
 #include "common/fast-backtrace.h"
 
 #include <algorithm>
-#include <cassert>
 #include <execinfo.h>
 
 #include "common/sanitizer.h"

@@ -4,15 +4,9 @@
 
 #include "common/pid.h"
 
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
-
-#include "net/net-ifnet.h"
 
 process_id_t PID;
 

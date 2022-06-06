@@ -6,10 +6,8 @@
 
 #include "common/php-functions.h"
 
-#include "compiler/compiler-core.h"
 #include "compiler/data/define-data.h"
 #include "compiler/data/function-data.h"
-#include "compiler/data/var-data.h"
 #include "compiler/gentree.h"
 #include "compiler/inferring/edge.h"
 #include "compiler/inferring/node-recalc.h"

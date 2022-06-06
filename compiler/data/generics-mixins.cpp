@@ -6,7 +6,6 @@
 #include "compiler/data/function-data.h"
 #include "compiler/phpdoc.h"
 #include "compiler/type-hint.h"
-#include "compiler/vertex.h"
 #include "compiler/utils/string-utils.h"
 
 /*

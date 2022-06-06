@@ -11,10 +11,8 @@
 #include "compiler/code-gen/includes.h"
 #include "compiler/code-gen/namespace.h"
 #include "compiler/code-gen/naming.h"
-#include "compiler/code-gen/raw-data.h"
 #include "compiler/code-gen/vertex-compiler.h"
 #include "compiler/data/class-data.h"
-#include "compiler/data/function-data.h"
 #include "compiler/data/ffi-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/lib-data.h"
@@ -23,7 +21,6 @@
 #include "compiler/inferring/public.h"
 #include "compiler/inferring/type-data.h"
 #include "compiler/tl-classes.h"
-#include "compiler/vertex.h"
 
 VarDeclaration VarExternDeclaration(VarPtr var) {
   return {var, true, false};

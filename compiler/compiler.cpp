@@ -9,7 +9,6 @@
 #include <ftw.h>
 #include <functional>
 #include <iostream>
-#include <mutex>
 #include <sstream>
 #include <sys/stat.h>
 #include <sys/types.h>

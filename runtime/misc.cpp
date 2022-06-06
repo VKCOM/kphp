@@ -13,12 +13,10 @@
 
 #include "runtime/critical_section.h"
 #include "runtime/datetime.h"
-#include "runtime/exception.h"
 #include "runtime/files.h"
 #include "runtime/interface.h"
 #include "runtime/json-functions.h"
 #include "runtime/math_functions.h"
-#include "runtime/string_functions.h"
 #include "runtime/vkext.h"
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
