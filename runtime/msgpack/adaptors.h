@@ -16,7 +16,7 @@
 
 namespace vk::msgpack {
 
-class type_error : public std::bad_cast {};
+class type_error : public std::exception {};
 
 namespace detail {
 

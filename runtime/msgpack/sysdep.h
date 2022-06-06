@@ -18,7 +18,12 @@
 
 #endif
 
+#ifdef __APPLE__
+#include <machine/endian.h>
+#else
 #include <endian.h>
+#endif
+
 static_assert(BYTE_ORDER == LITTLE_ENDIAN);
 
 #   if defined(unix) || defined(__unix) || defined(__APPLE__) || defined(__OpenBSD__)
@@ -89,7 +94,3 @@ static_assert(BYTE_ORDER == LITTLE_ENDIAN);
     do { uint32_t val = _msgpack_be32(num); memcpy(to, &val, 4); } while(0)
 #define _msgpack_store64(to, num) \
     do { uint64_t val = _msgpack_be64(num); memcpy(to, &val, 8); } while(0)
-
-#ifdef __APPLE__
-#  include <TargetConditionals.h>
-#endif
