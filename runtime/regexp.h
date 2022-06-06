@@ -70,6 +70,7 @@ private:
   void pattern_compilation_warning(const char *function, const char *file, char const *message, ...) noexcept __attribute__ ((format (printf, 4, 5)));
 
   void check_pattern_compilation_warning() const noexcept;
+  bool check_errors(const string &subject, int64_t offset) const;
 
   int64_t skip_utf8_subsequent_bytes(int64_t offset, const string &subject) const noexcept;
 
@@ -84,7 +85,11 @@ public:
 
 
   Optional<int64_t> match(const string &subject, bool all_matches) const;
-  Optional<int64_t> match(const string &subject, mixed &matches, bool all_matches, int64_t offset = 0) const;
+
+  template<class T> // T is array<string>, array<mixed> or mixed
+  Optional<int64_t> match_one(const string &subject, T &matches, int64_t offset = 0) const;
+  template<class T> // T is array<string>, array<mixed> or mixed
+  Optional<int64_t> match_all(const string &subject, T &matches, int64_t offset = 0) const;
 
   Optional<int64_t> match(const string &subject, mixed &matches, int64_t flags, bool all_matches, int64_t offset = 0) const;
 
@@ -105,41 +110,48 @@ void global_init_regexp_lib();
 inline void preg_add_match(array<mixed> &v, const mixed &match, const string &name);
 inline void preg_add_match(array<string> &v, const string &match, const string &name);
 
+inline Optional<int64_t> f$preg_match_strings(const regexp &regex, const string &subject, array<string> &matches, int64_t offset = 0);
+inline Optional<int64_t> f$preg_match_strings(const regexp &regex, const string &subject, array<mixed> &matches, int64_t offset = 0);
+inline Optional<int64_t> f$preg_match_strings(const regexp &regex, const string &subject, mixed &matches, int64_t offset = 0);
+inline Optional<int64_t> f$preg_match_strings(const string &regex, const string &subject, array<string> &matches, int64_t offset = 0);
+inline Optional<int64_t> f$preg_match_strings(const string &regex, const string &subject, array<mixed> &matches, int64_t offset = 0);
+inline Optional<int64_t> f$preg_match_strings(const string &regex, const string &subject, mixed &matches, int64_t offset = 0);
+inline Optional<int64_t> f$preg_match_strings(const mixed &regex, const string &subject, array<string> &matches, int64_t offset = 0);
+inline Optional<int64_t> f$preg_match_strings(const mixed &regex, const string &subject, array<mixed> &matches, int64_t offset = 0);
+inline Optional<int64_t> f$preg_match_strings(const mixed &regex, const string &subject, mixed &matches, int64_t offset = 0);
+
+inline Optional<int64_t> f$preg_match_all_strings(const regexp &regex, const string &subject, array<array<string>> &matches, int64_t offset = 0);
+inline Optional<int64_t> f$preg_match_all_strings(const regexp &regex, const string &subject, array<mixed> &matches, int64_t offset = 0);
+inline Optional<int64_t> f$preg_match_all_strings(const regexp &regex, const string &subject, mixed &matches, int64_t offset = 0);
+inline Optional<int64_t> f$preg_match_all_strings(const string &regex, const string &subject, array<array<string>> &matches, int64_t offset = 0);
+inline Optional<int64_t> f$preg_match_all_strings(const string &regex, const string &subject, array<mixed> &matches, int64_t offset = 0);
+inline Optional<int64_t> f$preg_match_all_strings(const string &regex, const string &subject, mixed &matches, int64_t offset = 0);
+inline Optional<int64_t> f$preg_match_all_strings(const mixed &regex, const string &subject, array<array<string>> &matches, int64_t offset = 0);
+inline Optional<int64_t> f$preg_match_all_strings(const mixed &regex, const string &subject, array<mixed> &matches, int64_t offset = 0);
+inline Optional<int64_t> f$preg_match_all_strings(const mixed &regex, const string &subject, mixed &matches, int64_t offset = 0);
 
 inline Optional<int64_t> f$preg_match(const regexp &regex, const string &subject);
-
 inline Optional<int64_t> f$preg_match_all(const regexp &regex, const string &subject);
 
-inline Optional<int64_t> f$preg_match(const regexp &regex, const string &subject, mixed &matches);
-
-inline Optional<int64_t> f$preg_match_all(const regexp &regex, const string &subject, mixed &matches);
-
 inline Optional<int64_t> f$preg_match(const regexp &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset = 0);
-
 inline Optional<int64_t> f$preg_match_all(const regexp &regex, const string &subject, mixed &matches, int64_t flags);
 
 inline Optional<int64_t> f$preg_match(const string &regex, const string &subject);
-
 inline Optional<int64_t> f$preg_match_all(const string &regex, const string &subject);
 
 inline Optional<int64_t> f$preg_match(const string &regex, const string &subject, mixed &matches);
-
 inline Optional<int64_t> f$preg_match_all(const string &regex, const string &subject, mixed &matches);
 
 inline Optional<int64_t> f$preg_match(const string &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset = 0);
-
 inline Optional<int64_t> f$preg_match_all(const string &regex, const string &subject, mixed &matches, int64_t flags);
 
 inline Optional<int64_t> f$preg_match(const mixed &regex, const string &subject);
-
 inline Optional<int64_t> f$preg_match_all(const mixed &regex, const string &subject);
 
 inline Optional<int64_t> f$preg_match(const mixed &regex, const string &subject, mixed &matches);
-
 inline Optional<int64_t> f$preg_match_all(const mixed &regex, const string &subject, mixed &matches);
 
 inline Optional<int64_t> f$preg_match(const mixed &regex, const string &subject, mixed &matches, int64_t flags);
-
 inline Optional<int64_t> f$preg_match_all(const mixed &regex, const string &subject, mixed &matches, int64_t flags);
 
 template<class T1, class T2, class T3, class = enable_if_t_is_optional<T3>>
@@ -331,7 +343,6 @@ Optional<string> regexp::replace(const T &replace_val, const string &subject, in
   return result;
 }
 
-
 void preg_add_match(array<mixed> &v, const mixed &match, const string &name) {
   if (name.size()) {
     v.set_value(name, match);
@@ -348,20 +359,84 @@ void preg_add_match(array<string> &v, const string &match, const string &name) {
   v.push_back(match);
 }
 
+Optional<int64_t> f$preg_match_strings(const regexp &regex, const string &subject, array<string> &matches, int64_t offset) {
+  return regex.match_one(subject, matches, offset);
+}
+
+Optional<int64_t> f$preg_match_strings(const regexp &regex, const string &subject, array<mixed> &matches, int64_t offset) {
+  return regex.match_one(subject, matches, offset);
+}
+
+Optional<int64_t> f$preg_match_strings(const regexp &regex, const string &subject, mixed &matches, int64_t offset) {
+  return regex.match_one(subject, matches, offset);
+}
+
+Optional<int64_t> f$preg_match_strings(const string &regex, const string &subject, array<string> &matches, int64_t offset) {
+  return f$preg_match_strings(regexp(regex), subject, matches, offset);
+}
+
+Optional<int64_t> f$preg_match_strings(const string &regex, const string &subject, array<mixed> &matches, int64_t offset) {
+  return f$preg_match_strings(regexp(regex), subject, matches, offset);
+}
+
+Optional<int64_t> f$preg_match_strings(const string &regex, const string &subject, mixed &matches, int64_t offset) {
+  return f$preg_match_strings(regexp(regex), subject, matches, offset);
+}
+
+Optional<int64_t> f$preg_match_strings(const mixed &regex, const string &subject, array<string> &matches, int64_t offset) {
+  return f$preg_match_strings(regexp(regex.to_string()), subject, matches, offset);
+}
+
+Optional<int64_t> f$preg_match_strings(const mixed &regex, const string &subject, array<mixed> &matches, int64_t offset) {
+  return f$preg_match_strings(regexp(regex.to_string()), subject, matches, offset);
+}
+
+Optional<int64_t> f$preg_match_strings(const mixed &regex, const string &subject, mixed &matches, int64_t offset) {
+  return f$preg_match_strings(regexp(regex.to_string()), subject, matches, offset);
+}
+
+Optional<int64_t> f$preg_match_all_strings(const regexp &regex, const string &subject, array<array<string>> &matches, int64_t offset) {
+  return regex.match_all(subject, matches, offset);
+}
+
+Optional<int64_t> f$preg_match_all_strings(const regexp &regex, const string &subject, array<mixed> &matches, int64_t offset) {
+  return regex.match_all(subject, matches, offset);;
+}
+
+Optional<int64_t> f$preg_match_all_strings(const regexp &regex, const string &subject, mixed &matches, int64_t offset) {
+  return regex.match_all(subject, matches, offset);
+}
+
+Optional<int64_t> f$preg_match_all_strings(const string &regex, const string &subject, array<array<string>> &matches, int64_t offset) {
+  return f$preg_match_all_strings(regexp(regex), subject, matches, offset);
+}
+
+Optional<int64_t> f$preg_match_all_strings(const string &regex, const string &subject, array<mixed> &matches, int64_t offset) {
+  return f$preg_match_all_strings(regexp(regex), subject, matches, offset);
+}
+
+Optional<int64_t> f$preg_match_all_strings(const string &regex, const string &subject, mixed &matches, int64_t offset) {
+  return f$preg_match_all_strings(regexp(regex), subject, matches, offset);
+}
+
+Optional<int64_t> f$preg_match_all_strings(const mixed &regex, const string &subject, array<array<string>> &matches, int64_t offset) {
+  return f$preg_match_all_strings(regexp(regex.to_string()), subject, matches, offset);
+}
+
+Optional<int64_t> f$preg_match_all_strings(const mixed &regex, const string &subject, array<mixed> &matches, int64_t offset) {
+  return f$preg_match_all_strings(regexp(regex.to_string()), subject, matches, offset);
+}
+
+Optional<int64_t> f$preg_match_all_strings(const mixed &regex, const string &subject, mixed &matches, int64_t offset) {
+  return f$preg_match_all_strings(regexp(regex.to_string()), subject, matches, offset);
+}
+
 Optional<int64_t> f$preg_match(const regexp &regex, const string &subject) {
   return regex.match(subject, false);
 }
 
 Optional<int64_t> f$preg_match_all(const regexp &regex, const string &subject) {
   return regex.match(subject, true);
-}
-
-Optional<int64_t> f$preg_match(const regexp &regex, const string &subject, mixed &matches) {
-  return regex.match(subject, matches, false);
-}
-
-Optional<int64_t> f$preg_match_all(const regexp &regex, const string &subject, mixed &matches) {
-  return regex.match(subject, matches, true);
 }
 
 Optional<int64_t> f$preg_match(const regexp &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset) {
@@ -380,14 +455,6 @@ Optional<int64_t> f$preg_match_all(const string &regex, const string &subject) {
   return f$preg_match_all(regexp(regex), subject);
 }
 
-Optional<int64_t> f$preg_match(const string &regex, const string &subject, mixed &matches) {
-  return f$preg_match(regexp(regex), subject, matches);
-}
-
-Optional<int64_t> f$preg_match_all(const string &regex, const string &subject, mixed &matches) {
-  return f$preg_match_all(regexp(regex), subject, matches);
-}
-
 Optional<int64_t> f$preg_match(const string &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset) {
   return f$preg_match(regexp(regex), subject, matches, flags, offset);
 }
@@ -402,14 +469,6 @@ Optional<int64_t> f$preg_match(const mixed &regex, const string &subject) {
 
 Optional<int64_t> f$preg_match_all(const mixed &regex, const string &subject) {
   return f$preg_match_all(regexp(regex.to_string()), subject);
-}
-
-Optional<int64_t> f$preg_match(const mixed &regex, const string &subject, mixed &matches) {
-  return f$preg_match(regexp(regex.to_string()), subject, matches);
-}
-
-Optional<int64_t> f$preg_match_all(const mixed &regex, const string &subject, mixed &matches) {
-  return f$preg_match_all(regexp(regex.to_string()), subject, matches);
 }
 
 Optional<int64_t> f$preg_match(const mixed &regex, const string &subject, mixed &matches, int64_t flags) {

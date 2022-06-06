@@ -413,6 +413,9 @@ function preg_quote ($str ::: string, $delimiter ::: string = '') ::: string;
 function preg_last_error() ::: int;
 function preg_split ($pattern ::: regexp, $subject ::: string, $limit ::: int = -1, $flags ::: int = 0) ::: mixed[] | false;
 
+function preg_match_strings ($regex ::: regexp, $subject ::: string, &$matches ::: string[], $offset ::: int = 0) ::: int | false;
+function preg_match_all_strings ($regex ::: regexp, $subject ::: string, &$matches ::: string[][], $offset ::: int = 0) ::: int | false;
+
 function shuffle (&$a ::: array) ::: void;
 function sort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
 function rsort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;

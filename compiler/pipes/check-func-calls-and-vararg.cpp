@@ -11,13 +11,35 @@
 
 namespace {
 
-bool is_const_bool(VertexPtr expr, bool value) {
+std::optional<int64_t> get_const_int(VertexPtr expr) {
+  if (auto as_int_conv = expr.try_as<op_conv_int>()) {
+    expr = as_int_conv->expr();
+  }
+  expr = GenTree::get_actual_value(expr);
+  if (expr->type() != op_int_const) {
+    return std::nullopt;
+  }
+  return parse_int_from_string(expr.as<op_int_const>());
+}
+
+std::optional<bool> get_const_bool(VertexPtr expr) {
   if (auto as_bool_conv = expr.try_as<op_conv_bool>()) {
     expr = as_bool_conv->expr();
   }
   expr = GenTree::get_actual_value(expr);
-  auto target_op = value ? op_true : op_false;
-  return expr->type() == target_op;
+  switch (expr->type()) {
+    case op_true:
+      return true;
+    case op_false:
+      return false;
+    default:
+      return std::nullopt;
+  }
+}
+
+bool is_const_bool(VertexPtr expr, bool value) {
+  auto cv = get_const_bool(expr);
+  return cv.has_value() && cv.value() == value;
 }
 
 VertexAdaptor<op_func_call> replace_call_func(VertexAdaptor<op_func_call> call, const std::string &func_name, std::vector<VertexPtr> args) {
@@ -25,6 +47,30 @@ VertexAdaptor<op_func_call> replace_call_func(VertexAdaptor<op_func_call> call, 
   new_call->set_string(func_name);
   new_call->func_id = G->get_function(func_name);
   return new_call;
+}
+
+VertexAdaptor<op_func_call> process_preg_match(VertexAdaptor<op_func_call> call, bool all) {
+  const auto &args = call->args();
+
+  std::optional<int64_t> flags;
+  if (args.size() >= 4) {
+    flags = get_const_int(args[3]);
+  }
+
+  const char *func_name = all ? "preg_match_all_strings" : "preg_match_strings";
+
+  // preg_match[_all]($pat, $s, $m)    -> preg_match[_all]_strings($pat, $s, $m)
+  // preg_match[_all]($pat, $s, $m, 0) -> preg_match[_all]_strings($pat, $s, $m)
+  if (args.size() == 3 || (args.size() == 4 && flags.value_or(-1) == 0)) {
+    return replace_call_func(call, func_name, {args[0], args[1], args[2]});
+  }
+
+  // preg_match[_all]($pat, $s, $m, 0, $offset) -> preg_match[_all]_strings($pat, $s, $m, $offset)
+  if (args.size() == 5 && flags.value_or(-1) == 0) {
+    return replace_call_func(call, func_name, {args[0], args[1], args[2], args[4]});
+  }
+
+  return call;
 }
 
 VertexAdaptor<op_func_call> process_microtime(VertexAdaptor<op_func_call> call) {
@@ -189,12 +235,18 @@ VertexPtr CheckFuncCallsAndVarargPass::create_CompileTimeLocation_call_arg(const
 }
 
 VertexAdaptor<op_func_call> CheckFuncCallsAndVarargPass::maybe_replace_extern_func_call(VertexAdaptor<op_func_call> call, FunctionPtr f_called) {
-  vk::string_view local_name = f_called->name;
-  if (local_name == "hrtime") {
+  vk::string_view name = f_called->name;
+  if (name == "hrtime") {
     return process_hrtime(call);
   }
-  if (local_name == "microtime") {
+  if (name == "microtime") {
     return process_microtime(call);
+  }
+  if (name == "preg_match") {
+    return process_preg_match(call, false);
+  }
+  if (name == "preg_match_all") {
+    return process_preg_match(call, true);
   }
   return call;
 }

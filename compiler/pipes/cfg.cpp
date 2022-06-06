@@ -482,6 +482,13 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       break;
     }
 
+    // lvalue conversions preserve write flags, unlike other unary operators
+    case op_conv_int_l:
+    case op_conv_string_l:
+    case op_conv_array_l:
+      create_cfg(tree_node.as<meta_op_unary>()->expr(), res_start, res_finish, write_flag, weak_write_flag);
+      break;
+
     // simple unary operators
     case op_ffi_c2php_conv:
     case op_ffi_php2c_conv:
@@ -489,12 +496,9 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     case op_ffi_cast:
     case op_ffi_cdata_value_ref:
     case op_conv_int:
-    case op_conv_int_l:
     case op_conv_float:
     case op_conv_string:
-    case op_conv_string_l:
     case op_conv_array:
-    case op_conv_array_l:
     case op_conv_object:
     case op_conv_mixed:
     case op_force_mixed:
@@ -567,16 +571,21 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       int ii = 0;
       for (auto cur : tree_node.as<op_func_call>()->args()) {
         bool new_weak_write_flag = false;
+        bool new_write_flag = false;
 
         if (func) {
           auto param = func->get_params()[ii].try_as<op_func_param>();
           if (param && param->var()->ref_flag) {
             new_weak_write_flag = true;
+            // assume that all builtin functions initialize out ref params with something meaningful
+            if (func->is_extern()) {
+              new_write_flag = true;
+            }
           }
         }
 
         kphp_assert (cur);
-        create_cfg(cur, &a, &b, false, new_weak_write_flag);
+        create_cfg(cur, &a, &b, new_write_flag, new_weak_write_flag);
         add_edge(start, a);
         start = b;
 
