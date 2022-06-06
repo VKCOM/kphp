@@ -68,8 +68,8 @@ static int bbw_local_replica_rotate (bb_writer_t *W, bb_rotation_point_t *P) {
     }
     W->unsuccessful_rotation_attempts++;
     int t = time (NULL) - W->unsuccessful_rotation_first_ts;
-    kprintf ("attempt #%d (%d secs): cannot find next binlog file after %s, log position %lld\n", t, W->unsuccessful_rotation_attempts, Binlog->info->filename, P->log_pos);
-    return (t > 120) ? -1 : -2;
+    kprintf ("attempt #%d (%d secs): cannot find next binlog file after %s, log position %lld\n", W->unsuccessful_rotation_attempts, t, Binlog->info->filename, P->log_pos);
+    return (t > 120) ? REPLAY_BINLOG_ERROR : REPLAY_BINLOG_STOP_READING;
   }
 
   tvkprintf (binlog_buffers, 2, "%s: opened next binlog '%s'(fd=%d) and stored in rotation point %p\n", __func__, P->Binlog->info ? P->Binlog->info->filename : "", P->Binlog->fd, P);
