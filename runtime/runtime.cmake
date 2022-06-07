@@ -7,6 +7,14 @@ prepend(KPHP_RUNTIME_MEMORY_RESOURCE_SOURCES memory_resource/
         monotonic_buffer_resource.cpp
         unsynchronized_pool_resource.cpp)
 
+prepend(KPHP_RUNTIME_MSGPACK_SOURCES msgpack/
+        check_instance_depth.cpp
+        object_visitor.cpp
+        packer.cpp
+        parser.cpp
+        unpacker.cpp
+        zone.cpp)
+
 prepend(KPHP_RUNTIME_JOB_WORKERS_SOURCES job-workers/
         client-functions.cpp
         job-interface.cpp
@@ -24,6 +32,7 @@ prepend(KPHP_RUNTIME_PDO_MYSQL_SOURCES pdo/mysql/
 
 prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         ${KPHP_RUNTIME_MEMORY_RESOURCE_SOURCES}
+        ${KPHP_RUNTIME_MSGPACK_SOURCES}
         ${KPHP_RUNTIME_JOB_WORKERS_SOURCES}
         ${KPHP_RUNTIME_PDO_SOURCES}
         ${KPHP_RUNTIME_PDO_MYSQL_SOURCES}
@@ -52,7 +61,6 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         migration_php8.cpp
         misc.cpp
         mixed.cpp
-        msgpack-serialization.cpp
         mysql.cpp
         net_events.cpp
         on_kphp_warning_callback.cpp
