@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <csetjmp>
+
 #include "common/dl-utils-lite.h"
 #include "common/sanitizer.h"
 
@@ -86,6 +88,8 @@ private:
 #endif
   int swapcontext_helper(ucontext_t_portable *oucp, const ucontext_t_portable *ucp);
 
+  void on_request_timeout_error();
+
 public:
 
   static PHPScriptBase *volatile current_script;
@@ -101,6 +105,8 @@ public:
   char *run_stack, *protected_end, *run_stack_end, *run_mem;
   size_t mem_size, stack_size;
   ucontext_t_portable run_context;
+
+  sigjmp_buf timeout_handler;
 
   script_t *run_main;
   php_query_data *data;
@@ -118,6 +124,8 @@ public:
   virtual ~PHPScriptBase();
 
   void init(script_t *script, php_query_data *data_to_set);
+
+  void asan_stack_unpoison();
 
   //in php script
   void pause();
@@ -137,6 +145,7 @@ public:
   void update_net_time();
   void update_script_time();
 
+  void reset_script_timeout();
   double get_net_time() const;
   double get_script_time();
   int get_net_queries_count() const;
