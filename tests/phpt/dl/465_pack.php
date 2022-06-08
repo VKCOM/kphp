@@ -11,6 +11,18 @@
   var_dump (pack ("s2S4", -123456, -234567, -345678, -456789, -567890, -678901));
   var_dump (pack ("nN5", -123456, -234567, -345678, -456789, -567890, -678901));
 
+  $nan = acos(8);
+  $floats = [0.0, 0.1, -0.1, 0.4932813, 1.0, -1.0, 1391212.2421, 9320.1828284300211, -8183.88129305222, $nan];
+  foreach ($floats as $x) {
+    $packed_e = pack('e', $x);
+    $packed_E = pack('E', $x);
+    $packed_d = pack('d', $x);
+    var_dump(explode($packed_e, ''), explode($packed_E, ''), explode($packed_d, ''));
+    var_dump(unpack('e', $packed_e));
+    var_dump(unpack('E', $packed_E));
+    var_dump(unpack('d', $packed_d));
+  }
+
   var_dump (pack ("iIlLNV", -1, -2, -3, -4, -5, -6));
   var_dump (pack ("iIlLNV", 1, 2, 3, 4, 5, 6));
   var_dump (pack ("iIlLNV", -123456, -234567, -345678, -456789, -567890, -678901));
