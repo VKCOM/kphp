@@ -14,6 +14,7 @@
 
 #include "common/algorithms/find.h"
 #include "common/smart_ptrs/singleton.h"
+#include "common/wrappers/fmt_format.h"
 
 #include "compiler/stage.h"
 #include "compiler/threading/thread-id.h"
@@ -124,6 +125,28 @@ bool LexerData::are_last_tokens(except_token_tag<token>, Args ...args) {
          are_last_tokens(args...);
 }
 
+vk::string_view LexerData::strip_whitespaces(std::size_t spaces_to_skip, vk::string_view source) noexcept {
+  kphp_assert(spaces_to_skip);
+  std::string val;
+  bool new_line = true;
+  std::size_t spaces_skipped = 0;
+  for (char c : source) {
+    if (new_line && c == ' ' && spaces_skipped < spaces_to_skip) {
+      ++spaces_skipped;
+      continue;
+    } else if (c == '\n') {
+      new_line = true;
+      spaces_skipped = 0;
+    } else {
+      stage::set_line(get_line_num());
+      kphp_error(spaces_skipped >= spaces_to_skip,
+                 fmt_format("Invalid body indentation level (expecting an indentation level of at least {})", spaces_to_skip));
+      new_line = false;
+    }
+    val.append(1, c);
+  }
+  return string_view_dup(val);
+}
 
 void LexerData::hack_last_tokens() {
   if (dont_hack_last_tokens) {
@@ -208,8 +231,12 @@ void LexerData::hack_last_tokens() {
   }
 
   if (are_last_tokens(tok_str_begin, tok_str, tok_str_end)) {
+    const std::size_t spaces_to_skip = tokens.back().str_val.size();
     tokens.pop_back();
     tokens.erase(std::prev(tokens.end(), 2));
+    if (spaces_to_skip) {
+      tokens.back().str_val = strip_whitespaces(spaces_to_skip, tokens.back().str_val);
+    }
     return;
   }
 
@@ -882,6 +909,9 @@ bool TokenLexerHeredocString::parse(LexerData *lexer_data) const {
     const char *t = s, *st = s;
     if (t[0] == '\n' || first) {
       t += t[0] == '\n';
+      const char *const spaces_start = t;
+      std::size_t spaces_count = 0;
+      for (; *t == ' '; ++spaces_count, ++t) {}
       if (!strncmp(t, tag.c_str(), tag.size())) {
         t += tag.size();
 
@@ -892,7 +922,7 @@ bool TokenLexerHeredocString::parse(LexerData *lexer_data) const {
         }
         if (t[0] == '\n' || t[0] == 0) {
           if (!single_quote) {
-            lexer_data->add_token((int)(t - st - semicolon), tok_str_end);
+            lexer_data->add_token((int)(t - st - semicolon), tok_str_end, spaces_start, spaces_start + spaces_count);
           } else {
             lexer_data->flush_str();
             lexer_data->pass_raw((int)(t - st - semicolon));;

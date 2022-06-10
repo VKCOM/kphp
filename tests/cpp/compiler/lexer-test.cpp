@@ -150,3 +150,67 @@ TEST(lexer_test, test_php_tokens) {
     ASSERT_EQ(expected, actual) << "input was: " << test.input;
   }
 }
+
+TEST(lexer_test, test_heredoc_string_skip_spaces) {
+  struct testCase {
+    std::string input;
+    std::string expected;
+  };
+  std::vector<testCase> tests = {
+    // empty strings or spaces
+    {"<<<END\nEND;", ""},
+    {"<<<END\n END;", ""},
+    {"<<<END\n  END;", ""},
+    {"<<<END\n\nEND;", ""},
+    {"<<<END\n \nEND;", " "},
+    {"<<<END\n  \nEND;", "  "},
+    {"<<<END\n  \n END;", " "},
+    {"<<<END\n  \n  END;", ""},
+    {"<<<END\n\n\nEND;", "\n"},
+    // no indent
+    {"<<<END\na\nEND;", "a"},
+    {"<<<END\n a\nEND;", " a"},
+    {"<<<END\n  a\nEND;", "  a"},
+    {"<<<END\n  a\n\nEND;", "  a\n"},
+    // with indent
+    {"<<<END\n a\n END;", "a"},
+    {"<<<END\n  a\n END;", " a"},
+    {"<<<END\n  a\n  END;", "a"},
+    {"<<<END\n  a\n\n END;", " a\n"},
+    {"<<<END\n  a\n\n  END;", "a\n"},
+    // few lanes
+    {"<<<END\n a\n b\nEND;", " a\n b"},
+    {"<<<END\n a\n b\n END;", "a\nb"},
+    {"<<<END\n  a\n  b\nEND;", "  a\n  b"},
+    {"<<<END\n  a\n  b\n END;", " a\n b"},
+    {"<<<END\n  a\n  b\n  END;", "a\nb"},
+    // ending whitespaces
+    {"<<<END\n  a\n \nEND;", "  a\n "},
+    {"<<<END\n  a\n  \nEND;", "  a\n  "},
+    {"<<<END\n  a\n  \n\nEND;", "  a\n  \n"},
+    {"<<<END\n  a\n  \n \nEND;", "  a\n  \n "},
+
+    {"<<<END\n  a\n \n END;", " a\n"},
+    {"<<<END\n  a\n  \n END;", " a\n "},
+    {"<<<END\n  a\n  \n\n END;", " a\n \n"},
+    {"<<<END\n  a\n  \n \n END;", " a\n \n"},
+    {"<<<END\n  a\n\n \n END;", " a\n\n"},
+    {"<<<END\n   a\n \n   END;", "a\n"},
+
+    {"<<<END\n  a\n \n  END;", "a\n"},
+    {"<<<END\n  a\n  \n  END;", "a\n"},
+    {"<<<END\n  a\n  \n\n  END;", "a\n\n"},
+    {"<<<END\n  a\n  \n \n  END;", "a\n\n"},
+    {"<<<END\n  a\n  \n  \n  END;", "a\n\n"},
+    {"<<<END\n  a\n  \n  \n  END;", "a\n\n"},
+  };
+
+  for (const auto &[input, expected] : tests) {
+    auto input_tag = "<?php\n" + input;
+    auto tokens = php_text_to_tokens(input_tag);
+    ASSERT_TRUE(!tokens.empty());
+    auto str_token = tokens.front();
+    ASSERT_TRUE(str_token.type() == tok_str);
+    ASSERT_EQ(str_token.str_val, expected) << "input was: " << input;
+  }
+}
