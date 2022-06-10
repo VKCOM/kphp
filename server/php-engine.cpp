@@ -2115,8 +2115,17 @@ int main_args_handler(int i, const char *long_option) {
 }
 
 void parse_main_args_till_option(int argc, char *argv[], const char *till_option = nullptr) {
+  static bool argv0_added = false;
   if (run_once) {
-    arg_add(argv[0]);
+    // $argv is meaningful in server mode when running with -o (flag) as well as
+    // for the scripts that were compiled in cli mode;
+    // for cli scripts, we'll enter this function twice: once we parse actual script argv
+    // until --Xkphp-options, and then we continue the parsing everything else as KPHP runtime options
+    // without this condition, we'll push argv0 (the program name) twice
+    if (!argv0_added) {
+      argv0_added = true;
+      arg_add(argv[0]);
+    }
     while (optind != argc) {
       const char *opt = argv[optind++];
       if (till_option && !strcmp(till_option, opt)) {
