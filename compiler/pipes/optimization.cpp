@@ -316,19 +316,6 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
     }
   } else if (auto op_conv_string_vertex = root.try_as<op_conv_string>()) {
     root = convert_strval_to_magic_tostring_method_call(op_conv_string_vertex);
-  } else if (root->type() == op_function) {
-    if (current_function->type == FunctionData::func_class_holder) {
-      current_function->class_id->members.for_each([this](ClassMemberInstanceField &class_field) {
-        if (class_field.var->init_val) {
-          if (auto var_vertex = class_field.var->init_val.try_as<op_var>()) {
-            if (vk::any_of_equal(var_vertex->var_id->init_val->type(), op_string_build, op_concat)) {
-              auto &op_concat_vertex = var_vertex->var_id->init_val;
-              op_concat_vertex = optimize_string_building(op_concat_vertex);
-            }
-          }
-        }
-      });
-    }
   }
 
   if (root->rl_type != val_none/* && root->rl_type != val_error*/) {
@@ -363,8 +350,10 @@ bool OptimizationPass::check_function(FunctionPtr function) const {
 void OptimizationPass::on_finish() {
   if (current_function->type == FunctionData::func_class_holder) {
     auto class_id = current_function->class_id;
-    class_id->members.for_each([](ClassMemberInstanceField &class_field) {
+    class_id->members.for_each([this](ClassMemberInstanceField &class_field) {
       if (class_field.var->init_val) {
+        run_function_pass(class_field.var->init_val, this);
+
         if (can_init_value_be_removed(class_field.var->init_val, class_field.var)) {
           class_field.var->init_val = {};
         } else {

@@ -84,6 +84,7 @@ Zend/tests/bug72543.phpt
 Zend/tests/bug76754.phpt
 Zend/tests/bug78271.phpt
 Zend/tests/class_properties_dynamic.phpt
+Zend/tests/class_properties_static.phpt
 Zend/tests/closure_006.phpt
 # nested lambdas work unpredictable, don't include this test :(
 # Zend/tests/closure_007.phpt
