@@ -47,7 +47,7 @@ struct LexerData : private vk::not_copyable {
   int get_line_num();
 
 private:
-  vk::string_view strip_whitespaces(std::size_t spaces_to_skip, vk::string_view source) noexcept;
+  vk::string_view strip_whitespaces(char space_char, std::size_t spaces_to_skip, vk::string_view source) noexcept;
 
   int line_num{0};
   const char *code{nullptr};
