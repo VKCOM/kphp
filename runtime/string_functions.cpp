@@ -746,6 +746,18 @@ int64_t f$ord(const string &s) {
   return (unsigned char)s[0];
 }
 
+static uint64_t float64_bits(double f) {
+  uint64_t bits = 0;
+  std::memcpy(&bits, &f, sizeof(uint64_t));
+  return bits;
+}
+
+static double float64_from_bits(uint64_t bits) {
+  double f = 0;
+  std::memcpy(&f, &bits, sizeof(uint64_t));
+  return f;
+}
+
 string f$pack(const string &pattern, const array<mixed> &a) {
   static_SB.clean();
   int cur_arg = 0;
@@ -883,9 +895,17 @@ string f$pack(const string &pattern, const array<mixed> &a) {
               static_SB.append((const char *)&value, sizeof(float));
               break;
             }
+            case 'e':
+            case 'E':
             case 'd': {
               double value = arg.to_float();
-              static_SB.append((const char *)&value, sizeof(double));
+              uint64_t value_byteordered = float64_bits(value);
+              if (format == 'e') {
+                value_byteordered = htole64(value_byteordered);
+              } else if (format == 'E') {
+                value_byteordered = htobe64(value_byteordered);
+              }
+              static_SB.append((const char *)&value_byteordered, sizeof(uint64_t));
               break;
             }
             case 'J':
@@ -2580,14 +2600,21 @@ array<mixed> f$unpack(const string &pattern, const string &data) {
               data_pos += (int)sizeof(float);
               break;
             }
+            case 'e':
+            case 'E':
             case 'd': {
               if (data_pos + (int)sizeof(double) > data_len) {
                 php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
                 return result;
               }
-              double double_value = 0;
-              memcpy(&double_value, data.c_str() + data_pos, sizeof(double));
-              value = double_value;
+              uint64_t value_byteordered = 0;
+              memcpy(&value_byteordered, data.c_str() + data_pos, sizeof(double));
+              if (format == 'e') {
+                value_byteordered = le64toh(value_byteordered);
+              } else if (format == 'E') {
+                value_byteordered = be64toh(value_byteordered);
+              }
+              value = float64_from_bits(value_byteordered);
               data_pos += (int)sizeof(double);
               break;
             }

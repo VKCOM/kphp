@@ -14,6 +14,11 @@
 extern string_buffer *coub;//TODO static
 using shutdown_function_type = std::function<void()>;
 
+enum class shutdown_functions_status {
+  not_executed,
+  running,
+  running_from_timeout,
+};
 
 void f$ob_clean();
 
@@ -42,6 +47,12 @@ array<string> f$headers_list();
 void f$setcookie(const string &name, const string &value, int64_t expire = 0, const string &path = string(), const string &domain = string(), bool secure = false, bool http_only = false);
 
 void f$setrawcookie(const string &name, const string &value, int64_t expire = 0, const string &path = string(), const string &domain = string(), bool secure = false, bool http_only = false);
+
+void run_shutdown_functions_from_timeout();
+void run_shutdown_functions_from_script();
+
+int get_shutdown_functions_count();
+shutdown_functions_status get_shutdown_functions_status();
 
 void f$register_shutdown_function(const shutdown_function_type &f);
 

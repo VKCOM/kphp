@@ -133,6 +133,22 @@ void check_get_global_vars_memory_stats_call() {
                     "function get_global_vars_memory_stats() disabled, use KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS to enable");
 }
 
+void check_register_shutdown_functions(VertexAdaptor<op_func_call> call) {
+  auto callback = call->args()[0].as<op_callback_of_builtin>();
+  if (!callback->func_id->can_throw()) {
+    return;
+  }
+  std::vector<std::string> throws;
+  for (const auto &e : callback->func_id->exceptions_thrown) {
+    throws.emplace_back(e->name);
+  }
+  kphp_error(false,
+             fmt_format("register_shutdown_callback should not throw exceptions\n"
+                        "But it may throw {}\n"
+                        "Throw chain: {}",
+                        vk::join(throws, ", "), callback->func_id->get_throws_call_chain()));
+}
+
 void mark_global_vars_for_memory_stats() {
   if (!G->settings().enable_global_vars_memory_stats.get()) {
     return;
@@ -628,8 +644,9 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
       check_get_global_vars_memory_stats_call();
     } else if (function_name == "is_null") {
       const TypeData *arg_type = tinf::get_type(call->args()[0]);
-      kphp_error(arg_type->can_store_null(),
-                 fmt_format("is_null() will be always false for {}", arg_type->as_human_readable()));
+      kphp_error(arg_type->can_store_null(), fmt_format("is_null() will be always false for {}", arg_type->as_human_readable()));
+    } else if (function_name == "register_shutdown_function") {
+      check_register_shutdown_functions(call);
     } else if (vk::string_view{function_name}.starts_with("rpc_tl_query")) {
       G->set_untyped_rpc_tl_used();
     } else if (vk::string_view{function_name}.starts_with("FFI$$")) {

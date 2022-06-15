@@ -1050,6 +1050,10 @@ void finish_script(int exit_code __attribute__((unused))) {
   assert (0);
 }
 
+void reset_script_timeout() {
+  PHPScriptBase::current_script->reset_script_timeout();
+}
+
 double get_net_time() {
   return PHPScriptBase::current_script->get_net_time();
 }
