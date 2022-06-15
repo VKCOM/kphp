@@ -232,13 +232,16 @@ void LexerData::hack_last_tokens() {
   }
 
   if (are_last_tokens(tok_str_begin, tok_str, tok_str_end)) {
-    auto spaces = tokens.back().str_val;
-    const std::size_t spaces_to_skip = spaces.size();
     tokens.pop_back();
     tokens.erase(std::prev(tokens.end(), 2));
-    if (spaces_to_skip) {
-      tokens.back().str_val = strip_whitespaces(spaces.front(), spaces_to_skip, tokens.back().str_val);
-    }
+    return;
+  }
+
+  if (are_last_tokens(tok_str, tok_str_skip_indent)) {
+    auto spaces = tokens.back().str_val;
+    std::size_t spaces_to_skip = spaces.size();
+    tokens.pop_back();
+    tokens.back().str_val = strip_whitespaces(spaces.front(), spaces_to_skip, tokens.back().str_val);
     return;
   }
 
@@ -936,11 +939,13 @@ bool TokenLexerHeredocString::parse(LexerData *lexer_data) const {
         }
         if (t[0] == '\n' || t[0] == 0) {
           if (!single_quote) {
-            std::size_t indent = spaces_count ?: tabs_count;
-            lexer_data->add_token((int)(t - st - semicolon), tok_str_end, spaces_start, spaces_start + indent);
+            lexer_data->add_token((int)(t - st - semicolon), tok_str_end);
           } else {
             lexer_data->flush_str();
             lexer_data->pass_raw((int)(t - st - semicolon));;
+          }
+          if (std::size_t indent = spaces_count ?: tabs_count) {
+            lexer_data->add_token(0, tok_str_skip_indent, spaces_start, spaces_start + indent);
           }
           break;
         }

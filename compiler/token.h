@@ -19,6 +19,7 @@ enum TokenType {
   tok_str,
   tok_str_begin,
   tok_str_end,
+  tok_str_skip_indent,
   tok_expr_begin,
   tok_expr_end,
   tok_var_name,

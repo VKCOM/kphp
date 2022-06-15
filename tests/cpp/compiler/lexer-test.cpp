@@ -184,6 +184,12 @@ TEST(lexer_test, test_heredoc_string_skip_spaces) {
     {"<<<END\n\t\ta\n\t\tEND;", "a"},
     {"<<<END\n\t\ta\n\n\tEND;", "\ta\n"},
     {"<<<END\n\t\ta\n\n\t\tEND;", "a\n"},
+    // nowdoc
+    {"<<<'END'\n a\n END;", "a"},
+    {"<<<'END'\n  a\n END;", " a"},
+    {"<<<'END'\n  a\n  END;", "a"},
+    {"<<<'END'\n  a\n\n END;", " a\n"},
+    {"<<<'END'\n  a\n\n  END;", "a\n"},
     // few lanes
     {"<<<END\n a\n b\nEND;", " a\n b"},
     {"<<<END\n a\n b\n END;", "a\nb"},
