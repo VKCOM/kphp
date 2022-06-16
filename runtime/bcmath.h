@@ -12,7 +12,7 @@ string f$bcdiv(const string &lhs, const string &rhs, int64_t scale = std::numeri
 
 string f$bcmod(const string &lhs, const string &rhs);
 
-string f$bcpow(const string &lhs, const string &rhs);
+string f$bcpow(const string &lhs, const string &rhs, int64_t scale = std::numeric_limits<int64_t>::min());
 
 string f$bcadd(const string &lhs, const string &rhs, int64_t scale = std::numeric_limits<int64_t>::min());
 
