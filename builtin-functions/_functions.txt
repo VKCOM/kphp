@@ -719,7 +719,7 @@ define('PHP_ROUND_HALF_ODD', 123423146);
 
 function bcscale ($scale ::: int) ::: void;
 function bcdiv ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
-function bcmod ($lhs ::: string, $rhs ::: string) ::: string;
+function bcmod ($lhs ::: string, $rhs ::: string, int $scale = PHP_INT_MIN) ::: string;
 function bcpow ($lhs ::: string, $rhs ::: string, int $scale = PHP_INT_MIN) ::: string;
 function bcadd ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
 function bcsub ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;

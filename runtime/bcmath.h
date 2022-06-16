@@ -10,7 +10,7 @@ void f$bcscale(int64_t scale);
 
 string f$bcdiv(const string &lhs, const string &rhs, int64_t scale = std::numeric_limits<int64_t>::min());
 
-string f$bcmod(const string &lhs, const string &rhs);
+string f$bcmod(const string &lhs, const string &rhs, int64_t scale = std::numeric_limits<int64_t>::min());
 
 string f$bcpow(const string &lhs, const string &rhs, int64_t scale = std::numeric_limits<int64_t>::min());
 

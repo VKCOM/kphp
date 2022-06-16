@@ -525,9 +525,17 @@ static string scale_num(const string &num, int64_t scale) {
   return num;
 }
 
-string f$bcmod(const string &lhs, const string &rhs) {
+string f$bcmod(const string &lhs, const string &rhs, int64_t scale) {
+  if (scale == std::numeric_limits<int64_t>::min()) {
+    scale = bc_scale;
+  }
+  if (scale < 0) {
+    php_warning("Wrong parameter scale = %li in function bcmod", scale);
+    scale = 0;
+  }
+
   if (lhs.empty()) {
-    return ZERO;
+    return scale_num(ZERO, scale);
   }
   if (rhs.empty()) {
     php_warning("Modulo by empty string in function bcmod");
@@ -579,7 +587,12 @@ string f$bcmod(const string &lhs, const string &rhs) {
     buffer[--cur_pos] = '-';
   }
 
-  return {buffer + cur_pos, static_cast<string::size_type>(20 - cur_pos)};
+  string result{buffer + cur_pos, static_cast<string::size_type>(20 - cur_pos)};
+  if (bc_parse_number(result, lsign, lint, ldot, lfrac, lscale) != 0) {
+    php_warning("Something went wrong in bcmod: result expected to be an integer, got \"%s\"", result.c_str());
+    return ZERO;
+  }
+  return scale_num(result, scale);
 }
 
 string f$bcpow(const string &lhs, const string &rhs, int64_t scale) {
