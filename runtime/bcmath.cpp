@@ -530,7 +530,7 @@ string f$bcmod(const string &lhs, const string &rhs, int64_t scale) {
     scale = bc_scale;
   }
   if (scale < 0) {
-    php_warning("Wrong parameter scale = %li in function bcmod", scale);
+    php_warning("Wrong parameter scale = %" PRIi64 " in function bcmod", scale);
     scale = 0;
   }
 
@@ -600,7 +600,7 @@ string f$bcpow(const string &lhs, const string &rhs, int64_t scale) {
     scale = bc_scale;
   }
   if (scale < 0) {
-    php_warning("Wrong parameter scale = %li in function bcpow", scale);
+    php_warning("Wrong parameter scale = %" PRIi64 " in function bcpow", scale);
     scale = 0;
   }
 
