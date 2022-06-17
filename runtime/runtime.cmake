@@ -39,6 +39,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         allocator.cpp
         array_functions.cpp
         bcmath.cpp
+        common_template_instantiations.cpp
         confdata-functions.cpp
         confdata-global-manager.cpp
         confdata-keys.cpp
