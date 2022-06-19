@@ -546,6 +546,7 @@ function invocator(callable $f, $arg) { $f($arg); }
 
 invocator(function($arg) {});
 invocator(function($arg) use($extra) {});
+invocator(fn($arg) => $arg * 10);
 ```
 
 To have compile-type checks, you can use **typed callables**. In PHPDoc, they are expressed with `callable(T1, T2, …): ReturnT`:
