@@ -52,11 +52,10 @@ $a = new A;
 $a->number = "42";
 ```
 
-Leaving fields untyped is strictly not recommended, use PHPDoc with *@var* to control types:
+Leaving fields untyped is strictly not recommended, use PHPDoc with *@var* or typehint to control types:
 ```php
 class A {
-  /** @var int */
-  public $number = 0;
+  public int $number = 0;
 }
 
 $a = new A;
@@ -84,12 +83,6 @@ Using a single-line *@var* tag is a preferred code style convention:
 /**
  * @var string|false user name or false if not loaded
  */
-```
-
-```warning
-For now, KPHP as about PHP 7.2 language level, that's why class fields type declarations are not parsed yet:  
-`public int $a = 0;`  
-Once supported, you'll be able to use this, and after PHP 8 support union types will be allowed.
 ```
 
 
