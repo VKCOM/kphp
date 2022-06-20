@@ -101,7 +101,7 @@ For example, file uploading can remain PHP-based, whereas API business logic wor
 
 ## Some details in PHP syntax are just not implemented
 
-KPHP has about PHP 7.2 language level support.
+KPHP has about PHP 7.4 language level support.
 
 Some parts of PHP syntax can be technically supported, but were not implemented — either they are hard to implement, or there wasn't enough time, or they are considered to be a bad style.
 

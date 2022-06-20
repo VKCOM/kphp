@@ -206,15 +206,6 @@ But for simple primitives, you can use PHP 7 type hints instead.
 
 ## PHP 7 type hints
 
-```warning
-As for now, KPHP supports about PHP 7.2 language level.  
-So, type hints can be used in functions — but not in class fields, and without union types.
-```
-
-```php
-function sum(int $a, int $b): int { return $a + $b; }
-```
-
 Type hints are more lightweight and are preferred to be used for primitives. They work just as PHPDocs and lead to errors if passed incorrectly:
 ```php
 function f(?string $b): int {
