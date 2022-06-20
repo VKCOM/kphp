@@ -184,8 +184,12 @@ static void rpc_send_ready(connection *c) {
   static int q[QUERY_INT_BUF_LEN];
   int qn = 0;
   qn += 2;
-  bool use_ready_v2 = is_staging != 0 || vk::singleton<LeaseContext>::get().cur_lease_mode.has_value();
-  int magic = use_ready_v2 ? TL_KPHP_READY_V2 : TL_KPHP_READY;
+  const auto &lease_mode = vk::singleton<LeaseContext>::get().cur_lease_mode;
+  const auto &lease_mode_v2 = vk::singleton<LeaseContext>::get().cur_lease_mode_v2;
+  bool use_ready_v3 = lease_mode_v2.has_value();
+  bool use_ready_v2 = !use_ready_v3 && (is_staging != 0 || lease_mode.has_value());
+  int magic = use_ready_v3 ? TL_KPHP_READY_V3 :
+              (use_ready_v2 ? TL_KPHP_READY_V2 : TL_KPHP_READY);
 
   q[qn++] = -1; // will be replaced by op
   int actor_id = get_current_actor_id();
@@ -193,9 +197,9 @@ static void rpc_send_ready(connection *c) {
     qn += wrap_rpc_dest_actor_raw(q + qn, actor_id, magic);
     magic = TL_RPC_INVOKE_REQ;
   }
+
   if (use_ready_v2) {
     int fields_mask = is_staging ? vk::tl::kphp::ready_v2_fields_mask::is_staging : 0;
-    const auto &lease_mode = vk::singleton<LeaseContext>::get().cur_lease_mode;
     switch (get_lease_mode(lease_mode)) {
       case LeaseWorkerMode::QUEUE_TYPES: {
         fields_mask |= vk::tl::kphp::ready_v2_fields_mask::worker_mode;
@@ -210,7 +214,24 @@ static void rpc_send_ready(connection *c) {
         break;
       }
     }
+  } else if (use_ready_v3) {
+    int fields_mask = is_staging ? vk::tl::kphp::ready_v3_fields_mask::is_staging : 0;
+    switch (get_lease_mode(lease_mode_v2)) {
+      case LeaseWorkerMode::QUEUE_TYPES: {
+        fields_mask |= vk::tl::kphp::ready_v3_fields_mask::worker_mode;
+        q[qn++] = fields_mask;
+        int stored_size = vk::tl::store_to_buffer(reinterpret_cast<char *>(q + qn), (QUERY_INT_BUF_LEN - qn) * 4, lease_mode_v2.value());
+        assert(stored_size % 4 == 0);
+        qn += stored_size / 4;
+        break;
+      }
+      case LeaseWorkerMode::ALL_QUEUES: {
+        q[qn++] = fields_mask;
+        break;
+      }
+    }
   }
+
   q[qn++] = static_cast<int>(inet_sockaddr_address(&c->local_endpoint));
   q[qn++] = static_cast<int>(inet_sockaddr_port(&c->local_endpoint));
   q[qn++] = pid; // pid

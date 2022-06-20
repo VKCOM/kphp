@@ -14,6 +14,7 @@
 class LeaseContext : vk::not_copyable {
 public:
   std::optional<QueueTypesLeaseWorkerMode> cur_lease_mode;
+  std::optional<QueueTypesLeaseWorkerModeV2> cur_lease_mode_v2;
   double rpc_stop_ready_timeout{0};
 
   friend class vk::singleton<LeaseContext>;

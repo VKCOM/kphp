@@ -9,7 +9,7 @@
 #include <vector>
 
 // This mode is set from YAML config on KPHP server startup
-// and sent from KPHP to tasks in kphp.readyV2
+// and sent from KPHP to tasks in kphp.readyV2 or kphp.readyV3
 
 struct QueueTypesLeaseWorkerMode {
   int fields_mask{0};
@@ -17,6 +17,15 @@ struct QueueTypesLeaseWorkerMode {
   std::vector<std::string> type_names;
 
   static QueueTypesLeaseWorkerMode tl_fetch();
+  void tl_store() const;
+};
+
+struct QueueTypesLeaseWorkerModeV2 {
+  int fields_mask{0};
+  std::vector<long long> queue_id;
+  std::vector<std::string> type_names;
+
+  static QueueTypesLeaseWorkerModeV2 tl_fetch();
   void tl_store() const;
 };
 
@@ -35,4 +44,7 @@ inline const char *lease_worker_mode_str(LeaseWorkerMode mode) {
   return "unreachable";
 }
 
-LeaseWorkerMode get_lease_mode(const std::optional<QueueTypesLeaseWorkerMode> &mode);
+template <typename T>
+LeaseWorkerMode get_lease_mode(const std::optional<T> &mode) {
+  return mode.has_value() ? LeaseWorkerMode::QUEUE_TYPES : LeaseWorkerMode::ALL_QUEUES;
+}

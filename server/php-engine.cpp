@@ -1869,8 +1869,8 @@ int main_args_handler(int i, const char *long_option) {
       return 0;
     }
     case 'S': {
-      const char *lease_config = optarg;
-      return LeaseConfigParser::parse_lease_options_config(lease_config);
+      LeaseConfigParser::lease_config_path = optarg;
+      return 0;
     }
     case 2000: {
       return read_option_to(long_option, 1, std::numeric_limits<int>::max(), queries_to_recreate_script);
@@ -2203,6 +2203,11 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("sigterm-wait-time", required_argument, 2029, "Time to wait before termination on SIGTERM");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
+  // TODO: remove it after successful migration from kphb.readyV2 to kphb.readyV3
+  if (LeaseConfigParser::parse_lease_options_config(LeaseConfigParser::lease_config_path) < 0) {
+    kprintf("Failed to parse option --tasks-config\n");
+    usage_and_exit();
+  }
 }
 
 
