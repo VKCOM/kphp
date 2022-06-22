@@ -7,15 +7,16 @@
 #include "common/algorithms/compare.h"
 
 #include "compiler/code-gen/common.h"
+#include "compiler/code-gen/files/json-encoder-tags.h"
 #include "compiler/code-gen/files/tl2cpp/tl2cpp-utils.h"
 #include "compiler/code-gen/includes.h"
 #include "compiler/code-gen/namespace.h"
 #include "compiler/code-gen/naming.h"
-#include "compiler/code-gen/raw-data.h"
 #include "compiler/code-gen/vertex-compiler.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/ffi-data.h"
+#include "compiler/data/kphp-json-tags.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/var-data.h"
@@ -23,7 +24,6 @@
 #include "compiler/inferring/public.h"
 #include "compiler/inferring/type-data.h"
 #include "compiler/tl-classes.h"
-#include "compiler/vertex.h"
 
 VarDeclaration VarExternDeclaration(VarPtr var) {
   return {var, true, false};
@@ -394,11 +394,15 @@ void InterfaceDeclaration::compile(CodeGenerator &W) const {
   W << OpenFile(interface->header_name, interface->get_subdir());
   W << "#pragma once" << NL;
 
+  IncludesCollector includes;
+
   if (!interface->implements.empty()) {
-    IncludesCollector includes;
     includes.add_base_classes_include(interface);
-    W << includes;
   }
+  if (!interface->json_encoders.empty()) {
+    includes.add_raw_filename_include(JsonEncoderTags::all_tags_file_);
+  }
+  W << includes;
 
   W << OpenNamespace() << NL;
 
@@ -572,19 +576,29 @@ void ClassDeclaration::compile_class_method(FunctionSignatureGenerator &&W, Clas
     << method_signature;
 
   if (is_pure_virtual) {
-    std::move(signature) << SemicolonAndNL{};
+    std::move(signature) << SemicolonAndNL{} << NL;
   } else {
-    std::move(signature) << BEGIN << "return " << return_value << SemicolonAndNL{} << END << NL;
+    std::move(signature) << BEGIN << "return " << return_value << SemicolonAndNL{} << END << NL << NL;
   }
-  std::move(signature) << NL;
 }
 
 void ClassDeclaration::compile_inner_methods(CodeGenerator &W, ClassPtr klass) {
+  compile_json_flatten_flag(W, klass);
   compile_get_class(W, klass);
   compile_get_hash(W, klass);
   compile_accept_visitor_methods(W, klass);
-  compile_serialization_methods(W, klass);
+  compile_msgpack_serialize(W, klass);
+  compile_msgpack_deserialize(W, klass);
   compile_virtual_builtin_functions(W, klass);
+}
+
+void ClassDeclaration::compile_json_flatten_flag(CodeGenerator &W, ClassPtr klass) {
+  const auto *tag_flatten = klass->kphp_json_tags
+                            ? klass->kphp_json_tags->find_tag([](const kphp_json::KphpJsonTag &tag) { return tag.attr_type == kphp_json::json_attr_flatten && tag.flatten; })
+                            : nullptr;
+  if (tag_flatten) {
+    W << "constexpr static bool json_flatten_class{true};" << NL << NL;
+  }
 }
 
 void ClassDeclaration::compile_get_class(CodeGenerator &W, ClassPtr klass) {
@@ -600,14 +614,7 @@ void ClassDeclaration::compile_accept_visitor(CodeGenerator &W, ClassPtr klass, 
   compile_class_method(FunctionSignatureGenerator(W), klass, fmt_format("void accept({} &visitor)", visitor_type), "generic_accept(visitor)");
 }
 
-void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr klass) {
-  if (!klass->need_to_array_debug_visitor &&
-      !klass->need_instance_cache_visitors &&
-      !klass->need_instance_memory_estimate_visitor) {
-    return;
-  }
-
-  W << NL;
+void ClassDeclaration::compile_generic_accept(CodeGenerator &W, ClassPtr klass) {
   FunctionSignatureGenerator(W) << "template<class Visitor>" << NL
                                 << "void generic_accept(Visitor &&visitor) " << BEGIN;
   for (auto cur_klass = klass; cur_klass; cur_klass = cur_klass->parent_class) {
@@ -617,6 +624,122 @@ void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr
     });
   }
   W << END << NL;
+}
+
+// generate `visitor("json_key", $field_name);`, wrapped with `if ($field_name != default)` if skip_if_default, etc.
+static void compile_json_visitor_call(CodeGenerator &W, ClassPtr json_encoder, ClassPtr klass, const ClassMemberInstanceField &field, bool to_encode) noexcept {
+  auto props = kphp_json::merge_and_inherit_json_tags(field, klass, json_encoder);
+
+  if (to_encode ? props.skip_when_encoding : props.skip_when_decoding) {
+    return;
+  }
+
+  if (to_encode && props.skip_if_default) {
+    W << "if (";
+    if (field.var->init_val) {
+      W << "!eq2($" << field.local_name() << ", " << field.var->init_val << ")";
+    } else {
+      W << "f$boolval($" << field.local_name() << ")";
+    }
+    W << ") " << BEGIN;
+  }
+  if (to_encode && props.float_precision) {
+    W << "visitor.set_precision(" << props.float_precision << ");" << NL;
+  }
+  if (props.raw_string) {
+    W << "JsonRawString raw_string$" << field.local_name() << "{$" << field.local_name() << "};" << NL;
+  }
+
+  W << "visitor(\"" << props.json_key << "\", " << (props.raw_string ? "raw_string$" : "$") << field.local_name();
+  if ((to_encode && props.array_as_hashmap) || (!to_encode && props.required)) {
+    W << ", true";
+  }
+
+  W << ");" << NL;
+  if (to_encode && props.float_precision) {
+    W << "visitor.restore_precision();" << NL;
+  }
+  if (to_encode && props.skip_if_default) {
+    W << END << NL;
+  }
+}
+
+void ClassDeclaration::compile_accept_json_visitor(CodeGenerator &W, ClassPtr klass, bool to_encode, ClassPtr json_encoder) {
+  bool parent_has_method = false;
+  if (ClassPtr parent = klass->parent_class) {
+    parent_has_method |= parent->json_encoders.end() != std::find(parent->json_encoders.begin(), parent->json_encoders.end(), std::pair{json_encoder, to_encode});
+  }
+  for (InterfacePtr parent : klass->implements) {
+    parent_has_method |= parent->json_encoders.end() != std::find(parent->json_encoders.begin(), parent->json_encoders.end(), std::pair{json_encoder, to_encode});
+  }
+
+  const bool has_derived = !klass->derived_classes.empty();
+  const bool is_pure_virtual = klass->is_interface();
+
+  FunctionSignatureGenerator &&signature = FunctionSignatureGenerator(W)
+    .set_is_virtual(is_pure_virtual || has_derived)
+    .set_final(parent_has_method && !has_derived)
+    .set_overridden(parent_has_method && has_derived)
+    .set_pure_virtual(is_pure_virtual)
+    << fmt_format("void accept({}<{}> &visitor)", to_encode ? "ToJsonVisitor" : "FromJsonVisitor", JsonEncoderTags::get_cppStructTag_name(json_encoder->name));
+
+  if (is_pure_virtual) {
+    std::move(signature) << SemicolonAndNL{};
+    return;
+  } else {
+    std::move(signature) << BEGIN;
+  }
+
+  // generates `visitor("json_key", $field_name)` calls in appropriate order
+  auto compile_visitor_calls_for_class_fields = [](CodeGenerator &W, ClassPtr klass, ClassPtr json_encoder, bool to_encode) {
+    // if @kphp-json 'fields' exists above a class, we use it to output fields in that order
+    if (klass->kphp_json_tags) {
+      const kphp_json::KphpJsonTag *tag_fields = klass->kphp_json_tags->find_tag([json_encoder](const kphp_json::KphpJsonTag &tag) {
+        return tag.attr_type == kphp_json::json_attr_fields && (!tag.for_encoder || tag.for_encoder == json_encoder);
+      });
+      if (tag_fields) {
+        for (vk::string_view field_name : split_skipping_delimeters(tag_fields->fields, ",")) {
+          compile_json_visitor_call(W, json_encoder, klass, *klass->members.get_instance_field(field_name), to_encode);
+        }
+        return;
+      }
+    }
+    // otherwise, we output fields in an order they are declared
+    klass->members.for_each([&W, json_encoder, klass, to_encode](const ClassMemberInstanceField &field) {
+      compile_json_visitor_call(W, json_encoder, klass, field, to_encode);
+    });
+  };
+
+  if (!klass->parent_class) {
+    compile_visitor_calls_for_class_fields(W, klass, json_encoder, to_encode);
+  } else {
+    // in final json we want parent fields to appear first
+    std::forward_list<ClassPtr> parents;
+    for (auto cur_klass = klass; cur_klass; cur_klass = cur_klass->parent_class) {
+      parents.emplace_front(cur_klass);
+    }
+    for (auto parent : parents) {
+      compile_visitor_calls_for_class_fields(W, parent, json_encoder, to_encode);
+    }
+  }
+
+  W << END << NL;
+}
+
+void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr klass) {
+  bool need_generic_accept =
+    klass->need_to_array_debug_visitor ||
+    klass->need_instance_cache_visitors ||
+    klass->need_instance_memory_estimate_visitor;
+
+  if (!need_generic_accept && klass->json_encoders.empty()) {
+    return;
+  }
+
+  if (need_generic_accept) {
+    W << NL;
+    compile_generic_accept(W, klass);
+  }
 
   if (klass->need_to_array_debug_visitor) {
     W << NL;
@@ -634,18 +757,18 @@ void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr
     compile_accept_visitor(W, klass, "InstanceDeepCopyVisitor");
     compile_accept_visitor(W, klass, "InstanceDeepDestroyVisitor");
   }
+
+  for (auto[encoder, to_encode] : klass->json_encoders) {
+    W << NL;
+    compile_accept_json_visitor(W, klass, to_encode, encoder);
+  }
 }
 
-void ClassDeclaration::compile_serialization_methods(CodeGenerator &W, ClassPtr klass) {
+void ClassDeclaration::compile_msgpack_serialize(CodeGenerator &W, ClassPtr klass) {
   if (!klass->is_serializable) {
     return;
   }
 
-  compile_serialize(W, klass);
-  compile_deserialize(W, klass);
-}
-
-void ClassDeclaration::compile_serialize(CodeGenerator &W, ClassPtr klass) {
   //template<typename Packer>
   //void msgpack_pack(Packer &packer) const {
   //   packer.pack(tag_1);
@@ -670,7 +793,11 @@ void ClassDeclaration::compile_serialize(CodeGenerator &W, ClassPtr klass) {
     << END << NL;
 }
 
-void ClassDeclaration::compile_deserialize(CodeGenerator &W, ClassPtr klass) {
+void ClassDeclaration::compile_msgpack_deserialize(CodeGenerator &W, ClassPtr klass) {
+  if (!klass->is_serializable) {
+    return;
+  }
+
   //if (msgpack_o.type != vk::msgpack::stored_type::ARRAY) { throw vk::msgpack::type_error{}; }
   //auto arr = msgpack_o.via.array;
   //for (size_t i = 0; i < arr.size; i += 2) {
@@ -725,6 +852,9 @@ IncludesCollector ClassDeclaration::compile_front_includes(CodeGenerator &W) con
   });
 
   includes.add_base_classes_include(klass);
+  if (!klass->json_encoders.empty()) {
+    includes.add_raw_filename_include(JsonEncoderTags::all_tags_file_);
+  }
 
   W << includes;
 

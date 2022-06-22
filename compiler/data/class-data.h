@@ -4,6 +4,7 @@
 
 #pragma once
 #include <atomic>
+#include <forward_list>
 
 #include "common/algorithms/compare.h"
 #include "common/algorithms/hashes.h"
@@ -20,6 +21,7 @@
 
 struct FFIClassDataMixin;
 struct FFIScopeDataMixin;
+namespace kphp_json { class KphpJsonTagList; }
 
 enum class ClassType {
   klass,
@@ -53,6 +55,7 @@ public:
   FunctionPtr construct_function;
 
   const PhpDocComment *phpdoc{nullptr};
+  const kphp_json::KphpJsonTagList *kphp_json_tags{nullptr};
 
   bool can_be_php_autoloaded{false};
   bool is_immutable{false};
@@ -70,6 +73,7 @@ public:
   std::atomic<bool> need_instance_cache_visitors{false};
   std::atomic<bool> need_instance_memory_estimate_visitor{false};
   std::atomic<bool> need_virtual_builtin_functions{false};
+  // need_json_visitors doesn't exist: instead, we use json_encoders with a list of classes
 
   ClassModifiers modifiers;
   ClassMembersContainer members;
@@ -79,6 +83,10 @@ public:
 
   FFIClassDataMixin *ffi_class_mixin = nullptr; // non-null for ffi_cdata classes
   FFIScopeDataMixin *ffi_scope_mixin = nullptr; // non-null for ffi_scope classes
+
+  // if JsonEncoder::encode() and MyJsonEncoder::decode() were called for this class,
+  // this field will contain [ {JsonEncoder,true}, {MyJsonEncoder,false} ]
+  std::forward_list<std::pair<ClassPtr, bool>> json_encoders;
 
   static const char *NAME_OF_VIRT_CLONE;
   static const char *NAME_OF_CLONE;

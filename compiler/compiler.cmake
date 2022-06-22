@@ -38,6 +38,7 @@ prepend(KPHP_COMPILER_DATA_SOURCES data/
         function-data.cpp
         lib-data.cpp
         generics-mixins.cpp
+        kphp-json-tags.cpp
         performance-inspections.cpp
         src-file.cpp
         var-data.cpp
@@ -72,6 +73,7 @@ prepend(KPHP_COMPILER_CODEGEN_SOURCES code-gen/
         files/function-source.cpp
         files/global_vars_memory_stats.cpp
         files/init-scripts.cpp
+        files/json-encoder-tags.cpp
         files/lib-header.cpp
         files/tl2cpp/tl-combinator.cpp
         files/tl2cpp/tl-constructor.cpp
@@ -192,7 +194,8 @@ prepend(KPHP_COMPILER_SOURCES ${KPHP_COMPILER_DIR}/
         stats.cpp
         type-hint.cpp
         tl-classes.cpp
-        vertex.cpp)
+        vertex.cpp
+        utils/string-utils.cpp)
 
 if(APPLE)
     set_source_files_properties(${KPHP_COMPILER_DIR}/lexer.cpp PROPERTIES COMPILE_FLAGS -Wno-deprecated-register)

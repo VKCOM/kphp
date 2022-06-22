@@ -4,6 +4,7 @@
 
 #include "compiler/pipes/check-func-calls-and-vararg.h"
 
+#include "compiler/data/kphp-json-tags.h"
 #include "compiler/data/src-file.h"
 #include "compiler/gentree.h"
 #include "compiler/name-gen.h"
@@ -188,15 +189,58 @@ VertexPtr CheckFuncCallsAndVarargPass::create_CompileTimeLocation_call_arg(const
   return v_loc;
 }
 
+// having checked all args count, sometimes, we want to replace f(...) with f'(...),
+// as f' better coincides with C++ implementation and/or C++ templates
+//
+// for instance, JsonEncoder::encode() and all inheritors' calls are replaced
+// (not to carry auto-generated inheritors body, as they are generated wrong anyway, cause JsonEncoder is built-in)
 VertexAdaptor<op_func_call> CheckFuncCallsAndVarargPass::maybe_replace_extern_func_call(VertexAdaptor<op_func_call> call, FunctionPtr f_called) {
-  vk::string_view local_name = f_called->name;
-  if (local_name == "hrtime") {
+  if (f_called->name == "hrtime") {
     return process_hrtime(call);
   }
-  if (local_name == "microtime") {
+  if (f_called->name == "microtime") {
     return process_microtime(call);
   }
+  if (f_called->modifiers.is_static() && f_called->class_id) {
+    vk::string_view local_name = f_called->local_name();
+
+    // replace JsonEncoderOrChild::decode($json, $class_name) with JsonEncoder::from_json_impl('JsonEncoderOrChild', $json, $class_name)
+    if (local_name == "decode" && is_class_JsonEncoder_or_child(f_called->class_id)) {
+      auto v_encoder_name = VertexAdaptor<op_string>::create().set_location(call->location);
+      v_encoder_name->str_val = f_called->class_id->name;
+      call->str_val = "JsonEncoder$$from_json_impl";
+      call->func_id = G->get_function(call->str_val);
+      return add_call_arg(v_encoder_name, call, true);
+    }
+    // replace JsonEncoderOrChild::encode($instance) with JsonEncoder::to_json_impl('JsonEncoderOrChild', $instance)
+    if (local_name == "encode" && is_class_JsonEncoder_or_child(f_called->class_id)) {
+      auto v_encoder_name = VertexAdaptor<op_string>::create().set_location(call->location);
+      v_encoder_name->str_val = f_called->class_id->name;
+      call->str_val = "JsonEncoder$$to_json_impl";
+      call->func_id = G->get_function(call->str_val);
+      return add_call_arg(v_encoder_name, call, true);
+    }
+    // replace JsonEncoderOrChild::getLastError() with parent JsonEncoder::getLastError()
+    if (local_name == "getLastError" && is_class_JsonEncoder_or_child(f_called->class_id)) {
+      call->str_val = "JsonEncoder$$getLastError";
+      call->func_id = G->get_function(call->str_val);
+      return call;
+    }
+  }
+
   return call;
+}
+
+bool CheckFuncCallsAndVarargPass::is_class_JsonEncoder_or_child(ClassPtr class_id) {
+  ClassPtr klass_JsonEncoder = G->get_class("JsonEncoder");
+  if (klass_JsonEncoder && klass_JsonEncoder->is_parent_of(class_id)) {
+    // when a class is first time detected as json encoder, parse and validate all constants, and store them
+    if (!class_id->kphp_json_tags) {
+      class_id->kphp_json_tags = kphp_json::convert_encoder_constants_to_tags(class_id);
+    }
+    return true;
+  }
+  return false;
 }
 
 VertexAdaptor<op_func_call> CheckFuncCallsAndVarargPass::add_call_arg(VertexPtr to_add, VertexAdaptor<op_func_call> call, bool prepend) {

@@ -393,6 +393,7 @@ void ClassData::set_atomic_field_deeply() {
     child->set_atomic_field_deeply<field_ptr>();
   }
 
+  // todo why we are setting it to parents, not only to child classes?
   for (auto parent_interface : implements) {
     parent_interface->set_atomic_field_deeply<field_ptr>();
   }

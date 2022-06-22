@@ -2,8 +2,6 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include <string_view>
-
 #include "compiler/pipes/final-check.h"
 
 #include "common/termformat/termformat.h"
@@ -11,6 +9,7 @@
 #include "common/algorithms/contains.h"
 
 #include "compiler/compiler-core.h"
+#include "compiler/data/kphp-json-tags.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/data/vars-collector.h"
@@ -105,6 +104,112 @@ void check_to_array_debug_call(VertexAdaptor<op_func_call> call) {
   } else {
     kphp_error_return(false, "Argument of to_array_debug() should be instance, tuple or shape");
   }
+}
+
+void check_field_of_a_jsonable_class(const ClassMemberInstanceField &field, const kphp_json::FieldJsonSettings &props, bool to_encode) noexcept {
+  const TypeData *type = tinf::get_type(field.var);
+
+  kphp_error_return(!props.array_as_hashmap || type->ptype() == tp_array,
+                    fmt_format("Field {} is @kphp-json 'array_as_hashmap', but it's not an array", field.var->as_human_readable()));
+  kphp_error_return(!props.raw_string || (type->ptype() == tp_string && !type->or_false_flag() && !type->or_null_flag()),
+                    fmt_format("Field {} is @kphp-json 'raw_string', but it's not a string", field.var->as_human_readable()));
+
+  if (field.type_hint) {
+    field.type_hint->traverse([field, to_encode](const TypeHint *child) {
+      // for now, these types are denied both for encoding and decoding,
+      // though potentially tuples and shapes can easily be allowed at least for encoding
+      bool denied = child->try_as<TypeHintTuple>() || child->try_as<TypeHintShape>() || child->try_as<TypeHintCallable>() || child->try_as<TypeHintFuture>();
+      if (const auto *as_instance = child->try_as<TypeHintInstance>()) {
+        ClassPtr field_class = as_instance->resolve();
+        denied = field_class->is_builtin();
+
+        if (!to_encode) {
+          if (field_class->is_interface()) {
+            kphp_error(0, fmt_format("Json decoding for {} is unavailable, because {} is an interface", field.var->as_human_readable(), field_class->as_human_readable()));
+          } else if (field_class->modifiers.is_abstract()) {
+            kphp_error(0, fmt_format("Json decoding for {} is unavailable, because {} is an abstract class", field.var->as_human_readable(), field_class->as_human_readable()));
+          } else if (!field_class->derived_classes.empty()) {
+            kphp_error(0, fmt_format("Json decoding for {} is unavailable, because {} has derived classes", field.var->as_human_readable(), field_class->as_human_readable()));
+          }
+        }
+      }
+      kphp_error(!denied, fmt_format("Field {} is @var {}, it's incompatible with json", field.var->as_human_readable(), field.type_hint->as_human_readable()));
+    });
+  }
+}
+
+// when we see JsonEncoder::encode($klass) and similar, append to klass->json_encoders
+// (so, in on_start() that list is empty, and all checks are done when adding the next found at a call)
+void store_json_encoder(ClassPtr klass, ClassPtr json_encoder, bool to_encode) noexcept {
+  {
+    AutoLocker<Lockable *> lock{&(*klass)};
+    auto it = std::find(klass->json_encoders.begin(), klass->json_encoders.end(), std::pair{json_encoder, to_encode});
+    if (it != klass->json_encoders.end()) {
+      return;
+    }
+    // maintain a list sorted to keep codegen stable
+    klass->json_encoders.emplace_front(json_encoder, to_encode);
+    klass->json_encoders.sort();
+  }
+
+  // we allow encoding interfaces and base classes (just generate a virtual accept for all inheritors),
+  // but for decoding we allow only leaf classes (it's conceptual, json strings don't contain class names)
+  // check this and print an appropriate error message
+  if (!to_encode) {
+    if (klass->is_interface()) {
+      kphp_error(0, fmt_format("Json decoding for {} is unavailable, because it's an interface", klass->as_human_readable()));
+    } else if (klass->modifiers.is_abstract()) {
+      kphp_error(0, fmt_format("Json decoding for {} is unavailable, because it's at abstract class", klass->as_human_readable()));
+    }
+  }
+
+  for (ClassPtr derived : klass->derived_classes) {
+    store_json_encoder(derived, json_encoder, to_encode);
+  }
+
+  std::set<std::string> used_json_keys;
+  for (ClassPtr parent = klass; parent; parent = parent->parent_class) {
+    parent->members.for_each([json_encoder, to_encode, klass, parent, &used_json_keys](const ClassMemberInstanceField &field) {
+      // tuples/interfaces are not allowed as fields, but if a field is marked with @kphp-json skip
+      // or is implicitly skipped (for example, due to visibility_policy of encoder),
+      // we shouldn't analyze it and store json encoders for it
+      // to correctly handle all cases, we merge all encoder constants and tags, equal to code generation
+      kphp_json::FieldJsonSettings props = kphp_json::merge_and_inherit_json_tags(field, parent, json_encoder);
+      if (to_encode ? props.skip_when_encoding : props.skip_when_decoding) {
+        return;
+      }
+
+      std::unordered_set<ClassPtr> sub_classes;
+      field.var->tinf_node.get_type()->get_all_class_types_inside(sub_classes);
+      for (ClassPtr sub_klass : sub_classes) {
+        store_json_encoder(sub_klass, json_encoder, to_encode);
+      }
+
+      check_field_of_a_jsonable_class(field, props, to_encode);
+      kphp_error(props.json_key.empty() || used_json_keys.insert(props.json_key).second,
+                 fmt_format("Json key \"{}\" appears twice for class {} encoded with {}", props.json_key, klass->as_human_readable(), json_encoder->as_human_readable()));
+    });
+  }
+}
+
+ClassPtr extract_json_encoder_from_call(VertexAdaptor<op_func_call> call) noexcept {
+  auto v_encoder = GenTree::get_actual_value(call->args().front());
+  kphp_assert(v_encoder->type() == op_string);  // it's const string of a class name (JsonEncoder of inheritors)
+  return G->get_class(v_encoder->get_string());
+}
+
+void check_to_json_impl_call(VertexAdaptor<op_func_call> call) noexcept {
+  auto encoder = extract_json_encoder_from_call(call);
+  const auto *type = tinf::get_type(call->args()[1]);
+  kphp_error_return(type->ptype() == tp_Class, "second argument of JsonEncoder::encode should be a class type");
+  store_json_encoder(type->class_type(), encoder, true);
+}
+
+void check_from_json_impl_call(VertexAdaptor<op_func_call> call) noexcept {
+  auto encoder = extract_json_encoder_from_call(call);
+  const auto *type = tinf::get_type(call);
+  kphp_assert(type->ptype() == tp_Class);
+  store_json_encoder(type->class_type(), encoder, false);
 }
 
 void check_instance_serialize_call(VertexAdaptor<op_func_call> call) {
@@ -581,7 +686,7 @@ void FinalCheckPass::check_instanceof(VertexAdaptor<op_instanceof> instanceof_ve
   kphp_error(instanceof_var_type->class_type(), fmt_format("left operand of 'instanceof' should be an instance, but passed {}", instanceof_var_type->as_human_readable()));
 }
 
-static void check_indexing_violation(std::string_view allowed_types_string, const std::vector<PrimitiveType> &allowed_types, std::string_view what_indexing,
+static void check_indexing_violation(vk::string_view allowed_types_string, const std::vector<PrimitiveType> &allowed_types, vk::string_view what_indexing,
                                      const TypeData &key_type) noexcept {
   kphp_error(vk::contains(allowed_types, key_type.ptype()),
              fmt_format("Only {} types are allowed for {}{}indexing, but {} type is passed", allowed_types_string, what_indexing,
@@ -634,6 +739,10 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
       check_instance_cache_store_call(call);
     } else if (function_name == "to_array_debug" || function_name == "instance_to_array") {
       check_to_array_debug_call(call);
+    } else if (function_name == "JsonEncoder$$to_json_impl") {
+      check_to_json_impl_call(call);
+    } else if (function_name == "JsonEncoder$$from_json_impl") {
+      check_from_json_impl_call(call);
     } else if (function_name == "instance_serialize") {
       check_instance_serialize_call(call);
     } else if (function_name == "instance_deserialize") {

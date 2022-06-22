@@ -1,0 +1,25 @@
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2020 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
+#pragma once
+
+#include <type_traits>
+
+namespace impl_ {
+template<typename T, typename = std::void_t<>>
+struct IsJsonFlattenClass : std::false_type{};
+
+template<typename T>
+struct IsJsonFlattenClass<T, std::enable_if_t<T::json_flatten_class>> : std::true_type{};
+} // namespace impl_
+
+struct JsonRawString {
+  explicit JsonRawString(string &s) noexcept
+    : str(s) {}
+  string &str;
+};
+
+struct JsonEncoderError {
+  static string msg;
+};
