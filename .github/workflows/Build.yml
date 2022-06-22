@@ -59,7 +59,9 @@ jobs:
       run: docker load --input kphp-build-env-${{matrix.os}}.tar
       
     - name: Start docker container
-      run: docker run -dt --name kphp-build-container-${{matrix.os}} --volume $GITHUB_WORKSPACE:${{env.kphp_root_dir}} kphp-build-img-${{matrix.os}}
+      run: |
+        docker run -dt --name kphp-build-container-${{matrix.os}} kphp-build-img-${{matrix.os}}
+        docker cp $GITHUB_WORKSPACE/. kphp-build-container-${{matrix.os}}:${{env.kphp_root_dir}}
 
     - name: Add git safe directory
       run: docker exec kphp-build-container-${{matrix.os}} bash -c
