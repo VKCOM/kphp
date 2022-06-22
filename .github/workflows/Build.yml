@@ -47,8 +47,8 @@ jobs:
       with:
         path: kphp-build-env-${{matrix.os}}.tar
         key: docker-image-cache-${{matrix.os}}-${{ hashFiles('.github/workflows/Dockerfile.*') }}
-          
-    - name: Buld and save docker image
+
+    - name: Build and save docker image
       if: steps.docker-image-cache.outputs.cache-hit != 'true'
       run: |
         docker build -f $GITHUB_WORKSPACE/.github/workflows/Dockerfile.${{matrix.os}} $GITHUB_WORKSPACE -t kphp-build-img-${{matrix.os}}
@@ -61,20 +61,20 @@ jobs:
     - name: Start docker container
       run: docker run -dt --name kphp-build-container-${{matrix.os}} --volume $GITHUB_WORKSPACE:${{env.kphp_root_dir}} kphp-build-img-${{matrix.os}}
 
-    - name: Change repo rights
+    - name: Add git safe directory
       run: docker exec kphp-build-container-${{matrix.os}} bash -c
-              "chown -R kitten ${{env.kphp_root_dir}}"
+              "git config --global --add safe.directory ${{env.kphp_root_dir}}"
 
     - name: Build all
-      run: docker exec -u kitten kphp-build-container-${{matrix.os}} bash -c 
+      run: docker exec kphp-build-container-${{matrix.os}} bash -c 
               "cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DADDRESS_SANITIZER=${{matrix.asan}} -DUNDEFINED_SANITIZER=${{matrix.ubsan}} -S ${{env.kphp_root_dir}} -B ${{env.kphp_build_dir}} && make -C ${{env.kphp_build_dir}} -j$(nproc) all"
 
     - name: Run unit tests
-      run: docker exec -u kitten kphp-build-container-${{matrix.os}} bash -c 
+      run: docker exec kphp-build-container-${{matrix.os}} bash -c 
               "make -C ${{env.kphp_build_dir}} -j$(nproc) test"
 
     - name: Compile dummy PHP script
-      run: docker exec -u kitten kphp-build-container-${{matrix.os}} bash -c 
+      run: docker exec kphp-build-container-${{matrix.os}} bash -c 
               "cd ${{env.kphp_build_dir}} && echo 'hello world' > demo.php && ${{env.kphp_root_dir}}/objs/bin/kphp2cpp --cxx ${{matrix.compiler}} demo.php && kphp_out/server -o"
 
     - name: Run python tests
