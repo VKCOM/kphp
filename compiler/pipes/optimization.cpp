@@ -361,5 +361,11 @@ void OptimizationPass::on_finish() {
         }
       }
     });
+
+    class_id->members.for_each([this](ClassMemberStaticField &static_field) {
+      if (static_field.var->init_val) {
+        run_function_pass(static_field.var->init_val, this);
+      }
+    });
   }
 }
