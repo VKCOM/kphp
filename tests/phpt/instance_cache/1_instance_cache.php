@@ -1,4 +1,4 @@
-@ok
+@ok non-idempotent
 <?php
 
 require_once 'kphp_tester_include.php';
