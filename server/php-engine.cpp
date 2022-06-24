@@ -303,7 +303,7 @@ command_t *create_command_net_writer(const char *data, int data_len, command_t *
 
 /** php-script **/
 
-#define run_once_count 1
+int run_once_count = 1;
 int queries_to_recreate_script = 100;
 
 void *php_script;
@@ -1837,7 +1837,10 @@ int main_args_handler(int i, const char *long_option) {
       return 0;
     }
     case 'o': {
-      run_once = 1;
+      run_once = true;
+      if (optarg) {
+        return read_option_to(long_option, 1, std::numeric_limits<int>::max(), run_once_count);
+      }
       return 0;
     }
     case 'q': {
@@ -2153,7 +2156,7 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("static-buffers-size", required_argument, 'L', "limit for static buffers length (e.g. limits script output size)");
   parse_option("error-tag", required_argument, 'E', "name of file with engine tag showed on every warning");
   parse_option("workers-num", required_argument, 'f', "the total workers number");
-  parse_option("once", no_argument, 'o', "run script once");
+  parse_option("once", optional_argument, 'o', "run script once");
   parse_option("master-port", required_argument, 'p', "port for memcached interface to master");
   parse_option("cluster-name", required_argument, 's', "only one kphp with same cluster name will be run on one machine");
   parse_option("time-limit", required_argument, 't', "time limit for script in seconds");
@@ -2264,7 +2267,7 @@ int run_main(int argc, char **argv, php_mode mode) {
   static_assert(offsetof(tcp_rpc_client_functions, rpc_ready) == offsetof(tcp_rpc_server_functions, rpc_ready), "");
 
   if (mode == php_mode::cli) {
-    run_once = 1;
+    run_once = true;
     disable_access_log = 2;
     parse_main_args_till_option(argc, argv, "--Xkphp-options");
   }

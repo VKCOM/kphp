@@ -35,7 +35,7 @@ extern int no_sql;
 
 extern int master_flag;
 
-extern int run_once;
+extern bool run_once;
 extern int run_once_return_code;
 
 extern int die_on_fail;
