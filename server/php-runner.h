@@ -58,24 +58,9 @@ extern long long query_stats_id;
 void dump_query_stats();
 
 void init_handlers();
-void php_script_finish(void *ptr);
-void php_script_free(void *ptr);
-void php_script_clear(void *ptr);
-void php_script_init(void *ptr, script_t *f_run, php_query_data *data_to_set);
-run_state_t php_script_iterate(void *ptr);
-php_query_base_t *php_script_get_query(void *ptr);
-script_result *php_script_get_res(void *ptr);
-void php_script_query_readed(void *ptr);
-void php_script_query_answered(void *ptr);
-run_state_t php_script_get_state(void *ptr);
-void *php_script_create(size_t mem_size, size_t stack_size);
-void php_script_terminate(void *ptr, const char *error_message, script_error_t error_type);
+
 void php_script_disable_timeout();
 void php_script_set_timeout(double t);
-const char *php_script_get_error(void *ptr);
-script_error_t php_script_get_error_type(void *ptr);
-
-long long php_script_memory_get_total_usage(void *ptr);
 
 /** script **/
 class PHPScriptBase {
@@ -144,6 +129,8 @@ public:
   void query_answered();
 
   void run();
+
+  void terminate(const char *error_message_, script_error_t error_type_);
 
   void update_net_time();
   void update_script_time();

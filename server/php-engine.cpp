@@ -306,7 +306,7 @@ command_t *create_command_net_writer(const char *data, int data_len, command_t *
 int run_once_count = 1;
 int queries_to_recreate_script = 100;
 
-void *php_script;
+PHPScriptBase *php_script;
 
 int has_pending_scripts() {
   return php_worker_run_flag || pending_http_queue.first_query != (conn_query *)&pending_http_queue;
@@ -316,7 +316,7 @@ void net_error(net_ansgen_t *ansgen, php_query_base_t *query, const char *err) {
   ansgen->func->error(ansgen, err);
   query->ans = ansgen->ans;
   ansgen->func->free(ansgen);
-  php_script_query_answered(php_script);
+  php_script->query_answered();
 }
 
 void prepare_rpc_query_raw(int packet_id, int *q, int qsize, unsigned (*crc32_partial_custom)(const void *q, long len, unsigned crc32_complement)) {

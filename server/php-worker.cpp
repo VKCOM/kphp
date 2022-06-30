@@ -196,9 +196,9 @@ void php_worker_init_script(php_worker *worker) {
   script_t *script = get_script();
   dl_assert (script != nullptr, "failed to get script");
   if (php_script == nullptr) {
-    php_script = php_script_create((size_t)max_memory, (size_t)(8 << 20));
+    php_script = new PHPScriptBase(max_memory, 8 << 20);;
   }
-  php_script_init(php_script, script, worker->data);
+  php_script->init(script, worker->data);
   php_script_set_timeout(timeout);
   worker->state = phpq_run;
 }
@@ -250,11 +250,11 @@ void php_worker_run(php_worker *worker) {
   int f = 1;
   while (f) {
     if (worker->terminate_flag) {
-      php_script_terminate(php_script, worker->error_message, worker->terminate_reason);
+      php_script->terminate(worker->error_message, worker->terminate_reason);
     }
 
 //    fprintf (stderr, "state = %d, f = %d\n", php_script_get_state (php_script), f);
-    switch (php_script_get_state(php_script)) {
+    switch (php_script->state) {
       case run_state_t::ready: {
         vk::singleton<ServerStats>::get().set_running_worker_status();
         if (worker->waiting) {
@@ -266,7 +266,7 @@ void php_worker_run(php_worker *worker) {
           break;
         }
         vkprintf (2, "before php_script_iterate [req_id = %016llx] (before swap context)\n", worker->req_id);
-        php_script_iterate(php_script);
+        php_script->iterate();
         vkprintf (2, "after php_script_iterate [req_id = %016llx] (after swap context)\n", worker->req_id);
         php_worker_wait(worker, 0); //check for net events
         break;
@@ -295,7 +295,7 @@ void php_worker_run(php_worker *worker) {
       }
       case run_state_t::error: {
         vkprintf (2, "php script [req_id = %016llx]: ERROR (probably timeout)\n", worker->req_id);
-        php_script_finish(php_script);
+        php_script->finish();
 
         if (worker->conn != nullptr) {
           switch (worker->mode) {
@@ -304,12 +304,12 @@ void php_worker_run(php_worker *worker) {
               break;
             case rpc_worker:
               if (!rpc_stored) {
-                server_rpc_error(worker->conn, worker->req_id, -504, php_script_get_error(php_script));
+                server_rpc_error(worker->conn, worker->req_id, -504, php_script->error_message);
               }
               break;
             case job_worker: {
-              const char *error = php_script_get_error(php_script);
-              int error_code = job_workers::server_php_script_error_offset - static_cast<int>(php_script_get_error_type(php_script));
+              const char *error = php_script->error_message;
+              int error_code = job_workers::server_php_script_error_offset - static_cast<int>(php_script->error_type);
               auto &job_server = vk::singleton<job_workers::JobWorkerServer>::get();
               if (job_server.reply_is_expected()) {
                 job_server.store_job_response_error(error, error_code);
@@ -326,9 +326,9 @@ void php_worker_run(php_worker *worker) {
       }
       case run_state_t::finished: {
         vkprintf (2, "php script [req_id = %016llx]: OK (still can return RPC_ERROR)\n", worker->req_id);
-        script_result *res = php_script_get_res(php_script);
+        script_result *res = php_script->res;
         php_worker_set_result(worker, res);
-        php_script_finish(php_script);
+        php_script->finish();
 
         worker->state = phpq_free_script;
         f = 0;
@@ -369,9 +369,9 @@ void php_worker_wait(php_worker *worker, int timeout_ms) {
 
 void php_worker_answer_query(php_worker *worker, void *ans) {
   assert (worker != nullptr && ans != nullptr);
-  auto *q_base = php_script_get_query(php_script);
+  auto *q_base = php_script->query;
   q_base->ans = ans;
-  php_script_query_answered(php_script);
+  php_script->query_answered();
 }
 
 void php_worker_wakeup(php_worker *worker) {
@@ -383,7 +383,7 @@ void php_worker_wakeup(php_worker *worker) {
 }
 
 void php_worker_run_query(php_worker *worker) {
-  auto *q_base = php_script_get_query(php_script);
+  auto *q_base = php_script->query;
 
   qmem_free_ptrs();
 
@@ -448,12 +448,12 @@ void php_worker_free_script(php_worker *worker) {
 
   php_queries_finish();
   php_script_disable_timeout();
-  php_script_clear(php_script);
+  php_script->clear();
 
   static int finished_queries = 0;
   if ((++finished_queries) % queries_to_recreate_script == 0
-      || (!use_madvise_dontneed && php_script_memory_get_total_usage(php_script) > memory_used_to_recreate_script)) {
-    php_script_free(php_script);
+      || (!use_madvise_dontneed && php_script->memory_get_total_usage() > memory_used_to_recreate_script)) {
+    delete php_script;
     php_script = nullptr;
     finished_queries = 0;
   }

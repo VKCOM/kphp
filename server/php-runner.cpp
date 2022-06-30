@@ -684,68 +684,6 @@ void init_handlers() {
   dl_signal(SIGABRT, sigabrt_handler);
 }
 
-void php_script_finish(void *ptr) {
-  ((PHPScriptBase *)ptr)->finish();
-}
-
-void php_script_clear(void *ptr) {
-  ((PHPScriptBase *)ptr)->clear();
-}
-
-void php_script_free(void *ptr) {
-  delete (PHPScriptBase *)ptr;
-}
-
-void php_script_init(void *ptr, script_t *f_run, php_query_data *data_to_set) {
-  ((PHPScriptBase *)ptr)->init(f_run, data_to_set);
-}
-
-run_state_t php_script_iterate(void *ptr) {
-  return ((PHPScriptBase *)ptr)->iterate();
-}
-
-php_query_base_t *php_script_get_query(void *ptr) {
-  return ((PHPScriptBase *)ptr)->query;
-}
-
-script_result *php_script_get_res(void *ptr) {
-  return ((PHPScriptBase *)ptr)->res;
-}
-
-void php_script_query_readed(void *ptr) {
-  ((PHPScriptBase *)ptr)->query_readed();
-}
-
-void php_script_query_answered(void *ptr) {
-  ((PHPScriptBase *)ptr)->query_answered();
-}
-
-run_state_t php_script_get_state(void *ptr) {
-  return ((PHPScriptBase *)ptr)->state;
-}
-
-void *php_script_create(size_t mem_size, size_t stack_size) {
-  return (void *)(new PHPScriptBase(mem_size, stack_size));
-}
-
-void php_script_terminate(void *ptr, const char *error_message, script_error_t error_type) {
-  ((PHPScriptBase *)ptr)->state = run_state_t::error;
-  ((PHPScriptBase *)ptr)->error_type = error_type;
-  ((PHPScriptBase *)ptr)->error_message = error_message;
-}
-
-const char *php_script_get_error(void *ptr) {
-  return static_cast<PHPScriptBase *>(ptr)->error_message;
-}
-
-script_error_t php_script_get_error_type(void *ptr) {
-  return static_cast<PHPScriptBase *>(ptr)->error_type;
-}
-
-long long php_script_memory_get_total_usage(void *ptr) {
-  return ((PHPScriptBase *)ptr)->memory_get_total_usage();
-}
-
 void php_script_disable_timeout() {
   itimerval timer{.it_interval{0, 0}, .it_value{0, 0}};
   setitimer(ITIMER_REAL, &timer, nullptr);
@@ -769,4 +707,10 @@ void php_script_set_timeout(double t) {
 
 void PHPScriptBase::cur_run() {
   current_script->run();
+}
+
+void PHPScriptBase::terminate(const char *error_message_, script_error_t error_type_) {
+  state = run_state_t::error;
+  error_type = error_type_;
+  error_message = error_message_;
 }

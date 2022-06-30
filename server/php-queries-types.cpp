@@ -18,7 +18,7 @@
 void php_query_x2_t::run([[maybe_unused]] php_worker *worker) noexcept {
   query_stats.desc = "PHPQX2";
 
-  php_script_query_readed(php_script);
+  php_script->query_readed();
 
   //  worker->conn->status = conn_wait_net;
   //  worker->conn->pending_queries = 1;
@@ -28,7 +28,7 @@ void php_query_x2_t::run([[maybe_unused]] php_worker *worker) noexcept {
 
   ans = &res;
 
-  php_script_query_answered(php_script);
+  php_script->query_answered();
 }
 
 void php_query_rpc_answer::run(php_worker *worker) noexcept {
@@ -42,14 +42,14 @@ void php_query_rpc_answer::run(php_worker *worker) noexcept {
     vkprintf (2, "going to send %d bytes as an answer [req_id = %016llx]\n", qsize, worker->req_id);
     send_rpc_query(c, q[2] == 0 ? TL_RPC_REQ_RESULT : TL_RPC_REQ_ERROR, worker->req_id, q, qsize);
   }
-  php_script_query_readed(php_script);
-  php_script_query_answered(php_script);
+  php_script->query_readed();
+  php_script->query_answered();
 }
 
 void php_query_connect_t::run([[maybe_unused]] php_worker *worker) noexcept {
   query_stats.desc = "CONNECT";
 
-  php_script_query_readed(php_script);
+  php_script->query_readed();
 
   static php_query_connect_answer_t res;
 
@@ -69,7 +69,7 @@ void php_query_connect_t::run([[maybe_unused]] php_worker *worker) noexcept {
 
   ans = &res;
 
-  php_script_query_answered(php_script);
+  php_script->query_answered();
 }
 
 external_driver_connect::external_driver_connect(std::unique_ptr<database_drivers::Connector> &&connector) : connector(std::move(connector)) {};
@@ -77,7 +77,7 @@ external_driver_connect::external_driver_connect(std::unique_ptr<database_driver
 void external_driver_connect::run(php_worker *worker __attribute__((unused))) noexcept {
   query_stats.desc = "CONNECT_EXTERNAL_DRIVER";
 
-  php_script_query_readed(php_script);
+  php_script->query_readed();
 
   static php_query_connect_answer_t res;
 
@@ -87,13 +87,13 @@ void external_driver_connect::run(php_worker *worker __attribute__((unused))) no
 
   ans = &res;
 
-  php_script_query_answered(php_script);
+  php_script->query_answered();
 }
 
 void php_query_wait_t::run(php_worker *worker) noexcept {
   query_stats.desc = "WAIT_NET";
-  php_script_query_readed(php_script);
-  php_script_query_answered(php_script);
+  php_script->query_readed();
+  php_script->query_answered();
 
   php_worker_wait(worker, timeout_ms);
 }
@@ -186,13 +186,13 @@ int php_worker_http_load_post_impl(php_worker *worker, char *buf, int min_len, i
 void php_query_http_load_post_t::run(php_worker *worker) noexcept {
   query_stats.desc = "HTTP_LOAD_POST";
 
-  php_script_query_readed(php_script);
+  php_script->query_readed();
 
   static php_query_http_load_post_answer_t res;
   res.loaded_bytes = php_worker_http_load_post_impl(worker, buf, min_len, max_len);
   ans = &res;
 
-  php_script_query_answered(php_script);
+  php_script->query_answered();
 
   if (res.loaded_bytes < 0) {
     // TODO we need to close connection. Do we need to pass 1 as second parameter?

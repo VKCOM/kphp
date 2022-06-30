@@ -128,7 +128,7 @@ void php_worker_run_sql_query_packet(php_worker *worker, php_net_query_packet_t 
   query_stats.query = query->data;
 
   int connection_id = query->connection_id;
-  php_script_query_readed(php_script);
+  php_script->query_readed();
 
   sql_ansgen_t *ansgen = sql_ansgen_packet_create();
 

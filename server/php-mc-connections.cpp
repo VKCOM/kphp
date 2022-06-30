@@ -252,7 +252,7 @@ void php_worker_run_mc_query_packet(php_worker *worker, php_net_query_packet_t *
   query_stats.desc = "MC";
   query_stats.query = query->data;
 
-  php_script_query_readed(php_script);
+  php_script->query_readed();
   mc_ansgen_t *ansgen = mc_ansgen_packet_create();
   ansgen->func->set_query_type(ansgen, query->extra_type);
 
