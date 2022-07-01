@@ -92,6 +92,7 @@ public:
   static const char *NAME_OF_CLONE;
   static const char *NAME_OF_CONSTRUCT;
   static const char *NAME_OF_TO_STRING;
+  static const char *NAME_OF_WAKEUP;
 
   explicit ClassData(ClassType type);
   std::string as_human_readable() const;

@@ -174,6 +174,9 @@ class_instance<I> from_json_impl(const mixed &json, JsonPath &json_path) noexcep
       return {};
     }
   }
+  if constexpr (impl_::HasClassWakeupMethod<I>::value) {
+    instance.get()->wakeup(instance);
+  }
   return JsonEncoderError::msg.empty() ? instance : class_instance<I>{};
 }
 

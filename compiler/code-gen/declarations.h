@@ -122,12 +122,14 @@ struct ClassDeclaration : CodeGenRootCmd {
 
 private:
   static void compile_json_flatten_flag(CodeGenerator &W, ClassPtr klass);
+  static void compile_has_wakeup_flag(CodeGenerator &W, ClassPtr klass);
   static void compile_get_class(CodeGenerator &W, ClassPtr klass);
   static void compile_get_hash(CodeGenerator &W, ClassPtr klass);
   static void compile_accept_visitor_methods(CodeGenerator &W, ClassPtr klass);
   static void compile_msgpack_serialize(CodeGenerator &W, ClassPtr klass);
   static void compile_msgpack_deserialize(CodeGenerator &W, ClassPtr klass);
   static void compile_virtual_builtin_functions(CodeGenerator &W, ClassPtr klass);
+  static void compile_wakeup(CodeGenerator &W, ClassPtr klass);
 
   template<class ReturnValueT>
   static void compile_class_method(FunctionSignatureGenerator &&W, ClassPtr klass, vk::string_view method_signature, const ReturnValueT &return_value);

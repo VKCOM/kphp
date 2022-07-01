@@ -12,6 +12,12 @@ struct IsJsonFlattenClass : std::false_type{};
 
 template<typename T>
 struct IsJsonFlattenClass<T, std::enable_if_t<T::json_flatten_class>> : std::true_type{};
+
+template<typename T, typename = std::void_t<>>
+struct HasClassWakeupMethod : std::false_type{};
+
+template<typename T>
+struct HasClassWakeupMethod<T, std::enable_if_t<T::has_wakeup_method>> : std::true_type{};
 } // namespace impl_
 
 struct JsonRawString {

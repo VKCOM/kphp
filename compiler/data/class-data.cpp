@@ -24,6 +24,7 @@ const char *ClassData::NAME_OF_VIRT_CLONE = "__virt_clone$";
 const char *ClassData::NAME_OF_CLONE = "__clone";
 const char *ClassData::NAME_OF_CONSTRUCT = "__construct";
 const char *ClassData::NAME_OF_TO_STRING = "__toString";
+const char *ClassData::NAME_OF_WAKEUP = "__wakeup";
 
 ClassData::ClassData(ClassType type) :
   class_type(type),

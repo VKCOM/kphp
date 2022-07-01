@@ -584,12 +584,14 @@ void ClassDeclaration::compile_class_method(FunctionSignatureGenerator &&W, Clas
 
 void ClassDeclaration::compile_inner_methods(CodeGenerator &W, ClassPtr klass) {
   compile_json_flatten_flag(W, klass);
+  compile_has_wakeup_flag(W, klass);
   compile_get_class(W, klass);
   compile_get_hash(W, klass);
   compile_accept_visitor_methods(W, klass);
   compile_msgpack_serialize(W, klass);
   compile_msgpack_deserialize(W, klass);
   compile_virtual_builtin_functions(W, klass);
+  compile_wakeup(W, klass);
 }
 
 void ClassDeclaration::compile_json_flatten_flag(CodeGenerator &W, ClassPtr klass) {
@@ -598,6 +600,13 @@ void ClassDeclaration::compile_json_flatten_flag(CodeGenerator &W, ClassPtr klas
                             : nullptr;
   if (tag_flatten) {
     W << "constexpr static bool json_flatten_class{true};" << NL << NL;
+  }
+}
+
+void ClassDeclaration::compile_has_wakeup_flag(CodeGenerator &W, ClassPtr klass) {
+  bool has_wakeup = klass->members.has_instance_method("__wakeup");
+  if (has_wakeup) {
+    W << "constexpr static bool has_wakeup_method{true};" << NL << NL;
   }
 }
 
@@ -843,6 +852,26 @@ void ClassDeclaration::compile_virtual_builtin_functions(CodeGenerator &W, Class
 
   compile_class_method(FunctionSignatureGenerator(W).set_const_this(), klass,
                        klass->src_name + "* virtual_builtin_clone()", "new " + klass->src_name + "{*this}");
+}
+
+void ClassDeclaration::compile_wakeup(CodeGenerator &W, ClassPtr klass) {
+  const auto *m_wakeup = klass->members.get_instance_method("__wakeup");
+  if (!m_wakeup || klass->is_interface()) {
+    return;
+  }
+  FunctionPtr f_wakeup = m_wakeup->function;
+
+  // wakeup() method would look like this:
+  //    void wakeup(class_instance<C$A> const &v$this) noexcept {
+  //      void f$A$$__wakeup(class_instance<C$A> const &v$this) noexcept ;
+  //      f$A$$__wakeup(v$this);
+  //    }
+  // (we insert a prototype into function body intentionally, to avoid cross includes)
+  // even on inheritance, prototypes differ in children, that's why it's not virtual
+  FunctionSignatureGenerator(W) << fmt_format("void wakeup(class_instance<{}> const &v$this)", klass->src_name) << BEGIN;
+  W << FunctionDeclaration(f_wakeup, true) << ";" << NL;
+  W << "f$" << f_wakeup->name << "(v$this);" << NL;
+  W << END << NL;
 }
 
 IncludesCollector ClassDeclaration::compile_front_includes(CodeGenerator &W) const {
