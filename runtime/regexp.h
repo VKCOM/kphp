@@ -116,7 +116,7 @@ inline Optional<int64_t> f$preg_match_all(const regexp &regex, const string &sub
 
 inline Optional<int64_t> f$preg_match(const regexp &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset = 0);
 
-inline Optional<int64_t> f$preg_match_all(const regexp &regex, const string &subject, mixed &matches, int64_t flags);
+inline Optional<int64_t> f$preg_match_all(const regexp &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset = 0);
 
 inline Optional<int64_t> f$preg_match(const string &regex, const string &subject);
 
@@ -128,7 +128,7 @@ inline Optional<int64_t> f$preg_match_all(const string &regex, const string &sub
 
 inline Optional<int64_t> f$preg_match(const string &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset = 0);
 
-inline Optional<int64_t> f$preg_match_all(const string &regex, const string &subject, mixed &matches, int64_t flags);
+inline Optional<int64_t> f$preg_match_all(const string &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset = 0);
 
 inline Optional<int64_t> f$preg_match(const mixed &regex, const string &subject);
 
@@ -138,9 +138,9 @@ inline Optional<int64_t> f$preg_match(const mixed &regex, const string &subject,
 
 inline Optional<int64_t> f$preg_match_all(const mixed &regex, const string &subject, mixed &matches);
 
-inline Optional<int64_t> f$preg_match(const mixed &regex, const string &subject, mixed &matches, int64_t flags);
+inline Optional<int64_t> f$preg_match(const mixed &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset = 0);
 
-inline Optional<int64_t> f$preg_match_all(const mixed &regex, const string &subject, mixed &matches, int64_t flags);
+inline Optional<int64_t> f$preg_match_all(const mixed &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset = 0);
 
 template<class T1, class T2, class T3, class = enable_if_t_is_optional<T3>>
 inline auto f$preg_replace(const T1 &regex, const T2 &replace_val, const T3 &subject, int64_t limit = -1, int64_t &replace_count = preg_replace_count_dummy);
@@ -368,8 +368,8 @@ Optional<int64_t> f$preg_match(const regexp &regex, const string &subject, mixed
   return regex.match(subject, matches, flags, false, offset);
 }
 
-Optional<int64_t> f$preg_match_all(const regexp &regex, const string &subject, mixed &matches, int64_t flags) {
-  return regex.match(subject, matches, flags, true);
+Optional<int64_t> f$preg_match_all(const regexp &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset) {
+  return regex.match(subject, matches, flags, true, offset);
 }
 
 Optional<int64_t> f$preg_match(const string &regex, const string &subject) {
@@ -392,8 +392,8 @@ Optional<int64_t> f$preg_match(const string &regex, const string &subject, mixed
   return f$preg_match(regexp(regex), subject, matches, flags, offset);
 }
 
-Optional<int64_t> f$preg_match_all(const string &regex, const string &subject, mixed &matches, int64_t flags) {
-  return f$preg_match_all(regexp(regex), subject, matches, flags);
+Optional<int64_t> f$preg_match_all(const string &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset) {
+  return f$preg_match_all(regexp(regex), subject, matches, flags, offset);
 }
 
 Optional<int64_t> f$preg_match(const mixed &regex, const string &subject) {
@@ -412,12 +412,12 @@ Optional<int64_t> f$preg_match_all(const mixed &regex, const string &subject, mi
   return f$preg_match_all(regexp(regex.to_string()), subject, matches);
 }
 
-Optional<int64_t> f$preg_match(const mixed &regex, const string &subject, mixed &matches, int64_t flags) {
-  return f$preg_match(regexp(regex.to_string()), subject, matches, flags);
+Optional<int64_t> f$preg_match(const mixed &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset) {
+  return f$preg_match(regexp(regex.to_string()), subject, matches, flags, offset);
 }
 
-Optional<int64_t> f$preg_match_all(const mixed &regex, const string &subject, mixed &matches, int64_t flags) {
-  return f$preg_match_all(regexp(regex.to_string()), subject, matches, flags);
+Optional<int64_t> f$preg_match_all(const mixed &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset) {
+  return f$preg_match_all(regexp(regex.to_string()), subject, matches, flags, offset);
 }
 
 
