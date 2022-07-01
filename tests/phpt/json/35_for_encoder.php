@@ -10,6 +10,27 @@ class MyJsonEncoder2 extends \JsonEncoder {
 }
 
 
+class AdminEncoder extends JsonEncoder {
+}
+
+class GuestEncoder extends JsonEncoder {
+}
+
+class User {
+  /**
+   * @kphp-json skip = true
+   * @kphp-json for AdminEncoder skip=false
+   * @kphp-json for AdminEncoder rename=super_aa
+   */
+  public string $aa = 'aa';
+
+  /**
+   * @kphp-json for AdminEncoder skip
+   * @kphp-json for GuestEncoder rename=super_bb
+   */
+  public string $bb = 'bb';
+}
+
 class HasRenameSpec {
     /**
      * @kphp-json rename = id2
@@ -147,7 +168,17 @@ function test_has_fields_spec_order() {
     if ($j3 !== '{"f3":3,"f2":2,"f1":1}') throw new Exception("unexpected j3: " . $j3);
 }
 
+function test_skips_for_encoder() {
+    var_dump(JsonEncoder::encode(new User()));
+    echo "\n";
+    var_dump(AdminEncoder::encode(new User()));
+    echo "\n";
+    var_dump(GuestEncoder::encode(new User()));
+    echo JsonEncoder::getLastError(), "\n";
+}
+
 test_has_rename_spec();
 test_has_skip_spec();
 test_has_fields_spec();
 test_has_fields_spec_order();
+test_skips_for_encoder();

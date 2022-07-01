@@ -9,7 +9,6 @@
 /public int \$f1;/
 /@kphp-json 'visibility_policy' is allowed above classes, not above fields/
 /@kphp-json 'flatten' can't be used with some other @kphp-json tags/
-/@kphp-json 'skip' can't be used with other @kphp-json tags/
 /public int \$f5;/
 /@kphp-json 'rename' expected to have a value after '='/
 /class VeryInvalidFlatten/

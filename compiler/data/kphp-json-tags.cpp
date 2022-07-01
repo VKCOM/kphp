@@ -283,12 +283,6 @@ void KphpJsonTagList::validate_tags_compatibility(ClassPtr above_class) const {
 
   for (const KphpJsonTag &tag : tags) {
     switch (tag.attr_type) {
-      case json_attr_skip:
-        if (tag.skip == SkipFieldType::always_skip) {
-          constexpr unsigned int disallowed_over_field = json_attr_rename | json_attr_skip_if_default | json_attr_float_precision | json_attr_array_as_hashmap | json_attr_required | json_attr_raw_string;
-          kphp_error((disallowed_over_field & existing_mask) == 0, "@kphp-json 'skip' can't be used with other @kphp-json tags");
-        }
-        break;
       case json_attr_flatten:
         if (tag.flatten) {
           constexpr unsigned int disallowed_over_class = json_attr_rename_policy | json_attr_visibility_policy | json_attr_skip_if_default | json_attr_fields;
