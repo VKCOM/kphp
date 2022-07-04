@@ -52,7 +52,7 @@ void net_error(net_ansgen_t *ansgen, php_query_base_t *query, const char *err);
 conn_query *create_pnet_query(connection *http_conn, connection *conn, net_ansgen_t *gen, double finish_time);
 void pnet_query_delete(conn_query *q);
 
-#define run_once_count 1
+extern int run_once_count;
 extern int queries_to_recreate_script;
 extern void *php_script;
 void turn_sigterm_on();

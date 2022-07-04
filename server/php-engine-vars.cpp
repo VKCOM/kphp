@@ -26,7 +26,7 @@ int no_sql = 0;
 
 int master_flag = 0; // 1 -- master, 0 -- single process, -1 -- child
 
-int run_once = 0;
+bool run_once = false;
 int run_once_return_code = 0;
 
 int die_on_fail = 0;

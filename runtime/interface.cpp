@@ -709,7 +709,7 @@ Optional<string> f$inet_pton(const string &address) {
   return string(buffer, size);
 }
 
-extern int run_once;
+extern bool run_once;
 
 void print(const char *s, size_t s_len) {
   if (run_once && ob_cur_buffer == 0) {

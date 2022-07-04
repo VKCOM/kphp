@@ -1,4 +1,4 @@
-@ok
+@ok non-idempotent
 <?php
 #ifndef KPHP
 ?>
