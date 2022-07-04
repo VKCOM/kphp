@@ -44,7 +44,7 @@ namespace impl_ {
 // todo somewhen, unify this JsonEncoder and JsonWriter, and support JSON_PRETTY_PRINT then
 class JsonEncoder : vk::not_copyable {
 public:
-  JsonEncoder(int64_t options, bool simple_encode, const string &json_obj_magic_key = {}) noexcept;
+  JsonEncoder(int64_t options, bool simple_encode, const char *json_obj_magic_key = nullptr) noexcept;
 
   bool encode(bool b) noexcept;
   bool encode(int64_t i) noexcept;
@@ -64,7 +64,7 @@ private:
   JsonPath json_path_;
   const int64_t options_{0};
   const bool simple_encode_{false};
-  const string json_obj_magic_key_;
+  const char *json_obj_magic_key_{nullptr};
 };
 
 template<class T>
@@ -111,9 +111,9 @@ bool JsonEncoder::encode(const array<T> &arr) noexcept {
         next_key = nullptr;
         static_SB << '"' << int_key << '"';
       } else {
-        const auto &str_key = key.as_string();
+        const string &str_key = key.as_string();
         // skip service key intended only for distinguish empty json object with empty json array
-        if (!json_obj_magic_key_.empty() && json_obj_magic_key_ == str_key) {
+        if (json_obj_magic_key_ && !strcmp(json_obj_magic_key_, str_key.c_str())) {
           continue;
         }
         next_key = str_key.c_str();

@@ -246,7 +246,7 @@ string JsonPath::to_string() const {
 
 namespace impl_ {
 
-JsonEncoder::JsonEncoder(int64_t options, bool simple_encode, const string &json_obj_magic_key) noexcept:
+JsonEncoder::JsonEncoder(int64_t options, bool simple_encode, const char *json_obj_magic_key) noexcept:
   options_(options),
   simple_encode_(simple_encode),
   json_obj_magic_key_(json_obj_magic_key) {

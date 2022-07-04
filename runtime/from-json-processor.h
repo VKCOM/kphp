@@ -42,9 +42,8 @@ public:
   bool has_error() const noexcept { return !error_.empty(); }
   const string &get_error() const noexcept { return error_; }
 
-  static const string &get_json_obj_magic_key() noexcept {
-    static string key{"__json_obj_magic"};
-    return key;
+  static const char *get_json_obj_magic_key() noexcept {
+    return "__json_obj_magic";
   }
 
 private:
@@ -127,7 +126,7 @@ private:
     json_path_.enter(nullptr);
     for (const auto it : json_array) {
       auto json_key = it.get_key();
-      if (json_key.is_string() && json_key.as_string() == get_json_obj_magic_key()) {
+      if (json_key.is_string() && !strcmp(json_key.as_string().c_str(), get_json_obj_magic_key())) {
         continue; // don't deserialize magic
       }
       do_set(array[json_key], it.get_value());
@@ -199,7 +198,7 @@ template<class ClassName, class Tag>
 ClassName f$JsonEncoder$$from_json_impl(Tag /*tag*/, const string &json_string, const string &/*class_mame*/) noexcept {
   JsonEncoderError::msg = {};
 
-  auto [json, success] = json_decode(json_string, FromJsonVisitor<Tag>::get_json_obj_magic_key().c_str());
+  auto [json, success] = json_decode(json_string, FromJsonVisitor<Tag>::get_json_obj_magic_key());
 
   if (!success) {
     JsonEncoderError::msg.append(json_string.empty() ? "provided empty json string" : "failed to parse json string");
