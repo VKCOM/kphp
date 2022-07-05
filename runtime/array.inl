@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <type_traits>
+
 #include "common/algorithms/fastmod.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
@@ -1561,7 +1563,14 @@ void array<T>::merge_with_recursive(const array<T1> &other) noexcept {
 
 template<class T>
 void array<T>::merge_with_recursive(const mixed &other) noexcept {
-  merge_with_recursive(other.is_array() ? other.as_array() : array<T>::create(other));
+  if (other.is_array()) {
+    return merge_with_recursive(other.as_array());
+  }
+  if constexpr (std::is_convertible_v<mixed, T>) {
+    merge_with_recursive(array<T>::create(other));
+  } else {
+    php_warning("Array merge isn't possible: can't convert mixed to array item type");
+  }
 }
 
 template<class T>
@@ -1825,13 +1834,17 @@ void array<T>::fill_vector(int64_t num, const T &value) {
 }
 
 template<class T>
-void array<T>::memcpy_vector(int64_t num, const void *src_buf) {
-  php_assert(is_vector() && p->int_size == 0 && num <= p->int_buf_size);
-  mutate_if_vector_shared();
+void array<T>::memcpy_vector(int64_t num __attribute__((unused)), const void *src_buf __attribute__((unused))) {
+  if constexpr (std::is_trivially_copyable_v<T>) {
+    php_assert(is_vector() && p->int_size == 0 && num <= p->int_buf_size);
+    mutate_if_vector_shared();
 
-  memcpy(p->int_entries, src_buf, num * sizeof(T));
-  p->max_key = num - 1;
-  p->int_size = static_cast<uint32_t>(num);
+    memcpy(p->int_entries, src_buf, num * sizeof(T));
+    p->max_key = num - 1;
+    p->int_size = static_cast<uint32_t>(num);
+  } else {
+    php_critical_error("Can't memcpy array with not trivially copyable items");
+  }
 }
 
 

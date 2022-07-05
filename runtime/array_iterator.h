@@ -165,7 +165,7 @@ public:
       }
     }
 
-    const string_hash_type *result = nullptr;
+    string_hash_type *result = nullptr;
     if (n < 0) {
       result = arr.p->end();
       while (n < 0) {
