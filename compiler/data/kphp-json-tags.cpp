@@ -177,10 +177,13 @@ static SkipFieldType parse_skip(vk::string_view rhs) noexcept {
 
 static vk::string_view parse_fields_delimited_by_comma(vk::string_view rhs) noexcept {
   // convert "$id, $age" to ",id,age," for fast later search of substr ",{name},"
+  std::unordered_set<size_t> names_hashes;
   auto *fields_delim = new std::string(",");
   for (const auto &field_name : split_skipping_delimeters(rhs, "$, ")) {
     *fields_delim += field_name;
     *fields_delim += ',';
+    kphp_error(names_hashes.insert(vk::std_hash(field_name)).second,
+               fmt_format("@kphp-json '{}' lists a duplicated item ${}", AllJsonAttrs::type2name(json_attr_fields), field_name));
   }
   return fields_delim->c_str();
 }
