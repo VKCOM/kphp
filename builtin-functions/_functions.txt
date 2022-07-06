@@ -377,7 +377,7 @@ function gethostbynamel ($name ::: string) ::: string[] | false;
 function inet_pton ($address ::: string) ::: string | false;
 
 function pack ($pattern ::: string, ...$args) ::: string;
-function unpack ($pattern ::: string, $data ::: string) ::: mixed[];
+function unpack ($pattern ::: string, $data ::: string) ::: mixed[] | false;
 
 define('JSON_UNESCAPED_UNICODE', 1);
 define('JSON_FORCE_OBJECT', 16);

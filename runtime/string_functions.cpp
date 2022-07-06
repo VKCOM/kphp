@@ -2406,8 +2406,8 @@ string f$ucwords(const string &str) {
   return res;
 }
 
-array<mixed> f$unpack(const string &pattern, const string &data) {
-  array<mixed> result;
+Optional<array<mixed>> f$unpack(const string &pattern, const string &data) {
+  Optional<array<mixed>> result = false;
 
   int data_len = data.size(), data_pos = 0;
   for (int i = 0; i < (int)pattern.size();) {
@@ -2471,7 +2471,7 @@ array<mixed> f$unpack(const string &pattern, const string &data) {
           key_prefix = ONE;
         }
 
-        result.set_value(key_prefix, string(data.c_str() + data_pos, cnt));
+        result.ref().set_value(key_prefix, string(data.c_str() + data_pos, cnt));
 
         data_pos += read_len;
         break;
@@ -2510,7 +2510,7 @@ array<mixed> f$unpack(const string &pattern, const string &data) {
           key_prefix = ONE;
         }
 
-        result.set_value(key_prefix, value);
+        result.ref().set_value(key_prefix, value);
 
         data_pos += read_len;
         break;
@@ -2662,7 +2662,7 @@ array<mixed> f$unpack(const string &pattern, const string &data) {
             key.append(string(counter++));
           }
 
-          result.set_value(key, value);
+          result.ref().set_value(key, value);
 
           if (cnt == 0) {
             if (data_pos >= data_len) {

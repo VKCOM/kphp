@@ -77,3 +77,8 @@
   var_dump (unpack("cchars/nint", "\x04\x00\xa0\x00"));
   var_dump (unpack("c2chars/nint", "\x04\x00\xa0\x00"));
   var_dump (unpack("c2/n", "\x32\x42\x00\xa0"));
+
+  var_dump(unpack("00V6", "\x04\x00\xa0\x00"));
+  var_dump(unpack("H", ""));
+  var_dump(unpack("c*2/n", "\x04\x00\xa0\x00"));
+  var_dump(unpack("\e", "\x04\x00\xa0\x00"));
