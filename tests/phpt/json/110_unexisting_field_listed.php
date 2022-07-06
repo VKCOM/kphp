@@ -3,7 +3,7 @@
 <?php
 
 /**
- * @kphp-json fields = id, name
+ * @kphp-json fields = $id, $name
  */
 class User1 {
     public int $id = 0;

@@ -61,9 +61,9 @@ class HasSkipSpec {
 }
 
 /**
- * @kphp-json fields = id, name
- * @kphp-json for MyJsonEncoder fields = id
- * @kphp-json for MyJsonEncoder2 fields = id, name, password
+ * @kphp-json fields = $id, $name
+ * @kphp-json for MyJsonEncoder fields = $id
+ * @kphp-json for MyJsonEncoder2 fields = $id, $name, $password
  */
 class HasFieldsSpec {
     public int $id;

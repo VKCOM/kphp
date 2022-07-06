@@ -7,7 +7,7 @@ class MyJsonEncoder extends JsonEncoder {
 }
 
 /**
- * @kphp-json fields = id, name
+ * @kphp-json fields = $id, $name
  */
 class User1 {
     public int $id = 0;
@@ -16,24 +16,24 @@ class User1 {
     public string $other = 'other';
 }
 
-/** @kphp-json fields = b1 */
+/** @kphp-json fields = $b1 */
 class Base {
     public string $b1 = 'b1';
     public string $b2 = 'b2';
 }
-/** @kphp-json fields = d11 */
+/** @kphp-json fields = $d11 */
 class Derived1 extends Base {
     public ?string $d11 = 'd11';
     public ?string $d12 = 'd12';
 }
-/** @kphp-json fields = d21 */
+/** @kphp-json fields = $d21 */
 class Derived2 extends Base {
     public ?string $d21 = 'd21';
     public ?string $d22 = 'd22';
 }
 
 /**
- * @kphp-json fields = id
+ * @kphp-json fields = $id
  */
 class WithDef {
     /** @kphp-json skip_if_default */
@@ -42,6 +42,7 @@ class WithDef {
 }
 
 /**
+ * KPHP also allows not to write $ sign
  * @kphp-json fields =   public1  ,   private1
  */
 class WithPrivateFields {
@@ -52,7 +53,7 @@ class WithPrivateFields {
 
 /**
  * @kphp-json rename_policy = snake_case
- * @kphp-json fields = responseId, anotherValue
+ * @kphp-json fields = $responseId, $anotherValue
  */
 class WithRenames {
     public int $responseId = 0;
@@ -64,12 +65,12 @@ class WithRenames {
 
 interface KV {}
 
-/** @kphp-json fields = key, value */
+/** @kphp-json fields = $key, $value */
 class KV_orderKV implements KV {
     public string $key = 'k';
     public string $value = 'v';
 }
-/** @kphp-json fields = value, key */
+/** @kphp-json fields = $value, $key */
 class KV_orderVK implements KV {
     public string $key = 'k';
     public string $value = 'v';

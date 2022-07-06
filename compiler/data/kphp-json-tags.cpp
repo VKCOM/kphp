@@ -176,9 +176,9 @@ static SkipFieldType parse_skip(vk::string_view rhs) noexcept {
 }
 
 static vk::string_view parse_fields_delimited_by_comma(vk::string_view rhs) noexcept {
-  // convert "id, age" to ",id,age," for fast later search of substr ",{name},"
+  // convert "$id, $age" to ",id,age," for fast later search of substr ",{name},"
   auto *fields_delim = new std::string(",");
-  for (const auto &field_name : split_skipping_delimeters(rhs, ", ")) {
+  for (const auto &field_name : split_skipping_delimeters(rhs, "$, ")) {
     *fields_delim += field_name;
     *fields_delim += ',';
   }
