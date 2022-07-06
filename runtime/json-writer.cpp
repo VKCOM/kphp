@@ -62,24 +62,24 @@ JsonWriter::~JsonWriter() noexcept {
   static_SB.clean();
 }
 
-bool JsonWriter::Bool(bool b) noexcept {
-  if (!RegisterValue()) {
+bool JsonWriter::write_bool(bool b) noexcept {
+  if (!register_value()) {
     return false;
   }
   b ? static_SB.append("true", 4) : static_SB.append("false", 5);
   return true;
 }
 
-bool JsonWriter::Int64(int64_t i) noexcept {
-  if (!RegisterValue()) {
+bool JsonWriter::write_int(int64_t i) noexcept {
+  if (!register_value()) {
     return false;
   }
   static_SB << i;
   return true;
 }
 
-bool JsonWriter::Double(double d) noexcept {
-  if (!RegisterValue()) {
+bool JsonWriter::write_double(double d) noexcept {
+  if (!register_value()) {
     return false;
   }
   if (std::isnan(d) || std::isinf(d)) {
@@ -98,8 +98,8 @@ bool JsonWriter::Double(double d) noexcept {
   return true;
 }
 
-bool JsonWriter::String(const string &s) noexcept {
-  if (!RegisterValue()) {
+bool JsonWriter::write_string(const string &s) noexcept {
+  if (!register_value()) {
     return false;
   }
   static_SB.reserve(2 * s.size() + 2);
@@ -109,23 +109,23 @@ bool JsonWriter::String(const string &s) noexcept {
   return true;
 }
 
-bool JsonWriter::RawString(const string &s) noexcept {
-  if (!RegisterValue()) {
+bool JsonWriter::write_raw_string(const string &s) noexcept {
+  if (!register_value()) {
     return false;
   }
   static_SB << s;
   return true;
 }
 
-bool JsonWriter::Null() noexcept {
-  if (!RegisterValue()) {
+bool JsonWriter::write_null() noexcept {
+  if (!register_value()) {
     return false;
   }
   static_SB.append("null", 4);
   return true;
 }
 
-bool JsonWriter::Key(std::string_view key, bool escape) noexcept {
+bool JsonWriter::write_key(std::string_view key, bool escape) noexcept {
   if (stack_top_ == -1 || stack_[stack_top_].in_array) {
     error_.append("json key is allowed only inside object");
     return false;
@@ -135,7 +135,7 @@ bool JsonWriter::Key(std::string_view key, bool escape) noexcept {
   }
   if (pretty_print_) {
     static_SB << '\n';
-    WriteIndent();
+    write_indent();
   }
   static_SB << '"';
   if (escape) {
@@ -151,36 +151,36 @@ bool JsonWriter::Key(std::string_view key, bool escape) noexcept {
   return true;
 }
 
-bool JsonWriter::StartObject() noexcept {
-  return NewLevel(false);
+bool JsonWriter::start_object() noexcept {
+  return new_level(false);
 }
 
-bool JsonWriter::EndObject() noexcept {
-  return ExitLevel(false);
+bool JsonWriter::end_object() noexcept {
+  return exit_level(false);
 }
 
-bool JsonWriter::StartArray() noexcept {
-  return NewLevel(true);
+bool JsonWriter::start_array() noexcept {
+  return new_level(true);
 }
 
-bool JsonWriter::EndArray() noexcept {
-  return ExitLevel(true);
+bool JsonWriter::end_array() noexcept {
+  return exit_level(true);
 }
 
-bool JsonWriter::IsComplete() const noexcept {
+bool JsonWriter::is_complete() const noexcept {
   return error_.empty() && stack_top_ == -1 && has_root_;
 }
 
-string JsonWriter::GetError() const noexcept {
+string JsonWriter::get_error() const noexcept {
   return error_;
 }
 
-string JsonWriter::GetJson() const noexcept {
+string JsonWriter::get_final_json() const noexcept {
   return static_SB.str();
 }
 
-bool JsonWriter::NewLevel(bool is_array) noexcept {
-  if (!RegisterValue()) {
+bool JsonWriter::new_level(bool is_array) noexcept {
+  if (!register_value()) {
     return false;
   }
   ++stack_top_;
@@ -196,7 +196,7 @@ bool JsonWriter::NewLevel(bool is_array) noexcept {
   return true;
 }
 
-bool JsonWriter::ExitLevel(bool is_array) noexcept {
+bool JsonWriter::exit_level(bool is_array) noexcept {
   if (stack_top_ == -1) {
     error_.append("brace disbalance");
     return false;
@@ -214,14 +214,14 @@ bool JsonWriter::ExitLevel(bool is_array) noexcept {
   indent_ -= 4;
   if (pretty_print_ && cur_level.values_count) {
     static_SB << '\n';
-    WriteIndent();
+    write_indent();
   }
 
   static_SB << (is_array ? ']' : '}');
   return true;
 }
 
-bool JsonWriter::RegisterValue() noexcept {
+bool JsonWriter::register_value() noexcept {
   if (has_root_ && stack_top_ == -1) {
     error_.append("attempt to set value twice in a root of json");
     return false;
@@ -236,7 +236,7 @@ bool JsonWriter::RegisterValue() noexcept {
     }
     if (pretty_print_) {
       static_SB << '\n';
-      WriteIndent();
+      write_indent();
     }
   }
   ++stack_[stack_top_].values_count;
@@ -244,7 +244,7 @@ bool JsonWriter::RegisterValue() noexcept {
   return true;
 }
 
-void JsonWriter::WriteIndent() const noexcept {
+void JsonWriter::write_indent() const noexcept {
   if (indent_) {
     static_SB.reserve(indent_);
     for (std::size_t i = 0; i < indent_; ++i) {

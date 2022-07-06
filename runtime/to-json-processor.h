@@ -21,17 +21,17 @@ public:
   void operator()(const char *key, const T &value, bool array_as_hashmap = false) noexcept {
     array_as_hashmap_ = array_as_hashmap;
     if (!flatten_class_) {
-      writer_.Key(key);
+      writer_.write_key(key);
     }
     process_impl(value);
   }
 
   void set_precision(std::size_t precision) noexcept {
-    writer_.SetDoublePrecision(precision);
+    writer_.set_double_precision(precision);
   }
 
   void restore_precision() noexcept {
-    writer_.SetDoublePrecision(0);
+    writer_.set_double_precision(0);
   }
 
 private:
@@ -51,22 +51,22 @@ private:
 
   template<class T>
   void process_vector(const array<T> &array) noexcept {
-    writer_.StartArray();
+    writer_.start_array();
     for (const auto &elem : array) {
       process_impl(elem.get_value());
     }
-    writer_.EndArray();
+    writer_.end_array();
   }
 
   template<class T>
   void process_map(const array<T> &array) noexcept {
-    writer_.StartObject();
+    writer_.start_object();
     for (const auto &elem : array) {
       const auto &key = elem.get_key().to_string();
-      writer_.Key({key.c_str(), key.size()}, true);
+      writer_.write_key({key.c_str(), key.size()}, true);
       process_impl(elem.get_value());
     }
-    writer_.EndObject();
+    writer_.end_object();
   }
 
   template<class T>
@@ -103,27 +103,27 @@ private:
   }
 
   void add_value(const string &value) noexcept {
-    writer_.String(value);
+    writer_.write_string(value);
   }
 
   void add_value(const JsonRawString &value) noexcept {
-    writer_.RawString(value.str);
+    writer_.write_raw_string(value.str);
   }
 
   void add_value(std::int64_t value) noexcept {
-    writer_.Int64(value);
+    writer_.write_int(value);
   }
 
   void add_value(bool value) noexcept {
-    writer_.Bool(value);
+    writer_.write_bool(value);
   }
 
   void add_value(double value) noexcept {
-    writer_.Double(value);
+    writer_.write_double(value);
   }
 
   void add_null_value() noexcept {
-    writer_.Null();
+    writer_.write_null();
   }
 
   impl_::JsonWriter &writer_;
@@ -140,12 +140,12 @@ void to_json_impl(const class_instance<T> &klass, impl_::JsonWriter &writer, con
   }
 
   if (klass.is_null()) {
-    writer.Null();
+    writer.write_null();
     return;
   }
   constexpr bool flatten_class = impl_::IsJsonFlattenClass<T>::value;
   if constexpr (!flatten_class) {
-    writer.StartObject();
+    writer.start_object();
   }
 
   ToJsonVisitor<Tag> visitor{writer, flatten_class, depth};
@@ -159,7 +159,7 @@ void to_json_impl(const class_instance<T> &klass, impl_::JsonWriter &writer, con
   }
 
   if constexpr (!flatten_class) {
-    writer.EndObject();
+    writer.end_object();
   }
 }
 
@@ -184,10 +184,10 @@ string f$JsonEncoder$$to_json_impl(Tag /*tag*/, const class_instance<T> &klass, 
   if (!JsonEncoderError::msg.empty()) {
     return {};
   }
-  if (!writer.IsComplete()) {
+  if (!writer.is_complete()) {
     // unexpected internal error
-    php_warning("JsonEncoder internal error: %s", writer.GetError().c_str());
+    php_warning("JsonEncoder internal error: %s", writer.get_error().c_str());
     return {};
   }
-  return writer.GetJson();
+  return writer.get_final_json();
 }

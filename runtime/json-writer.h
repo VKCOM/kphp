@@ -19,32 +19,32 @@ public:
   explicit JsonWriter(bool pretty_print = false, bool preserve_zero_fraction = false) noexcept;
   ~JsonWriter() noexcept;
 
-  bool Bool(bool b) noexcept;
-  bool Int64(int64_t i) noexcept;
-  bool Double(double d) noexcept;
-  bool String(const string &s) noexcept;
-  bool RawString(const string &s) noexcept;
-  bool Null() noexcept;
+  bool write_bool(bool b) noexcept;
+  bool write_int(int64_t i) noexcept;
+  bool write_double(double d) noexcept;
+  bool write_string(const string &s) noexcept;
+  bool write_raw_string(const string &s) noexcept;
+  bool write_null() noexcept;
 
-  bool Key(std::string_view key, bool escape = false) noexcept;
-  bool StartObject() noexcept;
-  bool EndObject() noexcept;
-  bool StartArray() noexcept;
-  bool EndArray() noexcept;
+  bool write_key(std::string_view key, bool escape = false) noexcept;
+  bool start_object() noexcept;
+  bool end_object() noexcept;
+  bool start_array() noexcept;
+  bool end_array() noexcept;
 
-  void SetDoublePrecision(std::size_t precision) noexcept {
+  void set_double_precision(std::size_t precision) noexcept {
     double_precision_ = precision;
   }
 
-  bool IsComplete() const noexcept;
-  string GetError() const noexcept;
-  string GetJson() const noexcept;
+  bool is_complete() const noexcept;
+  string get_error() const noexcept;
+  string get_final_json() const noexcept;
 
 private:
-  bool NewLevel(bool is_array) noexcept;
-  bool ExitLevel(bool is_array) noexcept;
-  bool RegisterValue() noexcept;
-  void WriteIndent() const noexcept;
+  bool new_level(bool is_array) noexcept;
+  bool exit_level(bool is_array) noexcept;
+  bool register_value() noexcept;
+  void write_indent() const noexcept;
 
   struct NestedLevel {
     bool in_array{false};
