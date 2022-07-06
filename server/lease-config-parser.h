@@ -31,8 +31,10 @@ queue_id:
 class LeaseConfigParser {
 public:
   static int parse_lease_options_config(const char *lease_config) noexcept;
+  static char *lease_config_path;
 private:
   static std::optional<QueueTypesLeaseWorkerMode> get_lease_mode_from_config(const YAML::Node &node);
+  static std::optional<QueueTypesLeaseWorkerModeV2> get_lease_mode_v2_from_config(const YAML::Node &node);
   static std::vector<LeaseRpcClient> get_rpc_clients_from_config(const YAML::Node &node);
 
   template <typename T>
