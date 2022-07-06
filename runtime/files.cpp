@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <libgen.h>
 #include <sys/utsname.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #undef basename
@@ -719,7 +720,14 @@ static Optional<string> file_fgets(const Stream &stream, int64_t length) {
   }
 
   if (length < 0) {
-    length = 1024; // TODO remove limit
+    struct stat st{};
+    int fd = fileno(f);
+    fstat(fd, &st);
+    if (st.st_size > 0) {
+      length = st.st_size + 1;
+    } else {
+      return false;
+    }
   }
   if (length > string::max_size()) {
     php_warning("Parameter length in function fgetc is too large");

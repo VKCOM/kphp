@@ -87,6 +87,15 @@
   @var_dump (file_put_contents ('tmp', 'test'));
   var_dump (file_put_contents ($filename, "test-test-test"));
   var_dump (file_get_contents ($filename));
+  var_dump (file_put_contents ($filename, ''));
+  fclose($file);
+
+  $large_text = str_repeat("s", 3000);
+  var_dump (file_put_contents($filename, $large_text));
+  $file = fopen ($filename, 'r');
+  $large_line = fgets ($file);
+  var_dump (strlen ($large_line));
+  fclose ($file);
   unlink ($filename);
 
   @var_dump (realpath ("../dl/473-file.php"));
