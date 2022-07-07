@@ -2406,7 +2406,7 @@ string f$ucwords(const string &str) {
   return res;
 }
 
-array<mixed> f$unpack(const string &pattern, const string &data) {
+Optional<array<mixed>> f$unpack(const string &pattern, const string &data) {
   array<mixed> result;
 
   int data_len = data.size(), data_pos = 0;
@@ -2421,7 +2421,7 @@ array<mixed> f$unpack(const string &pattern, const string &data) {
 
       if (cnt <= 0) {
         php_warning("Wrong count specifier in pattern \"%s\"", pattern.c_str());
-        return result;
+        return false;
       }
     } else if (pattern[i] == '*') {
       cnt = 0;
@@ -2430,7 +2430,7 @@ array<mixed> f$unpack(const string &pattern, const string &data) {
     if (data_pos >= data_len) {
       if (format == 'A' || format == 'a' || format == 'H' || format == 'h' || cnt != 0) {
         php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
-        return result;
+        return false;
       }
       return result;
     }
@@ -2444,7 +2444,7 @@ array<mixed> f$unpack(const string &pattern, const string &data) {
 
     if (cnt == 0 && i != (int)pattern.size()) {
       php_warning("Misplaced symbol '*' in pattern \"%s\"", pattern.c_str());
-      return result;
+      return false;
     }
 
     char filler = 0;
@@ -2461,7 +2461,7 @@ array<mixed> f$unpack(const string &pattern, const string &data) {
         int read_len = cnt;
         if (read_len + data_pos > data_len) {
           php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
-          return result;
+          return false;
         }
         while (cnt > 0 && data[data_pos + cnt - 1] == filler) {
           cnt--;
@@ -2487,7 +2487,7 @@ array<mixed> f$unpack(const string &pattern, const string &data) {
         int read_len = (cnt + 1) / 2;
         if (read_len + data_pos > data_len) {
           php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
-          return result;
+          return false;
         }
 
         string value(cnt, false);
@@ -2526,7 +2526,7 @@ array<mixed> f$unpack(const string &pattern, const string &data) {
           int value_int;
           if (data_pos >= data_len) {
             php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
-            return result;
+            return false;
           }
 
           switch (format) {
@@ -2594,7 +2594,7 @@ array<mixed> f$unpack(const string &pattern, const string &data) {
             case 'f': {
               if (data_pos + (int)sizeof(float) > data_len) {
                 php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
-                return result;
+                return false;
               }
               value = (double)*(float *)(data.c_str() + data_pos);
               data_pos += (int)sizeof(float);
@@ -2605,7 +2605,7 @@ array<mixed> f$unpack(const string &pattern, const string &data) {
             case 'd': {
               if (data_pos + (int)sizeof(double) > data_len) {
                 php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
-                return result;
+                return false;
               }
               uint64_t value_byteordered = 0;
               memcpy(&value_byteordered, data.c_str() + data_pos, sizeof(double));
@@ -2623,7 +2623,7 @@ array<mixed> f$unpack(const string &pattern, const string &data) {
             case 'Q': {
               if (data_pos + (int)sizeof(unsigned long long) > data_len) {
                 php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
-                return result;
+                return false;
               }
 
               // stored in the host machine order by the default (Q flag)
@@ -2645,7 +2645,7 @@ array<mixed> f$unpack(const string &pattern, const string &data) {
             case 'q': {
               if (data_pos + (int)sizeof(long long) > data_len) {
                 php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
-                return result;
+                return false;
               }
               long long value_ll = *reinterpret_cast<const long long *>(data.c_str() + data_pos);
               value = f$strval(static_cast<int64_t>(value_ll));
@@ -2654,7 +2654,7 @@ array<mixed> f$unpack(const string &pattern, const string &data) {
             }
             default:
               php_warning("Format code \"%c\" not supported", format);
-              return result;
+              return false;
           }
 
           string key = key_prefix;

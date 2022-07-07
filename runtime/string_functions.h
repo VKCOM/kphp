@@ -242,7 +242,7 @@ string f$ucfirst(const string &str);
 
 string f$ucwords(const string &str);
 
-array<mixed> f$unpack(const string &pattern, const string &data);
+Optional<array<mixed>> f$unpack(const string &pattern, const string &data);
 
 int64_t f$vprintf(const string &format, const array<mixed> &args);
 
