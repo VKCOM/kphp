@@ -447,6 +447,7 @@ void php_worker_free_script(php_worker *worker) {
   }
 
   php_queries_finish();
+  php_script_disable_timeout();
   php_script_clear(php_script);
 
   static int finished_queries = 0;
