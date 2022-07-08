@@ -70,6 +70,7 @@ void php_script_query_answered(void *ptr);
 run_state_t php_script_get_state(void *ptr);
 void *php_script_create(size_t mem_size, size_t stack_size);
 void php_script_terminate(void *ptr, const char *error_message, script_error_t error_type);
+void php_script_disable_timeout();
 void php_script_set_timeout(double t);
 const char *php_script_get_error(void *ptr);
 script_error_t php_script_get_error_type(void *ptr);

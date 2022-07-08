@@ -735,16 +735,14 @@ long long php_script_memory_get_total_usage(void *ptr) {
   return ((PHPScriptBase *)ptr)->memory_get_total_usage();
 }
 
-void php_script_set_timeout(double t) {
-  static itimerval timer;
-  timer.it_interval.tv_sec = 0;
-  timer.it_interval.tv_usec = 0;
-
-  timer.it_value.tv_sec = 0;
-  timer.it_value.tv_usec = 0;
-
-  //stop old timer
+void php_script_disable_timeout() {
+  itimerval timer{.it_interval{0, 0}, .it_value{0, 0}};
   setitimer(ITIMER_REAL, &timer, nullptr);
+}
+
+void php_script_set_timeout(double t) {
+  php_script_disable_timeout();
+  static itimerval timer;
 
   if (t > MAX_SCRIPT_TIMEOUT) {
     return;
