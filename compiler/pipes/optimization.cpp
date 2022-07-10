@@ -131,6 +131,23 @@ VertexPtr OptimizationPass::optimize_set_push_back(VertexAdaptor<op_set> set_op)
 void OptimizationPass::collect_concat(VertexPtr root, std::vector<VertexPtr> *collected) {
   if (root->type() == op_string_build || root->type() == op_concat) {
     for (auto i : *root) {
+      if (vk::any_of_equal(i->type(), op_int_const, op_float_const, op_true, op_false)) {
+        std::string value;
+        if (i->type() == op_true) {
+          value = "1";
+        } else if (i->type() == op_false) {
+          value = "";
+        } else {
+          value = i->get_string();
+        }
+
+        auto new_val = VertexAdaptor<op_string>::create();
+        new_val->location = i->get_location();
+        new_val->str_val = value;
+
+        i = new_val;
+      }
+
       collect_concat(i, collected);
     }
   } else {
