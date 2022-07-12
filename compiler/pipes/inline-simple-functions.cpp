@@ -94,6 +94,7 @@ bool InlineSimpleFunctions::check_function(FunctionPtr function) const {
          !function->has_variadic_param &&
          !function->is_main_function() &&
          function->type != FunctionData::func_class_holder &&
+         (!function->modifiers.is_instance() || function->local_name() != "__wakeup") &&
          !function->kphp_lib_export;
 }
 

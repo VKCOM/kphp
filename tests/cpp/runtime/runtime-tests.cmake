@@ -9,6 +9,7 @@ prepend(RUNTIME_TESTS_SOURCES ${BASE_DIR}/tests/cpp/runtime/
         flex-test.cpp
         inter-process-mutex-test.cpp
         inter-process-resource-test.cpp
+        json-writer-test.cpp
         number-string-comparison.cpp
         kphp-type-traits-test.cpp
         memory_resource/details/memory_chunk_list-test.cpp
