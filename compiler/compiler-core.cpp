@@ -4,11 +4,8 @@
 
 #include "compiler/compiler-core.h"
 
-#include <dirent.h>
-
 #include "common/algorithms/contains.h"
 #include "common/wrappers/mkdir_recursive.h"
-#include "common/smart_ptrs/unique_ptr_with_delete_function.h"
 
 #include "compiler/const-manipulations.h"
 #include "compiler/data/ffi-data.h"
@@ -17,80 +14,6 @@
 #include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/name-gen.h"
-
-namespace {
-
-void close_dir(DIR *d) {
-  closedir(d);
-}
-
-void collect_composer_folders(const std::string &path, std::vector<std::string> &result) {
-  // can't use nftw here as it doesn't provide a portable way to stop directory traversal;
-  // we don't want to visit *all* files in the vendor tree
-  //
-  // suppose we have this composer-generated layout:
-  //     vendor/pkg1/
-  //     * composer.json
-  //     * src/
-  //     vendor/ns/pkg2/
-  //     * composer.json
-  //     * src/
-  // all pkg directories can have a lot of files inside src/,
-  // if we can stop as soon as we find composer.json, a lot of
-  // redundant work is avoided
-
-  vk::unique_ptr_with_delete_function<DIR, close_dir> dp{opendir(path.c_str())};
-  if (dp == nullptr) {
-    kphp_warning(fmt_format("find composer files: opendir({}) failed: {}", path.c_str(), strerror(errno)));
-    return;
-  }
-
-  // since composer package can't have nested composer.json file, we stop
-  // directory traversal if we found it; otherwise we descend further;
-  // dirs contains all directories that we need to visit when descending
-  bool recurse = true;
-  std::vector<std::string> dirs;
-
-  while (const auto *entry = readdir(dp.get())) {
-    if (entry->d_name[0] == '.') {
-      continue;
-    }
-
-    if (std::strcmp(entry->d_name, "composer.json") == 0) {
-      result.push_back(path);
-      recurse = false;
-      break;
-    }
-
-    // by default, composer does no copy for packages; it creates a symlink instead
-    if (entry->d_type == DT_LNK) {
-      // collect only those links that point to a directory
-      auto link_path = path + "/" + entry->d_name;
-      struct stat link_info;
-      stat(link_path.c_str(), &link_info);
-      if (S_ISDIR(link_info.st_mode)) {
-        dirs.push_back(std::move(link_path));
-      }
-    } else if (entry->d_type == DT_DIR) {
-      dirs.emplace_back(path + "/" + entry->d_name);
-    }
-  }
-
-  if (recurse) {
-    for (const auto &dir : dirs) {
-      collect_composer_folders(dir, result);
-    }
-  }
-}
-
-// Collect all composer.json file roots that can be found in the given directory.
-std::vector<std::string> find_composer_folders(const std::string &dir) {
-  std::vector<std::string> result;
-  collect_composer_folders(dir, result);
-  return result;
-}
-
-}
 
 static FunctionPtr UNPARSED_BUT_REQUIRED_FUNC_PTR = FunctionPtr(reinterpret_cast<FunctionData *>(0x0001));
 
@@ -532,24 +455,7 @@ void CompilerCore::init_composer_class_loader() {
   }
 
   composer_class_loader.set_use_dev(settings().composer_autoload_dev.get());
-
-  composer_class_loader.load_root_file(settings().composer_root.get());
-
-  // We could traverse the composer file and collect all "repositories"
-  // and map them with "requirements" to get the dependency list,
-  // but some projects may use composer plugins that change composer
-  // files before "composer install" is invoked, so the final vendor
-  // folder may be generated from files that differ from the composer
-  // files that we can reach. To avoid that problem, we scan the vendor
-  // folder in order to collect all dependencies (both direct and indirect).
-
-  std::string vendor = settings().composer_root.get() + "vendor";
-  bool vendor_folder_exists = access(vendor.c_str(), F_OK) == 0;
-  if (vendor_folder_exists) {
-    for (const auto &composer_root : find_composer_folders(vendor)) {
-      composer_class_loader.load_file(composer_root);
-    }
-  }
+  composer_class_loader.load(settings().composer_root.get());
 }
 
 

@@ -27,7 +27,12 @@
                 "multi2/src/"
             ],
             "": "fallback"
-        }
+        },
+        "classmap": [
+            "classmap/classmap_lib.php",
+            "classmap/classmap_no_namespace.php",
+            "classmap/dir/"
+        ]
     },
     "autoload-dev": {
         "psr-4": {

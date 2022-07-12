@@ -1,60 +1,73 @@
-[
-    {
-        "name": "vk/pkg1",
-        "version": "1.0.0",
-        "version_normalized": "1.0.0.0",
-        "dist": {
-            "type": "path",
-            "url": "./packages/pkg1",
-            "reference": "cad9181dd719b2300857994e3f139a3537295184",
-            "shasum": null
+{
+    "packages": [
+        {
+            "name": "vk/pkg1",
+            "version": "1.0.0",
+            "version_normalized": "1.0.0.0",
+            "dist": {
+                "type": "path",
+                "url": "./packages/pkg1",
+                "reference": "c815828c6fde4469dddb6f0df1057dc308af767d"
+            },
+            "require": {
+                "vk/pkg2": "1.0.0"
+            },
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "VK\\Common\\Pkg1\\": "src/"
+                }
+            },
+            "transport-options": {
+                "relative": true
+            },
+            "install-path": "../vk/pkg1"
         },
-        "require": {
-            "vk/pkg2": "1.0.0"
+        {
+            "name": "vk/pkg2",
+            "version": "1.0.0",
+            "version_normalized": "1.0.0.0",
+            "dist": {
+                "type": "path",
+                "url": "./packages/pkg2",
+                "reference": "e32549ec11d35c5d7deea3ffe72a35ca33456f23"
+            },
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "VK\\Common\\Pkg2\\": "src"
+                }
+            },
+            "transport-options": {
+                "relative": true
+            },
+            "install-path": "../vk/pkg2"
         },
-        "type": "library",
-        "installation-source": "dist",
-        "autoload": {
-            "psr-4": {
-                "VK\\Common\\Pkg1\\": "src/"
-            }
+        {
+            "name": "vk/utils",
+            "version": "1.0.0",
+            "version_normalized": "1.0.0.0",
+            "dist": {
+                "type": "path",
+                "url": "./packages/utils",
+                "reference": "0a222823e935ae31baddb76e6ab1801884ebc6c9"
+            },
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "VK\\Utils\\": "src/",
+                    "": "utils-fallback/src/"
+                }
+            },
+            "transport-options": {
+                "relative": true
+            },
+            "install-path": "../vk/utils"
         }
-    },
-    {
-        "name": "vk/pkg2",
-        "version": "1.0.0",
-        "version_normalized": "1.0.0.0",
-        "dist": {
-            "type": "path",
-            "url": "./packages/pkg2",
-            "reference": "a4d1b73b856b267d687b5b6f9d4ab6ec1b884afe",
-            "shasum": null
-        },
-        "type": "library",
-        "installation-source": "dist",
-        "autoload": {
-            "psr-4": {
-                "VK\\Common\\Pkg2\\": "src"
-            }
-        }
-    },
-    {
-        "name": "vk/utils",
-        "version": "1.0.0",
-        "version_normalized": "1.0.0.0",
-        "dist": {
-            "type": "path",
-            "url": "./packages/utils",
-            "reference": "f08b32d3a2176e0de96c4e79383d1c950f39fc63",
-            "shasum": null
-        },
-        "type": "library",
-        "installation-source": "dist",
-        "autoload": {
-            "psr-4": {
-                "VK\\Utils\\": "src/",
-                "": "utils-fallback/src/"
-            }
-        }
-    }
-]
+    ],
+    "dev": true,
+    "dev-package-names": []
+}

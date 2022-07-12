@@ -6,4 +6,9 @@ $vendorDir = dirname(dirname(__FILE__));
 $baseDir = dirname($vendorDir);
 
 return array(
+    'ClassmapLib\\Classes\\ClassmapClass1' => $baseDir . '/classmap/classmap_lib.php',
+    'ClassmapLib\\Classes\\ClassmapClass2' => $baseDir . '/classmap/classmap_lib.php',
+    'ClassmapNoNamespace' => $baseDir . '/classmap/classmap_no_namespace.php',
+    'Composer\\InstalledVersions' => $vendorDir . '/composer/InstalledVersions.php',
+    'OtherClassmap\\OtherClassmapClass' => $baseDir . '/classmap/dir/classmap.php',
 );
