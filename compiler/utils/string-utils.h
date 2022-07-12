@@ -1,11 +1,13 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2020 LLC «V Kontakte»
+// Copyright (c) 2022 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
 
 #include <algorithm>
-#include <limits.h>
+#include <climits>
+#include <string>
+#include <vector>
 
 #include "common/algorithms/string-algorithms.h"
 #include "common/wrappers/string_view.h"
@@ -135,3 +137,6 @@ static inline void remove_extra_spaces(std::string &str) {
 static inline bool is_string_self_static_parent(const std::string &s) {
   return s == "self" || s == "static" || s == "parent";
 }
+
+std::string transform_to_snake_case(vk::string_view origin) noexcept;
+std::string transform_to_camel_case(vk::string_view origin) noexcept;

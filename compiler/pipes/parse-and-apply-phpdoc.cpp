@@ -11,6 +11,7 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/kphp-json-tags.h"
 #include "compiler/data/src-file.h"
 #include "compiler/gentree.h"
 #include "compiler/phpdoc.h"
@@ -525,6 +526,13 @@ class ParseAndApplyPhpDocForClass {
 
 public:
   explicit ParseAndApplyPhpDocForClass(ClassPtr klass) : klass(klass) {
+    // apply @kphp-serializable and so on
+    stage::set_location({klass->file_id, klass->get_holder_function(), klass->location_line_num});
+    if (klass->phpdoc) {
+      for (const PhpDocTag &tag : klass->phpdoc->tags) {
+        parse_kphp_doc_tag(tag);
+      }
+    }
 
     // if there is @var / type hint near class field — save it; otherwise, convert the field default value to a type hint
     // note: it's safe to use init_val here (even if it refers to constants of other classes): defines were inlined at previous pipe
@@ -535,7 +543,12 @@ public:
         f.type_hint = phpdoc_finalize_type_hint_and_resolve(f.type_hint, klass->get_holder_function());
         kphp_error(f.type_hint, fmt_format("Failed to parse @var of {}", f.var->as_human_readable()));
       }
+
+      if (f.phpdoc && f.phpdoc->has_tag(PhpDocType::kphp_json)) {
+        f.kphp_json_tags = kphp_json::KphpJsonTagList::create_from_phpdoc(klass->get_holder_function(), f.phpdoc, ClassPtr{});
+      }
     });
+
     klass->members.for_each([&](ClassMemberStaticField &f) {
       stage::set_location(f.root->location);
       f.type_hint = calculate_field_type_hint(f.phpdoc, f.type_hint, f.var, klass);
@@ -543,15 +556,18 @@ public:
         f.type_hint = phpdoc_finalize_type_hint_and_resolve(f.type_hint, klass->get_holder_function());
         kphp_error(f.type_hint, fmt_format("Failed to parse @var of {}", f.var->as_human_readable()));
       }
+      if (f.phpdoc) {
+        kphp_error_return(!f.phpdoc->has_tag(PhpDocType::kphp_json), "@kphp-json is allowed only for instance fields");
+      }
     });
 
-    // now apply @kphp-serializable and so on
-    if (klass->phpdoc) {
-      for (const PhpDocTag &tag : klass->phpdoc->tags) {
-        parse_kphp_doc_tag(tag);
+    // `@kphp-json flatten` above a class should satisfy some restrictions, check them after parsing all fields
+    if (klass->kphp_json_tags) {
+      stage::set_location({klass->file_id, klass->get_holder_function(), klass->location_line_num});
+      if (klass->kphp_json_tags->find_tag([](const kphp_json::KphpJsonTag &tag) { return tag.attr_type == kphp_json::json_attr_flatten && tag.flatten; })) {
+        klass->kphp_json_tags->check_flatten_class(klass);
       }
     }
-
   }
 
 private:
@@ -631,6 +647,12 @@ private:
           });
         } catch (const std::exception &ex) {
           kphp_error(false, fmt_format("@kphp-analyze-performance bad tag: {}", ex.what()));
+        }
+        break;
+
+      case PhpDocType::kphp_json:
+        if (!klass->kphp_json_tags) { // meeting the first @kphp-json, parse them all
+          klass->kphp_json_tags = kphp_json::KphpJsonTagList::create_from_phpdoc(klass->get_holder_function(), klass->phpdoc, klass);
         }
         break;
 

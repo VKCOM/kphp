@@ -9,6 +9,8 @@
 #include "runtime/exception.h"
 #include "runtime/string_functions.h"
 
+// note: json-functions.cpp is used for non-typed json implementation: for json_encode() and json_decode()
+// for classes, e.g. `JsonEncoder::encode(new A)`, see json-writer.cpp and from/to visitors
 namespace {
 
 void json_append_one_char(unsigned int c) noexcept {
@@ -38,7 +40,7 @@ bool json_append_char(unsigned int c) noexcept {
 }
 
 
-bool do_json_encode_string_php(const impl_::JsonPath &json_path, const char *s, int len, int64_t options) noexcept {
+bool do_json_encode_string_php(const JsonPath &json_path, const char *s, int len, int64_t options) noexcept {
   int begin_pos = static_SB.size();
   if (options & JSON_UNESCAPED_UNICODE) {
     static_SB.reserve(2 * len + 2);
@@ -213,8 +215,6 @@ bool do_json_encode_string_vkext(const char *s, int len) noexcept {
 
 } // namespace
 
-namespace impl_ {
-
 string JsonPath::to_string() const {
   // this function is called only when error is occurred, so it's not
   // very performance-sensitive
@@ -244,9 +244,12 @@ string JsonPath::to_string() const {
   return result;
 }
 
-JsonEncoder::JsonEncoder(int64_t options, bool simple_encode) noexcept:
+namespace impl_ {
+
+JsonEncoder::JsonEncoder(int64_t options, bool simple_encode, const char *json_obj_magic_key) noexcept:
   options_(options),
-  simple_encode_(simple_encode) {
+  simple_encode_(simple_encode),
+  json_obj_magic_key_(json_obj_magic_key) {
 }
 
 bool JsonEncoder::encode(bool b) noexcept {
@@ -315,7 +318,7 @@ void json_skip_blanks(const char *s, int &i) noexcept {
   }
 }
 
-bool do_json_decode(const char *s, int s_len, int &i, mixed &v) noexcept {
+bool do_json_decode(const char *s, int s_len, int &i, mixed &v, const char *json_obj_magic_key) noexcept {
   if (!v.is_null()) {
     v.destroy();
   }
@@ -474,7 +477,7 @@ bool do_json_decode(const char *s, int s_len, int &i, mixed &v) noexcept {
       if (s[i] != ']') {
         do {
           mixed value;
-          if (!do_json_decode(s, s_len, i, value)) {
+          if (!do_json_decode(s, s_len, i, value, json_obj_magic_key)) {
             return false;
           }
           res.push_back(value);
@@ -498,7 +501,7 @@ bool do_json_decode(const char *s, int s_len, int &i, mixed &v) noexcept {
       if (s[i] != '}') {
         do {
           mixed key;
-          if (!do_json_decode(s, s_len, i, key) || !key.is_string()) {
+          if (!do_json_decode(s, s_len, i, key, json_obj_magic_key) || !key.is_string()) {
             return false;
           }
           json_skip_blanks(s, i);
@@ -506,7 +509,7 @@ bool do_json_decode(const char *s, int s_len, int &i, mixed &v) noexcept {
             return false;
           }
 
-          if (!do_json_decode(s, s_len, i, res[key])) {
+          if (!do_json_decode(s, s_len, i, res[key], json_obj_magic_key)) {
             return false;
           }
           json_skip_blanks(s, i);
@@ -517,6 +520,12 @@ bool do_json_decode(const char *s, int s_len, int &i, mixed &v) noexcept {
         }
       } else {
         i++;
+      }
+
+      // it's impossible to distinguish whether empty php array was an json array or json object;
+      // to overcome it we add dummy key to php array that make array::is_vector() returning false, so we have difference
+      if (json_obj_magic_key && res.empty()) {
+        res[string{json_obj_magic_key}] = true;
       }
 
       new(&v) mixed(res);
@@ -552,18 +561,22 @@ bool do_json_decode(const char *s, int s_len, int &i, mixed &v) noexcept {
 
 } // namespace
 
-mixed f$json_decode(const string &v, bool assoc) noexcept {
-  // TODO It was a warning before (in case if assoc is false), but then it was disabled, should we enable it again?
-  static_cast<void>(assoc);
-
+std::pair<mixed, bool> json_decode(const string &v, const char *json_obj_magic_key) noexcept {
   mixed result;
   int i = 0;
-  if (do_json_decode(v.c_str(), v.size(), i, result)) {
+  if (do_json_decode(v.c_str(), v.size(), i, result, json_obj_magic_key)) {
     json_skip_blanks(v.c_str(), i);
     if (i == static_cast<int>(v.size())) {
-      return result;
+      bool success = true;
+      return {result, success};
     }
   }
 
   return {};
+}
+
+mixed f$json_decode(const string &v, bool assoc) noexcept {
+  // TODO It was a warning before (in case if assoc is false), but then it was disabled, should we enable it again?
+  static_cast<void>(assoc);
+  return json_decode(v).first;
 }

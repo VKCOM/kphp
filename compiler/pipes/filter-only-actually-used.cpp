@@ -172,7 +172,8 @@ IdMap<FunctionPtr> calc_actually_used_having_call_edges(std::vector<FunctionAndE
       fun->type == FunctionData::func_class_holder || // classes should be carried along the pipeline
       (fun->is_extern() && vk::any_of_equal(fun->name, "wait", "make_clone")) ||
       fun->kphp_lib_export ||
-      (fun->modifiers.is_instance() && fun->local_name() == ClassData::NAME_OF_TO_STRING);
+      (fun->modifiers.is_instance() && fun->local_name() == ClassData::NAME_OF_TO_STRING) ||
+      (fun->modifiers.is_instance() && fun->local_name() == ClassData::NAME_OF_WAKEUP);
     if (should_be_used_apriori && !used_functions[fun]) {
       calc_actually_used_dfs(fun, used_functions, call_graph);
     }

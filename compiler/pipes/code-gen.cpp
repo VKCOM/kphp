@@ -11,6 +11,7 @@
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/files/function-header.h"
 #include "compiler/code-gen/files/function-source.h"
+#include "compiler/code-gen/files/json-encoder-tags.h"
 #include "compiler/code-gen/files/global_vars_memory_stats.h"
 #include "compiler/code-gen/files/init-scripts.h"
 #include "compiler/code-gen/files/lib-header.h"
@@ -54,6 +55,7 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
 
   std::forward_list<FunctionPtr> all_functions = tmp_stream.flush();   // functions to codegen, order doesn't matter
   const std::vector<ClassPtr> &all_classes = G->get_classes();
+  std::set<ClassPtr> all_json_encoders;
 
   for (FunctionPtr f : all_functions) {
     code_gen_start_root_task(os, std::make_unique<FunctionH>(f));
@@ -61,6 +63,9 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
   }
 
   for (ClassPtr c : all_classes) {
+    if (c->kphp_json_tags && G->get_class("JsonEncoder")->is_parent_of(c)) {
+      all_json_encoders.insert(c);
+    }
     if (!c->does_need_codegen()) {
       continue;
     }
@@ -127,6 +132,7 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
   if (!G->settings().is_static_lib_mode()) {
     code_gen_start_root_task(os, std::make_unique<TypeTagger>(vk::singleton<ForkableTypeStorage>::get().flush_forkable_types(), vk::singleton<ForkableTypeStorage>::get().flush_waitable_types()));
     code_gen_start_root_task(os, std::make_unique<ShapeKeys>(TypeHintShape::get_all_registered_keys()));
+    code_gen_start_root_task(os, std::make_unique<JsonEncoderTags>(std::move(all_json_encoders)));
   }
 
   code_gen_start_root_task(os, std::make_unique<TlSchemaToCpp>());

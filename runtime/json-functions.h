@@ -11,11 +11,13 @@
 
 constexpr int64_t JSON_UNESCAPED_UNICODE = 1;
 constexpr int64_t JSON_FORCE_OBJECT = 16;
-constexpr int64_t JSON_PRETTY_PRINT = 128; // TODO: add actual support
+constexpr int64_t JSON_PRETTY_PRINT = 128; // TODO: add actual support to untyped
 constexpr int64_t JSON_PARTIAL_OUTPUT_ON_ERROR = 512;
-constexpr int64_t JSON_AVAILABLE_OPTIONS = JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT | JSON_PARTIAL_OUTPUT_ON_ERROR;
+constexpr int64_t JSON_PRESERVE_ZERO_FRACTION = 1024;
 
-namespace impl_ {
+constexpr int64_t JSON_AVAILABLE_OPTIONS = JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT | JSON_PARTIAL_OUTPUT_ON_ERROR;
+constexpr int64_t JSON_AVAILABLE_FLAGS_TYPED = JSON_PRETTY_PRINT | JSON_PRESERVE_ZERO_FRACTION;
+
 struct JsonPath {
   constexpr static int MAX_DEPTH = 8;
 
@@ -36,9 +38,13 @@ struct JsonPath {
   string to_string() const;
 };
 
+namespace impl_ {
+// note: this class in runtime is used for non-typed json implementation: for json_encode() and json_decode()
+// for classes, e.g. `JsonEncoder::encode(new A)`, see json-writer.h and from/to visitors
+// todo somewhen, unify this JsonEncoder and JsonWriter, and support JSON_PRETTY_PRINT then
 class JsonEncoder : vk::not_copyable {
 public:
-  JsonEncoder(int64_t options, bool simple_encode) noexcept;
+  JsonEncoder(int64_t options, bool simple_encode, const char *json_obj_magic_key = nullptr) noexcept;
 
   bool encode(bool b) noexcept;
   bool encode(int64_t i) noexcept;
@@ -58,6 +64,7 @@ private:
   JsonPath json_path_;
   const int64_t options_{0};
   const bool simple_encode_{false};
+  const char *json_obj_magic_key_{nullptr};
 };
 
 template<class T>
@@ -104,7 +111,11 @@ bool JsonEncoder::encode(const array<T> &arr) noexcept {
         next_key = nullptr;
         static_SB << '"' << int_key << '"';
       } else {
-        const auto &str_key = key.as_string();
+        const string &str_key = key.as_string();
+        // skip service key intended only for distinguish empty json object with empty json array
+        if (json_obj_magic_key_ && !strcmp(json_obj_magic_key_, str_key.c_str())) {
+          continue;
+        }
         next_key = str_key.c_str();
         if (!encode(str_key)) {
           if (!(options_ & JSON_PARTIAL_OUTPUT_ON_ERROR)) {
@@ -177,4 +188,5 @@ inline Optional<string> f$vk_json_encode(const T &v) noexcept {
   return f$json_encode(v, 0, true);
 }
 
+std::pair<mixed, bool> json_decode(const string &v, const char *json_obj_magic_key = nullptr) noexcept;
 mixed f$json_decode(const string &v, bool assoc = false) noexcept;

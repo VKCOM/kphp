@@ -48,6 +48,7 @@ Checks: |-
   -readability-named-parameter,
   -readability-identifier-length,
   -bugprone-easily-swappable-parameters
+  -misc-no-recursion
 
 CheckOptions:
   - key:             bugprone-suspicious-string-compare.WarnOnImplicitComparison

@@ -40,7 +40,7 @@ struct KnownPhpDocTag {
 };
 
 class AllDocTags {
-  static constexpr int N_TAGS = 35;
+  static constexpr int N_TAGS = 36;
   static const KnownPhpDocTag ALL_TAGS[N_TAGS];
 
 public:
@@ -97,6 +97,7 @@ const KnownPhpDocTag AllDocTags::ALL_TAGS[] = {
   KnownPhpDocTag("@kphp-reserved-fields", PhpDocType::kphp_reserved_fields),
   KnownPhpDocTag("@kphp-serialized-field", PhpDocType::kphp_serialized_field),
   KnownPhpDocTag("@kphp-serialized-float32", PhpDocType::kphp_serialized_float32),
+  KnownPhpDocTag("@kphp-json", PhpDocType::kphp_json),
   KnownPhpDocTag("@kphp-profile", PhpDocType::kphp_profile),
   KnownPhpDocTag("@kphp-profile-allow-inline", PhpDocType::kphp_profile_allow_inline),
   KnownPhpDocTag("@kphp-strict-types-enable", PhpDocType::kphp_strict_types_enable),

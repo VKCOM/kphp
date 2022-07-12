@@ -35,6 +35,7 @@
 
 class TypeData;
 class ClassMembersContainer;
+namespace kphp_json { class KphpJsonTagList; }
 
 struct ClassMemberStaticMethod {
   FunctionPtr function;
@@ -85,6 +86,7 @@ struct ClassMemberInstanceField {
   VertexAdaptor<op_var> root;
   VarPtr var;
   const PhpDocComment *phpdoc{nullptr};
+  const kphp_json::KphpJsonTagList *kphp_json_tags{nullptr};
   const TypeHint *type_hint{nullptr};  // from @var / php 7.4 type hint / default value
   int8_t serialization_tag = -1;
   bool serialize_as_float32{false};

@@ -121,18 +121,22 @@ struct ClassDeclaration : CodeGenRootCmd {
   static void compile_inner_methods(CodeGenerator &W, ClassPtr klass);
 
 private:
+  static void compile_json_flatten_flag(CodeGenerator &W, ClassPtr klass);
+  static void compile_has_wakeup_flag(CodeGenerator &W, ClassPtr klass);
   static void compile_get_class(CodeGenerator &W, ClassPtr klass);
   static void compile_get_hash(CodeGenerator &W, ClassPtr klass);
   static void compile_accept_visitor_methods(CodeGenerator &W, ClassPtr klass);
-  static void compile_serialization_methods(CodeGenerator &W, ClassPtr klass);
-  static void compile_serialize(CodeGenerator &W, ClassPtr klass);
-  static void compile_deserialize(CodeGenerator &W, ClassPtr klass);
+  static void compile_msgpack_serialize(CodeGenerator &W, ClassPtr klass);
+  static void compile_msgpack_deserialize(CodeGenerator &W, ClassPtr klass);
   static void compile_virtual_builtin_functions(CodeGenerator &W, ClassPtr klass);
+  static void compile_wakeup(CodeGenerator &W, ClassPtr klass);
 
   template<class ReturnValueT>
   static void compile_class_method(FunctionSignatureGenerator &&W, ClassPtr klass, vk::string_view method_signature, const ReturnValueT &return_value);
 
   static void compile_accept_visitor(CodeGenerator &W, ClassPtr klass, const char *visitor_type);
+  static void compile_generic_accept(CodeGenerator &W, ClassPtr klass);
+  static void compile_accept_json_visitor(CodeGenerator &W, ClassPtr klass, bool to_encode, ClassPtr json_encoder);
   IncludesCollector compile_front_includes(CodeGenerator &W) const;
   void compile_back_includes(CodeGenerator &W, IncludesCollector &&front_includes) const;
   void compile_job_worker_shared_memory_piece_methods(CodeGenerator &W, bool compile_declaration_only = false) const;

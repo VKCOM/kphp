@@ -25,6 +25,7 @@
 #include "runtime/critical_section.h"
 #include "runtime/curl.h"
 #include "runtime/datetime.h"
+#include "runtime/json-processor-utils.h"
 #include "runtime/exception.h"
 #include "runtime/files.h"
 #include "runtime/instance-cache.h"
@@ -2287,6 +2288,7 @@ static void free_runtime_libs() {
   database_drivers::free_mysql_lib();
   vk::singleton<database_drivers::Adaptor>::get().reset();
   free_interface_lib();
+  hard_reset_var(JsonEncoderError::msg);
 }
 
 void global_init_runtime_libs() {

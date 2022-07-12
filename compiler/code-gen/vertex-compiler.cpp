@@ -11,6 +11,7 @@
 
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/declarations.h"
+#include "compiler/code-gen/files/json-encoder-tags.h"
 #include "compiler/code-gen/naming.h"
 #include "compiler/code-gen/raw-data.h"
 #include "compiler/data/class-data.h"
@@ -24,6 +25,8 @@
 #include "compiler/inferring/public.h"
 #include "compiler/name-gen.h"
 #include "compiler/vertex.h"
+
+namespace {
 
 struct Operand {
   VertexPtr root;
@@ -647,6 +650,25 @@ enum class func_call_mode {
   fork_call // call using fork
 };
 
+// to_json_impl() and from_json_impl() are represented in AST as `impl($json_encoder, ...args)`
+// but we want them to be codegenerated as `f$impl(JsonEncoderTag{}, ...args)`
+// here we shift call args by one and manually output cpp struct tag{} as the first argument
+VertexAdaptor<op_func_call> patch_compiling_json_impl_call(CodeGenerator &W, VertexAdaptor<op_func_call> call) noexcept {
+  auto args = call->args();
+  auto first_arg = args.begin();
+  auto v_encoder = GenTree::get_actual_value(*first_arg);
+
+  std::vector<VertexPtr> rest_args;
+  std::copy(++first_arg, args.end(), std::back_insert_iterator{rest_args});
+
+  auto new_call = VertexAdaptor<op_func_call>::create(rest_args).set_location(call->location);
+  new_call->str_val = call->str_val;
+  new_call->func_id = call->func_id;
+
+  W << JsonEncoderTags::get_cppStructTag_name(v_encoder->get_string()) << "{}, ";
+  return new_call;
+}
+
 void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_call_mode mode = func_call_mode::simple) {
   if (root->str_val == "make_clone" && tinf::get_type(root->args()[0])->is_primitive_type()) {
     // avoid generating make_clone call for primitive types such that (int, double, bool) just for beauty
@@ -698,6 +720,11 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
     W << "< " << TypeName(tp) << " >";
   }
   W << "(";
+
+  if (func && func->is_extern() && vk::any_of_equal(func->name, "JsonEncoder$$to_json_impl", "JsonEncoder$$from_json_impl")) {
+    root = patch_compiling_json_impl_call(W, root);
+  }
+
   auto args = root->args();
   if (func && func->cpp_variadic_call) {
     if (args.size() == 1) {
@@ -707,7 +734,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
     }
   }
 
-  W << JoinValues(vk::make_iterator_range(args.begin(), args.end()), ", ");
+  W << JoinValues(args, ", ");
   W << ")";
 }
 
@@ -2055,6 +2082,7 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
   }
 }
 
+} // anonymous namespace
 
 void compile_vertex(VertexPtr root, CodeGenerator &W) {
   OperationType tp = OpInfo::type(root->type());
