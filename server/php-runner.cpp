@@ -147,12 +147,12 @@ PHPScriptBase::~PHPScriptBase() {
 
 void PHPScriptBase::init(script_t *script, php_query_data *data_to_set) {
   assert (script != nullptr);
-  assert (state == run_state_t::empty);
+  assert_state(run_state_t::empty);
 
   query = nullptr;
   state = run_state_t::before_init;
 
-  assert (state == run_state_t::before_init);
+  assert_state(run_state_t::before_init);
 
   getcontext_portable(&run_context);
   run_context.uc_stack.ss_sp = run_stack;
@@ -294,7 +294,7 @@ void PHPScriptBase::update_script_time() {
 run_state_t PHPScriptBase::iterate() {
   current_script = this;
 
-  assert (state == run_state_t::ready);
+  assert_state(run_state_t::ready);
   state = run_state_t::running;
 
   update_net_time();
@@ -359,7 +359,7 @@ void PHPScriptBase::finish() {
 }
 
 void PHPScriptBase::clear() {
-  assert(state == run_state_t::uncleared);
+  assert_state(run_state_t::uncleared);
   run_main->clear();
   free_runtime_environment();
   state = run_state_t::empty;
@@ -371,8 +371,15 @@ void PHPScriptBase::clear() {
   }
 }
 
+void PHPScriptBase::assert_state(run_state_t expected) {
+  if (state != expected) {
+    log_server_critical("assert_state failed: state is %d, expected %d", static_cast<int>(state), static_cast<int>(expected));
+  }
+  assert(state == expected);
+}
+
 void PHPScriptBase::ask_query(php_query_base_t *q) {
-  assert (state == run_state_t::running);
+  assert_state(run_state_t::running);
   query = q;
   state = run_state_t::query;
   //fprintf (stderr, "ask_query: pause\n");
@@ -381,7 +388,7 @@ void PHPScriptBase::ask_query(php_query_base_t *q) {
 }
 
 void PHPScriptBase::set_script_result(script_result *res_to_set) {
-  assert (state == run_state_t::running);
+  assert_state(run_state_t::running);
   res = res_to_set;
   state = run_state_t::finished;
   pause();
@@ -389,12 +396,12 @@ void PHPScriptBase::set_script_result(script_result *res_to_set) {
 
 void PHPScriptBase::query_readed() {
   assert (is_running == false);
-  assert (state == run_state_t::query);
+  assert_state(run_state_t::query);
   state = run_state_t::query_running;
 }
 
 void PHPScriptBase::query_answered() {
-  assert (state == run_state_t::query_running);
+  assert_state(run_state_t::query_running);
   state = run_state_t::ready;
   //fprintf (stderr, "ok\n");
 }
@@ -459,7 +466,11 @@ void PHPScriptBase::run() {
 }
 
 void PHPScriptBase::reset_script_timeout() {
+  // php_script_set_timeout has a side effect of setting the tl_flag to false;
+  // we want to avoid that, since timeout should set tl_flag to true
+  bool current_tl_flag = tl_flag;
   php_script_set_timeout(script_timeout);
+  tl_flag = current_tl_flag;
 }
 
 double PHPScriptBase::get_net_time() const {
@@ -471,7 +482,7 @@ long long PHPScriptBase::memory_get_total_usage() const {
 }
 
 double PHPScriptBase::get_script_time() {
-  assert (state == run_state_t::running);
+  assert_state(run_state_t::running);
   update_script_time();
   return script_time;
 }

@@ -91,6 +91,8 @@ private:
 
   void on_request_timeout_error();
 
+  void assert_state(run_state_t expected);
+
 public:
 
   static PHPScriptBase *volatile current_script;
