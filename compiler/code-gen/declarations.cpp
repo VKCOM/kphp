@@ -685,18 +685,27 @@ void ClassDeclaration::compile_accept_json_visitor(CodeGenerator &W, ClassPtr kl
   const bool has_derived = !klass->derived_classes.empty();
   const bool is_pure_virtual = klass->is_interface();
 
-  FunctionSignatureGenerator &&signature = FunctionSignatureGenerator(W)
-    .set_is_virtual(is_pure_virtual || has_derived)
-    .set_final(parent_has_method && !has_derived)
-    .set_overridden(parent_has_method && has_derived)
-    .set_pure_virtual(is_pure_virtual)
-    << fmt_format("void accept({}<{}> &visitor)", to_encode ? "ToJsonVisitor" : "FromJsonVisitor", JsonEncoderTags::get_cppStructTag_name(json_encoder->name));
-
+  // todo chain methods are copy-pasted, because the code like
+  // `FunctionSignatureGenerator &&signature = FunctionSignatureGenerator(W)... << fmt_format; std::move(signature)<<BEGIN;`
+  // why ever, triggers an asan error (but correctly works without asan)
+  // we could not figure out why, probably it's asan's false positive, but for now, we decided just to leave a copy-paste
   if (is_pure_virtual) {
-    std::move(signature) << SemicolonAndNL{};
+    FunctionSignatureGenerator(W)
+      .set_is_virtual(is_pure_virtual || has_derived)
+      .set_final(parent_has_method && !has_derived)
+      .set_overridden(parent_has_method && has_derived)
+      .set_pure_virtual(is_pure_virtual)
+      << fmt_format("void accept({}<{}> &visitor)", to_encode ? "ToJsonVisitor" : "FromJsonVisitor", JsonEncoderTags::get_cppStructTag_name(json_encoder->name))
+      << SemicolonAndNL{};
     return;
   } else {
-    std::move(signature) << BEGIN;
+    FunctionSignatureGenerator(W)
+      .set_is_virtual(is_pure_virtual || has_derived)
+      .set_final(parent_has_method && !has_derived)
+      .set_overridden(parent_has_method && has_derived)
+      .set_pure_virtual(is_pure_virtual)
+      << fmt_format("void accept({}<{}> &visitor)", to_encode ? "ToJsonVisitor" : "FromJsonVisitor", JsonEncoderTags::get_cppStructTag_name(json_encoder->name))
+      << BEGIN;
   }
 
   // generates `visitor("json_key", $field_name)` calls in appropriate order
