@@ -350,13 +350,21 @@ bool OptimizationPass::check_function(FunctionPtr function) const {
 void OptimizationPass::on_finish() {
   if (current_function->type == FunctionData::func_class_holder) {
     auto class_id = current_function->class_id;
-    class_id->members.for_each([](ClassMemberInstanceField &class_field) {
+    class_id->members.for_each([this](ClassMemberInstanceField &class_field) {
       if (class_field.var->init_val) {
+        run_function_pass(class_field.var->init_val, this);
+
         if (can_init_value_be_removed(class_field.var->init_val, class_field.var)) {
           class_field.var->init_val = {};
         } else {
           explicit_cast_array_type(class_field.var->init_val, tinf::get_type(class_field.var));
         }
+      }
+    });
+
+    class_id->members.for_each([this](ClassMemberStaticField &static_field) {
+      if (static_field.var->init_val) {
+        run_function_pass(static_field.var->init_val, this);
       }
     });
   }
