@@ -50,7 +50,7 @@ We are going to improve that we load *"translations.$lang_name."* from memcache 
 When you start the KPHP server, it spawns **one master process** and **several worker processes**.  
 
 <p class="img-c">
-    <img alt="master worker shared mem" src="../../assets/img/kphp-shared-mem.png" width=429>
+    <img alt="master worker shared mem" src="../../assets/img/kphp-shared-mem.png" width="441">
 </p>
 
 
