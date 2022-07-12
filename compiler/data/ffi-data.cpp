@@ -173,10 +173,8 @@ const TypeHint *FFIRoot::c2php_type_hint(const TypeHint *c_hint, Php2cMode mode)
     return nullptr;
   }
 
-  if (mode == Php2cMode::FuncReturn) {
-    if (type->is_cstring()) {
-      return TypeHintPrimitive::create(tp_string);
-    }
+  if (type->is_cstring()) {
+    return TypeHintOptional::create(TypeHintPrimitive::create(tp_string), true, false);
   }
 
   if (const auto *as_scalar = c2php_scalar_type_hint(type->kind)) {
@@ -314,7 +312,11 @@ struct TypePrinter {
     std::string array_suffix;
 
     while (type->kind == FFITypeKind::Array) {
-      array_suffix = "[" + std::to_string(type->num) + "]" + array_suffix;
+      if (type->num == -1) {
+        array_suffix = "[]" + array_suffix;
+      } else {
+        array_suffix = "[" + std::to_string(type->num) + "]" + array_suffix;
+      }
       type = type->members[0];
     }
 
@@ -373,6 +375,9 @@ struct TypePrinter {
       case FFITypeKind::Var:
         return format_var(type);
       case FFITypeKind::Array:
+        if (type->num == -1) {
+          return format_type(type->members[0]) + "[]";
+        }
         return format_type(type->members[0]) + "[" + std::to_string(type->num) + "]";
 
       case FFITypeKind::Pointer:

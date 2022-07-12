@@ -10,4 +10,3 @@ void ffi_type_delete(const FFIType *type) {
   }
   delete type;
 }
-

@@ -669,6 +669,9 @@ Assumption infer_from_call(FunctionPtr f, VertexAdaptor<op_func_call> call, Vert
       ClassPtr scope_class = assume_class_of_expr(f, call->args()[0], call).try_as_class();
       return Assumption(InstantiateFFIOperationsPass::infer_from_ffi_scope_cast(f, call, scope_class));
     }
+    if (f_called->name == "ffi_array_get") {
+      return Assumption(InstantiateFFIOperationsPass::infer_from_ffi_array_get(f, call));
+    }
   }
 
   // when an assumption doesn't depend on a call, the return assumption can be once calculated and cached
@@ -799,6 +802,8 @@ Assumption assume_class_of_expr(FunctionPtr f, VertexPtr root, VertexPtr stop_at
       return Assumption(root.as<op_ffi_c2php_conv>()->php_type);
     case op_ffi_cdata_value_ref:
       return assume_class_of_expr(f, root.as<op_ffi_cdata_value_ref>()->expr(), stop_at);
+    case op_ffi_array_get:
+      return Assumption(root.as<op_ffi_array_get>()->c_elem_type);
     case op_index: {
       auto index = root.as<op_index>();
       if (index->has_key()) {

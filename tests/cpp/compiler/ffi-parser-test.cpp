@@ -204,7 +204,7 @@ TEST(ffi_test, test_parse_enum) {
   for (const auto &test : tests) {
     FFITypedefs typedefs;
     auto result = ffi_parse_file(test.input, typedefs);
-    ASSERT_TRUE(result.err.message.empty());
+    ASSERT_EQ(result.err.message, "");
 
     std::vector<std::pair<std::string, int>> result_constants;
     copy(result.enum_constants.begin(), result.enum_constants.end(), std::back_inserter(result_constants));
@@ -269,8 +269,8 @@ TEST(ffi_test, test_parse_sized_int_type_expr) {
   for (const auto &test : tests) {
     FFITypedefs typedefs;
     auto [target_type, err] = ffi_parse_type(test.input, typedefs);
+    ASSERT_EQ(err.message, "");
     ASSERT_EQ(ffi_type_string(target_type), test.expected) << "input expr is " + test.input;
-    ASSERT_TRUE(err.message.empty());
   }
 }
 
@@ -309,13 +309,24 @@ TEST(ffi_test, test_parse_simple_type_expr) {
 
     {"struct foo", "struct foo"},
     {"struct foo*", "struct foo*"},
+
+    {"int32_t[]", "int32_t[]"},
+    {"uint8_t*[]", "uint8_t*[]"},
+    {"uint8_t**[]", "uint8_t**[]"},
+    {"const uint8_t*[]", "const uint8_t*[]"},
+    {"const uint8_t**[]", "const uint8_t**[]"},
+    {"uint8_t[111][]", "uint8_t[111][]"},
+    {"uint8_t[111][2][]", "uint8_t[111][2][]"},
+    {"uint8_t[111][2][33][]", "uint8_t[111][2][33][]"},
+    {"uint8_t*[111][2][33][]", "uint8_t*[111][2][33][]"},
+    {"const uint8_t*[111][2][33][]", "const uint8_t*[111][2][33][]"},
   };
 
   for (const auto &test : tests) {
     FFITypedefs typedefs;
     auto [target_type, err] = ffi_parse_type(test.input, typedefs);
+    ASSERT_EQ(err.message, "") << "input expr is " + test.input;
     ASSERT_EQ(ffi_type_string(target_type), test.expected) << "input expr is " + test.input;
-    ASSERT_TRUE(err.message.empty());
   }
 }
 
@@ -351,14 +362,13 @@ TEST(ffi_test, test_parse_decl) {
     {"const char * const * const * const x, y;", "const char*** x; const char y"},
     {"const char * const * const * const x, *y;", "const char*** x; const char* y"},
 
-    {"int x[];", "int32_t* x"},
-
     // TODO: this should be rejected; only leftmost array type can be unsized
-    {"int x[][];", "int32_t** x"},
+    {"int x[][];", "int32_t x[][]"},
 
     {"int x[10];", "int32_t x[10]"},
     {"int x[10][20];", "int32_t x[10][20]"},
     {"int x[10][20][3];", "int32_t x[10][20][3]"},
+    {"int x[10][20][3][];", "int32_t x[10][20][3][]"},
 
     {"struct Foo *fooptr;", "struct Foo* fooptr"},
     {"struct Foo * const *fooptr;", "struct Foo** fooptr"},
@@ -366,6 +376,19 @@ TEST(ffi_test, test_parse_decl) {
 
     {"struct Foo foo_array[10];", "struct Foo foo_array[10]"},
     {"struct Foo foo_array[10][20];", "struct Foo foo_array[10][20]"},
+
+    {"struct { int16_t *arr[11]; };", "struct { int16_t* arr[11]; }"},
+    {"struct { const int16_t *arr[11]; };", "struct { const int16_t* arr[11]; }"},
+    {"struct { int16_t * arr[11][2]; };", "struct { int16_t* arr[11][2]; }"},
+    {"struct { const int16_t *arr[11][2]; };", "struct { const int16_t* arr[11][2]; }"},
+    {"struct { const int16_t *arr[11][2][33]; };", "struct { const int16_t* arr[11][2][33]; }"},
+
+    {"struct { int16_t *arr[11][]; };", "struct { int16_t* arr[11][]; }"},
+    {"struct { const int16_t *arr[11][]; };", "struct { const int16_t* arr[11][]; }"},
+    {"struct { int16_t* arr [11] [222] []; };", "struct { int16_t* arr[11][222][]; }"},
+    {"struct { struct Foo arr[11] [222] []; };", "struct { struct Foo arr[11][222][]; }"},
+    {"struct { const struct Foo *arr[11] [222] []; };", "struct { const struct Foo* arr[11][222][]; }"},
+    {"int x[];", "int32_t x[]"},
 
     {"struct { int8_t x; };", "struct { int8_t x; }"},
     {"struct { int8_t x, y; };", "struct { int8_t x; int8_t y; }"},
@@ -414,6 +437,10 @@ TEST(ffi_test, test_decltype_string) {
     {"int x[10][20]", "int32_t[10][20]"},
     {"int x[10][20][3]", "int32_t[10][20][3]"},
 
+    {"int32_t x[]", "int32_t[]"},
+    {"int32_t x[1][]", "int32_t[1][]"},
+    {"int32_t x[1][2][]", "int32_t[1][2][]"},
+
     {"struct Foo foo_array[10]", "struct Foo[10]"},
     {"struct Foo foo_array[10][20]", "struct Foo[10][20]"},
   };
@@ -421,8 +448,8 @@ TEST(ffi_test, test_decltype_string) {
   for (const auto &test : tests) {
     FFITypedefs typedefs;
     auto [target_type, err] = ffi_parse_type(test.input, typedefs);
+    ASSERT_EQ(err.message, "");
     ASSERT_EQ(ffi_decltype_string(target_type), test.expected) << "input expr is " + test.input;
-    ASSERT_TRUE(err.message.empty());
   }
 }
 
@@ -484,6 +511,30 @@ TEST(ffi_test, test_typedef) {
     {
       "typedef int64_t i64; void f(volatile i64* arg);",
       "void f(volatile int64_t* arg)",
+    },
+
+    // typedef on array types
+    {
+      "typedef uint8_t my_int128[16]; void f(my_int128 arg);",
+      "void f(uint8_t arg[16])",
+    },
+    {
+      "typedef uint8_t foo[2][4]; void f(foo arg);",
+      "void f(uint8_t arg[2][4])",
+    },
+    {
+      "typedef uint8_t mem[]; void f(mem arg);",
+      "void f(uint8_t arg[])",
+    },
+
+    // arrays of pointers
+    {
+      "typedef uint8_t *foo[8]; void f(foo arg);",
+      "void f(uint8_t* arg[8])",
+    },
+    {
+      "typedef uint8_t *mem[]; void f(mem arg);",
+      "void f(uint8_t* arg[])",
     },
 
     // combining things together

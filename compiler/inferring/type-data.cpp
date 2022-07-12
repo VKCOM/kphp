@@ -334,6 +334,9 @@ bool TypeData::can_store_false() const {
 }
 
 bool TypeData::structured() const {
+  if (ptype() == tp_Class && !class_type_.empty() && class_type()->name == "FFI\\CData") {
+    return true;
+  }
   return vk::any_of_equal(ptype(), tp_array, tp_tuple, tp_shape, tp_future, tp_future_queue);
 }
 
@@ -550,6 +553,44 @@ void TypeData::set_lca(PrimitiveType ptype) {
   set_lca(TypeData::get_type(ptype));
 }
 
+static void append_ffi_type(const TypeData *type, ClassPtr klass, bool boxed, std::string &res) {
+  auto *as_ffi = klass->ffi_class_mixin;
+  const auto *key = type->lookup_at_any_key();
+  if (key) {
+    // CData as FFI array
+    res += "class_instance<CDataArray<";
+    if (key->ffi_const_flag()) {
+      res += "const ";
+    }
+    append_ffi_type(key, key->class_type(), false, res);
+    res += ">>";
+    return;
+  }
+
+  std::string c_type = ffi_mangled_decltype_string(as_ffi->scope_name, FFIRoot::get_ffi_type(klass));
+
+  // TODO: can we avoid manual ptr addition here?
+  if (type->get_indirection() != 0) {
+    // boxed types are wrapped into CDataPtr which already includes 1 level of indirection
+    // unboxed types are normal C pointers, we need all '*' here
+    int num_stars = boxed ? type->get_indirection() - 1 : type->get_indirection();
+    c_type += std::string(num_stars, '*');
+  }
+
+  if (!boxed) {
+    res += c_type;
+    return;
+  }
+
+  if (as_ffi->is_ref()) {
+    res += klass->src_name;
+  } else if (type->get_indirection() != 0) {
+    std::string maybe_const = type->ffi_const_flag() ? "const " : "";
+    res += "CDataPtr<" + maybe_const + c_type + ">";
+  } else {
+    res += "class_instance<C$FFI$CData<" + c_type + ">>";
+  }
+}
 
 inline void get_cpp_style_type(const TypeData *type, std::string &res) {
   const PrimitiveType tp = type->get_real_ptype();
@@ -557,20 +598,8 @@ inline void get_cpp_style_type(const TypeData *type, std::string &res) {
   switch (tp) {
     case tp_Class: {
       auto klass = type->class_type();
-      if (auto *as_ffi = klass->ffi_class_mixin) {
-        if (as_ffi->is_ref()) {
-          res += klass->src_name;
-        } else if (type->get_indirection() != 0) {
-          // indirection level (num of '*') and constness is qualifier-like property
-          // of a type, so FFI Type associated with a given class doesn't contain that info;
-          // therefore, it's not enough to just use ffi_mangled_decltype_string here -
-          // we need to add extra information using the TypeData state
-          auto ptr = std::string(type->get_indirection() - 1, '*');
-          std::string maybe_const = type->ffi_const_flag() ? "const " : "";
-          res += "CDataPtr<" + maybe_const + ffi_mangled_decltype_string(as_ffi->scope_name, FFIRoot::get_ffi_type(klass)) + ptr + ">";
-        } else {
-          res += "class_instance<C$FFI$CData<" + ffi_mangled_decltype_string(as_ffi->scope_name, FFIRoot::get_ffi_type(klass)) + ">>";
-        }
+      if (klass->ffi_class_mixin) {
+        append_ffi_type(type, klass, true, res);
         break;
       }
       res += "class_instance<";

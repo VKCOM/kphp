@@ -73,6 +73,7 @@ public:
   FFIType *combine(const DeclarationSpecifiers &decl_specs, const Declarator &declarator);
   FFIType *combine(const DeclarationSpecifiers &decl_specs, const AbstractDeclarator &declarator);
   FFIType *combine(const Pointer &pointer, const DirectDeclarator &declarator);
+  FFIType *combine(const Pointer &pointer, const DirectAbstractDeclarator &declarator);
 
   FFIType *make_simple_type(FFITypeKind kind) {
     return alloc.new_type(kind);
@@ -81,6 +82,7 @@ public:
   FFIType *make_simple_type(FFITypeKind kind, FFIType::Flag flags) { return alloc.new_type(kind, flags); }
 
   FFIType *make_enum_member(string_span name, int value);
+  FFIType *make_abstract_array_declarator(string_span size_str);
   FFIType *make_array_declarator(FFIType *declarator, string_span size_str);
   FFIType *make_function(FFIType *func_expr, FFIType *params);
   FFIType *make_pointer();

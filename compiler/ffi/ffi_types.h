@@ -44,6 +44,7 @@ enum class FFITypeKind: uint16_t {
   //
   // T[0]  -> members[0]=T, num=0
   // T[10] -> members[0]=T, num=10
+  // T[]   -> members[0]=T, num=-1
   Array,
 
   // Fundamental C types.
@@ -68,6 +69,7 @@ enum class FFITypeKind: uint16_t {
   // Values below are used only during the final type construction.
   // They're like intermediate AST representations.
 
+  _abstractArrayDeclarator, // num: array size
   _arrayDeclarator,
   _pointerDeclarator,
   _typesList,

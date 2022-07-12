@@ -171,6 +171,12 @@ void compile_postfix_op(VertexAdaptor<meta_op_unary> root, CodeGenerator &W) {
 }
 
 void compile_ffi_c2php_conv(VertexAdaptor<op_ffi_c2php_conv> root, CodeGenerator &W) {
+  if (const FFIType *ffi_type = FFIRoot::get_ffi_type(root->php_type)) {
+    if (ffi_type->kind == FFITypeKind::Array && ffi_type->num != -1) {
+      W << "ffi_c2php_array(" << root->expr() << ", " << ffi_type->num << ")";
+      return;
+    }
+  }
   const char *func = tinf::get_type(root)->is_ffi_ref() ? "ffi_c2php_ref" : "ffi_c2php";
   W << func << "(" << root->expr() << ")";
 }
@@ -727,9 +733,11 @@ void compile_func_call_fast(VertexAdaptor<op_func_call> root, CodeGenerator &W) 
 }
 
 void compile_ffi_cast(VertexAdaptor<op_ffi_cast> root, CodeGenerator &W) {
-  const auto *type = tinf::get_type(root->expr());
+  const auto *from_type = tinf::get_type(root->expr());
   const char *func = "ffi_cast";
-  if (type->get_indirection() == 0 && ffi_builtin_type(type->class_type()->ffi_class_mixin->ffi_type->kind)) {
+  if (from_type->lookup_at_any_key()) {
+    func = "ffi_cast_array";
+  } else if (from_type->get_indirection() == 0 && ffi_builtin_type(from_type->class_type()->ffi_class_mixin->ffi_type->kind)) {
      func = "ffi_cast_scalar";
   }
   W << func << "<" << ffi_mangled_decltype_string(root->php_type) << ">(" << root->expr() << ")";
@@ -741,8 +749,14 @@ void compile_ffi_addr(VertexAdaptor<op_ffi_addr> root, CodeGenerator &W) {
 
 void compile_ffi_new(VertexAdaptor<op_ffi_new> root, CodeGenerator &W) {
   const auto *ffi_type = FFIRoot::get_ffi_type(root->php_type);
-  const char *func = ffi_type->kind == FFITypeKind::Pointer ? "ffi_new_cdata_ptr" : "ffi_new_cdata";
-  W << func << "<" << ffi_mangled_decltype_string(root->php_type) << ">()";
+  if (root->has_array_size_expr()) {
+    const auto *elem_type = ffi_type->members[0];
+    std::string scope_name = FFIRoot::get_ffi_scope(root->php_type);
+    W << "ffi_new_cdata_array" << "<" << ffi_mangled_decltype_string(scope_name, elem_type) << ">" << "(" << root->array_size_expr() << ")";
+  } else {
+    const char *func = ffi_type->kind == FFITypeKind::Pointer ? "ffi_new_cdata_ptr" : "ffi_new_cdata";
+    W << func << "<" << ffi_mangled_decltype_string(root->php_type) << ">()";
+  }
 }
 
 void compile_ffi_cdata_value_ref(VertexAdaptor<op_ffi_cdata_value_ref> root, CodeGenerator &W) {
@@ -771,6 +785,14 @@ void compile_ffi_load_call(VertexAdaptor<op_ffi_load_call> root, CodeGenerator &
   W << "ffi_load_scope_symbols(";
   compile_func_call(root->func_call(), W);
   W << ", " << scope->shared_lib_id << ", " << scope->get_env_offset() << ", " << num_dynamic_symbols << ")";
+}
+
+void compile_ffi_array_get(VertexAdaptor<op_ffi_array_get> root, CodeGenerator &W) {
+  W << "ffi_array_get(" << root->array() << ", " << root->key() << ")";
+}
+
+void compile_ffi_array_set(VertexAdaptor<op_ffi_array_set> root, CodeGenerator &W) {
+  W << "ffi_array_set(" << root->array() << ", " << root->key() << ", " << root->value() << ")";
 }
 
 void compile_exception_constructor_call(VertexAdaptor<op_exception_constructor_call> root, CodeGenerator &W) {
@@ -1938,6 +1960,12 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       break;
     case op_ffi_load_call:
       compile_ffi_load_call(root.as<op_ffi_load_call>(), W);
+      break;
+    case op_ffi_array_get:
+      compile_ffi_array_get(root.as<op_ffi_array_get>(), W);
+      break;
+    case op_ffi_array_set:
+      compile_ffi_array_set(root.as<op_ffi_array_set>(), W);
       break;
     case op_func_call:
       compile_func_call_fast(root.as<op_func_call>(), W);

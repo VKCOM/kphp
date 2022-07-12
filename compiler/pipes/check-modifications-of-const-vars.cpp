@@ -34,6 +34,21 @@ void CheckModificationsOfConstVars::check_modifications(VertexPtr v, bool write_
   }
 
   switch (v->type()) {
+    case op_ffi_array_set: {
+      auto array_set = v.as<op_ffi_array_set>();
+      check_modifications(array_set->array(), true);
+      check_modifications(array_set->key(), false);
+      check_modifications(array_set->value(), false);
+      break;
+    }
+    case op_ffi_array_get: {
+      // ffi_array_get returns a non-const reference to the element
+      auto array_get = v.as<op_ffi_array_get>();
+      check_modifications(array_get->array(), true);
+      check_modifications(array_get->key(), false);
+      break;
+    }
+
     case op_prefix_inc:
     case op_postfix_inc:
     case op_prefix_dec:

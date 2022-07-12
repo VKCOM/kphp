@@ -265,9 +265,11 @@ public:
 // or from ffi_cdata<...> type hint
 //
 // some examples of the types that can be expressed:
-// ffi_cdata<scope, struct T>  = CData<struct T>
-// ffi_cdata<scope, struct T*> = CData<struct T*>
-// ffi_cdata<scope, int64_t>   = CData<int64_t>
+// ffi_cdata<scope, struct T>   = CData<struct T>
+// ffi_cdata<scope, struct T*>  = CData<struct T*>
+// ffi_cdata<scope, int64_t>    = CData<int64_t>
+// ffi_cdata<scope, uint32_t[]> = CDataArray<uint32_t>
+// ffi_cdata<scope, void*[][]>  = CDataArray<CDataArray<void*>>
 class TypeHintFFIType : public TypeHint {
   TypeHintFFIType(std::string scope_name, const FFIType *type)
     : TypeHint(flag_contains_instances_inside)

@@ -1,8 +1,8 @@
-// A Bison parser, made by GNU Bison 3.7.
+// A Bison parser, made by GNU Bison 3.7.5.
 
 // Skeleton implementation for Bison LALR(1) parsers in C++
 
-// Copyright (C) 2002-2015, 2018-2020 Free Software Foundation, Inc.
+// Copyright (C) 2002-2015, 2018-2021 Free Software Foundation, Inc.
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -127,7 +127,7 @@
 #else // !YYDEBUG
 
 # define YYCDEBUG if (false) std::cerr
-# define YY_SYMBOL_PRINT(Title, Symbol)  YYUSE (Symbol)
+# define YY_SYMBOL_PRINT(Title, Symbol)  YY_USE (Symbol)
 # define YY_REDUCE_PRINT(Rule)           static_cast<void> (0)
 # define YY_STACK_PRINT()                static_cast<void> (0)
 
@@ -236,7 +236,7 @@ namespace ffi {
   {}
 
   void
-  YYParser::by_kind::clear ()
+  YYParser::by_kind::clear () YY_NOEXCEPT
   {
     kind_ = symbol_kind::S_YYEMPTY;
   }
@@ -345,7 +345,7 @@ namespace ffi {
       YY_SYMBOL_PRINT (yymsg, yysym);
 
     // User destructor.
-    YYUSE (yysym.kind ());
+    YY_USE (yysym.kind ());
   }
 
 #if YYDEBUG
@@ -354,7 +354,7 @@ namespace ffi {
   YYParser::yy_print_ (std::ostream& yyo, const basic_symbol<Base>& yysym) const
   {
     std::ostream& yyoutput = yyo;
-    YYUSE (yyoutput);
+    YY_USE (yyoutput);
     if (yysym.empty ())
       yyo << "empty symbol";
     else
@@ -363,7 +363,7 @@ namespace ffi {
         yyo << (yykind < YYNTOKENS ? "token" : "nterm")
             << ' ' << yysym.name () << " ("
             << yysym.location << ": ";
-        YYUSE (yykind);
+        YY_USE (yykind);
         yyo << ')';
       }
   }
@@ -609,565 +609,601 @@ namespace ffi {
           switch (yyn)
             {
   case 4: // external_declaration: declaration
-#line 129 "c.y"
+#line 130 "c.y"
                 { driver.add_type((yystack_[0].value. type_ )); }
 #line 615 "yy_parser_generated.cpp"
     break;
 
   case 5: // external_declaration: typedef_declaration
-#line 130 "c.y"
+#line 131 "c.y"
                         {}
 #line 621 "yy_parser_generated.cpp"
     break;
 
   case 6: // external_declaration: EXTERN declaration
-#line 131 "c.y"
+#line 132 "c.y"
                        { driver.add_type((yystack_[0].value. type_ )); }
 #line 627 "yy_parser_generated.cpp"
     break;
 
   case 7: // external_declaration: STATIC declaration
-#line 132 "c.y"
+#line 133 "c.y"
                        { driver.add_type((yystack_[0].value. type_ )); }
 #line 633 "yy_parser_generated.cpp"
     break;
 
   case 8: // external_declaration: AUTO declaration
-#line 133 "c.y"
+#line 134 "c.y"
                      { driver.add_type((yystack_[0].value. type_ )); }
 #line 639 "yy_parser_generated.cpp"
     break;
 
   case 9: // external_declaration: REGISTER declaration
-#line 134 "c.y"
+#line 135 "c.y"
                          { driver.add_type((yystack_[0].value. type_ )); }
 #line 645 "yy_parser_generated.cpp"
     break;
 
   case 10: // typedef_declaration: TYPEDEF specifier_qualifier_list declarator ";"
-#line 138 "c.y"
+#line 139 "c.y"
                                                           { driver.add_typedef((yystack_[2].value. type_ ), (yystack_[1].value. type_ )); }
 #line 651 "yy_parser_generated.cpp"
     break;
 
   case 11: // declaration: declaration_specifiers ";"
-#line 142 "c.y"
+#line 143 "c.y"
                                      { (yylhs.value. type_ ) = (yystack_[1].value. type_ ); }
 #line 657 "yy_parser_generated.cpp"
     break;
 
   case 12: // declaration: declaration_specifiers init_declarator_list ";"
-#line 143 "c.y"
+#line 144 "c.y"
                                                           { (yylhs.value. type_ ) = driver.combine(DeclarationSpecifiers{(yystack_[2].value. type_ )}, InitDeclaratorList{(yystack_[1].value. type_ )}); }
 #line 663 "yy_parser_generated.cpp"
     break;
 
   case 13: // declaration_specifiers: type_specifier
-#line 147 "c.y"
+#line 148 "c.y"
                    { (yylhs.value. type_ ) = (yystack_[0].value. type_ ); }
 #line 669 "yy_parser_generated.cpp"
     break;
 
   case 14: // declaration_specifiers: type_specifier declaration_specifiers
-#line 148 "c.y"
+#line 149 "c.y"
                                           { (yylhs.value. type_ ) = driver.combine(TypeSpecifier{(yystack_[1].value. type_ )}, DeclarationSpecifiers{(yystack_[0].value. type_ )}); }
 #line 675 "yy_parser_generated.cpp"
     break;
 
   case 15: // declaration_specifiers: type_qualifier
-#line 149 "c.y"
+#line 150 "c.y"
                    { (yylhs.value. type_ ) = (yystack_[0].value. type_ ); }
 #line 681 "yy_parser_generated.cpp"
     break;
 
   case 16: // declaration_specifiers: type_qualifier declaration_specifiers
-#line 150 "c.y"
+#line 151 "c.y"
                                           { (yylhs.value. type_ ) = driver.combine(TypeQualifier{(yystack_[1].value. type_ )}, DeclarationSpecifiers{(yystack_[0].value. type_ )}); }
 #line 687 "yy_parser_generated.cpp"
     break;
 
   case 17: // type_qualifier: CONST
-#line 154 "c.y"
+#line 155 "c.y"
           { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::_typeFlags, FFIType::Flag::Const); }
 #line 693 "yy_parser_generated.cpp"
     break;
 
   case 18: // type_qualifier: VOLATILE
-#line 155 "c.y"
+#line 156 "c.y"
              { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::_typeFlags, FFIType::Flag::Volatile); }
 #line 699 "yy_parser_generated.cpp"
     break;
 
   case 19: // base_type_specifier: VOID
-#line 159 "c.y"
+#line 160 "c.y"
          { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::Void); }
 #line 705 "yy_parser_generated.cpp"
     break;
 
   case 20: // base_type_specifier: CHAR
-#line 160 "c.y"
+#line 161 "c.y"
          { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::Char); }
 #line 711 "yy_parser_generated.cpp"
     break;
 
   case 21: // base_type_specifier: BOOL
-#line 161 "c.y"
+#line 162 "c.y"
          { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::Bool); }
 #line 717 "yy_parser_generated.cpp"
     break;
 
   case 22: // base_type_specifier: FLOAT
-#line 162 "c.y"
+#line 163 "c.y"
           { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::Float); }
 #line 723 "yy_parser_generated.cpp"
     break;
 
   case 23: // base_type_specifier: DOUBLE
-#line 163 "c.y"
+#line 164 "c.y"
            { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::Double); }
 #line 729 "yy_parser_generated.cpp"
     break;
 
   case 24: // base_type_specifier: INT
-#line 164 "c.y"
+#line 165 "c.y"
         { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::_int); }
 #line 735 "yy_parser_generated.cpp"
     break;
 
   case 25: // base_type_specifier: LONG
-#line 165 "c.y"
+#line 166 "c.y"
          { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::_typeFlags, FFIType::Flag::Long); }
 #line 741 "yy_parser_generated.cpp"
     break;
 
   case 26: // base_type_specifier: SHORT
-#line 166 "c.y"
+#line 167 "c.y"
           { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::_typeFlags, FFIType::Flag::Short); }
 #line 747 "yy_parser_generated.cpp"
     break;
 
   case 27: // base_type_specifier: SIGNED
-#line 167 "c.y"
+#line 168 "c.y"
            { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::_typeFlags, FFIType::Flag::Signed); }
 #line 753 "yy_parser_generated.cpp"
     break;
 
   case 28: // base_type_specifier: UNSIGNED
-#line 168 "c.y"
+#line 169 "c.y"
              { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::_typeFlags, FFIType::Flag::Unsigned); }
 #line 759 "yy_parser_generated.cpp"
     break;
 
   case 29: // base_type_specifier: INT8
-#line 169 "c.y"
+#line 170 "c.y"
          { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::Int8); }
 #line 765 "yy_parser_generated.cpp"
     break;
 
   case 30: // base_type_specifier: INT16
-#line 170 "c.y"
+#line 171 "c.y"
           { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::Int16); }
 #line 771 "yy_parser_generated.cpp"
     break;
 
   case 31: // base_type_specifier: INT32
-#line 171 "c.y"
+#line 172 "c.y"
           { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::Int32); }
 #line 777 "yy_parser_generated.cpp"
     break;
 
   case 32: // base_type_specifier: INT64
-#line 172 "c.y"
+#line 173 "c.y"
           { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::Int64); }
 #line 783 "yy_parser_generated.cpp"
     break;
 
   case 33: // base_type_specifier: UINT8
-#line 173 "c.y"
+#line 174 "c.y"
           { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::Uint8); }
 #line 789 "yy_parser_generated.cpp"
     break;
 
   case 34: // base_type_specifier: UINT16
-#line 174 "c.y"
+#line 175 "c.y"
            { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::Uint16); }
 #line 795 "yy_parser_generated.cpp"
     break;
 
   case 35: // base_type_specifier: UINT32
-#line 175 "c.y"
+#line 176 "c.y"
            { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::Uint32); }
 #line 801 "yy_parser_generated.cpp"
     break;
 
   case 36: // base_type_specifier: UINT64
-#line 176 "c.y"
+#line 177 "c.y"
            { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::Uint64); }
 #line 807 "yy_parser_generated.cpp"
     break;
 
   case 37: // base_type_specifier: SIZE_T
-#line 177 "c.y"
+#line 178 "c.y"
            { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::_size); }
 #line 813 "yy_parser_generated.cpp"
     break;
 
   case 38: // type_specifier: base_type_specifier
-#line 182 "c.y"
+#line 183 "c.y"
                         { (yylhs.value. type_ ) = (yystack_[0].value. type_ ); }
 #line 819 "yy_parser_generated.cpp"
     break;
 
   case 39: // type_specifier: struct_or_union_specifier
-#line 183 "c.y"
+#line 184 "c.y"
                               { (yylhs.value. type_ ) = (yystack_[0].value. type_ ); }
 #line 825 "yy_parser_generated.cpp"
     break;
 
   case 40: // type_specifier: enum_specifier
-#line 184 "c.y"
+#line 185 "c.y"
                    { (yylhs.value. type_ ) = (yystack_[0].value. type_ ); }
 #line 831 "yy_parser_generated.cpp"
     break;
 
   case 41: // type_specifier: TYPEDEF_NAME
-#line 185 "c.y"
+#line 186 "c.y"
                  { (yylhs.value. type_ ) = driver.get_aliased_type((yystack_[0].value. str_ )); }
 #line 837 "yy_parser_generated.cpp"
     break;
 
   case 42: // init_declarator_list: init_declarator
-#line 189 "c.y"
+#line 190 "c.y"
                     { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::_initDeclaratorList); (yylhs.value. type_ )->members.emplace_back((yystack_[0].value. type_ )); }
 #line 843 "yy_parser_generated.cpp"
     break;
 
   case 43: // init_declarator_list: init_declarator_list "," init_declarator
-#line 190 "c.y"
+#line 191 "c.y"
                                                { (yylhs.value. type_ ) = (yystack_[2].value. type_ ); (yylhs.value. type_ )->members.emplace_back((yystack_[0].value. type_ )); }
 #line 849 "yy_parser_generated.cpp"
     break;
 
   case 44: // init_declarator: declarator
-#line 195 "c.y"
+#line 196 "c.y"
                { (yylhs.value. type_ ) = (yystack_[0].value. type_ ); }
 #line 855 "yy_parser_generated.cpp"
     break;
 
   case 45: // declarator: direct_declarator
-#line 199 "c.y"
+#line 200 "c.y"
                       { (yylhs.value. type_ ) = (yystack_[0].value. type_ ); }
 #line 861 "yy_parser_generated.cpp"
     break;
 
   case 46: // declarator: pointer direct_declarator
-#line 200 "c.y"
+#line 201 "c.y"
                               { (yylhs.value. type_ ) = driver.combine(Pointer{(yystack_[1].value. type_ )}, DirectDeclarator{(yystack_[0].value. type_ )}); }
 #line 867 "yy_parser_generated.cpp"
     break;
 
   case 47: // pointer: "*" type_qualifier_list pointer
-#line 206 "c.y"
+#line 207 "c.y"
                                     { (yylhs.value. type_ ) = (yystack_[0].value. type_ ); (yylhs.value. type_ )->num++; }
 #line 873 "yy_parser_generated.cpp"
     break;
 
   case 48: // pointer: "*" type_qualifier_list
-#line 207 "c.y"
+#line 208 "c.y"
                             { (yylhs.value. type_ ) = driver.make_pointer(); }
 #line 879 "yy_parser_generated.cpp"
     break;
 
   case 49: // pointer: "*" pointer
-#line 208 "c.y"
+#line 209 "c.y"
                 { (yylhs.value. type_ ) = (yystack_[0].value. type_ ); (yylhs.value. type_ )->num++; }
 #line 885 "yy_parser_generated.cpp"
     break;
 
   case 50: // pointer: "*"
-#line 209 "c.y"
+#line 210 "c.y"
         { (yylhs.value. type_ ) = driver.make_pointer(); }
 #line 891 "yy_parser_generated.cpp"
     break;
 
   case 51: // type_qualifier_list: type_qualifier
-#line 213 "c.y"
+#line 214 "c.y"
                    { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::_typesList); (yylhs.value. type_ )->members.emplace_back((yystack_[0].value. type_ )); }
 #line 897 "yy_parser_generated.cpp"
     break;
 
   case 52: // type_qualifier_list: type_qualifier_list type_qualifier
-#line 214 "c.y"
+#line 215 "c.y"
                                        { (yylhs.value. type_ ) = (yystack_[1].value. type_ ); (yylhs.value. type_ )->members.emplace_back((yystack_[0].value. type_ )); }
 #line 903 "yy_parser_generated.cpp"
     break;
 
   case 53: // direct_declarator: IDENTIFIER
-#line 218 "c.y"
+#line 219 "c.y"
                { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::Name); (yylhs.value. type_ )->str = (yystack_[0].value. str_ ).to_string(); }
 #line 909 "yy_parser_generated.cpp"
     break;
 
   case 54: // direct_declarator: "(" declarator ")"
-#line 219 "c.y"
+#line 220 "c.y"
                              { (yylhs.value. type_ ) = (yystack_[1].value. type_ ); }
 #line 915 "yy_parser_generated.cpp"
     break;
 
   case 55: // direct_declarator: direct_declarator "[" "]"
-#line 220 "c.y"
-                                        { (yylhs.value. type_ ) = driver.make_pointer(); (yylhs.value. type_ ) = driver.combine(Pointer{(yylhs.value. type_ )}, DirectDeclarator{(yystack_[2].value. type_ )}); }
+#line 221 "c.y"
+                                        { (yylhs.value. type_ ) = driver.make_array_declarator((yystack_[2].value. type_ ), "-1"); }
 #line 921 "yy_parser_generated.cpp"
     break;
 
   case 56: // direct_declarator: direct_declarator "[" INT_CONSTANT "]"
-#line 221 "c.y"
+#line 222 "c.y"
                                                      { (yylhs.value. type_ ) = driver.make_array_declarator((yystack_[3].value. type_ ), (yystack_[1].value. str_ )); }
 #line 927 "yy_parser_generated.cpp"
     break;
 
   case 57: // direct_declarator: direct_declarator "(" parameter_type_list ")"
-#line 222 "c.y"
+#line 223 "c.y"
                                                         { (yylhs.value. type_ ) = driver.make_function((yystack_[3].value. type_ ), (yystack_[1].value. type_ )); }
 #line 933 "yy_parser_generated.cpp"
     break;
 
   case 58: // direct_declarator: direct_declarator "(" ")"
-#line 223 "c.y"
+#line 224 "c.y"
                                     { (yylhs.value. type_ ) = driver.make_function((yystack_[2].value. type_ ), nullptr); }
 #line 939 "yy_parser_generated.cpp"
     break;
 
   case 59: // parameter_type_list: parameter_list "," ELLIPSIS
-#line 227 "c.y"
+#line 228 "c.y"
                                   { (yylhs.value. type_ ) = (yystack_[2].value. type_ ); (yylhs.value. type_ )->members.emplace_back(driver.make_simple_type(FFITypeKind::_ellipsis)); }
 #line 945 "yy_parser_generated.cpp"
     break;
 
   case 60: // parameter_type_list: parameter_list
-#line 228 "c.y"
+#line 229 "c.y"
                    { (yylhs.value. type_ ) = (yystack_[0].value. type_ ); }
 #line 951 "yy_parser_generated.cpp"
     break;
 
   case 61: // parameter_list: parameter_declaration
-#line 232 "c.y"
+#line 233 "c.y"
                           { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::_typesList); (yylhs.value. type_ )->members.emplace_back((yystack_[0].value. type_ )); }
 #line 957 "yy_parser_generated.cpp"
     break;
 
   case 62: // parameter_list: parameter_list "," parameter_declaration
-#line 233 "c.y"
+#line 234 "c.y"
                                                { (yylhs.value. type_ ) = (yystack_[2].value. type_ ); (yylhs.value. type_ )->members.emplace_back((yystack_[0].value. type_ )); }
 #line 963 "yy_parser_generated.cpp"
     break;
 
   case 63: // parameter_declaration: declaration_specifiers declarator
-#line 237 "c.y"
+#line 238 "c.y"
                                       { (yylhs.value. type_ ) = driver.combine(DeclarationSpecifiers{(yystack_[1].value. type_ )}, Declarator{(yystack_[0].value. type_ )}); }
 #line 969 "yy_parser_generated.cpp"
     break;
 
   case 64: // parameter_declaration: declaration_specifiers abstract_declarator
-#line 238 "c.y"
+#line 239 "c.y"
                                                { (yylhs.value. type_ ) = driver.combine(DeclarationSpecifiers{(yystack_[1].value. type_ )}, AbstractDeclarator{(yystack_[0].value. type_ )}); }
 #line 975 "yy_parser_generated.cpp"
     break;
 
   case 65: // parameter_declaration: declaration_specifiers
-#line 239 "c.y"
+#line 240 "c.y"
                            { (yylhs.value. type_ ) = (yystack_[0].value. type_ ); }
 #line 981 "yy_parser_generated.cpp"
     break;
 
-  case 66: // abstract_declarator: pointer
-#line 243 "c.y"
-            { (yylhs.value. type_ ) = (yystack_[0].value. type_ ); }
+  case 66: // abstract_declarator: pointer direct_abstract_declarator
+#line 244 "c.y"
+                                       { (yylhs.value. type_ ) = driver.combine(Pointer{(yystack_[1].value. type_ )}, DirectAbstractDeclarator{(yystack_[0].value. type_ )}); }
 #line 987 "yy_parser_generated.cpp"
     break;
 
-  case 67: // struct_or_union_specifier: STRUCT "{" struct_declaration_list "}"
-#line 247 "c.y"
-                                                 { (yylhs.value. type_ ) = driver.make_struct_def((yystack_[1].value. type_ )); }
+  case 67: // abstract_declarator: pointer
+#line 245 "c.y"
+            { (yylhs.value. type_ ) = (yystack_[0].value. type_ ); }
 #line 993 "yy_parser_generated.cpp"
     break;
 
-  case 68: // struct_or_union_specifier: STRUCT typedef_name_or_identifier "{" struct_declaration_list "}"
-#line 248 "c.y"
-                                                                            { (yylhs.value. type_ ) = driver.make_struct_def((yystack_[1].value. type_ )); (yylhs.value. type_ )->str = (yystack_[3].value. str_ ).to_string(); }
+  case 68: // abstract_declarator: direct_abstract_declarator
+#line 246 "c.y"
+                               { (yylhs.value. type_ ) = (yystack_[0].value. type_ ); }
 #line 999 "yy_parser_generated.cpp"
     break;
 
-  case 69: // struct_or_union_specifier: STRUCT typedef_name_or_identifier
-#line 249 "c.y"
-                                      { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::Struct); (yylhs.value. type_ )->str = (yystack_[0].value. str_ ).to_string(); }
+  case 69: // direct_abstract_declarator: "[" "]"
+#line 250 "c.y"
+                      { (yylhs.value. type_ ) = driver.make_abstract_array_declarator("-1"); }
 #line 1005 "yy_parser_generated.cpp"
     break;
 
-  case 70: // struct_or_union_specifier: UNION "{" struct_declaration_list "}"
-#line 250 "c.y"
-                                                { (yylhs.value. type_ ) = driver.make_union_def((yystack_[1].value. type_ )); }
+  case 70: // direct_abstract_declarator: "[" INT_CONSTANT "]"
+#line 251 "c.y"
+                                   { (yylhs.value. type_ ) = driver.make_abstract_array_declarator((yystack_[1].value. str_ )); }
 #line 1011 "yy_parser_generated.cpp"
     break;
 
-  case 71: // struct_or_union_specifier: UNION typedef_name_or_identifier "{" struct_declaration_list "}"
-#line 251 "c.y"
-                                                                           { (yylhs.value. type_ ) = driver.make_union_def((yystack_[1].value. type_ )); (yylhs.value. type_ )->str = (yystack_[3].value. str_ ).to_string(); }
+  case 71: // direct_abstract_declarator: direct_abstract_declarator "[" "]"
+#line 252 "c.y"
+                                                 { (yylhs.value. type_ ) = driver.make_array_declarator((yystack_[2].value. type_ ), "-1"); }
 #line 1017 "yy_parser_generated.cpp"
     break;
 
-  case 72: // struct_or_union_specifier: UNION typedef_name_or_identifier
-#line 252 "c.y"
-                                     { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::Union); (yylhs.value. type_ )->str = (yystack_[0].value. str_ ).to_string(); }
+  case 72: // direct_abstract_declarator: direct_abstract_declarator "[" INT_CONSTANT "]"
+#line 253 "c.y"
+                                                              { (yylhs.value. type_ ) = driver.make_array_declarator((yystack_[3].value. type_ ), (yystack_[1].value. str_ )); }
 #line 1023 "yy_parser_generated.cpp"
     break;
 
-  case 73: // typedef_name_or_identifier: IDENTIFIER
-#line 256 "c.y"
-               { (yylhs.value. str_ ) = (yystack_[0].value. str_ ); }
+  case 73: // struct_or_union_specifier: STRUCT "{" struct_declaration_list "}"
+#line 257 "c.y"
+                                                 { (yylhs.value. type_ ) = driver.make_struct_def((yystack_[1].value. type_ )); }
 #line 1029 "yy_parser_generated.cpp"
     break;
 
-  case 74: // typedef_name_or_identifier: TYPEDEF_NAME
-#line 257 "c.y"
-                 { (yylhs.value. str_ ) = (yystack_[0].value. str_ ); }
+  case 74: // struct_or_union_specifier: STRUCT typedef_name_or_identifier "{" struct_declaration_list "}"
+#line 258 "c.y"
+                                                                            { (yylhs.value. type_ ) = driver.make_struct_def((yystack_[1].value. type_ )); (yylhs.value. type_ )->str = (yystack_[3].value. str_ ).to_string(); }
 #line 1035 "yy_parser_generated.cpp"
     break;
 
-  case 75: // struct_declaration_list: struct_declaration
-#line 261 "c.y"
-                       { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::_typesList); (yylhs.value. type_ )->members.emplace_back((yystack_[0].value. type_ )); }
+  case 75: // struct_or_union_specifier: STRUCT typedef_name_or_identifier
+#line 259 "c.y"
+                                      { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::Struct); (yylhs.value. type_ )->str = (yystack_[0].value. str_ ).to_string(); }
 #line 1041 "yy_parser_generated.cpp"
     break;
 
-  case 76: // struct_declaration_list: struct_declaration_list struct_declaration
-#line 262 "c.y"
-                                               { (yylhs.value. type_ ) = (yystack_[1].value. type_ ); (yylhs.value. type_ )->members.emplace_back((yystack_[0].value. type_ )); }
+  case 76: // struct_or_union_specifier: UNION "{" struct_declaration_list "}"
+#line 260 "c.y"
+                                                { (yylhs.value. type_ ) = driver.make_union_def((yystack_[1].value. type_ )); }
 #line 1047 "yy_parser_generated.cpp"
     break;
 
-  case 77: // struct_declaration: specifier_qualifier_list struct_declarator_list ";"
-#line 266 "c.y"
-                                                              { (yylhs.value. type_ ) = (yystack_[1].value. type_ ); (yylhs.value. type_ )->members.emplace_back((yystack_[2].value. type_ )); }
+  case 77: // struct_or_union_specifier: UNION typedef_name_or_identifier "{" struct_declaration_list "}"
+#line 261 "c.y"
+                                                                           { (yylhs.value. type_ ) = driver.make_union_def((yystack_[1].value. type_ )); (yylhs.value. type_ )->str = (yystack_[3].value. str_ ).to_string(); }
 #line 1053 "yy_parser_generated.cpp"
     break;
 
-  case 78: // specifier_qualifier_list: type_specifier specifier_qualifier_list
-#line 270 "c.y"
-                                            { (yylhs.value. type_ ) = driver.combine(TypeSpecifier{(yystack_[1].value. type_ )}, SpecifierQualifierList{(yystack_[0].value. type_ )}); }
+  case 78: // struct_or_union_specifier: UNION typedef_name_or_identifier
+#line 262 "c.y"
+                                     { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::Union); (yylhs.value. type_ )->str = (yystack_[0].value. str_ ).to_string(); }
 #line 1059 "yy_parser_generated.cpp"
     break;
 
-  case 79: // specifier_qualifier_list: type_specifier
-#line 271 "c.y"
-                   { (yylhs.value. type_ ) = (yystack_[0].value. type_ ); }
+  case 79: // typedef_name_or_identifier: IDENTIFIER
+#line 266 "c.y"
+               { (yylhs.value. str_ ) = (yystack_[0].value. str_ ); }
 #line 1065 "yy_parser_generated.cpp"
     break;
 
-  case 80: // specifier_qualifier_list: type_qualifier specifier_qualifier_list
-#line 272 "c.y"
-                                            { (yylhs.value. type_ ) = driver.combine(TypeQualifier{(yystack_[1].value. type_ )}, SpecifierQualifierList{(yystack_[0].value. type_ )}); }
+  case 80: // typedef_name_or_identifier: TYPEDEF_NAME
+#line 267 "c.y"
+                 { (yylhs.value. str_ ) = (yystack_[0].value. str_ ); }
 #line 1071 "yy_parser_generated.cpp"
     break;
 
-  case 81: // specifier_qualifier_list: type_qualifier
-#line 273 "c.y"
-                   { (yylhs.value. type_ ) = (yystack_[0].value. type_ ); }
+  case 81: // struct_declaration_list: struct_declaration
+#line 271 "c.y"
+                       { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::_typesList); (yylhs.value. type_ )->members.emplace_back((yystack_[0].value. type_ )); }
 #line 1077 "yy_parser_generated.cpp"
     break;
 
-  case 82: // struct_declarator_list: struct_declarator
-#line 277 "c.y"
-                      { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::_structFieldList); (yylhs.value. type_ )->members.emplace_back((yystack_[0].value. type_ )); }
+  case 82: // struct_declaration_list: struct_declaration_list struct_declaration
+#line 272 "c.y"
+                                               { (yylhs.value. type_ ) = (yystack_[1].value. type_ ); (yylhs.value. type_ )->members.emplace_back((yystack_[0].value. type_ )); }
 #line 1083 "yy_parser_generated.cpp"
     break;
 
-  case 83: // struct_declarator_list: struct_declarator_list "," struct_declarator
-#line 278 "c.y"
-                                                   { (yylhs.value. type_ ) = (yystack_[2].value. type_ ); (yylhs.value. type_ )->members.emplace_back((yystack_[0].value. type_ )); }
+  case 83: // struct_declaration: specifier_qualifier_list struct_declarator_list ";"
+#line 276 "c.y"
+                                                              { (yylhs.value. type_ ) = (yystack_[1].value. type_ ); (yylhs.value. type_ )->members.emplace_back((yystack_[2].value. type_ )); }
 #line 1089 "yy_parser_generated.cpp"
     break;
 
-  case 84: // struct_declarator: declarator
-#line 282 "c.y"
-               { (yylhs.value. type_ ) = (yystack_[0].value. type_ ); }
+  case 84: // specifier_qualifier_list: type_specifier specifier_qualifier_list
+#line 280 "c.y"
+                                            { (yylhs.value. type_ ) = driver.combine(TypeSpecifier{(yystack_[1].value. type_ )}, SpecifierQualifierList{(yystack_[0].value. type_ )}); }
 #line 1095 "yy_parser_generated.cpp"
     break;
 
-  case 85: // enum_specifier: ENUM "{" enumerator_list "}"
-#line 289 "c.y"
-                                       { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::EnumDef); }
+  case 85: // specifier_qualifier_list: type_specifier
+#line 281 "c.y"
+                   { (yylhs.value. type_ ) = (yystack_[0].value. type_ ); }
 #line 1101 "yy_parser_generated.cpp"
     break;
 
-  case 86: // enum_specifier: ENUM "{" enumerator_list "," "}"
-#line 290 "c.y"
-                                             { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::EnumDef); }
+  case 86: // specifier_qualifier_list: type_qualifier specifier_qualifier_list
+#line 282 "c.y"
+                                            { (yylhs.value. type_ ) = driver.combine(TypeQualifier{(yystack_[1].value. type_ )}, SpecifierQualifierList{(yystack_[0].value. type_ )}); }
 #line 1107 "yy_parser_generated.cpp"
     break;
 
-  case 87: // enum_specifier: ENUM IDENTIFIER "{" enumerator_list "}"
-#line 291 "c.y"
-                                                  { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::EnumDef); (yylhs.value. type_ )->str = (yystack_[3].value. str_ ).to_string(); }
+  case 87: // specifier_qualifier_list: type_qualifier
+#line 283 "c.y"
+                   { (yylhs.value. type_ ) = (yystack_[0].value. type_ ); }
 #line 1113 "yy_parser_generated.cpp"
     break;
 
-  case 88: // enum_specifier: ENUM IDENTIFIER "{" enumerator_list "," "}"
-#line 292 "c.y"
-                                                        { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::EnumDef); (yylhs.value. type_ )->str = (yystack_[4].value. str_ ).to_string(); }
+  case 88: // struct_declarator_list: struct_declarator
+#line 287 "c.y"
+                      { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::_structFieldList); (yylhs.value. type_ )->members.emplace_back((yystack_[0].value. type_ )); }
 #line 1119 "yy_parser_generated.cpp"
     break;
 
-  case 89: // enum_specifier: ENUM IDENTIFIER
-#line 293 "c.y"
-                    { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::Enum); (yylhs.value. type_ )->str = (yystack_[0].value. str_ ).to_string(); }
+  case 89: // struct_declarator_list: struct_declarator_list "," struct_declarator
+#line 288 "c.y"
+                                                   { (yylhs.value. type_ ) = (yystack_[2].value. type_ ); (yylhs.value. type_ )->members.emplace_back((yystack_[0].value. type_ )); }
 #line 1125 "yy_parser_generated.cpp"
     break;
 
-  case 90: // enumerator_list: enumerator
-#line 297 "c.y"
-               { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::_enumList); driver.add_enumerator((yylhs.value. type_ ), (yystack_[0].value. type_ )); }
+  case 90: // struct_declarator: declarator
+#line 292 "c.y"
+               { (yylhs.value. type_ ) = (yystack_[0].value. type_ ); }
 #line 1131 "yy_parser_generated.cpp"
     break;
 
-  case 91: // enumerator_list: enumerator_list "," enumerator
-#line 298 "c.y"
-                                     { (yylhs.value. type_ ) = (yystack_[2].value. type_ ); driver.add_enumerator((yylhs.value. type_ ), (yystack_[0].value. type_ )); }
+  case 91: // enum_specifier: ENUM "{" enumerator_list "}"
+#line 299 "c.y"
+                                       { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::EnumDef); }
 #line 1137 "yy_parser_generated.cpp"
     break;
 
-  case 92: // enumerator: IDENTIFIER "=" int_value
-#line 302 "c.y"
-                               { (yylhs.value. type_ ) = driver.make_enum_member((yystack_[2].value. str_ ), (yystack_[0].value. int_ )); }
+  case 92: // enum_specifier: ENUM "{" enumerator_list "," "}"
+#line 300 "c.y"
+                                             { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::EnumDef); }
 #line 1143 "yy_parser_generated.cpp"
     break;
 
-  case 93: // enumerator: IDENTIFIER
-#line 303 "c.y"
-               { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::_enumMember); (yylhs.value. type_ )->str = (yystack_[0].value. str_ ).to_string(); }
+  case 93: // enum_specifier: ENUM IDENTIFIER "{" enumerator_list "}"
+#line 301 "c.y"
+                                                  { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::EnumDef); (yylhs.value. type_ )->str = (yystack_[3].value. str_ ).to_string(); }
 #line 1149 "yy_parser_generated.cpp"
     break;
 
-  case 94: // int_value: INT_CONSTANT
-#line 307 "c.y"
-                 { (yylhs.value. int_ ) = driver.stoi((yystack_[0].value. str_ )); }
+  case 94: // enum_specifier: ENUM IDENTIFIER "{" enumerator_list "," "}"
+#line 302 "c.y"
+                                                        { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::EnumDef); (yylhs.value. type_ )->str = (yystack_[4].value. str_ ).to_string(); }
 #line 1155 "yy_parser_generated.cpp"
     break;
 
-  case 95: // int_value: "-" INT_CONSTANT
-#line 308 "c.y"
-                       { (yylhs.value. int_ ) = -driver.stoi((yystack_[0].value. str_ )); }
+  case 95: // enum_specifier: ENUM IDENTIFIER
+#line 303 "c.y"
+                    { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::Enum); (yylhs.value. type_ )->str = (yystack_[0].value. str_ ).to_string(); }
 #line 1161 "yy_parser_generated.cpp"
     break;
 
-  case 96: // int_value: "+" INT_CONSTANT
-#line 309 "c.y"
-                      { (yylhs.value. int_ ) = driver.stoi((yystack_[0].value. str_ )); }
+  case 96: // enumerator_list: enumerator
+#line 307 "c.y"
+               { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::_enumList); driver.add_enumerator((yylhs.value. type_ ), (yystack_[0].value. type_ )); }
 #line 1167 "yy_parser_generated.cpp"
     break;
 
+  case 97: // enumerator_list: enumerator_list "," enumerator
+#line 308 "c.y"
+                                     { (yylhs.value. type_ ) = (yystack_[2].value. type_ ); driver.add_enumerator((yylhs.value. type_ ), (yystack_[0].value. type_ )); }
+#line 1173 "yy_parser_generated.cpp"
+    break;
 
-#line 1171 "yy_parser_generated.cpp"
+  case 98: // enumerator: IDENTIFIER "=" int_value
+#line 312 "c.y"
+                               { (yylhs.value. type_ ) = driver.make_enum_member((yystack_[2].value. str_ ), (yystack_[0].value. int_ )); }
+#line 1179 "yy_parser_generated.cpp"
+    break;
+
+  case 99: // enumerator: IDENTIFIER
+#line 313 "c.y"
+               { (yylhs.value. type_ ) = driver.make_simple_type(FFITypeKind::_enumMember); (yylhs.value. type_ )->str = (yystack_[0].value. str_ ).to_string(); }
+#line 1185 "yy_parser_generated.cpp"
+    break;
+
+  case 100: // int_value: INT_CONSTANT
+#line 317 "c.y"
+                 { (yylhs.value. int_ ) = driver.stoi((yystack_[0].value. str_ )); }
+#line 1191 "yy_parser_generated.cpp"
+    break;
+
+  case 101: // int_value: "-" INT_CONSTANT
+#line 318 "c.y"
+                       { (yylhs.value. int_ ) = -driver.stoi((yystack_[0].value. str_ )); }
+#line 1197 "yy_parser_generated.cpp"
+    break;
+
+  case 102: // int_value: "+" INT_CONSTANT
+#line 319 "c.y"
+                      { (yylhs.value. int_ ) = driver.stoi((yystack_[0].value. str_ )); }
+#line 1203 "yy_parser_generated.cpp"
+    break;
+
+
+#line 1207 "yy_parser_generated.cpp"
 
             default:
               break;
@@ -1523,20 +1559,21 @@ namespace ffi {
   const short
   YYParser::yypact_[] =
   {
-     324,   -83,   356,   356,   356,   356,   356,   -83,   -83,   -83,
+     326,   -83,   358,   358,   358,   358,   358,   -83,   -83,   -83,
      -83,   -83,   -83,   -83,   -83,   -83,   -83,   -83,   -83,   -83,
      -83,   -83,   -83,   -83,   -83,   -83,   -83,   -83,    11,    15,
-      32,    91,   -83,   -83,   -83,    17,   356,   -83,   356,   -83,
-     -83,   356,   356,    52,   -83,   -83,   -83,   -83,   356,   -83,
-     -83,    43,   356,    56,     7,    60,   -83,   -83,   -83,    52,
-      -4,   -83,    89,   -83,   -83,    27,    81,   -83,   -83,   -83,
-     -83,    69,   123,   -83,    52,   356,   159,   356,    75,    63,
-     -83,     7,    72,   -83,   -83,    -4,    52,   -83,    81,   259,
-      13,   -83,   -83,   -83,   -83,    92,   -83,   191,   -83,   227,
-      70,    35,   -83,    68,   -83,   -83,   -83,   -83,   -83,    52,
-      74,    95,   -83,   -83,    84,    52,   -83,   -83,   -83,    83,
-      85,   -83,   -83,   -83,   -83,    47,   -83,   -83,    27,   -83,
-     -83,   291,   -83,   -83,   -83,   -83,   -83,   -83,   -83
+      44,    93,   -83,   -83,   -83,    17,   358,   -83,   358,   -83,
+     -83,   358,   358,    67,   -83,   -83,   -83,   -83,   358,   -83,
+     -83,    90,   358,    91,     7,    98,   -83,   -83,   -83,    67,
+      -4,   -83,    63,   -83,   -83,    27,    41,   -83,   -83,   -83,
+     -83,    79,   125,   -83,    67,   358,   161,   358,    92,    73,
+     -83,     7,   100,   -83,   -83,    -4,    67,   -83,    41,   261,
+      13,   -83,   -83,   -83,   -83,    84,   -83,   193,   -83,   229,
+      78,    55,   -83,    99,   -83,   -83,   -83,   -83,   -83,    62,
+     101,   103,   -83,   -83,    97,    67,   -83,   -83,   -83,    94,
+     102,   -83,   -83,   -83,   -83,    57,   -83,    70,   -83,    38,
+     -83,   104,   -83,   293,   -83,   -83,   -83,   -83,   -83,   -83,
+     105,   104,    74,   -83,   -83,   -83,   -83,   106,   -83
   };
 
   const signed char
@@ -1546,32 +1583,35 @@ namespace ffi {
       24,    25,    27,    28,    22,    23,    17,    18,    19,    29,
       30,    31,    32,    33,    34,    35,    36,    37,     0,     0,
        0,     0,     2,     5,     4,     0,    15,    38,    13,    39,
-      40,    81,    79,     0,     6,     7,     8,     9,     0,    73,
-      74,    69,     0,    72,     0,    89,     1,     3,    11,     0,
-      50,    53,     0,    42,    44,     0,    45,    16,    14,    80,
-      78,     0,     0,    75,     0,     0,     0,     0,    93,     0,
-      90,     0,     0,    51,    49,    48,     0,    12,    46,     0,
-       0,    10,    67,    76,    84,     0,    82,     0,    70,     0,
-       0,     0,    85,     0,    54,    52,    47,    43,    58,    65,
-       0,    60,    61,    55,     0,     0,    77,    68,    71,     0,
-       0,    94,    92,    86,    91,     0,    87,    63,    66,    64,
-      57,     0,    56,    83,    96,    95,    88,    59,    62
+      40,    87,    85,     0,     6,     7,     8,     9,     0,    79,
+      80,    75,     0,    78,     0,    95,     1,     3,    11,     0,
+      50,    53,     0,    42,    44,     0,    45,    16,    14,    86,
+      84,     0,     0,    81,     0,     0,     0,     0,    99,     0,
+      96,     0,     0,    51,    49,    48,     0,    12,    46,     0,
+       0,    10,    73,    82,    90,     0,    88,     0,    76,     0,
+       0,     0,    91,     0,    54,    52,    47,    43,    58,    65,
+       0,    60,    61,    55,     0,     0,    83,    74,    77,     0,
+       0,   100,    98,    92,    97,     0,    93,     0,    63,    67,
+      64,    68,    57,     0,    56,    89,   102,   101,    94,    69,
+       0,    66,     0,    59,    62,    70,    71,     0,    72
   };
 
   const signed char
   YYParser::yypgoto_[] =
   {
-     -83,   -83,    71,   -83,    73,   -21,     0,   -83,     8,   -83,
-      14,   -34,   -58,   -83,   -64,   -83,   -83,   -28,   -83,   -83,
-      76,   -42,   -27,    16,   -83,   -11,   -83,    25,   -82,   -83
+     -83,   -83,    80,   -83,    95,   -21,     0,   -83,     8,   -83,
+      28,   -34,   -58,   -83,   -64,   -83,   -83,   -16,   -83,   -10,
+     -83,    96,   -42,   -35,    16,   -83,     5,   -83,    40,   -82,
+     -83
   };
 
-  const short
+  const unsigned char
   YYParser::yydefgoto_[] =
   {
-      -1,    31,    32,    33,    34,    35,    41,    37,    42,    62,
-      63,    64,    65,    85,    66,   110,   111,   112,   129,    39,
-      51,    72,    73,    74,    95,    96,    40,    79,    80,   122
+       0,    31,    32,    33,    34,    35,    41,    37,    42,    62,
+      63,    64,    65,    85,    66,   110,   111,   112,   130,   131,
+      39,    51,    72,    73,    74,    95,    96,    40,    79,    80,
+     122
   };
 
   const unsigned char
@@ -1580,46 +1620,47 @@ namespace ffi {
       36,    88,    84,    36,    36,    36,    36,    60,    38,    71,
       76,    38,    38,    38,    38,    67,    48,    68,    43,   124,
       52,    58,    78,   113,    59,    82,    49,   106,    60,   114,
-      49,    36,    61,    97,    59,    99,    36,    54,    36,    38,
-      94,   123,    61,   124,    38,    93,    38,    55,    75,    93,
-      78,   128,    50,   136,    16,    17,    50,    69,    70,    59,
-      83,    77,    78,    60,    88,    81,   101,    61,   109,   102,
-      93,   125,    93,    91,   126,   127,    44,    45,    46,    47,
-     104,    94,   130,   119,   120,   105,   121,   100,    89,    36,
-      90,    56,    86,    87,   132,   115,   116,    38,   131,   134,
-     107,   135,    57,   138,   133,    53,   103,     0,     0,     0,
-     109,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,    92,
-       0,    36,     1,     2,     0,     3,     4,     5,     6,    38,
+      49,    36,    61,    97,    59,    99,    36,    93,    36,    38,
+      94,    93,    61,   124,    38,    59,    38,   127,    89,    54,
+      90,   129,    50,    61,    16,    17,    50,    69,    70,    55,
+      83,   123,    93,   138,    93,    88,    86,    87,   109,    59,
+      78,   127,    78,    60,    59,   128,   101,    61,    60,   102,
+     139,    94,    61,    91,   146,   105,   140,   115,   116,    36,
+     147,   119,   120,    56,   121,    75,    77,    38,    44,    45,
+      46,    47,   125,    81,   100,   126,   133,   134,   104,   132,
+     136,    57,   109,   142,   107,   145,   148,   144,   137,   141,
+     135,   103,     0,     0,     0,    53,     0,     0,     0,     0,
+       0,    92,     0,    36,     1,     2,     0,     3,     4,     5,
+       6,    38,     7,     8,     9,    10,    11,    12,    13,    14,
+      15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
+      25,    26,    27,    28,    29,    30,     1,    98,     0,     0,
+       0,     0,     0,     0,     7,     8,     9,    10,    11,    12,
+      13,    14,    15,    16,    17,    18,    19,    20,    21,    22,
+      23,    24,    25,    26,    27,    28,    29,    30,     0,   117,
+       0,     0,     1,     0,     0,     0,     0,     0,     0,     0,
        7,     8,     9,    10,    11,    12,    13,    14,    15,    16,
       17,    18,    19,    20,    21,    22,    23,    24,    25,    26,
-      27,    28,    29,    30,     1,    98,     0,     0,     0,     0,
+      27,    28,    29,    30,     1,   118,     0,     0,     0,     0,
        0,     0,     7,     8,     9,    10,    11,    12,    13,    14,
       15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
-      25,    26,    27,    28,    29,    30,     0,   117,     0,     0,
-       1,     0,     0,     0,     0,     0,     0,     0,     7,     8,
-       9,    10,    11,    12,    13,    14,    15,    16,    17,    18,
-      19,    20,    21,    22,    23,    24,    25,    26,    27,    28,
-      29,    30,     1,   118,     0,     0,     0,     0,     0,     0,
-       7,     8,     9,    10,    11,    12,    13,    14,    15,    16,
-      17,    18,    19,    20,    21,    22,    23,    24,    25,    26,
-      27,    28,    29,    30,     0,     0,     0,   108,     1,     0,
-       0,     0,     0,     0,     0,     0,     7,     8,     9,    10,
-      11,    12,    13,    14,    15,    16,    17,    18,    19,    20,
-      21,    22,    23,    24,    25,    26,    27,    28,    29,    30,
+      25,    26,    27,    28,    29,    30,     0,     0,     0,   108,
        1,     0,     0,     0,     0,     0,     0,     0,     7,     8,
        9,    10,    11,    12,    13,    14,    15,    16,    17,    18,
       19,    20,    21,    22,    23,    24,    25,    26,    27,    28,
       29,    30,     1,     0,     0,     0,     0,     0,     0,     0,
        7,     8,     9,    10,    11,    12,    13,    14,    15,    16,
       17,    18,    19,    20,    21,    22,    23,    24,    25,    26,
-      27,    28,    29,    30,   137,     1,     2,     0,     3,     4,
-       5,     6,     0,     7,     8,     9,    10,    11,    12,    13,
-      14,    15,    16,    17,    18,    19,    20,    21,    22,    23,
-      24,    25,    26,    27,    28,    29,    30,     1,     0,     0,
-       0,     0,     0,     0,     0,     7,     8,     9,    10,    11,
+      27,    28,    29,    30,     1,     0,     0,     0,     0,     0,
+       0,     0,     7,     8,     9,    10,    11,    12,    13,    14,
+      15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
+      25,    26,    27,    28,    29,    30,   143,     1,     2,     0,
+       3,     4,     5,     6,     0,     7,     8,     9,    10,    11,
       12,    13,    14,    15,    16,    17,    18,    19,    20,    21,
-      22,    23,    24,    25,    26,    27,    28,    29,    30
+      22,    23,    24,    25,    26,    27,    28,    29,    30,     1,
+       0,     0,     0,     0,     0,     0,     0,     7,     8,     9,
+      10,    11,    12,    13,    14,    15,    16,    17,    18,    19,
+      20,    21,    22,    23,    24,    25,    26,    27,    28,    29,
+      30
   };
 
   const short
@@ -1628,46 +1669,47 @@ namespace ffi {
        0,    65,    60,     3,     4,     5,     6,    11,     0,    43,
       52,     3,     4,     5,     6,    36,     5,    38,     2,   101,
        5,     4,    15,    10,     7,    59,    15,    85,    11,    16,
-      15,    31,    15,    75,     7,    77,    36,     5,    38,    31,
-      74,     6,    15,   125,    36,    72,    38,    15,     5,    76,
-      15,   109,    41,     6,    58,    59,    41,    41,    42,     7,
-      60,     5,    15,    11,   128,     5,     3,    15,    89,     6,
-      97,     3,    99,     4,     6,   109,     3,     4,     5,     6,
-       8,   115,     8,    13,    14,    85,    16,    12,     7,    89,
-       9,     0,     3,     4,    10,     3,     4,    89,     3,    16,
-      86,    16,    31,   131,   115,    29,    81,    -1,    -1,    -1,
-     131,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,     6,
-      -1,   131,    41,    42,    -1,    44,    45,    46,    47,   131,
+      15,    31,    15,    75,     7,    77,    36,    72,    38,    31,
+      74,    76,    15,   125,    36,     7,    38,     9,     7,     5,
+       9,   109,    41,    15,    58,    59,    41,    41,    42,    15,
+      60,     6,    97,     6,    99,   129,     3,     4,    89,     7,
+      15,     9,    15,    11,     7,   109,     3,    15,    11,     6,
+      10,   115,    15,     4,    10,    85,    16,     3,     4,    89,
+      16,    13,    14,     0,    16,     5,     5,    89,     3,     4,
+       5,     6,     3,     5,    12,     6,     3,    10,     8,     8,
+      16,    31,   133,     9,    86,    10,    10,   133,    16,   129,
+     115,    81,    -1,    -1,    -1,    29,    -1,    -1,    -1,    -1,
+      -1,     6,    -1,   133,    41,    42,    -1,    44,    45,    46,
+      47,   133,    49,    50,    51,    52,    53,    54,    55,    56,
+      57,    58,    59,    60,    61,    62,    63,    64,    65,    66,
+      67,    68,    69,    70,    71,    72,    41,     6,    -1,    -1,
+      -1,    -1,    -1,    -1,    49,    50,    51,    52,    53,    54,
+      55,    56,    57,    58,    59,    60,    61,    62,    63,    64,
+      65,    66,    67,    68,    69,    70,    71,    72,    -1,     6,
+      -1,    -1,    41,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
       49,    50,    51,    52,    53,    54,    55,    56,    57,    58,
       59,    60,    61,    62,    63,    64,    65,    66,    67,    68,
       69,    70,    71,    72,    41,     6,    -1,    -1,    -1,    -1,
       -1,    -1,    49,    50,    51,    52,    53,    54,    55,    56,
       57,    58,    59,    60,    61,    62,    63,    64,    65,    66,
-      67,    68,    69,    70,    71,    72,    -1,     6,    -1,    -1,
-      41,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    49,    50,
-      51,    52,    53,    54,    55,    56,    57,    58,    59,    60,
-      61,    62,    63,    64,    65,    66,    67,    68,    69,    70,
-      71,    72,    41,     6,    -1,    -1,    -1,    -1,    -1,    -1,
-      49,    50,    51,    52,    53,    54,    55,    56,    57,    58,
-      59,    60,    61,    62,    63,    64,    65,    66,    67,    68,
-      69,    70,    71,    72,    -1,    -1,    -1,     8,    41,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    49,    50,    51,    52,
-      53,    54,    55,    56,    57,    58,    59,    60,    61,    62,
-      63,    64,    65,    66,    67,    68,    69,    70,    71,    72,
+      67,    68,    69,    70,    71,    72,    -1,    -1,    -1,     8,
       41,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    49,    50,
       51,    52,    53,    54,    55,    56,    57,    58,    59,    60,
       61,    62,    63,    64,    65,    66,    67,    68,    69,    70,
       71,    72,    41,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
       49,    50,    51,    52,    53,    54,    55,    56,    57,    58,
       59,    60,    61,    62,    63,    64,    65,    66,    67,    68,
-      69,    70,    71,    72,    73,    41,    42,    -1,    44,    45,
-      46,    47,    -1,    49,    50,    51,    52,    53,    54,    55,
-      56,    57,    58,    59,    60,    61,    62,    63,    64,    65,
-      66,    67,    68,    69,    70,    71,    72,    41,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    49,    50,    51,    52,    53,
+      69,    70,    71,    72,    41,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    49,    50,    51,    52,    53,    54,    55,    56,
+      57,    58,    59,    60,    61,    62,    63,    64,    65,    66,
+      67,    68,    69,    70,    71,    72,    73,    41,    42,    -1,
+      44,    45,    46,    47,    -1,    49,    50,    51,    52,    53,
       54,    55,    56,    57,    58,    59,    60,    61,    62,    63,
-      64,    65,    66,    67,    68,    69,    70,    71,    72
+      64,    65,    66,    67,    68,    69,    70,    71,    72,    41,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    49,    50,    51,
+      52,    53,    54,    55,    56,    57,    58,    59,    60,    61,
+      62,    63,    64,    65,    66,    67,    68,    69,    70,    71,
+      72
   };
 
   const signed char
@@ -1676,17 +1718,18 @@ namespace ffi {
        0,    41,    42,    44,    45,    46,    47,    49,    50,    51,
       52,    53,    54,    55,    56,    57,    58,    59,    60,    61,
       62,    63,    64,    65,    66,    67,    68,    69,    70,    71,
-      72,    87,    88,    89,    90,    91,    92,    93,    94,   105,
-     112,    92,    94,   109,    90,    90,    90,    90,     5,    15,
-      41,   106,     5,   106,     5,    15,     0,    88,     4,     7,
-      11,    15,    95,    96,    97,    98,   100,    91,    91,   109,
-     109,    97,   107,   108,   109,     5,   107,     5,    15,   113,
-     114,     5,    97,    92,    98,    99,     3,     4,   100,     7,
-       9,     4,     6,   108,    97,   110,   111,   107,     6,   107,
-      12,     3,     6,   113,     8,    92,    98,    96,     8,    91,
+      72,    87,    88,    89,    90,    91,    92,    93,    94,   106,
+     113,    92,    94,   110,    90,    90,    90,    90,     5,    15,
+      41,   107,     5,   107,     5,    15,     0,    88,     4,     7,
+      11,    15,    95,    96,    97,    98,   100,    91,    91,   110,
+     110,    97,   108,   109,   110,     5,   108,     5,    15,   114,
+     115,     5,    97,    92,    98,    99,     3,     4,   100,     7,
+       9,     4,     6,   109,    97,   111,   112,   108,     6,   108,
+      12,     3,     6,   114,     8,    92,    98,    96,     8,    91,
      101,   102,   103,    10,    16,     3,     4,     6,     6,    13,
-      14,    16,   115,     6,   114,     3,     6,    97,    98,   104,
-       8,     3,    10,   111,    16,    16,     6,    73,   103
+      14,    16,   116,     6,   115,     3,     6,     9,    97,    98,
+     104,   105,     8,     3,    10,   112,    16,    16,     6,    10,
+      16,   105,     9,    73,   103,    10,    10,    16,    10
   };
 
   const signed char
@@ -1698,10 +1741,11 @@ namespace ffi {
       93,    93,    93,    93,    93,    93,    93,    93,    94,    94,
       94,    94,    95,    95,    96,    97,    97,    98,    98,    98,
       98,    99,    99,   100,   100,   100,   100,   100,   100,   101,
-     101,   102,   102,   103,   103,   103,   104,   105,   105,   105,
-     105,   105,   105,   106,   106,   107,   107,   108,   109,   109,
-     109,   109,   110,   110,   111,   112,   112,   112,   112,   112,
-     113,   113,   114,   114,   115,   115,   115
+     101,   102,   102,   103,   103,   103,   104,   104,   104,   105,
+     105,   105,   105,   106,   106,   106,   106,   106,   106,   107,
+     107,   108,   108,   109,   110,   110,   110,   110,   111,   111,
+     112,   113,   113,   113,   113,   113,   114,   114,   115,   115,
+     116,   116,   116
   };
 
   const signed char
@@ -1713,10 +1757,11 @@ namespace ffi {
        1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
        1,     1,     1,     3,     1,     1,     2,     3,     2,     2,
        1,     1,     2,     1,     3,     3,     4,     4,     3,     3,
-       1,     1,     3,     2,     2,     1,     1,     4,     5,     2,
-       4,     5,     2,     1,     1,     1,     2,     3,     2,     1,
-       2,     1,     1,     3,     1,     4,     5,     5,     6,     2,
-       1,     3,     3,     1,     1,     2,     2
+       1,     1,     3,     2,     2,     1,     2,     1,     1,     2,
+       3,     3,     4,     4,     5,     2,     4,     5,     2,     1,
+       1,     1,     2,     3,     2,     1,     2,     1,     1,     3,
+       1,     4,     5,     5,     6,     2,     1,     3,     3,     1,
+       1,     2,     2
   };
 
 
@@ -1745,11 +1790,11 @@ namespace ffi {
   "init_declarator_list", "init_declarator", "declarator", "pointer",
   "type_qualifier_list", "direct_declarator", "parameter_type_list",
   "parameter_list", "parameter_declaration", "abstract_declarator",
-  "struct_or_union_specifier", "typedef_name_or_identifier",
-  "struct_declaration_list", "struct_declaration",
-  "specifier_qualifier_list", "struct_declarator_list",
-  "struct_declarator", "enum_specifier", "enumerator_list", "enumerator",
-  "int_value", YY_NULLPTR
+  "direct_abstract_declarator", "struct_or_union_specifier",
+  "typedef_name_or_identifier", "struct_declaration_list",
+  "struct_declaration", "specifier_qualifier_list",
+  "struct_declarator_list", "struct_declarator", "enum_specifier",
+  "enumerator_list", "enumerator", "int_value", YY_NULLPTR
   };
 #endif
 
@@ -1758,16 +1803,17 @@ namespace ffi {
   const short
   YYParser::yyrline_[] =
   {
-       0,   123,   123,   124,   129,   130,   131,   132,   133,   134,
-     138,   142,   143,   147,   148,   149,   150,   154,   155,   159,
-     160,   161,   162,   163,   164,   165,   166,   167,   168,   169,
-     170,   171,   172,   173,   174,   175,   176,   177,   182,   183,
-     184,   185,   189,   190,   195,   199,   200,   206,   207,   208,
-     209,   213,   214,   218,   219,   220,   221,   222,   223,   227,
-     228,   232,   233,   237,   238,   239,   243,   247,   248,   249,
-     250,   251,   252,   256,   257,   261,   262,   266,   270,   271,
-     272,   273,   277,   278,   282,   289,   290,   291,   292,   293,
-     297,   298,   302,   303,   307,   308,   309
+       0,   124,   124,   125,   130,   131,   132,   133,   134,   135,
+     139,   143,   144,   148,   149,   150,   151,   155,   156,   160,
+     161,   162,   163,   164,   165,   166,   167,   168,   169,   170,
+     171,   172,   173,   174,   175,   176,   177,   178,   183,   184,
+     185,   186,   190,   191,   196,   200,   201,   207,   208,   209,
+     210,   214,   215,   219,   220,   221,   222,   223,   224,   228,
+     229,   233,   234,   238,   239,   240,   244,   245,   246,   250,
+     251,   252,   253,   257,   258,   259,   260,   261,   262,   266,
+     267,   271,   272,   276,   280,   281,   282,   283,   287,   288,
+     292,   299,   300,   301,   302,   303,   307,   308,   312,   313,
+     317,   318,   319
   };
 
   void
@@ -1855,9 +1901,9 @@ namespace ffi {
 
 #line 13 "c.y"
 } // ffi
-#line 1859 "yy_parser_generated.cpp"
+#line 1905 "yy_parser_generated.cpp"
 
-#line 311 "c.y"
+#line 321 "c.y"
 
 
 void ffi::YYParser::error(const ffi::Location &loc, const std::string &message) {

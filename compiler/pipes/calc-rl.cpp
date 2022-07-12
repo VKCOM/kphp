@@ -71,6 +71,13 @@ void rl_func_call_calc(VertexPtr root, RLValueType expected_rl_type) {
 
 void rl_other_calc(VertexPtr root, RLValueType expected_rl_type) {
   switch (root->type()) {
+    case op_ffi_new: {
+      auto v = root.try_as<op_ffi_new>();
+      if (v->has_array_size_expr()) {
+        rl_calc(v->array_size_expr(), expected_rl_type);
+      }
+      break;
+    }
     case op_ffi_cdata_value_ref:
     case op_conv_array_l:
     case op_conv_int_l:
@@ -106,6 +113,9 @@ void rl_common_calc(VertexPtr root, RLValueType expected_rl_type) {
     case op_do:
       rl_calc_all<val_none, val_r>(root, 1);
       break;
+    case op_ffi_new:
+      break;
+    case op_ffi_array_set:
     case op_return:
     case op_break:
     case op_continue:
@@ -220,7 +230,7 @@ void rl_calc(VertexPtr root, RLValueType expected_rl_type) {
         case val_r:
         case val_none:
           if (lhs->type() != op_var) {    // "$a->prop" is most common usage, but others like "f()->prop" are also possible
-            kphp_error(vk::any_of_equal(lhs->type(), op_index, op_func_call, op_instance_prop, op_clone, op_seq_rval, op_ffi_new, op_ffi_addr),
+            kphp_error(vk::any_of_equal(lhs->type(), op_index, op_func_call, op_instance_prop, op_clone, op_seq_rval, op_ffi_new, op_ffi_addr, op_ffi_array_get),
                        "op_instance_prop has to be used on lvalue");
           }
           rl_calc(lhs, val_r);

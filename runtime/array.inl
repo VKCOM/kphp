@@ -2173,6 +2173,12 @@ const T *array<T>::get_const_vector_pointer() const {
 }
 
 template<class T>
+T *array<T>::get_vector_pointer() {
+  php_assert (is_vector());
+  return &(p->get_vector_value(0));
+}
+
+template<class T>
 bool array<T>::is_equal_inner_pointer(const array &other) const noexcept {
   return p == other.p;
 }

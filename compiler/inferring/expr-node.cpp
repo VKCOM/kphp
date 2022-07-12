@@ -297,6 +297,9 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
     case op_ffi_new:
       set_lca(expr.as<op_ffi_new>()->php_type->to_type_data());
       break;
+    case op_ffi_array_get:
+      set_lca(expr.as<op_ffi_array_get>()->c_elem_type->to_type_data());
+      break;
     case op_trigger_recalc_arg_ref_rule:
       recalc_arg_ref_rule(expr.as<op_trigger_recalc_arg_ref_rule>());
       break;

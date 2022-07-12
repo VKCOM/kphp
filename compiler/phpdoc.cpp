@@ -249,20 +249,33 @@ const TypeHint *PhpDocTypeHintParser::parse_ffi_cdata() {
     if (vk::any_of_equal(tok, tok_gt, tok_clpar)) {
       break;
     }
+    bool need_space = false;
     if (tok == tok_func_name) {
+      cdef.append(cur_tok->str_val.begin(), cur_tok->str_val.end());
+      need_space = true;
+    } else if (tok == tok_int_const) {
       cdef.append(cur_tok->str_val.begin(), cur_tok->str_val.end());
     } else if (tok == tok_void) {
       cdef.append("void");
+      need_space = true;
     } else if (tok == tok_int) {
       cdef.append("int");
-    } else if (tok == tok_times) {
-      cdef.push_back('*');
+      need_space = true;
     } else if (tok == tok_const) {
       cdef.append("const");
+      need_space = true;
+    } else if (tok == tok_times) {
+      cdef.push_back('*');
+    }  else if (tok == tok_opbrk) {
+      cdef.push_back('[');
+    } else if (tok == tok_clbrk) {
+      cdef.push_back(']');
     } else {
       throw std::runtime_error("unexpected token, expected C type, '>' or ')'");
     }
-    cdef.push_back(' ');
+    if (need_space) {
+      cdef.push_back(' ');
+    }
     cur_tok++;
   }
   cur_tok++; // consume '>' or ')'

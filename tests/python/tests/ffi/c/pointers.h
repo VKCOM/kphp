@@ -32,3 +32,6 @@ void set_void_ptr(VoidPtr *dst, void *ptr);
 void cstr_out_param(const char **out);
 
 int strlen_safe(const char *s);
+
+const char *nullptr_cstr();
+const char *empty_cstr();

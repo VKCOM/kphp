@@ -409,6 +409,7 @@ public:
   void mutate_if_shared() noexcept;
 
   const T *get_const_vector_pointer() const; // unsafe
+  T *get_vector_pointer(); // unsafe
 
   bool is_equal_inner_pointer(const array &other) const noexcept;
 

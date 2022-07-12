@@ -1357,6 +1357,26 @@ function set_migration_php8_warning ($mask ::: int) ::: void;
 
 function set_json_log_on_timeout_mode(bool $enabled) ::: void;
 
+/**
+ * ffi_memcpy_string implements FFI::memcpy for string-typed $src argument
+ */
+function ffi_memcpy_string(\FFI\CData $dst, string $src, int $size);
+
+/**
+ * ffi_array_set implements array or pointer update operation: $arr[$index] = $value
+ * For CData arrays, a bound check if performed: PHP throws and KPHP triggers
+ * a critical error if $index is out of bounds
+ */
+function ffi_array_set(\FFI\CData $arr, int $index, $value): void;
+
+/**
+ * ffi_array_get implements array or pointer read operation: $arr[$index]
+ * For CData arrays, a bound check if performed: PHP throws and KPHP triggers
+ * a critical error if $index is out of bounds
+ * @return \FFI\CData
+ */
+function ffi_array_get(\FFI\CData $arr, int $index);
+
 final class FFI {
   /** @return \FFI\Scope but actually, ffi_scope<(depends on code)> */
   public static function cdef(string $code, ?string $lib = null);
@@ -1380,6 +1400,18 @@ final class FFI {
   public static function cast(string $type, \FFI\CData $cdata);
 
   public static function sizeof(\FFI\CData $cdata): int;
+
+  /**
+   * memcmp compares $size bytes from $ptr1 and $ptr2
+   * if $size bytes from these pointers are identical, 0 is returned
+   * otherwise it returns -1 if $ptr1 data less (<) than $ptr2
+   * or +1 if $ptr1 data greater than (>) $ptr2
+   *
+   * any C value is comparable: scalars, arrays, structs, pointers
+   * note that this function compares the underlying data, so when
+   * comparing pointers, it's not just an address comparison
+   */
+  public static function memcmp(\FFI\CData $ptr1, \FFI\CData $ptr2, int $size): int;
 
   public static function memcpy(\FFI\CData $dst, \FFI\CData $src, int $size): void;
 

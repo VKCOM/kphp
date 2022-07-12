@@ -376,11 +376,58 @@
     }
   },
   {
-    "comment": "artificial op that is inserted instead of FFI::new call",
-    "name": "op_ffi_new",
+    "comment": "artificial op that implements ffi_array_get functions",
+    "name": "op_ffi_array_get",
+    "sons": {
+      "array": 0,
+      "key": 1
+    },
     "base_name": "meta_op_base",
     "props": {
       "rl": "rl_op",
+      "cnst": "cnst_const_func",
+      "type": "common_op",
+      "str": "ffi_array_get"
+    },
+    "extra_fields": {
+      "c_elem_type": {
+        "type": "const TypeHint *"
+      }
+    }
+  },
+  {
+    "comment": "artificial op that implements ffi_array_set function",
+    "name": "op_ffi_array_set",
+    "sons": {
+      "array": 0,
+      "key": 1,
+      "value": 2
+    },
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_common",
+      "cnst": "cnst_not_func",
+      "type": "common_op",
+      "str": "ffi_array_set"
+    },
+    "extra_fields": {
+      "c_elem_type": {
+        "type": "const TypeHint *"
+      }
+    }
+  },
+  {
+    "comment": "artificial op that is inserted instead of FFI::new call",
+    "name": "op_ffi_new",
+    "sons": {
+      "array_size_expr": {
+        "id": 0,
+        "optional": true
+      }
+    },
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_other",
       "cnst": "cnst_nonconst_func",
       "type": "common_op",
       "str": "ffi_new"

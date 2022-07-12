@@ -1,7 +1,18 @@
 <?php
 
 #ifndef KPHP
+
+if (getenv('KPHP_TESTS_POLYFILLS_REPO') === false) {
+  die('$KPHP_TESTS_POLYFILLS_REPO is unset');
+}
+(function ($class_loader) {
+  // add local classes that are placed near the running test
+  [$script_path] = get_included_files();
+  $class_loader->addPsr4("", dirname($script_path));
+})(require_once getenv('KPHP_TESTS_POLYFILLS_REPO', true) . '/vendor/autoload.php');
+
 define('kphp', 0);
+
 if (false)
 #endif
   define('kphp', 1);

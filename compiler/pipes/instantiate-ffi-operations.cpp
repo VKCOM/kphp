@@ -37,6 +37,63 @@ static void check_class_defined(const TypeHint *type_hint) {
   }
 }
 
+struct TypeExpr {
+  std::string cdef;
+  VertexPtr size_expr;
+  const char *err = nullptr;
+};
+
+static void resolve_type_expr_string(TypeExpr &dst, VertexPtr e) {
+  if (dst.err != nullptr) {
+    return;
+  }
+
+  if (auto as_string = e.try_as<op_string>()) {
+    dst.cdef.append(as_string->str_val);
+    return;
+  }
+  if (auto as_concat = e.try_as<op_concat>()) {
+    resolve_type_expr_string(dst, as_concat->lhs());
+    resolve_type_expr_string(dst, as_concat->rhs());
+    return;
+  }
+  if (auto as_string_build = e.try_as<op_string_build>()) {
+    for (const auto &arg : as_string_build->args()) {
+      resolve_type_expr_string(dst, arg);
+    }
+    return;
+  }
+  if (!dst.size_expr) {
+    dst.size_expr = e;
+    return;
+  }
+
+  dst.err = "type string expression is too complex";
+}
+
+// resolve_type_expr_string handles C type expressions resolving
+// needed for FFI::cast($s, ...), FFI::type($s), FFI::new($s), etc.
+//
+// These expressions can be simple, like 'int[10]' and 'int32_t*',
+// but sometimes they can include dynamic parts:
+//
+// * "int[$size]"              | cdef='int[]'  size_expr=$size
+// * 'int*[' . ($size*2) . ']' | cdef='int*[]' size_expr=($size*2)
+//
+// We allow up to 1 dynamic part and imply that it's array size related.
+//
+// Dynamic size expressions do not affect the type string parsing results
+// as size is not part of the type, but it is required to create
+// a new instance of dynamic array with a function like ffi_new_array<T>(size_expr)
+//
+// In case of an error, TypeExpr.err explains why type string parsing failed
+static TypeExpr resolve_type_expr_string(VertexPtr e) {
+  TypeExpr type_expr;
+  type_expr.cdef.reserve(32);
+  resolve_type_expr_string(type_expr, e);
+  return type_expr;
+}
+
 static ClassPtr get_cdata_class(FunctionPtr context, VertexPtr expr) {
   ClassPtr klass = assume_class_of_expr(context, expr, expr).try_as_class();
   if (klass && klass->is_ffi_cdata()) {
@@ -45,16 +102,36 @@ static ClassPtr get_cdata_class(FunctionPtr context, VertexPtr expr) {
   return {};
 }
 
+static const FFIType *get_ffi_type(FunctionPtr context, VertexPtr expr) {
+  auto assumption = assume_class_of_expr(context, expr, expr);
+  if (!assumption.assum_hint) {
+    return nullptr;
+  }
+  if (auto as_class = assumption.try_as_class()) {
+    if (as_class->is_ffi_cdata()) {
+      return as_class->ffi_class_mixin->ffi_type;
+    }
+  }
+  if (const auto *as_ffi = assumption.assum_hint->try_as<TypeHintFFIType>()) {
+    return as_ffi->type;
+  }
+  return nullptr;
+}
+
+static bool is_ptr_type_hint(const TypeHint *type_hint) {
+  const auto *as_ffi = type_hint->try_as<TypeHintFFIType>();
+  if (!as_ffi) {
+    return false;
+  }
+  return as_ffi->type->kind == FFITypeKind::Pointer;
+}
+
 static bool is_ptr_field(ClassPtr klass, const std::string &field_name) {
   const auto *field = klass->get_instance_field(field_name);
   if (!field) {
     return false;
   }
-  const auto *as_ffi = field->type_hint->try_as<TypeHintFFIType>();
-  if (!as_ffi) {
-    return false;
-  }
-  return as_ffi->type->kind == FFITypeKind::Pointer;
+  return is_ptr_type_hint(field->type_hint);
 }
 
 static bool contains_non_scalar_types(const FFIType *type) {
@@ -73,17 +150,24 @@ static inline VertexPtr unwrap_if_c2php_conv(VertexPtr v) {
 }
 
 // internal handling FFI::cast('int', $cdata) and $cdef->cast('struct A', $cdata): calc the @return of this operation
-static const TypeHint *ffi_cast_impl(const FFIType *type, ClassPtr cdata_class, ClassPtr scope_class) {
+// from_type is a FFI type of $cdata value
+static const TypeHint *ffi_cast_impl(const FFIType *type, const FFIType *from_type, ClassPtr scope_class) {
   // FFI::cast returns a reference-like non-owning data, so a special care
   // should be taken here
   if (const auto *to_builtin = ffi_builtin_type(type->kind)) {
-    const auto *from_builtin = ffi_builtin_type(cdata_class->ffi_class_mixin->ffi_type->kind);
+    const auto *from_builtin = ffi_builtin_type(from_type->kind);
     // it could potentially be safe to perform some struct->scalar conversions,
     // but we're forbidding them for now
     kphp_error_act(from_builtin,
-                   fmt_format("ffi casting a non-scalar type {} to a scalar type {}", cdata_class->name, to_builtin->c_name), return nullptr);
+                   fmt_format("ffi casting a non-scalar type {} to a scalar type {}", ffi_decltype_string(from_type), to_builtin->c_name), return nullptr);
     return TypeHintInstance::create("&" + to_builtin->php_class_name);
   }
+
+  if (from_type->kind == FFITypeKind::Array) {
+    kphp_error_act(type->kind == FFITypeKind::Pointer, "can only cast arrays to pointers", return nullptr);
+  }
+
+  kphp_error_act(type->kind != FFITypeKind::Array, "casting to an array is not supported yet", return nullptr);
 
   if (type->kind == FFITypeKind::Struct && scope_class) {
     return TypeHintInstance::create("&" + FFIRoot::cdata_class_name(scope_class->ffi_scope_mixin->scope_name, type->str));
@@ -94,22 +178,138 @@ static const TypeHint *ffi_cast_impl(const FFIType *type, ClassPtr cdata_class, 
   return php_type;
 }
 
+struct InferResult {
+  const TypeHint *type_hint = nullptr;
+  VertexPtr size_expr;
+};
+
+static InferResult infer_from_static_new(VertexAdaptor<op_func_call> call) {
+  kphp_error_act(call->args().size() == 1,
+                 "FFI::new() expects one non-empty string argument", return {});
+
+  TypeExpr type_expr = resolve_type_expr_string(call->args()[0]);
+  kphp_error_act(!type_expr.err,
+                 fmt_format("FFI::new(): {}", type_expr.err), return {});
+
+  FFITypedefs typedefs;
+  auto[type, err] = ffi_parse_type(type_expr.cdef, typedefs);
+  kphp_error_act(err.message.empty(),
+                 fmt_format("FFI::new(): line {}: {}", err.line, err.message), return {});
+  kphp_error_act(!contains_non_scalar_types(type),
+                 "static FFI::new() can only create scalar types", return {});
+
+  return {G->get_ffi_root().create_type_hint(type, "C"), type_expr.size_expr};
+}
+
+static InferResult infer_from_scope_new(VertexAdaptor<op_func_call> call, ClassPtr scope_class) {
+  kphp_error_act(call->args().size() == 2,  // first if implicit $this
+                 "ffi->new() expects a non-empty const string argument", return {});
+
+  TypeExpr type_expr = resolve_type_expr_string(call->args()[1]);
+  kphp_error_act(!type_expr.err,
+                 fmt_format("ffi->new(): {}", type_expr.err), return {});
+
+  auto[type, err] = ffi_parse_type(type_expr.cdef, scope_class->ffi_scope_mixin->typedefs);
+  kphp_error_act(err.message.empty(),
+                 fmt_format("ffi->new(): line {}: {}", err.line, err.message), return {});
+
+  const TypeHint *php_type = G->get_ffi_root().create_type_hint(type, scope_class->ffi_scope_mixin->scope_name);
+  kphp_error(php_type, fmt_format("ffi->new(): failed to infer a PHP type hint for {} type", type->str));
+  return {php_type, type_expr.size_expr};
+}
+
+static InferResult infer_from_static_cast(FunctionPtr f, VertexAdaptor<op_func_call> call) {
+  kphp_error_act(call->args().size() == 2,
+                 "FFI::cast() expects two arguments", return {});
+
+  TypeExpr type_expr = resolve_type_expr_string(call->args()[0]);
+  kphp_error_act(!type_expr.err,
+                 fmt_format("FFI::cast(): {}", type_expr.err), return {});
+
+  FFITypedefs typedefs;
+  auto[type, err] = ffi_parse_type(type_expr.cdef, typedefs);
+  kphp_error_act(err.message.empty(),
+                 fmt_format("FFI::cast(): line {}: {}", err.line, err.message), return {});
+
+  const FFIType *from_type = get_ffi_type(f, call->args()[1]);
+  if (!from_type) {
+    return {};
+  }
+
+  return {ffi_cast_impl(type, from_type, ClassPtr{}), type_expr.size_expr};
+}
+
+static InferResult infer_from_scope_cast(FunctionPtr f, VertexAdaptor<op_func_call> call, ClassPtr scope_class) {
+  kphp_error_act(call->args().size() == 3,  // first is implicit $this
+                 "ffi->cast() expects two arguments", return {});
+
+  TypeExpr type_expr = resolve_type_expr_string(call->args()[1]);
+  kphp_error_act(!type_expr.err,
+                 fmt_format("ffi->cast(): {}", type_expr.err), return {});
+
+  auto[type, err] = ffi_parse_type(type_expr.cdef, scope_class->ffi_scope_mixin->typedefs);
+  kphp_error_act(err.message.empty(),
+                 fmt_format("ffi->cast(): line {}: {}", err.line, err.message), return {});
+
+  const FFIType *from_type = get_ffi_type(f, call->args()[2]);
+  if (!from_type) {
+    return {};
+  }
+
+  return {ffi_cast_impl(type, from_type, scope_class), type_expr.size_expr};
+}
+
 // todo some time later, drop the --enable-ffi flag, enable it always
 bool InstantiateFFIOperationsPass::check_function(FunctionPtr f __attribute__((unused))) const {
   return G->settings().ffi_enabled.get();
 }
 
+static VertexAdaptor<op_ffi_new> create_ffi_new(const InferResult &infer_result) {
+  VertexPtr size_expr;
+  if (infer_result.size_expr) {
+    // a dynamically sized array
+    size_expr = infer_result.size_expr;
+    return VertexAdaptor<op_ffi_new>::create(infer_result.size_expr);
+  } else if (const auto *ffi_type_hint = infer_result.type_hint->try_as<TypeHintFFIType>()) {
+    if (ffi_type_hint->type->kind == FFITypeKind::Array && ffi_type_hint->type->num >= 0) {
+      // a fixed-size array
+      size_expr = GenTree::create_int_const(ffi_type_hint->type->num);
+    }
+  }
+  if (size_expr) {
+    return VertexAdaptor<op_ffi_new>::create(size_expr);
+  }
+  return VertexAdaptor<op_ffi_new>::create();
+}
+
+static const TypeHint *infer_ffi_array_elem_type(FunctionPtr context, VertexPtr array_arg) {
+  const auto *type_hint = assume_class_of_expr(context, array_arg, array_arg).assum_hint;
+  if (!type_hint) {
+    return nullptr;
+  }
+  const auto *ffi_type = type_hint->try_as<TypeHintFFIType>();
+  if (!ffi_type) {
+    return nullptr;
+  }
+  if (vk::none_of_equal(ffi_type->type->kind, FFITypeKind::Array, FFITypeKind::Pointer)) {
+    return nullptr;
+  }
+  return G->get_ffi_root().create_type_hint(ffi_type->type->members[0], ffi_type->scope_name);
+}
+
 // on FFI::new(), replace it with op_ffi_new
 VertexPtr InstantiateFFIOperationsPass::on_ffi_static_new(VertexAdaptor<op_func_call> call) {
-  auto new_op = VertexAdaptor<op_ffi_new>::create().set_location(call);
-  new_op->php_type = infer_from_ffi_static_new(call);
+  auto infer_result = infer_from_static_new(call);
+  auto new_op = create_ffi_new(infer_result).set_location(call);
+  new_op->php_type = infer_result.type_hint;
   return new_op;
 }
 
 // on $cdef->new(), replace it with op_ffi_new
 VertexPtr InstantiateFFIOperationsPass::on_ffi_scope_new(VertexAdaptor<op_func_call> call, ClassPtr scope_class) {
-  auto new_op = VertexAdaptor<op_ffi_new>::create().set_location(call);
-  new_op->php_type = infer_from_ffi_scope_new(call, scope_class);
+  auto infer_result = infer_from_scope_new(call, scope_class);
+  auto new_op = create_ffi_new(infer_result).set_location(call);
+  new_op->php_type = infer_result.type_hint;
   return new_op;
 }
 
@@ -125,6 +325,49 @@ VertexPtr InstantiateFFIOperationsPass::on_ffi_static_is_null(VertexAdaptor<op_f
   // FFI::is_null(c2php($x)) -> FFI::is_null($x)
   call->args()[0] = unwrap_if_c2php_conv(call->args()[0]);
   return call;
+}
+
+VertexPtr InstantiateFFIOperationsPass::on_ffi_array_get(VertexAdaptor<op_func_call> call) {
+  if (call->args().size() != 2) {
+    return call;
+  }
+  auto array_arg = call->args()[0];
+  auto key_arg = call->args()[1];
+
+  const auto *c_elem_type = infer_ffi_array_elem_type(current_function, array_arg);
+  kphp_error_act(c_elem_type, "ffi_array_get: invalid $arr argument", return call);
+
+  auto array_get = VertexAdaptor<op_ffi_array_get>::create(array_arg, key_arg).set_location(call);
+  array_get->c_elem_type = c_elem_type;
+
+  const auto *php_type = G->get_ffi_root().c2php_field_type_hint(array_get->c_elem_type);
+  auto conv = VertexAdaptor<op_ffi_c2php_conv>::create(array_get).set_location(array_get);
+  conv->php_type = php_type;
+  kphp_error_act(php_type,
+                 fmt_format("Unsupported c2php type: {}", array_get->c_elem_type->as_human_readable()),
+                 return array_get);
+  return conv;
+}
+
+VertexPtr InstantiateFFIOperationsPass::on_ffi_array_set(VertexAdaptor<op_func_call> call) {
+  if (call->args().size() != 3) {
+    return call;
+  }
+  auto array_arg = call->args()[0];
+  auto key_arg = call->args()[1];
+  auto value_arg = call->args()[2];
+
+  const auto *c_elem_type = infer_ffi_array_elem_type(current_function, array_arg);
+  kphp_error_act(c_elem_type, "ffi_array_set: invalid $arr argument", return call);
+
+  auto php2c_conv = VertexAdaptor<op_ffi_php2c_conv>::create(value_arg).set_location(value_arg);
+  php2c_conv->c_type = c_elem_type;
+  php2c_conv->simple_dst = false;
+
+  auto array_set = VertexAdaptor<op_ffi_array_set>::create(array_arg, key_arg, php2c_conv).set_location(call);
+  array_set->c_elem_type = c_elem_type;
+
+  return array_set;
 }
 
 // on FFI::cast(), replace it with op_ffi_cast
@@ -206,10 +449,10 @@ VertexPtr InstantiateFFIOperationsPass::on_cdata_instance_prop(ClassPtr root_cla
   // so that we don't try to insert conversions there as well
   VertexAdaptor<op_instance_prop> current = root;
   while (true) {
+    current->access_type = InstancePropAccessType::CData;
     auto next = current->instance().try_as<op_instance_prop>();
     if (!next) {
       // end of the chain
-      current->access_type = InstancePropAccessType::CData;
       break;
     }
     ClassPtr cdata_class = get_cdata_class(current_function, next->instance());
@@ -271,84 +514,28 @@ VertexPtr InstantiateFFIOperationsPass::on_scope_instance_prop(ClassPtr scope_cl
   return conv;
 }
 
+const TypeHint *InstantiateFFIOperationsPass::infer_from_ffi_array_get(FunctionPtr f, VertexAdaptor<op_func_call> call) {
+  return call->args().empty() ? nullptr : infer_ffi_array_elem_type(f, call->args()[0]);
+}
+
 // infer @return for FFI::new()
 const TypeHint *InstantiateFFIOperationsPass::infer_from_ffi_static_new(VertexAdaptor<op_func_call> call) {
-  kphp_error_act(call->args().size() == 1,
-                 "FFI::new() expects one non-empty const string argument", return nullptr);
-
-  const std::string &type_expr = collect_string_concatenation(call->args()[0]);
-  kphp_error_act(!type_expr.empty(),
-                 "FFI::new() expects one non-empty const string argument", return nullptr);
-
-  FFITypedefs typedefs;
-  auto[type, err] = ffi_parse_type(type_expr, typedefs);
-  kphp_error_act(err.message.empty(),
-                 fmt_format("FFI::new(): line {}: {}", err.line, err.message), return nullptr);
-  kphp_error_act(!contains_non_scalar_types(type),
-                 "static FFI::new() can only create scalar types", return nullptr);
-
-  return G->get_ffi_root().create_type_hint(type, "C");
+  return infer_from_static_new(call).type_hint;
 }
 
 // infer @return for $cdef->new()
 const TypeHint *InstantiateFFIOperationsPass::infer_from_ffi_scope_new(VertexAdaptor<op_func_call> call, ClassPtr scope_class) {
-  kphp_error_act(call->args().size() == 2,  // first if implicit $this
-                 "ffi->new() expects a non-empty const string argument", return nullptr);
-
-  const std::string &type_expr = collect_string_concatenation(call->args()[1]);
-  kphp_error_act(!type_expr.empty(),
-                 "ffi->new() expects a non-empty const string argument", return nullptr);
-
-  auto[type, err] = ffi_parse_type(type_expr, scope_class->ffi_scope_mixin->typedefs);
-  kphp_error_act(err.message.empty(),
-                 fmt_format("ffi->new(): line {}: {}", err.line, err.message), return nullptr);
-
-  const TypeHint *php_type = G->get_ffi_root().create_type_hint(type, scope_class->ffi_scope_mixin->scope_name);
-  kphp_error(php_type, fmt_format("ffi->new(): failed to infer a PHP type hint for {} type", type->str));
-  return php_type;
+  return infer_from_scope_new(call, scope_class).type_hint;
 }
 
 // infer @return for FFI::cast()
 const TypeHint *InstantiateFFIOperationsPass::infer_from_ffi_static_cast(FunctionPtr f, VertexAdaptor<op_func_call> call) {
-  kphp_error_act(call->args().size() == 2,
-                 "FFI::cast() expects two arguments", return nullptr);
-
-  const std::string &type_expr = collect_string_concatenation(call->args()[0]);
-  kphp_error_act(!type_expr.empty(),
-                 "FFI::cast() expects a non-empty const string first argument", return nullptr);
-
-  FFITypedefs typedefs;
-  auto[type, err] = ffi_parse_type(type_expr, typedefs);
-  kphp_error_act(err.message.empty(),
-                 fmt_format("FFI::cast(): line {}: {}", err.line, err.message), return nullptr);
-
-  ClassPtr cdata_class = get_cdata_class(f, call->args()[1]);
-  if (!cdata_class) {
-    return nullptr;
-  }
-
-  return ffi_cast_impl(type, cdata_class, ClassPtr{});
+  return infer_from_static_cast(f, call).type_hint;
 }
 
 // infer @return for $cdef->cast()
 const TypeHint *InstantiateFFIOperationsPass::infer_from_ffi_scope_cast(FunctionPtr f, VertexAdaptor<op_func_call> call, ClassPtr scope_class) {
-  kphp_error_act(call->args().size() == 3,  // first is implicit $this
-                 "ffi->cast() expects two arguments", return nullptr);
-
-  const std::string &type_expr = collect_string_concatenation(call->args()[1]);
-  kphp_error_act(!type_expr.empty(),
-                 "ffi->cast() expects a non-empty const string first argument", return nullptr);
-
-  auto[type, err] = ffi_parse_type(type_expr, scope_class->ffi_scope_mixin->typedefs);
-  kphp_error_act(err.message.empty(),
-                 fmt_format("ffi->cast(): line {}: {}", err.line, err.message), return nullptr);
-
-  ClassPtr cdata_class = get_cdata_class(f, call->args()[2]);
-  if (!cdata_class) {
-    return nullptr;
-  }
-
-  return ffi_cast_impl(type, cdata_class, scope_class);
+  return infer_from_scope_cast(f, call, scope_class).type_hint;
 }
 
 
@@ -400,10 +587,24 @@ VertexPtr InstantiateFFIOperationsPass::on_exit_vertex(VertexPtr root) {
       if (f_called->name == "FFI$$isNull") {
         return on_ffi_static_is_null(call);
       }
+      if (f_called->name == "ffi_array_get") {
+        return on_ffi_array_get(call);
+      }
+      if (f_called->name == "ffi_array_set") {
+        return on_ffi_array_set(call);
+      }
 
       // count(c2php($x)) -> count($x)
       if (f_called->name == "count" && call->args()[0]->type() == op_ffi_c2php_conv) {
-        call->args()[0] = unwrap_if_c2php_conv(call->args()[0]);
+        auto c2php = call->args()[0].as<op_ffi_c2php_conv>();
+        // it's easy to get C fixed sized array type decay to a pointer,
+        // so we inline the count result right away
+        if (const auto *as_ffi = c2php->php_type->try_as<TypeHintFFIType>()) {
+          if (as_ffi->type->kind == FFITypeKind::Array && as_ffi->type->num != -1) {
+            return GenTree::create_int_const(as_ffi->type->num);
+          }
+        }
+        call->args()[0] = c2php->expr();
       }
 
       // some CData-like types are not boxed, but we want get_class()
@@ -428,6 +629,14 @@ VertexPtr InstantiateFFIOperationsPass::on_exit_vertex(VertexPtr root) {
         kv->var() = c2php_conv->expr();
       }
     }
+  }
+
+  if (auto instance_prop = root.try_as<op_instance_prop>()) {
+    if (auto c2php_conv = instance_prop->instance().try_as<op_ffi_c2php_conv>()) {
+      instance_prop->access_type = is_ptr_type_hint(c2php_conv->php_type) ? InstancePropAccessType::CDataDirectPtr : InstancePropAccessType::CDataDirect;
+      instance_prop->instance() = c2php_conv->expr();
+    }
+    return instance_prop;
   }
 
   if (auto assign = root.try_as<op_set_modify>()) {

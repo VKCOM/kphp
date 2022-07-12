@@ -122,7 +122,7 @@ static void recalc_ffi_type(TypeData *dst, const std::string &scope_name, const 
   }
 
   if (type->kind == FFITypeKind::Array) {
-    dst->set_lca(TypeData::get_type(tp_array));
+    dst->set_lca(G->get_class("FFI\\CData")->type_data);
     TypeData nested{*TypeData::get_type(tp_any)};
     recalc_ffi_type(&nested, scope_name, type->members[0]);
     dst->set_lca_at(MultiKey::any_key(1), &nested);

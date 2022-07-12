@@ -429,7 +429,6 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     }
 
     // simple just-value operators
-    case op_ffi_new:
     case op_int_const:
     case op_float_const:
     case op_true:
@@ -517,6 +516,36 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     case op_addr:
     case op_clone: {
       create_cfg(tree_node.as<meta_op_unary>()->expr(), res_start, res_finish);
+      break;
+    }
+
+    case op_ffi_array_get: {
+      auto op = tree_node.as<op_ffi_array_get>();
+      Node array_end, key_start;
+      create_cfg(op->array(), res_start, &array_end);
+      create_cfg(op->key(), &key_start, res_finish);
+      add_edge(array_end, key_start);
+      break;
+    }
+
+    case op_ffi_array_set: {
+      auto op = tree_node.as<op_ffi_array_set>();
+      Node array_end, key_start, key_end, value_start;
+      create_cfg(op->array(), res_start, &array_end, false, write_flag || weak_write_flag);
+      create_cfg(op->key(), &key_start, &key_end);
+      create_cfg(op->value(), &value_start, res_finish);
+      add_edge(array_end, key_start);
+      add_edge(key_end, value_start);
+      break;
+    }
+
+    case op_ffi_new: {
+      auto v = tree_node.as<op_ffi_new>();
+      if (v->has_array_size_expr()) {
+        create_cfg(tree_node.as<op_ffi_new>()->array_size_expr(), res_start, res_finish);
+      } else {
+        *res_start = *res_finish = new_node();
+      }
       break;
     }
 
