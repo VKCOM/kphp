@@ -11,7 +11,13 @@
 
 extern template class array<int64_t>;
 extern template class array<string>;
-extern template class array<double>;
+/*
+ * Commented out, because it breaks @kphp-flatten optimization.
+ * When array<double> is explicitly instantiated here it's compiled with -O3 instead of -Os.
+ * It spoils inlining of array<>::get_value functions called from @kphp-flatten annotated ML related functions:
+ * some strange `call` asm instructions are generated instead of normal inlining.
+ */
+// extern template class array<double>;
 extern template class array<bool>;
 extern template class array<mixed>;
 
