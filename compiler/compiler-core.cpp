@@ -15,6 +15,8 @@
 #include "compiler/data/define-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/lib-data.h"
+#include "compiler/data/modulite-data.h"
+#include "compiler/data/src-dir.h"
 #include "compiler/data/src-file.h"
 #include "compiler/name-gen.h"
 
@@ -194,6 +196,20 @@ FFIRoot &CompilerCore::get_ffi_root() {
   return ffi;
 }
 
+vk::string_view CompilerCore::calc_relative_name(SrcFilePtr file, bool builtin) const {
+  vk::string_view full_file_name = file->file_name;
+  if (full_file_name.starts_with(settings_->base_dir.get())) {
+    return full_file_name.substr(settings_->base_dir.get().size());
+    return full_file_name.substr(settings_->base_dir.get().size());
+  } else if (settings_->is_composer_enabled() && full_file_name.starts_with(settings_->composer_root.get())) {
+    return full_file_name.substr(settings_->composer_root.get().size());
+  } else if (builtin) {
+    return file->short_file_name;
+  } else {
+    return full_file_name;
+  }
+}
+
 SrcFilePtr CompilerCore::register_file(const std::string &file_name, LibPtr owner_lib, bool builtin) {
   if (file_name.empty()) {
     return {};
@@ -213,6 +229,7 @@ SrcFilePtr CompilerCore::register_file(const std::string &file_name, LibPtr owne
     last_pos_of_dot = full_file_name.length();
   }
 
+  vk::string_view full_dir_name = vk::string_view{full_file_name.c_str(), last_pos_of_slash};
   std::string short_file_name = full_file_name.substr(last_pos_of_slash, last_pos_of_dot - last_pos_of_slash);
   std::string extension = full_file_name.substr(std::min(full_file_name.length(), last_pos_of_dot + 1));
   if (extension != "php") {
@@ -227,25 +244,53 @@ SrcFilePtr CompilerCore::register_file(const std::string &file_name, LibPtr owne
     if (!node->data) {
       SrcFilePtr new_file = SrcFilePtr(new SrcFile(full_file_name, short_file_name, owner_lib));
       new_file->is_from_functions_file = builtin;
-      vk::string_view relative_file_name{new_file->file_name};
-      if (relative_file_name.starts_with(settings().base_dir.get())) {
-        relative_file_name.remove_prefix(settings().base_dir.get().size());
-      } else if (settings().is_composer_enabled() && relative_file_name.starts_with(settings().composer_root.get())) {
-        relative_file_name.remove_prefix(settings().composer_root.get().size());
-      } else if (builtin) {
-        relative_file_name = short_file_name;
-      }
-      new_file->relative_file_name = static_cast<std::string>(relative_file_name);
+      new_file->relative_file_name = static_cast<std::string>(calc_relative_name(new_file, builtin));
       size_t last_slash = new_file->relative_file_name.rfind('/');
       new_file->relative_dir_name = last_slash == std::string::npos ? "" : new_file->relative_file_name.substr(0, last_slash);
 
-      std::string func_name = "src_" + new_file->short_file_name + fmt_format("{:x}", vk::std_hash(relative_file_name));
+      std::string func_name = "src_" + new_file->short_file_name + fmt_format("{:x}", vk::std_hash(new_file->relative_file_name));
       new_file->main_func_name = replace_non_alphanum(std::move(func_name));
       node->data = new_file;
     }
   }
+
+  TSHashTable<SrcDirPtr>::HTNode *node_file_dir = dirs_ht.at(vk::std_hash(full_dir_name));
+  if (!node_file_dir->data) {
+    AutoLocker<Lockable *> locker(node_file_dir);
+    if (!node_file_dir->data) {
+      node_file_dir->data = register_dir(full_dir_name);
+    }
+  }
+
   SrcFilePtr file = node->data;
+  file->dir = node_file_dir->data;
+  kphp_assert(file && file->dir && file->dir->parent_dir);
+
   return file;
+}
+
+SrcDirPtr CompilerCore::register_dir(vk::string_view full_dir_name) {
+  static CachedProfiler cache{"Load src dirs tree"};
+  AutoProfiler prof{*cache};
+
+  SrcDirPtr dir = SrcDirPtr(new SrcDir(static_cast<std::string>(full_dir_name)));
+
+  if (full_dir_name.size() > 1) {
+    size_t last_pos_of_slash = full_dir_name.rfind('/', full_dir_name.size() - 2);
+    vk::string_view parent_dir_name = full_dir_name.substr(0, last_pos_of_slash + 1);
+
+    TSHashTable<SrcDirPtr>::HTNode *node_parent_dir = dirs_ht.at(vk::std_hash(parent_dir_name));
+    if (!node_parent_dir->data) {
+      AutoLocker<Lockable *> locker(node_parent_dir);
+      if (!node_parent_dir->data) {
+        node_parent_dir->data = register_dir(parent_dir_name);
+      }
+    }
+    dir->parent_dir = node_parent_dir->data;
+//    printf("%s -> %s\n", dir->full_dir_name.c_str(), dir->parent_dir->full_dir_name.c_str());
+  }
+
+  return dir;
 }
 
 void CompilerCore::require_function(const std::string &name, DataStream<FunctionPtr> &os) {
@@ -307,6 +352,19 @@ LibPtr CompilerCore::register_lib(LibPtr lib) {
     node->data = lib;
   }
   return node->data;
+}
+
+ModulitePtr CompilerCore::register_modulite(ModulitePtr modulite) {
+  TSHashTable<ModulitePtr>::HTNode *node = modulites_ht.at(vk::std_hash(modulite->modulite_name));
+  AutoLocker<Lockable *> locker(node);
+  kphp_error(!node->data, fmt_format("Duplicate modulite {}, declared in:\n- {}\n- {}", modulite->modulite_name, modulite->yaml_file->relative_file_name, node->data->yaml_file->relative_file_name));
+  node->data = modulite;
+  return node->data;
+}
+
+ModulitePtr CompilerCore::get_modulite(vk::string_view name) {
+  const auto *result = modulites_ht.find(vk::std_hash(name));
+  return result ? *result : ModulitePtr{};
 }
 
 void CompilerCore::register_main_file(const std::string &file_name, DataStream<SrcFilePtr> &os) {
@@ -480,6 +538,14 @@ std::vector<DefinePtr> CompilerCore::get_defines() {
 
 std::vector<LibPtr> CompilerCore::get_libs() {
   return libs_ht.get_all();
+}
+
+std::vector<SrcDirPtr> CompilerCore::get_dirs() {
+  return dirs_ht.get_all();
+}
+
+std::vector<ModulitePtr> CompilerCore::get_modulites() {
+  return modulites_ht.get_all();
 }
 
 const ComposerAutoloader &CompilerCore::get_composer_autoloader() const {

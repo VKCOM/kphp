@@ -29,15 +29,17 @@ class CompilerCore {
 private:
   Index cpp_index;
   TSHashTable<SrcFilePtr> file_ht;
+  TSHashTable<SrcDirPtr> dirs_ht;
   TSHashTable<FunctionPtr> functions_ht;
+  TSHashTable<ClassPtr> classes_ht;
   TSHashTable<DefinePtr> defines_ht;
   TSHashTable<VarPtr> global_vars_ht;
   TSHashTable<LibPtr> libs_ht;
+  TSHashTable<ModulitePtr> modulites_ht;
   SrcFilePtr main_file;
   CompilerSettings *settings_;
   ComposerAutoloader composer_class_loader;
   FFIRoot ffi;
-  TSHashTable<ClassPtr> classes_ht;
   ClassPtr memcache_class;
   TlClasses tl_classes;
   std::vector<std::string> kphp_runtime_opts;
@@ -57,9 +59,11 @@ public:
   const CompilerSettings &settings() const;
   const std::string &get_global_namespace() const;
 
+  vk::string_view calc_relative_name(SrcFilePtr file, bool builtin) const;
   std::string search_required_file(const std::string &file_name) const;
   std::string search_file_in_include_dirs(const std::string &file_name, size_t *dir_index = nullptr) const;
   SrcFilePtr register_file(const std::string &file_name, LibPtr owner_lib, bool builtin = false);
+  SrcDirPtr register_dir(vk::string_view full_dir_name);
 
   FFIRoot &get_ffi_root();
 
@@ -83,8 +87,10 @@ public:
   ClassPtr try_register_class(ClassPtr cur_class);
   bool register_class(ClassPtr cur_class);
   LibPtr register_lib(LibPtr lib);
+  ModulitePtr register_modulite(ModulitePtr modulite);
 
   FunctionPtr get_function(const std::string &name);
+  ModulitePtr get_modulite(vk::string_view name);
   ClassPtr get_class(vk::string_view name);
   ClassPtr get_memcache_class();
   void set_memcache_class(ClassPtr klass);
@@ -102,6 +108,8 @@ public:
   std::vector<InterfacePtr> get_interfaces();
   std::vector<DefinePtr> get_defines();
   std::vector<LibPtr> get_libs();
+  std::vector<SrcDirPtr> get_dirs();
+  std::vector<ModulitePtr> get_modulites();
   const ComposerAutoloader &get_composer_autoloader() const;
 
   void load_index();

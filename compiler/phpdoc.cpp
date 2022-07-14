@@ -15,6 +15,7 @@
 #include "compiler/data/src-file.h"
 #include "compiler/gentree.h"
 #include "compiler/lexer.h"
+#include "compiler/modulite-check-rules.h"
 #include "compiler/name-gen.h"
 #include "compiler/stage.h"
 #include "compiler/type-hint.h"
@@ -740,14 +741,18 @@ const TypeHint *phpdoc_finalize_type_hint_and_resolve(const TypeHint *type_hint,
   }
 
   if (type_hint->has_instances_inside()) {
-    type_hint->traverse([&all_resolved](const TypeHint *child) {
+    type_hint->traverse([&all_resolved, resolve_context](const TypeHint *child) {
       if (const auto *as_instance = child->try_as<TypeHintInstance>()) {
         ClassPtr klass = as_instance->resolve();
         if (!klass) {
           all_resolved = false;
-          kphp_error(0, fmt_format("Could not find class {}", TermStringFormat::paint_red(as_instance->full_class_name)));
+          kphp_error_return(0, fmt_format("Could not find class {}", TermStringFormat::paint_red(as_instance->full_class_name)));
         } else {
           kphp_error(!klass->is_trait(), fmt_format("Using trait {} as a type is invalid (traits are not types)", as_instance->full_class_name));
+        }
+
+        if (resolve_context->modulite || klass->modulite) {
+          modulite_check_when_use_class(resolve_context, klass);
         }
 
       } else if (const auto *as_scope = child->try_as<TypeHintFFIScope>()) {

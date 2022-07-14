@@ -30,12 +30,13 @@ public:
   VertexPtr val;
   std::string name;
   SrcFilePtr file_id;
+  ModulitePtr modulite;
 
   DefineData();
   DefineData(std::string name, VertexPtr val, DefineType type_);
 
   inline DefineType &type() { return type_; }
-
+  std::string as_human_readable() const;
 };
 
 // some operations can't contain define() expressions and they can be recursively skipped in FunctionPassBase;

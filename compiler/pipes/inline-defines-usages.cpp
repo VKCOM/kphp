@@ -6,6 +6,7 @@
 
 #include "compiler/data/class-data.h"
 #include "compiler/data/define-data.h"
+#include "compiler/modulite-check-rules.h"
 #include "compiler/name-gen.h"
 #include "compiler/pipes/check-access-modifiers.h"
 
@@ -30,8 +31,8 @@ VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root) {
   // const value defines are replaced by their value;
   // non-const defines are replaced by d$ variables
   if (root->type() == op_func_name) {
-    const auto name = resolve_define_name(root->get_string());
-    const auto def = G->get_define(name);
+    std::string name = resolve_define_name(root->get_string());
+    DefinePtr def = G->get_define(name);
     if (!def) {
       const auto readable_name = vk::replace_all(vk::replace_all(name, "$$", "::"), "$", "\\");
       kphp_error(0, fmt_format("Undefined constant '{}'", readable_name));
@@ -49,6 +50,10 @@ VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root) {
         check_access(class_id, lambda_class_id, FieldModifiers{def->access}, access_class, "const", def->name);
       }
       root = def->val.clone().set_location_recursively(root);
+    }
+
+    if (current_function->modulite || def->modulite) {
+      modulite_check_when_use_constant(current_function, def);
     }
   }
 

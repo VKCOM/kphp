@@ -8,6 +8,7 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/var-data.h"
 #include "compiler/gentree.h"
+#include "compiler/modulite-check-rules.h"
 #include "compiler/name-gen.h"
 #include "compiler/utils/string-utils.h"
 
@@ -129,6 +130,11 @@ void RegisterVariablesPass::register_var(VertexAdaptor<op_var> var_vertex) {
   }
   var_vertex->var_id = var;
   var->marked_as_global |= var_vertex->extra_type == op_ex_var_superglobal;
+  if (var->class_id) {
+    if (current_function->modulite || var->class_id->modulite) {
+      modulite_check_when_use_static_field(current_function, var);
+    }
+  }
 }
 
 void RegisterVariablesPass::visit_global_vertex(VertexAdaptor<op_global> global) {
@@ -139,6 +145,9 @@ void RegisterVariablesPass::visit_global_vertex(VertexAdaptor<op_global> global)
       continue
     );
     register_global_var(var.as<op_var>());
+    if (current_function->modulite) {
+      modulite_check_when_global_keyword(current_function, var.as<op_var>()->str_val);
+    }
   }
 }
 

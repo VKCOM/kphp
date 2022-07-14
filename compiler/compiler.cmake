@@ -39,7 +39,9 @@ prepend(KPHP_COMPILER_DATA_SOURCES data/
         lib-data.cpp
         generics-mixins.cpp
         kphp-json-tags.cpp
+        modulite-data.cpp
         performance-inspections.cpp
+        src-dir.cpp
         src-file.cpp
         var-data.cpp
         ffi-data.cpp
@@ -157,6 +159,7 @@ prepend(KPHP_COMPILER_PIPES_SOURCES pipes/
         split-switch.cpp
         transform-to-smart-instanceof.cpp
         type-inferer.cpp
+        wait-for-all-classes.cpp
         write-files.cpp)
 
 prepend(KPHP_COMPILER_FFI_SOURCES ffi/
@@ -188,6 +191,7 @@ prepend(KPHP_COMPILER_SOURCES ${KPHP_COMPILER_DIR}/
         index.cpp
         lambda-utils.cpp
         lexer.cpp
+        modulite-check-rules.cpp
         name-gen.cpp
         operation.cpp
         phpdoc.cpp
