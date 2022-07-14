@@ -135,6 +135,7 @@ function ob_get_level () ::: int;
 
 function header ($str ::: string, $replace ::: bool = true, $http_response_code ::: int = 0) ::: void;
 function headers_list () ::: string[];
+function send_http_103_early_hints($headers ::: string[]) ::: void;
 function setcookie ($name ::: string, $value ::: string, $expire ::: int = 0, $path ::: string = '', $domain ::: string = '', $secure ::: bool = false, $http_only ::: bool = false) ::: void;
 function setrawcookie ($name ::: string, $value ::: string, $expire ::: int = 0, $path ::: string = '', $domain ::: string = '', $secure ::: bool = false, $http_only ::: bool = false) ::: void;
 function register_shutdown_function (callable():void $function) ::: void;

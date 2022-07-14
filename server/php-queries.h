@@ -319,6 +319,7 @@ void job_set_result(int exit_code);
 
 void script_error();
 void finish_script(int exit_code);
+void http_send_query(const char *headers, int headers_len, const char *body, int body_len);
 int rpc_connect_to(const char *host_name, int port);
 slot_id_t rpc_send_query(int host_num, char *request, int request_len, int timeout_ms);
 void wait_net_events(int timeout_ms);

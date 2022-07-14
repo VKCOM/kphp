@@ -14,6 +14,9 @@
 #include "common/precise-time.h"
 #include "common/wrappers/overloaded.h"
 
+#include "net/net-buffers.h"
+#include "net/net-connections.h"
+
 #include "runtime/allocator.h"
 #include "runtime/job-workers/processing-jobs.h"
 #include "runtime/rpc.h"
@@ -24,6 +27,7 @@
 #include "server/php-init-scripts.h"
 #include "server/php-queries-stats.h"
 #include "server/php-runner.h"
+#include "server/php-worker.h"
 
 #define MAX_NET_ERROR_LEN 128
 
@@ -950,6 +954,18 @@ void db_run_query(int host_num, const char *request, int request_len, int timeou
       callback(cur->buf, cur->len);
       cur = cur->next;
     }
+  }
+}
+
+void http_send_query(const char *headers, int headers_len, const char *body, int body_len) {
+  if (active_worker->mode == http_worker) {
+    write_out(&active_worker->conn->Out, headers, headers_len);
+    write_out(&active_worker->conn->Out, body, body_len);
+    flush_connection_output(active_worker->conn);
+  } else if (active_worker->mode == once_worker) {
+    write(1, headers, headers_len);
+    write(1, body, body_len);
+    fsync(1);
   }
 }
 
