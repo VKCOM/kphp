@@ -821,7 +821,10 @@ Optional<string> file_file_get_contents(const string &name) {
     offset = 0;
   }
 
-  struct stat stat_buf;
+  struct stat stat_buf{};
+#if ASAN7_ENABLED && __GNUC__ == 10 && __GNUC_MINOR__ == 3
+  ASAN_UNPOISON_MEMORY_REGION(&stat_buf, sizeof(stat_buf));
+#endif
   dl::enter_critical_section();//OK
   int file_fd = open_safe(name.c_str() + offset, O_RDONLY);
   if (file_fd < 0) {
