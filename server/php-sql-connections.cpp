@@ -123,7 +123,7 @@ void command_net_write_run_sql(command_t *base_command, void *data) {
   command->len = 0;
 }
 
-void php_worker_run_sql_query_packet(php_worker *worker, php_net_query_packet_t *query) {
+void php_worker_run_sql_query_packet(PhpWorker *worker, php_net_query_packet_t *query) {
   query_stats.desc = "SQL";
   query_stats.query = query->data;
 

@@ -15,7 +15,7 @@
 #include "server/php-sql-connections.h"
 #include "server/php-worker.h"
 
-void php_query_x2_t::run([[maybe_unused]] php_worker *worker) noexcept {
+void php_query_x2_t::run([[maybe_unused]] PhpWorker *worker) noexcept {
   query_stats.desc = "PHPQX2";
 
   php_script->query_readed();
@@ -31,7 +31,7 @@ void php_query_x2_t::run([[maybe_unused]] php_worker *worker) noexcept {
   php_script->query_answered();
 }
 
-void php_query_rpc_answer::run(php_worker *worker) noexcept {
+void php_query_rpc_answer::run(PhpWorker *worker) noexcept {
   query_stats.desc = "RPC_ANSWER";
 
   if (worker->mode == rpc_worker) {
@@ -46,7 +46,7 @@ void php_query_rpc_answer::run(php_worker *worker) noexcept {
   php_script->query_answered();
 }
 
-void php_query_connect_t::run([[maybe_unused]] php_worker *worker) noexcept {
+void php_query_connect_t::run([[maybe_unused]] PhpWorker *worker) noexcept {
   query_stats.desc = "CONNECT";
 
   php_script->query_readed();
@@ -74,7 +74,7 @@ void php_query_connect_t::run([[maybe_unused]] php_worker *worker) noexcept {
 
 external_driver_connect::external_driver_connect(std::unique_ptr<database_drivers::Connector> &&connector) : connector(std::move(connector)) {};
 
-void external_driver_connect::run(php_worker *worker __attribute__((unused))) noexcept {
+void external_driver_connect::run(PhpWorker *worker __attribute__((unused))) noexcept {
   query_stats.desc = "CONNECT_EXTERNAL_DRIVER";
 
   php_script->query_readed();
@@ -90,16 +90,16 @@ void external_driver_connect::run(php_worker *worker __attribute__((unused))) no
   php_script->query_answered();
 }
 
-void php_query_wait_t::run(php_worker *worker) noexcept {
+void php_query_wait_t::run(PhpWorker *worker) noexcept {
   query_stats.desc = "WAIT_NET";
   php_script->query_readed();
   php_script->query_answered();
 
-  php_worker_wait(worker, timeout_ms);
+  worker->wait(timeout_ms);
 }
 
 
-int php_worker_http_load_post_impl(php_worker *worker, char *buf, int min_len, int max_len) {
+int php_worker_http_load_post_impl(PhpWorker *worker, char *buf, int min_len, int max_len) {
   connection *c = worker->conn;
   double precise_now = get_utime_monotonic();
 
@@ -183,7 +183,7 @@ int php_worker_http_load_post_impl(php_worker *worker, char *buf, int min_len, i
 }
 
 
-void php_query_http_load_post_t::run(php_worker *worker) noexcept {
+void php_query_http_load_post_t::run(PhpWorker *worker) noexcept {
   query_stats.desc = "HTTP_LOAD_POST";
 
   php_script->query_readed();
@@ -196,11 +196,11 @@ void php_query_http_load_post_t::run(php_worker *worker) noexcept {
 
   if (res.loaded_bytes < 0) {
     // TODO we need to close connection. Do we need to pass 1 as second parameter?
-    php_worker_terminate(worker, 1, script_error_t::post_data_loading_error, "error during loading big post data");
+    worker->terminate(1, script_error_t::post_data_loading_error, "error during loading big post data");
   }
 }
 
-void php_net_query_packet_t::run(php_worker *worker) noexcept {
+void php_net_query_packet_t::run(PhpWorker *worker) noexcept {
   query_stats.desc = "NET";
 
   switch (protocol) {

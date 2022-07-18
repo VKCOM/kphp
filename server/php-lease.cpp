@@ -103,7 +103,7 @@ static void lease_change_state(lease_state_t new_state) {
   }
 }
 
-void lease_on_worker_finish(php_worker *worker) {
+void lease_on_worker_finish(PhpWorker *worker) {
   if ((lease_state == lease_state_t::on || lease_state == lease_state_t::initiating_finish) && worker->target_fd == rpc_lease_target) {
     double worked = precise_now - worker->start_time;
     lease_stats_time += worked;

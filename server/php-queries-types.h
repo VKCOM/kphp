@@ -12,12 +12,12 @@ enum class protocol_type {
   rpc,
 };
 
-struct php_worker;
+class PhpWorker;
 
 struct php_query_base_t {
   void *ans{nullptr};
 
-  virtual void run(php_worker *worker) noexcept = 0;
+  virtual void run(PhpWorker *worker) noexcept = 0;
 
   virtual ~php_query_base_t() = default;
 };
@@ -25,14 +25,14 @@ struct php_query_base_t {
 struct php_query_x2_t : php_query_base_t {
   int val{0};
 
-  void run(php_worker *worker) noexcept final;
+  void run(PhpWorker *worker) noexcept final;
 };
 
 struct php_query_rpc_answer : php_query_base_t {
   const char *data{nullptr};
   int data_len{0};
 
-  void run(php_worker *worker) noexcept final;
+  void run(PhpWorker *worker) noexcept final;
 };
 
 struct php_query_connect_t : php_query_base_t {
@@ -40,7 +40,7 @@ struct php_query_connect_t : php_query_base_t {
   int port{0};
   protocol_type protocol{};
 
-  void run(php_worker *worker) noexcept final;
+  void run(PhpWorker *worker) noexcept final;
 };
 
 namespace database_drivers {
@@ -52,7 +52,7 @@ struct external_driver_connect : php_query_base_t {
 
   explicit external_driver_connect(std::unique_ptr<database_drivers::Connector> &&connector);
 
-  void run(php_worker *worker) noexcept final;
+  void run(PhpWorker *worker) noexcept final;
 };
 
 struct php_query_http_load_post_t : php_query_base_t {
@@ -60,7 +60,7 @@ struct php_query_http_load_post_t : php_query_base_t {
   int min_len{0};
   int max_len{0};
 
-  void run(php_worker *worker) noexcept final;
+  void run(PhpWorker *worker) noexcept final;
 };
 
 struct php_net_query_packet_t : php_query_base_t {
@@ -73,11 +73,11 @@ struct php_net_query_packet_t : php_query_base_t {
   protocol_type protocol{};
   int extra_type{0};
 
-  void run(php_worker *worker) noexcept final;
+  void run(PhpWorker *worker) noexcept final;
 };
 
 struct php_query_wait_t : php_query_base_t {
   int timeout_ms{0};
 
-  void run(php_worker *worker) noexcept final;
+  void run(PhpWorker *worker) noexcept final;
 };

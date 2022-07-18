@@ -7,7 +7,6 @@
 #include "common/sanitizer.h"
 
 #include "server/php-queries.h"
-#include "server/php-runner.h"
 
 struct conn_query;
 struct connection;
@@ -55,7 +54,10 @@ void pnet_query_delete(conn_query *q);
 
 extern int run_once_count;
 extern int queries_to_recreate_script;
+
+class PHPScriptBase;
 extern PHPScriptBase *php_script;
+
 void turn_sigterm_on();
 
 connection *get_target_connection(conn_target_t *S, int force_flag);

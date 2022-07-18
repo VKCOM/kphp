@@ -248,7 +248,7 @@ int memcache_client_execute(connection *c, int op) {
   return 0;
 }
 
-void php_worker_run_mc_query_packet(php_worker *worker, php_net_query_packet_t *query) {
+void php_worker_run_mc_query_packet(PhpWorker *worker, php_net_query_packet_t *query) {
   query_stats.desc = "MC";
   query_stats.query = query->data;
 
