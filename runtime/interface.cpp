@@ -333,11 +333,11 @@ array<string> f$headers_list() {
 }
 
 void f$send_http_103_early_hints(const array<string> & headers) {
-  string header("HTTP/1.1 103 Early Hints\n");
+  string header("HTTP/1.1 103 Early Hints\r\n");
   for (const auto & h : headers) {
-    header.append(string(h.get_value()).append("\n"));
+    header.append(h.get_value().c_str()).append("\r\n");
   }
-  http_send_query(header.c_str(), header.size(), "\n", 1);
+  http_send_immediate_response(header.c_str(), header.size(), "\r\n", 2);
 }
 
 void f$setrawcookie(const string &name, const string &value, int64_t expire, const string &path, const string &domain, bool secure, bool http_only) {

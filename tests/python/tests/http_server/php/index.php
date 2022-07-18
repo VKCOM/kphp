@@ -50,7 +50,7 @@ if ($_SERVER["PHP_SELF"] === "/ini_get") {
     echo "pid=" . posix_getpid();
 } else {
     if ($_GET["hints"] === "yes") {
-        send_http_103_early_hints([]);
+        send_http_103_early_hints(["Content-Type: text/plain or application/json", "Link: </script.js>; rel=preload; as=script"]);
         sleep(2);
     }
     echo "Hello world!";

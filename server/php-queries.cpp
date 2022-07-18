@@ -957,15 +957,14 @@ void db_run_query(int host_num, const char *request, int request_len, int timeou
   }
 }
 
-void http_send_query(const char *headers, int headers_len, const char *body, int body_len) {
+void http_send_immediate_response(const char *headers, int headers_len, const char *body, int body_len) {
+  php_assert(active_worker != nullptr);
   if (active_worker->mode == http_worker) {
     write_out(&active_worker->conn->Out, headers, headers_len);
     write_out(&active_worker->conn->Out, body, body_len);
     flush_connection_output(active_worker->conn);
-  } else if (active_worker->mode == once_worker) {
-    write(1, headers, headers_len);
-    write(1, body, body_len);
-    fsync(1);
+  } else {
+    php_warning("Early hints available only from HTTP worker");
   }
 }
 

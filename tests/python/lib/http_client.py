@@ -4,7 +4,7 @@ import socket
 
 from .colors import blue
 
-class _RawResponse:
+class RawResponse:
     def __init__(self, raw_bytes):
         self.raw_bytes = raw_bytes
         head, _, body = raw_bytes.partition(b"\r\n\r\n")
@@ -62,4 +62,4 @@ def send_http_request_raw(port, request):
     print(*response_bytes.splitlines(True), sep="\n")
     print("=============================")
 
-    return _RawResponse(response_bytes)
+    return RawResponse(response_bytes)

@@ -2,7 +2,7 @@ import urllib
 import socket
 
 from python.lib.testcase import KphpServerAutoTestCase
-from python.lib.http_client import _RawResponse
+from python.lib.http_client import RawResponse
 
 
 class TestRequest(KphpServerAutoTestCase):
@@ -12,23 +12,34 @@ class TestRequest(KphpServerAutoTestCase):
         self.assertEqual(response.content, b"Hello world!")
 
     def test_send_request_with_early_hints(self):
+        def print_log(header, body):
+            print(header)
+            print("=============================")
+            print(*body.splitlines(True), sep="\n")
+            print("=============================")
         msg = b"GET /?hints=yes HTTP/1.1\n\n"
+        print_log("\nSending Raw HTTP request", msg)
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect(('127.0.0.1', self.kphp_server.http_port))
             s.send(msg)
-            early_hints = s.recv(len(msg))
+            s.settimeout(0.1)
+            early_hints = RawResponse(s.recv(118))
             s.settimeout(1)
-            response = b''
+            pause = False
             try:
-                response = s.recv(4096)
+                s.recv(4096)
             except OSError:
-                pass
-            self.assertEqual(response, b'')
+                pause = True
+            self.assertTrue(pause)
             s.settimeout(None)
-            response = s.recv(4096)
-        self.assertEqual(_RawResponse(early_hints).status_code, 103)
-        self.assertEqual(_RawResponse(response).status_code, 200)
-        self.assertEqual(_RawResponse(response).content, b"Hello world!")
+            response = RawResponse(s.recv(4096))
+        print_log("\nGot Raw HTTP 103 hints", early_hints.raw_bytes)
+        print_log("\nGot Raw HTTP response", response.raw_bytes)
+        self.assertEqual(early_hints.status_code, 103)
+        self.assertEqual(early_hints.headers["Content-Type"], "text/plain or application/json")
+        self.assertEqual(early_hints.headers["Link"], "</script.js>; rel=preload; as=script")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, b"Hello world!")
 
     def test_send_request_with_query(self):
         response = self.kphp_server.http_request_raw([b"GET /status?foo=bar&baz=gaz HTTP/1.1"])
