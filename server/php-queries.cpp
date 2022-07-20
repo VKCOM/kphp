@@ -21,9 +21,9 @@
 #include "server/database-drivers/adaptor.h"
 #include "server/job-workers/job-message.h"
 #include "server/php-engine-vars.h"
+#include "server/php-init-scripts.h"
 #include "server/php-queries-stats.h"
 #include "server/php-runner.h"
-#include "server/php-script.h"
 
 #define MAX_NET_ERROR_LEN 128
 

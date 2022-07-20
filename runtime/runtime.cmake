@@ -142,7 +142,7 @@ ${MERGED_RUNTIME_HEADERS}
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/php_lib_version.cpp
 [[
 #include "auto/runtime/runtime-headers.h"
-#include "server/php-script.h"
+#include "server/php-init-scripts.h"
 ]])
 
 add_library(php_lib_version_j OBJECT ${CMAKE_CURRENT_BINARY_DIR}/php_lib_version.cpp)

@@ -2,7 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "server/php-script.h"
+#include "server/php-init-scripts.h"
 
 static script_t* main_script;
 

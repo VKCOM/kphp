@@ -59,8 +59,8 @@
 #include "runtime/rpc.h"
 #include "server/cluster-name.h"
 #include "server/confdata-binlog-replay.h"
-#include "server/database-drivers/connector.h"
 #include "server/database-drivers/adaptor.h"
+#include "server/database-drivers/connector.h"
 #include "server/job-workers/job-worker-client.h"
 #include "server/job-workers/job-worker-server.h"
 #include "server/job-workers/job-workers-context.h"
@@ -70,6 +70,7 @@
 #include "server/lease-context.h"
 #include "server/numa-configuration.h"
 #include "server/php-engine-vars.h"
+#include "server/php-init-scripts.h"
 #include "server/php-lease.h"
 #include "server/php-master-warmup.h"
 #include "server/php-master.h"
@@ -81,8 +82,8 @@
 #include "server/server-log.h"
 #include "server/server-stats.h"
 #include "server/statshouse/statshouse-client.h"
-#include "server/workers-control.h"
 #include "server/statshouse/worker-stats-buffer.h"
+#include "server/workers-control.h"
 
 using job_workers::JobWorkersContext;
 using job_workers::JobWorkerClient;
@@ -1631,8 +1632,6 @@ void start_server() {
 }
 
 void set_instance_cache_memory_limit(size_t limit);
-void init_php_scripts() noexcept;
-void global_init_php_scripts() noexcept;
 const char *get_php_scripts_version() noexcept;
 char **get_runtime_options(int *count) noexcept;
 

@@ -18,7 +18,7 @@ prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
         php-queries-types.cpp
         php-query-data.cpp
         php-runner.cpp
-        php-script.cpp
+        php-init-scripts.cpp
         php-sql-connections.cpp
         php-worker.cpp
         server-log.cpp
