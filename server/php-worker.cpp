@@ -144,10 +144,10 @@ void PhpWorker::state_init_script() noexcept {
   script_t *script = get_script();
   dl_assert(script != nullptr, "failed to get script");
   if (php_script == nullptr) {
-    php_script = new PHPScriptBase(max_memory, 8 << 20);;
+    php_script = new PhpScript(max_memory, 8 << 20);;
   }
   php_script->init(script, data);
-  php_script_set_timeout(timeout);
+  php_script->set_timeout(timeout);
   state = phpq_run;
 }
 
@@ -396,7 +396,7 @@ void PhpWorker::state_free_script() noexcept {
   }
 
   php_queries_finish();
-  php_script_disable_timeout();
+  php_script->disable_timeout();
   php_script->clear();
 
   static int finished_queries = 0;
