@@ -587,7 +587,6 @@ struct ClassDefinition {
   friend std::ostream &operator<<(std::ostream &os, const ClassDefinition<Members...> &self) {
     os << "/**" << std::endl
        << " * @kphp-tl-class" << std::endl
-       << " * @kphp-infer" << std::endl
        << " */" << std::endl
        << (self.class_repr.is_interface ? "interface " : "class ") << self.class_repr.php_class_name;
     if (self.class_repr.parent) {
