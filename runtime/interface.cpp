@@ -19,6 +19,7 @@
 #include "common/macos-ports.h"
 #include "common/tl/constants/common.h"
 
+#include "net/net-connections.h"
 #include "runtime/array_functions.h"
 #include "runtime/bcmath.h"
 #include "runtime/confdata-functions.h"
@@ -56,6 +57,7 @@
 #include "server/numa-configuration.h"
 #include "server/php-engine-vars.h"
 #include "server/php-queries.h"
+#include "server/php-worker.h"
 #include "server/php-query-data.h"
 #include "server/workers-control.h"
 #include "server/database-drivers/mysql/mysql.h"
@@ -80,6 +82,8 @@ static int http_need_gzip;
 
 static bool is_utf8_enabled = false;
 bool is_json_log_on_timeout_enabled = true;
+
+static int ignore_level = 0;
 
 void f$ob_clean() {
   coub->clean();
@@ -370,6 +374,26 @@ void f$setrawcookie(const string &name, const string &value, int64_t expire, con
 
 void f$setcookie(const string &name, const string &value, int64_t expire, const string &path, const string &domain, bool secure, bool http_only) {
   f$setrawcookie(name, f$urlencode(value), expire, path, domain, secure, http_only);
+}
+
+int64_t f$ignore_user_abort(Optional<bool> enable) {
+  php_assert(active_worker != nullptr && active_worker->conn != nullptr);
+  if (enable.is_null()) {
+    return ignore_level;
+  } else if (enable.val()) {
+    active_worker->conn->ignored = true;
+    return ignore_level++;
+  } else {
+    int prev = ignore_level > 0 ? ignore_level-- : 0;
+    if (ignore_level == 0) {
+      active_worker->conn->ignored = false;
+    }
+    if (active_worker->conn->interrupted && !active_worker->conn->ignored) {
+      active_worker->conn->status = conn_error;
+      f$exit(1);
+    }
+    return prev;
+  }
 }
 
 static inline const char *http_get_error_msg_text(int *code) {
@@ -2202,6 +2226,7 @@ static void init_interface_lib() {
   php_warning_level = std::max(2, php_warning_minimum_level);
   php_disable_warnings = 0;
   is_json_log_on_timeout_enabled = true;
+  ignore_level = 0;
 
   static char engine_pid_buf[20];
   dl::enter_critical_section();//OK

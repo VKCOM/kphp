@@ -218,6 +218,8 @@ struct connection {
   char in_buff[BUFF_SIZE];
   char out_buff[BUFF_SIZE];
   struct ucred credentials;
+  bool interrupted;
+  bool ignored;
 };
 typedef struct connection connection_t;
 
