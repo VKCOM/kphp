@@ -70,6 +70,20 @@ inline Optional<string> f$instance_serialize(const class_instance<InstanceClass>
   return result;
 }
 
+template<class InstanceClass>
+inline string f$instance_serialize_safe(const class_instance<InstanceClass> &instance) noexcept {
+  vk::msgpack::packer_float32_decorator::clear();
+  vk::msgpack::CheckInstanceDepth::depth = 0;
+  string err_msg;
+  auto result = f$msgpack_serialize(instance, &err_msg);
+  if (vk::msgpack::CheckInstanceDepth::is_exceeded()) {
+    THROW_EXCEPTION(new_Exception(string(__FILE__), __LINE__, string("maximum depth of nested instances exceeded")));
+  } else if (!err_msg.empty()) {
+    THROW_EXCEPTION(new_Exception(string(__FILE__), __LINE__, err_msg));
+  }
+  return result.val();
+}
+
 /**
  * this function works nice with POSIX signal despite of exceptions
  * due to malloc_replacement_guard exceptions will be allocated in script memory
@@ -128,4 +142,14 @@ inline ResultType f$msgpack_deserialize_safe(const string &buffer) noexcept {
 template<class ResultClass>
 inline ResultClass f$instance_deserialize(const string &buffer, const string&) noexcept {
   return f$msgpack_deserialize<ResultClass>(buffer);
+}
+
+template<class ResultClass>
+inline ResultClass f$instance_deserialize_safe(const string &buffer, const string&) noexcept {
+  string err_msg;
+  auto res = f$msgpack_deserialize<ResultClass>(buffer, &err_msg);
+  if (!err_msg.empty()) {
+    THROW_EXCEPTION (new_Exception(string(__FILE__), __LINE__, err_msg));
+  }
+  return res;
 }

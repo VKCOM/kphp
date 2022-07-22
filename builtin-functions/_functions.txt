@@ -1302,8 +1302,12 @@ function instance_cache_update_ttl(string $key, int $ttl = 0) ::: bool;
 function instance_cache_delete(string $key) ::: bool;
 
 function instance_serialize($instance ::: any) ::: string | null;
+/** @kphp-extern-func-info can_throw */
+function instance_serialize_safe($instance ::: any) ::: string;
 /** @kphp-extern-func-info cpp_template_call */
 function instance_deserialize($serialized ::: string, $to_type ::: string) ::: instance<^2>;
+/** @kphp-extern-func-info cpp_template_call can_throw */
+function instance_deserialize_safe($serialized ::: string, $to_type ::: string) ::: instance<^2>;
 
 function is_confdata_loaded() ::: bool;
 function confdata_get_value($key ::: string) ::: mixed;
