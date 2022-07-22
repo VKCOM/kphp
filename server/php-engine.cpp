@@ -632,6 +632,7 @@ int hts_func_close(connection *c, int who __attribute__((unused))) {
 
   auto *worker = reinterpret_cast<php_worker *>(D->extra);
   if (worker != nullptr) {
+    // todo: коммент, что это вызывается только если конект порвался вне критической секции (ignore_user_abort)
     php_worker_terminate(worker, 1, script_error_t::http_connection_close, "http connection close");
     double timeout = php_worker_main(worker);
     D->extra = nullptr;

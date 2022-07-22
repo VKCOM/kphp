@@ -138,6 +138,7 @@ function headers_list () ::: string[];
 function setcookie ($name ::: string, $value ::: string, $expire ::: int = 0, $path ::: string = '', $domain ::: string = '', $secure ::: bool = false, $http_only ::: bool = false) ::: void;
 function setrawcookie ($name ::: string, $value ::: string, $expire ::: int = 0, $path ::: string = '', $domain ::: string = '', $secure ::: bool = false, $http_only ::: bool = false) ::: void;
 function register_shutdown_function (callable():void $function) ::: void;
+function ignore_user_abort ($enable ::: ?bool = null) ::: int;
 /* // removed because it's not working now.
   function fastcgi_finish_request() ::: void;
 */

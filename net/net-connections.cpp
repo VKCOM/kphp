@@ -729,15 +729,21 @@ int server_read_write(struct connection *c) {
 
   c->flags |= C_INCONN;
 
-  if (ev->epoll_ready & (EPOLLHUP | EPOLLERR | EPOLLRDHUP | EPOLLPRI)) {
+  if (!c->interrupted && ev->epoll_ready & (EPOLLHUP | EPOLLERR | EPOLLRDHUP | EPOLLPRI)) {
     if ((ev->epoll_ready & EPOLLIN) && (c->flags & C_WANTRD) && !(c->flags & (C_NORD | C_FAILED | C_STOPREAD))) {
       vkprintf(3, "reading buffered data from socket %d, before closing\n", c->fd);
       c->type->reader(c);
     }
 
     vkprintf(1 + !(ev->epoll_ready & EPOLLPRI), "socket %d: disconnected (epoll_ready=%02x), cleaning\n", c->fd, ev->epoll_ready);
-    force_clear_connection(c);
-    return EVA_DESTROY;
+    if (c->ignored) {
+      c->interrupted = true;
+      c->flags &= ~C_WANTRW;
+      return EVT_SPEC;
+    } else {
+      force_clear_connection(c);
+      return EVA_DESTROY;
+    }
   }
 
   /*
@@ -849,17 +855,21 @@ int server_read_write(struct connection *c) {
   if (c->error || c->status == conn_error || (c->status == conn_write_close && !(c->flags & C_WANTWR)) || (c->flags & C_FAILED)) {
     vkprintf(1, "socket %d: closing and cleaning (error code=%d)\n", c->fd, c->error);
 
-    if (c->status != conn_connecting) {
-      active_connections--;
-      if (c->flags & C_SPECIAL) {
-        close_special_connection(c);
+    if (c->interrupted) {
+      force_clear_connection(c);
+    } else {
+      if (c->status != conn_connecting) {
+        active_connections--;
+        if (c->flags & C_SPECIAL) {
+          close_special_connection(c);
+        }
       }
-    }
-    c->type->close(c, 0);
-    clear_connection_timeout(c);
+      c->type->close(c, 0);
+      clear_connection_timeout(c);
 
-    memset(c, 0, sizeof(struct connection));
-    ev->data = 0;
+      memset(c, 0, sizeof(struct connection));
+      ev->data = 0;
+    }
     return EVA_DESTROY;
   }
 
