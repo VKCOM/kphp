@@ -22,7 +22,7 @@ void PhpClasses::load_from(const vk::tlo_parsing::tl_scheme &scheme, bool genera
 }
 
 bool is_or_null_possible(php_field_type internal_type) {
-  return vk::none_of_equal(internal_type, php_field_type::t_class, php_field_type::t_mixed, php_field_type::t_maybe);
+  return vk::none_of_equal(internal_type, php_field_type::t_mixed, php_field_type::t_maybe);
 }
 
 bool is_php_code_gen_allowed(const TlTypePhpRepresentation &type_repr) noexcept {
