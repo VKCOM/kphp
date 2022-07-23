@@ -1,5 +1,5 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2020 LLC «V Kontakte»
+// Copyright (c) 2022 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
@@ -14,8 +14,8 @@
 class InstantiateGenericsAndLambdasF {
   using Base = SyncPipeF<FunctionPtr>;
 
-  using InstanceOfFunctionTemplatePtr = FunctionPtr;
-  using OStreamT = MultipleDataStreams<FunctionPtr, InstanceOfFunctionTemplatePtr>;
+  using InstantiatedGenericPtr = FunctionPtr;
+  using OStreamT = MultipleDataStreams<FunctionPtr, InstantiatedGenericPtr>;
 
 public:
   // don't show it in profiler, as it duplicates InstantiateGenericsAndLambdasPass, that's immediately called from execute()

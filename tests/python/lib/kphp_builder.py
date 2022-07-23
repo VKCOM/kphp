@@ -159,6 +159,7 @@ class KphpBuilder:
                 "^Compiling pch stage started\\.\\.\\.$",
                 "^\\[nocc\\] saved pch file to .+$",
                 "^objs cnt = \\d+$",
+                "^Compiling pch stage started\\.\\.\\.$",
                 "^Compiling stage started\\.\\.\\.$",
                 "^Linking stage started\\.\\.\\.$",
                 "^\\s*\\d+\\% \\[total jobs \\d+\\] \\[left jobs \\d+\\] \\[running jobs \\d+\\] \\[waiting jobs \\d+\\]$"

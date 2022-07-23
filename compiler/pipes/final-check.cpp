@@ -201,7 +201,7 @@ ClassPtr extract_json_encoder_from_call(VertexAdaptor<op_func_call> call) noexce
 void check_to_json_impl_call(VertexAdaptor<op_func_call> call) noexcept {
   auto encoder = extract_json_encoder_from_call(call);
   const auto *type = tinf::get_type(call->args()[1]);
-  kphp_error_return(type->ptype() == tp_Class, "second argument of JsonEncoder::encode should be a class type");
+  kphp_assert(type->ptype() == tp_Class);
   store_json_encoder(type->class_type(), encoder, true);
 }
 

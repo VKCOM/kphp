@@ -40,7 +40,7 @@ struct KnownPhpDocTag {
 };
 
 class AllDocTags {
-  static constexpr int N_TAGS = 36;
+  static constexpr int N_TAGS = 37;
   static const KnownPhpDocTag ALL_TAGS[N_TAGS];
 
 public:
@@ -83,6 +83,7 @@ const KnownPhpDocTag AllDocTags::ALL_TAGS[] = {
   KnownPhpDocTag("@kphp-extern-func-info", PhpDocType::kphp_extern_func_info),
   KnownPhpDocTag("@kphp-pure-function", PhpDocType::kphp_pure_function),
   KnownPhpDocTag("@kphp-template", PhpDocType::kphp_template),
+  KnownPhpDocTag("@kphp-generic", PhpDocType::kphp_generic),
   KnownPhpDocTag("@kphp-param", PhpDocType::kphp_param),
   KnownPhpDocTag("@kphp-return", PhpDocType::kphp_return),
   KnownPhpDocTag("@kphp-memcache-class", PhpDocType::kphp_memcache_class),
@@ -171,7 +172,7 @@ std::string PhpDocTag::get_tag_name() const noexcept {
  * or "$var tuple(int, string) maybe comment" or "A[] maybe comment"
  * parse a type (turn it into the TypeHint tree representation) and a variable name (if present).
  */
-PhpDocTag::TypeAndVarName PhpDocTag::value_as_type_and_var_name(FunctionPtr current_function) const {
+PhpDocTag::TypeAndVarName PhpDocTag::value_as_type_and_var_name(FunctionPtr current_function, const GenericsDeclarationMixin *genericTs) const {
   std::vector<Token> tokens = phpdoc_to_tokens(value);
   auto tok_iter = tokens.cbegin();
   vk::string_view var_name;
@@ -185,7 +186,7 @@ PhpDocTag::TypeAndVarName PhpDocTag::value_as_type_and_var_name(FunctionPtr curr
     }
   }
 
-  PhpDocTypeHintParser parser(current_function);
+  PhpDocTypeHintParser parser(current_function, genericTs);
   const TypeHint *type_hint{nullptr};
   try {
     type_hint = parser.parse_from_tokens(tok_iter);
@@ -219,8 +220,8 @@ const TypeHint *PhpDocTypeHintParser::parse_classname(const std::string &phpdoc_
   if (is_string_self_static_parent(phpdoc_class_name)) {
     return TypeHintInstance::create(phpdoc_class_name);
   }
-  if (current_function->generics_declaration && current_function->generics_declaration->has_nameT(phpdoc_class_name)) {
-    return TypeHintGenericsT::create(phpdoc_class_name);
+  if (genericTs != nullptr && genericTs->has_nameT(phpdoc_class_name)) {
+    return TypeHintGenericT::create(phpdoc_class_name);
   }
   return TypeHintInstance::create(resolve_uses(current_function, phpdoc_class_name));
 }
@@ -412,7 +413,17 @@ const TypeHint *PhpDocTypeHintParser::parse_simple_type() {
       return TypeHintOptional::create(parse_type_expression(), true, false);
     case tok_object:
       cur_tok++;
-      return TypeHintPrimitive::create(tp_any);
+      return TypeHintObject::create();
+    case tok_class:
+      if ((cur_tok + 1)->type() == tok_minus && (cur_tok + 2)->type() == tok_string) {  // class-string<T>
+        cur_tok += 3;
+        const auto *nested = parse_nested_one_type_hint();
+        if (!nested->try_as<TypeHintGenericT>()) {
+          throw std::runtime_error("class-string<> should contain generic T inside");
+        }
+        return TypeHintClassString::create(nested);
+      }
+      break;
 
     case tok_static:
     case tok_func_name:
@@ -461,8 +472,10 @@ const TypeHint *PhpDocTypeHintParser::parse_simple_type() {
       return parse_classname(std::string(cur_tok->str_val));
 
     default:
-      throw std::runtime_error(fmt_format("can't parse '{}'", cur_tok->str_val));
+      break;
   }
+
+  throw std::runtime_error(fmt_format("can't parse '{}'", cur_tok->str_val));
 }
 
 const TypeHint *PhpDocTypeHintParser::parse_arg_ref() {   // ^1, ^2[*][*], ^3()
@@ -489,11 +502,14 @@ const TypeHint *PhpDocTypeHintParser::parse_arg_ref() {   // ^1, ^2[*][*], ^3()
 const TypeHint *PhpDocTypeHintParser::parse_type_array() {
   const TypeHint *inner = parse_simple_type();
 
-  if (cur_tok->type() == tok_double_colon) {      // T::fieldName
+  if (cur_tok->type() == tok_double_colon) {      // T::methodName(), T::fieldName
     cur_tok++;
-    if (cur_tok->type() == tok_func_name) {
-      inner = TypeHintFieldRef::create(inner, std::string(cur_tok->str_val));
-      cur_tok++;
+    if (cur_tok->type() == tok_func_name && (cur_tok + 1)->type() == tok_oppar && (cur_tok + 2)->type() == tok_clpar) {
+      inner = TypeHintRefToMethod::create(inner, std::string(cur_tok->str_val));
+      cur_tok += 3;
+    } else if (cur_tok->type() == tok_func_name) {
+      inner = TypeHintRefToField::create(inner, std::string(cur_tok->str_val));
+      cur_tok += 1;
     } else {
       throw std::runtime_error("Invalid syntax after ::");
     }
@@ -724,41 +740,44 @@ const TypeHint *phpdoc_finalize_type_hint_and_resolve(const TypeHint *type_hint,
   }
 
   if (type_hint->has_instances_inside()) {
-    // todo move below
     type_hint->traverse([&all_resolved](const TypeHint *child) {
-      if (const auto *as_scope = child->try_as<TypeHintFFIScope>()) {
-      ClassPtr klass = G->get_class(FFIRoot::scope_class_name(as_scope->scope_name));
-      kphp_error_return(klass, fmt_format("Could not find ffi_scope<{}>", as_scope->scope_name));
-    }
-
-    if (const auto *as_ffi = child->try_as<TypeHintFFIType>()) {
-      if (vk::any_of_equal(as_ffi->type->kind, FFITypeKind::Struct, FFITypeKind::Union)) {
-        ClassPtr klass = G->get_class(FFIRoot::cdata_class_name(as_ffi->scope_name, as_ffi->type->str));
-        kphp_error_return(klass, fmt_format("Could not find ffi_cdata<{}, {}>", as_ffi->scope_name, as_ffi->type->str));
-        bool tags_ok = (as_ffi->type->kind == FFITypeKind::Struct && klass->ffi_class_mixin->ffi_type->kind == FFITypeKind::StructDef) ||
-                       (as_ffi->type->kind == FFITypeKind::Union && klass->ffi_class_mixin->ffi_type->kind == FFITypeKind::UnionDef);
-        kphp_error_return(tags_ok, fmt_format("Mismatched union/struct tag for ffi_cdata<{}, {}>", as_ffi->scope_name, as_ffi->type->str));
-      }
-    }
-
-    if (const auto *as_instance = child->try_as<TypeHintInstance>()) {
+      if (const auto *as_instance = child->try_as<TypeHintInstance>()) {
         ClassPtr klass = as_instance->resolve();
         if (!klass) {
           all_resolved = false;
           kphp_error(0, fmt_format("Could not find class {}", TermStringFormat::paint_red(as_instance->full_class_name)));
         } else {
-          kphp_error(!klass->is_trait(), "You may not use trait as a type-hint");
+          kphp_error(!klass->is_trait(), fmt_format("Using trait {} as a type is invalid (traits are not types)", as_instance->full_class_name));
         }
 
+      } else if (const auto *as_scope = child->try_as<TypeHintFFIScope>()) {
+        ClassPtr klass = G->get_class(FFIRoot::scope_class_name(as_scope->scope_name));
+        kphp_error_return(klass, fmt_format("Could not find ffi_scope<{}>", as_scope->scope_name));
+
+      } else if (const auto *as_ffi = child->try_as<TypeHintFFIType>()) {
+        if (vk::any_of_equal(as_ffi->type->kind, FFITypeKind::Struct, FFITypeKind::Union)) {
+          ClassPtr klass = G->get_class(FFIRoot::cdata_class_name(as_ffi->scope_name, as_ffi->type->str));
+          kphp_error_return(klass, fmt_format("Could not find ffi_cdata<{}, {}>", as_ffi->scope_name, as_ffi->type->str));
+          bool tags_ok = (as_ffi->type->kind == FFITypeKind::Struct && klass->ffi_class_mixin->ffi_type->kind == FFITypeKind::StructDef) ||
+                         (as_ffi->type->kind == FFITypeKind::Union && klass->ffi_class_mixin->ffi_type->kind == FFITypeKind::UnionDef);
+          kphp_error_return(tags_ok, fmt_format("Mismatched union/struct tag for ffi_cdata<{}, {}>", as_ffi->scope_name, as_ffi->type->str));
+        }
       }
     });
+  }
+
+  if (type_hint->has_autogeneric_inside()) {
+    // 'callable' and 'object' are allowed only standalone; fire an error for 'callable[]' and other nested
+    kphp_error(type_hint->try_as<TypeHintObject>() ||
+               (type_hint->try_as<TypeHintCallable>() && type_hint->try_as<TypeHintCallable>()->is_untyped_callable()),
+               "Keywords 'callable' and 'object' have special treatment, they are not real types.\nThey can be used for a parameter, implicitly converting a function into generic.\nThey can NOT be used inside arrays, tuples, etc. — only as a standalone keyword.\nConsider using typed callables instead of 'callable', and generic functions/classes instead of 'object'.");
   }
 
   if (type_hint->has_callables_inside()) {
     type_hint->traverse([](const TypeHint *child) {
       if (const auto *as_callable = child->try_as<TypeHintCallable>()) {
 
-        if (as_callable->is_typed_callable()) {
+        if (as_callable->is_typed_callable() && !as_callable->has_genericT_inside()) {
           as_callable->get_interface();
         }
 
@@ -770,26 +789,30 @@ const TypeHint *phpdoc_finalize_type_hint_and_resolve(const TypeHint *type_hint,
 }
 
 /*
- * When we have a template function <T> and an instantiation T=User, replace all T's inside a type hint.
- * We also handle @kphp-return here, that can ref to a field T::fieldName, replacing it after T is instantiated.
+ * When we have a generic function <T> and an instantiation T=User, replace all T's inside a type hint.
+ * We also handle @return here, that can ref to a field T::fieldName, replacing it after T is instantiated.
  * (note, that we don't allow ClassName::fieldName anywhere but in generics; if it's written, it will fail on type inferring)
  */
-const TypeHint *phpdoc_replace_genericsT_with_instantiation(const TypeHint *type_hint, const GenericsInstantiationMixin *generics_instantiation) {
-  if (!type_hint->has_genericsT_inside()) {
+const TypeHint *phpdoc_replace_genericTs_with_reified(const TypeHint *type_hint, const GenericsInstantiationMixin *reifiedTs) {
+  if (!type_hint->has_genericT_inside()) {
     return type_hint;
   }
 
-  return type_hint->replace_children_custom([generics_instantiation](const TypeHint *child) {
+  return type_hint->replace_children_custom([reifiedTs](const TypeHint *child) {
 
-    if (const auto *as_genericsT = child->try_as<TypeHintGenericsT>()) {
-      const TypeHint *replacement = generics_instantiation->find(as_genericsT->nameT);
-      kphp_assert(replacement);
-      return replacement;
+    if (const auto *as_genericT = child->try_as<TypeHintGenericT>()) {
+      const TypeHint *replacement = reifiedTs->find(as_genericT->nameT);
+      return replacement ?: child;
     }
-    if (const auto *as_field_ref = child->try_as<TypeHintFieldRef>()) {
+    if (const auto *as_field_ref = child->try_as<TypeHintRefToField>()) {
       const auto *field = as_field_ref->resolve_field();
-      kphp_error(field, "Could not detect a field that :: points to in phpdoc white instantiating templates");
+      kphp_error(field, "Could not detect a field that :: points to in phpdoc white instantiating generics");
       return field && field->type_hint ? field->type_hint : TypeHintPrimitive::create(tp_any);
+    }
+    if (const auto *as_field_ref = child->try_as<TypeHintRefToMethod>()) {
+      FunctionPtr method = as_field_ref->resolve_method();
+      kphp_error(method, "Could not detect a method that :: points to in phpdoc white instantiating generics");
+      return method && method->return_typehint ? method->return_typehint : TypeHintPrimitive::create(tp_any);
     }
 
     return child;

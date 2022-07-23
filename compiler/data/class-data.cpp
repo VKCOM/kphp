@@ -120,8 +120,7 @@ FunctionPtr ClassData::add_virt_clone() {
 
   FunctionPtr f_virt_clone = FunctionData::create_function(virt_clone_f_name, v_op_function, FunctionData::func_local);
   f_virt_clone->file_id = file_id;
-  f_virt_clone->assumption_return_status = AssumptionStatus::initialized;
-  f_virt_clone->assumption_for_return = Assumption(ClassPtr{this});
+  f_virt_clone->return_typehint = type_hint;
   f_virt_clone->is_inline = true;
   f_virt_clone->modifiers = FunctionModifiers::instance_public();
   f_virt_clone->root.set_location_recursively(Location(location_line_num));

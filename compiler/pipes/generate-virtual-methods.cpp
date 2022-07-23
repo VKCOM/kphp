@@ -452,7 +452,7 @@ void GenerateVirtualMethodsF::on_finish(DataStream<FunctionPtr> &os) {
 
   // this loop takes about 0.4 sec in one thread; in the future, it can be parallelized
   for (FunctionPtr f : all_functions) {
-    kphp_assert(!f->is_template());
+    kphp_assert(!f->is_generic());
 
     if (f->modifiers.is_static() && f->modifiers.is_abstract()) {  // is_abstract() to make vkcom compile, as it has invalid phpdoc inheritance
       check_static_function_signatures_compatibility(f, f->class_id->derived_classes);

@@ -4,7 +4,7 @@ KPHP_ENABLE_FFI=1
 <?php
 
 /**
- * @kphp-template T
+ * @kphp-generic T
  * @param T $struct
  */
 function printXY($struct) {

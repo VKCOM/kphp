@@ -3,7 +3,7 @@ KPHP_SHOW_ALL_TYPE_ERRORS=1
 /\$a1 is assumed to be both A and B/
 /\$a2 is assumed to be both A and B/
 /\$a3 is assumed to be both A and B/
-/\$a4 is assumed to be both A and B/
+/\$a4 is was declared as @param A, and later reassigned to B/
 /\$a5 was already assumed to be A/
 /\$a6 has inconsistent phpdocs/
 <?php

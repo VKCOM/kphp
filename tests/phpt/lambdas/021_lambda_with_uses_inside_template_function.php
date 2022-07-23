@@ -62,8 +62,8 @@ test_lambda_with_uses_in_template_function();
 test_lambda_with_uses_in_another_lambda_passed_as_arg($test_id_lambda);
 
 /**
- * @kphp-template T
- * @kphp-param T $a
+ * @kphp-generic T
+ * @param T $a
  */
 function withCapturingTpl($a) {
     $f = fn() => $a->fa();

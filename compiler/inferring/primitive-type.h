@@ -23,6 +23,7 @@ enum PrimitiveType {
   tp_future_queue,
   tp_regexp,
   tp_Class,
+  tp_object,
   tp_Error,
   ptype_size
 };

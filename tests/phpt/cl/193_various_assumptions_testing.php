@@ -6,9 +6,9 @@ class A {
 }
 
 /**
- * @kphp-template T
- * @kphp-param T $obj
- * @kphp-return T
+ * @kphp-generic T
+ * @param T $obj
+ * @return T
  */
 function tplCallFa($obj) {
     $obj->fa();

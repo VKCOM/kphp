@@ -106,6 +106,8 @@ void TypeHintCallable::recalc_type_data_in_context_of_call(TypeData *dst, Vertex
     dst->set_lca(get_lambda_class()->type_data);
   } else {
     // the 'callable' keyword used in phpdoc/type declaration doesn't affect the type inference
+    // if used in param, like function f(callable $cb), f was auto-converted to generics, and 'callable' was dropped away
+    // this branch is reachable when 'callable' is used in @return or in @var, then it's treated like 'any' and replaced by an inferred lambda
   }
 }
 
@@ -172,8 +174,13 @@ void TypeHintInstance::recalc_type_data_in_context_of_call(TypeData *dst, Vertex
   dst->set_lca(resolve()->type_data);
 }
 
-void TypeHintFieldRef::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__ ((unused))) const {
+void TypeHintRefToField::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__ ((unused))) const {
   kphp_error(0, "Syntax ClassName::field is available only in a combination with generics");
+  dst->set_lca(tp_any);
+}
+
+void TypeHintRefToMethod::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__ ((unused))) const {
+  kphp_error(0, "Syntax ClassName::method() is available only in a combination with generics");
   dst->set_lca(tp_any);
 }
 
@@ -195,6 +202,12 @@ void TypeHintPipe::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr 
 
 void TypeHintPrimitive::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__ ((unused))) const {
   dst->set_lca(TypeData::get_type(ptype));
+}
+
+void TypeHintObject::recalc_type_data_in_context_of_call(TypeData *dst __attribute__ ((unused)), VertexPtr call __attribute__ ((unused))) const {
+  // 'object' keyword is allowed only in params of functions
+  // (it remains for extern functions, but for PHP functions it converts a function into generic and drops away)
+  dst->set_lca(tp_object);
 }
 
 void TypeHintShape::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const {
@@ -220,8 +233,12 @@ void TypeHintTuple::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr
   }
 }
 
-void TypeHintGenericsT::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__ ((unused))) const {
+void TypeHintGenericT::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__ ((unused))) const {
   dst->set_lca(tp_Error);
-  kphp_assert(0 && "genericsT not instantiated before type inferring");
+  kphp_assert(0 && "generic T not instantiated before type inferring");
+}
+
+void TypeHintClassString::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__ ((unused))) const {
+  dst->set_ptype(tp_string);
 }
 

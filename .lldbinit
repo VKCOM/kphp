@@ -18,6 +18,9 @@ type summary add --python-function "lldb_addons.class_with_debug_string" MultiKe
 type summary add --python-function "lldb_addons.class_with_debug_string" TypeHint
 type summary add --python-function "lldb_addons.class_with_debug_string" cfg::Node
 type summary add --python-function "lldb_addons.class_with_debug_string" cfg::UsageData
+type summary add --python-function "lldb_addons.class_with_debug_string" GenericsDeclarationMixin
+type summary add --python-function "lldb_addons.class_with_debug_string" GenericsInstantiationMixin
+type summary add --python-function "lldb_addons.class_with_debug_string" GenericsInstantiationPhpComment
 
 type summary add --python-function "lldb_addons.token_printer" Token
 type summary add --python-function "lldb_addons.vk_string_view_printer" vk::string_view

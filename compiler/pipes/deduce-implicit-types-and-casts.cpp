@@ -3,14 +3,15 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "compiler/pipes/deduce-implicit-types-and-casts.h"
+#include "compiler/pipes/transform-to-smart-instanceof.h"
 
 #include "compiler/compiler-core.h"
-#include "compiler/data/class-data.h"
-#include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/generics-reification.h"
 #include "compiler/gentree.h"
 #include "compiler/lambda-utils.h"
 #include "compiler/name-gen.h"
+#include "compiler/phpdoc.h"
 #include "compiler/type-hint.h"
 
 /*
@@ -95,7 +96,7 @@
  *
  * We need assumptions not only for ->arrowCalls(), but also for generics instantiations:
  *    function f<T>(T $obj, callable(T):void) { ... }
- * Having a call in terms of template functions,
+ * Having a call in terms of generic functions,
  *    f($obj, function($o) { ... });
  * We need an assumption for $obj, to instantiate f(), to auto-infer $o as an argument.
  *
@@ -103,8 +104,8 @@
  * Not only for ->arrowCalls(), but for ->fields and other cases – everything except binding ()-invocations, that's resolved later.
  *
  * Here we also bind func calls (set func_id of every op_func_call). It seems logical to do this while resolving assumptions.
- * func_id becomes valid for functions and methods, but for template functions, it still points to a template function.
- * (template functions are instantiated a bit later, and func_id is reassigned to an instantiation)
+ * func_id becomes valid for functions and methods, but for generics, it still points to a generic function.
+ * (generics are instantiated a bit later, and func_id is reassigned to an instantiation)
  *
  * Note, that assumptions are calculated on demand — and only up to the point we first need it:
  *    $a = new A;
@@ -118,6 +119,12 @@
  *
  * ---
  *
+ * A function can reach this pass not only via compilation pipeline, like any other pass.
+ * This pass is also executed for `f` if we need to calc assuption for return of `f`, see `assume_return_of_function()`.
+ * That's why it's guarded with multithreading once lock, see `check_function()` below.
+ *
+ * ---
+ *
  * Concluding, this step does the following, simultaneously:
  * - resolves func calls and binds func_id to every op_func_call
  * - modifies arguments of functions or rhs at assignments to fit phpdoc (lhs)
@@ -125,10 +132,31 @@
  * - when an ->field access found, calculates assumptions to bind var_id
  * - calculates assumptions for some other needs for later passes
  * - deduces types of lambdas arguments passed to array_map() or similar, as well as to typed callables
- * - deduces <T> for template function calls, saving it to call->instantiation_list
+ * - deduces <T> for generic calls, saving it to call->reifiedTs
  * - some other minors, read the code
  */
 
+
+// having a lambda with assumed types, construct TypeHintCallable from it
+// (to inherit from a typed callable interface, for example)
+static InterfacePtr get_typed_callable_interface_from_lambda(FunctionPtr f_lambda) {
+  std::vector<const TypeHint *> arg_types;
+  arg_types.reserve(f_lambda->get_params().size());
+
+  for (auto p : f_lambda->get_params()) {
+    const TypeHint *param_hint = p.as<op_func_param>()->type_hint;
+    if (!param_hint) {
+      return InterfacePtr{};
+    }
+    arg_types.emplace_back(param_hint);
+  }
+  if (!f_lambda->return_typehint) {
+    return InterfacePtr{};
+  }
+
+  const TypeHint *as_callable = TypeHintCallable::create(std::move(arg_types), f_lambda->return_typehint);
+  return as_callable->is_typedata_constexpr() ? as_callable->try_as<TypeHintCallable>()->get_interface() : InterfacePtr{};
+}
 
 // having an array_map type_hint `callable(^2[*] $x)` and a call `array_map(fn($a) => ..., [new A]),
 // deduce that $a is A, based on ^arg refs and assumptions
@@ -151,11 +179,31 @@ static const TypeHint *patch_type_hint_with_argref_in_context_of_call(const Type
   return replaced->has_argref_inside() ? nullptr : replaced;
 }
 
+// take a look at `function map<TIn, TOut>(TIn[] $in, callable(TIn):TOut $callback)`
+// it's a generic function, TIn can be reified as an argument, but TOut = "what a lambda will return"
+// having a call `map([new A], fn($a) => $a)`, at reification scan KPHP deduces `TIn = A, TOut = unknown`
+// then it starts patching arguments, `fn` becomes `callable(A):TOut`
+// this function fills TOut=(assumption of fn)=A, which is also set to f_lambda->return_typehint
+static const TypeHint *patch_lambda_return_hint_replacing_genericT_in_call(const TypeHint *type_hint, FunctionPtr f_lambda, VertexAdaptor<op_func_call> call) {
+  if (const auto *as_genericT = type_hint->try_as<TypeHintGenericT>()) {
+    // implementation detail: this will execute DeduceImplicitTypesAndCastsPass of f_lambda in current thread
+    // like any assumptions, it will correctly analyze `{ $a2 = $a; return $a2; }`
+    // note, that `map([1], fn($i) => $i)` will still work, because assumption `$i=int` is saved
+    // (unlike regular functions, assumptions for lambda params are saved even for primitives)
+    if (Assumption ret_assum = assume_return_of_function(f_lambda)) {
+      call->reifiedTs->provideT(as_genericT->nameT, ret_assum.assum_hint, call);
+      return ret_assum.assum_hint;
+    }
+  }
+
+  return type_hint;
+}
+
 // having an rhs (fn(), or 'strlen', or [$obj, 'method']) passed as typed/untyped callable,
-// do nesessary modifications of rhs
-// the argument `call` is valid for func calls (to resolve ^2), but is empty for assignments
+// perform necessary modifications of rhs
+// the argument `call` is valid for func calls (to resolve ^2 and fill TOut), but is empty for assignments
 // mind that lambdas and non-lambdas passed to built-in functions are represented as op_callback_of_builtin
-static void patch_rhs_casting_to_callable(VertexPtr &rhs, const TypeHintCallable *as_callable, VertexAdaptor<op_func_call> call) {
+void patch_rhs_casting_to_callable(VertexPtr &rhs, const TypeHintCallable *as_callable, VertexAdaptor<op_func_call> call) {
   bool is_extern_func_param = call && call->func_id && call->func_id->is_extern();
   InterfacePtr typed_interface = as_callable->is_typed_callable() && as_callable->is_typedata_constexpr() ? as_callable->get_interface() : InterfacePtr{};
 
@@ -166,14 +214,18 @@ static void patch_rhs_casting_to_callable(VertexPtr &rhs, const TypeHintCallable
     for (int i = 0; i < f_lambda_params.size() && i < as_callable->arg_types.size(); ++i) {
       auto l_param = f_lambda_params[i].as<op_func_param>();
       if (!l_param->type_hint) {
-        const TypeHint *arg_type_hint = as_callable->arg_types[i];
-        l_param->type_hint = arg_type_hint->has_argref_inside()
-                             ? patch_type_hint_with_argref_in_context_of_call(arg_type_hint, stage::get_function(), call)
-                             : arg_type_hint;
+        l_param->type_hint = as_callable->arg_types[i];
+      }
+      if (l_param->type_hint->has_argref_inside()) {
+        l_param->type_hint = patch_type_hint_with_argref_in_context_of_call(l_param->type_hint, stage::get_function(), call);
       }
     }
     if (!f_lambda->return_typehint) {
       f_lambda->return_typehint = as_callable->return_type;
+    }
+    if (as_callable->return_type->has_genericT_inside()) {
+      f_lambda->return_typehint = patch_lambda_return_hint_replacing_genericT_in_call(as_callable->return_type, f_lambda, call);
+      typed_interface = get_typed_callable_interface_from_lambda(f_lambda);
     }
     rhs.as<op_lambda>()->lambda_class = typed_interface;  // save for the next pass
 
@@ -251,7 +303,7 @@ static void patch_rhs_casting_to_callable(VertexPtr &rhs, const TypeHintCallable
 // the main function that patches rhs to fit lhs type, see detailed comments above
 // called when rhs is passed as @param, or when @var $v = rhs, or for "return expr" to fit @return, etc
 static void patch_rhs_casting_to_lhs_type(VertexPtr &rhs, const TypeHint *lhs_type_hint, VertexAdaptor<op_func_call> call = {}) {
-  // to avoid reduntant work, every type hint has a special flag whether it potentially can requied an rhs cast
+  // to avoid redundant work, every type hint has a special flag whether it potentially can require an rhs cast
   // for example, we do nothing for @param int or @param string[], but start analyzing rhs for @param callable
   if (!lhs_type_hint->has_flag_maybe_casts_rhs()) {
     return;
@@ -267,12 +319,13 @@ static void patch_rhs_casting_to_lhs_type(VertexPtr &rhs, const TypeHint *lhs_ty
   // leave T from ?T
   lhs_type_hint = lhs_type_hint->unwrap_optional();
 
+  // @param callable — extracted to a separate method, not to mess here
   if (const auto *as_callable = lhs_type_hint->try_as<TypeHintCallable>()) {
-    // @param callable — extracted to a separate method, not to mess here
     patch_rhs_casting_to_callable(rhs, as_callable, call);
   }
+
+  // @param (callable():void)[], cast every rhs array's element
   if (const auto *as_array = lhs_type_hint->try_as<TypeHintArray>()) {
-    // @param callable[], cast every rhs array's element
     if (auto rhs_as_array = rhs.try_as<op_array>()) {
       for (auto &item : *rhs_as_array) {
         if (auto as_double_arrow = item.try_as<op_double_arrow>()) {
@@ -283,16 +336,18 @@ static void patch_rhs_casting_to_lhs_type(VertexPtr &rhs, const TypeHint *lhs_ty
       }
     }
   }
+
+  // @param tuple(int, callable(...):void), cast correspondent arguments of a passed tuple
   if (const auto *as_tuple = lhs_type_hint->try_as<TypeHintTuple>()) {
-    // @param tuple(int, callable(...):void), cast correspondent arguments of a passed tuple
     if (auto rhs_as_tuple = rhs.try_as<op_tuple>()) {
       for (int i = 0; i < as_tuple->items.size() && i < rhs_as_tuple->size(); ++i) {
         patch_rhs_casting_to_lhs_type(rhs_as_tuple->args()[i], as_tuple->items[i], call);
       }
     }
   }
+
+  // @param shape(cb: callable(...):int), cast corresponding arguments of a passed shape
   if (const auto *as_shape = lhs_type_hint->try_as<TypeHintShape>()) {
-    // @param shape(cb: callable(...):int), cast correspoinding arguments of a passed shape
     if (auto rhs_as_shape = rhs.try_as<op_shape>()) {
       for (auto sub_expr : rhs_as_shape->args()) {
         const std::string &shape_key = GenTree::get_actual_value(sub_expr->front())->get_string();
@@ -304,40 +359,6 @@ static void patch_rhs_casting_to_lhs_type(VertexPtr &rhs, const TypeHint *lhs_ty
   }
 }
 
-// having a call `f(...)` of a template function `f<T>(...)`, deduce `T`
-// for now, we don't have rich generics functions implementations, only template functions are supported
-// (it means, that we can't express `f<T>(T[] $array)`, only `f<T>(T $arg)`, so T = assumption for $arg)
-// in the future, we'll support vectors/maps and enhanced generics, and this will be enriched
-static void patch_instantiation_list_on_generics_func_call(FunctionPtr template_function, VertexAdaptor<op_func_call> call, FunctionPtr current_function) {
-  kphp_assert(template_function->is_template() && template_function->generics_declaration);
-
-  auto *instantiation_list = new GenericsInstantiationMixin;
-  VertexRange func_args = template_function->get_params();
-
-  for (int i = 0; i < func_args.size(); ++i) {
-    auto param = func_args[i].as<op_func_param>();
-    if (!param->type_hint || !param->type_hint->has_genericsT_inside()) {
-      continue;
-    }
-    kphp_assert(param->type_hint->try_as<TypeHintGenericsT>());     // only `T $arg`
-    const std::string &nameT = param->type_hint->try_as<TypeHintGenericsT>()->nameT;
-
-    VertexPtr call_arg = GenTree::get_call_arg_for_param(call, param, i);
-    kphp_error_return(call_arg, fmt_format("missed {}th argument in calling a template function {}", i, call->func_id->as_human_readable()));
-
-    Assumption assumption = assume_class_of_expr(current_function, call_arg, call);
-    const TypeHint *instantiation_hint = assumption.assum_hint ?: TypeHintPrimitive::create(tp_any);
-    // we'd better not auto-instantiate tp_any if can't detect an instance,
-    // but for current template function syntax there is no explicit way to specify an instantiation
-    // so, leave this for now, and when we implement generics, we'll reconsider this
-
-    instantiation_list->add_instantiationT(nameT, instantiation_hint);
-  }
-  kphp_assert(template_function->generics_declaration->size() == instantiation_list->size());
-
-  call->instantiation_list = instantiation_list;
-  call->instantiation_list->location = call->location;
-}
 
 // we have @kphp-infer cast and ::: syntax in functions.txt that means auto-casting of passed arguments,
 // but we don't auto-cast in files marked with @kphp-strict-types-enable
@@ -397,6 +418,64 @@ static VertexPtr implicit_cast_call_arg_to_cast_param(VertexPtr rhs, const TypeH
   }
 }
 
+
+// this pass is very tricky, probably it's the most cognitively hard in KPHP
+// a function can reach it in 3 ways actually:
+// - normally, through compilation pipeline
+// - in on_finish(), this pass is executed for all nested lambdas
+// - when f1 needs to know assumption for return for f2, this pass is launched for f2
+// that's why we add a multithreading guard here, to ensure it's executed only the first time requested
+bool DeduceImplicitTypesAndCastsPass::check_function(FunctionPtr f) const {
+  auto expected = FunctionData::AssumptionStatus::uninitialized;
+  if (f->assumption_pass_status.compare_exchange_strong(expected, FunctionData::AssumptionStatus::processing_deduce_pass)) {
+    f->assumption_processing_thread = std::this_thread::get_id();
+    return true;
+  } else if (expected == FunctionData::AssumptionStatus::processing_deduce_pass) {
+    while (f->assumption_pass_status == FunctionData::AssumptionStatus::processing_deduce_pass && f->assumption_processing_thread != std::this_thread::get_id()) {
+      std::this_thread::sleep_for(std::chrono::nanoseconds{100});
+    }
+  }
+  return false;
+}
+
+void DeduceImplicitTypesAndCastsPass::on_start() {
+  FunctionPtr f = current_function;
+  kphp_assert(f->assumption_pass_status == FunctionData::AssumptionStatus::processing_deduce_pass && !f->is_generic());
+
+  // this is a hack, but we can't insert this pass before DeduceImplicitTypesAndCastsPass in compilation pipeline
+  // hence, we manually call it from here
+  // some time later, contents of "smart instanceof" pass has to be reconsidered and merged into this pass,
+  // because logically instanceof specifics is also about implicit casts, actually
+  TransformToSmartInstanceofPass pass;
+  run_function_pass(f, &pass);
+  stage::set_name(get_description());
+}
+
+void DeduceImplicitTypesAndCastsPass::on_finish() {
+  current_function->assumption_pass_status = FunctionData::AssumptionStatus::done_deduce_pass;
+  current_function->assumption_processing_thread = std::thread::id{};
+
+  // while reifying genericTs for calls, not every call could fill all Ts in-place,
+  // some or them can be reified only when traversing the tree up, in on_exit_vertex of a parent
+  // I have an idea of how to rewrite in a more elegant way with user_recursion, but it will complicate this MR for now
+  generic_calls.reverse();
+  for (auto call : generic_calls) {
+    stage::set_location(call->location);
+    FunctionPtr f_called = call->func_id;
+    bool old_syntax = !GenericsDeclarationMixin::is_new_kphp_generic_syntax(f_called->phpdoc);
+    check_reifiedTs_for_generic_func_call(f_called->genericTs, call, old_syntax);
+  }
+
+  if (stage::has_error()) {
+    return;
+  }
+
+  for (FunctionPtr f_lambda : nested_lambdas) {
+    DeduceImplicitTypesAndCastsPass pass_lambda;
+    run_function_pass(f_lambda, &pass_lambda);
+  }
+}
+
 // analyze a vertex in the pass
 // on_exit_vertex (not on enter) is reasonable
 VertexPtr DeduceImplicitTypesAndCastsPass::on_exit_vertex(VertexPtr root) {
@@ -428,6 +507,8 @@ VertexPtr DeduceImplicitTypesAndCastsPass::on_exit_vertex(VertexPtr root) {
     on_clone(root.as<op_clone>());
   } else if (root->type() == op_throw) {
     on_throw(root.as<op_throw>());
+  } else if (root->type() == op_lambda) {
+    on_lambda(root.as<op_lambda>());
   }
 
   return root;
@@ -457,7 +538,7 @@ void DeduceImplicitTypesAndCastsPass::on_phpdoc_for_var(VertexAdaptor<op_phpdoc_
                         fmt_format("${} has inconsistent phpdocs.\nAt first it was declared as @var {}, and then @var {}",
                                    var_name, TermStringFormat::paint_green(prev_phpdoc_hint->as_human_readable()), TermStringFormat::paint_green(v_phpdoc->type_hint->as_human_readable())));
     } else {
-      // we had an assumption for $v already ($v was used to bind arrow calls or instantiate a template), check that phpdoc equals
+      // we had an assumption for $v already ($v was used to bind arrow calls or instantiate a generic), check that phpdoc equals
       kphp_error_return(existing.assum_hint == v_phpdoc->type_hint,
                         fmt_format("You want ${} to have the type {}, but ${} was already used above in this function.\n${} was already assumed to be {}.\nMove this phpdoc above all assignments to ${} to resolve this conflict.",
                                    var_name, TermStringFormat::paint_green(v_phpdoc->type_hint->as_human_readable()), var_name, var_name, TermStringFormat::paint_green(existing.assum_hint->as_human_readable()), var_name));
@@ -472,7 +553,7 @@ void DeduceImplicitTypesAndCastsPass::on_phpdoc_for_var(VertexAdaptor<op_phpdoc_
 
 // for every `f(...)`, bind func_id
 // for every call argument, patch it to fit @param of f()
-// if f() is a template function `f<T1,T2,...>(...)`, deduce instantiation T's (save call->instantiation_list)
+// if f() is a generic function `f<T1,T2,...>(...)`, deduce instantiation Ts (save call->reifiedTs)
 void DeduceImplicitTypesAndCastsPass::on_func_call(VertexAdaptor<op_func_call> call) {
   if (!call->func_id) {
     if (call->extra_type == op_ex_constructor_call) {
@@ -517,10 +598,29 @@ void DeduceImplicitTypesAndCastsPass::on_func_call(VertexAdaptor<op_func_call> c
   FunctionPtr f_called = call->func_id;
   auto call_args = call->args();
   auto f_called_params = f_called->get_params();
-  
+
+  // if we are calling `f<T>`, then `f` has not been instantiated yet at this point, so we have a generic func call
+  // at first, we need to know all generic types (call->reifiedTs)
+  // 1) they could be explicitly set using syntax `f/*<T1, T2>*/(...)`
+  // 2) they could be omitted and should be auto-reified
+  if (f_called->is_generic()) {
+    bool old_syntax = !GenericsDeclarationMixin::is_new_kphp_generic_syntax(f_called->phpdoc);
+
+    if (call->reifiedTs) {
+      kphp_assert(call->reifiedTs->empty() && call->reifiedTs->commentTs);
+      apply_instantiationTs_from_php_comment(f_called, call, call->reifiedTs->commentTs);
+    } else {
+      reify_function_genericTs_on_generic_func_call(current_function, f_called, call, old_syntax);
+    }
+    // we can't check call->reifiedTs, because some of them may be pushed when exiting a parent vertex
+    // see on_finish()
+    generic_calls.emplace_front(call);
+  }
+
+  // now, loop through every argument and potentially patch it
   for (int i = 0; i < f_called_params.size() && i < call_args.size(); ++i) {
     auto param = f_called_params[i].as<op_func_param>();
-    
+
     if (param->type_hint) {
       patch_call_arg_on_func_call(param, call_args[i], call);
       if (param->extra_type == op_ex_param_variadic) {    // all the rest arguments are meant to be passed to this param
@@ -530,17 +630,12 @@ void DeduceImplicitTypesAndCastsPass::on_func_call(VertexAdaptor<op_func_call> c
       }
     }
   }
-
-  if (f_called->is_template() && !call->instantiation_list) {
-    patch_instantiation_list_on_generics_func_call(f_called, call, current_function);
-  }
 }
 
 // a helper to print a human-readable error for `f()` when f not found
 // the return value is not used, it's just to make the code shorter by using `return kphp_error(...)`
-int DeduceImplicitTypesAndCastsPass::print_error_unexisting_function(std::string unexisting_func_name) {
-  unexisting_func_name = vk::replace_all(unexisting_func_name, "$$", "::");
-  unexisting_func_name = vk::replace_all(unexisting_func_name, "$", "\\");
+int DeduceImplicitTypesAndCastsPass::print_error_unexisting_function(const std::string &call_string) {
+  std::string unexisting_func_name = replace_call_string_to_readable(call_string);
 
   // people try to use some of these and struggle to find an alternative
   if (unexisting_func_name == "reset") {
@@ -568,36 +663,30 @@ int DeduceImplicitTypesAndCastsPass::print_error_unexisting_function(std::string
 
 // having `f($arg1, $arg2)`, this functions patches $arg_i to fit the corresponding @param of f()
 void DeduceImplicitTypesAndCastsPass::patch_call_arg_on_func_call(VertexAdaptor<op_func_param> param, VertexPtr &call_arg, VertexAdaptor<op_func_call> call) {
+  const TypeHint *param_hint = param->type_hint;
+
   // for cast params (::: in functions.txt or '@kphp-infer cast') we add conversions automatically (implicit casts),
   // unless the file from where we're calling this function is annotated with strict_types=1
-  if (param->is_cast_param && is_implicit_cast_allowed(current_function->file_id->is_strict_types, param->type_hint)) {
-    call_arg = implicit_cast_call_arg_to_cast_param(call_arg, param->type_hint, param->var()->ref_flag);
+  if (param->is_cast_param && is_implicit_cast_allowed(current_function->file_id->is_strict_types, param_hint)) {
+    call_arg = implicit_cast_call_arg_to_cast_param(call_arg, param_hint, param->var()->ref_flag);
     return;
   }
 
-  // for `f('strlen')`, convert strlen to a lambda, so that `f<T>` would be instantiated correctly (not as f<string>)
-  // note, that patching arguments (here) is done _before_ calculating call->instantiation_list
-  // that's why we need to reify generics arguments at first (here), <T> is calculated based on this reification
-  // for now, we accept only "callable"; later, when generics are supported, this will be enriched and extracted to a separate function
-  if (param->type_hint->has_genericsT_inside()) {
-    FunctionPtr f_called = call->func_id;
-    kphp_assert(f_called->is_template() && f_called->generics_declaration);
-    if (const auto *as_genericsT = param->type_hint->try_as<TypeHintGenericsT>()) {
-      const TypeHint *extends_hint = call->instantiation_list ? call->instantiation_list->find(as_genericsT->nameT)
-                                                              : f_called->generics_declaration->find(as_genericsT->nameT);
-      if (extends_hint && extends_hint->try_as<TypeHintCallable>()) {
-        patch_rhs_casting_to_lhs_type(call_arg, TypeHintCallable::create_untyped_callable(), call);
-      }
-    }
+  // at this pass, generics are not instantiated yet,
+  // but call->reifiedTs is already filled (at least, partially)
+  // so, if we need to cast to `callable(T)`, we already know T
+  if (param_hint->has_genericT_inside()) {
+    kphp_assert(call->reifiedTs);
+    param_hint = phpdoc_replace_genericTs_with_reified(param_hint, call->reifiedTs);
   }
 
-  // maybe, we need to hack the call_arg expression based on types
-  // for example: an op_lambda passed to a typed callable @param is auto-inherited from a typed interface
-  // for example: a string passed to a callable is converted to op_callback_of_builtin
+  // now, patch call_arg to fit param_hint
+  // example: an op_lambda passed to a typed callable @param is auto-inherited from a typed interface
+  // example: a string passed to a callable is converted to op_callback_of_builtin
   if (param->extra_type != op_ex_param_variadic) {
-    patch_rhs_casting_to_lhs_type(call_arg, param->type_hint, call);
+    patch_rhs_casting_to_lhs_type(call_arg, param_hint, call);
   } else if (param->type_hint->try_as<TypeHintArray>()) {
-    patch_rhs_casting_to_lhs_type(call_arg, param->type_hint->try_as<TypeHintArray>()->inner, call);
+    patch_rhs_casting_to_lhs_type(call_arg, param_hint->try_as<TypeHintArray>()->inner, call);
   }
 }
 
@@ -703,6 +792,11 @@ void DeduceImplicitTypesAndCastsPass::on_clone(VertexAdaptor<op_clone> v_clone) 
 // handle `throw $ex`, calc assumptions to be used later
 void DeduceImplicitTypesAndCastsPass::on_throw(VertexAdaptor<op_throw> v_throw) {
   v_throw->class_id = assume_class_of_expr(current_function, v_throw->exception(), v_throw).try_as_class();
+}
+
+// handle `function() { ... }` (lambdas were not replaced by lambda classes yet at this step of pipeline)
+void DeduceImplicitTypesAndCastsPass::on_lambda(VertexAdaptor<op_lambda> v_lambda) {
+  nested_lambdas.emplace_front(v_lambda->func_id);
 }
 
 // handle `$obj->field`, calc assumption for $obj and set var_id

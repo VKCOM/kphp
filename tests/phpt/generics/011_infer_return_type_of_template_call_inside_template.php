@@ -83,9 +83,9 @@ class B {
 }
 
 /**
- * @kphp-template T
- * @kphp-param T $obj
- * @kphp-return T
+ * @kphp-generic T
+ * @param T $obj
+ * @return T
  */
 function tpl1($obj) {
     $obj->fa();
@@ -93,9 +93,9 @@ function tpl1($obj) {
 }
 
 /**
- * @kphp-template T
- * @kphp-param T $obj
- * @kphp-return T
+ * @kphp-generic T
+ * @param T $obj
+ * @return T
  */
 function tpl2($obj) {
     $obj->fa();

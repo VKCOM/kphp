@@ -28,6 +28,7 @@ enum class PhpDocType {
   kphp_should_not_throw,
   kphp_throws,
   kphp_template,
+  kphp_generic,
   kphp_param,
   kphp_return,
   kphp_memcache_class,
@@ -50,6 +51,8 @@ enum class PhpDocType {
   kphp_color,
 };
 
+class GenericsDeclarationMixin;
+
 // one phpdoc contains of several doc tags
 // every doc tag has a type (enum mapping @tag-name) and a value
 struct PhpDocTag {
@@ -71,7 +74,7 @@ struct PhpDocTag {
   std::string get_tag_name() const noexcept;
 
   std::string value_as_string() const noexcept { return std::string(value); }
-  TypeAndVarName value_as_type_and_var_name(FunctionPtr current_function) const;
+  TypeAndVarName value_as_type_and_var_name(FunctionPtr current_function, const GenericsDeclarationMixin *genericTs) const;
 };
 
 // a class representing whole php doc comment
@@ -115,14 +118,16 @@ public:
 // such parsing could be done only based on current_function, when we know all classes and function's properties
 class PhpDocTypeHintParser {
 public:
-  explicit PhpDocTypeHintParser(FunctionPtr current_function) :
-    current_function(current_function) {}
+  explicit PhpDocTypeHintParser(FunctionPtr current_function, const GenericsDeclarationMixin *genericTs)
+    : current_function(current_function)
+    , genericTs(genericTs) {}
 
   const TypeHint *parse_from_tokens(std::vector<Token>::const_iterator &tok_iter);
   const TypeHint *parse_from_tokens_silent(std::vector<Token>::const_iterator &tok_iter) noexcept;
 
 private:
   FunctionPtr current_function;
+  const GenericsDeclarationMixin *genericTs;
   std::vector<Token>::const_iterator cur_tok;
 
   const TypeHint *parse_ffi_scope();
@@ -139,5 +144,5 @@ private:
 };
 
 const TypeHint *phpdoc_finalize_type_hint_and_resolve(const TypeHint *type_hint, FunctionPtr resolve_context);
-const TypeHint *phpdoc_replace_genericsT_with_instantiation(const TypeHint *type_hint, const GenericsInstantiationMixin *generics_instantiation);
+const TypeHint *phpdoc_replace_genericTs_with_reified(const TypeHint *type_hint, const GenericsInstantiationMixin *reifiedTs);
 const TypeHint *phpdoc_convert_default_value_to_type_hint(VertexPtr init_val);

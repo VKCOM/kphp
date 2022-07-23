@@ -88,7 +88,6 @@
 #include "compiler/pipes/resolve-self-static-parent.h"
 #include "compiler/pipes/sort-and-inherit-classes.h"
 #include "compiler/pipes/split-switch.h"
-#include "compiler/pipes/transform-to-smart-instanceof.h"
 #include "compiler/pipes/type-inferer.h"
 #include "compiler/pipes/write-files.h"
 #include "compiler/scheduler/constructor.h"
@@ -247,9 +246,10 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PassC<PreprocessEq3Pass>{}
     >> PassC<PreprocessExceptions>{}
     >> SyncC<ParseAndApplyPhpdocF>{}
-    // from this point, @param/@return are parsed in all functions, and we can use assumptions
-    // template functions and lambdas are stopped by the SyncPipe above, they are instantiated on demand and passed here, see <1> output
-    >> PassC<TransformToSmartInstanceofPass>{}
+    // from this point, @param/@return are parsed in all functions, we can calculate and use assumptions
+    // lambdas don't traverse this part of pipeline — they are processed by containing functions as vertices
+    // generics are also stopped by the SyncPipe above, they are instantiated on demand and passed here, see <1> output
+    // do NOT insert any pipe before, see DeduceImplicitTypesAndCastsPass::check_function()
     >> PassC<DeduceImplicitTypesAndCastsPass>{}
     >> PipeC<InstantiateGenericsAndLambdasF>{} >> use_nth_output_tag<0>{}
     >> SyncC<GenerateVirtualMethodsF>{}
@@ -316,7 +316,7 @@ bool compiler_execute(CompilerSettings *settings) {
 
   SchedulerConstructor{scheduler}
     >> PipeC<InstantiateGenericsAndLambdasF>{} >> use_nth_output_tag<1>{}
-    >> PassC<TransformToSmartInstanceofPass>{};
+    >> PassC<DeduceImplicitTypesAndCastsPass>{};
 
   if (G->settings().show_progress.get()) {
     PipesProgress::get().enable();

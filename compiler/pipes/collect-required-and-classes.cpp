@@ -103,24 +103,13 @@ private:
     });
   }
 
-  // When looking at /** @var Photo */ under the instance field, assume that we
-  // need to load the Photo class even if there is no explicit constructor call
+  // looking at /** @var Photo */ above a field, load Photo class
   inline void require_all_classes_in_field_phpdoc(const PhpDocComment *phpdoc) {
     if (const PhpDocTag *var_tag = phpdoc->find_tag(PhpDocType::var)) {
-      require_all_classes_in_var_phpdoc(var_tag->value);
+      if (auto tag_parsed = var_tag->value_as_type_and_var_name(current_function, current_function->genericTs)) {
+        require_all_classes_in_phpdoc_type(tag_parsed.type_hint);
+      }
     }
-  }
-
-  // Having @var (in a field or standalone), autoload classes inside it.
-  // We can't distinguish class T and genericsT, just try to load all we found, that's okay
-  inline void require_all_classes_in_var_phpdoc(vk::string_view var_tag_value) {
-    // we can't use parse_type_and_var_name() here
-    // since classes are not available at this point: we need to fetch these unknown classes
-    std::vector<Token> tokens = phpdoc_to_tokens(var_tag_value);
-    auto cur_tok = tokens.cbegin();
-    PhpDocTypeHintParser parser(current_function);
-    const TypeHint *type_hint = parser.parse_from_tokens_silent(cur_tok);
-    require_all_classes_in_phpdoc_type(type_hint);
   }
 
   // Searching for classes inside @var/@param phpdoc as well as inside type hints
@@ -256,7 +245,7 @@ public:
     }
 
     if (auto as_phpdoc_var = root.try_as<op_phpdoc_var>()) {
-      require_all_classes_in_var_phpdoc(as_phpdoc_var->tag_value);
+      require_all_classes_in_phpdoc_type(as_phpdoc_var->type_hint);
     }
 
     return root;

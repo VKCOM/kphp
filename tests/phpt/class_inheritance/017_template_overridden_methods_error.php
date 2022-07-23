@@ -10,11 +10,9 @@ interface SlicesVisitor {
 
 interface Slice {
     /**
-     * @param SliceVisitor $visitor
-     * @return any
-     * @kphp-template T
-     * @kphp-param T $visitor
-     * @kphp-return T::_template
+     * @kphp-generic T
+     * @param T $visitor
+     * @return T::_template
      */
     function accept($visitor);
 }

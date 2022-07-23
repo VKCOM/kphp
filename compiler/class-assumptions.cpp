@@ -3,22 +3,30 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 /*
- * 'Assumption' is predicted type information that describes which variables belong to which classes.
- * Used to resolve arrow method calls: to detect, a method of which class is actually being called.
- * For $a->getValue() we can infer that getValue() belongs to the A class; hence we resolve it to Classes$A$$getValue().
+ * 'Assumption' is predicted type information calculated BEFORE type inferring.
+ * It's supposed that type inferring would afterward produce the same types.
+ * Assumptions are used to bind function calls (to create call graph):
+ * - resolve ->arrowCalls() to detect, a method of which class is actually being called
+ *   (for `$a->getValue()` we assume $a to be of class A; hence we set call->func_id = A::getValue).
+ * - instantiate generics: having `f<T>` called with `f($a)`, reify T=A
  *
- * Method resolving happens in DeduceImplicitTypesAndCastsPass: it assigns func_id to ->calls() and ->fields.
- * That happens before control flow graph and registering variables, this is why assumptions rely on variable names.
+ * Assumptions can be calculated for return values and variables.
+ * - for returns of functions, they are from @return or by analyzing 'return' statements
+ * - for local variables, they are from @var or by analyzing assignments
+ * - for parameters, they are from @param
  *
- * We also perform a simple function code analysis that helps infer some types without explicit phpdoc hints.
- * For example, in "$a = new A; $a->foo()" we see that A constructor is called, therefore the type of $a is A
- * and $a->foo can be resolved to Classes$A$$foo().
+ * Important!
+ * For variables, assumptions rely on variable names, which is generally wrong,
+ * because variables can be splitted and smartcasted.
+ * See: `function f(mixed $id) { $id = (int)$id; echo $id; }` is later converted to `{ $id$v1 = (int)$id; echo $id$v1; }`
+ * That's why assumptions for variables ARE NOT SAVED if they don't contain INSTANCES.
+ * We deny splitting variables with instances, because it may lead to mismatch inferring and assumptions.
+ * The only exception is lambdas, assumptions for parameters are always stored (for better generics user experience).
+ * Return values, nevertheless, can contain assumptions for primitives only.
  *
- * Caution! Assumptions is NOT type inferring, it's much more rough analysis.
- * They are used ONLY to bind -> invocations and to instantiate template functions.
- * They do not contain information about primitives, they do not operate cfg/smartcasts — only variable names.
- * In other words, assumptions are our type expectations/intentions for classes, they are checked by tinf later.
- * If they are incorrect (for example, @return A but actually returns B), a tinf error will occur later on.
+ * In other words, assumptions are our type expectations/intentions for classes, for earlier (apriori) binding.
+ * They are checked by tinf later.
+ * If they are incorrect (for example, @return A, but actually returns B), a tinf error will occur later on.
  */
 #include "compiler/class-assumptions.h"
 
@@ -28,6 +36,7 @@
 #include "compiler/data/function-data.h"
 #include "compiler/gentree.h"
 #include "compiler/pipes/instantiate-ffi-operations.h"
+#include "compiler/pipes/deduce-implicit-types-and-casts.h"
 #include "compiler/phpdoc.h"
 #include "compiler/type-hint.h"
 #include "compiler/function-pass.h"
@@ -44,29 +53,10 @@ static inline const TypeHint *assumption_unwrap_optional(const TypeHint *assum_h
   return assum_hint;
 }
 
-static inline bool assumption_needs_to_be_saved(const Assumption &assumption) {
-  const TypeHint *type_hint = assumption_unwrap_optional(assumption.assum_hint);
-
-  if (type_hint == nullptr) {
-    return false;
-  }
-  if (const auto *as_callable = type_hint->try_as<TypeHintCallable>()) {
-    // don't treat plain 'callable' as an assumption, until it's bound to an actual function (a lambda, probably)
-    return as_callable->is_typed_callable() || as_callable->f_bound_to;
-  }
-  return true;
+static inline bool assumption_needs_to_be_saved(const TypeHint *assum_hint) {
+  return assum_hint && assum_hint->is_typedata_constexpr() && !assum_hint->has_autogeneric_inside();
 }
 
-
-Assumption::Assumption(const TypeHint *type_hint) {
-  if (type_hint == nullptr) {
-    assum_hint = nullptr;
-  } else if (!type_hint->has_instances_inside() && !type_hint->has_callables_inside()) {
-    assum_hint = nullptr;
-  } else {
-    assum_hint = type_hint; // note, that tuple(int,A) is saved as is, but getting [0] subkey will return undefined
-  }
-}
 
 Assumption::Assumption(ClassPtr klass) : assum_hint(klass->type_hint) {
 }
@@ -154,8 +144,7 @@ ClassPtr Assumption::extract_instance_from_type_hint(const TypeHint *a) {
         }
         continue; // allow cases like `A|B|null`
       }
-      const auto *as_instance = item->try_as<TypeHintInstance>();
-      ClassPtr klass = as_instance ? as_instance->resolve() : ClassPtr{};
+      ClassPtr klass = extract_instance_from_type_hint(item);
       bool has_parents = klass && (klass->parent_class || !klass->implements.empty());
       if (!has_parents) {
         return ClassPtr{};
@@ -171,7 +160,7 @@ ClassPtr Assumption::extract_instance_from_type_hint(const TypeHint *a) {
       if (as_pipe->items[i]->try_as<TypeHintPrimitive>()) {
         continue; // we know that it's tp_Null
       }
-      ClassPtr other = as_pipe->items[i]->try_as<TypeHintInstance>()->resolve();
+      ClassPtr other = extract_instance_from_type_hint(as_pipe->items[i]);
       const auto common_bases = first->get_common_base_or_interface(other);
       if (common_bases.size() != 1) {
         return ClassPtr{};
@@ -190,10 +179,16 @@ ClassPtr Assumption::extract_instance_from_type_hint(const TypeHint *a) {
   if (const auto *as_callable = a->try_as<TypeHintCallable>()) {
     return as_callable->is_typed_callable() ? as_callable->get_interface() : as_callable->get_lambda_class();
   }
-  // 'A::fieldName' — a syntax that's used in @kphp-return
-  if (const auto *as_field_ref = a->try_as<TypeHintFieldRef>()) {
+  // 'T::fieldName' — a syntax that's used in @return for generics
+  if (const auto *as_field_ref = a->try_as<TypeHintRefToField>()) {
     if (const auto *field = as_field_ref->resolve_field()) {
       return extract_instance_from_type_hint(field->type_hint);
+    }
+  }
+  // 'T::methodName()' — a syntax that's used in @return for generics
+  if (const auto *as_method_ref = a->try_as<TypeHintRefToMethod>()) {
+    if (FunctionPtr method = as_method_ref->resolve_method()) {
+      return assume_return_of_function(method).try_as_class();
     }
   }
   // ffi_cdata<scope, struct T> — return T inside scope, it's a registered class
@@ -214,7 +209,6 @@ ClassPtr Assumption::extract_instance_from_type_hint(const TypeHint *a) {
 
 static Assumption calc_assumption_for_class_static_var(ClassPtr c, const std::string &var_name);
 static Assumption calc_assumption_for_class_instance_field(ClassPtr c, const std::string &var_name);
-static Assumption calc_assumption_for_return(FunctionPtr f);
 
 
 static Assumption assumption_merge(const Assumption &dst, const Assumption &rhs) {
@@ -237,11 +231,14 @@ static Assumption assumption_merge(const Assumption &dst, const Assumption &rhs)
   return {};
 }
 
-static void __attribute__((noinline)) print_error_assumptions_arent_merged_for_var(const std::string &var_name, Assumption a, Assumption b) {
+static void __attribute__((noinline)) print_error_assumptions_arent_merged_for_var(FunctionPtr f, const std::string &var_name, Assumption a, Assumption b) {
   ClassPtr a_klass = a.try_as_class();
   ClassPtr b_klass = b.try_as_class();
   std::vector<ClassPtr> common_bases = a_klass ? a_klass->get_common_base_or_interface(b_klass) : std::vector<ClassPtr>{};
 
+  kphp_error_return(!f->find_param_by_name(var_name),
+                    fmt_format("${} is was declared as @param {}, and later reassigned to {}\nPlease, use different names for local vars and arguments",
+                               var_name, TermStringFormat::paint_green(a.as_human_readable()), TermStringFormat::paint_green(b.as_human_readable())));
   kphp_error_return(common_bases.empty(),
                     fmt_format("${} is assumed to be both {} and {}\nAdd /** @var {} ${} */ above all assignments to ${} to resolve this conflict.\nProbably, you want /** @var \\{} ${} */",
                                var_name, TermStringFormat::paint_green(a.as_human_readable()), TermStringFormat::paint_green(b.as_human_readable()), "{type}", var_name, var_name, common_bases.front()->name, var_name));
@@ -258,8 +255,14 @@ static void __attribute__((noinline)) print_error_assumptions_arent_merged_for_r
 
 
 void assumption_add_for_var(FunctionPtr f, const std::string &var_name, const Assumption &assumption, VertexPtr v_location) {
-  if (!assumption_needs_to_be_saved(assumption)) {   // we store only meaningful assumptions, that will help resolve -> access
+  if (!assumption_needs_to_be_saved(assumption.assum_hint)) {
     return;
+  }
+  if (!assumption.assum_hint->has_instances_inside() && !assumption.assum_hint->has_callables_inside()) {
+    const bool add_even_for_primitives = f->is_lambda() && f->find_param_by_name(var_name);
+    if (!add_even_for_primitives) { // see a comment at the top
+      return;
+    }
   }
 
   for (auto &name_and_a : f->assumptions_for_vars) {
@@ -268,7 +271,7 @@ void assumption_add_for_var(FunctionPtr f, const std::string &var_name, const As
         name_and_a.second = merged;
       } else {
         stage::set_location(v_location->location);
-        print_error_assumptions_arent_merged_for_var(var_name, name_and_a.second, assumption);
+        print_error_assumptions_arent_merged_for_var(f, var_name, name_and_a.second, assumption);
       }
       return;
     }
@@ -279,7 +282,7 @@ void assumption_add_for_var(FunctionPtr f, const std::string &var_name, const As
 }
 
 void assumption_add_for_return(FunctionPtr f, const Assumption &assumption, VertexPtr v_location) {
-  if (!assumption_needs_to_be_saved(assumption)) {   // we store only meaningful assumptions, that will help resolve -> access
+  if (!assumption_needs_to_be_saved(assumption.assum_hint)) {
     return;
   }
 
@@ -421,22 +424,9 @@ public:
     if (!as_return || !as_return->has_expr()) {
       return root;
     }
-    VertexPtr expr = as_return->expr();
 
-    if (expr->type() == op_var && expr->get_string() == "this" && current_function->modifiers.is_instance()) {
-      assumption_add_for_return(current_function, Assumption(current_function->class_id), root);  // return this
-    } else if (auto call = expr.try_as<op_func_call>()) {
-      if (call->extra_type == op_ex_constructor_call) {
-        assumption_add_for_return(current_function, Assumption(call->args()[0].as<op_alloc>()->allocated_class), root);
-      } else if (call->func_id) {
-        assumption_add_for_return(current_function, calc_assumption_for_return(call->func_id), root);
-      }
-    } else if (auto call_ex = expr.try_as<op_exception_constructor_call>()) {
-      assumption_add_for_return(current_function, Assumption(call_ex->constructor_call()->args()[0].as<op_alloc>()->allocated_class), root);
-    } else if (auto lambda_vertex = expr.try_as<op_lambda>()) {
-      assumption_add_for_return(current_function, assume_class_of_expr(current_function, lambda_vertex, root), root);
-    }
-
+    Assumption ret_assum = assume_class_of_expr(current_function, as_return->expr(), root);
+    assumption_add_for_return(current_function, ret_assum, root);
     return root;
   }
 };
@@ -444,8 +434,9 @@ public:
 // this is a hack preventing race condition and should be removed somewhen
 // (though it does not prevent it fully, but it happens noticeable more rarely)
 // see comment in MR for detailed description
-void run_CalcAssumptionForVarPass_safe(FunctionPtr function, CalcAssumptionForVarPass *pass) {
-  Location location_backup_raw = Location{*stage::get_location_ptr()};
+template <class PassT>
+void run_CalcAssumptionPass_safe(FunctionPtr function, PassT *pass) {
+  stage::StageInfo stage_backup_raw = *stage::get_stage_info_ptr();
   pass->setup(function);
   pass->on_start();
 
@@ -463,31 +454,7 @@ void run_CalcAssumptionForVarPass_safe(FunctionPtr function, CalcAssumptionForVa
 
   recurse(function->root);
   pass->on_finish();
-  *stage::get_location_ptr() = std::move(location_backup_raw);
-}
-
-/*
- * For the '$a = getSome(), $a->... , or getSome()->...' we need to deduce the result type of getSome().
- * That information can be obtained from the @return tag or trivial returns analysis inside that function.
- * Called exactly once for every function.
- */
-void init_assumptions_for_return(FunctionPtr f) {
-  kphp_assert (f->assumption_return_status == AssumptionStatus::processing);
-//  printf("[%d] init_assumptions_for_return of %s\n", get_thread_id(), f->name.c_str());
-
-  if (f->return_typehint) {
-    bool is_meaningful =
-      f->return_typehint->is_typedata_constexpr() &&
-      (!f->return_typehint->try_as<TypeHintCallable>() || f->return_typehint->try_as<TypeHintCallable>()->is_typed_callable());
-    if (is_meaningful) {
-      assumption_add_for_return(f, Assumption(f->return_typehint), f->root);
-      return;
-    }
-  }
-
-  // traverse function body, find all 'return' there
-  CalcAssumptionForReturnPass pass;
-  run_function_pass(f, &pass);
+  *stage::get_stage_info_ptr() = stage_backup_raw;
 }
 
 /*
@@ -499,7 +466,7 @@ static Assumption calc_assumption_for_var(FunctionPtr f, const std::string &var_
     return Assumption(f->class_id);
   }
 
-  // assumptions for arguments are filled outside, like assumptions from phpdocs: see DeduceImplicitTypesAndCastsPass
+  // assumptions for arguments are filled outside from @param: see DeduceImplicitTypesAndCastsPass
   if (Assumption from_argument = f->get_assumption_for_var(var_name)) {
     return from_argument;
   }
@@ -529,41 +496,9 @@ static Assumption calc_assumption_for_var(FunctionPtr f, const std::string &var_
   }
 
   CalcAssumptionForVarPass pass(var_name, stop_at);
-  run_CalcAssumptionForVarPass_safe(f, &pass);
+  run_CalcAssumptionPass_safe(f, &pass);
 
   return f->get_assumption_for_var(var_name);
-}
-
-/*
- * A high-level function which deduces the result type of f.
- * The results are cached; init on f is called during the first invocation.
- */
-static Assumption calc_assumption_for_return(FunctionPtr f) {
-  // these cases depend on a call, they are handled in infer_from_call, but if it was bypassed
-  if (f->is_template() || (f->return_typehint && !f->return_typehint->is_typedata_constexpr())) {
-    return {};
-  }
-
-  if (f->is_constructor()) {
-    return Assumption(f->class_id);
-  }
-
-  auto expected = AssumptionStatus::unknown;
-  if (f->assumption_return_status.compare_exchange_strong(expected, AssumptionStatus::processing)) {
-    kphp_assert(f->assumption_return_processing_thread == std::thread::id{});
-    f->assumption_return_processing_thread = std::this_thread::get_id();
-    init_assumptions_for_return(f);
-    f->assumption_return_status = AssumptionStatus::initialized;
-  } else if (expected == AssumptionStatus::processing) {
-    if (f->assumption_return_processing_thread == std::this_thread::get_id()) {
-      return {};
-    }
-    while (f->assumption_return_status != AssumptionStatus::initialized) {
-      std::this_thread::sleep_for(std::chrono::nanoseconds{100});
-    }
-  }
-
-  return f->assumption_for_return;
 }
 
 static Assumption calc_assumption_for_class_instance_field(ClassPtr c, const std::string &var_name) {
@@ -641,18 +576,18 @@ Assumption infer_from_call(FunctionPtr f, VertexAdaptor<op_func_call> call, Vert
     return {};
   }
 
-  // calling a template function; this func call has been previously instantiated
-  // then we take a regular @return (a constexpr one) or @kphp-return with genericsT inside (it's also stored in return_typehint)
-  if (f_called->is_template()) {
-    kphp_assert(call->instantiation_list);
+  // calling a generic function; this func call has been previously reified
+  // we require generic functions to have @return declared (either constexpr or with generic T inside)
+  if (f_called->is_generic()) {
+    kphp_assert(call->reifiedTs);
 
     if (f_called->return_typehint) {
-      return Assumption(phpdoc_replace_genericsT_with_instantiation(f_called->return_typehint, call->instantiation_list));
+      return Assumption(phpdoc_replace_genericTs_with_reified(f_called->return_typehint, call->reifiedTs));
     }
     return {};
   }
 
-  // some ffi functions, like $cdef->new('int') and FFI::cast(), also depend on a call, like template functions
+  // some ffi functions, like $cdef->new('int') and FFI::cast(), also depend on a call, like generic functions
   // but their @return can't be expressed in syntax of _functions.txt: instead, inferring is hardcoded
   if (f_called->is_extern()) {
     if (f_called->name == "FFI$$new") {
@@ -675,7 +610,7 @@ Assumption infer_from_call(FunctionPtr f, VertexAdaptor<op_func_call> call, Vert
   }
 
   // when an assumption doesn't depend on a call, the return assumption can be once calculated and cached
-  return calc_assumption_for_return(f_called);
+  return assume_return_of_function(f_called);
 }
 
 Assumption infer_from_array(FunctionPtr f, VertexAdaptor<op_array> array, VertexPtr stop_at) {
@@ -683,24 +618,24 @@ Assumption infer_from_array(FunctionPtr f, VertexAdaptor<op_array> array, Vertex
     return {};
   }
 
-  ClassPtr klass;
+  Assumption common_t;
   for (auto v : *array) {
     if (auto double_arrow = v.try_as<op_double_arrow>()) {
       v = double_arrow->value();
     }
-    ClassPtr as_klass = assume_class_of_expr(f, v, stop_at).try_as_class();
-    if (!as_klass) {
+    Assumption elem_t = assume_class_of_expr(f, v, stop_at);
+    if (!elem_t) {
       return {};
     }
 
-    if (!klass) {
-      klass = as_klass;
-    } else if (klass != as_klass) {
+    if (!common_t) {
+      common_t = elem_t;
+    } else if (common_t.assum_hint != elem_t.assum_hint) {
       return {};
     }
   }
 
-  return Assumption(TypeHintArray::create(klass->type_hint));
+  return Assumption(TypeHintArray::create(common_t.assum_hint));
 }
 
 Assumption infer_from_tuple(FunctionPtr f, VertexAdaptor<op_tuple> tuple, VertexPtr stop_at) {
@@ -753,10 +688,10 @@ Assumption infer_from_invoke_call(FunctionPtr f, VertexAdaptor<op_invoke_call> i
   Assumption cb_assum = assume_class_of_expr(f, invoke_call->args()[0], stop_at);
   const TypeHint *assum_hint = assumption_unwrap_optional(cb_assum.assum_hint) ?: TypeHintPrimitive::create(tp_any);
 
-  // $cb can be a raw callable got from op_lambda, while deducing types (until templates and lambdas are instantiated)
+  // $cb can be a raw callable got from op_lambda, while deducing types (until generics and lambdas are instantiated)
   if (const auto *as_callable = assum_hint->try_as<TypeHintCallable>()) {
     if (as_callable->is_untyped_callable() && as_callable->f_bound_to) {
-      return calc_assumption_for_return(as_callable->f_bound_to);
+      return assume_return_of_function(as_callable->f_bound_to);
     } else if (as_callable->is_typed_callable()) {
       return Assumption(as_callable->return_type);
     }
@@ -765,7 +700,7 @@ Assumption infer_from_invoke_call(FunctionPtr f, VertexAdaptor<op_invoke_call> i
   // $cb can be a lambda class, after all instantiations, when binding invoke calls
   ClassPtr c_lambda = cb_assum.try_as_class();
   if (c_lambda && c_lambda->is_lambda_class()) {
-    return calc_assumption_for_return(c_lambda->get_instance_method("__invoke")->function);
+    return assume_return_of_function(c_lambda->get_instance_method("__invoke")->function);
   }
 
   return {};
@@ -773,6 +708,42 @@ Assumption infer_from_invoke_call(FunctionPtr f, VertexAdaptor<op_invoke_call> i
 
 } // namespace
 
+
+// a public function of this module: deduce the result type of f
+// for `$a = getSome(), $a->...`  or `getSome()->...`, we need to deduce the result type of getSome()
+// that information can be obtained from the @return tag or returns analysis in body
+Assumption assume_return_of_function(FunctionPtr f) {
+  // for regular @return (unless 'callable', 'T' and similar), use it as an assumption
+  // (for strongly typed code, it covers almost all cases, except lambdas)
+  if (assumption_needs_to_be_saved(f->return_typehint)) {
+    return Assumption(f->return_typehint);
+  }
+
+  if (!f->assumption_for_return) {
+    // important! to calculate assumptions, all call->func_id must be already bound
+    // in other words, calculating assumptions goes along with binding call->func_id, instance_prop->var_id, etc.
+    // we execute the pass which actually does all this stuff, see comments in that file
+    // the pass has second-call prevention in check_function()
+    DeduceImplicitTypesAndCastsPass pass;
+    run_function_pass(f, &pass);
+
+    // having executed that pass, analyze body
+    // we must manually handle concurrent execution here (if many threads want to know return assumption for f)
+    auto expected = FunctionData::AssumptionStatus::done_deduce_pass;
+    if (f->assumption_pass_status.compare_exchange_strong(expected, FunctionData::AssumptionStatus::processing_returns_in_body)) {
+      f->assumption_processing_thread = std::this_thread::get_id();
+      CalcAssumptionForReturnPass ret_pass;
+      run_CalcAssumptionPass_safe(f, &ret_pass);
+      f->assumption_pass_status = FunctionData::AssumptionStatus::done_returns_in_body;
+    } else if (expected == FunctionData::AssumptionStatus::processing_returns_in_body) {
+      while (f->assumption_pass_status == FunctionData::AssumptionStatus::processing_returns_in_body && f->assumption_processing_thread != std::this_thread::get_id()) {
+        std::this_thread::sleep_for(std::chrono::nanoseconds{100});
+      }
+    }
+  }
+
+  return f->assumption_for_return;
+}
 
 // the main function of this module, that is called from the outside
 // it calculates the assumption for "root" inside "f", up to the "stop_at" vertex
@@ -834,6 +805,20 @@ Assumption assume_class_of_expr(FunctionPtr f, VertexPtr root, VertexPtr stop_at
       return assume_class_of_expr(f, root.as<op_move>()->expr(), stop_at);
     case op_set:
       return assume_class_of_expr(f, root.as<op_set>()->rhs(), stop_at);
+
+    // assumptions for primitives aren't saved to $local_vars and don't help to resolve ->arrows,
+    // but they are useful for generics reification
+    case op_int_const:
+      return Assumption(TypeHintPrimitive::create(tp_int));
+    case op_float_const:
+      return Assumption(TypeHintPrimitive::create(tp_float));
+    case op_string:
+    case op_conv_string:
+      return Assumption(TypeHintPrimitive::create(tp_string));
+    case op_false:
+    case op_true:
+      return Assumption(TypeHintPrimitive::create(tp_bool));
+
     default:
       return {};
   }

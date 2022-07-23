@@ -118,6 +118,7 @@ public:
       FunctionPtr switch_f = FunctionData::create_function(func_name, func, FunctionData::func_switch);
       new_functions.push_back(switch_f);
       switch_f->has_var_tags_inside = current_function->has_var_tags_inside;
+      switch_f->has_commentTs_inside = current_function->has_commentTs_inside;
 
       auto func_call = VertexAdaptor<op_func_call>::create(case_state_0);
       func_call->str_val = func_name;

@@ -1,6 +1,8 @@
 @kphp_should_fail
-/in foo<any>/
+/in foo<string>/
+/in foo<int>/
 /instantiated at/
+/is not an instance or it can't be detected/
 <?php
 
 class A { var $data = 10; }

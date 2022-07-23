@@ -28,7 +28,7 @@ class TypeData;
  * TypeHint can be converted to TypeData if it is _constexpr_:
  * * if it contains ^1 inside, it's not constexpr, as it requires a context of a call
  * * if it contains self inside, it's not constexpr, as it requires a resolve context
- * * if it contains T inside (of a @kphp-template function), it's not constexpr, as it requires a generic instantiation
+ * * if it contains T inside (of a @kphp-generic function), it's not constexpr, as it requires a generic instantiation
  * * otherwise, it's constexpr
  * Note, that self/static/parent are valid type hints (instances), but only while parsing (inheritance, traits, etc)
  * When bound to a function, they must be replaced with actual context, see phpdoc_finalize_type_hint_and_resolve()
@@ -53,7 +53,8 @@ protected:
     flag_contains_argref_inside = 1 << 2,
     flag_contains_tp_any_inside = 1 << 3,
     flag_contains_callables_inside = 1 << 4,
-    flag_contains_genericsT_inside = 1 << 5,
+    flag_contains_genericT_inside = 1 << 5,
+    flag_contains_autogeneric_inside = 1 << 6,
     flag_potentially_casts_rhs = 1 << 10,
   };
 
@@ -72,10 +73,11 @@ public:
   bool has_argref_inside() const { return flags & flag_contains_argref_inside; }
   bool has_tp_any_inside() const { return flags & flag_contains_tp_any_inside; }
   bool has_callables_inside() const { return flags & flag_contains_callables_inside; }
-  bool has_genericsT_inside() const { return flags & flag_contains_genericsT_inside; }
+  bool has_genericT_inside() const { return flags & flag_contains_genericT_inside; }
+  bool has_autogeneric_inside() const { return flags & flag_contains_autogeneric_inside; }
   bool has_flag_maybe_casts_rhs() const { return flags & flag_potentially_casts_rhs; }
 
-  bool is_typedata_constexpr() const { return !has_argref_inside() && !has_self_static_parent_inside() && !has_genericsT_inside(); }
+  bool is_typedata_constexpr() const { return !has_argref_inside() && !has_self_static_parent_inside() && !has_genericT_inside(); }
   const TypeData *to_type_data() const;
   const TypeHint *unwrap_optional() const;
 
@@ -175,10 +177,10 @@ public:
 
 /**
  * T::fieldName — a reference to a type of a class field.
- * We allow this to be used only with genericsT, see phpdoc_replace_genericsT_with_instantiation(); SomeClass::f will fail.
+ * We allow this to be used only with generic T, see phpdoc_replace_genericTs_with_reified(); SomeClass::f will fail.
  */
-class TypeHintFieldRef : public TypeHint {
-  explicit TypeHintFieldRef(const TypeHint *inner, std::string field_name)
+class TypeHintRefToField : public TypeHint {
+  explicit TypeHintRefToField(const TypeHint *inner, std::string field_name)
     : TypeHint(0)
     , inner(inner)
     , field_name(std::move(field_name)) {}
@@ -196,6 +198,31 @@ public:
   void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr func_call) const final;
 
   const ClassMemberInstanceField *resolve_field() const;
+};
+
+/**
+ * T::methodName() — a reference to a return type of a class instance method.
+ * Like TypeHintRefToField, used in generics to express "a type that is returned from a method": `@ return T::getValue()`
+ */
+class TypeHintRefToMethod : public TypeHint {
+  explicit TypeHintRefToMethod(const TypeHint *inner, std::string method_name)
+    : TypeHint(0)
+    , inner(inner)
+    , method_name(std::move(method_name)) {}
+
+public:
+  const TypeHint *inner;
+  std::string method_name;
+
+  static const TypeHint *create(const TypeHint *inner, const std::string &method_name);
+
+  std::string as_human_readable() const final;
+  void traverse(const TraverserCallbackT &callback) const final;
+  const TypeHint *replace_self_static_parent(FunctionPtr resolve_context) const final;
+  const TypeHint *replace_children_custom(const ReplacerCallbackT &callback) const final;
+  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr func_call) const final;
+
+  FunctionPtr resolve_method() const;
 };
 
 /**
@@ -223,13 +250,13 @@ public:
 
 /**
  * callable, callable(int):void
- * Remember, that untyped callables used as function arguments actually turn this function into a template one
+ * Remember, that untyped callables used as function arguments actually turn this function into a generic one
  */
 class TypeHintCallable : public TypeHint {
   explicit TypeHintCallable()
-    : TypeHint(flag_contains_callables_inside | flag_potentially_casts_rhs | flag_contains_tp_any_inside) {}
+    : TypeHint(flag_contains_callables_inside | flag_potentially_casts_rhs | flag_contains_autogeneric_inside | flag_contains_tp_any_inside) {}
   explicit TypeHintCallable(FunctionPtr f_bound_to)
-    : TypeHint(flag_contains_callables_inside | flag_potentially_casts_rhs)
+    : TypeHint(flag_contains_callables_inside)
     , f_bound_to(std::move(f_bound_to)) {}
   explicit TypeHintCallable(std::vector<const TypeHint *> &&arg_types, const TypeHint *return_type)
     : TypeHint(flag_contains_callables_inside | flag_potentially_casts_rhs)
@@ -449,6 +476,25 @@ public:
 };
 
 /**
+ * 'object' has a special treatment and a special type hint (it's not a primitive, it's not an instance of an exact class).
+ * 'object' parameters, like just 'callable', convert a function to a template one.
+ * 'object' also occurs in _functions.txt for parameters meaning "any instance, not a primitive".
+ */
+class TypeHintObject : public TypeHint {
+  explicit TypeHintObject()
+    : TypeHint(flag_contains_autogeneric_inside | flag_contains_tp_any_inside) {}
+
+public:
+  static const TypeHint *create();
+
+  std::string as_human_readable() const final;
+  void traverse(const TraverserCallbackT &callback) const final;
+  const TypeHint *replace_self_static_parent(FunctionPtr resolve_context) const final;
+  const TypeHint *replace_children_custom(const ReplacerCallbackT &callback) const final;
+  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr func_call) const final;
+};
+
+/**
  * shape(x:int, y:?string, ...) — associative arrays with predefined structure
  * While x and y exist as strings in TypeHint, they become Key (string keys) in TypeData subkeys
  */
@@ -500,18 +546,39 @@ public:
 };
 
 /**
- * T inside types of generics declarations, for example @ kphp-template T1 T2
- * Then `T1` and `T2` in a context of that declaration (@ kphp-param and @ kphp-return for instance) are of this class.
+ * T inside types of generics declarations, for example @ kphp-generic T1, T2
+ * Then `T1` and `T2` in a context of that declaration (@ param, @ return, @ var) are of this class.
  */
-class TypeHintGenericsT : public TypeHint {
-  explicit TypeHintGenericsT(std::string nameT)
-    : TypeHint(flag_contains_genericsT_inside)
+class TypeHintGenericT : public TypeHint {
+  explicit TypeHintGenericT(std::string nameT)
+    : TypeHint(flag_contains_genericT_inside)
     , nameT(std::move(nameT)) {}
 
 public:
   std::string nameT;
 
   static const TypeHint *create(const std::string &nameT);
+
+  std::string as_human_readable() const final;
+  void traverse(const TraverserCallbackT &callback) const final;
+  const TypeHint *replace_self_static_parent(FunctionPtr resolve_context) const final;
+  const TypeHint *replace_children_custom(const ReplacerCallbackT &callback) const final;
+  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr func_call) const final;
+};
+
+/**
+ * class-string<T> — for generic functions (inner=T must be TypeHintGenericT)
+ * Used to express parameters that are expected to be passed Some::class.
+ */
+class TypeHintClassString : public TypeHint {
+  explicit TypeHintClassString(const TypeHint *inner)
+    : TypeHint(0)
+    , inner(inner) {}
+
+public:
+  const TypeHint *inner;
+
+  static const TypeHint *create(const TypeHint *inner);
 
   std::string as_human_readable() const final;
   void traverse(const TraverserCallbackT &callback) const final;

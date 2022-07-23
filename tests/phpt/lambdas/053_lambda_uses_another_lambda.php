@@ -16,7 +16,5 @@ function withC(callable $predicate, $callArg) {
 }
 
 withC(function(A $a) { $a->fa(); }, new A);
-
-// BTW, another instantiation doesn't work (and has never worked): using lambdas inside template functions disappoints :(
-// withC(function($v) { var_dump($v); }, 100);
+withC(function($v) { var_dump($v); }, 100);
 

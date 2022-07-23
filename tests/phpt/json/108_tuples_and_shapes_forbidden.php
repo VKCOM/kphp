@@ -1,6 +1,6 @@
 @kphp_should_fail
 /Field WithTuple::\$tupe is @var tuple\(int, string\), it's incompatible with json/
-/Field WithShape::\$shape is @var shape\(a:int, b:string, it's incompatible with json/
+/Field WithShape::\$shape is @var shape\(a:int, b:string\), it's incompatible with json/
 /Field WithBuiltin::\$ex is @var \?ArgumentCountError, it's incompatible with json/
 /Field WithBuiltin::\$conn is @var RpcConnection, it's incompatible with json/
 <?php

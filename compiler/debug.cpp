@@ -186,6 +186,7 @@ std::string debugTokenName(TokenType t) {
     {tok_private, "tok_private"},
     {tok_protected, "tok_protected"},
     {tok_phpdoc, "tok_phpdoc"},
+    {tok_commentTs, "tok_commentTs"},
     {tok_clone, "tok_clone"},
     {tok_instanceof, "tok_instanceof"},
     {tok_end, "tok_end"},
@@ -230,6 +231,8 @@ static std::string debugVertexMore(VertexPtr v) {
       return v->get_string();
     case op_function:
       return v.as<op_function>()->func_id->as_human_readable();
+    case op_func_param:
+      return v.as<op_func_param>()->type_hint ? v.as<op_func_param>()->type_hint->as_human_readable() : "";
     case op_lambda:
       return v.as<op_lambda>()->func_id->as_human_readable();
     case op_callback_of_builtin:

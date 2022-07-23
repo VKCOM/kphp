@@ -11,6 +11,8 @@
 
 class DeduceImplicitTypesAndCastsPass final : public FunctionPassBase {
   std::forward_list<VertexAdaptor<op_phpdoc_var>> phpdocs_for_vars;
+  std::forward_list<VertexAdaptor<op_func_call>> generic_calls;
+  std::forward_list<FunctionPtr> nested_lambdas;
 
   const TypeHint *get_found_phpdoc_for_var(const std::string &var_name) {
     for (const auto &phpdoc_var : phpdocs_for_vars) {
@@ -26,9 +28,12 @@ public:
     return "Deduce implicit types and casts";
   }
 
+  bool check_function(FunctionPtr f) const override;
+  void on_start() override;
+  void on_finish() override;
   VertexPtr on_exit_vertex(VertexPtr root) override;
 
-  int print_error_unexisting_function(std::string unexisting_func_name);
+  int print_error_unexisting_function(const std::string &call_string);
 
   void patch_call_arg_on_func_call(VertexAdaptor<op_func_param> param, VertexPtr &call_arg, VertexAdaptor<op_func_call> call);
 
@@ -43,4 +48,5 @@ public:
   void on_instance_prop(VertexAdaptor<op_instance_prop> v_prop);
   void on_clone(VertexAdaptor<op_clone> v_clone);
   void on_throw(VertexAdaptor<op_throw> v_throw);
+  void on_lambda(VertexAdaptor<op_lambda> v_lambda);
 };

@@ -39,7 +39,7 @@ FunctionPtr FunctionData::clone_from(FunctionPtr other, const std::string &new_n
   res->update_location_in_body();
   res->name_gen_map = {};
   res->tinf_node.init_as_return_value(res);
-  res->assumption_return_processing_thread = std::thread::id{};
+  res->assumption_processing_thread = std::thread::id{};
 
   return res;
 }
@@ -182,13 +182,16 @@ std::string FunctionData::as_human_readable(bool add_details) const {
     result_name = "function(" + params_names_str + ")";
   } else if (modifiers.is_instance() && class_id && class_id->is_typed_callable_interface() && local_name() == "__invoke") {
     result_name = "callable(" + vk::join(params, ",", [](auto p) { return p->type_hint->as_human_readable(); }) + "):" + return_typehint->as_human_readable();
-  } else if (generics_instantiation && outer_function) {
+  } else if (instantiationTs && outer_function) {
     result_name = outer_function->as_human_readable(add_details);
-    result_name.erase(result_name.find('<'));
-    result_name += "<" + vk::join(*generics_instantiation, ",", [](const auto &pair) { return pair.second->as_human_readable(); }) + ">";
+    result_name.erase(result_name.rfind('<'));
+    result_name += "<" + vk::join(*outer_function->genericTs, ", ", [this](const GenericsDeclarationMixin::GenericsItem &item) {
+      const TypeHint *itemT = instantiationTs->find(item.nameT);
+      return itemT == nullptr ? "nullptr" : itemT->as_human_readable();
+    }) + ">";
     if (add_details) {
-      SrcFilePtr file = generics_instantiation->location.get_file();
-      std::string line = std::to_string(generics_instantiation->location.line);
+      SrcFilePtr file = instantiationTs->location.get_file();
+      std::string line = std::to_string(instantiationTs->location.line);
       result_name += " (instantiated at " + (file ? file->relative_file_name : "unknown file") + ":" + line + ")";
     }
   } else {
@@ -214,8 +217,8 @@ std::string FunctionData::as_human_readable(bool add_details) const {
       result_name = add_details ? base_class + "::" + method_name + " (static=" + context_class + ")" : context_class + "::" + method_name;
     }
 
-    if (generics_declaration) {
-      result_name += "<" + vk::join(*generics_declaration, ",", [](const auto &itemT) { return itemT.nameT; }) + ">";
+    if (genericTs) {
+      result_name += "<" + vk::join(*genericTs, ",", [](const auto &itemT) { return itemT.nameT; }) + ">";
     }
   }
 

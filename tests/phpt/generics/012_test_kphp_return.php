@@ -37,7 +37,7 @@ function test_return_another_element_of_template_array() {
 }
 
 /**
- * @kphp-template T $arg0 $arg1 $arg2
+ * @kphp-generic T $arg0 $arg1 $arg2
  * @kphp-return T[]
  */
 function create_array($arg0, $arg1, $arg2) {

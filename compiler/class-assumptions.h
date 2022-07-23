@@ -8,13 +8,6 @@
 #include "compiler/data/vertex-adaptor.h"
 #include "compiler/debug.h"
 
-
-enum class AssumptionStatus {
-  unknown,
-  processing,
-  initialized
-};
-
 class Assumption {
   DEBUG_STRING_METHOD { return as_human_readable(); }
 
@@ -25,8 +18,8 @@ public:
   // important! no int / string[] / tuple(int): only if it has instances! (so that it will help -> resolving)
   const TypeHint *assum_hint{nullptr};
 
-  Assumption() = default;                           // create in undefined state
-  explicit Assumption(const TypeHint *type_hint);   // create from type hint (save it if has instances)
+  Assumption() = default;
+  explicit Assumption(const TypeHint *type_hint) : assum_hint(type_hint) {}
   explicit Assumption(ClassPtr klass);
 
   std::string as_human_readable() const;
@@ -42,5 +35,7 @@ public:
 
 
 void assumption_add_for_var(FunctionPtr f, const std::string &var_name, const Assumption &assumption, VertexPtr v_location);
+void assumption_add_for_return(FunctionPtr f, const Assumption &assumption, VertexPtr v_location);
 
 Assumption assume_class_of_expr(FunctionPtr f, VertexPtr root, VertexPtr stop_at);
+Assumption assume_return_of_function(FunctionPtr f);

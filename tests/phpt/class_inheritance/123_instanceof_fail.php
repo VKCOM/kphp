@@ -1,6 +1,6 @@
 @kphp_should_fail
-/left operand of 'instanceof' should be an instance, but passed int/
-/left operand of 'instanceof' should be an instance, but passed int/
+/pass int to argument \$instance of instance_cast/
+/but it's declared as @param object/
 <?php
 
 interface IBase {}
