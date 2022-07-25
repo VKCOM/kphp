@@ -78,8 +78,10 @@ inline string f$instance_serialize_safe(const class_instance<InstanceClass> &ins
   auto result = f$msgpack_serialize(instance, &err_msg);
   if (vk::msgpack::CheckInstanceDepth::is_exceeded()) {
     THROW_EXCEPTION(new_Exception(string(__FILE__), __LINE__, string("maximum depth of nested instances exceeded")));
+    return {};
   } else if (!err_msg.empty()) {
     THROW_EXCEPTION(new_Exception(string(__FILE__), __LINE__, err_msg));
+    return {};
   }
   return result.val();
 }
@@ -135,6 +137,7 @@ inline ResultType f$msgpack_deserialize_safe(const string &buffer) noexcept {
   auto res = f$msgpack_deserialize(buffer, &err_msg);
   if (!err_msg.empty()) {
     THROW_EXCEPTION (new_Exception(string(__FILE__), __LINE__, err_msg));
+    return {};
   }
   return res;
 }
@@ -150,6 +153,7 @@ inline ResultClass f$instance_deserialize_safe(const string &buffer, const strin
   auto res = f$msgpack_deserialize<ResultClass>(buffer, &err_msg);
   if (!err_msg.empty()) {
     THROW_EXCEPTION (new_Exception(string(__FILE__), __LINE__, err_msg));
+    return {};
   }
   return res;
 }

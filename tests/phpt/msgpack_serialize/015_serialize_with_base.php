@@ -27,6 +27,11 @@ $str = instance_serialize($a);
 $a_new = instance_deserialize($str, A::class);
 $a_new->foo();
 
+$str_safe = instance_serialize_safe($a);
+$a_new_safe = instance_deserialize_safe($str_safe, A::class);
+$a_new_safe->foo();
+var_dump($a_new_safe->y);
+
 /** @kphp-serializable */
 class B22 {
     /**
@@ -310,10 +315,7 @@ class B1 {
 }
 
 try {
-    $test = instance_serialize_safe(new B1());
-    var_dump("haha");
-    var_dump($test);
+    instance_serialize_safe(new B1());
 } catch (\Exception $e) {
-    var_dump("not haha");
     var_dump($e->getMessage());
 }
