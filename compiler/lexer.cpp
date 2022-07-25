@@ -130,25 +130,30 @@ void LexerData::hack_last_tokens() {
     return;
   }
 
-  TokenType casts[][2] = {
-    {tok_int,     tok_conv_int},
-    {tok_float,   tok_conv_float},
-    {tok_string,  tok_conv_string},
-    {tok_array,   tok_conv_array},
-    {tok_object,  tok_conv_object},
-    {tok_bool,    tok_conv_bool},
-    {tok_boolean, tok_conv_bool}
-  };
-
   auto remove_last_tokens = [this](size_t cnt) {
     tokens.erase(std::prev(tokens.end(), cnt), tokens.end());
   };
 
-  for (auto &cast : casts) {
-    if (are_last_tokens(tok_oppar, cast[0], tok_clpar)) {
-      remove_last_tokens(3);
-      tokens.emplace_back(cast[1]);
-      return;
+  // perform a cast array matching only if we have something
+  // that looks like a cast (a token surrounded by parenthesis)
+  if (are_last_tokens(tok_oppar, any_token_tag{}, tok_clpar)) {
+    static TokenType casts[][2] = {
+      {tok_int,    tok_conv_int},
+      {tok_float,  tok_conv_float},
+      {tok_double,  tok_conv_float},
+      {tok_string, tok_conv_string},
+      {tok_array,  tok_conv_array},
+      {tok_object, tok_conv_object},
+      {tok_bool,   tok_conv_bool},
+      {tok_boolean, tok_conv_bool},
+    };
+    for (auto &cast : casts) {
+      // check the middle token, the one that goes before ')'
+      if (tokens[tokens.size() - 2].type() == cast[0]) {
+        remove_last_tokens(3);
+        tokens.emplace_back(cast[1]);
+        return;
+      }
     }
   }
 

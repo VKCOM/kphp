@@ -68,13 +68,13 @@ struct FFIScopeDataMixin {
     return functions[0].env_index;
   }
 
-  const FFISymbol *find_variable(const std::string &name) { return find_symbol(variables, name); }
-  const FFISymbol *find_function(const std::string &name) { return find_symbol(functions, name); }
+  const FFISymbol *find_variable(const vk::string_view name) { return find_symbol(variables, name); }
+  const FFISymbol *find_function(const vk::string_view name) { return find_symbol(functions, name); }
 
 private:
 
-  static const FFISymbol *find_symbol(const std::vector<FFISymbol> &sorted_vector, const std::string &name) {
-    const auto &it = std::lower_bound(sorted_vector.begin(), sorted_vector.end(), name, [](const FFISymbol &lhs, const std::string &name) {
+  static const FFISymbol *find_symbol(const std::vector<FFISymbol> &sorted_vector, vk::string_view name) {
+    const auto &it = std::lower_bound(sorted_vector.begin(), sorted_vector.end(), name, [](const FFISymbol &lhs, vk::string_view name) {
       return lhs.name() < name;
     });
     if (it != sorted_vector.end() && it->name() == name) {
@@ -115,6 +115,8 @@ public:
   static const FFIType *get_ffi_type(const TypeHint *type_hint);
   static std::string get_ffi_scope(const TypeHint *type_hint);
 
+  static bool is_ffi_scope_call(VertexAdaptor<op_func_call> call);
+
   static void register_builtin_classes(DataStream<FunctionPtr> &os);
 
   bool register_scope(const std::string &scope_name, FFIScopeDataMixin *data);
@@ -147,6 +149,8 @@ private:
   };
   const TypeHint *c2php_type_hint(const TypeHint *c_type, Php2cMode mode);
   const TypeHint *c2php_scalar_type_hint(FFITypeKind kind);
+
+  const TypeHint *unboxed_type_hint(const FFIType *type, const std::string &scope_name, bool is_return);
 };
 
 const FFIBuiltinType *ffi_builtin_type(FFITypeKind);

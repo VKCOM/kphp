@@ -271,6 +271,13 @@ class TestFFI(KphpCompilerAutoTestCase):
 
     # other tests
 
+    def test_callbacks(self):
+        self.ffi_build_and_compare_with_php('php/callbacks.php', shared_libs=['vector'])
+
+    def test_unmanaged_memory(self):
+        self.ffi_build_and_compare_with_php('php/unmanaged_memory.php', shared_libs=['pointers'])
+
+
     def test_dynamic_size_arrays(self):
         self.ffi_build_and_compare_with_php('php/dynamic_size_arrays.php', shared_libs=['pointers'])
 

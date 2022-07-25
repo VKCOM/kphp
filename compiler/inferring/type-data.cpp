@@ -225,7 +225,7 @@ void TypeData::set_ffi_pointer_type(const TypeData *new_ptr_type, int new_indire
     return;
   }
 
-  if (ptr_class->ffi_type->kind == FFITypeKind::Void && indirection_ == 1) {
+  if (ptr_class->ffi_type->kind == FFITypeKind::Void && indirection_ == 1 && new_indirection != 0) {
     // any pointer is compatible with `void*`,
     // the type remains `void*`
     return;

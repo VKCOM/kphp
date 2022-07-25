@@ -360,8 +360,17 @@
   },
   {
     "comment": "artificial op that is inserted instead of FFI::cast call",
+    "sons": {
+      "expr": {
+        "id": 0
+      },
+      "array_size_expr": {
+        "id": 1,
+        "optional": true
+      }
+    },
     "name": "op_ffi_cast",
-    "base_name": "meta_op_unary",
+    "base_name": "meta_op_base",
     "props": {
       "rl": "rl_op",
       "cnst": "cnst_nonconst_func",
@@ -420,8 +429,11 @@
     "comment": "artificial op that is inserted instead of FFI::new call",
     "name": "op_ffi_new",
     "sons": {
+      "owned_flag_expr": {
+        "id": 0
+      },
       "array_size_expr": {
-        "id": 0,
+        "id": 1,
         "optional": true
       }
     },

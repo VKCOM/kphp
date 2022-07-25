@@ -66,4 +66,7 @@ public:
 
 FFIParseResult ffi_parse_file(const std::string &src, FFITypedefs &typedefs);
 
+// exposed for testing purposes
+std::string ffi_preprocess_file(const std::string &src, FFIParseResult &parse_result);
+
 std::pair<const FFIType*, FFIParseError> ffi_parse_type(const std::string &type_expr, FFITypedefs &typedefs);

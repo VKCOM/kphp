@@ -43,6 +43,11 @@ VertexPtr InlineSimpleFunctions::on_enter_vertex(VertexPtr root) {
     case op_null:
     case op_function:
     case op_instance_prop:
+    case op_ffi_cdata_value_ref:
+    case op_ffi_cast:
+    case op_ffi_load_call:
+    case op_ffi_php2c_conv:
+    case op_ffi_c2php_conv:
       break;
     case op_func_name:
     case op_func_call:
@@ -52,6 +57,10 @@ VertexPtr InlineSimpleFunctions::on_enter_vertex(VertexPtr root) {
     case op_ternary:
     case op_if:
     case op_alloc:
+    case op_ffi_new:
+    case op_ffi_addr:
+    case op_ffi_array_get:
+    case op_ffi_array_set:
       on_simple_operation();
       break;
     case op_func_param_list:

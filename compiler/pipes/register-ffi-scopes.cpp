@@ -69,8 +69,11 @@ private:
         // broken type assumptions (see issue #424)
         var->str_val = "_unnamed_arg" + std::to_string(i);
       }
+      if (ffi_type->members[0]->kind == FFITypeKind::FunctionPointer) {
+        kphp_error_return(!type->is_signal_safe(), fmt_format("{}: @kphp-ffi-signalsafe should not be used with FFI callbacks", type->str));
+      }
       param->type_hint = G->get_ffi_root().create_type_hint(ffi_type->members[0], result.scope);
-      kphp_error_return(param->type_hint, fmt_format("unsupported C param type: {}", ffi_decltype_string(ffi_type)));
+      kphp_error_return(param->type_hint, fmt_format("{}: unsupported C param type: {}", type->str, ffi_decltype_string(ffi_type)));
       params.emplace_back(param);
     }
     if (type->is_variadic()) {
@@ -88,7 +91,7 @@ private:
     ffi_func->modifiers.set_instance();
     ffi_func->modifiers.set_public();
     ffi_func->return_typehint = G->get_ffi_root().create_type_hint(type->members[0], result.scope);
-    kphp_error_return(ffi_func->return_typehint, fmt_format("unsupported C return type: {}", ffi_type_string(type->members[0])));
+    kphp_error_return(ffi_func->return_typehint, fmt_format("{}: unsupported C return type: {}", type->str, ffi_type_string(type->members[0])));
 
     scope_class->members.add_instance_method(ffi_func);
     G->register_and_require_function(ffi_func, os);

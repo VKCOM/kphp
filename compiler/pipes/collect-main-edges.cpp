@@ -292,8 +292,11 @@ void CollectMainEdgesPass::on_func_call(VertexAdaptor<op_func_call> call) {
 
     // call an extern function having a callback type description, like 'callable(^1[*]) : bool'
     if (function->is_extern() && param->type_hint && param->type_hint->try_as<TypeHintCallable>()) {
-      kphp_assert(arg->type() == op_callback_of_builtin);
-      on_passed_callback_to_builtin(call, i, arg.as<op_callback_of_builtin>());
+      // for FFI calls, php2c(null) is used to express a null function pointer
+      if (arg->type() != op_ffi_php2c_conv) {
+        kphp_assert(arg->type() == op_callback_of_builtin);
+        on_passed_callback_to_builtin(call, i, arg.as<op_callback_of_builtin>());
+      }
     }
 
     // having a f($x) and a call f($arg), it's a bit tricky what's going on here:

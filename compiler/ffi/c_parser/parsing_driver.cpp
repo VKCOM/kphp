@@ -7,6 +7,7 @@
 #include "compiler/kphp_assert.h"
 
 #include "common/algorithms/find.h"
+#include "common/containers/final_action.h"
 
 #include <charconv>
 #include <unordered_set>
@@ -68,6 +69,12 @@ static void finalize_types(FFIType *type) {
     if (kind == FFITypeKind::_size) {
       return int_type_by_size(sizeof(size_t), false);
     }
+    if (kind == FFITypeKind::_intptr) {
+      return int_type_by_size(sizeof(intptr_t), true);
+    }
+    if (kind == FFITypeKind::_uintptr) {
+      return int_type_by_size(sizeof(uintptr_t), false);
+    }
 
     if (kind == FFITypeKind::_int) {
       bool is_signed = !(type->flags & FFIType::Flag::Unsigned);
@@ -100,6 +107,14 @@ static void finalize_types(FFIType *type) {
   for (auto &member : type->members) {
     finalize_types(member);
   }
+}
+
+FFIType *ParsingDriver::function_to_var(FFIType *function) {
+  function->kind = FFITypeKind::Var;
+  FFIType *function_ptr_type = alloc.new_type(FFITypeKind::FunctionPointer);
+  function_ptr_type->members = std::move(function->members);
+  function->members = {function_ptr_type};
+  return function;
 }
 
 void ParsingDriver::add_missing_decls() {
@@ -153,6 +168,10 @@ ParsingDriver::Result ParsingDriver::parse() {
 }
 
 void ParsingDriver::add_type(FFIType *type) {
+  vk::finally([&] () {
+      lexer.reset_comment();
+  });
+
   if (type->kind == FFITypeKind::Unknown) {
     return;
   }
@@ -176,6 +195,9 @@ void ParsingDriver::add_typedef(FFIType *type, FFIType *declarator) {
   FFIType *combined_type = combine(DeclarationSpecifiers{type}, Declarator{declarator});
   finalize_types(combined_type);
 
+  if (combined_type->kind == FFITypeKind::Function) {
+    combined_type = function_to_var(combined_type);
+  }
   if (combined_type->kind != FFITypeKind::Var) {
     return;
   }
@@ -366,8 +388,22 @@ FFIType *ParsingDriver::make_array_declarator(FFIType *declarator, string_span s
 
 FFIType *ParsingDriver::make_function(FFIType *func_expr, FFIType *params) {
   FFIType *function_type = alloc.new_type(FFITypeKind::Function);
-  kphp_assert(func_expr->kind == FFITypeKind::Name);
-  function_type->str = func_expr->str;
+  kphp_assert(vk::any_of_equal(func_expr->kind, FFITypeKind::Name, FFITypeKind::_pointerDeclarator));
+  bool is_func_ptr = func_expr->kind == FFITypeKind::_pointerDeclarator;
+  if (is_func_ptr) {
+    // array of function pointers is not supported directly, but it can
+    // be achieved via typedef if necessary
+    if (func_expr->members[0]->kind != FFITypeKind::Name) {
+      raise_error("parsing function pointer: only simple identifiers are supported (use typedef for arrays)");
+    }
+    function_type->str = func_expr->members[0]->str;
+  } else {
+    function_type->str = func_expr->str;
+    vk::string_view doc_comment = lexer.get_comment().to_string_view();
+    if (vk::contains(doc_comment, "@kphp-ffi-signalsafe")) {
+      function_type->flags = static_cast<FFIType::Flag>(function_type->flags | FFIType::Flag::SignalSafe);
+    }
+  }
   FFIType *result_type_placeholder = alloc.new_type(); // return type will be inserted here later
   function_type->members.emplace_back(result_type_placeholder);
   if (params) { // nullptr for a func with an empty param list
@@ -383,7 +419,9 @@ FFIType *ParsingDriver::make_function(FFIType *func_expr, FFIType *params) {
       }
 
       // for the convenience, turn unnamed params into a Field with empty str
-      if (p->kind == FFITypeKind::Var) {
+      if (p->kind == FFITypeKind::Function) {
+        function_type->members.emplace_back(function_to_var(p));
+      } else if (p->kind == FFITypeKind::Var) {
         function_type->members.emplace_back(p);
       } else {
         FFIType *var = alloc.new_type(FFITypeKind::Var);
@@ -418,8 +456,17 @@ FFIType *ParsingDriver::make_struct_or_union_def(FFIType *fields, bool is_struct
       FFIType *declarator = list->members[i];
       FFIType *field_type = list->members.back();
       FFIType *field = combine(DeclarationSpecifiers{field_type}, Declarator{declarator});
+      if (field->kind == FFITypeKind::Function) {
+        field = function_to_var(field);
+      }
       struct_type->members.emplace_back(field);
     }
   }
   return struct_type;
+}
+
+void ParsingDriver::raise_error(const std::string &message) {
+  // TODO: better error locations, more context information
+  ffi::Location loc{0, 0};
+  throw ParsingDriver::ParseError{loc, message};
 }

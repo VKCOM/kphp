@@ -159,6 +159,16 @@ ffi_array_set($arr, $index, $value);
 // like FFI::memcpy, but the source argument is a string, not FFI\CData
 // identical to FFI::memcpy($cdata, $php_string, $size);
 ffi_memcpy_string($cdata, $php_string, $size);
+
+// like FFI::cast, but the source argument is int, not FFI\CData
+// identical to FFI::cast('void*', $addr);
+// $addr should be a value obtained by ffi_cast_ptr2addr
+ffi_cast_addr2ptr($addr)
+
+// like FFI::cast, but the destination type is uintptr_t-like scalar
+// identical to FFI::cast('uintptr_t', $ptr)
+// $ptr should be a CData holding void* pointer
+ffi_cast_ptr2addr($ptr)
 ```
 
 ### Auto conversions
@@ -178,15 +188,15 @@ When a `php2c` can happen:
 * Assigning to a C struct/union field
 * Assigning to a pseudo `cdata` property of C scalar types (like `int8_t`)
 
-| PHP type | C type | Note |
-|---|---|---|
-| `int` | `int8_t`-`int64_t`, `int`, `uint`, etc. | A trivial cast (may truncate). |
-| `float` | `float`, `double` | A trivial cast. |
-| `bool` | `bool` | No-op. |
-| `string(1)` | `char` | Run time error if string length is not 1. |
-| `string` (*) | `const char*` | Doesn't make a copy. |
-| `ffi_cdata<$scope, T>` | `T` | Alloc-free. |
-| `ffi_cdata<$scope, T*>` | `T*` | Alloc-free. |
+| PHP type                | C type                                  | Note                                      |
+|-------------------------|-----------------------------------------|-------------------------------------------|
+| `int`                   | `int8_t`-`int64_t`, `int`, `uint`, etc. | A trivial cast (may truncate).            |
+| `float`                 | `float`, `double`                       | A trivial cast.                           |
+| `bool`                  | `bool`                                  | No-op.                                    |
+| `string(1)`             | `char`                                  | Run time error if string length is not 1. |
+| `string` (*)            | `const char*`                           | Doesn't make a copy.                      |
+| `ffi_cdata<$scope, T>`  | `T`                                     | Alloc-free.                               |
+| `ffi_cdata<$scope, T*>` | `T*`                                    | Alloc-free.                               |
 
 > (*) Only for function arguments, but not struct/union fields write.
 
@@ -201,15 +211,15 @@ When a `c2php` can happen:
 * Reading C scalar pseudo `cdata` property
 * Reading FFI Scope property (C enums, extern variables)
 
-| C type | PHP type | Note |
-|---|---|---|
-| `int8_t`-`int64_t`, `int`, `uint`, etc. | `int` | A trivial cast. |
-| `float`, `double` | `float` | A trivial cast. |
-| `bool` | `bool` | No-op. |
-| `char` | `string(1)` | Allocates a string of 1 char. |
-| `const char*` (*) | `string` | Allocates a string, copies data from `const char*` |
-| `T` | `ffi_cdata<$scope, T>` | Allocates a `ffi_cdata` object. |
-| `T*` | `ffi_cdata<$scope, T*>` | Alloc-free. |
+| C type                                  | PHP type                | Note                                               |
+|-----------------------------------------|-------------------------|----------------------------------------------------|
+| `int8_t`-`int64_t`, `int`, `uint`, etc. | `int`                   | A trivial cast.                                    |
+| `float`, `double`                       | `float`                 | A trivial cast.                                    |
+| `bool`                                  | `bool`                  | No-op.                                             |
+| `char`                                  | `string(1)`             | Allocates a string of 1 char.                      |
+| `const char*` (*)                       | `string`                | Allocates a string, copies data from `const char*` |
+| `T`                                     | `ffi_cdata<$scope, T>`  | Allocates a `ffi_cdata` object.                    |
+| `T*`                                    | `ffi_cdata<$scope, T*>` | Alloc-free.                                        |
 
 > (*) Only for function results, but not struct/union fields reads.
 
@@ -267,6 +277,190 @@ $foo->str_field = 'foo'; // ERROR
 // When we return a C `int` value, it's converted to a `PHP int` type,
 // using an auto conversion again (c2php), this time it's static_cast<int64_t>($x).
 $v = $cdef->abs(10);
+```
+
+### Function pointer types
+
+It's possible to pass KPHP functions as C function pointer (callback function).
+
+To do this, several limitation should be kept in mind:
+
+* For methods, only static methods are allowed
+* For lambdas, no capturing is allowed (`use` is not supported)
+* FFI callbacks can't throw exceptions (it would be a compile-time error in KPHP)
+
+There is a high chance that you'll need to have an FFI scope object inside that lambda to make it useful.
+In order to access it from the lambda without captures, use global variables or static class fields.
+
+Some APIs provide a common `void*` user data parameter. You pass that argument to the function along
+with the callback, and it will be passed to you callback along other arguments.
+
+```php
+// $user_data is Context*
+$lib->some_func(FFI::cast('void*', $user_data), function ($ud) {
+  $data = MyLib::$scope->cast('struct Context*', $ud);
+  // use $data as Context*
+});
+```
+
+The callbacks are type checked, so you can't use a function with incompatible types.
+
+Special rules are used when mapping lambda params and result types. For auto-convertible types
+like string, int and float, unboxed types are used. For other cdata types, boxed forms are used.
+
+| C callback signature           | PHP lambda signature                                             |
+|--------------------------------|------------------------------------------------------------------|
+| `int16_t (*) (uint32_t, bool)` | `callable (int, bool): int`                                      |
+| `void* (*) (struct Vector2f*)` | `callable (ffi_cdata<lib, struct Vector*>): ffi_cdata<C, void*>` |
+| `void (*) (const char*)`       | `callable (string): void`                                        |
+| `char (*) ()`                  | `callable (): string`                                            |
+
+How FFI lambdas work:
+
+* A special wrapper function is generated, it accepts params identical to C callback signature types
+* The wrapper forwards all C arguments to KPHP lambda using c2php
+* Then it returns the result of the KPHP lambda via php2c
+
+So, C side can call KPHP lambda using C types and get C types returned from it.
+
+All foreign code is executed inside **critical section**. That critical section is suspended until KPHP lambda returns.
+After that, critical section is entered again. This means that you can call other FFI functions while running  KPHP lambda.
+
+When writing the function pointer type in FFI C headers, you have two options:
+
+1. Create a typedef
+
+```c
+typedef RetType (*FuncTypeName) (ParamType1, ..., ParamTypeN);
+
+void use_callback(FuncTypeName f);
+```
+
+2. Use function pointer inline syntax
+
+```c
+void use_callback(RetType (*f) (ParamType1, ..., ParamTypeN));
+```
+
+KPHP callbacks should be used carefully. If you allocate a managed FFI object inside lambda and return
+that object to C, it will be deallocated by the time KPHP callback returns. This means C will get
+some potentially invalid memory without even knowing it.
+
+Therefore, sometimes it's better to allocate unmanaged memory with `FFI::new()` and then call `FFI::free()` manually.
+The exact advice would depend on the library you're trying to use via FFI and its API.
+
+It's safe to return scalar and compound value types (`T` instead of `T*`) as they will be copied properly.
+(If object of type `T` contains dynamically allocated memory, it's another topic.)
+
+To pass a null function pointer, simply use `null` literal:
+
+```php
+// the C side will get null pointer as function pointer argument
+$c_lib->c_func(null);
+```
+
+
+### Passing C function as C callback
+
+Let's suppose you want to pass some C library function as C function callback.
+
+The straightforward approach may not always work:
+
+```php
+// may fail during the run time
+Foo::$lib->some_func(Foo::$lib->other_func);
+```
+
+As a workaround, you can use extra lambda wrapping:
+
+```php
+Foo::$lib->some_func(function ($x) {
+  return Foo::$lib->other_func($x);
+});
+```
+
+This approach should always work.
+
+
+### Non-owned (unmanaged) memory
+
+When `FFI::new()` is called with two parameters and second parameter being `false`, the allocated object
+will not be freed when its reference count goes to 0.
+
+```php
+// allocate 10 bytes that will not be automatically de-allocated;
+// prefer uint8_t[...] to char[...] if you want a raw memory
+$mem = FFI::new('uint8_t[10]', false);
+```
+
+The unmanaged (non-owned) memory is allocated using the script allocator.
+This means that even if you forget to `free()` this memory, it won't leak at the request boundary.
+It is still recommended to `FFI::free()` when possible to avoid out-of-memory errors during the request.
+
+It's important that you call `FFI::free()` on the properly-typed object.
+If memory was allocated as `uint64_t` (8 bytes), the pointer passed to `FFI::free()` should have that type.
+
+```php
+// suppose that $ptr is typed as `void*`, but originally we allocated 10 bytes;
+// we need to cast that back to make sure free() works correctly;
+$mem = FFI::cast('uint8_t[10]', $ptr);
+FFI::free($mem);
+```
+
+If you're allocating a chunk of memory with something like a char array, then make sure to
+free that chunk using the array with the same size that you used during the allocation.
+
+Most C memory management rules apply here. Avoid calling `FFI::free()` on the same memory more than once and so on.
+
+Please avoid the patterns illustrated below:
+
+```php
+// BAD: calling free() on FFI::addr() result
+$obj = FFI::new('uint64_t', false);
+FFI::free(FFI::addr($obj));
+
+// GOOD: calling free() on the actual object you allocated
+$obj = FFI::new('uint64_t', false);
+FFI::free($obj);
+```
+
+```php
+// BAD: casting an array to void* without doing FFI::addr()
+$obj = FFI::new("int[$size]", false);
+$ptr = FFI::cast('void*', $obj);
+FFI::free($ptr);
+
+// GOOD: using FFI::addr() on array
+$obj = FFI::new("int[$size]", false);
+$ptr = FFI::cast('void*', FFI::addr($obj));
+FFI::free($ptr);
+```
+
+```php
+// BAD: free() is called on an array of wrong size
+$arr = FFI::new('int[10]', false);
+$arr_ptr = FFI::cast('void*', FFI::addr($arr));
+$arr2 = FFI::cast('int[5]', $arr_ptr);
+FFI::free($arr2);
+
+// GOOD: free() is called on an array of correct size
+$arr = FFI::new('int[10]', false);
+$arr_ptr = FFI::cast('void*', FFI::addr($arr));
+$arr2 = FFI::cast('int[10]', $arr_ptr);
+FFI::free($arr2);
+```
+
+The memory may not be reclaimed immediately after `FFI::free()` is called, but using any object pointing to
+the underlying C data after freeing the memory can be considered to be undefined behavior.
+
+Also note that globally-declared (including class static members) memory may follow different patterns.
+If you need to free such global memory, assign `null` right after the `FFI::free()` call.
+
+```php
+// Combined together, this pattern gives you better chances that the
+// memory will be freed earlier
+FFI::free(SomeClass::$data);
+SomeClass::$data = null;
 ```
 
 
@@ -348,6 +542,38 @@ The `(2)` is preferable. Here is a simple fix for the code above:
 - $bar = $cdef2->new('struct Bar');
 + $bar->fooptr = $cdef2->cast('struct Foo*', FFI::addr($foo));
 ```
+
+### FFI performance tips
+
+For small, getter-like or pure math functions you may want to add a special comment inside the cdef string.
+
+```c
+// @kphp-ffi-signalsafe
+double sin(double);
+```
+
+Note that you have to use a single-line comment for that, right before the function declaration.
+
+```c
+// @kphp-ffi-signalsafe
+// this is a bad example
+double sin(double);
+
+// this is a good example
+// @kphp-ffi-signalsafe
+double sin(double);
+```
+
+With this comment, KPHP compiler will not emit a critical section for the specified function.
+
+As the name implies, the function being called should be signal-safe.
+Another way to put it: that function should not leak anything if it will be interrupted and never continued.
+
+There are additional restrictions: a function marked with `@kphp-ffi-signalsafe` can't have
+a function pointer argument.
+
+This will affect only KPHP FFI performance as PHP will ignore that comment.
+
 
 ### Using languages other than C
 

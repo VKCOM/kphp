@@ -294,7 +294,17 @@ void check_func_call_params(VertexAdaptor<op_func_call> call) {
     }
     const auto *type_hint_callable = param->type_hint->try_as<TypeHintCallable>();
 
-    FunctionPtr f_passed_to_builtin = call_params[i].as<op_callback_of_builtin>()->func_id;
+    if (call_params[i]->type() == op_ffi_php2c_conv) {
+      continue;
+    }
+
+    auto callback_of_builtin = call_params[i].as<op_callback_of_builtin>();
+    FunctionPtr f_passed_to_builtin = callback_of_builtin->func_id;
+    if (f->class_id && f->class_id->ffi_scope_mixin) {
+      kphp_error(!callback_of_builtin->func_id->can_throw(),
+                 fmt_format("FFI callback should not throw\nThrow chain: {}", callback_of_builtin->func_id->get_throws_call_chain()));
+      kphp_error(callback_of_builtin->size() == 0, "FFI callbacks should not capture any variables");
+    }
 
     kphp_error(!f_passed_to_builtin->is_resumable, fmt_format("Callbacks passed to builtin functions must not be resumable.\n"
                                                               "But '{}' became resumable because of the calls chain:\n"
@@ -463,6 +473,9 @@ void check_php2c_conv(VertexAdaptor<op_ffi_php2c_conv> conv) {
     if (as_instance->full_class_name == "FFI\\CData") {
       return;
     }
+  }
+  if (conv->c_type->try_as<TypeHintCallable>() && conv->expr()->type() == op_null) {
+    return;
   }
   const auto *php_type = tinf::get_type(conv->expr());
   const FFIType *ffi_type = FFIRoot::get_ffi_type(conv->c_type);

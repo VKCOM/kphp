@@ -18,7 +18,7 @@ static void log_ffi_parser_stats(const ffi::ParsingDriver::Result &result) {
   }
 }
 
-static std::string preprocess_file(const std::string &src, FFIParseResult& parse_result) {
+std::string ffi_preprocess_file(const std::string &src, FFIParseResult &parse_result) {
   // this code is definitely not as good as it could be;
   // like in PHP, we don't really handle any preprocessor directives
   // apart from the special FFI_SCOPE and FFI_LIB #defines
@@ -74,6 +74,7 @@ static std::string preprocess_file(const std::string &src, FFIParseResult& parse
 static void set_error(FFIParseError &dst, const std::string &src, ffi::ParsingDriver::ParseError &e) {
   dst.message = std::move(e.message);
   dst.line = 1;
+  std::string chunk(src.begin(), src.begin() + e.location.begin);
   dst.line += std::count_if(src.begin(), src.begin() + e.location.begin, [](char c){
     return c == '\n';
   });
@@ -86,7 +87,7 @@ FFIParseResult ffi_parse_file(const std::string &src, FFITypedefs &typedefs) {
     return result;
   }
 
-  std::string preprocessed_src = preprocess_file(src, result);
+  std::string preprocessed_src = ffi_preprocess_file(src, result);
 
   ffi::ParsingDriver driver(preprocessed_src, typedefs);
 
@@ -96,7 +97,7 @@ FFIParseResult ffi_parse_file(const std::string &src, FFITypedefs &typedefs) {
     result.set_types(std::move(parse_result.types));
     result.enum_constants = parse_result.enum_constants;
   } catch (ffi::ParsingDriver::ParseError &e) {
-    set_error(result.err, src, e);
+    set_error(result.err, preprocessed_src, e);
   }
 
   return result;

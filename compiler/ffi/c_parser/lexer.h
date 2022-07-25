@@ -23,12 +23,21 @@ public:
     : p_{input.c_str()}
     , input_start_{input.c_str()}
     , input_end_{input.c_str() + input.length()}
-    , typedefs_{typedefs} {}
+    , typedefs_{typedefs} {
+    reset_comment();
+  }
 
   int get_next_token(YYParser::semantic_type *sym, YYParser::location_type *loc) {
     auto tok = get_next_token_impl(sym, loc);
     offset_ = p_ - input_start_;
     return tok;
+  }
+
+  string_span get_comment() const noexcept { return comment_; }
+
+  void reset_comment() noexcept {
+    comment_.data_ = nullptr;
+    comment_.len_ = 0;
   }
 
 private:
@@ -39,6 +48,8 @@ private:
   const FFITypedefs &typedefs_;
 
   using token_type = YYParser::token_type;
+
+  string_span comment_;
 
   // get_next_token_impl() is implemented in a generated file after invoking Ragel
   // see lexer.rl file

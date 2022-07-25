@@ -341,6 +341,8 @@ VertexPtr generate_default_value_of_type(const TypeHint *ret_type) {
       default:
         break;
     }
+  } else if (ret_type->try_as<TypeHintFFIType>()) {
+    return VertexAdaptor<op_null>::create();
   }
   return {};
 }

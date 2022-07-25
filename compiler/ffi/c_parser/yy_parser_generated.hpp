@@ -314,22 +314,24 @@ namespace ffi {
     C_TOKEN_UINT32 = 322,          // UINT32
     C_TOKEN_UINT64 = 323,          // UINT64
     C_TOKEN_SIZE_T = 324,          // SIZE_T
-    C_TOKEN_STRUCT = 325,          // STRUCT
-    C_TOKEN_UNION = 326,           // UNION
-    C_TOKEN_ENUM = 327,            // ENUM
-    C_TOKEN_ELLIPSIS = 328,        // ELLIPSIS
-    C_TOKEN_CASE = 329,            // CASE
-    C_TOKEN_DEFAULT = 330,         // DEFAULT
-    C_TOKEN_IF = 331,              // IF
-    C_TOKEN_ELSE = 332,            // ELSE
-    C_TOKEN_SWITCH = 333,          // SWITCH
-    C_TOKEN_WHILE = 334,           // WHILE
-    C_TOKEN_DO = 335,              // DO
-    C_TOKEN_FOR = 336,             // FOR
-    C_TOKEN_GOTO = 337,            // GOTO
-    C_TOKEN_CONTINUE = 338,        // CONTINUE
-    C_TOKEN_BREAK = 339,           // BREAK
-    C_TOKEN_RETURN = 340           // RETURN
+    C_TOKEN_INTPTR_T = 325,        // INTPTR_T
+    C_TOKEN_UINTPTR_T = 326,       // UINTPTR_T
+    C_TOKEN_STRUCT = 327,          // STRUCT
+    C_TOKEN_UNION = 328,           // UNION
+    C_TOKEN_ENUM = 329,            // ENUM
+    C_TOKEN_ELLIPSIS = 330,        // ELLIPSIS
+    C_TOKEN_CASE = 331,            // CASE
+    C_TOKEN_DEFAULT = 332,         // DEFAULT
+    C_TOKEN_IF = 333,              // IF
+    C_TOKEN_ELSE = 334,            // ELSE
+    C_TOKEN_SWITCH = 335,          // SWITCH
+    C_TOKEN_WHILE = 336,           // WHILE
+    C_TOKEN_DO = 337,              // DO
+    C_TOKEN_FOR = 338,             // FOR
+    C_TOKEN_GOTO = 339,            // GOTO
+    C_TOKEN_CONTINUE = 340,        // CONTINUE
+    C_TOKEN_BREAK = 341,           // BREAK
+    C_TOKEN_RETURN = 342           // RETURN
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -346,7 +348,7 @@ namespace ffi {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 86, ///< Number of tokens.
+        YYNTOKENS = 88, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
@@ -418,53 +420,55 @@ namespace ffi {
         S_UINT32 = 67,                           // UINT32
         S_UINT64 = 68,                           // UINT64
         S_SIZE_T = 69,                           // SIZE_T
-        S_STRUCT = 70,                           // STRUCT
-        S_UNION = 71,                            // UNION
-        S_ENUM = 72,                             // ENUM
-        S_ELLIPSIS = 73,                         // ELLIPSIS
-        S_CASE = 74,                             // CASE
-        S_DEFAULT = 75,                          // DEFAULT
-        S_IF = 76,                               // IF
-        S_ELSE = 77,                             // ELSE
-        S_SWITCH = 78,                           // SWITCH
-        S_WHILE = 79,                            // WHILE
-        S_DO = 80,                               // DO
-        S_FOR = 81,                              // FOR
-        S_GOTO = 82,                             // GOTO
-        S_CONTINUE = 83,                         // CONTINUE
-        S_BREAK = 84,                            // BREAK
-        S_RETURN = 85,                           // RETURN
-        S_YYACCEPT = 86,                         // $accept
-        S_translation_unit = 87,                 // translation_unit
-        S_external_declaration = 88,             // external_declaration
-        S_typedef_declaration = 89,              // typedef_declaration
-        S_declaration = 90,                      // declaration
-        S_declaration_specifiers = 91,           // declaration_specifiers
-        S_type_qualifier = 92,                   // type_qualifier
-        S_base_type_specifier = 93,              // base_type_specifier
-        S_type_specifier = 94,                   // type_specifier
-        S_init_declarator_list = 95,             // init_declarator_list
-        S_init_declarator = 96,                  // init_declarator
-        S_declarator = 97,                       // declarator
-        S_pointer = 98,                          // pointer
-        S_type_qualifier_list = 99,              // type_qualifier_list
-        S_direct_declarator = 100,               // direct_declarator
-        S_parameter_type_list = 101,             // parameter_type_list
-        S_parameter_list = 102,                  // parameter_list
-        S_parameter_declaration = 103,           // parameter_declaration
-        S_abstract_declarator = 104,             // abstract_declarator
-        S_direct_abstract_declarator = 105,      // direct_abstract_declarator
-        S_struct_or_union_specifier = 106,       // struct_or_union_specifier
-        S_typedef_name_or_identifier = 107,      // typedef_name_or_identifier
-        S_struct_declaration_list = 108,         // struct_declaration_list
-        S_struct_declaration = 109,              // struct_declaration
-        S_specifier_qualifier_list = 110,        // specifier_qualifier_list
-        S_struct_declarator_list = 111,          // struct_declarator_list
-        S_struct_declarator = 112,               // struct_declarator
-        S_enum_specifier = 113,                  // enum_specifier
-        S_enumerator_list = 114,                 // enumerator_list
-        S_enumerator = 115,                      // enumerator
-        S_int_value = 116                        // int_value
+        S_INTPTR_T = 70,                         // INTPTR_T
+        S_UINTPTR_T = 71,                        // UINTPTR_T
+        S_STRUCT = 72,                           // STRUCT
+        S_UNION = 73,                            // UNION
+        S_ENUM = 74,                             // ENUM
+        S_ELLIPSIS = 75,                         // ELLIPSIS
+        S_CASE = 76,                             // CASE
+        S_DEFAULT = 77,                          // DEFAULT
+        S_IF = 78,                               // IF
+        S_ELSE = 79,                             // ELSE
+        S_SWITCH = 80,                           // SWITCH
+        S_WHILE = 81,                            // WHILE
+        S_DO = 82,                               // DO
+        S_FOR = 83,                              // FOR
+        S_GOTO = 84,                             // GOTO
+        S_CONTINUE = 85,                         // CONTINUE
+        S_BREAK = 86,                            // BREAK
+        S_RETURN = 87,                           // RETURN
+        S_YYACCEPT = 88,                         // $accept
+        S_translation_unit = 89,                 // translation_unit
+        S_external_declaration = 90,             // external_declaration
+        S_typedef_declaration = 91,              // typedef_declaration
+        S_declaration = 92,                      // declaration
+        S_declaration_specifiers = 93,           // declaration_specifiers
+        S_type_qualifier = 94,                   // type_qualifier
+        S_base_type_specifier = 95,              // base_type_specifier
+        S_type_specifier = 96,                   // type_specifier
+        S_init_declarator_list = 97,             // init_declarator_list
+        S_init_declarator = 98,                  // init_declarator
+        S_declarator = 99,                       // declarator
+        S_pointer = 100,                         // pointer
+        S_type_qualifier_list = 101,             // type_qualifier_list
+        S_direct_declarator = 102,               // direct_declarator
+        S_parameter_type_list = 103,             // parameter_type_list
+        S_parameter_list = 104,                  // parameter_list
+        S_parameter_declaration = 105,           // parameter_declaration
+        S_abstract_declarator = 106,             // abstract_declarator
+        S_direct_abstract_declarator = 107,      // direct_abstract_declarator
+        S_struct_or_union_specifier = 108,       // struct_or_union_specifier
+        S_typedef_name_or_identifier = 109,      // typedef_name_or_identifier
+        S_struct_declaration_list = 110,         // struct_declaration_list
+        S_struct_declaration = 111,              // struct_declaration
+        S_specifier_qualifier_list = 112,        // specifier_qualifier_list
+        S_struct_declarator_list = 113,          // struct_declarator_list
+        S_struct_declarator = 114,               // struct_declarator
+        S_enum_specifier = 115,                  // enum_specifier
+        S_enumerator_list = 116,                 // enumerator_list
+        S_enumerator = 117,                      // enumerator
+        S_int_value = 118                        // int_value
       };
     };
 
@@ -972,9 +976,9 @@ namespace ffi {
     /// Constants.
     enum
     {
-      yylast_ = 430,     ///< Last index in yytable_.
+      yylast_ = 440,     ///< Last index in yytable_.
       yynnts_ = 31,  ///< Number of nonterminal symbols.
-      yyfinal_ = 56 ///< Termination state number.
+      yyfinal_ = 58 ///< Termination state number.
     };
 
 
@@ -987,7 +991,7 @@ namespace ffi {
 
 #line 13 "c.y"
 } // ffi
-#line 991 "yy_parser_generated.hpp"
+#line 995 "yy_parser_generated.hpp"
 
 
 

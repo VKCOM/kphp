@@ -32,6 +32,27 @@ function const_uint8_ptr_sum($ptr, $num) {
   return $sum;
 }
 
+function test_cast_addr() {
+  $v = FFI::new('int');
+  $v->cdata = 542;
+  var_dump($v->cdata);
+
+  $addr = ffi_cast_ptr2addr(FFI::addr($v));
+  $void_ptr = ffi_cast_addr2ptr($addr);
+  $ptr = FFI::cast('int*', $void_ptr);
+  var_dump(ffi_array_get($ptr, 0));
+
+  $addr2 = ffi_cast_ptr2addr($void_ptr);
+  $void_ptr2 = ffi_cast_addr2ptr($addr2);
+  $ptr2 = FFI::cast('int*', $void_ptr2);
+  var_dump(ffi_array_get($ptr2, 0));
+
+  ffi_array_set($ptr2, 0, 100);
+  var_dump($v->cdata);
+  var_dump(ffi_array_get($ptr, 0));
+  var_dump(ffi_array_get($ptr2, 0));
+}
+
 function test() {
   $mem = FFI::new('uint8_t[16]');
 
@@ -58,6 +79,8 @@ function test() {
     var_dump(ffi_array_get($mem, $i));
     var_dump(ffi_array_get($uint8ptr, $i));
   }
+
+  test_cast_addr();
 }
 
 test();

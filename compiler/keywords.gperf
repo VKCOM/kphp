@@ -62,7 +62,7 @@ __NAMESPACE__, tok_namespace_c
 int, tok_int
 integer, tok_int
 float, tok_float
-double, tok_float
+double, tok_double
 string, tok_string
 object, tok_object
 callable, tok_callable

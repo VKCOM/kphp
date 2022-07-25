@@ -173,26 +173,23 @@ void compile_postfix_op(VertexAdaptor<meta_op_unary> root, CodeGenerator &W) {
   W << Operand{root->expr(), root->type(), true} << OpInfo::str(root->type());
 }
 
-void compile_ffi_c2php_conv(VertexAdaptor<op_ffi_c2php_conv> root, CodeGenerator &W) {
-  if (const FFIType *ffi_type = FFIRoot::get_ffi_type(root->php_type)) {
+void compile_ffi_c2php(VertexPtr expr, bool is_ref, const TypeHint *php_type, CodeGenerator &W) {
+  if (const FFIType *ffi_type = FFIRoot::get_ffi_type(php_type)) {
     if (ffi_type->kind == FFITypeKind::Array && ffi_type->num != -1) {
-      W << "ffi_c2php_array(" << root->expr() << ", " << ffi_type->num << ")";
+      W << "ffi_c2php_array(" << expr << ", " << ffi_type->num << ")";
       return;
     }
   }
-  const char *func = tinf::get_type(root)->is_ffi_ref() ? "ffi_c2php_ref" : "ffi_c2php";
-  W << func << "(" << root->expr() << ")";
+  const char *func = is_ref ? "ffi_c2php_ref" : "ffi_c2php";
+  W << func << "(" << expr << ")";
 }
 
-void compile_ffi_php2c_conv(VertexAdaptor<op_ffi_php2c_conv> root, CodeGenerator &W) {
-  // just to make the generated code a bit more compact
-  if (root->expr()->type() == op_null) {
-    W << "nullptr";
-    return;
-  }
+void compile_ffi_c2php_conv(VertexAdaptor<op_ffi_c2php_conv> root, CodeGenerator &W) {
+  compile_ffi_c2php(root->expr(), tinf::get_type(root)->is_ffi_ref(), root->php_type, W);
+}
 
-  const FFIType *conv_type = FFIRoot::get_ffi_type(root->c_type);
-  const FFIType *type = conv_type->kind == FFITypeKind::Var ? conv_type->members[0] : conv_type;
+void compile_ffi_php2c_tag(const FFIType *c_type, const std::string scope_name, CodeGenerator &W) {
+  const FFIType *type = c_type->kind == FFITypeKind::Var ? c_type->members[0] : c_type;
   std::string tag;
   // some tags have unboxed specializations, other types are specialized with CData templates;
   // see ffi_tag<> specializations in ffi.h for more info
@@ -201,11 +198,26 @@ void compile_ffi_php2c_conv(VertexAdaptor<op_ffi_php2c_conv> root, CodeGenerator
   } else if (type->is_cstring()) {
     tag = "const char*";
   } else if (vk::any_of_equal(type->kind, FFITypeKind::Pointer, FFITypeKind::Struct, FFITypeKind::StructDef, FFITypeKind::Union, FFITypeKind::UnionDef)) {
-    tag = "C$FFI$CData<" + ffi_mangled_decltype_string(root->c_type) + ">";
+    tag = "C$FFI$CData<" + ffi_mangled_decltype_string(scope_name, type) + ">";
   } else {
-    tag = ffi_mangled_decltype_string(root->c_type);
+    tag = ffi_mangled_decltype_string(scope_name, type);
   }
-  W << "ffi_php2c(" << root->expr() << ", ffi_tag<" << tag << ">{})";
+  W << "ffi_tag<" << tag << ">{}";
+}
+
+void compile_ffi_php2c(VertexPtr expr, const TypeHint *c_type, CodeGenerator &W) {
+  W << "ffi_php2c(" << expr << ", ";
+  compile_ffi_php2c_tag(FFIRoot::get_ffi_type(c_type), FFIRoot::get_ffi_scope(c_type), W);
+  W << ")";
+}
+
+void compile_ffi_php2c_conv(VertexAdaptor<op_ffi_php2c_conv> root, CodeGenerator &W) {
+  // just to make the generated code a bit more compact
+  if (root->expr()->type() == op_null) {
+    W << "nullptr";
+    return;
+  }
+  compile_ffi_php2c(root->expr(), root->c_type, W);
 }
 
 void compile_conv_op(VertexAdaptor<meta_op_unary> root, CodeGenerator &W) {
@@ -595,12 +607,68 @@ void compile_for(VertexAdaptor<op_for> root, CodeGenerator &W) {
     CycleBody{root->cmd(), root->continue_label_id, root->break_label_id};
 }
 
+void compile_ffi_callback(VertexAdaptor<op_callback_of_builtin> callback, const FFIType *fn_type, const std::string &scope_name, CodeGenerator &W) {
+  // for FFI callback the code generation is close to what we're doing for normal op_callback_of_builtin,
+  // except we need to add some prologue and epilogue to the function being passed;
+  // the prologue converts all callback arguments with c2php (C calls callback with C types, KPHP expects PHP types)
+  // the epilogue converts the call result with php2c (KPHP returns PHP types, C side expects C types)
+
+  W << LockComments{};
+
+  // the outermost lambda params have C types, not PHP types,
+  // so we can't use FunctionParams(callback->func_id) here
+  auto php_params = callback->func_id->get_params();
+  W << "[](";
+  bool need_comma = false;
+  for (int i = 1; i < fn_type->members.size(); i++) {
+    if (need_comma) {
+      W << ", ";
+    }
+    const auto *param_type = fn_type->members[i]->members[0];
+    auto param = php_params[i-1].as<op_func_param>();
+    W << ffi_mangled_type_string(scope_name, param_type) << " " << param->var();
+    need_comma = true;
+  }
+  W << ") " << BEGIN;
+
+  // to make the generated code more compact, we do not introduce tmp variables
+  // for c2php-converted arguments; the same goes for the php2c result conversion
+  bool is_void = tinf::get_type(callback->func_id, -1)->ptype() == tp_void;
+  if (!is_void) {
+    W << "return ffi_php2c(";
+  }
+  W << "FFI_INVOKE_CALLBACK(" << FunctionName(callback->func_id) << "(";
+  bool first_arg = true;
+  for (const auto &x : callback->func_id->get_params()) {
+    if (!first_arg) {
+      W << ", ";
+    }
+    auto param = x.try_as<op_func_param>();
+    compile_ffi_c2php(param->var(), false, param->type_hint, W);
+    first_arg = false;
+  }
+  W << "))";
+  if (!is_void) {
+    const FFIType *c_return_type = fn_type->members[0];
+    W << ", ";
+    compile_ffi_php2c_tag(c_return_type, scope_name, W);
+    W << ")";
+  }
+  W << ";";
+
+  W << NL << END;
+
+  W << UnlockComments{};
+}
+
 void compile_ffi_func_call(VertexAdaptor<op_func_call> call, CodeGenerator &W) {
-  const auto &local_name = std::string(get_local_name_from_global_$$(call->func_id->name));
+  std::string local_name = std::string(call->func_id->local_name());
   auto *scope = call->func_id->class_id->ffi_scope_mixin;
   const FFISymbol *sym = scope->find_function(local_name);
 
-  W << "FFI_CALL(";
+  if (!sym->type->is_signal_safe()) {
+    W << "FFI_CALL(";
+  }
 
   if (scope->is_shared_lib()) {
     W << "reinterpret_cast<" << ffi_mangled_decltype_string(scope->scope_name, sym->type) << ">(ffi_env_instance.symbols[" << sym->env_index << "].ptr)";
@@ -636,12 +704,21 @@ void compile_ffi_func_call(VertexAdaptor<op_func_call> call, CodeGenerator &W) {
     if (need_comma) {
       W << ", ";
     }
-    W << args[i];
+    if (auto as_callback = args[i].try_as<op_callback_of_builtin>()) {
+      // sym->type->members[i] is Var, so its members[0] is an actual param type
+      const FFIType *function_pointer = sym->type->members[i]->members[0];
+      kphp_assert(function_pointer->kind == FFITypeKind::FunctionPointer);
+      compile_ffi_callback(as_callback, function_pointer, scope->scope_name, W);
+    } else {
+      W << args[i];
+    }
     need_comma = true;
   }
   W << ")";
 
-  W << ")"; // closing FFI_CALL macro argument list
+  if (!sym->type->is_signal_safe()) {
+    W << ")"; // closing FFI_CALL macro argument list
+  }
 }
 
 enum class func_call_mode {
@@ -676,15 +753,9 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
     return;
   }
 
-  if (root->func_id->modifiers.is_instance()) {
-    // sometimes instance method calls don't have inferrable class-like type
-    // in their args[0]
-    // TODO: figure out why; if the root of the issue is fixed, remove `if (klass)` check below
-    auto klass = tinf::get_type(root->args()[0])->class_type();
-    if (klass && klass->is_ffi_scope()) {
-      compile_ffi_func_call(root, W);
-      return;
-    }
+  if (FFIRoot::is_ffi_scope_call(root)) {
+    compile_ffi_func_call(root, W);
+    return;
   }
 
   FunctionPtr func;
@@ -761,13 +832,28 @@ void compile_func_call_fast(VertexAdaptor<op_func_call> root, CodeGenerator &W) 
 
 void compile_ffi_cast(VertexAdaptor<op_ffi_cast> root, CodeGenerator &W) {
   const auto *from_type = tinf::get_type(root->expr());
+  const auto *to_type = FFIRoot::get_ffi_type(root->php_type);
+  const std::string &scope_name = FFIRoot::get_ffi_scope(root->php_type);
+  if (to_type->kind == FFITypeKind::Array) {
+    kphp_assert(root->has_array_size_expr() || to_type->num != -1);
+    // right now only pointer types can be cast to arrays;
+    // also, these arrays always have only 1 dimension (therefore, members[0] is a non-array element type)
+    W << "ffi_cast_to_array" << "<" << ffi_mangled_decltype_string(scope_name, to_type->members[0]) << ">(" << root->expr() << ", "; // << root->array_size_expr() << ")";
+    if (to_type->num != -1) {
+      W << to_type->num;
+    } else {
+      W << root->array_size_expr();
+    }
+    W << ")";
+    return;
+  }
   const char *func = "ffi_cast";
   if (from_type->lookup_at_any_key()) {
-    func = "ffi_cast_array";
+    func = "ffi_cast_from_array";
   } else if (from_type->get_indirection() == 0 && ffi_builtin_type(from_type->class_type()->ffi_class_mixin->ffi_type->kind)) {
      func = "ffi_cast_scalar";
   }
-  W << func << "<" << ffi_mangled_decltype_string(root->php_type) << ">(" << root->expr() << ")";
+  W << func << "<" << ffi_mangled_decltype_string(scope_name, to_type) << ">(" << root->expr() << ")";
 }
 
 void compile_ffi_addr(VertexAdaptor<op_ffi_addr> root, CodeGenerator &W) {
@@ -779,10 +865,11 @@ void compile_ffi_new(VertexAdaptor<op_ffi_new> root, CodeGenerator &W) {
   if (root->has_array_size_expr()) {
     const auto *elem_type = ffi_type->members[0];
     std::string scope_name = FFIRoot::get_ffi_scope(root->php_type);
-    W << "ffi_new_cdata_array" << "<" << ffi_mangled_decltype_string(scope_name, elem_type) << ">" << "(" << root->array_size_expr() << ")";
+    W << "ffi_new_cdata_array" << "<" << ffi_mangled_decltype_string(scope_name, elem_type) << ">" << "(" << root->array_size_expr() << ", " << root->owned_flag_expr() << ")";
+  } else if (ffi_type->kind != FFITypeKind::Pointer) {
+    W << "ffi_new_cdata<" << ffi_mangled_decltype_string(root->php_type) << ">(" << root->owned_flag_expr() << ")";
   } else {
-    const char *func = ffi_type->kind == FFITypeKind::Pointer ? "ffi_new_cdata_ptr" : "ffi_new_cdata";
-    W << func << "<" << ffi_mangled_decltype_string(root->php_type) << ">()";
+    W << "ffi_new_cdata_ptr<" << ffi_mangled_decltype_string(root->php_type) << ">()";
   }
 }
 

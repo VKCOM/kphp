@@ -17,6 +17,16 @@ if (false)
 #endif
   define('kphp', 1);
 
+/** @return ffi_scope<vector> */
+function vector_lib() {
+  /** @var ffi_scope<vector> $lib */
+  static $lib = null;
+  if (!$lib) {
+    $lib = FFI::scope('vector');
+  }
+  return $lib;
+}
+
 function kphp_load_vector_lib() {
   if (kphp) {
     FFI::load(__DIR__ . '/../../c/vector.h');

@@ -91,7 +91,7 @@ struct CDataPtr {
     if (!v.is_null()) {
       php_warning("FFI: initialized ptr with incompatible optional");
     }
-    c_value = nullptr;
+    c_value = reinterpret_cast<T*>(1);
   }
 
   void accept(InstanceMemoryEstimateVisitor&) {}
@@ -137,7 +137,12 @@ template<class T>
 CDataPtr<T> ffi_addr(const class_instance<CDataArray<T>> &cdata) { return CDataPtr<T>::create(cdata->data); }
 
 template<class T>
-T *ffi_c_value_ptr(CDataPtr<T> ptr) { return {ptr.c_value}; }
+T *ffi_c_value_ptr(CDataPtr<T> ptr) {
+  if (ptr.c_value == reinterpret_cast<T*>(1)) {
+    return nullptr;
+  }
+  return ptr.c_value;
+}
 
 template<class T>
 T *ffi_c_value_ptr(class_instance<C$FFI$CData<T>> &cdata) { return {&cdata->c_value}; }
@@ -261,6 +266,16 @@ int64_t f$FFI$$sizeof(const CDataRef<T> &ref) {
   return sizeof(*ref.c_value);
 }
 
+inline CDataPtr<void> f$ffi_cast_addr2ptr(int64_t addr) {
+  CDataPtr<void> ptr;
+  ptr.c_value = reinterpret_cast<void*>(addr);
+  return ptr;
+}
+
+inline int64_t f$ffi_cast_ptr2addr(CDataPtr<void> ptr) {
+  return reinterpret_cast<int64_t>(ptr.c_value);
+}
+
 template<class T1, class T2>
 int64_t f$FFI$$memcmp(T1 ptr1, T2 ptr2, int64_t size)  {
   int64_t result = std::memcmp(ffi_c_value_ptr(ptr1), ffi_c_value_ptr(ptr2), size);
@@ -294,6 +309,21 @@ template<class T>
 bool f$FFI$$isNull(CDataPtr<T> ptr) { return ptr.c_value == nullptr; }
 
 template<class T>
+void f$FFI$$free(const class_instance<C$FFI$CData<T>> &cdata) {
+  cdata->set_refcnt(cdata->get_refcnt() - 1);
+}
+
+template<class T>
+void f$FFI$$free(const class_instance<CDataArray<T>> &cdata) {
+  cdata->set_refcnt(cdata->get_refcnt() - 1);
+}
+
+template<class T>
+void f$FFI$$free(const CDataPtr<T> &ptr) {
+  dl::deallocate(ptr.c_value, sizeof(T));
+}
+
+template<class T>
 constexpr int64_t f$count(const class_instance<CDataArray<T>> &a) {
   return a->len;
 }
@@ -304,9 +334,12 @@ constexpr int64_t f$count(const CDataArrayRef<T> &a) {
 }
 
 template<class T>
-class_instance<C$FFI$CData<T>> ffi_new_cdata() {
+class_instance<C$FFI$CData<T>> ffi_new_cdata(bool owned) {
   class_instance<C$FFI$CData<T>> cdata;
   cdata.alloc();
+  if (!owned) {
+    cdata->set_refcnt(cdata->get_refcnt() + 1);
+  }
   return cdata;
 }
 
@@ -316,7 +349,7 @@ auto ffi_new_cdata_ptr() {
 }
 
 template<class T>
-class_instance<CDataArray<T>> ffi_new_cdata_array(int64_t len) {
+class_instance<CDataArray<T>> ffi_new_cdata_array(int64_t len, bool owned) {
   if (unlikely(len < 0)) {
     php_critical_error("FFI::new(): negative array size");
   }
@@ -325,6 +358,9 @@ class_instance<CDataArray<T>> ffi_new_cdata_array(int64_t len) {
   }
   class_instance<CDataArray<T>> cdata;
   cdata.alloc(len);
+  if (!owned) {
+    cdata->set_refcnt(cdata->get_refcnt() + 1);
+  }
   return cdata;
 }
 
@@ -334,8 +370,35 @@ CDataRef<ToType> ffi_cast_scalar(FromType &v) {
 }
 
 template<class ToType, class T>
-auto ffi_cast_array(class_instance<CDataArray<T>> &a) {
+auto ffi_cast_from_array(class_instance<CDataArray<T>> &a) {
   return CDataPtr<std::remove_pointer_t<ToType>>{(ToType)a->data};
+}
+
+template<class ToType, class T>
+auto ffi_cast_to_array(T* data, int64_t len) {
+  // TODO: make CDataArrayRef expressible via KPHP type system and return that?
+  // otherwise we need to allocate a class_instance for every cast;
+  // not a big problem right now, but we can do better
+
+  if (unlikely(len < 0)) {
+    php_critical_error("FFI::cast(): negative array size");
+  }
+  if (unlikely(len == 0)) {
+    php_critical_error("FFI::cast(): zero array size");
+  }
+
+  class_instance<CDataArray<ToType>> cdata;
+  cdata.alloc();
+  cdata->len = len;
+  cdata->data = static_cast<ToType*>(data);
+  // cast never creates owning objects
+  cdata->set_refcnt(cdata->get_refcnt() + 1);
+  return cdata;
+}
+
+template<class ToType, class T>
+auto ffi_cast_to_array(const CDataPtr<T> &ptr, int64_t len) {
+  return ffi_cast_to_array<ToType>(ptr.c_value, len);
 }
 
 template<class ToType, class FromType>
@@ -451,7 +514,7 @@ CDataPtr<T> ffi_c2php(T *v) {
 }
 
 template<class T> class_instance<C$FFI$CData<T>> ffi_c2php(T v) {
-  auto cdata = ffi_new_cdata<T>();
+  auto cdata = ffi_new_cdata<T>(true);
   cdata->c_value = v;
   return cdata;
 }
@@ -495,6 +558,10 @@ inline double ffi_php2c(double v, ffi_tag<double>) { return v; }
 inline const char* ffi_php2c(const string &v, ffi_tag<const char*>) { return v.c_str(); }
 inline const void* ffi_php2c(const string &v, ffi_tag<const void*>) { return v.c_str(); }
 
+inline const char* ffi_php2c(const Optional<string> &v, ffi_tag<const char*>) {
+  return v.has_value() ? v.val().c_str() : nullptr;
+}
+
 // some FFI types allow nulls as their values
 inline bool ffi_php2c(Optional<bool> v, ffi_tag<bool>) { return v.is_null() ? false : v.val(); }
 inline uint8_t ffi_php2c(Optional<int64_t> v, ffi_tag<uint8_t>) { return v.is_null() ? 0 : v.val(); }
@@ -511,26 +578,26 @@ inline double ffi_php2c(Optional<double> v, ffi_tag<double>) { return v.is_null(
 template<class T>
 auto ffi_php2c(class_instance<C$FFI$CData<T>> v, ffi_tag<C$FFI$CData<T>>) { return v->c_value; }
 
-inline const char* ffi_php2c(CDataPtr<char> v, ffi_tag<const char*>) { return v.c_value; }
-inline const char* ffi_php2c(CDataPtr<const char> v, ffi_tag<const char*>) { return v.c_value; }
+inline const char* ffi_php2c(CDataPtr<char> v, ffi_tag<const char*>) { return ffi_c_value_ptr(v); }
+inline const char* ffi_php2c(CDataPtr<const char> v, ffi_tag<const char*>) { return ffi_c_value_ptr(v); }
 
 template<class T>
-void *ffi_php2c(CDataPtr<T> v, ffi_tag<void*>) { return v.c_value; }
+void *ffi_php2c(CDataPtr<T> v, ffi_tag<void*>) { return ffi_c_value_ptr(v); }
 
 template<class T>
-const void *ffi_php2c(CDataPtr<T> v, ffi_tag<const void*>) { return v.c_value; }
+const void *ffi_php2c(CDataPtr<T> v, ffi_tag<const void*>) { return ffi_c_value_ptr(v); }
 
 template<class T>
-const void *ffi_php2c(CDataPtr<const T> v, ffi_tag<const void*>) { return v.c_value; }
+const void *ffi_php2c(CDataPtr<const T> v, ffi_tag<const void*>) { return ffi_c_value_ptr(v); }
 
 template<class T>
-T* ffi_php2c(CDataPtr<T> v, ffi_tag<C$FFI$CData<T*>>) { return v.c_value; }
+T* ffi_php2c(CDataPtr<T> v, ffi_tag<C$FFI$CData<T*>>) { return ffi_c_value_ptr(v); }
 
 template<class T>
-const T* ffi_php2c(CDataPtr<T> v, ffi_tag<C$FFI$CData<const T*>>) { return v.c_value; }
+const T* ffi_php2c(CDataPtr<T> v, ffi_tag<C$FFI$CData<const T*>>) { return ffi_c_value_ptr(v); }
 
 template<class T>
-const T* ffi_php2c(CDataPtr<const T> v, ffi_tag<C$FFI$CData<const T*>>) { return v.c_value; }
+const T* ffi_php2c(CDataPtr<const T> v, ffi_tag<C$FFI$CData<const T*>>) { return ffi_c_value_ptr(v); }
 
 // this is a special overloading for things like php2c(null);
 // note: we compile op_null as Optional<bool>{}
@@ -561,7 +628,7 @@ inline double ffi_vararg_php2c(double v) { return v; }
 inline const char *ffi_vararg_php2c(const string &s) { return s.c_str(); }
 
 template<class T>
-T* ffi_vararg_php2c(CDataPtr<T> v) { return v.c_value; }
+T* ffi_vararg_php2c(CDataPtr<T> v) { return ffi_c_value_ptr(v); }
 
 template<class T>
 auto ffi_vararg_php2c(class_instance<C$FFI$CData<T>> v) { return v->c_value; }

@@ -264,6 +264,12 @@ const TypeHint *PhpDocTypeHintParser::parse_ffi_cdata() {
     } else if (tok == tok_int) {
       cdef.append("int");
       need_space = true;
+    } else if (tok == tok_float) {
+      cdef.append("float");
+      need_space = true;
+    } else if (tok == tok_double) {
+      cdef.append("double");
+      need_space = true;
     } else if (tok == tok_const) {
       cdef.append("const");
       need_space = true;
@@ -357,6 +363,7 @@ const TypeHint *PhpDocTypeHintParser::parse_simple_type() {
       cur_tok++;
       return TypeHintPrimitive::create(tp_bool);
     case tok_float:
+    case tok_double:
       cur_tok++;
       return TypeHintPrimitive::create(tp_float);
     case tok_string:
