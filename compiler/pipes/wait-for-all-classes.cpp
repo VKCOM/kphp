@@ -32,6 +32,10 @@ void WaitForAllClassesAndLoadModulitesF::on_finish(DataStream<FunctionPtr> &os) 
 }
 
 void WaitForAllClassesAndLoadModulitesF::register_all_modulites() {
+  if (!G->settings().modulite_enabled.get()) {
+    return;
+  }
+
   SrcDirPtr dir_root = G->get_main_file()->dir;
 
   // Sort all dirs in a project from short to long, e.g.

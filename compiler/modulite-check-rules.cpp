@@ -38,6 +38,10 @@ static bool does_allow_internal_rule_satisfy_usage_context(FunctionPtr usage_con
          (rule.kind == ModuliteSymbol::kind_modulite && rule.modulite == usage_context->modulite);
 }
 
+static inline bool is_env_modulite_enabled() {
+  return G->settings().modulite_enabled.get();
+}
+
 
 // class A is exported from a modulite when
 // - "A" is declared in 'export'
@@ -193,6 +197,10 @@ static bool does_require_another_modulite(ModulitePtr inside_m, ModulitePtr anot
 
 
 void modulite_check_when_use_class(FunctionPtr usage_context, ClassPtr klass) {
+  if (!is_env_modulite_enabled()) {
+    return;
+  }
+
   ModulitePtr inside_m = usage_context->modulite;
   ModulitePtr another_m = klass->modulite;
   if (inside_m == another_m) {
@@ -219,6 +227,10 @@ void modulite_check_when_use_class(FunctionPtr usage_context, ClassPtr klass) {
 }
 
 void modulite_check_when_use_constant(FunctionPtr usage_context, DefinePtr used_c) {
+  if (!is_env_modulite_enabled()) {
+    return;
+  }
+
   ModulitePtr inside_m = usage_context->modulite;
   ModulitePtr another_m = used_c->modulite;
   if (inside_m == another_m) {
@@ -247,6 +259,10 @@ void modulite_check_when_use_constant(FunctionPtr usage_context, DefinePtr used_
 
 
 void modulite_check_when_call_function(FunctionPtr usage_context, FunctionPtr called_f) {
+  if (!is_env_modulite_enabled()) {
+    return;
+  }
+
   ModulitePtr inside_m = usage_context->modulite;
   ModulitePtr another_m = called_f->modulite;
   if (inside_m == another_m) {
@@ -273,6 +289,10 @@ void modulite_check_when_call_function(FunctionPtr usage_context, FunctionPtr ca
 }
 
 void modulite_check_when_use_static_field(FunctionPtr usage_context, VarPtr field) {
+  if (!is_env_modulite_enabled()) {
+    return;
+  }
+
   ModulitePtr inside_m = usage_context->modulite;
   ModulitePtr another_m = field->class_id->modulite;
   if (inside_m == another_m) {
@@ -300,6 +320,10 @@ void modulite_check_when_use_static_field(FunctionPtr usage_context, VarPtr fiel
 }
 
 void modulite_check_when_global_keyword(FunctionPtr usage_context, const std::string &global_var_name) {
+  if (!is_env_modulite_enabled()) {
+    return;
+  }
+
   ModulitePtr inside_m = usage_context->modulite;
 
   if (inside_m) {
