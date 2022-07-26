@@ -49,5 +49,9 @@ if ($_SERVER["PHP_SELF"] === "/ini_get") {
 } else if ($_SERVER["PHP_SELF"] === "/pid") {
     echo "pid=" . posix_getpid();
 } else {
-  echo "Hello world!";
+    if ($_GET["hints"] === "yes") {
+        send_http_103_early_hints([]);
+        sleep(2);
+    }
+    echo "Hello world!";
 }
