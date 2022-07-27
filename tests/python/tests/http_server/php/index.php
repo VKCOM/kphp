@@ -8,6 +8,65 @@ class A {
   public $b = "hello";
 }
 
+/**
+ * @kphp-required
+ */
+function shutdown_function() {
+    fwrite(STDERR, "shutdown_function was called\n");
+}
+
+function assert($flag) {
+    if (!$flag) {
+        critical_error("failed assert");
+    }
+}
+
+interface I {
+    public function work();
+}
+
+class ResumableWorker implements I {
+    public function work() {
+        $job = function() {
+                sched_yield_sleep(2);
+                return true;
+        };
+        $futures = [];
+        for ($i = 0; $i < 3; ++$i) {
+            $futures[] = fork($job());
+        }
+        $responses = wait_multi($futures);
+        foreach ($responses as $resp) {
+            assert($resp);
+        }
+        fwrite(STDERR, "test_ignore_user_abort/finish_resumable_work\n");
+    }
+}
+
+class RpcWorker implements I {
+    protected int $port;
+
+    public function __construct(int $port) {
+        $this->port = $port;
+    }
+
+    public function work() {
+        fwrite(STDERR, $this->port . "\n");
+        $job = function() {
+            $conn = new_rpc_connection('localhost', $this->port, 0, 3);
+            $req_id = rpc_tl_query_one($conn, ["_" => "engine.sleep",
+                                                "time_ms" => 60]);
+            $resp = rpc_tl_query_result_one($req_id);
+            assert($resp);
+        };
+        for ($i = 0; $i < 3; ++$i) {
+            $job();
+        }
+        fwrite(STDERR, "test_ignore_user_abort/finish_rpc_work\n");
+   }
+}
+
+
 if ($_SERVER["PHP_SELF"] === "/ini_get") {
   echo ini_get($_SERVER["QUERY_STRING"]);
 } else if (substr($_SERVER["PHP_SELF"], 0, 12) === "/test_limits") {
@@ -37,6 +96,48 @@ if ($_SERVER["PHP_SELF"] === "/ini_get") {
   }
   file_put_contents("out.dat", $res === false ? "false" : $res);
   echo "OK";
+} else if ($_SERVER["PHP_SELF"] === "/test_ignore_user_abort") {
+    register_shutdown_function('shutdown_function');
+    /** @var I */
+    $worker = null;
+    switch($_GET["type"]) {
+     case "rpc":
+        $worker = new RpcWorker(intval($_GET["port"]));
+        break;
+     case "resumable":
+        $worker = new ResumableWorker;
+        break;
+     default:
+        echo "ERROR"; return;
+    }
+    switch($_GET["level"]) {
+     case "no_ignore":
+        $worker->work();
+        break;
+     case "ignore":
+        ignore_user_abort(true);
+        $worker->work();
+        fwrite(STDERR, "test_ignore_user_abort/finish_ignore\n");
+        ignore_user_abort(false);
+        break;
+     case "multi_ignore":
+        ignore_user_abort(true);
+        $worker->work();
+        $worker->work();
+        fwrite(STDERR, "test_ignore_user_abort/finish_multi_ignore\n");
+        ignore_user_abort(false);
+        break;
+     case "nested_ignore":
+        ignore_user_abort(true);
+        ignore_user_abort(true);
+        $worker->work();
+        ignore_user_abort(false);
+        fwrite(STDERR, "test_ignore_user_abort/finish_nested_ignore\n");
+        ignore_user_abort(false);
+     default:
+        echo "ERROR"; return;
+    }
+    echo "OK";
 } else if ($_SERVER["PHP_SELF"] === "/test_big_post_data") {
     $keys = array_keys($_POST);
     if ($keys) {
