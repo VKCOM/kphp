@@ -68,7 +68,7 @@ class KphpServer(Engine):
         """
         return self._http_port
 
-    def http_request(self, uri='/', method='GET', http_port=None, **kwargs):
+    def http_request(self, uri='/', method='GET', http_port=None, timeout=30, **kwargs):
         """
         Послать запрос в kphp сервер
         :param http_port: порт в который посылать, если их несколько
@@ -77,7 +77,7 @@ class KphpServer(Engine):
         :param kwargs: дополнительные параметры, передаваемые в request
         :return: ответ на запрос
         """
-        return send_http_request(self._http_port if http_port is None else http_port, uri, method, **kwargs)
+        return send_http_request(self._http_port if http_port is None else http_port, uri, method, timeout, **kwargs)
 
     def http_post(self, uri='/', **kwargs):
         """

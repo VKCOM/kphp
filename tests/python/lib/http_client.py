@@ -5,11 +5,11 @@ import socket
 from .colors import blue
 
 
-def send_http_request(port, uri='/', method='GET', **kwargs):
+def send_http_request(port, uri='/', method='GET', timeout=30, **kwargs):
     session = requests.session()
     url = 'http://127.0.0.1:{}{}'.format(port, uri)
     print("\nSending HTTP request: [{}]".format(blue(url)))
-    r = session.request(method=method, url=url, timeout=30, **kwargs)
+    r = session.request(method=method, url=url, timeout=timeout, **kwargs)
     session.close()
     print("HTTP request debug:")
     print("=============================")
