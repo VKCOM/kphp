@@ -10,7 +10,6 @@
 #include <unistd.h>
 
 #include "common/algorithms/arithmetic.h"
-#include "common/container_of.h"
 #include "common/md5.h"
 #include "common/precise-time.h"
 #include "common/wrappers/likely.h"
@@ -19,8 +18,6 @@
 #include "common/binlog/kdb-binlog-common.h"
 
 DECLARE_VERBOSITY(binlog_buffers);
-
-#define UPDATE_OLD_BINLOG_VARS
 
 typedef struct {
   bool need_to_free;

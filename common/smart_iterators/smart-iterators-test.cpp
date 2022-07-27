@@ -7,8 +7,6 @@
 #include <vector>
 
 #include "common/smart_iterators/filter_iterator.h"
-#include "common/smart_iterators/take_while_iterator.h"
-#include "common/smart_iterators/transform_iterator.h"
 #include "common/wrappers/iterator_range.h"
 
 using namespace ::testing;

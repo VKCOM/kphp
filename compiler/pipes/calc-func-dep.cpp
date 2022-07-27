@@ -7,7 +7,6 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/var-data.h"
 #include "compiler/inferring/public.h"
-#include "compiler/vertex.h"
 
 VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex) {
   if (!calls.empty() && calls.back()->is_extern() && vertex->type() == op_callback_of_builtin) {

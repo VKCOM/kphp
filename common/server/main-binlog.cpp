@@ -6,8 +6,6 @@
 
 #include "common/binlog/binlog-buffer.h"
 
-#include "common/stats/provider.h"
-
 bb_buffer_t BinlogBuffer;
 bb_reader_t BinlogBufferReader;
 bb_writer_t BinlogBufferWriter;

@@ -4,7 +4,6 @@
 
 #include "common/parallel/counter.h"
 
-#include <cstdint>
 #include <random>
 #include <thread>
 #include <vector>

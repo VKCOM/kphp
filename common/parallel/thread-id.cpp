@@ -6,7 +6,6 @@
 
 #include <assert.h>
 #include <pthread.h>
-#include <stdbool.h>
 
 struct thread_state {
   bool running;

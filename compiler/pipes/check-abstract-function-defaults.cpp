@@ -7,7 +7,6 @@
 #include "common/containers/final_action.h"
 #include "common/termformat/termformat.h"
 
-#include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/pipes/calc-real-defines-values.h"
 

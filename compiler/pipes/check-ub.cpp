@@ -6,7 +6,6 @@
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/function-data.h"
-#include "compiler/gentree.h"
 
 /*
  * C++ undefined behaviour fixes.

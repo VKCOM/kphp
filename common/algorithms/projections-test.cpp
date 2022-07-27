@@ -12,7 +12,6 @@
 #include "common/algorithms/sort.h"
 #include "common/algorithms/stable_sort.h"
 #include "common/algorithms/upper_bound.h"
-#include "common/kprintf.h"
 
 TEST(algorithms_projections_test, sort) {
   std::vector<std::pair<int, int>> rng = {{1, -2}, {2, -3}, {3, -4}};

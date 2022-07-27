@@ -4,12 +4,13 @@
 
 #include "server/numa-configuration.h"
 
+#ifndef __APPLE__
 #include <algorithm>
 #include <cassert>
 
 #include "common/kprintf.h"
 #include "common/dl-utils-lite.h"
-
+#endif
 
 bool NumaConfiguration::add_numa_node([[maybe_unused]] int numa_node_id, [[maybe_unused]] const bitmask *cpu_mask) {
 #if defined(__APPLE__)

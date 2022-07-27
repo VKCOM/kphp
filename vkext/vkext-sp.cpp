@@ -3,7 +3,6 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "common/string-processing.h"
-#include "common/unicode/unicode-utils.h"
 
 #include "vkext/vkext.h"
 

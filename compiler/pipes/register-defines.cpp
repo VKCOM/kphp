@@ -5,7 +5,6 @@
 #include "compiler/pipes/register-defines.h"
 
 #include "compiler/compiler-core.h"
-#include "compiler/data/class-data.h"
 #include "compiler/data/src-file.h"
 
 VertexPtr RegisterDefinesPass::on_exit_vertex(VertexPtr root) {

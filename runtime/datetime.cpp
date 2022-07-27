@@ -4,9 +4,7 @@
 
 #include "runtime/datetime.h"
 
-#include <clocale>
 #include <ctime>
-#include <sys/time.h>
 #include <chrono>
 
 #include "runtime/critical_section.h"

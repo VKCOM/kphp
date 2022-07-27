@@ -6,7 +6,6 @@
 #include "runtime/instance-copy-processor.h"
 
 #include "server/job-workers/job-message.h"
-#include "server/job-workers/shared-memory-manager.h"
 
 #include "runtime/job-workers/processing-jobs.h"
 

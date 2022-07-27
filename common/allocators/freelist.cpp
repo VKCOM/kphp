@@ -4,8 +4,6 @@
 
 #include "common/allocators/freelist.h"
 
-#include <stdbool.h>
-
 struct freelist_node {
   tagged_ptr_t next;
 };

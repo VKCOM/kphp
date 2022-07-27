@@ -5,7 +5,6 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <map>
-#include <string>
 #include <vector>
 
 #include "common/algorithms/contains.h"

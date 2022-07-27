@@ -8,7 +8,6 @@
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/inferring/edge.h"
-#include "compiler/inferring/public.h"
 #include "compiler/inferring/restriction-match-phpdoc.h"
 #include "compiler/threading/profiler.h"
 

@@ -9,10 +9,8 @@
 #include "compiler/code-gen/includes.h"
 #include "compiler/code-gen/namespace.h"
 #include "compiler/code-gen/vertex-compiler.h"
-#include "compiler/data/class-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/vars-collector.h"
-#include "compiler/vertex.h"
 
 GlobalVarsReset::GlobalVarsReset(SrcFilePtr main_file) :
   main_file_(main_file) {

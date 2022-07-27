@@ -7,7 +7,6 @@
 #include <fstream>
 #include <openssl/sha.h>
 #include <sstream>
-#include <unistd.h>
 
 #include "common/algorithms/contains.h"
 #include "common/algorithms/find.h"

@@ -6,7 +6,6 @@
 
 #include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
-#include "compiler/vertex.h"
 
 namespace tinf {
 

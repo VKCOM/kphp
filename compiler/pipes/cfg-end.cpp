@@ -8,7 +8,6 @@
 #include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
 #include "compiler/inferring/public.h"
-#include "compiler/vertex.h"
 
 struct MergeData {
   int id;

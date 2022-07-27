@@ -135,9 +135,6 @@ extern Throwable CurException;
 #define TRY_CALL(CallT, ResT, call) TRY_CALL_(CallT, call, return (ResT()))
 #define TRY_CALL_VOID(ResT, call) TRY_CALL_VOID_(call, return (ResT()))
 
-#define TRY_CALL_EXIT(CallT, message, call) TRY_CALL_(CallT, call, php_critical_error (message))
-#define TRY_CALL_VOID_EXIT(message, call) TRY_CALL_VOID_(call, php_critical_error (message))
-
 string exception_trace_as_string(const Throwable &e);
 void exception_initialize(const Throwable &e, const string &message, int64_t code);
 

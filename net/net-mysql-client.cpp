@@ -5,13 +5,10 @@
 #include "net/net-mysql-client.h"
 
 #include <assert.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
 
-#include "common/crc32.h"
 #include "common/kprintf.h"
 #include "common/options.h"
 #include "common/precise-time.h"

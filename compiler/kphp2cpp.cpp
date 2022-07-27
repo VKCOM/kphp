@@ -9,7 +9,6 @@
 #include "common/algorithms/string-algorithms.h"
 #include "common/options.h"
 #include "common/sanitizer.h"
-#include "common/server/limits.h"
 #include "common/server/signals.h"
 #include "common/version-string.h"
 #include "common/wrappers/string_view.h"

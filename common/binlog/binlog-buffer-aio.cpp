@@ -2,12 +2,8 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include <aio.h>
 #include <assert.h>
-#include <cstdlib>
-#include <errno.h>
 #include <fcntl.h>
-#include <float.h>
 #include <unistd.h>
 
 #include "common/kprintf.h"

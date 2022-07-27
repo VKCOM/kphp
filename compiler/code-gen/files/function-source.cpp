@@ -8,7 +8,6 @@
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/includes.h"
 #include "compiler/code-gen/namespace.h"
-#include "compiler/code-gen/naming.h"
 #include "compiler/code-gen/vertex-compiler.h"
 #include "compiler/stage.h"
 

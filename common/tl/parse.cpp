@@ -5,10 +5,7 @@
 #include "common/tl/parse.h"
 
 #include <cinttypes>
-#include <functional>
 #include <memory>
-
-#include "common/binlog/kdb-binlog-common.h"
 
 #include "common/stats/provider.h"
 #include "common/tl/constants/common.h"

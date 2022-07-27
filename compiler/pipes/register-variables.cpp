@@ -5,9 +5,7 @@
 #include "compiler/pipes/register-variables.h"
 
 #include "compiler/compiler-core.h"
-#include "compiler/data/class-data.h"
 #include "compiler/data/var-data.h"
-#include "compiler/gentree.h"
 #include "compiler/name-gen.h"
 #include "compiler/utils/string-utils.h"
 

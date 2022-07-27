@@ -6,7 +6,6 @@
 
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
-#include "compiler/function-pass.h"
 #include "compiler/vertex.h"
 
 namespace {

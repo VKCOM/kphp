@@ -5,7 +5,6 @@
 #include "compiler/inferring/primitive-type.h"
 
 #include <map>
-#include <string>
 
 #include "common/algorithms/find.h"
 

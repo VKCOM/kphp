@@ -13,7 +13,6 @@
 #include "compiler/code-gen/raw-data.h"
 #include "compiler/code-gen/vertex-compiler.h"
 #include "compiler/data/src-file.h"
-#include "compiler/data/var-data.h"
 #include "compiler/stage.h"
 
 struct InitVar {

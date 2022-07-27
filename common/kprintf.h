@@ -55,7 +55,6 @@ fprintf(stderr, __VA_ARGS__);
 #define log_not_too_much_fun(fun, ...) do_not_too_much(log_not_too_much_print_impl, fun, __VA_ARGS__)
 
 #define log_not_too_much(...)                               log_not_too_much_fun(kprintf, __VA_ARGS__)
-#define send_not_too_much_messages_to_assertion_chat(...)   log_not_too_much_fun(send_message_to_assertion_chat, __VA_ARGS__)
 
 #define tv_do(func, type, verbosity_level, format, ...) do { \
     if (!VERBOSITY(type, verbosity_level)) { \
@@ -65,8 +64,6 @@ fprintf(stderr, __VA_ARGS__);
   } while (0)
 
 #define tvkprintf(...) tv_do(kprintf, ##__VA_ARGS__)
-#define tvlog_not_too_much(...) tv_do(log_not_too_much, ##__VA_ARGS__)
-
 
 #define VERBOSITY(nm, level) ((verbosity_ ##nm == -1 ? verbosity : verbosity_ ##nm) >= (level))
 #define DECLARE_VERBOSITY(nm) extern int verbosity_ ##nm

@@ -3,7 +3,6 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include <cassert>
-#include <poll.h>
 
 #include "common/precise-time.h"
 #include "common/rpc-error-codes.h"
@@ -15,8 +14,6 @@
 #include "server/job-workers/job-worker-server.h"
 #include "server/php-engine.h"
 #include "server/php-lease.h"
-#include "server/php-mc-connections.h"
-#include "server/php-sql-connections.h"
 #include "server/php-worker.h"
 #include "server/server-stats.h"
 #include "server/database-drivers/request.h"

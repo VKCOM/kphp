@@ -9,11 +9,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
 
-#include "common/crc32.h"
 #include "common/kprintf.h"
-#include "common/options.h"
 #include "common/server/stats.h"
 #include "common/stats/provider.h"
 
@@ -22,7 +19,6 @@
 #include "net/net-crypto-aes.h"
 #include "net/net-dc.h"
 #include "net/net-events.h"
-#include "net/net-sockaddr-storage.h"
 
 #define MAX_KEY_LEN     1000
 #define MAX_VALUE_LEN   1048576

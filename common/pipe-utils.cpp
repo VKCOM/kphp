@@ -4,10 +4,6 @@
 
 #include "common/pipe-utils.h"
 
-#include <errno.h>
-#include <stdio.h>
-#include <unistd.h>
-
 #include "net/net-connections.h"
 #include "net/net-tcp-rpc-common.h"
 

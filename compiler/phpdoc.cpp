@@ -4,7 +4,6 @@
 
 #include "compiler/phpdoc.h"
 
-#include <cstdio>
 #include <utility>
 
 #include "common/termformat/termformat.h"
@@ -13,7 +12,6 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
-#include "compiler/gentree.h"
 #include "compiler/lexer.h"
 #include "compiler/name-gen.h"
 #include "compiler/stage.h"

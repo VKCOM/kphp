@@ -5,12 +5,7 @@
 #include "vkext/vkext-stats.h"
 
 #include <assert.h>
-#include <ctype.h>
-#include <limits.h>
-#include <stdlib.h>
 #include <string.h>
-
-#include "common/wrappers/likely.h"
 
 #include "vkext/vkext-rpc.h"
 

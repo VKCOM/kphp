@@ -5,7 +5,6 @@
 #include "server/http-server-context.h"
 
 #include <sstream>
-#include <string>
 #include <vector>
 #include <unistd.h>
 

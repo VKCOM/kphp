@@ -8,18 +8,12 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <cstring>
 #include <functional>
 #include <limits>
 #include <random>
 #include <type_traits>
 
 #include <gtest/gtest.h>
-
-#include "common/crypto/aes256-aarch64.h"
-#include "common/crypto/aes256-generic.h"
-#include "common/crypto/aes256-x86_64.h"
-#include "common/crypto/aes256-arm64.h"
 
 template<size_t plaintext_bytes, size_t iv_bytes, size_t key_bytes>
 class AESCtx : public ::testing::Test {

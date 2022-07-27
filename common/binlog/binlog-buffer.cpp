@@ -13,11 +13,9 @@
 #include <climits>
 #include <cstring>
 #include <utility>
-#include <vector>
 
 #include "common/crc32.h"
 #include "common/kprintf.h"
-#include "common/options.h"
 #include "common/precise-time.h"
 #include "common/kfs/kfs-binlog.h"
 

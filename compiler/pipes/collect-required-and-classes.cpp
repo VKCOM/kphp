@@ -4,14 +4,10 @@
 
 #include "compiler/pipes/collect-required-and-classes.h"
 
-#include "common/wrappers/likely.h"
-
 #include "compiler/const-manipulations.h"
 #include "compiler/compiler-core.h"
-#include "compiler/data/class-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/function-pass.h"
-#include "compiler/gentree.h"
 #include "compiler/lexer.h"
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"

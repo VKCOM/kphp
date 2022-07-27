@@ -2,10 +2,8 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include <fcntl.h>
 #include <zlib.h>
 
-#include "vkext/vkext-rpc-include.h"
 #include "vkext/vkext-rpc.h"
 #include "vkext/vkext-tl-parse.h"
 #include "vkext/vkext.h"

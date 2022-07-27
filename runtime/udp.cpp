@@ -15,7 +15,6 @@
 #include "runtime/net_events.h"
 #include "runtime/streams.h"
 #include "runtime/string_functions.h"
-#include "runtime/url.h"
 
 int DEFAULT_SOCKET_TIMEOUT = 60;
 

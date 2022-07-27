@@ -6,7 +6,6 @@
 
 #include <algorithm>
 #include <assert.h>
-#include <cstdint>
 #include <sys/time.h>
 #include <time.h>
 #include <unistd.h>

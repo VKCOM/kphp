@@ -6,7 +6,6 @@
 
 #include <cstdlib>
 #include <cstring>
-#include <dlfcn.h>
 #include <unistd.h>
 
 #include "common/algorithms/find.h"

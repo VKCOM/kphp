@@ -4,14 +4,12 @@
 
 #include "common/server/statsd-client.h"
 
-#include "common/binlog/kdb-binlog-common.h"
 #include "common/kfs/kfs.h"
 #include "net/net-connections.h"
 #include "net/net-crypto-aes.h"
 
 #include "common/options.h"
 #include "common/resolver.h"
-#include "common/server/engine-settings.h"
 #include "common/server/stats.h"
 
 #define STATSD_PORTS_CNT_DEFAULT (2)

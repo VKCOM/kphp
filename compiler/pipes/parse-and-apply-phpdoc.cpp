@@ -9,15 +9,12 @@
 #include "common/algorithms/contains.h"
 
 #include "compiler/compiler-core.h"
-#include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/kphp-json-tags.h"
 #include "compiler/data/src-file.h"
-#include "compiler/gentree.h"
 #include "compiler/phpdoc.h"
 #include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
-#include "compiler/vertex.h"
 
 // Inspects @kphp-tags in phpdoc above a function (note that @kphp-required is analyzed in gentree)
 // Also converts @param/@return to type hints and marks a function as a template on @kphp-template and untyped callables

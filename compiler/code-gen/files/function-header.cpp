@@ -10,7 +10,6 @@
 #include "compiler/code-gen/includes.h"
 #include "compiler/code-gen/namespace.h"
 #include "compiler/code-gen/vertex-compiler.h"
-#include "compiler/data/function-data.h"
 
 FunctionH::FunctionH(FunctionPtr function) :
   function(function) {

@@ -14,7 +14,6 @@
 #include "compiler/code-gen/naming.h"
 #include "compiler/code-gen/vertex-compiler.h"
 #include "compiler/data/class-data.h"
-#include "compiler/data/function-data.h"
 #include "compiler/data/ffi-data.h"
 #include "compiler/data/kphp-json-tags.h"
 #include "compiler/data/src-file.h"
