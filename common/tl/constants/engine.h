@@ -20,6 +20,7 @@
 #define                                           TL_ENGINE_SEND_SIGNAL 0x1a7708a3U
 #define                                         TL_ENGINE_SET_VERBOSITY 0x9d980926U
 #define                                    TL_ENGINE_SET_VERBOSITY_TYPE 0x5388c0aeU
+#define                                                 TL_ENGINE_SLEEP 0x3d3bcd48U
 #define                                                  TL_ENGINE_STAT 0xefb3c36bU
 #define                                               TL_ENGINE_VERSION 0x1a2e06faU
 #define                                             TL_ENGINE_WRITE_NOP 0x58160af4U

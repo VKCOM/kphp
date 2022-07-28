@@ -96,6 +96,7 @@ right {X:Type} {Y:Type} value:Y = Either X Y;
 @any @internal engine.setVerbosity verbosity:int = True;
 @any @internal engine.setVerbosityType type:string verbosity:int = True;
 @any @internal engine.sendSignal signal:int = True;
+@any @internal engine.sleep time_ms:int = Bool;
 
 @any engine.nop  = True;
 @read engine.readNop = True; // same as nop, but assumed as read in proxy
@@ -105,4 +106,3 @@ right {X:Type} {Y:Type} value:Y = Either X Y;
 @any engine.count = BoolStat;
 @any engine.pid = net.Pid;
 @any engine.version = String;
-

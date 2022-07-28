@@ -3,6 +3,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include <csignal>
+#include <unistd.h>
 
 #include "common/tl/constants/common.h"
 #include "common/tl/constants/engine.h"
@@ -18,13 +19,14 @@
 #include "net/net-msg.h"
 #include "server/php-master-tl-handlers.h"
 
-static bool fetch_function() {
+namespace {
+bool fetch_function() {
   tl_fetch_end();
   return !tl_fetch_error();
 }
 
 template<typename Fetcher>
-static bool fetch_function(Fetcher &&fetcher) {
+bool fetch_function(Fetcher &&fetcher) {
   fetcher();
   tl_fetch_end();
   return !tl_fetch_error();
@@ -33,7 +35,7 @@ static bool fetch_function(Fetcher &&fetcher) {
 // @any engine.nop  = True;
 // @read engine.readNop = True; // same as nop, but assumed as read in proxy
 // @write engine.writeNop = True; // same as nop, but assumed as write in proxy
-static void tl_engine_nop_handler() {
+void tl_engine_nop_handler() {
   if (!fetch_function()) {
     return;
   }
@@ -41,8 +43,22 @@ static void tl_engine_nop_handler() {
   tl_store_int(TL_TRUE);
 }
 
+// @any @internal engine.sleep time_ms:int = Bool;
+void tl_engine_sleep_handler() {
+  int time_ms = 0;
+  bool ok = fetch_function([&]() { time_ms = tl_fetch_int(); });
+  if (!ok) {
+    return;
+  }
+
+  kprintf("sleep for %d ms\n", time_ms);
+  usleep(time_ms * 1000);
+
+  tl_store_int(TL_BOOL_TRUE);
+}
+
 // @any engine.pid = net.Pid;
-static void tl_engine_pid_handler() {
+void tl_engine_pid_handler() {
   if (!fetch_function()) {
     return;
   }
@@ -52,7 +68,7 @@ static void tl_engine_pid_handler() {
 }
 
 // @any engine.version = String;
-static void tl_engine_version_handler() {
+void tl_engine_version_handler() {
   if (!fetch_function()) {
     return;
   }
@@ -62,7 +78,7 @@ static void tl_engine_version_handler() {
 }
 
 // @any engine.count = BoolStat;
-static void tl_engine_count_handler() {
+void tl_engine_count_handler() {
   if (!fetch_function()) {
     return;
   }
@@ -71,17 +87,15 @@ static void tl_engine_count_handler() {
 }
 
 // @any @internal engine.sendSignal signal:int = True;
-static void tl_engine_send_signal_handler() {
+void tl_engine_send_signal_handler() {
   int signal = 0;
-  bool ok = fetch_function([&]() {
-              signal = tl_fetch_int_range(1, 64);
-            });
+  bool ok = fetch_function([&]() { signal = tl_fetch_int_range(1, 64); });
   if (!ok) {
     return;
   }
 
   static double sigkill_forced = 0;
-  struct sigaction act{};
+  struct sigaction act {};
   kprintf("Got signal '%s' through rpc\n", strsignal(signal));
   sigaction(signal, nullptr, &act);
   if (signal == SIGKILL) {
@@ -103,11 +117,9 @@ static void tl_engine_send_signal_handler() {
 }
 
 // @any @internal engine.setVerbosity verbosity:int = True;
-static void tl_engine_set_verbosity_handler() {
+void tl_engine_set_verbosity_handler() {
   int requested_verbosity = 0;
-  bool ok = fetch_function([&]() {
-              requested_verbosity = tl_fetch_int();
-            });
+  bool ok = fetch_function([&]() { requested_verbosity = tl_fetch_int(); });
   if (!ok) {
     return;
   }
@@ -118,14 +130,14 @@ static void tl_engine_set_verbosity_handler() {
 }
 
 // @any @internal engine.setVerbosityType type:string verbosity:int = True;
-static void tl_engine_set_verbosity_type_handler() {
+void tl_engine_set_verbosity_type_handler() {
   static constexpr int MAX_LEN = 256;
   char type[MAX_LEN + 1] = {0};
   int requested_verbosity = 0;
   bool ok = fetch_function([&]() {
-              tl_fetch_string0(type, MAX_LEN);
-              requested_verbosity = tl_fetch_int();
-            });
+    tl_fetch_string0(type, MAX_LEN);
+    requested_verbosity = tl_fetch_int();
+  });
   if (!ok) {
     return;
   }
@@ -139,7 +151,7 @@ static void tl_engine_set_verbosity_type_handler() {
 }
 
 // @any engine.stat = Stat;
-static void tl_engine_stat_handler() {
+void tl_engine_stat_handler() {
   if (!fetch_function()) {
     return;
   }
@@ -152,7 +164,7 @@ static void tl_engine_stat_handler() {
 }
 
 // @any engine.filteredStat stat_names:%(Vector string) = Stat;
-static void tl_engine_filtered_stat_handler() {
+void tl_engine_filtered_stat_handler() {
   std::vector<std::string> sorted_filter_keys;
   bool ok = fetch_function([&]() {
     vk::tl::fetch_vector(sorted_filter_keys, 1 << 20);
@@ -171,7 +183,7 @@ static void tl_engine_filtered_stat_handler() {
 
 // @any rpcInvokeReq#2374df3d {X:Type} query_id:long query:!X = RpcReqResult X;
 // entrypoint for any TL query
-static void tl_rpc_invoke_req_handler(connection *connection) {
+void tl_rpc_invoke_req_handler(connection *connection) {
   tl_query_header_t header{};
 
   tl_store_init(std::make_unique<tl_out_methods_tcp_raw_msg>(connection), NETWORK_MAX_STORED_SIZE);
@@ -199,6 +211,9 @@ static void tl_rpc_invoke_req_handler(connection *connection) {
       case TL_ENGINE_READ_NOP:
       case TL_ENGINE_WRITE_NOP:
         tl_engine_nop_handler();
+        break;
+      case TL_ENGINE_SLEEP:
+        tl_engine_sleep_handler();
         break;
       case TL_ENGINE_PID:
         tl_engine_pid_handler();
@@ -230,6 +245,7 @@ static void tl_rpc_invoke_req_handler(connection *connection) {
   }
   tl_store_end();
 }
+} // namespace
 
 int master_rpc_tl_execute(connection *c, int op, raw_message_t *raw) {
   raw_message_t r;
