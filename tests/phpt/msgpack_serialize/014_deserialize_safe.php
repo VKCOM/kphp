@@ -18,3 +18,24 @@ try {
 } catch (\Exception $e) {
     var_dump($e->getMessage());
 }
+
+/** @kphp-serializable */
+class A {
+    /**
+     * @kphp-serialized-field 1
+     * @var int
+     */
+    public $x = 10;
+
+    /**
+     * @kphp-serialized-field 2
+     * @var int
+     */
+    public $y = 10;
+}
+
+try {
+    instance_deserialize_safe('asdfasfdasdfsafd', A::class);
+} catch (\Exception $e) {
+    var_dump($e->getMessage());
+}

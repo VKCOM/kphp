@@ -134,7 +134,7 @@ jobs:
         brew link --overwrite php@7.4
         pip3 install jsonschema
         rm -rf /usr/local/opt/openssl
-        ln -sF /usr/local/Cellar/openssl@1.1/1.1.1p /usr/local/opt/openssl
+        ln -sF /usr/local/Cellar/openssl@1.1/1.1.1q /usr/local/opt/openssl
 
     - name: Run cmake
       run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DDOWNLOAD_MISSING_LIBRARIES=On -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build
