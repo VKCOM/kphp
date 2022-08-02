@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <libgen.h>
 #include <string>
 
 #include "common/php-functions.h"
@@ -246,13 +247,20 @@ public:
 };
 
 // moved from the collect-required-and-classes.cpp to make it more reusable
-static inline std::string collect_string_concatenation(VertexPtr v) {
+static inline std::string collect_string_concatenation(VertexPtr v, bool allow_dirname = false) {
   if (auto string = v.try_as<op_string>()) {
     return string->str_val;
   }
+  if (auto call = v.try_as<op_func_call>(); allow_dirname && call && call->str_val == "dirname") {
+    kphp_error_act(call->size() == 1, "call to 'dirname' must have one arg", return {});
+    auto dirname_arg = call->back().try_as<op_string>();
+    kphp_error_act(dirname_arg, "'dirname' has to be called with string type arg", return {});
+    auto path_copy = dirname_arg->str_val;
+    return dirname(path_copy.data());
+  }
   if (auto concat = v.try_as<op_concat>()) {
-    auto left = collect_string_concatenation(concat->lhs());
-    auto right = collect_string_concatenation(concat->rhs());
+    auto left = collect_string_concatenation(concat->lhs(), allow_dirname);
+    auto right = collect_string_concatenation(concat->rhs(), allow_dirname);
     return (left.empty() || right.empty()) ? std::string() : (left + right);
   }
   return {};
