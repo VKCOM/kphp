@@ -55,8 +55,12 @@ VertexAdaptor<op_func_call> generate_critical_error_call(std::string msg) {
   auto msg_v = VertexAdaptor<op_string>::create();
   msg_v->str_val = std::move(msg);
 
+  // this error is bad, we can't continue the execution;
+  // but it's not bad enough to interrupt the normal script termination routine,
+  // so we emit a soft critical error instead of a harsh one;
+  // this way, shutdown handlers can be executed (#569)
   auto call_ce = VertexAdaptor<op_func_call>::create(msg_v);
-  call_ce->str_val = "critical_error";
+  call_ce->str_val = "soft_critical_error";
   call_ce->func_id = G->get_function(call_ce->str_val);
 
   return call_ce;
