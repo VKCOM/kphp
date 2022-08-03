@@ -20,11 +20,11 @@
 #include "server/workers-control.h"
 
 // region database_drivers::Adaptor friends related declarations
-struct php_worker;
+class PhpWorker;
 struct net_event_t;
 struct external_driver_connect;
 void generic_event_loop(WorkerType, bool) noexcept;
-void php_worker_run_net_queue(php_worker *);
+void php_worker_run_net_queue(PhpWorker *);
 bool process_net_event(net_event_t *);
 // endregion
 
@@ -107,7 +107,7 @@ private:
   friend void ::generic_event_loop(WorkerType, bool) noexcept;
 
   void process_external_db_request_net_query(std::unique_ptr<Request> &&request) noexcept;
-  friend void ::php_worker_run_net_queue(php_worker *);
+  friend void ::php_worker_run_net_queue(PhpWorker *);
 
   void process_external_db_response_event(std::unique_ptr<Response> &&response) noexcept;
   friend bool ::process_net_event(net_event_t *);

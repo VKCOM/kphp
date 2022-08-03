@@ -24,7 +24,15 @@ enum php_worker_state_t {
   phpq_finish
 };
 
-struct php_worker {
+/**
+ * Logical PHP worker, not related to physical worker process.
+ * Created at the begin of any request processing which requires to run generated from PHP code.
+ * Deleted at the end of request processing.
+ * It stores connection and other network related stuff. This is some kind of bridge between event loop and script context.
+ * It runs generated from PHP code by using PhpScript.
+ */
+class PhpWorker {
+public:
   struct connection *conn;
 
   php_query_data *data;
@@ -48,27 +56,29 @@ struct php_worker {
 
   long long req_id;
   int target_fd;
+
+  PhpWorker(php_worker_mode_t mode_, connection *c, http_query_data *http_data, rpc_query_data *rpc_data, job_query_data *job_data,
+             long long req_id_, double timeout);
+  ~PhpWorker();
+
+  double enter_lifecycle() noexcept;
+
+  void terminate(int flag, script_error_t terminate_reason_, const char *error_message_) noexcept;
+  double get_timeout() const noexcept;
+
+  void answer_query(void *ans) noexcept;
+  void wait(int timeout_ms) noexcept;
+  void wakeup() noexcept;
+  void run_query() noexcept;
+  void on_wakeup() noexcept;
+  void set_result(script_result *res) noexcept;
+
+private:
+  void state_try_start() noexcept;
+  void state_init_script() noexcept;
+  void state_run() noexcept;
+  void state_free_script() noexcept;
+  void state_finish() noexcept;
 };
 
-extern php_worker *active_worker;
-
-php_worker *php_worker_create(php_worker_mode_t mode, connection *c, http_query_data *http_data, rpc_query_data *rpc_data, job_query_data *job_data,
-                              long long req_id, double timeout);
-void php_worker_free(php_worker *worker);
-
-double php_worker_main(php_worker *worker);
-void php_worker_terminate(php_worker *worker, int flag, script_error_t terminate_reason, const char *error_message);
-void php_worker_on_wakeup(php_worker *worker);
-/** trying to start query **/
-void php_worker_try_start(php_worker *worker);
-
-void php_worker_init_script(php_worker *worker);
-void php_worker_run(php_worker *worker);
-void php_worker_wait(php_worker *worker, int timeout_ms);
-void php_worker_answer_query(php_worker *worker, void *ans);
-void php_worker_wakeup(php_worker *worker);
-void php_worker_run_query(php_worker *worker);
-void php_worker_set_result(php_worker *worker, script_result *res);
-void php_worker_free_script(php_worker *worker);
-void php_worker_finish(php_worker *worker);
-double php_worker_get_timeout(php_worker *worker);
+extern PhpWorker *active_worker;

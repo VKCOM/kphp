@@ -10,9 +10,9 @@
 #include "common/sanitizer.h"
 
 #include "server/php-engine-vars.h"
-#include "server/php-query-data.h"
+#include "server/php-init-scripts.h"
 #include "server/php-queries-types.h"
-#include "server/php-script.h"
+#include "server/php-query-data.h"
 #include "server/ucontext-portable.h"
 
 enum class run_state_t {
@@ -58,27 +58,12 @@ extern long long query_stats_id;
 void dump_query_stats();
 
 void init_handlers();
-void php_script_finish(void *ptr);
-void php_script_free(void *ptr);
-void php_script_clear(void *ptr);
-void php_script_init(void *ptr, script_t *f_run, php_query_data *data_to_set);
-run_state_t php_script_iterate(void *ptr);
-php_query_base_t *php_script_get_query(void *ptr);
-script_result *php_script_get_res(void *ptr);
-void php_script_query_readed(void *ptr);
-void php_script_query_answered(void *ptr);
-run_state_t php_script_get_state(void *ptr);
-void *php_script_create(size_t mem_size, size_t stack_size);
-void php_script_terminate(void *ptr, const char *error_message, script_error_t error_type);
-void php_script_disable_timeout();
-void php_script_set_timeout(double t);
-const char *php_script_get_error(void *ptr);
-script_error_t php_script_get_error_type(void *ptr);
 
-long long php_script_memory_get_total_usage(void *ptr);
-
-/** script **/
-class PHPScriptBase {
+/**
+ * Represents current running script.
+ * It stores state of the script: current execution point, pointers to allocated script memory, stack for script context, etc.
+ */
+class PhpScript {
   double cur_timestamp, net_time, script_time;
   int queries_cnt;
   int long_queries_cnt{0};
@@ -95,7 +80,7 @@ private:
 
 public:
 
-  static PHPScriptBase *volatile current_script;
+  static PhpScript *volatile current_script;
   static ucontext_t_portable exit_context;
   volatile static bool is_running;
   volatile static bool tl_flag;
@@ -115,43 +100,46 @@ public:
   php_query_data *data;
   script_result *res;
 
-  static void cur_run();
-  static void error(const char *error_message, script_error_t error_type);
+  static void script_context_entrypoint() noexcept;
+  static void error(const char *error_message, script_error_t error_type) noexcept;
 
-  void check_tl();
+  PhpScript(size_t mem_size, size_t stack_size) noexcept;
+  ~PhpScript() noexcept;
 
-  bool is_protected(char *x);
-  bool check_stack_overflow(char *x);
+  void check_tl() noexcept;
+  bool is_protected(char *x) noexcept;
 
-  PHPScriptBase(size_t mem_size, size_t stack_size);
-  virtual ~PHPScriptBase();
+  bool check_stack_overflow(char *x) noexcept;
 
-  void init(script_t *script, php_query_data *data_to_set);
+  void init(script_t *script, php_query_data *data_to_set) noexcept;
 
   void asan_stack_unpoison();
 
-  //in php script
-  void pause();
-  void ask_query(php_query_base_t *q);
-  void set_script_result(script_result *res_to_set);
+  void pause() noexcept;
+  void ask_query(php_query_base_t *q) noexcept;
+  void set_script_result(script_result *res_to_set) noexcept;
 
-  void resume();
-  run_state_t iterate();
+  void resume() noexcept;
+  run_state_t iterate() noexcept;
 
-  void finish();
-  void clear();
-  void query_readed();
-  void query_answered();
+  void finish() noexcept;
+  void clear() noexcept;
+  void query_readed() noexcept;
+  void query_answered() noexcept;
 
-  void run();
+  void run() noexcept;
 
-  void update_net_time();
-  void update_script_time();
+  void terminate(const char *error_message_, script_error_t error_type_) noexcept;
 
-  void reset_script_timeout();
-  double get_net_time() const;
-  double get_script_time();
-  int get_net_queries_count() const;
-  long long memory_get_total_usage() const;
+  void update_net_time() noexcept;
+  void update_script_time() noexcept;
+
+  void reset_script_timeout() noexcept;
+  double get_net_time() const noexcept;
+  double get_script_time() noexcept;
+  int get_net_queries_count() const noexcept;
+  long long memory_get_total_usage() const noexcept;
+
+  void disable_timeout() noexcept;
+  void set_timeout(double t) noexcept;
 };
-

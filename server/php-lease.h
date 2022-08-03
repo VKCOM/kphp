@@ -14,7 +14,7 @@
 
 DECLARE_VERBOSITY(lease);
 
-void lease_on_worker_finish(php_worker *worker);
+void lease_on_worker_finish(PhpWorker *worker);
 void lease_set_ready();
 void lease_on_stop();
 void run_rpc_lease();

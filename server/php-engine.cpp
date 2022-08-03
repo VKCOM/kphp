@@ -59,8 +59,8 @@
 #include "runtime/rpc.h"
 #include "server/cluster-name.h"
 #include "server/confdata-binlog-replay.h"
-#include "server/database-drivers/connector.h"
 #include "server/database-drivers/adaptor.h"
+#include "server/database-drivers/connector.h"
 #include "server/job-workers/job-worker-client.h"
 #include "server/job-workers/job-worker-server.h"
 #include "server/job-workers/job-workers-context.h"
@@ -70,6 +70,7 @@
 #include "server/lease-context.h"
 #include "server/numa-configuration.h"
 #include "server/php-engine-vars.h"
+#include "server/php-init-scripts.h"
 #include "server/php-lease.h"
 #include "server/php-master-warmup.h"
 #include "server/php-master.h"
@@ -81,8 +82,8 @@
 #include "server/server-log.h"
 #include "server/server-stats.h"
 #include "server/statshouse/statshouse-client.h"
-#include "server/workers-control.h"
 #include "server/statshouse/worker-stats-buffer.h"
+#include "server/workers-control.h"
 
 using job_workers::JobWorkersContext;
 using job_workers::JobWorkerClient;
@@ -306,7 +307,7 @@ command_t *create_command_net_writer(const char *data, int data_len, command_t *
 int run_once_count = 1;
 int queries_to_recreate_script = 100;
 
-void *php_script;
+PhpScript *php_script;
 
 int has_pending_scripts() {
   return php_worker_run_flag || pending_http_queue.first_query != (conn_query *)&pending_http_queue;
@@ -316,7 +317,7 @@ void net_error(net_ansgen_t *ansgen, php_query_base_t *query, const char *err) {
   ansgen->func->error(ansgen, err);
   query->ans = ansgen->ans;
   ansgen->func->free(ansgen);
-  php_script_query_answered(php_script);
+  php_script->query_answered();
 }
 
 void prepare_rpc_query_raw(int packet_id, int *q, int qsize, unsigned (*crc32_partial_custom)(const void *q, long len, unsigned crc32_complement)) {
@@ -348,12 +349,12 @@ void on_net_event(int event_status) {
   }
   assert (active_worker != nullptr);
   if (event_status < 0) {
-    php_worker_terminate(active_worker, 0, script_error_t::net_event_error, "memory limit on net event");
-    php_worker_wakeup(active_worker);
+    active_worker->terminate(0, script_error_t::net_event_error, "memory limit on net event");
+    active_worker->wakeup();
     return;
   }
   if (active_worker->waiting) {
-    php_worker_wakeup(active_worker);
+    active_worker->wakeup();
   }
 }
 
@@ -491,7 +492,7 @@ void hts_stop() {
   hts_stopped = 1;
 }
 
-void hts_at_query_end(connection *c, int check_keep_alive) {
+void hts_at_query_end(connection *c, bool check_keep_alive) {
   hts_data *D = HTS_DATA (c);
 
   clear_connection_timeout(c);
@@ -507,15 +508,17 @@ void hts_at_query_end(connection *c, int check_keep_alive) {
   assert (c->status != conn_wait_net);
 }
 
-int do_hts_func_wakeup(connection *c, int flag) {
+int do_hts_func_wakeup(connection *c, bool flag) {
   hts_data *D = HTS_DATA(c);
 
   assert (c->status == conn_expect_query || c->status == conn_wait_net);
   c->status = conn_expect_query;
 
-  auto *worker = reinterpret_cast<php_worker *>(D->extra);
-  double timeout = php_worker_main(worker);
+  auto *worker = reinterpret_cast<PhpWorker *>(D->extra);
+  assert(worker);
+  double timeout = worker->enter_lifecycle();
   if (timeout == 0) {
+    delete worker;
     hts_at_query_end(c, flag);
   } else {
     assert (timeout > 0);
@@ -615,27 +618,28 @@ int hts_func_execute(connection *c, int op) {
                                                       inet_sockaddr_port(&c->remote_endpoint));
 
   static long long http_script_req_id = 0;
-  php_worker *worker = php_worker_create(http_worker, c, http_data, nullptr, nullptr, ++http_script_req_id, script_timeout);
+  PhpWorker *worker = new PhpWorker(http_worker, c, http_data, nullptr, nullptr, ++http_script_req_id, script_timeout);
   D->extra = worker;
 
   set_connection_timeout(c, script_timeout);
   c->status = conn_wait_net;
-  return do_hts_func_wakeup(c, 0);
+  return do_hts_func_wakeup(c, false);
 }
 
 int hts_func_wakeup(connection *c) {
-  return do_hts_func_wakeup(c, 1);
+  return do_hts_func_wakeup(c, true);
 }
 
 int hts_func_close(connection *c, int who __attribute__((unused))) {
   hts_data *D = HTS_DATA(c);
 
-  auto *worker = reinterpret_cast<php_worker *>(D->extra);
+  auto *worker = reinterpret_cast<PhpWorker *>(D->extra);
   if (worker != nullptr) {
-    php_worker_terminate(worker, 1, script_error_t::http_connection_close, "http connection close");
-    double timeout = php_worker_main(worker);
+    worker->terminate(1, script_error_t::http_connection_close, "http connection close");
+    double timeout = worker->enter_lifecycle();
     D->extra = nullptr;
     assert ("worker is unfinished after closing connection" && timeout == 0);
+    delete worker;
   }
   return 0;
 }
@@ -816,9 +820,11 @@ int rpcx_func_wakeup(connection *c) {
   assert (c->status == conn_expect_query || c->status == conn_wait_net);
   c->status = conn_expect_query;
 
-  auto *worker = reinterpret_cast<php_worker *>(D->extra);
-  double timeout = php_worker_main(worker);
+  auto *worker = reinterpret_cast<PhpWorker *>(D->extra);
+  assert(worker);
+  double timeout = worker->enter_lifecycle();
   if (timeout == 0) {
+    delete worker;
     rpcx_at_query_end(c);
   } else {
     assert (c->pending_queries >= 0 && c->status == conn_wait_net);
@@ -831,12 +837,13 @@ int rpcx_func_wakeup(connection *c) {
 int rpcx_func_close(connection *c, int who __attribute__((unused))) {
   auto *D = TCP_RPC_DATA(c);
 
-  auto *worker = reinterpret_cast<php_worker *>(D->extra);
+  auto *worker = reinterpret_cast<PhpWorker *>(D->extra);
   if (worker != nullptr) {
-    php_worker_terminate(worker, 1, script_error_t::rpc_connection_close, "rpc connection close");
-    double timeout = php_worker_main(worker);
+    worker->terminate(1, script_error_t::rpc_connection_close, "rpc connection close");
+    double timeout = worker->enter_lifecycle();
     D->extra = nullptr;
     assert ("worker is unfinished after closing connection" && timeout == 0);
+    delete worker;
 
     if (!has_pending_scripts()) {
       lease_set_ready();
@@ -1012,7 +1019,7 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       rpc_query_data *rpc_data = rpc_query_data_create(std::move(header), reinterpret_cast<int *>(buf), len / static_cast<int>(sizeof(int)), D->remote_pid.ip,
                                                        D->remote_pid.port, D->remote_pid.pid, D->remote_pid.utime);
 
-      php_worker *worker = php_worker_create(run_once ? once_worker : rpc_worker, c, nullptr, rpc_data, nullptr, req_id, actual_script_timeout);
+      PhpWorker *worker = new PhpWorker(run_once ? once_worker : rpc_worker, c, nullptr, rpc_data, nullptr, req_id, actual_script_timeout);
       D->extra = worker;
 
       c->status = conn_wait_net;
@@ -1087,7 +1094,9 @@ void pnet_query_answer(conn_query *q) {
     } else {
       assert ("unexpected type of connection\n" && 0);
     }
-    php_worker_answer_query(reinterpret_cast<php_worker *>(extra), ((net_ansgen_t *)(q->extra))->ans);
+    assert(extra);
+    auto *worker = static_cast<PhpWorker *>(extra);
+    worker->answer_query(static_cast<net_ansgen_t *>(q->extra)->ans);
   }
 }
 
@@ -1623,8 +1632,6 @@ void start_server() {
 }
 
 void set_instance_cache_memory_limit(size_t limit);
-void init_php_scripts() noexcept;
-void global_init_php_scripts() noexcept;
 const char *get_php_scripts_version() noexcept;
 char **get_runtime_options(int *count) noexcept;
 

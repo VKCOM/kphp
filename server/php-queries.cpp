@@ -21,9 +21,9 @@
 #include "server/database-drivers/adaptor.h"
 #include "server/job-workers/job-message.h"
 #include "server/php-engine-vars.h"
+#include "server/php-init-scripts.h"
 #include "server/php-queries-stats.h"
 #include "server/php-runner.h"
-#include "server/php-script.h"
 
 #define MAX_NET_ERROR_LEN 128
 
@@ -47,7 +47,7 @@ static void save_last_net_error(const char *s) {
 
 /** create connection query **/
 php_query_http_load_post_answer_t *php_query_http_load(char *buf, int min_len, int max_len) {
-  assert (PHPScriptBase::is_running);
+  assert (PhpScript::is_running);
 
   //DO NOT use query after script is terminated!!!
   php_query_http_load_post_t q;
@@ -55,7 +55,7 @@ php_query_http_load_post_answer_t *php_query_http_load(char *buf, int min_len, i
   q.min_len = min_len;
   q.max_len = max_len;
 
-  PHPScriptBase::current_script->ask_query(&q);
+  PhpScript::current_script->ask_query(&q);
 
   return static_cast<php_query_http_load_post_answer_t *>(q.ans);
 }
@@ -305,20 +305,20 @@ void chain_append(chain_t *chain, data_reader_t *reader) {
 
 /** test x^2 query **/
 php_query_x2_answer_t *php_query_x2(int x) {
-  assert (PHPScriptBase::is_running);
+  assert (PhpScript::is_running);
 
   //DO NOT use query after script is terminated!!!
   php_query_x2_t q;
   q.val = x;
 
-  PHPScriptBase::current_script->ask_query(&q);
+  PhpScript::current_script->ask_query(&q);
 
   return static_cast<php_query_x2_answer_t *>(q.ans);
 }
 
 /** create connection query **/
 php_query_connect_answer_t *php_query_connect(const char *host, int port, protocol_type protocol) {
-  assert (PHPScriptBase::is_running);
+  assert (PhpScript::is_running);
 
   //DO NOT use query after script is terminated!!!
   php_query_connect_t q;
@@ -326,7 +326,7 @@ php_query_connect_answer_t *php_query_connect(const char *host, int port, protoc
   q.port = port;
   q.protocol = protocol;
 
-  PHPScriptBase::current_script->ask_query(&q);
+  PhpScript::current_script->ask_query(&q);
 
   return static_cast<php_query_connect_answer_t *>(q.ans);
 }
@@ -359,7 +359,7 @@ php_net_query_packet_answer_t *php_net_query_packet(
   q.protocol = protocol;
   q.extra_type = extra_type;
 
-  PHPScriptBase::current_script->ask_query(&q);
+  PhpScript::current_script->ask_query(&q);
 
   return static_cast<php_net_query_packet_answer_t *>(q.ans);
 }
@@ -798,7 +798,7 @@ static StaticQueue<net_event_t, 2000000> net_events;
 static StaticQueue<net_query_t, 2000000> net_queries;
 
 void *dl_allocate_safe(size_t size) {
-  if (size == 0 || PHPScriptBase::ml_flag) {
+  if (size == 0 || PhpScript::ml_flag) {
     return nullptr;
   }
 
@@ -970,11 +970,11 @@ slot_id_t rpc_send_query(int host_num, char *request, int request_size, int time
 }
 
 void wait_net_events(int timeout_ms) {
-  assert (PHPScriptBase::is_running);
+  assert (PhpScript::is_running);
   php_query_wait_t q;
   q.timeout_ms = timeout_ms;
 
-  PHPScriptBase::current_script->ask_query(&q);
+  PhpScript::current_script->ask_query(&q);
 }
 
 net_event_t *pop_net_event() {
@@ -986,12 +986,12 @@ const net_event_t *get_last_net_event() {
 }
 
 void rpc_answer(const char *res, int res_len) {
-  assert (PHPScriptBase::is_running);
+  assert (PhpScript::is_running);
   php_query_rpc_answer q;
   q.data = res;
   q.data_len = res_len;
 
-  PHPScriptBase::current_script->ask_query(&q);
+  PhpScript::current_script->ask_query(&q);
 }
 
 php_net_query_packet_answer_t *php_net_query_get(int connection_id, const char *data, int data_len, int timeout_ms, protocol_type protocol) {
@@ -1003,13 +1003,13 @@ php_net_query_packet_answer_t *php_net_query_get(int connection_id, const char *
   q.timeout = timeout_ms * 0.001;
   q.protocol = protocol;
 
-  PHPScriptBase::current_script->ask_query(&q);
+  PhpScript::current_script->ask_query(&q);
 
   return static_cast<php_net_query_packet_answer_t *>(q.ans);
 }
 
 void script_error() {
-  PHPScriptBase::error("script_error called", script_error_t::unclassified_error);
+  PhpScript::error("script_error called", script_error_t::unclassified_error);
 }
 
 void http_set_result(const char *headers, int headers_len, const char *body, int body_len, int exit_code) {
@@ -1020,7 +1020,7 @@ void http_set_result(const char *headers, int headers_len, const char *body, int
   res.body = body;
   res.body_len = body_len;
 
-  PHPScriptBase::current_script->set_script_result(&res);
+  PhpScript::current_script->set_script_result(&res);
 }
 
 void rpc_set_result(const char *body, int body_len, int exit_code) {
@@ -1031,7 +1031,7 @@ void rpc_set_result(const char *body, int body_len, int exit_code) {
   res.body = body;
   res.body_len = body_len;
 
-  PHPScriptBase::current_script->set_script_result(&res);
+  PhpScript::current_script->set_script_result(&res);
 }
 
 void job_set_result(int exit_code) {
@@ -1042,7 +1042,7 @@ void job_set_result(int exit_code) {
   res.body = nullptr;
   res.body_len = 0;
 
-  PHPScriptBase::current_script->set_script_result(&res);
+  PhpScript::current_script->set_script_result(&res);
 }
 
 void finish_script(int exit_code __attribute__((unused))) {
@@ -1051,19 +1051,19 @@ void finish_script(int exit_code __attribute__((unused))) {
 }
 
 void reset_script_timeout() {
-  PHPScriptBase::current_script->reset_script_timeout();
+  PhpScript::current_script->reset_script_timeout();
 }
 
 double get_net_time() {
-  return PHPScriptBase::current_script->get_net_time();
+  return PhpScript::current_script->get_net_time();
 }
 
 double get_script_time() {
-  return PHPScriptBase::current_script->get_script_time();
+  return PhpScript::current_script->get_script_time();
 }
 
 int get_net_queries_count() {
-  return PHPScriptBase::current_script->get_net_queries_count();
+  return PhpScript::current_script->get_net_queries_count();
 }
 
 

@@ -61,12 +61,12 @@ void Adaptor::create_outbound_connections() noexcept {
 }
 
 int Adaptor::initiate_connect(std::unique_ptr<Connector> &&connector) noexcept {
-  assert(PHPScriptBase::is_running);
+  assert(PhpScript::is_running);
 
   // DO NOT use query after script is terminated!!!
   ::external_driver_connect q{std::move(connector)};
 
-  PHPScriptBase::current_script->ask_query(&q);
+  PhpScript::current_script->ask_query(&q);
 
   return static_cast<php_query_connect_answer_t *>(q.ans)->connection_id;
 }

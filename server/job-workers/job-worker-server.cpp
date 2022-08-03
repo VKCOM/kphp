@@ -27,7 +27,7 @@ namespace {
 constexpr int EPOLL_FLAGS = EVT_READ | EVT_LEVEL | EVT_SPEC | EPOLLONESHOT;
 
 struct JobCustomData {
-  php_worker *worker;
+  PhpWorker *worker;
 };
 
 int jobs_server_reader(connection *c) {
@@ -68,9 +68,11 @@ int jobs_server_php_wakeup(connection *c) {
   c->status = conn_expect_query;
 
   auto *worker = reinterpret_cast<JobCustomData *>(c->custom_data)->worker;
-  double timeout = php_worker_main(worker);
+  assert(worker);
+  double timeout = worker->enter_lifecycle();
 
   if (timeout == 0) {
+    delete worker;
     jobs_server_at_query_end(c);
   } else {
     assert(c->pending_queries >= 0 && c->status == conn_wait_net);
@@ -174,7 +176,7 @@ int JobWorkerServer::job_parse_execute(connection *c) noexcept {
   job_query_data *job_data = job_query_data_create(job, [](JobSharedMessage *job_response) {
     return vk::singleton<JobWorkerServer>::get().send_job_reply(job_response);
   });
-  reinterpret_cast<JobCustomData *>(c->custom_data)->worker = php_worker_create(job_worker, c, nullptr, nullptr, job_data, job->job_id, left_job_time);
+  reinterpret_cast<JobCustomData *>(c->custom_data)->worker = new PhpWorker(job_worker, c, nullptr, nullptr, job_data, job->job_id, left_job_time);
 
   set_connection_timeout(c, left_job_time);
   c->status = conn_wait_net;
