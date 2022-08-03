@@ -492,7 +492,7 @@ void hts_stop() {
   hts_stopped = 1;
 }
 
-void hts_at_query_end(connection *c, int check_keep_alive) {
+void hts_at_query_end(connection *c, bool check_keep_alive) {
   hts_data *D = HTS_DATA (c);
 
   clear_connection_timeout(c);
@@ -508,7 +508,7 @@ void hts_at_query_end(connection *c, int check_keep_alive) {
   assert (c->status != conn_wait_net);
 }
 
-int do_hts_func_wakeup(connection *c, int flag) {
+int do_hts_func_wakeup(connection *c, bool flag) {
   hts_data *D = HTS_DATA(c);
 
   assert (c->status == conn_expect_query || c->status == conn_wait_net);
@@ -623,11 +623,11 @@ int hts_func_execute(connection *c, int op) {
 
   set_connection_timeout(c, script_timeout);
   c->status = conn_wait_net;
-  return do_hts_func_wakeup(c, 0);
+  return do_hts_func_wakeup(c, false);
 }
 
 int hts_func_wakeup(connection *c) {
-  return do_hts_func_wakeup(c, 1);
+  return do_hts_func_wakeup(c, true);
 }
 
 int hts_func_close(connection *c, int who __attribute__((unused))) {
