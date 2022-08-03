@@ -4,6 +4,12 @@ from python.lib.testcase import KphpServerAutoTestCase
 class TestCurl(KphpServerAutoTestCase):
     maxDiff = 16 * 1024
 
+    @classmethod
+    def extra_class_setup(cls):
+        cls.kphp_server.update_options({
+            "--workers-num": 2,
+        })
+
     def _curl_request(self, uri, return_transfer=1, post=None, headers=None):
         resp = self.kphp_server.http_post(
             uri="/test_curl",
