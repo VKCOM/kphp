@@ -294,13 +294,13 @@ class Engine:
 
         return (engine_stopped_properly, status)
 
-    def rpc_request(self, request):
+    def rpc_request(self, request, timeout=60):
         """
         Послать rpc запрос в движек
         :param request: Словарь с rpc запросом
         :return: Словарь с rpc ответом
         """
-        return send_rpc_request(request, self._rpc_port)
+        return send_rpc_request(request, self._rpc_port, timeout)
 
     def _assert_availability(self):
         _, status = os.waitpid(self._engine_process.pid, os.WNOHANG)
