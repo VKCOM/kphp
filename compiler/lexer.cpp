@@ -131,12 +131,13 @@ void LexerData::hack_last_tokens() {
   }
 
   TokenType casts[][2] = {
-    {tok_int,    tok_conv_int},
-    {tok_float,  tok_conv_float},
-    {tok_string, tok_conv_string},
-    {tok_array,  tok_conv_array},
-    {tok_object, tok_conv_object},
-    {tok_bool,   tok_conv_bool}
+    {tok_int,     tok_conv_int},
+    {tok_float,   tok_conv_float},
+    {tok_string,  tok_conv_string},
+    {tok_array,   tok_conv_array},
+    {tok_object,  tok_conv_object},
+    {tok_bool,    tok_conv_bool},
+    {tok_boolean, tok_conv_bool}
   };
 
   auto remove_last_tokens = [this](size_t cnt) {

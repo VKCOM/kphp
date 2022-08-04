@@ -331,8 +331,6 @@ const TypeHint *PhpDocTypeHintParser::parse_simple_type() {
       cur_type = tok_int;
     } else if (cur_tok->str_val == "double") {
       cur_type = tok_float;
-    } else if (cur_tok->str_val == "boolean") {
-      cur_type = tok_bool;
     } else if (cur_tok->str_val == "\\tuple") {
       cur_type = tok_tuple;
     } else if (cur_tok->str_val == "\\shape") {
@@ -356,6 +354,8 @@ const TypeHint *PhpDocTypeHintParser::parse_simple_type() {
       cur_tok++;
       return TypeHintPrimitive::create(tp_int);
     case tok_bool:
+      [[fallthrough]];
+    case tok_boolean:
       cur_tok++;
       return TypeHintPrimitive::create(tp_bool);
     case tok_float:

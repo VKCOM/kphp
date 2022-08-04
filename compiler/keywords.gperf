@@ -68,6 +68,7 @@ callable, tok_callable
 void, tok_void
 mixed, tok_mixed
 bool, tok_bool
+boolean, tok_boolean
 false, tok_false
 true, tok_true
 FALSE, tok_false
