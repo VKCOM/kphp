@@ -329,8 +329,6 @@ const TypeHint *PhpDocTypeHintParser::parse_simple_type() {
   if (cur_type == tok_func_name) {
     if (cur_tok->str_val == "integer") {
       cur_type = tok_int;
-    } else if (cur_tok->str_val == "double") {
-      cur_type = tok_float;
     } else if (cur_tok->str_val == "\\tuple") {
       cur_type = tok_tuple;
     } else if (cur_tok->str_val == "\\shape") {
