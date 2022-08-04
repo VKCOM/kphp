@@ -12,6 +12,17 @@ function test_int_casts() {
   var_dump ((int) true);
 }
 
+function test_integer_casts() {
+  var_dump ((integer) 1);
+  var_dump ((integer) 1.5);
+  var_dump ((integer) "12");
+  var_dump ((integer) "1.2");
+  var_dump ((integer) "hello");
+  var_dump ((integer) null);
+  var_dump ((integer) false);
+  var_dump ((integer) true);
+}
+
 function test_float_casts() {
   var_dump ((float) 1);
   var_dump ((float) 1.5);
@@ -86,6 +97,7 @@ function test_boolean_casts() {
 }
 
 test_int_casts();
+test_integer_casts();
 test_float_casts();
 test_double_casts();
 test_string_casts();

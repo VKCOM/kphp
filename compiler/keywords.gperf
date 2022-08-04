@@ -60,6 +60,7 @@ __LINE__, tok_line_c
 __METHOD__, tok_method_c
 __NAMESPACE__, tok_namespace_c
 int, tok_int
+integer, tok_int
 float, tok_float
 double, tok_float
 string, tok_string
