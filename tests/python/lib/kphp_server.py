@@ -145,11 +145,21 @@ class KphpServer(Engine):
                 expected_record = expected_records[0]
                 expected_msg = expected_record["msg"]
                 got_msg = json_log_record["msg"]
-                if re.search(expected_msg, got_msg):
+                got_tags = json_log_record.get("tags")
+                if re.search(expected_msg, got_msg) \
+                        and (got_tags.get("process_type") == "general_worker"
+                             or got_tags.get("process_type") == "job_worker"
+                             or got_tags.get("process_type") == "master") \
+                        and (got_tags.get("worker_unique_index") is None or
+                             isinstance(got_tags.get("worker_unique_index"), int)) \
+                        and (isinstance(got_tags.get("pid"), int)):
                     expected_record_copy = expected_record.copy()
                     expected_record_copy["msg"] = ""
                     json_log_record_copy = json_log_record.copy()
                     json_log_record_copy["msg"] = ""
+                    json_log_record_copy["tags"].pop("process_type")
+                    json_log_record_copy["tags"].pop("pid")
+                    json_log_record_copy["tags"].pop("worker_unique_index", "No Key found")
                     if expected_record_copy == json_log_record_copy:
                         expected_records.pop(0)
                         self._json_logs[index] = None
