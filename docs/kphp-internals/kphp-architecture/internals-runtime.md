@@ -8,7 +8,7 @@ title: Runtime
 The **Runtime** KPHP stage implements everything to make generated C++ code run and behave exactly like PHP.
 
 <p style="padding: 20px 0;" class="img-c">
-    <img alt="runtime structure" src="../../assets/img/kphp-runtime.png" width="663">
+    <img alt="runtime structure" src="../../assets/img/kphp-runtime.png" width="673">
 </p>
 
 
