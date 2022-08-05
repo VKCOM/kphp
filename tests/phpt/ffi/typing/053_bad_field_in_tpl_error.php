@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_FFI=1
 /Field \$value not found in class cdata\$cdef\$u(\w+)_0\\Bar/
 <?php
 

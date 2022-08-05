@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_FFI=1
 /assign FFI\\CData_int64 to Foo::\$int32/
 /declared as @var FFI\\CData_int32/
 <?php

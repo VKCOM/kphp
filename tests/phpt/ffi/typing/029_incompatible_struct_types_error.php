@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_FFI=1
 /Invalid php2c conversion: cdata\$test\\Foo -> struct Bar/
 <?php
 

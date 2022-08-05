@@ -1,5 +1,4 @@
 @kphp_runtime_should_warn
-KPHP_ENABLE_FFI=1
 /zero array size/
 <?
 

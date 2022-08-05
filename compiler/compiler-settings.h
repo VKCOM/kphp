@@ -124,8 +124,6 @@ public:
   KphpOption<std::string> composer_root;
   KphpOption<bool> composer_autoload_dev;
 
-  KphpOption<bool> ffi_enabled;
-
   KphpOption<bool> force_make;
   KphpOption<bool> no_make;
   KphpOption<uint64_t> jobs_count;

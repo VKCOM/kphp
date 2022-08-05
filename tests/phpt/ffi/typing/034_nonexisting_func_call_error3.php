@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_FFI=1
 /Method g\(\) not found in class ffi_scope<cdef\$u[a-f0-9]+_0>/
 /Method g2\(\) not found in class ffi_scope<cdef\$u[a-f0-9]+_1>/
 <?php

@@ -291,8 +291,6 @@ int main(int argc, char *argv[]) {
              "composer-root", "KPHP_COMPOSER_ROOT");
   parser.add("Include autoload-dev section for the root composer file", settings->composer_autoload_dev,
              "composer-autoload-dev", "KPHP_COMPOSER_AUTOLOAD_DEV");
-  parser.add("Enable KPHP experimental FFI support", settings->ffi_enabled,
-             "enable-ffi", "KPHP_ENABLE_FFI");
   parser.add("Require functions typing (1 - @param / type hint is mandatory, 0 - auto infer or check if exists)", settings->require_functions_typing,
              "require-functions-typing", "KPHP_REQUIRE_FUNCTIONS_TYPING");
   parser.add("Require class typing (1 - @var / default value is mandatory, 0 - auto infer or check if exists)", settings->require_class_typing,

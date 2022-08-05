@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_FFI=1
 /Field \$cdata not found in class FFI\\CData_int32/
 <?php
 

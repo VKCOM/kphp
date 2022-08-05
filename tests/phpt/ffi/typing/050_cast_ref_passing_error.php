@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_FFI=1
 /pass &FFI\\CData_int32 to argument/
 /declared as @param FFI\\CData_int32/
 <?php

@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_FFI=1
 /pass const FFI\\CData_int32\* to argument \$x of f/
 /but it's declared as @param Foo/
 <?php

@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_FFI=1
 /ffi_array_get index type must be int, A used instead/
 <?php
 
