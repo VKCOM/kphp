@@ -232,6 +232,15 @@ void FilterOnlyActuallyUsedFunctionsF::on_finish(DataStream<FunctionPtr> &os) {
     set_index(all[id].first, id);
   }
 
+  // uncomment this to debug "invalid index of IdMap: -1"
+//  for (const auto &f_and_e : all) {
+//    for (const auto &edge : f_and_e.second) {
+//      if (get_index(edge.called_f) == -1) {
+//        printf("-1 of %s -> %s\n", f_and_e.first->name.c_str(), edge.called_f->name.c_str());
+//      }
+//    }
+//  }
+
   stage::set_name("Calc throws and body value");
   stage::set_file(SrcFilePtr());
   stage::die_if_global_errors();

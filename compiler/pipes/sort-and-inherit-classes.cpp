@@ -131,6 +131,8 @@ VertexAdaptor<op_function> SortAndInheritClassesF::generate_function_with_parent
   return func;
 }
 
+// PHP has late static binding, that's why inheriting a static method is not trivial
+// a new function is created with context_class (to resolve 'static')
 void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_class, const ClassMemberStaticMethod &parent_method, DataStream<FunctionPtr> &function_stream) {
   auto local_name = parent_method.local_name();
   auto parent_f = parent_method.function;
@@ -175,6 +177,29 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
   G->register_and_require_function(context_function, function_stream);
 }
 
+// when Base::f and Child::f (non-static) both exist, we just do some checks
+// (Base could be a class or an interface)
+void SortAndInheritClassesF::inherit_instance_method_from_parent(ClassPtr child_class, const ClassMemberInstanceMethod &parent_method) {
+  const auto *child_method = child_class->members.get_instance_method(parent_method.local_name());
+  if (!child_method) {
+    return;
+  }
+
+  FunctionPtr parent_f = parent_method.function;
+  FunctionPtr child_f = child_method->function;
+  stage::set_location(Location{child_class->file_id, child_f, child_f->root->location.line});
+
+  kphp_error(!(!parent_f->modifiers.is_abstract() && child_f->modifiers.is_abstract()),
+             fmt_format("Can not make non-abstract method {} abstract in class {}", parent_f->as_human_readable(), child_class->name));
+  kphp_error(!(parent_f->is_generic() && child_f->is_generic() && !parent_f->modifiers.is_abstract()),
+             fmt_format("Overriding non-abstract generic methods is forbidden: {}", child_f->as_human_readable()));
+  kphp_error(!(parent_f->is_generic() && !child_f->is_generic()),
+             fmt_format("{} is a generic method, but child {} is not.\n@kphp-generic is not inherited, add it manually to child methods", parent_f->as_human_readable(), child_f->as_human_readable()));
+  kphp_error(!(child_f->is_generic() && !parent_f->is_generic()),
+             fmt_format("{} is a generic method, but parent {} is not", child_f->as_human_readable(), parent_f->as_human_readable()));
+}
+
+
 void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_class, ClassPtr parent_class, DataStream<FunctionPtr> &function_stream) {
   stage::set_file(child_class->file_id);
   stage::set_function(FunctionPtr{});
@@ -199,10 +224,7 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
       inherit_static_method_from_parent(child_class, m, function_stream);
     });
     parent_class->members.for_each([&](const ClassMemberInstanceMethod &m) {
-      if (const auto *method = child_class->members.get_instance_method(m.local_name())) {
-        kphp_error(!(!m.function->modifiers.is_abstract() && method->function->modifiers.is_abstract()),
-                   fmt_format("Can not make non-abstract method {} abstract in class {}", m.function->as_human_readable(), child_class->name));
-      }
+      inherit_instance_method_from_parent(child_class, m);
     });
     parent_class->members.for_each([&](const ClassMemberStaticField &f) {
       if (const auto *field = child_class->members.get_static_field(f.local_name())) {
@@ -235,6 +257,10 @@ void SortAndInheritClassesF::inherit_class_from_interface(ClassPtr child_class, 
              fmt_format("{} `implements` a non-interface {}", child_class->name, interface_class->name));
 
   child_class->implements.emplace_back(interface_class);
+
+  interface_class->members.for_each([&](const ClassMemberInstanceMethod &m) {
+    inherit_instance_method_from_parent(child_class, m);
+  });
 
   AutoLocker<Lockable *> locker(&(*interface_class));
   interface_class->derived_classes.emplace_back(child_class);

@@ -172,6 +172,7 @@ void ClassMembersContainer::add_instance_method(FunctionPtr function) {
 
   if (vk::string_view(function->name).ends_with(ClassData::NAME_OF_CONSTRUCT)) {
     klass->construct_function = function;
+    function->return_typehint = klass->type_hint;
   }
 }
 

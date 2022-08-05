@@ -28,6 +28,7 @@ const char *ptype_name(PrimitiveType id) {
     case tp_future_queue:  return "future_queue";
     case tp_regexp:        return "regexp";
     case tp_Class:         return "Class";
+    case tp_object:        return "object";
     case tp_void:          return "void";
     case tp_Error:         return "Error";
     case ptype_size:       kphp_fail();
@@ -67,6 +68,9 @@ PrimitiveType type_lca(PrimitiveType a, PrimitiveType b) {
   }
 
   if (b >= tp_void) { // instances, future, etc — can mix only with false
+    if (a == tp_Class && b == tp_object) {
+      return tp_object;
+    }
     return tp_Error;
   }
 

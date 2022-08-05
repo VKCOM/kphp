@@ -1,5 +1,5 @@
 @kphp_should_fail
-/You may not use trait as a type-hint/
+/Using trait Tr as a type is invalid/
 <?php
 
 trait Tr {

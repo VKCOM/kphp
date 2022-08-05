@@ -1,5 +1,5 @@
 @kphp_should_fail
-/field y is not static in klass Example/
+/field y is not static in class Example/
 <?php
 
 class Example {

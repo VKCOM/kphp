@@ -127,6 +127,12 @@ static inline std::string replace_backslashes(const std::string &s) {
   return replace_characters(s, '\\', '$');
 }
 
+static inline std::string replace_call_string_to_readable(const std::string &s_with_$) {
+  std::string repl = vk::replace_all(s_with_$, "$$", "::");
+  repl = vk::replace_all(repl, "$", "\\");
+  return repl;
+}
+
 static inline void remove_extra_spaces(std::string &str) {
   std::replace_if(str.begin(), str.end(), isspace, ' ');
   str = static_cast<std::string>(vk::trim(str));

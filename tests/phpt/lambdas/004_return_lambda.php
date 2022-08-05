@@ -37,7 +37,7 @@ f()();
 
 
 // lambdas returning lambdas
-// such op_invoke_call are bound later, after all templates instantiations
+// such op_invoke_call are bound later, after all generics instantiations
 
 function get_lambda(): callable
 {

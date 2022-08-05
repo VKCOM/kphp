@@ -207,6 +207,12 @@ void LexerData::hack_last_tokens() {
     return;
   }
 
+  if (are_last_tokens(tok_commentTs)) {
+    if (!are_last_tokens(tok_func_name, tok_commentTs)) {
+      tokens.pop_back();
+    }
+  }
+
   if (are_last_tokens(tok_new, tok_func_name, except_token_tag<tok_oppar>{})) {
     Token t = tokens.back();
     tokens.pop_back();
@@ -919,6 +925,15 @@ bool TokenLexerComment::parse(LexerData *lexer_data) const {
       if (is_phpdoc) {
         lexer_data->add_token(0, tok_phpdoc, phpdoc_start, s);
       }
+    } else if (s[0] && s[1] && s[0] == '<') { // generics commentTs: /*<T>*/
+      char const *inst_start = ++s;
+      while (s[0] && (s[0] != '*' || s[1] != '/')) {
+        s++;
+      }
+      if (s[-1] != '>') {
+        return TokenLexerError("Unclosed generics instantiation: /*< must be ended by >*/").parse(lexer_data);
+      }
+      lexer_data->add_token(0, tok_commentTs, inst_start, s - 1);
     } else {
       while (s[0] && (s[0] != '*' || s[1] != '/')) {
         s++;
@@ -1099,6 +1114,7 @@ void TokenLexerPHPDoc::init() {
   add_rule(h, "=>", tok_double_arrow);
   add_rule(h, "->", tok_arrow);
   add_rule(h, "...", tok_varg);
+  add_rule(h, "=", tok_eq1);
 }
 
 bool TokenLexerGlobal::parse(LexerData *lexer_data) const {

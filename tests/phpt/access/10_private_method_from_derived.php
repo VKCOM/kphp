@@ -1,5 +1,5 @@
 @kphp_should_fail access
-/Can't access/
+/Can't access private static method Base::fun1 \(static=Derived\)/
 <?php
 
 class Base {

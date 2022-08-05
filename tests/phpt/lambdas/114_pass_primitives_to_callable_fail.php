@@ -1,6 +1,5 @@
 @kphp_should_fail
-/expected Callback1 to be callable, but any found/
-/expected Callback1 to be callable, but A found/
+/Seems that something is wrong with a callable passed, it's not callable actually/
 <?php
 
 class A {}

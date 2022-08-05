@@ -13,14 +13,27 @@
 #include "compiler/data/function-data.h"
 #include "compiler/data/kphp-json-tags.h"
 #include "compiler/data/src-file.h"
-#include "compiler/gentree.h"
 #include "compiler/phpdoc.h"
 #include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
 
-// Inspects @kphp-tags in phpdoc above a function (note that @kphp-required is analyzed in gentree)
-// Also converts @param/@return to type hints and marks a function as a template on @kphp-template and untyped callables
+/*
+ * This pass applies phpdocs above functions/classes to FunctionData/ClassData.
+ * Phpdoc for a method could be inherited from a parent method
+ * (it's one of the reasons, why @param and @return can't be applied in gentree).
+ *
+ * - parses @kphp tags
+ * - resolves self/static/parent and checks classes existence in all types (`phpdoc_finalize_type_hint_and_resolve()`:
+ *    - in @param and @return above functions
+ *    - in @var above class fields
+ *    - in @var inside function body
+ *    - in / *<T>* / inside function body
+ *    - ... and other places where a type can occur
+ * - 'callable' and 'object' convert a function into a generic one
+ */
+
+
 class ParseAndApplyPhpDocForFunction {
   FunctionPtr f_;
   bool infer_cast_{false};
@@ -28,10 +41,11 @@ class ParseAndApplyPhpDocForFunction {
   VertexRange func_params_;
 
 public:
-  explicit ParseAndApplyPhpDocForFunction(FunctionPtr f) : f_(f), func_params_(f->get_params()) {
-
-    phpdoc_from_fun_ = get_phpdoc_from_fun_considering_inheritance();
-    stage::set_location(phpdoc_from_fun_->root->get_location());
+  explicit ParseAndApplyPhpDocForFunction(FunctionPtr f)
+    : f_(f)
+    , phpdoc_from_fun_(get_phpdoc_from_fun_considering_inheritance())
+    , func_params_(f->get_params()) {
+    stage::set_location(phpdoc_from_fun_->root->location);
 
     const PhpDocComment *phpdoc = phpdoc_from_fun_->phpdoc;
 
@@ -52,8 +66,8 @@ public:
       }
     }
 
-    // 'callable' or typed callable params act like @kphp-template
-    convert_to_template_function_if_callable_arg();
+    // untyped 'callable' and 'object' act like @kphp-generic
+    convert_to_generic_function_if_callable_or_object_arg();
 
     // now, parse @return tags
     if (phpdoc) {
@@ -65,17 +79,24 @@ public:
     }
 
     // now, parse all @var phpdocs inside, resolving classes and self/static/parent
-    // it couldn't be done before: generics T is distinguishable from class T only after @kphp-template parsing
     if (f_->has_var_tags_inside) {
       parse_inner_var_doc_tags(f_->root);
+      stage::set_location(phpdoc_from_fun_->root->get_location());
     }
 
-    // 1) check that all classes exists and are not traits in @param/@return
-    // 2) if self/static/parent, resolve them
+    // besides @var, types can occur in `f/*<T>*/()`, need to resolve classes there also
+    if (f_->has_commentTs_inside) {
+      parse_inner_commentTs(f_->root);
+      stage::set_location(phpdoc_from_fun_->root->get_location());
+    }
+
+    // resolve self/static/parent in @return or php hint
     if (f_->return_typehint) {
       f_->return_typehint = phpdoc_finalize_type_hint_and_resolve(f_->return_typehint, f_);
       kphp_error(f_->return_typehint, fmt_format("Failed to parse @return of {}", f_->as_human_readable()));
     }
+
+    // resolve self/static/parent in @param or php hint
     for (auto param : f_->get_params()) {
       if (param.as<op_func_param>()->type_hint) {
         param.as<op_func_param>()->type_hint = phpdoc_finalize_type_hint_and_resolve(param.as<op_func_param>()->type_hint, f_);
@@ -90,16 +111,16 @@ public:
       // if 1, typing is mandatory, except these conditions
       f_->type == FunctionData::func_local &&
       !f_->is_lambda() &&                         // lambdas may have implicitly deduced types, they are going to be checked later
-      !f_->disabled_warnings.count("return");     // "@kphp-disable-warnings return" in function phpdoc
+      !f_->disabled_warnings.count("return");  // "@kphp-disable-warnings return" in function phpdoc
 
     if (needs_to_be_fully_typed) {
       check_all_arguments_have_param_or_type_hint();
-      check_function_has_return_or_type_hint();
     }
-
-    // only having applied @kphp-template and others, we can analyze phpdocs of inner lambdas
-    if (f_->has_lambdas_inside) {
-      run_nested_lambdas(f_->root);
+    if (!f_->return_typehint) {
+      f_->return_typehint = auto_create_return_type_if_not_provided();
+      if (!f_->return_typehint && needs_to_be_fully_typed) {  // if @return not set, assume void
+        f_->return_typehint = TypeHintPrimitive::create(tp_void);
+      }
     }
   }
 
@@ -148,15 +169,29 @@ private:
     return f_;
   }
 
-  void convert_to_template_function_if_callable_arg() {
+  void convert_to_generic_function_if_callable_or_object_arg() {
     for (auto p : func_params_) {
       auto cur_func_param = p.as<op_func_param>();
-      if (const auto *callable = cur_func_param->type_hint ? cur_func_param->type_hint->try_as<TypeHintCallable>() : nullptr) {
-        if (!callable->is_typed_callable()) {    // we will generate common interfaces for typed callables in on_finish()
-          GenericsDeclarationMixin::make_function_generics_on_callable_arg(f_, cur_func_param);
+      if (!cur_func_param->type_hint || !cur_func_param->type_hint->has_autogeneric_inside()) {
+        continue;
+      }
+
+      if (const auto *as_callable = cur_func_param->type_hint->try_as<TypeHintCallable>()) {
+        if (!as_callable->is_typed_callable()) {    // we will generate common interfaces for typed callables in on_finish()
+          GenericsDeclarationMixin::make_function_generic_on_callable_arg(f_, cur_func_param);
         }
+      } else if (!f_->is_extern() && cur_func_param->type_hint->try_as<TypeHintObject>()) {
+        GenericsDeclarationMixin::make_function_generic_on_object_arg(f_, cur_func_param);
       }
     }
+  }
+
+  static inline const GenericsDeclarationMixin *get_genericTs_for_phpdoc_parsing(FunctionPtr f_) {
+    const auto *f = f_->get_this_or_topmost_if_lambda();
+    if (f->genericTs) {
+      return f->genericTs;
+    }
+    return nullptr;
   }
 
   void parse_kphp_doc_tag(const PhpDocTag &tag) {
@@ -252,8 +287,31 @@ private:
       }
 
       case PhpDocType::kphp_template: {
-        if (!f_->generics_declaration) {
-          GenericsDeclarationMixin::apply_from_phpdoc(f_, phpdoc_from_fun_->phpdoc);
+        if (!f_->genericTs) { // @kphp-template is an old-style declaration, there may be multiple tags
+          f_->genericTs = GenericsDeclarationMixin::create_for_function_from_phpdoc(f_, phpdoc_from_fun_->phpdoc);
+        }
+        break;
+      }
+
+      case PhpDocType::kphp_generic: {
+        kphp_error_return(!f_->is_constructor(), "__construct() can't be declared as a generic function");
+        // @kphp-generic above a function was parsed in gentree (though it could be inherited)
+        kphp_assert(f_->genericTs || phpdoc_from_fun_->genericTs);
+        if (!f_->genericTs) {
+          f_->genericTs = new GenericsDeclarationMixin(*phpdoc_from_fun_->genericTs);
+        }
+        // but still needs to check classes existence to react on T=Unknown and to resolve 'self'
+        for (auto &itemT : f_->genericTs->itemsT) {
+          if (itemT.extends_hint) {
+            itemT.extends_hint = phpdoc_finalize_type_hint_and_resolve(itemT.extends_hint, f_);
+            kphp_error(itemT.extends_hint, fmt_format("Could not parse generic T extends after '{}:'", itemT.nameT));
+            GenericsDeclarationMixin::check_declarationT_extends_hint(itemT.extends_hint, itemT.nameT);
+          }
+          if (itemT.def_hint) {
+            itemT.def_hint = phpdoc_finalize_type_hint_and_resolve(itemT.def_hint, f_);
+            kphp_error(itemT.def_hint, fmt_format("Could not parse generic T default after '{}='", itemT.nameT));
+            GenericsDeclarationMixin::check_declarationT_def_hint(itemT.def_hint, itemT.nameT);
+          }
         }
         break;
       }
@@ -318,14 +376,14 @@ private:
   }
 
   void parse_return_doc_tag(const PhpDocTag &tag) {
-    auto tag_parsed = tag.value_as_type_and_var_name(phpdoc_from_fun_);
+    auto tag_parsed = tag.value_as_type_and_var_name(phpdoc_from_fun_, get_genericTs_for_phpdoc_parsing(f_));
     if (!tag_parsed) {    // an error has already been printed
       return;
     }
 
     if (f_->return_typehint) {
       // @kphp-return takes precedence over a regular @return (@return can contain anything regardless whether it's before or after @kphp-return)
-      if (f_->return_typehint->has_genericsT_inside()) {
+      if (f_->return_typehint->has_genericT_inside()) {
         return;
       }
       // if both @return and type hint exist, check their compatibility
@@ -336,7 +394,7 @@ private:
   }
 
   void parse_param_doc_tag(const PhpDocTag &tag) {
-    auto tag_parsed = tag.value_as_type_and_var_name(phpdoc_from_fun_);
+    auto tag_parsed = tag.value_as_type_and_var_name(phpdoc_from_fun_, get_genericTs_for_phpdoc_parsing(f_));
     if (!tag_parsed) {    // an error has already been printed
       return;
     }
@@ -349,7 +407,7 @@ private:
 
     if (param->type_hint) {
       // @kphp-param takes precedence over a regular @param (@param can contain anything regardless whether it's before or after @kphp-param)
-      if (param->type_hint->has_genericsT_inside()) {
+      if (param->type_hint->has_genericT_inside()) {
         return;
       }
       // if both @param and type hint exist, check their compatibility
@@ -467,20 +525,30 @@ private:
   void parse_inner_var_doc_tags(VertexPtr root) {
     if (auto as_phpdoc_var = root.try_as<op_phpdoc_var>()) {
       stage::set_location(root->location);
-      PhpDocTag var_tag(PhpDocType::var, as_phpdoc_var->tag_value);
-      auto tag_parsed = var_tag.value_as_type_and_var_name(f_);
-      kphp_error_return(tag_parsed, fmt_format("Failed to parse @var inside {}", f_->as_human_readable()));
-
-      as_phpdoc_var->type_hint = tag_parsed.type_hint;
-      as_phpdoc_var->var()->str_val = tag_parsed.var_name.empty() ? as_phpdoc_var->next_var_name : tag_parsed.var_name;
-      kphp_error(!as_phpdoc_var->var()->str_val.empty(), "@var with empty var name");
-
       as_phpdoc_var->type_hint = phpdoc_finalize_type_hint_and_resolve(as_phpdoc_var->type_hint, f_);
       kphp_error(as_phpdoc_var->type_hint, fmt_format("Failed to parse @var inside {}", f_->as_human_readable()));
     }
 
     for (auto child : *root) {
       parse_inner_var_doc_tags(child);
+    }
+  }
+
+  void parse_inner_commentTs(VertexPtr root) {
+    if (auto as_call = root.try_as<op_func_call>()) {
+      if (as_call->reifiedTs) {
+        kphp_assert(as_call->reifiedTs->commentTs);
+        stage::set_location(root->location);
+
+        for (auto &inst_type_hint : as_call->reifiedTs->commentTs->vectorTs) {
+          inst_type_hint = phpdoc_finalize_type_hint_and_resolve(inst_type_hint, f_);
+          kphp_error(inst_type_hint, fmt_format("Failed to parse /*<...>*/ inside {}", f_->as_human_readable()));
+        }
+      }
+    }
+
+    for (auto child : *root) {
+      parse_inner_commentTs(child);
     }
   }
 
@@ -496,37 +564,29 @@ private:
     }
   }
 
-  void check_function_has_return_or_type_hint() {
-    // at this point, all phpdocs and type hints have been parsed
-    // if we have no @return and no return hint, assume @return void
-    if (!f_->return_typehint) {
-      bool assume_return_void = !f_->is_constructor() && !f_->assumption_for_return && !f_->is_template();
-
-      if (assume_return_void) {
-        f_->return_typehint = TypeHintPrimitive::create(tp_void);
-      }
+  const TypeHint *auto_create_return_type_if_not_provided() {
+    if (f_->is_constructor()) {
+      return f_->class_id->type_hint;
     }
-  }
-
-  void run_nested_lambdas(VertexPtr root) {
-    if (auto as_op_lambda = root.try_as<op_lambda>()) {
-      ParseAndApplyPhpDocForFunction{as_op_lambda->func_id};
+    if (f_->assumption_for_return) {
+      return f_->assumption_for_return.assum_hint;
     }
-
-    for (auto child : *root) {
-      run_nested_lambdas(child);
-    }
+    return nullptr;
   }
 };
 
-// Inspects @var above all fields and converts them to type hints
-// Also analyzes @kphp-serializable and other tags above the class itself
+
 class ParseAndApplyPhpDocForClass {
   ClassPtr klass;
+  FunctionPtr holder_function;
 
 public:
-  explicit ParseAndApplyPhpDocForClass(ClassPtr klass) : klass(klass) {
-    // apply @kphp-serializable and so on
+  explicit ParseAndApplyPhpDocForClass(FunctionPtr holder_function)
+    : klass(holder_function->class_id)
+    , holder_function(holder_function) {
+
+    // apply @kphp-serializable, @kphp-json and so on
+    // do this before parsing @var for fields, as phpdoc for the class can affect parsing behaviour
     stage::set_location({klass->file_id, klass->get_holder_function(), klass->location_line_num});
     if (klass->phpdoc) {
       for (const PhpDocTag &tag : klass->phpdoc->tags) {
@@ -538,9 +598,9 @@ public:
     // note: it's safe to use init_val here (even if it refers to constants of other classes): defines were inlined at previous pipe
     klass->members.for_each([&](ClassMemberInstanceField &f) {
       stage::set_location(f.root->location);
-      f.type_hint = calculate_field_type_hint(f.phpdoc, f.type_hint, f.var, klass);
+      f.type_hint = calculate_field_type_hint(f.phpdoc, f.type_hint, f.var);
       if (f.type_hint) {
-        f.type_hint = phpdoc_finalize_type_hint_and_resolve(f.type_hint, klass->get_holder_function());
+        f.type_hint = phpdoc_finalize_type_hint_and_resolve(f.type_hint, holder_function);
         kphp_error(f.type_hint, fmt_format("Failed to parse @var of {}", f.var->as_human_readable()));
       }
 
@@ -551,9 +611,9 @@ public:
 
     klass->members.for_each([&](ClassMemberStaticField &f) {
       stage::set_location(f.root->location);
-      f.type_hint = calculate_field_type_hint(f.phpdoc, f.type_hint, f.var, klass);
+      f.type_hint = calculate_field_type_hint(f.phpdoc, f.type_hint, f.var);
       if (f.type_hint) {
-        f.type_hint = phpdoc_finalize_type_hint_and_resolve(f.type_hint, klass->get_holder_function());
+        f.type_hint = phpdoc_finalize_type_hint_and_resolve(f.type_hint, holder_function);
         kphp_error(f.type_hint, fmt_format("Failed to parse @var of {}", f.var->as_human_readable()));
       }
       if (f.phpdoc) {
@@ -573,12 +633,12 @@ public:
 private:
   // calculate type_hint for a field using all rules
   // returns TypeHint or nullptr
-  static const TypeHint *calculate_field_type_hint(const PhpDocComment *phpdoc, const TypeHint *php_type_hint, VarPtr var, ClassPtr klass) {
+  const TypeHint *calculate_field_type_hint(const PhpDocComment *phpdoc, const TypeHint *php_type_hint, VarPtr var) {
     // if there is a /** @var int|false */ comment above the class field declaration
     // moreover, it overrides php_type_hint: /** @var int[] */ public array $a; — int[] is used instead of array
     if (phpdoc) {
       if (const PhpDocTag *tag_phpdoc = phpdoc->find_tag(PhpDocType::var)) {
-        auto tag_parsed = tag_phpdoc->value_as_type_and_var_name(stage::get_function());
+        auto tag_parsed = tag_phpdoc->value_as_type_and_var_name(holder_function, nullptr);
         if (!kphp_error(tag_parsed, fmt_format("Failed to parse phpdoc of {}", var->as_human_readable()))) {
           return tag_parsed.type_hint;
         }
@@ -662,14 +722,15 @@ private:
   }
 };
 
+
 void ParseAndApplyPhpdocF::execute(FunctionPtr function, DataStream<FunctionPtr> &unused_os) {
   stage::set_name("Apply phpdocs");
   stage::set_function(function);
   kphp_assert (function);
 
   if (function->type == FunctionData::func_class_holder) {
-    ParseAndApplyPhpDocForClass{function->class_id};
-  } else if (function->type != FunctionData::func_lambda) {
+    ParseAndApplyPhpDocForClass{function};
+  } else {
     ParseAndApplyPhpDocForFunction{function};
   }
 

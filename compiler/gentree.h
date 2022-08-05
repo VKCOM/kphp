@@ -71,10 +71,16 @@ public:
   static void func_force_return(VertexAdaptor<op_function> func, VertexPtr val = {});
   VertexAdaptor<op_ternary> create_ternary_op_vertex(VertexPtr condition, VertexPtr true_expr, VertexPtr false_expr);
 
-  static auto create_int_const(int32_t number) {
+  static VertexPtr create_int_const(int32_t number) {
     auto int_v = VertexAdaptor<op_int_const>::create();
     int_v->str_val = std::to_string(number);
     return int_v;
+  }
+
+  static VertexPtr create_string_const(const std::string &str_val) {
+    auto str_v = VertexAdaptor<op_string>::create();
+    str_v->str_val = str_val;
+    return str_v;
   }
 
   VertexAdaptor<op_func_param> get_func_param();
@@ -147,6 +153,7 @@ public:
 
 private:
   const TypeHint *get_typehint();
+  GenericsInstantiationPhpComment *parse_php_commentTs(vk::string_view str_commentTs);
 
   static void check_and_remove_num_separators(std::string &s);
   VertexPtr get_op_num_const();

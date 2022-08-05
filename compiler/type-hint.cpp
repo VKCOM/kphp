@@ -94,13 +94,24 @@ ClassPtr TypeHintInstance::resolve_and_set_klass() const {
   return klass = G->get_class(full_class_name);
 }
 
-const ClassMemberInstanceField *TypeHintFieldRef::resolve_field() const {
+const ClassMemberInstanceField *TypeHintRefToField::resolve_field() const {
   if (const auto *inner_instance = inner->unwrap_optional()->try_as<TypeHintInstance>()) {
     if (ClassPtr inner_resolved = inner_instance->resolve()) {
       return inner_resolved->get_instance_field(field_name);
     }
   }
   return nullptr;
+}
+
+FunctionPtr TypeHintRefToMethod::resolve_method() const {
+  if (const auto *inner_instance = inner->unwrap_optional()->try_as<TypeHintInstance>()) {
+    if (ClassPtr inner_resolved = inner_instance->resolve()) {
+      if (const ClassMemberInstanceMethod *member = inner_resolved->get_instance_method(method_name)) {
+        return member->function;
+      }
+    }
+  }
+  return {};
 }
 
 InterfacePtr TypeHintCallable::get_interface() const {
@@ -290,13 +301,23 @@ const TypeHint *TypeHintInstance::create(const std::string &full_class_name) {
   );
 }
 
-const TypeHint *TypeHintFieldRef::create(const TypeHint *inner, const std::string &field_name) {
+const TypeHint *TypeHintRefToField::create(const TypeHint *inner, const std::string &field_name) {
   HasherOfTypeHintForOptimization hash(12470101183576506574ULL);
   hash.feed_inner(inner);
   hash.feed_string(field_name);
 
   return hash.get_existing() ?: hash.add_because_doesnt_exist(
-    new TypeHintFieldRef(inner, field_name)
+    new TypeHintRefToField(inner, field_name)
+  );
+}
+
+const TypeHint *TypeHintRefToMethod::create(const TypeHint *inner, const std::string &method_name) {
+  HasherOfTypeHintForOptimization hash(11681103389463249563ULL);
+  hash.feed_inner(inner);
+  hash.feed_string(method_name);
+
+  return hash.get_existing() ?: hash.add_because_doesnt_exist(
+    new TypeHintRefToMethod(inner, method_name)
   );
 }
 
@@ -335,6 +356,14 @@ const TypeHint *TypeHintPrimitive::create(PrimitiveType ptype) {
   );
 }
 
+const TypeHint *TypeHintObject::create() {
+  HasherOfTypeHintForOptimization hash(13255191682146639421ULL);
+
+  return hash.get_existing() ?: hash.add_because_doesnt_exist(
+    new TypeHintObject()
+  );
+}
+
 const TypeHint *TypeHintShape::create(std::vector<std::pair<std::string, const TypeHint *>> &&items, bool is_vararg) {
   HasherOfTypeHintForOptimization hash(8163025479511413046ULL);
   for (const auto &item : items) {
@@ -363,12 +392,21 @@ const TypeHint *TypeHintTuple::create(std::vector<const TypeHint *> &&items) {
   );
 }
 
-const TypeHint *TypeHintGenericsT::create(const std::string &nameT) {
+const TypeHint *TypeHintGenericT::create(const std::string &nameT) {
   HasherOfTypeHintForOptimization hash(4117413899192632779ULL);
   hash.feed_string(nameT);
 
   return hash.get_existing() ?: hash.add_because_doesnt_exist(
-    new TypeHintGenericsT(nameT)
+    new TypeHintGenericT(nameT)
+  );
+}
+
+const TypeHint *TypeHintClassString::create(const TypeHint *inner) {
+  HasherOfTypeHintForOptimization hash(2914531788341198112ULL);
+  hash.feed_inner(inner);
+
+  return hash.get_existing() ?: hash.add_because_doesnt_exist(
+    new TypeHintClassString(inner)
   );
 }
 
@@ -383,11 +421,11 @@ std::string TypeHintArgRef::as_human_readable() const {
 }
 
 std::string TypeHintArgRefCallbackCall::as_human_readable() const {
-  return std::to_string(arg_num) + "()";
+  return "^" + std::to_string(arg_num) + "()";
 }
 
 std::string TypeHintArgRefInstance::as_human_readable() const {
-  return "instance<" + std::to_string(arg_num) + ">";
+  return "instance<^" + std::to_string(arg_num) + ">";
 }
 
 std::string TypeHintArgSubkeyGet::as_human_readable() const {
@@ -396,7 +434,8 @@ std::string TypeHintArgSubkeyGet::as_human_readable() const {
 
 std::string TypeHintArray::as_human_readable() const {
   std::string inner_str = inner->as_human_readable();
-  return inner->try_as<TypeHintOptional>() ? "(" + inner_str + ")" + "[]" : inner_str + "[]";
+  bool embrace = inner->try_as<TypeHintOptional>() || inner->try_as<TypeHintCallable>() || inner->try_as<TypeHintPipe>();
+  return embrace ? "(" + inner_str + ")" + "[]" : inner_str + "[]";
 }
 
 std::string TypeHintCallable::as_human_readable() const {
@@ -426,8 +465,12 @@ std::string TypeHintInstance::as_human_readable() const {
   return resolved ? resolved->as_human_readable() : full_class_name;
 }
 
-std::string TypeHintFieldRef::as_human_readable() const {
+std::string TypeHintRefToField::as_human_readable() const {
   return inner->as_human_readable() + "::" + field_name;
+}
+
+std::string TypeHintRefToMethod::as_human_readable() const {
+  return inner->as_human_readable() + "::" + method_name + "()";
 }
 
 std::string TypeHintOptional::as_human_readable() const {
@@ -442,16 +485,24 @@ std::string TypeHintPrimitive::as_human_readable() const {
   return ptype_name(ptype);
 }
 
+std::string TypeHintObject::as_human_readable() const {
+  return "object";
+}
+
 std::string TypeHintShape::as_human_readable() const {
-  return "shape(" + vk::join(items, ", ", [](const auto &item) { return item.first + ":" + item.second->as_human_readable(); }) + (is_vararg ? ", ..." : "");
+  return "shape(" + vk::join(items, ", ", [](const auto &item) { return item.first + ":" + item.second->as_human_readable(); }) + (is_vararg ? ", ...)" : ")");
 }
 
 std::string TypeHintTuple::as_human_readable() const {
   return "tuple(" + vk::join(items, ", ", [](const TypeHint *item) { return item->as_human_readable(); }) + ")";
 }
 
-std::string TypeHintGenericsT::as_human_readable() const {
+std::string TypeHintGenericT::as_human_readable() const {
   return nameT;
+}
+
+std::string TypeHintClassString::as_human_readable() const {
+  return "class_string<" + inner->as_human_readable() + ">";
 }
 
 
@@ -513,7 +564,12 @@ void TypeHintInstance::traverse(const TraverserCallbackT &callback) const {
   callback(this);
 }
 
-void TypeHintFieldRef::traverse(const TraverserCallbackT &callback) const {
+void TypeHintRefToField::traverse(const TraverserCallbackT &callback) const {
+  callback(this);
+  inner->traverse(callback);
+}
+
+void TypeHintRefToMethod::traverse(const TraverserCallbackT &callback) const {
   callback(this);
   inner->traverse(callback);
 }
@@ -534,6 +590,10 @@ void TypeHintPrimitive::traverse(const TraverserCallbackT &callback) const {
   callback(this);
 }
 
+void TypeHintObject::traverse(const TraverserCallbackT &callback) const {
+  callback(this);
+}
+
 void TypeHintShape::traverse(const TraverserCallbackT &callback) const {
   callback(this);
   for (const auto &item : items) {
@@ -548,8 +608,13 @@ void TypeHintTuple::traverse(const TraverserCallbackT &callback) const {
   }
 }
 
-void TypeHintGenericsT::traverse(const TypeHint::TraverserCallbackT &callback) const {
+void TypeHintGenericT::traverse(const TypeHint::TraverserCallbackT &callback) const {
   callback(this);
+}
+
+void TypeHintClassString::traverse(const TypeHint::TraverserCallbackT &callback) const {
+  callback(this);
+  inner->traverse(callback);
 }
 
 
@@ -608,8 +673,12 @@ const TypeHint *TypeHintInstance::replace_self_static_parent(FunctionPtr resolve
   return is_string_self_static_parent(full_class_name) ? create(resolve_uses(resolve_context, full_class_name)) : this;
 }
 
-const TypeHint *TypeHintFieldRef::replace_self_static_parent(FunctionPtr resolve_context) const {
+const TypeHint *TypeHintRefToField::replace_self_static_parent(FunctionPtr resolve_context) const {
   return create(inner->replace_self_static_parent(resolve_context), field_name);
+}
+
+const TypeHint *TypeHintRefToMethod::replace_self_static_parent(FunctionPtr resolve_context) const {
+  return create(inner->replace_self_static_parent(resolve_context), method_name);
 }
 
 const TypeHint *TypeHintOptional::replace_self_static_parent(FunctionPtr resolve_context) const {
@@ -625,6 +694,10 @@ const TypeHint *TypeHintPrimitive::replace_self_static_parent(FunctionPtr resolv
   return this;
 }
 
+const TypeHint *TypeHintObject::replace_self_static_parent(FunctionPtr resolve_context __attribute__ ((unused))) const {
+  return this;
+}
+
 const TypeHint *TypeHintShape::replace_self_static_parent(FunctionPtr resolve_context) const {
   auto mapper = vk::make_transform_iterator_range([resolve_context](const auto &sub) { return std::make_pair(sub.first, sub.second->replace_self_static_parent(resolve_context)); }, items.begin(), items.end());
   return create({mapper.begin(), mapper.end()}, is_vararg);
@@ -635,8 +708,12 @@ const TypeHint *TypeHintTuple::replace_self_static_parent(FunctionPtr resolve_co
   return create({mapper.begin(), mapper.end()});
 }
 
-const TypeHint *TypeHintGenericsT::replace_self_static_parent(FunctionPtr resolve_context __attribute__ ((unused))) const {
+const TypeHint *TypeHintGenericT::replace_self_static_parent(FunctionPtr resolve_context __attribute__ ((unused))) const {
   return this;
+}
+
+const TypeHint *TypeHintClassString::replace_self_static_parent(FunctionPtr resolve_context) const {
+  return create(inner->replace_self_static_parent(resolve_context));
 }
 
 
@@ -644,7 +721,7 @@ const TypeHint *TypeHintGenericsT::replace_self_static_parent(FunctionPtr resolv
 //    replace_children_custom()
 // returns a new type hint with children replaced by a custom callback
 // used to replace ^1 and other argrefs with assumptions — for example, ^1[] could become A[]
-// also used to replace generics T with an exact type hint — to convert tuple(T) to tuple(B)
+// also used to replace generic T with an exact type hint — to convert tuple(T) to tuple(B)
 // replace_self_static_parent() could be dropped off, but is left for performance
 
 
@@ -696,8 +773,12 @@ const TypeHint *TypeHintInstance::replace_children_custom(const ReplacerCallback
   return callback(this);
 }
 
-const TypeHint *TypeHintFieldRef::replace_children_custom(const ReplacerCallbackT &callback) const {
+const TypeHint *TypeHintRefToField::replace_children_custom(const ReplacerCallbackT &callback) const {
   return callback(create(inner->replace_children_custom(callback), field_name));
+}
+
+const TypeHint *TypeHintRefToMethod::replace_children_custom(const ReplacerCallbackT &callback) const {
+  return callback(create(inner->replace_children_custom(callback), method_name));
 }
 
 const TypeHint *TypeHintOptional::replace_children_custom(const ReplacerCallbackT &callback) const {
@@ -713,6 +794,10 @@ const TypeHint *TypeHintPrimitive::replace_children_custom(const ReplacerCallbac
   return callback(this);
 }
 
+const TypeHint *TypeHintObject::replace_children_custom(const ReplacerCallbackT &callback) const {
+  return callback(this);
+}
+
 const TypeHint *TypeHintShape::replace_children_custom(const ReplacerCallbackT &callback) const {
   auto mapper = vk::make_transform_iterator_range([callback](const auto &sub) { return std::make_pair(sub.first, sub.second->replace_children_custom(callback)); }, items.begin(), items.end());
   return callback(create({mapper.begin(), mapper.end()}, is_vararg));
@@ -723,8 +808,12 @@ const TypeHint *TypeHintTuple::replace_children_custom(const ReplacerCallbackT &
   return callback(create({mapper.begin(), mapper.end()}));
 }
 
-const TypeHint *TypeHintGenericsT::replace_children_custom(const ReplacerCallbackT &callback) const {
+const TypeHint *TypeHintGenericT::replace_children_custom(const ReplacerCallbackT &callback) const {
   return callback(this);
+}
+
+const TypeHint *TypeHintClassString::replace_children_custom(const ReplacerCallbackT &callback) const {
+  return callback(create(inner->replace_children_custom(callback)));
 }
 
 

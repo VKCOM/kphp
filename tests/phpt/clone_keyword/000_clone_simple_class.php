@@ -25,3 +25,15 @@ var_dump($a->y);
 
 var_dump($b->x);
 var_dump($b->y);
+
+
+class A2 { public $i = 10; }
+
+function f2() {
+    $x = new A2();
+    return $x;
+}
+
+$a2 = f2();
+var_dump((clone $a2)->i);
+

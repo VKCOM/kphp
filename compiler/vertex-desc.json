@@ -311,7 +311,7 @@
         "type": "FunctionPtr",
         "default": "{}"
       },
-      "instantiation_list": {
+      "reifiedTs": {
         "type": "GenericsInstantiationMixin *",
         "default": "nullptr"
       }
@@ -2022,12 +2022,6 @@
       "str": "@var"
     },
     "extra_fields": {
-      "next_var_name": {
-        "type": "std::string"
-      },
-      "tag_value": {
-        "type": "std::string"
-      },
       "type_hint": {
         "type": "const TypeHint *",
         "default": "nullptr"

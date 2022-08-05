@@ -2,7 +2,7 @@
 <?php
 
 class Base {
-    /** @var callable(int):int $cb */
+    /** @param callable(int):int $cb */
     function takesTypedCallback(callable $cb, int $arg) {
         echo $cb($arg), "\n";
     }

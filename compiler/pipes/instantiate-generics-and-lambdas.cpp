@@ -1,5 +1,5 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2020 LLC «V Kontakte»
+// Copyright (c) 2022 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "compiler/pipes/instantiate-generics-and-lambdas.h"
@@ -8,6 +8,7 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/generics-mixins.h"
+#include "compiler/gentree.h"
 #include "compiler/lambda-utils.h"
 #include "compiler/phpdoc.h"
 #include "compiler/type-hint.h"
@@ -17,68 +18,155 @@
  * This pass creates new functions and passes them backwards to be handled again:
  * 1) it generates lambda classes for every op_lambda,
  *    and therefore pipes __construct and __invoke of that class
- * 2) it instantiates template functions knowing T1, etc
- *    and therefore pipes a newly-created function (an instantiated template function)
+ * 2) it instantiates generic functions knowing T1, etc
+ *    and therefore pipes a newly-created function (an instantiated clone of generic function)
  */
 
-// when we have a call `f<T>(...)`, we generate a new function `f$_$T`,
-// which is not a template one, but an instantiated one
-static FunctionPtr instantiate_template_function(FunctionPtr template_function,
-                                                 GenericsInstantiationMixin *generics_instantiation,
-                                                 const std::string &name_of_instantiated_function) {
+class InstantiateGenericFunctionPass final : public FunctionPassBase {
+  FunctionPtr generic_function;
+  const GenericsInstantiationMixin *instantiationTs;
 
-  auto new_function = FunctionData::clone_from(template_function, name_of_instantiated_function);
-  CloneNestedLambdasPass::run_if_lambdas_inside(new_function, nullptr);
-  new_function->generics_declaration = nullptr;
-  new_function->generics_instantiation = generics_instantiation;
-  new_function->outer_function = template_function;
-
-  // typically, `f(T $obj)` doesn't restrict T, in fact it means `f<T : any>(T $obj)`, T has extends_hint = nullptr
-  // but `f(callable $c)` actually means `f<Callback1 : callable>(Callback1 $c)`, so Callback1 has extends_hint = callable
-  // when real generics functions are done, we'll have a syntax to express `f<T : SomeInterface>(T $obj)`, for now we haven't
-  for (const auto &generics_item : *template_function->generics_declaration) {
-    const TypeHint *instantiation_type = generics_instantiation->find(generics_item.nameT);
-    kphp_assert(instantiation_type);
-
-    if (generics_item.extends_hint) {
-      if (generics_item.extends_hint->try_as<TypeHintCallable>()) {   // prevent f(1) and other non-callable instantiations
-        kphp_error(instantiation_type->try_as<TypeHintCallable>(),
-                   fmt_format("Invalid template instantiation: expected {} to be {}, but {} found",
-                              generics_item.nameT, TermStringFormat::paint_green(generics_item.extends_hint->as_human_readable()), TermStringFormat::paint_green(instantiation_type->as_human_readable())));
-      }
-    }
+public:
+  InstantiateGenericFunctionPass(FunctionPtr generic_function, GenericsInstantiationMixin *instantiationTs)
+    : generic_function(generic_function)
+    , instantiationTs(instantiationTs) {
   }
+
+  std::string get_description() override {
+    return "Instantiate generic function";
+  }
+
+  VertexPtr on_enter_vertex(VertexPtr root) override {
+    if (auto as_phpdoc_var = root.try_as<op_phpdoc_var>()) {
+      as_phpdoc_var->type_hint = phpdoc_replace_genericTs_with_reified(as_phpdoc_var->type_hint, instantiationTs);
+
+    } else if (auto as_call = root.try_as<op_func_call>()) {
+      if (as_call->reifiedTs) {
+        kphp_assert(as_call->reifiedTs->empty() && as_call->reifiedTs->commentTs);
+        as_call->reifiedTs = new GenericsInstantiationMixin(*as_call->reifiedTs);
+        for (auto &type_hint : as_call->reifiedTs->commentTs->vectorTs) {
+          type_hint = phpdoc_replace_genericTs_with_reified(type_hint, instantiationTs);
+        }
+      }
+
+    } else if (auto as_var = root.try_as<op_var>()) {
+      auto param = generic_function->find_param_by_name(as_var->str_val);
+      if (param && param->type_hint && param->type_hint->has_genericT_inside() && find_param_by_name(as_var->str_val)) {
+        if (const auto *as_class_string = param->type_hint->try_as<TypeHintClassString>()) {
+          const TypeHint *instT = instantiationTs->find(as_class_string->inner->try_as<TypeHintGenericT>()->nameT);
+          if (instT && instT->try_as<TypeHintInstance>()) {
+            return GenTree::create_string_const(instT->try_as<TypeHintInstance>()->full_class_name);
+          }
+        }
+      }
+
+    } else if (auto as_op_lambda = root.try_as<op_lambda>()) {
+      run_function_pass(as_op_lambda->func_id, this);
+    }
+
+    return root;
+  }
+
+  bool user_recursion(VertexPtr root) override {
+    if (root->type() == op_func_param_list) {
+      return true;
+    }
+
+    return false;
+  }
+
+  VertexAdaptor<op_func_param> find_param_by_name(const std::string &var_name) {
+    FunctionPtr outer_function = current_function;
+    while (outer_function->is_lambda()) {
+      bool is_used = std::find_if(outer_function->uses_list.begin(), outer_function->uses_list.end(),
+                                  [var_name](auto v_use) { return v_use->str_val == var_name; }) != outer_function->uses_list.end();
+      if (!is_used) {
+        return {};
+      }
+      outer_function = outer_function->outer_function;
+    }
+    return outer_function->find_param_by_name(var_name);
+  }
+};
+
+
+// when we have a call `f<T1, T2>(...)`, we generate a new function `f$_$T1$_$T2`,
+// which is not a generic one, but an instantiated one
+static FunctionPtr instantiate_generic_function(FunctionPtr generic_function,
+                                                GenericsInstantiationMixin *instantiationTs,
+                                                const std::string &name_of_instantiated_function) {
+
+  auto new_function = FunctionData::clone_from(generic_function, name_of_instantiated_function);
+  CloneNestedLambdasPass::run_if_lambdas_inside(new_function, nullptr);
+  new_function->genericTs = nullptr;
+  new_function->instantiationTs = instantiationTs;
+  new_function->outer_function = generic_function;
+
+  // replace all T inside a cloned function where it could potentially be:
+  // 1) in type_hint of params/return
+  // 2) in nested @var phpdocs and nested /*<T>*/ calls
 
   for (auto p : new_function->get_params()) {
     auto param = p.as<op_func_param>();
     if (param->type_hint) {
-      param->type_hint = phpdoc_replace_genericsT_with_instantiation(param->type_hint, generics_instantiation);
+      param->type_hint = phpdoc_replace_genericTs_with_reified(param->type_hint, instantiationTs);
     }
   }
 
-  if (new_function->return_typehint && new_function->return_typehint->has_genericsT_inside()) {
-    new_function->return_typehint = phpdoc_replace_genericsT_with_instantiation(new_function->return_typehint, generics_instantiation);
+  if (new_function->return_typehint && new_function->return_typehint->has_genericT_inside()) {
+    new_function->return_typehint = phpdoc_replace_genericTs_with_reified(new_function->return_typehint, instantiationTs);
   }
 
+  InstantiateGenericFunctionPass pass(generic_function, instantiationTs);
+  run_function_pass(new_function, &pass);
+
+  kphp_assert(!new_function->is_required && !new_function->is_generic());
   return new_function;
 }
+
+static FunctionPtr instantiate_generic_function_concurrent(FunctionPtr generic_function,
+                                                           GenericsInstantiationMixin *instantiationTs,
+                                                           const std::string &name_of_instantiated_function,
+                                                           DataStream<FunctionPtr> &function_stream) {
+  FunctionPtr generated_function;
+
+  G->operate_on_function_locking(name_of_instantiated_function, [&](FunctionPtr &f) {
+    if (!f) {
+      f = instantiate_generic_function(generic_function, instantiationTs, name_of_instantiated_function);
+
+      if (f->modifiers.is_instance()) {
+        AutoLocker locker(&(*f->class_id));
+        f->class_id->members.add_instance_method(f);
+      }
+
+      G->require_function(f, function_stream);
+    }
+
+    generated_function = f;
+  });
+
+  return generated_function;
+}
+
 
 // the pass which is called from the F pipe
 // (the F pipe is needed to have several outputs, which is impossible with Pass structure)
 class InstantiateGenericsAndLambdasPass final : public FunctionPassBase {
   DataStream<FunctionPtr> &function_stream;
+  DataStream<FunctionPtr> &forward_next_stream;
 
 public:
 
-  explicit InstantiateGenericsAndLambdasPass(DataStream<FunctionPtr> &function_stream)
-    : function_stream(function_stream) {}
+  explicit InstantiateGenericsAndLambdasPass(DataStream<FunctionPtr> &function_stream, DataStream<FunctionPtr> &forward_next_stream)
+    : function_stream(function_stream)
+    , forward_next_stream(forward_next_stream) {}
 
   std::string get_description() override {
-    return "Instantiate template functions and lambdas";
+    return "Instantiate generics and lambdas";
   }
 
   VertexPtr on_enter_vertex(VertexPtr root) override {
-    if (root->type() == op_lambda) {
+    if (root->type() == op_lambda && !stage::has_error()) {
       return on_op_lambda_convert_to_construct_lambda_class(root.as<op_lambda>());
     }
     if (root->type() == op_callback_of_builtin) {
@@ -86,8 +174,8 @@ public:
     }
 
     if (auto call = root.try_as<op_func_call>()) {
-      if (call->func_id && call->func_id->is_template()) {
-        call->func_id = on_template_func_call_instantiate(call->func_id, call);
+      if (call->func_id && call->func_id->is_generic()) {
+        call->func_id = on_generic_func_call_instantiate(call->func_id, call);
       }
     }
 
@@ -96,46 +184,25 @@ public:
 
   // have `f<T>(...)`, create f$_$T and return it
   // note, that we always know T due to the previous pipe (when omitted in code, it was auto-deduced if possible)
-  FunctionPtr on_template_func_call_instantiate(FunctionPtr template_function, VertexAdaptor<op_func_call> call) {
-    kphp_assert(template_function->is_template() && template_function->generics_declaration);
-    kphp_assert(call->instantiation_list);
-    kphp_assert(template_function->generics_declaration->size() == call->instantiation_list->size());
+  FunctionPtr on_generic_func_call_instantiate(FunctionPtr generic_function, VertexAdaptor<op_func_call> call) {
+    kphp_assert(generic_function->genericTs && call->reifiedTs);
+    kphp_assert(generic_function->genericTs->size() == call->reifiedTs->size());
 
-    // if f<T> is a member of an interface, instantate f<T> in all derived classes
-    // note, that we don't allow `class A { foo<T>() { ... } } class B : A { foo<T>() { ... } }` (moving a template to self method)
-    if (template_function->modifiers.is_instance() && template_function->is_virtual_method) {
-      kphp_error(template_function->modifiers.is_abstract(),
-                 fmt_format("{} is overridden in child classes. Overriding non-abstract instance template functions is unsupported", template_function->as_human_readable()));
-      for (ClassPtr derived : template_function->class_id->get_all_derived_classes()) {
-        if (derived != template_function->class_id) {
-          if (const auto *method = derived->members.get_instance_method(template_function->local_name())) {
-            on_template_func_call_instantiate(method->function, call);
+    // if f<T> is a member of an interface, instantiate f<T> in all derived classes
+    // note, that we don't allow `class A { foo<T>() { ... } } class B : A { foo<T>() { ... } }` (moving a generic to self method)
+    if (generic_function->modifiers.is_instance() && generic_function->is_virtual_method) {
+      kphp_assert(generic_function->modifiers.is_abstract());  // should have been checked in advance
+      for (ClassPtr derived : generic_function->class_id->get_all_derived_classes()) {
+        if (derived != generic_function->class_id) {
+          if (const auto *method = derived->members.get_instance_method(generic_function->local_name())) {
+            on_generic_func_call_instantiate(method->function, call);
           }
         }
       }
     }
 
-    std::string generated_name = call->instantiation_list->generate_instantiated_func_name(template_function);
-    FunctionPtr generated_function;
-
-    G->operate_on_function_locking(generated_name, [&](FunctionPtr &f) {
-      // a function with the same name could be already created earlier
-      if (f) {
-        generated_function = f;
-        return;
-      }
-
-      f = instantiate_template_function(template_function, call->instantiation_list, generated_name);
-      generated_function = f;
-
-      if (template_function->modifiers.is_instance()) {
-        AutoLocker<Lockable *> locker(&(*template_function->class_id));
-        template_function->class_id->members.add_instance_method(generated_function);
-      }
-
-      kphp_assert(!generated_function->is_required);
-      G->require_function(generated_function, function_stream);
-    });
+    std::string generated_name = call->reifiedTs->generate_instantiated_name(generic_function->name, generic_function->genericTs);
+    FunctionPtr generated_function = instantiate_generic_function_concurrent(generic_function, call->reifiedTs, generated_name, function_stream);
 
     return generated_function;
   }
@@ -154,10 +221,14 @@ public:
     if (v_lambda->lambda_class) {   // while deducing types, we used this field to express inheritance from a typed callable
       kphp_assert(v_lambda->lambda_class->is_typed_callable_interface());
       inherit_lambda_class_from_typed_callable(c_lambda, v_lambda->lambda_class);
+      G->require_function(v_lambda->lambda_class->get_instance_method("__invoke")->function, function_stream);
     }
     v_lambda->lambda_class = c_lambda;
 
-    function_stream << f_lambda;
+    InstantiateGenericsAndLambdasPass pass_lambda(function_stream, forward_next_stream);
+    run_function_pass(f_lambda, &pass_lambda);
+    forward_next_stream << f_lambda;  // nested lambdas were already processed by DeduceImplicitTypesAndCastsPass
+
     G->require_function(c_lambda->construct_function, function_stream);
     G->require_function(c_lambda->get_instance_method("__invoke")->function, function_stream);
     G->register_and_require_function(c_lambda->gen_holder_function(c_lambda->name), function_stream, true);
@@ -174,7 +245,9 @@ public:
       kphp_assert(f_lambda->is_lambda());
       patch_lambda_function_add_uses_as_arguments(f_lambda);
 
-      function_stream << f_lambda;
+      InstantiateGenericsAndLambdasPass pass_lambda(function_stream, forward_next_stream);
+      run_function_pass(f_lambda, &pass_lambda);
+      forward_next_stream << f_lambda;
     }
 
     return v_callback;
@@ -186,7 +259,7 @@ void InstantiateGenericsAndLambdasF::execute(FunctionPtr function, OStreamT &os)
   auto &forward_next_stream = *os.project_to_nth_data_stream<0>();
   auto &newly_generated_functions_stream = *os.project_to_nth_data_stream<1>();
 
-  InstantiateGenericsAndLambdasPass pass(newly_generated_functions_stream);
+  InstantiateGenericsAndLambdasPass pass(newly_generated_functions_stream, forward_next_stream);
   run_function_pass(function, &pass);
 
   if (stage::has_error()) {

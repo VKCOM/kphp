@@ -194,11 +194,12 @@ VertexPtr CheckFuncCallsAndVarargPass::create_CompileTimeLocation_call_arg(const
 //
 // for instance, JsonEncoder::encode() and all inheritors' calls are replaced
 // (not to carry auto-generated inheritors body, as they are generated wrong anyway, cause JsonEncoder is built-in)
-VertexAdaptor<op_func_call> CheckFuncCallsAndVarargPass::maybe_replace_extern_func_call(VertexAdaptor<op_func_call> call, FunctionPtr f_called) {
-  if (f_called->name == "hrtime") {
+VertexPtr CheckFuncCallsAndVarargPass::maybe_replace_extern_func_call(VertexAdaptor<op_func_call> call, FunctionPtr f_called) {
+  const std::string &f_name = f_called->name;
+  if (f_name == "hrtime") {
     return process_hrtime(call);
   }
-  if (f_called->name == "microtime") {
+  if (f_name == "microtime") {
     return process_microtime(call);
   }
   if (f_called->modifiers.is_static() && f_called->class_id) {
@@ -226,6 +227,14 @@ VertexAdaptor<op_func_call> CheckFuncCallsAndVarargPass::maybe_replace_extern_fu
       call->func_id = G->get_function(call->str_val);
       return call;
     }
+  }
+
+  if (f_name == "classof" && call->size() == 1) {
+    ClassPtr klassT = assume_class_of_expr(current_function, call->args()[0], call).try_as_class();
+    kphp_error_act(klassT, "classof() used for non-instance", return call);
+    auto v_class_name = VertexAdaptor<op_string>::create();
+    v_class_name->str_val = klassT->name;
+    return v_class_name;
   }
 
   return call;
@@ -334,7 +343,7 @@ VertexPtr CheckFuncCallsAndVarargPass::on_func_call(VertexAdaptor<op_func_call> 
   }
 
   if (f->is_extern() && !stage::has_error()) {
-    call = maybe_replace_extern_func_call(call, call->func_id);
+    return maybe_replace_extern_func_call(call, call->func_id);
   }
 
   return call;

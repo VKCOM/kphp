@@ -184,6 +184,7 @@ prepend(KPHP_COMPILER_SOURCES ${KPHP_COMPILER_DIR}/
         compiler-settings.cpp
         function-colors.cpp
         gentree.cpp
+        generics-reification.cpp
         index.cpp
         lambda-utils.cpp
         lexer.cpp

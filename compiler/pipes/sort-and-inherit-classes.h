@@ -26,6 +26,7 @@ private:
 
   void inherit_child_class_from_parent(ClassPtr child_class, ClassPtr parent_class, DataStream<FunctionPtr> &function_stream);
   void inherit_static_method_from_parent(ClassPtr child_class, const ClassMemberStaticMethod &parent_method, DataStream<FunctionPtr> &function_stream);
+  void inherit_instance_method_from_parent(ClassPtr child_class, const ClassMemberInstanceMethod &parent_method);
 
   void inherit_class_from_interface(ClassPtr child_class, InterfacePtr interface_class);
   static void clone_members_from_traits(std::vector<TraitPtr> &&traits, ClassPtr ready_class, DataStream<FunctionPtr> &function_stream);

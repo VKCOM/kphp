@@ -16,7 +16,7 @@ class ParseAndApplyPhpdocF final : public SyncPipeF<FunctionPtr> {
 
 public:
   bool forward_to_next_pipe(const FunctionPtr &f) override {
-    return !f->is_lambda() && !f->is_template();
+    return !f->is_lambda() && !f->is_generic();
   }
 
   void execute(FunctionPtr function, DataStream<FunctionPtr> &unused_os) final;

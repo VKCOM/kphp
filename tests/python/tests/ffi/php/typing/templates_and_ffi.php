@@ -6,7 +6,7 @@ if (false)
   FFI::load(__DIR__ . '/../c/vector.h');
 
 /**
- * @kphp-template T
+ * @kphp-generic T
  * @param T $ffi_vec
  */
 function printXY($ffi_vec) {
@@ -14,7 +14,7 @@ function printXY($ffi_vec) {
 }
 
 /**
- * @kphp-template T
+ * @kphp-generic T
  * @kphp-param T $ffi_vec
  * @kphp-return T
  */
@@ -23,17 +23,17 @@ function getEqVec($ffi_vec) {
 }
 
 /**
- * @kphp-template T
- * @kphp-param T $vec_arr
- * @kphp-return T::data[]
+ * @kphp-generic T
+ * @param T $vec_arr
+ * @return T::data[]
  */
 function getInnerVecOfArr($vec_arr) {
     return [$vec_arr->data];
 }
 
 /**
- * @kphp-template T
- * @kphp-param T $ffi_vec
+ * @kphp-generic T
+ * @param T $ffi_vec
  */
 function getLambdaCapturingFfiTpl($ffi_vec): callable {
     return function($add) use($ffi_vec) {
@@ -42,7 +42,7 @@ function getLambdaCapturingFfiTpl($ffi_vec): callable {
 }
 
 /**
- * @kphp-template T
+ * @kphp-generic T
  * @param T $scope
  * @param any $value
  */

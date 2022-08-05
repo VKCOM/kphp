@@ -103,7 +103,8 @@ class LibData;
 class SrcFile;
 class TypeHint;
 class PhpDocComment;
-struct GenericsInstantiationMixin;
+class GenericsInstantiationMixin;
+class GenericsInstantiationPhpComment;
 
 using VarPtr = Id<VarData>;
 using ClassPtr = Id<ClassData>;

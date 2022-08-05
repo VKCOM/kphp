@@ -33,3 +33,36 @@ function f3(array $p1, array $p2, ?array $p3, ?array $p4, ?array $p5): array {
 f1(1);
 f2(null,function($x){});
 f3([],[],[],[],[]);
+
+
+/** @return int[] */
+function getIntArr() {
+    return [1,2,3];
+}
+
+/** @return mixed */
+function getMixed() {
+    return [1, '2', 3];
+}
+
+/** @return mixed[] */
+function getMixedArray() {
+    return ['1', 2, '3'];
+}
+
+function mapSome($case) {
+    if ($case === 1) {
+        $a = getIntArr();
+    } else if ($case === 2) {
+        $a = getMixed();
+    } else {
+        $a = getMixedArray();
+    }
+
+    $eq = array_map(fn($v) => $v, $a);
+    var_dump($eq);
+}
+
+mapSome(1);
+mapSome(2);
+mapSome(3);

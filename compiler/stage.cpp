@@ -139,15 +139,21 @@ static TLS<StageInfo> stage_info;
 } // namespace stage
 
 void stage::print_current_location_on_error(FILE *f) {
-  int line = get_line();
   bool use_colors = should_be_colored(f);
+  Location location = get_location();
+
+  // fix that sometimes (in strange cases) 'line' of location is not set, whereas current function exists
+  // then let's point to a function declaration in error message
+  if (location.line == 0 && location.function) {
+    location.line = location.function->root->location.line;
+  }
 
   // {file}:{line} in {function}
-  fmt_fprintf(f, "  {}\n", get_location().as_human_readable());
+  fmt_fprintf(f, "  {}\n", location.as_human_readable());
 
   // line contents
-  if (line > 0) {
-    std::string comment = static_cast<std::string>(vk::trim(get_file()->get_line(line)));
+  if (location.line > 0) {
+    std::string comment = static_cast<std::string>(vk::trim(location.file->get_line(location.line)));
     comment = vk::replace_all(comment, "\n", "\\n");
     fmt_fprintf(f, "    {}\n", use_colors ? TermStringFormat::paint(comment, TermStringFormat::yellow) : comment);
   }

@@ -40,14 +40,14 @@
  *    $a->__invoke();       // which is actually Lambda$XXX$__invoke($a): op_func_call { op_var $a }
  *
  * Replacing op_invoke_call `$a()` with op_func_call `$a->__invoke()` is done in ConvertInvokeToFuncCallPass.
- * This step is after a sync pipe, after all lambdas and templates are expanded, and can't be done earlier.
+ * This step is after a sync pipe, after all lambdas and generics are expanded, and can't be done earlier.
  * Why? Consider this hard example:
  *    function hardDemo<T>(T $arg) { return fn() => fn() => $arg; }
  *    hardDemo($obj)()()->objMethod();
  * Assumptions for this could be calculated (to bind ->objMethod()) while deducing types,
  * but in order to replace `()` with `__invoke()`, we really have to wait until everything is instantiated,
  * because at the moment when `()()` is called, lambdas inside `hardDemo<T>` could not yet be replaced by classes actually.
- * All in all, see ConvertInvokeToFuncCallPass which binds op_invoke_call after a sync pipe of all lambdas/templates.
+ * All in all, see ConvertInvokeToFuncCallPass which binds op_invoke_call after a sync pipe of all lambdas/generics.
  *
  * Lambdas and uses.
  * A lambda can capture external variables via use(), or implicitly if an arrow, or parent $this.
@@ -73,11 +73,7 @@
  * Untyped callables.
  * The keyword `callable` is very weird, but we have to support it, as its usage is quite common.
  *    function callMe(callable $fn)
- * `callable` param makes this function be a template implicitly, e.g.
- *    @kphp-template CallbackT : callable
- *    @kphp-param CallbackT $fn
- *    function callMe($fn)
- * Or, written in terms of generics,
+ * `callable` param makes this function be a generic one implicitly, e.g.
  *    function callMe<CallbackT : callable>(CallbackT $fn)
  * When `callMe()` is called with different lambdas, they are actually instantiated by Lambda$XXX instances,
  * so there are many clones: callMe$_$Lambda$XXX1, callMe$_$Lambda$XXX2, etc.
@@ -128,7 +124,7 @@
  *    $obj->foo('strlen')
  * has to know the assumption for $obj.
  * At the same time, func_id for every op_func_call is bound.
- * At the same time, generics T are auto-reified.
+ * At the same time, generic Ts are auto-reified.
  * All these computations are done simultaneously in DeduceImplicitTypesAndCastsPass, see comments there.
  *
  * Lambdas passed to built-in functions.

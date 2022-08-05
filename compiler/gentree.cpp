@@ -15,6 +15,7 @@
 #include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/lambda-utils.h"
+#include "compiler/lexer.h"
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
 #include "compiler/stage.h"
@@ -213,6 +214,14 @@ VertexAdaptor<Op> GenTree::get_func_call() {
   std::string name{cur->str_val};
   next_cur();
 
+  GenericsInstantiationPhpComment *commentTs{nullptr};
+  if constexpr (Op == op_func_call) {
+    if (test_expect(tok_commentTs)) {   // f/*<...>*/(args)
+      commentTs = parse_php_commentTs(cur->str_val);
+      next_cur();
+    }
+  }
+
   CE (expect(tok_oppar, "'('"));
   skip_phpdoc_tokens();
   std::vector<VertexPtr> next;
@@ -224,6 +233,13 @@ VertexAdaptor<Op> GenTree::get_func_call() {
 
   if (call->has_get_string()) {
     call->set_string(name);
+  }
+  if constexpr (Op == op_func_call) {
+    if (commentTs != nullptr) {
+      call->reifiedTs = new GenericsInstantiationMixin(call->location);
+      call->reifiedTs->commentTs = commentTs;
+      cur_function->has_commentTs_inside = true;
+    }
   }
   return call;
 }
@@ -581,7 +597,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow, const PhpDocComment *phpdoc) {
     }
     case tok_func_name: {
       cur++;
-      if (!test_expect(tok_oppar)) {
+      if (!test_expect(tok_oppar) && !test_expect(tok_commentTs)) {
         if (!was_arrow && vk::any_of_equal(op->str_val, "die", "exit")) { // can be called without "()"
           res = get_vertex_with_str_val(VertexAdaptor<op_func_call>{}, static_cast<std::string>(op->str_val));
         } else {
@@ -1304,20 +1320,23 @@ VertexPtr GenTree::get_phpdoc_inside_function() {
   // there can be several @var directives (for example, a block of @var comments above the list() assignment)
   for (const PhpDocTag &tag: PhpDocComment(phpdoc_str).tags) {
     if (tag.type == PhpDocType::var) {
-      // we can't parse @var at this point: we don't have enough information
-      // (for instance, T could be class T or generics T depending on @kphp-template considering inheritance, and so on)
-      // instead, we just save necessary info to op_phpdoc_var for later, see ParseAndApplyPhpDocForFunction
-
-      auto inner_var = VertexAdaptor<op_var>::create().set_location(auto_location());
-      auto phpdoc_var = VertexAdaptor<op_phpdoc_var>::create(inner_var).set_location(inner_var);
-      phpdoc_var->tag_value = tag.value_as_string();
-      // inner_var->str_val and phpdoc_var->type_hint will be assigned after parsing
+      // we are able to parse @var in gentree: @kphp-generic was already parsed, and generic T won't mess with class T
+      // classes resolving (and error for unknown classes) will happen later, in parse-and-apply-phpdoc.cpp
+      auto tag_parsed = tag.value_as_type_and_var_name(cur_function, cur_function->get_this_or_topmost_if_lambda()->genericTs);
+      kphp_error_act(tag_parsed, fmt_format("Failed to parse @var inside {}", cur_function->as_human_readable()), break);
 
       // tag could look like /* @var type $v comment */ or just /* @var type comment */ $v = ...
-      // as we don't parse it now, save the next token to handle the second case later
-      if ((cur + 1)->type() == tok_var_name) {
-        phpdoc_var->next_var_name = static_cast<std::string>((cur + 1)->str_val);
+      auto inner_var = VertexAdaptor<op_var>::create().set_location(auto_location());
+      if (!tag_parsed.var_name.empty()) {
+        inner_var->str_val = tag_parsed.var_name;
+      } else if ((cur + 1)->type() == tok_var_name) {
+        inner_var->str_val = static_cast<std::string>((cur + 1)->str_val);
+      } else {
+        kphp_error(0, "@var with empty var name");
       }
+
+      auto phpdoc_var = VertexAdaptor<op_phpdoc_var>::create(inner_var).set_location(inner_var);
+      phpdoc_var->type_hint = tag_parsed.type_hint;
 
       result = result ? VertexPtr(VertexAdaptor<op_seq>::create(result, phpdoc_var)) : VertexPtr(phpdoc_var);
       cur_function->has_var_tags_inside = true;
@@ -1496,7 +1515,7 @@ VertexAdaptor<op_function> GenTree::get_function(bool is_lambda, const PhpDocCom
     }
   }
 
-  auto func_root = VertexAdaptor<op_function>::create(VertexAdaptor<op_func_param_list>{}, VertexAdaptor<op_seq>{}).set_location(func_location);
+  auto func_root = VertexAdaptor<op_function>::create(VertexAdaptor<op_func_param_list>::create(), VertexAdaptor<op_seq>::create()).set_location(func_location);
   FunctionData::func_type_t func_type = is_lambda ? FunctionData::func_lambda : processing_file->is_builtin() ? FunctionData::func_extern : FunctionData::func_local;
 
   StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(func_name, func_root, func_type));
@@ -1505,6 +1524,15 @@ VertexAdaptor<op_function> GenTree::get_function(bool is_lambda, const PhpDocCom
 
   if (is_lambda) {
     cur_function->outer_function = functions_stack[functions_stack.size() - 2];
+  }
+
+  // we parse @kphp-generic here, in gentree, not in ParseAndApplyPhpdocF pipe,
+  // because when all @param/@var will be parsed in parallel, we already should know what classes/functions are generic
+  // in other words, we treat <T> in declaration as a language syntax, which is expressed in phpdoc only due to PHP limitations
+  // this also helps parse /*<T>*/ in a function body (and in inner lambdas) in gentree, able to differ class T vs generic T
+  if (phpdoc && phpdoc->has_tag(PhpDocType::kphp_generic)) {
+    stage::set_location(Location{cur_function->file_id, cur_function, func_location.line});
+    cur_function->genericTs = GenericsDeclarationMixin::create_for_function_from_phpdoc(cur_function, phpdoc);
   }
 
   CE(cur_function->root->param_list_ref() = parse_cur_function_param_list());
@@ -1650,6 +1678,11 @@ VertexPtr GenTree::get_class(const PhpDocComment *phpdoc, ClassType class_type) 
   if (cur_class->is_interface()) {
     cur_class->modifiers.set_abstract();
   }
+  // @kphp-generic should be applied in gentree, even before parsing extends, see comment for functions
+  if (phpdoc && phpdoc->has_tag(PhpDocType::kphp_generic)) {
+    kphp_error(0, "@kphp-generic for classes is unsupported yet");
+  }
+
   parse_extends_implements();
 
   auto name_vertex = VertexAdaptor<op_func_name>::create().set_location(auto_location());
@@ -1727,10 +1760,11 @@ VertexPtr GenTree::process_arrow(VertexPtr lhs, VertexPtr rhs) {
     inst_prop->str_val = rhs->get_string();
     return inst_prop;
 
-  } else if (rhs->type() == op_func_call) {
-    auto new_root = VertexAdaptor<op_func_call>::create(lhs, rhs.as<op_func_call>()->args());
+  } else if (auto as_func_call = rhs.try_as<op_func_call>()) {
+    auto new_root = VertexAdaptor<op_func_call>::create(lhs, as_func_call->args());
     new_root->extra_type = op_ex_func_call_arrow;
-    new_root->str_val = rhs->get_string();
+    new_root->str_val = as_func_call->str_val;
+    new_root->reifiedTs = as_func_call->reifiedTs;
     return new_root;
 
   } else {
@@ -1896,12 +1930,35 @@ const TypeHint *GenTree::get_typehint() {
   }
 
   try {
-    PhpDocTypeHintParser parser(cur_function);
+    PhpDocTypeHintParser parser(cur_function, cur_function->get_this_or_topmost_if_lambda()->genericTs);
     return parser.parse_from_tokens(cur);
   } catch (std::runtime_error &) {
     kphp_error(0, "Cannot parse type hint");
     return {};
   }
+}
+
+// parse a php comment like /*<int, A>*/ or /*<T>*/ which expresses manual types for generic instantiation
+GenericsInstantiationPhpComment *GenTree::parse_php_commentTs(vk::string_view str_commentTs) {
+  PhpDocTypeHintParser parser(cur_function, cur_function->get_this_or_topmost_if_lambda()->genericTs);
+  std::vector<Token> doc_tokens = phpdoc_to_tokens(str_commentTs);
+  std::vector<const TypeHint *> vectorTs;
+  auto cur_tok = doc_tokens.cbegin();
+
+  while (cur_tok != doc_tokens.cend() && cur_tok->type() != tok_end) {
+    const TypeHint *instantiationT = nullptr;
+    try {
+      instantiationT = parser.parse_from_tokens(cur_tok);
+    } catch (std::runtime_error &ex) {
+      kphp_error_act(0, fmt_format("Could not parse generic instantiation comment: {}", ex.what()), return nullptr);
+    }
+
+    kphp_error_act(cur_tok->type() == tok_comma || cur_tok->type() == tok_end, "expected ','", return nullptr);
+    cur_tok++;
+    vectorTs.emplace_back(instantiationT);
+  }
+
+  return new GenericsInstantiationPhpComment(vectorTs);
 }
 
 VertexAdaptor<op_catch> GenTree::get_catch() {

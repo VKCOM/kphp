@@ -60,7 +60,7 @@ public:
   bool tl_common_h_dep = false;
 
   // for lambdas: a function that contains this lambda ($this is captured from outer_function, it can also be a lambda on nesting)
-  // for template instantiations: refs to an original (a template) function
+  // for generic instantiations: refs to an original (a generic) function
   // for __invoke method of a lambda: refs to a lambda function that's called from this __invoke
   FunctionPtr outer_function;
 
@@ -75,8 +75,15 @@ public:
   std::forward_list<std::pair<std::string, Assumption>> assumptions_for_vars;   // (var_name, assumption)[]
   Assumption assumption_for_return;
 
-  vk::copyable_atomic<AssumptionStatus> assumption_return_status{AssumptionStatus::unknown};
-  vk::copyable_atomic<std::thread::id> assumption_return_processing_thread{std::thread::id{}};
+  enum class AssumptionStatus {
+    uninitialized,
+    processing_deduce_pass,
+    done_deduce_pass,
+    processing_returns_in_body,
+    done_returns_in_body
+  };
+  vk::copyable_atomic<AssumptionStatus> assumption_pass_status{AssumptionStatus::uninitialized};
+  vk::copyable_atomic<std::thread::id> assumption_processing_thread{std::thread::id{}};
 
   std::string src_name, header_name;
   std::string subdir;
@@ -108,7 +115,8 @@ public:
   bool is_overridden_method = false;
   bool is_no_return = false;
   bool has_lambdas_inside = false;      // used for optimization after cloning (not to launch CloneNestedLambdasPass)
-  bool has_var_tags_inside = false;     // used for optimization (not to traverse body when applying phpdoc if no @var inside)
+  bool has_var_tags_inside = false;     // used for optimization (not to traverse body if no @var inside)
+  bool has_commentTs_inside = false;    // used for optimization (not to traverse body if no /*<...>*/ inside)
   bool warn_unused_result = false;
   bool is_flatten = false;
   bool is_pure = false;
@@ -130,12 +138,12 @@ public:
   PerformanceInspections performance_inspections_for_warning;
   std::forward_list<FunctionPtr> performance_inspections_for_warning_parents;
 
-  // non-null for template functions, e.g. f<T> (somewhen they will be called "generics functions")
-  // describes @kphp-template, @kphp-param and @kphp-return
-  GenericsDeclarationMixin *generics_declaration{nullptr};
-  // non-null for instantiations of template functions, e.g. f<User>
-  // describes a mapping between generics (T) and actual instantiation types (User)
-  GenericsInstantiationMixin *generics_instantiation{nullptr};
+  // non-null for generic functions, e.g. f<T> or g<T1, T2>
+  // describes what's actually written in @kphp-generic: that f has T, probably with extends_hint
+  GenericsDeclarationMixin *genericTs{nullptr};
+  // non-null for instantiations of generic functions, e.g. f<User>
+  // describes a mapping between generic types (T) and actual instantiation types (User)
+  GenericsInstantiationMixin *instantiationTs{nullptr};
 
   ClassPtr class_id;
   ClassPtr context_class;
@@ -175,13 +183,12 @@ public:
     return type == func_lambda;
   }
 
-  // somewhen, will be renamed to is_generics(), when real generics functions are implemented; for now, we call them "template functions"
-  bool is_template() const {
-    return generics_declaration != nullptr;
+  bool is_generic() const {
+    return genericTs != nullptr;
   }
 
-  bool is_instantiation_of_template_function() const {
-    return generics_instantiation != nullptr;
+  bool is_instantiation_of_generic_function() const {
+    return instantiationTs != nullptr;
   }
 
   bool is_constructor() const;

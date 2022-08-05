@@ -4,10 +4,13 @@ require_once 'kphp_tester_include.php';
 
 class BB {
     public ?Classes\F $f = null;
+    /** @var ?Classes\KeywordAsFieldName */
+    private $k = null;
 
     function f() {
         if ($this->f) $this->f->appendInt(1);
         else echo "f null\n";
+        if ($this->k) $this->k->int++;
     }
 }
 
