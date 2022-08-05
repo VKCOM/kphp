@@ -243,6 +243,17 @@ void LexerData::hack_last_tokens() {
   if (are_last_tokens(tok_function, tok_var_dump) || are_last_tokens(tok_function, tok_dbg_echo) || are_last_tokens(tok_function, tok_print) || are_last_tokens(tok_function, tok_echo)) {
     tokens.back() = {tok_func_name, tokens.back().str_val};
   }
+
+  // recognize leading slash for define/defined;
+  // similar logic has already implemented for regular functions
+  if (are_last_tokens(tok_func_name)) {
+    auto name = tokens.back().str_val;
+    if (name == "\\define") {
+      tokens.back() = {tok_define, name};
+    } else if (name == "\\defined") {
+      tokens.back() = {tok_defined, name};
+    }
+  }
 }
 
 void LexerData::set_dont_hack_last_tokens() {
