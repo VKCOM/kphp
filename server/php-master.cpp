@@ -596,6 +596,11 @@ int run_worker(WorkerType worker_type) {
     pid = getpid();
 
     master_sfd = -1;
+    if (worker_type == WorkerType::general_worker) {
+      process_type = ProcessType::general_worker;
+    } else {
+      process_type = ProcessType::job_worker;
+    }
 
     for (int i = 0; i < allocated_targets; i++) {
       while (Targets[i].refcnt > 0) {
