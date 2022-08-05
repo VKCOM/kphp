@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_FFI=1
 /pass cdata\$test\\Foo to argument/
 /declared as @param cdata\$test\\Bar/
 <?php

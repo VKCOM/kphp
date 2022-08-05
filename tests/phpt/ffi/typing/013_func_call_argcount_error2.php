@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_FFI=1
 /Too few arguments to function call, expected 2, have 1/
 <?php
 

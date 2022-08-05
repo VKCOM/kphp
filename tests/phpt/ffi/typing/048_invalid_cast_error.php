@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_FFI=1
 /Could not find class/
 <?php
 

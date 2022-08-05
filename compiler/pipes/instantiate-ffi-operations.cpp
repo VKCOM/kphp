@@ -259,11 +259,6 @@ static InferResult infer_from_scope_cast(FunctionPtr f, VertexAdaptor<op_func_ca
   return {ffi_cast_impl(type, from_type, scope_class), type_expr.size_expr};
 }
 
-// todo some time later, drop the --enable-ffi flag, enable it always
-bool InstantiateFFIOperationsPass::check_function(FunctionPtr f __attribute__((unused))) const {
-  return G->settings().ffi_enabled.get();
-}
-
 static VertexAdaptor<op_ffi_new> create_ffi_new(const InferResult &infer_result) {
   VertexPtr size_expr;
   if (infer_result.size_expr) {

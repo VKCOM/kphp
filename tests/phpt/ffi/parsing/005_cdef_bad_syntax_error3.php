@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_FFI=1
 /FFI::cdef\(\): line 3: syntax error, unexpected IDENTIFIER/
 <?php
 

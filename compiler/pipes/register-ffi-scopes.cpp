@@ -292,10 +292,8 @@ VertexPtr RegisterFFIScopes::on_exit_vertex(VertexPtr root) {
 }
 
 void RegisterFFIScopesF::execute(FunctionPtr f, DataStream<FunctionPtr> &os) {
-  if (G->settings().ffi_enabled.get()) {
-    RegisterFFIScopes pass{os};
-    pass.setup(f);
-    run_function_pass(f->root, &pass);
-  }
+  RegisterFFIScopes pass{os};
+  pass.setup(f);
+  run_function_pass(f->root, &pass);
   os << f;
 }

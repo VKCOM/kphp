@@ -52,9 +52,7 @@ class TestFFI(KphpCompilerAutoTestCase):
             ('opcache.preload', os.path.join(self.test_dir, 'php', 'preload.php')),
         ]
         self.assertTrue(once_runner.run_with_php(php_options), "Got PHP error")
-        self.assertTrue(once_runner.compile_with_kphp({
-            'KPHP_ENABLE_FFI': '1',
-        }))
+        self.assertTrue(once_runner.compile_with_kphp({}))
         self.assertTrue(once_runner.run_with_kphp(), "Got KPHP runtime error")
         self.assertTrue(once_runner.compare_php_and_kphp_stdout(), "Got PHP and KPHP diff")
 

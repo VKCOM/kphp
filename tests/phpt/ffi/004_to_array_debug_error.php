@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_FFI=1
 /Called to_array_debug\(\) with CData/
 <?php
 

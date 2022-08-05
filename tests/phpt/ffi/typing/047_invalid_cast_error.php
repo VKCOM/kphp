@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_FFI=1
 /FFI::cast\(\): line 1: syntax error/
 <?php
 

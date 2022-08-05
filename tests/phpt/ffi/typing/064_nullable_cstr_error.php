@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_FFI=1
 /pass \?string to argument \$s of ensure_string/
 <?php
 

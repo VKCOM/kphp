@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_FFI=1
 /casting a non-scalar type struct Foo to a scalar type int32_t/
 <?php
 

@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_FFI=1
 /Invalid php2c conversion: FFI\\CData_int8\* -> int8_t\*\*/
 <?php
 

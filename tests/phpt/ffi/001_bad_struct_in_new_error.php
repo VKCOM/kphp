@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_FFI=1
 /ffi->new\(\): line 1: syntax error, unexpected IDENTIFIER/
 <?php
 

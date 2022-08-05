@@ -30,8 +30,6 @@ public:
     return "Instrument the code that uses FFI operations";
   }
 
-  bool check_function(FunctionPtr f) const override;
-
   VertexPtr on_enter_vertex(VertexPtr v) override;
   VertexPtr on_exit_vertex(VertexPtr v) override;
 
