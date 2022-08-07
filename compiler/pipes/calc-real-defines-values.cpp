@@ -44,7 +44,10 @@ void CalcRealDefinesAndAssignModulitesF::execute(FunctionPtr f, DataStream<Funct
     f->class_id->modulite = f->file_id->dir->nested_files_modulite;
   }
 
-  f->modulite = f->file_id->dir->nested_files_modulite;
+  // not just f->file_id, because if f = (method cloned from trait), then f->file_id = (file with trait)
+  // but we need a file of a containing class, since a trait might be imported from another modulite
+  SrcFilePtr file_id = f->modifiers.is_nonmember() ? f->file_id : f->class_id->file_id;
+  f->modulite = file_id->dir->nested_files_modulite;
 
   Base::execute(f, unused_os);
 }

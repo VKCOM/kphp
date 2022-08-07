@@ -1,0 +1,10 @@
+name: "@parent"
+namespace: ""
+
+export:
+  - "ParentFuncs"
+
+force-internal:
+
+require:
+  - "@parent/child1/child2/child3"

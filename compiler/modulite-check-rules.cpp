@@ -33,9 +33,10 @@
 
 
 static bool does_allow_internal_rule_satisfy_usage_context(FunctionPtr usage_context, const ModuliteSymbol &rule) {
-  return (rule.kind == ModuliteSymbol::kind_function && rule.function == usage_context) ||
-         (rule.kind == ModuliteSymbol::kind_klass && rule.klass == usage_context->class_id) ||
-         (rule.kind == ModuliteSymbol::kind_modulite && rule.modulite == usage_context->modulite);
+  const FunctionData *outer = usage_context->get_this_or_topmost_if_lambda();
+  return (rule.kind == ModuliteSymbol::kind_function && rule.function.operator->() == outer) ||
+         (rule.kind == ModuliteSymbol::kind_klass && rule.klass == outer->class_id) ||
+         (rule.kind == ModuliteSymbol::kind_modulite && rule.modulite == outer->modulite);
 }
 
 static inline bool is_env_modulite_enabled() {

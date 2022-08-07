@@ -1,0 +1,11 @@
+name: "@utils"
+namespace: "Algo101\\"
+
+export:
+  "asdf":
+    - ""
+
+require: "asdf"
+
+allow-internal-access:
+  - "Algo101"

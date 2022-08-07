@@ -381,10 +381,7 @@ void ModuliteData::resolve_names_to_pointers() {
 
   // append this (inside_m) to submodulites_exported_at_any_depth all the tree up
   for (ModulitePtr child = inside_m; child->parent; child = child->parent) {
-    bool child_is_exported = vk::any_of(child->parent->exports, [child](const ModuliteSymbol &e) {
-      return e.kind == ModuliteSymbol::kind_modulite && e.modulite == child;
-    });
-    if (!child_is_exported) {
+    if (!child->is_exported_from_parent()) {
       break;
     }
     child->parent->submodulites_exported_at_any_depth.emplace_back(inside_m);
@@ -399,16 +396,27 @@ void ModuliteData::validate_yaml_requires() {
       // @msg requires @feed or @some/another
       // valid: @feed has no parent or @some/another is exported from @some
       // invalid: it's not exported (same with longer chains, e.g. @p/c1/c2/c3, but @p/c1/c2 not exported from @p/c1)
+      // valid: @api requires @api/internal, @msg/channels/infra requires @msg/internal (because they are scoped by lca)
       ModulitePtr another_m = r.modulite;
-      // valid: @api requires @api/internal, @msg/channels requires @msg/internal (because they are scoped by lca)
-      ModulitePtr common_lca_parent = inside_m->find_lca_with(another_m);
-
       if (inside_m == another_m) {
         fire_yaml_error(inside_m, fmt_format("a modulite lists itself in 'require': {}", inside_m->modulite_name), r.line);
       }
-      for (ModulitePtr child = another_m; child->parent && child != common_lca_parent; child = child->parent) {
-        bool in_same_direct_parent = inside_m == common_lca_parent || inside_m->parent == common_lca_parent;
-        if (!in_same_direct_parent && !vk::contains(child->parent->submodulites_exported_at_any_depth, child)) {
+
+      ModulitePtr common_lca_parent = inside_m->find_lca_with(another_m);
+      for (ModulitePtr child = another_m; child->parent != common_lca_parent; child = child->parent) {
+        if (!child->is_exported_from_parent()) {
+          // valid: even if @some/another is not exported, but mentioned in "allow-internal-access" for @msg in @some
+          ModulitePtr cur_parent = child->parent;
+          if (cur_parent) {
+            auto it_this = std::find_if(cur_parent->allow_internal.begin(), cur_parent->allow_internal.end(),
+                                        [inside_m](const auto &p) { return p.first.kind == ModuliteSymbol::kind_modulite && p.first.modulite == inside_m; });
+            if (it_this != cur_parent->allow_internal.end()) {
+              bool lists_cur = vk::any_of(it_this->second, [child](const ModuliteSymbol &s) { return s.kind == ModuliteSymbol::kind_modulite && s.modulite == child; });
+              if (lists_cur) {
+                continue;
+              }
+            }
+          }
           fire_yaml_error(inside_m, fmt_format("can't require {}: {} is internal in {}", another_m->modulite_name, child->modulite_name, child->parent->modulite_name), r.line);
         }
       }
@@ -464,9 +472,12 @@ void ModuliteData::validate_yaml_force_internal() {
       }
     }
 
-    if (fi.kind == ModuliteSymbol::kind_modulite) {
-      // @msg force internals @msg/channels or #vk/common
-      fire_yaml_error(inside_m, "'force-internal' contains a symbol that can't be listed here", fi.line);
+    bool is_allowed = (fi.kind == ModuliteSymbol::kind_constant && fi.constant->class_id)
+                      || (fi.kind == ModuliteSymbol::kind_function && fi.function->class_id)
+                      || (fi.kind == ModuliteSymbol::kind_global_var && fi.global_var.find("$$") != std::string::npos);
+    if (!is_allowed) {
+      // @msg force internals @msg/channels or #vk/common or SomeClass
+      fire_yaml_error(inside_m, "'force-internal' can contain only class members", fi.line);
     } else {
       // @msg force internals A::someMethod() / A::CONST / etc.
       // valid: it belongs to @msg

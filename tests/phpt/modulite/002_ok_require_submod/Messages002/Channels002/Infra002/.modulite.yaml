@@ -1,0 +1,12 @@
+name: "@msg/channels/infra"
+namespace: "Messages002\\Channels002\\Infra002\\"
+
+export:
+  - "Infra002"
+
+force-internal:
+
+require:
+  - "@msg"
+  - "@msg/channels"
+  - "@msg/core"

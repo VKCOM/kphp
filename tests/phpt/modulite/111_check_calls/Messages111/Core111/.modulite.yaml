@@ -1,0 +1,10 @@
+name: "@msg/core"
+namespace: "\\Messages111\\Core111"
+
+export:
+  - "Core111"
+
+force-internal:
+
+require:
+

@@ -1,0 +1,10 @@
+name: "@msg"
+namespace: "\\Messages111"
+
+export:
+  - "User111"
+
+force-internal:
+
+require:
+

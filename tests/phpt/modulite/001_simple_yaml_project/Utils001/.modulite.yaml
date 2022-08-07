@@ -1,0 +1,9 @@
+name: "@utils"
+namespace: "Utils001\\"
+
+export:
+  - "Strings001"
+
+require:
+  - "\\GlobalCl::globalMethod()"
+

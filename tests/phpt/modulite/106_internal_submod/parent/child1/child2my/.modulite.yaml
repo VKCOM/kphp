@@ -1,0 +1,9 @@
+name: "@parent/child1/child2my"
+namespace: ""
+
+export:
+  - "Child2My"
+
+force-internal:
+
+require:

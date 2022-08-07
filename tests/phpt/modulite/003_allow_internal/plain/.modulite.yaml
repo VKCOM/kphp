@@ -1,0 +1,23 @@
+name: "@plain"
+namespace: ""
+
+export:
+  - "plainPublic1()"
+  - "plainPublic2()"
+  - "PLAIN_CONST_PUB"
+
+force-internal:
+
+require:
+  - "@utils"
+
+allow-internal-access:
+  "@feed":
+    - "plainHidden1()"
+  "\\Feed003\\Post003":
+    - "plainHidden2()"
+  "\\globalDemo()":
+    - "plainHidden1()"
+    - "plainHidden2()"
+    - "PLAIN_CONST_HID"
+

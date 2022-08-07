@@ -1,0 +1,10 @@
+name: "@msg/core"
+namespace: "Messages002\\Core002\\"
+
+export:
+  - "Core002"
+
+force-internal:
+
+require:
+  - "@msg/channels"

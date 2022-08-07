@@ -25,7 +25,7 @@
 
 void WaitForAllClassesAndLoadModulitesF::on_finish(DataStream<FunctionPtr> &os) {
   stage::die_if_global_errors();
-  SortAndInheritClassesF::check_on_finish(os);
+  SortAndInheritClassesF::check_on_finish(tmp_stream);
   stage::set_name("Register modulites");
   register_all_modulites();
   Base::on_finish(os);

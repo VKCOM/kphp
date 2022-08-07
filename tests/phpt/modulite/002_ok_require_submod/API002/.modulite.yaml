@@ -1,0 +1,11 @@
+name: "@api"
+namespace: "API002\\"
+
+export:
+  - "ApiCall"
+
+force-internal:
+
+require:
+  - "@api/impl"
+

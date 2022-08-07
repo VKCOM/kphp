@@ -1,0 +1,14 @@
+name: "@utils"
+namespace: "Utils104\\"
+
+export:
+  - "Strings104"
+  - "@algo"
+
+force-internal:
+  - "\\Utils104\\Strings104"
+  - "\\A::ONE"
+  - "@algo"
+
+require:
+

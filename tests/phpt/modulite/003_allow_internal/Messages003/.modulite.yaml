@@ -1,0 +1,17 @@
+name: "@msg"
+namespace: "\\Messages003"
+
+export:
+  - "User003"
+
+force-internal:
+
+require:
+  - "@feed"
+  - "@utils"
+  - "@plain"
+  - "@msg/core"
+
+allow-internal-access:
+  "@feed":
+    - "@msg/core"
