@@ -730,6 +730,8 @@ int server_read_write(struct connection *c) {
   c->flags |= C_INCONN;
 
   if (!c->interrupted && ev->epoll_ready & (EPOLLHUP | EPOLLERR | EPOLLRDHUP | EPOLLPRI)) {
+    //This condition handles a broken connection. If the connection was aborted inside
+    //the ignore_user_abort section, then fd is passed again to epoll with edge-triggered level
     if ((ev->epoll_ready & EPOLLIN) && (c->flags & C_WANTRD) && !(c->flags & (C_NORD | C_FAILED | C_STOPREAD))) {
       vkprintf(3, "reading buffered data from socket %d, before closing\n", c->fd);
       c->type->reader(c);
@@ -737,9 +739,9 @@ int server_read_write(struct connection *c) {
 
     vkprintf(1 + !(ev->epoll_ready & EPOLLPRI), "socket %d: disconnected (epoll_ready=%02x), cleaning\n", c->fd, ev->epoll_ready);
     if (c->ignored) {
-      c->interrupted = true;
-      c->flags &= ~C_WANTRW;
-      return EVT_SPEC;
+      c->interrupted = true; //Remember that the connection was cut off if script was inside the section ignore_user_abort
+      c->flags &= ~C_WANTRW; //Remove flags for re-adding event by using compute_conn_events() in the next calls as edge-triggered
+      return EVT_SPEC; //Adding with a special flag to add event as edge-triggered
     } else {
       force_clear_connection(c);
       return EVA_DESTROY;
@@ -856,6 +858,7 @@ int server_read_write(struct connection *c) {
     vkprintf(1, "socket %d: closing and cleaning (error code=%d)\n", c->fd, c->error);
 
     if (c->interrupted) {
+      //Called if the connection was aborted while the script was inside the ignore_user_abort section and the script passed it.
       force_clear_connection(c);
     } else {
       if (c->status != conn_connecting) {
