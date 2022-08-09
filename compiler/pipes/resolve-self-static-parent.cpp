@@ -128,7 +128,7 @@ void ResolveSelfStaticParentPass::check_access_to_class_from_this_file(const std
     kphp_error(ref_class && ref_class->derived_classes.empty(),
                "Using 'static' is prohibited from instance methods when a class has derived classes.\nEither use 'self', or modify your code to use '$this->' func calls.");
   }
-  if (ref_class && !ref_class->can_be_php_autoloaded) {
+  if (ref_class && !ref_class->can_be_php_autoloaded && !ref_class->file_id->is_loaded_by_psr0) {
     // todo temporary allow direct using tl _result classes for vkcom; roll back after switching to long ID
     kphp_error(ref_class->file_id == current_function->file_id || current_function->is_virtual_method || (ref_class->phpdoc && ref_class->phpdoc->has_tag(PhpDocType::kphp_tl_class)),
                fmt_format("Class {} can be accessed only from file {}, as it is not autoloadable",
