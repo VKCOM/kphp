@@ -107,5 +107,5 @@ def search_php_bin(php8_require=False):
     if sys.platform == "darwin":
         return shutil.which("php")
     if php8_require:
-        return shutil.which("php8.0")
+        return shutil.which("php8.1") or shutil.which("php8")
     return shutil.which("php7.4")

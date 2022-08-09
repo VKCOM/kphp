@@ -220,6 +220,8 @@ void f$array_reserve_from(array<T1> &a, const array<T2> &base);
 template<class T>
 bool f$array_is_vector(const array<T> &a);
 
+template<class T>
+bool f$array_is_list(const array<T> &a);
 
 array<mixed> f$range(const mixed &from, const mixed &to, int64_t step = 1);
 
@@ -1269,6 +1271,14 @@ void f$array_reserve_from(array<T1> &a, const array<T2> &base) {
 template<class T>
 bool f$array_is_vector(const array<T> &a) {
   return a.is_vector();
+}
+
+template<class T>
+bool f$array_is_list(const array<T> &a) {
+  // is_vector() is fast, but not enough;
+  // is_pseudo_vector() doesn't cover is_vector() case,
+  // so we need to call both of them to get the precise and PHP-compatible answer
+  return a.is_vector() || a.is_pseudo_vector();
 }
 
 
