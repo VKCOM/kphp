@@ -332,6 +332,14 @@ array<string> f$headers_list() {
   return result;
 }
 
+void f$send_http_103_early_hints(const array<string> & headers) {
+  string header("HTTP/1.1 103 Early Hints\r\n");
+  for (const auto & h : headers) {
+    header.append(h.get_value().c_str()).append("\r\n");
+  }
+  http_send_immediate_response(header.c_str(), header.size(), "\r\n", 2);
+}
+
 void f$setrawcookie(const string &name, const string &value, int64_t expire, const string &path, const string &domain, bool secure, bool http_only) {
   string date = f$gmdate(HTTP_DATE, expire);
 

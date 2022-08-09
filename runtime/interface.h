@@ -44,6 +44,8 @@ void f$header(const string &str, bool replace = true, int64_t http_response_code
 
 array<string> f$headers_list();
 
+void f$send_http_103_early_hints(const array<string> & headers);
+
 void f$setcookie(const string &name, const string &value, int64_t expire = 0, const string &path = string(), const string &domain = string(), bool secure = false, bool http_only = false);
 
 void f$setrawcookie(const string &name, const string &value, int64_t expire = 0, const string &path = string(), const string &domain = string(), bool secure = false, bool http_only = false);

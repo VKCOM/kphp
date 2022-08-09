@@ -4,6 +4,23 @@ import socket
 
 from .colors import blue
 
+class RawResponse:
+    def __init__(self, raw_bytes):
+        self.raw_bytes = raw_bytes
+        head, _, body = raw_bytes.partition(b"\r\n\r\n")
+
+        first_line, _, headers_data = head.partition(b"\r\n")
+        self.method, _, status = first_line.partition(b' ')
+        status_code, _, status_line = status.partition(b' ')
+        self.status_code = int(status_code)
+        self.reason = status_line
+        self.headers = {}
+        self.content = body
+
+        for i in headers_data.splitlines():
+            k, v = i.split(b': ')
+            self.headers[k.decode()] = v.decode()
+
 
 def send_http_request(port, uri='/', method='GET', **kwargs):
     session = requests.session()
@@ -45,21 +62,4 @@ def send_http_request_raw(port, request):
     print(*response_bytes.splitlines(True), sep="\n")
     print("=============================")
 
-    class _RawResponse:
-        def __init__(self, raw_bytes):
-            self.raw_bytes = raw_bytes
-            head, _, body = raw_bytes.partition(b"\r\n\r\n")
-
-            first_line, _, headers_data = head.partition(b"\r\n")
-            self.method, _, status = first_line.partition(b' ')
-            status_code, _, status_line = status.partition(b' ')
-            self.status_code = int(status_code)
-            self.reason = status_line
-            self.headers = {}
-            self.content = body
-
-            for i in headers_data.splitlines():
-                k, v = i.split(b': ')
-                self.headers[k.decode()] = v.decode()
-
-    return _RawResponse(response_bytes)
+    return RawResponse(response_bytes)
