@@ -1,0 +1,14 @@
+{
+    "name": "vk/ads",
+    "version": "1.0.0",
+    "autoload": {
+        "psr-0": {
+            "VK\\Ads\\": "src",
+            "MultiDir\\": [
+                "multi1/src/",
+                "multi2/src/"
+            ],
+            "": "fallback"
+        }
+    }
+}

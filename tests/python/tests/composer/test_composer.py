@@ -14,6 +14,13 @@ class TestComposer(KphpCompilerAutoTestCase):
                 "KPHP_COMPOSER_AUTOLOAD_DEV": "1",
             })
 
+    def test_psr0_class_loading(self):
+        self.build_and_compare_with_php(
+            php_script_path="php/test_autoload_psr0/index.php",
+            kphp_env={
+                "KPHP_COMPOSER_ROOT": os.path.join(self.test_dir, "php/test_autoload_psr0")
+            })
+
     def test_psr4_class_loading_no_dev(self):
         once_runner = self.make_kphp_once_runner("php/index.php")
         # tests/ are not registered in autoloader if we're not using -composer-autoload-dev
