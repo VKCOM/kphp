@@ -1,0 +1,7 @@
+name: "<composer_root>"
+namespace: "VK\\Strings\\"
+
+export:
+  # empty for composer packages means "by default" (e.g. all public symbols)
+  # (but if any element is set, it means a manually provided export list)
+require:

@@ -1,0 +1,15 @@
+{
+  "name": "vk/engines",
+  "version": "0.0.1",
+  "type": "library",
+  "autoload": {
+    "psr-4": {
+      "Engines\\": "src/"
+    },
+    "files": [
+      "eng-ping.php"
+    ]
+  },
+  "require": {
+  }
+}

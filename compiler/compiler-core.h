@@ -34,8 +34,9 @@ private:
   TSHashTable<ClassPtr> classes_ht;
   TSHashTable<DefinePtr> defines_ht;
   TSHashTable<VarPtr> global_vars_ht;
-  TSHashTable<LibPtr> libs_ht;
-  TSHashTable<ModulitePtr> modulites_ht;
+  TSHashTable<LibPtr, 1000> libs_ht;
+  TSHashTable<ModulitePtr, 1000> modulites_ht;
+  TSHashTable<ComposerJsonPtr, 1000> composer_json_ht;
   SrcFilePtr main_file;
   CompilerSettings *settings_;
   ComposerAutoloader composer_class_loader;
@@ -88,9 +89,12 @@ public:
   bool register_class(ClassPtr cur_class);
   LibPtr register_lib(LibPtr lib);
   ModulitePtr register_modulite(ModulitePtr modulite);
+  ComposerJsonPtr register_composer_json(ComposerJsonPtr composer_json);
 
   FunctionPtr get_function(const std::string &name);
   ModulitePtr get_modulite(vk::string_view name);
+  ComposerJsonPtr get_composer_json(vk::string_view name);
+  ComposerJsonPtr get_composer_json_at_dir(SrcDirPtr dir);
   ClassPtr get_class(vk::string_view name);
   ClassPtr get_memcache_class();
   void set_memcache_class(ClassPtr klass);

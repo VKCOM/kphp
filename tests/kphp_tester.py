@@ -102,12 +102,15 @@ def make_test_file(file_path, test_tmp_dir, test_tags):
             else:  # <?php
                 break
 
+        env_vars["KPHP_ENABLE_MODULITE"] = "1"
         return TestFile(file_path, test_tmp_dir, tags, env_vars, out_regexps, forbidden_regexps)
 
 
 def parse_env_var_from_test_header(file_path, line):
     env_name, env_value = line.split('=', 2)
-    # todo some placeholders in env_value? like {dir} for example
+    # placeholders in file header, e.g. KPHP_COMPOSER_ROOT={dir}
+    if "{" in env_value:
+        env_value = env_value.replace("{dir}", os.path.dirname(os.path.abspath(file_path)))
     return env_name, env_value
 
 

@@ -1,0 +1,9 @@
+name: "@utils/impl"
+namespace: "VK\\RPC\\Utils123\\Impl123"
+
+export:
+  - "HasherImpl123::calcHash()"
+  - "HasherImpl123::calc2()"
+
+require:
+  - "#vk/strings"

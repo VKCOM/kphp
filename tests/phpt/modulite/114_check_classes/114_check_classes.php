@@ -14,6 +14,8 @@ KPHP_ENABLE_MODULITE=1
 /restricted to use Feed114\\More114_4, it's internal in @feed/
 /static function demo\(\): \?Infra114\\Hidden114_2/
 /restricted to use Feed114\\Infra114\\Hidden114_2, it's internal in @feed\/infra/
+/\$object instanceof Glob114/
+/restricted to use Glob114::class, it's not required by @other/
 <?php
 
 \Feed114\Post114::demo();
@@ -21,6 +23,7 @@ KPHP_ENABLE_MODULITE=1
 
 require_once 'Other114/other114.php';
 other114(null, null);
+printGlob114(new Glob114);
 
 /** @var ?\Feed114\Infra114\Strings114 $an */
 $an = null;

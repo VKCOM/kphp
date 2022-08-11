@@ -48,7 +48,9 @@ public:
 
   vk::string_view get_line(int id);
 
-  bool is_builtin() const;
+  bool is_builtin() const { return is_from_functions_file || is_from_owner_lib(); }
+  bool is_from_owner_lib() const;
+
   std::string get_main_func_run_var_name() const;
   VertexPtr get_main_func_run_var() const;
 };

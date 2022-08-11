@@ -13,3 +13,9 @@ function other114($post, $infra) {
 
 function get114() {
 }
+
+function printGlob114($object) {
+    if ($object instanceof Glob114) {
+        $object->doSmth('printed');
+    }
+}

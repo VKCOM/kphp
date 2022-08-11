@@ -6,6 +6,7 @@
 #include "compiler/pipes/sort-and-inherit-classes.h"
 
 #include "compiler/compiler-core.h"
+#include "compiler/data/composer-json-data.h"
 #include "compiler/data/src-dir.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/modulite-data.h"
@@ -50,10 +51,29 @@ void WaitForAllClassesAndLoadModulitesF::register_all_modulites() {
     return d1->full_dir_name.size() < d2->full_dir_name.size();
   });
 
-  // 1) parse all existing .modulite.yaml files
+  // 1) all existing composer packages are implicit modulites "#vendorname/packagename" ("#" + json->name)
+  // for instance, if a modulite in a project calls a function from a package, it's auto checked to be required
+  // by default, all symbols from composer packages are exported ("exports" is empty, see modulite-check-rules.cpp)
+  // but if it contains .modulite.yaml near composer.json, that yaml can manually declared exported functions
+  for (SrcDirPtr dir : all_dirs) {
+    if (dir->has_composer_json) {
+      ComposerJsonPtr composer_json = G->get_composer_json_at_dir(dir);
+      kphp_assert(composer_json);
+      ModulitePtr modulite = ModuliteData::create_from_composer_json(composer_json, dir->has_modulite_yaml);
+
+      bool is_root = dir->full_dir_name == G->settings().composer_root.get();
+      if (is_root || !modulite) {  // composer.json at project root is loaded, but not stored as a modulite
+        continue;
+      }
+      G->register_modulite(modulite);
+      dir->nested_files_modulite = modulite;
+    }
+  }
+
+  // 2) parse all existing .modulite.yaml files
   // while parsing, cross-references like @another-m are not resolved, it will be done below
   for (SrcDirPtr dir : all_dirs) {
-    if (dir->has_modulite_yaml) {
+    if (dir->has_modulite_yaml && !dir->has_composer_json) {
       // find the dir up the tree with .modulite.yaml; say, dir contains @msg/channels, with_parent expected to be @msg
       SrcDirPtr with_parent = dir;
       while (with_parent && with_parent != dir_root && !with_parent->nested_files_modulite) {
@@ -62,7 +82,7 @@ void WaitForAllClassesAndLoadModulitesF::register_all_modulites() {
       ModulitePtr parent = with_parent ? with_parent->nested_files_modulite : ModulitePtr{};
 
       ModulitePtr modulite = ModuliteData::create_from_modulite_yaml(dir->get_modulite_yaml_filename(), parent);
-      if (!modulite->modulite_name.empty()) {   // no error while parsing yaml
+      if (modulite && !modulite->modulite_name.empty()) {   // no error while parsing yaml
         G->register_modulite(modulite);
         dir->nested_files_modulite = modulite;
       }
@@ -70,7 +90,7 @@ void WaitForAllClassesAndLoadModulitesF::register_all_modulites() {
   }
   stage::die_if_global_errors();  // on any parsing errors, they were printed using kphp_error, same below
 
-  // 2) resolve cross-references like @msg in "export"/"requires"/etc.
+  // 3) resolve cross-references like @msg in "export"/"requires"/etc.
   for (SrcDirPtr dir : all_dirs) {
     if (dir->nested_files_modulite) {
       ModulitePtr modulite = dir->nested_files_modulite;
@@ -79,7 +99,7 @@ void WaitForAllClassesAndLoadModulitesF::register_all_modulites() {
   }
   stage::die_if_global_errors();
 
-  // 3) propagate dir->modulite to child dirs unless a child dir is a modulite itself
+  // 4) propagate dir->modulite to child dirs unless a child dir is a modulite itself
   // - VK/Messages/                               it's @messages now
   //   - .modulite.yaml (@messages)
   //   - Core/                                    <-- assign @messages here
@@ -91,7 +111,7 @@ void WaitForAllClassesAndLoadModulitesF::register_all_modulites() {
     }
   }
 
-  // 4) validate symbols in yaml config like "export", check that child modulites are placed in expected dirs, etc.
+  // 5) validate symbols in yaml config like "export", check that child modulites are placed in expected dirs, etc.
   // we do this after knowing all dirs and subdirs (=> all files inside them), which modulites every file belongs to
   for (SrcDirPtr dir : all_dirs) {
     if (dir->nested_files_modulite && dir->nested_files_modulite->yaml_file->dir == dir) {

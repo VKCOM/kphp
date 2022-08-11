@@ -34,6 +34,7 @@ prepend(KPHP_COMPILER_MAKE_SOURCES make/
 prepend(KPHP_COMPILER_DATA_SOURCES data/
         class-data.cpp
         class-members.cpp
+        composer-json-data.cpp
         define-data.cpp
         function-data.cpp
         lib-data.cpp

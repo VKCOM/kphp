@@ -24,4 +24,8 @@ class Post111 {
         \Child3::child3Func();
         \Child3::hidden3Func();
     }
+
+    static function demoCallInternalGeneric() {
+        \Utils111\Strings111::hiddenGeneric([1,2,3]);
+    }
 }

@@ -4,127 +4,21 @@
 
 #include "compiler/composer.h"
 
-#include <yaml-cpp/yaml.h> // using YAML parser to handle JSON files
-
 #include "common/algorithms/contains.h"
 #include "common/wrappers/fmt_format.h"
+
+#include "compiler/compiler-core.h"
+#include "compiler/data/composer-json-data.h"
 #include "compiler/kphp_assert.h"
-#include "compiler/stage.h"
 
-namespace {
-bool file_exists(std::string_view filename) noexcept {
-  return access(filename.data(), F_OK) == 0;
+
+static bool file_exists(const std::string &filename) {
+  return access(filename.c_str(), F_OK) == 0;
 };
-
-std::string make_file_path(std::string_view pkg_root, std::string &&dir) {
-  if (dir.empty()) {
-    dir = "./"; // composer interprets "" as "./" or "."
-  }
-  std::replace(dir.begin(), dir.end(), '\\', '/');
-  // ensure that dir always ends with '/'
-  if (dir.back() != '/') {
-    dir.push_back('/');
-  }
-
-  return std::string{pkg_root} + "/" + std::move(dir);
-}
-
-class PsrLoader {
-public:
-  using Map = ComposerAutoloader::PsrMap;
-
-  PsrLoader(const YAML::Node &psr_section, Map &map, std::string_view pkg_root) noexcept:
-    psr_section_(psr_section),
-    map_(map),
-    pkg_root_(pkg_root) {}
-
-  void load();
-
-  virtual ~PsrLoader() = default;
-
-protected:
-  void load_entry_namespace(std::string &&namespace_str, std::string &&path) {
-    auto full_path = make_file_path(pkg_root_, std::move(path));
-    map_[std::move(namespace_str)].emplace_back(std::move(full_path));
-  }
-
-  static bool is_classname(std::string_view namespace_str) noexcept {
-    return !namespace_str.empty() && namespace_str.back() != '\\';
-  }
-
-  virtual void load_entry(std::string &&namespace_str, std::string &&path) = 0;
-
-  const YAML::Node psr_section_;
-  Map &map_;
-  std::string_view pkg_root_;
-};
-
-void PsrLoader::load() {
-  for (const auto &kv : psr_section_) {
-    if (kv.second.IsSequence()) {
-      for (const auto &dir : kv.second) {
-        load_entry(kv.first.as<std::string>(), dir.as<std::string>());
-      }
-    } else if (kv.second.IsScalar()) {
-      load_entry(kv.first.as<std::string>(), kv.second.as<std::string>());
-    } else {
-      kphp_error(false, fmt_format("load composer file {}/composer.json: invalid autoload psr item", pkg_root_));
-    }
-  }
-}
-
-class Psr4Loader : public PsrLoader {
-public:
-  Psr4Loader(const YAML::Node &autoload_section, Map &map, std::string_view pkg_root)
-    : PsrLoader(autoload_section["psr-4"], map, pkg_root) {}
-
-protected:
-  void load_entry(std::string &&namespace_str, std::string &&path) final {
-    kphp_error(!is_classname(namespace_str), fmt_format(
-      "load composer file {}/composer.json: namespace must ends with '\\' sign in psr-4", pkg_root_));
-    std::replace(namespace_str.begin(), namespace_str.end(), '\\', '/');
-    load_entry_namespace(std::move(namespace_str), std::move(path));
-  }
-};
-
-class Psr0Loader : public PsrLoader {
-public:
-  Psr0Loader(const YAML::Node &autoload_section, std::map<std::string, std::string> &classmap, Map &map, std::string_view pkg_root)
-    : PsrLoader(autoload_section["psr-0"], map, pkg_root)
-    , classmap_(classmap) {}
-
-protected:
-  void load_entry(std::string &&namespace_str, std::string &&path) final {
-    const bool classname = is_classname(namespace_str);
-    std::replace(namespace_str.begin(), namespace_str.end(), '\\', '/');
-
-    if (classname) {
-      load_entry_class(std::move(namespace_str), std::move(path));
-    } else {
-      load_entry_namespace(std::move(namespace_str), std::move(path) + "/" + namespace_str);
-    }
-  }
-
-private:
-  void load_entry_class(std::string &&namespace_str, std::string &&path) {
-    auto class_name = namespace_str;
-    auto last_slash = class_name.find_last_of('/');
-    auto begin = class_name.begin();
-    if (last_slash != std::string::npos) {
-      std::advance(begin, last_slash);
-    }
-    std::replace(begin, class_name.end(), '_', '/');
-    std::string file{pkg_root_};
-    file.append(1, '/').append(path).append(1, '/').append(class_name).append(".php");
-    classmap_.emplace(std::move(namespace_str), std::move(file));
-  }
-
-  std::map<std::string, std::string> &classmap_;
-};
-} // namespace
 
 std::string ComposerAutoloader::psr_lookup_nocache(const PsrMap &psr, const std::string &class_name, bool transform_underscore) {
   std::string prefix = class_name;
+
   // we start from a longest prefix and then try to match it
   // against the psr4/psr0 map; if there is no match, the last prefix
   // part is dropped and the process is repeated until we
@@ -215,6 +109,8 @@ void ComposerAutoloader::set_use_dev(bool v) {
 void ComposerAutoloader::load_root_file(const std::string &pkg_root) {
   kphp_assert(!pkg_root.empty() && pkg_root.back() == '/');
   kphp_assert(autoload_filename_.empty());
+  kphp_error_return(file_exists(pkg_root + "composer.json"), fmt_format("composer.json does not exist in --composer-root {}", pkg_root));
+
   autoload_filename_ = pkg_root + "vendor/autoload.php";
   load_file(pkg_root, true);
 }
@@ -274,52 +170,46 @@ void ComposerAutoloader::load_file(const std::string &pkg_root, bool is_root_fil
   //   }
   // }
 
-  auto filename = pkg_root + "/composer.json";
-
-  try {
-    YAML::Node root = YAML::LoadFile(filename);
-    auto name = root["name"];
-    bool require_autoload_files = is_root_file || (name && vk::contains(deps_, name.as<std::string>()));
-    if (auto autoload = root["autoload"]) {
-      add_autoload_section(autoload, pkg_root, require_autoload_files);
-    }
-    if (is_root_file) {
-      if (auto require = root["require"]) {
-        for (const auto &kv : require) {
-          deps_.insert(kv.first.as<std::string>());
-        }
-      }
-      auto require_dev = root["require-dev"];
-      if (require_dev && use_dev_) {
-        for (const auto &kv : require_dev) {
-          deps_.insert(kv.first.as<std::string>());
-        }
-      }
-    }
-    if (is_root_file && use_dev_) {
-      if (auto autoload_dev = root["autoload-dev"]) {
-        add_autoload_section(autoload_dev, pkg_root, require_autoload_files);
-      }
-    }
-  } catch (const std::exception &e) {
-    kphp_error(false, fmt_format("load composer file {}: {}", filename.c_str(), e.what()));
+  // loading composer.json does not throw exceptions
+  // on invalid json, in just fires kphp_error, but returns a valid pointer (probably, with empty package_name)
+  ComposerJsonPtr composer_json = ComposerJsonPtr(new ComposerJsonData(pkg_root + "/composer.json"));
+  if (!composer_json->package_name.empty()) {
+    G->register_composer_json(composer_json);
   }
-}
+//  printf("composer package %s in %s\n", composer_json->package_name.c_str(), pkg_root.c_str());
 
-void ComposerAutoloader::add_autoload_section(const YAML::Node &autoload, const std::string &pkg_root, bool require_files) {
-  // https://getcomposer.org/doc/04-schema.md#psr-4
-  Psr4Loader psr4_loader{autoload, autoload_psr4_, pkg_root};
-  psr4_loader.load();
+  // we handle "require/autoload/files" only in direct root deps, see https://github.com/VKCOM/kphp/pull/465
+  bool require_autoload_files = is_root_file || vk::contains(deps_, composer_json->package_name);
+  bool use_dev = is_root_file && use_dev_;
 
-  // https://getcomposer.org/doc/04-schema.md#psr-0
-  Psr0Loader psr0_loader{autoload, autoload_psr0_classmap_, autoload_psr0_, pkg_root};
-  psr0_loader.load();
+  for (const auto &autoload_file : composer_json->autoload_files) {
+    if (require_autoload_files && (!autoload_file.is_dev || use_dev)) {
+      files_to_require_.emplace_back(autoload_file.file_name);
+    }
+  }
 
-  if (require_files) {
-    // files that are required by the composer-generated autoload.php
-    // https://getcomposer.org/doc/04-schema.md#files
-    for (const auto &autoload_filename : autoload["files"]) {
-      files_to_require_.emplace_back(pkg_root + "/" + autoload_filename.as<std::string>());
+  for (const auto &autoload_psr0 : composer_json->autoload_psr0) {
+    if (!autoload_psr0.is_dev || use_dev) {
+      if (autoload_psr0.prefix_is_classname) {
+        kphp_assert(autoload_psr0.dirs.size() == 1);
+        autoload_psr0_classmap_[autoload_psr0.prefix] = autoload_psr0.dirs.front();
+      } else {
+        auto &at_prefix = autoload_psr0_[autoload_psr0.prefix];
+        at_prefix.insert(at_prefix.end(), autoload_psr0.dirs.begin(), autoload_psr0.dirs.end());
+      }
+    }
+  }
+
+  for (const auto &autoload_psr4 : composer_json->autoload_psr4) {
+    if (!autoload_psr4.is_dev || use_dev) {
+      auto &at_prefix = autoload_psr4_[autoload_psr4.prefix];
+      at_prefix.insert(at_prefix.end(), autoload_psr4.dirs.begin(), autoload_psr4.dirs.end());
+    }
+  }
+
+  for (const auto &require : composer_json->require) {
+    if (is_root_file && (!require.is_dev || use_dev)) {
+      deps_.insert(require.package_name);
     }
   }
 }

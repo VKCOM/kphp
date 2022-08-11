@@ -9,9 +9,8 @@
 
 #include "compiler/threading/locks.h"
 
-template<class T>
+template<class T, int N = 1000000>
 class TSHashTable {
-  static const int N = 1000000;
 public:
   struct HTNode : Lockable {
     unsigned long long hash;
@@ -26,20 +25,18 @@ public:
 private:
   HTNode *nodes;
   int used_size;
-  int nodes_size;
 public:
   TSHashTable() :
     nodes(new HTNode[N]),
-    used_size(0),
-    nodes_size(N) {
+    used_size(0) {
   }
 
   HTNode *at(unsigned long long hash) {
-    int i = (unsigned)hash % (unsigned)nodes_size;
+    int i = (unsigned)hash % (unsigned)N;
     while (true) {
       while (nodes[i].hash != 0 && nodes[i].hash != hash) {
         i++;
-        if (i == nodes_size) {
+        if (i == N) {
           i = 0;
         }
       }
@@ -54,10 +51,10 @@ public:
   }
 
   const T *find(unsigned long long hash) {
-    int i = (unsigned)hash % (unsigned)nodes_size;
+    int i = (unsigned)hash % (unsigned)N;
     while (nodes[i].hash != 0 && nodes[i].hash != hash) {
       i++;
-      if (i == nodes_size) {
+      if (i == N) {
         i = 0;
       }
     }

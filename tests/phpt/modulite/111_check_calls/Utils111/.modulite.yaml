@@ -7,6 +7,7 @@ export:
 force-internal:
   - "Strings111::hidden1()"
   - "Strings111::hidden2()"
+  - "Strings111::hiddenGeneric()"
 
 require:
   - "@feed"

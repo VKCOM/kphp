@@ -1,0 +1,21 @@
+{
+  "name": "vk/rpc",
+  "version": "0.0.1",
+  "type": "library",
+  "autoload": {
+    "psr-4": {
+      "VK\\RPC\\": "src/"
+    },
+    "files": [
+      "src/rpc_global.php"
+    ]
+  },
+  "require": {
+    "php": "^7 || ^8",
+    "vk/strings": "*"
+  },
+  "repositories": [{
+    "type": "path",
+    "url": "../vk-strings"
+  }]
+}

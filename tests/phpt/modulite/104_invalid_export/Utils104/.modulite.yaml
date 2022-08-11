@@ -4,6 +4,7 @@ namespace: "Utils104\\"
 export:
   - "Strings104"
   - "@algo"
+  - "@utils/inner/very"
 
 force-internal:
   - "\\Utils104\\Strings104"

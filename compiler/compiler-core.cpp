@@ -11,6 +11,7 @@
 #include "common/smart_ptrs/unique_ptr_with_delete_function.h"
 
 #include "compiler/const-manipulations.h"
+#include "compiler/data/composer-json-data.h"
 #include "compiler/data/ffi-data.h"
 #include "compiler/data/define-data.h"
 #include "compiler/data/function-data.h"
@@ -345,7 +346,7 @@ bool CompilerCore::register_class(ClassPtr cur_class) {
 }
 
 LibPtr CompilerCore::register_lib(LibPtr lib) {
-  TSHashTable<LibPtr>::HTNode *node = libs_ht.at(vk::std_hash(lib->lib_namespace()));
+  TSHashTable<LibPtr, 1000>::HTNode *node = libs_ht.at(vk::std_hash(lib->lib_namespace()));
   AutoLocker<Lockable *> locker(node);
   if (!node->data) {
     node->data = lib;
@@ -354,7 +355,7 @@ LibPtr CompilerCore::register_lib(LibPtr lib) {
 }
 
 ModulitePtr CompilerCore::register_modulite(ModulitePtr modulite) {
-  TSHashTable<ModulitePtr>::HTNode *node = modulites_ht.at(vk::std_hash(modulite->modulite_name));
+  TSHashTable<ModulitePtr, 1000>::HTNode *node = modulites_ht.at(vk::std_hash(modulite->modulite_name));
   AutoLocker<Lockable *> locker(node);
   kphp_error(!node->data, fmt_format("Duplicate modulite {}, declared in:\n- {}\n- {}", modulite->modulite_name, modulite->yaml_file->relative_file_name, node->data->yaml_file->relative_file_name));
   node->data = modulite;
@@ -364,6 +365,29 @@ ModulitePtr CompilerCore::register_modulite(ModulitePtr modulite) {
 ModulitePtr CompilerCore::get_modulite(vk::string_view name) {
   const auto *result = modulites_ht.find(vk::std_hash(name));
   return result ? *result : ModulitePtr{};
+}
+
+ComposerJsonPtr CompilerCore::register_composer_json(ComposerJsonPtr composer_json) {
+  TSHashTable<ComposerJsonPtr, 1000>::HTNode *node = composer_json_ht.at(vk::std_hash(composer_json->package_name));
+  AutoLocker<Lockable *> locker(node);
+  kphp_error(!node->data, fmt_format("Duplicate composer package {}, declared in:\n- {}\n- {}", composer_json->package_name, composer_json->json_file->relative_file_name, node->data->json_file->relative_file_name));
+  node->data = composer_json;
+  kphp_assert(composer_json->json_file->dir);
+  composer_json->json_file->dir->has_composer_json = true;
+  return node->data;
+}
+
+ComposerJsonPtr CompilerCore::get_composer_json(vk::string_view name) {
+  const auto *result = composer_json_ht.find(vk::std_hash(name));
+  return result ? *result : ComposerJsonPtr{};
+}
+
+ComposerJsonPtr CompilerCore::get_composer_json_at_dir(SrcDirPtr dir) {
+  std::vector<ComposerJsonPtr> at_dir = composer_json_ht.get_all_if([dir](ComposerJsonPtr j) {
+    return j->json_file->dir == dir;
+  });
+  kphp_assert(at_dir.size() < 2);
+  return at_dir.empty() ? ComposerJsonPtr{} : at_dir.front();
 }
 
 void CompilerCore::register_main_file(const std::string &file_name, DataStream<SrcFilePtr> &os) {
@@ -602,7 +626,6 @@ void CompilerCore::init_composer_class_loader() {
   }
 
   composer_class_loader.set_use_dev(settings().composer_autoload_dev.get());
-
   composer_class_loader.load_root_file(settings().composer_root.get());
 
   // We could traverse the composer file and collect all "repositories"
@@ -616,7 +639,7 @@ void CompilerCore::init_composer_class_loader() {
   std::string vendor = settings().composer_root.get() + "vendor";
   bool vendor_folder_exists = access(vendor.c_str(), F_OK) == 0;
   if (vendor_folder_exists) {
-    for (const auto &composer_root : find_composer_folders(vendor)) {
+    for (const std::string &composer_root : find_composer_folders(vendor)) {
       composer_class_loader.load_file(composer_root);
     }
   }

@@ -18,6 +18,11 @@ function callSend(Feed005\Send005\ISender $sender) {
     $sender->send();
 }
 
+function printCurDescInherit() {
+    \Common005\ErrBase005::printCurDesc();
+    \Feed005\ErrFeed005::printCurDesc();
+}
+
 RankImpl1::rank();
 RankImpl2::rank();
 RankImpl1::copyMe();
@@ -26,3 +31,7 @@ RankImpl2::copyMe();
 callSend(SenderFactory::createSender('email'));
 callSend(SenderFactory::createSender('sms'));
 
+printCurDescInherit();
+
+Common005\CallOthers005::accessGloDer();
+Common005\CallOthers005::accessMessage();

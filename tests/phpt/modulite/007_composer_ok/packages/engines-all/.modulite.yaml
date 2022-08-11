@@ -1,0 +1,10 @@
+name: "<composer_root>"
+namespace: "VK\\Messages\\"
+
+export:
+  - "@msg"
+  - "\\START_MODE"
+  - "\\pingAllEngines()"
+
+require:
+  - "\\MONOLITH_CONST"

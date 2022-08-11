@@ -20,6 +20,7 @@ public:
   std::string full_dir_name;
   SrcDirPtr parent_dir;
   bool has_modulite_yaml{false};
+  bool has_composer_json{false};
   ModulitePtr nested_files_modulite;
 
   std::string get_modulite_yaml_filename() const;

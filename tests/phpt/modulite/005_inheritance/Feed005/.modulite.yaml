@@ -11,4 +11,8 @@ export:
 force-internal:
 
 require:
+  - "@common"
 
+allow-internal-access:
+  "\\printCurDescInherit()":
+    - "ErrFeed005::printCurDesc()"

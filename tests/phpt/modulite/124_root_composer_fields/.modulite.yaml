@@ -1,0 +1,6 @@
+name: "<composer_root>"
+namespace: "\\"
+
+export:
+  
+require:

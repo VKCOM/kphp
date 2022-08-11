@@ -1,0 +1,15 @@
+name: "@common"
+namespace: "Common005"
+
+export:
+  - ErrBase005
+  - CallOthers005
+
+force-internal:
+
+require:
+  - "@messages"
+  - \GloDer005::STR
+  - \GloDer005::$COUNT
+  - \GloDer005::stF()
+  - \GloDer005::inF()

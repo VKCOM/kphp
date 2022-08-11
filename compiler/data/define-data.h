@@ -37,6 +37,8 @@ public:
 
   inline DefineType &type() { return type_; }
   std::string as_human_readable() const;
+
+  bool is_builtin() const;
 };
 
 // some operations can't contain define() expressions and they can be recursively skipped in FunctionPassBase;

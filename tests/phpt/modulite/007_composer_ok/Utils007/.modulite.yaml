@@ -1,0 +1,9 @@
+name: "@utils"
+namespace: ""
+
+export:
+  - "utilsSummarize()"
+
+require:
+  - "#vk/strings"
+  - "#vk/engines"
