@@ -7,6 +7,9 @@ KPHP_ENABLE_MODULITE=1
 /restricted to use Feed113\\Infra113\\Hidden113::\$HIDDEN_1, it's internal in @feed\/infra/
 /in other113/
 /restricted to use Feed113\\Post113::\$ONE, @feed is not required by @other/
+/restricted to use Feed113\\Impl113\\Impl113::\$impl_name, @feed\/impl is internal in @feed/
+/in Strings113::demo/
+/restricted to use Feed113\\Impl113\\Inner113\\Inner113::\$inner_name, @feed\/impl\/inner is internal in @feed\/impl/
 <?php
 
 \Feed113\Post113::demo();

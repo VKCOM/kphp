@@ -15,6 +15,7 @@ function globalDemo() {
     plainHidden1();
     plainHidden2();
     echo PLAIN_CONST_PUB, ' ', PLAIN_CONST_HID, "\n";
+    echo Utils003\Impl003\Hasher003::calc1(), "\n";
 }
 
 globalDemo();

@@ -1,5 +1,7 @@
 @kphp_should_fail
 KPHP_ENABLE_MODULITE=1
+/in global scope/
+/restricted to use Feed114\\Infra114\\Strings114, @feed\/infra is internal in @feed/
 /in other114/
 /restricted to use Feed114\\Post114, @feed is not required by @other/
 /restricted to use Feed114\\Infra114\\Hidden114, it's internal in @feed/infra/
@@ -19,3 +21,6 @@ KPHP_ENABLE_MODULITE=1
 
 require_once 'Other114/other114.php';
 other114(null, null);
+
+/** @var ?\Feed114\Infra114\Strings114 $an */
+$an = null;

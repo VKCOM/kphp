@@ -7,3 +7,7 @@ export:
 force-internal:
 
 require:
+
+allow-internal-access:
+  "@msg":
+    - "Child3::hidden3Func()"

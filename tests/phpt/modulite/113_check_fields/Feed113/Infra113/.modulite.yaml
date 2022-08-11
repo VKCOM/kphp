@@ -8,4 +8,5 @@ force-internal:
   - "Strings113::$str_hidden"
 
 require:
+  - "@feed"
 

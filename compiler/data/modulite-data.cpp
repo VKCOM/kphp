@@ -379,9 +379,13 @@ void ModuliteData::resolve_names_to_pointers() {
     }
   }
 
+  inside_m->exported_from_parent = parent && vk::any_of(parent->exports, [inside_m](const ModuliteSymbol &e) {
+    return e.kind == ModuliteSymbol::kind_modulite && e.modulite == inside_m;
+  });
+
   // append this (inside_m) to submodulites_exported_at_any_depth all the tree up
   for (ModulitePtr child = inside_m; child->parent; child = child->parent) {
-    if (!child->is_exported_from_parent()) {
+    if (!child->exported_from_parent) {
       break;
     }
     child->parent->submodulites_exported_at_any_depth.emplace_back(inside_m);
@@ -402,19 +406,16 @@ void ModuliteData::validate_yaml_requires() {
         fire_yaml_error(inside_m, fmt_format("a modulite lists itself in 'require': {}", inside_m->modulite_name), r.line);
       }
 
-      ModulitePtr common_lca_parent = inside_m->find_lca_with(another_m);
-      for (ModulitePtr child = another_m; child->parent != common_lca_parent; child = child->parent) {
-        if (!child->is_exported_from_parent()) {
+      ModulitePtr common_lca = inside_m->find_lca_with(another_m);
+      for (ModulitePtr child = another_m; child != common_lca && child->parent != common_lca; child = child->parent) {
+        if (ModulitePtr cur_parent = child->parent; cur_parent && !child->exported_from_parent) {
           // valid: even if @some/another is not exported, but mentioned in "allow-internal-access" for @msg in @some
-          ModulitePtr cur_parent = child->parent;
-          if (cur_parent) {
-            auto it_this = std::find_if(cur_parent->allow_internal.begin(), cur_parent->allow_internal.end(),
-                                        [inside_m](const auto &p) { return p.first.kind == ModuliteSymbol::kind_modulite && p.first.modulite == inside_m; });
-            if (it_this != cur_parent->allow_internal.end()) {
-              bool lists_cur = vk::any_of(it_this->second, [child](const ModuliteSymbol &s) { return s.kind == ModuliteSymbol::kind_modulite && s.modulite == child; });
-              if (lists_cur) {
-                continue;
-              }
+          auto it_this = std::find_if(cur_parent->allow_internal.begin(), cur_parent->allow_internal.end(),
+                                      [inside_m](const auto &p) { return p.first.kind == ModuliteSymbol::kind_modulite && p.first.modulite == inside_m; });
+          if (it_this != cur_parent->allow_internal.end()) {
+            bool lists_cur = vk::any_of(it_this->second, [child](const ModuliteSymbol &s) { return s.kind == ModuliteSymbol::kind_modulite && s.modulite == child; });
+            if (lists_cur) {
+              continue;
             }
           }
           fire_yaml_error(inside_m, fmt_format("can't require {}: {} is internal in {}", another_m->modulite_name, child->modulite_name, child->parent->modulite_name), r.line);
@@ -489,23 +490,12 @@ void ModuliteData::validate_yaml_force_internal() {
   }
 }
 
-// @msg exports @msg/channels if it's listed in "export" directly
-bool ModuliteData::is_exported_from_parent() {
-  if (!parent) {
-    return false;
-  }
-
-  ModulitePtr self = get_self_ptr();
-  return vk::any_of(parent->exports, [self](const ModuliteSymbol &e) {
-    return e.kind == ModuliteSymbol::kind_modulite && e.modulite == self;
-  });
-}
-
 // for @msg/channels/infra and @msg/folders, lca is @msg
+// for @msg/channels and @msg, lca is @msg
 // for @msg and @feed, lca is null
 ModulitePtr ModuliteData::find_lca_with(ModulitePtr another_m) {
   ModulitePtr lca = get_self_ptr();
-  for (; lca; lca = lca->parent) {
+  for (; lca && lca != another_m; lca = lca->parent) {
     bool is_common = vk::string_view{another_m->modulite_name}.starts_with(lca->modulite_name) && another_m->modulite_name[lca->modulite_name.size()] == '/';
     if (is_common) {
       break;

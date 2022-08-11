@@ -175,6 +175,37 @@ static bool is_static_field_exported_from(VarPtr field, ModulitePtr owner, Funct
   return false;
 }
 
+// submodulite @msg/core is exported from @msg when
+// - "@msg/core" is declared in 'export'
+// - or "@msg/core" is declared in 'allow-internal' for current usage context
+// - or usage context is @msg/channels, it can access @msg/core, because @msg is their lca
+// if check_all_depth, checks are done for any chains, e.g. @parent/c1/c2/c3 — c3 from c2, c2 from c1, c1 from parent
+// else, check is not only for child from child->parent (c3 from c2 if given above)
+static bool is_submodulite_exported(ModulitePtr child, FunctionPtr usage_context, bool check_all_depth = true) {
+  ModulitePtr parent = child->parent;
+
+  if (child->exported_from_parent) {
+    return !check_all_depth || !parent->parent || is_submodulite_exported(parent, usage_context);
+  }
+
+  for (const auto &p : parent->allow_internal) {
+    if (does_allow_internal_rule_satisfy_usage_context(usage_context, p.first)) {
+      for (const ModuliteSymbol &e : p.second) {
+        if (e.kind == ModuliteSymbol::kind_modulite && e.modulite == child) {
+          return !check_all_depth || !parent->parent || is_submodulite_exported(parent, usage_context);
+        }
+      }
+    }
+  }
+
+  if (usage_context && usage_context->modulite && parent == usage_context->modulite->find_lca_with(parent)) {
+    return true;
+  }
+
+  return false;
+}
+
+
 static bool does_require_another_modulite(ModulitePtr inside_m, ModulitePtr another_m) {
   // examples: we are at inside_m = @feed, accessing another_m = @msg/channels
   // fast path: if @feed requires @msg/channels
@@ -195,6 +226,64 @@ static bool does_require_another_modulite(ModulitePtr inside_m, ModulitePtr anot
 }
 
 
+class ModuliteErr {
+  ModulitePtr inside_m;
+  ModulitePtr another_m;
+  FunctionPtr usage_context;
+  std::string desc;
+
+public:
+  [[gnu::cold]] ModuliteErr(FunctionPtr usage_context, ClassPtr klass)
+    : inside_m(usage_context->modulite)
+    , another_m(klass->modulite)
+    , usage_context(usage_context)
+    , desc(fmt_format("use {}", TermStringFormat::paint_bold(klass->as_human_readable()))) {}
+
+  [[gnu::cold]] ModuliteErr(FunctionPtr usage_context, FunctionPtr called_f)
+    : inside_m(usage_context->modulite)
+    , another_m(called_f->modulite)
+    , usage_context(usage_context)
+    , desc(fmt_format("call {}()", TermStringFormat::paint_bold(called_f->as_human_readable()))) {}
+
+  [[gnu::cold]] ModuliteErr(FunctionPtr usage_context, DefinePtr used_c)
+    : inside_m(usage_context->modulite)
+    , another_m(used_c->modulite)
+    , usage_context(usage_context)
+    , desc(fmt_format("use {}", TermStringFormat::paint_bold(used_c->as_human_readable()))) {}
+
+  [[gnu::cold]] ModuliteErr(FunctionPtr usage_context, VarPtr field)
+    : inside_m(usage_context->modulite)
+    , another_m(field->class_id->modulite)
+    , usage_context(usage_context)
+    , desc(fmt_format("use {}", TermStringFormat::paint_bold(field->as_human_readable()))) {}
+
+  [[gnu::cold]] ModuliteErr(FunctionPtr usage_context, const std::string &global_var_name)
+    : inside_m(usage_context->modulite)
+    , another_m({})
+    , usage_context(usage_context)
+    , desc(fmt_format("use global {}", TermStringFormat::paint_bold("$" + global_var_name))) {}
+
+  [[gnu::cold]] void print_error_symbol_is_not_exported() {
+    kphp_error(0, fmt_format("[modulite] restricted to {}, it's internal in {}", desc, another_m->modulite_name));
+  }
+
+  [[gnu::cold]] void print_error_submodulite_is_not_exported() {
+    kphp_assert(another_m->parent && !is_submodulite_exported(another_m, usage_context));
+    ModulitePtr child_internal = another_m;
+    while (is_submodulite_exported(child_internal, usage_context, false)) {
+      child_internal = child_internal->parent;
+    }
+    kphp_error(0, fmt_format("[modulite] restricted to {}, {} is internal in {}", desc, child_internal->modulite_name, child_internal->parent->modulite_name));
+  }
+
+  [[gnu::cold]] void print_error_modulite_is_not_required() {
+    kphp_error(0, fmt_format("[modulite] restricted to {}, {} is not required by {}", desc, another_m->modulite_name, inside_m->modulite_name));
+  }
+
+  [[gnu::cold]] void print_error_symbol_is_not_required() {
+    kphp_error(0, fmt_format("[modulite] restricted to {}, it's not required by {}", desc, inside_m->modulite_name));
+  }
+};
 
 
 void modulite_check_when_use_class(FunctionPtr usage_context, ClassPtr klass) {
@@ -208,22 +297,33 @@ void modulite_check_when_use_class(FunctionPtr usage_context, ClassPtr klass) {
     return;
   }
 
-  if (another_m && !is_class_exported_from(klass, another_m, usage_context)) {
-    kphp_error(0, fmt_format("[modulite] restricted to use {}, it's internal in {}", TermStringFormat::paint_bold(klass->as_human_readable()), another_m->modulite_name));
-    return;
-  }
-
-  if (inside_m) {
-    if (another_m) {
-      kphp_error(does_require_another_modulite(inside_m, another_m),
-                 fmt_format("[modulite] restricted to use {}, {} is not required by {}", TermStringFormat::paint_bold(klass->as_human_readable()), another_m->modulite_name, inside_m->modulite_name));
+  if (another_m) {
+    if (!is_class_exported_from(klass, another_m, usage_context)) {
+      ModuliteErr(usage_context, klass).print_error_symbol_is_not_exported();
       return;
     }
 
-    bool in_require = vk::any_of(inside_m->require, [klass](const ModuliteSymbol &s) {
-      return s.kind == ModuliteSymbol::kind_klass && s.klass == klass;
-    });
-    kphp_error(in_require, fmt_format("[modulite] restricted to use {}, it's not required by {}", TermStringFormat::paint_bold(klass->as_human_readable()), inside_m->modulite_name));
+    if (another_m->parent && !is_submodulite_exported(another_m, usage_context)) {
+      ModuliteErr(usage_context, klass).print_error_submodulite_is_not_exported();
+      return;
+    }
+  }
+
+  if (inside_m) {
+    bool should_require_m_instead = !!another_m;
+    if (should_require_m_instead) {
+      if (!does_require_another_modulite(inside_m, another_m)) {
+        ModuliteErr(usage_context, klass).print_error_modulite_is_not_required();
+      }
+
+    } else {
+      bool in_require = vk::any_of(inside_m->require, [klass](const ModuliteSymbol &s) {
+        return s.kind == ModuliteSymbol::kind_klass && s.klass == klass;
+      });
+      if (!in_require) {
+        ModuliteErr(usage_context, klass).print_error_symbol_is_not_required();
+      }
+    }
   }
 }
 
@@ -238,26 +338,36 @@ void modulite_check_when_use_constant(FunctionPtr usage_context, DefinePtr used_
     return;
   }
 
-  if (another_m && !is_constant_exported_from(used_c, another_m, usage_context)) {
-    kphp_error(0, fmt_format("[modulite] restricted to use {}, it's internal in {}", TermStringFormat::paint_bold(used_c->as_human_readable()), another_m->modulite_name));
-    return;
-  }
-
-  if (inside_m) {
-    if (another_m) {
-      kphp_error(does_require_another_modulite(inside_m, another_m),
-                 fmt_format("[modulite] restricted to use {}, {} is not required by {}", TermStringFormat::paint_bold(used_c->as_human_readable()), another_m->modulite_name, inside_m->modulite_name));
+  if (another_m) {
+    if (!is_constant_exported_from(used_c, another_m, usage_context)) {
+      ModuliteErr(usage_context, used_c).print_error_symbol_is_not_exported();
       return;
     }
 
-    bool in_require = vk::any_of(inside_m->require, [used_c](const ModuliteSymbol &s) {
-      return (s.kind == ModuliteSymbol::kind_klass && s.klass == used_c->class_id) ||
-             (s.kind == ModuliteSymbol::kind_constant && s.constant == used_c);
-    });
-    kphp_error(in_require, fmt_format("[modulite] restricted to use {}, it's not required by {}", TermStringFormat::paint_bold(used_c->as_human_readable()), inside_m->modulite_name));
+    if (another_m->parent && !is_submodulite_exported(another_m, usage_context)) {
+      ModuliteErr(usage_context, used_c).print_error_submodulite_is_not_exported();
+      return;
+    }
+  }
+
+  if (inside_m) {
+    bool should_require_m_instead = !!another_m;
+    if (should_require_m_instead) {
+      if (!does_require_another_modulite(inside_m, another_m)) {
+        ModuliteErr(usage_context, used_c).print_error_modulite_is_not_required();
+      }
+
+    } else {
+      bool in_require = vk::any_of(inside_m->require, [used_c](const ModuliteSymbol &s) {
+        return (s.kind == ModuliteSymbol::kind_klass && s.klass == used_c->class_id) ||
+               (s.kind == ModuliteSymbol::kind_constant && s.constant == used_c);
+      });
+      if (!in_require) {
+        ModuliteErr(usage_context, used_c).print_error_symbol_is_not_required();
+      }
+    }
   }
 }
-
 
 void modulite_check_when_call_function(FunctionPtr usage_context, FunctionPtr called_f) {
   if (!is_env_modulite_enabled()) {
@@ -270,22 +380,33 @@ void modulite_check_when_call_function(FunctionPtr usage_context, FunctionPtr ca
     return;
   }
 
-  if (another_m && !is_function_exported_from(called_f, another_m, usage_context)) {
-    kphp_error(0, fmt_format("[modulite] restricted to call {}(), it's internal in {}", TermStringFormat::paint_bold(called_f->as_human_readable()), another_m->modulite_name));
-    return;
-  }
-
-  if (inside_m) {
-    if (another_m) {
-      kphp_error(does_require_another_modulite(inside_m, another_m),
-                 fmt_format("[modulite] restricted to call {}(), {} is not required by {}", TermStringFormat::paint_bold(called_f->as_human_readable()), another_m->modulite_name, inside_m->modulite_name));
+  if (another_m) {
+    if (!is_function_exported_from(called_f, another_m, usage_context)) {
+      ModuliteErr(usage_context, called_f).print_error_symbol_is_not_exported();
       return;
     }
 
-    bool in_require = vk::any_of(inside_m->require, [called_f](const ModuliteSymbol &s) {
-      return s.kind == ModuliteSymbol::kind_function && s.function == called_f;
-    });
-    kphp_error(in_require, fmt_format("[modulite] restricted to call {}(), it's not required by {}", TermStringFormat::paint_bold(called_f->as_human_readable()), inside_m->modulite_name));
+    if (another_m->parent && !is_submodulite_exported(another_m, usage_context)) {
+      ModuliteErr(usage_context, called_f).print_error_submodulite_is_not_exported();
+      return;
+    }
+  }
+
+  if (inside_m) {
+    bool should_require_m_instead = !!another_m;
+    if (should_require_m_instead) {
+      if (!does_require_another_modulite(inside_m, another_m)) {
+        ModuliteErr(usage_context, called_f).print_error_modulite_is_not_required();
+      }
+
+    } else {
+      bool in_require = vk::any_of(inside_m->require, [called_f](const ModuliteSymbol &s) {
+        return s.kind == ModuliteSymbol::kind_function && s.function == called_f;
+      });
+      if (!in_require) {
+        ModuliteErr(usage_context, called_f).print_error_symbol_is_not_required();
+      }
+    }
   }
 }
 
@@ -300,23 +421,34 @@ void modulite_check_when_use_static_field(FunctionPtr usage_context, VarPtr fiel
     return;
   }
 
-  if (another_m && !is_static_field_exported_from(field, another_m, usage_context)) {
-    kphp_error(0, fmt_format("[modulite] restricted to use {}, it's internal in {}", TermStringFormat::paint_bold(field->as_human_readable()), another_m->modulite_name));
-    return;
-  }
-
-  if (inside_m) {
-    if (another_m) {
-      kphp_error(does_require_another_modulite(inside_m, another_m),
-                 fmt_format("[modulite] restricted to use {}, {} is not required by {}", TermStringFormat::paint_bold(field->as_human_readable()), another_m->modulite_name, inside_m->modulite_name));
+  if (another_m) {
+    if (!is_static_field_exported_from(field, another_m, usage_context)) {
+      ModuliteErr(usage_context, field).print_error_symbol_is_not_exported();
       return;
     }
 
-    bool in_require = vk::any_of(inside_m->require, [field](const ModuliteSymbol &s) {
-      return (s.kind == ModuliteSymbol::kind_klass && s.klass == field->class_id) ||
-             (s.kind == ModuliteSymbol::kind_global_var && s.global_var == field->name);
-    });
-    kphp_error(in_require, fmt_format("[modulite] restricted to use {}, it's not required by {}", TermStringFormat::paint_bold(field->as_human_readable()), inside_m->modulite_name));
+    if (another_m->parent && !is_submodulite_exported(another_m, usage_context)) {
+      ModuliteErr(usage_context, field).print_error_submodulite_is_not_exported();
+      return;
+    }
+  }
+
+  if (inside_m) {
+    bool should_require_m_instead = !!another_m;
+    if (should_require_m_instead) {
+      if (!does_require_another_modulite(inside_m, another_m)) {
+        ModuliteErr(usage_context, field).print_error_modulite_is_not_required();
+      }
+
+    } else {
+      bool in_require = vk::any_of(inside_m->require, [field](const ModuliteSymbol &s) {
+        return (s.kind == ModuliteSymbol::kind_klass && s.klass == field->class_id) ||
+               (s.kind == ModuliteSymbol::kind_global_var && s.global_var == field->name);
+      });
+      if (!in_require) {
+        ModuliteErr(usage_context, field).print_error_symbol_is_not_required();
+      }
+    }
   }
 }
 
@@ -331,7 +463,9 @@ void modulite_check_when_global_keyword(FunctionPtr usage_context, const std::st
     bool in_require = vk::any_of(inside_m->require, [global_var_name](const ModuliteSymbol &s) {
       return s.kind == ModuliteSymbol::kind_global_var && s.global_var == global_var_name;
     });
-    kphp_error(in_require, fmt_format("[modulite] restricted to use global {}, it's not required by {}", TermStringFormat::paint_bold("$" + global_var_name), inside_m->modulite_name));
+    if (!in_require) {
+      ModuliteErr(usage_context, global_var_name).print_error_symbol_is_not_required();
+    }
   }
 }
 

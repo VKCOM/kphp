@@ -1,0 +1,10 @@
+name: "@feed/impl/inner"
+namespace: "\\Feed113\\Impl113\\Inner113"
+
+export:
+  - "Inner113"
+
+force-internal:
+
+require:
+

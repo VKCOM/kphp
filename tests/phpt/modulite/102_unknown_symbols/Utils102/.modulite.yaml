@@ -5,6 +5,7 @@ export:
   - "StringsNot"
   - "$unknown"
   - "basicFn()"
+  - "Utils102\\Strings102"
 
 force-internal:
   - "Strings102::$me"

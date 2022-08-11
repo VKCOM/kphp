@@ -4,6 +4,7 @@ namespace Utils111;
 
 class Hidden111 {
     static function demo() {
+        Impl111\Hasher111::calc1();
         self::demo2();
     }
 

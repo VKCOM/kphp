@@ -3,6 +3,7 @@ KPHP_ENABLE_MODULITE=1
 /in global scope/
 /restricted to use Feed112\\Infra112\\Hidden112::HIDDEN_2, it's internal in @feed\/infra/
 /restricted to use OTHER_112_CONST, it's internal in @other/
+/restricted to use Feed112\\Infra112\\Strings112::STR_NAME, @feed\/infra is internal in @feed/
 /in Post112::demo/
 /restricted to use Feed112\\Infra112\\Strings112::STR_HIDDEN, it's internal in @feed\/infra/
 /restricted to use Feed112\\Infra112\\Hidden112::HIDDEN_1, it's internal in @feed\/infra/
@@ -16,6 +17,7 @@ KPHP_ENABLE_MODULITE=1
 \Feed112\Post112::demo();
 \Feed112\Infra112\Strings112::demo();
 echo Feed112\Infra112\Hidden112::HIDDEN_2;
+echo Feed112\Infra112\Strings112::STR_NAME;
 
 define('GLOBAL_DEF', 1);
 

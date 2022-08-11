@@ -3,6 +3,7 @@ namespace: "Feed113"
 
 export:
   - "Post113"
+  - "@feed/infra"
 
 force-internal:
   - "Post113::$THREE"

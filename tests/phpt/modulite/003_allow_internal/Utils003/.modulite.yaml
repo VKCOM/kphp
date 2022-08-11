@@ -10,10 +10,12 @@ force-internal:
 
 require:
   - "@feed"
+  - "@utils/impl"
 
 allow-internal-access:
   "\\globalDemo()":
     - "Strings003::hidden2()"
+    - "@utils/impl"
   "\\Feed003\\Post003":
     - "Hidden003"
     - "Strings003"

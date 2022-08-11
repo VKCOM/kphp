@@ -61,6 +61,8 @@ public:
 
   // "export" from yaml lists all exported symbols (classes, functions, submodulites, etc.)
   std::vector<ModuliteSymbol> exports;
+  // denormalization: if its parent lists @this in "export" (so, it's visible always, without 'allow-internal' lookups)
+  bool exported_from_parent{false};
   // submodulites from "export" (including exported sub-submodulites, etc.) are stored separately for optimization
   std::vector<ModulitePtr> submodulites_exported_at_any_depth;
 
@@ -80,7 +82,6 @@ public:
   void validate_yaml_exports();
   void validate_yaml_force_internal();
 
-  bool is_exported_from_parent();
   ModulitePtr find_lca_with(ModulitePtr another_m);
 };
 

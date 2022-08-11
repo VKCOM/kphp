@@ -3,6 +3,7 @@ KPHP_ENABLE_MODULITE=1
 /Failed loading Utils102\/.modulite.yaml:/
 /can't find class\/constant Utils102\\StringsNot/
 /can't find function Utils102\\basicFn\(\)/
+/can't find class\/constant Utils102\\Utils102\\Strings102/
 /can't find static field Utils102\\Strings102::\$me/
 /can't find function id\(\)/
 /can't find class/constant Utils102\\SOME_CONST/

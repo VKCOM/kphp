@@ -1,0 +1,7 @@
+name: "@utils/impl"
+namespace: "\\Utils003\\Impl003"
+
+export:
+  - "Hasher003"
+
+require:

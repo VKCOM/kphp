@@ -8,6 +8,7 @@ export:
 force-internal:
 
 require:
+  - "@utils"
 
 allow-internal-access:
   "@feed":
