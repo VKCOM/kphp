@@ -91,6 +91,7 @@ public:
     }
 
     // resolve self/static/parent in @return or php hint
+    stage::set_location(f_->root->location);
     if (f_->return_typehint) {
       f_->return_typehint = phpdoc_finalize_type_hint_and_resolve(f_->return_typehint, f_);
       kphp_error(f_->return_typehint, fmt_format("Failed to parse @return of {}", f_->as_human_readable()));

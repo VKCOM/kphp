@@ -1,0 +1,13 @@
+name: "@parent"
+namespace: ""
+
+export:
+
+force-internal:
+
+require:
+
+allow-internal-access:
+  "@feed":
+    - "@parent/child1"
+    

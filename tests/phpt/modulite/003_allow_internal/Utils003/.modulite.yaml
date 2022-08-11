@@ -1,0 +1,25 @@
+name: "@utils"
+namespace: "\\Utils003"
+
+export:
+  - "Strings003"
+
+force-internal:
+  - "Strings003::hidden1()"
+  - "Strings003::hidden2()"
+
+require:
+  - "@feed"
+  - "@utils/impl"
+
+allow-internal-access:
+  "\\globalDemo()":
+    - "Strings003::hidden2()"
+    - "@utils/impl"
+  "\\Feed003\\Post003":
+    - "Hidden003"
+    - "Strings003"
+  "@msg":
+    - "Hidden003::demo2()"
+  "@plain":
+    - "Hidden003"

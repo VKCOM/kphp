@@ -66,6 +66,7 @@ public:
   bool has_job_shared_memory_piece{false};
 
   SrcFilePtr file_id;
+  ModulitePtr modulite;
   int location_line_num{-1};
   std::string src_name, header_name;
 

@@ -1,0 +1,24 @@
+name: "@utils"
+namespace: "Utils102\\"
+
+export:
+  - "StringsNot"
+  - "$unknown"
+  - "basicFn()"
+  - "Utils102\\Strings102"
+
+force-internal:
+  - "Strings102::$me"
+  - "Strings102::method()"
+
+require:
+  - "\\id()"
+  - "SOME_CONST"
+  - "\\GlobalC"
+  - "\\GlobalC::method()"
+
+allow-internal-access:
+  "\\A":
+    - "\\A::method()"
+    - "\\A::DONT"
+

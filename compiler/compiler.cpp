@@ -44,7 +44,7 @@
 #include "compiler/pipes/check-func-calls-and-vararg.h"
 #include "compiler/pipes/check-modifications-of-const-vars.h"
 #include "compiler/pipes/check-nested-foreach.h"
-#include "compiler/pipes/check-requires.h"
+#include "compiler/pipes/wait-for-all-classes.h"
 #include "compiler/pipes/check-restrictions.h"
 #include "compiler/pipes/check-tl-classes.h"
 #include "compiler/pipes/check-type-hint-variance.h"
@@ -233,13 +233,13 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PassC<GenTreePostprocessPass>{}
     >> PipeC<SplitSwitchF>{}
     >> PipeC<RegisterFFIScopesF>{}
+    >> PassC<RegisterDefinesPass>{}
     >> PipeC<CollectRequiredAndClassesF>{} >> use_nth_output_tag<0>{}
-    >> SyncC<CheckRequires>{}
+    >> SyncC<WaitForAllClassesAndLoadModulitesF>{}
     >> PipeC<CheckTypeHintVariance>{}
     >> PassC<CalcLocationsPass>{}
     >> PassC<ResolveSelfStaticParentPass>{}
-    >> PassC<RegisterDefinesPass>{}
-    >> SyncC<CalcRealDefinesValuesF>{}
+    >> SyncC<CalcRealDefinesAndAssignModulitesF>{}
     >> SyncC<RegisterKphpConfiguration>{}
     >> PassC<EraseDefinesDeclarationsPass>{}
     >> PassC<InlineDefinesUsagesPass>{}

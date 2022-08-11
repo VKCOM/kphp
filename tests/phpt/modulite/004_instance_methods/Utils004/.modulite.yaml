@@ -1,0 +1,11 @@
+name: "@utils"
+namespace: "Utils004\\"
+
+export:
+  - "Strings004"
+
+force-internal:
+
+require:
+  - "@msg"
+

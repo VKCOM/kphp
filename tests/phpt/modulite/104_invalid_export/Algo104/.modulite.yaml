@@ -1,0 +1,11 @@
+name: "@algo"
+namespace: "\\Algo104"
+
+export:
+  - "\\Utils104\\Strings104"
+  - "\\A"
+
+require:
+  - "\\Utils104\\Strings104"
+
+allow-internal-access:

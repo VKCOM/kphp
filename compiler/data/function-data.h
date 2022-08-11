@@ -90,6 +90,7 @@ public:
   std::string header_full_name;
 
   SrcFilePtr file_id;
+  ModulitePtr modulite;
   FunctionPtr fork_prev, wait_prev;
   FunctionPtr throws_reason;
   Location throws_location;

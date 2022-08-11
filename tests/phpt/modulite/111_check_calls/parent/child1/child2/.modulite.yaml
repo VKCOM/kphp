@@ -1,0 +1,14 @@
+name: "@parent/child1/child2"
+namespace: ""
+
+export:
+
+force-internal:
+
+require:
+
+allow-internal-access:
+  "@feed":
+    - "@parent/child1/child2/child3"
+  "@msg":
+    - "@parent/child1/child2/child3"

@@ -1,0 +1,11 @@
+name: "@api"
+namespace: "API106\\"
+
+export:
+  - "ApiCall"
+
+force-internal:
+
+require:
+  - "@api/impl"
+

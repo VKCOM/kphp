@@ -1,0 +1,11 @@
+name: "@feed"
+namespace: "Feed110"
+
+export:
+  - "Post110"
+
+force-internal:
+
+require:
+  - "@utils"
+

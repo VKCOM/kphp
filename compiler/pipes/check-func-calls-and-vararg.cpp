@@ -5,6 +5,7 @@
 #include "compiler/pipes/check-func-calls-and-vararg.h"
 
 #include "compiler/data/kphp-json-tags.h"
+#include "compiler/modulite-check-rules.h"
 #include "compiler/data/src-file.h"
 #include "compiler/gentree.h"
 #include "compiler/name-gen.h"
@@ -339,6 +340,14 @@ VertexPtr CheckFuncCallsAndVarargPass::on_func_call(VertexAdaptor<op_func_call> 
       kphp_error(f->has_variadic_param, "Unpacking an argument to a non-variadic param");
     } else if (auto conv = call_arg.try_as<op_conv_array>(); conv && conv->expr()->type() == op_varg) {
       kphp_error(f->has_variadic_param, "Unpacking an argument to a non-variadic param");
+    }
+  }
+
+  if (current_function->modulite || f->modulite) {
+    bool is_instance_call = f->modifiers.is_instance();
+    bool is_constructor_call = f->is_constructor() && !f->class_id->is_lambda_class();
+    if (f->type == FunctionData::func_local && (!is_instance_call || is_constructor_call)) {
+      modulite_check_when_call_function(current_function, f);
     }
   }
 

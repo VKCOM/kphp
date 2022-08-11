@@ -1,0 +1,10 @@
+name: "@feed"
+namespace: "\\Feed006"
+
+export:
+  - "PubFeed"
+
+force-internal:
+
+require:
+

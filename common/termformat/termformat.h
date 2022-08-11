@@ -41,6 +41,7 @@ public:
 
   static std::string paint_green(const std::string &s, bool reset_at_the_end = true);
   static std::string paint_red(const std::string &s, bool reset_at_the_end = true);
+  static std::string paint_bold(const std::string &s);
 
 private:
   static const std::string COLORS[COLORS_CNT];

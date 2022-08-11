@@ -1,0 +1,13 @@
+name: "@api/impl"
+namespace: "API002\\Impl"
+
+export:
+  - "ApiInternals"
+
+force-internal:
+
+require:
+  - "@msg"
+  - "@msg/channels"
+  - "@api"
+

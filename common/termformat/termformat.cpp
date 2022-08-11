@@ -109,3 +109,7 @@ string TermStringFormat::paint_green(const string & s, bool reset_at_the_end/* =
 string TermStringFormat::paint_red(const string & s, bool reset_at_the_end/* = true*/) {
   return paint(s, red, reset_at_the_end);
 }
+
+std::string TermStringFormat::paint_bold(const std::string &s) {
+  return add_text_attribute(s, bold);
+}

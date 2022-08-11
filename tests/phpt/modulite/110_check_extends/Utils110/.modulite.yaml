@@ -1,0 +1,10 @@
+name: "@utils"
+namespace: "\\Utils110"
+
+export:
+
+force-internal:
+
+require:
+  - "@feed"
+

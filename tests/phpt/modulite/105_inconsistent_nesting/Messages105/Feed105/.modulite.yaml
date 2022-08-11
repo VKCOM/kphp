@@ -1,0 +1,9 @@
+name: "@feed"
+namespace: "Feed"
+
+export:
+
+force-internal:
+
+require:
+

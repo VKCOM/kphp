@@ -1,0 +1,9 @@
+name: "@msg"
+namespace: "Messages105\\"
+
+export:
+
+force-internal:
+
+require:
+

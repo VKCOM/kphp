@@ -1,0 +1,15 @@
+name: "@utils"
+namespace: "Utils103\\"
+
+export:
+  - "@utils/sub"
+
+force-internal:
+
+require:
+  - "@msg"
+
+allow-internal-access:
+  "@msg/core":
+    - "@parent/c1/c2/c3"
+

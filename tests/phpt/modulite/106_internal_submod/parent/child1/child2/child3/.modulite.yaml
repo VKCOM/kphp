@@ -1,0 +1,11 @@
+name: "@parent/child1/child2/child3"
+namespace: ""
+
+export:
+  - "Child3"
+
+force-internal:
+
+require:
+  - "@parent/child1/child2/child3my"
+  - "@parent/child1/child2my"

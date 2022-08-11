@@ -27,6 +27,7 @@ public:
 
   std::string main_func_name;
   FunctionPtr main_function;
+  SrcDirPtr dir;
   LibPtr owner_lib;
 
   std::vector<vk::string_view> lines;

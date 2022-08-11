@@ -1,0 +1,15 @@
+name: "@plain"
+namespace: ""
+
+export:
+  - "plainPublic1()"
+  - "plainPublic2()"
+
+force-internal:
+
+require:
+  - "@utils"
+
+allow-internal-access:
+  "@feed":
+    - "plainHidden1()"

@@ -1,0 +1,10 @@
+name: "@feed/infra"
+namespace: "\\Feed115\\Infra115"
+
+export:
+  - "Strings115"
+
+force-internal:
+
+require:
+

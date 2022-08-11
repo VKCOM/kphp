@@ -10,7 +10,7 @@
 #include "compiler/pipes/sync.h"
 #include "compiler/vertex.h"
 
-class CalcRealDefinesValuesF final : public SyncPipeF<FunctionPtr> {
+class CalcRealDefinesAndAssignModulitesF final : public SyncPipeF<FunctionPtr> {
 private:
   using Base = SyncPipeF<FunctionPtr>;
   std::set<std::string *> in_progress;
@@ -27,7 +27,8 @@ private:
 
 public:
 
-  CalcRealDefinesValuesF();
+  CalcRealDefinesAndAssignModulitesF();
 
+  void execute(FunctionPtr f, DataStream<FunctionPtr> &unused_os) override;
   void on_finish(DataStream<FunctionPtr> &os) final;
 };

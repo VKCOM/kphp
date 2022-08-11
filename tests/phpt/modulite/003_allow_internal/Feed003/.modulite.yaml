@@ -1,0 +1,23 @@
+name: "@feed"
+namespace: "Feed003"
+
+export:
+  - "Post003"
+
+force-internal:
+  - "Post003::forceHidden()"
+  - "Post003::HIDDEN"
+  - "Post003::$HIDDEN"
+
+require:
+  - "@utils"
+  - "@msg/core"
+  - "\\globalDemo()"
+  - "@parent/child1/child2/child3"
+  - "@plain"
+
+allow-internal-access:
+  "\\Messages003\\User003::demo()":
+    - "Post003::HIDDEN"
+  "\\Messages003\\User003":
+    - "Post003::$HIDDEN"

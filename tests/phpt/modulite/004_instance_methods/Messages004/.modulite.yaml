@@ -1,0 +1,11 @@
+name: "@msg"
+namespace: "Messages004\\"
+
+export:
+  - "Messages004"
+
+force-internal:
+  - "Messages004::instanceFnMarkedForceInternal()"
+
+require:
+

@@ -1,0 +1,13 @@
+name: "@parent/child1/child2/child3"
+namespace: ""
+
+export:
+  - "Child3::child3Func()"
+
+force-internal:
+
+require:
+
+allow-internal-access:
+   "\\Feed003\\Post003":
+     - "Child3"
