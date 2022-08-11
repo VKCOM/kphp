@@ -200,7 +200,6 @@ vk::string_view CompilerCore::calc_relative_name(SrcFilePtr file, bool builtin) 
   vk::string_view full_file_name = file->file_name;
   if (full_file_name.starts_with(settings_->base_dir.get())) {
     return full_file_name.substr(settings_->base_dir.get().size());
-    return full_file_name.substr(settings_->base_dir.get().size());
   } else if (settings_->is_composer_enabled() && full_file_name.starts_with(settings_->composer_root.get())) {
     return full_file_name.substr(settings_->composer_root.get().size());
   } else if (builtin) {
