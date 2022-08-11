@@ -300,6 +300,7 @@ function array_reserve_map_int_keys (&$a ::: array, $size ::: int) ::: void;
 function array_reserve_map_string_keys (&$a ::: array, $size ::: int) ::: void;
 function array_reserve_from (&$a ::: array, $base ::: array) ::: void;
 function array_is_vector ($a ::: array) ::: bool;
+function array_is_list ($a ::: array) ::: bool;
 
 function empty ($val ::: any) ::: bool;
 function count ($val ::: any) ::: int;
