@@ -25,4 +25,28 @@ $my_controller->init();
 $my_pretty_controller = new Ads\my_pretty_controller();
 $my_pretty_controller->init();
 
+$g0 = new UniqueGlobalClass0();
+$g0->init();
+
+$g1 = new UniqueGlobalClass1();
+$g1->init();
+
+$t0 = new Test0();
+$t0->echo();
+
+$t1 = new foo\Test1();
+$t1->echo();
+
+$t2 = new foo\bar\Test2();
+$t2->echo();
+
+$t3 = new my_test3();
+$t3->echo();
+
+$t4 = new foo\my_test4();
+$t4->echo();
+
+$t5 = new foo\bar\my_test5();
+$t5->echo();
+
 echo "alright\n";

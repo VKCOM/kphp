@@ -11,11 +11,120 @@
 #include "compiler/kphp_assert.h"
 #include "compiler/stage.h"
 
+namespace {
+bool file_exists(std::string_view filename) noexcept {
+  return access(filename.data(), F_OK) == 0;
+};
+
+std::string make_file_path(std::string_view pkg_root, std::string &&dir) {
+  if (dir.empty()) {
+    dir = "./"; // composer interprets "" as "./" or "."
+  }
+  std::replace(dir.begin(), dir.end(), '\\', '/');
+  // ensure that dir always ends with '/'
+  if (dir.back() != '/') {
+    dir.push_back('/');
+  }
+
+  return std::string{pkg_root} + "/" + std::move(dir);
+}
+
+class PsrLoader {
+public:
+  using Map = ComposerAutoloader::PsrMap;
+
+  PsrLoader(const YAML::Node &psr_section, Map &map, std::string_view pkg_root) noexcept:
+    psr_section_(psr_section),
+    map_(map),
+    pkg_root_(pkg_root) {}
+
+  void load();
+
+  virtual ~PsrLoader() = default;
+
+protected:
+  void load_entry_namespace(std::string &&namespace_str, std::string &&path) {
+    auto full_path = make_file_path(pkg_root_, std::move(path));
+    map_[std::move(namespace_str)].emplace_back(std::move(full_path));
+  }
+
+  static bool is_classname(std::string_view namespace_str) noexcept {
+    return !namespace_str.empty() && namespace_str.back() != '\\';
+  }
+
+  virtual void load_entry(std::string &&namespace_str, std::string &&path) = 0;
+
+  const YAML::Node &psr_section_;
+  Map &map_;
+  std::string_view pkg_root_;
+};
+
+void PsrLoader::load() {
+  for (const auto &kv : psr_section_) {
+    if (kv.second.IsSequence()) {
+      for (const auto &dir : kv.second) {
+        load_entry(kv.first.as<std::string>(), dir.as<std::string>());
+      }
+    } else if (kv.second.IsScalar()) {
+      load_entry(kv.first.as<std::string>(), kv.second.as<std::string>());
+    } else {
+      kphp_error(false, fmt_format("load composer file {}/composer.json: invalid autoload psr item", pkg_root_));
+    }
+  }
+}
+
+class Psr4Loader : public PsrLoader {
+public:
+  Psr4Loader(const YAML::Node &autoload_section, Map &map, std::string_view pkg_root)
+    : PsrLoader(autoload_section["psr-4"], map, pkg_root) {}
+
+protected:
+  void load_entry(std::string &&namespace_str, std::string &&path) final {
+    kphp_error(!is_classname(namespace_str), fmt_format(
+      "load composer file {}/composer.json: namespace must ends with '\\' sign in psr-4", pkg_root_));
+    std::replace(namespace_str.begin(), namespace_str.end(), '\\', '/');
+    load_entry_namespace(std::move(namespace_str), std::move(path));
+  }
+};
+
+class Psr0Loader : public PsrLoader {
+public:
+  Psr0Loader(const YAML::Node &autoload_section, std::map<std::string, std::string> &classmap, Map &map, std::string_view pkg_root)
+    : PsrLoader(autoload_section["psr-0"], map, pkg_root)
+    , classmap_(classmap) {}
+
+protected:
+  void load_entry(std::string &&namespace_str, std::string &&path) final {
+    const bool classname = is_classname(namespace_str);
+    std::replace(namespace_str.begin(), namespace_str.end(), '\\', '/');
+
+    if (classname) {
+      load_entry_class(std::move(namespace_str), std::move(path));
+    } else {
+      load_entry_namespace(std::move(namespace_str), std::move(path) + "/" + namespace_str);
+    }
+  }
+
+private:
+  void load_entry_class(std::string &&namespace_str, std::string &&path) {
+    auto class_name = namespace_str;
+    auto last_slash = class_name.find_last_of('/');
+    auto begin = class_name.begin();
+    if (last_slash != std::string::npos) {
+      std::advance(begin, last_slash);
+    }
+    std::replace(begin, class_name.end(), '_', '/');
+    std::string file{pkg_root_};
+    file.append(1, '/').append(path).append(1, '/').append(class_name).append(".php");
+    classmap_.emplace(std::move(namespace_str), std::move(file));
+  }
+
+  std::map<std::string, std::string> &classmap_;
+};
+} // namespace
+
 std::string ComposerAutoloader::psr_lookup_nocache(const PsrMap &psr, const std::string &class_name, bool transform_underscore) {
   std::string prefix = class_name;
-
-  auto file_exists = [](const std::string &filename) { return access(filename.c_str(), F_OK) == 0; };
-
   // we start from a longest prefix and then try to match it
   // against the psr4/psr0 map; if there is no match, the last prefix
   // part is dropped and the process is repeated until we
@@ -89,7 +198,14 @@ std::string ComposerAutoloader::psr4_lookup(const std::string &class_name) const
 }
 
 std::string ComposerAutoloader::psr0_lookup(const std::string &class_name) const {
-  return psr_lookup_nocache(autoload_psr0_, class_name, true);
+  auto file = psr_lookup_nocache(autoload_psr0_, class_name, true);
+  if (file.empty()) {
+    auto it = autoload_psr0_classmap_.find(class_name);
+    if (it != autoload_psr0_classmap_.end() && file_exists(it->second)) {
+      return it->second;
+    }
+  }
+  return file;
 }
 
 void ComposerAutoloader::set_use_dev(bool v) {
@@ -192,52 +308,18 @@ void ComposerAutoloader::load_file(const std::string &pkg_root, bool is_root_fil
 
 void ComposerAutoloader::add_autoload_section(const YAML::Node &autoload, const std::string &pkg_root, bool require_files) {
   // https://getcomposer.org/doc/04-schema.md#psr-4
-  add_autoload_psr_section(autoload["psr-4"], autoload_psr4_, pkg_root, false);
+  Psr4Loader psr4_loader{autoload, autoload_psr4_, pkg_root};
+  psr4_loader.load();
 
   // https://getcomposer.org/doc/04-schema.md#psr-0
-  add_autoload_psr_section(autoload["psr-0"], autoload_psr0_, pkg_root, true);
+  Psr0Loader psr0_loader{autoload, autoload_psr0_classmap_, autoload_psr0_, pkg_root};
+  psr0_loader.load();
 
   if (require_files) {
     // files that are required by the composer-generated autoload.php
     // https://getcomposer.org/doc/04-schema.md#files
     for (const auto &autoload_filename : autoload["files"]) {
       files_to_require_.emplace_back(pkg_root + "/" + autoload_filename.as<std::string>());
-    }
-  }
-}
-
-static std::string make_file_path(const std::string &pkg_root, std::string dir, const std::string &prefix, bool add_prefix) {
-  if (add_prefix) {
-    dir += '/';
-    dir += prefix;
-  }
-  if (dir.empty()) {
-    dir = "./"; // composer interprets "" as "./" or "."
-  }
-  std::replace(dir.begin(), dir.end(), '\\', '/');
-  // ensure that dir always ends with '/'
-  if (dir.back() != '/') {
-    dir.push_back('/');
-  }
-
-  return pkg_root + "/" + dir;
-}
-
-void ComposerAutoloader::add_autoload_psr_section(const YAML::Node &psr_src, PsrMap &psr_map, const std::string &pkg_root, bool add_prefix) {
-  for (const auto &kv : psr_src) {
-    auto prefix = kv.first.as<std::string>();
-    std::replace(prefix.begin(), prefix.end(), '\\', '/');
-
-    if (kv.second.IsSequence()) {
-      for (const auto &dir : kv.second) {
-        auto dir_str = dir.as<std::string>();
-        psr_map[prefix].emplace_back(make_file_path(pkg_root, dir_str, prefix, add_prefix));
-      }
-    } else if (kv.second.IsScalar()) {
-      auto dir_str = kv.second.as<std::string>();
-      psr_map[prefix].emplace_back(make_file_path(pkg_root, dir_str, prefix, add_prefix));
-    } else {
-      kphp_error(false, fmt_format("load composer file {}/composer.json: invalid autoload psr item", pkg_root));
     }
   }
 }

@@ -52,10 +52,10 @@ public:
     return files_to_require_;
   }
 
-private:
   using PsrMap = std::map<std::string, std::vector<std::string>, std::less<>>;
+
+private:
   void load_file(const std::string &filename, bool root);
-  void add_autoload_psr_section(const YAML::Node &psr_src, PsrMap &psr_map, const std::string &pkg_root, bool add_prefix);
   void add_autoload_section(const YAML::Node &autoload, const std::string &pkg_root, bool require_files);
 
   static std::string psr_lookup_nocache(const PsrMap &psr, const std::string &class_name, bool transform_underscore = false);
@@ -63,6 +63,7 @@ private:
   bool use_dev_;
   PsrMap autoload_psr4_;
   PsrMap autoload_psr0_;
+  std::map<std::string, std::string> autoload_psr0_classmap_;
   std::unordered_set<std::string> deps_;
 
   std::string autoload_filename_;

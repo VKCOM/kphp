@@ -7,11 +7,55 @@ namespace Composer\Autoload;
 class ComposerStaticInit7586022b0f1396301f39438a7060911a
 {
     public static $prefixesPsr0 = array (
+        'm' => 
+        array (
+            'my_test3' => 
+            array (
+                0 => __DIR__ . '/../..' . '/src_classes',
+            ),
+        ),
+        'f' => 
+        array (
+            'foo\\my_test4' => 
+            array (
+                0 => __DIR__ . '/../..' . '/src_classes',
+            ),
+            'foo\\bar\\my_test5' => 
+            array (
+                0 => __DIR__ . '/../..' . '/src_classes',
+            ),
+            'foo\\bar\\Test2' => 
+            array (
+                0 => __DIR__ . '/../..' . '/src_classes',
+            ),
+            'foo\\Test1' => 
+            array (
+                0 => __DIR__ . '/../..' . '/src_classes',
+            ),
+        ),
         'V' => 
         array (
             'VK\\Ads\\' => 
             array (
                 0 => __DIR__ . '/../..' . '/src',
+            ),
+        ),
+        'U' => 
+        array (
+            'UniqueGlobalClass1' => 
+            array (
+                0 => __DIR__ . '/../..' . '/src_classes',
+            ),
+            'UniqueGlobalClass0' => 
+            array (
+                0 => __DIR__ . '/../..' . '/',
+            ),
+        ),
+        'T' => 
+        array (
+            'Test0' => 
+            array (
+                0 => __DIR__ . '/../..' . '/src_classes',
             ),
         ),
         'M' => 
