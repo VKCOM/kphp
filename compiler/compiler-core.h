@@ -96,7 +96,7 @@ public:
   void set_memcache_class(ClassPtr klass);
 
   bool register_define(DefinePtr def_id);
-  DefinePtr get_define(const std::string &name);
+  DefinePtr get_define(std::string_view name);
 
   VarPtr create_var(const std::string &name, VarData::Type type);
   VarPtr get_global_var(const std::string &name, VarData::Type type, VertexPtr init_val, bool *is_new_inserted = nullptr);

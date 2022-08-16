@@ -111,6 +111,11 @@ TEST(lexer_test, test_php_tokens) {
     {"[1]", {"tok_opbrk([)", "tok_int_const(1)", "tok_clbrk(])"}},
     {"array(1)", {"tok_array(array)", "tok_oppar(()", "tok_int_const(1)", "tok_clpar())"}},
 
+    {"define", {"tok_define(define)"}},
+    {"\\define", {"tok_define(\\define)"}},
+    {"defined", {"tok_defined(defined)"}},
+    {"\\defined", {"tok_defined(\\defined)"}},
+
     // combined tests
     {"echo \"{$x->y}\";", {"tok_echo(echo)", "tok_str_begin(\")", "tok_expr_begin({)", "tok_var_name($x)", "tok_arrow(->)", "tok_func_name(y)", "tok_expr_end(})", "tok_str_end(\")", "tok_semicolon(;)"}},
   };

@@ -421,7 +421,12 @@ bool CompilerCore::register_define(DefinePtr def_id) {
   return true;
 }
 
-DefinePtr CompilerCore::get_define(const std::string &name) {
+DefinePtr CompilerCore::get_define(std::string_view name) {
+  // we don't support namespaces for constants yet, but we
+  // permit var_dump(\foo) syntax and interpret it as just var_dump(foo);
+  if (!name.empty() && name.front() == '\\') {
+    name.remove_prefix(1);
+  }
   return defines_ht.at(vk::std_hash(name))->data;
 }
 
