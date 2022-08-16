@@ -1485,3 +1485,15 @@ class JsonEncoder {
   /** @kphp-extern-func-info cpp_template_call */
   static function from_json_impl(string $encoder_tag, string $json, string $class_name) ::: instance<^3>;
 }
+
+class DateTimeZone {
+  /** @kphp-extern-func-info can_throw */
+  public function __construct(string $timezone);
+  public function getName(): string;
+}
+
+class DateTime {
+  /** @kphp-extern-func-info can_throw */
+  public function __construct(string $datetime = "now", ?DateTimeZone $timezone = null);
+  public static function getLastErrors(): array|false;
+}

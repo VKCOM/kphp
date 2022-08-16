@@ -1,6 +1,7 @@
 #include "runtime/timelib_wrapper.h"
 
 #include <kphp/timelib/timelib.h>
+#include <sys/time.h>
 
 #include "common/containers/final_action.h"
 #include "common/smart_ptrs/singleton.h"
@@ -30,6 +31,28 @@ void set_time_value(array<mixed> &dst, const char *name, int64_t value) {
   }
 }
 
+array<mixed> dump_errors(const timelib_error_container &error) {
+  array<mixed> result;
+
+  array<string> result_warnings;
+  result_warnings.reserve(error.warning_count, 0, false);
+  for (int i = 0; i < error.warning_count; i++) {
+    result_warnings.set_value(error.warning_messages[i].position, string(error.warning_messages[i].message));
+  }
+  result.set_value(string("warning_count"), error.warning_count);
+  result.set_value(string("warnings"), result_warnings);
+
+  array<string> result_errors;
+  result_errors.reserve(error.error_count, 0, false);
+  for (int i = 0; i < error.error_count; i++) {
+    result_errors.set_value(error.error_messages[i].position, string(error.error_messages[i].message));
+  }
+  result.set_value(string("error_count"), error.error_count);
+  result.set_value(string("errors"), result_errors);
+
+  return result;
+}
+
 array<mixed> create_date_parse_array(timelib_time *t, timelib_error_container *error) {
   array<mixed> result;
 
@@ -48,21 +71,7 @@ array<mixed> create_date_parse_array(timelib_time *t, timelib_error_container *e
     result.set_value(string("fraction"), static_cast<double>(t->us) / 1000000.0);
   }
 
-  array<string> result_warnings;
-  result_warnings.reserve(error->warning_count, 0, false);
-  for (int i = 0; i < error->warning_count; i++) {
-    result_warnings.set_value(error->warning_messages[i].position, string(error->warning_messages[i].message));
-  }
-  result.set_value(string("warning_count"), error->warning_count);
-  result.set_value(string("warnings"), result_warnings);
-
-  array<string> result_errors;
-  result_errors.reserve(error->error_count, 0, false);
-  for (int i = 0; i < error->error_count; i++) {
-    result_errors.set_value(error->error_messages[i].position, string(error->error_messages[i].message));
-  }
-  result.set_value(string("error_count"), error->error_count);
-  result.set_value(string("errors"), result_errors);
+  result.merge_with(dump_errors(*error));
 
   result.set_value(string("is_localtime"), static_cast<bool>(t->is_localtime));
 
@@ -214,4 +223,87 @@ std::pair<int64_t, bool> php_timelib_strtotime(const string &tz_name, const stri
   }
 
   return {ts, true};
+}
+
+struct DateGlobals {
+  char *default_timezone{nullptr};
+  char *timezone{nullptr};
+//  HashTable *tzcache{nullptr};
+  timelib_error_container *last_errors{nullptr};
+  int timezone_valid{0};
+};
+
+static DateGlobals date_globals;
+
+static void update_errors_warnings(timelib_error_container *last_errors) {
+  if (date_globals.last_errors) {
+    timelib_error_container_dtor(date_globals.last_errors);
+    date_globals.last_errors = nullptr;
+  }
+  date_globals.last_errors = last_errors;
+}
+
+std::pair<timelib_time *, string> php_timelib_date_initialize(const string &tz_name, const string &time_str, const char *format) {
+  timelib_error_container *err = nullptr;
+  timelib_time *t = format
+    ? timelib_parse_from_format(format, time_str.c_str(), time_str.size(), &err, timelib_builtin_db(), timelib_parse_tzfile)
+    : timelib_strtotime(time_str.c_str(), time_str.size(), &err, timelib_builtin_db(), timelib_parse_tzfile);
+
+  /* update last errors and warnings */
+  update_errors_warnings(err);
+
+  if (err && err->error_count) {
+    /* spit out the first library error message, at least */
+    string error_msg{"Failed to parse time string "};
+    error_msg.append(1, '(').append(time_str).append(1, ')');
+    error_msg.append(" at position ").append(err->error_messages[0].position);
+    error_msg.append(" (").append(1, err->error_messages[0].character).append("): ");
+    error_msg.append(err->error_messages[0].message);
+    timelib_time_dtor(t);
+    return {nullptr, std::move(error_msg)};
+  }
+
+  timelib_tzinfo *tzi = nullptr;
+  if (!tz_name.empty()) {
+    tzi = vk::singleton<TzinfoCache>::get().get_tzinfo(tz_name.c_str());
+  } else if (t->tz_info) {
+    tzi = t->tz_info;
+  } else {
+    // TODO: use f$date_default_timezone_get()
+    tzi = vk::singleton<TzinfoCache>::get().get_tzinfo(PHP_TIMELIB_TZ_MOSCOW);
+  }
+
+  timelib_time *now = timelib_time_ctor();
+  vk::final_action now_deleter{[now] { timelib_time_dtor(now); }};
+
+  now->tz_info = tzi;
+  now->zone_type = TIMELIB_ZONETYPE_ID;
+
+  timeval tp{};
+  gettimeofday(&tp, nullptr);
+  const auto [sec, usec] = tp;
+
+  timelib_unixtime2local(now, static_cast<timelib_sll>(sec));
+  now->us = usec;
+
+  timelib_fill_holes(t, now, TIMELIB_NO_CLONE);
+  timelib_update_ts(t, tzi);
+  timelib_update_from_sse(t);
+
+  t->have_relative = 0;
+
+  return {t, {}};
+}
+
+void php_timelib_date_remove(timelib_time *t) {
+  if (t) {
+    timelib_time_dtor(t);
+  }
+}
+
+Optional<array<mixed>> php_timelib_date_get_last_errors() {
+  if (date_globals.last_errors) {
+    return dump_errors(*date_globals.last_errors);
+  }
+  return false;
 }
