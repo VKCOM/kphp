@@ -12,6 +12,17 @@ function test_int_casts() {
   var_dump ((int) true);
 }
 
+function test_integer_casts() {
+  var_dump ((integer) 1);
+  var_dump ((integer) 1.5);
+  var_dump ((integer) "12");
+  var_dump ((integer) "1.2");
+  var_dump ((integer) "hello");
+  var_dump ((integer) null);
+  var_dump ((integer) false);
+  var_dump ((integer) true);
+}
+
 function test_float_casts() {
   var_dump ((float) 1);
   var_dump ((float) 1.5);
@@ -57,8 +68,39 @@ function test_array_casts() {
   var_dump ((array) true);
 }
 
+function test_bool_casts() {
+  var_dump ((bool) 0);
+  var_dump ((bool) 1);
+  var_dump ((bool) 1.5);
+  var_dump ((bool) "");
+  var_dump ((bool) "12");
+  var_dump ((bool) "1.2");
+  var_dump ((bool) "hello");
+  var_dump ((bool) []);
+  var_dump ((bool) null);
+  var_dump ((bool) false);
+  var_dump ((bool) true);
+}
+
+function test_boolean_casts() {
+  var_dump ((boolean) 0);
+  var_dump ((boolean) 1);
+  var_dump ((boolean) 1.5);
+  var_dump ((boolean) "");
+  var_dump ((boolean) "12");
+  var_dump ((boolean) "1.2");
+  var_dump ((boolean) "hello");
+  var_dump ((boolean) []);
+  var_dump ((boolean) null);
+  var_dump ((boolean) false);
+  var_dump ((boolean) true);
+}
+
 test_int_casts();
+test_integer_casts();
 test_float_casts();
 test_double_casts();
 test_string_casts();
 test_array_casts();
+test_bool_casts();
+test_boolean_casts();
