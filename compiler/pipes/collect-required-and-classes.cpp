@@ -236,7 +236,7 @@ public:
     }
 
     if (auto require = root.try_as<op_require>()) {
-      std::string name = collect_string_concatenation(require->expr());
+      std::string name = collect_string_concatenation(require->expr(), true);
       kphp_error_act (!name.empty(), "Not a string in 'require' arguments", return root);
       if (is_composer_autoload(name)) {
         return require_composer_autoload(root);
