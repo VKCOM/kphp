@@ -392,7 +392,12 @@ const TypeHint *PhpDocTypeHintParser::parse_simple_type() {
     case tok_array:
       cur_tok++;
       if (vk::any_of_equal(cur_tok->type(), tok_lt, tok_oppar)) {   // array<...>
-        return TypeHintArray::create(parse_nested_one_type_hint());
+        const auto &type_hints = parse_nested_type_hints();
+        if (type_hints.empty() || type_hints.size() > 2) {
+          throw std::runtime_error{"array<...> has to be parameterized with one type or two types at most"};
+        }
+        // just ignore array's key type if there is any
+        return TypeHintArray::create(type_hints.back());
       }
       return TypeHintArray::create_array_of_any();
     case tok_at: {      // @tl\...
