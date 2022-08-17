@@ -1367,6 +1367,13 @@ function set_migration_php8_warning ($mask ::: int) ::: void;
 
 function set_json_log_on_timeout_mode(bool $enabled) ::: void;
 
+// re-initialize given ArrayIterator with another array;
+// in KPHP it returns the same ArrayIterator that is ready to be used
+// in PHP (via polyfills) it returns a newly allocated object
+//
+// reset_array_iterator is a KPHP extension of ArrayIterator API
+function reset_array_iterator(ArrayIterator $iter, $array ::: mixed[]) : ArrayIterator;
+
 /**
  * ffi_memcpy_string implements FFI::memcpy for string-typed $src argument
  */

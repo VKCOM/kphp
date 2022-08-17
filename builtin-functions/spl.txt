@@ -24,3 +24,20 @@ class OverflowException extends RuntimeException {}
 class RangeException extends RuntimeException {}
 class UnderflowException extends RuntimeException {}
 class UnexpectedValueException extends RuntimeException {}
+
+// https://www.php.net/manual/en/class.arrayiterator.php
+// TODO: make it work with T[] arrays when generic classes are available.
+// For now, it only supports mixed[].
+final class ArrayIterator {
+    public function __construct($arr ::: mixed[]);
+
+    public function count(): int;
+
+    public function current(): mixed;
+
+    public function key(): mixed;
+
+    public function next(): void;
+
+    public function valid(): bool;
+}
