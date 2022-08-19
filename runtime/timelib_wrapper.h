@@ -26,3 +26,5 @@ using timelib_time = _timelib_time;
 std::pair<timelib_time *, string> php_timelib_date_initialize(const string &tz_name, const string &time_str, const char *format = nullptr);
 void php_timelib_date_remove(timelib_time *t);
 Optional<array<mixed>> php_timelib_date_get_last_errors();
+string php_timelib_date_format(const string &format, timelib_time *t, bool localtime);
+string php_timelib_date_format_localtime(const string &format, timelib_time *t);

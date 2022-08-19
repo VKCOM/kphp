@@ -307,3 +307,262 @@ Optional<array<mixed>> php_timelib_date_get_last_errors() {
   }
   return false;
 }
+
+static const char *const mon_full_names[] = {"January", "February", "March",     "April",   "May",      "June",
+                                             "July",    "August",   "September", "October", "November", "December"};
+
+static const char *const mon_short_names[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+
+static const char *const day_full_names[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+
+static const char *const day_short_names[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+
+static const char *english_suffix(timelib_sll number) {
+  if (number >= 10 && number <= 19) {
+    return "th";
+  } else {
+    switch (number % 10) {
+      case 1:
+        return "st";
+      case 2:
+        return "nd";
+      case 3:
+        return "rd";
+    }
+  }
+  return "th";
+}
+/* }}} */
+
+/* {{{ day of week helpers */
+static const char *php_date_full_day_name(timelib_sll y, timelib_sll m, timelib_sll d) {
+  timelib_sll day_of_week = timelib_day_of_week(y, m, d);
+  if (day_of_week < 0) {
+    return "Unknown";
+  }
+  return day_full_names[day_of_week];
+}
+
+static const char *php_date_short_day_name(timelib_sll y, timelib_sll m, timelib_sll d) {
+  timelib_sll day_of_week = timelib_day_of_week(y, m, d);
+  if (day_of_week < 0) {
+    return "Unknown";
+  }
+  return day_short_names[day_of_week];
+}
+
+#define timelib_is_leap(y) ((y) % 4 == 0 && ((y) % 100 != 0 || (y) % 400 == 0))
+
+using StaticBuf = std::array<char, 128>;
+
+static std::size_t safe_snprintf(StaticBuf &buf, const char *format, ...) {
+  va_list args;
+  va_start(args, format);
+  int written = vsnprintf(buf.data(), buf.size(), format, args);
+  va_end(args);
+  php_assert(written > 0);
+
+  if (static_cast<size_t>(written) >= buf.size()) {
+    written = static_cast<int>(buf.size()) - 1;
+    buf[written] = '\0';
+  }
+  return written;
+}
+
+string php_timelib_date_format(const string &format, timelib_time *t, bool localtime) {
+  // we don't support timezones other than TIMELIB_ZONETYPE_ID
+  if (format.empty() || t->zone_type != TIMELIB_ZONETYPE_ID) {
+    return {};
+  }
+
+  string_buffer &SB = static_SB_spare;
+  SB.clean();
+
+  timelib_time_offset *offset = localtime ? timelib_get_time_zone_info(t->sse, t->tz_info) : nullptr;
+  vk::final_action offset_deleter{[offset] {
+    if (offset) {
+      timelib_time_offset_dtor(offset);
+    }
+  }};
+
+  int weekYearSet = 0;
+  timelib_sll isoweek = 0;
+  timelib_sll isoyear = 0;
+
+  // php implementation has 97 bytes buffer capacity, I hope 128 bytes will look a bit less weird
+  StaticBuf buffer{};
+  int length = 0;
+
+  for (std::size_t i = 0; i < format.size(); ++i) {
+    int rfc_colon = 0;
+    switch (format[i]) {
+      /* day */
+      case 'd':
+        length = safe_snprintf(buffer, "%02d", static_cast<int>(t->d));
+        break;
+      case 'D':
+        length = safe_snprintf(buffer, "%s", php_date_short_day_name(t->y, t->m, t->d));
+        break;
+      case 'j':
+        length = safe_snprintf(buffer, "%d", static_cast<int>(t->d));
+        break;
+      case 'l':
+        length = safe_snprintf(buffer, "%s", php_date_full_day_name(t->y, t->m, t->d));
+        break;
+      case 'S':
+        length = safe_snprintf(buffer, "%s", english_suffix(t->d));
+        break;
+      case 'w':
+        length = safe_snprintf(buffer, "%d", static_cast<int>(timelib_day_of_week(t->y, t->m, t->d)));
+        break;
+      case 'N':
+        length = safe_snprintf(buffer, "%d", static_cast<int>(timelib_iso_day_of_week(t->y, t->m, t->d)));
+        break;
+      case 'z':
+        length = safe_snprintf(buffer, "%d", static_cast<int>(timelib_day_of_year(t->y, t->m, t->d)));
+        break;
+
+      /* week */
+      case 'W':
+        if (!weekYearSet) {
+          timelib_isoweek_from_date(t->y, t->m, t->d, &isoweek, &isoyear);
+          weekYearSet = 1;
+        }
+        length = safe_snprintf(buffer, "%02d", static_cast<int>(isoweek));
+        break; /* iso weeknr */
+      case 'o':
+        if (!weekYearSet) {
+          timelib_isoweek_from_date(t->y, t->m, t->d, &isoweek, &isoyear);
+          weekYearSet = 1;
+        }
+        length = safe_snprintf(buffer, "%ld", static_cast<int64_t>(isoyear));
+        break; /* iso year */
+
+      /* month */
+      case 'F':
+        length = safe_snprintf(buffer, "%s", mon_full_names[t->m - 1]);
+        break;
+      case 'm':
+        length = safe_snprintf(buffer, "%02d", static_cast<int>(t->m));
+        break;
+      case 'M':
+        length = safe_snprintf(buffer, "%s", mon_short_names[t->m - 1]);
+        break;
+      case 'n':
+        length = safe_snprintf(buffer, "%d", static_cast<int>(t->m));
+        break;
+      case 't':
+        length = safe_snprintf(buffer, "%d", static_cast<int>(timelib_days_in_month(t->y, t->m)));
+        break;
+
+      /* year */
+      case 'L':
+        length = safe_snprintf(buffer, "%d", timelib_is_leap((int)t->y));
+        break;
+      case 'y':
+        length = safe_snprintf(buffer, "%02d", static_cast<int>(t->y % 100));
+        break;
+      case 'Y':
+        length = safe_snprintf(buffer, "%s%04lld", t->y < 0 ? "-" : "", abs(t->y));
+        break;
+
+      /* time */
+      case 'a':
+        length = safe_snprintf(buffer, "%s", t->h >= 12 ? "pm" : "am");
+        break;
+      case 'A':
+        length = safe_snprintf(buffer, "%s", t->h >= 12 ? "PM" : "AM");
+        break;
+      case 'B': {
+        int retval = (((static_cast<long>(t->sse)) - ((static_cast<long>(t->sse)) - (((static_cast<long>(t->sse)) % 86400) + 3600))) * 10);
+        if (retval < 0) {
+          retval += 864000;
+        }
+        /* Make sure to do this on a positive int to avoid rounding errors */
+        retval = (retval / 864) % 1000;
+        length = safe_snprintf(buffer, "%03d", retval);
+        break;
+      }
+      case 'g':
+        length = safe_snprintf(buffer, "%d", (t->h % 12) ? static_cast<int>(t->h) % 12 : 12);
+        break;
+      case 'G':
+        length = safe_snprintf(buffer, "%d", static_cast<int>(t->h));
+        break;
+      case 'h':
+        length = safe_snprintf(buffer, "%02d", (t->h % 12) ? static_cast<int>(t->h) % 12 : 12);
+        break;
+      case 'H':
+        length = safe_snprintf(buffer, "%02d", static_cast<int>(t->h));
+        break;
+      case 'i':
+        length = safe_snprintf(buffer, "%02d", static_cast<int>(t->i));
+        break;
+      case 's':
+        length = safe_snprintf(buffer, "%02d", static_cast<int>(t->s));
+        break;
+      case 'u':
+        length = safe_snprintf(buffer, "%06d", static_cast<int>(floor(t->us)));
+        break;
+      case 'v':
+        length = safe_snprintf(buffer, "%03d", static_cast<int>(floor(t->us / 1000)));
+        break;
+
+      /* timezone */
+      case 'I':
+        length = safe_snprintf(buffer, "%d", localtime ? offset->is_dst : 0);
+        break;
+      case 'P':
+        rfc_colon = 1;
+        [[fallthrough]];
+      case 'O':
+        length = safe_snprintf(buffer, "%c%02d%s%02d", localtime ? ((offset->offset < 0) ? '-' : '+') : '+', localtime ? abs(offset->offset / 3600) : 0,
+                               rfc_colon ? ":" : "", localtime ? abs((offset->offset % 3600) / 60) : 0);
+        break;
+      case 'T':
+        length = safe_snprintf(buffer, "%s", localtime ? offset->abbr : "GMT");
+        break;
+      case 'e':
+        length = safe_snprintf(buffer, "%s", localtime ? t->tz_info->name : "UTC");
+        break;
+      case 'Z':
+        length = safe_snprintf(buffer, "%d", localtime ? offset->offset : 0);
+        break;
+
+      /* full date/time */
+      case 'c':
+        length = safe_snprintf(buffer, "%04ld-%02d-%02dT%02d:%02d:%02d%c%02d:%02d", static_cast<int64_t>(t->y), static_cast<int>(t->m), static_cast<int>(t->d),
+                               static_cast<int>(t->h), static_cast<int>(t->i), static_cast<int>(t->s), localtime ? ((offset->offset < 0) ? '-' : '+') : '+',
+                               localtime ? abs(offset->offset / 3600) : 0, localtime ? abs((offset->offset % 3600) / 60) : 0);
+        break;
+      case 'r':
+        length = safe_snprintf(buffer, "%3s, %02d %3s %04ld %02d:%02d:%02d %c%02d%02d", php_date_short_day_name(t->y, t->m, t->d), static_cast<int>(t->d),
+                               mon_short_names[t->m - 1], static_cast<int64_t>(t->y), static_cast<int>(t->h), static_cast<int>(t->i), static_cast<int>(t->s),
+                               localtime ? ((offset->offset < 0) ? '-' : '+') : '+', localtime ? abs(offset->offset / 3600) : 0,
+                               localtime ? abs((offset->offset % 3600) / 60) : 0);
+        break;
+      case 'U':
+        length = safe_snprintf(buffer, "%lld", t->sse);
+        break;
+
+      case '\\':
+        if (i < format.size()) {
+          ++i;
+        }
+        [[fallthrough]];
+
+      default:
+        buffer[0] = format[i];
+        buffer[1] = '\0';
+        length = 1;
+        break;
+    }
+    SB.append(buffer.data(), length);
+  }
+
+  return SB.str();
+}
+
+string php_timelib_date_format_localtime(const string &format, timelib_time *t) {
+  return php_timelib_date_format(format, t, t->is_localtime);
+}

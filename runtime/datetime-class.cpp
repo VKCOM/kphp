@@ -47,3 +47,7 @@ class_instance<C$DateTime> f$DateTime$$__construct(const class_instance<C$DateTi
 Optional<array<mixed>> f$DateTime$$getLastErrors() noexcept {
   return php_timelib_date_get_last_errors();
 }
+
+string f$DateTime$$format(const class_instance<C$DateTime> &self, const string &format) noexcept {
+  return php_timelib_date_format_localtime(format, self->time);
+}

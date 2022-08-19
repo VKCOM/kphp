@@ -1495,5 +1495,6 @@ class DateTimeZone {
 class DateTime {
   /** @kphp-extern-func-info can_throw */
   public function __construct(string $datetime = "now", ?DateTimeZone $timezone = null);
+  public function format(string $format): string;
   public static function getLastErrors(): array|false;
 }

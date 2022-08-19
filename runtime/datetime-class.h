@@ -4,11 +4,14 @@
 
 #pragma once
 
+#include "runtime/dummy-visitor-methods.h"
 #include "runtime/kphp_core.h"
 #include "runtime/refcountable_php_classes.h"
 #include "runtime/timelib_wrapper.h"
 
-struct C$DateTimeZone : public refcountable_php_classes<C$DateTimeZone> {
+struct C$DateTimeZone : public refcountable_php_classes<C$DateTimeZone>, private DummyVisitorMethods {
+  using DummyVisitorMethods::accept;
+
   string timezone;
 
   const char *get_class() const noexcept {
@@ -23,7 +26,9 @@ struct C$DateTimeZone : public refcountable_php_classes<C$DateTimeZone> {
 class_instance<C$DateTimeZone> f$DateTimeZone$$__construct(const class_instance<C$DateTimeZone> &self, const string &timezone) noexcept;
 string f$DateTimeZone$$getName(const class_instance<C$DateTimeZone> &self) noexcept;
 
-struct C$DateTime : public refcountable_php_classes<C$DateTime> {
+struct C$DateTime : public refcountable_php_classes<C$DateTime>, private DummyVisitorMethods {
+  using DummyVisitorMethods::accept;
+
   timelib_time *time{nullptr};
 
   const char *get_class() const noexcept {
@@ -42,3 +47,5 @@ class_instance<C$DateTime> f$DateTime$$__construct(const class_instance<C$DateTi
                                                    const class_instance<C$DateTimeZone> &timezone = Optional<bool>{}) noexcept;
 
 Optional<array<mixed>> f$DateTime$$getLastErrors() noexcept;
+
+string f$DateTime$$format(const class_instance<C$DateTime> &self, const string &format) noexcept;
