@@ -45,13 +45,17 @@ TEMP_DEB="$(mktemp)"
 wget -O "$TEMP_DEB" 'https://dev.mysql.com/get/mysql-apt-config_0.8.20-1_all.deb'
 DEBIAN_FRONTEND=noninteractive dpkg -i "$TEMP_DEB"
 rm -f "$TEMP_DEB"
+# for postgresql 
+echo "deb http://apt.postgresql.org/pub/repos/apt buster-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
+wget -qO - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - 
 ```
 Install packages
 ```bash
 apt-get update
 apt install git cmake-data=3.16* cmake=3.16* make g++ gperf python3-minimal python3-jsonschema \
             curl-kphp-vk libuber-h3-dev kphp-timelib libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
-            libzstd-dev libyaml-cpp-dev libnghttp2-dev zlib1g-dev php7.4-dev libmysqlclient-dev libnuma-dev
+            libzstd-dev libyaml-cpp-dev libnghttp2-dev zlib1g-dev php7.4-dev libmysqlclient-dev libnuma-dev \
+            postgresql postgresql-server-dev-all libpq-dev libldap-dev libkrb5-dev
 ```
 
 
@@ -70,7 +74,8 @@ Install packages
 apt-get update
 apt install git cmake make g++ gperf python3-minimal python3-jsonschema \
             curl-kphp-vk libuber-h3-dev kphp-timelib libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
-            libzstd-dev libyaml-cpp-dev libnghttp2-dev zlib1g-dev php7.4-dev libmysqlclient-dev libnuma-dev
+            libzstd-dev libyaml-cpp-dev libnghttp2-dev zlib1g-dev php7.4-dev libmysqlclient-dev libnuma-dev \
+            postgresql postgresql-server-dev-all libpq-dev libldap-dev libkrb5-dev
 ```
 
 

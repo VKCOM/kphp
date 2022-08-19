@@ -62,6 +62,7 @@
 #include "server/php-query-data.h"
 #include "server/workers-control.h"
 #include "server/database-drivers/mysql/mysql.h"
+#include "server/database-drivers/pgsql/pgsql.h"
 
 static enum {
   QUERY_TYPE_NONE,
@@ -2335,6 +2336,9 @@ static void free_runtime_libs() {
   vk::singleton<JsonLogger>::get().reset_buffers();
 #ifdef PDO_DRIVER_MYSQL
   database_drivers::free_mysql_lib();
+#endif
+#ifdef PDO_DRIVER_PGSQL
+  database_drivers::free_pgsql_lib();
 #endif
   vk::singleton<database_drivers::Adaptor>::get().reset();
   free_interface_lib();

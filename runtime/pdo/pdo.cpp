@@ -7,6 +7,7 @@
 #include "runtime/pdo/pdo.h"
 #include "runtime/pdo/pdo_statement.h"
 #include "runtime/pdo/mysql/mysql_pdo_driver.h"
+#include "runtime/pdo/pgsql/pgsql_pdo_driver.h"
 #include "runtime/resumable.h"
 
 
@@ -23,7 +24,14 @@ class_instance<C$PDO> f$PDO$$__construct(const class_instance<C$PDO> &v$this, co
 #else
     php_critical_error("PDO MySQL driver is disabled");
 #endif
-  } else {
+  } else if (driver_name == string{"pgsql"}) {
+#ifdef PDO_DRIVER_PGSQL
+    v$this.get()->driver = std::make_unique<pdo::pgsql::PgsqlPdoDriver>();
+#else
+    php_critical_error("PDO pgSQL driver is disabled");
+#endif
+  }
+  else {
     php_critical_error("Unknown PDO driver name: %s", driver_name.c_str());
   }
 
@@ -62,16 +70,35 @@ public:
   }
 };
 
+class PdoExecResumable final : public Resumable {
+private:
+  PdoQueryResumable *query;
+
+  class_instance<C$PDOStatement> statement;
+public:
+  using ReturnT = Optional<int64_t>;
+
+  explicit PdoExecResumable(const class_instance<C$PDO> &v$this, const string &query) noexcept
+    : query(new PdoQueryResumable(v$this, query))  {}
+
+  bool run() {
+    RESUMABLE_BEGIN
+      statement = start_resumable<class_instance<C$PDOStatement>>(query);
+      TRY_WAIT(PdoExecResumable_label, statement, class_instance<C$PDOStatement>)
+      if (statement.is_null()) {
+        RETURN(false);
+      }
+      RETURN(statement.get()->statement->affected_rows());
+    RESUMABLE_END
+  }
+};
+
 class_instance<C$PDOStatement> f$PDO$$query(const class_instance<C$PDO> &v$this, const string &query, Optional<int64_t>) {
   return start_resumable<class_instance<C$PDOStatement>>(new PdoQueryResumable{v$this, query});
 }
 
 Optional<int64_t> f$PDO$$exec(const class_instance<C$PDO> &v$this, const string &query) {
-  auto statement = start_resumable<class_instance<C$PDOStatement>>(new PdoQueryResumable{v$this, query});
-  if (statement.is_null()) {
-    return false;
-  }
-  return statement.get()->statement->affected_rows();
+  return start_resumable<Optional<int64_t>>(new PdoExecResumable{v$this, query});
 }
 
 Optional<string> f$PDO$$errorCode(const class_instance<C$PDO> &v$this) {
@@ -91,7 +118,7 @@ array<mixed> f$PDO$$errorInfo(const class_instance<C$PDO> &v$this) {
 
   array<mixed> res(array_size{3, 0, true});
   res[0] = sqlstate.val();
-  res[1] = static_cast<int64_t>(error_code);
-  res[2] = string{error_msg};
+  res[1] = error_code == 0 ? mixed() : error_code;
+  res[2] = strcmp(error_msg, "") == 0 ? mixed() : string{error_msg};
   return res;
 }

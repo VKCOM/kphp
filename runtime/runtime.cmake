@@ -43,6 +43,12 @@ prepend(KPHP_RUNTIME_PDO_MYSQL_SOURCES pdo/mysql/
         mysql_pdo_emulated_statement.cpp)
 endif()
 
+if (PDO_DRIVER_PGSQL)
+prepend(KPHP_RUNTIME_PDO_PGSQL_SOURCES pdo/pgsql/
+        pgsql_pdo_driver.cpp
+        pgsql_pdo_emulated_statement.cpp)
+endif()
+
 prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         ${KPHP_RUNTIME_DATETIME_SOURCES}
         ${KPHP_RUNTIME_MEMORY_RESOURCE_SOURCES}
@@ -51,6 +57,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         ${KPHP_RUNTIME_SPL_SOURCES}
         ${KPHP_RUNTIME_PDO_SOURCES}
         ${KPHP_RUNTIME_PDO_MYSQL_SOURCES}
+        ${KPHP_RUNTIME_PDO_PGSQL_SOURCES}
         allocator.cpp
         array_functions.cpp
         bcmath.cpp
@@ -142,6 +149,11 @@ set(RUNTIME_LINK_TEST_LIBS vk::flex_data_static ${CURL_LIB} OpenSSL::SSL ${NUMA_
 if (PDO_DRIVER_MYSQL)
     list(APPEND RUNTIME_LINK_TEST_LIBS mysqlclient)
 endif()
+
+if (PDO_DRIVER_PGSQL)
+    list(APPEND RUNTIME_LINK_TEST_LIBS PostgreSQL::PostgreSQL)
+endif()
+
 file(GLOB_RECURSE KPHP_RUNTIME_ALL_HEADERS
      RELATIVE ${BASE_DIR}
      CONFIGURE_DEPENDS
