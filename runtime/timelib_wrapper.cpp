@@ -243,11 +243,14 @@ static void update_errors_warnings(timelib_error_container *last_errors) {
   date_globals.last_errors = last_errors;
 }
 
+static const string NOW{"now"};
+
 std::pair<timelib_time *, string> php_timelib_date_initialize(const string &tz_name, const string &time_str, const char *format) {
+  const string &time_str_new = time_str.empty() ? NOW : time_str;
   timelib_error_container *err = nullptr;
   timelib_time *t = format
     ? timelib_parse_from_format(format, time_str.c_str(), time_str.size(), &err, timelib_builtin_db(), timelib_parse_tzfile)
-    : timelib_strtotime(time_str.c_str(), time_str.size(), &err, timelib_builtin_db(), timelib_parse_tzfile);
+    : timelib_strtotime(time_str_new.c_str(), time_str_new.size(), &err, timelib_builtin_db(), timelib_parse_tzfile);
 
   /* update last errors and warnings */
   update_errors_warnings(err);
