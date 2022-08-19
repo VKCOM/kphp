@@ -5,9 +5,15 @@
 // php_timelib wraps the https://github.com/derickr/timelib library
 // which is used in PHP to implement several datetime lib functions.
 
-const char* const PHP_TIMELIB_TZ_MOSCOW = "Europe/Moscow";
-const char* const PHP_TIMELIB_TZ_GMT3 = "Etc/GMT-3";
-const char* const PHP_TIMELIB_TZ_GMT4 = "Etc/GMT-4";
+const char *const PHP_TIMELIB_TZ_MOSCOW = "Europe/Moscow";
+const char *const PHP_TIMELIB_TZ_GMT3 = "Etc/GMT-3";
+const char *const PHP_TIMELIB_TZ_GMT4 = "Etc/GMT-4";
+
+const char *const PHP_TIMELIB_MON_FULL_NAMES[] = {"January", "February", "March",     "April",   "May",      "June",
+                                                  "July",    "August",   "September", "October", "November", "December"};
+const char *const PHP_TIMELIB_MON_SHORT_NAMES[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+const char *const PHP_TIMELIB_DAY_FULL_NAMES[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+const char *const PHP_TIMELIB_DAY_SHORT_NAMES[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 
 void global_init_php_timelib();
 
@@ -26,5 +32,10 @@ using timelib_time = _timelib_time;
 std::pair<timelib_time *, string> php_timelib_date_initialize(const string &tz_name, const string &time_str, const char *format = nullptr);
 void php_timelib_date_remove(timelib_time *t);
 Optional<array<mixed>> php_timelib_date_get_last_errors();
+
+constexpr bool timelib_is_leap_year(int32_t year) noexcept {
+  return (year % 4 == 0) && (year % 100 != 0 || year % 400 == 0);
+}
+
 string php_timelib_date_format(const string &format, timelib_time *t, bool localtime);
 string php_timelib_date_format_localtime(const string &format, timelib_time *t);

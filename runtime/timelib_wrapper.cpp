@@ -308,16 +308,7 @@ Optional<array<mixed>> php_timelib_date_get_last_errors() {
   return false;
 }
 
-static const char *const mon_full_names[] = {"January", "February", "March",     "April",   "May",      "June",
-                                             "July",    "August",   "September", "October", "November", "December"};
-
-static const char *const mon_short_names[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-
-static const char *const day_full_names[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
-
-static const char *const day_short_names[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-
-static const char *english_suffix(timelib_sll number) {
+constexpr const char *english_suffix(timelib_sll number) noexcept {
   if (number >= 10 && number <= 19) {
     return "th";
   } else {
@@ -332,15 +323,13 @@ static const char *english_suffix(timelib_sll number) {
   }
   return "th";
 }
-/* }}} */
 
-/* {{{ day of week helpers */
 static const char *php_date_full_day_name(timelib_sll y, timelib_sll m, timelib_sll d) {
   timelib_sll day_of_week = timelib_day_of_week(y, m, d);
   if (day_of_week < 0) {
     return "Unknown";
   }
-  return day_full_names[day_of_week];
+  return PHP_TIMELIB_DAY_FULL_NAMES[day_of_week];
 }
 
 static const char *php_date_short_day_name(timelib_sll y, timelib_sll m, timelib_sll d) {
@@ -348,10 +337,8 @@ static const char *php_date_short_day_name(timelib_sll y, timelib_sll m, timelib
   if (day_of_week < 0) {
     return "Unknown";
   }
-  return day_short_names[day_of_week];
+  return PHP_TIMELIB_DAY_SHORT_NAMES[day_of_week];
 }
-
-#define timelib_is_leap(y) ((y) % 4 == 0 && ((y) % 100 != 0 || (y) % 400 == 0))
 
 using StaticBuf = std::array<char, 128>;
 
@@ -440,13 +427,13 @@ string php_timelib_date_format(const string &format, timelib_time *t, bool local
 
       /* month */
       case 'F':
-        length = safe_snprintf(buffer, "%s", mon_full_names[t->m - 1]);
+        length = safe_snprintf(buffer, "%s", PHP_TIMELIB_MON_FULL_NAMES[t->m - 1]);
         break;
       case 'm':
         length = safe_snprintf(buffer, "%02d", static_cast<int>(t->m));
         break;
       case 'M':
-        length = safe_snprintf(buffer, "%s", mon_short_names[t->m - 1]);
+        length = safe_snprintf(buffer, "%s", PHP_TIMELIB_MON_SHORT_NAMES[t->m - 1]);
         break;
       case 'n':
         length = safe_snprintf(buffer, "%d", static_cast<int>(t->m));
@@ -457,7 +444,7 @@ string php_timelib_date_format(const string &format, timelib_time *t, bool local
 
       /* year */
       case 'L':
-        length = safe_snprintf(buffer, "%d", timelib_is_leap((int)t->y));
+        length = safe_snprintf(buffer, "%d", timelib_is_leap_year(static_cast<int>(t->y)));
         break;
       case 'y':
         length = safe_snprintf(buffer, "%02d", static_cast<int>(t->y % 100));
@@ -537,8 +524,8 @@ string php_timelib_date_format(const string &format, timelib_time *t, bool local
         break;
       case 'r':
         length = safe_snprintf(buffer, "%3s, %02d %3s %04ld %02d:%02d:%02d %c%02d%02d", php_date_short_day_name(t->y, t->m, t->d), static_cast<int>(t->d),
-                               mon_short_names[t->m - 1], static_cast<int64_t>(t->y), static_cast<int>(t->h), static_cast<int>(t->i), static_cast<int>(t->s),
-                               localtime ? ((offset->offset < 0) ? '-' : '+') : '+', localtime ? abs(offset->offset / 3600) : 0,
+                               PHP_TIMELIB_MON_SHORT_NAMES[t->m - 1], static_cast<int64_t>(t->y), static_cast<int>(t->h), static_cast<int>(t->i),
+                               static_cast<int>(t->s), localtime ? ((offset->offset < 0) ? '-' : '+') : '+', localtime ? abs(offset->offset / 3600) : 0,
                                localtime ? abs((offset->offset % 3600) / 60) : 0);
         break;
       case 'U':
