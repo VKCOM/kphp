@@ -1213,6 +1213,104 @@ string f$sprintf(const string &format, const array<mixed> &a) {
   return result;
 }
 
+string f$stripcslashes(const string &str) {
+  if (str.empty()) {
+    return str;
+  }
+
+  // this implementation is an adapted version from php-src
+
+  auto len = str.size();
+  auto new_len = len;
+  string result(len, false);
+  char *result_c_str = &result[0];
+  char num_tmp[4]; // we need up to three digits + a space for null-terminator
+  int j = 0;
+
+  for (int i = 0; i < len; i++) {
+    if (str[i] != '\\' || i + 1 >= len) {
+      *result_c_str++ = str[i];
+    } else {
+      i++; // step over a backslash
+      switch (str[i]) {
+        case 'n':
+          *result_c_str++ = '\n';
+          new_len--;
+          break;
+        case 'r':
+          *result_c_str++ = '\r';
+          new_len--;
+          break;
+        case 'a':
+          *result_c_str++ = '\a';
+          new_len--;
+          break;
+        case 't':
+          *result_c_str++ = '\t';
+          new_len--;
+          break;
+        case 'v':
+          *result_c_str++ = '\v';
+          new_len--;
+          break;
+        case 'b':
+          *result_c_str++ = '\b';
+          new_len--;
+          break;
+        case 'f':
+          *result_c_str++ = '\f';
+          new_len--;
+          break;
+        case '\\':
+          *result_c_str++ = '\\';
+          new_len--;
+          break;
+        case 'x': // \\xN or \\xNN
+          // collect up to two hex digits and interpret them as char
+          if (i+1 < len && isxdigit(static_cast<int>(str[i+1]))) {
+            num_tmp[0] = str[++i];
+            if (i+1 < len && isxdigit(static_cast<int>(str[i+1]))) {
+              num_tmp[1] = str[++i];
+              num_tmp[2] = '\0';
+              new_len -= 3;
+            } else {
+              num_tmp[1] = '\0';
+              new_len -= 2;
+            }
+            *result_c_str++ = static_cast<char>(strtol(num_tmp, nullptr, 16));
+          } else {
+            // not a hex literal, just copy a char as i
+            *result_c_str++ = str[i];
+            new_len--;
+          }
+          break;
+        default: // \N \NN \NNN
+          // collect up to three octal digits and interpret them as char
+          j = 0;
+          while (i < len && str[i] >= '0' && str[i] <= '7' && j < 3) {
+            num_tmp[j++] = str[i++];
+          }
+          if (j) {
+            num_tmp[j] ='\0';
+            *result_c_str++ = static_cast<char>(strtol(num_tmp, nullptr, 8));
+            new_len -= j;
+            i--;
+          } else {
+            // not an octal literal, just copy a char as is
+            *result_c_str++ = str[i];
+            new_len--;
+          }
+      }
+    }
+  }
+
+  if (new_len != 0) {
+    *result_c_str = '\0';
+  }
+  result.shrink(new_len);
+  return result;
+}
+
 string f$stripslashes(const string &str) {
   int len = str.size();
   int i;

@@ -629,6 +629,7 @@ function parse_str ($str ::: string, &$arr ::: mixed) ::: void; // TODO: why no 
 function ord ($c ::: string) ::: int;
 function strcasecmp ($str1 ::: string, $str2 ::: string) ::: int;
 function strcmp ($str1 ::: string, $str2 ::: string) ::: int;
+function stripcslashes ($str ::: string) ::: string;
 function stripslashes ($str ::: string) ::: string;
 function strip_tags ($str ::: string, $allow ::: string|string[] = "") ::: string;
 function strncmp ($str1 ::: string, $str2 ::: string, $len ::: int) ::: int;
