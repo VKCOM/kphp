@@ -92,6 +92,8 @@ Optional<string> f$setlocale(int64_t category, const string &locale);
 
 string f$sprintf(const string &format, const array<mixed> &a);
 
+string f$stripcslashes(const string &str);
+
 string f$stripslashes(const string &str);
 
 int64_t f$strcasecmp(const string &lhs, const string &rhs);
