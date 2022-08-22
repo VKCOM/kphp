@@ -41,3 +41,4 @@ string php_timelib_date_format(const string &format, timelib_time *t, bool local
 string php_timelib_date_format_localtime(const string &format, timelib_time *t);
 void php_timelib_date_timestamp_set(timelib_time *t, int64_t timestamp);
 int64_t php_timelib_date_timestamp_get(timelib_time *t);
+std::pair<bool, string> php_timelib_date_modify(timelib_time *t, const string &modifier);

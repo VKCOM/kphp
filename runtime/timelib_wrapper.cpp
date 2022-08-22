@@ -243,6 +243,15 @@ static void update_errors_warnings(timelib_error_container *last_errors) {
   date_globals.last_errors = last_errors;
 }
 
+static string gen_parse_error_msg(const timelib_error_container &err, const string &str) {
+  string error_msg{"Failed to parse time string "};
+  error_msg.append(1, '(').append(str).append(1, ')');
+  error_msg.append(" at position ").append(err.error_messages[0].position);
+  error_msg.append(" (").append(1, err.error_messages[0].character).append("): ");
+  error_msg.append(err.error_messages[0].message);
+  return error_msg;
+}
+
 static const string NOW{"now"};
 
 std::pair<timelib_time *, string> php_timelib_date_initialize(const string &tz_name, const string &time_str, const char *format) {
@@ -257,13 +266,8 @@ std::pair<timelib_time *, string> php_timelib_date_initialize(const string &tz_n
 
   if (err && err->error_count) {
     /* spit out the first library error message, at least */
-    string error_msg{"Failed to parse time string "};
-    error_msg.append(1, '(').append(time_str).append(1, ')');
-    error_msg.append(" at position ").append(err->error_messages[0].position);
-    error_msg.append(" (").append(1, err->error_messages[0].character).append("): ");
-    error_msg.append(err->error_messages[0].message);
     timelib_time_dtor(t);
-    return {nullptr, std::move(error_msg)};
+    return {nullptr, gen_parse_error_msg(*err, time_str)};
   }
 
   timelib_tzinfo *tzi = nullptr;
@@ -572,4 +576,58 @@ int64_t php_timelib_date_timestamp_get(timelib_time *t) {
   php_assert(error == 0);
 
   return timestamp;
+}
+
+std::pair<bool, string> php_timelib_date_modify(timelib_time *t, const string &modifier) {
+  timelib_error_container *err = nullptr;
+  timelib_time *tmp_time = timelib_strtotime(modifier.c_str(), modifier.size(), &err, timelib_builtin_db(), timelib_parse_tzfile);
+  vk::final_action tmp_time_deleter{[tmp_time] { timelib_time_dtor(tmp_time); }};
+
+  /* update last errors and warnings */
+  update_errors_warnings(err);
+
+  if (err && err->error_count) {
+    /* spit out the first library error message, at least */
+    return {false, gen_parse_error_msg(*err, modifier)};
+  }
+
+  std::memcpy(&t->relative, &tmp_time->relative, sizeof(timelib_rel_time));
+  t->have_relative = tmp_time->have_relative;
+  t->sse_uptodate = 0;
+
+  if (tmp_time->y != -99999) {
+    t->y = tmp_time->y;
+  }
+  if (tmp_time->m != -99999) {
+    t->m = tmp_time->m;
+  }
+  if (tmp_time->d != -99999) {
+    t->d = tmp_time->d;
+  }
+
+  if (tmp_time->h != -99999) {
+    t->h = tmp_time->h;
+    if (tmp_time->i != -99999) {
+      t->i = tmp_time->i;
+      if (tmp_time->s != -99999) {
+        t->s = tmp_time->s;
+      } else {
+        t->s = 0;
+      }
+    } else {
+      t->i = 0;
+      t->s = 0;
+    }
+  }
+
+  if (tmp_time->us != -99999) {
+    t->us = tmp_time->us;
+  }
+
+  timelib_update_ts(t, nullptr);
+  timelib_update_from_sse(t);
+  t->have_relative = 0;
+  std::memset(&t->relative, 0, sizeof(t->relative));
+
+  return {true, {}};
 }
