@@ -556,3 +556,20 @@ string php_timelib_date_format(const string &format, timelib_time *t, bool local
 string php_timelib_date_format_localtime(const string &format, timelib_time *t) {
   return php_timelib_date_format(format, t, t->is_localtime);
 }
+
+void php_timelib_date_timestamp_set(timelib_time *t, int64_t timestamp) {
+  timelib_unixtime2local(t, static_cast<timelib_sll>(timestamp));
+  timelib_update_ts(t, nullptr);
+  t->us = 0;
+}
+
+int64_t php_timelib_date_timestamp_get(timelib_time *t) {
+  timelib_update_ts(t, nullptr);
+
+  int error = 0;
+  timelib_long timestamp = timelib_date_to_int(t, &error);
+  // the 'error' should be always 0 on x64 platform
+  php_assert(error == 0);
+
+  return timestamp;
+}

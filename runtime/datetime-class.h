@@ -48,4 +48,8 @@ class_instance<C$DateTime> f$DateTime$$__construct(const class_instance<C$DateTi
 
 Optional<array<mixed>> f$DateTime$$getLastErrors() noexcept;
 
+class_instance<C$DateTime> f$DateTime$$setTimestamp(const class_instance<C$DateTime> &self, int64_t timestamp) noexcept;
+
 string f$DateTime$$format(const class_instance<C$DateTime> &self, const string &format) noexcept;
+
+int64_t f$DateTime$$getTimestamp(const class_instance<C$DateTime> &self) noexcept;

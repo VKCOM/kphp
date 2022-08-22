@@ -48,6 +48,15 @@ Optional<array<mixed>> f$DateTime$$getLastErrors() noexcept {
   return php_timelib_date_get_last_errors();
 }
 
+class_instance<C$DateTime> f$DateTime$$setTimestamp(const class_instance<C$DateTime> &self, int64_t timestamp) noexcept {
+  php_timelib_date_timestamp_set(self->time, timestamp);
+  return self;
+}
+
 string f$DateTime$$format(const class_instance<C$DateTime> &self, const string &format) noexcept {
   return php_timelib_date_format_localtime(format, self->time);
+}
+
+int64_t f$DateTime$$getTimestamp(const class_instance<C$DateTime> &self) noexcept {
+  return php_timelib_date_timestamp_get(self->time);
 }

@@ -39,3 +39,5 @@ constexpr bool timelib_is_leap_year(int32_t year) noexcept {
 
 string php_timelib_date_format(const string &format, timelib_time *t, bool localtime);
 string php_timelib_date_format_localtime(const string &format, timelib_time *t);
+void php_timelib_date_timestamp_set(timelib_time *t, int64_t timestamp);
+int64_t php_timelib_date_timestamp_get(timelib_time *t);

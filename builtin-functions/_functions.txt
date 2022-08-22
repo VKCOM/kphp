@@ -1510,11 +1510,14 @@ interface DateTimeInterface {
 
   /* Methods */
   public function format(string $format): string;
+  public function getTimestamp(): int;
 }
 
 class DateTime implements DateTimeInterface {
   /** @kphp-extern-func-info can_throw */
   public function __construct(string $datetime = "now", ?DateTimeZone $timezone = null);
-  public function format(string $format): string;
   public static function getLastErrors(): array|false;
+  public function setTimestamp(int $timestamp): DateTime;
+  public function format(string $format): string;
+  public function getTimestamp(): int;
 }
