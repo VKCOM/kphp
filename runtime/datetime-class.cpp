@@ -67,6 +67,12 @@ class_instance<C$DateTime> f$DateTime$$setISODate(const class_instance<C$DateTim
   return self;
 }
 
+class_instance<C$DateTime> f$DateTime$$setTime(const class_instance<C$DateTime> &self, int64_t hour, int64_t minute, int64_t second,
+                                               int64_t microsecond) noexcept {
+  php_date_time_set(self->time, hour, minute, second, microsecond);
+  return self;
+}
+
 class_instance<C$DateTime> f$DateTime$$setTimestamp(const class_instance<C$DateTime> &self, int64_t timestamp) noexcept {
   php_timelib_date_timestamp_set(self->time, timestamp);
   return self;

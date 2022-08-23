@@ -648,3 +648,11 @@ void php_timelib_date_isodate_set(timelib_time *t, int64_t y, int64_t w, int64_t
   t->have_relative = 1;
   timelib_update_ts(t, nullptr);
 }
+
+void php_date_time_set(timelib_time *t, int64_t h, int64_t i, int64_t s, int64_t ms) {
+  t->h = h;
+  t->i = i;
+  t->s = s;
+  t->us = ms;
+  timelib_update_ts(t, nullptr);
+}

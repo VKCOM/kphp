@@ -1520,6 +1520,12 @@ class DateTime implements DateTimeInterface {
   public function modify(string $modifier): DateTime|false;
   public function setDate(int $year, int $month, int $day): DateTime;
   public function setISODate(int $year, int $week, int $dayOfWeek = 1): DateTime;
+  public function setTime(
+      int $hour,
+      int $minute,
+      int $second = 0,
+      int $microsecond = 0
+  ): DateTime;
   public function setTimestamp(int $timestamp): DateTime;
   public function format(string $format): string;
   public function getTimestamp(): int;
