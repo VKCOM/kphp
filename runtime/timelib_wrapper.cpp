@@ -638,3 +638,13 @@ void php_timelib_date_date_set(timelib_time *t, int64_t y, int64_t m, int64_t d)
   t->d = d;
   timelib_update_ts(t, nullptr);
 }
+
+void php_timelib_date_isodate_set(timelib_time *t, int64_t y, int64_t w, int64_t d) {
+  t->y = y;
+  t->m = 1;
+  t->d = 1;
+  std::memset(&t->relative, 0, sizeof(t->relative));
+  t->relative.d = timelib_daynr_from_weeknr(y, w, d);
+  t->have_relative = 1;
+  timelib_update_ts(t, nullptr);
+}

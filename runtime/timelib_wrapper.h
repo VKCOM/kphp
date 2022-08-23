@@ -43,3 +43,5 @@ void php_timelib_date_timestamp_set(timelib_time *t, int64_t timestamp);
 int64_t php_timelib_date_timestamp_get(timelib_time *t);
 std::pair<bool, string> php_timelib_date_modify(timelib_time *t, const string &modifier);
 void php_timelib_date_date_set(timelib_time *t, int64_t y, int64_t m, int64_t d);
+void php_timelib_date_isodate_set(timelib_time *t, int64_t y, int64_t w, int64_t d);
+

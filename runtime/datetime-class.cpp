@@ -62,6 +62,11 @@ class_instance<C$DateTime> f$DateTime$$setDate(const class_instance<C$DateTime> 
   return self;
 }
 
+class_instance<C$DateTime> f$DateTime$$setISODate(const class_instance<C$DateTime> &self, int64_t year, int64_t week, int64_t dayOfWeek) noexcept {
+  php_timelib_date_isodate_set(self->time, year, week, dayOfWeek);
+  return self;
+}
+
 class_instance<C$DateTime> f$DateTime$$setTimestamp(const class_instance<C$DateTime> &self, int64_t timestamp) noexcept {
   php_timelib_date_timestamp_set(self->time, timestamp);
   return self;

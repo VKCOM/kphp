@@ -4,12 +4,13 @@
 function test_set_date() {
   $date = new DateTime("2009-01-30 19:34:10");
   echo $date->format(DATE_RFC2822) . "\n";
+
   $new_date = $date->setDate(2008, 02, 01);
   echo $date->format(DATE_RFC2822) . "\n";
   echo $new_date->format(DATE_RFC2822) . "\n";
 }
 
-function test_date_exceed_range() {
+function test_set_date_exceed_range() {
   $date = new DateTime();
   
   $date->setDate(2001, 2, 28);
@@ -22,5 +23,38 @@ function test_date_exceed_range() {
   echo $date->format('Y-m-d') . "\n";
 }
 
+function test_setiso_date() {
+  $date = new DateTime();
+
+  $new_date = $date->setISODate(2008, 2);
+  echo $date->format('Y-m-d') . "\n";
+  echo $new_date->format('Y-m-d') . "\n";
+
+  $date->setISODate(2008, 2, 7);
+  echo $date->format('Y-m-d') . "\n";
+}
+
+function test_setiso_date_exceed_range() {
+  $date = new DateTime();
+
+  $date->setISODate(2008, 2, 7);
+  echo $date->format('Y-m-d') . "\n";
+
+  $date->setISODate(2008, 2, 8);
+  echo $date->format('Y-m-d') . "\n";
+
+  $date->setISODate(2008, 53, 7);
+  echo $date->format('Y-m-d') . "\n";
+}
+
+function test_setiso_date_find_month() {
+  $date = new DateTime();
+  $newDate = $date->setISODate(2008, 14);
+  echo $newDate->format('n'), "\n";
+}
+
 test_set_date();
-test_date_exceed_range();
+test_set_date_exceed_range();
+test_setiso_date();
+test_setiso_date_exceed_range();
+test_setiso_date_find_month();
