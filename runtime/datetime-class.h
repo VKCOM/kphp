@@ -50,6 +50,8 @@ Optional<array<mixed>> f$DateTime$$getLastErrors() noexcept;
 
 class_instance<C$DateTime> f$DateTime$$modify(const class_instance<C$DateTime> &self, const string &modifier) noexcept;
 
+class_instance<C$DateTime> f$DateTime$$setDate(const class_instance<C$DateTime> &self, int64_t year, int64_t month, int64_t day) noexcept;
+
 class_instance<C$DateTime> f$DateTime$$setTimestamp(const class_instance<C$DateTime> &self, int64_t timestamp) noexcept;
 
 string f$DateTime$$format(const class_instance<C$DateTime> &self, const string &format) noexcept;

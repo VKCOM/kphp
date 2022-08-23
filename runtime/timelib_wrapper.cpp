@@ -631,3 +631,10 @@ std::pair<bool, string> php_timelib_date_modify(timelib_time *t, const string &m
 
   return {true, {}};
 }
+
+void php_timelib_date_date_set(timelib_time *t, int64_t y, int64_t m, int64_t d) {
+  t->y = y;
+  t->m = m;
+  t->d = d;
+  timelib_update_ts(t, nullptr);
+}

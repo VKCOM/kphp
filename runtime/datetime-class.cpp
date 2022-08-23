@@ -57,6 +57,11 @@ class_instance<C$DateTime> f$DateTime$$modify(const class_instance<C$DateTime> &
   return self;
 }
 
+class_instance<C$DateTime> f$DateTime$$setDate(const class_instance<C$DateTime> &self, int64_t year, int64_t month, int64_t day) noexcept {
+  php_timelib_date_date_set(self->time, year, month, day);
+  return self;
+}
+
 class_instance<C$DateTime> f$DateTime$$setTimestamp(const class_instance<C$DateTime> &self, int64_t timestamp) noexcept {
   php_timelib_date_timestamp_set(self->time, timestamp);
   return self;
