@@ -35,6 +35,29 @@ function test_constructor_relative_date() {
   echo $time->format('Y/m/d'), "\n";
 }
 
+function test_constructor_tz_from_datetime() {
+  $dates = ['2010-01-28T15:00:00', '2010-01-28T15:00:00 Europe/Amsterdam', '2010-01-28T15:00:00 Pacific/Nauru',
+    '@946684800', '2010-01-28T15:00:00+0430', '2010-01-28T15:00:00 GMT-06:00', '2010-01-28T15:00:00 CEST',
+    '2010-01-28T15:00:00 BST', '2010-01-28T15:00:00 ACDT'];
+
+  foreach ($dates as $date) {
+    var_dump((new DateTime($date))->format("Y-m-d H:i:s e I O P T Z"));
+    var_dump(DateTime::getLastErrors());
+  }
+}
+
+function test_constructor_timezone_param() {
+  var_dump((new DateTime('2022-08-24 16:45:00'))->format('Y-m-d H:i:s e I O P T Z U'));
+  var_dump((new DateTime('2022-08-24 16:45:00', new DateTimeZone('Europe/Moscow')))->format('Y-m-d H:i:s e I O P T Z U'));
+  var_dump((new DateTime('2022-08-24 16:45:00', new DateTimeZone('Etc/GMT-3')))->format('Y-m-d H:i:s e I O P T Z U'));
+  var_dump((new DateTime('2022-08-24 16:45:00 Pacific/Nauru', new DateTimeZone('Etc/GMT-3')))->format('Y-m-d H:i:s e I O P T Z U'));
+  var_dump((new DateTime('2022-08-24 16:45:00 BST', new DateTimeZone('Europe/Moscow')))->format('Y-m-d H:i:s e I O P T Z U'));
+  var_dump((new DateTime('2022-08-24 16:45:00 GMT-06:00', new DateTimeZone('Europe/Moscow')))->format('Y-m-d H:i:s e I O P T Z U'));
+  var_dump((new DateTime('@946684800', new DateTimeZone('Etc/GMT-3')))->format('Y-m-d H:i:s e I O P T Z U'));
+}
+
 test_constructor_valid_date();
 test_constructor_invalid_date();
 test_constructor_relative_date();
+test_constructor_tz_from_datetime();
+test_constructor_timezone_param();

@@ -363,16 +363,36 @@ static std::size_t safe_snprintf(StaticBuf &buf, const char *format, ...) {
   return written;
 }
 
+static timelib_time_offset *create_time_offset(timelib_time *t) {
+  if (t->zone_type == TIMELIB_ZONETYPE_ABBR) {
+    timelib_time_offset *offset = timelib_time_offset_ctor();
+    offset->offset = (t->z + (t->dst * 3600));
+    offset->leap_secs = 0;
+    offset->is_dst = t->dst;
+    offset->abbr = timelib_strdup(t->tz_abbr);
+    return offset;
+  }
+  if (t->zone_type == TIMELIB_ZONETYPE_OFFSET) {
+    timelib_time_offset *offset = timelib_time_offset_ctor();
+    offset->offset = (t->z);
+    offset->leap_secs = 0;
+    offset->is_dst = 0;
+    offset->abbr = static_cast<char *>(timelib_malloc(9)); /* GMT±xxxx\0 */
+    snprintf(offset->abbr, 9, "GMT%c%02d%02d", (offset->offset < 0) ? '-' : '+', abs(offset->offset / 3600), abs((offset->offset % 3600) / 60));
+    return offset;
+  }
+  return timelib_get_time_zone_info(t->sse, t->tz_info);
+}
+
 string php_timelib_date_format(const string &format, timelib_time *t, bool localtime) {
-  // we don't support timezones other than TIMELIB_ZONETYPE_ID
-  if (format.empty() || t->zone_type != TIMELIB_ZONETYPE_ID) {
+  if (format.empty()) {
     return {};
   }
 
   string_buffer &SB = static_SB_spare;
   SB.clean();
 
-  timelib_time_offset *offset = localtime ? timelib_get_time_zone_info(t->sse, t->tz_info) : nullptr;
+  timelib_time_offset *offset = localtime ? create_time_offset(t) : nullptr;
   vk::final_action offset_deleter{[offset] {
     if (offset) {
       timelib_time_offset_dtor(offset);
@@ -517,7 +537,21 @@ string php_timelib_date_format(const string &format, timelib_time *t, bool local
         length = safe_snprintf(buffer, "%s", localtime ? offset->abbr : "GMT");
         break;
       case 'e':
-        length = safe_snprintf(buffer, "%s", localtime ? t->tz_info->name : "UTC");
+        if (!localtime) {
+          length = safe_snprintf(buffer, "%s", "UTC");
+        } else {
+          switch (t->zone_type) {
+            case TIMELIB_ZONETYPE_ID:
+              length = safe_snprintf(buffer, "%s", t->tz_info->name);
+              break;
+            case TIMELIB_ZONETYPE_ABBR:
+              length = safe_snprintf(buffer, "%s", offset->abbr);
+              break;
+            case TIMELIB_ZONETYPE_OFFSET:
+              length = safe_snprintf(buffer, "%c%02d:%02d", ((offset->offset < 0) ? '-' : '+'), abs(offset->offset / 3600), abs((offset->offset % 3600) / 60));
+              break;
+          }
+        }
         break;
       case 'Z':
         length = safe_snprintf(buffer, "%d", localtime ? offset->offset : 0);
