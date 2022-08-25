@@ -4,7 +4,11 @@
 
 function test_modify_wrong_modifier() {
   $date = new DateTime('2000-12-31');
-  $date->modify('+1 day +four month');
+  $new_date = $date->modify('+1 day +four month');
+  var_dump((bool)$new_date);
+  var_dump((bool)$date);
+  echo $date->format("D, d M Y") . "\n";
+  var_dump(DateTime::getLastErrors());
 }
 
 test_modify_wrong_modifier();
