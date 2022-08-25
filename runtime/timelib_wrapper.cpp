@@ -225,22 +225,14 @@ std::pair<int64_t, bool> php_timelib_strtotime(const string &tz_name, const stri
   return {ts, true};
 }
 
-struct DateGlobals {
-  char *default_timezone{nullptr};
-  char *timezone{nullptr};
-//  HashTable *tzcache{nullptr};
-  timelib_error_container *last_errors{nullptr};
-  int timezone_valid{0};
-};
-
-static DateGlobals date_globals;
+static timelib_error_container *last_errors_global = nullptr;
 
 static void update_errors_warnings(timelib_error_container *last_errors) {
-  if (date_globals.last_errors) {
-    timelib_error_container_dtor(date_globals.last_errors);
-    date_globals.last_errors = nullptr;
+  if (last_errors_global) {
+    timelib_error_container_dtor(last_errors_global);
+    last_errors_global = nullptr;
   }
-  date_globals.last_errors = last_errors;
+  last_errors_global = last_errors;
 }
 
 static string gen_parse_error_msg(const timelib_error_container &err, const string &str) {
@@ -309,8 +301,8 @@ void php_timelib_date_remove(timelib_time *t) {
 }
 
 Optional<array<mixed>> php_timelib_date_get_last_errors() {
-  if (date_globals.last_errors) {
-    return dump_errors(*date_globals.last_errors);
+  if (last_errors_global) {
+    return dump_errors(*last_errors_global);
   }
   return false;
 }
