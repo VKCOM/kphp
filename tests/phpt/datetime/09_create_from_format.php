@@ -97,8 +97,21 @@ function test_create_from_format_timezone_param() {
   echo $date->format('Y-m-d H:i:s e I O P T Z U'), "\n";
 }
 
+function test_implicit_current_time() {
+  // the $date has to contain current H-i-s, despite it's not provided
+  $date = DateTime::createFromFormat('Y-m-d', '2012-10-17');
+
+  $hours = (int)$date->format('H');
+  $minutes = (int)$date->format('i');
+  $seconds = (int)$date->format('s');
+
+  $sum = $hours + $minutes + $seconds;
+  var_dump($sum > 0);
+}
+
 test_create_from_format();
 test_create_from_format_errors();
 test_overflow_behaviour();
 test_create_from_format_tz_from_datetime();
 test_create_from_format_timezone_param();
+test_implicit_current_time();

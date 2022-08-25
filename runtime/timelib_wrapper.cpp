@@ -285,7 +285,12 @@ std::pair<timelib_time *, string> php_timelib_date_initialize(const string &tz_n
   timelib_unixtime2local(now, static_cast<timelib_sll>(sec));
   now->us = usec;
 
-  timelib_fill_holes(t, now, TIMELIB_NO_CLONE);
+  int options = TIMELIB_NO_CLONE;
+  if (format) {
+    options |= TIMELIB_OVERRIDE_TIME;
+  }
+
+  timelib_fill_holes(t, now, options);
   timelib_update_ts(t, tzi);
   timelib_update_from_sse(t);
 
