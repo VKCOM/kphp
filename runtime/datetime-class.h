@@ -46,6 +46,9 @@ extern const string NOW;
 class_instance<C$DateTime> f$DateTime$$__construct(const class_instance<C$DateTime> &self, const string &datetime = NOW,
                                                    const class_instance<C$DateTimeZone> &timezone = Optional<bool>{}) noexcept;
 
+class_instance<C$DateTime> f$DateTime$$createFromFormat(const string &format, const string &datetime,
+                                                        const class_instance<C$DateTimeZone> &timezone = Optional<bool>{}) noexcept;
+
 Optional<array<mixed>> f$DateTime$$getLastErrors() noexcept;
 
 class_instance<C$DateTime> f$DateTime$$modify(const class_instance<C$DateTime> &self, const string &modifier) noexcept;

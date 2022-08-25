@@ -44,6 +44,18 @@ class_instance<C$DateTime> f$DateTime$$__construct(const class_instance<C$DateTi
   return self;
 }
 
+class_instance<C$DateTime> f$DateTime$$createFromFormat(const string &format, const string &datetime,
+                                                        const class_instance<C$DateTimeZone> &timezone) noexcept {
+  auto [time, _] = php_timelib_date_initialize(timezone.is_null() ? string{} : timezone->timezone, datetime, format.c_str());
+  if (!time) {
+    return {};
+  }
+  class_instance<C$DateTime> date_time;
+  date_time.alloc();
+  date_time->time = time;
+  return date_time;
+}
+
 Optional<array<mixed>> f$DateTime$$getLastErrors() noexcept {
   return php_timelib_date_get_last_errors();
 }
