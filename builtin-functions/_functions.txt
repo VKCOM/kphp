@@ -1510,6 +1510,7 @@ interface DateTimeInterface {
 
   /* Methods */
   public function format(string $format): string;
+  public function getOffset(): int;
   public function getTimestamp(): int;
 }
 
@@ -1529,5 +1530,6 @@ class DateTime implements DateTimeInterface {
   ): DateTime;
   public function setTimestamp(int $timestamp): DateTime;
   public function format(string $format): string;
+  public function getOffset(): int;
   public function getTimestamp(): int;
 }

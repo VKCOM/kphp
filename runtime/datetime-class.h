@@ -64,4 +64,6 @@ class_instance<C$DateTime> f$DateTime$$setTimestamp(const class_instance<C$DateT
 
 string f$DateTime$$format(const class_instance<C$DateTime> &self, const string &format) noexcept;
 
+int64_t f$DateTime$$getOffset(const class_instance<C$DateTime> &self) noexcept;
+
 int64_t f$DateTime$$getTimestamp(const class_instance<C$DateTime> &self) noexcept;

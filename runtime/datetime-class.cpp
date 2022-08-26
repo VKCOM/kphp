@@ -94,6 +94,10 @@ string f$DateTime$$format(const class_instance<C$DateTime> &self, const string &
   return php_timelib_date_format_localtime(format, self->time);
 }
 
+int64_t f$DateTime$$getOffset(const class_instance<C$DateTime> &self) noexcept {
+  return php_timelib_date_offset_get(self->time);
+}
+
 int64_t f$DateTime$$getTimestamp(const class_instance<C$DateTime> &self) noexcept {
   return php_timelib_date_timestamp_get(self->time);
 }

@@ -45,3 +45,4 @@ std::pair<bool, string> php_timelib_date_modify(timelib_time *t, const string &m
 void php_timelib_date_date_set(timelib_time *t, int64_t y, int64_t m, int64_t d);
 void php_timelib_date_isodate_set(timelib_time *t, int64_t y, int64_t w, int64_t d);
 void php_date_time_set(timelib_time *t, int64_t h, int64_t i, int64_t s, int64_t ms);
+int64_t php_timelib_date_offset_get(timelib_time *t);

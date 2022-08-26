@@ -687,3 +687,23 @@ void php_date_time_set(timelib_time *t, int64_t h, int64_t i, int64_t s, int64_t
   t->us = ms;
   timelib_update_ts(t, nullptr);
 }
+
+int64_t php_timelib_date_offset_get(timelib_time *t) {
+  if (t->is_localtime) {
+    switch (t->zone_type) {
+      case TIMELIB_ZONETYPE_ID: {
+        timelib_time_offset *offset = timelib_get_time_zone_info(t->sse, t->tz_info);
+        int64_t offset_int = offset->offset;
+        timelib_time_offset_dtor(offset);
+        return offset_int;
+      }
+      case TIMELIB_ZONETYPE_OFFSET: {
+        return t->z;
+      }
+      case TIMELIB_ZONETYPE_ABBR: {
+        return t->z + (3600 * t->dst);
+      }
+    }
+  }
+  return 0;
+}
