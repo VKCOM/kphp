@@ -2,6 +2,7 @@
 
 #include <kphp/timelib/timelib.h>
 #include <sys/time.h>
+#include <functional>
 
 #include "common/containers/final_action.h"
 #include "common/smart_ptrs/singleton.h"
@@ -227,12 +228,20 @@ std::pair<int64_t, bool> php_timelib_strtotime(const string &tz_name, const stri
 
 static timelib_error_container *last_errors_global = nullptr;
 
-static void update_errors_warnings(timelib_error_container *last_errors) {
+using ScriptMemGuard = decltype(std::function{make_malloc_replacement_with_script_allocator})::result_type;
+
+// NB: should be called under script allocator, because of calls to free() inside timelib_error_container_dtor()
+static void update_errors_warnings(timelib_error_container *last_errors, [[maybe_unused]] const ScriptMemGuard &guard) {
   if (last_errors_global) {
     timelib_error_container_dtor(last_errors_global);
     last_errors_global = nullptr;
   }
   last_errors_global = last_errors;
+}
+
+void free_timelib() {
+  auto script_guard = make_malloc_replacement_with_script_allocator();
+  update_errors_warnings(nullptr, script_guard);
 }
 
 static string gen_parse_error_msg(const timelib_error_container &err, const string &str) {
@@ -247,6 +256,8 @@ static string gen_parse_error_msg(const timelib_error_container &err, const stri
 static const string NOW{"now"};
 
 std::pair<timelib_time *, string> php_timelib_date_initialize(const string &tz_name, const string &time_str, const char *format) {
+  auto script_guard = make_malloc_replacement_with_script_allocator();
+
   const string &time_str_new = time_str.empty() ? NOW : time_str;
   timelib_error_container *err = nullptr;
   timelib_time *t = format
@@ -254,7 +265,7 @@ std::pair<timelib_time *, string> php_timelib_date_initialize(const string &tz_n
     : timelib_strtotime(time_str_new.c_str(), time_str_new.size(), &err, timelib_builtin_db(), timelib_parse_tzfile);
 
   /* update last errors and warnings */
-  update_errors_warnings(err);
+  update_errors_warnings(err, script_guard);
 
   if (err && err->error_count) {
     /* spit out the first library error message, at least */
@@ -301,6 +312,7 @@ std::pair<timelib_time *, string> php_timelib_date_initialize(const string &tz_n
 
 void php_timelib_date_remove(timelib_time *t) {
   if (t) {
+    auto script_guard = make_malloc_replacement_with_script_allocator();
     timelib_time_dtor(t);
   }
 }
@@ -360,7 +372,8 @@ static std::size_t safe_snprintf(StaticBuf &buf, const char *format, ...) {
   return written;
 }
 
-static timelib_time_offset *create_time_offset(timelib_time *t) {
+// NB: should be called under script allocator
+static timelib_time_offset *create_time_offset(timelib_time *t, [[maybe_unused]] const ScriptMemGuard &guard) {
   if (t->zone_type == TIMELIB_ZONETYPE_ABBR) {
     timelib_time_offset *offset = timelib_time_offset_ctor();
     offset->offset = (t->z + (t->dst * 3600));
@@ -386,10 +399,12 @@ string php_timelib_date_format(const string &format, timelib_time *t, bool local
     return {};
   }
 
+  auto script_guard = make_malloc_replacement_with_script_allocator();
+
   string_buffer &SB = static_SB_spare;
   SB.clean();
 
-  timelib_time_offset *offset = localtime ? create_time_offset(t) : nullptr;
+  timelib_time_offset *offset = localtime ? create_time_offset(t, script_guard) : nullptr;
   vk::final_action offset_deleter{[offset] {
     if (offset) {
       timelib_time_offset_dtor(offset);
@@ -593,12 +608,15 @@ string php_timelib_date_format_localtime(const string &format, timelib_time *t) 
 }
 
 void php_timelib_date_timestamp_set(timelib_time *t, int64_t timestamp) {
+  auto script_guard = make_malloc_replacement_with_script_allocator();
   timelib_unixtime2local(t, static_cast<timelib_sll>(timestamp));
   timelib_update_ts(t, nullptr);
   t->us = 0;
 }
 
 int64_t php_timelib_date_timestamp_get(timelib_time *t) {
+  auto script_guard = make_malloc_replacement_with_script_allocator();
+
   timelib_update_ts(t, nullptr);
 
   int error = 0;
@@ -610,12 +628,14 @@ int64_t php_timelib_date_timestamp_get(timelib_time *t) {
 }
 
 std::pair<bool, string> php_timelib_date_modify(timelib_time *t, const string &modifier) {
+  auto script_guard = make_malloc_replacement_with_script_allocator();
+
   timelib_error_container *err = nullptr;
   timelib_time *tmp_time = timelib_strtotime(modifier.c_str(), modifier.size(), &err, timelib_builtin_db(), timelib_parse_tzfile);
   vk::final_action tmp_time_deleter{[tmp_time] { timelib_time_dtor(tmp_time); }};
 
   /* update last errors and warnings */
-  update_errors_warnings(err);
+  update_errors_warnings(err, script_guard);
 
   if (err && err->error_count) {
     /* spit out the first library error message, at least */
@@ -664,6 +684,7 @@ std::pair<bool, string> php_timelib_date_modify(timelib_time *t, const string &m
 }
 
 void php_timelib_date_date_set(timelib_time *t, int64_t y, int64_t m, int64_t d) {
+  auto script_guard = make_malloc_replacement_with_script_allocator();
   t->y = y;
   t->m = m;
   t->d = d;
@@ -671,6 +692,7 @@ void php_timelib_date_date_set(timelib_time *t, int64_t y, int64_t m, int64_t d)
 }
 
 void php_timelib_date_isodate_set(timelib_time *t, int64_t y, int64_t w, int64_t d) {
+  auto script_guard = make_malloc_replacement_with_script_allocator();
   t->y = y;
   t->m = 1;
   t->d = 1;
@@ -681,6 +703,7 @@ void php_timelib_date_isodate_set(timelib_time *t, int64_t y, int64_t w, int64_t
 }
 
 void php_date_time_set(timelib_time *t, int64_t h, int64_t i, int64_t s, int64_t ms) {
+  auto script_guard = make_malloc_replacement_with_script_allocator();
   t->h = h;
   t->i = i;
   t->s = s;
@@ -689,6 +712,7 @@ void php_date_time_set(timelib_time *t, int64_t h, int64_t i, int64_t s, int64_t
 }
 
 int64_t php_timelib_date_offset_get(timelib_time *t) {
+  auto script_guard = make_malloc_replacement_with_script_allocator();
   if (t->is_localtime) {
     switch (t->zone_type) {
       case TIMELIB_ZONETYPE_ID: {

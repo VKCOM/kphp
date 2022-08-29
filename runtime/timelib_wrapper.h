@@ -26,6 +26,8 @@ array<mixed> php_timelib_date_parse_from_format(const string &format, const stri
 
 bool php_timelib_is_valid_date(int64_t month, int64_t day, int64_t year);
 
+void free_timelib();
+
 struct _timelib_time;
 using timelib_time = _timelib_time;
 
