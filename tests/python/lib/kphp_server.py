@@ -123,6 +123,15 @@ class KphpServer(Engine):
                 if abs(created_at - time.time()) > 60:
                     raise RuntimeError("Got bad timestamp in json log created_at: {}".format(created_at))
                 del log_record["created_at"]
+                got_tags = log_record.get("tags")
+                if (got_tags.get("process_type") not in ["general_worker", "http_worker", "rpc_worker", "master"]) \
+                        or (got_tags.get("logname_id") is not None and not isinstance(got_tags.get("logname_id"), int)) \
+                        or (not isinstance(got_tags.get("pid"), int)):
+                    raise RuntimeError("Got bad process_type tags in json log: {}".format(got_tags))
+                if log_record["tags"]["process_type"] != "master":
+                    del log_record["tags"]["logname_id"]
+                del log_record["tags"]["process_type"]
+                del log_record["tags"]["pid"]
                 self._json_logs.append(log_record)
 
     def assert_json_log(self, expect, message="Can't wait expected json log", timeout=60):
@@ -145,21 +154,11 @@ class KphpServer(Engine):
                 expected_record = expected_records[0]
                 expected_msg = expected_record["msg"]
                 got_msg = json_log_record["msg"]
-                got_tags = json_log_record.get("tags")
-                if re.search(expected_msg, got_msg) \
-                        and (got_tags.get("process_type") == "general_worker"
-                             or got_tags.get("process_type") == "job_worker"
-                             or got_tags.get("process_type") == "master") \
-                        and (got_tags.get("worker_unique_index") is None or
-                             isinstance(got_tags.get("worker_unique_index"), int)) \
-                        and (isinstance(got_tags.get("pid"), int)):
+                if re.search(expected_msg, got_msg):
                     expected_record_copy = expected_record.copy()
                     expected_record_copy["msg"] = ""
                     json_log_record_copy = json_log_record.copy()
                     json_log_record_copy["msg"] = ""
-                    json_log_record_copy["tags"].pop("process_type")
-                    json_log_record_copy["tags"].pop("pid")
-                    json_log_record_copy["tags"].pop("worker_unique_index", "No Key found")
                     if expected_record_copy == json_log_record_copy:
                         expected_records.pop(0)
                         self._json_logs[index] = None

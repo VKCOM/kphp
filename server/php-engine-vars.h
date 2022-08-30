@@ -21,7 +21,7 @@
 #define DEFAULT_SCRIPT_TIMEOUT 30
 #define MAX_SCRIPT_TIMEOUT (60 * 7)
 
-enum class ProcessType { master, general_worker, job_worker };
+enum class ProcessType { master, http_worker, rpc_worker, job_worker };
 
 /** engine variables **/
 extern int initial_verbosity;
