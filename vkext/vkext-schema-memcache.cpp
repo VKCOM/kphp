@@ -223,7 +223,7 @@ static const char *php_common_namespace = "_common";
 
 void check_buffer_overflow(int len) {
   if (len > PHP_CLASS_NAME_BUFFER_LENGTH) {
-    php_error_docref(NULL TSRMLS_CC, E_ERROR,
+    php_error_docref(NULL, E_ERROR,
                      "Internal class name buffer overflow (rpc typed mode)");
   }
 }
@@ -439,7 +439,7 @@ int get_full_tree_type_name(char *dst, struct tl_tree_type *tree, const char *co
       } else if (!strcmp(cur_type->id, "Bool")) {
         dst += make_tl_class_name(dst, "", "bool", "", '\0');
       } else {
-        php_error_docref(NULL TSRMLS_CC, E_ERROR,
+        php_error_docref(NULL, E_ERROR,
                          "Unexpected type %s during creating instance", cur_type->id);
       }
       return dst - start_dst;
@@ -481,7 +481,7 @@ int get_full_tree_type_name(char *dst, struct tl_tree_type *tree, const char *co
       }
       case NODE_TYPE_ARRAY:
       case NODE_TYPE_VAR_TYPE: {
-        php_error_docref(NULL TSRMLS_CC, E_ERROR,
+        php_error_docref(NULL, E_ERROR,
                          "Unexpected node type %d during creating instance", TYPE(child));
         break;
       }
@@ -504,7 +504,7 @@ static void get_php_class_name(char *dst, struct tl_tree_type *tree, int num) {
     } else if (!strcmp(constructor_name, "reqError")) {
       make_tl_class_name(dst, "", reqResult_error_class_name, "", '\0');
     } else {
-      php_error_docref(NULL TSRMLS_CC, E_WARNING,
+      php_error_docref(NULL, E_WARNING,
                        "Unknown constructor of ReqResult: %s", constructor_name);
     }
   } else {
@@ -643,7 +643,7 @@ void array_set_field(zval **arr, zval *val, const char *id, long long num) {
   ADD_CNT (array_set_field);
   START_TIMER (array_set_field);
   if (!*arr) {
-    php_error_docref(NULL TSRMLS_CC, E_WARNING, "In fetching of the function: %s\nAttempt to array_set_field() of NULL tl object", tl_current_function_name);
+    php_error_docref(NULL, E_WARNING, "In fetching of the function: %s\nAttempt to array_set_field() of NULL tl object", tl_current_function_name);
     VK_ALLOC_INIT_ZVAL (*arr);
     array_init (*arr);
   }
@@ -665,7 +665,7 @@ void set_field(zval **arr, zval *val, const char *id, long long num) {
   ADD_CNT (set_field);
   START_TIMER (set_field);
   if (!*arr) {
-    php_error_docref(NULL TSRMLS_CC, E_WARNING, "In fetching of the function: %s\nAttempt to set_field() of NULL tl object", tl_current_function_name);
+    php_error_docref(NULL, E_WARNING, "In fetching of the function: %s\nAttempt to set_field() of NULL tl object", tl_current_function_name);
     VK_ALLOC_INIT_ZVAL (*arr);
     array_init (*arr);
   }
@@ -706,7 +706,7 @@ void set_field_string(zval **arr, char *val, const char *id, int num) {
   ADD_CNT (set_field_string);
   START_TIMER (set_field_string);
   if (!*arr) {
-    php_error_docref(NULL TSRMLS_CC, E_WARNING, "In fetching of the function: %s\nAttempt to set_field_string() of NULL tl object", tl_current_function_name);
+    php_error_docref(NULL, E_WARNING, "In fetching of the function: %s\nAttempt to set_field_string() of NULL tl object", tl_current_function_name);
     VK_ALLOC_INIT_ZVAL (*arr);
     array_init (*arr);
   }
@@ -739,7 +739,7 @@ void set_field_int(zval **arr, int val, const char *id, int num) {
   ADD_CNT (set_field_int);
   START_TIMER (set_field_int);
   if (!*arr) {
-    php_error_docref(NULL TSRMLS_CC, E_WARNING, "In fetching of the function: %s\nAttempt to set_field_int() of NULL tl object", tl_current_function_name);
+    php_error_docref(NULL, E_WARNING, "In fetching of the function: %s\nAttempt to set_field_int() of NULL tl object", tl_current_function_name);
     VK_ALLOC_INIT_ZVAL (*arr);
     array_init (*arr);
   }
@@ -962,7 +962,7 @@ struct tl_tree *store_function(VK_ZVAL_API_P arr) {
     return 0;
   }
   if (!allow_internal_rpc_queries && (c->flags & COMBINATOR_FLAG_INTERNAL)) {
-    php_error_docref(NULL TSRMLS_CC, E_WARNING, "### DEPRECATED TL FEATURE ###:\nStoring of internal tl function %s\n", c->id);
+    php_error_docref(NULL, E_WARNING, "### DEPRECATED TL FEATURE ###:\nStoring of internal tl function %s\n", c->id);
     if (VK_Z_API_TYPE (arr) == IS_OBJECT) {
       zval_ptr_dtor(r);
       efree(dst);
@@ -1722,7 +1722,7 @@ void *tlcomb_fetch_type(void **IP, void **Data, zval **arr, struct tl_tree **var
 #ifdef VLOG
     fprintf (stderr, "Fetching any constructor\n");
 #endif
-    php_error_docref(NULL TSRMLS_CC, E_WARNING,
+    php_error_docref(NULL, E_WARNING,
                      "### DEPRECATED TL FEATURE ###: "
                      "The constructor name must be given if type has several ones. It's going to guess the constructor in runtime (fetching phase) ! "
                      "Type: %s; "
@@ -1841,7 +1841,7 @@ void *tlcomb_store_type(void **IP, void **Data, zval **arr, struct tl_tree **var
 #ifdef VLOG
     fprintf (stderr, "Storing any constructor\n");
 #endif
-    php_error_docref(NULL TSRMLS_CC, E_WARNING,
+    php_error_docref(NULL, E_WARNING,
                      "### DEPRECATED TL FEATURE ###: "
                      "The constructor name must be given if type has several ones. It's going to guess the constructor in runtime (storing phase) ! "
                      "Type: %s; "
@@ -1932,7 +1932,7 @@ void *tlcomb_fetch_field_end(void **IP, void **Data, zval **arr, struct tl_tree 
   char *id = *reinterpret_cast<char **>(IP++);
   int num = (long)*(IP++);
   if (!*arr) {
-    php_error_docref(NULL TSRMLS_CC, E_WARNING, "In fetching of the function: %s\nField is NULL after fetching", tl_current_function_name);
+    php_error_docref(NULL, E_WARNING, "In fetching of the function: %s\nField is NULL after fetching", tl_current_function_name);
     VK_ALLOC_INIT_ZVAL (*arr);
     array_init (*arr);
   }
@@ -2023,7 +2023,7 @@ void *tlcomb_fetch_array(void **IP, void **Data, zval **arr, struct tl_tree **va
       return 0;
     }
     if (!*arr) {
-      php_error_docref(NULL TSRMLS_CC, E_WARNING, "In fetching of the function: %s\nElement of tl array is NULL after fetching", tl_current_function_name);
+      php_error_docref(NULL, E_WARNING, "In fetching of the function: %s\nElement of tl array is NULL after fetching", tl_current_function_name);
       VK_ALLOC_INIT_ZVAL (*arr);
       array_init (*arr);
     }
@@ -2197,7 +2197,7 @@ void *tlcomb_fetch_vector(void **IP, void **Data, zval **arr, struct tl_tree **v
       return 0;
     }
     if (!*arr) {
-      php_error_docref(NULL TSRMLS_CC, E_WARNING, "In fetching of the function: %s\nElement of Vector is NULL after fetching", tl_current_function_name);
+      php_error_docref(NULL, E_WARNING, "In fetching of the function: %s\nElement of Vector is NULL after fetching", tl_current_function_name);
       VK_ALLOC_INIT_ZVAL (*arr);
       array_init (*arr);
     }
@@ -2241,7 +2241,7 @@ void *tlcomb_fetch_dictionary(void **IP, void **Data, zval **arr, struct tl_tree
       return 0;
     }
     if (!*arr) {
-      php_error_docref(NULL TSRMLS_CC, E_WARNING, "In fetching of the function: %s\nElement of Dictionary is NULL after fetching", tl_current_function_name);
+      php_error_docref(NULL, E_WARNING, "In fetching of the function: %s\nElement of Dictionary is NULL after fetching", tl_current_function_name);
       VK_ALLOC_INIT_ZVAL (*arr);
       array_init (*arr);
     }
@@ -2278,7 +2278,7 @@ void *tlcomb_fetch_int_key_dictionary(void **IP, void **Data, zval **arr, struct
       return 0;
     }
     if (!*arr) {
-      php_error_docref(NULL TSRMLS_CC, E_WARNING, "In fetching of the function: %s\nElement of IntKeyDictionary is NULL after fetching", tl_current_function_name);
+      php_error_docref(NULL, E_WARNING, "In fetching of the function: %s\nElement of IntKeyDictionary is NULL after fetching", tl_current_function_name);
       VK_ALLOC_INIT_ZVAL (*arr);
       array_init (*arr);
     }
@@ -2314,7 +2314,7 @@ void *tlcomb_fetch_long_key_dictionary(void **IP, void **Data, zval **arr, struc
       return 0;
     }
     if (!*arr) {
-      php_error_docref(NULL TSRMLS_CC, E_WARNING, "In fetching of the function: %s\nElement of LongKeyDictionary i NULL after fetching", tl_current_function_name);
+      php_error_docref(NULL, E_WARNING, "In fetching of the function: %s\nElement of LongKeyDictionary i NULL after fetching", tl_current_function_name);
       VK_ALLOC_INIT_ZVAL (*arr);
       array_init (*arr);
     }

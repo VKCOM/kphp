@@ -9,6 +9,6 @@
 
 #include "vkext/vk_zend.h"
 
-bool vk_json_encode(zval *val TSRMLS_DC);
+bool vk_json_encode(zval *val);
 
 #endif

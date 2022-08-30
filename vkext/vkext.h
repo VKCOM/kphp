@@ -74,9 +74,9 @@ PHP_FUNCTION (tl_config_load_file);
 PHP_FUNCTION (enable_internal_rpc_queries);
 PHP_FUNCTION (disable_internal_rpc_queries);
 
-#define PHP_WARNING(t) (NULL TSRMLS_CC, E_WARNING, t);
-#define PHP_ERROR(t) (NULL TSRMLS_CC, E_ERROR, t);
-#define PHP_NOTICE(t) (NULL TSRMLS_CC, E_NOTICE, t);
+#define PHP_WARNING(t) (NULL, E_WARNING, t);
+#define PHP_ERROR(t) (NULL, E_ERROR, t);
+#define PHP_NOTICE(t) (NULL, E_NOTICE, t);
 
 extern zend_module_entry vkext_module_entry;
 #define phpext_vkext_ptr &vkext_module_ptr

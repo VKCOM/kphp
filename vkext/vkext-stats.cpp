@@ -38,7 +38,7 @@ static int get_hll_size(char const *s, VK_LEN_T s_len) {
 
 PHP_FUNCTION (vk_stats_hll_merge) {
   zval *z;
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a", &z) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "a", &z) == FAILURE) {
     return;
   }
   if (Z_TYPE_P (z) != IS_ARRAY) {
@@ -212,7 +212,7 @@ double hll_count(char const *hll_table, int hll_table_size, int m) {
 PHP_FUNCTION (vk_stats_hll_count) {
   char *s;
   VK_LEN_T s_len;
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &s, &s_len) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &s, &s_len) == FAILURE) {
     return;
   }
   int len = get_hll_size(s, s_len);
@@ -295,7 +295,7 @@ static int hll_add(char *hll, int size, zval *z) {
 PHP_FUNCTION (vk_stats_hll_create) {
   zval *z = NULL;
   long size = 256;
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|al", &z, &size) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "|al", &z, &size) == FAILURE) {
     return;
   }
   if (z != NULL && Z_TYPE_P (z) != IS_ARRAY) {
@@ -323,7 +323,7 @@ PHP_FUNCTION (vk_stats_hll_add) {
   char *hll;
   zval *z;
   VK_LEN_T hll_len;
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa", &hll, &hll_len, &z) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "sa", &hll, &hll_len, &z) == FAILURE) {
     return;
   }
   if (Z_TYPE_P (z) != IS_ARRAY || !is_hll_unpacked(hll, hll_len) || (hll_len != (1 << 8) && hll_len != (1 << 14))) {
@@ -345,7 +345,7 @@ PHP_FUNCTION (vk_stats_hll_add) {
 PHP_FUNCTION (vk_stats_hll_pack) {
   char *s;
   VK_LEN_T s_len;
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &s, &s_len) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &s, &s_len) == FAILURE) {
     return;
   }
   if (!is_hll_unpacked(s, s_len)) {
@@ -360,7 +360,7 @@ PHP_FUNCTION (vk_stats_hll_pack) {
 PHP_FUNCTION (vk_stats_hll_unpack) {
   char *s;
   VK_LEN_T s_len;
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &s, &s_len) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &s, &s_len) == FAILURE) {
     return;
   }
   if (is_hll_unpacked(s, s_len)) {
@@ -379,7 +379,7 @@ PHP_FUNCTION (vk_stats_hll_unpack) {
 PHP_FUNCTION (vk_stats_hll_is_packed) {
   char *s;
   VK_LEN_T s_len;
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &s, &s_len) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &s, &s_len) == FAILURE) {
     return;
   }
   RETURN_BOOL(!is_hll_unpacked(s, s_len));

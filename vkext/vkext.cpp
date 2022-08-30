@@ -595,7 +595,7 @@ PHP_FUNCTION (vk_utf8_to_win) {
   VK_LEN_T text_len = 0;
   long max_len = 0;
   long exit_on_error = 0;
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|lb", &text, &text_len, &max_len, &exit_on_error) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s|lb", &text, &text_len, &max_len, &exit_on_error) == FAILURE) {
     return;
   }
   init_buff(0);
@@ -614,7 +614,7 @@ PHP_FUNCTION (vk_utf8_to_win) {
 PHP_FUNCTION (vk_win_to_utf8) {
   char *text;
   long text_len = 0;
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &text, &text_len) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &text, &text_len) == FAILURE) {
     return;
   }
   init_buff(0);
@@ -629,7 +629,7 @@ PHP_FUNCTION (vk_win_to_utf8) {
 PHP_FUNCTION (vk_upcase) {
   char *text;
   VK_LEN_T text_length = 0;
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &text, &text_length) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &text, &text_length) == FAILURE) {
     return;
   }
   char *new_text = estrdup (text);
@@ -648,7 +648,7 @@ PHP_FUNCTION (vk_flex) {
   char *type;
   long type_len = 0;
   long lang_id = 0;
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sslsl", &name, &name_len, &case_name, &case_name_len, &sex, &type, &type_len, &lang_id) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "sslsl", &name, &name_len, &case_name, &case_name_len, &sex, &type, &type_len, &lang_id) == FAILURE) {
     return;
   }
   if (verbosity) {
@@ -665,12 +665,12 @@ PHP_FUNCTION (vk_flex) {
 PHP_FUNCTION (vk_json_encode) {
   zval *parameter;
 
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &parameter) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "z", &parameter) == FAILURE) {
     RETURN_FALSE;
   }
 
   init_buff(0);
-  if (!vk_json_encode(parameter TSRMLS_CC)) {
+  if (!vk_json_encode(parameter)) {
     free_buff();
     RETURN_FALSE;
   }
@@ -730,7 +730,7 @@ PHP_FUNCTION (vk_whitespace_pack) {
   char *text, *ctext;
   VK_LEN_T text_length = 0;
   long html_opt = 0;
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l", &text, &text_length, &html_opt) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s|l", &text, &text_length, &html_opt) == FAILURE) {
     return;
   }
   init_buff(text_length);
@@ -1109,7 +1109,7 @@ PHP_FUNCTION (vk_set_error_verbosity) {
   ADD_CNT(total);
   START_TIMER(total);
   long t;
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &t) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &t) == FAILURE) {
     END_TIMER(total);
     return;
   }

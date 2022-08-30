@@ -10,7 +10,7 @@
 PHP_FUNCTION(vk_sp_simplify) {
   char *s;
   VK_LEN_T len;
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &s, &len) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &s, &len) == FAILURE) {
     return;
   }
   sp_init();
@@ -25,7 +25,7 @@ PHP_FUNCTION(vk_sp_simplify) {
 PHP_FUNCTION(vk_sp_full_simplify) {
   char *s;
   VK_LEN_T len;
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &s, &len) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &s, &len) == FAILURE) {
     return;
   }
   sp_init();
@@ -40,7 +40,7 @@ PHP_FUNCTION(vk_sp_full_simplify) {
 PHP_FUNCTION(vk_sp_deunicode) {
   char *s;
   VK_LEN_T len;
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &s, &len) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &s, &len) == FAILURE) {
     return;
   }
   sp_init();
@@ -55,7 +55,7 @@ PHP_FUNCTION(vk_sp_deunicode) {
 PHP_FUNCTION(vk_sp_to_upper) {
   char *s;
   VK_LEN_T len;
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &s, &len) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &s, &len) == FAILURE) {
     return;
   }
   sp_init();
@@ -70,7 +70,7 @@ PHP_FUNCTION(vk_sp_to_upper) {
 PHP_FUNCTION(vk_sp_to_lower) {
   char *s;
   VK_LEN_T len;
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &s, &len) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &s, &len) == FAILURE) {
     return;
   }
   sp_init();
@@ -85,7 +85,7 @@ PHP_FUNCTION(vk_sp_to_lower) {
 PHP_FUNCTION(vk_sp_sort) {
   char *s;
   VK_LEN_T len;
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &s, &len) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &s, &len) == FAILURE) {
     return;
   }
   sp_init();
@@ -100,7 +100,7 @@ PHP_FUNCTION(vk_sp_sort) {
 PHP_FUNCTION(vk_sp_remove_repeats) {
   char *s;
   VK_LEN_T len;
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &s, &len) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &s, &len) == FAILURE) {
     return;
   }
   sp_init();
@@ -115,7 +115,7 @@ PHP_FUNCTION(vk_sp_remove_repeats) {
 PHP_FUNCTION(vk_sp_to_cyrillic) {
   char *s;
   VK_LEN_T len;
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &s, &len) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &s, &len) == FAILURE) {
     return;
   }
   sp_init();
@@ -130,7 +130,7 @@ PHP_FUNCTION(vk_sp_to_cyrillic) {
 PHP_FUNCTION(vk_sp_words_only) {
   char *s;
   VK_LEN_T len;
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &s, &len) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &s, &len) == FAILURE) {
     return;
   }
   sp_init();
