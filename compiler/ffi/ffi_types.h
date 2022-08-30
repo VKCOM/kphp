@@ -12,9 +12,22 @@ enum class FFITypeKind: uint16_t {
   Unknown,
 
   // Function is a function definition.
+  // this->str: function name
   // this->members[0]: return type
   // this->members[1:...]: param types
   Function,
+
+  // FunctionPointer is a pointer that describes a function type
+  // members[0]: return type
+  // members[1:...]: param types
+  //
+  // Example: void (*) (int, int) | [void, int, int]
+  //
+  // We only support simple function pointer types;
+  // it's impossible to express higher order functions or function pointers that return a function pointer
+  // this makes the parser grammar and the type tree easier while it still covers a big
+  // portion of what we want to support
+  FunctionPointer,
 
   // Var is used for both struct members and named function params
   // this->str: name
@@ -70,8 +83,8 @@ enum class FFITypeKind: uint16_t {
   // They're like intermediate AST representations.
 
   _abstractArrayDeclarator, // num: array size
-  _arrayDeclarator,
-  _pointerDeclarator,
+  _arrayDeclarator, // num: array size
+  _pointerDeclarator, // num: indirection level
   _typesList,
   _structFieldList,
   _initDeclaratorList,
@@ -79,6 +92,8 @@ enum class FFITypeKind: uint16_t {
   _enumMember, // str: constant name; num: constant int value (or 0 if unset)
   _int,
   _size,
+  _intptr,
+  _uintptr,
   _typeFlags,
   _ellipsis,
 };
@@ -98,6 +113,8 @@ struct FFIType {
     LongLong = 1 << 7, // Second "long" specifier bit
 
     Used = 1 << 8,
+
+    SignalSafe = 1 << 9,
   };
 
   FFITypeKind kind = FFITypeKind::Unknown;
@@ -116,6 +133,7 @@ struct FFIType {
 
   bool is_const() const noexcept { return flags & Flag::Const; }
   bool is_variadic() const noexcept { return flags & Flag::Variadic; }
+  bool is_signal_safe() const noexcept { return flags & Flag::SignalSafe; }
 
   // whether a type is `void*`
   bool is_void_ptr() const noexcept {

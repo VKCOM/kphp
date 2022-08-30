@@ -1373,6 +1373,21 @@ function set_json_log_on_timeout_mode(bool $enabled) ::: void;
 function ffi_memcpy_string(\FFI\CData $dst, string $src, int $size);
 
 /**
+ * ffi_cast_addr2ptr implements FFI::cast for int-typed argument;
+ * It's identical to FFI::cast('void*', $addr)
+ * @return ffi_cdata<C, void*>
+ */
+function ffi_cast_addr2ptr(int $addr);
+
+/**
+ * ffi_cast_ptr2addr implements a FFI::cast from a pointer CData to a scalar addr;
+ * It's identical to FFI::cast('uintptr_t', $ptr)
+ * @param ffi_cdata<C, void*> $ptr
+ * @return int
+ */
+function ffi_cast_ptr2addr(\FFI\CData $ptr);
+
+/**
  * ffi_array_set implements array or pointer update operation: $arr[$index] = $value
  * For CData arrays, a bound check if performed: PHP throws and KPHP triggers
  * a critical error if $index is out of bounds
@@ -1404,7 +1419,8 @@ final class FFI {
   public static function arrayType(\FFI\CData $type, array $dimensions): \FFI\CType;
 
   /** @return \FFI\CData but actually, a concrete \FFI\CData_int64 or other, depends on $type */
-  public static function new(string $type);
+  public static function new(string $type, bool $owned = true);
+  public static function free(\FFI\CData $cdata);
 
   /** @return \FFI\CData but actually, something like ^1, but may be ffi &ref */
   public static function cast(string $type, \FFI\CData $cdata);
@@ -1429,7 +1445,7 @@ final class FFI {
 
   public static function isNull(\FFI\CData $cdata): bool;
 
-  public static function string(FFI\CData $ptr, ?int $size = null): string;
+  public static function string(\FFI\CData $ptr, ?int $size = null): string;
 
   private function __construct();
 }

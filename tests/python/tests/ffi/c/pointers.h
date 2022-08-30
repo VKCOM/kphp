@@ -35,3 +35,11 @@ int strlen_safe(const char *s);
 
 const char *nullptr_cstr();
 const char *empty_cstr();
+
+void set_unmanaged_data(void*);
+void *get_unmanaged_data();
+
+uint64_t alloc_callback_test(void* (*alloc_func) (int));
+
+typedef void* (*AllocFunc) (int size);
+uint64_t alloc_callback_test2(AllocFunc f);

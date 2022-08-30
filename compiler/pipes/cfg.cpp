@@ -485,7 +485,6 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     case op_ffi_c2php_conv:
     case op_ffi_php2c_conv:
     case op_ffi_addr:
-    case op_ffi_cast:
     case op_ffi_cdata_value_ref:
     case op_conv_int:
     case op_conv_int_l:
@@ -519,6 +518,19 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       break;
     }
 
+    case op_ffi_cast: {
+      auto op = tree_node.as<op_ffi_cast>();
+      if (op->has_array_size_expr()) {
+        Node expr_end, array_size_expr_start;
+        create_cfg(op->expr(), res_start, &expr_end);
+        create_cfg(op->array_size_expr(), &array_size_expr_start, res_finish);
+        add_edge(expr_end, array_size_expr_start);
+      } else {
+        create_cfg(op->expr(), res_start, res_finish);
+      }
+      break;
+    }
+
     case op_ffi_array_get: {
       auto op = tree_node.as<op_ffi_array_get>();
       Node array_end, key_start;
@@ -540,11 +552,14 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
     }
 
     case op_ffi_new: {
-      auto v = tree_node.as<op_ffi_new>();
-      if (v->has_array_size_expr()) {
-        create_cfg(tree_node.as<op_ffi_new>()->array_size_expr(), res_start, res_finish);
+      auto op = tree_node.as<op_ffi_new>();
+      Node owned_flag_expr_end, array_size_expr_start;
+      create_cfg(op->owned_flag_expr(), res_start, &owned_flag_expr_end);
+      if (op->has_array_size_expr()) {
+        create_cfg(op->array_size_expr(), &array_size_expr_start, res_finish);
+        add_edge(owned_flag_expr_end, array_size_expr_start);
       } else {
-        *res_start = *res_finish = new_node();
+        *res_finish = owned_flag_expr_end;
       }
       break;
     }

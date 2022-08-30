@@ -16,6 +16,13 @@ extern volatile long long pending_signals;
 void enter_critical_section() noexcept;
 void leave_critical_section() noexcept;
 
+// leaves the critical section until the destructor is executed;
+// it is implied that this object is constructed somewhere inside the critical section
+struct NonCriticalSectionGuard : private vk::not_copyable {
+  NonCriticalSectionGuard() noexcept { leave_critical_section(); }
+  ~NonCriticalSectionGuard() noexcept { enter_critical_section(); }
+};
+
 struct CriticalSectionGuard : private vk::not_copyable {
   CriticalSectionGuard() noexcept { enter_critical_section(); }
   ~CriticalSectionGuard() noexcept { leave_critical_section(); }

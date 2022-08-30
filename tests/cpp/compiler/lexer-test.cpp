@@ -58,6 +58,12 @@ TEST(lexer_test, test_php_tokens) {
     {"'$x $y->z'", {"tok_str($x $y->z)"}},
     {"'$x[0] $x[key]'", {"tok_str($x[0] $x[key])"}},
 
+    // 'float' and 'double' are different tokens, unless it's a cast
+    {"float", {"tok_float(float)"}},
+    {"double", {"tok_double(double)"}},
+    {"(float)$x", {"tok_conv_float", "tok_var_name($x)"}},
+    {"(double)$x", {"tok_conv_float", "tok_var_name($x)"}},
+
     // strings: mix variables with simple tok_str parts
     {R"("$x")", {"tok_str_begin(\")", "tok_expr_begin", "tok_var_name($x)", "tok_expr_end", "tok_str_end(\")"}},
     {R"(".$x")", {"tok_str_begin(\")", "tok_str(.)", "tok_expr_begin", "tok_var_name($x)", "tok_expr_end", "tok_str_end(\")"}},

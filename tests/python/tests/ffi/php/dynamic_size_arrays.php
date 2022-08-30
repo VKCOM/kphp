@@ -331,6 +331,15 @@ function test_array_wrapping() {
   var_dump(ffi_array_get($wrapper->int32_array, 0));
 }
 
+function test_float_double() {
+  $size = 2;
+
+  $floats = FFI::new("float[$size]");
+  var_dump(\FFI::sizeof($floats));
+  $doubles = FFI::new("double[$size]");
+  var_dump(\FFI::sizeof($doubles));
+}
+
 $example_lib = FFI::cdef('
 #define FFI_SCOPE "example"
 
@@ -356,3 +365,4 @@ test_make_array($example_lib);
 test_array_as_ptr();
 test_array_of_pointers($example_lib);
 test_array_wrapping();
+test_float_double();

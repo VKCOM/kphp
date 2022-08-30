@@ -161,6 +161,7 @@ std::string debugTokenName(TokenType t) {
     {tok_namespace_c, "tok_namespace_c"},
     {tok_int, "tok_int"},
     {tok_float, "tok_float"},
+    {tok_double, "tok_double"},
     {tok_string, "tok_string"},
     {tok_object, "tok_object"},
     {tok_callable, "tok_callable"},

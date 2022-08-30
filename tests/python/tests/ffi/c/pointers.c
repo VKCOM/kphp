@@ -3,6 +3,8 @@
 
 #include "pointers.h"
 
+static void *unmanaged_data;
+
 SomeData *nullptr_data(void) {
   return (SomeData*)0;
 }
@@ -76,4 +78,23 @@ const char* nullptr_cstr() {
 
 const char* empty_cstr() {
   return "";
+}
+
+void set_unmanaged_data(void *data) {
+  unmanaged_data = data;
+}
+
+void *get_unmanaged_data() {
+  return unmanaged_data;
+}
+
+uint64_t alloc_callback_test(void* (*alloc_func) (int)) {
+  void *mem = alloc_func(8);
+  uint64_t *as_uint = (uint64_t*)(mem);
+  *as_uint = 0xffff;
+  return *as_uint;
+}
+
+uint64_t alloc_callback_test2(AllocFunc f) {
+  return alloc_callback_test(f);
 }

@@ -104,6 +104,10 @@ private:
   FFIType *combine_array_type(FFIType *dst, FFIType *elem_type, FFIType *current);
   FFIType *make_struct_or_union_def(FFIType *fields, bool is_struct);
 
+  FFIType *function_to_var(FFIType *function);
+
+  void raise_error(const std::string &message);
+
   void add_missing_decls();
 };
 

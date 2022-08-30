@@ -54,6 +54,8 @@ TEST(ffi_test, test_lexer) {
     {"uint16_t", {token_type::C_TOKEN_UINT16}},
     {"uint32_t", {token_type::C_TOKEN_UINT32}},
     {"uint64_t", {token_type::C_TOKEN_UINT64}},
+    {"intptr_t", {token_type::C_TOKEN_INTPTR_T}},
+    {"uintptr_t", {token_type::C_TOKEN_UINTPTR_T}},
     {"size_t", {token_type::C_TOKEN_SIZE_T}},
     {"long", {token_type::C_TOKEN_LONG}},
     {"short", {token_type::C_TOKEN_SHORT}},
@@ -121,6 +123,39 @@ TEST(ffi_test, test_lexer) {
   }
 }
 
+TEST(ffi_test, test_preprocess) {
+  struct testCase {
+    std::string input;
+    std::string output;
+  };
+  std::vector<testCase> tests = {
+    {
+      R"(#define FFI_SCOPE "example"
+void f();)",
+      R"(
+void f();)",
+    },
+
+    {
+      R"(#define FFI_SCOPE "example"
+#define FFI_LIB "./ffilibs/libexample"
+
+void f();)",
+      R"(
+
+
+void f();)",
+    },
+  };
+
+  for (const auto &test : tests) {
+    FFIParseResult parse_result;
+    std::string preprocessed = ffi_preprocess_file(test.input, parse_result);
+
+    ASSERT_EQ(preprocessed, test.output) << "input is `" + test.input + "`";
+  }
+}
+
 TEST(ffi_test, test_parse_decl_error) {
   struct testCase {
     std::string input;
@@ -146,6 +181,11 @@ TEST(ffi_test, test_parse_decl_error) {
     {"void f(,)", "syntax error, unexpected \",\""},
     {"void long();", "syntax error, unexpected ), expecting ( or * or IDENTIFIER"},
 
+    // unnamed function pointer params are not accepted by C compilers
+    {"void f(void (*) ());", "syntax error, unexpected ), expecting ( or IDENTIFIER"},
+
+    {"void f(int32_t (*g[3]) (), int32_t x)", "parsing function pointer: only simple identifiers are supported (use typedef for arrays)"},
+
     // variadic '...' can't be used without at least 1 named param
     {"void f(...);", "syntax error, unexpected ELLIPSIS"},
 
@@ -162,6 +202,30 @@ TEST(ffi_test, test_parse_decl_error) {
       };)",
       "syntax error, unexpected ;, expecting ( or * or IDENTIFIER",
       2,
+    },
+    {
+      R"(
+        iii f();
+      )",
+      "syntax error, unexpected IDENTIFIER",
+      2,
+    },
+    {
+      R"(
+
+iii f();
+)",
+      "syntax error, unexpected IDENTIFIER",
+      3,
+    },
+    {
+      R"(#define FFI_LIB "./ffilibs/libexample"
+#define FFI_SCOPE "example"
+
+iii f();
+)",
+      "syntax error, unexpected IDENTIFIER",
+      4,
     },
   };
 
@@ -264,6 +328,8 @@ TEST(ffi_test, test_parse_sized_int_type_expr) {
     {"const unsigned long long * const * const x", "const uint64_t**"},
 
     {"size_t", "uint64_t"},
+    {"intptr_t", "int64_t"},
+    {"uintptr_t", "uint64_t"},
   };
 
   for (const auto &test : tests) {
@@ -410,11 +476,23 @@ TEST(ffi_test, test_parse_decl) {
     {"struct foo { char x; };", "struct foo{ char x; }"},
     {"struct foo { char x; int8_t y; };", "struct foo{ char x; int8_t y; }"},
 
+    {"struct foo { void (*f) (int32_t x); };", "struct foo{ void (*f)(int32_t x); }"},
+    {"struct foo { void (*f) (int64_t, double); };", "struct foo{ void (*f)(int64_t, double); }"},
+    {"struct foo { struct bar* (*g) (); };", "struct foo{ struct bar* (*g)(); }"},
+
     {"void f(int32_t code, ...);", "void f(int32_t code, ...)"},
     {"void f(int32_t fd, const char *format, ...);", "void f(int32_t fd, const char* format, ...)"},
 
     {"void f(void);", "void f()"},
     {"int32_t f(void);", "int32_t f()"},
+
+    {"void f(void (*g) ());", "void f(void (*g)())"},
+    {"void f(void (*g) (int32_t));", "void f(void (*g)(int32_t))"},
+    {"void f(void (*g) (int32_t x));", "void f(void (*g)(int32_t x))"},
+    {"void f(void (*g) (int32_t, int64_t));", "void f(void (*g)(int32_t, int64_t))"},
+    {"void f(void (*g) (int32_t x, int64_t y));", "void f(void (*g)(int32_t x, int64_t y))"},
+    {"float f(double (*g) (int32_t x, int64_t y));", "float f(double (*g)(int32_t x, int64_t y))"},
+    {"void f(void (*g1) (), int32_t (*g2) (int64_t), int32_t x);", "void f(void (*g1)(), int32_t (*g2)(int64_t), int32_t x)"},
   };
 
   for (const auto &test : tests) {
@@ -422,6 +500,7 @@ TEST(ffi_test, test_parse_decl) {
     std::string input = test.input;
     auto result = ffi_parse_file(input, typedefs);
 
+    ASSERT_EQ(result.err.message, "");
     std::string declarations = ffi_test_join_types(result);
     ASSERT_EQ(declarations, test.expected) << "input decl is " + test.input;
   }
@@ -527,6 +606,16 @@ TEST(ffi_test, test_typedef) {
       "void f(uint8_t arg[])",
     },
 
+    // typedef on function pointer types
+    {
+      "typedef void (*FuncType) (int32_t); void f(FuncType g);",
+      "void f(void (*g)(int32_t))",
+    },
+    {
+      "typedef double (*FuncType) (int8_t x, int16_t y); void f(FuncType g);",
+      "void f(double (*g)(int8_t x, int16_t y))",
+    },
+
     // arrays of pointers
     {
       "typedef uint8_t *foo[8]; void f(foo arg);",
@@ -565,6 +654,24 @@ TEST(ffi_test, test_typedef) {
       )",
       "struct Foo{ int64_t x; int64_t y; }; struct Foo* f()",
     },
+    {
+      R"(
+        typedef int64_t i64;
+        typedef i64 (*FuncType) (i64);
+        typedef void (*FuncTypeTwo) (FuncType);
+        void f(FuncTypeTwo g);
+      )",
+      "void f(void (*g)(int64_t (*)(int64_t)))",
+    },
+    {
+      R"(
+        typedef int64_t i64;
+        typedef i64 (*FuncType) (i64 x);
+        typedef void (*FuncTypeTwo) (FuncType callback);
+        void f(FuncTypeTwo funcs[2]);
+      )",
+      "void f(void (*funcs[2])(int64_t (*callback)(int64_t x)))",
+    },
   };
 
   for (const auto &test : tests) {
@@ -572,6 +679,7 @@ TEST(ffi_test, test_typedef) {
     std::string input = test.input;
     auto result = ffi_parse_file(input, typedefs);
 
+    ASSERT_EQ(result.err.message, "");
     std::string declarations = ffi_test_join_types(result);
     ASSERT_EQ(declarations, test.expected) << "input decl is " + test.input;
   }

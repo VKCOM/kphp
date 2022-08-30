@@ -71,7 +71,7 @@
 %token BOOL CHAR SHORT INT LONG SIGNED UNSIGNED FLOAT DOUBLE CONST VOLATILE VOID
 %token INT8 INT16 INT32 INT64
 %token UINT8 UINT16 UINT32 UINT64
-%token SIZE_T
+%token SIZE_T INTPTR_T UINTPTR_T
 %token STRUCT UNION ENUM ELLIPSIS
 
 %token CASE DEFAULT IF ELSE SWITCH WHILE DO FOR GOTO CONTINUE BREAK RETURN
@@ -175,8 +175,9 @@ base_type_specifier
   | UINT16 { $$ = driver.make_simple_type(FFITypeKind::Uint16); }
   | UINT32 { $$ = driver.make_simple_type(FFITypeKind::Uint32); }
   | UINT64 { $$ = driver.make_simple_type(FFITypeKind::Uint64); }
+  | INTPTR_T { $$ = driver.make_simple_type(FFITypeKind::_intptr); }
+  | UINTPTR_T { $$ = driver.make_simple_type(FFITypeKind::_uintptr); }
   | SIZE_T { $$ = driver.make_simple_type(FFITypeKind::_size); }
-
   ;
 
 type_specifier

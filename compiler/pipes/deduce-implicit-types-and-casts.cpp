@@ -289,7 +289,8 @@ void patch_rhs_casting_to_callable(VertexPtr &rhs, const TypeHintCallable *as_ca
       v_callback->func_id = f_lambda;
       v_callback->str_val = f_lambda->name;
       rhs = v_callback;
-
+    } else if (rhs->type() == op_null && FFIRoot::is_ffi_scope_call(call)) {
+      // allow null as callback argument for FFI functions
     } else {
       // array_map($f, ...) or array_map(getCallback(), ...) or similar
       auto bound_this = rhs;

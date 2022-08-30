@@ -222,9 +222,38 @@ const TypeHint *FFIRoot::create_type_hint(const FFIType *type, const std::string
     case FFITypeKind::Array:
       return TypeHintFFIType::create(scope_name, type);
 
+    case FFITypeKind::FunctionPointer: {
+      const auto *return_type = unboxed_type_hint(type->members[0], scope_name, true);
+      if (!return_type) {
+        return nullptr;
+      }
+      std::vector<const TypeHint*> param_types;
+      param_types.reserve(type->members.size() - 1);
+      for (int i = 1; i < type->members.size(); i++) {
+        kphp_assert(type->members[i]->kind == FFITypeKind::Var);
+        const auto *param_type = unboxed_type_hint(type->members[i]->members[0], scope_name, false);
+        if (!param_type) {
+          return nullptr;
+        }
+        param_types.push_back(param_type);
+      }
+      return TypeHintCallable::create(std::move(param_types), return_type);
+    }
+
     default:
       return nullptr;
   }
+}
+
+const TypeHint *FFIRoot::unboxed_type_hint(const FFIType *type, const std::string &scope_name, bool is_return) {
+  // auto-convertible types, like int and float are kept unboxed
+  if (!is_return && type->is_cstring()) {
+    return TypeHintOptional::create(TypeHintPrimitive::create(tp_string), true, false);
+  }
+  if (const TypeHint *as_scalar = c2php_scalar_type_hint(type->kind)) {
+    return as_scalar;
+  }
+  return create_type_hint(type, scope_name);
 }
 
 std::vector<FFIScopeDataMixin*> FFIRoot::get_scopes() const {
@@ -285,6 +314,12 @@ void FFIRoot::bind_symbols() {
   num_dynamic_symbols = index;
 }
 
+bool FFIRoot::is_ffi_scope_call(VertexAdaptor<op_func_call> call) {
+  return call->extra_type == op_ex_func_call_arrow &&
+         call->func_id->class_id &&
+         call->func_id->class_id->is_ffi_scope();
+}
+
 struct TypePrinter {
   bool is_decltype = false;
   bool name_mangling = false;
@@ -320,13 +355,25 @@ struct TypePrinter {
       type = type->members[0];
     }
 
+    if (type->kind == FFITypeKind::FunctionPointer) {
+      return format_function(type, name + array_suffix, true);
+    }
+    // a special case to avoid excessive empty space;
+    // also: array types are not allowed when parameter name is omitted
+    if (name.empty()) {
+      return format_type(type);
+    }
     return format_type(type) + " " + name + array_suffix;
   }
 
-  std::string format_function(const FFIType *f) const {
+  std::string format_function(const FFIType *f, const std::string &func_name, bool is_func_ptr) const {
     std::string variadic_arg = f->is_variadic() ? ", ..." : "";
-    std::string func_name = is_decltype ? "(*)" : f->str;
-    return format_type(f->members[0]) + " " + func_name + "(" + format_list(f->members.begin() + 1, f->members.end()) + variadic_arg + ")";
+    const std::string &params = "(" + format_list(f->members.begin() + 1, f->members.end()) + variadic_arg + ")";
+    if (is_func_ptr) {
+      return format_type(f->members[0]) + " (*" + func_name + ")" + params;
+    }
+    const std::string &name = func_name.empty() ? "(*)" : func_name;
+    return format_type(f->members[0]) + " " + name + params;
   }
 
   std::string format_struct_or_union_def(const FFIType *s, const std::string &tag) const {
@@ -383,8 +430,11 @@ struct TypePrinter {
       case FFITypeKind::Pointer:
         return type->members.empty() ? "*" : format_type(type->members[0]) + std::string(type->num, '*');
 
+      case FFITypeKind::FunctionPointer:
+        return format_function(type, "", true);
+
       case FFITypeKind::Function:
-        return format_function(type);
+        return format_function(type, is_decltype ? "" : type->str, false);
 
       default:
         return "?";
