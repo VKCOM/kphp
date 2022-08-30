@@ -388,7 +388,9 @@ static timelib_time_offset *create_time_offset(timelib_time *t, [[maybe_unused]]
     offset->leap_secs = 0;
     offset->is_dst = 0;
     offset->abbr = static_cast<char *>(timelib_malloc(9)); /* GMT±xxxx\0 */
-    snprintf(offset->abbr, 9, "GMT%c%02d%02d", (offset->offset < 0) ? '-' : '+', abs(offset->offset / 3600), abs((offset->offset % 3600) / 60));
+    // set upper bound to 99 just to ensure that 'hours_offset' fits in %02d
+    auto hours_offset = std::min(abs(offset->offset / 3600), 99);
+    snprintf(offset->abbr, 9, "GMT%c%02d%02d", (offset->offset < 0) ? '-' : '+', hours_offset, abs((offset->offset % 3600) / 60));
     return offset;
   }
   return timelib_get_time_zone_info(t->sse, t->tz_info);
