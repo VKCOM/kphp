@@ -599,10 +599,10 @@ int run_worker(WorkerType worker_type) {
     master_sfd = -1;
     if (worker_type == WorkerType::job_worker) {
       process_type = ProcessType::job_worker;
-    } else if (RpcClients::get().rpc_clients.size() > 0) {
-      process_type = ProcessType::rpc_worker;
-    } else {
+    } else if (RpcClients::get().rpc_clients.empty()) {
       process_type = ProcessType::http_worker;
+    } else {
+      process_type = ProcessType::rpc_worker;
     }
 
     for (int i = 0; i < allocated_targets; i++) {
