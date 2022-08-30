@@ -730,19 +730,25 @@ int server_read_write(struct connection *c) {
   c->flags |= C_INCONN;
 
   if (!c->interrupted && ev->epoll_ready & (EPOLLHUP | EPOLLERR | EPOLLRDHUP | EPOLLPRI)) {
-    //This condition handles a broken connection. If the connection was aborted inside
-    //the ignore_user_abort section, then fd is passed again to epoll with edge-triggered level
     if ((ev->epoll_ready & EPOLLIN) && (c->flags & C_WANTRD) && !(c->flags & (C_NORD | C_FAILED | C_STOPREAD))) {
       vkprintf(3, "reading buffered data from socket %d, before closing\n", c->fd);
       c->type->reader(c);
     }
 
     vkprintf(1 + !(ev->epoll_ready & EPOLLPRI), "socket %d: disconnected (epoll_ready=%02x), cleaning\n", c->fd, ev->epoll_ready);
+    // When connection is closed on client side, we have two options to do:
+    // (1) Close connection on server side immediately
+    // (2) Delay closing connection on server side, until we leave the ignore_user_abort "critical section"
     if (c->ignored) {
-      c->interrupted = true; //Remember that the connection was cut off if script was inside the section ignore_user_abort
-      c->flags &= ~C_WANTRW; //Remove flags for re-adding event by using compute_conn_events() in the next calls as edge-triggered
-      return EVT_SPEC; //Adding with a special flag to add event as edge-triggered
+      // This handles case (2)
+      // The problem is when connection is closed on client side, epoll always reports EPOLLRDHUP on the underlying fd. It leads to endless repeated wakeups.
+      // To avoid this we do the trick: readd fd to epoll in edge-triggered mode.
+      // In edge-triggered mode event is reported only at the first time, so we will have only one wakeup on EPOLLRDHUP after readding fd to epoll.
+      c->interrupted = true; // Remember that the connection was closed if script was inside the ignore_user_abort "critical section"
+      c->flags &= ~C_WANTRW; // Remove flags for re-adding fd in edge-triggered mode by using compute_conn_events() in the next calls
+      return EVT_SPEC; // Use EVT_SPEC only without EVT_LEVEL to add fd in edge-triggered mode
     } else {
+      // This handles case (1)
       force_clear_connection(c);
       return EVA_DESTROY;
     }
@@ -858,7 +864,7 @@ int server_read_write(struct connection *c) {
     vkprintf(1, "socket %d: closing and cleaning (error code=%d)\n", c->fd, c->error);
 
     if (c->interrupted) {
-      //Called if the connection was aborted while the script was inside the ignore_user_abort section and the script passed it.
+      // Here is delayed connection closing described above at case (2)
       force_clear_connection(c);
     } else {
       if (c->status != conn_connecting) {
