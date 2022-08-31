@@ -51,6 +51,7 @@ class RpcWorker implements I {
     }
 
     public function work() {
+        fwrite(STDERR, $this->port . "\n");
         $job = function() {
             $conn = new_rpc_connection('localhost', $this->port, 0, 5);
             $req_id = rpc_tl_query_one($conn, ["_" => "engine.sleep",
@@ -58,9 +59,7 @@ class RpcWorker implements I {
             $resp = rpc_tl_query_result_one($req_id);
             assert($resp['result']);
         };
-        for ($i = 0; $i < 3; ++$i) {
-            $job();
-        }
+        $job();
         fwrite(STDERR, "test_ignore_user_abort/finish_rpc_work_" . $_GET["level"] . "\n");
    }
 }
