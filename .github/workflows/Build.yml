@@ -127,14 +127,24 @@ jobs:
     
     steps:
     - uses: actions/checkout@v3
-    
+
+    - name: Get polyfills repo
+      uses: actions/checkout@v3
+      with:
+        repository: 'uber/h3'
+        path: 'h3'
+        ref: stable-3.x
+
     - name: Setup Environment
       run: |
-        brew install re2c cmake coreutils glib-openssl libiconv re2 fmt h3 yaml-cpp mysql msgpack-cxx zstd googletest php@7.4
+        brew install re2c cmake coreutils glib-openssl libiconv re2 yaml-cpp mysql msgpack-cxx zstd googletest php@7.4
         brew link --overwrite php@7.4
         pip3 install jsonschema
         rm -rf /usr/local/opt/openssl
         ln -sF /usr/local/Cellar/openssl@1.1/1.1.1q /usr/local/opt/openssl
+
+    - name: Build Uber h3
+      run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -S $GITHUB_WORKSPACE/h3 -B ${{runner.workspace}}/h3/build && make install -C ${{runner.workspace}}/h3/build -j$(nproc) all
 
     - name: Run cmake
       run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DDOWNLOAD_MISSING_LIBRARIES=On -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build
