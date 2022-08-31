@@ -28,7 +28,7 @@ def _tl_serialize_struct(request):
     return " ".join(encoded)
 
 
-def send_rpc_request(request, port):
+def send_rpc_request(request, port, timeout=60):
     tl_client_bin = search_tl_client()
     encoded_request = _tl_serialize_struct(request)
 
@@ -42,7 +42,7 @@ def send_rpc_request(request, port):
         stdin=subprocess.PIPE,
         stderr=subprocess.PIPE
     )
-    stdout_data, stderr_data = p.communicate(input=encoded_request.encode())
+    stdout_data, stderr_data = p.communicate(input=encoded_request.encode(), timeout=timeout)
     if stderr_data:
         raise RuntimeError("Can't send rpc request: " + stderr_data.decode())
     if p.returncode:

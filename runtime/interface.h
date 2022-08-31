@@ -9,6 +9,7 @@
 #include "common/wrappers/string_view.h"
 
 #include "runtime/kphp_core.h"
+#include "runtime/optional.h"
 #include "server/php-query-data.h"
 
 extern string_buffer *coub;//TODO static
@@ -49,6 +50,8 @@ void f$send_http_103_early_hints(const array<string> & headers);
 void f$setcookie(const string &name, const string &value, int64_t expire = 0, const string &path = string(), const string &domain = string(), bool secure = false, bool http_only = false);
 
 void f$setrawcookie(const string &name, const string &value, int64_t expire = 0, const string &path = string(), const string &domain = string(), bool secure = false, bool http_only = false);
+
+int64_t f$ignore_user_abort(Optional<bool> enable = Optional<bool>());
 
 void run_shutdown_functions_from_timeout();
 void run_shutdown_functions_from_script();
