@@ -57,7 +57,6 @@ class RpcWorker implements I {
             $req_id = rpc_tl_query_one($conn, ["_" => "engine.sleep",
                                                 "time_ms" => 60]);
             $resp = rpc_tl_query_result_one($req_id);
-            fwrite(STDERR, "" . var_export($resp, true) . "\n");
             assert($resp['result']);
         };
         $job();
