@@ -23,7 +23,7 @@ class TestIgnoreUserAbort(KphpServerAutoTestCase):
         self.assertTrue(error)
 
     def test_user_abort_resumable_work(self):
-        self._send_request(uri='/test_ignore_user_abort?type=rpc&level=no_ignore')
+        self._send_request(uri='/test_ignore_user_abort?type=resumable&level=no_ignore')
         self.kphp_server.assert_log(['Critical error during script execution: http connection close'], timeout=5)
         error = False
         try:
