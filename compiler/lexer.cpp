@@ -14,6 +14,7 @@
 
 #include "common/algorithms/find.h"
 #include "common/smart_ptrs/singleton.h"
+#include "common/wrappers/fmt_format.h"
 
 #include "compiler/stage.h"
 #include "compiler/threading/thread-id.h"
@@ -124,6 +125,29 @@ bool LexerData::are_last_tokens(except_token_tag<token>, Args ...args) {
          are_last_tokens(args...);
 }
 
+vk::string_view LexerData::strip_whitespaces(char space_char, std::size_t spaces_to_skip, vk::string_view source) noexcept {
+  stage::set_line(get_line_num());
+  kphp_assert(spaces_to_skip);
+  std::string val;
+  bool new_line = true;
+  std::size_t spaces_skipped = 0;
+  for (char c : source) {
+    if (new_line && vk::any_of_equal(c, ' ', '\t') && spaces_skipped < spaces_to_skip) {
+      kphp_error(space_char == c, "Invalid indentation - tabs and spaces cannot be mixed");
+      ++spaces_skipped;
+      continue;
+    } else if (c == '\n') {
+      new_line = true;
+      spaces_skipped = 0;
+    } else {
+      kphp_error(spaces_skipped >= spaces_to_skip,
+                 fmt_format("Invalid body indentation level (expecting an indentation level of at least {})", spaces_to_skip));
+      new_line = false;
+    }
+    val.append(1, c);
+  }
+  return string_view_dup(val);
+}
 
 void LexerData::hack_last_tokens() {
   if (dont_hack_last_tokens) {
@@ -210,6 +234,14 @@ void LexerData::hack_last_tokens() {
   if (are_last_tokens(tok_str_begin, tok_str, tok_str_end)) {
     tokens.pop_back();
     tokens.erase(std::prev(tokens.end(), 2));
+    return;
+  }
+
+  if (are_last_tokens(tok_str, tok_str_skip_indent)) {
+    auto spaces = tokens.back().str_val;
+    std::size_t spaces_to_skip = spaces.size();
+    tokens.pop_back();
+    tokens.back().str_val = strip_whitespaces(spaces.front(), spaces_to_skip, tokens.back().str_val);
     return;
   }
 
@@ -882,8 +914,23 @@ bool TokenLexerHeredocString::parse(LexerData *lexer_data) const {
     const char *t = s, *st = s;
     if (t[0] == '\n' || first) {
       t += t[0] == '\n';
+      const char *const spaces_start = t;
+      std::size_t spaces_count = 0;
+      std::size_t tabs_count = 0;
+      for (; *t != '\0'; ++t) {
+        if (*t == ' ') {
+          ++spaces_count;
+        } else if (*t == '\t') {
+          ++tabs_count;
+        } else {
+          break;
+        }
+      }
       if (!strncmp(t, tag.c_str(), tag.size())) {
         t += tag.size();
+
+        stage::set_line(lexer_data->get_line_num());
+        kphp_error(!spaces_count || !tabs_count, "Invalid indentation - tabs and spaces cannot be mixed");
 
         int semicolon = 0;
         if (t[0] == ';') {
@@ -896,6 +943,9 @@ bool TokenLexerHeredocString::parse(LexerData *lexer_data) const {
           } else {
             lexer_data->flush_str();
             lexer_data->pass_raw((int)(t - st - semicolon));;
+          }
+          if (std::size_t indent = spaces_count ?: tabs_count) {
+            lexer_data->add_token(0, tok_str_skip_indent, spaces_start, spaces_start + indent);
           }
           break;
         }

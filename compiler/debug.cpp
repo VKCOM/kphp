@@ -36,6 +36,7 @@ std::string debugTokenName(TokenType t) {
     {tok_str, "tok_str"},
     {tok_str_begin, "tok_str_begin"},
     {tok_str_end, "tok_str_end"},
+    {tok_str_skip_indent, "tok_str_skip_indent"},
     {tok_expr_begin, "tok_expr_begin"},
     {tok_expr_end, "tok_expr_end"},
     {tok_var_name, "tok_var_name"},
