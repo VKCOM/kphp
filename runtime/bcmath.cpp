@@ -515,9 +515,27 @@ string f$bcdiv(const string &lhs, const string &rhs, int64_t scale) {
                          static_cast<int>(scale), lsign * rsign);
 }
 
-string f$bcmod(const string &lhs, const string &rhs) {
+static string scale_num(const string &num, int64_t scale) {
+  if (scale > 0) {
+    string result = num;
+    result.append(1, '.');
+    result.append(scale, '0');
+    return result;
+  }
+  return num;
+}
+
+string f$bcmod(const string &lhs, const string &rhs, int64_t scale) {
+  if (scale == std::numeric_limits<int64_t>::min()) {
+    scale = bc_scale;
+  }
+  if (scale < 0) {
+    php_warning("Wrong parameter scale = %" PRIi64 " in function bcmod", scale);
+    scale = 0;
+  }
+
   if (lhs.empty()) {
-    return ZERO;
+    return scale_num(ZERO, scale);
   }
   if (rhs.empty()) {
     php_warning("Modulo by empty string in function bcmod");
@@ -569,15 +587,28 @@ string f$bcmod(const string &lhs, const string &rhs) {
     buffer[--cur_pos] = '-';
   }
 
-  return {buffer + cur_pos, static_cast<string::size_type>(20 - cur_pos)};
-}
-
-string f$bcpow(const string &lhs, const string &rhs) {
-  if (lhs.empty()) {
+  string result{buffer + cur_pos, static_cast<string::size_type>(20 - cur_pos)};
+  if (bc_parse_number(result, lsign, lint, ldot, lfrac, lscale) != 0) {
+    php_warning("Something went wrong in bcmod: result expected to be an integer, got \"%s\"", result.c_str());
     return ZERO;
   }
+  return scale_num(result, scale);
+}
+
+string f$bcpow(const string &lhs, const string &rhs, int64_t scale) {
+  if (scale == std::numeric_limits<int64_t>::min()) {
+    scale = bc_scale;
+  }
+  if (scale < 0) {
+    php_warning("Wrong parameter scale = %" PRIi64 " in function bcpow", scale);
+    scale = 0;
+  }
+
+  if (lhs.empty()) {
+    return scale_num(ZERO, scale);
+  }
   if (rhs.empty()) {
-    return ONE;
+    return scale_num(ONE, scale);
   }
 
   int lsign, lint, ldot, lfrac, lscale;
@@ -603,7 +634,7 @@ string f$bcpow(const string &lhs, const string &rhs) {
   }
 
   if (deg == 0) {
-    return ONE;
+    return scale_num(ONE, scale);
   }
 
   string result = ONE;
@@ -616,7 +647,11 @@ string f$bcpow(const string &lhs, const string &rhs) {
     deg >>= 1;
   }
 
-  return result;
+  if (bc_parse_number(result, lsign, lint, ldot, lfrac, lscale) != 0) {
+    php_warning("Something went wrong in bcpow: result expected to be an integer, got \"%s\"", result.c_str());
+    return ZERO;
+  }
+  return scale_num(result, scale);
 }
 
 string f$bcadd(const string &lhs, const string &rhs, int64_t scale) {
