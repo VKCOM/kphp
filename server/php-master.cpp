@@ -63,6 +63,7 @@
 #include "server/statshouse/add-metrics-batch.h"
 #include "server/statshouse/statshouse-client.h"
 #include "server/workers-control.h"
+#include "server/lease-rpc-client.h"
 
 #include "server/php-master-restart.h"
 #include "server/php-master-warmup.h"
@@ -596,6 +597,13 @@ int run_worker(WorkerType worker_type) {
     pid = getpid();
 
     master_sfd = -1;
+    if (worker_type == WorkerType::job_worker) {
+      process_type = ProcessType::job_worker;
+    } else if (RpcClients::get().rpc_clients.empty()) {
+      process_type = ProcessType::http_worker;
+    } else {
+      process_type = ProcessType::rpc_worker;
+    }
 
     for (int i = 0; i < allocated_targets; i++) {
       while (Targets[i].refcnt > 0) {

@@ -12,6 +12,7 @@
 #include "common/fast-backtrace.h"
 #include "common/wrappers/likely.h"
 #include "server/json-logger.h"
+#include "server/php-engine-vars.h"
 
 namespace {
 
@@ -224,6 +225,19 @@ void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at
   if (tags_available_) {
     json_out_it->append_raw(tags_);
   }
+  if (process_type == ProcessType::master) {
+    json_out_it->append_key("process_type").append_string("master");
+  } else if (process_type == ProcessType::http_worker) {
+    json_out_it->append_key("process_type").append_string("http_worker");
+    json_out_it->append_key("logname_id").append_integer(logname_id);
+  } else if (process_type == ProcessType::rpc_worker) {
+    json_out_it->append_key("process_type").append_string("rpc_worker");
+    json_out_it->append_key("logname_id").append_integer(logname_id);
+  } else if (process_type == ProcessType::job_worker) {
+    json_out_it->append_key("process_type").append_string("job_worker");
+    json_out_it->append_key("logname_id").append_integer(logname_id);
+  }
+  json_out_it->append_key("pid").append_integer(pid);
   json_out_it->append_raw(uncaught ? R"json("uncaught":true)json" : R"json("uncaught":false)json");
   json_out_it->finish<'}'>();
 

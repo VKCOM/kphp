@@ -24,6 +24,8 @@ int pid = -1;
 
 int no_sql = 0;
 
+ProcessType process_type = ProcessType::master;
+
 int master_flag = 0; // 1 -- master, 0 -- single process, -1 -- child
 
 bool run_once = false;

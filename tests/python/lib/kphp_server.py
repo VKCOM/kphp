@@ -123,6 +123,15 @@ class KphpServer(Engine):
                 if abs(created_at - time.time()) > 60:
                     raise RuntimeError("Got bad timestamp in json log created_at: {}".format(created_at))
                 del log_record["created_at"]
+                got_tags = log_record.get("tags")
+                if (got_tags.get("process_type") not in ["general_worker", "http_worker", "rpc_worker", "master"]) \
+                        or (got_tags.get("logname_id") is not None and not isinstance(got_tags.get("logname_id"), int)) \
+                        or (not isinstance(got_tags.get("pid"), int)):
+                    raise RuntimeError("Got bad process_type tags in json log: {}".format(got_tags))
+                if log_record["tags"]["process_type"] != "master":
+                    del log_record["tags"]["logname_id"]
+                del log_record["tags"]["process_type"]
+                del log_record["tags"]["pid"]
                 self._json_logs.append(log_record)
 
     def assert_json_log(self, expect, message="Can't wait expected json log", timeout=60):
