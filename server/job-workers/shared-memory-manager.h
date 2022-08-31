@@ -82,6 +82,8 @@ public:
 
   bool set_memory_limit(size_t memory_limit) noexcept;
   bool set_shared_messages_count(size_t shared_messages_count) noexcept;
+  bool set_per_process_memory_limit(size_t per_process_memory_limit) noexcept;
+  bool set_shared_messages_count_process_multiplier(size_t shared_messages_count_process_multiplier) noexcept;
 
   bool request_extra_memory_for_resource(memory_resource::unsynchronized_pool_resource &resource, size_t required_size) noexcept;
 
@@ -98,6 +100,8 @@ private:
 
   size_t memory_limit_{0};
   size_t shared_messages_count_{0};
+  size_t per_process_memory_limit_{0};
+  size_t shared_messages_count_process_multiplier_{0};
 
   struct alignas(8) ControlBlock {
     ControlBlock() noexcept {

@@ -2119,6 +2119,30 @@ int main_args_handler(int i, const char *long_option) {
     case 2029: {
       return read_option_to(long_option, 0.0, SIGTERM_MAX_TIMEOUT, sigterm_wait_timeout);
     }
+    case 2030: {
+      const int64_t per_process_memory_size = parse_memory_limit(optarg);
+      if (per_process_memory_size <= 0) {
+        kprintf("--%s option: couldn't parse argument\n", long_option);
+        return -1;
+      }
+      if (!vk::singleton<job_workers::SharedMemoryManager>::get().set_per_process_memory_limit(per_process_memory_size)) {
+        kprintf("--%s option: too small\n", long_option);
+        return -1;
+      }
+      return 0;
+    }
+    case 2031: {
+      const int messages_count_multiplier = atoi(optarg);
+      if (messages_count_multiplier <= 0) {
+        kprintf("--%s option: couldn't parse argument\n", long_option);
+        return -1;
+      }
+      if (!vk::singleton<job_workers::SharedMemoryManager>::get().set_shared_messages_count_process_multiplier(static_cast<size_t>(messages_count_multiplier))) {
+        kprintf("--%s option: too small\n", long_option);
+        return -1;
+      }
+      return 0;
+    }
     default:
       return -1;
   }
@@ -2217,6 +2241,10 @@ void parse_main_args(int argc, char *argv[]) {
                                                               "'local' - bind to local numa node, in case out of memory take memory from the other nearest node (default)\n"
                                                               "'bind' - bind to the specified node, in case out of memory raise a fatal error");
   parse_option("sigterm-wait-time", required_argument, 2029, "Time to wait before termination on SIGTERM");
+  parse_option("job-workers-shared-memory-size-process-multiplier", required_argument, 2030, "Per process memory size used to calculate the total size of shared memory for job workers related communication:\n"
+                                                                                             "memory limit = per_process_memory * processes_count");
+  parse_option("job-workers-shared-messages-process-multiplier", required_argument, 2031, "Coefficient used to calculate the total count of the shared messages for job workers related communication:\n"
+                                                                                          "messages count = coefficient * processes_count");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
   // TODO: remove it after successful migration from kphb.readyV2 to kphb.readyV3
