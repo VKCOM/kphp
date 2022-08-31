@@ -16,6 +16,10 @@
 
 // TODO: reminder: use string_view here instead of const string refs
 
+namespace YAML {
+class Node;
+} // namespace YAML
+
 class ComposerAutoloader : private vk::not_copyable {
 public:
   // whether to load dev autoloading settings;
@@ -32,10 +36,11 @@ public:
   // this method is not thread-safe and should be called only during the compiler init
   void load_root_file(const std::string &pkg_root);
 
-  // psr4_lookup tries to find a filename that should contain
+  // psr4_lookup/psr0_lookup tries to find a filename that should contain
   // a class class_name; the lookup is based on the loaded
   // composer files and their autoload definitions
   std::string psr4_lookup(const std::string &class_name) const;
+  std::string psr0_lookup(const std::string &class_name) const;
 
   // is_autoload_file reports whether the specified absolute filename
   // is a composer-generated autoload.php file
@@ -47,12 +52,18 @@ public:
     return files_to_require_;
   }
 
+  using PsrMap = std::map<std::string, std::vector<std::string>, std::less<>>;
+
 private:
   void load_file(const std::string &filename, bool root);
-  std::string psr4_lookup_nocache(const std::string &class_name) const;
+  void add_autoload_section(const YAML::Node &autoload, const std::string &pkg_root, bool require_files);
+
+  static std::string psr_lookup_nocache(const PsrMap &psr, const std::string &class_name, bool transform_underscore = false);
 
   bool use_dev_;
-  std::map<std::string, std::vector<std::string>, std::less<>> autoload_psr4_;
+  PsrMap autoload_psr4_;
+  PsrMap autoload_psr0_;
+  std::map<std::string, std::string> autoload_psr0_classmap_;
   std::unordered_set<std::string> deps_;
 
   std::string autoload_filename_;

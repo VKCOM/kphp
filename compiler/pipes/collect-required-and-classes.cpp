@@ -44,10 +44,15 @@ private:
     std::string file_name = replace_characters(class_name, '\\', '/');
 
     if (G->settings().is_composer_enabled()) {
-      const auto &psr4_filename = G->get_composer_autoloader().psr4_lookup(file_name);
-      if (!psr4_filename.empty()) {
+      const auto &composer = G->get_composer_autoloader();
+      if (const auto &psr4_filename = composer.psr4_lookup(file_name); !psr4_filename.empty()) {
         require_file(psr4_filename, false);
         return; // required from the composer autoload PSR-4 path
+      }
+      if (const auto &psr0_filename = composer.psr0_lookup(file_name); !psr0_filename.empty()) {
+        auto file = require_file(psr0_filename, false);
+        file->is_loaded_by_psr0 = true;
+        return; // required from the composer autoload PSR-0 path
       }
     }
 
