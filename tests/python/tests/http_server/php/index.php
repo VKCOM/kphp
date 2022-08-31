@@ -39,7 +39,7 @@ class ResumableWorker implements I {
         foreach ($responses as $resp) {
             assert($resp);
         }
-        fwrite(STDERR, "test_ignore_user_abort/finish_resumable_work\n");
+        fwrite(STDERR, "test_ignore_user_abort/finish_resumable_work_" . $_GET["level"] . "\n");
     }
 }
 
@@ -53,16 +53,15 @@ class RpcWorker implements I {
     public function work() {
         fwrite(STDERR, $this->port . "\n");
         $job = function() {
-            $conn = new_rpc_connection('localhost', $this->port, 0, 3);
+            $conn = new_rpc_connection('localhost', $this->port, 0, 5);
             $req_id = rpc_tl_query_one($conn, ["_" => "engine.sleep",
                                                 "time_ms" => 60]);
             $resp = rpc_tl_query_result_one($req_id);
+            fwrite(STDERR, "" . var_export($resp, true) . "\n");
             assert($resp['result']);
         };
-        for ($i = 0; $i < 3; ++$i) {
-            $job();
-        }
-        fwrite(STDERR, "test_ignore_user_abort/finish_rpc_work\n");
+        $job();
+        fwrite(STDERR, "test_ignore_user_abort/finish_rpc_work_" . $_GET["level"] . "\n");
    }
 }
 
@@ -117,14 +116,14 @@ if ($_SERVER["PHP_SELF"] === "/ini_get") {
      case "ignore":
         ignore_user_abort(true);
         $worker->work();
-        fwrite(STDERR, "test_ignore_user_abort/finish_ignore\n");
+        fwrite(STDERR, "test_ignore_user_abort/finish_ignore_" . $_GET["type"] . "\n");
         ignore_user_abort(false);
         break;
      case "multi_ignore":
         ignore_user_abort(true);
         $worker->work();
         $worker->work();
-        fwrite(STDERR, "test_ignore_user_abort/finish_multi_ignore\n");
+        fwrite(STDERR, "test_ignore_user_abort/finish_multi_ignore_" . $_GET["type"] . "\n");
         ignore_user_abort(false);
         break;
      case "nested_ignore":
@@ -132,7 +131,7 @@ if ($_SERVER["PHP_SELF"] === "/ini_get") {
         ignore_user_abort(true);
         $worker->work();
         ignore_user_abort(false);
-        fwrite(STDERR, "test_ignore_user_abort/finish_nested_ignore\n");
+        fwrite(STDERR, "test_ignore_user_abort/finish_nested_ignore_" . $_GET["type"] . "\n");
         ignore_user_abort(false);
      default:
         echo "ERROR"; return;
