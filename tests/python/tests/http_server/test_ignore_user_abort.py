@@ -16,8 +16,8 @@ class TestIgnoreUserAbort(KphpServerAutoTestCase):
     Имя изменено для избежания ошибки связанной с asan
     """
     def test_user_abort_of_rpc_work(self):
-        self._send_request(uri='/test_ignore_user_abort?type=rpc&level=no_ignore')
-        self.kphp_server.assert_log(['Critical error during script execution: http connection close'], timeout=5)
+        self._send_request(uri='/test_ignore_user_abort?type=rpc&level=no_ignore&port={}'.format(str(self.kphp_server.master_port)))
+        self.kphp_server.assert_log(['Critical error during script execution: http connection close'], timeout=10)
         error = False
         try:
             self.kphp_server.assert_log(["test_ignore_user_abort/finish_rpc_work_" + "no_ignore"], timeout=2)
@@ -27,7 +27,7 @@ class TestIgnoreUserAbort(KphpServerAutoTestCase):
 
     def test_user_abort_resumable_work(self):
         self._send_request(uri='/test_ignore_user_abort?type=resumable&level=no_ignore')
-        self.kphp_server.assert_log(['Critical error during script execution: http connection close'], timeout=5)
+        self.kphp_server.assert_log(['Critical error during script execution: http connection close'], timeout=10)
         error = False
         try:
             self.kphp_server.assert_log(["test_ignore_user_abort/finish_resumable_work_" + "no_ignore"], timeout=2)
