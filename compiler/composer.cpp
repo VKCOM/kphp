@@ -54,7 +54,7 @@ protected:
 
   virtual void load_entry(std::string &&namespace_str, std::string &&path) = 0;
 
-  const YAML::Node &psr_section_;
+  const YAML::Node psr_section_;
   Map &map_;
   std::string_view pkg_root_;
 };
