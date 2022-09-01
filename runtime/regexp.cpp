@@ -8,6 +8,7 @@
 #include <re2/re2.h>
 
 #include "common/containers/final_action.h"
+#include "common/unicode/utf8-utils.h"
 
 #include "runtime/critical_section.h"
 
@@ -709,12 +710,6 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, bool all_
     return false;
   }
 
-  if (is_utf8 && !mb_UTF8_check(subject.c_str())) {
-    matches = array<mixed>();
-    pcre_last_error = PCRE_ERROR_BADUTF8;
-    return false;
-  }
-
   if (all_matches) {
     matches = array<mixed>(array_size(subpatterns_count, named_subpatterns_count, named_subpatterns_count == 0));
     for (int32_t i = 0; i < subpatterns_count; i++) {
@@ -735,6 +730,18 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, bool all_
     pcre_last_error = PCRE2_ERROR_BADOFFSET;
     return false;
   }
+
+  if (is_utf8 && offset && is_invalid_utf8_first_byte(subject[offset])) {
+    matches = array<mixed>{};
+    pcre_last_error = PCRE_ERROR_BADUTF8_OFFSET;
+    return false;
+  }
+  if (is_utf8 && !mb_UTF8_check(subject.c_str())) {
+    matches = array<mixed>{};
+    pcre_last_error = PCRE_ERROR_BADUTF8;
+    return false;
+  }
+
   while (offset <= int64_t{subject.size()}) {
     const int64_t count = exec(subject, offset, second_try);
 
@@ -802,12 +809,6 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, int64_t f
     return false;
   }
 
-  if (is_utf8 && !mb_UTF8_check(subject.c_str())) {
-    matches = array<mixed>();
-    pcre_last_error = PCRE_ERROR_BADUTF8;
-    return false;
-  }
-
   bool offset_capture = false;
   if (flags & PREG_OFFSET_CAPTURE) {
     flags &= ~PREG_OFFSET_CAPTURE;
@@ -850,6 +851,18 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, int64_t f
     pcre_last_error = PCRE2_ERROR_BADOFFSET;
     return false;
   }
+
+  if (is_utf8 && offset && is_invalid_utf8_first_byte(subject[offset])) {
+    matches = array<mixed>{};
+    pcre_last_error = PCRE_ERROR_BADUTF8_OFFSET;
+    return false;
+  }
+  if (is_utf8 && !mb_UTF8_check(subject.c_str())) {
+    matches = array<mixed>{};
+    pcre_last_error = PCRE_ERROR_BADUTF8;
+    return false;
+  }
+
   while (offset <= int64_t{subject.size()}) {
     const int64_t count = exec(subject, offset, second_try);
 
@@ -1038,6 +1051,8 @@ int64_t regexp::last_error() {
       return PHP_PCRE_RECURSION_LIMIT_ERROR;
     case PCRE_ERROR_BADUTF8:
       return PHP_PCRE_BAD_UTF8_ERROR;
+    case PCRE_ERROR_BADUTF8_OFFSET:
+      return PREG_BAD_UTF8_OFFSET_ERROR;
     case PCRE2_ERROR_BADOFFSET:
       return PHP_PCRE_INTERNAL_ERROR;
     default:
