@@ -384,6 +384,10 @@ ext/standard/tests/general_functions/getopt.phpt
 ext/standard/tests/general_functions/getopt_002.phpt
 ext/standard/tests/general_functions/getopt_004.phpt
 ext/standard/tests/general_functions/getopt_005.phpt
+ext/standard/tests/general_functions/getopt_006.phpt
+ext/standard/tests/general_functions/getopt_007.phpt
+ext/standard/tests/general_functions/getopt_008.phpt
+ext/standard/tests/general_functions/getopt_009.phpt
 ext/standard/tests/general_functions/header_redirection_001.phpt
 ext/standard/tests/general_functions/header_redirection_002.phpt
 ext/standard/tests/general_functions/header_redirection_003.phpt

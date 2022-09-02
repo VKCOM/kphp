@@ -1304,12 +1304,12 @@ static bool parse_multipart(const char *post, int post_len, const string &bounda
 static char arg_vars_storage[sizeof(array<string>)];
 static array<string> *arg_vars = nullptr;
 
-int64_t &get_dummy_rest_index() noexcept {
-  static int64_t dummy_rest_index = 0;
+Optional<int64_t> &get_dummy_rest_index() noexcept {
+  static Optional<int64_t> dummy_rest_index;
   return dummy_rest_index;
 }
 
-Optional<array<mixed>> f$getopt(const string &options, array<string> longopts, int64_t &rest_index) {
+Optional<array<mixed>> f$getopt(const string &options, array<string> longopts, Optional<int64_t> &rest_index) {
   if (!arg_vars) {
     return false;
   }
