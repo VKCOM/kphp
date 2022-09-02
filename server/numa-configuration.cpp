@@ -15,7 +15,7 @@ bool NumaConfiguration::add_numa_node([[maybe_unused]] int numa_node_id, [[maybe
 #if defined(__APPLE__)
   return false;
 #else
-  assert(numa_available() == 0);
+  assert(numa_available() >= 0);
 
   if (!inited) {
     total_cpus = numa_num_configured_cpus();
@@ -48,7 +48,7 @@ bool NumaConfiguration::add_numa_node([[maybe_unused]] int numa_node_id, [[maybe
 
 void NumaConfiguration::distribute_process([[maybe_unused]] int numa_node_id, [[maybe_unused]] const cpu_set_t &cpu_mask) const {
 #if !defined(__APPLE__)
-  assert(numa_available() == 0);
+  assert(numa_available() >= 0);
 
   int res = sched_setaffinity(0, sizeof(cpu_set_t), &cpu_mask);
   dl_passert(res != -1, "Can't bind worker to cpu");
