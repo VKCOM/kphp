@@ -2062,7 +2062,7 @@ int main_args_handler(int i, const char *long_option) {
       kprintf("--%s option: NUMA is not available on macOS\n", long_option);
       return -1;
 #else
-      if (numa_available() != 0) {
+      if (numa_available() < 0) {
         kprintf("--%s option: NUMA is not available on the host\n", long_option);
         return -1;
       }
@@ -2101,7 +2101,7 @@ int main_args_handler(int i, const char *long_option) {
       kprintf("--%s option: NUMA is not available on macOS\n", long_option);
       return -1;
 #else
-      if (numa_available() != 0) {
+      if (numa_available() < 0) {
         kprintf("--%s option: NUMA is not available on the host\n", long_option);
         return -1;
       }
