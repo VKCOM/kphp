@@ -13,7 +13,7 @@ class TestIgnoreUserAbort(KphpServerAutoTestCase):
             pass
 
     """
-    Имя изменено для избежания ошибки связанной с asan
+    Name changed to avoid asan alert
     """
     def test_user_abort_of_rpc_work(self):
         self._send_request(uri='/test_ignore_user_abort?type=rpc&level=no_ignore&port={}'.format(str(self.kphp_server.master_port)))
