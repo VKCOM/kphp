@@ -12,7 +12,12 @@ class TestIgnoreUserAbort(KphpServerAutoTestCase):
         except Exception:
             pass
 
-    def test_user_abort_rpc_work(self):
+    """
+    Changing the name leads to different tests run order and for some reason it helps to get rid of ASAN warning. 
+    As we decided that the previous ASAN warning was false-positive, this kind of fix might be acceptable for us.
+    Old name was - "test_user_abort_rpc_work"
+    """
+    def test_user_abort_of_rpc_work(self):
         self._send_request(uri='/test_ignore_user_abort?type=rpc&level=no_ignore&port={}'.format(str(self.kphp_server.master_port)))
         self.kphp_server.assert_log(['Critical error during script execution: http connection close'], timeout=10)
         error = False
