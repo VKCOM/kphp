@@ -42,7 +42,8 @@ void ClassData::set_name_and_src_name(const std::string &full_name) {
   std::string namespace_name = pos == std::string::npos ? "" : full_name.substr(0, pos);
   std::string class_name = pos == std::string::npos ? full_name : full_name.substr(pos + 1);
 
-  this->can_be_php_autoloaded = file_id && namespace_name == file_id->namespace_name && class_name == file_id->short_file_name;
+  this->can_be_php_autoloaded = file_id && ((namespace_name == file_id->namespace_name && class_name == file_id->short_file_name) ||
+                                            (G->get_composer_autoloader().is_classmap_file(file_id->file_name)));
   this->can_be_php_autoloaded |= this->is_builtin();
 
   this->is_lambda = vk::string_view{full_name}.starts_with("Lambda$") || vk::string_view{full_name}.starts_with("ITyped$");

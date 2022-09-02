@@ -6,6 +6,8 @@
 
 #include <yaml-cpp/yaml.h> // using YAML parser to handle JSON files
 
+#include <filesystem>
+
 #include "common/algorithms/contains.h"
 #include "common/wrappers/fmt_format.h"
 #include "compiler/kphp_assert.h"
@@ -122,6 +124,42 @@ private:
   std::map<std::string, std::string> &classmap_;
 };
 } // namespace
+
+bool ComposerAutoloader::is_classmap_file(const std::string &filename) const noexcept {
+  return vk::contains(classmap_files_, filename);
+}
+
+void ComposerAutoloader::scan_classmap(const std::string &filename) {
+  // supporting the real composer classmap is cumbersome: it requires full PHP parsing to
+  // fetch all classes from files (the filename doesn't have to follow any conventions);
+  // we could also invoke php interpreter over vendor/composer/autoload_classmap.php to
+  // print a JSON dump of the generated classmap and then decode that, but then
+  // it will be impossible to compile a kphp program that uses a classmap without php interpreter;
+  // as an alternative, we add all classmap files to auto-required lists that will be
+  // included along "autoload.files" files, if some classes are not needed, they will be
+  // discarded after we compute actually used symbols
+  //
+  // this approach works well as long as there is no significant side effects related to
+  // the files being autoloaded (otherwise those side effects will trigger at different point in time)
+
+  const auto add_classmap_file = [&](const std::string &filename) {
+    classmap_files_.insert(filename);
+    files_to_require_.emplace_back(filename);
+  };
+
+  auto file_info = std::filesystem::status(filename);
+  kphp_error(file_info.type() != std::filesystem::file_type::not_found,
+             fmt_format("can't find {} classmap file", filename));
+  if (file_info.type() == std::filesystem::file_type::directory) {
+    for (const auto &entry : std::filesystem::directory_iterator(filename)) {
+      scan_classmap(entry.path().string());
+    }
+  } else if (file_info.type() == std::filesystem::file_type::regular) {
+    if (vk::string_view(filename).ends_with(".php") || vk::string_view(filename).ends_with(".inc")) {
+      add_classmap_file(filename);
+    }
+  }
+}
 
 std::string ComposerAutoloader::psr_lookup_nocache(const PsrMap &psr, const std::string &class_name, bool transform_underscore) {
   std::string prefix = class_name;
@@ -253,6 +291,11 @@ void ComposerAutoloader::load_file(const std::string &pkg_root, bool is_root_fil
   //       "": "fallback-dir/",
   //       <...>
   //     },
+  //     "classmap": [
+  //       "src/",
+  //       "lib/file.php",
+  //       <...>
+  //     ],
   //     "files": [
   //       "file.php",
   //       <...>
@@ -314,6 +357,12 @@ void ComposerAutoloader::add_autoload_section(const YAML::Node &autoload, const 
   // https://getcomposer.org/doc/04-schema.md#psr-0
   Psr0Loader psr0_loader{autoload, autoload_psr0_classmap_, autoload_psr0_, pkg_root};
   psr0_loader.load();
+
+  // https://getcomposer.org/doc/04-schema.md#classmap
+  const auto &classmap_src = autoload["classmap"];
+  for (const auto &elem : classmap_src) {
+    scan_classmap(pkg_root + elem.as<std::string>());
+  }
 
   if (require_files) {
     // files that are required by the composer-generated autoload.php

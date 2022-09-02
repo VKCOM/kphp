@@ -48,6 +48,8 @@ public:
     return filename == autoload_filename_;
   }
 
+  bool is_classmap_file(const std::string &filename) const noexcept;
+
   const std::vector<std::string> &get_files_to_require() const noexcept {
     return files_to_require_;
   }
@@ -60,11 +62,14 @@ private:
 
   static std::string psr_lookup_nocache(const PsrMap &psr, const std::string &class_name, bool transform_underscore = false);
 
+  void scan_classmap(const std::string &filename);
+
   bool use_dev_;
   PsrMap autoload_psr4_;
   PsrMap autoload_psr0_;
   std::map<std::string, std::string> autoload_psr0_classmap_;
   std::unordered_set<std::string> deps_;
+  std::unordered_set<std::string> classmap_files_;
 
   std::string autoload_filename_;
   std::vector<std::string> files_to_require_;

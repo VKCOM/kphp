@@ -50,12 +50,21 @@ class ComposerStaticInit9539f736c30192217f7a8384c08769a6
         1 => __DIR__ . '/..' . '/vk/utils/utils-fallback/src',
     );
 
+    public static $classMap = array (
+        'ClassmapLib\\Classes\\ClassmapClass1' => __DIR__ . '/../..' . '/classmap/classmap_lib.php',
+        'ClassmapLib\\Classes\\ClassmapClass2' => __DIR__ . '/../..' . '/classmap/classmap_lib.php',
+        'ClassmapNoNamespace' => __DIR__ . '/../..' . '/classmap/classmap_no_namespace.php',
+        'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
+        'OtherClassmap\\OtherClassmapClass' => __DIR__ . '/../..' . '/classmap/dir/classmap.php',
+    );
+
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
             $loader->prefixLengthsPsr4 = ComposerStaticInit9539f736c30192217f7a8384c08769a6::$prefixLengthsPsr4;
             $loader->prefixDirsPsr4 = ComposerStaticInit9539f736c30192217f7a8384c08769a6::$prefixDirsPsr4;
             $loader->fallbackDirsPsr4 = ComposerStaticInit9539f736c30192217f7a8384c08769a6::$fallbackDirsPsr4;
+            $loader->classMap = ComposerStaticInit9539f736c30192217f7a8384c08769a6::$classMap;
 
         }, null, ClassLoader::class);
     }
