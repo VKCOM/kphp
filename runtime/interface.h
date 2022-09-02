@@ -172,7 +172,8 @@ bool f$ini_set(const string &s, const string &value);
 
 Optional<string> f$ini_get(const string &s);
 
-Optional<array<mixed>> f$getopt(const string &options, array<string> longopts = array<string>());
+int64_t &get_dummy_rest_index() noexcept;
+Optional<array<mixed>> f$getopt(const string &options, array<string> longopts = {}, int64_t &rest_index = get_dummy_rest_index());
 
 void global_init_runtime_libs();
 void global_init_script_allocator();

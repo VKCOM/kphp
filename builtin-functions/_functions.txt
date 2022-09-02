@@ -375,7 +375,7 @@ function debug_backtrace() ::: string[][];
 function posix_getpid() ::: int;
 function posix_getuid() ::: int;
 function posix_getpwuid($uid ::: int) ::: mixed[] | false;
-function getopt ($options ::: string, $longopt ::: array = array()) ::: mixed[] | false;
+function getopt ($options ::: string, $longopt ::: array = array(), int &$rest_index = 0) ::: mixed[] | false;
 function gethostbynamel ($name ::: string) ::: string[] | false;
 function inet_pton ($address ::: string) ::: string | false;
 
