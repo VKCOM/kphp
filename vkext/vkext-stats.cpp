@@ -2,8 +2,6 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "vkext/vkext-stats.h"
-
 #include <assert.h>
 #include <ctype.h>
 #include <limits.h>
