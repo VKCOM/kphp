@@ -25,24 +25,7 @@ public:
   void init(void *buffer, size_t buffer_size) noexcept;
   void hard_reset() noexcept;
 
-  void *allocate(size_t size) noexcept {
-    void *mem = nullptr;
-    const auto aligned_size = details::align_for_chunk(size);
-    if (aligned_size < MAX_CHUNK_BLOCK_SIZE_) {
-      mem = try_allocate_small_piece(aligned_size);
-      if (!mem) {
-        mem = allocate_small_piece_from_fallback_resource(aligned_size);
-      }
-    } else {
-      mem = allocate_huge_piece(aligned_size, true);
-      if (!mem) {
-        mem = perform_defragmentation_and_allocate_huge_piece(aligned_size);
-      }
-    }
-
-    register_allocation(mem, aligned_size);
-    return mem;
-  }
+  void *allocate(size_t size) noexcept;
 
   void *allocate0(size_t size) noexcept {
     auto *mem = allocate(size);

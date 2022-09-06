@@ -35,4 +35,15 @@ void monotonic_buffer::critical_dump(void *mem, size_t size) const noexcept {
     stats_.real_memory_used, stats_.max_real_memory_used);
 }
 
+void monotonic_buffer_resource::raise_oom(size_t size) const {
+  // if we have 100mb and can't allocate 50mb, the frag ratio will be 2.0;
+  // values below 1.0 are theoretically possible, but very unlikely;
+  // having a frag ratio above 4.0 could be a bad sign
+  auto mem_pool_size = static_cast<size_t>(memory_end_ - memory_begin_);
+  size_t mem_available = mem_pool_size - stats_.memory_used;
+  auto fragmentation_ratio = (double)mem_available / (double)size;
+  php_out_of_memory_warning("Can't allocate %zu bytes (fragmentation ration: %.3f)", size, fragmentation_ratio);
+  raise(SIGUSR2);
+}
+
 } // namespace memory_resource

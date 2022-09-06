@@ -5,6 +5,7 @@
 #include "runtime/memory_resource/unsynchronized_pool_resource.h"
 
 #include "common/wrappers/likely.h"
+#include "common/kprintf.h"
 
 #include "runtime/memory_resource/details/memory_ordered_chunk_list.h"
 
@@ -81,6 +82,27 @@ void *unsynchronized_pool_resource::allocate_small_piece_from_fallback_resource(
     memory_debug("fallback resource was empty, took piece from huge map\n");
   }
   return fallback_resource_.get_from_pool(aligned_size);
+}
+
+void *unsynchronized_pool_resource::allocate(size_t size) noexcept {
+  void *mem = nullptr;
+  const auto aligned_size = details::align_for_chunk(size);
+  if (aligned_size < MAX_CHUNK_BLOCK_SIZE_) {
+    mem = try_allocate_small_piece(aligned_size);
+    if (!mem) {
+      mem = allocate_small_piece_from_fallback_resource(aligned_size);
+    }
+    kprintf("allocated %lu <from chunk>\n", size);
+  } else {
+    mem = allocate_huge_piece(aligned_size, true);
+    if (!mem) {
+      mem = perform_defragmentation_and_allocate_huge_piece(aligned_size);
+    }
+    kprintf("allocated %lu <from pool>\n", size);
+  }
+
+  register_allocation(mem, aligned_size);
+  return mem;
 }
 
 void *unsynchronized_pool_resource::perform_defragmentation_and_allocate_huge_piece(size_t aligned_size) noexcept {

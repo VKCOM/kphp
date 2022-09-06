@@ -114,8 +114,7 @@ public:
   void *get_from_pool(size_t size, bool safe = false) noexcept {
     if (unlikely(static_cast<size_t>(memory_end_ - memory_current_) < size)) {
       if (unlikely(!safe)) {
-        php_out_of_memory_warning("Can't allocate %zu bytes", size);
-        raise(SIGUSR2);
+        raise_oom(size);
       }
       return nullptr;
     }
@@ -124,6 +123,8 @@ public:
     memory_current_ += size;
     return mem;
   }
+
+  void raise_oom(size_t size) const;
 };
 
 } // namespace memory_resource
