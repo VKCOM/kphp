@@ -80,7 +80,15 @@ void *unsynchronized_pool_resource::allocate_small_piece_from_fallback_resource(
     fallback_resource_.init(smallest_huge_piece, details::memory_chunk_tree::get_chunk_size(smallest_huge_piece));
     memory_debug("fallback resource was empty, took piece from huge map\n");
   }
-  return fallback_resource_.get_from_pool(aligned_size);
+  // call get_from_pool with safe=true, so we can handle OOM here,
+  // inside the script allocator;
+  // without that, we'll get fallback resource memory stats used when
+  // calculating the memory usage rate (fragmentation impact)
+  mem = fallback_resource_.get_from_pool(aligned_size, true);
+  if (unlikely(!mem)) {
+    raise_oom(aligned_size);
+  }
+  return mem;
 }
 
 void *unsynchronized_pool_resource::perform_defragmentation_and_allocate_huge_piece(size_t aligned_size) noexcept {
