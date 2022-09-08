@@ -392,20 +392,38 @@ void write_char_utf8_no_escape(int c) {
     write_buff_char((char)c);
     return;
   }
+  // 2 bytes(11): 110x xxxx 10xx xxxx
   if (c < 0x800) {
-    write_buff_char_2((char)(0xc0 + (c >> 6)), (char)(0x80 + (c & 63)));
+    write_buff_char_2((char)(0xC0 + (c >> 6)), (char)(0x80 + (c & 63)));
     return;
   }
+
+  // 3 bytes(16): 1110 xxxx 10xx xxxx 10xx xxxx
   if (c < 0x10000) {
-    write_buff_char_3((char)(0xe0 + (c >> 12)), (char)(0x80 + ((c >> 6) & 63)), (char)(0x80 + (c & 63)));
+    write_buff_char_3((char)(0xE0 + (c >> 12)), (char)(0x80 + ((c >> 6) & 63)), (char)(0x80 + (c & 63)));
     return;
   }
-  if (c >= 0x10000 && c <= 0x10ffff) {
-    write_buff_char_4((char)(0xf0 + (c >> 18)), (char)(0x80 + ((c >> 12) & 63)), (char)(0x80 + ((c >> 6) & 63)), (char)(0x80 + (c & 63)));
+
+  // 4 bytes(21): 1111 0xxx 10xx xxxx 10xx xxxx 10xx xxxx
+  if (c < 0x200000) {
+    write_buff_char_4((char)(0xF0 + (c >> 18)), (char)(0x80 + ((c >> 12) & 63)), (char)(0x80 + ((c >> 6) & 63)), (char)(0x80 + (c & 63)));
+    return;
+  }
+
+  // 5 bytes(26): 1111 10xx 10xx xxxx 10xx xxxx 10xx xxxx 10xx xxxx
+  if (c < 0x4000000) {
+    write_buff_char_5((char)(0xF8 + (c >> 24)), (char)(0x80 + ((c >> 18) & 63)), (char)(0x80 + ((c >> 12) & 63)), (char)(0x80 + ((c >> 6) & 63)),
+                      (char)(0x80 + (c & 63)));
+    return;
+  }
+
+  // 6 bytes(31): 1111 110x 10xx xxxx 10xx xxxx 10xx xxxx 10xx xxxx 10xx xxxx
+  if (c < 0x80000000) {
+    write_buff_char_6((char)(0xFC + (c >> 30)), (char)(0x80 + ((c >> 24) & 63)), (char)(0x80 + ((c >> 18) & 63)), (char)(0x80 + ((c >> 12) & 63)),
+                      (char)(0x80 + ((c >> 6) & 63)), (char)(0x80 + (c & 63)));
     return;
   }
 }
-
 
 static int win_to_utf8(const char *s, int len, bool escape) {
   int state = 0;
@@ -419,9 +437,7 @@ static int win_to_utf8(const char *s, int len, bool escape) {
     } else if (state == 1 && s[i] == '#') {
       state++;
     } else if (state == 2 && s[i] >= '0' && s[i] <= '9') {
-      if (cur_num < 0x20000) {
-        cur_num = s[i] - '0' + cur_num * 10;
-      }
+      cur_num = s[i] - '0' + cur_num * 10;
     } else if (state == 2 && s[i] == ';') {
       state++;
     } else {
@@ -446,7 +462,6 @@ static int win_to_utf8(const char *s, int len, bool escape) {
   }
   return cur_buff_len;
 }
-
 
 char ws[256] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
 

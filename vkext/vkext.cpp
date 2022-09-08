@@ -421,7 +421,48 @@ void write_char_utf8(int c) {
   write_buff_char(';');
 }
 
-int win_to_utf8(const char *s, int len) {
+void write_char_utf8_no_escape(int c) {
+  if (!c) {
+    return;
+  }
+  if (c < 128) {
+    write_buff_char((char)c);
+    return;
+  }
+  // 2 bytes(11): 110x xxxx 10xx xxxx
+  if (c < 0x800) {
+    write_buff_char_2((char)(0xC0 + (c >> 6)), (char)(0x80 + (c & 63)));
+    return;
+  }
+
+  // 3 bytes(16): 1110 xxxx 10xx xxxx 10xx xxxx
+  if (c < 0x10000) {
+    write_buff_char_3((char)(0xE0 + (c >> 12)), (char)(0x80 + ((c >> 6) & 63)), (char)(0x80 + (c & 63)));
+    return;
+  }
+
+  // 4 bytes(21): 1111 0xxx 10xx xxxx 10xx xxxx 10xx xxxx
+  if (c < 0x200000) {
+    write_buff_char_4((char)(0xF0 + (c >> 18)), (char)(0x80 + ((c >> 12) & 63)), (char)(0x80 + ((c >> 6) & 63)), (char)(0x80 + (c & 63)));
+    return;
+  }
+
+  // 5 bytes(26): 1111 10xx 10xx xxxx 10xx xxxx 10xx xxxx 10xx xxxx
+  if (c < 0x4000000) {
+    write_buff_char_5((char)(0xF8 + (c >> 24)), (char)(0x80 + ((c >> 18) & 63)), (char)(0x80 + ((c >> 12) & 63)), (char)(0x80 + ((c >> 6) & 63)),
+                      (char)(0x80 + (c & 63)));
+    return;
+  }
+
+  // 6 bytes(31): 1111 110x 10xx xxxx 10xx xxxx 10xx xxxx 10xx xxxx 10xx xxxx
+  if (c < 0x80000000) {
+    write_buff_char_6((char)(0xFC + (c >> 30)), (char)(0x80 + ((c >> 24) & 63)), (char)(0x80 + ((c >> 18) & 63)), (char)(0x80 + ((c >> 12) & 63)),
+                      (char)(0x80 + ((c >> 6) & 63)), (char)(0x80 + (c & 63)));
+    return;
+  }
+}
+
+int win_to_utf8(const char *s, int len, bool escape) {
   int state = 0;
   int save_pos = -1;
   int cur_num = 0;
@@ -433,9 +474,7 @@ int win_to_utf8(const char *s, int len) {
     } else if (state == 1 && s[i] == '#') {
       state++;
     } else if (state == 2 && s[i] >= '0' && s[i] <= '9') {
-      if (cur_num < 0x20000) {
-        cur_num = s[i] - '0' + cur_num * 10;
-      }
+      cur_num = s[i] - '0' + cur_num * 10;
     } else if (state == 2 && s[i] == ';') {
       state++;
     } else {
@@ -444,10 +483,10 @@ int win_to_utf8(const char *s, int len) {
     if (state == 3 && 0xd800 <= cur_num && cur_num <= 0xdfff) {
       cur_num = 32;
     }
-    if (state == 3 && (cur_num >= 32 && cur_num != 33 && cur_num != 34 && cur_num != 36 && cur_num != 39 && cur_num != 60 && cur_num != 62 && cur_num != 92 && cur_num != 8232 && cur_num != 8233 && cur_num < 0x80000000)) {
+    if (state == 3 && (!escape || (cur_num >= 32 && cur_num != 33 && cur_num != 34 && cur_num != 36 && cur_num != 39 && cur_num != 60 && cur_num != 62 && cur_num != 92 && cur_num != 8232 && cur_num != 8233 && cur_num < 0x80000000))) {
       write_buff_set_pos(save_pos);
       assert (save_pos == write_buff_get_pos());
-      write_char_utf8(cur_num);
+      (escape ? write_char_utf8 : write_char_utf8_no_escape)(cur_num);
     } else if (state == 3 && cur_num >= 0x10000) {
       write_char_utf8(win_to_utf8_convert[(unsigned char)(s[i])]);
       write_buff_char_pos('$', save_pos);
@@ -543,11 +582,12 @@ PHP_FUNCTION (vk_utf8_to_win) {
 PHP_FUNCTION (vk_win_to_utf8) {
   char *text;
   long text_len = 0;
-  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &text, &text_len) == FAILURE) {
+  bool escape = true;
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s|b", &text, &text_len, &escape) == FAILURE) {
     return;
   }
   init_buff(0);
-  win_to_utf8(text, text_len);
+  win_to_utf8(text, text_len, escape);
   write_buff_char(0);
   char *res = finish_buff();
   char *new_res = estrdup (res);
