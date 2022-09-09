@@ -178,7 +178,7 @@ std::string with_extra_flag(std::string flags) {
 }
 
 std::string get_default_extra_cxxflags() noexcept {
-  return with_extra_flag("-Os -ggdb");
+  return with_extra_flag("-O2 -ggdb");
 }
 
 std::string get_default_extra_ldflags() noexcept {

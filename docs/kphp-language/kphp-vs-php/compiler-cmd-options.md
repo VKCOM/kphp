@@ -114,7 +114,7 @@ C++ compiler for building the output binary, default **g++**.
 
 <aside>--extra-cxx-flags {flags} / KPHP_EXTRA_CXXFLAGS = {flags}</aside>
 
-Extra C++ compiler flags for building the output binary, default **-Os -ggdb** + some others.
+Extra C++ compiler flags for building the output binary, default **-O2 -ggdb** + some others.
 
 <aside>--extra-linker-flags {flags} / KPHP_EXTRA_LDFLAGS = {flags}</aside>
 
