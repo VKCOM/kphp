@@ -114,8 +114,7 @@ public:
   void *get_from_pool(size_t size, bool safe = false) noexcept {
     if (unlikely(static_cast<size_t>(memory_end_ - memory_current_) < size)) {
       if (unlikely(!safe)) {
-        php_out_of_memory_warning("Can't allocate %zu bytes", size);
-        raise(SIGUSR2);
+        raise_oom(size);
       }
       return nullptr;
     }
@@ -124,6 +123,13 @@ public:
     memory_current_ += size;
     return mem;
   }
+
+protected:
+  // this function should never be called from the nested/base context,
+  // since all allocators have their own mem stats;
+  // when signaling OOM, we want to see the root mem stats, not the
+  // fallback buffer mem stats, for instance
+  void raise_oom(size_t size) const noexcept;
 };
 
 } // namespace memory_resource
