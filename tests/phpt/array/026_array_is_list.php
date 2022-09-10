@@ -1,4 +1,4 @@
-@ok php8
+@skip php8
 <?php
 
 var_dump(array_is_list([]));

@@ -1,5 +1,4 @@
 @kphp_should_fail
-/Not enough arguments to supply a variadic call/
 /Too few arguments to function call, expected 2, have 0/
 /Too few arguments to function call, expected 4, have 2/
 /Too few arguments to function call, expected 2, have 0/

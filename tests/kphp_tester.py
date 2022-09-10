@@ -213,10 +213,10 @@ def run_fail_test(test: TestFile, runner):
     if runner.compile_with_kphp(test.env_vars):
         return TestResult.failed(test, runner.artifacts, "kphp build is ok, but it expected to fail")
 
-    if test.out_regexps or test.forbidden_regexps:
-        if not runner.kphp_build_stderr_artifact:
-            return TestResult.failed(test, runner.artifacts, "kphp build failed without stderr")
+    if not runner.kphp_build_stderr_artifact:
+        return TestResult.failed(test, runner.artifacts, "kphp build failed without stderr")
 
+    if test.out_regexps or test.forbidden_regexps:
         with open(runner.kphp_build_stderr_artifact.file) as f:
             stderr_log = f.read()
             for index, msg_regex in enumerate(test.out_regexps, start=1):

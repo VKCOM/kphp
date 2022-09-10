@@ -668,7 +668,7 @@ void DeduceImplicitTypesAndCastsPass::patch_call_arg_on_func_call(VertexAdaptor<
 
   // for cast params (::: in functions.txt or '@kphp-infer cast') we add conversions automatically (implicit casts),
   // unless the file from where we're calling this function is annotated with strict_types=1
-  if (param->is_cast_param && is_implicit_cast_allowed(current_function->file_id->is_strict_types, param_hint)) {
+  if (param->is_cast_param && is_implicit_cast_allowed(current_function->file_id->is_strict_types, param_hint) && call_arg->type() != op_varg) {
     call_arg = implicit_cast_call_arg_to_cast_param(call_arg, param_hint, param->var()->ref_flag);
     return;
   }
