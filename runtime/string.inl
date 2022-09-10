@@ -944,12 +944,30 @@ int64_t string::compare(const string &str) const {
 
 
 int64_t string::get_correct_index(int64_t index) const {
-  return index >= 0 ? index : index + int64_t{size()};
+  if (index < 0) {
+    index = index + size();
+    if (index < 0) {
+      index = 0;
+    }
+  }
+  return index;
+}
+
+int64_t string::get_correct_index_clamped(int64_t index) const {
+  if (index < 0) {
+    index = index + size();
+    if (index < 0) {
+      index = 0;
+    }
+  } else if (index > size()) {
+    index = size();
+  }
+  return index;
 }
 
 const string string::get_value(int64_t int_key) const {
   const int64_t true_key = get_correct_index(int_key);
-  if (true_key < 0 || true_key >= size()) {
+  if (true_key >= size()) {
     return {};
   }
   return string(1, p[true_key]);

@@ -729,7 +729,7 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, bool all_
   pcre_last_error = 0;
 
   int64_t result = 0;
-  offset = std::max(subject.get_correct_index(offset), 0_i64);
+  offset = subject.get_correct_index(offset);
   if (offset > subject.size()) {
     matches = array<mixed>();
     pcre_last_error = PCRE2_ERROR_BADOFFSET;
@@ -844,7 +844,7 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, int64_t f
 
   int64_t result = 0;
   auto empty_match = array<mixed>::create(string(), PCRE2_UNSET);
-  offset = std::max(subject.get_correct_index(offset), 0_i64);
+  offset = subject.get_correct_index(offset);
   if (offset > subject.size()) {
     matches = array<mixed>();
     pcre_last_error = PCRE2_ERROR_BADOFFSET;

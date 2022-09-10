@@ -1360,7 +1360,7 @@ bool mixed::isset(int64_t int_key) const {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
       int_key = as_string().get_correct_index(int_key);
-      return int_key >= 0 && int_key < as_string().size();
+      return int_key < as_string().size();
     }
 
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {

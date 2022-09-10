@@ -671,6 +671,8 @@ function str_replace ($search, $replace, $subject, &$count ::: int = TODO) ::: ^
 function str_ireplace ($search, $replace, $subject, &$count ::: int = TODO) ::: ^3 | string;
 function str_split ($str ::: string, $split_length ::: int = 1) ::: string[];
 function strlen ($str ::: string) ::: int;
+function strspn ($haystack ::: string, $char_list ::: string, $offset ::: int = 0) ::: int;
+function strcspn ($haystack ::: string, $char_list ::: string, $offset ::: int = 0) ::: int;
 function strpbrk ($haystack ::: string, $char_list ::: string) ::: string | false;
 function strpos ($haystack ::: string, $needle, $offset ::: int = 0) ::: int | false;
 function stripos ($haystack ::: string, $needle, $offset ::: int = 0) ::: int | false;
