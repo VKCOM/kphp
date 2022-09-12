@@ -177,6 +177,7 @@ public:
   inline int64_t compare(const string &str) const;
 
   inline int64_t get_correct_index(int64_t index) const;
+  inline int64_t get_correct_index_clamped(int64_t index) const;
   inline const string get_value(int64_t int_key) const;
   inline const string get_value(const string &string_key) const;
   inline const string get_value(const mixed &v) const;

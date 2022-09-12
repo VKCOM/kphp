@@ -121,6 +121,10 @@ int64_t f$strncmp(const string &lhs, const string &rhs, int64_t len);
 
 int64_t f$strnatcmp(const string &lhs, const string &rhs);
 
+int64_t f$strspn(const string &hayshack, const string &char_list, int64_t offset = 0) noexcept;
+
+int64_t f$strcspn(const string &hayshack, const string &char_list, int64_t offset = 0) noexcept;
+
 Optional<string> f$strpbrk(const string &haystack, const string &char_list);
 
 Optional<int64_t> f$strpos(const string &haystack, const string &needle, int64_t offset = 0);
