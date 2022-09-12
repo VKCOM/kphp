@@ -18,8 +18,12 @@ ClusterName::ClusterName() {
 }
 
 const char *ClusterName::set_cluster_name(const char *name) noexcept {
-  // reserved for shmem, statsd, socket suffixes and prefixes
-  constexpr size_t reserved = 42;
+  static const char *socket_prefix = "kphp_master_unix_socket_for_graceful_restart-";
+  static const char *shm_prefix = "/";
+  static const char *shm_suffix = "_kphp_shm";
+  static const char *statsd_prefix = "kphp_stats.";
+  static const auto reserved = std::max({std::strlen(socket_prefix), std::strlen(shm_prefix) + std::strlen(shm_suffix), std::strlen(statsd_prefix)});
+
   const auto name_len = std::strlen(name);
   if (!name_len) {
     return "empty cluster name";
@@ -35,10 +39,8 @@ const char *ClusterName::set_cluster_name(const char *name) noexcept {
     return "Incorrect symbol in cluster name. Allowed symbols are: alpha-numerics, '-', '_'";
   }
 
-  const char *socket_prefix = "kphp_master_fd_for_graceful_restart-";
-  auto socket_prefix_len = std::strlen(socket_prefix);
   std::strcpy(socket_name_.data(), socket_prefix);
-  if (socket_prefix_len + name_len > MAX_SOCKET_NAME_LEN) {
+  if (std::strlen(socket_prefix) + name_len > MAX_SOCKET_NAME_LEN) {
     // To allow cluster name longer than 107 symbols, we just take crc64 of it as the socket name
     uint64_t crc = compute_crc64(name, name_len);
     char hex_crc_str[sizeof(crc) * 2 + 1];
@@ -48,11 +50,11 @@ const char *ClusterName::set_cluster_name(const char *name) noexcept {
     std::strcat(socket_name_.data(), cluster_name_.data());
   }
 
-  std::strcpy(shmem_name_.data(), "/");
+  std::strcpy(shmem_name_.data(), shm_prefix);
   std::strcat(shmem_name_.data(), cluster_name_.data());
-  std::strcat(shmem_name_.data(), "_kphp_shm");
+  std::strcat(shmem_name_.data(), shm_suffix);
 
-  std::strcpy(statsd_prefix_.data(), "kphp_stats.");
+  std::strcpy(statsd_prefix_.data(), statsd_prefix);
   std::strcat(statsd_prefix_.data(), cluster_name_.data());
   return nullptr;
 }
