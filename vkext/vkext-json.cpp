@@ -9,7 +9,7 @@
 #include "vkext/vkext.h"
 
 static void json_escape_string(const char *s, size_t len);
-static bool php_json_encode(zval *val, const char *key TSRMLS_DC);
+static bool php_json_encode(zval *val, const char *key);
 
 static int json_determine_array_type(VK_ZVAL_API_P val) {
   int i;
@@ -37,7 +37,7 @@ static bool json_encode_array(VK_ZVAL_API_P val) {
 
   if (Z_TYPE_P(VK_ZVAL_API_TO_ZVALP(val)) == IS_ARRAY) {
     myht = HASH_OF(VK_ZVAL_API_TO_ZVALP(val));
-    r = json_determine_array_type(val TSRMLS_CC);
+    r = json_determine_array_type(val);
   } else {
     myht = Z_OBJPROP_P(VK_ZVAL_API_TO_ZVALP(val));
     r = 1;
@@ -64,7 +64,7 @@ static bool json_encode_array(VK_ZVAL_API_P val) {
           need_comma = 1;
         }
 
-        encoded_successfully = encoded_successfully && php_json_encode(VK_ZVAL_API_TO_ZVALP(data), (key ? key->val : NULL) TSRMLS_CC);
+        encoded_successfully = encoded_successfully && php_json_encode(VK_ZVAL_API_TO_ZVALP(data), (key ? key->val : NULL));
       } else if (r == 1) {
         if (key) {
           if (key->val[0] == '\0' && Z_TYPE_P (VK_ZVAL_API_TO_ZVALP(val)) == IS_OBJECT) {
@@ -81,7 +81,7 @@ static bool json_encode_array(VK_ZVAL_API_P val) {
           json_escape_string(key->val, VK_HASH_KEY_LEN(key->len));
           write_buff_char(':');
 
-          encoded_successfully = encoded_successfully && php_json_encode(VK_ZVAL_API_TO_ZVALP(data), (key ? key->val : NULL) TSRMLS_CC);
+          encoded_successfully = encoded_successfully && php_json_encode(VK_ZVAL_API_TO_ZVALP(data), (key ? key->val : NULL));
         } else {
           if (need_comma) {
             write_buff_char(',');
@@ -94,7 +94,7 @@ static bool json_encode_array(VK_ZVAL_API_P val) {
           write_buff_char('"');
           write_buff_char(':');
 
-          encoded_successfully = encoded_successfully && php_json_encode(VK_ZVAL_API_TO_ZVALP(data), (key ? key->val : NULL) TSRMLS_CC);
+          encoded_successfully = encoded_successfully && php_json_encode(VK_ZVAL_API_TO_ZVALP(data), (key ? key->val : NULL));
         }
       }
     } VK_ZEND_HASH_FOREACH_END();
@@ -157,7 +157,7 @@ static void json_escape_string(const char *s, size_t len) {
   write_buff_char('"');
 }
 
-static bool php_json_encode(zval *val, const char *key TSRMLS_DC) {
+static bool php_json_encode(zval *val, const char *key) {
   bool encoded_successfully = true;
   HashTable *myht;
 
@@ -200,7 +200,7 @@ static bool php_json_encode(zval *val, const char *key TSRMLS_DC) {
     case IS_ARRAY:
       myht = HASH_OF(val);
       if (myht && VK_ZEND_HASH_IS_RECURSIVE(myht)) {
-        php_error_docref(NULL TSRMLS_CC, E_WARNING, "array recursion detected%s%s",
+        php_error_docref(NULL, E_WARNING, "array recursion detected%s%s",
           ((key) ? " - " : ""), ((key) ? key : ""));
         write_buff("null", 4);
         break;
@@ -210,7 +210,7 @@ static bool php_json_encode(zval *val, const char *key TSRMLS_DC) {
         VK_ZEND_HASH_PROTECT_RECURSION(myht);
       }
 
-      encoded_successfully = encoded_successfully && json_encode_array(VK_ZVAL_API_REF(val) TSRMLS_CC);
+      encoded_successfully = encoded_successfully && json_encode_array(VK_ZVAL_API_REF(val));
 
       if (myht && VK_ZEND_HASH_APPLY_PROTECTION(myht)) {
         VK_ZEND_HASH_UNPROTECT_RECURSION(myht);
@@ -220,7 +220,7 @@ static bool php_json_encode(zval *val, const char *key TSRMLS_DC) {
     case IS_OBJECT:
       myht = Z_OBJPROP_P(val);
       if (myht && VK_ZEND_HASH_IS_RECURSIVE(myht)) {
-        php_error_docref(NULL TSRMLS_CC, E_WARNING, "object recursion detected%s%s",
+        php_error_docref(NULL, E_WARNING, "object recursion detected%s%s",
           ((key) ? " - " : ""), ((key) ? key : ""));
         write_buff("null", 4);
         break;
@@ -230,7 +230,7 @@ static bool php_json_encode(zval *val, const char *key TSRMLS_DC) {
         VK_ZEND_HASH_PROTECT_RECURSION(myht);
       }
 
-      encoded_successfully = encoded_successfully && json_encode_array(VK_ZVAL_API_REF(val) TSRMLS_CC);
+      encoded_successfully = encoded_successfully && json_encode_array(VK_ZVAL_API_REF(val));
 
       if (myht && VK_ZEND_HASH_APPLY_PROTECTION(myht)) {
         VK_ZEND_HASH_UNPROTECT_RECURSION(myht);
@@ -246,7 +246,7 @@ static bool php_json_encode(zval *val, const char *key TSRMLS_DC) {
   return encoded_successfully;
 }
 
-bool vk_json_encode(zval *val TSRMLS_DC)
+bool vk_json_encode(zval *val)
 {
-  return php_json_encode(val, NULL TSRMLS_CC);
+  return php_json_encode(val, NULL);
 }

@@ -1,4 +1,5 @@
 set(VKEXT_DIR ${BASE_DIR}/vkext)
+set(VKEXT_AUTO_DIR ${AUTO_DIR}/vkext)
 
 function(install_vkext PHP_VERSION)
     execute_process(COMMAND php-config${PHP_VERSION} --extension-dir
@@ -54,7 +55,7 @@ prepend(VKEXT_SOURCES ${VKEXT_DIR}/
         vkext-stats.cpp
         vkext-sp.cpp)
 
-foreach(PHP_VERSION IN ITEMS "" "7.4")
+foreach(PHP_VERSION IN ITEMS "" "7.4" "8.0" "8.1")
     find_program(PHP_CONFIG_EXEC${PHP_VERSION} php-config${PHP_VERSION})
     set(PHP_CONFIG_EXEC ${PHP_CONFIG_EXEC${PHP_VERSION}})
     if(PHP_CONFIG_EXEC)
@@ -90,3 +91,39 @@ foreach(PHP_VERSION IN ITEMS "" "7.4")
         endif()
     endif()
 endforeach()
+
+set(VKEXT_CONFIG_M4_STUB ${VKEXT_AUTO_DIR}/config.m4)
+set(VKEXT_PHP_STUBS ${VKEXT_DIR}/vkext.stub.php)
+
+# This config.m4 stub is only needed for arginfo generating from PHP stubs.
+# The extension itself is built with CMake completely.
+file(WRITE ${VKEXT_CONFIG_M4_STUB} "\
+PHP_ARG_ENABLE([vkext],
+  [whether to enable vkext support],
+  [AS_HELP_STRING([--enable-vkext],
+    [Enable vkext support])],
+  [no])
+
+if test \"$PHP_VKEXT\" != \"no\"; then
+  AC_DEFINE(HAVE_VKEXT, 1, [ Have vkext support ])
+  PHP_NEW_EXTENSION(vkext, $ext_shared)
+fi
+")
+
+find_program(PHPIZE_EXEC phpize8.0)  # 8.0 seems to be enough for generating arginfo from stubs
+if(PHPIZE_EXEC)
+    message(STATUS "${PHPIZE_EXEC} found")
+    # This command is considered to run manually to generate *_arginfo.h files.
+    # These files are stored in repo instead of being created automatically because the command goes via HTTP to download generating script.
+    # That might be insecure to run from some CI/CD builds.
+    add_custom_target(vkext_arginfo
+            COMMAND ${PHPIZE_EXEC} && ./configure
+            COMMAND cp ${VKEXT_PHP_STUBS} .
+            COMMAND make vkext_arginfo.h
+            COMMAND mv vkext_arginfo.h vkext_legacy_arginfo.h ${VKEXT_DIR}
+            DEPENDS ${VKEXT_PHP_STUBS}
+            WORKING_DIRECTORY ${VKEXT_AUTO_DIR}
+            COMMENT "Generating vkext*_arginfo.h from PHP stubs")
+else()
+    message(STATUS "phpize8.0 not found. You need at least 8.0 version to generate vkext_arginfo.h from stubs")
+endif()

@@ -96,15 +96,15 @@ struct memcache_value do_fetch_memcache_value() {
   return value;
 }
 
-static int mmc_postprocess_value(zval **return_value, char *value, int value_len TSRMLS_DC) {
+static int mmc_postprocess_value(zval **return_value, char *value, int value_len) {
   const char *value_tmp = value;
   php_unserialize_data_t var_hash;
   PHP_VAR_UNSERIALIZE_INIT(var_hash);
 
-  if (!php_var_unserialize(Z_PP_TO_ZAPI_P(return_value), (const unsigned char **)&value_tmp, (const unsigned char *)(value_tmp + value_len), &var_hash TSRMLS_CC)) {
+  if (!php_var_unserialize(Z_PP_TO_ZAPI_P(return_value), (const unsigned char **)&value_tmp, (const unsigned char *)(value_tmp + value_len), &var_hash)) {
     ZVAL_FALSE(*return_value);
     PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
-    php_error_docref(NULL TSRMLS_CC, E_NOTICE, "unable to unserialize data");
+    php_error_docref(NULL, E_NOTICE, "unable to unserialize data");
     return 0;
   }
 
@@ -126,7 +126,7 @@ void php_rpc_fetch_memcache_value(INTERNAL_FUNCTION_PARAMETERS) {
         }
 
         if (value.flags & 1) {
-          mmc_postprocess_value(&return_value, res, res_len TSRMLS_DC);
+          mmc_postprocess_value(&return_value, res, res_len);
           efree (res);
         } else {
           VK_RETURN_STRINGL_NOD (res, res_len);

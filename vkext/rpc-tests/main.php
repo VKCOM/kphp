@@ -393,7 +393,7 @@ function test_rpc_invoke_req_extra_headers($key, $value, $ignore_result, $use_ac
 
 function main()
 {
-  echo "@@@@@@ TESTS STARTED @@@@@@\n";
+  echo "@@@@@@ TESTS STARTED for PHP " . phpversion() . " @@@@@@\n";
   memcache_test("test-key", "test-value");
 
   getTypeWithFieldsMask(7);

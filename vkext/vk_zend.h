@@ -135,12 +135,6 @@ extern "C" {
     (_pzs) = (zend_hash_get_current_key_ex((_ht), &(_pzs), &(_h), &_pos) == HASH_KEY_IS_STRING)?    \
              (_pzs) : NULL;
 
-#ifdef __arm64__
-#undef TSRMLS_CC
-#define TSRMLS_CC
-#undef TSRMLS_DC
-#define TSRMLS_DC
-#endif
 
 static zend_always_inline VK_ZVAL_API_P vk_zend_hash_find(HashTable *ht, const char *key, size_t len) {
   zend_string *key_str = zend_string_init(key, len, 0);
@@ -194,7 +188,7 @@ static zend_always_inline zval *vk_zend_read_public_property(zval *object, const
 #if PHP_MAJOR_VERSION >= 8
   return zend_read_property(NULL, Z_OBJ(*object), prop_name, strlen(prop_name), 0, NULL);
 #else
-  return zend_read_property(NULL, object, prop_name, strlen(prop_name), 0 TSRMLS_CC, NULL);
+  return zend_read_property(NULL, object, prop_name, strlen(prop_name), 0, NULL);
 #endif
 }
 

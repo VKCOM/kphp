@@ -13,94 +13,23 @@
 
 #include "common/version-string.h"
 
+#if PHP_VERSION_ID >= 80000
+#include "vkext/vkext_arginfo.h"
+#else
+#include "vkext/vkext_legacy_arginfo.h"
+#endif
+
 #include "vkext/vkext-errors.h"
 #include "vkext/vkext-flex.h"
 #include "vkext/vkext-iconv.h"
 #include "vkext/vkext-json.h"
 #include "vkext/vkext-rpc.h"
 #include "vkext/vkext-schema-memcache.h"
-#include "vkext/vkext-sp.h"
-#include "vkext/vkext-stats.h"
 #include "vkext/vkext-tl-memcache.h"
 
 #if __GNUC__ >= 6
 #pragma GCC diagnostic ignored "-Wdate-time"
 #endif
-
-
-static zend_function_entry vkext_functions[] = {
-  PHP_FE(vk_hello_world, NULL)
-  PHP_FE(vk_upcase, NULL)
-  PHP_FE(vk_utf8_to_win, NULL)
-  PHP_FE(vk_win_to_utf8, NULL)
-  PHP_FE(vk_flex, NULL)
-  PHP_FE(vk_json_encode, NULL)
-  PHP_FE(vk_whitespace_pack, NULL)
-  PHP_FE(new_rpc_connection, NULL)
-  PHP_FE(rpc_clean, NULL)
-  PHP_FE(rpc_send, NULL)
-  PHP_FE(rpc_send_noflush, NULL)
-  PHP_FE(rpc_flush, NULL)
-  PHP_FE(rpc_get_and_parse, NULL)
-  PHP_FE(rpc_get, NULL)
-  PHP_FE(rpc_parse, NULL)
-  PHP_FE(set_fail_rpc_on_int32_overflow, NULL)
-  PHP_FE(store_int, NULL)
-  PHP_FE(store_long, NULL)
-  PHP_FE(store_string, NULL)
-  PHP_FE(store_double, NULL)
-  PHP_FE(store_float, NULL)
-  PHP_FE(store_many, NULL)
-  PHP_FE(store_header, NULL)
-  PHP_FE(fetch_int, NULL)
-  PHP_FE(fetch_long, NULL)
-  PHP_FE(fetch_double, NULL)
-  PHP_FE(fetch_float, NULL)
-  PHP_FE(fetch_string, NULL)
-  PHP_FE(fetch_memcache_value, NULL)
-  PHP_FE(fetch_end, NULL)
-  PHP_FE(fetch_eof, NULL)
-  PHP_FE(fetch_lookup_int, NULL)
-  PHP_FE(fetch_lookup_data, NULL)
-  PHP_FE(vk_set_error_verbosity, NULL)
-  PHP_FE(rpc_queue_create, NULL)
-  PHP_FE(rpc_queue_empty, NULL)
-  PHP_FE(rpc_queue_next, NULL)
-  PHP_FE(rpc_queue_push, NULL)
-  PHP_FE(vk_clear_stats, NULL)
-  PHP_FE(rpc_tl_pending_queries_count, NULL)
-  PHP_FE(rpc_tl_query, NULL)
-  PHP_FE(rpc_tl_query_one, NULL)
-  PHP_FE(rpc_tl_query_result, NULL)
-  PHP_FE(rpc_tl_query_result_one, NULL)
-  PHP_FE(typed_rpc_tl_query, NULL)
-  PHP_FE(typed_rpc_tl_query_one, NULL)
-  PHP_FE(typed_rpc_tl_query_result, NULL)
-  PHP_FE(typed_rpc_tl_query_result_one, NULL)
-  PHP_FE(enable_internal_rpc_queries, NULL)
-  PHP_FE(disable_internal_rpc_queries, NULL)
-  PHP_FE(rpc_get_last_send_error, NULL)
-  PHP_FE(vkext_prepare_stats, NULL)
-  PHP_FE(vkext_full_version, NULL)
-  PHP_FE(vk_sp_simplify, NULL)
-  PHP_FE(vk_sp_full_simplify, NULL)
-  PHP_FE(vk_sp_deunicode, NULL)
-  PHP_FE(vk_sp_to_upper, NULL)
-  PHP_FE(vk_sp_to_lower, NULL)
-  PHP_FE(vk_sp_sort, NULL)
-  PHP_FE(vk_sp_remove_repeats, NULL)
-  PHP_FE(vk_sp_to_cyrillic, NULL)
-  PHP_FE(vk_sp_words_only, NULL)
-  PHP_FE(tl_config_load_file, NULL)
-  PHP_FE(vk_stats_hll_merge, NULL)
-  PHP_FE(vk_stats_hll_count, NULL)
-  PHP_FE(vk_stats_hll_create, NULL)
-  PHP_FE(vk_stats_hll_add, NULL)
-  PHP_FE(vk_stats_hll_pack, NULL)
-  PHP_FE(vk_stats_hll_unpack, NULL)
-  PHP_FE(vk_stats_hll_is_packed, NULL)
-  {NULL, NULL, NULL}
-};
 
 PHP_INI_MH (on_change_conffile);
 
@@ -115,7 +44,7 @@ PHP_INI_END ()
 zend_module_entry vkext_module_entry = {
   STANDARD_MODULE_HEADER,
   VKEXT_NAME,
-  vkext_functions,
+  ext_functions,
   PHP_MINIT(vkext),
   PHP_MSHUTDOWN(vkext),
   PHP_RINIT(vkext),
@@ -595,7 +524,7 @@ PHP_FUNCTION (vk_utf8_to_win) {
   VK_LEN_T text_len = 0;
   long max_len = 0;
   long exit_on_error = 0;
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|lb", &text, &text_len, &max_len, &exit_on_error) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s|lb", &text, &text_len, &max_len, &exit_on_error) == FAILURE) {
     return;
   }
   init_buff(0);
@@ -614,7 +543,7 @@ PHP_FUNCTION (vk_utf8_to_win) {
 PHP_FUNCTION (vk_win_to_utf8) {
   char *text;
   long text_len = 0;
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &text, &text_len) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &text, &text_len) == FAILURE) {
     return;
   }
   init_buff(0);
@@ -629,7 +558,7 @@ PHP_FUNCTION (vk_win_to_utf8) {
 PHP_FUNCTION (vk_upcase) {
   char *text;
   VK_LEN_T text_length = 0;
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &text, &text_length) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &text, &text_length) == FAILURE) {
     return;
   }
   char *new_text = estrdup (text);
@@ -648,7 +577,7 @@ PHP_FUNCTION (vk_flex) {
   char *type;
   long type_len = 0;
   long lang_id = 0;
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sslsl", &name, &name_len, &case_name, &case_name_len, &sex, &type, &type_len, &lang_id) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "sslsl", &name, &name_len, &case_name, &case_name_len, &sex, &type, &type_len, &lang_id) == FAILURE) {
     return;
   }
   if (verbosity) {
@@ -665,12 +594,12 @@ PHP_FUNCTION (vk_flex) {
 PHP_FUNCTION (vk_json_encode) {
   zval *parameter;
 
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &parameter) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "z", &parameter) == FAILURE) {
     RETURN_FALSE;
   }
 
   init_buff(0);
-  if (!vk_json_encode(parameter TSRMLS_CC)) {
+  if (!vk_json_encode(parameter)) {
     free_buff();
     RETURN_FALSE;
   }
@@ -730,7 +659,7 @@ PHP_FUNCTION (vk_whitespace_pack) {
   char *text, *ctext;
   VK_LEN_T text_length = 0;
   long html_opt = 0;
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l", &text, &text_length, &html_opt) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s|l", &text, &text_length, &html_opt) == FAILURE) {
     return;
   }
   init_buff(text_length);
@@ -1109,7 +1038,7 @@ PHP_FUNCTION (vk_set_error_verbosity) {
   ADD_CNT(total);
   START_TIMER(total);
   long t;
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &t) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &t) == FAILURE) {
     END_TIMER(total);
     return;
   }

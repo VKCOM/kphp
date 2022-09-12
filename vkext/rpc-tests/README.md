@@ -1,7 +1,6 @@
-Before test running you need to clone engine repo  
-and apply memcache-rpc-tl-test.patch to it (git apply).
+Before test running you need to clone engine repo.
 
-Run from vkext/rpc-tests directory with the following command:
+Run tests from vkext/rpc-tests directory with the following command:
 
 `./run-tests.py --engine-repo <path-to-engine-repo>`
 

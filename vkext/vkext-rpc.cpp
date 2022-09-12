@@ -1050,7 +1050,7 @@ static void rpc_server_deactivate(struct rpc_server *server) { /* {{{ */
   server->status = rpc_status_disconnected;
   update_precise_now();
   server->failed = precise_now;
-//  php_error_docref (NULL TSRMLS_CC, E_NOTICE, "Server " IP_PRINT_STR " (tcp %d) [fd = %d] failed with: %s (%d)", IP_TO_PRINT (server->host), server->port, server->fd, server->error, server->errnum);
+//  php_error_docref (NULL, E_NOTICE, "Server " IP_PRINT_STR " (tcp %d) [fd = %d] failed with: %s (%d)", IP_TO_PRINT (server->host), server->port, server->fd, server->error, server->errnum);
 }
 /* }}} */
 
@@ -2860,7 +2860,7 @@ void php_rpc_fetch_int(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
   if (!t) {
     RETURN_LONG (value);
   } else {
-    php_error_docref(NULL TSRMLS_CC, E_WARNING, t);
+    php_error_docref(NULL, E_WARNING, t);
     free(t);
     RETURN_FALSE;
   }
@@ -2874,7 +2874,7 @@ void php_rpc_fetch_lookup_int(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
   if (!t) {
     RETURN_LONG (value);
   } else {
-    php_error_docref(NULL TSRMLS_CC, E_WARNING, t);
+    php_error_docref(NULL, E_WARNING, t);
     free(t);
     RETURN_FALSE;
   }
@@ -2884,7 +2884,7 @@ void php_rpc_fetch_lookup_int(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
 
 void php_rpc_fetch_lookup_data(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
   long x4_bytes_length;
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &x4_bytes_length) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &x4_bytes_length) == FAILURE) {
     return;
   }
   char *error_str;
@@ -2892,7 +2892,7 @@ void php_rpc_fetch_lookup_data(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
   if (!error_str) {
     VK_RETURN_STRINGL_DUP(data, x4_bytes_length * 4);
   } else {
-    php_error_docref(NULL TSRMLS_CC, E_WARNING, error_str);
+    php_error_docref(NULL, E_WARNING, error_str);
     free(error_str);
     RETURN_FALSE;
   }
@@ -2924,7 +2924,7 @@ void php_rpc_fetch_long(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
   if (!t) {
     VV_RETURN_LONG (value);
   } else {
-    php_error_docref(NULL TSRMLS_CC, E_WARNING, t);
+    php_error_docref(NULL, E_WARNING, t);
     free(t);
     RETURN_FALSE;
   }
@@ -2938,7 +2938,7 @@ void php_rpc_fetch_double(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
   if (!t) {
     RETURN_DOUBLE (value);
   } else {
-    php_error_docref(NULL TSRMLS_CC, E_WARNING, t);
+    php_error_docref(NULL, E_WARNING, t);
     free(t);
     RETURN_FALSE;
   }
@@ -2952,7 +2952,7 @@ void php_rpc_fetch_float(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
   if (!t) {
     RETURN_DOUBLE (value);
   } else {
-    php_error_docref(NULL TSRMLS_CC, E_WARNING, t);
+    php_error_docref(NULL, E_WARNING, t);
     free(t);
     RETURN_FALSE;
   }
@@ -2964,7 +2964,7 @@ void php_rpc_fetch_string(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
   char *value;
   int value_len = do_rpc_fetch_string(&value);
   if (value_len < 0) {
-    php_error_docref(NULL TSRMLS_CC, E_WARNING, value);
+    php_error_docref(NULL, E_WARNING, value);
     free(value);
     RETURN_FALSE;
   } else {
@@ -2979,12 +2979,12 @@ void php_rpc_fetch_end(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
   const char *t;
   int r = do_rpc_fetch_eof(&t);
   if (t) {
-    php_error_docref(NULL TSRMLS_CC, E_WARNING, t);
+    php_error_docref(NULL, E_WARNING, t);
   } else {
     if (r) {
       RETURN_TRUE;
     } else {
-      php_error_docref(NULL TSRMLS_CC, E_WARNING, "Ending fetch from non-empty buffer\n");
+      php_error_docref(NULL, E_WARNING, "Ending fetch from non-empty buffer\n");
       RETURN_FALSE;
     }
   }
@@ -3269,7 +3269,7 @@ void php_new_rpc_connection(INTERNAL_FUNCTION_PARAMETERS) {  /* {{{ */
   unsigned host = rpc_resolve_hostname(host_name);
 
   if (!host) {
-    php_error_docref(NULL TSRMLS_CC, E_WARNING, "Can't resolve hostname %s", host_name);
+    php_error_docref(NULL, E_WARNING, "Can't resolve hostname %s", host_name);
     END_TIMER (parse);
     RETURN_NULL();
   }
@@ -3281,7 +3281,7 @@ void php_new_rpc_connection(INTERNAL_FUNCTION_PARAMETERS) {  /* {{{ */
 
   struct rpc_connection *c;
   if (!(c = do_new_rpc_connection(host, port, 3, default_actor_id, default_query_timeout, connect_timeout, retry_timeout, &error_string, &errnum))) {
-    php_error_docref(NULL TSRMLS_CC, E_WARNING, "Can't connect to %s:%d (ip %08x), %s (%d)", host_name, port, host, error_string ? error_string : "Unknown error", errnum);
+    php_error_docref(NULL, E_WARNING, "Can't connect to %s:%d (ip %08x), %s (%d)", host_name, port, host, error_string ? error_string : "Unknown error", errnum);
     if (error_string) {
       efree (error_string);
     }
