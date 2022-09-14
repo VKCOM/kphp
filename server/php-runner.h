@@ -7,6 +7,7 @@
 #include <csetjmp>
 
 #include "common/dl-utils-lite.h"
+#include "common/mixin/not_copyable.h"
 #include "common/sanitizer.h"
 
 #include "server/php-engine-vars.h"
@@ -59,6 +60,25 @@ void dump_query_stats();
 
 void init_handlers();
 
+class CoroutineStack : vk::not_copyable {
+public:
+  explicit CoroutineStack(size_t stack_size) noexcept;
+  ~CoroutineStack() noexcept;
+
+  bool is_protected(const char *x) const noexcept;
+  bool check_stack_overflow(const char *x) const noexcept;
+  void asan_stack_unpoison() const noexcept;
+
+  char *get_stack_ptr() const noexcept { return run_stack_; }
+  size_t get_stack_size() const noexcept { return stack_size_; }
+
+private:
+  const size_t stack_size_{0};
+  char *run_stack_{nullptr};
+  const char *protected_end_{nullptr};
+  const char *run_stack_end_{nullptr};
+};
+
 /**
  * Represents current running script.
  * It stores state of the script: current execution point, pointers to allocated script memory, stack for script context, etc.
@@ -89,11 +109,11 @@ public:
   const char *error_message{nullptr};
   script_error_t error_type{script_error_t::no_error};
   php_query_base_t *query{nullptr};
-  char *run_stack{nullptr}, *protected_end{nullptr}, *run_stack_end{nullptr}, *run_mem{nullptr};
   const size_t mem_size{0};
-  const size_t stack_size{0};
-  ucontext_t_portable run_context{};
+  char *run_mem{nullptr};
+  CoroutineStack coroutine_stack;
 
+  ucontext_t_portable run_context{};
   sigjmp_buf timeout_handler{};
 
   script_t *run_main{nullptr};
@@ -103,17 +123,12 @@ public:
   static void script_context_entrypoint() noexcept;
   static void error(const char *error_message, script_error_t error_type) noexcept;
 
-  PhpScript(size_t mem_sz, size_t stack_sz) noexcept;
+  PhpScript(size_t mem_size, size_t stack_size) noexcept;
   ~PhpScript() noexcept;
 
   void check_tl() noexcept;
-  bool is_protected(char *x) noexcept;
-
-  bool check_stack_overflow(char *x) noexcept;
 
   void init(script_t *script, php_query_data *data_to_set) noexcept;
-
-  void asan_stack_unpoison();
 
   void pause() noexcept;
   void ask_query(php_query_base_t *q) noexcept;
