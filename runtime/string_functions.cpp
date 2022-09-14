@@ -1843,11 +1843,11 @@ int64_t f$strnatcmp(const string &lhs, const string &rhs) {
 }
 
 int64_t f$strspn(const string &hayshack, const string &char_list, int64_t offset) noexcept {
-  return strspn(hayshack.c_str() + hayshack.get_correct_index_clamped(offset), char_list.c_str());
+  return strspn(hayshack.c_str() + hayshack.get_correct_offset_clamped(offset), char_list.c_str());
 }
 
 int64_t f$strcspn(const string &hayshack, const string &char_list, int64_t offset) noexcept {
-  return strcspn(hayshack.c_str() + hayshack.get_correct_index_clamped(offset), char_list.c_str());
+  return strcspn(hayshack.c_str() + hayshack.get_correct_offset_clamped(offset), char_list.c_str());
 }
 
 Optional<string> f$strpbrk(const string &haystack, const string &char_list) {
@@ -2329,7 +2329,7 @@ Optional<string> f$substr(const string &str, int64_t start, int64_t length) {
 //    php_warning("start is in part removed by length argument in substr function call");
     return false;
   }
-  start = str.get_correct_index(start);
+  start = str.get_correct_offset(start);
   if (length < 0) {
     length = (str_len - start) + length;
     if (length < 0) {
@@ -2345,7 +2345,7 @@ Optional<string> f$substr(const string &str, int64_t start, int64_t length) {
 }
 
 int64_t f$substr_count(const string &haystack, const string &needle, int64_t offset, int64_t length) {
-  offset = haystack.get_correct_index(offset);
+  offset = haystack.get_correct_offset(offset);
   if (offset >= haystack.size()) {
     return 0;
   }
@@ -2373,7 +2373,7 @@ string f$substr_replace(const string &str, const string &replacement, int64_t st
   int64_t str_len = str.size();
 
   // if $start is negative, count $start from the end of the string
-  start = str.get_correct_index_clamped(start);
+  start = str.get_correct_offset_clamped(start);
 
   // if $length is negative, set it to the length needed
   // needed to stop that many chars from the end of the string
@@ -2406,7 +2406,7 @@ Optional<int64_t> f$substr_compare(const string &main_str, const string &str, in
     return false;
   }
 
-  offset = str.get_correct_index(offset);
+  offset = main_str.get_correct_offset(offset);
 
   // > and >= signs depend on version of PHP7.2 and could vary unpredictably. We put `>` sign which corresponds to behaviour of PHP7.2.22
   if (offset > str_len) {
