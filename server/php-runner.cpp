@@ -76,7 +76,7 @@ void PhpScript::error(const char *error_message, script_error_t error_type) noex
   current_script->error_message = error_message;
   current_script->error_type = error_type;
   stack_end = reinterpret_cast<char *>(exit_context.uc_stack.ss_sp) + exit_context.uc_stack.ss_size;
-#if ASAN7_ENABLED
+#if ASAN_ENABLED
   __sanitizer_finish_switch_fiber(nullptr, nullptr, nullptr);
   __sanitizer_start_switch_fiber(nullptr, exit_context.uc_stack.ss_sp, exit_context.uc_stack.ss_size);
 #endif
@@ -134,7 +134,7 @@ PhpScript::PhpScript(size_t mem_size, size_t stack_size) noexcept :
 }
 
 PhpScript::~PhpScript() noexcept {
-#if ASAN7_ENABLED
+#if ASAN_ENABLED
   if (fiber_is_started) {
     __sanitizer_finish_switch_fiber(nullptr, nullptr, nullptr);
   }
@@ -183,7 +183,7 @@ void PhpScript::init(script_t *script, php_query_data *data_to_set) noexcept {
 // if ASAN is disabled, this function does nothing
 // use this function right before doing a longjmp
 void PhpScript::asan_stack_unpoison() {
-#if ASAN7_ENABLED
+#if ASAN_ENABLED
   ASAN_UNPOISON_MEMORY_REGION(run_stack, stack_size);
 #endif
 }
@@ -213,7 +213,7 @@ void PhpScript::on_request_timeout_error() {
 
 int PhpScript::swapcontext_helper(ucontext_t_portable *oucp, const ucontext_t_portable *ucp) {
   stack_end = reinterpret_cast<char *>(ucp->uc_stack.ss_sp) + ucp->uc_stack.ss_size;
-#if ASAN7_ENABLED
+#if ASAN_ENABLED
   if (fiber_is_started) {
     __sanitizer_finish_switch_fiber(nullptr, nullptr, nullptr);
   }

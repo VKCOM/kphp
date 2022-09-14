@@ -16,11 +16,6 @@
 
 #if !defined(ASAN_ENABLED)
 # define ASAN_ENABLED 0
-#elif __GNUC__ >= 7
-// gcc prior 7 version didn't have __sanitizer_start[finish]_switch_fiber to control stack pointer during swapcontext
-// some functions(fast_backtrace) cause stack-buffer-overflow due to stack traversing out of frame, nevertheless it's ok for sanitizer
-// asan starts to produce false positive overflow due to swapcontext with c++ exceptions (if you have non-trivial destructors)
-# define ASAN7_ENABLED 1
 #endif
 
 #if defined(__clang__)
