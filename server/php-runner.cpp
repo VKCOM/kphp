@@ -134,6 +134,16 @@ void CoroutineStack::asan_stack_unpoison() const noexcept {
 #endif
 }
 
+void CoroutineStack::asan_stack_clear() const noexcept {
+#if ASAN_ENABLED
+  ASAN_UNPOISON_MEMORY_REGION(run_stack_, stack_size_);
+  // clear stack of coroutine; this allows to treat all its content as non-live memory,
+  // thus lsan will be unable to find pointer(locating on stack) to leaked object on heap,
+  // and will report a leak
+  std::memset(run_stack_, 0, stack_size_);
+#endif
+}
+
 PhpScript::PhpScript(size_t mem_size, size_t stack_size) noexcept
   : mem_size(mem_size)
   , run_mem(static_cast<char *>(mmap(nullptr, mem_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0)))
@@ -365,6 +375,7 @@ void PhpScript::clear() noexcept {
       our_madvise(&run_mem[memory_used_to_recreate_script], mem_size - memory_used_to_recreate_script, advice);
     }
   }
+  coroutine_stack.asan_stack_clear();
 }
 
 void PhpScript::assert_state(run_state_t expected) {

@@ -66,6 +66,7 @@ public:
   bool is_protected(const char *x) const noexcept;
   bool check_stack_overflow(const char *x) const noexcept;
   void asan_stack_unpoison() const noexcept;
+  void asan_stack_clear() const noexcept;
 
   char *get_stack_ptr() const noexcept { return run_stack_; }
   size_t get_stack_size() const noexcept { return stack_size_; }
