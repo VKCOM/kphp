@@ -103,25 +103,8 @@ bool PhpScript::check_stack_overflow(char *x) noexcept {
 }
 
 PhpScript::PhpScript(size_t mem_size, size_t stack_size) noexcept :
-  cur_timestamp(0),
-  net_time(0),
-  script_time(0),
-  queries_cnt(0),
-  long_queries_cnt(0),
-  state(run_state_t::empty),
-  error_message(nullptr),
-  error_type(script_error_t::no_error),
-  query(nullptr),
-  run_stack(nullptr),
-  protected_end(nullptr),
-  run_stack_end(nullptr),
-  run_mem(nullptr),
   mem_size(mem_size),
-  stack_size(stack_size),
-  run_context(),
-  run_main(nullptr),
-  data(nullptr),
-  res(nullptr) {
+  stack_size(stack_size)  {
   //fprintf (stderr, "PHPScriptBase: constructor\n");
   stack_size = getpagesize() + (stack_size + getpagesize() - 1) / getpagesize() * getpagesize();
   run_stack = (char *)valloc(stack_size);

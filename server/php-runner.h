@@ -64,8 +64,8 @@ void init_handlers();
  * It stores state of the script: current execution point, pointers to allocated script memory, stack for script context, etc.
  */
 class PhpScript {
-  double cur_timestamp, net_time, script_time;
-  int queries_cnt;
+  double cur_timestamp{0}, net_time{0}, script_time{0};
+  int queries_cnt{0};
   int long_queries_cnt{0};
 
 private:
@@ -79,26 +79,26 @@ private:
   void assert_state(run_state_t expected);
 
 public:
-
   static PhpScript *volatile current_script;
   static ucontext_t_portable exit_context;
   volatile static bool is_running;
   volatile static bool tl_flag;
   volatile static bool ml_flag;
 
-  run_state_t state;
-  const char *error_message;
-  script_error_t error_type;
-  php_query_base_t *query;
-  char *run_stack, *protected_end, *run_stack_end, *run_mem;
-  size_t mem_size, stack_size;
-  ucontext_t_portable run_context;
+  run_state_t state{run_state_t::empty};
+  const char *error_message{nullptr};
+  script_error_t error_type{script_error_t::no_error};
+  php_query_base_t *query{nullptr};
+  char *run_stack{nullptr}, *protected_end{nullptr}, *run_stack_end{nullptr}, *run_mem{nullptr};
+  const size_t mem_size{0};
+  const size_t stack_size{0};
+  ucontext_t_portable run_context{};
 
-  sigjmp_buf timeout_handler;
+  sigjmp_buf timeout_handler{};
 
-  script_t *run_main;
-  php_query_data *data;
-  script_result *res;
+  script_t *run_main{nullptr};
+  php_query_data *data{nullptr};
+  script_result *res{nullptr};
 
   static void script_context_entrypoint() noexcept;
   static void error(const char *error_message, script_error_t error_type) noexcept;
