@@ -43,8 +43,6 @@ enum class script_error_t : uint8_t {
   errors_count
 };
 
-#define SEGV_STACK_SIZE (MINSIGSTKSZ + 65536)
-
 struct query_stats_t {
   long long q_id;
   const char *desc;

@@ -4,6 +4,7 @@
 
 #include "server/php-runner.h"
 
+#include <array>
 #include <cassert>
 #include <cerrno>
 #include <cstdlib>
@@ -660,8 +661,11 @@ void check_stack_overflow() {
 
 //C interface
 void init_handlers() {
+  constexpr size_t SEGV_STACK_SIZE = MINSIGSTKSZ + 65536;
+  static std::array<char, SEGV_STACK_SIZE> buffer;
+
   stack_t segv_stack;
-  segv_stack.ss_sp = valloc(SEGV_STACK_SIZE);
+  segv_stack.ss_sp = buffer.data();
   segv_stack.ss_flags = 0;
   segv_stack.ss_size = SEGV_STACK_SIZE;
   sigaltstack(&segv_stack, nullptr);
