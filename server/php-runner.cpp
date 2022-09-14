@@ -97,11 +97,17 @@ CoroutineStack::CoroutineStack(size_t stack_size) noexcept
   , run_stack_(static_cast<char *>(std::aligned_alloc(getpagesize(), stack_size_)))
   , protected_end_(run_stack_ + getpagesize())
   , run_stack_end_(run_stack_ + stack_size_) {
+// give a chance for leak sanitizer to examine memory
+// (lsan gets SIGSEGV trying to access PROT_NONE memory)
+#if !ASAN_ENABLED
   assert(mprotect(run_stack_, getpagesize(), PROT_NONE) == 0);
+#endif
 }
 
 CoroutineStack::~CoroutineStack() noexcept {
+#if !ASAN_ENABLED
   mprotect(run_stack_, getpagesize(), PROT_READ | PROT_WRITE);
+#endif
   std::free(run_stack_);
 }
 
