@@ -144,7 +144,7 @@ void PhpWorker::state_init_script() noexcept {
   script_t *script = get_script();
   dl_assert(script != nullptr, "failed to get script");
   if (php_script == nullptr) {
-    php_script = new PhpScript(max_memory, 8 << 20);;
+    php_script = new PhpScript(max_memory, 8 << 20);
   }
   php_script->init(script, data);
   php_script->set_timeout(timeout);

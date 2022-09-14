@@ -102,18 +102,17 @@ bool PhpScript::check_stack_overflow(char *x) noexcept {
   return left < (1 << 12);
 }
 
-PhpScript::PhpScript(size_t mem_size, size_t stack_size) noexcept :
-  mem_size(mem_size),
-  stack_size(stack_size)  {
-  //fprintf (stderr, "PHPScriptBase: constructor\n");
-  stack_size = getpagesize() + (stack_size + getpagesize() - 1) / getpagesize() * getpagesize();
-  run_stack = (char *)valloc(stack_size);
-  assert (mprotect(run_stack, getpagesize(), PROT_NONE) == 0);
+PhpScript::PhpScript(size_t mem_sz, size_t stack_sz) noexcept
+  : mem_size(mem_sz)
+  , stack_size((stack_sz + getpagesize() - 1) / getpagesize() * getpagesize()) {
+  // fprintf (stderr, "PHPScriptBase: constructor\n");
+  run_stack = static_cast<char *>(valloc(stack_size));
+  assert(mprotect(run_stack, getpagesize(), PROT_NONE) == 0);
   protected_end = run_stack + getpagesize();
   run_stack_end = run_stack + stack_size;
 
   run_mem = static_cast<char *>(mmap(nullptr, mem_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
-  //fprintf (stderr, "[%p -> %p] [%p -> %p]\n", run_stack, run_stack_end, run_mem, run_mem + mem_size);
+  // fprintf (stderr, "[%p -> %p] [%p -> %p]\n", run_stack, run_stack_end, run_mem, run_mem + mem_size);
 }
 
 PhpScript::~PhpScript() noexcept {

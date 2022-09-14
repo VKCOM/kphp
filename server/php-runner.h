@@ -103,7 +103,7 @@ public:
   static void script_context_entrypoint() noexcept;
   static void error(const char *error_message, script_error_t error_type) noexcept;
 
-  PhpScript(size_t mem_size, size_t stack_size) noexcept;
+  PhpScript(size_t mem_sz, size_t stack_sz) noexcept;
   ~PhpScript() noexcept;
 
   void check_tl() noexcept;
