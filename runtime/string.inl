@@ -942,32 +942,40 @@ int64_t string::compare(const string &str) const {
   return res ? res : static_cast<int64_t>(my_size) - static_cast<int64_t>(str_size);
 }
 
-
-int64_t string::get_correct_index(int64_t index) const {
-  if (index < 0) {
-    index = index + size();
-    if (index < 0) {
-      index = 0;
-    }
-  }
-  return index;
+bool string::isset(int64_t index) const {
+  return index >= 0 && index < size();
 }
 
-int64_t string::get_correct_index_clamped(int64_t index) const {
-  if (index < 0) {
-    index = index + size();
-    if (index < 0) {
-      index = 0;
+
+int64_t string::get_correct_index(int64_t index) const {
+  return index >= 0 ? index : index + int64_t{size()};
+}
+
+int64_t string::get_correct_offset(int64_t offset) const {
+  if (offset < 0) {
+    offset = offset + size();
+    if (offset < 0) {
+      offset = 0;
     }
-  } else if (index > size()) {
-    index = size();
   }
-  return index;
+  return offset;
+}
+
+int64_t string::get_correct_offset_clamped(int64_t offset) const {
+  if (offset < 0) {
+    offset = offset + size();
+    if (offset < 0) {
+      offset = 0;
+    }
+  } else if (offset > size()) {
+    offset = size();
+  }
+  return offset;
 }
 
 const string string::get_value(int64_t int_key) const {
   const int64_t true_key = get_correct_index(int_key);
-  if (true_key >= size()) {
+  if (unlikely(!isset(true_key))) {
     return {};
   }
   return string(1, p[true_key]);
