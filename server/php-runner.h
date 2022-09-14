@@ -87,9 +87,6 @@ class PhpScript {
   int long_queries_cnt{0};
 
 private:
-#if ASAN_ENABLED
-  bool fiber_is_started = false;
-#endif
   int swapcontext_helper(ucontext_t_portable *oucp, const ucontext_t_portable *ucp);
 
   void on_request_timeout_error();

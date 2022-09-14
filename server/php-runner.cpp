@@ -64,6 +64,9 @@ void perform_error_if_running(const char *msg, script_error_t error_type) {
     assert ("unreachable point" && 0);
   }
 }
+
+[[maybe_unused]] const void *main_thread_stack = nullptr;
+[[maybe_unused]] size_t main_thread_stacksize = 0;
 } // namespace
 
 void PhpScript::error(const char *error_message, script_error_t error_type) noexcept {
@@ -78,8 +81,7 @@ void PhpScript::error(const char *error_message, script_error_t error_type) noex
   current_script->error_type = error_type;
   stack_end = reinterpret_cast<char *>(exit_context.uc_stack.ss_sp) + exit_context.uc_stack.ss_size;
 #if ASAN_ENABLED
-  __sanitizer_finish_switch_fiber(nullptr, nullptr, nullptr);
-  __sanitizer_start_switch_fiber(nullptr, exit_context.uc_stack.ss_sp, exit_context.uc_stack.ss_size);
+  __sanitizer_start_switch_fiber(nullptr, main_thread_stack, main_thread_stacksize);
 #endif
   setcontext_portable(&exit_context);
 }
@@ -141,11 +143,6 @@ PhpScript::PhpScript(size_t mem_size, size_t stack_size) noexcept
 }
 
 PhpScript::~PhpScript() noexcept {
-#if ASAN_ENABLED
-  if (fiber_is_started) {
-    __sanitizer_finish_switch_fiber(nullptr, nullptr, nullptr);
-  }
-#endif
   munmap(run_mem, mem_size);
 }
 
@@ -208,27 +205,32 @@ void PhpScript::on_request_timeout_error() {
 
 int PhpScript::swapcontext_helper(ucontext_t_portable *oucp, const ucontext_t_portable *ucp) {
   stack_end = reinterpret_cast<char *>(ucp->uc_stack.ss_sp) + ucp->uc_stack.ss_size;
-#if ASAN_ENABLED
-  if (fiber_is_started) {
-    __sanitizer_finish_switch_fiber(nullptr, nullptr, nullptr);
-  }
-  fiber_is_started = true;
-  __sanitizer_start_switch_fiber(nullptr, ucp->uc_stack.ss_sp, ucp->uc_stack.ss_size);
-#endif
-
   return swapcontext_portable(oucp, ucp);
 }
+
 void PhpScript::pause() noexcept {
   //fprintf (stderr, "pause: \n");
   is_running = false;
-  assert (swapcontext_helper(&run_context, &exit_context) == 0);
+#if ASAN_ENABLED
+  __sanitizer_start_switch_fiber(nullptr, main_thread_stack, main_thread_stacksize);
+#endif
+  assert(swapcontext_helper(&run_context, &exit_context) == 0);
+#if ASAN_ENABLED
+  __sanitizer_finish_switch_fiber(nullptr, &main_thread_stack, &main_thread_stacksize);
+#endif
   is_running = true;
   check_tl();
   //fprintf (stderr, "pause: ended\n");
 }
 
 void PhpScript::resume() noexcept {
-  assert (swapcontext_helper(&exit_context, &run_context) == 0);
+#if ASAN_ENABLED
+  __sanitizer_start_switch_fiber(nullptr, run_context.uc_stack.ss_sp, run_context.uc_stack.ss_size);
+#endif
+  assert(swapcontext_helper(&exit_context, &run_context) == 0);
+#if ASAN_ENABLED
+  __sanitizer_finish_switch_fiber(nullptr, nullptr, nullptr);
+#endif
 }
 
 void dump_query_stats() {
@@ -702,6 +704,9 @@ void PhpScript::set_timeout(double t) noexcept {
 }
 
 void PhpScript::script_context_entrypoint() noexcept {
+#if ASAN_ENABLED
+  __sanitizer_finish_switch_fiber(nullptr, &main_thread_stack, &main_thread_stacksize);
+#endif
   current_script->run();
 }
 
