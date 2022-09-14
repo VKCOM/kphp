@@ -106,7 +106,7 @@ PhpScript::PhpScript(size_t mem_sz, size_t stack_sz) noexcept
   : mem_size(mem_sz)
   , stack_size((stack_sz + getpagesize() - 1) / getpagesize() * getpagesize()) {
   // fprintf (stderr, "PHPScriptBase: constructor\n");
-  run_stack = static_cast<char *>(valloc(stack_size));
+  run_stack = static_cast<char *>(std::aligned_alloc(getpagesize(), stack_size));
   assert(mprotect(run_stack, getpagesize(), PROT_NONE) == 0);
   protected_end = run_stack + getpagesize();
   run_stack_end = run_stack + stack_size;
