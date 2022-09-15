@@ -6,6 +6,8 @@
 
 #include <array>
 #include <climits>
+#include <sys/un.h>
+#include <type_traits>
 
 #include "common/mixin/not_copyable.h"
 #include "common/smart_ptrs/singleton.h"
@@ -20,12 +22,14 @@ public:
   const char *get_statsd_prefix() const noexcept { return statsd_prefix_.data(); }
 
 private:
+  static constexpr size_t MAX_SOCKET_NAME_LEN = sizeof(std::declval<sockaddr_un>().sun_path) - 1;
+
   ClusterName();
 
   friend class vk::singleton<ClusterName>;
 
   std::array<char, NAME_MAX> cluster_name_;
-  std::array<char, NAME_MAX> socket_name_;
+  std::array<char, MAX_SOCKET_NAME_LEN + 1> socket_name_;
   std::array<char, NAME_MAX> shmem_name_;
   std::array<char, NAME_MAX> statsd_prefix_;
 };
