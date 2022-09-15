@@ -77,7 +77,7 @@ apt install git cmake make g++ gperf python3-minimal python3-jsonschema \
 ##### MacOS with Intel chipset
 Make sure you have `brew` and `clang` (at least `Apple clang version 10.0.0`)
 ```bash
-brew install re2c cmake coreutils glib-openssl libiconv re2 fmt h3 yaml-cpp mysql msgpack-cxx zstd googletest php@7.4
+brew install re2c cmake coreutils glib-openssl libiconv re2 yaml-cpp mysql msgpack-cxx zstd googletest php@7.4
 brew link --overwrite php@7.4
 pip3 install jsonschema
 ```
@@ -90,6 +90,15 @@ git checkout osx-platform
 echo 'export "EPOLL_SHIM_REPO=$(pwd)" >> ~/.bash_profile'
 ```
 
+Clone somewhere local [h3 from Github]({{site.url_package_h3_mac}}) and switch to *stable-3.x* branch.
+```bash
+git clone https://github.com/uber/h3.git
+git checkout stable-3.x
+mkdir build
+cd build
+cmake ..
+sudo make install
+```
 
 ##### MacOS with Apple M1 chipset
 
