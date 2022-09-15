@@ -48,6 +48,14 @@ if(UNDEFINED_SANITIZER)
 endif()
 cmake_print_variables(ADDRESS_SANITIZER UNDEFINED_SANITIZER)
 
+option(PDO_LIBS_STATIC_LINKING "Enable static linking with database libs")
+
+option(PDO_MYSQL_SUPPORT "Enable MySQL support")
+if(PDO_MYSQL_SUPPORT)
+    add_definitions(-DPDO_MYSQL_SUPPORT)
+endif()
+cmake_print_variables(PDO_MYSQL_SUPPORT PDO_LIBS_STATIC_LINKING)
+
 option(KPHP_TESTS "Build the tests" ON)
 cmake_print_variables(KPHP_TESTS)
 

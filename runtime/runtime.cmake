@@ -29,9 +29,11 @@ prepend(KPHP_RUNTIME_PDO_SOURCES pdo/
         pdo_statement.cpp
         abstract_pdo_driver.cpp)
 
+if(PDO_MYSQL_SUPPORT)
 prepend(KPHP_RUNTIME_PDO_MYSQL_SOURCES pdo/mysql/
         mysql_pdo_driver.cpp
         mysql_pdo_emulated_statement.cpp)
+endif()
 
 prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         ${KPHP_RUNTIME_MEMORY_RESOURCE_SOURCES}

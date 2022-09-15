@@ -8,7 +8,9 @@
 #include "runtime/array_functions.h"
 #include "runtime/pdo/pdo.h"
 #include "runtime/pdo/pdo_statement.h"
+#ifdef PDO_MYSQL_SUPPORT
 #include "runtime/pdo/mysql/mysql_pdo_driver.h"
+#endif
 #include "runtime/resumable.h"
 
 
@@ -20,7 +22,11 @@ class_instance<C$PDO> f$PDO$$__construct(const class_instance<C$PDO> &v$this, co
   const auto &connection_string = dsn_parts[1];
 
   if (driver_name == string{"mysql"}) {
+#ifdef PDO_MYSQL_SUPPORT
     v$this.get()->driver = std::make_unique<pdo::mysql::MysqlPdoDriver>();
+#else
+    php_critical_error("Supported of MySQL is disabled");
+#endif
   } else {
     php_critical_error("Unknown PDO driver name: %s", driver_name.c_str());
   }
