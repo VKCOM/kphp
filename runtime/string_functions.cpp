@@ -6,6 +6,7 @@
 
 #include <clocale>
 #include <sys/types.h>
+#include <cctype>
 
 #include "common/macos-ports.h"
 #include "common/unicode/unicode-utils.h"
@@ -1977,9 +1978,27 @@ Optional<string> f$strstr(const string &haystack, const string &needle, bool bef
 string f$strtolower(const string &str) {
   int n = str.size();
 
+  // if there is no upper case char inside the string, we can
+  // return the argument unchanged, avoiding the allocation and data copying;
+  // while at it, memorize the first upper case char, so we can
+  // use memcpy to copy everything before that pos;
+  // note: do not use islower() here, the compiler does not inline that function call;
+  // it could be beneficial to use 256-byte LUT here, but SIMD approach could be even better
+  const char *end = str.c_str() + n;
+  const char *uppercase_pos = std::find_if(str.c_str(), end, [](unsigned char ch) {
+    return ch >= 'A' && ch <= 'Z';
+  });
+  if (uppercase_pos == end) {
+    return str;
+  }
+
   string res(n, false);
-  for (int i = 0; i < n; i++) {
-    res[i] = (char)tolower(str[i]);
+  int64_t lowercase_prefix = uppercase_pos - str.c_str();
+  if (lowercase_prefix != 0) { // avoid unnecessary function call
+    std::memcpy(res.buffer(), str.c_str(), lowercase_prefix);
+  }
+  for (int i = lowercase_prefix; i < n; i++) {
+    res[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(str[i])));
   }
 
   return res;
@@ -1988,9 +2007,22 @@ string f$strtolower(const string &str) {
 string f$strtoupper(const string &str) {
   int n = str.size();
 
+  // same optimization as in strtolower
+  const char *end = str.c_str() + n;
+  const char *lowercase_pos = std::find_if(str.c_str(), end, [](unsigned char ch) {
+    return ch >= 'a' && ch <= 'z';
+  });
+  if (lowercase_pos == end) {
+    return str;
+  }
+
   string res(n, false);
-  for (int i = 0; i < n; i++) {
-    res[i] = (char)toupper(str[i]);
+  int64_t uppercase_prefix = lowercase_pos - str.c_str();
+  if (uppercase_prefix != 0) { // avoid unnecessary function call
+    std::memcpy(res.buffer(), str.c_str(), uppercase_prefix);
+  }
+  for (int i = uppercase_prefix; i < n; i++) {
+    res[i] = static_cast<char>(std::toupper(static_cast<unsigned char>(str[i])));
   }
 
   return res;
