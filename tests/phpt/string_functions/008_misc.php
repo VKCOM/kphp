@@ -12,8 +12,33 @@ function extend_test_suite($tests) {
     $all_tests[] = "$test _ $test";
     $all_tests[] = "\x00$test";
     $all_tests[] = "$test\x00$test\x00";
+    $all_tests[] = "+$test";
+    $all_tests[] = "-$test";
+    if (strlen($test) > 2) {
+      $all_tests[] = substr($test, strlen($test) / 2);
+    }
   }
   return $all_tests;
+}
+
+function test_strcasecmp() {
+  $tests = extend_test_suite([
+    '',
+    ' ',
+    '_',
+    '134',
+    'foo',
+    'Foo',
+    'FOO',
+    'Hello, World!',
+    'Hello, World',
+  ]);
+
+  foreach ($tests as $s1) {
+    foreach ($tests as $s2) {
+      var_dump("'$s1' -vs- '$s2' " . strcasecmp($s1, $s2));
+    }
+  }
 }
 
 function test_strtolower_strtoupper() {
@@ -23,6 +48,8 @@ function test_strtolower_strtoupper() {
     'a',
     'A',
     '_',
+    '1242',
+    '+534',
     'foo',
     'foO',
     'fOo',
@@ -51,4 +78,4 @@ function test_strtolower_strtoupper() {
 }
 
 test_strtolower_strtoupper();
-
+test_strcasecmp();

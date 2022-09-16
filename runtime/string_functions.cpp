@@ -1337,13 +1337,15 @@ string f$stripslashes(const string &str) {
 }
 
 int64_t f$strcasecmp(const string &lhs, const string &rhs) {
-  int n = min(lhs.size(), rhs.size()) + 1;
+  int n = min(lhs.size(), rhs.size());
   for (int i = 0; i < n; i++) {
     if (tolower(lhs[i]) != tolower(rhs[i])) {
       return tolower(lhs[i]) - tolower(rhs[i]);
     }
   }
-  return 0;
+  // TODO: for PHP8.2, use <=> operator instead:
+  //   return spaceship(static_cast<int64_t>(lhs.size()), static_cast<int64_t>(rhs.size()));
+  return static_cast<int64_t>(lhs.size()) - static_cast<int64_t>(rhs.size());
 }
 
 int64_t f$strcmp(const string &lhs, const string &rhs) {
