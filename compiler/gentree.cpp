@@ -1521,6 +1521,7 @@ VertexAdaptor<op_function> GenTree::get_function(bool is_lambda, const PhpDocCom
   StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(func_name, func_root, func_type));
   cur_function->phpdoc = phpdoc;
   cur_function->modifiers = modifiers;
+  cur_function->is_internal = processing_file->is_builtin() && processing_file->short_file_name == "kphp_internal_txt";
 
   if (is_lambda) {
     cur_function->outer_function = functions_stack[functions_stack.size() - 2];

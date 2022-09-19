@@ -279,9 +279,6 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
     case op_func_call:
       recalc_func_call(expr.as<op_func_call>());
       break;
-    case op_exception_constructor_call:
-      recalc_func_call(expr.as<op_exception_constructor_call>()->constructor_call());
-      break;
     case op_ffi_load_call:
       recalc_func_call(expr.as<op_ffi_load_call>()->func_call());
       break;

@@ -13,6 +13,7 @@ if (0) {
   define('PHP_SAPI', php_sapi_name());//"Defined in source code"
 }
 
+require_once __DIR__ . '/kphp_internal.txt';
 require_once __DIR__ . '/uberh3.txt';
 require_once __DIR__ . '/spl.txt';
 require_once __DIR__ . '/ffi.txt';

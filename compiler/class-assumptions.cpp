@@ -759,8 +759,6 @@ Assumption assume_class_of_expr(FunctionPtr f, VertexPtr root, VertexPtr stop_at
       return infer_from_call(f, root.as<op_func_call>(), stop_at);
     case op_invoke_call:
       return infer_from_invoke_call(f, root.as<op_invoke_call>(), stop_at);
-    case op_exception_constructor_call:
-      return infer_from_call(f, root.as<op_exception_constructor_call>()->constructor_call(), stop_at);
     case op_ffi_load_call:
       return infer_from_call(f, root.as<op_ffi_load_call>()->func_call(), stop_at);
     case op_ffi_addr:

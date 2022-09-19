@@ -101,7 +101,10 @@ public:
   tinf::VarNode tinf_node;              // tinf node for return
 
   const PhpDocComment *phpdoc{nullptr};
-  
+
+  // TODO: pack most (all?) bool fields to std::bitset
+  // can save a few bytes per every FunctionData object even if we add more flags later;
+  // or use bit fields like we do in vertex base class
   bool has_variadic_param = false;
   bool should_be_sync = false;
   bool should_not_throw = false;
@@ -121,6 +124,7 @@ public:
   bool warn_unused_result = false;
   bool is_flatten = false;
   bool is_pure = false;
+  bool is_internal = false; // whether this function can be called only when inserted by the compiler
 
   function_palette::ColorContainer colors{};            // colors specified with @kphp-color
   std::vector<FunctionPtr> *next_with_colors{nullptr};  // next colored functions reachable via call graph

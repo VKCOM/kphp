@@ -637,16 +637,6 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       }
       break;
     }
-    case op_exception_constructor_call: {
-      auto op = tree_node.as<op_exception_constructor_call>();
-      Node call_end, file_start, file_end, line_start;
-      create_cfg(op->constructor_call(), res_start, &call_end);
-      create_cfg(op->file_arg(), &file_start, &file_end);
-      create_cfg(op->line_arg(), &line_start, res_finish);
-      add_edge(call_end, file_start);
-      add_edge(file_end, line_start);
-      break;
-    }
     case op_ffi_load_call:
       create_cfg(tree_node.as<op_ffi_load_call>()->func_call(), res_start, res_finish);
       break;
