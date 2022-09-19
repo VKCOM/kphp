@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <cctype>
-
 #include "common/algorithms/simd-int-to-string.h"
 
 #include "runtime/string_cache.h"
@@ -653,7 +651,7 @@ const char *string::c_str() const {
 
 inline void string::warn_on_float_conversion() const {
   const char *s = c_str();
-  while (isspace(*s)) {
+  while (php_isspace(*s)) {
     s++;
   }
 
@@ -712,7 +710,7 @@ bool string::try_to_float_as_php8(double *val) const {
   // If end_ptr == p then this means that strtod could not perform
   // the conversion (otherwise end_ptr would have shifted relative
   // to p), which means it is not a valid number.
-  return end_ptr != p && std::all_of(end_ptr, p + size(), [](char c) { return isspace(static_cast<unsigned char>(c)); });
+  return end_ptr != p && std::all_of(end_ptr, p + size(), [](char c) { return php_isspace(c); });
 }
 
 bool string::try_to_float_as_php7(double *val) const {
@@ -763,7 +761,7 @@ bool string::to_bool() const {
 }
 
 int64_t string::to_int(const char *s, size_type l) {
-  while (isspace(*s)) {
+  while (php_isspace(*s)) {
     s++;
   }
 
@@ -832,7 +830,7 @@ bool string::is_int() const {
 
 bool string::is_numeric_as_php8() const {
   const char *s = c_str();
-  while (isspace(*s)) {
+  while (php_isspace(*s)) {
     s++;
   }
 
@@ -873,7 +871,7 @@ bool string::is_numeric_as_php8() const {
     }
   }
 
-  return std::all_of(s, c_str() + size(), [](const char c) { return isspace(static_cast<unsigned char>(c)); });
+  return std::all_of(s, c_str() + size(), [](const char c) { return php_isspace(c); });
 }
 
 bool string::is_numeric_as_php7() const {

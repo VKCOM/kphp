@@ -6,11 +6,82 @@
 
 #include <climits>
 #include <cstring>
-#include <cctype>
 #include <limits>
 #include <type_traits>
 
 #include "common/sanitizer.h"
+
+namespace impl {
+
+// for functions that can be implemented as efficient range check, we
+// don't use a lookup table if compilers can generate more efficient code there;
+// for complex classes as XDIGIT we'll do one memory read.
+extern const uint8_t php_ascii_char_props[256];
+constexpr uint8_t CHAR_PROP_ALPHA = 1 << 0; // [a-zA-Z]
+constexpr uint8_t CHAR_PROP_ALNUM = 1 << 1; // [a-zA-Z0-9]
+constexpr uint8_t CHAR_PROP_PUNCT = 1 << 2;
+constexpr uint8_t CHAR_PROP_SPACE = 1 << 3;
+constexpr uint8_t CHAR_PROP_XDIGIT = 1 << 4; // [a-fA-F0-9]
+
+extern const unsigned char php_tolower_conv_table[256];
+extern const unsigned char php_toupper_conv_table[256];
+
+} // namespace impl
+
+inline bool php_isalnum(char ch) noexcept {
+  return (impl::php_ascii_char_props[static_cast<unsigned char>(ch)] & impl::CHAR_PROP_ALNUM) != 0;
+}
+
+inline bool php_isalpha(char ch) noexcept {
+  return (impl::php_ascii_char_props[static_cast<unsigned char>(ch)] & impl::CHAR_PROP_ALPHA) != 0;
+}
+
+inline bool php_iscntrl(char ch) noexcept {
+  unsigned char u = ch;
+  return u <= 31 || u == 127;
+}
+
+inline bool php_isdigit(char ch) noexcept {
+  return ch >= '0' && ch <= '9';
+}
+
+inline bool php_isgraph(char ch) noexcept {
+  unsigned char u = ch;
+  return u >= 33 && u <= 126;
+}
+
+inline bool php_isprint(char ch) noexcept {
+  unsigned char u = ch;
+  return u >= 32 && u <= 126;
+}
+
+inline bool php_ispunct(char ch) noexcept {
+  return (impl::php_ascii_char_props[static_cast<unsigned char>(ch)] & impl::CHAR_PROP_PUNCT) != 0;
+}
+
+inline bool php_isspace(char ch) noexcept {
+  return (impl::php_ascii_char_props[static_cast<unsigned char>(ch)] & impl::CHAR_PROP_SPACE) != 0;
+}
+
+inline bool php_isxdigit(char ch) noexcept {
+  return (impl::php_ascii_char_props[static_cast<unsigned char>(ch)] & impl::CHAR_PROP_XDIGIT) != 0;
+}
+
+inline bool php_islower(char ch) noexcept {
+  return ch >= 'a' && ch <= 'z';
+}
+
+inline bool php_isupper(char ch) noexcept {
+  return ch >= 'A' && ch <= 'Z';
+}
+
+inline char php_tolower(char ch) noexcept {
+  return impl::php_tolower_conv_table[static_cast<unsigned char>(ch)];
+}
+
+inline char php_toupper(char ch) noexcept {
+  return impl::php_toupper_conv_table[static_cast<unsigned char>(ch)];
+}
 
 constexpr int STRLEN_WARNING_FLAG = 1 << 30;
 constexpr int STRLEN_OBJECT = -3;
@@ -91,7 +162,7 @@ int64_t string_hash(const char *p, size_t l) {
 }
 
 inline bool php_is_numeric(const char *s) {
-  while (isspace(*s)) {
+  while (php_isspace(*s)) {
     s++;
   }
 

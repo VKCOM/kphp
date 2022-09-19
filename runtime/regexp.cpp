@@ -203,8 +203,8 @@ bool regexp::is_valid_RE2_regexp(const char *regexp_string, int64_t regexp_len, 
           if (regexp_string[i] == '\\') {
             switch (regexp_string[i + 1]) {
               case 'x':
-                if (isxdigit(regexp_string[i + 2]) &&
-                    isxdigit(regexp_string[i + 3])) {
+                if (php_isxdigit(regexp_string[i + 2]) &&
+                    php_isxdigit(regexp_string[i + 3])) {
                   i += 3;
                   continue;
                 }
@@ -254,8 +254,8 @@ bool regexp::is_valid_RE2_regexp(const char *regexp_string, int64_t regexp_len, 
       case '\\':
         switch (regexp_string[i + 1]) {
           case 'x':
-            if (isxdigit(regexp_string[i + 2]) &&
-                isxdigit(regexp_string[i + 3])) {
+            if (php_isxdigit(regexp_string[i + 2]) &&
+                php_isxdigit(regexp_string[i + 3])) {
               i += 3;
               break;
             }

@@ -3,6 +3,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 #include "compiler/pipes/analyze-performance.h"
 
+#include "common/php-functions.h"
 #include "common/algorithms/sorting.h"
 #include "common/algorithms/string-algorithms.h"
 #include "common/termformat/termformat.h"
@@ -56,7 +57,7 @@ std::string get_description_for_help_impl(VertexPtr expr) {
         }
         std::replace_if(raw_str.begin(), raw_str.end(),
                         [](char c) {
-                          return iscntrl(c) || vk::any_of_equal(c, '"', '\'', '\\');
+                          return php_iscntrl(c) || vk::any_of_equal(c, '"', '\'', '\\');
                         }, '?');
         raw_str.erase(std::unique(raw_str.begin(), raw_str.end(),
                                   [](char lhs, char rhs) { return vk::any_of_equal(lhs, '?', ' ') && lhs == rhs; }),

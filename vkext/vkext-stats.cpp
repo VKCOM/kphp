@@ -3,7 +3,6 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include <assert.h>
-#include <ctype.h>
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>

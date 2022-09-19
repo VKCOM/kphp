@@ -6,7 +6,6 @@
 
 #include <clocale>
 #include <sys/types.h>
-#include <cctype>
 
 #include "common/macos-ports.h"
 #include "common/unicode/unicode-utils.h"
@@ -177,8 +176,8 @@ static const unsigned char koi_to_win[] = {
   207, 223, 208, 209, 210, 211, 198, 194, 220, 219, 199, 216, 221, 217, 215, 218};
 
 string f$convert_cyr_string(const string &str, const string &from_s, const string &to_s) {
-  char from = (char)toupper(from_s[0]);
-  char to = (char)toupper(to_s[0]);
+  char from = php_toupper(from_s[0]);
+  char to = php_toupper(to_s[0]);
 
   const unsigned char *table = nullptr;
   if (from == 'W' && to == 'K') {
@@ -566,7 +565,7 @@ string f$lcfirst(const string &str) {
   }
 
   string res(n, false);
-  res[0] = (char)tolower(str[0]);
+  res[0] = php_tolower(str[0]);
   memcpy(&res[1], &str[1], n - 1);
 
   return res;
@@ -1268,9 +1267,9 @@ string f$stripcslashes(const string &str) {
           break;
         case 'x': // \\xN or \\xNN
           // collect up to two hex digits and interpret them as char
-          if (i+1 < len && isxdigit(static_cast<int>(str[i+1]))) {
+          if (i+1 < len && php_isxdigit(str[i+1])) {
             num_tmp[0] = str[++i];
-            if (i+1 < len && isxdigit(static_cast<int>(str[i+1]))) {
+            if (i+1 < len && php_isxdigit(str[i+1])) {
               num_tmp[1] = str[++i];
               num_tmp[2] = '\0';
               new_len -= 3;
@@ -1339,8 +1338,8 @@ string f$stripslashes(const string &str) {
 int64_t f$strcasecmp(const string &lhs, const string &rhs) {
   int n = min(lhs.size(), rhs.size());
   for (int i = 0; i < n; i++) {
-    if (tolower(lhs[i]) != tolower(rhs[i])) {
-      return tolower(lhs[i]) - tolower(rhs[i]);
+    if (php_tolower(lhs[i]) != php_tolower(rhs[i])) {
+      return php_tolower(lhs[i]) - php_tolower(rhs[i]);
     }
   }
   // TODO: for PHP8.2, use <=> operator instead:
@@ -1380,7 +1379,7 @@ static bool php_tag_find(const string &tag, const string &allow) {
   string norm;
   int state = 0, done = 0;
   for (int i = 0; tag[i] && !done; i++) {
-    char c = (char)tolower(tag[i]);
+    char c = php_tolower(tag[i]);
     switch (c) {
       case '<':
         norm.push_back(c);
@@ -1389,7 +1388,7 @@ static bool php_tag_find(const string &tag, const string &allow) {
         done = 1;
         break;
       default:
-        if (!isspace(c)) {
+        if (!php_isspace(c)) {
           // since PHP5.3.4, self-closing tags are interpreted as normal tags,
           // so normalized <br/> = <br>; note that tags from $allow are not normalized
           if (c != '/') {
@@ -1427,7 +1426,7 @@ string f$strip_tags(const string &str, const string &allow) {
         break;
       case '<':
         if (!in_q) {
-          if (isspace(str[i + 1])) {
+          if (php_isspace(str[i + 1])) {
             if (state == 0) {
               static_SB << c;
             } else if (state == 1) {
@@ -1567,12 +1566,12 @@ string f$strip_tags(const string &str, const string &allow) {
       case 'e':
         /* !DOCTYPE exception */
         if (state == 3 && i > 6
-            && tolower(str[i - 1]) == 'p'
-            && tolower(str[i - 2]) == 'y'
-            && tolower(str[i - 3]) == 't'
-            && tolower(str[i - 4]) == 'c'
-            && tolower(str[i - 5]) == 'o'
-            && tolower(str[i - 6]) == 'd') {
+            && php_tolower(str[i - 1]) == 'p'
+            && php_tolower(str[i - 2]) == 'y'
+            && php_tolower(str[i - 3]) == 't'
+            && php_tolower(str[i - 4]) == 'c'
+            && php_tolower(str[i - 5]) == 'o'
+            && php_tolower(str[i - 6]) == 'd') {
           state = 1;
           break;
         }
@@ -1583,7 +1582,7 @@ string f$strip_tags(const string &str, const string &allow) {
          * state == 2 (PHP). Switch back to HTML.
          */
 
-        if (state == 2 && i > 2 && tolower(str[i - 1]) == 'm' && tolower(str[i - 2]) == 'x') {
+        if (state == 2 && i > 2 && php_tolower(str[i - 1]) == 'm' && php_tolower(str[i - 2]) == 'x') {
           state = 1;
           break;
         }
@@ -1710,12 +1709,12 @@ static int64_t compare_right(char const **a, char const *aend, char const **b, c
      both numbers to know that they have the same magnitude, so we
      remember it in BIAS. */
   for (;; (*a)++, (*b)++) {
-    if ((*a == aend || !isdigit((int32_t)(unsigned char)**a)) &&
-        (*b == bend || !isdigit((int32_t)(unsigned char)**b))) {
+    if ((*a == aend || !php_isdigit(**a)) &&
+        (*b == bend || !php_isdigit(**b))) {
       return bias;
-    } else if (*a == aend || !isdigit((int32_t)(unsigned char)**a)) {
+    } else if (*a == aend || !php_isdigit(**a)) {
       return -1;
-    } else if (*b == bend || !isdigit((int32_t)(unsigned char)**b)) {
+    } else if (*b == bend || !php_isdigit(**b)) {
       return +1;
     } else if (**a < **b) {
       if (!bias) {
@@ -1735,12 +1734,12 @@ static int64_t compare_left(char const **a, char const *aend, char const **b, ch
   /* Compare two left-aligned numbers: the first to have a
      different value wins. */
   for (;; (*a)++, (*b)++) {
-    if ((*a == aend || !isdigit((int32_t)(unsigned char)**a)) &&
-        (*b == bend || !isdigit((int32_t)(unsigned char)**b))) {
+    if ((*a == aend || !php_isdigit(**a)) &&
+        (*b == bend || !php_isdigit(**b))) {
       return 0;
-    } else if (*a == aend || !isdigit((int32_t)(unsigned char)**a)) {
+    } else if (*a == aend || !php_isdigit(**a)) {
       return -1;
-    } else if (*b == bend || !isdigit((int32_t)(unsigned char)**b)) {
+    } else if (*b == bend || !php_isdigit(**b)) {
       return +1;
     } else if (**a < **b) {
       return -1;
@@ -1772,27 +1771,27 @@ static int64_t strnatcmp_ex(char const *a, size_t a_len, char const *b, size_t b
     cb = *bp;
 
     /* skip over leading zeros */
-    while (leading && ca == '0' && (ap + 1 < aend) && isdigit((int32_t)(unsigned char)*(ap + 1))) {
+    while (leading && ca == '0' && (ap + 1 < aend) && php_isdigit(*(ap + 1))) {
       ca = *++ap;
     }
 
-    while (leading && cb == '0' && (bp + 1 < bend) && isdigit((int32_t)(unsigned char)*(bp + 1))) {
+    while (leading && cb == '0' && (bp + 1 < bend) && php_isdigit(*(bp + 1))) {
       cb = *++bp;
     }
 
     leading = 0;
 
     /* Skip consecutive whitespace */
-    while (isspace((int32_t)(unsigned char)ca)) {
+    while (php_isspace(ca)) {
       ca = *++ap;
     }
 
-    while (isspace((int32_t)(unsigned char)cb)) {
+    while (php_isspace(cb)) {
       cb = *++bp;
     }
 
     /* process run of digits */
-    if (isdigit((int32_t)(unsigned char)ca) && isdigit((int32_t)(unsigned char)cb)) {
+    if (php_isdigit(ca) && php_isdigit(cb)) {
       fractional = (ca == '0' || cb == '0');
 
       if (fractional) {
@@ -1816,8 +1815,8 @@ static int64_t strnatcmp_ex(char const *a, size_t a_len, char const *b, size_t b
     }
 
     if (fold_case) {
-      ca = static_cast<unsigned char>(toupper(ca));
-      cb = static_cast<unsigned char>(toupper(cb));
+      ca = static_cast<unsigned char>(php_toupper(ca));
+      cb = static_cast<unsigned char>(php_toupper(cb));
     }
 
     if (ca < cb) {
@@ -1983,13 +1982,9 @@ string f$strtolower(const string &str) {
   // if there is no upper case char inside the string, we can
   // return the argument unchanged, avoiding the allocation and data copying;
   // while at it, memorize the first upper case char, so we can
-  // use memcpy to copy everything before that pos;
-  // note: do not use islower() here, the compiler does not inline that function call;
-  // it could be beneficial to use 256-byte LUT here, but SIMD approach could be even better
+  // use memcpy to copy everything before that pos
   const char *end = str.c_str() + n;
-  const char *uppercase_pos = std::find_if(str.c_str(), end, [](unsigned char ch) {
-    return ch >= 'A' && ch <= 'Z';
-  });
+  const char *uppercase_pos = std::find_if(str.c_str(), end, php_isupper);
   if (uppercase_pos == end) {
     return str;
   }
@@ -2000,7 +1995,7 @@ string f$strtolower(const string &str) {
     std::memcpy(res.buffer(), str.c_str(), lowercase_prefix);
   }
   for (int i = lowercase_prefix; i < n; i++) {
-    res[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(str[i])));
+    res[i] = php_tolower(str[i]);
   }
 
   return res;
@@ -2011,9 +2006,7 @@ string f$strtoupper(const string &str) {
 
   // same optimization as in strtolower
   const char *end = str.c_str() + n;
-  const char *lowercase_pos = std::find_if(str.c_str(), end, [](unsigned char ch) {
-    return ch >= 'a' && ch <= 'z';
-  });
+  const char *lowercase_pos = std::find_if(str.c_str(), end, php_islower);
   if (lowercase_pos == end) {
     return str;
   }
@@ -2024,7 +2017,7 @@ string f$strtoupper(const string &str) {
     std::memcpy(res.buffer(), str.c_str(), uppercase_prefix);
   }
   for (int i = uppercase_prefix; i < n; i++) {
-    res[i] = static_cast<char>(std::toupper(static_cast<unsigned char>(str[i])));
+    res[i] = php_toupper(str[i]);
   }
 
   return res;
@@ -2493,7 +2486,7 @@ string f$ucfirst(const string &str) {
   }
 
   string res(n, false);
-  res[0] = (char)toupper(str[0]);
+  res[0] = php_toupper(str[0]);
   memcpy(&res[1], &str[1], n - 1);
 
   return res;

@@ -394,7 +394,7 @@ bool do_json_decode(const char *s, int s_len, int &i, mixed &v, const char *json
                 value[l] = '\t';
                 break;
               case 'u':
-                if (isxdigit(s[i + 1]) && isxdigit(s[i + 2]) && isxdigit(s[i + 3]) && isxdigit(s[i + 4])) {
+                if (php_isxdigit(s[i + 1]) && php_isxdigit(s[i + 2]) && php_isxdigit(s[i + 3]) && php_isxdigit(s[i + 4])) {
                   int num = 0;
                   for (int t = 0; t < 4; t++) {
                     char c = s[++i];
@@ -410,7 +410,7 @@ bool do_json_decode(const char *s, int s_len, int &i, mixed &v, const char *json
 
                   if (0xD7FF < num && num < 0xE000) {
                     if (s[i + 1] == '\\' && s[i + 2] == 'u' &&
-                        isxdigit(s[i + 3]) && isxdigit(s[i + 4]) && isxdigit(s[i + 5]) && isxdigit(s[i + 6])) {
+                        php_isxdigit(s[i + 3]) && php_isxdigit(s[i + 4]) && php_isxdigit(s[i + 5]) && php_isxdigit(s[i + 6])) {
                       i += 2;
                       int u = 0;
                       for (int t = 0; t < 4; t++) {

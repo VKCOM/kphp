@@ -2,6 +2,8 @@
 
 #include "common/php-functions.h"
 
+#include <cctype> // needed for testing against libc implementations
+
 bool php_is_int_wrapper(const std::string &s) {
   return php_is_int(s.c_str(), s.size());
 }
@@ -146,4 +148,54 @@ TEST(test_php_try_to_integer, long_strings) {
   ASSERT_FALSE(php_try_to_int_wrapper("9223372036854775808", x));
   ASSERT_FALSE(php_try_to_int_wrapper("-784894841981984984891498", x));
   ASSERT_FALSE(php_try_to_int_wrapper("-9223372036854775809", x));
+}
+
+
+TEST(php_functions_test, test_ctype_conv) {
+  struct TestPair {
+    const char *name;
+    int (*ctype_func)(int);
+    char (*kphp_func)(char);
+  };
+  std::vector<TestPair> funcs = {
+    {"tolower", std::tolower, php_tolower},
+    {"toupper", std::toupper, php_toupper},
+  };
+
+  for (const auto &func_pair : funcs) {
+    for (int c = 0; c <= 255; c++) {
+      unsigned char want = func_pair.ctype_func(c);
+      unsigned char have = func_pair.kphp_func(c);
+      ASSERT_EQ(have, want) << func_pair.name <<  " mismatched at char with code " << c;
+    }
+  }
+}
+
+TEST(php_functions_test, test_ctype_predicates) {
+  struct TestPair {
+    const char *name;
+    int (*ctype_func)(int);
+    bool (*kphp_func)(char);
+  };
+  std::vector<TestPair> funcs = {
+    {"isalnum", std::isalnum, php_isalnum},
+    {"isalpha", std::isalpha, php_isalpha},
+    {"iscntrl", std::iscntrl, php_iscntrl},
+    {"isdigit", std::isdigit, php_isdigit},
+    {"islower", std::islower, php_islower},
+    {"isgraph", std::isgraph, php_isgraph},
+    {"isprint", std::isprint, php_isprint},
+    {"ispunct", std::ispunct, php_ispunct},
+    {"isspace", std::isspace, php_isspace},
+    {"isupper", std::isupper, php_isupper},
+    {"isxdigit", std::isxdigit, php_isxdigit},
+  };
+
+  for (const auto &func_pair : funcs) {
+    for (int c = 0; c <= 255; c++) {
+      bool want = func_pair.ctype_func(c);
+      bool have = func_pair.kphp_func(c);
+      ASSERT_EQ(have, want) << func_pair.name <<  " mismatched at char with code " << c;
+    }
+  }
 }

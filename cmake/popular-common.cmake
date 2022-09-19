@@ -24,6 +24,7 @@ prepend(POPULAR_COMMON_SOURCES ${COMMON_DIR}/
         parallel/maximum.cpp
         parallel/thread-id.cpp
         parallel/limit-counter.cpp
+        php-functions.cpp
         version-string.cpp
         rpc-headers.cpp)
 

@@ -556,7 +556,7 @@ Optional<array<mixed>> f$fgetcsv(const Stream &stream, int64_t length, string de
     inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mblen(bptr, limit - bptr)) : 0);
     if (inc_len == 1) {
       char const *tmp = bptr;
-      while ((*tmp != delimiter_char) && isspace((int)*(unsigned char *)tmp)) {
+      while ((*tmp != delimiter_char) && php_isspace(*tmp)) {
         tmp++;
       }
       if (*tmp == enclosure_char) {

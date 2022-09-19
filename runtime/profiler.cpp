@@ -311,7 +311,7 @@ void ProfilerBase::forcibly_dump_log_on_finish(const char *function_name) noexce
     vk::string_view suffix{function_name};
     suffix_size = std::min(suffix.size(), suffix_buffer.size());
     std::replace_copy_if(suffix.begin(), suffix.begin() + suffix_size, suffix_buffer.begin(),
-                         [](char c) { return !isalnum(c); }, '_');
+                         [](char c) { return !php_isalnum(c); }, '_');
   }
   context.update_log_suffix({suffix_buffer.data(), suffix_size});
 }
@@ -587,7 +587,7 @@ void f$profiler_set_log_suffix(const string &suffix) noexcept {
     return;
   }
   for (string::size_type i = 0; i != suffix.size(); ++i) {
-    if (unlikely(!isalnum(suffix[i]) && suffix[i] != '_')) {
+    if (unlikely(!php_isalnum(suffix[i]) && suffix[i] != '_')) {
       php_warning("Trying to set suffix '%s' with non alphanumeric character", suffix.c_str());
       return;
     }

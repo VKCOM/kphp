@@ -6,11 +6,11 @@
 
 #include <algorithm>
 
-#include <cctype>
 #include <cinttypes>
 #include <cstdio>
 #include <cstring>
 
+#include "common/php-functions.h"
 #include "common/crc32.h"
 
 ClusterName::ClusterName() {
@@ -33,7 +33,7 @@ const char *ClusterName::set_cluster_name(const char *name) noexcept {
   }
   std::copy(name, name + name_len + 1, cluster_name_.begin());
   bool has_wrong_symbols = std::any_of(cluster_name_.begin(), cluster_name_.begin() + name_len, [](char c) {
-    return !std::isalnum(c) && c != '-' && c != '_';
+    return !php_isalnum(c) && c != '-' && c != '_';
   });
   if (has_wrong_symbols) {
     return "Incorrect symbol in cluster name. Allowed symbols are: alpha-numerics, '-', '_'";

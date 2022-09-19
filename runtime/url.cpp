@@ -235,7 +235,8 @@ array<mixed> php_url_parse_ex(const char *str, string::size_type length) {
     p = s;
     while (p < e) {
       /* scheme = 1*[ lowalpha | digit | "+" | "-" | "." ] */
-      if (!isalpha(*p) && !isdigit(*p) && *p != '+' && *p != '.' && *p != '-') {
+      // TODO: isalpha+isdigit can be combined into isalnum
+      if (!php_isalpha(*p) && !php_isdigit(*p) && *p != '+' && *p != '.' && *p != '-') {
         if (e + 1 < ue && e < s + strcspn(s, "?#")) {
           goto parse_port;
         } else if (s + 1 < ue && *s == '/' && *(s + 1) == '/') { /* relative-scheme URL */
@@ -263,7 +264,7 @@ array<mixed> php_url_parse_ex(const char *str, string::size_type length) {
        * correctly parse things like a.com:80
        */
       p = e + 1;
-      while (p < ue && isdigit(*p)) {
+      while (p < ue && php_isdigit(*p)) {
         p++;
       }
 
@@ -298,7 +299,7 @@ array<mixed> php_url_parse_ex(const char *str, string::size_type length) {
     p = e + 1;
     pp = p;
 
-    while (pp < ue && pp - p < 6 && isdigit(*pp)) {
+    while (pp < ue && pp - p < 6 && php_isdigit(*pp)) {
       pp++;
     }
 

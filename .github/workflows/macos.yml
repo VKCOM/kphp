@@ -45,7 +45,7 @@ jobs:
       run: make -C ${{runner.workspace}}/build -j$(nproc) all
       
     - name: Run unit tests
-      run: make -C ${{runner.workspace}}/build -j$(nproc) test
+      run: env CTEST_OUTPUT_ON_FAILURE=1 make -C ${{runner.workspace}}/build -j$(nproc) test
 
     - name: Compile dummy PHP script
       working-directory: ${{runner.workspace}}/build

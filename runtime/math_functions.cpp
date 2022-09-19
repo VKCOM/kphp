@@ -268,7 +268,7 @@ string f$base_convert(const string &number, int64_t frombase, int64_t tobase) {
 
   string n(len, false);
   for (string::size_type i = 0; i < len; i++) {
-    const char *s = (const char *)memchr(digits, tolower(number[i + f]), 36);
+    const char *s = (const char *)memchr(digits, php_tolower(number[i + f]), 36);
     if (s == nullptr || s - digits >= frombase) {
       php_warning("Wrong character '%c' at position %u in parameter number (%s) in function base_convert", number[i + f], i + f, number.c_str());
       return number;

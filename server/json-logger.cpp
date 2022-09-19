@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include "common/php-functions.h"
 #include "common/algorithms/find.h"
 #include "common/fast-backtrace.h"
 #include "common/wrappers/likely.h"
@@ -58,8 +59,8 @@ bool copy_raw_string(char *&out, size_t out_size, vk::string_view str) noexcept 
   size_t i = 0;
   for (; i != str.size() && out_size; ++i, --out_size) {
     const char c = str[i];
-    if (std::iscntrl(c)) {
-      *out++ = std::isspace(c) ? ' ' : '?';
+    if (php_iscntrl(c)) {
+      *out++ = php_isspace(c) ? ' ' : '?';
     } else {
       if (vk::any_of_equal(c, '/', '\\', '"')) {
         if (!--out_size) {
