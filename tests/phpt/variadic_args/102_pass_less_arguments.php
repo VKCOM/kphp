@@ -1,4 +1,5 @@
 @kphp_should_fail
+/It's prohibited to unpack non-fixed arrays where positional arguments expected/
 <?php
 
 function fun($x, ...$args) {

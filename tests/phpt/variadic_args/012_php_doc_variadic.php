@@ -66,9 +66,57 @@ function return_varg_doc($arg) {
   return $arg;
 }
 
+/**
+ * @param mixed[] $args
+ * @return mixed
+ */
+function minnz(...$args) {
+    var_dump($args);
+    $min = min($args);
+    return $min;
+}
+
+/**
+ * @return mixed
+ */
+function getResults() {
+    return [2, '1'];
+}
+
+function demo_with_mixed() {
+    $results = getResults();
+    $min = minnz(...$results);
+    var_dump($min);
+}
+
+
+/**
+ * @param mixed ...$args
+ */
+function takeArgsMixed(string $prefix, ...$args) {
+    var_dump($args);
+}
+
+/**
+ * @param string ...$args
+ */
+function takeArgsString(string $prefix, ...$args) {
+    var_dump($args);
+}
+
+function test_pass_different_types() {
+    $link = 'link';
+    takeArgsMixed('p', ...['app', $link]);
+    takeArgsString('p', ...['app', $link]);
+}
+
+
+
 get_int_args(1, 2, 3);
 get_array_args(["hello", "world"]);
 get_instance_args(new Stub, new Stub);
 get_interface_args(new StubImpl2, new StubImpl1);
 get_varg_in_phpdoc_but_array([1, 2]);
 var_dump(return_varg_doc(1));
+demo_with_mixed();
+test_pass_different_types();
