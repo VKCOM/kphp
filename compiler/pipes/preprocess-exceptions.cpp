@@ -44,5 +44,8 @@ VertexPtr PreprocessExceptions::on_exit_vertex(VertexPtr root) {
   auto file_arg = VertexAdaptor<op_string>::create().set_location(root->location);
   file_arg->set_string(root->location.get_file()->relative_file_name);
   auto line_arg = GenTree::create_int_const(root->location.get_line());
-  return VertexAdaptor<op_exception_constructor_call>::create(call, file_arg, line_arg).set_location(root->location);
+  auto new_call = VertexAdaptor<op_func_call>::create(call, file_arg, line_arg).set_location(root->location);
+  new_call->func_id = G->get_function("_exception_set_location");
+  new_call->auto_inserted = true;
+  return new_call;
 }

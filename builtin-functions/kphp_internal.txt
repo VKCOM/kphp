@@ -1,0 +1,7 @@
+<?php
+
+// Functions declared in this file can't be called normally.
+// It's a compile-time error to use such function inside KPHP program.
+// Only KPHP compiler can insert calls to these functions.
+
+function _exception_set_location($e, string $filename, int $line): ^1;

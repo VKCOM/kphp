@@ -147,7 +147,7 @@ CompileTimeLocation f$CompileTimeLocation$$__construct(const CompileTimeLocation
 CompileTimeLocation f$CompileTimeLocation$$calculate(const CompileTimeLocation &v$passed);
 
 template<typename T>
-T __exception_set_location(const T &e, const string &file, int64_t line) {
+T f$_exception_set_location(const T &e, const string &file, int64_t line) {
   e->$file = file;
   e->$line = line;
   return e;

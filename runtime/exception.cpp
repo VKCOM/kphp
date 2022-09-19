@@ -81,7 +81,7 @@ CompileTimeLocation f$CompileTimeLocation$$calculate(const CompileTimeLocation &
 }
 
 Exception new_Exception(const string &file, int64_t line, const string &message, int64_t code) {
-  return __exception_set_location(f$Exception$$__construct(Exception().alloc(), message, code), file, line);
+  return f$_exception_set_location(f$Exception$$__construct(Exception().alloc(), message, code), file, line);
 }
 
 

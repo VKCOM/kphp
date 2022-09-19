@@ -318,25 +318,6 @@
     }
   },
   {
-    "comment": "artificial op that wraps exception constructor call",
-    "sons": {
-      "constructor_call": {
-        "id": 0,
-        "type": "op_func_call"
-      },
-      "file_arg": 1,
-      "line_arg": 2
-    },
-    "name": "op_exception_constructor_call",
-    "base_name": "meta_op_base",
-    "props": {
-      "rl": "rl_op",
-      "cnst": "cnst_nonconst_func",
-      "type": "common_op",
-      "str": "exception_constructor_call"
-    }
-  },
-  {
     "comment": "artificial op that evaluates to a CData.c_value reference",
     "name": "op_ffi_cdata_value_ref",
     "base_name": "meta_op_unary",

@@ -909,12 +909,6 @@ void compile_ffi_array_set(VertexAdaptor<op_ffi_array_set> root, CodeGenerator &
   W << "ffi_array_set(" << root->array() << ", " << root->key() << ", " << root->value() << ")";
 }
 
-void compile_exception_constructor_call(VertexAdaptor<op_exception_constructor_call> root, CodeGenerator &W) {
-  W << "__exception_set_location(";
-  compile_func_call(root->constructor_call(), W);
-  W << ", " << root->file_arg() << ", " << root->line_arg() << ")";
-}
-
 void compile_fork(VertexAdaptor<op_fork> root, CodeGenerator &W) {
   compile_func_call(root->func_call(), W, func_call_mode::fork_call);
 }
@@ -2056,9 +2050,6 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       break;
     case op_function:
       compile_function(root.as<op_function>(), W);
-      break;
-    case op_exception_constructor_call:
-      compile_exception_constructor_call(root.as<op_exception_constructor_call>(), W);
       break;
     case op_ffi_cdata_value_ref:
       compile_ffi_cdata_value_ref(root.as<op_ffi_cdata_value_ref>(), W);

@@ -352,6 +352,9 @@ VertexPtr CheckFuncCallsAndVarargPass::on_func_call(VertexAdaptor<op_func_call> 
   }
 
   if (f->is_extern() && !stage::has_error()) {
+    if (f->is_internal) {
+      kphp_error(call->auto_inserted, fmt_format("Called internal {} function", f->name));
+    }
     return maybe_replace_extern_func_call(call, call->func_id);
   }
 
