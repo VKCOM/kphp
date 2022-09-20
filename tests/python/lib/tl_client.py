@@ -53,4 +53,7 @@ def send_rpc_request(request, port, timeout=60):
     if stdout_data == "Can't serialize":
         raise RuntimeError("Can't serialize request")
     print("\nGot rpc response: {}".format(green(stdout_data)))
-    return json.loads(stdout_data)
+    try:
+        return json.loads(stdout_data)
+    except json.JSONDecodeError:
+        return stdout_data
