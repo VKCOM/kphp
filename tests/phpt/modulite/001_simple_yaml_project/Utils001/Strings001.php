@@ -5,7 +5,14 @@ class Strings001 {
     static public function lowercase(string $s): string {
         static $count = 0;  // not global
         $count++;
+
+        // allow using symbols in "require"
         \GlobalCl::globalMethod();
+        echo \GlobalCl::ZERO, "\n";
+        echo \GlobalCl::$state, "\n";
+
+        // allow using symbols from a class in "require
+        echo \GlobalEnum::RED, ' ', \GlobalEnum::GREEN, "\n";
 
         // allow using built-in constants, classes, etc.
         if (0) echo PHP_INT_MAX;

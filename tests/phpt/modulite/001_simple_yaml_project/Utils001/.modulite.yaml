@@ -5,5 +5,8 @@ export:
   - "Strings001"
 
 require:
+  - "\\GlobalEnum"
+  - "\\GlobalCl::ZERO"
+  - "\\GlobalCl::$state"
   - "\\GlobalCl::globalMethod()"
 
