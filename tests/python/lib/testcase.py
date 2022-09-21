@@ -208,8 +208,8 @@ class KphpServerAutoTestCase(BaseTestCase):
             os.link(cls.kphp_builder.kphp_runtime_bin, cls.kphp_server_bin)
 
         cls.sanitizer_pattern = os.path.join(cls.kphp_server_working_dir, "engine_sanitizer_log")
-        os.environ["ASAN_OPTIONS"] = "detect_leaks=0:log_path=" + cls.sanitizer_pattern
-        os.environ["UBSAN_OPTIONS"] = "print_stacktrace=1:allow_addr2line=1:log_path={}".format(cls.sanitizer_pattern)
+        os.environ["ASAN_OPTIONS"] = "log_path=" + cls.sanitizer_pattern
+        os.environ["UBSAN_OPTIONS"] = f"print_stacktrace=1:allow_addr2line=1:log_path={cls.sanitizer_pattern}"
         cls.kphp_server = KphpServer(
             engine_bin=cls.kphp_server_bin,
             working_dir=cls.kphp_server_working_dir
