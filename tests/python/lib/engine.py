@@ -34,7 +34,8 @@ class Engine:
             "--log": self._log_file,
             "--statsd-port": self._stats_receiver.port,
             "--port": self._rpc_port,
-            "--allow-loopback": True
+            "--allow-loopback": True,
+            "--dump-next-queries": 100000,
         }
         if not os.getuid():
             self._options["--user"] = "root"

@@ -29,6 +29,7 @@ class KphpServer(Engine):
         self._options["--disable-sql"] = True
         self._options["--workers-num"] = 1
         self._options["--allow-loopback"] = None
+        self._options["--dump-next-queries"] = None
         self._json_log_file_read_fd = None
         self._json_logs = []
         if options:
