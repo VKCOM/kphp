@@ -76,7 +76,7 @@ jobs:
 
     - name: Build all
       run: docker exec kphp-build-container-${{matrix.os}} bash -c 
-              "cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DADDRESS_SANITIZER=${{matrix.asan}} -DUNDEFINED_SANITIZER=${{matrix.ubsan}} -DPDO_MYSQL_SUPPORT=ON -DPDO_LIBS_STATIC_LINKING=ON -S ${{env.kphp_root_dir}} -B ${{env.kphp_build_dir}} && make -C ${{env.kphp_build_dir}} -j$(nproc) all"
+              "cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DADDRESS_SANITIZER=${{matrix.asan}} -DUNDEFINED_SANITIZER=${{matrix.ubsan}} -DPDO_DRIVER_MYSQL=ON -DPDO_LIBS_STATIC_LINKING=ON -S ${{env.kphp_root_dir}} -B ${{env.kphp_build_dir}} && make -C ${{env.kphp_build_dir}} -j$(nproc) all"
 
     - name: Run unit tests
       run: docker exec kphp-build-container-${{matrix.os}} bash -c 
@@ -147,7 +147,7 @@ jobs:
       run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -S $GITHUB_WORKSPACE/h3 -B ${{runner.workspace}}/h3/build && make install -C ${{runner.workspace}}/h3/build -j$(nproc) all
 
     - name: Run cmake
-      run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DPDO_MYSQL_SUPPORT=ON -DPDO_LIBS_STATIC_LINKING=ON -DDOWNLOAD_MISSING_LIBRARIES=On -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build
+      run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DPDO_DRIVER_MYSQL=ON -DPDO_LIBS_STATIC_LINKING=ON -DDOWNLOAD_MISSING_LIBRARIES=On -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build
 
     - name: Build all
       run: make -C ${{runner.workspace}}/build -j$(nproc) all
