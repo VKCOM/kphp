@@ -328,7 +328,7 @@ void CompilerSettings::init() {
 
   std::vector<vk::string_view> external_libs{"pthread", "crypto", "m", "dl"};
 
-#ifdef PDO_MYSQL_SUPPORT
+#ifdef PDO_DRIVER_MYSQL
 #ifdef PDO_LIBS_STATIC_LINKING
   external_static_libs.emplace_back("mysqlclient");
 #else

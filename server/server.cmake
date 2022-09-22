@@ -41,7 +41,7 @@ prepend(KPHP_DATABASE_DRIVERS_SOURCES ${BASE_DIR}/server/database-drivers/
         adaptor.cpp
         connector.cpp)
 
-if (PDO_MYSQL_SUPPORT)
+if (PDO_DRIVER_MYSQL)
 prepend(KPHP_DATABASE_DRIVERS_MYSQL_SOURCES ${BASE_DIR}/server/database-drivers/mysql/
         mysql.cpp
         mysql-request.cpp
