@@ -31,6 +31,9 @@ struct C$VK$TL$RpcFunction : abstract_refcountable_php_interface {
   virtual void accept(InstanceDeepCopyVisitor &) noexcept {}
   virtual void accept(InstanceDeepDestroyVisitor &) noexcept {}
 
+  virtual size_t virtual_builtin_sizeof() const noexcept { return 0; }
+  virtual C$VK$TL$RpcFunction *virtual_builtin_clone() const noexcept { return nullptr; }
+
   virtual ~C$VK$TL$RpcFunction() = default;
   virtual std::unique_ptr<tl_func_base> store() const = 0;
 };
@@ -46,6 +49,9 @@ struct C$VK$TL$RpcFunctionReturnResult : abstract_refcountable_php_interface {
   virtual void accept(InstanceReferencesCountingVisitor &) noexcept {}
   virtual void accept(InstanceDeepCopyVisitor &) noexcept {}
   virtual void accept(InstanceDeepDestroyVisitor &) noexcept {}
+
+  virtual size_t virtual_builtin_sizeof() const noexcept { return 0; }
+  virtual C$VK$TL$RpcFunctionReturnResult *virtual_builtin_clone() const noexcept { return nullptr; }
 
   virtual ~C$VK$TL$RpcFunctionReturnResult() = default;
 };
@@ -63,6 +69,9 @@ struct C$VK$TL$RpcResponse : abstract_refcountable_php_interface {
 
   virtual const char *get_class() const { return "VK\\TL\\RpcResponse"; }
   virtual int32_t get_hash() const { return static_cast<int32_t>(vk::std_hash(vk::string_view(C$VK$TL$RpcResponse::get_class()))); }
+
+  virtual size_t virtual_builtin_sizeof() const noexcept { return 0; }
+  virtual C$VK$TL$RpcResponse *virtual_builtin_clone() const noexcept { return nullptr; }
 
   virtual ~C$VK$TL$RpcResponse() = default;
 };

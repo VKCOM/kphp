@@ -67,6 +67,14 @@ public:
     return 0;
   }
 
+  virtual C$McMemcache* virtual_builtin_clone() const noexcept {
+    return new C$McMemcache{*this};
+  }
+
+  virtual size_t virtual_builtin_sizeof() const noexcept {
+    return sizeof(*this);
+  }
+
   array<host> hosts{array_size{1, 0, true}};
 };
 
