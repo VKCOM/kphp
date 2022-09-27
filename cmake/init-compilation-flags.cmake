@@ -49,6 +49,9 @@ endif()
 cmake_print_variables(ADDRESS_SANITIZER UNDEFINED_SANITIZER)
 
 option(PDO_LIBS_STATIC_LINKING "Enable static linking with database libs for PDO")
+if(PDO_LIBS_STATIC_LINKING)
+    add_definitions(-DPDO_LIBS_STATIC_LINKING)
+endif()
 cmake_print_variables(PDO_LIBS_STATIC_LINKING)
 
 option(PDO_DRIVER_MYSQL "Enable MySQL PDO driver")
