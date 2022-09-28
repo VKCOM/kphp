@@ -9,6 +9,7 @@
 
 #include "common/wrappers/field_getter.h"
 
+#include "common/wrappers/likely.h"
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/files/json-encoder-tags.h"
@@ -27,6 +28,19 @@
 #include "compiler/vertex.h"
 
 namespace {
+
+struct IntLit {
+  vk::string_view value;
+
+  void compile(CodeGenerator &W) const {
+    if (unlikely(value == "-9223372036854775808")) {
+      // avoid "integer overflow" warning for PHP_INT_MIN values
+      W << "(-9223372036854775807_i64 - 1_i64)";
+    } else {
+      W << value << "_i64";
+    }
+  }
+};
 
 struct Operand {
   VertexPtr root;
@@ -2000,7 +2014,7 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       break;
 
     case op_int_const:
-      W << root.as<op_int_const>()->str_val << "_i64";
+      W << IntLit{root.as<op_int_const>()->str_val};
       break;
     case op_float_const:
       str = root.as<op_float_const>()->str_val;
