@@ -101,6 +101,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         typed_rpc.cpp
         uber-h3.cpp
         udp.cpp
+        tcp.cpp
         url.cpp
         vkext.cpp
         vkext_stats.cpp
