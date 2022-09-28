@@ -7,7 +7,6 @@
 #include <cerrno>
 #include <poll.h>
 #include <sys/socket.h>
-#include <inttypes.h>
 
 #include "common/resolver.h"
 
