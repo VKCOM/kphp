@@ -76,6 +76,9 @@ void explicit_cast_array_type(VertexPtr &type_acceptor, const TypeData *required
       !is_implicit_array_conversion(existed_type, required_type)) {
     return;
   }
+  if (!(vk::any_of_equal(required_type->get_real_ptype(), tp_array, tp_mixed))) {
+    fprintf(stderr, "BAD TYPE: %s\n", required_type->as_human_readable().c_str());
+  }
   kphp_assert(vk::any_of_equal(required_type->get_real_ptype(), tp_array, tp_mixed));
   if (type_acceptor->extra_type == op_ex_var_const) {
     auto var_id = cast_const_array_type(type_acceptor, required_type);

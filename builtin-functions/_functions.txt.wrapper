@@ -1,0 +1,697 @@
+<?php
+
+/**
+ * @kphp-profile
+ * @kphp-infer cast
+ */
+function _kphp__array_slice($a, $offset ::: int, $length ::: ?int = null, $preserve_keys ::: bool = false) {
+  return array_slice($a, $offset, $length, $preserve_keys);
+}
+
+/** @kphp-profile */
+function _kphp__strstr($haystack ::: string, $needle ::: mixed, $before_needle ::: bool = false) ::: string | false {
+  return strstr($haystack, $needle, $before_needle);
+}
+
+/** @kphp-profile */
+function _kphp__stristr($haystack ::: string, $needle ::: mixed, $before_needle ::: bool = false) ::: string | false {
+  return stristr($haystack, $needle, $before_needle);
+}
+
+/**
+ * @param any $v
+ * @kphp-profile
+ */
+function _kphp__implode($s ::: string, $v) ::: string {
+  return implode($s, $v);
+}
+
+/**
+ * @param any $regex
+ * @kphp-profile
+ */
+function _kphp__preg_match_simple($regex, $subject ::: string) ::: int | false {
+  return preg_match($regex, $subject);
+}
+/**
+ * @param any $regex
+ * @kphp-profile
+ */
+function _kphp__preg_match($regex, $subject ::: string, &$matches ::: mixed) ::: int | false {
+  return preg_match($regex, $subject, $matches);
+}
+/**
+ * @param any $regex
+ * @kphp-profile
+ */
+function _kphp__preg_match_all_simple($regex, $subject ::: string) ::: int | false {
+  return preg_match_all($regex, $subject, $matches);
+}
+/**
+ * @param any $regex
+ * @kphp-profile
+ */
+function _kphp__preg_match_all($regex, $subject ::: string, &$matches ::: mixed) ::: int | false {
+  return preg_match_all($regex, $subject, $matches);
+}
+
+/** @kphp-profile */
+function _kphp__ob_clean() : void {  ob_clean(); }
+/** @kphp-profile */
+function _kphp__ob_end_clean() : bool { return ob_end_clean(); }
+/** @kphp-profile */
+function _kphp__ob_get_clean() : string|false { return ob_get_clean(); }
+/** @kphp-profile */
+function _kphp__ob_get_contents() : string { return ob_get_contents(); }
+/** @kphp-profile */
+function _kphp__ob_start($x ::: string= "") : void {  ob_start($x); }
+/** @kphp-profile */
+function _kphp__ob_flush() : void {  ob_flush(); }
+/** @kphp-profile */
+function _kphp__ob_end_flush() : bool { return ob_end_flush(); }
+/** @kphp-profile */
+function _kphp__ob_get_flush() : string|false { return ob_get_flush(); }
+/** @kphp-profile */
+function _kphp__ob_get_length() : int|false { return ob_get_length(); }
+/** @kphp-profile */
+function _kphp__ob_get_level() : int { return ob_get_level(); }
+/** @kphp-profile */
+function _kphp__header($str ::: string, $replace ::: bool= true, $http_response_code ::: int= 0) : void {  header($str, $replace, $http_response_code); }
+/** @kphp-profile */
+function _kphp__headers_list() : string[] { return headers_list(); }
+/** @kphp-profile */
+function _kphp__send_http_103_early_hints($headers ::: string[]) : void {  send_http_103_early_hints($headers); }
+/** @kphp-profile */
+function _kphp__setcookie($name ::: string, $value ::: string, $expire ::: int= 0, $path ::: string= "", $domain ::: string= "", $secure ::: bool= false, $http_only ::: bool= false) : void {  setcookie($name, $value, $expire, $path, $domain, $secure, $http_only); }
+/** @kphp-profile */
+function _kphp__setrawcookie($name ::: string, $value ::: string, $expire ::: int= 0, $path ::: string= "", $domain ::: string= "", $secure ::: bool= false, $http_only ::: bool= false) : void {  setrawcookie($name, $value, $expire, $path, $domain, $secure, $http_only); }
+/** @kphp-profile */
+function _kphp__ignore_user_abort($enable ::: ?bool= null) : int { return ignore_user_abort($enable); }
+/** @kphp-profile */
+function _kphp__error_get_last() : mixed { return error_get_last(); }
+/** @kphp-profile */
+function _kphp__warning($message ::: string) : void {  warning($message); }
+/** @kphp-profile */
+function _kphp__kphp_backtrace($pretty ::: bool= true) : string[] { return kphp_backtrace($pretty); }
+/** @kphp-profile */
+function _kphp__ini_get($s ::: string) : string|false { return ini_get($s); }
+/** @kphp-profile */
+function _kphp__ini_set($s ::: string, $v ::: string) : bool { return ini_set($s, $v); }
+/** @kphp-profile */
+function _kphp__memory_get_usage($real_usage ::: bool= false) : int { return memory_get_usage($real_usage); }
+/** @kphp-profile */
+function _kphp__memory_get_peak_usage($real_usage ::: bool= false) : int { return memory_get_peak_usage($real_usage); }
+/** @kphp-profile */
+function _kphp__memory_get_total_usage() : int { return memory_get_total_usage(); }
+/** @kphp-profile */
+function _kphp__memory_get_static_usage() : int { return memory_get_static_usage(); }
+/** @kphp-profile */
+function _kphp__memory_get_detailed_stats() : int[] { return memory_get_detailed_stats(); }
+/** @kphp-profile */
+function _kphp__memory_get_allocations() : tuple(int, int) { return memory_get_allocations(); }
+/** @kphp-profile */
+function _kphp__get_global_vars_memory_stats($lower_bound ::: int= 0) : int[] { return get_global_vars_memory_stats($lower_bound); }
+/** @kphp-profile */
+function _kphp__get_net_time() : float { return get_net_time(); }
+/** @kphp-profile */
+function _kphp__get_script_time() : float { return get_script_time(); }
+/** @kphp-profile */
+function _kphp__get_net_queries_count() : int { return get_net_queries_count(); }
+/** @kphp-profile */
+function _kphp__get_engine_uptime() : int { return get_engine_uptime(); }
+/** @kphp-profile */
+function _kphp__get_engine_version() : string { return get_engine_version(); }
+/** @kphp-profile */
+function _kphp__get_engine_workers_number() : int { return get_engine_workers_number(); }
+/** @kphp-profile */
+function _kphp__explode($delimiter ::: string, $str ::: string, $limit ::: int= PHP_INT_MAX) : string[] { return explode($delimiter, $str, $limit); }
+/** @kphp-profile */
+function _kphp__get_hash_of_class(object $klass) : int { return get_hash_of_class($klass); }
+/** @kphp-profile */
+function _kphp__print($v ::: string) : int { return print($v); }
+/** @kphp-profile */
+function _kphp__checkdate($month ::: int, $day ::: int, $year ::: int) : bool { return checkdate($month, $day, $year); }
+/** @kphp-profile */
+function _kphp__date($format ::: string, $timestamp ::: int= PHP_INT_MIN) : string { return date($format, $timestamp); }
+/** @kphp-profile */
+function _kphp__date_default_timezone_set($s ::: string) : bool { return date_default_timezone_set($s); }
+/** @kphp-profile */
+function _kphp__date_default_timezone_get() : string { return date_default_timezone_get(); }
+/** @kphp-profile */
+function _kphp__getdate($timestamp ::: int= PHP_INT_MIN) : mixed[] { return getdate($timestamp); }
+/** @kphp-profile */
+function _kphp__gmdate($format ::: string, $timestamp ::: int= PHP_INT_MIN) : string { return gmdate($format, $timestamp); }
+/** @kphp-profile */
+function _kphp__gmmktime($h ::: int= PHP_INT_MIN, $m ::: int= PHP_INT_MIN, $s ::: int= PHP_INT_MIN, $month ::: int= PHP_INT_MIN, $day ::: int= PHP_INT_MIN, $year ::: int= PHP_INT_MIN) : int { return gmmktime($h, $m, $s, $month, $day, $year); }
+/** @kphp-profile */
+function _kphp__localtime($timestamp ::: int= PHP_INT_MIN, $is_associative ::: bool= false) : mixed[] { return localtime($timestamp, $is_associative); }
+/** @kphp-profile */
+function _kphp__mktime($h ::: int= PHP_INT_MIN, $m ::: int= PHP_INT_MIN, $s ::: int= PHP_INT_MIN, $month ::: int= PHP_INT_MIN, $day ::: int= PHP_INT_MIN, $year ::: int= PHP_INT_MIN) : int { return mktime($h, $m, $s, $month, $day, $year); }
+/** @kphp-profile */
+function _kphp__strftime($format ::: string, $timestamp ::: int= PHP_INT_MIN) : string { return strftime($format, $timestamp); }
+/** @kphp-profile */
+function _kphp__strtotime($time ::: string, $timestamp ::: int= PHP_INT_MIN) : int|false { return strtotime($time, $timestamp); }
+/** @kphp-profile */
+function _kphp__date_parse($time ::: string) : mixed[] { return date_parse($time); }
+/** @kphp-profile */
+function _kphp__date_parse_from_format($format ::: string, $time ::: string) : mixed[] { return date_parse_from_format($format, $time); }
+/** @kphp-profile */
+function _kphp__time() : int { return time(); }
+/** @kphp-profile */
+function _kphp__microtime_string() : string { return microtime_string(); }
+/** @kphp-profile */
+function _kphp__microtime_float() : float { return microtime_float(); }
+/** @kphp-profile */
+function _kphp__hrtime_int() : int { return hrtime_int(); }
+/** @kphp-profile */
+function _kphp__hrtime_array() : int[] { return hrtime_array(); }
+/** @kphp-profile */
+function _kphp__debug_backtrace() : string[][] { return debug_backtrace(); }
+/** @kphp-profile */
+function _kphp__posix_getpid() : int { return posix_getpid(); }
+/** @kphp-profile */
+function _kphp__posix_getuid() : int { return posix_getuid(); }
+/** @kphp-profile */
+function _kphp__posix_getpwuid($uid ::: int) : mixed[]|false { return posix_getpwuid($uid); }
+/** @kphp-profile */
+function _kphp__gethostbynamel($name ::: string) : string[]|false { return gethostbynamel($name); }
+/** @kphp-profile */
+function _kphp__inet_pton($address ::: string) : string|false { return inet_pton($address); }
+/** @kphp-profile */
+function _kphp__unpack($pattern ::: string, $data ::: string) : mixed[]|false { return unpack($pattern, $data); }
+/** @kphp-profile */
+function _kphp__serialize($v ::: mixed) : string { return serialize($v); }
+/** @kphp-profile */
+function _kphp__unserialize($v ::: string) : mixed { return unserialize($v); }
+/** @kphp-profile */
+function _kphp__json_encode($v ::: mixed, $options ::: int= 0) : string|false { return json_encode($v, $options); }
+/** @kphp-profile */
+function _kphp__json_decode($v ::: string, $assoc ::: bool= false) : mixed { return json_decode($v, $assoc); }
+/** @kphp-profile */
+function _kphp__msgpack_serialize($v ::: mixed) : ?string { return msgpack_serialize($v); }
+/** @kphp-profile */
+function _kphp__msgpack_deserialize($v ::: string) : mixed { return msgpack_deserialize($v); }
+/** @kphp-profile */
+function _kphp__msgpack_serialize_safe($v ::: mixed) : string { return msgpack_serialize_safe($v); }
+/** @kphp-profile */
+function _kphp__msgpack_deserialize_safe($v ::: string) : mixed { return msgpack_deserialize_safe($v); }
+/** @kphp-profile */
+function _kphp__lcg_value() : float { return lcg_value(); }
+/** @kphp-profile */
+function _kphp__uniqid($prefix ::: string= "", $more_entropy ::: bool= false) : string { return uniqid($prefix, $more_entropy); }
+/** @kphp-profile */
+function _kphp__srand($seed ::: int= PHP_INT_MIN) : void {  srand($seed); }
+/** @kphp-profile */
+function _kphp__getrandmax() : int { return getrandmax(); }
+/** @kphp-profile */
+function _kphp__mt_srand($seed ::: int= PHP_INT_MIN) : void {  mt_srand($seed); }
+/** @kphp-profile */
+function _kphp__mt_getrandmax() : int { return mt_getrandmax(); }
+/** @kphp-profile */
+function _kphp__hash_algos() : string[] { return hash_algos(); }
+/** @kphp-profile */
+function _kphp__hash_hmac_algos() : string[] { return hash_hmac_algos(); }
+/** @kphp-profile */
+function _kphp__hash($algo ::: string, $data ::: string, $raw_output ::: bool= false) : string { return hash($algo, $data, $raw_output); }
+/** @kphp-profile */
+function _kphp__hash_hmac($algo ::: string, $data ::: string, $key ::: string, $raw_output ::: bool= false) : string { return hash_hmac($algo, $data, $key, $raw_output); }
+/** @kphp-profile */
+function _kphp__sha1($s ::: string, $raw_output ::: bool= false) : string { return sha1($s, $raw_output); }
+/** @kphp-profile */
+function _kphp__md5($s ::: string, $raw_output ::: bool= false) : string { return md5($s, $raw_output); }
+/** @kphp-profile */
+function _kphp__md5_file($s ::: string, $raw_output ::: bool= false) : string|false { return md5_file($s, $raw_output); }
+/** @kphp-profile */
+function _kphp__crc32($s ::: string) : int { return crc32($s); }
+/** @kphp-profile */
+function _kphp__crc32_file($s ::: string) : int { return crc32_file($s); }
+/** @kphp-profile */
+function _kphp__hash_equals(string $known_string, string $user_string) : bool { return hash_equals($known_string, $user_string); }
+/** @kphp-profile */
+function _kphp__cp1251($utf8_string ::: string) : string { return cp1251($utf8_string); }
+/** @kphp-profile */
+function _kphp__openssl_pkey_get_private($key ::: string, $passphrase ::: string= "") : string|false { return openssl_pkey_get_private($key, $passphrase); }
+/** @kphp-profile */
+function _kphp__openssl_pkey_get_public($key ::: string) : string|false { return openssl_pkey_get_public($key); }
+/** @kphp-profile */
+function _kphp__openssl_verify($data ::: string, $signature ::: string, $pub_key_id ::: string, $signature_alg ::: int= 1) : int { return openssl_verify($data, $signature, $pub_key_id, $signature_alg); }
+/** @kphp-profile */
+function _kphp__openssl_random_pseudo_bytes($length ::: int) : string|false { return openssl_random_pseudo_bytes($length); }
+/** @kphp-profile */
+function _kphp__openssl_x509_parse($x509cert ::: string, $shortnames ::: bool= true) : mixed[]|false { return openssl_x509_parse($x509cert, $shortnames); }
+/** @kphp-profile */
+function _kphp__openssl_x509_checkpurpose($x509cert ::: string, $purpose ::: int) : mixed { return openssl_x509_checkpurpose($x509cert, $purpose); }
+/** @kphp-profile */
+function _kphp__openssl_pkcs7_sign($infile ::: string, $outfile ::: string, $sign_cert ::: string, $priv_key ::: string, string[] $headers, $flags ::: int= PKCS7_DETACHED, $extra_certs ::: string= "") : bool { return openssl_pkcs7_sign($infile, $outfile, $sign_cert, $priv_key, $headers, $flags, $extra_certs); }
+/** @kphp-profile */
+function _kphp__openssl_get_cipher_methods($aliases ::: bool= false) : string[] { return openssl_get_cipher_methods($aliases); }
+/** @kphp-profile */
+function _kphp__openssl_cipher_iv_length($method ::: string) : int|false { return openssl_cipher_iv_length($method); }
+/** @kphp-profile */
+function _kphp__openssl_decrypt($data ::: string, $method ::: string, $key ::: string, $options ::: int= 0, $iv ::: string= "", $tag ::: string= "", $aad ::: string= "") : string|false { return openssl_decrypt($data, $method, $key, $options, $iv, $tag, $aad); }
+/** @kphp-profile */
+function _kphp__gzencode($str ::: string, $level ::: int= -1) : string { return gzencode($str, $level); }
+/** @kphp-profile */
+function _kphp__gzdecode($str ::: string) : string { return gzdecode($str); }
+/** @kphp-profile */
+function _kphp__gzcompress($str ::: string, $level ::: int= -1) : string { return gzcompress($str, $level); }
+/** @kphp-profile */
+function _kphp__gzuncompress($str ::: string) : string { return gzuncompress($str); }
+/** @kphp-profile */
+function _kphp__gzdeflate($str ::: string, $level ::: int= -1) : string { return gzdeflate($str, $level); }
+/** @kphp-profile */
+function _kphp__gzinflate($str ::: string) : string { return gzinflate($str); }
+/** @kphp-profile */
+function _kphp__base64_decode($str ::: string, $strict ::: bool= false) : string|false { return base64_decode($str, $strict); }
+/** @kphp-profile */
+function _kphp__base64_encode($str ::: string) : string { return base64_encode($str); }
+/** @kphp-profile */
+function _kphp__rawurldecode($str ::: string) : string { return rawurldecode($str); }
+/** @kphp-profile */
+function _kphp__rawurlencode($str ::: string) : string { return rawurlencode($str); }
+/** @kphp-profile */
+function _kphp__urldecode($str ::: string) : string { return urldecode($str); }
+/** @kphp-profile */
+function _kphp__urlencode($str ::: string) : string { return urlencode($str); }
+/** @kphp-profile */
+function _kphp__parse_url($str ::: string, $component ::: int= -1) : mixed { return parse_url($str, $component); }
+/** @kphp-profile */
+function _kphp__acos($v ::: float) : float { return acos($v); }
+/** @kphp-profile */
+function _kphp__acosh($v ::: float) : float { return acosh($v); }
+/** @kphp-profile */
+function _kphp__asin($v ::: float) : float { return asin($v); }
+/** @kphp-profile */
+function _kphp__asinh($v ::: float) : float { return asinh($v); }
+/** @kphp-profile */
+function _kphp__atan($v ::: float) : float { return atan($v); }
+/** @kphp-profile */
+function _kphp__atan2($y ::: float, $x ::: float) : float { return atan2($y, $x); }
+/** @kphp-profile */
+function _kphp__base_convert($number ::: string, $frombase ::: int, $tobase ::: int) : string { return base_convert($number, $frombase, $tobase); }
+/** @kphp-profile */
+function _kphp__ceil($v ::: float) : float { return ceil($v); }
+/** @kphp-profile */
+function _kphp__cos($v ::: float) : float { return cos($v); }
+/** @kphp-profile */
+function _kphp__cosh($v ::: float) : float { return cosh($v); }
+/** @kphp-profile */
+function _kphp__deg2rad($v ::: float) : float { return deg2rad($v); }
+/** @kphp-profile */
+function _kphp__exp($v ::: float) : float { return exp($v); }
+/** @kphp-profile */
+function _kphp__floor($v ::: float) : float { return floor($v); }
+/** @kphp-profile */
+function _kphp__log($v ::: float, $base ::: float= 2.7182818284590452353602874713527) : float { return log($v, $base); }
+/** @kphp-profile */
+function _kphp__fmod($x ::: float, $y ::: float) : float { return fmod($x, $y); }
+/** @kphp-profile */
+function _kphp__pi() : float { return pi(); }
+/** @kphp-profile */
+function _kphp__round($v ::: float, $precision ::: int= 0) : float { return round($v, $precision); }
+/** @kphp-profile */
+function _kphp__sin($v ::: float) : float { return sin($v); }
+/** @kphp-profile */
+function _kphp__sinh($v ::: float) : float { return sinh($v); }
+/** @kphp-profile */
+function _kphp__sqrt($v ::: float) : float { return sqrt($v); }
+/** @kphp-profile */
+function _kphp__tan($v ::: float) : float { return tan($v); }
+/** @kphp-profile */
+function _kphp__rad2deg($v ::: float) : float { return rad2deg($v); }
+/** @kphp-profile */
+function _kphp__addcslashes($str ::: string, $what ::: string) : string { return addcslashes($str, $what); }
+/** @kphp-profile */
+function _kphp__addslashes($str ::: string) : string { return addslashes($str); }
+/** @kphp-profile */
+function _kphp__bindec($number ::: string) : int { return bindec($number); }
+/** @kphp-profile */
+function _kphp__bin2hex($str ::: string) : string { return bin2hex($str); }
+/** @kphp-profile */
+function _kphp__chr($v ::: int) : string { return chr($v); }
+/** @kphp-profile */
+function _kphp__convert_cyr_string($str ::: string, $from ::: string, $to ::: string) : string { return convert_cyr_string($str, $from, $to); }
+/** @kphp-profile */
+function _kphp__count_chars($str ::: string, $mode ::: int= 0) : mixed { return count_chars($str, $mode); }
+/** @kphp-profile */
+function _kphp__decbin($number ::: int) : string { return decbin($number); }
+/** @kphp-profile */
+function _kphp__dechex($number ::: int) : string { return dechex($number); }
+/** @kphp-profile */
+function _kphp__hex2bin($str ::: string) : string { return hex2bin($str); }
+/** @kphp-profile */
+function _kphp__hexdec($number ::: string) : int { return hexdec($number); }
+/** @kphp-profile */
+function _kphp__htmlentities($str ::: string) : string { return htmlentities($str); }
+/** @kphp-profile */
+function _kphp__html_entity_decode($str ::: string, $flags ::: int= ENT_COMPAT, $encoding ::: string= "1251") : string { return html_entity_decode($str, $flags, $encoding); }
+/** @kphp-profile */
+function _kphp__htmlspecialchars($str ::: string, $flags ::: int= ENT_COMPAT) : string { return htmlspecialchars($str, $flags); }
+/** @kphp-profile */
+function _kphp__htmlspecialchars_decode($str ::: string, $flags ::: int= ENT_COMPAT) : string { return htmlspecialchars_decode($str, $flags); }
+/** @kphp-profile */
+function _kphp__levenshtein($str1 ::: string, $str2 ::: string) : int { return levenshtein($str1, $str2); }
+/** @kphp-profile */
+function _kphp__mysql_escape_string($str ::: string) : string { return mysql_escape_string($str); }
+/** @kphp-profile */
+function _kphp__ord($c ::: string) : int { return ord($c); }
+/** @kphp-profile */
+function _kphp__strcasecmp($str1 ::: string, $str2 ::: string) : int { return strcasecmp($str1, $str2); }
+/** @kphp-profile */
+function _kphp__strcmp($str1 ::: string, $str2 ::: string) : int { return strcmp($str1, $str2); }
+/** @kphp-profile */
+function _kphp__stripcslashes($str ::: string) : string { return stripcslashes($str); }
+/** @kphp-profile */
+function _kphp__stripslashes($str ::: string) : string { return stripslashes($str); }
+/** @kphp-profile */
+function _kphp__strip_tags($str ::: string, $allow ::: string|string[]= "") : string { return strip_tags($str, $allow); }
+/** @kphp-profile */
+function _kphp__strncmp($str1 ::: string, $str2 ::: string, $len ::: int) : int { return strncmp($str1, $str2, $len); }
+/** @kphp-profile */
+function _kphp__strnatcmp($str1 ::: string, $str2 ::: string) : int { return strnatcmp($str1, $str2); }
+/** @kphp-profile */
+function _kphp__wordwrap($str ::: string, $width ::: int= 75, $break ::: string= "\\n", $cut ::: bool= false) : string { return wordwrap($str, $width, $break, $cut); }
+/** @kphp-profile */
+function _kphp__ip2long($ip ::: string) : int|false { return ip2long($ip); }
+/** @kphp-profile */
+function _kphp__ip2ulong($ip ::: string) : string|false { return ip2ulong($ip); }
+/** @kphp-profile */
+function _kphp__long2ip($ip ::: int) : string { return long2ip($ip); }
+/** @kphp-profile */
+function _kphp__get_magic_quotes_gpc() : bool { return get_magic_quotes_gpc(); }
+/** @kphp-profile */
+function _kphp__php_sapi_name() : string { return php_sapi_name(); }
+/** @kphp-profile */
+function _kphp__str_pad($input ::: string, $len ::: int, $pad_str ::: string= " ", $pad_type ::: int= STR_PAD_RIGHT) : string { return str_pad($input, $len, $pad_str, $pad_type); }
+/** @kphp-profile */
+function _kphp__str_repeat($s ::: string, $multiplier ::: int) : string { return str_repeat($s, $multiplier); }
+/** @kphp-profile */
+function _kphp__lcfirst($str ::: string) : string { return lcfirst($str); }
+/** @kphp-profile */
+function _kphp__ucfirst($str ::: string) : string { return ucfirst($str); }
+/** @kphp-profile */
+function _kphp__ucwords($str ::: string) : string { return ucwords($str); }
+/** @kphp-profile */
+function _kphp__str_split($str ::: string, $split_length ::: int= 1) : string[] { return str_split($str, $split_length); }
+/** @kphp-profile */
+function _kphp__strlen($str ::: string) : int { return strlen($str); }
+/** @kphp-profile */
+function _kphp__strspn($haystack ::: string, $char_list ::: string, $offset ::: int= 0) : int { return strspn($haystack, $char_list, $offset); }
+/** @kphp-profile */
+function _kphp__strcspn($haystack ::: string, $char_list ::: string, $offset ::: int= 0) : int { return strcspn($haystack, $char_list, $offset); }
+/** @kphp-profile */
+function _kphp__strpbrk($haystack ::: string, $char_list ::: string) : string|false { return strpbrk($haystack, $char_list); }
+/** @kphp-profile */
+function _kphp__strrchr($haystack ::: string, $needle ::: string) : string|false { return strrchr($haystack, $needle); }
+/** @kphp-profile */
+function _kphp__strrev($str ::: string) : string { return strrev($str); }
+/** @kphp-profile */
+function _kphp__strtolower($str ::: string) : string { return strtolower($str); }
+/** @kphp-profile */
+function _kphp__strtoupper($str ::: string) : string { return strtoupper($str); }
+/** @kphp-profile */
+function _kphp__substr($str ::: string, $start ::: int, $length ::: int= PHP_INT_MAX) : string|false { return substr($str, $start, $length); }
+/** @kphp-profile */
+function _kphp__substr_count($haystack ::: string, $needle ::: string, $offset ::: int= 0, $length ::: int= PHP_INT_MAX) : int { return substr_count($haystack, $needle, $offset, $length); }
+/** @kphp-profile */
+function _kphp__substr_replace(string $str, string $replacement, $start ::: int, $length ::: int= PHP_INT_MAX) : string { return substr_replace($str, $replacement, $start, $length); }
+/** @kphp-profile */
+function _kphp__substr_compare($main_str ::: string, $str ::: string, $offset ::: int, $length ::: int= PHP_INT_MAX, $case_insensitivity ::: bool= false) : int|false { return substr_compare($main_str, $str, $offset, $length, $case_insensitivity); }
+/** @kphp-profile */
+function _kphp__str_starts_with($haystack ::: string, $needle ::: string) : bool { return str_starts_with($haystack, $needle); }
+/** @kphp-profile */
+function _kphp__str_ends_with($haystack ::: string, $needle ::: string) : bool { return str_ends_with($haystack, $needle); }
+/** @kphp-profile */
+function _kphp__trim($s ::: string, $what ::: string= " \n\r\t\v\0") : string { return trim($s, $what); }
+/** @kphp-profile */
+function _kphp__ltrim($s ::: string, $what ::: string= " \n\r\t\v\0") : string { return ltrim($s, $what); }
+/** @kphp-profile */
+function _kphp__rtrim($s ::: string, $what ::: string= " \n\r\t\v\0") : string { return rtrim($s, $what); }
+/** @kphp-profile */
+function _kphp__xor_strings($s ::: string, $t ::: string) : string { return xor_strings($s, $t); }
+/** @kphp-profile */
+function _kphp__setlocale($category ::: int, $locale ::: string) : string|false { return setlocale($category, $locale); }
+/** @kphp-profile */
+function _kphp__iconv($input_encoding ::: string, $output_encoding ::: string, $input_str ::: string) : string|false { return iconv($input_encoding, $output_encoding, $input_str); }
+/** @kphp-profile */
+function _kphp__mb_check_encoding($str ::: string, $encoding ::: string= "1251") : bool { return mb_check_encoding($str, $encoding); }
+/** @kphp-profile */
+function _kphp__mb_strlen($str ::: string, $encoding ::: string= "1251") : int { return mb_strlen($str, $encoding); }
+/** @kphp-profile */
+function _kphp__mb_strpos($haystack ::: string, $needle ::: string, $offset ::: int= 0, $encoding ::: string= "1251") : int|false { return mb_strpos($haystack, $needle, $offset, $encoding); }
+/** @kphp-profile */
+function _kphp__mb_stripos($haystack ::: string, $needle ::: string, $offset ::: int= 0, $encoding ::: string= "1251") : int|false { return mb_stripos($haystack, $needle, $offset, $encoding); }
+/** @kphp-profile */
+function _kphp__mb_strtolower($str ::: string, $encoding ::: string= "1251") : string { return mb_strtolower($str, $encoding); }
+/** @kphp-profile */
+function _kphp__mb_strtoupper($str ::: string, $encoding ::: string= "1251") : string { return mb_strtoupper($str, $encoding); }
+/** @kphp-profile */
+function _kphp__mb_substr($str ::: string, $start ::: int, $length ::: mixed= PHP_INT_MAX, $encoding ::: string= "1251") : string { return mb_substr($str, $start, $length, $encoding); }
+/** @kphp-profile */
+function _kphp__bcscale($scale ::: int) : void {  bcscale($scale); }
+/** @kphp-profile */
+function _kphp__bcdiv($lhs ::: string, $rhs ::: string, $scale ::: int= PHP_INT_MIN) : string { return bcdiv($lhs, $rhs, $scale); }
+/** @kphp-profile */
+function _kphp__bcmod($lhs ::: string, $rhs ::: string, int $scale= PHP_INT_MIN) : string { return bcmod($lhs, $rhs, $scale); }
+/** @kphp-profile */
+function _kphp__bcpow($lhs ::: string, $rhs ::: string, int $scale= PHP_INT_MIN) : string { return bcpow($lhs, $rhs, $scale); }
+/** @kphp-profile */
+function _kphp__bcadd($lhs ::: string, $rhs ::: string, $scale ::: int= PHP_INT_MIN) : string { return bcadd($lhs, $rhs, $scale); }
+/** @kphp-profile */
+function _kphp__bcsub($lhs ::: string, $rhs ::: string, $scale ::: int= PHP_INT_MIN) : string { return bcsub($lhs, $rhs, $scale); }
+/** @kphp-profile */
+function _kphp__bcmul($lhs ::: string, $rhs ::: string, $scale ::: int= PHP_INT_MIN) : string { return bcmul($lhs, $rhs, $scale); }
+/** @kphp-profile */
+function _kphp__bccomp($lhs ::: string, $rhs ::: string, $scale ::: int= PHP_INT_MIN) : int { return bccomp($lhs, $rhs, $scale); }
+/** @kphp-profile */
+function _kphp__mysqli_errno(mysqli $dn) : int { return mysqli_errno($dn); }
+/** @kphp-profile */
+function _kphp__mysqli_error(mysqli $dn) : string { return mysqli_error($dn); }
+/** @kphp-profile */
+function _kphp__mysqli_affected_rows(mysqli $dn) : int { return mysqli_affected_rows($dn); }
+/** @kphp-profile */
+function _kphp__mysqli_fetch_array($query_id ::: int, $result_type ::: int) : ?mixed[] { return mysqli_fetch_array($query_id, $result_type); }
+/** @kphp-profile */
+function _kphp__mysqli_insert_id(mysqli $dn) : int { return mysqli_insert_id($dn); }
+/** @kphp-profile */
+function _kphp__mysqli_num_rows($query_id ::: int) : int { return mysqli_num_rows($query_id); }
+/** @kphp-profile */
+function _kphp__mysqli_query(mysqli $dn, $query ::: string) : mixed { return mysqli_query($dn, $query); }
+/** @kphp-profile */
+function _kphp__mysqli_connect($host ::: string, $username ::: string, $password ::: string, $db_name ::: string, $port ::: int) : mysqli { return mysqli_connect($host, $username, $password, $db_name, $port); }
+/** @kphp-profile */
+function _kphp__mysqli_select_db(mysqli $dn, $name ::: string) : bool { return mysqli_select_db($dn, $name); }
+/** @kphp-profile */
+function _kphp__function_exists($func_name ::: mixed) : bool { return function_exists($func_name); }
+/** @kphp-profile */
+function _kphp__basename($name ::: string, $suffix ::: string= "") : string { return basename($name, $suffix); }
+/** @kphp-profile */
+function _kphp__chmod($name ::: string, $mode ::: int) : bool { return chmod($name, $mode); }
+/** @kphp-profile */
+function _kphp__clearstatcache() : void {  clearstatcache(); }
+/** @kphp-profile */
+function _kphp__copy($from ::: string, $to ::: string) : bool { return copy($from, $to); }
+/** @kphp-profile */
+function _kphp__dirname($name ::: string) : string { return dirname($name); }
+/** @kphp-profile */
+function _kphp__file($name ::: string) : string[]|false { return file($name); }
+/** @kphp-profile */
+function _kphp__file_get_contents($name ::: string) : string|false { return file_get_contents($name); }
+/** @kphp-profile */
+function _kphp__file_put_contents($name ::: string, $content ::: mixed, $flags ::: int= 0) : int|false { return file_put_contents($name, $content, $flags); }
+/** @kphp-profile */
+function _kphp__file_exists($name ::: string) : bool { return file_exists($name); }
+/** @kphp-profile */
+function _kphp__filesize($name ::: string) : int|false { return filesize($name); }
+/** @kphp-profile */
+function _kphp__filectime($name ::: string) : int|false { return filectime($name); }
+/** @kphp-profile */
+function _kphp__filemtime($name ::: string) : int|false { return filemtime($name); }
+/** @kphp-profile */
+function _kphp__mkdir($name ::: string, $mode ::: int= 0777, $recursive ::: bool= false) : bool { return mkdir($name, $mode, $recursive); }
+/** @kphp-profile */
+function _kphp__php_uname($mode ::: string= "a") : string { return php_uname($mode); }
+/** @kphp-profile */
+function _kphp__rename($oldname ::: string, $newname ::: string) : bool { return rename($oldname, $newname); }
+/** @kphp-profile */
+function _kphp__realpath($path ::: string) : string|false { return realpath($path); }
+/** @kphp-profile */
+function _kphp__tempnam($dir ::: string, $prefix ::: string) : string|false { return tempnam($dir, $prefix); }
+/** @kphp-profile */
+function _kphp__unlink($name ::: string) : bool { return unlink($name); }
+/** @kphp-profile */
+function _kphp__scandir($directory ::: string) : string[]|false { return scandir($directory); }
+/** @kphp-profile */
+function _kphp__sleep($seconds ::: int) : void {  sleep($seconds); }
+/** @kphp-profile */
+function _kphp__usleep($micro_seconds ::: int) : void {  usleep($micro_seconds); }
+/** @kphp-profile */
+function _kphp__getimagesize($name ::: string) : mixed { return getimagesize($name); }
+/** @kphp-profile */
+function _kphp__vk_utf8_to_win($text ::: string, $max_len ::: int= 0, $exit_on_error ::: bool= false) : string { return vk_utf8_to_win($text, $max_len, $exit_on_error); }
+/** @kphp-profile */
+function _kphp__vk_win_to_utf8($text ::: string, $escape ::: bool= true) : string { return vk_win_to_utf8($text, $escape); }
+/** @kphp-profile */
+function _kphp__vk_flex($name ::: string, $case_name ::: string, $sex ::: int, $type ::: string, $lang_id ::: int= 0) : string { return vk_flex($name, $case_name, $sex, $type, $lang_id); }
+/** @kphp-profile */
+function _kphp__vk_json_encode($v ::: mixed) : string|false { return vk_json_encode($v); }
+/** @kphp-profile */
+function _kphp__vk_json_encode_safe($v ::: mixed) : string { return vk_json_encode_safe($v); }
+/** @kphp-profile */
+function _kphp__vk_whitespace_pack($str ::: string, $html_opt ::: bool= false) : string { return vk_whitespace_pack($str, $html_opt); }
+/** @kphp-profile */
+function _kphp__vk_sp_simplify($str ::: string) : string { return vk_sp_simplify($str); }
+/** @kphp-profile */
+function _kphp__vk_sp_full_simplify($str ::: string) : string { return vk_sp_full_simplify($str); }
+/** @kphp-profile */
+function _kphp__vk_sp_deunicode($str ::: string) : string { return vk_sp_deunicode($str); }
+/** @kphp-profile */
+function _kphp__vk_sp_to_upper($str ::: string) : string { return vk_sp_to_upper($str); }
+/** @kphp-profile */
+function _kphp__vk_sp_to_lower($str ::: string) : string { return vk_sp_to_lower($str); }
+/** @kphp-profile */
+function _kphp__vk_sp_remove_repeats($str ::: string) : string { return vk_sp_remove_repeats($str); }
+/** @kphp-profile */
+function _kphp__vk_sp_to_cyrillic($str ::: string) : string { return vk_sp_to_cyrillic($str); }
+/** @kphp-profile */
+function _kphp__vk_sp_words_only($str ::: string) : string { return vk_sp_words_only($str); }
+/** @kphp-profile */
+function _kphp__likely($x ::: bool) : bool { return likely($x); }
+/** @kphp-profile */
+function _kphp__unlikely($x ::: bool) : bool { return unlikely($x); }
+/** @kphp-profile */
+function _kphp__new_rpc_connection($str ::: string, $port ::: int, $default_actor_id ::: mixed= 0, $timeout ::: float= 0.3, $connect_timeout ::: float= 0.3, $reconnect_timeout ::: float= 17.0) : RpcConnection { return new_rpc_connection($str, $port, $default_actor_id, $timeout, $connect_timeout, $reconnect_timeout); }
+/** @kphp-profile */
+function _kphp__store_gzip_pack_threshold($pack_threshold_bytes ::: int) : void {  store_gzip_pack_threshold($pack_threshold_bytes); }
+/** @kphp-profile */
+function _kphp__store_start_gzip_pack() : void {  store_start_gzip_pack(); }
+/** @kphp-profile */
+function _kphp__store_finish_gzip_pack($pack_threshold_bytes ::: int) : void {  store_finish_gzip_pack($pack_threshold_bytes); }
+/** @kphp-profile */
+function _kphp__store_header($actor_id ::: mixed, $flags ::: int= 0) : bool { return store_header($actor_id, $flags); }
+/** @kphp-profile */
+function _kphp__store_error($error_code ::: int, $error_text ::: string) : bool { return store_error($error_code, $error_text); }
+/** @kphp-profile */
+function _kphp__store_raw($v ::: string) : bool { return store_raw($v); }
+/** @kphp-profile */
+function _kphp__set_fail_rpc_on_int32_overflow($fail_rpc ::: bool) : bool { return set_fail_rpc_on_int32_overflow($fail_rpc); }
+/** @kphp-profile */
+function _kphp__store_int($v ::: int) : bool { return store_int($v); }
+/** @kphp-profile */
+function _kphp__store_long($v ::: int) : bool { return store_long($v); }
+/** @kphp-profile */
+function _kphp__store_double($v ::: float) : bool { return store_double($v); }
+/** @kphp-profile */
+function _kphp__store_float($v ::: float) : bool { return store_float($v); }
+/** @kphp-profile */
+function _kphp__store_string($v ::: string) : bool { return store_string($v); }
+/** @kphp-profile */
+function _kphp__store_finish() : bool { return store_finish(); }
+/** @kphp-profile */
+function _kphp__sched_yield() : void {  sched_yield(); }
+/** @kphp-profile */
+function _kphp__sched_yield_sleep($timeout ::: float) : void {  sched_yield_sleep($timeout); }
+/** @kphp-profile */
+function _kphp__get_running_fork_id() : future<void> { return get_running_fork_id(); }
+/** @kphp-profile */
+function _kphp__query_x2($x ::: int) : int { return query_x2($x); }
+/** @kphp-profile */
+function _kphp__set_wait_all_forks_on_finish(bool $wait= true) : bool { return set_wait_all_forks_on_finish($wait); }
+/** @kphp-profile */
+function _kphp__fopen($filename ::: string, $mode ::: string) : mixed { return fopen($filename, $mode); }
+/** @kphp-profile */
+function _kphp__stream_context_create($options ::: mixed= []) : mixed { return stream_context_create($options); }
+/** @kphp-profile */
+function _kphp__move_uploaded_file($oldname ::: string, $newname ::: string) : bool { return move_uploaded_file($oldname, $newname); }
+/** @kphp-profile */
+function _kphp__mail($to ::: string, $subject ::: string, $message ::: string, $additional_headers ::: string= "") : bool { return mail($to, $subject, $message, $additional_headers); }
+/** @kphp-profile */
+function _kphp__curl_init($url ::: string= "") : int { return curl_init($url); }
+/** @kphp-profile */
+function _kphp__curl_reset($curl_handle ::: int) : void {  curl_reset($curl_handle); }
+/** @kphp-profile */
+function _kphp__curl_setopt($curl_handle ::: int, $option ::: int, $value ::: mixed) : bool { return curl_setopt($curl_handle, $option, $value); }
+/** @kphp-profile */
+function _kphp__curl_exec($curl_handle ::: int) : mixed { return curl_exec($curl_handle); }
+/** @kphp-profile */
+function _kphp__curl_getinfo($curl_handle ::: int, $option ::: int= 0) : mixed { return curl_getinfo($curl_handle, $option); }
+/** @kphp-profile */
+function _kphp__curl_error($curl_handle ::: int) : string { return curl_error($curl_handle); }
+/** @kphp-profile */
+function _kphp__curl_errno($curl_handle ::: int) : int { return curl_errno($curl_handle); }
+/** @kphp-profile */
+function _kphp__curl_close($curl_handle ::: int) : void {  curl_close($curl_handle); }
+/** @kphp-profile */
+function _kphp__curl_multi_init() : int { return curl_multi_init(); }
+/** @kphp-profile */
+function _kphp__curl_multi_add_handle($multi_handle ::: int, $curl_handle ::: int) : int|false { return curl_multi_add_handle($multi_handle, $curl_handle); }
+/** @kphp-profile */
+function _kphp__curl_multi_getcontent($curl_handle ::: int) : string|null|false { return curl_multi_getcontent($curl_handle); }
+/** @kphp-profile */
+function _kphp__curl_multi_setopt($multi_handle ::: int, $option ::: int, $value ::: int) : bool { return curl_multi_setopt($multi_handle, $option, $value); }
+/** @kphp-profile */
+function _kphp__curl_multi_select($multi_handle ::: int, $timeout ::: float= 1.0) : int|false { return curl_multi_select($multi_handle, $timeout); }
+/** @kphp-profile */
+function _kphp__curl_multi_remove_handle($multi_handle ::: int, $curl_handle ::: int) : int|false { return curl_multi_remove_handle($multi_handle, $curl_handle); }
+/** @kphp-profile */
+function _kphp__curl_multi_errno($multi_handle ::: int) : int|false { return curl_multi_errno($multi_handle); }
+/** @kphp-profile */
+function _kphp__curl_multi_close($multi_handle ::: int) : void {  curl_multi_close($multi_handle); }
+/** @kphp-profile */
+function _kphp__curl_multi_strerror($errornum ::: int) : ?string { return curl_multi_strerror($errornum); }
+/** @kphp-profile */
+function _kphp__prepare_search_query($query ::: string) : string { return prepare_search_query($query); }
+/** @kphp-profile */
+function _kphp__system($query ::: string) : int { return system($query); }
+/** @kphp-profile */
+function _kphp__raise_sigsegv() : void {  raise_sigsegv(); }
+/** @kphp-profile */
+function _kphp__instance_cache_store(string $key, object $value, int $ttl= 0) : bool { return instance_cache_store($key, $value, $ttl); }
+/** @kphp-profile */
+function _kphp__instance_cache_update_ttl(string $key, int $ttl= 0) : bool { return instance_cache_update_ttl($key, $ttl); }
+/** @kphp-profile */
+function _kphp__instance_cache_delete(string $key) : bool { return instance_cache_delete($key); }
+/** @kphp-profile */
+function _kphp__instance_serialize(object $instance) : ?string { return instance_serialize($instance); }
+/** @kphp-profile */
+function _kphp__instance_serialize_safe(object $instance) : string { return instance_serialize_safe($instance); }
+/** @kphp-profile */
+function _kphp__confdata_get_value($key ::: string) : mixed { return confdata_get_value($key); }
+/** @kphp-profile */
+function _kphp__confdata_get_values_by_any_wildcard($wildcard ::: string) : mixed[] { return confdata_get_values_by_any_wildcard($wildcard); }
+/** @kphp-profile */
+function _kphp__confdata_get_values_by_predefined_wildcard($wildcard ::: string) : mixed[] { return confdata_get_values_by_predefined_wildcard($wildcard); }
+/** @kphp-profile */
+function _kphp__profiler_set_log_suffix($suffix ::: string) : void {  profiler_set_log_suffix($suffix); }
+/** @kphp-profile */
+function _kphp__profiler_set_function_label($label ::: string) : void {  profiler_set_function_label($label); }
+/** @kphp-profile */
+function _kphp__profiler_is_enabled() : bool { return profiler_is_enabled(); }
+/** @kphp-profile */
+function _kphp__kphp_job_worker_start(KphpJobWorkerRequest $request, float $timeout) : future<KphpJobWorkerResponse>|false { return kphp_job_worker_start($request, $timeout); }
+/** @kphp-profile */
+function _kphp__kphp_job_worker_start_no_reply(KphpJobWorkerRequest $request, float $timeout) : bool { return kphp_job_worker_start_no_reply($request, $timeout); }
+/** @kphp-profile */
+function _kphp__kphp_job_worker_start_multi(KphpJobWorkerRequest[] $request, float $timeout) : (future<KphpJobWorkerResponse>|false)[] { return kphp_job_worker_start_multi($request, $timeout); }
+/** @kphp-profile */
+function _kphp__kphp_job_worker_fetch_request() : KphpJobWorkerRequest { return kphp_job_worker_fetch_request(); }
+/** @kphp-profile */
+function _kphp__kphp_job_worker_store_response(KphpJobWorkerResponse $response) : void {  kphp_job_worker_store_response($response); }
+/** @kphp-profile */
+function _kphp__get_job_workers_number() : int { return get_job_workers_number(); }
+/** @kphp-profile */
+function _kphp__zstd_compress(string $data, int $level= 3) : string|false { return zstd_compress($data, $level); }
+/** @kphp-profile */
+function _kphp__zstd_uncompress(string $data) : string|false { return zstd_uncompress($data); }
+/** @kphp-profile */
+function _kphp__zstd_compress_dict(string $data, string $dict) : string|false { return zstd_compress_dict($data, $dict); }
+/** @kphp-profile */
+function _kphp__zstd_uncompress_dict(string $data, string $dict) : string|false { return zstd_uncompress_dict($data, $dict); }
+/** @kphp-profile */
+function _kphp__set_migration_php8_warning($mask ::: int) : void {  set_migration_php8_warning($mask); }
+/** @kphp-profile */
+function _kphp__set_json_log_on_timeout_mode(bool $enabled) : void {  set_json_log_on_timeout_mode($enabled); }
+/** @kphp-profile */
+function _kphp__reset_array_iterator(ArrayIterator $iter, $array ::: mixed[]) : ArrayIterator { return reset_array_iterator($iter, $array); }
+/** @kphp-profile */
+function _kphp__numa_get_bound_node() : int { return numa_get_bound_node(); }

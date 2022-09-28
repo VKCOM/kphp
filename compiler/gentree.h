@@ -254,3 +254,46 @@ inline bool is_positive_constexpr_int(VertexPtr v) {
 inline bool is_constructor_call(VertexAdaptor<op_func_call> call) {
   return !call->args().empty() && call->str_val == ClassData::NAME_OF_CONSTRUCT;
 }
+
+inline bool is_special_func(VertexAdaptor<op_func_call> call) {
+  const auto &name = vk::string_view{call->str_val};
+  if (name.starts_with("preg_")) {
+    if ((name == "preg_match" || name == "preg_match_all") && (call->args().size() == 2 || call->args().size() == 3)) {
+      return false;
+    }
+    return true;
+  }
+  return name == "echo" ||
+         name == "dbg_echo" ||
+         name == "var_dump" ||
+         name == "intval" ||
+         name == "strval" ||
+         name == "floatval" ||
+         name == "boolval" ||
+         name == "arrayval" ||
+         name == "exit" ||
+         name == "die" ||
+         name == "critical_error" ||
+         name == "classof" ||
+         name == "err" ||
+         name == "instance_cast" ||
+         name == "instance_to_array" ||
+         name == "make_clone" ||
+         name == "array_push" ||
+         name == "array_unshift" ||
+         name == "array_merge_into" ||
+         name == "array_splice" ||
+         name == "wait_queue_push" ||
+         name == "empty" ||
+         name == "hrtime" ||
+         name == "microtime" ||
+         name == "set_context_on_error" ||
+         name.ends_with("sort") ||
+         name.starts_with("vk_stats_hll") ||
+         name.starts_with("array_reserve") ||
+         name.starts_with("is_") ||
+         name.starts_with("rpc_") ||
+         name.starts_with("typed_rpc_") ||
+         name.starts_with("fetch_") ||
+         name.starts_with("ffi_");
+}

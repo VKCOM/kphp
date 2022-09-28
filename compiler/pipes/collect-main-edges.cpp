@@ -367,7 +367,8 @@ void CollectMainEdgesPass::on_return(VertexAdaptor<op_return> v, FunctionPtr fun
   // * if it's declared as '@return string', we just need a postponed type check for every return statement
   // * if it's declared as '@return array' of other any-containing — we create a set-edge instead
   // (remember, that a return value has a type restriction if any @return is specified, created in on_function())
-  bool should_create_set_to_infer = !function->return_typehint || function->return_typehint->has_tp_any_inside();
+  bool should_create_set_to_infer = !function->return_typehint || function->return_typehint->has_tp_any_inside()
+    || function->name == "_kphp__array_slice";
 
   if (should_create_set_to_infer) {
     create_set(as_lvalue(function, -1), v);

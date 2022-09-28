@@ -203,6 +203,7 @@ bool compiler_execute(CompilerSettings *settings) {
 
   G->register_main_file(settings->main_file.get(), src_file_stream);
   G->require_file(G->settings().functions_file.get(), LibPtr{}, src_file_stream, true, true);
+  G->require_file(G->settings().functions_file.get() + ".wrapper", LibPtr{}, src_file_stream, true, false);
 
   static lockf_wrapper unique_file_lock;
   if (!unique_file_lock.lock()) {

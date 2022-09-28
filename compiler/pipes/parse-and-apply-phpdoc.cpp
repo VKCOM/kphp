@@ -114,7 +114,7 @@ public:
       !f_->is_lambda() &&                         // lambdas may have implicitly deduced types, they are going to be checked later
       !f_->disabled_warnings.count("return");  // "@kphp-disable-warnings return" in function phpdoc
 
-    if (needs_to_be_fully_typed) {
+    if (needs_to_be_fully_typed && false) {
       check_all_arguments_have_param_or_type_hint();
     }
     if (!f_->return_typehint) {

@@ -1483,6 +1483,66 @@ VertexAdaptor<op_func_param_list> GenTree::parse_cur_function_param_list() {
   return VertexAdaptor<op_func_param_list>::create(params_next).set_location(cur_function->root);
 }
 
+bool print_funcs = getenv("KPHP_PRINT_FUNCS") != nullptr;
+
+static std::string escaped_string(const std::string &str) {
+  std::string result;
+  result.reserve(str.size());
+  for (size_t i = 0; i < str.size(); i++) {
+    switch (str[i]) {
+      case '\r':
+        result.append("\\r");
+        break;
+      case '\n':
+        result.append("\\n");
+        break;
+      case '"':
+        result.append("\\\"");
+        break;
+      case '\\':
+        result.append("\\\\");
+        break;
+      case '\'':
+        result.append("\\\'");
+        break;
+      case 0: {
+        if (str[i + 1] < '0' || str[i + 1] > '9') {
+          result.append("\\0");
+        } else {
+          result.append("\\000");
+        }
+        break;
+      }
+      case '\a':
+        result.append("\\a");
+        break;
+      case '\b':
+        result.append("\\b");
+        break;
+      case '\f':
+        result.append("\\f");
+        break;
+      case '\t':
+        result.append("\\t");
+        break;
+      case '\v':
+        result.append("\\v");
+        break;
+      default:
+        if ((unsigned char)str[i] < 32) {
+          std::string tmp = "\\0";
+          tmp += (char)('0' + (str[i] / 8));
+          tmp += (char)('0' + (str[i] % 8));
+          result.append(tmp);
+        } else {
+          result.push_back(str[i]);
+        }
+        break;
+    }
+  }
+  return result;
+}
+
 VertexAdaptor<op_function> GenTree::get_function(bool is_lambda, const PhpDocComment *phpdoc, FunctionModifiers modifiers) {
   bool is_arrow = test_expect(tok_fn);
   CE(expect2(tok_fn, tok_function, "function"));
@@ -1587,7 +1647,127 @@ VertexAdaptor<op_function> GenTree::get_function(bool is_lambda, const PhpDocCom
                         || cur_function->modifiers.is_abstract()
                         || cur_function->modifiers.is_instance()
                         || cur_function->is_lambda()
-                        || kphp_required_flag;
+                        || kphp_required_flag
+                        || vk::string_view{cur_function->name}.starts_with("_kphp__");
+    if (print_funcs && cur_function->is_extern() && cur_function->modifiers.is_nonmember() && !cur_function->is_internal) {
+      bool skip = cur_function->has_variadic_param || !cur_function->return_typehint->is_typedata_constexpr();
+      if (!skip) {
+        for (const auto &param : cur_function->root->param_list()->params()) {
+          auto p = param.as<op_func_param>();
+          if (p->has_default_value() && p->default_value()->type() == op_func_name) {
+            if (p->default_value().as<op_func_name>()->get_string() == "TODO" || p->default_value().as<op_func_name>()->get_string() == "TODO_OVERLOAD") {
+              skip = true;
+              break;
+            }
+          }
+          if (p->var()->ref_flag) {
+            skip = true;
+            break;
+          }
+          if (!p->type_hint) {
+            skip = true;
+            break;
+          }
+          if (p->type_hint) {
+            skip = p->type_hint->try_as<TypeHintCallable>();
+            if (skip) {
+              break;
+            }
+            auto is_any = [](const TypeHint *type_hint) {
+              auto as_primitive = type_hint->try_as<TypeHintPrimitive>();
+              return as_primitive && as_primitive->ptype == tp_any;
+            };
+            if (is_any(p->type_hint)) {
+              skip = true;
+              break;
+            }
+            auto as_array = p->type_hint->try_as<TypeHintArray>();
+            if (as_array && is_any(as_array->inner)) {
+              skip = true;
+              break;
+            }
+            if (p->type_hint->try_as<TypeHintFuture>()) {
+              skip = true;
+              break;
+            }
+          }
+        }
+      }
+      if (!skip) {
+        printf("/** @kphp-profile */\n");
+        printf("function _kphp__%s(", cur_function->name.c_str());
+        bool first_param = true;
+        for (const auto &param : cur_function->root->param_list()->params()) {
+          auto p = param.as<op_func_param>();
+          if (!first_param) {
+            printf(", ");
+          }
+          first_param = false;
+          auto type_hint = p->type_hint;
+          if (!type_hint) {
+            type_hint = TypeHintPrimitive::create(tp_any);
+          }
+          const char *maybe_ref = "";
+          if (p->is_cast_param) {
+            printf("%s$%s ::: %s", maybe_ref, p->var()->str_val.c_str(), type_hint->as_human_readable().c_str());
+          } else {
+            printf("%s %s$%s", type_hint->as_human_readable().c_str(), maybe_ref, p->var()->str_val.c_str());
+          }
+          if (p->has_default_value()) {
+            auto value = p->default_value();
+            switch (value->type()) {
+              case op_string:
+                printf("= \"%s\"", escaped_string(value->get_string()).c_str());
+                break;
+              case op_func_name:
+              case op_int_const:
+              case op_float_const:
+                printf("= %s", value->get_string().c_str());
+                break;
+              case op_true:
+                printf("= true");
+                break;
+              case op_false:
+                printf("= false");
+                break;
+              case op_null:
+                printf("= null");
+                break;
+              case op_array: {
+                auto arr = value.as<op_array>();
+                if (arr->args().empty()) {
+                  printf("= []");
+                  break;
+                }
+                fprintf(stderr, "non-empty array\n");
+                throw "bad";
+              }
+              default:
+                fprintf(stderr, "unhandled %s\n", OpInfo::op_str(value->type()));
+                throw "bad";
+                break;
+            }
+          }
+        }
+        const char *ret = "return";
+        if (auto as_primitive = cur_function->return_typehint->try_as<TypeHintPrimitive>()) {
+          if (as_primitive->ptype == tp_void) {
+            ret = "";
+          }
+        }
+        printf(") : %s { %s %s(", cur_function->return_typehint->as_human_readable().c_str(), ret, cur_function->name.c_str());
+        bool first_arg = true;
+        for (const auto &param : cur_function->root->param_list()->params()) {
+          auto p = param.as<op_func_param>();
+          if (!first_arg) {
+            printf(", ");
+          }
+          first_arg = false;
+          printf("$%s", p->var()->str_val.c_str());
+        }
+        printf("); }\n");
+      }
+    }
     G->register_and_require_function(cur_function, parsed_os, auto_require);
   }
 

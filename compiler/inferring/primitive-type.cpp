@@ -14,8 +14,8 @@
 const char *ptype_name(PrimitiveType id) {
   switch (id) {
     case tp_any:           return "any";
-    case tp_Null:          return "Null";
-    case tp_False:         return "False";
+    case tp_Null:          return "null";
+    case tp_False:         return "false";
     case tp_bool:          return "bool";
     case tp_int:           return "int";
     case tp_float:         return "float";
@@ -27,10 +27,10 @@ const char *ptype_name(PrimitiveType id) {
     case tp_future:        return "future";
     case tp_future_queue:  return "future_queue";
     case tp_regexp:        return "regexp";
-    case tp_Class:         return "Class";
+    case tp_Class:         return "class";
     case tp_object:        return "object";
     case tp_void:          return "void";
-    case tp_Error:         return "Error";
+    case tp_Error:         return "error";
     case ptype_size:       kphp_fail();
   }
   kphp_fail();

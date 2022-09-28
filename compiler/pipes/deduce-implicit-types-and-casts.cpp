@@ -587,6 +587,23 @@ void DeduceImplicitTypesAndCastsPass::on_func_call(VertexAdaptor<op_func_call> c
       call->func_id = method->function;
 
     } else {
+      if (!call->location.file->is_builtin() && call->extra_type != op_ex_func_call_arrow) {
+        auto fn = G->get_function(call->str_val);
+        if (fn->is_extern() && !fn->is_internal && fn->modifiers.is_nonmember()) {
+          vk::string_view name = fn->local_name();
+          bool is_special = is_special_func(call);
+          if (!is_special && !vk::string_view{call->location.file->file_name}.ends_with("_functions.txt.wrapper")) {
+            auto new_func = "_kphp__" + call->str_val;
+            if (name.starts_with("preg_") && call->args().size() == 2) {
+              new_func += "_simple";
+            }
+            if (G->get_function(new_func)) {
+              call->str_val = new_func;
+            }
+          }
+        }
+      }
+
       // just a regular function call in a global namespace
       call->func_id = G->get_function(call->str_val);
       if (!call->func_id) {
