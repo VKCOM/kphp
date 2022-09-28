@@ -431,7 +431,7 @@ function uksort (&$a ::: array, callable(mixed $x, mixed $y):int $callback) ::: 
 function natsort (&$a ::: array) ::: void;
 
 function lcg_value() ::: float;
-function uniqid ($prefix ::: string = '', $more_entropy ::: int = false) ::: string;
+function uniqid ($prefix ::: string = '', $more_entropy ::: bool = false) ::: string;
 
 function srand ($seed ::: int = PHP_INT_MIN) ::: void;
 function rand ($l ::: int = TODO_OVERLOAD, $r ::: int = TODO_OVERLOAD) ::: int;
