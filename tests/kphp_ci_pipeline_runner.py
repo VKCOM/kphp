@@ -236,7 +236,8 @@ if __name__ == "__main__":
         env_vars.append("UBSAN_OPTIONS=print_stacktrace=1:allow_addr2line=1")
     if args.use_nocc:
         cmake_options.append("-DCMAKE_CXX_COMPILER_LAUNCHER={}".format(nocc_env("NOCC_EXECUTABLE", "nocc")))
-
+    cmake_options.append("-DPDO_DRIVER_MYSQL=ON")
+    cmake_options.append("-DPDO_LIBS_STATIC_LINKING=ON")
     kphp_polyfills_repo = args.kphp_polyfills_repo
     if kphp_polyfills_repo == "":
         print(red("empty --kphp-polyfills-repo argument"), flush=True)
