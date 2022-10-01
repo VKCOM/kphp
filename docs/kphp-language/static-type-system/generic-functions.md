@@ -550,6 +550,110 @@ function getValueOf($obj) {
 ```
 
 
+## Variadic generics f\<...T\>
+
+You can declare a function that accepts arbitrary number of arguments as a variadic parameter:
+```php
+/**
+ * @kphp-generic ...T
+ * @param T ...$args
+ */
+function f(...$args) { }  
+```
+
+Internally, when `f()` is called with N arguments, `$args` is replaced with N copies. E.g., N=2:
+```php
+f(new A, new B);        // N = 2
+// actually creates
+function f_n2<T1, T2>(T1 $args_1, T2 $args_2) {
+  // body is cloned, $args is replaced with flat copies
+}
+// and calls
+f_n2<A, B>(new A, new B);
+```
+
+There is a limited number of valid operations you can perform over `$args`:
+* forward to another function via `g(...$args)`
+* concat into an array via `[...$args]`
+
+More precisely, `$args` is replaced with N copies of arguments, and this replacement 
+is correct in a limited number of constructions.
+
+Variadic generics are useful to express proxy functions that pass parameters to other functions as-is or with slight modifications. 
+Here are examples of simple forwarding, appending and prepending:
+```php
+/** 
+ * @kphp-generic ...TArg
+ * @param TArg ...$args
+ */
+function forwardToG(...$args) {
+  log("call g n=" . count($args));
+  g(...$args);      // actually replaced by g($args_1, $args_2, ... args_N)
+}
+
+/**
+ * @kphp-generic ...TMore
+ * @param TMore ...$more
+ */
+function prependIntToG(int $first, ...$more) {
+  g($first, ...$args);
+}
+
+/** 
+ * @kphp-generic T, ...TArg
+ * @param T $append
+ * @param TArg ...$args
+ */
+function appendSomethingToG($append, ...$args) {
+  g(...[...$args, $append]);
+  // actually replaced by g(...[$args_1, $args_2, ... args_N, $append])
+}
+```
+
+Note, that `g()` is not required to accept a variadic parameter, because unpacking a fixed-size array 
+to positional arguments is valid both in PHP and KPHP. 
+```php
+function g(int $a, int $b, int $c = 0) {}
+
+// ok, g(1, 2, 0)
+g(...[1,2]);
+
+// ok, g(...[$args]) for N=3 is g(...[$args_1, $args_2, $args_3])
+// correctly unpacked to g($args_1, $args_2, $args_3)  
+forwardToG(1, 2, 3);
+```
+
+A `/*<...*>/` syntax also works with variadic generics and helps in cases when Ts can't be auto reified:
+```php
+variadicF/*<A>*/(null);                         // actually, variadicF_n1<A>
+variadicF/*<A, B, ?int>*/(null, null, null);    // actually, variadicF_n3<A, B, ?int>
+```
+
+
+## A problem with null
+
+KPHP tries no auto-reify Ts when you pass arguments to generic functions. `f(3)` is reified as `f<int>(3)`, and similar. 
+But KPHP can do nothing about `f(null)`, since `null` is not a type, it's a flag of any null-containing type.
+
+In case you want to pass nulls, you should manually provide `/*<...>*/` at the point of instantiation:
+```php
+f/*<?int>*/(null);
+f/*<mixed>*/(null);
+f/*<A[]|null|false>*/(null);
+```
+
+If `null` is one of the arguments, and others are correctly reified, you should nevertheless pass all Ts manually, 
+since it's the awaited syntax:
+```php
+f/*<int, A, ?int>*/(0, new A, null);
+```
+
+If this becomes a frequent case, we could introduce something like `f/<auto, auto, ?int>*/` or invent something better 
+by integrating `null` into the type system.
+
+By the way, `true` and `false` don't have such ambiguities, they are reified as `bool`.
+
+
 ## A problem with primitives and variables
 
 The point when we are instantiating generics is exactly the same point when we bind `f()` and `$a->f()` calls to real functions. In order to bind `$a->f()` to a function, we need to know the type of `$a`. To manage this, we use assumptions, which are based on variable names. For instance, if `@param A $a` exists, we know that *$a* is *A*.

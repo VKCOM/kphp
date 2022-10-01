@@ -607,6 +607,19 @@ void DeduceImplicitTypesAndCastsPass::on_func_call(VertexAdaptor<op_func_call> c
   if (f_called->is_generic()) {
     bool old_syntax = !GenericsDeclarationMixin::is_new_kphp_generic_syntax(f_called->phpdoc);
 
+    // if `f` is a variadic generic `f<...TArg>` called with N=2 arguments, `f$n2<TArg1, TArg2>` is created and called instead
+    // (same for manually provided variadic types: `f/*<int, string, ?A>*/` => `f$n3<int, string, ?A>`)
+    if (f_called->has_variadic_param && f_called->genericTs->is_variadic()) {
+      int n_variadic = call->reifiedTs
+                       ? call->reifiedTs->commentTs->size()
+                       : call_args.size() - (f_called_params.size() - 1 + f_called->has_implicit_this_arg());
+      if (n_variadic >= 0) {
+        f_called = convert_variadic_generic_function_accepting_N_args(f_called, n_variadic);
+        f_called_params = f_called->get_params();
+        call->func_id = f_called;
+      }
+    }
+
     if (call->reifiedTs) {
       kphp_assert(call->reifiedTs->empty() && call->reifiedTs->commentTs);
       apply_instantiationTs_from_php_comment(f_called, call, call->reifiedTs->commentTs);

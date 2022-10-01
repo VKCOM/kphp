@@ -218,7 +218,7 @@ std::string FunctionData::as_human_readable(bool add_details) const {
     }
 
     if (genericTs) {
-      result_name += "<" + vk::join(*genericTs, ",", [](const auto &itemT) { return itemT.nameT; }) + ">";
+      result_name += genericTs->as_human_readable();
     }
   }
 

@@ -41,6 +41,15 @@
  *    @kphp-generic T, TCont = Container<T>
  *    @kphp-generic TValue, TErr : \Err = \Err
  *
+ * There are also variadic generics, declared like
+ *    @kphp-generic ...TArg
+ * They are applicable only to variadic functions, e.g.
+ *    function f<...TArg>(TArg ...$args) { anotherF(...$args); }
+ * When called like `f(1, new A)`, N=2, a separate function `f$n2` is created,
+ * replacing "...TArg" with "TArg1, TArg2" and "...$args" with "$args$1, $args$2":
+ *    function f$n2<TArg1, TArg2>(TArg1 $args$1, TArg2 $args$2) { anotherF($args$1, $args$2); }
+ * Consider `convert_variadic_generic_function_accepting_N_args()`.
+ *
  * Note, that @kphp-generic is parsed right in gentree, even before parsing function/class,
  * because even when parsing function body we must know that nested / *<T>* / is generic T, not class T.
  * In other words, we treat <T> as a language syntax, which is expressed in phpdoc only due to PHP limitations.
@@ -112,6 +121,13 @@ static void create_from_phpdoc_kphp_generic_new_syntax(FunctionPtr current_funct
         for (auto s : split_skipping_delimeters(tag.value, ",")) {
           std::vector<Token> tokens = phpdoc_to_tokens(s);
           auto cur_tok = tokens.cbegin();
+          bool is_variadic = false;
+
+          if (cur_tok->type() == tok_varg) {  // not T, but ...T (variadic generic)
+            is_variadic = true;
+            cur_tok++;
+          }
+
           kphp_error_return(cur_tok->type() != tok_var_name, fmt_format("'@kphp-generic ${}' is an invalid syntax: provide T names, not variables.\nProbably, you want:\n* @kphp-generic T\n* @param T ${}", cur_tok->str_val, cur_tok->str_val));
           kphp_error_return(cur_tok->type() == tok_func_name, fmt_format("Can't parse generic declaration: can't detect T from '{}'", s));
 
@@ -136,7 +152,7 @@ static void create_from_phpdoc_kphp_generic_new_syntax(FunctionPtr current_funct
           kphp_error_return(cur_tok->type() != tok_func_name, "Can't parse generic declaration: use a comma to separate generic T ('T1, T2' instead of 'T1 T2')");
           kphp_error_return(cur_tok->type() == tok_end, fmt_format("Can't parse generic declaration <{}>: unexpected end", nameT));
 
-          out->add_itemT(nameT, extends_hint, def_hint);
+          out->add_itemT(nameT, extends_hint, def_hint, is_variadic);
         }
         break;
 
@@ -158,7 +174,12 @@ static void create_from_phpdoc_kphp_generic_new_syntax(FunctionPtr current_funct
 
 
 std::string GenericsDeclarationMixin::as_human_readable() const {
-  return "<" + vk::join(itemsT, ", ", [](const auto &itemT) { return itemT.nameT; }) + ">";
+  return "<" + vk::join(itemsT, ", ", [](const GenericsItem &itemT) {
+    if (itemT.is_variadic) {
+      return "..." + itemT.nameT;
+    }
+    return itemT.nameT;
+  }) + ">";
 }
 
 bool GenericsDeclarationMixin::has_nameT(const std::string &nameT) const {
@@ -170,10 +191,11 @@ bool GenericsDeclarationMixin::has_nameT(const std::string &nameT) const {
   return false;
 }
 
-void GenericsDeclarationMixin::add_itemT(const std::string &nameT, const TypeHint *extends_hint, const TypeHint *def_hint) {
+void GenericsDeclarationMixin::add_itemT(const std::string &nameT, const TypeHint *extends_hint, const TypeHint *def_hint, bool is_variadic) {
   kphp_error_return(!nameT.empty(), "Invalid (empty) generic <T> in declaration");
   kphp_error_return(!has_nameT(nameT), fmt_format("Duplicate generic <{}> in declaration", nameT));
-  itemsT.emplace_back(GenericsItem{nameT, extends_hint, def_hint});
+  kphp_error_return(itemsT.empty() || !itemsT.back().is_variadic, fmt_format("Variadic <...{}> is not the last in declaration", itemsT.back().nameT));
+  itemsT.emplace_back(GenericsItem{nameT, extends_hint, def_hint, is_variadic});
 }
 
 const TypeHint *GenericsDeclarationMixin::get_extends_hint(const std::string &nameT) const {
@@ -283,12 +305,14 @@ bool GenericsDeclarationMixin::is_new_kphp_generic_syntax(const PhpDocComment *p
   return phpdoc && phpdoc->find_tag(PhpDocType::kphp_generic);
 }
 
+// creates genericTs as an empty object, ready for parsing
 GenericsDeclarationMixin *GenericsDeclarationMixin::create_for_function_empty(FunctionPtr f) {
   auto *out = new GenericsDeclarationMixin();
   (void)f;  // reserved for the future
   return out;
 }
 
+// creates genericTs parsed from @kphp-generic above the function
 GenericsDeclarationMixin *GenericsDeclarationMixin::create_for_function_from_phpdoc(FunctionPtr f, const PhpDocComment *phpdoc) {
   auto *out = create_for_function_empty(f);
 
@@ -296,6 +320,24 @@ GenericsDeclarationMixin *GenericsDeclarationMixin::create_for_function_from_php
     create_from_phpdoc_kphp_generic_new_syntax(f, out, phpdoc);
   } else {
     create_from_phpdoc_kphp_template_old_syntax(f, out, phpdoc);
+  }
+
+  return out;
+}
+
+// creates genericTs as a clone from generic_f->genericTs, replacing "...TArgs" with "TArg1, TArg2" (for N=2 here)
+GenericsDeclarationMixin *GenericsDeclarationMixin::create_for_function_cloning_from_variadic(FunctionPtr generic_f, int n_variadic) {
+  auto *out = create_for_function_empty(generic_f);
+
+  for (const auto &itemT : *generic_f->genericTs) {
+    if (itemT.is_variadic) {
+      for (int i = 1; i <= n_variadic; ++i) {
+        auto ith_nameT = itemT.nameT + std::to_string(i);
+        out->add_itemT(ith_nameT, itemT.extends_hint, nullptr);
+      }
+    } else {
+      out->add_itemT(itemT.nameT, itemT.extends_hint, itemT.def_hint);
+    }
   }
 
   return out;

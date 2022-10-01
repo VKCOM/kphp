@@ -2,7 +2,7 @@
 <?php
 
 /**
- * @param any $args
+ * @param any ...$args
  */
 function f(...$args) {
 }
