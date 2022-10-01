@@ -7,6 +7,7 @@
 #include <cctype>
 
 #include "common/algorithms/simd-int-to-string.h"
+#include "common/algorithms/switch_hash.h"
 
 #include "runtime/string_cache.h"
 #include "runtime/migration_php8.h"
@@ -903,6 +904,18 @@ int64_t string::hash() const {
   return string_hash(p, size());
 }
 
+template<int MaxLen>
+uint64_t string::case_hash8() const noexcept {
+  return vk::case_hash8<MaxLen>(p, size());
+}
+
+template<int MaxLen>
+uint64_t string::case_hash8(const char *prefix, int64_t prefix_len) const noexcept {
+  if (prefix_len > size() || memcmp(p, prefix, prefix_len) != 0) {
+    return 0;
+  }
+  return vk::case_hash8<MaxLen>(p + prefix_len, size() - prefix_len);
+}
 
 string string::substr(size_type pos, size_type n) const {
   return string(p + pos, n);

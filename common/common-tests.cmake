@@ -5,6 +5,7 @@ prepend(COMMON_TESTS_SOURCES ${COMMON_DIR}/
         algorithms/projections-test.cpp
         algorithms/simd-int-to-string-test.cpp
         algorithms/string-algorithms-test.cpp
+        algorithms/switch_hash-test.cpp
         allocators/freelist-test.cpp
         allocators/lockfree-slab-test.cpp
         crc32c-test.cpp
