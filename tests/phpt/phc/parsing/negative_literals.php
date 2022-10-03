@@ -27,6 +27,9 @@
   var_dump(- -9223372036854775807);
   var_dump(- - -9223372036854775807);
 
+  var_dump(PHP_INT_MIN);
+  var_dump(abs(PHP_INT_MIN + 1));
+
 #ifndef KPHP
   var_dump(-PHP_INT_MAX - 1);
   var_dump(-PHP_INT_MAX - 1);
