@@ -113,12 +113,10 @@ class BaseTestCase(TestCase):
     def teardown_method(self, method):
         self.custom_teardown_method(method)
 
-    @classmethod
-    def custom_setup_method(cls, method):
+    def custom_setup_method(self, method):
         pass
 
-    @classmethod
-    def custom_teardown_method(cls, method):
+    def custom_teardown_method(self, method):
         pass
 
     class _Cmp:
