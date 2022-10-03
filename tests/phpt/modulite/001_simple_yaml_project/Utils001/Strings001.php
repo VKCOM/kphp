@@ -24,4 +24,12 @@ class Strings001 {
 
         return strtolower($s);
     }
+
+    /**
+     * @param ?tuple(int, \GlobalA001) $arg
+     * @return ?shape(x: string, y: ?\GlobalB001[])
+     */
+    static public function hasPhpdoc($arg) {
+        return null;
+    }
 }

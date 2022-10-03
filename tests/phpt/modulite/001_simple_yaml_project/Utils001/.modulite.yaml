@@ -9,4 +9,6 @@ require:
   - "\\GlobalCl::ZERO"
   - "\\GlobalCl::$state"
   - "\\GlobalCl::globalMethod()"
+  - "\\GlobalA001"  # used only in phpdoc
+  - "\\GlobalB001"  # used only in phpdoc
 

@@ -12,11 +12,17 @@ KPHP_ENABLE_MODULITE=1
 /restricted to use Feed114\\More114_3, it's internal in @feed/
 /static \$st;/
 /restricted to use Feed114\\More114_4, it's internal in @feed/
+/static \$a114;/
+/restricted to use GlobalA114, it's not required by @feed\/infra/
 /static function demo\(\): \?Infra114\\Hidden114_2/
 /restricted to use Feed114\\Infra114\\Hidden114_2, it's internal in @feed\/infra/
 /\$object instanceof Glob114/
 /restricted to use Glob114::class, it's not required by @other/
+/function other114/
+/restricted to use GlobalB114, it's not required by @other/
 <?php
+
+if (0) new \GlobalB114;
 
 \Feed114\Post114::demo();
 \Feed114\Infra114\Strings114::demo();
