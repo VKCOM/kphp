@@ -17,6 +17,7 @@ class unsynchronized_pool_resource;
 
 namespace dl {
 
+extern bool script_allocator_enabled;
 extern long long query_num; // engine query number. query_num == 0 before first query
 
 memory_resource::unsynchronized_pool_resource &get_default_script_allocator() noexcept;
