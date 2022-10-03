@@ -26,10 +26,9 @@ memory_resource::Dealer &get_memory_dealer() noexcept {
   return dealer;
 }
 
-volatile bool script_allocator_enabled = false;
-
 } // namespace
 
+bool script_allocator_enabled = false;
 long long query_num = 0;
 
 memory_resource::unsynchronized_pool_resource &get_default_script_allocator() noexcept {

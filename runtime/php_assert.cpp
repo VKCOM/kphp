@@ -123,7 +123,7 @@ static void php_warning_impl(bool out_of_memory, int error_type, char const *mes
     return;
   }
 
-  const bool allocations_allowed = !out_of_memory && !dl::in_critical_section;
+  const bool allocations_allowed = dl::script_allocator_enabled && !out_of_memory && !dl::in_critical_section;
   dl::enter_critical_section();//OK
 
   vsnprintf(buf, BUF_SIZE, message, args);
