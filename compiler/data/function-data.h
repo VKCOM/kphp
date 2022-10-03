@@ -30,18 +30,81 @@ class FunctionData {
   DEBUG_STRING_METHOD { return as_human_readable(); }
   
   // code outside of the data/ should use FunctionData::create_function()
-  FunctionData() = default;
+  FunctionData()
+    : tl_common_h_dep{false}
+    , is_required{false}
+    , has_variadic_param{false}
+    , should_be_sync{false}
+    , should_not_throw{false}
+    , kphp_lib_export{false}
+    , is_auto_inherited{false}
+    , is_inline{false}
+    , cpp_template_call{false}
+    , cpp_variadic_call{false}
+    , is_resumable{false}
+    , can_be_implicitly_interrupted_by_other_resumable{false}
+    , is_virtual_method{false}
+    , is_overridden_method{false}
+    , is_no_return{false}
+    , has_lambdas_inside{false}
+    , has_var_tags_inside{false}
+    , has_commentTs_inside{false}
+    , warn_unused_result{false}
+    , is_flatten{false}
+    , is_pure{false}
+    , is_internal{false}
+    , ignore_return_warning{false}
+  {}
+
   FunctionData& operator=(const FunctionData &other) = default;
   FunctionData(const FunctionData &other) = default;
 
 public:
   int id = -1;
 
-  std::string name;        // full function name; when it belongs to a class, it looks like VK$Namespace$$funcname
-  VertexAdaptor<op_function> root;
-  bool is_required = false;
+  bool tl_common_h_dep : 1;
+  bool is_required : 1;
+  bool has_variadic_param : 1;
+  bool should_be_sync : 1;
+  bool should_not_throw : 1;
+  bool kphp_lib_export : 1;
+  bool is_auto_inherited : 1;
+  bool is_inline : 1;
+  bool cpp_template_call : 1;
+  bool cpp_variadic_call : 1;
+  bool is_resumable : 1;
+  bool can_be_implicitly_interrupted_by_other_resumable : 1;
+  bool is_virtual_method : 1;
+  bool is_overridden_method : 1;
+  bool is_no_return : 1;
+  bool has_lambdas_inside : 1;      // used for optimization after cloning (not to launch CloneNestedLambdasPass)
+  bool has_var_tags_inside : 1;     // used for optimization (not to traverse body if no @var inside)
+  bool has_commentTs_inside : 1;    // used for optimization (not to traverse body if no /*<...>*/ inside)
+  bool warn_unused_result : 1;
+  bool is_flatten : 1;
+  bool is_pure : 1;
+  bool is_internal : 1; // whether this function can be called only when inserted by the compiler
+  bool ignore_return_warning : 1;
 
-  enum func_type_t {
+  FunctionModifiers modifiers = FunctionModifiers::nonmember();
+
+  enum class profiler_status : uint8_t {
+    disable,
+    // A function that is being profiled that starts and ends the profiling
+    enable_as_root,
+    // A function that will be profiled if it's reachable from the root (inline functions are not profiled)
+    enable_as_child,
+    // A function that will be profiled if it's reachable from the root even if it's an inline function
+    enable_as_inline_child,
+  } profiler_state = profiler_status::disable;
+
+  enum class body_value: uint8_t {
+    empty,
+    non_empty,
+    unknown,
+  } body_seq = body_value::unknown;
+
+  enum func_type_t: uint8_t {
     func_main,
     func_local,
     func_lambda,
@@ -51,13 +114,14 @@ public:
   };
   func_type_t type = func_local;
 
-  std::vector<VarPtr> local_var_ids, global_var_ids, static_var_ids, param_ids;
+  VertexAdaptor<op_function> root;
+
   std::unordered_set<VarPtr> *bad_vars = nullptr;     // for check ub and safe operations wrapper, see comments in check-ub.cpp
+  std::vector<VarPtr> local_var_ids, global_var_ids, static_var_ids, param_ids;
   std::set<VarPtr> implicit_const_var_ids, explicit_const_var_ids, explicit_header_const_var_ids;
   std::vector<FunctionPtr> dep;
   std::set<ClassPtr> class_dep;
   std::set<ClassPtr> exceptions_thrown; // exceptions that can be thrown by this function
-  bool tl_common_h_dep = false;
 
   // for lambdas: a function that contains this lambda ($this is captured from outer_function, it can also be a lambda on nesting)
   // for generic instantiations: refs to an original (a generic) function
@@ -85,63 +149,29 @@ public:
   vk::copyable_atomic<AssumptionStatus> assumption_pass_status{AssumptionStatus::uninitialized};
   vk::copyable_atomic<std::thread::id> assumption_processing_thread{std::thread::id{}};
 
+  std::string name;        // full function name; when it belongs to a class, it looks like VK$Namespace$$funcname
   std::string src_name, header_name;
   std::string subdir;
   std::string header_full_name;
+
+  const TypeHint *return_typehint{nullptr};
+  const PhpDocComment *phpdoc{nullptr};
 
   SrcFilePtr file_id;
   ModulitePtr modulite;
   FunctionPtr fork_prev, wait_prev;
   FunctionPtr throws_reason;
   Location throws_location;
-  std::set<std::string> disabled_warnings;
   std::map<size_t, int> name_gen_map;
 
-  const TypeHint *return_typehint{nullptr};
   tinf::VarNode tinf_node;              // tinf node for return
-
-  const PhpDocComment *phpdoc{nullptr};
-
-  // TODO: pack most (all?) bool fields to std::bitset
-  // can save a few bytes per every FunctionData object even if we add more flags later;
-  // or use bit fields like we do in vertex base class
-  bool has_variadic_param = false;
-  bool should_be_sync = false;
-  bool should_not_throw = false;
-  bool kphp_lib_export = false;
-  bool is_auto_inherited = false;
-  bool is_inline = false;
-  bool cpp_template_call = false;
-  bool cpp_variadic_call = false;
-  bool is_resumable = false;
-  bool can_be_implicitly_interrupted_by_other_resumable = false;
-  bool is_virtual_method = false;
-  bool is_overridden_method = false;
-  bool is_no_return = false;
-  bool has_lambdas_inside = false;      // used for optimization after cloning (not to launch CloneNestedLambdasPass)
-  bool has_var_tags_inside = false;     // used for optimization (not to traverse body if no @var inside)
-  bool has_commentTs_inside = false;    // used for optimization (not to traverse body if no /*<...>*/ inside)
-  bool warn_unused_result = false;
-  bool is_flatten = false;
-  bool is_pure = false;
-  bool is_internal = false; // whether this function can be called only when inserted by the compiler
 
   function_palette::ColorContainer colors{};            // colors specified with @kphp-color
   std::vector<FunctionPtr> *next_with_colors{nullptr};  // next colored functions reachable via call graph
 
-  enum class profiler_status : uint8_t {
-    disable,
-    // A function that is being profiled that starts and ends the profiling
-    enable_as_root,
-    // A function that will be profiled if it's reachable from the root (inline functions are not profiled)
-    enable_as_child,
-    // A function that will be profiled if it's reachable from the root even if it's an inline function
-    enable_as_inline_child,
-  } profiler_state = profiler_status::disable;
-
+  std::forward_list<FunctionPtr> performance_inspections_for_warning_parents;
   PerformanceInspections performance_inspections_for_analysis;
   PerformanceInspections performance_inspections_for_warning;
-  std::forward_list<FunctionPtr> performance_inspections_for_warning_parents;
 
   // non-null for generic functions, e.g. f<T> or g<T1, T2>
   // describes what's actually written in @kphp-generic: that f has T, probably with extends_hint
@@ -152,13 +182,6 @@ public:
 
   ClassPtr class_id;
   ClassPtr context_class;
-  FunctionModifiers modifiers = FunctionModifiers::nonmember();
-
-  enum class body_value {
-    empty,
-    non_empty,
-    unknown,
-  } body_seq = body_value::unknown;
 
   static FunctionPtr create_function(std::string name, VertexAdaptor<op_function> root, func_type_t type);
   static FunctionPtr clone_from(FunctionPtr other, const std::string &new_name, VertexAdaptor<op_function> root_instead_of_cloning = {});

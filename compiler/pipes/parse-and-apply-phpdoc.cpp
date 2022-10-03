@@ -112,7 +112,7 @@ public:
       // if 1, typing is mandatory, except these conditions
       f_->type == FunctionData::func_local &&
       !f_->is_lambda() &&                         // lambdas may have implicitly deduced types, they are going to be checked later
-      !f_->disabled_warnings.count("return");  // "@kphp-disable-warnings return" in function phpdoc
+      !f_->ignore_return_warning; // "@kphp-disable-warnings return" in function phpdoc
 
     if (needs_to_be_fully_typed) {
       check_all_arguments_have_param_or_type_hint();
@@ -241,8 +241,13 @@ private:
         std::istringstream is(tag.value_as_string());
         std::string token;
         while (is >> token) {
-          if (!f_->disabled_warnings.insert(token).second) {
-            kphp_warning(fmt_format("Warning '{}' has been disabled twice", token));
+          if (token == "return") {
+            if (f_->ignore_return_warning) {
+              kphp_warning("Warning 'return' has been disabled twice");
+            }
+            f_->ignore_return_warning = true;
+          } else {
+            kphp_warning(fmt_format("Unknown warning name '{}' in kphp-disable-warnings", token));
           }
         }
         break;

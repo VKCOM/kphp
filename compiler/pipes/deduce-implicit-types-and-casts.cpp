@@ -700,7 +700,7 @@ void DeduceImplicitTypesAndCastsPass::on_return(VertexAdaptor<op_return> v_retur
   // this allows mixing void and non-void, but probably, somewhen we'll get rid of this in vkcom
   if (current_function->type == FunctionData::func_main ||
       current_function->type == FunctionData::func_switch ||
-      current_function->disabled_warnings.count("return")) {
+      current_function->ignore_return_warning) {
     if (v_return->has_expr() && v_return->expr()->type() != op_null) {
       v_return->expr() = VertexAdaptor<op_force_mixed>::create(v_return->expr());
     }
