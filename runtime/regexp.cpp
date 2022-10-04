@@ -6,7 +6,9 @@
 
 #include <cstddef>
 #include <re2/re2.h>
-
+#if ASAN_ENABLED
+#include <sanitizer/lsan_interface.h>
+#endif
 #include "common/containers/final_action.h"
 #include "common/unicode/utf8-utils.h"
 
@@ -486,6 +488,9 @@ void regexp::init(const char *regexp_string, int64_t regexp_len, const char *fun
   bool need_pcre = false;
   if (can_use_RE2) {
     RE2_regexp = new RE2(re2::StringPiece(static_SB.c_str(), static_SB.size()), RE2_options);
+#if ASAN_ENABLED
+    __lsan_ignore_object(RE2_regexp);
+#endif
     if (!RE2_regexp->ok()) {
       pattern_compilation_warning(function, file, "RE2 compilation of regexp \"%s\" failed. Error %d at %s",
         static_SB.c_str(), RE2_regexp->error_code(), RE2_regexp->error().c_str());
@@ -509,7 +514,9 @@ void regexp::init(const char *regexp_string, int64_t regexp_len, const char *fun
     const char *error;
     int32_t erroffset = 0;
     pcre_regexp = pcre_compile(static_SB.c_str(), pcre_options, &error, &erroffset, nullptr);
-
+#if ASAN_ENABLED
+    __lsan_ignore_object(pcre_regexp);
+#endif
     if (pcre_regexp == nullptr) {
       pattern_compilation_warning(function, file, "Regexp compilation failed: %s at offset %d", error, erroffset);
       clean();
@@ -530,6 +537,9 @@ void regexp::init(const char *regexp_string, int64_t regexp_len, const char *fun
 
       if (named_subpatterns_count > 0) {
         subpattern_names = new string[subpatterns_count + 1];
+#if ASAN_ENABLED
+        __lsan_ignore_object(subpattern_names);
+#endif
 
         int32_t name_entry_size = 0;
         php_assert (pcre_fullinfo(pcre_regexp, nullptr, PCRE_INFO_NAMEENTRYSIZE, &name_entry_size) == 0);
