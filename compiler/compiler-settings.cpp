@@ -309,7 +309,7 @@ void CompilerSettings::init() {
   ld_flags.value_ = extra_ld_flags.get();
   append_curl(cxx_default_flags, ld_flags.value_);
   append_apple_options(cxx_default_flags, ld_flags.value_);
-  std::vector<vk::string_view> external_static_libs{"pcre", "re2", "yaml-cpp", "h3", "ssl", "z", "zstd", "nghttp2", "kphp-timelib", "mysqlclient"};
+  std::vector<vk::string_view> external_static_libs{"pcre", "re2", "yaml-cpp", "h3", "ssl", "z", "zstd", "nghttp2", "kphp-timelib"};
 
 #ifdef KPHP_TIMELIB_LIB_DIR
   ld_flags.value_ += " -L" KPHP_TIMELIB_LIB_DIR;
@@ -327,6 +327,15 @@ void CompilerSettings::init() {
 #endif
 
   std::vector<vk::string_view> external_libs{"pthread", "crypto", "m", "dl"};
+
+#ifdef PDO_DRIVER_MYSQL
+#ifdef PDO_LIBS_STATIC_LINKING
+  external_static_libs.emplace_back("mysqlclient");
+#else
+  external_libs.emplace_back("mysqlclient");
+#endif
+#endif
+
 #if defined(__APPLE__)
   append_if_doesnt_contain(ld_flags.value_, external_static_libs, "-l");
   auto flex_prefix = kphp_src_path.value_ + "objs/flex/lib";

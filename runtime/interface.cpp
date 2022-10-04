@@ -2318,7 +2318,9 @@ static void free_runtime_libs() {
   free_migration_php8();
 
   vk::singleton<JsonLogger>::get().reset_buffers();
+#ifdef PDO_DRIVER_MYSQL
   database_drivers::free_mysql_lib();
+#endif
   vk::singleton<database_drivers::Adaptor>::get().reset();
   free_interface_lib();
   hard_reset_var(JsonEncoderError::msg);
