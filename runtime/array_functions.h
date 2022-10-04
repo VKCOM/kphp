@@ -1514,6 +1514,11 @@ mixed f$array_first_key(const array<T> &a) {
 }
 
 template<class T>
+mixed f$array_key_first(const array<T> &a) {
+  return f$array_first_key(a);
+}
+
+template<class T>
 T f$array_first_value(const array<T> &a) {
   return a.empty() ? T() : a.begin().get_value(); // in PHP 'false' on empty, here T()
 }
@@ -1521,6 +1526,11 @@ T f$array_first_value(const array<T> &a) {
 template<class T>
 mixed f$array_last_key(const array<T> &a) {
   return a.empty() ? mixed() : (--a.end()).get_key();
+}
+
+template<class T>
+mixed f$array_key_last(const array<T> &a) {
+  return f$array_last_key(a);
 }
 
 template<class T>
