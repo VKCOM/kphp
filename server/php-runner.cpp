@@ -95,7 +95,7 @@ void PhpScript::check_tl() noexcept {
   }
 }
 
-CoroutineStack::CoroutineStack(size_t stack_size) noexcept
+PhpScriptStack::PhpScriptStack(size_t stack_size) noexcept
   : stack_size_((stack_size + getpagesize() - 1) / getpagesize() * getpagesize())
   , run_stack_(static_cast<char *>(std::aligned_alloc(getpagesize(), stack_size_)))
   , protected_end_(run_stack_ + getpagesize())
@@ -103,16 +103,16 @@ CoroutineStack::CoroutineStack(size_t stack_size) noexcept
   assert(mprotect(run_stack_, getpagesize(), PROT_NONE) == 0);
 }
 
-CoroutineStack::~CoroutineStack() noexcept {
+PhpScriptStack::~PhpScriptStack() noexcept {
   mprotect(run_stack_, getpagesize(), PROT_READ | PROT_WRITE);
   std::free(run_stack_);
 }
 
-bool CoroutineStack::is_protected(const char *x) const noexcept {
+bool PhpScriptStack::is_protected(const char *x) const noexcept {
   return run_stack_ <= x && x < protected_end_;
 }
 
-bool CoroutineStack::check_stack_overflow(const char *x) const noexcept {
+bool PhpScriptStack::check_stack_overflow(const char *x) const noexcept {
   assert(protected_end_ <= x && x < run_stack_end_);
   long left = x - protected_end_;
   return left < (1 << 12);
@@ -122,13 +122,13 @@ bool CoroutineStack::check_stack_overflow(const char *x) const noexcept {
 // making it possible to do a longjmp up the stack;
 // if ASAN is disabled, this function does nothing
 // use this function right before doing a longjmp
-void CoroutineStack::asan_stack_unpoison() const noexcept {
+void PhpScriptStack::asan_stack_unpoison() const noexcept {
 #if ASAN_ENABLED
   ASAN_UNPOISON_MEMORY_REGION(run_stack_, stack_size_);
 #endif
 }
 
-void CoroutineStack::asan_stack_clear() const noexcept {
+void PhpScriptStack::asan_stack_clear() const noexcept {
 #if ASAN_ENABLED
   // give a chance for leak sanitizer to examine memory
   // (lsan gets SIGSEGV trying to access PROT_NONE memory)
@@ -144,7 +144,7 @@ void CoroutineStack::asan_stack_clear() const noexcept {
 PhpScript::PhpScript(size_t mem_size, size_t stack_size) noexcept
   : mem_size(mem_size)
   , run_mem(static_cast<char *>(mmap(nullptr, mem_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0)))
-  , coroutine_stack(stack_size) {
+  , script_stack(stack_size) {
   // fprintf (stderr, "PHPScriptBase: constructor\n");
   // fprintf (stderr, "[%p -> %p] [%p -> %p]\n", run_stack, run_stack_end, run_mem, run_mem + mem_size);
 }
@@ -163,8 +163,8 @@ void PhpScript::init(script_t *script, php_query_data *data_to_set) noexcept {
   assert_state(run_state_t::before_init);
 
   getcontext_portable(&run_context);
-  run_context.uc_stack.ss_sp = coroutine_stack.get_stack_ptr();
-  run_context.uc_stack.ss_size = coroutine_stack.get_stack_size();
+  run_context.uc_stack.ss_sp = script_stack.get_stack_ptr();
+  run_context.uc_stack.ss_size = script_stack.get_stack_size();
   run_context.uc_link = nullptr;
   makecontext_portable(&run_context, &script_context_entrypoint, 0);
 
@@ -372,7 +372,7 @@ void PhpScript::clear() noexcept {
       our_madvise(&run_mem[memory_used_to_recreate_script], mem_size - memory_used_to_recreate_script, advice);
     }
   }
-  coroutine_stack.asan_stack_clear();
+  script_stack.asan_stack_clear();
 }
 
 void PhpScript::assert_state(run_state_t expected) {
@@ -523,7 +523,7 @@ static void sigalrm_handler(int signum) {
       // can contain arbitrary code and should not be executed from the signal handler;
       // therefore, we break out of this signal handler to a prepared recovery point
       // (without changing the script context) and then do all required steps
-      PhpScript::current_script->coroutine_stack.asan_stack_unpoison();
+      PhpScript::current_script->script_stack.asan_stack_unpoison();
       siglongjmp(PhpScript::current_script->timeout_handler, 1);
     }
   }
@@ -607,7 +607,7 @@ void sigsegv_handler(int signum, siginfo_t *info, void *ucontext) {
   const int trace_size = backtrace(trace, 64);
 
   void *addr = info->si_addr;
-  if (PhpScript::is_running && PhpScript::current_script->coroutine_stack.is_protected(static_cast<char *>(addr))) {
+  if (PhpScript::is_running && PhpScript::current_script->script_stack.is_protected(static_cast<char *>(addr))) {
     vk::singleton<JsonLogger>::get().write_stack_overflow_log(E_ERROR);
     write_str(2, "Error -1: Callstack overflow\n");
     print_http_data();
@@ -660,7 +660,7 @@ void check_stack_overflow() __attribute__ ((noinline));
 void check_stack_overflow() {
   if (PhpScript::is_running) {
     void *sp = get_sp();
-    if (PhpScript::current_script->coroutine_stack.check_stack_overflow(static_cast<char *>(sp))) {
+    if (PhpScript::current_script->script_stack.check_stack_overflow(static_cast<char *>(sp))) {
       vk::singleton<JsonLogger>::get().write_stack_overflow_log(E_ERROR);
       raise(SIGSTACKOVERFLOW);
       fprintf(stderr, "_exiting in check_stack_overflow\n");

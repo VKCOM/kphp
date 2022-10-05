@@ -58,10 +58,10 @@ void dump_query_stats();
 
 void init_handlers();
 
-class CoroutineStack : vk::not_copyable {
+class PhpScriptStack : vk::not_copyable {
 public:
-  explicit CoroutineStack(size_t stack_size) noexcept;
-  ~CoroutineStack() noexcept;
+  explicit PhpScriptStack(size_t stack_size) noexcept;
+  ~PhpScriptStack() noexcept;
 
   bool is_protected(const char *x) const noexcept;
   bool check_stack_overflow(const char *x) const noexcept;
@@ -107,7 +107,7 @@ public:
   php_query_base_t *query{nullptr};
   const size_t mem_size{0};
   char *run_mem{nullptr};
-  CoroutineStack coroutine_stack;
+  PhpScriptStack script_stack;
 
   ucontext_t_portable run_context{};
   sigjmp_buf timeout_handler{};
