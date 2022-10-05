@@ -5,6 +5,7 @@
 #include "compiler/inferring/restriction-isset.h"
 
 #include "compiler/data/var-data.h"
+#include "compiler/data/function-data.h"
 #include "compiler/inferring/edge.h"
 #include "compiler/inferring/expr-node.h"
 #include "compiler/inferring/ifi.h"
@@ -92,6 +93,11 @@ bool RestrictionIsset::find_dangerous_isset_dfs(int isset_flags, tinf::Node *nod
   tinf::ExprNode *expr_node = dynamic_cast <tinf::ExprNode *> (node);
   if (expr_node != nullptr) {
     VertexPtr v = expr_node->get_expr();
+    if (v->type() == op_func_call && v.as<op_func_call>()->func_id->is_indexing_func() && isset_is_dangerous(isset_flags, node->get_type())) {
+      node->isset_was = -1;
+      find_dangerous_isset_warning(bt, node, "[index func]");
+      return true;
+    }
     if (v->type() == op_index && !vk::any_of_equal(tinf::get_type(v.as<op_index>()->array())->ptype(), tp_tuple, tp_shape) && isset_is_dangerous(isset_flags, node->get_type())) {
       node->isset_was = -1;
       find_dangerous_isset_warning(bt, node, "[index]");

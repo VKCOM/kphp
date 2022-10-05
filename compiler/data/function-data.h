@@ -200,6 +200,12 @@ public:
   bool is_invoke_method() const;
   bool is_imported_from_static_lib() const;
 
+  bool is_indexing_func() const noexcept {
+    // this is a list of functions that may lead to the same result
+    // differences as direct array indexing
+    return vk::any_of_equal(name, "array_first_value", "array_last_value");
+  }
+
   const FunctionData *get_this_or_topmost_if_lambda() const {
     return type == FunctionData::func_lambda ? outer_function->get_this_or_topmost_if_lambda() : this;
   }

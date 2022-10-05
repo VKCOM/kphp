@@ -438,7 +438,10 @@ void CollectMainEdgesPass::ifi_fix(VertexPtr v) {
       }
     }
 
-    if ((cur->type() == op_var && ifi_tp != ifi_unset) || (ifi_tp > ifi_isset && cur->type() == op_index)) {
+    const auto is_indexing_func_call = [](VertexPtr v) {
+      return v->type() == op_func_call && v.as<op_func_call>()->func_id->is_indexing_func();
+    };
+    if ((cur->type() == op_var && ifi_tp != ifi_unset) || (ifi_tp > ifi_isset && (cur->type() == op_index || is_indexing_func_call(cur)))) {
       tinf::Node *node = tinf::get_tinf_node(cur);
       if (node->isset_flags == 0) {
         create_isset_check(as_rvalue(node));
