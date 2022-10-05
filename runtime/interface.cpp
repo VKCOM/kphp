@@ -1304,21 +1304,26 @@ static bool parse_multipart(const char *post, int post_len, const string &bounda
 static char arg_vars_storage[sizeof(array<string>)];
 static array<string> *arg_vars = nullptr;
 
-Optional<array<mixed>> f$getopt(const string &options, array<string> longopts) {
+Optional<int64_t> &get_dummy_rest_index() noexcept {
+  static Optional<int64_t> dummy_rest_index;
+  return dummy_rest_index;
+}
+
+Optional<array<mixed>> f$getopt(const string &options, array<string> longopts, Optional<int64_t> &rest_index) {
   if (!arg_vars) {
     return false;
   }
-  string real_options = string("+");
+  string real_options{"+"};
   real_options.append(options);
   const char *php_argv[arg_vars->count()];
   int php_argc = 0;
-  for (array<string>::iterator iter = arg_vars->begin(); iter != arg_vars->end(); ++iter) {
+  for (auto iter : *arg_vars) {
     php_argv[php_argc++] = iter.get_value().c_str();
   }
 
   option real_longopts[longopts.count() + 1];
   int longopts_count = 0;
-  for (array<string>::iterator iter = longopts.begin(); iter != longopts.end(); ++iter) {
+  for (auto iter : longopts) {
     string opt = iter.get_value();
     string::size_type count = 0;
     while (count < opt.size() && opt[opt.size() - count - 1] == ':') {
@@ -1361,6 +1366,7 @@ Optional<array<mixed>> f$getopt(const string &options, array<string> longopts) {
       result.set_value(key, value);
     }
   }
+  rest_index = optind;
 
   return result;
 }
