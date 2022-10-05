@@ -264,11 +264,11 @@ std::pair<timelib_time *, string> php_timelib_date_initialize(const string &tz_n
     ? timelib_parse_from_format(format, time_str.c_str(), time_str.size(), &err, timelib_builtin_db(), timelib_parse_tzfile)
     : timelib_strtotime(time_str_new.c_str(), time_str_new.size(), &err, timelib_builtin_db(), timelib_parse_tzfile);
 
-  /* update last errors and warnings */
+  // update last errors and warnings
   update_errors_warnings(err, script_guard);
 
   if (err && err->error_count) {
-    /* spit out the first library error message, at least */
+    // spit out the first library error message, at least
     timelib_time_dtor(t);
     return {nullptr, gen_parse_error_msg(*err, time_str)};
   }
@@ -387,7 +387,7 @@ static timelib_time_offset *create_time_offset(timelib_time *t, [[maybe_unused]]
     offset->offset = (t->z);
     offset->leap_secs = 0;
     offset->is_dst = 0;
-    offset->abbr = static_cast<char *>(timelib_malloc(9)); /* GMT±xxxx\0 */
+    offset->abbr = static_cast<char *>(timelib_malloc(9)); // GMT±xxxx\0
     // set upper bound to 99 just to ensure that 'hours_offset' fits in %02d
     auto hours_offset = std::min(abs(offset->offset / 3600), 99);
     snprintf(offset->abbr, 9, "GMT%c%02d%02d", (offset->offset < 0) ? '-' : '+', hours_offset, abs((offset->offset % 3600) / 60));
@@ -424,7 +424,7 @@ string php_timelib_date_format(const string &format, timelib_time *t, bool local
   for (std::size_t i = 0; i < format.size(); ++i) {
     int rfc_colon = 0;
     switch (format[i]) {
-      /* day */
+      // day
       case 'd':
         length = safe_snprintf(buffer, "%02d", static_cast<int>(t->d));
         break;
@@ -450,23 +450,23 @@ string php_timelib_date_format(const string &format, timelib_time *t, bool local
         length = safe_snprintf(buffer, "%d", static_cast<int>(timelib_day_of_year(t->y, t->m, t->d)));
         break;
 
-      /* week */
+      // week
       case 'W':
         if (!weekYearSet) {
           timelib_isoweek_from_date(t->y, t->m, t->d, &isoweek, &isoyear);
           weekYearSet = 1;
         }
         length = safe_snprintf(buffer, "%02d", static_cast<int>(isoweek));
-        break; /* iso weeknr */
+        break; // iso weeknr
       case 'o':
         if (!weekYearSet) {
           timelib_isoweek_from_date(t->y, t->m, t->d, &isoweek, &isoyear);
           weekYearSet = 1;
         }
         length = safe_snprintf(buffer, "%ld", static_cast<int64_t>(isoyear));
-        break; /* iso year */
+        break; // iso year
 
-      /* month */
+      // month
       case 'F':
         length = safe_snprintf(buffer, "%s", PHP_TIMELIB_MON_FULL_NAMES[t->m - 1]);
         break;
@@ -483,7 +483,7 @@ string php_timelib_date_format(const string &format, timelib_time *t, bool local
         length = safe_snprintf(buffer, "%d", static_cast<int>(timelib_days_in_month(t->y, t->m)));
         break;
 
-      /* year */
+      // year
       case 'L':
         length = safe_snprintf(buffer, "%d", timelib_is_leap_year(static_cast<int>(t->y)));
         break;
@@ -494,7 +494,7 @@ string php_timelib_date_format(const string &format, timelib_time *t, bool local
         length = safe_snprintf(buffer, "%s%04lld", t->y < 0 ? "-" : "", abs(t->y));
         break;
 
-      /* time */
+      // time
       case 'a':
         length = safe_snprintf(buffer, "%s", t->h >= 12 ? "pm" : "am");
         break;
@@ -506,7 +506,7 @@ string php_timelib_date_format(const string &format, timelib_time *t, bool local
         if (retval < 0) {
           retval += 864000;
         }
-        /* Make sure to do this on a positive int to avoid rounding errors */
+        // Make sure to do this on a positive int to avoid rounding errors
         retval = (retval / 864) % 1000;
         length = safe_snprintf(buffer, "%03d", retval);
         break;
@@ -536,7 +536,7 @@ string php_timelib_date_format(const string &format, timelib_time *t, bool local
         length = safe_snprintf(buffer, "%03d", static_cast<int>(floor(t->us / 1000)));
         break;
 
-      /* timezone */
+      // timezone
       case 'I':
         length = safe_snprintf(buffer, "%d", localtime ? offset->is_dst : 0);
         break;
@@ -571,7 +571,7 @@ string php_timelib_date_format(const string &format, timelib_time *t, bool local
         length = safe_snprintf(buffer, "%d", localtime ? offset->offset : 0);
         break;
 
-      /* full date/time */
+      // full date/time
       case 'c':
         length = safe_snprintf(buffer, "%04ld-%02d-%02dT%02d:%02d:%02d%c%02d:%02d", static_cast<int64_t>(t->y), static_cast<int>(t->m), static_cast<int>(t->d),
                                static_cast<int>(t->h), static_cast<int>(t->i), static_cast<int>(t->s), localtime ? ((offset->offset < 0) ? '-' : '+') : '+',
@@ -636,11 +636,11 @@ std::pair<bool, string> php_timelib_date_modify(timelib_time *t, const string &m
   timelib_time *tmp_time = timelib_strtotime(modifier.c_str(), modifier.size(), &err, timelib_builtin_db(), timelib_parse_tzfile);
   vk::final_action tmp_time_deleter{[tmp_time] { timelib_time_dtor(tmp_time); }};
 
-  /* update last errors and warnings */
+  // update last errors and warnings
   update_errors_warnings(err, script_guard);
 
   if (err && err->error_count) {
-    /* spit out the first library error message, at least */
+    // spit out the first library error message, at least
     return {false, gen_parse_error_msg(*err, modifier)};
   }
 
@@ -648,21 +648,21 @@ std::pair<bool, string> php_timelib_date_modify(timelib_time *t, const string &m
   t->have_relative = tmp_time->have_relative;
   t->sse_uptodate = 0;
 
-  if (tmp_time->y != -99999) {
+  if (tmp_time->y != TIMELIB_UNSET) {
     t->y = tmp_time->y;
   }
-  if (tmp_time->m != -99999) {
+  if (tmp_time->m != TIMELIB_UNSET) {
     t->m = tmp_time->m;
   }
-  if (tmp_time->d != -99999) {
+  if (tmp_time->d != TIMELIB_UNSET) {
     t->d = tmp_time->d;
   }
 
-  if (tmp_time->h != -99999) {
+  if (tmp_time->h != TIMELIB_UNSET) {
     t->h = tmp_time->h;
-    if (tmp_time->i != -99999) {
+    if (tmp_time->i != TIMELIB_UNSET) {
       t->i = tmp_time->i;
-      if (tmp_time->s != -99999) {
+      if (tmp_time->s != TIMELIB_UNSET) {
         t->s = tmp_time->s;
       } else {
         t->s = 0;
@@ -673,7 +673,7 @@ std::pair<bool, string> php_timelib_date_modify(timelib_time *t, const string &m
     }
   }
 
-  if (tmp_time->us != -99999) {
+  if (tmp_time->us != TIMELIB_UNSET) {
     t->us = tmp_time->us;
   }
 
