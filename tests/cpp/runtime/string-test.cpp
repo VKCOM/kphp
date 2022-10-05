@@ -82,6 +82,49 @@ TEST(string_test, test_copy_and_make_not_shared) {
   ASSERT_EQ(str3.get_reference_counter(), 1);
 }
 
+TEST(string_test, test_to_int) {
+  struct TestCase {
+    std::string s;
+    string::size_type l;
+    int64_t want;
+  };
+  std::vector<TestCase> tests = {
+    {" ", 0, 0},
+    {" ", 1, 0},
+    {" -123", 1, 0},
+    {" -123", 2, 0},
+    {" -123", 3, -1},
+    {" -123", 4, -12},
+    {" -123", 5, -123},
+    {"  -123", 5, -12},
+    {"   -123", 5, -1},
+    {"    -123", 5, 0},
+    {"     -123", 5, 0},
+    {" +123", 1, 0},
+    {" +123", 2, 0},
+    {" +123", 3, 1},
+    {" +123", 4, 12},
+    {" +123", 5, 123},
+    {"  +123", 5, 12},
+    {"   +123", 5, 1},
+    {"    +123", 5, 0},
+    {"     +123", 5, 0},
+    {" 123 ", 1, 0},
+    {" 123 ", 2, 1},
+    {" 123 ", 3, 12},
+    {" 123 ", 4, 123},
+    {" 123 ", 5, 123},
+    {"  123 ", 5, 123},
+    {"   123 ", 5, 12},
+    {"    123 ", 5, 1},
+    {"     123 ", 5, 0},
+  };
+  for (const auto &test : tests) {
+    int64_t have = string::to_int(test.s.c_str(), test.l);
+    ASSERT_EQ(have, test.want) << "s=" << test.s << ", l=" << test.l;
+  }
+}
+
 TEST(string_test, test_hex_to_int) {
   for (size_t c = 0; c != 256; ++c) {
     if (vk::none_of_equal(c,
