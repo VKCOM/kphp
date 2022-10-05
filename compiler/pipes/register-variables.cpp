@@ -99,6 +99,7 @@ void RegisterVariablesPass::register_param_var(VertexAdaptor<op_var> var_vertex,
 
 void RegisterVariablesPass::register_var(VertexAdaptor<op_var> var_vertex) {
   VarPtr var;
+  ClassPtr requested_class;
   std::string name = var_vertex->str_val;
   size_t pos$$ = name.find("$$");
   if (pos$$ != std::string::npos ||
@@ -110,14 +111,14 @@ void RegisterVariablesPass::register_var(VertexAdaptor<op_var> var_vertex) {
       std::string var_name = name.substr(pos$$ + 2);
       ClassPtr klass = G->get_class(replace_characters(class_name, '$', '\\'));
       kphp_error_return(klass, fmt_format("class {} not found", class_name));
-      ClassPtr used_klass = klass;
+      requested_class = klass;
       while (klass && !klass->members.has_field(var_name)) {
         klass = klass->parent_class;
       }
       kphp_error_return(klass, fmt_format("static field not found: {}", name));
       const auto *field = klass->members.get_static_field(var_name);
-      kphp_error_return(field, fmt_format("field {} is not static in class {}", var_name, used_klass->name));
-      kphp_error_return(klass == used_klass || !field->modifiers.is_private(),
+      kphp_error_return(field, fmt_format("field {} is not static in class {}", var_name, requested_class->name));
+      kphp_error_return(klass == requested_class || !field->modifiers.is_private(),
                         fmt_format("Can't access private static field using derived class: {}", name));
       name = replace_backslashes(klass->name) + "$$" + var_name;
     }
@@ -132,7 +133,9 @@ void RegisterVariablesPass::register_var(VertexAdaptor<op_var> var_vertex) {
   var->marked_as_global |= var_vertex->extra_type == op_ex_var_superglobal;
   if (var->class_id) {
     if (current_function->modulite || var->class_id->modulite) {
-      modulite_check_when_use_static_field(current_function, var);
+      // When `class B extends A`, var=B::$FIELD would refer to A::$FIELD actually,
+      // but we should perform all checks for B (requested_class), not for A
+      modulite_check_when_use_static_field(current_function, var, requested_class);
     }
   }
 }

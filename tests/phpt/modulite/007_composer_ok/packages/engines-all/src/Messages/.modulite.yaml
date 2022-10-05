@@ -1,0 +1,11 @@
+name: "@msg"
+namespace: "Engines\\Messages\\"
+
+export:
+  - "@msg/channels"
+  - "@msg/folders"
+  - "MessagesLayer"
+
+require:
+  - "@msg/channels"
+  - "@msg/core"

@@ -60,11 +60,7 @@ vk::string_view SrcFile::get_line(int id) {
   return lines[id];
 }
 
-bool SrcFile::is_builtin() const {
-  if (is_from_functions_file) {
-    return true;
-  }
-
+bool SrcFile::is_from_owner_lib() const {
   return owner_lib && !owner_lib->is_raw_php() && file_name == owner_lib->functions_txt_file();
 }
 

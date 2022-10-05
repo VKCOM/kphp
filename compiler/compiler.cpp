@@ -222,7 +222,9 @@ bool compiler_execute(CompilerSettings *settings) {
   }
 
   G->try_load_tl_classes();
+  stage::set_name("Load Composer packages");
   G->init_composer_class_loader();
+  stage::die_if_global_errors();
 
   PipeC<LoadFileF>::get()->set_input_stream(&src_file_stream);
 

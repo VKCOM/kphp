@@ -56,7 +56,6 @@ public:
 
 private:
   void load_file(const std::string &filename, bool root);
-  void add_autoload_section(const YAML::Node &autoload, const std::string &pkg_root, bool require_files);
 
   static std::string psr_lookup_nocache(const PsrMap &psr, const std::string &class_name, bool transform_underscore = false);
 

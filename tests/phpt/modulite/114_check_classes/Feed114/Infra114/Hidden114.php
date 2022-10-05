@@ -7,6 +7,8 @@ class Hidden114 {
     public $tup;
     /** @var ?\Feed114\More114_4 */
     static $st;
+    /** @var ?\GlobalA114 */
+    static $a114;
 
     function demo(self $self, \Feed114\More114 $more) {
         $this->get();

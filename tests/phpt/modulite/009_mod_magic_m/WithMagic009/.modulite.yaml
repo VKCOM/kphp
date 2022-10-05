@@ -1,0 +1,12 @@
+name: "@withmagic"
+namespace: WithMagic009
+
+export:
+  - WithToString009
+
+force-internal:
+
+require:
+  - "@logic"
+
+allow-internal-access:

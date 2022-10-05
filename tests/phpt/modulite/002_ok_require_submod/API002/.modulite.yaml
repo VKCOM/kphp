@@ -8,4 +8,5 @@ force-internal:
 
 require:
   - "@api/impl"
+  - "\\Glob002"
 

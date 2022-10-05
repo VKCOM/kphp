@@ -5,6 +5,7 @@
 #include "compiler/data/define-data.h"
 
 #include "compiler/data/class-data.h"
+#include "compiler/data/src-file.h"
 
 DefineData::DefineData() :
   id(),
@@ -21,4 +22,8 @@ std::string DefineData::as_human_readable() const {
   return class_id
          ? class_id->as_human_readable() + "::" + get_local_name_from_global_$$(name)
          : name;
+}
+
+bool DefineData::is_builtin() const {
+  return file_id && file_id->is_builtin();
 }

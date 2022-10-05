@@ -103,6 +103,7 @@ class LibData;
 class SrcDir;
 class SrcFile;
 class ModuliteData;
+class ComposerJsonData;
 class TypeHint;
 class PhpDocComment;
 class GenericsInstantiationMixin;
@@ -118,6 +119,7 @@ using LibPtr = Id<LibData>;
 using SrcDirPtr = Id<SrcDir>;
 using SrcFilePtr = Id<SrcFile>;
 using ModulitePtr = Id<ModuliteData>;
+using ComposerJsonPtr = Id<ComposerJsonData>;
 
 bool operator<(FunctionPtr, FunctionPtr);
 bool operator<(VarPtr, VarPtr);

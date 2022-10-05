@@ -1,0 +1,18 @@
+name: "@logic"
+namespace: Logic009\
+
+export:
+  - TestMagic009
+
+force-internal:
+  - TestMagic009::doSmth()
+
+require:
+  - "@withmagic"
+  - \GlobWithCtor009    # __construct() is not required to be listed
+  - \GlobWithCtor009::printInstancesCount()
+  - \GlobWithClone009   # __clone() is not required to be listed, like any other non-static method
+
+allow-internal-access:
+  \WithMagic009\WithToString009::__toString():
+    - TestMagic009::doSmth()

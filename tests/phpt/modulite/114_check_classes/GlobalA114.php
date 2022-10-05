@@ -1,0 +1,3 @@
+<?php
+
+class GlobalA114 {}

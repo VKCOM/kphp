@@ -1,0 +1,79 @@
+{
+    "packages": [
+        {
+            "name": "vk/engines",
+            "version": "0.0.1",
+            "version_normalized": "0.0.1.0",
+            "dist": {
+                "type": "path",
+                "url": "./packages/engines-all",
+                "reference": "99f54bb65cb2024f2104cb765bc1cef2b17e3af4"
+            },
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "Engines\\": "src/"
+                },
+                "files": [
+                    "eng-ping.php"
+                ]
+            },
+            "transport-options": {
+                "relative": true
+            },
+            "install-path": "../vk/engines"
+        },
+        {
+            "name": "vk/rpc",
+            "version": "0.0.1",
+            "version_normalized": "0.0.1.0",
+            "dist": {
+                "type": "path",
+                "url": "./packages/vk-rpc",
+                "reference": "c440f049fdebb60257d57d84557698fa5640d7e9"
+            },
+            "require": {
+                "php": "^7 || ^8",
+                "vk/strings": "*"
+            },
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "VK\\RPC\\": "src/"
+                },
+                "files": [
+                    "src/rpc_global.php"
+                ]
+            },
+            "transport-options": {
+                "relative": true
+            },
+            "install-path": "../vk/rpc"
+        },
+        {
+            "name": "vk/strings",
+            "version": "0.0.1",
+            "version_normalized": "0.0.1.0",
+            "dist": {
+                "type": "path",
+                "url": "./packages/vk-strings",
+                "reference": "22909c8cfd3884ebd8a69dade25e99dc56fd4a75"
+            },
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "VK\\Strings\\": "src/"
+                }
+            },
+            "transport-options": {
+                "relative": true
+            },
+            "install-path": "../vk/strings"
+        }
+    ],
+    "dev": true,
+    "dev-package-names": []
+}

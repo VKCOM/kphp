@@ -1,0 +1,11 @@
+name: "@logic"
+namespace: Logic008\
+
+export:
+  - TestLogic008
+
+force-internal:
+
+require:
+  - "@withgen"
+  - \Either008::isError()

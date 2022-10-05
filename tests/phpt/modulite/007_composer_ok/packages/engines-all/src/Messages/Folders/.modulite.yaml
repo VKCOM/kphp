@@ -1,0 +1,8 @@
+name: "@msg/folders"
+namespace: "Engines\\Messages\\Folders"
+
+export:
+  - "FoldersRep"
+
+require:
+  - "@msg/core"

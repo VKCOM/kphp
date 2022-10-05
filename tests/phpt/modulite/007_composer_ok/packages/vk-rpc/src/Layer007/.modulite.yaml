@@ -1,0 +1,9 @@
+name: "@layer"
+namespace: VK\RPC\Layer007
+
+export:
+  - QueryBuilder007
+
+require:
+  - "#vk/strings"
+  - \VK\RPC\RpcQuery007

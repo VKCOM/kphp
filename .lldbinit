@@ -9,6 +9,7 @@ type summary add --python-function "lldb_addons.class_with_debug_string" VarData
 type summary add --python-function "lldb_addons.class_with_debug_string" DefineData
 type summary add --python-function "lldb_addons.class_with_debug_string" LibData
 type summary add --python-function "lldb_addons.class_with_debug_string" ModuliteData
+type summary add --python-function "lldb_addons.class_with_debug_string" ComposerJsonData
 type summary add --python-function "lldb_addons.class_with_debug_string" SrcDir
 type summary add --python-function "lldb_addons.class_with_debug_string" SrcFile
 type summary add --python-function "lldb_addons.class_with_debug_string" Location
@@ -33,6 +34,7 @@ type summary add --python-function "lldb_addons.data_ptr_printer" Id<VarData>   
 type summary add --python-function "lldb_addons.data_ptr_printer" Id<DefineData>    # DefinePtr
 type summary add --python-function "lldb_addons.data_ptr_printer" Id<LibData>       # LibPtr
 type summary add --python-function "lldb_addons.data_ptr_printer" Id<ModuliteData>  # ModulitePtr
+type summary add --python-function "lldb_addons.data_ptr_printer" Id<ComposerJsonData>  # ComposerJsonPtr
 type summary add --python-function "lldb_addons.data_ptr_printer" Id<SrcDir>        # SrcDirPtr
 type summary add --python-function "lldb_addons.data_ptr_printer" Id<SrcFile>       # SrcFilePtr
 type summary add --python-function "lldb_addons.data_ptr_printer" Id<cfg::UsageData> # UsagePtr
@@ -43,6 +45,7 @@ type synth add -l "lldb_addons.data_ptr_children" Id<VarData>       # VarPtr
 type synth add -l "lldb_addons.data_ptr_children" Id<DefineData>    # DefinePtr
 type synth add -l "lldb_addons.data_ptr_children" Id<LibData>       # LibPtr
 type synth add -l "lldb_addons.data_ptr_children" Id<ModuliteData>  # ModulitePtr
+type synth add -l "lldb_addons.data_ptr_children" Id<ComposerJsonData>  # ComposerJsonPtr
 type synth add -l "lldb_addons.data_ptr_children" Id<SrcDir>        # SrcDirPtr
 type synth add -l "lldb_addons.data_ptr_children" Id<SrcFile>       # SrcFilePtr
 type synth add -l "lldb_addons.data_ptr_children" Id<cfg::UsageData> # UsagePtr

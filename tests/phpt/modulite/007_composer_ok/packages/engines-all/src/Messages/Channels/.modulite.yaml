@@ -1,0 +1,8 @@
+name: "@msg/channels"
+namespace: "Engines\\Messages\\Channels"
+
+export:
+  - "ChannelsRep"
+
+require:
+  - "@msg/core"

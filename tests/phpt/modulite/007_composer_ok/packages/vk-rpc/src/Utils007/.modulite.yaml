@@ -1,0 +1,11 @@
+name: "@utils"
+namespace: "VK\\RPC\\Utils007"
+
+export:
+  - "Hasher007"
+
+require:
+  - "\\VK\\RPC\\RpcLogger007::logWithHash()"
+  - "\\globalFunctionInVkRpc()"
+  - "\\GLOBAL_DEF_IN_RPC"
+  - "\\MONOLITH_CONST"

@@ -10,6 +10,7 @@
 #include "common/wrappers/likely.h"
 
 #include "compiler/compiler-core.h"
+#include "compiler/data/composer-json-data.h"
 #include "compiler/data/define-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-dir.h"
@@ -63,29 +64,26 @@ class ModuliteYamlParser {
     return y.Scalar();
   }
 
-  static vk::string_view alloc_stringview(vk::string_view sv_on_local_mem) {
-    const auto *alloc = new std::string(sv_on_local_mem.data(), sv_on_local_mem.size());
-    return vk::string_view{alloc->c_str(), alloc->size()};
-  }
-
-
   void parse_yaml_name(const YAML::Node &y_name) {
     const std::string &name = y_name.Scalar();
     if (name.empty() || name[0] != '@') {
+      if (name == "<composer_root>") {
+        return;
+      }
       fire_yaml_error(out, "'name' should start with @", y_name);
     }
 
-    std::string modulite_name = name;
+    std::string modulite_name = out->composer_json ? prepend_composer_package_to_name(name) : name;
     size_t last_slash = modulite_name.rfind('/');
     vk::string_view expected_parent_name = vk::string_view{modulite_name}.substr(0, last_slash);
 
     // valid:   @msg/channels/infra is placed in @msg/channels
     // invalid: @msg/channels/infra is placed in @msg, @feed is placed in @msg
-    if (out->parent && out->parent->modulite_name != expected_parent_name) {
+    if (!out->is_composer_package && out->parent && out->parent->modulite_name != expected_parent_name) {
       fire_yaml_error(out, fmt_format("inconsistent nesting: {} placed in {}", modulite_name, out->parent->modulite_name), y_name);
     }
     // invalid: @msg/channels is placed outside
-    if (!out->parent && last_slash != std::string::npos) {
+    if (!out->is_composer_package && !out->parent && last_slash != std::string::npos) {
       fire_yaml_error(out, fmt_format("inconsistent nesting: {} placed outside of {}", modulite_name, expected_parent_name), -1);
     }
 
@@ -108,17 +106,12 @@ class ModuliteYamlParser {
     }
   }
 
-  // this function exists, because g++ does not understand such statements inside parse_any_scalar_symbol():
-  // return {.kind=ModuliteSymbol::kind_function, .line=line, .function=function};
-  template<ModuliteSymbol::Kind kind, class T>
-  [[gnu::always_inline]] ModuliteSymbol create_symbol(int line, T value) const {
-    ModuliteSymbol s{.kind=kind, .line=line};
-    if constexpr (kind == ModuliteSymbol::kind_ref_stringname) { s.ref_stringname = value; }
-    if constexpr (kind == ModuliteSymbol::kind_klass) { s.klass = value; }
-    if constexpr (kind == ModuliteSymbol::kind_function) { s.function = value; }
-    if constexpr (kind == ModuliteSymbol::kind_constant) { s.constant = value; }
-    if constexpr (kind == ModuliteSymbol::kind_global_var) { s.global_var = value; }
-    return s;
+  // when a PHP developer writes a Composer package and uses modulites in it,
+  // modulites named absolutely, like @utils or @flood-details — like in any other project
+  // but when a monolith uses that package placed in vendor/, all its modulites are prefixed:
+  // @flood/details in #vk/common is represented as "#vk/common/@flood/details" on monolith compilation
+  std::string prepend_composer_package_to_name(const std::string &modulite_name) const {
+    return "#" + out->composer_json->package_name + "/" + modulite_name;
   }
 
   // resolve any string to a symbol, example inputs:
@@ -128,11 +121,13 @@ class ModuliteYamlParser {
 
     // @msg, @msg/channels
     if (s[0] == '@') {  // will be resolved later, store as string
-      return create_symbol<ModuliteSymbol::kind_ref_stringname>(line, alloc_stringview(s));
+      return !out->composer_json
+             ? ModuliteSymbol{.kind=ModuliteSymbol::kind_ref_stringname, .line=line, .ref_stringname=string_view_dup(s)}
+             : ModuliteSymbol{.kind=ModuliteSymbol::kind_ref_stringname, .line=line, .ref_stringname=string_view_dup(prepend_composer_package_to_name(s))};
     }
     // #composer-package
     if (s[0] == '#') {  // will be resolved later, store as string
-      return create_symbol<ModuliteSymbol::kind_ref_stringname>(line, alloc_stringview(s));
+      return ModuliteSymbol{.kind=ModuliteSymbol::kind_ref_stringname, .line=line, .ref_stringname=string_view_dup(s)};
     }
 
     size_t pos$$ = s.find("::");
@@ -142,26 +137,26 @@ class ModuliteYamlParser {
     if (pos$$ == std::string::npos) {
       if (s[0] == '$') {
         // $global_var
-        return create_symbol<ModuliteSymbol::kind_global_var>(line, alloc_stringview(s).substr(1));
+        return ModuliteSymbol{.kind=ModuliteSymbol::kind_global_var, .line=line, .global_var=string_view_dup(s).substr(1)};
       } else if (s[s.size() - 1] == ')') {
         // relative_func() or \\global_func()
         std::string f_fqn = abs_name ? s.substr(1, s.size() - 3) : out->modulite_namespace + s.substr(0, s.size() - 2);
         if (FunctionPtr function = G->get_function(replace_backslashes(f_fqn))) {
-          return create_symbol<ModuliteSymbol::kind_function>(line, function);
+          return ModuliteSymbol{.kind=ModuliteSymbol::kind_function, .line=line, .function=function};
         }
         fire_yaml_error(out, fmt_format("can't find function {}()", TermStringFormat::paint_bold(f_fqn)), line);
-        return create_symbol<ModuliteSymbol::kind_ref_stringname>(line, "");
+        return ModuliteSymbol{.kind=ModuliteSymbol::kind_ref_stringname, .line=line, .ref_stringname=""};
       } else {
         // RelativeClass or \\GlobalClass or RELATIVE_CONST or \\GLOBAL_CONST
         std::string fqn = abs_name ? s.substr(1) : out->modulite_namespace + s;
         if (ClassPtr klass = G->get_class(fqn)) {
-          return create_symbol<ModuliteSymbol::kind_klass>(line, klass);
+          return ModuliteSymbol{.kind=ModuliteSymbol::kind_klass, .line=line, .klass=klass};
         }
         if (DefinePtr constant = G->get_define(fqn)) {
-          return create_symbol<ModuliteSymbol::kind_constant>(line, constant);
+          return ModuliteSymbol{.kind=ModuliteSymbol::kind_constant, .line=line, .constant=constant};
         }
         fire_yaml_error(out, fmt_format("can't find class/constant {}", TermStringFormat::paint_bold(fqn)), line);
-        return create_symbol<ModuliteSymbol::kind_ref_stringname>(line, "");
+        return ModuliteSymbol{.kind=ModuliteSymbol::kind_ref_stringname, .line=line, .ref_stringname=""};
       }
       __builtin_unreachable();
     }
@@ -171,36 +166,36 @@ class ModuliteYamlParser {
     ClassPtr klass = G->get_class(c_fqn);
     if (!klass) {
       fire_yaml_error(out, fmt_format("can't find class {}", TermStringFormat::paint_bold(c_fqn)), line);
-      return create_symbol<ModuliteSymbol::kind_ref_stringname>(line, "");
+      return ModuliteSymbol{.kind=ModuliteSymbol::kind_ref_stringname, .line=line, .ref_stringname=""};
     }
 
     if (s[pos$$ + 2] == '$') {
       // C::$static_field
       std::string local_name = s.substr(pos$$ + 3);
-      if (const ClassMemberStaticField *f = klass->members.get_static_field(local_name)) {
-        return create_symbol<ModuliteSymbol::kind_global_var>(line, vk::string_view(f->var->name));
+      if (const ClassMemberStaticField *f = klass->get_static_field(local_name)) {
+        return ModuliteSymbol{.kind=ModuliteSymbol::kind_global_var, .line=line, .global_var=vk::string_view(f->var->name)};
       }
       fire_yaml_error(out, fmt_format("can't find static field {}::${}", TermStringFormat::paint_bold(c_fqn), TermStringFormat::paint_bold(local_name)), line);
-      return create_symbol<ModuliteSymbol::kind_ref_stringname>(line, "");
+      return ModuliteSymbol{.kind=ModuliteSymbol::kind_ref_stringname, .line=line, .ref_stringname=""};
     } else if (s[s.size() - 1] == ')') {
       // C::static_method() or C::instance_method()
       std::string local_name = s.substr(pos$$ + 2, s.size() - pos$$ - 4);
       if (const ClassMemberStaticMethod *m = klass->members.get_static_method(local_name)) {
-        return create_symbol<ModuliteSymbol::kind_function>(line, m->function);
+        return ModuliteSymbol{.kind=ModuliteSymbol::kind_function, .line=line, .function=m->function};
       }
-      if (const ClassMemberInstanceMethod *m = klass->members.get_instance_method(local_name)) {
-        return create_symbol<ModuliteSymbol::kind_function>(line, m->function);
+      if (const ClassMemberInstanceMethod *m = klass->get_instance_method(local_name)) {
+        return ModuliteSymbol{.kind=ModuliteSymbol::kind_function, .line=line, .function=m->function};
       }
       fire_yaml_error(out, fmt_format("can't find method {}::{}()", TermStringFormat::paint_bold(c_fqn), TermStringFormat::paint_bold(local_name)), line);
-      return create_symbol<ModuliteSymbol::kind_ref_stringname>(line, "");
+      return ModuliteSymbol{.kind=ModuliteSymbol::kind_ref_stringname, .line=line, .ref_stringname=""};
     } else {
       // C::CONST
       std::string local_name = s.substr(pos$$ + 2);
-      if (const ClassMemberConstant *c = klass->members.get_constant(local_name)) {
-        return create_symbol<ModuliteSymbol::kind_constant>(line, G->get_define(c->define_name));
+      if (const ClassMemberConstant *c = klass->get_constant(local_name)) {
+        return ModuliteSymbol{.kind=ModuliteSymbol::kind_constant, .line=line, .constant=G->get_define(c->define_name)};
       }
       fire_yaml_error(out, fmt_format("can't find constant {}::{}", TermStringFormat::paint_bold(c_fqn), TermStringFormat::paint_bold(local_name)), line);
-      return create_symbol<ModuliteSymbol::kind_ref_stringname>(line, "");
+      return ModuliteSymbol{.kind=ModuliteSymbol::kind_ref_stringname, .line=line, .ref_stringname=""};
     }
 
     __builtin_unreachable();
@@ -328,10 +323,44 @@ static ModulitePtr get_modulite_of_symbol(const ModuliteSymbol &s) {
   }
 }
 
+// parse composer.json and emit ModulitePtr from it
+// composer packages are implicit modulites named "#"+json->name
+// if a folder also contains .modulite.yaml, it's also parsed and can manually declare "export"
+ModulitePtr ModuliteData::create_from_composer_json(ComposerJsonPtr composer_json, bool has_modulite_yaml_also) {
+  ModulitePtr out = ModulitePtr(new ModuliteData());
+  out->yaml_file = composer_json->json_file;
+  out->modulite_name = "#" + composer_json->package_name;
+  out->composer_json = composer_json;
+  out->is_composer_package = true;
+
+  // json->require (dependent packages, e.g. "vk/utils") are copied to modulite->require, e.g. "#vk/utils"
+  for (const ComposerJsonData::RequireItem &c_require : composer_json->require) {
+    out->require.emplace_back(ModuliteSymbol{.kind=ModuliteSymbol::kind_ref_stringname, .line=-1, .ref_stringname=string_view_dup("#" + c_require.package_name)});
+  }
+
+  if (has_modulite_yaml_also) {
+    std::string yaml_filename = composer_json->json_file->dir->get_modulite_yaml_filename();
+    out->yaml_file = G->register_file(yaml_filename, LibPtr{});
+    try {
+      YAML::Node y_file = YAML::LoadFile(out->yaml_file->file_name);
+      ModuliteYamlParser parser(out);
+      parser.parse_modulite_yaml_file(y_file);
+    } catch (const YAML::Exception &ex) {
+      fire_yaml_error(out, ex.msg, ex.mark.line + 1);
+      return ModulitePtr{};
+    }
+  }
+
+  return out;
+}
+
+// parse modulite.yaml and emit ModulitePtr from it
 ModulitePtr ModuliteData::create_from_modulite_yaml(const std::string &yaml_filename, ModulitePtr parent) {
   ModulitePtr out = ModulitePtr(new ModuliteData());
   out->yaml_file = G->register_file(yaml_filename, LibPtr{});
   out->parent = parent;
+  out->composer_json = parent ? parent->composer_json : ComposerJsonPtr{};
+  out->is_composer_package = false;
 
   try {
     YAML::Node y_file = YAML::LoadFile(out->yaml_file->file_name);
@@ -350,16 +379,16 @@ void ModuliteData::resolve_names_to_pointers() {
   ModulitePtr inside_m = get_self_ptr();
 
   auto resolve_stringname = [inside_m](ModuliteSymbol &s) {
-    if (s.kind == ModuliteSymbol::kind_ref_stringname && s.ref_stringname.starts_with("@")) {
+    if (s.kind == ModuliteSymbol::kind_ref_stringname) {
       ModulitePtr ref = G->get_modulite(s.ref_stringname);
       if (!ref) {
+        if (s.ref_stringname[0] == '#') {
+          return;
+        }
         fire_yaml_error(inside_m, fmt_format("{} not found", TermStringFormat::paint_bold(static_cast<std::string>(s.ref_stringname))), s.line);
       }
       s.kind = ModuliteSymbol::kind_modulite;
       s.modulite = ref;
-
-    } else if (s.kind == ModuliteSymbol::kind_ref_stringname && s.ref_stringname.starts_with("#")) {
-      fire_yaml_error(inside_m, "composer packages are not supported yet", s.line);
     }
   };
 
@@ -382,6 +411,12 @@ void ModuliteData::resolve_names_to_pointers() {
   inside_m->exported_from_parent = parent && vk::any_of(parent->exports, [inside_m](const ModuliteSymbol &e) {
     return e.kind == ModuliteSymbol::kind_modulite && e.modulite == inside_m;
   });
+
+  // if a composer package is written using modulites, then all its child modulites are exported and available from the monolith
+  // (unless .modulite.yaml near composer.json explicitly declares "export")
+  if (parent && parent->is_composer_package && parent->exports.empty()) {
+    inside_m->exported_from_parent = true;
+  }
 
   // append this (inside_m) to submodulites_exported_at_any_depth all the tree up
   for (ModulitePtr child = inside_m; child->parent; child = child->parent) {
@@ -426,7 +461,9 @@ void ModuliteData::validate_yaml_requires() {
       // @msg requires SomeClass / someFunction() / A::someMethod() / A::CONST / etc.
       // valid: it's in a global scope
       // invalid: it's in @some-modulite (@msg should require @some-modulite, not its symbols)
-      if (ModulitePtr of_modulite = get_modulite_of_symbol(r)) {
+      ModulitePtr of_modulite = get_modulite_of_symbol(r);
+      bool is_global_scope = !of_modulite || (of_modulite->is_composer_package && of_modulite->composer_json == inside_m->composer_json);
+      if (!is_global_scope) {
         fire_yaml_error(inside_m, fmt_format("'require' contains a member of {}; you should require {} directly, not its members", of_modulite->modulite_name, of_modulite->modulite_name), r.line);
       }
     }
@@ -502,4 +539,16 @@ ModulitePtr ModuliteData::find_lca_with(ModulitePtr another_m) {
     }
   }
   return lca;
+}
+
+ModulitePtr ModuliteData::get_modulite_corresponding_to_composer_json() {
+  if (!composer_json) {
+    return {};
+  }
+  ModulitePtr topmost = get_self_ptr();
+  while (topmost->parent) {
+    topmost = topmost->parent;
+  }
+  kphp_assert(topmost->is_composer_package);
+  return topmost;
 }

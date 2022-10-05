@@ -47,10 +47,17 @@ class ModuliteData {
   ModulitePtr get_self_ptr() { return ModulitePtr(this); }
 
 public:
+  static ModulitePtr create_from_composer_json(ComposerJsonPtr composer_json, bool has_modulite_yaml_also);
   static ModulitePtr create_from_modulite_yaml(const std::string &yaml_filename, ModulitePtr parent);
 
   // full absolute path to .modulite.yaml, it's registered in G, it has ->dir, kphp_error can point to it
   SrcFilePtr yaml_file;
+
+  // if it's a sub-modulite of a composer package (or a modulite created from composer.json itself)
+  ComposerJsonPtr composer_json;
+
+  // if it's a modulite created from composer.json (for instance, "export" is typically empty, which means all exported)
+  bool is_composer_package;
 
   // "name" from yaml, starts with @, e.g. "@feed", "@messages", "@messages/channel"
   std::string modulite_name;
@@ -83,5 +90,6 @@ public:
   void validate_yaml_force_internal();
 
   ModulitePtr find_lca_with(ModulitePtr another_m);
+  ModulitePtr get_modulite_corresponding_to_composer_json();
 };
 

@@ -1,0 +1,10 @@
+{
+  "name": "vk/strings",
+  "version": "0.0.1",
+  "type": "library",
+  "autoload": {
+    "psr-4": {
+      "VK\\Strings\\": "src/"
+    }
+  }
+}

@@ -1,0 +1,11 @@
+name: "@messages"
+namespace: "Messages005"
+
+export:
+  - "Message005"
+
+force-internal:
+
+require:
+
+allow-internal-access:

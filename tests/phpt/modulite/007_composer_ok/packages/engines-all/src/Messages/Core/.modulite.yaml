@@ -1,0 +1,12 @@
+name: "@msg/core"
+namespace: "Engines\\Messages\\Core"
+
+export:
+  - "ClusterConnection"
+  - "MsgLogger::logMessage()"
+
+require:
+
+allow-internal-access:
+  "\\Engines\\Messages\\Channels\\ChannelsRep":
+    - "MsgLogger::logMessageInternal()"

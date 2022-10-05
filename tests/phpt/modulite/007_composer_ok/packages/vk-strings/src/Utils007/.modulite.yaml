@@ -1,0 +1,17 @@
+name: "@utils"
+namespace: "VK\\Strings\\Utils007"
+
+export:
+  - "Append007"
+  - "@utils/str"
+
+force-internal:
+  - "Append007::concatStr()"
+
+require:
+
+allow-internal-access:
+  "\\VK\\Strings\\StringBuilder007":
+    - "Append007"
+  "\\utilsSummarize()":
+    - "Append007::concatStr()"

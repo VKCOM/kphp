@@ -8,6 +8,7 @@ KPHP_ENABLE_MODULITE=1
 /'force-internal' can contain only class members/
 /'force-internal' contains a symbol that does not belong to @utils/
 /'export' of @utils lists a non-child @algo/
+/'export' of @utils lists a non-child @utils\/inner\/very/
 <?php
 
 class A {
@@ -16,3 +17,4 @@ class A {
 
 Utils104\Strings104::doSmth();
 Algo104\Sort104::doSmth();
+Utils104\UtilsInner\UtilsVeryInner\UtilsVeryInnerFuncs::doSmth();

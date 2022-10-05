@@ -8,8 +8,8 @@
 #include "compiler/data/modulite-data.h"
 
 void modulite_check_when_use_class(FunctionPtr usage_context, ClassPtr klass);
-void modulite_check_when_use_constant(FunctionPtr usage_context, DefinePtr used_c);
+void modulite_check_when_use_constant(FunctionPtr usage_context, DefinePtr used_c, ClassPtr requested_class);
 void modulite_check_when_call_function(FunctionPtr usage_context, FunctionPtr called_f);
-void modulite_check_when_use_static_field(FunctionPtr usage_context, VarPtr field);
+void modulite_check_when_use_static_field(FunctionPtr usage_context, VarPtr field, ClassPtr requested_class);
 void modulite_check_when_global_keyword(FunctionPtr usage_context, const std::string &global_var_name);
 

@@ -1,0 +1,18 @@
+name: "@withgen"
+namespace: ""
+
+export:
+  - \my_map()
+  - test_either_creation()
+
+force-internal:
+
+require:
+  - "@logic"
+  - Either008::data()
+  - Either008::getData()
+
+allow-internal-access:
+  Logic008\TestLogic008::printEitherIsError():
+    - internal_f_non_generic()
+    - internal_f_generic()
