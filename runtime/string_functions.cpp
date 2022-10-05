@@ -2354,7 +2354,7 @@ Optional<string> f$substr(const string &str, int64_t start, int64_t length) {
     length = str_len;
   }
 
-  if (start >= str_len) {
+  if (start > str_len) {
 //    php_warning("start is after string end in substr function call");
     return false;
   }
