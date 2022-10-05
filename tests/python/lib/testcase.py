@@ -229,13 +229,11 @@ class KphpServerAutoTestCase(BaseTestCase):
             if not can_ignore_sanitizer_log(sanitizer_log):
                 raise RuntimeError("Got unexpected sanitizer log '{}'".format(sanitizer_log))
 
-    @classmethod
-    def custom_setup_method(cls, method):
+    def custom_setup_method(self, method):
         pass
 
-    @classmethod
-    def custom_teardown_method(cls, method):
-        cls.kphp_server._engine_logs = []
+    def custom_teardown_method(self, method):
+        self.kphp_server._engine_logs = []
 
     @classmethod
     def extra_class_setup(cls):
