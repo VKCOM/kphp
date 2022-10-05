@@ -522,13 +522,7 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
     W << *tl_dep_usings << NL;
   }
 
-  klass->members.for_each([&](const ClassMemberInstanceField &f) {
-    W << TypeName(tinf::get_type(f.var)) << " $" << f.local_name() << "{";
-    if (f.var->init_val) {
-      W << f.var->init_val;
-    }
-    W << "};" << NL;
-  });
+  compile_fields(W, klass);
 
   if (!klass->derived_classes.empty()) {
     W << "virtual ~" << klass->src_name << "() = default;" << NL;
@@ -592,6 +586,149 @@ void ClassDeclaration::compile_inner_methods(CodeGenerator &W, ClassPtr klass) {
   compile_msgpack_deserialize(W, klass);
   compile_virtual_builtin_functions(W, klass);
   compile_wakeup(W, klass);
+}
+
+// type_size_approx tries to calculate the TypeData value size when interpreted as C++ type
+// it's used for field sorting, so it's not expected to give the byte-precise results
+static int64_t type_size_approx(const TypeData *type_data) {
+  auto round_up = [](int64_t x, int64_t multiplier) {
+    return (x + (multiplier - 1)) & (-multiplier);
+  };
+  auto calc_rounded_size = [round_up](int64_t size) -> std::pair<int64_t, int64_t> {
+    if (size == 1) {
+      // byte-sized objects should not require any alignment
+      return {size, 1};
+    }
+    int64_t alignment = 8;
+    if (size == 2) {
+      alignment = 2;
+    } else if (size < 8) {
+      alignment = 4;
+    }
+    int64_t rounded_up_size = round_up(size, alignment);
+    return {rounded_up_size, alignment};
+  };
+
+  int64_t total_result = 0;
+  int64_t align = 8;
+  switch (type_data->ptype()) {
+    case tp_bool:
+      total_result = 1;
+      align = 1;
+      break;
+    case tp_mixed:
+      total_result = 16;
+      break;
+    case tp_shape:
+    case tp_tuple: {
+      for (auto it = type_data->lookup_begin(); it != type_data->lookup_end(); ++it) {
+        auto [member_size, member_alignment] = calc_rounded_size(type_size_approx(it->second));
+        align = std::max(align, member_alignment);
+        total_result += member_size;
+      }
+      break;
+    }
+    default:
+      // most types are 8-byte wide: ints, floats, strings, arrays, objects, ...
+      total_result = 8;
+      break;
+  }
+
+  if (type_data->use_optional()) {
+    // optional uses uint8_t trailing tag
+    total_result += 1;
+  }
+
+  if (align != 1) {
+    total_result = round_up(total_result, align);
+  }
+
+  return total_result;
+}
+
+void ClassDeclaration::compile_fields(CodeGenerator &W, ClassPtr klass) {
+  // try to output class fields in the order that leads to the most compact object layout possible;
+  // we're trying to minimize the amount of unnecessary field padding here
+  //
+  // the strategy we're using here may not lead to the optimal layout in all cases,
+  // but it's close to the optimal in most cases; it's also tested to
+  // never make things worse than they were in the original declaration order
+
+  struct FieldWithSize {
+    int64_t size;
+    const ClassMemberInstanceField *ptr;
+  };
+
+  auto compile_field = [](CodeGenerator &W, const ClassMemberInstanceField *f) {
+    W << TypeName(tinf::get_type(f->var)) << " $" << f->local_name() << "{";
+    if (f->var->init_val) {
+      W << f->var->init_val;
+    }
+    W << "};" << NL;
+  };
+
+  // build a sorted vector of fields, from bigger size to the smallest
+  std::vector<FieldWithSize> fields;
+  klass->members.for_each([&](const ClassMemberInstanceField &f) {
+    int64_t size = type_size_approx(tinf::get_type(f.var));
+    fields.push_back({size, &f});
+  });
+  sort(fields.begin(), fields.end(), [](const FieldWithSize &a, const FieldWithSize &b) {
+    return a.size > b.size;
+  });
+
+  // most classes have a 4-byte prefix that may create an unwanted gap if we're not careful
+  //
+  // this prefix is ref_count uint32_t, if we put 8-byte field after it, a 4-byte padding will be inserted
+  //
+  //     [ref cnt : 4][padding : 4][foo : 8][bar : 2][baz : 2]
+  //                  |          /
+  //                  wasted space
+  //
+  // but if we fill this gap with our own fields "padding", there will be no wasted space
+  //
+  //     [ref cnt : 4][bar : 2][baz : 2][foo : 8]
+  //
+  // this gap can be filled with four 1-byte fields (like bool), two 2-byte fields (like optional bool)
+  // or a single 4-byte field (could be a tuple of 4 bools, for example, etc.);
+  // any combinations might work, bool+bool+?bool (1+1+2) is OK;
+  // partial gap filling is better than none, since we can reduce the wasted space from 4 to 4-N
+  // where N is the number of bytes we filled
+  //
+  // for polymorphic types, there is more than just 4 bytes in the beginning of the object (one or
+  // more vtables), but they will be followed by the same ref_counter and the alignment rules of
+  // the following fields will not be affected: we can assume that our prefix always have the size of 4
+  //
+  // if there is an non-empty parent, it's up to that parent to fill the gap
+  bool needs_padding = !klass->parent_class || !klass->parent_class->members.has_any_instance_var();
+  if (needs_padding) {
+    constexpr int prefix_size = 4;
+    int64_t size_filled = 0;
+    for (auto &f : fields) {
+      if (size_filled >= prefix_size) {
+        break; // the gap is filled, field padding is completed
+      }
+      if (f.size == prefix_size) {
+        compile_field(W, f.ptr);
+        f.ptr = nullptr; // not to be compiled below
+        break;
+      }
+      if (vk::any_of_equal(f.size, 2, 1) && (f.size + size_filled <= 4)) {
+        compile_field(W, f.ptr);
+        f.ptr = nullptr; // not to be compiled below
+        size_filled += f.size;
+      }
+    }
+  }
+
+  // emit all fields, except the ones that were used for the gap filling;
+  // the fields are printed from the bigger size to the smaller
+  for (const auto &f : fields) {
+    if (!f.ptr) {
+      continue; // this field was already compiled above
+    }
+    compile_field(W, f.ptr);
+  }
 }
 
 void ClassDeclaration::compile_json_flatten_flag(CodeGenerator &W, ClassPtr klass) {

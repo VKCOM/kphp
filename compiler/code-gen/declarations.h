@@ -121,6 +121,7 @@ struct ClassDeclaration : CodeGenRootCmd {
   static void compile_inner_methods(CodeGenerator &W, ClassPtr klass);
 
 private:
+  static void compile_fields(CodeGenerator &W, ClassPtr klass);
   static void compile_json_flatten_flag(CodeGenerator &W, ClassPtr klass);
   static void compile_has_wakeup_flag(CodeGenerator &W, ClassPtr klass);
   static void compile_get_class(CodeGenerator &W, ClassPtr klass);

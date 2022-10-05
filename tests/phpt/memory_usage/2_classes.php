@@ -22,17 +22,16 @@ function test_empty_class() {
 
 function test_class_with_simple_fields() {
   class MyClass1 {
-    // counter 4 + unique index 4
-    public $x = 1; // 8
-    public $y = 1.0; // 8
-    public $z = true; // 1 // aligned to 8
-    public $u = "hello world"; // 8
-    public $w = [1, 2, 3]; // 8
-  } // total size = 48
+    public $x = 1;
+    public $y = 1.0;
+    public $z = true;
+    public $u = "hello world";
+    public $w = [1, 2, 3];
+  }
 
 #ifndef KPHP
-  var_dump(48);
-  var_dump(48);
+  var_dump(40);
+  var_dump(40);
   var_dump(0);
   return;
 #endif
