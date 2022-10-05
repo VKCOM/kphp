@@ -52,6 +52,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         critical_section.cpp
         curl.cpp
         datetime.cpp
+        datetime-class.cpp
         exception.cpp
         files.cpp
         from-json-processor.cpp

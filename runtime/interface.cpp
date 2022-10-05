@@ -2312,6 +2312,7 @@ static void free_runtime_libs() {
   free_typed_rpc_lib();
   free_streams_lib();
   free_udp_lib();
+  free_timelib();
   OnKphpWarningCallback::get().reset();
 
   free_job_client_interface_lib();

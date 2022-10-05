@@ -31,12 +31,7 @@ static void set_default_timezone_id(const char *timezone_id) {
   default_timezone_id = timezone_id;
 }
 
-static const char *day_of_week_names_short[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-static const char *day_of_week_names_full[] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 static const char *suffix[] = {"st", "nd", "rd", "th"};
-static const char *month_names_short[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-static const char *month_names_full[] = {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November",
-                                         "December"};
 
 static time_t gmmktime(struct tm *tm) {
   char *tz = getenv("TZ");
@@ -53,10 +48,6 @@ static time_t gmmktime(struct tm *tm) {
   tzset();
 
   return result;
-}
-
-static inline int32_t is_leap(int32_t year) {
-  return ((year % 4 == 0) ^ (year % 100 == 0) ^ (year % 400 == 0));
 }
 
 bool f$checkdate(int64_t month, int64_t day, int64_t year) {
@@ -77,8 +68,8 @@ static inline int32_t fix_year(int32_t year) {
 void iso_week_number(int y, int doy, int weekday, int &iw, int &iy) {
   int y_leap, prev_y_leap, jan1weekday;
 
-  y_leap = is_leap(y);
-  prev_y_leap = is_leap(y - 1);
+  y_leap = timelib_is_leap_year(y);
+  prev_y_leap = timelib_is_leap_year(y - 1);
 
   jan1weekday = (weekday - (doy % 7) + 7) % 7;
 
@@ -144,13 +135,13 @@ static string date(const string &format, const tm &t, int64_t timestamp, bool lo
         SB << (char)(day % 10 + '0');
         break;
       case 'D':
-        SB << day_of_week_names_short[day_of_week];
+        SB << PHP_TIMELIB_DAY_SHORT_NAMES[day_of_week];
         break;
       case 'j':
         SB << day;
         break;
       case 'l':
-        SB << day_of_week_names_full[day_of_week];
+        SB << PHP_TIMELIB_DAY_FULL_NAMES[day_of_week];
         break;
       case 'N':
         SB << (day_of_week == 0 ? '7' : (char)(day_of_week + '0'));
@@ -189,14 +180,14 @@ static string date(const string &format, const tm &t, int64_t timestamp, bool lo
         SB << (char)('0' + iso_week % 10);
         break;
       case 'F':
-        SB << month_names_full[month - 1];
+        SB << PHP_TIMELIB_MON_FULL_NAMES[month - 1];
         break;
       case 'm':
         SB << (char)(month / 10 + '0');
         SB << (char)(month % 10 + '0');
         break;
       case 'M':
-        SB << month_names_short[month - 1];
+        SB << PHP_TIMELIB_MON_SHORT_NAMES[month - 1];
         break;
       case 'n':
         SB << month;
@@ -205,7 +196,7 @@ static string date(const string &format, const tm &t, int64_t timestamp, bool lo
         SB << php_timelib_days_in_month(month, year);
         break;
       case 'L':
-        SB << (int)is_leap(year);
+        SB << (int)timelib_is_leap_year(year);
         break;
       case 'o':
         iso_week_number(year, day_of_year, day_of_week, iso_week, iso_year);
@@ -317,12 +308,12 @@ static string date(const string &format, const tm &t, int64_t timestamp, bool lo
         }
         break;
       case 'r':
-        SB << day_of_week_names_short[day_of_week];
+        SB << PHP_TIMELIB_DAY_SHORT_NAMES[day_of_week];
         SB << ", ";
         SB << (char)(day / 10 + '0');
         SB << (char)(day % 10 + '0');
         SB << ' ';
-        SB << month_names_short[month - 1];
+        SB << PHP_TIMELIB_MON_SHORT_NAMES[month - 1];
         SB << ' ';
         SB << year;
         SB << ' ';
@@ -405,8 +396,8 @@ array<mixed> f$getdate(int64_t timestamp) {
   result.set_value(string("mon", 3), t.tm_mon + 1);
   result.set_value(string("year", 4), t.tm_year + 1900);
   result.set_value(string("yday", 4), t.tm_yday);
-  result.set_value(string("weekday", 7), string(day_of_week_names_full[t.tm_wday]));
-  result.set_value(string("month", 5), string(month_names_full[t.tm_mon]));
+  result.set_value(string("weekday", 7), string(PHP_TIMELIB_DAY_FULL_NAMES[t.tm_wday]));
+  result.set_value(string("month", 5), string(PHP_TIMELIB_MON_FULL_NAMES[t.tm_mon]));
   result.set_value(string("0", 1), timestamp);
 
   return result;
