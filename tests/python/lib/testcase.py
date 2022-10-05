@@ -107,6 +107,18 @@ class BaseTestCase(TestCase):
     def custom_teardown(cls):
         pass
 
+    def setup_method(self, method):
+        self.custom_setup_method(method)
+
+    def teardown_method(self, method):
+        self.custom_teardown_method(method)
+
+    def custom_setup_method(self, method):
+        pass
+
+    def custom_teardown_method(self, method):
+        pass
+
     class _Cmp:
         def __init__(self, comparator, representation):
             self._comparator = comparator
@@ -216,6 +228,12 @@ class KphpServerAutoTestCase(BaseTestCase):
         for sanitizer_log in glob.glob(cls.sanitizer_pattern + ".*"):
             if not can_ignore_sanitizer_log(sanitizer_log):
                 raise RuntimeError("Got unexpected sanitizer log '{}'".format(sanitizer_log))
+
+    def custom_setup_method(self, method):
+        pass
+
+    def custom_teardown_method(self, method):
+        self.kphp_server._engine_logs = []
 
     @classmethod
     def extra_class_setup(cls):

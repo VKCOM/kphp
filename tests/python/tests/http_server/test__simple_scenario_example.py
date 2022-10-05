@@ -9,6 +9,7 @@ class TestSimpleScenarioExample(KphpServerAutoTestCase):
         })
 
     def test_master_process_log(self):
+        self.kphp_server.restart()
         self.kphp_server.assert_log(["master"], "Can't find master process starting message")
 
     def test_uptime_stat(self):
