@@ -7,6 +7,7 @@
 #include <csetjmp>
 
 #include "common/dl-utils-lite.h"
+#include "common/mixin/not_copyable.h"
 #include "common/sanitizer.h"
 
 #include "server/php-engine-vars.h"
@@ -42,8 +43,6 @@ enum class script_error_t : uint8_t {
   errors_count
 };
 
-#define SEGV_STACK_SIZE (MINSIGSTKSZ + 65536)
-
 struct query_stats_t {
   long long q_id;
   const char *desc;
@@ -59,19 +58,36 @@ void dump_query_stats();
 
 void init_handlers();
 
+class PhpScriptStack : vk::not_copyable {
+public:
+  explicit PhpScriptStack(size_t stack_size) noexcept;
+  ~PhpScriptStack() noexcept;
+
+  bool is_protected(const char *x) const noexcept;
+  bool check_stack_overflow(const char *x) const noexcept;
+  void asan_stack_unpoison() const noexcept;
+  void asan_stack_clear() const noexcept;
+
+  char *get_stack_ptr() const noexcept { return run_stack_; }
+  size_t get_stack_size() const noexcept { return stack_size_; }
+
+private:
+  const size_t stack_size_{0};
+  char *run_stack_{nullptr};
+  const char *protected_end_{nullptr};
+  const char *run_stack_end_{nullptr};
+};
+
 /**
  * Represents current running script.
  * It stores state of the script: current execution point, pointers to allocated script memory, stack for script context, etc.
  */
 class PhpScript {
-  double cur_timestamp, net_time, script_time;
-  int queries_cnt;
+  double cur_timestamp{0}, net_time{0}, script_time{0};
+  int queries_cnt{0};
   int long_queries_cnt{0};
 
 private:
-#if ASAN7_ENABLED
-  bool fiber_is_started = false;
-#endif
   int swapcontext_helper(ucontext_t_portable *oucp, const ucontext_t_portable *ucp);
 
   void on_request_timeout_error();
@@ -79,26 +95,26 @@ private:
   void assert_state(run_state_t expected);
 
 public:
-
   static PhpScript *volatile current_script;
   static ucontext_t_portable exit_context;
   volatile static bool is_running;
   volatile static bool tl_flag;
   volatile static bool ml_flag;
 
-  run_state_t state;
-  const char *error_message;
-  script_error_t error_type;
-  php_query_base_t *query;
-  char *run_stack, *protected_end, *run_stack_end, *run_mem;
-  size_t mem_size, stack_size;
-  ucontext_t_portable run_context;
+  run_state_t state{run_state_t::empty};
+  const char *error_message{nullptr};
+  script_error_t error_type{script_error_t::no_error};
+  php_query_base_t *query{nullptr};
+  const size_t mem_size{0};
+  char *run_mem{nullptr};
+  PhpScriptStack script_stack;
 
-  sigjmp_buf timeout_handler;
+  ucontext_t_portable run_context{};
+  sigjmp_buf timeout_handler{};
 
-  script_t *run_main;
-  php_query_data *data;
-  script_result *res;
+  script_t *run_main{nullptr};
+  php_query_data *data{nullptr};
+  script_result *res{nullptr};
 
   static void script_context_entrypoint() noexcept;
   static void error(const char *error_message, script_error_t error_type) noexcept;
@@ -107,13 +123,8 @@ public:
   ~PhpScript() noexcept;
 
   void check_tl() noexcept;
-  bool is_protected(char *x) noexcept;
-
-  bool check_stack_overflow(char *x) noexcept;
 
   void init(script_t *script, php_query_data *data_to_set) noexcept;
-
-  void asan_stack_unpoison();
 
   void pause() noexcept;
   void ask_query(php_query_base_t *q) noexcept;
