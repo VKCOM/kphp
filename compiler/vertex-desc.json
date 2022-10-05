@@ -731,6 +731,11 @@
     "props": {
       "str": "switch"
     },
+    "extra_fields": {
+      "kind": {
+        "type": "SwitchKind"
+      }
+    },
     "ranges": {
       "cases": [
         3,

@@ -18,6 +18,13 @@ vertex_inner<Op> *raw_create_vertex_inner(int args_n);
 
 class TypeHint;
 
+enum class SwitchKind: uint8_t {
+  EmptySwitch,  // switch with no expr cases
+  IntSwitch,    // switch with int-only constexpr cases
+  StringSwitch, // switch with string-only constexpr
+  VarSwitch,    // switch with arbitrary (mixed) expr cases
+};
+
 enum class InstancePropAccessType: uint8_t {
   Default,        // normal instance prop access
   CData,          // accessing a FFI field through php2c level
