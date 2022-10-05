@@ -27,7 +27,7 @@ static Stream udp_stream_socket_client(const string &url, int64_t &error_number,
                                        int64_t flags __attribute__((unused)), const mixed &options __attribute__((unused))) {
   auto quit = [&](int socket_fd, const Optional<string> & extra_info = Optional<string>()) {
     if (extra_info.has_value()) {
-      php_warning("%s, %s", error_description.c_str(), extra_info.val().c_str());
+      php_warning("%s. %s", error_description.c_str(), extra_info.val().c_str());
     } else {
       php_warning("%s", error_description.c_str());
     }
@@ -106,13 +106,13 @@ static Stream udp_stream_socket_client(const string &url, int64_t &error_number,
   if (sock_fd == -1) {
     dl::leave_critical_section();
     set_error(-4, "Can't create udp socket");
-    return quit(sock_fd, Optional<string>(string("function socket set errno to ").append(errno)));
+    return quit(sock_fd, Optional<string>(string("System call \'socket(...)\' got error \'").append(strerror(errno)).append("\'")));
   }
   if (connect(sock_fd, reinterpret_cast <const sockaddr *> (&addr), addrlen) == -1) {
     if (errno != EINPROGRESS) {
       dl::leave_critical_section();
       set_error(-5, "Can't connect to udp socket");
-      return quit(sock_fd, Optional<string>(string("function connect set errno to ").append(errno)));
+      return quit(sock_fd, Optional<string>(string("System call \'connect(...)\' got error \'").append(strerror(errno)).append("\'")));
     }
 
     pollfd poll_fds;
@@ -124,9 +124,9 @@ static Stream udp_stream_socket_client(const string &url, int64_t &error_number,
       dl::leave_critical_section();
       Optional<string> extra_info;
       if (left_time <= 0) {
-        extra_info = string("timeout expired");
+        extra_info = string("Timeout expired");
       } else {
-        extra_info = string("function poll set errno to ").append(errno);
+        extra_info = string("System call \'poll(...)\' got error \'").append(strerror(errno)).append("\'");
       }
       set_error(-6, "Can't connect to udp socket");
       return quit(sock_fd, extra_info);
