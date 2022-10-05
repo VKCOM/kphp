@@ -403,6 +403,13 @@ function msgpack_serialize_safe($v ::: mixed) ::: string;
 /** @kphp-extern-func-info can_throw */
 function msgpack_deserialize_safe($v ::: string) ::: mixed;
 
+define('PREG_NO_ERROR', 0);
+define('PREG_INTERNAL_ERROR', 1);
+define('PREG_BACKTRACK_LIMIT_ERROR', 2);
+define('PREG_RECURSION_LIMIT_ERROR', 3);
+define('PREG_BAD_UTF8_ERROR', 4);
+define('PREG_BAD_UTF8_OFFSET_ERROR', 5);
+
 define('PREG_PATTERN_ORDER', 1);
 define('PREG_SET_ORDER', 2);
 define('PREG_OFFSET_CAPTURE', 4);

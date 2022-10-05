@@ -98,3 +98,7 @@ static inline int put_char_utf8 (unsigned int x, char *s) {
   return 0;
 }
 
+// returns true, if the given value is not the first code unit of a UTF sequence
+constexpr bool is_invalid_utf8_first_byte(char c) {
+  return (c & 0xc0) == 0x80;
+}
