@@ -19,7 +19,7 @@ function vk_utf8_to_win(string $text, int $max_len = 0, bool $exit_on_error = fa
   return "";
 }
 
-function vk_win_to_utf8(string $text) : string {
+function vk_win_to_utf8(string$text, bool $escape = true) : string {
   return "";
 }
 

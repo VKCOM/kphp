@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 007dde50522168f76ecea3b206d6d9270188355d */
+ * Stub hash: 483315f5e4ee09b477d536fe066baf385afd6afb */
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_vk_hello_world, 0, 0, IS_STRING, 0)
 ZEND_END_ARG_INFO()
@@ -14,7 +14,10 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_vk_utf8_to_win, 0, 1, IS_STRING,
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, exit_on_error, _IS_BOOL, 0, "false")
 ZEND_END_ARG_INFO()
 
-#define arginfo_vk_win_to_utf8 arginfo_vk_upcase
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_vk_win_to_utf8, 0, 1, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO(0, text, IS_STRING, 0)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, escape, _IS_BOOL, 0, "true")
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_vk_flex, 0, 5, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, name, IS_STRING, 0)
