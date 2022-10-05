@@ -276,13 +276,13 @@ template<class T>
 mixed f$array_first_key(const array<T> &a);
 
 template<class T>
-T f$array_first_value(const array<T> &a);
+Optional<T> f$array_first_value(const array<T> &a);
 
 template<class T>
 mixed f$array_last_key(const array<T> &a);
 
 template<class T>
-T f$array_last_value(const array<T> &a);
+Optional<T> f$array_last_value(const array<T> &a);
 
 template<class T>
 inline void f$array_swap_int_keys(array<T> &a, int64_t idx1, int64_t idx2) noexcept;
@@ -1514,8 +1514,8 @@ mixed f$array_first_key(const array<T> &a) {
 }
 
 template<class T>
-T f$array_first_value(const array<T> &a) {
-  return a.empty() ? T() : a.begin().get_value(); // in PHP 'false' on empty, here T()
+Optional<T> f$array_first_value(const array<T> &a) {
+  return a.empty() ? Optional<T>{} : a.begin().get_value();
 }
 
 template<class T>
@@ -1524,8 +1524,8 @@ mixed f$array_last_key(const array<T> &a) {
 }
 
 template<class T>
-T f$array_last_value(const array<T> &a) {
-  return a.empty() ? T() : (--a.end()).get_value(); // in PHP 'false' on empty, here T()
+Optional<T> f$array_last_value(const array<T> &a) {
+  return a.empty() ? Optional<T>{} : (--a.end()).get_value();
 }
 
 template<class T>

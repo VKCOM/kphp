@@ -210,9 +210,9 @@ function getKeyByPos ($a ::: array, $n ::: int) ::: mixed;
 function getValueByPos ($a ::: array, $n ::: int) ::: ^1[*];
 function create_vector ($n ::: int, $x ::: any) ::: ^2[];
 function array_first_key ($a ::: array) ::: mixed;
-function array_first_value ($a ::: array) ::: ^1[*];
+function array_first_value ($a ::: array) ::: ?^1[*];
 function array_last_key ($a ::: array) ::: mixed;
-function array_last_value ($a ::: array) ::: ^1[*];
+function array_last_value ($a ::: array) ::: ?^1[*];
 function array_swap_int_keys (&$a ::: array, $idx1 ::: int, $idx2 ::: int) ::: void;
 
 function implode ($s ::: string, $v ::: array) ::: string;
