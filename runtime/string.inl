@@ -763,8 +763,9 @@ bool string::to_bool() const {
 }
 
 int64_t string::to_int(const char *s, size_type l) {
-  while (isspace(*s)) {
+  while (isspace(*s) && l > 0) {
     s++;
+    l--;
   }
 
   int64_t mul = 1, cur = 0;
