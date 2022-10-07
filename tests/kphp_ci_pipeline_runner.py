@@ -376,12 +376,13 @@ if __name__ == "__main__":
                 "KPHP_TESTS_ENGINE_REPO={engine_repo} "
                 "KPHP_TESTS_KPHP_REPO={kphp_repo_root} "
                 "KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} "
-                "python3 -m pytest --tb=native -n{jobs} {tests_dir}".format(
+                "python3 -m pytest --tb=native -n{jobs} -k '{exclude_pattern}' {tests_dir}".format(
                 jobs=n_cpu,
                 lib_dir=os.path.join(runner_dir, "python"),
                 engine_repo=args.engine_repo,
                 kphp_repo_root=kphp_repo_root,
                 kphp_polyfills_repo=kphp_polyfills_repo,
+                exclude_pattern="not test_load_and_kill_worker" if args.use_asan else "",   # TODO: ASAN behaves very strange on this test that makes it flaky
                 tests_dir=os.path.join(args.kphp_tests_repo, "python/tests"),
                 # nocc will be automatically used if NOCC_SERVERS_FILENAME is set
             ),
