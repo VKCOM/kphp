@@ -4,27 +4,11 @@
 
 #pragma once
 
+#include "runtime/datetime/datetime_zone.h"
 #include "runtime/datetime/timelib_wrapper.h"
 #include "runtime/dummy-visitor-methods.h"
 #include "runtime/kphp_core.h"
 #include "runtime/refcountable_php_classes.h"
-
-struct C$DateTimeZone : public refcountable_php_classes<C$DateTimeZone>, private DummyVisitorMethods {
-  using DummyVisitorMethods::accept;
-
-  string timezone;
-
-  const char *get_class() const noexcept {
-    return R"(DateTimeZone)";
-  }
-
-  int get_hash() const noexcept {
-    return 219249843;
-  }
-};
-
-class_instance<C$DateTimeZone> f$DateTimeZone$$__construct(const class_instance<C$DateTimeZone> &self, const string &timezone) noexcept;
-string f$DateTimeZone$$getName(const class_instance<C$DateTimeZone> &self) noexcept;
 
 struct C$DateTime : public refcountable_php_classes<C$DateTime>, private DummyVisitorMethods {
   using DummyVisitorMethods::accept;
