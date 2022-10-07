@@ -2,12 +2,12 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime/datetime-class.h"
+#include "runtime/datetime/datetime.h"
 
 #include <cstring>
 
+#include "runtime/datetime/datetime_functions.h"
 #include "runtime/exception.h"
-#include "runtime/datetime.h"
 
 class_instance<C$DateTimeZone> f$DateTimeZone$$__construct(const class_instance<C$DateTimeZone> &self, const string &timezone) noexcept {
   if (strcmp(PHP_TIMELIB_TZ_MOSCOW, timezone.c_str()) != 0 && strcmp(PHP_TIMELIB_TZ_GMT3, timezone.c_str()) != 0) {

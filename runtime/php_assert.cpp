@@ -21,7 +21,6 @@
 #include "common/wrappers/pathname.h"
 
 #include "runtime/critical_section.h"
-#include "runtime/datetime.h"
 #include "runtime/exception.h"
 #include "runtime/kphp-backtrace.h"
 #include "runtime/on_kphp_warning_callback.h"
