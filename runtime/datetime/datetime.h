@@ -5,21 +5,22 @@
 #pragma once
 
 #include "runtime/datetime/datetime_zone.h"
+#include "runtime/datetime/datetime_interface.h"
 #include "runtime/datetime/timelib_wrapper.h"
 #include "runtime/dummy-visitor-methods.h"
 #include "runtime/kphp_core.h"
 #include "runtime/refcountable_php_classes.h"
 
-struct C$DateTime : public refcountable_php_classes<C$DateTime>, private DummyVisitorMethods {
+struct C$DateTime : public refcountable_polymorphic_php_classes<C$DateTimeInterface>, private DummyVisitorMethods {
   using DummyVisitorMethods::accept;
 
   timelib_time *time{nullptr};
 
-  const char *get_class() const noexcept {
+  const char *get_class() const noexcept final {
     return R"(DateTime)";
   }
 
-  int get_hash() const noexcept {
+  int get_hash() const noexcept final {
     return 2141635158;
   }
 
