@@ -1,6 +1,7 @@
 prepend(KPHP_RUNTIME_DATETIME_SOURCES datetime/
         datetime.cpp
         datetime_functions.cpp
+        datetime_immutable.cpp
         datetime_zone.cpp
         timelib_wrapper.cpp)
 

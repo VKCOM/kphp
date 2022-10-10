@@ -310,6 +310,11 @@ std::pair<timelib_time *, string> php_timelib_date_initialize(const string &tz_n
   return {t, {}};
 }
 
+timelib_time *php_timelib_time_clone(timelib_time *t) {
+  auto script_guard = make_malloc_replacement_with_script_allocator();
+  return timelib_time_clone(t);
+}
+
 void php_timelib_date_remove(timelib_time *t) {
   if (t) {
     auto script_guard = make_malloc_replacement_with_script_allocator();

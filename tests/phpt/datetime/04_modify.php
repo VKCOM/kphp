@@ -3,7 +3,19 @@
 
 function test_modify() {
   $datetime = new DateTime("2009-01-31 14:28:41");
+  $new_datetime = $datetime->modify("+1 day");
+  echo "After modification: " . $new_datetime->format("D, d M Y") . "\n";
+  echo "After modification: " . $datetime->format("D, d M Y") . "\n";
+}
 
+function test_modify_immutable() {
+  $datetime = new DateTimeImmutable("2009-01-31 14:28:41");
+  $new_datetime = $datetime->modify("+1 day");
+  echo "After modification: " . $new_datetime->format("D, d M Y") . "\n";
+  echo "After modification: " . $datetime->format("D, d M Y") . "\n";
+}
+
+function test_modify_through_polymorphic_call(DateTimeInterface $datetime) {
   $new_datetime = $datetime->modify("+1 day");
   echo "After modification 1: " . $new_datetime->format("D, d M Y") . "\n";
   echo "After modification 1: " . $datetime->format("D, d M Y") . "\n";
@@ -34,4 +46,7 @@ function test_modify_shift_date() {
 }
 
 test_modify();
+test_modify_immutable();
+test_modify_through_polymorphic_call(new DateTime("2009-01-31 14:28:41"));
+test_modify_through_polymorphic_call(new DateTimeImmutable("2009-01-31 14:28:41"));
 test_modify_shift_date();
