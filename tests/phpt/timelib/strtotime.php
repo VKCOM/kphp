@@ -91,3 +91,14 @@ foreach ($timezones as $tz) {
     $time += $i;
   }
 }
+
+function test_check_memory_leak() {
+  foreach (['UTC', 'BST', 'Europe/Amsterdam'] as $tz) {
+    $date = "2006:02:12 23:12:23 $tz";
+    strtotime($date);
+    date_parse($date);
+    date_parse_from_format('Y-m-d H:i:s', $date);
+  }
+}
+
+test_check_memory_leak();
