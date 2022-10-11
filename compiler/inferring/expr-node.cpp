@@ -100,6 +100,11 @@ void ExprNodeRecalc::recalc_func_call(VertexAdaptor<op_func_call> call) {
   } else {
     set_lca(function, -1);
   }
+
+  // TODO: is this the right place to do it?
+  if (function->is_result_array2tuple) {
+    new_type_->set_tuple_as_array_flag();
+  }
 }
 
 void ExprNodeRecalc::recalc_arg_ref_rule(VertexAdaptor<op_trigger_recalc_arg_ref_rule> expr) {
@@ -519,6 +524,9 @@ std::string tinf::ExprNode::convert_expr_to_human_readable(VertexPtr expr) {
 
     case op_func_call: {
       auto func = expr.as<op_func_call>()->func_id;
+      if (func->is_result_indexing) {
+        return func->as_human_readable() + "[.]";
+      }
       return func->is_constructor() ? "new " + func->class_id->as_human_readable() : func->as_human_readable();
     }
 

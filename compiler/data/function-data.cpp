@@ -14,6 +14,7 @@
 #include "compiler/inferring/public.h"
 #include "compiler/type-hint.h"
 #include "compiler/vertex.h"
+#include "common/algorithms/contains.h"
 
 FunctionPtr FunctionData::create_function(std::string name, VertexAdaptor<op_function> root, func_type_t type) {
   static CachedProfiler cache("Create Function");
@@ -165,6 +166,18 @@ std::string FunctionData::get_performance_inspections_warning_chain(PerformanceI
   return vk::join(chain, " -> ");
 }
 
+// some internal functions may appear in error messages;
+// we don't want to print something like _explode_nth() instead of expode()
+// that would be unhelpful for the user
+static const std::unordered_map<vk::string_view, std::string> internal_function_pretty_names = {
+  {"_explode_nth", "explode"},
+  {"_explode_1", "explode"},
+  {"_microtime_float", "microtime"},
+  {"_microtime_string", "microtime"},
+  {"_hrtime_int", "hrtime"},
+  {"_hrtime_array", "hrtime"},
+};
+
 std::string FunctionData::as_human_readable(bool add_details) const {
   std::vector<VertexAdaptor<op_func_param>> params;
   for (auto p : get_params()) {
@@ -201,7 +214,12 @@ std::string FunctionData::as_human_readable(bool add_details) const {
 
     // if name is just a function "function_name", doesn't belong to any class
     if (pos1 == std::string::npos) {
-      result_name = name;
+      if (is_internal) {
+        const auto &pretty_name = internal_function_pretty_names.find(name);
+        result_name = pretty_name != internal_function_pretty_names.end() ? pretty_name->second : name;
+      } else {
+        result_name = name;
+      }
     }
       // if name is "class$$method"
     else if (pos2 == pos1) {
@@ -231,6 +249,16 @@ bool FunctionData::is_imported_from_static_lib() const {
 
 bool FunctionData::is_invoke_method() const {
   return modifiers.is_instance() && (class_id->is_lambda_class() || class_id->is_typed_callable_interface()) && vk::string_view{name}.ends_with("__invoke");
+}
+
+vk::string_view FunctionData::get_tmp_string_specialization() const {
+  static std::unordered_map<vk::string_view, vk::string_view> funcs = {
+    {"substr", "_tmp_substr"},
+    {"trim", "_tmp_trim"},
+    // TODO: ltrim, rtrim, strstr
+  };
+  auto it = funcs.find(name);
+  return it == funcs.end() ? "" : it->second;
 }
 
 VertexAdaptor<op_func_param> FunctionData::find_param_by_name(vk::string_view var_name) {

@@ -22,6 +22,12 @@ public:
   static VertexPtr create_int_const(int64_t number);
   static VertexAdaptor<op_string> create_string_const(const std::string &s);
 
+  static VertexPtr unwrap_array_value(VertexPtr v);
+  static VertexPtr unwrap_string_value(VertexPtr v);
+  static VertexPtr unwrap_int_value(VertexPtr v);
+  static VertexPtr unwrap_float_value(VertexPtr v);
+  static VertexPtr unwrap_bool_value(VertexPtr v);
+
   static VertexAdaptor<op_seq> embrace(VertexPtr v);
 
   static void func_force_return(VertexAdaptor<op_function> func, VertexPtr val = {});

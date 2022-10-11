@@ -2343,39 +2343,31 @@ array<string> f$str_split(const string &str, int64_t split_length) {
 }
 
 Optional<string> f$substr(const string &str, int64_t start, int64_t length) {
-  string::size_type str_len = str.size();
-
-  if (length < 0 && -length > str_len) {
-//    php_warning("bad length argument in substr function call");
+  if (!wrap_substr_args(str.size(), start, length)) {
     return false;
   }
-
-  if (length > str_len) {
-    length = str_len;
-  }
-
-  if (start > str_len) {
-//    php_warning("start is after string end in substr function call");
-    return false;
-  }
-
-  if (length < 0 && length < start - str_len) {
-//    php_warning("start is in part removed by length argument in substr function call");
-    return false;
-  }
-  start = str.get_correct_offset(start);
-  if (length < 0) {
-    length = (str_len - start) + length;
-    if (length < 0) {
-      length = 0;
-    }
-  }
-
-  if (length > str_len - start) {
-    length = str_len - start;
-  }
-
   return str.substr(static_cast<string::size_type>(start), static_cast<string::size_type>(length));
+}
+
+Optional<string> f$substr(tmp_string str, int64_t start, int64_t length) {
+  if (!wrap_substr_args(str.size, start, length)) {
+    return false;
+  }
+  return string(str.data + start, length);
+}
+
+tmp_string f$_tmp_substr(const string &str, int64_t start, int64_t length) {
+  if (!wrap_substr_args(str.size(), start, length)) {
+    return {};
+  }
+  return {str.c_str() + start, static_cast<string::size_type>(length)};
+}
+
+tmp_string f$_tmp_substr(tmp_string str, int64_t start, int64_t length) {
+  if (!wrap_substr_args(str.size, start, length)) {
+    return {};
+  }
+  return {str.data + start, static_cast<string::size_type>(length)};
 }
 
 int64_t f$substr_count(const string &haystack, const string &needle, int64_t offset, int64_t length) {
@@ -2463,12 +2455,12 @@ bool f$str_ends_with(const string &haystack, const string &needle) {
   return haystack.ends_with(needle);
 }
 
-string f$trim(const string &s, const string &what) {
+tmp_string trim_impl(const char *s, string::size_type s_len, const string &what) {
   const char *mask = get_mask(what);
 
-  int len = (int)s.size();
+  int len = s_len;
   if (len == 0 || (!mask[(unsigned char)s[len - 1]] && !mask[(unsigned char)s[0]])) {
-    return s;
+    return {s, s_len};
   }
 
   while (len > 0 && mask[(unsigned char)s[len - 1]]) {
@@ -2483,7 +2475,27 @@ string f$trim(const string &s, const string &what) {
   while (mask[(unsigned char)s[l]]) {
     l++;
   }
-  return {s.c_str() + l, static_cast<string::size_type>(len - l)};
+  return {s + l, static_cast<string::size_type>(len - l)};
+}
+
+tmp_string f$_tmp_trim(tmp_string s, const string &what) {
+  return trim_impl(s.data, s.size, what);
+}
+
+tmp_string f$_tmp_trim(const string &s, const string &what) {
+  return trim_impl(s.c_str(), s.size(), what);
+}
+
+string f$trim(tmp_string s, const string &what) {
+  return materialize_tmp_string(trim_impl(s.data, s.size, what));
+}
+
+string f$trim(const string &s, const string &what) {
+  tmp_string result = trim_impl(s.c_str(), s.size(), what);
+  if (result.data == s.c_str() && result.size == s.size()) {
+    return s;
+  }
+  return materialize_tmp_string(result);
 }
 
 string f$ucfirst(const string &str) {

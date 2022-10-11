@@ -495,10 +495,19 @@ auto &array<T>::array_inner::find_map_entry(S &self, int64_t int_key) noexcept {
 template<class T>
 template<class S>
 auto &array<T>::array_inner::find_map_entry(S &self, const string &string_key, int64_t precomputed_hash) noexcept {
+  return find_map_entry(self, string_key.c_str(), string_key.size(), precomputed_hash);
+}
+
+template<class T>
+template<class S>
+auto &array<T>::array_inner::find_map_entry(S &self, const char *key, string::size_type key_size, int64_t precomputed_hash) noexcept {
+  static const auto str_not_eq = [](const string &lhs, const char *rhs, string::size_type rhs_size) {
+    return lhs.size() != rhs_size || string::compare(lhs, rhs, rhs_size) != 0;
+  };
   auto *string_entries = self.get_string_entries();
   uint32_t bucket = self.choose_bucket_string(precomputed_hash);
   while (string_entries[bucket].next != EMPTY_POINTER &&
-         (string_entries[bucket].int_key != precomputed_hash || string_entries[bucket].string_key != string_key)) {
+         (string_entries[bucket].int_key != precomputed_hash || str_not_eq(string_entries[bucket].string_key, key, key_size))) {
     if (unlikely (++bucket == self.string_buf_size)) {
       bucket = 0;
     }
@@ -1107,6 +1116,12 @@ T &array<T>::operator[](const string &string_key) {
 }
 
 template<class T>
+T &array<T>::operator[](tmp_string string_key) {
+  // TODO: try not to allocate here too
+  return (*this)[materialize_tmp_string(string_key)];
+}
+
+template<class T>
 T &array<T>::operator[](const mixed &v) {
   switch (v.get_type()) {
     case mixed::type::NUL:
@@ -1219,6 +1234,20 @@ void array<T>::set_value(const string &string_key, const T &v) noexcept {
 }
 
 template<class T>
+void array<T>::set_value(tmp_string string_key, T &&v) noexcept {
+  // TODO: rework value insertion, so tmp_string is converted to a real string
+  // only when new insertion happens
+  emplace_value(materialize_tmp_string(string_key), std::move(v));
+}
+
+template<class T>
+void array<T>::set_value(tmp_string string_key, const T &v) noexcept {
+  // TODO: rework value insertion, so tmp_string is converted to a real string
+  // only when new insertion happens
+  emplace_value(materialize_tmp_string(string_key), v);
+}
+
+template<class T>
 void array<T>::set_value(const string &string_key, const T &v, int64_t precomputed_hash) noexcept {
   mutate_to_map_if_vector_or_map_need_string();
   p->emplace_string_key_map_value(overwrite_element::YES, precomputed_hash, string_key, v);
@@ -1316,13 +1345,13 @@ const T *array<T>::find_value(int64_t int_key) const noexcept {
 }
 
 template<class T>
-const T *array<T>::find_value(const string &string_key) const noexcept {
+const T *array<T>::find_value(const char *s, string::size_type l) const noexcept {
   int64_t int_val = 0;
-  const bool is_key_int = string_key.try_to_int(&int_val);
+  const bool is_key_int = php_try_to_int(s, l, &int_val);
   if (p->is_vector()) {
     return is_key_int ? p->find_vector_value(int_val) : nullptr;
   }
-  return is_key_int ? p->find_map_value(int_val) : p->find_map_value(string_key, string_key.hash());
+  return is_key_int ? p->find_map_value(int_val) : p->find_map_value(s, l, string_hash(s, l));
 }
 
 template<class T>

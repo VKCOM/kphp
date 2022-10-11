@@ -174,9 +174,11 @@ private:
 
     // to avoid the const_cast, declare these functions as static with a template self parameter (this)
     template<class S>
-    static inline auto &find_map_entry(S &self, int64_t int_key) noexcept;
+    static auto &find_map_entry(S &self, int64_t int_key) noexcept;
     template<class S>
-    static inline auto &find_map_entry(S &self, const string &string_key, int64_t precomputed_hash) noexcept;
+    static auto &find_map_entry(S &self, const string &string_key, int64_t precomputed_hash) noexcept;
+    template<class S>
+    static auto &find_map_entry(S &self, const char *key, string::size_type key_size, int64_t precomputed_hash) noexcept;
 
     template<class ...Key>
     inline const T *find_map_value(Key &&... key) const noexcept;
@@ -265,6 +267,7 @@ public:
   T &operator[](int64_t int_key);
   T &operator[](int32_t key) { return (*this)[int64_t{key}]; }
   T &operator[](const string &s);
+  T &operator[](tmp_string s);
   T &operator[](const mixed &v);
   T &operator[](double double_key);
   T &operator[](const const_iterator &it) noexcept;
@@ -283,6 +286,8 @@ public:
   void emplace_value(const string &string_key, Args &&... args) noexcept;
   void set_value(const string &string_key, T &&v) noexcept;
   void set_value(const string &string_key, const T &v) noexcept;
+  void set_value(tmp_string string_key, T &&v) noexcept;
+  void set_value(tmp_string string_key, const T &v) noexcept;
 
   void set_value(const string &string_key, T &&v, int64_t precomputed_hash) noexcept;
   void set_value(const string &string_key, const T &v, int64_t precomputed_hash) noexcept;
@@ -309,7 +314,9 @@ public:
 
   const T *find_value(int64_t int_key) const noexcept;
   const T *find_value(int32_t key) const noexcept { return find_value(int64_t{key}); }
-  const T *find_value(const string &s) const noexcept;
+  const T *find_value(const char *s, string::size_type l) const noexcept;
+  const T *find_value(tmp_string s) const noexcept { return find_value(s.data, s.size); }
+  const T *find_value(const string &s) const noexcept { return find_value(s.c_str(), s.size()); }
   const T *find_value(const string &s, int64_t precomputed_hash) const noexcept;
   const T *find_value(const mixed &v) const noexcept;
   const T *find_value(double double_key) const noexcept;

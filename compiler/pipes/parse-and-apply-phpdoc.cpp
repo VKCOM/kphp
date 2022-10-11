@@ -385,6 +385,33 @@ private:
         break;
       }
 
+      case PhpDocType::kphp_internal_result_indexing: {
+        kphp_error(f_->is_internal, "@kphp-internal-result-indexing is supported only for internal functions");
+        f_->is_result_indexing = true;
+        break;
+      }
+
+      case PhpDocType::kphp_internal_result_array2tuple: {
+        kphp_error(f_->is_internal, "@kphp-internal-result-array2tuple is supported only for internal functions");
+        f_->is_result_array2tuple = true;
+        break;
+      }
+
+      case PhpDocType::kphp_internal_param_readonly: {
+        kphp_error(f_->is_extern(), "@kphp-internal-param-readonly is supported only for builtin functions");
+        std::istringstream is(tag.value_as_string());
+        std::string param_name;
+        is >> param_name;
+        auto it = std::find_if(func_params_.begin(), func_params_.end(), [&param_name](VertexPtr v) {
+          return v.as<op_func_param>()->var()->str_val == vk::string_view(param_name).substr(1);
+        });
+        kphp_error_return(it != func_params_.end(), "kphp-internal-param-readonly used for non-existing param");
+        int param_index = std::distance(func_params_.begin(), it);
+        kphp_error_return(param_index <= std::numeric_limits<int8_t>::max(), "kphp-internal-param-readonly index overflow");
+        f_->readonly_param_index = param_index;
+        break;
+      }
+
       default:
         break;
     }

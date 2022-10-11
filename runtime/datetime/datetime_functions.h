@@ -32,8 +32,8 @@ double microtime_monotonic();
 double microtime();
 
 mixed f$microtime(bool get_as_float = false);
-string f$microtime_string();
-double f$microtime_float();
+string f$_microtime_string();
+double f$_microtime_float();
 
 int64_t f$mktime(int64_t h = std::numeric_limits<int64_t>::min(),
                  int64_t m = std::numeric_limits<int64_t>::min(),
@@ -52,7 +52,7 @@ array<mixed> f$date_parse_from_format(const string &format, const string &time_s
 int64_t f$time();
 
 mixed f$hrtime(bool as_number = false);
-array<int64_t> f$hrtime_array();
-int64_t f$hrtime_int();
+array<int64_t> f$_hrtime_array();
+int64_t f$_hrtime_int();
 
 void init_datetime_lib();

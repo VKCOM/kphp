@@ -95,6 +95,9 @@ prepend(KPHP_COMPILER_CODEGEN_SOURCES code-gen/
         vertex-compiler.cpp
         writer-data.cpp)
 
+prepend(KPHP_COMPILER_REWRITE_RULES_SOURCES rewrite-rules/
+        rules_runtime.cpp)
+
 prepend(KPHP_COMPILER_PIPES_SOURCES pipes/
         analyzer.cpp
         analyze-performance.cpp
@@ -143,6 +146,7 @@ prepend(KPHP_COMPILER_PIPES_SOURCES pipes/
         instantiate-generics-and-lambdas.cpp
         instantiate-ffi-operations.cpp
         load-files.cpp
+        early-optimization.cpp
         optimization.cpp
         parse.cpp
         parse-and-apply-phpdoc.cpp
@@ -175,6 +179,7 @@ prepend(KPHP_COMPILER_SOURCES ${KPHP_COMPILER_DIR}/
         ${KPHP_COMPILER_DATA_SOURCES}
         ${KPHP_COMPILER_INFERRING_SOURCES}
         ${KPHP_COMPILER_MAKE_SOURCES}
+        ${KPHP_COMPILER_REWRITE_RULES_SOURCES}
         ${KPHP_COMPILER_PIPES_SOURCES}
         ${KPHP_COMPILER_SCHEDULER_SOURCES}
         ${KPHP_COMPILER_THREADING_SOURCES}
@@ -210,7 +215,8 @@ endif()
 
 list(APPEND KPHP_COMPILER_SOURCES
      ${KPHP_COMPILER_COMMON}
-     ${KEYWORDS_SET})
+     ${KEYWORDS_SET}
+     ${AUTO_DIR}/compiler/rewrite-rules/early_opt.cpp)
 
 vk_add_library(kphp2cpp_src OBJECT ${KPHP_COMPILER_SOURCES})
 
@@ -231,6 +237,15 @@ add_custom_command(OUTPUT ${VERTEX_AUTO_GENERATED}
                    DEPENDS ${KPHP_COMPILER_DIR}/vertex-gen.py ${KPHP_COMPILER_DIR}/vertex-desc.json
                    COMMENT "vertices generation")
 add_custom_target(auto_vertices_generation_target DEPENDS ${VERTEX_AUTO_GENERATED})
+
+prepend(EARLY_OPT_RULES_AUTO_GENERATED ${KPHP_COMPILER_AUTO_DIR}/rewrite-rules/
+        early_opt.h
+        early_opt.cpp)
+add_custom_command(OUTPUT ${EARLY_OPT_RULES_AUTO_GENERATED}
+        COMMAND ${Python3_EXECUTABLE} ${KPHP_COMPILER_DIR}/rewrite-rules/rules-gen.py --auto ${AUTO_DIR} --schema ${KPHP_COMPILER_DIR}/vertex-desc.json --rules ${KPHP_COMPILER_DIR}/rewrite-rules/early_opt.rules
+        DEPENDS ${KPHP_COMPILER_DIR}/rewrite-rules/rules-gen.py ${KPHP_COMPILER_DIR}/rewrite-rules/early_opt.rules
+        COMMENT "early_opt rules generation")
+add_custom_target(auto_early_opt_rules_generation_target DEPENDS ${EARLY_OPT_RULES_AUTO_GENERATED})
 
 set_property(SOURCE ${KPHP_COMPILER_DIR}/kphp2cpp.cpp
              APPEND

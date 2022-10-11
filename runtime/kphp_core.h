@@ -418,6 +418,7 @@ template<class T>
 int64_t f$sizeof(const T &v);
 
 
+inline string &append(string &dest, tmp_string from);
 inline string &append(string &dest, const string &from);
 inline string &append(string &dest, int64_t from);
 
@@ -1271,6 +1272,10 @@ inline int64_t f$get_hash_of_class(const class_instance<T> &klass) {
   return klass.get_hash();
 }
 
+inline string &append(string &dest, tmp_string from) {
+  return dest.append(from.data, from.size);
+}
+
 string &append(string &dest, const string &from) {
   return dest.append(from);
 }
@@ -1292,6 +1297,10 @@ string &append(string &dest, const T &from) {
 template<class T>
 mixed &append(mixed &dest, const T &from) {
   return dest.append(f$strval(from));
+}
+
+inline mixed &append(mixed &dest, tmp_string from) {
+  return dest.append(from);
 }
 
 template<class T0, class T>

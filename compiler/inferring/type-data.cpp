@@ -786,6 +786,7 @@ int type_strlen(const TypeData *type) {
     case tp_shape:
       return STRLEN_ARRAY_;
     case tp_string:
+    case tp_tmp_string:
       return STRLEN_STRING;
     case tp_mixed:
       return STRLEN_VAR;

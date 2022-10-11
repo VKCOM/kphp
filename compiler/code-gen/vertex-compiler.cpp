@@ -1600,7 +1600,7 @@ void compile_string_build_impl(VertexAdaptor<op_string_build> root, VarName dst,
   }
 
   if (complex_flag) {
-    tmp_string_name = "tmp_string";
+    tmp_string_name = "tmp_string_";
     W << "string " << tmp_string_name << " = ";
   }
   W << "string (" << len_arg << ", true)";

@@ -54,6 +54,11 @@ $tests = [
   '\11a\11',
   '\1111',
   '\9a',
+  'hello' . chr(0) . 'world',
+   chr(0) . 'hello' . chr(0),
+   chr(0) . chr(0) . 'hello',
+   chr(0),
+   chr(65),
 ];
 
 $all_tests = [];

@@ -74,6 +74,7 @@
 #include "compiler/pipes/inline-simple-functions.h"
 #include "compiler/pipes/load-files.h"
 #include "compiler/pipes/optimization.h"
+#include "compiler/pipes/early-optimization.h"
 #include "compiler/pipes/parse-and-apply-phpdoc.h"
 #include "compiler/pipes/parse.h"
 #include "compiler/pipes/preprocess-break.h"
@@ -254,6 +255,7 @@ bool compiler_execute(CompilerSettings *settings) {
     // do NOT insert any pipe before, see DeduceImplicitTypesAndCastsPass::check_function()
     >> PassC<DeduceImplicitTypesAndCastsPass>{}
     >> PipeC<InstantiateGenericsAndLambdasF>{} >> use_nth_output_tag<0>{}
+    >> PipeC<EarlyOptimizationF>{}
     >> SyncC<GenerateVirtualMethodsF>{}
     >> PassC<ConvertInvokeToFuncCallPass>{}
     >> PassC<CheckFuncCallsAndVarargPass>{}

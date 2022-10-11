@@ -79,10 +79,12 @@ public:
   inline bool operator!() const;
 
   inline mixed &append(const string &v);
+  inline mixed &append(tmp_string v);
 
   inline mixed &operator[](int64_t int_key);
   inline mixed &operator[](int32_t key) { return (*this)[int64_t{key}]; }
   inline mixed &operator[](const string &string_key);
+  inline mixed &operator[](tmp_string string_key);
   inline mixed &operator[](const mixed &v);
   inline mixed &operator[](double double_key);
   inline mixed &operator[](const array<mixed>::const_iterator &it);
@@ -92,6 +94,7 @@ public:
   inline void set_value(int32_t key, const mixed &value) { set_value(int64_t{key}, value); }
   inline void set_value(const string &string_key, const mixed &v);
   inline void set_value(const string &string_key, const mixed &v, int64_t precomuted_hash);
+  inline void set_value(tmp_string string_key, const mixed &v);
   inline void set_value(const mixed &v, const mixed &value);
   inline void set_value(double double_key, const mixed &value);
   inline void set_value(const array<mixed>::const_iterator &it);
@@ -101,6 +104,7 @@ public:
   inline const mixed get_value(int32_t key) const { return get_value(int64_t{key}); }
   inline const mixed get_value(const string &string_key) const;
   inline const mixed get_value(const string &string_key, int64_t precomuted_hash) const;
+  inline const mixed get_value(tmp_string string_key) const;
   inline const mixed get_value(const mixed &v) const;
   inline const mixed get_value(double double_key) const;
   inline const mixed get_value(const array<mixed>::const_iterator &it) const;

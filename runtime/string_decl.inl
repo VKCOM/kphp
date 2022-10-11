@@ -4,9 +4,36 @@
   #error "this file must be included only from kphp_core.h"
 #endif
 
+using string_size_type = uint32_t;
+
+inline bool string_to_bool(const char *s, string_size_type size) {
+  return size >= 2 || (size == 1 && s[0] != '0');
+}
+
+// tmp_string is not a real string: it can't be used in a place where string types are expected;
+// it can be a result of compiler-inserted evaluation that should be then recognized by the
+// runtime functions overloading
+//
+// in a sense, it's like a string view, but only valid for a single expression evaluation
+struct tmp_string {
+  const char *data = nullptr;
+  string_size_type size = 0;
+
+  tmp_string() = default;
+  inline tmp_string(const char *data, string_size_type size);
+  explicit inline tmp_string(const string &s);
+
+  bool to_bool() const noexcept {
+    return data && string_to_bool(data, size);
+  }
+
+  bool has_value() const noexcept { return data != nullptr; }
+  bool empty() const noexcept { return size == 0; }
+};
+
 class string {
 public:
-  using size_type = uint32_t;
+  using size_type = string_size_type;
   static constexpr size_type npos = (size_type)-1;
 
 private:
@@ -117,6 +144,7 @@ public:
   inline string &append_unsafe(int32_t v) {return append(int64_t{v});}
   inline string &append_unsafe(double d) __attribute__((always_inline));
   inline string &append_unsafe(const string &str) __attribute__((always_inline));
+  inline string &append_unsafe(tmp_string str) __attribute__((always_inline));
   inline string &append_unsafe(const char *s, size_type n) __attribute__((always_inline));
   inline string &append_unsafe(const mixed &v) __attribute__((always_inline));
   inline string &finish_append() __attribute__((always_inline));
@@ -161,6 +189,7 @@ public:
   inline mixed to_numeric() const;
   inline bool to_bool() const;
   inline static int64_t to_int(const char *s, size_type l);
+  inline int64_t to_int(int64_t start, int64_t l) const;
   inline int64_t to_int() const;
   inline double to_float() const;
   inline const string &to_string() const;
@@ -174,12 +203,14 @@ public:
 
   inline int64_t hash() const;
 
+  static inline int64_t compare(const string &str, const char *other, size_type other_size);
   inline int64_t compare(const string &str) const;
 
   inline bool isset(int64_t index) const;
+  static inline int64_t get_correct_offset(size_type size, int64_t offset);
   inline int64_t get_correct_index(int64_t index) const;
-  inline int64_t get_correct_offset(int64_t index) const;
-  inline int64_t get_correct_offset_clamped(int64_t index) const;
+  inline int64_t get_correct_offset(int64_t offset) const;
+  inline int64_t get_correct_offset_clamped(int64_t offset) const;
   inline const string get_value(int64_t int_key) const;
   inline const string get_value(const string &string_key) const;
   inline const string get_value(const mixed &v) const;
@@ -198,6 +229,13 @@ public:
 
   inline void destroy() __attribute__((always_inline));
 };
+
+inline string materialize_tmp_string(tmp_string s) {
+  if (!s.data) {
+    return string{}; // an empty string
+  }
+  return string{s.data, s.size};
+}
 
 inline bool operator==(const string &lhs, const string &rhs);
 
@@ -218,6 +256,7 @@ inline string::size_type max_string_size(int64_t) __attribute__((always_inline))
 inline string::size_type max_string_size(int32_t) __attribute__((always_inline));
 inline string::size_type max_string_size(double) __attribute__((always_inline));
 inline string::size_type max_string_size(const string &s) __attribute__((always_inline));
+inline string::size_type max_string_size(tmp_string s) __attribute__((always_inline));
 inline string::size_type max_string_size(const mixed &v) __attribute__((always_inline));
 
 template<class T>
@@ -225,3 +264,34 @@ inline string::size_type max_string_size(const array<T> &) __attribute__((always
 
 template<class T>
 inline string::size_type max_string_size(const Optional<T> &v) __attribute__((always_inline));
+
+inline bool wrap_substr_args(string::size_type str_len, int64_t &start, int64_t &length) {
+  if (length < 0 && -length > str_len) {
+    return false;
+  }
+
+  if (length > str_len) {
+    length = str_len;
+  }
+
+  if (start > str_len) {
+    return false;
+  }
+
+  if (length < 0 && length < start - str_len) {
+    return false;
+  }
+  start = string::get_correct_offset(str_len, start);
+  if (length < 0) {
+    length = (str_len - start) + length;
+    if (length < 0) {
+      length = 0;
+    }
+  }
+
+  if (length > str_len - start) {
+    length = str_len - start;
+  }
+
+  return true;
+}

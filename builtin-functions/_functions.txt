@@ -365,16 +365,6 @@ function date_parse_from_format ($format ::: string, $time ::: string) : mixed[]
 function time() ::: int;
 function hrtime (bool $as_number = false): mixed; // int[]|int
 
-// microtime(false) specialization
-function microtime_string () : string;
-// microtime(true) specialization
-function microtime_float () : float;
-
-// hrtime(true) specialization
-function hrtime_int () : int;
-// hrtime(false) specialization
-function hrtime_array () : int[];
-
 function debug_backtrace() ::: string[][];
 function posix_getpid() ::: int;
 function posix_getuid() ::: int;
@@ -695,6 +685,7 @@ function strrchr ($haystack ::: string, $needle ::: string) ::: string | false;
 function strrev ($str ::: string) ::: string;
 function strtolower ($str ::: string) ::: string;
 function strtoupper ($str ::: string) ::: string;
+/** @kphp-internal-param-readonly $str */
 function substr ($str ::: string, $start ::: int, $length ::: int = PHP_INT_MAX) ::: string | false;
 function substr_count ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $length ::: int = PHP_INT_MAX) ::: int;
 function substr_replace (string $str, string $replacement, $start ::: int, $length ::: int = PHP_INT_MAX) ::: string;
@@ -703,6 +694,7 @@ function substr_compare ($main_str ::: string, $str ::: string, $offset ::: int,
 function str_starts_with ($haystack ::: string, $needle ::: string) ::: bool;
 function str_ends_with ($haystack ::: string, $needle ::: string) ::: bool;
 
+/** @kphp-internal-param-readonly $s */
 function trim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;
 function ltrim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;
 function rtrim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;

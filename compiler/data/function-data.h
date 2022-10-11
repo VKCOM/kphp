@@ -125,6 +125,10 @@ public:
   bool is_flatten = false;
   bool is_pure = false;
   bool is_internal = false; // whether this function can be called only when inserted by the compiler
+  bool is_result_indexing = false; // whether this function implicitly does array indexing inside
+  bool is_result_array2tuple = false; // whether this function result is optimized from array to tuple, and we need to preserve the semantics
+
+  int8_t readonly_param_index = -1; // until we need more than one, encode it as a byte-sized index
 
   function_palette::ColorContainer colors{};            // colors specified with @kphp-color
   std::vector<FunctionPtr> *next_with_colors{nullptr};  // next colored functions reachable via call graph
@@ -199,6 +203,8 @@ public:
   bool is_constructor() const;
   bool is_invoke_method() const;
   bool is_imported_from_static_lib() const;
+
+  vk::string_view get_tmp_string_specialization() const;
 
   const FunctionData *get_this_or_topmost_if_lambda() const {
     return type == FunctionData::func_lambda ? outer_function->get_this_or_topmost_if_lambda() : this;
