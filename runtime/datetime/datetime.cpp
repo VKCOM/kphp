@@ -4,6 +4,7 @@
 
 #include "runtime/datetime/datetime.h"
 
+#include "runtime/datetime/datetime_immutable.h"
 #include "runtime/exception.h"
 
 C$DateTime::~C$DateTime() {
@@ -36,6 +37,13 @@ class_instance<C$DateTime> f$DateTime$$createFromFormat(const string &format, co
   date_time.alloc();
   date_time->time = time;
   return date_time;
+}
+
+class_instance<C$DateTime> f$DateTime$$createFromImmutable(const class_instance<C$DateTimeImmutable> &object) noexcept {
+  class_instance<C$DateTime> clone;
+  clone.alloc();
+  clone->time = php_timelib_time_clone(object->time);
+  return clone;
 }
 
 Optional<array<mixed>> f$DateTime$$getLastErrors() noexcept {

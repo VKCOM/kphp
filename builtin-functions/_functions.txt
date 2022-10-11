@@ -1546,6 +1546,7 @@ class DateTime implements DateTimeInterface {
   /** @kphp-extern-func-info can_throw */
   public function __construct(string $datetime = "now", ?DateTimeZone $timezone = null);
   public static function createFromFormat(string $format, string $datetime, ?DateTimeZone $timezone = null): ?DateTime;
+  public static function createFromImmutable(DateTimeImmutable $object): DateTime;
   public static function getLastErrors(): array|false;
   public function modify(string $modifier): ?DateTime;
   public function setDate(int $year, int $month, int $day): DateTime;
@@ -1566,6 +1567,7 @@ class DateTimeImmutable implements DateTimeInterface {
   /** @kphp-extern-func-info can_throw */
   public function __construct(string $datetime = "now", ?DateTimeZone $timezone = null);
   public static function createFromFormat(string $format, string $datetime, ?DateTimeZone $timezone = null): ?DateTimeImmutable;
+  public static function createFromMutable(DateTime $object): DateTimeImmutable;
   public static function getLastErrors(): array|false;
   public function modify(string $modifier): ?DateTimeImmutable;
   public function setDate(int $year, int $month, int $day): DateTimeImmutable;

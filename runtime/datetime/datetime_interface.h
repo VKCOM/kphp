@@ -6,7 +6,11 @@
 
 #include "runtime/refcountable_php_classes.h"
 
+#include "runtime/datetime/timelib_wrapper.h"
+
 struct C$DateTimeInterface : public abstract_refcountable_php_interface {
+  timelib_time *time{nullptr};
+
   virtual const char *get_class() const noexcept = 0;
   virtual int get_hash() const noexcept = 0;
 };
