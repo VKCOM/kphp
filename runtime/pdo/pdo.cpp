@@ -2,8 +2,6 @@
 // Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include <mysql/mysql.h>
-
 
 #include "runtime/array_functions.h"
 #include "runtime/pdo/pdo.h"

@@ -2,8 +2,9 @@
 // Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include <mysql/mysql.h>
+
 #include "runtime/pdo/mysql/mysql_pdo_emulated_statement.h"
-#include "runtime/kphp_core.h"
 #include "runtime/pdo/pdo_statement.h"
 #include "runtime/resumable.h"
 #include "server/database-drivers/mysql/mysql.h"

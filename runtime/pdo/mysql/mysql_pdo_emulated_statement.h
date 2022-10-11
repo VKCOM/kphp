@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <mysql/mysql.h>
-
 #include "runtime/kphp_core.h"
 #include "runtime/pdo/abstract_pdo_statement.h"
 
