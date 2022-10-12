@@ -9,7 +9,7 @@
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/function-pass.h"
-#include "compiler/gentree.h"
+#include "compiler/vertex-util.h"
 #include "compiler/inferring/edge.h"
 #include "compiler/inferring/ifi.h"
 #include "compiler/inferring/public.h"
@@ -33,8 +33,8 @@ SwitchKind get_switch_kind(VertexAdaptor<op_switch> s) {
     }
 
     num_value_cases++;
-    auto val = GenTree::get_actual_value(one_case.as<op_case>()->expr());
-    if (is_const_int(val)) {
+    auto val = VertexUtil::get_actual_value(one_case.as<op_case>()->expr());
+    if (VertexUtil::is_const_int(val)) {
       num_const_int_cases++;
     } else if (auto as_string = val.try_as<op_string>()) {
       // PHP would use a numerical comparison for strings that look like a number,
@@ -69,7 +69,7 @@ RValue CollectMainEdgesPass::as_set_value(VertexPtr v) {
   if (vk::any_of_equal(v->type(), op_prefix_inc, op_prefix_dec, op_postfix_dec, op_postfix_inc)) {
     auto unary = v.as<meta_op_unary>();
     auto location = stage::get_location();
-    auto one = GenTree::create_int_const(1).set_location(location);
+    auto one = VertexUtil::create_int_const(1).set_location(location);
     auto res = VertexAdaptor<op_add>::create(unary->expr(), one).set_location(location);
     return as_rvalue(res);
   }
@@ -184,11 +184,11 @@ void CollectMainEdgesPass::create_edges_to_recalc_arg_ref(const TypeHint *type_h
     VertexPtr call_arg{nullptr};
 
     if (const auto *as_arg_ref = child->try_as<TypeHintArgRef>()) {
-      call_arg = GenTree::get_call_arg_ref(as_arg_ref->arg_num, func_call);
+      call_arg = VertexUtil::get_call_arg_ref(as_arg_ref->arg_num, func_call);
     } else if (const auto *as_arg_ref = child->try_as<TypeHintArgRefInstance>()) {
-      call_arg = GenTree::get_call_arg_ref(as_arg_ref->arg_num, func_call);
+      call_arg = VertexUtil::get_call_arg_ref(as_arg_ref->arg_num, func_call);
     } else if (const auto *as_arg_ref = child->try_as<TypeHintArgRefCallbackCall>()) {
-      call_arg = GenTree::get_call_arg_ref(as_arg_ref->arg_num, func_call);
+      call_arg = VertexUtil::get_call_arg_ref(as_arg_ref->arg_num, func_call);
     }
 
     if (call_arg) {

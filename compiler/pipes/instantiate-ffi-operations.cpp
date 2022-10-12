@@ -4,6 +4,7 @@
 
 #include "compiler/pipes/instantiate-ffi-operations.h"
 
+#include "compiler/vertex-util.h"
 #include "compiler/const-manipulations.h"
 #include "compiler/ffi/ffi_parser.h"
 #include "compiler/type-hint.h"
@@ -285,7 +286,7 @@ static VertexAdaptor<op_ffi_new> create_ffi_new(const InferResult &infer_result)
   } else if (const auto *ffi_type_hint = infer_result.type_hint->try_as<TypeHintFFIType>()) {
     if (ffi_type_hint->type->kind == FFITypeKind::Array && ffi_type_hint->type->num >= 0) {
       // a fixed-size array
-      size_expr = GenTree::create_int_const(ffi_type_hint->type->num);
+      size_expr = VertexUtil::create_int_const(ffi_type_hint->type->num);
     }
   }
   if (size_expr) {
@@ -528,7 +529,7 @@ VertexPtr InstantiateFFIOperationsPass::on_cdata_instance_prop(ClassPtr root_cla
 VertexPtr InstantiateFFIOperationsPass::on_scope_instance_prop(ClassPtr scope_class, VertexAdaptor<op_instance_prop> root) {
   auto enum_constant = scope_class->ffi_scope_mixin->enum_constants.find(root->get_string());
   if (enum_constant != scope_class->ffi_scope_mixin->enum_constants.end()) {
-    return GenTree::create_int_const(enum_constant->second);
+    return VertexUtil::create_int_const(enum_constant->second);
   }
 
   root->access_type = InstancePropAccessType::ExternVar;
@@ -630,7 +631,7 @@ VertexPtr InstantiateFFIOperationsPass::on_exit_vertex(VertexPtr root) {
         // so we inline the count result right away
         if (const auto *as_ffi = c2php->php_type->try_as<TypeHintFFIType>()) {
           if (as_ffi->type->kind == FFITypeKind::Array && as_ffi->type->num != -1) {
-            return GenTree::create_int_const(as_ffi->type->num);
+            return VertexUtil::create_int_const(as_ffi->type->num);
           }
         }
         call->args()[0] = c2php->expr();

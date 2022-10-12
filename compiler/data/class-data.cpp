@@ -13,7 +13,7 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
-#include "compiler/gentree.h"
+#include "compiler/vertex-util.h"
 #include "compiler/inferring/type-data.h"
 #include "compiler/name-gen.h"
 #include "compiler/type-hint.h"
@@ -130,7 +130,7 @@ FunctionPtr ClassData::add_virt_clone() {
 }
 
 void ClassData::add_class_constant() {
-  members.add_constant("class", GenTree::generate_constant_field_class_value(get_self()), AccessModifiers::public_);
+  members.add_constant("class", VertexUtil::create_string_const(get_self()->name), AccessModifiers::public_);
 }
 
 void ClassData::create_constructor_with_parent_call(DataStream<FunctionPtr> &os) {
@@ -173,7 +173,7 @@ void ClassData::create_constructor(VertexAdaptor<op_function> func) {
   auto this_param = gen_param_this(func->get_location());
   func->param_list_ref() = VertexAdaptor<op_func_param_list>::create(this_param, func->param_list()->params());
 
-  GenTree::func_force_return(func, gen_vertex_this(func->location));
+  VertexUtil::func_force_return(func, gen_vertex_this(func->location));
 
   auto ctor_function = FunctionData::create_function(func_name, func, FunctionData::func_local);
   ctor_function->update_location_in_body();

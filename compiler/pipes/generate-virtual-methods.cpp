@@ -11,6 +11,7 @@
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/gentree.h"
+#include "compiler/vertex-util.h"
 #include "compiler/type-hint.h"
 
 // a "virtual method" is an instance method overridden in child classes (all methods of interfaces are virtual also)
@@ -267,7 +268,7 @@ void check_constructor_signature_compatibility(FunctionPtr interface_constructor
 }
 
 VertexAdaptor<op_case> gen_case_on_hash(ClassPtr derived, VertexAdaptor<op_seq> cmd) {
-  auto hash_of_derived = GenTree::create_int_const(derived->get_hash());
+  auto hash_of_derived = VertexUtil::create_int_const(derived->get_hash());
   return VertexAdaptor<op_case>::create(hash_of_derived, cmd);
 }
 
@@ -333,7 +334,7 @@ VertexPtr generate_default_value_of_type(const TypeHint *ret_type) {
       case tp_int:
       case tp_float:
       case tp_mixed:
-        return GenTree::create_int_const(0);
+        return VertexUtil::create_int_const(0);
       case tp_bool:
         return VertexAdaptor<op_false>::create();
       case tp_string:

@@ -9,6 +9,7 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/vertex-util.h"
 #include "compiler/gentree.h"
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
@@ -105,7 +106,7 @@ VertexPtr ResolveSelfStaticParentPass::on_enter_vertex(VertexPtr v) {
 
   } else if (auto as_instanceof = v.try_as<op_instanceof>()) {
     // ... instanceof XXX, the right was replaced by XXX::class
-    const std::string &instanceof_class = GenTree::get_actual_value(as_instanceof->rhs())->get_string();
+    const std::string &instanceof_class = VertexUtil::get_actual_value(as_instanceof->rhs())->get_string();
     auto pos = instanceof_class.find("::");
     kphp_assert(pos != std::string::npos);
 

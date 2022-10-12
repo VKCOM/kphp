@@ -10,12 +10,14 @@
 #include "common/php-functions.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/define-data.h"
-#include "compiler/gentree.h"
+#include "compiler/data/var-data.h"
+#include "compiler/compiler-core.h"
 #include "compiler/name-gen.h"
 #include "compiler/operation.h"
 #include "compiler/pipes/check-access-modifiers.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
+#include "compiler/vertex-util.h"
 
 template<typename T>
 struct ConstManipulations {
@@ -152,19 +154,19 @@ protected:
   }
 
   bool on_binary(VertexAdaptor<meta_op_binary> v) override {
-    VertexPtr lhs = GenTree::get_actual_value(v->lhs());
-    VertexPtr rhs = GenTree::get_actual_value(v->rhs());
+    VertexPtr lhs = VertexUtil::get_actual_value(v->lhs());
+    VertexPtr rhs = VertexUtil::get_actual_value(v->rhs());
     return visit(lhs) && visit(rhs);
   }
 
   bool on_array_value(VertexAdaptor<op_array> v, size_t ind) override {
     auto ith_element = v->args()[ind];
     if (auto double_arrow = ith_element.try_as<op_double_arrow>()) {
-      VertexPtr key = GenTree::get_actual_value(double_arrow->key());
-      VertexPtr value = GenTree::get_actual_value(double_arrow->value());
+      VertexPtr key = VertexUtil::get_actual_value(double_arrow->key());
+      VertexPtr value = VertexUtil::get_actual_value(double_arrow->value());
       return visit(key) && visit(value);
     }
-    return visit(GenTree::get_actual_value(ith_element));
+    return visit(VertexUtil::get_actual_value(ith_element));
   }
 
   bool on_var(VertexAdaptor<op_var> v) override {
@@ -344,7 +346,7 @@ struct ArrayHash final
   : ConstManipulations<void> {
   static uint64_t calc_hash(VertexPtr v) {
     ArrayHash array_hash;
-    array_hash.visit(GenTree::get_actual_value(v));
+    array_hash.visit(VertexUtil::get_actual_value(v));
     return array_hash.cur_hash;
   }
 
@@ -389,8 +391,8 @@ protected:
   }
 
   void on_double_arrow(VertexAdaptor<op_double_arrow> v) final {
-    VertexPtr key = GenTree::get_actual_value(v->key());
-    VertexPtr value = GenTree::get_actual_value(v->value());
+    VertexPtr key = VertexUtil::get_actual_value(v->key());
+    VertexPtr value = VertexUtil::get_actual_value(v->value());
 
     visit(key);
     feed_hash_string("=>");
@@ -402,14 +404,14 @@ protected:
     feed_hash(MAGIC1);
 
     for (auto it : *v) {
-      visit(GenTree::get_actual_value(it));
+      visit(VertexUtil::get_actual_value(it));
     }
 
     feed_hash(MAGIC2);
   }
 
   void on_var(VertexAdaptor<op_var> v) final {
-    return visit(GenTree::get_actual_value(v));
+    return visit(VertexUtil::get_actual_value(v));
   }
 
   void on_non_const(VertexPtr v) final {
@@ -433,7 +435,7 @@ struct VertexPtrFormatter final
   : ConstManipulations<std::string> {
   static std::string to_string(VertexPtr v) {
     static VertexPtrFormatter serializer;
-    return serializer.visit(GenTree::get_actual_value(v));
+    return serializer.visit(VertexUtil::get_actual_value(v));
   }
 
 protected:
@@ -463,8 +465,8 @@ protected:
   }
 
   std::string on_double_arrow(VertexAdaptor<op_double_arrow> v) final {
-    VertexPtr key = GenTree::get_actual_value(v->key());
-    VertexPtr value = GenTree::get_actual_value(v->value());
+    VertexPtr key = VertexUtil::get_actual_value(v->key());
+    VertexPtr value = VertexUtil::get_actual_value(v->value());
 
     return visit(key) + "=>" + visit(value);
   }
@@ -473,7 +475,7 @@ protected:
     std::string res;
 
     for (auto it : *v) {
-      res += visit(GenTree::get_actual_value(it)) + ", ";
+      res += visit(VertexUtil::get_actual_value(it)) + ", ";
     }
 
     return res;
@@ -520,19 +522,19 @@ protected:
   }
 
   bool on_binary(VertexAdaptor<meta_op_binary> v) override {
-    VertexPtr lhs = GenTree::get_actual_value(v->lhs());
-    VertexPtr rhs = GenTree::get_actual_value(v->rhs());
+    VertexPtr lhs = VertexUtil::get_actual_value(v->lhs());
+    VertexPtr rhs = VertexUtil::get_actual_value(v->rhs());
     return visit(lhs) && visit(rhs);
   }
 
   bool on_array_value(VertexAdaptor<op_array> v, size_t ind) override {
     auto ith_element = v->args()[ind];
     if (auto double_arrow = ith_element.try_as<op_double_arrow>()) {
-      auto key = GenTree::get_actual_value(double_arrow->key()).try_as<op_int_const>();
-      VertexPtr value = GenTree::get_actual_value(double_arrow->value());
+      auto key = VertexUtil::get_actual_value(double_arrow->key()).try_as<op_int_const>();
+      VertexPtr value = VertexUtil::get_actual_value(double_arrow->value());
       return key && key->str_val == std::to_string(ind) && visit(value);
     }
-    return visit(GenTree::get_actual_value(ith_element));
+    return visit(VertexUtil::get_actual_value(ith_element));
   }
 
   bool on_array_finish(VertexAdaptor<op_array>) override {

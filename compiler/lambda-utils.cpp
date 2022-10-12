@@ -13,6 +13,7 @@
 #include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
+#include "compiler/vertex-util.h"
 
 /*
  * How do lambdas work.
@@ -438,7 +439,7 @@ void auto_capture_vars_from_body_in_arrow_lambda(FunctionPtr f_lambda) {
     return var_name != "this" &&      // $this is captured by another approach, in non-arrow lambdas also
            var_name.find("::") == std::string::npos &&
            var_name.find("$u") == std::string::npos &&   // not a superlocal var created in gentree
-           !GenTree::is_superglobal(var_name) &&
+           !VertexUtil::is_superglobal(var_name) &&
            !f_lambda->find_param_by_name(var_name) &&
            !f_lambda->find_use_by_name(var_name);
   };

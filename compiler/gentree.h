@@ -44,13 +44,10 @@ public:
   static VertexAdaptor<op_var> create_superlocal_var(const std::string& name_prefix, FunctionPtr cur_function);
   static VertexAdaptor<op_switch> create_switch_vertex(FunctionPtr cur_function, VertexPtr switch_condition, std::vector<VertexPtr> &&cases);
 
-  static bool is_superglobal(const std::string &s);
   static bool is_magic_method_name_allowed(const std::string &name);
 
 
   GenTree(std::vector<Token> tokens, SrcFilePtr file, DataStream<FunctionPtr> &os);
-
-  static VertexAdaptor<op_string> generate_constant_field_class_value(ClassPtr klass);
 
   bool test_expect(TokenType tp) { return cur->type() == tp; }
 
@@ -58,30 +55,9 @@ public:
   int open_parent();
   void skip_phpdoc_tokens();
 
-  static VertexAdaptor<op_seq> embrace(VertexPtr v);
-
-  template<PrimitiveType ToT>
-  static VertexPtr conv_to(VertexPtr x);
-
-  static VertexPtr get_actual_value(VertexPtr v);
-  static const std::string *get_constexpr_string(VertexPtr v);
-  static VertexPtr get_call_arg_ref(int arg_num, VertexPtr v_func_call);
   static VertexPtr get_call_arg_for_param(VertexAdaptor<op_func_call> call, VertexAdaptor<op_func_param> param, int param_i);
 
-  static void func_force_return(VertexAdaptor<op_function> func, VertexPtr val = {});
   VertexAdaptor<op_ternary> create_ternary_op_vertex(VertexPtr condition, VertexPtr true_expr, VertexPtr false_expr);
-
-  static VertexPtr create_int_const(int32_t number) {
-    auto int_v = VertexAdaptor<op_int_const>::create();
-    int_v->str_val = std::to_string(number);
-    return int_v;
-  }
-
-  static VertexPtr create_string_const(const std::string &str_val) {
-    auto str_v = VertexAdaptor<op_string>::create();
-    str_v->str_val = str_val;
-    return str_v;
-  }
 
   VertexAdaptor<op_func_param> get_func_param();
   VertexAdaptor<op_var> get_var_name();
@@ -181,76 +157,3 @@ private:
   SrcFilePtr processing_file;
 };
 
-template<PrimitiveType ToT>
-VertexAdaptor<meta_op_unary> GenTree::conv_to_lval(VertexPtr x) {
-  switch (ToT) {
-    case tp_array : return VertexAdaptor<op_conv_array_l>::create(x).set_location(x);
-    case tp_int   : return VertexAdaptor<op_conv_int_l>::create(x).set_location(x);
-    case tp_string: return VertexAdaptor<op_conv_string_l>::create(x).set_location(x);
-  }
-  return {};
-}
-
-template<PrimitiveType ToT>
-VertexPtr GenTree::conv_to(VertexPtr x) {
-  switch (ToT) {
-    case tp_int:
-      return VertexAdaptor<op_conv_int>::create(x).set_location(x);
-
-    case tp_bool:
-      return VertexAdaptor<op_conv_bool>::create(x).set_location(x);
-
-    case tp_string:
-      return VertexAdaptor<op_conv_string>::create(x).set_location(x);
-
-    case tp_float:
-      return VertexAdaptor<op_conv_float>::create(x).set_location(x);
-
-    case tp_array:
-      return VertexAdaptor<op_conv_array>::create(x).set_location(x);
-
-    case tp_regexp:
-      return VertexAdaptor<op_conv_regexp>::create(x).set_location(x);
-
-    case tp_mixed:
-      return VertexAdaptor<op_conv_mixed>::create(x).set_location(x);
-
-    default:
-      return x;
-  }
-}
-
-static inline bool is_const_int(VertexPtr root) {
-  switch (root->type()) {
-    case op_int_const:
-      return true;
-    case op_minus:
-    case op_plus:
-    case op_not:
-      return is_const_int(root.as<meta_op_unary>()->expr());
-    case op_add:
-    case op_mul:
-    case op_sub:
-    case op_div:
-    case op_and:
-    case op_or:
-    case op_xor:
-    case op_shl:
-    case op_shr:
-    case op_mod:
-    case op_pow:
-      return is_const_int(root.as<meta_op_binary>()->lhs()) && is_const_int(root.as<meta_op_binary>()->rhs());
-    default:
-      break;
-  }
-  return false;
-}
-
-inline bool is_positive_constexpr_int(VertexPtr v) {
-  auto actual_value = GenTree::get_actual_value(v).try_as<op_int_const>();
-  return actual_value && parse_int_from_string(actual_value) >= 0;
-}
-
-inline bool is_constructor_call(VertexAdaptor<op_func_call> call) {
-  return !call->args().empty() && call->str_val == ClassData::NAME_OF_CONSTRUCT;
-}

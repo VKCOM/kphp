@@ -5,7 +5,9 @@
 #include "compiler/pipes/collect-const-vars.h"
 
 #include "compiler/data/src-file.h"
-#include "compiler/gentree.h"
+#include "compiler/vertex-util.h"
+#include "compiler/data/var-data.h"
+#include "compiler/compiler-core.h"
 #include "compiler/name-gen.h"
 
 int CollectConstVarsPass::get_dependency_level(VertexPtr vertex) {
@@ -39,7 +41,7 @@ VertexPtr CollectConstVarsPass::on_enter_vertex(VertexPtr root) {
 
   if (root->const_type == cnst_const_val) {
     if (root->type() == op_conv_regexp) {
-      VertexPtr expr = GenTree::get_actual_value(root.as<op_conv_regexp>()->expr());
+      VertexPtr expr = VertexUtil::get_actual_value(root.as<op_conv_regexp>()->expr());
       if (vk::any_of_equal(expr->type(), op_string, op_concat, op_string_build)) {
         return create_const_variable(root, root->location);
       }

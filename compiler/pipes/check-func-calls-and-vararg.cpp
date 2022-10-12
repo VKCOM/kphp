@@ -7,7 +7,7 @@
 #include "compiler/data/kphp-json-tags.h"
 #include "compiler/modulite-check-rules.h"
 #include "compiler/data/src-file.h"
-#include "compiler/gentree.h"
+#include "compiler/vertex-util.h"
 #include "compiler/name-gen.h"
 #include "compiler/type-hint.h"
 
@@ -17,7 +17,7 @@ bool is_const_bool(VertexPtr expr, bool value) {
   if (auto as_bool_conv = expr.try_as<op_conv_bool>()) {
     expr = as_bool_conv->expr();
   }
-  expr = GenTree::get_actual_value(expr);
+  expr = VertexUtil::get_actual_value(expr);
   auto target_op = value ? op_true : op_false;
   return expr->type() == target_op;
 }
@@ -151,11 +151,11 @@ VertexAdaptor<op_func_call> CheckFuncCallsAndVarargPass::process_varargs(VertexA
     if (auto unpack_as_varg = ith_call_arg.try_as<op_varg>()) {
       if (i_call_arg == call_args.size() - 1 && i_func_param == f_params.size() - 1 && variadic_args_passed.empty()) {
         // variadic just have been forwarded, e.g. f(...$args) transformed to f($args) without any array_merge
-        variadic_args_passed.emplace_back(GenTree::conv_to<tp_array>(unpack_as_varg->array()));
+        variadic_args_passed.emplace_back(VertexUtil::create_conv_to(tp_array, unpack_as_varg->array()));
         is_just_single_arg_forwarded = true;
       } else {
         // f(...$args, ...$another) transformed to f(array_merge($args, $another))
-        variadic_args_passed.emplace_back(GenTree::conv_to<tp_array>(unpack_as_varg->array()));
+        variadic_args_passed.emplace_back(VertexUtil::create_conv_to(tp_array, unpack_as_varg->array()));
         needs_wrap_array_merge = true;
       }
     } else {
@@ -247,7 +247,7 @@ VertexPtr CheckFuncCallsAndVarargPass::create_CompileTimeLocation_call_arg(const
                           : current_function->name;
   }
 
-  auto v_line = GenTree::create_int_const(call_location.get_line());
+  auto v_line = VertexUtil::create_int_const(call_location.get_line());
 
   auto v_alloc = VertexAdaptor<op_alloc>::create().set_location(call_location);
   v_alloc->allocated_class = klass_CompileTimeLocation;

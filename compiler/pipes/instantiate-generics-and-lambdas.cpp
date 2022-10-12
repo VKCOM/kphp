@@ -8,7 +8,7 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/generics-mixins.h"
-#include "compiler/gentree.h"
+#include "compiler/vertex-util.h"
 #include "compiler/lambda-utils.h"
 #include "compiler/phpdoc.h"
 #include "compiler/type-hint.h"
@@ -55,7 +55,7 @@ public:
         if (const auto *as_class_string = param->type_hint->try_as<TypeHintClassString>()) {
           const TypeHint *instT = instantiationTs->find(as_class_string->inner->try_as<TypeHintGenericT>()->nameT);
           if (instT && instT->try_as<TypeHintInstance>()) {
-            return GenTree::create_string_const(instT->try_as<TypeHintInstance>()->full_class_name);
+            return VertexUtil::create_string_const(instT->try_as<TypeHintInstance>()->full_class_name);
           }
         }
       }

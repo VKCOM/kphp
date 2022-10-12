@@ -5,7 +5,8 @@
 #include "compiler/pipes/preprocess-exceptions.h"
 
 #include "compiler/data/src-file.h"
-#include "compiler/gentree.h"
+#include "compiler/vertex-util.h"
+#include "compiler/compiler-core.h"
 
 VertexPtr PreprocessExceptions::on_exit_vertex(VertexPtr root) {
   static const ClassPtr throwable_class = G->get_class("Throwable");
@@ -26,7 +27,7 @@ VertexPtr PreprocessExceptions::on_exit_vertex(VertexPtr root) {
   }
 
   auto call = root.try_as<op_func_call>();
-  if (!call || !is_constructor_call(call)) {
+  if (!call || !VertexUtil::is_constructor_call(call)) {
     return root;
   }
   auto alloc = call->args()[0].try_as<op_alloc>();
@@ -43,7 +44,7 @@ VertexPtr PreprocessExceptions::on_exit_vertex(VertexPtr root) {
   // 2) the result of codegeneration doesn't depend on username / project location
   auto file_arg = VertexAdaptor<op_string>::create().set_location(root->location);
   file_arg->set_string(root->location.get_file()->relative_file_name);
-  auto line_arg = GenTree::create_int_const(root->location.get_line());
+  auto line_arg = VertexUtil::create_int_const(root->location.get_line());
   auto new_call = VertexAdaptor<op_func_call>::create(call, file_arg, line_arg).set_location(root->location);
   new_call->func_id = G->get_function("_exception_set_location");
   new_call->auto_inserted = true;

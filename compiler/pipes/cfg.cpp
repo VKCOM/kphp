@@ -8,9 +8,10 @@
 #include <random>
 
 #include "compiler/data/function-data.h"
+#include "compiler/data/var-data.h"
+#include "compiler/compiler-core.h"
 #include "compiler/function-pass.h"
 #include "compiler/debug.h"
-#include "compiler/gentree.h"
 #include "compiler/inferring/ifi.h"
 #include "compiler/utils/idmap.h"
 

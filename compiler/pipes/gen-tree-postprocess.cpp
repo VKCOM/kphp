@@ -8,7 +8,7 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
-#include "compiler/gentree.h"
+#include "compiler/vertex-util.h"
 
 namespace {
 template <typename F>
@@ -67,7 +67,7 @@ VertexAdaptor<op_list> make_list_op(VertexAdaptor<op_set> assign) {
     }
 
     auto var = x;
-    auto key = GenTree::create_int_const(implicit_key);
+    auto key = VertexUtil::create_int_const(implicit_key);
     mappings.emplace_back(VertexAdaptor<op_list_keyval>::create(key, var));
   }
 
@@ -231,7 +231,7 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root) {
 
 VertexPtr GenTreePostprocessPass::on_exit_vertex(VertexPtr root) {
   if (root->type() == op_var) {
-    if (GenTree::is_superglobal(root->get_string())) {
+    if (VertexUtil::is_superglobal(root->get_string())) {
       root->extra_type = op_ex_var_superglobal;
     }
   }
@@ -239,7 +239,7 @@ VertexPtr GenTreePostprocessPass::on_exit_vertex(VertexPtr root) {
   if (auto call = root.try_as<op_func_call>()) {
     if (!G->settings().profiler_level.get() && call->size() == 1 &&
         vk::any_of_equal(call->get_string(), "profiler_set_log_suffix", "profiler_set_function_label")) {
-      return VertexAdaptor<op_if>::create(VertexAdaptor<op_false>::create(), GenTree::embrace(call)).set_location_recursively(root);
+      return VertexAdaptor<op_if>::create(VertexAdaptor<op_false>::create(), VertexUtil::embrace(call)).set_location_recursively(root);
     }
   }
 

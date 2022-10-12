@@ -5,7 +5,7 @@
 #include "compiler/pipes/extract-resumable-calls.h"
 
 #include "compiler/compiler-core.h"
-#include "compiler/gentree.h"
+#include "compiler/vertex-util.h"
 #include "compiler/inferring/public.h"
 #include "compiler/name-gen.h"
 
@@ -108,8 +108,8 @@ VertexPtr ExtractResumableCallsPass::replace_set_ternary(VertexAdaptor<op_set_mo
   false_case_rhs = rhs_ternary->false_expr();
   false_case_rhs->val_ref_flag = rhs_ternary->val_ref_flag;
 
-  auto ternary_replacer = VertexAdaptor<op_if>::create(rhs_ternary->cond(), GenTree::embrace(set_true_case), GenTree::embrace(set_false_case));
-  return GenTree::embrace(ternary_replacer.set_rl_type(val_none).set_location(set_vertex));
+  auto ternary_replacer = VertexAdaptor<op_if>::create(rhs_ternary->cond(), VertexUtil::embrace(set_true_case), VertexUtil::embrace(set_false_case));
+  return VertexUtil::embrace(ternary_replacer.set_rl_type(val_none).set_location(set_vertex));
 }
 
 VertexPtr ExtractResumableCallsPass::replace_set_logical_operation(VertexAdaptor<op_set_modify> set_vertex, VertexAdaptor<meta_op_binary> operation) noexcept {
@@ -131,8 +131,8 @@ VertexPtr ExtractResumableCallsPass::replace_set_logical_operation(VertexAdaptor
       kphp_assert(0 && "unexpected type");
   }
 
-  auto check_lhs = VertexAdaptor<op_if>::create(temp_var.second, GenTree::embrace(set_if_lhs_true), GenTree::embrace(set_if_lhs_false));
-  return GenTree::embrace(check_lhs.set_rl_type(val_none).set_location(operation));
+  auto check_lhs = VertexAdaptor<op_if>::create(temp_var.second, VertexUtil::embrace(set_if_lhs_true), VertexUtil::embrace(set_if_lhs_false));
+  return VertexUtil::embrace(check_lhs.set_rl_type(val_none).set_location(operation));
 }
 
 VertexPtr ExtractResumableCallsPass::replace_resumable_expr_with_temp_var(VertexPtr *resumable_expr, VertexPtr expr_user) noexcept {
