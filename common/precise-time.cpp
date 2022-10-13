@@ -5,52 +5,59 @@
 #include "common/precise-time.h"
 
 #include <algorithm>
-#include <cassert>
 #include <cstdint>
-#include <sys/time.h>
-#include <ctime>
-#include <unistd.h>
+#include <chrono>
 
+#include "common/cycleclock.h"
 #include "common/wrappers/likely.h"
 
 int now;
-static int start_time;
 thread_local double precise_now;
 
-double get_utime_monotonic() {
-  struct timespec T;
-  double res = 0;
-#if _POSIX_TIMERS
-  assert(clock_gettime(CLOCK_MONOTONIC, &T) >= 0);
-  res = T.tv_sec + static_cast<double>(T.tv_nsec) * 1e-9;
-#else
-#error "No high-precision clock"
-  res = time();
-#endif
+const uint64_t DEFAULT_CYCLECLOCK_COEFFICIENT = 1;
+static const uint64_t cycleclock_coefficient = std::max(INTEL_DEFAULT_FREQ_KHZ * 1000 / cycleclock_freq(), DEFAULT_CYCLECLOCK_COEFFICIENT);
 
-  precise_now = std::max(precise_now, res);
-  return res;
-}
+template<double (*cb)()>
+struct cached_time {
+  double get_time(int cycles_cache) {
+    const auto cycleclock = cycleclock_now() * cycleclock_coefficient;
 
-double get_network_time() {
-  struct timespec tp;
-  if (!clock_gettime(CLOCK_MONOTONIC, &tp)) {
-    precise_now = std::max(precise_now, tp.tv_sec + (1e-9) * tp.tv_nsec);
+    if (cycleclock - last_cycleclock > cycles_cache) {
+      last_cached_time = cb();
+      last_cycleclock = cycleclock;
+    }
+
+    return last_cached_time;
   }
+  double last_cached_time = -1;
+  uint64_t last_cycleclock{};
+};
 
+double get_utime_monotonic() noexcept {
+  std::chrono::duration<double> seconds = std::chrono::steady_clock::now().time_since_epoch();
+  precise_now = seconds.count();
   return precise_now;
 }
 
-long long get_precise_time() {
-  timespec T;
-  int r = clock_gettime(CLOCK_REALTIME, &T);
-  assert(r >= 0);
-  double res = static_cast<double>(T.tv_sec) + static_cast<double>(T.tv_nsec) * 1e-9;
-  return static_cast<long long>(res * (1LL << 32));
+double get_double_time_since_epoch() noexcept {
+  std::chrono::duration<double> seconds = std::chrono::system_clock::now().time_since_epoch();
+  return seconds.count();
 }
 
+double get_network_time() noexcept {
+  thread_local static cached_time<get_utime_monotonic> cache{};
+  return std::max(precise_now, cache.get_time(1e6));
+}
+
+double get_precise_time(unsigned precision) noexcept {
+  thread_local static cached_time<get_double_time_since_epoch> cache{};
+  return cache.get_time(precision);
+}
+
+static int start_time;
+
 void init_uptime() {
-  start_time = time(nullptr);
+  start_time = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 }
 
 int get_uptime() {
