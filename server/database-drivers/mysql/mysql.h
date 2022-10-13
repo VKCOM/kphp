@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <mysql/mysql.h>
-
 #include "common/kprintf.h"
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
