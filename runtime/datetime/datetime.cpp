@@ -4,6 +4,7 @@
 
 #include "runtime/datetime/datetime.h"
 
+#include "runtime/datetime/date_interval.h"
 #include "runtime/datetime/datetime_immutable.h"
 #include "runtime/exception.h"
 
@@ -24,6 +25,11 @@ class_instance<C$DateTime> f$DateTime$$__construct(const class_instance<C$DateTi
     return {};
   }
   self->time = time;
+  return self;
+}
+
+class_instance<C$DateTime> f$DateTime$$add(const class_instance<C$DateTime> &self, const class_instance<C$DateInterval> &interval) noexcept {
+  self->time = php_timelib_date_add(self->time, interval->rel_time);
   return self;
 }
 
@@ -78,6 +84,24 @@ class_instance<C$DateTime> f$DateTime$$setTime(const class_instance<C$DateTime> 
 class_instance<C$DateTime> f$DateTime$$setTimestamp(const class_instance<C$DateTime> &self, int64_t timestamp) noexcept {
   php_timelib_date_timestamp_set(self->time, timestamp);
   return self;
+}
+
+class_instance<C$DateTime> f$DateTime$$sub(const class_instance<C$DateTime> &self, const class_instance<C$DateInterval> &interval) noexcept {
+  auto [new_time, error_msg] = php_timelib_date_sub(self->time, interval->rel_time);
+  if (!new_time) {
+    php_warning("DateTime::sub(): %s", error_msg.data());
+    return self;
+  }
+  self->time = new_time;
+  return self;
+}
+
+class_instance<C$DateInterval> f$DateTime$$diff(const class_instance<C$DateTime> &self, const class_instance<C$DateTimeInterface> &target_object,
+                                                bool absolute) noexcept {
+  class_instance<C$DateInterval> interval;
+  interval.alloc();
+  interval->rel_time = php_timelib_date_diff(self->time, target_object.get()->time, absolute);
+  return interval;
 }
 
 string f$DateTime$$format(const class_instance<C$DateTime> &self, const string &format) noexcept {

@@ -10,6 +10,7 @@
 #include "runtime/kphp_core.h"
 #include "runtime/refcountable_php_classes.h"
 
+struct C$DateInterval;
 struct C$DateTime;
 
 struct C$DateTimeImmutable : public refcountable_polymorphic_php_classes<C$DateTimeInterface>, private DummyVisitorMethods {
@@ -30,6 +31,9 @@ extern const string NOW;
 class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$__construct(const class_instance<C$DateTimeImmutable> &self, const string &datetime = NOW,
                                                                      const class_instance<C$DateTimeZone> &timezone = Optional<bool>{}) noexcept;
 
+class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$add(const class_instance<C$DateTimeImmutable> &self,
+                                                             const class_instance<C$DateInterval> &interval) noexcept;
+
 class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$createFromFormat(const string &format, const string &datetime,
                                                                           const class_instance<C$DateTimeZone> &timezone = Optional<bool>{}) noexcept;
 
@@ -49,6 +53,12 @@ class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$setTime(const class_ins
                                                                  int64_t second = 0, int64_t microsecond = 0) noexcept;
 
 class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$setTimestamp(const class_instance<C$DateTimeImmutable> &self, int64_t timestamp) noexcept;
+
+class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$sub(const class_instance<C$DateTimeImmutable> &self,
+                                                             const class_instance<C$DateInterval> &interval) noexcept;
+
+class_instance<C$DateInterval> f$DateTimeImmutable$$diff(const class_instance<C$DateTimeImmutable> &self,
+                                                         const class_instance<C$DateTimeInterface> &target_object, bool absolute = false) noexcept;
 
 string f$DateTimeImmutable$$format(const class_instance<C$DateTimeImmutable> &self, const string &format) noexcept;
 

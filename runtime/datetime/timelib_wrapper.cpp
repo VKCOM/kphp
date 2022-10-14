@@ -761,6 +761,39 @@ int64_t php_timelib_date_offset_get(timelib_time *t) {
   return 0;
 }
 
+timelib_time *php_timelib_date_add(timelib_time *t, timelib_rel_time *interval) {
+  auto script_guard = make_malloc_replacement_with_script_allocator();
+
+  timelib_time *new_time = timelib_add(t, interval);
+  timelib_time_dtor(t);
+  return new_time;
+}
+
+std::pair<timelib_time *, std::string_view> php_timelib_date_sub(timelib_time *t, timelib_rel_time *interval) {
+  auto script_guard = make_malloc_replacement_with_script_allocator();
+
+  if (interval->have_special_relative) {
+    return {nullptr, "Only non-special relative time specifications are supported for subtraction"};
+  }
+
+  timelib_time *new_time = timelib_sub(t, interval);
+  timelib_time_dtor(t);
+  return {new_time, {}};
+}
+
+timelib_rel_time *php_timelib_date_diff(timelib_time *time1, timelib_time *time2, bool absolute) {
+  auto script_guard = make_malloc_replacement_with_script_allocator();
+
+  timelib_update_ts(time1, nullptr);
+  timelib_update_ts(time2, nullptr);
+
+  timelib_rel_time *diff = timelib_diff(time1, time2);
+  if (absolute) {
+    diff->invert = 0;
+  }
+  return diff;
+}
+
 std::pair<timelib_rel_time *, string> php_timelib_date_interval_initialize(const string &format) {
   auto script_guard = make_malloc_replacement_with_script_allocator();
 

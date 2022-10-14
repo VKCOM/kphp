@@ -6,9 +6,17 @@
 
 #include <cstring>
 
+#include "runtime/datetime/date_interval.h"
 #include "runtime/datetime/datetime.h"
 #include "runtime/datetime/datetime_functions.h"
 #include "runtime/exception.h"
+
+static class_instance<C$DateTimeImmutable> clone_immutable(const class_instance<C$DateTimeImmutable> &origin) {
+  class_instance<C$DateTimeImmutable> clone;
+  clone.alloc();
+  clone->time = php_timelib_time_clone(origin->time);
+  return clone;
+}
 
 C$DateTimeImmutable::~C$DateTimeImmutable() {
   php_timelib_date_remove(time);
@@ -26,6 +34,13 @@ class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$__construct(const class
   }
   self->time = time;
   return self;
+}
+
+class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$add(const class_instance<C$DateTimeImmutable> &self,
+                                                             const class_instance<C$DateInterval> &interval) noexcept {
+  auto new_date = clone_immutable(self);
+  new_date->time = php_timelib_date_add(new_date->time, interval->rel_time);
+  return new_date;
 }
 
 class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$createFromFormat(const string &format, const string &datetime,
@@ -49,13 +64,6 @@ class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$createFromMutable(const
 
 Optional<array<mixed>> f$DateTimeImmutable$$getLastErrors() noexcept {
   return php_timelib_date_get_last_errors();
-}
-
-static class_instance<C$DateTimeImmutable> clone_immutable(const class_instance<C$DateTimeImmutable> &origin) {
-  class_instance<C$DateTimeImmutable> clone;
-  clone.alloc();
-  clone->time = php_timelib_time_clone(origin->time);
-  return clone;
 }
 
 class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$modify(const class_instance<C$DateTimeImmutable> &self, const string &modifier) noexcept {
@@ -93,6 +101,26 @@ class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$setTimestamp(const clas
   auto new_date = clone_immutable(self);
   php_timelib_date_timestamp_set(new_date->time, timestamp);
   return new_date;
+}
+
+class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$sub(const class_instance<C$DateTimeImmutable> &self,
+                                                             const class_instance<C$DateInterval> &interval) noexcept {
+  auto new_date = clone_immutable(self);
+  auto [new_time, error_msg] = php_timelib_date_sub(new_date->time, interval->rel_time);
+  if (!new_time) {
+    php_warning("DateTimeImmutable::sub(): %s", error_msg.data());
+    return new_date;
+  }
+  new_date->time = new_time;
+  return new_date;
+}
+
+class_instance<C$DateInterval> f$DateTimeImmutable$$diff(const class_instance<C$DateTimeImmutable> &self,
+                                                         const class_instance<C$DateTimeInterface> &target_object, bool absolute) noexcept {
+  class_instance<C$DateInterval> interval;
+  interval.alloc();
+  interval->rel_time = php_timelib_date_diff(self->time, target_object.get()->time, absolute);
+  return interval;
 }
 
 string f$DateTimeImmutable$$format(const class_instance<C$DateTimeImmutable> &self, const string &format) noexcept {

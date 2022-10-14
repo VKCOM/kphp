@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string_view>
+
 #include "runtime/kphp_core.h"
 
 // php_timelib wraps the https://github.com/derickr/timelib library
@@ -52,6 +54,10 @@ void php_timelib_date_date_set(timelib_time *t, int64_t y, int64_t m, int64_t d)
 void php_timelib_date_isodate_set(timelib_time *t, int64_t y, int64_t w, int64_t d);
 void php_date_time_set(timelib_time *t, int64_t h, int64_t i, int64_t s, int64_t ms);
 int64_t php_timelib_date_offset_get(timelib_time *t);
+
+timelib_time *php_timelib_date_add(timelib_time *t, timelib_rel_time *interval);
+std::pair<timelib_time *, std::string_view> php_timelib_date_sub(timelib_time *t, timelib_rel_time *interval);
+timelib_rel_time *php_timelib_date_diff(timelib_time *time1, timelib_time *time2, bool absolute);
 
 std::pair<timelib_rel_time *, string> php_timelib_date_interval_initialize(const string &format);
 std::pair<timelib_rel_time *, string> php_timelib_date_interval_create_from_date_string(const string &time_str);
