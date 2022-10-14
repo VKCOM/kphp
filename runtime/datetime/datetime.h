@@ -4,38 +4,22 @@
 
 #pragma once
 
+#include "runtime/datetime/datetime_zone.h"
+#include "runtime/datetime/datetime_interface.h"
 #include "runtime/dummy-visitor-methods.h"
 #include "runtime/kphp_core.h"
 #include "runtime/refcountable_php_classes.h"
-#include "runtime/timelib_wrapper.h"
 
-struct C$DateTimeZone : public refcountable_php_classes<C$DateTimeZone>, private DummyVisitorMethods {
+struct C$DateTimeImmutable;
+
+struct C$DateTime : public refcountable_polymorphic_php_classes<C$DateTimeInterface>, private DummyVisitorMethods {
   using DummyVisitorMethods::accept;
 
-  string timezone;
-
-  const char *get_class() const noexcept {
-    return R"(DateTimeZone)";
-  }
-
-  int get_hash() const noexcept {
-    return 219249843;
-  }
-};
-
-class_instance<C$DateTimeZone> f$DateTimeZone$$__construct(const class_instance<C$DateTimeZone> &self, const string &timezone) noexcept;
-string f$DateTimeZone$$getName(const class_instance<C$DateTimeZone> &self) noexcept;
-
-struct C$DateTime : public refcountable_php_classes<C$DateTime>, private DummyVisitorMethods {
-  using DummyVisitorMethods::accept;
-
-  timelib_time *time{nullptr};
-
-  const char *get_class() const noexcept {
+  const char *get_class() const noexcept final {
     return R"(DateTime)";
   }
 
-  int get_hash() const noexcept {
+  int get_hash() const noexcept final {
     return 2141635158;
   }
 
@@ -48,6 +32,8 @@ class_instance<C$DateTime> f$DateTime$$__construct(const class_instance<C$DateTi
 
 class_instance<C$DateTime> f$DateTime$$createFromFormat(const string &format, const string &datetime,
                                                         const class_instance<C$DateTimeZone> &timezone = Optional<bool>{}) noexcept;
+
+class_instance<C$DateTime> f$DateTime$$createFromImmutable(const class_instance<C$DateTimeImmutable> &object) noexcept;
 
 Optional<array<mixed>> f$DateTime$$getLastErrors() noexcept;
 

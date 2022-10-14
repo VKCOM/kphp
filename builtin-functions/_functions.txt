@@ -1527,6 +1527,16 @@ interface DateTimeInterface {
   const W3C = "Y-m-d\TH:i:sP";
 
   /* Methods */
+  public function modify(string $modifier): ?DateTimeInterface;
+  public function setDate(int $year, int $month, int $day): DateTimeInterface;
+  public function setISODate(int $year, int $week, int $dayOfWeek = 1): DateTimeInterface;
+  public function setTime(
+      int $hour,
+      int $minute,
+      int $second = 0,
+      int $microsecond = 0
+  ): DateTimeInterface;
+  public function setTimestamp(int $timestamp): DateTimeInterface;
   public function format(string $format): string;
   public function getOffset(): int;
   public function getTimestamp(): int;
@@ -1536,6 +1546,7 @@ class DateTime implements DateTimeInterface {
   /** @kphp-extern-func-info can_throw */
   public function __construct(string $datetime = "now", ?DateTimeZone $timezone = null);
   public static function createFromFormat(string $format, string $datetime, ?DateTimeZone $timezone = null): ?DateTime;
+  public static function createFromImmutable(DateTimeImmutable $object): DateTime;
   public static function getLastErrors(): array|false;
   public function modify(string $modifier): ?DateTime;
   public function setDate(int $year, int $month, int $day): DateTime;
@@ -1547,6 +1558,27 @@ class DateTime implements DateTimeInterface {
       int $microsecond = 0
   ): DateTime;
   public function setTimestamp(int $timestamp): DateTime;
+  public function format(string $format): string;
+  public function getOffset(): int;
+  public function getTimestamp(): int;
+}
+
+class DateTimeImmutable implements DateTimeInterface {
+  /** @kphp-extern-func-info can_throw */
+  public function __construct(string $datetime = "now", ?DateTimeZone $timezone = null);
+  public static function createFromFormat(string $format, string $datetime, ?DateTimeZone $timezone = null): ?DateTimeImmutable;
+  public static function createFromMutable(DateTime $object): DateTimeImmutable;
+  public static function getLastErrors(): array|false;
+  public function modify(string $modifier): ?DateTimeImmutable;
+  public function setDate(int $year, int $month, int $day): DateTimeImmutable;
+  public function setISODate(int $year, int $week, int $dayOfWeek = 1): DateTimeImmutable;
+  public function setTime(
+      int $hour,
+      int $minute,
+      int $second = 0,
+      int $microsecond = 0
+  ): DateTimeImmutable;
+  public function setTimestamp(int $timestamp): DateTimeImmutable;
   public function format(string $format): string;
   public function getOffset(): int;
   public function getTimestamp(): int;

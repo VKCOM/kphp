@@ -30,7 +30,7 @@
 
 #include "runtime/array_functions.h"
 #include "runtime/critical_section.h"
-#include "runtime/datetime.h"
+#include "runtime/datetime/datetime_functions.h"
 #include "runtime/files.h"
 #include "runtime/net_events.h"
 #include "runtime/streams.h"

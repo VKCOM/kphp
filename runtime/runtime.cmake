@@ -1,3 +1,10 @@
+prepend(KPHP_RUNTIME_DATETIME_SOURCES datetime/
+        datetime.cpp
+        datetime_functions.cpp
+        datetime_immutable.cpp
+        datetime_zone.cpp
+        timelib_wrapper.cpp)
+
 prepend(KPHP_RUNTIME_MEMORY_RESOURCE_SOURCES memory_resource/
         dealer.cpp
         details/memory_chunk_tree.cpp
@@ -36,6 +43,7 @@ prepend(KPHP_RUNTIME_PDO_MYSQL_SOURCES pdo/mysql/
 endif()
 
 prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
+        ${KPHP_RUNTIME_DATETIME_SOURCES}
         ${KPHP_RUNTIME_MEMORY_RESOURCE_SOURCES}
         ${KPHP_RUNTIME_MSGPACK_SOURCES}
         ${KPHP_RUNTIME_JOB_WORKERS_SOURCES}
@@ -51,8 +59,6 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         confdata-keys.cpp
         critical_section.cpp
         curl.cpp
-        datetime.cpp
-        datetime-class.cpp
         exception.cpp
         files.cpp
         from-json-processor.cpp
@@ -87,7 +93,6 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         string_buffer.cpp
         string_cache.cpp
         string_functions.cpp
-        timelib_wrapper.cpp
         tl/rpc_tl_query.cpp
         tl/rpc_response.cpp
         tl/rpc_server.cpp

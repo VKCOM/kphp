@@ -2,7 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime/datetime.h"
+#include "runtime/datetime/datetime_functions.h"
 
 #include <clocale>
 #include <ctime>
@@ -10,8 +10,8 @@
 #include <chrono>
 
 #include "runtime/critical_section.h"
+#include "runtime/datetime/timelib_wrapper.h"
 #include "runtime/string_functions.h"
-#include "runtime/timelib_wrapper.h"
 
 extern long timezone;
 

@@ -1,9 +1,7 @@
 @ok
 <?php
 
-function test_format_basic() {
-  $date = new DateTime("2005-07-14 22:30:41");
-
+function test_format_basic(DateTimeInterface $date) {
   var_dump( $date->format( "F j, Y, g:i a") );
   var_dump( $date->format( "m.d.y") );
   var_dump( $date->format( "j, n, Y") );
@@ -18,9 +16,7 @@ function test_format_basic() {
   var_dump( $date->format( "U") );
 }
 
-function test_format_basic_predefined_constants() {
-  $date = new DateTime("2005-07-14 22:30:41");
-
+function test_format_basic_predefined_constants(DateTimeInterface $date) {
   var_dump( $date->format( DateTime::ATOM) ) ;
   var_dump( $date->format( DateTime::COOKIE) ) ;
   var_dump( $date->format( DateTime::ISO8601) ) ;
@@ -36,10 +32,9 @@ function test_format_basic_predefined_constants() {
   var_dump( $date->format( DateTime::W3C) ) ;
 }
 
-function test_format_negative_year() {
-  $date2 = new DateTime("-2005-07-14 22:30:41");
-  var_dump( $date2->format( "Y") );
-  var_dump( $date2->format( "c") );
+function test_format_negative_year(DateTimeInterface $date) {
+  var_dump( $date->format( "Y") );
+  var_dump( $date->format( "c") );
 }
 
 function test_format_leap_year() {
@@ -57,7 +52,26 @@ function test_format_leap_year() {
   var_dump ((new DateTime("404-07-14"))->format( "L"));
 }
 
-test_format_basic();
-test_format_basic_predefined_constants();
-test_format_negative_year();
+function test_format_leap_year_immutable() {
+  var_dump ((new DateTimeImmutable("92-07-14"))->format( "L"));
+  var_dump ((new DateTimeImmutable("96-07-14"))->format( "L"));
+  var_dump ((new DateTimeImmutable("100-07-14"))->format( "L"));
+  var_dump ((new DateTimeImmutable("104-07-14"))->format( "L"));
+  var_dump ((new DateTimeImmutable("196-07-14"))->format( "L"));
+  var_dump ((new DateTimeImmutable("200-07-14"))->format( "L"));
+  var_dump ((new DateTimeImmutable("204-07-14"))->format( "L"));
+  var_dump ((new DateTimeImmutable("300-07-14"))->format( "L"));
+  var_dump ((new DateTimeImmutable("300-07-14"))->format( "L"));
+  var_dump ((new DateTimeImmutable("396-07-14"))->format( "L"));
+  var_dump ((new DateTimeImmutable("400-07-14"))->format( "L"));
+  var_dump ((new DateTimeImmutable("404-07-14"))->format( "L"));
+}
+
+test_format_basic(new DateTime("2005-07-14 22:30:41"));
+test_format_basic(new DateTimeImmutable("2005-07-14 22:30:41"));
+test_format_basic_predefined_constants(new DateTime("2005-07-14 22:30:41"));
+test_format_basic_predefined_constants(new DateTimeImmutable("2005-07-14 22:30:41"));
+test_format_negative_year(new DateTime("-2005-07-14 22:30:41"));
+test_format_negative_year(new DateTimeImmutable("-2005-07-14 22:30:41"));
 test_format_leap_year();
+test_format_leap_year_immutable();
