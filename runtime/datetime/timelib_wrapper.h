@@ -31,6 +31,9 @@ void free_timelib();
 struct _timelib_time;
 using timelib_time = _timelib_time;
 
+struct _timelib_rel_time;
+using timelib_rel_time = _timelib_rel_time;
+
 std::pair<timelib_time *, string> php_timelib_date_initialize(const string &tz_name, const string &time_str, const char *format = nullptr);
 timelib_time *php_timelib_time_clone(timelib_time *t);
 void php_timelib_date_remove(timelib_time *t);
@@ -49,3 +52,8 @@ void php_timelib_date_date_set(timelib_time *t, int64_t y, int64_t m, int64_t d)
 void php_timelib_date_isodate_set(timelib_time *t, int64_t y, int64_t w, int64_t d);
 void php_date_time_set(timelib_time *t, int64_t h, int64_t i, int64_t s, int64_t ms);
 int64_t php_timelib_date_offset_get(timelib_time *t);
+
+std::pair<timelib_rel_time *, string> php_timelib_date_interval_initialize(const string &format);
+std::pair<timelib_rel_time *, string> php_timelib_date_interval_create_from_date_string(const string &time_str);
+void php_timelib_date_interval_remove(timelib_rel_time *t);
+string php_timelib_date_interval_format(const string &format, timelib_rel_time *t);

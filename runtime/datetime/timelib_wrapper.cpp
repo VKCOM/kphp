@@ -760,3 +760,165 @@ int64_t php_timelib_date_offset_get(timelib_time *t) {
   }
   return 0;
 }
+
+std::pair<timelib_rel_time *, string> php_timelib_date_interval_initialize(const string &format) {
+  auto script_guard = make_malloc_replacement_with_script_allocator();
+
+  timelib_time *b = nullptr;
+  timelib_time *e = nullptr;
+  timelib_rel_time *p = nullptr;
+  int r = 0;
+  timelib_error_container *errors = nullptr;
+  timelib_strtointerval(format.c_str(), format.size(), &b, &e, &p, &r, &errors);
+  vk::final_action error_deleter{[errors]() { timelib_error_container_dtor(errors); }};
+  vk::final_action e_deleter{[e]() { free(e); }};
+  vk::final_action b_deleter{[b]() { free(b); }};
+
+  if (errors->error_count > 0) {
+    if (p) {
+      timelib_rel_time_dtor(p);
+    }
+    return {nullptr, string{"Unknown or bad format ("}.append(format).append(1, ')')};
+  }
+
+  if (p) {
+    return {p, {}};
+  }
+
+  if (b && e) {
+    timelib_update_ts(b, nullptr);
+    timelib_update_ts(e, nullptr);
+    return {timelib_diff(b, e), {}};
+  }
+
+  return {nullptr, string{"Failed to parse interval ("}.append(format).append(1, ')')};
+}
+
+void php_timelib_date_interval_remove(timelib_rel_time *t) {
+  if (t) {
+    auto script_guard = make_malloc_replacement_with_script_allocator();
+    timelib_rel_time_dtor(t);
+  }
+}
+
+std::pair<timelib_rel_time *, string> php_timelib_date_interval_create_from_date_string(const string &time_str) {
+  auto script_guard = make_malloc_replacement_with_script_allocator();
+
+  timelib_error_container *err = nullptr;
+  timelib_time *time = timelib_strtotime_leak_safe(time_str, &err);
+  vk::final_action time_deleter{[time] { timelib_time_dtor(time); }};
+  vk::final_action error_deleter{[err]() { timelib_error_container_dtor(err); }};
+
+  if (err->error_count > 0) {
+    string error_msg{"Unknown or bad format ("};
+    error_msg.append(time_str).append(1, ')').append(" at position ").append(err->error_messages[0].position);
+    error_msg.append(" (").append(1, err->error_messages[0].character ? err->error_messages[0].character : ' ').append("): ");
+    error_msg.append(err->error_messages[0].message);
+    return {nullptr, std::move(error_msg)};
+  }
+  return {timelib_rel_time_clone(&time->relative), {}};
+}
+
+string php_timelib_date_interval_format(const string &format, timelib_rel_time *t) {
+  // no need to use make_malloc_replacement_with_script_allocator() here since this function doesn't allocate heap memory
+  if (format.empty()) {
+    return {};
+  }
+
+  string_buffer &SB = static_SB_spare;
+  SB.clean();
+
+  // php implementation has 33 bytes buffer capacity, we have 128 bytes as well as php_timelib_date_format()
+  StaticBuf buffer{};
+  int length = 0;
+  bool have_format_spec = false;
+
+  for (std::size_t i = 0; i < format.size(); ++i) {
+    if (have_format_spec) {
+      switch (format[i]) {
+        case 'Y':
+          length = safe_snprintf(buffer, "%02d", static_cast<int>(t->y));
+          break;
+        case 'y':
+          length = safe_snprintf(buffer, "%d", static_cast<int>(t->y));
+          break;
+
+        case 'M':
+          length = safe_snprintf(buffer, "%02d", static_cast<int>(t->m));
+          break;
+        case 'm':
+          length = safe_snprintf(buffer, "%d", static_cast<int>(t->m));
+          break;
+
+        case 'D':
+          length = safe_snprintf(buffer, "%02d", static_cast<int>(t->d));
+          break;
+        case 'd':
+          length = safe_snprintf(buffer, "%d", static_cast<int>(t->d));
+          break;
+
+        case 'H':
+          length = safe_snprintf(buffer, "%02d", static_cast<int>(t->h));
+          break;
+        case 'h':
+          length = safe_snprintf(buffer, "%d", static_cast<int>(t->h));
+          break;
+
+        case 'I':
+          length = safe_snprintf(buffer, "%02d", static_cast<int>(t->i));
+          break;
+        case 'i':
+          length = safe_snprintf(buffer, "%d", static_cast<int>(t->i));
+          break;
+
+        case 'S':
+          length = safe_snprintf(buffer, "%02ld", static_cast<int64_t>(t->s));
+          break;
+        case 's':
+          length = safe_snprintf(buffer, "%ld", static_cast<int64_t>(t->s));
+          break;
+
+        case 'F':
+          length = safe_snprintf(buffer, "%06ld", static_cast<int64_t>(t->us));
+          break;
+        case 'f':
+          length = safe_snprintf(buffer, "%ld", static_cast<int64_t>(t->us));
+          break;
+
+        case 'a': {
+          if (static_cast<int>(t->days) != TIMELIB_UNSET) {
+            length = safe_snprintf(buffer, "%d", static_cast<int>(t->days));
+          } else {
+            length = safe_snprintf(buffer, "(unknown)");
+          }
+        } break;
+        case 'r':
+          length = safe_snprintf(buffer, "%s", t->invert ? "-" : "");
+          break;
+        case 'R':
+          length = safe_snprintf(buffer, "%c", t->invert ? '-' : '+');
+          break;
+
+        case '%':
+          length = safe_snprintf(buffer, "%%");
+          break;
+        default:
+          buffer[0] = '%';
+          buffer[1] = format[i];
+          buffer[2] = '\0';
+          length = 2;
+          break;
+      }
+      SB.append(buffer.data(), length);
+      have_format_spec = false;
+    } else {
+      if (format[i] == '%') {
+        have_format_spec = true;
+      } else {
+        SB << format[i];
+      }
+    }
+  }
+
+  return SB.str();
+}

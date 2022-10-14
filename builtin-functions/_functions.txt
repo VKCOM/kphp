@@ -1512,6 +1512,13 @@ class DateTimeZone {
   public function getName(): string;
 }
 
+class DateInterval {
+  /** @kphp-extern-func-info can_throw */
+  public function __construct(string $duration);
+  public static function createFromDateString(string $datetime): ?DateInterval;
+  public function format(string $format): string;
+}
+
 interface DateTimeInterface {
   /* Constants */
   const ATOM = "Y-m-d\TH:i:sP";
