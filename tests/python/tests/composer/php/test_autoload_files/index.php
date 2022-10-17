@@ -25,9 +25,9 @@ ksort($global_map);
 var_dump(
   $global_map,
 
-  array_key_first([]),
-  array_key_first([1, 2]),
-  array_key_first(['first' => 1, 'second' => 2]),
+  array_key_first_custom([]),
+  array_key_first_custom([1, 2]),
+  array_key_first_custom(['first' => 1, 'second' => 2]),
 
   str_contains('', ''),
   str_contains('x', ''),
