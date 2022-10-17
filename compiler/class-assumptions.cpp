@@ -34,13 +34,13 @@
 
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
-#include "compiler/gentree.h"
 #include "compiler/pipes/instantiate-ffi-operations.h"
 #include "compiler/pipes/deduce-implicit-types-and-casts.h"
 #include "compiler/phpdoc.h"
 #include "compiler/type-hint.h"
 #include "compiler/function-pass.h"
 #include "compiler/vertex.h"
+#include "compiler/vertex-util.h"
 
 
 static inline const TypeHint *assumption_unwrap_optional(const TypeHint *assum_hint) {
@@ -87,7 +87,7 @@ Assumption Assumption::get_subkey_by_index(VertexPtr index_key) const {
     return Assumption(as_array->inner);
   }
   if (const auto *as_tuple = type_hint->try_as<TypeHintTuple>()) {
-    if (auto as_int_index = GenTree::get_actual_value(index_key).try_as<op_int_const>()) {
+    if (auto as_int_index = VertexUtil::get_actual_value(index_key).try_as<op_int_const>()) {
       int int_index = parse_int_from_string(as_int_index);
       if (int_index >= 0 && int_index < as_tuple->items.size()) {
         return Assumption(as_tuple->items[int_index]);
@@ -95,8 +95,8 @@ Assumption Assumption::get_subkey_by_index(VertexPtr index_key) const {
     }
   }
   if (const auto *as_shape = type_hint->try_as<TypeHintShape>()) {
-    if (vk::any_of_equal(GenTree::get_actual_value(index_key)->type(), op_int_const, op_string)) {
-      const auto &string_index = GenTree::get_actual_value(index_key)->get_string();
+    if (vk::any_of_equal(VertexUtil::get_actual_value(index_key)->type(), op_int_const, op_string)) {
+      const auto &string_index = VertexUtil::get_actual_value(index_key)->get_string();
       if (const TypeHint *at_index = as_shape->find_at(string_index)) {
         return Assumption(at_index);
       }
@@ -541,19 +541,19 @@ Assumption infer_from_call(FunctionPtr f, VertexAdaptor<op_func_call> call, Vert
     const TypeHint *return_typehint = f_called->return_typehint->unwrap_optional();
 
     if (const auto *as_arg_ref = return_typehint->try_as<TypeHintArgRef>()) {       // array_values ($a ::: array) ::: ^1
-      return assume_class_of_expr(f, GenTree::get_call_arg_ref(as_arg_ref->arg_num, call), stop_at);
+      return assume_class_of_expr(f, VertexUtil::get_call_arg_ref(as_arg_ref->arg_num, call), stop_at);
     }
     if (const auto *as_sub = return_typehint->try_as<TypeHintArgSubkeyGet>()) {  // array_shift (&$a ::: array) ::: ^1[*]
       if (const auto *arg_ref = as_sub->inner->try_as<TypeHintArgRef>()) {
-        auto expr_a = assume_class_of_expr(f, GenTree::get_call_arg_ref(arg_ref->arg_num, call), stop_at);
+        auto expr_a = assume_class_of_expr(f, VertexUtil::get_call_arg_ref(arg_ref->arg_num, call), stop_at);
         if (Assumption inner = expr_a.get_inner_if_array()) {
           return inner;
         }
       }
     }
     if (const auto *as_arg_ref = return_typehint->try_as<TypeHintArgRefInstance>()) {   // f (...) ::: instance<^1>
-      if (auto arg = GenTree::get_call_arg_ref(as_arg_ref->arg_num, call)) {
-        if (const auto *class_name = GenTree::get_constexpr_string(arg)) {
+      if (auto arg = VertexUtil::get_call_arg_ref(as_arg_ref->arg_num, call)) {
+        if (const auto *class_name = VertexUtil::get_constexpr_string(arg)) {
           if (auto klass = G->get_class(*class_name)) {
             return Assumption(klass);
           }
@@ -564,8 +564,8 @@ Assumption infer_from_call(FunctionPtr f, VertexAdaptor<op_func_call> call, Vert
       return Assumption(as_ffi);
     }
     if (const auto *as_ffi_scope = return_typehint->try_as<TypeHintFFIScopeArgRef>()) {
-      if (auto arg = GenTree::get_call_arg_ref(as_ffi_scope->arg_num, call)) {
-        if (const auto *scope_name = GenTree::get_constexpr_string(arg)) {
+      if (auto arg = VertexUtil::get_call_arg_ref(as_ffi_scope->arg_num, call)) {
+        if (const auto *scope_name = VertexUtil::get_constexpr_string(arg)) {
           if (auto module_class = G->get_class(FFIRoot::scope_class_name(*scope_name))) {
             return Assumption(module_class);
           }
@@ -649,7 +649,7 @@ Assumption infer_from_tuple(FunctionPtr f, VertexAdaptor<op_tuple> tuple, Vertex
 Assumption infer_from_shape(FunctionPtr f, VertexAdaptor<op_shape> shape, VertexPtr stop_at) {
   std::vector<std::pair<std::string, const TypeHint *>> sub;
   for (auto sub_expr : shape->args()) {
-    const std::string &shape_key = GenTree::get_actual_value(sub_expr->front())->get_string();
+    const std::string &shape_key = VertexUtil::get_actual_value(sub_expr->front())->get_string();
     sub.emplace_back(shape_key, assume_class_of_expr(f, sub_expr->back(), stop_at).assum_hint ?: TypeHintPrimitive::create(tp_any));
   }
   return Assumption(TypeHintShape::create(std::move(sub), false));

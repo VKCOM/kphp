@@ -5,7 +5,7 @@
 #include "compiler/type-hint.h"
 
 #include "compiler/data/function-data.h"
-#include "compiler/gentree.h"
+#include "compiler/vertex-util.h"
 #include "compiler/inferring/public.h"
 
 // recalc_type_data_in_context_of_call() from type-hint.h for all ancestors
@@ -13,7 +13,7 @@
 
 
 void TypeHintArgRef::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const {
-  if (auto vertex = GenTree::get_call_arg_ref(arg_num, call)) {
+  if (auto vertex = VertexUtil::get_call_arg_ref(arg_num, call)) {
     dst->set_lca(vertex->tinf_node.get_type());
   }
 }
@@ -72,8 +72,8 @@ void TypeHintArgRefCallbackCall::recalc_type_data_in_context_of_call(TypeData *d
 }
 
 void TypeHintArgRefInstance::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const {
-  if (auto v = GenTree::get_call_arg_ref(arg_num, call)) {
-    if (const auto *class_name = GenTree::get_constexpr_string(v)) {
+  if (auto v = VertexUtil::get_call_arg_ref(arg_num, call)) {
+    if (const auto *class_name = VertexUtil::get_constexpr_string(v)) {
       if (auto klass = G->get_class(*class_name)) {
         dst->set_lca(klass->type_data);
         return;
@@ -151,8 +151,8 @@ void TypeHintFFIType::recalc_type_data_in_context_of_call(TypeData *dst, VertexP
 }
 
 void TypeHintFFIScopeArgRef::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const {
-  if (auto v = GenTree::get_call_arg_ref(arg_num, call)) {
-    if (const auto *arg_scope_name = GenTree::get_constexpr_string(v)) {
+  if (auto v = VertexUtil::get_call_arg_ref(arg_num, call)) {
+    if (const auto *arg_scope_name = VertexUtil::get_constexpr_string(v)) {
       dst->set_lca(G->get_class(FFIRoot::scope_class_name(*arg_scope_name))->type_data);
     }
   }

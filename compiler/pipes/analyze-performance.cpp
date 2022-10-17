@@ -11,7 +11,7 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/src-file.h"
 #include "compiler/inferring/public.h"
-#include "compiler/gentree.h"
+#include "compiler/vertex-util.h"
 
 namespace {
 
@@ -49,7 +49,7 @@ std::string get_description_for_help_impl(VertexPtr expr) {
   expr = remove_conv_wrap(expr);
   switch (expr->type()) {
     case op_var:
-      if (const auto *constexpr_str = GenTree::get_constexpr_string(expr)) {
+      if (const auto *constexpr_str = VertexUtil::get_constexpr_string(expr)) {
         std::string raw_str{constexpr_str->c_str(), std::min(constexpr_str->size(), size_t{36})};
         if (raw_str.size() < constexpr_str->size()) {
           raw_str.append("<...>");

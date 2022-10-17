@@ -9,7 +9,7 @@
 #include "common/algorithms/hashes.h"
 
 #include "compiler/data/class-data.h"
-#include "compiler/gentree.h"
+#include "compiler/vertex-util.h"
 #include "compiler/inferring/public.h"
 
 namespace {
@@ -30,7 +30,7 @@ bool can_init_value_be_removed(VertexPtr init_value, const VarPtr &variable) {
 
   switch (init_type->ptype()) {
     case tp_string: {
-      const auto *init_string = GenTree::get_constexpr_string(init_value);
+      const auto *init_string = VertexUtil::get_constexpr_string(init_value);
       return init_string && init_string->empty();
     }
     case tp_array:

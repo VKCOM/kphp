@@ -13,7 +13,7 @@
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/data/vars-collector.h"
-#include "compiler/gentree.h"
+#include "compiler/vertex-util.h"
 #include "compiler/type-hint.h"
 
 namespace {
@@ -193,7 +193,7 @@ void store_json_encoder(ClassPtr klass, ClassPtr json_encoder, bool to_encode) n
 }
 
 ClassPtr extract_json_encoder_from_call(VertexAdaptor<op_func_call> call) noexcept {
-  auto v_encoder = GenTree::get_actual_value(call->args().front());
+  auto v_encoder = VertexUtil::get_actual_value(call->args().front());
   kphp_assert(v_encoder->type() == op_string);  // it's const string of a class name (JsonEncoder of inheritors)
   return G->get_class(v_encoder->get_string());
 }
@@ -313,7 +313,7 @@ void check_func_call_params(VertexAdaptor<op_func_call> call) {
     if (auto name = f_passed_to_builtin->local_name(); name == "to_array_debug" || name == "instance_to_array") {
       if (const auto *as_subkey = type_hint_callable->arg_types[0]->try_as<TypeHintArgSubkeyGet>()) {
         const auto *arg_ref = as_subkey->inner->try_as<TypeHintArgRef>();
-        if (auto arg = GenTree::get_call_arg_ref(arg_ref ? arg_ref->arg_num : -1, call)) {
+        if (auto arg = VertexUtil::get_call_arg_ref(arg_ref ? arg_ref->arg_num : -1, call)) {
           const auto *value_type = tinf::get_type(arg)->lookup_at_any_key();
           auto out_class = value_type->class_type();
           kphp_error_return(out_class, "type of argument for to_array_debug has to be array of Classes");
@@ -585,7 +585,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
       kphp_error (list_size <= tuple_size, fmt_format("Can't assign tuple of length {} to list of length {}", tuple_size, list_size));
       for (auto cur : list->list()) {
         const auto kv = cur.as<op_list_keyval>();
-        if (GenTree::get_actual_value(kv->key())->type() != op_int_const) {
+        if (VertexUtil::get_actual_value(kv->key())->type() != op_int_const) {
           const TypeData *key_type = tinf::get_type(kv->key());
           kphp_error(0, fmt_format("Only int const keys can be used, got '{}'", ptype_name(key_type->ptype())));
         }
@@ -593,7 +593,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     } else if (arrayType->ptype() == tp_shape) {
       for (auto cur : list->list()) {
         const auto kv = cur.as<op_list_keyval>();
-        if (GenTree::get_actual_value(kv->key())->type() != op_string) {
+        if (VertexUtil::get_actual_value(kv->key())->type() != op_string) {
           const TypeData *key_type = tinf::get_type(kv->key());
           kphp_error(0, fmt_format("Only string const keys can be used, got '{}'", ptype_name(key_type->ptype())));
         }
@@ -608,7 +608,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     const TypeData *array_type = tinf::get_type(arr);
     // TODO: do we need this?
     if (array_type->ptype() == tp_tuple) {
-      const auto key_value = GenTree::get_actual_value(key);
+      const auto key_value = VertexUtil::get_actual_value(key);
       if (key_value->type() == op_int_const) {
         const long index = parse_int_from_string(key_value.as<op_int_const>());
         const size_t tuple_size = array_type->get_tuple_max_index();
@@ -822,7 +822,7 @@ void FinalCheckPass::check_lib_exported_function(FunctionPtr function) {
   for (auto p: function->get_params()) {
     auto param = p.as<op_func_param>();
     if (param->has_default_value() && param->default_value()) {
-      VertexPtr default_value = GenTree::get_actual_value(param->default_value());
+      VertexPtr default_value = VertexUtil::get_actual_value(param->default_value());
       kphp_error_act(vk::any_of_equal(default_value->type(), op_int_const, op_float_const),
                      "Only const int, const float are allowed as default param for @kphp-lib-export function",
                      continue);

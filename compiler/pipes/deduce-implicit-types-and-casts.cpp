@@ -8,7 +8,7 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/src-file.h"
 #include "compiler/generics-reification.h"
-#include "compiler/gentree.h"
+#include "compiler/vertex-util.h"
 #include "compiler/lambda-utils.h"
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
@@ -163,7 +163,7 @@ static InterfacePtr get_typed_callable_interface_from_lambda(FunctionPtr f_lambd
 static const TypeHint *patch_type_hint_with_argref_in_context_of_call(const TypeHint *type_hint, FunctionPtr current_function, VertexAdaptor<op_func_call> call) {
   const TypeHint *replaced = type_hint->replace_children_custom([current_function, call](const TypeHint *child) {
     if (const auto *as_arg_ref = child->try_as<TypeHintArgRef>()) {
-      if (auto call_arg = GenTree::get_call_arg_ref(as_arg_ref->arg_num, call)) {
+      if (auto call_arg = VertexUtil::get_call_arg_ref(as_arg_ref->arg_num, call)) {
         return assume_class_of_expr(current_function, call_arg, call).assum_hint ?: child;
       }
     }
@@ -351,7 +351,7 @@ static void patch_rhs_casting_to_lhs_type(VertexPtr &rhs, const TypeHint *lhs_ty
   if (const auto *as_shape = lhs_type_hint->try_as<TypeHintShape>()) {
     if (auto rhs_as_shape = rhs.try_as<op_shape>()) {
       for (auto sub_expr : rhs_as_shape->args()) {
-        const std::string &shape_key = GenTree::get_actual_value(sub_expr->front())->get_string();
+        const std::string &shape_key = VertexUtil::get_actual_value(sub_expr->front())->get_string();
         if (const TypeHint *lhs_type_at_key = as_shape->find_at(shape_key)) {
           patch_rhs_casting_to_lhs_type(sub_expr->back(), lhs_type_at_key, call);
         }
@@ -387,11 +387,11 @@ static VertexPtr implicit_cast_call_arg_to_cast_param(VertexPtr rhs, const TypeH
   if (ref_flag) {
     switch (tp) {
       case tp_array:
-        return GenTree::conv_to_lval<tp_array>(rhs);
+        return VertexUtil::create_conv_to_lval(tp_array, rhs);
       case tp_int:
-        return GenTree::conv_to_lval<tp_int>(rhs);
+        return VertexUtil::create_conv_to_lval(tp_int, rhs);
       case tp_string:
-        return GenTree::conv_to_lval<tp_string>(rhs);
+        return VertexUtil::create_conv_to_lval(tp_string, rhs);
       case tp_mixed:
         return rhs;
       default:
@@ -401,19 +401,19 @@ static VertexPtr implicit_cast_call_arg_to_cast_param(VertexPtr rhs, const TypeH
   }
   switch (tp) {
     case tp_int:
-      return GenTree::conv_to<tp_int>(rhs);
+      return VertexUtil::create_conv_to(tp_int, rhs);
     case tp_bool:
-      return GenTree::conv_to<tp_bool>(rhs);
+      return VertexUtil::create_conv_to(tp_bool, rhs);
     case tp_string:
-      return GenTree::conv_to<tp_string>(rhs);
+      return VertexUtil::create_conv_to(tp_string, rhs);
     case tp_float:
-      return GenTree::conv_to<tp_float>(rhs);
+      return VertexUtil::create_conv_to(tp_float, rhs);
     case tp_array:
-      return GenTree::conv_to<tp_array>(rhs);
+      return VertexUtil::create_conv_to(tp_array, rhs);
     case tp_regexp:
-      return GenTree::conv_to<tp_regexp>(rhs);
+      return VertexUtil::create_conv_to(tp_regexp, rhs);
     case tp_mixed:
-      return GenTree::conv_to<tp_mixed>(rhs);
+      return VertexUtil::create_conv_to(tp_mixed, rhs);
     default:
       return rhs;
   }

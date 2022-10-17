@@ -10,7 +10,7 @@
 #include "compiler/data/define-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
-#include "compiler/gentree.h"
+#include "compiler/vertex-util.h"
 #include "compiler/inferring/edge.h"
 #include "compiler/inferring/node-recalc.h"
 #include "compiler/type-hint.h"
@@ -115,17 +115,17 @@ void ExprNodeRecalc::recalc_push_back_return(VertexAdaptor<op_push_back_return> 
 }
 
 void ExprNodeRecalc::recalc_index(VertexAdaptor<op_index> index) {
-  bool is_const_int_index = index->has_key() && GenTree::get_actual_value(index->key())->type() == op_int_const;
+  bool is_const_int_index = index->has_key() && VertexUtil::get_actual_value(index->key())->type() == op_int_const;
   if (is_const_int_index) {
-    long int_index = parse_int_from_string(GenTree::get_actual_value(index->key()).as<op_int_const>());
+    long int_index = parse_int_from_string(VertexUtil::get_actual_value(index->key()).as<op_int_const>());
     MultiKey key({Key::int_key((int)int_index)});
     set_lca(index->array(), &key);
     return;
   }
 
-  bool is_const_string_index = index->has_key() && GenTree::get_actual_value(index->key())->type() == op_string;
+  bool is_const_string_index = index->has_key() && VertexUtil::get_actual_value(index->key())->type() == op_string;
   if (is_const_string_index) {
-    MultiKey key({Key::string_key(GenTree::get_actual_value(index->key())->get_string())});
+    MultiKey key({Key::string_key(VertexUtil::get_actual_value(index->key())->get_string())});
     set_lca(index->array(), &key);
     return;
   }
@@ -187,7 +187,7 @@ void ExprNodeRecalc::recalc_shape(VertexAdaptor<op_shape> shape) {
   recalc_ptype<tp_shape>();
   for (auto i: shape->args()) {
     auto double_arrow = i.as<op_double_arrow>();
-    const std::string &str_index = GenTree::get_actual_value(double_arrow->key())->get_string();
+    const std::string &str_index = VertexUtil::get_actual_value(double_arrow->key())->get_string();
     std::vector<Key> i_key_index{Key::string_key(str_index)};
     MultiKey key(i_key_index);
     set_lca_at(&key, double_arrow->value());
@@ -260,7 +260,7 @@ void ExprNodeRecalc::recalc_power(VertexAdaptor<op_pow> expr) {
   VertexPtr base = expr->lhs();
   add_dependency(as_rvalue(base));
   VertexPtr exponent = expr->rhs();
-  if (is_positive_constexpr_int(exponent)) {
+  if (VertexUtil::is_positive_constexpr_int(exponent)) {
     recalc_ptype<tp_int>();
     set_lca(drop_optional(as_rvalue(base)));
   } else {

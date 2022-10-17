@@ -20,7 +20,7 @@
 #include "compiler/data/src-file.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/var-data.h"
-#include "compiler/gentree.h"
+#include "compiler/vertex-util.h"
 #include "compiler/inferring/public.h"
 #include "compiler/inferring/type-data.h"
 #include "compiler/tl-classes.h"
@@ -157,7 +157,7 @@ void FunctionParams::compile(CodeGenerator &W) const {
       case gen_out_style::txt: {
         declare_txt_param(W, var, type_gen);
         if (param->has_default_value() && param->default_value() && in_header) {
-          VertexPtr default_value = GenTree::get_actual_value(param->default_value());
+          VertexPtr default_value = VertexUtil::get_actual_value(param->default_value());
           kphp_assert(vk::any_of_equal(default_value->type(), op_int_const, op_float_const));
           W << " = " << default_value->get_string();
         }

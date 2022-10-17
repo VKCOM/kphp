@@ -6,8 +6,8 @@
 
 #include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
-#include "compiler/gentree.h"
 #include "compiler/vertex.h"
+#include "compiler/vertex-util.h"
 
 is_func_id_t get_ifi_id(VertexPtr v) {
   if (v->type() == op_unset) {
@@ -17,9 +17,9 @@ is_func_id_t get_ifi_id(VertexPtr v) {
     return ifi_isset;
   }
   if (v->type() == op_eq3) {
-    VertexPtr b = GenTree::get_actual_value(v.as<meta_op_binary>()->rhs());
+    VertexPtr b = VertexUtil::get_actual_value(v.as<meta_op_binary>()->rhs());
     if (b->type() == op_var || b->type() == op_index) {
-      b = GenTree::get_actual_value(v.as<meta_op_binary>()->lhs());
+      b = VertexUtil::get_actual_value(v.as<meta_op_binary>()->lhs());
     }
 
     if (b->type() == op_false) {                                // $var === false

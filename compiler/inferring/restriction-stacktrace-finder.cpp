@@ -8,7 +8,6 @@
 #include "common/algorithms/string-algorithms.h"
 #include "common/termformat/termformat.h"
 
-#include "compiler/gentree.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/function-data.h"
 #include "compiler/inferring/edge.h"
@@ -17,6 +16,7 @@
 #include "compiler/inferring/var-node.h"
 #include "compiler/type-hint.h"
 #include "compiler/vertex.h"
+#include "compiler/vertex-util.h"
 
 /*
     This module finds a stacktrace to describe, why a type mismatch occurred.
@@ -67,7 +67,7 @@ int RestrictionStacktraceFinder::get_importance_of_reason(const tinf::Node *from
     return 0;
   }
 
-  VertexPtr expr = GenTree::get_actual_value(dynamic_cast<const tinf::ExprNode *>(to)->get_expr());
+  VertexPtr expr = VertexUtil::get_actual_value(dynamic_cast<const tinf::ExprNode *>(to)->get_expr());
   switch (expr->type()) {
     case op_var:
       return get_var_id_from_node(to) == get_var_id_from_node(from) ? 4 : 5;

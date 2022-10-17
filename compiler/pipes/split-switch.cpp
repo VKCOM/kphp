@@ -4,9 +4,10 @@
 
 #include "compiler/pipes/split-switch.h"
 
+#include "compiler/compiler-core.h"
 #include "compiler/data/src-file.h"
 #include "compiler/function-pass.h"
-#include "compiler/gentree.h"
+#include "compiler/vertex-util.h"
 #include "compiler/name-gen.h"
 
 class SplitSwitchPass final : public FunctionPassBase {
@@ -25,7 +26,7 @@ private:
       return goto_op;
     }
 
-    auto minus_one = GenTree::create_int_const(-1);
+    auto minus_one = VertexUtil::create_int_const(-1);
     auto state = VertexAdaptor<op_var>::create();
     state->str_val = state_name;
     auto expr = VertexAdaptor<op_set>::create(state, minus_one);
@@ -42,7 +43,7 @@ private:
     const std::string &state_name,
     int cycle_depth) {
     if (root->type() == op_return) {
-      auto one = GenTree::create_int_const(1);
+      auto one = VertexUtil::create_int_const(1);
       auto state = VertexAdaptor<op_var>::create();
       state->str_val = state_name;
       auto expr = VertexAdaptor<op_set>::create(state, one);
@@ -113,7 +114,7 @@ public:
       auto func_params = VertexAdaptor<op_func_param_list>::create(case_state_param);
       auto func = VertexAdaptor<op_function>::create(func_params, seq);
       func = prepare_switch_func(func, case_state_name, 1).as<op_function>();
-      GenTree::func_force_return(func, VertexAdaptor<op_null>::create());
+      VertexUtil::func_force_return(func, VertexAdaptor<op_null>::create());
 
       FunctionPtr switch_f = FunctionData::create_function(func_name, func, FunctionData::func_switch);
       new_functions.push_back(switch_f);
@@ -133,20 +134,20 @@ public:
       auto run_func = VertexAdaptor<op_set>::create(case_res, func_call);
 
 
-      auto zero = GenTree::create_int_const(0);
-      auto one = GenTree::create_int_const(1);
-      auto minus_one = GenTree::create_int_const(-1);
+      auto zero = VertexUtil::create_int_const(0);
+      auto one = VertexUtil::create_int_const(1);
+      auto minus_one = VertexUtil::create_int_const(-1);
 
       auto eq_one = VertexAdaptor<op_eq2>::create(case_state_1, one);
       auto eq_minus_one = VertexAdaptor<op_eq2>::create(case_state_2, minus_one);
 
       auto cmd_one = VertexAdaptor<op_return>::create(case_res_copy);
-      auto one_2 = GenTree::create_int_const(1);
+      auto one_2 = VertexUtil::create_int_const(1);
       auto cmd_minus_one = VertexAdaptor<op_break>::create(one_2);
 
       auto init = VertexAdaptor<op_set>::create(case_state_3, zero);
-      auto if_one = VertexAdaptor<op_if>::create(eq_one, GenTree::embrace(cmd_one));
-      auto if_minus_one = VertexAdaptor<op_if>::create(eq_minus_one, GenTree::embrace(cmd_minus_one));
+      auto if_one = VertexAdaptor<op_if>::create(eq_one, VertexUtil::embrace(cmd_one));
+      auto if_minus_one = VertexAdaptor<op_if>::create(eq_minus_one, VertexUtil::embrace(cmd_minus_one));
 
       auto new_seq = VertexAdaptor<op_seq>::create(init, run_func, if_one, if_minus_one);
       cs->back() = new_seq;

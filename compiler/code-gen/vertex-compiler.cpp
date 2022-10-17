@@ -22,10 +22,10 @@
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/type-hint.h"
-#include "compiler/gentree.h"
 #include "compiler/inferring/public.h"
 #include "compiler/name-gen.h"
 #include "compiler/vertex.h"
+#include "compiler/vertex-util.h"
 
 namespace {
 
@@ -79,7 +79,7 @@ struct TupleGetIndex {
 
   TupleGetIndex(VertexPtr tuple, VertexPtr key) :
     tuple(tuple),
-    int_index(GenTree::get_actual_value(key)->get_string()) {
+    int_index(VertexUtil::get_actual_value(key)->get_string()) {
   }
 
   void compile(CodeGenerator &W) const {
@@ -98,7 +98,7 @@ struct ShapeGetIndex {
 
   ShapeGetIndex(VertexPtr shape, VertexPtr key) :
     shape(shape),
-    index(GenTree::get_actual_value(key)->get_string()) {
+    index(VertexUtil::get_actual_value(key)->get_string()) {
   }
 
   void compile(CodeGenerator &W) const {
@@ -696,7 +696,7 @@ void compile_ffi_func_call(VertexAdaptor<op_func_call> call, CodeGenerator &W) {
   // since FFI methods are instance methods, ignore the first $this argument
   for (int i = 1; i < args.size(); i++) {
     if (call->func_id->has_variadic_param && i == args.size() - 1) {
-      auto variadic_arg = GenTree::get_actual_value(args[i]).try_as<op_array>();
+      auto variadic_arg = VertexUtil::get_actual_value(args[i]).try_as<op_array>();
       kphp_assert(variadic_arg);
       if (need_comma && !variadic_arg->args().empty()) {
         W << ", ";
@@ -747,7 +747,7 @@ enum class func_call_mode {
 VertexAdaptor<op_func_call> patch_compiling_json_impl_call(CodeGenerator &W, VertexAdaptor<op_func_call> call) noexcept {
   auto args = call->args();
   auto first_arg = args.begin();
-  auto v_encoder = GenTree::get_actual_value(*first_arg);
+  auto v_encoder = VertexUtil::get_actual_value(*first_arg);
 
   std::vector<VertexPtr> rest_args;
   std::copy(++first_arg, args.end(), std::back_insert_iterator{rest_args});
@@ -813,7 +813,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
   auto args = root->args();
   if (func && func->cpp_variadic_call) {
     if (args.size() == 1) {
-      if (auto array = GenTree::get_actual_value(args[0]).try_as<op_array>()) {
+      if (auto array = VertexUtil::get_actual_value(args[0]).try_as<op_array>()) {
         args = array->args();
       }
     }
@@ -1067,7 +1067,7 @@ struct CaseInfo {
       expr = cs->expr();
       cmd = cs->cmd();
 
-      VertexPtr val = GenTree::get_actual_value(expr);
+      VertexPtr val = VertexUtil::get_actual_value(expr);
       kphp_assert (val->type() == op_string);
       const std::string &s = val.as<op_string>()->str_val;
       hash = string_hash(s.c_str(), s.size());
@@ -1166,14 +1166,14 @@ void compile_switch_int(VertexAdaptor<op_switch> root, CodeGenerator &W) {
     if (auto cs = one_case.try_as<op_case>()) {
       cmd = cs->cmd();
 
-      VertexPtr val = GenTree::get_actual_value(cs->expr());
+      VertexPtr val = VertexUtil::get_actual_value(cs->expr());
       W << "case ";
       if (val->type() == op_int_const) {
         const std::string &str = val.as<op_int_const>()->str_val;
         W << str;
         kphp_error(used.insert(str).second, fmt_format("Switch: repeated cases found [{}]", str));
       } else {
-        kphp_assert(is_const_int(val));
+        kphp_assert(VertexUtil::is_const_int(val));
         W << val;
       }
     } else {
@@ -1459,7 +1459,7 @@ void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGen
   int ii = 0;
   for (auto i : root->args()) {
     info[ii].v = i;
-    VertexPtr value = GenTree::get_actual_value(i);
+    VertexPtr value = VertexUtil::get_actual_value(i);
     const TypeData *type = tinf::get_type(value);
 
     int value_length = type_strlen(type);
@@ -1719,7 +1719,7 @@ void compile_array(VertexAdaptor<op_array> root, CodeGenerator &W) {
   int int_cnt = 0, string_cnt = 0, xx_cnt = 0;
   for (size_t key_id = 0; key_id < root->args().size(); ++key_id) {
     if (auto arrow = root->args()[key_id].try_as<op_double_arrow>()) {
-      VertexPtr key = GenTree::get_actual_value(arrow->key());
+      VertexPtr key = VertexUtil::get_actual_value(arrow->key());
       if (!has_double_arrow && key->type() == op_int_const) {
         if (key.as<op_int_const>()->str_val == std::to_string(key_id)) {
           root->args()[key_id] = arrow->value();
@@ -1796,7 +1796,7 @@ void compile_shape(VertexAdaptor<op_shape> root, CodeGenerator &W) {
   std::vector<std::pair<int64_t, VertexPtr>> sorted_by_hash;
   sorted_by_hash.reserve(root->args().size());
   for (auto double_arrow : *root) {
-    const std::string &key_str = GenTree::get_actual_value(double_arrow.as<op_double_arrow>()->lhs())->get_string();
+    const std::string &key_str = VertexUtil::get_actual_value(double_arrow.as<op_double_arrow>()->lhs())->get_string();
     sorted_by_hash.emplace_back(string_hash(key_str.c_str(), key_str.size()), double_arrow.as<op_double_arrow>()->rhs());
   }
   std::sort(sorted_by_hash.begin(), sorted_by_hash.end(), [](const auto &a, const auto &b) -> bool {

@@ -4,7 +4,7 @@
 
 #include "compiler/pipes/convert-sprintf-calls.h"
 
-#include <compiler/gentree.h>
+#include "compiler/vertex-util.h"
 #include <utility>
 
 struct FormatCallInfo {
@@ -90,7 +90,7 @@ VertexPtr ConvertSprintfCallsPass::on_exit_vertex(VertexPtr root) {
 VertexPtr ConvertSprintfCallsPass::convert_sprintf_call(VertexAdaptor<op_func_call> call) {
   const auto args = call->args();
   const auto format_arg_raw = args[0];
-  const auto *format_string = GenTree::get_constexpr_string(format_arg_raw);
+  const auto *format_string = VertexUtil::get_constexpr_string(format_arg_raw);
   if (format_string == nullptr) {
     return call;
   }

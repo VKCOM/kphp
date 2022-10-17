@@ -10,6 +10,7 @@
 #include "compiler/data/src-file.h"
 #include "compiler/data/ffi-data.h"
 #include "compiler/type-hint.h"
+#include "compiler/vertex-util.h"
 
 #include <fstream>
 
@@ -132,7 +133,7 @@ private:
   void add_enum_constant(const std::string &const_name, int const_value, ClassPtr scope_class) {
     auto fake_op_var = VertexAdaptor<op_var>::create();
     fake_op_var->str_val = const_name;
-    auto fake_def_val = GenTree::create_int_const(const_value);
+    auto fake_def_val = VertexUtil::create_int_const(const_value);
 
     // in PHP/KPHP, we access enum constants via an arrow: $cdef->CONST
     // so, make it be an instance field, not a static const; it'll pass all checks of fields existence

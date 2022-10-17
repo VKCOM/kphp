@@ -4,7 +4,6 @@
 
 #include "compiler/pipes/convert-invoke-to-func-call.h"
 
-#include "compiler/gentree.h"
 #include "compiler/name-gen.h"
 #include "compiler/type-hint.h"
 
