@@ -297,6 +297,10 @@ inline void f$array_swap_int_keys(array<T> &a, int64_t idx1, int64_t idx2) noexc
 
 template<class T>
 string f$implode(const string &s, const array<T> &a) {
+  if (a.count() == 1) {
+    return f$strval(a.begin().get_value());
+  }
+
   string_buffer &SB = static_SB;
   SB.clean();
 
