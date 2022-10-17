@@ -128,11 +128,16 @@ class Engine:
         self._log_file_write_fd = open(self._log_file, 'ab')
         self._log_file_read_fd = open(self._log_file, 'r')
         print("\nStarting engine: [{}]".format(cyan(" ".join(cmd))))
+
+        # some of engines are leaky
+        env = os.environ.copy()
+        env["ASAN_OPTIONS"] = "detect_leaks=0"
         self._engine_process = psutil.Popen(
             cmd,
             stdout=self._log_file_write_fd,
             stderr=subprocess.STDOUT,
-            cwd=self._working_dir
+            cwd=self._working_dir,
+            env=env
         )
 
         if os.waitpid(self._engine_process.pid, os.WNOHANG)[1] != 0:

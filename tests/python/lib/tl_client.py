@@ -36,11 +36,16 @@ def send_rpc_request(request, port, timeout=60):
     cmd = [tl_client_bin, "--stdin", "--json-encoded", "--port", str(port)]
     if not os.getuid():
         cmd += ["--user", "root", "--group", "root"]
+
+    # tlclient is leaky
+    env = os.environ.copy()
+    env["ASAN_OPTIONS"] = "detect_leaks=0"
     p = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
         stdin=subprocess.PIPE,
-        stderr=subprocess.PIPE
+        stderr=subprocess.PIPE,
+        env=env
     )
     stdout_data, stderr_data = p.communicate(input=encoded_request.encode(), timeout=timeout)
     if stderr_data:

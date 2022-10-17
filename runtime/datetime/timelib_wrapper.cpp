@@ -1,8 +1,11 @@
 #include "runtime/datetime/timelib_wrapper.h"
 
-#include <kphp/timelib/timelib.h>
-#include <sys/time.h>
 #include <functional>
+#include <kphp/timelib/timelib.h>
+#if ASAN_ENABLED
+#include <sanitizer/lsan_interface.h>
+#endif
+#include <sys/time.h>
 
 #include "common/containers/final_action.h"
 #include "common/smart_ptrs/singleton.h"
@@ -167,9 +170,28 @@ bool php_timelib_is_valid_date(int64_t m, int64_t d, int64_t y) {
   return y >= 1 && y <= 32767 && timelib_valid_date(y, m, d);
 }
 
+static timelib_time *timelib_strtotime_leak_safe(const string &time, timelib_error_container **errors) {
+  timelib_time *t = timelib_strtotime(time.c_str(), time.size(), errors, timelib_builtin_db(), timelib_parse_tzfile);
+  // sometimes 't->tz_info' contains allocated timezone object, but sometimes doesn't. And we are unable to merely delete this object
+  // because it can be shared among different e.g. DateTimeImmutable vs DateTime objects. Given that it's quite rare situation this leak is just suppressed.
+  // (it's not a leak in 'php-src' because all 'tz_info *' there are cached. We are unable cache it in kphp because of our memory managment)
+#if ASAN_ENABLED
+  __lsan_ignore_object(t->tz_info);
+#endif
+  return t;
+}
+
+static timelib_time *timelib_parse_from_format_leak_safe(const char *format, const string &time, timelib_error_container **errors) {
+  timelib_time *t = timelib_parse_from_format(format, time.c_str(), time.size(), errors, timelib_builtin_db(), timelib_parse_tzfile);
+#if ASAN_ENABLED
+  __lsan_ignore_object(t->tz_info);
+#endif
+  return t;
+}
+
 array<mixed> php_timelib_date_parse(const string &time_str) {
   timelib_error_container *error = nullptr;
-  timelib_time *t = timelib_strtotime(time_str.c_str(), time_str.size(), &error, timelib_builtin_db(), timelib_parse_tzfile);
+  timelib_time *t = timelib_strtotime_leak_safe(time_str, &error);
   auto t_deleter = vk::finally([t]() { timelib_time_dtor(t); });
   auto error_deleter = vk::finally([error]() { timelib_error_container_dtor(error); });
   return create_date_parse_array(t, error);
@@ -177,7 +199,7 @@ array<mixed> php_timelib_date_parse(const string &time_str) {
 
 array<mixed> php_timelib_date_parse_from_format(const string &format, const string &time_str) {
   timelib_error_container *error = nullptr;
-  timelib_time *t = timelib_parse_from_format(format.c_str(), time_str.c_str(), time_str.size(), &error, timelib_builtin_db(), timelib_parse_tzfile);
+  timelib_time *t = timelib_parse_from_format_leak_safe(format.c_str(), time_str, &error);
   auto t_deleter = vk::finally([t]() { timelib_time_dtor(t); });
   auto error_deleter = vk::finally([error]() { timelib_error_container_dtor(error); });
   return create_date_parse_array(t, error);
@@ -206,7 +228,7 @@ std::pair<int64_t, bool> php_timelib_strtotime(const string &tz_name, const stri
   now->zone_type = TIMELIB_ZONETYPE_ID;
   timelib_unixtime2local(now, static_cast<timelib_sll>(preset_ts));
   timelib_error_container *error = nullptr;
-  timelib_time *t = timelib_strtotime(times.c_str(), times.size(), &error, timelib_builtin_db(), timelib_parse_tzfile);
+  timelib_time *t = timelib_strtotime_leak_safe(times, &error);
   auto t_deleter = vk::finally([t]() { timelib_time_dtor(t); });
 
   int errors_num = error->error_count;
@@ -261,8 +283,8 @@ std::pair<timelib_time *, string> php_timelib_date_initialize(const string &tz_n
   const string &time_str_new = time_str.empty() ? NOW : time_str;
   timelib_error_container *err = nullptr;
   timelib_time *t = format
-    ? timelib_parse_from_format(format, time_str.c_str(), time_str.size(), &err, timelib_builtin_db(), timelib_parse_tzfile)
-    : timelib_strtotime(time_str_new.c_str(), time_str_new.size(), &err, timelib_builtin_db(), timelib_parse_tzfile);
+    ? timelib_parse_from_format_leak_safe(format, time_str, &err)
+    : timelib_strtotime_leak_safe(time_str_new, &err);
 
   // update last errors and warnings
   update_errors_warnings(err, script_guard);
@@ -638,7 +660,7 @@ std::pair<bool, string> php_timelib_date_modify(timelib_time *t, const string &m
   auto script_guard = make_malloc_replacement_with_script_allocator();
 
   timelib_error_container *err = nullptr;
-  timelib_time *tmp_time = timelib_strtotime(modifier.c_str(), modifier.size(), &err, timelib_builtin_db(), timelib_parse_tzfile);
+  timelib_time *tmp_time = timelib_strtotime_leak_safe(modifier, &err);
   vk::final_action tmp_time_deleter{[tmp_time] { timelib_time_dtor(tmp_time); }};
 
   // update last errors and warnings

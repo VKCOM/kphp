@@ -96,15 +96,15 @@ class KphpBuilder:
         shutil.rmtree(self._kphp_build_tmp_dir, ignore_errors=True)
 
     @staticmethod
-    def _prepare_sanitizer_env(working_directory, sanitizer_log_name):
+    def _prepare_sanitizer_env(working_directory, sanitizer_log_name, detect_leaks=1):
         tmp_sanitizer_file = os.path.join(working_directory, sanitizer_log_name)
         sanitizer_glob_mask = "{}.*".format(tmp_sanitizer_file)
         for old_sanitizer_file in glob.glob(sanitizer_glob_mask):
             os.remove(old_sanitizer_file)
 
         env = os.environ.copy()
-        env["ASAN_OPTIONS"] = "detect_leaks=0:allocator_may_return_null=1:log_path={}".format(tmp_sanitizer_file)
-        env["UBSAN_OPTIONS"] = "print_stacktrace=1:allow_addr2line=1:log_path={}".format(tmp_sanitizer_file)
+        env["ASAN_OPTIONS"] = f"detect_leaks={detect_leaks}:allocator_may_return_null=1:log_path={tmp_sanitizer_file}"
+        env["UBSAN_OPTIONS"] = f"print_stacktrace=1:allow_addr2line=1:log_path={tmp_sanitizer_file}"
         return env, sanitizer_glob_mask
 
     def _move_sanitizer_logs_to_artifacts(self, sanitizer_glob_mask, proc, sanitizer_log_name):
@@ -117,7 +117,7 @@ class KphpBuilder:
         os.makedirs(self._kphp_build_tmp_dir, exist_ok=True)
 
         sanitizer_log_name = "kphp_build_sanitizer_log"
-        env, sanitizer_glob_mask = self._prepare_sanitizer_env(self._kphp_build_tmp_dir, sanitizer_log_name)
+        env, sanitizer_glob_mask = self._prepare_sanitizer_env(self._kphp_build_tmp_dir, sanitizer_log_name, detect_leaks=0)
         if kphp_env:
             env.update(kphp_env)
         env.setdefault("KPHP_THREADS_COUNT", "3")
