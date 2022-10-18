@@ -25,23 +25,26 @@ static long long opened_udp_sockets_last_query_num = -1;
 
 static Stream udp_stream_socket_client(const string &url, int64_t &error_number, string &error_description, double timeout,
                                        int64_t flags __attribute__((unused)), const mixed &options __attribute__((unused))) {
-#define RETURN                                          \
-  php_warning ("%s", error_description.c_str());        \
-  if (sock_fd != -1) {                                  \
-    close(sock_fd);                                     \
-  }                                                     \
-  return false
+  auto quit = [&](int socket_fd, const Optional<string> & extra_info = {}) {
+    if (extra_info.has_value()) {
+      php_warning("%s. %s", error_description.c_str(), extra_info.val().c_str());
+    } else {
+      php_warning("%s", error_description.c_str());
+    }
+    if (socket_fd != -1) {
+      close(socket_fd);
+    }
+    return false;
+  };
+  auto set_error = [&](int64_t error_no, const char * error) {
+    error_number = error_no;
+    error_description = CONST_STRING(error);
+  };
+  auto set_format_error = [&](int64_t error_no, const char * format, auto ... params) {
+    error_number = error_no;
+    error_description = f$sprintf(CONST_STRING(format), array<mixed>::create(params...));
+  };
 
-#define RETURN_ERROR(error_no, error)                   \
-  error_number = error_no;                              \
-  error_description = CONST_STRING(error);              \
-  RETURN
-
-#define RETURN_ERROR_FORMAT(error_no, format, ...)                   \
-  error_number = error_no;                                           \
-  error_description = f$sprintf (                                    \
-    CONST_STRING(format), array<mixed>::create(__VA_ARGS__));          \
-  RETURN
   if (timeout < 0) {
     timeout = DEFAULT_SOCKET_TIMEOUT;
   }
@@ -50,27 +53,32 @@ static Stream udp_stream_socket_client(const string &url, int64_t &error_number,
   string url_to_parse = url;
 
   if (url_to_parse.size() < 6 || url_to_parse.substr(0, 6) != string("udp://", 6)) {
-    RETURN_ERROR_FORMAT(-7, "\"%s\" doesn't start with UDP", url);
+    set_format_error(-7, "\"%s\" doesn't start with UDP", url);
+    return quit(sock_fd);
   }
   url_to_parse = url_to_parse.substr(6, url_to_parse.size() - 6);
   string::size_type pos = url_to_parse.find(string(":", 1));
   if (pos == string::npos) {
-    RETURN_ERROR_FORMAT(-7, "\"%s\" has to be of format 'udp://<host>:<port>'", url);
+    set_format_error(-7, "\"%s\" has to be of format 'udp://<host>:<port>'", url);
+    return quit(sock_fd);
   }
   string host = url_to_parse.substr(0, pos);
   int64_t port = f$intval(url_to_parse.substr(pos + 1, url_to_parse.size() - (pos + 1)));
 
   if (host.empty()) {
-    RETURN_ERROR_FORMAT(-1, "Wrong host specified in url \"%s\"", url);
+    set_format_error(-1, "Wrong host specified in url \"%s\"", url);
+    return quit(sock_fd);
   }
 
   if (port <= 0 || port >= 65536) {
-    RETURN_ERROR_FORMAT(-2, "Wrong port specified in url \"%s\"", url);
+    set_format_error(-2, "Wrong port specified in url \"%s\"", url);
+    return quit(sock_fd);
   }
 
   struct hostent *h;
   if (!(h = kdb_gethostbyname(host.c_str())) || !h->h_addr_list || !h->h_addr_list[0]) {
-    RETURN_ERROR_FORMAT(-3, "Can't resolve host \"%s\"", host);
+    set_format_error(-3, "Can't resolve host \"%s\"", host);
+    return quit(sock_fd);
   }
 
   struct sockaddr_storage addr;
@@ -97,12 +105,14 @@ static Stream udp_stream_socket_client(const string &url, int64_t &error_number,
   sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
   if (sock_fd == -1) {
     dl::leave_critical_section();
-    RETURN_ERROR(-4, "Can't create udp socket");
+    set_error(-4, "Can't create udp socket");
+    return quit(sock_fd, string("System call 'socket(...)' got error '").append(strerror(errno)).append("'"));
   }
   if (connect(sock_fd, reinterpret_cast <const sockaddr *> (&addr), addrlen) == -1) {
     if (errno != EINPROGRESS) {
       dl::leave_critical_section();
-      RETURN_ERROR(-5, "Can't connect to udp socket");
+      set_error(-5, "Can't connect to udp socket");
+      return quit(sock_fd, string("System call 'connect(...)' got error '").append(strerror(errno)).append("'"));
     }
 
     pollfd poll_fds;
@@ -112,7 +122,14 @@ static Stream udp_stream_socket_client(const string &url, int64_t &error_number,
     double left_time = end_time - microtime_monotonic();
     if (left_time <= 0 || poll(&poll_fds, 1, timeout_convert_to_ms(left_time)) <= 0) {
       dl::leave_critical_section();
-      RETURN_ERROR(-6, "Can't connect to udp socket");
+      string extra_info;
+      if (left_time <= 0) {
+        extra_info = string("Timeout expired");
+      } else {
+        extra_info = string("System call 'poll(...)' got error '").append(strerror(errno)).append("'");
+      }
+      set_error(-6, "Can't connect to udp socket");
+      return quit(sock_fd, extra_info);
     }
   }
 
@@ -135,15 +152,13 @@ static Stream udp_stream_socket_client(const string &url, int64_t &error_number,
 
     if (try_count == 3) {
       dl::leave_critical_section();
-      RETURN_ERROR(-18, "Can't generate stream_name in 3 tries. Something is definitely wrong.");
+      set_error(-18, "Can't generate stream_name in 3 tries. Something is definitely wrong.");
+      return quit(sock_fd);
     }
   }
   opened_udp_sockets->set_value(stream_key, sock_fd);
   dl::leave_critical_section();
   return stream_key;
-#undef RETURN
-#undef RETURN_ERROR
-#undef RETURN_ERROR_FORMAT
 }
 
 static int udp_get_fd(const Stream &stream) {
