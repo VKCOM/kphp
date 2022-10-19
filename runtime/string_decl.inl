@@ -72,13 +72,7 @@ public:
   inline string(size_type n, bool b);
   inline explicit string(int64_t i);
   inline explicit string(int32_t i): string(static_cast<int64_t>(i)) {}
-
-  using NewAlgo = std::true_type;
-  using OldAlgo = std::false_type;
-
-  explicit string(double f, NewAlgo);
-  explicit string(double f, OldAlgo);
-  explicit string(double f) : string(f, NewAlgo{}) {};
+  explicit string(double f);
 
 
   ~string() noexcept;
