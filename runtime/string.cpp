@@ -2,7 +2,11 @@
 // Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include <array>
+
 #include "runtime/kphp_core.h"
+
+#include "common/wrappers/fmt_format.h"
 
 // Don't move this destructor to the headers, it spoils addr2line traces
 string::~string() noexcept {
@@ -11,16 +15,19 @@ string::~string() noexcept {
 
 string::string(double f) {
   constexpr uint32_t MAX_LEN = 4096;
-  char result[MAX_LEN + 2];
-  result[0] = '\0';
-  result[1] = '\0';
+  std::array<char, MAX_LEN + 2> result = {};
 
-  char *begin = result + 2;
+  char *begin = result.data() + 2;
   if (std::isnan(f)) {
-    // to prevent printing `-NAN` by snprintf
+    // to prevent printing `-NAN`
     f = std::abs(f);
   }
-  int len = snprintf(begin, MAX_LEN, "%.14G", f);
+
+  // fmt::format uses Grisu algorithm for double to string conversions,
+  // which is 3-5 times faster than snprintf one.
+  // check benchmarks in https://github.com/fmtlib/fmt
+  int len = fmt::format_to_n(begin, MAX_LEN, "{:.14G}", f).size;
+
   if (static_cast<uint32_t>(len) < MAX_LEN) {
     if (static_cast<uint32_t>(begin[len - 1] - '5') < 5 && begin[len - 2] == '0' && begin[len - 3] == '-') {
       --len;
@@ -30,14 +37,14 @@ string::string(double f) {
       result[0] = begin[0];
       result[1] = '.';
       result[2] = '0';
-      begin = result;
+      begin = result.data();
       len += 2;
     } else if (begin[0] == '-' && begin[2] == 'E') {
       result[0] = begin[0];
       result[1] = begin[1];
       result[2] = '.';
       result[3] = '0';
-      begin = result;
+      begin = result.data();
       len += 2;
     }
     php_assert (len <= STRLEN_FLOAT);
