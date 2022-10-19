@@ -23,3 +23,5 @@ prepend(RUNTIME_TESTS_SOURCES ${BASE_DIR}/tests/cpp/runtime/
 
 allow_deprecated_declarations_for_apple(${BASE_DIR}/tests/cpp/runtime/inter-process-mutex-test.cpp)
 vk_add_unittest(runtime "${RUNTIME_LIBS};${RUNTIME_LINK_TEST_LIBS}" ${RUNTIME_TESTS_SOURCES})
+add_executable(string-float-benchmark ${BASE_DIR}/tests/cpp/runtime/string-float-benchmark.cpp)
+target_link_libraries(string-float-benchmark "${RUNTIME_LIBS};${RUNTIME_LINK_TEST_LIBS}" vk::popular_common fmt::fmt benchmark)
