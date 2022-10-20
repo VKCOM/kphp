@@ -72,7 +72,7 @@ public:
   inline string(size_type n, bool b);
   inline explicit string(int64_t i);
   inline explicit string(int32_t i): string(static_cast<int64_t>(i)) {}
-  inline explicit string(double f);
+  explicit string(double f);
 
 
   ~string() noexcept;
