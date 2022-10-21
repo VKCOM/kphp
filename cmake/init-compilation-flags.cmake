@@ -95,7 +95,7 @@ add_link_options(-fno-common)
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
     add_compile_options(-march=sandybridge)
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
-    add_compile_options(-march=armv8.2-a+crypto+fp16+rcpc+dotprod+ssbs)
+    add_compile_options(-march=armv8.2-a+crypto)
 endif()
 
 add_compile_options(-Werror -Wall -Wextra -Wunused-function -Wfloat-conversion -Wno-sign-compare

@@ -288,7 +288,7 @@ void CompilerSettings::init() {
 #ifdef __x86_64__
   ss << " -march=sandybridge";
 #elif __aarch64__
-  ss << " -march=armv8.2-a+crypto+fp16+rcpc+dotprod+ssbs";
+  ss << " -march=armv8.2-a+crypto";
 #endif
   if (!no_pch.get()) {
     ss << " -Winvalid-pch -fpch-preprocess";

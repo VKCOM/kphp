@@ -46,7 +46,6 @@ static __inline__ uint64_t cycleclock_freq() {
 #elif defined(__aarch64__)
   uint64_t aarch64_timer_frequency;
   asm volatile("mrs %0, cntfrq_el0" : "=r"(aarch64_timer_frequency));
-  std::cout << "freq: " << aarch64_timer_frequency << std::endl;
   return aarch64_timer_frequency;
 #else
 #error "Unsupported arch"
