@@ -742,6 +742,7 @@ function bcadd ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) 
 function bcsub ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
 function bcmul ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
 function bccomp ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: int;
+function bcsqrt($num ::: string, $scale ::: int = PHP_INT_MIN): string;
 
 function mysqli_errno(\mysqli $dn) ::: int;
 function mysqli_error(\mysqli $dn) ::: string;

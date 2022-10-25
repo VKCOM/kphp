@@ -61,6 +61,22 @@ static int bc_parse_number(const string &s, int &lsign, int &lint, int &ldot, in
   return lscale;
 }
 
+struct BcNum {
+  int n_sign{0};  // sign
+  int n_int{0};   // number of trailing zeroes pluse one if there is '+' or '-' sign
+  int n_dot{0};   // number of bytes prior dot
+  int n_frac{0};  // n_dot + 1
+  int n_scale{0}; // number of digits after dot
+  string str;     // actual string representation
+};
+
+std::pair<BcNum, bool> bc_parse_number_wrapper(const string &num) {
+  BcNum bc_num;
+  bc_num.str = num;
+  bool success = bc_parse_number(num, bc_num.n_sign, bc_num.n_int, bc_num.n_dot, bc_num.n_frac, bc_num.n_scale) >= 0;
+  return {bc_num, success};
+}
+
 static string bc_zero(int scale) {
   if (scale == 0) {
     return ZERO;
@@ -94,6 +110,11 @@ static int bc_comp(const char *lhs, int lint, int ldot, int lfrac, int lscale, c
   }
 
   return 0;
+}
+
+static int bc_comp_wrapper(const BcNum &lhs, const BcNum &rhs, int scale) {
+  return bc_comp(lhs.str.c_str(), lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale,
+                 rhs.str.c_str(), rhs.n_int, rhs.n_dot, rhs.n_frac, rhs.n_scale, scale);
 }
 
 static string bc_round(char *lhs, int lint, int ldot, int lfrac, int lscale, int scale, int sign, int add_trailing_zeroes) {
@@ -329,6 +350,11 @@ static string bc_mul_positive(const char *lhs, int lint, int ldot, int lfrac, in
   return bc_round(result.buffer(), resint, resdot, resfrac, resscale, scale, sign, 1);
 }
 
+static string bc_mul_wrapper(const BcNum &lhs, const BcNum &rhs, int scale, int sign) {
+  return bc_mul_positive(lhs.str.c_str(), lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale,
+                         rhs.str.c_str(), rhs.n_int, rhs.n_dot, rhs.n_frac, rhs.n_scale, scale, sign);
+}
+
 static string bc_div_positive(const char *lhs, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rint, int rdot, int rfrac, int rscale, int scale, int sign) {
   int llen = ldot - lint;
   int rlen = rdot - rint;
@@ -443,6 +469,10 @@ static string bc_div_positive(const char *lhs, int lint, int ldot, int lfrac, in
   return bc_round(result.buffer(), resint, resdot, resfrac, resscale, scale, sign, 0);
 }
 
+static string bc_div_positive_wrapper(const BcNum &lhs, const BcNum &rhs, int scale, int sign) {
+  return bc_div_positive(lhs.str.c_str(), lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale,
+                         rhs.str.c_str(), rhs.n_int, rhs.n_dot, rhs.n_frac, rhs.n_scale, scale, sign);
+}
 
 static string bc_add(const char *lhs, int lsign, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rsign, int rint, int rdot, int rfrac, int rscale, int scale) {
   if (lsign > 0 && rsign > 0) {
@@ -473,6 +503,15 @@ static string bc_add(const char *lhs, int lsign, int lint, int ldot, int lfrac, 
   exit(1);
 }
 
+static string bc_add_wrapper(const BcNum &lhs, const BcNum &rhs, int scale) {
+  return bc_add(lhs.str.c_str(), lhs.n_sign, lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale,
+                rhs.str.c_str(), rhs.n_sign, rhs.n_int, rhs.n_dot, rhs.n_frac, rhs.n_scale, scale);
+}
+
+static string bc_sub_wrapper(const BcNum &lhs, const BcNum &rhs, int scale) {
+  return bc_add(lhs.str.c_str(),        lhs.n_sign, lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale,
+                rhs.str.c_str(), (-1) * rhs.n_sign, rhs.n_int, rhs.n_dot, rhs.n_frac, rhs.n_scale, scale);
+}
 
 void f$bcscale(int64_t scale) {
   if (scale < 0) {
@@ -790,6 +829,131 @@ int64_t f$bccomp(const string &lhs, const string &rhs, int64_t scale) {
   return (1 - 2 * (lsign < 0)) * bc_comp(lhs.c_str(), lint, ldot, lfrac, lscale,
                                          rhs.c_str(), rint, rdot, rfrac, rscale,
                                          static_cast<int>(scale));
+}
+
+// In some places we need to check if the number NUM is almost zero.
+// Specifically, all but the last digit is 0 and the last digit is 1.
+// Last digit is defined by scale.
+static bool bc_is_near_zero(const BcNum &num, int scale) {
+  if (scale > num.n_scale) {
+    scale = num.n_scale;
+  }
+
+  const int len = num.n_dot - num.n_int;
+  for (int i = num.n_int; i < len; ++i) {
+    if (num.str[i] != '0') {
+      return false;
+    }
+  }
+
+  if (scale == 0) {
+    return true;
+  }
+
+  const int count = scale - 1;
+  const char *ptr = num.str.c_str() + num.n_frac;
+
+  for (int i = 0; i < count; ++i) {
+    if (ptr[i] != '0') {
+      return false;
+    }
+  }
+
+  return ptr[count] == '1' || ptr[count] == '0';
+}
+
+static const string ZERO_FIVE{"0.5"};
+static const string TEN{"10"};
+
+static const BcNum ZERO_BC_NUM = bc_parse_number_wrapper(ZERO).first;
+static const BcNum ZERO_FIVE_BC_NUM = bc_parse_number_wrapper(ZERO_FIVE).first;
+static const BcNum ONE_BC_NUM = bc_parse_number_wrapper(ONE).first;
+
+static std::pair<BcNum, int> bc_sqrt_calc_initial_guess(const BcNum &num, int cmp_with_one) {
+  if (cmp_with_one < 0) {
+    // the number is between 0 and 1. Guess should start at 1.
+    return {ONE_BC_NUM, num.n_scale};
+  }
+  // the number is greater than 1. Guess should start at 10^(exp/2).
+  BcNum exponent = bc_parse_number_wrapper(string{num.n_dot}).first;
+  string exponent_str = bc_mul_wrapper(exponent, ZERO_FIVE_BC_NUM, 0, 1);
+  string guess_str = f$bcpow(TEN, exponent_str, 0);
+  BcNum guess = bc_parse_number_wrapper(guess_str).first;
+  return {std::move(guess), 3};
+}
+
+static std::pair<string, bool> bc_sqrt(const BcNum &num, int scale) {
+  // initial checks
+  const int cmp_zero = bc_comp_wrapper(num, ZERO_BC_NUM, num.n_scale);
+  if (cmp_zero < 0 || num.n_sign == -1) {
+    return {{}, false}; // error
+  } else if (cmp_zero == 0) {
+    return {ZERO, true};
+  }
+
+  const int cmp_one = bc_comp_wrapper(num, ONE_BC_NUM, num.n_scale);
+  if (cmp_one == 0) {
+    return {ONE, true};
+  }
+
+  // calculate the initial guess.
+  auto [guess, cscale] = bc_sqrt_calc_initial_guess(num, cmp_one);
+  const int rscale = scale > num.n_scale ? scale : num.n_scale;
+
+  // find the square root using Newton's algorithm.
+  for (;;) {
+    const BcNum prev_guess = guess;
+
+    string div_str = bc_div_positive_wrapper(num, guess, cscale, 1);
+    guess = bc_parse_number_wrapper(div_str).first;
+
+    string add_str = bc_add_wrapper(guess, prev_guess, cscale);
+    guess = bc_parse_number_wrapper(add_str).first;
+
+    string mul_str = bc_mul_wrapper(guess, ZERO_FIVE_BC_NUM, cscale, 1);
+    guess = bc_parse_number_wrapper(mul_str).first;
+
+    string sub_str = bc_sub_wrapper(guess, prev_guess, cscale + 1);
+    BcNum diff = bc_parse_number_wrapper(sub_str).first;
+
+    if (bc_is_near_zero(diff, cscale)) {
+      if (cscale < rscale + 1) {
+        cscale = std::min(cscale * 3, rscale + 1);
+      } else {
+        break;
+      }
+    }
+  }
+
+  return {bc_div_positive_wrapper(guess, ONE_BC_NUM, rscale, 1), true};
+}
+
+string f$bcsqrt(const string &num, int64_t scale) {
+  if (scale == std::numeric_limits<int64_t>::min()) {
+    scale = bc_scale;
+  }
+  if (scale < 0) {
+    php_warning("Wrong parameter scale = %" PRIi64 " in function bcsqrt", scale);
+    scale = 0;
+  }
+  if (num.empty()) {
+    return bc_zero(static_cast<int>(scale));
+  }
+
+  const auto [bc_num, parse_success] = bc_parse_number_wrapper(num);
+  if (!parse_success) {
+    php_warning("First parameter \"%s\" in function bcsqrt is not a number", num.c_str());
+    return bc_zero(static_cast<int>(scale));
+  }
+
+  auto [sqrt, sqrt_success] = bc_sqrt(bc_num, scale);
+  if (!sqrt_success) {
+    php_warning("bcsqrt(): Square root of negative number");
+    return {};
+  }
+
+  const BcNum &sqrt_bc_num = bc_parse_number_wrapper(sqrt).first;
+  return bc_div_positive_wrapper(sqrt_bc_num, ONE_BC_NUM, scale, 1);
 }
 
 void free_bcmath_lib() {

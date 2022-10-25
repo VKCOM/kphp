@@ -22,4 +22,6 @@ string f$bcmul(const string &lhs, const string &rhs, int64_t scale = std::numeri
 
 int64_t f$bccomp(const string &lhs, const string &rhs, int64_t scale = std::numeric_limits<int64_t>::min());
 
+string f$bcsqrt(const string &num, int64_t scale = std::numeric_limits<int64_t>::min());
+
 void free_bcmath_lib();
