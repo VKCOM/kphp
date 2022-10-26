@@ -114,7 +114,7 @@ KPHP has many limitations and guidelines. Without experience, the compilation wo
 After compilation, you'll get a `./kphp_out/server` binary. We've already seen this when compiling a sample script.  
 Stop the PHP server and launch the KPHP binary on the same port.
 ```bash
-./kphp_out/server -H 8080
+./kphp_out/server -H 8080 -f 1
 ```
 
 You can pass various [compiler options](../kphp-language/kphp-vs-php/compiler-cmd-options.md) to the `kphp` command or [execution options](../kphp-server/execution-options/server-cmd-options.md) to the `./server` binary.

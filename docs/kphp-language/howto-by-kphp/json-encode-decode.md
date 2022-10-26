@@ -1,5 +1,5 @@
 ---
-sort: 5
+sort: 4
 ---
 
 # JSON encode and decode

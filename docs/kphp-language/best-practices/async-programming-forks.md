@@ -356,13 +356,17 @@ Stops everything until any result of the queue is ready (context doesn't switch 
 
 Lets any other random fork to run (switches context to it), or returns immediately if no other forks exist; there was an example above.
 
-<aside>sched_yield_sleep( float ): void (resumable)</aside>
+<aside>sched_yield_sleep( float $timeout ): void (resumable)</aside>
 
 Same as *sched_yield()*, but resumes at least after *$timeout* in seconds has passed.
 
 <aside>get_running_fork_id(): future&lt;void&gt;</aside>
 
 Converted to *(int)*, represents internal scheduler fork id (0 for "main thread"); can be used in caching layers to save "is this object already loading by some other fork".
+
+<aside>set_wait_all_forks_on_finish( bool $wait ): bool</aside>
+
+Enables (when passed *true*) waiting for all launched forks when a script in main thread finishes. *exit()* or *die()* called from a fork force process finish nevertheless. On OOM/timeout, KPHP also stops a script and doesn't wait for background forks. 
 
 
 ```tip

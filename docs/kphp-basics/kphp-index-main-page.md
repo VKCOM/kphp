@@ -8,7 +8,7 @@ notopnavigation: true
 
 <a href="{{ site.url_github_kphp }}" class="btn-github-page">
   <span class="icon icon-github"></span>
-  <span>Github page</span>
+  <span>GitHub page</span>
 </a>
 
 KPHP is a PHP compiler. It compiles a limited subset of PHP to a native binary running faster than PHP.
@@ -75,7 +75,7 @@ This situation is quite common. KPHP rarely compiles already existing code witho
 Read more about this in [compiling an existing project](./compile-existing-project.md).
 
 
-## Typical KPHP development
+## Typical development with KPHP
 
 * Use PHP for development: sync your IDE with the dev server and write code. It's uploaded automatically and just works — PHP is an interpreter.
 * Use PHP for testing and bundling: PHPUnit can't and shouldn't be compiled.
@@ -92,16 +92,16 @@ KPHP is distributed under the [GPLv3 license]({{site.url_license_file}}), on beh
 
 ## Ask questions and provide feedback
 
-To communicate with KPHP community, use [Github issues]({{site.url_github_issues}}) or public E-Mails available on Github.
+To communicate with KPHP community, use [GitHub issues]({{site.url_github_issues}}) or a [Telegram chat]({{site.url_telegram_chat}}).
 
-You can also take a look at our [FAQ page](./faq.md).
+You can also take a look at our [FAQ page](./faq.md) and [Roadmap page](./roadmap.md).
 
 
 ## Contributing
 
 If you've developed a useful PHP library that successfully compiles with KPHP, feel free to share it [here]({{site.url_github_kphp_snippets}}).
 
-If you want to contribute to KPHP itself, try to dig into its internals. They're quite hard to take in all at once. Learn about [KPHP architecture](../kphp-internals/kphp-architecture) and examine imaginary [contribution scenarios](../kphp-internals/developing-and-extending-kphp/contributing-to-kphp.md).
+If you want to contribute to KPHP itself, try to dig into its internals. They're quite hard to take in all at once. Learn about [KPHP architecture](../kphp-internals/kphp-architecture/README.md) and examine imaginary [contribution scenarios](../kphp-internals/developing-and-extending-kphp/contributing-to-kphp.md).
 
 
 ## How do I start using KPHP?

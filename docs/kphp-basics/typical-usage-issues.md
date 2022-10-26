@@ -55,7 +55,7 @@ The error means that you don't have the user *kitten* in your system.
 
 This means that KPHP does not have this function implemented yet. As stated before, KPHP supports many PHP functions, but not all of them.
 
-**Solution.** Write and call a function in PHP that does what you need. Optionally, you can create a relevant issue on [Github]({{site.url_github_kphp}}).
+**Solution.** Write and call a function in PHP that does what you need. Optionally, you can create a relevant issue on [GitHub]({{site.url_github_kphp}}).
 
 
 <blockquote class="faq">I get an error <i>"Using Unknown type"</i></blockquote>
@@ -129,7 +129,7 @@ This leads to *Error* with the message *"mix classes A and B"*, because type of 
 
 **Solutions.**
 1. Implement a common interface, so that *demo()* would accept this interface as a parameter
-2. Use [template functions](../kphp-language/howto-by-kphp/template-functions.md) 
+2. Use [generic functions](../kphp-language/static-type-system/generic-functions.md) 
 
 
 <blockquote class="faq">I specify PHP 7 class type hint, but KPHP doesn't prevent from passing <code>null</code></blockquote>

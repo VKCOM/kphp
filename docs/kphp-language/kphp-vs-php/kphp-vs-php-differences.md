@@ -107,7 +107,6 @@ Some parts of PHP syntax can be technically supported, but were not implemented 
 
 For now, KPHP has the absence of:
 * nested *list()* assignments  
-* array and string dereferencing
 * generators
 * group use declarations
 * anonymous classes
@@ -162,6 +161,7 @@ Most of them are dedicated to compile-time checks and runtime performance.
 * embedded web server, process orchestration, graceful restart [and more](../../kphp-server/kphp-as-backend/web-server.md)
 * compile-time optimizations: inlining, constants extracting, pre-compiled visitors, read-only detection...
 * runtime optimizations: typed vectors, SIMD, script allocators, stack variables...
+* [FFI](../php-extensions/ffi.md) has almost zero overhead
 
 As you see, compilation coupled with static code analysis opens the gates to safe code and efficiency.
  

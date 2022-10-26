@@ -599,7 +599,7 @@ Using *any* in *@var/@param/@return* is identical to absence, as it just relies 
  */
 ```
 
-*any* is a valid notation if you can't express a type with PHPDoc properly because it depends on external circumstances. For instance, arguments of [template functions](../howto-by-kphp/template-functions.md) are likely to be annotated with *any*. 
+*any* is a valid notation if you can't express a type with PHPDoc properly because it depends on external circumstances. 
 
 *any* is also useful to deal with covariance/contravariance in inheritance when you want to specify PHPDoc for a base method, but children methods have different types:
 ```php

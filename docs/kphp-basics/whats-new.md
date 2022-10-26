@@ -7,7 +7,247 @@ title: What's new?
 # What's new? (Versions history)
 
 
-## 2020-11-05
+## [2022-10-06](https://github.com/VKCOM/kphp/milestone/26?closed=1)
+
+* Modulite + Composer integration
+* allow unpacking into positional arguments `f(...[1,2])` for `function f($x,$y)`
+* reorder class fields at codegeneration considering C++ fields padding to reduce object size
+* class `DateTime`
+* added argument `$rest_index` to `getopt()`
+* added `strspn()` and `strcspn()`
+* optimize `switch` codegen if all cases are constant strings/ints
+* compatible with leak sanitizer
+* optimize `strtolower()` and `strtoupper()` to produce less allocations
+* g++ is launched with `-O2` by default
+
+
+## [2022-09-01](https://github.com/VKCOM/kphp/milestone/25?closed=1)
+
+* FFI callbacks supported, Lua modules can now be embedded ([doc](../kphp-language/php-extensions/ffi.md))
+* added `ignore_user_abort()` to prevent script terminations in distributed transactions
+* constants with leading slash now work
+* parse `array<int, string>` in phpdocs, type of key is just dropped off
+* added `stripcslashes()`
+* added argument `$scale` to `bcpow()` and `bcmod()`
+* whitespace identation at heredoc/nowdoc
+* class `ArrayIterator` (for `mixed[]` arrays only)
+* `dirname()` works inside `require` when compile-time resolved
+* support psr-0 autoload in *composer.json*
+
+
+## [2022-08-12](https://github.com/VKCOM/kphp/milestone/24?closed=1)
+
+* generic functions `@kphp-generic`: next gen template functions ([doc](../kphp-language/static-type-system/generic-functions.md))
+* deprecate `@kphp-template`, `@kphp-param`, and `@kphp-return`
+* support Modulite inside kphp (everything except composer) 
+* http 103 headers, `send_http_103_early_hints()`
+* added `array_is_list()`
+* added `instance_deserialize_safe()` and `instance_serialize_safe()`
+
+
+## [2022-07-13](https://github.com/VKCOM/kphp/milestone/23?closed=1)
+
+* reduce binary size with debug symbols by embedding common template specializations at runtime compilation
+* `JsonEncoder` and `@kphp-json` ([doc](../kphp-language/howto-by-kphp/json-encode-decode.md))
+* FFI improvements: nested pointers, arrays, native strings
+* added argument `$offset` to `preg_match_all()`
+* `unpack()` returns `false` on error
+
+
+## [2022-06-09](https://github.com/VKCOM/kphp/milestone/22?closed=1)
+
+* shutdown functions are invoked even after script timeout
+* embedded msgpack instead of an external dependency
+* `pack()` and `unpack()` support `e` and `E` formats
+
+
+## [2022-05-26](https://github.com/VKCOM/kphp/milestone/21?closed=1)
+
+* some optimizations reducing binary size for vkcom
+* `microtime(true)` returns `float` (support specializations for built-in functions)
+* added `date_parse()` and `date_parse_from_format()`
+* added option `--sigterm-wait-time`
+
+
+## [2022-04-15](https://github.com/VKCOM/kphp/milestone/20?closed=1)
+
+* better CPU utilization (NUMA, CPU affinity, multiple socket backlogs)
+* added class `CompileTimeLocation` ([doc](../kphp-language/howto-by-kphp/compile-time-location.md))
+* added `array_unset($arr, $key)`
+* added `memory_get_allocations()` to be used in ktest
+* `intval()` ingores spaces at string start
+* on json encoding error, output a full path to that key
+* compatible with clang++-11
+* support FFI pointers ([doc](../kphp-language/php-extensions/ffi.md))
+
+
+## [2022-02-18](https://github.com/VKCOM/kphp/milestone/19?closed=1)
+
+* added `to_array_debug(object|tuple|shape)`
+* handle phpdoc above lambdas
+* better deal with phpdoc/typehints mixture on inheritance
+* MySQL resumable support and basic PDO implementation
+* callbacks passed to internal functions restricted to be resumable
+* optimize phpdoc parsing
+* added `str_starts_with()` and `str_ends_with()`
+
+
+## [2022-01-20](https://github.com/VKCOM/kphp/milestone/18?closed=1)
+
+* use lld instead of ld for partial linking
+* support indexing in constants declaration
+* fire compilation errors for invalid indexing typing
+* some changes in precompiled headers for nocc integration
+* added `array_merge_recursive()`
+
+
+## [2021-12-22](https://github.com/VKCOM/kphp/milestone/17?closed=1)
+
+* lambdas re-implemented completely, almost all relative issues resolved
+* template functions re-implemented completely, almost all relative issues resolved
+* a new syntax for `@kphp-template`, we're heading towards generics
+* argument `$flags` in `array_unique()`
+
+
+## [2021-12-09](https://github.com/VKCOM/kphp/milestone/16?closed=1)
+
+* output some metrics to statshouse instead of grafana
+* `$exception->getFile()` returns relative paths for stable codegen in TeamCity
+* `Exception` and other built-in classes became copyable into shared memory
+* KPHP can now be compiled for Apple M1
+
+
+## [2021-11-11](https://github.com/VKCOM/kphp/milestone/15?closed=1)
+
+* fix a race condition in `KphpJobWorkerMemoryPiece`
+* initial FFI support ([doc](../kphp-language/php-extensions/ffi.md))
+
+
+## [2021-10-15](https://github.com/VKCOM/kphp/milestone/14?closed=1)
+
+* dropped Jessie support, C++ 17 is available for development
+* full UTF-8 and complex emoji support
+* increased http server limits
+* existing bcmath functions work like PHP in corner cases
+
+
+## [2021-09-16](https://github.com/VKCOM/kphp/milestone/13?closed=1)
+
+* added `set_migration_php8_warning($bitmask)` that will trigger warnings on PHP 7/8 behavior mismatch
+* some fixes around sigsegv in kubernetes restart
+
+
+## [2021-08-26](https://github.com/VKCOM/kphp/milestone/12?closed=1)
+
+* links to equal instances remain after copying to shared memory
+* supported copying hierarchical classes to shared memory
+* smart casts for ternary expressions
+
+
+## [2021-07-30](https://github.com/VKCOM/kphp/milestone/11?closed=1)
+
+* spread operator `...$array`
+* numeric literal separator: `107_925_284.88`
+* all tests correctly work with PHP 7.4
+
+
+## [2021-07-15](https://github.com/VKCOM/kphp/milestone/10?closed=1)
+
+* job workers released: separate processes working in parallel with http workers ([doc](../kphp-language/best-practices/parallelism-job-workers.md))
+
+
+## [2021-06-18](https://github.com/VKCOM/kphp/milestone/9?closed=1)
+
+* use shared memory instead of pipes for stats collecting from workers into master
+* some compile-time optimizations
+* added `str_ireplace()`
+* added constants `M_E`, `M_PI_2`, and similar
+* support for token `INF`
+
+
+## [2021-06-02](https://github.com/VKCOM/kphp/milestone/8?closed=1)
+
+* fix memory leak in curl library for long-running processes
+* support `__toString()` magic method
+* beta version of job workers
+* compatible with g++-11
+* generate pch header for clang, same as gch for g++
+
+
+## [2021-04-29](https://github.com/VKCOM/kphp/milestone/7?closed=1)
+
+* lots of codegeneration optimizations, 20% speedup for vkcom
+* colored functions `@kphp-color` ([doc](../kphp-language/howto-by-kphp/colored-functions.md))
+* some fixes around lambdas, interfaces and traits
+* consider type hints compatibility on inheritance, the same way as PHP does
+
+
+## [2021-04-02](https://github.com/VKCOM/kphp/milestone/6?closed=1)
+
+* reorganized runtime code to achieve more accurate cpp backtraces in Sentry
+* `strtotime()` now behaves exactly like in PHP due to integrated timelib
+* support zstd functions
+* `@kphp-warn-performance` above classes ([doc](../kphp-language/best-practices/performance-inspections.md))
+
+
+## [2021-03-13](https://github.com/VKCOM/kphp/milestone/5?closed=1)
+
+* support field type hints in classes
+* `declare(strict_types=1)` prevents auto casts passing arguments to built-in functions
+* a bit more exact typing for built-in preg functions
+* `strip_tags()` supports self-closing tags like <br>
+* `hash()` and `hash_hmac()` support sha224, sha384, sha512
+* added `hash_hmac_algos()`
+* pseudo-vectors encoded as regular vectors in msgpack serialization
+
+
+## [2021-02-17](https://github.com/VKCOM/kphp/milestone/4?closed=1)
+
+* significant reduced memory consumption for large codebases
+* `void` functions are forbidden to fork, `future<void|null>` is invalid
+* introduced `set_wait_all_forks_on_finish()`
+* aliases for `array_reserve()` (for vector, map int keys, map string keys)
+* added `acosh()`, `asin()`, `asinh()`, `cosh()`, `sinh()`, `rad2deg()`
+* support dereferencing like `"asdf"[$i]` and `(function(){...})()`
+
+
+## [2021-01-28](https://github.com/VKCOM/kphp/milestone/3?closed=1)
+
+* pretty errors and call stack on type mismatch
+* prevent chain reaction polluting types on type mismatch when restricted by phpdoc
+* exception inheritance
+* all standard exception classes implemented, including `Error` and `Throwable`
+* `@kphp-throws` and `@kphp-should-not-throw` annotations
+* significant codegeneration speedup for large codebases
+* `to_array_debug()` accepts the second argument `bool $with_classnames=false`
+* added `hrtime()`
+* `parse_url()` behaves like PHP 7.4
+
+
+## [2020-12-23](https://github.com/VKCOM/kphp/milestone/2?closed=1)
+
+* `@return` now infers the type, not just checks it
+* union type hints and `mixed` type hint are now valid not only in phpdoc
+* `@kphp-serialized-float32` annotation above fields for msgpack (4 bytes, not 8)
+* compatible with MacOS
+
+
+## [2020-12-11](https://github.com/VKCOM/kphp/milestone/1?closed=1)
+
+* json logs are also written from signal handlers and uncaught exceptions
+* `@kphp-analyze-performance` and `@kphp-warn-performance` ([doc](../kphp-language/best-practices/performance-inspections.md))
+* finalization of 64 bit support
+* correctly handle calls with a leading slash `\funcName()`
+* correctly handle `"${var}"` interpolation (previously, only `"{$var}"` worked)
+
+
+## 2020-11-19
+
+* TL `Long` is now `int` at codegen, not `mixed`
+* use critical sections around OpenSSL runtime
+
+
+## 2020-10-27
 
 * SIGTERM invokes graceful shutdown
 * dropped polyfills from the repo, use Composer

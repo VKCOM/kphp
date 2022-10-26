@@ -261,7 +261,7 @@ int main(int argc, char *argv[]) {
              "php-code-version", "KPHP_PHP_CODE_VERSION", "unknown");
   parser.add("C++ compiler for building the output binary", settings->cxx,
              "cxx", "KPHP_CXX", get_default_cxx());
-  parser.add("Directory for c++ compiler toolchain. Will be passed to compiler through -B option", settings->cxx_toolchain_dir,
+  parser.add("Directory for c++ compiler toolchain. Will be passed to cxx via -B option", settings->cxx_toolchain_dir,
              "cxx-toolchain-dir", "KPHP_CXX_TOOLCHAIN_DIR");
   parser.add("Extra C++ compiler flags for building the output binary", settings->extra_cxx_flags,
              "extra-cxx-flags", "KPHP_EXTRA_CXXFLAGS", get_default_extra_cxxflags());
@@ -277,13 +277,13 @@ int main(int argc, char *argv[]) {
              'g', "profiler", "KPHP_PROFILER", "0", {"0", "1", "2"});
   parser.add("Enable an ability to get global vars memory stats", settings->enable_global_vars_memory_stats,
              "enable-global-vars-memory-stats", "KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS");
-  parser.add("Enable all performance analyze inspections for all reachable functions", settings->enable_full_performance_analyze,
+  parser.add("Enable all inspections available for @kphp-analyze-performance for all reachable functions", settings->enable_full_performance_analyze,
              "enable-full-performance-analyze", "KPHP_ENABLE_FULL_PERFORMANCE_ANALYZE");
   parser.add("Print graph of resumable calls to stderr", settings->print_resumable_graph,
              'p', "print-graph", "KPHP_PRINT_RESUMABLE_GRAPH");
   parser.add("Forbid to use the precompile header", settings->no_pch,
              "no-pch", "KPHP_NO_PCH");
-  parser.add("Forbid to use the index file", settings->no_index_file,
+  parser.add("Forbid to use an index file which contains codegen hashes from previous compilation", settings->no_index_file,
              "no-index-file", "KPHP_NO_INDEX_FILE");
   parser.add("Show transpilation progress", settings->show_progress,
              "show-progress", "KPHP_SHOW_PROGRESS");

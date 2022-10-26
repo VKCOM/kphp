@@ -59,9 +59,9 @@ KPHP is distributed under the GPLv3 license, on behalf of VK.com (V Kontakte LLC
 
 ## Ask questions and provide feedback
 
-To communicate with KPHP community, use Github issues or public E-Mails available on Github.
+To communicate with KPHP community, use GitHub issues or a [Telegram chat](https://t.me/kphp_chat).
 
-You can also take a look at our [FAQ page](https://vkcom.github.io/kphp/kphp-basics/faq.html).
+You can also take a look at our [FAQ page](https://vkcom.github.io/kphp/kphp-basics/faq.html) and [Roadmap page](https://vkcom.github.io/kphp/kphp-basics/roadmap.html).
 
 
 ## Contributing

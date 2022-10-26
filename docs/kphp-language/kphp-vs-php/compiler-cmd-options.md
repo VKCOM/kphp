@@ -112,6 +112,10 @@ It will be embedded to the resulting binary and can be accessed from it — with
 
 C++ compiler for building the output binary, default **g++**.
 
+<aside>--cxx-toolchain-dir {dir} / KPHP_CXX_TOOLCHAIN_DIR = {dir}</aside>
+
+Directory for c++ compiler toolchain. Will be passed to cxx via `-B` option.
+
 <aside>--extra-cxx-flags {flags} / KPHP_EXTRA_CXXFLAGS = {flags}</aside>
 
 Extra C++ compiler flags for building the output binary, default **-O2 -ggdb** + some others.
@@ -126,16 +130,24 @@ Use dynamic incremental linkage `ld` for building the output binary, default **0
 
 <aside>--profiler {mode} / -g {mode} / KPHP_PROFILER = {mode}</aside>
 
-Enable [embedded profiler](../../kphp-language/best-practices/embedded-profiler.md), default **0**.  
+Enable [embedded profiler](../best-practices/embedded-profiler.md), default **0**.  
 Available modes: *0 | 1 | 2*. See the link above for details.
 
 <aside>--enable-global-vars-memory-stats / KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS = 0 | 1</aside>
 
 Enables *get_global_vars_memory_stats()* function and compiles debug code tracking memory, default **0**.
 
-<aside>--no-pch / KPHP_NO_PCH = 1</aside>
+<aside>--enable-full-performance-analyze / KPHP_ENABLE_FULL_PERFORMANCE_ANALYZE = 0 | 1</aside>
+
+Enable all [inspections](../best-practices/performance-inspections.md) available for `@kphp-analyze-performance` for all reachable functions and generates a json report, default **0**.
+
+<aside>--no-pch / KPHP_NO_PCH = 0 | 1</aside>
 
 Forbid to use precompiled headers, default **0**.
+
+<aside>--no-index-file / KPHP_NO_INDEX_FILE = 0 | 1</aside>
+
+Forbid to use an index file which contains codegen hashes from previous compilation, default **0**.
 
 <aside>--show-progress / KPHP_SHOW_PROGRESS = 0 | 1</aside>
 

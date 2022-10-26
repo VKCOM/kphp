@@ -184,7 +184,7 @@ Another example. Constant arrays and strings are extracted separately so that th
 ## Call graph and functions binding
 
 After all reachable code has been loaded and converted to AST representation, AST nodes are associated with real parsed functions by *PreprocessFunctionPass*:
-* simple invocation *some_function()* binds to this function unless it's a [template function](../../kphp-language/howto-by-kphp/template-functions.md)
+* simple invocation *some_function()* binds to this function unless it's a [generic function](../../kphp-language/static-type-system/generic-functions.md)
 * *require_once "file.php"* binds to "file wrapper" surrounded with the once condition
 * *new ClassName* binds to constructor invocation
 * *array_map('funcname',...)* and other string callbacks are resolved and bound

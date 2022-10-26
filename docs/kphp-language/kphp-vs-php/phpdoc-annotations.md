@@ -21,6 +21,10 @@ This tag is for non-void functions. If an invocation doesn't use the result (not
 
 If a function turns out to be able to throw an exception, you'll get a compilation error.
 
+<aside>@kphp-throws {classes extending Exception, comma separated}</aside>
+
+Checked exceptions: KPHP would ensure that a function actually throws the same list as you expect in PHPdoc.
+
 <aside>@kphp-inline</aside>
 
 Marks this function as 'inline' for gcc, and codegen implementation places it in .h file (not .cpp).  
@@ -38,10 +42,9 @@ Indicates, that this function never returns (always calls *exit()*). While build
 
 Tells KPHP that this function is pure: the result is always the same on constant arguments. Therefore, a function can be called in constant arrays for example.
 
-<aside>@kphp-template [T] {parameters}</aside>
-<aside>@kphp-return {description}</aside>
+<aside>@kphp-generic T1, T2, ...</aside>
 
-See [template functions](../howto-by-kphp/template-functions.md).
+See [generic functions](../static-type-system/generic-functions.md).
 
 <aside>@kphp-sync</aside>
 
@@ -61,25 +64,40 @@ See [embedded profiler](../best-practices/embedded-profiler.md).
 
 Makes assembler code of this function aggressively inline _everything_, avoiding `callq`. Do not use it without examining assembler output!  
 
-<aside>@kphp-warn-performance {inspections}</aside>
-<aside>@kphp-analyze-performance {inspections}</aside>
+<aside>@kphp-warn-performance {inspections, comma separated}</aside>
+<aside>@kphp-analyze-performance {inspections, comma separated}</aside>
+
 Available inspections: `array-merge-into`, `array-reserve`, `constant-execution-in-loop`, `implicit-array-cast`.
-These annotation are propagated to all reachable functions by the callstack.
-See [TODO](../TODD.md).  
+These annotations are propagated to all reachable functions by the callstack.  
+See [compile-time performance inspections](../best-practices/performance-inspections.md).
+
+<aside>@kphp-color {color}</aside>
+
+See [colored functions](../howto-by-kphp/colored-functions.md).
 
 
 ## @kphp-... tags for classes
 
 <aside>@kphp-serializable</aside>
 <aside>@kphp-serialized-field {index}</aside>
+<aside>@kphp-serialized-float32</aside>
 <aside>@kphp-reserved-fields {indexes}</aside>
 
 See [serialization and msgpack](../howto-by-kphp/serialization-msgpack.md).
+
+<aside>@kphp-json {attr}={value}</aside>
+
+See [JSON encode and decode](../howto-by-kphp/json-encode-decode.md).
 
 <aside>@kphp-immutable-class</aside>
 
 Fields of an immutable class are **deeply constant** and can be set only in *__construct()*. All nested instances must be also immutable.  
 Such instances can be stored in an [instance cache](../best-practices/shared-memory.md).
+
+<aside>@kphp-color {color}</aside>
+
+Behaves like that color is written above every method of a class.  
+See [colored functions](../howto-by-kphp/colored-functions.md).
 
 
 ## @kphp-... tags for fields
