@@ -204,7 +204,7 @@ Optional<string> tcp_fgets(const Stream &stream, int64_t length) {
   if (fd == -1) {
     return false;
   } else if (length < 0) {
-    length = INT_MAX;
+    length = getpagesize();
   }
   string data(length, false);
 
