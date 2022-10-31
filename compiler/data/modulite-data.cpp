@@ -53,6 +53,10 @@ static const std::string EMPTY_STRING_RETURNED_WHEN_GOT_NONSTRING_IN_YAML;
   fire_yaml_error(inside_m, reason, y_node.Mark().line + 1);
 }
 
+[[gnu::noinline]] static std::string paint_bold(vk::string_view s) {
+  return TermStringFormat::paint_bold(static_cast<std::string>(s));
+}
+
 class ModuliteYamlParser {
   ModulitePtr out;
 
@@ -73,7 +77,7 @@ class ModuliteYamlParser {
       fire_yaml_error(out, "'name' should start with @", y_name);
     }
 
-    std::string modulite_name = out->composer_json ? prepend_composer_package_to_name(name) : name;
+    std::string modulite_name = out->composer_json ? prepend_composer_package_to_name(out->composer_json, name) : name;
     size_t last_slash = modulite_name.rfind('/');
     vk::string_view expected_parent_name = vk::string_view{modulite_name}.substr(0, last_slash);
 
@@ -106,99 +110,11 @@ class ModuliteYamlParser {
     }
   }
 
-  // when a PHP developer writes a Composer package and uses modulites in it,
-  // modulites named absolutely, like @utils or @flood-details — like in any other project
-  // but when a monolith uses that package placed in vendor/, all its modulites are prefixed:
-  // @flood/details in #vk/common is represented as "#vk/common/@flood/details" on monolith compilation
-  std::string prepend_composer_package_to_name(const std::string &modulite_name) const {
-    return "#" + out->composer_json->package_name + "/" + modulite_name;
-  }
-
-  // resolve any string to a symbol, example inputs:
-  // "\\f()", "@msg/channels", "RelativeClass", "REL_CONST", "\\GLOBAL_CONST", "\\AbsClass::$static_field"
+  // parse any symbol as a string: "\\f()", "@msg/channels", "RelativeClass", etc.
+  // at the moment of parsing, they are stored as strings, and later resolved to symbols (see resolve_names_to_pointers())
   ModuliteSymbol parse_any_scalar_symbol(const std::string &s, const YAML::Node &y_loc) const {
     int line = y_loc.Mark().line + 1;
-
-    // @msg, @msg/channels
-    if (s[0] == '@') {  // will be resolved later, store as string
-      return !out->composer_json
-             ? ModuliteSymbol{.kind=ModuliteSymbol::kind_ref_stringname, .line=line, .ref_stringname=string_view_dup(s)}
-             : ModuliteSymbol{.kind=ModuliteSymbol::kind_ref_stringname, .line=line, .ref_stringname=string_view_dup(prepend_composer_package_to_name(s))};
-    }
-    // #composer-package
-    if (s[0] == '#') {  // will be resolved later, store as string
-      return ModuliteSymbol{.kind=ModuliteSymbol::kind_ref_stringname, .line=line, .ref_stringname=string_view_dup(s)};
-    }
-
-    size_t pos$$ = s.find("::");
-    bool abs_name = s[0] == '\\';
-
-    // if no :: then it doesn't belong to a class
-    if (pos$$ == std::string::npos) {
-      if (s[0] == '$') {
-        // $global_var
-        return ModuliteSymbol{.kind=ModuliteSymbol::kind_global_var, .line=line, .global_var=string_view_dup(s).substr(1)};
-      } else if (s[s.size() - 1] == ')') {
-        // relative_func() or \\global_func()
-        std::string f_fqn = abs_name ? s.substr(1, s.size() - 3) : out->modulite_namespace + s.substr(0, s.size() - 2);
-        if (FunctionPtr function = G->get_function(replace_backslashes(f_fqn))) {
-          return ModuliteSymbol{.kind=ModuliteSymbol::kind_function, .line=line, .function=function};
-        }
-        fire_yaml_error(out, fmt_format("can't find function {}()", TermStringFormat::paint_bold(f_fqn)), line);
-        return ModuliteSymbol{.kind=ModuliteSymbol::kind_ref_stringname, .line=line, .ref_stringname=""};
-      } else {
-        // RelativeClass or \\GlobalClass or RELATIVE_CONST or \\GLOBAL_CONST
-        std::string fqn = abs_name ? s.substr(1) : out->modulite_namespace + s;
-        if (ClassPtr klass = G->get_class(fqn)) {
-          return ModuliteSymbol{.kind=ModuliteSymbol::kind_klass, .line=line, .klass=klass};
-        }
-        if (DefinePtr constant = G->get_define(fqn)) {
-          return ModuliteSymbol{.kind=ModuliteSymbol::kind_constant, .line=line, .constant=constant};
-        }
-        fire_yaml_error(out, fmt_format("can't find class/constant {}", TermStringFormat::paint_bold(fqn)), line);
-        return ModuliteSymbol{.kind=ModuliteSymbol::kind_ref_stringname, .line=line, .ref_stringname=""};
-      }
-      __builtin_unreachable();
-    }
-
-    // if :: exists, then it's RelativeClass::{something} or \\GlobalClass::{something}
-    std::string c_fqn = abs_name ? s.substr(1, pos$$ - 1) : out->modulite_namespace + s.substr(0, pos$$);
-    ClassPtr klass = G->get_class(c_fqn);
-    if (!klass) {
-      fire_yaml_error(out, fmt_format("can't find class {}", TermStringFormat::paint_bold(c_fqn)), line);
-      return ModuliteSymbol{.kind=ModuliteSymbol::kind_ref_stringname, .line=line, .ref_stringname=""};
-    }
-
-    if (s[pos$$ + 2] == '$') {
-      // C::$static_field
-      std::string local_name = s.substr(pos$$ + 3);
-      if (const ClassMemberStaticField *f = klass->get_static_field(local_name)) {
-        return ModuliteSymbol{.kind=ModuliteSymbol::kind_global_var, .line=line, .global_var=vk::string_view(f->var->name)};
-      }
-      fire_yaml_error(out, fmt_format("can't find static field {}::${}", TermStringFormat::paint_bold(c_fqn), TermStringFormat::paint_bold(local_name)), line);
-      return ModuliteSymbol{.kind=ModuliteSymbol::kind_ref_stringname, .line=line, .ref_stringname=""};
-    } else if (s[s.size() - 1] == ')') {
-      // C::static_method() or C::instance_method()
-      std::string local_name = s.substr(pos$$ + 2, s.size() - pos$$ - 4);
-      if (const ClassMemberStaticMethod *m = klass->members.get_static_method(local_name)) {
-        return ModuliteSymbol{.kind=ModuliteSymbol::kind_function, .line=line, .function=m->function};
-      }
-      if (const ClassMemberInstanceMethod *m = klass->get_instance_method(local_name)) {
-        return ModuliteSymbol{.kind=ModuliteSymbol::kind_function, .line=line, .function=m->function};
-      }
-      fire_yaml_error(out, fmt_format("can't find method {}::{}()", TermStringFormat::paint_bold(c_fqn), TermStringFormat::paint_bold(local_name)), line);
-      return ModuliteSymbol{.kind=ModuliteSymbol::kind_ref_stringname, .line=line, .ref_stringname=""};
-    } else {
-      // C::CONST
-      std::string local_name = s.substr(pos$$ + 2);
-      if (const ClassMemberConstant *c = klass->get_constant(local_name)) {
-        return ModuliteSymbol{.kind=ModuliteSymbol::kind_constant, .line=line, .constant=G->get_define(c->define_name)};
-      }
-      fire_yaml_error(out, fmt_format("can't find constant {}::{}", TermStringFormat::paint_bold(c_fqn), TermStringFormat::paint_bold(local_name)), line);
-      return ModuliteSymbol{.kind=ModuliteSymbol::kind_ref_stringname, .line=line, .ref_stringname=""};
-    }
-
-    __builtin_unreachable();
+    return ModuliteSymbol{.kind=ModuliteSymbol::kind_ref_stringname, .line=line, .ref_stringname=string_view_dup(s)};
   }
 
   void parse_yaml_export(const YAML::Node &y_export) {
@@ -289,6 +205,14 @@ public:
       fire_yaml_error(out, "'allow-internal-access' has incorrect format", y_allow_internal);
     }
   }
+
+  // when a PHP developer writes a Composer package and uses modulites in it,
+  // modulites named absolutely, like @utils or @flood-details — like in any other project
+  // but when a monolith uses that package placed in vendor/, all its modulites are prefixed:
+  // @flood/details in #vk/common is represented as "#vk/common/@flood/details" on monolith compilation
+  static std::string prepend_composer_package_to_name(ComposerJsonPtr composer_json, const std::string &modulite_name) {
+    return "#" + composer_json->package_name + "/" + modulite_name;
+  }
 };
 
 
@@ -378,33 +302,19 @@ ModulitePtr ModuliteData::create_from_modulite_yaml(const std::string &yaml_file
 void ModuliteData::resolve_names_to_pointers() {
   ModulitePtr inside_m = get_self_ptr();
 
-  auto resolve_stringname = [inside_m](ModuliteSymbol &s) {
-    if (s.kind == ModuliteSymbol::kind_ref_stringname) {
-      ModulitePtr ref = G->get_modulite(s.ref_stringname);
-      if (!ref) {
-        if (s.ref_stringname[0] == '#') {
-          return;
-        }
-        fire_yaml_error(inside_m, fmt_format("{} not found", TermStringFormat::paint_bold(static_cast<std::string>(s.ref_stringname))), s.line);
-      }
-      s.kind = ModuliteSymbol::kind_modulite;
-      s.modulite = ref;
-    }
-  };
-
   for (ModuliteSymbol &symbol : exports) {
-    resolve_stringname(symbol);
+    resolve_symbol_from_yaml(symbol);
   }
   for (ModuliteSymbol &symbol : force_internal) {
-    resolve_stringname(symbol);
+    resolve_symbol_from_yaml(symbol);
   }
   for (ModuliteSymbol &symbol : require) {
-    resolve_stringname(symbol);
+    resolve_symbol_from_yaml(symbol);
   }
   for (auto &p_allow_rule : allow_internal) {
-    resolve_stringname(p_allow_rule.first);
+    resolve_symbol_from_yaml(p_allow_rule.first);
     for (ModuliteSymbol &symbol : p_allow_rule.second) {
-      resolve_stringname(symbol);
+      resolve_symbol_from_yaml(symbol);
     }
   }
 
@@ -426,6 +336,120 @@ void ModuliteData::resolve_names_to_pointers() {
     child->parent->submodulites_exported_at_any_depth.emplace_back(inside_m);
   }
 }
+
+// resolve any config item ("SomeClass", "SomeClass::f()", "@msg", etc.) from a string to a symbol
+// this is done in-place, modifying s.kind and s.{union_prop}
+// on error resolving, it's also printed here, pointing to a concrete line in yaml file
+void ModuliteData::resolve_symbol_from_yaml(ModuliteSymbol &s) {
+  kphp_assert(s.kind == ModuliteSymbol::kind_ref_stringname);
+  ModulitePtr inside_m = get_self_ptr();
+  vk::string_view v = s.ref_stringname;
+
+  // @msg, @msg/channels
+  if (v[0] == '@') {
+    std::string name = static_cast<std::string>(v);
+    if (composer_json) {
+      name = ModuliteYamlParser::prepend_composer_package_to_name(composer_json, name);
+    }
+    if (ModulitePtr m_ref = G->get_modulite(name)) {
+      s.kind = ModuliteSymbol::kind_modulite;
+      s.modulite = m_ref;
+    } else {
+      fire_yaml_error(inside_m, fmt_format("{} not found", paint_bold(v)), s.line);
+    }
+    return;
+  }
+  
+  // #composer-package
+  if (v[0] == '#') {
+    if (ModulitePtr m_ref = G->get_modulite(s.ref_stringname)) {
+      s.kind = ModuliteSymbol::kind_modulite;
+      s.modulite = m_ref;
+    } else {
+      // in case a ref is not found, don't fire an error,
+      // because composer.json often contain "php" and other strange non-installed deps in "require"
+    }
+    return;
+  }
+
+  size_t pos$$ = v.find("::");
+  bool abs_name = v[0] == '\\';
+
+  // if no :: then it doesn't belong to a class
+  if (pos$$ == std::string::npos) {
+    // $global_var
+    if (v[0] == '$') {
+      s.kind = ModuliteSymbol::kind_global_var;
+      s.global_var = s.global_var.substr(1);
+      return;
+    }
+    // relative_func() or \\global_func()
+    if (v[v.size() - 1] == ')') {
+      std::string f_fqn = abs_name ? static_cast<std::string>(v.substr(1, v.size() - 3)) : modulite_namespace + v.substr(0, v.size() - 2);
+      if (FunctionPtr function = G->get_function(replace_backslashes(f_fqn))) {
+        s.kind = ModuliteSymbol::kind_function;
+        s.function = function;
+      } else {
+        fire_yaml_error(inside_m, fmt_format("can't find function {}()", paint_bold(f_fqn)), s.line);
+      }
+      return;
+    }
+    // RelativeClass or \\GlobalClass or RELATIVE_CONST or \\GLOBAL_CONST
+    std::string fqn = abs_name ? static_cast<std::string>(v.substr(1)) : modulite_namespace + v;
+    if (ClassPtr klass = G->get_class(fqn)) {
+      s.kind = ModuliteSymbol::kind_klass;
+      s.klass = klass;
+    } else if (DefinePtr constant = G->get_define(fqn)) {
+      s.kind = ModuliteSymbol::kind_constant;
+      s.constant = constant;
+    } else {
+      fire_yaml_error(inside_m, fmt_format("can't find class/constant {}", paint_bold(fqn)), s.line);
+    }
+
+  } else {
+    // if :: exists, then it's RelativeClass::{something} or \\GlobalClass::{something}
+    std::string c_fqn = abs_name ? static_cast<std::string>(v.substr(1, pos$$ - 1)) : modulite_namespace + v.substr(0, pos$$);
+    ClassPtr klass = G->get_class(c_fqn);
+    if (!klass) {
+      fire_yaml_error(inside_m, fmt_format("can't find class {}", paint_bold(c_fqn)), s.line);
+      return;
+    }
+
+    // C::$static_field
+    if (v[pos$$ + 2] == '$') {
+      vk::string_view local_name = v.substr(pos$$ + 3);
+      if (const ClassMemberStaticField *f = klass->get_static_field(local_name)) {
+        s.kind = ModuliteSymbol::kind_global_var;
+        s.global_var = vk::string_view(f->var->name);
+      } else {
+        fire_yaml_error(inside_m, fmt_format("can't find static field {}::${}", paint_bold(c_fqn), paint_bold(local_name)), s.line);
+      }
+      return;
+    }
+    // C::static_method() or C::instance_method()
+    if (v[v.size() - 1] == ')') {
+      vk::string_view local_name = v.substr(pos$$ + 2, v.size() - pos$$ - 4);
+      if (const ClassMemberStaticMethod *m = klass->members.get_static_method(local_name)) {
+        s.kind = ModuliteSymbol::kind_function;
+        s.function = m->function;
+      } else if (const ClassMemberInstanceMethod *m = klass->get_instance_method(local_name)) {
+        s.kind = ModuliteSymbol::kind_function;
+        s.function = m->function;
+      } else {
+        fire_yaml_error(inside_m, fmt_format("can't find method {}::{}()", paint_bold(c_fqn), paint_bold(local_name)), s.line);
+      }
+      return;
+    }
+    // C::CONST
+    vk::string_view local_name = v.substr(pos$$ + 2);
+    if (const ClassMemberConstant *c = klass->get_constant(local_name)) {
+      s.kind = ModuliteSymbol::kind_constant;
+      s.constant = G->get_define(c->define_name);
+    } else {
+      fire_yaml_error(inside_m, fmt_format("can't find constant {}::{}", paint_bold(c_fqn), paint_bold(local_name)), s.line);
+    }
+  }
+};
 
 void ModuliteData::validate_yaml_requires() {
   ModulitePtr inside_m = get_self_ptr();
@@ -539,16 +563,4 @@ ModulitePtr ModuliteData::find_lca_with(ModulitePtr another_m) {
     }
   }
   return lca;
-}
-
-ModulitePtr ModuliteData::get_modulite_corresponding_to_composer_json() {
-  if (!composer_json) {
-    return {};
-  }
-  ModulitePtr topmost = get_self_ptr();
-  while (topmost->parent) {
-    topmost = topmost->parent;
-  }
-  kphp_assert(topmost->is_composer_package);
-  return topmost;
 }

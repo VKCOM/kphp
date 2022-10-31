@@ -131,7 +131,7 @@ void RegisterVariablesPass::register_var(VertexAdaptor<op_var> var_vertex) {
   var_vertex->var_id = var;
   var->marked_as_global |= var_vertex->extra_type == op_ex_var_superglobal;
   if (var->class_id) {
-    if (current_function->modulite || var->class_id->modulite) {
+    if (current_function->modulite != var->class_id->modulite) {
       // When `class B extends A`, var=B::$FIELD would refer to A::$FIELD actually,
       // but we should perform all checks for B (requested_class), not for A
       modulite_check_when_use_static_field(current_function, var, requested_class);

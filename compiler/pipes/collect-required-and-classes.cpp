@@ -4,18 +4,15 @@
 
 #include "compiler/pipes/collect-required-and-classes.h"
 
-#include "common/wrappers/likely.h"
-
 #include "compiler/const-manipulations.h"
 #include "compiler/compiler-core.h"
-#include "compiler/data/class-data.h"
+#include "compiler/data/modulite-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/data/src-dir.h"
 #include "compiler/function-pass.h"
-#include "compiler/lexer.h"
-#include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
 #include "compiler/type-hint.h"
-#include "compiler/utils/string-utils.h"
+
 
 class CollectRequiredPass final : public FunctionPassBase {
 private:
@@ -182,10 +179,103 @@ private:
     return VertexAdaptor<op_seq>::create(list).set_location(root->location);
   }
 
+  // SrcDir has `state_collect_required` atomic: every dir containing at least one PHP file is handled here
+  void once_init_dir_atomic(SrcDirPtr dir) {
+    auto expected = SrcDir::PassStatus::uninitialized;
+    if (dir->state_collect_required.compare_exchange_strong(expected, SrcDir::PassStatus::processing)) {
+
+      // ensure a parent dir has already been inited
+      if (dir->parent_dir && dir->parent_dir->state_collect_required != SrcDir::PassStatus::done) {
+        once_init_dir_atomic(dir->parent_dir);
+      }
+      // here is the moment of parsing .modulite.yaml inside a dir
+      if (ModulitePtr modulite = load_modulite_inside_dir(dir)) {
+        require_all_deps_of_modulite(modulite);
+      }
+
+    } else if (expected == SrcDir::PassStatus::processing) {
+      while (dir->state_collect_required == SrcDir::PassStatus::processing) {
+        std::this_thread::sleep_for(std::chrono::nanoseconds{100});
+      }
+    }
+    dir->state_collect_required = SrcDir::PassStatus::done;
+  }
+
+  // parse .modulite.yaml inside a dir, called once per dir
+  // it's somehow related to "collecting requires", so implemented here, to be done in parallel
+  // moreover, symbols listed in "export" are used for classes collecting, see require_all_deps_of_modulite()
+  // while parsing, cross-references like SomeClass or @another-m are not resolved, it will be done on all classes loaded
+  ModulitePtr load_modulite_inside_dir(SrcDirPtr dir) {
+    if (!G->settings().modulite_enabled.get()) {
+      return {};
+    }
+
+    ModulitePtr modulite;
+
+    if (dir->has_composer_json) {
+      // composer packages are implicit modulites "#vendorname/packagename" ("#" + json->name)
+      // for instance, if a modulite in a project calls a function from a package, it's auto checked to be required
+      // by default, all symbols from composer packages are exported ("exports" is empty, see modulite-check-rules.cpp)
+      // but if it contains .modulite.yaml near composer.json, that yaml can manually declared exported functions
+      ComposerJsonPtr composer_json = G->get_composer_json_at_dir(dir);
+      kphp_assert(composer_json);
+      modulite = ModuliteData::create_from_composer_json(composer_json, dir->has_modulite_yaml);
+
+      bool is_root = dir->full_dir_name == G->settings().composer_root.get();
+      if (is_root || !modulite) {  // composer.json at project root is loaded, but not stored as a modulite
+        return {};
+      }
+
+    } else if (dir->has_modulite_yaml && !dir->has_composer_json) {
+      // parse .modulite.yaml inside a regular dir
+      // find the dir up the tree with .modulite.yaml; say, dir contains @msg/channels, with_parent expected to be @msg
+      SrcDirPtr with_parent = dir;
+      while (with_parent && with_parent != G->get_main_file()->dir && !with_parent->nested_files_modulite) {
+        with_parent = with_parent->parent_dir;
+      }
+      ModulitePtr parent = with_parent ? with_parent->nested_files_modulite : ModulitePtr{};
+
+      modulite = ModuliteData::create_from_modulite_yaml(dir->get_modulite_yaml_filename(), parent);
+      if (!modulite || modulite->modulite_name.empty()) {   // an error while parsing yaml, was already printed
+        return {};
+      }
+
+    } else {
+      // a dir doesn't contain a modulite.yaml file itself — but if it's nested into another, propagate from the above
+      // - VK/Messages/      it's dir->parent_dir, already inited
+      //   .modulite.yaml    @messages, already parsed
+      //   - Core/           it's dir, no .modulite.yaml => assign @messages here
+      if (dir->parent_dir) {
+        dir->nested_files_modulite = dir->parent_dir->nested_files_modulite;
+      }
+      return {};
+    }
+
+    G->register_modulite(modulite);
+    dir->nested_files_modulite = modulite;
+    return modulite;
+  }
+
+  // symbols listed in "export" in .modulite.yaml are also used for classes collecting
+  // without this, classes unreachable via PHP code but listed in "export" lead to an error on names resolving
+  // this is quite important, because Modulite plugin auto-generates config from all sources,
+  // and some of them may not be reachable at the moment of compilation (some wip yet unused code)
+  void require_all_deps_of_modulite(ModulitePtr modulite) {
+    for (const ModuliteSymbol &s : modulite->exports) {
+      if (s.kind == ModuliteSymbol::kind_ref_stringname) {
+        vk::string_view e = s.ref_stringname;   // exported symbol: class / define / method / etc.
+        bool seems_like_classname = !e.ends_with(")") && e[0] != '$' && e[0] != '@' && e[0] != '#';
+        if (seems_like_classname) {
+          require_class(modulite->modulite_namespace + e);
+        }
+      }
+    }
+  }
+
 public:
-  CollectRequiredPass(DataStream<SrcFilePtr> &file_stream, DataStream<FunctionPtr> &function_stream) :
-    file_stream(file_stream),
-    function_stream(function_stream) {
+  CollectRequiredPass(DataStream<SrcFilePtr> &file_stream, DataStream<FunctionPtr> &function_stream)
+    : file_stream(file_stream)
+    , function_stream(function_stream) {
   }
 
   std::string get_description() override {
@@ -197,6 +287,11 @@ public:
       require_all_deps_of_class(current_function->class_id);
     } else if (current_function->type == FunctionData::func_local) {
       require_all_classes_from_func_declaration(current_function);
+    } else if (current_function->type == FunctionData::func_main) {
+      SrcDirPtr dir = current_function->file_id->dir;
+      if (dir->state_collect_required != SrcDir::PassStatus::done) {
+        once_init_dir_atomic(dir);
+      }
     }
   }
 

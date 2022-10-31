@@ -39,7 +39,7 @@ VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root) {
       return root;
     }
 
-    if (current_function->modulite || def->modulite) {
+    if (current_function->modulite != def->modulite) {
       // When `class B extends A`, def=B::CONST would refer to A::CONST actually,
       // but we should perform all checks for B (requested_class), not for A
       ClassPtr requested_class;

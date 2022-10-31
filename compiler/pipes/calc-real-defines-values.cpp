@@ -72,12 +72,12 @@ void CalcRealDefinesAndAssignModulitesF::on_finish(DataStream<FunctionPtr> &os) 
     stage::set_location({klass->file_id, f_klass, klass->location_line_num});
 
     if (klass->parent_class) {
-      if (klass->modulite || klass->parent_class->modulite) {
+      if (klass->modulite != klass->parent_class->modulite) {
         modulite_check_when_use_class(f_klass, klass->parent_class);
       }
     }
     for (ClassPtr interface : klass->implements) {
-      if (klass->modulite || interface->modulite) {
+      if (klass->modulite != interface->modulite) {
         modulite_check_when_use_class(f_klass, interface);
       }
     }

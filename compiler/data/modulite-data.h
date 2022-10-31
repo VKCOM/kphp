@@ -84,12 +84,12 @@ public:
 
 
   void resolve_names_to_pointers();
+  void resolve_symbol_from_yaml(ModuliteSymbol &s);
 
   void validate_yaml_requires();
   void validate_yaml_exports();
   void validate_yaml_force_internal();
 
   ModulitePtr find_lca_with(ModulitePtr another_m);
-  ModulitePtr get_modulite_corresponding_to_composer_json();
 };
 

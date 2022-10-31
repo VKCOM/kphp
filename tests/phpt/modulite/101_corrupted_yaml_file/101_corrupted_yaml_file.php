@@ -8,7 +8,6 @@ KPHP_ENABLE_MODULITE=1
 /Duplicate modulite @utils/
 /- ""/
 /expected non-empty string/
-/can't find class\/constant/
 <?php
 
 Utils101\Strings101::doSmth();
