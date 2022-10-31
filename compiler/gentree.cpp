@@ -4,6 +4,7 @@
 
 #include "compiler/gentree.h"
 
+#include "auto/compiler/vertex/vertex-types.h"
 #include "common/algorithms/contains.h"
 #include "common/algorithms/find.h"
 
@@ -15,11 +16,13 @@
 #include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/generics-mixins.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/lambda-utils.h"
 #include "compiler/lexer.h"
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
 #include "compiler/stage.h"
+#include "compiler/token.h"
 #include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
@@ -97,6 +100,9 @@ VertexPtr GenTree::get_foreach_value() {
 }
 
 VertexAdaptor<op_var> GenTree::get_function_use_var_name_ref() {
+  if (cur->type() == tok_clpar) { // for trailing comma
+    return {};
+  }
   auto result = get_var_name_ref();
   kphp_error(result, fmt_format("function use list: expected varname, found {}", cur->str_val));
   kphp_error(!result->ref_flag, "references to variables in `use` block are forbidden in lambdas");
@@ -1377,7 +1383,7 @@ bool GenTree::parse_cur_function_uses() {
   }
 
   std::vector<VertexAdaptor<op_var>> uses_as_vars;
-  gen_list<op_err>(&uses_as_vars, &GenTree::get_function_use_var_name_ref, tok_comma);
+  gen_list<op_none>(&uses_as_vars, &GenTree::get_function_use_var_name_ref, tok_comma);
 
   for (auto &v : uses_as_vars) {
     cur_function->uses_list.emplace_front(v);   // the order — use($v1, $v2) or use($v2, $v1) — doesn't matter
@@ -1494,7 +1500,7 @@ VertexAdaptor<op_func_param_list> GenTree::parse_cur_function_param_list() {
     params_next.emplace_back(ClassData::gen_param_this(auto_location()));
   }
 
-  bool ok_params_next = gen_list<op_err>(&params_next, &GenTree::get_func_param, tok_comma);
+  bool ok_params_next = gen_list<op_none>(&params_next, &GenTree::get_func_param, tok_comma);
   CE(!kphp_error(ok_params_next, "Failed to parse function params"));
   CE(expect(tok_clpar, "')'"));
 
