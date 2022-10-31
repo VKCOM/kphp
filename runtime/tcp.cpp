@@ -78,6 +78,7 @@ Optional<int64_t> connect_to_address(const string &host, int64_t port, double en
       return {};
     }
   }
+  freeaddrinfo(result);
 
   pollfd poll_fd;
   poll_fd.fd = socket_fd;
@@ -86,14 +87,11 @@ Optional<int64_t> connect_to_address(const string &host, int64_t port, double en
   double timeout = end_time - microtime_monotonic();
   if (timeout <= 0) {
     faulter(-3, string("Timeout expired %s"), string(""));
-    freeaddrinfo(result);
     return {};
   } else if (poll(&poll_fd, 1, timeout_convert_to_ms(timeout)) <= 0) {
     faulter(-3, string("Can't connect to tcp socket. System call 'poll(...)' got error"), string(strerror(errno)));
-    freeaddrinfo(result);
     return {};
   } else {
-    freeaddrinfo(result);
     int old_flags = fcntl(socket_fd, F_GETFL);
     fcntl(socket_fd, F_SETFL, old_flags & ~O_NONBLOCK);
     return socket_fd;
