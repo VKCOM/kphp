@@ -451,7 +451,8 @@ DefinePtr CompilerCore::get_define(std::string_view name) {
   if (!name.empty() && name.front() == '\\') {
     name.remove_prefix(1);
   }
-  return defines_ht.at(vk::std_hash(name))->data;
+  const auto *result = defines_ht.find(vk::std_hash(name));
+  return result ? *result : DefinePtr{};
 }
 
 VarPtr CompilerCore::create_var(const std::string &name, VarData::Type type) {

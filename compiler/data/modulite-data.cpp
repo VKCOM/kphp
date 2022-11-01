@@ -40,13 +40,19 @@
 
 static const std::string EMPTY_STRING_RETURNED_WHEN_GOT_NONSTRING_IN_YAML;
 
+// we do all checks if 1/2, but for 2, we just output to console instead of an error
+// todo this will be removed after testing for a month in production
+#define kphp_error_modulite(cond, str) \
+  if (G->settings().modulite_enabled.get() == 2) { kphp_notice(str); } \
+  else { kphp_error(cond, str); }
+
 
 [[gnu::cold]] static void fire_yaml_error(ModulitePtr inside_m, const std::string &reason, int line) {
   inside_m->yaml_file->load();  // load a file from disk, so that error message in console outputs a line
 
   stage::set_file(inside_m->yaml_file);
   stage::set_line(line);
-  kphp_error(0, fmt_format("Failed loading {}:\n{}", inside_m->yaml_file->relative_file_name, reason));
+  kphp_error_modulite(0, fmt_format("Failed loading {}:\n{}", inside_m->yaml_file->relative_file_name, reason));
 }
 
 [[gnu::cold]] static void fire_yaml_error(ModulitePtr inside_m, const std::string &reason, const YAML::Node &y_node) {
@@ -511,7 +517,7 @@ void ModuliteData::validate_yaml_exports() {
         fire_yaml_error(inside_m, fmt_format("'export' of {} lists a non-child {}", inside_m->modulite_name, another_m->modulite_name), e.line);
       }
 
-    } else {
+    } else if (e.kind != ModuliteSymbol::kind_ref_stringname) {
       // @msg exports SomeClass / someFunction() / A::someMethod() / A::CONST / etc.
       // valid: it belongs to @msg
       // invalid: it's in a global scope, or belongs to @feed, or @msg/channels, or etc.

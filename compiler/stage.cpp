@@ -22,6 +22,8 @@ const char *get_assert_level_desc(AssertLevelT assert_level) {
       return "Warning";
     case CE_ASSERT_LEVEL:
       return "Compilation error";
+    case NOTICE_ASSERT_LEVEL:
+      return "Notice";
     case FATAL_ASSERT_LEVEL:
       return "Fatal error";
     default:
@@ -65,7 +67,9 @@ void on_compilation_error(const char *description __attribute__((unused)), const
   if (assert_level == CE_ASSERT_LEVEL) {
     stage::error();
   }
-  stage::warnings_count++;
+  if (assert_level == CE_ASSERT_LEVEL || assert_level == WRN_ASSERT_LEVEL) {
+    stage::warnings_count++;
+  }
   fflush(file);
 }
 
