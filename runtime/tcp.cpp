@@ -110,6 +110,7 @@ void register_socket(const Stream & stream) {
 Stream tcp_stream_socket_client(const string &url, int64_t &error_number, string &error_description, double timeout,
                                 int64_t flags __attribute__((unused)),
                                 const mixed &context __attribute__((unused))) {
+  dl::CriticalSectionSmartGuard guard;
   if (timeout < 0) {
     timeout = DEFAULT_SOCKET_TIMEOUT;
   }
@@ -126,7 +127,6 @@ Stream tcp_stream_socket_client(const string &url, int64_t &error_number, string
     return false;
   }
 
-  dl::CriticalSectionSmartGuard guard;
   Optional<int64_t> fd{};
   if (flags & STREAM_CLIENT_CONNECT) {
     fd = details::connect_to_address(info.val().first, info.val().second, end_time, set_format_error);
