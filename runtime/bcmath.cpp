@@ -616,7 +616,23 @@ string f$bcmod(const string &lhs_str, const string &rhs_str, int64_t scale) {
   return bc_div_positive_wrapper(x, ONE_BC_NUM, scale, result_sign);
 }
 
-string f$bcpow(const string &lhs, const string &rhs, int64_t scale) {
+static std::pair<std::int64_t, bool> bc_num2int(const BcNum &num) {
+  if (num.n_dot - num.n_int > 18) {
+    return {0, false};
+  }
+
+  std::int64_t ingeger = 0;
+  for (int i = num.n_int; i < num.n_dot; ++i) {
+    ingeger = ingeger * 10 + num.str[i] - '0';
+  }
+  if (num.n_sign == -1) {
+    ingeger *= -1;
+  }
+
+  return {ingeger, true};
+}
+
+string f$bcpow(const string &lhs_str, const string &rhs_str, int64_t scale) {
   if (scale == std::numeric_limits<int64_t>::min()) {
     scale = bc_scale;
   }
@@ -625,54 +641,74 @@ string f$bcpow(const string &lhs, const string &rhs, int64_t scale) {
     scale = 0;
   }
 
-  if (lhs.empty()) {
+  const auto [lhs, lhs_success] = bc_parse_number_wrapper(lhs_str.empty() ? ZERO : lhs_str);
+  if (!lhs_success) {
+    php_warning("First parameter \"%s\" in function bcpow is not a number", lhs.str.c_str());
     return scale_num(ZERO, scale);
   }
-  if (rhs.empty()) {
+
+  const auto [rhs, rhs_success] = bc_parse_number_wrapper(rhs_str.empty() ? ZERO : rhs_str);
+  if (!rhs_success) {
+    php_warning("Second parameter \"%s\" in function bcpow is not a number", rhs.str.c_str());
+    return scale_num(ONE, scale);
+  }
+  if (rhs.n_scale != 0) {
+    php_warning("bcpow(): non-zero scale \"%s\" in exponent", rhs.str.c_str());
+  }
+
+  auto [exponent, exp_success] = bc_num2int(rhs);
+  if (!exp_success) {
+    php_warning("Second parameter \"%s\" in function bcpow is larger than 1e18", rhs.str.c_str());
+    return scale_num(ZERO, scale);
+  }
+
+  if (exponent == 0) {
     return scale_num(ONE, scale);
   }
 
-  int lsign, lint, ldot, lfrac, lscale;
-  if (bc_parse_number(lhs, lsign, lint, ldot, lfrac, lscale) != 0) {
-    php_warning("First parameter \"%s\" in function bcpow is not an integer", lhs.c_str());
-    return ZERO;
+  bool neg = false;
+  int rscale = scale;
+
+  if (exponent < 0) {
+    neg = true;
+    exponent = -exponent;
+  } else {
+    rscale = std::min(static_cast<int>(lhs.n_scale * exponent), std::max(static_cast<int>(scale), lhs.n_scale));
   }
 
-  int rsign, rint, rdot, rfrac, rscale;
-  if (bc_parse_number(rhs, rsign, rint, rdot, rfrac, rscale) != 0) {
-    php_warning("Second parameter \"%s\" in function bcpow is not an integer", rhs.c_str());
-    return ZERO;
+  // set initial value of temp
+  string power = lhs.str;
+  int pwrscale = lhs.n_scale;
+  while ((exponent & 1) == 0) {
+    pwrscale = 2 * pwrscale;
+    power = f$bcmul(power, power, pwrscale);
+    exponent = exponent >> 1;
   }
+  string temp = power;
+  int calcscale = pwrscale;
+  exponent = exponent >> 1;
 
-  long long deg = 0;
-  for (int i = rint; i < rdot; i++) {
-    deg = deg * 10 + rhs[i] - '0';
-  }
-
-  if (rdot - rint > 18 || (rsign < 0 && deg != 0)) {
-    php_warning("Second parameter \"%s\" in function bcpow is not a non negative integer less than 1e18", rhs.c_str());
-    return ZERO;
-  }
-
-  if (deg == 0) {
-    return scale_num(ONE, scale);
-  }
-
-  string result = ONE;
-  string mul = lhs;
-  while (deg > 0) {
-    if (deg & 1) {
-      result = f$bcmul(result, mul, 0);
+  // do the calculation
+  while (exponent > 0) {
+    pwrscale = 2 * pwrscale;
+    power = f$bcmul(power, power, pwrscale);
+    if ((exponent & 1) == 1) {
+      calcscale = pwrscale + calcscale;
+      temp = f$bcmul(temp, power, calcscale);
     }
-    mul = f$bcmul(mul, mul, 0);
-    deg >>= 1;
+    exponent = exponent >> 1;
   }
 
-  if (bc_parse_number(result, lsign, lint, ldot, lfrac, lscale) != 0) {
-    php_warning("Something went wrong in bcpow: result expected to be an integer, got \"%s\"", result.c_str());
-    return ZERO;
+  string result = temp;
+
+  if (neg) {
+    const BcNum &temp_bc_num = bc_parse_number_wrapper(temp).first;
+    if (bc_comp_wrapper(temp_bc_num, ZERO_BC_NUM, temp_bc_num.n_scale) != 0) {
+      result = f$bcdiv(ONE, temp, rscale);
+    }
   }
-  return scale_num(result, scale);
+  // just scale result
+  return f$bcadd(result, ZERO, scale);
 }
 
 string f$bcadd(const string &lhs, const string &rhs, int64_t scale) {
