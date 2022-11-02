@@ -8,6 +8,7 @@
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <limits>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -57,6 +58,7 @@
 #include "runtime/interface.h"
 #include "runtime/profiler.h"
 #include "runtime/rpc.h"
+#include "runtime/json-functions.h"
 #include "server/cluster-name.h"
 #include "server/confdata-binlog-replay.h"
 #include "server/database-drivers/adaptor.h"
@@ -2143,6 +2145,22 @@ int main_args_handler(int i, const char *long_option) {
       }
       return 0;
     }
+    case 2032: {
+      std::ifstream file(optarg);
+      if (!file) {
+        kprintf("--%s option : file opening failed\n", long_option);
+        return -1;
+      }
+      std::stringstream stringstream;
+      stringstream << file.rdbuf();
+      auto [config, flag] = json_decode(string(stringstream.str().c_str()));
+      if (!flag) {
+        kprintf("--%s option : file is not json\n", long_option);
+        return -1;
+      }
+      runtime_config = config;
+      return 0;
+    }
     default:
       return -1;
   }
@@ -2245,6 +2263,7 @@ void parse_main_args(int argc, char *argv[]) {
                                                                                              "memory limit = per_process_memory * processes_count");
   parse_option("job-workers-shared-messages-process-multiplier", required_argument, 2031, "Coefficient used to calculate the total count of the shared messages for job workers related communication:\n"
                                                                                           "messages count = coefficient * processes_count");
+  parse_option("runtime-congifuration", required_argument, 2032, "Smart text"); // add option for runtime
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
   // TODO: remove it after successful migration from kphb.readyV2 to kphb.readyV3

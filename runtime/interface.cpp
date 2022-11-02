@@ -85,6 +85,12 @@ bool is_json_log_on_timeout_enabled = true;
 
 static int ignore_level = 0;
 
+mixed runtime_config;
+
+mixed f$kphp_runtime_config() {
+  return runtime_config;
+}
+
 void f$ob_clean() {
   coub->clean();
 }
