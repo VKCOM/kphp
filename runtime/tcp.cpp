@@ -1,13 +1,13 @@
 
 #include <errno.h>
 #include <fcntl.h>
-#include <netdb.h>
 #include <functional>
+#include <netdb.h>
 #include <sys/poll.h>
 
-#include "runtime/net_events.h"
 #include "runtime/critical_section.h"
 #include "runtime/datetime/datetime_functions.h"
+#include "runtime/net_events.h"
 #include "runtime/streams.h"
 #include "runtime/string_functions.h"
 #include "runtime/tcp.h"
@@ -18,12 +18,11 @@ int DEFAULT_SOCKET_TIMEOUT = 60;
 
 int opened_tcp_client_sockets_last_query_nam = -1;
 char opened_tcp_sockets_storage[sizeof(array<int>)];
-array<FILE *> * opened_tcp_client_sockets = reinterpret_cast <array<FILE *> *> (opened_tcp_sockets_storage);
+array<FILE *> *opened_tcp_client_sockets = reinterpret_cast<array<FILE *> *>(opened_tcp_sockets_storage);
 addrinfo tcp_hints = {0, AF_UNSPEC, SOCK_STREAM, 0, 0, nullptr, nullptr, nullptr};
 
 namespace details {
-Optional<std::pair<string, int64_t>> parse_url(const string &url,
-                                               const std::function<void(int64_t, const string &, string)> &faulter) {
+Optional<std::pair<string, int64_t>> parse_url(const string &url, const std::function<void(int64_t, const string &, string)> &faulter) {
   string url_to_parse = url;
   if (!url_to_parse.starts_with(string("tcp://"))) {
     faulter(-7, string("\"%s\" doesn't start with tcp"), url_to_parse);
@@ -51,8 +50,7 @@ Optional<std::pair<string, int64_t>> parse_url(const string &url,
   return std::pair<string, int64_t>(host, port);
 }
 
-Optional<int64_t> connect_to_address(const string &host, int64_t port, double end_time,
-                                     const std::function<void(int64_t, const string &, string)> &faulter) {
+Optional<int64_t> connect_to_address(const string &host, int64_t port, double end_time, const std::function<void(int64_t, const string &, string)> &faulter) {
   addrinfo *result = nullptr;
   int get_result = getaddrinfo(host.c_str(), string(port).c_str(), &tcp_hints, &result); /*allocation */
   if (get_result != 0 || result == nullptr) {
@@ -62,7 +60,7 @@ Optional<int64_t> connect_to_address(const string &host, int64_t port, double en
   /* result points to an allocated dynamically linked list of
    * addrinfo structures linked by the ai_next component.
    * There are several reasons for this. We will use the first element */
-  addrinfo * rp = result;
+  addrinfo *rp = result;
   int64_t socket_fd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
   if (socket_fd == -1) {
     faulter(-3, string("Can't create tcp socket. System call 'socket(...)' got error"), string(strerror(errno)));
@@ -98,17 +96,16 @@ Optional<int64_t> connect_to_address(const string &host, int64_t port, double en
   }
 }
 
-void register_socket(const Stream & stream) {
+void register_socket(const Stream &stream) {
   if (dl::query_num != opened_tcp_client_sockets_last_query_nam) {
-    new(opened_tcp_sockets_storage) array<int>();
+    new (opened_tcp_sockets_storage) array<int>();
     opened_tcp_client_sockets_last_query_nam = dl::query_num;
   }
   opened_tcp_client_sockets->set_value(stream, nullptr);
 }
 } // namespace details
 
-Stream tcp_stream_socket_client(const string &url, int64_t &error_number, string &error_description, double timeout,
-                                int64_t flags __attribute__((unused)),
+Stream tcp_stream_socket_client(const string &url, int64_t &error_number, string &error_description, double timeout, int64_t flags __attribute__((unused)),
                                 const mixed &context __attribute__((unused))) {
   dl::CriticalSectionSmartGuard guard;
   if (timeout < 0) {
@@ -116,7 +113,7 @@ Stream tcp_stream_socket_client(const string &url, int64_t &error_number, string
   }
 
   double end_time = microtime_monotonic() + timeout;
-  auto set_format_error = [&](int64_t error_no, const string & format, string param) {
+  auto set_format_error = [&](int64_t error_no, const string &format, string param) {
     error_number = error_no;
     error_description = f$sprintf(format, array<mixed>::create(std::move(param)));
   };
@@ -212,8 +209,8 @@ Optional<string> tcp_fgets(const Stream &stream, int64_t length) {
   if (opened_tcp_client_sockets->get_value(stream) == nullptr) {
     opened_tcp_client_sockets->set_value(stream, fdopen(fd, "r"));
   }
-  FILE * src = opened_tcp_client_sockets->get_value(stream);
-  char * res = fgets(data.buffer(), length, src);
+  FILE *src = opened_tcp_client_sockets->get_value(stream);
+  char *res = fgets(data.buffer(), length, src);
   dl::leave_critical_section();
 
   if (res == nullptr) {
@@ -223,7 +220,7 @@ Optional<string> tcp_fgets(const Stream &stream, int64_t length) {
   return data.substr(0, end_pos);
 }
 
-Optional<string> tcp_fgetc(const Stream & stream) {
+Optional<string> tcp_fgetc(const Stream &stream) {
   int fd = tcp_get_fd(stream);
   if (fd == -1) {
     return false;
@@ -233,7 +230,7 @@ Optional<string> tcp_fgetc(const Stream & stream) {
   if (!opened_tcp_client_sockets->get_value(stream)) {
     opened_tcp_client_sockets->set_value(stream, fdopen(fd, "r"));
   }
-  FILE * src = opened_tcp_client_sockets->get_value(stream);
+  FILE *src = opened_tcp_client_sockets->get_value(stream);
   int res = fgetc(src);
   dl::leave_critical_section();
 
@@ -271,7 +268,7 @@ bool tcp_feof(const Stream &stream) {
   if (!opened_tcp_client_sockets->get_value(stream)) {
     opened_tcp_client_sockets->set_value(stream, fdopen(fd, "r"));
   }
-  FILE * src = opened_tcp_client_sockets->get_value(stream);
+  FILE *src = opened_tcp_client_sockets->get_value(stream);
   int res = feof(src);
   dl::leave_critical_section();
 
@@ -281,7 +278,7 @@ bool tcp_feof(const Stream &stream) {
 /*
  * now available only blocking/non-blocking option
  * */
-bool tcp_stream_set_option (const Stream &stream, int64_t option, int64_t value) {
+bool tcp_stream_set_option(const Stream &stream, int64_t option, int64_t value) {
   int fd = tcp_get_fd(stream);
   if (fd == -1) {
     return false;
