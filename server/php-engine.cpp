@@ -2153,8 +2153,8 @@ int main_args_handler(int i, const char *long_option) {
       }
       std::stringstream stringstream;
       stringstream << file.rdbuf();
-      auto [config, flag] = json_decode(string(stringstream.str().c_str()));
-      if (!flag) {
+      auto [config, success] = json_decode(string(stringstream.str().c_str()));
+      if (!success) {
         kprintf("--%s option : file is not json\n", long_option);
         return -1;
       }
