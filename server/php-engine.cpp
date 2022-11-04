@@ -1039,6 +1039,11 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
         return 0;
       }
 
+      if (dl::is_malloc_replaced()) {
+        dl::rollback_malloc_replacement();
+        dl::report_wrong_malloc_replacement_error();
+      }
+
       tl_fetch_init_raw_message(raw);
 
       auto op_from_tl = tl_fetch_int();

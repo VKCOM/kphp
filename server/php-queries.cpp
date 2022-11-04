@@ -201,6 +201,10 @@ void qmem_clear() {
 
   assert (state == st_inited);
 
+  if (dl::is_malloc_replaced()) {
+    dl::rollback_malloc_replacement();
+    dl::report_wrong_malloc_replacement_error();
+  }
   left.clear();
   used_mem = 0;
   for (int i = static_pages_n; i < pages_n; i++) {

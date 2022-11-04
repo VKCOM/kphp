@@ -50,6 +50,7 @@ void script_allocator_free(void *p) noexcept;
 bool is_malloc_replaced() noexcept;
 void replace_malloc_with_script_allocator() noexcept;
 void rollback_malloc_replacement() noexcept;
+void report_wrong_malloc_replacement_error() noexcept;
 
 class MemoryReplacementGuard {
   bool force_enable_disable_;

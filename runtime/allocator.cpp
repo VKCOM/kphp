@@ -16,8 +16,10 @@
 #include "common/wrappers/likely.h"
 
 #include "runtime/critical_section.h"
+#include "runtime/kphp-backtrace.h"
 #include "runtime/memory_resource/dealer.h"
 #include "runtime/php_assert.h"
+#include "server/server-log.h"
 
 namespace dl {
 namespace {
@@ -281,6 +283,31 @@ void replace_malloc_with_script_allocator() noexcept {
 
 void rollback_malloc_replacement() noexcept {
   MallocStateHolder::get().replace_malloc(true);
+}
+
+void report_wrong_malloc_replacement_error() noexcept {
+  php_assert(dl::is_malloc_replaced() == false);
+  std::array<char, 1000> buf{'\0'};
+  const char *sep = ";\n";
+
+  auto [raw_backtrace, backtrace_size] = MallocStateHolder::get().get_last_malloc_replacement_backtrace();
+  KphpBacktrace demangler{raw_backtrace, backtrace_size};
+  size_t cur_len = 0;
+  for (const char *name : demangler.make_demangled_backtrace_range()) {
+    const size_t len = name ? strlen(name) : 0;
+    if (len == 0) {
+      continue;
+    }
+    if (cur_len + len + std::strlen(sep) + 1 > buf.size()) {
+      break;
+    }
+    std::strcat(buf.data(), name);
+    std::strcat(buf.data(), sep);
+    cur_len += len + std::strlen(sep);
+  }
+  log_server_critical("Malloc replacement was not rolled back.\n"
+                      "Stacktrace of last replacement:\n"
+                      "%s", buf.data());
 }
 
 MemoryReplacementGuard::MemoryReplacementGuard(memory_resource::unsynchronized_pool_resource &memory_resource, bool force_enable_disable) : force_enable_disable_(force_enable_disable) {
