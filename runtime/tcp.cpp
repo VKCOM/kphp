@@ -330,9 +330,12 @@ void global_init_tcp_lib() {
 void free_tcp_lib() {
   dl::enter_critical_section();
   if (dl::query_num == opened_tcp_client_sockets_last_query_nam) {
-    const array<FILE *> *const_opened_udp_sockets = opened_tcp_client_sockets;
-    for (array<FILE *>::const_iterator p = const_opened_udp_sockets->begin(); p != const_opened_udp_sockets->end(); ++p) {
-      tcp_fclose(p.get_key());
+    array<FILE *> *const_opened_udp_sockets = opened_tcp_client_sockets;
+    for (array<FILE *>::iterator p = const_opened_udp_sockets->begin(); p != const_opened_udp_sockets->end();) {
+      Stream key = p.get_key();
+      ++p;
+      tcp_fclose(key);
+
     }
     opened_tcp_client_sockets_last_query_nam--;
   }
