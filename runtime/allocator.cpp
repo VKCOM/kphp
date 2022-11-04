@@ -11,6 +11,7 @@
 
 #include "common/algorithms/find.h"
 #include "common/containers/final_action.h"
+#include "common/fast-backtrace.h"
 #include "common/macos-ports.h"
 #include "common/wrappers/likely.h"
 
@@ -244,6 +245,12 @@ public:
 
   void replace_malloc(bool is_malloc_replaced_before) noexcept {
     php_assert(is_malloc_replaced_before == is_malloc_replaced_);
+    CriticalSectionGuard critical_section;
+
+    if (!is_malloc_replaced_before) {
+      last_malloc_replacement_backtrace_size_ = fast_backtrace(last_malloc_replacement_backtrace_.data(), last_malloc_replacement_backtrace_.size());
+    }
+
     is_malloc_replaced_ = !is_malloc_replaced_;
   }
 
@@ -251,9 +258,15 @@ public:
     return is_malloc_replaced_;
   }
 
+  std::pair<void *const *, int> get_last_malloc_replacement_backtrace() const noexcept {
+    return {last_malloc_replacement_backtrace_.data(), last_malloc_replacement_backtrace_size_};
+  }
+
 private:
   MallocStateHolder() = default;
   bool is_malloc_replaced_{false};
+  std::array<void *, 128> last_malloc_replacement_backtrace_{};
+  int last_malloc_replacement_backtrace_size_{0};
 };
 
 } // namespace
