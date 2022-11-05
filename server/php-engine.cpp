@@ -2158,7 +2158,7 @@ int main_args_handler(int i, const char *long_option) {
         kprintf("--%s option : file is not json\n", long_option);
         return -1;
       }
-      runtime_config = config;
+      runtime_config = std::move(config);
       return 0;
     }
     default:
