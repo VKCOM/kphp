@@ -132,6 +132,22 @@ if ($_SERVER["PHP_SELF"] === "/ini_get") {
         echo "ERROR"; return;
     }
     echo "OK";
+} else if ($_SERVER["PHP_SELF"] === "/test_runtime_config") {
+    $config = kphp_runtime_config();
+    switch ($_GET["mode"]) {
+     case "read_only":
+         echo "name : " . $config["name"] . " ";
+         echo "version : " . $config["version"] . " ";
+         break;
+     case "modify":
+         $config["version"] = "1.0.1";
+         echo "modified version : " . $config["version"] . " ";
+         echo "old version : " . kphp_runtime_config()["version"] . " ";
+         break;
+     default:
+     echo "ERROR"; return;
+    }
+    echo "OK";
 } else if ($_SERVER["PHP_SELF"] === "/test_big_post_data") {
     $keys = array_keys($_POST);
     if ($keys) {
