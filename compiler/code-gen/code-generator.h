@@ -97,32 +97,36 @@ public:
   void append(long long value) {
     feed_hash(value);
     if (!is_step_just_calc_hashes) {
-      char buf[32];
-      data->append(buf, static_cast<size_t>(simd_int64_to_string(value, buf) - buf));
+      const size_t buf_size = 32;
+      char buf[buf_size];
+      data->append(buf, static_cast<size_t>(simd_int64_to_string(value, buf, buf_size) - buf));
     }
   }
 
   void append(unsigned long long value) {
     feed_hash(value);
     if (!is_step_just_calc_hashes) {
-      char buf[32];
-      data->append(buf, static_cast<size_t>(simd_uint64_to_string(value, buf) - buf));
+      const size_t buf_size = 32;
+      char buf[buf_size];
+      data->append(buf, static_cast<size_t>(simd_uint64_to_string(value, buf, buf_size) - buf));
     }
   }
 
   void append(int value) {
     feed_hash(value);
     if (!is_step_just_calc_hashes) {
-      char buf[16];
-      data->append(buf, static_cast<size_t>(simd_int32_to_string(value, buf) - buf));
+      const size_t buf_size = 16;
+      char buf[buf_size];
+      data->append(buf, static_cast<size_t>(simd_int32_to_string(value, buf, buf_size) - buf));
     }
   }
 
   void append(unsigned int value) {
     feed_hash(value);
     if (!is_step_just_calc_hashes) {
-      char buf[16];
-      data->append(buf, static_cast<size_t>(simd_uint32_to_string(value, buf) - buf));
+      const size_t buf_size = 16;
+      char buf[buf_size];
+      data->append(buf, static_cast<size_t>(simd_uint32_to_string(value, buf, buf_size) - buf));
     }
   }
 

@@ -256,8 +256,9 @@ bool arg::is_sharp() const {
 }
 
 static inline std::string to_hex_str(unsigned int x) {
-  char buf[16];
-  sprintf(buf, "%08x", x);
+  const size_t buf_size = 16;
+  char buf[buf_size];
+  snprintf(buf, buf_size, "%08x", x);
   return {buf, 8};
 }
 

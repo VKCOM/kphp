@@ -1117,23 +1117,23 @@ const char *net_event_t::get_description() const noexcept {
   static std::array<char, 10000> BUF;
   std::visit(overloaded{
     [this](const net_events_data::rpc_answer &event) {
-      sprintf(BUF.data(), "RPC RESPONSE: TL function magic = 0x%08x, response magic = 0x%08x, bytes length = %d",
+      snprintf(BUF.data(), BUF.size(), "RPC RESPONSE: TL function magic = 0x%08x, response magic = 0x%08x, bytes length = %d",
                            get_pending_rpc_tl_query_magic(slot_id),
                            event.result_len >= 4 ? *reinterpret_cast<unsigned int *>(event.result) : 0, event.result_len);
     },
     [this](const net_events_data::rpc_error &event) {
-      sprintf(BUF.data(), "RPC ERROR: TL function magic = 0x%08x, error code = %d, error message = %s",
+      snprintf(BUF.data(), BUF.size(), "RPC ERROR: TL function magic = 0x%08x, error code = %d, error message = %s",
                            get_pending_rpc_tl_query_magic(slot_id), event.error_code, event.error_message);
     },
     [](const net_events_data::job_worker_answer &event) {
       if (event.job_result) {
-        sprintf(BUF.data(), "JOB RESPONSE: class name = %s", event.job_result->response.get_class());
+        snprintf(BUF.data(), BUF.size(), "JOB RESPONSE: class name = %s", event.job_result->response.get_class());
       } else {
-        sprintf(BUF.data(), "JOB ERROR");
+        snprintf(BUF.data(), BUF.size(), "JOB ERROR");
       }
     },
     [](const database_drivers::Response *) {
-      sprintf(BUF.data(), "EXTERNAL DB ANSWER");
+      snprintf(BUF.data(), BUF.size(), "EXTERNAL DB ANSWER");
     },
   }, data);
   return BUF.data();

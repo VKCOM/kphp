@@ -43,8 +43,9 @@ struct value_to_string {
 template<typename T>
 struct value_to_string<T, true> {
   static std::string get(T value) {
-    static char buff[100];
-    int len = sprintf(buff, "%.15lf", static_cast<double>(value));
+    const size_t buff_size = 100;
+    static char buff[buff_size];
+    int len = snprintf(buff, buff_size, "%.15lf", static_cast<double>(value));
     if (len < 0) {
       return "";
     }

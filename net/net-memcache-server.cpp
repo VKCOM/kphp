@@ -726,7 +726,8 @@ int return_one_key_false (struct connection *c, const char *key, int key_len) {
 
 int return_one_key_list (struct connection *c, const char *key, int key_len, int res, int mode, const int *R, int R_cnt) {
   int w, i;
-  static char buff[16];
+  const size_t buff_size = 16;
+  static char buff[buff_size];
 
   vkprintf(1, "result = %d\n", res);
 
@@ -738,7 +739,7 @@ int return_one_key_list (struct connection *c, const char *key, int key_len, int
       w = 4;
       *((int *) buff) = res;
     } else {
-      w = sprintf (buff, "%d", res);
+      w = snprintf(buff, buff_size, "%d", res);
     }
     return return_one_key (c, key, buff, w);
   }
@@ -746,7 +747,8 @@ int return_one_key_list (struct connection *c, const char *key, int key_len, int
   write_out (&c->Out, "VALUE ", 6);
   write_out (&c->Out, key, key_len);
 
-  char *ptr = get_write_ptr (&c->Out, 512);
+  const size_t ptr_size = 512;
+  char *ptr = get_write_ptr (&c->Out, ptr_size);
   if (!ptr) return -1;
   char *s = ptr + 480;
 
@@ -756,10 +758,10 @@ int return_one_key_list (struct connection *c, const char *key, int key_len, int
   ptr += 14;
   if (res != 0x7fffffff) {
     if (mode >= 0) {
-      w = sprintf (ptr, "%d", res);
+      w = snprintf(ptr, ptr_size - 14, "%d", res);
     } else {
       w = 4;
-      *((int *) ptr) = res;
+      *(reinterpret_cast<int *>(ptr)) = res;
     }
     ptr += w;
   } else {
@@ -771,64 +773,69 @@ int return_one_key_list (struct connection *c, const char *key, int key_len, int
     if (ptr >= s) {
       advance_write_ptr (&c->Out, ptr - (s - 480));
       ptr = get_write_ptr (&c->Out, 512);
-      if (!ptr) return -1;
+      if (!ptr) {
+        return -1;
+      }
       s = ptr + 480;
     }
     if (mode >= 0) {
       if (i || res != 0x7fffffff) {
         *ptr++ = ',';  w++;
       }
-      w += t = sprintf (ptr, "%d", R[i]);
+      w += t = snprintf(ptr, 10, "%d", R[i]);
     } else {
       w += t = 4;
-      *((int *) ptr) = R[i];
+      *(reinterpret_cast<int *>(ptr)) = R[i];
     }
     ptr += t;
   }
-  size_ptr[sprintf (size_ptr, "% 9d", w)] = '\r';
-  memcpy (ptr, "\r\n", 2);
+  size_ptr[snprintf(size_ptr, 12, "% 9d", w)] = '\r';
+  memcpy(ptr, "\r\n", 2);
   ptr += 2;
   advance_write_ptr (&c->Out, ptr - (s - 480));
 
   return 0;
 }
 
-int return_one_key_list_long (struct connection *c, const char *key, int key_len, int res, int mode, const long long *R, int R_cnt) {
+int return_one_key_list_long(struct connection *c, const char *key, int key_len, int res, int mode, const long long *R, int R_cnt) {
   int w, i;
-  static char buff[16];
+  const size_t buf_size = 16;
+  static char buff[buf_size];
 
   vkprintf(1, "result = %d\n", res);
 
   if (!R_cnt) {
     if (res == 0x7fffffff) {
-      return return_one_key (c, key, "", 0);
+      return return_one_key(c, key, "", 0);
     }
     if (mode < 0) {
       w = 8;
-      *((long long *) buff) = res;
+      *(reinterpret_cast<long long *>(buff)) = res;
     } else {
-      w = sprintf (buff, "%d", res);
+      w = snprintf(buff, buf_size, "%d", res);
     }
-    return return_one_key (c, key, buff, w);
+    return return_one_key(c, key, buff, w);
   }
 
-  write_out (&c->Out, "VALUE ", 6);
-  write_out (&c->Out, key, key_len);
+  write_out(&c->Out, "VALUE ", 6);
+  write_out(&c->Out, key, key_len);
 
-  char *ptr = get_write_ptr (&c->Out, 512);
-  if (!ptr) return -1;
+  char *ptr = get_write_ptr(&c->Out, 512);
+  if (!ptr) {
+    return -1;
+  }
   char *s = ptr + 480;
 
-  memcpy (ptr, " 0 .........\r\n", 14);
+  memcpy(ptr, " 0 .........\r\n", 14);
   char *size_ptr = ptr + 3;
 
   ptr += 14;
   if (res != 0x7fffffff) {
     if (mode >= 0) {
-      w = sprintf (ptr, "%d", res);
+      w = snprintf(ptr, 10, "%d", res);
     } else {
       w = 8;
-      *((long long *) ptr) = res;
+      *(reinterpret_cast<long long *>(ptr)) = res;
     }
     ptr += w;
   } else {
@@ -838,30 +845,32 @@ int return_one_key_list_long (struct connection *c, const char *key, int key_len
   for (i = 0; i < R_cnt; i++) {
     int t;
     if (ptr >= s) {
-      advance_write_ptr (&c->Out, ptr - (s - 480));
-      ptr = get_write_ptr (&c->Out, 512);
-      if (!ptr) return -1;
+      advance_write_ptr(&c->Out, ptr - (s - 480));
+      ptr = get_write_ptr(&c->Out, 512);
+      if (!ptr) {
+        return -1;
+      }
       s = ptr + 480;
     }
     if (mode >= 0) {
       if (i || res != 0x7fffffff) {
-        *ptr++ = ',';  w++;
+        *ptr++ = ',';
+        w++;
       }
-      w += t = sprintf (ptr, "%lld", R[i]);
+      w += t = snprintf(ptr, 14, "%lld", R[i]);
     } else {
       w += t = 8;
-      *((long long *) ptr) = R[i];
+      *(reinterpret_cast<long long *>(ptr)) = R[i];
     }
     ptr += t;
   }
-  size_ptr[sprintf (size_ptr, "% 9d", w)] = '\r';
-  memcpy (ptr, "\r\n", 2);
+  size_ptr[snprintf(size_ptr, 12, "% 9d", w)] = '\r';
+  memcpy(ptr, "\r\n", 2);
   ptr += 2;
-  advance_write_ptr (&c->Out, ptr - (s - 480));
+  advance_write_ptr(&c->Out, ptr - (s - 480));
 
   return 0;
 }
-
 
 int mcs_store (struct connection *c __attribute__((unused)),
                int op __attribute__((unused)),
@@ -995,7 +1004,7 @@ int mcs_init_crypto (struct connection *c, char *key, int key_len) {
     return -1;
   }
 
-  int mytime = time (0);
+  int mytime = time (nullptr);
 
 //  fprintf (stderr, "remote time %d, local %d\n", utime, mytime);
 
@@ -1003,7 +1012,8 @@ int mcs_init_crypto (struct connection *c, char *key, int key_len) {
     return -1;
   }
 
-  static char nonce_in[16], nonce_out[16], out_buf[64];
+  const size_t out_buf_size = 64;
+  static char nonce_in[16], nonce_out[16], out_buf[out_buf_size];
 
   *(long long *)(nonce_in + 8) = strtoull (key + 27, &tmp, 16);
   if (tmp != key + 43) {
@@ -1028,7 +1038,7 @@ int mcs_init_crypto (struct connection *c, char *key, int key_len) {
     return -1;
   }
 
-  write_out (&c->Out, out_buf, sprintf (out_buf, "NONCE %016llx%016llx\r\n", *(long long *)nonce_out, *(long long *)(nonce_out + 8)));
+  write_out(&c->Out, out_buf, snprintf(out_buf, out_buf_size, "NONCE %016llx%016llx\r\n", *(long long *)nonce_out, *(long long *)(nonce_out + 8)));
 
   mark_all_processed (&c->Out);
   mark_all_unprocessed (&c->In);

@@ -31,8 +31,9 @@ TEST(cluster_name_test, test_long_name) {
   const std::string not_very_long_cluster_name = "kphp" + std::string(128, '-') + "_engine";
   ASSERT_EQ(vk::singleton<ClusterName>::get().set_cluster_name(not_very_long_cluster_name.c_str()), nullptr);
   uint64_t crc = compute_crc64(not_very_long_cluster_name.c_str(), not_very_long_cluster_name.length());
-  char hex_crc_str[sizeof(crc) * 2 + 1];
-  std::sprintf(hex_crc_str, "%16" PRIx64, crc);
+  size_t hex_crc_str_size = sizeof(crc) * 2 + 1;
+  char hex_crc_str[hex_crc_str_size];
+  std::snprintf(hex_crc_str, hex_crc_str_size, "%16" PRIx64, crc);
   std::string expected_socket_name = std::string(hex_crc_str) + "_kphp_fd_transfer";
   ASSERT_STREQ(vk::singleton<ClusterName>::get().get_cluster_name(), not_very_long_cluster_name.c_str());
   ASSERT_STREQ(vk::singleton<ClusterName>::get().get_socket_name(), expected_socket_name.c_str());

@@ -255,14 +255,14 @@ void write_buff_long(long x) {
   if (unlikely (wptr + 25 > buff + BUFF_LEN)) {
     flush_buff();
   }
-  wptr += sprintf(wptr, "%ld", x);
+  wptr += snprintf(wptr, 25, "%ld", x);
 }
 
 void write_buff_double(double x) {
   if (unlikely (wptr + 100 > buff + BUFF_LEN)) {
     flush_buff();
   }
-  wptr += sprintf(wptr, "%lf", x);
+  wptr += snprintf(wptr, 100, "%f", x);
 }
 
 

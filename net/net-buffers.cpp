@@ -128,7 +128,7 @@ char *get_write_ptr (netbuffer_t *H, int len) {
     return X->wptr;
   }
   Y = alloc_buffer();
-  if (!Y) { return 0; }
+  if (!Y) { return nullptr; }
   H->extra++;
   X->next = Y;
   Y->prev = X;

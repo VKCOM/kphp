@@ -564,9 +564,10 @@ int mcc_init_crypto (struct connection *c) {
 
   aes_generate_nonce (MCC_DATA(c)->nonce);
 
-  static char buf[128];
+  const size_t buf_size = 128;
+  static char buf[buf_size];
 
-  write_out (&c->Out, buf, sprintf (buf, "delete @#$AuTh$#@A:%08x:%016llx%016llx\r\n", 
+  write_out(&c->Out, buf, snprintf(buf, buf_size, "delete @#$AuTh$#@A:%08x:%016llx%016llx\r\n",
     MCC_DATA(c)->nonce_time,
     *(long long *)MCC_DATA(c)->nonce,
     *(long long *)(MCC_DATA(c)->nonce + 8))

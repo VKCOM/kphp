@@ -484,8 +484,9 @@ double microtime_monotonic() {
 static string microtime_string() {
   struct timespec T;
   php_assert (clock_gettime(CLOCK_REALTIME, &T) >= 0);
-  char buf[45];
-  int len = sprintf(buf, "0.%09d %d", (int)T.tv_nsec, (int)T.tv_sec);
+  const size_t buf_size = 45;
+  char buf[buf_size];
+  int len = snprintf(buf, buf_size, "0.%09d %d", (int)T.tv_nsec, (int)T.tv_sec);
   return {buf, static_cast<string::size_type>(len)};
 }
 

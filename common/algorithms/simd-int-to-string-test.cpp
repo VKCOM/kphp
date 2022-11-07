@@ -11,23 +11,27 @@
 
 namespace {
 std::string int32_to_string(int32_t x) {
-  char buffer[11];
-  return std::string{buffer, simd_int32_to_string(x, buffer)};
+  const size_t buffer_size = 11;
+  char buffer[buffer_size];
+  return std::string{buffer, simd_int32_to_string(x, buffer, buffer_size)};
 }
 
 std::string uint32_to_string(uint32_t x) {
-  char buffer[10];
-  return std::string{buffer, simd_uint32_to_string(x, buffer)};
+  const size_t buffer_size = 10;
+  char buffer[buffer_size];
+  return std::string{buffer, simd_uint32_to_string(x, buffer, buffer_size)};
 }
 
 std::string int64_to_string(int64_t x) {
-  char buffer[20];
-  return std::string{buffer, simd_int64_to_string(x, buffer)};
+  const size_t buffer_size = 20;
+  char buffer[buffer_size];
+  return std::string{buffer, simd_int64_to_string(x, buffer, buffer_size)};
 }
 
 std::string uint64_to_string(uint64_t x) {
-  char buffer[20];
-  return std::string{buffer, simd_uint64_to_string(x, buffer)};
+  const size_t buffer_size = 20;
+  char buffer[buffer_size];
+  return std::string{buffer, simd_uint64_to_string(x, buffer, buffer_size)};
 }
 }
 

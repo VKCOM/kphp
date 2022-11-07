@@ -264,8 +264,9 @@ bool tl_fetch_query_answer_header(tl_query_answer_header_t *header) {
 
 static void tl_store_stats_result(const tl_stats_result_t *stats) {
   static auto double_to_string0 = [](double x) {
-    static char buf[30];
-    sprintf(buf, "%.9f", x);
+    const size_t buf_size = 30;
+    static char buf[buf_size];
+    snprintf(buf, buf_size, "%.9f", x);
     return buf;
   };
 

@@ -309,64 +309,66 @@ const char *ip_to_print(unsigned ip) {
   return inet_ntop(AF_INET, &ip, buf, sizeof(buf));
 }
 
-static int conv_ipv6_internal (const unsigned short ipv6[8], char *s) {
+static int conv_ipv6_internal(const unsigned short ipv6[8], char *s, size_t buf_size) {
   int p = 0;
-  p += sprintf (s + p, "%x:", htons (ipv6[0]));
+  p += snprintf(s + p, buf_size, "%x:", htons(ipv6[0]));
   if (!ipv6[1]) {
-    p += sprintf (s + p, ":");
+    p += snprintf(s + p, buf_size - p, ":");
   } else {
-    p += sprintf (s + p, "%x:", htons (ipv6[1]));
+    p += snprintf(s + p, buf_size - p, "%x:", htons(ipv6[1]));
   }
   if (!ipv6[2]) {
-    p += sprintf (s + p, ":");
+    p += snprintf(s + p, buf_size - p, ":");
   } else {
-    p += sprintf (s + p, "%x:", htons (ipv6[2]));
+    p += snprintf(s + p, buf_size - p, "%x:", htons(ipv6[2]));
   }
   if (!ipv6[3]) {
-    p += sprintf (s + p, ":");
+    p += snprintf(s + p, buf_size - p, ":");
   } else {
-    p += sprintf (s + p, "%x:", htons (ipv6[3]));
+    p += snprintf(s + p, buf_size - p, "%x:", htons(ipv6[3]));
   }
   if (!ipv6[4]) {
-    p += sprintf (s + p, ":");
+    p += snprintf(s + p, buf_size - p, ":");
   } else {
-    p += sprintf (s + p, "%x:", htons (ipv6[4]));
+    p += snprintf(s + p, buf_size - p, "%x:", htons(ipv6[4]));
   }
   if (!ipv6[5]) {
-    p += sprintf (s + p, ":");
+    p += snprintf(s + p, buf_size - p, ":");
   } else {
-    p += sprintf (s + p, "%x:", htons (ipv6[5]));
+    p += snprintf(s + p, buf_size - p, "%x:", htons(ipv6[5]));
   }
   if (!ipv6[6]) {
-    p += sprintf (s + p, ":");
+    p += snprintf(s + p, buf_size - p, ":");
   } else {
-    p += sprintf (s + p, "%x:", htons (ipv6[6]));
+    p += snprintf(s + p, buf_size - p, "%x:", htons(ipv6[6]));
   }
   if (ipv6[7]) {
-    p += sprintf (s + p, "%x", htons (ipv6[7]));
+    p += snprintf(s + p, buf_size - p, "%x", htons(ipv6[7]));
   }
   return p;
 }
 
 const char *ipv6_to_print(const void *ipv6) {
-  static char abuf[1000], *ptr = abuf;
+  const size_t abuf_size = 1000;
+  static char abuf[abuf_size], *ptr = abuf;
   char *res;
   if (ptr > abuf + 900) {
     ptr = abuf;
   }
   res = ptr;
-  ptr += conv_ipv6_internal ((const unsigned short *) ipv6, ptr) + 1;
+  ptr += conv_ipv6_internal(static_cast<const unsigned short *>(ipv6), ptr, abuf_size - (ptr - abuf)) + 1;
   return res;
 }
 
 const char *pid_to_print(const struct process_id *pid) {
-  static char abuf[1000], *ptr = abuf;
+  const size_t abuf_size = 1000;
+  static char abuf[abuf_size], *ptr = abuf;
   char *res;
   if (ptr > abuf + 900) {
     ptr = abuf;
   }
   res = ptr;
-  ptr += sprintf (ptr, "[%d.%d.%d.%d:%hu:%hu:%u]",
+  ptr += snprintf(ptr, abuf_size - (ptr - abuf), "[%d.%d.%d.%d:%hu:%hu:%u]",
                   pid->ip >> 24, (pid->ip >> 16) & 0xff, (pid->ip >> 8) & 0xff, pid->ip & 0xff,
                   pid->port, pid->pid, pid->utime) + 1;
   return res;

@@ -35,14 +35,15 @@ string f$uniqid(const string &prefix, bool more_entropy) {
   int sec = (int)tv.tv_sec;
   int usec = (int)(tv.tv_usec & 0xFFFFF);
 
-  char buf[30];
+  size_t buf_size = 30;
+  char buf[buf_size];
   static_SB.clean() << prefix;
 
   if (more_entropy) {
-    sprintf(buf, "%08x%05x%.8f", sec, usec, f$lcg_value() * 10);
+    snprintf(buf, buf_size, "%08x%05x%.8f", sec, usec, f$lcg_value() * 10);
     static_SB.append(buf, 23);
   } else {
-    sprintf(buf, "%08x%05x", sec, usec);
+    snprintf(buf, buf_size, "%08x%05x", sec, usec);
     static_SB.append(buf, 13);
   }
 
@@ -211,7 +212,7 @@ mixed f$getimagesize(const string &name) {
     read_size = size;
   }
 
-  if (read_size < 12 || read_safe(read_fd, buf, read_size) < (ssize_t)read_size) {
+  if (read_size < 12 || read_safe(read_fd, buf, read_size) < static_cast<ssize_t>(read_size)) {
     close(read_fd);
     dl::leave_critical_section();
     return false;
@@ -244,7 +245,7 @@ mixed f$getimagesize(const string &name) {
           return false;
         }
         memcpy(image, buf, read_size);
-        if (read_safe(read_fd, image + read_size, size - read_size) < (ssize_t)(size - read_size)) {
+        if (read_safe(read_fd, image + read_size, size - read_size) < static_cast<ssize_t>(size - read_size)) {
           dl::deallocate(image, size);
           close(read_fd);
           dl::leave_critical_section();
@@ -325,14 +326,14 @@ mixed f$getimagesize(const string &name) {
           }
         }
         dl::deallocate(image, size);
-      } else if (!strncmp((const char *)buf, php_sig_jpc, sizeof(php_sig_jpc)) && (int)read_size >= 42) {
+      } else if (!strncmp((const char *)buf, php_sig_jpc, sizeof(php_sig_jpc)) && static_cast<int>(read_size) >= 42) {
         type = IMAGETYPE_JPEG;
 
         width = (buf[8] << 24) + (buf[9] << 16) + (buf[10] << 8) + buf[11];
         height = (buf[12] << 24) + (buf[13] << 16) + (buf[14] << 8) + buf[15];
         channels = (buf[40] << 8) + buf[41];
 
-        if (channels < 0 || channels > 256 || (int)read_size < 42 + 3 * channels || width <= 0 || height <= 0) {
+        if (channels < 0 || channels > 256 || static_cast<int>(read_size) < 42 + 3 * channels || width <= 0 || height <= 0) {
           close(read_fd);
           dl::leave_critical_section();
           return false;
@@ -360,7 +361,7 @@ mixed f$getimagesize(const string &name) {
 
         int buf_pos = 12;
         size_t file_pos = 12;
-        while ((int)read_size >= 42 + buf_pos + 8) {
+        while (static_cast<int>(read_size) >= 42 + buf_pos + 8) {
           const unsigned char *s = buf + buf_pos;
           int box_length = (s[0] << 24) + (s[1] << 16) + (s[2] << 8) + s[3];
           if (box_length == 1 || box_length > 1000000000) {
@@ -373,7 +374,7 @@ mixed f$getimagesize(const string &name) {
             height = (s[12] << 24) + (s[13] << 16) + (s[14] << 8) + s[15];
             channels = (s[40] << 8) + s[41];
 
-            if (channels < 0 || channels > 256 || (int)read_size < 42 + buf_pos + 8 + 3 * channels || width <= 0 || height <= 0) {
+            if (channels < 0 || channels > 256 || static_cast<int>(read_size) < 42 + buf_pos + 8 + 3 * channels || width <= 0 || height <= 0) {
               break;
             }
 
@@ -394,7 +395,7 @@ mixed f$getimagesize(const string &name) {
             break;
           }
           file_pos += box_length;
-          if (file_pos >= size || (off_t)file_pos != (ssize_t)file_pos || (ssize_t)file_pos < 0) {
+          if (file_pos >= size || static_cast<off_t>(file_pos) != static_cast<ssize_t>(file_pos) || static_cast<ssize_t>(file_pos) < 0) {
             break;
           }
 
@@ -403,7 +404,7 @@ mixed f$getimagesize(const string &name) {
             read_size = size - file_pos;
           }
 
-          if (read_size < 50 || pread(read_fd, buf, read_size, (off_t)file_pos) < (ssize_t)read_size) {
+          if (read_size < 50 || pread(read_fd, buf, read_size, static_cast<off_t>(file_pos)) < static_cast<ssize_t>(read_size)) {
             break;
           }
 
@@ -445,7 +446,7 @@ mixed f$getimagesize(const string &name) {
   result.push_back(width);
   result.push_back(height);
   result.push_back(type);
-  int len = sprintf((char *)buf, "width=\"%d\" height=\"%d\"", width, height);
+  int len = snprintf((char *)buf, min_size,"width=\"%d\" height=\"%d\"", width, height);
   result.push_back(string((const char *)buf, len));
   if (bits != 0) {
     result.set_value(string("bits", 4), bits);

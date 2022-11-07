@@ -252,22 +252,21 @@ inline void write_buff_int(int x) {
   if (unlikely (wptr + 25 > buff + BUFF_LEN)) {
     flush_buff();
   }
-  wptr += sprintf(wptr, "%d", x);
+  wptr += snprintf(wptr, 25, "%d", x);
 }
 
 
 int utf8_to_win(const char *s, int len, int64_t max_len, bool exit_on_error) {
   int st = 0;
   int acc = 0;
-  int i;
 //  if (max_len && len > 3 * max_len) {
 //    len = 3 * max_len;
 //  }
-  for (i = 0; i < len; i++) {
+  for (int i = 0; i < len; i++) {
     if (max_len && cur_buff_len >= max_len) {
       break;
     }
-    int c = (unsigned char)s[i];
+    int c = static_cast<unsigned char>(s[i]);
     if (c < 0x80) {
       if (st) {
         if (exit_on_error) {
@@ -275,7 +274,7 @@ int utf8_to_win(const char *s, int len, int64_t max_len, bool exit_on_error) {
         }
         write_buff("?1?", 3);
       }
-      write_buff_char((char)c);
+      write_buff_char(static_cast<char>(c));
       st = 0;
     } else if ((c & 0xc0) == 0x80) {
       if (!st) {
@@ -296,7 +295,7 @@ int utf8_to_win(const char *s, int len, int64_t max_len, bool exit_on_error) {
         } else {
           int d = utf8_to_win_char(acc);
           if (d != -1 && d) {
-            write_buff_char((char)d);
+            write_buff_char(static_cast<char>(d));
           } else {
             write_buff_char_2('&', '#');
             write_buff_int(acc);
@@ -514,10 +513,11 @@ string f$vk_win_to_utf8(const string &text, bool escape) {
 }
 
 string f$vk_flex(const string &name, const string &case_name, int64_t sex, const string &type, int64_t lang_id) {
-  static char ERROR_MSG_BUF[1000] = {'\0'};
+  const size_t error_msg_buf_size = 1000;
+  static char ERROR_MSG_BUF[error_msg_buf_size] = {'\0'};
   ERROR_MSG_BUF[0] = '\0';
   vk::string_view res = flex(vk::string_view{name.c_str(), name.size()}, vk::string_view{case_name.c_str(), case_name.size()}, sex == 1,
-                         vk::string_view{type.c_str(), type.size()}, lang_id, buff, ERROR_MSG_BUF);
+                         vk::string_view{type.c_str(), type.size()}, lang_id, buff, ERROR_MSG_BUF, error_msg_buf_size);
   if (ERROR_MSG_BUF[0] != '\0') {
     php_warning("%s", ERROR_MSG_BUF);
   }

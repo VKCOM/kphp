@@ -58,9 +58,10 @@ void dl_print_backtrace() {
 }
 
 void dl_print_backtrace_gdb() {
-  char * const envp[] = {NULL};
-  char pid_buf[30];
-  sprintf (pid_buf, "%d", getpid());
+  char * const envp[] = {nullptr};
+  const size_t pid_buf_size = 30;
+  char pid_buf[pid_buf_size];
+  snprintf(pid_buf, pid_buf_size, "%d", getpid());
   char name_buf[512];
   ssize_t res = readlink ("/proc/self/exe", name_buf, 511);
   if (res >= 0) {
@@ -73,10 +74,10 @@ void dl_print_backtrace_gdb() {
     if (!child_pid) {
       dup2 (2, 1); //redirect output to stderr
       //fprintf (stdout, "stack trace for %s pid = %s\n", name_buf, pid_buf);
-      execle ("gdb", "gdb", "--batch", "-n", "-ex", "thread", "-ex", "bt", name_buf, pid_buf, (char *)NULL, envp);
+      execle ("gdb", "gdb", "--batch", "-n", "-ex", "thread", "-ex", "bt", name_buf, pid_buf, (char *)nullptr, envp);
       _exit (0); /* If gdb failed to start */
     } else {
-      waitpid (child_pid, NULL, 0);
+      waitpid (child_pid, nullptr, 0);
     }
   } else {
     write (2, "can't get name of executable file to pass to gdb\n", 49);

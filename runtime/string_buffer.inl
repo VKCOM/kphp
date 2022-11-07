@@ -92,19 +92,19 @@ string_buffer &operator<<(string_buffer &sb, bool x) {
 
 string_buffer &operator<<(string_buffer &sb, int32_t x) {
   sb.reserve_at_least(11);
-  sb.buffer_end = simd_int32_to_string(x, sb.buffer_end);
+  sb.buffer_end = simd_int32_to_string(x, sb.buffer_end, 11);
   return sb;
 }
 
 string_buffer &operator<<(string_buffer &sb, uint32_t x) {
   sb.reserve_at_least(10);
-  sb.buffer_end = simd_uint32_to_string(x, sb.buffer_end);
+  sb.buffer_end = simd_uint32_to_string(x, sb.buffer_end, 10);
   return sb;
 }
 
 string_buffer &operator<<(string_buffer &sb, int64_t x) {
   sb.reserve_at_least(20);
-  sb.buffer_end = simd_int64_to_string(x, sb.buffer_end);
+  sb.buffer_end = simd_int64_to_string(x, sb.buffer_end, 20);
   return sb;
 }
 

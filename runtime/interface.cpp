@@ -681,8 +681,9 @@ Optional<string> f$ip2ulong(const string &ip) {
     return false;
   }
 
-  char buf[25];
-  int len = sprintf(buf, "%u", ntohl(result.s_addr));
+  const size_t buf_size = 25;
+  char buf[buf_size];
+  int len = snprintf(buf, buf_size, "%u", ntohl(result.s_addr));
   return string(buf, len);
 }
 
@@ -2234,9 +2235,10 @@ static void init_interface_lib() {
   is_json_log_on_timeout_enabled = true;
   ignore_level = 0;
 
-  static char engine_pid_buf[20];
+  const size_t engine_pid_buf_size = 20;
+  static char engine_pid_buf[engine_pid_buf_size];
   dl::enter_critical_section();//OK
-  sprintf(engine_pid_buf, "] [%d] ", (int)getpid());
+  snprintf(engine_pid_buf, engine_pid_buf_size, "] [%d] ", (int)getpid());
   dl::leave_critical_section();
   engine_pid = engine_pid_buf;
 

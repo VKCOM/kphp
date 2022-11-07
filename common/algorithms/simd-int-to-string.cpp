@@ -105,18 +105,18 @@ inline __m128i shift_digits(__m128i a, unsigned digit) noexcept {
 }
 
 inline char *uint32_less10000_to_string(uint32_t value, char *out_buffer) {
-  if (value < 10u) {
+  if (value < 10U) {
     *out_buffer = static_cast<char>('0' + static_cast<char>(value));
     return out_buffer + 1;
   }
 
-  const uint32_t d1 = fastmod::fastdiv<100u>(value) << 1u;
-  const uint32_t d2 = fastmod::fastmod<100u>(value) << 1u;
+  const uint32_t d1 = fastmod::fastdiv<100U>(value) << 1U;
+  const uint32_t d2 = fastmod::fastmod<100U>(value) << 1U;
 
-  if (value >= 1000u) {
+  if (value >= 1000U) {
     *out_buffer++ = lookup_digit_table(d1);
   }
-  if (value >= 100u) {
+  if (value >= 100U) {
     *out_buffer++ = lookup_digit_table(d1 + 1);
   }
   *out_buffer++ = lookup_digit_table(d2);
@@ -126,22 +126,22 @@ inline char *uint32_less10000_to_string(uint32_t value, char *out_buffer) {
 
 inline char *uint32_greater10000_less100000000_to_string(uint32_t value, char *out_buffer) {
   // value = bbbbcccc
-  const uint32_t b = fastmod::fastdiv<10000u>(value);
-  const uint32_t c = fastmod::fastmod<10000u>(value);
+  const uint32_t b = fastmod::fastdiv<10000U>(value);
+  const uint32_t c = fastmod::fastmod<10000U>(value);
 
-  const uint32_t d1 = fastmod::fastdiv<100u>(b) << 1u;
-  const uint32_t d2 = fastmod::fastmod<100u>(b) << 1u;
+  const uint32_t d1 = fastmod::fastdiv<100U>(b) << 1U;
+  const uint32_t d2 = fastmod::fastmod<100U>(b) << 1U;
 
-  const uint32_t d3 = fastmod::fastdiv<100u>(c) << 1u;
-  const uint32_t d4 = fastmod::fastmod<100u>(c) << 1u;
+  const uint32_t d3 = fastmod::fastdiv<100U>(c) << 1U;
+  const uint32_t d4 = fastmod::fastmod<100U>(c) << 1U;
 
-  if (value >= 10000000u) {
+  if (value >= 10000000U) {
     *out_buffer++ = lookup_digit_table(d1);
   }
-  if (value >= 1000000u) {
+  if (value >= 1000000U) {
     *out_buffer++ = lookup_digit_table(d1 + 1);
   }
-  if (value >= 100000u) {
+  if (value >= 100000U) {
     *out_buffer++ = lookup_digit_table(d2);
   }
   *out_buffer++ = lookup_digit_table(d2 + 1);
@@ -154,17 +154,17 @@ inline char *uint32_greater10000_less100000000_to_string(uint32_t value, char *o
 }
 } // namespace impl_
 
-char *simd_uint32_to_string(uint32_t value, char *out_buffer) noexcept {
-  if (value < 10000u) {
+char *simd_uint32_to_string(uint32_t value, char *out_buffer, [[maybe_unused]] size_t buffer_size) noexcept {
+  if (value < 10000U) {
     return impl_::uint32_less10000_to_string(value, out_buffer);
   }
-  if (value < 100000000u) {
+  if (value < 100000000U) {
     return impl_::uint32_greater10000_less100000000_to_string(value, out_buffer);
   }
 
   // value = aabbbbbbbb in decimal
-  const uint32_t a = fastmod::fastdiv<100000000u>(value); // 1 to 42
-  value = fastmod::fastmod<100000000u>(value);
+  const uint32_t a = fastmod::fastdiv<100000000U>(value); // 1 to 42
+  value = fastmod::fastmod<100000000U>(value);
 
   if (a >= 10) {
     const unsigned i = a << 1;
@@ -183,26 +183,26 @@ char *simd_uint32_to_string(uint32_t value, char *out_buffer) noexcept {
   return out_buffer + 8;
 }
 
-char *simd_int32_to_string(int32_t value, char *out_buffer) noexcept {
+char *simd_int32_to_string(int32_t value, char *out_buffer, size_t buffer_size) noexcept {
   auto u = static_cast<uint32_t>(value);
   if (value < 0) {
     *out_buffer++ = '-';
     u = ~u + 1;
   }
-  return simd_uint32_to_string(u, out_buffer);
+  return simd_uint32_to_string(u, out_buffer, buffer_size);
 }
 
-char *simd_uint64_to_string(uint64_t value, char *out_buffer) {
-  if (value < 10000u) {
+char *simd_uint64_to_string(uint64_t value, char *out_buffer, [[maybe_unused]] size_t buffer_size) {
+  if (value < 10000U) {
     return impl_::uint32_less10000_to_string(static_cast<uint32_t>(value), out_buffer);
   }
-  if (value < 100000000u) {
+  if (value < 100000000U) {
     return impl_::uint32_greater10000_less100000000_to_string(static_cast<uint32_t>(value), out_buffer);
   }
 
-  if (value < 10000000000000000ull) {
-    const auto v0 = static_cast<uint32_t>(value / 100000000u);
-    const auto v1 = static_cast<uint32_t>(value % 100000000u);
+  if (value < 10000000000000000ULL) {
+    const auto v0 = static_cast<uint32_t>(value / 100000000U);
+    const auto v1 = static_cast<uint32_t>(value % 100000000U);
 
     const __m128i a0 = impl_::convert_8digits_to_128bits_vector(v0);
     const __m128i a1 = impl_::convert_8digits_to_128bits_vector(v1);
@@ -223,32 +223,32 @@ char *simd_uint64_to_string(uint64_t value, char *out_buffer) {
     return out_buffer + 16 - digit;
   }
 
-  const auto a = static_cast<uint32_t>(value / 10000000000000000ull); // 1 to 1844
-  value %= 10000000000000000ull;
+  const auto a = static_cast<uint32_t>(value / 10000000000000000ULL); // 1 to 1844
+  value %= 10000000000000000ULL;
 
-  if (a < 10u) {
+  if (a < 10U) {
     *out_buffer++ = static_cast<char>('0' + static_cast<char>(a));
-  } else if (a < 100u) {
-    const uint32_t i = a << 1u;
+  } else if (a < 100U) {
+    const uint32_t i = a << 1U;
     *out_buffer++ = impl_::lookup_digit_table(i);
     *out_buffer++ = impl_::lookup_digit_table(i + 1);
-  } else if (a < 1000u) {
-    *out_buffer++ = static_cast<char>('0' + static_cast<char>(fastmod::fastdiv<100u>(a)));
+  } else if (a < 1000U) {
+    *out_buffer++ = static_cast<char>('0' + static_cast<char>(fastmod::fastdiv<100U>(a)));
 
-    const uint32_t i = fastmod::fastmod<100u>(a) << 1u;
+    const uint32_t i = fastmod::fastmod<100U>(a) << 1U;
     *out_buffer++ = impl_::lookup_digit_table(i);
     *out_buffer++ = impl_::lookup_digit_table(i + 1);
   } else {
-    const uint32_t i = fastmod::fastdiv<100u>(a) << 1u;
-    const uint32_t j = fastmod::fastmod<100u>(a) << 1u;
+    const uint32_t i = fastmod::fastdiv<100U>(a) << 1U;
+    const uint32_t j = fastmod::fastmod<100U>(a) << 1U;
     *out_buffer++ = impl_::lookup_digit_table(i);
     *out_buffer++ = impl_::lookup_digit_table(i + 1);
     *out_buffer++ = impl_::lookup_digit_table(j);
     *out_buffer++ = impl_::lookup_digit_table(j + 1);
   }
 
-  const auto v0 = static_cast<uint32_t>(value / 100000000u);
-  const auto v1 = static_cast<uint32_t>(value % 100000000u);
+  const auto v0 = static_cast<uint32_t>(value / 100000000U);
+  const auto v1 = static_cast<uint32_t>(value % 100000000U);
 
   const __m128i a0 = impl_::convert_8digits_to_128bits_vector(v0);
   const __m128i a1 = impl_::convert_8digits_to_128bits_vector(v1);
@@ -260,13 +260,13 @@ char *simd_uint64_to_string(uint64_t value, char *out_buffer) {
   return out_buffer + 16;
 }
 
-char *simd_int64_to_string(int64_t value, char *out_buffer) {
+char *simd_int64_to_string(int64_t value, char *out_buffer, size_t buffer_size) {
   auto u = static_cast<uint64_t>(value);
   if (value < 0) {
     *out_buffer++ = '-';
     u = ~u + 1;
   }
-  return simd_uint64_to_string(u, out_buffer);
+  return simd_uint64_to_string(u, out_buffer, buffer_size);
 }
 
 #else
@@ -275,23 +275,23 @@ char *simd_int64_to_string(int64_t value, char *out_buffer) {
 #include <cstdint>
 #include <cstdio>
 
-char *simd_uint32_to_string(uint32_t value, char *out_buffer) noexcept {
-  int n = sprintf(out_buffer, "%u", value);
+char *simd_uint32_to_string(uint32_t value, char *out_buffer, size_t buffer_size) noexcept {
+  int n = snprintf(out_buffer, buffer_size, "%u", value);
   return out_buffer + n;
 }
 
-char *simd_int32_to_string(int32_t value, char *out_buffer) noexcept {
-  int n = sprintf(out_buffer, "%d", value);
+char *simd_int32_to_string(int32_t value, char *out_buffer, size_t buffer_size) noexcept {
+  int n = snprintf(out_buffer, buffer_size, "%d", value);
   return out_buffer + n;
 }
 
-char *simd_uint64_to_string(uint64_t value, char *out_buffer) {
-  int n = sprintf(out_buffer, "%llu", value);
+char *simd_uint64_to_string(uint64_t value, char *out_buffer, size_t buffer_size) {
+  int n = snprintf(out_buffer, buffer_size, "%llu", value);
   return out_buffer + n;
 }
 
-char *simd_int64_to_string(int64_t value, char *out_buffer) {
-  int n = sprintf(out_buffer, "%lld", value);
+char *simd_int64_to_string(int64_t value, char *out_buffer, size_t buffer_size) {
+  int n = snprintf(out_buffer, buffer_size, "%lld", value);
   return out_buffer + n;
 }
 

@@ -218,10 +218,10 @@ string::string(int64_t i) {
   const char *end = nullptr;
   if (static_cast<int64_t>(i32) == i) {
     p = create(STRLEN_INT32, true);
-    end = simd_int32_to_string(i32, p);
+    end = simd_int32_to_string(i32, p, STRLEN_INT32);
   } else {
     p = create(STRLEN_INT64, true);
-    end = simd_int64_to_string(i, p);
+    end = simd_int64_to_string(i, p, STRLEN_INT64);
   }
   inner()->size = static_cast<size_type>(end - p);
   p[inner()->size] = '\0';
@@ -444,9 +444,8 @@ string &string::append(int64_t i) {
   }
 
   reserve_at_least(size() + STRLEN_INT64);
-  const char *end = simd_int64_to_string(i, p + size());
+  const char *end = simd_int64_to_string(i, p + size(), STRLEN_INT64);
   inner()->size = static_cast<size_type>(end - p);
-  p[inner()->size] = '\0';
   return *this;
 }
 
@@ -503,7 +502,7 @@ string &string::append_unsafe(int64_t i) {
     return append_unsafe(cached_int_positive.ref_data(), cached_int_positive.size);
   }
 
-  const char *end = simd_int64_to_string(i, p + size());
+  const char *end = simd_int64_to_string(i, p + size(), capacity() - size());
   inner()->size = static_cast<size_type>(end - p);
   return *this;
 }
