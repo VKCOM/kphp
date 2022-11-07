@@ -11,11 +11,6 @@
 #include "server/php-engine-vars.h"
 #include "server/workers-control.h"
 
-// Используется в некоторых тестах, что бы обмануть clang и не дать ему выкинуть вызов std::malloc из кода
-void *alloc_no_inline(int x) {
-  return std::malloc(x);
-}
-
 class RuntimeTestsEnvironment final : public testing::Environment {
 public:
   ~RuntimeTestsEnvironment() final {}
