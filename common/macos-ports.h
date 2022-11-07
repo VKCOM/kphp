@@ -39,11 +39,6 @@
 
 extern char **environ;
 
-extern void *(*__malloc_hook)(size_t size, const void *caller);
-extern void *(*__realloc_hook)(void *ptr, size_t size, const void *caller);
-extern void *(*__memalign_hook)(size_t alignment, size_t size, const void *caller);
-extern void (*__free_hook)(void *ptr, const void *caller);
-
 struct ucred {
   pid_t pid;
   uid_t uid;
