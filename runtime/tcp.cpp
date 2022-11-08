@@ -1,5 +1,5 @@
 
-#include <errno.h>
+#include <cerrno>
 #include <fcntl.h>
 #include <functional>
 #include <netdb.h>
@@ -19,12 +19,12 @@ struct tcp_socket {
   int fd{-1};
 };
 
-int DEFAULT_SOCKET_TIMEOUT = 60;
+constexpr int DEFAULT_SOCKET_TIMEOUT = 60;
+constexpr addrinfo tcp_hints = {0, AF_UNSPEC, SOCK_STREAM, 0, 0, nullptr, nullptr, nullptr};
 
 int opened_tcp_client_sockets_last_query_nam = -1;
-char opened_tcp_sockets_storage[sizeof(array<int>)];
+std::byte opened_tcp_sockets_storage[sizeof(array<tcp_socket>)];
 array<tcp_socket> *opened_tcp_client_sockets = reinterpret_cast<array<tcp_socket> *>(opened_tcp_sockets_storage);
-addrinfo tcp_hints = {0, AF_UNSPEC, SOCK_STREAM, 0, 0, nullptr, nullptr, nullptr};
 
 namespace details {
 Optional<std::pair<string, int64_t>> parse_url(const string &url, const std::function<void(int64_t, const string &, string)> &faulter) {
@@ -68,7 +68,7 @@ Optional<int64_t> connect_to_address(const string &host, int64_t port, double en
   addrinfo *rp = result;
   int64_t socket_fd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
   if (socket_fd == -1) {
-    faulter(-3, string("Can't create tcp socket. System call 'socket(...)' got error"), string(strerror(errno)));
+    faulter(-3, string("Can't create tcp socket. System call 'socket(...)' got error "), string(errno));
     freeaddrinfo(result);
     return {};
   }
@@ -76,7 +76,7 @@ Optional<int64_t> connect_to_address(const string &host, int64_t port, double en
 
   if (connect(socket_fd, rp->ai_addr, rp->ai_addrlen) != 0) {
     if (errno != EINPROGRESS) {
-      faulter(-3, string("Can't connect to tcp socket. System call 'connect(...)' got error"), string(strerror(errno)));
+      faulter(-3, string("Can't connect to tcp socket. System call 'connect(...)' got error "), string(errno));
       close(socket_fd);
       freeaddrinfo(result);
       return {};
@@ -84,17 +84,14 @@ Optional<int64_t> connect_to_address(const string &host, int64_t port, double en
   }
   freeaddrinfo(result);
 
-  pollfd poll_fd;
-  poll_fd.fd = socket_fd;
-  poll_fd.events = POLLIN | POLLERR | POLLHUP | POLLOUT | POLLPRI;
-
+  pollfd poll_fd{static_cast<int>(socket_fd), POLLIN | POLLERR | POLLHUP | POLLOUT | POLLPRI, 0};
   double timeout = end_time - microtime_monotonic();
   if (timeout <= 0) {
     faulter(-3, string("Timeout expired %s"), string(""));
     close(socket_fd);
     return {};
   } else if (poll(&poll_fd, 1, timeout_convert_to_ms(timeout)) <= 0) {
-    faulter(-3, string("Can't connect to tcp socket. System call 'poll(...)' got error"), string(strerror(errno)));
+    faulter(-3, string("Can't connect to tcp socket. System call 'poll(...)' got error "), string(errno));
     close(socket_fd);
     return {};
   } else {
