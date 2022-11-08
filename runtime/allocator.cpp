@@ -287,7 +287,7 @@ MemoryReplacementGuard::~MemoryReplacementGuard() {
 
 extern "C" void *__libc_malloc(size_t size);
 extern "C" void *__libc_calloc(size_t nmemb, size_t size);
-extern "C" void *__libc_realloc(void *mem, std::size_t new_size);
+extern "C" void *__libc_realloc(void *mem, size_t new_size);
 extern "C" void __libc_free(void *mem);
 extern "C" void *__libc_memalign(size_t alignment, size_t size);
 
@@ -299,7 +299,7 @@ void *calloc(size_t nmemb, size_t size) {
   return dl::is_malloc_replaced() ? dl::script_allocator_calloc(nmemb, size) : __libc_calloc(nmemb, size);
 }
 
-void *realloc(void *mem, std::size_t new_size) {
+void *realloc(void *mem, size_t new_size) {
   return dl::is_malloc_replaced() ? dl::script_allocator_realloc(mem, new_size) : __libc_realloc(mem, new_size);
 }
 
