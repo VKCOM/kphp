@@ -2155,7 +2155,7 @@ int main_args_handler(int i, const char *long_option) {
       stringstream << file.rdbuf();
       auto [config, success] = json_decode(string(stringstream.str().c_str()));
       if (!success) {
-        kprintf("--%s option : file is not json\n", long_option);
+        kprintf("--%s option : file is not JSON\n", long_option);
         return -1;
       }
       runtime_config = std::move(config);
