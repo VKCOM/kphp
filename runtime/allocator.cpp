@@ -235,63 +235,39 @@ void script_allocator_free(void *mem) noexcept {
 
 namespace {
 
-class MallocHooksSwitcher : vk::not_copyable {
+class MallocStateHolder : vk::not_copyable {
 public:
-  static MallocHooksSwitcher &get() noexcept {
-    static MallocHooksSwitcher switcher;
-    return switcher;
+  static MallocStateHolder &get() noexcept {
+    static MallocStateHolder state;
+    return state;
   }
 
-  void switch_hooks(bool malloc_hooks_are_replaced_before) noexcept {
-    php_assert(malloc_hooks_are_replaced_before == malloc_hooks_are_replaced_);
-    CriticalSectionGuard critical_section;
-    std::swap(malloc_hook_, __malloc_hook);
-    std::swap(realloc_hook_, __realloc_hook);
-    std::swap(memalign_hook_, __memalign_hook);
-    std::swap(free_hook_, __free_hook);
-    malloc_hooks_are_replaced_ = !malloc_hooks_are_replaced_;
+  void replace_malloc(bool is_malloc_replaced_before) noexcept {
+    php_assert(is_malloc_replaced_before == is_malloc_replaced_);
+    is_malloc_replaced_ = !is_malloc_replaced_;
   }
 
-  bool are_malloc_hooks_replaced() const noexcept {
-    return malloc_hooks_are_replaced_;
+  bool is_malloc_replaced() const noexcept {
+    return is_malloc_replaced_;
   }
 
 private:
-  MallocHooksSwitcher() :
-    malloc_hook_{[](size_t size, const void *) {
-      return script_allocator_malloc(size);
-    }},
-    realloc_hook_{[](void *ptr, size_t size, const void *) {
-      return script_allocator_realloc(ptr, size);
-    }},
-    memalign_hook_{[](size_t alignment, size_t size, const void *) {
-      // script allocator gives addresses aligned to 8 bytes
-      php_assert(alignment <= 8);
-      return script_allocator_malloc(size);
-    }},
-    free_hook_{[](void *ptr, const void *) {
-      return script_allocator_free(ptr);
-    }} {}
-
-  decltype(__malloc_hook) malloc_hook_{nullptr};
-  decltype(__realloc_hook) realloc_hook_{nullptr};
-  decltype(__memalign_hook) memalign_hook_{nullptr};
-  decltype(__free_hook) free_hook_{nullptr};
-  bool malloc_hooks_are_replaced_{false};
+  MallocStateHolder() = default;
+  bool is_malloc_replaced_{false};
 };
 
 } // namespace
 
 bool is_malloc_replaced() noexcept {
-  return MallocHooksSwitcher::get().are_malloc_hooks_replaced();
+  return MallocStateHolder::get().is_malloc_replaced();
 }
 
 void replace_malloc_with_script_allocator() noexcept {
-  MallocHooksSwitcher::get().switch_hooks(false);
+  MallocStateHolder::get().replace_malloc(false);
 }
 
 void rollback_malloc_replacement() noexcept {
-  MallocHooksSwitcher::get().switch_hooks(true);
+  MallocStateHolder::get().replace_malloc(true);
 }
 
 MemoryReplacementGuard::MemoryReplacementGuard(memory_resource::unsynchronized_pool_resource &memory_resource, bool force_enable_disable) : force_enable_disable_(force_enable_disable) {
@@ -305,6 +281,48 @@ MemoryReplacementGuard::~MemoryReplacementGuard() {
 }
 
 } // namespace dl
+
+// sanitizers aren't happy with custom realization of malloc-like functions
+#if !ASAN_ENABLED and !defined(__APPLE__)
+
+extern "C" void *__libc_malloc(size_t size);
+extern "C" void *__libc_calloc(size_t nmemb, size_t size);
+extern "C" void *__libc_realloc(void *mem, size_t new_size);
+extern "C" void __libc_free(void *mem);
+extern "C" void *__libc_memalign(size_t alignment, size_t size);
+
+void *malloc(size_t size) {
+  return dl::is_malloc_replaced() ? dl::script_allocator_malloc(size) : __libc_malloc(size);
+}
+
+void *calloc(size_t nmemb, size_t size) {
+  return dl::is_malloc_replaced() ? dl::script_allocator_calloc(nmemb, size) : __libc_calloc(nmemb, size);
+}
+
+void *realloc(void *mem, size_t new_size) {
+  return dl::is_malloc_replaced() ? dl::script_allocator_realloc(mem, new_size) : __libc_realloc(mem, new_size);
+}
+
+void free(void *mem) {
+  return dl::is_malloc_replaced() ? dl::script_allocator_free(mem) : __libc_free(mem);
+}
+
+void *aligned_alloc(size_t alignment, size_t size) {
+  if (dl::is_malloc_replaced()) {
+    // script allocator gives addresses aligned to 8 bytes
+    php_assert(alignment <= 8);
+    return dl::script_allocator_malloc(size);
+  }
+  return __libc_memalign(alignment, size);
+}
+
+void *memalign(size_t alignment, size_t size) {
+  return aligned_alloc(alignment, size);
+}
+
+// put realization posix_memalign function here if you want to use it under script allocator
+
+#endif
 
 // replace global operators new and delete for linked C++ code
 void *operator new(size_t size) {
