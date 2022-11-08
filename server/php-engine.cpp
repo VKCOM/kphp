@@ -2263,7 +2263,7 @@ void parse_main_args(int argc, char *argv[]) {
                                                                                              "memory limit = per_process_memory * processes_count");
   parse_option("job-workers-shared-messages-process-multiplier", required_argument, 2031, "Coefficient used to calculate the total count of the shared messages for job workers related communication:\n"
                                                                                           "messages count = coefficient * processes_count");
-  parse_option("runtime-configuration", required_argument, 2032, "name of the json file that will be available at runtime");
+  parse_option("runtime-config", required_argument, 2032, "JSON file path that will be available at runtime as 'mixed' via 'kphp_runtime_config()");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
   // TODO: remove it after successful migration from kphb.readyV2 to kphb.readyV3
