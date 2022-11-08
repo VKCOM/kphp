@@ -7,33 +7,30 @@
 #include <limits>
 #include <string>
 
+#include <array>
 #include <gtest/gtest.h>
 
 namespace {
 std::string int32_to_string(int32_t x) {
-  const size_t buffer_size = 11;
-  char buffer[buffer_size];
-  return std::string{buffer, simd_int32_to_string(x, buffer, buffer_size)};
+  std::array<char, 11> buffer{};
+  return {buffer.data(), simd_int32_to_string(x, buffer.data(), buffer.size())};
 }
 
 std::string uint32_to_string(uint32_t x) {
-  const size_t buffer_size = 10;
-  char buffer[buffer_size];
-  return std::string{buffer, simd_uint32_to_string(x, buffer, buffer_size)};
+  std::array<char, 10> buffer{};
+  return {buffer.data(), simd_uint32_to_string(x, buffer.data(), buffer.size())};
 }
 
 std::string int64_to_string(int64_t x) {
-  const size_t buffer_size = 20;
-  char buffer[buffer_size];
-  return std::string{buffer, simd_int64_to_string(x, buffer, buffer_size)};
+  std::array<char, 20> buffer{};
+  return {buffer.data(), simd_int64_to_string(x, buffer.data(), buffer.size())};
 }
 
 std::string uint64_to_string(uint64_t x) {
-  const size_t buffer_size = 20;
-  char buffer[buffer_size];
-  return std::string{buffer, simd_uint64_to_string(x, buffer, buffer_size)};
+  std::array<char, 20> buffer{};
+  return {buffer.data(), simd_uint64_to_string(x, buffer.data(), buffer.size())};
 }
-}
+} // namespace
 
 TEST(simd_int_to_string, int32_type) {
   for (int32_t x : {0, 1, 7,
