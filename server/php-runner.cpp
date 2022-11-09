@@ -437,7 +437,7 @@ void PhpScript::run() noexcept {
   assert (run_main->run != nullptr);
 
   if (sigsetjmp(timeout_handler, true) != 0) { // set up a timeout recovery point for initialising
-    perform_error_if_running("timeout exit\n", script_error_t::timeout);
+    perform_error_if_running("timeout exit\n", script_error_t::timeout); // this call will not return (it changes the context)
   }
   init_runtime_environment(data, run_mem, mem_size);
   if (sigsetjmp(timeout_handler, true) != 0) { // set up a timeout recovery point
