@@ -27,6 +27,13 @@ struct array_size {
   inline array_size &min(const array_size &other);
 };
 
+#if defined(__clang__) || (defined(__GNUC__) && __GNUC__ < 10)
+// clang complains about 'flexible array member x of type T[] with non-trivial destruction'
+#define KPHP_ARRAY_TAIL_SIZE 0
+#else
+// gcc10 complains about out-of-bounds access to an array of zero size
+#define KPHP_ARRAY_TAIL_SIZE
+#endif
 
 namespace dl {
 template<class T, class TT, class T1>
@@ -106,7 +113,7 @@ private:
 
     static constexpr entry_pointer_type EMPTY_POINTER = 0;
 
-    int_hash_entry int_entries[0];
+    int_hash_entry int_entries[KPHP_ARRAY_TAIL_SIZE];
 
     inline bool is_vector() const __attribute__ ((always_inline));
 
