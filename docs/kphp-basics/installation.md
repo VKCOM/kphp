@@ -71,9 +71,9 @@ Having done all these steps, you'll have the `kphp` command and related ones to 
 You can now proceed to [the next step](./compile-sample-script.md).
 
 
-## Install KPHP from Homebrew
+## Install KPHP for MacOS
 
-KPHP isn't available on Mac OS. Please use Docker instead.
+KPHP isn't available as a Homebrew package, but can be [compiled from sources](../kphp-internals/developing-and-extending-kphp/compiling-kphp-from-sources.md) or run using Docker.
 
 
 ## Install KPHP for Windows

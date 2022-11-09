@@ -16,13 +16,13 @@ If you've developed a useful PHP library that successfully compiles with KPHP, f
 
 ## The release cycle
 
-All development takes place [on Github]({{site.url_github_kphp}}). The "Issues" tab is a public issue tracker, also VK.com has a private one.
+All development takes place [on GitHub]({{site.url_github_kphp}}). The "Issues" tab is a public issue tracker, also VK.com has a private one.
 
 The *master* branch is protected for direct pushing, all changes are made using pull requests. Merging is disabled: only squashing and rebasing are allowed to keep a git history linear.
 
 PRs can be merged only by KPHP maintainers. 
 
-When a PR is merged to the *master* branch, it is automatically tested with CI. The CI is not hosted on Github: instead, a public Github repo is mirrored to private VK.com infrastructure, and all testing and packing are held there. Once in a couple of weeks, VK.com builds all public *.deb* packages — and that's the release point.
+When a PR is merged to the *master* branch, it is automatically tested with CI. The CI is not hosted on GitHub: instead, a public GitHub repo is mirrored to private VK.com infrastructure, and all testing and packing are held there. Once in a couple of weeks, VK.com builds all public *.deb* packages — and that's the release point.
 
 Release versions and .deb package versioning are **not semver** — they are linked to dates and build numbers. This is mostly due to historical and internal reasons.
 

@@ -11,14 +11,14 @@ We have not tested if KPHP can be compiled for a non-Debian system. If you have 
 
 ## Where all sources are located
 
-All KPHP sources are [on Github]({{site.url_github_kphp}}), distributed under the GPLv3 license.  
+All KPHP sources are [on GitHub]({{site.url_github_kphp}}), distributed under the GPLv3 license.  
 These are sources of KPHP, vkext, flex data (for Russian declensions), and all TL tools.
 
 KPHP linkage depends on some custom packages, that are also compiled from source:
-* patched curl build [on Github]({{site.url_package_curl}}) (branch *dpkg-build-7.60.0*)
-* custom uber-h3 build [on Github]({{site.url_package_h3}}) (branch *dpkg-build*)
-* epoll implementation for MacOS [on Github]({{site.url_package_epoll_shim}}) (branch *osx-platform*)
-* custom timelib build [on Github]({{site.url_package_timelib}}) (branch *master*)
+* patched curl build [on GitHub]({{site.url_package_curl}}) (branch *dpkg-build-7.60.0*)
+* custom uber-h3 build [on GitHub]({{site.url_package_h3}}) (branch *dpkg-build*)
+* epoll implementation for MacOS [on GitHub]({{site.url_package_epoll_shim}}) (branch *osx-platform*)
+* custom timelib build [on GitHub]({{site.url_package_timelib}}) (branch *master*)
 
 KPHP is compiled with CMake and packed with CPack.
 
@@ -81,7 +81,7 @@ brew install re2c cmake coreutils glib-openssl libiconv re2 yaml-cpp mysql msgpa
 brew link --overwrite php@7.4
 pip3 install jsonschema
 ```
-Clone somewhere local [epoll-shim from Github]({{site.url_package_epoll_shim}}) and switch to *osx-platform* branch.
+Clone somewhere local [epoll-shim from GitHub]({{site.url_package_epoll_shim}}) and switch to *osx-platform* branch.
 Add env variable `EPOLL_SHIM_REPO` to your bash profile. It allows to avoid of cloning `epoll-shim` on each clean cmake call.
 ```bash
 git clone https://github.com/VKCOM/epoll-shim.git
@@ -90,7 +90,7 @@ git checkout osx-platform
 echo 'export "EPOLL_SHIM_REPO=$(pwd)" >> ~/.bash_profile'
 ```
 
-Clone somewhere local [h3 from Github]({{site.url_package_h3_mac}}) and switch to *stable-3.x* branch.
+Clone somewhere local [h3 from GitHub]({{site.url_package_h3_mac}}) and switch to *stable-3.x* branch.
 ```bash
 git clone https://github.com/uber/h3.git
 git checkout stable-3.x

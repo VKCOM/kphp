@@ -77,6 +77,14 @@ Measuring that isolated pieces of code shows tremendous superiority of strict ty
   <i>deep decision trees with tons of branches</i> — PHP: ~5 sec, KPHP: 0.14 sec
 </p>
 
+
+## FFI has almost zero overhead
+
+KPHP supports [FFI](../php-extensions/ffi.md) (foreign functions interface) — pretty the same as PHP does. 
+
+But FFI in KPHP works much, much faster, because KPHP internals is also C++ actually, like any FFI library. KPHP is able to remove excess CData casting, send internal pointers to FFI functions, etc. If you are sure that particular FFI calls are signal-safe, you can even disable critical sections for them, and achieve almost native interop speed, tens of times faster than in PHP.
+
+
 <hr> 
 
 ```danger

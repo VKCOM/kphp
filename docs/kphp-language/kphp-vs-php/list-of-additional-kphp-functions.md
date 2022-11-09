@@ -22,6 +22,7 @@ These are keywords (language constructs), described [in the type system article]
 
 <aside>instance_cast(object $instance, string $class_name): \$class_name</aside>
 <aside>to_array_debug(object $instance): mixed[]</aside>
+<aside>to_array_debug(shape|tuple $array_in_php): mixed[]</aside>
 
 Functions for casting instances, described [here](../static-type-system/type-casting.md).
 
@@ -52,26 +53,36 @@ Same as `$dest = array_merge($dest, $another)`, but without creating a temporary
 <aside>array_find(T[] $a, callable(T):bool $callback): tuple(int|string|null, T)</aside>
 
 Find an element in an array with callback.  
-tuple[0] is corresponding key (*null* if not exists).  
-tuple[1] is a found value (empty *T* if not exists).
+tuple\[0] is corresponding key (*null* if not exists).  
+tuple\[1] is a found value (empty *T* if not exists).
 
 <aside>array_filter_by_key(T[] $array, callable(T):bool $callback): T[]</aside>
 
 Since `array_filter()` in KPHP doesn't accept `ARRAY_FILTER_USE_KEY`, it's an alternative.  
 (as support of *ARRAY_FILTER_USE_KEY* can't be done without callback argument type spoiling)
 
-<aside>array_reserve(T[] &$arr, int $int_keys_num, int $str_keys_num, bool $is_vector): void</aside>
+<aside>array_unset(T[] &$array, int|string $key): T</aside>
+
+Unsets an element by key and returns that (removed) element, per one hashtable lookup.
+
+<aside>array_is_vector(T[] $array): bool</aside>
+
+Returns whether an array is stored internally as a true vector, not a hashtable. It means that it has only successive int keys `[0..N]` and it was never converted to a map (e.g. at first \[1] was set and then \[0]: it would be a map). Empty arrays are also vectors.
+
+<aside>array_reserve_vector(T[] &$array, int $size): void</aside>
+<aside>array_reserve_map_int_keys(T[] &$array, int $size): void</aside>
+<aside>array_reserve_map_string_keys(T[] &$array, int $size): void</aside>
 
 Reserve array memory — if you know in advance, how many elements will be inserted to it.  
 Effectife especially for vectors, as there will be no reallocations on insertion.  
-*$arr* — target array (typically empty)  
-*$int_keys_num* — number of int keys  
-*$str_keys_num* — number of string keys  
-*$is_vector* — should it be a vector (if *$str_keys_num* is 0)
 
 <aside>array_reserve_from(T[] &$arr, T2[] $base): void</aside>
 
 The same as `array_reserve()`, but takes all sizes (length, key type, is vector) from array *$base*.
+
+<aside>reset_array_iterator(ArrayIterator $iter, mixed[] $array): ArrayIterator</aside>
+
+A KPHP extension of `ArrayIterator` API. Re-initializes `$iter` with another array. In KPHP it returns the same `ArrayIterator` that is ready to be used. In PHP (via polyfills) it returns a newly allocated object.
 
 
 ## Async programming
@@ -81,6 +92,10 @@ The same as `array_reserve()`, but takes all sizes (length, key type, is vector)
 <aside>... and others</aside>  
 
 Read about [coroutines (forks)](../best-practices/async-programming-forks.md).
+
+<aside>send_http_103_early_hints(string[] $headers): void</aside>
+
+Sends the [103 HTTP header](https://developer.mozilla.org/ru/docs/Web/HTTP/Status/103) and continues execution. Used from PHP code to push links to CSS/JS so that a client browser starts downloading them until a server still serves the request. No global buffers are modified, `header()` would still append headers for a regular HTTP answer. 
 
 
 ## RPC calls
@@ -117,6 +132,18 @@ Returns currently used and dirty memory (in bytes).
 
 Returns heap memory usage (system heap, not script allocator) (in bytes).
 
+<aside>memory_get_detailed_stats(): int[]</aside>
+
+Returns a hashmap with lots of internal memory info: `['memory_used'=>N, 'defragmentation_calls'=>M, ...]`.
+
+<aside>memory_get_allocations(): tuple(int, int)</aside>
+
+Returns a tuple of `(num_allocations, memory_allocated)`. The benefit of this function is that it can be used to measure allocations between two execution points: how many allocations happened and how much memory we allocated. Since it returns a tuple instead of array, it doesn't do any heap allocations on its own.
+
+<aside>estimate_memory_usage(any $value): int</aside>
+
+Returns an approximate amount of bytes used to store a variable. Use this for logging static class fields and global variables (probably used as key-value caches at script executions) to measure how huge they actually are at runtime.
+
 
 ## Serialization to binary format
 
@@ -135,6 +162,16 @@ Read about [serialization and msgpack](../howto-by-kphp/serialization-msgpack.md
 <aside>profiler_set_log_suffix(string $suffix): void</aside>
 
 Read about [embedded profiler](../best-practices/embedded-profiler.md).
+
+
+## FFI
+
+<aside>FFI::load(string $filename): FFI\Scope</aside>
+<aside>FFI\Scope::new(string $type, bool $owned = false): FFI\CData</aside>
+<aside>ffi_cast_addr2ptr(int $addr): ffi_cdata&lt;C, void*&gt;</aside>
+<aside>... and others</aside>  
+
+Read about [FFI](../php-extensions/ffi.md).
 
 
 ## Misc
@@ -161,6 +198,10 @@ Defines a context for runtime warnings (to be written to [json error logs](../..
 *$tags* — key-value tags (treated like an aggregate)  
 *$extra_info* — key-value extra arbitrary data (not an aggregator)  
 *$env* — environment (e.g.: staging / production)
+
+<aside>set_json_log_on_timeout_mode(bool $enabled): void</aside>
+
+When enabled, KPHP won't output an error into json logs in case of script timeout.
 
 <aside>likely(bool $value): bool</aside>
 <aside>unlikely(bool $value): bool</aside>

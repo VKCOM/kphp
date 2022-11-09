@@ -31,7 +31,6 @@ One worker can serve one request at a time. Until a request is finished, the wor
 ```
 
 Typically, you'd launch *N* workers on a production server, where *N* is a bit smaller than the number of CPU cores. Check option `--workers-num/-f`.  
-For development, 2 workers are enough.  
-If you don't specify `-f` at all, the master process would handle all requests, but remember, that they are blocking. 
+For development, 2 workers are enough.
 
 When the server is launched from **root**, it switches to the user *kitten*, as working from root is a bad practice. You can override it by `./server -u {username}` or even allow working from root by `./server -u root`

@@ -22,8 +22,8 @@ They have no associated environment variables per each.
 
 <aside>--workers-num {n} / -f {n}</aside>
 
-The number of worker processes, default **0**.  
-By default, no workers are started: the master process handles all requests (each request is blocking). This is applicable only for development.  
+The number of worker processes, **required to be set for server (not cli) mode**.  
+For development and testing, 1-2 workers is okay.  
 For production, you typically set this number a bit less than the number of CPU cores on the server.
 
 <aside>--http-port {port} / -H {port}</aside>
@@ -157,6 +157,10 @@ You can explicitly specify `-u root` to disable switching.
 
 Like `--user`, but controls the group name, default **kitten**. The same: makes sense only if launched from **root**.
 
+<aside>--job-workers-ratio {ratio}</aside>
+
+The [jobs workers](../../kphp-language/best-practices/parallelism-job-workers.md) ratio of the overall workers number, float, from 0.0 to 1.0, default **0**: no job workers are launched by default.
+
 
 ## Rarely used options (advanced level)
 
@@ -220,6 +224,18 @@ Forces using CRC32 instead of CRC32-C for TCP RPC protocol.
  
 A minimum verbosity level for PHP warnings, in range of *[0,3]*, default **0**.  
 Controls the minimum applied value of `error_reporting()` PHP call. 
+
+<aside>--numa-node-to-bind {numa_node_id}:{cpus}</aside>
+
+NUMA node description for binding workers to its cpu cores / memory. `{numa_node_id}` is a number, and `{cpus}` is a comma-separated list of node numbers or node ranges.  
+Example: '0: 0-27, 55-72'.  
+To set up multiple NUMA nodes, use this option more than once providing different configs.
+
+<aside>--numa-memory-policy local|bind</aside>
+
+NUMA memory policy for workers. Takes effect only if `--numa-node-to-bind` option is used.  
+*local* — bind to a local numa node, in case out of memory take memory from the other nearest node (**default**);  
+*bind* — bind to the specified node, in case out of memory raise a fatal error.
 
 
 ## Other options (VK.com proprietary)

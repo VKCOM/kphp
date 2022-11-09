@@ -1,5 +1,5 @@
 ---
-sort: 4
+sort: 2
 ---
 
 # Serialization, msgpack
@@ -105,6 +105,13 @@ After having deleted the field, you must specify its index in `@kphp-reserved-fi
 * Deleting is ok, but don't forget about *@kphp-reserved-fields*
 * **Types of fields can't be changed!** Old binary data would not map to the new structure
 ```
+
+
+## Serializing floats
+
+At runtime, PHP's *float* is C++ *double* stored as 8 bytes. That's why it takes 9 bytes for serialization (1 for the header).
+
+In case you want to shrink binary size, and losing some precision is okay for you, annontate a field with `@kphp-serialized-float32`. Doubles will be cast to C++ *float* upon serialization and therefore require 5 bytes. Mostly useful for arrays of floats.
 
 
 ## Limitations

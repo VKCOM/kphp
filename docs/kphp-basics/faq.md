@@ -8,7 +8,7 @@ noprevnext: true
 This section contains helpful notes and brief answers to common questions about KPHP.
 
 ```note
-If you have something to ask besides these topics, use [Github issues]({{site.url_github_issues}}) or public E-Mails available on Github.
+If you have something to ask besides these topics, use [GitHub issues]({{site.url_github_issues}}) or a [Telegram chat]({{site.url_telegram_chat}}).
 ```
 
 <hr>
@@ -40,7 +40,7 @@ KPHP type system is [much more expansive](../kphp-language/static-type-system/kp
 
 <blockquote class="faq">Is there something like "duck typing", regardless of strict typing?</blockquote>
 
-For this, you might want to read about [template functions](../kphp-language/howto-by-kphp/template-functions.md).
+For this, you might want to read about [generic functions](../kphp-language/static-type-system/generic-functions.md).
 
 
 <blockquote class="faq">Why can't KPHP compile my code?</blockquote>

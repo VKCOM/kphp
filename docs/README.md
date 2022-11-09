@@ -2,7 +2,7 @@
 
 This folder is a KPHP website, available at [https://vkcom.github.io/kphp/](https://vkcom.github.io/kphp/).
 
-It is based on Jekyll and works on Github Pages.
+It is based on Jekyll and works on GitHub Pages.
 
 
 ## How to launch the site locally

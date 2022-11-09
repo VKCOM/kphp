@@ -1,5 +1,5 @@
 ---
-sort: 7
+sort: 5
 ---
 
 # Exceptions 
@@ -26,7 +26,7 @@ Traces are not identical to PHP, but more or less readable.
 ## How exceptions are implemented
 
 Internally, KPHP doesn't translate this code to C++ exceptions for several reasons.  
-Instead, KPHP builds exception spreading graphs and detects, what functions and statements can throw. When an exception is thrown, an internal global variable is set. Potentially throwing statements are wrapped with a macro, that checks this global and returns if true. This approach in fact works faster than C++ exceptions.
+Instead, KPHP builds exception propagation graphs and detects what functions and statements can throw. When an exception is thrown, an internal global variable is set. Potentially throwing statements are wrapped with a macro, that checks this global and returns if true. This approach in fact works faster than C++ exceptions.
 
 If an exception has been thrown inside an async call, it is suppressed and would be re-thrown when waiting for the async result. This is described in [coroutines](../best-practices/async-programming-forks.md).
 
@@ -52,3 +52,12 @@ if ($err) {
 }
 $user->id;
 ```
+
+
+## Exception inheritance and standard exceptions
+
+Since 2021, you can derive your classes from `Exception` and throw them as expected, identically to PHP.
+
+`Error` and `Throwable` interfaces are also supported, as well as standard SPL classes.
+
+There is a PHPDoc annotation `@kphp-throws` that implements checked exceptions: KPHP would ensure that a function actually throws the same list as you expect.

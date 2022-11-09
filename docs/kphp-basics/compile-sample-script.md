@@ -70,7 +70,7 @@ docker run -ti -v ~/kphp-project/:/tmp/dev:rw -p 8080:8080 kphp
 Then just compile `my.php` and run the server — **inside Docker**:
 ```bash
 kphp /tmp/dev/my.php
-./kphp_out/server -H 8080
+./kphp_out/server -H 8080 -f 1
 ```
 
 Open <a href="http://localhost:8080" target="_blank">http://localhost:8080</a>. Your server is running!
@@ -82,7 +82,7 @@ If you have installed KPHP locally, execute the following:
 ```bash
 cd ~/kphp-project
 kphp my.php
-./kphp_out/server -H 8080
+./kphp_out/server -H 8080 -f 1
 ```
 
 Open <a href="http://localhost:8080" target="_blank">http://localhost:8080</a>. Your server is running!
