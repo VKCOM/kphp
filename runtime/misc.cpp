@@ -446,7 +446,7 @@ mixed f$getimagesize(const string &name) {
   result.push_back(width);
   result.push_back(height);
   result.push_back(type);
-  int len = snprintf((char *)buf, min_size,"width=\"%d\" height=\"%d\"", width, height);
+  int len = snprintf(reinterpret_cast<char *>(buf), min_size, "width=\"%d\" height=\"%d\"", width, height);
   result.push_back(string((const char *)buf, len));
   if (bits != 0) {
     result.set_value(string("bits", 4), bits);

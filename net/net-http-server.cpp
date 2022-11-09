@@ -848,7 +848,7 @@ int write_basic_http_header (struct connection *c, int code, int date, int len, 
     D->query_flags &= ~QF_EXTRA_HEADERS;
     assert(ptr < buff + buff_size - 64);
     if (len >= 0) {
-      ptr += snprintf(ptr, 29, "Content-Length: %d\r\n", len);
+      ptr += snprintf(ptr, 30, "Content-Length: %d\r\n", len);
     }
 
     ptr += snprintf(ptr, 3, "\r\n");

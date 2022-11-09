@@ -74,7 +74,7 @@ void dl_print_backtrace_gdb() {
     if (!child_pid) {
       dup2 (2, 1); //redirect output to stderr
       //fprintf (stdout, "stack trace for %s pid = %s\n", name_buf, pid_buf);
-      execle ("gdb", "gdb", "--batch", "-n", "-ex", "thread", "-ex", "bt", name_buf, pid_buf, (char *)nullptr, envp);
+      execle ("gdb", "gdb", "--batch", "-n", "-ex", "thread", "-ex", "bt", name_buf, pid_buf, nullptr, envp);
       _exit (0); /* If gdb failed to start */
     } else {
       waitpid (child_pid, nullptr, 0);

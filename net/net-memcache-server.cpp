@@ -782,7 +782,7 @@ int return_one_key_list (struct connection *c, const char *key, int key_len, int
       if (i || res != 0x7fffffff) {
         *ptr++ = ',';  w++;
       }
-      w += t = snprintf(ptr, 10, "%d", R[i]);
+      w += t = snprintf(ptr, 12, "%d", R[i]);
     } else {
       w += t = 4;
       *(reinterpret_cast<int *>(ptr)) = R[i];
@@ -832,7 +832,7 @@ int return_one_key_list_long(struct connection *c, const char *key, int key_len,
   ptr += 14;
   if (res != 0x7fffffff) {
     if (mode >= 0) {
-      w = snprintf(ptr, 10, "%d", res);
+      w = snprintf(ptr, 12, "%d", res);
     } else {
       w = 8;
       *(reinterpret_cast<long long *>(ptr)) = res;
@@ -857,7 +857,7 @@ int return_one_key_list_long(struct connection *c, const char *key, int key_len,
         *ptr++ = ',';
         w++;
       }
-      w += t = snprintf(ptr, 14, "%lld", R[i]);
+      w += t = snprintf(ptr, 21, "%lld", R[i]);
     } else {
       w += t = 8;
       *(reinterpret_cast<long long *>(ptr)) = R[i];
