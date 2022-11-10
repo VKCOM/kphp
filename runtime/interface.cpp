@@ -87,7 +87,7 @@ static int ignore_level = 0;
 
 mixed runtime_config;
 
-mixed f$kphp_runtime_config() {
+mixed f$kphp_get_runtime_config() {
   return runtime_config;
 }
 

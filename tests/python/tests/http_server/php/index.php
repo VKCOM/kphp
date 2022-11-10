@@ -133,7 +133,7 @@ if ($_SERVER["PHP_SELF"] === "/ini_get") {
     }
     echo "OK";
 } else if ($_SERVER["PHP_SELF"] === "/test_runtime_config") {
-    $config = kphp_runtime_config();
+    $config = kphp_get_runtime_config();
     switch ($_GET["mode"]) {
      case "read_only":
          echo "name : " . $config["name"] . " ";
@@ -142,7 +142,7 @@ if ($_SERVER["PHP_SELF"] === "/ini_get") {
      case "modify":
          $config["version"] = "1.0.1";
          echo "modified version : " . $config["version"] . " ";
-         echo "old version : " . kphp_runtime_config()["version"] . " ";
+         echo "old version : " . kphp_get_runtime_config()["version"] . " ";
          break;
      default:
      echo "ERROR"; return;

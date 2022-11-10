@@ -123,7 +123,7 @@ string f$php_sapi_name();
 
 extern mixed runtime_config;
 
-mixed f$kphp_runtime_config();
+mixed f$kphp_get_runtime_config();
 
 extern mixed v$_SERVER;
 extern mixed v$_GET;
