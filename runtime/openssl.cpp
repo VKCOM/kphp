@@ -348,6 +348,8 @@ static EVP_PKEY *openssl_get_public_evp(const string &key, bool &from_cache) {
   return evp_pkey;
 }
 
+using RSA_ptr = vk::unique_ptr_with_delete_function<rsa_st, RSA_free>;
+
 bool f$openssl_public_encrypt(const string &data, string &result, const string &key) {
   bool from_cache = false;
   dl::CriticalSectionSmartGuard critical_section;
@@ -372,8 +374,9 @@ bool f$openssl_public_encrypt(const string &data, string &result, const string &
   int key_size = EVP_PKEY_size(pkey);
   php_assert (PHP_BUF_LEN >= key_size);
 
-  if (RSA_public_encrypt((int)data.size(), reinterpret_cast <const unsigned char *> (data.c_str()),
-                         reinterpret_cast <unsigned char *> (php_buf), EVP_PKEY_get0_RSA(pkey), RSA_PKCS1_PADDING) != key_size) {
+  RSA_ptr rsa{EVP_PKEY_get1_RSA(pkey)};
+  if (RSA_public_encrypt(static_cast<int>(data.size()), reinterpret_cast<const unsigned char *>(data.c_str()),
+                         reinterpret_cast<unsigned char *>(php_buf), rsa.get(), RSA_PKCS1_PADDING) != key_size) {
     if (!from_cache) {
       EVP_PKEY_free(pkey);
     }
@@ -423,8 +426,9 @@ bool f$openssl_private_decrypt(const string &data, string &result, const string 
   int key_size = EVP_PKEY_size(pkey);
   php_assert (PHP_BUF_LEN >= key_size);
 
-  int len = RSA_private_decrypt((int)data.size(), reinterpret_cast <const unsigned char *> (data.c_str()),
-                                reinterpret_cast <unsigned char *> (php_buf), EVP_PKEY_get0_RSA(pkey), RSA_PKCS1_PADDING);
+  RSA_ptr rsa{EVP_PKEY_get1_RSA(pkey)};
+  int len = RSA_private_decrypt(static_cast<int>(data.size()), reinterpret_cast<const unsigned char *>(data.c_str()),
+                                reinterpret_cast<unsigned char *>(php_buf), rsa.get(), RSA_PKCS1_PADDING);
   if (!from_cache) {
     EVP_PKEY_free(pkey);
   }

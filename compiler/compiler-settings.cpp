@@ -159,6 +159,9 @@ void append_apple_options(std::string &cxx_flags, std::string &ld_flags) noexcep
 #endif
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 std::string calc_cxx_flags_sha256(vk::string_view cxx, vk::string_view cxx_flags_line) noexcept {
   SHA256_CTX sha256;
   SHA256_Init(&sha256);
@@ -176,6 +179,8 @@ std::string calc_cxx_flags_sha256(vk::string_view cxx, vk::string_view cxx_flags
   }
   return hash_str;
 }
+
+#pragma GCC diagnostic pop
 
 } // namespace
 
