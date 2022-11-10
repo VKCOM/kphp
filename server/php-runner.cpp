@@ -411,6 +411,9 @@ void PhpScript::query_answered() noexcept {
 }
 
 void PhpScript::run() noexcept {
+  if (sigsetjmp(timeout_handler, true) != 0) { // set up a timeout recovery point for initialising
+    perform_error_if_running("early timeout exit from script initialization\n", script_error_t::timeout); // this call will not return (it changes the context)
+  }
   is_running = true;
   check_tl();
 
@@ -436,9 +439,6 @@ void PhpScript::run() noexcept {
   }
   assert (run_main->run != nullptr);
 
-  if (sigsetjmp(timeout_handler, true) != 0) { // set up a timeout recovery point for initialising
-    perform_error_if_running("timeout exit\n", script_error_t::timeout); // this call will not return (it changes the context)
-  }
   init_runtime_environment(data, run_mem, mem_size);
   if (sigsetjmp(timeout_handler, true) != 0) { // set up a timeout recovery point
     on_request_timeout_error(); // this call will not return (it changes the context)
