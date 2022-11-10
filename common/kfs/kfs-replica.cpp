@@ -17,7 +17,6 @@
 #include "common/kprintf.h"
 #include "common/options.h"
 #include "common/server/engine-settings.h"
-#include "common/sha1.h"
 #include "common/wrappers/pathname.h"
 
 #include "common/kfs/kfs-binlog.h"
