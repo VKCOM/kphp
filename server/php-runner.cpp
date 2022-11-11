@@ -181,6 +181,7 @@ void PhpScript::init(script_t *script, php_query_data *data_to_set) noexcept {
   queries_cnt = 0;
   long_queries_cnt = 0;
 
+  dl::init_critical_section();
   query_stats_id++;
   memset(&query_stats, 0, sizeof(query_stats));
 
@@ -411,12 +412,6 @@ void PhpScript::query_answered() noexcept {
 }
 
 void PhpScript::run() noexcept {
-  if (sigsetjmp(timeout_handler, true) != 0) { // set up a timeout recovery point for initialising
-    perform_error_if_running("early timeout exit from script initialization\n", script_error_t::timeout); // this call will not return (it changes the context)
-  }
-  is_running = true;
-  check_tl();
-
   if (data != nullptr) {
     http_query_data *http_data = data->http_data;
     if (http_data != nullptr) {
@@ -439,10 +434,16 @@ void PhpScript::run() noexcept {
   }
   assert (run_main->run != nullptr);
 
+  dl::enter_critical_section();
   init_runtime_environment(data, run_mem, mem_size);
+  is_running = true;
   if (sigsetjmp(timeout_handler, true) != 0) { // set up a timeout recovery point
-    on_request_timeout_error(); // this call will not return (it changes the context)
+    on_request_timeout_error();                // this call will not return (it changes the context)
   }
+  dl::leave_critical_section();
+  php_assert (dl::in_critical_section == 0); // To ensure that no critical section is left at the end of the initialization
+  check_tl();
+
   CurException = Optional<bool>{};
   run_main->run();
   if (CurException.is_null()) {
