@@ -438,7 +438,7 @@ void PhpScript::run() noexcept {
   init_runtime_environment(data, run_mem, mem_size);
   is_running = true;
   if (sigsetjmp(timeout_handler, true) != 0) { // set up a timeout recovery point
-    on_request_timeout_error();                // this call will not return (it changes the context)
+    on_request_timeout_error(); // this call will not return (it changes the context)
   }
   dl::leave_critical_section();
   php_assert (dl::in_critical_section == 0); // To ensure that no critical section is left at the end of the initialization
