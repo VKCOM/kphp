@@ -314,7 +314,7 @@ void CompilerSettings::init() {
   ld_flags.value_ = extra_ld_flags.get();
   append_curl(cxx_default_flags, ld_flags.value_);
   append_apple_options(cxx_default_flags, ld_flags.value_);
-  std::vector<vk::string_view> external_static_libs{"pcre", "re2", "yaml-cpp", "h3", "ssl", "z", "zstd", "nghttp2", "kphp-timelib"};
+  std::vector<vk::string_view> external_static_libs{"pcre", "re2", "yaml-cpp", "h3", "ssl", "crypto", "z", "zstd", "nghttp2", "kphp-timelib"};
 
 #ifdef KPHP_TIMELIB_LIB_DIR
   ld_flags.value_ += " -L" KPHP_TIMELIB_LIB_DIR;
@@ -331,7 +331,7 @@ void CompilerSettings::init() {
   ld_flags.value_ += " /opt/homebrew/lib/libucontext.a";
 #endif
 
-  std::vector<vk::string_view> external_libs{"pthread", "crypto", "m", "dl"};
+  std::vector<vk::string_view> external_libs{"pthread", "m", "dl"};
 
 #ifdef PDO_DRIVER_MYSQL
 #ifdef PDO_LIBS_STATIC_LINKING
