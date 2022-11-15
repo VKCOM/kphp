@@ -10,6 +10,7 @@
 #include "runtime/kphp_core.h"
 #include "runtime/refcountable_php_classes.h"
 
+struct C$DateInterval;
 struct C$DateTimeImmutable;
 
 struct C$DateTime : public refcountable_polymorphic_php_classes<C$DateTimeInterface>, private DummyVisitorMethods {
@@ -30,6 +31,8 @@ extern const string NOW;
 class_instance<C$DateTime> f$DateTime$$__construct(const class_instance<C$DateTime> &self, const string &datetime = NOW,
                                                    const class_instance<C$DateTimeZone> &timezone = Optional<bool>{}) noexcept;
 
+class_instance<C$DateTime> f$DateTime$$add(const class_instance<C$DateTime> &self, const class_instance<C$DateInterval> &interval) noexcept;
+
 class_instance<C$DateTime> f$DateTime$$createFromFormat(const string &format, const string &datetime,
                                                         const class_instance<C$DateTimeZone> &timezone = Optional<bool>{}) noexcept;
 
@@ -47,6 +50,11 @@ class_instance<C$DateTime> f$DateTime$$setTime(const class_instance<C$DateTime> 
                                                int64_t microsecond = 0) noexcept;
 
 class_instance<C$DateTime> f$DateTime$$setTimestamp(const class_instance<C$DateTime> &self, int64_t timestamp) noexcept;
+
+class_instance<C$DateTime> f$DateTime$$sub(const class_instance<C$DateTime> &self, const class_instance<C$DateInterval> &interval) noexcept;
+
+class_instance<C$DateInterval> f$DateTime$$diff(const class_instance<C$DateTime> &self, const class_instance<C$DateTimeInterface> &target_object,
+                                                bool absolute = false) noexcept;
 
 string f$DateTime$$format(const class_instance<C$DateTime> &self, const string &format) noexcept;
 

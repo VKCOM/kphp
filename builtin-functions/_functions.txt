@@ -1528,6 +1528,13 @@ class DateTimeZone {
   public function getName(): string;
 }
 
+class DateInterval {
+  /** @kphp-extern-func-info can_throw */
+  public function __construct(string $duration);
+  public static function createFromDateString(string $datetime): ?DateInterval;
+  public function format(string $format): string;
+}
+
 interface DateTimeInterface {
   /* Constants */
   const ATOM = "Y-m-d\TH:i:sP";
@@ -1545,6 +1552,7 @@ interface DateTimeInterface {
   const W3C = "Y-m-d\TH:i:sP";
 
   /* Methods */
+  public function add(DateInterval $interval): DateTimeInterface;
   public function modify(string $modifier): ?DateTimeInterface;
   public function setDate(int $year, int $month, int $day): DateTimeInterface;
   public function setISODate(int $year, int $week, int $dayOfWeek = 1): DateTimeInterface;
@@ -1555,6 +1563,8 @@ interface DateTimeInterface {
       int $microsecond = 0
   ): DateTimeInterface;
   public function setTimestamp(int $timestamp): DateTimeInterface;
+  public function sub(DateInterval $interval): DateTimeInterface;
+  public function diff(DateTimeInterface $targetObject, bool $absolute = false): DateInterval;
   public function format(string $format): string;
   public function getOffset(): int;
   public function getTimestamp(): int;
@@ -1563,6 +1573,7 @@ interface DateTimeInterface {
 class DateTime implements DateTimeInterface {
   /** @kphp-extern-func-info can_throw */
   public function __construct(string $datetime = "now", ?DateTimeZone $timezone = null);
+  public function add(DateInterval $interval): DateTime;
   public static function createFromFormat(string $format, string $datetime, ?DateTimeZone $timezone = null): ?DateTime;
   public static function createFromImmutable(DateTimeImmutable $object): DateTime;
   public static function getLastErrors(): array|false;
@@ -1576,6 +1587,8 @@ class DateTime implements DateTimeInterface {
       int $microsecond = 0
   ): DateTime;
   public function setTimestamp(int $timestamp): DateTime;
+  public function sub(DateInterval $interval): DateTime;
+  public function diff(DateTimeInterface $targetObject, bool $absolute = false): DateInterval;
   public function format(string $format): string;
   public function getOffset(): int;
   public function getTimestamp(): int;
@@ -1584,6 +1597,7 @@ class DateTime implements DateTimeInterface {
 class DateTimeImmutable implements DateTimeInterface {
   /** @kphp-extern-func-info can_throw */
   public function __construct(string $datetime = "now", ?DateTimeZone $timezone = null);
+  public function add(DateInterval $interval): DateTimeImmutable;
   public static function createFromFormat(string $format, string $datetime, ?DateTimeZone $timezone = null): ?DateTimeImmutable;
   public static function createFromMutable(DateTime $object): DateTimeImmutable;
   public static function getLastErrors(): array|false;
@@ -1597,6 +1611,8 @@ class DateTimeImmutable implements DateTimeInterface {
       int $microsecond = 0
   ): DateTimeImmutable;
   public function setTimestamp(int $timestamp): DateTimeImmutable;
+  public function sub(DateInterval $interval): DateTimeImmutable;
+  public function diff(DateTimeInterface $targetObject, bool $absolute = false): DateInterval;
   public function format(string $format): string;
   public function getOffset(): int;
   public function getTimestamp(): int;

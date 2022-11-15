@@ -1,4 +1,5 @@
 prepend(KPHP_RUNTIME_DATETIME_SOURCES datetime/
+        date_interval.cpp
         datetime.cpp
         datetime_functions.cpp
         datetime_immutable.cpp
