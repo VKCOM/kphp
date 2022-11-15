@@ -710,6 +710,20 @@ function rtrim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;
 function xor_strings ($s ::: string, $t ::: string) ::: string;
 function similar_text ($first ::: string, $second ::: string, float &$percent = TODO) ::: int;
 
+function extension_loaded(string $extension): bool;
+
+function ctype_alnum(mixed $text): bool;
+function ctype_alpha(mixed $text): bool;
+function ctype_cntrl(mixed $text): bool;
+function ctype_digit(mixed $text): bool;
+function ctype_graph(mixed $text): bool;
+function ctype_lower(mixed $text): bool;
+function ctype_print(mixed $text): bool;
+function ctype_punct(mixed $text): bool;
+function ctype_space(mixed $text): bool;
+function ctype_upper(mixed $text): bool;
+function ctype_xdigit(mixed $text): bool;
+
 define('LC_ALL', 6);
 define('LC_COLLATE', 3);
 define('LC_CTYPE', 0);

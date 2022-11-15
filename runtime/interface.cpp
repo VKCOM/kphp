@@ -2436,3 +2436,7 @@ int64_t f$numa_get_bound_node() {
   }
   return numa.get_worker_numa_node(logname_id);
 }
+
+bool f$extension_loaded(const string &/*extension*/) {
+  return true;
+}
