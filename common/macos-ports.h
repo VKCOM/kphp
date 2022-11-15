@@ -115,11 +115,11 @@ inline int prctl(int, unsigned long) noexcept {
 
 #define PTHREAD_MUTEX_ROBUST_NP 2
 
-inline int pthread_mutexattr_setrobust_np(const pthread_mutexattr_t *, int) noexcept {
+inline int pthread_mutexattr_setrobust(const pthread_mutexattr_t *, int) noexcept {
   return 0;
 }
 
-inline int pthread_mutex_consistent_np(pthread_mutex_t *) noexcept {
+inline int pthread_mutex_consistent(pthread_mutex_t *) noexcept {
   return 0;
 }
 
