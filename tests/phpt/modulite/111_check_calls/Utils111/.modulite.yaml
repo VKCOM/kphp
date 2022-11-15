@@ -11,6 +11,6 @@ force-internal:
 
 require:
   - "@feed"
-  - "\\GlobalCl"
+  - "\\GlobalCl111"
   - "@utils/impl"
 

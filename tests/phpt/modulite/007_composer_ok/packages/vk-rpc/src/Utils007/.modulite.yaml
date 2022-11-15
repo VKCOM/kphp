@@ -7,5 +7,5 @@ export:
 require:
   - "\\VK\\RPC\\RpcLogger007::logWithHash()"
   - "\\globalFunctionInVkRpc()"
-  - "\\GLOBAL_DEF_IN_RPC"
-  - "\\MONOLITH_CONST"
+  - "\\GLOBAL_DEF_IN_RPC_007"
+  - "\\MONOLITH_CONST_007"

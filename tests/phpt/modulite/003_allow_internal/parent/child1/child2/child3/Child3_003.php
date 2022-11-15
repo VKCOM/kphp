@@ -1,6 +1,6 @@
 <?php
 
-class Child3 {
+class Child3_003 {
     const HID = 'hid';
     static $HID = 'hid';
 

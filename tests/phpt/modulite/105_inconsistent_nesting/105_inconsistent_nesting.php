@@ -11,3 +11,5 @@ require_once __DIR__ . '/Messages105/Sub105/Channels105/Channels105.php';
 require_once __DIR__ . '/Messages105/Infra105/Infra105.php';
 require_once __DIR__ . '/Messages105/Feed105/Feed105.php';
 require_once __DIR__ . '/Utils105/Strings105.php';
+
+empty_call_will_fail_before();

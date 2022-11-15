@@ -1,6 +1,6 @@
 <?php
 
-define('GLOBAL_DEF_IN_RPC', 0);
+define('GLOBAL_DEF_IN_RPC_007', 0);
 
 function globalFunctionInVkRpc() {}
 

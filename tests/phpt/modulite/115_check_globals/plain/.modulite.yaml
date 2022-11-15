@@ -2,7 +2,7 @@ name: "@plain"
 namespace: ""
 
 export:
-  - "plain()"
+  - "plain_115()"
 
 force-internal:
 

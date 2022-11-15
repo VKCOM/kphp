@@ -758,7 +758,7 @@ const TypeHint *phpdoc_finalize_type_hint_and_resolve(const TypeHint *type_hint,
           kphp_error(!klass->is_trait(), fmt_format("Using trait {} as a type is invalid (traits are not types)", as_instance->full_class_name));
         }
 
-        if (resolve_context->modulite || klass->modulite) {
+        if (resolve_context->modulite != klass->modulite) {
           modulite_check_when_use_class(resolve_context, klass);
         }
 

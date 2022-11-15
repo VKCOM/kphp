@@ -12,5 +12,5 @@ KPHP_ENABLE_MODULITE=1
 
 Messages106\Messages106::act();
 
-require_once __DIR__ . '/parent/ParentFuncs.php';
-ParentFuncs::testThatCantAccessSubsubchild();
+require_once __DIR__ . '/parent/ParentFuncs_106.php';
+ParentFuncs_106::testThatCantAccessSubsubchild();

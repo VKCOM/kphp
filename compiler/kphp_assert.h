@@ -20,6 +20,7 @@
 #define compiler_assert_noret(x, y, level) compiler_assert_(x, y, level, __builtin_unreachable())
 
 #define kphp_warning(y)  compiler_assert (0, y, WRN_ASSERT_LEVEL)
+#define kphp_notice(y)  compiler_assert (0, y, NOTICE_ASSERT_LEVEL)
 #define kphp_error(x, y) compiler_assert (x, y, CE_ASSERT_LEVEL)
 #define kphp_error_act(x, y, act) if (kphp_error (x, y)) act
 #define kphp_error_return(x, y) kphp_error_act (x, y, return)
@@ -31,6 +32,7 @@
 enum AssertLevelT {
   WRN_ASSERT_LEVEL,
   CE_ASSERT_LEVEL,
+  NOTICE_ASSERT_LEVEL,
   FATAL_ASSERT_LEVEL
 };
 

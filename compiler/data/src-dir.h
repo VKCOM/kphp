@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <string>
 
 #include "common/wrappers/string_view.h"
@@ -22,6 +23,13 @@ public:
   bool has_modulite_yaml{false};
   bool has_composer_json{false};
   ModulitePtr nested_files_modulite;
+
+  enum class PassStatus {
+    uninitialized,
+    processing,
+    done,
+  };
+  std::atomic<PassStatus> state_collect_required{PassStatus::uninitialized};   // for "collect required" pass
 
   std::string get_modulite_yaml_filename() const;
 };

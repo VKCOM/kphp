@@ -7,3 +7,4 @@ KPHP_ENABLE_MODULITE=1
 /'require' not specified/
 <?php
 
+empty_call_will_fail_before();

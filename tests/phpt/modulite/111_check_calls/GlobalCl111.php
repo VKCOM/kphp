@@ -1,6 +1,6 @@
 <?php
 
-class GlobalCl {
+class GlobalCl111 {
     static function staticFn() {}
 }
 

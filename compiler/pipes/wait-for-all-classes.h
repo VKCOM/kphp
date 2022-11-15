@@ -9,7 +9,7 @@
 #include "compiler/threading/data-stream.h"
 #include "compiler/pipes/sync.h"
 
-class WaitForAllClassesAndLoadModulitesF final: public SyncPipeF<FunctionPtr, FunctionPtr> {
+class WaitForAllClassesF final: public SyncPipeF<FunctionPtr, FunctionPtr> {
   using Base = SyncPipeF<FunctionPtr, FunctionPtr>;
 public:
   bool forward_to_next_pipe(const FunctionPtr &f) final {
@@ -24,5 +24,5 @@ public:
   }
 
   void on_finish(DataStream<FunctionPtr> &os) final;
-  void register_all_modulites();
+  void resolve_and_validate_modulites();
 };

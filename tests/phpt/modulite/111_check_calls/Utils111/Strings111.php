@@ -5,8 +5,8 @@ namespace Utils111;
 class Strings111 {
     static function normal() {
         Hidden111::demo();
-        new \GlobalCl;
-        \GlobalCl::staticFn();
+        new \GlobalCl111;
+        \GlobalCl111::staticFn();
     }
 
     static function hidden1() { }

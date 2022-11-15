@@ -24,102 +24,40 @@
  * On complete, pass all functions forward the compilation pipeline.
  */
 
-void WaitForAllClassesAndLoadModulitesF::on_finish(DataStream<FunctionPtr> &os) {
+void WaitForAllClassesF::on_finish(DataStream<FunctionPtr> &os) {
   stage::die_if_global_errors();
   SortAndInheritClassesF::check_on_finish(tmp_stream);
   stage::set_name("Register modulites");
-  register_all_modulites();
+  resolve_and_validate_modulites();
   Base::on_finish(os);
 }
 
-void WaitForAllClassesAndLoadModulitesF::register_all_modulites() {
+// after all classes have been loaded, we can resolve symbols in modulite configs
+// (until this point, yaml files were parsed, but stored as strings)
+void WaitForAllClassesF::resolve_and_validate_modulites() {
   if (!G->settings().modulite_enabled.get()) {
     return;
   }
 
-  SrcDirPtr dir_root = G->get_main_file()->dir;
-
-  // Sort all dirs in a project from short to long, e.g.
-  // - /root/of/project
-  // - /root/of/project/VK/Messages
-  // - /root/of/project/VK/Expressions
-  // - /root/of/project/VK/Messages/Core
-  // We'll iterate dirs in the same order, so we have a guarantee, that
-  // on a child dir pointer, its parent dir has 100% been visited.
-  std::vector<SrcDirPtr> all_dirs = G->get_dirs();
-  std::sort(all_dirs.begin(), all_dirs.end(), [](SrcDirPtr d1, SrcDirPtr d2) {
-    return d1->full_dir_name.size() < d2->full_dir_name.size();
+  // sort all modulites from short to long, so that a parent appears before a child when iterating
+  // this fact is used to fill `child->exported_from_parent` by lookup, and some others
+  std::vector<ModulitePtr> all_modulites = G->get_modulites();
+  std::sort(all_modulites.begin(), all_modulites.end(), [](ModulitePtr m1, ModulitePtr m2) {
+    return m1->modulite_name.size() < m2->modulite_name.size();
   });
 
-  // 1) all existing composer packages are implicit modulites "#vendorname/packagename" ("#" + json->name)
-  // for instance, if a modulite in a project calls a function from a package, it's auto checked to be required
-  // by default, all symbols from composer packages are exported ("exports" is empty, see modulite-check-rules.cpp)
-  // but if it contains .modulite.yaml near composer.json, that yaml can manually declared exported functions
-  for (SrcDirPtr dir : all_dirs) {
-    if (dir->has_composer_json) {
-      ComposerJsonPtr composer_json = G->get_composer_json_at_dir(dir);
-      kphp_assert(composer_json);
-      ModulitePtr modulite = ModuliteData::create_from_composer_json(composer_json, dir->has_modulite_yaml);
-
-      bool is_root = dir->full_dir_name == G->settings().composer_root.get();
-      if (is_root || !modulite) {  // composer.json at project root is loaded, but not stored as a modulite
-        continue;
-      }
-      G->register_modulite(modulite);
-      dir->nested_files_modulite = modulite;
-    }
-  }
-
-  // 2) parse all existing .modulite.yaml files
-  // while parsing, cross-references like @another-m are not resolved, it will be done below
-  for (SrcDirPtr dir : all_dirs) {
-    if (dir->has_modulite_yaml && !dir->has_composer_json) {
-      // find the dir up the tree with .modulite.yaml; say, dir contains @msg/channels, with_parent expected to be @msg
-      SrcDirPtr with_parent = dir;
-      while (with_parent && with_parent != dir_root && !with_parent->nested_files_modulite) {
-        with_parent = with_parent->parent_dir;
-      }
-      ModulitePtr parent = with_parent ? with_parent->nested_files_modulite : ModulitePtr{};
-
-      ModulitePtr modulite = ModuliteData::create_from_modulite_yaml(dir->get_modulite_yaml_filename(), parent);
-      if (modulite && !modulite->modulite_name.empty()) {   // no error while parsing yaml
-        G->register_modulite(modulite);
-        dir->nested_files_modulite = modulite;
-      }
-    }
-  }
-  stage::die_if_global_errors();  // on any parsing errors, they were printed using kphp_error, same below
-
-  // 3) resolve cross-references like @msg in "export"/"requires"/etc.
-  for (SrcDirPtr dir : all_dirs) {
-    if (dir->nested_files_modulite) {
-      ModulitePtr modulite = dir->nested_files_modulite;
-      modulite->resolve_names_to_pointers();
-    }
+  // resolve symbols like SomeClass and @msg in "export"/"require"/etc.
+  // until now, they are stored just as string names, they can be resolved only after all classes have been loaded
+  for (ModulitePtr modulite : all_modulites) {
+    modulite->resolve_names_to_pointers();
   }
   stage::die_if_global_errors();
 
-  // 4) propagate dir->modulite to child dirs unless a child dir is a modulite itself
-  // - VK/Messages/                               it's @messages now
-  //   - .modulite.yaml (@messages)
-  //   - Core/                                    <-- assign @messages here
-  //     - Channels/                              it's @messages/channels now
-  //       - .modulite.yaml (@messages/channels)
-  for (SrcDirPtr dir : all_dirs) {
-    if (!dir->nested_files_modulite && dir->parent_dir) {
-      dir->nested_files_modulite = dir->parent_dir->nested_files_modulite;
-    }
+  // validate symbols in yaml config, after resolving all
+  // see comments inside validators for what they actually do
+  for (ModulitePtr modulite : all_modulites) {
+    modulite->validate_yaml_requires();
+    modulite->validate_yaml_exports();
+    modulite->validate_yaml_force_internal();
   }
-
-  // 5) validate symbols in yaml config like "export", check that child modulites are placed in expected dirs, etc.
-  // we do this after knowing all dirs and subdirs (=> all files inside them), which modulites every file belongs to
-  for (SrcDirPtr dir : all_dirs) {
-    if (dir->nested_files_modulite && dir->nested_files_modulite->yaml_file->dir == dir) {
-      ModulitePtr modulite = dir->nested_files_modulite;
-      modulite->validate_yaml_requires();
-      modulite->validate_yaml_exports();
-      modulite->validate_yaml_force_internal();
-    }
-  }
-  stage::die_if_global_errors();
 }

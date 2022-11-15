@@ -1,9 +1,9 @@
 <?php
 
-class ParentFuncs {
+class ParentFuncs_106 {
     static function testThatCantAccessSubsubchild() {
-        require_once __DIR__ . '/child1/child2/child3/Child3.php';
+        require_once __DIR__ . '/child1/child2/child3/Child3_106.php';
         require_once __DIR__ . '/morechild1/MoreChild1.php';
-        Child3::child3Func();
+        Child3_106::child3Func();
     }
 }

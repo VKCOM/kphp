@@ -1,7 +1,7 @@
 @kphp_should_fail
 KPHP_ENABLE_MODULITE=1
 /'require' contains a member of @utils; you should require @utils directly, not its members/
-/"\\\\A"/
+/"\\\\AAA104"/
 /'export' contains a symbol that does not belong to @algo/
 /Failed loading Utils104\/.modulite.yaml:/
 /'force-internal' contains a symbol which is exported/
@@ -11,7 +11,7 @@ KPHP_ENABLE_MODULITE=1
 /'export' of @utils lists a non-child @utils\/inner\/very/
 <?php
 
-class A {
+class AAA104 {
     const ONE = 1;
 }
 

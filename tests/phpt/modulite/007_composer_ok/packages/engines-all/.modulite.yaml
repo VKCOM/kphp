@@ -7,4 +7,4 @@ export:
   - "\\pingAllEngines()"
 
 require:
-  - "\\MONOLITH_CONST"
+  - "\\MONOLITH_CONST_007"

@@ -9,7 +9,7 @@ class StringBuilder120 {
     }
 
     public function useSymbolsFromMonolith() {
-        echo MONOLITH_CONST, "\n";
+        echo MONOLITH_CONST_120, "\n";
         echo \VK\RPC\RpcQuery120::CLUSTER_NAME, "\n";
     }
 }

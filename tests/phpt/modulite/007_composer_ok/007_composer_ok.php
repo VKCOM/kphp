@@ -7,7 +7,7 @@ require_once __DIR__ . '/Utils007/utils007.php';
 
 global $global_map;
 
-define('MONOLITH_CONST', 'cc');
+define('MONOLITH_CONST_007', 'cc');
 
 echo START_MODE, "\n";
 \VK\Strings\StringBuilder007::$inited = true;

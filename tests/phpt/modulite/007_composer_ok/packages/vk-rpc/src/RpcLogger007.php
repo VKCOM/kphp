@@ -13,7 +13,7 @@ class RpcLogger007 {
         self::log("hash = $hash");
 
         \globalFunctionInVkRpc();
-        if(0) echo GLOBAL_DEF_IN_RPC;
+        if(0) echo GLOBAL_DEF_IN_RPC_007;
 
         // allow using built-in constants, classes, etc.
         if (0) echo PHP_INT_MAX;

@@ -17,7 +17,7 @@ KPHP_ENABLE_MODULITE=1
 /static function demo\(\): \?Infra114\\Hidden114_2/
 /restricted to use Feed114\\Infra114\\Hidden114_2, it's internal in @feed\/infra/
 /\$object instanceof Glob114/
-/restricted to use Glob114::class, it's not required by @other/
+/restricted to use Glob114, it's not required by @other/
 /function other114/
 /restricted to use GlobalB114, it's not required by @other/
 <?php

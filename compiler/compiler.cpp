@@ -237,7 +237,7 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PipeC<RegisterFFIScopesF>{}
     >> PassC<RegisterDefinesPass>{}
     >> PipeC<CollectRequiredAndClassesF>{} >> use_nth_output_tag<0>{}
-    >> SyncC<WaitForAllClassesAndLoadModulitesF>{}
+    >> SyncC<WaitForAllClassesF>{}
     >> PipeC<CheckTypeHintVariance>{}
     >> PassC<CalcLocationsPass>{}
     >> PassC<ResolveSelfStaticParentPass>{}

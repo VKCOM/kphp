@@ -1,7 +1,7 @@
 @kphp_should_fail
 KPHP_ENABLE_MODULITE=1
 /in global scope/
-/restricted to use global \$in_plain, it's not required by @plain/
+/restricted to use global \$in_plain_115, it's not required by @plain/
 /in Post115::demo/
 /restricted to use global \$somehow, it's not required by @feed/
 /in a lambda inside internal/
@@ -15,5 +15,5 @@ KPHP_ENABLE_MODULITE=1
 \Feed115\Post115::demo();
 
 require_once 'plain/plain.php';
-plain();
+plain_115();
 
