@@ -2042,17 +2042,18 @@ int parse_zend_bool(VK_ZVAL_API_P z) { /* {{{ */
 /* }}} */
 
 char *parse_zend_string(VK_ZVAL_API_P z, int *l) { /* {{{ */
-  static char s[100];
+  const size_t s_size = 100;
+  static char s[s_size];
   zval value_copy;
   switch (Z_TYPE_P (VK_ZVAL_API_TO_ZVALP(z))) {
     case IS_LONG:
-      sprintf(s, "%" PRIi64, static_cast<int64_t>(Z_LVAL_P (VK_ZVAL_API_TO_ZVALP(z))));
+      snprintf(s, s_size, "%" PRIi64, static_cast<int64_t>(Z_LVAL_P (VK_ZVAL_API_TO_ZVALP(z))));
       if (l) {
         *l = strlen(s);
       }
       return s;
     case IS_DOUBLE:
-      sprintf(s, "%lf", Z_DVAL_P (VK_ZVAL_API_TO_ZVALP(z)));
+      snprintf(s, s_size, "%f", Z_DVAL_P (VK_ZVAL_API_TO_ZVALP(z)));
       if (l) {
         *l = strlen(s);
       }
@@ -2064,9 +2065,9 @@ char *parse_zend_string(VK_ZVAL_API_P z, int *l) { /* {{{ */
       return Z_STRVAL_P (VK_ZVAL_API_TO_ZVALP(z));
     case VK_IS_BOOL_T_CASE:
       if (VK_ZVAL_IS_TRUE(VK_ZVAL_API_TO_ZVALP(z))) {
-        sprintf(s, "%s", "1");
+        snprintf(s, s_size, "%s", "1");
       } else {
-        sprintf(s, "%s", "");
+        snprintf(s, s_size, "%s", "");
       }
       if (l) {
         *l = strlen(s);

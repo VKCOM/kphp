@@ -47,8 +47,9 @@ void kwrite_str(int fd, const char *s) noexcept {
 
 bool check_signal_critical_section(int sig_num, const char *sig_name) {
   if (dl::in_critical_section) {
-    char message_1kw[100];
-    sprintf(message_1kw, "in critical section: pending %s caught\n", sig_name);
+    const size_t message_1kw_size = 100;
+    char message_1kw[message_1kw_size];
+    snprintf(message_1kw, message_1kw_size, "in critical section: pending %s caught\n", sig_name);
     kwrite_str(2, message_1kw);
     dl::pending_signals = dl::pending_signals | (1 << sig_num);
     return false;
@@ -241,19 +242,20 @@ void PhpScript::resume() noexcept {
 }
 
 void dump_query_stats() {
-  char tmp[100];
-  char *s = tmp;
+  const size_t buf_size = 100;
+  char buf[buf_size];
+  char *s = buf;
   if (query_stats.desc != nullptr) {
-    s += sprintf(s, "%s:", query_stats.desc);
+    s += snprintf(s, buf_size, "%s:", query_stats.desc);
   }
   if (query_stats.port != 0) {
-    s += sprintf(s, "[port=%d]", query_stats.port);
+    s += snprintf(s, buf_size - (s - buf), "[port=%d]", query_stats.port);
   }
   if (query_stats.timeout > 0) {
-    s += sprintf(s, "[timeout=%lf]", query_stats.timeout);
+    s += snprintf(s, buf_size - (s - buf), "[timeout=%lf]", query_stats.timeout);
   }
   *s = 0;
-  kprintf("%s\n", tmp);
+  kprintf("%s\n", buf);
 
   if (query_stats.query != nullptr) {
     const char *s = query_stats.query;
@@ -262,9 +264,9 @@ void dump_query_stats() {
       t++;
     }
     if (t - s <= 1000) {
-      kprintf("QUERY:[%.*s]\n", (int)(t - s), s);
+      kprintf("QUERY:[%.*s]\n", static_cast<int>(t - s), s);
     } else {
-      kprintf("QUERY:[%.*s]<truncated, real length = %d>\n", 1000, s, (int)(t - s));
+      kprintf("QUERY:[%.*s]<truncated, real length = %d>\n", 1000, s, static_cast<int>(t - s));
     }
   }
 }
@@ -339,16 +341,17 @@ void PhpScript::finish() noexcept {
     }
   }
 
-  static char buf[5000];
+  const size_t buf_size = 5000;
+  static char buf[buf_size];
   buf[0] = 0;
   if (disable_access_log < 2) {
     if (data != nullptr) {
       http_query_data *http_data = data->http_data;
       if (http_data != nullptr) {
         if (disable_access_log) {
-          sprintf(buf, "[uri = %.*s?<truncated>]", min(http_data->uri_len, 200), http_data->uri);
+          snprintf(buf, buf_size, "[uri = %.*s?<truncated>]", min(http_data->uri_len, 200), http_data->uri);
         } else {
-          sprintf(buf, "[uri = %.*s?%.*s]", min(http_data->uri_len, 200), http_data->uri,
+          snprintf(buf, buf_size, "[uri = %.*s?%.*s]", min(http_data->uri_len, 200), http_data->uri,
                   min(http_data->get_len, 4000), http_data->get);
         }
       }

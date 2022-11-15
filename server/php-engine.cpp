@@ -992,9 +992,10 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       vkprintf(2, "got RPC_INVOKE_REQ [req_id = %016llx]\n", req_id);
 
       if (!check_tasks_invoker_pid(remote_pid)) {
-        static char msg_buf[1000];
+        const size_t msg_buf_size = 1000;
+        static char msg_buf[msg_buf_size];
         process_id_t lease_pid = get_lease_pid();
-        sprintf(msg_buf, "Task invoker is invalid. Expected %s, but actual %s", pid_to_print(&lease_pid), pid_to_print(&remote_pid));
+        snprintf(msg_buf, msg_buf_size, "Task invoker is invalid. Expected %s, but actual %s", pid_to_print(&lease_pid), pid_to_print(&remote_pid));
         send_rpc_error(c, req_id, TL_ERROR_QUERY_INCORRECT, msg_buf);
         return 0;
       }
@@ -1432,7 +1433,7 @@ void cron() {
 void reopen_json_log() {
   if (logname) {
     char worker_json_log_file_name[PATH_MAX];
-    sprintf(worker_json_log_file_name, "%s.json", logname);
+    snprintf(worker_json_log_file_name, PATH_MAX, "%s.json", logname);
     if (!vk::singleton<JsonLogger>::get().reopen_log_file(worker_json_log_file_name)) {
       vkprintf(-1, "failed to open log '%s': error=%s", worker_json_log_file_name, strerror(errno));
     }

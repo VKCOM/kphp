@@ -42,8 +42,9 @@ const char *ClusterName::set_cluster_name(const char *name) noexcept {
   if (std::strlen(socket_suffix) + name_len > MAX_SOCKET_NAME_LEN) {
     // To allow cluster name longer than 107 symbols, we just take crc64 of it as the socket name
     uint64_t crc = compute_crc64(name, name_len);
-    char hex_crc_str[sizeof(crc) * 2 + 1];
-    std::sprintf(hex_crc_str, "%16" PRIx64, crc);
+    size_t hex_crc_str_size = sizeof(crc) * 2 + 1;
+    char hex_crc_str[hex_crc_str_size];
+    std::snprintf(hex_crc_str, hex_crc_str_size, "%16" PRIx64, crc);
     std::strcpy(socket_name_.data(), hex_crc_str);
   } else {
     std::strcpy(socket_name_.data(), cluster_name_.data());

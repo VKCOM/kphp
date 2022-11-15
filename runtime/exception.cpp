@@ -15,10 +15,11 @@ array<array<string>> make_backtrace(void **trace, int trace_size) noexcept {
   const string function_key{"function"};
 
   array<array<string>> res{array_size{trace_size - 4, 0, true}};
-  char buf[20];
+  const size_t buf_size = 20;
+  char buf[buf_size];
   for (int i = 1; i < trace_size; i++) {
     dl::enter_critical_section();//OK
-    snprintf(buf, 19, "%p", trace[i]);
+    snprintf(buf, buf_size, "%p", trace[i]);
     dl::leave_critical_section();
     array<string> current{array_size{0, 1, false}};
     current.set_value(function_key, string{buf});

@@ -38,17 +38,18 @@ bool lang::has_symbol(char c) const noexcept {
   return strchr(flexible_symbols, c) != nullptr;
 }
 
-vk::string_view flex(vk::string_view name, vk::string_view case_name, bool is_female, vk::string_view type, int lang_id, char * const dst_buf, char * const err_buf) {
+vk::string_view flex(vk::string_view name, vk::string_view case_name, bool is_female, vk::string_view type, int lang_id, char * const dst_buf,
+                     char * const err_buf, size_t err_buf_size) {
   if (name.size() > (1 << 10)) {
-    sprintf(err_buf, "Name has length %zu and is too long in function vk_flex", name.size());
+    snprintf(err_buf, err_buf_size, "Name has length %zu and is too long in function vk_flex", name.size());
     return name;
   }
   if (case_name[0] == 0 || case_name == "Nom") {
     return name;
   }
 
-  if ((unsigned int)lang_id >= (unsigned int)LANG_NUM) {
-    sprintf(err_buf, "Unknown lang id %d in function vk_flex", lang_id);
+  if (static_cast<unsigned int>(lang_id) >= static_cast<unsigned int>(LANG_NUM)) {
+    snprintf(err_buf, err_buf_size, "Unknown lang id %d in function vk_flex", lang_id);
     return name;
   }
 
@@ -70,7 +71,7 @@ vk::string_view flex(vk::string_view name, vk::string_view case_name, bool is_fe
     }
     start_node = cur_lang->surnames_start;
   } else {
-    sprintf(err_buf, "Unknown type \"%s\" in function vk_flex", type.data());
+    snprintf(err_buf, err_buf_size, "Unknown type \"%s\" in function vk_flex", type.data());
     return name;
   }
   assert(start_node >= 0);
@@ -83,7 +84,7 @@ vk::string_view flex(vk::string_view name, vk::string_view case_name, bool is_fe
     }
   }
   if (ca == -1) {
-    sprintf(err_buf, "Unknown case \"%s\" in function vk_flex", case_name.data());
+    snprintf(err_buf, err_buf_size, "Unknown case \"%s\" in function vk_flex", case_name.data());
     return name;
   }
 

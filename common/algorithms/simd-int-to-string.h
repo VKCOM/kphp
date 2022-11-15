@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 
 char *simd_uint32_to_string(uint32_t value, char *out_buffer) noexcept;

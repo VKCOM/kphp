@@ -608,8 +608,9 @@ VK_ZVAL_API_P get_field(zval *arr, const char *id, int num, zval **dst) {
           if (strlen(id)) {
             *dst = vk_zend_read_public_property(arr, id);
           } else {
-            char arg_name[30];
-            sprintf(arg_name, "arg%d", num);
+            const size_t arg_name_size = 30;
+            char arg_name[arg_name_size];
+            snprintf(arg_name, arg_name_size, "arg%d", num);
             *dst = vk_zend_read_public_property(arr, arg_name);
           }
         }
@@ -692,8 +693,9 @@ void set_field(zval **arr, zval *val, const char *id, long long num) {
       if (id && strlen(id)) {
         vk_zend_update_public_property_nod(*arr, id, val);
       } else {
-        char arg_name[10];
-        sprintf(arg_name, "arg%lld", num);
+        const size_t arg_name_size = 10;
+        char arg_name[arg_name_size];
+        snprintf(arg_name, arg_name_size, "arg%lld", num);
         vk_zend_update_public_property_nod(*arr, arg_name, val);
       }
       break;
@@ -726,8 +728,9 @@ void set_field_string(zval **arr, char *val, const char *id, int num) {
       if (id && strlen(id)) {
         vk_zend_update_public_property_string(*arr, id, val);
       } else {
-        char arg_name[10];
-        sprintf(arg_name, "arg%d", num);
+        const size_t arg_name_size = 10;
+        char arg_name[arg_name_size];
+        snprintf(arg_name, arg_name_size, "arg%d", num);
         vk_zend_update_public_property_string(*arr, arg_name, val);
       }
       break;
@@ -755,8 +758,9 @@ void set_field_int(zval **arr, int val, const char *id, int num) {
       if (id && strlen(id)) {
         vk_zend_update_public_property_long(*arr, id, val);
       } else {
-        char arg_name[10];
-        sprintf(arg_name, "arg%d", num);
+        const size_t arg_name_size = 10;
+        char arg_name[arg_name_size];
+        snprintf(arg_name, arg_name_size, "arg%d", num);
         vk_zend_update_public_property_long(*arr, arg_name, val);
       }
       break;
@@ -2004,8 +2008,9 @@ void *tlcomb_fetch_array(void **IP, void **Data, zval **arr, struct tl_tree **va
       if (typed_mode) {
         static char class_name[PHP_CLASS_NAME_BUFFER_LENGTH];
         static char php_prefix[PHP_PREFIX_BUFFER_LENGTH];
-        static char buf[30];
-        sprintf(buf, "_arg%d_item", num);
+        const size_t buf_size = 30;
+        static char buf[buf_size];
+        snprintf(buf, buf_size, "_arg%d_item", num);
         get_php_prefix(php_prefix, owner_name, TYPES);
         check_buffer_overflow(make_tl_class_name(class_name, php_prefix, owner_name, buf, '_'));
         *arr = create_php_instance(class_name);
@@ -2623,8 +2628,9 @@ void *tlcomb_store_dictionary(void **IP, void **Data, zval **arr, struct tl_tree
     if (VK_ZSTR_P_NON_EMPTY(key)) {
       do_rpc_store_string(key->val, VK_HASH_KEY_LEN(key->len));
     } else {
-      static char buf[30];
-      sprintf(buf, "%" PRIu64, static_cast<uint64_t>(index));
+      const size_t buf_size = 30;
+      static char buf[buf_size];
+      snprintf(buf, buf_size, "%" PRIu64, static_cast<uint64_t>(index));
       do_rpc_store_string(buf, strlen(buf));
     }
 

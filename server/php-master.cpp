@@ -891,8 +891,9 @@ int return_one_key_key(connection *c, const char *key) {
 }
 
 int return_one_key_val(connection *c, const char *val, int vlen) {
-  char tmp[300];
-  int l = sprintf(tmp, " 0 %d\r\n", vlen);
+  const size_t tmp_size = 300;
+  char tmp[tmp_size];
+  int l = snprintf(tmp, tmp_size, " 0 %d\r\n", vlen);
   assert (l < 300);
   write_out(&c->Out, tmp, l);
   write_out(&c->Out, val, vlen);
@@ -993,8 +994,9 @@ int php_master_get(connection *c, const char *old_key, int old_key_len) {
     std::string res;
     for (int i = 0; i < vk::singleton<WorkersControl>::get().get_all_alive(); i++) {
       if (!workers[i]->is_dying) {
-        char buf[30];
-        sprintf(buf, "%d", workers[i]->pid);
+        const size_t buf_size = 30;
+        char buf[buf_size];
+        snprintf(buf, buf_size, "%d", workers[i]->pid);
         if (!res.empty()) {
           res += ",";
         }

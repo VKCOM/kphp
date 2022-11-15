@@ -446,7 +446,6 @@ string &string::append(int64_t i) {
   reserve_at_least(size() + STRLEN_INT64);
   const char *end = simd_int64_to_string(i, p + size());
   inner()->size = static_cast<size_type>(end - p);
-  p[inner()->size] = '\0';
   return *this;
 }
 

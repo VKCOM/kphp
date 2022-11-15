@@ -63,8 +63,9 @@ static void print_demangled_adresses(void **buffer, int nptrs, int num_shift, bo
       backtrace_symbols_fd(buffer, nptrs, 2);
     }
   } else if (php_warning_level == 3 && allow_gdb) {
-    char pid_buf[30];
-    sprintf(pid_buf, "%d", getpid());
+    const size_t pid_buf_size = 30;
+    char pid_buf[pid_buf_size];
+    snprintf(pid_buf, pid_buf_size, "%d", getpid());
     char name_buf[512];
     ssize_t res = readlink("/proc/self/exe", name_buf, 511);
     if (res >= 0) {

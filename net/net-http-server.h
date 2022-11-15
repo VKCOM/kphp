@@ -90,7 +90,7 @@ int gen_http_time (char *date_buffer, int *time);
 char *cur_http_date ();
 int write_basic_http_header (struct connection *c, int code, int date, int len, const char *add_header, const char *content_type);
 int write_http_error (struct connection *c, int code);
-int format_http_error_page(int code, char *buff);
+int format_http_error_page(int code, char *buff, size_t buff_size);
 
 /* END */
 #endif

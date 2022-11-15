@@ -189,19 +189,20 @@ static char error_text_pattern[] =
 "</body>\r\n"
 "</html>\r\n";
 
-int format_http_error_page(int code, char *buff) {
+int format_http_error_page(int code, char *buff, size_t buff_size) {
   const char *error_message = http_get_error_msg_text (&code);
-  return sprintf (buff, error_text_pattern, code, error_message, code, error_message);
+  return snprintf(buff, buff_size, error_text_pattern, code, error_message, code, error_message);
 }
 
 int write_http_error (struct connection *c, int code) {
   if (code == 204) {
-    write_basic_http_header (c, code, 0, -1, 0, 0);
+    write_basic_http_header(c, code, 0, -1, nullptr, nullptr);
     return 0;
   } else {
-    static char buff[1024];
-    int len = format_http_error_page(code, buff);
-    write_basic_http_header (c, code, 0, len, 0, 0);
+    const size_t buff_size = 1024;
+    static char buff[buff_size];
+    int len = format_http_error_page(code, buff, buff_size);
+    write_basic_http_header(c, code, 0, len, nullptr, nullptr);
     return write_out (&c->Out, buff, len);
   }
 }
@@ -677,7 +678,7 @@ static char dows [] = "SunMonTueWedThuFriSatEar";
 int dd [] =
 {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
-void gen_http_date (char date_buffer[29], int time) {
+void gen_http_date(char date_buffer[29], int time) {
   int day, mon, year, hour, min, sec, xd, i, dow;
   if (time < 0) time = 0;
   sec = time % 60;
@@ -720,10 +721,7 @@ void gen_http_date (char date_buffer[29], int time) {
   assert (day >= 1 && day <= 31 && mon >=0 && mon <= 11 &&
       year >= 1970 && year <= 2039);
 
-  sprintf (date_buffer, "%.3s, %.2d %.3s %d %.2d:%.2d:%.2d GM", 
-      dows + dow * 3, day, months + mon * 3, year,
-      hour, min, sec);
-  date_buffer[28] = 'T';
+  snprintf(date_buffer, 30, "%.3s, %.2d %.3s %d %.2d:%.2d:%.2d GMT", dows + dow * 3, day, months + mon * 3, year, hour, min, sec);
 }
 
 int gen_http_time (char *date_buffer, int *time) {
@@ -834,28 +832,28 @@ int write_basic_http_header (struct connection *c, int code, int date, int len, 
   struct hts_data *D = HTS_DATA(c);
 
   if (D->http_ver >= HTTP_V10 || D->http_ver == 0) {
-#define B_SZ	4096
-    static char buff[B_SZ], date_buff[32];
+    const size_t buff_size = 4096;
+    static char buff[buff_size], date_buff[32];
     char *ptr = buff;
-    const char *error_message = http_get_error_msg_text (&code);
+    const char *error_message = http_get_error_msg_text(&code);
     if (date) {
-      gen_http_date (date_buff, date);
+      gen_http_date(date_buff, date);
     }
-    ptr += snprintf (ptr, B_SZ - 64, header_pattern, code, error_message,
-		     date ? date_buff : cur_http_date(), 
-		     content_type ? content_type : "text/html", 
-		     (D->query_flags & QF_KEEPALIVE) ? "keep-alive" : "close", 
-		     (D->query_flags & QF_EXTRA_HEADERS) && extra_http_response_headers ? extra_http_response_headers : "", 
+    ptr += snprintf(ptr, buff_size - 64, header_pattern, code, error_message,
+		     date ? date_buff : cur_http_date(),
+		     content_type ? content_type : "text/html",
+		     (D->query_flags & QF_KEEPALIVE) ? "keep-alive" : "close",
+		     (D->query_flags & QF_EXTRA_HEADERS) && extra_http_response_headers ? extra_http_response_headers : "",
 		     add_header ?: "");
     D->query_flags &= ~QF_EXTRA_HEADERS;
-    assert (ptr < buff + B_SZ - 64);
+    assert(ptr < buff + buff_size - 64);
     if (len >= 0) {
-      ptr += sprintf (ptr, "Content-Length: %d\r\n", len);
+      ptr += snprintf(ptr, 30, "Content-Length: %d\r\n", len);
     }
 
-    ptr += sprintf (ptr, "\r\n");
+    ptr += snprintf(ptr, 3, "\r\n");
 
-    return write_out (&c->Out, buff, ptr - buff);
+    return write_out(&c->Out, buff, ptr - buff);
   }
 
   return 0;

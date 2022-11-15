@@ -129,9 +129,10 @@ int set_core_dump_rlimit(long long size_limit) {
 
 
 int adjust_oom_score(int oom_score_adj) {
-  static char path[64], str[16];
-  assert(sprintf(path, "/proc/%d/oom_score_adj", getpid()) < 64);
-  int l = sprintf(str, "%d", oom_score_adj);
+  const size_t path_size = 64, str_size = 16;
+  static char path[path_size], str[str_size];
+  assert(snprintf(path, path_size, "/proc/%d/oom_score_adj", getpid()) < 64);
+  int l = snprintf(str, str_size, "%d", oom_score_adj);
   assert(l <= 15);
   int fd = open(path, O_WRONLY | O_TRUNC);
   if (fd < 0) {

@@ -4,15 +4,15 @@
 
 #include "common/tl/compiler/tl-parser-new.h"
 
-#include <assert.h>
+#include <cassert>
 #include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <time.h>
+#include <ctime>
 #include <unistd.h>
 
 #include "common/c-tree.h"
@@ -163,7 +163,7 @@ char *parse_lex() {
       nextch();
     }
     if (curch == '/' && nextch() == '/') {
-      char *filename_save = NULL;
+      char *filename_save = nullptr;
       if (nextch() == '!' && nextch() == ' ') {
         filename_save = parse.text + parse.pos + 1;
       }
@@ -305,8 +305,9 @@ bool check_lex(const char *s) {
 
 int expect(const char *s) {
   if (!check_lex(s)) {
-    static char buf[1000];
-    sprintf(buf, "Expected %s", s);
+    const size_t buf_size = 1000;
+    static char buf[buf_size];
+    snprintf(buf, buf_size, "Expected %s", s);
     parse_error(buf);
     return -1;
   } else {
@@ -487,7 +488,7 @@ struct tree *parse_term() {
     tree_add_child(T, S);
     if (LEX_CHAR ('<')) {
       EXPECT ("<");
-      while (1) {
+      while (true) {
         PARSE_TRY_PES (parse_expr);
         if (LEX_CHAR ('>')) {
           break;
@@ -515,7 +516,7 @@ struct tree *parse_subexpr() {
   int was_term = 0;
   int cc = 0;
 
-  while (1) {
+  while (true) {
     PARSE_TRY (parse_nat_const);
     if (S) {
       tree_add_child(T, S);
@@ -544,7 +545,7 @@ struct tree *parse_subexpr() {
 struct tree *parse_expr() {
   PARSE_INIT (type_expr);
   int cc = 0;
-  while (1) {
+  while (true) {
     PARSE_TRY (parse_subexpr);
     if (S) {
       tree_add_child(T, S);
@@ -656,7 +657,7 @@ struct tree *parse_args2() {
 struct tree *parse_args1() {
   PARSE_INIT (type_args1);
   EXPECT ("(");
-  while (1) {
+  while (true) {
     PARSE_TRY_PES (parse_var_ident_opt);
     if (LEX_CHAR(':')) {
       break;
@@ -690,7 +691,7 @@ struct tree *parse_args() {
 
 struct tree *parse_opt_args() {
   PARSE_INIT (type_opt_args);
-  while (1) {
+  while (true) {
     PARSE_TRY_PES (parse_var_ident);
     if (parse.lex.type == lex_char && *parse.lex.ptr == ':') {
       break;
@@ -706,7 +707,7 @@ struct tree *parse_result_type() {
   PARSE_TRY_PES (parse_boxed_type_ident);
   if (LEX_CHAR ('<')) {
     EXPECT ("<");
-    while (1) {
+    while (true) {
       PARSE_TRY_PES (parse_expr);
       if (LEX_CHAR ('>')) {
         break;
@@ -716,7 +717,7 @@ struct tree *parse_result_type() {
     EXPECT (">");
     PARSE_OK;
   } else {
-    while (1) {
+    while (true) {
       if (LEX_CHAR (';')) {
         PARSE_OK;
       }
@@ -734,7 +735,7 @@ struct tree *parse_combinator_decl() {
     parse_lex();
   }
   PARSE_TRY_PES (parse_full_combinator_id)
-  while (1) {
+  while (true) {
     if (LEX_CHAR ('{')) {
       parse_lex();
       PARSE_TRY_PES (parse_opt_args);
@@ -743,7 +744,7 @@ struct tree *parse_combinator_decl() {
       break;
     }
   }
-  while (1) {
+  while (true) {
     if (LEX_CHAR ('=')) {
       break;
     }
@@ -781,7 +782,7 @@ struct tree *parse_constr_declarations() {
   if (parse.lex.type == lex_triple_minus || parse.lex.type == lex_eof) {
     PARSE_OK;
   }
-  while (1) {
+  while (true) {
     PARSE_TRY_PES (parse_declaration);
     EXPECT (";");
     if (parse.lex.type == lex_eof || parse.lex.type == lex_triple_minus) {
@@ -795,7 +796,7 @@ struct tree *parse_fun_declarations() {
   if (parse.lex.type == lex_triple_minus || parse.lex.type == lex_eof) {
     PARSE_OK;
   }
-  while (1) {
+  while (true) {
     PARSE_TRY_PES (parse_declaration);
     EXPECT (";");
     if (parse.lex.type == lex_eof || parse.lex.type == lex_triple_minus) {
@@ -812,7 +813,7 @@ struct tree *parse_program() {
     PARSE_TRY_PES (parse_constr_declarations);
   }
 
-  while (1) {
+  while (true) {
     if (parse.lex.type == lex_error) {
       PARSE_FAIL;
     }
@@ -918,11 +919,11 @@ void tl_set_var_value_num(tree_var_value_t **T, struct tl_combinator_tree *var, 
 struct tl_combinator_tree *tl_get_var_value(tree_var_value_t **T, tl_combinator_tree *var) {
   struct tl_var_value t = {.ptr = var, .val = 0, .num_val = 0};
   struct tl_var_value *r = tree_lookup_value_var_value(*T, t);
-  return r ? r->val : 0;
+  return r ? r->val : nullptr;
 }
 
 int tl_get_var_value_num(tree_var_value_t **T, tl_combinator_tree *var) {
-  struct tl_var_value t = {.ptr = var, .val = 0};
+  struct tl_var_value t = {.ptr = var, .val = nullptr};
   struct tl_var_value *r = tree_lookup_value_var_value(*T, t);
   return r ? r->num_val : 0;
 }
@@ -1013,7 +1014,7 @@ void tl_del_var(struct tl_var *v) {
 void tl_clear_vars() {
   tree_act_tl_var(vars[namespace_level], tl_del_var);
   vars[namespace_level] = tree_clear_tl_var(vars[namespace_level]);
-  last_num_var[namespace_level] = 0;
+  last_num_var[namespace_level] = nullptr;
 }
 
 struct tl_var *tl_get_last_num_var() {
@@ -1023,8 +1024,7 @@ struct tl_var *tl_get_last_num_var() {
 struct tl_var *tl_get_var(char *_id, int len) {
   char *id = mystrdup(_id, len);
   struct tl_var v = {.id = id};
-  int i;
-  for (i = namespace_level; i >= 0; i--) {
+  for (int i = namespace_level; i >= 0; i--) {
     struct tl_var **w = tree_lookup_value_tl_var(vars[i], &v);
     if (w) {
       free(id);
@@ -1032,7 +1032,7 @@ struct tl_var *tl_get_var(char *_id, int len) {
     }
   }
   free(id);
-  return 0;
+  return nullptr;
 }
 
 void namespace_push() {
@@ -1052,7 +1052,7 @@ struct tl_type *tl_get_type(const char *_id, int len) {
   struct tl_type _t = {.id = id};
   struct tl_type **r = tree_lookup_value_tl_type(tl_type_tree, &_t);
   free(id);
-  return r ? *r : 0;
+  return r ? *r : nullptr;
 }
 
 struct tl_type *tl_add_type(const char *_id, int len, int params_num, long long params_types) {
@@ -1066,7 +1066,7 @@ struct tl_type *tl_add_type(const char *_id, int len, int params_num, long long 
     free(id);
     if (params_num >= 0 && ((*_r)->params_num != params_num || (*_r)->params_types != params_types)) {
       TL_ERROR ("Wrong params_num or types for type %s\n", (*_r)->id);
-      return 0;
+      return nullptr;
     }
     return *_r;
   }
@@ -1081,9 +1081,9 @@ struct tl_type *tl_add_type(const char *_id, int len, int params_num, long long 
   }
   t->name = 0;
   t->constructors_num = 0;
-  t->constructors = 0;
+  t->constructors = nullptr;
   t->flags = 0;
-  t->real_id = 0;
+  t->real_id = nullptr;
   if (params_num >= 0) {
     assert (params_num <= 64);
     t->params_num = params_num;
@@ -1101,7 +1101,7 @@ void tl_add_type_param(struct tl_type *t, int x) {
   assert (t->flags & 4);
   assert (t->params_num <= 64);
   if (x) {
-    t->params_types |= (1ull << (t->params_num++));
+    t->params_types |= (1ULL << (t->params_num++));
   } else {
     t->params_num++;
   }
@@ -1130,14 +1130,14 @@ struct tl_constructor *tl_get_constructor(const char *_id, int len) {
   struct tl_constructor _t = {.id = id};
   struct tl_constructor **r = tree_lookup_value_tl_constructor(tl_constructor_tree, &_t);
   free(id);
-  return r ? *r : 0;
+  return r ? *r : nullptr;
 }
 
 struct tl_constructor *tl_add_constructor(struct tl_type *a, const char *_id, int len) {
   assert (a);
   if (a->flags & 1) {
     TL_ERROR ("New constructor for type `%s` after final statement\n", a->id);
-    return 0;
+    return nullptr;
   }
   int x = 0;
   while (x < len && _id[x] != '#') {
@@ -1151,8 +1151,7 @@ struct tl_constructor *tl_add_constructor(struct tl_type *a, const char *_id, in
   unsigned magic = 0;
   if (x < len) {
     assert (len - x == 9);
-    int i;
-    for (i = 1; i <= 8; i++) {
+    for (int i = 1; i <= 8; i++) {
       magic = (magic << 4) + (_id[x + i] <= '9' ? _id[x + i] - '0' : _id[x + i] - 'a' + 10);
     }
     assert (magic && magic != -1);
@@ -1175,16 +1174,15 @@ struct tl_constructor *tl_add_constructor(struct tl_type *a, const char *_id, in
   t->name = magic;
   t->id = id;
   t->print_id = strdup(id);
-  t->real_id = 0;
+  t->real_id = nullptr;
 
-  int i;
-  for (i = 0; i < len; i++) {
+  for (int i = 0; i < len; i++) {
     if (t->print_id[i] == '.' || t->print_id[i] == '#' || t->print_id[i] == ' ') {
       t->print_id[i] = '$';
     }
   }
 
-  t->left = t->right = 0;
+  t->left = t->right = nullptr;
   a->constructors = reinterpret_cast<tl_constructor **>(realloc(a->constructors, sizeof(void *) * (a->constructors_num + 1)));
   assert (a->constructors);
   a->constructors[a->constructors_num++] = t;
@@ -1202,7 +1200,7 @@ struct tl_constructor *tl_get_function(const char *_id, int len) {
   struct tl_constructor _t = {.id = id};
   struct tl_constructor **r = tree_lookup_value_tl_constructor(tl_function_tree, &_t);
   free(id);
-  return r ? *r : 0;
+  return r ? *r : nullptr;
 }
 
 struct tl_constructor *tl_add_function(struct tl_type *a, const char *_id, int len) {
@@ -1219,8 +1217,7 @@ struct tl_constructor *tl_add_function(struct tl_type *a, const char *_id, int l
   unsigned magic = 0;
   if (x < len) {
     assert (len - x == 9);
-    int i;
-    for (i = 1; i <= 8; i++) {
+    for (int i = 1; i <= 8; i++) {
       magic = (magic << 4) + (_id[x + i] <= '9' ? _id[x + i] - '0' : _id[x + i] - 'a' + 10);
     }
     assert (magic && magic != -1);
@@ -1239,16 +1236,15 @@ struct tl_constructor *tl_add_function(struct tl_type *a, const char *_id, int l
   t->name = magic;
   t->id = id;
   t->print_id = strdup(id);
-  t->real_id = 0;
+  t->real_id = nullptr;
 
-  int i;
-  for (i = 0; i < len; i++) {
+  for (int i = 0; i < len; i++) {
     if (t->print_id[i] == '.' || t->print_id[i] == '#' || t->print_id[i] == ' ') {
       t->print_id[i] = '$';
     }
   }
 
-  t->left = t->right = 0;
+  t->left = t->right = nullptr;
   tl_function_tree = tree_insert_tl_constructor(tl_function_tree, t, lrand48());
   total_functions_num++;
   return t;
@@ -1266,7 +1262,7 @@ struct tl_combinator_tree *alloc_ctree_node() {
 
 struct tl_combinator_tree *tl_tree_dup(struct tl_combinator_tree *T) {
   if (!T) {
-    return 0;
+    return nullptr;
   }
   tl_combinator_tree *S = reinterpret_cast<tl_combinator_tree *>(malloc(sizeof(*S)));
   memcpy(S, T, sizeof(*S));
@@ -1278,12 +1274,12 @@ struct tl_combinator_tree *tl_tree_dup(struct tl_combinator_tree *T) {
 struct tl_type *tl_tree_get_type(struct tl_combinator_tree *T) {
   assert (T->type == type_type);
   if (T->act == act_array) {
-    return 0;
+    return nullptr;
   }
   while (T->left) {
     T = T->left;
     if (T->act == act_array) {
-      return 0;
+      return nullptr;
     }
     assert (T->type == type_type);
   }
@@ -1341,7 +1337,7 @@ void tl_buf_add_tree(struct tl_combinator_tree *T, int x) {
   if (!T) {
     return;
   }
-  assert (T != (void *)-1l && T != (void *)-2l);
+  assert (T != (void *)-1L && T != (void *)-2L);
   switch (T->act) {
     case act_question_mark:
       tl_buf_add_string_q("?", -1, x);
@@ -1352,7 +1348,7 @@ void tl_buf_add_tree(struct tl_combinator_tree *T, int x) {
         x = 0;
       }
       if (T->flags & 2) {
-        tl_buf_add_string_q((char *)T->data, -1, x);
+        tl_buf_add_string_q(static_cast<char *>(T->data), -1, x);
       } else {
         tl_type *t = reinterpret_cast<tl_type *>(T->data);
         if (T->flags & 4) {
@@ -1373,7 +1369,7 @@ void tl_buf_add_tree(struct tl_combinator_tree *T, int x) {
       return;
     case act_field:
       if (T->data) {
-        tl_buf_add_string_q((char *)T->data, -1, x);
+        tl_buf_add_string_q(static_cast<char *>(T->data), -1, x);
         x = 0;
         tl_buf_add_string_q(":", -1, 0);
       }
@@ -1385,14 +1381,15 @@ void tl_buf_add_tree(struct tl_combinator_tree *T, int x) {
       tl_buf_add_tree(T->right, 1);
       return;
     case act_var: {
-      if (T->data == (void *)-1l) {
+      if (T->data == (void *)-1L) {
         return;
       }
       tl_combinator_tree *v = reinterpret_cast<tl_combinator_tree *>(T->data);
-      tl_buf_add_string_q((char *)v->data, -1, x);
+      tl_buf_add_string_q(static_cast<char *>(v->data), -1, x);
       if (T->type == type_num && T->type_flags) {
-        static char _buf[30];
-        sprintf(_buf, "+%lld", T->type_flags);
+        const size_t _buf_size = 30;
+        static char _buf[_buf_size];
+        snprintf(_buf, _buf_size, "+%lld", T->type_flags);
         tl_buf_add_string_q(_buf, -1, 0);
       }
     }
@@ -1417,17 +1414,19 @@ void tl_buf_add_tree(struct tl_combinator_tree *T, int x) {
       tl_buf_add_tree(T->right, 0);
       return;
     case act_nat_const: {
-      static char _buf[30];
-      snprintf(_buf, 29, "%lld", T->type_flags);
+      const size_t _buf_size = 30;
+      static char _buf[_buf_size];
+      snprintf(_buf, _buf_size, "%lld", T->type_flags);
       tl_buf_add_string_q(_buf, -1, x);
       return;
     }
     case act_opt_field: {
       tl_combinator_tree *v = reinterpret_cast<tl_combinator_tree *>(T->left->data);
-      tl_buf_add_string_q((char *)v->data, -1, x);
+      tl_buf_add_string_q(static_cast<char *>(v->data), -1, x);
       tl_buf_add_string_q(".", -1, 0);
-      static char _buf[30];
-      sprintf(_buf, "%lld", T->left->type_flags);
+      const size_t _buf_size = 30;
+      static char _buf[_buf_size];
+      snprintf(_buf, _buf_size, "%lld", T->left->type_flags);
       tl_buf_add_string_q(_buf, -1, 0);
       tl_buf_add_string_q("?", -1, 0);
       tl_buf_add_tree(T->right, 0);
@@ -1481,8 +1480,9 @@ void tl_print_combinator(struct tl_constructor *c) {
     }
   }
   tl_buf_add_string_nospace(c->real_id ? c->real_id : c->id, -1);
-  static char _buf[10];
-  sprintf(_buf, "#%08x", c->name);
+  const size_t _buf_size = 10;
+  static char _buf[_buf_size];
+  snprintf(_buf, _buf_size, "#%08x", c->name);
   tl_buf_add_string_nospace(_buf, -1);
   tl_buf_add_tree(c->left, 1);
   tl_buf_add_string("=", -1);
@@ -1551,7 +1551,7 @@ struct tl_combinator_tree *tl_union(struct tl_combinator_tree *L, struct tl_comb
     case type_num_value:
       if (R->type != type_num_value && R->type != type_num) {
         TL_ERROR ("Union: type mistmatch\n");
-        return 0;
+        return nullptr;
       }
       free(v);
       R->type_flags += L->type_flags;
@@ -1560,7 +1560,7 @@ struct tl_combinator_tree *tl_union(struct tl_combinator_tree *L, struct tl_comb
     case type_list:
       if (R->type != type_list_item) {
         TL_ERROR ("Union: type mistmatch\n");
-        return 0;
+        return nullptr;
       }
       v->type = type_list;
       v->act = act_union;
@@ -1568,24 +1568,24 @@ struct tl_combinator_tree *tl_union(struct tl_combinator_tree *L, struct tl_comb
     case type_type:
       if (L->type_len == 0) {
         TL_ERROR ("Arguments number exceeds type arity\n");
-        return 0;
+        return nullptr;
       }
       if (R->type != type_num && R->type != type_type && R->type != type_num_value) {
         TL_ERROR ("Union: type mistmatch\n");
-        return 0;
+        return nullptr;
       }
       if (R->type_len < 0) {
         if (!tl_finish_subtree(R)) {
-          return 0;
+          return nullptr;
         }
       }
       if (R->type_len > 0) {
         TL_ERROR ("Argument type must have full number of arguments\n");
-        return 0;
+        return nullptr;
       }
       if (L->type_len > 0 && ((L->type_flags & 1) != (R->type == type_num || R->type == type_num_value))) {
         TL_ERROR ("Argument types mistmatch: L->type_flags = %lld, R->type = %s\n", L->flags, TL_TYPE(R->type));
-        return 0;
+        return nullptr;
       }
       v->type = type_type;
       v->act = act_arg;
@@ -1594,7 +1594,7 @@ struct tl_combinator_tree *tl_union(struct tl_combinator_tree *L, struct tl_comb
       return v;
     default:
       assert (0);
-      return 0;
+      return nullptr;
   }
 }
 
@@ -1648,9 +1648,8 @@ struct tl_combinator_tree *tl_parse_subexpr(struct tree *T, int s) {
   assert (T->type == type_subexpr);
   assert (T->nc >= 1);
   vkprintf(2, "tl_parse_subexpr: s = %d\n", s);
-  int i;
   TL_INIT (L);
-  for (i = 0; i < T->nc; i++) {
+  for (int i = 0; i < T->nc; i++) {
     TL_TRY (tl_parse_any_term(T->c[i], s), L);
     s = 0;
   }
@@ -1661,9 +1660,8 @@ struct tl_combinator_tree *tl_parse_expr(struct tree *T, int s) {
   assert (T->type == type_expr);
   assert (T->nc >= 1);
   vkprintf(2, "tl_parse_expr: s = %d\n", s);
-  int i;
   TL_INIT (L);
-  for (i = 0; i < T->nc; i++) {
+  for (int i = 0; i < T->nc; i++) {
     TL_TRY (tl_parse_subexpr(T->c[i], s), L);
     s = 0;
   }
@@ -1684,9 +1682,8 @@ struct tl_combinator_tree *tl_parse_nat_const(struct tree *T, int s) {
   L = alloc_ctree_node();
   L->act = act_nat_const;
   L->type = type_num_value;
-  int i;
   long long x = 0;
-  for (i = 0; i < T->len; i++) {
+  for (int i = 0; i < T->len; i++) {
     x = x * 10 + T->text[i] - '0';
   }
   L->type_flags = x;
@@ -1735,7 +1732,7 @@ struct tl_combinator_tree *tl_parse_ident(struct tree *T, int s) {
     assert (c->type);
     if (c->type->constructors_num != 1) {
       TL_ERROR ("Constructor can be used only if it is the only constructor of the type\n");
-      return 0;
+      return nullptr;
     }
     c->type->flags |= 1;
     L = alloc_ctree_node();
@@ -1820,8 +1817,7 @@ struct tl_combinator_tree *tl_parse_opt_args(struct tree *T) {
     TL_FAIL;
   }
 
-  int i;
-  for (i = 0; i < T->nc - 1; i++) {
+  for (int i = 0; i < T->nc - 1; i++) {
     if (T->c[i]->type != type_var_ident) {
       TL_ERROR ("Variable name expected\n");
       TL_FAIL;
@@ -1833,11 +1829,11 @@ struct tl_combinator_tree *tl_parse_opt_args(struct tree *T) {
   }
   TL_INIT (H);
 //  for (i = T->nc - 2; i >= (T->nc >= 2 ? 0 : -1); i--) {
-  for (i = 0; i <= T->nc - 2; i++) {
+  for (int i = 0; i <= T->nc - 2; i++) {
     TL_INIT (S);
     S = alloc_ctree_node();
     S->left = (i == T->nc - 2) ? R : tl_tree_dup(R);
-    S->right = 0;
+    S->right = nullptr;
     S->type = type_list_item;
     S->type_len = 0;
     S->act = act_field;
@@ -1860,7 +1856,7 @@ struct tl_combinator_tree *tl_parse_args2(struct tree *T) {
   TL_INIT (R);
   TL_INIT (L);
   int x = 0;
-  char *field_name = 0;
+  char *field_name = nullptr;
   if (T->c[x]->type == type_var_ident_opt || T->c[x]->type == type_var_ident) {
     field_name = mystrdup(T->c[x]->text, T->c[x]->len);
     if (!tl_add_field(field_name)) {
@@ -1909,7 +1905,7 @@ struct tl_combinator_tree *tl_parse_args2(struct tree *T) {
   H->type = type_list_item;
   H->act = act_field;
   H->left = S;
-  H->right = 0;
+  H->right = nullptr;
   H->data = field_name;
   H->type_len = 0;
 
@@ -1951,9 +1947,8 @@ struct tl_combinator_tree *tl_parse_args134(struct tree *T) {
     E->type = type_type;
     E->act = act_opt_field;
     E->left = tl_parse_ident(T->c[last]->c[0], 0);
-    int i;
     long long x = 0;
-    for (i = 0; i < T->c[last]->c[1]->len; i++) {
+    for (int i = 0; i < T->c[last]->c[1]->len; i++) {
       x = x * 10 + T->c[last]->c[1]->text[i] - '0';
     }
     E->left->type_flags = x;
@@ -1963,8 +1958,7 @@ struct tl_combinator_tree *tl_parse_args134(struct tree *T) {
     R = E;
     last--;
   }
-  int i;
-  for (i = 0; i < last; i++) {
+  for (int i = 0; i < last; i++) {
     if (T->c[i]->type != type_var_ident && T->c[i]->type != type_var_ident_opt) {
       TL_ERROR ("Variable name expected\n");
       TL_FAIL;
@@ -1976,15 +1970,15 @@ struct tl_combinator_tree *tl_parse_args134(struct tree *T) {
   }
   TL_INIT (H);
 //  for (i = T->nc - 2; i >= (T->nc >= 2 ? 0 : -1); i--) {
-  for (i = (last >= 0 ? 0 : -1); i <= last; i++) {
+  for (int i = (last >= 0 ? 0 : -1); i <= last; i++) {
     TL_INIT (S);
     S = alloc_ctree_node();
     S->left = (i == last) ? R : tl_tree_dup(R);
-    S->right = 0;
+    S->right = nullptr;
     S->type = type_list_item;
     S->type_len = 0;
     S->act = act_field;
-    S->data = i >= 0 ? mystrdup(T->c[i]->text, T->c[i]->len) : 0;
+    S->data = i >= 0 ? mystrdup(T->c[i]->text, T->c[i]->len) : nullptr;
     if (excl) {
       S->flags |= FLAG_EXCL;
     }
@@ -1993,14 +1987,15 @@ struct tl_combinator_tree *tl_parse_args134(struct tree *T) {
         TL_ERROR ("Duplicate field name %s\n", (char *)S->data);
         TL_FAIL;
       }
-      vkprintf(2, "Adding field %s\n", (char *)S->data);
+      vkprintf(2, "Adding field %s\n", static_cast<char *>(S->data));
     }
     if (tt >= 0) {
       //assert (S->data);
       char *name = reinterpret_cast<char *>(S->data);
       if (!name) {
-        static char s[20];
-        sprintf(s, "%lld", lrand48() * (1ll << 32) + lrand48());
+        const size_t s_size = 20;
+        static char s[s_size];
+        snprintf(s, s_size, "%lld", lrand48() * (1LL << 32) + lrand48());
         name = s;
       }
       struct tl_var *v = tl_add_var(name, S, tt);
@@ -2031,7 +2026,7 @@ struct tl_combinator_tree *tl_parse_args(struct tree *T) {
       return tl_parse_args134(T->c[0]);
     default:
       assert (0);
-      return 0;
+      return nullptr;
   }
 }
 
@@ -2081,8 +2076,7 @@ struct tl_combinator_tree *tl_parse_result_type(struct tree *T) {
     L->type_flags = t->params_types;
     L->data = t;
 
-    int i;
-    for (i = 1; i < T->nc; i++) {
+    for (int i = 1; i < T->nc; i++) {
       TL_TRY (tl_parse_any_term(T->c[i], 0), L);
       assert (L->right);
       assert (L->right->type == type_num || L->right->type == type_num_value || (L->right->type == type_type && L->right->type_len == 0));
@@ -2227,8 +2221,8 @@ void change_var_ptrs(struct tl_combinator_tree *O, struct tl_combinator_tree *D,
 }
 
 tl_combinator_tree *change_first_var(struct tl_combinator_tree *O, struct tl_combinator_tree **X, struct tl_combinator_tree *Y) {
-  auto *minus_one = reinterpret_cast<tl_combinator_tree *>(-1l);
-  auto *minus_two = reinterpret_cast<tl_combinator_tree *>(-2l);
+  auto *minus_one = reinterpret_cast<tl_combinator_tree *>(-1L);
+  auto *minus_two = reinterpret_cast<tl_combinator_tree *>(-2L);
   if (!O) {
     return minus_one;
   };
@@ -2265,7 +2259,7 @@ tl_combinator_tree *change_first_var(struct tl_combinator_tree *O, struct tl_com
   struct tl_combinator_tree *t;
   t = change_first_var(O->left, X, Y);
   if (!t) {
-    return 0;
+    return nullptr;
   }
   if (t == minus_one) {
     t = change_first_var(O->right, X, Y);
@@ -2309,7 +2303,7 @@ void check_nat_val(struct tl_var_value v) {
   if (L->type == type_type) {
     return;
   }
-  while (1) {
+  while (true) {
     if (L->type == type_num_value) {
       if (x + L->type_flags < 0) {
         __tok = 0;
@@ -2345,7 +2339,7 @@ struct tl_combinator_tree *reduce_type(struct tl_combinator_tree *A, struct tl_t
     assert (A->type_flags == t->params_types);
     A->act = act_type;
     A->type = type_type;
-    A->left = A->right = 0;
+    A->left = A->right = nullptr;
     A->data = t;
     return A;
   }
@@ -2354,8 +2348,8 @@ struct tl_combinator_tree *reduce_type(struct tl_combinator_tree *A, struct tl_t
 }
 
 struct tl_combinator_tree *change_value_var(struct tl_combinator_tree *O, tree_var_value_t **X) {
-  auto *minus_one = reinterpret_cast<tl_combinator_tree *>(-1l);
-  auto *minus_two = reinterpret_cast<tl_combinator_tree *>(-2l);
+  auto *minus_one = reinterpret_cast<tl_combinator_tree *>(-1L);
+  auto *minus_two = reinterpret_cast<tl_combinator_tree *>(-2L);
   if (!O) {
     return minus_two;
   };
@@ -2383,12 +2377,12 @@ struct tl_combinator_tree *change_value_var(struct tl_combinator_tree *O, tree_v
   struct tl_combinator_tree *t;
   t = change_value_var(O->left, X);
   if (!t) {
-    return 0;
+    return nullptr;
   }
   if (t == minus_one) {
     t = change_value_var(O->right, X);
     if (!t) {
-      return 0;
+      return nullptr;
     }
     if (t == minus_one) {
       return minus_one;
@@ -2403,7 +2397,7 @@ struct tl_combinator_tree *change_value_var(struct tl_combinator_tree *O, tree_v
   }
   t = change_value_var(O->right, X);
   if (!t) {
-    return 0;
+    return nullptr;
   }
   if (t == minus_one) {
     return O->left;
@@ -2480,8 +2474,7 @@ int tl_parse_declaration(struct tree *T, int fun) {
 
 int tl_parse_constr_declarations(struct tree *T) {
   assert (T->type == type_constr_declarations);
-  int i;
-  for (i = 0; i < T->nc; i++) {
+  for (int i = 0; i < T->nc; i++) {
     TL_TRY_PES (tl_parse_declaration(T->c[i], 0));
   }
   return 1;
@@ -2489,8 +2482,7 @@ int tl_parse_constr_declarations(struct tree *T) {
 
 int tl_parse_fun_declarations(struct tree *T) {
   assert (T->type == type_fun_declarations);
-  int i;
-  for (i = 0; i < T->nc; i++) {
+  for (int i = 0; i < T->nc; i++) {
     TL_TRY_PES (tl_parse_declaration(T->c[i], 1));
   }
   return 1;
@@ -2555,7 +2547,7 @@ int uniformize(struct tl_combinator_tree *L, struct tl_combinator_tree *R, tree_
       vkprintf(3, "Type mistmatch. Error\n");
       return 0;
     }
-    if (R->data == (void *)-1l || L->data == (void *)-1l) {
+    if (R->data == (void *)-1L || L->data == (void *)-1L) {
       return 1;
     }
     if (L->act == act_var) {
@@ -2589,12 +2581,12 @@ int uniformize(struct tl_combinator_tree *L, struct tl_combinator_tree *R, tree_
       return 0;
     }
     assert (R->type == type_num || R->type == type_num_value);
-    if (R->data == (void *)-1l || L->data == (void *)-1l) {
+    if (R->data == (void *)-1L || L->data == (void *)-1L) {
       return 1;
     }
     long long x = 0;
     struct tl_combinator_tree *K = L;
-    while (1) {
+    while (true) {
       x += K->type_flags;
       if (K->type == type_num_value) {
         break;
@@ -2617,7 +2609,7 @@ int uniformize(struct tl_combinator_tree *L, struct tl_combinator_tree *R, tree_
     }
     long long y = 0;
     struct tl_combinator_tree *M = R;
-    while (1) {
+    while (true) {
       y += M->type_flags;
       if (M->type == type_num_value) {
         break;
@@ -2684,7 +2676,7 @@ void tl_type_check(struct tl_type *t) {
   }
   for (i = 0; i < t->constructors_num; i++) {
     for (j = i + 1; j < t->constructors_num; j++) {
-      tree_var_value_t *v = 0;
+      tree_var_value_t *v = nullptr;
       if (check_constructors_equal(t->constructors[i]->right, t->constructors[j]->right, &v)) {
         t->flags |= 16;
       }
@@ -2742,7 +2734,7 @@ struct tl_program *tl_parse(struct tree *schema_tree) {
   __ok = 1;
   tree_act_tl_type(tl_type_tree, tl_type_check);
   if (!__ok) {
-    return 0;
+    return nullptr;
   }
   return tl_program_cur;
 }
@@ -2848,7 +2840,7 @@ void write_var_type_flags(long long flags) {
 }
 
 static inline int is_spec_type(void *data) {
-  return data && (!strcmp(((struct tl_type *)data)->id, "#") || !strcmp(((struct tl_type *)data)->id, "Type"));
+  return data && (!strcmp((static_cast<struct tl_type *>(data))->id, "#") || !strcmp((static_cast<struct tl_type *>(data))->id, "Type"));
 }
 
 void write_tree(struct tl_combinator_tree *T, int extra, tree_var_value_t **v, int *last_var);
@@ -3020,8 +3012,7 @@ void write_combinator(struct tl_constructor *c) {
 }
 
 void write_type_constructors(struct tl_type *t) {
-  int i;
-  for (i = 0; i < t->constructors_num; i++) {
+  for (int i = 0; i < t->constructors_num; i++) {
     write_combinator(t->constructors[i]);
   }
 }
@@ -3036,7 +3027,7 @@ void write_types(int f) {
     wint(TLS_SCHEMA_V4);
   }
   wint(0);
-  wint(time(0));
+  wint(time(nullptr));
   num = 0;
   wint(total_types_num);
   tree_act_tl_type(tl_type_tree, write_type);

@@ -18,10 +18,11 @@
 #include "common/resolver.h"
 
 char *stats_t::normalize_key(const char *key, const char *format, const char *prefix) noexcept {
-  static char result_start[1 << 10];
+  const size_t result_start_size = 1 << 10;
+  static char result_start[result_start_size];
   char *result = result_start;
-  int prefix_length = sprintf(result, "%s", prefix);
-  sprintf(result + prefix_length, format, key);
+  int prefix_length = snprintf(result, result_start_size, "%s", prefix);
+  snprintf(result + prefix_length, result_start_size - prefix_length, format, key);
   while (*result) {
     char c = *result;
     bool ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9');
@@ -216,9 +217,10 @@ void prepare_common_stats(stats_t *stats) {
 }
 
 static void get_cmdline(int my_pid, char *cmdline_buffer, int len) {
-  static char cmdline_file[100];
-  sprintf(cmdline_file, "/proc/%d/cmdline", my_pid);
-  FILE *f = fopen(cmdline_file, "rb");
+  const size_t cmd_line_file_size = 100;
+  static char cmd_line_file[cmd_line_file_size];
+  snprintf(cmd_line_file, cmd_line_file_size, "/proc/%d/cmdline", my_pid);
+  FILE *f = fopen(cmd_line_file, "rb");
   if (f) {
     int got = fread(cmdline_buffer, 1, len - 1, f);
     fclose(f);
