@@ -247,7 +247,6 @@ public:
 
   void replace_malloc(bool is_malloc_replaced_before) noexcept {
     php_assert(is_malloc_replaced_before == is_malloc_replaced_);
-    CriticalSectionGuard critical_section;
 
     if (!is_malloc_replaced_before) {
       last_malloc_replacement_backtrace_size_ = fast_backtrace(last_malloc_replacement_backtrace_.data(), last_malloc_replacement_backtrace_.size());
