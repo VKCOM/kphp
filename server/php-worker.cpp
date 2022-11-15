@@ -146,6 +146,7 @@ void PhpWorker::state_init_script() noexcept {
   if (php_script == nullptr) {
     php_script = new PhpScript(max_memory, 8 << 20);
   }
+  dl::init_critical_section();
   php_script->init(script, data);
   php_script->set_timeout(timeout);
   state = phpq_run;

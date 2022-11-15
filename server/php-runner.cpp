@@ -411,9 +411,6 @@ void PhpScript::query_answered() noexcept {
 }
 
 void PhpScript::run() noexcept {
-  is_running = true;
-  check_tl();
-
   if (data != nullptr) {
     http_query_data *http_data = data->http_data;
     if (http_data != nullptr) {
@@ -436,10 +433,16 @@ void PhpScript::run() noexcept {
   }
   assert (run_main->run != nullptr);
 
+  dl::enter_critical_section();
+  is_running = true;
   init_runtime_environment(data, run_mem, mem_size);
   if (sigsetjmp(timeout_handler, true) != 0) { // set up a timeout recovery point
     on_request_timeout_error(); // this call will not return (it changes the context)
   }
+  dl::leave_critical_section();
+  php_assert (dl::in_critical_section == 0); // To ensure that no critical section is left at the end of the initialization
+  check_tl();
+
   CurException = Optional<bool>{};
   run_main->run();
   if (CurException.is_null()) {

@@ -1724,8 +1724,6 @@ static void init_superglobals(const http_query_data &http_data, const rpc_query_
   v$_SERVER.set_value(string("argc"), v$argc);
 
   v$d$PHP_SAPI = php_sapi_name();
-
-  php_assert (dl::in_critical_section == 0);
 }
 
 static http_query_data empty_http_data;
@@ -2287,8 +2285,6 @@ static void init_runtime_libs() {
   init_string_buffer_lib(static_cast<int>(static_buffer_length_limit));
 
   init_interface_lib();
-
-  php_assert (dl::in_critical_section == 0);
 }
 
 static void free_interface_lib() {
@@ -2359,7 +2355,6 @@ void global_init_script_allocator() {
 }
 
 void init_runtime_environment(php_query_data *data, void *mem, size_t mem_size) {
-  dl::init_critical_section();
   dl::init_script_allocator(mem, mem_size);
   reset_global_interface_vars();
   init_runtime_libs();
