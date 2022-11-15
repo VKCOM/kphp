@@ -160,4 +160,73 @@ function test_bcmath_negative_zero() {
   #endif
 }
 
+function test_bcsqrt($nums) {
+  foreach ($nums as $num) {
+    echo bcsqrt($num), "\n";
+
+    for ($i = 0; $i < 30; ++$i) {
+      echo "num: $num; scale: $i; sqrt: ", bcsqrt($num, $i), "\n";
+    }
+  }
+}
+
+function test_bcsqrt_scale($num) {
+  echo bcsqrt($num), "\n";
+  bcscale(1);
+  echo bcsqrt($num), "\n";
+  echo bcsqrt($num, 0), "\n";
+  echo bcsqrt($num, 2), "\n";
+  echo bcsqrt($num, 3), "\n";
+  bcscale(2);
+  echo bcsqrt($num), "\n";
+  echo bcsqrt($num, 0), "\n";
+  echo bcsqrt($num, 1), "\n";
+  echo bcsqrt($num, 2), "\n";
+  echo bcsqrt($num, 3), "\n";
+  bcscale(3);
+  echo bcsqrt($num), "\n";
+  echo bcsqrt($num, 0), "\n";
+  echo bcsqrt($num, 1), "\n";
+  echo bcsqrt($num, 2), "\n";
+  echo bcsqrt($num, 3), "\n";
+  bcscale(4);
+  echo bcsqrt($num), "\n";
+  echo bcsqrt($num, 0), "\n";
+  echo bcsqrt($num, 1), "\n";
+  echo bcsqrt($num, 2), "\n";
+  echo bcsqrt($num, 3), "\n";
+  bcscale(0);
+}
+
+function gen_numbers($seed) {
+  $res = [];
+  foreach ([0.001, 0.01, 0.5, 3, 7, 10, 100, 1000, 10000, 100000, 1.0E+12] as $factor) {
+    $res[] = max($seed * $factor, 0.0001);
+  }
+  return $res;
+}
+
 test_bcmath_negative_zero();
+
+$low_nums = [-0, +0, 0, 0.12340463450737, 0.1234046, 0.123, 0.1, 0.0, 0., .0, 0.0001, 0.2, 0.2001, 0.000100000345, 00.01, 0.010305020100, 000.1000305020100];
+$mid_nums = ["", 1, 1.0, 1.00, 1.01, 1.001, 2, 2.0, 2.00, 2.01, 2.001, 2.0001, 2.00010003, 3, 4, 5, 6, 7, 8, 9,
+             9.12342135234234234, 9.12342135, 9.123, 9.1, 9.10, 9.100, 9.0, 9.00, 09.00, 009.00, 009.001, 9.00000001, 9.000000013445];
+$big_nums = [23984732141234, 2134143131, 341341341.132441, 341341341.132441, 34134134.324132441, 34134134.0000441, 34134134.00000, 341341340.00000, 341341340.00012];
+$math_constants = [M_PI, M_E, M_LOG2E, M_LOG10E, M_LN2, M_LN10, M_PI_2, M_PI_4, M_1_PI, M_2_PI, M_SQRTPI, M_2_SQRTPI, M_SQRT2, M_SQRT3, M_SQRT1_2, M_LNPI, M_EULER];
+
+test_bcsqrt($low_nums);
+test_bcsqrt($mid_nums);
+test_bcsqrt($big_nums);
+test_bcsqrt($math_constants);
+
+test_bcsqrt(gen_numbers(0.2346));
+test_bcsqrt(gen_numbers(0.7684576));
+test_bcsqrt(gen_numbers(0.0913244));
+test_bcsqrt(gen_numbers(0.0102004));
+test_bcsqrt(gen_numbers(0.89305972));
+test_bcsqrt(gen_numbers(M_PI));
+test_bcsqrt(gen_numbers(M_E));
+test_bcsqrt(gen_numbers(M_LOG2E));
+test_bcsqrt(gen_numbers(M_SQRT2));
+test_bcsqrt(gen_numbers(M_LNPI));
+test_bcsqrt_scale(417.134576345);
