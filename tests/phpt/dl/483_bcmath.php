@@ -198,6 +198,29 @@ function test_bcsqrt_scale($num) {
   bcscale(0);
 }
 
+function test_bcmod($nums) {
+  $count_outer = 0;
+
+  foreach ($nums as $divident) {
+    $divident = $count_outer++ % 2 ? -$divident : $divident;
+
+    $count_inner = 0;
+
+    foreach ($nums as $divisor) {
+      if ($divisor == 0) {
+        continue;
+      }
+
+      $divisor = $count_inner++ % 3 ? -$divisor : $divisor;
+      echo bcmod($divident, $divisor), "\n";
+
+      for ($i = 0; $i < 30; ++$i) {
+        echo bcmod($divident, $divisor, $i), "\n";
+      }
+    }
+  }
+}
+
 function gen_numbers($seed) {
   $res = [];
   foreach ([0.001, 0.01, 0.5, 3, 7, 10, 100, 1000, 10000, 100000, 1.0E+12] as $factor) {
@@ -230,3 +253,8 @@ test_bcsqrt(gen_numbers(M_LOG2E));
 test_bcsqrt(gen_numbers(M_SQRT2));
 test_bcsqrt(gen_numbers(M_LNPI));
 test_bcsqrt_scale(417.134576345);
+
+test_bcmod($low_nums);
+test_bcmod($mid_nums);
+test_bcmod($big_nums);
+test_bcmod($math_constants);

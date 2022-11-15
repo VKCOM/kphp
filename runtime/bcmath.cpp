@@ -77,6 +77,9 @@ std::pair<BcNum, bool> bc_parse_number_wrapper(const string &num) {
   return {bc_num, success};
 }
 
+static const BcNum ZERO_BC_NUM = bc_parse_number_wrapper(ZERO).first;
+static const BcNum ONE_BC_NUM = bc_parse_number_wrapper(ONE).first;
+
 static string bc_zero(int scale) {
   if (scale == 0) {
     return ZERO;
@@ -564,7 +567,7 @@ static string scale_num(const string &num, int64_t scale) {
   return num;
 }
 
-string f$bcmod(const string &lhs, const string &rhs, int64_t scale) {
+string f$bcmod(const string &lhs_str, const string &rhs_str, int64_t scale) {
   if (scale == std::numeric_limits<int64_t>::min()) {
     scale = bc_scale;
   }
@@ -573,65 +576,44 @@ string f$bcmod(const string &lhs, const string &rhs, int64_t scale) {
     scale = 0;
   }
 
-  if (lhs.empty()) {
-    return scale_num(ZERO, scale);
+  if (lhs_str.empty()) {
+    return bc_zero(scale);
   }
-  if (rhs.empty()) {
-    php_warning("Modulo by empty string in function bcmod");
+
+  auto [lhs, lhs_success] = bc_parse_number_wrapper(lhs_str);
+  if (!lhs_success) {
+    php_warning("First parameter \"%s\" in function bcmod is not a number", lhs.str.c_str());
     return ZERO;
   }
 
-  int lsign, lint, ldot, lfrac, lscale;
-  if (bc_parse_number(lhs, lsign, lint, ldot, lfrac, lscale) != 0) {
-    php_warning("First parameter \"%s\" in function bcmod is not an integer", lhs.c_str());
+  auto [rhs, rhs_success] = bc_parse_number_wrapper(rhs_str);
+  if (!rhs_success) {
+    php_warning("Second parameter \"%s\" in function bcmod is not a number", rhs.str.c_str());
     return ZERO;
   }
 
-  int rsign, rint, rdot, rfrac, rscale;
-  if (bc_parse_number(rhs, rsign, rint, rdot, rfrac, rscale) != 0) {
-    php_warning("Second parameter \"%s\" in function bcmod is not an integer", rhs.c_str());
-    return ZERO;
+  if (bc_comp_wrapper(rhs, ZERO_BC_NUM, rhs.n_scale) == 0) {
+    php_warning("bcmod(): Division by zero");
+    return {};
   }
 
-  long long mod = 0;
-  for (int i = rint; i < rdot; i++) {
-    mod = mod * 10 + rhs[i] - '0';
-  }
+  const int rscale = std::max(lhs.n_scale, rhs.n_scale + static_cast<int>(scale));
 
-  if (rdot - rint > 18 || mod == 0) {
-    php_warning("Second parameter \"%s\" in function bcmod is not a non zero integer less than 1e18 by absolute value", rhs.c_str());
-    return ZERO;
-  }
+  // result should have the same sign as lhs
+  const int result_sign = lhs.n_sign;
+  lhs.n_sign = 1;
+  rhs.n_sign = 1;
 
-  long long res = 0;
-  for (int i = lint; i < ldot; i++) {
-    res = res * 2;
-    if (res >= mod) {
-      res -= mod;
-    }
-    res = res * 5 + lhs[i] - '0';
-    while (res >= mod) {
-      res -= mod;
-    }
-  }
+  string div = bc_div_positive_wrapper(lhs, rhs, 0, 1);
+  BcNum x = bc_parse_number_wrapper(div).first;
 
-  char buffer[20];
-  int cur_pos = 20;
-  do {
-    buffer[--cur_pos] = (char)(res % 10 + '0');
-    res /= 10;
-  } while (res > 0);
+  string mul = bc_mul_wrapper(x, rhs, rscale, 1);
+  x = bc_parse_number_wrapper(mul).first;
 
-  if (lsign < 0) {
-    buffer[--cur_pos] = '-';
-  }
+  string sub = bc_sub_wrapper(lhs, x, rscale);
+  x = bc_parse_number_wrapper(sub).first;
 
-  string result{buffer + cur_pos, static_cast<string::size_type>(20 - cur_pos)};
-  if (bc_parse_number(result, lsign, lint, ldot, lfrac, lscale) != 0) {
-    php_warning("Something went wrong in bcmod: result expected to be an integer, got \"%s\"", result.c_str());
-    return ZERO;
-  }
-  return scale_num(result, scale);
+  return bc_div_positive_wrapper(x, ONE_BC_NUM, scale, result_sign);
 }
 
 string f$bcpow(const string &lhs, const string &rhs, int64_t scale) {
@@ -865,9 +847,7 @@ static bool bc_is_near_zero(const BcNum &num, int scale) {
 static const string ZERO_FIVE{"0.5"};
 static const string TEN{"10"};
 
-static const BcNum ZERO_BC_NUM = bc_parse_number_wrapper(ZERO).first;
 static const BcNum ZERO_FIVE_BC_NUM = bc_parse_number_wrapper(ZERO_FIVE).first;
-static const BcNum ONE_BC_NUM = bc_parse_number_wrapper(ONE).first;
 
 static std::pair<BcNum, int> bc_sqrt_calc_initial_guess(const BcNum &num, int cmp_with_one) {
   if (cmp_with_one < 0) {
