@@ -1,8 +1,8 @@
 <?php
 
-namespace Utils110;
+namespace Utils010;
 
-class UnreachableClass110 {
+class UnreachableClass010 {
     public int $x;
 
     public function getX(): int { return $this->x; }

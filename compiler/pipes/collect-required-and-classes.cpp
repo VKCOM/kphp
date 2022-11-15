@@ -190,6 +190,8 @@ private:
       }
       // here is the moment of parsing .modulite.yaml inside a dir
       if (ModulitePtr modulite = load_modulite_inside_dir(dir)) {
+        G->register_modulite(modulite);
+        dir->nested_files_modulite = modulite;
         require_all_deps_of_modulite(modulite);
       }
 
@@ -210,8 +212,6 @@ private:
       return {};
     }
 
-    ModulitePtr modulite;
-
     if (dir->has_composer_json) {
       // composer packages are implicit modulites "#vendorname/packagename" ("#" + json->name)
       // for instance, if a modulite in a project calls a function from a package, it's auto checked to be required
@@ -219,14 +219,17 @@ private:
       // but if it contains .modulite.yaml near composer.json, that yaml can manually declared exported functions
       ComposerJsonPtr composer_json = G->get_composer_json_at_dir(dir);
       kphp_assert(composer_json);
-      modulite = ModuliteData::create_from_composer_json(composer_json, dir->has_modulite_yaml);
+      ModulitePtr modulite = ModuliteData::create_from_composer_json(composer_json, dir->has_modulite_yaml);
 
       bool is_root = dir->full_dir_name == G->settings().composer_root.get();
       if (is_root || !modulite) {  // composer.json at project root is loaded, but not stored as a modulite
         return {};
       }
+      dir->nested_files_modulite = modulite;
+      return modulite;
+    }
 
-    } else if (dir->has_modulite_yaml && !dir->has_composer_json) {
+    if (dir->has_modulite_yaml) {
       // parse .modulite.yaml inside a regular dir
       // find the dir up the tree with .modulite.yaml; say, dir contains @msg/channels, with_parent expected to be @msg
       SrcDirPtr with_parent = dir;
@@ -235,25 +238,22 @@ private:
       }
       ModulitePtr parent = with_parent ? with_parent->nested_files_modulite : ModulitePtr{};
 
-      modulite = ModuliteData::create_from_modulite_yaml(dir->get_modulite_yaml_filename(), parent);
+      ModulitePtr modulite = ModuliteData::create_from_modulite_yaml(dir->get_modulite_yaml_filename(), parent);
       if (!modulite || modulite->modulite_name.empty()) {   // an error while parsing yaml, was already printed
         return {};
       }
-
-    } else {
-      // a dir doesn't contain a modulite.yaml file itself — but if it's nested into another, propagate from the above
-      // - VK/Messages/      it's dir->parent_dir, already inited
-      //   .modulite.yaml    @messages, already parsed
-      //   - Core/           it's dir, no .modulite.yaml => assign @messages here
-      if (dir->parent_dir) {
-        dir->nested_files_modulite = dir->parent_dir->nested_files_modulite;
-      }
-      return {};
+      dir->nested_files_modulite = modulite;
+      return modulite;
     }
 
-    G->register_modulite(modulite);
-    dir->nested_files_modulite = modulite;
-    return modulite;
+    // a dir doesn't contain a modulite.yaml file itself — but if it's nested into another, propagate from the above
+    // - VK/Messages/      it's dir->parent_dir, already inited
+    //   .modulite.yaml    @messages, already parsed
+    //   - Core/           it's dir, no .modulite.yaml => assign @messages here
+    if (dir->parent_dir) {
+      dir->nested_files_modulite = dir->parent_dir->nested_files_modulite;
+    }
+    return {};
   }
 
   // symbols listed in "export" in .modulite.yaml are also used for classes collecting

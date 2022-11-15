@@ -2,8 +2,8 @@ name: "@plain"
 namespace: ""
 
 export:
-  - "plainPublic1()"
-  - "plainPublic2()"
+  - "plainPublic1_111()"
+  - "plainPublic2_111()"
 
 force-internal:
 
@@ -12,4 +12,4 @@ require:
 
 allow-internal-access:
   "@feed":
-    - "plainHidden1()"
+    - "plainHidden1_111()"

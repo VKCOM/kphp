@@ -12,4 +12,4 @@ require_once 'kphp_tester_include.php';
 // now it works, because "export" from modulites are also considered in collect requires pass
 // this is quite important, because Modulite plugin auto-generates config from all sources,
 // and some of them may not be reachable at the moment of generation (some wip yet unused code)
-echo Utils110\Strings110::class, "\n";
+echo Utils010\Strings010::class, "\n";

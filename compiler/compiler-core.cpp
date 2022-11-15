@@ -357,7 +357,7 @@ LibPtr CompilerCore::register_lib(LibPtr lib) {
 ModulitePtr CompilerCore::register_modulite(ModulitePtr modulite) {
   TSHashTable<ModulitePtr, 1000>::HTNode *node = modulites_ht.at(vk::std_hash(modulite->modulite_name));
   AutoLocker<Lockable *> locker(node);
-  kphp_error(!node->data, fmt_format("Duplicate modulite {}, declared in:\n- {}\n- {}", modulite->modulite_name, modulite->yaml_file->relative_file_name, node->data->yaml_file->relative_file_name));
+  kphp_error(!node->data, fmt_format("Redeclaration of modulite {}, declared in:\n- {}\n- {}", modulite->modulite_name, modulite->yaml_file->relative_file_name, node->data->yaml_file->relative_file_name));
   node->data = modulite;
   return node->data;
 }
@@ -370,7 +370,7 @@ ModulitePtr CompilerCore::get_modulite(vk::string_view name) {
 ComposerJsonPtr CompilerCore::register_composer_json(ComposerJsonPtr composer_json) {
   TSHashTable<ComposerJsonPtr, 1000>::HTNode *node = composer_json_ht.at(vk::std_hash(composer_json->package_name));
   AutoLocker<Lockable *> locker(node);
-  kphp_error(!node->data, fmt_format("Duplicate composer package {}, declared in:\n- {}\n- {}", composer_json->package_name, composer_json->json_file->relative_file_name, node->data->json_file->relative_file_name));
+  kphp_error(!node->data, fmt_format("Redeclaration of composer package {}, declared in:\n- {}\n- {}", composer_json->package_name, composer_json->json_file->relative_file_name, node->data->json_file->relative_file_name));
   node->data = composer_json;
   kphp_assert(composer_json->json_file->dir);
   composer_json->json_file->dir->has_composer_json = true;

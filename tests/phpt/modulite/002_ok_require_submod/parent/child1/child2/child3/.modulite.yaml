@@ -2,7 +2,7 @@ name: "@parent/child1/child2/child3"
 namespace: ""
 
 export:
-  - "Child3"
+  - "Child3_002"
 
 force-internal:
 

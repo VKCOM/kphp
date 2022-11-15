@@ -1,0 +1,10 @@
+name: "@utils"
+namespace: "Utils010\\"
+
+export:
+  - "Strings010"
+  - "UnreachableClass010"
+  - "UnreachableNs\\AnotherUn010"
+
+require:
+  

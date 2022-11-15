@@ -41,6 +41,7 @@ struct ModuliteSymbol {
 };
 
 // represents structure of .modulite.yaml
+// IMPORTANT! keep this class and logic very close to ModuliteData in modulite-phpstan
 class ModuliteData {
   DEBUG_STRING_METHOD { return modulite_name; }
 

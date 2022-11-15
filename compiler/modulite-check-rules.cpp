@@ -29,6 +29,8 @@
  *
  * This file is for checking rules, after all yaml files have been loaded.
  * Parsing and validation of .modulite.yaml is implemented in another file, see `modulite-data.cpp`.
+ *
+ * IMPORTANT! keep this file and logic very close to ModuliteCheckRules in modulite-phpstan
  */
 
 
@@ -274,6 +276,7 @@ static bool does_require_another_modulite(ModulitePtr inside_m, ModulitePtr anot
 }
 
 
+// this class is close to ModuliteErrFormatter in modulite-phpstan
 class ModuliteErr {
   ModulitePtr inside_m;
   ModulitePtr another_m;
@@ -297,13 +300,13 @@ public:
     : inside_m(usage_context->modulite)
     , another_m(used_c->modulite)
     , usage_context(usage_context)
-    , desc(fmt_format("use {}", TermStringFormat::paint_bold(used_c->as_human_readable()))) {}
+    , desc(fmt_format("use {}", TermStringFormat::paint_bold(used_c->class_id ? used_c->class_id->as_human_readable() : used_c->as_human_readable()))) {}
 
   [[gnu::cold]] ModuliteErr(FunctionPtr usage_context, VarPtr field)
     : inside_m(usage_context->modulite)
     , another_m(field->class_id->modulite)
     , usage_context(usage_context)
-    , desc(fmt_format("use {}", TermStringFormat::paint_bold(field->as_human_readable()))) {}
+    , desc(fmt_format("use {}", TermStringFormat::paint_bold(field->class_id ? field->class_id->as_human_readable() : field->as_human_readable()))) {}
 
   [[gnu::cold]] ModuliteErr(FunctionPtr usage_context, const std::string &global_var_name)
     : inside_m(usage_context->modulite)

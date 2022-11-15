@@ -16,25 +16,25 @@ class Post003 {
         \Utils003\Strings003::hidden1();
         Hidden003::demo();
         self::forceHidden();
-        plainPublic1();
-        plainHidden1();
+        plainPublic1_003();
+        plainHidden1_003();
     }
 
     static function forceHidden() {
         if(0) Hidden003::demo();
         if(0) globalDemo();
         if(0) \Messages003\Core003\Core003::demo1();
-        if(0) plainHidden2();
+        if(0) plainHidden2_003();
     }
 
     static function demoRequireUnexported() {
-        require_once __DIR__ . '/../parent/child1/child2/child3/Child3.php';
-        \Child3::child3Func();
+        require_once __DIR__ . '/../parent/child1/child2/child3/Child3_003.php';
+        \Child3_003::child3Func();
         $self = new self;
         $self->printHidConst();
     }
 
     private function printHidConst() {
-        echo \Child3::HID, ' ', \Child3::$HID, "\n";
+        echo \Child3_003::HID, ' ', \Child3_003::$HID, "\n";
     }
 }

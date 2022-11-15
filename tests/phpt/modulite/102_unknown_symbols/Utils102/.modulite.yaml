@@ -18,7 +18,7 @@ require:
   - "\\GlobalC::method()"
 
 allow-internal-access:
-  "\\A":
-    - "\\A::method()"
-    - "\\A::DONT"
+  "\\A102":
+    - "\\A102::method()"
+    - "\\A102::DONT"
 

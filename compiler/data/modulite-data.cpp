@@ -35,6 +35,8 @@
  *
  * Note, that this file is only about parsing and validating .modulite.yaml.
  * Checking for rules is implemented in a separate file, see `modulite-check-rules.cpp`.
+ *
+ * IMPORTANT! keep this file and logic very close to ModuliteData in modulite-phpstan
  */
 
 
@@ -63,6 +65,7 @@ static const std::string EMPTY_STRING_RETURNED_WHEN_GOT_NONSTRING_IN_YAML;
   return TermStringFormat::paint_bold(static_cast<std::string>(s));
 }
 
+// IMPORTANT! keep this class and logic very close to ModuliteYamlParser in modulite-phpstan
 class ModuliteYamlParser {
   ModulitePtr out;
 
@@ -130,7 +133,7 @@ class ModuliteYamlParser {
     }
   }
 
-  void parse_yaml_force_internal_symbols(const YAML::Node &y_force_internal) {
+  void parse_yaml_force_internal(const YAML::Node &y_force_internal) {
     for (const auto &y : y_force_internal) {
       const std::string &y_name = as_string(y);
       out->force_internal.emplace_back(parse_any_scalar_symbol(y_name, y));
@@ -139,9 +142,8 @@ class ModuliteYamlParser {
 
   void parse_yaml_require(const YAML::Node &y_require) {
     for (const auto &y : y_require) {
-      const std::string &y_name = as_string(y);   // e.g. "@rpc" / "#flood-lib" / "\\id()" / "\\VK\\Post"
-      ModuliteSymbol s = parse_any_scalar_symbol(y_name, y);
-      out->require.emplace_back(s);
+      const std::string &y_name = as_string(y);
+      out->require.emplace_back(parse_any_scalar_symbol(y_name, y));
     }
   }
 
@@ -190,7 +192,7 @@ public:
 
     const auto &y_force_internal = y_file["force-internal"];
     if (y_force_internal && y_force_internal.IsSequence()) {
-      parse_yaml_force_internal_symbols(y_force_internal);
+      parse_yaml_force_internal(y_force_internal);
     } else if (y_force_internal && !y_force_internal.IsNull()) {
       fire_yaml_error(out, "'force-internal' has incorrect format", y_force_internal);
     }
@@ -361,14 +363,14 @@ void ModuliteData::resolve_symbol_from_yaml(ModuliteSymbol &s) {
       s.kind = ModuliteSymbol::kind_modulite;
       s.modulite = m_ref;
     } else {
-      fire_yaml_error(inside_m, fmt_format("{} not found", paint_bold(v)), s.line);
+      fire_yaml_error(inside_m, fmt_format("modulite {} not found", paint_bold(v)), s.line);
     }
     return;
   }
   
   // #composer-package
   if (v[0] == '#') {
-    if (ModulitePtr m_ref = G->get_modulite(s.ref_stringname)) {
+    if (ModulitePtr m_ref = G->get_modulite(v)) {
       s.kind = ModuliteSymbol::kind_modulite;
       s.modulite = m_ref;
     } else {
@@ -386,7 +388,7 @@ void ModuliteData::resolve_symbol_from_yaml(ModuliteSymbol &s) {
     // $global_var
     if (v[0] == '$') {
       s.kind = ModuliteSymbol::kind_global_var;
-      s.global_var = s.global_var.substr(1);
+      s.global_var = v.substr(1);
       return;
     }
     // relative_func() or \\global_func()
@@ -428,7 +430,7 @@ void ModuliteData::resolve_symbol_from_yaml(ModuliteSymbol &s) {
         s.kind = ModuliteSymbol::kind_global_var;
         s.global_var = vk::string_view(f->var->name);
       } else {
-        fire_yaml_error(inside_m, fmt_format("can't find static field {}::${}", paint_bold(c_fqn), paint_bold(local_name)), s.line);
+        fire_yaml_error(inside_m, fmt_format("can't find class field {}::${}", paint_bold(c_fqn), paint_bold(local_name)), s.line);
       }
       return;
     }

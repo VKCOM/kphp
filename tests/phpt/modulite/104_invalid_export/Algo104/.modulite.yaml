@@ -3,7 +3,7 @@ namespace: "\\Algo104"
 
 export:
   - "\\Utils104\\Strings104"
-  - "\\A"
+  - "\\AAA104"
 
 require:
   - "\\Utils104\\Strings104"

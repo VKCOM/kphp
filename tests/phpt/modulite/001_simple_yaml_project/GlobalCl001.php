@@ -1,6 +1,6 @@
 <?php
 
-class GlobalCl {
+class GlobalCl001 {
     const ZERO = 0;
     static public $state = 0;
     

@@ -8,5 +8,5 @@ function pingAllEngines() {
     $rep_folders = Engines\Messages\Folders\FoldersRep::createFoldersRep();
     $rep_folders->log();
 
-    if (0) echo MONOLITH_CONST;
+    if (0) echo MONOLITH_CONST_007;
 }

@@ -2,9 +2,9 @@ name: "@plain"
 namespace: ""
 
 export:
-  - "plainPublic1()"
-  - "plainPublic2()"
-  - "PLAIN_CONST_PUB"
+  - "plainPublic1_003()"
+  - "plainPublic2_003()"
+  - "PLAIN_CONST_PUB_003"
 
 force-internal:
 
@@ -13,11 +13,11 @@ require:
 
 allow-internal-access:
   "@feed":
-    - "plainHidden1()"
+    - "plainHidden1_003()"
   "\\Feed003\\Post003":
-    - "plainHidden2()"
+    - "plainHidden2_003()"
   "\\globalDemo()":
-    - "plainHidden1()"
-    - "plainHidden2()"
-    - "PLAIN_CONST_HID"
+    - "plainHidden1_003()"
+    - "plainHidden2_003()"
+    - "PLAIN_CONST_HID_003"
 

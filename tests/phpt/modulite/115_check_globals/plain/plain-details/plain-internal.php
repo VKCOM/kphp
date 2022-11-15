@@ -1,6 +1,6 @@
 <?php
 
-function internal() {
+function internal_115() {
     static $ss;
     $cb = function() {
     global $gg;

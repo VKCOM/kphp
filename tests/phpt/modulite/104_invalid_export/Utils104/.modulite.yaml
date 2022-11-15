@@ -8,7 +8,7 @@ export:
 
 force-internal:
   - "\\Utils104\\Strings104"
-  - "\\A::ONE"
+  - "\\AAA104::ONE"
   - "@algo"
 
 require:

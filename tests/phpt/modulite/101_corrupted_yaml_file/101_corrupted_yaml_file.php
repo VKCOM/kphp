@@ -5,7 +5,7 @@ KPHP_ENABLE_MODULITE=1
 /'export' has incorrect format/
 /require: "asdf"/
 /'require' has incorrect format/
-/Duplicate modulite @utils/
+/Redeclaration of modulite @utils/
 /- ""/
 /expected non-empty string/
 <?php

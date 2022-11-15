@@ -2,7 +2,7 @@ name: "@parent"
 namespace: ""
 
 export:
-  - "ParentFuncs"
+  - "ParentFuncs_002"
 
 force-internal:
 

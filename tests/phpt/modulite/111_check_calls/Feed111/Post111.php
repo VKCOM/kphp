@@ -9,8 +9,8 @@ class Post111 {
         \Utils111\Strings111::hidden1();
         Hidden111::demo();
         self::forceHidden();
-        plainPublic1();
-        plainHidden1();
+        plainPublic1_111();
+        plainHidden1_111();
     }
 
     static function forceHidden() {
@@ -20,9 +20,9 @@ class Post111 {
     }
 
     static function demoRequireUnexported() {
-        require_once __DIR__ . '/../parent/child1/child2/child3/Child3.php';
-        \Child3::child3Func();
-        \Child3::hidden3Func();
+        require_once __DIR__ . '/../parent/child1/child2/child3/Child3_111.php';
+        \Child3_111::child3Func();
+        \Child3_111::hidden3Func();
     }
 
     static function demoCallInternalGeneric() {
