@@ -165,7 +165,7 @@ function test_bcsqrt($nums) {
     echo bcsqrt($num), "\n";
 
     for ($i = 0; $i < 30; ++$i) {
-      echo "num: ", $num, "; scale: ", $i, "; sqrt: ", bcsqrt($num, $i), "\n";
+      echo "num: $num; scale: $i; sqrt: ", bcsqrt($num, $i), "\n";
     }
   }
 }
