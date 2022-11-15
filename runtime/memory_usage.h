@@ -160,6 +160,6 @@ int64_t f$estimate_memory_usage(const class_instance<T> &value) {
 
 template<typename Int, typename>
 array<int64_t> f$get_global_vars_memory_stats(Int lower_bound) {
-  array<int64_t> get_global_vars_memory_stats_impl(int64_t);
+  array<int64_t> get_global_vars_memory_stats_impl(int64_t) noexcept;
   return get_global_vars_memory_stats_impl(lower_bound);
 }

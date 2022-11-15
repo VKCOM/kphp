@@ -674,7 +674,7 @@ void check_stack_overflow() {
 
 //C interface
 void init_handlers() {
-  constexpr size_t SEGV_STACK_SIZE = MINSIGSTKSZ + 65536;
+  constexpr size_t SEGV_STACK_SIZE = 65536;
   static std::array<char, SEGV_STACK_SIZE> buffer;
 
   stack_t segv_stack;

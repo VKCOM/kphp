@@ -28,6 +28,7 @@ if(APPLE)
     set(OPENSSL_ROOT_DIR "/usr/local/opt/openssl" CACHE INTERNAL "")
 endif()
 
+set(OPENSSL_USE_STATIC_LIBS TRUE)
 find_package(OpenSSL REQUIRED)
 include_directories(${OPENSSL_INCLUDE_DIR})
 

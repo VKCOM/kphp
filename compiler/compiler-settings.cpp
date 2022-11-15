@@ -159,6 +159,9 @@ void append_apple_options(std::string &cxx_flags, std::string &ld_flags) noexcep
 #endif
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 std::string calc_cxx_flags_sha256(vk::string_view cxx, vk::string_view cxx_flags_line) noexcept {
   SHA256_CTX sha256;
   SHA256_Init(&sha256);
@@ -176,6 +179,8 @@ std::string calc_cxx_flags_sha256(vk::string_view cxx, vk::string_view cxx_flags
   }
   return hash_str;
 }
+
+#pragma GCC diagnostic pop
 
 } // namespace
 
@@ -309,7 +314,7 @@ void CompilerSettings::init() {
   ld_flags.value_ = extra_ld_flags.get();
   append_curl(cxx_default_flags, ld_flags.value_);
   append_apple_options(cxx_default_flags, ld_flags.value_);
-  std::vector<vk::string_view> external_static_libs{"pcre", "re2", "yaml-cpp", "h3", "ssl", "z", "zstd", "nghttp2", "kphp-timelib"};
+  std::vector<vk::string_view> external_static_libs{"pcre", "re2", "yaml-cpp", "h3", "z", "zstd", "nghttp2", "kphp-timelib"};
 
 #ifdef KPHP_TIMELIB_LIB_DIR
   ld_flags.value_ += " -L" KPHP_TIMELIB_LIB_DIR;
@@ -326,7 +331,7 @@ void CompilerSettings::init() {
   ld_flags.value_ += " /opt/homebrew/lib/libucontext.a";
 #endif
 
-  std::vector<vk::string_view> external_libs{"pthread", "crypto", "m", "dl"};
+  std::vector<vk::string_view> external_libs{"pthread", "m", "dl"};
 
 #ifdef PDO_DRIVER_MYSQL
 #ifdef PDO_LIBS_STATIC_LINKING
@@ -335,6 +340,9 @@ void CompilerSettings::init() {
   external_libs.emplace_back("mysqlclient");
 #endif
 #endif
+
+  external_static_libs.emplace_back("ssl");
+  external_static_libs.emplace_back("crypto");
 
 #if defined(__APPLE__)
   append_if_doesnt_contain(ld_flags.value_, external_static_libs, "-l");

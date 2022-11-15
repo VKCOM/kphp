@@ -29,7 +29,7 @@ void init_mutex(pthread_mutex_t *mutex) {
   int err;
   err = pthread_mutexattr_init(&attr);
   assert (err == 0 && "failed to init mutexattr");
-  err = pthread_mutexattr_setrobust_np(&attr, PTHREAD_MUTEX_ROBUST_NP);
+  err = pthread_mutexattr_setrobust(&attr, PTHREAD_MUTEX_ROBUST_NP);
   assert (err == 0 && "failed to setrobust_np for mutex");
   err = pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED);
   assert (err == 0 && "failed to setpshared for mutex");
@@ -101,7 +101,7 @@ void shared_data_lock(shared_data_t *data) {
     if (err == EOWNERDEAD) {
       vkprintf(1, "owner of shared memory mutex is dead. trying to make mutex and memory consitent\n");
 
-      err = pthread_mutex_consistent_np(&data->main_mutex);
+      err = pthread_mutex_consistent(&data->main_mutex);
       assert (err == 0 && "failed to make mutex constistent_np");
     } else {
       assert (0 && "unknown mutex lock error");
