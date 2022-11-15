@@ -181,7 +181,6 @@ void PhpScript::init(script_t *script, php_query_data *data_to_set) noexcept {
   queries_cnt = 0;
   long_queries_cnt = 0;
 
-  dl::init_critical_section();
   query_stats_id++;
   memset(&query_stats, 0, sizeof(query_stats));
 
