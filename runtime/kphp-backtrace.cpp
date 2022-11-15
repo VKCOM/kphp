@@ -14,7 +14,7 @@
 
 std::forward_list<char **> KphpBacktrace::last_used_symbols_;
 
-KphpBacktrace::KphpBacktrace(void **raw_backtrace, int32_t size) noexcept {
+KphpBacktrace::KphpBacktrace(void *const *raw_backtrace, int32_t size) noexcept {
   dl::CriticalSectionGuard signal_critical_section;
   if ((symbols_begin_ = backtrace_symbols(raw_backtrace, size))) {
     symbols_end_ = symbols_begin_ + size;

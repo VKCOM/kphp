@@ -11,12 +11,15 @@
 
 #include "common/algorithms/find.h"
 #include "common/containers/final_action.h"
+#include "common/fast-backtrace.h"
 #include "common/macos-ports.h"
 #include "common/wrappers/likely.h"
 
 #include "runtime/critical_section.h"
+#include "runtime/kphp-backtrace.h"
 #include "runtime/memory_resource/dealer.h"
 #include "runtime/php_assert.h"
+#include "server/server-log.h"
 
 namespace dl {
 namespace {
@@ -244,6 +247,11 @@ public:
 
   void replace_malloc(bool is_malloc_replaced_before) noexcept {
     php_assert(is_malloc_replaced_before == is_malloc_replaced_);
+
+    if (!is_malloc_replaced_before) {
+      last_malloc_replacement_backtrace_size_ = fast_backtrace(last_malloc_replacement_backtrace_.data(), last_malloc_replacement_backtrace_.size());
+    }
+
     is_malloc_replaced_ = !is_malloc_replaced_;
   }
 
@@ -251,9 +259,15 @@ public:
     return is_malloc_replaced_;
   }
 
+  std::pair<void *const *, int> get_last_malloc_replacement_backtrace() const noexcept {
+    return {last_malloc_replacement_backtrace_.data(), last_malloc_replacement_backtrace_size_};
+  }
+
 private:
   MallocStateHolder() = default;
   bool is_malloc_replaced_{false};
+  std::array<void *, 128> last_malloc_replacement_backtrace_{};
+  int last_malloc_replacement_backtrace_size_{0};
 };
 
 } // namespace
@@ -268,6 +282,31 @@ void replace_malloc_with_script_allocator() noexcept {
 
 void rollback_malloc_replacement() noexcept {
   MallocStateHolder::get().replace_malloc(true);
+}
+
+void report_wrong_malloc_replacement_error() noexcept {
+  php_assert(dl::is_malloc_replaced() == false);
+  std::array<char, 1000> buf{'\0'};
+  const char *sep = ";\n";
+
+  auto [raw_backtrace, backtrace_size] = MallocStateHolder::get().get_last_malloc_replacement_backtrace();
+  KphpBacktrace demangler{raw_backtrace, backtrace_size};
+  size_t cur_len = 0;
+  for (const char *name : demangler.make_demangled_backtrace_range()) {
+    const size_t len = name ? strlen(name) : 0;
+    if (len == 0) {
+      continue;
+    }
+    if (cur_len + len + std::strlen(sep) + 1 > buf.size()) {
+      break;
+    }
+    std::strcat(buf.data(), name);
+    std::strcat(buf.data(), sep);
+    cur_len += len + std::strlen(sep);
+  }
+  log_server_critical("Malloc replacement was not rolled back.\n"
+                      "Stacktrace of last replacement:\n"
+                      "%s", buf.data());
 }
 
 MemoryReplacementGuard::MemoryReplacementGuard(memory_resource::unsynchronized_pool_resource &memory_resource, bool force_enable_disable) : force_enable_disable_(force_enable_disable) {

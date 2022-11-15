@@ -24,7 +24,7 @@ const char *level2str(ServerLog type) {
 }
 
 void write_log_server_impl(ServerLog type, const char *format, ...) noexcept {
-  std::array<char, 256> buffer{};
+  std::array<char, 2048> buffer{};
 
   va_list ap;
   va_start (ap, format);

@@ -13,7 +13,7 @@
 
 class KphpBacktrace : vk::not_copyable {
 public:
-  KphpBacktrace(void **raw_backtrace, int32_t size) noexcept;
+  KphpBacktrace(void *const *raw_backtrace, int32_t size) noexcept;
 
   auto make_demangled_backtrace_range(bool full_trace = false) noexcept {
     return vk::make_transform_iterator_range(
