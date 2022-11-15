@@ -2755,7 +2755,7 @@ Optional<array<mixed>> f$unpack(const string &pattern, const string &data) {
 
               const size_t buf_size = 20;
               char buf[buf_size];
-              value = string{buf, static_cast<string::size_type>(simd_uint64_to_string(value_byteordered, buf, buf_size) - buf)};
+              value = string{buf, static_cast<string::size_type>(simd_uint64_to_string(value_byteordered, buf) - buf)};
               data_pos += (int)sizeof(unsigned long long);
               break;
             }

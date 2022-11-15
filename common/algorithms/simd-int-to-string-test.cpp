@@ -13,22 +13,22 @@
 namespace {
 std::string int32_to_string(int32_t x) {
   std::array<char, 11> buffer{};
-  return {buffer.data(), simd_int32_to_string(x, buffer.data(), buffer.size())};
+  return {buffer.data(), simd_int32_to_string(x, buffer.data())};
 }
 
 std::string uint32_to_string(uint32_t x) {
   std::array<char, 10> buffer{};
-  return {buffer.data(), simd_uint32_to_string(x, buffer.data(), buffer.size())};
+  return {buffer.data(), simd_uint32_to_string(x, buffer.data())};
 }
 
 std::string int64_to_string(int64_t x) {
-  std::array<char, 20> buffer{};
-  return {buffer.data(), simd_int64_to_string(x, buffer.data(), buffer.size())};
+  std::array<char, 21> buffer{};
+  return {buffer.data(), simd_int64_to_string(x, buffer.data())};
 }
 
 std::string uint64_to_string(uint64_t x) {
   std::array<char, 20> buffer{};
-  return {buffer.data(), simd_uint64_to_string(x, buffer.data(), buffer.size())};
+  return {buffer.data(), simd_uint64_to_string(x, buffer.data())};
 }
 } // namespace
 

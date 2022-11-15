@@ -154,7 +154,7 @@ inline char *uint32_greater10000_less100000000_to_string(uint32_t value, char *o
 }
 } // namespace impl_
 
-char *simd_uint32_to_string(uint32_t value, char *out_buffer, [[maybe_unused]] size_t buffer_size) noexcept {
+char *simd_uint32_to_string(uint32_t value, char *out_buffer) noexcept {
   if (value < 10000U) {
     return impl_::uint32_less10000_to_string(value, out_buffer);
   }
@@ -183,16 +183,16 @@ char *simd_uint32_to_string(uint32_t value, char *out_buffer, [[maybe_unused]] s
   return out_buffer + 8;
 }
 
-char *simd_int32_to_string(int32_t value, char *out_buffer, size_t buffer_size) noexcept {
+char *simd_int32_to_string(int32_t value, char *out_buffer) noexcept {
   auto u = static_cast<uint32_t>(value);
   if (value < 0) {
     *out_buffer++ = '-';
     u = ~u + 1;
   }
-  return simd_uint32_to_string(u, out_buffer, buffer_size);
+  return simd_uint32_to_string(u, out_buffer);
 }
 
-char *simd_uint64_to_string(uint64_t value, char *out_buffer, [[maybe_unused]] size_t buffer_size) {
+char *simd_uint64_to_string(uint64_t value, char *out_buffer) {
   if (value < 10000U) {
     return impl_::uint32_less10000_to_string(static_cast<uint32_t>(value), out_buffer);
   }
@@ -260,13 +260,13 @@ char *simd_uint64_to_string(uint64_t value, char *out_buffer, [[maybe_unused]] s
   return out_buffer + 16;
 }
 
-char *simd_int64_to_string(int64_t value, char *out_buffer, size_t buffer_size) {
+char *simd_int64_to_string(int64_t value, char *out_buffer) {
   auto u = static_cast<uint64_t>(value);
   if (value < 0) {
     *out_buffer++ = '-';
     u = ~u + 1;
   }
-  return simd_uint64_to_string(u, out_buffer, buffer_size);
+  return simd_uint64_to_string(u, out_buffer);
 }
 
 #else
@@ -274,25 +274,31 @@ char *simd_int64_to_string(int64_t value, char *out_buffer, size_t buffer_size) 
 // todo anyone who wants to practice some low-level magic — welcome to implement a proper SIMD form with ARM intrinsics
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
+#include <array>
 
-char *simd_uint32_to_string(uint32_t value, char *out_buffer, size_t buffer_size) noexcept {
-  int n = snprintf(out_buffer, buffer_size, "%u", value);
-  return out_buffer + n;
+template <size_t S, typename T>
+inline int simd_value_to_string(char *out_buffer, const char* format, T value) noexcept {
+  std::array<char, S> buffer{};
+  int n = snprintf(buffer.data(), S, format, value);
+  memcpy(buffer.data(), out_buffer, n);
+  return n;
 }
 
-char *simd_int32_to_string(int32_t value, char *out_buffer, size_t buffer_size) noexcept {
-  int n = snprintf(out_buffer, buffer_size, "%d", value);
-  return out_buffer + n;
+char *simd_uint32_to_string(uint32_t value, char *out_buffer) noexcept {
+  return out_buffer + simd_value_to_string<11>(out_buffer, "%u", value);;
 }
 
-char *simd_uint64_to_string(uint64_t value, char *out_buffer, size_t buffer_size) {
-  int n = snprintf(out_buffer, buffer_size, "%llu", value);
-  return out_buffer + n;
+char *simd_int32_to_string(int32_t value, char *out_buffer) noexcept {
+  return out_buffer + simd_value_to_string<12>(out_buffer, "%d", value);
 }
 
-char *simd_int64_to_string(int64_t value, char *out_buffer, size_t buffer_size) {
-  int n = snprintf(out_buffer, buffer_size, "%lld", value);
-  return out_buffer + n;
+char *simd_uint64_to_string(uint64_t value, char *out_buffer) {
+  return out_buffer + simd_value_to_string<20>(out_buffer, "%llu", value);
+}
+
+char *simd_int64_to_string(int64_t value, char *out_buffer) {
+  return out_buffer + simd_value_to_string<21>(out_buffer, "%lld", value);
 }
 
 #endif
