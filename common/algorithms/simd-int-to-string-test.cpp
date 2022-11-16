@@ -22,7 +22,7 @@ std::string uint32_to_string(uint32_t x) {
 }
 
 std::string int64_to_string(int64_t x) {
-  std::array<char, 21> buffer{};
+  std::array<char, 20> buffer{};
   return {buffer.data(), simd_int64_to_string(x, buffer.data())};
 }
 

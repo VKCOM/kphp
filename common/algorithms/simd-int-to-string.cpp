@@ -281,7 +281,7 @@ template <size_t S, typename T>
 inline int simd_value_to_string(char *out_buffer, const char* format, T value) noexcept {
   std::array<char, S> buffer{};
   int n = snprintf(buffer.data(), S, format, value);
-  memcpy(buffer.data(), out_buffer, n);
+  memcpy(out_buffer, buffer.data(), n);
   return n;
 }
 
@@ -294,7 +294,7 @@ char *simd_int32_to_string(int32_t value, char *out_buffer) noexcept {
 }
 
 char *simd_uint64_to_string(uint64_t value, char *out_buffer) {
-  return out_buffer + simd_value_to_string<20>(out_buffer, "%llu", value);
+  return out_buffer + simd_value_to_string<21>(out_buffer, "%llu", value);
 }
 
 char *simd_int64_to_string(int64_t value, char *out_buffer) {
