@@ -20,6 +20,8 @@ string bc_zero(int scale) {
   return result;
 }
 
+// legacy code is isolated within this namespace;
+// it would be nice to gradually rewrite it with some kind of OOP-style
 namespace legacy {
 
 //parse a number into parts, returns scale on success and -1 on error
