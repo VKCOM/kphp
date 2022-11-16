@@ -23,7 +23,7 @@ string bc_zero(int scale) {
 namespace legacy {
 
 //parse a number into parts, returns scale on success and -1 on error
-int bc_parse_number(const string &s, int &lsign, int &lint, int &ldot, int &lfrac, int &lscale) {
+int bc_parse_number_impl(const string &s, int &lsign, int &lint, int &ldot, int &lfrac, int &lscale) {
   int i = 0;
   lsign = 1;
   if (s[i] == '-' || s[i] == '+') {
@@ -72,7 +72,7 @@ int bc_parse_number(const string &s, int &lsign, int &lint, int &ldot, int &lfra
   return lscale;
 }
 
-int bc_comp(const char *lhs, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rint, int rdot, int rfrac, int rscale, int scale) {
+int bc_comp_impl(const char *lhs, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rint, int rdot, int rfrac, int rscale, int scale) {
   int llen = ldot - lint;
   int rlen = rdot - rint;
 
@@ -254,7 +254,7 @@ string bc_sub_positive(const char *lhs, int lint, int ldot, int lfrac, int lscal
   return bc_round(result.buffer(), resint, resdot, resfrac, resscale, scale, sign, 1);
 }
 
-string bc_mul_positive(const char *lhs, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rint, int rdot, int rfrac, int rscale, int scale, int sign) {
+string bc_mul_positive_impl(const char *lhs, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rint, int rdot, int rfrac, int rscale, int scale, int sign) {
   int llen = ldot - lint;
   int rlen = rdot - rint;
 
@@ -300,7 +300,7 @@ string bc_mul_positive(const char *lhs, int lint, int ldot, int lfrac, int lscal
   return bc_round(result.buffer(), resint, resdot, resfrac, resscale, scale, sign, 1);
 }
 
-string bc_div_positive(const char *lhs, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rint, int rdot, int rfrac, int rscale, int scale, int sign) {
+string bc_div_positive_impl(const char *lhs, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rint, int rdot, int rfrac, int rscale, int scale, int sign) {
   int llen = ldot - lint;
   int rlen = rdot - rint;
 
@@ -414,13 +414,13 @@ string bc_div_positive(const char *lhs, int lint, int ldot, int lfrac, int lscal
   return bc_round(result.buffer(), resint, resdot, resfrac, resscale, scale, sign, 0);
 }
 
-string bc_add(const char *lhs, int lsign, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rsign, int rint, int rdot, int rfrac, int rscale, int scale) {
+string bc_add_impl(const char *lhs, int lsign, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rsign, int rint, int rdot, int rfrac, int rscale, int scale) {
   if (lsign > 0 && rsign > 0) {
     return bc_add_positive(lhs, lint, ldot, lfrac, lscale, rhs, rint, rdot, rfrac, rscale, scale, 1);
   }
 
   if (lsign > 0 && rsign < 0) {
-    if (bc_comp(lhs, lint, ldot, lfrac, lscale, rhs, rint, rdot, rfrac, rscale, 1000000000) >= 0) {
+    if (bc_comp_impl(lhs, lint, ldot, lfrac, lscale, rhs, rint, rdot, rfrac, rscale, 1000000000) >= 0) {
       return bc_sub_positive(lhs, lint, ldot, lfrac, lscale, rhs, rint, rdot, rfrac, rscale, scale, 1);
     } else {
       return bc_sub_positive(rhs, rint, rdot, rfrac, rscale, lhs, lint, ldot, lfrac, lscale, scale, -1);
@@ -428,7 +428,7 @@ string bc_add(const char *lhs, int lsign, int lint, int ldot, int lfrac, int lsc
   }
 
   if (lsign < 0 && rsign > 0) {
-    if (bc_comp(lhs, lint, ldot, lfrac, lscale, rhs, rint, rdot, rfrac, rscale, 1000000000) <= 0) {
+    if (bc_comp_impl(lhs, lint, ldot, lfrac, lscale, rhs, rint, rdot, rfrac, rscale, 1000000000) <= 0) {
       return bc_sub_positive(rhs, rint, rdot, rfrac, rscale, lhs, lint, ldot, lfrac, lscale, scale, 1);
     } else {
       return bc_sub_positive(lhs, lint, ldot, lfrac, lscale, rhs, rint, rdot, rfrac, rscale, scale, -1);
@@ -453,39 +453,39 @@ struct BcNum {
   string str;     // actual string representation
 };
 
-std::pair<BcNum, bool> bc_parse_number_wrapper(const string &num) {
+std::pair<BcNum, bool> bc_parse_number(const string &num) {
   BcNum bc_num;
   bc_num.str = num;
-  bool success = legacy::bc_parse_number(num, bc_num.n_sign, bc_num.n_int, bc_num.n_dot, bc_num.n_frac, bc_num.n_scale) >= 0;
+  bool success = legacy::bc_parse_number_impl(num, bc_num.n_sign, bc_num.n_int, bc_num.n_dot, bc_num.n_frac, bc_num.n_scale) >= 0;
   return {bc_num, success};
 }
 
-const BcNum ZERO_BC_NUM = bc_parse_number_wrapper(ZERO).first;
-const BcNum ONE_BC_NUM = bc_parse_number_wrapper(ONE).first;
+const BcNum ZERO_BC_NUM = bc_parse_number(ZERO).first;
+const BcNum ONE_BC_NUM = bc_parse_number(ONE).first;
 
-int bc_comp_wrapper(const BcNum &lhs, const BcNum &rhs, int scale) {
-  return legacy::bc_comp(lhs.str.c_str(), lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale,
-                         rhs.str.c_str(), rhs.n_int, rhs.n_dot, rhs.n_frac, rhs.n_scale, scale);
+int bc_comp(const BcNum &lhs, const BcNum &rhs, int scale) {
+  return legacy::bc_comp_impl(lhs.str.c_str(), lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale,
+                              rhs.str.c_str(), rhs.n_int, rhs.n_dot, rhs.n_frac, rhs.n_scale, scale);
 }
 
-string bc_mul_wrapper(const BcNum &lhs, const BcNum &rhs, int scale, int sign) {
-  return legacy::bc_mul_positive(lhs.str.c_str(), lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale,
-                                 rhs.str.c_str(), rhs.n_int, rhs.n_dot, rhs.n_frac, rhs.n_scale, scale, sign);
+string bc_mul_positive(const BcNum &lhs, const BcNum &rhs, int scale, int sign) {
+  return legacy::bc_mul_positive_impl(lhs.str.c_str(), lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale,
+                                      rhs.str.c_str(), rhs.n_int, rhs.n_dot, rhs.n_frac, rhs.n_scale, scale, sign);
 }
 
-string bc_div_positive_wrapper(const BcNum &lhs, const BcNum &rhs, int scale, int sign) {
-  return legacy::bc_div_positive(lhs.str.c_str(), lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale,
-                                 rhs.str.c_str(), rhs.n_int, rhs.n_dot, rhs.n_frac, rhs.n_scale, scale, sign);
+string bc_div_positive(const BcNum &lhs, const BcNum &rhs, int scale, int sign) {
+  return legacy::bc_div_positive_impl(lhs.str.c_str(), lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale,
+                                      rhs.str.c_str(), rhs.n_int, rhs.n_dot, rhs.n_frac, rhs.n_scale, scale, sign);
 }
 
-string bc_add_wrapper(const BcNum &lhs, const BcNum &rhs, int scale) {
-  return legacy::bc_add(lhs.str.c_str(), lhs.n_sign, lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale,
-                        rhs.str.c_str(), rhs.n_sign, rhs.n_int, rhs.n_dot, rhs.n_frac, rhs.n_scale, scale);
+string bc_add(const BcNum &lhs, const BcNum &rhs, int scale) {
+  return legacy::bc_add_impl(lhs.str.c_str(), lhs.n_sign, lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale,
+                             rhs.str.c_str(), rhs.n_sign, rhs.n_int, rhs.n_dot, rhs.n_frac, rhs.n_scale, scale);
 }
 
-string bc_sub_wrapper(const BcNum &lhs, const BcNum &rhs, int scale) {
-  return legacy::bc_add(lhs.str.c_str(),        lhs.n_sign, lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale,
-                        rhs.str.c_str(), (-1) * rhs.n_sign, rhs.n_int, rhs.n_dot, rhs.n_frac, rhs.n_scale, scale);
+string bc_sub(const BcNum &lhs, const BcNum &rhs, int scale) {
+  return legacy::bc_add_impl(lhs.str.c_str(),        lhs.n_sign, lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale,
+                             rhs.str.c_str(), (-1) * rhs.n_sign, rhs.n_int, rhs.n_dot, rhs.n_frac, rhs.n_scale, scale);
 }
 
 } // namespace
@@ -514,19 +514,19 @@ string f$bcdiv(const string &lhs_str, const string &rhs_str, int64_t scale) {
     return bc_zero(static_cast<int>(scale));
   }
 
-  const auto [lhs, lhs_success] = bc_parse_number_wrapper(lhs_str);
+  const auto [lhs, lhs_success] = bc_parse_number(lhs_str);
   if (!lhs_success) {
     php_warning("First parameter \"%s\" in function bcdiv is not a number", lhs.str.c_str());
     return ZERO;
   }
 
-  const auto [rhs, rhs_success] = bc_parse_number_wrapper(rhs_str);
+  const auto [rhs, rhs_success] = bc_parse_number(rhs_str);
   if (!rhs_success) {
     php_warning("Second parameter \"%s\" in function bcdiv is not a number", rhs.str.c_str());
     return ZERO;
   }
 
-  return bc_div_positive_wrapper(lhs, rhs, static_cast<int>(scale), lhs.n_sign * rhs.n_sign);
+  return bc_div_positive(lhs, rhs, static_cast<int>(scale), lhs.n_sign * rhs.n_sign);
 }
 
 static string scale_num(const string &num, int64_t scale) {
@@ -552,19 +552,19 @@ string f$bcmod(const string &lhs_str, const string &rhs_str, int64_t scale) {
     return bc_zero(scale);
   }
 
-  auto [lhs, lhs_success] = bc_parse_number_wrapper(lhs_str);
+  auto [lhs, lhs_success] = bc_parse_number(lhs_str);
   if (!lhs_success) {
     php_warning("First parameter \"%s\" in function bcmod is not a number", lhs.str.c_str());
     return ZERO;
   }
 
-  auto [rhs, rhs_success] = bc_parse_number_wrapper(rhs_str);
+  auto [rhs, rhs_success] = bc_parse_number(rhs_str);
   if (!rhs_success) {
     php_warning("Second parameter \"%s\" in function bcmod is not a number", rhs.str.c_str());
     return ZERO;
   }
 
-  if (bc_comp_wrapper(rhs, ZERO_BC_NUM, rhs.n_scale) == 0) {
+  if (bc_comp(rhs, ZERO_BC_NUM, rhs.n_scale) == 0) {
     php_warning("bcmod(): Division by zero");
     return {};
   }
@@ -576,16 +576,16 @@ string f$bcmod(const string &lhs_str, const string &rhs_str, int64_t scale) {
   lhs.n_sign = 1;
   rhs.n_sign = 1;
 
-  string div = bc_div_positive_wrapper(lhs, rhs, 0, 1);
-  BcNum x = bc_parse_number_wrapper(div).first;
+  string div = bc_div_positive(lhs, rhs, 0, 1);
+  BcNum x = bc_parse_number(div).first;
 
-  string mul = bc_mul_wrapper(x, rhs, rscale, 1);
-  x = bc_parse_number_wrapper(mul).first;
+  string mul = bc_mul_positive(x, rhs, rscale, 1);
+  x = bc_parse_number(mul).first;
 
-  string sub = bc_sub_wrapper(lhs, x, rscale);
-  x = bc_parse_number_wrapper(sub).first;
+  string sub = bc_sub(lhs, x, rscale);
+  x = bc_parse_number(sub).first;
 
-  return bc_div_positive_wrapper(x, ONE_BC_NUM, scale, result_sign);
+  return bc_div_positive(x, ONE_BC_NUM, scale, result_sign);
 }
 
 static std::pair<std::int64_t, bool> bc_num2int(const BcNum &num) {
@@ -613,13 +613,13 @@ string f$bcpow(const string &lhs_str, const string &rhs_str, int64_t scale) {
     scale = 0;
   }
 
-  const auto [lhs, lhs_success] = bc_parse_number_wrapper(lhs_str.empty() ? ZERO : lhs_str);
+  const auto [lhs, lhs_success] = bc_parse_number(lhs_str.empty() ? ZERO : lhs_str);
   if (!lhs_success) {
     php_warning("First parameter \"%s\" in function bcpow is not a number", lhs.str.c_str());
     return scale_num(ZERO, scale);
   }
 
-  const auto [rhs, rhs_success] = bc_parse_number_wrapper(rhs_str.empty() ? ZERO : rhs_str);
+  const auto [rhs, rhs_success] = bc_parse_number(rhs_str.empty() ? ZERO : rhs_str);
   if (!rhs_success) {
     php_warning("Second parameter \"%s\" in function bcpow is not a number", rhs.str.c_str());
     return scale_num(ONE, scale);
@@ -674,8 +674,8 @@ string f$bcpow(const string &lhs_str, const string &rhs_str, int64_t scale) {
   string result = temp;
 
   if (neg) {
-    const BcNum &temp_bc_num = bc_parse_number_wrapper(temp).first;
-    if (bc_comp_wrapper(temp_bc_num, ZERO_BC_NUM, temp_bc_num.n_scale) != 0) {
+    const BcNum &temp_bc_num = bc_parse_number(temp).first;
+    if (bc_comp(temp_bc_num, ZERO_BC_NUM, temp_bc_num.n_scale) != 0) {
       result = f$bcdiv(ONE, temp, rscale);
     }
   }
@@ -699,19 +699,19 @@ string f$bcadd(const string &lhs_str, const string &rhs_str, int64_t scale) {
     scale = 0;
   }
 
-  const auto [lhs, lhs_success] = bc_parse_number_wrapper(lhs_str);
+  const auto [lhs, lhs_success] = bc_parse_number(lhs_str);
   if (!lhs_success) {
     php_warning("First parameter \"%s\" in function bcadd is not a number", lhs.str.c_str());
     return bc_zero(static_cast<int>(scale));
   }
 
-  const auto [rhs, rhs_success] = bc_parse_number_wrapper(rhs_str);
+  const auto [rhs, rhs_success] = bc_parse_number(rhs_str);
   if (!rhs_success) {
     php_warning("Second parameter \"%s\" in function bcadd is not a number", rhs.str.c_str());
     return bc_zero(static_cast<int>(scale));
   }
 
-  return bc_add_wrapper(lhs, rhs, static_cast<int>(scale));
+  return bc_add(lhs, rhs, static_cast<int>(scale));
 }
 
 string f$bcsub(const string &lhs_str, const string &rhs_str, int64_t scale) {
@@ -730,13 +730,13 @@ string f$bcsub(const string &lhs_str, const string &rhs_str, int64_t scale) {
     scale = 0;
   }
 
-  const auto [lhs, lhs_success] = bc_parse_number_wrapper(lhs_str);
+  const auto [lhs, lhs_success] = bc_parse_number(lhs_str);
   if (!lhs_success) {
     php_warning("First parameter \"%s\" in function bcsub is not a number", lhs.str.c_str());
     return bc_zero(static_cast<int>(scale));
   }
 
-  auto [rhs, rhs_success] = bc_parse_number_wrapper(rhs_str);
+  auto [rhs, rhs_success] = bc_parse_number(rhs_str);
   if (!rhs_success) {
     php_warning("Second parameter \"%s\" in function bcsub is not a number", rhs.str.c_str());
     return bc_zero(static_cast<int>(scale));
@@ -744,7 +744,7 @@ string f$bcsub(const string &lhs_str, const string &rhs_str, int64_t scale) {
 
   rhs.n_sign *= -1;
 
-  return bc_add_wrapper(lhs, rhs, static_cast<int>(scale));
+  return bc_add(lhs, rhs, static_cast<int>(scale));
 }
 
 string f$bcmul(const string &lhs_str, const string &rhs_str, int64_t scale) {
@@ -763,19 +763,19 @@ string f$bcmul(const string &lhs_str, const string &rhs_str, int64_t scale) {
     scale = 0;
   }
 
-  const auto [lhs, lhs_success] = bc_parse_number_wrapper(lhs_str);
+  const auto [lhs, lhs_success] = bc_parse_number(lhs_str);
   if (!lhs_success) {
     php_warning("First parameter \"%s\" in function bcmul is not a number", lhs.str.c_str());
     return ZERO;
   }
 
-  const auto [rhs, rhs_success] = bc_parse_number_wrapper(rhs_str);
+  const auto [rhs, rhs_success] = bc_parse_number(rhs_str);
   if (!rhs_success) {
     php_warning("Second parameter \"%s\" in function bcmul is not a number", rhs.str.c_str());
     return ZERO;
   }
 
-  return bc_mul_wrapper(lhs, rhs, static_cast<int>(scale), lhs.n_sign * rhs.n_sign);
+  return bc_mul_positive(lhs, rhs, static_cast<int>(scale), lhs.n_sign * rhs.n_sign);
 }
 
 int64_t f$bccomp(const string &lhs_str, const string &rhs_str, int64_t scale) {
@@ -794,13 +794,13 @@ int64_t f$bccomp(const string &lhs_str, const string &rhs_str, int64_t scale) {
     scale = 0;
   }
 
-  const auto [lhs, lhs_success] = bc_parse_number_wrapper(lhs_str);
+  const auto [lhs, lhs_success] = bc_parse_number(lhs_str);
   if (!lhs_success) {
     php_warning("First parameter \"%s\" in function bccomp is not a number", lhs.str.c_str());
     return 0;
   }
 
-  const auto [rhs, rhs_success] = bc_parse_number_wrapper(rhs_str);
+  const auto [rhs, rhs_success] = bc_parse_number(rhs_str);
   if (!rhs_success) {
     php_warning("Second parameter \"%s\" in function bccomp is not a number", rhs.str.c_str());
     return 0;
@@ -810,7 +810,7 @@ int64_t f$bccomp(const string &lhs_str, const string &rhs_str, int64_t scale) {
     return (lhs.n_sign - rhs.n_sign) / 2;
   }
 
-  return (1 - 2 * (lhs.n_sign < 0)) * bc_comp_wrapper(lhs, rhs, static_cast<int>(scale));
+  return (1 - 2 * (lhs.n_sign < 0)) * bc_comp(lhs, rhs, static_cast<int>(scale));
 }
 
 // In some places we need to check if the number NUM is almost zero.
@@ -847,7 +847,7 @@ static bool bc_is_near_zero(const BcNum &num, int scale) {
 static const string ZERO_FIVE{"0.5"};
 static const string TEN{"10"};
 
-static const BcNum ZERO_FIVE_BC_NUM = bc_parse_number_wrapper(ZERO_FIVE).first;
+static const BcNum ZERO_FIVE_BC_NUM = bc_parse_number(ZERO_FIVE).first;
 
 static std::pair<BcNum, int> bc_sqrt_calc_initial_guess(const BcNum &num, int cmp_with_one) {
   if (cmp_with_one < 0) {
@@ -855,23 +855,23 @@ static std::pair<BcNum, int> bc_sqrt_calc_initial_guess(const BcNum &num, int cm
     return {ONE_BC_NUM, num.n_scale};
   }
   // the number is greater than 1. Guess should start at 10^(exp/2).
-  BcNum exponent = bc_parse_number_wrapper(string{num.n_dot}).first;
-  string exponent_str = bc_mul_wrapper(exponent, ZERO_FIVE_BC_NUM, 0, 1);
+  BcNum exponent = bc_parse_number(string{num.n_dot}).first;
+  string exponent_str = bc_mul_positive(exponent, ZERO_FIVE_BC_NUM, 0, 1);
   string guess_str = f$bcpow(TEN, exponent_str, 0);
-  BcNum guess = bc_parse_number_wrapper(guess_str).first;
+  BcNum guess = bc_parse_number(guess_str).first;
   return {std::move(guess), 3};
 }
 
 static std::pair<string, bool> bc_sqrt(const BcNum &num, int scale) {
   // initial checks
-  const int cmp_zero = bc_comp_wrapper(num, ZERO_BC_NUM, num.n_scale);
+  const int cmp_zero = bc_comp(num, ZERO_BC_NUM, num.n_scale);
   if (cmp_zero < 0 || num.n_sign == -1) {
     return {{}, false}; // error
   } else if (cmp_zero == 0) {
     return {ZERO, true};
   }
 
-  const int cmp_one = bc_comp_wrapper(num, ONE_BC_NUM, num.n_scale);
+  const int cmp_one = bc_comp(num, ONE_BC_NUM, num.n_scale);
   if (cmp_one == 0) {
     return {ONE, true};
   }
@@ -884,17 +884,17 @@ static std::pair<string, bool> bc_sqrt(const BcNum &num, int scale) {
   for (;;) {
     const BcNum prev_guess = guess;
 
-    string div_str = bc_div_positive_wrapper(num, guess, cscale, 1);
-    guess = bc_parse_number_wrapper(div_str).first;
+    string div_str = bc_div_positive(num, guess, cscale, 1);
+    guess = bc_parse_number(div_str).first;
 
-    string add_str = bc_add_wrapper(guess, prev_guess, cscale);
-    guess = bc_parse_number_wrapper(add_str).first;
+    string add_str = bc_add(guess, prev_guess, cscale);
+    guess = bc_parse_number(add_str).first;
 
-    string mul_str = bc_mul_wrapper(guess, ZERO_FIVE_BC_NUM, cscale, 1);
-    guess = bc_parse_number_wrapper(mul_str).first;
+    string mul_str = bc_mul_positive(guess, ZERO_FIVE_BC_NUM, cscale, 1);
+    guess = bc_parse_number(mul_str).first;
 
-    string sub_str = bc_sub_wrapper(guess, prev_guess, cscale + 1);
-    BcNum diff = bc_parse_number_wrapper(sub_str).first;
+    string sub_str = bc_sub(guess, prev_guess, cscale + 1);
+    BcNum diff = bc_parse_number(sub_str).first;
 
     if (bc_is_near_zero(diff, cscale)) {
       if (cscale < rscale + 1) {
@@ -905,7 +905,7 @@ static std::pair<string, bool> bc_sqrt(const BcNum &num, int scale) {
     }
   }
 
-  return {bc_div_positive_wrapper(guess, ONE_BC_NUM, rscale, 1), true};
+  return {bc_div_positive(guess, ONE_BC_NUM, rscale, 1), true};
 }
 
 string f$bcsqrt(const string &num_str, int64_t scale) {
@@ -920,7 +920,7 @@ string f$bcsqrt(const string &num_str, int64_t scale) {
     return bc_zero(static_cast<int>(scale));
   }
 
-  const auto [num, parse_success] = bc_parse_number_wrapper(num_str);
+  const auto [num, parse_success] = bc_parse_number(num_str);
   if (!parse_success) {
     php_warning("First parameter \"%s\" in function bcsqrt is not a number", num.str.c_str());
     return bc_zero(static_cast<int>(scale));
@@ -932,8 +932,8 @@ string f$bcsqrt(const string &num_str, int64_t scale) {
     return {};
   }
 
-  const BcNum &sqrt_bc_num = bc_parse_number_wrapper(sqrt).first;
-  return bc_div_positive_wrapper(sqrt_bc_num, ONE_BC_NUM, scale, 1);
+  const BcNum &sqrt_bc_num = bc_parse_number(sqrt).first;
+  return bc_div_positive(sqrt_bc_num, ONE_BC_NUM, scale, 1);
 }
 
 void free_bcmath_lib() {
