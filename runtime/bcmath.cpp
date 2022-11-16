@@ -47,9 +47,7 @@ static int bc_parse_number(const string &s, int &lsign, int &lint, int &ldot, in
   while (s[lint] == '0' && lint + 1 < ldot) {
     lint++;
   }
-//  while (lscale > 0 && s[lfrac + lscale - 1] == '0') {
-//    lscale--;
-//  }
+
   if (lscale == 0 && lfrac > ldot) {
     lfrac--;
     php_assert (lfrac == ldot);
@@ -140,37 +138,6 @@ static string bc_round(char *lhs, int lint, int ldot, int lfrac, int lscale, int
       }
     }
   }
-
-/*
-  if (lscale > scale) {
-    while (scale > 0 && lhs[lfrac + scale - 1] == '9' && lhs[lfrac + scale] >= '5') {
-      scale--;
-    }
-    lscale = scale;
-    if (lhs[lfrac + scale] >= '5') {
-      if (scale > 0) {
-        lhs[lfrac + scale - 1]++;
-      } else {
-        lfrac--;
-        php_assert (lfrac == ldot);
-
-        int i;
-        lhs[lint - 1] = '0';
-        for (i = 0; lhs[ldot - i - 1] == '9'; i++) {
-          lhs[ldot - i - 1] = '0';
-        }
-        lhs[ldot - i - 1]++;
-        if (ldot - i - 1 < lint) {
-          lint = ldot - i - 1;
-        }
-      }
-    }
-  }
-
-  while (lscale > 0 && lhs[lfrac + lscale - 1] == '0') {
-    lscale--;
-  }
-*/
 
   if (lscale == 0 && lfrac > ldot) {
     lfrac--;
