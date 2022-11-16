@@ -470,7 +470,6 @@ static string bc_add(const char *lhs, int lsign, int lint, int ldot, int lfrac, 
   }
 
   php_assert (0);
-  exit(1);
 }
 
 static string bc_add_wrapper(const BcNum &lhs, const BcNum &rhs, int scale) {
