@@ -4,13 +4,15 @@
 
 #include "runtime/bcmath.h"
 
-static int bc_scale{0};
+namespace {
 
-static const string ONE("1", 1);
-static const string ZERO("0", 1);
+int bc_scale{0};
+
+const string ONE("1", 1);
+const string ZERO("0", 1);
 
 //parse a number into parts, returns scale on success and -1 on error
-static int bc_parse_number(const string &s, int &lsign, int &lint, int &ldot, int &lfrac, int &lscale) {
+int bc_parse_number(const string &s, int &lsign, int &lint, int &ldot, int &lfrac, int &lscale) {
   int i = 0;
   lsign = 1;
   if (s[i] == '-' || s[i] == '+') {
@@ -75,10 +77,10 @@ std::pair<BcNum, bool> bc_parse_number_wrapper(const string &num) {
   return {bc_num, success};
 }
 
-static const BcNum ZERO_BC_NUM = bc_parse_number_wrapper(ZERO).first;
-static const BcNum ONE_BC_NUM = bc_parse_number_wrapper(ONE).first;
+const BcNum ZERO_BC_NUM = bc_parse_number_wrapper(ZERO).first;
+const BcNum ONE_BC_NUM = bc_parse_number_wrapper(ONE).first;
 
-static string bc_zero(int scale) {
+string bc_zero(int scale) {
   if (scale == 0) {
     return ZERO;
   }
@@ -87,7 +89,7 @@ static string bc_zero(int scale) {
   return result;
 }
 
-static int bc_comp(const char *lhs, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rint, int rdot, int rfrac, int rscale, int scale) {
+int bc_comp(const char *lhs, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rint, int rdot, int rfrac, int rscale, int scale) {
   int llen = ldot - lint;
   int rlen = rdot - rint;
 
@@ -113,12 +115,12 @@ static int bc_comp(const char *lhs, int lint, int ldot, int lfrac, int lscale, c
   return 0;
 }
 
-static int bc_comp_wrapper(const BcNum &lhs, const BcNum &rhs, int scale) {
+int bc_comp_wrapper(const BcNum &lhs, const BcNum &rhs, int scale) {
   return bc_comp(lhs.str.c_str(), lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale,
                  rhs.str.c_str(), rhs.n_int, rhs.n_dot, rhs.n_frac, rhs.n_scale, scale);
 }
 
-static string bc_round(char *lhs, int lint, int ldot, int lfrac, int lscale, int scale, int sign, int add_trailing_zeroes) {
+string bc_round(char *lhs, int lint, int ldot, int lfrac, int lscale, int scale, int sign, int add_trailing_zeroes) {
   while (lhs[lint] == '0' && lint + 1 < ldot) {
     lint++;
   }
@@ -160,7 +162,7 @@ static string bc_round(char *lhs, int lint, int ldot, int lfrac, int lscale, int
   }
 }
 
-static string bc_add_positive(const char *lhs, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rint, int rdot, int rfrac, int rscale, int scale, int sign) {
+string bc_add_positive(const char *lhs, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rint, int rdot, int rfrac, int rscale, int scale, int sign) {
   int llen = ldot - lint;
   int rlen = rdot - rint;
 
@@ -274,7 +276,7 @@ string bc_sub_positive(const char *lhs, int lint, int ldot, int lfrac, int lscal
   return bc_round(result.buffer(), resint, resdot, resfrac, resscale, scale, sign, 1);
 }
 
-static string bc_mul_positive(const char *lhs, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rint, int rdot, int rfrac, int rscale, int scale, int sign) {
+string bc_mul_positive(const char *lhs, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rint, int rdot, int rfrac, int rscale, int scale, int sign) {
   int llen = ldot - lint;
   int rlen = rdot - rint;
 
@@ -320,12 +322,12 @@ static string bc_mul_positive(const char *lhs, int lint, int ldot, int lfrac, in
   return bc_round(result.buffer(), resint, resdot, resfrac, resscale, scale, sign, 1);
 }
 
-static string bc_mul_wrapper(const BcNum &lhs, const BcNum &rhs, int scale, int sign) {
+string bc_mul_wrapper(const BcNum &lhs, const BcNum &rhs, int scale, int sign) {
   return bc_mul_positive(lhs.str.c_str(), lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale,
                          rhs.str.c_str(), rhs.n_int, rhs.n_dot, rhs.n_frac, rhs.n_scale, scale, sign);
 }
 
-static string bc_div_positive(const char *lhs, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rint, int rdot, int rfrac, int rscale, int scale, int sign) {
+string bc_div_positive(const char *lhs, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rint, int rdot, int rfrac, int rscale, int scale, int sign) {
   int llen = ldot - lint;
   int rlen = rdot - rint;
 
@@ -439,12 +441,12 @@ static string bc_div_positive(const char *lhs, int lint, int ldot, int lfrac, in
   return bc_round(result.buffer(), resint, resdot, resfrac, resscale, scale, sign, 0);
 }
 
-static string bc_div_positive_wrapper(const BcNum &lhs, const BcNum &rhs, int scale, int sign) {
+string bc_div_positive_wrapper(const BcNum &lhs, const BcNum &rhs, int scale, int sign) {
   return bc_div_positive(lhs.str.c_str(), lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale,
                          rhs.str.c_str(), rhs.n_int, rhs.n_dot, rhs.n_frac, rhs.n_scale, scale, sign);
 }
 
-static string bc_add(const char *lhs, int lsign, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rsign, int rint, int rdot, int rfrac, int rscale, int scale) {
+string bc_add(const char *lhs, int lsign, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rsign, int rint, int rdot, int rfrac, int rscale, int scale) {
   if (lsign > 0 && rsign > 0) {
     return bc_add_positive(lhs, lint, ldot, lfrac, lscale, rhs, rint, rdot, rfrac, rscale, scale, 1);
   }
@@ -472,15 +474,16 @@ static string bc_add(const char *lhs, int lsign, int lint, int ldot, int lfrac, 
   php_assert (0);
 }
 
-static string bc_add_wrapper(const BcNum &lhs, const BcNum &rhs, int scale) {
+string bc_add_wrapper(const BcNum &lhs, const BcNum &rhs, int scale) {
   return bc_add(lhs.str.c_str(), lhs.n_sign, lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale,
                 rhs.str.c_str(), rhs.n_sign, rhs.n_int, rhs.n_dot, rhs.n_frac, rhs.n_scale, scale);
 }
 
-static string bc_sub_wrapper(const BcNum &lhs, const BcNum &rhs, int scale) {
+string bc_sub_wrapper(const BcNum &lhs, const BcNum &rhs, int scale) {
   return bc_add(lhs.str.c_str(),        lhs.n_sign, lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale,
                 rhs.str.c_str(), (-1) * rhs.n_sign, rhs.n_int, rhs.n_dot, rhs.n_frac, rhs.n_scale, scale);
 }
+} // namespace
 
 void f$bcscale(int64_t scale) {
   if (scale < 0) {
