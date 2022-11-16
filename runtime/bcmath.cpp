@@ -491,7 +491,7 @@ void f$bcscale(int64_t scale) {
   }
 }
 
-string f$bcdiv(const string &lhs, const string &rhs, int64_t scale) {
+string f$bcdiv(const string &lhs_str, const string &rhs_str, int64_t scale) {
   if (scale == std::numeric_limits<int64_t>::min()) {
     scale = bc_scale;
   }
@@ -499,29 +499,27 @@ string f$bcdiv(const string &lhs, const string &rhs, int64_t scale) {
     php_warning("Wrong parameter scale = %" PRIi64 " in function bcdiv", scale);
     scale = 0;
   }
-  if (lhs.empty()) {
+  if (lhs_str.empty()) {
     return bc_zero(static_cast<int>(scale));
   }
-  if (rhs.empty()) {
+  if (rhs_str.empty()) {
     php_warning("Division by empty string in function bcdiv");
     return bc_zero(static_cast<int>(scale));
   }
 
-  int lsign, lint, ldot, lfrac, lscale;
-  if (bc_parse_number(lhs, lsign, lint, ldot, lfrac, lscale) < 0) {
-    php_warning("First parameter \"%s\" in function bcdiv is not a number", lhs.c_str());
+  const auto [lhs, lhs_success] = bc_parse_number_wrapper(lhs_str);
+  if (!lhs_success) {
+    php_warning("First parameter \"%s\" in function bcdiv is not a number", lhs.str.c_str());
     return ZERO;
   }
 
-  int rsign, rint, rdot, rfrac, rscale;
-  if (bc_parse_number(rhs, rsign, rint, rdot, rfrac, rscale) < 0) {
-    php_warning("Second parameter \"%s\" in function bcdiv is not a number", rhs.c_str());
+  const auto [rhs, rhs_success] = bc_parse_number_wrapper(rhs_str);
+  if (!rhs_success) {
+    php_warning("Second parameter \"%s\" in function bcdiv is not a number", rhs.str.c_str());
     return ZERO;
   }
 
-  return bc_div_positive(lhs.c_str(), lint, ldot, lfrac, lscale,
-                         rhs.c_str(), rint, rdot, rfrac, rscale,
-                         static_cast<int>(scale), lsign * rsign);
+  return bc_div_positive_wrapper(lhs, rhs, static_cast<int>(scale), lhs.n_sign * rhs.n_sign);
 }
 
 static string scale_num(const string &num, int64_t scale) {
@@ -678,12 +676,12 @@ string f$bcpow(const string &lhs_str, const string &rhs_str, int64_t scale) {
   return f$bcadd(result, ZERO, scale);
 }
 
-string f$bcadd(const string &lhs, const string &rhs, int64_t scale) {
-  if (lhs.empty()) {
-    return f$bcadd(ZERO, rhs, scale);
+string f$bcadd(const string &lhs_str, const string &rhs_str, int64_t scale) {
+  if (lhs_str.empty()) {
+    return f$bcadd(ZERO, rhs_str, scale);
   }
-  if (rhs.empty()) {
-    return f$bcadd(lhs, ZERO, scale);
+  if (rhs_str.empty()) {
+    return f$bcadd(lhs_str, ZERO, scale);
   }
 
   if (scale == std::numeric_limits<int64_t>::min()) {
@@ -694,29 +692,27 @@ string f$bcadd(const string &lhs, const string &rhs, int64_t scale) {
     scale = 0;
   }
 
-  int lsign, lint, ldot, lfrac, lscale;
-  if (bc_parse_number(lhs, lsign, lint, ldot, lfrac, lscale) < 0) {
-    php_warning("First parameter \"%s\" in function bcadd is not a number", lhs.c_str());
+  const auto [lhs, lhs_success] = bc_parse_number_wrapper(lhs_str);
+  if (!lhs_success) {
+    php_warning("First parameter \"%s\" in function bcadd is not a number", lhs.str.c_str());
     return bc_zero(static_cast<int>(scale));
   }
 
-  int rsign, rint, rdot, rfrac, rscale;
-  if (bc_parse_number(rhs, rsign, rint, rdot, rfrac, rscale) < 0) {
-    php_warning("Second parameter \"%s\" in function bcadd is not a number", rhs.c_str());
+  const auto [rhs, rhs_success] = bc_parse_number_wrapper(rhs_str);
+  if (!rhs_success) {
+    php_warning("Second parameter \"%s\" in function bcadd is not a number", rhs.str.c_str());
     return bc_zero(static_cast<int>(scale));
   }
 
-  return bc_add(lhs.c_str(), lsign, lint, ldot, lfrac, lscale,
-                rhs.c_str(), rsign, rint, rdot, rfrac, rscale,
-                static_cast<int>(scale));
+  return bc_add_wrapper(lhs, rhs, static_cast<int>(scale));
 }
 
-string f$bcsub(const string &lhs, const string &rhs, int64_t scale) {
-  if (lhs.empty()) {
-    return f$bcsub(ZERO, rhs, scale);
+string f$bcsub(const string &lhs_str, const string &rhs_str, int64_t scale) {
+  if (lhs_str.empty()) {
+    return f$bcsub(ZERO, rhs_str, scale);
   }
-  if (rhs.empty()) {
-    return f$bcsub(lhs, ZERO, scale);
+  if (rhs_str.empty()) {
+    return f$bcsub(lhs_str, ZERO, scale);
   }
 
   if (scale == std::numeric_limits<int64_t>::min()) {
@@ -727,31 +723,29 @@ string f$bcsub(const string &lhs, const string &rhs, int64_t scale) {
     scale = 0;
   }
 
-  int lsign, lint, ldot, lfrac, lscale;
-  if (bc_parse_number(lhs, lsign, lint, ldot, lfrac, lscale) < 0) {
-    php_warning("First parameter \"%s\" in function bcsub is not a number", lhs.c_str());
+  const auto [lhs, lhs_success] = bc_parse_number_wrapper(lhs_str);
+  if (!lhs_success) {
+    php_warning("First parameter \"%s\" in function bcsub is not a number", lhs.str.c_str());
     return bc_zero(static_cast<int>(scale));
   }
 
-  int rsign, rint, rdot, rfrac, rscale;
-  if (bc_parse_number(rhs, rsign, rint, rdot, rfrac, rscale) < 0) {
-    php_warning("Second parameter \"%s\" in function bcsub is not a number", rhs.c_str());
+  auto [rhs, rhs_success] = bc_parse_number_wrapper(rhs_str);
+  if (!rhs_success) {
+    php_warning("Second parameter \"%s\" in function bcsub is not a number", rhs.str.c_str());
     return bc_zero(static_cast<int>(scale));
   }
 
-  rsign *= -1;
+  rhs.n_sign *= -1;
 
-  return bc_add(lhs.c_str(), lsign, lint, ldot, lfrac, lscale,
-                rhs.c_str(), rsign, rint, rdot, rfrac, rscale,
-                static_cast<int>(scale));
+  return bc_add_wrapper(lhs, rhs, static_cast<int>(scale));
 }
 
-string f$bcmul(const string &lhs, const string &rhs, int64_t scale) {
-  if (lhs.empty()) {
-    return f$bcmul(ZERO, rhs, scale);
+string f$bcmul(const string &lhs_str, const string &rhs_str, int64_t scale) {
+  if (lhs_str.empty()) {
+    return f$bcmul(ZERO, rhs_str, scale);
   }
-  if (rhs.empty()) {
-    return f$bcmul(lhs, ZERO, scale);
+  if (rhs_str.empty()) {
+    return f$bcmul(lhs_str, ZERO, scale);
   }
 
   if (scale == std::numeric_limits<int64_t>::min()) {
@@ -762,29 +756,27 @@ string f$bcmul(const string &lhs, const string &rhs, int64_t scale) {
     scale = 0;
   }
 
-  int lsign, lint, ldot, lfrac, lscale;
-  if (bc_parse_number(lhs, lsign, lint, ldot, lfrac, lscale) < 0) {
-    php_warning("First parameter \"%s\" in function bcmul is not a number", lhs.c_str());
+  const auto [lhs, lhs_success] = bc_parse_number_wrapper(lhs_str);
+  if (!lhs_success) {
+    php_warning("First parameter \"%s\" in function bcmul is not a number", lhs.str.c_str());
     return ZERO;
   }
 
-  int rsign, rint, rdot, rfrac, rscale;
-  if (bc_parse_number(rhs, rsign, rint, rdot, rfrac, rscale) < 0) {
-    php_warning("Second parameter \"%s\" in function bcmul is not a number", rhs.c_str());
+  const auto [rhs, rhs_success] = bc_parse_number_wrapper(rhs_str);
+  if (!rhs_success) {
+    php_warning("Second parameter \"%s\" in function bcmul is not a number", rhs.str.c_str());
     return ZERO;
   }
 
-  return bc_mul_positive(lhs.c_str(), lint, ldot, lfrac, lscale,
-                         rhs.c_str(), rint, rdot, rfrac, rscale,
-                         static_cast<int>(scale), lsign * rsign);
+  return bc_mul_wrapper(lhs, rhs, static_cast<int>(scale), lhs.n_sign * rhs.n_sign);
 }
 
-int64_t f$bccomp(const string &lhs, const string &rhs, int64_t scale) {
-  if (lhs.empty()) {
-    return f$bccomp(ZERO, rhs, scale);
+int64_t f$bccomp(const string &lhs_str, const string &rhs_str, int64_t scale) {
+  if (lhs_str.empty()) {
+    return f$bccomp(ZERO, rhs_str, scale);
   }
-  if (rhs.empty()) {
-    return f$bccomp(lhs, ZERO, scale);
+  if (rhs_str.empty()) {
+    return f$bccomp(lhs_str, ZERO, scale);
   }
 
   if (scale == std::numeric_limits<int64_t>::min()) {
@@ -795,25 +787,23 @@ int64_t f$bccomp(const string &lhs, const string &rhs, int64_t scale) {
     scale = 0;
   }
 
-  int lsign, lint, ldot, lfrac, lscale;
-  if (bc_parse_number(lhs, lsign, lint, ldot, lfrac, lscale) < 0) {
-    php_warning("First parameter \"%s\" in function bccomp is not a number", lhs.c_str());
+  const auto [lhs, lhs_success] = bc_parse_number_wrapper(lhs_str);
+  if (!lhs_success) {
+    php_warning("First parameter \"%s\" in function bccomp is not a number", lhs.str.c_str());
     return 0;
   }
 
-  int rsign, rint, rdot, rfrac, rscale;
-  if (bc_parse_number(rhs, rsign, rint, rdot, rfrac, rscale) < 0) {
-    php_warning("Second parameter \"%s\" in function bccomp is not a number", rhs.c_str());
+  const auto [rhs, rhs_success] = bc_parse_number_wrapper(rhs_str);
+  if (!rhs_success) {
+    php_warning("Second parameter \"%s\" in function bccomp is not a number", rhs.str.c_str());
     return 0;
   }
 
-  if (lsign != rsign) {
-    return (lsign - rsign) / 2;
+  if (lhs.n_sign != rhs.n_sign) {
+    return (lhs.n_sign - rhs.n_sign) / 2;
   }
 
-  return (1 - 2 * (lsign < 0)) * bc_comp(lhs.c_str(), lint, ldot, lfrac, lscale,
-                                         rhs.c_str(), rint, rdot, rfrac, rscale,
-                                         static_cast<int>(scale));
+  return (1 - 2 * (lhs.n_sign < 0)) * bc_comp_wrapper(lhs, rhs, static_cast<int>(scale));
 }
 
 // In some places we need to check if the number NUM is almost zero.
@@ -911,7 +901,7 @@ static std::pair<string, bool> bc_sqrt(const BcNum &num, int scale) {
   return {bc_div_positive_wrapper(guess, ONE_BC_NUM, rscale, 1), true};
 }
 
-string f$bcsqrt(const string &num, int64_t scale) {
+string f$bcsqrt(const string &num_str, int64_t scale) {
   if (scale == std::numeric_limits<int64_t>::min()) {
     scale = bc_scale;
   }
@@ -919,17 +909,17 @@ string f$bcsqrt(const string &num, int64_t scale) {
     php_warning("Wrong parameter scale = %" PRIi64 " in function bcsqrt", scale);
     scale = 0;
   }
-  if (num.empty()) {
+  if (num_str.empty()) {
     return bc_zero(static_cast<int>(scale));
   }
 
-  const auto [bc_num, parse_success] = bc_parse_number_wrapper(num);
+  const auto [num, parse_success] = bc_parse_number_wrapper(num_str);
   if (!parse_success) {
-    php_warning("First parameter \"%s\" in function bcsqrt is not a number", num.c_str());
+    php_warning("First parameter \"%s\" in function bcsqrt is not a number", num.str.c_str());
     return bc_zero(static_cast<int>(scale));
   }
 
-  auto [sqrt, sqrt_success] = bc_sqrt(bc_num, scale);
+  auto [sqrt, sqrt_success] = bc_sqrt(num, scale);
   if (!sqrt_success) {
     php_warning("bcsqrt(): Square root of negative number");
     return {};
