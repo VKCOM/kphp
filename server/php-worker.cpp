@@ -26,7 +26,7 @@ PhpWorker *active_worker = nullptr;
 
 double PhpWorker::enter_lifecycle() noexcept {
   if (finish_time < precise_now + 0.01) {
-    terminate(0, script_error_t::timeout, "timeout");
+    PhpScript::timeout_expired = true;
   }
   on_wakeup();
 

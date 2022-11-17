@@ -503,7 +503,7 @@ int shutdown_functions_count = 0;
 char shutdown_function_storage[MAX_SHUTDOWN_FUNCTIONS * sizeof(shutdown_function_type)];
 shutdown_function_type *shutdown_functions = reinterpret_cast<shutdown_function_type *>(shutdown_function_storage);
 shutdown_functions_status shutdown_functions_status_value = shutdown_functions_status::not_executed;
-jmp_buf timeout_exit;
+jmp_buf error_exit;
 bool finished = false;
 bool flushed = false;
 bool wait_all_forks_on_finish = false;
@@ -602,13 +602,13 @@ int get_shutdown_functions_count() {
   return shutdown_functions_count;
 }
 
-void run_shutdown_functions_from_timeout() {
+void run_shutdown_functions_from_error() {
   // to safely run the shutdown handlers in the timeout context, we set
   // a recovery point to be used from the user-called die/exit;
   // without that, exit would lead to a finished state instead of the error state
   // we were about to enter (since timeout is an error state)
-  shutdown_functions_status_value = shutdown_functions_status::running_from_timeout;
-  if (setjmp(timeout_exit) == 0) {
+  shutdown_functions_status_value = shutdown_functions_status::running_from_error;
+  if (setjmp(error_exit) == 0) {
     run_shutdown_functions();
   }
 }
@@ -642,7 +642,7 @@ void finish(int64_t exit_code, bool allow_forks_waiting) {
   if (!finished) {
     finished = true;
     forcibly_stop_profiler();
-    if (shutdown_functions_count != 0) {
+    if (shutdown_functions_count != 0 && shutdown_functions_status_value == shutdown_functions_status::not_executed) {
       run_shutdown_functions_from_script();
     }
     if (allow_forks_waiting && wait_all_forks_on_finish) {
@@ -659,8 +659,8 @@ void finish(int64_t exit_code, bool allow_forks_waiting) {
 }
 
 void f$exit(const mixed &v) {
-  if (shutdown_functions_status_value == shutdown_functions_status::running_from_timeout) {
-    longjmp(timeout_exit, 1);
+  if (shutdown_functions_status_value == shutdown_functions_status::running_from_error) {
+    longjmp(error_exit, 1);
   }
 
   if (v.is_string()) {

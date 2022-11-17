@@ -5,6 +5,7 @@
 #pragma once
 
 #include <csetjmp>
+#include <limits>
 
 #include "common/dl-utils-lite.h"
 #include "common/mixin/not_copyable.h"
@@ -90,7 +91,7 @@ class PhpScript {
 private:
   int swapcontext_helper(ucontext_t_portable *oucp, const ucontext_t_portable *ucp);
 
-  void on_request_timeout_error();
+  void on_request_error(const char * error_log_, const char * error_message_, script_error_t error_type_);
 
   void assert_state(run_state_t expected);
 
@@ -98,7 +99,7 @@ public:
   static PhpScript *volatile current_script;
   static ucontext_t_portable exit_context;
   volatile static bool is_running;
-  volatile static bool tl_flag;
+  volatile static bool timeout_expired;
   volatile static bool ml_flag;
 
   run_state_t state{run_state_t::empty};
@@ -108,6 +109,7 @@ public:
   const size_t mem_size{0};
   char *run_mem{nullptr};
   PhpScriptStack script_stack;
+  double finish_time{std::numeric_limits<double>::max()};
 
   ucontext_t_portable run_context{};
   sigjmp_buf timeout_handler{};
@@ -122,7 +124,8 @@ public:
   PhpScript(size_t mem_size, size_t stack_size) noexcept;
   ~PhpScript() noexcept;
 
-  void check_tl() noexcept;
+  void check_timeout() noexcept;
+  void check_net_error() noexcept;
 
   void init(script_t *script, php_query_data *data_to_set) noexcept;
 
