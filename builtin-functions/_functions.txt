@@ -179,6 +179,9 @@ function kphp_backtrace($pretty ::: bool = true) ::: string[];
 function ini_get ($s ::: string) ::: string | false;
 function ini_set ($s ::: string, $v ::: string) ::: bool;
 
+function parse_env_file($filename ::: string) ::: string[];
+function parse_env_string($env_string ::: string) ::: string[];
+
 function memory_get_usage ($real_usage ::: bool = false) ::: int;
 function memory_get_peak_usage ($real_usage ::: bool = false) ::: int;
 function memory_get_total_usage() ::: int;

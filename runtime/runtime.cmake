@@ -81,6 +81,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         net_events.cpp
         on_kphp_warning_callback.cpp
         openssl.cpp
+        parsing_functions.cpp
         php_assert.cpp
         profiler.cpp
         regexp.cpp
