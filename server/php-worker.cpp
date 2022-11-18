@@ -245,6 +245,10 @@ void PhpWorker::state_run() noexcept {
       }
       case run_state_t::error: {
         vkprintf(2, "php script [req_id = %016llx]: ERROR (probably timeout)\n", req_id);
+        if (dl::is_malloc_replaced()) {
+          // in case the error happened when malloc was replaced
+          dl::rollback_malloc_replacement();
+        }
         php_script->finish();
 
         if (conn != nullptr) {

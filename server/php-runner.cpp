@@ -73,10 +73,6 @@ void perform_error_if_running(const char *msg, script_error_t error_type) {
 void PhpScript::error(const char *error_message, script_error_t error_type) noexcept {
   assert (is_running == true);
   is_running = false;
-  if (dl::is_malloc_replaced()) {
-    // in case the error happened when malloc was replaced
-    dl::rollback_malloc_replacement();
-  }
   current_script->state = run_state_t::error;
   current_script->error_message = error_message;
   current_script->error_type = error_type;
@@ -319,6 +315,7 @@ run_state_t PhpScript::iterate() noexcept {
 
 void PhpScript::finish() noexcept {
   assert (state == run_state_t::finished || state == run_state_t::error);
+  assert(dl::is_malloc_replaced() == false);
   auto save_state = state;
   const auto &script_mem_stats = dl::get_script_memory_stats();
   state = run_state_t::uncleared;
