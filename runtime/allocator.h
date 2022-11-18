@@ -9,6 +9,7 @@
 #include <memory>
 
 #include "common/containers/final_action.h"
+#include "runtime/critical_section.h"
 #include "runtime/memory_resource/memory_resource.h"
 
 namespace memory_resource {
@@ -62,13 +63,15 @@ public:
 } // namespace dl
 
 // replace malloc so it starts to use a script memory
-inline auto make_malloc_replacement_with_script_allocator(bool replace = true) noexcept {
+inline auto make_malloc_replacement_with_script_allocator_guard(bool replace = true) noexcept {
   if (replace) {
+    dl::enter_critical_section();
     dl::replace_malloc_with_script_allocator();
   }
   return vk::finally([replace] {
     if (replace) {
       dl::rollback_malloc_replacement();
+      dl::leave_critical_section();
     }
   });
 }

@@ -185,7 +185,7 @@ Optional<array<int64_t>> f$UberH3$$kRing(int64_t h3_index_origin, int64_t k) noe
   auto neighbor_indexes = make_zeros_vector<int64_t>(neighbors_count);
   if (neighbors_count) {
     // kRing() uses malloc
-    auto malloc_replacer = make_malloc_replacement_with_script_allocator();
+    auto malloc_replacer = make_malloc_replacement_with_script_allocator_guard();
     kRing(h3_index_origin, checked_k, reinterpret_cast<H3Index *>(&neighbor_indexes[0]));
   }
   return std::move(neighbor_indexes);
@@ -340,7 +340,7 @@ Optional<array<int64_t>> f$UberH3$$compact(const array<int64_t> &h3_indexes) noe
   auto compacted_h3_set = make_zeros_vector<int64_t>(h3_set.count());
   if (!compacted_h3_set.empty()) {
     // compact() uses malloc
-    auto malloc_replacer = make_malloc_replacement_with_script_allocator();
+    auto malloc_replacer = make_malloc_replacement_with_script_allocator_guard();
     if (unlikely(compact(reinterpret_cast<const H3Index *>(h3_set.get_const_vector_pointer()),
                          reinterpret_cast<H3Index *>(&compacted_h3_set[0]),
                          static_cast<int32_t>(h3_indexes.count())))) {
@@ -415,7 +415,7 @@ Optional<array<int64_t>> f$UberH3$$polyfill(const array<std::tuple<double, doubl
   auto hexagon_indexes = make_zeros_vector<int64_t>(max_size);
   if (!hexagon_indexes.empty()) {
     // polyfill() uses malloc
-    auto malloc_replacer = make_malloc_replacement_with_script_allocator();
+    auto malloc_replacer = make_malloc_replacement_with_script_allocator_guard();
     polyfill(&polygon_owner.getPolygon(), checked_resolution, reinterpret_cast<H3Index *>(&hexagon_indexes[0]));
   }
   int64_t indexes_count = 0;

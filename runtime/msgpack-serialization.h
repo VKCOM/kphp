@@ -103,7 +103,7 @@ inline ResultType f$msgpack_deserialize(const string &buffer, string *out_err_ms
     return {};
   }
 
-  const auto malloc_replacement_guard = make_malloc_replacement_with_script_allocator();
+  const auto malloc_replacement_guard = make_malloc_replacement_with_script_allocator_guard();
   string err_msg;
   try {
     vk::msgpack::unpacker unpacker{buffer};
