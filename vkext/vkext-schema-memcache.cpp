@@ -1784,7 +1784,7 @@ void *tlcomb_store_type(void **IP, void **Data, zval **arr, struct tl_tree **var
 
   int n = -1;
   if (t->constructors_num > 1) {
-    if (t->name == TYPE_NAME_MAYBE && Z_TYPE_P(*arr) != IS_ARRAY) {
+    if (t->name == TYPE_NAME_MAYBE && typed_mode) {
       // hack for getting name of maybe constructor in typed mode
       const char *ctor_name;
       if (Z_TYPE_P(*arr) == IS_NULL) {
