@@ -1,5 +1,5 @@
 diff --git a/common/tl/schemas/memcache.tl b/common/tl/schemas/memcache.tl
-index 69ee471dd2..4d8e2882ae 100644
+index 69ee471dd2..7e92d3b373 100644
 --- a/common/tl/schemas/memcache.tl
 +++ b/common/tl/schemas/memcache.tl
 @@ -100,10 +100,10 @@ memcache.tokenHashMd5 hash:string = memcache.Token;
@@ -15,7 +15,7 @@ index 69ee471dd2..4d8e2882ae 100644
  @read memcache.getWildcardWithFlags prefix:string = Dictionary memcache.Value;
  
  // -1 for no expire, time before key is expired, false for no key
-@@ -127,3 +127,85 @@ memcache.tokenHashMd5 hash:string = memcache.Token;
+@@ -127,3 +127,103 @@ memcache.tokenHashMd5 hash:string = memcache.Token;
  @read @internal memcache.multiExists keys:%(Vector string) = Vector Bool;
  
  @readwrite memcache.compareAndDelete key:string expected_token:memcache.Token = memcache.CompareAndDeleteResult;
@@ -101,20 +101,39 @@ index 69ee471dd2..4d8e2882ae 100644
 +graph.retMaybeInt x: int = Maybe int;
 +@readwrite
 +graph.retMaybeVectorInt x: int len: int = Maybe (%Vector int);
++
++
++---types---
++
++test.storeMaybeArrayData
++  vector: (Maybe %(Vector string))
++  tuple: (Maybe %(Tuple string 1))
++  dictionary: (Maybe %(Dictionary string))
++  int_key_dictionary: (Maybe %(IntKeyDictionary string))
++  long_key_dictionary: (Maybe %(LongKeyDictionary string))
++= test.StoreMaybeArrayData;
++
++---functions---
++
++@readwrite
++test.storeMaybeArray
++  data: %test.storeMaybeArrayData
++= test.StoreMaybeArrayData;
 diff --git a/memcached/memcached-rpc.cpp b/memcached/memcached-rpc.cpp
-index f5e599c4ee..4003574eab 100644
+index f5e599c4ee..d787df4f08 100644
 --- a/memcached/memcached-rpc.cpp
 +++ b/memcached/memcached-rpc.cpp
-@@ -2,6 +2,8 @@
+@@ -2,6 +2,9 @@
  
  #include "auto/TL/constants/common.h"
  #include "auto/TL/constants/memcache.h"
 +#include "auto/TL/cpp-serializers/graph/all_functions.h"
 +#include "auto/TL/cpp-serializers/common/all_functions.h"
++#include "auto/TL/cpp-serializers/test/all_functions.h"
  #include "common/buffer-set.h"
  #include "common/precise-time.h"
  #include "common/rpc-error-codes.h"
-@@ -826,6 +828,85 @@ TL_DO_FUN_END
+@@ -826,6 +829,88 @@ TL_DO_FUN_END
  TL_PARSE_FUN(memcached_dump_all_lru_keys_to_log)
  TL_PARSE_FUN_END
  
@@ -196,15 +215,18 @@ index f5e599c4ee..4003574eab 100644
 +  e->tl_store_result(e->x);
 +TL_AUTOGEN_DO_FUN_END
 +
++TL_AUTOGEN_DO_FUN(test, storeMaybeArray)
++  e->tl_store_result(e->data);
++TL_AUTOGEN_DO_FUN_END
 +
  struct tl_act_extra *memcached_parse_function() {
    unsigned int op = tl_fetch_int();
    if (tl_fetch_error()) {
 diff --git a/memcached/memcached.mk b/memcached/memcached.mk
-index 35227ac23d..e35d5693d3 100644
+index 35227ac23d..8c53f64134 100644
 --- a/memcached/memcached.mk
 +++ b/memcached/memcached.mk
-@@ -4,8 +4,12 @@ $(foreach file, ${MEMCACHE_PARTS}, \
+@@ -4,8 +4,13 @@ $(foreach file, ${MEMCACHE_PARTS}, \
    $(eval $(call ObjWithFlagsCPP, ${OBJ}/memcached/memcached-with-times-$(file).o, memcached/memcached-$(file).cpp, -DWITH_MODIFICATION_TIME)) \
  )
  
@@ -213,6 +235,7 @@ index 35227ac23d..e35d5693d3 100644
 +MEMCACHE_AUTOGEN_TL_DEPS += ${TL_AUTOGEN_GRAPH_CXX}
 +MEMCACHE_AUTOGEN_TL_DEPS += ${TL_AUTOGEN_COMMON_CXX}
 +MEMCACHE_AUTOGEN_TL_DEPS += ${TL_AUTOGEN_SEARCH_CXX}
++MEMCACHE_AUTOGEN_TL_DEPS += ${TL_AUTOGEN_TEST_CXX}
 +
 +${EXE}/memcached-with-times: ${MEMCACHE_PARTS:%=${OBJ}/memcached/memcached-with-times-%.o} ${TL_ENGINE_OBJS} ${MEMCACHE_AUTOGEN_TL_DEPS}
 +${EXE}/memcached: ${MEMCACHE_PARTS:%=${OBJ}/memcached/memcached-%.o} ${TL_ENGINE_OBJS} ${MEMCACHE_AUTOGEN_TL_DEPS}

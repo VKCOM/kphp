@@ -22,6 +22,7 @@ use VK\TL\memcache\Functions\memcache_get;
 use VK\TL\memcache\Functions\memcache_set;
 use VK\TL\memcache\Types\memcache_strvalue;
 use VK\TL\rpcProxy\Functions\rpcProxy_diagonal;
+use VK\TL\test\Functions\test_storeMaybeArray;
 use VK\TL\text\Functions\text_getExtraMask;
 use VK\TL\text\Functions\text_getSecret;
 use VK\TL\text\Functions\text_onlineFriendsId;
@@ -391,6 +392,29 @@ function test_rpc_invoke_req_extra_headers($key, $value, $ignore_result, $use_ac
   assertEq($value, $res["result"]["value"]);
 }
 
+function test_store_maybe_array() {
+  echo "##### test_store_maybe_array #####\n";
+  $data = new \VK\TL\test\Types\test_storeMaybeArrayData(
+    ["qwerty1 vector"],
+    ["qwerty1 tuple"],
+    ["hello" => "qwerty1 Dict"],
+    [123 => "qwerty1 IntDict"],
+    [123 => "qwerty1 LongDict"]);
+
+  $req = new test_storeMaybeArray($data);
+  $response = rpc_query_sync($req, MEMCACHE_PORT);
+  if ($response->isError()) {
+    var_dump(rpc_get_last_send_error());
+    assertFalse();
+  }
+  $ans = test_storeMaybeArray::result($response);
+  assertEq($data->vector, $ans->vector);
+  assertEq($data->tuple, $ans->tuple);
+  assertEq($data->dictionary, $ans->dictionary);
+  assertEq($data->int_key_dictionary, $ans->int_key_dictionary);
+  assertEq($data->long_key_dictionary, $ans->long_key_dictionary);
+}
+
 function main()
 {
   echo "@@@@@@ TESTS STARTED for PHP " . phpversion() . " @@@@@@\n";
@@ -429,6 +453,8 @@ function main()
   test_rpc_invoke_req_extra_headers("test1", "hello", false, true);
   test_rpc_invoke_req_extra_headers("test2", "hello", true, false);
   test_rpc_invoke_req_extra_headers("test3", "hello", true, true);
+
+  test_store_maybe_array();
 
   global $FailedAsserts;
   echo "@@@@@@ TESTS ENDED @@@@@@\n";
