@@ -7,7 +7,31 @@
 #include "common/unicode/unicode-utils.h"
 #include "common/unicode/utf8-utils.h"
 
+bool is_detect_incorrect_encoding_names_warning = false;
+
+void f$set_detect_incorrect_encoding_names_warning(bool show) {
+  is_detect_incorrect_encoding_names_warning = show;
+}
+
+static void detect_incorrect_encoding_names(const string &encoding) {
+  const auto encoding_name = f$strtolower(encoding).c_str();
+
+  if (!strcmp(encoding_name, "cp1251") || !strcmp(encoding_name, "cp-1251") || !strcmp(encoding_name, "windows-1251")) {
+    return;
+  }
+
+  if (!strcmp(encoding_name, "utf8") || !strcmp(encoding_name, "utf-8")) {
+    return;
+  }
+
+  php_warning("Found unsupported \"%s\" encoding", encoding_name);
+}
+
 static int mb_detect_encoding(const string &encoding) {
+  if (is_detect_incorrect_encoding_names_warning) {
+    detect_incorrect_encoding_names(encoding);
+  }
+
   if (strstr(encoding.c_str(), "1251")) {
     return 1251;
   }
