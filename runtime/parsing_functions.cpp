@@ -80,7 +80,7 @@ string get_env_val(const string &env_entry)
 {
   for (string::size_type i = 0; i < env_entry.size(); i++) {
     if (env_entry[i] == '=') {
-      return env_entry.substr(i+1, env_entry.size() - i);
+      return env_entry.substr(i+1, env_entry.size() - (i+1));
     }
   }
 
