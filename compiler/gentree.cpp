@@ -19,6 +19,7 @@
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
 #include "compiler/stage.h"
+#include "compiler/token.h"
 #include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
@@ -332,12 +333,12 @@ VertexPtr GenTree::get_postfix_expression(VertexPtr res, bool parenthesized) {
       }
       res.set_location(location);
       need = true;
-    } else if (tp == tok_arrow) {
+    } else if (tp == tok_arrow || tp == tok_nullsafe_arrow) {
       auto location = auto_location();
       next_cur();
       VertexPtr rhs = get_expr_top(true);
       CE (!kphp_error(rhs, "Failed to parse right argument of '->'"));
-      res = process_arrow(res, rhs);
+      res = process_arrow(res, rhs, tp == tok_nullsafe_arrow);
       CE(res);
       res.set_location(location);
       need = true;
@@ -1782,10 +1783,11 @@ VertexAdaptor<op_var> GenTree::auto_capture_this_in_lambda(FunctionPtr f_lambda)
   return v_captured_this;
 }
 
-VertexPtr GenTree::process_arrow(VertexPtr lhs, VertexPtr rhs) {
+VertexPtr GenTree::process_arrow(VertexPtr lhs, VertexPtr rhs, bool is_null_safe) {
   if (rhs->type() == op_func_name) {
     auto inst_prop = VertexAdaptor<op_instance_prop>::create(lhs);
     inst_prop->str_val = rhs->get_string();
+    inst_prop->is_null_safe = is_null_safe;
     return inst_prop;
 
   } else if (auto as_func_call = rhs.try_as<op_func_call>()) {
@@ -1793,6 +1795,7 @@ VertexPtr GenTree::process_arrow(VertexPtr lhs, VertexPtr rhs) {
     new_root->extra_type = op_ex_func_call_arrow;
     new_root->str_val = as_func_call->str_val;
     new_root->reifiedTs = as_func_call->reifiedTs;
+    new_root->is_null_safe = is_null_safe;
     return new_root;
 
   } else {

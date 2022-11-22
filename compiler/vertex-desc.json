@@ -314,6 +314,10 @@
       "reifiedTs": {
         "type": "GenericsInstantiationMixin *",
         "default": "nullptr"
+      },
+      "is_null_safe": {
+        "type": "bool",
+        "default": "false"
       }
     }
   },
@@ -519,6 +523,10 @@
       "access_type": {
         "type": "InstancePropAccessType",
         "default": "InstancePropAccessType::Default"
+      },
+      "is_null_safe": {
+        "type": "bool",
+        "default": "false"
       }
     }
   },
