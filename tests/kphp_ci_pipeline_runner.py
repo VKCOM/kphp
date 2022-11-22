@@ -143,7 +143,7 @@ def parse_args():
         type=str,
         dest="engine_repo",
         default="",
-        help="specify path to vk engine repository dir"
+        help="Any nonempty value of this option will identify that integration tests are enabled."  # TODO: rename it
     )
 
     parser.add_argument(
@@ -195,7 +195,7 @@ def parse_args():
         action='store_true',
         dest="use_nocc",
         default=False,
-        help="use nocc for compiling kphp/engine and running phpt"
+        help="use nocc for compiling kphp and running phpt"
     )
 
     parser.add_argument(
@@ -266,30 +266,6 @@ if __name__ == "__main__":
         skip=args.steps and "make-kphp" not in args.steps
     )
 
-    if args.engine_repo:
-        packages_dir = os.path.abspath(os.path.join(kphp_repo_root, "build/_CPack_Packages/Linux/DEB/kphp-1.0.1-Linux"))
-        engine_cc = "gcc"
-        engine_cxx = "g++"  # don't use nocc, as engines build uses -MP -MMD options that are not supported yet
-        # There is no way to pass extra options for engine Makefile, so pass them right via CXX
-        engine_cxx += " -I{packages_dir}/TLO_PARSING_DEV/usr/include/ -L{packages_dir}/TLO_PARSING_DEV/lib/".format(packages_dir=packages_dir)
-        runner.add_test_group(
-            name="make-engines",
-            description="make engines",
-            cmd="{env_vars} PATH=\"{packages_dir}/TL_TOOLS/bin:$PATH\" "
-                "CC='{engine_cc}' CXX='{engine_cxx}' "
-                "make asan={asan} -C {engine_repo_root} -j{jobs} "
-                "objs/bin/combined.tlo objs/bin/combined2.tl tlclient tasks rpc-proxy pmemcached memcached".format(
-                    jobs=n_cpu,
-                    env_vars=env_vars,
-                    packages_dir=packages_dir,
-                    engine_repo_root=args.engine_repo,
-                    engine_cc=engine_cc,
-                    engine_cxx=engine_cxx,
-                    asan=1 if args.use_asan else 0
-            ),
-            skip=args.steps and "make-engines" not in args.steps
-        )
-
     runner.add_test_group(
         name="kphp-tests",
         description="run kphp tests with cxx={}".format(args.cxx_name),
@@ -320,16 +296,14 @@ if __name__ == "__main__":
         )
 
     tl2php_bin = os.path.join(kphp_repo_root, "objs/bin/tl2php")
-    combined_tlo = os.path.join(args.engine_repo or kphp_repo_root, "objs/bin/combined.tlo")
-    combined2_tl = os.path.join(args.engine_repo or kphp_repo_root, "objs/bin/combined2.tl")
+    combined_tlo = os.path.abspath("/usr/share/engine/combined.tlo")
     tl_tests_dir = make_relpath(runner_dir, "TL-tests")
     runner.add_test_group(
         name="tl2php",
         description="gen php classes with tests from tl schema in {} mode".format("gcc"),
-        cmd="{env_vars} {tl2php} -i -c {combined2_tl} -t -f -d {tl_tests_dir} {combined_tlo}".format(
+        cmd="{env_vars} {tl2php} -i -t -f -d {tl_tests_dir} {combined_tlo}".format(
             env_vars=env_vars,
             tl2php=tl2php_bin,
-            combined2_tl=combined2_tl,
             tl_tests_dir=tl_tests_dir,
             combined_tlo=combined_tlo
         ),
@@ -373,9 +347,9 @@ if __name__ == "__main__":
             name="integration-tests",
             description="run kphp integration tests with cxx={}".format("gcc"),
             cmd="PYTHONPATH={lib_dir} "
-                "KPHP_TESTS_ENGINE_REPO={engine_repo} "
                 "KPHP_TESTS_KPHP_REPO={kphp_repo_root} "
                 "KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} "
+                "KPHP_TESTS_INTERGRATION_TESTS_ENABLED=1 "
                 "python3 -m pytest --tb=native -n{jobs} -k '{exclude_pattern}' {tests_dir}".format(
                 jobs=n_cpu,
                 lib_dir=os.path.join(runner_dir, "python"),

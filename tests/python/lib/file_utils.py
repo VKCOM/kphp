@@ -24,7 +24,7 @@ def _check_bin(bin_path):
     return False
 
 
-_ENGINE_REPO = os.environ.get("KPHP_TESTS_ENGINE_REPO")
+_ENGINE_INSTALL_PATH = "/usr/share/engine" if os.environ.get("KPHP_TESTS_INTERGRATION_TESTS_ENABLED") else None
 _DEFAULT_KPHP_REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../../../"))
 _KPHP_REPO = os.environ.get("KPHP_TESTS_KPHP_REPO", _DEFAULT_KPHP_REPO)
 
@@ -34,16 +34,16 @@ def search_kphp2cpp():
 
 
 def search_engine_bin(engine_name):
-    return _check_file("objs/bin/" + engine_name, _ENGINE_REPO, _check_bin)
+    return _check_file("bin/" + engine_name, _ENGINE_INSTALL_PATH, _check_bin)
 
 
 def search_tl_client():
-    return _check_file("objs/bin/tlclient", _ENGINE_REPO, _check_bin)
+    return _check_file("bin/tlclient", _ENGINE_INSTALL_PATH, _check_bin)
 
 
 def search_combined_tlo(working_dir):
-    if _ENGINE_REPO:
-        return _check_file("objs/bin/combined.tlo", _ENGINE_REPO, os.path.isfile)
+    if _ENGINE_INSTALL_PATH:
+        return _check_file("combined.tlo", _ENGINE_INSTALL_PATH, os.path.isfile)
     tl_compiler_path = _check_file("objs/bin/tl-compiler", _KPHP_REPO, _check_bin)
     common_tl = _check_file("common/tl-files/common.tl", _KPHP_REPO, os.path.isfile)
     subprocess.call(
