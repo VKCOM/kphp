@@ -17,14 +17,14 @@ TEST(allocator_malloc_replacement_test, test_replacement_raii) {
   ASSERT_FALSE(dl::is_malloc_replaced());
 
   {
-    auto guard = make_malloc_replacement_with_script_allocator_guard();
+    auto guard = make_malloc_replacement_with_script_allocator();
     ASSERT_TRUE(dl::is_malloc_replaced());
   }
 
   ASSERT_FALSE(dl::is_malloc_replaced());
 
   {
-    auto guard = make_malloc_replacement_with_script_allocator_guard(false);
+    auto guard = make_malloc_replacement_with_script_allocator(false);
     ASSERT_FALSE(dl::is_malloc_replaced());
   }
 
@@ -38,7 +38,7 @@ static void do_malloc_fn_test(const MallocFn &malloc_fn) {
 
   const auto memory_stats_before = dl::get_script_memory_stats();
   {
-    auto guard = make_malloc_replacement_with_script_allocator_guard();
+    auto guard = make_malloc_replacement_with_script_allocator();
     ASSERT_TRUE(dl::is_malloc_replaced());
     void *mem = malloc_fn(128);
     ASSERT_TRUE(mem);

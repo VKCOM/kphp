@@ -415,7 +415,7 @@ void regexp::init(const char *regexp_string, int64_t regexp_len, const char *fun
 
   use_heap_memory = (dl::get_script_memory_stats().memory_limit == 0);
 
-  auto malloc_replacement_guard = make_malloc_replacement_with_script_allocator_guard(!use_heap_memory);
+  auto malloc_replacement_guard = make_malloc_replacement_with_script_allocator(!use_heap_memory);
 
   is_utf8 = false;
   int32_t pcre_options = 0;
@@ -618,7 +618,7 @@ int64_t regexp::exec(const string &subject, int64_t offset, bool second_try) con
   if (RE2_regexp && !second_try) {
     {
       dl::CriticalSectionGuard critical_section;
-      auto malloc_replacement_guard = make_malloc_replacement_with_script_allocator_guard(!use_heap_memory);
+      auto malloc_replacement_guard = make_malloc_replacement_with_script_allocator(!use_heap_memory);
 
       re2::StringPiece text(subject.c_str(), subject.size());
       bool matched = RE2_regexp->Match(text, static_cast<int32_t>(offset), subject.size(), RE2::UNANCHORED, RE2_submatch, subpatterns_count);
