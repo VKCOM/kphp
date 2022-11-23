@@ -1,9 +1,7 @@
 #pragma once
 
 #include "runtime/kphp_core.h"
-#include "runtime/string_functions.h"
 #include <regex>
-#include <iostream>
 #include <fstream>
 
 /*
