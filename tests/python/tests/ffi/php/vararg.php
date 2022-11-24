@@ -23,7 +23,7 @@ function test_printf1() {
   $cdef->printf("%3ld\n", $int->cdata);
 
   $cdef->printf("true=%d false=%d int=%ld float=%.2f\n",
-    true, false, 43, 43.0);
+    (int)true, (int)false, 43, 43.0);
 }
 
 for ($i = 0; $i < 5; ++$i) {
