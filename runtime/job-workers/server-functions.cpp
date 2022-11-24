@@ -48,23 +48,23 @@ void f$kphp_job_worker_store_response(const class_instance<C$KphpJobWorkerRespon
     return;
   }
   if (!f$is_kphp_job_workers_enabled()) {
-    php_warning("Can't store job response: job workers disabled");
+    php_warning("Can't store job response %s: job workers disabled", response.get_class());
     return;
   }
   if (!current_job.send_reply) {
-    php_warning("Can't store job response: this is a not job request");
+    php_warning("Can't store job response %s: this is a not job request", response.get_class());
     return;
   }
   auto &memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
   auto *response_memory = memory_manager.acquire_shared_message<job_workers::JobSharedMessage>();
   if (!response_memory) {
-    php_warning("Can't store job response: not enough shared memory");
+    php_warning("Can't store job response %s: not enough shared memory", response.get_class());
     return;
   }
   response_memory->instance = copy_instance_into_other_memory(response, response_memory->resource,
                                                               ExtraRefCnt::for_job_worker_communication, job_workers::request_extra_shared_memory);
   if (response_memory->instance.is_null()) {
-    php_warning("Can't store job response: too big response");
+    php_warning("Can't store job response %s: too big response", response.get_class());
     memory_manager.release_shared_message(response_memory);
     return;
   }
@@ -73,7 +73,7 @@ void f$kphp_job_worker_store_response(const class_instance<C$KphpJobWorkerRespon
   if (const char *err = current_job.send_reply(response_memory)) {
     memory_manager.release_shared_message(response_memory);
     critical_section.leave_critical_section();
-    php_warning("Can't store job response: %s", err);
+    php_warning("Can't store job response %s: %s", response.get_class(), err);
   } else {
     memory_manager.detach_shared_message_from_this_proc(response_memory);
   }

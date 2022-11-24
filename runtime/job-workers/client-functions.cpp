@@ -43,8 +43,8 @@ JobMessageT *make_job_request_message(const class_instance<T> &instance) {
   auto &memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
   auto *memory_request = memory_manager.acquire_shared_message<JobMessageT>();
   if (memory_request == nullptr) {
-    php_notice("Can't send job: not enough shared messages. "
-               "Most probably job workers are slowed and overloaded due to external factors: net/cpu lags, network queries slowdown etc.");
+    php_notice("Can't send job %s: not enough shared messages. "
+               "Most probably job workers are slowed and overloaded due to external factors: net/cpu lags, network queries slowdown etc.", instance.get_class());
     return nullptr;
   }
 
@@ -52,7 +52,7 @@ JobMessageT *make_job_request_message(const class_instance<T> &instance) {
                                                              ExtraRefCnt::for_job_worker_communication, job_workers::request_extra_shared_memory);
   if (memory_request->instance.is_null()) {
     memory_manager.release_shared_message(memory_request);
-    php_warning("Can't send job: too big request");
+    php_warning("Can't send job %s: too big request", instance.get_class());
     return nullptr;
   }
   return memory_request;
@@ -82,7 +82,7 @@ int send_job_request_message(job_workers::JobSharedMessage *job_message, double 
       }
       memory_manager.release_shared_message(job_message);
       critical_section.leave_critical_section();
-      php_warning("Can't send job: probably jobs queue is full");
+      php_warning("Can't send job %s: probably jobs queue is full", job_message->instance.get_class());
       return -1;
     }
   }
