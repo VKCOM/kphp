@@ -187,6 +187,10 @@ void PhpScript::init(script_t *script, php_query_data *data_to_set) noexcept {
 void PhpScript::on_request_timeout_error() {
   // note: this function runs only when is_running=true
 
+  if (dl::is_malloc_replaced()) {
+    dl::rollback_malloc_replacement();
+  }
+
   // we can get here from a normal timeout *or* a timeout that happens after
   // we tried to execute the shutdown functions from the timeout context;
   // in the latter case, we should skip all everything here and go straight to the
