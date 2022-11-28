@@ -22,11 +22,6 @@ jobs:
             asan: off
             ubsan: off
           - os: focal
-            compiler: g++
-            cpp: 17
-            asan: off
-            ubsan: off
-          - os: focal
             compiler: clang++
             cpp: 17
             asan: off
