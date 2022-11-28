@@ -238,7 +238,7 @@ array<mixed> f$parse_ini_string(const string &ini_string, bool process_sections,
           return {};
         }
 
-        if (!ini_var.empty() && !ini_val.empty()) {
+        if (!ini_var.empty()) {
           switch (scanner_mode) {
             case INI_SCANNER_NORMAL:
               if (isINIBoolVal(ini_val)) {
