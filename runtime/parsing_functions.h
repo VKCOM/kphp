@@ -3,6 +3,7 @@
 #include "runtime/kphp_core.h"
 #include <regex>
 #include <iostream>
+#include <fstream>
 #include <string>
 
 /*
@@ -38,3 +39,5 @@ string get_ini_val(const string &ini_entry);
 bool cast_str_to_bool(const string &ini_var);
 
 array<mixed> f$parse_ini_string(const string &ini_string, bool process_sections = false, int scanner_mode = INI_SCANNER_NORMAL);
+
+array<mixed> f$parse_ini_file(const string &filename, bool process_sections = false, int scanner_mode = INI_SCANNER_NORMAL);

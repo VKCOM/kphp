@@ -288,3 +288,38 @@ array<mixed> f$parse_ini_string(const string &ini_string, bool process_sections,
 
   return res;
 }
+
+
+
+array<mixed> f$parse_ini_file(const string &filename, bool process_sections, int scanner_mode)
+{
+  if (filename.empty()) {
+    php_warning("Filename cannot be empty");
+    return {};
+  }
+
+  std::ifstream ifs(filename.c_str());
+
+  if (!ifs.is_open()) {
+    php_warning("failed to open stream: %s", filename.c_str());
+    return {};
+  }
+
+  std::string str;
+  std::string ini_string;
+
+  while (std::getline(ifs, str)) {
+    if (!str.empty()) {
+      ini_string.append(str);
+      ini_string.append(" ");
+    }
+  }
+
+  if (!str.empty()) {
+    ini_string.append(str);
+  }
+
+  ifs.close();
+
+  return f$parse_ini_string(string(ini_string.c_str()), process_sections, scanner_mode);
+}
