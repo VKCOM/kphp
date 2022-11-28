@@ -284,12 +284,14 @@ void rollback_malloc_replacement() noexcept {
   MallocStateHolder::get().replace_malloc(true);
 }
 
-void report_wrong_malloc_replacement_error() noexcept {
-  php_assert(dl::is_malloc_replaced() == false);
-  std::array<char, 1000> buf{'\0'};
-  const char *sep = ";\n";
-
+void write_last_malloc_replacement_stacktrace(char *buf, size_t buf_size) noexcept {
+  if (buf_size == 0) {
+    return;
+  }
+  buf[0] = '\0';
+  auto malloc_replacement_rollback = temporary_rollback_malloc_replacement();
   auto [raw_backtrace, backtrace_size] = MallocStateHolder::get().get_last_malloc_replacement_backtrace();
+  const char *sep = ";\n";
   KphpBacktrace demangler{raw_backtrace, backtrace_size};
   size_t cur_len = 0;
   for (const char *name : demangler.make_demangled_backtrace_range()) {
@@ -297,16 +299,13 @@ void report_wrong_malloc_replacement_error() noexcept {
     if (len == 0) {
       continue;
     }
-    if (cur_len + len + std::strlen(sep) + 1 > buf.size()) {
+    if (cur_len + len + std::strlen(sep) + 1 > buf_size) {
       break;
     }
-    std::strcat(buf.data(), name);
-    std::strcat(buf.data(), sep);
+    std::strcat(buf, name);
+    std::strcat(buf, sep);
     cur_len += len + std::strlen(sep);
   }
-  log_server_critical("Malloc replacement was not rolled back.\n"
-                      "Stacktrace of last replacement:\n"
-                      "%s", buf.data());
 }
 
 MemoryReplacementGuard::MemoryReplacementGuard(memory_resource::unsynchronized_pool_resource &memory_resource, bool force_enable_disable) : force_enable_disable_(force_enable_disable) {

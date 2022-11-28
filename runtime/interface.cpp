@@ -585,6 +585,8 @@ void f$fastcgi_finish_request(int64_t exit_code) {
 }
 
 void run_shutdown_functions() {
+  php_assert(dl::is_malloc_replaced() == false);
+
   ShutdownProfiler shutdown_profiler;
   for (int i = 0; i < shutdown_functions_count; i++) {
     shutdown_functions[i]();
