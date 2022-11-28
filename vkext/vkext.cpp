@@ -1017,7 +1017,9 @@ PHP_FUNCTION (typed_rpc_tl_query) {
   ADD_CNT(total);
   START_TIMER(total);
   vkext_reset_error();
+  typed_mode = 1;
   vk_memcache_query(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  typed_mode = 0;
   tl_current_function_name = NULL;
   END_TIMER(total);
 }
@@ -1026,7 +1028,9 @@ PHP_FUNCTION (typed_rpc_tl_query_one) {
   ADD_CNT(total);
   START_TIMER(total);
   vkext_reset_error();
+  typed_mode = 1;
   vk_memcache_query1(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  typed_mode = 0;
   tl_current_function_name = NULL;
   END_TIMER(total);
 }
