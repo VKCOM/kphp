@@ -78,7 +78,7 @@ Optional<int64_t> connect_to_address(const string &host, int64_t port, double en
     }
   }
 
-  pollfd poll_fd{static_cast<int>(socket_fd), POLLIN | POLLERR | POLLHUP | POLLOUT | POLLPRI, 0};
+  pollfd poll_fd{static_cast<int>(socket_fd), POLLOUT, 0};
   double timeout = end_time - microtime_monotonic();
   if (timeout <= 0) {
     faulter(-3, string("Timeout expired %s"), string(""));
