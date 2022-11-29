@@ -107,7 +107,7 @@ class TestJobErrors(KphpServerAutoTestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json(), {"job-id": False})
 
-        self.kphp_server.assert_log(["Warning: Can't send job: too big request"])
+        self.kphp_server.assert_log(["Warning: Can't send job X2Request: too big request"])
         self.kphp_server.assert_stats(
             prefix="kphp_server.workers_job_memory_messages_shared_messages_",
             initial_stats=stats_messages_before,
@@ -129,7 +129,7 @@ class TestJobErrors(KphpServerAutoTestCase):
         stats_extra_buffers_before = self.kphp_server.get_stats("kphp_server.workers_job_memory_messages_extra_buffers_")
         self.job_error_test_impl("big_response", self.JOB_NO_REPLY, 6)
         self.kphp_server.assert_log(2 * [
-            "Warning: Can't store job response: too big response"
+            "Warning: Can't store job response X2Response: too big response"
         ])
         self.kphp_server.assert_stats(
             prefix="kphp_server.workers_job_memory_messages_extra_buffers_",
