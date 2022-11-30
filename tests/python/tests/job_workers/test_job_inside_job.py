@@ -31,8 +31,8 @@ class TestJobInsideJob(KphpServerAutoTestCase):
                 for cur_data in data
             ]})
         messages_cnt = len(data) * 2 * (redirect_chain_len + 1)
-        # if redirect_chain_len >= self.JOB_WORKERS_NUM:
-        #     messages_cnt -= 1
+        if redirect_chain_len >= self.JOB_WORKERS_NUM:
+            messages_cnt -= 1
         self.kphp_server.assert_stats(
             initial_stats=stats_before,
             timeout=10,
