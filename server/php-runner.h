@@ -109,7 +109,6 @@ public:
   const size_t mem_size{0};
   char *run_mem{nullptr};
   PhpScriptStack script_stack;
-  double finish_time{std::numeric_limits<double>::max()};
 
   ucontext_t_portable run_context{};
   sigjmp_buf timeout_handler{};

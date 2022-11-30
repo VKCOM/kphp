@@ -748,7 +748,6 @@ void PhpScript::set_timeout(double t) noexcept {
   timer.it_value.tv_usec = usec;
 
   PhpScript::timeout_expired = false;
-  finish_time = precise_now + t;
   setitimer(ITIMER_REAL, &timer, nullptr);
 }
 
