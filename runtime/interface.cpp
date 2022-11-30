@@ -49,6 +49,7 @@
 #include "runtime/string_functions.h"
 #include "runtime/typed_rpc.h"
 #include "runtime/udp.h"
+#include "runtime/tcp.h"
 #include "runtime/url.h"
 #include "runtime/zlib.h"
 #include "server/database-drivers/adaptor.h"
@@ -2318,6 +2319,7 @@ static void free_runtime_libs() {
   free_typed_rpc_lib();
   free_streams_lib();
   free_udp_lib();
+  free_tcp_lib();
   free_timelib();
   OnKphpWarningCallback::get().reset();
 
@@ -2349,6 +2351,7 @@ void global_init_runtime_libs() {
   global_init_resumable_lib();
   global_init_rpc_lib();
   global_init_udp_lib();
+  global_init_tcp_lib();
   global_init_job_workers_lib();
   global_init_php_timelib();
   global_init_curl_lib();
