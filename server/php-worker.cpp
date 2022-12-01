@@ -26,12 +26,11 @@ PhpWorker *active_worker = nullptr;
 
 double PhpWorker::enter_lifecycle() noexcept {
   if (finish_time < precise_now + 0.01) {
-    PhpScript::timeout_expired = true;
-//    if (state > phpq_try_start) {
-//      PhpScript::timeout_expired = true;
-//    } else {
-//      terminate(0, script_error_t::timeout, "timeout\n");
-//    }
+    if (state < phpq_run) {
+      terminate(0, script_error_t::timeout, "timeout exit\n");
+    } else {
+      PhpScript::timeout_expired = true;
+    }
   }
   on_wakeup();
 
