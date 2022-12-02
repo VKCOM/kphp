@@ -20,7 +20,7 @@ prepend(RUNTIME_TESTS_SOURCES ${BASE_DIR}/tests/cpp/runtime/
         string-list-test.cpp
         string-test.cpp
         zstd-test.cpp
-        parsing-functions-test.cpp)
+        ini-parsing-tests.cpp)
 
 allow_deprecated_declarations_for_apple(${BASE_DIR}/tests/cpp/runtime/inter-process-mutex-test.cpp)
 vk_add_unittest(runtime "${RUNTIME_LIBS};${RUNTIME_LINK_TEST_LIBS}" ${RUNTIME_TESTS_SOURCES})
