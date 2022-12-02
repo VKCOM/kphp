@@ -338,7 +338,7 @@ int utf8_to_win(const char *s, int len, int64_t max_len, bool exit_on_error) {
   return 1;
 }
 
-void write_char_utf8(int c) {
+void write_char_utf8(int64_t c) {
   if (!c) {
     return;
   }
@@ -383,7 +383,7 @@ void write_char_utf8(int c) {
   write_buff_char(';');
 }
 
-void write_char_utf8_no_escape(int c) {
+void write_char_utf8_no_escape(int64_t c) {
   if (!c) {
     return;
   }
@@ -427,7 +427,7 @@ void write_char_utf8_no_escape(int c) {
 static int win_to_utf8(const char *s, int len, bool escape) {
   int state = 0;
   int save_pos = -1;
-  int cur_num = 0;
+  int64_t cur_num = 0;
   for (int i = 0; i < len; i++) {
     if (state == 0 && s[i] == '&') {
       save_pos = cur_buff_len;
@@ -436,7 +436,9 @@ static int win_to_utf8(const char *s, int len, bool escape) {
     } else if (state == 1 && s[i] == '#') {
       state++;
     } else if (state == 2 && s[i] >= '0' && s[i] <= '9') {
-      cur_num = s[i] - '0' + cur_num * 10;
+      if (cur_num < 0x80000000) {
+        cur_num = s[i] - '0' + cur_num * 10;
+      }
     } else if (state == 2 && s[i] == ';') {
       state++;
     } else {
@@ -449,7 +451,7 @@ static int win_to_utf8(const char *s, int len, bool escape) {
       write_buff_set_pos(save_pos);
       php_assert (save_pos == cur_buff_len);
       (escape ? write_char_utf8 : write_char_utf8_no_escape)(cur_num);
-    } else if (state == 3 && cur_num >= 0x10000) {
+    } else if (state == 3 && cur_num >= 0x80000000) {
       write_char_utf8(win_to_utf8_convert[(unsigned char)s[i]]);
       write_buff_char_pos('$', save_pos);
     } else {
