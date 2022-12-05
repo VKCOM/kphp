@@ -294,12 +294,30 @@ inline void f$array_swap_int_keys(array<T> &a, int64_t idx1, int64_t idx2) noexc
  *
  */
 
+string implode_string_vector(const string &s, const array<string> &a);
 
 template<class T>
 string f$implode(const string &s, const array<T> &a) {
-  if (a.count() == 1) {
+  int64_t count = a.count();
+  if (count == 1) {
     return f$strval(a.begin().get_value());
   }
+  if (count == 0) {
+    return string{};
+  }
+
+  if constexpr (std::is_same_v<T, string>) {
+    if (a.is_vector()) {
+      // traversing a flat vector is fast enough, so we can do it twice:
+      // calculate the total result length and append the result
+      // right into the dst string;
+      // (sometimes we don't even need to traverse the array for result_size, see int array overloading)
+      // this way we avoid x2 data bytes copying (into SB and then into the result string);
+      return implode_string_vector(s, a);
+    }
+  }
+
+  // fallback to the generic iterator + string_buffer solution
 
   string_buffer &SB = static_SB;
   SB.clean();
