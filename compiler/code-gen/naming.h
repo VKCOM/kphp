@@ -201,9 +201,22 @@ struct FunctionClassName {
 
 struct VarName {
   VarPtr var;
+  vk::string_view name;
+
+  VarName() = default;
   explicit VarName(VarPtr var) : var(var) {}
+  explicit VarName(vk::string_view name) : name{name} {}
+
+  bool empty() const {
+    return !var && name.empty();
+  }
 
   void compile(CodeGenerator &W) const {
+    if (!name.empty()) {
+      W << name;
+      return;
+    }
+
     if (var->is_function_static_var()) {
       W << FunctionName(var->holder_func) << "$";
     }

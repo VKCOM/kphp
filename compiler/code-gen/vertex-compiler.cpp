@@ -469,6 +469,7 @@ void compile_binary_func_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W
     ")";
 }
 
+bool try_compile_append_inplace(VertexAdaptor<op_set_dot> root, CodeGenerator &W);
 
 void compile_binary_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W) {
   const auto &root_type_str = OpInfo::str(root->type());
@@ -500,6 +501,12 @@ void compile_binary_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W) {
   // special inplace variables that are defined at the assignment location, not in the beginning of the function
   if (root->type() == op_set && lhs->type() == op_var && lhs->extra_type == op_ex_var_superlocal_inplace) {
     W << TypeName(lhs_tp) << " ";    // generates "array<T> $tmp = v" instead of "$tmp = v"
+  }
+
+  if (root->type() == op_set_dot && root->rl_type == val_none) {
+    if (try_compile_append_inplace(root.as<op_set_dot>(), W)) {
+      return;
+    }
   }
 
   if (OpInfo::type(root->type()) == binary_func_op) {
@@ -1427,8 +1434,37 @@ static bool can_save_ref(VertexPtr v) {
   return false;
 }
 
-void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGenerator &W) {
-  if (root->args().size() <= 5) {
+void compile_string_build_impl(VertexAdaptor<op_string_build> root, VarName dst, const TypeData *dst_type, CodeGenerator &W) {
+  struct LenArg {
+    std::string var_name;
+    int64_t static_len = 0;
+    bool complex_flag = false;
+
+    void compile(CodeGenerator &W) const {
+      if (complex_flag) {
+        W << var_name;
+      } else {
+        W << static_len;
+      }
+    }
+  };
+  struct AppendArg {
+    const StrlenInfo &str_info;
+
+    AppendArg(const StrlenInfo &str_info): str_info{str_info} {}
+
+    void compile(CodeGenerator &W) const {
+      if (str_info.str_flag) {
+        W << RawString(str_info.str) << ", " << str_info.len;
+      } else if (str_info.var_flag) {
+        W << str_info.str;
+      } else {
+        W << str_info.v;
+      }
+    }
+  };
+
+  if (dst.empty() && root->args().size() <= 5) {
     bool all_string_args = true;
     for (const auto &arg : root->args()) {
       const auto *arg_type = tinf::get_type(arg);
@@ -1455,7 +1491,7 @@ void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGen
   bool ok = true;
   bool was_dynamic = false;
   bool was_object = false;
-  int static_length = 0;
+  LenArg len_arg;
   int ii = 0;
   for (auto i : root->args()) {
     info[ii].v = i;
@@ -1474,7 +1510,7 @@ void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGen
       info[ii].str_flag = true;
       info[ii].str = value->get_string();
       info[ii].len = (int)info[ii].str.size();
-      static_length += info[ii].len;
+      len_arg.static_len += info[ii].len;
     } else {
       if (value_length == STRLEN_DYNAMIC) {
         was_dynamic = true;
@@ -1487,7 +1523,7 @@ void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGen
         }
 
         kphp_assert (value_length >= 0);
-        static_length += value_length;
+        len_arg.static_len += value_length;
       }
 
       info[ii].len = value_length;
@@ -1500,7 +1536,7 @@ void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGen
   }
 
   bool complex_flag = was_dynamic || was_object;
-  std::string len_name;
+  len_arg.complex_flag = complex_flag;
   std::string tmp_string_name;
   int n_next_var_idx = 0;
   if (complex_flag) {
@@ -1529,33 +1565,47 @@ void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGen
       }
     }
 
-    len_name = "tmp_strlen";
-    W << "string::size_type " << len_name << " = " << static_length;
+    len_arg.var_name = "tmp_strlen";
+    W << "string::size_type " << len_arg.var_name << " = " << len_arg.static_len;
     for (const auto &str : to_add) {
       W << " + max_string_size (" << str << ")";
     }
     W << ";" << NL;
+  }
+
+  if (!dst.empty()) {
+    if (!complex_flag) { // open the block if it's not opened yet
+      W << "(" << BEGIN;
+    }
+    // TODO: handle mixed too (it's more tricky: sometimes we need to convert mixed to string, etc.)
+    kphp_assert(dst_type->ptype() == tp_string);
+    VarName string_dst = dst;
+    if (dst_type->ptype() == tp_string && dst_type->use_optional()) {
+      W << "auto &as_string_ = " << dst << ".ref();" << NL;
+      string_dst = VarName{"as_string_"};
+    }
+    // reserve_at_least will handle the shared string by cloning it,
+    // so we can use append_unsafe+finish_append safely here;
+    // the unsafe append method doesn't add a trailing 0 byte after each append,
+    // it also doesn't check whether we need to reserve more memory for the result;
+    // the finish_append call will insert that 0 byte once in the very end
+    W << string_dst << ".reserve_at_least(" << len_arg << " + " << string_dst << ".size());" << NL;
+    W << string_dst;
+    for (const auto &str_info : info) {
+      W << ".append_unsafe(" << AppendArg{str_info} << ")";
+    }
+    W << ".finish_append();" << NL;
+    W << END << ")";
+    return;
+  }
+
+  if (complex_flag) {
     tmp_string_name = "tmp_string";
     W << "string " << tmp_string_name << " = ";
   }
-
-  W << "string (";
-  if (complex_flag) {
-    W << len_name;
-  } else {
-    W << static_length;
-  }
-  W << ", true)";
+  W << "string (" << len_arg << ", true)";
   for (const auto &str_info : info) {
-    W << ".append_unsafe (";
-    if (str_info.str_flag) {
-      W << RawString(str_info.str) << ", " << str_info.len;
-    } else if (str_info.var_flag) {
-      W << str_info.str;
-    } else {
-      W << str_info.v;
-    }
-    W << ")";
+    W << ".append_unsafe (" << AppendArg{str_info} << ")";
   }
   W << ".finish_append()";
 
@@ -1564,6 +1614,35 @@ void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGen
       << tmp_string_name << ";" << NL
       << END << ")";
   }
+}
+
+void compile_string_build_as_string(VertexAdaptor<op_string_build> root, CodeGenerator &W) {
+  compile_string_build_impl(root, {}, nullptr, W);
+}
+
+bool try_compile_append_inplace(VertexAdaptor<op_set_dot> root, CodeGenerator &W) {
+  if (root->rhs()->type() == op_string_build) {
+    const auto *lhs_type = tinf::get_type(root->lhs());
+    if (lhs_type->ptype() != tp_string) {
+      return false;
+    }
+    // compile `$lhs .= $s1 . $s2 . [...] . $s3` more efficiently:
+    // append all strings directly to the $lhs without creating a temporary
+    // string for the $rhs result; also, grow $lhs accordingly, so it
+    // can fit all the string parts
+    if (root->lhs()->type() == op_var) {
+      kphp_assert(tinf::get_type(root->lhs().as<op_var>())->ptype() == tp_string);
+      compile_string_build_impl(root->rhs().as<op_string_build>(), VarName{root->lhs().as<op_var>()->var_id}, lhs_type, W);
+      return true;
+    }
+    W << "(" << BEGIN;
+    W << "auto &concat_lhs_ = " << root->lhs() << ";" << NL;
+    compile_string_build_impl(root->rhs().as<op_string_build>(), VarName{"concat_lhs_"}, lhs_type, W);
+    W << ";" << NL << END << ")";
+    return true;
+  }
+
+  return false;
 }
 
 void compile_index_of_array(VertexAdaptor<op_index> root, CodeGenerator &W) {
