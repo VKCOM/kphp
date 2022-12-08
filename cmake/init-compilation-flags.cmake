@@ -16,16 +16,17 @@ endif()
 cmake_print_variables(CMAKE_CXX_STANDARD)
 
 if(APPLE)
-    include_directories(/usr/local/include)
     add_definitions(-D_XOPEN_SOURCE)
-    # these dirs are for M1 macs
-    if(IS_DIRECTORY /opt/homebrew)
+    if (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+        include_directories(/usr/local/include)
+        set(OPENSSL_ROOT_DIR "/usr/local/opt/openssl" CACHE INTERNAL "")
+    elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
         include_directories(/opt/homebrew/include)
         link_directories(/opt/homebrew/lib)
+        set(OPENSSL_ROOT_DIR "/opt/homebrew/opt/openssl" CACHE INTERNAL "")
+    else()
+        message(FATAL_ERROR "unsupported arch: ${CMAKE_SYSTEM_PROCESSOR}")
     endif()
-    # if your mac doesn't have openssl here, you could just make a symbolic link like
-    # sudo ln -s /opt/homebrew/Cellar/openssl@1.1/1.1.1q /usr/local/opt/openssl
-    set(OPENSSL_ROOT_DIR "/usr/local/opt/openssl" CACHE INTERNAL "")
 endif()
 
 set(OPENSSL_USE_STATIC_LIBS TRUE)
