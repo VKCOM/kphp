@@ -299,6 +299,11 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
         explicit_cast_array_type(args[index], tinf::get_type(params[index]), &current_function->explicit_const_var_ids);
       }
     }
+    // TODO: move it to the late optimization rewrite rules
+    if (func->name == "array_splice" && root->rl_type == val_none) {
+      // array_splice used as statement doesn't have to return an array of removed elements
+      func_call->func_id = G->get_function("_array_splice_discard");
+    }
   } else if (auto op_array_vertex = root.try_as<op_array>()) {
     if (!var_init_expression_optimization_depth_) {
       for (auto &array_element : *op_array_vertex) {

@@ -788,6 +788,34 @@ void array<T>::mutate_to_map_if_vector_or_map_need_string() {
 }
 
 template<class T>
+void array<T>::vector_resize_down(int64_t new_size) {
+  php_assert (is_vector() && new_size <= p->int_size && new_size >= 0);
+  if (p->int_size == new_size) {
+    return; // nothing to do
+  }
+  if (p->ref_cnt > 0) {
+    // shared: need to create a new array; we keep the same vector size,
+    // but copy only new_size elements from the old vector
+    array_inner *new_array = array_inner::create(p->int_size, 0, true);
+    const T *elems = (T*)p->int_entries;
+    // copy until only the elements we're keeping
+    for (uint32_t i = 0; i < new_size; i++) {
+      new_array->push_back_vector_value(elems[i]);
+    }
+    p->dispose();
+    p = new_array;
+  } else {
+    // not shared
+    // destroy the elements past the new size, keep the array memory;
+    // this is a more effective pop()xN version where we discard the values
+    for (uint32_t i = new_size; i < p->int_size; i++) {
+      ((T *)p->int_entries)[i].~T();
+    }
+    p->int_size = new_size;
+  }
+}
+
+template<class T>
 void array<T>::reserve(int64_t int_size, int64_t string_size, bool make_vector_if_possible) {
   if (int_size > int64_t{p->int_buf_size} || (string_size > 0 && string_size > int64_t{p->string_buf_size})) {
     if (is_vector() && string_size == 0 && make_vector_if_possible) {

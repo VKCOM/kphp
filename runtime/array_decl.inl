@@ -421,6 +421,7 @@ public:
   bool is_equal_inner_pointer(const array &other) const noexcept;
 
   void reserve(int64_t int_size, int64_t string_size, bool make_vector_if_possible);
+  void vector_resize_down(int64_t new_size); // unsafe (new_size <= int_size && new_size >= 0)
 
   size_t estimate_memory_usage() const;
 

@@ -223,7 +223,7 @@ function explode ($delimiter ::: string, $str ::: string, $limit ::: int = PHP_I
 
 function array_chunk ($a ::: array, $chunk_size ::: int, $preserve_keys ::: bool = false) ::: ^1[];
 
-function array_splice (&$a ::: array, $offset ::: int, $length ::: int, $replacement ::: array = array()) ::: ^1;
+function array_splice (&$a ::: array, $offset ::: int, $length ::: int = PHP_INT_MAX, $replacement ::: array = array()) ::: ^1;
 /** @kphp-extern-func-info cpp_template_call */
 function array_merge ($a1 ::: array, $a2  ::: array = array(), $a3  ::: array = array(),
             $a4 ::: array = array(), $a5  ::: array = array(), $a6  ::: array = array(),

@@ -5,3 +5,6 @@
 // Only KPHP compiler can insert calls to these functions.
 
 function _exception_set_location($e, string $filename, int $line): ^1;
+
+// array_splice that doesn't return anything
+function _array_splice_discard(&$a ::: array, $offset ::: int, $length ::: int = PHP_INT_MAX, $replacement ::: array = array()): void;

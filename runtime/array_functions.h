@@ -33,6 +33,12 @@ template<class T>
 array<T> f$array_slice(const array<T> &a, int64_t offset, const mixed &length_var = mixed(), bool preserve_keys = false);
 
 template<class T>
+void f$_array_splice_discard(array<T> &a, int64_t offset, int64_t length, const array<Unknown> &);
+
+template<class T, class T1 = T>
+void f$_array_splice_discard(array<T> &a, int64_t offset, int64_t length = std::numeric_limits<int64_t>::max(), const array<T1> &replacement = array<T1>());
+
+template<class T>
 array<T> f$array_splice(array<T> &a, int64_t offset, int64_t length, const array<Unknown> &);
 
 template<class T, class T1 = T>
@@ -403,13 +409,8 @@ array<T> f$array_slice(const array<T> &a, int64_t offset, const mixed &length_va
   return result;
 }
 
-template<class T>
-array<T> f$array_splice(array<T> &a, int64_t offset, int64_t length, const array<Unknown> &) {
-  return f$array_splice(a, offset, length, array<T>());
-}
-
 template<class T, class T1>
-array<T> f$array_splice(array<T> &a, int64_t offset, int64_t length, const array<T1> &replacement) {
+array<T> array_splice(array<T> &a, int64_t offset, int64_t length, const array<T1> &replacement, bool need_ret_value) {
   int64_t size = a.count();
   if (offset < 0) {
     offset += size;
@@ -437,7 +438,29 @@ array<T> f$array_splice(array<T> &a, int64_t offset, int64_t length, const array
     return array<T>();
   }
 
-  array<T> result(a.size().cut(length));
+  array<T> result;
+  if (need_ret_value) {
+    result = array<T>(a.size().cut(length));
+  }
+
+  if (length + offset == size && a.is_vector()) {
+    // if we need to return the removed elems, collect them before we truncate the array
+    if (need_ret_value) {
+      const auto &elems = a.get_const_vector_pointer();
+      for (int64_t i = offset; i < a.count(); i++) {
+        result.push_back(elems[i]);
+      }
+    }
+    // can modify the array in-place: just truncate its tail (keep the allocated memory);
+    a.vector_resize_down(offset);
+    // since l+o=c, we can push the replacement elements back; we might even avoid the allocation
+    // do to the truncation during the memory-preserving previous step
+    for (const auto &it_r : replacement) {
+      a.push_back(it_r.get_value());
+    }
+    return result;
+  }
+
   array<T> new_a(a.size().cut(size - length) + replacement.size());
   int64_t i = 0;
   const auto &const_arr = a;
@@ -449,7 +472,7 @@ array<T> f$array_splice(array<T> &a, int64_t offset, int64_t length, const array
     }
     if (i < offset || i >= offset + length) {
       new_a.push_back(it);
-    } else {
+    } else if (need_ret_value) {
       result.push_back(it);
     }
     ++i;
@@ -457,6 +480,26 @@ array<T> f$array_splice(array<T> &a, int64_t offset, int64_t length, const array
   a = std::move(new_a);
 
   return result;
+}
+
+template<class T, class T1>
+void f$_array_splice_discard(array<T> &a, int64_t offset, int64_t length, const array<Unknown> &) {
+  f$_array_splice_discard(a, offset, length, array<T>());
+}
+
+template<class T, class T1>
+void f$_array_splice_discard(array<T> &a, int64_t offset, int64_t length, const array<T1> &replacement) {
+  array_splice(a, offset, length, replacement, false);
+}
+
+template<class T>
+array<T> f$array_splice(array<T> &a, int64_t offset, int64_t length, const array<Unknown> &) {
+  return f$array_splice(a, offset, length, array<T>());
+}
+
+template<class T, class T1>
+array<T> f$array_splice(array<T> &a, int64_t offset, int64_t length, const array<T1> &replacement) {
+  return array_splice(a, offset, length, replacement, true);
 }
 
 template<class ReturnT, class InputArrayT, class DefaultValueT>
