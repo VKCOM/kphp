@@ -26,3 +26,5 @@ Optional<int64_t> f$mb_stripos(const string &haystack, const string &needle, int
 string f$mb_substr(const string &str, int64_t start, const mixed &length = std::numeric_limits<int64_t>::max(), const string &encoding = CP1251);
 
 void f$set_detect_incorrect_encoding_names_warning(bool show);
+
+void free_detect_incorrect_encoding_names();
