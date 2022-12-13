@@ -16,7 +16,6 @@ class MysqlResponse final : public Response {
 public:
   MYSQL_RES *res{nullptr};
   uint64_t affected_rows{0};
-  bool is_error{false};
 
   using Response::Response;
 

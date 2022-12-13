@@ -61,9 +61,12 @@ mixed PgsqlPdoEmulatedStatement::fetch(const class_instance<C$PDOStatement> &) n
   ++processed_row;
   int columns = LIB_PGSQL_CALL(PQnfields(pGresult));
   array<mixed> res;
-  for (int column = 0; column < columns; ++column) {
-    res.set_value(string{PQfname(pGresult, column)}, string{LIB_PGSQL_CALL(PQgetvalue(pGresult, processed_row, column))});
-    res.set_value(column, string{LIB_PGSQL_CALL(PQgetvalue(pGresult, processed_row, column))});
+  {
+    dl::CriticalSectionGuard guard;
+    for (int column = 0; column < columns; ++column) {
+      res.set_value(string{PQfname(pGresult, column)}, string{PQgetvalue(pGresult, processed_row, column)});
+      res.set_value(column, string{PQgetvalue(pGresult, processed_row, column)});
+    }
   }
   return res;
 }

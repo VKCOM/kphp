@@ -12,7 +12,6 @@ class PgsqlResponse final : public Response {
 public:
   PGresult *res{nullptr};
   uint64_t affected_rows{0};
-  bool is_error{false};
 
   using Response::Response;
 

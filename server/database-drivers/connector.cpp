@@ -11,6 +11,55 @@
 
 namespace database_drivers {
 
+void Connector::push_async_request(std::unique_ptr<Request> &&request) noexcept {
+  dl::CriticalSectionGuard guard;
+  assert(pending_request == nullptr && pending_response == nullptr && "Pipelining is not allowed");
+  pending_request = std::move(request);
+  update_state_ready_to_write();
+}
+
+void Connector::handle_write() noexcept {
+  assert(connected());
+  assert(pending_request);
+
+  AsyncOperationStatus status = pending_request->send_async();
+  switch (status) {
+    case AsyncOperationStatus::IN_PROGRESS:
+      break;
+    case AsyncOperationStatus::COMPLETED:
+      pending_response = make_response();
+      pending_request = nullptr;
+      update_state_ready_to_read();
+      break;
+    case AsyncOperationStatus::ERROR:
+      auto response = make_response();
+      response->is_error = true;
+      pending_request = nullptr;
+      vk::singleton<Adaptor>::get().finish_request_resumable(std::move(response));
+      update_state_idle();
+      break;
+  }
+}
+
+void Connector::handle_read() noexcept {
+  assert(pending_response);
+
+  auto &adaptor = vk::singleton<database_drivers::Adaptor>::get();
+  AsyncOperationStatus status = pending_response->fetch_async();
+  switch (status) {
+    case AsyncOperationStatus::IN_PROGRESS:
+      break;
+    case AsyncOperationStatus::COMPLETED:
+    case AsyncOperationStatus::ERROR:
+      adaptor.finish_request_resumable(std::move(pending_response));
+      pending_response = nullptr;
+      update_state_idle();
+      break;
+  }
+}
+
+void Connector::handle_special() noexcept {}
+
 bool Connector::connected() const noexcept {
   return is_connected;
 }

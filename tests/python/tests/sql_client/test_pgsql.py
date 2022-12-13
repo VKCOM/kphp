@@ -80,9 +80,8 @@ class TestPgsql(KphpServerAutoTestCase):
         self._sql_query_impl(query='SELECT pg_sleep(0.5)',
                              expected_res=[{'0': '', 'pg_sleep': ''}],
                              uri="/resumable_test?name=pgsql")
-        self.kphp_server._assert_availability()
-        self.kphp_server._read_new_logs()
+        server_log = self.kphp_server.get_log()
         pattern = "start_resumable_function(.|\n)*start_query(.|\n)*end_resumable_function(.|\n)*end_query"
-        if not re.search(pattern, ''.join(self.kphp_server._engine_logs)):
+        if not re.search(pattern, ''.join(server_log)):
             raise RuntimeError("cannot find match for pattern \"" + pattern + "\n")
 

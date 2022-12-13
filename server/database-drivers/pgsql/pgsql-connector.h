@@ -26,16 +26,10 @@ public:
 
   int get_fd() const noexcept final;
 
-  void push_async_request(std::unique_ptr<Request> &&request) noexcept final;
-
 private:
   string conninfo{};
-  std::unique_ptr<Request> pending_request;
-  std::unique_ptr<Response> pending_response;
 
-  void handle_read() noexcept override;
-  void handle_write() noexcept override;
-  void handle_special() noexcept override;
+  std::unique_ptr<Response> make_response() const noexcept override;
 };
 
 } // namespace database_drivers

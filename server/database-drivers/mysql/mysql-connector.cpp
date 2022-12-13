@@ -56,61 +56,7 @@ AsyncOperationStatus MysqlConnector::connect_async() noexcept {
   }
 }
 
-void MysqlConnector::push_async_request(std::unique_ptr<Request> &&request) noexcept {
-  dl::CriticalSectionGuard guard;
-
-  assert(pending_request == nullptr && pending_response == nullptr && "Pipelining is not allowed");
-
-  tvkprintf(mysql, 1, "MySQL initiate async request send: request_id = %d\n", request->request_id);
-
-  pending_request = std::move(request);
-
-  update_state_ready_to_write();
+std::unique_ptr<Response> MysqlConnector::make_response() const noexcept {
+  return std::make_unique<MysqlResponse>(connector_id, pending_request->request_id);
 }
-
-void MysqlConnector::handle_write() noexcept {
-  assert(connected());
-  assert(pending_request);
-
-  AsyncOperationStatus status = pending_request->send_async();
-  switch (status) {
-    case AsyncOperationStatus::IN_PROGRESS:
-      return;
-    case AsyncOperationStatus::COMPLETED: {
-      pending_response = std::make_unique<MysqlResponse>(connector_id, pending_request->request_id);
-      pending_request = nullptr;
-      update_state_ready_to_read(); // TODO: maybe do it via EVA_CONTINUE | flags?
-      break;
-    }
-    case AsyncOperationStatus::ERROR: {
-      auto response = std::make_unique<MysqlResponse>(connector_id, pending_request->request_id);
-      response->is_error = true;
-      pending_request = nullptr;
-      vk::singleton<Adaptor>::get().finish_request_resumable(std::move(response));
-      update_state_idle();
-      break;
-    }
-  }
-}
-
-void MysqlConnector::handle_read() noexcept {
-  assert(pending_response);
-
-  auto &adaptor = vk::singleton<database_drivers::Adaptor>::get();
-  AsyncOperationStatus status = pending_response->fetch_async();
-  switch (status) {
-    case AsyncOperationStatus::IN_PROGRESS:
-      return;
-    case AsyncOperationStatus::COMPLETED:
-    case AsyncOperationStatus::ERROR:
-      adaptor.finish_request_resumable(std::move(pending_response));
-      pending_response = nullptr;
-      update_state_idle();
-      break;
-  }
-}
-
-void MysqlConnector::handle_special() noexcept {
-}
-
 } // namespace database_drivers
