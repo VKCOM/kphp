@@ -503,7 +503,7 @@ int shutdown_functions_count = 0;
 char shutdown_function_storage[MAX_SHUTDOWN_FUNCTIONS * sizeof(shutdown_function_type)];
 shutdown_function_type *shutdown_functions = reinterpret_cast<shutdown_function_type *>(shutdown_function_storage);
 shutdown_functions_status shutdown_functions_status_value = shutdown_functions_status::not_executed;
-jmp_buf error_exit;
+jmp_buf timeout_exit;
 bool finished = false;
 bool flushed = false;
 bool wait_all_forks_on_finish = false;
@@ -608,7 +608,7 @@ void run_shutdown_functions_from_error() {
   // without that, exit would lead to a finished state instead of the error state
   // we were about to enter (since timeout is an error state)
   shutdown_functions_status_value = shutdown_functions_status::running_from_error;
-  if (setjmp(error_exit) == 0) {
+  if (setjmp(timeout_exit) == 0) {
     run_shutdown_functions();
   }
 }
@@ -660,7 +660,7 @@ void finish(int64_t exit_code, bool allow_forks_waiting) {
 
 void f$exit(const mixed &v) {
   if (shutdown_functions_status_value == shutdown_functions_status::running_from_error) {
-    longjmp(error_exit, 1);
+    longjmp(timeout_exit, 1);
   }
 
   if (v.is_string()) {
