@@ -30,9 +30,9 @@ function test_printf2() {
   $bar->foo->b = true;
 
   $cdef->printf("%d %d %ld %d\n",
-    $bar->foo->i8, $bar->foo->i32, $bar->foo->i64, $bar->foo->b);
+    $bar->foo->i8, $bar->foo->i32, $bar->foo->i64, (int)$bar->foo->b);
   $cdef->printf("%d %d %ld %d\n",
-    $foo->i8, $foo->i32, $foo->i64, $foo->b);
+    $foo->i8, $foo->i32, $foo->i64, (int)$foo->b);
 }
 
 for ($i = 0; $i < 5; ++$i) {
