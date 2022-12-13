@@ -112,6 +112,12 @@ static int change_user_group(const char *user_name, const char *group_name) {
       kprintf ("You are trying to run the script as root, if you are sure of this, specify the user explicitly with the command --user\n");
       exit(1);
     }
+
+    if (!strcmp(user_name, "root")) {
+      vkprintf(0, "You are running as root");
+      return 0;
+    }
+
     if ((pw = getpwnam(user_name)) == 0) {
       kprintf ("change_user_group: can't find the user %s to switch to\n", user_name);
       return -1;
