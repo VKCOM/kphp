@@ -56,6 +56,25 @@ TEST(string_test, test_ends_with) {
   ASSERT_FALSE(str.starts_with(string{"hello world!"}));
 }
 
+TEST(string_test, test_contains) {
+  string empty_str{""};
+  ASSERT_TRUE(empty_str.contains(string{""}));
+  ASSERT_FALSE(empty_str.contains(string{"a"}));
+
+  string str{"hello world"};
+  ASSERT_TRUE(str.contains(string{"hello"}));
+  ASSERT_TRUE(str.contains(string{"world"}));
+  ASSERT_TRUE(str.contains(string{"orld"}));
+  ASSERT_TRUE(str.contains(string{"o w"}));
+  ASSERT_TRUE(str.contains(string{"d"}));
+  ASSERT_TRUE(str.contains(string{""}));
+
+  ASSERT_FALSE(str.contains(string{"hEllo"}));
+  ASSERT_FALSE(str.contains(string{"o W"}));
+
+  ASSERT_FALSE(str.contains(string{"hello world!"}));
+}
+
 TEST(string_test, test_make_const_string_on_memory) {
   char mem[1024];
 

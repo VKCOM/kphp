@@ -702,6 +702,7 @@ function substr_compare ($main_str ::: string, $str ::: string, $offset ::: int,
 
 function str_starts_with ($haystack ::: string, $needle ::: string) ::: bool;
 function str_ends_with ($haystack ::: string, $needle ::: string) ::: bool;
+function str_contains ($haystack ::: string, $needle ::: string) ::: bool;
 
 function trim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;
 function ltrim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;

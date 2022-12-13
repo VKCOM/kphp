@@ -344,6 +344,20 @@ bool string::ends_with(const string &other) const noexcept {
   return other.size() > size() ? false : !memcmp(c_str() + (size() - other.size()), other.c_str(), other.size());
 }
 
+bool string::contains(const string &other) const noexcept {
+  if (other.size() > size()) {
+    return false;
+  }
+
+  for (size_type i = 0; i < (size() - other.size() + 1); i++) {
+    if (memcmp(c_str() + i, other.c_str(), other.size()) == 0) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 const char &string::operator[](size_type pos) const {
   return p[pos];
 }
