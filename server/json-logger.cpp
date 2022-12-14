@@ -255,6 +255,39 @@ void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at
   json_out_it->finish_json_and_flush(json_log_fd_);
 }
 
+void JsonLogger::write_trace_with_context(vk::string_view raw_trace) noexcept {
+  if (json_log_fd_ <= 0) {
+    return;
+  }
+
+  auto *json_out_it = buffers_.begin();
+  for (; json_out_it != buffers_.end() && !json_out_it->try_start_json(); ++json_out_it) {
+  }
+  assert(json_out_it != buffers_.end());
+
+  json_out_it->append_raw(raw_trace);
+
+  json_out_it->append_key("tags").start<'{'>();
+  if (tags_available_) {
+    json_out_it->append_raw(tags_);
+  }
+  if (process_type == ProcessType::master) {
+    json_out_it->append_key("process_type").append_string("master");
+  } else if (process_type == ProcessType::http_worker) {
+    json_out_it->append_key("process_type").append_string("http_worker");
+    json_out_it->append_key("logname_id").append_integer(logname_id);
+  } else if (process_type == ProcessType::rpc_worker) {
+    json_out_it->append_key("process_type").append_string("rpc_worker");
+    json_out_it->append_key("logname_id").append_integer(logname_id);
+  } else if (process_type == ProcessType::job_worker) {
+    json_out_it->append_key("process_type").append_string("job_worker");
+    json_out_it->append_key("logname_id").append_integer(logname_id);
+  }
+  json_out_it->append_key("pid").append_integer(pid);
+  json_out_it->finish<'}'>();
+  json_out_it->finish_json_and_flush(json_log_fd_);
+}
+
 void JsonLogger::write_log_with_backtrace(vk::string_view message, int type) noexcept {
   std::array<void *, 64> trace{};
   const int trace_size = backtrace(trace.data(), trace.size());

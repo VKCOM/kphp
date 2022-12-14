@@ -90,6 +90,10 @@ right {X:Type} {Y:Type} value:Y = Either X Y;
 
 ---functions---
 
+@any rpcDestActor#7568aabd {X:Type} actor_id:long query:!X = X;
+@any rpcDestActorFlags#f0a5acf7 {X:Type} actor_id:long flags:# extra:%(RpcInvokeReqExtra flags) query:!X = X;
+@any rpcDestFlags#e352035e {X:Type} flags:# extra:%(RpcInvokeReqExtra flags) query:!X = X;
+
 @any rpcInvokeReq#2374df3d {X:Type} query_id:long query:!X = RpcReqResult X;
 
 //NEVER use this. Only for debugging engines.

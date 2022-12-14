@@ -178,6 +178,8 @@ function kphp_get_runtime_config() ::: mixed;
 function kphp_backtrace($pretty ::: bool = true) ::: string[];
 function register_kphp_on_oom_callback(callable():void $callback) ::: bool;
 
+function kphp_write_trace_to_json_log(mixed[] $trace);
+
 function ini_get ($s ::: string) ::: string | false;
 function ini_set ($s ::: string, $v ::: string) ::: bool;
 
