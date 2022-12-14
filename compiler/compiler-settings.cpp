@@ -141,17 +141,18 @@ void append_curl(std::string &cxx_flags, std::string &ld_flags) noexcept {
 
 void append_apple_options(std::string &cxx_flags, std::string &ld_flags) noexcept {
 #if defined(__APPLE__)
-  cxx_flags += " -I/usr/local/include"
-               " -I/usr/local/opt/openssl/include";
+#ifdef __arm64__
+  std::string common_path = "/opt/homebrew";
+#else
+  std::string common_path = "/usr/local";
+#endif
+  cxx_flags += " -I" + common_path + "/include"
+               " -I" + common_path + "/opt/openssl/include";
   ld_flags += " -liconv"
               " -lepoll-shim"
-              " -L/usr/local/opt/openssl/lib"
-              " -L" EPOLL_SHIM_LIB_DIR;
-
-  if (std::filesystem::is_directory("/opt/homebrew")) { // for M1
-    cxx_flags += " -I/opt/homebrew/include";
-    ld_flags += " -L/opt/homebrew/lib";
-  }
+              " -L" EPOLL_SHIM_LIB_DIR
+              " -L" + common_path + "/lib"
+              " -L" + common_path + "/opt/openssl/lib";
 
 #else
   static_cast<void>(cxx_flags);

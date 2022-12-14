@@ -77,8 +77,10 @@ apt install git cmake make g++ gperf python3-minimal python3-jsonschema \
 ##### MacOS with Intel chipset
 Make sure you have `brew` and `clang` (at least `Apple clang version 10.0.0`)
 ```bash
-brew install re2c cmake coreutils glib-openssl libiconv re2 yaml-cpp mysql msgpack-cxx zstd googletest php@7.4
-brew link --overwrite php@7.4
+brew tap shivammathur/php
+brew update
+brew install re2c cmake coreutils openssl libiconv re2 pcre yaml-cpp zstd googletest shivammathur/php/php@7.4
+brew link --overwrite shivammathur/php/php@7.4
 pip3 install jsonschema
 ```
 Clone somewhere local [epoll-shim from GitHub]({{site.url_package_epoll_shim}}) and switch to *osx-platform* branch.
