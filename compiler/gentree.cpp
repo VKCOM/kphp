@@ -1424,6 +1424,10 @@ VertexAdaptor<op_func_param_list> GenTree::parse_cur_function_param_list() {
     }
   }
 
+  if (cur_function->is_generic() && cur_function->genericTs->is_variadic()) {
+    kphp_error(cur_function->has_variadic_param, "Variadic generic can be used only for a function with ...$variadic parameter");
+  }
+
   return VertexAdaptor<op_func_param_list>::create(params_next).set_location(cur_function->root);
 }
 

@@ -65,6 +65,9 @@ public:
         }
       }
     }
+    if (f_->is_generic() && f_->genericTs->is_variadic()) {
+      check_variadic_generic_f_has_necessary_param();
+    }
 
     // untyped 'callable' and 'object' act like @kphp-generic
     convert_to_generic_function_if_callable_or_object_arg();
@@ -185,6 +188,17 @@ private:
         GenericsDeclarationMixin::make_function_generic_on_object_arg(f_, cur_func_param);
       }
     }
+  }
+
+  // for `f<...TArg>`, there must be a variadic parameter annotated `TArg ...$name`
+  void check_variadic_generic_f_has_necessary_param() {
+    VertexRange f_params = f_->get_params();
+    auto last_param = f_params[f_params.size()-1].as<op_func_param>();
+    kphp_assert(last_param->extra_type == op_ex_param_variadic);
+
+    const auto *as_array = last_param->type_hint ? last_param->type_hint->try_as<TypeHintArray>() : nullptr;
+    bool is_declared_ok = as_array && as_array->inner->try_as<TypeHintGenericT>() && as_array->inner->try_as<TypeHintGenericT>()->nameT == f_->genericTs->itemsT.back().nameT;
+    kphp_error(is_declared_ok, fmt_format("Invalid @param declaration for a variadic generic.\nMust declare @param {} ...${}", f_->genericTs->itemsT.back().nameT, last_param->var()->str_val));
   }
 
   static inline const GenericsDeclarationMixin *get_genericTs_for_phpdoc_parsing(FunctionPtr f_) {
@@ -415,6 +429,10 @@ private:
       param->type_hint = merge_php_hint_and_phpdoc(param->type_hint, tag_parsed.type_hint, true);
     } else {
       param->type_hint = tag_parsed.type_hint;
+    }
+
+    if (param->extra_type == op_ex_param_variadic) {
+      kphp_error(param->type_hint->try_as<TypeHintArray>(), fmt_format("@param for a variadic parameter is not an array.\nDeclare either @param T ...${} or @param T[] ${}", param->var()->str_val, param->var()->str_val));
     }
 
     if (infer_cast_) {

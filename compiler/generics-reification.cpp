@@ -5,8 +5,10 @@
 #include "compiler/generics-reification.h"
 
 #include "compiler/data/function-data.h"
+#include "compiler/function-pass.h"
 #include "compiler/phpdoc.h"
 #include "compiler/type-hint.h"
+#include "compiler/vertex-util.h"
 
 
 /*
@@ -39,6 +41,11 @@
  * Generic T may have extends condition and default value in declaration:
  *    function f<T1 : SomeInterface, T2 = mixed, T3 = T2>
  * After reified, call->reifiedTs are checked for extends_hint.
+ *
+ * Generic T may be variadic:
+ *    function f<...TArg>(TArg ...$args)
+ * On a call with 2 arguments, a function `f$n2<TArg1, TArg2>(TArg1 $args$1, TArg2 $args$2)` is implicitly created.
+ * Consider `convert_variadic_generic_function_accepting_N_args()`.
  *
  * Sometimes, generic Ts can't be reified:
  *    f(null)         // T=???
@@ -321,4 +328,177 @@ void check_reifiedTs_for_generic_func_call(const GenericsDeclarationMixin *gener
       check_reifiedT_extends_hint(itemT.nameT, instantiationT, itemT.extends_hint);
     }
   }
+}
+
+// implementation of variadic generic function specialized by N:
+// when `f<...TArg>(...$args)` is called with N=2 arguments, a function `f$n2` is created,
+// replacing "...$args" with "$args$1, $args$2" along with ...TArgs
+// $args can be used only in special contexts:
+// * forwarding `anotherF(0, ...$args)` (replaced by `anotherF(0, $args$1, $args$2)`, same below)
+// * merging into an array `[0, ...$args]`, particularly you can append an argument `anotherF(...[...$args, 0])`
+// $args can not be used in foreach, accessed by an index, etc.: it's a compilation error
+class ReplaceVariadicArgWithNArgsPass : public FunctionPassBase {
+  std::string variadic_var_name;    // $args
+  FunctionPtr generic_function;     // f (but current_function is f$n2)
+  int n_variadic;                   // N=2
+  VertexPtr replaced_v_for_on_exit; // see on_exit_vertex()
+
+public:
+  explicit ReplaceVariadicArgWithNArgsPass(FunctionPtr generic_function, int n_variadic)
+    : generic_function(std::move(generic_function))
+    , n_variadic(n_variadic) {}
+
+  std::string get_description() override {
+    return "Replace $args with $args$1, $args$2";
+  }
+
+  void on_start() override {
+    auto params = generic_function->get_params();
+    auto last_param = params[params.size() - 1].as<op_func_param>();
+    kphp_assert(last_param->extra_type == op_ex_param_variadic);
+    variadic_var_name = last_param->var()->str_val;
+  }
+
+  void on_finish() override {
+    current_function->has_variadic_param = false;
+  }
+
+  VertexPtr on_exit_vertex(VertexPtr root) override {
+    if (replaced_v_for_on_exit) {
+      root = replaced_v_for_on_exit;
+      replaced_v_for_on_exit = VertexPtr{};
+      run_function_pass(root, this);
+      return root;
+    }
+
+    if (is_op_var_generic(root)) {
+      kphp_error(0, fmt_format("Variadic argument ...${} used incorrectly in a variadic generic.\nIt can not be replaced with N={} copies here.\nFor example, f(${}) is incorrect, but f(...${}) is okay.", variadic_var_name, n_variadic, variadic_var_name, variadic_var_name));
+    }
+
+    return root;
+  }
+
+  // check: root == $args
+  inline bool is_op_var_generic(VertexPtr root) {
+    return root->type() == op_var && root.as<op_var>()->str_val == variadic_var_name;
+  }
+
+  // check: root == ...$args
+  inline bool is_op_varg_op_var_generic(VertexPtr root) {
+    return root->type() == op_varg && is_op_var_generic(root.as<op_varg>()->array());
+  }
+
+  // creates $args$i
+  inline VertexAdaptor<op_var> create_ith_op_var(VertexPtr v_get_location, int i) {
+    auto ith_var = VertexAdaptor<op_var>::create().set_location(v_get_location->location);
+    ith_var->str_val = variadic_var_name + "$" + std::to_string(i);
+    return ith_var;
+  }
+
+  bool user_recursion(VertexPtr root) override {
+    if (auto as_param_list = root.try_as<op_func_param_list>()) {
+      replaced_v_for_on_exit = replace_varg_in_func_param_list(as_param_list);
+    } else if (auto as_call = root.try_as<op_func_call>()) {
+      replaced_v_for_on_exit = replace_varg_in_func_call(as_call);
+      // count($args) is ok, replace it with N at compile-time
+      if (as_call->str_val == "count" && as_call->size() == 1 && as_call->extra_type != op_ex_func_call_arrow && is_op_var_generic(as_call->front())) {
+        replaced_v_for_on_exit = VertexUtil::create_int_const(n_variadic);
+      }
+    }
+
+    return !!replaced_v_for_on_exit;
+  }
+
+  // function f$n2(...$args) => function f$n2($args$1, $args$2)
+  VertexPtr replace_varg_in_func_param_list(VertexAdaptor<op_func_param_list> param_list) {
+    std::vector<VertexAdaptor<op_func_param>> new_params_vector;
+    bool occured_varg = false;
+
+    for (VertexPtr param : param_list->params()) {
+      auto p = param.as<op_func_param>();
+      if (p->extra_type == op_ex_param_variadic && p->type_hint) {
+        occured_varg = true;
+        std::string nameT = p->type_hint->try_as<TypeHintArray>()->inner->try_as<TypeHintGenericT>()->nameT;
+        for (int i = 1; i <= n_variadic; ++i) {
+          auto ith_param = VertexAdaptor<op_func_param>::create(create_ith_op_var(p, i)).set_location(p);
+          ith_param->type_hint = TypeHintGenericT::create(nameT + std::to_string(i));
+          new_params_vector.emplace_back(ith_param);
+        }
+      } else {
+        new_params_vector.emplace_back(p);
+      }
+    }
+    if (!occured_varg) {
+      return {};
+    }
+
+    auto new_param_list = VertexAdaptor<op_func_param_list>::create(new_params_vector).set_location(current_function->root);
+    return new_param_list;
+  }
+
+  // anotherF(...$args) => anotherF($args$1, $args$2)
+  // [...$args] => [$args$0, $args$1] also here,
+  //    because it was already replaced by a func call array_merge_spread($args), so => array_merge_spread([$args$0], [$args$1])
+  VertexPtr replace_varg_in_func_call(VertexAdaptor<op_func_call> call) {
+    std::vector<VertexPtr> new_args_vector;
+    const bool is_array_creation = call->str_val == "array_merge_spread" && call->extra_type != op_ex_func_call_arrow;
+    bool occured_varg = false;
+    new_args_vector.reserve(call->size() - 1 + n_variadic);
+
+    for (VertexPtr arg : call->args()) {
+      if (is_op_varg_op_var_generic(arg)) {   // f(1, 2, ...$here)
+        occured_varg = true;
+        for (int i = 1; i <= n_variadic; ++i) {
+          new_args_vector.emplace_back(create_ith_op_var(arg, i));
+        }
+      } else if (is_array_creation && is_op_var_generic(arg)) {   // [1, 2, ...$here] (actually array_merge_spread(1, 2, $here))
+        occured_varg = true;
+        for (int i = 1; i <= n_variadic; ++i) {
+          std::vector<VertexPtr> ith_wrap{create_ith_op_var(arg, i)};
+          new_args_vector.emplace_back(VertexAdaptor<op_array>::create(ith_wrap).set_location(arg));
+        }
+      } else {
+        new_args_vector.emplace_back(arg);
+      }
+    }
+    if (!occured_varg) {
+      return {};
+    }
+
+    auto new_call = VertexAdaptor<op_func_call>::create(new_args_vector).set_location(call);
+    new_call->str_val = call->str_val;
+    new_call->func_id = call->func_id;
+    new_call->extra_type = call->extra_type;
+    return new_call;
+  }
+};
+
+// when a variadic generic `f<...TArg>(...$args)` is called with 2 arguments,
+// a function `f$n2` is created, replacing "...TArg" with "TArg1, TArg2" in declaration
+// and "...$args" with "$args$1, $args$2" in body (see a pass above)
+FunctionPtr convert_variadic_generic_function_accepting_N_args(FunctionPtr generic_function, int n_variadic) {
+  std::string name = generic_function->name + "$n" + std::to_string(n_variadic);
+  FunctionPtr f_converted;
+
+  G->operate_on_function_locking(name, [generic_function, n_variadic, name, &f_converted](FunctionPtr &f_ht) {
+    if (f_ht) {
+      f_converted = f_ht;
+      return;
+    }
+
+    f_converted = FunctionData::clone_from(generic_function, name);
+    f_converted->genericTs = GenericsDeclarationMixin::create_for_function_cloning_from_variadic(generic_function, n_variadic);
+    kphp_error(!f_converted->genericTs->empty(), "Variadic generic used with zero arguments, and there are no more generic Ts besides");
+
+    std::string stage_backup_name = stage::get_stage_info_ptr()->name;
+    Location stage_backup_location = stage::get_stage_info_ptr()->location;
+    ReplaceVariadicArgWithNArgsPass pass(generic_function, n_variadic);
+    run_function_pass(f_converted, &pass);
+    stage::get_stage_info_ptr()->name = stage_backup_name;
+    stage::get_stage_info_ptr()->location = stage_backup_location;
+
+    f_ht = f_converted;
+  });
+
+  return f_converted;
 }

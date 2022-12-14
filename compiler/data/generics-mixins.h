@@ -28,6 +28,7 @@ public:
     std::string nameT;
     const TypeHint *extends_hint;   // in @kphp-generic, it goes after ':', e.g. T1:SomeInterface
     const TypeHint *def_hint;       // in @kphp-generic, it goes after '=', e.g. T2=Err
+    bool is_variadic{false};        // in @kphp-generic, it's declared as ...T, not T
   };
 
   std::vector<GenericsItem> itemsT;
@@ -38,9 +39,10 @@ public:
   size_t size() const { return itemsT.size(); }
   auto begin() const { return itemsT.begin(); }
   auto end() const { return itemsT.end(); }
+  bool is_variadic() const { return !itemsT.empty() && itemsT.back().is_variadic; }
 
   bool has_nameT(const std::string &nameT) const;
-  void add_itemT(const std::string &nameT, const TypeHint *extends_hint, const TypeHint *def_hint);
+  void add_itemT(const std::string &nameT, const TypeHint *extends_hint, const TypeHint *def_hint, bool is_variadic = false);
   const TypeHint *get_extends_hint(const std::string &nameT) const;
 
   std::string prompt_provide_commentTs_human_readable(VertexPtr call) const;
@@ -52,6 +54,7 @@ public:
   static void make_function_generic_on_object_arg(FunctionPtr f, VertexPtr func_param);
   static GenericsDeclarationMixin *create_for_function_empty(FunctionPtr f);
   static GenericsDeclarationMixin *create_for_function_from_phpdoc(FunctionPtr f, const PhpDocComment *phpdoc);
+  static GenericsDeclarationMixin *create_for_function_cloning_from_variadic(FunctionPtr generic_f, int n_variadic);
 };
 
 // we have a special syntax in PHP to explicitly provide generic types inside a PHP comment: `f/*<T1, T2>*/(...)`
@@ -66,6 +69,8 @@ public:
     : vectorTs(std::move(vectorTs)) {}
 
   std::string as_human_readable() const;
+
+  size_t size() const { return vectorTs.size(); }
 };
 
 // when we have `f<T1,T2>` and a call `f($o1,$o2)`, then it has call->reifiedTs set
