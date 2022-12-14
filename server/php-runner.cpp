@@ -349,10 +349,6 @@ run_state_t PhpScript::iterate() noexcept {
 void PhpScript::finish() noexcept {
   assert (state == run_state_t::finished || state == run_state_t::error);
   assert(dl::is_malloc_replaced() == false);
-  if (error_type == script_error_t::http_connection_close || error_type == script_error_t::rpc_connection_close
-      || error_type == script_error_t::post_data_loading_error || error_type == script_error_t::net_event_error) {
-    resume();
-  }
   auto save_state = state;
   const auto &script_mem_stats = dl::get_script_memory_stats();
   state = run_state_t::uncleared;

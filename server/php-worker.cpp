@@ -253,6 +253,12 @@ void PhpWorker::state_run() noexcept {
           // in case the error happened when malloc was replaced
           dl::rollback_malloc_replacement();
         }
+        auto error_type = php_script->error_type;
+        if (error_type == script_error_t::http_connection_close || error_type == script_error_t::rpc_connection_close
+            || error_type == script_error_t::post_data_loading_error || error_type == script_error_t::net_event_error) {
+          /*This condition causes resume to run the shutdown function on network errors*/
+          php_script->resume();
+        }
         php_script->finish();
 
         if (conn != nullptr) {
