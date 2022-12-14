@@ -1394,6 +1394,8 @@ function zstd_uncompress_dict(string $data, string $dict) ::: string | false;
 
 function set_migration_php8_warning ($mask ::: int) ::: void;
 
+function set_detect_incorrect_encoding_names_warning(bool $show) ::: void;
+
 function set_json_log_on_timeout_mode(bool $enabled) ::: void;
 
 // re-initialize given ArrayIterator with another array;

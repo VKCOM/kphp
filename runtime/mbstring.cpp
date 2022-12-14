@@ -7,12 +7,48 @@
 #include "common/unicode/unicode-utils.h"
 #include "common/unicode/utf8-utils.h"
 
+static bool is_detect_incorrect_encoding_names_warning{false};
+
+void f$set_detect_incorrect_encoding_names_warning(bool show) {
+  is_detect_incorrect_encoding_names_warning = show;
+}
+
+void free_detect_incorrect_encoding_names() {
+  is_detect_incorrect_encoding_names_warning = false;
+}
+
+static int mb_detect_encoding_new(const string &encoding) {
+  const auto encoding_name = f$strtolower(encoding).c_str();
+
+  if (!strcmp(encoding_name, "cp1251") || !strcmp(encoding_name, "cp-1251") || !strcmp(encoding_name, "windows-1251")) {
+    return 1251;
+  }
+
+  if (!strcmp(encoding_name, "utf8") || !strcmp(encoding_name, "utf-8")) {
+    return 8;
+  }
+
+  return -1;
+}
+
 static int mb_detect_encoding(const string &encoding) {
+  const int result_new = mb_detect_encoding_new(encoding);
+
   if (strstr(encoding.c_str(), "1251")) {
+    if (is_detect_incorrect_encoding_names_warning && 1251 != result_new) {
+      php_warning("mb_detect_encoding returns 1251, but new will return %d, encoding %s", result_new, encoding.c_str());
+    }
     return 1251;
   }
   if (strstr(encoding.c_str(), "-8")) {
+    if (is_detect_incorrect_encoding_names_warning && 8 != result_new) {
+      php_warning("mb_detect_encoding returns 8, but new will return %d, encoding %s", result_new, encoding.c_str());
+    }
     return 8;
+  }
+
+  if (is_detect_incorrect_encoding_names_warning && -1 != result_new) {
+    php_warning("mb_detect_encoding returns -1, but new will return %d, encoding %s", result_new, encoding.c_str());
   }
   return -1;
 }
