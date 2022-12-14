@@ -84,7 +84,7 @@ jobs:
 
     - name: Compile dummy PHP script
       run: docker exec kphp-build-container-${{matrix.os}} bash -c 
-              "cd ${{env.kphp_build_dir}} && echo 'hello world' > demo.php && ${{env.kphp_root_dir}}/objs/bin/kphp2cpp --cxx ${{matrix.compiler}} demo.php && kphp_out/server -o"
+              "cd ${{env.kphp_build_dir}} && echo 'hello world' > demo.php && ${{env.kphp_root_dir}}/objs/bin/kphp2cpp --cxx ${{matrix.compiler}} demo.php && kphp_out/server -o --user kitten"
 
     - name: Polyfills composer install
       run: docker exec kphp-build-container-${{matrix.os}} bash -c
