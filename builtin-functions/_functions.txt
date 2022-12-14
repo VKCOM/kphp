@@ -176,6 +176,8 @@ function kphp_set_context_on_error(mixed[] $tags, mixed $extra_info, string $env
 function kphp_get_runtime_config() ::: mixed;
 function kphp_backtrace($pretty ::: bool = true) ::: string[];
 
+function kphp_write_trace_to_json_log(mixed[] $trace);
+
 function ini_get ($s ::: string) ::: string | false;
 function ini_set ($s ::: string, $v ::: string) ::: bool;
 

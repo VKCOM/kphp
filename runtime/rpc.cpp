@@ -1314,7 +1314,8 @@ array<array<mixed>> f$rpc_tl_query_result(const array<int64_t> &query_ids) {
   return start_resumable<array<array<mixed>>>(new rpc_tl_query_result_resumable(query_ids));
 }
 
-array<array<mixed>> f$rpc_tl_query_result_synchronously(const array<int64_t> &query_ids) {
+array<array<mixed>>
+f$rpc_tl_query_result_synchronously(const array<int64_t> &query_ids) {
   array<array<mixed>> tl_objects_unsorted(array_size(query_ids.count(), 0, false));
   if (query_ids.count() == 1) {
     wait_without_result_synchronously_safe(query_ids.begin().get_value());
