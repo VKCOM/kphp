@@ -10,7 +10,7 @@
 
 bool crypto_arm64_has_aes_extension() {
   const kdb_cpuid_t *cpuid = kdb_cpuid();
-  assert(cpuid->type == KDB_CPUID_AARCH64);
+  assert(cpuid->type == KDB_CPUID_ARM64);
 
   return false;
 }

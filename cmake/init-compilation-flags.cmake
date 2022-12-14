@@ -106,10 +106,12 @@ if(NOT DEFINED ENV{ENABLE_GRPROF})
 endif()
 
 include_directories(${GENERATED_DIR})
-add_compile_options(-fwrapv -fno-strict-aliasing -fno-stack-protector -ggdb -fno-omit-frame-pointer)
+add_compile_options(-fwrapv -fno-strict-aliasing -fno-stack-protector -ggdb -fno-omit-frame-pointer -fno-common -fsigned-char)
+add_link_options(-fno-common)
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
-    add_compile_options(-march=sandybridge -fno-common)
-    add_link_options(-fno-common)
+    add_compile_options(-march=sandybridge)
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
+    add_compile_options(-march=armv8.2-a+crypto)
 endif()
 
 add_compile_options(-Werror -Wall -Wextra -Wunused-function -Wfloat-conversion -Wno-sign-compare

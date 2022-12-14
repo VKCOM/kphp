@@ -282,7 +282,7 @@ static void header(const char *str, int str_len, bool replace = true, int http_r
     php_warning("Wrong header name: \"%s\"", name.c_str());
     return;
   }
-  for (int i = 0; i < (int)name.size(); i++) {
+  for (string::size_type i = 0; i < name.size(); i++) {
     if (name[i] <= 32 || name[i] >= 127) {
       php_warning("Wrong header name: \"%s\"", name.c_str());
       return;

@@ -159,6 +159,8 @@ if ($_SERVER["PHP_SELF"] === "/ini_get") {
     echo json_encode(['len' => $res]);
 } else if ($_SERVER["PHP_SELF"] === "/pid") {
     echo "pid=" . posix_getpid();
+} else if ($_SERVER["PHP_SELF"] === "/test_script_errors") {
+  critical_error("Test error");
 } else {
     if ($_GET["hints"] === "yes") {
         send_http_103_early_hints(["Content-Type: text/plain or application/json", "Link: </script.js>; rel=preload; as=script"]);

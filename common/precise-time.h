@@ -2,28 +2,25 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef __PRECISE_TIME_H__
-#define __PRECISE_TIME_H__
+#pragma once
 
-#include <stdint.h>
-#include <time.h>
+#include <cstdint>
+#include <ctime>
 
-/* net-event.h */
+/* Wall Clock time */
 extern int now;
+
+/* Monotonic time */
 extern thread_local double precise_now;
-double get_utime_monotonic ();
 
-/* common/server-functions.h */
-extern long long precise_time;  // (long long) (2^16 * precise unixtime)
-extern long long precise_time_rdtsc; // when precise_time was obtained
-long long get_precise_time (unsigned precision);
+double get_precise_time(unsigned precision) noexcept;
 
-/* ??? */
-double get_double_time ();
+static inline long long precise_time_to_binlog_time(double precise_time) noexcept {
+  return static_cast<long long>(precise_time * (1LL << 32));
+}
 
-double get_network_time();
+double get_utime_monotonic() noexcept;
+double get_network_time() noexcept;
 
 int get_uptime();
 void init_uptime();
-
-#endif

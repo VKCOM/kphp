@@ -290,6 +290,8 @@ void CompilerSettings::init() {
   ss << " -fno-strict-aliasing -fno-omit-frame-pointer";
 #ifdef __x86_64__
   ss << " -march=sandybridge";
+#elif __aarch64__
+  ss << " -march=armv8.2-a+crypto";
 #endif
   if (!no_pch.get()) {
     ss << " -Winvalid-pch -fpch-preprocess";
@@ -329,7 +331,7 @@ void CompilerSettings::init() {
   ld_flags.value_ += " -L /usr/local/lib";
 #endif
 
-#ifdef __arm64__
+#if defined(__APPLE__) && defined(__arm64__)
   // for development under M1, manual installation of libucontext is needed
   // see the docs: https://vkcom.github.io/kphp/kphp-internals/developing-and-extending-kphp/compiling-kphp-from-sources.html
   ld_flags.value_ += " /opt/homebrew/lib/libucontext.a";

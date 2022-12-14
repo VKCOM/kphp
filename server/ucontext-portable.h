@@ -4,8 +4,8 @@
 
 #pragma once
 
-#if defined(__x86_64__)
-// for x86, we just use makecontext(), ucontext_t and other native functions
+#if !(defined(__APPLE__) && defined(__arm64__))
+// for x86 mac or x86/arm linux, we just use makecontext(), ucontext_t and other native functions
 #include <ucontext.h>
 
 #define ucontext_t_portable ucontext_t
@@ -14,7 +14,7 @@
 #define makecontext_portable makecontext
 #define swapcontext_portable swapcontext
 
-#elif defined(__arm64__)
+#else
 // for M1, we can't use native makecontext() and others: they compile, but hang up when called
 // instead, we require the ucontext library: https://github.com/kaniini/libucontext
 // see the docs: https://vkcom.github.io/kphp/kphp-internals/developing-and-extending-kphp/compiling-kphp-from-sources.html
@@ -29,6 +29,4 @@ extern "C" {
 #define makecontext_portable libucontext_makecontext
 #define swapcontext_portable libucontext_swapcontext
 
-#else
-#error "Unsupported arch"
 #endif

@@ -494,11 +494,11 @@ auto &array<T>::array_inner::find_map_entry(S &self, int64_t int_key) noexcept {
 
 template<class T>
 template<class S>
-auto &array<T>::array_inner::find_map_entry(S &self, const string &string_key, int64_t precomuted_hash) noexcept {
+auto &array<T>::array_inner::find_map_entry(S &self, const string &string_key, int64_t precomputed_hash) noexcept {
   auto *string_entries = self.get_string_entries();
-  uint32_t bucket = self.choose_bucket_string(precomuted_hash);
+  uint32_t bucket = self.choose_bucket_string(precomputed_hash);
   while (string_entries[bucket].next != EMPTY_POINTER &&
-         (string_entries[bucket].int_key != precomuted_hash || string_entries[bucket].string_key != string_key)) {
+         (string_entries[bucket].int_key != precomputed_hash || string_entries[bucket].string_key != string_key)) {
     if (unlikely (++bucket == self.string_buf_size)) {
       bucket = 0;
     }
@@ -566,10 +566,10 @@ T &array<T>::array_inner::set_map_value(overwrite_element policy, int64_t int_ke
 }
 
 template<class T>
-T array<T>::array_inner::unset_map_value(const string &string_key, int64_t precomuted_hash) {
+T array<T>::array_inner::unset_map_value(const string &string_key, int64_t precomputed_hash) {
   string_hash_entry *string_entries = get_string_entries();
-  uint32_t bucket = choose_bucket_string(precomuted_hash);
-  while (string_entries[bucket].next != EMPTY_POINTER && (string_entries[bucket].int_key != precomuted_hash || string_entries[bucket].string_key != string_key)) {
+  uint32_t bucket = choose_bucket_string(precomputed_hash);
+  while (string_entries[bucket].next != EMPTY_POINTER && (string_entries[bucket].int_key != precomputed_hash || string_entries[bucket].string_key != string_key)) {
     if (unlikely (++bucket == string_buf_size)) {
       bucket = 0;
     }
@@ -1219,15 +1219,15 @@ void array<T>::set_value(const string &string_key, const T &v) noexcept {
 }
 
 template<class T>
-void array<T>::set_value(const string &string_key, const T &v, int64_t precomuted_hash) noexcept {
+void array<T>::set_value(const string &string_key, const T &v, int64_t precomputed_hash) noexcept {
   mutate_to_map_if_vector_or_map_need_string();
-  p->emplace_string_key_map_value(overwrite_element::YES, precomuted_hash, string_key, v);
+  p->emplace_string_key_map_value(overwrite_element::YES, precomputed_hash, string_key, v);
 }
 
 template<class T>
-void array<T>::set_value(const string &string_key, T &&v, int64_t precomuted_hash) noexcept {
+void array<T>::set_value(const string &string_key, T &&v, int64_t precomputed_hash) noexcept {
   mutate_to_map_if_vector_or_map_need_string();
-  p->emplace_string_key_map_value(overwrite_element::YES, precomuted_hash, string_key, std::move(v));
+  p->emplace_string_key_map_value(overwrite_element::YES, precomputed_hash, string_key, std::move(v));
 }
 
 
@@ -1326,8 +1326,8 @@ const T *array<T>::find_value(const string &string_key) const noexcept {
 }
 
 template<class T>
-const T *array<T>::find_value(const string &string_key, int64_t precomuted_hash) const noexcept {
-  return p->is_vector() ? nullptr : p->find_map_value(string_key, precomuted_hash);
+const T *array<T>::find_value(const string &string_key, int64_t precomputed_hash) const noexcept {
+  return p->is_vector() ? nullptr : p->find_map_value(string_key, precomputed_hash);
 }
 
 template<class T>
@@ -1443,8 +1443,8 @@ const T array<T>::get_value(const K &key) const {
 }
 
 template<class T>
-const T array<T>::get_value(const string &string_key, int64_t precomuted_hash) const {
-  auto *value = find_value(string_key, precomuted_hash);
+const T array<T>::get_value(const string &string_key, int64_t precomputed_hash) const {
+  auto *value = find_value(string_key, precomputed_hash);
   return value ? *value : T{};
 }
 

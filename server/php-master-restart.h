@@ -52,17 +52,21 @@ struct shared_data_t {
   master_data_t masters[2];
 };
 
-#if !defined(__APPLE__)
-
 static constexpr size_t MASTER_DATA_T_SIZEOF = 272;
+#if defined(__APPLE__)
+static constexpr size_t SHARED_DATA_T_SIZEOF = 680;
+#elif defined(__x86_64__)
 static constexpr size_t SHARED_DATA_T_SIZEOF = 656;
+#elif defined(__arm64__) || defined (__aarch64__)
+static constexpr size_t SHARED_DATA_T_SIZEOF = 664;
+#else
+#error "Unsupported arch"
+#endif
 
 static_assert(sizeof(master_data_t) == MASTER_DATA_T_SIZEOF, "Layout of this struct must be the same in any KPHP version unless shared data magic is used, "
                                                              "otherwise restart won't work");
 static_assert(sizeof(shared_data_t) == SHARED_DATA_T_SIZEOF, "Layout of this struct must be the same in any KPHP version unless shared data magic is used, "
                                                              "otherwise restart won't work");
-#endif
-
 
 extern shared_data_t *shared_data;
 extern master_data_t *me, *other; // these are pointers to shared memory

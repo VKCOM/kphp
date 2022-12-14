@@ -32,6 +32,23 @@ const char *KphpBacktrace::make_line(const char *symbol, bool full_trace) noexce
   const char *mangled_name = nullptr;
   const char *offset_begin = nullptr;
   const char *offset_end = nullptr;
+#ifdef __APPLE__
+  const char *begin = strchr(symbol, '_');
+  if (begin == nullptr) {
+    return nullptr;
+  }
+  const char *end = strchr(begin, '+');
+  if (end == nullptr) {
+    return nullptr;
+  }
+
+  const size_t copy_name_len = end - begin;
+  php_assert(name_buffer_.size() >= copy_name_len);
+  memcpy(name_buffer_.data(), begin, end - begin);
+  name_buffer_[copy_name_len - 1] = 0;
+
+  full_trace = false;
+#else
   for (const char *p = symbol; *p; ++p) {
     if (*p == '(') {
       mangled_name = p;
@@ -50,6 +67,7 @@ const char *KphpBacktrace::make_line(const char *symbol, bool full_trace) noexce
   php_assert(name_buffer_.size() >= copy_name_len);
   memcpy(name_buffer_.data(), mangled_name + 1, copy_name_len - 1);
   name_buffer_[copy_name_len - 1] = 0;
+#endif
 
   dl::CriticalSectionGuard critical_section;
   int status = 0;
