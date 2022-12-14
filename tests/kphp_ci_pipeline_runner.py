@@ -237,6 +237,7 @@ if __name__ == "__main__":
     if args.use_nocc:
         cmake_options.append("-DCMAKE_CXX_COMPILER_LAUNCHER={}".format(nocc_env("NOCC_EXECUTABLE", "nocc")))
     cmake_options.append("-DPDO_DRIVER_MYSQL=ON")
+    cmake_options.append("-DPDO_DRIVER_PGSQL=ON")
     cmake_options.append("-DPDO_LIBS_STATIC_LINKING=ON")
     kphp_polyfills_repo = args.kphp_polyfills_repo
     if kphp_polyfills_repo == "":

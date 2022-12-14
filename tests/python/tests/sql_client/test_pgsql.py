@@ -2,21 +2,21 @@ import re
 
 import pytest
 
-from pytest_mysql.factories import mysql, mysql_proc
+import pytest_postgresql
 from python.lib.testcase import KphpServerAutoTestCase
 
 
-class TestMysql(KphpServerAutoTestCase):
+class TestPgsql(KphpServerAutoTestCase):
     @classmethod
     def extra_class_setup(cls):
         cls.kphp_server.update_options({
-            "--verbosity-mysql=2": True,
+            "--verbosity-pgsql=2": True,
             "-t": 10,
         })
 
     @pytest.fixture(autouse=True)
-    def _setup_mysql_db(self, mysql, mysql_proc):
-        cursor = mysql.cursor()
+    def _setup_pgsql_db(self, postgresql, postgresql_proc):
+        cursor = postgresql.cursor()
         cursor.execute(
             '''
             CREATE TABLE TestTable
@@ -27,29 +27,28 @@ class TestMysql(KphpServerAutoTestCase):
                 PRIMARY KEY (id)
             );
 
-            INSERT INTO 
-                TestTable (id, val_str, val_float) 
-            VALUES 
+            INSERT INTO
+                TestTable (id, val_str, val_float)
+            VALUES
                 (1, 'hello', '1.0'),
                 (2, 'world', '4.0'),
                 (3, 'a', '42.42');
             '''
         )
-        cursor.fetchall()
+        postgresql.commit()
         cursor.close()
-        mysql.commit()
 
-        self.mysql_client = mysql
-        self.mysql_proc = mysql_proc
+        self.pgsql_client = postgresql
+        self.pgsql_proc = postgresql_proc
 
-    def _sql_query_impl(self, query, expected_res, uri="/?name=mysql"):
+    def _sql_query_impl(self, query, expected_res, uri="/?name=pgsql"):
         resp = self.kphp_server.http_post(
             uri=uri,
             json={
-                "dbname": 'test',
-                "host": '127.0.0.1',
-                "port": self.mysql_proc.port,
-                "user": self.mysql_proc.user,
+                "dbname": self.pgsql_proc.dbname,
+                "host": self.pgsql_proc.host,
+                "port": self.pgsql_proc.port,
+                "user": self.pgsql_proc.user,
                 "query": query
             }
         )
@@ -71,17 +70,18 @@ class TestMysql(KphpServerAutoTestCase):
 
     def test_fail_unexisted_table(self):
         self._sql_query_impl(query='SELECT * FROM UnexistedTable',
-                             expected_res={'error': ['42S02', 1146]})
+                             expected_res={'error': ['42P01', 7]})
 
     def test_fail_syntax_error(self):
         self._sql_query_impl(query='HELLO WORLD',
-                             expected_res={'error': ['42000', 1064]})
+                             expected_res={'error': ['42601', 7]})
 
     def test_resumable_friendly(self):
-        self._sql_query_impl(query='SELECT sleep(0.5)',
-                             expected_res=[{'0': '0', 'sleep(0.5)': '0'}],
-                             uri="/resumable_test?name=mysql")
+        self._sql_query_impl(query='SELECT pg_sleep(0.5)',
+                             expected_res=[{'0': '', 'pg_sleep': ''}],
+                             uri="/resumable_test?name=pgsql")
         server_log = self.kphp_server.get_log()
         pattern = "start_resumable_function(.|\n)*start_query(.|\n)*end_resumable_function(.|\n)*end_query"
         if not re.search(pattern, ''.join(server_log)):
             raise RuntimeError("cannot find match for pattern \"" + pattern + "\n")
+

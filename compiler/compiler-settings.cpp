@@ -152,6 +152,9 @@ void append_apple_options(std::string &cxx_flags, std::string &ld_flags) noexcep
               " -lepoll-shim"
               " -L" EPOLL_SHIM_LIB_DIR
               " -L" + common_path + "/lib"
+#ifdef PDO_DRIVER_PGSQL
+              " -L" + common_path + "/opt/libpq/lib"
+#endif
               " -L" + common_path + "/opt/openssl/lib";
 
 #else
@@ -339,6 +342,20 @@ void CompilerSettings::init() {
   external_static_libs.emplace_back("mysqlclient");
 #else
   external_libs.emplace_back("mysqlclient");
+#endif
+#endif
+
+#ifdef PDO_DRIVER_PGSQL
+#ifdef PDO_LIBS_STATIC_LINKING
+  ld_flags.value_ += fmt_format(" -L /usr/lib/postgresql/{}/lib/ ", PDO_DRIVER_PGSQL_VERSION);
+  external_static_libs.emplace_back("pq");
+  external_static_libs.emplace_back("pgcommon");
+  external_static_libs.emplace_back("pgport");
+  // following common libraries are required for libpq.a
+  external_libs.emplace_back("ldap");
+  external_libs.emplace_back("gssapi_krb5");
+#else
+  external_libs.emplace_back("pq");
 #endif
 #endif
 

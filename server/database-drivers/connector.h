@@ -9,6 +9,7 @@
 #include "common/mixin/not_copyable.h"
 #include "runtime/allocator.h"
 #include "server/database-drivers/async-operation-status.h"
+#include "server/database-drivers/response.h"
 
 namespace database_drivers {
 
@@ -41,32 +42,40 @@ public:
    *
    * Usually it puts @a request to pending requests queue.
    */
-  virtual void push_async_request(std::unique_ptr<Request> &&request) noexcept = 0;
+  virtual void push_async_request(std::unique_ptr<Request> &&request) noexcept;
 
   /**
    * @brief Performs necessary actions when underlying connection is ready for write, @see EPOLLOUT.
    *
    * Usually it sends all pending requests and removes completely sent requests from queue.
    */
-  virtual void handle_write() noexcept = 0;
+  virtual void handle_write() noexcept;
 
   /**
    * @brief Performs necessary actions when underlying connection is ready for read, @see EPOLLIN.
    *
    * Usually it reads all available responses and finishes corresponding resumables, @see database_drivers::Adaptor::finish_request_resumable().
    */
-  virtual void handle_read() noexcept = 0;
+  virtual void handle_read() noexcept;
 
   /**
    * @brief Performs necessary actions when special events happened on underlying connection , @see EPOLLRDHUP, EPOLLPRI.
    *
    * For example, special events are: server closed the connection, TCP out-of-band data came on socket
    */
-  virtual void handle_special() noexcept = 0;
+  virtual void handle_special() noexcept;
+
+  /**
+   * @brief Associates the last request with the response.
+   *
+   */
+  virtual std::unique_ptr<Response> make_response() const noexcept = 0;
 
   bool connected() const noexcept;
 
 protected:
+  std::unique_ptr<Request> pending_request;
+  std::unique_ptr<Response> pending_response;
   bool is_connected{};
   bool ready_to_read{};
   bool ready_to_write{};

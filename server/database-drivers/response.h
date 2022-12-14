@@ -13,6 +13,7 @@ class Response : public ManagedThroughDlAllocator {
 public:
   int connector_id{};
   int bound_request_id{};
+  bool is_error{false};
 
   Response(int connector_id, int bound_request_id)
     : connector_id(connector_id)

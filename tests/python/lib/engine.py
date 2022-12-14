@@ -182,6 +182,15 @@ class Engine:
         self.stop()
         self.start()
 
+    def get_log(self):
+        """
+        Получить полный лог движка
+        """
+        self._assert_availability()
+        self._read_new_logs()
+        return self._engine_logs
+
+
     def assert_log(self, expect, message="Can't wait expected log", timeout=60):
         """
         Проверить наличие сообщение в логе движка
