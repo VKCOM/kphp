@@ -112,7 +112,7 @@ void PhpScript::check_net_error() noexcept {
         break;
       case script_error_t::net_event_error:
         assert(shutdown_functions_status == shutdown_functions_status::not_executed);
-        on_request_error("Memory limit on net event", "net event error\n", script_error_t::post_data_loading_error);
+        on_request_error("Memory limit on net event", "net event error\n", error_type);
         break;
       default:
         break;
