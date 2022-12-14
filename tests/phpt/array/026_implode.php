@@ -2,6 +2,19 @@
 <?php
 
 function test() {
+  $map_string_parts = [
+    10 => '',
+    20 => 'foo',
+    30 => '',
+    40 => 'hello, world',
+    50 => ' ',
+    60 => '?',
+  ];
+
+  var_dump(implode('', $map_string_parts));
+  var_dump(implode('/', $map_string_parts));
+  var_dump(implode('//', $map_string_parts));
+
   /** @var string[][] $string_parts */
   $string_parts = [
     [],

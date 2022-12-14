@@ -138,3 +138,32 @@ template<>
 array<int64_t> f$array_diff(const array<int64_t> &a1, const array<int64_t> &a2) {
   return array_diff_impl(a1, a2, [](int64_t val) { return val; });
 }
+
+string implode_string_vector(const string &s, const array<string> &a) {
+  // we use a precondition here that array is not empty: count-1 is not negative, elems[0] is valid
+  int64_t count = a.count();
+  const string* elems = a.get_const_vector_pointer();
+
+  int result_size = 0;
+  for (int64_t i = 0; i < count; i++) {
+    result_size += elems[i].size();
+  }
+
+  if (s.empty()) {
+    // ~5-10% of implode usages involve an empty delimiter: implode("", $arr)
+    // people use it to have a fast way to concatenate a large number of strings together
+    string result(result_size, true);
+    for (int64_t i = 0; i < count; i++) {
+      result.append_unsafe(elems[i]);
+    }
+    return result.finish_append();
+  }
+
+  result_size += s.size() * (count - 1);
+  string result(result_size, true);
+  result.append_unsafe(elems[0]);
+  for (int64_t i = 1; i < count; i++) {
+    result.append_unsafe(s).append_unsafe(elems[i]);
+  }
+  return result.finish_append();
+}
