@@ -123,6 +123,7 @@ using ComposerJsonPtr = Id<ComposerJsonData>;
 
 bool operator<(FunctionPtr, FunctionPtr);
 bool operator<(VarPtr, VarPtr);
+bool operator<(SrcFilePtr, SrcFilePtr);
 
 namespace std {
 template<typename Data>

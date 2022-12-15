@@ -14,3 +14,8 @@ struct FunctionH : CodeGenRootCmd {
   void compile(CodeGenerator &W) const final;
 };
 
+struct FunctionListH : CodeGenRootCmd {
+  const std::vector<FunctionPtr> functions;
+  explicit FunctionListH(const std::vector<FunctionPtr> functions) : functions{functions} {}
+  void compile(CodeGenerator &W) const final;
+};

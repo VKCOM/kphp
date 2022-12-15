@@ -74,3 +74,7 @@ VertexPtr SrcFile::get_main_func_run_var() const {
   v->extra_type = op_ex_var_superglobal;
   return v;
 }
+
+bool operator<(SrcFilePtr a, SrcFilePtr b) {
+  return a->file_name < b->file_name;
+}
