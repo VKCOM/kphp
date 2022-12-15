@@ -1316,7 +1316,10 @@ function get_reference_counter ($v) ::: int;
 function prepare_search_query ($query ::: string) ::: string;
 
 /** For local usage only **/
-function system ($query ::: string) ::: int;
+function exec($command ::: string, &$output ::: mixed = [], int &$result_code = 0): string|false;
+function system($command ::: string, int &$result_code = 0): string|false;
+function passthru($command ::: string, int &$result_code = 0): false|null;
+
 function raise_sigsegv () ::: void;
 function make_clone ($x ::: any) ::: ^1;
 

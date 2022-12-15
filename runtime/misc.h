@@ -64,8 +64,4 @@ string f$var_export(const class_instance<T> &v, bool buffered = false) {
 
 string f$cp1251(const string &utf8_string);
 
-
-/** For local usage only **/
-int64_t f$system(const string &query);
-
 void f$kphp_set_context_on_error(const array<mixed> &tags, const array<mixed> &extra_info, const string& env = {});
