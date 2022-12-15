@@ -24,7 +24,11 @@ string f$implode(const string &s, const array<T> &a);
 array<string> explode(char delimiter, const string &str, int64_t limit = std::numeric_limits<int64_t>::max());
 
 array<string> f$explode(const string &delimiter, const string &str, int64_t limit = std::numeric_limits<int64_t>::max());
-
+string f$_explode_nth(const string &delimiter, const string &str, int64_t index);
+string f$_explode_1(const string &delimiter, const string &str);
+std::tuple<string, string> f$_explode_tuple2(const string &delimiter, const string &str, int64_t mask, int64_t limit = 2+1);
+std::tuple<string, string, string> f$_explode_tuple3(const string &delimiter, const string &str, int64_t mask, int64_t limit = 3+1);
+std::tuple<string, string, string, string> f$_explode_tuple4(const string &delimiter, const string &str, int64_t mask, int64_t limit = 4+1);
 
 template<class T>
 array<array<T>> f$array_chunk(const array<T> &a, int64_t chunk_size, bool preserve_keys = false);

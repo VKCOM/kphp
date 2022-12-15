@@ -1,5 +1,6 @@
 @kphp_should_fail
 /pass int to argument \$x of ensure_array/
+/hrtime returns int/
 <?php
 
 /** @param int[] $x */

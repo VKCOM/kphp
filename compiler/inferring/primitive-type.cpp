@@ -21,6 +21,7 @@ const char *ptype_name(PrimitiveType id) {
     case tp_float:         return "float";
     case tp_array:         return "array";
     case tp_string:        return "string";
+    case tp_tmp_string:    return "tmp_string";
     case tp_mixed:         return "mixed";
     case tp_tuple:         return "tuple";
     case tp_shape:         return "shape";

@@ -40,7 +40,7 @@ struct KnownPhpDocTag {
 };
 
 class AllDocTags {
-  static constexpr int N_TAGS = 37;
+  static constexpr int N_TAGS = 40;
   static const KnownPhpDocTag ALL_TAGS[N_TAGS];
 
 public:
@@ -103,6 +103,9 @@ const KnownPhpDocTag AllDocTags::ALL_TAGS[] = {
   KnownPhpDocTag("@kphp-profile-allow-inline", PhpDocType::kphp_profile_allow_inline),
   KnownPhpDocTag("@kphp-strict-types-enable", PhpDocType::kphp_strict_types_enable),
   KnownPhpDocTag("@kphp-color", PhpDocType::kphp_color),
+  KnownPhpDocTag("@kphp-internal-result-indexing", PhpDocType::kphp_internal_result_indexing),
+  KnownPhpDocTag("@kphp-internal-result-array2tuple", PhpDocType::kphp_internal_result_array2tuple),
+  KnownPhpDocTag("@kphp-internal-param-readonly", PhpDocType::kphp_internal_param_readonly),
 };
 
 
@@ -473,6 +476,13 @@ const TypeHint *PhpDocTypeHintParser::parse_simple_type() {
         const auto *nested = dynamic_cast<const TypeHintArgRef *>(parse_nested_one_type_hint());
         kphp_assert(nested);
         return TypeHintArgRefInstance::create(nested->arg_num);
+      }
+      if (cur_tok->str_val == "_tmp_string") {
+        cur_tok++;
+        if (!current_function->is_extern()) {
+          throw std::runtime_error("_tmp_string type can only be used for KPHP builtin functions");
+        }
+        return TypeHintPrimitive::create(tp_tmp_string);
       }
       // otherwise interpreted as a class name (including the lowercase names);
       // it works with the absolute and relative names as well as for a special names like 'self';

@@ -504,8 +504,8 @@ mixed f$microtime(bool get_as_float) {
   }
 }
 
-double f$microtime_float() { return microtime(); }
-string f$microtime_string() { return microtime_string(); }
+double f$_microtime_float() { return microtime(); }
+string f$_microtime_string() { return microtime_string(); }
 
 int64_t f$mktime(int64_t h, int64_t m, int64_t s, int64_t month, int64_t day, int64_t year) {
   tm t;
@@ -595,8 +595,8 @@ mixed f$hrtime(bool as_number) {
   return hrtime_array();
 }
 
-array<int64_t> f$hrtime_array() { return hrtime_array(); }
-int64_t f$hrtime_int() { return hrtime_int(); }
+array<int64_t> f$_hrtime_array() { return hrtime_array(); }
+int64_t f$_hrtime_int() { return hrtime_int(); }
 
 void init_datetime_lib() {
   dl::enter_critical_section();//OK

@@ -5,6 +5,7 @@
 #include "compiler/inferring/restriction-isset.h"
 
 #include "compiler/data/var-data.h"
+#include "compiler/data/function-data.h"
 #include "compiler/inferring/edge.h"
 #include "compiler/inferring/expr-node.h"
 #include "compiler/inferring/ifi.h"
@@ -92,10 +93,17 @@ bool RestrictionIsset::find_dangerous_isset_dfs(int isset_flags, tinf::Node *nod
   tinf::ExprNode *expr_node = dynamic_cast <tinf::ExprNode *> (node);
   if (expr_node != nullptr) {
     VertexPtr v = expr_node->get_expr();
-    if (v->type() == op_index && !vk::any_of_equal(tinf::get_type(v.as<op_index>()->array())->ptype(), tp_tuple, tp_shape) && isset_is_dangerous(isset_flags, node->get_type())) {
-      node->isset_was = -1;
-      find_dangerous_isset_warning(bt, node, "[index]");
-      return true;
+    if (v->type() == op_index) {
+      const auto *type = tinf::get_type(v.as<op_index>()->array());
+      // check all indexing operations except shapes and tuples,
+      // unless the tuple is used in array context (so it may lead to the same side effects as array indexing)
+      bool should_check = type->ptype() != tp_shape &&
+                          (type->ptype() != tp_tuple || type->tuple_as_array_flag());
+      if (should_check && isset_is_dangerous(isset_flags, node->get_type())) {
+        node->isset_was = -1;
+        find_dangerous_isset_warning(bt, node, "[index]");
+        return true;
+      }
     }
     if (auto var = v.try_as<op_var>()) {
       VarPtr from_var = var->var_id;
@@ -113,6 +121,11 @@ bool RestrictionIsset::find_dangerous_isset_dfs(int isset_flags, tinf::Node *nod
     }
     if (auto call = v.try_as<op_func_call>()) {
       FunctionPtr func = call->func_id;
+      if (func->is_result_indexing && isset_is_dangerous(isset_flags, node->get_type())) {
+        node->isset_was = -1;
+        find_dangerous_isset_warning(bt, node, "[index func]");
+        return true;
+      }
       bt->push_back(node);
       if (find_dangerous_isset_dfs(isset_flags, tinf::get_tinf_node(func, -1), bt)) {
         return true;

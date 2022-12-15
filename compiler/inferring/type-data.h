@@ -28,6 +28,7 @@ private:
     or_false_flag_e       = 0b00000100,
     shape_has_varg_flag_e = 0b00001000,
     ffi_const_flag_e      = 0b00010000,
+    tuple_as_array_flag_e = 0b00100000,
   };
 
 public:
@@ -122,6 +123,9 @@ public:
 
   void set_shape_has_varg_flag() { set_flag<shape_has_varg_flag_e>(); }
   bool shape_has_varg_flag() const { return get_flag<shape_has_varg_flag_e>(); }
+
+  void set_tuple_as_array_flag() { set_flag<tuple_as_array_flag_e>(); }
+  bool tuple_as_array_flag() const { return get_flag<tuple_as_array_flag_e>(); }
 
   int get_indirection() const noexcept { return indirection_; }
 

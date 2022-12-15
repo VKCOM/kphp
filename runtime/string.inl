@@ -15,6 +15,10 @@
   #error "this file must be included only from kphp_core.h"
 #endif
 
+tmp_string::tmp_string(const char *data, string_size_type size) : data{data}, size{size} {}
+
+tmp_string::tmp_string(const string &s) : data{s.c_str()}, size{s.size()} {}
+
 bool string::string_inner::is_shared() const {
   return ref_count > 0;
 }
@@ -519,6 +523,13 @@ string &string::append_unsafe(const string &str) {
   return *this;
 }
 
+string &string::append_unsafe(tmp_string str) {
+  if (!str.has_value()) {
+    return *this;
+  }
+  return append_unsafe(str.data, str.size);
+}
+
 string &string::append_unsafe(const char *s, size_type n) {
   memcpy(p + size(), s, n);
   inner()->size += n;
@@ -756,10 +767,7 @@ mixed string::to_numeric() const {
   return res;
 }
 
-bool string::to_bool() const {
-  int l = size();
-  return l >= 2 || (l == 1 && p[0] != '0');
-}
+bool string::to_bool() const { return string_to_bool(p, size()); }
 
 int64_t string::to_int(const char *s, size_type l) {
   while (isspace(*s) && l > 0) {
@@ -786,6 +794,10 @@ int64_t string::to_int(const char *s, size_type l) {
 
 int64_t string::to_int() const {
   return to_int(p, size());
+}
+
+int64_t string::to_int(int64_t start, int64_t l) const {
+  return to_int(p + start, l);
 }
 
 double string::to_float() const {
@@ -935,11 +947,14 @@ string::size_type string::find_first_of(const string &s, size_type pos) const {
   return string::npos;
 }
 
+int64_t string::compare(const string &str, const char *other, size_type other_size) {
+  const size_type my_size = str.size();
+  const int res = memcmp(str.p, other, std::min(my_size, other_size));
+  return res ? res : static_cast<int64_t>(my_size) - static_cast<int64_t>(other_size);
+}
+
 int64_t string::compare(const string &str) const {
-  const size_type my_size = size();
-  const size_type str_size = str.size();
-  const int res = memcmp(p, str.p, std::min(my_size, str_size));
-  return res ? res : static_cast<int64_t>(my_size) - static_cast<int64_t>(str_size);
+  return compare(*this, str.c_str(), str.size());
 }
 
 bool string::isset(int64_t index) const {
@@ -951,14 +966,18 @@ int64_t string::get_correct_index(int64_t index) const {
   return index >= 0 ? index : index + int64_t{size()};
 }
 
-int64_t string::get_correct_offset(int64_t offset) const {
+int64_t string::get_correct_offset(size_type size, int64_t offset) {
   if (offset < 0) {
-    offset = offset + size();
+    offset = offset + size;
     if (offset < 0) {
       offset = 0;
     }
   }
   return offset;
+}
+
+int64_t string::get_correct_offset(int64_t offset) const {
+  return get_correct_offset(size(), offset);
 }
 
 int64_t string::get_correct_offset_clamped(int64_t offset) const {
@@ -1135,6 +1154,10 @@ string::size_type max_string_size(double) {
 
 string::size_type max_string_size(const string &s) {
   return s.size();
+}
+
+string::size_type max_string_size(tmp_string s) {
+  return s.size;
 }
 
 string::size_type max_string_size(const mixed &v) {

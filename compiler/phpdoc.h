@@ -49,6 +49,9 @@ enum class PhpDocType {
   kphp_profile_allow_inline,
   kphp_strict_types_enable, // TODO: remove when strict_types=1 are enabled by default
   kphp_color,
+  kphp_internal_result_indexing,
+  kphp_internal_result_array2tuple,
+  kphp_internal_param_readonly,
 };
 
 class GenericsDeclarationMixin;

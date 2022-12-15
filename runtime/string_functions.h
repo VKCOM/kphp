@@ -231,6 +231,10 @@ mixed f$str_ireplace(const mixed &search, const mixed &replace, const mixed &sub
 array<string> f$str_split(const string &str, int64_t split_length = 1);
 
 Optional<string> f$substr(const string &str, int64_t start, int64_t length = std::numeric_limits<int64_t>::max());
+Optional<string> f$substr(tmp_string, int64_t start, int64_t length = std::numeric_limits<int64_t>::max());
+
+tmp_string f$_tmp_substr(const string &str, int64_t start, int64_t length = std::numeric_limits<int64_t>::max());
+tmp_string f$_tmp_substr(tmp_string str, int64_t start, int64_t length = std::numeric_limits<int64_t>::max());
 
 int64_t f$substr_count(const string &haystack, const string &needle, int64_t offset = 0, int64_t length = std::numeric_limits<int64_t>::max());
 
@@ -242,6 +246,9 @@ bool f$str_starts_with(const string &haystack, const string &needle);
 
 bool f$str_ends_with(const string &haystack, const string &needle);
 
+tmp_string f$_tmp_trim(tmp_string s, const string &what = WHAT);
+tmp_string f$_tmp_trim(const string &s, const string &what = WHAT);
+string f$trim(tmp_string s, const string &what = WHAT);
 string f$trim(const string &s, const string &what = WHAT);
 
 string f$ucfirst(const string &str);

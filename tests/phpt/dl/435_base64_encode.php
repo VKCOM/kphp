@@ -10,7 +10,9 @@ function filesBinToBase64($str) { // for storage-engine: secret packing
 }
 
 function filesHashEncodedBase64($val, $key) {
+  $val_arg = $val;
   $val = $val . substr(md5($val), 0, 12);
+  var_dump("val=$val_arg | key=$key | new_val=$val");
   $len = strlen($val);
   $count = ceil($len/16);
   $hash = '';

@@ -488,6 +488,14 @@ mixed &mixed::append(const string &v) {
   return *this;
 }
 
+mixed &mixed::append(tmp_string v) {
+  if (unlikely (get_type() != type::STRING)) {
+    convert_to_string();
+  }
+  as_string().append(v.data, v.size);
+  return *this;
+}
+
 const mixed mixed::to_numeric() const {
   switch (get_type()) {
     case type::NUL:
@@ -1105,6 +1113,13 @@ mixed &mixed::operator[](const string &string_key) {
   return as_array()[string_key];
 }
 
+mixed &mixed::operator[](tmp_string string_key) {
+  if (get_type() == type::ARRAY) {
+    return as_array()[string_key];
+  }
+  return (*this)[materialize_tmp_string(string_key)];
+}
+
 mixed &mixed::operator[](const mixed &v) {
   switch (v.get_type()) {
     case type::NUL:
@@ -1216,6 +1231,11 @@ void mixed::set_value(const string &string_key, const mixed &v, int64_t precomut
   return get_type() == type::ARRAY ? as_array().set_value(string_key, v, precomuted_hash) : set_value(string_key, v);
 }
 
+void mixed::set_value(tmp_string string_key, const mixed &v) {
+  // TODO: as with arrays, avoid eager tmp_string->string conversion
+  set_value(materialize_tmp_string(string_key), v);
+}
+
 void mixed::set_value(const mixed &v, const mixed &value) {
   switch (v.get_type()) {
     case type::NUL:
@@ -1292,6 +1312,15 @@ const mixed mixed::get_value(const string &string_key) const {
 
 const mixed mixed::get_value(const string &string_key, int64_t precomuted_hash) const {
   return get_type() == type::ARRAY ? as_array().get_value(string_key, precomuted_hash) : get_value(string_key);
+}
+
+const mixed mixed::get_value(tmp_string string_key) const {
+  if (get_type() == type::ARRAY) {
+    // fast path: arrays can handle a tmp_string lookup efficiently
+    return as_array().get_value(string_key);
+  }
+  // TODO: make other lookups efficient too (like string from numeric tmp_string)?
+  return get_value(materialize_tmp_string(string_key));
 }
 
 const mixed mixed::get_value(const mixed &v) const {

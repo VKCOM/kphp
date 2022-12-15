@@ -9,6 +9,10 @@ inline bool f$boolval(T val) {
   return static_cast<bool>(val);
 }
 
+inline bool f$boolval(tmp_string val) {
+  return val.to_bool();
+}
+
 inline bool f$boolval(const string &val) {
   return val.to_bool();
 }
@@ -58,6 +62,13 @@ inline int64_t f$intval(const Optional<T> &val) {
   return val.has_value() ? f$intval(val.val()) : 0;
 }
 
+inline int64_t f$intval(tmp_string s) {
+  if (!s.has_value()) {
+    return 0;
+  }
+  return string::to_int(s.data, s.size);
+}
+
 
 inline int64_t f$safe_intval(bool val) {
   return val;
@@ -82,7 +93,6 @@ inline int64_t f$safe_intval(const string &val) {
 inline int64_t f$safe_intval(const mixed &val) {
   return val.safe_to_int();
 }
-
 
 template<class T, class = enable_for_bool_int_double<T>>
 inline double f$floatval(T val) {

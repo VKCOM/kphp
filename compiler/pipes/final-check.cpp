@@ -734,7 +734,7 @@ static void check_indexing_type(PrimitiveType indexed_type, const TypeData &key_
     static const std::vector allowed_types{tp_int, tp_mixed, tp_future};
     check_indexing_violation("int and future", allowed_types, ptype_name(indexed_type), key_type);
   } else {
-    static const std::vector allowed_types{tp_int, tp_float, tp_string, tp_mixed, tp_future};
+    static const std::vector allowed_types{tp_int, tp_float, tp_string, tp_tmp_string, tp_mixed, tp_future};
     check_indexing_violation("int, float, string and future", allowed_types, {}, key_type);
   }
 }
