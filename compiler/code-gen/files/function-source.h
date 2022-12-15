@@ -14,6 +14,11 @@ struct FunctionCpp : CodeGenRootCmd {
   void compile(CodeGenerator &W) const final;
 };
 
-void declare_global_vars(FunctionPtr function, CodeGenerator &W);
-void declare_const_vars(FunctionPtr function, CodeGenerator &W);
-void declare_static_vars(FunctionPtr function, CodeGenerator &W);
+struct FunctionListCpp : CodeGenRootCmd {
+  std::vector<FunctionPtr> functions;
+  explicit FunctionListCpp(std::vector<FunctionPtr> functions) : functions{functions} {}
+  void compile(CodeGenerator &W) const final;
+};
+
+void declare_vars_vector(const std::vector<VarPtr> &vars, std::unordered_set<VarPtr> *already_declared, CodeGenerator &W);
+void declare_vars_set(const std::set<VarPtr> &vars, std::unordered_set<VarPtr> *already_declared, CodeGenerator &W);

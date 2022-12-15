@@ -37,10 +37,36 @@ size_t CodeGenF::calc_count_of_parts(size_t cnt_global_vars) {
   return 1u + cnt_global_vars / G->settings().globals_split_count.get();
 }
 
+static bool needs_lambda_prefix(FunctionPtr func) {
+  return func->is_lambda() ||
+         (func->modifiers.is_instance() && func->class_id->is_lambda_class()) ||
+         (func->modifiers.is_instance() && func->class_id->is_typed_callable_interface());
+}
+
+static bool is_bundle_func(FunctionPtr func) {
+  return !func->file_id->is_builtin() && !needs_lambda_prefix(func);
+}
+
+static int estimate_func_body_size(FunctionPtr func) {
+  auto func_body = func->root->cmd();
+  auto first_stmt_location = (*func_body->begin())->location;
+  auto last_stmt_location = (*func_body->back()).location;
+  if (last_stmt_location.line == -1 && func_body->size() >= 3) {
+    last_stmt_location = func_body->args()[func_body->size()-1]->location;
+  }
+  if (last_stmt_location.line == -1 || first_stmt_location.line == -1) {
+    // fall back to some arbitrary size approximation
+    // we shouldn't even need it, but some locations are set to -1
+    // and there is not much we can do about it here
+    // (the compiler should try harder to avoid inserting the nodes without appropriate locations)
+    return 10;
+  }
+  return last_stmt_location.line - first_stmt_location.line + 1;
+}
 
 void CodeGenF::execute(FunctionPtr function, DataStream<std::unique_ptr<CodeGenRootCmd>> &unused_os __attribute__ ((unused))) {
   if (function->does_need_codegen() || function->is_imported_from_static_lib()) {
-    prepare_generate_function(function);
+    // prepare_generate_function() is used inside on_finish(), when we have all required functions available to us
     G->stats.on_function_processed(function);
     tmp_stream << function;
   }
@@ -60,9 +86,123 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
   const std::vector<ClassPtr> &all_classes = G->get_classes();
   std::set<ClassPtr> all_json_encoders;
 
+  struct FuncBundle {
+    SrcFilePtr file = {};
+    std::vector<std::vector<FunctionPtr>> chunks = {{}};
+    int current_chunk_size = 0;
+
+    FuncBundle() = default;
+    FuncBundle(SrcFilePtr file): file{file} {}
+
+    void push_func(FunctionPtr f, int max_bundle_size) {
+      int f_size = estimate_func_body_size(f);
+      if (!f->is_inline && f_size > 10) {
+        f_size /= 10;
+      }
+      std::vector<FunctionPtr> *chunk = &chunks.back();
+      if (current_chunk_size != 0 && current_chunk_size + f_size > max_bundle_size) {
+        current_chunk_size = 0;
+        chunks.emplace_back();
+        chunk = &chunks.back();
+      }
+      chunk->emplace_back(f);
+      current_chunk_size += f_size;
+    }
+
+    static std::string add_chunk_suffix(int index, const std::string &name) {
+      if (index == 0) {
+        return name;
+      }
+      return name + "_" + std::to_string(index);
+    }
+  };
+
+  // we want to group related functions into a single h/cpp files; these groups are called [func] bundles here
+  // to build stable bundles, we need to have functions sorted on the across the bundle boundary (they're never bigger than a single file right now)
+  //
+  // linked list sort is nlogn; we can also use vectors instead of maps on the next step because of the file sorting included here
+  all_functions.sort([](FunctionPtr a, FunctionPtr b) {
+    return std::tie(a->file_id, a->name) < std::tie(b->file_id, b->name);
+  });
+
+  std::unordered_map<ClassPtr, FuncBundle> private_bundles;
+  std::vector<FuncBundle> filename_bundles;
+  std::vector<FunctionPtr> standalone_funcs;
+  SrcFilePtr prev_file;
+
   for (FunctionPtr f : all_functions) {
+    if (!is_bundle_func(f)) {
+      // lambdas or something else that we don't want to group with other functions
+      standalone_funcs.emplace_back(f);
+      continue;
+    }
+    constexpr int FUNC_BUNDLE_MAX_SIZE = 400;
+    // private methods are perfect buckets: they pack the things used together nicely
+    if (f->modifiers.is_private()) {
+      private_bundles[f->class_id].push_func(f, 2 * FUNC_BUNDLE_MAX_SIZE);
+      continue;
+    }
+    if (prev_file != f->file_id) {
+      prev_file = f->file_id;
+      filename_bundles.emplace_back(f->file_id); // create next (empty) bundle
+    }
+    filename_bundles.back().push_func(f, FUNC_BUNDLE_MAX_SIZE);
+  }
+
+  // now run a prepare_generate_function for every function
+  for (auto &f : standalone_funcs) {
+    auto file_name = f->name;
+    std::replace(file_name.begin(), file_name.end(), '$', '@');
+    f->subdir = calc_subdir_for_function(f, f->file_id->short_file_name);
+    prepare_generate_function(f, file_name);
+  }
+  for (auto &it : private_bundles) {
+    auto file_name = it.first->src_name + "-private";
+    std::replace(file_name.begin(), file_name.end(), '$', '@');
+    for (int i = 0; i < it.second.chunks.size(); i++) {
+      std::string chunk_file_name = FuncBundle::add_chunk_suffix(i, file_name);
+      const auto &funcs = it.second.chunks[i];
+      for (const auto &f : funcs) {
+        f->subdir = calc_subdir_for_function(f, file_name); // using file_name because chunks belong to the same folder
+        prepare_generate_function(f, chunk_file_name);
+      }
+    }
+  }
+  for (auto &it : filename_bundles) {
+    auto file_name = static_cast<std::string>(G->calc_relative_name(it.file, false));
+    std::replace(file_name.begin(), file_name.end(), '/', '@');
+    for (int i = 0; i < it.chunks.size(); i++) {
+      std::string chunk_file_name = FuncBundle::add_chunk_suffix(i, file_name);
+      const auto &funcs = it.chunks[i];
+      for (const auto &f : funcs) {
+        f->subdir = calc_subdir_for_function(f, file_name); // using file_name because chunks belong to the same folder
+        prepare_generate_function(f, chunk_file_name);
+      }
+    }
+  }
+
+  // spawn codegen tasks for functions
+  for (const auto &f : standalone_funcs) {
     code_gen_start_root_task(os, std::make_unique<FunctionH>(f));
     code_gen_start_root_task(os, std::make_unique<FunctionCpp>(f));
+  }
+  for (const auto &it : private_bundles) {
+    for (const auto &funcs : it.second.chunks) {
+      if (funcs.empty()) {
+        continue;
+      }
+      code_gen_start_root_task(os, std::make_unique<FunctionListH>(funcs));
+      code_gen_start_root_task(os, std::make_unique<FunctionListCpp>(funcs));
+    }
+  }
+  for (const auto &it : filename_bundles) {
+    for (const auto &funcs : it.chunks) {
+      if (funcs.empty()) {
+        continue;
+      }
+      code_gen_start_root_task(os, std::make_unique<FunctionListH>(funcs));
+      code_gen_start_root_task(os, std::make_unique<FunctionListCpp>(funcs));
+    }
   }
 
   for (ClassPtr c : all_classes) {
@@ -151,12 +291,8 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
   }
 }
 
-void CodeGenF::prepare_generate_function(FunctionPtr func) {
-  std::string file_name = func->name;
-  std::replace(file_name.begin(), file_name.end(), '$', '@');
-
+void CodeGenF::prepare_generate_function(FunctionPtr func, const std::string &file_name) {
   func->header_name = file_name + ".h";
-  func->subdir = calc_subdir_for_function(func);
 
   if (!func->is_inline) {
     func->src_name = file_name + ".cpp";
@@ -176,19 +312,13 @@ void CodeGenF::prepare_generate_function(FunctionPtr func) {
   }
 }
 
-std::string CodeGenF::calc_subdir_for_function(FunctionPtr func) {
+std::string CodeGenF::calc_subdir_for_function(FunctionPtr func, const std::string &file_name) {
   // place __construct and __invoke of lambdas to a separate dir, like lambda classes are placed to cl_l/
-  if (func->is_lambda()) {
-    return "o_l";
-  }
-  if (func->modifiers.is_instance() && func->class_id->is_lambda_class()) {
-    return "o_l";
-  }
-  if (func->modifiers.is_instance() && func->class_id->is_typed_callable_interface()) {
+  if (needs_lambda_prefix(func)) {
     return "o_l";
   }
 
-  int bucket = vk::std_hash(func->file_id->short_file_name) % 100;
+  int bucket = vk::std_hash(file_name) % 100;
   return "o_" + std::to_string(bucket);
 }
 
