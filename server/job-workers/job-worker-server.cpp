@@ -226,13 +226,14 @@ const char *JobWorkerServer::send_job_reply(JobSharedMessage *job_response) noex
   job_stat.job_response_max_real_memory_used = job_memory_stats.max_real_memory_used;
   job_stat.job_response_max_memory_used = job_memory_stats.max_memory_used;
 
+  int32_t job_response_id = job_response->job_id;
   if (!job_writer.write_job_result(job_response, write_job_result_fd)) {
     ++vk::singleton<SharedMemoryManager>::get().get_stats().errors_pipe_server_write;
     return "Can't write job reply to the pipe";
   }
   ++vk::singleton<SharedMemoryManager>::get().get_stats().jobs_replied;
   reply_was_sent = true;
-  tvkprintf(job_workers, 2, "send job response: ready_job_id = %d, job_result_memory_ptr = %p\n", job_response->job_id, job_response);
+  tvkprintf(job_workers, 2, "send job response: ready_job_id = %d, job_result_memory_ptr = %p\n", job_response_id, job_response);
 
   return nullptr;
 }
