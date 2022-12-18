@@ -113,6 +113,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         vkext.cpp
         vkext_stats.cpp
         ffi.cpp
+        yaml.cpp
         zlib.cpp
         zstd.cpp)
 
