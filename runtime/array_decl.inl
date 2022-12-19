@@ -401,6 +401,7 @@ public:
 
 
   T pop();
+  T &back();
 
   T shift();
 

@@ -181,7 +181,51 @@ function test_circular_dep() {
   var_dump(JsonEncoder::encode(new BCirc));
 }
 
+class ACirc2 {
+  /** @var BCirc2 */
+  public $b;
+}
 
+class BCirc2 {
+  /** @var ACirc2[] */
+  public $a;
+}
+
+function test_circular_dep2() {
+  $a = new ACirc2;
+  $b = new BCirc2;
+  $a->b = $b;
+  $b->a[] = $a;
+
+  var_dump(JsonEncoder::encode($a));
+  var_dump(JsonEncoder::getLastError());
+
+  var_dump(JsonEncoder::encode($b));
+  var_dump(JsonEncoder::getLastError());
+}
+
+class ACirc3 {
+  /** @var BCirc3[] */
+  public $b;
+}
+
+class BCirc3 {
+  /** @var ACirc3[] */
+  public $a;
+}
+
+function test_circular_dep3() {
+  $a = new ACirc3;
+  $b = new BCirc3;
+  $a->b[] = $b;
+  $b->a[] = $a;
+
+  var_dump(JsonEncoder::encode($a));
+  var_dump(JsonEncoder::getLastError());
+
+  var_dump(JsonEncoder::encode($b));
+  var_dump(JsonEncoder::getLastError());
+}
 
 test_decode_nested_types();
 test_decode_inheritance();
@@ -193,3 +237,5 @@ test_circular_reference();
 test_interface();
 test_interface_regress();
 test_circular_dep();
+test_circular_dep2();
+test_circular_dep3();

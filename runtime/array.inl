@@ -2038,6 +2038,11 @@ T array<T>::pop() {
 }
 
 template<class T>
+T &array<T>::back() {
+  return (--end()).get_value();
+}
+
+template<class T>
 T array<T>::shift() {
   if (count() == 0) {
     php_warning("Cannot use array_shift on empty array");

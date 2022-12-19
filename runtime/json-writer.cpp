@@ -4,6 +4,7 @@
 
 #include "runtime/json-writer.h"
 
+#include "runtime/array_functions.h"
 #include "runtime/math_functions.h"
 
 // note: json-writer.cpp is used for classes, e.g. `JsonEncoder::encode(new A)` (also see from/to visitors)
@@ -126,11 +127,11 @@ bool JsonWriter::write_null() noexcept {
 }
 
 bool JsonWriter::write_key(std::string_view key, bool escape) noexcept {
-  if (stack_top_ == -1 || stack_[stack_top_].in_array) {
+  if (stack_.empty() || stack_.back().in_array) {
     error_.append("json key is allowed only inside object");
     return false;
   }
-  if (stack_[stack_top_].values_count) {
+  if (stack_.back().values_count) {
     static_SB << ',';
   }
   if (pretty_print_) {
@@ -168,7 +169,7 @@ bool JsonWriter::end_array() noexcept {
 }
 
 bool JsonWriter::is_complete() const noexcept {
-  return error_.empty() && stack_top_ == -1 && has_root_;
+  return error_.empty() && stack_.empty() && has_root_;
 }
 
 string JsonWriter::get_error() const noexcept {
@@ -183,13 +184,7 @@ bool JsonWriter::new_level(bool is_array) noexcept {
   if (!register_value()) {
     return false;
   }
-  ++stack_top_;
-  if (stack_top_ == MAX_DEPTH) {
-    error_.append("stack overflow, max depth level is ");
-    error_.append(static_cast<std::int64_t>(MAX_DEPTH));
-    return false;
-  }
-  stack_[stack_top_] = NestedLevel{.in_array = is_array};
+  stack_.emplace_back(NestedLevel{.in_array = is_array});
 
   static_SB << (is_array ? '[' : '{');
   indent_ += 4;
@@ -197,12 +192,12 @@ bool JsonWriter::new_level(bool is_array) noexcept {
 }
 
 bool JsonWriter::exit_level(bool is_array) noexcept {
-  if (stack_top_ == -1) {
+  if (stack_.empty()) {
     error_.append("brace disbalance");
     return false;
   }
-  auto cur_level = stack_[stack_top_];
-  --stack_top_;
+
+  auto cur_level = stack_.pop();
   if (cur_level.in_array != is_array) {
     error_.append("attempt to enclosure ");
     error_.push_back(cur_level.in_array ? '[' : '{');
@@ -222,16 +217,17 @@ bool JsonWriter::exit_level(bool is_array) noexcept {
 }
 
 bool JsonWriter::register_value() noexcept {
-  if (has_root_ && stack_top_ == -1) {
+  if (has_root_ && stack_.empty()) {
     error_.append("attempt to set value twice in a root of json");
     return false;
   }
-  if (stack_top_ == -1) {
+  if (stack_.empty()) {
     has_root_ = true;
     return true;
   }
-  if (stack_[stack_top_].in_array) {
-    if (stack_[stack_top_].values_count) {
+  auto &top = stack_.back();
+  if (top.in_array) {
+    if (top.values_count) {
       static_SB << ',';
     }
     if (pretty_print_) {
@@ -239,7 +235,7 @@ bool JsonWriter::register_value() noexcept {
       write_indent();
     }
   }
-  ++stack_[stack_top_].values_count;
+  ++top.values_count;
 
   return true;
 }

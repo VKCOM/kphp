@@ -6,7 +6,6 @@
 
 #include "runtime/kphp_core.h"
 
-#include <array>
 #include <string_view>
 
 namespace impl_ {
@@ -51,10 +50,7 @@ private:
     std::uint32_t values_count{0};
   };
 
-  constexpr static std::size_t MAX_DEPTH{64};
-  std::array<NestedLevel, MAX_DEPTH> stack_;
-  std::int64_t stack_top_{-1};
-
+  array<NestedLevel> stack_;
   string error_;
   std::size_t double_precision_{0};
   const bool pretty_print_{false};
