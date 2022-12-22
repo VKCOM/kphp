@@ -7,6 +7,8 @@
 #include "common/unicode/unicode-utils.h"
 #include "common/unicode/utf8-utils.h"
 
+#include "runtime/string_functions.h"
+
 static bool is_detect_incorrect_encoding_names_warning{false};
 
 void f$set_detect_incorrect_encoding_names_warning(bool show) {
@@ -17,8 +19,11 @@ void free_detect_incorrect_encoding_names() {
   is_detect_incorrect_encoding_names_warning = false;
 }
 
+enum class MbEncoding { cp1251 = 1251, utf8 = 8 };
+static MbEncoding default_mb_encoding{MbEncoding::cp1251};
+
 static int mb_detect_encoding_new(const string &encoding) {
-  const auto encoding_name = f$strtolower(encoding).c_str();
+  const auto *encoding_name = f$strtolower(encoding).c_str();
 
   if (!strcmp(encoding_name, "cp1251") || !strcmp(encoding_name, "cp-1251") || !strcmp(encoding_name, "windows-1251")) {
     return 1251;
@@ -32,6 +37,9 @@ static int mb_detect_encoding_new(const string &encoding) {
 }
 
 static int mb_detect_encoding(const string &encoding) {
+  if (encoding.empty()) {
+    return static_cast<std::underlying_type_t<MbEncoding>>(default_mb_encoding);
+  }
   const int result_new = mb_detect_encoding_new(encoding);
 
   if (strstr(encoding.c_str(), "1251")) {
