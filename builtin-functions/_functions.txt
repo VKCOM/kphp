@@ -728,6 +728,7 @@ function setlocale ($category ::: int, $locale ::: string) ::: string | false;
 
 function iconv ($input_encoding ::: string, $output_encoding ::: string, $input_str ::: string) ::: string | false;
 
+function mb_internal_encoding(?string $encoding = null): mixed;
 function mb_check_encoding ($str ::: string, $encoding ::: string = "") ::: bool;
 function mb_strlen ($str ::: string, $encoding ::: string = "") ::: int;
 function mb_strpos ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $encoding ::: string = "") ::: int | false;

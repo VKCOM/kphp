@@ -138,6 +138,29 @@ bool mb_UTF8_check(const char *s) {
   php_assert (0);
 }
 
+mixed f$mb_internal_encoding(const Optional<string> &encoding) {
+  if (!encoding.has_value()) {
+    switch (default_mb_encoding) {
+      case MbEncoding::cp1251:
+        return string{"Windows-1251"};
+      case MbEncoding::utf8:
+        return string{"UTF-8"};
+    }
+  }
+
+  switch (mb_detect_encoding(encoding.val())) {
+    case static_cast<int>(MbEncoding::cp1251):
+      default_mb_encoding = MbEncoding::cp1251;
+      return true;
+    case static_cast<int>(MbEncoding::utf8):
+      default_mb_encoding = MbEncoding::utf8;
+      return true;
+  }
+
+  php_warning("mb_internal_encoding(): Unknown encoding \"%s\"", encoding.val().c_str());
+  return false;
+}
+
 bool f$mb_check_encoding(const string &str, const string &encoding) {
   int encoding_num = mb_detect_encoding(encoding);
   if (encoding_num < 0) {

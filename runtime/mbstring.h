@@ -10,6 +10,8 @@
 
 bool mb_UTF8_check(const char *s);
 
+mixed f$mb_internal_encoding(const Optional<string> &encoding = Optional<bool>{});
+
 bool f$mb_check_encoding(const string &str, const string &encoding = {});
 
 int64_t f$mb_strlen(const string &str, const string &encoding = {});
