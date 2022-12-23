@@ -1,9 +1,7 @@
 @ok
 <?php
+    /** @var int[] */
 	$x = array ();
-	/**
-	 * @kphp-required
-	 **/
 /**
  * @kphp-required
  * @param null $element1
