@@ -75,4 +75,8 @@ class_instance<C$KphpJobWorkerResponse> ProcessingJobs::withdraw(int job_id) noe
   return result;
 }
 
+int64_t ProcessingJobs::get_resumable_id(int job_id) const noexcept {
+  return processing_.get_value(job_id).resumable_id;
+}
+
 } // namespace job_workers

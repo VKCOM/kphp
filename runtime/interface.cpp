@@ -34,6 +34,7 @@
 #include "runtime/job-workers/server-functions.h"
 #include "runtime/json-processor-utils.h"
 #include "runtime/kphp-backtrace.h"
+#include "runtime/kphp_tracing.h"
 #include "runtime/math_functions.h"
 #include "runtime/memcache.h"
 #include "runtime/mysql.h"
@@ -2370,6 +2371,7 @@ static void free_runtime_libs() {
   free_timelib();
   OnKphpWarningCallback::get().reset();
   free_slot_factories();
+  kphp_tracing::clear_callbacks();
 
   free_job_client_interface_lib();
   free_job_server_interface_lib();
