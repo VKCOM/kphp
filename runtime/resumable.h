@@ -7,6 +7,7 @@
 #include "runtime/allocator.h"
 #include "runtime/exception.h"
 #include "runtime/kphp_core.h"
+#include "runtime/kphp_tracing.h"
 #include "runtime/storage.h"
 
 extern bool resumable_finished;
@@ -54,6 +55,9 @@ protected:
 
   virtual bool run() = 0;
 
+  virtual bool is_internal_resumable() const noexcept {
+    return false;
+  }
 public:
   Resumable() = default;
   virtual ~Resumable() = default;

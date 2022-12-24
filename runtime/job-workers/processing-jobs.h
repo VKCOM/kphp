@@ -42,6 +42,7 @@ public:
   int64_t finish_job_on_timeout(int job_id) noexcept;
 
   class_instance<C$KphpJobWorkerResponse> withdraw(int job_id) noexcept;
+  int64_t get_resumable_id(int job_id) const noexcept;
 
   void reset() noexcept {
     hard_reset_var(processing_);

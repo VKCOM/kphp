@@ -256,6 +256,7 @@ void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at
 }
 
 void JsonLogger::write_trace_with_context(vk::string_view raw_trace) noexcept {
+  // TODO: handle buffer overflow
   if (json_log_fd_ <= 0) {
     return;
   }

@@ -19,6 +19,7 @@
 
 #include "runtime/allocator.h"
 #include "runtime/job-workers/processing-jobs.h"
+#include "runtime/kphp_tracing.h"
 #include "runtime/rpc.h"
 
 #include "server/database-drivers/adaptor.h"
@@ -892,6 +893,11 @@ int create_job_worker_answer_event(job_workers::JobSharedMessage *job_result) {
   const int status = alloc_net_event(job_result->job_id, &event);
   if (status <= 0) {
     return status;
+  }
+  if (kphp_tracing::on_response_callback) {
+    if (int64_t resumable_id = vk::singleton<job_workers::ProcessingJobs>::get().get_resumable_id(job_result->job_id)) {
+      kphp_tracing::on_response_callback(resumable_id);
+    }
   }
   event->data = net_events_data::job_worker_answer{ job_workers::copy_finished_job_to_script_memory(job_result) };
   return 1;

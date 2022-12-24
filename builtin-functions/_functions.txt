@@ -1614,3 +1614,9 @@ class DateTimeImmutable implements DateTimeInterface {
   public function getOffset(): int;
   public function getTimestamp(): int;
 }
+
+function kphp_tracing_register_on_wait_callbacks(callable():void $on_start, callable(int $ready_resumable_id):void $on_finish);
+function kphp_tracing_register_on_fork_switch_callback(callable(int $old_fork_id, int $new_fork_id):void $callback);
+function kphp_tracing_register_on_response_callback(callable(int $request_id):void $callback);
+function kphp_tracing_register_on_fork_callbacks(callable(int $new_fork_id):void $on_start, callable(int $fork_id):void $on_finish);
+

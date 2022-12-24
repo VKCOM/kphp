@@ -33,6 +33,10 @@ public:
     : request_id(request_id) {}
 
 protected:
+  bool is_internal_resumable() const noexcept final {
+    return true;
+  }
+
   bool run() noexcept final {
     auto &adaptor = vk::singleton<database_drivers::Adaptor>::get();
     std::unique_ptr<Response> res = adaptor.withdraw_response(request_id);
