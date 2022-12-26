@@ -7,6 +7,7 @@
 
 #define                                             TL_KPHP_LEASE_STATS 0x3013ebf4U
 #define                                      TL_KPHP_PROCESS_LEASE_TASK 0xa3fdb77cU
+#define                                   TL_KPHP_PROCESS_LEASE_TASK_V2 0xa3fdb77dU
 #define                                        TL_KPHP_QUEUE_TYPES_MODE 0x93529d44U
 #define                                     TL_KPHP_QUEUE_TYPES_MODE_V2 0x93529d45U
 #define                                                   TL_KPHP_READY 0x6a34cac7U
