@@ -6,6 +6,7 @@ on:
     - master
 
 env:
+  HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: true
   kphp_root_dir: /home/kitten/kphp
   kphp_polyfills_dir: /home/kitten/kphp/kphp-polyfills
   kphp_build_dir: /home/kitten/kphp/build
