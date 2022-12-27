@@ -44,16 +44,24 @@ And that's it, you can now proceed to [the next step](./compile-sample-script.md
 If you don't want to use Docker at all, feel free to use .deb packages available at the vk.com artifactory.  
 This is the preferred way to set up KPHP on production servers.
 
-**Add *repo.vkpartner.ru* to sources.list.d**
+**Add *artifactory-external.vkpartner.ru* to sources.list.d**
 
 ```bash
-# for Ubuntu
-sudo wget -O /etc/apt/trusted.gpg.d/vkpartner.asc https://repo.vkpartner.ru/GPG-KEY.pub
-echo "deb [arch=amd64] https://repo.vkpartner.ru/kphp-focal focal main" | sudo tee /etc/apt/sources.list.d/vkpartner.list
+# trusted key
+wget -qO /etc/apt/trusted.gpg.d/vkpartner.asc https://artifactory-external.vkpartner.ru/artifactory/api/gpg/key/public
 
-# for Debian Buster
-sudo wget -O /etc/apt/trusted.gpg.d/vkpartner.asc https://repo.vkpartner.ru/GPG-KEY.pub
-echo "deb [arch=amd64] https://repo.vkpartner.ru/kphp-buster buster main" | sudo tee /etc/apt/sources.list.d/vkpartner.list
+# for Ubuntu 20.04 (focal)
+echo "deb [arch=amd64] https://artifactory-external.vkpartner.ru/artifactory/kphp focal main" | sudo tee /etc/apt/sources.list.d/vkpartner.list
+
+# for Ubuntu 22.04 (jammy)
+echo "deb [arch=amd64] https://artifactory-external.vkpartner.ru/artifactory/kphp jammy main" | sudo tee /etc/apt/sources.list.d/vkpartner.list
+
+# for Debian 10 (buster)
+echo "deb [arch=amd64] https://artifactory-external.vkpartner.ru/artifactory/kphp buster main" | sudo tee /etc/apt/sources.list.d/vkpartner.list
+
+# for Debian 11 (bullseye)
+echo "deb [arch=amd64] https://artifactory-external.vkpartner.ru/artifactory/kphp bullseye main" | sudo tee /etc/apt/sources.list.d/vkpartner.list
+
 ```
 
 **Install KPHP packages**
