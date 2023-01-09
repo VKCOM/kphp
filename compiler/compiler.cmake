@@ -216,7 +216,8 @@ endif()
 list(APPEND KPHP_COMPILER_SOURCES
      ${KPHP_COMPILER_COMMON}
      ${KEYWORDS_SET}
-     ${AUTO_DIR}/compiler/rewrite-rules/early_opt.cpp)
+     ${AUTO_DIR}/compiler/rewrite-rules/early_opt.cpp
+     ${AUTO_DIR}/compiler/rewrite-rules/gentree_postprocess.cpp)
 
 vk_add_library(kphp2cpp_src OBJECT ${KPHP_COMPILER_SOURCES})
 
@@ -238,14 +239,16 @@ add_custom_command(OUTPUT ${VERTEX_AUTO_GENERATED}
                    COMMENT "vertices generation")
 add_custom_target(auto_vertices_generation_target DEPENDS ${VERTEX_AUTO_GENERATED})
 
-prepend(EARLY_OPT_RULES_AUTO_GENERATED ${KPHP_COMPILER_AUTO_DIR}/rewrite-rules/
-        early_opt.h
-        early_opt.cpp)
-add_custom_command(OUTPUT ${EARLY_OPT_RULES_AUTO_GENERATED}
-        COMMAND ${Python3_EXECUTABLE} ${KPHP_COMPILER_DIR}/rewrite-rules/rules-gen.py --auto ${AUTO_DIR} --schema ${KPHP_COMPILER_DIR}/vertex-desc.json --rules ${KPHP_COMPILER_DIR}/rewrite-rules/early_opt.rules
-        DEPENDS ${KPHP_COMPILER_DIR}/rewrite-rules/rules-gen.py ${KPHP_COMPILER_DIR}/rewrite-rules/early_opt.rules
-        COMMENT "early_opt rules generation")
-add_custom_target(auto_early_opt_rules_generation_target DEPENDS ${EARLY_OPT_RULES_AUTO_GENERATED})
+function(add_rewrite_rules NAME)
+    add_custom_command(OUTPUT ${KPHP_COMPILER_AUTO_DIR}/rewrite-rules/${NAME}.h ${KPHP_COMPILER_AUTO_DIR}/rewrite-rules/${NAME}.cpp
+            COMMAND ${Python3_EXECUTABLE} ${KPHP_COMPILER_DIR}/rewrite-rules/rules-gen.py --auto ${AUTO_DIR} --schema ${KPHP_COMPILER_DIR}/vertex-desc.json --rules ${KPHP_COMPILER_DIR}/rewrite-rules/${NAME}.rules
+            DEPENDS ${KPHP_COMPILER_DIR}/rewrite-rules/rules-gen.py ${KPHP_COMPILER_DIR}/rewrite-rules/${NAME}.rules
+            COMMENT "${NAME} rules generation")
+    add_custom_target(auto_${NAME}_rules_generation_target DEPENDS ${KPHP_COMPILER_AUTO_DIR}/rewrite-rules/${NAME}.h ${KPHP_COMPILER_AUTO_DIR}/rewrite-rules/${NAME}.cpp)
+endfunction()
+
+add_rewrite_rules("early_opt")
+add_rewrite_rules("gentree_postprocess")
 
 set_property(SOURCE ${KPHP_COMPILER_DIR}/kphp2cpp.cpp
              APPEND

@@ -7,9 +7,6 @@ from .rules_parser import RulesParser, Rule
 from .rules_parser import Expr
 from .code_printer import CodePrinter
 
-# TODO:
-# - measure compile-time effect of rewrite rules (early_opt pass)
-
 OUTPUT_H_TEMPLATE = """// Compiler for PHP (aka KPHP)
 // Copyright (c) 2022 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
@@ -37,6 +34,8 @@ OUTPUT_CPP_TEMPLATE = """// Compiler for PHP (aka KPHP)
 #include "compiler/function-pass.h"
 #include "compiler/vertex-util.h"
 #include <string_view>
+
+namespace {
 
 class GeneratedPass final : public FunctionPassBase {
 private:
@@ -73,6 +72,8 @@ ${on_exit_vertex_body}
 
 ${vertex_methods}
 };
+
+} // namespace
 
 void run_${name}_rules_pass(FunctionPtr f) {
   GeneratedPass pass{rewrite_rules::get_context()};
@@ -218,13 +219,13 @@ class RulesGenerator:
                 return f"{e.name}.clone()"
             used_vars.add(e.name)
             return e.name
-        args = []
+        args = ['ctx_']
         if e.vertex_string:
             args.append(e.vertex_string)
         for member in e.members:
             args.append(self.__generate_replacement_vertex(member, used_vars))
         fn = "create_vertex_with_string" if e.vertex_string else "create_vertex"
-        return f"{fn}<{e.op}>(ctx_, " + ', '.join(args) + ")"
+        return f"{fn}<{e.op}>(" + ', '.join(args) + ")"
 
     def print_matcher_cond(self, e: Expr, name: str, printer: CodePrinter, vars_declared: Set[str]):
         if e.op == Expr.OP_ANY:

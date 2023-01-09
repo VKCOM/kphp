@@ -4,6 +4,7 @@
 
 #include "compiler/pipes/gen-tree-postprocess.h"
 
+#include "auto/compiler/rewrite-rules/gentree_postprocess.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/lib-data.h"
@@ -132,26 +133,10 @@ VertexPtr process_require_lib(VertexAdaptor<op_func_call> require_lib_call) {
 }
 } // namespace
 
-GenTreePostprocessPass::builtin_fun GenTreePostprocessPass::get_builtin_function(const std::string &name) {
-  static std::unordered_map<vk::string_view, builtin_fun> functions = {
-    {"strval",        {op_conv_string,         1}},
-    {"intval",        {op_conv_int,            1}},
-    {"boolval",       {op_conv_bool,           1}},
-    {"floatval",      {op_conv_float,          1}},
-    {"arrayval",      {op_conv_array,          1}},
-    {"not_false",     {op_conv_drop_false,     1}},
-    {"not_null",      {op_conv_drop_null,      1}},
-    {"fork",          {op_fork,                1}},
-    {"pow",           {op_pow,                 2}}
-  };
-  auto it = functions.find(name);
-  if (it == functions.end()) {
-    if (name == "profiler_is_enabled") {
-      return {G->settings().profiler_level.get() ? op_true : op_false, 0};
-    }
-    return {op_err, -1};
+void GenTreePostprocessPass::on_start() {
+  if (current_function->does_need_codegen()) {
+    run_gentree_postprocess_rules_pass(current_function);
   }
-  return it->second;
 }
 
 VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root) {
@@ -180,11 +165,6 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root) {
 
   if (auto call = root.try_as<op_func_call>()) {
     const auto &name = call->get_string();
-
-    auto builtin = get_builtin_function(name);
-    if (builtin.op != op_err && call->size() == builtin.args) {
-      return create_vertex(builtin.op, call->args()).set_location(root);
-    }
 
     if (name == "call_user_func_array") {
       auto args = call->args();
@@ -233,13 +213,6 @@ VertexPtr GenTreePostprocessPass::on_exit_vertex(VertexPtr root) {
   if (root->type() == op_var) {
     if (VertexUtil::is_superglobal(root->get_string())) {
       root->extra_type = op_ex_var_superglobal;
-    }
-  }
-
-  if (auto call = root.try_as<op_func_call>()) {
-    if (!G->settings().profiler_level.get() && call->size() == 1 &&
-        vk::any_of_equal(call->get_string(), "profiler_set_log_suffix", "profiler_set_function_label")) {
-      return VertexAdaptor<op_if>::create(VertexAdaptor<op_false>::create(), VertexUtil::embrace(call)).set_location_recursively(root);
     }
   }
 

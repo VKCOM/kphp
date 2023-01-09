@@ -134,7 +134,7 @@ VertexAdaptor<Op> create_vertex_with_string(Context &ctx, std::string &&name, co
 template<Operation Op, class... Args>
 VertexAdaptor<Op> create_vertex(Context &ctx, Args &&...args) {
   static_cast<void>(ctx);
-  auto v = VertexAdaptor<Op>::create(std::forward<Args>(args)...);
+  auto v = VertexAdaptor<Op>::create_vararg(std::forward<Args>(args)...);
   return v;
 }
 

@@ -14,9 +14,8 @@ def main():
     name = Path(args.rules).stem
     result = RulesGenerator(args.rules, args.schema).generate_rules()
     output_dir = Path(os.path.join(args.auto, 'compiler', 'rewrite-rules'))
-    if output_dir.exists():
-        shutil.rmtree(str(output_dir))
-    output_dir.mkdir()
+    if not output_dir.exists():
+        output_dir.mkdir()
     with open(os.path.join(output_dir, name + ".h"), 'w') as f:
         f.write(result.h_src)
     with open(os.path.join(output_dir, name + ".cpp"), 'w') as f:

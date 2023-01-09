@@ -1,0 +1,18 @@
+(op_func_call {"strval"} x)    => (op_conv_string x)
+(op_func_call {"intval"} x)    => (op_conv_int x)
+(op_func_call {"boolval"} x)   => (op_conv_bool x)
+(op_func_call {"floatval"} x)  => (op_conv_float x)
+(op_func_call {"arrayval"} x)  => (op_conv_array x)
+(op_func_call {"not_false"} x) => (op_conv_drop_false x)
+(op_func_call {"not_null"} x)  => (op_conv_drop_null x)
+(op_func_call {"fork"} x)      => (op_fork x)
+(op_func_call {"pow"} x y)     => (op_pow x y)
+
+(op_func_call {"profiler_is_enabled"})
+  where { G->settings().profiler_level.get() }
+  => (op_true)
+(op_func_call {"profiler_is_enabled"}) => (op_false)
+
+(op_func_call _)
+  where { !G->settings().profiler_level.get() && vk::any_of_equal(v_->get_string(), "profiler_set_log_suffix", "profiler_set_function_label") }
+  => (op_if (op_false) (op_seq v_))
