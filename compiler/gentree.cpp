@@ -526,6 +526,9 @@ VertexPtr GenTree::get_expr_top(bool was_arrow, const PhpDocComment *phpdoc) {
     }
     case tok_var_name: {
       res = get_var_name();
+      if (cur->type() == tok_double_colon) {  // $class::method(), $class::$field, $class::CONST
+        res = get_member_by_name_after_var(res.as<op_var>());
+      }
       return_flag = false;
       break;
     }
@@ -579,15 +582,20 @@ VertexPtr GenTree::get_expr_top(bool was_arrow, const PhpDocComment *phpdoc) {
 
     case tok_new: {
       next_cur();
-      CE(!kphp_error(cur->type() == tok_func_name, "Expected class name after new"));
-      auto func_call = get_func_call<op_func_call, op_none>();
-      // Hack to be more compatible with php
-      if (func_call->str_val == "Memcache") {
-        func_call->set_string("McMemcache");
+      if (test_expect(tok_func_name)) {   // 'new A()' / 'new \Some\Class($args)'
+        auto func_call = get_func_call<op_func_call, op_none>();
+        // Hack to be more compatible with php
+        if (func_call->str_val == "Memcache") {
+          func_call->set_string("McMemcache");
+        }
+        res = gen_constructor_call_with_args(func_call->str_val, func_call->get_next(), func_call->location);
+        CE(res);
+      } else if (test_expect(tok_var_name)) {   // 'new $class_name' / 'new $class_name(...$args)'
+        res = get_by_name_construct();
+        CE(res);
+      } else {
+        CE(!kphp_error(0, "Expected class name after new"));
       }
-
-      res = gen_constructor_call_with_args(func_call->str_val, func_call->get_next(), func_call->location);
-      CE(res);
       break;
     }
     case tok_func_name: {
@@ -1235,6 +1243,94 @@ VertexAdaptor<op_shape> GenTree::get_shape() {
 
   // shape->args() is a sequence of op_double_arrow
   return VertexAdaptor<op_shape>::create(inner_array.as<op_array>()->args()).set_location(location);
+}
+
+// `new $c` / `new $c()` / `new $c(a, r, g, s)` / `new $c(...$args)`
+// convert into `_by_name_construct($c, ...)`
+// later, if $c is constexpr (class-string<T> for example), this call will be replaced with `new T(...)`
+// see replace-extern-func-calls.cpp
+VertexPtr GenTree::get_by_name_construct() {
+  kphp_assert(cur->type() == tok_var_name);  // cur is $c
+  auto v_class_name = VertexAdaptor<op_var>::create().set_location(auto_location());
+  v_class_name->str_val = static_cast<std::string>(cur->str_val); // 'c'
+
+  std::vector<VertexPtr> args = {v_class_name};
+
+  if ((cur + 1)->type() == tok_oppar) { // `new $c(...)`
+    auto dummy_call = get_func_call<op_func_call, op_none>();
+    if (dummy_call) {
+      args.insert(args.end(), dummy_call->begin(), dummy_call->end());
+    }
+  } else {  // `new $c`
+    next_cur();
+  }
+
+  auto v_by_name = VertexAdaptor<op_func_call>::create(args).set_location(auto_location());
+  v_by_name->str_val = "_by_name_construct";
+  v_by_name->auto_inserted = true;
+  return v_by_name;
+}
+
+// `$c::...`, expected to be `$c::method(...)` / `$c::CONST` / `$c::$field`
+// convert into `_by_name_call_method($c, 'method', ...)`, etc.
+// later, if $c is constexpr, this calls will be replaced with `T::method(...)` / `T::CONST` / `T::$field`
+// see replace-extern-func-calls.cpp
+VertexPtr GenTree::get_member_by_name_after_var(VertexAdaptor<op_var> v_before) {
+  kphp_assert(cur->type() == tok_double_colon);
+  next_cur();
+
+  // $c::method(...) -> _by_name_call_method($c, 'method', ...)
+  if (cur->type() == tok_func_name && (cur+1)->type() == tok_oppar) {
+    auto v_method_name = VertexAdaptor<op_string>::create().set_location(auto_location());
+    v_method_name->str_val = static_cast<std::string>(cur->str_val);
+
+    auto dummy_call = get_func_call<op_func_call, op_none>();
+    std::vector<VertexPtr> args = {v_before, v_method_name};
+    if (dummy_call) {   // 'if' not to fail on unclosed '('
+      args.insert(args.end(), dummy_call->begin(), dummy_call->end());
+    }
+
+    auto v_by_name = VertexAdaptor<op_func_call>::create(args).set_location(auto_location());
+    v_by_name->str_val = "_by_name_call_method";
+    v_by_name->auto_inserted = true;
+    return v_by_name;
+  }
+
+  // $c::CONST -> _by_name_get_const($c, 'CONST')
+  // $c::CONST[0] and similar also supported
+  if (cur->type() == tok_func_name && (cur+1)->type() != tok_oppar) {
+    auto v_const_name = VertexAdaptor<op_string>::create().set_location(auto_location());
+    v_const_name->str_val = static_cast<std::string>(cur->str_val);
+
+    next_cur();
+    std::vector<VertexPtr> args = {v_before, v_const_name};
+
+    auto v_by_name = VertexAdaptor<op_func_call>::create(args).set_location(auto_location());
+    v_by_name->str_val = "_by_name_get_const";
+    v_by_name->auto_inserted = true;
+    return v_by_name;
+  }
+
+  // $c::$field -> _by_name_get_field($c, 'field')
+  // $c::$field[0] += and similar also supported
+  // note, that for $c::$var(, we fire an error, because it's $c::$method(), an unsupported dynamic call by name
+  if (cur->type() == tok_var_name) {
+    kphp_error_act((cur+1)->type() != tok_oppar, "Syntax '$class_name::$method_name()' is invalid in KPHP.\nProbably, you need switch-case or code generation instead of invocations via dynamic names.", return v_before);
+
+    auto v_field_name = VertexAdaptor<op_string>::create().set_location(auto_location());
+    v_field_name->str_val = static_cast<std::string>(cur->str_val);
+
+    next_cur();
+    std::vector<VertexPtr> args = {v_before, v_field_name};
+
+    auto v_by_name = VertexAdaptor<op_func_call>::create(args).set_location(auto_location());
+    v_by_name->str_val = "_by_name_get_field";
+    v_by_name->auto_inserted = true;
+    return v_by_name;
+  }
+
+  kphp_error(0, fmt_format("Unrecognized syntax after '${}::'", v_before->str_val));
+  return v_before;
 }
 
 // analyze phpdoc /** ... */ NOT above a function/field/etc, but inside a function

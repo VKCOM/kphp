@@ -39,6 +39,25 @@ VertexPtr VertexUtil::get_call_arg_ref(int arg_num, VertexPtr v_func_call) {
   return {};
 }
 
+VertexAdaptor<op_func_call> VertexUtil::add_call_arg(VertexPtr to_add, VertexAdaptor<op_func_call> call, bool prepend) {
+  std::vector<VertexPtr> new_args;
+  new_args.reserve(call->args().size() + 1);
+  if (prepend) {
+    new_args.emplace_back(to_add);
+  }
+  for (auto arg : call->args()) {
+    new_args.emplace_back(arg);
+  }
+  if (!prepend) {
+    new_args.emplace_back(to_add);
+  }
+
+  auto new_call = VertexAdaptor<op_func_call>::create(new_args).set_location(call->location);
+  new_call->str_val = call->str_val;
+  new_call->func_id = call->func_id;
+  return new_call;
+}
+
 VertexPtr VertexUtil::create_int_const(int64_t number) {
   auto int_v = VertexAdaptor<op_int_const>::create();
   int_v->str_val = std::to_string(number);
@@ -98,10 +117,6 @@ bool VertexUtil::is_superglobal(const std::string &s) {
     "_ENV"
   };
   return vk::contains(names, s);
-}
-
-bool VertexUtil::is_constructor_call(VertexAdaptor<op_func_call> call) {
-  return !call->args().empty() && call->str_val == ClassData::NAME_OF_CONSTRUCT;
 }
 
 bool VertexUtil::is_positive_constexpr_int(VertexPtr v) {

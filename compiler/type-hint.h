@@ -197,7 +197,7 @@ public:
   const TypeHint *replace_children_custom(const ReplacerCallbackT &callback) const final;
   void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr func_call) const final;
 
-  const ClassMemberInstanceField *resolve_field() const;
+  const TypeHint *resolve_field_type_hint() const;
 };
 
 /**

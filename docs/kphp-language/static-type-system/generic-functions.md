@@ -630,6 +630,111 @@ variadicF/*<A, B, ?int>*/(null, null, null);    // actually, variadicF_n3<A, B, 
 ```
 
 
+## new $class, $class::method(), etc.
+
+PHP allows to create a class by name / call a method by name. Generally, KPHP does not, but in case of generics, it works. 
+If `$class` is a compile-time known `class-string<T>`, it's possible to use such constructions:
+```php
+/**
+ * @kphp-generic T
+ * @param class-string<T> $class_name
+ */
+function demo($class_name) {
+  $obj = new $class_name;         // ok
+  $obj->afterCreated();
+  $class_name::staticMethod();    // also ok
+}
+
+demo(A::class);     // actually, demo<A>('A')
+demo(B::class);     // actually, demo<B>('B')
+```
+
+Here it's possible **because $class is compile-time known**, everything is statically resolved.
+
+This gives you an ability to write wrappers around constructors:
+```php
+/**
+ * @kphp-generic TCreated
+ * @param class-string<TCreated> $cn
+ * @return TCreated
+ */
+function createAndCheckValid(string $cn, int $arg) {
+  $obj = new $cn($arg);
+  if (!$obj->isValid()) {
+    throw new RuntimeException("Object($cn) is not valid for arg=$arg");
+  }
+  return $obj;
+} 
+```
+
+You can pass here any classes accepting `int` in constructor and having `isValid()` method.
+
+Combined with variadic generics this feature becomes much more powerful:
+```php
+class A {
+  function __construct() { ... }
+  function init() { ... }
+}
+
+class B {
+  function __construct(int $a) { ... }
+  function init() { ... }
+}
+
+class C {
+  function __construct(A $a, ?B $b) { ... }
+  function init() { ... } 
+}
+
+/**
+ * @kphp-generic T, ...TArg
+ * @param class-string<T> $class_name
+ * @param TArg ...$args
+ * @return T
+ */
+function createAndInit($class_name, ...$args) {
+  $obj = new $class_name(...$args);
+  $obj->init();
+  return $obj;
+}
+
+createAndInit(A::class);
+createAndInit(B::class, 10);
+createAndInit(C::class, new A, new B(0));
+```
+
+If generic Ts can't be auto-reified by arguments, they could be provided manually, as before:
+```php
+// without a hint, it's impossible to guess what 'null' means
+createAndInit/*<C, A, B>*/(C::class, null, null);
+```
+   
+Same for wrappers around calling any static method:
+```php
+/**
+ * @kphp-generic T, ...TArg
+ * @param class-string<T> $class_name
+ * @param TArg ...$args
+ */
+function calcAndCheckGreater0($class_name, ...$args): int {
+  $res = $class_name::calcCoeff(...$args);
+  if ($res <= 0) {
+    log("Unexpected coeff=$res for $class_name");
+  }
+  return $res;
+} 
+```
+
+These syntax constructions would work:
+* `new $class` (probably with arguments)
+* `$class::staticMethod()` (probably with arguments)
+* `$class::CONST`
+* `$class::$STATIC_FIELD` (even for writing)
+
+`$class::instanceMethod()` does not work, and should not.  
+`$class::$dynamic_method()` also does not, a method name should be compile-time known.
+
+
 ## A problem with null
 
 KPHP tries no auto-reify Ts when you pass arguments to generic functions. `f(3)` is reified as `f<int>(3)`, and similar. 

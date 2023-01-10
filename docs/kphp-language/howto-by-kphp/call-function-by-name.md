@@ -7,13 +7,13 @@ sort: 1
 An ability to call a function/method by name does not exist in compiled languages. 
 But it exists in plain PHP and is essential in various routing/ORMs and so on.
 
-KPHP **does not support** calling by name, just as any other compiled language. 
+KPHP **does not support** calling by a dynamic name, just like any other compiled language.   
 How to achieve the same result?
 
 
 ## How is it done in plain PHP?
 
-In PHP you just call any function by name / any method by name / create a class by name:
+In PHP, you just call any function by name / any method by name / create a class by name:
 
 ```php
 $f_name = "...";
@@ -35,7 +35,8 @@ This is prohibited in KPHP. All calls, all property access — everything must b
 
 ## How to achieve this in KPHP?
 
-Think of KPHP as of any other compiled language. Nothing better than *switch-case* is generally unavailable.
+Think of KPHP as of any other compiled language. 
+For dynamic variables, nothing better than *switch-case* actually exists.
 
 And this is OK, this is not a drawback. 
 Static call graph makes your code predictable and understandable, you always see all available methods reached out from here.
@@ -51,6 +52,30 @@ case "logout":
   break; 
 }
 ```
+
+
+## Compile-time known strings and generics
+
+If `$class_name` is compile-time known, you are able to create it via `new $class_name` or call like `$class_name::method()`:
+
+```php
+/**
+ * @kphp-generic T
+ * @param class-string<T> $class_name
+ */
+function demo($class_name) {
+  $obj = new $class_name;         // ok
+  $obj->afterCreated();
+  $class_name::staticMethod();    // also ok
+}
+
+demo(A::class);     // actually, demo<A>('A')
+demo(B::class);     // actually, demo<B>('B')
+```
+
+It works **only for compile-time known variables**, in [generic functions](../static-type-system/generic-functions.md). It can work, because everything is still statically resolved.
+
+Probably, when you are searching for a way to "create any class" or "call any function", that "any" comes from an input. Hence, generics will not fit your needs.
 
 
 ## If so, how do I perform request routing?

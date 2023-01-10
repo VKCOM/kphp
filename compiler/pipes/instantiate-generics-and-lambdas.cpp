@@ -27,7 +27,7 @@ class InstantiateGenericFunctionPass final : public FunctionPassBase {
   const GenericsInstantiationMixin *instantiationTs;
 
 public:
-  InstantiateGenericFunctionPass(FunctionPtr generic_function, GenericsInstantiationMixin *instantiationTs)
+  InstantiateGenericFunctionPass(FunctionPtr generic_function, const GenericsInstantiationMixin *instantiationTs)
     : generic_function(generic_function)
     , instantiationTs(instantiationTs) {
   }
@@ -61,7 +61,8 @@ public:
       }
 
     } else if (auto as_op_lambda = root.try_as<op_lambda>()) {
-      run_function_pass(as_op_lambda->func_id, this);
+      InstantiateGenericFunctionPass pass(generic_function, instantiationTs);
+      run_function_pass(as_op_lambda->func_id, &pass);
     }
 
     return root;
