@@ -19,6 +19,7 @@
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
 #include "compiler/stage.h"
+#include "compiler/token.h"
 #include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
@@ -651,6 +652,9 @@ VertexPtr GenTree::get_expr_top(bool was_arrow, const PhpDocComment *phpdoc) {
       res = get_func_call<op_tuple, op_err>();
       CE (!kphp_error(res.as<op_tuple>()->size(), "tuple() must have at least one argument"));
       break;
+    case tok_match:
+      res = get_match();
+      break;
     case tok_shape:
       res = get_shape();
       break;
@@ -1213,6 +1217,74 @@ VertexAdaptor<op_switch> GenTree::get_switch() {
   return VertexUtil::create_switch_vertex(cur_function, switch_condition.set_location(location), std::move(cases)).set_location(location);
 }
 
+
+VertexAdaptor<op_match_proxy> GenTree::get_match() {
+  const auto location = auto_location();
+  next_cur();
+  CE(expect(tok_oppar, "'('"));
+  skip_phpdoc_tokens();
+  const auto match_condition = get_expression();
+  CE(!kphp_error(match_condition, "Failed to parse 'match' expression"));
+  CE(expect(tok_clpar, "')'"));
+
+  CE(expect(tok_opbrc, "'{'"));
+  std::vector<VertexPtr> cases;
+  while (cur->type() != tok_clbrc) {
+    skip_phpdoc_tokens();
+    if (cur->type() == tok_comma) {
+      next_cur();
+      continue;
+    }
+
+    if (cur->type() == tok_default) {
+      // printf("%s: new default arm!\n", __FUNCTION__);
+      cases.emplace_back(get_match_default());
+    }
+    else {
+      // printf("%s: new ordinary arm!\n", __FUNCTION__);
+      cases.emplace_back(get_match_case());
+    }
+  }
+
+  CE(expect(tok_clbrc, "'}'"));
+
+  auto kek = VertexAdaptor<op_match_proxy>::create(match_condition, std::move(cases)).set_location(location);
+  kek.debugPrint();
+  return kek;
+}
+
+VertexAdaptor<op_match_case> GenTree::get_match_case() {
+  const auto location = auto_location();
+  std::vector<VertexPtr> arms;
+
+  VertexPtr cur_expr;
+  for (cur_expr = get_expression(); cur_expr->type() != op_double_arrow; cur_expr = get_expression()) {
+    cur_expr.debugPrint();
+    if (cur_expr) {
+      arms.emplace_back(cur_expr);
+    }
+    if (cur->type() == tok_comma) {
+      next_cur();
+      continue;
+    }
+  }
+
+  cur_expr.debugPrint();
+
+  if (const auto double_arrow = cur_expr.try_as<op_double_arrow>()) {
+    arms.emplace_back(double_arrow->key());
+    return VertexAdaptor<op_match_case>::create(VertexAdaptor<op_seq_comma>::create(arms), double_arrow->value()).set_location(location);
+  }
+  assert(false && "Unreachable!");
+  return {};
+}
+
+VertexAdaptor<op_match_default> GenTree::get_match_default() {
+  const auto location = auto_location();
+  next_cur();
+  CE(expect(tok_double_arrow, "'=>'"));
+  return VertexAdaptor<op_match_default>::create(get_expression()).set_location(location);
+}
 VertexAdaptor<op_shape> GenTree::get_shape() {
   auto location = auto_location();
 

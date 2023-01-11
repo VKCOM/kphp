@@ -28,6 +28,7 @@ Array, tok_array
 as, tok_as
 case, tok_case
 switch, tok_switch
+match, tok_match
 class, tok_class
 interface, tok_interface
 trait, tok_trait
