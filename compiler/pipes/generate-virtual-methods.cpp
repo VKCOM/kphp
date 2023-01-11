@@ -10,7 +10,6 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
-#include "compiler/gentree.h"
 #include "compiler/vertex-util.h"
 #include "compiler/type-hint.h"
 
@@ -437,7 +436,7 @@ void generate_body_of_virtual_method(FunctionPtr virtual_function) {
     auto call_get_hash = VertexAdaptor<op_func_call>::create(ClassData::gen_vertex_this({}));
     call_get_hash->str_val = "get_hash_of_class";
     call_get_hash->func_id = G->get_function(call_get_hash->str_val);
-    virtual_function->root->cmd_ref() = VertexAdaptor<op_seq>::create(GenTree::create_switch_vertex(virtual_function, call_get_hash, std::move(cases)));
+    virtual_function->root->cmd_ref() = VertexAdaptor<op_seq>::create(VertexUtil::create_switch_vertex(virtual_function, call_get_hash, std::move(cases)));
   }
 
   virtual_function->type = FunctionData::func_local;    // could be func_extern before, but now it has a body

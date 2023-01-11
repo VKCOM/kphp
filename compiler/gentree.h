@@ -40,10 +40,6 @@ class GenTree {
 public:
   Location auto_location() const { return Location{this->line_num}; }
 
-  VertexAdaptor<op_var> create_superlocal_var(const std::string& name_prefix);
-  static VertexAdaptor<op_var> create_superlocal_var(const std::string& name_prefix, FunctionPtr cur_function);
-  static VertexAdaptor<op_switch> create_switch_vertex(FunctionPtr cur_function, VertexPtr switch_condition, std::vector<VertexPtr> &&cases);
-
   static bool is_magic_method_name_allowed(const std::string &name);
 
 

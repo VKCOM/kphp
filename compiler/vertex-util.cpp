@@ -4,10 +4,12 @@
 
 #include "compiler/vertex-util.h"
 
+#include <set>
+
 #include "common/algorithms/contains.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/var-data.h"
-#include <set>
+#include "compiler/name-gen.h"
 
 VertexPtr VertexUtil::get_actual_value(VertexPtr v) {
   if (auto var = v.try_as<op_var>()) {
@@ -47,6 +49,19 @@ VertexAdaptor<op_string> VertexUtil::create_string_const(const std::string &s) {
   auto string_v = VertexAdaptor<op_string>::create();
   string_v->set_string(s);
   return string_v;
+}
+
+VertexAdaptor<op_var> VertexUtil::create_superlocal_var(const std::string &name_prefix, FunctionPtr cur_function) {
+  auto v = VertexAdaptor<op_var>::create();
+  v->str_val = gen_unique_name(name_prefix, cur_function);
+  v->extra_type = op_ex_var_superlocal;
+  return v;
+}
+
+VertexAdaptor<op_switch> VertexUtil::create_switch_vertex(FunctionPtr cur_function, VertexPtr switch_condition, std::vector<VertexPtr> &&cases) {
+  auto temp_var_condition_on_switch = create_superlocal_var("condition_on_switch", cur_function);
+  auto temp_var_matched_with_one_case = create_superlocal_var("matched_with_one_case", cur_function);
+  return VertexAdaptor<op_switch>::create(switch_condition, temp_var_condition_on_switch, temp_var_matched_with_one_case, std::move(cases)).set_location(switch_condition);
 }
 
 VertexAdaptor<op_seq> VertexUtil::embrace(VertexPtr v) {

@@ -696,7 +696,7 @@ VertexAdaptor<op_ternary> GenTree::create_ternary_op_vertex(VertexPtr condition,
     return VertexAdaptor<op_ternary>::create(condition, true_expr, false_expr);
   }
 
-  auto cond_var = create_superlocal_var("shorthand_ternary_cond").set_location(condition);
+  auto cond_var = VertexUtil::create_superlocal_var("shorthand_ternary_cond", cur_function).set_location(condition);
 
   auto cond = VertexUtil::create_conv_to(tp_bool, VertexAdaptor<op_set>::create(cond_var, condition));
 
@@ -934,7 +934,7 @@ std::pair<VertexAdaptor<op_foreach_param>, VertexPtr> GenTree::get_foreach_param
   CE (!kphp_error(value_expr, fmt_format("Expected a var name, ref or list, found {}", tok.str_val)));
 
   if (vk::any_of_equal(value_expr->type(), op_list_ce, op_array)) {
-    value = create_superlocal_var("list");
+    value = VertexUtil::create_superlocal_var("list", cur_function);
     list = value_expr;
   } else {
     value = value_expr.as<op_var>();
@@ -952,7 +952,7 @@ std::pair<VertexAdaptor<op_foreach_param>, VertexPtr> GenTree::get_foreach_param
   if (value->ref_flag) {
     temp_var = VertexAdaptor<op_empty>::create();
   } else {
-    temp_var = create_superlocal_var("tmp_expr");
+    temp_var = VertexUtil::create_superlocal_var("tmp_expr", cur_function);
   }
 
   auto param = key ? VertexAdaptor<op_foreach_param>::create(array_expression, value, temp_var, key).set_location(location)
@@ -1161,23 +1161,6 @@ VertexAdaptor<op_do> GenTree::get_do() {
   return VertexAdaptor<op_do>::create(VertexUtil::embrace(body), condition).set_location(location);
 }
 
-VertexAdaptor<op_var> GenTree::create_superlocal_var(const std::string &name_prefix) {
-  return create_superlocal_var(name_prefix, cur_function);
-}
-
-VertexAdaptor<op_var> GenTree::create_superlocal_var(const std::string &name_prefix, FunctionPtr cur_function) {
-  auto v = VertexAdaptor<op_var>::create();
-  v->str_val = gen_unique_name(name_prefix, cur_function);
-  v->extra_type = op_ex_var_superlocal;
-  return v;
-}
-
-VertexAdaptor<op_switch> GenTree::create_switch_vertex(FunctionPtr cur_function, VertexPtr switch_condition,std::vector<VertexPtr> &&cases) {
-  auto temp_var_condition_on_switch = create_superlocal_var("condition_on_switch", cur_function);
-  auto temp_var_matched_with_one_case = create_superlocal_var("matched_with_one_case", cur_function);
-  return VertexAdaptor<op_switch>::create(switch_condition, temp_var_condition_on_switch, temp_var_matched_with_one_case, std::move(cases));
-}
-
 VertexAdaptor<op_switch> GenTree::get_switch() {
   auto location = auto_location();
 
@@ -1227,7 +1210,7 @@ VertexAdaptor<op_switch> GenTree::get_switch() {
   }
   CE (expect(tok_clbrc, "'}'"));
 
-  return create_switch_vertex(cur_function, switch_condition, std::move(cases)).set_location(location);
+  return VertexUtil::create_switch_vertex(cur_function, switch_condition.set_location(location), std::move(cases)).set_location(location);
 }
 
 VertexAdaptor<op_shape> GenTree::get_shape() {
