@@ -235,6 +235,10 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root) {
 }
 
 VertexPtr GenTreePostprocessPass::on_exit_vertex(VertexPtr root) {
+  if (current_function->name == "foo" && root->type() == op_function) {
+    root.debugPrint();
+  }
+  
   if (root->type() == op_var) {
     if (VertexUtil::is_superglobal(root->get_string())) {
       root->extra_type = op_ex_var_superglobal;
