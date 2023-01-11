@@ -748,6 +748,10 @@
     "extra_fields": {
       "kind": {
         "type": "SwitchKind"
+      },
+      "is_match": {
+        "type" : "bool",
+        "default" : "false"
       }
     },
     "ranges": {
@@ -755,6 +759,54 @@
         3,
         0
       ]
+    }
+  },
+  {
+    "comment": "match (condition()) { cases()... }",
+    "sons": {
+      "condition": 0
+    },
+    "name": "op_match_proxy",
+    "base_name": "meta_op_cycle",
+    "props": {
+      "str": "match",
+      "rl": "rl_other"
+    },
+    "ranges": {
+      "cases": [
+        1,
+        0
+      ]
+    }
+  },
+  {
+    "comment": "$expr_1, ..., $expr_n => $result_expr",
+    "sons": {
+      "conditions" : {
+        "id": 0,
+        "type": "op_seq_comma"
+      },
+      "result_expr" : {
+        "id": 1
+      }
+    },
+    "name": "op_match_case",
+    "base_name": "meta_op_base",
+    "props": {
+      "str": "case"
+    }
+  },
+  {
+    "comment": "default => $result_expr",
+    "sons": {
+      "result_expr" : {
+        "id": 0
+      }
+    },
+    "name": "op_match_default",
+    "base_name": "meta_op_base",
+    "props": {
+      "str": "default"
     }
   },
   {
