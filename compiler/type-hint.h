@@ -380,6 +380,31 @@ public:
 };
 
 /**
+ * not_null(T), not_false(T), not_null<T>, not_false<T>.
+ * Primarily used in generics to unwrap genericT, similar to std::remove_reference.
+ */
+class TypeHintNotNull : public TypeHint {
+  explicit TypeHintNotNull(const TypeHint *inner, bool drop_not_null, bool drop_not_false)
+    : TypeHint(0)
+    , inner(inner)
+    , drop_not_null(drop_not_null)
+    , drop_not_false(drop_not_false) {}
+
+public:
+  const TypeHint *inner;
+  bool drop_not_null;
+  bool drop_not_false;
+
+  static const TypeHint *create(const TypeHint *inner, bool drop_not_null, bool drop_not_false);
+
+  std::string as_human_readable() const final;
+  void traverse(const TraverserCallbackT &callback) const final;
+  const TypeHint *replace_self_static_parent(FunctionPtr resolve_context) const final;
+  const TypeHint *replace_children_custom(const ReplacerCallbackT &callback) const final;
+  void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr func_call) const final;
+};
+
+/**
  * A, VK\Namespaced, self — these all are instances
  * Note, that self/static/parent are saved as full_class_name, but storing them here is an intermediate moment of parsing
  * Because self is not constexpr: it should be replaced with an actual context to be used in inferring
