@@ -9,6 +9,7 @@
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/function-pass.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
 #include "compiler/inferring/edge.h"
 #include "compiler/inferring/ifi.h"
@@ -49,6 +50,9 @@ SwitchKind get_switch_kind(VertexAdaptor<op_switch> s) {
     return SwitchKind::EmptySwitch;
   }
 
+  if (s->is_match) {
+    return SwitchKind::VarSwitch;
+  }
   if (num_const_string_cases == num_value_cases) {
     return SwitchKind::StringSwitch;
   } else if (num_const_int_cases == num_value_cases) {

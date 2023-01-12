@@ -14,6 +14,7 @@
 #include "compiler/data/function-data.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/lambda-utils.h"
 #include "compiler/lexer.h"
 #include "compiler/name-gen.h"
@@ -1252,6 +1253,7 @@ VertexAdaptor<op_match_proxy> GenTree::get_match() {
       // printf("%s: new ordinary arm!\n", __FUNCTION__);
       cases.emplace_back(get_match_case());
     }
+    kphp_assert_msg(cases.back(), "Invalid 'match' case!");
   }
 
   CE(expect(tok_clbrc, "'}'"));
@@ -1266,30 +1268,41 @@ VertexAdaptor<op_match_case> GenTree::get_match_case() {
   std::vector<VertexPtr> arms;
 
   VertexPtr cur_expr;
-  for (cur_expr = get_expression(); cur_expr->type() != op_double_arrow; cur_expr = get_expression()) {
-    cur_expr.debugPrint();
-    if (cur_expr) {
-      arms.emplace_back(cur_expr);
-    }
+  for (cur_expr = get_expression(); cur_expr && cur_expr->type() != op_double_arrow; cur_expr = get_expression()) {
+    arms.emplace_back(cur_expr);
+  
     if (cur->type() == tok_comma) {
       next_cur();
       continue;
     }
   }
 
-  cur_expr.debugPrint();
+  VertexPtr result;
 
-  if (const auto double_arrow = cur_expr.try_as<op_double_arrow>()) {
-    arms.emplace_back(double_arrow->key());
-    return VertexAdaptor<op_match_case>::create(VertexAdaptor<op_seq_comma>::create(arms), double_arrow->value()).set_location(location);
+  // trailling comma: "fourty-two", => 42'
+  if (!cur_expr) {
+    CE(expect(tok_double_arrow, "'=>'"));
+    result = get_expression();
   }
-  assert(false && "Unreachable!");
-  return {};
+  else if (const auto double_arrow = cur_expr.try_as<op_double_arrow>()) {
+    arms.emplace_back(double_arrow->key());
+    result = double_arrow->value();
+  }
+  else {
+    kphp_fail_msg("Ivalid syntax of 'match' cases!");
+  }
+  
+  return VertexAdaptor<op_match_case>::create(VertexAdaptor<op_seq_comma>::create(arms), result).set_location(location);
 }
 
 VertexAdaptor<op_match_default> GenTree::get_match_default() {
   const auto location = auto_location();
   next_cur();
+
+  // trailling comma: default, => 42'
+  if (cur->type() == tok_comma) {
+    next_cur();
+  }
   CE(expect(tok_double_arrow, "'=>'"));
   return VertexAdaptor<op_match_default>::create(get_expression()).set_location(location);
 }

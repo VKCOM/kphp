@@ -1239,7 +1239,7 @@ void compile_switch_var(VertexAdaptor<op_switch> root, CodeGenerator &W) {
     VertexAdaptor<op_seq> cmd;
     if (auto cs = one_case.try_as<op_case>()) {
       cmd = cs->cmd();
-      W << "if (" << temp_var_matched_with_a_case << " || eq2(" << temp_var_condition_on_switch << ", " << cs->expr() << ")) " << BEGIN;
+      W << "if (" << temp_var_matched_with_a_case << " || " << (root->is_match ? "equals(" : "eq2(") << temp_var_condition_on_switch << ", " << cs->expr() << ")) " << BEGIN;
       W << temp_var_matched_with_a_case << " = true;" << NL;
     } else {
       if (!default_case_is_the_last) {
