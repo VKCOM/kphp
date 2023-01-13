@@ -7,3 +7,4 @@ function foo($a) {
 }
 
 foo(false);
+foo(true);
