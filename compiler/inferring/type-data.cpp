@@ -24,6 +24,7 @@
 
 static std::vector<const TypeData *> primitive_types;
 static std::vector<const TypeData *> array_types;
+static TypeData *foreach_key_type;
 
 void TypeData::init_static() {
   if (!primitive_types.empty()) {
@@ -39,6 +40,17 @@ void TypeData::init_static() {
   for (int tp = 0; tp < ptype_size; tp++) {
     array_types[tp] = create_array_of(primitive_types[tp]);
   }
+
+  // create this TypeData object once and use it for all foreach keys;
+  // foreach key is encoded as string|int mixed type
+  foreach_key_type = new TypeData(tp_mixed);
+  foreach_key_type->flags_ = restricted_mixed_flag_e |
+    restricted_mixed_string_flag_e |
+    restricted_mixed_int_flag_e;
+}
+
+const TypeData *TypeData::get_foreach_key_type() {
+  return foreach_key_type;
 }
 
 const TypeData *TypeData::get_type(PrimitiveType type) {
@@ -142,16 +154,41 @@ std::string TypeData::as_human_readable(bool colored) const {
       }
       break;
     }
+    case tp_mixed:
+      if (is_restricted_mixed()) {
+        const PrimitiveType possible_elements[] = {
+          tp_int,
+          tp_float,
+          tp_string,
+          tp_array,
+          tp_bool,
+        };
+        for (auto ptype : possible_elements) {
+          if (!restricted_mixed_contains(ptype)) {
+            continue;
+          }
+          if (res.empty()) {
+            res = ptype_name(ptype);
+          } else {
+            res += "|" + std::string{ptype_name(ptype)};
+          }
+        }
+      } else {
+        res = ptype_name(ptype_);
+      }
+      break;
     default:
       res = ptype_name(ptype_);
   }
 
   if (ptype_ != tp_any) {
-    if (use_or_null() && !use_or_false()) {
+    bool print_null_type = use_or_null() || (is_restricted_mixed() && or_null_flag());
+    bool print_false_type = use_or_false() || (is_restricted_mixed() && or_false_flag());
+    if (print_null_type && !print_false_type) {
       res = "?" + res;
-    } else if (use_or_false() && !use_or_null()) {
+    } else if (print_false_type && !print_null_type) {
       res += "|false";
-    } else if (use_or_false() && use_or_null()) {
+    } else if (print_false_type && print_null_type) {
       res += "|false|null";
     }
   }
@@ -186,6 +223,55 @@ PrimitiveType TypeData::get_real_ptype() const {
     return tp_bool;
   }
   return p;
+}
+
+bool TypeData::restricted_mixed_contains(const TypeData *rhs) const {
+  if (rhs->ptype() == tp_mixed && !rhs->is_restricted_mixed()) {
+    return true; // allow any unrestricted mixed assignment for now
+  }
+  if (rhs->or_null_flag() && !or_null_flag()) {
+    return false;
+  }
+  if (rhs->or_false_flag() && !(or_false_flag() || restricted_mixed_contains(tp_bool))) {
+    return false;
+  }
+  if (rhs->ptype() == tp_int && restricted_mixed_contains(tp_float)) {
+    return true;
+  }
+  if (ptype_mixed_flag(rhs->ptype()) != 0 && !restricted_mixed_contains(rhs->ptype())) {
+    return false;
+  }
+  return true;
+}
+
+uint16_t TypeData::restricted_mixed_types_mask() const {
+  return flags_ & restricted_mixed_flags_mask();
+}
+
+uint16_t TypeData::restricted_mixed_flags_mask() {
+  return restricted_mixed_flag_e |
+         restricted_mixed_int_flag_e |
+         restricted_mixed_float_flag_e |
+         restricted_mixed_string_flag_e |
+         restricted_mixed_array_flag_e |
+         restricted_mixed_bool_flag_e;
+}
+
+uint16_t TypeData::ptype_mixed_flag(PrimitiveType ptype) {
+  switch (ptype) {
+    case tp_int:
+      return restricted_mixed_int_flag_e;
+    case tp_float:
+      return restricted_mixed_float_flag_e;
+    case tp_string:
+      return restricted_mixed_string_flag_e;
+    case tp_array:
+      return restricted_mixed_array_flag_e;
+    case tp_bool:
+      return restricted_mixed_bool_flag_e;
+    default:
+      return 0;
+  }
 }
 
 bool TypeData::is_ffi_ref() const {
@@ -320,7 +406,7 @@ bool TypeData::is_primitive_type() const {
   return vk::any_of_equal(get_real_ptype(), tp_int, tp_bool, tp_float, tp_future, tp_future_queue);
 }
 
-void TypeData::set_flags(uint8_t new_flags) {
+void TypeData::set_flags(uint16_t new_flags) {
   kphp_assert_msg((flags_ & new_flags) == flags_, "It is forbidden to remove flag");
   flags_ = new_flags;
 }
@@ -411,14 +497,31 @@ const TypeData *TypeData::get_deepest_type_of_array() const {
   return this;
 }
 
-void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_null, FFIRvalueFlags ffi_flags) {
+void TypeData::set_lca(const TypeData *rhs, LCAFlags flags) {
   if (rhs == nullptr) {
     return;
   }
   TypeData *lhs = this;
 
+  auto new_flags = rhs->flags_;
   PrimitiveType new_ptype = type_lca(lhs->ptype(), rhs->ptype());
+  if (lhs->is_restricted_mixed()) {
+    if (flags.phpdoc) {
+      // still constructing a type from a phpdoc context
+      new_flags |= ptype_mixed_flag(rhs->ptype());
+    } else {
+      // checking a type compatibility
+      if (!lhs->restricted_mixed_contains(rhs)) {
+        new_ptype = tp_Error;
+      }
+    }
+  }
   if (new_ptype == tp_mixed) {
+    if (flags.phpdoc && lhs->ptype() != tp_mixed && rhs->ptype() != tp_mixed) {
+      new_flags |= restricted_mixed_flag_e;
+      new_flags |= ptype_mixed_flag(lhs->ptype());
+      new_flags |= ptype_mixed_flag(rhs->ptype());
+    }
     if (lhs->ptype() == tp_array && lhs->lookup_at_any_key()) {
       lhs->set_lca_at(MultiKey::any_key(1), TypeData::get_type(tp_mixed));
       if (lhs->ptype() == tp_Error) {
@@ -435,24 +538,29 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_nul
   }
 
   lhs->set_ptype(new_ptype);
-  uint8_t new_flags = rhs->flags_;
-  if (!save_or_false) {
+  if (!flags.save_or_false) {
     new_flags &= ~(or_false_flag_e);
   }
-  if (!save_or_null) {
+  if (!flags.save_or_null) {
     new_flags &= ~(or_null_flag_e);
   }
+  if (!flags.phpdoc) {
+    // only phpdoc types can have restricted mixed types;
+    // when assigning to a local variable, etc. we wash all these flags away
+    // note that we may allow these types globally at some point
+    // (it would require the changes to cfg pass so the casts work correctly)
+    new_flags &= ~restricted_mixed_flags_mask();
+  }
   new_flags |= lhs->flags_;
-
   lhs->set_flags(new_flags);
 
-  if (ffi_flags.drop_ref && rhs->is_ffi_ref()) {
+  if (flags.ffi_drop_ref && rhs->is_ffi_ref()) {
     auto *new_rhs = rhs->clone();
     new_rhs->class_type_ = {rhs->class_type()->ffi_class_mixin->non_ref};
     rhs = new_rhs;
   }
   int rhs_indirection = rhs->get_indirection();
-  if (ffi_flags.take_addr) {
+  if (flags.ffi_take_addr) {
     rhs_indirection++;
   }
 
@@ -509,7 +617,7 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_nul
   }
 }
 
-void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool save_or_false, bool save_or_null, FFIRvalueFlags ffi_flags) {
+void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, LCAFlags flags) {
   TypeData *cur = this;
   
   for (const Key &key : multi_key) {
@@ -530,7 +638,7 @@ void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool s
     }
   }
 
-  cur->set_lca(rhs, save_or_false, save_or_null, ffi_flags);
+  cur->set_lca(rhs, flags);
   if (cur->error_flag()) {  // proxy tp_Error from keys to the type itself
     this->set_ptype(tp_Error);
   }
@@ -902,6 +1010,12 @@ bool is_less_or_equal_type(const TypeData *given, const TypeData *expected, cons
         }
         break;
       case tp_mixed:
+        if (expected->is_restricted_mixed()) {
+          if (given->is_restricted_mixed()) {
+            return expected->restricted_mixed_types_mask() == given->restricted_mixed_types_mask();
+          }
+          return expected->restricted_mixed_contains(given);
+        }
         if (vk::any_of_equal(tp, tp_bool, tp_int, tp_float, tp_string, tp_mixed)) {
           return true;
         }
