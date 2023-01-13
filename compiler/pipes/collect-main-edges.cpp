@@ -621,8 +621,8 @@ void CollectMainEdgesPass::on_finish() {
   if (current_function->is_extern()) {
     return;
   }
-  if (!have_returns) {
-    // hack to work well with functions which always throws
+  if (!have_returns && !current_function->return_typehint) {
+    // work well with functions which always throws
     create_type_assign(as_lvalue(current_function, -1), TypeData::get_type(tp_void));
   }
   call_on_var(current_function->local_var_ids);
