@@ -1259,9 +1259,7 @@ VertexAdaptor<op_match_proxy> GenTree::get_match() {
 
   CE(expect(tok_clbrc, "'}'"));
 
-  auto kek = VertexAdaptor<op_match_proxy>::create(match_condition, std::move(cases)).set_location(location);
-  kek.debugPrint();
-  return kek;
+  return VertexAdaptor<op_match_proxy>::create(match_condition, std::move(cases)).set_location(location);
 }
 
 VertexAdaptor<op_match_case> GenTree::get_match_case() {
