@@ -1,5 +1,5 @@
 @kphp_should_fail php8
-/Expected expression before token '=>'/
+Expected expression before '=>'
 <?php
 
 match(10) {

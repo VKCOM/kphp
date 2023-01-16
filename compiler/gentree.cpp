@@ -15,6 +15,7 @@
 #include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/vertex-adaptor.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/lambda-utils.h"
 #include "compiler/lexer.h"
 #include "compiler/name-gen.h"
@@ -1282,6 +1283,7 @@ VertexAdaptor<op_match_case> GenTree::get_match_case() {
   // trailling comma: "fourty-two", => 42'
   if (!cur_expr) {
     CE(expect(tok_double_arrow, "'=>'"));
+    kphp_error(!arms.empty(), "Expected expression before '=>'");
     result = get_expression();
   }
   else if (const auto double_arrow = cur_expr.try_as<op_double_arrow>()) {

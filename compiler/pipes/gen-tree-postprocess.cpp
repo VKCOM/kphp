@@ -368,9 +368,9 @@ VertexPtr GenTreePostprocessPass::convert_match(VertexAdaptor<op_match_proxy> ma
 
   if (!has_default) {
     auto message = VertexAdaptor<op_string>::create();
-    message->str_val = "UnhandledMatchError!";
+    message->str_val = "unhandled value in match!";
     auto emit_error = VertexAdaptor<op_func_call>::create(std::vector{message});
-    emit_error->set_string("warning");
+    emit_error->set_string("critical_error");
     const auto case_body = VertexAdaptor<op_seq>::create(std::vector<VertexPtr>{emit_error, case_break.clone()});
     switch_arms.emplace_back(VertexAdaptor<op_default>::create(case_body));
   }

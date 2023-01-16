@@ -1,5 +1,5 @@
 @kphp_runtime_should_warn php8
-/Unhandled match value '100'/
+Error: unhandled value in match!
 <?php
 
 match(100) {

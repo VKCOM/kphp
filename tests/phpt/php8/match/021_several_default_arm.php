@@ -1,5 +1,5 @@
 @kphp_should_fail php8
-/Match expressions may only contain one default arm/
+Match: several `default` cases found"
 <?php
 
 match(10) {
