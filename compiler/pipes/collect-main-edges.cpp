@@ -420,7 +420,7 @@ void CollectMainEdgesPass::on_switch(VertexAdaptor<op_switch> switch_op) {
       }
     }
   }
-  if (switch_op->kind == SwitchKind::IntSwitch) {
+  else if (switch_op->kind == SwitchKind::IntSwitch) {
     // in case of int-only switch, condition var is discarded, so there is
     // no real need in trying to insert an assignment node here
     create_type_assign(as_lvalue(switch_op->condition_on_switch()), TypeData::get_type(tp_int));
