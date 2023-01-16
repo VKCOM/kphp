@@ -1239,11 +1239,9 @@ VertexAdaptor<op_match_proxy> GenTree::get_match() {
     }
 
     if (cur->type() == tok_default) {
-      // printf("%s: new default arm!\n", __FUNCTION__);
       cases.emplace_back(get_match_default());
     }
     else {
-      // printf("%s: new ordinary arm!\n", __FUNCTION__);
       cases.emplace_back(get_match_case());
     }
     kphp_assert_msg(cases.back(), "Invalid 'match' case!");

@@ -4,7 +4,6 @@
 
 #include "compiler/pipes/gen-tree-postprocess.h"
 
-#include "auto/compiler/vertex/vertex-types.h"
 #include "common/algorithms/find.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
