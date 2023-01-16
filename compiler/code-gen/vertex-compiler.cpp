@@ -4,6 +4,7 @@
 
 #include "compiler/code-gen/vertex-compiler.h"
 
+#include "compiler/inferring/primitive-type.h"
 #include <iterator>
 #include <unordered_map>
 
@@ -1119,8 +1120,12 @@ void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   auto temp_var_strval_of_condition = root->condition_on_switch();
   auto temp_var_matched_with_a_case = root->matched_with_one_case();
 
+  // because we checked types before in case of match
+  const auto *const convert_function = root->is_match ? "" : "f$strval";
+
+
   W << BEGIN;
-  W << temp_var_strval_of_condition << " = f$strval (" << root->condition() << ");" << NL;
+  W << temp_var_strval_of_condition << " = " << convert_function << "(" << root->condition() << ");" << NL;
   W << temp_var_matched_with_a_case << " = false;" << NL;
 
   W << "switch (" << temp_var_strval_of_condition << ".hash()) " << BEGIN;
@@ -1163,7 +1168,9 @@ void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W) {
 }
 
 void compile_switch_int(VertexAdaptor<op_switch> root, CodeGenerator &W) {
-  W << "switch (f$intval (" << root->condition() << "))" << BEGIN;
+  // because we checked types before in case of match
+  const auto *const convert_function = root->is_match ? "" : "f$intval";
+  W << "switch (" << convert_function << " (" << root->condition() << "))" << BEGIN;
 
   W << "static_cast<void>(" << root->condition_on_switch() << ");" << NL;
   W << "static_cast<void>(" << root->matched_with_one_case() << ");" << NL;
@@ -1178,7 +1185,8 @@ void compile_switch_int(VertexAdaptor<op_switch> root, CodeGenerator &W) {
       if (val->type() == op_int_const) {
         const std::string &str = val.as<op_int_const>()->str_val;
         W << str;
-        kphp_error(used.insert(str).second, fmt_format("Switch: repeated cases found [{}]", str));
+        const std::string op = root->is_match ? "Match" : "Switch";
+        kphp_error(used.insert(str).second, fmt_format("{}: repeated cases found [{}]", op, str));
       } else {
         kphp_assert(VertexUtil::is_const_int(val));
         W << val;
@@ -1200,6 +1208,7 @@ void compile_switch_var(VertexAdaptor<op_switch> root, CodeGenerator &W) {
 
   auto temp_var_condition_on_switch = root->condition_on_switch();
   auto temp_var_matched_with_a_case = root->matched_with_one_case();
+  const auto *const eq_function = root->is_match ? "equals" : "eq2";
 
   W << "do " << BEGIN;
   W << temp_var_condition_on_switch << " = " << root->condition() << ";" << NL;
@@ -1211,7 +1220,7 @@ void compile_switch_var(VertexAdaptor<op_switch> root, CodeGenerator &W) {
     VertexAdaptor<op_seq> cmd;
     if (auto cs = one_case.try_as<op_case>()) {
       cmd = cs->cmd();
-      W << "if (" << temp_var_matched_with_a_case << " || " << (root->is_match ? "equals(" : "eq2(") << temp_var_condition_on_switch << ", " << cs->expr() << ")) " << BEGIN;
+      W << "if (" << temp_var_matched_with_a_case << " || " << eq_function << "(" << temp_var_condition_on_switch << ", " << cs->expr() << ")) " << BEGIN;
       W << temp_var_matched_with_a_case << " = true;" << NL;
     } else {
       if (!default_case_is_the_last) {
@@ -1250,12 +1259,29 @@ void compile_switch(VertexAdaptor<op_switch> root, CodeGenerator &W) {
 
   for (auto one_case : root->cases()) {
     if (one_case->type() == op_default) {
-      kphp_error_return(!has_default, "Switch: several `default` cases found");
+      const std::string op = root->is_match ? "Match" : "Switch";
+      kphp_error_return(!has_default, op + ": several `default` cases found");
       has_default = true;
       continue;
     }
   }
 
+  if (root->is_match) {
+    const auto *const cond_type = tinf::get_type(root->condition());
+     if (!cond_type) {
+      compile_switch_var(root, W);
+      return;
+    }
+
+    if (root->kind == SwitchKind::StringSwitch && cond_type->get_real_ptype() == tp_string) {
+      compile_switch_str(root, W);
+    } else if (root->kind == SwitchKind::IntSwitch &&  cond_type->get_real_ptype() == tp_int) {
+      compile_switch_int(root, W);
+    } else {
+      compile_switch_var(root, W);
+    }
+    return;
+  }
   if (root->kind == SwitchKind::StringSwitch) {
     compile_switch_str(root, W);
   } else if (root->kind == SwitchKind::IntSwitch) {

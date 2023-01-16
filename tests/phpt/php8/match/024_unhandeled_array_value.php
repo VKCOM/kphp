@@ -1,5 +1,4 @@
 @kphp_runtime_should_warn php8
-/Unhandled match value 'Array/
 <?php
 
 $options = [
