@@ -4,6 +4,8 @@
 
 #include "compiler/pipes/gen-tree-postprocess.h"
 
+#include "auto/compiler/vertex/vertex-types.h"
+#include "common/algorithms/find.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/lib-data.h"
@@ -234,10 +236,6 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root) {
 }
 
 VertexPtr GenTreePostprocessPass::on_exit_vertex(VertexPtr root) {
-  if (current_function->name == "foo" && root->type() == op_function) {
-    root.debugPrint();
-  }
-  
   if (root->type() == op_var) {
     if (VertexUtil::is_superglobal(root->get_string())) {
       root->extra_type = op_ex_var_superglobal;
@@ -345,13 +343,10 @@ VertexPtr GenTreePostprocessPass::convert_match(VertexAdaptor<op_match_proxy> ma
   static const auto case_break = VertexAdaptor<op_break>::create(VertexUtil::create_int_const(1));
   
   for (const auto match_case : cases) {
-    // match_case.debugPrint();
     if (const auto ordinary_case = match_case.try_as<op_match_case>()) {
-      // puts("Have hew ordinary case!\n");
       const auto set_result = VertexAdaptor<op_set>::create(tmp_result_var, ordinary_case->result_expr());
       const auto case_body = VertexAdaptor<op_seq>::create(std::vector<VertexPtr>{set_result, case_break.clone()}).set_location(ordinary_case);
       for (const auto case_condition : ordinary_case->conditions()->args()) {
-        // puts("\tHave new condition!\n");
         switch_arms.emplace_back(VertexAdaptor<op_case>::create(case_condition, case_body));
       }
     }
@@ -361,9 +356,7 @@ VertexPtr GenTreePostprocessPass::convert_match(VertexAdaptor<op_match_proxy> ma
       const auto case_body = VertexAdaptor<op_seq>::create(std::vector<VertexPtr>{set_result, case_break.clone()}).set_location(default_case);
       switch_arms.emplace_back(VertexAdaptor<op_default>::create(case_body));
     }
-    else {
-      // TODO error
-    }
+    kphp_error(vk::any_of_equal(match_case->type(), op_match_case, op_match_default), "Internel error: invalid case type in match expression");
   }
 
   if (!has_default) {
