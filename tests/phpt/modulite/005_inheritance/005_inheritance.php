@@ -8,6 +8,7 @@ require_once 'kphp_tester_include.php';
 use Feed005\Rank005\RankImpl1;
 use Feed005\Rank005\RankImpl2;
 use Feed005\SenderFactory;
+require_once 'plain005/plain005.php';
 
 GImportTrait::pubStaticFn();
 $mmm = new GImportTrait;
@@ -32,6 +33,7 @@ callSend(SenderFactory::createSender('email'));
 callSend(SenderFactory::createSender('sms'));
 
 printCurDescInherit();
+plainPrintCurDescInherit();
 
 Common005\CallOthers005::accessGloDer();
 Common005\CallOthers005::accessMessage();

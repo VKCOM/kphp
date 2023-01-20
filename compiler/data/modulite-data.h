@@ -24,19 +24,30 @@ struct ModuliteSymbol {
     kind_modulite,          // @feed or @msg/channels
     kind_klass,             // SomeClass
     kind_function,          // someFunction() or A::someMethod()
-    kind_constant,          // SOME_DEFINE or A::SOME_CONST
-    kind_global_var,        // $global_var or A::$static_field
+    kind_constant,          // A::CONST
+    kind_property,          // A::$static_field
+    kind_global_const,      // SOME_DEFINE or GLOBAL_CONST
+    kind_global_var,        // $global_var
   } kind;
 
   int line;
+  ClassPtr klass;   // valid for kind_klass, kind_function (when method), kind_constant, kind_property
+  // note, that for inheritance, when A{const C} and B extends A, B::C refers to A::C actually
+  // (when we parse "B::C" in yaml, we call $b->get_constant('C'), it returns a member of A)
+  // if B and A belong to different modulites, this fact leads to unexpected errors
+  // same for methods and properties
+  // that's the reason we store klass
+  // for instance, for "B::C", klass=B, constant=A::C
+  // and when B::C is used in php code, it also refers to c#A$$C, but requested_class is B
+  // that's the reason we pass requested_class to modulite_check_when_use_constant() and similar
 
   union {
     vk::string_view ref_stringname;
-    ModulitePtr modulite;
-    ClassPtr klass;
-    FunctionPtr function;
-    DefinePtr constant;
-    vk::string_view global_var;
+    ModulitePtr modulite;       // kind_modulite
+    FunctionPtr function;       // kind_function (global function and method)
+    DefinePtr constant;         // kind_constant, kind_global_const
+    VarPtr property;            // kind_property
+    vk::string_view global_var; // kind_global_var
   };
 };
 

@@ -59,7 +59,7 @@ void CalcRealDefinesAndAssignModulitesF::on_finish(DataStream<FunctionPtr> &os) 
 
   for (DefinePtr define : G->get_defines()) {
     process_define(define);
-    define->modulite = define->file_id->dir->nested_files_modulite;
+    define->modulite = (define->class_id ? define->class_id->file_id : define->file_id)->dir->nested_files_modulite;
   }
   stage::die_if_global_errors();
 

@@ -1,0 +1,12 @@
+name: "@sak"
+namespace: "SakCommon005\\"
+
+export:
+  - "ErrSak005"
+
+force-internal:
+
+require:
+  - "@feed"
+
+allow-internal-access:

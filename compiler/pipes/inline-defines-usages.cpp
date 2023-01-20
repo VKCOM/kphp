@@ -42,13 +42,12 @@ VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root) {
     if (current_function->modulite != def->modulite) {
       // When `class B extends A`, def=B::CONST would refer to A::CONST actually,
       // but we should perform all checks for B (requested_class), not for A
-      ClassPtr requested_class;
       if (name[0] == 'c' && name[1] == '#') {
         std::string requested_cn = root->get_string().substr(0, root->get_string().find("$$"));
-        requested_class = G->get_class(requested_cn);
-        kphp_assert(requested_class);
+        modulite_check_when_use_constant(current_function, def, G->get_class(requested_cn));
+      } else {
+        modulite_check_when_use_global_const(current_function, def);
       }
-      modulite_check_when_use_constant(current_function, def, requested_class);
     }
 
     if (def->type() == DefineData::def_var) {
