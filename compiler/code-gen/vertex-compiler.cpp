@@ -1260,6 +1260,9 @@ void compile_switch(VertexAdaptor<op_switch> root, CodeGenerator &W) {
     compile_switch_str(root, W);
   } else if (root->kind == SwitchKind::IntSwitch) {
     compile_switch_int(root, W);
+  } else if (root->kind == SwitchKind::EmptySwitch) {                         // will contain only inlined 'default' case
+    W << "static_cast<void>(" << root->matched_with_one_case() << ");" << NL; // suppress g++ 'unused variable' warning
+    compile_switch_var(root, W);
   } else {
     compile_switch_var(root, W);
   }

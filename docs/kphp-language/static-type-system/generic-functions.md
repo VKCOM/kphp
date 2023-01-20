@@ -739,6 +739,62 @@ All in all,
 * passing variables (only with primitives) is tricky, but `/*<T>*/` or `@var` helps
 
 
+## Constexpr switch
+
+Suppose you want something like `$factory->getInstance<T>()`, to be used like
+```php
+$factory->getInstance(FooService::class)->fooMethod();
+$factory->getInstance(AnotherService::class)->anotherMethod();
+```
+
+Here is a possible implementation:
+```php
+/**
+ * @kphp-generic TService
+ * @param class-string<TService> $serviceClass
+ * @return TService
+ */
+function getInstance(string $serviceClass) {
+  switch ($serviceClass) {
+  case FooService::class:
+    return $this->foo ?? ($this->foo = $this->createFoo());
+  case AnotherService::class:
+    return $this->getAnother();
+  // more services
+  }
+  
+  if (isset(self::HIDDEN[$serviceClass])) {
+    throw new Exception("$serviceClass is private and can not be used");
+  }
+  throw new Exception("$serviceClass not found");
+}
+```
+
+It will work as expected, but to make it valid, KPHP performs a skilful trick. Let's see how `getInstance<FooService>` would look like:
+```php
+function getInstance<FooService>(string $serviceClass = 'FooService'): FooService {
+  switch ($serviceClass) {
+  case FooService::class:
+    // return FooService object, ok
+  case AnotherService::class:
+    // return another object, ERROR! types mismatch, FooService expected
+  }
+  ...
+}
+```
+
+As you see, without any modifications, the code is erroneous. 
+
+But we have a guarantee that `$serviceClass` is 'FooService' in this cocrete generic specialization.
+In other terms, it's a **constexpr** compile-time known string. We have a switch over a constexpr string,
+so the only case is valid, which is also calculated at compile-time, so `switch` itself could be just replaced 
+with a body of a true `case`, or `default` if all cases are false. Also, `$serviceClass` variable can not be modified.
+
+KPHP automatically performs such transformations for `switch` over constexpr a string, with constexpr cases,
+where every non-empty case ends with break/return/throw. Constructions like `if/else` are not analyzed,
+so use such pattern for your scenarios.
+
+
 ## Generic methods are allowed
 
 Both static methods and instance methods could be made generic.
