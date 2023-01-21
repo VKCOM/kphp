@@ -32,6 +32,7 @@ match, tok_match
 class, tok_class
 interface, tok_interface
 trait, tok_trait
+enum, tok_enum
 const, tok_const
 default, tok_default
 do, tok_do

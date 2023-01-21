@@ -5,10 +5,13 @@
 #include "compiler/pipes/inline-defines-usages.h"
 
 #include "compiler/data/class-data.h"
+#include "compiler/data/data_ptr.h"
 #include "compiler/data/define-data.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/modulite-check-rules.h"
 #include "compiler/name-gen.h"
 #include "compiler/pipes/check-access-modifiers.h"
+#include "compiler/utils/string-utils.h"
 
 VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root) {
   // defined('NAME') is replaced by true or false
@@ -34,6 +37,28 @@ VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root) {
     std::string name = resolve_define_name(root->get_string());
     DefinePtr def = G->get_define(name);
     if (!def) {
+      std::string full_name = root->get_string();
+      const auto pos_colon = full_name.find("$$");
+      if (pos_colon != std::string::npos) {
+
+        full_name.replace(pos_colon, 2, "$$getEnum");
+        const auto class_name = std::string(full_name.begin(), full_name.begin() + pos_colon);
+
+
+        const auto klass = G->get_class(class_name);
+        kphp_assert_msg(klass, fmt_format("There is no enum-class with name '{}'", class_name));
+        const auto method_name = std::string(full_name.begin() + pos_colon + 2, full_name.end());
+
+        const auto * const method_data = klass->members.get_static_method(method_name);
+        kphp_assert_msg(method_data, fmt_format("There is no const nor enum case '{}'", replace_characters(std::string(root->get_string()), '$', ':')));
+        const auto method = method_data->function;
+
+        if (method) {
+          auto new_call = VertexAdaptor<op_func_call>::create(std::vector<VertexPtr>{}).set_location(root);
+          new_call->func_id = method;
+          return new_call;
+        }
+      }
       const auto readable_name = vk::replace_all(vk::replace_all(name, "$$", "::"), "$", "\\");
       kphp_error(0, fmt_format("Undefined constant '{}'", readable_name));
       return root;
