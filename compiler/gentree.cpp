@@ -1723,6 +1723,12 @@ VertexPtr GenTree::get_class(const PhpDocComment *phpdoc, ClassType class_type) 
   VertexPtr body_vertex = get_statement();    // an empty op_seq
   CE (!kphp_error(body_vertex, "Failed to parse class body"));
 
+  if (const auto body_seq = body_vertex.try_as<op_seq>()) {
+    for (const auto & stmt : body_seq->args()) {
+      kphp_error_return(stmt->type() != op_string, "Case can only be used in enums") {};
+    }
+  }
+
   cur_class->add_class_constant(); // A::class
 
   if (auto constructor_method = cur_class->members.get_constructor()) {
