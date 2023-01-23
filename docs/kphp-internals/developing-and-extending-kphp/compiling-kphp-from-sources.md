@@ -94,12 +94,13 @@ Add env variable `EPOLL_SHIM_REPO` to your bash profile. It allows to avoid of c
 git clone https://github.com/VKCOM/epoll-shim.git
 cd epoll-shim
 git checkout osx-platform
-echo 'export "EPOLL_SHIM_REPO=$(pwd)" >> ~/.bash_profile'
+echo 'export "EPOLL_SHIM_REPO=$(pwd)"' >> ~/.bash_profile
 ```
 
 Clone somewhere local [h3 from GitHub]({{site.url_package_h3_mac}}) and switch to *stable-3.x* branch.
 ```bash
 git clone https://github.com/uber/h3.git
+cd h3
 git checkout stable-3.x
 mkdir build
 cd build
