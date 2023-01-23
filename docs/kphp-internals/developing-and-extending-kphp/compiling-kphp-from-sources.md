@@ -95,6 +95,7 @@ git clone https://github.com/VKCOM/epoll-shim.git
 cd epoll-shim
 git checkout osx-platform
 echo 'export "EPOLL_SHIM_REPO=$(pwd)" >> ~/.bash_profile'
+source ~/.bash_profile
 ```
 
 Clone somewhere local [h3 from GitHub]({{site.url_package_h3_mac}}) and switch to *stable-3.x* branch.
