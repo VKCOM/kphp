@@ -29,12 +29,15 @@ void CurrentProcessingQuery::reset() {
 }
 
 void CurrentProcessingQuery::set_current_tl_function(const string &tl_function_name) {
-  php_assert(current_tl_function_name_.empty());
+  // It can be not empty in the following case:
+  // 1. Timeout is raised in the middle of serialization (when current TL function is still not reset).
+  // 2. Then shutdown functions called from timeout.
+  // 3. They use RPC which finally call set_current_tl_function.
+  // It will be rewritten by another tl_function_name and work fine
   current_tl_function_name_ = tl_function_name;
 }
 
 void CurrentProcessingQuery::set_current_tl_function(const class_instance<RpcTlQuery> &current_query) {
-  php_assert(current_tl_function_name_.empty());
   current_tl_function_name_ = current_query.get()->tl_function_name;
 }
 
