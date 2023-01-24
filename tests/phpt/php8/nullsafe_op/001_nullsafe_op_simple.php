@@ -2,9 +2,6 @@
 
 <?php
 
-require_once 'kphp_tester_include.php';
-
-/// Supplementary code
 class C {
   public int $dd;
   function __construct() {
@@ -90,6 +87,12 @@ class A {
     var_dump('A::b_param(int)');
     return $this->bb;
   }
+
+  public static B $b_static;
+  public static function get_b_static() {
+    return self::$b_static;
+  }
+
 }
 
 function getA() {
@@ -169,4 +172,6 @@ if ($res) {
   var_dump($res->d());
 }
 
-?>
+A::$b_static = new B;
+var_dump(A::$b_static?->null()?->c()?->self()?->d());
+var_dump(A::get_b_static()?->null()?->c()?->self()?->d());
