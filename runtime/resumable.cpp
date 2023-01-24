@@ -1315,3 +1315,14 @@ int32_t get_resumable_stack(void **buffer, int32_t limit) {
   }
   return limit;
 }
+
+string f$resumable_get_description(int64_t resumable_id) {
+  if (resumable_id == 0) {
+    return string{"main thread"};
+  }
+  Resumable *r = is_forked_resumable_id(resumable_id) ? get_forked_resumable(resumable_id) : get_started_resumable(resumable_id);
+  if (r) {
+    return string{typeid(*r).name()};
+  }
+  return string{"unknown"};
+}
