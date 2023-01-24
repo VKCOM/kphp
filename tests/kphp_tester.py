@@ -323,7 +323,9 @@ def run_test(use_nocc, cxx_name, test: TestFile):
     runner = test.make_kphp_once_runner(use_nocc, cxx_name)
     runner.remove_artifacts_dir()
 
-    if test.is_kphp_should_fail():
+    if test.is_php8() and runner._php_bin is None:      # if php8 doesn't exist on a machine
+        test_result = TestResult.skipped(test)
+    elif test.is_kphp_should_fail():
         test_result = run_fail_test(test, runner)
     elif test.is_kphp_should_warn():
         test_result = run_warn_test(test, runner)

@@ -835,9 +835,9 @@ const TypeHint *phpdoc_replace_genericTs_with_reified(const TypeHint *type_hint,
       return replacement ?: child;
     }
     if (const auto *as_field_ref = child->try_as<TypeHintRefToField>()) {
-      const auto *field = as_field_ref->resolve_field();
-      kphp_error(field, "Could not detect a field that :: points to in phpdoc white instantiating generics");
-      return field && field->type_hint ? field->type_hint : TypeHintPrimitive::create(tp_any);
+      const TypeHint *field_type_hint = as_field_ref->resolve_field_type_hint();
+      kphp_error(field_type_hint, "Could not detect a field that :: points to in phpdoc white instantiating generics");
+      return field_type_hint ?: TypeHintPrimitive::create(tp_any);
     }
     if (const auto *as_field_ref = child->try_as<TypeHintRefToMethod>()) {
       FunctionPtr method = as_field_ref->resolve_method();

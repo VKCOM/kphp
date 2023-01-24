@@ -96,6 +96,7 @@ prepend(KPHP_COMPILER_CODEGEN_SOURCES code-gen/
         writer-data.cpp)
 
 prepend(KPHP_COMPILER_REWRITE_RULES_SOURCES rewrite-rules/
+        replace-extern-func-calls.cpp
         rules_runtime.cpp)
 
 prepend(KPHP_COMPILER_PIPES_SOURCES pipes/

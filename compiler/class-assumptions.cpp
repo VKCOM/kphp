@@ -181,8 +181,8 @@ ClassPtr Assumption::extract_instance_from_type_hint(const TypeHint *a) {
   }
   // 'T::fieldName' — a syntax that's used in @return for generics
   if (const auto *as_field_ref = a->try_as<TypeHintRefToField>()) {
-    if (const auto *field = as_field_ref->resolve_field()) {
-      return extract_instance_from_type_hint(field->type_hint);
+    if (const TypeHint *field_type_hint = as_field_ref->resolve_field_type_hint()) {
+      return extract_instance_from_type_hint(field_type_hint);
     }
   }
   // 'T::methodName()' — a syntax that's used in @return for generics

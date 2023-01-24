@@ -1,7 +1,7 @@
 @kphp_should_fail
-/Too many arguments to function call, expected 2, have 4/
-/Too many arguments to function call, expected 2, have 5/
-/Too few arguments to function call, expected 2, have 1/
+/Too many arguments in call to f\(\), expected 2, have 4/
+/Too many arguments in call to f\(\), expected 2, have 5/
+/Too few arguments in call to g\(\), expected 2, have 1/
 <?php
 
 function f(int $s, int $i) {

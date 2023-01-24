@@ -58,7 +58,7 @@ VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root) {
     } else {
       if (def->class_id) {
         auto access_class = def->class_id;
-        check_access(class_id, lambda_class_id, FieldModifiers{def->access}, access_class, "const", def->name);
+        check_access(class_id, lambda_class_id, FieldModifiers{def->access}, access_class, "const", def->as_human_readable());
       }
       root = def->val.clone().set_location_recursively(root);
     }

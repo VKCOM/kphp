@@ -1,8 +1,8 @@
 @kphp_should_fail
-/Too few arguments to function call, expected 2, have 0/
-/Too few arguments to function call, expected 4, have 2/
-/Too few arguments to function call, expected 2, have 0/
-/Too few arguments to function call, expected 5, have 1/
+/Too few arguments in call to Test::f_min1_maxn\(\), expected 2, have 0/
+/Too few arguments in call to Test::f_min3_maxn\(\), expected 4, have 2/
+/Too few arguments in call to Test::sf_min1_maxn\(\), expected 2, have 0/
+/Too few arguments in call to Test::sf_min4_maxn\(\), expected 5, have 1/
 <?php
 
 // as variadic functions are preprocessed, error is given

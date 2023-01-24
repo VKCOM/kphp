@@ -27,7 +27,7 @@ VertexPtr PreprocessExceptions::on_exit_vertex(VertexPtr root) {
   }
 
   auto call = root.try_as<op_func_call>();
-  if (!call || !VertexUtil::is_constructor_call(call)) {
+  if (!call || call->extra_type != op_ex_constructor_call) {
     return root;
   }
   auto alloc = call->args()[0].try_as<op_alloc>();

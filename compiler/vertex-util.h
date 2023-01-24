@@ -16,6 +16,7 @@ public:
   static VertexPtr get_actual_value(VertexPtr v);
   static const std::string *get_constexpr_string(VertexPtr v);
   static VertexPtr get_call_arg_ref(int arg_num, VertexPtr v_func_call);
+  static VertexAdaptor<op_func_call> add_call_arg(VertexPtr to_add, VertexAdaptor<op_func_call> call, bool prepend);
 
   static VertexPtr create_conv_to(PrimitiveType targetType, VertexPtr x);
   static VertexAdaptor<meta_op_unary> create_conv_to_lval(PrimitiveType targetType, VertexPtr x);
@@ -35,7 +36,6 @@ public:
   static void func_force_return(VertexAdaptor<op_function> func, VertexPtr val = {});
 
   static bool is_superglobal(const std::string &s);
-  static bool is_constructor_call(VertexAdaptor<op_func_call> call);
   static bool is_positive_constexpr_int(VertexPtr v);
   static bool is_const_int(VertexPtr root);
 };

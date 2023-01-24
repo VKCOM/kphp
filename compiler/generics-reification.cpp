@@ -469,6 +469,7 @@ public:
     new_call->str_val = call->str_val;
     new_call->func_id = call->func_id;
     new_call->extra_type = call->extra_type;
+    new_call->auto_inserted = call->auto_inserted;
     return new_call;
   }
 };

@@ -94,10 +94,15 @@ ClassPtr TypeHintInstance::resolve_and_set_klass() const {
   return klass = G->get_class(full_class_name);
 }
 
-const ClassMemberInstanceField *TypeHintRefToField::resolve_field() const {
+const TypeHint *TypeHintRefToField::resolve_field_type_hint() const {
   if (const auto *inner_instance = inner->unwrap_optional()->try_as<TypeHintInstance>()) {
     if (ClassPtr inner_resolved = inner_instance->resolve()) {
-      return inner_resolved->get_instance_field(field_name);
+      if (const ClassMemberInstanceField *member = inner_resolved->get_instance_field(field_name)) {
+        return member->type_hint ?: TypeHintPrimitive::create(tp_any);
+      }
+      if (const ClassMemberStaticField *member = inner_resolved->get_static_field(field_name)) {
+        return member->type_hint ?: TypeHintPrimitive::create(tp_any);
+      }
     }
   }
   return nullptr;
@@ -107,6 +112,9 @@ FunctionPtr TypeHintRefToMethod::resolve_method() const {
   if (const auto *inner_instance = inner->unwrap_optional()->try_as<TypeHintInstance>()) {
     if (ClassPtr inner_resolved = inner_instance->resolve()) {
       if (const ClassMemberInstanceMethod *member = inner_resolved->get_instance_method(method_name)) {
+        return member->function;
+      }
+      if (const ClassMemberStaticMethod *member = inner_resolved->members.get_static_method(method_name)) {
         return member->function;
       }
     }
