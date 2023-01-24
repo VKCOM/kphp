@@ -224,10 +224,15 @@ public:
 };
 
 
+// having some_file.php, detect a modulite this file belongs to
+// up to this point, all dirs have been traversed and propagated to child dirs also
+static inline ModulitePtr get_modulite_of_file(const SrcFilePtr &file_id) {
+  return file_id->dir->nested_files_modulite;
+}
+
 // having SomeClass or someFunction(), detect a modulite this symbol belongs to
 // pay attention, that we can't use `FunctionData::modulite` and similar,
 // because that properties haven't been assigned up to the point of yaml validation
-// (but dir->nested_files_modulite has already been set, propagated to child dirs also, that's what we rely on here)
 // `FunctionData::modulite` and similar will be assigned later, to be used for checking func calls / class access / etc.
 // See `CalcRealDefinesAndAssignModulitesF` sync pipe.
 static ModulitePtr get_modulite_of_symbol(const ModuliteSymbol &s) {
@@ -237,19 +242,15 @@ static ModulitePtr get_modulite_of_symbol(const ModuliteSymbol &s) {
     case ModuliteSymbol::kind_modulite:
       return s.modulite->parent;
     case ModuliteSymbol::kind_klass:
-      return s.klass->file_id->dir->nested_files_modulite;
-    case ModuliteSymbol::kind_function:
-      return s.function->file_id->dir->nested_files_modulite;
     case ModuliteSymbol::kind_constant:
-      return s.constant->file_id->dir->nested_files_modulite;
-    case ModuliteSymbol::kind_global_var: {
-      size_t pos$$ = s.global_var.find("$$");
-      if (pos$$ == std::string::npos) {
-        return ModulitePtr{};
-      }
-      ClassPtr klass = G->get_class(replace_characters(static_cast<std::string>(s.global_var.substr(0, pos$$)), '$', '\\'));
-      return klass && klass->file_id ? klass->file_id->dir->nested_files_modulite : ModulitePtr{};
-    }
+    case ModuliteSymbol::kind_property:
+      return get_modulite_of_file(s.klass->file_id);
+    case ModuliteSymbol::kind_function:
+      return get_modulite_of_file(s.klass ? s.klass->file_id : s.function->file_id);
+    case ModuliteSymbol::kind_global_const:
+      return get_modulite_of_file(s.constant->file_id);
+    case ModuliteSymbol::kind_global_var:
+      return ModulitePtr{};
     default:
       __builtin_unreachable();
   }
@@ -408,7 +409,7 @@ void ModuliteData::resolve_symbol_from_yaml(ModuliteSymbol &s) {
       s.kind = ModuliteSymbol::kind_klass;
       s.klass = klass;
     } else if (DefinePtr constant = G->get_define(fqn)) {
-      s.kind = ModuliteSymbol::kind_constant;
+      s.kind = ModuliteSymbol::kind_global_const;
       s.constant = constant;
     } else {
       fire_yaml_error(inside_m, fmt_format("can't find class/constant {}", paint_bold(fqn)), s.line);
@@ -427,8 +428,9 @@ void ModuliteData::resolve_symbol_from_yaml(ModuliteSymbol &s) {
     if (v[pos$$ + 2] == '$') {
       vk::string_view local_name = v.substr(pos$$ + 3);
       if (const ClassMemberStaticField *f = klass->get_static_field(local_name)) {
-        s.kind = ModuliteSymbol::kind_global_var;
-        s.global_var = vk::string_view(f->var->name);
+        s.kind = ModuliteSymbol::kind_property;
+        s.klass = klass;
+        s.property = f->var;
       } else {
         fire_yaml_error(inside_m, fmt_format("can't find class field {}::${}", paint_bold(c_fqn), paint_bold(local_name)), s.line);
       }
@@ -439,9 +441,11 @@ void ModuliteData::resolve_symbol_from_yaml(ModuliteSymbol &s) {
       vk::string_view local_name = v.substr(pos$$ + 2, v.size() - pos$$ - 4);
       if (const ClassMemberStaticMethod *m = klass->members.get_static_method(local_name)) {
         s.kind = ModuliteSymbol::kind_function;
+        s.klass = klass;
         s.function = m->function;
       } else if (const ClassMemberInstanceMethod *m = klass->get_instance_method(local_name)) {
         s.kind = ModuliteSymbol::kind_function;
+        s.klass = klass;
         s.function = m->function;
       } else {
         fire_yaml_error(inside_m, fmt_format("can't find method {}::{}()", paint_bold(c_fqn), paint_bold(local_name)), s.line);
@@ -452,6 +456,7 @@ void ModuliteData::resolve_symbol_from_yaml(ModuliteSymbol &s) {
     vk::string_view local_name = v.substr(pos$$ + 2);
     if (const ClassMemberConstant *c = klass->get_constant(local_name)) {
       s.kind = ModuliteSymbol::kind_constant;
+      s.klass = klass;
       s.constant = G->get_define(c->define_name);
     } else {
       fire_yaml_error(inside_m, fmt_format("can't find constant {}::{}", paint_bold(c_fqn), paint_bold(local_name)), s.line);
@@ -542,9 +547,9 @@ void ModuliteData::validate_yaml_force_internal() {
       }
     }
 
-    bool is_allowed = (fi.kind == ModuliteSymbol::kind_constant && fi.constant->class_id)
-                      || (fi.kind == ModuliteSymbol::kind_function && fi.function->class_id)
-                      || (fi.kind == ModuliteSymbol::kind_global_var && fi.global_var.find("$$") != std::string::npos);
+    bool is_allowed = (fi.kind == ModuliteSymbol::kind_constant && fi.klass)
+                      || (fi.kind == ModuliteSymbol::kind_function && fi.klass)
+                      || (fi.kind == ModuliteSymbol::kind_property && fi.klass);
     if (!is_allowed) {
       // @msg force internals @msg/channels or #vk/common or SomeClass
       fire_yaml_error(inside_m, "'force-internal' can contain only class members", fi.line);
