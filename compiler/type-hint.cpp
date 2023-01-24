@@ -292,6 +292,17 @@ const TypeHint *TypeHintFuture::create(PrimitiveType ptype, const TypeHint *inne
   );
 }
 
+const TypeHint *TypeHintNotNull::create(const TypeHint *inner, bool drop_not_null, bool drop_not_false) {
+  HasherOfTypeHintForOptimization hash(5192347813149011894ULL);
+  hash.feed_inner(inner);
+  hash.feed_hash(static_cast<uint64_t>(drop_not_null));
+  hash.feed_hash(static_cast<uint64_t>(drop_not_false));
+
+  return hash.get_existing() ?: hash.add_because_doesnt_exist(
+    new TypeHintNotNull(inner, drop_not_null, drop_not_false)
+  );
+}
+
 const TypeHint *TypeHintInstance::create(const std::string &full_class_name) {
   HasherOfTypeHintForOptimization hash(16370122391586404558ULL);
   hash.feed_string(full_class_name);
@@ -460,6 +471,10 @@ std::string TypeHintFuture::as_human_readable() const {
   return std::string(ptype_name(ptype)) + "<" + inner->as_human_readable() + ">";
 }
 
+std::string TypeHintNotNull::as_human_readable() const {
+  return std::string(drop_not_null ? "not_null" : "") + (drop_not_false ? "not_false" : "") + "<" + inner->as_human_readable() + ">";
+}
+
 std::string TypeHintInstance::as_human_readable() const {
   ClassPtr resolved = resolve();
   return resolved ? resolved->as_human_readable() : full_class_name;
@@ -556,6 +571,11 @@ void TypeHintFFIScope::traverse(const TraverserCallbackT &callback) const {
 }
 
 void TypeHintFuture::traverse(const TraverserCallbackT &callback) const {
+  callback(this);
+  inner->traverse(callback);
+}
+
+void TypeHintNotNull::traverse(const TraverserCallbackT &callback) const {
   callback(this);
   inner->traverse(callback);
 }
@@ -669,6 +689,10 @@ const TypeHint *TypeHintFuture::replace_self_static_parent(FunctionPtr resolve_c
   return create(ptype, inner->replace_self_static_parent(resolve_context));
 }
 
+const TypeHint *TypeHintNotNull::replace_self_static_parent(FunctionPtr resolve_context) const {
+  return create(inner->replace_self_static_parent(resolve_context), drop_not_null, drop_not_false);
+}
+
 const TypeHint *TypeHintInstance::replace_self_static_parent(FunctionPtr resolve_context) const {
   return is_string_self_static_parent(full_class_name) ? create(resolve_uses(resolve_context, full_class_name)) : this;
 }
@@ -767,6 +791,10 @@ const TypeHint *TypeHintFFIScope::replace_children_custom(const ReplacerCallback
 
 const TypeHint *TypeHintFuture::replace_children_custom(const ReplacerCallbackT &callback) const {
   return callback(create(ptype, inner->replace_children_custom(callback)));
+}
+
+const TypeHint *TypeHintNotNull::replace_children_custom(const ReplacerCallbackT &callback) const {
+  return callback(create(inner->replace_children_custom(callback), drop_not_null, drop_not_false));
 }
 
 const TypeHint *TypeHintInstance::replace_children_custom(const ReplacerCallbackT &callback) const {

@@ -484,6 +484,14 @@ const TypeHint *PhpDocTypeHintParser::parse_simple_type() {
         }
         return TypeHintPrimitive::create(tp_tmp_string);
       }
+      if (cur_tok->str_val == "not_null") {
+        cur_tok++;
+        return TypeHintNotNull::create(parse_nested_one_type_hint(), true, false);
+      }
+      if (cur_tok->str_val == "not_false") {
+        cur_tok++;
+        return TypeHintNotNull::create(parse_nested_one_type_hint(), false, true);
+      }
       // otherwise interpreted as a class name (including the lowercase names);
       // it works with the absolute and relative names as well as for a special names like 'self';
       // file 'use' directives are taken into the account
