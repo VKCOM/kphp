@@ -234,3 +234,5 @@ T f$wait_multi(const array<int64_t> &resumable_ids) {
 }
 
 void forcibly_stop_all_running_resumables();
+
+string f$resumable_get_description(int64_t resumable_id);
