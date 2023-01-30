@@ -197,9 +197,6 @@ void PhpScript::on_request_timeout_error() {
   // timeout exit context switching
   auto shutdown_functions_status = get_shutdown_functions_status();
   if (shutdown_functions_status != shutdown_functions_status::running_from_timeout) {
-    if (is_json_log_on_timeout_enabled) {
-      vk::singleton<JsonLogger>::get().write_log_with_backtrace("Maximum execution time exceeded", E_ERROR);
-    }
     if (get_shutdown_functions_count() != 0 && get_shutdown_functions_status() == shutdown_functions_status::not_executed) {
       // resetting a timer here will cause another SIGALRM to be received later
       // that will bring us to this function again in case if we haven't finished
@@ -516,6 +513,7 @@ namespace kphp_runtime_signal_handlers {
 
 static void sigalrm_handler(int signum) {
   kwrite_str(2, "in sigalrm_handler\n");
+  vk::singleton<JsonLogger>::get().write_log_with_backtrace("Maximum execution time exceeded", static_cast<int>(ServerLog::Critical));
   if (check_signal_critical_section(signum, "SIGALRM")) {
     PhpScript::tl_flag = true;
     // if script is not actually running, don't bother (sigalrm handler is called
@@ -556,7 +554,6 @@ static void stack_overflow_handler(int signum) {
   if (check_signal_critical_section(signum, "SIGRTMIN+2")) {
     perform_error_if_running("stack overflow error\n", script_error_t::stack_overflow);
   }
-}
 }
 
 void print_http_data() {
@@ -657,6 +654,7 @@ void sigabrt_handler(int) {
   kill_workers();
   _exit(EXIT_FAILURE);
 }
+}
 
 static __inline__ void *get_sp() {
   return __builtin_frame_address(0);
@@ -692,9 +690,9 @@ void init_handlers() {
   ksignal(SIGPHPASSERT, kphp_runtime_signal_handlers::php_assert_handler);
   ksignal(SIGSTACKOVERFLOW, kphp_runtime_signal_handlers::stack_overflow_handler);
 
-  dl_sigaction(SIGSEGV, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, sigsegv_handler);
-  dl_sigaction(SIGBUS, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, sigsegv_handler);
-  dl_signal(SIGABRT, sigabrt_handler);
+  dl_sigaction(SIGSEGV, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, kphp_runtime_signal_handlers::sigsegv_handler);
+  dl_sigaction(SIGBUS, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, kphp_runtime_signal_handlers::sigsegv_handler);
+  dl_signal(SIGABRT, kphp_runtime_signal_handlers::sigabrt_handler);
 }
 
 void PhpScript::disable_timeout() noexcept {
