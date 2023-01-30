@@ -513,7 +513,7 @@ namespace kphp_runtime_signal_handlers {
 
 static void sigalrm_handler(int signum) {
   kwrite_str(2, "in sigalrm_handler\n");
-  vk::singleton<JsonLogger>::get().write_log_with_backtrace("Maximum execution time exceeded", static_cast<int>(ServerLog::Critical));
+  vk::singleton<JsonLogger>::get().write_log_with_backtrace("Maximum execution time exceeded", E_ERROR);
   if (check_signal_critical_section(signum, "SIGALRM")) {
     PhpScript::tl_flag = true;
     // if script is not actually running, don't bother (sigalrm handler is called
