@@ -1614,3 +1614,5 @@ class DateTimeImmutable implements DateTimeInterface {
   public function getOffset(): int;
   public function getTimestamp(): int;
 }
+
+function getenv(string $varname = '', bool $local_only = false): mixed;
