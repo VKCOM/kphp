@@ -93,7 +93,7 @@ if (PDO_DRIVER_PGSQL)
     set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "${CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS}, libpq-dev")
 endif()
 
-set(CPACK_DEBIAN_KPHP_PACKAGE_RECOMMENDS "php7.4-vkext, vk-tl-tools")
+set(CPACK_DEBIAN_KPHP_PACKAGE_RECOMMENDS "vk-tl-tools")
 set(CPACK_DEBIAN_KPHP_DESCRIPTION "kphp2cpp compiler and runtime for it")
 set(CPACK_DEBIAN_KPHP_PACKAGE_NAME "kphp")
 
