@@ -70,9 +70,15 @@ echo "deb [arch=amd64] https://artifactory-external.vkpartner.ru/artifactory/kph
 sudo apt update
 sudo apt install kphp vk-tl-tools
 
+# If you want to use php for development, you need to install vkext of the corresponding php version.
+# The following versions are available: 7.4, 8.0, 8.1, 8.2.
+sudo apt install php7.4-vkext
+
 sudo mkdir -p /var/www/vkontakte/data/www/vkontakte.com/tl/
 sudo tl-compiler -e /var/www/vkontakte/data/www/vkontakte.com/tl/scheme.tlo /usr/share/vkontakte/examples/tl-files/common.tl /usr/share/vkontakte/examples/tl-files/tl.tl
 ```
+
+
 
 Having done all these steps, you'll have the `kphp` command and related ones to use later on.
 
