@@ -144,3 +144,23 @@ Optional<bool> f$passthru(const string &command, int64_t &result_code) {
   }
   return false;
 }
+
+string f$escapeshellarg(const string &arg) noexcept {
+  php_assert(std::strlen(arg.c_str()) == arg.size() && "Input string contains NULL bytes");
+
+  string result;
+  result.reserve_at_least(arg.size() + 2);
+  result.push_back('\'');
+
+  for (std::size_t i = 0; i < arg.size(); ++i) {
+    if (arg[i] == '\'') {
+      result.push_back('\'');
+      result.push_back('\\');
+      result.push_back('\'');
+    }
+    result.push_back(arg[i]);
+  }
+
+  result.push_back('\'');
+  return result;
+}
