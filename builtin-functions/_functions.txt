@@ -1312,6 +1312,7 @@ function exec($command ::: string, &$output ::: mixed = [], int &$result_code = 
 function system($command ::: string, int &$result_code = 0): string|false;
 function passthru($command ::: string, int &$result_code = 0): false|null;
 function escapeshellarg($arg ::: string): string;
+function escapeshellcmd($cmd ::: string): string;
 
 function raise_sigsegv () ::: void;
 function make_clone ($x ::: any) ::: ^1;
