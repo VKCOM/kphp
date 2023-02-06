@@ -11,6 +11,10 @@ static bool valid_environment_name(const char *name, const char *end) noexcept {
   return std::find_if(name, end, [](char s) { return vk::any_of_equal(s, ' ', '.', '['); }) == end;
 }
 
+#ifdef __APPLE__
+extern char **environ;
+#endif
+
 array<string> f$getenv() noexcept {
   array<string> res;
   for (char **env = environ; env && *env; ++env) {
