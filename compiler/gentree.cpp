@@ -333,7 +333,7 @@ VertexPtr GenTree::get_postfix_expression(VertexPtr res, bool parenthesized) {
       }
       res.set_location(location);
       need = true;
-    } else if (tp == tok_arrow || tp == tok_nullsafe_arrow) {
+    } else if (vk::any_of_equal(tp, tok_arrow, tok_nullsafe_arrow)) {
       auto location = auto_location();
       next_cur();
       VertexPtr rhs = get_expr_top(true);

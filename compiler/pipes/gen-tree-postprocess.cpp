@@ -4,13 +4,16 @@
 
 #include "compiler/pipes/gen-tree-postprocess.h"
 
+#include "auto/compiler/vertex/vertex-types.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/vertex-adaptor.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/name-gen.h"
 #include "compiler/vertex-util.h"
+#include "runtime/php_assert.h"
 
 namespace {
 template <typename F>
@@ -232,86 +235,68 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root) {
 }
 
 VertexPtr GenTreePostprocessPass::on_exit_vertex(VertexPtr root) {
-  if (auto as_instance_prop = root.try_as<op_instance_prop>(); as_instance_prop && as_instance_prop->is_null_safe) {
-    if (as_instance_prop->instance().try_as<op_func_call>() || as_instance_prop->instance().try_as<op_seq_rval>() || 
-      (as_instance_prop->instance().try_as<op_ternary>() && 
-       as_instance_prop->instance().try_as<op_ternary>()->false_expr()->type() == op_func_call)
-    ) {
-      auto before_arrow = as_instance_prop->instance();
-      auto tmp_var = VertexAdaptor<op_var>::create().set_location(root);
-      tmp_var->str_val = gen_unique_name("tmp_before_arrow");
-      tmp_var->extra_type = op_ex_var_superlocal_inplace;
-
-      auto set_call_to_tmp = VertexAdaptor<op_set>::create(tmp_var, before_arrow).set_location(before_arrow);
-
-      auto cond = VertexAdaptor<op_eq3>::create(VertexAdaptor<op_null>::create(), tmp_var).set_location(before_arrow);
-
-      auto new_as_inst = VertexAdaptor<op_instance_prop>::create(tmp_var).set_location(before_arrow);
-      new_as_inst->str_val = as_instance_prop->str_val;
-
-      auto ternary = VertexAdaptor<op_ternary>::create(VertexAdaptor<op_conv_bool>::create(cond), 
-                                                       VertexAdaptor<op_null>::create(), 
-                                                       new_as_inst).set_location(root);
-
-      return VertexAdaptor<op_seq_rval>::create(set_call_to_tmp, ternary).set_location(root);
-    }
-    
-    auto cond = VertexAdaptor<op_eq3>::create(VertexAdaptor<op_null>::create(),
-                                              as_instance_prop->instance().clone()).set_location(root);
-    VertexPtr reconstructed = as_instance_prop;
-    if (auto as_ternary = as_instance_prop->instance().try_as<op_ternary>()) {
-      reconstructed = VertexAdaptor<op_instance_prop>::create(as_ternary->false_expr()).set_location(root);
-      reconstructed.as<op_instance_prop>()->str_val = as_instance_prop->str_val;
-    }
-    return VertexAdaptor<op_ternary>::create(VertexAdaptor<op_conv_bool>::create(cond), 
-                                             VertexAdaptor<op_null>::create(),
-                                             reconstructed).set_location(root);
-  }
   if (root->type() == op_var) {
     if (VertexUtil::is_superglobal(root->get_string())) {
       root->extra_type = op_ex_var_superglobal;
     }
   }
 
-  if (auto call = root.try_as<op_func_call>()) {
-    if (call->is_null_safe) {
-      if (call->begin()->try_as<op_func_call>() || call->begin()->try_as<op_seq_rval>() ||
-        (call->begin()->try_as<op_ternary>() && 
-         call->begin()->try_as<op_ternary>()->false_expr()->type() == op_func_call)
-      ) {
-        auto before_arrow = *call->begin();
-
-        auto tmp_var = VertexAdaptor<op_var>::create().set_location(before_arrow);
-        tmp_var->str_val = gen_unique_name("tmp_before_arrow");
-        tmp_var->extra_type = op_ex_var_superlocal_inplace;
-
-        auto set_call_to_tmp = VertexAdaptor<op_set>::create(tmp_var, before_arrow).set_location(before_arrow);
-
-        auto cond = VertexAdaptor<op_eq3>::create(VertexAdaptor<op_null>::create(),
-                                                  tmp_var).set_location(before_arrow);
-        auto new_call = call.clone();
-        *new_call->begin() = tmp_var;
-        auto ternary = VertexAdaptor<op_ternary>::create(VertexAdaptor<op_conv_bool>::create(cond),
-                                                         VertexAdaptor<op_null>::create(),
-                                                         new_call).set_location(before_arrow);
-
-        return VertexAdaptor<op_seq_rval>::create(set_call_to_tmp, ternary).set_location(before_arrow);
+  // Transformation of expr?->field_or_func_call to
+  // {
+  //   $tmp_unique_name = expr;
+  //   $tmp_unique_name === null ? null : $tmp_unique_name->field_or_func_call;
+  // }
+  // We use op_seq_rval for State Exprs extension (the last statement in the block 
+  // is used as value of whole block)
+  // Naive implementation could look like
+  // $expr === null? null : $expr->field_or_func_call
+  // But in case of foo()?->field_or_func_call it could call "foo()" twice
+  // That is why we store "expr" to temporary variable
+  auto transform_nullsufe = [](VertexPtr root) {
+    const auto before_nullsafe_arrow = [&root]() {
+      if (root->type() == op_instance_prop) {
+        return root.as<op_instance_prop>()->instance();
       }
+      kphp_assert_msg(root->type() == op_func_call, "Internal compiler error: transformation of nullsafe operator failf");
+      return *root.as<op_func_call>()->begin();
+    }();
+    auto tmp_var = VertexAdaptor<op_var>::create().set_location(root);
+    tmp_var->str_val = gen_unique_name("tmp_before_nullsafe_arrow");
+    tmp_var->extra_type = op_ex_var_superlocal_inplace;
 
-      auto cond = VertexAdaptor<op_eq3>::create(VertexAdaptor<op_null>::create(),
-                                                call->begin()->clone()).set_location(root);
-      VertexPtr reconstructed = call;
-      if (auto as_ternary = call->begin()->try_as<op_ternary>()) {
-        reconstructed = VertexAdaptor<op_func_call>::create(as_ternary->false_expr(),
-                                                            VertexRange(call->begin() + 1, call->end()));
-        reconstructed->extra_type = call->extra_type;
-        reconstructed.as<op_func_call>()->str_val = call->str_val;
-        reconstructed.as<op_func_call>()->reifiedTs = call->reifiedTs;
-      }
-      return VertexAdaptor<op_ternary>::create(VertexAdaptor<op_conv_bool>::create(cond),
-                                               VertexAdaptor<op_null>::create(),
-                                               reconstructed).set_location(root);
+    auto assignment = VertexAdaptor<op_set>::create(tmp_var, before_nullsafe_arrow).set_location(root);
+    auto cond = VertexAdaptor<op_eq3>::create(VertexAdaptor<op_null>::create(), tmp_var).set_location(root);
+
+    VertexPtr transformed_vertex {};
+    if (auto as_instance_prop = root.try_as<op_instance_prop>()) {
+      transformed_vertex = VertexAdaptor<op_instance_prop>::create(tmp_var).set_location(root);
+      transformed_vertex.as<op_instance_prop>()->str_val = as_instance_prop->str_val;
     }
+    else if (auto as_call = root.try_as<op_func_call>()) {
+      transformed_vertex = as_call.clone();
+      *transformed_vertex->begin() = tmp_var;
+    }
+    else {
+      kphp_fail_msg("Internal compiler error: transformation of nullsafe operator fail");
+    }
+
+    auto ternary = VertexAdaptor<op_ternary>::create(VertexAdaptor<op_conv_bool>::create(cond), 
+                                                       VertexAdaptor<op_null>::create(), 
+                                                       transformed_vertex).set_location(root);
+
+    return VertexAdaptor<op_seq_rval>::create(assignment, ternary).set_location(root);
+  };
+  
+  auto is_nullsafe_construction = [](VertexPtr vertex) {
+    return (vertex->type() == op_instance_prop && vertex.as<op_instance_prop>()->is_null_safe)||
+           (vertex->type() == op_func_call && vertex.as<op_func_call>()->is_null_safe);
+  };
+
+  if (is_nullsafe_construction(root)) {
+    return transform_nullsufe(root);
+  }
+
+  if (auto call = root.try_as<op_func_call>()) {
     if (!G->settings().profiler_level.get() && call->size() == 1 &&
         vk::any_of_equal(call->get_string(), "profiler_set_log_suffix", "profiler_set_function_label")) {
       return VertexAdaptor<op_if>::create(VertexAdaptor<op_false>::create(), VertexUtil::embrace(call)).set_location_recursively(root);
