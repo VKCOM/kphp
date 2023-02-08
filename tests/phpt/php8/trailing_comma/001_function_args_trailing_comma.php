@@ -11,5 +11,3 @@ function foo(
 }
 
 foo("vk", "com");
-
-?>
