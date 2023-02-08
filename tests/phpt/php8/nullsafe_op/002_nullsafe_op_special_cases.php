@@ -1,11 +1,7 @@
 @ok php8
-
 <?php
 
 require_once 'kphp_tester_include.php';
-
-
-/// Supplementary code
 
 class A {
   public int $data;
@@ -61,5 +57,3 @@ var_dump(($a === NULL ? getA() : condA(0))?->data);
 $a = condA(1);
 var_dump(($a === NULL ? getA() : condA(1))?->data);
 var_dump(($a === NULL ? getA() : condA(0))?->data);
-
-?>

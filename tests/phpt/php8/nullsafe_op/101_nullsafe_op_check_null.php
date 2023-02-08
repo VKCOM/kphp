@@ -1,5 +1,4 @@
 @kphp_should_fail php8
-
 /Invalid property ...->dd: Can not parse: maybe, too deep nesting/
 <?php
 
@@ -28,4 +27,3 @@ class B {
 }
 
 var_dump((new B())?->c()->dd); // should use ?->dd
-?>

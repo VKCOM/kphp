@@ -1,5 +1,4 @@
 @ok php8
-
 <?php
 
 class C {

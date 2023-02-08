@@ -1,8 +1,6 @@
 @kphp_should_fail kphp8
-
-/Method absent() not found in class B/
-/Method absent() not found in class C/
-
+/Method absent\(\) not found in class B/
+/Method absent\(\) not found in class C/
 <?php
 
 class C {
@@ -31,4 +29,3 @@ class B {
 
 var_dump((new B)?->absent());
 var_dump((new B)?->c()?->absent());
-?>
