@@ -2,10 +2,22 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 
 from .kphp_builder import KphpBuilder
 from .file_utils import error_can_be_ignored
+from .port_generator import get_port
+from .http_client import send_http_request
 
+
+def check_port_opened(port):
+    import socket
+    from contextlib import closing
+    with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
+        if sock.connect_ex(('127.0.0.1', port)) == 0:
+            return True
+        else:
+            return False
 
 class KphpRunOnce(KphpBuilder):
     def __init__(self, php_script_path, artifacts_dir, working_dir, php_bin,
@@ -99,8 +111,9 @@ class KphpRunOnce(KphpBuilder):
         sanitizer_log_name = "kphp_runtime_sanitizer_log"
         env, sanitizer_glob_mask = self._prepare_sanitizer_env(self._kphp_runtime_tmp_dir, sanitizer_log_name)
 
-        cmd = [self._kphp_runtime_bin, "--once={}".format(runs_cnt), "--disable-sql", "--profiler-log-prefix", "profiler.log",
-               "--worker-queries-to-reload", "1"]
+        port = get_port();
+        cmd = [self._kphp_runtime_bin, "-f1", "-H{}".format(port)]
+
         if not os.getuid():
             cmd += ["-u", "root", "-g", "root"]
         kphp_server_proc = subprocess.Popen(cmd,
@@ -108,7 +121,23 @@ class KphpRunOnce(KphpBuilder):
                                             env=env,
                                             stdout=subprocess.PIPE,
                                             stderr=subprocess.PIPE)
-        self._kphp_server_stdout, kphp_runtime_stderr = self._wait_proc(kphp_server_proc)
+
+        retries = 10
+        sleep_time = 0.5
+        while not check_port_opened(port) and retries > 0:
+            time.sleep(sleep_time)
+            sleep_time *= 1.2
+            retries -= 1
+        if retries == 0:
+            raise RuntimeError("failed to wait kphp server started")
+
+        time.sleep(1)
+
+        resp = send_http_request(port);
+        self._kphp_server_stdout = resp.content
+        kphp_server_proc.terminate()
+
+        _, kphp_runtime_stderr = self._wait_proc(kphp_server_proc)
 
         self._move_sanitizer_logs_to_artifacts(sanitizer_glob_mask, kphp_server_proc, sanitizer_log_name)
         ignore_stderr = error_can_be_ignored(

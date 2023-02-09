@@ -28,10 +28,6 @@ def send_http_request(port, uri='/', method='GET', timeout=30, **kwargs):
     print("\nSending HTTP request: [{}]".format(blue(url)))
     r = session.request(method=method, url=url, timeout=timeout, **kwargs)
     session.close()
-    print("HTTP request debug:")
-    print("=============================")
-    print(*[i for i in dump.dump_all(r).splitlines(True)], sep="\n")
-    print("=============================")
     return r
 
 

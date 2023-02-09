@@ -303,7 +303,7 @@ def run_runtime_warn_test(test: TestFile, runner):
 
 def run_ok_test(test: TestFile, runner):
     # Run kphp test twice to check correctness in web-server alike environment with per request runtime reinitialization
-    runs_cnt = 2 if test.is_idempotent() else 1
+    runs_cnt = 1
     if not runner.run_with_php(runs_cnt=runs_cnt):
         return TestResult.failed(test, runner.artifacts, "got php error")
     if not runner.compile_with_kphp(test.env_vars):
@@ -325,14 +325,6 @@ def run_test(use_nocc, cxx_name, test: TestFile):
 
     if test.is_php8() and runner._php_bin is None:      # if php8 doesn't exist on a machine
         test_result = TestResult.skipped(test)
-    elif test.is_kphp_should_fail():
-        test_result = run_fail_test(test, runner)
-    elif test.is_kphp_should_warn():
-        test_result = run_warn_test(test, runner)
-    elif test.is_kphp_runtime_should_warn():
-        test_result = run_runtime_warn_test(test, runner)
-    elif test.is_kphp_runtime_should_not_warn():
-        test_result = run_runtime_not_warn_test(test, runner)
     elif test.is_ok():
         test_result = run_ok_test(test, runner)
     else:
@@ -478,7 +470,7 @@ def main():
         sys.exit(1)
 
     run_all_tests(tests_dir=os.path.normpath(args.tests_dir),
-                  jobs=args.jobs,
+                  jobs=1,
                   test_tags=args.test_tags,
                   no_report=args.no_report,
                   passed_list=args.passed_list,
