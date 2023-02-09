@@ -1543,7 +1543,7 @@ WorkerType run_master() {
 
     if (to_exit) {
       vkprintf(1, "all workers killed. Exit\n");
-      _exit(0);
+      exit(0);
     }
 
     if (local_pending_signals & (1ll << SIGUSR1)) {
