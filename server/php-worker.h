@@ -82,3 +82,4 @@ private:
 };
 
 extern PhpWorker *active_worker;
+extern bool flushed_http_connection;
