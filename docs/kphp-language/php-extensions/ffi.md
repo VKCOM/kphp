@@ -26,7 +26,7 @@ to extend KPHP with functionality that is already implemented in C.
 It's particularly helpful for KPHP as you can implement unsupported PHP extensions yourself
 by writing a code that uses the underlying C library that is used by the PHP internal implementation.
 
-For instance, KPHP does not come with [GD](https://www.php.net/manual/ru/book.image.php) module.
+For instance, KPHP does not come with [GD](https://www.php.net/manual/en/book.image.php) module.
 If you look at the PHP implementation, you'll notice that it implements most functions using
 [libgd](https://libgd.github.io/) C library. This is where FFI comes in handy: if you create
 a FFI class that wraps `libgd`, you'll have an ability yo use GD in both PHP and KPHP.
@@ -50,8 +50,8 @@ As with anything else, KPHP wants to have more types information to build your c
 
 All FFI-related types should be annotated with special annotations:
 
-* `ffi_cdata<scope_name, type_expr>` for [\FFI\CData](https://www.php.net/manual/ru/class.ffi-cdata.php)
-* `ffi_scope<scope_name>` for [\FFI](https://www.php.net/manual/ru/class.ffi.php) class instances
+* `ffi_cdata<scope_name, type_expr>` for [\FFI\CData](https://www.php.net/manual/en/class.ffi-cdata.php)
+* `ffi_scope<scope_name>` for [\FFI](https://www.php.net/manual/en/class.ffi.php) class instances
 
 For `ffi_cdata<>`, you can use a pointer-type expression, builtin type name, struct name and
 any other supported C type expression. For instance, `ffi_cdata<foo, union Event**>` is a valid
@@ -106,7 +106,7 @@ or some requested type or function are not declared as a part of the FFI cdef so
 > In order to be compatible with PHP, you need to provide a separate preloading
 > script and run it appropriately.
 
-When [\FFI::cdef](https://www.php.net/manual/ru/ffi.cdef.php) or [\FFI::load](https://www.php.net/manual/ru/ffi.load.php)
+When [\FFI::cdef](https://www.php.net/manual/en/ffi.cdef.php) or [\FFI::load](https://www.php.net/manual/en/ffi.load.php)
 C sources don't contain a `FFI_SCOPE` directive, the scope name will be automatically generated,
 so it will be almost impossible to spell that `ffi_scope` type properly.
 For both PHP and KPHP it's preferable to use named scopes. 

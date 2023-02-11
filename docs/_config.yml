@@ -14,7 +14,7 @@ url_github_nocolor: https://github.com/VKCOM/nocolor
 url_github_nocc: https://github.com/VKCOM/nocc
 url_telegram_chat: https://t.me/kphp_chat
 url_functions_txt: https://github.com/VKCOM/kphp/blob/master/builtin-functions/_functions.txt
-url_PDO: https://github.com/VKCOM/kphp/blob/master/builtin-functions/PDO/PDO.php
+url_PDO: https://github.com/VKCOM/kphp/blob/master/builtin-functions/pdo/PDO.php
 url_dockerfile: https://github.com/VKCOM/kphp/blob/master/Dockerfile
 url_license_file: https://github.com/VKCOM/kphp/blob/master/LICENSE
 url_vertex_desc_json: https://github.com/VKCOM/kphp/blob/master/compiler/vertex-desc.json

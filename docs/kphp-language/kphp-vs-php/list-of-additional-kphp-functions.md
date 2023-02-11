@@ -95,7 +95,7 @@ Read about [coroutines (forks)](../best-practices/async-programming-forks.md).
 
 <aside>send_http_103_early_hints(string[] $headers): void</aside>
 
-Sends the [103 HTTP header](https://developer.mozilla.org/ru/docs/Web/HTTP/Status/103) and continues execution. Used from PHP code to push links to CSS/JS so that a client browser starts downloading them until a server still serves the request. No global buffers are modified, `header()` would still append headers for a regular HTTP answer. 
+Sends the [103 HTTP header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/103) and continues execution. Used from PHP code to push links to CSS/JS so that a client browser starts downloading them until a server still serves the request. No global buffers are modified, `header()` would still append headers for a regular HTTP answer. 
 
 
 ## RPC calls
