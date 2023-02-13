@@ -1117,23 +1117,25 @@ const char *net_event_t::get_description() const noexcept {
   static std::array<char, 10000> BUF;
   std::visit(overloaded{
     [this](const net_events_data::rpc_answer &event) {
-      snprintf(BUF.data(), BUF.size(), "RPC RESPONSE: TL function magic = 0x%08x, response magic = 0x%08x, bytes length = %d",
-                           get_pending_rpc_tl_query_magic(slot_id),
+      auto *r = get_rpc_request(slot_id);
+      snprintf(BUF.data(), BUF.size(), "RPC_RESPONSE: actor_id=%" PRIi64 ", tl_function_magic=0x%08x, response_magic=0x%08x, bytes_length=%d",
+                           r->actor_id, r->function_magic,
                            event.result_len >= 4 ? *reinterpret_cast<unsigned int *>(event.result) : 0, event.result_len);
     },
     [this](const net_events_data::rpc_error &event) {
-      snprintf(BUF.data(), BUF.size(), "RPC ERROR: TL function magic = 0x%08x, error code = %d, error message = %s",
-                           get_pending_rpc_tl_query_magic(slot_id), event.error_code, event.error_message);
+      auto *r = get_rpc_request(slot_id);
+      snprintf(BUF.data(), BUF.size(), "RPC_ERROR: actor_id=%" PRIi64 ", tl_function_magic=0x%08x, error_code=%d, error_message=%s",
+                           r->actor_id, r->function_magic, event.error_code, event.error_message);
     },
     [](const net_events_data::job_worker_answer &event) {
       if (event.job_result) {
-        snprintf(BUF.data(), BUF.size(), "JOB RESPONSE: class name = %s", event.job_result->response.get_class());
+        snprintf(BUF.data(), BUF.size(), "JOB_RESPONSE: class_name=%s", event.job_result->response.get_class());
       } else {
-        snprintf(BUF.data(), BUF.size(), "JOB ERROR");
+        snprintf(BUF.data(), BUF.size(), "JOB_ERROR");
       }
     },
     [](const database_drivers::Response *) {
-      snprintf(BUF.data(), BUF.size(), "EXTERNAL DB ANSWER");
+      snprintf(BUF.data(), BUF.size(), "EXTERNAL_DB_ANSWER");
     },
   }, data);
   return BUF.data();
