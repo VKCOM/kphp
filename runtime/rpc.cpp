@@ -563,18 +563,6 @@ bool rpc_store(bool is_error) {
 }
 
 
-struct rpc_request {
-  int64_t resumable_id; // == 0 - default, > 0 if not finished, -1 if received an answer, -2 if received an error, -3 if answer was gotten
-  union {
-    kphp_event_timer *timer;
-    char *answer;
-    const char *error;
-  };
-  uint32_t function_magic{0};
-  int64_t actor_id{-1};
-};
-
-
 // only for good linkage. Will be never used to load
 template<>
 int Storage::tagger<rpc_request>::get_tag() noexcept {
@@ -594,7 +582,7 @@ static rpc_request gotten_rpc_request;
 
 static int timeout_wakeup_id = -1;
 
-static inline rpc_request *get_rpc_request(slot_id_t request_id) {
+rpc_request *get_rpc_request(slot_id_t request_id) {
   php_assert (rpc_first_request_id <= request_id && request_id < rpc_next_request_id);
   if (request_id < rpc_first_array_request_id) {
     return &gotten_rpc_request;
@@ -769,14 +757,6 @@ int64_t f$rpc_send_noflush(const class_instance<C$RpcConnection> &conn, double t
   }
 
   return request_id;
-}
-
-uint32_t get_pending_rpc_tl_query_magic(int32_t request_id) {
-  rpc_request *request = get_rpc_request(request_id);
-  if (request->resumable_id < 0) {
-    return 0;
-  }
-  return request->function_magic;
 }
 
 void process_rpc_answer(int32_t request_id, char *result, int32_t result_len __attribute__((unused))) {

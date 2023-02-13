@@ -9,8 +9,20 @@
 #include "common/algorithms/hashes.h"
 #include "runtime/dummy-visitor-methods.h"
 #include "runtime/kphp_core.h"
+#include "runtime/net_events.h"
 #include "runtime/resumable.h"
 #include "runtime/to-array-processor.h"
+
+struct rpc_request {
+  int64_t resumable_id; // == 0 - default, > 0 if not finished, -1 if received an answer, -2 if received an error, -3 if answer was gotten
+  union {
+    kphp_event_timer *timer;
+    char *answer;
+    const char *error;
+  };
+  uint32_t function_magic{0};
+  int64_t actor_id{-1};
+};
 
 extern long long rpc_tl_results_last_query_num;
 
@@ -27,7 +39,8 @@ extern bool fail_rpc_on_int32_overflow;
 
 extern bool rpc_stored;
 
-uint32_t get_pending_rpc_tl_query_magic(int32_t request_id);
+using slot_id_t = int;
+rpc_request *get_rpc_request(slot_id_t request_id);
 
 void process_rpc_answer(int32_t request_id, char *result, int32_t result_len);
 
