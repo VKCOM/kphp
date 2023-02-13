@@ -881,7 +881,7 @@ final class RpcConnection {
 }
 
 /** rpc store **/
-function new_rpc_connection ($str ::: string, $port ::: int, $default_actor_id ::: mixed = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: \RpcConnection;
+function new_rpc_connection ($str ::: string, $port ::: int, $actor_id ::: mixed = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: \RpcConnection; // TODO: make actor_id int
 function store_gzip_pack_threshold ($pack_threshold_bytes ::: int) ::: void;
 function store_start_gzip_pack() ::: void;
 function store_finish_gzip_pack ($pack_threshold_bytes ::: int) ::: void;

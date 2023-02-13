@@ -101,11 +101,11 @@ struct C$RpcConnection final : public refcountable_php_classes<C$RpcConnection>,
   int32_t host_num{-1};
   int32_t port{-1};
   int32_t timeout_ms{-1};
-  long long default_actor_id{-1};
+  int64_t actor_id{-1};
   int32_t connect_timeout{-1};
   int32_t reconnect_timeout{-1};
 
-  C$RpcConnection(int32_t host_num, int32_t port, int32_t tmeout_ms, long long default_actor_id, int32_t connect_timeout, int32_t reconnect_timeout);
+  C$RpcConnection(int32_t host_num, int32_t port, int32_t tmeout_ms, int64_t actor_id, int32_t connect_timeout, int32_t reconnect_timeout);
 
   const char *get_class() const  noexcept {
     return R"(RpcConnection)";
@@ -121,13 +121,13 @@ struct C$RpcConnection final : public refcountable_php_classes<C$RpcConnection>,
     visitor("host_num", host_num);
     visitor("port", port);
     visitor("timeout_ms", timeout_ms);
-    visitor("default_actor_id", default_actor_id);
+    visitor("actor_id", actor_id);
     visitor("connect_timeout", connect_timeout);
     visitor("reconnect_timeout", reconnect_timeout);
   }
 };
 
-class_instance<C$RpcConnection> f$new_rpc_connection(const string &host_name, int64_t port, const mixed &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
+class_instance<C$RpcConnection> f$new_rpc_connection(const string &host_name, int64_t port, const mixed &actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
 
 void f$store_gzip_pack_threshold(int64_t pack_threshold_bytes);
 
