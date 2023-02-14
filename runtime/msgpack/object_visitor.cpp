@@ -69,11 +69,15 @@ bool object_visitor::visit_float64(double v) noexcept {
 bool object_visitor::visit_str(const char *v, uint32_t size) {
   auto *obj = m_stack.back();
   obj->type = stored_type::STR;
-  char *tmp = static_cast<char *>(m_zone.allocate_align(size, alignof(char)));
-  std::memcpy(tmp, v, size);
-  obj->via.str.ptr = tmp;
-
-  obj->via.str.size = size;
+  if (v) {
+    char *tmp = static_cast<char *>(m_zone.allocate_align(size, alignof(char)));
+    std::memcpy(tmp, v, size);
+    obj->via.str.ptr = tmp;
+    obj->via.str.size = size;
+  } else {
+    obj->via.str.ptr = nullptr;
+    obj->via.str.size = 0;
+  }
   return true;
 }
 

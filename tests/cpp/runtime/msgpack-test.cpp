@@ -1,36 +1,37 @@
 #include "runtime/kphp_core.h"
 #include "runtime/msgpack-serialization.h"
+#include <array>
 #include <gtest/gtest.h>
 #include <utility>
 
-constexpr int64_t edge_int_values[] = {
-  0,
-  1,
-  -1,
+constexpr auto edge_int_values = std::array{
+  0_i64,
+  1_i64,
+  -1_i64,
   std::numeric_limits<int64_t>::max(),
   std::numeric_limits<int64_t>::min(),
-  std::numeric_limits<int32_t>::max(),
-  std::numeric_limits<int32_t>::min(),
+  static_cast<int64_t>(std::numeric_limits<int32_t>::max()),
+  static_cast<int64_t>(std::numeric_limits<int32_t>::min()),
   std::numeric_limits<int32_t>::max() + 1_i64,
   std::numeric_limits<int32_t>::min() + 1_i64,
   std::numeric_limits<int32_t>::max() - 1_i64,
   std::numeric_limits<int32_t>::min() - 1_i64,
-  std::numeric_limits<int16_t>::max(),
-  std::numeric_limits<int16_t>::min(),
+  static_cast<int64_t>(std::numeric_limits<int16_t>::max()),
+  static_cast<int64_t>(std::numeric_limits<int16_t>::min()),
   std::numeric_limits<int16_t>::max() + 1_i64,
   std::numeric_limits<int16_t>::min() + 1_i64,
   std::numeric_limits<int16_t>::max() - 1_i64,
   std::numeric_limits<int16_t>::min() - 1_i64,
-  std::numeric_limits<int8_t>::max(),
-  std::numeric_limits<int8_t>::min(),
+  static_cast<int64_t>(std::numeric_limits<int16_t>::max()),
+  static_cast<int64_t>(std::numeric_limits<int16_t>::min()),
   std::numeric_limits<int8_t>::max() + 1_i64,
   std::numeric_limits<int8_t>::min() + 1_i64,
   std::numeric_limits<int8_t>::max() - 1_i64,
   std::numeric_limits<int8_t>::min() - 1_i64,
 };
-constexpr double edge_fp_values[] = {+0, -0, 1.1e-300, -1.1e-300, 1, -1, std::numeric_limits<double>::min(), std::numeric_limits<double>::max()};
+constexpr auto edge_fp_values = std::array{+0.0, -0.0, 1.1e-300, -1.1e-300, 1.0, -1.0, std::numeric_limits<double>::min(), std::numeric_limits<double>::max()};
 
-const string edge_string_values[] = {
+const auto edge_string_values = std::array{
   string(""),
   string("0"),
   string("a"),
@@ -193,4 +194,8 @@ TEST(msgpack, array_extended) {
   assert_single<array<mixed>>(array<mixed>::create(1, -0.0, string("! @ #  % ^\0& * ()-_+="),
                                                    array<int64_t>::create(1, 2, 3, 4, std::numeric_limits<int64_t>::max()),
                                                    array<string>::create(string("qwerty"))));
+  assert_single<array<Stub>>(array<Stub>::create(Stub(42_i64, -0.0, 42_i64, string("string"), array<mixed>::create(string("0"), string(""), 42, -0.0)),
+                                                 Stub(42_i64, -0.0, 42_i64, string("string"), {}),
+                                                 Stub(42_i64, -0.0, 42_i64, {}, array<mixed>::create(string("0"), string(""), 42, -0.0)),
+                                                 Stub({}, -0.0, 42_i64, string("string"), array<mixed>::create(string("0"), string(""), 42, -0.0))));
 }
