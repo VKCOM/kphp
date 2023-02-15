@@ -9,8 +9,20 @@
 #include "common/algorithms/hashes.h"
 #include "runtime/dummy-visitor-methods.h"
 #include "runtime/kphp_core.h"
+#include "runtime/net_events.h"
 #include "runtime/resumable.h"
 #include "runtime/to-array-processor.h"
+
+struct rpc_request {
+  int64_t resumable_id; // == 0 - default, > 0 if not finished, -1 if received an answer, -2 if received an error, -3 if answer was gotten
+  union {
+    kphp_event_timer *timer;
+    char *answer;
+    const char *error;
+  };
+  uint32_t function_magic{0};
+  int64_t actor_id{-1};
+};
 
 extern long long rpc_tl_results_last_query_num;
 
@@ -27,7 +39,8 @@ extern bool fail_rpc_on_int32_overflow;
 
 extern bool rpc_stored;
 
-uint32_t get_pending_rpc_tl_query_magic(int32_t request_id);
+using slot_id_t = int;
+rpc_request *get_rpc_request(slot_id_t request_id);
 
 void process_rpc_answer(int32_t request_id, char *result, int32_t result_len);
 
@@ -101,11 +114,11 @@ struct C$RpcConnection final : public refcountable_php_classes<C$RpcConnection>,
   int32_t host_num{-1};
   int32_t port{-1};
   int32_t timeout_ms{-1};
-  long long default_actor_id{-1};
+  int64_t actor_id{-1};
   int32_t connect_timeout{-1};
   int32_t reconnect_timeout{-1};
 
-  C$RpcConnection(int32_t host_num, int32_t port, int32_t tmeout_ms, long long default_actor_id, int32_t connect_timeout, int32_t reconnect_timeout);
+  C$RpcConnection(int32_t host_num, int32_t port, int32_t tmeout_ms, int64_t actor_id, int32_t connect_timeout, int32_t reconnect_timeout);
 
   const char *get_class() const  noexcept {
     return R"(RpcConnection)";
@@ -121,13 +134,13 @@ struct C$RpcConnection final : public refcountable_php_classes<C$RpcConnection>,
     visitor("host_num", host_num);
     visitor("port", port);
     visitor("timeout_ms", timeout_ms);
-    visitor("default_actor_id", default_actor_id);
+    visitor("actor_id", actor_id);
     visitor("connect_timeout", connect_timeout);
     visitor("reconnect_timeout", reconnect_timeout);
   }
 };
 
-class_instance<C$RpcConnection> f$new_rpc_connection(const string &host_name, int64_t port, const mixed &default_actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
+class_instance<C$RpcConnection> f$new_rpc_connection(const string &host_name, int64_t port, const mixed &actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
 
 void f$store_gzip_pack_threshold(int64_t pack_threshold_bytes);
 
