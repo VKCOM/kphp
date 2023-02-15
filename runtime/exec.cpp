@@ -84,7 +84,7 @@ static ExecStatus passthru_impl(const string &cmd) {
   std::size_t bytes_read = 0;
   const int fd = fileno(fp.get());
   while ((bytes_read = read(fd, BUFF.data(),  BUFF.size())) > 0) {
-    write(STDOUT_FILENO, BUFF.data(), bytes_read);
+    [[maybe_unused]] auto bytes_written = write(STDOUT_FILENO, BUFF.data(), bytes_read);
     [[maybe_unused]] auto res = fflush(stdout);
   }
 
@@ -124,7 +124,7 @@ Optional<string> f$exec(const string &command, mixed &output, int64_t &result_co
 
 Optional<string> f$system(const string &command, int64_t &result_code) {
   auto [success, result, last_line] = exec_impl(command, [](char *buff, std::size_t size) {
-    write(STDOUT_FILENO, buff, size);
+    [[maybe_unused]] auto bytes_written = write(STDOUT_FILENO, buff, size);
     [[maybe_unused]] auto res = fflush(stdout);
     return size;
   });
