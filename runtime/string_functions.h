@@ -429,6 +429,23 @@ int64_t f$similar_text(const string &first, const string &second, double &percen
 
 // similar_text ( string $first , string $second [, float &$percent ] ) : int
 
+// str_concat_arg generalizes both tmp_string and string arguments;
+// it can be constructed from both of them, so concat functions can operate
+// on both tmp_string and string types
+// there is a special (string, string) overloading for concat2 to
+// allow the empty string result optimization to kick in
+struct str_concat_arg {
+  const char *data;
+  string::size_type size;
+
+  str_concat_arg(const string &s) : data{s.c_str()}, size{s.size()} {}
+  str_concat_arg(tmp_string s) : data{s.data}, size{s.size} {}
+
+  tmp_string as_tmp_string() const noexcept {
+    return {data, size};
+  }
+};
+
 // str_concat functions implement efficient string-typed `.` (concatenation) operator implementation;
 // apart from being machine-code size efficient (a function call is more compact), they're also
 // usually faster as runtime is compiled with -O3 which is almost never the case for translated C++ code
@@ -444,6 +461,7 @@ int64_t f$similar_text(const string &first, const string &second, double &percen
 //     350: 9 args
 // Both 6 and 7 argument combination already look infrequent enough to not bother
 string str_concat(const string &s1, const string &s2);
-string str_concat(const string &s1, const string &s2, const string &s3);
-string str_concat(const string &s1, const string &s2, const string &s3, const string &s4);
-string str_concat(const string &s1, const string &s2, const string &s3, const string &s4, const string &s5);
+string str_concat(str_concat_arg s1, str_concat_arg s2);
+string str_concat(str_concat_arg s1, str_concat_arg s2, str_concat_arg s3);
+string str_concat(str_concat_arg s1, str_concat_arg s2, str_concat_arg s3, str_concat_arg s4);
+string str_concat(str_concat_arg s1, str_concat_arg s2, str_concat_arg s3, str_concat_arg s4, str_concat_arg s5);
