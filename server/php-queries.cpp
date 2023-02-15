@@ -21,6 +21,7 @@
 #include "runtime/job-workers/processing-jobs.h"
 #include "runtime/kphp_tracing.h"
 #include "runtime/rpc.h"
+#include "runtime/rpc_queries_stat.h"
 
 #include "server/database-drivers/adaptor.h"
 #include "server/job-workers/job-message.h"
@@ -974,7 +975,7 @@ void http_send_immediate_response(const char *headers, int headers_len, const ch
   }
 }
 
-slot_id_t rpc_send_query(int host_num, char *request, int request_size, int timeout_ms) {
+slot_id_t rpc_send_query(int host_num, int64_t actor_id, char *request, int request_size, int timeout_ms) {
   net_query_t *query = create_net_query();
   if (query == nullptr) {
     return -1; // memory limit
@@ -986,6 +987,7 @@ slot_id_t rpc_send_query(int host_num, char *request, int request_size, int time
   }
 
   PhpQueriesStats::get_rpc_queries_stat().register_query(request_size);
+  vk::singleton<RpcQueriesStat>::get().register_query(actor_id, request_size);
   query->data = net_queries_data::rpc_send{ host_num, request, request_size, timeout_ms };
   return query->slot_id;
 }
@@ -1087,6 +1089,9 @@ int get_net_queries_count() {
   return PhpScript::current_script->get_net_queries_count();
 }
 
+int get_long_net_queries_count() {
+  return PhpScript::current_script->get_long_net_queries_count();
+}
 
 int get_engine_uptime() {
   return get_uptime();

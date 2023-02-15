@@ -46,6 +46,7 @@
 #include "runtime/regexp.h"
 #include "runtime/resumable.h"
 #include "runtime/rpc.h"
+#include "runtime/rpc_queries_stat.h"
 #include "runtime/streams.h"
 #include "runtime/string_functions.h"
 #include "runtime/typed_rpc.h"
@@ -1787,10 +1788,17 @@ double f$get_script_time() {
   return get_script_time();
 }
 
+array<std::tuple<int64_t, int64_t, int64_t>> f$get_rpc_queries_by_actor_stat() {
+  return vk::singleton<RpcQueriesStat>::get().rpc_stats_by_actor();
+}
+
 int64_t f$get_net_queries_count() {
   return get_net_queries_count();
 }
 
+int64_t f$get_long_net_queries_count() {
+  return get_long_net_queries_count();
+}
 
 int64_t f$get_engine_uptime() {
   return get_engine_uptime();

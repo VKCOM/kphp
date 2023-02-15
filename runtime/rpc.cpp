@@ -16,6 +16,7 @@
 #include "runtime/misc.h"
 #include "runtime/net_events.h"
 #include "runtime/resumable.h"
+#include "runtime/rpc_queries_stat.h"
 #include "runtime/string_functions.h"
 #include "runtime/tl/rpc_function.h"
 #include "runtime/tl/rpc_request.h"
@@ -678,7 +679,7 @@ int64_t rpc_send(const class_instance<C$RpcConnection> &conn, double timeout, bo
   memcpy(p + sizeof(RpcHeaders), &extra_headers, extra_headers_size);
   memcpy(p + sizeof(RpcHeaders) + extra_headers_size, data_buf.c_str() + sizeof(RpcHeaders), data_buf.size() - sizeof(RpcHeaders));
 
-  slot_id_t result = rpc_send_query(conn.get()->host_num, p, static_cast<int>(request_size), timeout_convert_to_ms(timeout));
+  slot_id_t result = rpc_send_query(conn.get()->host_num, conn.get()->actor_id, p, static_cast<int>(request_size), timeout_convert_to_ms(timeout));
   if (result <= 0) {
     return -1;
   }
@@ -846,6 +847,7 @@ protected:
 
       string result;
       result.assign_raw(res.answer - 12);
+      vk::singleton<RpcQueriesStat>::get().register_loading_by_script(res.actor_id, result.size());
       RETURN(result);
     RESUMABLE_END
   }
@@ -919,6 +921,7 @@ protected:
 
       string result;
       result.assign_raw(res.answer - 12);
+      vk::singleton<RpcQueriesStat>::get().register_loading_by_script(res.actor_id, result.size());
       bool parse_result = f$rpc_parse(result);
       php_assert(parse_result);
 
@@ -1377,6 +1380,7 @@ void init_rpc_lib() {
 
   CurrentProcessingQuery::get().reset();
   RpcPendingQueries::get().hard_reset();
+  vk::singleton<RpcQueriesStat>::get().reset();
   CurrentRpcServerQuery::get().reset();
   reset_rpc_global_vars();
 
@@ -1396,6 +1400,7 @@ void free_rpc_lib() {
   reset_rpc_global_vars();
   RpcPendingQueries::get().hard_reset();
   CurrentProcessingQuery::get().reset();
+  vk::singleton<RpcQueriesStat>::get().reset();
 }
 
 int64_t f$rpc_queue_create() {

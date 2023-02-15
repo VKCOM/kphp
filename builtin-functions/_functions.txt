@@ -197,9 +197,16 @@ function estimate_memory_usage($value ::: any) ::: int;
 // to enable this function, set KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS=1
 function get_global_vars_memory_stats($lower_bound ::: int = 0) ::: int[];
 
+
+/**
+ * @return tuple(int, int, int)[]
+ */
+function get_rpc_queries_by_actor_stat();
+
 function get_net_time() ::: float;
 function get_script_time() ::: float;
 function get_net_queries_count() ::: int;
+function get_long_net_queries_count() ::: int;
 
 function get_engine_uptime() ::: int;
 function get_engine_version() ::: string;

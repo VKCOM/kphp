@@ -502,6 +502,10 @@ int PhpScript::get_net_queries_count() const noexcept {
   return queries_cnt;
 }
 
+int PhpScript::get_long_net_queries_count() const noexcept {
+  return long_queries_cnt;
+}
+
 PhpScript *volatile PhpScript::current_script;
 ucontext_t_portable PhpScript::exit_context;
 volatile bool PhpScript::is_running = false;
