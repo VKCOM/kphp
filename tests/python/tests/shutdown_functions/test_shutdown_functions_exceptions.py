@@ -25,3 +25,27 @@ class TestShutdownFunctionsExceptions(KphpServerAutoTestCase):
                 },
                 {"version": 0, "type": 2, "env": "", "msg": "running shutdown handler", "tags": {"uncaught": False}},
             ])
+
+    def test_exception_and_exit_shutdown_function(self):
+        # test that:
+        # We correctly execute shutdown functions with the exit function inside after exception
+        resp = self.kphp_server.http_post(
+            json=[
+                {"op": "register_shutdown_function", "msg": "shutdown_with_exit"},
+                {"op": "exception", "msg": "hello", "code": 123},
+            ])
+        self.assertEqual(resp.status_code, 200)
+        self.kphp_server.assert_json_log(
+            expect=[
+                {"version": 0, "type": 2, "env": "", "msg": "running shutdown handler 1", "tags": {"uncaught": False}},])
+        correct = False
+        try:
+            self.kphp_server.assert_json_log(
+                expect=[
+                    {"version": 0, "type": 2, "env": "", "msg": "running shutdown handler 1", "tags": {"uncaught": False}},],
+                timeout=1)
+        except Exception:
+            correct = True
+        self.assertTrue(correct)
+
+

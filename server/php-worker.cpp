@@ -26,7 +26,11 @@ PhpWorker *active_worker = nullptr;
 
 double PhpWorker::enter_lifecycle() noexcept {
   if (finish_time < precise_now + 0.01) {
-    terminate(0, script_error_t::timeout, "timeout");
+    if (state < phpq_run) {
+      terminate(0, script_error_t::timeout, "timeout exit\n");
+    } else {
+      PhpScript::timeout_expired = true;
+    }
   }
   on_wakeup();
 
@@ -248,6 +252,12 @@ void PhpWorker::state_run() noexcept {
         if (dl::is_malloc_replaced()) {
           // in case the error happened when malloc was replaced
           dl::rollback_malloc_replacement();
+        }
+        auto error_type = php_script->error_type;
+        if (error_type == script_error_t::http_connection_close || error_type == script_error_t::rpc_connection_close
+            || error_type == script_error_t::post_data_loading_error || error_type == script_error_t::net_event_error) {
+          /*This condition causes resume to run the shutdown function on network errors*/
+          php_script->resume();
         }
         php_script->finish();
 

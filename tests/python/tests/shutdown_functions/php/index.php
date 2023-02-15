@@ -9,6 +9,11 @@ function may_throw(bool $cond, string $msg) {
 }
 
 /** @kphp-required */
+function shutdown_trivial() {
+    warning("trivial shutdown function work");
+}
+
+/** @kphp-required */
 function shutdown_exception_warning() {
   $msg = "running shutdown handler";
   try {
@@ -93,6 +98,9 @@ function do_register_shutdown_function(string $fn) {
     case "shutdown_fork_wait":
       register_shutdown_function("shutdown_fork_wait");
       break;
+    case "shutdown_trivial":
+      register_shutdown_function("shutdown_trivial");
+      break;
   }
 }
 
@@ -120,6 +128,15 @@ function do_long_work(int $duration) {
   }
 }
 
+function do_fork() {
+    $job = function() {
+        sched_yield_sleep(2);
+        return true;
+    };
+    $future = fork($job());
+    wait($future);
+}
+
 function main() {
   foreach (json_decode(file_get_contents('php://input')) as $action) {
     switch ($action["op"]) {
@@ -140,6 +157,9 @@ function main() {
         break;
       case "register_shutdown_function":
         do_register_shutdown_function((string)$action["msg"]);
+        break;
+      case "fork":
+        do_fork();
         break;
       default:
         echo "unknown operation";

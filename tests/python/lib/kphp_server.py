@@ -80,14 +80,14 @@ class KphpServer(Engine):
         """
         return send_http_request(self._http_port if http_port is None else http_port, uri, method, timeout, **kwargs)
 
-    def http_post(self, uri='/', **kwargs):
+    def http_post(self, uri='/', timeout=30, **kwargs):
         """
         Послать POST запрос в kphp сервер
         :param uri: uri запроса
         :param kwargs: дополнительные параметры, передаваемые в request
         :return: ответ на запрос
         """
-        return self.http_request(uri=uri, method='POST', **kwargs)
+        return self.http_request(uri=uri, method='POST', timeout=timeout, **kwargs)
 
     def http_get(self, uri='/', **kwargs):
         """

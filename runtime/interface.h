@@ -18,7 +18,7 @@ using shutdown_function_type = std::function<void()>;
 enum class shutdown_functions_status {
   not_executed,
   running,
-  running_from_timeout,
+  running_from_error,
 };
 
 void f$ob_clean();
@@ -53,7 +53,7 @@ void f$setrawcookie(const string &name, const string &value, int64_t expire = 0,
 
 int64_t f$ignore_user_abort(Optional<bool> enable = Optional<bool>());
 
-void run_shutdown_functions_from_timeout();
+void run_shutdown_functions_from_error();
 void run_shutdown_functions_from_script();
 
 int get_shutdown_functions_count();

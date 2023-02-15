@@ -83,13 +83,40 @@ void PhpScript::error(const char *error_message, script_error_t error_type) noex
   setcontext_portable(&exit_context);
 }
 
-void PhpScript::check_tl() noexcept {
-  if (tl_flag) {
-    state = run_state_t::error;
-    error_type = script_error_t::timeout;
-    error_message = "Timeout exit";
-    pause();
+void PhpScript::check_timeout() noexcept {
+  assert(is_running);
+  if (timeout_expired) {
+    on_request_error("Maximum execution time exceeded", "timeout exit\n", script_error_t::timeout);
   }
+}
+
+void PhpScript::check_net_error() noexcept {
+  assert(is_running);
+  auto shutdown_functions_status = get_shutdown_functions_status();
+  switch (error_type) {
+      case script_error_t::timeout:
+        assert(shutdown_functions_status == shutdown_functions_status::not_executed);
+        on_request_error("Maximum execution time exceeded", "timeout exit\n", error_type);
+        break;
+      case script_error_t::http_connection_close:
+        assert(shutdown_functions_status == shutdown_functions_status::not_executed);
+        on_request_error("Http connection closed", "http connection closed\n", error_type);
+        break;
+      case script_error_t::rpc_connection_close:
+        assert(shutdown_functions_status == shutdown_functions_status::not_executed);
+        on_request_error("RPC connection closed", "rpc connection closed\n", error_type);
+        break;
+      case script_error_t::post_data_loading_error:
+        assert(shutdown_functions_status == shutdown_functions_status::not_executed);
+        on_request_error("Post data loading error", "post loading error\n", error_type);
+        break;
+      case script_error_t::net_event_error:
+        assert(shutdown_functions_status == shutdown_functions_status::not_executed);
+        on_request_error("Memory limit on net event", "net event error\n", error_type);
+        break;
+      default:
+        break;
+    }
 }
 
 PhpScriptStack::PhpScriptStack(size_t stack_size) noexcept
@@ -171,6 +198,7 @@ void PhpScript::init(script_t *script, php_query_data *data_to_set) noexcept {
   state = run_state_t::ready;
 
   error_message = "??? error";
+  error_type = script_error_t::no_error;
 
   script_time = 0;
   net_time = 0;
@@ -184,31 +212,31 @@ void PhpScript::init(script_t *script, php_query_data *data_to_set) noexcept {
   PhpScript::ml_flag = false;
 }
 
-void PhpScript::on_request_timeout_error() {
-  // note: this function runs only when is_running=true
+void PhpScript::on_request_error(const char * error_log_, const char * error_message_, script_error_t error_type_) {
+  assert(is_running);
 
   if (dl::is_malloc_replaced()) {
     dl::rollback_malloc_replacement();
   }
 
-  // we can get here from a normal timeout *or* a timeout that happens after
-  // we tried to execute the shutdown functions from the timeout context;
+  // we can get here from a normal error *or* an error that happens after
+  // we tried to execute the shutdown functions from the error context;
   // in the latter case, we should skip all everything here and go straight to the
-  // timeout exit context switching
+  // error exit context switching
   auto shutdown_functions_status = get_shutdown_functions_status();
-  if (shutdown_functions_status != shutdown_functions_status::running_from_timeout) {
+  if (shutdown_functions_status != shutdown_functions_status::running_from_error) {
     if (is_json_log_on_timeout_enabled) {
-      vk::singleton<JsonLogger>::get().write_log_with_backtrace("Maximum execution time exceeded", E_ERROR);
+      vk::singleton<JsonLogger>::get().write_log_with_backtrace(error_log_, E_ERROR);
     }
     if (get_shutdown_functions_count() != 0 && get_shutdown_functions_status() == shutdown_functions_status::not_executed) {
       // resetting a timer here will cause another SIGALRM to be received later
       // that will bring us to this function again in case if we haven't finished
       // executing shutdown functions yet
       current_script->reset_script_timeout();
-      run_shutdown_functions_from_timeout();
+      run_shutdown_functions_from_error();
     }
   }
-  perform_error_if_running("timeout exit\n", script_error_t::timeout);
+  perform_error_if_running(error_message_, error_type_);
 }
 
 int PhpScript::swapcontext_helper(ucontext_t_portable *oucp, const ucontext_t_portable *ucp) {
@@ -227,7 +255,8 @@ void PhpScript::pause() noexcept {
   __sanitizer_finish_switch_fiber(nullptr, &main_thread_stack, &main_thread_stacksize);
 #endif
   is_running = true;
-  check_tl();
+  check_net_error();
+  check_timeout();
   //fprintf (stderr, "pause: ended\n");
 }
 
@@ -441,11 +470,11 @@ void PhpScript::run() noexcept {
   is_running = true;
   init_runtime_environment(data, run_mem, mem_size);
   if (sigsetjmp(timeout_handler, true) != 0) { // set up a timeout recovery point
-    on_request_timeout_error(); // this call will not return (it changes the context)
+    on_request_error("Maximum execution time exceeded", "timeout exit\n", script_error_t::timeout); // this call will not return (it changes the context)
   }
   dl::leave_critical_section();
   php_assert (dl::in_critical_section == 0); // To ensure that no critical section is left at the end of the initialization
-  check_tl();
+  check_timeout();
 
   CurException = Optional<bool>{};
   run_main->run();
@@ -477,11 +506,11 @@ void PhpScript::run() noexcept {
 }
 
 void PhpScript::reset_script_timeout() noexcept {
-  // php_script_set_timeout has a side effect of setting the tl_flag to false;
-  // we want to avoid that, since timeout should set tl_flag to true
-  bool current_tl_flag = tl_flag;
+  // php_script_set_timeout has a side effect of setting the timeout_expired to false;
+  // we want to avoid that, since timeout should set timeout_expired to true
+  bool current_tl_flag = timeout_expired;
   set_timeout(script_timeout);
-  tl_flag = current_tl_flag;
+  timeout_expired = current_tl_flag;
 }
 
 double PhpScript::get_net_time() const noexcept {
@@ -505,7 +534,7 @@ int PhpScript::get_net_queries_count() const noexcept {
 PhpScript *volatile PhpScript::current_script;
 ucontext_t_portable PhpScript::exit_context;
 volatile bool PhpScript::is_running = false;
-volatile bool PhpScript::tl_flag = false;
+volatile bool PhpScript::timeout_expired = false;
 volatile bool PhpScript::ml_flag = false;
 
 void write_str(int fd, const char *s) noexcept {
@@ -517,7 +546,7 @@ namespace kphp_runtime_signal_handlers {
 static void sigalrm_handler(int signum) {
   kwrite_str(2, "in sigalrm_handler\n");
   if (check_signal_critical_section(signum, "SIGALRM")) {
-    PhpScript::tl_flag = true;
+    PhpScript::timeout_expired = true;
     // if script is not actually running, don't bother (sigalrm handler is called
     // even if timeout happens after the script already finished its execution)
     if (PhpScript::is_running) {
@@ -714,7 +743,7 @@ void PhpScript::set_timeout(double t) noexcept {
   timer.it_value.tv_sec = sec;
   timer.it_value.tv_usec = usec;
 
-  PhpScript::tl_flag = false;
+  PhpScript::timeout_expired = false;
   setitimer(ITIMER_REAL, &timer, nullptr);
 }
 
