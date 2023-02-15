@@ -95,17 +95,17 @@ if ($_SERVER["PHP_SELF"] === "/ini_get") {
      case "one_flush":
         echo "Hello ";
         flush();
-        sleep(1);
+        sleep(2);
         echo "world";
         return;
 
      case "few_flush":
         echo "This ";
         flush();
-        sleep(1);
+        sleep(2);
         echo "is big ";
         flush();
-        sleep(1);
+        sleep(2);
         echo "message";
         return;
 
@@ -115,7 +115,7 @@ if ($_SERVER["PHP_SELF"] === "/ini_get") {
         $chunk = "Hello world";
         echo sprintf("%x\r\n", strlen($chunk)) . $chunk . "\r\n";
         flush();
-        sleep(1);
+        sleep(2);
 
         $chunk = "Bye world";
         echo sprintf("%x\r\n", strlen($chunk)) . $chunk . "\r\n";
@@ -124,7 +124,7 @@ if ($_SERVER["PHP_SELF"] === "/ini_get") {
      case "error_on_flush":
         echo "Start work";
         flush();
-        sleep(1);
+        sleep(2);
         throw new Exception('Exception');
     }
 
