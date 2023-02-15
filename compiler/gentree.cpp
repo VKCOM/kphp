@@ -4,7 +4,6 @@
 
 #include "compiler/gentree.h"
 
-#include "auto/compiler/vertex/vertex-types.h"
 #include "common/algorithms/contains.h"
 #include "common/algorithms/find.h"
 
