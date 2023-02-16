@@ -384,5 +384,9 @@ bool compiler_execute(CompilerSettings *settings) {
     std::ofstream compilation_metrics{compilation_metrics_file};
     G->stats.write_to(compilation_metrics, false);
   }
+
+  std::ofstream of("function_to_file_mapping.txt");
+  G->func_to_file_mapping.write_to(of);
+
   return true;
 }

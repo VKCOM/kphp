@@ -38,6 +38,8 @@ void FunctionCpp::compile(CodeGenerator &W) const {
   if (function->is_inline) {
     return;
   }
+  G->func_to_file_mapping.add_mapping(function->name, function->src_name);
+
   W << OpenFile(function->src_name, function->subdir);
   W << ExternInclude(G->settings().runtime_headers.get());
   W << Include(function->header_full_name);

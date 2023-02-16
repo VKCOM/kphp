@@ -56,6 +56,8 @@ void FunctionH::compile(CodeGenerator &W) const {
     declare_global_vars(function, W);
     declare_const_vars(function, W);
     declare_static_vars(function, W);
+    G->func_to_file_mapping.add_mapping(function->name, function->header_name);
+
     W << UnlockComments();
     W << function->root << NL;
     W << LockComments();
