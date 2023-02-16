@@ -30,20 +30,20 @@ static Storage *get_storage(int64_t resumable_id);
 bool check_started_storage(Storage *s);
 bool check_forked_storage(Storage *s);
 
-static inline void update_current_resumable_id(int64_t new_id);
+static inline void update_current_resumable_id(int64_t new_id, bool is_internal);
 
 bool Resumable::resume(int64_t resumable_id, Storage *input) {
   php_assert(!input || check_started_storage(input) || check_forked_storage(input));
   int64_t parent_id = runned_resumable_id;
 
   input_ = input;
-  update_current_resumable_id(resumable_id);
+  update_current_resumable_id(resumable_id, is_internal_resumable());
 
   bool res = run();
 
   // must not be used
   input_ = nullptr;
-  update_current_resumable_id(parent_id);
+  update_current_resumable_id(parent_id, is_internal_resumable());
 
   return res;
 }
@@ -206,7 +206,7 @@ int64_t register_forked_resumable(Resumable *resumable) {
   return res_id;
 }
 
-static inline void update_current_resumable_id(int64_t new_id) {
+static inline void update_current_resumable_id(int64_t new_id, bool is_internal) {
   int64_t old_running_fork = f$get_running_fork_id();
   runned_resumable_id = new_id;
   int64_t new_running_fork = f$get_running_fork_id();
@@ -218,7 +218,7 @@ static inline void update_current_resumable_id(int64_t new_id) {
     if (new_running_fork) {
       get_forked_resumable_info(new_running_fork)->running_time -= get_precise_now();
     }
-    if (kphp_tracing::on_fork_switch_callback) {
+    if (!is_internal && kphp_tracing::on_fork_switch_callback) {
       kphp_tracing::on_fork_switch_callback(old_running_fork, new_running_fork);
     }
   }
