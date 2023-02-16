@@ -157,6 +157,8 @@ double f$get_net_time();
 
 double f$get_script_time();
 
+std::tuple<int64_t, int64_t, int64_t> f$get_rpc_queries_stat();
+
 int64_t f$get_net_queries_count();
 
 int64_t f$get_long_net_queries_count();
