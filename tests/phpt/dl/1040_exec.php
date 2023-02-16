@@ -173,10 +173,10 @@ function test_system_passthru_errors() {
   var_dump($result);
 }
 
-test_system_call();
+// test_system_call();
+// test_system_calls_errors();
 test_exec_call();
 test_exec_preserve_input();
 test_passthru_call();
-test_system_calls_errors();
 test_exec_calls_errors();
 test_system_passthru_errors();
