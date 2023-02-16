@@ -122,7 +122,8 @@ Optional<string> f$exec(const string &command, mixed &output, int64_t &result_co
   return false;
 }
 
-Optional<string> f$system(const string &command, int64_t &result_code) {
+// ultimate version of system(), the same as in php
+static Optional<string> php_system(const string &command, int64_t &result_code) {
   auto [success, result, last_line] = exec_impl(command, [](char *buff, std::size_t size) {
     [[maybe_unused]] auto bytes_written = write(STDOUT_FILENO, buff, size);
     [[maybe_unused]] auto res = fflush(stdout);
@@ -134,6 +135,13 @@ Optional<string> f$system(const string &command, int64_t &result_code) {
     return last_line;
   }
   return false;
+}
+
+// interim version of system(), required for transitional period
+// TODO: should be removed once transition is completed
+int64_t f$system(const string &command, int64_t &result_code) {
+  php_system(command, result_code);
+  return result_code;
 }
 
 Optional<bool> f$passthru(const string &command, int64_t &result_code) {
