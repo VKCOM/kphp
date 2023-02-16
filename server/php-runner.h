@@ -154,7 +154,6 @@ public:
   double get_net_time() const noexcept;
   double get_script_time() noexcept;
   int get_net_queries_count() const noexcept;
-  int get_long_net_queries_count() const noexcept;
   long long memory_get_total_usage() const noexcept;
 
   void disable_timeout() noexcept;

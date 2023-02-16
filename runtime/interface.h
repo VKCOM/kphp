@@ -159,7 +159,6 @@ double f$get_script_time();
 
 int64_t f$get_net_queries_count();
 
-int64_t f$get_long_net_queries_count();
 
 int64_t f$get_engine_uptime();
 

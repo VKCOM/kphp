@@ -1823,9 +1823,6 @@ int64_t f$get_net_queries_count() {
   return get_net_queries_count();
 }
 
-int64_t f$get_long_net_queries_count() {
-  return get_long_net_queries_count();
-}
 
 int64_t f$get_engine_uptime() {
   return get_engine_uptime();
