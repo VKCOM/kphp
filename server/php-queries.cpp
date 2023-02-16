@@ -886,10 +886,10 @@ int create_job_worker_answer_event(job_workers::JobSharedMessage *job_result) {
   if (status <= 0) {
     return status;
   }
-  if (kphp_tracing::on_response_callback) {
-    if (int64_t resumable_id = vk::singleton<job_workers::ProcessingJobs>::get().get_resumable_id(job_result->job_id)) {
-      kphp_tracing::on_response_callback(resumable_id);
-    }
+  if (kphp_tracing::on_job_request_finish) {
+    const auto &job_request_info = vk::singleton<job_workers::ProcessingJobs>::get().get_job_request_info(job_result->job_id);
+    double now_timestamp = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
+    kphp_tracing::on_job_request_finish(job_request_info.resumable_id, now_timestamp - job_request_info.send_timestamp);
   }
   event->data = net_events_data::job_worker_answer{ job_workers::copy_finished_job_to_script_memory(job_result) };
   return 1;

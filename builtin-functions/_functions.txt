@@ -1636,4 +1636,7 @@ function kphp_tracing_register_on_fork_callbacks(callable(int $new_fork_id):void
 function kphp_tracing_register_on_kphp_rpc_request_callbacks(
     callable(int $rpc_query_id, int $actor_id, int $tl_magic, int $request_size):void $on_start,
     callable(int $rpc_query_id, int $response_size, float $duration):void $on_finish);
+function kphp_tracing_register_on_kphp_job_request_callbacks(
+    callable(int $future_id, string $job_class_name):void $on_start,
+    callable(int $future_id, float $duration):void $on_finish);
 

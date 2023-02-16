@@ -26,12 +26,14 @@ struct JobRequestInfo {
   int64_t resumable_id{0};
   kphp_event_timer *timer{nullptr};
   class_instance<C$KphpJobWorkerResponse> response;
+  double send_timestamp{0.0};
 
   JobRequestInfo() = default;
 
-  JobRequestInfo(int64_t resumable_id, kphp_event_timer *timer)
+  JobRequestInfo(int64_t resumable_id, kphp_event_timer *timer, double send_timestamp)
     : resumable_id(resumable_id)
-    , timer(timer) {}
+    , timer(timer)
+    , send_timestamp(send_timestamp) {}
 };
 
 class ProcessingJobs : vk::not_copyable {
@@ -42,7 +44,7 @@ public:
   int64_t finish_job_on_timeout(int job_id) noexcept;
 
   class_instance<C$KphpJobWorkerResponse> withdraw(int job_id) noexcept;
-  int64_t get_resumable_id(int job_id) const noexcept;
+  const JobRequestInfo &get_job_request_info(int job_id) noexcept;
 
   void reset() noexcept {
     hard_reset_var(processing_);

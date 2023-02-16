@@ -9,6 +9,7 @@
 #include "runtime/instance-copy-processor.h"
 #include "runtime/job-workers/job-interface.h"
 #include "runtime/job-workers/processing-jobs.h"
+#include "runtime/kphp_tracing.h"
 #include "runtime/resumable.h"
 
 #include "server/job-workers/job-message.h"
@@ -66,7 +67,9 @@ int send_job_request_message(job_workers::JobSharedMessage *job_message, double 
   auto &client = vk::singleton<job_workers::JobWorkerClient>::get();
 
   const auto now = std::chrono::system_clock::now();
-  job_message->job_start_time = std::chrono::duration<double>{now.time_since_epoch()}.count();
+  const char *job_class_name = job_message->instance.get_class();
+  double job_send_time = std::chrono::duration<double>{now.time_since_epoch()}.count();
+  job_message->job_start_time = job_send_time;
   job_message->job_timeout = timeout;
   job_message->no_reply = no_reply;
 
@@ -100,8 +103,12 @@ int send_job_request_message(job_workers::JobSharedMessage *job_message, double 
   update_precise_now();
   kphp_event_timer *timer = allocate_event_timer(get_precise_now() + timeout, get_job_timeout_wakeup_id(), job_id);
 
-  vk::singleton<job_workers::ProcessingJobs>::get().start_job_processing(job_id, job_workers::JobRequestInfo{job_resumable_id, timer});
+  vk::singleton<job_workers::ProcessingJobs>::get().start_job_processing(job_id, job_workers::JobRequestInfo{job_resumable_id, timer, job_send_time});
   
+  if (kphp_tracing::on_job_request_start) {
+    kphp_tracing::on_job_request_start(job_resumable_id, string{job_class_name});
+  }
+
   return job_resumable_id;
 }
 
