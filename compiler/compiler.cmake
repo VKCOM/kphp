@@ -193,6 +193,7 @@ prepend(KPHP_COMPILER_SOURCES ${KPHP_COMPILER_DIR}/
         debug.cpp
         compiler-settings.cpp
         function-colors.cpp
+        func-to-file-map.cpp
         gentree.cpp
         vertex-util.cpp
         generics-reification.cpp

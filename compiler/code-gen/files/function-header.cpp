@@ -65,6 +65,7 @@ void FunctionH::compile(CodeGenerator &W) const {
 
   if (function->is_inline) {
     write_function_definition(function, nullptr, W);
+    G->func_to_file_mapping.add_mapping(function->name, function->header_name);
   }
 
   W << CloseNamespace();
@@ -109,6 +110,8 @@ void FunctionListH::compile(CodeGenerator &W) const {
   for (const auto &f : functions) {
     if (f->is_inline) {
       write_function_definition(f, &already_declared_vars, W);
+      G->func_to_file_mapping.add_mapping(f->name, f->header_name);
+
     }
   }
 

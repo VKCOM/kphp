@@ -44,8 +44,11 @@ void declare_vars_set(const std::set<VarPtr> &vars, std::unordered_set<VarPtr> *
 
 void FunctionCpp::compile(CodeGenerator &W) const {
   if (function->is_inline) {
+
     return;
   }
+  G->func_to_file_mapping.add_mapping(function->name, function->src_name);
+
   W << OpenFile(function->src_name, function->subdir);
   W << ExternInclude(G->settings().runtime_headers.get());
   W << Include(function->header_full_name);
@@ -109,11 +112,14 @@ void FunctionListCpp::compile(CodeGenerator &W) const {
 
   for (const auto &function : functions) {
     if (function->is_inline) {
+
       continue;
     }
 
     stage::set_function(function);
     function->name_gen_map = {}; // make codegeneration of this function idempotent
+
+    G->func_to_file_mapping.add_mapping(function->name, function->src_name);
 
     W << UnlockComments();
     W << function->root << NL;

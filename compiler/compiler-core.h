@@ -14,16 +14,17 @@
 
 #include "common/algorithms/hashes.h"
 
+#include "compiler/compiler-settings.h"
+#include "compiler/composer.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/ffi-data.h"
-#include "compiler/compiler-settings.h"
+#include "compiler/func-to-file-map.h"
+#include "compiler/function-colors.h"
 #include "compiler/index.h"
 #include "compiler/stats.h"
 #include "compiler/threading/data-stream.h"
 #include "compiler/threading/hash-table.h"
 #include "compiler/tl-classes.h"
-#include "compiler/composer.h"
-#include "compiler/function-colors.h"
 
 class CompilerCore {
 private:
@@ -155,6 +156,8 @@ public:
   }
 
   Stats stats;
+  FuncToFileMap func_to_file_mapping;
+
 };
 
 extern CompilerCore *G;
