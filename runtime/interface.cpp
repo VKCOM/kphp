@@ -1819,11 +1819,6 @@ double f$get_script_time() {
   return get_script_time();
 }
 
-std::tuple<int64_t, int64_t, int64_t> f$get_rpc_queries_stat() {
-  const auto &stat = PhpQueriesStats::get_rpc_queries_stat();
-  return {stat.queries_count(), stat.incoming_bytes(), stat.outgoing_bytes()};
-}
-
 int64_t f$get_net_queries_count() {
   return get_net_queries_count();
 }
