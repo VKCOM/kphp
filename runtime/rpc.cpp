@@ -5,6 +5,7 @@
 #include "runtime/rpc.h"
 
 #include <cstdarg>
+#include <chrono>
 
 #include "common/rpc-error-codes.h"
 #include "common/rpc-headers.h"
@@ -717,7 +718,13 @@ int64_t rpc_send(const class_instance<C$RpcConnection> &conn, double timeout, bo
   cur->resumable_id = register_forked_resumable(new rpc_resumable(result));
   cur->function_magic = function_magic;
   cur->actor_id = conn.get()->actor_id;
+  cur->send_timestamp = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
   cur->timer = nullptr;
+
+  if (kphp_tracing::on_rpc_request_start) {
+    kphp_tracing::on_rpc_request_start(cur->resumable_id, cur->actor_id, cur->function_magic, static_cast<int64_t>(request_size));
+  }
+
   if (ignore_answer) {
     int64_t resumable_id = cur->resumable_id;
     process_rpc_timeout(result);

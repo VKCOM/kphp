@@ -6,6 +6,7 @@
 
 #include <array>
 #include <cassert>
+#include <chrono>
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
@@ -848,6 +849,11 @@ int create_rpc_answer_event(slot_id_t slot_id, int len, net_event_t **res) {
   net_event_t *event;
   if (!rpc_ids_factory.is_from_current_script_execution(slot_id)) {
     return 0;
+  }
+  rpc_request *r = get_rpc_request(slot_id);
+  double now_timestamp = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
+  if (kphp_tracing::on_rpc_request_finish) {
+    kphp_tracing::on_rpc_request_finish(r->resumable_id, len, now_timestamp - r->send_timestamp);
   }
   int status = alloc_net_event(slot_id, &event);
   if (status <= 0) {

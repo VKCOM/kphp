@@ -11,6 +11,8 @@ on_fork_state_change_callback_t on_wait_finish_callback;
 on_fork_state_change_callback_t on_fork_start;
 on_fork_state_change_callback_t on_fork_finish;
 on_fork_switch_callback_t on_fork_switch_callback;
+on_rpc_request_start_callback_t on_rpc_request_start;
+on_rpc_request_finish_callback_t on_rpc_request_finish;
 
 void clear_callbacks() {
   on_wait_start_callback = {};
@@ -18,6 +20,8 @@ void clear_callbacks() {
   on_fork_switch_callback = {};
   on_fork_start = {};
   on_fork_finish = {};
+  on_rpc_request_start = {};
+  on_rpc_request_finish = {};
 }
 
 }
@@ -36,4 +40,10 @@ void f$kphp_tracing_register_on_fork_callbacks(const kphp_tracing::on_fork_state
                                                const kphp_tracing::on_fork_state_change_callback_t &on_finish) {
   kphp_tracing::on_fork_start = on_start;
   kphp_tracing::on_fork_finish = on_finish;
+}
+
+void f$kphp_tracing_register_on_kphp_rpc_request_callbacks(const kphp_tracing::on_rpc_request_start_callback_t &on_start,
+                                                           const kphp_tracing::on_rpc_request_finish_callback_t &on_finish) {
+  kphp_tracing::on_rpc_request_start = on_start;
+  kphp_tracing::on_rpc_request_finish = on_finish;
 }

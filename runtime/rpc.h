@@ -22,6 +22,7 @@ struct rpc_request {
   };
   uint32_t function_magic{0};
   int64_t actor_id{-1};
+  double send_timestamp{0.0};
 };
 
 extern long long rpc_tl_results_last_query_num;
