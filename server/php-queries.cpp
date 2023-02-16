@@ -1067,6 +1067,9 @@ int get_net_queries_count() {
   return PhpScript::current_script->get_net_queries_count();
 }
 
+int get_long_net_queries_count() {
+  return PhpScript::current_script->get_long_net_queries_count();
+}
 
 int get_engine_uptime() {
   return get_uptime();

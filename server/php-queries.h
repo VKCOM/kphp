@@ -309,6 +309,7 @@ void reset_script_timeout();
 double get_net_time();
 double get_script_time();
 int get_net_queries_count();
+int get_long_net_queries_count();
 int get_engine_uptime();
 const char *get_engine_version();
 int http_load_long_query(char *buf, int min_len, int max_len);

@@ -200,6 +200,7 @@ function get_global_vars_memory_stats($lower_bound ::: int = 0) ::: int[];
 function get_net_time() ::: float;
 function get_script_time() ::: float;
 function get_net_queries_count() ::: int;
+function get_long_net_queries_count() ::: int;
 
 function get_engine_uptime() ::: int;
 function get_engine_version() ::: string;
