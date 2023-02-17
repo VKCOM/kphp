@@ -28,10 +28,10 @@ public:
   explicit job_resumable(int job_id)
     : job_id(job_id) {}
 
-protected:
   bool is_internal_resumable() const noexcept final {
     return true;
   }
+protected:
 
   bool run() final {
     const class_instance<C$KphpJobWorkerResponse> &res = vk::singleton<job_workers::ProcessingJobs>::get().withdraw(job_id);

@@ -596,10 +596,6 @@ private:
   int request_id;
 
 protected:
-  bool is_internal_resumable() const noexcept final {
-    return true;
-  }
-
   bool run() {
     php_assert (dl::query_num == rpc_requests_last_query_num);
     rpc_request *request = get_rpc_request(request_id);
@@ -640,6 +636,10 @@ protected:
 public:
   explicit rpc_resumable(int request_id) :
     request_id(request_id) {
+  }
+
+  bool is_internal_resumable() const noexcept final {
+    return true;
   }
 };
 

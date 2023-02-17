@@ -54,16 +54,16 @@ protected:
   void *pos__{nullptr};
 
   virtual bool run() = 0;
-
-  virtual bool is_internal_resumable() const noexcept {
-    return false;
-  }
 public:
   Resumable() = default;
   virtual ~Resumable() = default;
 
   bool resume(int64_t resumable_id, Storage *input);
   void *get_stack_ptr() { return pos__; }
+
+  virtual bool is_internal_resumable() const noexcept {
+    return false;
+  }
 
   static void update_output();
 };

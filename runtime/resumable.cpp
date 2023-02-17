@@ -347,11 +347,10 @@ static void free_resumable_continuation(resumable_info *res) noexcept {
 }
 
 static void finish_forked_resumable(int64_t resumable_id) noexcept {
-  if (kphp_tracing::on_fork_finish) {
+  forked_resumable_info *res = get_forked_resumable_info(resumable_id);
+  if (kphp_tracing::on_fork_finish && !res->continuation->is_internal_resumable()) {
     kphp_tracing::on_fork_finish(resumable_id);
   }
-
-  forked_resumable_info *res = get_forked_resumable_info(resumable_id);
   free_resumable_continuation(res);
 
   if (res->queue_id > 100000000) {
@@ -739,12 +738,11 @@ private:
 static int32_t wait_timeout_wakeup_id = -1;
 
 class wait_resumable final : public ResumableWithTimer {
-protected:
+public:
   bool is_internal_resumable() const noexcept final {
     return true;
   }
 
-public:
   explicit wait_resumable(int64_t child_id) noexcept:
     child_id_(child_id) {
   }
@@ -1149,11 +1147,11 @@ void wait_all_forks() noexcept {
 static int32_t wait_queue_timeout_wakeup_id = -1;
 
 class wait_queue_resumable final : public ResumableWithTimer {
-protected:
+public:
   bool is_internal_resumable() const noexcept final {
     return true;
   }
-public:
+
   explicit wait_queue_resumable(int64_t queue_id) noexcept:
     queue_id_(queue_id) {
   }
