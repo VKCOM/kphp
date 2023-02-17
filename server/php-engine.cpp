@@ -2162,6 +2162,9 @@ int main_args_handler(int i, const char *long_option) {
       runtime_config = std::move(config);
       return 0;
     }
+    case 2033: {
+      return read_option_to(long_option, 0.0, 0.5, oom_handling_memory_ratio);
+    }
     default:
       return -1;
   }
@@ -2265,6 +2268,7 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("job-workers-shared-messages-process-multiplier", required_argument, 2031, "Coefficient used to calculate the total count of the shared messages for job workers related communication:\n"
                                                                                           "messages count = coefficient * processes_count");
   parse_option("runtime-config", required_argument, 2032, "JSON file path that will be available at runtime as 'mixed' via 'kphp_runtime_config()");
+  parse_option("oom-handling-memory-ratio", required_argument, 2033, "memory ratio of overall script memory to handle OOM errors (default: 0.00)");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
   // TODO: remove it after successful migration from kphb.readyV2 to kphb.readyV3

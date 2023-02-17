@@ -91,6 +91,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         mysql.cpp
         net_events.cpp
         on_kphp_warning_callback.cpp
+        oom_handler.cpp
         openssl.cpp
         php_assert.cpp
         profiler.cpp

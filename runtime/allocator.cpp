@@ -76,14 +76,14 @@ void global_init_script_allocator() noexcept {
   query_num++;
 }
 
-void init_script_allocator(void *buffer, size_t buffer_size) noexcept {
+void init_script_allocator(void *buffer, size_t script_mem_size, size_t oom_handling_mem_size) noexcept {
   auto &dealer = get_memory_dealer();
   php_assert(!dealer.heap_script_resource_replacer());
   php_assert(dealer.is_default_allocator_used());
   php_assert(!is_malloc_replaced());
 
   CriticalSectionGuard lock;
-  dealer.current_script_resource().init(buffer, buffer_size);
+  dealer.current_script_resource().init(buffer, script_mem_size, oom_handling_mem_size);
   script_allocator_enabled = true;
   query_num++;
 }

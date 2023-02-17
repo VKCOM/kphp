@@ -28,6 +28,7 @@
 #include "runtime/curl.h"
 #include "runtime/exception.h"
 #include "runtime/interface.h"
+#include "runtime/oom_handler.h"
 #include "runtime/profiler.h"
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
@@ -138,8 +139,9 @@ void PhpScriptStack::asan_stack_clear() const noexcept {
 #endif
 }
 
-PhpScript::PhpScript(size_t mem_size, size_t stack_size) noexcept
+PhpScript::PhpScript(size_t mem_size, double oom_handling_memory_ratio, size_t stack_size) noexcept
   : mem_size(mem_size)
+  , oom_handling_memory_ratio(oom_handling_memory_ratio)
   , run_mem(static_cast<char *>(mmap(nullptr, mem_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0)))
   , script_stack(stack_size) {
   // fprintf (stderr, "PHPScriptBase: constructor\n");
@@ -436,7 +438,9 @@ void PhpScript::run() noexcept {
 
   dl::enter_critical_section();
   is_running = true;
-  init_runtime_environment(data, run_mem, mem_size);
+  auto oom_handling_memory_size = static_cast<size_t>(std::ceil(mem_size * oom_handling_memory_ratio));
+  auto script_memory_size = mem_size - oom_handling_memory_size;
+  init_runtime_environment(data, run_mem, script_memory_size, oom_handling_memory_size);
   if (sigsetjmp(timeout_handler, true) != 0) { // set up a timeout recovery point
     on_request_timeout_error(); // this call will not return (it changes the context)
   }

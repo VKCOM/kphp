@@ -27,18 +27,19 @@
 #include "runtime/curl.h"
 #include "runtime/datetime/datetime_functions.h"
 #include "runtime/datetime/timelib_wrapper.h"
-#include "runtime/json-processor-utils.h"
 #include "runtime/exception.h"
 #include "runtime/files.h"
 #include "runtime/instance-cache.h"
 #include "runtime/job-workers/client-functions.h"
 #include "runtime/job-workers/server-functions.h"
+#include "runtime/json-processor-utils.h"
 #include "runtime/kphp-backtrace.h"
 #include "runtime/math_functions.h"
 #include "runtime/memcache.h"
 #include "runtime/mysql.h"
 #include "runtime/net_events.h"
 #include "runtime/on_kphp_warning_callback.h"
+#include "runtime/oom_handler.h"
 #include "runtime/openssl.h"
 #include "runtime/pdo/pdo.h"
 #include "runtime/profiler.h"
@@ -47,22 +48,22 @@
 #include "runtime/rpc.h"
 #include "runtime/streams.h"
 #include "runtime/string_functions.h"
+#include "runtime/tcp.h"
 #include "runtime/typed_rpc.h"
 #include "runtime/udp.h"
-#include "runtime/tcp.h"
 #include "runtime/url.h"
 #include "runtime/zlib.h"
 #include "server/database-drivers/adaptor.h"
+#include "server/database-drivers/mysql/mysql.h"
+#include "server/database-drivers/pgsql/pgsql.h"
 #include "server/job-workers/job-message.h"
 #include "server/json-logger.h"
 #include "server/numa-configuration.h"
 #include "server/php-engine-vars.h"
 #include "server/php-queries.h"
-#include "server/php-worker.h"
 #include "server/php-query-data.h"
+#include "server/php-worker.h"
 #include "server/workers-control.h"
-#include "server/database-drivers/mysql/mysql.h"
-#include "server/database-drivers/pgsql/pgsql.h"
 
 static enum {
   QUERY_TYPE_NONE,
@@ -2379,6 +2380,7 @@ static void free_runtime_libs() {
   database_drivers::free_pgsql_lib();
 #endif
   vk::singleton<database_drivers::Adaptor>::get().reset();
+  vk::singleton<OomHandler>::get().reset();
   free_interface_lib();
   hard_reset_var(JsonEncoderError::msg);
 }
@@ -2403,8 +2405,8 @@ void global_init_script_allocator() {
   dl::global_init_script_allocator();
 }
 
-void init_runtime_environment(php_query_data *data, void *mem, size_t mem_size) {
-  dl::init_script_allocator(mem, mem_size);
+void init_runtime_environment(php_query_data *data, void *mem, size_t script_mem_size, size_t oom_handling_mem_size) {
+  dl::init_script_allocator(mem, script_mem_size, oom_handling_mem_size);
   reset_global_interface_vars();
   init_runtime_libs();
   init_superglobals(data);

@@ -22,8 +22,9 @@ public:
   using monotonic_buffer_resource::get_memory_stats;
   using monotonic_buffer_resource::memory_begin;
 
-  void init(void *buffer, size_t buffer_size) noexcept;
+  void init(void *buffer, size_t buffer_size, size_t oom_handling_buffer_size = 0) noexcept;
   void hard_reset() noexcept;
+  void unfreeze_oom_handling_memory() noexcept;
 
   void *allocate(size_t size) noexcept {
     void *mem = nullptr;
@@ -134,6 +135,7 @@ private:
 
   details::memory_chunk_tree huge_pieces_;
   monotonic_buffer_resource fallback_resource_;
+  size_t oom_handling_memory_size_{0};
 
   extra_memory_pool *extra_memory_head_{nullptr};
   extra_memory_pool extra_memory_tail_{sizeof(extra_memory_pool)};
