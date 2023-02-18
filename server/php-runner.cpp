@@ -29,6 +29,7 @@
 #include "runtime/exception.h"
 #include "runtime/interface.h"
 #include "runtime/oom_handler.h"
+#include "runtime/kphp_tracing.h"
 #include "runtime/profiler.h"
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"

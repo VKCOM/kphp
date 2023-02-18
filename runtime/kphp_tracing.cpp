@@ -15,6 +15,8 @@ on_rpc_request_start_callback_t on_rpc_request_start;
 on_rpc_request_finish_callback_t on_rpc_request_finish;
 on_job_request_start_callback_t on_job_request_start;
 on_job_request_finish_callback_t on_job_request_finish;
+on_context_switch_callback_t on_script_to_net_ctx_switch;
+on_context_switch_callback_t on_net_to_script_ctx_switch;
 
 void clear_callbacks() {
   on_wait_start_callback = {};
@@ -26,6 +28,8 @@ void clear_callbacks() {
   on_rpc_request_finish = {};
   on_job_request_start = {};
   on_job_request_finish = {};
+  on_script_to_net_ctx_switch = {};
+  on_net_to_script_ctx_switch = {};
 }
 
 }
@@ -56,4 +60,10 @@ void f$kphp_tracing_register_on_kphp_job_request_callbacks(const kphp_tracing::o
                                                            const kphp_tracing::on_job_request_finish_callback_t &on_finish) {
   kphp_tracing::on_job_request_start = on_start;
   kphp_tracing::on_job_request_finish = on_finish;
+}
+
+void f$kphp_tracing_register_on_context_switch_callbacks(const kphp_tracing::on_context_switch_callback_t &on_script_to_net_switch,
+                                                         const kphp_tracing::on_context_switch_callback_t &on_net_to_script_switch) {
+  kphp_tracing::on_script_to_net_ctx_switch = on_script_to_net_switch;
+  kphp_tracing::on_net_to_script_ctx_switch = on_net_to_script_switch;
 }
