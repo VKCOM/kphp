@@ -513,12 +513,14 @@ namespace kphp_runtime_signal_handlers {
 
 static void sigalrm_handler(int signum) {
   kwrite_str(2, "in sigalrm_handler\n");
-  vk::singleton<JsonLogger>::get().write_log_with_backtrace("Maximum execution time exceeded", E_ERROR);
   if (check_signal_critical_section(signum, "SIGALRM")) {
     PhpScript::tl_flag = true;
     // if script is not actually running, don't bother (sigalrm handler is called
     // even if timeout happens after the script already finished its execution)
     if (PhpScript::is_running) {
+      if (is_json_log_on_timeout_enabled) {
+        vk::singleton<JsonLogger>::get().write_log_with_backtrace("Maximum execution time exceeded", E_ERROR);
+      }
       // we need to (in that order):
       // [1] run the shutdown handlers
       // [2] change the context to the worker
