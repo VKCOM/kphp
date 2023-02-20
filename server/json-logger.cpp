@@ -255,7 +255,7 @@ void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at
   json_out_it->finish_json_and_flush(json_log_fd_);
 }
 
-void JsonLogger::write_trace_with_context(vk::string_view raw_trace) noexcept {
+void JsonLogger::write_trace_with_context(vk::string_view trace_line_without_braces) noexcept {
   // TODO: handle buffer overflow
   if (json_log_fd_ <= 0) {
     return;
@@ -266,7 +266,7 @@ void JsonLogger::write_trace_with_context(vk::string_view raw_trace) noexcept {
   }
   assert(json_out_it != buffers_.end());
 
-  json_out_it->append_raw(raw_trace);
+  json_out_it->append_raw(trace_line_without_braces);
 
   json_out_it->append_key("tags").start<'{'>();
   if (tags_available_) {

@@ -66,4 +66,4 @@ string f$cp1251(const string &utf8_string);
 
 void f$kphp_set_context_on_error(const array<mixed> &tags, const array<mixed> &extra_info, const string& env = {});
 
-void f$kphp_write_trace_to_json_log(const array<mixed> &trace);
+void f$kphp_write_trace_to_json_log(const string &json_trace_line);

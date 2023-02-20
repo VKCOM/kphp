@@ -736,11 +736,10 @@ void f$kphp_set_context_on_error(const array<mixed> &tags, const array<mixed> &e
   json_logger.set_env({env.c_str(), env.size()});
 }
 
-void f$kphp_write_trace_to_json_log(const array<mixed> &trace) {
+void f$kphp_write_trace_to_json_log(const string &json_trace_line) {
   auto &json_logger = vk::singleton<JsonLogger>::get();
-  auto str = f$json_encode(trace);
-  vk::string_view raw_trace = str.val().c_str();
-  raw_trace.remove_prefix(1);
-  raw_trace.remove_suffix(1);
-  json_logger.write_trace_with_context(raw_trace);
+  vk::string_view trace_line_without_braces = json_trace_line.c_str();
+  trace_line_without_braces.remove_prefix(1);
+  trace_line_without_braces.remove_suffix(1);
+  json_logger.write_trace_with_context(trace_line_without_braces);
 }

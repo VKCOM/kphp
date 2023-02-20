@@ -21,7 +21,7 @@ using on_job_request_finish_callback_t = std::function<void(int64_t, double)>;
 
 extern on_wait_start_callback_t on_wait_start_callback;
 extern on_fork_state_change_callback_t on_wait_finish_callback;
-extern on_fork_state_change_callback_t on_fork_start;
+extern on_fork_switch_callback_t on_fork_start;
 extern on_fork_state_change_callback_t on_fork_finish;
 extern on_fork_switch_callback_t on_fork_switch_callback;
 extern on_rpc_request_start_callback_t on_rpc_request_start;
@@ -39,7 +39,7 @@ void clear_callbacks();
 void f$kphp_tracing_register_on_wait_callbacks(const kphp_tracing::on_wait_start_callback_t &on_start,
                                                const kphp_tracing::on_fork_state_change_callback_t &on_finish);
 void f$kphp_tracing_register_on_fork_switch_callback(const kphp_tracing::on_fork_switch_callback_t &callback);
-void f$kphp_tracing_register_on_fork_callbacks(const kphp_tracing::on_fork_state_change_callback_t &on_start,
+void f$kphp_tracing_register_on_fork_callbacks(const kphp_tracing::on_fork_switch_callback_t &on_start,
                                                const kphp_tracing::on_fork_state_change_callback_t &on_finish);
 void f$kphp_tracing_register_on_kphp_rpc_request_callbacks(const kphp_tracing::on_rpc_request_start_callback_t &on_start,
                                                            const kphp_tracing::on_rpc_request_finish_callback_t &on_finish);
