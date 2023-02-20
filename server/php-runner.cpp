@@ -236,6 +236,9 @@ void PhpScript::pause() noexcept {
   __sanitizer_finish_switch_fiber(nullptr, &main_thread_stack, &main_thread_stacksize);
 #endif
   in_script_context = true;
+  if (kphp_tracing::on_net_to_script_ctx_switch) {
+    kphp_tracing::on_net_to_script_ctx_switch(last_net_time_delta);
+  }
   check_delayed_errors();
   //fprintf (stderr, "pause: ended\n");
 }
@@ -295,6 +298,7 @@ void PhpScript::update_net_time() noexcept {
     }
   }
   net_time += net_add;
+  last_net_time_delta = net_add;
 
   cur_timestamp = new_cur_timestamp;
 }

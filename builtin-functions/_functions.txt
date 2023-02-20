@@ -1640,7 +1640,4 @@ function kphp_tracing_register_on_kphp_job_request_callbacks(
     callable(int $future_id, string $job_class_name):void $on_start,
     callable(int $future_id, float $duration):void $on_finish);
 
-function kphp_tracing_register_on_context_switch_callbacks(
-    callable():void $on_script_to_net_switch,
-    callable():void $on_net_to_script_switch);
-
+function kphp_tracing_register_on_net_to_script_switch_callback(callable(double $net_time_delta):void $on_net_to_script_switch);
