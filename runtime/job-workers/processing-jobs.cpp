@@ -2,13 +2,14 @@
 // Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include "runtime/job-workers/processing-jobs.h"
+
+#include "runtime/kphp_tracing.h"
 #include "runtime/net_events.h"
 #include "runtime/instance-copy-processor.h"
-
 #include "server/job-workers/job-message.h"
 #include "server/job-workers/shared-memory-manager.h"
 
-#include "runtime/job-workers/processing-jobs.h"
 
 namespace job_workers {
 
@@ -43,6 +44,11 @@ int64_t ProcessingJobs::finish_job_impl(int job_id, job_workers::FinishedJob *jo
   }
 
   auto &ready_job = processing_[job_id];
+
+  if (kphp_tracing::on_job_request_finish) {
+    double now_timestamp = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
+    kphp_tracing::on_job_request_finish(ready_job.resumable_id, now_timestamp - ready_job.send_timestamp);
+  }
 
   if (job_result) {
     ready_job.response = std::move(job_result->response);

@@ -850,11 +850,6 @@ int create_rpc_answer_event(slot_id_t slot_id, int len, net_event_t **res) {
   if (!rpc_ids_factory.is_from_current_script_execution(slot_id)) {
     return 0;
   }
-  rpc_request *r = get_rpc_request(slot_id);
-  double now_timestamp = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
-  if (kphp_tracing::on_rpc_request_finish) {
-    kphp_tracing::on_rpc_request_finish(r->resumable_id, len, now_timestamp - r->send_timestamp);
-  }
   int status = alloc_net_event(slot_id, &event);
   if (status <= 0) {
     return status;
@@ -885,11 +880,6 @@ int create_job_worker_answer_event(job_workers::JobSharedMessage *job_result) {
   const int status = alloc_net_event(job_result->job_id, &event);
   if (status <= 0) {
     return status;
-  }
-  if (kphp_tracing::on_job_request_finish) {
-    const auto &job_request_info = vk::singleton<job_workers::ProcessingJobs>::get().get_job_request_info(job_result->job_id);
-    double now_timestamp = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
-    kphp_tracing::on_job_request_finish(job_request_info.resumable_id, now_timestamp - job_request_info.send_timestamp);
   }
   event->data = net_events_data::job_worker_answer{ job_workers::copy_finished_job_to_script_memory(job_result) };
   return 1;
