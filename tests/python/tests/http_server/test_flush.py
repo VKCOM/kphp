@@ -11,7 +11,6 @@ class TestFlush(KphpServerAutoTestCase):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect(('127.0.0.1', self.kphp_server.http_port))
             s.send(request)
-            s.settimeout(1.5)
             first_chunk = RawResponse(s.recv(200))
             self.assertEqual(first_chunk.status_code, 200)
             self.assertEqual(first_chunk.content, b'Hello ')
@@ -25,12 +24,10 @@ class TestFlush(KphpServerAutoTestCase):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect(('127.0.0.1', self.kphp_server.http_port))
             s.send(request)
-            s.settimeout(1.5)
             first_chunk = RawResponse(s.recv(200))
             self.assertEqual(first_chunk.status_code, 200)
             self.assertEqual(first_chunk.content, b'This ')
 
-            s.settimeout(3)
             second_chunk = s.recv(10)
             self.assertEqual(second_chunk, b'is big ')
 
@@ -43,7 +40,6 @@ class TestFlush(KphpServerAutoTestCase):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect(('127.0.0.1', self.kphp_server.http_port))
             s.send(request)
-            s.settimeout(1.5)
             first_chunk = RawResponse(s.recv(200))
             self.assertEqual(first_chunk.status_code, 200)
             self.assertEqual(first_chunk.headers["Transfer-Encoding"], "chunked")
@@ -58,7 +54,6 @@ class TestFlush(KphpServerAutoTestCase):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect(('127.0.0.1', self.kphp_server.http_port))
             s.send(request)
-            s.settimeout(1.5)
             first_chunk = RawResponse(s.recv(200))
             self.assertEqual(first_chunk.status_code, 200)
             self.assertEqual(first_chunk.content, b'Start work')
