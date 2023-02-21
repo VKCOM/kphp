@@ -38,6 +38,7 @@ public:
   php_query_data *data;
 
   bool paused;
+  bool flushed_http_connection;
   bool terminate_flag;
   script_error_t terminate_reason;
   const char *error_message;
@@ -82,4 +83,3 @@ private:
 };
 
 extern PhpWorker *active_worker;
-extern bool flushed_http_connection;

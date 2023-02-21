@@ -440,6 +440,7 @@ PhpWorker::PhpWorker(php_worker_mode_t mode_, connection *c, http_query_data *ht
   : conn(c)
   , data(php_query_data_create(http_data, rpc_data, job_data))
   , paused(false)
+  , flushed_http_connection(false)
   , terminate_flag(false)
   , terminate_reason(script_error_t::unclassified_error)
   , error_message("no error")

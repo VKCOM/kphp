@@ -90,8 +90,6 @@ static int ignore_level = 0;
 
 mixed runtime_config;
 
-bool flushed_http_connection = false;
-
 mixed f$kphp_get_runtime_config() {
   return runtime_config;
 }
@@ -532,22 +530,27 @@ const string_buffer * compress_http_query_body(string_buffer * http_query_body) 
   }
 }
 
-void ob_flush_into_system() {
+
+int ob_merge_buffers() {
   php_assert (ob_cur_buffer >= 0);
-  for (int i = ob_system_level + 1; i <= ob_cur_buffer; i++) {
-    oub[ob_system_level].append(oub[i].c_str(), oub[i].size());
+  int ob_first_not_empty = 0;
+  while (ob_first_not_empty < ob_cur_buffer && oub[ob_first_not_empty].size() == 0) {
+    ob_first_not_empty++;
   }
+  for (int i = ob_first_not_empty + 1; i <= ob_cur_buffer; i++) {
+    oub[ob_first_not_empty].append(oub[i].c_str(), oub[i].size());
+  }
+  return ob_first_not_empty;
 }
 
 void f$flush() {
-  php_assert(ob_cur_buffer >= 0);
-  php_assert(active_worker != nullptr && active_worker->conn != nullptr);
+  php_assert(ob_cur_buffer >= 0 && active_worker != nullptr);
 
   string_buffer const * http_body = compress_http_query_body(&oub[ob_system_level]);
   string_buffer const * http_headers = nullptr;
-  if (!flushed_http_connection) {
+  if (!active_worker->flushed_http_connection) {
     http_headers = get_headers();
-    flushed_http_connection = true;
+    active_worker->flushed_http_connection = true;
   }
   http_send_immediate_response(http_headers ? http_headers->buffer() : nullptr, http_headers ? http_headers->size() : 0,
                                http_body->buffer(), http_body->size());
@@ -556,9 +559,9 @@ void f$flush() {
 }
 
 void f$fastcgi_finish_request(int64_t exit_code) {
-  ob_flush_into_system();
-  if (flushed_http_connection) {
-    string const raw_response = oub[ob_system_level].str();
+  int const ob_total_buffer = ob_merge_buffers();
+  if (active_worker != nullptr && active_worker->flushed_http_connection) {
+    string const raw_response = oub[ob_total_buffer].str();
     http_set_result(nullptr, 0, raw_response.c_str(), raw_response.size(), static_cast<int32_t>(exit_code));
     php_assert (0);
   }
@@ -573,7 +576,7 @@ void f$fastcgi_finish_request(int64_t exit_code) {
       //TODO console_set_result
       fflush(stderr);
 
-      write_safe(1, oub[ob_system_level].buffer(), oub[ob_system_level].size());
+      write_safe(1, oub[ob_total_buffer].buffer(), oub[ob_total_buffer].size());
 
       //TODO move to finish_script
       free_runtime_environment();
@@ -581,7 +584,7 @@ void f$fastcgi_finish_request(int64_t exit_code) {
       break;
     }
     case QUERY_TYPE_HTTP: {
-      const string_buffer *compressed = compress_http_query_body(&oub[ob_system_level]);
+      const string_buffer *compressed = compress_http_query_body(&oub[ob_total_buffer]);
       if (!is_head_query) {
         set_content_length_header(compressed->size());
       }
@@ -591,7 +594,7 @@ void f$fastcgi_finish_request(int64_t exit_code) {
       break;
     }
     case QUERY_TYPE_RPC: {
-      rpc_set_result(oub[ob_system_level].buffer(), oub[ob_system_level].size(), static_cast<int32_t>(exit_code));
+      rpc_set_result(oub[ob_total_buffer].buffer(), oub[ob_total_buffer].size(), static_cast<int32_t>(exit_code));
 
       break;
     }
@@ -2260,7 +2263,6 @@ static void init_interface_lib() {
   shutdown_functions_count = 0;
   shutdown_functions_status_value = shutdown_functions_status::not_executed;
   finished = false;
-  flushed_http_connection = false;
 
   php_warning_level = std::max(2, php_warning_minimum_level);
   php_disable_warnings = 0;
