@@ -467,7 +467,7 @@ static inline const char *http_get_error_msg_text(int *code) {
   return "Extension Code";
 }
 
-void set_content_length_header(int content_length) {
+static void set_content_length_header(int content_length) {
   static_SB_spare.clean() << "Content-Length: " << content_length;
   header(static_SB_spare.c_str(), (int)static_SB_spare.size());
 }
@@ -511,7 +511,7 @@ bool wait_all_forks_on_finish = false;
 
 } // namespace
 
-const string_buffer * compress_http_query_body(string_buffer * http_query_body) {
+static const string_buffer * compress_http_query_body(string_buffer * http_query_body) {
   php_assert(http_query_body != nullptr);
 
   if (is_head_query) {
@@ -531,7 +531,7 @@ const string_buffer * compress_http_query_body(string_buffer * http_query_body) 
 }
 
 
-int ob_merge_buffers() {
+static int ob_merge_buffers() {
   php_assert (ob_cur_buffer >= 0);
   int ob_first_not_empty = 0;
   while (ob_first_not_empty < ob_cur_buffer && oub[ob_first_not_empty].size() == 0) {
