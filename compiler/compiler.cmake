@@ -72,6 +72,7 @@ prepend(KPHP_COMPILER_CODEGEN_SOURCES code-gen/
         code-gen-task.cpp
         code-generator.cpp
         declarations.cpp
+        files/cmake-lists-txt.cpp
         files/function-header.cpp
         files/function-source.cpp
         files/global_vars_memory_stats.cpp
