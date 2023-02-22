@@ -964,7 +964,7 @@ void http_send_immediate_response(const char *headers, int headers_len, const ch
     write_out(&active_worker->conn->Out, body, body_len);
     flush_connection_output(active_worker->conn);
   } else {
-    php_warning("Early hints available only from HTTP worker");
+    php_warning("Immediate HTTP response available only from HTTP worker");
   }
 }
 

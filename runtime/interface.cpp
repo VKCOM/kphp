@@ -80,6 +80,7 @@ static int ob_cur_buffer;
 
 static string_buffer oub[OB_MAX_BUFFERS];
 string_buffer *coub;
+constexpr int ob_system_level = 0;
 static int http_need_gzip;
 
 static bool is_utf8_enabled = false;
@@ -466,15 +467,15 @@ static inline const char *http_get_error_msg_text(int *code) {
   return "Extension Code";
 }
 
-static const string_buffer *get_headers(int content_length) {//can't use static_SB, returns pointer to static_SB_spare
+static void set_content_length_header(int content_length) {
+  static_SB_spare.clean() << "Content-Length: " << content_length;
+  header(static_SB_spare.c_str(), (int)static_SB_spare.size());
+}
+
+static const string_buffer *get_headers() {//can't use static_SB, returns pointer to static_SB_spare
   string date = f$gmdate(HTTP_DATE);
   static_SB_spare.clean() << "Date: " << date;
   header(static_SB_spare.c_str(), (int)static_SB_spare.size());
-
-  if (!is_head_query) {
-    static_SB_spare.clean() << "Content-Length: " << content_length;
-    header(static_SB_spare.c_str(), (int)static_SB_spare.size());
-  }
 
   php_assert (dl::query_num == header_last_query_num);
 
@@ -506,38 +507,76 @@ shutdown_function_type *shutdown_functions = reinterpret_cast<shutdown_function_
 shutdown_functions_status shutdown_functions_status_value = shutdown_functions_status::not_executed;
 jmp_buf timeout_exit;
 bool finished = false;
-bool flushed = false;
 bool wait_all_forks_on_finish = false;
 
 } // namespace
 
+static const string_buffer * compress_http_query_body(string_buffer * http_query_body) {
+  php_assert(http_query_body != nullptr);
+
+  if (is_head_query) {
+    http_query_body->clean();
+    return http_query_body;
+  } else {
+    if ((http_need_gzip & 5) == 5) {
+      header("Content-Encoding: gzip", 22, true);
+      return zlib_encode(http_query_body->c_str(), http_query_body->size(), 6, ZLIB_ENCODE);
+    } else if ((http_need_gzip & 6) == 6) {
+      header("Content-Encoding: deflate", 25, true);
+      return zlib_encode(http_query_body->c_str(), http_query_body->size(), 6, ZLIB_COMPRESS);
+    } else {
+      return http_query_body;
+    }
+  }
+}
+
+
+static int ob_merge_buffers() {
+  php_assert (ob_cur_buffer >= 0);
+  int ob_first_not_empty = 0;
+  while (ob_first_not_empty < ob_cur_buffer && oub[ob_first_not_empty].size() == 0) {
+    ob_first_not_empty++;
+  }
+  for (int i = ob_first_not_empty + 1; i <= ob_cur_buffer; i++) {
+    oub[ob_first_not_empty].append(oub[i].c_str(), oub[i].size());
+  }
+  return ob_first_not_empty;
+}
+
+void f$flush() {
+  php_assert(ob_cur_buffer >= 0 && active_worker != nullptr);
+
+  string_buffer const * http_body = compress_http_query_body(&oub[ob_system_level]);
+  string_buffer const * http_headers = nullptr;
+  if (!active_worker->flushed_http_connection) {
+    http_headers = get_headers();
+    active_worker->flushed_http_connection = true;
+  }
+  http_send_immediate_response(http_headers ? http_headers->buffer() : nullptr, http_headers ? http_headers->size() : 0,
+                               http_body->buffer(), http_body->size());
+  oub[ob_system_level].clean();
+  static_SB_spare.clean();
+}
+
 void f$fastcgi_finish_request(int64_t exit_code) {
-  if (flushed) {
-    return;
+  int const ob_total_buffer = ob_merge_buffers();
+  if (active_worker != nullptr && active_worker->flushed_http_connection) {
+    string const raw_response = oub[ob_total_buffer].str();
+    http_set_result(nullptr, 0, raw_response.c_str(), raw_response.size(), static_cast<int32_t>(exit_code));
+    php_assert (0);
   }
 
   if (!run_once) {
     exit_code = 0; // TODO: is it correct?
   }
 
-  flushed = true;
-
-  php_assert (ob_cur_buffer >= 0);
-  int first_not_empty_buffer = 0;
-  while (first_not_empty_buffer < ob_cur_buffer && oub[first_not_empty_buffer].size() == 0) {
-    first_not_empty_buffer++;
-  }
-
-  for (int i = first_not_empty_buffer + 1; i <= ob_cur_buffer; i++) {
-    oub[first_not_empty_buffer].append(oub[i].c_str(), oub[i].size());
-  }
 
   switch (query_type) {
     case QUERY_TYPE_CONSOLE: {
       //TODO console_set_result
       fflush(stderr);
 
-      write_safe(1, oub[first_not_empty_buffer].buffer(), oub[first_not_empty_buffer].size());
+      write_safe(1, oub[ob_total_buffer].buffer(), oub[ob_total_buffer].size());
 
       //TODO move to finish_script
       free_runtime_environment();
@@ -545,29 +584,17 @@ void f$fastcgi_finish_request(int64_t exit_code) {
       break;
     }
     case QUERY_TYPE_HTTP: {
-      const string_buffer *compressed;
-      if (is_head_query) {
-        oub[first_not_empty_buffer].clean();
-        compressed = &oub[first_not_empty_buffer];
-      } else {
-        if ((http_need_gzip & 5) == 5) {
-          header("Content-Encoding: gzip", 22, true);
-          compressed = zlib_encode(oub[first_not_empty_buffer].c_str(), oub[first_not_empty_buffer].size(), 6, ZLIB_ENCODE);
-        } else if ((http_need_gzip & 6) == 6) {
-          header("Content-Encoding: deflate", 25, true);
-          compressed = zlib_encode(oub[first_not_empty_buffer].c_str(), oub[first_not_empty_buffer].size(), 6, ZLIB_COMPRESS);
-        } else {
-          compressed = &oub[first_not_empty_buffer];
-        }
+      const string_buffer *compressed = compress_http_query_body(&oub[ob_total_buffer]);
+      if (!is_head_query) {
+        set_content_length_header(compressed->size());
       }
-
-      const string_buffer *headers = get_headers(compressed->size());
+      const string_buffer *headers = get_headers();
       http_set_result(headers->buffer(), headers->size(), compressed->buffer(), compressed->size(), static_cast<int32_t>(exit_code));
 
       break;
     }
     case QUERY_TYPE_RPC: {
-      rpc_set_result(oub[first_not_empty_buffer].buffer(), oub[first_not_empty_buffer].size(), static_cast<int32_t>(exit_code));
+      rpc_set_result(oub[ob_total_buffer].buffer(), oub[ob_total_buffer].size(), static_cast<int32_t>(exit_code));
 
       break;
     }
@@ -2236,7 +2263,6 @@ static void init_interface_lib() {
   shutdown_functions_count = 0;
   shutdown_functions_status_value = shutdown_functions_status::not_executed;
   finished = false;
-  flushed = false;
 
   php_warning_level = std::max(2, php_warning_minimum_level);
   php_disable_warnings = 0;
