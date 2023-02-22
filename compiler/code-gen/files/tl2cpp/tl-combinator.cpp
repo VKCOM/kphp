@@ -66,6 +66,7 @@ void CombinatorStore::gen_before_args_processing(CodeGenerator &W) const {
   W << "(void)tl_object;" << NL;
   if (combinator->is_function()) {
     W << fmt_format("f$store_int({:#010x});", static_cast<unsigned int>(combinator->id)) << NL;
+    W << fmt_format("CurrentProcessingQuery::get().set_last_stored_tl_function_magic({:#010x});", static_cast<unsigned int>(combinator->id)) << NL;
   }
 }
 

@@ -669,7 +669,7 @@ int64_t rpc_send(const class_instance<C$RpcConnection> &conn, double timeout, bo
 
   const char *rpc_payload_start = data_buf.c_str() + sizeof(RpcHeaders);
   size_t rpc_payload_size = data_buf.size() - sizeof(RpcHeaders);
-  uint32_t function_magic = *reinterpret_cast<const uint32_t *>(rpc_payload_start);
+  uint32_t function_magic = CurrentProcessingQuery::get().get_last_stored_tl_function_magic();
   RpcExtraHeaders extra_headers{};
   size_t extra_headers_size = fill_extra_headers_if_needed(extra_headers, function_magic, conn.get()->actor_id, ignore_answer);
 

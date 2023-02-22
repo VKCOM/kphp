@@ -73,3 +73,11 @@ void CurrentProcessingQuery::raise_storing_error(const char *format, ...) {
     THROW_EXCEPTION(new_Exception(string{}, 0, msg, -1));
   }
 }
+
+uint32_t CurrentProcessingQuery::get_last_stored_tl_function_magic() const {
+  return last_stored_tl_function_magic_;
+}
+
+void CurrentProcessingQuery::set_last_stored_tl_function_magic(uint32_t last_stored_tl_function_magic) {
+  CurrentProcessingQuery::last_stored_tl_function_magic_ = last_stored_tl_function_magic;
+}
