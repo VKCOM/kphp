@@ -95,6 +95,9 @@ int send_job_request_message(job_workers::JobSharedMessage *job_message, double 
   }
 
   if (no_reply) {
+    if (kphp_tracing::on_job_request_start) {
+      kphp_tracing::on_job_request_start(-1, string{job_class_name});
+    }
     return 0;
   }
 
