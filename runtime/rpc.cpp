@@ -810,11 +810,14 @@ void process_rpc_error(int32_t request_id, int32_t error_code __attribute__((unu
     php_assert (request->resumable_id != -1);
     return;
   }
-  double now_timestamp = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
-  if (kphp_tracing::on_rpc_request_finish) {
-    int64_t fork_id = get_awaiting_fork_id(request->resumable_id);
-    double duration = now_timestamp - request->send_timestamp;
-    kphp_tracing::on_rpc_request_finish(request->resumable_id, -1, duration, fork_id);
+  if (strcmp(error_message, "Timeout in KPHP runtime") != 0) {
+    //   TODO: why process_rpc_timeout called from rpc_send earlier than on_rpc_start callback???
+    double now_timestamp = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
+    if (kphp_tracing::on_rpc_request_finish) {
+      int64_t fork_id = get_awaiting_fork_id(request->resumable_id);
+      double duration = now_timestamp - request->send_timestamp;
+      kphp_tracing::on_rpc_request_finish(request->resumable_id, -1, duration, fork_id);
+    }
   }
   int64_t resumable_id = request->resumable_id;
   request->resumable_id = -2;
