@@ -218,8 +218,7 @@ static inline void update_current_resumable_id(int64_t new_id, bool is_internal)
     if (new_running_fork) {
       get_forked_resumable_info(new_running_fork)->running_time -= get_precise_now();
     }
-    if (kphp_tracing::on_fork_switch_callback) {
-      (void)is_internal;
+    if (!is_internal && kphp_tracing::on_fork_switch_callback) {
       kphp_tracing::on_fork_switch_callback(old_running_fork, new_running_fork);
     }
   }
@@ -349,7 +348,7 @@ static void free_resumable_continuation(resumable_info *res) noexcept {
 
 static void finish_forked_resumable(int64_t resumable_id) noexcept {
   forked_resumable_info *res = get_forked_resumable_info(resumable_id);
-  if (kphp_tracing::on_fork_finish) {
+  if (kphp_tracing::on_fork_finish && !res->continuation->is_internal_resumable()) {
     kphp_tracing::on_fork_finish(resumable_id);
   }
   free_resumable_continuation(res);
