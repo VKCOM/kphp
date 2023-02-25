@@ -67,7 +67,6 @@ int send_job_request_message(job_workers::JobSharedMessage *job_message, double 
   auto &client = vk::singleton<job_workers::JobWorkerClient>::get();
 
   const auto now = std::chrono::system_clock::now();
-  const char *job_class_name = job_message->instance.get_class();
   double job_send_time = std::chrono::duration<double>{now.time_since_epoch()}.count();
   job_message->job_start_time = job_send_time;
   job_message->job_timeout = timeout;
@@ -95,9 +94,6 @@ int send_job_request_message(job_workers::JobSharedMessage *job_message, double 
   }
 
   if (no_reply) {
-    if (kphp_tracing::on_job_request_start) {
-      kphp_tracing::on_job_request_start(-1, string{job_class_name});
-    }
     return 0;
   }
 
@@ -108,10 +104,6 @@ int send_job_request_message(job_workers::JobSharedMessage *job_message, double 
 
   vk::singleton<job_workers::ProcessingJobs>::get().start_job_processing(job_id, job_workers::JobRequestInfo{job_resumable_id, timer, job_send_time});
   
-  if (kphp_tracing::on_job_request_start) {
-    kphp_tracing::on_job_request_start(job_resumable_id, string{job_class_name});
-  }
-
   return job_resumable_id;
 }
 
@@ -150,6 +142,10 @@ Optional<int64_t> kphp_job_worker_start_impl(const class_instance<C$KphpJobWorke
   }
 
   int job_resumable_id = send_job_request_message(memory_request, timeout, nullptr, no_reply);
+
+  if (kphp_tracing::on_job_request_start) {
+    kphp_tracing::on_job_request_start(no_reply ? -1 : job_resumable_id, request);
+  }
 
   if (job_resumable_id < 0) {
     return false;
@@ -240,6 +236,9 @@ array<Optional<int64_t>> f$kphp_job_worker_start_multi(const array<class_instanc
     }
 
     int job_resumable_id = send_job_request_message(job_request, timeout, common_job_request);
+    if (kphp_tracing::on_job_request_start) {
+      kphp_tracing::on_job_request_start(job_resumable_id, req);
+    }
     if (job_resumable_id > 0) {
       res.set_value(it.get_key(), job_resumable_id);
     } else {
