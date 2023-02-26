@@ -9,7 +9,13 @@ void yaml_node_to_mixed(const YAML::Node &node, mixed &data, const string &sourc
   data.clear(); // sets data to NULL
   if (node.IsScalar()) {
     const string string_data(node.as<std::string>().c_str());
-    if (string_data.is_int()) {
+    if (string_data == string("true") || string_data == string("false")) {
+      if (source[node.Mark().pos] == '"' && source[node.Mark().pos + string_data.size() + 1] == '"') {
+        data = string_data;
+      } else {
+        data = string_data == string("true");
+      }
+    } else if (string_data.is_int()) {
       if (source[node.Mark().pos] == '"' && source[node.Mark().pos + string_data.size() + 1] == '"') {
         data = string_data;
       } else {
@@ -79,7 +85,7 @@ void mixed_to_string(const mixed& data, string& string_data, uint8_t nesting_lev
     } else if (data.is_float()) {
       string_data.append(data.as_double());
     } else if (data.is_bool()) {
-      string_data.append(data.as_bool());
+      string_data.append((data.as_bool()) ? "true" : "false");
     }
     string_data.push_back('\n');
     return;

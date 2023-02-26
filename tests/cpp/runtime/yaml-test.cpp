@@ -81,6 +81,25 @@ TEST(yaml_test, test_yaml_vector_recursive) {
   ASSERT_DOUBLE_EQ(example[3][2].as_double(), result[3][2].as_double());
 }
 
+TEST(yaml_test, test_yaml_bool) {
+  mixed example;
+  example.push_back(true);
+  example.push_back(false);
+  example.push_back(string("true"));
+  example.push_back(string("false"));
+  mixed result = f$yaml_parse(f$yaml_emit(example));
+  ASSERT_TRUE(result.is_array());
+  ASSERT_TRUE(result.as_array().is_pseudo_vector());
+  ASSERT_TRUE(result[0].is_bool());
+  ASSERT_TRUE(example[0].as_bool() == result[0].as_bool());
+  ASSERT_TRUE(result[1].is_bool());
+  ASSERT_TRUE(example[1].as_bool() == result[1].as_bool());
+  ASSERT_TRUE(result[2].is_string());
+  ASSERT_TRUE(example[2].as_string() == result[2].as_string());
+  ASSERT_TRUE(result[3].is_string());
+  ASSERT_TRUE(example[3].as_string() == result[3].as_string());
+}
+
 TEST(yaml_test, test_yaml_map) {
   mixed example;
   example[string("first")] = string("string");
@@ -217,6 +236,27 @@ TEST(yaml_test, test_yaml_vector_recursive_file) {
   ASSERT_TRUE(result[3][2].is_float());
   ASSERT_DOUBLE_EQ(example[3][2].as_double(), result[3][2].as_double());
   ASSERT_TRUE(f$unlink(filename));
+}
+
+TEST(yaml_test, test_yaml_bool_file) {
+  mixed example;
+  example.push_back(true);
+  example.push_back(false);
+  example.push_back(string("true"));
+  example.push_back(string("false"));
+  string filename("test_yaml_bool");
+  ASSERT_TRUE(f$yaml_emit_file(filename, example));
+  mixed result = f$yaml_parse_file(filename);
+  ASSERT_TRUE(result.is_array());
+  ASSERT_TRUE(result.as_array().is_pseudo_vector());
+  ASSERT_TRUE(result[0].is_bool());
+  ASSERT_TRUE(example[0].as_bool() == result[0].as_bool());
+  ASSERT_TRUE(result[1].is_bool());
+  ASSERT_TRUE(example[1].as_bool() == result[1].as_bool());
+  ASSERT_TRUE(result[2].is_string());
+  ASSERT_TRUE(example[2].as_string() == result[2].as_string());
+  ASSERT_TRUE(result[3].is_string());
+  ASSERT_TRUE(example[3].as_string() == result[3].as_string());
 }
 
 TEST(yaml_test, test_yaml_map_file) {
