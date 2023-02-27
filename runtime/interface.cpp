@@ -503,7 +503,7 @@ namespace {
 // i don't want destructors of this array to be called
 int shutdown_functions_count = 0;
 char shutdown_function_storage[MAX_SHUTDOWN_FUNCTIONS * sizeof(shutdown_function_type)];
-shutdown_function_type *shutdown_functions = reinterpret_cast<shutdown_function_type *>(shutdown_function_storage);
+shutdown_function_type *const shutdown_functions = reinterpret_cast<shutdown_function_type *>(shutdown_function_storage);
 shutdown_functions_status shutdown_functions_status_value = shutdown_functions_status::not_executed;
 jmp_buf timeout_exit;
 bool finished = false;
@@ -657,6 +657,9 @@ void f$register_shutdown_function(const shutdown_function_type &f) {
     php_warning("Too many shutdown functions registered, ignore next one\n");
     return;
   }
+  // this guard is to preserve correct state of 'shutdown_function_type' after construction
+  // it's matter because the destructor of 'shutdown_function_type' is called now
+  dl::CriticalSectionGuard critical_section;
   // I really need this, because this memory can contain random trash, if previouse script failed
   new(&shutdown_functions[shutdown_functions_count++]) shutdown_function_type(f);
 }
@@ -2319,8 +2322,16 @@ static void init_runtime_libs() {
   init_interface_lib();
 }
 
+static void free_shutdown_functions() {
+  for (std::size_t i = 0; i < shutdown_functions_count; ++i) {
+    shutdown_functions[i].~shutdown_function_type();
+  }
+  shutdown_functions_count = 0;
+}
+
 static void free_interface_lib() {
   dl::enter_critical_section();//OK
+  free_shutdown_functions();
   if (dl::query_num == uploaded_files_last_query_num) {
     const array<bool> *const_uploaded_files = uploaded_files;
     for (auto p = const_uploaded_files->begin(); p != const_uploaded_files->end(); ++p) {
