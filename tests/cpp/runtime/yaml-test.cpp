@@ -257,6 +257,7 @@ TEST(yaml_test, test_yaml_bool_file) {
   ASSERT_TRUE(example[2].as_string() == result[2].as_string());
   ASSERT_TRUE(result[3].is_string());
   ASSERT_TRUE(example[3].as_string() == result[3].as_string());
+  ASSERT_TRUE(f$unlink(filename));
 }
 
 TEST(yaml_test, test_yaml_map_file) {

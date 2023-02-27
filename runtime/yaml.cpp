@@ -130,8 +130,9 @@ bool f$yaml_emit_file(const string &filename, const mixed &data) {
 }
 
 string f$yaml_emit(const mixed &data) {
-  string string_data;
+  string string_data("---\n");
   mixed_to_string(data, string_data);
+  string_data.append("...");
   return string_data;
 }
 
