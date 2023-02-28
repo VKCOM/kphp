@@ -25,6 +25,9 @@ VertexPtr ConvertInvokeToFuncCallPass::on_exit_vertex(VertexPtr root) {
   } else if (root->type() == op_callback_of_builtin) {
     stage::set_location(root->location);
     return on_callback_of_builtin(root.as<op_callback_of_builtin>());
+  } else if (root->type() == op_func_call) {
+    stage::set_location(root->location);
+    return on_func_call(root.as<op_func_call>());
   } else if (root->type() == op_invoke_call) {
     stage::set_location(root->location);
     return on_invoke_call(root.as<op_invoke_call>());
@@ -44,6 +47,7 @@ VertexPtr ConvertInvokeToFuncCallPass::on_callback_of_builtin(VertexAdaptor<op_c
   // then a lambda's uses_list is already captured by v_callback — so, all work is already done, just exit
   if (v_callback->func_id) {
     kphp_assert(v_callback->func_id->is_lambda());
+    nested_lambdas.emplace_front(v_callback->func_id);
     return v_callback;
   }
   // otherwise, func_id is not set, and we need to set it here
@@ -64,6 +68,21 @@ VertexPtr ConvertInvokeToFuncCallPass::on_callback_of_builtin(VertexAdaptor<op_c
 
   v_callback->func_id = class_method->function;
   return v_callback;
+}
+
+// up to this point, all `$f = function() { ... }`
+// have already been replaced with `$f = Lambda$xxx$$__construct(op_alloc)`
+// such lambda classes have __invoke() method that actually calls the original lambda (see lambda-utils.cpp)
+// detect such constructions to fill `this->nested_lambdas`
+VertexPtr ConvertInvokeToFuncCallPass::on_func_call(VertexAdaptor<op_func_call> v_call) {
+  FunctionPtr called_f = v_call->func_id;
+
+  if (called_f->class_id && called_f->class_id->is_lambda_class() && called_f->is_constructor()) {
+    FunctionPtr lambda_f = called_f->class_id->get_instance_method("__invoke")->function->outer_function;
+    nested_lambdas.emplace_front(lambda_f);
+  }
+
+  return v_call;
 }
 
 // here we replace op_invoke_call `$f(...)` with an op_func_call `$f->__invoke(...)`
@@ -118,4 +137,26 @@ VertexPtr ConvertInvokeToFuncCallPass::on_clone(VertexAdaptor<op_clone> v_clone)
 
   // otherwise, it's left as is: clone $obj
   return v_clone;
+}
+
+// ConvertInvokeToFuncCallF is needed to hold lambdas so they don't pass the pipeline before a containing function
+void ConvertInvokeToFuncCallF::execute(FunctionPtr f, DataStream<FunctionPtr> &os) {
+  if (f->is_lambda()) {
+    // don't push it into pipeline
+    // it will be pushed (or already was pushed) by a function containing this lambda
+    return;
+  }
+
+  execute_with_nested_lambdas(f, os);
+}
+
+// whenever f is pushed to the pipeline, all lambdas within it have already been processed
+void ConvertInvokeToFuncCallF::execute_with_nested_lambdas(FunctionPtr f, DataStream<FunctionPtr> &os) {
+  ConvertInvokeToFuncCallPass pass;
+  run_function_pass(f, &pass);
+  for (FunctionPtr f_lambda : pass.flush_nested_lambdas()) {
+    execute_with_nested_lambdas(f_lambda, os);
+  }
+
+  os << f;
 }

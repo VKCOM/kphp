@@ -181,8 +181,8 @@ ClassPtr Assumption::extract_instance_from_type_hint(const TypeHint *a) {
   }
   // 'T::fieldName' — a syntax that's used in @return for generics
   if (const auto *as_field_ref = a->try_as<TypeHintRefToField>()) {
-    if (const auto *field = as_field_ref->resolve_field()) {
-      return extract_instance_from_type_hint(field->type_hint);
+    if (const TypeHint *field_type_hint = as_field_ref->resolve_field_type_hint()) {
+      return extract_instance_from_type_hint(field_type_hint);
     }
   }
   // 'T::methodName()' — a syntax that's used in @return for generics
@@ -431,32 +431,6 @@ public:
   }
 };
 
-// this is a hack preventing race condition and should be removed somewhen
-// (though it does not prevent it fully, but it happens noticeable more rarely)
-// see comment in MR for detailed description
-template <class PassT>
-void run_CalcAssumptionPass_safe(FunctionPtr function, PassT *pass) {
-  stage::StageInfo stage_backup_raw = *stage::get_stage_info_ptr();
-  pass->setup(function);
-  pass->on_start();
-
-  std::function<void(VertexPtr)> recurse = [&recurse, pass](VertexPtr vertex) {
-    stage::set_location(vertex->get_location());
-
-    pass->on_enter_vertex(vertex);
-    if (!pass->user_recursion(vertex)) {
-      for (VertexPtr i : *vertex) {
-        recurse(i);
-      }
-    }
-    pass->on_exit_vertex(vertex);
-  };
-
-  recurse(function->root);
-  pass->on_finish();
-  *stage::get_stage_info_ptr() = stage_backup_raw;
-}
-
 /*
  * A high-level function which deduces the type of $a inside f.
  * The results are cached per var_name; init on f is called during the first invocation.
@@ -496,7 +470,7 @@ static Assumption calc_assumption_for_var(FunctionPtr f, const std::string &var_
   }
 
   CalcAssumptionForVarPass pass(var_name, stop_at);
-  run_CalcAssumptionPass_safe(f, &pass);
+  run_function_pass(f, &pass);
 
   return f->get_assumption_for_var(var_name);
 }
@@ -733,7 +707,7 @@ Assumption assume_return_of_function(FunctionPtr f) {
     if (f->assumption_pass_status.compare_exchange_strong(expected, FunctionData::AssumptionStatus::processing_returns_in_body)) {
       f->assumption_processing_thread = std::this_thread::get_id();
       CalcAssumptionForReturnPass ret_pass;
-      run_CalcAssumptionPass_safe(f, &ret_pass);
+      run_function_pass(f, &ret_pass);
       f->assumption_pass_status = FunctionData::AssumptionStatus::done_returns_in_body;
     } else if (expected == FunctionData::AssumptionStatus::processing_returns_in_body) {
       while (f->assumption_pass_status == FunctionData::AssumptionStatus::processing_returns_in_body && f->assumption_processing_thread != std::this_thread::get_id()) {

@@ -90,6 +90,45 @@ if ($_SERVER["PHP_SELF"] === "/ini_get") {
   }
   file_put_contents("out.dat", $res === false ? "false" : $res);
   echo "OK";
+} else if ($_SERVER["PHP_SELF"] === "/test_script_flush") {
+    switch($_GET["type"]) {
+     case "one_flush":
+        echo "Hello ";
+        flush();
+        sleep(2);
+        echo "world";
+        return;
+
+     case "few_flush":
+        echo "This ";
+        flush();
+        sleep(2);
+        echo "is big ";
+        flush();
+        sleep(2);
+        echo "message";
+        return;
+
+     case "transfer_encoding_chunked":
+        header("Transfer-Encoding: chunked");
+
+        $chunk = "Hello world";
+        echo sprintf("%x\r\n", strlen($chunk)) . $chunk . "\r\n";
+        flush();
+        sleep(2);
+
+        $chunk = "Bye world";
+        echo sprintf("%x\r\n", strlen($chunk)) . $chunk . "\r\n";
+        return;
+
+     case "error_on_flush":
+        echo "Start work";
+        flush();
+        sleep(2);
+        throw new Exception('Exception');
+    }
+
+    echo "OK";
 } else if ($_SERVER["PHP_SELF"] === "/test_ignore_user_abort") {
     register_shutdown_function('shutdown_function');
     /** @var I */

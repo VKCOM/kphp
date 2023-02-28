@@ -319,23 +319,23 @@ bool f$fetch_end() {
   return true;
 }
 
-C$RpcConnection::C$RpcConnection(int32_t host_num, int32_t port, int32_t timeout_ms, long long default_actor_id, int32_t connect_timeout, int32_t reconnect_timeout) :
+C$RpcConnection::C$RpcConnection(int32_t host_num, int32_t port, int32_t timeout_ms, int64_t actor_id, int32_t connect_timeout, int32_t reconnect_timeout) :
   host_num(host_num),
   port(port),
   timeout_ms(timeout_ms),
-  default_actor_id(default_actor_id),
+  actor_id(actor_id),
   connect_timeout(connect_timeout),
   reconnect_timeout(reconnect_timeout) {
 }
 
-class_instance<C$RpcConnection> f$new_rpc_connection(const string &host_name, int64_t port, const mixed &default_actor_id, double timeout, double connect_timeout, double reconnect_timeout) {
+class_instance<C$RpcConnection> f$new_rpc_connection(const string &host_name, int64_t port, const mixed &actor_id, double timeout, double connect_timeout, double reconnect_timeout) {
   int32_t host_num = rpc_connect_to(host_name.c_str(), static_cast<int32_t>(port));
   if (host_num < 0) {
     return {};
   }
 
   return make_instance<C$RpcConnection>(host_num, static_cast<int32_t>(port), timeout_convert_to_ms(timeout),
-                                        store_parse_number<long long>(default_actor_id),
+                                        store_parse_number<int64_t >(actor_id),
                                         timeout_convert_to_ms(connect_timeout), timeout_convert_to_ms(reconnect_timeout));
 }
 
@@ -563,17 +563,6 @@ bool rpc_store(bool is_error) {
 }
 
 
-struct rpc_request {
-  int64_t resumable_id; // == 0 - default, > 0 if not finished, -1 if received an answer, -2 if received an error, -3 if answer was gotten
-  union {
-    kphp_event_timer *timer;
-    char *answer;
-    const char *error;
-  };
-  uint32_t function_magic{0};
-};
-
-
 // only for good linkage. Will be never used to load
 template<>
 int Storage::tagger<rpc_request>::get_tag() noexcept {
@@ -593,7 +582,7 @@ static rpc_request gotten_rpc_request;
 
 static int timeout_wakeup_id = -1;
 
-static inline rpc_request *get_rpc_request(slot_id_t request_id) {
+rpc_request *get_rpc_request(slot_id_t request_id) {
   php_assert (rpc_first_request_id <= request_id && request_id < rpc_next_request_id);
   if (request_id < rpc_first_array_request_id) {
     return &gotten_rpc_request;
@@ -674,7 +663,7 @@ int64_t rpc_send(const class_instance<C$RpcConnection> &conn, double timeout, bo
 
   uint32_t function_magic = *reinterpret_cast<const uint32_t *>(data_buf.c_str() + sizeof(RpcHeaders));
   RpcExtraHeaders extra_headers{};
-  size_t extra_headers_size = fill_extra_headers_if_needed(extra_headers, function_magic, conn.get()->default_actor_id, ignore_answer);
+  size_t extra_headers_size = fill_extra_headers_if_needed(extra_headers, function_magic, conn.get()->actor_id, ignore_answer);
 
   const auto request_size = static_cast<size_t>(data_buf.size() + extra_headers_size);
   char *p = static_cast<char *>(dl::allocate(request_size));
@@ -723,6 +712,7 @@ int64_t rpc_send(const class_instance<C$RpcConnection> &conn, double timeout, bo
 
   cur->resumable_id = register_forked_resumable(new rpc_resumable(result));
   cur->function_magic = function_magic;
+  cur->actor_id = conn.get()->actor_id;
   cur->timer = nullptr;
   if (ignore_answer) {
     int64_t resumable_id = cur->resumable_id;
@@ -767,14 +757,6 @@ int64_t f$rpc_send_noflush(const class_instance<C$RpcConnection> &conn, double t
   }
 
   return request_id;
-}
-
-uint32_t get_pending_rpc_tl_query_magic(int32_t request_id) {
-  rpc_request *request = get_rpc_request(request_id);
-  if (request->resumable_id < 0) {
-    return 0;
-  }
-  return request->function_magic;
 }
 
 void process_rpc_answer(int32_t request_id, char *result, int32_t result_len __attribute__((unused))) {

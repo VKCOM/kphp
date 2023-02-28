@@ -40,10 +40,6 @@ class GenTree {
 public:
   Location auto_location() const { return Location{this->line_num}; }
 
-  VertexAdaptor<op_var> create_superlocal_var(const std::string& name_prefix);
-  static VertexAdaptor<op_var> create_superlocal_var(const std::string& name_prefix, FunctionPtr cur_function);
-  static VertexAdaptor<op_switch> create_switch_vertex(FunctionPtr cur_function, VertexPtr switch_condition, std::vector<VertexPtr> &&cases);
-
   static bool is_magic_method_name_allowed(const std::string &name);
 
 
@@ -93,8 +89,6 @@ public:
   VertexAdaptor<op_string> get_string();
   VertexAdaptor<op_string_build> get_string_build();
   VertexPtr get_def_value();
-  template<PrimitiveType ToT>
-  static VertexAdaptor<meta_op_unary> conv_to_lval(VertexPtr x);
   template<Operation Op, Operation EmptyOp, class FuncT, class ResultType = typename vk::function_traits<FuncT>::ResultType>
   VertexAdaptor<op_seq> get_multi_call(FuncT &&f, bool parenthesis = false);
   VertexAdaptor<op_return> get_return();
@@ -107,6 +101,8 @@ public:
   VertexAdaptor<op_do> get_do();
   VertexAdaptor<op_switch> get_switch();
   VertexAdaptor<op_shape> get_shape();
+  VertexPtr get_by_name_construct();
+  VertexPtr get_member_by_name_after_var(VertexAdaptor<op_var> v_before);
   VertexPtr get_phpdoc_inside_function();
   bool parse_cur_function_uses();
   static bool test_if_uses_and_arguments_intersect(const std::forward_list<VertexAdaptor<op_var>> &uses_list, const VertexRange &params);

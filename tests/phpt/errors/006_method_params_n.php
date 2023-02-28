@@ -1,11 +1,11 @@
 @kphp_should_fail
-/Too few arguments to function call, expected 1, have 0/
-/Too few arguments to function call, expected 3, have 1/
-/Too few arguments to function call, expected 1, have 0/
-/Too many arguments to function call, expected 0, have 3/
-/Too many arguments to function call, expected 1, have 2/
-/Too many arguments to function call, expected 4, have 5/
-/Too many arguments to function call, expected 0, have 2/
+/Too few arguments in call to Test::f_min1_max1\(\), expected 1, have 0/
+/Too few arguments in call to Test::f_min3_max4\(\), expected 3, have 1/
+/Too few arguments in call to Test::sf_min1_max1\(\), expected 1, have 0/
+/Too many arguments in call to Test::f_min0_max0\(\), expected 0, have 3/
+/Too many arguments in call to Test::f_min1_max1\(\), expected 1, have 2/
+/Too many arguments in call to Test::f_min3_max4\(\), expected 4, have 5/
+/Too many arguments in call to Test::sf_min0_max0\(\), expected 0, have 2/
 <?php
 
 class Test {

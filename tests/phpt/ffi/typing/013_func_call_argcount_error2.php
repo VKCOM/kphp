@@ -1,5 +1,5 @@
 @kphp_should_fail
-/Too few arguments to function call, expected 2, have 1/
+/Too few arguments in call to scope\\example::f\(\), expected 2, have 1/
 <?php
 
 $cdef = FFI::cdef('

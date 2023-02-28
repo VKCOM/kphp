@@ -5,6 +5,9 @@ on:
     branches:
     - master
 
+env:
+  HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: true
+
 jobs:
   build-macos:
     runs-on: ${{matrix.os}}-12

@@ -27,7 +27,7 @@ class InstantiateGenericFunctionPass final : public FunctionPassBase {
   const GenericsInstantiationMixin *instantiationTs;
 
 public:
-  InstantiateGenericFunctionPass(FunctionPtr generic_function, GenericsInstantiationMixin *instantiationTs)
+  InstantiateGenericFunctionPass(FunctionPtr generic_function, const GenericsInstantiationMixin *instantiationTs)
     : generic_function(generic_function)
     , instantiationTs(instantiationTs) {
   }
@@ -55,13 +55,14 @@ public:
         if (const auto *as_class_string = param->type_hint->try_as<TypeHintClassString>()) {
           const TypeHint *instT = instantiationTs->find(as_class_string->inner->try_as<TypeHintGenericT>()->nameT);
           if (instT && instT->try_as<TypeHintInstance>()) {
-            return VertexUtil::create_string_const(instT->try_as<TypeHintInstance>()->full_class_name);
+            return VertexUtil::create_string_const(instT->try_as<TypeHintInstance>()->full_class_name).set_location(root);
           }
         }
       }
 
     } else if (auto as_op_lambda = root.try_as<op_lambda>()) {
-      run_function_pass(as_op_lambda->func_id, this);
+      InstantiateGenericFunctionPass pass(generic_function, instantiationTs);
+      run_function_pass(as_op_lambda->func_id, &pass);
     }
 
     return root;

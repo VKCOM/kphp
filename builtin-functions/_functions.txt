@@ -141,6 +141,7 @@ function setcookie ($name ::: string, $value ::: string, $expire ::: int = 0, $p
 function setrawcookie ($name ::: string, $value ::: string, $expire ::: int = 0, $path ::: string = '', $domain ::: string = '', $secure ::: bool = false, $http_only ::: bool = false) ::: void;
 function register_shutdown_function (callable():void $function) ::: void;
 function ignore_user_abort ($enable ::: ?bool = null) ::: int;
+function flush() ::: void;
 /* // removed because it's not working now.
   function fastcgi_finish_request() ::: void;
 */
@@ -881,7 +882,7 @@ final class RpcConnection {
 }
 
 /** rpc store **/
-function new_rpc_connection ($str ::: string, $port ::: int, $default_actor_id ::: mixed = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: \RpcConnection;
+function new_rpc_connection ($str ::: string, $port ::: int, $actor_id ::: mixed = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: \RpcConnection; // TODO: make actor_id int
 function store_gzip_pack_threshold ($pack_threshold_bytes ::: int) ::: void;
 function store_start_gzip_pack() ::: void;
 function store_finish_gzip_pack ($pack_threshold_bytes ::: int) ::: void;
@@ -1308,7 +1309,12 @@ function get_reference_counter ($v) ::: int;
 function prepare_search_query ($query ::: string) ::: string;
 
 /** For local usage only **/
-function system ($query ::: string) ::: int;
+function exec($command ::: string, &$output ::: mixed = [], int &$result_code = 0): string|false;
+function system($command ::: string, int &$result_code = 0): int;
+function passthru($command ::: string, int &$result_code = 0): false|null;
+function escapeshellarg($arg ::: string): string;
+function escapeshellcmd($cmd ::: string): string;
+
 function raise_sigsegv () ::: void;
 function make_clone ($x ::: any) ::: ^1;
 
@@ -1611,3 +1617,5 @@ class DateTimeImmutable implements DateTimeInterface {
   public function getOffset(): int;
   public function getTimestamp(): int;
 }
+
+function getenv(string $varname = '', bool $local_only = false): mixed;

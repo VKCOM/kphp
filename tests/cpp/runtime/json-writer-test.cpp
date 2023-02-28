@@ -308,10 +308,17 @@ TEST(json_writer_error, brace_disbalance) {
 
 TEST(json_writer_error, stack_overflow) {
   JsonWriter writer;
-  for (std::size_t i = 0; i < 64; ++i) {
+  for (std::size_t i = 0; i < 128; ++i) {
     ASSERT_TRUE(writer.start_array());
   }
-  ASSERT_FALSE(writer.start_array());
+
+  // there is no stack overflow error anymore
   ASSERT_FALSE(writer.is_complete());
-  ASSERT_STREQ(writer.get_error().c_str(), "stack overflow, max depth level is 64");
+  ASSERT_TRUE(writer.get_error().empty());
+
+  for (std::size_t i = 0; i < 128; ++i) {
+    ASSERT_TRUE(writer.end_array());
+  }
+  ASSERT_TRUE(writer.is_complete());
+  ASSERT_TRUE(writer.get_error().empty());
 }

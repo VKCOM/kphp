@@ -516,8 +516,8 @@ lease_worker_settings try_fetch_lookup_custom_worker_settings() {
     return {};
   }
   tl_fetch_mark();
-  int magic = tl_fetch_int();
-  if (magic != TL_KPHP_PROCESS_LEASE_TASK) {
+  const int magic = tl_fetch_int();
+  if (magic != TL_KPHP_PROCESS_LEASE_TASK && magic != TL_KPHP_PROCESS_LEASE_TASK_V2) {
     tl_fetch_mark_restore();
     return {};
   }

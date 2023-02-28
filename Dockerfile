@@ -3,8 +3,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends apt-utils ca-certificates gnupg wget && \
-    wget -qO - https://repo.vkpartner.ru/GPG-KEY.pub | apt-key add - && \
-    echo "deb https://repo.vkpartner.ru/kphp-focal/ focal main" >> /etc/apt/sources.list && \
+    wget -qO /etc/apt/trusted.gpg.d/vkpartner.asc https://artifactory-external.vkpartner.ru/artifactory/api/gpg/key/public && \
+    echo "deb https://artifactory-external.vkpartner.ru/artifactory/kphp focal main" >> /etc/apt/sources.list && \
     apt-get update && \
     apt-get install -y --no-install-recommends kphp php7.4-vkext vk-flex-data vk-tl-tools && \
     rm -rf /var/lib/apt/lists/*

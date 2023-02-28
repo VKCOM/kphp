@@ -4,7 +4,10 @@
 
 #include "compiler/pipes/transform-to-smart-instanceof.h"
 
+#include "common/algorithms/compare.h"
+
 #include "compiler/name-gen.h"
+#include "compiler/vertex-util.h"
 
 
 bool TransformToSmartInstanceofPass::user_recursion(VertexPtr v) {
@@ -50,7 +53,7 @@ bool TransformToSmartInstanceofPass::on_if_user_recursion(VertexAdaptor<op_if> v
 // (without this, assumptions will be mixed)
 bool TransformToSmartInstanceofPass::on_catch_user_recursion(VertexAdaptor<op_catch> v_catch) {
   auto instance_var = v_catch->var();
-  auto v_exception = VertexAdaptor<op_var>::create();
+  auto v_exception = VertexAdaptor<op_var>::create().set_location(v_catch);
   v_exception->str_val = gen_unique_name("exception");
   new_names_of_var[instance_var->str_val].push(v_exception->str_val);
   v_catch->var_ref() = v_exception;
@@ -109,6 +112,10 @@ void TransformToSmartInstanceofPass::add_tmp_var_with_instance_cast(VertexAdapto
 }
 
 VertexPtr TransformToSmartInstanceofPass::on_enter_vertex(VertexPtr v) {
+  if (auto v_switch = v.try_as<op_switch>()) {
+    return try_replace_switch_when_constexpr(v_switch);
+  }
+
   if (v->type() != op_var || new_names_of_var.empty()) {
     return v;
   }
@@ -159,3 +166,61 @@ VertexAdaptor<op_instanceof> TransformToSmartInstanceofPass::get_instanceof_from
 
   return {};
 }
+
+// switch() for constexpr condition with constexpr cases can be replaced: all false cases dropped off
+// it's done early in pipeline (before method binding), so false cases can contain invalid code, it's intentional
+// the main purpose is for generic functions with class-string<T>, then $class_name is compile-time known:
+// `switch($class_name) case *::class`, different cases can be incompatible as a whole, but okay in every specialization
+VertexPtr TransformToSmartInstanceofPass::try_replace_switch_when_constexpr(VertexAdaptor<op_switch> v_switch) {
+  VertexPtr v_cond = VertexUtil::get_actual_value(v_switch->condition());
+  if (v_cond->type() != op_string) {
+    return v_switch;
+  }
+
+  // check that
+  // 1) all cases are const strings
+  // 2) every case ends with `break`/`return`/`throw` or is empty (just fallthrough)
+  VertexRange cases = v_switch->cases();
+  bool is_valid_const_string_switch = cases.size() > 1 && vk::all_of(cases, [](VertexPtr v) {
+    auto as_case = v.try_as<op_case>();
+    if (!as_case) {   // default
+      return true;
+    }
+    VertexPtr last_stmt = as_case->cmd()->empty() ? (VertexPtr)VertexAdaptor<op_empty>::create() : as_case->cmd()->args()[as_case->cmd()->size() - 1];
+    return VertexUtil::get_actual_value(as_case->expr())->type() == op_string &&
+           vk::any_of_equal(last_stmt->type(), op_break, op_return, op_throw);
+  });
+  if (!is_valid_const_string_switch) {
+    return v_switch;
+  }
+
+  // find case x where x == switch condition (true case)
+  auto it_true_case = std::find_if(cases.begin(), cases.end(),
+                                   [v_cond](VertexPtr v_case) { return v_case->type() == op_case && VertexUtil::get_actual_value(v_case.as<op_case>()->expr())->get_string() == v_cond->get_string(); });
+  // for 'case x: case y: ...', fall through empty cases
+  while (it_true_case != cases.end() && (*it_true_case)->type() == op_case && it_true_case->as<op_case>()->cmd()->empty()) {
+    ++it_true_case;
+  }
+
+  // get body of true case
+  VertexAdaptor<op_seq> v_true_cmd;
+  if (it_true_case != cases.end() && (*it_true_case)->type() == op_case) {
+    v_true_cmd = it_true_case->as<op_case>()->cmd();
+  } else {
+    auto it_default = std::find_if(cases.begin(), cases.end(),
+                                   [](VertexPtr v_case) { return v_case->type() == op_default; });
+    if (it_default != cases.end()) {
+      v_true_cmd = it_default->as<op_default>()->cmd();
+    }
+  }
+  if (!v_true_cmd) {
+    std::vector<VertexPtr> v_empty = {VertexAdaptor<op_empty>::create().set_location(v_switch)};
+    v_true_cmd = VertexAdaptor<op_seq>::create(v_empty).set_location(v_switch);
+  }
+
+  // return `switch(condition) default: {body of true 'case'}`
+  // (it's easier to reconstruct another switch with only-default branch then to eliminate 'break;' inside)
+  auto ins_default = VertexAdaptor<op_default>::create(v_true_cmd).set_location(v_true_cmd);
+  return VertexUtil::create_switch_vertex(current_function, v_switch->condition(), {ins_default});
+}
+

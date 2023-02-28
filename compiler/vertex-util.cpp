@@ -4,10 +4,12 @@
 
 #include "compiler/vertex-util.h"
 
+#include <set>
+
 #include "common/algorithms/contains.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/var-data.h"
-#include <set>
+#include "compiler/name-gen.h"
 
 VertexPtr VertexUtil::get_actual_value(VertexPtr v) {
   if (auto var = v.try_as<op_var>()) {
@@ -37,6 +39,25 @@ VertexPtr VertexUtil::get_call_arg_ref(int arg_num, VertexPtr v_func_call) {
   return {};
 }
 
+VertexAdaptor<op_func_call> VertexUtil::add_call_arg(VertexPtr to_add, VertexAdaptor<op_func_call> call, bool prepend) {
+  std::vector<VertexPtr> new_args;
+  new_args.reserve(call->args().size() + 1);
+  if (prepend) {
+    new_args.emplace_back(to_add);
+  }
+  for (auto arg : call->args()) {
+    new_args.emplace_back(arg);
+  }
+  if (!prepend) {
+    new_args.emplace_back(to_add);
+  }
+
+  auto new_call = VertexAdaptor<op_func_call>::create(new_args).set_location(call->location);
+  new_call->str_val = call->str_val;
+  new_call->func_id = call->func_id;
+  return new_call;
+}
+
 VertexPtr VertexUtil::create_int_const(int64_t number) {
   auto int_v = VertexAdaptor<op_int_const>::create();
   int_v->str_val = std::to_string(number);
@@ -47,6 +68,19 @@ VertexAdaptor<op_string> VertexUtil::create_string_const(const std::string &s) {
   auto string_v = VertexAdaptor<op_string>::create();
   string_v->set_string(s);
   return string_v;
+}
+
+VertexAdaptor<op_var> VertexUtil::create_superlocal_var(const std::string &name_prefix, FunctionPtr cur_function) {
+  auto v = VertexAdaptor<op_var>::create();
+  v->str_val = gen_unique_name(name_prefix, cur_function);
+  v->extra_type = op_ex_var_superlocal;
+  return v;
+}
+
+VertexAdaptor<op_switch> VertexUtil::create_switch_vertex(FunctionPtr cur_function, VertexPtr switch_condition, std::vector<VertexPtr> &&cases) {
+  auto temp_var_condition_on_switch = create_superlocal_var("condition_on_switch", cur_function);
+  auto temp_var_matched_with_one_case = create_superlocal_var("matched_with_one_case", cur_function);
+  return VertexAdaptor<op_switch>::create(switch_condition, temp_var_condition_on_switch, temp_var_matched_with_one_case, std::move(cases)).set_location(switch_condition);
 }
 
 VertexAdaptor<op_seq> VertexUtil::embrace(VertexPtr v) {
@@ -83,10 +117,6 @@ bool VertexUtil::is_superglobal(const std::string &s) {
     "_ENV"
   };
   return vk::contains(names, s);
-}
-
-bool VertexUtil::is_constructor_call(VertexAdaptor<op_func_call> call) {
-  return !call->args().empty() && call->str_val == ClassData::NAME_OF_CONSTRUCT;
 }
 
 bool VertexUtil::is_positive_constexpr_int(VertexPtr v) {

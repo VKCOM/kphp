@@ -484,6 +484,14 @@ const TypeHint *PhpDocTypeHintParser::parse_simple_type() {
         }
         return TypeHintPrimitive::create(tp_tmp_string);
       }
+      if (cur_tok->str_val == "not_null") {
+        cur_tok++;
+        return TypeHintNotNull::create(parse_nested_one_type_hint(), true, false);
+      }
+      if (cur_tok->str_val == "not_false") {
+        cur_tok++;
+        return TypeHintNotNull::create(parse_nested_one_type_hint(), false, true);
+      }
       // otherwise interpreted as a class name (including the lowercase names);
       // it works with the absolute and relative names as well as for a special names like 'self';
       // file 'use' directives are taken into the account
@@ -827,9 +835,9 @@ const TypeHint *phpdoc_replace_genericTs_with_reified(const TypeHint *type_hint,
       return replacement ?: child;
     }
     if (const auto *as_field_ref = child->try_as<TypeHintRefToField>()) {
-      const auto *field = as_field_ref->resolve_field();
-      kphp_error(field, "Could not detect a field that :: points to in phpdoc white instantiating generics");
-      return field && field->type_hint ? field->type_hint : TypeHintPrimitive::create(tp_any);
+      const TypeHint *field_type_hint = as_field_ref->resolve_field_type_hint();
+      kphp_error(field_type_hint, "Could not detect a field that :: points to in phpdoc white instantiating generics");
+      return field_type_hint ?: TypeHintPrimitive::create(tp_any);
     }
     if (const auto *as_field_ref = child->try_as<TypeHintRefToMethod>()) {
       FunctionPtr method = as_field_ref->resolve_method();

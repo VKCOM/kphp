@@ -68,7 +68,9 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         critical_section.cpp
         ctype.cpp
         curl.cpp
+        env.cpp
         exception.cpp
+        exec.cpp
         files.cpp
         from-json-processor.cpp
         instance-cache.cpp

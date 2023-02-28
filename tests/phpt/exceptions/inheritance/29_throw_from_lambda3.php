@@ -6,7 +6,7 @@ class MyException2 extends MyException1 {}
 class MyException3 extends \Exception {}
 
 function test() {
-  $throw = function(Exception $e) {
+  $throw = function(Exception $e): int {
     throw $e;
   };
 

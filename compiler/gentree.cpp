@@ -526,6 +526,9 @@ VertexPtr GenTree::get_expr_top(bool was_arrow, const PhpDocComment *phpdoc) {
     }
     case tok_var_name: {
       res = get_var_name();
+      if (cur->type() == tok_double_colon) {  // $class::method(), $class::$field, $class::CONST
+        res = get_member_by_name_after_var(res.as<op_var>());
+      }
       return_flag = false;
       break;
     }
@@ -579,15 +582,20 @@ VertexPtr GenTree::get_expr_top(bool was_arrow, const PhpDocComment *phpdoc) {
 
     case tok_new: {
       next_cur();
-      CE(!kphp_error(cur->type() == tok_func_name, "Expected class name after new"));
-      auto func_call = get_func_call<op_func_call, op_none>();
-      // Hack to be more compatible with php
-      if (func_call->str_val == "Memcache") {
-        func_call->set_string("McMemcache");
+      if (test_expect(tok_func_name)) {   // 'new A()' / 'new \Some\Class($args)'
+        auto func_call = get_func_call<op_func_call, op_none>();
+        // Hack to be more compatible with php
+        if (func_call->str_val == "Memcache") {
+          func_call->set_string("McMemcache");
+        }
+        res = gen_constructor_call_with_args(func_call->str_val, func_call->get_next(), func_call->location);
+        CE(res);
+      } else if (test_expect(tok_var_name)) {   // 'new $class_name' / 'new $class_name(...$args)'
+        res = get_by_name_construct();
+        CE(res);
+      } else {
+        CE(!kphp_error(0, "Expected class name after new"));
       }
-
-      res = gen_constructor_call_with_args(func_call->str_val, func_call->get_next(), func_call->location);
-      CE(res);
       break;
     }
     case tok_func_name: {
@@ -696,7 +704,7 @@ VertexAdaptor<op_ternary> GenTree::create_ternary_op_vertex(VertexPtr condition,
     return VertexAdaptor<op_ternary>::create(condition, true_expr, false_expr);
   }
 
-  auto cond_var = create_superlocal_var("shorthand_ternary_cond").set_location(condition);
+  auto cond_var = VertexUtil::create_superlocal_var("shorthand_ternary_cond", cur_function).set_location(condition);
 
   auto cond = VertexUtil::create_conv_to(tp_bool, VertexAdaptor<op_set>::create(cond_var, condition));
 
@@ -934,7 +942,7 @@ std::pair<VertexAdaptor<op_foreach_param>, VertexPtr> GenTree::get_foreach_param
   CE (!kphp_error(value_expr, fmt_format("Expected a var name, ref or list, found {}", tok.str_val)));
 
   if (vk::any_of_equal(value_expr->type(), op_list_ce, op_array)) {
-    value = create_superlocal_var("list");
+    value = VertexUtil::create_superlocal_var("list", cur_function);
     list = value_expr;
   } else {
     value = value_expr.as<op_var>();
@@ -952,7 +960,7 @@ std::pair<VertexAdaptor<op_foreach_param>, VertexPtr> GenTree::get_foreach_param
   if (value->ref_flag) {
     temp_var = VertexAdaptor<op_empty>::create();
   } else {
-    temp_var = create_superlocal_var("tmp_expr");
+    temp_var = VertexUtil::create_superlocal_var("tmp_expr", cur_function);
   }
 
   auto param = key ? VertexAdaptor<op_foreach_param>::create(array_expression, value, temp_var, key).set_location(location)
@@ -1161,23 +1169,6 @@ VertexAdaptor<op_do> GenTree::get_do() {
   return VertexAdaptor<op_do>::create(VertexUtil::embrace(body), condition).set_location(location);
 }
 
-VertexAdaptor<op_var> GenTree::create_superlocal_var(const std::string &name_prefix) {
-  return create_superlocal_var(name_prefix, cur_function);
-}
-
-VertexAdaptor<op_var> GenTree::create_superlocal_var(const std::string &name_prefix, FunctionPtr cur_function) {
-  auto v = VertexAdaptor<op_var>::create();
-  v->str_val = gen_unique_name(name_prefix, cur_function);
-  v->extra_type = op_ex_var_superlocal;
-  return v;
-}
-
-VertexAdaptor<op_switch> GenTree::create_switch_vertex(FunctionPtr cur_function, VertexPtr switch_condition,std::vector<VertexPtr> &&cases) {
-  auto temp_var_condition_on_switch = create_superlocal_var("condition_on_switch", cur_function);
-  auto temp_var_matched_with_one_case = create_superlocal_var("matched_with_one_case", cur_function);
-  return VertexAdaptor<op_switch>::create(switch_condition, temp_var_condition_on_switch, temp_var_matched_with_one_case, std::move(cases));
-}
-
 VertexAdaptor<op_switch> GenTree::get_switch() {
   auto location = auto_location();
 
@@ -1227,7 +1218,7 @@ VertexAdaptor<op_switch> GenTree::get_switch() {
   }
   CE (expect(tok_clbrc, "'}'"));
 
-  return create_switch_vertex(cur_function, switch_condition, std::move(cases)).set_location(location);
+  return VertexUtil::create_switch_vertex(cur_function, switch_condition.set_location(location), std::move(cases)).set_location(location);
 }
 
 VertexAdaptor<op_shape> GenTree::get_shape() {
@@ -1252,6 +1243,94 @@ VertexAdaptor<op_shape> GenTree::get_shape() {
 
   // shape->args() is a sequence of op_double_arrow
   return VertexAdaptor<op_shape>::create(inner_array.as<op_array>()->args()).set_location(location);
+}
+
+// `new $c` / `new $c()` / `new $c(a, r, g, s)` / `new $c(...$args)`
+// convert into `_by_name_construct($c, ...)`
+// later, if $c is constexpr (class-string<T> for example), this call will be replaced with `new T(...)`
+// see replace-extern-func-calls.cpp
+VertexPtr GenTree::get_by_name_construct() {
+  kphp_assert(cur->type() == tok_var_name);  // cur is $c
+  auto v_class_name = VertexAdaptor<op_var>::create().set_location(auto_location());
+  v_class_name->str_val = static_cast<std::string>(cur->str_val); // 'c'
+
+  std::vector<VertexPtr> args = {v_class_name};
+
+  if ((cur + 1)->type() == tok_oppar) { // `new $c(...)`
+    auto dummy_call = get_func_call<op_func_call, op_none>();
+    if (dummy_call) {
+      args.insert(args.end(), dummy_call->begin(), dummy_call->end());
+    }
+  } else {  // `new $c`
+    next_cur();
+  }
+
+  auto v_by_name = VertexAdaptor<op_func_call>::create(args).set_location(auto_location());
+  v_by_name->str_val = "_by_name_construct";
+  v_by_name->auto_inserted = true;
+  return v_by_name;
+}
+
+// `$c::...`, expected to be `$c::method(...)` / `$c::CONST` / `$c::$field`
+// convert into `_by_name_call_method($c, 'method', ...)`, etc.
+// later, if $c is constexpr, this calls will be replaced with `T::method(...)` / `T::CONST` / `T::$field`
+// see replace-extern-func-calls.cpp
+VertexPtr GenTree::get_member_by_name_after_var(VertexAdaptor<op_var> v_before) {
+  kphp_assert(cur->type() == tok_double_colon);
+  next_cur();
+
+  // $c::method(...) -> _by_name_call_method($c, 'method', ...)
+  if (cur->type() == tok_func_name && (cur+1)->type() == tok_oppar) {
+    auto v_method_name = VertexAdaptor<op_string>::create().set_location(auto_location());
+    v_method_name->str_val = static_cast<std::string>(cur->str_val);
+
+    auto dummy_call = get_func_call<op_func_call, op_none>();
+    std::vector<VertexPtr> args = {v_before, v_method_name};
+    if (dummy_call) {   // 'if' not to fail on unclosed '('
+      args.insert(args.end(), dummy_call->begin(), dummy_call->end());
+    }
+
+    auto v_by_name = VertexAdaptor<op_func_call>::create(args).set_location(auto_location());
+    v_by_name->str_val = "_by_name_call_method";
+    v_by_name->auto_inserted = true;
+    return v_by_name;
+  }
+
+  // $c::CONST -> _by_name_get_const($c, 'CONST')
+  // $c::CONST[0] and similar also supported
+  if (cur->type() == tok_func_name && (cur+1)->type() != tok_oppar) {
+    auto v_const_name = VertexAdaptor<op_string>::create().set_location(auto_location());
+    v_const_name->str_val = static_cast<std::string>(cur->str_val);
+
+    next_cur();
+    std::vector<VertexPtr> args = {v_before, v_const_name};
+
+    auto v_by_name = VertexAdaptor<op_func_call>::create(args).set_location(auto_location());
+    v_by_name->str_val = "_by_name_get_const";
+    v_by_name->auto_inserted = true;
+    return v_by_name;
+  }
+
+  // $c::$field -> _by_name_get_field($c, 'field')
+  // $c::$field[0] += and similar also supported
+  // note, that for $c::$var(, we fire an error, because it's $c::$method(), an unsupported dynamic call by name
+  if (cur->type() == tok_var_name) {
+    kphp_error_act((cur+1)->type() != tok_oppar, "Syntax '$class_name::$method_name()' is invalid in KPHP.\nProbably, you need switch-case or code generation instead of invocations via dynamic names.", return v_before);
+
+    auto v_field_name = VertexAdaptor<op_string>::create().set_location(auto_location());
+    v_field_name->str_val = static_cast<std::string>(cur->str_val);
+
+    next_cur();
+    std::vector<VertexPtr> args = {v_before, v_field_name};
+
+    auto v_by_name = VertexAdaptor<op_func_call>::create(args).set_location(auto_location());
+    v_by_name->str_val = "_by_name_get_field";
+    v_by_name->auto_inserted = true;
+    return v_by_name;
+  }
+
+  kphp_error(0, fmt_format("Unrecognized syntax after '${}::'", v_before->str_val));
+  return v_before;
 }
 
 // analyze phpdoc /** ... */ NOT above a function/field/etc, but inside a function

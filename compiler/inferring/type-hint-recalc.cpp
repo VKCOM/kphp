@@ -170,6 +170,12 @@ void TypeHintFuture::recalc_type_data_in_context_of_call(TypeData *dst, VertexPt
   dst->set_lca_at(MultiKey::any_key(1), &nested);
 }
 
+void TypeHintNotNull::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const {
+  TypeData nested(*TypeData::get_type(tp_any));
+  inner->recalc_type_data_in_context_of_call(&nested, call);
+  dst->set_lca(&nested, !drop_not_false, !drop_not_null);
+}
+
 void TypeHintInstance::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__ ((unused))) const {
   dst->set_lca(resolve()->type_data);
 }

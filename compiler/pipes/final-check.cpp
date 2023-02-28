@@ -901,6 +901,13 @@ void FinalCheckPass::on_function() {
     kphp_error(!return_type->or_false_flag(), fmt_format("Function returns void and false simultaneously"));
     kphp_error(!return_type->or_null_flag(), fmt_format("Function returns void and null simultaneously"));
   }
+  for (int i = 0; i < current_function->param_ids.size(); ++i) {
+    const TypeData *arg_type = tinf::get_type(current_function, i);
+    if (arg_type->get_real_ptype() == tp_any) {
+      stage::set_location(current_function->root->location);
+      raise_error_using_Unknown_type(current_function->get_params()[i].as<op_func_param>()->var());
+    }
+  }
 }
 
 void FinalCheckPass::raise_error_using_Unknown_type(VertexPtr v) {

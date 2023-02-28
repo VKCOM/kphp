@@ -133,6 +133,32 @@ static bool is_function_exported_from(FunctionPtr function, ModulitePtr owner, F
   return false;
 }
 
+// constant GLOBAL_DEFINE is exported from a modulite when
+// - "\\GLOBAL_DEFINE" is declared in 'export' (already checked that it's declared inside a modulite)
+static bool is_global_const_exported_from(DefinePtr constant, ModulitePtr owner, FunctionPtr usage_context) {
+  for (const ModuliteSymbol &e : owner->exports) {
+    if (e.kind == ModuliteSymbol::kind_global_const && e.constant == constant) {
+      return true;
+    }
+  }
+
+  for (const auto &p : owner->allow_internal) {
+    if (does_allow_internal_rule_satisfy_usage_context(usage_context, p.first)) {
+      for (const ModuliteSymbol &e : p.second) {
+        if (e.kind == ModuliteSymbol::kind_global_const && e.constant == constant) {
+          return true;
+        }
+      }
+    }
+  }
+
+  if (owner->is_composer_package) {   // when it's an implicit modulite created from composer.json, all is exported
+    return owner->exports.empty();    // (unless .modulite.yaml exists near composer.json and manually provides "export")
+  }
+
+  return false;
+}
+
 // constant A::C is exported from a modulite when
 // - "A::C" is declared in 'export'
 // - or "A" is declared in 'export' AND "A::C" is not declared in 'force-internal'
@@ -177,14 +203,14 @@ static bool is_constant_exported_from(DefinePtr constant, ClassPtr requested_cla
 // - "A::$f" is declared in 'export'
 // - or "A" is declared in 'export' AND "A::$f" is not declared in 'force-internal'
 // - or either "A" or "A::$f" is declared in 'allow internal' for current usage context
-static bool is_static_field_exported_from(VarPtr field, ClassPtr requested_class, ModulitePtr owner, FunctionPtr usage_context) {
+static bool is_static_field_exported_from(VarPtr property, ClassPtr requested_class, ModulitePtr owner, FunctionPtr usage_context) {
   for (const ModuliteSymbol &e : owner->exports) {
-    if (e.kind == ModuliteSymbol::kind_global_var && e.global_var == field->name) {
+    if (e.kind == ModuliteSymbol::kind_property && e.property == property) {
       return true;
     }
     if (e.kind == ModuliteSymbol::kind_klass && e.klass == requested_class) {
       for (const ModuliteSymbol &fi : owner->force_internal) {
-        if (fi.kind == ModuliteSymbol::kind_global_var && fi.global_var == field->name) {
+        if (fi.kind == ModuliteSymbol::kind_property && fi.klass == requested_class && fi.property == property) {
           goto search_allow_internal;
         }
       }
@@ -196,7 +222,7 @@ static bool is_static_field_exported_from(VarPtr field, ClassPtr requested_class
   for (const auto &p : owner->allow_internal) {
     if (does_allow_internal_rule_satisfy_usage_context(usage_context, p.first)) {
       for (const ModuliteSymbol &e : p.second) {
-        if (e.kind == ModuliteSymbol::kind_global_var && e.global_var == field->name) {
+        if (e.kind == ModuliteSymbol::kind_property && e.property == property) {
           return true;
         }
         if (e.kind == ModuliteSymbol::kind_klass && e.klass == requested_class) {
@@ -296,17 +322,17 @@ public:
     , usage_context(usage_context)
     , desc(fmt_format("call {}()", TermStringFormat::paint_bold(called_f->as_human_readable()))) {}
 
-  [[gnu::cold]] ModuliteErr(FunctionPtr usage_context, DefinePtr used_c)
+  [[gnu::cold]] ModuliteErr(FunctionPtr usage_context, ClassPtr requested_class, DefinePtr used_c)
     : inside_m(usage_context->modulite)
     , another_m(used_c->modulite)
     , usage_context(usage_context)
-    , desc(fmt_format("use {}", TermStringFormat::paint_bold(used_c->class_id ? used_c->class_id->as_human_readable() : used_c->as_human_readable()))) {}
+    , desc(fmt_format("use {}", TermStringFormat::paint_bold(requested_class ? requested_class->as_human_readable() : used_c->as_human_readable()))) {}
 
-  [[gnu::cold]] ModuliteErr(FunctionPtr usage_context, VarPtr field)
+  [[gnu::cold]] ModuliteErr(FunctionPtr usage_context, ClassPtr requested_class, VarPtr property)
     : inside_m(usage_context->modulite)
-    , another_m(field->class_id->modulite)
+    , another_m(property->class_id->modulite)
     , usage_context(usage_context)
-    , desc(fmt_format("use {}", TermStringFormat::paint_bold(field->class_id ? field->class_id->as_human_readable() : field->as_human_readable()))) {}
+    , desc(fmt_format("use {}", TermStringFormat::paint_bold(requested_class ? requested_class->as_human_readable() : property->as_human_readable()))) {}
 
   [[gnu::cold]] ModuliteErr(FunctionPtr usage_context, const std::string &global_var_name)
     : inside_m(usage_context->modulite)
@@ -386,25 +412,25 @@ void modulite_check_when_use_class(FunctionPtr usage_context, ClassPtr klass) {
   }
 }
 
-void modulite_check_when_use_constant(FunctionPtr usage_context, DefinePtr used_c, ClassPtr requested_class) {
+void modulite_check_when_use_global_const(FunctionPtr usage_context, DefinePtr used_c) {
   if (!is_env_modulite_enabled()) {
     return;
   }
 
   ModulitePtr inside_m = usage_context->modulite;
-  ModulitePtr another_m = requested_class ? requested_class->modulite : used_c->modulite;
+  ModulitePtr another_m = used_c->modulite;
   if (inside_m == another_m || should_this_usage_context_be_ignored(usage_context)) {
     return;
   }
 
   if (another_m) {
-    if (!is_constant_exported_from(used_c, requested_class, another_m, usage_context)) {
-      ModuliteErr(usage_context, used_c).print_error_symbol_is_not_exported();
+    if (!is_global_const_exported_from(used_c, another_m, usage_context)) {
+      ModuliteErr(usage_context, {}, used_c).print_error_symbol_is_not_exported();
       return;
     }
 
     if (another_m->parent && !is_submodulite_exported(another_m, usage_context)) {
-      ModuliteErr(usage_context, used_c).print_error_submodulite_is_not_exported();
+      ModuliteErr(usage_context, {}, used_c).print_error_submodulite_is_not_exported();
       return;
     }
   }
@@ -413,7 +439,48 @@ void modulite_check_when_use_constant(FunctionPtr usage_context, DefinePtr used_
     bool should_require_m_instead = another_m && (!another_m->is_composer_package || another_m->composer_json != inside_m->composer_json);
     if (should_require_m_instead) {
       if (!does_require_another_modulite(inside_m, another_m)) {
-        ModuliteErr(usage_context, used_c).print_error_modulite_is_not_required();
+        ModuliteErr(usage_context, {}, used_c).print_error_modulite_is_not_required();
+      }
+
+    } else {
+      bool in_require = vk::any_of(inside_m->require, [used_c](const ModuliteSymbol &s) {
+        return s.kind == ModuliteSymbol::kind_global_const && s.constant == used_c;
+      });
+      if (!in_require && !used_c->is_builtin()) {
+        ModuliteErr(usage_context, {}, used_c).print_error_symbol_is_not_required();
+      }
+    }
+  }
+}
+
+void modulite_check_when_use_constant(FunctionPtr usage_context, DefinePtr used_c, ClassPtr requested_class) {
+  if (!is_env_modulite_enabled()) {
+    return;
+  }
+
+  ModulitePtr inside_m = usage_context->modulite;
+  ModulitePtr another_m = requested_class->modulite;
+  if (inside_m == another_m || should_this_usage_context_be_ignored(usage_context)) {
+    return;
+  }
+
+  if (another_m) {
+    if (!is_constant_exported_from(used_c, requested_class, another_m, usage_context)) {
+      ModuliteErr(usage_context, requested_class, used_c).print_error_symbol_is_not_exported();
+      return;
+    }
+
+    if (another_m->parent && !is_submodulite_exported(another_m, usage_context)) {
+      ModuliteErr(usage_context, requested_class, used_c).print_error_submodulite_is_not_exported();
+      return;
+    }
+  }
+
+  if (inside_m) {
+    bool should_require_m_instead = another_m && (!another_m->is_composer_package || another_m->composer_json != inside_m->composer_json);
+    if (should_require_m_instead) {
+      if (!does_require_another_modulite(inside_m, another_m)) {
+        ModuliteErr(usage_context, requested_class, used_c).print_error_modulite_is_not_required();
       }
 
     } else {
@@ -422,7 +489,7 @@ void modulite_check_when_use_constant(FunctionPtr usage_context, DefinePtr used_
                (s.kind == ModuliteSymbol::kind_constant && s.constant == used_c);
       });
       if (!in_require && !used_c->is_builtin()) {
-        ModuliteErr(usage_context, used_c).print_error_symbol_is_not_required();
+        ModuliteErr(usage_context, requested_class, used_c).print_error_symbol_is_not_required();
       }
     }
   }
@@ -476,25 +543,25 @@ void modulite_check_when_call_function(FunctionPtr usage_context, FunctionPtr ca
   }
 }
 
-void modulite_check_when_use_static_field(FunctionPtr usage_context, VarPtr field, ClassPtr requested_class) {
+void modulite_check_when_use_static_field(FunctionPtr usage_context, VarPtr property, ClassPtr requested_class) {
   if (!is_env_modulite_enabled()) {
     return;
   }
 
   ModulitePtr inside_m = usage_context->modulite;
-  ModulitePtr another_m = requested_class ? requested_class->modulite : field->class_id->modulite;
+  ModulitePtr another_m = requested_class->modulite;
   if (inside_m == another_m || should_this_usage_context_be_ignored(usage_context)) {
     return;
   }
 
   if (another_m) {
-    if (!is_static_field_exported_from(field, requested_class, another_m, usage_context)) {
-      ModuliteErr(usage_context, field).print_error_symbol_is_not_exported();
+    if (!is_static_field_exported_from(property, requested_class, another_m, usage_context)) {
+      ModuliteErr(usage_context, requested_class, property).print_error_symbol_is_not_exported();
       return;
     }
 
     if (another_m->parent && !is_submodulite_exported(another_m, usage_context)) {
-      ModuliteErr(usage_context, field).print_error_submodulite_is_not_exported();
+      ModuliteErr(usage_context, requested_class, property).print_error_submodulite_is_not_exported();
       return;
     }
   }
@@ -503,16 +570,16 @@ void modulite_check_when_use_static_field(FunctionPtr usage_context, VarPtr fiel
     bool should_require_m_instead = another_m && (!another_m->is_composer_package || another_m->composer_json != inside_m->composer_json);
     if (should_require_m_instead) {
       if (!does_require_another_modulite(inside_m, another_m)) {
-        ModuliteErr(usage_context, field).print_error_modulite_is_not_required();
+        ModuliteErr(usage_context, requested_class, property).print_error_modulite_is_not_required();
       }
 
     } else {
-      bool in_require = vk::any_of(inside_m->require, [field, requested_class](const ModuliteSymbol &s) {
+      bool in_require = vk::any_of(inside_m->require, [property, requested_class](const ModuliteSymbol &s) {
         return (s.kind == ModuliteSymbol::kind_klass && s.klass == requested_class) ||
-               (s.kind == ModuliteSymbol::kind_global_var && s.global_var == field->name);
+               (s.kind == ModuliteSymbol::kind_property && s.property == property);
       });
       if (!in_require && !requested_class->is_builtin()) {
-        ModuliteErr(usage_context, field).print_error_symbol_is_not_required();
+        ModuliteErr(usage_context, requested_class, property).print_error_symbol_is_not_required();
       }
     }
   }

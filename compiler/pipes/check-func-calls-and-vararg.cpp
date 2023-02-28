@@ -4,11 +4,10 @@
 
 #include "compiler/pipes/check-func-calls-and-vararg.h"
 
-#include "compiler/data/kphp-json-tags.h"
 #include "compiler/modulite-check-rules.h"
 #include "compiler/data/src-file.h"
+#include "compiler/rewrite-rules/replace-extern-func-calls.h"
 #include "compiler/vertex-util.h"
-#include "compiler/name-gen.h"
 #include "compiler/type-hint.h"
 
 /*
@@ -204,81 +203,6 @@ VertexPtr CheckFuncCallsAndVarargPass::create_CompileTimeLocation_call_arg(const
   return v_loc;
 }
 
-// having checked all args count, sometimes, we want to replace f(...) with f'(...),
-// as f' better coincides with C++ implementation and/or C++ templates
-//
-// for instance, JsonEncoder::encode() and all inheritors' calls are replaced
-// (not to carry auto-generated inheritors body, as they are generated wrong anyway, cause JsonEncoder is built-in)
-VertexPtr CheckFuncCallsAndVarargPass::maybe_replace_extern_func_call(VertexAdaptor<op_func_call> call, FunctionPtr f_called) {
-  const std::string &f_name = f_called->name;
-  if (f_called->modifiers.is_static() && f_called->class_id) {
-    vk::string_view local_name = f_called->local_name();
-
-    // replace JsonEncoderOrChild::decode($json, $class_name) with JsonEncoder::from_json_impl('JsonEncoderOrChild', $json, $class_name)
-    if (local_name == "decode" && is_class_JsonEncoder_or_child(f_called->class_id)) {
-      auto v_encoder_name = VertexAdaptor<op_string>::create().set_location(call->location);
-      v_encoder_name->str_val = f_called->class_id->name;
-      call->str_val = "JsonEncoder$$from_json_impl";
-      call->func_id = G->get_function(call->str_val);
-      return add_call_arg(v_encoder_name, call, true);
-    }
-    // replace JsonEncoderOrChild::encode($instance) with JsonEncoder::to_json_impl('JsonEncoderOrChild', $instance)
-    if (local_name == "encode" && is_class_JsonEncoder_or_child(f_called->class_id)) {
-      auto v_encoder_name = VertexAdaptor<op_string>::create().set_location(call->location);
-      v_encoder_name->str_val = f_called->class_id->name;
-      call->str_val = "JsonEncoder$$to_json_impl";
-      call->func_id = G->get_function(call->str_val);
-      return add_call_arg(v_encoder_name, call, true);
-    }
-    // replace JsonEncoderOrChild::getLastError() with parent JsonEncoder::getLastError()
-    if (local_name == "getLastError" && is_class_JsonEncoder_or_child(f_called->class_id)) {
-      call->str_val = "JsonEncoder$$getLastError";
-      call->func_id = G->get_function(call->str_val);
-      return call;
-    }
-  }
-
-  if (f_name == "classof" && call->size() == 1) {
-    ClassPtr klassT = assume_class_of_expr(current_function, call->args()[0], call).try_as_class();
-    kphp_error_act(klassT, "classof() used for non-instance", return call);
-    auto v_class_name = VertexAdaptor<op_string>::create();
-    v_class_name->str_val = klassT->name;
-    return v_class_name;
-  }
-
-  return call;
-}
-
-bool CheckFuncCallsAndVarargPass::is_class_JsonEncoder_or_child(ClassPtr class_id) {
-  ClassPtr klass_JsonEncoder = G->get_class("JsonEncoder");
-  if (klass_JsonEncoder && klass_JsonEncoder->is_parent_of(class_id)) {
-    // when a class is first time detected as json encoder, parse and validate all constants, and store them
-    if (!class_id->kphp_json_tags) {
-      class_id->kphp_json_tags = kphp_json::convert_encoder_constants_to_tags(class_id);
-    }
-    return true;
-  }
-  return false;
-}
-
-VertexAdaptor<op_func_call> CheckFuncCallsAndVarargPass::add_call_arg(VertexPtr to_add, VertexAdaptor<op_func_call> call, bool prepend) {
-  std::vector<VertexPtr> new_args;
-  new_args.reserve(call->args().size() + 1);
-  if (prepend) {
-    new_args.emplace_back(to_add);
-  }
-  for (auto arg : call->args()) {
-    new_args.emplace_back(arg);
-  }
-  if (!prepend) {
-    new_args.emplace_back(to_add);
-  }
-
-  auto new_call = VertexAdaptor<op_func_call>::create(new_args).set_location(call->location);
-  new_call->str_val = call->str_val;
-  new_call->func_id = call->func_id;
-  return new_call;
-}
 
 // check func call, that a call is valid (not abstract, etc) and provided a valid number of arguments
 // also, check the number of arguments passed as callbacks to extern functions
@@ -286,6 +210,22 @@ VertexPtr CheckFuncCallsAndVarargPass::on_func_call(VertexAdaptor<op_func_call> 
   FunctionPtr f = call->func_id;
   if (!f) {
     return call;    // an error has already been printed when it wasn't set
+  }
+
+  if (f->is_extern()) {
+    if (f->is_internal) {
+      kphp_error_act(call->auto_inserted, fmt_format("Called internal function {}()", f->as_human_readable()), return call);
+    }
+    // probably, replace f(...) with f'(...) or even with a non-call expr
+    // for instance, `_by_name_get_const('A', 'C')` is replaced with value of A::C
+    // for instance, `MyJsonEncoder::encode(...)` is replaced with `JsonEncoder::to_json_impl('MyJsonEncoder', ...)`
+    VertexPtr repl = maybe_replace_extern_func_call(current_function, call);
+    auto repl_with_call = repl.try_as<op_func_call>();
+    if (!repl_with_call) {
+      return repl;
+    }
+    call = repl_with_call;
+    f = call->func_id;
   }
 
   // if f_called is f(...$args) or call is f(...[1,2]), then resample called arguments
@@ -315,7 +255,7 @@ VertexPtr CheckFuncCallsAndVarargPass::on_func_call(VertexAdaptor<op_func_call> 
   if (call_params.size() < func_params.size()) {
     for (int i = call_params.size(); i < func_params.size(); ++i) {
       if (VertexPtr auto_added = maybe_autofill_missing_call_arg(call, f, func_params[i].as<op_func_param>())) {
-        call = add_call_arg(auto_added, call, false);
+        call = VertexUtil::add_call_arg(auto_added, call, false);
         call_params = call->args();
       }
     }
@@ -325,9 +265,9 @@ VertexPtr CheckFuncCallsAndVarargPass::on_func_call(VertexAdaptor<op_func_call> 
   int delta_this = f->has_implicit_this_arg() ? 1 : 0;    // not to count implicit $this on error output
 
   kphp_error(call_n_params >= f->get_min_argn(),
-             fmt_format("Too few arguments to function call, expected {}, have {}", f->get_min_argn() - delta_this, call_n_params - delta_this));
+             fmt_format("Too few arguments in call to {}(), expected {}, have {}", TermStringFormat::paint_bold(f->as_human_readable()), f->get_min_argn() - delta_this, call_n_params - delta_this));
   kphp_error(func_params.size() >= call_n_params,
-             fmt_format("Too many arguments to function call, expected {}, have {}", func_params.size() - delta_this, call_n_params - delta_this));
+             fmt_format("Too many arguments in call to {}(), expected {}, have {}", TermStringFormat::paint_bold(f->as_human_readable()), func_params.size() - delta_this, call_n_params - delta_this));
 
   for (int i = 0; i < call_params.size() && i < func_params.size(); ++i) {
     auto func_param = func_params[i].as<op_func_param>();
@@ -357,13 +297,6 @@ VertexPtr CheckFuncCallsAndVarargPass::on_func_call(VertexAdaptor<op_func_call> 
     } else if (f->type == FunctionData::func_local && is_constructor_call) {
       modulite_check_when_use_class(current_function, f->class_id);
     }
-  }
-
-  if (f->is_extern() && !stage::has_error()) {
-    if (f->is_internal) {
-      kphp_error(call->auto_inserted, fmt_format("Called internal {} function", f->name));
-    }
-    return maybe_replace_extern_func_call(call, call->func_id);
   }
 
   return call;

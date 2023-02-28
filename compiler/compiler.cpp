@@ -257,7 +257,7 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PipeC<InstantiateGenericsAndLambdasF>{} >> use_nth_output_tag<0>{}
     >> PipeC<EarlyOptimizationF>{}
     >> SyncC<GenerateVirtualMethodsF>{}
-    >> PassC<ConvertInvokeToFuncCallPass>{}
+    >> PipeC<ConvertInvokeToFuncCallF>{}
     >> PassC<CheckFuncCallsAndVarargPass>{}
     >> PassC<InstantiateFFIOperationsPass>{}
     >> PipeC<CheckAbstractFunctionDefaults>{}

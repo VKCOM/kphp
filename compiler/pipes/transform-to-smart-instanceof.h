@@ -36,5 +36,7 @@ private:
   bool on_catch_user_recursion(VertexAdaptor<op_catch> v_catch);
   bool on_lambda_user_recursion(VertexAdaptor<op_lambda> v_lambda);
 
+  VertexPtr try_replace_switch_when_constexpr(VertexAdaptor<op_switch> v_switch);
+
   std::map<std::string, std::stack<std::string>> new_names_of_var;
 };

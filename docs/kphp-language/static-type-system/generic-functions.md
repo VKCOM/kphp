@@ -630,6 +630,111 @@ variadicF/*<A, B, ?int>*/(null, null, null);    // actually, variadicF_n3<A, B, 
 ```
 
 
+## new $class, $class::method(), etc.
+
+PHP allows to create a class by name / call a method by name. Generally, KPHP does not, but in case of generics, it works. 
+If `$class` is a compile-time known `class-string<T>`, it's possible to use such constructions:
+```php
+/**
+ * @kphp-generic T
+ * @param class-string<T> $class_name
+ */
+function demo($class_name) {
+  $obj = new $class_name;         // ok
+  $obj->afterCreated();
+  $class_name::staticMethod();    // also ok
+}
+
+demo(A::class);     // actually, demo<A>('A')
+demo(B::class);     // actually, demo<B>('B')
+```
+
+Here it's possible **because $class is compile-time known**, everything is statically resolved.
+
+This gives you an ability to write wrappers around constructors:
+```php
+/**
+ * @kphp-generic TCreated
+ * @param class-string<TCreated> $cn
+ * @return TCreated
+ */
+function createAndCheckValid(string $cn, int $arg) {
+  $obj = new $cn($arg);
+  if (!$obj->isValid()) {
+    throw new RuntimeException("Object($cn) is not valid for arg=$arg");
+  }
+  return $obj;
+} 
+```
+
+You can pass here any classes accepting `int` in constructor and having `isValid()` method.
+
+Combined with variadic generics this feature becomes much more powerful:
+```php
+class A {
+  function __construct() { ... }
+  function init() { ... }
+}
+
+class B {
+  function __construct(int $a) { ... }
+  function init() { ... }
+}
+
+class C {
+  function __construct(A $a, ?B $b) { ... }
+  function init() { ... } 
+}
+
+/**
+ * @kphp-generic T, ...TArg
+ * @param class-string<T> $class_name
+ * @param TArg ...$args
+ * @return T
+ */
+function createAndInit($class_name, ...$args) {
+  $obj = new $class_name(...$args);
+  $obj->init();
+  return $obj;
+}
+
+createAndInit(A::class);
+createAndInit(B::class, 10);
+createAndInit(C::class, new A, new B(0));
+```
+
+If generic Ts can't be auto-reified by arguments, they could be provided manually, as before:
+```php
+// without a hint, it's impossible to guess what 'null' means
+createAndInit/*<C, A, B>*/(C::class, null, null);
+```
+   
+Same for wrappers around calling any static method:
+```php
+/**
+ * @kphp-generic T, ...TArg
+ * @param class-string<T> $class_name
+ * @param TArg ...$args
+ */
+function calcAndCheckGreater0($class_name, ...$args): int {
+  $res = $class_name::calcCoeff(...$args);
+  if ($res <= 0) {
+    log("Unexpected coeff=$res for $class_name");
+  }
+  return $res;
+} 
+```
+
+These syntax constructions would work:
+* `new $class` (probably with arguments)
+* `$class::staticMethod()` (probably with arguments)
+* `$class::CONST`
+* `$class::$STATIC_FIELD` (even for writing)
+
+`$class::instanceMethod()` does not work, and should not.  
+`$class::$dynamic_method()` also does not, a method name should be compile-time known.
+
+
 ## A problem with null
 
 KPHP tries no auto-reify Ts when you pass arguments to generic functions. `f(3)` is reified as `f<int>(3)`, and similar. 
@@ -737,6 +842,62 @@ All in all,
 * passing constants works well
 * passing fields/functions works well
 * passing variables (only with primitives) is tricky, but `/*<T>*/` or `@var` helps
+
+
+## Constexpr switch
+
+Suppose you want something like `$factory->getInstance<T>()`, to be used like
+```php
+$factory->getInstance(FooService::class)->fooMethod();
+$factory->getInstance(AnotherService::class)->anotherMethod();
+```
+
+Here is a possible implementation:
+```php
+/**
+ * @kphp-generic TService
+ * @param class-string<TService> $serviceClass
+ * @return TService
+ */
+function getInstance(string $serviceClass) {
+  switch ($serviceClass) {
+  case FooService::class:
+    return $this->foo ?? ($this->foo = $this->createFoo());
+  case AnotherService::class:
+    return $this->getAnother();
+  // more services
+  }
+  
+  if (isset(self::HIDDEN[$serviceClass])) {
+    throw new Exception("$serviceClass is private and can not be used");
+  }
+  throw new Exception("$serviceClass not found");
+}
+```
+
+It will work as expected, but to make it valid, KPHP performs a skilful trick. Let's see how `getInstance<FooService>` would look like:
+```php
+function getInstance<FooService>(string $serviceClass = 'FooService'): FooService {
+  switch ($serviceClass) {
+  case FooService::class:
+    // return FooService object, ok
+  case AnotherService::class:
+    // return another object, ERROR! types mismatch, FooService expected
+  }
+  ...
+}
+```
+
+As you see, without any modifications, the code is erroneous. 
+
+But we have a guarantee that `$serviceClass` is 'FooService' in this cocrete generic specialization.
+In other terms, it's a **constexpr** compile-time known string. We have a switch over a constexpr string,
+so the only case is valid, which is also calculated at compile-time, so `switch` itself could be just replaced 
+with a body of a true `case`, or `default` if all cases are false. Also, `$serviceClass` variable can not be modified.
+
+KPHP automatically performs such transformations for `switch` over constexpr a string, with constexpr cases,
+where every non-empty case ends with break/return/throw. Constructions like `if/else` are not analyzed,
+so use such pattern for your scenarios.
 
 
 ## Generic methods are allowed
