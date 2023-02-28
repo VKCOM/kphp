@@ -1611,8 +1611,3 @@ class DateTimeImmutable implements DateTimeInterface {
   public function getOffset(): int;
   public function getTimestamp(): int;
 }
-
-function yaml_emit_file ($filename ::: string, $data ::: mixed) ::: bool;
-function yaml_emit ($data ::: mixed) ::: string;
-function yaml_parse_file ($filename ::: string, $pos ::: int = 0) ::: mixed;
-function yaml_parse ($data ::: string, $pos ::: int = 0) ::: mixed;
