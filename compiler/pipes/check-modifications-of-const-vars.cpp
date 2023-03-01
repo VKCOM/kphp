@@ -111,8 +111,16 @@ void CheckModificationsOfConstVars::check_modifications(VertexPtr v, bool write_
                                             const_var->class_id->construct_function == current_function &&
                                             v->type() == op_instance_prop &&
                                             v.as<op_instance_prop>()->instance()->get_string() == "this";
-          auto err_msg = "Modification of const variable: " + TermStringFormat::paint(const_var->name, TermStringFormat::red);
-          kphp_error(modification_allowed, err_msg.c_str());
+          static constexpr auto constant_prefix = "d$";
+
+          if (vk::string_view(const_var->name).starts_with(constant_prefix)) { // constant
+            kphp_error(modification_allowed,
+                       fmt_format("Modification of constant: {}",
+                                  TermStringFormat::paint(std::string(std::next(const_var->name.begin(), std::strlen(constant_prefix)), const_var->name.end()),
+                                                          TermStringFormat::red)));
+          } else {
+            kphp_error(modification_allowed, fmt_format("Modification of const variable: {}", TermStringFormat::paint(const_var->name, TermStringFormat::red)));
+          }
         }
       }
       break;
