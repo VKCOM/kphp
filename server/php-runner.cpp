@@ -87,10 +87,10 @@ void PhpScript::error(const char *error_message, script_error_t error_type) noex
 void PhpScript::check_delayed_errors() noexcept {
   php_assert(PhpScript::in_script_context);
   if (time_limit_exceeded) {
-    state = run_state_t::error;
-    error_type = script_error_t::timeout;
-    error_message = "Timeout exit";
-    pause();
+    perform_error_if_running("timeout exit\n", script_error_t::timeout);
+  }
+  if (memory_limit_exceeded) {
+    perform_error_if_running("memory limit exit\n", script_error_t::memory_limit);
   }
 }
 
@@ -545,7 +545,9 @@ static void sigusr2_handler(int signum) {
   kwrite_str(2, "in sigusr2_handler\n");
   if (check_signal_critical_section(signum, "SIGUSR2")) {
     PhpScript::memory_limit_exceeded = true;
-    perform_error_if_running("memory limit exit\n", script_error_t::memory_limit);
+    if (PhpScript::in_script_context) {
+      perform_error_if_running("memory limit exit\n", script_error_t::memory_limit);
+    }
   }
 }
 
