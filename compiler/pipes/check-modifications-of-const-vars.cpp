@@ -121,6 +121,7 @@ void CheckModificationsOfConstVars::check_modifications(VertexPtr v, bool write_
           } else {
             kphp_error(modification_allowed, fmt_format("Modification of const variable: {}", TermStringFormat::paint(const_var->name, TermStringFormat::red)));
           }
+
         }
       }
       break;
