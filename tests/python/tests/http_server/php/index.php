@@ -1,13 +1,5 @@
 <?php
 
-/** @kphp-immutable-class */
-class A {
-  /** @var int */
-  public $a = 42;
-  /** @var string */
-  public $b = "hello";
-}
-
 /**
  * @kphp-required
  */
@@ -60,8 +52,9 @@ class RpcWorker implements I {
    }
 }
 
-
-if ($_SERVER["PHP_SELF"] === "/ini_get") {
+if (isset($_SERVER["JOB_ID"])) {
+  require_once "job_worker.php";
+} else if ($_SERVER["PHP_SELF"] === "/ini_get") {
   echo ini_get($_SERVER["QUERY_STRING"]);
 } else if (substr($_SERVER["PHP_SELF"], 0, 12) === "/test_limits") {
   echo json_encode($_SERVER);
@@ -200,6 +193,8 @@ if ($_SERVER["PHP_SELF"] === "/ini_get") {
     echo "pid=" . posix_getpid();
 } else if ($_SERVER["PHP_SELF"] === "/test_script_errors") {
   critical_error("Test error");
+} else if ($_SERVER["PHP_SELF"] === "/test_oom_handler") {
+  require_once "test_oom_handler.php";
 } else {
     if ($_GET["hints"] === "yes") {
         send_http_103_early_hints(["Content-Type: text/plain or application/json", "Link: </script.js>; rel=preload; as=script"]);
