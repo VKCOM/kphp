@@ -22,7 +22,7 @@ bool f$register_kphp_on_oom_callback(const on_oom_callback_t &callback) {
 }
 
 void OomHandler::invoke() noexcept {
-  if (!callback_) {
+  if (!callback_ || !PhpScript::in_script_context) {
     return;
   }
   if (callback_running_) {

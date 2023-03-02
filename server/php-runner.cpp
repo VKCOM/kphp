@@ -87,9 +87,12 @@ void PhpScript::error(const char *error_message, script_error_t error_type) noex
 void PhpScript::check_delayed_errors() noexcept {
   php_assert(PhpScript::in_script_context);
   if (time_limit_exceeded) {
+    time_limit_exceeded = false;
     perform_error_if_running("timeout exit\n", script_error_t::timeout);
   }
   if (memory_limit_exceeded) {
+    memory_limit_exceeded = false;
+    vk::singleton<OomHandler>::get().invoke();
     perform_error_if_running("memory limit exit\n", script_error_t::memory_limit);
   }
 }
