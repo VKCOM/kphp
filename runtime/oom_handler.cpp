@@ -7,9 +7,9 @@
 #include "common/kprintf.h"
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
-#include "runtime/memory_resource/unsynchronized_pool_resource.h"
 #include "runtime/php_assert.h"
 #include "server/php-runner.h"
+#include "runtime/resumable.h"
 
 bool f$register_kphp_on_oom_callback(const on_oom_callback_t &callback) {
   OomHandler &oom_handler_ctx = vk::singleton<OomHandler>::get();
@@ -30,6 +30,7 @@ void OomHandler::invoke() noexcept {
   } else {
     kprintf("Invoking OOM handler\n");
     dl::CriticalSectionGuard guard;
+    forcibly_stop_all_running_resumables();
     dl::get_default_script_allocator().unfreeze_oom_handling_memory();
     callback_running_ = true;
     callback_();
