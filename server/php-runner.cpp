@@ -52,7 +52,7 @@ bool check_signal_critical_section(int sig_num, const char *sig_name) {
     char message_1kw[message_1kw_size];
     snprintf(message_1kw, message_1kw_size, "in critical section: pending %s caught\n", sig_name);
     kwrite_str(2, message_1kw);
-    dl::pending_signals = dl::pending_signals | (1 << sig_num);
+    dl::pending_signals = dl::pending_signals | (1ll << sig_num);
     return false;
   }
   dl::pending_signals = 0;
