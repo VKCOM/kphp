@@ -183,7 +183,7 @@ Optional<array<mixed>> f$getopt(const string &options, array<string> longopts = 
 void global_init_runtime_libs();
 void global_init_script_allocator();
 
-void init_runtime_environment(php_query_data *data, void *mem, size_t mem_size);
+void init_runtime_environment(php_query_data *data, void *mem, size_t script_mem_size, size_t oom_handling_mem_size = 0);
 
 void free_runtime_environment();
 

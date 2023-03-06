@@ -232,3 +232,5 @@ template<typename T>
 T f$wait_multi(const array<int64_t> &resumable_ids) {
   return start_resumable<T>(new wait_multi_resumable<T>(resumable_ids));
 }
+
+void forcibly_stop_all_running_resumables();

@@ -61,7 +61,7 @@ void Adaptor::create_outbound_connections() noexcept {
 }
 
 int Adaptor::initiate_connect(std::unique_ptr<Connector> &&connector) noexcept {
-  assert(PhpScript::is_running);
+  assert(PhpScript::in_script_context);
 
   // DO NOT use query after script is terminated!!!
   ::external_driver_connect q{std::move(connector)};

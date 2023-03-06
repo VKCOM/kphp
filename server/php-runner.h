@@ -97,15 +97,16 @@ private:
 public:
   static PhpScript *volatile current_script;
   static ucontext_t_portable exit_context;
-  volatile static bool is_running;
-  volatile static bool tl_flag;
-  volatile static bool ml_flag;
+  volatile static bool in_script_context;
+  volatile static bool time_limit_exceeded;
+  volatile static bool memory_limit_exceeded;
 
   run_state_t state{run_state_t::empty};
   const char *error_message{nullptr};
   script_error_t error_type{script_error_t::no_error};
   php_query_base_t *query{nullptr};
   const size_t mem_size{0};
+  double oom_handling_memory_ratio{0};
   char *run_mem{nullptr};
   PhpScriptStack script_stack;
 
@@ -119,10 +120,10 @@ public:
   static void script_context_entrypoint() noexcept;
   static void error(const char *error_message, script_error_t error_type) noexcept;
 
-  PhpScript(size_t mem_size, size_t stack_size) noexcept;
+  PhpScript(size_t mem_size, double oom_handling_memory_ratio, size_t stack_size) noexcept;
   ~PhpScript() noexcept;
 
-  void check_tl() noexcept;
+  void check_delayed_errors() noexcept;
 
   void init(script_t *script, php_query_data *data_to_set) noexcept;
 

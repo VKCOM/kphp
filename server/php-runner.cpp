@@ -28,6 +28,7 @@
 #include "runtime/curl.h"
 #include "runtime/exception.h"
 #include "runtime/interface.h"
+#include "runtime/oom_handler.h"
 #include "runtime/profiler.h"
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
@@ -51,7 +52,7 @@ bool check_signal_critical_section(int sig_num, const char *sig_name) {
     char message_1kw[message_1kw_size];
     snprintf(message_1kw, message_1kw_size, "in critical section: pending %s caught\n", sig_name);
     kwrite_str(2, message_1kw);
-    dl::pending_signals = dl::pending_signals | (1 << sig_num);
+    dl::pending_signals = dl::pending_signals | (1ll << sig_num);
     return false;
   }
   dl::pending_signals = 0;
@@ -59,7 +60,7 @@ bool check_signal_critical_section(int sig_num, const char *sig_name) {
 }
 
 void perform_error_if_running(const char *msg, script_error_t error_type) {
-  if (PhpScript::is_running) {
+  if (PhpScript::in_script_context) {
     kwrite_str(2, msg);
     PhpScript::error(msg, error_type);
     assert ("unreachable point" && 0);
@@ -71,8 +72,8 @@ void perform_error_if_running(const char *msg, script_error_t error_type) {
 } // namespace
 
 void PhpScript::error(const char *error_message, script_error_t error_type) noexcept {
-  assert (is_running == true);
-  is_running = false;
+  assert (in_script_context == true);
+  in_script_context = false;
   current_script->state = run_state_t::error;
   current_script->error_message = error_message;
   current_script->error_type = error_type;
@@ -83,12 +84,16 @@ void PhpScript::error(const char *error_message, script_error_t error_type) noex
   setcontext_portable(&exit_context);
 }
 
-void PhpScript::check_tl() noexcept {
-  if (tl_flag) {
-    state = run_state_t::error;
-    error_type = script_error_t::timeout;
-    error_message = "Timeout exit";
-    pause();
+void PhpScript::check_delayed_errors() noexcept {
+  php_assert(PhpScript::in_script_context);
+  if (time_limit_exceeded) {
+    time_limit_exceeded = false;
+    perform_error_if_running("timeout exit\n", script_error_t::timeout);
+  }
+  if (memory_limit_exceeded) {
+    memory_limit_exceeded = false;
+    vk::singleton<OomHandler>::get().invoke();
+    perform_error_if_running("memory limit exit\n", script_error_t::memory_limit);
   }
 }
 
@@ -138,8 +143,9 @@ void PhpScriptStack::asan_stack_clear() const noexcept {
 #endif
 }
 
-PhpScript::PhpScript(size_t mem_size, size_t stack_size) noexcept
+PhpScript::PhpScript(size_t mem_size, double oom_handling_memory_ratio, size_t stack_size) noexcept
   : mem_size(mem_size)
+  , oom_handling_memory_ratio(oom_handling_memory_ratio)
   , run_mem(static_cast<char *>(mmap(nullptr, mem_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0)))
   , script_stack(stack_size) {
   // fprintf (stderr, "PHPScriptBase: constructor\n");
@@ -181,7 +187,7 @@ void PhpScript::init(script_t *script, php_query_data *data_to_set) noexcept {
   query_stats_id++;
   memset(&query_stats, 0, sizeof(query_stats));
 
-  PhpScript::ml_flag = false;
+  PhpScript::memory_limit_exceeded = false;
 }
 
 void PhpScript::on_request_timeout_error() {
@@ -215,7 +221,7 @@ int PhpScript::swapcontext_helper(ucontext_t_portable *oucp, const ucontext_t_po
 
 void PhpScript::pause() noexcept {
   //fprintf (stderr, "pause: \n");
-  is_running = false;
+  in_script_context = false;
 #if ASAN_ENABLED
   __sanitizer_start_switch_fiber(nullptr, main_thread_stack, main_thread_stacksize);
 #endif
@@ -223,8 +229,8 @@ void PhpScript::pause() noexcept {
 #if ASAN_ENABLED
   __sanitizer_finish_switch_fiber(nullptr, &main_thread_stack, &main_thread_stacksize);
 #endif
-  is_running = true;
-  check_tl();
+  in_script_context = true;
+  check_delayed_errors();
   //fprintf (stderr, "pause: ended\n");
 }
 
@@ -400,7 +406,7 @@ void PhpScript::set_script_result(script_result *res_to_set) noexcept {
 }
 
 void PhpScript::query_readed() noexcept {
-  assert (is_running == false);
+  assert (in_script_context == false);
   assert_state(run_state_t::query);
   state = run_state_t::query_running;
 }
@@ -435,14 +441,16 @@ void PhpScript::run() noexcept {
   assert (run_main->run != nullptr);
 
   dl::enter_critical_section();
-  is_running = true;
-  init_runtime_environment(data, run_mem, mem_size);
+  in_script_context = true;
+  auto oom_handling_memory_size = static_cast<size_t>(std::ceil(mem_size * oom_handling_memory_ratio));
+  auto script_memory_size = mem_size - oom_handling_memory_size;
+  init_runtime_environment(data, run_mem, script_memory_size, oom_handling_memory_size);
   if (sigsetjmp(timeout_handler, true) != 0) { // set up a timeout recovery point
     on_request_timeout_error(); // this call will not return (it changes the context)
   }
   dl::leave_critical_section();
   php_assert (dl::in_critical_section == 0); // To ensure that no critical section is left at the end of the initialization
-  check_tl();
+  check_delayed_errors();
 
   CurException = Optional<bool>{};
   run_main->run();
@@ -476,9 +484,9 @@ void PhpScript::run() noexcept {
 void PhpScript::reset_script_timeout() noexcept {
   // php_script_set_timeout has a side effect of setting the tl_flag to false;
   // we want to avoid that, since timeout should set tl_flag to true
-  bool current_tl_flag = tl_flag;
+  bool current_tl_flag = time_limit_exceeded;
   set_timeout(script_timeout);
-  tl_flag = current_tl_flag;
+  time_limit_exceeded = current_tl_flag;
 }
 
 double PhpScript::get_net_time() const noexcept {
@@ -501,9 +509,9 @@ int PhpScript::get_net_queries_count() const noexcept {
 
 PhpScript *volatile PhpScript::current_script;
 ucontext_t_portable PhpScript::exit_context;
-volatile bool PhpScript::is_running = false;
-volatile bool PhpScript::tl_flag = false;
-volatile bool PhpScript::ml_flag = false;
+volatile bool PhpScript::in_script_context = false;
+volatile bool PhpScript::time_limit_exceeded = false;
+volatile bool PhpScript::memory_limit_exceeded = false;
 
 void write_str(int fd, const char *s) noexcept {
   write(fd, s, std::min(strlen(s), size_t{1000}));
@@ -514,10 +522,10 @@ namespace kphp_runtime_signal_handlers {
 static void sigalrm_handler(int signum) {
   kwrite_str(2, "in sigalrm_handler\n");
   if (check_signal_critical_section(signum, "SIGALRM")) {
-    PhpScript::tl_flag = true;
+    PhpScript::time_limit_exceeded = true;
     // if script is not actually running, don't bother (sigalrm handler is called
     // even if timeout happens after the script already finished its execution)
-    if (PhpScript::is_running) {
+    if (PhpScript::in_script_context) {
       if (is_json_log_on_timeout_enabled) {
         vk::singleton<JsonLogger>::get().write_log_with_backtrace("Maximum execution time exceeded", E_ERROR);
       }
@@ -539,8 +547,10 @@ static void sigalrm_handler(int signum) {
 static void sigusr2_handler(int signum) {
   kwrite_str(2, "in sigusr2_handler\n");
   if (check_signal_critical_section(signum, "SIGUSR2")) {
-    PhpScript::ml_flag = true;
-    perform_error_if_running("memory limit exit\n", script_error_t::memory_limit);
+    PhpScript::memory_limit_exceeded = true;
+    if (PhpScript::in_script_context) {
+      perform_error_if_running("memory limit exit\n", script_error_t::memory_limit);
+    }
   }
 }
 
@@ -559,7 +569,7 @@ static void stack_overflow_handler(int signum) {
 }
 
 void print_http_data() {
-  if (!PhpScript::is_running) {
+  if (!PhpScript::in_script_context) {
     return;
   }
   if (!PhpScript::current_script) {
@@ -613,7 +623,7 @@ void sigsegv_handler(int signum, siginfo_t *info, void *ucontext) {
   const int trace_size = backtrace(trace, 64);
 
   void *addr = info->si_addr;
-  if (PhpScript::is_running && PhpScript::current_script->script_stack.is_protected(static_cast<char *>(addr))) {
+  if (PhpScript::in_script_context && PhpScript::current_script->script_stack.is_protected(static_cast<char *>(addr))) {
     vk::singleton<JsonLogger>::get().write_stack_overflow_log(E_ERROR);
     write_str(2, "Error -1: Callstack overflow\n");
     print_http_data();
@@ -656,7 +666,7 @@ void sigabrt_handler(int) {
   kill_workers();
   _exit(EXIT_FAILURE);
 }
-}
+} // namespace kphp_runtime_signal_handlers
 
 static __inline__ void *get_sp() {
   return __builtin_frame_address(0);
@@ -665,7 +675,7 @@ static __inline__ void *get_sp() {
 void check_stack_overflow() __attribute__ ((noinline));
 
 void check_stack_overflow() {
-  if (PhpScript::is_running) {
+  if (PhpScript::in_script_context) {
     void *sp = get_sp();
     if (PhpScript::current_script->script_stack.check_stack_overflow(static_cast<char *>(sp))) {
       vk::singleton<JsonLogger>::get().write_stack_overflow_log(E_ERROR);
@@ -714,7 +724,7 @@ void PhpScript::set_timeout(double t) noexcept {
   timer.it_value.tv_sec = sec;
   timer.it_value.tv_usec = usec;
 
-  PhpScript::tl_flag = false;
+  PhpScript::time_limit_exceeded = false;
   setitimer(ITIMER_REAL, &timer, nullptr);
 }
 
