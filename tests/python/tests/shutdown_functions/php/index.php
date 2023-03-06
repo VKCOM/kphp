@@ -120,6 +120,18 @@ function do_long_work(int $duration) {
   }
 }
 
+interface Iface {
+  public function f();
+}
+
+class Impl implements Iface {
+  public function f() { var_dump(0); }
+}
+
+function do_null_interface_method_call(Iface $iface) {
+  $iface->f();
+}
+
 function main() {
   foreach (json_decode(file_get_contents('php://input')) as $action) {
     switch ($action["op"]) {
@@ -140,6 +152,11 @@ function main() {
         break;
       case "register_shutdown_function":
         do_register_shutdown_function((string)$action["msg"]);
+        break;
+      case "null_interface_method_call":
+        $impl = new Impl();
+        $impl = null;
+        do_null_interface_method_call($impl);
         break;
       default:
         echo "unknown operation";

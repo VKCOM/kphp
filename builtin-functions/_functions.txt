@@ -168,6 +168,16 @@ function error_reporting ($e ::: int = TODO) ::: int;
 function warning ($message ::: string) ::: void;
 /** @kphp-no-return */
 function critical_error($message ::: string) ::: void;
+/**
+ * Raise a soft critical error.
+ * Unlike critical_error() this function will let the script to finish normally.
+ * In particular, the shutdown handlers will be executed.
+ *
+ * It will behave almost identically to critical_error() if -K runtime flag was used.
+ *
+ * @kphp-no-return
+ */
+function soft_critical_error($message ::: string) ::: void;
 /** @kphp-no-return */
 function exit($code = 0) ::: void;
 /** @kphp-no-return */
