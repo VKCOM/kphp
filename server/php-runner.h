@@ -97,9 +97,9 @@ private:
 public:
   static PhpScript *volatile current_script;
   static ucontext_t_portable exit_context;
-  static bool in_script_context;
-  static bool time_limit_exceeded;
-  static bool memory_limit_exceeded;
+  volatile static bool in_script_context;
+  volatile static bool time_limit_exceeded;
+  volatile static bool memory_limit_exceeded;
 
   run_state_t state{run_state_t::empty};
   const char *error_message{nullptr};

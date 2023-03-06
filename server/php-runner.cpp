@@ -509,9 +509,9 @@ int PhpScript::get_net_queries_count() const noexcept {
 
 PhpScript *volatile PhpScript::current_script;
 ucontext_t_portable PhpScript::exit_context;
-bool PhpScript::in_script_context = false;
-bool PhpScript::time_limit_exceeded = false;
-bool PhpScript::memory_limit_exceeded = false;
+volatile bool PhpScript::in_script_context = false;
+volatile bool PhpScript::time_limit_exceeded = false;
+volatile bool PhpScript::memory_limit_exceeded = false;
 
 void write_str(int fd, const char *s) noexcept {
   write(fd, s, std::min(strlen(s), size_t{1000}));
