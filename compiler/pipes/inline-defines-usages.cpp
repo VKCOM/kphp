@@ -11,6 +11,11 @@
 #include "compiler/pipes/check-access-modifiers.h"
 
 VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root) {
+  if (root->type() == op_function && current_function->name.find("src_index") == 0) {
+    printf("Pass: %s", "InlineDefinesUsages\n");
+    root.debugPrint();
+    puts("==================");
+  }
   // defined('NAME') is replaced by true or false
   if (auto defined = root.try_as<op_defined>()) {
     kphp_error_act (
@@ -49,7 +54,8 @@ VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root) {
         modulite_check_when_use_global_const(current_function, def);
       }
     }
-
+    if (current_function->name.find("src_index") == 0)
+      printf("\tName = %s\n\tType = %d\n<><><><><><><><><><><>\n", name.data(), def->type());
     if (def->type() == DefineData::def_var) {
       auto var = VertexAdaptor<op_var>::create().set_location(root);
       var->extra_type = op_ex_var_superglobal;
@@ -60,7 +66,10 @@ VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root) {
         auto access_class = def->class_id;
         check_access(class_id, lambda_class_id, FieldModifiers{def->access}, access_class, "const", def->as_human_readable());
       }
-      root = def->val.clone().set_location_recursively(root);
+      auto wrapped = VertexAdaptor<op_define_val>::create(def->val.clone());
+      wrapped->value().set_location_recursively(root);
+      wrapped->define_id = def;
+      root = wrapped;
     }
   }
 

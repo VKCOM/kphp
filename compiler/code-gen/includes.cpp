@@ -47,7 +47,7 @@ static std::string make_relative_path(const std::string &source_path, const std:
   return relative_path;
 }
 
-void IncludesCollector::add_function_body_depends(const FunctionPtr &function) {
+void IncludesCollector::add_function_body_depends(const FunctionPtr &function) { // TODO(mkornaukhov03)
   for (auto to_include : function->dep) {
     if (to_include == function) {
       continue;
@@ -60,6 +60,10 @@ void IncludesCollector::add_function_body_depends(const FunctionPtr &function) {
       kphp_assert(!to_include->header_full_name.empty());
       internal_headers_.emplace(to_include->header_full_name);
     }
+  }
+
+  for(auto const_var : function->explicit_const_var_ids) {
+    add_var_signature_depends(const_var);
   }
 
   for (auto to_include : function->class_dep) {

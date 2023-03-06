@@ -236,16 +236,16 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PassC<GenTreePostprocessPass>{}
     >> PipeC<SplitSwitchF>{}
     >> PipeC<RegisterFFIScopesF>{}
-    >> PassC<RegisterDefinesPass>{}
+    >> PassC<RegisterDefinesPass>{} // 1
     >> PipeC<CollectRequiredAndClassesF>{} >> use_nth_output_tag<0>{}
     >> SyncC<WaitForAllClassesF>{}
     >> PipeC<CheckTypeHintVariance>{}
     >> PassC<CalcLocationsPass>{}
     >> PassC<ResolveSelfStaticParentPass>{}
-    >> SyncC<CalcRealDefinesAndAssignModulitesF>{}
+    >> SyncC<CalcRealDefinesAndAssignModulitesF>{} // 2, calc const or as var
     >> SyncC<RegisterKphpConfiguration>{}
-    >> PassC<EraseDefinesDeclarationsPass>{}
-    >> PassC<InlineDefinesUsagesPass>{}
+    >> PassC<EraseDefinesDeclarationsPass>{} // 3
+    >> PassC<InlineDefinesUsagesPass>{} // 4
     >> PassC<PreprocessEq3Pass>{}
     >> PassC<PreprocessExceptions>{}
     >> SyncC<ParseAndApplyPhpdocF>{}
@@ -267,8 +267,8 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PassC<RemoveEmptyFunctionCallsPass>{}
     >> PassC<PreprocessBreakPass>{}
     >> PassC<ConvertSprintfCallsPass>{}
-    >> PassC<CalcConstTypePass>{}
-    >> PassC<CollectConstVarsPass>{}
+    >> PassC<CalcConstTypePass>{} // 5
+    >> PassC<CollectConstVarsPass>{} // 6
     >> PassC<ConvertListAssignmentsPass>{}
     >> PassC<RegisterVariablesPass>{}
     >> PassC<PropagateThrowFlagPass>{}

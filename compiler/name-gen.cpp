@@ -32,11 +32,26 @@ std::string gen_const_regexp_name(const std::string &str) {
 }
 
 bool is_array_suitable_for_hashing(VertexPtr vertex) {
-  return vertex->type() == op_array && CheckConst::is_const(vertex);
+  bool res = vertex->type() == op_array
+             && CheckConst::is_const(vertex);
+  return res;
 }
 
 std::string gen_const_array_name(const VertexAdaptor<op_array> &array) {
   return fmt_format("const_array$us{:x}", ArrayHash::calc_hash(array));
+}
+
+bool is_object_suitable_for_hashing(VertexPtr vertex) {
+  puts("HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+  bool ss = vertex->type() == op_define_val && vertex.as<op_define_val>()->value()->type() == op_func_call && vertex->const_type == cnst_const_val;
+  printf("Res = %d\nvertex const type = %d\nvertex->type() = %d\n", (int)ss, vertex->const_type, vertex->type());
+  return ss;
+}
+
+std::string gen_const_object_name(const VertexAdaptor<op_define_val> &def) {
+  kphp_error(def->value()->type() == op_func_call, "Internal error: expected op_define_val <op_func_call>");
+  auto obj_hash = ObjectHash::calc_hash(def);
+  return fmt_format("const_obj$us{:x}", obj_hash);
 }
 
 std::string gen_unique_name(const std::string& prefix, FunctionPtr function) {

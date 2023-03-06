@@ -30,6 +30,16 @@ void CalcConstTypePass::calc_const_type_of_class_fields(ClassPtr klass) {
 }
 
 VertexPtr CalcConstTypePass::on_exit_vertex(VertexPtr v) {
+  if (auto as_define_val = v.try_as<op_define_val>()) {
+    if (auto val_as_func_call = as_define_val->value().try_as<op_func_call>();
+        val_as_func_call && val_as_func_call->func_id && val_as_func_call->func_id->is_constructor()) {
+      bool has_nonconst_son = vk::any_of(*val_as_func_call, [](VertexPtr son) { return son->const_type == cnst_nonconst_val; });
+      as_define_val->value()->const_type = has_nonconst_son ? cnst_nonconst_val : cnst_const_val;
+    }
+    kphp_error(as_define_val->value()->const_type == cnst_const_val, "Non-const expression in const context");
+    v->const_type = cnst_const_val;
+    return v;
+  }
   if (auto as_func_call = v.try_as<op_func_call>()) {
     if (!as_func_call->func_id || !as_func_call->func_id->is_pure) {
       v->const_type = cnst_nonconst_val;

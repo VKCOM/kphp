@@ -18,18 +18,21 @@ FunctionCpp::FunctionCpp(FunctionPtr function) :
 
 void declare_global_vars(FunctionPtr function, CodeGenerator &W) {
   for (auto global_var : function->global_var_ids) {
+    printf("GLOBAL VAR: %s\n", global_var->name.c_str());
     W << VarExternDeclaration(global_var) << NL;
   }
 }
 
 void declare_const_vars(FunctionPtr function, CodeGenerator &W) {
   for (auto const_var : function->explicit_const_var_ids) {
+    printf("CONST VAR: %s\n", const_var->name.c_str());
     W << VarExternDeclaration(const_var) << NL;
   }
 }
 
 void declare_static_vars(FunctionPtr function, CodeGenerator &W) {
   for (auto static_var : function->static_var_ids) {
+    printf("STATIC VAR: %s\n", static_var->name.c_str());
     W << VarExternDeclaration(static_var) << NL;
   }
 }
@@ -46,7 +49,7 @@ void FunctionCpp::compile(CodeGenerator &W) const {
   function->name_gen_map = {};  // make codegeneration of this function idempotent
 
   IncludesCollector includes;
-  includes.add_function_body_depends(function);
+  includes.add_function_body_depends(function); // TODO(mkornaukhov03) here should trigger to include class def
   W << includes;
 
   W << OpenNamespace();

@@ -107,7 +107,11 @@ void RegisterVariablesPass::register_var(VertexAdaptor<op_var> var_vertex) {
       var_vertex->extra_type == op_ex_var_superglobal) {
     if (pos$$ != std::string::npos) {
       std::string class_name = name.substr(0, pos$$);
+
       std::string var_name = name.substr(pos$$ + 2);
+      if (class_name.find("BBB") != std::string::npos) {
+        printf("Class:%s\nVar=%s\n---------------\n", class_name.data(), var_name.data());
+      }
       ClassPtr klass = G->get_class(replace_characters(class_name, '$', '\\'));
       kphp_error_return(klass, fmt_format("class {} not found", class_name));
       requested_class = klass;

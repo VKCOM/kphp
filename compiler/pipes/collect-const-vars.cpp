@@ -57,21 +57,31 @@ VertexPtr CollectConstVarsPass::on_enter_vertex(VertexPtr root) {
 }
 
 bool CollectConstVarsPass::should_convert_to_const(VertexPtr root) {
-  return vk::any_of_equal(root->type(), op_string, op_array, op_concat, op_string_build, op_func_call);
+  return vk::any_of_equal(root->type(), op_string, op_array, op_concat, op_string_build, op_func_call, op_define_val);
 }
 
 VertexPtr CollectConstVarsPass::create_const_variable(VertexPtr root, Location loc) {
   std::string name;
 
-  if (root->type() == op_string) {
-    name = gen_const_string_name(root.as<op_string>()->str_val);
-  } else if (root->type() == op_conv_regexp && root.as<op_conv_regexp>()->expr()->type() == op_string) {
-    name = gen_const_regexp_name(root.as<op_conv_regexp>()->expr().as<op_string>()->str_val);
-  } else if (is_array_suitable_for_hashing(root)) {
-    name = gen_const_array_name(root.as<op_array>());
+  VertexPtr real = root;
+  if (real->type() == op_define_val) {
+    real = root.as<op_define_val>()->value(); // VertexUtil :: realValue()?
+  }
+
+  if (real->type() == op_string) {
+    name = gen_const_string_name(real.as<op_string>()->str_val);
+  } else if (real->type() == op_conv_regexp && real.as<op_conv_regexp>()->expr()->type() == op_string) {
+    name = gen_const_regexp_name(real.as<op_conv_regexp>()->expr().as<op_string>()->str_val);
+  } else if (is_array_suitable_for_hashing(real)) {
+    name = gen_const_array_name(real.as<op_array>());
+  } else if (is_object_suitable_for_hashing(root)) {
+    name = gen_const_object_name(root.as<op_define_val>());
   } else {
     name = gen_unique_name("const_var");
   }
+  root = real;
+
+  // TODO(mkornaukhov03) here should gen same name for same func calls, see ArrayHasher
 
   auto var = VertexAdaptor<op_var>::create();
   var->str_val = name;

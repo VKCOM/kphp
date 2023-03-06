@@ -8,6 +8,11 @@
 #include "common/wrappers/likely.h"
 
 VertexPtr PreprocessEq3Pass::on_exit_vertex(VertexPtr root) {
+  if (root->type() == op_function && current_function->name.find("src_index") == 0) {
+    printf("Pass: %s", "PreprocessEq3\n");
+    root.debugPrint();
+    puts("==================");
+  }
   if (root->type() == op_eq3) {
     auto eq_op = root.as<meta_op_binary>();
     VertexPtr a = eq_op->lhs();

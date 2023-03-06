@@ -46,6 +46,12 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex) {
     current_function->class_dep.insert(klass);
   }
 
+  if (auto as_var = vertex.try_as<op_var>()) {
+    if (as_var->var_id->class_id) {
+      current_function->class_dep.insert(as_var->var_id->class_id);
+    }
+  }
+
   //NB: There is no user functions in default values of any kind.
   if (auto call = vertex.try_as<op_func_call>()) {
     FunctionPtr other_function = call->func_id;

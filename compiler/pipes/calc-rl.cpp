@@ -167,6 +167,9 @@ void rl_common_calc(VertexPtr root, RLValueType expected_rl_type) {
 }
 
 void rl_calc(VertexPtr root, RLValueType expected_rl_type) {
+  if (root->type() == op_define_val) {
+    root = root.as<op_define_val>()->value();
+  }
   stage::set_location(root->get_location());
 
   root->rl_type = expected_rl_type;

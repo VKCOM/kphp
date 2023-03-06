@@ -2280,6 +2280,9 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
 } // anonymous namespace
 
 void compile_vertex(VertexPtr root, CodeGenerator &W) {
+  if (root->type() == op_define_val) {
+    root = root.as<op_define_val>()->value();
+  }
   OperationType tp = OpInfo::type(root->type());
 
   W << UpdateLocation(root->location);

@@ -124,7 +124,7 @@ void CalcRealDefinesAndAssignModulitesF::process_define(DefinePtr def) {
   in_progress.erase(&def->name);
   stack.pop_back();
 
-  if (check_const.is_const(def->val)) {
+  if (check_const.is_const(def->val)) { // TODO(mkornaukhov03) here
     if (def->class_id) {
       check_const_access.check(def->val, def->class_id);
     }

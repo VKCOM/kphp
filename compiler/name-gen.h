@@ -15,7 +15,9 @@ std::string gen_unique_name(const std::string& prefix, FunctionPtr function = Fu
 std::string gen_const_string_name(const std::string &str);
 std::string gen_const_regexp_name(const std::string &str);
 bool is_array_suitable_for_hashing(VertexPtr vertex);
+bool is_object_suitable_for_hashing(VertexPtr vertex);
 std::string gen_const_array_name(const VertexAdaptor<op_array> &array);
+std::string gen_const_object_name(const VertexAdaptor<op_define_val> &def_val);
 
 std::string resolve_uses(FunctionPtr resolve_context, const std::string &class_name);
 ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr lhs, VertexPtr v);
