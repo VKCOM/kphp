@@ -54,6 +54,7 @@ function shutdown_critical_error() {
 
 /** @kphp-required */
 function shutdown_fork_wait() {
+  fprintf(STDERR, "shutdown_fork_wait(): running_fork_id=%d\n", (int)get_running_fork_id());
   fprintf(STDERR, "before fork\n");
   $resp_future = fork(forked_func(42));
   fprintf(STDERR, "after fork\n");
@@ -120,6 +121,15 @@ function do_long_work(int $duration) {
   }
 }
 
+function long_resumable(int $duration): bool {
+  if (false) {   // make this function reachable from forks to make kphp generate resumable specific code
+    fork(long_resumable(-1));
+    sched_yield();
+  }
+  do_long_work($duration);
+  return true;
+}
+
 function main() {
   foreach (json_decode(file_get_contents('php://input')) as $action) {
     switch ($action["op"]) {
@@ -134,6 +144,13 @@ function main() {
         break;
       case "long_work":
         do_long_work((int)$action["duration"]);
+        break;
+      case "resumable_long_work":
+        long_resumable((int)$action["duration"]);
+        break;
+      case "fork_wait_resumable_long_work":
+        $f = fork(long_resumable((int)$action["duration"]));
+        wait($f);
         break;
       case "sleep":
         do_sleep((float)$action["duration"]);

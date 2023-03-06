@@ -5,7 +5,8 @@ class TestShutdownFunctionsTimeouts(KphpServerAutoTestCase):
     @classmethod
     def extra_class_setup(cls):
         cls.kphp_server.update_options({
-            "--time-limit": 1
+            "--time-limit": 1,
+            "--verbosity-resumable=2": True,
         })
 
     def test_timeout_reset_at_shutdown_function(self):
@@ -46,3 +47,42 @@ class TestShutdownFunctionsTimeouts(KphpServerAutoTestCase):
         self.assertEqual(resp.text, "ERROR")
         self.assertEqual(resp.status_code, 500)
         self.kphp_server.assert_log(["Critical error during script execution: timeout exit"], timeout=5)
+
+    def test_timeout_from_resumable_in_main_thread(self):
+        # tests that when timeout is raised inside some 'started' resumable in main thread
+        # and shutdown functions run, fork switching and resumables handling works correctly
+        resp = self.kphp_server.http_post(
+            json=[
+                {"op": "register_shutdown_function", "msg": "shutdown_fork_wait"},
+                {"op": "resumable_long_work", "duration": 2},
+            ])
+        self.assertEqual(resp.text, "ERROR")
+        self.assertEqual(resp.status_code, 500)
+        self.kphp_server.assert_log(["Critical error during script execution: timeout",
+                                     "shutdown_fork_wait\\(\\): running_fork_id=0",
+                                     "before fork",
+                                     "after fork",
+                                     "before yield",
+                                     "after yield",
+                                     "after wait",
+                                     ], timeout=5)
+
+    def test_timeout_from_fork(self):
+        # tests that when timeout is raised inside some fork
+        # and shutdown functions run, fork switching and resumables handling works correctly
+        resp = self.kphp_server.http_post(
+            json=[
+                {"op": "register_shutdown_function", "msg": "shutdown_fork_wait"},
+                {"op": "fork_wait_resumable_long_work", "duration": 2},
+            ])
+        self.assertEqual(resp.text, "ERROR")
+        self.assertEqual(resp.status_code, 500)
+        self.kphp_server.assert_log(["Critical error during script execution: timeout",
+                                     "shutdown_fork_wait\\(\\): running_fork_id=0",
+                                     "before fork",
+                                     "after fork",
+                                     "before yield",
+                                     "after yield",
+                                     "after wait",
+                                     ], timeout=5)
+
