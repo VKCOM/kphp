@@ -191,14 +191,6 @@ def parse_args():
     )
 
     parser.add_argument(
-        "--use-nocc",
-        action='store_true',
-        dest="use_nocc",
-        default=False,
-        help="use nocc for compiling kphp and running phpt"
-    )
-
-    parser.add_argument(
         'steps',
         metavar='STEPS',
         type=str,
