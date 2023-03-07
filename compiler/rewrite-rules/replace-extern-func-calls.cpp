@@ -179,13 +179,10 @@ static VertexPtr replace_JsonEncoder_getLastError(VertexAdaptor<op_func_call> ca
   return call;
 }
 
-// `classof(expr)` => `assumption(expr)::class`
-static VertexPtr replace_classof(FunctionPtr current_function, VertexAdaptor<op_func_call> call) {
-  ClassPtr klassT = assume_class_of_expr(current_function, call->args()[0], call).try_as_class();
-  kphp_error_act(klassT, "classof() used for non-instance", return call);
-  auto v_class_name = VertexAdaptor<op_string>::create();
-  v_class_name->str_val = klassT->name;
-  return v_class_name;
+// `classof(expr)` should be replaced in advance: it's not a regular function, it's available only in f<T>
+static VertexPtr replace_classof([[maybe_unused]] FunctionPtr current_function, VertexAdaptor<op_func_call> call) {
+  kphp_error(0, "classof() used incorrectly: it's a keyword to be used only for a single variable which is a generic parameter");
+  return call;
 }
 
 
