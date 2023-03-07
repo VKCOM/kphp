@@ -501,7 +501,6 @@ constexpr uint32_t MAX_SHUTDOWN_FUNCTIONS = 256;
 
 namespace {
 
-// i don't want destructors of this array to be called
 int shutdown_functions_count = 0;
 char shutdown_function_storage[MAX_SHUTDOWN_FUNCTIONS * sizeof(shutdown_function_type)];
 shutdown_function_type *const shutdown_functions = reinterpret_cast<shutdown_function_type *>(shutdown_function_storage);
@@ -616,6 +615,7 @@ void f$fastcgi_finish_request(int64_t exit_code) {
 
 void run_shutdown_functions() {
   php_assert(dl::is_malloc_replaced() == false);
+  forcibly_stop_all_running_resumables();
 
   ShutdownProfiler shutdown_profiler;
   for (int i = 0; i < shutdown_functions_count; i++) {

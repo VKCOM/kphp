@@ -19,7 +19,7 @@ function shutdown_exception_warning() {
   } catch (Throwable $e) {
     $msg = "unexpected exception in shutdown handler";
   }
-  warning($msg);
+  fprintf(STDERR, $msg . "\n");
 }
 
 /** @kphp-required */
@@ -27,7 +27,7 @@ function shutdown_after_long_work() {
   // unless the timer resets to 0 before this function is executed, it will not
   // manage to finish successfully
   do_sleep(0.75);
-  warning("shutdown function managed to finish");
+  fprintf(STDERR, "shutdown function managed to finish\n");
 }
 
 /** @kphp-required */
@@ -37,34 +37,35 @@ function shutdown_endless_loop() {
 
 /** @kphp-required */
 function shutdown_with_exit1() {
-  warning("running shutdown handler 1");
+  fprintf(STDERR, "running shutdown handler 1\n");
   exit(0);
 }
 
 /** @kphp-required */
 function shutdown_with_exit2() {
-  warning("running shutdown handler 2");
+  fprintf(STDERR, "running shutdown handler 2\n");
 }
 
 /** @kphp-required */
 function shutdown_critical_error() {
-  warning("running shutdown handler critical errors");
+  fprintf(STDERR, "running shutdown handler critical errors\n");
   critical_error("critical error from shutdown function");
 }
 
 /** @kphp-required */
 function shutdown_fork_wait() {
-  warning("before fork");
+  fprintf(STDERR, "shutdown_fork_wait(): running_fork_id=%d\n", (int)get_running_fork_id());
+  fprintf(STDERR, "before fork\n");
   $resp_future = fork(forked_func(42));
-  warning("after fork");
+  fprintf(STDERR, "after fork\n");
   while (!wait_concurrently($resp_future)) {}
-  warning("after wait");
+  fprintf(STDERR, "after wait\n");
 }
 
 function forked_func(int $i): int {
-  warning("before yield");
+  fprintf(STDERR, "before yield\n");
   sched_yield_sleep(0.5); // wait net
-  warning("after yield");
+  fprintf(STDERR, "after yield\n");
   return $i;
 }
 
@@ -120,6 +121,15 @@ function do_long_work(int $duration) {
   }
 }
 
+function long_resumable(int $duration): bool {
+  if (false) {   // make this function reachable from forks to make kphp generate resumable specific code
+    fork(long_resumable(-1));
+    sched_yield();
+  }
+  do_long_work($duration);
+  return true;
+}
+
 function main() {
   foreach (json_decode(file_get_contents('php://input')) as $action) {
     switch ($action["op"]) {
@@ -134,6 +144,13 @@ function main() {
         break;
       case "long_work":
         do_long_work((int)$action["duration"]);
+        break;
+      case "resumable_long_work":
+        long_resumable((int)$action["duration"]);
+        break;
+      case "fork_wait_resumable_long_work":
+        $f = fork(long_resumable((int)$action["duration"]));
+        wait($f);
         break;
       case "sleep":
         do_sleep((float)$action["duration"]);

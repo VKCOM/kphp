@@ -482,11 +482,10 @@ void PhpScript::run() noexcept {
 }
 
 void PhpScript::reset_script_timeout() noexcept {
-  // php_script_set_timeout has a side effect of setting the tl_flag to false;
-  // we want to avoid that, since timeout should set tl_flag to true
-  bool current_tl_flag = time_limit_exceeded;
+  // php_script_set_timeout has a side effect of setting the PhpScript::time_limit_exceeded to false;
+  // and we really do need this before executing shutdown functions otherwise shutdown functions will be terminated
+  // after the first swap context back to script at PhpScript::check_delayed_errors()
   set_timeout(script_timeout);
-  time_limit_exceeded = current_tl_flag;
 }
 
 double PhpScript::get_net_time() const noexcept {
