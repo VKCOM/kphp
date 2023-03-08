@@ -76,7 +76,7 @@ function g($foo) { var_dump($foo->value); }
 /** @param ffi_cdata<example, struct Foo*> */
 function g_ptr($foo) { var_dump($foo->value); }
 
-  $cdef = FFI::cdef('
+$cdef = FFI::cdef('
   #define FFI_SCOPE "example"
   struct Foo { int value; };
 ');
@@ -222,8 +222,6 @@ When a `c2php` can happen:
 | `T*`                                    | `ffi_cdata<$scope, T*>` | Alloc-free.                                        |
 
 > (*) Only for function results, but not struct/union fields reads.
-
-
 
 Keep in mind: KPHP will try to behave identically to how PHP would. This means that marking a function return as `const char*` if it needs a `free()` will cause a **memory leak** in both PHP and KPHP.
 
