@@ -1911,7 +1911,7 @@ void compile_shape(VertexAdaptor<op_shape> root, CodeGenerator &W) {
     sorted_by_hash.emplace_back(string_hash(key_str.c_str(), key_str.size()), double_arrow.as<op_double_arrow>()->rhs());
   }
   std::sort(sorted_by_hash.begin(), sorted_by_hash.end(), [](const auto &a, const auto &b) -> bool {
-    kphp_assert(a.first != b.first);
+    kphp_assert(a.second == b.second || a.first != b.first);
     return a.first < b.first;
   });
 

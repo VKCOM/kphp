@@ -86,10 +86,10 @@ private:
     // for every f(substr(...)) replace substr(...) with _tmp_substr(...)
     // if f() marks its associated parameter with readonly attribute
 
-    auto fn = root->func_id;
+    FunctionPtr fn = root->func_id;
 
     // fast path: skip functions that have no readonly params
-    if (fn->readonly_param_index == -1) {
+    if (!fn || fn->readonly_param_index == -1) {
       return root;
     }
     if (root->args().size() <= fn->readonly_param_index) {

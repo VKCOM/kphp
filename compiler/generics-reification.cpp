@@ -190,12 +190,6 @@ static void reify_genericT_from_call_argument(FunctionPtr current_function, Func
     if (call_arg->type() == op_string) {
       klassT = G->get_class(call_arg->get_string());
       kphp_error_return(klassT, fmt_format("Class {} not found", call_arg->get_string()));
-    } else if (call_arg->type() == op_func_call && call_arg->extra_type != op_ex_func_call_arrow) {
-      auto args = call_arg.as<op_func_call>()->args();
-      if (call_arg->get_string() == "classof" && args.size() == 1) {
-        klassT = assume_class_of_expr(current_function, args[0], call).try_as_class();
-        kphp_error_return(klassT, fmt_format("Could not detect a class of classof()"));
-      }
     }
 
     kphp_error_return(klassT, "Expected ::class as a parameter, but got not a const string");

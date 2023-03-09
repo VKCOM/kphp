@@ -1,5 +1,6 @@
 @kphp_should_fail
-/classof\(\) used for non-instance/
+/in a lambda inside castO2ToTypeofO1<BB, D1>/
+/classof\(\) used incorrectly: it's a keyword to be used only for a single variable which is a generic parameter/
 <?php
 
 class BB {
@@ -95,15 +96,6 @@ function demo1() {
         $b->bf();
 }
 
-function demo2() {
-    global $i_arr;
-    $a2 = [new A];
-    foreach (havingClass($i_arr, classof($a2[0])) as $a)
-        $a->af();
-    foreach (havingClass($i_arr, classof(new B)) as $b)
-        $b->bf();
-}
-
 function demo3() {
     global $i_arr;
     foreach (havingClassLike($i_arr, new A) as $a)
@@ -119,7 +111,6 @@ function demo4() {
 }
 
 demo1(); echo "\n";
-demo2(); echo "\n";
 demo3(); echo "\n";
 demo4(); echo "\n";
 
