@@ -1,4 +1,4 @@
-@php8 ok
+@php8.1 ok
 class A {
     public int $x;
     public function __construct(int $x) {
