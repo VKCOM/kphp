@@ -65,7 +65,7 @@ VertexPtr CollectConstVarsPass::create_const_variable(VertexPtr root, Location l
 
   VertexPtr real = root;
   if (real->type() == op_define_val) {
-    real = root.as<op_define_val>()->value(); // VertexUtil :: realValue()?
+    real = VertexUtil::get_actual_value(root);
   }
 
   if (real->type() == op_string) {
@@ -80,8 +80,6 @@ VertexPtr CollectConstVarsPass::create_const_variable(VertexPtr root, Location l
     name = gen_unique_name("const_var");
   }
   root = real;
-
-  // TODO(mkornaukhov03) here should gen same name for same func calls, see ArrayHasher
 
   auto var = VertexAdaptor<op_var>::create();
   var->str_val = name;
