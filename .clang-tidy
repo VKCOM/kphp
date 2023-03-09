@@ -47,8 +47,9 @@ Checks: |-
   -modernize-concat-nested-namespaces,
   -readability-named-parameter,
   -readability-identifier-length,
-  -bugprone-easily-swappable-parameters
-  -misc-no-recursion
+  -bugprone-easily-swappable-parameters,
+  -misc-no-recursion,
+  -misc-const-correctness
 
 CheckOptions:
   - key:             bugprone-suspicious-string-compare.WarnOnImplicitComparison
