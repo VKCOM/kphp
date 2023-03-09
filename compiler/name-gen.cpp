@@ -32,9 +32,7 @@ std::string gen_const_regexp_name(const std::string &str) {
 }
 
 bool is_array_suitable_for_hashing(VertexPtr vertex) {
-  bool res = vertex->type() == op_array
-             && CheckConst::is_const(vertex);
-  return res;
+  return vertex->type() == op_array && CheckConst::is_const(vertex);
 }
 
 std::string gen_const_array_name(const VertexAdaptor<op_array> &array) {
@@ -42,9 +40,7 @@ std::string gen_const_array_name(const VertexAdaptor<op_array> &array) {
 }
 
 bool is_object_suitable_for_hashing(VertexPtr vertex) {
-  puts("HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!");
   bool ss = vertex->type() == op_define_val && vertex.as<op_define_val>()->value()->type() == op_func_call && vertex->const_type == cnst_const_val;
-  printf("Res = %d\nvertex const type = %d\nvertex->type() = %d\n", (int)ss, vertex->const_type, vertex->type());
   return ss;
 }
 

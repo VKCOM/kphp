@@ -47,7 +47,7 @@ static std::string make_relative_path(const std::string &source_path, const std:
   return relative_path;
 }
 
-void IncludesCollector::add_function_body_depends(const FunctionPtr &function) { // TODO(mkornaukhov03)
+void IncludesCollector::add_function_body_depends(const FunctionPtr &function) {
   for (auto to_include : function->dep) {
     if (to_include == function) {
       continue;

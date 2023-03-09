@@ -201,9 +201,6 @@ protected:
   }
 
   bool on_func_call(VertexAdaptor<op_func_call> v) override {
-    /*
-     * Allows use objects in const context
-     * */
     return v->const_type == cnst_const_val;
   }
 };
@@ -247,10 +244,8 @@ protected:
   }
 
   bool on_func_call(VertexAdaptor<op_func_call> v) final {
-    /*
-     * Allows use objects in const context
-     * */
-    return v->get_string()  == "__construct";
+    // Allows use objects in const context
+    return v->get_string() == "__construct";
   }
 
 private:
@@ -453,7 +448,6 @@ protected:
   }
 
   void on_func_call(VertexAdaptor<op_func_call> v) override {
-    printf("> > > HASHING op_func_call!\n");
     if (v->func_id && v->func_id->is_constructor())
     for (auto son : v->args()) {
       visit(son);
