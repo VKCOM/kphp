@@ -118,7 +118,7 @@ def can_ignore_sanitizer_log(sanitizer_log_file):
 def search_php_bin(required_php_ver=PhpVersion.fallback):
     if sys.platform == "darwin":
         return shutil.which("php")
-    ordered_version = [PhpVersion.v8_2, PhpVersion.v8_1, PhpVersion.v8, PhpVersion.v7_4];
+    ordered_version = [PhpVersion.v8_1, PhpVersion.v8, PhpVersion.v7_4];
     for php_ver in ordered_version:
         if (php_ver == required_php_ver):
             return shutil.which(php_ver.value)
