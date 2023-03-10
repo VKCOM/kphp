@@ -15,7 +15,7 @@ constexpr int64_t JSON_PRETTY_PRINT = 128; // TODO: add actual support to untype
 constexpr int64_t JSON_PARTIAL_OUTPUT_ON_ERROR = 512;
 constexpr int64_t JSON_PRESERVE_ZERO_FRACTION = 1024;
 
-constexpr int64_t JSON_AVAILABLE_OPTIONS = JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT | JSON_PARTIAL_OUTPUT_ON_ERROR;
+constexpr int64_t JSON_AVAILABLE_OPTIONS = JSON_UNESCAPED_UNICODE | JSON_FORCE_OBJECT | JSON_PARTIAL_OUTPUT_ON_ERROR | JSON_PRETTY_PRINT;
 constexpr int64_t JSON_AVAILABLE_FLAGS_TYPED = JSON_PRETTY_PRINT | JSON_PRESERVE_ZERO_FRACTION;
 
 struct JsonPath {
@@ -46,17 +46,17 @@ class JsonEncoder : vk::not_copyable {
 public:
   JsonEncoder(int64_t options, bool simple_encode, const char *json_obj_magic_key = nullptr) noexcept;
 
-  bool encode(bool b) noexcept;
-  bool encode(int64_t i) noexcept;
-  bool encode(const string &s) noexcept;
-  bool encode(double d) noexcept;
-  bool encode(const mixed &v) noexcept;
+  bool encode(bool b, const string prefix=string()) noexcept;
+  bool encode(int64_t i, const string prefix=string()) noexcept;
+  bool encode(double d, const string prefix=string())  noexcept;
+  bool encode(const string &s, const string prefix=string()) noexcept;
+  bool encode(const mixed &v, const string prefix=string())  noexcept;
 
   template<class T>
-  bool encode(const array<T> &arr) noexcept;
+  bool encode(const array<T> &arr, const string prefix=string()) noexcept;
 
   template<class T>
-  bool encode(const Optional<T> &opt) noexcept;
+  bool encode(const Optional<T> &opt, const string prefix=string()) noexcept;
 
 private:
   bool encode_null() const noexcept;
@@ -65,10 +65,12 @@ private:
   const int64_t options_{0};
   const bool simple_encode_{false};
   const char *json_obj_magic_key_{nullptr};
+  static string pretty;
 };
 
 template<class T>
-bool JsonEncoder::encode(const array<T> &arr) noexcept {
+bool JsonEncoder::encode(const array<T> &arr, const string prefix)  noexcept {
+  string next_prefix = prefix;
   bool is_vector = arr.is_vector();
   const bool force_object = static_cast<bool>(JSON_FORCE_OBJECT & options_);
   if (!force_object && !is_vector && arr.is_pseudo_vector()) {
@@ -88,6 +90,10 @@ bool JsonEncoder::encode(const array<T> &arr) noexcept {
     for (auto p : arr) {
       if (i != 0) {
         static_SB << ',';
+        if ( (options_ & JSON_PRETTY_PRINT) && !is_vector) {
+          next_prefix.append(pretty);
+          static_SB << '\n';
+        } 
       }
       if (!encode(p.get_value())) {
         if (!(options_ & JSON_PARTIAL_OUTPUT_ON_ERROR)) {
@@ -99,9 +105,16 @@ bool JsonEncoder::encode(const array<T> &arr) noexcept {
     json_path_.leave();
   } else {
     bool is_first = true;
+    if (options_ & JSON_PRETTY_PRINT) {
+         next_prefix.append(pretty);
+         static_SB << '\n' << next_prefix;
+    }
     for (auto p : arr) {
       if (!is_first) {
         static_SB << ',';
+        if ( (options_ & JSON_PRETTY_PRINT)) {
+           static_SB << '\n' << next_prefix;
+        } 
       }
       is_first = false;
       const char *next_key = nullptr;
@@ -125,7 +138,7 @@ bool JsonEncoder::encode(const array<T> &arr) noexcept {
       }
       static_SB << ':';
       json_path_.enter(next_key);
-      if (!encode(p.get_value())) {
+      if (!encode(p.get_value(), next_prefix)) {
         if (!(options_ & JSON_PARTIAL_OUTPUT_ON_ERROR)) {
           return false;
         }
@@ -134,12 +147,17 @@ bool JsonEncoder::encode(const array<T> &arr) noexcept {
     }
   }
 
+  if ( (options_ & JSON_PRETTY_PRINT) && !is_vector) {
+       static_SB << '\n';
+       static_SB << prefix;
+  } 
+
   static_SB << "}]"[is_vector];
   return true;
 }
 
 template<class T>
-bool JsonEncoder::encode(const Optional<T> &opt) noexcept {
+bool JsonEncoder::encode(const Optional<T> &opt, const string prefix) noexcept {
   switch (opt.value_state()) {
     case OptionalState::has_value:
       return encode(opt.val());
@@ -162,7 +180,8 @@ Optional<string> f$json_encode(const T &v, int64_t options = 0, bool simple_enco
   }
 
   static_SB.clean();
-  if (unlikely(!impl_::JsonEncoder(options, simple_encode).encode(v))) {
+  string prefix = string();
+  if (unlikely(!impl_::JsonEncoder(options, simple_encode).encode(v, prefix))) {
     return false;
   }
   return static_SB.str();
