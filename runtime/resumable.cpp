@@ -218,8 +218,8 @@ static inline void update_current_resumable_id(int64_t new_id, bool is_internal)
     if (new_running_fork) {
       get_forked_resumable_info(new_running_fork)->running_time -= get_precise_now();
     }
-    if (!is_internal && kphp_tracing::on_fork_switch_callback) {
-      kphp_tracing::on_fork_switch_callback(old_running_fork, new_running_fork);
+    if (!is_internal && kphp_tracing::on_fork_switch) {
+      kphp_tracing::on_fork_switch(old_running_fork, new_running_fork);
     }
   }
   Resumable::update_output();
@@ -620,17 +620,9 @@ void wait_without_result_synchronously(int64_t resumable_id) {
     return;
   }
 
-  if (kphp_tracing::on_wait_start_callback) {
-    kphp_tracing::on_wait_start_callback();
-  }
-
   update_precise_now();
   while (wait_net(MAX_TIMEOUT_MS) && resumable->queue_id >= 0) {
     update_precise_now();
-  }
-
-  if (kphp_tracing::on_wait_finish_callback) {
-    kphp_tracing::on_wait_finish_callback(resumable_id);
   }
 }
 
@@ -753,10 +745,6 @@ public:
 
 private:
   bool run() final {
-    if (kphp_tracing::on_wait_finish_callback) {
-      kphp_tracing::on_wait_finish_callback(child_id_);
-    }
-
     remove_timer();
 
     forked_resumable_info *info = get_forked_resumable_info(child_id_);
@@ -785,9 +773,6 @@ public:
 private:
   bool run() final {
     RESUMABLE_BEGIN
-      if (kphp_tracing::on_wait_start_callback) {
-        kphp_tracing::on_wait_start_callback();
-      }
       while (true) {
         info_ = get_forked_resumable_info(child_id_);
 
@@ -801,9 +786,6 @@ private:
         TRY_WAIT_DROP_RESULT(wait_many_resumable_label1, void);
       }
 
-      if (kphp_tracing::on_wait_finish_callback) {
-        kphp_tracing::on_wait_finish_callback(child_id_);
-      }
       output_->save<bool>(true);
       child_id_ = -1;
       return true;
@@ -861,16 +843,6 @@ bool wait_without_result(int64_t resumable_id, double timeout) {
     return false;
   }
 
-  if (kphp_tracing::on_wait_start_callback) {
-    kphp_tracing::on_wait_start_callback();
-  }
-
-  auto on_wait_finish_caller = vk::finally([resumable_id](){
-    if (kphp_tracing::on_wait_finish_callback) {
-      kphp_tracing::on_wait_finish_callback(resumable_id);
-    }
-  });
-
   if (in_main_thread()) {
     if (!wait_forked_resumable(resumable_id, timeout)) {
       last_wait_error = "Timeout in wait";
@@ -879,8 +851,6 @@ bool wait_without_result(int64_t resumable_id, double timeout) {
 
     return true;
   }
-
-  on_wait_finish_caller.disable(); // it finishes inside wait_resumable, when waited resumable becomes ready
 
   wait_resumable *res = new wait_resumable(resumable_id);
   resumable->queue_id = register_started_resumable(res);
@@ -1103,20 +1073,12 @@ Optional<int64_t> wait_queue_next_synchronously(int64_t queue_id) {
     return 0;
   }
   
-  if (kphp_tracing::on_wait_start_callback) {
-    kphp_tracing::on_wait_start_callback();
-  }
-
   update_precise_now();
   while (wait_net(MAX_TIMEOUT * 1000) && q->first_finished_function == -2) {
     update_precise_now();
   }
 
-  int64_t ready_resumable_id = q->first_finished_function == -2 ? 0 : -q->first_finished_function;
-  if (kphp_tracing::on_wait_finish_callback) {
-    kphp_tracing::on_wait_finish_callback(ready_resumable_id);
-  }
-  return ready_resumable_id;
+  return q->first_finished_function == -2 ? 0 : -q->first_finished_function;
 }
 
 void wait_all_forks() noexcept {
@@ -1184,17 +1146,10 @@ private:
 
     queue_id_ = -1;
     if (q->first_finished_function != -2) {
-      int64_t ready_resumable_id = -q->first_finished_function;
-      if (kphp_tracing::on_wait_finish_callback) {
-        kphp_tracing::on_wait_finish_callback(ready_resumable_id);
-      }
-      RETURN(ready_resumable_id);
+      RETURN((-q->first_finished_function));
     }
     // timeout
     php_assert(input_ == nullptr);
-    if (kphp_tracing::on_wait_finish_callback) {
-      kphp_tracing::on_wait_finish_callback(0);
-    }
     RETURN(false);
   }
 
@@ -1231,23 +1186,12 @@ Optional<int64_t> f$wait_queue_next(int64_t queue_id, double timeout) {
     return false;
   }
 
-  if (kphp_tracing::on_wait_start_callback) {
-    kphp_tracing::on_wait_start_callback();
-  }
-
-  static auto extract_ready_resumable_id = [](wait_queue *q) {
-    return q->first_finished_function == -2
-             ? Optional<int64_t>{false}
-             : Optional<int64_t>{-q->first_finished_function};
-  };
-
   if (timeout == 0.0) {
     wait_net(0);
-    auto resumable_id = extract_ready_resumable_id(q);
-    if (kphp_tracing::on_wait_finish_callback) {
-      kphp_tracing::on_wait_finish_callback(resumable_id.val());
-    }
-    return resumable_id;
+
+    return q->first_finished_function == -2
+           ? Optional<int64_t>{false}
+           : Optional<int64_t>{-q->first_finished_function};
   }
 
   bool has_timeout = true;
@@ -1263,11 +1207,9 @@ Optional<int64_t> f$wait_queue_next(int64_t queue_id, double timeout) {
     wait_queue_next(queue_id, timeout);
 
     q = get_wait_queue(queue_id);//can change in scheduler
-    auto resumable_id = extract_ready_resumable_id(q);
-    if (kphp_tracing::on_wait_finish_callback) {
-      kphp_tracing::on_wait_finish_callback(resumable_id.val());
-    }
-    return resumable_id;
+    return q->first_finished_function == -2
+           ? Optional<int64_t>{false}
+           : Optional<int64_t>{-q->first_finished_function};
   }
 
   wait_queue_resumable *res = new wait_queue_resumable(queue_id);

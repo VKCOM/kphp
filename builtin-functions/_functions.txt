@@ -1630,14 +1630,15 @@ class DateTimeImmutable implements DateTimeInterface {
 
 function getenv(string $varname = '', bool $local_only = false): mixed;
 
-function kphp_tracing_register_on_wait_callbacks(callable():void $on_start, callable(int $ready_resumable_id):void $on_finish);
-function kphp_tracing_register_on_fork_switch_callback(callable(int $old_fork_id, int $new_fork_id):void $callback);
-function kphp_tracing_register_on_fork_callbacks(callable(int $parent_fork_id, int $started_fork_id):void $on_start, callable(int $fork_id):void $on_finish);
-function kphp_tracing_register_on_kphp_rpc_request_callbacks(
-    callable(int $rpc_query_id, int $actor_id, int $tl_magic, int $request_size):void $on_start,
-    callable(int $rpc_query_id, int $response_size, float $duration, int $awaiting_fork_id):void $on_finish);
-function kphp_tracing_register_on_kphp_job_request_callbacks(
-    callable(int $future_id, KphpJobWorkerRequest $job):void $on_start,
-    callable(int $future_id, float $duration, int $awaiting_fork_id):void $on_finish);
-
-function kphp_tracing_register_on_net_to_script_switch_callback(callable(double $net_time_delta):void $on_net_to_script_switch);
+function register_kphp_on_fork_callbacks(
+    callable(int $parent_fork_id, int $started_fork_id):void $onForkStart,
+    callable(int $fork_id):void $onForkFinish,
+    callable(int $old_fork_id, int $new_fork_id):void $onForkSwitch);
+function register_kphp_on_rpc_query_callbacks(
+    callable(int $rpc_query_id, int $actor_id, int $tl_magic, int $request_size):void $onRpcSend,
+    callable(int $rpc_query_id, int $response_size, float $duration, int $awaiting_fork_id):void $onRpcGotResponse);
+function register_kphp_on_job_worker_callbacks(
+    callable(int $future_id, KphpJobWorkerRequest $job):void $onJobSend,
+    callable(int $future_id, float $duration, int $awaiting_fork_id):void $onJobGotResponse);
+function register_kphp_on_swapcontext_callbacks(
+    callable(double $net_time_delta):void $onSwitchNetToScript);
