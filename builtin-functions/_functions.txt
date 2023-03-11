@@ -1635,7 +1635,7 @@ function register_kphp_on_fork_callbacks(
     callable(int $fork_id):void $onForkFinish,
     callable(int $old_fork_id, int $new_fork_id):void $onForkSwitch);
 function register_kphp_on_rpc_query_callbacks(
-    callable(int $rpc_query_id, int $actor_id, int $tl_magic, int $request_size):void $onRpcSend,
+    callable(int $rpc_query_id, int $actor_id, int $tl_magic, int $request_size, float $start_timestamp):void $onRpcSend,
     callable(int $rpc_query_id, int $response_size, float $duration, int $awaiting_fork_id):void $onRpcGotResponse);
 function register_kphp_on_job_worker_callbacks(
     callable(int $future_id, KphpJobWorkerRequest $job):void $onJobSend,

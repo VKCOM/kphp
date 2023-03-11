@@ -725,7 +725,7 @@ int64_t rpc_send(const class_instance<C$RpcConnection> &conn, double timeout, bo
   cur->timer = nullptr;
 
   if (kphp_tracing::on_rpc_request_start) {
-    kphp_tracing::on_rpc_request_start(!ignore_answer ? cur->resumable_id : -1, cur->actor_id, cur->function_magic, static_cast<int64_t>(request_size));
+    kphp_tracing::on_rpc_request_start(!ignore_answer ? cur->resumable_id : -1, cur->actor_id, cur->function_magic, static_cast<int64_t>(request_size), cur->send_timestamp);
   }
 
   if (ignore_answer) {
