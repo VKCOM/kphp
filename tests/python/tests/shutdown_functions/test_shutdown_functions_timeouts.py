@@ -86,3 +86,23 @@ class TestShutdownFunctionsTimeouts(KphpServerAutoTestCase):
                                      "after wait",
                                      ], timeout=5)
 
+    def test_resume_script_resumable(self):
+        #tests that answers after timeout doesn't break anything, ad doesn't continue script resumables
+        resp = self.kphp_server.http_post(
+            json=[
+                {"op": "register_shutdown_function", "msg": "shutdown_fork_wait"},
+                {"op": "sleep", "duration": 0.7},
+                {"op": "fork_send_rpc_without_wait", "duration": 0.5, "master_port": self.kphp_server.master_port},
+                {"op": "long_work", "duration": 2}
+            ])
+        self.assertEqual(resp.text, "ERROR")
+        self.assertEqual(resp.status_code, 500)
+        self.kphp_server.assert_log(["RPC request sent successfully = 1",
+                                     "Critical error during script execution: timeout",
+                                     "shutdown_fork_wait\\(\\): running_fork_id=0",
+                                     "before fork",
+                                     "after fork",
+                                     "before yield",
+                                     "after yield",
+                                     "after wait",
+                                     ], timeout=5)
