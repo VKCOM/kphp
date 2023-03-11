@@ -765,6 +765,8 @@ void ClassDeclaration::compile_generic_accept(CodeGenerator &W, ClassPtr klass) 
                                 << "void generic_accept(Visitor &&visitor) " << BEGIN;
   for (auto cur_klass = klass; cur_klass; cur_klass = cur_klass->parent_class) {
     cur_klass->members.for_each([&W](const ClassMemberInstanceField &f) {
+       if  (f.modifiers.is_private() ) return;
+       if  (f.modifiers.is_protected() ) return;
       // will generate visitor("field_name", $field_name);
       W << "visitor(\"" << f.local_name() << "\", $" << f.local_name() << ");" << NL;
     });
