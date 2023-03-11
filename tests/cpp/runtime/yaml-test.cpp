@@ -136,6 +136,19 @@ TEST(yaml_test, test_yaml_map_recursive) {
   ASSERT_DOUBLE_EQ(example[string("self")][string("third")].as_double(), result[string("self")][string("third")].as_double());
 }
 
+TEST(yaml_test, test_yaml_empty_array) {
+  array<mixed> empty_array;
+  mixed result = f$yaml_parse(f$yaml_emit(empty_array));
+  ASSERT_TRUE(result.is_array());
+  ASSERT_TRUE(result.as_array().empty());
+}
+
+TEST(yaml_test, test_yaml_null) {
+  mixed example;
+  mixed result = f$yaml_parse(f$yaml_emit(example));
+  ASSERT_TRUE(result.is_null());
+}
+
 TEST(yaml_test, test_yaml_string_file) {
   mixed example = string("string");
   string filename("test_yaml_string");
@@ -299,5 +312,24 @@ TEST(yaml_test, test_yaml_map_recursive_file) {
   ASSERT_EQ(example[string("self")][string("second")].as_int(), result[string("self")][string("second")].as_int());
   ASSERT_TRUE(result[string("self")][string("third")].is_float());
   ASSERT_DOUBLE_EQ(example[string("self")][string("third")].as_double(), result[string("self")][string("third")].as_double());
+  ASSERT_TRUE(f$unlink(filename));
+}
+
+TEST(yaml_test, test_yaml_empty_array_file) {
+  array<mixed> empty_array;
+  string filename("test_yaml_empty_array");
+  ASSERT_TRUE(f$yaml_emit_file(filename, empty_array));
+  mixed result = f$yaml_parse_file(filename);
+  ASSERT_TRUE(result.is_array());
+  ASSERT_TRUE(result.as_array().empty());
+  ASSERT_TRUE(f$unlink(filename));
+}
+
+TEST(yaml_test, test_yaml_null_file) {
+  mixed example;
+  string filename("test_yaml_null");
+  ASSERT_TRUE(f$yaml_emit_file(filename, example));
+  mixed result = f$yaml_parse_file(filename);
+  ASSERT_TRUE(result.is_null());
   ASSERT_TRUE(f$unlink(filename));
 }
