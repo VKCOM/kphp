@@ -939,3 +939,4 @@ void free_files_lib() {
   dl::leave_critical_section();
 }
 
+#include "files_touch.cpp"
