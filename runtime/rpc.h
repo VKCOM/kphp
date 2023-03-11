@@ -21,7 +21,7 @@ struct rpc_request {
     const char *error;
   };
   uint32_t function_magic{0};
-  int64_t actor_id{-1};
+  int64_t actor_port{0}; // high int: actor_id, low int: connection port
   double send_timestamp{0.0};
 };
 
@@ -115,11 +115,11 @@ struct C$RpcConnection final : public refcountable_php_classes<C$RpcConnection>,
   int32_t host_num{-1};
   int32_t port{-1};
   int32_t timeout_ms{-1};
-  int64_t actor_id{-1};
+  int32_t actor_id{-1};
   int32_t connect_timeout{-1};
   int32_t reconnect_timeout{-1};
 
-  C$RpcConnection(int32_t host_num, int32_t port, int32_t tmeout_ms, int64_t actor_id, int32_t connect_timeout, int32_t reconnect_timeout);
+  C$RpcConnection(int32_t host_num, int32_t port, int32_t tmeout_ms, int32_t actor_id, int32_t connect_timeout, int32_t reconnect_timeout);
 
   const char *get_class() const  noexcept {
     return R"(RpcConnection)";

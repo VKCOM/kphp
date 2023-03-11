@@ -320,7 +320,7 @@ bool f$fetch_end() {
   return true;
 }
 
-C$RpcConnection::C$RpcConnection(int32_t host_num, int32_t port, int32_t timeout_ms, int64_t actor_id, int32_t connect_timeout, int32_t reconnect_timeout) :
+C$RpcConnection::C$RpcConnection(int32_t host_num, int32_t port, int32_t timeout_ms, int32_t actor_id, int32_t connect_timeout, int32_t reconnect_timeout) :
   host_num(host_num),
   port(port),
   timeout_ms(timeout_ms),
@@ -336,7 +336,7 @@ class_instance<C$RpcConnection> f$new_rpc_connection(const string &host_name, in
   }
 
   return make_instance<C$RpcConnection>(host_num, static_cast<int32_t>(port), timeout_convert_to_ms(timeout),
-                                        store_parse_number<int64_t >(actor_id),
+                                        store_parse_number<int32_t>(actor_id),
                                         timeout_convert_to_ms(connect_timeout), timeout_convert_to_ms(reconnect_timeout));
 }
 
@@ -720,12 +720,12 @@ int64_t rpc_send(const class_instance<C$RpcConnection> &conn, double timeout, bo
 
   cur->resumable_id = register_forked_resumable(new rpc_resumable(result));
   cur->function_magic = function_magic;
-  cur->actor_id = conn.get()->actor_id;
+  cur->actor_port = (static_cast<int64_t>(conn.get()->actor_id) << 32) + conn.get()->port;
   cur->send_timestamp = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
   cur->timer = nullptr;
 
   if (kphp_tracing::on_rpc_request_start) {
-    kphp_tracing::on_rpc_request_start(!ignore_answer ? cur->resumable_id : -1, cur->actor_id, cur->function_magic, static_cast<int64_t>(request_size), cur->send_timestamp);
+    kphp_tracing::on_rpc_request_start(!ignore_answer ? cur->resumable_id : -1, cur->actor_port, cur->function_magic, static_cast<int64_t>(request_size), cur->send_timestamp);
   }
 
   if (ignore_answer) {

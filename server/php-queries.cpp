@@ -1105,13 +1105,13 @@ const char *net_event_t::get_description() const noexcept {
     [this](const net_events_data::rpc_answer &event) {
       auto *r = get_rpc_request(slot_id);
       snprintf(BUF.data(), BUF.size(), "RPC_RESPONSE: actor_id=%" PRIi64 ", tl_function=%s(0x%08x), response_magic=0x%08x, bytes_length=%d",
-                           r->actor_id, tl_function_magic_to_name(r->function_magic), r->function_magic,
+                           r->actor_port >> 32, tl_function_magic_to_name(r->function_magic), r->function_magic,
                            event.result_len >= 4 ? *reinterpret_cast<unsigned int *>(event.result) : 0, event.result_len);
     },
     [this](const net_events_data::rpc_error &event) {
       auto *r = get_rpc_request(slot_id);
       snprintf(BUF.data(), BUF.size(), "RPC_ERROR: actor_id=%" PRIi64 ", tl_function_magic=0x%08x, error_code=%d, error_message=%s",
-                           r->actor_id, r->function_magic, event.error_code, event.error_message);
+                           r->actor_port >> 32, r->function_magic, event.error_code, event.error_message);
     },
     [](const net_events_data::job_worker_answer &event) {
       if (event.job_result) {
