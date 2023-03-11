@@ -10,6 +10,7 @@ class TestOomHandler(KphpServerAutoTestCase):
             "--job-workers-ratio": 0.5,
             "--hard-memory-limit": "10m",
             "--oom-handling-memory-ratio": 0.1,
+            "--time-limit": 1,
         })
 
     def _generic_test(self, params: str):
@@ -67,3 +68,11 @@ class TestOomHandler(KphpServerAutoTestCase):
         self._generic_test("test_case=oom_from_fork".format(self.kphp_server.master_port))
         self.kphp_server.assert_log(["fork_started_succesfully=1",
                                      "start OOM handler from fork_id=0"], timeout=5)
+
+    def test_timeout_in_oom_handler(self):
+        resp = self.kphp_server.http_get("/test_oom_handler?test_case=timeout_in_oom_handler")
+        self.assertEqual(resp.status_code, 500)
+        self.kphp_server.assert_log([
+            "allocations_cnt=[1-9]\\d?,memory_allocated=8\\d{5},estimate_memory_usage\\(arr\\)=8\\d{5}",
+            "timeout exit in OOM handler",
+        ], timeout=5)

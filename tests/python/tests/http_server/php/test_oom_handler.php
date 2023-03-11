@@ -10,8 +10,20 @@ function make_array_of_volume(int $bytes) {
   return $arr;
 }
 
+
+function safe_sleep(float $sleep_time_sec) {
+  $s = microtime(true);
+  do {
+  } while(microtime(true) - $s < $sleep_time_sec);
+}
+
+
 function make_oom_error() {
   make_array_of_volume(11 * 1024 * 1024);
+}
+
+function make_timeout_error() {
+  safe_sleep(1.5);
 }
 
 function fake_query(float $time_to_sleep) {
@@ -26,6 +38,10 @@ $script_allocated_array = [];
  */
 function oom_handler() {
   global $script_allocated_array, $test_case;
+
+  register_shutdown_function(function() {
+    critical_error("Shutdown functions registered from OOM handler shouldn't be called too");
+  });
 
   $fork_id = (int)get_running_fork_id();
   fprintf(STDERR, "start OOM handler from fork_id=$fork_id\n");
@@ -84,7 +100,7 @@ function oom_handler() {
     if ($ans !== true) {
       critical_error("fork wait failed, wait(future)=" . var_export($ans, true));
     }
-  } else if ($test_case !== "basic") {
+  } else if ($test_case !== "basic" && $test_case !== "timeout_in_oom_handler") {
     critical_error("Unexpected test case $test_case");
   }
 
@@ -99,6 +115,9 @@ function oom_handler() {
   $arr_mem_usage = estimate_memory_usage($arr);
   fprintf(STDERR, "allocations_cnt=$allocations_cnt,memory_allocated=$mem_allocated,estimate_memory_usage(arr)=$arr_mem_usage\n");
 
+  if ($test_case === "timeout_in_oom_handler") {
+    make_timeout_error();
+  }
 }
 
 function my_fork(string $test_case) {
@@ -121,6 +140,9 @@ function my_fork(string $test_case) {
 
 function main() {
   global $script_allocated_array, $test_case;
+  register_shutdown_function(function() {
+    critical_error("Shutdown functions shouldn't be called after OOM handler");
+  });
   $test_case = (string)$_GET["test_case"];
   $script_allocated_array = [1,2,3,4,5];
   $script_allocated_array[] = rand();
