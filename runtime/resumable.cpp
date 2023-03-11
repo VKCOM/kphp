@@ -1321,11 +1321,18 @@ int32_t get_resumable_stack(void **buffer, int32_t limit) {
 void forcibly_stop_all_running_resumables() {
   resumable_finished = true;
   runned_resumable_id = 0;
+  first_free_started_resumable_id = 0;
   Resumable::update_output();
   // Forcibly bind all suspension points to main thread.
   // It will prevent all previously started forks from continuing
   for (int64_t i = first_started_resumable_id; i < current_started_resumable_id; ++i) {
     started_resumable_info *info = get_started_resumable_info(i);
     info->parent_id = 0;
+  }
+  // Forcibly unbind all forks from their waits.
+  // Make it as if nobody waits them anymore
+  for (int64_t i = first_forked_resumable_id; i < current_forked_resumable_id; ++i) {
+    forked_resumable_info *info = get_forked_resumable_info(i);
+    info->queue_id = 0;
   }
 }
