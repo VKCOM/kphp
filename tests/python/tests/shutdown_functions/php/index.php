@@ -62,9 +62,9 @@ function shutdown_fork_wait() {
   fprintf(STDERR, "after wait\n");
 }
 
-function forked_func(int $i): int {
+function forked_func(int $i, float $duration = 0.5): int {
   fprintf(STDERR, "before yield\n");
-  sched_yield_sleep(0.5); // wait net
+  sched_yield_sleep($duration); // wait net
   fprintf(STDERR, "after yield\n");
   return $i;
 }
@@ -130,6 +130,19 @@ function long_resumable(int $duration): bool {
   return true;
 }
 
+function send_rpc(int $master_port, float $duration, bool $expect_resume = true) {
+  $c = new_rpc_connection("127.0.0.1", $master_port, 0, 100, 100);
+  $req_id = rpc_tl_query_one($c, ["_" => "engine.sleep", "time_ms" => (int)($duration * 1000)]);
+  $succ = ($req_id > 0);
+  fprintf(STDERR, "RPC request sent successfully = $succ\n");
+  $resp = rpc_tl_query_result_one($req_id);
+  if (!$expect_resume) {
+    critical_error("This fork mustn't be resumed");
+  }
+  fprintf(STDERR, "Got RPC answer = " . var_export($resp, true) . "\n");
+  return $resp["result"];
+}
+
 function main() {
   foreach (json_decode(file_get_contents('php://input')) as $action) {
     switch ($action["op"]) {
@@ -154,6 +167,16 @@ function main() {
         break;
       case "sleep":
         do_sleep((float)$action["duration"]);
+        break;
+      case "fork_send_rpc_without_wait":
+        $master_port = (int)$action["master_port"];
+        $duration = (float)$action["duration"];
+        fork(send_rpc($master_port, $duration, false));
+        rpc_flush();
+        do_sleep(0.001);
+        rpc_flush();
+        do_sleep(0.001);
+        rpc_flush();
         break;
       case "register_shutdown_function":
         do_register_shutdown_function((string)$action["msg"]);
