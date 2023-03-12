@@ -1635,10 +1635,10 @@ function register_kphp_on_fork_callbacks(
     callable(int $fork_id):void $onForkFinish,
     callable(int $old_fork_id, int $new_fork_id):void $onForkSwitch);
 function register_kphp_on_rpc_query_callbacks(
-    callable(int $rpc_query_id, int $actor_port, int $tl_magic, int $request_size, float $start_timestamp):void $onRpcSend,
-    callable(int $rpc_query_id, int $response_size, float $duration, int $awaiting_fork_id):void $onRpcGotResponse);
+    callable(int $rpcQueryID, int $actorPort, int $tlMagic, int $bytesSent, float $startTimestamp):void $onRpcSend,
+    callable(int $rpcQueryID, int $bytesRecv, float $durationSec, int $awaiting_fork_id):void $onRpcGotResponse);
 function register_kphp_on_job_worker_callbacks(
-    callable(int $future_id, KphpJobWorkerRequest $job):void $onJobSend,
-    callable(int $future_id, float $duration, int $awaiting_fork_id):void $onJobGotResponse);
+    callable(int $jobID, KphpJobWorkerRequest $job, float $startTimestamp):void $onJobSend,
+    callable(int $jobID, float $durationSec, int $awaiting_fork_id):void $onJobGotResponse);
 function register_kphp_on_swapcontext_callbacks(
-    callable(double $net_time_delta):void $onSwitchNetToScript);
+    callable(double $netTimeDelta):void $onSwitchNetToScript);

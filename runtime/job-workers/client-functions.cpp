@@ -144,7 +144,7 @@ Optional<int64_t> kphp_job_worker_start_impl(const class_instance<C$KphpJobWorke
   int job_resumable_id = send_job_request_message(memory_request, timeout, nullptr, no_reply);
 
   if (kphp_tracing::on_job_request_start) {
-    kphp_tracing::on_job_request_start(no_reply ? -1 : job_resumable_id, request);
+    kphp_tracing::on_job_request_start(no_reply ? -1 : job_resumable_id, request, memory_request->job_start_time);
   }
 
   if (job_resumable_id < 0) {
@@ -237,7 +237,7 @@ array<Optional<int64_t>> f$kphp_job_worker_start_multi(const array<class_instanc
 
     int job_resumable_id = send_job_request_message(job_request, timeout, common_job_request);
     if (kphp_tracing::on_job_request_start) {
-      kphp_tracing::on_job_request_start(job_resumable_id, req);
+      kphp_tracing::on_job_request_start(job_resumable_id, req, job_request->job_start_time);
     }
     if (job_resumable_id > 0) {
       res.set_value(it.get_key(), job_resumable_id);
