@@ -6,7 +6,6 @@
 
 #include "common/kprintf.h"
 #include "runtime/allocator.h"
-#include "runtime/critical_section.h"
 #include "runtime/php_assert.h"
 #include "server/php-runner.h"
 #include "runtime/resumable.h"
@@ -29,13 +28,16 @@ void OomHandler::invoke() noexcept {
     php_critical_error("Out of memory error happened inside OOM handler");
   } else {
     kprintf("Invoking OOM handler\n");
-    dl::CriticalSectionGuard guard;
     forcibly_stop_all_running_resumables();
     dl::get_default_script_allocator().unfreeze_oom_handling_memory();
     callback_running_ = true;
     callback_();
     callback_running_ = false;
   }
+}
+
+bool OomHandler::is_running() const noexcept {
+  return callback_running_;
 }
 
 void OomHandler::set_callback(const on_oom_callback_t &callback) noexcept {

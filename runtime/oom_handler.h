@@ -17,6 +17,7 @@ public:
 
   void set_callback(const on_oom_callback_t &callback) noexcept;
   void invoke() noexcept;
+  bool is_running() const noexcept;
 private:
   on_oom_callback_t callback_;
   bool callback_running_ = false;

@@ -193,6 +193,11 @@ void PhpScript::init(script_t *script, php_query_data *data_to_set) noexcept {
 void PhpScript::on_request_timeout_error() {
   // note: this function runs only when is_running=true
 
+  if (vk::singleton<OomHandler>::get().is_running()) {
+    perform_error_if_running("timeout exit in OOM handler\n", script_error_t::timeout);
+    return;
+  }
+
   if (dl::is_malloc_replaced()) {
     dl::rollback_malloc_replacement();
   }
@@ -447,6 +452,7 @@ void PhpScript::run() noexcept {
   init_runtime_environment(data, run_mem, script_memory_size, oom_handling_memory_size);
   if (sigsetjmp(timeout_handler, true) != 0) { // set up a timeout recovery point
     on_request_timeout_error(); // this call will not return (it changes the context)
+    assert(false && "Must be unreachable");
   }
   dl::leave_critical_section();
   php_assert (dl::in_critical_section == 0); // To ensure that no critical section is left at the end of the initialization
