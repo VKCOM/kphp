@@ -1,13 +1,9 @@
 @php8.1 ok
-class A {
-    public int $x;
-    public function __construct(int $x) {
-        $this->x = $x;
-    }
-    public function __toString() {
-        return strval($this->x);
-    }
-}
+<?php
+require_once 'kphp_tester_include.php';
 
-const OBJ = new A(42);
+const OBJ = new Classes\A(42);
 echo(OBJ);
+
+$tmp = OBJ;
+echo($tmp);
