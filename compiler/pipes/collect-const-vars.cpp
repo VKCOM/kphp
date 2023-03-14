@@ -22,6 +22,9 @@ int CollectConstVarsPass::get_dependency_level(VertexPtr vertex) {
 }
 VertexPtr CollectConstVarsPass::on_exit_vertex(VertexPtr root) {
   VertexPtr res = root;
+  if (auto as_def = res.try_as<op_define_val>()) {
+    res = as_def->value();
+  }
   if (root->const_type == cnst_const_val) {
     const_array_depth_ -= root->type() == op_array;
     if (should_convert_to_const(root)) {
@@ -32,6 +35,15 @@ VertexPtr CollectConstVarsPass::on_exit_vertex(VertexPtr root) {
   in_param_list_ -= root->type() == op_func_param_list;
   return res;
 }
+
+static bool is_underlying_array_or_string_or_func_call(VertexPtr root) {
+  auto real_type = root->type();
+  if (auto as_define_val = root.try_as<op_define_val>())  {
+    real_type = as_define_val->value()->type();
+  }
+  return vk::any_of_equal(real_type, op_array, op_string, op_func_call);
+}
+
 VertexPtr CollectConstVarsPass::on_enter_vertex(VertexPtr root) {
   in_param_list_ += root->type() == op_func_param_list;
 
@@ -46,10 +58,8 @@ VertexPtr CollectConstVarsPass::on_enter_vertex(VertexPtr root) {
         return create_const_variable(root, root->location);
       }
     }
-    if (vk::none_of_equal(root->type(), op_string, op_array)) {
-      if (should_convert_to_const(root)) {
-        return create_const_variable(root, root->location);
-      }
+    if (!is_underlying_array_or_string_or_func_call(root) && should_convert_to_const(root)) {
+      return create_const_variable(root, root->location);
     }
     const_array_depth_ += root->type() == op_array;
   }
@@ -57,7 +67,17 @@ VertexPtr CollectConstVarsPass::on_enter_vertex(VertexPtr root) {
 }
 
 bool CollectConstVarsPass::should_convert_to_const(VertexPtr root) {
-  return vk::any_of_equal(root->type(), op_string, op_array, op_concat, op_string_build, op_func_call, op_define_val);
+  auto real_type = root->type();
+  if (auto as_defined_val = root.try_as<op_define_val>()) {
+    real_type = as_defined_val->value()->type();
+  }
+  auto inner = VertexUtil::get_value_if_inlined(root);
+  if (auto as_func_call = inner.try_as<op_func_call>()) {
+    const bool is_pure = as_func_call->func_id && as_func_call->func_id->is_pure;
+    const bool is_inlined_const_object = as_func_call->func_id && root->type() == op_define_val && as_func_call->func_id->is_constructor();
+    return is_pure || is_inlined_const_object;
+  }
+  return vk::any_of_equal(real_type, op_string, op_array, op_concat, op_string_build);
 }
 
 VertexPtr CollectConstVarsPass::create_const_variable(VertexPtr root, Location loc) {
@@ -65,7 +85,7 @@ VertexPtr CollectConstVarsPass::create_const_variable(VertexPtr root, Location l
 
   VertexPtr real = root;
   if (real->type() == op_define_val) {
-    real = VertexUtil::get_actual_value(root);
+    real = VertexUtil::get_value_if_inlined(root);
   }
 
   if (real->type() == op_string) {
@@ -87,15 +107,20 @@ VertexPtr CollectConstVarsPass::create_const_variable(VertexPtr root, Location l
   var->location = loc;
 
   VarPtr var_id = G->get_global_var(name, VarData::var_const_t, root);
-  if (root->type() != op_array) {
-    var_id->dependency_level = 0;
-  } else {
+  if (root->type() == op_array) {
     int max_dep_level = 1;
     for (auto it : root.as<op_array>()->args()) {
       max_dep_level = std::max(max_dep_level, get_dependency_level(it) + 1);
     }
-
     var_id->dependency_level = max_dep_level;
+  } else if (auto as_func_call = root.try_as<op_func_call>(); as_func_call && as_func_call->func_id && as_func_call->func_id->is_constructor()) {
+    int max_dep_level = 1;
+    for (auto it : *as_func_call) {
+      max_dep_level = std::max(max_dep_level, get_dependency_level(it) + 1);
+    }
+    var_id->dependency_level = max_dep_level;
+  } else {
+    var_id->dependency_level = 0;
   }
 
   if (const_array_depth_ > 0) {

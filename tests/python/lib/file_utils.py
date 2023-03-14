@@ -11,7 +11,6 @@ class PhpVersion(enum.Enum):
     v8 = "php8"
     v8_1 = "php8.1"
     v8_2 = "php8.2"
-    fallback = "php7.4"
 
     def major(self):
         return self.value[3]
@@ -115,7 +114,7 @@ def can_ignore_sanitizer_log(sanitizer_log_file):
     return ignore_sanitizer
 
 
-def search_php_bin(required_php_ver=PhpVersion.fallback):
+def search_php_bin(required_php_ver=PhpVersion.v7_4):
     if sys.platform == "darwin":
         return shutil.which("php")
     ordered_version = [PhpVersion.v8_1, PhpVersion.v8, PhpVersion.v7_4]
@@ -128,4 +127,4 @@ def search_php_bin(required_php_ver=PhpVersion.fallback):
         if php_path:
             return php_path
     # invalid php version
-    return shutil.which(PhpVersion.fallback.value)
+    return shutil.which(PhpVersion.v7_4.value)

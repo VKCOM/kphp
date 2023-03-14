@@ -17,8 +17,12 @@ VertexPtr VertexUtil::get_actual_value(VertexPtr v) {
       return var->var_id->init_val;
     }
   }
-  if (auto def_val = v.try_as<op_define_val>()) {
-    return def_val->value();
+  return v;
+}
+
+VertexPtr VertexUtil::get_value_if_inlined(VertexPtr v) {
+  if (auto as_define_val = v.try_as<op_define_val>()) {
+    return as_define_val->value();
   }
   return v;
 }

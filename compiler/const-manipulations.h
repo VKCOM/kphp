@@ -248,6 +248,10 @@ protected:
     return v->get_string() == "__construct";
   }
 
+  bool on_define_val(VertexAdaptor<op_define_val>) final {
+    return true;
+  }
+
 private:
   int in_concat = 0;
 };
@@ -366,7 +370,7 @@ protected:
   }
 
   VertexPtr on_func_call(VertexAdaptor<op_func_call> v) final {
-    return v;
+    return VertexAdaptor<op_define_val>::create(v);
   }
 };
 

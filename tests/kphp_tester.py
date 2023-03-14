@@ -47,7 +47,7 @@ class TestFile:
         for version in PhpVersion:
             if version.value in self.tags:
                 return version
-        return PhpVersion.fallback
+        return PhpVersion.v7_4
 
 
     def make_kphp_once_runner(self, use_nocc, cxx_name):

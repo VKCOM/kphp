@@ -59,10 +59,14 @@ VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root) {
         auto access_class = def->class_id;
         check_access(class_id, lambda_class_id, FieldModifiers{def->access}, access_class, "const", def->as_human_readable());
       }
-      auto wrapped = VertexAdaptor<op_define_val>::create(def->val.clone());
-      wrapped->value().set_location_recursively(root);
-      wrapped->define_id = def;
-      root = wrapped;
+      if (def->val->type() == op_define_val) {
+        root = def->val.clone().set_location_recursively(root);
+      } else {
+        auto wrapped = VertexAdaptor<op_define_val>::create(def->val.clone());
+        wrapped->value().set_location_recursively(root);
+        wrapped->define_id = def;
+        root = wrapped;
+      }
     }
   }
 

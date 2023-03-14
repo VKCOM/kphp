@@ -131,6 +131,10 @@ void CalcRealDefinesAndAssignModulitesF::process_define(DefinePtr def) {
     def->type() = DefineData::def_const;
     def->val = make_const.make_const(def->val);
     def->val->const_type = cnst_const_val;
+    if (auto inlined = def->val.try_as<op_define_val>()) { // inlined another define
+      inlined->define_id = def;
+      inlined->value()->const_type = cnst_const_val;
+    }
   } else {
     def->type() = DefineData::def_var;
   }
