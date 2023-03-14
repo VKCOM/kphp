@@ -56,9 +56,9 @@
 #include "net/net-tcp-rpc-server.h"
 
 #include "runtime/interface.h"
+#include "runtime/json-functions.h"
 #include "runtime/profiler.h"
 #include "runtime/rpc.h"
-#include "runtime/json-functions.h"
 #include "server/cluster-name.h"
 #include "server/confdata-binlog-replay.h"
 #include "server/database-drivers/adaptor.h"
@@ -85,6 +85,7 @@
 #include "server/server-stats.h"
 #include "server/statshouse/statshouse-client.h"
 #include "server/statshouse/worker-stats-buffer.h"
+#include "server/web-server-stats.h"
 #include "server/workers-control.h"
 
 using job_workers::JobWorkersContext;
@@ -1421,6 +1422,7 @@ void cron() {
   if (master_flag == -1 && getppid() == 1) {
     turn_sigterm_on();
   }
+  webserver_stats = vk::singleton<WebServerStats>::get().load();
   vk::singleton<ServerStats>::get().update_this_worker_stats();
   vk::singleton<statshouse::WorkerStatsBuffer>::get().flush_if_needed();
 }
@@ -1490,6 +1492,10 @@ void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port) n
       if (verbosity > 0 && http_sfd >= 0) {
         vkprintf (-1, "created listening socket at %s:%d, fd=%d\n", ip_to_print(settings_addr.s_addr), http_port, http_sfd);
       }
+
+      uint16_t total_workers = vk::singleton<WorkersControl>::get().get_count(WorkerType::general_worker);
+      uint16_t running_workers = vk::singleton<WorkersControl>::get().get_alive_count(WorkerType::general_worker);
+      webserver_stats = WebServerStats::Stats(running_workers,0,total_workers - running_workers,total_workers);
 
       if (http_sfd >= 0) {
         init_listening_tcpv6_connection(http_sfd, &ct_php_engine_http_server, &http_methods, SM_SPECIAL);
@@ -2332,6 +2338,7 @@ int run_main(int argc, char **argv, php_mode mode) {
   set_core_dump_rlimit(1LL << 40);
 #endif
   vk::singleton<ServerStats>::get().init();
+  vk::singleton<WebServerStats>::get().init();
 
   max_special_connections = 1;
   set_on_active_special_connections_update_callback([] {

@@ -25,6 +25,7 @@ prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
         server-stats.cpp
         slot-ids-factory.cpp
         workers-control.cpp
+        web-server-stats.cpp
         statshouse/statshouse-client.cpp
         statshouse/add-metrics-batch.cpp
         statshouse/worker-stats-buffer.cpp)

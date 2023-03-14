@@ -63,6 +63,7 @@
 #include "server/php-queries.h"
 #include "server/php-query-data.h"
 #include "server/php-worker.h"
+#include "server/web-server-stats.h"
 #include "server/workers-control.h"
 
 static enum {
@@ -1833,6 +1834,10 @@ string f$get_engine_version() {
 
 int64_t f$get_engine_workers_number() {
   return vk::singleton<WorkersControl>::get().get_total_workers_count();
+}
+
+WebServerStats::Stats f$get_webserver_stats() {
+  return webserver_stats;
 }
 
 static char ini_vars_storage[sizeof(array<string>)];
