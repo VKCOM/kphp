@@ -72,6 +72,7 @@ prepend(KPHP_COMPILER_CODEGEN_SOURCES code-gen/
         code-gen-task.cpp
         code-generator.cpp
         declarations.cpp
+        files/cmake-lists-txt.cpp
         files/function-header.cpp
         files/function-source.cpp
         files/global_vars_memory_stats.cpp
@@ -259,6 +260,9 @@ target_include_directories(kphp2cpp PUBLIC ${KPHP_COMPILER_DIR})
 
 prepare_cross_platform_libs(COMPILER_LIBS yaml-cpp re2)
 set(COMPILER_LIBS vk::kphp2cpp_src vk::tlo_parsing_src vk::popular_common ${COMPILER_LIBS} fmt::fmt OpenSSL::Crypto pthread)
+if(NOT APPLE)
+    list(APPEND COMPILER_LIBS stdc++fs)
+endif()
 
 target_link_libraries(kphp2cpp PRIVATE ${COMPILER_LIBS})
 target_link_options(kphp2cpp PRIVATE ${NO_PIE})
