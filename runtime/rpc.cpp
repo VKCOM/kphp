@@ -720,7 +720,7 @@ int64_t rpc_send(const class_instance<C$RpcConnection> &conn, double timeout, bo
 
   cur->resumable_id = register_forked_resumable(new rpc_resumable(result));
   cur->function_magic = function_magic;
-  cur->actor_port = (static_cast<int64_t>(conn.get()->actor_id) << 32) + conn.get()->port;
+  cur->actor_port = conn.get()->actor_id > 0 ? conn.get()->actor_id : -conn.get()->port;
   cur->send_timestamp = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
   cur->timer = nullptr;
 

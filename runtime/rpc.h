@@ -21,7 +21,7 @@ struct rpc_request {
     const char *error;
   };
   uint32_t function_magic{0};
-  int64_t actor_port{0}; // high int: actor_id, low int: connection port
+  int32_t actor_port{0}; // if positive: actor_id; if negative: actor_id=0, it's port
   double send_timestamp{0.0};
 };
 
