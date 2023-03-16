@@ -84,14 +84,6 @@ private:
 };
 
 struct alignas(8) JobSharedMessage : GenericJobMessage<JobSharedMessageMetadata> {
-  void init_metadata(bool no_reply, double timeout) {
-    this->no_reply = no_reply;
-    this->job_timeout = timeout;
-    this->job_id = parallel_job_ids_factory.create_slot();
-    const auto now = std::chrono::system_clock::now();
-    double job_send_time = std::chrono::duration<double>{now.time_since_epoch()}.count();
-    this->job_start_time = job_send_time;
-  }
 };
 
 struct alignas(8) JobSharedMemoryPiece : GenericJobMessage<JobMetadata> {

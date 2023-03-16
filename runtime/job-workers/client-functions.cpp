@@ -63,6 +63,15 @@ JobMessageT *make_job_request_message(const class_instance<T> &instance) {
   return memory_request;
 }
 
+void init_job_request_metadata(job_workers::JobSharedMessage *job_message, bool no_reply, double timeout) {
+  const auto now = std::chrono::system_clock::now();
+
+  job_message->no_reply = no_reply;
+  job_message->job_timeout = timeout;
+  job_message->job_id = parallel_job_ids_factory.create_slot();
+  job_message->job_start_time = std::chrono::duration<double>{now.time_since_epoch()}.count();
+}
+
 int send_job_request_message(job_workers::JobSharedMessage *job_message, double timeout, job_workers::JobSharedMemoryPiece *common_job = nullptr, bool no_reply = false) {
   auto &client = vk::singleton<job_workers::JobWorkerClient>::get();
 
@@ -137,7 +146,7 @@ Optional<int64_t> kphp_job_worker_start_impl(const class_instance<C$KphpJobWorke
   if (memory_request == nullptr) {
     return false;
   }
-  memory_request->init_metadata(no_reply, timeout);
+  init_job_request_metadata(memory_request, no_reply, timeout);
 
   int job_id = memory_request->job_id;
   double job_start_time = memory_request->job_start_time;
@@ -235,7 +244,7 @@ array<Optional<int64_t>> f$kphp_job_worker_start_multi(const array<class_instanc
       php_assert(!common_job_instance.is_null());
       job_instance.get()->set_shared_memory_piece(common_job_instance);
     }
-    job_request->init_metadata(false, timeout);
+    init_job_request_metadata(job_request, false, timeout);
 
     int job_id = job_request->job_id;
     double job_start_time = job_request->job_start_time;
