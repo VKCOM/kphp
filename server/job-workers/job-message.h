@@ -4,11 +4,13 @@
 
 #pragma once
 
+#include <chrono>
 #include "common/mixin/not_copyable.h"
 
 #include "runtime/job-workers/job-interface.h"
-#include "runtime/memory_resource/unsynchronized_pool_resource.h"
 #include "runtime/kphp_core.h"
+#include "runtime/memory_resource/unsynchronized_pool_resource.h"
+#include "server/php-queries.h"
 
 namespace job_workers {
 
@@ -82,7 +84,14 @@ private:
 };
 
 struct alignas(8) JobSharedMessage : GenericJobMessage<JobSharedMessageMetadata> {
-// It's not a typedef because we need to forward declare this struct in several places
+  void init_metadata(bool no_reply, double timeout) {
+    this->no_reply = no_reply;
+    this->job_timeout = timeout;
+    this->job_id = parallel_job_ids_factory.create_slot();
+    const auto now = std::chrono::system_clock::now();
+    double job_send_time = std::chrono::duration<double>{now.time_since_epoch()}.count();
+    this->job_start_time = job_send_time;
+  }
 };
 
 struct alignas(8) JobSharedMemoryPiece : GenericJobMessage<JobMetadata> {
