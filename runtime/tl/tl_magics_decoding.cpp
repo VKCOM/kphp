@@ -8,3 +8,7 @@
 const char * __attribute__ ((weak)) tl_function_magic_to_name(uint32_t) noexcept {
   return "__unknown__";
 }
+
+string f$convert_tl_function_magic_to_name(int64_t magic) noexcept {
+  return string{tl_function_magic_to_name(static_cast<uint32_t>(magic))};
+}
