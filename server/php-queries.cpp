@@ -19,6 +19,7 @@
 
 #include "runtime/allocator.h"
 #include "runtime/job-workers/processing-jobs.h"
+#include "runtime/tl/tl_magics_decoding.h"
 #include "runtime/rpc.h"
 
 #include "server/database-drivers/adaptor.h"
@@ -1118,8 +1119,8 @@ const char *net_event_t::get_description() const noexcept {
   std::visit(overloaded{
     [this](const net_events_data::rpc_answer &event) {
       auto *r = get_rpc_request(slot_id);
-      snprintf(BUF.data(), BUF.size(), "RPC_RESPONSE: actor_id=%" PRIi64 ", tl_function_magic=0x%08x, response_magic=0x%08x, bytes_length=%d",
-                           r->actor_id, r->function_magic,
+      snprintf(BUF.data(), BUF.size(), "RPC_RESPONSE: actor_id=%" PRIi64 ", tl_function=%s(0x%08x), response_magic=0x%08x, bytes_length=%d",
+                           r->actor_id, tl_function_magic_to_name(r->function_magic), r->function_magic,
                            event.result_len >= 4 ? *reinterpret_cast<unsigned int *>(event.result) : 0, event.result_len);
     },
     [this](const net_events_data::rpc_error &event) {
