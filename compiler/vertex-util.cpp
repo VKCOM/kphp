@@ -20,6 +20,12 @@ VertexPtr VertexUtil::get_actual_value(VertexPtr v) {
   return v;
 }
 
+VertexPtr VertexUtil::get_define_val(VertexPtr v) {
+  if (v->type() == op_define_val)
+    return v.as<op_define_val>()->value();
+  return v;
+}
+
 const std::string *VertexUtil::get_constexpr_string(VertexPtr v) {
   v = VertexUtil::get_actual_value(v);
   if (auto conv_vertex = v.try_as<op_conv_string>()) {

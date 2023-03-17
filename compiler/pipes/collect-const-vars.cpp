@@ -30,6 +30,9 @@ VertexPtr CollectConstVarsPass::on_exit_vertex(VertexPtr root) {
   }
 
   in_param_list_ -= root->type() == op_func_param_list;
+  if (auto as_define_val = root.try_as<op_define_val>()) {
+    return as_define_val->value();
+  }
   return res;
 }
 VertexPtr CollectConstVarsPass::on_enter_vertex(VertexPtr root) {
