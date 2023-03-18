@@ -2372,6 +2372,7 @@ static void free_runtime_libs() {
   OnKphpWarningCallback::get().reset();
   free_slot_factories();
   kphp_tracing::clear_callbacks();
+  free_slot_factories();
 
   free_job_client_interface_lib();
   free_job_server_interface_lib();
