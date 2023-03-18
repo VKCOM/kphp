@@ -87,7 +87,8 @@ void RegisterKphpConfiguration::parse_palette_ruleset(VertexAdaptor<op_array> ar
 
 void RegisterKphpConfiguration::parse_palette_rule(VertexAdaptor<op_double_arrow> pair, function_palette::Palette &palette, function_palette::PaletteRuleset &add_to) {
   auto parse_rule_key_colors = [this, &palette](VertexPtr key) -> std::vector<function_palette::color_t> {
-    const auto *rule_string = VertexUtil::get_constexpr_string(key);
+    auto unwrapped_key = VertexUtil::get_define_val(key);
+    const auto *rule_string = VertexUtil::get_constexpr_string(unwrapped_key);
     auto color_names_strings = split(rule_string != nullptr ? *rule_string : "", ' ');
     kphp_error(!color_names_strings.empty(), fmt_format("{}::{} map keys must be non-empty constexpr strings",
                                                         configuration_class_name_, function_color_palette_name_));
@@ -98,8 +99,9 @@ void RegisterKphpConfiguration::parse_palette_rule(VertexAdaptor<op_double_arrow
   };
 
   auto parse_rule_value_error = [this](VertexPtr value) -> std::string {
-    const std::string *errtext_val = VertexUtil::get_constexpr_string(value);
-    const auto ok_val = value.try_as<op_int_const>();
+    auto unwrapped_value = VertexUtil::get_define_val(value);
+    const std::string *errtext_val = VertexUtil::get_constexpr_string(unwrapped_value);
+    const auto ok_val = VertexUtil::get_define_val(unwrapped_value).try_as<op_int_const>();
     kphp_error(errtext_val || (ok_val && ok_val->get_string() == "1"), fmt_format("{}::{} map values must be constexpr strings or number 1",
                                                                                   configuration_class_name_, function_color_palette_name_));
     return errtext_val != nullptr ? *errtext_val : "";
