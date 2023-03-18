@@ -715,21 +715,6 @@ sql_ansgen_t *sql_ansgen_packet_create() {
 }
 
 /** new rpc interface **/
-static SlotIdsFactory rpc_ids_factory;
-SlotIdsFactory parallel_job_ids_factory;
-SlotIdsFactory external_db_requests_factory;
-
-static void init_slots() {
-  rpc_ids_factory.init();
-  parallel_job_ids_factory.init();
-  external_db_requests_factory.init();
-}
-
-static void clear_slots() {
-  rpc_ids_factory.clear();
-  parallel_job_ids_factory.clear();
-  external_db_requests_factory.clear();
-}
 
 template<class DataT, int N>
 class StaticQueue {
@@ -1099,7 +1084,6 @@ int query_x2(int x) {
 
 void init_drivers() {
   init_readers();
-  init_slots();
 }
 
 void php_queries_start() {
@@ -1108,7 +1092,6 @@ void php_queries_start() {
 
 void php_queries_finish() {
   qmem_clear();
-  clear_slots();
 
   net_events.clear();
   net_queries.clear();
