@@ -18,6 +18,7 @@ object_visitor::object_visitor(msgpack::zone &zone) noexcept
   : m_zone(zone) {
   m_stack.reserve(STACK_SIZE);
   m_stack.push_back(&m_obj);
+  printf("(mkornaukhov03) object_visitor stack size = %zu", m_stack.size());
 }
 
 bool object_visitor::visit_nil() noexcept {
@@ -95,6 +96,8 @@ bool object_visitor::start_array(uint32_t num_elements) {
     obj->via.array.ptr = static_cast<msgpack::object *>(m_zone.allocate_align(size, alignof(msgpack::object)));
   }
   m_stack.push_back(obj->via.array.ptr);
+  printf("(mkornaukhov03) object_visitor stack size = %zu", m_stack.size());
+
   return true;
 }
 
@@ -112,6 +115,8 @@ bool object_visitor::start_map(uint32_t num_kv_pairs) {
     obj->via.map.ptr = static_cast<msgpack::object_kv *>(m_zone.allocate_align(size, alignof(msgpack::object_kv)));
   }
   m_stack.push_back(reinterpret_cast<msgpack::object *>(obj->via.map.ptr));
+  printf("(mkornaukhov03) object_visitor stack size = %zu", m_stack.size());
+
   return true;
 }
 

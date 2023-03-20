@@ -7,6 +7,7 @@
 #include <cstring>
 #include <type_traits>
 #include <vector>
+#include <cstdio>
 
 #include "runtime/msgpack/object_visitor.h"
 #include "runtime/msgpack/parser.h"
@@ -139,6 +140,7 @@ unpack_stack::unpack_stack() noexcept {
 template<typename Visitor>
 parse_return unpack_stack::push(Visitor &visitor, container_type type, uint32_t rest) {
   m_stack.emplace_back(type, rest);
+  printf("(mkornaukhov03) unpack_stack size = %zu\n", m_stack.size());
   switch (type) {
     case container_type::ARRAY_ITEM:
       return visitor.start_array_item() ? parse_return::CONTINUE : parse_return::STOP_VISITOR;
