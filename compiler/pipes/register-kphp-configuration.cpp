@@ -57,7 +57,8 @@ void RegisterKphpConfiguration::handle_constant_function_palette(const ClassMemb
   G->set_function_palette(std::move(palette));
 }
 
-void RegisterKphpConfiguration::parse_palette(VertexPtr const_val, function_palette::Palette &palette) {
+void RegisterKphpConfiguration::parse_palette(VertexPtr v, function_palette::Palette &palette) {
+  auto const_val = VertexUtil::get_define_val(v);
   auto arr = const_val.try_as<op_array>();
   kphp_error_return(arr, fmt_format("{}::{} must be a constexpr array",
                                     configuration_class_name_, function_color_palette_name_));
@@ -115,7 +116,7 @@ void RegisterKphpConfiguration::parse_palette_rule(VertexAdaptor<op_double_arrow
 // --------------------------------------------
 
 void RegisterKphpConfiguration::handle_constant_runtime_options(const ClassMemberConstant &c) {
-  auto arr = c.value.try_as<op_array>();
+  auto arr = VertexUtil::get_define_val(c.value).try_as<op_array>();
   kphp_error_return(arr, fmt_format("{}::{} must be a constexpr array",
                                     configuration_class_name_, runtime_options_name_));
   for (const auto &opt : arr->args()) {
@@ -145,7 +146,7 @@ void RegisterKphpConfiguration::handle_constant_runtime_options(const ClassMembe
 }
 
 void RegisterKphpConfiguration::generic_register_simple_option(VertexPtr value, vk::string_view opt_key) const noexcept {
-  const auto *opt_value = VertexUtil::get_constexpr_string(value);
+  const auto *opt_value  = VertexUtil::get_constexpr_string(VertexUtil::get_define_val(value));
   kphp_error_return(opt_value, fmt_format("{}::{} must be a constexpr string",
                                           configuration_class_name_, runtime_options_name_));
 
