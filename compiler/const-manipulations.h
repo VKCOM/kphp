@@ -256,7 +256,6 @@ public:
 
     return true;
   }
-
 };
 
 // moved from the collect-required-and-classes.cpp to make it more reusable
@@ -356,7 +355,7 @@ protected:
   }
 
   VertexPtr on_define_val(VertexAdaptor<op_define_val> v) final {
-//    v->value() = make_const(v->value());
+    v->value() = make_const(v->value());
     return v;
   }
 

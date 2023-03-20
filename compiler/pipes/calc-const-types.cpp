@@ -25,10 +25,6 @@ void CalcConstTypePass::calc_const_type_of_class_fields(ClassPtr klass) {
   klass->members.for_each([this](ClassMemberInstanceField &f) {
     if (f.var->init_val) {
       run_function_pass(f.var->init_val, this);
-      bool ok = f.var->init_val->const_type == cnst_const_val;
-      if (!ok) {
-        f.var->init_val.debugPrint();
-      }
       kphp_error(f.var->init_val->const_type == cnst_const_val, fmt_format("Default value of {} is not constant", f.var->as_human_readable()));
     }
   });
@@ -37,6 +33,7 @@ void CalcConstTypePass::calc_const_type_of_class_fields(ClassPtr klass) {
 VertexPtr CalcConstTypePass::on_exit_vertex(VertexPtr v) {
   if (auto as_define_val = v.try_as<op_define_val>()) {
     as_define_val->const_type = as_define_val->value()->const_type ;
+    kphp_assert_msg(as_define_val->const_type == cnst_const_val, "Non-constant in const context");
     return v;
   }
   if (auto as_func_call = v.try_as<op_func_call>()) {

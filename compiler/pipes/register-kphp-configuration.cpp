@@ -12,6 +12,12 @@
 #include "compiler/data/function-data.h"
 #include "compiler/vertex-util.h"
 
+// We use a lot of VertexUtil::get_define_val here because
+// on CalcRealDefinesAndAssignModulitesF and InlineDefinesUsagesPass
+// each define was replaced with `op_define_val` vertex with `value()` equals
+// defined value. These vertices will be replaced with their values
+// on CollectConstVarsPass
+
 void RegisterKphpConfiguration::execute(FunctionPtr function, DataStream<FunctionPtr> &unused_os __attribute__ ((unused))) {
   if (function->type == FunctionData::func_class_holder && function->class_id->name == configuration_class_name_) {
     stage::set_name("Register KphpConfiguration");
@@ -57,14 +63,13 @@ void RegisterKphpConfiguration::handle_constant_function_palette(const ClassMemb
   G->set_function_palette(std::move(palette));
 }
 
-void RegisterKphpConfiguration::parse_palette(VertexPtr v, function_palette::Palette &palette) {
-  auto const_val = VertexUtil::get_define_val(v);
-  auto arr = const_val.try_as<op_array>();
+void RegisterKphpConfiguration::parse_palette(VertexPtr const_val, function_palette::Palette &palette) {
+  auto arr = VertexUtil::get_define_val(const_val).try_as<op_array>();
   kphp_error_return(arr, fmt_format("{}::{} must be a constexpr array",
                                     configuration_class_name_, function_color_palette_name_));
 
   for (const auto &opt : arr->args()) {
-    const auto ruleset_arr = opt.try_as<op_array>();
+    const auto ruleset_arr = VertexUtil::get_define_val(opt).try_as<op_array>();
     kphp_error_act(ruleset_arr, fmt_format("{}::{} must contain constexpr arrays (rulesets)",
                                            configuration_class_name_, function_color_palette_name_), continue);
 
@@ -76,7 +81,7 @@ void RegisterKphpConfiguration::parse_palette_ruleset(VertexAdaptor<op_array> ar
   function_palette::PaletteRuleset ruleset;
 
   for (const auto &rule_node : arr->args()) {
-    auto pair = rule_node.try_as<op_double_arrow>();
+    auto pair = VertexUtil::get_define_val(rule_node).try_as<op_double_arrow>();
     kphp_error_act(pair, fmt_format("{}::{} rule must be an associative map",
                                     configuration_class_name_, function_color_palette_name_), continue);
 
@@ -120,10 +125,10 @@ void RegisterKphpConfiguration::handle_constant_runtime_options(const ClassMembe
   kphp_error_return(arr, fmt_format("{}::{} must be a constexpr array",
                                     configuration_class_name_, runtime_options_name_));
   for (const auto &opt : arr->args()) {
-    auto opt_pair = opt.try_as<op_double_arrow>();
+    auto opt_pair = VertexUtil::get_define_val(opt).try_as<op_double_arrow>();
     kphp_error_return(opt_pair, fmt_format("{}::{} must be an associative map",
                                            configuration_class_name_, runtime_options_name_));
-    const auto *opt_key = VertexUtil::get_constexpr_string(opt_pair->key());
+    const auto *opt_key = VertexUtil::get_constexpr_string(VertexUtil::get_define_val(opt_pair->key()));
     kphp_error_return(opt_key, fmt_format("{}::{} map keys must be constexpr strings",
                                           configuration_class_name_, runtime_options_name_));
     if (*opt_key == confdata_blacklist_key_) {
@@ -155,7 +160,7 @@ void RegisterKphpConfiguration::generic_register_simple_option(VertexPtr value, 
 }
 
 void RegisterKphpConfiguration::register_confdata_blacklist(VertexPtr value) const noexcept {
-  const auto *opt_value = VertexUtil::get_constexpr_string(value);
+  const auto *opt_value =  VertexUtil::get_constexpr_string(VertexUtil::get_define_val(value));
   kphp_error_return(opt_value, fmt_format("{}[{}] must be a constexpr string",
                                           runtime_options_name_, confdata_blacklist_key_));
 
@@ -168,11 +173,11 @@ void RegisterKphpConfiguration::register_confdata_blacklist(VertexPtr value) con
 }
 
 void RegisterKphpConfiguration::register_confdata_predefined_wildcard(VertexPtr value) const noexcept {
-  auto wildcards = value.try_as<op_array>();
+  auto wildcards = VertexUtil::get_define_val(value).try_as<op_array>();
   kphp_error_return(wildcards, fmt_format("{}[{}] must be a constexpr array",
                                           runtime_options_name_, confdata_predefined_wildcard_key_));
   for (const auto &wildcard : wildcards->args()) {
-    const auto *wildcard_str_value = VertexUtil::get_constexpr_string(wildcard);
+    const auto *wildcard_str_value =  VertexUtil::get_constexpr_string(VertexUtil::get_define_val(wildcard));
     kphp_error_return(wildcard_str_value && !wildcard_str_value->empty(),
                       fmt_format("{}[{}][] must be non empty constexpr string",
                                  runtime_options_name_, confdata_predefined_wildcard_key_));
@@ -186,11 +191,11 @@ void RegisterKphpConfiguration::register_mysql_db_name(VertexPtr value) const no
 }
 
 void RegisterKphpConfiguration::register_net_dc_mask(VertexPtr value) const noexcept {
-  auto dc_masks = value.try_as<op_array>();
+  auto dc_masks = VertexUtil::get_define_val(value).try_as<op_array>();
   kphp_error_return(dc_masks, fmt_format("{}[{}] must be a constexpr array",
                                          runtime_options_name_, net_dc_mask_key_));
   for (const auto &dc_mask_v : dc_masks->args()) {
-    const auto *index_ipv4_subnet = VertexUtil::get_constexpr_string(dc_mask_v);
+    const auto *index_ipv4_subnet = VertexUtil::get_constexpr_string(VertexUtil::get_define_val(dc_mask_v));
     kphp_error_return(index_ipv4_subnet && !index_ipv4_subnet->empty(),
                       fmt_format("{}[{}][] must be non empty constexpr string",
                                  runtime_options_name_, net_dc_mask_key_));
