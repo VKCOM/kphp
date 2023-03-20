@@ -2325,6 +2325,7 @@ static void init_runtime_libs() {
   init_rpc_lib();
   init_openssl_lib();
   init_math_functions();
+  kphp_tracing::init_tracing_lib();
   init_slot_factories();
 
   init_string_buffer_lib(static_cast<int>(static_buffer_length_limit));
@@ -2370,8 +2371,7 @@ static void free_runtime_libs() {
   free_tcp_lib();
   free_timelib();
   OnKphpWarningCallback::get().reset();
-  free_slot_factories();
-  kphp_tracing::clear_callbacks();
+  kphp_tracing::tree_tracing_lib();
   free_slot_factories();
 
   free_job_client_interface_lib();

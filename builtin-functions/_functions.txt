@@ -1642,3 +1642,15 @@ function register_kphp_on_job_worker_callbacks(
     callable(int $jobID, float $durationSec, int $awaiting_fork_id):void $onJobGotResponse);
 function register_kphp_on_swapcontext_callbacks(
     callable(double $netTimeDelta):void $onSwitchNetToScript);
+
+function kphp_tracing_init_binlog(): void;
+function kphp_tracing_get_binlog_as_hex_string(): string;
+
+function kphp_tracing_write_event_type(int $event_type): void;
+function kphp_tracing_write_int32(int $v): void;
+function kphp_tracing_write_int64(int $v): void;
+function kphp_tracing_write_uint32(int $v): void;
+function kphp_tracing_write_float32(float $v): void;
+function kphp_tracing_write_float64(float $v): void;
+function kphp_tracing_write_string(string $v): void;
+function kphp_tracing_write_bool(bool $v): void;

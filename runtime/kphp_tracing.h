@@ -29,7 +29,30 @@ extern on_job_request_start_callback_t on_job_request_start;
 extern on_job_request_finish_callback_t on_job_request_finish;
 extern on_net_to_script_switch_callback_t on_net_to_script_ctx_switch;
 
-void clear_callbacks();
+struct tracing_binary_buffer {
+  int capacity{0};
+  int *buf{nullptr};
+  int *pos{nullptr};
+
+  void init_and_alloc();
+  void alloc_if_not_enough(int reserve_bytes);
+  void clear();
+
+  int size_bytes() const { return (pos - buf) * 4; }
+
+  void write_int32(int64_t v) { *pos++ = static_cast<int>(v); }
+  void write_int64(int64_t v);
+  void write_uint32(int64_t v);
+  void write_float32(double v) { float f32 = static_cast<float>(v); *pos++ = *reinterpret_cast<int *>(&f32); }
+  void write_float64(double v);
+  void write_string(const string &v);
+  void write_bool(bool v);
+};
+
+extern tracing_binary_buffer trace_binlog;
+
+void init_tracing_lib();
+void tree_tracing_lib();
 
 }
 
@@ -42,4 +65,17 @@ void f$register_kphp_on_rpc_query_callbacks(const kphp_tracing::on_rpc_request_s
 void f$register_kphp_on_job_worker_callbacks(const kphp_tracing::on_job_request_start_callback_t &on_start,
                                              const kphp_tracing::on_job_request_finish_callback_t &on_finish);
 void f$register_kphp_on_swapcontext_callbacks(const kphp_tracing::on_net_to_script_switch_callback_t &on_net_to_script_switch);
+
+
+void f$kphp_tracing_init_binlog();
+string f$kphp_tracing_get_binlog_as_hex_string();
+
+void f$kphp_tracing_write_event_type(int64_t event_type);
+inline void f$kphp_tracing_write_int32(int64_t v) { kphp_tracing::trace_binlog.write_int32(v); }
+inline void f$kphp_tracing_write_int64(int64_t v) { kphp_tracing::trace_binlog.write_int64(v); }
+inline void f$kphp_tracing_write_uint32(int64_t v) { kphp_tracing::trace_binlog.write_uint32(v); }
+inline void f$kphp_tracing_write_float32(double v) { kphp_tracing::trace_binlog.write_float32(v); }
+inline void f$kphp_tracing_write_float64(double v) { kphp_tracing::trace_binlog.write_float64(v); }
+inline void f$kphp_tracing_write_string(const string &v) { kphp_tracing::trace_binlog.write_string(v); }
+inline void f$kphp_tracing_write_bool(bool v) { kphp_tracing::trace_binlog.write_bool(v); }
 
