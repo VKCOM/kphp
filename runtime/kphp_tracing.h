@@ -42,7 +42,7 @@ struct tracing_binary_buffer {
 
   void write_int32(int64_t v) { *pos++ = static_cast<int>(v); }
   void write_int64(int64_t v);
-  void write_uint32(int64_t v);
+  void write_uint32(int64_t v) { *pos++ = static_cast<unsigned int>(v); }
   void write_float32(double v) { float f32 = static_cast<float>(v); *pos++ = *reinterpret_cast<int *>(&f32); }
   void write_float64(double v);
   void write_string(const string &v);
@@ -70,7 +70,7 @@ void f$register_kphp_on_swapcontext_callbacks(const kphp_tracing::on_net_to_scri
 void f$kphp_tracing_init_binlog();
 string f$kphp_tracing_get_binlog_as_hex_string();
 
-void f$kphp_tracing_write_event_type(int64_t event_type);
+void f$kphp_tracing_write_event_type(int64_t event_type, int64_t custom24bits);
 inline void f$kphp_tracing_write_int32(int64_t v) { kphp_tracing::trace_binlog.write_int32(v); }
 inline void f$kphp_tracing_write_int64(int64_t v) { kphp_tracing::trace_binlog.write_int64(v); }
 inline void f$kphp_tracing_write_uint32(int64_t v) { kphp_tracing::trace_binlog.write_uint32(v); }

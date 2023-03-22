@@ -73,10 +73,6 @@ void tracing_binary_buffer::clear() {
   capacity = 0;
 }
 
-void tracing_binary_buffer::write_uint32(int64_t v) {
-  *pos++ = static_cast<uint32_t>(v);
-}
-
 void tracing_binary_buffer::write_int64(int64_t v) {
   int64_t *pos64 = reinterpret_cast<int64_t *>(pos);
   *pos64 = v;
@@ -90,13 +86,13 @@ void tracing_binary_buffer::write_float64(double v) {
 }
 
 void tracing_binary_buffer::write_string(const string &v) {
-  if (unlikely(v.size() > 4096)) {
+  if (unlikely(v.size() > 128)) {
     php_warning("too large string for a tracing buffer");
     write_int32(0);
     return;
   }
 
-  alloc_if_not_enough(128 + v.size());
+  alloc_if_not_enough(256);
   write_int32(v.size());
 
   char *pos8 = reinterpret_cast<char *>(pos);
@@ -153,7 +149,10 @@ string f$kphp_tracing_get_binlog_as_hex_string() {
   return out;
 }
 
-void f$kphp_tracing_write_event_type(int64_t event_type) {
+void f$kphp_tracing_write_event_type(int64_t event_type, int64_t custom24bits) {
+  if (unlikely(custom24bits < 0 || custom24bits >= 1<<24)) {
+    php_warning("custom24bits overflow next to event_type");
+  }
   kphp_tracing::trace_binlog.alloc_if_not_enough(128);
-  kphp_tracing::trace_binlog.write_int32(event_type);
+  kphp_tracing::trace_binlog.write_uint32((custom24bits << 8) + event_type);
 }
