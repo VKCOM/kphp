@@ -2422,6 +2422,10 @@ void free_runtime_environment() {
   dl::free_script_allocator();
 }
 
+void worker_global_init() noexcept {
+  worker_global_init_slot_factories();
+}
+
 void read_engine_tag(const char *file_name) {
   assert (dl::query_num == 0);
 

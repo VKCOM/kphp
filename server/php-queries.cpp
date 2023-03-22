@@ -828,7 +828,7 @@ void unalloc_net_event(net_event_t *event) {
 
 int create_rpc_error_event(slot_id_t slot_id, int error_code, const char *error_message, net_event_t **res) {
   net_event_t *event;
-  if (!rpc_ids_factory.is_valid_slot(slot_id)) {
+  if (!rpc_ids_factory.is_from_current_script_execution(slot_id)) {
     return 0;
   }
   int status = alloc_net_event(slot_id, &event);
@@ -845,7 +845,7 @@ int create_rpc_error_event(slot_id_t slot_id, int error_code, const char *error_
 int create_rpc_answer_event(slot_id_t slot_id, int len, net_event_t **res) {
   PhpQueriesStats::get_rpc_queries_stat().register_answer(len);
   net_event_t *event;
-  if (!rpc_ids_factory.is_valid_slot(slot_id)) {
+  if (!rpc_ids_factory.is_from_current_script_execution(slot_id)) {
     return 0;
   }
   int status = alloc_net_event(slot_id, &event);
@@ -871,7 +871,7 @@ int create_rpc_answer_event(slot_id_t slot_id, int len, net_event_t **res) {
 }
 
 int create_job_worker_answer_event(job_workers::JobSharedMessage *job_result) {
-  if (!parallel_job_ids_factory.is_valid_slot(job_result->job_id)) {
+  if (!parallel_job_ids_factory.is_from_current_script_execution(job_result->job_id)) {
     return 0;
   }
   net_event_t *event = nullptr;
