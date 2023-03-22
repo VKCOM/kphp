@@ -1641,7 +1641,7 @@ function register_kphp_on_job_worker_callbacks(
     callable(int $jobID, KphpJobWorkerRequest $job, float $startTimestamp, bool $isNoReply):void $onJobSend,
     callable(int $jobID, float $durationSec, int $awaiting_fork_id):void $onJobGotResponse);
 function register_kphp_on_swapcontext_callbacks(
-    callable(double $netTimeDelta):void $onSwitchNetToScript);
+    callable(double $nowTimestamp, double $netTimeDelta):void $onSwitchNetToScript);
 
 final class KphpShutdownType {
     const NORMAL = 0;
