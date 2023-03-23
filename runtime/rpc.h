@@ -45,7 +45,7 @@ rpc_request *get_rpc_request(slot_id_t request_id);
 
 void process_rpc_answer(int32_t request_id, char *result, int32_t result_len);
 
-void process_rpc_error(int32_t request_id, int32_t error_code, const char *error_message);
+void process_rpc_error(int32_t request_id, int32_t error_code, const char *error_message, bool is_fake_error = false);
 
 void rpc_parse_restore_previous();
 

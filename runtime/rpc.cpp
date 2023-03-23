@@ -637,12 +637,12 @@ public:
 
 array<double> rpc_request_need_timer;
 
-void process_rpc_timeout(int request_id) {
-  process_rpc_error(request_id, TL_ERROR_QUERY_TIMEOUT, "Timeout in KPHP runtime");
+void process_rpc_timeout(int request_id, bool fake_timeout_for_no_result) {
+  process_rpc_error(request_id, TL_ERROR_QUERY_TIMEOUT, "Timeout in KPHP runtime", fake_timeout_for_no_result);
 }
 
 void process_rpc_timeout(kphp_event_timer *timer) {
-  return process_rpc_timeout(timer->wakeup_extra);
+  return process_rpc_timeout(timer->wakeup_extra, false);
 }
 } // namespace
 
@@ -730,7 +730,7 @@ int64_t rpc_send(const class_instance<C$RpcConnection> &conn, double timeout, bo
 
   if (ignore_answer) {
     int64_t resumable_id = cur->resumable_id;
-    process_rpc_timeout(result);
+    process_rpc_timeout(result, true);
     get_forked_storage(resumable_id)->load<rpc_request>();
     return resumable_id;
   } else {
@@ -803,21 +803,18 @@ void process_rpc_answer(int32_t request_id, char *result, int32_t result_len __a
   resumable_run_ready(resumable_id);
 }
 
-void process_rpc_error(int32_t request_id, int32_t error_code __attribute__((unused)), const char *error_message) {
+void process_rpc_error(int32_t request_id, int32_t error_code __attribute__((unused)), const char *error_message, bool is_fake_error) {
   rpc_request *request = get_rpc_request(request_id);
 
   if (request->resumable_id < 0) {
     php_assert (request->resumable_id != -1);
     return;
   }
-  if (strcmp(error_message, "Timeout in KPHP runtime") != 0) {
-    //   TODO: why process_rpc_timeout called from rpc_send earlier than on_rpc_start callback???
+  if (!is_fake_error && kphp_tracing::on_rpc_request_finish) {
     double now_timestamp = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
-    if (kphp_tracing::on_rpc_request_finish) {
-      int64_t fork_id = get_awaiting_fork_id(request->resumable_id);
-      double duration = now_timestamp - request->send_timestamp;
-      kphp_tracing::on_rpc_request_finish(request_id, -1, duration, fork_id);
-    }
+    double duration = now_timestamp - request->send_timestamp;
+    int64_t fork_id = get_awaiting_fork_id(request->resumable_id);
+    kphp_tracing::on_rpc_request_finish(request_id, -1, duration, fork_id);
   }
   int64_t resumable_id = request->resumable_id;
   request->resumable_id = -2;
