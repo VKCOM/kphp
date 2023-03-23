@@ -1342,11 +1342,11 @@ void check_and_instance_cache_try_swap_memory() {
     case InstanceCacheSwapStatus::no_need:
       return;
     case InstanceCacheSwapStatus::swap_is_finished:
-      vkprintf(0, "instance cache memory resource successfully swapped\n");
+      kprintf("instance cache memory resource successfully swapped\n");
       ++instance_cache_memory_swaps_ok;
       return;
     case InstanceCacheSwapStatus::swap_is_forbidden:
-      vkprintf(0, "can't swap instance cache memory resource\n");
+      log_server_error("can't swap instance cache memory resource\n");
       ++instance_cache_memory_swaps_fail;
       return;
   }
