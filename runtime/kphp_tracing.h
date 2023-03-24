@@ -4,36 +4,9 @@
 
 #pragma once
 
-#include <functional>
-
 #include "runtime/kphp_core.h"
 
-struct C$KphpJobWorkerRequest;
-
 namespace kphp_tracing {
-
-using on_net_to_script_switch_callback_t = std::function<void(double)>;
-using on_fork_state_change_callback_t = std::function<void(int64_t)>;
-using on_fork_switch_callback_t = std::function<void(int64_t, int64_t)>;
-using on_rpc_request_start_callback_t = std::function<void(int64_t, int64_t, int64_t, int64_t, double, bool)>;
-using on_rpc_request_finish_callback_t = std::function<void(int64_t, int64_t, double, int64_t)>;
-using on_job_request_start_callback_t = std::function<void(int64_t, const class_instance<C$KphpJobWorkerRequest>&, double, bool)>;
-using on_job_request_finish_callback_t = std::function<void(int64_t, double, int64_t)>;
-
-using ShutdownType = int64_t;
-using on_shutdown_functions_start_callback_t = std::function<void(int64_t, ShutdownType)>;
-using on_shutdown_functions_finish_callback_t = std::function<void()>;
-
-extern on_fork_switch_callback_t on_fork_start;
-extern on_fork_state_change_callback_t on_fork_finish;
-extern on_fork_switch_callback_t on_fork_switch;
-extern on_rpc_request_start_callback_t on_rpc_request_start;
-extern on_rpc_request_finish_callback_t on_rpc_request_finish;
-extern on_job_request_start_callback_t on_job_request_start;
-extern on_job_request_finish_callback_t on_job_request_finish;
-extern on_net_to_script_switch_callback_t on_net_to_script_ctx_switch;
-extern on_shutdown_functions_start_callback_t on_shutdown_functions_start;
-extern on_shutdown_functions_finish_callback_t on_shutdown_functions_finish;
 
 struct tracing_binary_buffer {
   int capacity{0};
@@ -61,18 +34,6 @@ void init_tracing_lib();
 void free_tracing_lib();
 
 }
-
-// TODO: ensure this callbacks never swap context
-void f$register_kphp_on_fork_callbacks(const kphp_tracing::on_fork_switch_callback_t &on_fork_start,
-                                       const kphp_tracing::on_fork_state_change_callback_t &on_fork_finish,
-                                       const kphp_tracing::on_fork_switch_callback_t &on_fork_switch);
-void f$register_kphp_on_rpc_query_callbacks(const kphp_tracing::on_rpc_request_start_callback_t &on_start,
-                                            const kphp_tracing::on_rpc_request_finish_callback_t &on_finish);
-void f$register_kphp_on_job_worker_callbacks(const kphp_tracing::on_job_request_start_callback_t &on_start,
-                                             const kphp_tracing::on_job_request_finish_callback_t &on_finish);
-void f$register_kphp_on_swapcontext_callbacks(const kphp_tracing::on_net_to_script_switch_callback_t &on_net_to_script_switch);
-void f$register_kphp_shutdown_functions_callbacks(const kphp_tracing::on_shutdown_functions_start_callback_t &on_start,
-                                                     const kphp_tracing::on_shutdown_functions_finish_callback_t &on_finish);
 
 void f$kphp_tracing_init_binlog();
 string f$kphp_tracing_get_binlog_as_hex_string();

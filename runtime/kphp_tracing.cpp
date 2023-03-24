@@ -11,17 +11,6 @@ namespace kphp_tracing {
 constexpr int INITIAL_SIZE_BYTES = 262144;
 constexpr int EXPAND_SIZE_BYTES = 65536;
 
-on_fork_switch_callback_t on_fork_start;
-on_fork_state_change_callback_t on_fork_finish;
-on_fork_switch_callback_t on_fork_switch;
-on_rpc_request_start_callback_t on_rpc_request_start;
-on_rpc_request_finish_callback_t on_rpc_request_finish;
-on_job_request_start_callback_t on_job_request_start;
-on_job_request_finish_callback_t on_job_request_finish;
-on_net_to_script_switch_callback_t on_net_to_script_ctx_switch;
-on_shutdown_functions_start_callback_t on_shutdown_functions_start;
-on_shutdown_functions_finish_callback_t on_shutdown_functions_finish;
-
 tracing_binary_buffer trace_binlog;
 
 
@@ -31,17 +20,6 @@ void init_tracing_lib() {
 }
 
 void free_tracing_lib() {
-  on_fork_start = {};
-  on_fork_finish = {};
-  on_fork_switch = {};
-  on_rpc_request_start = {};
-  on_rpc_request_finish = {};
-  on_job_request_start = {};
-  on_job_request_finish = {};
-  on_net_to_script_ctx_switch = {};
-  on_shutdown_functions_start = {};
-  on_shutdown_functions_finish = {};
-
   trace_binlog.clear();
 }
 
@@ -108,36 +86,6 @@ void tracing_binary_buffer::write_bool(bool v) {
   *pos++ = static_cast<int>(v);
 }
 
-}
-
-void f$register_kphp_on_fork_callbacks(const kphp_tracing::on_fork_switch_callback_t &on_fork_start,
-                                       const kphp_tracing::on_fork_state_change_callback_t &on_fork_finish,
-                                       const kphp_tracing::on_fork_switch_callback_t &on_fork_switch) {
-  kphp_tracing::on_fork_start = on_fork_start;
-  kphp_tracing::on_fork_finish = on_fork_finish;
-  kphp_tracing::on_fork_switch = on_fork_switch;
-}
-
-void f$register_kphp_on_rpc_query_callbacks(const kphp_tracing::on_rpc_request_start_callback_t &on_start,
-                                            const kphp_tracing::on_rpc_request_finish_callback_t &on_finish) {
-  kphp_tracing::on_rpc_request_start = on_start;
-  kphp_tracing::on_rpc_request_finish = on_finish;
-}
-
-void f$register_kphp_on_job_worker_callbacks(const kphp_tracing::on_job_request_start_callback_t &on_start,
-                                             const kphp_tracing::on_job_request_finish_callback_t &on_finish) {
-  kphp_tracing::on_job_request_start = on_start;
-  kphp_tracing::on_job_request_finish = on_finish;
-}
-
-void f$register_kphp_on_swapcontext_callbacks(const kphp_tracing::on_net_to_script_switch_callback_t &on_net_to_script_switch) {
-  kphp_tracing::on_net_to_script_ctx_switch = on_net_to_script_switch;
-}
-
-void f$register_kphp_shutdown_functions_callbacks(const kphp_tracing::on_shutdown_functions_start_callback_t &on_start,
-                                                     const kphp_tracing::on_shutdown_functions_finish_callback_t &on_finish) {
-  kphp_tracing::on_shutdown_functions_start = on_start;
-  kphp_tracing::on_shutdown_functions_finish = on_finish;
 }
 
 void f$kphp_tracing_init_binlog() {

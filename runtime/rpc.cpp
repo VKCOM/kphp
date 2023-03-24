@@ -17,6 +17,7 @@
 #include "runtime/misc.h"
 #include "runtime/net_events.h"
 #include "runtime/resumable.h"
+#include "runtime/runtime_injection.h"
 #include "runtime/string_functions.h"
 #include "runtime/tl/rpc_function.h"
 #include "runtime/tl/rpc_request.h"
@@ -25,6 +26,9 @@
 #include "runtime/tl/tl_builtins.h"
 #include "runtime/zlib.h"
 #include "server/php-queries.h"
+
+using runtime_injection::on_rpc_request_start;
+using runtime_injection::on_rpc_request_finish;
 
 static const int GZIP_PACKED = 0x3072cfa1;
 
@@ -724,9 +728,8 @@ int64_t rpc_send(const class_instance<C$RpcConnection> &conn, double timeout, bo
   cur->send_timestamp = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
   cur->timer = nullptr;
 
-  if (kphp_tracing::on_rpc_request_start) {
-    kphp_tracing::on_rpc_request_start(result, cur->actor_port, cur->function_magic, static_cast<int64_t>(request_size), cur->send_timestamp, ignore_answer);
-  }
+  runtime_injection::invoke_callback(on_rpc_request_start,
+                                     result, cur->actor_port, cur->function_magic, static_cast<int64_t>(request_size), cur->send_timestamp, ignore_answer);
 
   if (ignore_answer) {
     int64_t resumable_id = cur->resumable_id;
@@ -783,11 +786,11 @@ void process_rpc_answer(int32_t request_id, char *result, int32_t result_len __a
     return;
   }
   double now_timestamp = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
-  if (kphp_tracing::on_rpc_request_finish) {
-    int64_t fork_id = get_awaiting_fork_id(request->resumable_id);
-    double duration = now_timestamp - request->send_timestamp;
-    kphp_tracing::on_rpc_request_finish(request_id, result_len, duration, fork_id);
-  }
+
+  int64_t fork_id = get_awaiting_fork_id(request->resumable_id);
+  double duration = now_timestamp - request->send_timestamp;
+  runtime_injection::invoke_callback(on_rpc_request_finish, request_id, result_len, duration, fork_id);
+
   int64_t resumable_id = request->resumable_id;
   request->resumable_id = -1;
 
@@ -810,11 +813,11 @@ void process_rpc_error(int32_t request_id, int32_t error_code __attribute__((unu
     php_assert (request->resumable_id != -1);
     return;
   }
-  if (!is_fake_error && kphp_tracing::on_rpc_request_finish) {
+  if (!is_fake_error) {
     double now_timestamp = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
     double duration = now_timestamp - request->send_timestamp;
     int64_t fork_id = get_awaiting_fork_id(request->resumable_id);
-    kphp_tracing::on_rpc_request_finish(request_id, -1, duration, fork_id);
+    runtime_injection::invoke_callback(on_rpc_request_finish, request_id, -1, duration, fork_id);
   }
   int64_t resumable_id = request->resumable_id;
   request->resumable_id = -2;

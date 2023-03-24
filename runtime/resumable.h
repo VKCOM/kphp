@@ -7,7 +7,6 @@
 #include "runtime/allocator.h"
 #include "runtime/exception.h"
 #include "runtime/kphp_core.h"
-#include "runtime/kphp_tracing.h"
 #include "runtime/storage.h"
 
 extern bool resumable_finished;

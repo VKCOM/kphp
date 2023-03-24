@@ -29,13 +29,15 @@
 #include "runtime/exception.h"
 #include "runtime/interface.h"
 #include "runtime/oom_handler.h"
-#include "runtime/kphp_tracing.h"
 #include "runtime/profiler.h"
+#include "runtime/runtime_injection.h"
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
 #include "server/php-queries.h"
 #include "server/server-log.h"
 #include "server/server-stats.h"
+
+using runtime_injection::on_net_to_script_ctx_switch;
 
 query_stats_t query_stats;
 long long query_stats_id = 1;
@@ -236,9 +238,7 @@ void PhpScript::pause() noexcept {
   __sanitizer_finish_switch_fiber(nullptr, &main_thread_stack, &main_thread_stacksize);
 #endif
   in_script_context = true;
-  if (kphp_tracing::on_net_to_script_ctx_switch) {
-    kphp_tracing::on_net_to_script_ctx_switch(last_net_time_delta);
-  }
+  runtime_injection::invoke_callback(on_net_to_script_ctx_switch, last_net_time_delta);
   check_delayed_errors();
   //fprintf (stderr, "pause: ended\n");
 }

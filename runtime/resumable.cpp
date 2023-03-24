@@ -7,6 +7,11 @@
 #include "common/kprintf.h"
 
 #include "runtime/net_events.h"
+#include "runtime/runtime_injection.h"
+
+using runtime_injection::on_fork_start;
+using runtime_injection::on_fork_finish;
+using runtime_injection::on_fork_switch;
 
 DEFINE_VERBOSITY(resumable);
 
@@ -218,8 +223,8 @@ static inline void update_current_resumable_id(int64_t new_id, bool is_internal)
     if (new_running_fork) {
       get_forked_resumable_info(new_running_fork)->running_time -= get_precise_now();
     }
-    if (!is_internal && kphp_tracing::on_fork_switch) {
-      kphp_tracing::on_fork_switch(old_running_fork, new_running_fork);
+    if (!is_internal) {
+      runtime_injection::invoke_callback(on_fork_switch, old_running_fork, new_running_fork);
     }
   }
   Resumable::update_output();
@@ -348,8 +353,8 @@ static void free_resumable_continuation(resumable_info *res) noexcept {
 
 static void finish_forked_resumable(int64_t resumable_id) noexcept {
   forked_resumable_info *res = get_forked_resumable_info(resumable_id);
-  if (kphp_tracing::on_fork_finish && !res->continuation->is_internal_resumable()) {
-    kphp_tracing::on_fork_finish(resumable_id);
+  if (!res->continuation->is_internal_resumable()) {
+    runtime_injection::invoke_callback(on_fork_finish, resumable_id);
   }
   free_resumable_continuation(res);
 
@@ -502,9 +507,7 @@ Storage *start_resumable_impl(Resumable *resumable) noexcept {
 int64_t fork_resumable(Resumable *resumable) noexcept {
   int64_t id = register_forked_resumable(resumable);
 
-  if (kphp_tracing::on_fork_start) {
-    kphp_tracing::on_fork_start(f$get_running_fork_id(), id);
-  }
+  runtime_injection::invoke_callback(on_fork_start, f$get_running_fork_id(), id);
 
   if (resumable->resume(id, nullptr)) {
     finish_forked_resumable(id);

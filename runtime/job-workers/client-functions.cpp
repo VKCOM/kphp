@@ -9,8 +9,8 @@
 #include "runtime/instance-copy-processor.h"
 #include "runtime/job-workers/job-interface.h"
 #include "runtime/job-workers/processing-jobs.h"
-#include "runtime/kphp_tracing.h"
 #include "runtime/resumable.h"
+#include "runtime/runtime_injection.h"
 
 #include "server/job-workers/job-message.h"
 #include "server/job-workers/job-worker-client.h"
@@ -20,6 +20,8 @@
 #include "server/server-stats.h"
 
 #include "runtime/job-workers/client-functions.h"
+
+using runtime_injection::on_job_request_start;
 
 class job_resumable : public Resumable {
 public:
@@ -153,9 +155,7 @@ Optional<int64_t> kphp_job_worker_start_impl(const class_instance<C$KphpJobWorke
 
   int job_resumable_id = send_job_request_message(memory_request, timeout, nullptr, no_reply);
 
-  if (kphp_tracing::on_job_request_start) {
-    kphp_tracing::on_job_request_start(job_id, request, job_start_time, no_reply);
-  }
+  runtime_injection::invoke_callback(on_job_request_start, job_id, request, job_start_time, no_reply);
 
   if (job_resumable_id < 0) {
     return false;
@@ -251,9 +251,7 @@ array<Optional<int64_t>> f$kphp_job_worker_start_multi(const array<class_instanc
 
     int job_resumable_id = send_job_request_message(job_request, timeout, common_job_request);
 
-    if (kphp_tracing::on_job_request_start) {
-      kphp_tracing::on_job_request_start(job_id, req, job_start_time, false);
-    }
+    runtime_injection::invoke_callback(on_job_request_start, job_id, req, job_start_time, false);
 
     if (job_resumable_id > 0) {
       res.set_value(it.get_key(), job_resumable_id);
