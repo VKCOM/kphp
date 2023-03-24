@@ -12,6 +12,7 @@
 #include "runtime/critical_section.h"
 #include "runtime/datetime/timelib_wrapper.h"
 #include "runtime/string_functions.h"
+#include "server/server-log.h"
 
 extern long timezone;
 
@@ -33,8 +34,37 @@ static void set_default_timezone_id(const char *timezone_id) {
 
 static const char *suffix[] = {"st", "nd", "rd", "th"};
 
-static time_t gmmktime(struct tm *tm) {
+static time_t deprecated_gmmktime(struct tm * tm) {
+  char *tz = getenv("TZ");
+  setenv("TZ", "", 1);
+  tzset();
+
+  time_t result = mktime(tm);
+
+  if (tz) {
+    setenv("TZ", tz, 1);
+  } else {
+    unsetenv("TZ");
+  }
+  tzset();
+
+  return result;
+}
+
+static time_t updated_gmmktime(struct tm * tm) {
   return timegm(tm);
+}
+
+static time_t gmmktime(struct tm *tm) {
+  dl::CriticalSectionGuard critical_section;
+  time_t deprecated_time = deprecated_gmmktime(tm);
+  time_t updated_time = updated_gmmktime(tm);
+  if (deprecated_time != updated_time) {
+    write_log_server_impl(ServerLog::Warning,
+                          "Updated gmmktime return different result. Updated value %ld, Deprecated value %ld, ENV TZ = \"%s\"",
+                          updated_time, deprecated_time, getenv("TZ"));
+  }
+  return deprecated_time;
 }
 
 bool f$checkdate(int64_t month, int64_t day, int64_t year) {
