@@ -615,13 +615,21 @@ void f$fastcgi_finish_request(int64_t exit_code) {
   coub->clean();
 }
 
-void run_shutdown_functions() {
+void run_shutdown_functions(ShutdownType shutdown_type) {
+  if (kphp_tracing::on_shutdown_functions_start) {
+    kphp_tracing::on_shutdown_functions_start(shutdown_functions_count, static_cast<int64_t>(shutdown_type));
+  }
+
   php_assert(dl::is_malloc_replaced() == false);
   forcibly_stop_all_running_resumables();
 
   ShutdownProfiler shutdown_profiler;
   for (int i = 0; i < shutdown_functions_count; i++) {
     shutdown_functions[i]();
+  }
+
+  if (kphp_tracing::on_shutdown_functions_finish) {
+    kphp_tracing::on_shutdown_functions_finish();
   }
 }
 
@@ -641,11 +649,11 @@ void run_shutdown_functions_from_timeout() {
 //  // we were about to enter (since timeout is an error state)
 //  shutdown_functions_status_value = shutdown_functions_status::running_from_timeout;
 //  if (setjmp(timeout_exit) == 0) {
-//    run_shutdown_functions();
+//    run_shutdown_functions(ShutdownType::timeout);
 //  }
 }
 
-void run_shutdown_functions_from_script() {
+void run_shutdown_functions_from_script(ShutdownType shutdown_type) {
   shutdown_functions_status_value = shutdown_functions_status::running;
   // when running shutdown functions from a normal (non-timeout) context,
   // reset the timer to give shutdown functions a new span of time to avoid
@@ -653,7 +661,7 @@ void run_shutdown_functions_from_script() {
   // if shutdown functions can't finish with that time quota, they will
   // be interrupted as usual
   reset_script_timeout();
-  run_shutdown_functions();
+  run_shutdown_functions(shutdown_type);
 }
 
 void f$register_shutdown_function(const shutdown_function_type &f) {
@@ -673,12 +681,12 @@ bool f$set_wait_all_forks_on_finish(bool wait) noexcept {
   return wait;
 }
 
-void finish(int64_t exit_code, bool allow_forks_waiting) {
+void finish(int64_t exit_code, bool allow_forks_waiting, bool from_exit) {
   if (!finished) {
     finished = true;
     forcibly_stop_profiler();
     if (shutdown_functions_count != 0) {
-      run_shutdown_functions_from_script();
+      run_shutdown_functions_from_script(from_exit ? ShutdownType::exit : ShutdownType::normal);
     }
     if (allow_forks_waiting && wait_all_forks_on_finish) {
       wait_all_forks();
@@ -700,9 +708,9 @@ void f$exit(const mixed &v) {
 
   if (v.is_string()) {
     *coub << v;
-    finish(0, false);
+    finish(0, false, true);
   } else {
-    finish(v.to_int(), false);
+    finish(v.to_int(), false, true);
   }
 }
 
@@ -2371,7 +2379,7 @@ static void free_runtime_libs() {
   free_tcp_lib();
   free_timelib();
   OnKphpWarningCallback::get().reset();
-  kphp_tracing::tree_tracing_lib();
+  kphp_tracing::free_tracing_lib();
   free_slot_factories();
 
   free_job_client_interface_lib();

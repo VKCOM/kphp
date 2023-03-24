@@ -1643,6 +1643,17 @@ function register_kphp_on_job_worker_callbacks(
 function register_kphp_on_swapcontext_callbacks(
     callable(double $netTimeDelta):void $onSwitchNetToScript);
 
+final class KphpShutdownType {
+    const NORMAL = 0;
+    const EXIT = 1;
+    const EXCEPTION = 2;
+    const TIMEOUT = 3;
+}
+
+function register_kphp_shutdown_functions_callbacks(
+    callable(int $shutdownFunctionsCount, int /* use KphpShutdownType constants */ $shutdown_type):void $beforeStart,
+    callable():void $afterFinish);
+
 function kphp_tracing_init_binlog(): void;
 function kphp_tracing_get_binlog_as_hex_string(): string;
 

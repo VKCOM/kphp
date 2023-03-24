@@ -19,6 +19,8 @@ on_rpc_request_finish_callback_t on_rpc_request_finish;
 on_job_request_start_callback_t on_job_request_start;
 on_job_request_finish_callback_t on_job_request_finish;
 on_net_to_script_switch_callback_t on_net_to_script_ctx_switch;
+on_shutdown_functions_start_callback_t on_shutdown_functions_start;
+on_shutdown_functions_finish_callback_t on_shutdown_functions_finish;
 
 tracing_binary_buffer trace_binlog;
 
@@ -28,7 +30,7 @@ void init_tracing_lib() {
   // if PHP code requires tracing, it calls kphp_tracing_init_binlog() and registered
 }
 
-void tree_tracing_lib() {
+void free_tracing_lib() {
   on_fork_start = {};
   on_fork_finish = {};
   on_fork_switch = {};
@@ -37,6 +39,8 @@ void tree_tracing_lib() {
   on_job_request_start = {};
   on_job_request_finish = {};
   on_net_to_script_ctx_switch = {};
+  on_shutdown_functions_start = {};
+  on_shutdown_functions_finish = {};
 
   trace_binlog.clear();
 }
@@ -128,6 +132,12 @@ void f$register_kphp_on_job_worker_callbacks(const kphp_tracing::on_job_request_
 
 void f$register_kphp_on_swapcontext_callbacks(const kphp_tracing::on_net_to_script_switch_callback_t &on_net_to_script_switch) {
   kphp_tracing::on_net_to_script_ctx_switch = on_net_to_script_switch;
+}
+
+void f$register_kphp_shutdown_functions_callbacks(const kphp_tracing::on_shutdown_functions_start_callback_t &on_start,
+                                                     const kphp_tracing::on_shutdown_functions_finish_callback_t &on_finish) {
+  kphp_tracing::on_shutdown_functions_start = on_start;
+  kphp_tracing::on_shutdown_functions_finish = on_finish;
 }
 
 void f$kphp_tracing_init_binlog() {

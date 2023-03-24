@@ -483,7 +483,7 @@ void PhpScript::run() noexcept {
       // run shutdown functions with an empty exception context; then recover it before we proceed
       auto saved_exception = CurException;
       CurException = Optional<bool>{};
-      run_shutdown_functions_from_script();
+      run_shutdown_functions_from_script(ShutdownType::exception);
       // only nothrow shutdown callbacks are allowed by the compiler, so the CurException should be null
       php_assert(CurException.is_null());
       CurException = saved_exception;
