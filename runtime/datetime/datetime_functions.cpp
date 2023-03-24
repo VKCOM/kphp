@@ -34,14 +34,19 @@ static void set_default_timezone_id(const char *timezone_id) {
 static const char *suffix[] = {"st", "nd", "rd", "th"};
 
 static time_t gmmktime(struct tm *tm) {
-  char *tz = getenv("TZ");
+  dl::CriticalSectionGuard critical_section;
+  char * tz = getenv("TZ");
+  string tz_copy;
+  if (tz) {
+    tz_copy = string(tz);
+  }
   setenv("TZ", "", 1);
   tzset();
 
   time_t result = mktime(tm);
 
   if (tz) {
-    setenv("TZ", tz, 1);
+    setenv("TZ", tz_copy.c_str(), 1);
   } else {
     unsetenv("TZ");
   }
