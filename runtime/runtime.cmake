@@ -108,6 +108,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         tl/rpc_tl_query.cpp
         tl/rpc_response.cpp
         tl/rpc_server.cpp
+        tl/tl_magics_decoding.cpp
         typed_rpc.cpp
         uber-h3.cpp
         udp.cpp

@@ -106,3 +106,5 @@ right {X:Type} {Y:Type} value:Y = Either X Y;
 @any engine.count = BoolStat;
 @any engine.pid = net.Pid;
 @any engine.version = String;
+
+@kphp kphp.pingRpcCluster#a677ee41 id:int = Int;
