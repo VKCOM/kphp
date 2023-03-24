@@ -60,9 +60,10 @@ static time_t gmmktime(struct tm *tm) {
   time_t deprecated_time = deprecated_gmmktime(tm);
   time_t updated_time = updated_gmmktime(tm);
   if (deprecated_time != updated_time) {
+    char * tz = getenv("TZ");
     write_log_server_impl(ServerLog::Warning,
                           "Updated gmmktime return different result. Updated value %ld, Deprecated value %ld, ENV TZ = \"%s\"",
-                          updated_time, deprecated_time, getenv("TZ"));
+                          updated_time, deprecated_time, tz != nullptr ? tz : "null");
   }
   return deprecated_time;
 }
