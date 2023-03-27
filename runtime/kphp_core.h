@@ -479,7 +479,7 @@ inline int64_t f$memory_get_total_usage();
 
 inline array<int64_t> f$memory_get_detailed_stats();
 
-inline std::tuple<int64_t, int64_t> f$memory_get_allocations();
+inline std::tuple<int64_t, int64_t, int64_t> f$memory_get_allocations();
 
 template<class T>
 inline int64_t f$get_reference_counter(const array<T> &v);
@@ -1379,9 +1379,9 @@ array<int64_t> f$memory_get_detailed_stats() {
     });
 }
 
-std::tuple<int64_t, int64_t> f$memory_get_allocations() {
+std::tuple<int64_t, int64_t, int64_t> f$memory_get_allocations() {
   const auto &stats = dl::get_script_memory_stats();
-  return {stats.total_allocations, stats.total_memory_allocated};
+  return {stats.total_allocations, stats.total_memory_allocated, stats.memory_used};
 }
 
 

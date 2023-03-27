@@ -54,8 +54,7 @@ public:
   int refcnt{0};
   int vsliceID;
   double start_timestamp;
-  int allocations_count;
-  int allocated_bytes;
+  int memory_used;
   explicit C$KphpTracingVSliceAtRuntime(int vsliceID): vsliceID(vsliceID) {}
 
   void add_ref();

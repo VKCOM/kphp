@@ -21,7 +21,7 @@ using on_job_request_start_callback_t = std::function<void(int64_t, const class_
 using on_job_request_finish_callback_t = std::function<void(int64_t, double, int64_t)>;
 using on_shutdown_functions_start_callback_t = std::function<void(int64_t, int64_t, double)>;
 using on_shutdown_functions_finish_callback_t = std::function<void(double)>;
-using on_tracing_vslice_tick_callback_t = std::function<void(int64_t, double, double, int64_t, int64_t)>;
+using on_tracing_vslice_tick_callback_t = std::function<void(int64_t, double, double, int64_t)>;
 
 extern on_fork_switch_callback_t on_fork_start;
 extern on_fork_state_change_callback_t on_fork_finish;
