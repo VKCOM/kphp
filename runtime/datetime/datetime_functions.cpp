@@ -61,10 +61,10 @@ static time_t gmmktime(struct tm *tm) {
   time_t updated_time = updated_gmmktime(tm);
   if (deprecated_time != updated_time) {
     char * tz = getenv("TZ");
-    write_log_server_impl(ServerLog::Warning,
-                          "Updated gmmktime return different result. Updated value %ld. Deprecated value %ld. ENV TZ = \"%s\". "
-                          "Local tz name[0] = \"%s\", tz name[1] = \"%s\", timezone %ld, daylight %d",
-                          updated_time, deprecated_time, tz != nullptr ? tz : "null", tzname[0], tzname[1], timezone, daylight);
+    log_server_warning("Updated gmmktime return different result. Updated value %ld. Deprecated value %ld. ENV TZ = \"%s\". "
+                       "Local tz name[0] = \"%s\", tz name[1] = \"%s\", timezone %ld, daylight %d",
+                       updated_time, deprecated_time, tz != nullptr ? tz : "null", tzname[0] != nullptr ? tzname[0] : "null",
+                       tzname[1] != nullptr ? tzname[1] : "null", timezone, daylight);
   }
   return deprecated_time;
 }
