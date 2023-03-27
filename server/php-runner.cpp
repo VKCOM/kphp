@@ -525,12 +525,12 @@ void write_str(int fd, const char *s) noexcept {
 namespace kphp_runtime_signal_handlers {
 
 static void sigalrm_handler(int signum) {
-  kwrite_str(2, "in sigalrm_handler\n");
   if (check_signal_critical_section(signum, "SIGALRM")) {
     PhpScript::time_limit_exceeded = true;
     // if script is not actually running, don't bother (sigalrm handler is called
     // even if timeout happens after the script already finished its execution)
     if (PhpScript::in_script_context) {
+      kwrite_str(2, "in sigalrm_handler inside script context\n");
       if (is_json_log_on_timeout_enabled) {
         vk::singleton<JsonLogger>::get().write_log_with_backtrace("Maximum execution time exceeded", E_ERROR);
       }
@@ -545,7 +545,11 @@ static void sigalrm_handler(int signum) {
       // (without changing the script context) and then do all required steps
       PhpScript::current_script->script_stack.asan_stack_unpoison();
       siglongjmp(PhpScript::current_script->timeout_handler, 1);
+    } else {
+      kwrite_str(2, "in sigalrm_handler inside net context\n");
     }
+  } else {
+    kwrite_str(2, "in sigalrm_handler inside critical section\n");
   }
 }
 

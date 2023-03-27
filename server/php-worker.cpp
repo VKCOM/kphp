@@ -25,8 +25,7 @@
 PhpWorker *active_worker = nullptr;
 
 double PhpWorker::enter_lifecycle() noexcept {
-  if (vk::any_of_equal(state, phpq_try_start, phpq_init_script) // optimization makes sense only for skipping initialization of timeout expired scripts
-      && finish_time < precise_now + 0.01) {
+  if (finish_time < precise_now + 0.01) {
     terminate(0, script_error_t::timeout, "timeout");
   }
   on_wakeup();
@@ -57,6 +56,11 @@ double PhpWorker::enter_lifecycle() noexcept {
     get_utime_monotonic();
   } while (!paused);
 
+  if (conn->status != conn_wait_net) {
+    vkprintf(0, "Connection suspended without waiting for net. PhpWorker state %d, connection status %d, "
+                "PhpScript state %d\n", state, conn->status, php_script != nullptr ? static_cast<int>(php_script->state) : -1);
+
+  }
   assert(conn->status == conn_wait_net);
   return get_timeout();
 }
