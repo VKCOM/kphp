@@ -16,6 +16,7 @@
 #include "compiler/phpdoc.h"
 #include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
+#include "compiler/vertex-util.h"
 #include "compiler/vertex.h"
 
 /*
@@ -703,7 +704,7 @@ private:
       return nullptr;
     }
     if (var->init_val) {
-      const TypeHint *type_hint = phpdoc_convert_default_value_to_type_hint(var->init_val);
+      const TypeHint *type_hint = phpdoc_convert_default_value_to_type_hint(VertexUtil::get_define_val(var->init_val));
       kphp_error(type_hint, fmt_format("Specify @var to {}", var->as_human_readable()));
       return type_hint;
     }
