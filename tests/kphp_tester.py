@@ -102,7 +102,6 @@ def make_test_file(file_path, test_tmp_dir, test_tags):
             else:  # <?php
                 break
 
-        env_vars["KPHP_ENABLE_MODULITE"] = "1"
         return TestFile(file_path, test_tmp_dir, tags, env_vars, out_regexps, forbidden_regexps)
 
 

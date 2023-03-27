@@ -35,10 +35,6 @@ void WaitForAllClassesF::on_finish(DataStream<FunctionPtr> &os) {
 // after all classes have been loaded, we can resolve symbols in modulite configs
 // (until this point, yaml files were parsed, but stored as strings)
 void WaitForAllClassesF::resolve_and_validate_modulites() {
-  if (!G->settings().modulite_enabled.get()) {
-    return;
-  }
-
   // sort all modulites from short to long, so that a parent appears before a child when iterating
   // this fact is used to fill `child->exported_from_parent` by lookup, and some others
   std::vector<ModulitePtr> all_modulites = G->get_modulites();

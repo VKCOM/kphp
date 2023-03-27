@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_MODULITE=1
 /Failed loading Utils102\/.modulite.yaml:/
 /can't find class\/constant Utils102\\StringsNot/
 /can't find function Utils102\\basicFn\(\)/

@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_MODULITE=1
 /Utils105\/.modulite.yaml:-1/
 /inconsistent nesting: @msg\/utils placed outside of @msg/
 /inconsistent nesting: @feed placed in @msg/
