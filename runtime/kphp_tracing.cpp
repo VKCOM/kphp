@@ -124,15 +124,16 @@ void f$kphp_tracing_enable_vslice_collecting() {
 
 void C$KphpTracingVSliceAtRuntime::add_ref() {
   if (refcnt++ == 0) {
-    start_timestamp = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
-    memory_used = dl::get_script_memory_stats().memory_used;
+    double now_timestamp = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
+    start_memory_used = dl::get_script_memory_stats().memory_used;
+    runtime_injection::invoke_callback(runtime_injection::on_tracing_vslice_start, vsliceID, now_timestamp);
   }
 }
 
 void C$KphpTracingVSliceAtRuntime::release() {
   if (--refcnt == 0) {
     double now_timestamp = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
-    runtime_injection::invoke_callback(runtime_injection::on_tracing_vslice_tick,
-                                       vsliceID, start_timestamp, now_timestamp, dl::get_script_memory_stats().memory_used - memory_used);
+    size_t memory_used = dl::get_script_memory_stats().memory_used - start_memory_used;
+    runtime_injection::invoke_callback(runtime_injection::on_tracing_vslice_finish, vsliceID, now_timestamp, memory_used);
   }
 }

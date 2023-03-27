@@ -1661,8 +1661,9 @@ class KphpTracingVSliceAtRuntime {
     private function __construct();
 }
 
-function register_kphp_on_tracing_vslice_callback(
-    callable(int $vsliceID, float $startTimestamp, float $endTimestamp, int $memoryUsed) $onVSliceTick);
+function register_kphp_on_tracing_vslice_callbacks(
+    callable(int $vsliceID, float $startTimestamp) $onVSliceStart,
+    callable(int $vsliceID, float $endTimestamp, int $memoryUsed) $onVSliceFinish);
 
 function kphp_tracing_enable_vslice_collecting(): void;
 /** @kphp-warn-unused-result */
