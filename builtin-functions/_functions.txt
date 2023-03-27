@@ -1641,18 +1641,10 @@ function register_kphp_on_job_worker_callbacks(
     callable(int $jobID, KphpJobWorkerRequest $job, float $startTimestamp, bool $isNoReply):void $onJobSend,
     callable(int $jobID, float $durationSec, int $awaiting_fork_id):void $onJobGotResponse);
 function register_kphp_on_swapcontext_callbacks(
-    callable(double $nowTimestamp, double $netTimeDelta):void $onSwitchNetToScript);
-
-final class KphpShutdownType {
-    const NORMAL = 0;
-    const EXIT = 1;
-    const EXCEPTION = 2;
-    const TIMEOUT = 3;
-}
-
-function register_kphp_shutdown_functions_callbacks(
-    callable(int $shutdownFunctionsCount, int /* use KphpShutdownType constants */ $shutdownType):void $onBeforeStart,
-    callable():void $onAfterFinish);
+    callable(float $nowTimestamp, float $netTimeDelta):void $onSwitchNetToScript);
+function register_kphp_on_shutdown_callbacks(
+    callable(int $shutdownFunctionsCount, int /* enum ShutdownType in interface.h */ $shutdownType, float $nowTimestamp):void $onBeforeStart,
+    callable(float $nowTimestamp):void $onAfterFinish);
 
 function kphp_tracing_init_binlog(): void;
 function kphp_tracing_get_binlog_as_hex_string(): string;
@@ -1670,7 +1662,7 @@ class KphpTracingVSliceAtRuntime {
 }
 
 function register_kphp_on_tracing_vslice_callback(
-    callable(int $vsliceID, double $startTimestamp, double $endTimestamp, int $allocationsCount, int $allocatedBytes) $onVSliceTick);
+    callable(int $vsliceID, float $startTimestamp, float $endTimestamp, int $allocationsCount, int $allocatedBytes) $onVSliceTick);
 
 function kphp_tracing_enable_vslice_collecting(): void;
 /** @kphp-warn-unused-result */

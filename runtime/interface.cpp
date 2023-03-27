@@ -620,7 +620,8 @@ void f$fastcgi_finish_request(int64_t exit_code) {
 }
 
 void run_shutdown_functions(ShutdownType shutdown_type) {
-  runtime_injection::invoke_callback(on_shutdown_functions_start, shutdown_functions_count, static_cast<int64_t>(shutdown_type));
+  double now_timestamp = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
+  runtime_injection::invoke_callback(on_shutdown_functions_start, shutdown_functions_count, static_cast<int64_t>(shutdown_type), now_timestamp);
 
   php_assert(dl::is_malloc_replaced() == false);
   forcibly_stop_all_running_resumables();
@@ -630,7 +631,8 @@ void run_shutdown_functions(ShutdownType shutdown_type) {
     shutdown_functions[i]();
   }
 
-  runtime_injection::invoke_callback(on_shutdown_functions_finish);
+  now_timestamp = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
+  runtime_injection::invoke_callback(on_shutdown_functions_finish, now_timestamp);
 }
 
 shutdown_functions_status get_shutdown_functions_status() {
@@ -685,9 +687,7 @@ void finish(int64_t exit_code, bool allow_forks_waiting, bool from_exit) {
   if (!finished) {
     finished = true;
     forcibly_stop_profiler();
-    if (shutdown_functions_count != 0) {
-      run_shutdown_functions_from_script(from_exit ? ShutdownType::exit : ShutdownType::normal);
-    }
+    run_shutdown_functions_from_script(from_exit ? ShutdownType::exit : ShutdownType::normal);
     if (allow_forks_waiting && wait_all_forks_on_finish) {
       wait_all_forks();
     }
