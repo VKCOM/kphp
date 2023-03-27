@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <random>
+
 using slot_id_t = int;
 
 /**
@@ -39,6 +41,7 @@ public:
   bool is_from_current_script_execution(slot_id_t slot_id) const { return begin_slot_id <= slot_id && slot_id < end_slot_id; }
 
 private:
+  std::random_device rd;
   slot_id_t begin_slot_id = 0;
   slot_id_t end_slot_id = 0;
 };

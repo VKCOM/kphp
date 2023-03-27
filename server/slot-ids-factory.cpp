@@ -2,10 +2,9 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include <cassert>
-#include <cstdlib>
-
 #include "server/slot-ids-factory.h"
+
+#include <cassert>
 
 static constexpr slot_id_t MIN_SLOT_ID = 65536;
 static constexpr slot_id_t MAX_SLOT_ID = 2000000000;
@@ -20,7 +19,7 @@ SlotIdsFactory external_db_requests_factory;
 
 
 void SlotIdsFactory::init() {
-  end_slot_id = begin_slot_id = static_cast<slot_id_t>(lrand48() % (MAX_SLOT_ID / 4) + MIN_SLOT_ID);
+  end_slot_id = begin_slot_id = static_cast<slot_id_t>(rd() % (MAX_SLOT_ID / 4) + MIN_SLOT_ID);
 }
 
 void SlotIdsFactory::renew() {
