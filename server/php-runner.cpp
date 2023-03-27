@@ -238,7 +238,7 @@ void PhpScript::pause() noexcept {
   __sanitizer_finish_switch_fiber(nullptr, &main_thread_stack, &main_thread_stacksize);
 #endif
   in_script_context = true;
-  runtime_injection::invoke_callback(on_net_to_script_ctx_switch, last_net_time_delta);
+  runtime_injection::invoke_callback(on_net_to_script_ctx_switch, cur_timestamp, last_net_time_delta);
   check_delayed_errors();
   //fprintf (stderr, "pause: ended\n");
 }

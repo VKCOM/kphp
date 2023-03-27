@@ -1651,8 +1651,8 @@ final class KphpShutdownType {
 }
 
 function register_kphp_shutdown_functions_callbacks(
-    callable(int $shutdownFunctionsCount, int /* use KphpShutdownType constants */ $shutdown_type):void $beforeStart,
-    callable():void $afterFinish);
+    callable(int $shutdownFunctionsCount, int /* use KphpShutdownType constants */ $shutdownType):void $onBeforeStart,
+    callable():void $onAfterFinish);
 
 function kphp_tracing_init_binlog(): void;
 function kphp_tracing_get_binlog_as_hex_string(): string;
@@ -1664,4 +1664,14 @@ function kphp_tracing_write_uint32(int $v): void;
 function kphp_tracing_write_float32(float $v): void;
 function kphp_tracing_write_float64(float $v): void;
 function kphp_tracing_write_string(string $v): void;
-function kphp_tracing_write_bool(bool $v): void;
+
+class KphpTracingVSliceAtRuntime {
+    private function __construct();
+}
+
+function register_kphp_on_tracing_vslice_callback(
+    callable(int $vsliceID, double $startTimestamp, double $endTimestamp, int $allocationsCount, int $allocatedBytes) $onVSliceTick);
+
+function kphp_tracing_enable_vslice_collecting(): void;
+/** @kphp-warn-unused-result */
+function kphp_tracing_vslice(int $vsliceID): KphpTracingVSliceAtRuntime;

@@ -25,10 +25,10 @@ struct tracing_binary_buffer {
   void write_float32(double v) { float f32 = static_cast<float>(v); *pos++ = *reinterpret_cast<int *>(&f32); }
   void write_float64(double v);
   void write_string(const string &v);
-  void write_bool(bool v);
 };
 
 extern tracing_binary_buffer trace_binlog;
+extern bool vslice_runtime_enabled;
 
 void init_tracing_lib();
 void free_tracing_lib();
@@ -45,5 +45,28 @@ inline void f$kphp_tracing_write_uint32(int64_t v) { kphp_tracing::trace_binlog.
 inline void f$kphp_tracing_write_float32(double v) { kphp_tracing::trace_binlog.write_float32(v); }
 inline void f$kphp_tracing_write_float64(double v) { kphp_tracing::trace_binlog.write_float64(v); }
 inline void f$kphp_tracing_write_string(const string &v) { kphp_tracing::trace_binlog.write_string(v); }
-inline void f$kphp_tracing_write_bool(bool v) { kphp_tracing::trace_binlog.write_bool(v); }
 
+
+void f$kphp_tracing_enable_vslice_collecting();
+
+class C$KphpTracingVSliceAtRuntime {
+public:
+  int refcnt{0};
+  int vsliceID;
+  double start_timestamp;
+  int allocations_count;
+  int allocated_bytes;
+  explicit C$KphpTracingVSliceAtRuntime(int vsliceID): vsliceID(vsliceID) {}
+
+  void add_ref();
+  void release();
+};
+
+
+inline __attribute__((always_inline)) class_instance<C$KphpTracingVSliceAtRuntime> f$kphp_tracing_vslice(int vsliceID) {
+  class_instance<C$KphpTracingVSliceAtRuntime> g;
+  if (unlikely(kphp_tracing::vslice_runtime_enabled)) {
+    g.alloc(vsliceID);
+  }
+  return g;
+}

@@ -16,6 +16,7 @@ on_job_request_finish_callback_t on_job_request_finish;
 on_net_to_script_switch_callback_t on_net_to_script_ctx_switch;
 on_shutdown_functions_start_callback_t on_shutdown_functions_start;
 on_shutdown_functions_finish_callback_t on_shutdown_functions_finish;
+on_tracing_vslice_tick_callback_t on_tracing_vslice_tick;
 
 void free_callbacks() {
   on_fork_start = {};
@@ -28,6 +29,7 @@ void free_callbacks() {
   on_net_to_script_ctx_switch = {};
   on_shutdown_functions_start = {};
   on_shutdown_functions_finish = {};
+  on_tracing_vslice_tick = {};
 }
 
 } // namespace runtime_injection
@@ -60,4 +62,8 @@ void f$register_kphp_shutdown_functions_callbacks(const runtime_injection::on_sh
                                                   const runtime_injection::on_shutdown_functions_finish_callback_t &on_finish) {
   runtime_injection::on_shutdown_functions_start = on_start;
   runtime_injection::on_shutdown_functions_finish = on_finish;
+}
+
+void f$register_kphp_on_tracing_vslice_callback(const runtime_injection::on_tracing_vslice_tick_callback_t &on_vslice_tick) {
+  runtime_injection::on_tracing_vslice_tick = on_vslice_tick;
 }

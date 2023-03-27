@@ -12,13 +12,14 @@ struct C$KphpJobWorkerRequest;
 
 namespace runtime_injection {
 
-using on_net_to_script_switch_callback_t = std::function<void(double)>;
+using on_net_to_script_switch_callback_t = std::function<void(double, double)>;
 using on_fork_state_change_callback_t = std::function<void(int64_t)>;
 using on_fork_switch_callback_t = std::function<void(int64_t, int64_t)>;
 using on_rpc_request_start_callback_t = std::function<void(int64_t, int64_t, int64_t, int64_t, double, bool)>;
 using on_rpc_request_finish_callback_t = std::function<void(int64_t, int64_t, double, int64_t)>;
 using on_job_request_start_callback_t = std::function<void(int64_t, const class_instance<C$KphpJobWorkerRequest>&, double, bool)>;
 using on_job_request_finish_callback_t = std::function<void(int64_t, double, int64_t)>;
+using on_tracing_vslice_tick_callback_t = std::function<void(int64_t, double, double, int64_t, int64_t)>;
 
 using ShutdownType = int64_t;
 using on_shutdown_functions_start_callback_t = std::function<void(int64_t, ShutdownType)>;
@@ -34,6 +35,7 @@ extern on_job_request_finish_callback_t on_job_request_finish;
 extern on_net_to_script_switch_callback_t on_net_to_script_ctx_switch;
 extern on_shutdown_functions_start_callback_t on_shutdown_functions_start;
 extern on_shutdown_functions_finish_callback_t on_shutdown_functions_finish;
+extern on_tracing_vslice_tick_callback_t on_tracing_vslice_tick;
 
 template<typename F, typename ...Args>
 void invoke_callback(F &f, Args &&... args) noexcept {
@@ -58,3 +60,4 @@ void f$register_kphp_on_job_worker_callbacks(const runtime_injection::on_job_req
 void f$register_kphp_on_swapcontext_callbacks(const runtime_injection::on_net_to_script_switch_callback_t &on_net_to_script_switch);
 void f$register_kphp_shutdown_functions_callbacks(const runtime_injection::on_shutdown_functions_start_callback_t &on_start,
                                                   const runtime_injection::on_shutdown_functions_finish_callback_t &on_finish);
+void f$register_kphp_on_tracing_vslice_callback(const runtime_injection::on_tracing_vslice_tick_callback_t &on_vslice_tick);
