@@ -119,6 +119,14 @@ struct ProcessBeforeReplace : public VertexVisitor<ProcessBeforeReplace, VertexP
       return v;
     }
 
+    static VertexPtr on_func_call(VertexAdaptor<op_func_call> v) {
+      return remove_op_define_val(v);
+    }
+
+    static VertexPtr on_conv_regexp(VertexAdaptor<op_conv_regexp> regexp) {
+      return remove_op_define_val(regexp);
+    }
+
     static VertexPtr on_concat(VertexAdaptor<op_concat> concat) {
       return remove_op_define_val(concat);
     }
