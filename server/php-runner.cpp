@@ -691,8 +691,6 @@ void check_stack_overflow() {
     }
   }
 }
-std::array<void *, 64> sigalrm_last_backtrace;
-int sigalrm_last_backtrace_size = 0;
 
 //C interface
 void init_handlers() {
