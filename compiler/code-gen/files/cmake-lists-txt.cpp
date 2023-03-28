@@ -20,7 +20,9 @@ void CmakeListsTxt::compile_include_cmake() const noexcept {
   file_path /= "objs/custom_php_project.cmake";
   if (!std::filesystem::exists(file_path)) {
      std::ofstream file{file_path};
-     file << "add_subdirectory(" << G->settings().dest_cpp_dir.get() << ")";
+     file << "if(EXISTS " << G->settings().dest_cpp_dir.get() << ")" << std::endl;
+     file << "    add_subdirectory(" << G->settings().dest_cpp_dir.get() << ")" << std::endl;
+     file << "endif()" << std::endl;
   }
 }
 
