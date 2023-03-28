@@ -58,6 +58,9 @@ void dump_query_stats();
 
 void init_handlers();
 
+extern std::array<void *, 128> sigalrm_last_backtrace;
+extern int sigalrm_last_backtrace_size;
+
 class PhpScriptStack : vk::not_copyable {
 public:
   explicit PhpScriptStack(size_t stack_size) noexcept;
