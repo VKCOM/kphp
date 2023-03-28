@@ -522,6 +522,9 @@ void write_str(int fd, const char *s) noexcept {
   write(fd, s, std::min(strlen(s), size_t{1000}));
 }
 
+std::array<void *, 128> sigalrm_last_backtrace;
+int sigalrm_last_backtrace_size;
+
 namespace kphp_runtime_signal_handlers {
 
 static void sigalrm_handler(int signum) {
