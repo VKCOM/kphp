@@ -49,9 +49,8 @@ int64_t ProcessingJobs::finish_job_impl(int job_id, job_workers::FinishedJob *jo
 
   double now_timestamp = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
   int64_t fork_id = get_awaiting_fork_id(ready_job.resumable_id);
-  runtime_injection::invoke_callback(on_job_request_finish, job_id, now_timestamp - ready_job.send_timestamp, fork_id);
-
   if (job_result) {
+    runtime_injection::invoke_callback(on_job_request_finish, job_id, false, now_timestamp - ready_job.send_timestamp, fork_id);
     ready_job.response = std::move(job_result->response);
     job_result->~FinishedJob();
     dl::deallocate(job_result, sizeof(job_workers::FinishedJob));
@@ -65,6 +64,7 @@ int64_t ProcessingJobs::finish_job_impl(int job_id, job_workers::FinishedJob *jo
       error.get()->error = string{"Not enough memory for accepting job response"};
       error.get()->error_code = client_oom_error;
     }
+    runtime_injection::invoke_callback(on_job_request_finish, job_id, error.get()->error_code, now_timestamp - ready_job.send_timestamp, fork_id);
     ready_job.response = std::move(error);
   }
 
