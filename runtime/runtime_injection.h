@@ -38,6 +38,9 @@ using on_shutdown_functions_finish_callback_t = std::function<void(double now_ti
 using on_tracing_vslice_start_callback_t = std::function<void(int64_t vslice_id, double start_timestamp)>;
 using on_tracing_vslice_finish_callback_t = std::function<void(int64_t vslice_id, double end_timestamp, int64_t memory_used)>;
 
+using on_curl_easy_callback_t = std::function<void(int64_t curl_handle)>;
+using on_curl_multi_callback_t = std::function<void(int64_t multi_handle, int64_t curl_handle)>;
+
 extern on_fork_start_callback_t on_fork_start;
 extern on_fork_finish_callback_t on_fork_finish;
 extern on_fork_switch_callback_t on_fork_switch;
@@ -50,6 +53,10 @@ extern on_shutdown_functions_start_callback_t on_shutdown_functions_start;
 extern on_shutdown_functions_finish_callback_t on_shutdown_functions_finish;
 extern on_tracing_vslice_start_callback_t on_tracing_vslice_start;
 extern on_tracing_vslice_finish_callback_t on_tracing_vslice_finish;
+extern on_curl_easy_callback_t on_curl_exec_start;
+extern on_curl_easy_callback_t on_curl_exec_finish;
+extern on_curl_multi_callback_t on_curl_multi_add_handle;
+extern on_curl_multi_callback_t on_curl_multi_remove_handle;
 
 template<typename F, typename ...Args>
 void invoke_callback(F &f, Args &&... args) noexcept {
@@ -76,3 +83,7 @@ void f$register_kphp_on_shutdown_callbacks(const runtime_injection::on_shutdown_
                                            const runtime_injection::on_shutdown_functions_finish_callback_t &on_finish);
 void f$register_kphp_on_tracing_vslice_callbacks(const runtime_injection::on_tracing_vslice_start_callback_t &on_start,
                                                  const runtime_injection::on_tracing_vslice_finish_callback_t &on_finish);
+void f$register_kphp_on_curl_callbacks(const runtime_injection::on_curl_easy_callback_t &on_curl_exec_start,
+                                       const runtime_injection::on_curl_easy_callback_t &on_curl_exec_finish,
+                                       const runtime_injection::on_curl_multi_callback_t &on_curl_multi_add_handle,
+                                       const runtime_injection::on_curl_multi_callback_t &on_curl_multi_remove_handle);

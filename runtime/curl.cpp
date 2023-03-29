@@ -12,11 +12,17 @@
 
 #include "runtime/critical_section.h"
 #include "runtime/interface.h"
+#include "runtime/runtime_injection.h"
 #include "runtime/string-list.h"
 
 #include "common/macos-ports.h"
 #include "common/smart_ptrs/singleton.h"
 #include "common/wrappers/to_array.h"
+
+using runtime_injection::on_curl_exec_start;
+using runtime_injection::on_curl_exec_finish;
+using runtime_injection::on_curl_multi_add_handle;
+using runtime_injection::on_curl_multi_remove_handle;
 
 static_assert(LIBCURL_VERSION_NUM >= 0x071c00, "Outdated libcurl");
 static_assert(CURL_MAX_WRITE_SIZE <= (1 << 30), "CURL_MAX_WRITE_SIZE expected to be less than (1 << 30)");
@@ -653,8 +659,12 @@ mixed f$curl_exec(curl_easy easy_id) noexcept {
     return false;
   }
 
+  runtime_injection::invoke_callback(on_curl_exec_start, easy_id);
+
   easy_context->cleanup_for_next_request();
   easy_context->error_num = dl::critical_section_call(curl_easy_perform, easy_context->easy_handle);
+
+  runtime_injection::invoke_callback(on_curl_exec_finish, easy_id);
 
   if (easy_context->error_num != CURLE_OK && easy_context->error_num != CURLE_PARTIAL_FILE) {
     return false;
@@ -791,6 +801,7 @@ curl_multi f$curl_multi_init() noexcept {
 Optional<int64_t> f$curl_multi_add_handle(curl_multi multi_id, curl_easy easy_id) noexcept {
   if (auto *multi_context = get_context<MultiContext>(multi_id)) {
     if (auto *easy_context = get_context<EasyContext>(easy_id)) {
+      runtime_injection::invoke_callback(on_curl_multi_add_handle, multi_id, easy_id);
       easy_context->cleanup_for_next_request();
       multi_context->error_num = dl::critical_section_call(curl_multi_add_handle, multi_context->multi_handle, easy_context->easy_handle);
       return multi_context->error_num;
@@ -889,6 +900,7 @@ Optional<array<int64_t>> f$curl_multi_info_read(curl_multi multi_id, int64_t &ms
 Optional<int64_t> f$curl_multi_remove_handle(curl_multi multi_id, curl_easy easy_id) noexcept {
   if (auto *multi_context = get_context<MultiContext>(multi_id)) {
     if (auto *easy_context = get_context<EasyContext>(easy_id)) {
+      runtime_injection::invoke_callback(on_curl_multi_remove_handle, multi_id, easy_id);
       multi_context->error_num = dl::critical_section_call(curl_multi_remove_handle, multi_context->multi_handle, easy_context->easy_handle);
       return multi_context->error_num;
     }

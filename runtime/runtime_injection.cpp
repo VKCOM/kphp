@@ -18,6 +18,10 @@ on_shutdown_functions_start_callback_t on_shutdown_functions_start;
 on_shutdown_functions_finish_callback_t on_shutdown_functions_finish;
 on_tracing_vslice_start_callback_t on_tracing_vslice_start;
 on_tracing_vslice_finish_callback_t on_tracing_vslice_finish;
+on_curl_easy_callback_t on_curl_exec_start;
+on_curl_easy_callback_t on_curl_exec_finish;
+on_curl_multi_callback_t on_curl_multi_add_handle;
+on_curl_multi_callback_t on_curl_multi_remove_handle;
 
 void free_callbacks() {
   on_fork_start = {};
@@ -32,6 +36,10 @@ void free_callbacks() {
   on_shutdown_functions_finish = {};
   on_tracing_vslice_start = {};
   on_tracing_vslice_finish = {};
+  on_curl_exec_start = {};
+  on_curl_exec_finish = {};
+  on_curl_multi_add_handle = {};
+  on_curl_multi_remove_handle = {};
 }
 
 } // namespace runtime_injection
@@ -70,4 +78,16 @@ void f$register_kphp_on_tracing_vslice_callbacks(const runtime_injection::on_tra
                                                  const runtime_injection::on_tracing_vslice_finish_callback_t &on_finish) {
   runtime_injection::on_tracing_vslice_start = on_start;
   runtime_injection::on_tracing_vslice_finish = on_finish;
+}
+
+void f$register_kphp_on_curl_callbacks(
+  const runtime_injection::on_curl_easy_callback_t &on_curl_exec_start,
+  const runtime_injection::on_curl_easy_callback_t &on_curl_exec_finish,
+  const runtime_injection::on_curl_multi_callback_t &on_curl_multi_add_handle,
+  const runtime_injection::on_curl_multi_callback_t &on_curl_multi_remove_handle
+) {
+  runtime_injection::on_curl_exec_start = on_curl_exec_start;
+  runtime_injection::on_curl_exec_finish = on_curl_exec_finish;
+  runtime_injection::on_curl_multi_add_handle = on_curl_multi_add_handle;
+  runtime_injection::on_curl_multi_remove_handle = on_curl_multi_remove_handle;
 }

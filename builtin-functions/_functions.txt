@@ -1645,6 +1645,12 @@ function register_kphp_on_swapcontext_callbacks(
 function register_kphp_on_shutdown_callbacks(
     callable(int $shutdownFunctionsCount, int /* enum ShutdownType in interface.h */ $shutdownType, float $nowTimestamp):void $onBeforeStart,
     callable(float $nowTimestamp):void $onAfterFinish);
+function register_kphp_on_curl_callbacks(
+    callable(int $curlHandle):void $on_curl_exec_start,
+    callable(int $curlHandle):void $on_curl_exec_finish,
+    callable(int $multiHandle, int $curlHandle):void $on_curl_multi_add_handle,
+    callable(int $multiHandle, int $curlHandle):void $on_curl_multi_remove_handle
+);
 
 function kphp_tracing_init_binlog(): void;
 function kphp_tracing_get_binlog_as_hex_string(): string;
