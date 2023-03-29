@@ -53,6 +53,7 @@
 #include "runtime/udp.h"
 #include "runtime/url.h"
 #include "runtime/zlib.h"
+#include "server/data-sharing.h"
 #include "server/database-drivers/adaptor.h"
 #include "server/database-drivers/mysql/mysql.h"
 #include "server/database-drivers/pgsql/pgsql.h"
@@ -63,7 +64,6 @@
 #include "server/php-queries.h"
 #include "server/php-query-data.h"
 #include "server/php-worker.h"
-#include "server/web-server-stats.h"
 #include "server/workers-control.h"
 
 static enum {
@@ -1834,10 +1834,6 @@ string f$get_engine_version() {
 
 int64_t f$get_engine_workers_number() {
   return vk::singleton<WorkersControl>::get().get_total_workers_count();
-}
-
-WebServerStats::Stats f$get_webserver_stats() {
-  return vk::singleton<WebServerStats>::get().load();
 }
 
 static char ini_vars_storage[sizeof(array<string>)];

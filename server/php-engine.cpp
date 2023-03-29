@@ -61,6 +61,7 @@
 #include "runtime/rpc.h"
 #include "server/cluster-name.h"
 #include "server/confdata-binlog-replay.h"
+#include "server/data-sharing.h"
 #include "server/database-drivers/adaptor.h"
 #include "server/database-drivers/connector.h"
 #include "server/job-workers/job-worker-client.h"
@@ -85,8 +86,8 @@
 #include "server/server-stats.h"
 #include "server/statshouse/statshouse-client.h"
 #include "server/statshouse/worker-stats-buffer.h"
-#include "server/web-server-stats.h"
 #include "server/workers-control.h"
+#include "server/web-server-stats.h"
 
 using job_workers::JobWorkersContext;
 using job_workers::JobWorkerClient;
@@ -2335,7 +2336,7 @@ int run_main(int argc, char **argv, php_mode mode) {
   set_core_dump_rlimit(1LL << 40);
 #endif
   vk::singleton<ServerStats>::get().init();
-  vk::singleton<WebServerStats>::get().init();
+  vk::singleton<DataSharing>::get().init();
 
   max_special_connections = 1;
   set_on_active_special_connections_update_callback([] {

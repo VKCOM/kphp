@@ -167,8 +167,6 @@ string f$get_engine_version();
 
 int64_t f$get_engine_workers_number();
 
-WebServerStats::Stats f$get_webserver_stats();
-
 void arg_add(const char *value);
 
 void ini_set(vk::string_view key, vk::string_view value);

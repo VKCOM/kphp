@@ -54,6 +54,7 @@
 #include "runtime/instance-cache.h"
 #include "server/cluster-name.h"
 #include "server/confdata-binlog-replay.h"
+#include "server/data-sharing.h"
 #include "server/http-server-context.h"
 #include "server/lease-rpc-client.h"
 #include "server/numa-configuration.h"
@@ -63,8 +64,8 @@
 #include "server/server-stats.h"
 #include "server/statshouse/add-metrics-batch.h"
 #include "server/statshouse/statshouse-client.h"
-#include "server/web-server-stats.h"
 #include "server/workers-control.h"
+#include "server/web-server-stats.h"
 
 #include "server/php-master-restart.h"
 #include "server/php-master-warmup.h"
