@@ -12,20 +12,25 @@ struct C$KphpJobWorkerRequest;
 
 namespace runtime_injection {
 
-using on_net_to_script_switch_callback_t = std::function<void(double, double)>;
-using on_fork_state_change_callback_t = std::function<void(int64_t)>;
-using on_fork_switch_callback_t = std::function<void(int64_t, int64_t)>;
-using on_rpc_request_start_callback_t = std::function<void(int64_t, int64_t, int64_t, int64_t, double, bool)>;
-using on_rpc_request_finish_callback_t = std::function<void(int64_t, int64_t, double, int64_t)>;
-using on_job_request_start_callback_t = std::function<void(int64_t, const class_instance<C$KphpJobWorkerRequest> &, double, bool)>;
-using on_job_request_finish_callback_t = std::function<void(int64_t, double, int64_t)>;
-using on_shutdown_functions_start_callback_t = std::function<void(int64_t, int64_t, double)>;
-using on_shutdown_functions_finish_callback_t = std::function<void(double)>;
-using on_tracing_vslice_start_callback_t = std::function<void(int64_t, double)>;
-using on_tracing_vslice_finish_callback_t = std::function<void(int64_t, double, int64_t)>;
+using on_fork_start_callback_t = std::function<void(int64_t parent_fork_id, int64_t started_fork_id)>;
+using on_fork_finish_callback_t = std::function<void(int64_t fork_id)>;
+using on_fork_switch_callback_t = std::function<void(int64_t old_fork_id, int64_t new_fork_id)>;
+using on_rpc_request_start_callback_t = std::function<
+  void(int64_t rpc_query_id, int64_t actor_port, int64_t tl_magic, int64_t bytes_sent, double start_timestamp, bool is_no_result)
+>;
+using on_rpc_request_finish_callback_t = std::function<void(int64_t rpc_query_id, int64_t bytes_recv, double duration_sec, int64_t awaiting_fork_id)>;
+using on_job_request_start_callback_t = std::function<
+  void(int64_t job_id, const class_instance<C$KphpJobWorkerRequest> &job, double start_timestamp, bool is_no_reply)
+>;
+using on_job_request_finish_callback_t = std::function<void(int64_t job_id, double duration_sec, int64_t awaiting_fork_id)>;
+using on_net_to_script_switch_callback_t = std::function<void(double now_timestamp, double net_time_delta)>;
+using on_shutdown_functions_start_callback_t = std::function<void(int64_t shutdown_functions_cnt, int64_t shutdown_type, double now_timestamp)>;
+using on_shutdown_functions_finish_callback_t = std::function<void(double now_timestamp)>;
+using on_tracing_vslice_start_callback_t = std::function<void(int64_t vslice_id, double start_timestamp)>;
+using on_tracing_vslice_finish_callback_t = std::function<void(int64_t vslice_id, double end_timestamp, int64_t memory_used)>;
 
-extern on_fork_switch_callback_t on_fork_start;
-extern on_fork_state_change_callback_t on_fork_finish;
+extern on_fork_start_callback_t on_fork_start;
+extern on_fork_finish_callback_t on_fork_finish;
 extern on_fork_switch_callback_t on_fork_switch;
 extern on_rpc_request_start_callback_t on_rpc_request_start;
 extern on_rpc_request_finish_callback_t on_rpc_request_finish;
@@ -50,8 +55,8 @@ void free_callbacks();
 
 
 // TODO: ensure this callbacks never swap context
-void f$register_kphp_on_fork_callbacks(const runtime_injection::on_fork_switch_callback_t &on_fork_start,
-                                       const runtime_injection::on_fork_state_change_callback_t &on_fork_finish,
+void f$register_kphp_on_fork_callbacks(const runtime_injection::on_fork_start_callback_t &on_fork_start,
+                                       const runtime_injection::on_fork_finish_callback_t &on_fork_finish,
                                        const runtime_injection::on_fork_switch_callback_t &on_fork_switch);
 void f$register_kphp_on_rpc_query_callbacks(const runtime_injection::on_rpc_request_start_callback_t &on_start,
                                             const runtime_injection::on_rpc_request_finish_callback_t &on_finish);
