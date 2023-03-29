@@ -20,14 +20,14 @@ using on_rpc_request_start_callback_t = std::function<
   void(int64_t rpc_query_id, int64_t actor_port, int64_t tl_magic, int64_t bytes_sent, double start_timestamp, bool is_no_result)
 >;
 using on_rpc_request_finish_callback_t = std::function<
-  void(int64_t rpc_query_id, int64_t bytes_recv_or_error_code, double duration_sec, int64_t awaiting_fork_id)
+  void(int64_t rpc_query_id, int64_t bytes_recv_or_error_code, double duration_sec)
 >;
 
 using on_job_request_start_callback_t = std::function<
   void(int64_t job_id, const class_instance<C$KphpJobWorkerRequest> &job, double start_timestamp, bool is_no_reply)
 >;
 using on_job_request_finish_callback_t = std::function<
-  void(int64_t job_id, const Optional<int64_t> &error_code, double duration_sec, int64_t awaiting_fork_id)
+  void(int64_t job_id, int64_t error_code, double duration_sec)
 >;
 
 using on_net_to_script_switch_callback_t = std::function<void(double now_timestamp, double net_time_delta)>;
@@ -49,7 +49,7 @@ enum ExecFunctionType : int64_t {
 
 using on_external_program_start_callback_t = std::function<void(ExecFunctionType exec_function_type, const string &command)>;
 using on_external_program_finish_callback_t = std::function<
-  void(ExecFunctionType exec_function_type, const Optional<int64_t> &return_code, const mixed &output)
+  void(ExecFunctionType exec_function_type, int64_t exit_code, const mixed &output)
 >;
 
 extern on_fork_start_callback_t on_fork_start;

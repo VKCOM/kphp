@@ -1109,18 +1109,6 @@ void wait_all_forks() noexcept {
   CurException = std::move(saved_exception);
 }
 
-int64_t get_awaiting_fork_id(int fork_id) noexcept {
-  php_assert(is_forked_resumable_id(fork_id));
-  auto *info = get_forked_resumable_info(fork_id);
-  if (info->queue_id > static_cast<int64_t>(1e8)) {
-    php_assert(is_started_resumable_id(info->queue_id));
-    int64_t wait_resumable_id = info->queue_id;
-    return get_started_resumable_info(wait_resumable_id)->fork_id;
-  } else {
-    return -1;
-  }
-}
-
 static int32_t wait_queue_timeout_wakeup_id = -1;
 
 class wait_queue_resumable final : public ResumableWithTimer {

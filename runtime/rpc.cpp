@@ -787,9 +787,8 @@ void process_rpc_answer(int32_t request_id, char *result, int32_t result_len __a
   }
   double now_timestamp = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
 
-  int64_t fork_id = get_awaiting_fork_id(request->resumable_id);
   double duration = now_timestamp - request->send_timestamp;
-  runtime_injection::invoke_callback(on_rpc_request_finish, request_id, result_len, duration, fork_id);
+  runtime_injection::invoke_callback(on_rpc_request_finish, request_id, result_len, duration);
 
   int64_t resumable_id = request->resumable_id;
   request->resumable_id = -1;
@@ -816,8 +815,7 @@ void process_rpc_error(int32_t request_id, int32_t error_code, const char *error
   if (!is_fake_error) {
     double now_timestamp = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
     double duration = now_timestamp - request->send_timestamp;
-    int64_t fork_id = get_awaiting_fork_id(request->resumable_id);
-    runtime_injection::invoke_callback(on_rpc_request_finish, request_id, error_code, duration, fork_id);
+    runtime_injection::invoke_callback(on_rpc_request_finish, request_id, error_code, duration);
   }
   int64_t resumable_id = request->resumable_id;
   request->resumable_id = -2;

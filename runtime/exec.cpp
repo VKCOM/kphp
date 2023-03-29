@@ -108,7 +108,7 @@ Optional<string> f$exec(const string &command) {
   runtime_injection::invoke_callback(on_external_program_start, runtime_injection::ExecFunctionType::exec, command);
   auto [success, return_code, last_line] = exec_impl(command, [](char */*buff*/, std::size_t size) { return size; });
   runtime_injection::invoke_callback(on_external_program_finish,
-                                     runtime_injection::ExecFunctionType::exec, success ? Optional<int64_t>{return_code} : Optional<int64_t>{false}, mixed{});
+                                     runtime_injection::ExecFunctionType::exec, success ? return_code : -1, mixed{});
   return success ? Optional<string>{last_line} : Optional<string>{false};
 }
 
@@ -123,7 +123,7 @@ Optional<string> f$exec(const string &command, mixed &output, int64_t &result_co
     return bytes_read;
   });
   runtime_injection::invoke_callback(on_external_program_finish,
-                                     runtime_injection::ExecFunctionType::exec, success ? result : Optional<int64_t>{false}, output);
+                                     runtime_injection::ExecFunctionType::exec, success ? result : -1, output);
   if (success) {
     result_code = result;
     return last_line;
@@ -140,7 +140,7 @@ static Optional<string> php_system(const string &command, int64_t &result_code) 
     return size;
   });
   runtime_injection::invoke_callback(on_external_program_finish,
-                                     runtime_injection::ExecFunctionType::system, success ? result : Optional<int64_t>{false}, mixed{});
+                                     runtime_injection::ExecFunctionType::system, success ? result : -1, mixed{});
   if (success) {
     result_code = result;
     return last_line;
@@ -159,7 +159,7 @@ Optional<bool> f$passthru(const string &command, int64_t &result_code) {
   runtime_injection::invoke_callback(on_external_program_start, runtime_injection::ExecFunctionType::passthru, command);
   auto [success, result, _] = passthru_impl(command);
   runtime_injection::invoke_callback(on_external_program_finish,
-                                     runtime_injection::ExecFunctionType::passthru, success ? result : Optional<int64_t>{false}, mixed{});
+                                     runtime_injection::ExecFunctionType::passthru, success ? result : -1, mixed{});
   if (success) {
     result_code = result;
     return {};

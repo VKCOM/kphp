@@ -95,8 +95,6 @@ Optional<int64_t> wait_queue_next_synchronously(int64_t queue_id);
 
 void wait_all_forks() noexcept;
 
-int64_t get_awaiting_fork_id(int fork_id) noexcept;
-
 void global_init_resumable_lib();
 void init_resumable_lib();
 
