@@ -189,11 +189,11 @@ function memory_get_total_usage() ::: int;
 function memory_get_static_usage() ::: int;
 function memory_get_detailed_stats() ::: int[];
 
-// memory_get_allocations returns a tuple of (num_allocations, total_allocated, memory_used)
+// memory_get_allocations returns a tuple of (num_allocations, memory_allocated)
 // the benefit of this function is that it can be used to measure the allocations
 // between two execution points: how many allocations happened and how much memory we allocated;
 // since it returns a tuple instead of array, it doesn't do any heap allocations on its own
-function memory_get_allocations() ::: tuple(int, int, int);
+function memory_get_allocations() ::: tuple(int, int);
 
 function estimate_memory_usage($value ::: any) ::: int;
 // to enable this function, set KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS=1
