@@ -1422,7 +1422,7 @@ void cron() {
   if (master_flag == -1 && getppid() == 1) {
     turn_sigterm_on();
   }
-  webserver_stats = vk::singleton<WebServerStats>::get().load();
+  vk::singleton<WebServerStats>::get().sync_this_worker_stats();
   vk::singleton<ServerStats>::get().update_this_worker_stats();
   vk::singleton<statshouse::WorkerStatsBuffer>::get().flush_if_needed();
 }
@@ -1493,10 +1493,6 @@ void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port) n
         vkprintf (-1, "created listening socket at %s:%d, fd=%d\n", ip_to_print(settings_addr.s_addr), http_port, http_sfd);
       }
 
-      uint16_t total_workers = vk::singleton<WorkersControl>::get().get_count(WorkerType::general_worker);
-      uint16_t running_workers = vk::singleton<WorkersControl>::get().get_alive_count(WorkerType::general_worker);
-      webserver_stats = WebServerStats::Stats(running_workers,0,total_workers - running_workers,total_workers);
-
       if (http_sfd >= 0) {
         init_listening_tcpv6_connection(http_sfd, &ct_php_engine_http_server, &http_methods, SM_SPECIAL);
       }
@@ -1534,6 +1530,7 @@ void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port) n
   }
 
   get_utime_monotonic();
+  vk::singleton<WebServerStats>::get().init_default_stats();
   //create_all_outbound_connections();
 
   ksignal(SIGTERM, sigterm_handler);

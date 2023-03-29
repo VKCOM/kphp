@@ -1837,7 +1837,7 @@ int64_t f$get_engine_workers_number() {
 }
 
 WebServerStats::Stats f$get_webserver_stats() {
-  return webserver_stats;
+  return vk::singleton<WebServerStats>::get().load();
 }
 
 static char ini_vars_storage[sizeof(array<string>)];

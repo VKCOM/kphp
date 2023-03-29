@@ -9,15 +9,23 @@
 #include "server/server-stats.h"
 
 struct WebServerStats : vk::not_copyable {
+  friend class vk::singleton<WebServerStats>;
+
   using Stats = std::tuple<int64_t, int64_t, int64_t, int64_t>;
 
   void init() noexcept;
 
-  bool store(ServerStats::WorkersStat const & stats);
+  void init_default_stats() noexcept;
 
-  WebServerStats::Stats load() const;
+  void store(ServerStats::WorkersStat const & stats) noexcept;
+
+  void sync_this_worker_stats() noexcept;
+
+  WebServerStats::Stats load() const noexcept;
 
 private:
+  WebServerStats() = default;
+
   struct Storage {
     std::atomic<uint16_t> running_workers{0};
     std::atomic<uint16_t> waiting_workers{0};
@@ -25,7 +33,7 @@ private:
     std::atomic<uint16_t> total_workers{0};
   };
 
-  Storage *engine_stats_{nullptr};
+  std::chrono::steady_clock::time_point last_update_;
+  Storage *webserver_stats{nullptr};
+  Stats buffered_webserver_stats;
 };
-
-extern WebServerStats::Stats webserver_stats;
