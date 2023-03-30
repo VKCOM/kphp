@@ -5,6 +5,7 @@
 #pragma once
 
 #include <csetjmp>
+#include <csignal>
 
 #include "common/dl-utils-lite.h"
 #include "common/mixin/not_copyable.h"
