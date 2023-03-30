@@ -5,7 +5,9 @@
 #include "runtime/kphp_tracing.h"
 
 #include <chrono>
+#include <unordered_map>
 
+#include "runtime/critical_section.h"
 #include "runtime/runtime_injection.h"
 
 
@@ -15,9 +17,11 @@ namespace kphp_tracing {
 
 constexpr int INITIAL_SIZE_BYTES = 262144;
 constexpr int EXPAND_SIZE_BYTES = 65536;
+constexpr int64_t etStringsTableRegister = 37;
 
 tracing_binary_buffer trace_binlog;
 bool vslice_runtime_enabled;
+std::unordered_map<int64_t, int> sent_strings_table;
 
 
 void init_tracing_lib() {
@@ -32,11 +36,13 @@ void free_tracing_lib() {
 
 
 void tracing_binary_buffer::init_and_alloc() {
+  if (buf != nullptr) {
+    dl::deallocate(buf, capacity);
+  }
+
   buf = reinterpret_cast<int *>(dl::allocate(INITIAL_SIZE_BYTES));
   pos = buf;
   capacity = INITIAL_SIZE_BYTES;
-  // todo delete after comparing with php
-  memset(reinterpret_cast<char *>(buf), 0, capacity);
 }
 
 void tracing_binary_buffer::alloc_if_not_enough(int reserve_bytes) {
@@ -49,8 +55,6 @@ void tracing_binary_buffer::alloc_if_not_enough(int reserve_bytes) {
     buf = reinterpret_cast<int *>(dl::reallocate(buf, capacity + EXPAND_SIZE_BYTES, capacity));
     pos = buf + offset;
     capacity += EXPAND_SIZE_BYTES;
-    // todo delete after comparing with php
-    memset(reinterpret_cast<char *>(buf) + capacity - EXPAND_SIZE_BYTES, 0, EXPAND_SIZE_BYTES);
   }
 }
 
@@ -74,22 +78,44 @@ void tracing_binary_buffer::write_float64(double v) {
   pos += 2;
 }
 
-void tracing_binary_buffer::write_string(const string &v) {
-  if (unlikely(v.size() > 128)) {
+int64_t tracing_binary_buffer::register_string_in_table(const string &v) {
+  if (unlikely(v.size() > 255)) {
+    php_warning("too large string for a tracing buffer");
+    return 0;
+  }
+
+  int64_t hash64 = v.hash();
+  const auto it = sent_strings_table.find(hash64);
+  if (it != sent_strings_table.end()) {
+    return it->second;
+  }
+
+  unsigned int idx_in_table = sent_strings_table.size() + 1;
+  dl::enter_critical_section();
+  sent_strings_table[hash64] = idx_in_table;
+  dl::leave_critical_section();
+  f$kphp_tracing_write_event_type(etStringsTableRegister, idx_in_table);
+
+  write_string_inlined(v);
+  return idx_in_table;
+}
+
+void tracing_binary_buffer::write_string_inlined(const string &v) {
+  if (unlikely(v.size() > 255)) {
     php_warning("too large string for a tracing buffer");
     write_int32(0);
     return;
   }
 
-  alloc_if_not_enough(256);
   write_int32(v.size());
+  alloc_if_not_enough(512);
 
   char *pos8 = reinterpret_cast<char *>(pos);
   memcpy(pos8, v.c_str(), v.size());
   pos += (v.size() + 3) / 4;  // a string is rounded up to 4 bytes (len 7 -> consumes 8)
 }
 
-}
+} // namespace
 
 void f$kphp_tracing_init_binlog() {
   kphp_tracing::trace_binlog.init_and_alloc();

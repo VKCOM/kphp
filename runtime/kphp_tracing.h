@@ -24,7 +24,10 @@ struct tracing_binary_buffer {
   void write_uint32(int64_t v) { *pos++ = static_cast<unsigned int>(v); }
   void write_float32(double v) { float f32 = static_cast<float>(v); *pos++ = *reinterpret_cast<int *>(&f32); }
   void write_float64(double v);
-  void write_string(const string &v);
+
+  int64_t register_string_in_table(const string &v);
+  void write_string_ref_table(int64_t idx_in_table) { *pos++ = static_cast<int>(idx_in_table) << 8; }
+  void write_string_inlined(const string &v);
 };
 
 extern tracing_binary_buffer trace_binlog;
@@ -33,7 +36,7 @@ extern bool vslice_runtime_enabled;
 void init_tracing_lib();
 void free_tracing_lib();
 
-}
+} // namespace
 
 void f$kphp_tracing_init_binlog();
 string f$kphp_tracing_get_binlog_as_hex_string();
@@ -44,7 +47,21 @@ inline void f$kphp_tracing_write_int64(int64_t v) { kphp_tracing::trace_binlog.w
 inline void f$kphp_tracing_write_uint32(int64_t v) { kphp_tracing::trace_binlog.write_uint32(v); }
 inline void f$kphp_tracing_write_float32(double v) { kphp_tracing::trace_binlog.write_float32(v); }
 inline void f$kphp_tracing_write_float64(double v) { kphp_tracing::trace_binlog.write_float64(v); }
-inline void f$kphp_tracing_write_string(const string &v) { kphp_tracing::trace_binlog.write_string(v); }
+
+inline int64_t f$kphp_tracing_register_const_string(const string &v) {
+  if (!v.is_reference_counter(ExtraRefCnt::for_global_const)) {
+    return 0;
+  }
+  return kphp_tracing::trace_binlog.register_string_in_table(v);
+}
+
+inline void f$kphp_tracing_write_string(const string &v, int64_t idx_in_table) {
+  if (idx_in_table > 0) {
+    kphp_tracing::trace_binlog.write_string_ref_table(idx_in_table);
+  } else {
+    kphp_tracing::trace_binlog.write_string_inlined(v);
+  }
+}
 
 
 void f$kphp_tracing_enable_vslice_collecting();

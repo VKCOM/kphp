@@ -1666,7 +1666,8 @@ function kphp_tracing_write_int64(int $v): void;
 function kphp_tracing_write_uint32(int $v): void;
 function kphp_tracing_write_float32(float $v): void;
 function kphp_tracing_write_float64(float $v): void;
-function kphp_tracing_write_string(string $v): void;
+function kphp_tracing_register_const_string(string $v): int;
+function kphp_tracing_write_string(string $v, int $idx_in_table): void;
 
 class KphpTracingVSliceAtRuntime {
     private function __construct();
