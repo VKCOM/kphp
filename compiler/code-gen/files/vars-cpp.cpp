@@ -119,22 +119,14 @@ static void compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> &vars,
     W << VarExternDeclaration(var);
   }
 
-  std::vector<std::string> values(const_raw_string_vars.size());
-  std::transform(const_raw_string_vars.begin(), const_raw_string_vars.end(),
-                 values.begin(),
-                 [](const VarPtr &var){ return var->init_val.as<op_string>()->get_string(); });
-  auto const_string_shifts = compile_raw_data(W, values);
-
   const std::vector<int> const_array_shifts = compile_arrays_raw_representation(const_raw_array_vars, W);
   kphp_assert(const_array_shifts.size() == const_raw_array_vars.size());
 
   for (size_t dep_level = 0; dep_level <= max_dep_level; ++dep_level) {
     FunctionSignatureGenerator(W) << NL << "void const_vars_init_priority_" << dep_level << "_file_" << part_id << "()" << BEGIN;
-
-    for (size_t ii = 0; ii < const_raw_string_vars.size(); ++ii) {
-      VarPtr var = const_raw_string_vars[ii];
-      if (var->dependency_level == dep_level) {
-        W << VarName(var) << ".assign_raw (&raw[" << const_string_shifts[ii] << "]);" << NL;
+    for (auto const_var : const_raw_string_vars) {
+      if (const_var->dependency_level == dep_level) {
+        W << VarName(const_var) << ".assign_raw(" << gen_raw_string(const_var->init_val.as<op_string>()->get_string()) << ");" << NL;
       }
     }
 

@@ -73,20 +73,13 @@ void GlobalVarsMemoryStats::compile_getter_part(CodeGenerator &W, const std::set
     << OpenNamespace();
 
   FunctionSignatureGenerator(W) << "static string get_raw_string(int raw_offset) " << BEGIN;
-  const auto var_name_shifts = compile_raw_data(W, var_names);
-  W << "string str;" << NL
-    << "str.assign_raw(&raw[raw_offset]);" << NL
-    << "return str;" << NL
-    << END << NL << NL;
-
   FunctionSignatureGenerator(W) << "void " << getter_name_ << "_" << part_id << "(int64_t lower_bound, array<int64_t> &result) " << BEGIN
                                 << "int64_t estimation = 0;" << NL;
-  size_t var_num = 0;
   for (auto global_var : global_vars) {
     W << VarDeclaration(global_var, true, false)
       << "estimation = f$estimate_memory_usage(" << VarName(global_var) << ");" << NL
       << "if (estimation > lower_bound) " << BEGIN
-      << "result.set_value(get_raw_string(" << var_name_shifts[var_num++] << "), estimation);" << NL
+      << "result.set_value(get_raw_string(" << gen_raw_string(global_var->init_val.as<op_string>()->get_string()) << "), estimation);" << NL
       << END << NL;
   }
 

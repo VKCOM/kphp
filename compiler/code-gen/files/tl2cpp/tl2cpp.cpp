@@ -173,11 +173,9 @@ void write_tl_query_handlers(CodeGenerator &W) {
   std::for_each(tl_const_vars.begin(), tl_const_vars.end(), [&W](const std::string &s) {
     W << "string " << cpp_tl_const_str(s) << ";" << NL;
   });
-  auto const_string_shifts = compile_raw_data(W, tl_const_vars);
   FunctionSignatureGenerator(W) << "void tl_str_const_init() " << BEGIN;
-  size_t i = 0;
   std::for_each(tl_const_vars.begin(), tl_const_vars.end(), [&](const std::string &s) {
-    W << cpp_tl_const_str(s) << ".assign_raw (&raw[" << const_string_shifts[i++] << "]);" << NL;
+    W << cpp_tl_const_str(s) << ".assign_raw (" << gen_raw_string(s) << ");" << NL;
   });
   W << END << NL << NL;
   W << "const char * tl_function_magic_to_name(uint32_t magic) noexcept " << BEGIN

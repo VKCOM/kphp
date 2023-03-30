@@ -52,3 +52,11 @@ std::vector<int> compile_raw_data(CodeGenerator &W, const Container &values) {
   return const_string_shifts;
 }
 
+inline RawString gen_raw_string(const std::string& data) {
+  int raw_len = string_raw_len(data.size());
+  std::string response(raw_len, '\0');
+  int err = string_raw(response.data(), raw_len, data.c_str(), static_cast<int>(data.size()));
+  kphp_assert (err == response.size());
+  return RawString(response);
+}
+
