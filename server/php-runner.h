@@ -59,7 +59,7 @@ void dump_query_stats();
 void init_handlers();
 
 extern std::array<void *, 128> sigalrm_last_backtrace;
-extern int sigalrm_last_backtrace_size;
+extern volatile std::sig_atomic_t sigalrm_last_backtrace_size;
 
 class PhpScriptStack : vk::not_copyable {
 public:

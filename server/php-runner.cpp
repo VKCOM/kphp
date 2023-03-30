@@ -523,13 +523,13 @@ void write_str(int fd, const char *s) noexcept {
 }
 
 std::array<void *, 128> sigalrm_last_backtrace;
-int sigalrm_last_backtrace_size;
+volatile std::sig_atomic_t sigalrm_last_backtrace_size;
 
 namespace kphp_runtime_signal_handlers {
 
 static void sigalrm_handler(int signum) {
   kwrite_str(2, "in sigalrm_handler\n");
-  sigalrm_last_backtrace_size = fast_backtrace(sigalrm_last_backtrace.data(), sigalrm_last_backtrace.size());
+  sigalrm_last_backtrace_size = backtrace(sigalrm_last_backtrace.data(), sigalrm_last_backtrace.size());
   if (check_signal_critical_section(signum, "SIGALRM")) {
     PhpScript::time_limit_exceeded = true;
     // if script is not actually running, don't bother (sigalrm handler is called
