@@ -41,6 +41,17 @@ using on_tracing_vslice_finish_callback_t = std::function<void(int64_t vslice_id
 using on_curl_easy_callback_t = std::function<void(int64_t curl_handle)>;
 using on_curl_multi_callback_t = std::function<void(int64_t multi_handle, int64_t curl_handle)>;
 
+enum ExecFunctionType : int64_t {
+  exec,
+  system,
+  passthru,
+};
+
+using on_external_program_start_callback_t = std::function<void(ExecFunctionType exec_function_type, const string &command)>;
+using on_external_program_finish_callback_t = std::function<
+  void(ExecFunctionType exec_function_type, const Optional<int64_t> &return_code, const mixed &output)
+>;
+
 extern on_fork_start_callback_t on_fork_start;
 extern on_fork_finish_callback_t on_fork_finish;
 extern on_fork_switch_callback_t on_fork_switch;
@@ -57,6 +68,8 @@ extern on_curl_easy_callback_t on_curl_exec_start;
 extern on_curl_easy_callback_t on_curl_exec_finish;
 extern on_curl_multi_callback_t on_curl_multi_add_handle;
 extern on_curl_multi_callback_t on_curl_multi_remove_handle;
+extern on_external_program_start_callback_t on_external_program_start;
+extern on_external_program_finish_callback_t on_external_program_finish;
 
 template<typename F, typename ...Args>
 void invoke_callback(F &f, Args &&... args) noexcept {
@@ -87,3 +100,5 @@ void f$register_kphp_on_curl_callbacks(const runtime_injection::on_curl_easy_cal
                                        const runtime_injection::on_curl_easy_callback_t &on_curl_exec_finish,
                                        const runtime_injection::on_curl_multi_callback_t &on_curl_multi_add_handle,
                                        const runtime_injection::on_curl_multi_callback_t &on_curl_multi_remove_handle);
+void f$register_kphp_on_extenral_program_execution_callbacks(const runtime_injection::on_external_program_start_callback_t &on_start,
+                                                             const runtime_injection::on_external_program_finish_callback_t &on_finish);

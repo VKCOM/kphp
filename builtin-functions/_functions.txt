@@ -1651,6 +1651,11 @@ function register_kphp_on_curl_callbacks(
     callable(int $multiHandle, int $curlHandle):void $on_curl_multi_add_handle,
     callable(int $multiHandle, int $curlHandle):void $on_curl_multi_remove_handle
 );
+function register_kphp_on_extenral_program_execution_callbacks(
+  callable(int /* enum ExecFunctionType in runtime_injection.h */ $exec_function_type, string $command):void $on_start,
+  callable(int /* enum ExecFunctionType in runtime_injection.h */ $exec_function_type, ?int $return_code, mixed $output):void $on_finish
+);
+
 
 function kphp_tracing_init_binlog(): void;
 function kphp_tracing_get_binlog_as_hex_string(): string;

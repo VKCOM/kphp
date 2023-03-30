@@ -8,6 +8,10 @@
 #include <functional>
 
 #include "common/smart_ptrs/unique_ptr_with_delete_function.h"
+#include "runtime/runtime_injection.h"
+
+using runtime_injection::on_external_program_start;
+using runtime_injection::on_external_program_finish;
 
 static size_t strip_trailing_whitespace(char *buffer, int bytes_read) {
   size_t l = bytes_read;
@@ -101,7 +105,10 @@ int64_t &get_dummy_result_code() noexcept {
 }
 
 Optional<string> f$exec(const string &command) {
-  auto [success, _, last_line] = exec_impl(command, [](char */*buff*/, std::size_t size) { return size; });
+  runtime_injection::invoke_callback(on_external_program_start, runtime_injection::ExecFunctionType::exec, command);
+  auto [success, return_code, last_line] = exec_impl(command, [](char */*buff*/, std::size_t size) { return size; });
+  runtime_injection::invoke_callback(on_external_program_finish,
+                                     runtime_injection::ExecFunctionType::exec, success ? Optional<int64_t>{return_code} : Optional<int64_t>{false}, mixed{});
   return success ? Optional<string>{last_line} : Optional<string>{false};
 }
 
@@ -109,12 +116,14 @@ Optional<string> f$exec(const string &command, mixed &output, int64_t &result_co
   if (!output.is_array()) {
     output = array<mixed>();
   }
+  runtime_injection::invoke_callback(on_external_program_start, runtime_injection::ExecFunctionType::exec, command);
   auto [success, result, last_line] = exec_impl(command, [&output](char *buff, std::size_t size) {
     const std::size_t bytes_read = strip_trailing_whitespace(buff, size);
     output.as_array().push_back(string(buff, bytes_read));
     return bytes_read;
   });
-
+  runtime_injection::invoke_callback(on_external_program_finish,
+                                     runtime_injection::ExecFunctionType::exec, success ? result : Optional<int64_t>{false}, output);
   if (success) {
     result_code = result;
     return last_line;
@@ -124,12 +133,14 @@ Optional<string> f$exec(const string &command, mixed &output, int64_t &result_co
 
 // ultimate version of system(), the same as in php
 static Optional<string> php_system(const string &command, int64_t &result_code) {
+  runtime_injection::invoke_callback(on_external_program_start, runtime_injection::ExecFunctionType::system, command);
   auto [success, result, last_line] = exec_impl(command, [](char *buff, std::size_t size) {
     [[maybe_unused]] auto bytes_written = write(STDOUT_FILENO, buff, size);
     [[maybe_unused]] auto res = fflush(stdout);
     return size;
   });
-
+  runtime_injection::invoke_callback(on_external_program_finish,
+                                     runtime_injection::ExecFunctionType::system, success ? result : Optional<int64_t>{false}, mixed{});
   if (success) {
     result_code = result;
     return last_line;
@@ -145,7 +156,10 @@ int64_t f$system(const string &command, int64_t &result_code) {
 }
 
 Optional<bool> f$passthru(const string &command, int64_t &result_code) {
+  runtime_injection::invoke_callback(on_external_program_start, runtime_injection::ExecFunctionType::passthru, command);
   auto [success, result, _] = passthru_impl(command);
+  runtime_injection::invoke_callback(on_external_program_finish,
+                                     runtime_injection::ExecFunctionType::passthru, success ? result : Optional<int64_t>{false}, mixed{});
   if (success) {
     result_code = result;
     return {};
