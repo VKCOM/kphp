@@ -14,6 +14,8 @@
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
 
+extern const char lhex_digits[17];
+
 namespace {
 
 enum {
@@ -255,8 +257,7 @@ void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at
   json_out_it->finish_json_and_flush(json_log_fd_);
 }
 
-void JsonLogger::write_trace_with_context(vk::string_view trace_line_without_braces) noexcept {
-  // TODO: handle buffer overflow
+void JsonLogger::write_trace_line(vk::string_view trace_line_without_braces, const unsigned char *binlog, size_t size) noexcept {
   if (json_log_fd_ <= 0) {
     return;
   }
@@ -268,24 +269,18 @@ void JsonLogger::write_trace_with_context(vk::string_view trace_line_without_bra
 
   json_out_it->append_raw(trace_line_without_braces);
 
-  json_out_it->append_key("tags").start<'{'>();
-  if (tags_available_) {
-    json_out_it->append_raw(tags_);
+  // todo this line can be very long
+  // todo don't create a separate string, inplace directly, but what about size?
+  const unsigned char *p = binlog;
+  const unsigned char *end = binlog + size;
+  char *hex = new char[size * 2];
+  for (int i = -1; p != end; ++p) {
+    hex[++i] = lhex_digits[(*p & 0xF0) >> 4];
+    hex[++i] = lhex_digits[(*p & 0x0F)];
   }
-  if (process_type == ProcessType::master) {
-    json_out_it->append_key("process_type").append_string("master");
-  } else if (process_type == ProcessType::http_worker) {
-    json_out_it->append_key("process_type").append_string("http_worker");
-    json_out_it->append_key("logname_id").append_integer(logname_id);
-  } else if (process_type == ProcessType::rpc_worker) {
-    json_out_it->append_key("process_type").append_string("rpc_worker");
-    json_out_it->append_key("logname_id").append_integer(logname_id);
-  } else if (process_type == ProcessType::job_worker) {
-    json_out_it->append_key("process_type").append_string("job_worker");
-    json_out_it->append_key("logname_id").append_integer(logname_id);
-  }
-  json_out_it->append_key("pid").append_integer(pid);
-  json_out_it->finish<'}'>();
+
+  json_out_it->append_key("binlog").append_raw_string(vk::string_view{hex, size * 2});
+  delete[] hex;
   json_out_it->finish_json_and_flush(json_log_fd_);
 }
 

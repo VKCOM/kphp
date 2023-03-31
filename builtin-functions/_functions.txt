@@ -178,8 +178,6 @@ function kphp_get_runtime_config() ::: mixed;
 function kphp_backtrace($pretty ::: bool = true) ::: string[];
 function register_kphp_on_oom_callback(callable():void $callback) ::: bool;
 
-function kphp_write_trace_to_json_log(string $json_trace_line): void;
-
 function ini_get ($s ::: string) ::: string | false;
 function ini_set ($s ::: string, $v ::: string) ::: bool;
 
@@ -1631,9 +1629,9 @@ class DateTimeImmutable implements DateTimeInterface {
 function getenv(string $varname = '', bool $local_only = false): mixed;
 
 function register_kphp_on_fork_callbacks(
-    callable(int $parent_fork_id, int $started_fork_id):void $onForkStart,
-    callable(int $fork_id):void $onForkFinish,
-    callable(int $old_fork_id, int $new_fork_id):void $onForkSwitch);
+    callable(int $startedForkID):void $onForkStart,
+    callable(int $finishedForkID):void $onForkFinish,
+    callable(int $activeForkID):void $onForkSwitch);
 function register_kphp_on_rpc_query_callbacks(
     callable(int $rpcQueryID, int $actorPort, int $tlMagic, int $bytesSent, float $startTimestamp, bool $isNoResult):void $onRpcSend,
     callable(int $rpcQueryID, int $bytesRecvOrErrorCode, float $durationSec):void $onRpcGotResponse);
@@ -1649,16 +1647,13 @@ function register_kphp_on_curl_callbacks(
     callable(int $curlHandle):void $on_curl_exec_start,
     callable(int $curlHandle):void $on_curl_exec_finish,
     callable(int $multiHandle, int $curlHandle):void $on_curl_multi_add_handle,
-    callable(int $multiHandle, int $curlHandle):void $on_curl_multi_remove_handle
-);
+    callable(int $multiHandle, int $curlHandle):void $on_curl_multi_remove_handle);
 function register_kphp_on_extenral_program_execution_callbacks(
-  callable(int /* enum ExecFunctionType in runtime_injection.h */ $exec_function_type, string $command):void $on_start,
-  callable(int /* enum ExecFunctionType in runtime_injection.h */ $exec_function_type, int $exitCode, mixed $output):void $on_finish
-);
+    callable(int $execID, int /* enum ExecType in exec.cpp */ $execType, string $command):void $onExecStart,
+    callable(int $execID, int $exitCode, mixed $output):void $onExecFinish);
 
 
 function kphp_tracing_init_binlog(): void;
-function kphp_tracing_get_binlog_as_hex_string(): string;
 
 function kphp_tracing_write_event_type(int $event_type, int $custom24bits): void;
 function kphp_tracing_write_int32(int $v): void;
@@ -1666,7 +1661,9 @@ function kphp_tracing_write_int64(int $v): void;
 function kphp_tracing_write_uint32(int $v): void;
 function kphp_tracing_write_float32(float $v): void;
 function kphp_tracing_write_float64(float $v): void;
-function kphp_tracing_register_const_string(string $v): int;
+
+function kphp_tracing_register_string_if_const(string $v): int;
+function kphp_tracing_register_string_force(string $v): int;
 function kphp_tracing_write_string(string $v, int $idx_in_table): void;
 
 class KphpTracingVSliceAtRuntime {
@@ -1680,3 +1677,7 @@ function register_kphp_on_tracing_vslice_callbacks(
 function kphp_tracing_enable_vslice_collecting(): void;
 /** @kphp-warn-unused-result */
 function kphp_tracing_vslice(int $vsliceID): KphpTracingVSliceAtRuntime;
+
+function kphp_tracing_write_dict_to_json_log(int $dictID, int $protocolVersion, int $pid, string[] $dictKV): void;
+function kphp_tracing_write_trace_to_json_log(string $jsonTraceLine): void;
+

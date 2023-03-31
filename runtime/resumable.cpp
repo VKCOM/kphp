@@ -224,7 +224,7 @@ static inline void update_current_resumable_id(int64_t new_id, bool is_internal)
       get_forked_resumable_info(new_running_fork)->running_time -= get_precise_now();
     }
     if (!is_internal) {
-      runtime_injection::invoke_callback(on_fork_switch, old_running_fork, new_running_fork);
+      runtime_injection::invoke_callback(on_fork_switch, new_running_fork);
     }
   }
   Resumable::update_output();
@@ -507,7 +507,7 @@ Storage *start_resumable_impl(Resumable *resumable) noexcept {
 int64_t fork_resumable(Resumable *resumable) noexcept {
   int64_t id = register_forked_resumable(resumable);
 
-  runtime_injection::invoke_callback(on_fork_start, f$get_running_fork_id(), id);
+  runtime_injection::invoke_callback(on_fork_start, id);
 
   if (resumable->resume(id, nullptr)) {
     finish_forked_resumable(id);

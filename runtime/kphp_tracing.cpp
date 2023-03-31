@@ -9,15 +9,17 @@
 
 #include "runtime/critical_section.h"
 #include "runtime/runtime_injection.h"
+#include "server/json-logger.h"
 
-
-extern const char lhex_digits[17];
 
 namespace kphp_tracing {
 
 constexpr int INITIAL_SIZE_BYTES = 262144;
 constexpr int EXPAND_SIZE_BYTES = 65536;
-constexpr int64_t etStringsTableRegister = 37;
+
+constexpr int64_t etStringsTableRegister = 1;
+constexpr int64_t etDictClearNumbers = 5;
+constexpr int64_t etDictSetNumberMeaning = 6;
 
 tracing_binary_buffer trace_binlog;
 bool vslice_runtime_enabled;
@@ -37,7 +39,7 @@ void free_tracing_lib() {
 
 void tracing_binary_buffer::init_and_alloc() {
   if (buf != nullptr) {
-    dl::deallocate(buf, capacity);
+    deallocate();
   }
 
   buf = reinterpret_cast<int *>(dl::allocate(INITIAL_SIZE_BYTES));
@@ -64,6 +66,15 @@ void tracing_binary_buffer::clear() {
   buf = nullptr;
   pos = nullptr;
   capacity = 0;
+}
+
+void tracing_binary_buffer::deallocate() {
+  dl::deallocate(buf, capacity);
+  clear();
+}
+
+const unsigned char *tracing_binary_buffer::get_raw_bytes() const {
+  return reinterpret_cast<const unsigned char *>(buf);
 }
 
 void tracing_binary_buffer::write_int64(int64_t v) {
@@ -121,21 +132,6 @@ void f$kphp_tracing_init_binlog() {
   kphp_tracing::trace_binlog.init_and_alloc();
 }
 
-string f$kphp_tracing_get_binlog_as_hex_string() {
-  string out;
-  if (kphp_tracing::trace_binlog.buf != nullptr) {
-    int buf_size = kphp_tracing::trace_binlog.size_bytes();
-    const unsigned char *p = reinterpret_cast<const unsigned char *>(kphp_tracing::trace_binlog.buf);
-    const unsigned char *end = p + buf_size;
-    out.reserve_at_least(buf_size * 2);
-    for (; p != end; ++p) {
-      out.push_back(lhex_digits[(*p & 0xF0) >> 4]);
-      out.push_back(lhex_digits[(*p & 0x0F)]);
-    }
-  }
-  return out;
-}
-
 void f$kphp_tracing_write_event_type(int64_t event_type, int64_t custom24bits) {
   if (unlikely(custom24bits < 0 || custom24bits >= 1 << 24)) {
     php_warning("custom24bits overflow next to event_type");
@@ -163,3 +159,41 @@ void C$KphpTracingVSliceAtRuntime::release() {
     runtime_injection::invoke_callback(runtime_injection::on_tracing_vslice_finish, vsliceID, now_timestamp, memory_used);
   }
 }
+
+void f$kphp_tracing_write_trace_to_json_log(const string &jsonTraceLine) {
+  vk::string_view json_no_braces = vk::string_view{jsonTraceLine.c_str(), jsonTraceLine.size()};
+  json_no_braces.remove_prefix(1);
+  json_no_braces.remove_suffix(1);
+
+  auto &json_logger = vk::singleton<JsonLogger>::get();
+  fprintf(stderr, "out buf %d\n", kphp_tracing::trace_binlog.size_bytes());
+  dl::enter_critical_section();
+  json_logger.write_trace_line(json_no_braces, kphp_tracing::trace_binlog.get_raw_bytes(), kphp_tracing::trace_binlog.size_bytes());
+  dl::leave_critical_section();
+}
+
+// todo try to delete
+void f$kphp_tracing_write_dict_to_json_log(int64_t dictID, int64_t protocolVersion, int64_t pid, const array<string> &dictKV) {
+  kphp_tracing::tracing_binary_buffer dict_buffer;
+  dict_buffer.init_and_alloc();
+  dict_buffer.write_int32((dictID << 8) + kphp_tracing::etDictClearNumbers);
+  for (const auto &it : dictKV) {
+    dict_buffer.write_int32((dictID << 8) + kphp_tracing::etDictSetNumberMeaning);
+    dict_buffer.write_uint32(it.get_int_key());
+    dict_buffer.write_string_inlined(it.get_value());
+  }
+
+  string json = string(R"("trace_id":"00000000000000000000000000000000","pid":)");
+  json.append(pid);
+  json.append(R"(,"protocol_v":)");
+  json.append(protocolVersion);
+  vk::string_view json_no_braces = vk::string_view{json.c_str(), json.size()};
+
+  auto &json_logger = vk::singleton<JsonLogger>::get();
+  dl::enter_critical_section();
+  json_logger.write_trace_line(json_no_braces, dict_buffer.get_raw_bytes(), dict_buffer.size_bytes());
+  dl::leave_critical_section();
+
+  dict_buffer.deallocate();
+}
+

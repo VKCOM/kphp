@@ -104,11 +104,23 @@ int64_t &get_dummy_result_code() noexcept {
   return result_code;
 }
 
+int64_t f$mt_rand() noexcept;
+
+static int64_t gen_random_exec_id() noexcept {
+  return f$mt_rand();
+}
+
+enum ExecType : int64_t {
+  fExec = 1,
+  fSystem = 2,
+  fPassthru = 3,
+};
+
 Optional<string> f$exec(const string &command) {
-  runtime_injection::invoke_callback(on_external_program_start, runtime_injection::ExecFunctionType::exec, command);
+  int64_t exec_id = gen_random_exec_id();
+  runtime_injection::invoke_callback(on_external_program_start, exec_id, ExecType::fExec, command);
   auto [success, return_code, last_line] = exec_impl(command, [](char */*buff*/, std::size_t size) { return size; });
-  runtime_injection::invoke_callback(on_external_program_finish,
-                                     runtime_injection::ExecFunctionType::exec, success ? return_code : -1, mixed{});
+  runtime_injection::invoke_callback(on_external_program_finish, exec_id, success ? return_code : -1, mixed{});
   return success ? Optional<string>{last_line} : Optional<string>{false};
 }
 
@@ -116,14 +128,14 @@ Optional<string> f$exec(const string &command, mixed &output, int64_t &result_co
   if (!output.is_array()) {
     output = array<mixed>();
   }
-  runtime_injection::invoke_callback(on_external_program_start, runtime_injection::ExecFunctionType::exec, command);
+  int64_t exec_id = gen_random_exec_id();
+  runtime_injection::invoke_callback(on_external_program_start, exec_id, ExecType::fExec, command);
   auto [success, result, last_line] = exec_impl(command, [&output](char *buff, std::size_t size) {
     const std::size_t bytes_read = strip_trailing_whitespace(buff, size);
     output.as_array().push_back(string(buff, bytes_read));
     return bytes_read;
   });
-  runtime_injection::invoke_callback(on_external_program_finish,
-                                     runtime_injection::ExecFunctionType::exec, success ? result : -1, output);
+  runtime_injection::invoke_callback(on_external_program_finish, exec_id, success ? result : -1, output);
   if (success) {
     result_code = result;
     return last_line;
@@ -133,14 +145,14 @@ Optional<string> f$exec(const string &command, mixed &output, int64_t &result_co
 
 // ultimate version of system(), the same as in php
 static Optional<string> php_system(const string &command, int64_t &result_code) {
-  runtime_injection::invoke_callback(on_external_program_start, runtime_injection::ExecFunctionType::system, command);
+  int64_t exec_id = gen_random_exec_id();
+  runtime_injection::invoke_callback(on_external_program_start, exec_id, ExecType::fSystem, command);
   auto [success, result, last_line] = exec_impl(command, [](char *buff, std::size_t size) {
     [[maybe_unused]] auto bytes_written = write(STDOUT_FILENO, buff, size);
     [[maybe_unused]] auto res = fflush(stdout);
     return size;
   });
-  runtime_injection::invoke_callback(on_external_program_finish,
-                                     runtime_injection::ExecFunctionType::system, success ? result : -1, mixed{});
+  runtime_injection::invoke_callback(on_external_program_finish, exec_id, success ? result : -1, mixed{});
   if (success) {
     result_code = result;
     return last_line;
@@ -156,10 +168,10 @@ int64_t f$system(const string &command, int64_t &result_code) {
 }
 
 Optional<bool> f$passthru(const string &command, int64_t &result_code) {
-  runtime_injection::invoke_callback(on_external_program_start, runtime_injection::ExecFunctionType::passthru, command);
+  int64_t exec_id = gen_random_exec_id();
+  runtime_injection::invoke_callback(on_external_program_start, exec_id, ExecType::fPassthru, command);
   auto [success, result, _] = passthru_impl(command);
-  runtime_injection::invoke_callback(on_external_program_finish,
-                                     runtime_injection::ExecFunctionType::passthru, success ? result : -1, mixed{});
+  runtime_injection::invoke_callback(on_external_program_finish, exec_id, success ? result : -1, mixed{});
   if (success) {
     result_code = result;
     return {};

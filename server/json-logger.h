@@ -33,7 +33,7 @@ public:
   void write_log_with_backtrace(vk::string_view message, int type) noexcept;
   void write_stack_overflow_log(int type) noexcept;
 
-  void write_trace_with_context(vk::string_view trace_line_without_braces) noexcept;
+  void write_trace_line(vk::string_view trace_line_without_braces, const unsigned char *binlog, size_t size) noexcept;
 
   void reset_buffers() noexcept;
 
