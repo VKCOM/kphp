@@ -61,7 +61,6 @@
 #include "runtime/rpc.h"
 #include "server/cluster-name.h"
 #include "server/confdata-binlog-replay.h"
-#include "server/data-sharing.h"
 #include "server/database-drivers/adaptor.h"
 #include "server/database-drivers/connector.h"
 #include "server/job-workers/job-worker-client.h"
