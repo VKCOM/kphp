@@ -187,6 +187,9 @@ void init_runtime_environment(php_query_data *data, void *mem, size_t script_mem
 
 void free_runtime_environment();
 
+// called only once at the beginning of each worker
+void worker_global_init() noexcept;
+
 void use_utf8();
 
 /*

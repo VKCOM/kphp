@@ -1631,6 +1631,7 @@ void start_server() {
     worker_type = start_master();
   }
 
+  worker_global_init();
   generic_event_loop(worker_type, !master_flag);
 }
 

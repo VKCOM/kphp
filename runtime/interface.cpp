@@ -2318,6 +2318,7 @@ static void init_runtime_libs() {
   init_rpc_lib();
   init_openssl_lib();
   init_math_functions();
+  init_slot_factories();
 
   init_string_buffer_lib(static_cast<int>(static_buffer_length_limit));
 
@@ -2362,6 +2363,7 @@ static void free_runtime_libs() {
   free_tcp_lib();
   free_timelib();
   OnKphpWarningCallback::get().reset();
+  free_slot_factories();
 
   free_job_client_interface_lib();
   free_job_server_interface_lib();
@@ -2418,6 +2420,10 @@ void free_runtime_environment() {
   free_runtime_libs();
   reset_global_interface_vars();
   dl::free_script_allocator();
+}
+
+void worker_global_init() noexcept {
+  worker_global_init_slot_factories();
 }
 
 void read_engine_tag(const char *file_name) {
