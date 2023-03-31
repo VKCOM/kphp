@@ -26,10 +26,10 @@ void WebServerStats::sync_this_worker_stats() noexcept {
   }
 }
 
-WebServerStats::Stats WebServerStats::load() const noexcept {
+WebServerStats::Stats WebServerStats::get() const noexcept {
   return buffered_webserver_stats;
 }
 
 WebServerStats::Stats f$get_webserver_stats() {
-  return vk::singleton<WebServerStats>::get().load();
+  return vk::singleton<WebServerStats>::get().get();
 }

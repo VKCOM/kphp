@@ -28,7 +28,7 @@ struct WebServerStats : vk::not_copyable {
 
   void sync_this_worker_stats() noexcept;
 
-  WebServerStats::Stats load() const noexcept;
+  WebServerStats::Stats get() const noexcept;
 
 private:
   WebServerStats() = default;
