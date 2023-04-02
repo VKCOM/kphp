@@ -161,14 +161,12 @@ void C$KphpTracingVSliceAtRuntime::release() {
 }
 
 void f$kphp_tracing_write_trace_to_json_log(const string &jsonTraceLine) {
-  vk::string_view json_no_braces = vk::string_view{jsonTraceLine.c_str(), jsonTraceLine.size()};
-  json_no_braces.remove_prefix(1);
-  json_no_braces.remove_suffix(1);
+  vk::string_view json_trace_line = vk::string_view{jsonTraceLine.c_str(), jsonTraceLine.size()};
 
   auto &json_logger = vk::singleton<JsonLogger>::get();
   fprintf(stderr, "out buf %d\n", kphp_tracing::trace_binlog.size_bytes());
   dl::enter_critical_section();
-  json_logger.write_trace_line(json_no_braces, kphp_tracing::trace_binlog.get_raw_bytes(), kphp_tracing::trace_binlog.size_bytes());
+  json_logger.write_trace_line(json_trace_line, kphp_tracing::trace_binlog.get_raw_bytes(), kphp_tracing::trace_binlog.size_bytes());
   dl::leave_critical_section();
 }
 
@@ -183,15 +181,16 @@ void f$kphp_tracing_write_dict_to_json_log(int64_t dictID, int64_t protocolVersi
     dict_buffer.write_string_inlined(it.get_value());
   }
 
-  string json = string(R"("trace_id":"00000000000000000000000000000000","pid":)");
+  string json = string(R"({"trace_id":"00000000000000000000000000000000","pid":)");
   json.append(pid);
   json.append(R"(,"protocol_v":)");
   json.append(protocolVersion);
-  vk::string_view json_no_braces = vk::string_view{json.c_str(), json.size()};
+  json.append("}");
+  vk::string_view json_trace_line = vk::string_view{json.c_str(), json.size()};
 
   auto &json_logger = vk::singleton<JsonLogger>::get();
   dl::enter_critical_section();
-  json_logger.write_trace_line(json_no_braces, dict_buffer.get_raw_bytes(), dict_buffer.size_bytes());
+  json_logger.write_trace_line(json_trace_line, dict_buffer.get_raw_bytes(), dict_buffer.size_bytes());
   dl::leave_critical_section();
 
   dict_buffer.deallocate();

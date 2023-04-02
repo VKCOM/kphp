@@ -33,7 +33,7 @@ public:
   void write_log_with_backtrace(vk::string_view message, int type) noexcept;
   void write_stack_overflow_log(int type) noexcept;
 
-  void write_trace_line(vk::string_view trace_line_without_braces, const unsigned char *binlog, size_t size) noexcept;
+  void write_trace_line(vk::string_view json_trace_line, const unsigned char *binlog, size_t size) noexcept;
 
   void reset_buffers() noexcept;
 
@@ -82,7 +82,7 @@ private:
     // it is used if signal is raised during the buffer filling
     volatile std::atomic<bool> busy_{false};
     char *last_{nullptr};
-    std::array<char, 512 * 1024> buffer_{{0}};
+    std::array<char, 32 * 1024> buffer_{{0}};
   };
-  std::array<JsonBuffer, 16> buffers_;
+  std::array<JsonBuffer, 8> buffers_;
 };

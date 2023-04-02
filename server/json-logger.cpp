@@ -257,31 +257,39 @@ void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at
   json_out_it->finish_json_and_flush(json_log_fd_);
 }
 
-void JsonLogger::write_trace_line(vk::string_view trace_line_without_braces, const unsigned char *binlog, size_t size) noexcept {
+void JsonLogger::write_trace_line(vk::string_view json_trace_line, const unsigned char *binlog, size_t size) noexcept {
   if (json_log_fd_ <= 0) {
     return;
   }
 
-  auto *json_out_it = buffers_.begin();
-  for (; json_out_it != buffers_.end() && !json_out_it->try_start_json(); ++json_out_it) {
+  // final json line will look like this:
+  // {...(json_trace_line),"binlog":"...hex..."}\n
+  // 'new' is safe, because external code wraps this call into a critical section
+  size_t buffer_size = 1 + (json_trace_line.size() - 2) + 1 + 8 + 1 + 1 + size*2 + 1 + 1 + 1;
+  char *buffer = new char[buffer_size];
+  int buffer_i = 0;
+
+  buffer[buffer_i++] = '{';
+  memcpy(buffer + buffer_i, json_trace_line.data() + 1, json_trace_line.size() - 2);
+  buffer_i += json_trace_line.size() - 2;
+  buffer[buffer_i++] = ',';
+  strncpy(buffer + buffer_i, "\"binlog\"", 8);
+  buffer_i += 8;
+  buffer[buffer_i++] = ':';
+  buffer[buffer_i++] = '"';
+
+  for (const unsigned char *p = binlog, *end = p + size; p != end; ++p) {
+    buffer[buffer_i++] = lhex_digits[(*p & 0xF0) >> 4];
+    buffer[buffer_i++] = lhex_digits[(*p & 0x0F)];
   }
-  assert(json_out_it != buffers_.end());
 
-  json_out_it->append_raw(trace_line_without_braces);
+  buffer[buffer_i++] = '"';
+  buffer[buffer_i++] = '}';
+  buffer[buffer_i++] = '\n';
+  assert(buffer_i == buffer_size);
 
-  // todo this line can be very long
-  // todo don't create a separate string, inplace directly, but what about size?
-  const unsigned char *p = binlog;
-  const unsigned char *end = binlog + size;
-  char *hex = new char[size * 2];
-  for (int i = -1; p != end; ++p) {
-    hex[++i] = lhex_digits[(*p & 0xF0) >> 4];
-    hex[++i] = lhex_digits[(*p & 0x0F)];
-  }
-
-  json_out_it->append_key("binlog").append_raw_string(vk::string_view{hex, size * 2});
-  delete[] hex;
-  json_out_it->finish_json_and_flush(json_log_fd_);
+  write(json_log_fd_, buffer, buffer_size);
+  delete[] buffer;
 }
 
 void JsonLogger::write_log_with_backtrace(vk::string_view message, int type) noexcept {
