@@ -14,8 +14,7 @@
 
 namespace kphp_tracing {
 
-constexpr int INITIAL_SIZE_BYTES = 262144;
-constexpr int EXPAND_SIZE_BYTES = 65536;
+constexpr int BUF_CHUNK_SIZE = 1024; // todo 65536
 
 constexpr int64_t etStringsTableRegister = 1;
 constexpr int64_t etDictClearNumbers = 5;
@@ -38,43 +37,45 @@ void free_tracing_lib() {
 
 
 void tracing_binary_buffer::init_and_alloc() {
-  if (buf != nullptr) {
-    deallocate();
-  }
-
-  buf = reinterpret_cast<int *>(dl::allocate(INITIAL_SIZE_BYTES));
-  pos = buf;
-  capacity = INITIAL_SIZE_BYTES;
+  finish_cur_chunk_start_next();
 }
 
-void tracing_binary_buffer::alloc_if_not_enough(int reserve_bytes) {
-  if (unlikely(buf == nullptr)) {
+void tracing_binary_buffer::alloc_next_chunk_if_not_enough(int reserve_bytes) {
+  if (unlikely(cur_chunk == nullptr)) {
     php_critical_error("tracing not initialized, but used");
   }
-  int cur_size = size_bytes();
-  if (cur_size + reserve_bytes > capacity) {
-    int offset = pos - buf;
-    buf = reinterpret_cast<int *>(dl::reallocate(buf, capacity + EXPAND_SIZE_BYTES, capacity));
-    pos = buf + offset;
-    capacity += EXPAND_SIZE_BYTES;
+  int cur_size = get_cur_chunk_size();
+  if (cur_size + reserve_bytes > BUF_CHUNK_SIZE) {
+    finish_cur_chunk_start_next();
+  }
+}
+
+void tracing_binary_buffer::finish_cur_chunk_start_next() {
+  if (cur_chunk != nullptr) {
+    cur_chunk->size_bytes = get_cur_chunk_size();
+  }
+
+  char *mem = reinterpret_cast<char *>(dl::allocate(BUF_CHUNK_SIZE));
+  one_chunk *chunk = reinterpret_cast<one_chunk *>(mem);
+  chunk->buf = reinterpret_cast<int *>(mem + sizeof(one_chunk));
+  chunk->size_bytes = 0;
+  chunk->prev_chunk = cur_chunk;
+
+  cur_chunk = chunk;
+  pos = cur_chunk->buf;
+}
+
+void tracing_binary_buffer::finish_cur_buffer() {
+  if (cur_chunk != nullptr) {
+    cur_chunk->size_bytes = get_cur_chunk_size();
   }
 }
 
 void tracing_binary_buffer::clear() {
   // no need of dl::deallocate(), because clear() is called at the end of the script,
   // we just need to clear pointers, so that dl::allocate() is called again for a new script
-  buf = nullptr;
+  cur_chunk = nullptr;
   pos = nullptr;
-  capacity = 0;
-}
-
-void tracing_binary_buffer::deallocate() {
-  dl::deallocate(buf, capacity);
-  clear();
-}
-
-const unsigned char *tracing_binary_buffer::get_raw_bytes() const {
-  return reinterpret_cast<const unsigned char *>(buf);
 }
 
 void tracing_binary_buffer::write_int64(int64_t v) {
@@ -119,11 +120,36 @@ void tracing_binary_buffer::write_string_inlined(const string &v) {
   }
 
   write_int32(v.size());
-  alloc_if_not_enough(512);
+  alloc_next_chunk_if_not_enough(512);
 
   char *pos8 = reinterpret_cast<char *>(pos);
   memcpy(pos8, v.c_str(), v.size());
   pos += (v.size() + 3) / 4;  // a string is rounded up to 4 bytes (len 7 -> consumes 8)
+}
+
+void tracing_binary_buffer::prepend_dict_buffer(const tracing_binary_buffer &dict_buffer) {
+  one_chunk *first_chunk = cur_chunk;
+  while (first_chunk->prev_chunk) {
+    first_chunk = first_chunk->prev_chunk;
+  }
+
+  first_chunk->prev_chunk = dict_buffer.cur_chunk;
+}
+
+void tracing_binary_buffer::output_to_json_log(const string &json_line) {
+  if (cur_chunk == nullptr) {
+    return;
+  }
+
+  std::forward_list<std::pair<const unsigned char *, size_t>> bin_buffers;
+  for (const one_chunk *chunk = cur_chunk; chunk; chunk = chunk->prev_chunk) {
+    bin_buffers.emplace_front(reinterpret_cast<const unsigned char *>(chunk->buf), chunk->size_bytes);
+  }
+
+  dl::enter_critical_section();
+  JsonLogger &json_logger = vk::singleton<JsonLogger>::get();
+  json_logger.write_trace_line(vk::string_view{json_line.c_str(), json_line.size()}, bin_buffers);
+  dl::leave_critical_section();
 }
 
 } // namespace
@@ -136,7 +162,7 @@ void f$kphp_tracing_write_event_type(int64_t event_type, int64_t custom24bits) {
   if (unlikely(custom24bits < 0 || custom24bits >= 1 << 24)) {
     php_warning("custom24bits overflow next to event_type");
   }
-  kphp_tracing::trace_binlog.alloc_if_not_enough(128);
+  kphp_tracing::trace_binlog.alloc_next_chunk_if_not_enough(128);
   kphp_tracing::trace_binlog.write_uint32((custom24bits << 8) + event_type);
 }
 
@@ -161,17 +187,11 @@ void C$KphpTracingVSliceAtRuntime::release() {
 }
 
 void f$kphp_tracing_write_trace_to_json_log(const string &jsonTraceLine) {
-  vk::string_view json_trace_line = vk::string_view{jsonTraceLine.c_str(), jsonTraceLine.size()};
-
-  auto &json_logger = vk::singleton<JsonLogger>::get();
-  fprintf(stderr, "out buf %d\n", kphp_tracing::trace_binlog.size_bytes());
-  dl::enter_critical_section();
-  json_logger.write_trace_line(json_trace_line, kphp_tracing::trace_binlog.get_raw_bytes(), kphp_tracing::trace_binlog.size_bytes());
-  dl::leave_critical_section();
+  kphp_tracing::trace_binlog.finish_cur_buffer();
+  kphp_tracing::trace_binlog.output_to_json_log(jsonTraceLine);
 }
 
-// todo try to delete
-void f$kphp_tracing_write_dict_to_json_log(int64_t dictID, int64_t protocolVersion, int64_t pid, const array<string> &dictKV) {
+void f$kphp_tracing_prepend_dict_to_binlog(int64_t dictID, const array<string> &dictKV) {
   kphp_tracing::tracing_binary_buffer dict_buffer;
   dict_buffer.init_and_alloc();
   dict_buffer.write_int32((dictID << 8) + kphp_tracing::etDictClearNumbers);
@@ -181,18 +201,7 @@ void f$kphp_tracing_write_dict_to_json_log(int64_t dictID, int64_t protocolVersi
     dict_buffer.write_string_inlined(it.get_value());
   }
 
-  string json = string(R"({"trace_id":"00000000000000000000000000000000","pid":)");
-  json.append(pid);
-  json.append(R"(,"protocol_v":)");
-  json.append(protocolVersion);
-  json.append("}");
-  vk::string_view json_trace_line = vk::string_view{json.c_str(), json.size()};
-
-  auto &json_logger = vk::singleton<JsonLogger>::get();
-  dl::enter_critical_section();
-  json_logger.write_trace_line(json_trace_line, dict_buffer.get_raw_bytes(), dict_buffer.size_bytes());
-  dl::leave_critical_section();
-
-  dict_buffer.deallocate();
+  dict_buffer.finish_cur_buffer();
+  kphp_tracing::trace_binlog.prepend_dict_buffer(dict_buffer);
 }
 

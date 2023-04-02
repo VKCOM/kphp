@@ -9,19 +9,24 @@
 namespace kphp_tracing {
 
 class tracing_binary_buffer {
-  int capacity{0};
-  int *buf{nullptr};
-  int *pos{nullptr};
+  struct one_chunk {
+    int *buf;
+    size_t size_bytes;
+    one_chunk *prev_chunk;
+  };
+
+  one_chunk *cur_chunk{nullptr};
+  int *pos{nullptr};  // points inside cur_chunk->buf
 
 public:
 
   void init_and_alloc();
-  void alloc_if_not_enough(int reserve_bytes);
+  void alloc_next_chunk_if_not_enough(int reserve_bytes);
+  void finish_cur_chunk_start_next();
+  void finish_cur_buffer();
   void clear();
-  void deallocate();
 
-  int size_bytes() const { return (pos - buf) * 4; }
-  const unsigned char *get_raw_bytes() const;
+  int get_cur_chunk_size() const { return (pos - cur_chunk->buf) * 4; }
 
   void write_int32(int64_t v) { *pos++ = static_cast<int>(v); }
   void write_int64(int64_t v);
@@ -32,6 +37,9 @@ public:
   int64_t register_string_in_table(const string &v);
   void write_string_ref_table(int64_t idx_in_table) { *pos++ = static_cast<int>(idx_in_table) << 8; }
   void write_string_inlined(const string &v);
+
+  void prepend_dict_buffer(const tracing_binary_buffer &dict_buffer);
+  void output_to_json_log(const string &json_line);
 };
 
 extern tracing_binary_buffer trace_binlog;
@@ -94,4 +102,4 @@ inline __attribute__((always_inline)) class_instance<C$KphpTracingVSliceAtRuntim
 }
 
 void f$kphp_tracing_write_trace_to_json_log(const string &jsonTraceLine);
-void f$kphp_tracing_write_dict_to_json_log(int64_t dictID, int64_t protocolVersion, int64_t pid, const array<string> &dictKV);
+void f$kphp_tracing_prepend_dict_to_binlog(int64_t dictID, const array<string> &dictKV);

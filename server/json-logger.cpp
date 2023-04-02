@@ -257,15 +257,20 @@ void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at
   json_out_it->finish_json_and_flush(json_log_fd_);
 }
 
-void JsonLogger::write_trace_line(vk::string_view json_trace_line, const unsigned char *binlog, size_t size) noexcept {
+void JsonLogger::write_trace_line(vk::string_view json_trace_line, const std::forward_list<std::pair<const unsigned char *, size_t>> &bin_buffers) noexcept {
   if (json_log_fd_ <= 0) {
     return;
+  }
+
+  size_t binlog_size = 0;
+  for (auto it : bin_buffers) {
+    binlog_size += it.second;
   }
 
   // final json line will look like this:
   // {...(json_trace_line),"binlog":"...hex..."}\n
   // 'new' is safe, because external code wraps this call into a critical section
-  size_t buffer_size = 1 + (json_trace_line.size() - 2) + 1 + 8 + 1 + 1 + size*2 + 1 + 1 + 1;
+  size_t buffer_size = 1 + (json_trace_line.size() - 2) + 1 + 8 + 1 + 1 + binlog_size*2 + 1 + 1 + 1;
   char *buffer = new char[buffer_size];
   int buffer_i = 0;
 
@@ -278,9 +283,11 @@ void JsonLogger::write_trace_line(vk::string_view json_trace_line, const unsigne
   buffer[buffer_i++] = ':';
   buffer[buffer_i++] = '"';
 
-  for (const unsigned char *p = binlog, *end = p + size; p != end; ++p) {
-    buffer[buffer_i++] = lhex_digits[(*p & 0xF0) >> 4];
-    buffer[buffer_i++] = lhex_digits[(*p & 0x0F)];
+  for (auto it : bin_buffers) {
+    for (const unsigned char *p = it.first, *end = p + it.second; p != end; ++p) {
+      buffer[buffer_i++] = lhex_digits[(*p & 0xF0) >> 4];
+      buffer[buffer_i++] = lhex_digits[(*p & 0x0F)];
+    }
   }
 
   buffer[buffer_i++] = '"';

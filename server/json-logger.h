@@ -5,6 +5,7 @@
 #pragma once
 #include <array>
 #include <atomic>
+#include <forward_list>
 
 #include "common/functional/identity.h"
 #include "common/mixin/not_copyable.h"
@@ -33,7 +34,7 @@ public:
   void write_log_with_backtrace(vk::string_view message, int type) noexcept;
   void write_stack_overflow_log(int type) noexcept;
 
-  void write_trace_line(vk::string_view json_trace_line, const unsigned char *binlog, size_t size) noexcept;
+  void write_trace_line(vk::string_view json_trace_line, const std::forward_list<std::pair<const unsigned char *, size_t>> &bin_buffers) noexcept;
 
   void reset_buffers() noexcept;
 
