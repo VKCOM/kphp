@@ -1,7 +1,7 @@
 #pragma once
 
-#include <cstdint>
 #include <chrono>
+#include <cstdint>
 
 #include "common/mixin/not_copyable.h"
 #include "common/smart_ptrs/singleton.h"

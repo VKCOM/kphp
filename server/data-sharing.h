@@ -16,16 +16,16 @@ struct DataSharing : vk::not_copyable {
   void init();
 
   template<std::size_t I>
-  std::tuple_element_t<I, Storage> & acquire() const noexcept {
+  std::tuple_element_t<I, Storage> &acquire() const noexcept {
     return std::get<I>(*storage);
   }
 
   template<typename T>
-  T & acquire() const noexcept {
+  T &acquire() const noexcept {
     return std::get<T>(*storage);
   }
 
 private:
   DataSharing() = default;
-  Storage * storage;
+  Storage *storage;
 };
