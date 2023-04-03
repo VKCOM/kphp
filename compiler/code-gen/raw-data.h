@@ -14,7 +14,7 @@
 #include "compiler/data/var-data.h"
 
 
-struct DepLevelContainer {
+struct DepLevelContainer { // TODO(mkornaukhov03): in case of empty container begin() != end()
     DepLevelContainer() : mapping(DEFAULT_MAX_DEP_LEVEL, std::vector<VarPtr>{}), cnt(0) {}
 
     struct const_iterator {
