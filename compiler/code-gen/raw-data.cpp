@@ -72,8 +72,7 @@ static inline int array_len() {
   return (10 * sizeof(int)) / sizeof(double);
 }
 
-
-std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &const_raw_array_vars, CodeGenerator &W) {
+std::vector<int> compile_arrays_raw_representation(const DepLevelContainer &const_raw_array_vars, CodeGenerator &W) {
   if (const_raw_array_vars.empty()) {
     return {};
   }
