@@ -179,6 +179,7 @@ void write_tl_query_handlers(CodeGenerator &W) {
   std::for_each(tl_const_vars.begin(), tl_const_vars.end(), [&](const std::string &s) {
     W << cpp_tl_const_str(s) << ".assign_raw (&raw[" << const_string_shifts[i++] << "]);" << NL;
   });
+
   W << END << NL << NL;
   W << "const char * tl_function_magic_to_name(uint32_t magic) noexcept " << BEGIN
     << "switch (magic) " << BEGIN;
@@ -186,6 +187,16 @@ void write_tl_query_handlers(CodeGenerator &W) {
     W << fmt_format("case {:#010x}U: return \"{}\";", static_cast<uint32_t>(tl_fun->id), tl_fun->name.c_str()) << NL;
   }
   W << "default: return \"__unknown__\";" << NL << END << NL;
+
+  W << END << NL << NL;
+  W << "array<int64_t> tl_magic_get_all_functions() noexcept " << BEGIN;
+  W << "array<int64_t> out;" << NL;
+  W << "out.reserve(" << tl->functions.size() << ", 0, true);" << NL;
+  for (const auto &[magic, tl_fun]: tl->functions) {
+    W << fmt_format("out.push_back({:#010x}U);", static_cast<uint32_t>(tl_fun->id)) << NL;
+  }
+  W << "return out;" << NL;
+
   W << END << NL;
   W << CloseFile();
 
