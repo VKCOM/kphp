@@ -9,10 +9,12 @@
 #if ASAN_ENABLED
 #include <sanitizer/lsan_interface.h>
 #endif
-#include "common/containers/final_action.h"
 #include "common/unicode/utf8-utils.h"
 
 #include "runtime/critical_section.h"
+
+using runtime_injection::on_regexp_operation_start;
+using runtime_injection::on_regexp_operation_finish;
 
 int64_t preg_replace_count_dummy;
 
@@ -671,6 +673,11 @@ Optional<int64_t> regexp::match(const string &subject, bool all_matches) const {
     return false;
   }
 
+  runtime_injection::invoke_callback(on_regexp_operation_start, RegexpOperationType::f_preg_match, is_constant_regexp());
+  auto final_injection_caller = vk::final_action([&]() {
+    runtime_injection::invoke_callback(on_regexp_operation_finish, pcre_last_error != 0);
+  });
+
   if (is_utf8 && !mb_UTF8_check(subject.c_str())) {
     pcre_last_error = PCRE_ERROR_BADUTF8;
     return false;
@@ -718,6 +725,11 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, bool all_
     matches = array<mixed>();
     return false;
   }
+
+  runtime_injection::invoke_callback(on_regexp_operation_start, RegexpOperationType::f_preg_match, is_constant_regexp());
+  auto final_injection_caller = vk::final_action([&]() {
+    runtime_injection::invoke_callback(on_regexp_operation_finish, pcre_last_error != 0);
+  });
 
   if (all_matches) {
     matches = array<mixed>(array_size(subpatterns_count, named_subpatterns_count, named_subpatterns_count == 0));
@@ -817,6 +829,11 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, int64_t f
     matches = array<mixed>();
     return false;
   }
+
+  runtime_injection::invoke_callback(on_regexp_operation_start, RegexpOperationType::f_preg_match, is_constant_regexp());
+  auto final_injection_caller = vk::final_action([&]() {
+    runtime_injection::invoke_callback(on_regexp_operation_finish, pcre_last_error != 0);
+  });
 
   bool offset_capture = false;
   if (flags & PREG_OFFSET_CAPTURE) {
@@ -962,6 +979,11 @@ Optional<array<mixed>> regexp::split(const string &subject, int64_t limit, int64
   if (pcre_regexp == nullptr && RE2_regexp == nullptr) {
     return false;
   }
+
+  runtime_injection::invoke_callback(runtime_injection::on_regexp_operation_start, RegexpOperationType::f_preg_split, is_constant_regexp());
+  auto final_injection_caller = vk::final_action([&]() {
+    runtime_injection::invoke_callback(runtime_injection::on_regexp_operation_finish, pcre_last_error != 0);
+  });
 
   if (is_utf8 && !mb_UTF8_check(subject.c_str())) {
     pcre_last_error = PCRE_ERROR_BADUTF8;

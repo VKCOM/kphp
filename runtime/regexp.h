@@ -6,10 +6,12 @@
 
 #include <pcre.h>
 
+#include "common/containers/final_action.h"
 #include "common/mixin/not_copyable.h"
 
 #include "runtime/kphp_core.h"
 #include "runtime/mbstring.h"
+#include "runtime/runtime_injection.h"
 
 namespace re2 {
 class RE2;
@@ -29,6 +31,12 @@ constexpr int64_t PCRE_RECURSION_LIMIT = 100000;
 constexpr int64_t PCRE_BACKTRACK_LIMIT = 1000000;
 
 constexpr int32_t MAX_SUBPATTERNS = 512;
+
+enum RegexpOperationType : int64_t {
+  f_preg_match,
+  f_preg_replace,
+  f_preg_split
+};
 
 enum {
   PHP_PCRE_NO_ERROR = 0,
@@ -83,6 +91,10 @@ public:
   void init(const string &regexp_string, const char *function = nullptr, const char *file = nullptr);
   void init(const char *regexp_string, int64_t regexp_len, const char *function = nullptr, const char *file = nullptr);
 
+  bool is_constant_regexp() const {
+    // const regexps are compiled beforehand in master process and stored in heap memory
+    return use_heap_memory;
+  }
 
   Optional<int64_t> match(const string &subject, bool all_matches) const;
   Optional<int64_t> match(const string &subject, mixed &matches, bool all_matches, int64_t offset = 0) const;
@@ -274,6 +286,11 @@ Optional<string> regexp::replace(const T &replace_val, const string &subject, in
   if (pcre_regexp == nullptr && RE2_regexp == nullptr) {
     return {};
   }
+
+  runtime_injection::invoke_callback(runtime_injection::on_regexp_operation_start, RegexpOperationType::f_preg_replace, is_constant_regexp());
+  auto final_injection_caller = vk::final_action([&]() {
+    runtime_injection::invoke_callback(runtime_injection::on_regexp_operation_finish, pcre_last_error != 0);
+  });
 
   if (is_utf8 && !mb_UTF8_check(subject.c_str())) {
     pcre_last_error = PCRE_ERROR_BADUTF8;

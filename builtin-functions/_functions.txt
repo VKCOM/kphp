@@ -1651,7 +1651,9 @@ function register_kphp_on_curl_callbacks(
 function register_kphp_on_extenral_program_execution_callbacks(
     callable(int $execID, int /* enum ExecType in exec.cpp */ $execType, string $command):void $onExecStart,
     callable(int $execID, int $exitCode, mixed $output):void $onExecFinish);
-
+function register_kphp_on_regexp_callbacks(
+    callable(int /* enum RegexpOperationType in regexp.h */ $regexpOpType, bool $isConstantRegexp):void $onRegexpOperationStart,
+    callable(bool $hasError):void $onRegexpOperationFinish);
 
 function kphp_tracing_init_binlog(): void;
 
