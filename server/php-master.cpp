@@ -1396,7 +1396,8 @@ static void cron() {
   CpuStatTimestamp cpu_timestamp{my_now, utime, stime, cpu_total};
   server_stats.update(cpu_timestamp);
 
-  vk::singleton<WebServerStats>::get().store(general_workers_stat);
+  vk::singleton<WebServerStats>::get().store({general_workers_stat.running_workers, general_workers_stat.waiting_workers,
+                                              general_workers_stat.ready_for_accept_workers, general_workers_stat.total_workers});
   instance_cache_purge_expired_elements();
   check_and_instance_cache_try_swap_memory();
   confdata_binlog_update_cron();

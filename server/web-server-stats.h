@@ -1,12 +1,12 @@
 #pragma once
 
 #include <cstdint>
+#include <chrono>
 
 #include "common/mixin/not_copyable.h"
 #include "common/smart_ptrs/singleton.h"
 #include "common/stats/provider.h"
 #include "server/data-sharing.h"
-#include "server/server-stats.h"
 
 namespace SharedData {
 struct WebServerStatsBuffer : vk::not_copyable {
@@ -24,7 +24,7 @@ struct WebServerStats : vk::not_copyable {
 
   void init_default_stats() noexcept;
 
-  void store(ServerStats::WorkersStat const &stats) noexcept;
+  void store(Stats const &stats) noexcept;
 
   void sync_this_worker_stats() noexcept;
 

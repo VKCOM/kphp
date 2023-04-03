@@ -1,5 +1,7 @@
 #include "server/web-server-stats.h"
 
+#include "server/server-stats.h"
+
 
 void WebServerStats::init_default_stats() noexcept {
   uint16_t total_workers = vk::singleton<WorkersControl>::get().get_count(WorkerType::general_worker);
@@ -7,12 +9,12 @@ void WebServerStats::init_default_stats() noexcept {
   buffered_webserver_stats = WebServerStats::Stats(running_workers, 0, total_workers - running_workers, total_workers);
 }
 
-void WebServerStats::store(ServerStats::WorkersStat const &stats) noexcept {
+void WebServerStats::store(WebServerStats::Stats const &stats) noexcept {
   auto & shared_part = vk::singleton<DataSharing>::get().acquire<SharedPart>();
-  shared_part.running_workers.store(stats.running_workers, std::memory_order_relaxed);
-  shared_part.waiting_workers.store(stats.waiting_workers, std::memory_order_relaxed);
-  shared_part.ready_for_accept_workers.store(stats.ready_for_accept_workers, std::memory_order_relaxed);
-  shared_part.total_workers.store(stats.total_workers, std::memory_order_relaxed);
+  shared_part.running_workers.store(std::get<0>(stats), std::memory_order_relaxed);
+  shared_part.waiting_workers.store(std::get<1>(stats), std::memory_order_relaxed);
+  shared_part.ready_for_accept_workers.store(std::get<2>(stats), std::memory_order_relaxed);
+  shared_part.total_workers.store(std::get<3>(stats), std::memory_order_relaxed);
 }
 
 void WebServerStats::sync_this_worker_stats() noexcept {
