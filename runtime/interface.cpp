@@ -1835,6 +1835,10 @@ int64_t f$get_engine_workers_number() {
   return vk::singleton<WorkersControl>::get().get_total_workers_count();
 }
 
+WebServerStats::Stats f$get_webserver_stats() {
+  return vk::singleton<WebServerStats>::get().get_cache();
+}
+
 static char ini_vars_storage[sizeof(array<string>)];
 static array<string> *ini_vars = nullptr;
 

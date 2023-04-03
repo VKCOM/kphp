@@ -28,12 +28,10 @@ struct WebServerStats : vk::not_copyable {
 
   void sync_this_worker_stats() noexcept;
 
-  WebServerStats::Stats get() const noexcept;
+  WebServerStats::Stats get_cache() const noexcept;
 
 private:
   WebServerStats() = default;
   std::chrono::steady_clock::time_point last_update_;
   Stats buffered_webserver_stats;
 };
-
-WebServerStats::Stats f$get_webserver_stats();
