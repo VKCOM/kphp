@@ -125,7 +125,7 @@ static void compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> &vars,
   kphp_assert(const_array_shifts.size() == const_raw_array_vars.size());
 
 
-  const size_t max_dep_level = std::max({const_raw_string_vars.size(), const_raw_array_vars.size(), other_const_vars.size()});
+  const size_t max_dep_level = std::max({const_raw_string_vars.max_dep_level(), const_raw_array_vars.max_dep_level(), other_const_vars.max_dep_level()});
 
   size_t str_idx = 0;
   size_t arr_idx = 0;

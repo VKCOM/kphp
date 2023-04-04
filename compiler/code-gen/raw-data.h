@@ -15,19 +15,26 @@
 
 
 struct DepLevelContainer { // TODO(mkornaukhov03): in case of empty container begin() != end()
-    DepLevelContainer() : mapping(DEFAULT_MAX_DEP_LEVEL, std::vector<VarPtr>{}), cnt(0) {}
+    DepLevelContainer() : mapping(), cnt(0) {
+      mapping.reserve(DEFAULT_MAX_DEP_LEVEL);
+    }
 
     struct const_iterator {
         const_iterator(const DepLevelContainer &owner_, size_t dep_level_, size_t internal_index_)
           : owner(owner_), dep_level(dep_level_), internal_index(internal_index_) {}
 
-        const VarPtr &operator*() { return owner.mapping[dep_level][internal_index]; }
+        const VarPtr &operator*() {
+          return owner.mapping[dep_level][internal_index];
+        }
 
         const_iterator &operator++() {
           ++internal_index;
           while (dep_level < owner.mapping.size() && internal_index >= owner.mapping[dep_level].size()) {
             internal_index = 0;
             ++dep_level;
+          }
+          if (dep_level == owner.mapping.size()) {
+            internal_index = 0;
           }
           return *this;
         }
@@ -47,7 +54,9 @@ struct DepLevelContainer { // TODO(mkornaukhov03): in case of empty container be
     };
 
     const_iterator begin() const {
-      return const_iterator(*this, 0, 0);
+      size_t begin_idx = 0;
+      for (; begin_idx < mapping.size() && mapping[begin_idx].empty(); ++begin_idx) {}
+      return const_iterator(*this, begin_idx, 0);
     }
 
     const_iterator end() const {
@@ -67,6 +76,10 @@ struct DepLevelContainer { // TODO(mkornaukhov03): in case of empty container be
     }
 
     const std::vector<VarPtr> & vars_by_dep_level(size_t dep_level) {
+      if (dep_level >= max_dep_level()) {
+        static const auto EMPTY = std::vector<VarPtr>{};
+        return EMPTY;
+      }
       return mapping[dep_level];
     }
 
@@ -74,7 +87,7 @@ struct DepLevelContainer { // TODO(mkornaukhov03): in case of empty container be
       ++cnt;
       auto dep_level = v->dependency_level;
       if (dep_level >= mapping.size()) {
-        mapping.resize(dep_level);
+        mapping.resize(dep_level + 1);
       }
       mapping[dep_level].emplace_back(v);
     }
