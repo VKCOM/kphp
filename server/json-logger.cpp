@@ -278,7 +278,7 @@ void JsonLogger::write_trace_line(vk::string_view json_trace_line, const std::fo
   memcpy(buffer + buffer_i, json_trace_line.data() + 1, json_trace_line.size() - 2);
   buffer_i += json_trace_line.size() - 2;
   buffer[buffer_i++] = ',';
-  strncpy(buffer + buffer_i, "\"binlog\"", 8);
+  memcpy(buffer + buffer_i, "\"binlog\"", 8);
   buffer_i += 8;
   buffer[buffer_i++] = ':';
   buffer[buffer_i++] = '"';
