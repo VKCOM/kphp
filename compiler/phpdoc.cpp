@@ -874,8 +874,8 @@ const TypeHint *phpdoc_convert_default_value_to_type_hint(VertexPtr init_val) {
     case op_mul:
     case op_sub:
     case op_plus: {
-      const auto *lhs_type_hint = phpdoc_convert_default_value_to_type_hint(VertexUtil::get_define_val(init_val.as<meta_op_binary>()->lhs()))->try_as<TypeHintPrimitive>();
-      const auto *rhs_type_hint = phpdoc_convert_default_value_to_type_hint(VertexUtil::get_define_val(init_val.as<meta_op_binary>()->rhs()))->try_as<TypeHintPrimitive>();
+      const auto *lhs_type_hint = phpdoc_convert_default_value_to_type_hint(VertexUtil::get_actual_value(init_val.as<meta_op_binary>()->lhs()))->try_as<TypeHintPrimitive>();
+      const auto *rhs_type_hint = phpdoc_convert_default_value_to_type_hint(VertexUtil::get_actual_value(init_val.as<meta_op_binary>()->rhs()))->try_as<TypeHintPrimitive>();
       if (lhs_type_hint && rhs_type_hint) {
         if (lhs_type_hint->ptype == tp_float || rhs_type_hint->ptype == tp_float) {
           return TypeHintPrimitive::create(tp_float);

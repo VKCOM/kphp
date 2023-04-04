@@ -14,7 +14,6 @@
 class VertexUtil {
 public:
   static VertexPtr get_actual_value(VertexPtr v);
-  static VertexPtr get_define_val(VertexPtr v);
   static const std::string *get_constexpr_string(VertexPtr v);
   static VertexPtr get_call_arg_ref(int arg_num, VertexPtr v_func_call);
   static VertexAdaptor<op_func_call> add_call_arg(VertexPtr to_add, VertexAdaptor<op_func_call> call, bool prepend);

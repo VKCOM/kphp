@@ -191,7 +191,7 @@ protected:
   }
 
   bool on_define_val(VertexAdaptor<op_define_val> v) final {
-    return visit(VertexUtil::get_define_val(v));
+    return visit(VertexUtil::get_actual_value(v));
   }
 
 };
@@ -335,7 +335,7 @@ protected:
       new_val->location = v->get_location();
 
       for (auto i : *v) {
-        VertexPtr res = VertexUtil::get_define_val(visit(i));
+        VertexPtr res = VertexUtil::get_actual_value(visit(i));
         kphp_error(res->has_get_string(), ("expected type convertible to string, but got: " + OpInfo::str(res->type())).c_str());
         new_val->str_val += res->get_string();
       }

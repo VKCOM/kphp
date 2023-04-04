@@ -187,7 +187,7 @@ static void reify_genericT_from_call_argument(FunctionPtr current_function, Func
   // for @param class-string<T>, if an argument is A::class, reify T=A
   if (const auto *as_class_string = param_hint->try_as<TypeHintClassString>()) {
     ClassPtr klassT;
-    auto real_call_arg = VertexUtil::get_define_val(call_arg);
+    auto real_call_arg = VertexUtil::get_actual_value(call_arg);
     if (real_call_arg->type() == op_string) {
       klassT = G->get_class(real_call_arg->get_string());
       kphp_error_return(klassT, fmt_format("Class {} not found", real_call_arg->get_string()));
