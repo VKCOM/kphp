@@ -1,9 +1,9 @@
-#include "server/data-sharing.h"
+#include "server/shared-data.h"
 
+#include <new>
 #include "common/wrappers/memory-utils.h"
-#include "server/web-server-stats.h"
 
-void DataSharing::init() {
+void SharedData::init() {
   auto *ptr = mmap_shared(sizeof(Storage));
   storage = new (ptr) Storage();
 }

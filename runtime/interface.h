@@ -11,7 +11,6 @@
 #include "runtime/kphp_core.h"
 #include "runtime/optional.h"
 #include "server/php-query-data.h"
-#include "server/web-server-stats.h"
 
 extern string_buffer *coub;//TODO static
 using shutdown_function_type = std::function<void()>;
@@ -167,7 +166,7 @@ string f$get_engine_version();
 
 int64_t f$get_engine_workers_number();
 
-WebServerStats::Stats f$get_webserver_stats();
+std::tuple<int64_t, int64_t, int64_t, int64_t> f$get_webserver_stats();
 
 void arg_add(const char *value);
 
