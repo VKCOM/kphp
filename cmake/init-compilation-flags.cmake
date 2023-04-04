@@ -81,6 +81,9 @@ cmake_print_variables(PDO_DRIVER_PGSQL)
 option(KPHP_TESTS "Build the tests" ON)
 cmake_print_variables(KPHP_TESTS)
 
+option(KPHP_CUSTOM_CMAKE "Use CMakeLists.txt of custom php project" OFF)
+cmake_print_variables(KPHP_CUSTOM_CMAKE)
+
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     message(STATUS "Setting build type to `${DEFAULT_BUILD_TYPE}` as none was specified.")
     set(CMAKE_BUILD_TYPE ${DEFAULT_BUILD_TYPE} CACHE STRING "Build type (default ${DEFAULT_BUILD_TYPE})" FORCE)
