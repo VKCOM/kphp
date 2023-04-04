@@ -17,6 +17,9 @@
 #include "common/macos-ports.h"
 #include "common/smart_ptrs/singleton.h"
 #include "common/wrappers/to_array.h"
+#include "net/net-events.h"
+#include "net/net-reactor.h"
+#include "server/curl-adaptor.h"
 
 static_assert(LIBCURL_VERSION_NUM >= 0x071c00, "Outdated libcurl");
 static_assert(CURL_MAX_WRITE_SIZE <= (1 << 30), "CURL_MAX_WRITE_SIZE expected to be less than (1 << 30)");
@@ -170,6 +173,7 @@ public:
   Optional<string> private_data{false};
 
   bool return_transfer{false};
+  bool connection_only{false};
 };
 
 class MultiContext : public BaseContext {
@@ -404,6 +408,7 @@ void post_fields_option_setter(EasyContext *easy_context, CURLoption, const mixe
 
 constexpr int64_t CURLOPT_RETURNTRANSFER = 1234567;
 constexpr int64_t CURLOPT_INFO_HEADER_OUT = 7654321;
+constexpr int64_t FUNCTION_TXTS_CURLOPT_CONNECT_ONLY = 200004;
 
 bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) noexcept {
   if (option == CURLOPT_INFO_HEADER_OUT) {
@@ -422,6 +427,10 @@ bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) 
   if (option == CURLOPT_RETURNTRANSFER) {
     easy_context->return_transfer = (value.to_int() == 1ll);
     return true;
+  }
+
+  if (option == FUNCTION_TXTS_CURLOPT_CONNECT_ONLY) {
+    easy_context->connection_only = (value.to_int() == 1ll);
   }
 
   struct EasyOptionHandler {
@@ -978,4 +987,126 @@ void free_curl_lib() noexcept {
   clear_contexts(vk::singleton<CurlContexts>::get().easy_contexts);
   clear_contexts(vk::singleton<CurlContexts>::get().multi_contexts);
   vk::singleton<CurlMemoryUsage>::get().total_allocated = 0;
+}
+
+std::unique_ptr<CurlRequest> CurlRequest::build(curl_easy easy_id) {
+  curl_multi multi_id = f$curl_multi_init();
+  if (!multi_id || !get_context<EasyContext>(easy_id)) {
+    return {};
+  }
+
+  // it is pointless to use stdout during concurrent request processing
+  bool ok = f$curl_setopt(easy_id, CURLOPT_RETURNTRANSFER, 1);
+  if (!ok) {
+    return {};
+  }
+
+  Optional<int64_t> status = f$curl_multi_add_handle(multi_id, easy_id);
+  if (!status.has_value() || status.val()) {
+    return {};
+  }
+  return std::unique_ptr<CurlRequest>{new CurlRequest{easy_id, multi_id}};
+}
+
+static int curl_socketfunction_cb(CURL *easy, curl_socket_t fd, int action, void *userp, void *socketp);
+
+void CurlRequest::send_async() const {
+  auto *easy_context = get_context<EasyContext>(easy_id);
+  auto *multi_context = get_context<MultiContext>(multi_id);
+  if (!easy_context || !multi_context) {
+    finish_request();
+    return;
+  }
+
+  multi_context->set_option_safe(CURLMOPT_SOCKETFUNCTION, curl_socketfunction_cb);
+  multi_context->set_option_safe(CURLMOPT_SOCKETDATA, this);
+
+  int running_handles = 0;
+  multi_context->error_num = dl::critical_section_call(curl_multi_socket_action, multi_context->multi_handle, CURL_SOCKET_TIMEOUT, 0, &running_handles);
+
+  if (easy_context->connection_only) {
+    auto info = f$curl_multi_info_read(multi_id);
+    if (info.has_value()) {
+      const int64_t *result = info.val().find_value(string{"result"});
+      if (result && *result == 0) {
+        finish_request(string{});
+        return;
+      }
+    }
+  }
+  if (!running_handles || multi_context->error_num != CURLM_OK) {
+    finish_request();
+  }
+}
+
+void CurlRequest::finish_request(Optional<string> &&response) const {
+  f$curl_multi_remove_handle(multi_id, easy_id);
+  auto curl_response = std::make_unique<CurlResponse>(std::move(response), request_id);
+  vk::singleton<CurlAdaptor>::get().finish_request_resumable(std::move(curl_response));
+}
+
+static int curl_epoll_cb(int fd, void *data, event_t *ev) {
+  auto *curl_request = static_cast<CurlRequest *>(data);
+
+  int flags = 0;
+  if (ev->ready & EVT_READ) {
+    flags |= CURL_CSELECT_IN;
+  }
+  if (ev->ready & EVT_WRITE) {
+    flags |= CURL_CSELECT_OUT;
+  }
+
+  auto *multi_context = get_context<MultiContext>(curl_request->multi_id);
+  if (!multi_context) {
+    curl_request->finish_request();
+    return 0;
+  }
+
+  int running_handles = 0;
+  multi_context->error_num = dl::critical_section_call(curl_multi_socket_action, multi_context->multi_handle, fd, flags, &running_handles);
+
+  if (multi_context->error_num != CURLM_OK) {
+    curl_request->finish_request();
+    return 0;
+  }
+
+  if (!running_handles) {
+    auto *easy_context = get_context<EasyContext>(curl_request->easy_id);
+    if (!easy_context) {
+      curl_request->finish_request();
+      return 0;
+    }
+
+    string content = easy_context->received_data.concat_and_get_string();
+    curl_request->finish_request(std::move(content));
+  }
+  return 0;
+}
+
+static int curl_socketfunction_cb(CURL */*easy*/, curl_socket_t fd, int action, void *userp, void */*socketp*/) {
+  auto *curl_request = static_cast<CurlRequest *>(userp);
+  switch (action) {
+    case CURL_POLL_IN:
+    case CURL_POLL_OUT:
+    case CURL_POLL_INOUT: {
+      int events = EVT_SPEC | EVT_LEVEL;
+      if (action != CURL_POLL_IN) {
+        events |= EVT_WRITE;
+      }
+      if (action != CURL_POLL_OUT) {
+        events |= EVT_READ;
+      }
+      epoll_insert(fd, events);
+      epoll_sethandler(fd, 0, curl_epoll_cb, curl_request);
+      break;
+    }
+    case CURL_POLL_REMOVE: {
+      epoll_remove(fd);
+      break;
+    }
+    default:
+      break;
+  }
+
+  return 0;
 }

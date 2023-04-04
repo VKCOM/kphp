@@ -67,3 +67,30 @@ private:
 
   friend class vk::singleton<CurlMemoryUsage>;
 };
+
+class CurlRequest : private vk::not_copyable {
+public:
+  static std::unique_ptr<CurlRequest> build(curl_easy easy_id);
+
+  void send_async() const;
+  void finish_request(Optional<string> &&respone = false) const;
+
+  int request_id{0};
+  const curl_easy easy_id{0};
+  const curl_multi multi_id{0};
+
+private:
+  CurlRequest(curl_easy easy_id, curl_multi multi_id) noexcept
+    : easy_id(easy_id)
+    , multi_id(multi_id) {}
+};
+
+class CurlResponse : private vk::not_copyable {
+public:
+  CurlResponse(Optional<string> &&response, int bound_request_id) noexcept
+    : response(std::move(response))
+    , bound_request_id(bound_request_id) {}
+
+  Optional<string> response;
+  const int bound_request_id{0};
+};

@@ -68,6 +68,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         critical_section.cpp
         ctype.cpp
         curl.cpp
+        curl-async.cpp
         env.cpp
         exception.cpp
         exec.cpp

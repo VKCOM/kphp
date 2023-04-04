@@ -46,9 +46,12 @@ class Request;
 class Connector;
 }
 
+class CurlRequest;
+class CurlResponse;
+
 struct net_event_t {
   slot_id_t slot_id;
-  std::variant<net_events_data::rpc_answer, net_events_data::rpc_error, net_events_data::job_worker_answer, database_drivers::Response *> data;
+  std::variant<net_events_data::rpc_answer, net_events_data::rpc_error, net_events_data::job_worker_answer, database_drivers::Response *, CurlResponse *> data;
 
   const char *get_description() const noexcept;
 };
@@ -66,7 +69,7 @@ struct rpc_send {
 
 struct net_query_t {
   slot_id_t slot_id;
-  std::variant<net_queries_data::rpc_send, database_drivers::Request *> data;
+  std::variant<net_queries_data::rpc_send, database_drivers::Request *, CurlRequest *> data;
 };
 
 #pragma pack(push, 4)
