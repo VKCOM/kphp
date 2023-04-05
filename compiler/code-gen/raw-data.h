@@ -75,7 +75,7 @@ struct DepLevelContainer { // TODO(mkornaukhov03): in case of empty container be
       return mapping.size();
     }
 
-    const std::vector<VarPtr> & vars_by_dep_level(size_t dep_level) {
+    const std::vector<VarPtr> & vars_by_dep_level(size_t dep_level) const {
       if (dep_level >= max_dep_level()) {
         static const auto EMPTY = std::vector<VarPtr>{};
         return EMPTY;

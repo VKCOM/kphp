@@ -140,7 +140,7 @@ static void compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> &vars,
       compile_raw_array(W, var, const_array_shifts[arr_idx++]);
     }
 
-    for (const auto &var: other_const_vars) {
+    for (const auto &var: other_const_vars.vars_by_dep_level(dep_level)) {
       W << InitVar(var);
       const auto *type_data = var->tinf_node.get_type();
       PrimitiveType ptype = type_data->ptype();
