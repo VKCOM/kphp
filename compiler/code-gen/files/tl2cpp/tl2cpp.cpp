@@ -181,7 +181,7 @@ void write_tl_query_handlers(CodeGenerator &W) {
   });
 
   W << END << NL << NL;
-  W << "const char * tl_function_magic_to_name(uint32_t magic) noexcept " << BEGIN
+  W << "const char * tl_function_magic_to_name_impl(uint32_t magic) noexcept " << BEGIN
     << "switch (magic) " << BEGIN;
   for (const auto &[magic, tl_fun]: tl->functions) {
     W << fmt_format("case {:#010x}U: return \"{}\";", static_cast<uint32_t>(tl_fun->id), tl_fun->name.c_str()) << NL;
@@ -189,7 +189,7 @@ void write_tl_query_handlers(CodeGenerator &W) {
   W << "default: return \"__unknown__\";" << NL << END << NL;
 
   W << END << NL << NL;
-  W << "array<int64_t> tl_magic_get_all_functions() noexcept " << BEGIN;
+  W << "array<int64_t> tl_magic_get_all_functions_impl() noexcept " << BEGIN;
   W << "array<int64_t> out;" << NL;
   W << "out.reserve(" << tl->functions.size() << ", 0, true);" << NL;
   for (const auto &[magic, tl_fun]: tl->functions) {
