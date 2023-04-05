@@ -46,7 +46,7 @@ include(${BASE_DIR}/compiler/compiler.cmake)
 
 include(${BASE_DIR}/tests/tests.cmake)
 
-if(EXISTS ${OBJS_DIR}/custom_php_project.cmake)
+if(KPHP_CUSTOM_CMAKE AND EXISTS ${OBJS_DIR}/custom_php_project.cmake)
     include(${OBJS_DIR}/custom_php_project.cmake)
 endif()
 
