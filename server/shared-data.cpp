@@ -7,7 +7,7 @@
 #include <new>
 #include "common/wrappers/memory-utils.h"
 
-uint64_t WorkersStats::pack() const noexcept {
+WorkersStats::PackerRepr WorkersStats::pack() const noexcept {
   uint64_t stats = 0;
   stats += running_workers;
   stats = stats << 16;
@@ -19,11 +19,14 @@ uint64_t WorkersStats::pack() const noexcept {
   return stats;
 }
 
-void WorkersStats::unpack(uint64_t stats) noexcept {
-  running_workers = (stats) >> 16 * 3;
-  waiting_workers = (stats << 16) >> 16 * 3;
-  ready_for_accept_workers = (stats << 16 * 2) >> 16 * 3;
-  total_workers = (stats << 16 * 3) >> 16 * 3;
+void WorkersStats::unpack(PackerRepr stats) noexcept {
+  total_workers = static_cast<uint16_t>(stats);
+  stats >>= 16;
+  ready_for_accept_workers = static_cast<uint16_t>(stats);
+  stats >>= 16;
+  waiting_workers = static_cast<uint16_t>(stats);
+  stats >>= 16;
+  running_workers = static_cast<uint16_t>(stats);
 }
 
 void SharedData::init() {

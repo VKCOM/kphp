@@ -11,13 +11,15 @@
 #include "common/smart_ptrs/singleton.h"
 
 struct WorkersStats {
+  using PackerRepr = uint64_t;
+
   uint16_t running_workers{0};
   uint16_t waiting_workers{0};
   uint16_t ready_for_accept_workers{0};
   uint16_t total_workers{0};
 
-  void unpack(uint64_t stats) noexcept;
-  uint64_t pack() const noexcept;
+  void unpack(PackerRepr stats) noexcept;
+  PackerRepr pack() const noexcept;
 };
 
 /**
@@ -25,7 +27,7 @@ struct WorkersStats {
  */
 class SharedData : vk::not_copyable {
   struct Storage {
-    std::atomic<uint64_t> workers_stats;
+    std::atomic<WorkersStats::PackerRepr> workers_stats;
   };
 
 public:
