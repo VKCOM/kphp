@@ -1838,7 +1838,7 @@ int64_t f$get_engine_workers_number() {
 
 std::tuple<int64_t, int64_t, int64_t, int64_t> f$get_webserver_stats() {
   const auto &stats = vk::singleton<SharedDataWorkerCache>::get().get_cached_worker_stats();
-  return {stats.running_workers, stats.ready_for_accept_workers, stats.total_workers, stats.waiting_workers};
+  return {stats.running_workers,  stats.waiting_workers, stats.ready_for_accept_workers, stats.total_workers};
 };
 
 static char ini_vars_storage[sizeof(array<string>)];
