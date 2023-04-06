@@ -56,9 +56,9 @@
 #include "net/net-tcp-rpc-server.h"
 
 #include "runtime/interface.h"
+#include "runtime/json-functions.h"
 #include "runtime/profiler.h"
 #include "runtime/rpc.h"
-#include "runtime/json-functions.h"
 #include "server/cluster-name.h"
 #include "server/confdata-binlog-replay.h"
 #include "server/database-drivers/adaptor.h"
@@ -83,6 +83,7 @@
 #include "server/php-worker.h"
 #include "server/server-log.h"
 #include "server/server-stats.h"
+#include "server/shared-data-worker-cache.h"
 #include "server/statshouse/statshouse-client.h"
 #include "server/statshouse/worker-stats-buffer.h"
 #include "server/workers-control.h"
@@ -1421,6 +1422,7 @@ void cron() {
   if (master_flag == -1 && getppid() == 1) {
     turn_sigterm_on();
   }
+  vk::singleton<SharedDataWorkerCache>::get().on_worker_cron();
   vk::singleton<ServerStats>::get().update_this_worker_stats();
   vk::singleton<statshouse::WorkerStatsBuffer>::get().flush_if_needed();
 }
@@ -1528,6 +1530,7 @@ void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port) n
   }
 
   get_utime_monotonic();
+  vk::singleton<SharedDataWorkerCache>::get().init_defaults();
   //create_all_outbound_connections();
 
   ksignal(SIGTERM, sigterm_handler);
@@ -2333,6 +2336,7 @@ int run_main(int argc, char **argv, php_mode mode) {
   set_core_dump_rlimit(1LL << 40);
 #endif
   vk::singleton<ServerStats>::get().init();
+  vk::singleton<SharedData>::get().init();
 
   max_special_connections = 1;
   set_on_active_special_connections_update_callback([] {

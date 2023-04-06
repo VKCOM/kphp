@@ -204,6 +204,8 @@ function get_net_queries_count() ::: int;
 function get_engine_uptime() ::: int;
 function get_engine_version() ::: string;
 function get_engine_workers_number() ::: int;
+// get_webserver_stats returns a tuple of (running_workers, waiting_workers, ready_for_accept_workers, total_workers)
+function get_webserver_stats() ::: tuple(int, int, int, int);
 
 define('SORT_REGULAR', 0);
 define('SORT_NUMERIC', 1);

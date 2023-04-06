@@ -56,6 +56,7 @@
 #include "server/database-drivers/adaptor.h"
 #include "server/database-drivers/mysql/mysql.h"
 #include "server/database-drivers/pgsql/pgsql.h"
+#include "server/shared-data-worker-cache.h"
 #include "server/job-workers/job-message.h"
 #include "server/json-logger.h"
 #include "server/numa-configuration.h"
@@ -1834,6 +1835,11 @@ string f$get_engine_version() {
 int64_t f$get_engine_workers_number() {
   return vk::singleton<WorkersControl>::get().get_total_workers_count();
 }
+
+std::tuple<int64_t, int64_t, int64_t, int64_t> f$get_webserver_stats() {
+  const auto &stats = vk::singleton<SharedDataWorkerCache>::get().get_cached_worker_stats();
+  return {stats.running_workers,  stats.waiting_workers, stats.ready_for_accept_workers, stats.total_workers};
+};
 
 static char ini_vars_storage[sizeof(array<string>)];
 static array<string> *ini_vars = nullptr;
