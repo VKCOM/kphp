@@ -12,24 +12,8 @@ struct WorkersStats {
   uint16_t ready_for_accept_workers{0};
   uint16_t total_workers{0};
 
-  void unpack(uint64_t stats) noexcept {
-    running_workers = (stats) >> 16 * 3;
-    waiting_workers = (stats << 16) >> 16 * 3;
-    ready_for_accept_workers = (stats << 16 * 2) >> 16 * 3;
-    total_workers = (stats << 16 * 3) >> 16 * 3;
-  }
-
-  uint64_t pack() const noexcept{
-    uint64_t stats = 0;
-    stats += running_workers;
-    stats = stats << 16;
-    stats += waiting_workers;
-    stats = stats << 16;
-    stats += ready_for_accept_workers;
-    stats = stats << 16;
-    stats += total_workers;
-    return stats;
-  }
+  void unpack(uint64_t stats) noexcept;
+  uint64_t pack() const noexcept;
 };
 
 /**
