@@ -13,90 +13,64 @@
 #include "compiler/vertex.h"
 #include "compiler/data/var-data.h"
 
+struct DepLevelContainer {
+  DepLevelContainer() {
+    mapping.reserve(DEFAULT_MAX_DEP_LEVEL);
+  }
 
-struct DepLevelContainer { // TODO(mkornaukhov03): in case of empty container begin() != end()
-    DepLevelContainer() : mapping(), cnt(0) {
-      mapping.reserve(DEFAULT_MAX_DEP_LEVEL);
+  struct const_iterator {
+    const_iterator(const DepLevelContainer &owner_, size_t dep_level_, size_t internal_index_)
+      : owner(owner_)
+      , dep_level(dep_level_)
+      , internal_index(internal_index_) {}
+
+    const VarPtr &operator*() {
+      return owner.mapping[dep_level][internal_index];
     }
 
-    struct const_iterator {
-        const_iterator(const DepLevelContainer &owner_, size_t dep_level_, size_t internal_index_)
-          : owner(owner_), dep_level(dep_level_), internal_index(internal_index_) {}
+    const_iterator &operator++();
 
-        const VarPtr &operator*() {
-          return owner.mapping[dep_level][internal_index];
-        }
-
-        const_iterator &operator++() {
-          ++internal_index;
-          while (dep_level < owner.mapping.size() && internal_index >= owner.mapping[dep_level].size()) {
-            internal_index = 0;
-            ++dep_level;
-          }
-          if (dep_level == owner.mapping.size()) {
-            internal_index = 0;
-          }
-          return *this;
-        }
-
-        bool operator==(const const_iterator &oth) const {
-          return std::make_tuple(&owner, dep_level, internal_index) == std::make_tuple(&oth.owner, oth.dep_level, oth.internal_index);
-        }
-
-        bool operator!=(const const_iterator &oth) const {
-          return !(*this == oth);
-        }
-
-      private:
-        const DepLevelContainer &owner;
-        size_t dep_level;
-        size_t internal_index;
-    };
-
-    const_iterator begin() const {
-      size_t begin_idx = 0;
-      for (; begin_idx < mapping.size() && mapping[begin_idx].empty(); ++begin_idx) {}
-      return const_iterator(*this, begin_idx, 0);
+    bool operator==(const const_iterator &oth) const {
+      return std::make_tuple(&owner, dep_level, internal_index) == std::make_tuple(&oth.owner, oth.dep_level, oth.internal_index);
     }
 
-    const_iterator end() const {
-      return const_iterator(*this, mapping.size(), 0);
-    }
-
-    size_t size() const {
-      return cnt;
-    }
-
-    size_t empty() const {
-      return size() == 0;
-    }
-
-    size_t max_dep_level() const {
-      return mapping.size();
-    }
-
-    const std::vector<VarPtr> & vars_by_dep_level(size_t dep_level) const {
-      if (dep_level >= max_dep_level()) {
-        static const auto EMPTY = std::vector<VarPtr>{};
-        return EMPTY;
-      }
-      return mapping[dep_level];
-    }
-
-    void add(VarPtr v) {
-      ++cnt;
-      auto dep_level = v->dependency_level;
-      if (dep_level >= mapping.size()) {
-        mapping.resize(dep_level + 1);
-      }
-      mapping[dep_level].emplace_back(v);
+    bool operator!=(const const_iterator &oth) const {
+      return !(*this == oth);
     }
 
   private:
-    friend const_iterator;
-    static constexpr auto DEFAULT_MAX_DEP_LEVEL = 8;
-    std::vector<std::vector<VarPtr>> mapping;
-    size_t cnt;
+    const DepLevelContainer &owner;
+    size_t dep_level;
+    size_t internal_index;
+  };
+
+  const_iterator begin() const;
+
+  const_iterator end() const {
+    return {*this, mapping.size(), 0};
+  }
+
+  size_t size() const {
+    return count;
+  }
+
+  size_t empty() const {
+    return size() == 0;
+  }
+
+  size_t max_dep_level() const {
+    return mapping.size();
+  }
+
+  const std::vector<VarPtr> &vars_by_dep_level(size_t dep_level) const;
+
+  void add(VarPtr v);
+
+private:
+  friend const_iterator;
+  static constexpr auto DEFAULT_MAX_DEP_LEVEL = 8;
+  std::vector<std::vector<VarPtr>> mapping;
+  size_t count{0};
 };
 
 class RawString {
