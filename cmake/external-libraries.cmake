@@ -54,6 +54,8 @@ else()
     add_link_options(-L${kphp-timelib_SOURCE_DIR}/objs)
 endif()
 
+add_compile_options(-Wno-redundant-move)
+
 if(APPLE)
     if (DEFINED ENV{EPOLL_SHIM_REPO})
         FetchContent_Declare(
