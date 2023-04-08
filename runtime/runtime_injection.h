@@ -53,6 +53,10 @@ using on_regexp_operation_finish_callback_t = std::function<
   void(bool has_error)
 >;
 
+using on_file_io_callback_t = std::function<
+  void(int64_t fd, double duration, int64_t bytes_cnt)
+>;
+
 extern on_fork_callback_t on_fork_start;
 extern on_fork_callback_t on_fork_finish;
 extern on_fork_callback_t on_fork_switch;
@@ -73,6 +77,8 @@ extern on_external_program_start_callback_t on_external_program_start;
 extern on_external_program_finish_callback_t on_external_program_finish;
 extern on_regexp_operation_start_callback_t on_regexp_operation_start;
 extern on_regexp_operation_finish_callback_t on_regexp_operation_finish;
+extern on_file_io_callback_t on_read_finish;
+extern on_file_io_callback_t on_write_finish;
 
 template<typename F, typename ...Args>
 void invoke_callback(F &f, Args &&... args) noexcept {
@@ -107,3 +113,4 @@ void f$register_kphp_on_extenral_program_execution_callbacks(const runtime_injec
                                                              const runtime_injection::on_external_program_finish_callback_t &on_finish);
 void f$register_kphp_on_regexp_callbacks(const runtime_injection::on_regexp_operation_start_callback_t &on_start,
                                          const runtime_injection::on_regexp_operation_finish_callback_t &on_finish);
+void f$register_kphp_on_file_io_callbacks(const runtime_injection::on_file_io_callback_t &on_read_finish, const runtime_injection::on_file_io_callback_t &on_write_finish);

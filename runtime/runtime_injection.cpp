@@ -26,6 +26,8 @@ on_external_program_start_callback_t on_external_program_start;
 on_external_program_finish_callback_t on_external_program_finish;
 on_regexp_operation_start_callback_t on_regexp_operation_start;
 on_regexp_operation_finish_callback_t on_regexp_operation_finish;
+on_file_io_callback_t on_read_finish;
+on_file_io_callback_t on_write_finish;
 
 void free_callbacks() {
   on_fork_start = {};
@@ -48,6 +50,8 @@ void free_callbacks() {
   on_external_program_finish = {};
   on_regexp_operation_start = {};
   on_regexp_operation_finish = {};
+  on_read_finish = {};
+  on_write_finish = {};
 }
 
 } // namespace runtime_injection
@@ -110,4 +114,9 @@ void f$register_kphp_on_regexp_callbacks(const runtime_injection::on_regexp_oper
                                          const runtime_injection::on_regexp_operation_finish_callback_t &on_finish) {
   runtime_injection::on_regexp_operation_start = on_start;
   runtime_injection::on_regexp_operation_finish = on_finish;
+}
+
+void f$register_kphp_on_file_io_callbacks(const runtime_injection::on_file_io_callback_t &on_read_finish, const runtime_injection::on_file_io_callback_t &on_write_finish) {
+  runtime_injection::on_read_finish = on_read_finish;
+  runtime_injection::on_write_finish = on_write_finish;
 }

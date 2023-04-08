@@ -1655,6 +1655,9 @@ function register_kphp_on_extenral_program_execution_callbacks(
 function register_kphp_on_regexp_callbacks(
     callable(int /* enum RegexpOperationType in regexp.h */ $regexpOpType, bool $isConstantRegexp):void $onRegexpOperationStart,
     callable(bool $hasError):void $onRegexpOperationFinish);
+function register_kphp_on_file_io_callbacks(
+    callable(int $fd, float $duration, int $bytesRead) $onReadFinish,
+    callable(int $fd, float $duration, int $bytesWritten) $onWriteFinish);
 
 function kphp_tracing_init_binlog(): void;
 

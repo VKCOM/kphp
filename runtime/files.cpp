@@ -4,6 +4,7 @@
 
 #include "runtime/files.h"
 
+#include <chrono>
 #include <dirent.h>
 #include <errno.h>
 #include <libgen.h>
@@ -18,8 +19,12 @@
 
 #include "runtime/critical_section.h"
 #include "runtime/interface.h"
+#include "runtime/runtime_injection.h"
 #include "runtime/streams.h"
 #include "runtime/string_functions.h"//php_buf, TODO
+
+using runtime_injection::on_read_finish;
+using runtime_injection::on_write_finish;
 
 static int32_t opened_fd{-1};
 
@@ -54,7 +59,11 @@ ssize_t read_safe(int32_t fd, void *buf, size_t len) {
   dl::enter_critical_section();//OK
   size_t full_len = len;
   do {
+    double start = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
     ssize_t cur_res = read(fd, buf, len);
+    double end = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
+    runtime_injection::invoke_callback(on_read_finish,
+                                       fd, end - start, cur_res >= 0 ? cur_res : -errno);
     if (cur_res == -1) {
       if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK) {
         continue;
@@ -79,7 +88,11 @@ ssize_t write_safe(int32_t fd, const void *buf, size_t len) {
   dl::enter_critical_section();//OK
   size_t full_len = len;
   do {
+    double start = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
     ssize_t cur_res = write(fd, buf, len);
+    double end = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
+    runtime_injection::invoke_callback(on_write_finish,
+                                       fd, end - start, cur_res >= 0 ? cur_res : -errno);
     if (cur_res == -1) {
       if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK) {
         continue;
