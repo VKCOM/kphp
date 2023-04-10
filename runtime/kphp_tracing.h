@@ -102,4 +102,4 @@ inline __attribute__((always_inline)) class_instance<C$KphpTracingVSliceAtRuntim
 }
 
 void f$kphp_tracing_write_trace_to_json_log(const string &jsonTraceLine);
-void f$kphp_tracing_prepend_dict_to_binlog(int64_t dictID, const array<string> &dictKV);
+void f$kphp_tracing_prepend_enum_to_binlog(int64_t enumID, const array<string> &enumKV);

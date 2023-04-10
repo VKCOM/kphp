@@ -17,8 +17,8 @@ namespace kphp_tracing {
 constexpr int BUF_CHUNK_SIZE = 1024; // todo 65536
 
 constexpr int64_t etStringsTableRegister = 1;
-constexpr int64_t etDictClearNumbers = 5;
-constexpr int64_t etDictSetNumberMeaning = 6;
+constexpr int64_t etEnumClear = 5;
+constexpr int64_t etEnumSetMeaning = 6;
 
 tracing_binary_buffer trace_binlog;
 bool vslice_runtime_enabled;
@@ -191,12 +191,12 @@ void f$kphp_tracing_write_trace_to_json_log(const string &jsonTraceLine) {
   kphp_tracing::trace_binlog.output_to_json_log(jsonTraceLine);
 }
 
-void f$kphp_tracing_prepend_dict_to_binlog(int64_t dictID, const array<string> &dictKV) {
+void f$kphp_tracing_prepend_enum_to_binlog(int64_t enumID, const array<string> &enumKV) {
   kphp_tracing::tracing_binary_buffer dict_buffer;
   dict_buffer.init_and_alloc();
-  dict_buffer.write_int32((dictID << 8) + kphp_tracing::etDictClearNumbers);
-  for (const auto &it : dictKV) {
-    dict_buffer.write_int32((dictID << 8) + kphp_tracing::etDictSetNumberMeaning);
+  dict_buffer.write_int32((enumID << 8) + kphp_tracing::etEnumClear);
+  for (const auto &it : enumKV) {
+    dict_buffer.write_int32((enumID << 8) + kphp_tracing::etEnumSetMeaning);
     dict_buffer.write_uint32(it.get_int_key());
     dict_buffer.write_string_inlined(it.get_value());
   }

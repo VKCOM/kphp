@@ -1684,6 +1684,6 @@ function kphp_tracing_enable_vslice_collecting(): void;
 /** @kphp-warn-unused-result */
 function kphp_tracing_vslice(int $vsliceID): KphpTracingVSliceAtRuntime;
 
-function kphp_tracing_prepend_dict_to_binlog(int $dictID, string[] $dictKV): void;
+function kphp_tracing_prepend_enum_to_binlog(int $enumID, string[] $enumKV): void;
 function kphp_tracing_write_trace_to_json_log(string $jsonTraceLine): void;
 
