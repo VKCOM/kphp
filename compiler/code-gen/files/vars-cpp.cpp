@@ -68,9 +68,9 @@ static void compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> &vars,
 
   W << ExternInclude(G->settings().runtime_headers.get());
 
-  std::vector<VarPtr> const_raw_string_vars;
-  std::vector<VarPtr> const_raw_array_vars;
-  std::vector<VarPtr> other_const_vars;
+  DepLevelContainer const_raw_array_vars;
+  DepLevelContainer other_const_vars;
+  DepLevelContainer const_raw_string_vars;
   std::set<VarPtr> dependent_vars;
 
   IncludesCollector includes;
@@ -81,7 +81,6 @@ static void compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> &vars,
   }
   W << includes;
 
-  int max_dep_level{0};
   W << OpenNamespace();
   for (auto var : vars) {
     if (G->settings().is_static_lib_mode() && var->is_builtin_global()) {
@@ -90,23 +89,20 @@ static void compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> &vars,
 
     W << VarDeclaration(var);
     if (var->is_constant()) {
-      if (max_dep_level < var->dependency_level) {
-        max_dep_level = var->dependency_level;
-      }
       switch (var->init_val->type()) {
         case op_string:
-          const_raw_string_vars.push_back(var);
+          const_raw_string_vars.add(var);
           break;
         case op_array:
           add_dependent_declarations(var->init_val, dependent_vars);
-          const_raw_array_vars.push_back(var);
+          const_raw_array_vars.add(var);
           break;
         case op_var:
           add_dependent_declarations(var->init_val, dependent_vars);
-          other_const_vars.emplace_back(var);
+          other_const_vars.add(var);
           break;
         default:
-          other_const_vars.emplace_back(var);
+          other_const_vars.add(var);
           break;
       }
     }
@@ -128,37 +124,35 @@ static void compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> &vars,
   const std::vector<int> const_array_shifts = compile_arrays_raw_representation(const_raw_array_vars, W);
   kphp_assert(const_array_shifts.size() == const_raw_array_vars.size());
 
-  for (size_t dep_level = 0; dep_level <= max_dep_level; ++dep_level) {
+
+  const size_t max_dep_level = std::max({const_raw_string_vars.max_dep_level(), const_raw_array_vars.max_dep_level(), other_const_vars.max_dep_level()});
+
+  size_t str_idx = 0;
+  size_t arr_idx = 0;
+  for (size_t dep_level = 0; dep_level < max_dep_level; ++dep_level) {
     FunctionSignatureGenerator(W) << NL << "void const_vars_init_priority_" << dep_level << "_file_" << part_id << "()" << BEGIN;
 
-    for (size_t ii = 0; ii < const_raw_string_vars.size(); ++ii) {
-      VarPtr var = const_raw_string_vars[ii];
-      if (var->dependency_level == dep_level) {
-        W << VarName(var) << ".assign_raw (&raw[" << const_string_shifts[ii] << "]);" << NL;
-      }
+    for (const auto &var : const_raw_string_vars.vars_by_dep_level(dep_level)) {
+      W << VarName(var) << ".assign_raw (&raw[" << const_string_shifts[str_idx++] << "]);" << NL;
     }
 
-    for (size_t array_id = 0; array_id < const_raw_array_vars.size(); ++array_id) {
-      VarPtr var = const_raw_array_vars[array_id];
-      if (var->dependency_level == dep_level) {
-        compile_raw_array(W, var, const_array_shifts[array_id]);
-      }
+    for (const auto &var : const_raw_array_vars.vars_by_dep_level(dep_level)) {
+      compile_raw_array(W, var, const_array_shifts[arr_idx++]);
     }
 
-    for (const auto &var: other_const_vars) {
-      if (var->dependency_level == dep_level) {
-        W << InitVar(var);
-        const auto *type_data = var->tinf_node.get_type();
-        PrimitiveType ptype = type_data->ptype();
-        if (vk::any_of_equal(ptype, tp_array, tp_mixed, tp_string)) {
-          W << VarName(var);
-          if (type_data->use_optional()) {
-            W << ".val()";
-          }
-          W << ".set_reference_counter_to(ExtraRefCnt::for_global_const);" << NL;
+    for (const auto &var: other_const_vars.vars_by_dep_level(dep_level)) {
+      W << InitVar(var);
+      const auto *type_data = var->tinf_node.get_type();
+      PrimitiveType ptype = type_data->ptype();
+      if (vk::any_of_equal(ptype, tp_array, tp_mixed, tp_string)) {
+        W << VarName(var);
+        if (type_data->use_optional()) {
+          W << ".val()";
         }
+        W << ".set_reference_counter_to(ExtraRefCnt::for_global_const);" << NL;
       }
     }
+
     W << END << NL;
   }
 
