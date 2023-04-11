@@ -132,11 +132,11 @@ static void compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> &vars,
   for (size_t dep_level = 0; dep_level < max_dep_level; ++dep_level) {
     FunctionSignatureGenerator(W) << NL << "void const_vars_init_priority_" << dep_level << "_file_" << part_id << "()" << BEGIN;
 
-    for (const auto& var : const_raw_string_vars.vars_by_dep_level(dep_level)) {
+    for (const auto &var : const_raw_string_vars.vars_by_dep_level(dep_level)) {
       W << VarName(var) << ".assign_raw (&raw[" << const_string_shifts[str_idx++] << "]);" << NL;
     }
 
-    for (const auto& var : const_raw_array_vars.vars_by_dep_level(dep_level)) {
+    for (const auto &var : const_raw_array_vars.vars_by_dep_level(dep_level)) {
       compile_raw_array(W, var, const_array_shifts[arr_idx++]);
     }
 

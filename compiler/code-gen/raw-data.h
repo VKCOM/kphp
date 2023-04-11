@@ -19,10 +19,10 @@ struct DepLevelContainer {
   }
 
   struct const_iterator {
-    const_iterator(const DepLevelContainer &owner_, size_t dep_level_, size_t internal_index_)
-      : owner(owner_)
-      , dep_level(dep_level_)
-      , internal_index(internal_index_) {}
+    const_iterator(const DepLevelContainer &owner, size_t dep_level, size_t internal_index)
+      : owner(owner)
+      , dep_level(dep_level)
+      , internal_index(internal_index) {}
 
     const VarPtr &operator*() {
       return owner.mapping[dep_level][internal_index];
