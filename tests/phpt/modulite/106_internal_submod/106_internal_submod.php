@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_MODULITE=1
 /Failed loading Messages106\/.modulite.yaml:/
 /can't require @api\/impl: @api\/impl is internal in @api/
 /can't require @msg\/channels\/infra: @msg\/channels\/infra is internal in @msg\/channels/
