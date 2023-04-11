@@ -235,14 +235,14 @@ bool CollectConstVarsPass::user_recursion(VertexPtr v) {
     if (current_function->type == FunctionData::func_class_holder) {
       ClassPtr c = current_function->class_id;
       c->members.for_each([&](ClassMemberInstanceField &field) {
-      if (field.var->init_val) {
-        run_function_pass(field.var->init_val, this);
-      }
+        if (field.var->init_val) {
+          run_function_pass(field.var->init_val, this);
+        }
       });
       c->members.for_each([&](ClassMemberStaticField &field) {
-      if (field.var->init_val) {
-        run_function_pass(field.var->init_val, this);
-      }
+        if (field.var->init_val) {
+          run_function_pass(field.var->init_val, this);
+        }
       });
     }
   }
