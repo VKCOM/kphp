@@ -11,6 +11,7 @@
 #include "compiler/name-gen.h"
 
 namespace {
+
 template<class Derived, class ResultType>
 struct VertexVisitor {
   static ResultType visit(VertexPtr v) {

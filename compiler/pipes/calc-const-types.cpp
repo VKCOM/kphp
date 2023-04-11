@@ -32,7 +32,7 @@ void CalcConstTypePass::calc_const_type_of_class_fields(ClassPtr klass) {
 
 VertexPtr CalcConstTypePass::on_exit_vertex(VertexPtr v) {
   if (auto as_define_val = v.try_as<op_define_val>()) {
-    as_define_val->const_type = as_define_val->value()->const_type ;
+    as_define_val->const_type = as_define_val->value()->const_type;
     kphp_assert_msg(as_define_val->const_type == cnst_const_val, "Non-constant in const context");
     return v;
   }

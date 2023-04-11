@@ -17,8 +17,9 @@ VertexPtr VertexUtil::get_actual_value(VertexPtr v) {
       return var->var_id->init_val;
     }
   }
-  if (v->type() == op_define_val)
+  if (v->type() == op_define_val) {
     return get_actual_value(v.as<op_define_val>()->value());
+  }
   return v;
 }
 

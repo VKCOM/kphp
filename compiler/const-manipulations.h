@@ -191,7 +191,7 @@ protected:
   }
 
   bool on_define_val(VertexAdaptor<op_define_val> v) final {
-    return visit(VertexUtil::get_actual_value(v));
+    return visit(v->value());
   }
 
 };
