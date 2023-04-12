@@ -141,17 +141,17 @@ public:
 
   iterator end() { return iterator(arr() - size() + 1); }
 
-  xiterator cbegin() { return xiterator(arr() - size() + 1); }
+  xiterator rbegin() { return xiterator(arr() - size() + 1); }
 
-  xiterator cend() { return xiterator(arr()  + 1); }
+  xiterator rend() { return xiterator(arr() + 1); }
 
   const_iterator begin() const { return const_iterator(arr() + 1); }
 
   const_iterator end() const { return const_iterator(arr() - size() + 1); }
 
-  const_xiterator cbegin() const { return const_xiterator(arr() -  size() +  1); }
+  const_xiterator rbegin() const { return const_xiterator(arr() -  size() + 1); }
 
-  const_xiterator cend() const { return const_xiterator(arr() + 1); }
+  const_xiterator rend() const { return const_xiterator(arr() - 1); }
 
   const Location &get_location() const { return location; }
 

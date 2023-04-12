@@ -56,50 +56,31 @@ public:
 
 template<class FunctionPassT>
 void run_function_pass(VertexPtr &vertex, FunctionPassT *pass) {
-  stage::set_location(vertex->get_location());
-//
-//  vertex = pass->on_enter_vertex(vertex);
-//
-//  if (!pass->user_recursion(vertex)) {
-//    for (auto &i : *vertex) {
-//      run_function_pass(i, pass);
-//    }
-//  }
-//
-//  vertex = pass->on_exit_vertex(vertex);
-
   static constexpr size_t STACK_INIT_CAP = 1000;
+  constexpr uintptr_t MASK = 1ul << 50;
+
   std::vector<VertexPtr*> vertex_stack;
   vertex_stack.reserve(STACK_INIT_CAP);
 
-//  std::vector<unsigned char> status_stack;
-//  status_stack.reserve(STACK_INIT_CAP);
-
-//  constexpr unsigned char MARKED = 1;
-//  constexpr unsigned char UNMARKED = 0;
-  constexpr uintptr_t MASK = 1ul << 50;
-
   vertex_stack.push_back(&vertex); // TODO think about insert bit in ptr
-//  status_stack.push_back(UNMARKED);
 
   while (!vertex_stack.empty()) {
     VertexPtr *x = vertex_stack.back();
-//    auto status = status_stack.back();
-//    status_stack.pop_back();
 
     if (reinterpret_cast<uintptr_t>(x) & MASK) {
       vertex_stack.pop_back();
       x = reinterpret_cast<VertexPtr*>(reinterpret_cast<uintptr_t>(x) ^ MASK);
+      stage::set_location((*x)->get_location());
       *x = pass->on_exit_vertex(*x);
       continue;
     }
+
+    stage::set_location((*x)->get_location());
     *x = pass->on_enter_vertex(*x);
-//    status_stack.push_back(MARKED);
     vertex_stack.back() = reinterpret_cast<VertexPtr*>(reinterpret_cast<uintptr_t>(x) | MASK);
     if (!pass->user_recursion(*x)) {
-      for (auto iter = (*x)->cbegin(); iter != (*x)->cend(); ++iter) {
+      for (auto iter = (*x)->rbegin(); iter != (*x)->rend(); ++iter) {
         vertex_stack.push_back(&*iter);
-//        status_stack.push_back(UNMARKED);
       }
     }
   }
