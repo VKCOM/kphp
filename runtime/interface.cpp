@@ -100,12 +100,19 @@ void f$ob_clean() {
   coub->clean();
 }
 
+static inline void reset_gzip_header() {
+  if (ob_cur_buffer == 0) {
+    http_need_gzip &= ~4;
+  }
+}
+
 bool f$ob_end_clean() {
   if (ob_cur_buffer == 0) {
     return false;
   }
 
   coub = &oub[--ob_cur_buffer];
+  reset_gzip_header();
   return true;
 }
 
@@ -116,7 +123,7 @@ Optional<string> f$ob_get_clean() {
 
   string result = coub->str();
   coub = &oub[--ob_cur_buffer];
-
+  reset_gzip_header();
   return result;
 }
 
