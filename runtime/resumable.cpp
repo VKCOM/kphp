@@ -354,7 +354,8 @@ static void free_resumable_continuation(resumable_info *res) noexcept {
 static void finish_forked_resumable(int64_t resumable_id) noexcept {
   forked_resumable_info *res = get_forked_resumable_info(resumable_id);
   if (!res->continuation->is_internal_resumable()) {
-    runtime_injection::invoke_callback(on_fork_finish, resumable_id);
+    double now_timestamp = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
+    runtime_injection::invoke_callback(on_fork_finish, resumable_id, now_timestamp);
   }
   free_resumable_continuation(res);
 
@@ -507,7 +508,8 @@ Storage *start_resumable_impl(Resumable *resumable) noexcept {
 int64_t fork_resumable(Resumable *resumable) noexcept {
   int64_t id = register_forked_resumable(resumable);
 
-  runtime_injection::invoke_callback(on_fork_start, id);
+  double now_timestamp = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
+  runtime_injection::invoke_callback(on_fork_start, id, now_timestamp);
 
   if (resumable->resume(id, nullptr)) {
     finish_forked_resumable(id);

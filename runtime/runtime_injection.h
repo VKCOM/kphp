@@ -12,6 +12,7 @@ struct C$KphpJobWorkerRequest;
 
 namespace runtime_injection {
 
+using on_fork_startstop_callback_t = std::function<void(int64_t fork_id, double now_timestamp)>;
 using on_fork_callback_t = std::function<void(int64_t fork_id)>;
 
 using on_rpc_query_start_callback_t = std::function<
@@ -28,7 +29,7 @@ using on_job_worker_finish_callback_t = std::function<
   void(int64_t job_id, int64_t error_code, double duration_sec)
 >;
 
-using on_net_to_script_switch_callback_t = std::function<void(double now_timestamp, double net_time_delta)>;
+using on_net_to_script_switch_callback_t = std::function<void(double net_time_delta)>;
 
 using on_shutdown_functions_start_callback_t = std::function<void(int64_t shutdown_functions_cnt, int64_t shutdown_type, double now_timestamp)>;
 using on_shutdown_functions_finish_callback_t = std::function<void(double now_timestamp)>;
@@ -57,8 +58,8 @@ using on_file_io_callback_t = std::function<
   void(int64_t fd, double duration, int64_t bytes_cnt)
 >;
 
-extern on_fork_callback_t on_fork_start;
-extern on_fork_callback_t on_fork_finish;
+extern on_fork_startstop_callback_t on_fork_start;
+extern on_fork_startstop_callback_t on_fork_finish;
 extern on_fork_callback_t on_fork_switch;
 extern on_rpc_query_start_callback_t on_rpc_query_start;
 extern on_rpc_query_finish_callback_t on_rpc_query_finish;
@@ -93,8 +94,8 @@ void free_callbacks();
 
 
 // TODO: ensure this callbacks never swap context
-void f$register_kphp_on_fork_callbacks(const runtime_injection::on_fork_callback_t &on_fork_start,
-                                       const runtime_injection::on_fork_callback_t &on_fork_finish,
+void f$register_kphp_on_fork_callbacks(const runtime_injection::on_fork_startstop_callback_t &on_fork_start,
+                                       const runtime_injection::on_fork_startstop_callback_t &on_fork_finish,
                                        const runtime_injection::on_fork_callback_t &on_fork_switch);
 void f$register_kphp_on_rpc_query_callbacks(const runtime_injection::on_rpc_query_start_callback_t &on_start,
                                             const runtime_injection::on_rpc_query_finish_callback_t &on_finish);

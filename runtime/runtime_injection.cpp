@@ -6,8 +6,8 @@
 
 namespace runtime_injection {
 
-on_fork_callback_t on_fork_start;
-on_fork_callback_t on_fork_finish;
+on_fork_startstop_callback_t on_fork_start;
+on_fork_startstop_callback_t on_fork_finish;
 on_fork_callback_t on_fork_switch;
 on_rpc_query_start_callback_t on_rpc_query_start;
 on_rpc_query_finish_callback_t on_rpc_query_finish;
@@ -56,8 +56,8 @@ void free_callbacks() {
 
 } // namespace runtime_injection
 
-void f$register_kphp_on_fork_callbacks(const runtime_injection::on_fork_callback_t &on_fork_start,
-                                       const runtime_injection::on_fork_callback_t &on_fork_finish,
+void f$register_kphp_on_fork_callbacks(const runtime_injection::on_fork_startstop_callback_t &on_fork_start,
+                                       const runtime_injection::on_fork_startstop_callback_t &on_fork_finish,
                                        const runtime_injection::on_fork_callback_t &on_fork_switch) {
   runtime_injection::on_fork_start = on_fork_start;
   runtime_injection::on_fork_finish = on_fork_finish;
