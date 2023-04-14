@@ -70,7 +70,7 @@ void run_function_pass(VertexPtr &vertex, FunctionPassT *pass) {
     if (reinterpret_cast<uintptr_t>(x) & MASK) {
       vertex_stack.pop_back();
       x = reinterpret_cast<VertexPtr*>(reinterpret_cast<uintptr_t>(x) ^ MASK);
-      stage::set_location((*x)->get_location());
+//      stage::set_location((*x)->get_location());
       *x = pass->on_exit_vertex(*x);
       continue;
     }
