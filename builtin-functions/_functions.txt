@@ -1635,10 +1635,10 @@ function register_kphp_on_fork_callbacks(
     callable(int $activeForkID):void $onForkSwitch);
 function register_kphp_on_rpc_query_callbacks(
     callable(int $rpcQueryID, int $actorPort, int $tlMagic, int $bytesSent, float $startTimestamp, bool $isNoResult):void $onRpcSend,
-    callable(int $rpcQueryID, int $bytesRecvOrErrorCode, float $durationSec):void $onRpcGotResponse);
+    callable(int $rpcQueryID, int $bytesRecvOrErrorCode, float $endTimestamp):void $onRpcGotResponse);
 function register_kphp_on_job_worker_callbacks(
     callable(int $jobID, KphpJobWorkerRequest $job, float $startTimestamp, bool $isNoReply):void $onJobSend,
-    callable(int $jobID, int $errorCode, float $durationSec):void $onJobGotResponse);
+    callable(int $jobID, int $errorCode, float $endTimestamp):void $onJobGotResponse);
 function register_kphp_on_swapcontext_callbacks(
     callable(float $netTimeDelta):void $onSwitchNetToScript);
 function register_kphp_on_shutdown_callbacks(
