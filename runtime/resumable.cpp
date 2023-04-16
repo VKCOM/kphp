@@ -4,6 +4,8 @@
 
 #include "runtime/resumable.h"
 
+#include <chrono>
+
 #include "common/kprintf.h"
 
 #include "runtime/net_events.h"
