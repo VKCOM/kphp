@@ -1,10 +1,13 @@
 #pragma once
 
+#include "runtime/kphp_core.h"
+
 extern "C" {
+	// FIXME
+	// #include <kphp/libmbfl/mbfl/mbfilter.h>
+	// #include "../../build/_deps/libmbfl-src/include/kphp/libmbfl/mbfl/mbfilter.h"
 	#include <libmbfl/mbfl/mbfilter.h>
 }
-
-#include "runtime/kphp_core.h"
 
 /**
  * Convert a string from one character encoding to another

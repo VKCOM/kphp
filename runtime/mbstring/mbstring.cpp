@@ -6,6 +6,7 @@ string f$mb_convert_encoding(const string &str, const string &to, const string &
 	const char *c_str = str.c_str();
 	const char *c_from = from.c_str();
 	const char *c_to = to.c_str();
+
 	enum mbfl_no_encoding from_encoding, to_encoding;
 	mbfl_buffer_converter *convd = NULL;
 	mbfl_string tmp, result, *ret;
@@ -28,6 +29,5 @@ string f$mb_convert_encoding(const string &str, const string &to, const string &
 	mbfl_buffer_converter_delete(convd);
 
 	/* returning kphp's string */
-	string res((const char*)ret->val, strlen((const char*)ret->val));
-	return res;
+	return string((const char*)ret->val, ret->len);
 }
