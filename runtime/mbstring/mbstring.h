@@ -2,10 +2,6 @@
 
 #include "runtime/kphp_core.h"
 
-extern "C" {
-	#include <kphp/libmbfl/mbfl/mbfilter.h>
-}
-
 /**
  * Convert a string from one character encoding to another
  * @param str The string to be converted

@@ -1,5 +1,9 @@
 #include "mbstring.h"
 
+extern "C" {
+	#include <kphp/libmbfl/mbfl/mbfilter.h>
+}
+
 string f$mb_convert_encoding(const string &str, const string &to, const string &from) {
 
 	/* preparing */
