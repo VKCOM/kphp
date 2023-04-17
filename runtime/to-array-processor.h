@@ -5,6 +5,8 @@
 #pragma once
 
 #include <string_view>
+#include <tuple>
+#include <unordered_map>
 
 #include "common/mixin/not_copyable.h"
 #include "common/smart_ptrs/singleton.h"
@@ -35,8 +37,9 @@ private:
 
 class ToArrayVisitor {
 public:
-  explicit ToArrayVisitor(bool with_class_names)
-    : with_class_names_(with_class_names) {}
+  explicit ToArrayVisitor(bool with_class_names, std::size_t depth)
+    : with_class_names_(with_class_names)
+    , depth_(++depth) {}
 
   array<mixed> flush_result() && noexcept {
     return std::move(result_);
@@ -83,12 +86,12 @@ private:
 
   template<class I>
   void process_impl(const char *field_name, const class_instance<I> &instance) {
-    add_value(field_name, instance.is_null() ? mixed{} : f$to_array_debug(instance, with_class_names_));
+    add_value(field_name, instance.is_null() ? mixed{} : to_array_debug_impl(instance, with_class_names_, depth_));
   }
 
   template<class ...Args>
   void process_impl(const char *field_name, const std::tuple<Args...> &value) {
-    ToArrayVisitor tuple_processor{with_class_names_};
+    ToArrayVisitor tuple_processor{with_class_names_, 0};
     tuple_processor.result_.reserve(sizeof...(Args), 0, true);
 
     process_tuple(value, tuple_processor, std::index_sequence_for<Args...>{});
@@ -97,7 +100,7 @@ private:
 
   template<size_t ...Is, typename ...T>
   void process_impl(const char *field_name, const shape<std::index_sequence<Is...>, T...> &value) {
-    ToArrayVisitor shape_processor{with_class_names_};
+    ToArrayVisitor shape_processor{with_class_names_, 0};
     shape_processor.result_.reserve(sizeof...(Is), 0, true);
 
     process_shape(value, shape_processor);
@@ -115,17 +118,26 @@ private:
 
   array<mixed> result_;
   bool with_class_names_{false};
+  std::size_t depth_{0};
+};
+
+struct ArrayProcessorError {
+  static bool recursion_depth_exeeded;
 };
 
 template<class T>
-array<mixed> f$to_array_debug(const class_instance<T> &klass, bool with_class_names = false) {
+array<mixed> to_array_debug_impl(const class_instance<T> &klass, bool with_class_names = false, std::size_t depth = 0) {
   array<mixed> result;
+  if (depth > 64) {
+    ArrayProcessorError::recursion_depth_exeeded = true;
+    return result;
+  }
   if (klass.is_null()) {
     return result;
   }
 
   if constexpr (!std::is_empty_v<T>) {
-    ToArrayVisitor visitor{with_class_names};
+    ToArrayVisitor visitor{with_class_names, depth};
     klass.get()->accept(visitor);
     result = std::move(visitor).flush_result();
   }
@@ -136,17 +148,38 @@ array<mixed> f$to_array_debug(const class_instance<T> &klass, bool with_class_na
   return result;
 }
 
+template<class T>
+array<mixed> f$to_array_debug(const class_instance<T> &klass, bool with_class_names = false) {
+  ArrayProcessorError::recursion_depth_exeeded = false;
+  auto result = to_array_debug_impl(klass, with_class_names);
+  if (ArrayProcessorError::recursion_depth_exeeded) {
+    ArrayProcessorError::recursion_depth_exeeded = false;
+    return {};
+  }
+  return result;
+}
+
 template<class... Args>
 array<mixed> f$to_array_debug(const std::tuple<Args...> &tuple, bool with_class_names = false) {
-  ToArrayVisitor visitor{with_class_names};
+  ArrayProcessorError::recursion_depth_exeeded = false;
+  ToArrayVisitor visitor{with_class_names, 0};
   ToArrayVisitor::process_tuple(tuple, visitor, std::index_sequence_for<Args...>{});
+  if (ArrayProcessorError::recursion_depth_exeeded) {
+    ArrayProcessorError::recursion_depth_exeeded = false;
+    return {};
+  }
   return std::move(visitor).flush_result();
 }
 
 template<size_t... Indexes, typename... T>
 array<mixed> f$to_array_debug(const shape<std::index_sequence<Indexes...>, T...> &shape, bool with_class_names = false) {
-  ToArrayVisitor visitor{with_class_names};
+  ArrayProcessorError::recursion_depth_exeeded = false;
+  ToArrayVisitor visitor{with_class_names, 0};
   ToArrayVisitor::process_shape(shape, visitor);
+  if (ArrayProcessorError::recursion_depth_exeeded) {
+    ArrayProcessorError::recursion_depth_exeeded = false;
+    return {};
+  }
   return std::move(visitor).flush_result();
 }
 
