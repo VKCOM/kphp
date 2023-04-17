@@ -57,6 +57,7 @@ else()
 endif()
 
 if(MBFL)
+    message(STATUS "MBFL=On, libmbfl will be downloaded and built")
     FetchContent_Declare(libmbfl GIT_REPOSITORY https://github.com/andreylzmw/libmbfl)
     FetchContent_MakeAvailable(libmbfl)
     include_directories(${libmbfl_SOURCE_DIR}/include)
