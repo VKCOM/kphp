@@ -4,7 +4,7 @@
 
 extern "C" {
 	// FIXME
-	#include "/../../build/_deps/libmbfl-src/include/kphp/libmbfl/mbfl/mbfilter.h"
+	#include "build/_deps/libmbfl-src/include/kphp/libmbfl/mbfl/mbfilter.h"
 	// #include <kphp/libmbfl/mbfl/mbfilter.h>
 }
 
