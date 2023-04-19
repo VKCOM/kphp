@@ -215,6 +215,10 @@ if(APPLE)
     set_source_files_properties(${KPHP_COMPILER_DIR}/lexer.cpp PROPERTIES COMPILE_FLAGS -Wno-deprecated-register)
 endif()
 
+if(COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "14.0.0")
+    set_source_files_properties(${KPHP_COMPILER_DIR}/ffi/c_parser/yy_parser_generated.cpp PROPERTIES COMPILE_FLAGS -Wno-unused-but-set-variable)
+endif()
+
 list(APPEND KPHP_COMPILER_SOURCES
      ${KPHP_COMPILER_COMMON}
      ${KEYWORDS_SET}
