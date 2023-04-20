@@ -61,6 +61,29 @@ function demo6() {
     my_log_more("end calculation");
 }
 
+function custom_log_1(int $log_level, string $message = "my_msg", ?CompileTimeLocation $loc = null) {
+  $loc = CompileTimeLocation::calculate($loc);
+  $basename = basename($loc->file);
+
+  echo $log_level;
+  echo "$message (in {$loc->function} at {$basename}:{$loc->line})\n";
+}
+
+function custom_bad_log(?CompileTimeLocation $loc = null, int $log_level = 1, string $message = "my_msg2") {
+  echo $log_level;
+  echo "$message \n";
+  if ($loc !== null) {
+    $basename = basename($loc->file);
+    echo "$message (in {$loc->function} at {$basename}:{$loc->line})\n";
+  }
+}
+
+function custom_good_log(int $log_level = 1, ?CompileTimeLocation $loc = null, string $message = "my_msg3") {
+  echo $log_level;
+  $loc = CompileTimeLocation::calculate($loc);
+  $basename = basename($loc->file);
+  echo "$message (in {$loc->function} at {$basename}:{$loc->line})\n";
+}
 
 demo1();
 A::demo2();
@@ -70,3 +93,12 @@ f();
 demo5();
 demo6();
 my_log_more('end');
+
+custom_log_1(1);
+custom_log_1(2, "custom msg");
+
+custom_bad_log(null);
+custom_bad_log(null, 42);
+custom_bad_log(null, 42, "custom msg2");
+
+custom_good_log(2);
