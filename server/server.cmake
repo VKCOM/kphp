@@ -2,6 +2,7 @@ prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
         cluster-name.cpp
         confdata-binlog-replay.cpp
         confdata-stats.cpp
+        shared-data.cpp
         http-server-context.cpp
         json-logger.cpp
         lease-config-parser.cpp
@@ -25,6 +26,7 @@ prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
         server-stats.cpp
         slot-ids-factory.cpp
         workers-control.cpp
+        shared-data-worker-cache.cpp
         statshouse/statshouse-client.cpp
         statshouse/add-metrics-batch.cpp
         statshouse/worker-stats-buffer.cpp)

@@ -133,7 +133,7 @@ void Adaptor::process_external_db_request_net_query(std::unique_ptr<Request> &&r
 
 void Adaptor::finish_request_resumable(std::unique_ptr<Response> &&response) noexcept {
   int event_status = 0;
-  if (external_db_requests_factory.is_valid_slot(response->bound_request_id)) {
+  if (external_db_requests_factory.is_from_current_script_execution(response->bound_request_id)) {
     ::net_event_t *event = nullptr;
     event_status = ::alloc_net_event(response->bound_request_id, &event);
     if (event_status > 0) {

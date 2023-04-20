@@ -55,15 +55,17 @@
 #include "server/cluster-name.h"
 #include "server/confdata-binlog-replay.h"
 #include "server/http-server-context.h"
+#include "server/lease-rpc-client.h"
+#include "server/numa-configuration.h"
 #include "server/php-engine-vars.h"
 #include "server/php-engine.h"
 #include "server/php-master-tl-handlers.h"
-#include "server/numa-configuration.h"
 #include "server/server-stats.h"
+#include "server/shared-data-worker-cache.h"
+#include "server/shared-data.h"
 #include "server/statshouse/add-metrics-batch.h"
 #include "server/statshouse/statshouse-client.h"
 #include "server/workers-control.h"
-#include "server/lease-rpc-client.h"
 
 #include "server/php-master-restart.h"
 #include "server/php-master-warmup.h"
@@ -1342,11 +1344,11 @@ void check_and_instance_cache_try_swap_memory() {
     case InstanceCacheSwapStatus::no_need:
       return;
     case InstanceCacheSwapStatus::swap_is_finished:
-      vkprintf(0, "instance cache memory resource successfully swapped\n");
+      kprintf("instance cache memory resource successfully swapped\n");
       ++instance_cache_memory_swaps_ok;
       return;
     case InstanceCacheSwapStatus::swap_is_forbidden:
-      vkprintf(0, "can't swap instance cache memory resource\n");
+      log_server_error("can't swap instance cache memory resource\n");
       ++instance_cache_memory_swaps_fail;
       return;
   }
@@ -1394,6 +1396,8 @@ static void cron() {
   CpuStatTimestamp cpu_timestamp{my_now, utime, stime, cpu_total};
   server_stats.update(cpu_timestamp);
 
+  vk::singleton<SharedData>::get().store_worker_stats({general_workers_stat.running_workers, general_workers_stat.waiting_workers,
+                                                        general_workers_stat.ready_for_accept_workers, general_workers_stat.total_workers});
   instance_cache_purge_expired_elements();
   check_and_instance_cache_try_swap_memory();
   confdata_binlog_update_cron();
