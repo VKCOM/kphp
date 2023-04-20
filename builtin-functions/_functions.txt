@@ -732,14 +732,6 @@ function setlocale ($category ::: int, $locale ::: string) ::: string | false;
 
 function iconv ($input_encoding ::: string, $output_encoding ::: string, $input_str ::: string) ::: string | false;
 
-function mb_check_encoding ($str ::: string, $encoding ::: string = "1251") ::: bool;
-function mb_strlen ($str ::: string, $encoding ::: string = "1251") ::: int;
-function mb_strpos ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $encoding ::: string = "1251") ::: int | false;
-function mb_stripos ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $encoding ::: string = "1251") ::: int | false;
-function mb_strtolower ($str ::: string, $encoding ::: string = "1251") ::: string;
-function mb_strtoupper ($str ::: string, $encoding ::: string = "1251") ::: string;
-function mb_substr ($str ::: string, $start ::: int, $length ::: mixed = PHP_INT_MAX, $encoding ::: string = "1251") ::: string;
-
 define('PHP_ROUND_HALF_UP', 123423141);
 define('PHP_ROUND_HALF_DOWN', 123423144);
 define('PHP_ROUND_HALF_EVEN', 123423145);
@@ -1624,3 +1616,6 @@ class DateTimeImmutable implements DateTimeInterface {
 }
 
 function getenv(string $varname = '', bool $local_only = false): mixed;
+
+function mb_convert_encoding(string $str, string $to, string $from): string;
+function mb_check_encoding(string $str, string $encoding): bool;

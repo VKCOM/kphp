@@ -331,6 +331,11 @@ void CompilerSettings::init() {
   ld_flags.value_ += " -L /usr/local/lib";
 #endif
 
+#ifdef LIBMBFL_LIB_DIR
+  external_static_libs.emplace_back("libmbfl");
+  ld_flags.value_ += " -L" LIBMBFL_LIB_DIR;
+#endif
+
 #if defined(__APPLE__) && defined(__arm64__)
   // for development under M1, manual installation of libucontext is needed
   // see the docs: https://vkcom.github.io/kphp/kphp-internals/developing-and-extending-kphp/compiling-kphp-from-sources.html

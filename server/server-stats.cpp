@@ -143,8 +143,6 @@ struct EnumTable : std::array<T, static_cast<size_t>(E::Key::types_count)> {
 template<class T>
 struct Percentiles {
   T p50{};
-  T p75{};
-  T p90{};
   T p95{};
   T p99{};
   T max{};
@@ -154,8 +152,6 @@ struct Percentiles {
   void update_percentiles(I first, I last, const Mapper &mapper = {}) noexcept {
     const auto size = last - first;
     set_percentile<50>(p50, first, size, mapper);
-    set_percentile<75>(p75, first, size, mapper);
-    set_percentile<90>(p90, first, size, mapper);
     set_percentile<95>(p95, first, size, mapper);
     set_percentile<99>(p99, first, size, mapper);
     set_percentile<100>(max, first, size, mapper);
@@ -702,8 +698,6 @@ template<typename T, typename Mapper = vk::identity>
 void write_to(stats_t *stats, const char *prefix, const char *suffix, const AggregatedSamples<T> &samples, const Mapper &mapper = {}) {
   if (stats->need_aggregated_stats()) {
     stats->add_gauge_stat(mapper(samples.percentiles.p50), prefix, suffix, ".p50");
-    stats->add_gauge_stat(mapper(samples.percentiles.p75), prefix, suffix, ".p75");
-    stats->add_gauge_stat(mapper(samples.percentiles.p90), prefix, suffix, ".p90");
     stats->add_gauge_stat(mapper(samples.percentiles.p95), prefix, suffix, ".p95");
     stats->add_gauge_stat(mapper(samples.percentiles.p99), prefix, suffix, ".p99");
     stats->add_gauge_stat(mapper(samples.percentiles.max), prefix, suffix, ".max");
@@ -714,8 +708,6 @@ template<typename T, typename Mapper = vk::identity>
 void write_to(stats_t *stats, const char *prefix, const char *suffix, const WorkerSamples<T> &samples, const Mapper &mapper = {}) {
   if (stats->need_aggregated_stats()) {
     stats->add_gauge_stat(mapper(samples.percentiles.p50), prefix, suffix, ".p50");
-    stats->add_gauge_stat(mapper(samples.percentiles.p75), prefix, suffix, ".p75");
-    stats->add_gauge_stat(mapper(samples.percentiles.p90), prefix, suffix, ".p90");
     stats->add_gauge_stat(mapper(samples.percentiles.p95), prefix, suffix, ".p95");
     stats->add_gauge_stat(mapper(samples.percentiles.p99), prefix, suffix, ".p99");
     stats->add_gauge_stat(mapper(samples.percentiles.max), prefix, suffix, ".max");
