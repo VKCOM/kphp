@@ -3,7 +3,16 @@ import subprocess
 import re
 import sys
 import shutil
+import enum
 
+class PhpVersion(enum.Enum):
+    v7_4 = "php7.4"
+    v8 = "php8"
+    v8_1 = "php8.1"
+    v8_2 = "php8.2"
+
+    def major(self):
+        return self.value[3]
 
 def _check_file(file_name, file_dir, file_checker):
     file_path = os.path.join(file_dir, file_name)
@@ -103,9 +112,17 @@ def can_ignore_sanitizer_log(sanitizer_log_file):
     return ignore_sanitizer
 
 
-def search_php_bin(php8_require=False):
+def search_php_bin(required_php_ver=PhpVersion.v7_4):
     if sys.platform == "darwin":
         return shutil.which("php")
-    if php8_require:
-        return shutil.which("php8.1") or shutil.which("php8")
-    return shutil.which("php7.4")
+    ordered_version = [PhpVersion.v8_1, PhpVersion.v8, PhpVersion.v7_4]
+    for php_ver in ordered_version:
+        if php_ver == required_php_ver:
+            return shutil.which(php_ver.value)
+        if php_ver.major() != required_php_ver.major():
+            continue
+        php_path = shutil.which(php_ver.value)
+        if php_path:
+            return php_path
+    # invalid php version
+    return shutil.which(PhpVersion.v7_4.value)
