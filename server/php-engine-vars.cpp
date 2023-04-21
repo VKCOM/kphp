@@ -18,6 +18,7 @@ int initial_verbosity = 0;
 char *logname_pattern = nullptr;
 int logname_id = 0;
 long long max_memory = 1 << 29;
+double oom_handling_memory_ratio = 0.00;
 
 int worker_id = -1;
 int pid = -1;

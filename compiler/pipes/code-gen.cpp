@@ -9,6 +9,7 @@
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/declarations.h"
+#include "compiler/code-gen/files/cmake-lists-txt.h"
 #include "compiler/code-gen/files/function-header.h"
 #include "compiler/code-gen/files/function-source.h"
 #include "compiler/code-gen/files/json-encoder-tags.h"
@@ -133,6 +134,7 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
     code_gen_start_root_task(os, std::make_unique<TypeTagger>(vk::singleton<ForkableTypeStorage>::get().flush_forkable_types(), vk::singleton<ForkableTypeStorage>::get().flush_waitable_types()));
     code_gen_start_root_task(os, std::make_unique<ShapeKeys>(TypeHintShape::get_all_registered_keys()));
     code_gen_start_root_task(os, std::make_unique<JsonEncoderTags>(std::move(all_json_encoders)));
+    code_gen_start_root_task(os, std::make_unique<CmakeListsTxt>());
   }
 
   code_gen_start_root_task(os, std::make_unique<TlSchemaToCpp>());

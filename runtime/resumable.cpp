@@ -52,6 +52,8 @@ void Resumable::update_output() {
   output_ = in_main_thread() ? nullptr : get_storage(runned_resumable_id);
 }
 
+namespace {
+
 struct resumable_info {
   Storage output;
   Resumable *continuation;
@@ -77,19 +79,18 @@ struct started_resumable_info : resumable_info {
   int64_t fork_id;
 };
 
-static int64_t first_forked_resumable_id;
-static int64_t first_array_forked_resumable_id;
-static int64_t current_forked_resumable_id = 1123456789;
-static forked_resumable_info *forked_resumables;
-static forked_resumable_info gotten_forked_resumable_info;
-static uint32_t forked_resumables_size;
+int64_t first_forked_resumable_id;
+int64_t first_array_forked_resumable_id;
+int64_t current_forked_resumable_id = 1123456789;
+forked_resumable_info *forked_resumables;
+forked_resumable_info gotten_forked_resumable_info;
+uint32_t forked_resumables_size;
 
-static int64_t first_started_resumable_id;
-static int64_t current_started_resumable_id = 123456789;
-static started_resumable_info *started_resumables;
-static uint32_t started_resumables_size;
-static int64_t first_free_started_resumable_id;
-
+int64_t first_started_resumable_id;
+int64_t current_started_resumable_id = 123456789;
+started_resumable_info *started_resumables;
+uint32_t started_resumables_size;
+int64_t first_free_started_resumable_id;
 
 struct wait_queue {
   int64_t first_finished_function;
@@ -100,25 +101,24 @@ struct wait_queue {
   int64_t resumable_id;
 };
 
-static wait_queue *wait_queues;
-static uint32_t wait_queues_size;
-static int64_t wait_next_queue_id;
+wait_queue *wait_queues;
+uint32_t wait_queues_size;
+int64_t wait_next_queue_id;
 
+int64_t *finished_resumables;
+uint32_t finished_resumables_size;
+uint32_t finished_resumables_count;
 
-static int64_t *finished_resumables;
-static uint32_t finished_resumables_size;
-static uint32_t finished_resumables_count;
+int64_t *yielded_resumables;
+uint32_t yielded_resumables_l;
+uint32_t yielded_resumables_r;
+uint32_t yielded_resumables_size;
 
-static int64_t *yielded_resumables;
-static uint32_t yielded_resumables_l;
-static uint32_t yielded_resumables_r;
-static uint32_t yielded_resumables_size;
-
-static inline bool is_forked_resumable_id(int64_t resumable_id) {
+inline bool is_forked_resumable_id(int64_t resumable_id) {
   return first_forked_resumable_id <= resumable_id && resumable_id < current_forked_resumable_id;
 }
 
-static inline forked_resumable_info *get_forked_resumable_info(int64_t resumable_id) {
+inline forked_resumable_info *get_forked_resumable_info(int64_t resumable_id) {
   php_assert(is_forked_resumable_id(resumable_id));
   if (resumable_id < first_array_forked_resumable_id) {
     return &gotten_forked_resumable_info;
@@ -126,27 +126,29 @@ static inline forked_resumable_info *get_forked_resumable_info(int64_t resumable
   return &forked_resumables[resumable_id - first_array_forked_resumable_id];
 }
 
-static inline bool is_started_resumable_id(int64_t resumable_id) {
+inline bool is_started_resumable_id(int64_t resumable_id) {
   return first_started_resumable_id <= resumable_id && resumable_id < current_started_resumable_id;
 }
 
-static inline started_resumable_info *get_started_resumable_info(int64_t resumable_id) {
+inline started_resumable_info *get_started_resumable_info(int64_t resumable_id) {
   php_assert(is_started_resumable_id(resumable_id));
   return &started_resumables[resumable_id - first_started_resumable_id];
 }
 
-static inline bool is_wait_queue_id(int64_t queue_id) {
+inline bool is_wait_queue_id(int64_t queue_id) {
   return 0 < queue_id && queue_id <= wait_next_queue_id && wait_queues[queue_id - 1].resumable_id >= 0;
 }
 
-static inline wait_queue *get_wait_queue(int64_t queue_id) {
+inline wait_queue *get_wait_queue(int64_t queue_id) {
   php_assert(is_wait_queue_id(queue_id));
   return &wait_queues[queue_id - 1];
 }
 
-static Storage *get_started_storage(int64_t resumable_id) noexcept {
+Storage *get_started_storage(int64_t resumable_id) noexcept {
   return &get_started_resumable_info(resumable_id)->output;
 }
+
+} // namespace
 
 Storage *get_forked_storage(int64_t resumable_id) {
   return &get_forked_resumable_info(resumable_id)->output;
@@ -1314,4 +1316,23 @@ int32_t get_resumable_stack(void **buffer, int32_t limit) {
     }
   }
   return limit;
+}
+
+void forcibly_stop_all_running_resumables() {
+  resumable_finished = true;
+  runned_resumable_id = 0;
+  first_free_started_resumable_id = 0;
+  Resumable::update_output();
+  // Forcibly bind all suspension points to main thread.
+  // It will prevent all previously started forks from continuing
+  for (int64_t i = first_started_resumable_id; i < current_started_resumable_id; ++i) {
+    started_resumable_info *info = get_started_resumable_info(i);
+    info->parent_id = 0;
+  }
+  // Forcibly unbind all forks from their waits.
+  // Make it as if nobody waits them anymore
+  for (int64_t i = first_forked_resumable_id; i < current_forked_resumable_id; ++i) {
+    forked_resumable_info *info = get_forked_resumable_info(i);
+    info->queue_id = 0;
+  }
 }

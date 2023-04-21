@@ -16,6 +16,7 @@
 #include "compiler/phpdoc.h"
 #include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
+#include "compiler/vertex-util.h"
 #include "compiler/vertex.h"
 
 /*

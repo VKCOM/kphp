@@ -45,6 +45,8 @@ protected:
 
   virtual T on_instance_prop(VertexAdaptor<op_instance_prop> v) { return on_non_const(v); }
 
+  virtual T on_define_val(VertexAdaptor<op_define_val> v) { return on_non_const(v); }
+
   virtual T on_non_const([[maybe_unused]] VertexPtr vertex) { return T(); }
 
   virtual T on_array(VertexAdaptor<op_array> v) {
@@ -126,6 +128,9 @@ protected:
       case op_double_arrow:
         return on_double_arrow(v.as<op_double_arrow>());
 
+      case op_define_val:
+        return on_define_val(v.as<op_define_val>());
+
       default:
         return on_non_const(v);
     }
@@ -184,6 +189,11 @@ protected:
   bool on_index_key(VertexPtr key) override {
     return visit(key);
   }
+
+  bool on_define_val(VertexAdaptor<op_define_val> v) final {
+    return visit(v->value());
+  }
+
 };
 
 struct CheckConstWithDefines final
@@ -313,7 +323,10 @@ protected:
 
   VertexPtr on_func_name(VertexAdaptor<op_func_name> v) final {
     std::string name = resolve_define_name(v->str_val);
-    return G->get_define(name)->val;
+    auto define_id = G->get_define(name);
+    auto response = VertexAdaptor<op_define_val>::create(define_id->val);
+    response->define_id = define_id;
+    return response;
   }
 
   VertexPtr on_non_const(VertexPtr v) final {
@@ -322,7 +335,7 @@ protected:
       new_val->location = v->get_location();
 
       for (auto i : *v) {
-        VertexPtr res = visit(i);
+        VertexPtr res = VertexUtil::get_actual_value(visit(i));
         kphp_error(res->has_get_string(), ("expected type convertible to string, but got: " + OpInfo::str(res->type())).c_str());
         new_val->str_val += res->get_string();
       }
@@ -340,6 +353,12 @@ protected:
     index->array() = make_const(index->array());
     return index;
   }
+
+  VertexPtr on_define_val(VertexAdaptor<op_define_val> v) final {
+    v->value() = make_const(v->value());
+    return v;
+  }
+
 };
 
 struct ArrayHash final

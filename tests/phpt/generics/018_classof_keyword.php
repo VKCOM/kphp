@@ -3,12 +3,15 @@
 require_once 'kphp_tester_include.php';
 
 class B {
+    const NAME = 'B';
     function method() { echo "B method\n"; return 1; }
 }
 class D1 extends B {
+    const NAME = 'D1';
     function dMethod() { echo "d1\n"; }
 }
 class D2 extends B {
+    const NAME = 'D2';
     function dMethod() { echo "d2\n"; }
 }
 
@@ -94,10 +97,26 @@ castO2ToTypeofO1($bb, new D1);
  * @param T $o1
  */
 function castToClassofLocal($o1) {
-    $d1 = new D1;
-    $casted = instance_cast($o1, classof($d1));
+    $casted = instance_cast($o1, classof($o1));
     echo $casted ? "can cast\n" : "can't cast\n";
 }
 
 castToClassofLocal(new D1);
 castToClassofLocal(new D2);
+
+
+
+/**
+ * @kphp-generic T
+ * @param class-string<T> $class_name
+ */
+function printNameConst($class_name) {
+    echo 'NAME=', $class_name::NAME, "\n";
+}
+
+function acceptO(object $o) {
+    printNameConst(classof($o));
+}
+
+acceptO(new B);
+acceptO(new D2);

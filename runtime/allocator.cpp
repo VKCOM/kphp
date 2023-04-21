@@ -76,14 +76,14 @@ void global_init_script_allocator() noexcept {
   query_num++;
 }
 
-void init_script_allocator(void *buffer, size_t buffer_size) noexcept {
+void init_script_allocator(void *buffer, size_t script_mem_size, size_t oom_handling_mem_size) noexcept {
   auto &dealer = get_memory_dealer();
   php_assert(!dealer.heap_script_resource_replacer());
   php_assert(dealer.is_default_allocator_used());
   php_assert(!is_malloc_replaced());
 
   CriticalSectionGuard lock;
-  dealer.current_script_resource().init(buffer, buffer_size);
+  dealer.current_script_resource().init(buffer, script_mem_size, oom_handling_mem_size);
   script_allocator_enabled = true;
   query_num++;
 }
@@ -285,27 +285,9 @@ void rollback_malloc_replacement() noexcept {
 }
 
 void write_last_malloc_replacement_stacktrace(char *buf, size_t buf_size) noexcept {
-  if (buf_size == 0) {
-    return;
-  }
-  buf[0] = '\0';
   auto malloc_replacement_rollback = temporary_rollback_malloc_replacement();
   auto [raw_backtrace, backtrace_size] = MallocStateHolder::get().get_last_malloc_replacement_backtrace();
-  const char *sep = ";\n";
-  KphpBacktrace demangler{raw_backtrace, backtrace_size};
-  size_t cur_len = 0;
-  for (const char *name : demangler.make_demangled_backtrace_range()) {
-    const size_t len = name ? strlen(name) : 0;
-    if (len == 0) {
-      continue;
-    }
-    if (cur_len + len + std::strlen(sep) + 1 > buf_size) {
-      break;
-    }
-    std::strcat(buf, name);
-    std::strcat(buf, sep);
-    cur_len += len + std::strlen(sep);
-  }
+  parse_kphp_backtrace(buf, buf_size, raw_backtrace, backtrace_size);
 }
 
 MemoryReplacementGuard::MemoryReplacementGuard(memory_resource::unsynchronized_pool_resource &memory_resource, bool force_enable_disable) : force_enable_disable_(force_enable_disable) {

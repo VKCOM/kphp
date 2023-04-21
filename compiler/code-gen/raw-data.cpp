@@ -4,12 +4,8 @@
 
 #include "compiler/code-gen/raw-data.h"
 
-#include "compiler/code-gen/code-generator.h"
-#include "compiler/code-gen/common.h"
 #include "compiler/code-gen/vertex-compiler.h"
 #include "compiler/const-manipulations.h"
-#include "compiler/vertex-util.h"
-#include "compiler/inferring/type-data.h"
 
 void RawString::compile(CodeGenerator &W) const {
   W << "\"";
@@ -68,12 +64,47 @@ void RawString::compile(CodeGenerator &W) const {
   W << "\"";
 }
 
+DepLevelContainer::const_iterator DepLevelContainer::begin() const {
+  size_t begin_idx = 0;
+  for (; begin_idx < mapping.size() && mapping[begin_idx].empty(); ++begin_idx) {
+  }
+  return {*this, begin_idx, 0};
+}
+
+const std::vector<VarPtr> &DepLevelContainer::vars_by_dep_level(size_t dep_level) const {
+  if (dep_level >= max_dep_level()) {
+    static const auto EMPTY = std::vector<VarPtr>{};
+    return EMPTY;
+  }
+  return mapping[dep_level];
+}
+
+void DepLevelContainer::add(VarPtr v) {
+  ++count;
+  auto dep_level = v->dependency_level;
+  if (dep_level >= mapping.size()) {
+    mapping.resize(dep_level + 1);
+  }
+  mapping[dep_level].emplace_back(v);
+}
+
+DepLevelContainer::const_iterator &DepLevelContainer::const_iterator::operator++() {
+  ++internal_index;
+  while (dep_level < owner.mapping.size() && internal_index >= owner.mapping[dep_level].size()) {
+    internal_index = 0;
+    ++dep_level;
+  }
+  if (dep_level == owner.mapping.size()) {
+    internal_index = 0;
+  }
+  return *this;
+}
+
 static inline int array_len() {
   return (10 * sizeof(int)) / sizeof(double);
 }
 
-
-std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &const_raw_array_vars, CodeGenerator &W) {
+std::vector<int> compile_arrays_raw_representation(const DepLevelContainer &const_raw_array_vars, CodeGenerator &W) {
   if (const_raw_array_vars.empty()) {
     return {};
   }

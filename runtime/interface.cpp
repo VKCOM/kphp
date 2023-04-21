@@ -27,18 +27,19 @@
 #include "runtime/curl.h"
 #include "runtime/datetime/datetime_functions.h"
 #include "runtime/datetime/timelib_wrapper.h"
-#include "runtime/json-processor-utils.h"
 #include "runtime/exception.h"
 #include "runtime/files.h"
 #include "runtime/instance-cache.h"
 #include "runtime/job-workers/client-functions.h"
 #include "runtime/job-workers/server-functions.h"
+#include "runtime/json-processor-utils.h"
 #include "runtime/kphp-backtrace.h"
 #include "runtime/math_functions.h"
 #include "runtime/memcache.h"
 #include "runtime/mysql.h"
 #include "runtime/net_events.h"
 #include "runtime/on_kphp_warning_callback.h"
+#include "runtime/oom_handler.h"
 #include "runtime/openssl.h"
 #include "runtime/pdo/pdo.h"
 #include "runtime/profiler.h"
@@ -47,22 +48,23 @@
 #include "runtime/rpc.h"
 #include "runtime/streams.h"
 #include "runtime/string_functions.h"
+#include "runtime/tcp.h"
 #include "runtime/typed_rpc.h"
 #include "runtime/udp.h"
-#include "runtime/tcp.h"
 #include "runtime/url.h"
 #include "runtime/zlib.h"
 #include "server/database-drivers/adaptor.h"
+#include "server/database-drivers/mysql/mysql.h"
+#include "server/database-drivers/pgsql/pgsql.h"
+#include "server/shared-data-worker-cache.h"
 #include "server/job-workers/job-message.h"
 #include "server/json-logger.h"
 #include "server/numa-configuration.h"
 #include "server/php-engine-vars.h"
 #include "server/php-queries.h"
-#include "server/php-worker.h"
 #include "server/php-query-data.h"
+#include "server/php-worker.h"
 #include "server/workers-control.h"
-#include "server/database-drivers/mysql/mysql.h"
-#include "server/database-drivers/pgsql/pgsql.h"
 
 static enum {
   QUERY_TYPE_NONE,
@@ -500,7 +502,6 @@ constexpr uint32_t MAX_SHUTDOWN_FUNCTIONS = 256;
 
 namespace {
 
-// i don't want destructors of this array to be called
 int shutdown_functions_count = 0;
 char shutdown_function_storage[MAX_SHUTDOWN_FUNCTIONS * sizeof(shutdown_function_type)];
 shutdown_function_type *const shutdown_functions = reinterpret_cast<shutdown_function_type *>(shutdown_function_storage);
@@ -615,6 +616,7 @@ void f$fastcgi_finish_request(int64_t exit_code) {
 
 void run_shutdown_functions() {
   php_assert(dl::is_malloc_replaced() == false);
+  forcibly_stop_all_running_resumables();
 
   ShutdownProfiler shutdown_profiler;
   for (int i = 0; i < shutdown_functions_count; i++) {
@@ -631,14 +633,15 @@ int get_shutdown_functions_count() {
 }
 
 void run_shutdown_functions_from_timeout() {
-  // to safely run the shutdown handlers in the timeout context, we set
-  // a recovery point to be used from the user-called die/exit;
-  // without that, exit would lead to a finished state instead of the error state
-  // we were about to enter (since timeout is an error state)
-  shutdown_functions_status_value = shutdown_functions_status::running_from_timeout;
-  if (setjmp(timeout_exit) == 0) {
-    run_shutdown_functions();
-  }
+// TODO: now it sometimes leads to critical errors in runtime. Need to rework it generally.
+//  // to safely run the shutdown handlers in the timeout context, we set
+//  // a recovery point to be used from the user-called die/exit;
+//  // without that, exit would lead to a finished state instead of the error state
+//  // we were about to enter (since timeout is an error state)
+//  shutdown_functions_status_value = shutdown_functions_status::running_from_timeout;
+//  if (setjmp(timeout_exit) == 0) {
+//    run_shutdown_functions();
+//  }
 }
 
 void run_shutdown_functions_from_script() {
@@ -1833,6 +1836,11 @@ int64_t f$get_engine_workers_number() {
   return vk::singleton<WorkersControl>::get().get_total_workers_count();
 }
 
+std::tuple<int64_t, int64_t, int64_t, int64_t> f$get_webserver_stats() {
+  const auto &stats = vk::singleton<SharedDataWorkerCache>::get().get_cached_worker_stats();
+  return {stats.running_workers,  stats.waiting_workers, stats.ready_for_accept_workers, stats.total_workers};
+};
+
 static char ini_vars_storage[sizeof(array<string>)];
 static array<string> *ini_vars = nullptr;
 
@@ -2316,6 +2324,7 @@ static void init_runtime_libs() {
   init_rpc_lib();
   init_openssl_lib();
   init_math_functions();
+  init_slot_factories();
 
   init_string_buffer_lib(static_cast<int>(static_buffer_length_limit));
 
@@ -2360,6 +2369,7 @@ static void free_runtime_libs() {
   free_tcp_lib();
   free_timelib();
   OnKphpWarningCallback::get().reset();
+  free_slot_factories();
 
   free_job_client_interface_lib();
   free_job_server_interface_lib();
@@ -2379,6 +2389,7 @@ static void free_runtime_libs() {
   database_drivers::free_pgsql_lib();
 #endif
   vk::singleton<database_drivers::Adaptor>::get().reset();
+  vk::singleton<OomHandler>::get().reset();
   free_interface_lib();
   hard_reset_var(JsonEncoderError::msg);
 }
@@ -2403,8 +2414,8 @@ void global_init_script_allocator() {
   dl::global_init_script_allocator();
 }
 
-void init_runtime_environment(php_query_data *data, void *mem, size_t mem_size) {
-  dl::init_script_allocator(mem, mem_size);
+void init_runtime_environment(php_query_data *data, void *mem, size_t script_mem_size, size_t oom_handling_mem_size) {
+  dl::init_script_allocator(mem, script_mem_size, oom_handling_mem_size);
   reset_global_interface_vars();
   init_runtime_libs();
   init_superglobals(data);
@@ -2415,6 +2426,10 @@ void free_runtime_environment() {
   free_runtime_libs();
   reset_global_interface_vars();
   dl::free_script_allocator();
+}
+
+void worker_global_init() noexcept {
+  worker_global_init_slot_factories();
 }
 
 void read_engine_tag(const char *file_name) {

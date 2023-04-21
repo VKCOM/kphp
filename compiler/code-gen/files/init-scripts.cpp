@@ -44,7 +44,7 @@ void StaticInit::compile(CodeGenerator &W) const {
                                   << "return " << RawString(G->settings().php_code_version.get()) << ";" << NL
                                   << END << NL << NL;
 
-    FunctionSignatureGenerator(W) << ("char **get_runtime_options(int *count)") << BEGIN;
+    FunctionSignatureGenerator(W) << ("char **get_runtime_options([[maybe_unused]] int *count)") << BEGIN;
     const auto &runtime_opts = G->get_kphp_runtime_opts();
     if (runtime_opts.empty()) {
       W << "return nullptr;" << NL;

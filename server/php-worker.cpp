@@ -10,6 +10,7 @@
 #include "common/wrappers/overloaded.h"
 #include "net/net-connections.h"
 #include "runtime/job-workers/job-interface.h"
+#include "runtime/kphp-backtrace.h"
 #include "runtime/rpc.h"
 #include "server/database-drivers/adaptor.h"
 #include "server/database-drivers/request.h"
@@ -21,6 +22,7 @@
 #include "server/php-sql-connections.h"
 #include "server/php-worker.h"
 #include "server/server-stats.h"
+#include "server/server-log.h"
 
 PhpWorker *active_worker = nullptr;
 
@@ -56,7 +58,16 @@ double PhpWorker::enter_lifecycle() noexcept {
     get_utime_monotonic();
   } while (!paused);
 
-  assert(conn->status == conn_wait_net);
+  if (conn->status != conn_wait_net) {
+    std::array<char, 256> backtrace{'\0'};
+    parse_kphp_backtrace(backtrace.data(), backtrace.size(), sigalrm_last_backtrace.data(), sigalrm_last_backtrace_size);
+    std::array<char, 512> message{};
+    snprintf(message.data(), message.size(),
+             "Connection suspended without waiting for net. PhpWorker state %d, connection status %d, PhpScript state %d\n"
+             "Stacktrace of last sigalrm:\n"
+             "%s", state, conn->status, php_script != nullptr ? static_cast<int>(php_script->state) : -1, backtrace.data());
+    dl_assert(conn->status == conn_wait_net, message.data());
+  }
   return get_timeout();
 }
 
@@ -144,7 +155,7 @@ void PhpWorker::state_init_script() noexcept {
   script_t *script = get_script();
   dl_assert(script != nullptr, "failed to get script");
   if (php_script == nullptr) {
-    php_script = new PhpScript(max_memory, 8 << 20);
+    php_script = new PhpScript(max_memory, oom_handling_memory_ratio, 8 << 20);
   }
   dl::init_critical_section();
   php_script->init(script, data);

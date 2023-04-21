@@ -166,6 +166,8 @@ string f$get_engine_version();
 
 int64_t f$get_engine_workers_number();
 
+std::tuple<int64_t, int64_t, int64_t, int64_t> f$get_webserver_stats();
+
 void arg_add(const char *value);
 
 void ini_set(vk::string_view key, vk::string_view value);
@@ -183,9 +185,12 @@ Optional<array<mixed>> f$getopt(const string &options, array<string> longopts = 
 void global_init_runtime_libs();
 void global_init_script_allocator();
 
-void init_runtime_environment(php_query_data *data, void *mem, size_t mem_size);
+void init_runtime_environment(php_query_data *data, void *mem, size_t script_mem_size, size_t oom_handling_mem_size = 0);
 
 void free_runtime_environment();
+
+// called only once at the beginning of each worker
+void worker_global_init() noexcept;
 
 void use_utf8();
 

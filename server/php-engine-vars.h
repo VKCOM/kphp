@@ -29,6 +29,7 @@ extern int initial_verbosity;
 extern char *logname_pattern;
 extern int logname_id;
 extern long long max_memory;
+extern double oom_handling_memory_ratio;
 
 extern int worker_id;
 extern int pid;

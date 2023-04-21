@@ -46,6 +46,10 @@ include(${BASE_DIR}/compiler/compiler.cmake)
 
 include(${BASE_DIR}/tests/tests.cmake)
 
+if(KPHP_CUSTOM_CMAKE AND EXISTS ${OBJS_DIR}/custom_php_project.cmake)
+    include(${OBJS_DIR}/custom_php_project.cmake)
+endif()
+
 add_custom_target(kphp ALL DEPENDS ${OBJS_DIR}/php_lib_version.sha256)
 add_dependencies(kphp kphp2cpp kphp-full-runtime)
 

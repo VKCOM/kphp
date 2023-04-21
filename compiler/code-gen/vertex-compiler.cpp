@@ -42,6 +42,34 @@ struct IntLit {
   }
 };
 
+// TmpExpr wraps a part of expression that is being extracted to a separate statement
+// to serve as an intermediate value. It's necessary to use this wrapper to avoid
+// any issues related to the expression lifetimes expectations.
+struct TmpExpr {
+  VertexPtr root;
+
+  TmpExpr(VertexPtr root) : root{root} {}
+
+  const TypeData *get_type() {
+    const auto *type = tinf::get_type(root);
+    if (type->ptype() == tp_tmp_string) {
+      // tmp_string must be materialized if it's used as an intermediate value
+      // tmp_string is never optional, so we don't have to worry about the flags
+      return TypeData::get_type(tp_string);
+    }
+    return type;
+  }
+
+  void compile(CodeGenerator &W) const {
+    const auto *type = tinf::get_type(root);
+    if (type->ptype() == tp_tmp_string) {
+      W << "materialize_tmp_string(" << root << ")";
+      return;
+    }
+    W << root;
+  }
+};
+
 struct Operand {
   VertexPtr root;
   Operation parent_type;
@@ -1471,7 +1499,7 @@ void compile_string_build_impl(VertexAdaptor<op_string_build> root, VarName dst,
     bool all_string_args = true;
     for (const auto &arg : root->args()) {
       const auto *arg_type = tinf::get_type(arg);
-      if (arg_type->ptype() != tp_string || arg_type->use_optional()) {
+      if (arg_type->use_optional() || vk::none_of_equal(arg_type->ptype(), tp_string, tp_tmp_string)) {
         all_string_args = false;
         break;
       }
@@ -1553,10 +1581,11 @@ void compile_string_build_impl(VertexAdaptor<op_string_build> root, VarName dst,
         std::string var_name = "tmp_var" + std::to_string(n_next_var_idx++);
 
         if (str_info.len == STRLEN_DYNAMIC) {
+          TmpExpr v{str_info.v};
           bool can_save_ref_flag = can_save_ref(str_info.v);
-          W << "const " << TypeName(tinf::get_type(str_info.v)) << " " <<
+          W << "const " << TypeName(v.get_type()) << " " <<
             (can_save_ref_flag ? "&" : "") <<
-            var_name << "=" << str_info.v << ";" << NL;
+            var_name << "=" << v << ";" << NL;
         } else if (str_info.len == STRLEN_OBJECT) {
           W << "const string " << var_name << " = f$strval" <<
             "(" << str_info.v << ");" << NL;
@@ -1882,7 +1911,7 @@ void compile_shape(VertexAdaptor<op_shape> root, CodeGenerator &W) {
     sorted_by_hash.emplace_back(string_hash(key_str.c_str(), key_str.size()), double_arrow.as<op_double_arrow>()->rhs());
   }
   std::sort(sorted_by_hash.begin(), sorted_by_hash.end(), [](const auto &a, const auto &b) -> bool {
-    kphp_assert(a.first != b.first);
+    kphp_assert(a.second == b.second || a.first != b.first);
     return a.first < b.first;
   });
 
@@ -1933,12 +1962,14 @@ void compile_defined(VertexPtr root __attribute__((unused)), CodeGenerator &W __
 
 void compile_safe_version(VertexPtr root, CodeGenerator &W) {
   if (auto set_value = root.try_as<op_set_value>()) {
+    TmpExpr key{set_value->key()};
+    TmpExpr value{set_value->value()};
     W << "SAFE_SET_VALUE " << MacroBegin{} <<
       set_value->array() << ", " <<
-      set_value->key() << ", " <<
-      TypeName(tinf::get_type(set_value->key())) << ", " <<
-      set_value->value() << ", " <<
-      TypeName(tinf::get_type(set_value->value())) <<
+      key << ", " <<
+      TypeName(key.get_type()) << ", " <<
+      value << ", " <<
+      TypeName(value.get_type()) <<
       MacroEnd{};
   } else if (OpInfo::rl(root->type()) == rl_set) {
     auto op = root.as<meta_op_binary>();
@@ -1949,32 +1980,36 @@ void compile_safe_version(VertexPtr root, CodeGenerator &W) {
     } else {
       kphp_fail();
     }
+    TmpExpr rhs{op->rhs()};
     W << op->lhs() << ", " <<
       OpInfo::str(root->type()) << ", " <<
-      op->rhs() << ", " <<
-      TypeName(tinf::get_type(op->rhs())) <<
+      rhs << ", " <<
+      TypeName(rhs.get_type()) <<
       MacroEnd{};
   } else if (auto pb = root.try_as<op_push_back>()) {
+    TmpExpr value{pb->value()};
     W << "SAFE_PUSH_BACK " << MacroBegin{} <<
       pb->array() << ", " <<
-      pb->value() << ", " <<
-      TypeName(tinf::get_type(pb->value())) <<
+      value << ", " <<
+      TypeName(value.get_type()) <<
       MacroEnd{};
   } else if (auto pb = root.try_as<op_push_back_return>()) {
+    TmpExpr value{pb->value()};
     W << "SAFE_PUSH_BACK_RETURN " << MacroBegin{} <<
       pb->array() << ", " <<
-      pb->value() << ", " <<
-      TypeName(tinf::get_type(pb->value())) <<
+      value << ", " <<
+      TypeName(value.get_type()) <<
       MacroEnd{};
   } else if (root->type() == op_array) {
     compile_array(root.as<op_array>(), W);
     return;
   } else if (auto index = root.try_as<op_index>()) {
     kphp_assert (index->has_key());
+    TmpExpr key{index->key()};
     W << "SAFE_INDEX " << MacroBegin{} <<
       index->array() << ", " <<
-      index->key() << ", " <<
-      TypeName(tinf::get_type(index->key())) <<
+      key << ", " <<
+      TypeName(key.get_type()) <<
       MacroEnd{};
   } else {
     kphp_error (0, fmt_format("Safe version of [{}] is not supported", OpInfo::str(root->type())));
