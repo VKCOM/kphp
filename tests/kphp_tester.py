@@ -10,7 +10,7 @@ from functools import partial
 from multiprocessing.dummy import Pool as ThreadPool
 
 from python.lib.colors import red, green, yellow, blue
-from python.lib.file_utils import search_php_bin
+from python.lib.file_utils import search_php_bin, PhpVersion
 from python.lib.nocc_for_kphp_tester import nocc_start_daemon_in_background
 from python.lib.kphp_run_once import KphpRunOnce
 
@@ -42,8 +42,11 @@ class TestFile:
     def is_kphp_runtime_should_not_warn(self):
         return "kphp_runtime_should_not_warn" in self.tags
 
-    def is_php8(self):
-        return "php8" in self.tags
+    def php_version(self):
+        for version in PhpVersion:
+            if version.value in self.tags:
+                return version
+        return PhpVersion.v7_4
 
     def make_kphp_once_runner(self, use_nocc, cxx_name):
         tester_dir = os.path.abspath(os.path.dirname(__file__))
@@ -51,7 +54,7 @@ class TestFile:
             php_script_path=self.file_path,
             working_dir=os.path.abspath(os.path.join(self.test_tmp_dir, "working_dir")),
             artifacts_dir=os.path.abspath(os.path.join(self.test_tmp_dir, "artifacts")),
-            php_bin=search_php_bin(php8_require=self.is_php8()),
+            php_bin=search_php_bin(required_php_ver=self.php_version()),
             extra_include_dirs=[os.path.join(tester_dir, "php_include")],
             vkext_dir=os.path.abspath(os.path.join(tester_dir, os.path.pardir, "objs", "vkext")),
             use_nocc=use_nocc,
@@ -322,7 +325,7 @@ def run_test(use_nocc, cxx_name, test: TestFile):
     runner = test.make_kphp_once_runner(use_nocc, cxx_name)
     runner.remove_artifacts_dir()
 
-    if test.is_php8() and runner._php_bin is None:      # if php8 doesn't exist on a machine
+    if test.php_version() != PhpVersion.v7_4 and runner._php_bin is None:  # if requested php version doesn't exist on a machine
         test_result = TestResult.skipped(test)
     elif test.is_kphp_should_fail():
         test_result = run_fail_test(test, runner)
