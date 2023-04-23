@@ -45,7 +45,7 @@ static void yaml_node_to_mixed(const YAML::Node &node, mixed &data, const string
     for (const auto &it : node) {
       mixed data_piece;
       yaml_node_to_mixed(it.second, data_piece, source);
-      data[string(it.first.as<std::string>().c_str())] = data_piece;
+      data.set_value(string(it.first.as<std::string>().c_str()), data_piece);
     }
   }
   // else node is Null or Undefined, so data is Null
@@ -61,7 +61,7 @@ static string yaml_print_tabs(const uint8_t nesting_level) noexcept {
 /*
  * print the key of a YAML map entry
  */
-static string yaml_print_key(const mixed& data_key) noexcept {
+static string yaml_print_key(const mixed &data_key) noexcept {
   if (data_key.is_string()) {
     return data_key.as_string();
   }
@@ -71,13 +71,13 @@ static string yaml_print_key(const mixed& data_key) noexcept {
 /*
  * get a YAML representation of mixed in a string variable
  */
-static void mixed_to_string(const mixed& data, string& string_data, const uint8_t nesting_level = 0) noexcept {
+static void mixed_to_string(const mixed &data, string &string_data, const uint8_t nesting_level = 0) noexcept {
   string buffer;
   if (!data.is_array()) {
     if (data.is_null()) {
-      buffer.push_back('~');
+      buffer.push_back('~'); // tilda is a YAML representation of NULL
     } else if (data.is_string()) {
-      const string& string_data_piece = data.as_string();
+      const string &string_data_piece = data.as_string();
       // check if a string has quotes
       if (string_data_piece.size() < 2 || (string_data_piece[0] != '"' && string_data_piece[string_data_piece.size() - 1] != '"')) {
         // if not, put it in quotes
@@ -101,6 +101,7 @@ static void mixed_to_string(const mixed& data, string& string_data, const uint8_
   const array<mixed> &data_array = data.as_array();
   if (data_array.empty()) {
     string_data.append("[]\n"); // an empty array is represented as [] in YAML
+    return;
   }
   const bool data_array_is_vector = data_array.is_pseudo_vector(); // check if an array has keys increasing by 1 starting from 0
   for (const auto &it : data_array) {
