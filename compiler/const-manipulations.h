@@ -47,6 +47,8 @@ protected:
 
   virtual T on_define_val(VertexAdaptor<op_define_val> v) { return on_non_const(v); }
 
+  virtual T on_func_call(VertexAdaptor<op_func_call> v) { return on_non_const(v); }
+
   virtual T on_non_const([[maybe_unused]] VertexPtr vertex) { return T(); }
 
   virtual T on_array(VertexAdaptor<op_array> v) {
@@ -131,12 +133,17 @@ protected:
       case op_define_val:
         return on_define_val(v.as<op_define_val>());
 
+      case op_func_call:
+        return on_func_call(v.as<op_func_call>());
+
       default:
         return on_non_const(v);
     }
   }
 };
 
+// CheckConst is used as Base class below
+// And in name-gen.cpp, to check -- whether we should hash and utilize as const variable or not
 struct CheckConst
   : ConstManipulations<bool> {
 public:
@@ -190,12 +197,14 @@ protected:
     return visit(key);
   }
 
-  bool on_define_val(VertexAdaptor<op_define_val> v) final {
+  bool on_define_val(VertexAdaptor<op_define_val> v) override {
     return visit(v->value());
   }
-
 };
 
+
+// CheckConstWithDefines is used in CalcRealDefinesValues pass
+// To choose correct `def->val->const_type` (cnst_const_val or def_var)
 struct CheckConstWithDefines final
   : CheckConst {
 public:
@@ -215,6 +224,11 @@ protected:
       return visit(define->val);
     }
     return false;
+  }
+
+  bool on_func_call(VertexAdaptor<op_func_call> v) override {
+    // Allows use objects in const context
+    return v->get_string() == "__construct";
   }
 
   bool on_non_const(VertexPtr v) final {
@@ -278,6 +292,8 @@ static inline std::string collect_string_concatenation(VertexPtr v, bool allow_d
   return {};
 }
 
+// MakeConst is used in CalcRealDefinesValues pass
+// To choose correct `def->val->const_type` (cnst_const_val or def_var)
 struct MakeConst final
   : ConstManipulations<VertexPtr> {
 public:
