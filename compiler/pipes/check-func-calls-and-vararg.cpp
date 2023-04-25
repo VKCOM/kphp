@@ -167,7 +167,7 @@ VertexPtr CheckFuncCallsAndVarargPass::maybe_autofill_missing_call_arg(VertexAda
   // in PHP, we declare f(CompileTimeLocation $loc = null) and just call f()
   // in KPHP, we implicitly replace f() with f(new CompileTimeLocation(__FILE__, __METHOD__, __LINE__))
   if (const auto *as_instance = param->type_hint->unwrap_optional()->try_as<TypeHintInstance>()) {
-    if (as_instance->resolve()->name == "CompileTimeLocation") {
+    if (as_instance->resolve()->name == "CompileTimeLocation" && param->has_default_value()) {
       return CheckFuncCallsAndVarargPass::create_CompileTimeLocation_call_arg(call->location);
     }
   }
@@ -252,29 +252,17 @@ VertexPtr CheckFuncCallsAndVarargPass::on_func_call(VertexAdaptor<op_func_call> 
   VertexRange func_params = f->get_params();
   VertexRange call_params = call->args();
 
-  int compile_time_loc_pos = -1;
-  for (int i = call_params.size(); i < func_params.size(); ++i) {
-    if (VertexPtr auto_added = maybe_autofill_missing_call_arg(call, f, func_params[i].as<op_func_param>())) {
-      compile_time_loc_pos = i;
-      break;
-    }
-  }
-
-  if (compile_time_loc_pos != -1) {
-    for (int param_pos = call_params.size(); param_pos < compile_time_loc_pos; ++param_pos) {
-      auto as_param = func_params[param_pos].as<op_func_param>();
-      if (!as_param->has_default_value()) {
-        kphp_error(as_param->has_default_value(), "Invalid usage of CompileTimeLocation arg. All args before it should have default values");
-        return {};
+  if (call_params.size() < func_params.size()) {
+    for (int missing_i = call_params.size(); missing_i < func_params.size(); ++missing_i) {
+      if (VertexPtr auto_added = maybe_autofill_missing_call_arg(call, f, func_params[missing_i].as<op_func_param>())) {
+        for (int def_i = call_params.size(); def_i < missing_i; ++def_i) {
+          call = VertexUtil::add_call_arg(func_params[def_i].as<op_func_param>()->default_value(), call, false);
+        }
+        call = VertexUtil::add_call_arg(auto_added, call, false);
+        call_params = call->args();
       }
-      call = VertexUtil::add_call_arg(as_param->default_value(), call, false);
-      call_params = call->args();
     }
-    auto auto_added = maybe_autofill_missing_call_arg(call, f, func_params[compile_time_loc_pos].as<op_func_param>());
-    call = VertexUtil::add_call_arg(auto_added, call, false);
-    call_params = call->args();
   }
-
 
   int call_n_params = call_params.size();
   int delta_this = f->has_implicit_this_arg() ? 1 : 0;    // not to count implicit $this on error output

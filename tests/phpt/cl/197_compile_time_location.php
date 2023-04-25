@@ -85,6 +85,16 @@ function custom_good_log(int $log_level = 1, ?CompileTimeLocation $loc = null, s
   echo "$message (in {$loc->function} at {$basename}:{$loc->line})\n";
 }
 
+function two_locations(string $message = "msg", CompileTimeLocation $loc1 = null, ?CompileTimeLocation $loc2 = null, int $more = 0) {
+  $loc1 = CompileTimeLocation::calculate($loc1);
+  $loc2 = CompileTimeLocation::calculate($loc2);
+  echo $message, ' ', $loc1->function, ' ', $loc2->function, ' ', $loc1->line, ' ', $loc2->line, "\n";
+}
+function callTwoLocations() {
+  two_locations();
+  two_locations("ms");
+}
+
 demo1();
 A::demo2();
 (new A)->demo3();
@@ -102,3 +112,5 @@ custom_bad_log(null, 42);
 custom_bad_log(null, 42, "custom msg2");
 
 custom_good_log(2);
+
+callTwoLocations();
