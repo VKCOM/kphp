@@ -250,7 +250,7 @@ void patch_rhs_casting_to_callable(VertexPtr &rhs, const TypeHintCallable *as_ca
     auto unwrapped_front = VertexUtil::unwrap_inlined_define(rhs->front());
     auto unwrapped_back = VertexUtil::unwrap_inlined_define(rhs->back());
 
-    std::string func_name = unwrapped_front->get_string() + "$$" + unwrapped_back->back()->get_string();
+    std::string func_name = unwrapped_front->get_string() + "$$" + unwrapped_back->get_string();
     func_name = replace_backslashes(func_name[0] == '\\' ? func_name.substr(1) : func_name);
 
     if (is_extern_func_param) {
