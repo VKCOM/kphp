@@ -790,6 +790,8 @@ Assumption assume_class_of_expr(FunctionPtr f, VertexPtr root, VertexPtr stop_at
     case op_false:
     case op_true:
       return Assumption(TypeHintPrimitive::create(tp_bool));
+    case op_define_val:
+      return assume_class_of_expr(f, root.as<op_define_val>()->value(), stop_at);
 
     default:
       return {};

@@ -244,10 +244,13 @@ void patch_rhs_casting_to_callable(VertexPtr &rhs, const TypeHintCallable *as_ca
       v_lambda->lambda_class = typed_interface;
       rhs = v_lambda;
     }
-
-  } else if (rhs->type() == op_array && rhs->size() == 2 && rhs->front()->type() == op_string && rhs->back()->type() == op_string) {
+  } else if (rhs->type() == op_array && rhs->size() == 2 && VertexUtil::unwrap_inlined_define(rhs->front())->type() == op_string
+             && VertexUtil::unwrap_inlined_define(rhs->back())->type() == op_string) {
     // ['A', 'staticMethod']
-    std::string func_name = rhs->front()->get_string() + "$$" + rhs->back()->get_string();
+    auto unwrapped_front = VertexUtil::unwrap_inlined_define(rhs->front());
+    auto unwrapped_back = VertexUtil::unwrap_inlined_define(rhs->back());
+
+    std::string func_name = unwrapped_front->get_string() + "$$" + unwrapped_back->back()->get_string();
     func_name = replace_backslashes(func_name[0] == '\\' ? func_name.substr(1) : func_name);
 
     if (is_extern_func_param) {
@@ -261,16 +264,18 @@ void patch_rhs_casting_to_callable(VertexPtr &rhs, const TypeHintCallable *as_ca
       rhs = v_lambda;
     }
 
-  } else if (rhs->type() == op_array && rhs->size() == 2 && rhs->back()->type() == op_string) {
+  } else if (rhs->type() == op_array && rhs->size() == 2 && VertexUtil::unwrap_inlined_define(rhs->back())->type() == op_string) { // HERE
     // [$obj, 'method'] or [getObject(), 'method'] or similar
     // pay attention, that $obj (rhs->front()) is captured in an auto-created wrapping lambda or in a c++ lambda in case of extern
+    auto unwrapped_back = VertexUtil::unwrap_inlined_define(rhs->back());
+
     if (is_extern_func_param) {
       auto v_callback = VertexAdaptor<op_callback_of_builtin>::create(rhs->front()).set_location(rhs);
-      v_callback->str_val = rhs->back()->get_string();
+      v_callback->str_val = unwrapped_back->get_string();
       rhs = v_callback;
     } else {
       auto v_lambda = VertexAdaptor<op_lambda>::create().set_location(rhs);
-      v_lambda->func_id = generate_lambda_from_string_or_array(stage::get_function(), rhs->back()->get_string(), rhs->front(), rhs);
+      v_lambda->func_id = generate_lambda_from_string_or_array(stage::get_function(), unwrapped_back->get_string(), rhs->front(), rhs);
       v_lambda->lambda_class = typed_interface;
       rhs = v_lambda;
     }
