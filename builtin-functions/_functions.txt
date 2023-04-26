@@ -624,7 +624,7 @@ function dechex ($number ::: int) ::: string;
 function hex2bin ($str ::: string) ::: string;
 function hexdec ($number ::: string) ::: int;
 function htmlentities ($str ::: string) ::: string;
-function html_entity_decode ($str ::: string, $flags ::: int = ENT_COMPAT, $encoding ::: string = '1251') ::: string;
+function html_entity_decode ($str ::: string, $flags ::: int = ENT_COMPAT, $encoding ::: string = "cp1251") ::: string;
 function htmlspecialchars ($str ::: string, $flags ::: int = ENT_COMPAT) ::: string;
 function htmlspecialchars_decode ($str ::: string, $flags ::: int = ENT_COMPAT) ::: string;
 function levenshtein ($str1 ::: string, $str2 ::: string) ::: int;
@@ -732,13 +732,13 @@ function setlocale ($category ::: int, $locale ::: string) ::: string | false;
 
 function iconv ($input_encoding ::: string, $output_encoding ::: string, $input_str ::: string) ::: string | false;
 
-function mb_check_encoding ($str ::: string, $encoding ::: string = "1251") ::: bool;
-function mb_strlen ($str ::: string, $encoding ::: string = "1251") ::: int;
-function mb_strpos ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $encoding ::: string = "1251") ::: int | false;
-function mb_stripos ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $encoding ::: string = "1251") ::: int | false;
-function mb_strtolower ($str ::: string, $encoding ::: string = "1251") ::: string;
-function mb_strtoupper ($str ::: string, $encoding ::: string = "1251") ::: string;
-function mb_substr ($str ::: string, $start ::: int, $length ::: mixed = PHP_INT_MAX, $encoding ::: string = "1251") ::: string;
+function mb_check_encoding ($str ::: string, $encoding ::: string = "cp1251") ::: bool;
+function mb_strlen ($str ::: string, $encoding ::: string = "cp1251") ::: int;
+function mb_strpos ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $encoding ::: string = "cp1251") ::: int | false;
+function mb_stripos ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $encoding ::: string = "cp1251") ::: int | false;
+function mb_strtolower ($str ::: string, $encoding ::: string = "cp1251") ::: string;
+function mb_strtoupper ($str ::: string, $encoding ::: string = "cp1251") ::: string;
+function mb_substr ($str ::: string, $start ::: int, $length ::: mixed = PHP_INT_MAX, $encoding ::: string = "cp1251") ::: string;
 
 define('PHP_ROUND_HALF_UP', 123423141);
 define('PHP_ROUND_HALF_DOWN', 123423144);
