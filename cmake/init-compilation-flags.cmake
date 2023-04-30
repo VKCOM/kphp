@@ -76,6 +76,7 @@ if (PDO_DRIVER_PGSQL)
     add_definitions(-DPDO_DRIVER_PGSQL)
     add_compile_definitions(PDO_DRIVER_PGSQL_VERSION=${PostgreSQL_VERSION})
 endif()
+
 cmake_print_variables(PDO_DRIVER_PGSQL)
 
 option(KPHP_TESTS "Build the tests" ON)

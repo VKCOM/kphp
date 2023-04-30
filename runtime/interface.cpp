@@ -2380,6 +2380,9 @@ static void free_runtime_libs() {
 
   free_migration_php8();
 
+  #ifndef MBFL
+  free_detect_incorrect_encoding_names();
+  #endif
   vk::singleton<JsonLogger>::get().reset_buffers();
 #ifdef PDO_DRIVER_MYSQL
   database_drivers::free_mysql_lib();

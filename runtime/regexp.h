@@ -9,7 +9,7 @@
 #include "common/mixin/not_copyable.h"
 
 #include "runtime/kphp_core.h"
-#include "runtime/mbstring.h"
+#include "runtime/mbstring/mbstring.h"
 
 namespace re2 {
 class RE2;

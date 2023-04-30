@@ -283,6 +283,9 @@ void CompilerSettings::init() {
 
   remove_extra_spaces(extra_cxx_flags.value_);
   std::stringstream ss;
+  #ifdef MBFL
+  ss << " -DMBFL ";
+  #endif
   ss << extra_cxx_flags.get();
   ss << " -iquote" << kphp_src_path.get()
      << " -iquote " << kphp_src_path.get() << "objs/generated/auto/runtime";
