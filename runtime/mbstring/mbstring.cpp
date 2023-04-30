@@ -234,49 +234,6 @@ static int64_t mb_UTF8_get_offset(const char *s, int64_t pos) {
   return res;
 }
 
-bool mb_UTF8_check(const char *s) {
-  do {
-#define CHECK(condition) if (!(condition)) {return false;}
-    unsigned int a = (unsigned char)(*s++);
-    if ((a & 0x80) == 0) {
-      if (a == 0) {
-        return true;
-      }
-      continue;
-    }
-
-    CHECK ((a & 0x40) != 0);
-
-    unsigned int b = (unsigned char)(*s++);
-    CHECK((b & 0xc0) == 0x80);
-    if ((a & 0x20) == 0) {
-      CHECK((a & 0x1e) > 0);
-      continue;
-    }
-
-    unsigned int c = (unsigned char)(*s++);
-    CHECK((c & 0xc0) == 0x80);
-    if ((a & 0x10) == 0) {
-      int x = (((a & 0x0f) << 6) | (b & 0x20));
-      CHECK(x != 0 && x != 0x360);//surrogates
-      continue;
-    }
-
-    unsigned int d = (unsigned char)(*s++);
-    CHECK((d & 0xc0) == 0x80);
-    if ((a & 0x08) == 0) {
-      int t = (((a & 0x07) << 6) | (b & 0x30));
-      CHECK(0 < t && t < 0x110);//end of unicode
-      continue;
-    }
-
-    return false;
-#undef CHECK
-  } while (true);
-
-  php_assert (0);
-}
-
 bool f$mb_check_encoding(const string &str, const string &encoding) {
   int encoding_num = mb_detect_encoding(encoding);
   if (encoding_num < 0) {

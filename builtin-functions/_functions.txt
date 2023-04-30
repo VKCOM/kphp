@@ -1632,7 +1632,7 @@ function mb_convert_variables(string $to_encoding, array|string $from_encoding, 
 function mb_decode_mimeheader(string $string): string;
 function mb_decode_numericentity(string $string, array $map, ?string $encoding = null): string;
 function mb_detect_encoding(string $string, array|string|null $encodings = null, bool $strict = false): string|false;
-function mb_detect_order(array|string|null $encoding = null): array|bool;
+function mb_detect_order(array|string|null $encoding = null): mixed; // return array|bool
 function mb_encode_mimeheader(string $string, ?string $charset = null, ?string $transfer_encoding = null, string $newline = "\r\n", int $indent = 0): string;
 function mb_encode_numericentity(string $string, array $map, ?string $encoding = null, bool $hex = false): string;
 function mb_encoding_aliases(string $encoding): array;

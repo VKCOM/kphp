@@ -220,7 +220,7 @@ int64_t f$mb_ereg_search_getpos(void);
  * If there are some matches, the first element will have the matched sub-string, the second element will have the first part grouped with brackets,
  * the third element will have the second part grouped with brackets, and so on. It returns false on error.
  */
-Optional<array> f$mb_ereg_search_getregs(void);
+mixed f$mb_ereg_search_getregs(void);
 
 /**
  * Setup string and regular expression for a multibyte regular expression match
@@ -241,7 +241,7 @@ bool f$mb_ereg_search_init(const string &str, const Optional<string> &pattern, c
  * @return array|false An array containing two elements. The first element is the offset, in bytes, where the match begins relative to the start of
  * the search string, and the second element is the length in bytes of the match. If an error occurs, false is returned.
  */
-Optional<array> f$mb_ereg_search_pos(const Optional<string> &pattern, const Optional<string> &options);
+mixed f$mb_ereg_search_pos(const Optional<string> &pattern, const Optional<string> &options);
 
 /**
  * Returns the matched part of a multibyte regular expression
@@ -251,7 +251,7 @@ Optional<array> f$mb_ereg_search_pos(const Optional<string> &pattern, const Opti
  * it returns an array including substring of matched part as first element, the first grouped part with brackets as second element,
  * the second grouped part as third element, and so on. It returns false on error.
  */
-Optional<array> f$mb_ereg_search_regs(const Optional<string> &pattern, const Optional<string> &options);
+mixed f$mb_ereg_search_regs(const Optional<string> &pattern, const Optional<string> &options);
 
 /**
  * Set start point of next regular expression match
@@ -496,7 +496,7 @@ bool f$mb_send_mail(const string &to, const string &subject, const string &messa
  * @param int limit (default = -1) If optional parameter limit is specified, it will be split in limit elements as maximum
  * @return array|false The result as an array, or false on failure
  */
-Optional<array> f$mb_split(const string &pattern, const string &str, const int64_t limit = -1);
+mixed f$mb_split(const string &pattern, const string &str, const int64_t limit = -1);
 
 /**
  * This function will return an array of strings, it is a version of str_split() with support for encodings of variable character size as well
