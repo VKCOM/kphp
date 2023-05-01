@@ -32,10 +32,20 @@ void CalcConstTypePass::calc_const_type_of_class_fields(ClassPtr klass) {
 
 VertexPtr CalcConstTypePass::on_exit_vertex(VertexPtr v) {
   if (auto as_define_val = v.try_as<op_define_val>()) {
+    auto val = as_define_val->value();
+    // check if it's an object in define
+    if (auto as_func_call = val.try_as<op_func_call>();
+        as_func_call && as_func_call->func_id && as_func_call->func_id->is_constructor()) {
+      bool has_nonconst_son = vk::any_of(*as_func_call, [](VertexPtr son) { return son->const_type == cnst_nonconst_val; });
+      as_func_call->const_type = has_nonconst_son ? cnst_nonconst_val : cnst_const_val;
+      return v;
+    }
     as_define_val->const_type = as_define_val->value()->const_type;
     kphp_error(as_define_val->const_type == cnst_const_val, "Non-constant in const context");
     return v;
   }
+  // for now only pure functions and
+  // constructors in defines can be `cnst_const_val`-ed
   if (auto as_func_call = v.try_as<op_func_call>()) {
     if (!as_func_call->func_id || !as_func_call->func_id->is_pure) {
       v->const_type = cnst_nonconst_val;

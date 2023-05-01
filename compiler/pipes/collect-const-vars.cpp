@@ -78,8 +78,13 @@ struct ShouldStoreOnTopDown : public VertexVisitor<ShouldStoreOnTopDown, bool> {
     return vk::any_of_equal(expr->type(), op_string, op_concat, op_string_build);
   }
 
+  static bool on_func_call(VertexAdaptor<op_func_call> v) {
+    // const constructors are handles in on_define_val
+    return v->func_id && v->func_id->is_pure;
+  }
+
   static bool fallback(VertexPtr v) {
-    return vk::any_of_equal(v->type(), op_concat, op_string_build, op_func_call);
+    return vk::any_of_equal(v->type(), op_concat, op_string_build); // op func call must be pure
   }
 };
 
