@@ -62,6 +62,10 @@ void IncludesCollector::add_function_body_depends(const FunctionPtr &function) {
     }
   }
 
+  for(auto const_var : function->explicit_const_var_ids) {
+    add_var_signature_depends(const_var);
+  }
+
   for (auto to_include : function->class_dep) {
     add_class_include(to_include);
   }

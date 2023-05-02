@@ -52,6 +52,24 @@ static void add_dependent_declarations(VertexPtr vertex, std::set<VarPtr> &depen
   }
 }
 
+static void add_dependent_includes(VertexPtr vertex, IncludesCollector & includes) {
+  if (!vertex) {
+    return;
+  }
+  for (auto child : *vertex) {
+    add_dependent_includes(child, includes);
+  }
+  if (auto as_func_call = vertex.try_as<op_func_call>()) {
+    includes.add_raw_filename_include(as_func_call->func_id->header_full_name);
+    includes.add_function_signature_depends(as_func_call->func_id);
+  }
+  if (auto as_var = vertex.try_as<op_var>()) {
+    includes.add_var_signature_depends(as_var->var_id);
+  }
+}
+
+
+
 void compile_raw_array(CodeGenerator &W, const VarPtr &var, int shift) {
   if (shift == -1) {
     W << InitVar(var);
@@ -77,6 +95,7 @@ static void compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> &vars,
   for (auto var : vars) {
     if (!G->settings().is_static_lib_mode() || !var->is_builtin_global()) {
       includes.add_var_signature_depends(var);
+      add_dependent_includes(var->init_val, includes);
     }
   }
   W << includes;

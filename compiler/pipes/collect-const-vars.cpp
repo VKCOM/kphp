@@ -69,6 +69,11 @@ struct VertexVisitor {
 };
 
 struct IsComposite : public VertexVisitor<IsComposite, bool> {
+  static bool on_define_val(VertexAdaptor<op_define_val> v) {
+    auto val = v->value().try_as<op_func_call>();
+    return val && val->func_id && val->func_id->is_constructor();
+  }
+
   static bool on_array(VertexAdaptor<op_array> v [[maybe_unused]]) {
     return true;
   }
