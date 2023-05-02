@@ -7,7 +7,6 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
-#include "compiler/vertex-util.h"
 
 void CalcConstTypePass::on_start() {
   if (current_function->type == FunctionData::func_class_holder) {
@@ -38,9 +37,8 @@ VertexPtr CalcConstTypePass::on_exit_vertex(VertexPtr v) {
         as_func_call && as_func_call->func_id && as_func_call->func_id->is_constructor()) {
       bool has_nonconst_son = vk::any_of(*as_func_call, [](VertexPtr son) { return son->const_type == cnst_nonconst_val; });
       as_func_call->const_type = has_nonconst_son ? cnst_nonconst_val : cnst_const_val;
-      return v;
     }
-    as_define_val->const_type = as_define_val->value()->const_type;
+    as_define_val->const_type = val->const_type;
     kphp_error(as_define_val->const_type == cnst_const_val, "Non-constant in const context");
     return v;
   }

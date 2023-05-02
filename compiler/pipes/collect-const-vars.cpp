@@ -28,6 +28,8 @@ struct VertexVisitor {
         return Derived::on_func_call(v.as<op_func_call>());
       case op_string_build:
         return Derived::on_string_build(v.as<op_string_build>());
+      case op_define_val:
+        return Derived::on_define_val(v.as<op_define_val>());
       default:
         return Derived::fallback(v);
     }
@@ -57,6 +59,10 @@ struct VertexVisitor {
     return Derived::fallback(v);
   }
 
+  static ResultType on_define_val(VertexAdaptor<op_define_val> v) {
+    return Derived::fallback(v);
+  }
+
   static ResultType fallback(VertexPtr v [[maybe_unused]]) {
     kphp_assert_msg(false, "Internal error: invalid visitor in CollectConstVars pass!");
   }
@@ -80,7 +86,8 @@ struct ShouldStoreOnTopDown : public VertexVisitor<ShouldStoreOnTopDown, bool> {
 
   static bool on_func_call(VertexAdaptor<op_func_call> v) {
     // const constructors are handles in on_define_val
-    return v->func_id && v->func_id->is_pure;
+    auto res =  v->func_id && v->func_id->is_pure;
+    return res;
   }
 
   static bool fallback(VertexPtr v) {
@@ -89,6 +96,12 @@ struct ShouldStoreOnTopDown : public VertexVisitor<ShouldStoreOnTopDown, bool> {
 };
 
 struct ShouldStoreOnBottomUp : public VertexVisitor<ShouldStoreOnBottomUp, bool> {
+  static bool on_define_val(VertexAdaptor<op_define_val> v) {
+    auto val = v->value().try_as<op_func_call>();
+    auto res = val && val->func_id && val->func_id->is_constructor();
+    return res;
+  }
+
   static bool fallback(VertexPtr v) {
     return vk::any_of_equal(v->type(), op_string, op_array);
   }
@@ -99,6 +112,13 @@ struct NameGenerator : public VertexVisitor<NameGenerator, std::string> {
 
   static std::string fallback(VertexPtr v[[maybe_unused]]) {
     return gen_unique_name(prefix);
+  }
+
+  static std::string on_define_val(VertexAdaptor<op_define_val> v) {
+    if (is_object_suitable_for_hashing(v)) {
+      return gen_const_object_name(v);
+    }
+    return fallback(v);
   }
 
   static std::string on_string(VertexAdaptor<op_string> v) {
@@ -218,7 +238,7 @@ VertexPtr CollectConstVarsPass::create_const_variable(VertexPtr root, Location l
   var->extra_type = op_ex_var_const;
   var->location = loc;
 
-  VarPtr var_id = G->get_global_var(name, VarData::var_const_t, root);
+  VarPtr var_id = G->get_global_var(name, VarData::var_const_t, VertexUtil::unwrap_inlined_define(root));
   set_var_dep_level(var_id);
 
   if (composite_const_depth_ > 0) {
