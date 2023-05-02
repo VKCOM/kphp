@@ -39,7 +39,7 @@ VertexPtr CalcConstTypePass::on_exit_vertex(VertexPtr v) {
       as_func_call->const_type = has_nonconst_son ? cnst_nonconst_val : cnst_const_val;
     }
     as_define_val->const_type = val->const_type;
-    kphp_error(as_define_val->const_type == cnst_const_val, "Non-constant in const context");
+    kphp_error(as_define_val->const_type == cnst_const_val, "Non-const expression in const context");
     return v;
   }
   // for now only pure functions and

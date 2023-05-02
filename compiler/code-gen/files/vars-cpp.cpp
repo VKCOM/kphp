@@ -60,7 +60,12 @@ static void add_dependent_includes(VertexPtr vertex, IncludesCollector & include
     add_dependent_includes(child, includes);
   }
   if (auto as_func_call = vertex.try_as<op_func_call>()) {
-    includes.add_raw_filename_include(as_func_call->func_id->header_full_name);
+    if (as_func_call->func_id) {
+      const auto& header_full_name = as_func_call->func_id->header_full_name;
+      if (!header_full_name.empty()) {
+        includes.add_raw_filename_include(as_func_call->func_id->header_full_name);
+      }
+    }
     includes.add_function_signature_depends(as_func_call->func_id);
   }
   if (auto as_var = vertex.try_as<op_var>()) {
