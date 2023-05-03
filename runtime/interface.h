@@ -166,6 +166,8 @@ string f$get_engine_version();
 
 int64_t f$get_engine_workers_number();
 
+string f$get_kphp_cluster_name();
+
 std::tuple<int64_t, int64_t, int64_t, int64_t> f$get_webserver_stats();
 
 void arg_add(const char *value);
