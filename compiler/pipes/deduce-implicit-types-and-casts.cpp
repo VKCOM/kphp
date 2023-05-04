@@ -229,7 +229,8 @@ void patch_rhs_casting_to_callable(VertexPtr &rhs, const TypeHintCallable *as_ca
     }
     rhs.as<op_lambda>()->lambda_class = typed_interface;  // save for the next pass
 
-  } else if (rhs->type() == op_string) {
+  } else if (VertexUtil::unwrap_inlined_define(rhs)->type() == op_string) {
+    rhs = VertexUtil::unwrap_inlined_define(rhs);
     // 'strlen' or 'A::staticMethod'
     std::string func_name = replace_characters(rhs->get_string(), ':', '$');
     func_name = replace_backslashes(func_name[0] == '\\' ? func_name.substr(1) : func_name);
