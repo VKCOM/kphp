@@ -1,4 +1,4 @@
-@php8.1 ok
+@php8
 <?php
 require_once 'kphp_tester_include.php';
 
