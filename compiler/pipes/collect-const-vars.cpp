@@ -245,15 +245,15 @@ VertexPtr CollectConstVarsPass::create_const_variable(VertexPtr root, Location l
   VarPtr var_id = G->get_global_var(name, VarData::var_const_t, VertexUtil::unwrap_inlined_define(root));
   set_var_dep_level(var_id);
 
-//  if (composite_const_depth_ > 0) {
-//    current_function->implicit_const_var_ids.insert(var_id);
-//  } else {
+  if (composite_const_depth_ > 0) {
+    current_function->implicit_const_var_ids.insert(var_id);
+  } else {
     if (in_param_list_ > 0) {
       current_function->explicit_header_const_var_ids.insert(var_id);
     } else {
       current_function->explicit_const_var_ids.insert(var_id);
     }
-//  }
+  }
 
   var->var_id = var_id;
   return var;
