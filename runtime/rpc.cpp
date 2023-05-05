@@ -134,7 +134,7 @@ bool f$rpc_parse(const string &new_rpc_data) {
   if (new_rpc_data.size() % sizeof(int) != 0) {
     php_warning("Wrong parameter \"new_rpc_data\" of len %d passed to function rpc_parse", (int)new_rpc_data.size());
     last_rpc_error = "Result's length is not divisible by 4";
-    last_rpc_error_code = TL_ERROR_UNKNOWN;
+    last_rpc_error_code = TL_ERROR_RESPONSE_SYNTAX;
     return false;
   }
 
@@ -790,7 +790,7 @@ void process_rpc_answer(int32_t request_id, char *result, int32_t result_len __a
   resumable_run_ready(resumable_id);
 }
 
-void process_rpc_error(int32_t request_id, int32_t error_code __attribute__((unused)), const char *error_message) {
+void process_rpc_error(int32_t request_id, int32_t error_code, const char *error_message) {
   rpc_request *request = get_rpc_request(request_id);
 
   if (request->resumable_id < 0) {
@@ -825,19 +825,19 @@ protected:
       TRY_WAIT(rpc_get_resumable_label_0, ready, bool);
       if (!ready) {
         last_rpc_error = last_wait_error;
-        last_rpc_error_code = TL_ERROR_UNKNOWN;
+        last_rpc_error_code = TL_ERROR_INTERNAL;
         RETURN(false);
       }
 
       Storage *input = get_forked_storage(resumable_id);
       if (input->tag == 0) {
         last_rpc_error = "Result already was gotten";
-        last_rpc_error_code = TL_ERROR_UNKNOWN;
+        last_rpc_error_code = TL_ERROR_INTERNAL;
         RETURN(false);
       }
       if (input->tag != Storage::tagger<rpc_request>::get_tag()) {
         last_rpc_error = "Not a rpc request";
-        last_rpc_error_code = TL_ERROR_UNKNOWN;
+        last_rpc_error_code = TL_ERROR_INTERNAL;
         RETURN(false);
       }
 
@@ -902,19 +902,19 @@ protected:
       TRY_WAIT(rpc_get_and_parse_resumable_label_0, ready, bool);
       if (!ready) {
         last_rpc_error = last_wait_error;
-        last_rpc_error_code = TL_ERROR_UNKNOWN;
+        last_rpc_error_code = TL_ERROR_INTERNAL;
         RETURN(false);
       }
 
       Storage *input = get_forked_storage(resumable_id);
       if (input->tag == 0) {
         last_rpc_error = "Result already was gotten";
-        last_rpc_error_code = TL_ERROR_UNKNOWN;
+        last_rpc_error_code = TL_ERROR_INTERNAL;
         RETURN(false);
       }
       if (input->tag != Storage::tagger<rpc_request>::get_tag()) {
         last_rpc_error = "Not a rpc request";
-        last_rpc_error_code = TL_ERROR_UNKNOWN;
+        last_rpc_error_code = TL_ERROR_INTERNAL;
         RETURN(false);
       }
 
