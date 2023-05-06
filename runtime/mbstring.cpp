@@ -7,6 +7,8 @@
 #include "common/unicode/unicode-utils.h"
 #include "common/unicode/utf8-utils.h"
 
+#include "runtime/string_functions.h"
+
 static bool is_detect_incorrect_encoding_names_warning{false};
 
 void f$set_detect_incorrect_encoding_names_warning(bool show) {
@@ -17,8 +19,11 @@ void free_detect_incorrect_encoding_names() {
   is_detect_incorrect_encoding_names_warning = false;
 }
 
+enum class MbEncoding { cp1251 = 1251, utf8 = 8 };
+static MbEncoding default_mb_encoding{MbEncoding::cp1251};
+
 static int mb_detect_encoding_new(const string &encoding) {
-  const auto encoding_name = f$strtolower(encoding).c_str();
+  const auto *encoding_name = f$strtolower(encoding).c_str();
 
   if (!strcmp(encoding_name, "cp1251") || !strcmp(encoding_name, "cp-1251") || !strcmp(encoding_name, "windows-1251")) {
     return 1251;
@@ -32,6 +37,9 @@ static int mb_detect_encoding_new(const string &encoding) {
 }
 
 static int mb_detect_encoding(const string &encoding) {
+  if (encoding.empty()) {
+    return static_cast<std::underlying_type_t<MbEncoding>>(default_mb_encoding);
+  }
   const int result_new = mb_detect_encoding_new(encoding);
 
   if (strstr(encoding.c_str(), "1251")) {
@@ -128,6 +136,29 @@ bool mb_UTF8_check(const char *s) {
   } while (true);
 
   php_assert (0);
+}
+
+mixed f$mb_internal_encoding(const Optional<string> &encoding) {
+  if (!encoding.has_value()) {
+    switch (default_mb_encoding) {
+      case MbEncoding::cp1251:
+        return string{"Windows-1251"};
+      case MbEncoding::utf8:
+        return string{"UTF-8"};
+    }
+  }
+
+  switch (mb_detect_encoding(encoding.val())) {
+    case static_cast<int>(MbEncoding::cp1251):
+      default_mb_encoding = MbEncoding::cp1251;
+      return true;
+    case static_cast<int>(MbEncoding::utf8):
+      default_mb_encoding = MbEncoding::utf8;
+      return true;
+  }
+
+  php_warning("mb_internal_encoding(): Unknown encoding \"%s\"", encoding.val().c_str());
+  return false;
 }
 
 bool f$mb_check_encoding(const string &str, const string &encoding) {
