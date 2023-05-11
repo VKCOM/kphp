@@ -31,7 +31,7 @@ inline VertexPtr PreprocessEq3Pass::convert_eq3_null_to_isset(VertexPtr eq_op, V
   }
 
   auto unwrapped = VertexUtil::get_actual_value(v);
-  if (vk::any_of_equal(unwrapped->type(), op_var, op_instance_prop, op_array)) {
+  if (vk::any_of_equal(unwrapped->type(), op_var, op_instance_prop, op_array) || (unwrapped->type() == op_func_call && unwrapped.try_as<op_func_call>()->extra_type == op_ex_constructor_call)) {
     // it's a kludge to make "real world" PHP code compile
     // TODO: can we get rid of this?
     if (unwrapped->has_get_string() &&
