@@ -13,8 +13,10 @@ VertexPtr PreprocessEq3Pass::on_exit_vertex(VertexPtr root) {
     VertexPtr a = eq_op->lhs();
     VertexPtr b = eq_op->rhs();
 
-    if (a->type() == op_null || b->type() == op_null) {
-      root = convert_eq3_null_to_isset(root, a->type() == op_null ? b : a);
+    auto a_unwrapped = VertexUtil::unwrap_inlined_define(a);
+    auto b_unwrapped = VertexUtil::unwrap_inlined_define(b);
+    if (a_unwrapped->type() == op_null || b_unwrapped->type() == op_null) {
+      root = convert_eq3_null_to_isset(root, a_unwrapped->type() == op_null ? b : a);
     }
   }
 
