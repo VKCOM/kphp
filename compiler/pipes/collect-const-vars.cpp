@@ -89,7 +89,7 @@ struct ShouldStoreOnTopDown : public VertexVisitor<ShouldStoreOnTopDown, bool> {
   }
 
   static bool on_func_call(VertexAdaptor<op_func_call> v) {
-    // const constructors are handles in on_define_val
+    // const constructors are handled in on_define_val
     auto res =  v->func_id && v->func_id->is_pure;
     return res;
   }

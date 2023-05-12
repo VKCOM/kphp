@@ -233,7 +233,7 @@ protected:
 
   bool on_func_call(VertexAdaptor<op_func_call> v) override {
     // Allows use objects in const context
-    return v->get_string() == "__construct";
+    return v->extra_type == op_ex_constructor_call;
   }
 
   bool on_non_const(VertexPtr v) final {
@@ -500,6 +500,7 @@ struct ObjectHash final : CommonHash {
     return object_hash.cur_hash;
   }
 };
+
 struct VertexPtrFormatter final
   : ConstManipulations<std::string> {
   static std::string to_string(VertexPtr v) {

@@ -69,6 +69,7 @@ VertexPtr CalcConstTypePass::on_exit_vertex(VertexPtr v) {
   }
   return v;
 }
+
 VertexPtr CalcConstTypePass::on_enter_vertex(VertexPtr v) {
   if (v->type() == op_define_val) {
     inlined_define_cnt++;
