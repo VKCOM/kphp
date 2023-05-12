@@ -9,6 +9,7 @@
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/function-pass.h"
+#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
 #include "compiler/inferring/edge.h"
 #include "compiler/inferring/ifi.h"
@@ -26,6 +27,7 @@ SwitchKind get_switch_kind(VertexAdaptor<op_switch> s) {
   int num_const_int_cases = 0;
   int num_const_string_cases = 0;
   int num_value_cases = 0;
+  int num_const_total_string_cases = 0;
 
   for (auto one_case : s->cases()) {
     if (one_case->type() == op_default) {
@@ -37,6 +39,8 @@ SwitchKind get_switch_kind(VertexAdaptor<op_switch> s) {
     if (VertexUtil::is_const_int(val)) {
       num_const_int_cases++;
     } else if (auto as_string = val.try_as<op_string>()) {
+      // In case of op_switch node that was generated from op_match
+      num_const_total_string_cases++;
       // PHP would use a numerical comparison for strings that look like a number,
       // we shouldn't rewrite these switches as a string-only switch
       if (!php_is_numeric(as_string->str_val.data())) {
@@ -48,10 +52,13 @@ SwitchKind get_switch_kind(VertexAdaptor<op_switch> s) {
   if (num_value_cases == 0) {
     return SwitchKind::EmptySwitch;
   }
-
+  if (s->is_match && num_const_total_string_cases == num_value_cases) {
+    return SwitchKind::StringSwitch;
+  }
   if (num_const_string_cases == num_value_cases) {
     return SwitchKind::StringSwitch;
-  } else if (num_const_int_cases == num_value_cases) {
+  }
+  if (num_const_int_cases == num_value_cases) {
     return SwitchKind::IntSwitch;
   }
   return SwitchKind::VarSwitch;
@@ -404,7 +411,16 @@ void CollectMainEdgesPass::on_switch(VertexAdaptor<op_switch> switch_op) {
   // int-only and string-only switches separately (these simple switch statements
   // form a majority of all switch statements)
   switch_op->kind = get_switch_kind(switch_op);
-  if (switch_op->kind == SwitchKind::IntSwitch) {
+  if (switch_op->is_match) {
+    // in case of converted from op_match
+    create_set(as_lvalue(switch_op->condition_on_switch()->var_id), switch_op->condition());
+    for (const auto &c : switch_op->cases()) {
+      if (auto as_case = c.try_as<op_case>()) {
+        create_set(as_lvalue(switch_op->condition_on_switch()->var_id), as_case->expr());
+      }
+    }
+  }
+  else if (switch_op->kind == SwitchKind::IntSwitch) {
     // in case of int-only switch, condition var is discarded, so there is
     // no real need in trying to insert an assignment node here
     create_type_assign(as_lvalue(switch_op->condition_on_switch()), TypeData::get_type(tp_int));

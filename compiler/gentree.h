@@ -100,6 +100,9 @@ public:
   VertexAdaptor<op_for> get_for();
   VertexAdaptor<op_do> get_do();
   VertexAdaptor<op_switch> get_switch();
+  VertexAdaptor<op_match_proxy> get_match();
+  VertexAdaptor<op_match_case> get_match_case();
+  VertexAdaptor<op_match_default> get_match_default();
   VertexAdaptor<op_shape> get_shape();
   VertexPtr get_by_name_construct();
   VertexPtr get_member_by_name_after_var(VertexAdaptor<op_var> v_before);
@@ -119,6 +122,8 @@ public:
   static VertexAdaptor<op_var> auto_capture_this_in_lambda(FunctionPtr f_lambda);
 
   VertexPtr get_class(const PhpDocComment *phpdoc, ClassType class_type);
+  VertexPtr get_enum(const PhpDocComment *phpdoc);
+  VertexAdaptor<op_string> get_enum_case();
   void parse_extends_implements();
 
   static VertexPtr process_arrow(VertexPtr lhs, VertexPtr rhs);

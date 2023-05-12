@@ -23,4 +23,7 @@ public:
 
   // converts the spread operator (...$a) to a call to the array_merge_spread function
   static VertexPtr convert_array_with_spread_operators(VertexAdaptor<op_array> array_vertex);
+  // converts match to a statement expression that contains a switch operator and temporary variable
+  static VertexPtr convert_match(VertexAdaptor<op_match_proxy> match_vertex);
+
 };

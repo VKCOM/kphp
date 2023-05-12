@@ -10,19 +10,28 @@
 #include "common/php-functions.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/class-members.h"
 #include "compiler/data/define-data.h"
+#include "compiler/data/field-modifiers.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/function-modifiers.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/data/vertex-adaptor.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/lambda-utils.h"
 #include "compiler/lexer.h"
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
 #include "compiler/stage.h"
+#include "compiler/token.h"
 #include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
 #include "compiler/vertex-util.h"
+#include <algorithm>
+#include <cstddef>
+#include <iterator>
 
 #define CE(x) if (!(x)) {return {};}
 
@@ -659,6 +668,9 @@ VertexPtr GenTree::get_expr_top(bool was_arrow, const PhpDocComment *phpdoc) {
       res = get_func_call<op_tuple, op_err>();
       CE (!kphp_error(res.as<op_tuple>()->size(), "tuple() must have at least one argument"));
       break;
+    case tok_match:
+      res = get_match();
+      break;
     case tok_shape:
       res = get_shape();
       break;
@@ -1221,6 +1233,83 @@ VertexAdaptor<op_switch> GenTree::get_switch() {
   return VertexUtil::create_switch_vertex(cur_function, switch_condition.set_location(location), std::move(cases)).set_location(location);
 }
 
+
+VertexAdaptor<op_match_proxy> GenTree::get_match() {
+  const auto location = auto_location();
+  next_cur();
+  CE(expect(tok_oppar, "'('"));
+  skip_phpdoc_tokens();
+  const auto match_condition = get_expression();
+  CE(!kphp_error(match_condition, "Failed to parse 'match' expression"));
+  CE(expect(tok_clpar, "')'"));
+
+  CE(expect(tok_opbrc, "'{'"));
+  std::vector<VertexPtr> cases;
+  while (cur->type() != tok_clbrc) {
+    skip_phpdoc_tokens();
+    if (cur->type() == tok_comma) {
+      next_cur();
+      continue;
+    }
+
+    if (cur->type() == tok_default) {
+      cases.emplace_back(get_match_default());
+    }
+    else {
+      cases.emplace_back(get_match_case());
+    }
+    kphp_assert_msg(cases.back(), "Invalid 'match' case!");
+  }
+
+  CE(expect(tok_clbrc, "'}'"));
+
+  return VertexAdaptor<op_match_proxy>::create(match_condition, std::move(cases)).set_location(location);
+}
+
+VertexAdaptor<op_match_case> GenTree::get_match_case() {
+  const auto location = auto_location();
+  std::vector<VertexPtr> arms;
+
+  VertexPtr cur_expr;
+  for (cur_expr = get_expression(); cur_expr && cur_expr->type() != op_double_arrow; cur_expr = get_expression()) {
+    arms.emplace_back(cur_expr);
+  
+    if (cur->type() == tok_comma) {
+      next_cur();
+      continue;
+    }
+  }
+
+  VertexPtr result;
+
+  // trailling comma: "fourty-two", => 42'
+  if (!cur_expr) {
+    CE(expect(tok_double_arrow, "'=>'"));
+    kphp_error(!arms.empty(), "Expected expression before '=>'");
+    result = get_expression();
+  }
+  else if (const auto double_arrow = cur_expr.try_as<op_double_arrow>()) {
+    arms.emplace_back(double_arrow->key());
+    result = double_arrow->value();
+  }
+  else {
+    kphp_fail_msg("Ivalid syntax of 'match' cases!");
+  }
+  
+  return VertexAdaptor<op_match_case>::create(VertexAdaptor<op_seq_comma>::create(arms), result).set_location(location);
+}
+
+VertexAdaptor<op_match_default> GenTree::get_match_default() {
+  const auto location = auto_location();
+  next_cur();
+
+  // trailling comma: default, => 42'
+  if (cur->type() == tok_comma) {
+    next_cur();
+  }
+  CE(expect(tok_double_arrow, "'=>'"));
+  return VertexAdaptor<op_match_default>::create(get_expression()).set_location(location);
+}
 VertexAdaptor<op_shape> GenTree::get_shape() {
   auto location = auto_location();
 
@@ -1730,6 +1819,12 @@ VertexPtr GenTree::get_class(const PhpDocComment *phpdoc, ClassType class_type) 
   VertexPtr body_vertex = get_statement();    // an empty op_seq
   CE (!kphp_error(body_vertex, "Failed to parse class body"));
 
+  if (const auto body_seq = body_vertex.try_as<op_seq>()) {
+    for (const auto & stmt : body_seq->args()) {
+      kphp_error_return(stmt->type() != op_string, "Case can only be used in enums") {};
+    }
+  }
+
   cur_class->add_class_constant(); // A::class
 
   if (auto constructor_method = cur_class->members.get_constructor()) {
@@ -1744,6 +1839,214 @@ VertexPtr GenTree::get_class(const PhpDocComment *phpdoc, ClassType class_type) 
   return {};
 }
 
+VertexPtr GenTree::get_enum(const PhpDocComment *phpdoc) {
+  CE(cur->type() == tok_enum);
+  next_cur();
+
+  CE (!kphp_error(test_expect(tok_func_name), "Enum name expected"));
+
+  auto name_str = static_cast<std::string>(cur->str_val);
+  std::string full_class_name = processing_file->namespace_name.empty() ? std::string{name_str} : processing_file->namespace_name + "\\" + name_str;
+
+  kphp_error(processing_file->namespace_uses.find(name_str) == processing_file->namespace_uses.end(),
+             "Enum name is the same as one of 'use' at the top of the file");
+
+  const auto class_ptr = ClassPtr(new ClassData{ClassType::klass});
+  StackPushPop<ClassPtr> c_alive(class_stack, cur_class, class_ptr);
+  StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, cur_class->gen_holder_function(full_class_name));
+
+  cur_class->modifiers.set_final();
+  cur_class->file_id = processing_file;
+  cur_class->set_name_and_src_name(full_class_name); // with full namespaces and slashes
+  cur_class->phpdoc = phpdoc;
+  cur_class->is_immutable = true;
+  cur_class->location_line_num = line_num;
+
+  bool registered = G->register_class(cur_class);
+  if (registered) {
+    ++G->stats.total_classes;
+  }
+
+  cur_class->add_class_constant();
+  if (registered) {
+    G->register_and_require_function(cur_function, parsed_os, true);  // push the class down the pipeline
+  }
+
+  // generate body
+  next_cur();
+  CE(cur->type() == tok_opbrc);
+
+
+  VertexPtr body_vertex = get_statement();
+  kphp_assert_msg(body_vertex && body_vertex->type() == op_seq, "Incorrect enum body");
+  const auto body_seq = body_vertex.try_as<op_seq>();
+  std::vector<std::string> cases;
+
+  auto modifiers_field_private = FieldModifiers();
+  modifiers_field_private.set_private();
+
+  // generate 'public static self $EnumCase;'
+  for (const auto &stmt : body_seq->args()) {
+    if (const auto case_vertex = stmt.try_as<op_string>()) { // TODO replace op_string with smth else
+      const auto case_name = case_vertex->get_string();
+      cases.push_back(case_name);
+      auto var = VertexAdaptor<op_var>::create();
+      var->str_val = case_name;
+      cur_class->members.add_static_field(var, {}, modifiers_field_private, nullptr, cur_class->type_hint);
+    }
+    kphp_error(stmt->type() != op_var, "Fields are no allowed in enums");
+  }
+
+  bool has_unwanted_fields = false;
+  std::vector<Location> locations;
+
+  cur_class->members.for_each([&](const ClassMemberInstanceField & field){
+    if (field.local_name() != "name") { // TODO add "value" for backed
+      has_unwanted_fields = true;
+      locations.push_back(field.root->location);
+    }
+  });
+
+  if (has_unwanted_fields) {
+    for (const auto & location : locations) {
+      stage::set_line(location.get_line());
+      kphp_error(!has_unwanted_fields, "Fields are not allowed in enums");
+    }
+  }
+
+  // add $name field
+  auto modifiers_field_public = FieldModifiers();
+  modifiers_field_public.set_public();
+
+  auto name_vertex = VertexAdaptor<op_var>::create();
+  name_vertex->str_val = "name";
+  name_vertex->is_const = true;
+  cur_class->members.add_instance_field(name_vertex,
+                                        VertexAdaptor<op_string>::create(),
+                                        modifiers_field_public,
+                                        nullptr,
+                                        nullptr);
+
+  // add $cases_ and cases()
+  std::vector<VertexPtr> cases_internal;
+  std::transform(std::begin(cases),
+                std::end(cases),
+                std::back_inserter(cases_internal),
+                [&](const std::string & s) {
+                  auto resp = VertexAdaptor<op_string>::create();
+                  resp->str_val = s;
+                  return resp;
+                });
+  auto cases_vertex = VertexAdaptor<op_var>::create();
+  cases_vertex->str_val = "cases_";
+  auto cases_init_vertex = VertexAdaptor<op_array>::create(cases_internal);
+
+  cur_class->members.add_static_field(cases_vertex,
+                                      cases_init_vertex,
+                                      modifiers_field_private,
+                                      nullptr,
+                                      nullptr);
+
+  {
+    const auto params = VertexAdaptor<op_func_param_list>::create();
+    const auto body = VertexAdaptor<op_seq>::create(VertexAdaptor<op_return>::create(cases_init_vertex.clone()));
+    const auto cases_function = VertexAdaptor<op_function>::create(params, body);
+    const auto func_name = cur_class->name + "$$cases";
+    const auto func = FunctionData::create_function(func_name, cases_function, FunctionData::func_local);
+
+    auto f_alive = StackPushPop<FunctionPtr> (functions_stack, cur_function, func);
+
+    func->update_location_in_body();
+    func->is_inline = true;
+    func->modifiers = FunctionModifiers::nonmember();
+    func->modifiers.set_public();
+    func->phpdoc = phpdoc;
+    cur_class->members.add_static_method(func);
+    G->register_and_require_function(func, parsed_os, true);
+  }
+
+  CE (!kphp_error(body_vertex, "Failed to parse enum body"));
+
+  // create private constructor
+  {
+    auto param_var = VertexAdaptor<op_var>::create();
+    param_var->str_val = "name_";
+    const auto param = VertexAdaptor<op_func_param>::create(param_var.clone());
+
+    auto this_vertex = VertexAdaptor<op_var>::create();
+    this_vertex->str_val = "this";
+    auto inst_prop = VertexAdaptor<op_instance_prop>::create(this_vertex.clone());
+    inst_prop->str_val = "name";
+    const auto body = VertexAdaptor<op_seq>::create(std::vector<VertexPtr>{
+      VertexAdaptor<op_set>::create(inst_prop, param_var.clone()),
+      VertexAdaptor<op_return>::create(this_vertex.clone())
+    });
+
+    auto func = VertexAdaptor<op_function>::create(VertexAdaptor<op_func_param_list>::create(std::vector<VertexPtr>{param}), body);
+
+    std::string func_name = replace_backslashes(cur_class->name) + "$$" + ClassData::NAME_OF_CONSTRUCT;
+    auto this_param = cur_class->gen_param_this(func->get_location());
+    func->param_list_ref() = VertexAdaptor<op_func_param_list>::create(this_param, func->param_list()->params());
+    VertexUtil::func_force_return(func, cur_class->gen_vertex_this(func->location));
+    auto ctor_function = FunctionData::create_function(func_name, func, FunctionData::func_local);
+
+    auto f_alive = StackPushPop<FunctionPtr> (functions_stack, cur_function, ctor_function);
+
+    ctor_function->update_location_in_body();
+    ctor_function->is_inline = true;
+    ctor_function->modifiers = FunctionModifiers::instance_private();
+    ctor_function->phpdoc = phpdoc;
+    cur_class->members.add_instance_method(ctor_function);
+    G->register_and_require_function(ctor_function, parsed_os, true);
+  }
+
+  // create getEnum* methods
+  for (const auto & case_name : cases) {
+    const auto params = VertexAdaptor<op_func_param_list>::create();
+
+    auto var = VertexAdaptor<op_var>::create();
+    var->str_val = cur_class->name + "$$" + case_name;
+
+    auto as_op_str = VertexAdaptor<op_string>::create();
+    as_op_str->str_val = case_name;
+
+    const auto cond = VertexAdaptor<op_conv_bool>::create(VertexAdaptor<op_eq3>::create(var.clone(), VertexAdaptor<op_null>::create()));
+    const auto ctor_call = gen_constructor_call_with_args(cur_class, std::vector<VertexPtr>{as_op_str}, auto_location());
+    const auto cond_body = VertexAdaptor<op_seq>::create(VertexAdaptor<op_set>::create(var.clone(), ctor_call));
+    const auto if_vertex = VertexAdaptor<op_if>::create(cond, cond_body);
+    const auto func_body = VertexAdaptor<op_seq>::create(std::vector<VertexPtr>{if_vertex, VertexAdaptor<op_return>::create(var.clone()), VertexAdaptor<op_return>::create()});
+    const auto func_vertex = VertexAdaptor<op_function>::create(params, func_body);
+    std::string func_name = replace_backslashes(cur_class->name) + "$$getEnum" + case_name;
+    auto function = FunctionData::create_function(func_name, func_vertex, FunctionData::func_local);
+
+    auto f_alive = StackPushPop<FunctionPtr> (functions_stack, cur_function, function);
+
+    function->update_location_in_body();
+    function->is_inline = true;
+    function->modifiers = FunctionModifiers::nonmember();
+    function->modifiers.set_public();
+    cur_class->members.add_static_method(function);
+    G->register_and_require_function(function, parsed_os, true);
+  }
+
+  return {};
+}
+
+VertexAdaptor<op_string> GenTree::get_enum_case() {
+
+  /*
+  enum {
+    ...
+    case ENUM_CASE;  <----- parse such a construction
+  }
+  */
+  CE(cur->type() == tok_case);
+  next_cur();
+  CE (!kphp_error(test_expect(tok_func_name), "Enum case name expected"));
+  auto response = VertexAdaptor<op_string>::create();
+  response->str_val = static_cast<std::string>(cur->str_val);
+  return response;
+}
 
 VertexAdaptor<op_func_call> GenTree::gen_constructor_call_with_args(const std::string &allocated_class_name, std::vector<VertexPtr> args, const Location &location) {
   auto alloc = VertexAdaptor<op_alloc>::create().set_location(location);
@@ -2021,6 +2324,8 @@ VertexPtr GenTree::get_statement(const PhpDocComment *phpdoc) {
       CE (check_seq_end());
       return res;
     }
+    case tok_case:
+      return get_enum_case();
     case tok_return:
       return get_return();
     case tok_continue:
@@ -2232,6 +2537,8 @@ VertexPtr GenTree::get_statement(const PhpDocComment *phpdoc) {
       kphp_error(processing_file->namespace_uses.empty(), "Usage of operator `use`(Aliasing/Importing) with traits is temporarily prohibited");
       return res;
     }
+    case tok_enum:
+      return get_enum(phpdoc);
     default: {
       auto res = get_expression();
       CE (check_statement_end());

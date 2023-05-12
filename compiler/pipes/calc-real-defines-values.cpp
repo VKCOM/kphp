@@ -94,6 +94,19 @@ void CalcRealDefinesAndAssignModulitesF::process_define_recursive(VertexPtr root
     if (define) {
       process_define(define);
     } else {
+      if (root->type() == op_func_name) {
+        // Check enums in a special way
+        // TODO replace with pure const later
+        const auto pos_double_dol = root->get_string().find("$$");
+        if (pos_double_dol != std::string::npos) {
+          std::string class_name = root->get_string().substr(0, pos_double_dol);
+          std::string enum_case_name = std::string(root->get_string().begin() + pos_double_dol + 2, root->get_string().end());
+          std::string need_method = class_name + "$$getEnum" + enum_case_name;
+          if (G->get_function(need_method)) {
+            return;
+          }
+        }
+      }
       kphp_error(0, fmt_format("Can't find definition for '{}'", define_name));
     }
   }
