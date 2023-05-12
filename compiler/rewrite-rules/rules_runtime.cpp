@@ -230,16 +230,10 @@ bool contains_var(VertexPtr tree, VertexPtr var) {
 }
 
 VertexPtr to_tmp_string_expr(VertexPtr v, bool safe) {
-
   v = VertexUtil::unwrap_string_value(v);
   if (v->type() != op_func_call) {
     return {};
   }
-
-  if (v.as<op_func_call>()->func_id->name == "substr") {
-    puts("here");
-  }
-
   auto as_call = v.as<op_func_call>();
   if (as_call->args().empty()) {
     return {};
@@ -251,9 +245,6 @@ VertexPtr to_tmp_string_expr(VertexPtr v, bool safe) {
   if (safe) {
     // the $subject string is always the first argument
     auto subject_arg = VertexUtil::unwrap_string_value(as_call->args()[0]);
-    puts("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
-    subject_arg.debugPrint();
-    puts("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
     if (!is_safe_simple_expr(subject_arg)) {
       return {};
     }
