@@ -1,4 +1,4 @@
-@kphp_should_fail
+@ok kphp_should_fail
 /Non-const expression in const context/
 <?php
 require_once 'kphp_tester_include.php';
