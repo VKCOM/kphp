@@ -64,6 +64,7 @@ std::string debugTokenName(TokenType t) {
     {tok_class, "tok_class"},
     {tok_interface, "tok_interface"},
     {tok_trait, "tok_trait"},
+    {tok_enum, "tok_enum"},
     {tok_extends, "tok_extends"},
     {tok_implements, "tok_implements"},
     {tok_namespace, "tok_namespace"},

@@ -119,6 +119,8 @@ public:
   static VertexAdaptor<op_var> auto_capture_this_in_lambda(FunctionPtr f_lambda);
 
   VertexPtr get_class(const PhpDocComment *phpdoc, ClassType class_type);
+  VertexPtr get_enum(const PhpDocComment *phpdoc);
+  VertexAdaptor<op_case> get_enum_case();
   void parse_extends_implements();
 
   static VertexPtr process_arrow(VertexPtr lhs, VertexPtr rhs);
