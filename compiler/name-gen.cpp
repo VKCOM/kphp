@@ -219,6 +219,10 @@ ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr lhs, Vert
     case op_set:
       return resolve_class_of_arrow_access(function, lhs.as<op_set>()->rhs(), v);
 
+    // inlined constant value
+    case op_define_val:
+      return resolve_class_of_arrow_access(function, lhs.as<op_define_val>()->value(), v);
+
     default:
       break;
   }
