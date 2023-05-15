@@ -1756,11 +1756,22 @@ VertexPtr GenTree::get_enum(const PhpDocComment * phpdoc) {
   kphp_error(processing_file->namespace_uses.find(name_str) == processing_file->namespace_uses.end(),
              "Enum name is the same as one of 'use' at the top of the file");
 
-  // TODO parse_extends_implements();
 
   const auto class_ptr = ClassPtr(new ClassData{ClassType::klass});
   StackPushPop<ClassPtr> c_alive(class_stack, cur_class, class_ptr);
   StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, cur_class->gen_holder_function(full_class_name));
+
+  next_cur();
+  kphp_error(!test_expect(tok_extends), "Enums cannot extend");
+
+  if (test_expect(tok_implements)) { // TODO separate parse_extends_implements into different functions
+    do {
+      next_cur();
+      kphp_error(test_expect(tok_func_name), "Class name expected after 'implements'");
+      cur_class->add_str_dependent(cur_function, ClassType::interface, cur->str_val);
+      next_cur();
+    } while (test_expect(tok_comma));
+  }
 
   cur_class->modifiers.set_final();
   cur_class->file_id = processing_file;
@@ -1780,14 +1791,12 @@ VertexPtr GenTree::get_enum(const PhpDocComment * phpdoc) {
   }
 
   // generate body
-  next_cur();
   CE(cur->type() == tok_opbrc);
 
   VertexPtr body_vertex = get_statement();
   kphp_assert_msg(body_vertex && body_vertex->type() == op_seq, "Incorrect enum body");
-  const auto body_seq = body_vertex.try_as<op_seq>();
 
-  std::vector<std::string> cases; // do i need it?
+  std::vector<std::string> cases;
 
   // add $name field
   {
@@ -1829,11 +1838,12 @@ VertexPtr GenTree::get_enum(const PhpDocComment * phpdoc) {
 
     ctor_function->update_location_in_body();
     ctor_function->is_inline = true;
-    ctor_function->modifiers = FunctionModifiers::instance_private();
+    ctor_function->modifiers = FunctionModifiers::instance_public();
     ctor_function->phpdoc = phpdoc;
     cur_class->members.add_instance_method(ctor_function);
     G->register_and_require_function(ctor_function, parsed_os, true);
   }
+  const auto body_seq = body_vertex.try_as<op_seq>();
 
   // generating constants
   for (const auto &stmt : body_seq->args()) {
@@ -1841,24 +1851,51 @@ VertexPtr GenTree::get_enum(const PhpDocComment * phpdoc) {
       auto cve = case_vertex->expr();
       const auto case_name_vertex = cve.try_as<op_func_name>();
 
-      if (!case_name_vertex) {
-        puts("Blya");
-      }
-
       assert(case_name_vertex);
       const auto case_name = case_name_vertex->get_string();
       cases.push_back(case_name);
 
       VertexAdaptor<op_string> cns = VertexAdaptor<op_string>::create();
-      cns->str_val = case_name.data();
+      cns->str_val = case_name;
 
-      const auto ctor_call = gen_constructor_call_with_args(cur_class, std::vector<VertexPtr>{cns}, auto_location());
-
+      const auto ctor_call = gen_constructor_call_with_args(cur_class->name, std::vector<VertexPtr>{cns}, auto_location());
+      ctor_call->args()[0].as<op_alloc>()->allocated_class_name = "self";
       cur_class->members.add_constant(case_name, ctor_call, AccessModifiers::public_);
 
     }
     kphp_error(stmt->type() != op_var, "Fields are no allowed in enums");
   }
+
+
+  // generating cases()
+  {
+    std::vector<VertexAdaptor<op_func_name>> arr_args;
+
+    std::transform(cases.begin(), cases.end(), std::back_inserter(arr_args), [](const std::string &case_name) {
+      auto item = VertexAdaptor<op_func_name>::create();
+      item->str_val = "self::" + case_name;
+      return item;
+    });
+
+    auto response = VertexAdaptor<op_array>::create(std::move(arr_args));
+
+    const auto params = VertexAdaptor<op_func_param_list>::create(std::vector<VertexAdaptor<op_func_param>>{});
+    const auto body = VertexAdaptor<op_seq>::create(std::vector<VertexPtr>{VertexAdaptor<op_return>::create(response)});
+    auto func = VertexAdaptor<op_function>::create(params, body);
+    std::string func_name = replace_backslashes(cur_class->name) + "$$cases";
+    auto cases_fun = FunctionData::create_function(func_name, func, FunctionData::func_local);
+    auto f_alive2 = StackPushPop<FunctionPtr>(functions_stack, cur_function, cases_fun);
+
+
+    cases_fun->update_location_in_body();
+    cases_fun->is_inline = true;
+    cases_fun->modifiers = FunctionModifiers::nonmember();
+    cases_fun->modifiers.set_public();
+    cases_fun->modifiers.set_final();
+    cur_class->members.add_static_method(cases_fun);
+    G->register_and_require_function(cases_fun, parsed_os, true);
+  }
+
 
   return {};
 }
