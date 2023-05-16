@@ -20,15 +20,18 @@ var_dump(gzdecode($encoded));
 
 
 function dump_test($ctx) {
-    $out = deflate_add($ctx, 'this ', ZLIB_NO_FLUSH);
-    $out .= deflate_add($ctx, 'is ', ZLIB_NO_FLUSH);
-    $out .= deflate_add($ctx, 'a test.', ZLIB_SYNC_FLUSH);
-    $out .= deflate_add($ctx, '', ZLIB_FINISH);
+    $chunks = ['myxa', 'myxophyta', 'myxopod', 'nab', 'nabbed', 'nabbing', 'nabit', 'nabk', 'nabob', 'nacarat', 'nacelle'];
+    $out = "";
+    for($i = 0; $i < count($chunks); $i++) {
+        $type = $i % 2 == 0 ? ZLIB_NO_FLUSH : ZLIB_SYNC_FLUSH;
+        $out .= deflate_add($ctx, $chunks[$i], $type);
+    }
+    $out .= deflate_add($ctx, $chunks[count($chunks) - 1], ZLIB_FINISH);
     var_dump(crc32($out));
     return $out;
 }
 
-$gzip_ctx = deflate_init(ZLIB_ENCODING_GZIP, ['window' => 9, 'memory' => 3]);
+$gzip_ctx = deflate_init(ZLIB_ENCODING_GZIP, ['window' => 10, 'memory' => 2]);
 $raw_ctx = deflate_init(ZLIB_ENCODING_RAW, ['level' => 8]);
 $deflate_ctx = deflate_init(ZLIB_ENCODING_DEFLATE, ['strategy' => ZLIB_HUFFMAN_ONLY]);
 

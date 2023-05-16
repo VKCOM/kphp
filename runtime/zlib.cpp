@@ -65,12 +65,30 @@ const string_buffer *zlib_encode(const char *s, int32_t s_len, int32_t level, in
   return &static_SB;
 }
 
-class_instance<C$DeflateContext> f$deflate_init(int encoding, const array<mixed> &options) {
+class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mixed> &options) {
   int level = -1;
   int memory = 8;
   int window = 15;
   int strategy = Z_DEFAULT_STRATEGY;
-  string_buffer dict;
+  auto extract_int_option = [&](int lbound, int ubound, const array_iterator<const mixed> & option, int & dst) {
+    mixed value = option.get_value();
+    if (value.is_int() && value.as_int() >= lbound && value.as_int() <= ubound) {
+      dst = value.as_int();
+      return 0;
+    } else {
+      php_warning("deflate_init() : option %s should be number between %d..%d", option.get_string_key().c_str(), lbound, ubound);
+      return -1;
+    }
+  };
+  switch (encoding) {
+    case ZLIB_ENCODING_RAW:
+    case ZLIB_ENCODING_DEFLATE:
+    case ZLIB_ENCODING_GZIP:
+      break;
+    default:
+      php_warning("deflate_init() : encoding should be one of ZLIB_ENCODING_RAW, ZLIB_ENCODING_DEFLATE, ZLIB_ENCODING_GZIP");
+      return {};
+  }
   for (const auto &option : options) {
     mixed value;
     if (!option.is_string_key()) {
@@ -78,31 +96,19 @@ class_instance<C$DeflateContext> f$deflate_init(int encoding, const array<mixed>
       return {};
     }
     if (option.get_string_key() == string("level")) {
-      value = options.get_value(string("level"));
-      if (value.is_int() && value.as_int() >= -1 && value.as_int() <= 9) {
-        level = value.as_int();
-      } else {
-        php_warning("deflate_init() : option level should be number between -1..9");
+      if (extract_int_option(-1, 9, option, level) != 0) {
         return {};
       }
     } else if (option.get_string_key() == string("memory")) {
-      value = options.get_value(string("memory"));
-      if (value.is_int() && value.as_int() >= 1 && value.as_int() <= 9) {
-        level = value.as_int();
-      } else {
-        php_warning("deflate_init() : option memory should be number between 1..9");
+      if (extract_int_option(1, 9, option, memory) != 0) {
         return {};
       }
     } else if (option.get_string_key() == string("window")) {
-      value = options.get_value(string("window"));
-      if (value.is_int() && value.as_int() >= 8 && value.as_int() <= 15) {
-        level = value.as_int();
-      } else {
-        php_warning("deflate_init() : option window should be number between 8..15");
+      if (extract_int_option(8, 15, option, window) != 0) {
         return {};
       }
     } else if (option.get_string_key() == string("strategy")) {
-      value = options.get_value(string("strategy"));
+      value = option.get_value();
       if (value.is_int()) {
         switch (value.as_int()) {
           case Z_FILTERED:
@@ -153,7 +159,7 @@ class_instance<C$DeflateContext> f$deflate_init(int encoding, const array<mixed>
   return context;
 }
 
-Optional<string> f$deflate_add(const class_instance<C$DeflateContext> &context, string &data, int64_t flush_type) {
+Optional<string> f$deflate_add(const class_instance<C$DeflateContext> &context, const string &data, int64_t flush_type) {
   switch (flush_type) {
     case Z_BLOCK:
     case Z_NO_FLUSH:
@@ -167,34 +173,41 @@ Optional<string> f$deflate_add(const class_instance<C$DeflateContext> &context, 
       return {};
   }
 
-  string_buffer buffer;
-  int out_size = compressBound(data.size()) + 30;
-  buffer.reserve(out_size);
+  dl::CriticalSectionGuard guard;
   z_stream *stream = &context.get()->stream;
-  stream->next_in = reinterpret_cast<Bytef *>(data.buffer());
-  stream->next_out = reinterpret_cast<Bytef *>(buffer.buffer());
+  int out_size = deflateBound(stream, data.size()) + 30;
+  out_size = out_size < 64 ? 64 : out_size;
+  char * buffer = static_cast<char *>(dl::script_allocator_malloc(out_size));
+  auto finalizer = vk::finally([buffer](){dl::script_allocator_free(buffer);});
+  stream->next_in = const_cast<Bytef *>(reinterpret_cast<const Bytef *>(data.c_str()));
+  stream->next_out = reinterpret_cast<Bytef *>(buffer);
   stream->avail_in = data.size();
   stream->avail_out = out_size;
 
-  dl::CriticalSectionGuard guard;
-  int res = deflate(stream, flush_type);
+  int status = Z_OK;
+  int buffer_used = 0;
+  do {
+    if (stream->avail_out == 0) {
+      buffer = static_cast<char *>(dl::script_allocator_realloc(buffer, out_size + 64));
+      out_size += 64;
+      stream->avail_out = 64;
+      stream->next_out = reinterpret_cast<Bytef *>(buffer + buffer_used);
+    }
+    status = deflate(stream, flush_type);
+    buffer_used = out_size - stream->avail_out;
+  } while (status == Z_OK && stream->avail_out == 0);
+
   int len;
-  switch (res) {
+  switch (status) {
     case Z_OK:
-      len = stream->next_out - reinterpret_cast<Bytef *>(buffer.buffer());
-      if (len != 0) {
-        buffer.set_pos(len);
-      }
-      return buffer.str();
+      len = stream->next_out - reinterpret_cast<Bytef *>(buffer);
+      return string(buffer, len);
     case Z_STREAM_END:
-      len = stream->next_out - reinterpret_cast<Bytef *>(buffer.buffer());
-      if (len != 0) {
-        buffer.set_pos(len);
-      }
+      len = stream->next_out - reinterpret_cast<Bytef *>(buffer);
       deflateReset(stream);
-      return buffer.str();
+      return string(buffer, len);
     default:
-      php_warning("deflate_add() : zlib error %s", zError(res));
+      php_warning("deflate_add() : zlib error %s", zError(status));
       return {};
   }
 }
