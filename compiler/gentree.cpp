@@ -1779,6 +1779,7 @@ VertexPtr GenTree::get_enum(const PhpDocComment * phpdoc) {
   cur_class->phpdoc = phpdoc;
   cur_class->is_immutable = true;
   cur_class->location_line_num = line_num;
+  cur_class->add_str_dependent(cur_function, ClassType::interface, "\\UnitEnum");
 
   bool registered = G->register_class(cur_class);
   if (registered) {
@@ -1794,7 +1795,7 @@ VertexPtr GenTree::get_enum(const PhpDocComment * phpdoc) {
   CE(cur->type() == tok_opbrc);
 
   VertexPtr body_vertex = get_statement();
-  kphp_assert_msg(body_vertex && body_vertex->type() == op_seq, "Incorrect enum body");
+  kphp_error(body_vertex && body_vertex->type() == op_seq, "Incorrect enum body");
 
   std::vector<std::string> cases;
 
@@ -1883,9 +1884,13 @@ VertexPtr GenTree::get_enum(const PhpDocComment * phpdoc) {
     const auto body = VertexAdaptor<op_seq>::create(std::vector<VertexPtr>{VertexAdaptor<op_return>::create(response)});
     auto func = VertexAdaptor<op_function>::create(params, body);
     std::string func_name = replace_backslashes(cur_class->name) + "$$cases";
+
+
     auto cases_fun = FunctionData::create_function(func_name, func, FunctionData::func_local);
     auto f_alive2 = StackPushPop<FunctionPtr>(functions_stack, cur_function, cases_fun);
 
+//    const auto *hint = TypeHintArray::create_array_of_any();
+//    cases_fun->return_typehint = hint;
 
     cases_fun->update_location_in_body();
     cases_fun->is_inline = true;

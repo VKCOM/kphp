@@ -67,6 +67,10 @@ class Error implements Throwable {
     final private function __clone() ::: void;
 }
 
+interface UnitEnum {
+    public static function cases();
+}
+
 interface Memcache {
     public function get (string|string[] $key) ::: mixed;
     public function delete (string $key) ::: bool;
