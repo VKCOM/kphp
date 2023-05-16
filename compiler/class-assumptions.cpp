@@ -777,6 +777,8 @@ Assumption assume_class_of_expr(FunctionPtr f, VertexPtr root, VertexPtr stop_at
       return assume_class_of_expr(f, root.as<op_move>()->expr(), stop_at);
     case op_set:
       return assume_class_of_expr(f, root.as<op_set>()->rhs(), stop_at);
+    case op_define_val:
+      return assume_class_of_expr(f, root.as<op_define_val>()->value(), stop_at);
 
     // assumptions for primitives aren't saved to $local_vars and don't help to resolve ->arrows,
     // but they are useful for generics reification
@@ -790,8 +792,6 @@ Assumption assume_class_of_expr(FunctionPtr f, VertexPtr root, VertexPtr stop_at
     case op_false:
     case op_true:
       return Assumption(TypeHintPrimitive::create(tp_bool));
-    case op_define_val:
-      return assume_class_of_expr(f, root.as<op_define_val>()->value(), stop_at);
 
     default:
       return {};

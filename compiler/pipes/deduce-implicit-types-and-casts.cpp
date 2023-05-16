@@ -265,7 +265,7 @@ void patch_rhs_casting_to_callable(VertexPtr &rhs, const TypeHintCallable *as_ca
       rhs = v_lambda;
     }
 
-  } else if (rhs->type() == op_array && rhs->size() == 2 && VertexUtil::unwrap_inlined_define(rhs->back())->type() == op_string) { // HERE
+  } else if (rhs->type() == op_array && rhs->size() == 2 && VertexUtil::unwrap_inlined_define(rhs->back())->type() == op_string) {
     // [$obj, 'method'] or [getObject(), 'method'] or similar
     // pay attention, that $obj (rhs->front()) is captured in an auto-created wrapping lambda or in a c++ lambda in case of extern
     auto unwrapped_back = VertexUtil::unwrap_inlined_define(rhs->back());
