@@ -42,6 +42,7 @@ static const string STR_ERROR("__error", 7);
 static const string STR_ERROR_CODE("__error_code", 12);
 
 static const char *last_rpc_error;
+static int32_t last_rpc_error_code;
 
 static const int32_t *rpc_data_begin;
 static const int32_t *rpc_data;
@@ -108,12 +109,17 @@ void rpc_parse_restore_previous() {
   rpc_data_len = rpc_data_len_backup;
 }
 
-const char *last_rpc_error_get() {
+const char *last_rpc_error_message_get() {
   return last_rpc_error;
+}
+
+int32_t last_rpc_error_code_get() {
+  return last_rpc_error_code;
 }
 
 void last_rpc_error_reset() {
   last_rpc_error = nullptr;
+  last_rpc_error_code = TL_ERROR_UNKNOWN;
 }
 
 void rpc_parse(const int32_t *new_rpc_data, int32_t new_rpc_data_len) {
@@ -128,6 +134,7 @@ bool f$rpc_parse(const string &new_rpc_data) {
   if (new_rpc_data.size() % sizeof(int) != 0) {
     php_warning("Wrong parameter \"new_rpc_data\" of len %d passed to function rpc_parse", (int)new_rpc_data.size());
     last_rpc_error = "Result's length is not divisible by 4";
+    last_rpc_error_code = TL_ERROR_RESPONSE_SYNTAX;
     return false;
   }
 
@@ -783,7 +790,7 @@ void process_rpc_answer(int32_t request_id, char *result, int32_t result_len __a
   resumable_run_ready(resumable_id);
 }
 
-void process_rpc_error(int32_t request_id, int32_t error_code __attribute__((unused)), const char *error_message) {
+void process_rpc_error(int32_t request_id, int32_t error_code, const char *error_message) {
   rpc_request *request = get_rpc_request(request_id);
 
   if (request->resumable_id < 0) {
@@ -798,6 +805,7 @@ void process_rpc_error(int32_t request_id, int32_t error_code __attribute__((unu
   }
 
   request->error = error_message;
+  request->error_code = error_code;
 
   php_assert (resumable_id > 0);
   resumable_run_ready(resumable_id);
@@ -817,16 +825,19 @@ protected:
       TRY_WAIT(rpc_get_resumable_label_0, ready, bool);
       if (!ready) {
         last_rpc_error = last_wait_error;
+        last_rpc_error_code = TL_ERROR_INTERNAL;
         RETURN(false);
       }
 
       Storage *input = get_forked_storage(resumable_id);
       if (input->tag == 0) {
         last_rpc_error = "Result already was gotten";
+        last_rpc_error_code = TL_ERROR_INTERNAL;
         RETURN(false);
       }
       if (input->tag != Storage::tagger<rpc_request>::get_tag()) {
         last_rpc_error = "Not a rpc request";
+        last_rpc_error_code = TL_ERROR_INTERNAL;
         RETURN(false);
       }
 
@@ -835,6 +846,7 @@ protected:
 
       if (res.resumable_id == -2) {
         last_rpc_error = res.error;
+        last_rpc_error_code = res.error_code;
         RETURN(false);
       }
 
@@ -890,16 +902,19 @@ protected:
       TRY_WAIT(rpc_get_and_parse_resumable_label_0, ready, bool);
       if (!ready) {
         last_rpc_error = last_wait_error;
+        last_rpc_error_code = TL_ERROR_INTERNAL;
         RETURN(false);
       }
 
       Storage *input = get_forked_storage(resumable_id);
       if (input->tag == 0) {
         last_rpc_error = "Result already was gotten";
+        last_rpc_error_code = TL_ERROR_INTERNAL;
         RETURN(false);
       }
       if (input->tag != Storage::tagger<rpc_request>::get_tag()) {
         last_rpc_error = "Not a rpc request";
+        last_rpc_error_code = TL_ERROR_INTERNAL;
         RETURN(false);
       }
 
@@ -908,6 +923,7 @@ protected:
 
       if (res.resumable_id == -2) {
         last_rpc_error = res.error;
+        last_rpc_error_code = res.error_code;
         RETURN(false);
       }
 
@@ -1196,7 +1212,7 @@ protected:
     bool ready;
 
     RESUMABLE_BEGIN
-      last_rpc_error = nullptr;
+      last_rpc_error_reset();
       ready = rpc_get_and_parse(query_id, -1);
       TRY_WAIT(rpc_get_and_parse_resumable_label_0, ready, bool);
       if (!ready) {
@@ -1204,7 +1220,7 @@ protected:
         if (!rpc_query.is_null()) {
           rpc_query.get()->result_fetcher.reset();
         }
-        RETURN(tl_fetch_error(last_rpc_error, TL_ERROR_UNKNOWN));
+        RETURN(tl_fetch_error(last_rpc_error, last_rpc_error_code));
       }
 
       array<mixed> tl_object = fetch_function(rpc_query);
