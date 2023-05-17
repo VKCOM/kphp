@@ -509,7 +509,6 @@ shutdown_function_type *const shutdown_functions = reinterpret_cast<shutdown_fun
 shutdown_functions_status shutdown_functions_status_value = shutdown_functions_status::not_executed;
 jmp_buf timeout_exit;
 bool finished = false;
-bool wait_all_forks_on_finish = false;
 
 } // namespace
 
@@ -668,20 +667,12 @@ void f$register_shutdown_function(const shutdown_function_type &f) {
   new(&shutdown_functions[shutdown_functions_count++]) shutdown_function_type(f);
 }
 
-bool f$set_wait_all_forks_on_finish(bool wait) noexcept {
-  std::swap(wait_all_forks_on_finish, wait);
-  return wait;
-}
-
-void finish(int64_t exit_code, bool allow_forks_waiting) {
+void finish(int64_t exit_code) {
   if (!finished) {
     finished = true;
     forcibly_stop_profiler();
     if (shutdown_functions_count != 0) {
       run_shutdown_functions_from_script();
-    }
-    if (allow_forks_waiting && wait_all_forks_on_finish) {
-      wait_all_forks();
     }
   }
 
@@ -700,9 +691,9 @@ void f$exit(const mixed &v) {
 
   if (v.is_string()) {
     *coub << v;
-    finish(0, false);
+    finish(0);
   } else {
-    finish(v.to_int(), false);
+    finish(v.to_int());
   }
 }
 

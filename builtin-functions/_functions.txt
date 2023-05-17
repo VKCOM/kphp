@@ -992,8 +992,6 @@ function get_fork_stat(future<any> $fork) ::: mixed[] | false;
 
 function query_x2 ($x ::: int) ::: int;
 
-function set_wait_all_forks_on_finish(bool $wait = true) ::: bool;
-
 /**
  * conversions
  * they should be there to work in array_map and similar
