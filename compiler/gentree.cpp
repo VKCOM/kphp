@@ -1757,7 +1757,7 @@ VertexPtr GenTree::get_enum(const PhpDocComment * phpdoc) {
              "Enum name is the same as one of 'use' at the top of the file");
 
 
-  const auto class_ptr = ClassPtr(new ClassData{ClassType::klass});
+  const auto class_ptr = ClassPtr(new ClassData{ClassType::enumeration});
   StackPushPop<ClassPtr> c_alive(class_stack, cur_class, class_ptr);
   StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, cur_class->gen_holder_function(full_class_name));
 
@@ -1889,9 +1889,6 @@ VertexPtr GenTree::get_enum(const PhpDocComment * phpdoc) {
     auto cases_fun = FunctionData::create_function(func_name, func, FunctionData::func_local);
     auto f_alive2 = StackPushPop<FunctionPtr>(functions_stack, cur_function, cases_fun);
 
-//    const auto *hint = TypeHintArray::create_array_of_any();
-//    cases_fun->return_typehint = hint;
-
     cases_fun->update_location_in_body();
     cases_fun->is_inline = true;
     cases_fun->modifiers = FunctionModifiers::nonmember();
@@ -1914,6 +1911,9 @@ VertexAdaptor<op_case> GenTree::get_enum_case() {
   }
   */
   CE(cur->type() == tok_case);
+
+  kphp_error(cur_class->is_enum(), "'case' expressions are available only in enum declaration");
+
   next_cur();
   CE (!kphp_error(test_expect(tok_func_name), "Enum case name expected"));
   auto val = VertexAdaptor<op_func_name>::create().set_location(auto_location());

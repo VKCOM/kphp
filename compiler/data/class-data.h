@@ -27,6 +27,7 @@ enum class ClassType {
   klass,
   interface,
   trait,
+  enumeration,
   ffi_scope,
   ffi_cdata,
 };
@@ -122,6 +123,7 @@ public:
   }
 
   bool is_class() const { return class_type == ClassType::klass; }
+  bool is_enum() const { return class_type == ClassType::enumeration; }
   bool is_interface() const { return class_type == ClassType::interface; }
   bool is_trait() const { return class_type == ClassType::trait; }
   bool is_ffi_scope() const { return class_type == ClassType::ffi_scope; }
