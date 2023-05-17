@@ -522,10 +522,10 @@ static const string_buffer * compress_http_query_body(string_buffer * http_query
   } else {
     if ((http_need_gzip & 5) == 5) {
       header("Content-Encoding: gzip", 22, true);
-      return zlib_encode(http_query_body->c_str(), http_query_body->size(), 6, ZLIB_ENCODE);
+      return zlib_encode(http_query_body->c_str(), http_query_body->size(), 6, ZLIB_ENCODING_GZIP);
     } else if ((http_need_gzip & 6) == 6) {
       header("Content-Encoding: deflate", 25, true);
-      return zlib_encode(http_query_body->c_str(), http_query_body->size(), 6, ZLIB_COMPRESS);
+      return zlib_encode(http_query_body->c_str(), http_query_body->size(), 6, ZLIB_ENCODING_DEFLATE);
     } else {
       return http_query_body;
     }

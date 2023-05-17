@@ -375,7 +375,7 @@ void f$store_finish_gzip_pack(int64_t threshold) {
     php_assert (rpc_pack_from % sizeof(int) == 0 && 0 <= rpc_pack_from && 0 <= answer_size);
     if (answer_size >= threshold) {
       const char *answer_begin = data_buf.c_str() + rpc_pack_from;
-      const string_buffer *compressed = zlib_encode(answer_begin, static_cast<int32_t>(answer_size), 6, ZLIB_ENCODE);
+      const string_buffer *compressed = zlib_encode(answer_begin, static_cast<int32_t>(answer_size), 6, ZLIB_ENCODING_GZIP);
 
       if (compressed->size() + 2 * sizeof(int) < answer_size) {
         data_buf.set_pos(rpc_pack_from);
