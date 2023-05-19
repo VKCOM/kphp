@@ -6,6 +6,7 @@ if(KPHP_TESTS)
         if(NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND APPLE)
             target_link_libraries(${TEST_NAME} PRIVATE /opt/homebrew/lib/libucontext.a)
         endif()
+        target_link_libraries(${TEST_NAME} PRIVATE /usr/local/lib/libucontext.a)
         target_link_options(${TEST_NAME} PRIVATE ${NO_PIE})
 
         gtest_discover_tests(${TEST_NAME})
