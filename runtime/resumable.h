@@ -61,6 +61,10 @@ public:
   bool resume(int64_t resumable_id, Storage *input);
   void *get_stack_ptr() { return pos__; }
 
+  virtual bool is_internal_resumable() const noexcept {
+    return false;
+  }
+
   static void update_output();
 };
 

@@ -12,6 +12,7 @@
 #include "compiler/data/define-data.h"
 #include "compiler/data/kphp-json-tags.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/kphp-tracing-tags.h"
 #include "compiler/vertex-util.h"
 
 /*
@@ -226,6 +227,15 @@ VertexPtr maybe_replace_extern_func_call(FunctionPtr current_function, VertexAda
   // classof($expr)
   if (f_name == "classof" && n_args == 1) {
     return replace_classof(current_function, call);
+  }
+
+  // register_shutdown_function(f_shutdown) — automatically mark f_shutdown with @kphp-tracing
+  // (it's also a kind of "replace when extern", that's why placed here, but can be moved to another place)
+  if (f_name == "register_shutdown_function" && n_args >= 1) {
+    FunctionPtr f_shutdown = call->args()[0].as<op_callback_of_builtin>()->func_id;
+    if (f_shutdown && !f_shutdown->kphp_tracing) {
+      f_shutdown->kphp_tracing = KphpTracingDeclarationMixin::create_for_shutdown_function(f_shutdown);
+    }
   }
 
   return call;

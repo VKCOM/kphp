@@ -9,7 +9,6 @@
 #if ASAN_ENABLED
 #include <sanitizer/lsan_interface.h>
 #endif
-#include "common/containers/final_action.h"
 #include "common/unicode/utf8-utils.h"
 
 #include "runtime/critical_section.h"

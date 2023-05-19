@@ -17,7 +17,6 @@
 #include "compiler/data/class-members.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/function-modifiers.h"
-#include "compiler/data/generics-mixins.h"
 #include "compiler/data/performance-inspections.h"
 #include "compiler/data/vertex-adaptor.h"
 #include "compiler/debug.h"
@@ -25,6 +24,9 @@
 #include "compiler/inferring/var-node.h"
 #include "compiler/threading/data-stream.h"
 #include "compiler/vertex-meta_op_base.h"
+
+class GenericsDeclarationMixin;
+class KphpTracingDeclarationMixin;
 
 class FunctionData {
   DEBUG_STRING_METHOD { return as_human_readable(); }
@@ -153,6 +155,9 @@ public:
   // non-null for instantiations of generic functions, e.g. f<User>
   // describes a mapping between generic types (T) and actual instantiation types (User)
   GenericsInstantiationMixin *instantiationTs{nullptr};
+
+  // non-null for functions marked with @kphp-tracing, contains parsed tag contents
+  KphpTracingDeclarationMixin *kphp_tracing{nullptr};
 
   ClassPtr class_id;
   ClassPtr context_class;

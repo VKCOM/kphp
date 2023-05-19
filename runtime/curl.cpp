@@ -12,6 +12,7 @@
 
 #include "runtime/critical_section.h"
 #include "runtime/interface.h"
+#include "runtime/kphp_tracing.h"
 #include "runtime/string-list.h"
 
 #include "common/macos-ports.h"
@@ -45,6 +46,7 @@ size_t curl_write(char *data, size_t size, size_t nmemb, void *userdata);
 
 class BaseContext : vk::not_copyable {
 public:
+  int64_t uniq_id{0};
   int64_t error_num{0};
   char error_msg[CURL_ERROR_SIZE + 1]{'\0'};
 
@@ -175,6 +177,7 @@ public:
 
   bool return_transfer{false};
   bool connection_only{false};
+  size_t bytes_recv{0};
 };
 
 class MultiContext : public BaseContext {
@@ -605,6 +608,7 @@ curl_easy f$curl_init(const string &url) noexcept {
   auto &easy_contexts = vk::singleton<CurlContexts>::get().easy_contexts;
   EasyContext *&easy_context = easy_contexts.emplace_back();
   easy_context = new(dl::allocate(sizeof(EasyContext))) EasyContext(easy_contexts.count());
+  easy_context->uniq_id = kphp_tracing::generate_uniq_id();
 
   dl::critical_section_call([&easy_context] { easy_context->easy_handle = curl_easy_init(); });
   if (unlikely(!easy_context->easy_handle)) {
@@ -663,13 +667,25 @@ mixed f$curl_exec(curl_easy easy_id) noexcept {
     return false;
   }
 
+  if (kphp_tracing::is_turned_on()) {
+    string url = easy_context->get_info(CURLINFO_EFFECTIVE_URL).as_string();
+    kphp_tracing::on_curl_exec_start(easy_context->uniq_id, url);
+  }
+
   easy_context->cleanup_for_next_request();
   easy_context->error_num = dl::critical_section_call(curl_easy_perform, easy_context->easy_handle);
 
   if (easy_context->error_num != CURLE_OK && easy_context->error_num != CURLE_PARTIAL_FILE) {
+    if (kphp_tracing::is_turned_on()) {
+      kphp_tracing::on_curl_exec_fail(easy_context->uniq_id, -easy_context->error_num); // error_num > 0, pass negative
+    }
     return false;
   }
 
+  easy_context->bytes_recv = easy_context->received_data.size();
+  if (kphp_tracing::is_turned_on()) {
+    kphp_tracing::on_curl_exec_finish(easy_context->uniq_id, easy_context->bytes_recv);
+  }
   if (easy_context->return_transfer) {
     return easy_context->received_data.concat_and_get_string();
   }
@@ -788,6 +804,7 @@ curl_multi f$curl_multi_init() noexcept {
   auto &multi_contexts = vk::singleton<CurlContexts>::get().multi_contexts;
   MultiContext *&multi = multi_contexts.emplace_back();
   multi = new(dl::allocate(sizeof(MultiContext))) MultiContext;
+  multi->uniq_id = kphp_tracing::generate_uniq_id();
 
   dl::critical_section_call([&multi] { multi->multi_handle = curl_multi_init(); });
   if (unlikely(multi->multi_handle == nullptr)) {
@@ -795,12 +812,21 @@ curl_multi f$curl_multi_init() noexcept {
     php_warning("Could not initialize a new curl multi handle");
     return 0;
   }
-  return multi_contexts.count();
+
+  int64_t multi_handle = multi_contexts.count();
+  if (kphp_tracing::is_turned_on()) {
+    kphp_tracing::on_curl_multi_init(multi->uniq_id);
+  }
+  return multi_handle;
 }
 
 Optional<int64_t> f$curl_multi_add_handle(curl_multi multi_id, curl_easy easy_id) noexcept {
   if (auto *multi_context = get_context<MultiContext>(multi_id)) {
     if (auto *easy_context = get_context<EasyContext>(easy_id)) {
+      if (kphp_tracing::is_turned_on()) {
+        string url = easy_context->get_info(CURLINFO_EFFECTIVE_URL).as_string();
+        kphp_tracing::on_curl_multi_add_handle(multi_context->uniq_id, easy_context->uniq_id, url);
+      }
       easy_context->cleanup_for_next_request();
       multi_context->error_num = dl::critical_section_call(curl_multi_add_handle, multi_context->multi_handle, easy_context->easy_handle);
       return multi_context->error_num;
@@ -811,6 +837,7 @@ Optional<int64_t> f$curl_multi_add_handle(curl_multi multi_id, curl_easy easy_id
 
 Optional<string> f$curl_multi_getcontent(curl_easy easy_id) noexcept {
   if (auto *easy_context = get_context<EasyContext>(easy_id)) {
+    easy_context->bytes_recv = easy_context->received_data.size();
     return easy_context->return_transfer ? easy_context->received_data.concat_and_get_string() : Optional<string>{};
   }
   return false;
@@ -899,6 +926,9 @@ Optional<array<int64_t>> f$curl_multi_info_read(curl_multi multi_id, int64_t &ms
 Optional<int64_t> f$curl_multi_remove_handle(curl_multi multi_id, curl_easy easy_id) noexcept {
   if (auto *multi_context = get_context<MultiContext>(multi_id)) {
     if (auto *easy_context = get_context<EasyContext>(easy_id)) {
+      if (kphp_tracing::is_turned_on()) {
+        kphp_tracing::on_curl_multi_remove_handle(multi_context->uniq_id, easy_context->uniq_id, easy_context->bytes_recv);
+      }
       multi_context->error_num = dl::critical_section_call(curl_multi_remove_handle, multi_context->multi_handle, easy_context->easy_handle);
       return multi_context->error_num;
     }
@@ -914,6 +944,9 @@ Optional<int64_t> f$curl_multi_errno(curl_multi multi_id) noexcept {
 void f$curl_multi_close(curl_multi multi_id) noexcept {
   if (auto *multi_context = get_context<MultiContext>(multi_id)) {
     vk::singleton<CurlContexts>::get().multi_contexts.set_value(multi_id - 1, nullptr);
+    if (kphp_tracing::is_turned_on()) {
+      kphp_tracing::on_curl_multi_close(multi_context->uniq_id);
+    }
     multi_context->release();
   }
 }

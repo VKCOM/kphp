@@ -56,8 +56,15 @@ void f$setrawcookie(const string &name, const string &value, int64_t expire = 0,
 
 int64_t f$ignore_user_abort(Optional<bool> enable = Optional<bool>());
 
+enum class ShutdownType {
+  normal,
+  exit,
+  exception,
+  timeout,
+};
+
 void run_shutdown_functions_from_timeout();
-void run_shutdown_functions_from_script();
+void run_shutdown_functions_from_script(ShutdownType shutdown_type);
 
 int get_shutdown_functions_count();
 shutdown_functions_status get_shutdown_functions_status();
@@ -67,7 +74,7 @@ void f$register_shutdown_function(const shutdown_function_type &f);
 void f$fastcgi_finish_request(int64_t exit_code = 0);
 
 __attribute__((noreturn))
-void finish(int64_t exit_code);
+void finish(int64_t exit_code, bool from_exit);
 
 __attribute__((noreturn))
 void f$exit(const mixed &v = 0);

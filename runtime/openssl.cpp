@@ -168,7 +168,7 @@ Optional<string> f$md5_file(const string &file_name, bool raw_output) {
   size_t size = stat_buf.st_size;
   while (size > 0) {
     size_t len = min(size, (size_t)PHP_BUF_LEN);
-    if (read_safe(read_fd, php_buf, len) < (ssize_t)len) {
+    if (read_safe(read_fd, php_buf, len, file_name) < (ssize_t)len) {
       break;
     }
     php_assert (MD5_Update(&c, static_cast <const void *> (php_buf), (unsigned long)len) == 1);
@@ -222,7 +222,7 @@ int64_t f$crc32_file(const string &file_name) {
   size_t size = stat_buf.st_size;
   while (size > 0) {
     size_t len = min(size, (size_t)PHP_BUF_LEN);
-    if (read_safe(read_fd, php_buf, len) < (ssize_t)len) {
+    if (read_safe(read_fd, php_buf, len, file_name) < (ssize_t)len) {
       break;
     }
     res = crc32_partial(php_buf, (int)len, res);

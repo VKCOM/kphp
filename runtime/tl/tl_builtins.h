@@ -372,7 +372,7 @@ struct t_Vector {
 
     for (int64_t i = 0; i < n; ++i) {
       if (!v.isset(i)) {
-        CurrentProcessingQuery::get().raise_storing_error("Vector[%ld] not set", i);
+        CurrentProcessingQuery::get().raise_storing_error("Vector[%" PRIi64 "] not set", i);
         return;
       }
       store_magic_if_not_bare(inner_magic);
