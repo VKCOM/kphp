@@ -20,6 +20,7 @@
 #include "net/net-events.h"
 #include "net/net-reactor.h"
 #include "server/curl-adaptor.h"
+#include "server/slot-ids-factory.h"
 
 static_assert(LIBCURL_VERSION_NUM >= 0x071c00, "Outdated libcurl");
 static_assert(CURL_MAX_WRITE_SIZE <= (1 << 30), "CURL_MAX_WRITE_SIZE expected to be less than (1 << 30)");
@@ -1008,6 +1009,11 @@ std::unique_ptr<CurlRequest> CurlRequest::build(curl_easy easy_id) {
   return std::unique_ptr<CurlRequest>{new CurlRequest{easy_id, multi_id}};
 }
 
+CurlRequest::CurlRequest(curl_easy easy_id, curl_multi multi_id) noexcept
+  : easy_id(easy_id)
+  , multi_id(multi_id)
+  , request_id(curl_requests_factory.create_slot()) {}
+
 static int curl_socketfunction_cb(CURL *easy, curl_socket_t fd, int action, void *userp, void *socketp);
 
 void CurlRequest::send_async() const {
@@ -1040,9 +1046,12 @@ void CurlRequest::send_async() const {
 }
 
 void CurlRequest::finish_request(Optional<string> &&response) const {
-  f$curl_multi_remove_handle(multi_id, easy_id);
   auto curl_response = std::make_unique<CurlResponse>(std::move(response), request_id);
   vk::singleton<CurlAdaptor>::get().finish_request_resumable(std::move(curl_response));
+}
+
+void CurlRequest::detach_multi_and_easy_handles() const noexcept {
+  f$curl_multi_remove_handle(multi_id, easy_id);
 }
 
 static int curl_epoll_cb(int fd, void *data, event_t *ev) {

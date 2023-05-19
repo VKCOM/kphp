@@ -74,15 +74,14 @@ public:
 
   void send_async() const;
   void finish_request(Optional<string> &&respone = false) const;
+  void detach_multi_and_easy_handles() const noexcept;
 
-  int request_id{0};
   const curl_easy easy_id{0};
   const curl_multi multi_id{0};
+  const int request_id{0};
 
 private:
-  CurlRequest(curl_easy easy_id, curl_multi multi_id) noexcept
-    : easy_id(easy_id)
-    , multi_id(multi_id) {}
+  CurlRequest(curl_easy easy_id, curl_multi multi_id) noexcept;
 };
 
 class CurlResponse : private vk::not_copyable {

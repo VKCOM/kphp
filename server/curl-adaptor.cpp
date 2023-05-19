@@ -36,15 +36,12 @@ void CurlAdaptor::reset() noexcept {
 }
 
 int CurlAdaptor::launch_request_resumable(std::unique_ptr<CurlRequest> &&request) noexcept {
-  slot_id_t request_id = curl_requests_factory.create_slot();
-  request->request_id = request_id;
-
+  const int request_id = request->request_id;
   net_query_t *query = create_net_query();
   query->slot_id = request_id;
   query->data = request.release();
   int resumable_id = register_forked_resumable(new CurlRequestResumable{request_id});
   processing_requests.insert(request_id, CurlRequestInfo{resumable_id});
-
   return resumable_id;
 }
 
@@ -90,4 +87,11 @@ std::unique_ptr<CurlResponse> CurlAdaptor::withdraw_response(int request_id) noe
   php_assert(req_info.resumable_id != 0);
   php_assert(req_info.response);
   return std::move(req_info.response);
+}
+
+void CurlAdaptor::finish_request(int request_id) noexcept {
+  std::unique_ptr<CurlRequest> request = processing_requests_holder.extract(request_id);
+  if (request) {
+    request->detach_multi_and_easy_handles();
+  }
 }

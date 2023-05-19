@@ -26,6 +26,7 @@ public:
   void process_response_event(std::unique_ptr<CurlResponse> &&response) noexcept;
 
   std::unique_ptr<CurlResponse> withdraw_response(int request_id) noexcept;
+  void finish_request(int request_id) noexcept;
   void reset() noexcept;
 
 private:

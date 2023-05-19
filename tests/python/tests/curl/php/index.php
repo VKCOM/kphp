@@ -32,9 +32,21 @@ function main() {
         wait($future);
         return;
       }
+      case "/test_curl_reuse_handle": {
+        test_curl_reuse_handle();
+        return;
+      }
+      case "/test_curl_resumable_reuse_handle": {
+        test_curl_reuse_handle(true);
+        return;
+      }
   }
 
   critical_error("unknown test");
+}
+
+function to_json_safe($str) {
+  return is_string($str) && $str != '' ? json_decode($str) : $str;
 }
 
 function test_curl($curl_resumable = false) {
@@ -70,10 +82,34 @@ function test_curl($curl_resumable = false) {
   fwrite(STDERR, "end_curl_query\n");
   curl_close($ch);
 
-  $resp = ["exec_result" => is_string($output) && $output != '' ? json_decode($output) : $output];
+  $resp = ["exec_result" => to_json_safe($output)];
   if ($ob_json = ob_get_clean()) {
     $resp["output_buffer"] = json_decode($ob_json);
   }
+  echo json_encode($resp);
+}
+
+function test_curl_reuse_handle($curl_resumable = false) {
+  $params = json_decode(file_get_contents('php://input'));
+
+  $ch = curl_init();
+  curl_setopt($ch, CURLOPT_URL, (string)$params["url"]);
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+  $timeout_s = $params["timeout"];
+
+  // set timeout only on first request
+  if (!$curl_resumable) {
+    curl_setopt($ch, CURLOPT_TIMEOUT_MS, $timeout_s * 1000);
+  }
+  $output1 = $curl_resumable ? curl_exec_concurrently($ch, $timeout_s) : curl_exec($ch);
+  if (!$curl_resumable) {
+    curl_setopt($ch, CURLOPT_TIMEOUT_MS, 0);
+  }
+
+  $output2 = $curl_resumable ? curl_exec_concurrently($ch) : curl_exec($ch);
+  curl_close($ch);
+
+  $resp = ["exec_result1" => to_json_safe($output1), "exec_result2" => to_json_safe($output2)];
   echo json_encode($resp);
 }
 
