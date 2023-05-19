@@ -64,7 +64,7 @@ class StatsReceiver:
     def try_update_stats(self):
         new_stats = {}
         lines = self._stats_file_read_fd.readlines()
-        for i in range(len(lines)):
+        for i in range(len(lines)-1):
             if lines[i][len(lines[i])-2] != "g":
                 lines[i] += lines[i+1]
                 lines.remove(lines[i+1])
