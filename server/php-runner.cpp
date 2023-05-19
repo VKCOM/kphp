@@ -221,6 +221,7 @@ void PhpScript::on_request_timeout_error() {
 
 int PhpScript::swapcontext_helper(ucontext_t_portable *oucp, const ucontext_t_portable *ucp) {
   stack_end = reinterpret_cast<char *>(ucp->uc_stack.ss_sp) + ucp->uc_stack.ss_size;
+  // __sanitizer_start_switch_fiber(&oucp->fake_stack, ucp->uc_stack.ss_sp, ucp->uc_stack.ss_size);
   return swapcontext_portable(oucp, ucp);
 }
 
