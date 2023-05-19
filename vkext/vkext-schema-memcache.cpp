@@ -1307,7 +1307,6 @@ static zval *make_query_result_or_error(zval **r, const char *error_msg, int err
 
 void vk_memcache_query_result_many(struct rpc_queue *Q, double timeout, zval **r) {
   array_init (*r);
-  int size = 0;
   while (!do_rpc_queue_empty(Q)) {
     long long qid = do_rpc_queue_next(Q, timeout);
     if (qid <= 0) {
@@ -1321,7 +1320,6 @@ void vk_memcache_query_result_many(struct rpc_queue *Q, double timeout, zval **r
     if (do_rpc_get_and_parse(qid, timeout - precise_now) < 0) {
       continue;
     }
-    size++;
     zval *res = make_query_result_or_error(vk_memcache_query_result_one(T),
                                            "Response not found, probably timed out",
                                            TL_ERROR_RESPONSE_NOT_FOUND);

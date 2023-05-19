@@ -523,7 +523,6 @@ int main (int argc, const char *argv[]) {
       }
     }
   }
-  int total = 0;
   for (i = 0; i < 0x110000; i++) {
     int cnt_s = 0, pos = 0, cnt_o = 0;
     for (j = 0; unfkd[i][j]; j++) {
@@ -545,12 +544,10 @@ int main (int argc, const char *argv[]) {
     } else {
       if (j > 0 && is_symbol (i)) {
 //        fprintf (stderr, "Error4 in %x(%d), cnt_s = %d, cnt_m = %d, cnt_o = %d\n", i, ugc[i], cnt_s, j - cnt_o - cnt_s, cnt_o);
-        total++;
       }
       without_diacritics[i] = i;
     }
   }
-//  fprintf (stderr, "Error4 total: %d\n", total);
 
   for (i = 0; i < 0x110000; i++) {
     j = i;
@@ -646,7 +643,6 @@ int main (int argc, const char *argv[]) {
   }
 
 
-  total = 0;
   for (i = 0; i < 0x110000; i++) {
     assert (len[i] <= 1);
     int ti = without_diacritics[i];
@@ -656,11 +652,9 @@ int main (int argc, const char *argv[]) {
           fprintf (stderr, "%x/%d(%x %x) %x/%d(%x %x)\n", i, i, convert_to[i][0], convert_to[i][1], ti, ti, convert_to[ti][0], convert_to[ti][1]);
           assert (0);
         }
-        total++;
       }
     }
   }
-//  fprintf (stderr, "Error5 total: %d\n", total);
 
   assert ((PREPARE_TABLE_SIZE & 15) == 0);
   
