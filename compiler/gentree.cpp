@@ -1902,7 +1902,7 @@ VertexPtr GenTree::get_enum(const PhpDocComment * phpdoc) {
   // generating constructor
   {
     auto param_var = VertexAdaptor<op_var>::create();
-    param_var->str_val = "name_";
+    param_var->str_val = "name";
     auto param = VertexAdaptor<op_func_param>::create(param_var.clone());
 
     auto params_vec = std::vector<VertexPtr>{param};
@@ -1976,6 +1976,7 @@ VertexPtr GenTree::get_enum(const PhpDocComment * phpdoc) {
     cases_fun->modifiers = FunctionModifiers::nonmember();
     cases_fun->modifiers.set_public();
     cases_fun->modifiers.set_final();
+    cases_fun->return_typehint = TypeHintArray::create(cur_class->type_hint);
     cur_class->members.add_static_method(cases_fun);
     G->register_and_require_function(cases_fun, parsed_os, true);
   }
@@ -1984,8 +1985,10 @@ VertexPtr GenTree::get_enum(const PhpDocComment * phpdoc) {
   #if 1
   if (vk::any_of_equal(enum_type, EnumType::BackedInt, EnumType::BackedString)) {
     auto param_var = VertexAdaptor<op_var>::create();
-    param_var->str_val = "value_";
-    auto params = VertexAdaptor<op_func_param_list>::create(std::vector<VertexPtr>{VertexAdaptor<op_func_param>::create(param_var)});
+    param_var->str_val = "value";
+    auto param_pampam = VertexAdaptor<op_func_param>::create(param_var);
+    param_pampam->type_hint = TypeHintPipe::create(std::vector<const TypeHint*>{TypeHintPrimitive::create(tp_int), TypeHintPrimitive::create(tp_string)});
+    auto params = VertexAdaptor<op_func_param_list>::create(std::vector<VertexPtr>{param_pampam});
 
 
     VertexPtr foreach_vert;

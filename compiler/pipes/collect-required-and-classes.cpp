@@ -74,6 +74,14 @@ private:
         }
       }
 
+      if (cur_class->name != "BackedEnum" && !cur_class->is_enum() && (dep.class_name == "UnitEnum" || dep.class_name == "BackedEnum")) {
+         if (cur_class->is_interface()) {
+          kphp_error(false, fmt_format("Interface {} cannot extend UnitEnum or BackedEnum", cur_class->name));
+        } else {
+          kphp_error(false, fmt_format("Class {} cannot implement UnitEnum or BackedEnum", cur_class->name));
+        }
+      }
+
       require_class(dep.class_name);
     }
     // class constant values may contain other class constants that may need require_class()
