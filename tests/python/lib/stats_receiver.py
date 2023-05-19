@@ -66,7 +66,8 @@ class StatsReceiver:
         lines = self._stats_file_read_fd.readlines()
         for i in range(len(lines)-1):
             if lines[i][len(lines[i])-2] != "g":
-                lines[i] += lines[i+1]
+                print(f"LINE: {lines[i]} and {lines[i+1]} = {lines[i].replace("\n", "") + lines[i+1]}")
+                lines[i] = lines[i].replace("\n", "") + lines[i+1]
                 lines.remove(lines[i+1])
         for stat_line in filter(None, lines):
             if stat_line[-1] != "\n":
