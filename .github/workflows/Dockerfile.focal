@@ -18,7 +18,6 @@ RUN apt-get update && \
     pip3 install portalocker psutil requests-toolbelt pytest pytest-xdist pytest-mysql pytest-postgresql psycopg zstandard && \
     rm -rf /var/lib/apt/lists/*
 
-ENV ASAN_OPTIONS=detect_leaks=0
 ENV UBSAN_OPTIONS=print_stacktrace=1:allow_addr2line=1
 
 RUN useradd -ms /bin/bash kitten
