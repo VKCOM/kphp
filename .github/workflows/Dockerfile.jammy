@@ -32,6 +32,7 @@ RUN update-alternatives --install /usr/bin/ld ld /usr/bin/x86_64-linux-gnu-ld 10
 RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" && \
     php composer-setup.php --install-dir=/usr/bin --filename=composer --version=1.10.26
 
+ENV ASAN_OPTIONS=detect_leaks=0:detect_stack_use_after_return=1
 ENV UBSAN_OPTIONS=print_stacktrace=1:allow_addr2line=1
 
 RUN useradd -ms /bin/bash kitten
