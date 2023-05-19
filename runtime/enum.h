@@ -24,3 +24,10 @@ struct C$UnitEnum : public abstract_refcountable_php_interface {
     ~C$UnitEnum() __attribute__((always_inline)) = default;
 };
 
+struct C$BackedEnum : public C$UnitEnum {
+  virtual const char *get_class() const  noexcept  override  = 0;
+  virtual int get_hash() const  noexcept  override  = 0;
+
+  C$BackedEnum() __attribute__((always_inline)) = default;
+  ~C$BackedEnum() __attribute__((always_inline)) = default;
+};
