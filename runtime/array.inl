@@ -273,7 +273,7 @@ template<class T>
 typename array<T>::array_inner *array<T>::array_inner::create(int64_t new_int_size, int64_t new_string_size, bool is_vector) {
   const size_t mem_size = estimate_size(new_int_size, new_string_size, is_vector);
   if (is_vector) {
-    auto p = reinterpret_cast<array_inner *>(dl::allocate(mem_size));
+    auto p = dynamic_cast<array_inner *>(dl::allocate(mem_size));
     p->ref_cnt = 0;
     p->max_key = -1;
     p->int_size = 0;
