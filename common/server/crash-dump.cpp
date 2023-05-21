@@ -128,7 +128,7 @@ static inline void crash_dump_prepare_registers(crash_dump_buffer_t *buffer, voi
   crash_dump_write_reg(LITERAL_WITH_LENGTH("R15=0x"), uc->uc_mcontext->__ss.__r15, buffer);
 #endif
 #elif defined(__x86_64__)
-  const auto *uc = static_cast<ucontext_t_portable *>(ucontext);
+  const auto *uc = static_cast<ucontext_t *>(ucontext);
 
   crash_dump_write_reg(LITERAL_WITH_LENGTH("RIP=0x"), uc->uc_mcontext.gregs[REG_RIP], buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("RSP=0x"), uc->uc_mcontext.gregs[REG_RSP], buffer);
