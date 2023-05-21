@@ -70,9 +70,9 @@ class StatsReceiver:
 
     def try_update_stats(self):
         new_stats = {}
-        while True:
-            if self.try_stats(): break
-            time.sleep(60)
+        # while True:
+        #     if self.try_stats(): break
+        #     time.sleep(60)
         lines = self._stats_file_read_fd.readlines()
         for stat_line in filter(None, lines):
             if stat_line[-1] != "\n":
