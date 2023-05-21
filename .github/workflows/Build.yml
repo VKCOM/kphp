@@ -61,8 +61,9 @@ jobs:
       # run: |
       #   docker build -f $GITHUB_WORKSPACE/.github/workflows/Dockerfile.${{matrix.os}} $GITHUB_WORKSPACE -t kphp-build-img-${{matrix.os}}
       #   docker save --output kphp-build-env-${{matrix.os}}.tar kphp-build-img-${{matrix.os}}
-      docker build -f $GITHUB_WORKSPACE/.github/workflows/Dockerfile.${{matrix.os}} $GITHUB_WORKSPACE -t kphp-build-img-${{matrix.os}}
-      docker save --output kphp-build-env-${{matrix.os}}.tar kphp-build-img-${{matrix.os}}
+      run: |
+        docker build -f $GITHUB_WORKSPACE/.github/workflows/Dockerfile.${{matrix.os}} $GITHUB_WORKSPACE -t kphp-build-img-${{matrix.os}}
+        docker save --output kphp-build-env-${{matrix.os}}.tar kphp-build-img-${{matrix.os}}
         
     # - name: Load docker image from cache
     #   if: steps.docker-image-cache.outputs.cache-hit == 'true'
