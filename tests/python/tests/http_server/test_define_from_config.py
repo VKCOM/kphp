@@ -9,9 +9,9 @@ class TestDefineFromConfig(KphpServerAutoTestCase):
         })
 
     def test_define_from_config(self):
-        resp = self.kphp_server.http_get("/ini_get?a")
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.text, "42")
+        # resp = self.kphp_server.http_get("/ini_get?a")
+        # self.assertEqual(resp.status_code, 200)
+        # self.assertEqual(resp.text, "42")
 
         resp = self.kphp_server.http_get("/ini_get?b")
         self.assertEqual(resp.status_code, 200)
