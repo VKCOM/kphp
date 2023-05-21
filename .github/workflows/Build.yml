@@ -30,8 +30,8 @@ jobs:
           - os: focal
             compiler: g++-10
             cpp: 20
-            asan: off
-            ubsan: on
+            asan: on
+            ubsan: off
           - os: jammy
             compiler: g++
             cpp: 20
