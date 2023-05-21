@@ -17,11 +17,11 @@ jobs:
     strategy:
       matrix:
         include:
-          # - os: buster
-          #   compiler: g++
-          #   cpp: 17
-          #   asan: off
-          #   ubsan: off
+          - os: buster
+            compiler: g++
+            cpp: 17
+            asan: off
+            ubsan: off
           - os: focal
             compiler: clang++
             cpp: 17
@@ -32,11 +32,11 @@ jobs:
             cpp: 20
             asan: off
             ubsan: on
-          # - os: jammy
-          #   compiler: g++
-          #   cpp: 20
-          #   asan: on
-          #   ubsan: off
+          - os: jammy
+            compiler: g++
+            cpp: 20
+            asan: on
+            ubsan: off
 
     name: "${{matrix.os}}/${{matrix.compiler}}/c++${{matrix.cpp}}/asan=${{matrix.asan}}/ubsan=${{matrix.ubsan}}"
 
@@ -62,9 +62,9 @@ jobs:
         docker build -f $GITHUB_WORKSPACE/.github/workflows/Dockerfile.${{matrix.os}} $GITHUB_WORKSPACE -t kphp-build-img-${{matrix.os}}
         docker save --output kphp-build-env-${{matrix.os}}.tar kphp-build-img-${{matrix.os}}
         
-    - name: Load docker image from cache
-      if: steps.docker-image-cache.outputs.cache-hit == 'true'
-      run: docker load --input kphp-build-env-${{matrix.os}}.tar
+    # - name: Load docker image from cache
+      # if: steps.docker-image-cache.outputs.cache-hit == 'true'
+      # run: docker load --input kphp-build-env-${{matrix.os}}.tar
 
     - name: Start docker container
       run: |
