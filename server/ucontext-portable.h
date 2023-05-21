@@ -22,6 +22,7 @@
 extern "C" {
 #include <libucontext/libucontext.h>
 }
+#include <ucontext.h>
 
 #define ucontext_t_portable libucontext_ucontext_t
 #define setcontext_portable libucontext_setcontext
