@@ -12,7 +12,7 @@ RUN apt update && \
     apt update && \
     apt install -y --no-install-recommends \
       git cmake make g++ lld gperf netcat \
-      python3-minimal python3-dev libpython3-dev python3-jsonschema python3-setuptools python3-pip && \
+      python3-minimal python3-dev libpython3-dev python3-jsonschema python3-setuptools python3-pip php7.4-bcmath php7.4-mbstring php7.4-curl php7.4-h3 php7.4 zstd && \
     pip3 install wheel && \
     apt install -y --no-install-recommends curl-kphp-vk kphp-timelib libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
       libzstd-dev libyaml-cpp-dev libnghttp2-dev zlib1g-dev php7.4-dev mysql-server libmysqlclient-dev libnuma-dev unzip \

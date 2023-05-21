@@ -61,18 +61,8 @@ class StatsReceiver:
                 raise RuntimeError("Waiting next stats timeout")
             time.sleep(0.05)
 
-    def try_stats(self):
-        lines = self._stats_file_read_fd.readlines()
-        for i in range(len(lines)):
-            if lines[i][len(lines[i])-2] != "g":
-                return False
-        return True
-
     def try_update_stats(self):
         new_stats = {}
-        # while True:
-        #     if self.try_stats(): break
-        #     time.sleep(60)
         lines = self._stats_file_read_fd.readlines()
         for stat_line in filter(None, lines):
             if stat_line[-1] != "\n":
