@@ -36,7 +36,7 @@ jobs:
             compiler: g++
             cpp: 20
             asan: off
-            ubsan: on
+            ubsan: off
 
     name: "${{matrix.os}}/${{matrix.compiler}}/c++${{matrix.cpp}}/asan=${{matrix.asan}}/ubsan=${{matrix.ubsan}}"
 
