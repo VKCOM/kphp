@@ -76,8 +76,37 @@ class TestJobErrors(KphpServerAutoTestCase):
         ])
 
     def test_job_stack_overflow_error(self):
-        self.job_error_test_impl("stack_overflow", self.JOB_STACK_OVERFLOW_ERROR)
-        self.kphp_server.assert_log(2 * [
+        data = [[1, 2, 3, 4], [7, 9, 12]]
+        buffers = 4
+        error_type = "stack_overflow"
+        error_code = self.JOB_STACK_OVERFLOW_ERROR
+        results = 2
+
+        stats_before = self.kphp_server.get_stats()
+        resp = self.kphp_server.http_post(
+            uri="/test_job_errors",
+            json={
+                "tag": "x2_with_error",
+                "error-type": error_type,
+                "data": data
+            })
+
+        self.assertEqual(resp.status_code, 200)
+
+        job_result = resp.json()["jobs-result"]
+        success_jobs = 0
+        for i in range(results):
+            success_jobs += job_result[i]["error_code"] == error_code
+            
+        self.kphp_server.assert_stats(
+            initial_stats=stats_before,
+            expected_added_stats={
+                "kphp_server.workers_job_memory_messages_shared_messages_buffers_acquired": buffers,
+                "kphp_server.workers_job_memory_messages_shared_messages_buffers_released": buffers,
+                "kphp_server.workers_job_memory_messages_shared_messages_buffer_acquire_fails": 0
+            })
+
+        self.kphp_server.assert_log(success_jobs * [
             "Critical error during script execution: sigsegv\\(stack overflow\\)",
             "Error -1: Callstack overflow"
         ])
