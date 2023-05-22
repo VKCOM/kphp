@@ -77,7 +77,7 @@ class TestJobErrors(KphpServerAutoTestCase):
 
     def test_job_stack_overflow_error(self):
         self.job_error_test_impl("stack_overflow", self.JOB_STACK_OVERFLOW_ERROR)
-        self.kphp_server.assert_log([
+        self.kphp_server.assert_log(2 * [
             "Critical error during script execution: sigsegv\\(stack overflow\\)",
             "Error -1: Callstack overflow"
         ])
