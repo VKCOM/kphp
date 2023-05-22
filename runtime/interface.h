@@ -63,12 +63,10 @@ shutdown_functions_status get_shutdown_functions_status();
 
 void f$register_shutdown_function(const shutdown_function_type &f);
 
-bool f$set_wait_all_forks_on_finish(bool wait = true) noexcept;
-
 void f$fastcgi_finish_request(int64_t exit_code = 0);
 
 __attribute__((noreturn))
-void finish(int64_t exit_code, bool allow_forks_waiting);
+void finish(int64_t exit_code);
 
 __attribute__((noreturn))
 void f$exit(const mixed &v = 0);
@@ -165,6 +163,8 @@ int64_t f$get_engine_uptime();
 string f$get_engine_version();
 
 int64_t f$get_engine_workers_number();
+
+string f$get_kphp_cluster_name();
 
 std::tuple<int64_t, int64_t, int64_t, int64_t> f$get_webserver_stats();
 

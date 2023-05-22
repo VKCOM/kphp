@@ -23,9 +23,10 @@ include(FetchContent)
 # Global includes must be before all other includes/add_subdirectories
 include(cmake/utils.cmake)
 include(cmake/init-global-vars.cmake)
+include(cmake/init-compilation-options.cmake)
+include(cmake/external-libraries.cmake)
 include(cmake/init-compilation-flags.cmake)
 include(cmake/popular-common.cmake)
-include(cmake/external-libraries.cmake)
 
 # TODO: use FetchContent_Declare instead of include_directories
 include_directories(.)

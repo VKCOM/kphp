@@ -21,8 +21,6 @@ function function_no_return(string $msg) {
 }
 
 function test_kphp() {
-  set_wait_all_forks_on_finish();
-
   fork(function_return_void("111"));
   fork(function_return_void("222"));
 

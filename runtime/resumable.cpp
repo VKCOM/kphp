@@ -1067,31 +1067,6 @@ Optional<int64_t> wait_queue_next_synchronously(int64_t queue_id) {
   return q->first_finished_function == -2 ? 0 : -q->first_finished_function;
 }
 
-void wait_all_forks() noexcept {
-  if (!in_main_thread()) {
-    return;
-  }
-
-  // TODO CurException should be null?
-  auto saved_exception = std::move(CurException);
-  for (int64_t fork_id = first_array_forked_resumable_id; fork_id < current_forked_resumable_id; ++fork_id) {
-    if (get_forked_resumable(fork_id)) {
-      wait_forked_resumable(fork_id, get_precise_now() + MAX_TIMEOUT);
-    }
-    Storage *output = get_forked_storage(fork_id);
-    if (output->tag == Storage::tagger<thrown_exception>::get_tag()) {
-      CurException = Optional<bool>{};
-      output->load<void>();
-      // TODO assert?
-      if (!CurException.is_null()) {
-        // write exception into logs and continue
-        php_uncaught_exception_error(CurException, true);
-      }
-    }
-  }
-  CurException = std::move(saved_exception);
-}
-
 static int32_t wait_queue_timeout_wakeup_id = -1;
 
 class wait_queue_resumable final : public ResumableWithTimer {

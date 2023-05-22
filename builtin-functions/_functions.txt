@@ -103,6 +103,10 @@ final class mysqli {
     private function __construct() ::: \mysqli;
 }
 
+final class DeflateContext {
+    private function __construct() ::: DeflateContext;
+}
+
 /** @var mixed $_SERVER */
 global $_SERVER;
 /** @var mixed $_GET */
@@ -204,6 +208,8 @@ function get_net_queries_count() ::: int;
 function get_engine_uptime() ::: int;
 function get_engine_version() ::: string;
 function get_engine_workers_number() ::: int;
+function get_kphp_cluster_name(): string;
+
 // get_webserver_stats returns a tuple of (running_workers, waiting_workers, ready_for_accept_workers, total_workers)
 function get_webserver_stats() ::: tuple(int, int, int, int);
 
@@ -513,9 +519,29 @@ function openssl_encrypt($data ::: string, $method ::: string, $key ::: string, 
 function openssl_decrypt($data ::: string, $method ::: string, $key ::: string, $options ::: int = 0, $iv ::: string  = '',
                         $tag ::: string = '', $aad ::: string = '') ::: string | false;
 
+define('ZLIB_ENCODING_RAW', -0x0f);
+define('ZLIB_ENCODING_DEFLATE', 0x0f);
+define('ZLIB_ENCODING_GZIP', 0x1f);
+
+define('ZLIB_NO_FLUSH', 0);
+define('ZLIB_PARTIAL_FLUSH', 1);
+define('ZLIB_SYNC_FLUSH', 2);
+define('ZLIB_FULL_FLUSH', 3);
+define('ZLIB_FINISH', 4);
+define('ZLIB_BLOCK', 5);
+define('ZLIB_TREES', 6);
+
+define('ZLIB_FILTERED', 1);
+define('ZLIB_HUFFMAN_ONLY', 2);
+define('ZLIB_RLE', 3);
+define('ZLIB_FIXED', 4);
+define('ZLIB_DEFAULT_STRATEGY', 0);
+
 define('PHP_QUERY_RFC1738', 1);
 define('PHP_QUERY_RFC3986', 2);
 
+function deflate_init(int $encoding, array $options = []) ::: ?DeflateContext;
+function deflate_add(DeflateContext $context, string $data, int $flush_mode = ZLIB_SYNC_FLUSH) ::: string | false;
 function gzencode ($str ::: string, $level ::: int = -1) ::: string;
 function gzdecode ($str ::: string) ::: string;
 function gzcompress ($str ::: string, $level ::: int = -1) ::: string;
@@ -990,8 +1016,6 @@ function get_fork_stat(future<any> $fork) ::: mixed[] | false;
 
 function query_x2 ($x ::: int) ::: int;
 
-function set_wait_all_forks_on_finish(bool $wait = true) ::: bool;
-
 /**
  * conversions
  * they should be there to work in array_map and similar
@@ -1400,6 +1424,8 @@ function set_migration_php8_warning ($mask ::: int) ::: void;
 function set_detect_incorrect_encoding_names_warning(bool $show) ::: void;
 
 function set_json_log_on_timeout_mode(bool $enabled) ::: void;
+
+function set_use_updated_gmmktime(bool $enable) ::: void;
 
 // re-initialize given ArrayIterator with another array;
 // in KPHP it returns the same ArrayIterator that is ready to be used
