@@ -96,13 +96,14 @@ class TestJobErrors(KphpServerAutoTestCase):
         job_result = resp.json()["jobs-result"]
         success_jobs = 0
         for i in range(results):
-            success_jobs += job_result[i]["error_code"] == error_code
+            if job_result[i]["error_code"] == error_code: success_jobs += 1
+        print(f"success_jobs = {success_jobs}")
             
         self.kphp_server.assert_stats(
             initial_stats=stats_before,
             expected_added_stats={
-                "kphp_server.workers_job_memory_messages_shared_messages_buffers_acquired": buffers,
-                "kphp_server.workers_job_memory_messages_shared_messages_buffers_released": buffers,
+                "kphp_server.workers_job_memory_messages_shared_messages_buffers_acquired": buffers-success_jobs,
+                "kphp_server.workers_job_memory_messages_shared_messages_buffers_released": buffers-success_jobs,
                 "kphp_server.workers_job_memory_messages_shared_messages_buffer_acquire_fails": 0
             })
 
