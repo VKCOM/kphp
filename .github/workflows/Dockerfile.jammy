@@ -17,7 +17,7 @@ RUN apt update && \
     apt install -y --no-install-recommends curl-kphp-vk kphp-timelib libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
       libzstd-dev libyaml-cpp-dev libnghttp2-dev zlib1g-dev php7.4-dev mysql-server libmysqlclient-dev libnuma-dev unzip \
       libldap-dev libkrb5-dev postgresql postgresql-server-dev-all && \
-    pip3 install portalocker psutil requests-toolbelt requests==2.27.1 pytest pytest-xdist pytest-mysql pytest-postgresql psycopg zstandard && \
+    pip3 install portalocker psutil requests-toolbelt pytest pytest-xdist pytest-mysql pytest-postgresql psycopg zstandard && \
     rm -rf /var/lib/apt/lists/*
 
 # set php7.4 as default
