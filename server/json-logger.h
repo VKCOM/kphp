@@ -25,6 +25,7 @@ public:
   void set_tags(vk::string_view tags) noexcept;
   void set_extra_info(vk::string_view extra_info) noexcept;
   void set_env(vk::string_view env) noexcept;
+  void set_demangle_stacktrace(bool enable) noexcept;
 
   // ATTENTION: this functions are used in signal handlers, therefore they are expected to be safe for them
   // Details: https://man7.org/linux/man-pages/man7/signal-safety.7.html
@@ -40,6 +41,8 @@ private:
 
   int64_t release_version_{0};
   int json_log_fd_{-1};
+
+  int demangled_stacktrace_fd_{-1};
 
 #if __cplusplus >= 201703
   static_assert(std::atomic<bool>::is_always_lock_free);
