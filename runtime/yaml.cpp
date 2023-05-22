@@ -69,6 +69,37 @@ static string yaml_print_key(const mixed &data_key) noexcept {
 }
 
 /*
+ * escape special characters in a string entry
+ */
+static string yaml_escape(const string &data) noexcept {
+  string escaped_data;
+  for (size_t i = 0; i < data.size(); ++i) {
+    if (data[i] == 10) { // line feed - code 10
+      escaped_data.push_back(92); // backslash
+      escaped_data.push_back('n');
+    } else if (data[i] == 8) { // backspace - code 8
+      escaped_data.push_back(92); // backslash
+      escaped_data.push_back('b');
+    } else if (data[i] == 9) { // horizontal tab - code 9
+      escaped_data.push_back(92); // backslash
+      escaped_data.push_back('t');
+    } else if (data[i] == 11) { // vertical tab - code 11
+      escaped_data.push_back(92); // backslash
+      escaped_data.push_back('v');
+    } else if (data[i] == 34) { // double quotation mark - code 34
+      escaped_data.push_back(92); // backslash
+      escaped_data.push_back(34); // double quotation mark
+    } else if (data[i] == 92) { // backslash - code 92
+      escaped_data.push_back(92);
+      escaped_data.push_back(92); // double backslash
+    } else {
+      escaped_data.push_back(data[i]);
+    }
+  }
+  return escaped_data;
+}
+
+/*
  * get a YAML representation of mixed in a string variable
  */
 static void mixed_to_string(const mixed &data, string &string_data, const uint8_t nesting_level = 0) noexcept {
@@ -77,16 +108,9 @@ static void mixed_to_string(const mixed &data, string &string_data, const uint8_
     if (data.is_null()) {
       buffer.push_back('~'); // tilda is a YAML representation of NULL
     } else if (data.is_string()) {
-      const string &string_data_piece = data.as_string();
-      // check if a string has quotes
-      if (string_data_piece.size() < 2 || (string_data_piece[0] != '"' && string_data_piece[string_data_piece.size() - 1] != '"')) {
-        // if not, put it in quotes
-        buffer.push_back('"');
-        buffer.append(string_data_piece);
-        buffer.push_back('"');
-      } else {
-        buffer = string_data_piece;
-      }
+      buffer.push_back('"'); // cover string entry in double quotes
+      buffer.append(yaml_escape(data.as_string())); // escape special characters
+      buffer.push_back('"');
     } else if (data.is_int()) {
       buffer.append(data.as_int());
     } else if (data.is_float()) {
