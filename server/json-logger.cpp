@@ -7,7 +7,6 @@
 #include <execinfo.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <sys/mman.h>
 
 #include "common/algorithms/find.h"
 #include "common/fast-backtrace.h"
@@ -207,18 +206,6 @@ void JsonLogger::set_env(vk::string_view env) noexcept {
   }
 }
 
-void JsonLogger::set_demangle_stacktrace(bool enable) noexcept {
-  if (enable && demangled_stacktrace_fd_ == -1) {
-    demangled_stacktrace_fd_ = memfd_create("json_log_demangled_stacktrace", 0);
-    int err = ftruncate(demangled_stacktrace_fd_, 1024);
-    if (err == -1) {
-    }
-  } else if (!enable && demangled_stacktrace_fd_ != -1) {
-    close(demangled_stacktrace_fd_);
-    demangled_stacktrace_fd_ = -1;
-  }
-}
-
 void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at, void *const *trace, int64_t trace_size, bool uncaught) noexcept {
   if (json_log_fd_ <= 0) {
     return;
@@ -259,20 +246,9 @@ void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at
   }
 
   json_out_it->append_key("trace").start<'['>();
-  if (demangled_stacktrace_fd_ != -1) {
-    backtrace_symbols_fd(trace, trace_size, demangled_stacktrace_fd_);
-    std::array<char, 1024> buffer{};
-    lseek(demangled_stacktrace_fd_, 0, SEEK_SET);
-    int count = read(demangled_stacktrace_fd_, buffer.data(), 1024);
-    (void) count;
-    json_out_it->append_raw_string(buffer.data());
-    lseek(demangled_stacktrace_fd_, 0, SEEK_SET);
-  } else {
-    for (int64_t i = 0; i < trace_size; ++i) {
-      json_out_it->append_hex_as_string(reinterpret_cast<int64_t>(trace[i]));
-    }
+  for (int64_t i = 0; i < trace_size; i++) {
+    json_out_it->append_hex_as_string(reinterpret_cast<int64_t>(trace[i]));
   }
-
   json_out_it->finish<']'>();
 
   json_out_it->append_key("msg").append_raw_string(message);
@@ -292,7 +268,6 @@ void JsonLogger::write_stack_overflow_log(int type) noexcept {
 }
 
 void JsonLogger::reset_buffers() noexcept {
-  demangled_stacktrace_fd_ = -1;
   tags_available_ = false;
   extra_info_available_ = false;
   env_available_ = false;

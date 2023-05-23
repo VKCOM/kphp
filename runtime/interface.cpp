@@ -89,10 +89,6 @@ static int http_need_gzip;
 static bool is_utf8_enabled = false;
 bool is_json_log_on_timeout_enabled = true;
 
-void f$set_demangle_stacktrace_json_log(bool enable) {
-  vk::singleton<JsonLogger>::get().set_demangle_stacktrace(enable);
-}
-
 static int ignore_level = 0;
 
 mixed runtime_config;
