@@ -208,7 +208,7 @@ void JsonLogger::set_env(vk::string_view env) noexcept {
 }
 
 void JsonLogger::write_log_with_demangled_backtrace(vk::string_view message,int type, int64_t created_at,
-                                                    void *const *trace, int64_t trace_size,bool uncaught) {
+                                                    void *const *trace, int64_t trace_size, bool uncaught) {
   if (json_log_fd_ <= 0) {
     return;
   }
