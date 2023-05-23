@@ -207,11 +207,10 @@ void JsonLogger::set_env(vk::string_view env) noexcept {
   }
 }
 
-
-void JsonLogger::write_log_with_demangled_backtrace(vk::string_view message, int type, int64_t created_at, void *const *trace, int64_t trace_size,
-                                                    bool uncaught) {
+void JsonLogger::write_log_with_demangled_backtrace(vk::string_view message,int type, int64_t created_at,
+                                                    void *const *trace, int64_t trace_size,bool uncaught) {
   if (json_log_fd_ <= 0) {
-    return ;
+    return;
   }
 
   auto *json_out_it = buffers_.begin();
@@ -221,10 +220,10 @@ void JsonLogger::write_log_with_demangled_backtrace(vk::string_view message, int
 
   write_general_info(json_out_it, type, created_at, uncaught);
 
-  KphpBacktrace demangler{trace + 2, static_cast<int32_t>(trace_size - 2)};
+  KphpBacktrace demangler{trace, static_cast<int32_t>(trace_size)};
   json_out_it->append_key("trace").start<'['>();
   for (const char *name : demangler.make_demangled_backtrace_range()) {
-    if (name) {
+    if (name && strcmp(name, "") != 0) {
       json_out_it->append_raw_string(name);
     }
   }
@@ -234,8 +233,8 @@ void JsonLogger::write_log_with_demangled_backtrace(vk::string_view message, int
   json_out_it->finish_json_and_flush(json_log_fd_);
 }
 
-
-void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at, void *const *trace, int64_t trace_size, bool uncaught) noexcept {
+void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at,
+                           void *const *trace, int64_t trace_size, bool uncaught) noexcept {
   if (json_log_fd_ <= 0) {
     return;
   }

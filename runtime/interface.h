@@ -216,7 +216,7 @@ inline void f$set_json_log_on_timeout_mode(bool enabled) {
 
 extern bool is_demangled_stacktrace_logs_enabled;
 
-inline void f$set_demangle_stacktrace_json_log(bool enable) {
+inline void f$set_json_log_demangle_stacktrace(bool enable) {
   is_demangled_stacktrace_logs_enabled = enable;
 }
 
