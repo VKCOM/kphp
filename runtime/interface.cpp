@@ -53,7 +53,7 @@
 #include "runtime/udp.h"
 #include "runtime/url.h"
 #include "runtime/zlib.h"
-#include "server/cluster-name.h"
+#include "server/server-config.h"
 #include "server/database-drivers/adaptor.h"
 #include "server/database-drivers/mysql/mysql.h"
 #include "server/database-drivers/pgsql/pgsql.h"
@@ -1830,7 +1830,7 @@ int64_t f$get_engine_workers_number() {
 }
 
 string f$get_kphp_cluster_name() {
-  return string{vk::singleton<ClusterName>::get().get_cluster_name()};
+  return string{vk::singleton<ServerConfig>::get().get_cluster_name()};
 }
 
 std::tuple<int64_t, int64_t, int64_t, int64_t> f$get_webserver_stats() {

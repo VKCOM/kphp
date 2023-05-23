@@ -1,5 +1,5 @@
 prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
-        cluster-name.cpp
+        master-name.cpp
         confdata-binlog-replay.cpp
         confdata-stats.cpp
         shared-data.cpp
@@ -22,6 +22,7 @@ prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
         php-init-scripts.cpp
         php-sql-connections.cpp
         php-worker.cpp
+        server-config.cpp
         server-log.cpp
         server-stats.cpp
         slot-ids-factory.cpp
