@@ -47,6 +47,10 @@ protected:
 
   virtual T on_define_val(VertexAdaptor<op_define_val> v) { return on_non_const(v); }
 
+  virtual T on_func_call(VertexAdaptor<op_func_call> v) { return on_non_const(v); }
+
+  virtual T on_alloc(VertexAdaptor<op_alloc> v) { return on_non_const(v); }
+
   virtual T on_non_const([[maybe_unused]] VertexPtr vertex) { return T(); }
 
   virtual T on_array(VertexAdaptor<op_array> v) {
@@ -131,12 +135,20 @@ protected:
       case op_define_val:
         return on_define_val(v.as<op_define_val>());
 
+      case op_func_call:
+        return on_func_call(v.as<op_func_call>());
+
+      case op_alloc:
+        return on_alloc(v.as<op_alloc>());
+
       default:
         return on_non_const(v);
     }
   }
 };
 
+// CheckConst is used as Base class below
+// And in name-gen.cpp, to check -- whether we should hash and utilize as const variable or not
 struct CheckConst
   : ConstManipulations<bool> {
 public:
@@ -190,12 +202,14 @@ protected:
     return visit(key);
   }
 
-  bool on_define_val(VertexAdaptor<op_define_val> v) final {
+  bool on_define_val(VertexAdaptor<op_define_val> v) override {
     return visit(v->value());
   }
-
 };
 
+
+// CheckConstWithDefines is used in CalcRealDefinesValues pass
+// To choose correct `def->val->const_type` (cnst_const_val or def_var)
 struct CheckConstWithDefines final
   : CheckConst {
 public:
@@ -215,6 +229,11 @@ protected:
       return visit(define->val);
     }
     return false;
+  }
+
+  bool on_func_call(VertexAdaptor<op_func_call> v) override {
+    // Allows use objects in const context
+    return v->extra_type == op_ex_constructor_call;
   }
 
   bool on_non_const(VertexPtr v) final {
@@ -278,6 +297,8 @@ static inline std::string collect_string_concatenation(VertexPtr v, bool allow_d
   return {};
 }
 
+// MakeConst is used in CalcRealDefinesValues pass
+// To choose correct `def->val->const_type` (cnst_const_val or def_var)
 struct MakeConst final
   : ConstManipulations<VertexPtr> {
 public:
@@ -359,15 +380,13 @@ protected:
     return v;
   }
 
-};
-
-struct ArrayHash final
-  : ConstManipulations<void> {
-  static uint64_t calc_hash(VertexPtr v) {
-    ArrayHash array_hash;
-    array_hash.visit(VertexUtil::get_actual_value(v));
-    return array_hash.cur_hash;
+  VertexPtr on_func_call(VertexAdaptor<op_func_call> v) final {
+    return v;
   }
+
+};
+struct CommonHash
+  : ConstManipulations<void> {
 
   void feed_hash(uint64_t val) {
     cur_hash = cur_hash * HASH_MULT + val;
@@ -378,7 +397,7 @@ struct ArrayHash final
   }
 
 protected:
-  void on_trivial(VertexPtr v) final {
+  void on_trivial(VertexPtr v) override {
     std::string s = OpInfo::str(v->type());
 
     if (v->has_get_string()) {
@@ -388,19 +407,19 @@ protected:
     feed_hash_string(s);
   }
 
-  void on_conv(VertexAdaptor<meta_op_unary> v) final {
+  void on_conv(VertexAdaptor<meta_op_unary> v) override {
     feed_hash_string(OpInfo::str(v->type()));
     return visit(v->expr());
   }
 
-  void on_unary(VertexAdaptor<meta_op_unary> v) final {
+  void on_unary(VertexAdaptor<meta_op_unary> v) override {
     std::string type_str = OpInfo::str(v->type());
     feed_hash_string(type_str);
 
     return visit(v->expr());
   }
 
-  void on_binary(VertexAdaptor<meta_op_binary> v) final {
+  void on_binary(VertexAdaptor<meta_op_binary> v) override {
     VertexPtr key = v->lhs();
     VertexPtr value = v->rhs();
 
@@ -409,7 +428,7 @@ protected:
     visit(value);
   }
 
-  void on_double_arrow(VertexAdaptor<op_double_arrow> v) final {
+  void on_double_arrow(VertexAdaptor<op_double_arrow> v) override {
     VertexPtr key = VertexUtil::get_actual_value(v->key());
     VertexPtr value = VertexUtil::get_actual_value(v->value());
 
@@ -418,7 +437,7 @@ protected:
     visit(value);
   }
 
-  void on_array(VertexAdaptor<op_array> v) final {
+  void on_array(VertexAdaptor<op_array> v) override {
     feed_hash(v->args().size());
     feed_hash(MAGIC1);
 
@@ -429,25 +448,57 @@ protected:
     feed_hash(MAGIC2);
   }
 
-  void on_var(VertexAdaptor<op_var> v) final {
+  void on_var(VertexAdaptor<op_var> v) override {
     return visit(VertexUtil::get_actual_value(v));
   }
 
-  void on_non_const(VertexPtr v) final {
+  void on_non_const(VertexPtr v) override {
     std::string msg = "unsupported type for hashing: " + OpInfo::str(v->type());
     kphp_assert_msg(false, msg.c_str());
   }
 
-  bool on_index_key(VertexPtr key) final {
+  bool on_index_key(VertexPtr key) override {
     visit(key);
     return true;
   }
 
-private:
+  void on_func_call(VertexAdaptor<op_func_call> v) override {
+    if (v->func_id && v->func_id->is_constructor())
+      for (auto son : v->args()) {
+        visit(son);
+      }
+  }
+
+  void on_define_val(VertexAdaptor<op_define_val> v) override {
+    auto define_hasher = DefinePtr::Hash();
+    feed_hash(static_cast<uint64_t>(define_hasher(v->define_id)));
+    visit(v->value());
+  }
+
+  void on_alloc(VertexAdaptor<op_alloc> v) override {
+    feed_hash_string(v->allocated_class_name);
+  }
+
   uint64_t cur_hash = 0;
   static const uint64_t HASH_MULT = 56235515617499ULL;
   static const uint64_t MAGIC1 = 536536536536960ULL;
   static const uint64_t MAGIC2 = 288288288288069ULL;
+};
+
+struct ArrayHash final : CommonHash {
+  static uint64_t calc_hash(VertexPtr v) {
+    ArrayHash array_hash;
+    array_hash.visit(VertexUtil::get_actual_value(v));
+    return array_hash.cur_hash;
+  }
+};
+
+struct ObjectHash final : CommonHash {
+  static uint64_t calc_hash(VertexPtr v) {
+    ObjectHash object_hash;
+    object_hash.visit(v);
+    return object_hash.cur_hash;
+  }
 };
 
 struct VertexPtrFormatter final

@@ -183,7 +183,9 @@ static bool is_safe_simple_expr(VertexPtr v) {
       }
       return false;
     }
-
+    case op_define_val: {
+      return is_safe_simple_expr(v.as<op_define_val>()->value());
+    }
     default:
       return false;
   }

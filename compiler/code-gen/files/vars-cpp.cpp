@@ -77,6 +77,7 @@ static void compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> &vars,
   for (auto var : vars) {
     if (!G->settings().is_static_lib_mode() || !var->is_builtin_global()) {
       includes.add_var_signature_depends(var);
+      includes.add_vertex_depends(var->init_val);
     }
   }
   W << includes;

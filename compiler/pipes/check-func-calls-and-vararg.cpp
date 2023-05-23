@@ -45,6 +45,7 @@ VertexAdaptor<op_func_call> CheckFuncCallsAndVarargPass::process_varargs(VertexA
 
   // at first, convert f(1, ...[2, ...[3]], ...$all, ...[5]) to f(1,2,3,...$all,5)
   std::function<void(VertexPtr)> flatten_call_varg = [&flattened_call_args, &flatten_call_varg](VertexPtr inner) {
+    inner = VertexUtil::get_actual_value(inner);
     if (auto as_array = inner.try_as<op_array>()) {
       for (VertexPtr item : as_array->args()) {
         kphp_error(item->type() != op_double_arrow, "Passed unpacked ...[array] must be a vector, without => keys");
