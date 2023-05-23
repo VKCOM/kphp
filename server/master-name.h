@@ -22,6 +22,7 @@ public:
 
 private:
   static constexpr size_t MAX_SOCKET_NAME_LEN = sizeof(std::declval<sockaddr_un>().sun_path) - 1;
+  const char *DEFAULT_MASTER_NAME = "default";
 
   MasterName();
 

@@ -20,7 +20,7 @@ TEST(master_name_test, test_long_name) {
   ASSERT_STREQ(vk::singleton<MasterName>::get().get_shmem_name(), "/default_kphp_shm");
 
   const std::string long_cluster_name = "kphp" + std::string(250, '_') + "_engine";
-  ASSERT_STREQ(vk::singleton<MasterName>::get().set_master_name(long_cluster_name.c_str(), false), "too long cluster name");
+  ASSERT_STREQ(vk::singleton<MasterName>::get().set_master_name(long_cluster_name.c_str(), false), "too long master name");
 
   ASSERT_STREQ(vk::singleton<MasterName>::get().get_master_name(), "default");
   ASSERT_STREQ(vk::singleton<MasterName>::get().get_socket_name(), "default_kphp_fd_transfer");
@@ -46,7 +46,7 @@ TEST(master_name_test, test_empty_name) {
   ASSERT_STREQ(vk::singleton<MasterName>::get().get_socket_name(), "default_kphp_fd_transfer");
   ASSERT_STREQ(vk::singleton<MasterName>::get().get_shmem_name(), "/default_kphp_shm");
 
-  ASSERT_STREQ(vk::singleton<MasterName>::get().set_master_name("", false), "empty cluster name");
+  ASSERT_STREQ(vk::singleton<MasterName>::get().set_master_name("", false), "empty master name");
 
   ASSERT_STREQ(vk::singleton<MasterName>::get().get_master_name(), "default");
   ASSERT_STREQ(vk::singleton<MasterName>::get().get_socket_name(), "default_kphp_fd_transfer");
@@ -55,7 +55,7 @@ TEST(master_name_test, test_empty_name) {
 
 TEST(master_name_test, test_special_chars) {
   ASSERT_STREQ(vk::singleton<MasterName>::get().set_master_name("a-b1c*d/e+f~g<h?i", false),
-               "Incorrect symbol in cluster name. Allowed symbols are: alpha-numerics, '-', '_'");
+               "Incorrect symbol in master name. Allowed symbols are: alpha-numerics, '-', '_'");
 
   ASSERT_EQ(vk::singleton<MasterName>::get().set_master_name("aB-12_0xD", false), nullptr);
 

@@ -2,7 +2,7 @@
 // Copyright (c) 2023 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "server-config.h"
+#include "server/server-config.h"
 #include "common/kprintf.h"
 
 #include <algorithm>

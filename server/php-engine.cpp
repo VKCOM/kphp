@@ -59,7 +59,7 @@
 #include "runtime/json-functions.h"
 #include "runtime/profiler.h"
 #include "runtime/rpc.h"
-#include "server-config.h"
+#include "server/server-config.h"
 #include "server/confdata-binlog-replay.h"
 #include "server/database-drivers/adaptor.h"
 #include "server/database-drivers/connector.h"
@@ -1841,6 +1841,7 @@ int main_args_handler(int i, const char *long_option) {
       return 0;
     }
     case 's': {
+      OPTION_ADD_DEPRECATION_MESSAGE("-s/--cluster-name");
       if (const char *err = vk::singleton<MasterName>::get().set_master_name(optarg, true)) {
         kprintf("--%s option: %s\n", long_option, err);
         return -1;
@@ -2236,7 +2237,7 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("workers-num", required_argument, 'f', "the total workers number");
   parse_option("once", optional_argument, 'o', "run script once");
   parse_option("master-port", required_argument, 'p', "port for memcached interface to master");
-  parse_option("cluster-name", required_argument, 's', "only one kphp with same cluster name will be run on one machine (deprecated)");
+  parse_common_option(OPT_DEPRECATED, nullptr, "cluster-name", required_argument, 's', "only one kphp with same cluster name will be run on one machine");
   parse_option("master-name", required_argument, 1998, "only one kphp with same master name will be run on one machine");
   parse_option("server-config", required_argument, 1999, "get server settings from config file (e.g. cluster name)");
   parse_option("time-limit", required_argument, 't', "time limit for script in seconds");

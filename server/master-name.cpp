@@ -14,7 +14,7 @@
 #include "common/crc32.h"
 
 MasterName::MasterName() {
-  set_master_name("default", false);
+  set_master_name(DEFAULT_MASTER_NAME, false);
 }
 
 const char *MasterName::set_master_name(const char *name, bool deprecated) noexcept {
@@ -27,12 +27,12 @@ const char *MasterName::set_master_name(const char *name, bool deprecated) noexc
 
   const auto name_len = std::strlen(name);
   if (!name_len) {
-    return "empty cluster name";
+    return "empty master name";
   }
   if (name_len + reserved >= master_name_.size()) {
-    return "too long cluster name";
+    return "too long master name";
   }
-  if (deprecated && strcmp(master_name_.data(), "default")) {
+  if (deprecated && strcmp(master_name_.data(), DEFAULT_MASTER_NAME)) {
     return nullptr;
   }
 
@@ -41,11 +41,11 @@ const char *MasterName::set_master_name(const char *name, bool deprecated) noexc
     return !std::isalnum(c) && c != '-' && c != '_';
   });
   if (has_wrong_symbols) {
-    return "Incorrect symbol in cluster name. Allowed symbols are: alpha-numerics, '-', '_'";
+    return "Incorrect symbol in master name. Allowed symbols are: alpha-numerics, '-', '_'";
   }
 
   if (std::strlen(socket_suffix) + name_len > MAX_SOCKET_NAME_LEN) {
-    // To allow cluster name longer than 107 symbols, we just take crc64 of it as the socket name
+    // To allow master name longer than 107 symbols, we just take crc64 of it as the socket name
     uint64_t crc = compute_crc64(name, name_len);
     size_t hex_crc_str_size = sizeof(crc) * 2 + 1;
     char hex_crc_str[hex_crc_str_size];

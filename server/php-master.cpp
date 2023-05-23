@@ -71,7 +71,7 @@
 #include "server/php-master-warmup.h"
 #include "server/server-log.h"
 
-#include "server-config.h"
+#include "server/server-config.h"
 #include "server/job-workers/job-worker-client.h"
 #include "server/job-workers/job-workers-context.h"
 #include "server/job-workers/job-stats.h"
@@ -494,7 +494,9 @@ bool all_job_workers_killed() {
 WorkerType start_master() {
   initial_verbosity = verbosity;
 
-  kprintf("[%s] [%s]\n", vk::singleton<MasterName>::get().get_shmem_name(), vk::singleton<MasterName>::get().get_socket_name());
+  kprintf("[master_name=%s] [cluster_name=%s] [shmem_name=%s] [socket_name=%s]\n",
+          vk::singleton<MasterName>::get().get_master_name(), vk::singleton<ServerConfig>::get().get_cluster_name(),
+          vk::singleton<MasterName>::get().get_shmem_name(), vk::singleton<MasterName>::get().get_socket_name());
 
   vkprintf(1, "start master: begin\n");
 
