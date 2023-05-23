@@ -13,6 +13,7 @@
 #include "common/wrappers/likely.h"
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
+#include "runtime/kphp-backtrace.h"
 
 namespace {
 
@@ -206,6 +207,34 @@ void JsonLogger::set_env(vk::string_view env) noexcept {
   }
 }
 
+
+void JsonLogger::write_log_with_demangled_backtrace(vk::string_view message, int type, int64_t created_at, void *const *trace, int64_t trace_size,
+                                                    bool uncaught) {
+  if (json_log_fd_ <= 0) {
+    return ;
+  }
+
+  auto *json_out_it = buffers_.begin();
+  for (; json_out_it != buffers_.end() && !json_out_it->try_start_json(); ++json_out_it) {
+  }
+  assert(json_out_it != buffers_.end());
+
+  write_general_info(json_out_it, type, created_at, uncaught);
+
+  KphpBacktrace demangler{trace + 2, static_cast<int32_t>(trace_size - 2)};
+  json_out_it->append_key("trace").start<'['>();
+  for (const char *name : demangler.make_demangled_backtrace_range()) {
+    if (name) {
+      json_out_it->append_raw_string(name);
+    }
+  }
+  json_out_it->finish<']'>();
+
+  json_out_it->append_key("msg").append_raw_string(message);
+  json_out_it->finish_json_and_flush(json_log_fd_);
+}
+
+
 void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at, void *const *trace, int64_t trace_size, bool uncaught) noexcept {
   if (json_log_fd_ <= 0) {
     return;
@@ -216,34 +245,7 @@ void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at
   }
   assert(json_out_it != buffers_.end());
 
-  json_out_it->append_key("version").append_integer(release_version_);
-  json_out_it->append_key("type").append_integer(type);
-  json_out_it->append_key("created_at").append_integer(created_at);
-  json_out_it->append_key("env").append_string(env_available_ ? env_ : vk::string_view{});
-
-  json_out_it->append_key("tags").start<'{'>();
-  if (tags_available_) {
-    json_out_it->append_raw(tags_);
-  }
-  if (process_type == ProcessType::master) {
-    json_out_it->append_key("process_type").append_string("master");
-  } else if (process_type == ProcessType::http_worker) {
-    json_out_it->append_key("process_type").append_string("http_worker");
-    json_out_it->append_key("logname_id").append_integer(logname_id);
-  } else if (process_type == ProcessType::rpc_worker) {
-    json_out_it->append_key("process_type").append_string("rpc_worker");
-    json_out_it->append_key("logname_id").append_integer(logname_id);
-  } else if (process_type == ProcessType::job_worker) {
-    json_out_it->append_key("process_type").append_string("job_worker");
-    json_out_it->append_key("logname_id").append_integer(logname_id);
-  }
-  json_out_it->append_key("pid").append_integer(pid);
-  json_out_it->append_raw(uncaught ? R"json("uncaught":true)json" : R"json("uncaught":false)json");
-  json_out_it->finish<'}'>();
-
-  if (extra_info_available_) {
-    json_out_it->append_key("extra_info").start<'{'>().append_raw(extra_info_).finish<'}'>();
-  }
+  write_general_info(json_out_it, type, created_at, uncaught);
 
   json_out_it->append_key("trace").start<'['>();
   for (int64_t i = 0; i < trace_size; i++) {
@@ -278,3 +280,35 @@ void JsonLogger::reset_buffers() noexcept {
     buffer.force_reset();
   }
 }
+
+void JsonLogger::write_general_info(JsonBuffer *json_out_it, int type, int64_t created_at, bool uncaught) {
+  json_out_it->append_key("version").append_integer(release_version_);
+  json_out_it->append_key("type").append_integer(type);
+  json_out_it->append_key("created_at").append_integer(created_at);
+  json_out_it->append_key("env").append_string(env_available_ ? env_ : vk::string_view{});
+
+  json_out_it->append_key("tags").start<'{'>();
+  if (tags_available_) {
+    json_out_it->append_raw(tags_);
+  }
+  if (process_type == ProcessType::master) {
+    json_out_it->append_key("process_type").append_string("master");
+  } else if (process_type == ProcessType::http_worker) {
+    json_out_it->append_key("process_type").append_string("http_worker");
+    json_out_it->append_key("logname_id").append_integer(logname_id);
+  } else if (process_type == ProcessType::rpc_worker) {
+    json_out_it->append_key("process_type").append_string("rpc_worker");
+    json_out_it->append_key("logname_id").append_integer(logname_id);
+  } else if (process_type == ProcessType::job_worker) {
+    json_out_it->append_key("process_type").append_string("job_worker");
+    json_out_it->append_key("logname_id").append_integer(logname_id);
+  }
+  json_out_it->append_key("pid").append_integer(pid);
+  json_out_it->append_raw(uncaught ? R"json("uncaught":true)json" : R"json("uncaught":false)json");
+  json_out_it->finish<'}'>();
+
+  if (extra_info_available_) {
+    json_out_it->append_key("extra_info").start<'{'>().append_raw(extra_info_).finish<'}'>();
+  }
+}
+

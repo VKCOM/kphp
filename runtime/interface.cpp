@@ -88,6 +88,7 @@ static int http_need_gzip;
 
 static bool is_utf8_enabled = false;
 bool is_json_log_on_timeout_enabled = true;
+bool is_demangled_stacktrace_logs_enabled = false;
 
 static int ignore_level = 0;
 
@@ -2274,6 +2275,7 @@ static void init_interface_lib() {
   php_warning_level = std::max(2, php_warning_minimum_level);
   php_disable_warnings = 0;
   is_json_log_on_timeout_enabled = true;
+  is_demangled_stacktrace_logs_enabled = false;
   ignore_level = 0;
 
   const size_t engine_pid_buf_size = 20;

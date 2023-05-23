@@ -1425,6 +1425,8 @@ function set_detect_incorrect_encoding_names_warning(bool $show) ::: void;
 
 function set_json_log_on_timeout_mode(bool $enabled) ::: void;
 
+function set_demangle_stacktrace_json_log(bool $enable) ::: void;
+
 function set_use_updated_gmmktime(bool $enable) ::: void;
 
 // re-initialize given ArrayIterator with another array;
