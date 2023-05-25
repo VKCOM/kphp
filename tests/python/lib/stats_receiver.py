@@ -65,8 +65,12 @@ class StatsReceiver:
         new_stats = {}
         for stat_line in filter(None, self._stats_file_read_fd.readlines()):
             if stat_line[-1] != "\n": return False
-            stat, value = stat_line.split(":")
-            value, _ = value.split("|")
+            try:
+                stat, value = stat_line.split(":")
+                value, _ = value.split("|")
+            except ValueError:
+                print(f"BAD: {stat_line}")
+                return False
             value = float(value.strip())
             new_stats[stat.strip()] = value.is_integer() and int(value) or value
 
