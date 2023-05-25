@@ -76,8 +76,40 @@ class TestJobErrors(KphpServerAutoTestCase):
         ])
 
     def test_job_stack_overflow_error(self):
-        self.job_error_test_impl("stack_overflow", self.JOB_STACK_OVERFLOW_ERROR, data=[[1, 2, 3, 4, 5]], buffers=2)
-        self.kphp_server.assert_log([
+        error_code = self.JOB_STACK_OVERFLOW_ERROR
+        data = [[1, 2, 3, 4], [7, 9, 12]]
+        buffers = 4
+        stats_before = self.kphp_server.get_stats()
+        resp = self.kphp_server.http_post(
+        uri="/test_job_errors",
+        json={
+            "tag": "x2_with_error",
+            "error-type": "stack_overflow",
+            "data": data
+        })
+        self.assertEqual(resp.status_code, 200)
+
+        job_result = resp.json()["jobs-result"]
+        results = 2
+
+        eq = 0
+        got_error_code = ''
+        for i in range(results):
+            if job_result[i]["error_code"] == error_code: eq += 1
+            else: got_error_code = job_result[i]["error_code"]
+        if eq == 0: self.assertEqual(got_error_code, error_code)
+
+        corr_buffers = buffers-(results-eq)
+
+        self.kphp_server.assert_stats(
+            initial_stats=stats_before,
+            expected_added_stats={
+            "kphp_server.workers_job_memory_messages_shared_messages_buffers_acquired": corr_buffers,
+            "kphp_server.workers_job_memory_messages_shared_messages_buffers_released": corr_buffers,
+            "kphp_server.workers_job_memory_messages_shared_messages_buffer_acquire_fails": 0
+        })
+
+        self.kphp_server.assert_log(eq * [
             "Critical error during script execution: sigsegv\\(stack overflow\\)",
             "Error -1: Callstack overflow"
         ])
