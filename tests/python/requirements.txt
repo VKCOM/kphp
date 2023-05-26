@@ -3,7 +3,7 @@ psutil==5.9.5
 urllib3==1.26.7
 requests-toolbelt==0.10.1
 pytest==7.3.1
-pytest-mysql==2.4.2
+pytest-mysql==2.3.1
 pytest-postgresql==4.1.1
 psycopg==3.1.9
 pytest-xdist==3.3.1
