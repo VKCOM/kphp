@@ -171,7 +171,7 @@ void IncludesCollector::compile(CodeGenerator &W) const {
       class_to_include = klass;
     }
     if (class_to_include && !prev_classes_.count(class_to_include)) {
-      class_headers.emplace(class_to_include->get_subdir() + "/" + class_to_include->header_name);
+      class_headers.emplace(class_to_include->get_subdir() + "/" + class_to_include->h_filename);
     }
   }
   for (const auto &class_header : class_headers) {
