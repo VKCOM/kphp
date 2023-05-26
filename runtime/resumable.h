@@ -90,8 +90,6 @@ void unregister_wait_queue(int64_t queue_id);
 int64_t wait_queue_push_unsafe(int64_t queue_id, int64_t resumable_id);
 Optional<int64_t> wait_queue_next_synchronously(int64_t queue_id);
 
-void wait_all_forks() noexcept;
-
 void global_init_resumable_lib();
 void init_resumable_lib();
 

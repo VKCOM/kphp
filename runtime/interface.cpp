@@ -53,7 +53,7 @@
 #include "runtime/udp.h"
 #include "runtime/url.h"
 #include "runtime/zlib.h"
-#include "server/cluster-name.h"
+#include "server/server-config.h"
 #include "server/database-drivers/adaptor.h"
 #include "server/database-drivers/mysql/mysql.h"
 #include "server/database-drivers/pgsql/pgsql.h"
@@ -88,6 +88,7 @@ static int http_need_gzip;
 
 static bool is_utf8_enabled = false;
 bool is_json_log_on_timeout_enabled = true;
+bool is_demangled_stacktrace_logs_enabled = false;
 
 static int ignore_level = 0;
 
@@ -509,7 +510,6 @@ shutdown_function_type *const shutdown_functions = reinterpret_cast<shutdown_fun
 shutdown_functions_status shutdown_functions_status_value = shutdown_functions_status::not_executed;
 jmp_buf timeout_exit;
 bool finished = false;
-bool wait_all_forks_on_finish = false;
 
 } // namespace
 
@@ -522,10 +522,10 @@ static const string_buffer * compress_http_query_body(string_buffer * http_query
   } else {
     if ((http_need_gzip & 5) == 5) {
       header("Content-Encoding: gzip", 22, true);
-      return zlib_encode(http_query_body->c_str(), http_query_body->size(), 6, ZLIB_ENCODE);
+      return zlib_encode(http_query_body->c_str(), http_query_body->size(), 6, ZLIB_ENCODING_GZIP);
     } else if ((http_need_gzip & 6) == 6) {
       header("Content-Encoding: deflate", 25, true);
-      return zlib_encode(http_query_body->c_str(), http_query_body->size(), 6, ZLIB_COMPRESS);
+      return zlib_encode(http_query_body->c_str(), http_query_body->size(), 6, ZLIB_ENCODING_DEFLATE);
     } else {
       return http_query_body;
     }
@@ -668,20 +668,12 @@ void f$register_shutdown_function(const shutdown_function_type &f) {
   new(&shutdown_functions[shutdown_functions_count++]) shutdown_function_type(f);
 }
 
-bool f$set_wait_all_forks_on_finish(bool wait) noexcept {
-  std::swap(wait_all_forks_on_finish, wait);
-  return wait;
-}
-
-void finish(int64_t exit_code, bool allow_forks_waiting) {
+void finish(int64_t exit_code) {
   if (!finished) {
     finished = true;
     forcibly_stop_profiler();
     if (shutdown_functions_count != 0) {
       run_shutdown_functions_from_script();
-    }
-    if (allow_forks_waiting && wait_all_forks_on_finish) {
-      wait_all_forks();
     }
   }
 
@@ -700,9 +692,9 @@ void f$exit(const mixed &v) {
 
   if (v.is_string()) {
     *coub << v;
-    finish(0, false);
+    finish(0);
   } else {
-    finish(v.to_int(), false);
+    finish(v.to_int());
   }
 }
 
@@ -1838,7 +1830,7 @@ int64_t f$get_engine_workers_number() {
 }
 
 string f$get_kphp_cluster_name() {
-  return string{vk::singleton<ClusterName>::get().get_cluster_name()};
+  return string{vk::singleton<ServerConfig>::get().get_cluster_name()};
 }
 
 std::tuple<int64_t, int64_t, int64_t, int64_t> f$get_webserver_stats() {
@@ -2283,6 +2275,7 @@ static void init_interface_lib() {
   php_warning_level = std::max(2, php_warning_minimum_level);
   php_disable_warnings = 0;
   is_json_log_on_timeout_enabled = true;
+  is_demangled_stacktrace_logs_enabled = false;
   ignore_level = 0;
 
   const size_t engine_pid_buf_size = 20;

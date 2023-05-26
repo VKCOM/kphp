@@ -18,7 +18,10 @@ struct rpc_request {
   union {
     kphp_event_timer *timer;
     char *answer;
-    const char *error;
+    struct {
+      const char *error;
+      int32_t error_code;
+    };
   };
   uint32_t function_magic{0};
   int64_t actor_id{-1};
@@ -48,7 +51,9 @@ void process_rpc_error(int32_t request_id, int32_t error_code, const char *error
 
 void rpc_parse_restore_previous();
 
-const char *last_rpc_error_get();
+const char *last_rpc_error_message_get();
+
+int32_t last_rpc_error_code_get();
 
 void last_rpc_error_reset();
 
