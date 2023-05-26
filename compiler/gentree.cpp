@@ -1644,9 +1644,8 @@ bool GenTree::check_statement_end() {
   }
   return expect (tok_semicolon, "';'");
 }
-
-void GenTree::parse_extends_implements() {
-  if (test_expect(tok_extends)) {     // extends comes before 'implements', the order is fixed
+void GenTree::parse_extends() {
+  if (test_expect(tok_extends)) {
     do {
       next_cur();                       // (same as in PHP)
       kphp_error_return(test_expect(tok_func_name), "Class name expected after 'extends'");
@@ -1655,7 +1654,8 @@ void GenTree::parse_extends_implements() {
       next_cur();
     } while (cur_class->is_interface() && test_expect(tok_comma));
   }
-
+}
+void GenTree::parse_implements() {
   if (test_expect(tok_implements)) {
     do {
       next_cur();
@@ -1664,6 +1664,11 @@ void GenTree::parse_extends_implements() {
       next_cur();
     } while (test_expect(tok_comma));
   }
+}
+
+void GenTree::parse_extends_implements() {
+  parse_extends(); // extends comes before 'implements', the order is fixed
+  parse_implements();
 }
 
 VertexPtr GenTree::get_class(const PhpDocComment *phpdoc, ClassType class_type) {
@@ -1744,7 +1749,7 @@ VertexPtr GenTree::get_class(const PhpDocComment *phpdoc, ClassType class_type) 
   return {};
 }
 
-VertexPtr GenTree::get_enum(const PhpDocComment * phpdoc) {
+VertexPtr GenTree::get_enum(const PhpDocComment *phpdoc) {
   CE(cur->type() == tok_enum);
   next_cur();
 
@@ -1764,41 +1769,9 @@ VertexPtr GenTree::get_enum(const PhpDocComment * phpdoc) {
   next_cur();
   kphp_error(!test_expect(tok_extends), "Enums cannot extend");
 
-  enum class EnumType {
-    Empty,
-    Pure,
-    BackedString,
-    BackedInt,
-  };
+  EnumType enum_type = get_enum_type();
 
-  auto is_pure_enum_case = [](VertexAdaptor<op_seq> value) -> bool {
-    return value->args().empty();
-  };
-
-  EnumType enum_type = EnumType::Empty;
-
-  if (test_expect(tok_colon)) {
-    next_cur();
-
-    if (cur->type() == tok_int) {
-      enum_type = EnumType::BackedInt;
-    } else if (cur->type() == tok_string) {
-      enum_type = EnumType::BackedString;
-    }
-
-    next_cur();
-  } else {
-    enum_type = EnumType::Pure;
-  }
-
-  if (test_expect(tok_implements)) {
-    do {
-      next_cur();
-      kphp_error(test_expect(tok_func_name), "Interface name expected after 'implements'");
-      cur_class->add_str_dependent(cur_function, ClassType::interface, cur->str_val);
-      next_cur();
-    } while (test_expect(tok_comma));
-  }
+  parse_implements();
 
   cur_class->modifiers.set_final();
   cur_class->file_id = processing_file;
@@ -1806,7 +1779,9 @@ VertexPtr GenTree::get_enum(const PhpDocComment * phpdoc) {
   cur_class->phpdoc = phpdoc;
   cur_class->is_immutable = true;
   cur_class->location_line_num = line_num;
-  cur_class->add_str_dependent(cur_function, ClassType::interface,  enum_type == EnumType::Pure ? "\\UnitEnum" : "\\BackedEnum");
+  cur_class->add_str_dependent(cur_function, ClassType::interface, enum_type == EnumType::Pure ? "\\UnitEnum" : "\\BackedEnum");
+
+  cur_class->add_class_constant();
 
   bool registered = G->register_class(cur_class);
   if (registered) {
@@ -1817,256 +1792,268 @@ VertexPtr GenTree::get_enum(const PhpDocComment * phpdoc) {
     G->register_and_require_function(cur_function, parsed_os, true);  // push the class down the pipeline
   }
 
-  // parse body
+  auto cases = get_enum_body_and_cases(enum_type);
+
+  generate_enum_fields(enum_type);
+  generate_enum_construct(enum_type);
+
+  generate_pure_enum_methods(cases);
+
+  if (vk::any_of_equal(enum_type, EnumType::BackedInt, EnumType::BackedString)) {
+    generate_backed_enum_methods();
+  }
+
+  return {};
+}
+
+void GenTree::generate_backed_enum_methods() {
+  auto param_var = VertexAdaptor<op_var>::create();
+  param_var->str_val = "value";
+  auto param_pampam = VertexAdaptor<op_func_param>::create(param_var);
+  param_pampam->type_hint = TypeHintPipe::create(std::vector<const TypeHint *>{TypeHintPrimitive::create(tp_int), TypeHintPrimitive::create(tp_string)});
+  auto params = VertexAdaptor<op_func_param_list>::create(std::vector<VertexPtr>{param_pampam});
+
+
+  VertexPtr foreach_vert;
+  // generating foreach
+  {
+    // generating foreach param
+    VertexAdaptor<op_func_call> cases_call = VertexAdaptor<op_func_call>::create();
+    cases_call->str_val = "self::cases";
+
+    VertexAdaptor<op_var> cur_case = VertexAdaptor<op_var>::create();
+    cur_case->str_val = "cur_case";
+
+    VertexAdaptor<op_var> tmp_var = VertexAdaptor<op_var>::create();
+    tmp_var->str_val = "tmp_var";
+    tmp_var->extra_type = op_ex_var_superlocal;
+
+    VertexAdaptor<op_foreach_param> fe_param = VertexAdaptor<op_foreach_param>::create(cases_call, cur_case, tmp_var);
+
+    // generating body
+    auto inst_prop = VertexAdaptor<op_instance_prop>::create(cur_case.clone());
+    inst_prop->str_val = "value";
+    auto cmp_vert = VertexAdaptor<op_conv_bool>::create(VertexAdaptor<op_eq3>::create(inst_prop.clone(), param_var.clone()));
+    auto ret_vert = VertexUtil::embrace(VertexAdaptor<op_return>::create(cur_case.clone()));
+    auto if_vert = VertexAdaptor<op_if>::create(cmp_vert, ret_vert);
+    foreach_vert = VertexAdaptor<op_foreach>::create(fe_param, VertexUtil::embrace(if_vert));
+  }
+  auto func_body = VertexUtil::embrace(foreach_vert);
+  auto tryFrom_func = VertexAdaptor<op_function>::create(params, func_body);
+  [[maybe_unused]]auto from_func = tryFrom_func.clone();
+
+  auto tf_fun = FunctionData::create_function(replace_backslashes(cur_class->name) + "$$tryFrom", tryFrom_func, FunctionData::func_local);
+
+  VertexUtil::func_force_return(tryFrom_func, VertexAdaptor<op_null>::create());
+
+  // auto f_alive2 = StackPushPop<FunctionPtr>(functions_stack, cur_function, tf_fun);
+
+  tf_fun->update_location_in_body();
+  tf_fun->is_inline = true;
+  tf_fun->modifiers = FunctionModifiers::nonmember();
+  tf_fun->modifiers.set_public();
+  tf_fun->modifiers.set_final();
+  cur_class->members.add_static_method(tf_fun);
+  G->register_and_require_function(tf_fun, parsed_os, true);
+
+
+  // from func
+  {
+    VertexPtr cmd = from_func->cmd();
+    assert (cmd->type() == op_seq);
+
+    VertexAdaptor<op_string> text = VertexAdaptor<op_string>::create();
+    text->str_val = fmt_format("Not a valid backing value for enum \"{}\"", cur_class->name);
+    auto code = VertexAdaptor<op_int_const>::create();
+    code->set_string("0");
+
+    VertexPtr node = gen_constructor_call_with_args("\\ValueError", std::vector<VertexPtr>{text, code}, auto_location());
+    node = VertexAdaptor<op_throw>::create(node);
+
+    std::vector<VertexPtr> next = cmd->get_next();
+    next.push_back(node);
+    from_func->cmd_ref() = VertexAdaptor<op_seq>::create(next);
+
+    auto f_fun = FunctionData::create_function(replace_backslashes(cur_class->name) + "$$from", from_func, FunctionData::func_local);
+
+
+    f_fun->update_location_in_body();
+    f_fun->is_inline = true;
+    f_fun->modifiers = FunctionModifiers::nonmember();
+    f_fun->modifiers.set_public();
+    f_fun->modifiers.set_final();
+    cur_class->members.add_static_method(f_fun);
+    G->register_and_require_function(f_fun, parsed_os, true);
+  }
+}
+
+void GenTree::generate_pure_enum_methods(const std::vector<std::string> &cases) {
+  std::vector<VertexAdaptor<op_func_name>> arr_args;
+
+  std::transform(cases.begin(), cases.end(), std::back_inserter(arr_args), [](const std::string &case_name) {
+  auto item = VertexAdaptor<op_func_name>::create();
+  item->str_val = "self::" + case_name;
+  return item;
+  });
+
+  auto response = VertexAdaptor<op_array>::create(std::move(arr_args));
+
+  const auto params = VertexAdaptor<op_func_param_list>::create();
+  auto func = VertexAdaptor<op_function>::create(params, VertexAdaptor<op_seq>::create());
+  VertexUtil::func_force_return(func, response);
+  const std::string func_name = replace_backslashes(cur_class->name) + "$$cases";
+
+  auto cases_fun = FunctionData::create_function(func_name, func, FunctionData::func_local);
+
+  cases_fun->update_location_in_body();
+  cases_fun->is_inline = true;
+  cases_fun->modifiers = FunctionModifiers::nonmember();
+  cases_fun->modifiers.set_public();
+  cases_fun->modifiers.set_final();
+  cases_fun->return_typehint = TypeHintArray::create(cur_class->type_hint);
+  cur_class->members.add_static_method(cases_fun);
+  G->register_and_require_function(cases_fun, parsed_os, true);
+}
+
+void GenTree::generate_enum_construct(EnumType enum_type) {
+  auto param_var = VertexAdaptor<op_var>::create();
+  param_var->str_val = "name";
+  auto param = VertexAdaptor<op_func_param>::create(param_var.clone());
+
+  auto params_vec = std::vector<VertexPtr>{param};
+
+  auto this_vertex = VertexAdaptor<op_var>::create();
+  this_vertex->str_val = "this";
+  auto inst_prop = VertexAdaptor<op_instance_prop>::create(this_vertex.clone());
+  inst_prop->str_val = "name";
+  auto ctor_body_seq = std::vector<VertexPtr>{VertexAdaptor<op_set>::create(inst_prop, param_var.clone())};
+
+  if (vk::any_of_equal(enum_type, EnumType::BackedString, EnumType::BackedInt)) {
+    auto param_var2 = VertexAdaptor<op_var>::create();
+    param_var2->str_val = "value_";
+    auto param2 = VertexAdaptor<op_func_param>::create(param_var2.clone());
+
+    params_vec.emplace_back(param2);
+
+    auto this_vertex2 = VertexAdaptor<op_var>::create();
+    this_vertex2->str_val = "this";
+    auto inst_prop2 = VertexAdaptor<op_instance_prop>::create(this_vertex2.clone());
+    inst_prop2->str_val = "value";
+
+    ctor_body_seq.emplace_back(VertexAdaptor<op_set>::create(inst_prop2, param_var2.clone()));
+  }
+
+  ctor_body_seq.emplace_back(VertexAdaptor<op_return>::create(this_vertex.clone()));
+
+  const auto body = VertexAdaptor<op_seq>::create(ctor_body_seq);
+
+  auto func = VertexAdaptor<op_function>::create(VertexAdaptor<op_func_param_list>::create(params_vec), body);
+
+  std::string func_name = replace_backslashes(cur_class->name) + "$$" + ClassData::NAME_OF_CONSTRUCT;
+  auto this_param = cur_class->gen_param_this(func->get_location());
+  func->param_list_ref() = VertexAdaptor<op_func_param_list>::create(this_param, func->param_list()->params());
+  VertexUtil::func_force_return(func, cur_class->gen_vertex_this(func->location));
+  auto ctor_function = FunctionData::create_function(func_name, func, FunctionData::func_local);
+
+
+  ctor_function->update_location_in_body();
+  ctor_function->is_inline = true;
+  ctor_function->modifiers = FunctionModifiers::instance_public();
+  cur_class->members.add_instance_method(ctor_function);
+  G->register_and_require_function(ctor_function, parsed_os, true);
+}
+
+void GenTree::generate_enum_fields(EnumType enum_type) {
+  if (vk::any_of_equal(enum_type, EnumType::BackedString, EnumType::BackedInt)) {
+    auto modifiers_field_public = FieldModifiers();
+    modifiers_field_public.set_public();
+
+    auto value_vertex = VertexAdaptor<op_var>::create();
+    value_vertex->str_val = "value";
+    value_vertex->is_const = true;
+
+    cur_class->members.add_instance_field(value_vertex,
+                                          VertexPtr{},
+                                          modifiers_field_public,
+                                          nullptr,
+                                          TypeHintPrimitive::create(enum_type == EnumType::BackedInt ? tp_int : tp_string));
+  }
+  auto modifiers_field_public = FieldModifiers();
+  modifiers_field_public.set_public();
+
+  auto name_vertex = VertexAdaptor<op_var>::create();
+  name_vertex->str_val = "name";
+  name_vertex->is_const = true;
+  cur_class->members.add_instance_field(name_vertex,
+                                        VertexPtr{},
+                                        modifiers_field_public,
+                                        nullptr,
+                                        TypeHintPrimitive::create(PrimitiveType::tp_string));
+
+}
+
+std::vector<std::string> GenTree::get_enum_body_and_cases(EnumType enum_type) {
   CE(cur->type() == tok_opbrc);
 
   VertexPtr body_vertex = get_statement();
   kphp_error(body_vertex && body_vertex->type() == op_seq, "Incorrect enum body");
 
   std::vector<std::string> cases;
-
-
   const auto body_seq = body_vertex.try_as<op_seq>();
 
-  // generating constants
-  for (const auto &stmt : body_seq->args()) {
-    if (const auto case_vertex = stmt.try_as<op_case>()) {
-      auto cve = case_vertex->expr();
-      const auto case_name_vertex = cve.try_as<op_func_name>();
+  auto is_pure_enum_case = [](VertexAdaptor<op_seq> value) -> bool {
+  return value->args().empty();
+  };
 
-      assert(case_name_vertex);
+  for (const auto &stmt: body_seq->args()) {
+    if (const auto case_vertex = stmt.try_as<op_case>()) {
+      const auto case_name_vertex = case_vertex->expr().try_as<op_func_name>();
       const auto case_name = case_name_vertex->get_string();
       cases.push_back(case_name);
 
-      VertexAdaptor<op_string> cns = VertexAdaptor<op_string>::create();
-      cns->str_val = case_name;
+      VertexAdaptor<op_string> name_arg = VertexAdaptor<op_string>::create();
+      name_arg->str_val = case_name;
 
-      auto is_pure_case = is_pure_enum_case(case_vertex->cmd());
+      const bool is_pure_case = is_pure_enum_case(case_vertex->cmd());
 
       kphp_error(
         (is_pure_case && enum_type == EnumType::Pure) ||
         (!is_pure_case && vk::any_of_equal(enum_type, EnumType::BackedInt, EnumType::BackedString)),
         fmt_format("Not appropriate case \"{}\" for enum \"{}\"", case_name, cur_class->name));
 
-      std::vector<VertexPtr> args{cns};
+      std::vector<VertexPtr> args{name_arg};
       if (vk::any_of_equal(enum_type, EnumType::BackedString, EnumType::BackedInt)) {
-        kphp_error(!case_vertex->cmd()->args().empty(), "You cannot use pure enum' case in backed enum");
+        kphp_error(!case_vertex->cmd()->args().empty(), "Cases without values are not allowed in backed enum");
         args.push_back(case_vertex->cmd()->args()[0]);
       }
 
-//      printf("cur class name: %s\n", cur_class->name.data());
       const auto ctor_call = gen_constructor_call_with_args(cur_class->name, args, auto_location());
       ctor_call->args()[0].as<op_alloc>()->allocated_class_name = "self";
       cur_class->members.add_constant(case_name, ctor_call, AccessModifiers::public_);
-
     }
-    kphp_error(stmt->type() != op_var, "Fields are no allowed in enums");
+    kphp_error(stmt->type() != op_var, "Fields are not allowed in enums");
   }
-  cur_class->add_class_constant();
+  return cases;
+}
 
-  // add $name field
-  {
-    auto modifiers_field_public = FieldModifiers();
-    modifiers_field_public.set_public();
+GenTree::EnumType GenTree::get_enum_type() {
+  kphp_assert_msg(cur_class && cur_class->is_enum(), "Cannot calculate enum type for non-enum");
+  if (test_expect(tok_colon)) {
+    next_cur();
 
-    auto name_vertex = VertexAdaptor<op_var>::create();
-    name_vertex->str_val = "name";
-    name_vertex->is_const = true;
-    cur_class->members.add_instance_field(name_vertex,
-                                          VertexPtr{},
-                                          modifiers_field_public,
-                                          nullptr,
-                                          TypeHintPrimitive::create(PrimitiveType::tp_string));
-  }
-
-  if (vk::any_of_equal(enum_type, EnumType::BackedString, EnumType::BackedInt)) {
-    auto modifiers_field_public = FieldModifiers();
-    modifiers_field_public.set_public();
-
-    auto name_vertex = VertexAdaptor<op_var>::create();
-    name_vertex->str_val = "value";
-    name_vertex->is_const = true;
-
-    cur_class->members.add_instance_field(name_vertex,
-                                          VertexPtr{},
-                                          modifiers_field_public,
-                                          nullptr,
-                                          TypeHintPrimitive::create(enum_type == EnumType::BackedInt ? tp_int : tp_string));
-  }
-
-  #if 1
-
-  // generating constructor
-  {
-    auto param_var = VertexAdaptor<op_var>::create();
-    param_var->str_val = "name";
-    auto param = VertexAdaptor<op_func_param>::create(param_var.clone());
-
-    auto params_vec = std::vector<VertexPtr>{param};
-
-    auto this_vertex = VertexAdaptor<op_var>::create();
-    this_vertex->str_val = "this";
-    auto inst_prop = VertexAdaptor<op_instance_prop>::create(this_vertex.clone());
-    inst_prop->str_val = "name";
-    auto ctor_body_seq = std::vector<VertexPtr>{  VertexAdaptor<op_set>::create(inst_prop, param_var.clone())};
-
-    if (vk::any_of_equal(enum_type, EnumType::BackedString, EnumType::BackedInt)) {
-      auto param_var2 = VertexAdaptor<op_var>::create();
-      param_var2->str_val = "value_";
-      auto param2= VertexAdaptor<op_func_param>::create(param_var2.clone());
-
-      params_vec.emplace_back(param2);
-
-      auto this_vertex2 = VertexAdaptor<op_var>::create();
-      this_vertex2->str_val = "this";
-      auto inst_prop2 = VertexAdaptor<op_instance_prop>::create(this_vertex2.clone());
-      inst_prop2->str_val = "value";
-
-      ctor_body_seq.emplace_back(VertexAdaptor<op_set>::create(inst_prop2, param_var2.clone()));
+    if (cur->type() == tok_int) {
+      next_cur();
+      return EnumType::BackedInt;
+    } else if (cur->type() == tok_string) {
+      next_cur();
+      return EnumType::BackedString;
     }
-
-    ctor_body_seq.emplace_back(VertexAdaptor<op_return>::create(this_vertex.clone()));
-
-    const auto body = VertexAdaptor<op_seq>::create(ctor_body_seq);
-
-    auto func = VertexAdaptor<op_function>::create(VertexAdaptor<op_func_param_list>::create(params_vec), body);
-
-    std::string func_name = replace_backslashes(cur_class->name) + "$$" + ClassData::NAME_OF_CONSTRUCT;
-    auto this_param = cur_class->gen_param_this(func->get_location());
-    func->param_list_ref() = VertexAdaptor<op_func_param_list>::create(this_param, func->param_list()->params());
-    VertexUtil::func_force_return(func, cur_class->gen_vertex_this(func->location));
-    auto ctor_function = FunctionData::create_function(func_name, func, FunctionData::func_local);
-
-
-    ctor_function->update_location_in_body();
-    ctor_function->is_inline = true;
-    ctor_function->modifiers = FunctionModifiers::instance_public();
-    ctor_function->phpdoc = phpdoc;
-    cur_class->members.add_instance_method(ctor_function);
-    G->register_and_require_function(ctor_function, parsed_os, true);
+    kphp_error(false, fmt_format("Invalid type of enum {}", cur_class->name));
   }
-    #endif
-#if 1
-  // generating cases()
-  {
-    std::vector<VertexAdaptor<op_func_name>> arr_args;
-
-    std::transform(cases.begin(), cases.end(), std::back_inserter(arr_args), [](const std::string &case_name) {
-      auto item = VertexAdaptor<op_func_name>::create();
-      item->str_val = "self::" + case_name;
-      return item;
-    });
-
-    auto response = VertexAdaptor<op_array>::create(std::move(arr_args));
-
-    const auto params = VertexAdaptor<op_func_param_list>::create(std::vector<VertexAdaptor<op_func_param>>{});
-    const auto body = VertexAdaptor<op_seq>::create(std::vector<VertexPtr>{VertexAdaptor<op_return>::create(response)});
-    auto func = VertexAdaptor<op_function>::create(params, body);
-    std::string func_name = replace_backslashes(cur_class->name) + "$$cases";
-
-
-    auto cases_fun = FunctionData::create_function(func_name, func, FunctionData::func_local);
-    // auto f_alive2 = StackPushPop<FunctionPtr>(functions_stack, cur_function, cases_fun);
-
-    cases_fun->update_location_in_body();
-    cases_fun->is_inline = true;
-    cases_fun->modifiers = FunctionModifiers::nonmember();
-    cases_fun->modifiers.set_public();
-    cases_fun->modifiers.set_final();
-    cases_fun->return_typehint = TypeHintArray::create(cur_class->type_hint);
-    cur_class->members.add_static_method(cases_fun);
-    G->register_and_require_function(cases_fun, parsed_os, true);
-  }
-#endif
-
-  #if 1
-  if (vk::any_of_equal(enum_type, EnumType::BackedInt, EnumType::BackedString)) {
-    auto param_var = VertexAdaptor<op_var>::create();
-    param_var->str_val = "value";
-    auto param_pampam = VertexAdaptor<op_func_param>::create(param_var);
-    param_pampam->type_hint = TypeHintPipe::create(std::vector<const TypeHint*>{TypeHintPrimitive::create(tp_int), TypeHintPrimitive::create(tp_string)});
-    auto params = VertexAdaptor<op_func_param_list>::create(std::vector<VertexPtr>{param_pampam});
-
-
-    VertexPtr foreach_vert;
-    // generating foreach
-    {
-      // generating foreach param
-      VertexAdaptor<op_func_call> cases_call = VertexAdaptor<op_func_call>::create();
-      cases_call->str_val = "self::cases";
-
-      VertexAdaptor<op_var> cur_case = VertexAdaptor<op_var>::create();
-      cur_case->str_val = "cur_case";
-
-      VertexAdaptor<op_var> tmp_var = VertexAdaptor<op_var>::create();
-      tmp_var->str_val = "tmp_var";
-      tmp_var->extra_type = op_ex_var_superlocal;
-
-      VertexAdaptor<op_foreach_param> fe_param = VertexAdaptor<op_foreach_param>::create(cases_call, cur_case, tmp_var);
-
-      // generating body
-      auto inst_prop = VertexAdaptor<op_instance_prop>::create(cur_case.clone());
-      inst_prop->str_val = "value";
-      auto cmp_vert = VertexAdaptor<op_conv_bool>::create(VertexAdaptor<op_eq3>::create(inst_prop.clone(), param_var.clone()));
-      auto ret_vert = VertexUtil::embrace(VertexAdaptor<op_return>::create(cur_case.clone()));
-      auto if_vert = VertexAdaptor<op_if>::create(cmp_vert, ret_vert);
-      foreach_vert = VertexAdaptor<op_foreach>::create(fe_param, VertexUtil::embrace(if_vert));
-    }
-    auto func_body = VertexUtil::embrace(foreach_vert);
-    auto tryFrom_func = VertexAdaptor<op_function>::create(params, func_body);
-    [[maybe_unused]]auto from_func = tryFrom_func.clone();
-
-    auto tf_fun = FunctionData::create_function(replace_backslashes(cur_class->name) + "$$tryFrom", tryFrom_func, FunctionData::func_local);
-
-    VertexUtil::func_force_return(tryFrom_func, VertexAdaptor<op_null>::create());
-
-    // auto f_alive2 = StackPushPop<FunctionPtr>(functions_stack, cur_function, tf_fun);
-
-    tf_fun->update_location_in_body();
-    tf_fun->is_inline = true;
-    tf_fun->modifiers = FunctionModifiers::nonmember();
-    tf_fun->modifiers.set_public();
-    tf_fun->modifiers.set_final();
-    cur_class->members.add_static_method(tf_fun);
-    G->register_and_require_function(tf_fun, parsed_os, true);
-
-
-    // from func
-    {
-      VertexPtr cmd = from_func->cmd();
-      assert (cmd->type() == op_seq);
-
-      VertexAdaptor<op_string> text = VertexAdaptor<op_string>::create();
-      text->str_val = fmt_format("Not a valid backing value for enum \"{}\"", cur_class->name);
-      auto code = VertexAdaptor<op_int_const>::create();
-      code->set_string("0");
-
-      VertexPtr node = gen_constructor_call_with_args("\\ValueError", std::vector<VertexPtr>{text, code}, auto_location());
-      node = VertexAdaptor<op_throw>::create(node);
-
-      std::vector<VertexPtr> next = cmd->get_next();
-      next.push_back(node);
-      from_func->cmd_ref() = VertexAdaptor<op_seq>::create(next);
-
-      auto f_fun = FunctionData::create_function(replace_backslashes(cur_class->name) + "$$from", from_func, FunctionData::func_local);
-
-
-      f_fun->update_location_in_body();
-      f_fun->is_inline = true;
-      f_fun->modifiers = FunctionModifiers::nonmember();
-      f_fun->modifiers.set_public();
-      f_fun->modifiers.set_final();
-      cur_class->members.add_static_method(f_fun);
-      G->register_and_require_function(f_fun, parsed_os, true);
-    }
-  }
-  #endif
-
-  return {};
+  return EnumType::Pure;
 }
 
 VertexAdaptor<op_case> GenTree::get_enum_case() {
-
   /*
   enum {
     ...
@@ -2091,14 +2078,11 @@ VertexAdaptor<op_case> GenTree::get_enum_case() {
     CE (!kphp_error(test_expect(tok_eq1), "\"=\" must be after backed enum case"));
     response = VertexAdaptor<op_case>::create(case_name, VertexAdaptor<op_seq>::create());
 
-    next_cur(); // WTF why I need it?
+    next_cur();
 
     auto expr = get_expression();
-//    puts("Enum value:\n");
-//    expr.debugPrint();
     response = VertexAdaptor<op_case>::create(case_name, VertexAdaptor<op_seq>::create(expr));
   }
-
 
   return response;
 }

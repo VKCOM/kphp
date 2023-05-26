@@ -93,6 +93,12 @@ VertexAdaptor<op_switch> VertexUtil::create_switch_vertex(FunctionPtr cur_functi
   return VertexAdaptor<op_switch>::create(switch_condition, temp_var_condition_on_switch, temp_var_matched_with_one_case, std::move(cases)).set_location(switch_condition);
 }
 
+VertexAdaptor<op_var> VertexUtil::create_var(const std::string &name) {
+  auto var = VertexAdaptor<op_var>::create();
+  var->str_val = name;
+  return var;
+}
+
 VertexAdaptor<op_seq> VertexUtil::embrace(VertexPtr v) {
   if (auto seq = v.try_as<op_seq>()) {
     return seq;
