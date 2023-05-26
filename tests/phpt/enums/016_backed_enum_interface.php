@@ -1,4 +1,5 @@
 @ok php8
+<?php
 enum Status : int {
     case Ok = 1;
     case Fail = 0;

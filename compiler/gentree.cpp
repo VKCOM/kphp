@@ -1779,7 +1779,6 @@ VertexPtr GenTree::get_enum(const PhpDocComment * phpdoc) {
 
   if (test_expect(tok_colon)) {
     next_cur();
-//    cur->debugPrint();
 
     if (cur->type() == tok_int) {
       enum_type = EnumType::BackedInt;
@@ -1792,9 +1791,7 @@ VertexPtr GenTree::get_enum(const PhpDocComment * phpdoc) {
     enum_type = EnumType::Pure;
   }
 
-//  printf("Enum type = %d\n", (int)enum_type);
-
-  if (test_expect(tok_implements)) { // TODO separate parse_extends_implements into different functions
+  if (test_expect(tok_implements)) {
     do {
       next_cur();
       kphp_error(test_expect(tok_func_name), "Interface name expected after 'implements'");
