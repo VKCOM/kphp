@@ -338,7 +338,7 @@ std::unique_ptr<TlDependentTypesUsings> InterfaceDeclaration::detect_if_needs_tl
 }
 
 void FFIDeclaration::compile(CodeGenerator &W) const {
-  W << OpenFile(ffi_scope->header_name, ffi_scope->get_subdir());
+  W << OpenFile(ffi_scope->h_filename, ffi_scope->get_subdir());
 
   W << "#pragma once" << NL;
 
@@ -391,7 +391,7 @@ void FFIDeclaration::compile(CodeGenerator &W) const {
 }
 
 void InterfaceDeclaration::compile(CodeGenerator &W) const {
-  W << OpenFile(interface->header_name, interface->get_subdir());
+  W << OpenFile(interface->h_filename, interface->get_subdir());
   W << "#pragma once" << NL;
 
   IncludesCollector includes;
@@ -468,7 +468,7 @@ std::unique_ptr<TlDependentTypesUsings> ClassDeclaration::detect_if_needs_tl_usi
 }
 
 void ClassDeclaration::compile(CodeGenerator &W) const {
-  W << OpenFile(klass->header_name, klass->get_subdir());
+  W << OpenFile(klass->h_filename, klass->get_subdir());
   W << "#pragma once" << NL;
 
   auto front_includes = compile_front_includes(W);
