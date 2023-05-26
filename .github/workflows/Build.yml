@@ -91,6 +91,10 @@ jobs:
       run: docker exec kphp-build-container-${{matrix.os}} bash -c
               "composer install -d ${{env.kphp_polyfills_dir}}"
 
+    - name: Install python packages
+      run: docker exec kphp-build-container-${{matrix.os}} bash -c
+              "pip3 install -r ${{env.kphp_root_dir}}/tests/python/requirements.txt"
+
     - name: Run python tests
       id: python_tests
       continue-on-error: true
