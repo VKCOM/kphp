@@ -1063,13 +1063,13 @@ void ClassMembersDefinition::compile_msgpack_serialize(CodeGenerator &W, ClassPt
   //   packer.pack(field_1);
   //   ...
   //}
-  std::string body;
+  std::vector<std::string> body;
   uint16_t cnt_fields = 0;
 
   klass->members.for_each([&](ClassMemberInstanceField &field) {
     if (field.serialization_tag != -1) {
       auto func_name = fmt_format("vk::msgpack::packer_float32_decorator::pack_value{}", field.serialize_as_float32 ? "_float32" : "");
-      body += fmt_format("packer.pack({}); {}(packer, ${});\n", field.serialization_tag, func_name, field.var->name);
+      body.emplace_back(fmt_format("packer.pack({}); {}(packer, ${});", field.serialization_tag, func_name, field.var->name));
       cnt_fields += 2;
     }
   });
@@ -1077,7 +1077,7 @@ void ClassMembersDefinition::compile_msgpack_serialize(CodeGenerator &W, ClassPt
   FunctionSignatureGenerator(W).set_const_this()
     << "void " << klass->src_name << "::msgpack_pack(vk::msgpack::packer<string_buffer> &packer)" << BEGIN
     << "packer.pack_array(" << cnt_fields << ");" << NL
-    << body << NL
+    << JoinValues(body, "", join_mode::multiple_lines) << NL
     << END << NL << NL;
 }
 
@@ -1108,13 +1108,13 @@ void ClassMembersDefinition::compile_msgpack_deserialize(CodeGenerator &W, Class
 
   cases.emplace_back("default: break;");
 
-  W << "void " << klass->src_name << "::msgpack_unpack(const vk::msgpack::object &msgpack_o)" << BEGIN
+  W << "void " << klass->src_name << "::msgpack_unpack(const vk::msgpack::object &msgpack_o) " << BEGIN
     << "if (msgpack_o.type != vk::msgpack::stored_type::ARRAY) { throw vk::msgpack::type_error{}; }" << NL
     << "auto arr = msgpack_o.via.array;" << NL
     << "for (size_t i = 0; i < arr.size; i += 2)" << BEGIN
     << "auto tag = arr.ptr[i].as<uint8_t>();" << NL
     << "[[maybe_unused]] auto elem = arr.ptr[i + 1];" << NL
-    << "switch (tag)" << BEGIN
+    << "switch (tag) " << BEGIN
     << JoinValues(cases, "", join_mode::multiple_lines) << NL
     << END << NL
     << END << NL
