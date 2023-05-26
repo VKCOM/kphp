@@ -582,8 +582,7 @@ void ClassDeclaration::compile_inner_methods(CodeGenerator &W, ClassPtr klass) {
   compile_get_class(W, klass);
   compile_get_hash(W, klass);
   compile_accept_visitor_methods(W, klass);
-  compile_msgpack_serialize(W, klass);
-  compile_msgpack_deserialize(W, klass);
+  compile_msgpack_declarations(W, klass);
   compile_virtual_builtin_functions(W, klass);
   compile_wakeup(W, klass);
 }
@@ -919,73 +918,14 @@ void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr
   }
 }
 
-void ClassDeclaration::compile_msgpack_serialize(CodeGenerator &W, ClassPtr klass) {
+void ClassDeclaration::compile_msgpack_declarations(CodeGenerator &W, ClassPtr klass) {
   if (!klass->is_serializable) {
     return;
   }
 
-  //template<typename Packer>
-  //void msgpack_pack(Packer &packer) const {
-  //   packer.pack(tag_1);
-  //   packer.pack(field_1);
-  //   ...
-  //}
-  std::string body;
-  uint16_t cnt_fields = 0;
-
-  klass->members.for_each([&](ClassMemberInstanceField &field) {
-    if (field.serialization_tag != -1) {
-      auto func_name = fmt_format("vk::msgpack::packer_float32_decorator::pack_value{}", field.serialize_as_float32 ? "_float32" : "");
-      body += fmt_format("packer.pack({}); {}(packer, ${});\n", field.serialization_tag, func_name, field.var->name);
-      cnt_fields += 2;
-    }
-  });
-
-  FunctionSignatureGenerator(W).set_const_this()
-    << "void msgpack_pack(vk::msgpack::packer<string_buffer> &packer)" << BEGIN
-    << "packer.pack_array(" << cnt_fields << ");" << NL
-    << body << NL
-    << END << NL;
-}
-
-void ClassDeclaration::compile_msgpack_deserialize(CodeGenerator &W, ClassPtr klass) {
-  if (!klass->is_serializable) {
-    return;
-  }
-
-  //if (msgpack_o.type != vk::msgpack::stored_type::ARRAY) { throw vk::msgpack::type_error{}; }
-  //auto arr = msgpack_o.via.array;
-  //for (size_t i = 0; i < arr.size; i += 2) {
-  //  auto tag = arr.ptr[i].as<uint8_t>();
-  //  [[maybe_unused]] auto elem = arr.ptr[i + 1];
-  //  switch (tag) {
-  //    case tag_x: elem.convert(x); break;
-  //    case tag_s: elem.convert(s); break;
-  //    default   : break;
-  //  }
-  //}
-  //
-
-  std::vector<std::string> cases;
-  klass->members.for_each([&](ClassMemberInstanceField &field) {
-    if (field.serialization_tag != -1) {
-      cases.emplace_back(fmt_format("case {}: elem.convert(${}); break;", field.serialization_tag, field.var->name));
-    }
-  });
-
-  cases.emplace_back("default: break;");
-
-  W << "void msgpack_unpack(const vk::msgpack::object &msgpack_o)" << BEGIN
-      << "if (msgpack_o.type != vk::msgpack::stored_type::ARRAY) { throw vk::msgpack::type_error{}; }" << NL
-      << "auto arr = msgpack_o.via.array;" << NL
-      << "for (size_t i = 0; i < arr.size; i += 2)" << BEGIN
-        << "auto tag = arr.ptr[i].as<uint8_t>();" << NL
-        << "[[maybe_unused]] auto elem = arr.ptr[i + 1];" << NL
-        << "switch (tag)" << BEGIN
-          << JoinValues(cases, "", join_mode::multiple_lines) << NL
-        << END << NL
-      << END << NL
-    << END << NL;
+  W << NL;
+  W << "void msgpack_pack(vk::msgpack::packer<string_buffer> &packer) const noexcept;" << NL << NL;
+  W << "void msgpack_unpack(const vk::msgpack::object &msgpack_o);" << NL;
 }
 
 void ClassDeclaration::compile_virtual_builtin_functions(CodeGenerator &W, ClassPtr klass) {
@@ -1088,6 +1028,97 @@ void ClassDeclaration::compile_job_worker_shared_memory_piece_methods(CodeGenera
     W << "(void)instance;" << NL;
   }
   W << END << NL;
+}
+
+void ClassMembersDefinition::compile(CodeGenerator &W) const {
+  if (!klass->is_serializable) {
+    return;
+  }
+
+  W << OpenFile(klass->cpp_filename, klass->get_subdir());
+  W << ExternInclude(G->settings().runtime_headers.get());
+
+  IncludesCollector includes;
+  includes.add_class_include(klass);
+  W << includes;
+
+  W << NL << OpenNamespace();
+
+  compile_msgpack_serialize(W, klass);
+  compile_msgpack_deserialize(W, klass);
+
+  W << CloseNamespace();
+
+  W << CloseFile();
+}
+
+void ClassMembersDefinition::compile_msgpack_serialize(CodeGenerator &W, ClassPtr klass) {
+  if (!klass->is_serializable) {
+    return;
+  }
+
+  //template<typename Packer>
+  //void msgpack_pack(Packer &packer) const {
+  //   packer.pack(tag_1);
+  //   packer.pack(field_1);
+  //   ...
+  //}
+  std::string body;
+  uint16_t cnt_fields = 0;
+
+  klass->members.for_each([&](ClassMemberInstanceField &field) {
+    if (field.serialization_tag != -1) {
+      auto func_name = fmt_format("vk::msgpack::packer_float32_decorator::pack_value{}", field.serialize_as_float32 ? "_float32" : "");
+      body += fmt_format("packer.pack({}); {}(packer, ${});\n", field.serialization_tag, func_name, field.var->name);
+      cnt_fields += 2;
+    }
+  });
+
+  FunctionSignatureGenerator(W).set_const_this()
+    << "void " << klass->src_name << "::msgpack_pack(vk::msgpack::packer<string_buffer> &packer)" << BEGIN
+    << "packer.pack_array(" << cnt_fields << ");" << NL
+    << body << NL
+    << END << NL << NL;
+}
+
+void ClassMembersDefinition::compile_msgpack_deserialize(CodeGenerator &W, ClassPtr klass) {
+  if (!klass->is_serializable) {
+    return;
+  }
+
+  //if (msgpack_o.type != vk::msgpack::stored_type::ARRAY) { throw vk::msgpack::type_error{}; }
+  //auto arr = msgpack_o.via.array;
+  //for (size_t i = 0; i < arr.size; i += 2) {
+  //  auto tag = arr.ptr[i].as<uint8_t>();
+  //  [[maybe_unused]] auto elem = arr.ptr[i + 1];
+  //  switch (tag) {
+  //    case tag_x: elem.convert(x); break;
+  //    case tag_s: elem.convert(s); break;
+  //    default   : break;
+  //  }
+  //}
+  //
+
+  std::vector<std::string> cases;
+  klass->members.for_each([&](ClassMemberInstanceField &field) {
+    if (field.serialization_tag != -1) {
+      cases.emplace_back(fmt_format("case {}: elem.convert(${}); break;", field.serialization_tag, field.var->name));
+    }
+  });
+
+  cases.emplace_back("default: break;");
+
+  W << "void " << klass->src_name << "::msgpack_unpack(const vk::msgpack::object &msgpack_o)" << BEGIN
+    << "if (msgpack_o.type != vk::msgpack::stored_type::ARRAY) { throw vk::msgpack::type_error{}; }" << NL
+    << "auto arr = msgpack_o.via.array;" << NL
+    << "for (size_t i = 0; i < arr.size; i += 2)" << BEGIN
+    << "auto tag = arr.ptr[i].as<uint8_t>();" << NL
+    << "[[maybe_unused]] auto elem = arr.ptr[i + 1];" << NL
+    << "switch (tag)" << BEGIN
+    << JoinValues(cases, "", join_mode::multiple_lines) << NL
+    << END << NL
+    << END << NL
+    << END << NL;
 }
 
 StaticLibraryRunGlobal::StaticLibraryRunGlobal(gen_out_style style) :
