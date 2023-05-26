@@ -77,8 +77,6 @@ class StatsReceiver:
 
         if not new_stats:
             return False
-        if self._stats and len(self._stats) > len(new_stats):
-            raise RuntimeError("Got inconsistent stats count: old={} new={} lines{}".format(len(self._stats), len(new_stats), len(lines)))
         # HACK: replace prefix for kphp server stats
         self._stats = {re.sub("^kphp_stats\\..+\\.", "kphp_server.", k): v for k, v in new_stats.items()}
         return True
