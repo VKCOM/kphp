@@ -23,6 +23,13 @@ VertexPtr VertexUtil::get_actual_value(VertexPtr v) {
   return v;
 }
 
+VertexPtr VertexUtil::unwrap_inlined_define(VertexPtr v) {
+  if (auto as_op_def = v.try_as<op_define_val>()) {
+    return unwrap_inlined_define(as_op_def->value());
+  }
+  return v;
+}
+
 const std::string *VertexUtil::get_constexpr_string(VertexPtr v) {
   v = VertexUtil::get_actual_value(v);
   if (auto conv_vertex = v.try_as<op_conv_string>()) {

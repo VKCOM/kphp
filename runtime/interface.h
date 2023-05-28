@@ -214,6 +214,12 @@ inline void f$set_json_log_on_timeout_mode(bool enabled) {
   is_json_log_on_timeout_enabled = enabled;
 }
 
+extern bool is_demangled_stacktrace_logs_enabled;
+
+inline void f$set_json_log_demangle_stacktrace(bool enable) {
+  is_demangled_stacktrace_logs_enabled = enable;
+}
+
 int64_t f$numa_get_bound_node();
 
 bool f$extension_loaded(const string &extension);

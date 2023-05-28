@@ -35,6 +35,18 @@ bool is_array_suitable_for_hashing(VertexPtr vertex) {
   return vertex->type() == op_array && CheckConst::is_const(vertex);
 }
 
+// checks that inlined as define' value constructor is suitable to be stored as constant var
+bool is_object_suitable_for_hashing(VertexPtr vertex) {
+  return vertex->type() == op_define_val && vertex.as<op_define_val>()->value()->type() == op_func_call
+         && vertex.as<op_define_val>()->value()->extra_type == op_ex_constructor_call && vertex->const_type == cnst_const_val;
+}
+
+std::string gen_const_object_name(const VertexAdaptor<op_define_val> &def) {
+  kphp_assert_msg(def->value()->type() == op_func_call, "Internal error: expected op_define_val <op_func_call>");
+  auto obj_hash = ObjectHash::calc_hash(def);
+  return fmt_format("const_obj$us{:x}", obj_hash);
+}
+
 std::string gen_const_array_name(const VertexAdaptor<op_array> &array) {
   return fmt_format("const_array$us{:x}", ArrayHash::calc_hash(array));
 }
@@ -206,6 +218,10 @@ ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr lhs, Vert
     // ($a = new A)->...
     case op_set:
       return resolve_class_of_arrow_access(function, lhs.as<op_set>()->rhs(), v);
+
+    // inlined constant value
+    case op_define_val:
+      return resolve_class_of_arrow_access(function, lhs.as<op_define_val>()->value(), v);
 
     default:
       break;

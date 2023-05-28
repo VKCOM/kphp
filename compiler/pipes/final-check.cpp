@@ -631,7 +631,6 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
           }
         }
       } else {
-        kphp_error(!var->is_constant(), "Can't use isset on const variable");
         const TypeData *type_info = tinf::get_type(var);
         kphp_error(type_info->can_store_null(),
                    fmt_format("isset({}) will be always true for {}", var->as_human_readable(), type_info->as_human_readable()));

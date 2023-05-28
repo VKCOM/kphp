@@ -1,6 +1,7 @@
 prepend(SERVER_TESTS_SOURCES ${BASE_DIR}/tests/cpp/server/
         job-workers/shared-memory-manager-test.cpp
-        cluster-name-test.cpp
+        master-name-test.cpp
+        server-config-test.cpp
         confdata-binlog-events-test.cpp
         php-engine-test.cpp
         workers-control-test.cpp)

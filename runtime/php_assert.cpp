@@ -25,6 +25,7 @@
 #include "runtime/kphp-backtrace.h"
 #include "runtime/on_kphp_warning_callback.h"
 #include "runtime/resumable.h"
+#include "runtime/interface.h"
 
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
@@ -155,7 +156,12 @@ static void php_warning_impl(bool out_of_memory, int error_type, char const *mes
     OnKphpWarningCallback::get().invoke_callback(string(buf));
   }
 
-  vk::singleton<JsonLogger>::get().write_log(buf, error_type, cur_time, buffer, nptrs, out_of_memory || die_on_fail || error_type == E_ERROR);
+  if (is_demangled_stacktrace_logs_enabled) {
+    vk::singleton<JsonLogger>::get().write_log_with_demangled_backtrace(
+      buf, error_type, cur_time, buffer, nptrs, out_of_memory || die_on_fail || error_type == E_ERROR);
+  } else {
+    vk::singleton<JsonLogger>::get().write_log(buf, error_type, cur_time, buffer, nptrs, out_of_memory || die_on_fail || error_type == E_ERROR);
+  }
 
   if (die_on_fail) {
     raise_php_assert_signal__();

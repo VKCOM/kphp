@@ -53,7 +53,7 @@
 #include "runtime/udp.h"
 #include "runtime/url.h"
 #include "runtime/zlib.h"
-#include "server/cluster-name.h"
+#include "server/server-config.h"
 #include "server/database-drivers/adaptor.h"
 #include "server/database-drivers/mysql/mysql.h"
 #include "server/database-drivers/pgsql/pgsql.h"
@@ -88,6 +88,7 @@ static int http_need_gzip;
 
 static bool is_utf8_enabled = false;
 bool is_json_log_on_timeout_enabled = true;
+bool is_demangled_stacktrace_logs_enabled = false;
 
 static int ignore_level = 0;
 
@@ -1829,7 +1830,7 @@ int64_t f$get_engine_workers_number() {
 }
 
 string f$get_kphp_cluster_name() {
-  return string{vk::singleton<ClusterName>::get().get_cluster_name()};
+  return string{vk::singleton<ServerConfig>::get().get_cluster_name()};
 }
 
 std::tuple<int64_t, int64_t, int64_t, int64_t> f$get_webserver_stats() {
@@ -2274,6 +2275,7 @@ static void init_interface_lib() {
   php_warning_level = std::max(2, php_warning_minimum_level);
   php_disable_warnings = 0;
   is_json_log_on_timeout_enabled = true;
+  is_demangled_stacktrace_logs_enabled = false;
   ignore_level = 0;
 
   const size_t engine_pid_buf_size = 20;

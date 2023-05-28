@@ -14,7 +14,7 @@
 #include "runtime/interface.h"
 
 const string COLON(",", 1);
-const string CP1251("1251", 4);
+const string CP1251("cp1251");
 const string DOT(".", 1);
 const string NEW_LINE("\n", 1);
 const string SPACE(" ", 1);
