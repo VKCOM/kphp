@@ -2581,8 +2581,6 @@ VertexPtr GenTree::get_const(AccessModifiers access) {
   CE (check_statement_end());
 
   if (const_in_class) {
-//    printf("Add to class: %s\n", const_name.c_str());
-//    fflush(stdout);
     cur_class->members.add_constant(const_name, v, access);
     return VertexAdaptor<op_empty>::create();
   }

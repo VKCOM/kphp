@@ -14,5 +14,3 @@ echo c->name;
 
 echo MyBool::F->name;
 echo MyBool::T->name;
-
-// TODO add 002_comparison

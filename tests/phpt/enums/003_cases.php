@@ -27,4 +27,3 @@ enum EmptyEnum {
 var_dump(count(Foo::cases()));
 var_dump(count(Single::cases()));
 var_dump(count(EmptyEnum::cases()));
-

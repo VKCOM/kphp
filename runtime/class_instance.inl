@@ -4,7 +4,6 @@
   #error "this file must be included only from kphp_core.h"
 #endif
 
-
 template<class T>
 class_instance<T> &class_instance<T>::operator=(const Optional<bool> &null) noexcept {
   php_assert(null.value_state() == OptionalState::null_value);

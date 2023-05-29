@@ -17,5 +17,3 @@ enum MyBool implements Printer {
         }
     }
 }
-
-// TODO tests with namespaces, different dirs etc

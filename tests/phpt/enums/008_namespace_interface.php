@@ -17,5 +17,3 @@ enum MyBool implements interfaces\PrinterNS\Printer {
 
 MyBool::T->print();
 MyBool::F->print();
-
-// TODO tests with namespaces, different dirs etc
