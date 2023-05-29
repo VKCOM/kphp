@@ -809,7 +809,7 @@ static void compile_json_visitor_call(CodeGenerator &W, ClassPtr json_encoder, C
   }
 }
 
-void ClassDeclaration::compile_accept_json_visitor(CodeGenerator &W, ClassPtr klass, bool to_encode, ClassPtr json_encoder) {
+static void do_compile_accept_json_visitor(CodeGenerator &W, ClassPtr klass, bool to_encode, ClassPtr json_encoder, bool compile_declaration_only) {
   bool parent_has_method = false;
   if (ClassPtr parent = klass->parent_class) {
     parent_has_method |= parent->json_encoders.end() != std::find(parent->json_encoders.begin(), parent->json_encoders.end(), std::pair{json_encoder, to_encode});
@@ -826,22 +826,33 @@ void ClassDeclaration::compile_accept_json_visitor(CodeGenerator &W, ClassPtr kl
   // why ever, triggers an asan error (but correctly works without asan)
   // we could not figure out why, probably it's asan's false positive, but for now, we decided just to leave a copy-paste
   if (is_pure_virtual) {
+    if (!compile_declaration_only) {
+      return;
+    }
     FunctionSignatureGenerator(W)
       .set_is_virtual(is_pure_virtual || has_derived)
       .set_final(parent_has_method && !has_derived)
       .set_overridden(parent_has_method && has_derived)
       .set_pure_virtual(is_pure_virtual)
+      .set_definition(!compile_declaration_only)
       << fmt_format("void accept({}<{}> &visitor)", to_encode ? "ToJsonVisitor" : "FromJsonVisitor", JsonEncoderTags::get_cppStructTag_name(json_encoder->name))
       << SemicolonAndNL{};
     return;
   } else {
+    const std::string class_name = compile_declaration_only ? "" : klass->src_name + "::";
     FunctionSignatureGenerator(W)
       .set_is_virtual(is_pure_virtual || has_derived)
       .set_final(parent_has_method && !has_derived)
       .set_overridden(parent_has_method && has_derived)
       .set_pure_virtual(is_pure_virtual)
-      << fmt_format("void accept({}<{}> &visitor)", to_encode ? "ToJsonVisitor" : "FromJsonVisitor", JsonEncoderTags::get_cppStructTag_name(json_encoder->name))
-      << BEGIN;
+      .set_definition(!compile_declaration_only)
+      << fmt_format("void {}accept({}<{}> &visitor)", class_name, to_encode ? "ToJsonVisitor" : "FromJsonVisitor",
+                    JsonEncoderTags::get_cppStructTag_name(json_encoder->name));
+    if (compile_declaration_only) {
+      W << SemicolonAndNL{};
+      return;
+    }
+    W << BEGIN;
   }
 
   // generates `visitor("json_key", $field_name)` calls in appropriate order
@@ -880,6 +891,13 @@ void ClassDeclaration::compile_accept_json_visitor(CodeGenerator &W, ClassPtr kl
   W << END << NL;
 }
 
+void ClassDeclaration::compile_accept_json_visitor(CodeGenerator &W, ClassPtr klass) {
+  for (auto[encoder, to_encode] : klass->json_encoders) {
+    W << NL;
+    do_compile_accept_json_visitor(W, klass, to_encode, encoder, true);
+  }
+}
+
 void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr klass) {
   bool need_generic_accept =
     klass->need_to_array_debug_visitor ||
@@ -912,10 +930,7 @@ void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr
     compile_accept_visitor(W, klass, "InstanceDeepDestroyVisitor");
   }
 
-  for (auto[encoder, to_encode] : klass->json_encoders) {
-    W << NL;
-    compile_accept_json_visitor(W, klass, to_encode, encoder);
-  }
+  compile_accept_json_visitor(W, klass);
 }
 
 void ClassDeclaration::compile_msgpack_declarations(CodeGenerator &W, ClassPtr klass) {
@@ -1031,7 +1046,7 @@ void ClassDeclaration::compile_job_worker_shared_memory_piece_methods(CodeGenera
 }
 
 void ClassMembersDefinition::compile(CodeGenerator &W) const {
-  if (!klass->is_serializable) {
+  if (!klass->is_serializable && klass->json_encoders.empty()) {
     return;
   }
 
@@ -1044,12 +1059,22 @@ void ClassMembersDefinition::compile(CodeGenerator &W) const {
 
   W << NL << OpenNamespace();
 
+  compile_accept_json_visitor(W, klass);
+  W << NL;
   compile_msgpack_serialize(W, klass);
+  W << NL;
   compile_msgpack_deserialize(W, klass);
 
   W << CloseNamespace();
 
   W << CloseFile();
+}
+
+void ClassMembersDefinition::compile_accept_json_visitor(CodeGenerator &W, ClassPtr klass) {
+  for (auto[encoder, to_encode] : klass->json_encoders) {
+    W << NL;
+    do_compile_accept_json_visitor(W, klass, to_encode, encoder, false);
+  }
 }
 
 void ClassMembersDefinition::compile_msgpack_serialize(CodeGenerator &W, ClassPtr klass) {
@@ -1078,7 +1103,7 @@ void ClassMembersDefinition::compile_msgpack_serialize(CodeGenerator &W, ClassPt
     << "void " << klass->src_name << "::msgpack_pack(vk::msgpack::packer<string_buffer> &packer)" << BEGIN
     << "packer.pack_array(" << cnt_fields << ");" << NL
     << JoinValues(body, "", join_mode::multiple_lines) << NL
-    << END << NL << NL;
+    << END << NL;
 }
 
 void ClassMembersDefinition::compile_msgpack_deserialize(CodeGenerator &W, ClassPtr klass) {
