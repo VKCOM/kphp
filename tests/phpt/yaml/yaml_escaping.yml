@@ -1,0 +1,5 @@
+---
+quote: "'single'quotes'are'not'escaped'double\"quotes\"are\"escaped\""
+newline: "1\n2\n3\n4\n5\nnewlines"
+other: "backslash\\horizontal tab\tvertical tab\vevery\b last\b symbol\b is\b erased\b"
+...
