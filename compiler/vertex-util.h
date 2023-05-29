@@ -26,7 +26,6 @@ public:
   static VertexAdaptor<op_var> create_superlocal_var(const std::string& name_prefix, FunctionPtr cur_function);
   static VertexAdaptor<op_switch> create_switch_vertex(FunctionPtr cur_function, VertexPtr switch_condition, std::vector<VertexPtr> &&cases);
   static VertexAdaptor<op_var> create_var(const std::string& name);
-  static VertexAdaptor<op_func_param> create_func_param(const std::string& name);
 
   static VertexPtr unwrap_array_value(VertexPtr v);
   static VertexPtr unwrap_string_value(VertexPtr v);

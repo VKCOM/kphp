@@ -1916,17 +1916,14 @@ void GenTree::generate_pure_enum_methods(const std::vector<std::string> &cases) 
 }
 
 void GenTree::generate_enum_construct(EnumType enum_type) {
-  auto param_var = VertexAdaptor<op_var>::create();
-  param_var->str_val = "name";
-  auto param = VertexAdaptor<op_func_param>::create(param_var.clone());
-
+  auto param = VertexAdaptor<op_func_param>::create(VertexUtil::create_var("name"));
   auto params_vec = std::vector<VertexPtr>{param};
 
   auto this_vertex = VertexAdaptor<op_var>::create();
   this_vertex->str_val = "this";
   auto inst_prop = VertexAdaptor<op_instance_prop>::create(this_vertex.clone());
   inst_prop->str_val = "name";
-  auto ctor_body_seq = std::vector<VertexPtr>{VertexAdaptor<op_set>::create(inst_prop, param_var.clone())};
+  auto ctor_body_seq = std::vector<VertexPtr>{VertexAdaptor<op_set>::create(inst_prop, VertexUtil::create_var("name"))};
 
   if (vk::any_of_equal(enum_type, EnumType::BackedString, EnumType::BackedInt)) {
     auto param_var2 = VertexAdaptor<op_var>::create();
