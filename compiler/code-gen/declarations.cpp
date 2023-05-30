@@ -759,9 +759,15 @@ void ClassDeclaration::compile_accept_visitor(CodeGenerator &W, ClassPtr klass, 
   compile_class_method(FunctionSignatureGenerator(W), klass, fmt_format("void accept({} &visitor)", visitor_type), "generic_accept(visitor)");
 }
 
-void ClassDeclaration::compile_generic_accept(CodeGenerator &W, ClassPtr klass) {
+static void do_compile_generic_accept(CodeGenerator &W, ClassPtr klass, bool compile_declaration_only) {
+  const std::string class_name = compile_declaration_only ? "" : klass->src_name + "::";
   FunctionSignatureGenerator(W) << "template<class Visitor>" << NL
-                                << "void generic_accept(Visitor &&visitor) " << BEGIN;
+                                << "void " << class_name << "generic_accept(Visitor &&visitor) ";
+  if (compile_declaration_only) {
+    W << SemicolonAndNL{};
+    return;
+  }
+  W << BEGIN;
   for (auto cur_klass = klass; cur_klass; cur_klass = cur_klass->parent_class) {
     cur_klass->members.for_each([&W](const ClassMemberInstanceField &f) {
       // will generate visitor("field_name", $field_name);
@@ -769,6 +775,10 @@ void ClassDeclaration::compile_generic_accept(CodeGenerator &W, ClassPtr klass) 
     });
   }
   W << END << NL;
+}
+
+void ClassDeclaration::compile_generic_accept(CodeGenerator &W, ClassPtr klass) {
+  do_compile_generic_accept(W, klass, true);
 }
 
 // generate `visitor("json_key", $field_name);`, wrapped with `if ($field_name != default)` if skip_if_default, etc.
@@ -1046,7 +1056,12 @@ void ClassDeclaration::compile_job_worker_shared_memory_piece_methods(CodeGenera
 }
 
 void ClassMembersDefinition::compile(CodeGenerator &W) const {
-  if (!klass->is_serializable && klass->json_encoders.empty()) {
+  bool need_generic_accept =
+    klass->need_to_array_debug_visitor ||
+    klass->need_instance_cache_visitors ||
+    klass->need_instance_memory_estimate_visitor;
+
+  if (!need_generic_accept && !klass->is_serializable && klass->json_encoders.empty()) {
     return;
   }
 
@@ -1059,6 +1074,29 @@ void ClassMembersDefinition::compile(CodeGenerator &W) const {
 
   W << NL << OpenNamespace();
 
+  if (need_generic_accept) {
+    W << NL;
+    compile_generic_accept(W, klass);
+  }
+
+  if (klass->need_to_array_debug_visitor) {
+    W << NL;
+    compile_generic_accept_instantiations(W, klass, "ToArrayVisitor");
+  }
+
+  if (klass->need_instance_memory_estimate_visitor) {
+    W << NL;
+    compile_generic_accept_instantiations(W, klass, "InstanceMemoryEstimateVisitor");
+  }
+
+  if (klass->need_instance_cache_visitors) {
+    W << NL;
+    compile_generic_accept_instantiations(W, klass, "InstanceReferencesCountingVisitor");
+    compile_generic_accept_instantiations(W, klass, "InstanceDeepCopyVisitor");
+    compile_generic_accept_instantiations(W, klass, "InstanceDeepDestroyVisitor");
+  }
+
+  W << NL;
   compile_accept_json_visitor(W, klass);
   W << NL;
   compile_msgpack_serialize(W, klass);
@@ -1068,6 +1106,14 @@ void ClassMembersDefinition::compile(CodeGenerator &W) const {
   W << CloseNamespace();
 
   W << CloseFile();
+}
+
+void ClassMembersDefinition::compile_generic_accept(CodeGenerator &W, ClassPtr klass) {
+  do_compile_generic_accept(W, klass, false);
+}
+
+void ClassMembersDefinition::compile_generic_accept_instantiations(CodeGenerator &W, ClassPtr klass, vk::string_view type) {
+  W << "template void " << klass->src_name << "::generic_accept(" << type << " &) noexcept;";
 }
 
 void ClassMembersDefinition::compile_accept_json_visitor(CodeGenerator &W, ClassPtr klass) {
