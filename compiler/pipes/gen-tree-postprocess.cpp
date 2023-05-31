@@ -318,6 +318,17 @@ VertexPtr GenTreePostprocessPass::convert_array_with_spread_operators(VertexAdap
   return call;
 }
 
+// convert op_match node to op_seq_rval like
+// {
+//   var res;
+//   switch (...) {
+//       ...
+//       ... => { res = ...}
+//       ...
+//   }
+//   res;
+// }
+// we need this because `match` is expression
 VertexPtr GenTreePostprocessPass::convert_match(VertexAdaptor<op_match> match_vertex) {
   auto gen_superlocal = [&](const std::string& name_prefix) {
     auto v = VertexAdaptor<op_var>::create().set_location(match_vertex);
@@ -352,7 +363,7 @@ VertexPtr GenTreePostprocessPass::convert_match(VertexAdaptor<op_match> match_ve
       const auto case_body = VertexAdaptor<op_seq>::create(std::vector<VertexPtr>{set_result, case_break.clone()}).set_location(default_case);
       switch_arms.emplace_back(VertexAdaptor<op_default>::create(case_body));
     }
-    kphp_error(vk::any_of_equal(match_case->type(), op_match_case, op_match_default), "Internel error: invalid case type in match expression");
+    kphp_error(vk::any_of_equal(match_case->type(), op_match_case, op_match_default), "Internal error: invalid case type in match expression");
   }
 
   if (!has_default) {
