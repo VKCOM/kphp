@@ -1228,7 +1228,7 @@ VertexAdaptor<op_switch> GenTree::get_switch() {
 }
 
 
-VertexAdaptor<op_match_proxy> GenTree::get_match() {
+VertexAdaptor<op_match> GenTree::get_match() {
   const auto location = auto_location();
   next_cur();
   CE(expect(tok_oppar, "'('"));
@@ -1248,8 +1248,7 @@ VertexAdaptor<op_match_proxy> GenTree::get_match() {
 
     if (cur->type() == tok_default) {
       cases.emplace_back(get_match_default());
-    }
-    else {
+    } else {
       cases.emplace_back(get_match_case());
     }
     kphp_assert_msg(cases.back(), "Invalid 'match' case!");
@@ -1257,7 +1256,7 @@ VertexAdaptor<op_match_proxy> GenTree::get_match() {
 
   CE(expect(tok_clbrc, "'}'"));
 
-  return VertexAdaptor<op_match_proxy>::create(match_condition, std::move(cases)).set_location(location);
+  return VertexAdaptor<op_match>::create(match_condition, std::move(cases)).set_location(location);
 }
 
 VertexAdaptor<op_match_case> GenTree::get_match_case() {
@@ -1281,12 +1280,10 @@ VertexAdaptor<op_match_case> GenTree::get_match_case() {
     CE(expect(tok_double_arrow, "'=>'"));
     kphp_error(!arms.empty(), "Expected expression before '=>'");
     result = get_expression();
-  }
-  else if (const auto double_arrow = cur_expr.try_as<op_double_arrow>()) {
+  } else if (const auto double_arrow = cur_expr.try_as<op_double_arrow>()) {
     arms.emplace_back(double_arrow->key());
     result = double_arrow->value();
-  }
-  else {
+  } else {
     kphp_fail_msg("Ivalid syntax of 'match' cases!");
   }
   
@@ -1304,6 +1301,7 @@ VertexAdaptor<op_match_default> GenTree::get_match_default() {
   CE(expect(tok_double_arrow, "'=>'"));
   return VertexAdaptor<op_match_default>::create(get_expression()).set_location(location);
 }
+
 VertexAdaptor<op_shape> GenTree::get_shape() {
   auto location = auto_location();
 

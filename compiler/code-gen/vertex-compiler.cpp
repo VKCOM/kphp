@@ -1149,8 +1149,7 @@ void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   auto temp_var_matched_with_a_case = root->matched_with_one_case();
 
   // because we checked types before in case of match
-  const auto *const convert_function = root->is_match ? "" : "f$strval";
-
+  const char *convert_function = root->is_match ? "" : "f$strval";
 
   W << BEGIN;
   W << temp_var_strval_of_condition << " = " << convert_function << "(" << root->condition() << ");" << NL;
@@ -1197,7 +1196,7 @@ void compile_switch_str(VertexAdaptor<op_switch> root, CodeGenerator &W) {
 
 void compile_switch_int(VertexAdaptor<op_switch> root, CodeGenerator &W) {
   // because we checked types before in case of match
-  const auto *const convert_function = root->is_match ? "" : "f$intval";
+  const char *convert_function = root->is_match ? "" : "f$intval";
   W << "switch (" << convert_function << " (" << root->condition() << "))" << BEGIN;
 
   W << "static_cast<void>(" << root->condition_on_switch() << ");" << NL;
@@ -1213,8 +1212,7 @@ void compile_switch_int(VertexAdaptor<op_switch> root, CodeGenerator &W) {
       if (val->type() == op_int_const) {
         const std::string &str = val.as<op_int_const>()->str_val;
         W << str;
-        const std::string op = root->is_match ? "Match" : "Switch";
-        kphp_error(used.insert(str).second, fmt_format("{}: repeated cases found [{}]", op, str));
+        kphp_error(used.insert(str).second, fmt_format("{}: repeated cases found [{}]", root->is_match ? "Match" : "Switch", str));
       } else {
         kphp_assert(VertexUtil::is_const_int(val));
         W << val;
@@ -1236,7 +1234,7 @@ void compile_switch_var(VertexAdaptor<op_switch> root, CodeGenerator &W) {
 
   auto temp_var_condition_on_switch = root->condition_on_switch();
   auto temp_var_matched_with_a_case = root->matched_with_one_case();
-  const auto *const eq_function = root->is_match ? "equals" : "eq2";
+  const char *eq_function = root->is_match ? "equals" : "eq2";
 
   W << "do " << BEGIN;
   W << temp_var_condition_on_switch << " = " << root->condition() << ";" << NL;
@@ -1287,15 +1285,14 @@ void compile_switch(VertexAdaptor<op_switch> root, CodeGenerator &W) {
 
   for (auto one_case : root->cases()) {
     if (one_case->type() == op_default) {
-      const std::string op = root->is_match ? "Match" : "Switch";
-      kphp_error_return(!has_default, op + ": several `default` cases found");
+      kphp_error_return(!has_default,  fmt_format("%s: several `default` cases found", root->is_match ? "Match" : "Switch"));
       has_default = true;
       continue;
     }
   }
 
   if (root->is_match) {
-    const auto *const cond_type = tinf::get_type(root->condition());
+    const TypeData *cond_type = tinf::get_type(root->condition());
      if (!cond_type) {
       compile_switch_var(root, W);
       return;

@@ -4,16 +4,13 @@
 
 #include "compiler/pipes/gen-tree-postprocess.h"
 
-#include "common/algorithms/find.h"
+#include <vector>
+
 #include "compiler/compiler-core.h"
-#include "compiler/data/class-data.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
-#include "compiler/data/vertex-adaptor.h"
 #include "compiler/name-gen.h"
-#include "compiler/vertex-meta_op_base.h"
 #include "compiler/vertex-util.h"
-#include <vector>
 
 namespace {
 template <typename F>
@@ -252,7 +249,7 @@ VertexPtr GenTreePostprocessPass::on_exit_vertex(VertexPtr root) {
     return convert_array_with_spread_operators(array);
   }
 
-  if (auto match = root.try_as<op_match_proxy>()) {
+  if (auto match = root.try_as<op_match>()) {
     return convert_match(match);
   }
 
@@ -321,7 +318,7 @@ VertexPtr GenTreePostprocessPass::convert_array_with_spread_operators(VertexAdap
   return call;
 }
 
-VertexPtr GenTreePostprocessPass::convert_match(VertexAdaptor<op_match_proxy> match_vertex) {
+VertexPtr GenTreePostprocessPass::convert_match(VertexAdaptor<op_match> match_vertex) {
   auto gen_superlocal = [&](const std::string& name_prefix) {
     auto v = VertexAdaptor<op_var>::create().set_location(match_vertex);
     v->str_val = gen_unique_name(name_prefix);
