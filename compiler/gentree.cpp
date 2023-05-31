@@ -1844,7 +1844,7 @@ void GenTree::generate_backed_enum_methods() {
   };
 
   for (size_t i = 0; i < required_func_names.size(); ++i) {
-    auto func = VertexAdaptor<op_function>::create(params, func_body);
+    auto func = VertexAdaptor<op_function>::create(params.clone(), func_body.clone());
 
     std::vector<VertexPtr> next = func->cmd()->get_next();
     next.push_back(last_statements[i]);
