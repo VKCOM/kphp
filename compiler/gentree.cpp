@@ -1783,14 +1783,6 @@ VertexPtr GenTree::get_enum(const PhpDocComment *phpdoc) {
 
   cur_class->add_class_constant();
 
-  bool registered = G->register_class(cur_class);
-  if (registered) {
-    ++G->stats.total_classes;
-  }
-
-  if (registered) {
-    G->register_and_require_function(cur_function, parsed_os, true);
-  }
 
   auto cases = get_enum_body_and_cases(enum_type);
 
@@ -1801,6 +1793,14 @@ VertexPtr GenTree::get_enum(const PhpDocComment *phpdoc) {
 
   if (vk::any_of_equal(enum_type, EnumType::BackedInt, EnumType::BackedString)) {
     generate_backed_enum_methods();
+  }
+
+  bool registered = G->register_class(cur_class);
+  if (registered) {
+    ++G->stats.total_classes;
+  }
+  if (registered) {
+    G->register_and_require_function(cur_function, parsed_os, true);
   }
 
   return {};
@@ -1865,9 +1865,7 @@ void GenTree::generate_pure_enum_methods(const std::vector<std::string> &cases) 
   std::vector<VertexAdaptor<op_func_name>> arr_args;
 
   std::transform(cases.begin(), cases.end(), std::back_inserter(arr_args), [](const std::string &case_name) {
-  auto item = VertexAdaptor<op_func_name>::create();
-  item->str_val = "self::" + case_name;
-  return item;
+  return VertexUtil::create_with_str_val<op_func_name>("self::" + case_name);
   });
 
   auto response = VertexAdaptor<op_array>::create(std::move(arr_args));
