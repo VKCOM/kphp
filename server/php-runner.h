@@ -5,7 +5,6 @@
 #pragma once
 
 #include <csetjmp>
-#include <csignal>
 
 #include "common/dl-utils-lite.h"
 #include "common/mixin/not_copyable.h"
@@ -58,9 +57,6 @@ extern long long query_stats_id;
 void dump_query_stats();
 
 void init_handlers();
-
-extern std::array<void *, 128> sigalrm_last_backtrace;
-extern volatile std::sig_atomic_t sigalrm_last_backtrace_size;
 
 class PhpScriptStack : vk::not_copyable {
 public:

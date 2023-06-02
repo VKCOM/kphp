@@ -189,7 +189,7 @@ my_array_filter([1,2,3], fn($i) => $i < 3);         // T=int, return=int[]
 my_array_filter([getA()], function($a) {            // T=A, return=A[]
   return $a->isValid();   // KPHP understands that $a is A because of callable(T)
 });
-my_array_filter([[1]], fn($ar) => count($ar)>0);    // T=A[], return=A[][]
+my_array_filter([[1]], fn($ar) => count($ar)>0);    // T=int[], return=int[][]
 ```
 
 In short, to perform reification, we use assumptions: having `T $arg` and `f(any_expr)`, calc `T=(assumption of any_expr)`. That's why it perfectly works for instances and partially works for primitives:

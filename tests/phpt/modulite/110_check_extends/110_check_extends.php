@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_MODULITE=1
 /Utils110\/More110.php:5/
 /interface I110 extends/
 /restricted to use Feed110\\IRank110, it's internal in @feed/

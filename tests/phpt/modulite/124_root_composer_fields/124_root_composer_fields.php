@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_MODULITE=1
 KPHP_COMPOSER_ROOT={dir}
 /restricted to use VK\\RPC\\RpcLogger124, it's internal in #vk\/rpc/
 /restricted to use VK\\Strings\\Strings124, it's internal in #vk\/strings/

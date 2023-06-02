@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_MODULITE=1
 /Failed loading Utils103\/.modulite.yaml:/
 /"@utils\/sub"/
 /@utils\/sub not found/

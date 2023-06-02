@@ -30,8 +30,19 @@ void CalcConstTypePass::calc_const_type_of_class_fields(ClassPtr klass) {
 }
 
 VertexPtr CalcConstTypePass::on_exit_vertex(VertexPtr v) {
+  if (auto as_define_val = v.try_as<op_define_val>()) {
+    inlined_define_cnt--;
+    auto val = as_define_val->value();
+    // check if it's an object in define
+    as_define_val->const_type = val->const_type;
+    kphp_error(as_define_val->const_type == cnst_const_val, "Non-const expression in const context");
+    return v;
+  }
+  // for now only pure functions and
+  // constructors in defines can be `cnst_const_val`-ed
   if (auto as_func_call = v.try_as<op_func_call>()) {
-    if (!as_func_call->func_id || !as_func_call->func_id->is_pure) {
+    const bool can_be_const = as_func_call->func_id && ((as_func_call->func_id->is_constructor() && inlined_define_cnt > 0)|| as_func_call->func_id->is_pure);
+    if (!can_be_const) {
       v->const_type = cnst_nonconst_val;
       return v;
     }
@@ -55,6 +66,13 @@ VertexPtr CalcConstTypePass::on_exit_vertex(VertexPtr v) {
       kphp_error (0, fmt_format("Unknown cnst-type for [op = {}]", v->type()));
       kphp_fail();
       break;
+  }
+  return v;
+}
+
+VertexPtr CalcConstTypePass::on_enter_vertex(VertexPtr v) {
+  if (v->type() == op_define_val) {
+    inlined_define_cnt++;
   }
   return v;
 }

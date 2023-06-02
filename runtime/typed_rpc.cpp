@@ -53,9 +53,9 @@ private:
       ready = rpc_get_and_parse(query_.get()->query_id, -1);
       TRY_WAIT(rpc_get_and_parse_resumable_label_0, ready, bool);
       if (!ready) {
-        php_assert (last_rpc_error_get());
+        php_assert (last_rpc_error_message_get());
         query_.get()->result_fetcher.reset();
-        RETURN(error_factory_.make_error(last_rpc_error_get(), TL_ERROR_UNKNOWN));
+        RETURN(error_factory_.make_error(last_rpc_error_message_get(), last_rpc_error_code_get()));
       }
 
       CurrentProcessingQuery::get().set_current_tl_function(query_);
