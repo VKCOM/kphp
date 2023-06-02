@@ -68,7 +68,7 @@ private:
   friend class vk::singleton<CurlMemoryUsage>;
 };
 
-class CurlRequest : private vk::not_copyable {
+class CurlRequest : public ManagedThroughDlAllocator, vk::not_copyable {
 public:
   static std::unique_ptr<CurlRequest> build(curl_easy easy_id);
 
@@ -84,7 +84,7 @@ private:
   CurlRequest(curl_easy easy_id, curl_multi multi_id) noexcept;
 };
 
-class CurlResponse : private vk::not_copyable {
+class CurlResponse : public ManagedThroughDlAllocator, vk::not_copyable {
 public:
   CurlResponse(Optional<string> &&response, int bound_request_id) noexcept
     : response(std::move(response))
