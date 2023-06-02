@@ -1058,6 +1058,7 @@ void CurlRequest::detach_multi_and_easy_handles() const noexcept {
 
 static int curl_epoll_cb(int fd, void *data, event_t *ev) {
   auto *curl_request = static_cast<CurlRequest *>(data);
+  php_assert(curl_request);
 
   int flags = 0;
   if (ev->ready & EVT_READ) {
@@ -1096,6 +1097,8 @@ static int curl_epoll_cb(int fd, void *data, event_t *ev) {
 
 static int curl_socketfunction_cb(CURL */*easy*/, curl_socket_t fd, int action, void *userp, void */*socketp*/) {
   auto *curl_request = static_cast<CurlRequest *>(userp);
+  php_assert(curl_request);
+
   switch (action) {
     case CURL_POLL_IN:
     case CURL_POLL_OUT:
