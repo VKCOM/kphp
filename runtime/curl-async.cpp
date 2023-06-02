@@ -7,6 +7,8 @@
 #include "runtime/resumable.h"
 #include "server/curl-adaptor.h"
 
+namespace curl_async {
+
 class curl_exec_concurrently final : public Resumable {
 private:
   using ReturnT = Optional<string>;
@@ -33,11 +35,12 @@ public:
     RESUMABLE_END
   }
 };
+} // namespace curl_async
 
 Optional<string> f$curl_exec_concurrently(curl_easy easy_id, double timeout_s) {
-  auto request = CurlRequest::build(easy_id);
+  auto request = curl_async::CurlRequest::build(easy_id);
   if (!request) {
     return false;
   }
-  return start_resumable<Optional<string>>(new curl_exec_concurrently(std::move(request), timeout_s));
+  return start_resumable<Optional<string>>(new curl_async::curl_exec_concurrently(std::move(request), timeout_s));
 }

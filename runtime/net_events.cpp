@@ -58,9 +58,9 @@ bool process_net_event(net_event_t *e) {
          php_assert(e->slot_id == response->bound_request_id);
          vk::singleton<database_drivers::Adaptor>::get().process_external_db_response_event(std::unique_ptr<database_drivers::Response>(response));
      },
-     [&](CurlResponse *response) {
+     [&](curl_async::CurlResponse *response) {
          php_assert(e->slot_id == response->bound_request_id);
-         vk::singleton<CurlAdaptor>::get().process_response_event(std::unique_ptr<CurlResponse>(response));
+         vk::singleton<curl_async::CurlAdaptor>::get().process_response_event(std::unique_ptr<curl_async::CurlResponse>(response));
      }
     }, e->data);
 

@@ -68,6 +68,8 @@ private:
   friend class vk::singleton<CurlMemoryUsage>;
 };
 
+namespace curl_async {
+
 class CurlRequest : public ManagedThroughDlAllocator, vk::not_copyable {
 public:
   static std::unique_ptr<CurlRequest> build(curl_easy easy_id);
@@ -93,3 +95,4 @@ public:
   Optional<string> response;
   const int bound_request_id{0};
 };
+} // namespace curl_async

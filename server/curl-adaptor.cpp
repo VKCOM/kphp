@@ -11,9 +11,11 @@
 #include "server/php-queries.h"
 
 template<>
-int Storage::tagger<std::unique_ptr<CurlResponse>>::get_tag() noexcept {
-  return 447403581;
+int Storage::tagger<std::unique_ptr<curl_async::CurlResponse>>::get_tag() noexcept {
+  return -1245890489;
 }
+
+namespace curl_async {
 
 class CurlAdaptor::CurlRequestResumable final : public Resumable {
   using ReturnT = std::unique_ptr<CurlResponse>;
@@ -95,3 +97,4 @@ void CurlAdaptor::finish_request(int request_id) noexcept {
     request->detach_multi_and_easy_handles();
   }
 }
+} // namespace curl_async

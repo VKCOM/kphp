@@ -990,6 +990,8 @@ void free_curl_lib() noexcept {
   vk::singleton<CurlMemoryUsage>::get().total_allocated = 0;
 }
 
+namespace curl_async {
+
 std::unique_ptr<CurlRequest> CurlRequest::build(curl_easy easy_id) {
   curl_multi multi_id = f$curl_multi_init();
   if (!multi_id || !get_context<EasyContext>(easy_id)) {
@@ -1119,3 +1121,4 @@ static int curl_socketfunction_cb(CURL */*easy*/, curl_socket_t fd, int action, 
 
   return 0;
 }
+} // namespace curl_async

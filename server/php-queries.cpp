@@ -1121,7 +1121,7 @@ const char *net_event_t::get_description() const noexcept {
     [](const database_drivers::Response *) {
       snprintf(BUF.data(), BUF.size(), "EXTERNAL_DB_ANSWER");
     },
-    [](const CurlResponse *) {
+    [](const curl_async::CurlResponse *) {
       snprintf(BUF.data(), BUF.size(), "CURL_ASYNC_RESPONSE");
     },
   }, data);

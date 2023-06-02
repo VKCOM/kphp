@@ -10,6 +10,8 @@
 #include "common/mixin/not_copyable.h"
 #include "runtime/signal_safe_hashtable.h"
 
+namespace curl_async {
+
 class CurlRequest;
 class CurlResponse;
 
@@ -36,3 +38,4 @@ private:
   SignalSafeHashtable<int, std::unique_ptr<CurlRequest>> processing_requests_holder;
   SignalSafeHashtable<int, CurlRequestInfo> processing_requests;
 };
+} // namespace curl_async
