@@ -254,6 +254,12 @@ void check_register_shutdown_functions(VertexAdaptor<op_func_call> call) {
                         vk::join(throws, ", "), callback->func_id->get_throws_call_chain()));
 }
 
+void check_json_decode_call(VertexAdaptor<op_func_call> call) {
+  auto args = call->args();
+  kphp_error_return(args.size() >= 2, "json_decode($s) without 2nd argument is unsupported: in PHP it leads to stdClass; use json_decode($s, true) to get mixed[]");
+  kphp_error_return(args[1]->type() == op_true, "json_decode($s, true) is supported only, got not true");
+}
+
 void mark_global_vars_for_memory_stats() {
   if (!G->settings().enable_global_vars_memory_stats.get()) {
     return;
@@ -782,6 +788,8 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
       check_estimate_memory_usage_call(call);
     } else if (function_name == "get_global_vars_memory_stats") {
       check_get_global_vars_memory_stats_call();
+    } else if (function_name == "json_decode") {
+      check_json_decode_call(call);
     } else if (function_name == "is_null") {
       const TypeData *arg_type = tinf::get_type(call->args()[0]);
       kphp_error(arg_type->can_store_null(), fmt_format("is_null() will be always false for {}", arg_type->as_human_readable()));
