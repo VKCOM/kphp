@@ -7,6 +7,7 @@
 #include "common/kprintf.h"
 
 #include "runtime/net_events.h"
+#include "server/php-queries.h"
 
 DEFINE_VERBOSITY(resumable);
 
@@ -471,6 +472,7 @@ static void debug_print_resumables() noexcept {
 static bool wait_started_resumable(int64_t resumable_id) noexcept;
 
 Storage *start_resumable_impl(Resumable *resumable) noexcept {
+  check_script_timeout();
   int64_t id = register_started_resumable(resumable);
 
   if (resumable->resume(id, nullptr)) {

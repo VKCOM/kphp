@@ -123,6 +123,7 @@ public:
   PhpScript(size_t mem_size, double oom_handling_memory_ratio, size_t stack_size) noexcept;
   ~PhpScript() noexcept;
 
+  void check_delayed_timeout() noexcept;
   void check_delayed_errors() noexcept;
 
   void init(script_t *script, php_query_data *data_to_set) noexcept;

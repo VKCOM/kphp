@@ -305,6 +305,7 @@ int mc_connect_to(const char *host_name, int port);
 void mc_run_query(int host_num, const char *request, int request_len, int timeout_ms, int query_type, void (*callback)(const char *result, int result_len)) ubsan_supp("alignment");
 int db_proxy_connect();
 void db_run_query(int host_num, const char *request, int request_len, int timeout_ms, void (*callback)(const char *result, int result_len));
+void check_script_timeout();
 void reset_script_timeout();
 double get_net_time();
 double get_script_time();

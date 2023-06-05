@@ -84,12 +84,20 @@ void PhpScript::error(const char *error_message, script_error_t error_type) noex
   setcontext_portable(&exit_context);
 }
 
-void PhpScript::check_delayed_errors() noexcept {
+void PhpScript::check_delayed_timeout() noexcept {
+  // The delayed timeout check is performed in the following cases
+  // [1] context swap
+  // [2] start_resumable
+  // TODO add check_delayed_timeout in some buildin functions
   php_assert(PhpScript::in_script_context);
   if (time_limit_exceeded) {
-    time_limit_exceeded = false;
-    perform_error_if_running("timeout exit\n", script_error_t::timeout);
+    on_request_timeout_error();
   }
+}
+
+void PhpScript::check_delayed_errors() noexcept {
+  php_assert(PhpScript::in_script_context);
+  check_delayed_timeout();
   if (memory_limit_exceeded) {
     memory_limit_exceeded = false;
     vk::singleton<OomHandler>::get().invoke();
@@ -202,19 +210,8 @@ void PhpScript::on_request_timeout_error() {
     dl::rollback_malloc_replacement();
   }
 
-  // we can get here from a normal timeout *or* a timeout that happens after
-  // we tried to execute the shutdown functions from the timeout context;
-  // in the latter case, we should skip all everything here and go straight to the
-  // timeout exit context switching
-  auto shutdown_functions_status = get_shutdown_functions_status();
-  if (shutdown_functions_status != shutdown_functions_status::running_from_timeout) {
-    if (get_shutdown_functions_count() != 0 && get_shutdown_functions_status() == shutdown_functions_status::not_executed) {
-      // resetting a timer here will cause another SIGALRM to be received later
-      // that will bring us to this function again in case if we haven't finished
-      // executing shutdown functions yet
-      current_script->reset_script_timeout();
-      run_shutdown_functions_from_timeout();
-    }
+  if (get_shutdown_functions_count() != 0 && get_shutdown_functions_status() == shutdown_functions_status::not_executed) {
+    run_shutdown_functions_from_timeout();
   }
   perform_error_if_running("timeout exit\n", script_error_t::timeout);
 }
@@ -225,6 +222,7 @@ int PhpScript::swapcontext_helper(ucontext_t_portable *oucp, const ucontext_t_po
 }
 
 void PhpScript::pause() noexcept {
+  check_delayed_timeout();
   //fprintf (stderr, "pause: \n");
   in_script_context = false;
 #if ASAN_ENABLED
@@ -450,10 +448,6 @@ void PhpScript::run() noexcept {
   auto oom_handling_memory_size = static_cast<size_t>(std::ceil(mem_size * oom_handling_memory_ratio));
   auto script_memory_size = mem_size - oom_handling_memory_size;
   init_runtime_environment(data, run_mem, script_memory_size, oom_handling_memory_size);
-  if (sigsetjmp(timeout_handler, true) != 0) { // set up a timeout recovery point
-    on_request_timeout_error(); // this call will not return (it changes the context)
-    assert(false && "Must be unreachable");
-  }
   dl::leave_critical_section();
   php_assert (dl::in_critical_section == 0); // To ensure that no critical section is left at the end of the initialization
   check_delayed_errors();
@@ -524,27 +518,41 @@ void write_str(int fd, const char *s) noexcept {
 
 namespace kphp_runtime_signal_handlers {
 
+static void sigalrm_in_net_context() {
+  PhpScript::time_limit_exceeded = true;
+}
+
+static void sigalrm_in_script_context() {
+  PhpScript::time_limit_exceeded = true;
+  if (is_json_log_on_timeout_enabled) {
+    vk::singleton<JsonLogger>::get().write_log_with_backtrace("Maximum execution time exceeded", E_ERROR);
+  }
+}
+
+static void sigalrm_set_timeout_ex() {
+  static itimerval timer;
+  memset(&timer, 0, sizeof(itimerval));
+  timer.it_value.tv_sec = 2;
+  setitimer(ITIMER_REAL, &timer, nullptr);
+}
+
 static void sigalrm_handler(int signum) {
   kwrite_str(2, "in sigalrm_handler\n");
   if (check_signal_critical_section(signum, "SIGALRM")) {
-    PhpScript::time_limit_exceeded = true;
-    // if script is not actually running, don't bother (sigalrm handler is called
-    // even if timeout happens after the script already finished its execution)
-    if (PhpScript::in_script_context) {
-      if (is_json_log_on_timeout_enabled) {
-        vk::singleton<JsonLogger>::get().write_log_with_backtrace("Maximum execution time exceeded", E_ERROR);
-      }
-      // we need to (in that order):
-      // [1] run the shutdown handlers
-      // [2] change the context to the worker
-      // [3] execute the error handling state
-      // previously, we performed [2] and [3] right here,
-      // but now we also need to run the shutdown handlers which is
-      // can contain arbitrary code and should not be executed from the signal handler;
-      // therefore, we break out of this signal handler to a prepared recovery point
-      // (without changing the script context) and then do all required steps
-      PhpScript::current_script->script_stack.asan_stack_unpoison();
-      siglongjmp(PhpScript::current_script->timeout_handler, 1);
+    // There are 3 possible situations when a timeout occurs
+    // [1] code in net context
+    //                        --> save the timeout fact in order to process it in the script context
+    // [2] code in script context and this is the first timeout
+    //                        --> process timeout and setup ex timeout which is deadline of shutdown functions call @see check_delayed_timeout
+    // [3] code in script context and this is the second timeout
+    //                        --> time to start shutdown functions has expired, emergency shutdown
+    if (!PhpScript::in_script_context) {
+      sigalrm_in_net_context();
+    } else if (!PhpScript::time_limit_exceeded) {
+      sigalrm_in_script_context();
+      sigalrm_set_timeout_ex();
+    } else {
+      perform_error_if_running("timeout exit\n", script_error_t::timeout);
     }
   }
 }

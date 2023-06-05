@@ -65,6 +65,7 @@
 #include "server/php-queries.h"
 #include "server/php-query-data.h"
 #include "server/php-worker.h"
+#include "server/php-runner.h"
 #include "server/workers-control.h"
 
 static enum {
@@ -634,15 +635,15 @@ int get_shutdown_functions_count() {
 }
 
 void run_shutdown_functions_from_timeout() {
-// TODO: now it sometimes leads to critical errors in runtime. Need to rework it generally.
-//  // to safely run the shutdown handlers in the timeout context, we set
-//  // a recovery point to be used from the user-called die/exit;
-//  // without that, exit would lead to a finished state instead of the error state
-//  // we were about to enter (since timeout is an error state)
-//  shutdown_functions_status_value = shutdown_functions_status::running_from_timeout;
-//  if (setjmp(timeout_exit) == 0) {
-//    run_shutdown_functions();
-//  }
+  shutdown_functions_status_value = shutdown_functions_status::running_from_timeout;
+  // to safely run the shutdown handlers in the timeout context, we set
+  // a recovery point to be used from the user-called die/exit;
+  // without that, exit would lead to a finished state instead of the error state
+  // we were about to enter (since timeout is an error state)
+  reset_script_timeout();
+  if (setjmp(timeout_exit) == 0) {
+    run_shutdown_functions();
+  }
 }
 
 void run_shutdown_functions_from_script() {
@@ -669,6 +670,7 @@ void f$register_shutdown_function(const shutdown_function_type &f) {
 }
 
 void finish(int64_t exit_code) {
+  check_script_timeout();
   if (!finished) {
     finished = true;
     forcibly_stop_profiler();
