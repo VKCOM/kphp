@@ -5,10 +5,11 @@
 #include "server/curl-adaptor.h"
 
 #include "runtime/curl.h"
+#include "runtime/net_events.h"
 #include "runtime/resumable.h"
 #include "server/php-engine.h"
-#include "server/slot-ids-factory.h"
 #include "server/php-queries.h"
+#include "server/slot-ids-factory.h"
 
 template<>
 int Storage::tagger<std::unique_ptr<curl_async::CurlResponse>>::get_tag() noexcept {
@@ -44,6 +45,11 @@ int CurlAdaptor::launch_request_resumable(std::unique_ptr<CurlRequest> &&request
   query->data = request.release();
   int resumable_id = register_forked_resumable(new CurlRequestResumable{request_id});
   processing_requests.insert(request_id, CurlRequestInfo{resumable_id});
+
+  update_precise_now();
+  wait_net(0);
+  update_precise_now();
+
   return resumable_id;
 }
 
