@@ -992,23 +992,23 @@ void free_curl_lib() noexcept {
 
 namespace curl_async {
 
-std::unique_ptr<CurlRequest> CurlRequest::build(curl_easy easy_id) {
+CurlRequest CurlRequest::build(curl_easy easy_id) {
   curl_multi multi_id = f$curl_multi_init();
   if (!multi_id || !get_context<EasyContext>(easy_id)) {
-    return {};
+    throw std::runtime_error{"failed to get context"};
   }
 
   // it is pointless to use stdout during concurrent request processing
   bool ok = f$curl_setopt(easy_id, CURLOPT_RETURNTRANSFER, 1);
   if (!ok) {
-    return {};
+    throw std::runtime_error{"failed to set returntransfer option"};
   }
 
   Optional<int64_t> status = f$curl_multi_add_handle(multi_id, easy_id);
   if (!status.has_value() || status.val()) {
-    return {};
+    throw std::runtime_error{"failed to add handle"};
   }
-  return std::unique_ptr<CurlRequest>{new CurlRequest{easy_id, multi_id}};
+  return {easy_id, multi_id};
 }
 
 CurlRequest::CurlRequest(curl_easy easy_id, curl_multi multi_id) noexcept

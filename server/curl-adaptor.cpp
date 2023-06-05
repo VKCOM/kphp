@@ -35,14 +35,13 @@ protected:
 
 void CurlAdaptor::reset() noexcept {
   processing_requests.clear();
-  processing_requests_holder.clear();
 }
 
-int CurlAdaptor::launch_request_resumable(std::unique_ptr<CurlRequest> &&request) noexcept {
-  const int request_id = request->request_id;
+int CurlAdaptor::launch_request_resumable(const CurlRequest &request) noexcept {
+  const int request_id = request.request_id;
   net_query_t *query = create_net_query();
   query->slot_id = request_id;
-  query->data = request.release();
+  query->data = request;
   int resumable_id = register_forked_resumable(new CurlRequestResumable{request_id});
   processing_requests.insert(request_id, CurlRequestInfo{resumable_id});
 
@@ -53,10 +52,8 @@ int CurlAdaptor::launch_request_resumable(std::unique_ptr<CurlRequest> &&request
   return resumable_id;
 }
 
-void CurlAdaptor::process_request_net_query(std::unique_ptr<CurlRequest> &&request) noexcept {
-  request->send_async();
-  int request_id = request->request_id;
-  processing_requests_holder.insert(request_id, std::move(request));
+void CurlAdaptor::process_request_net_query(const CurlRequest &request) noexcept {
+  request.send_async();
 }
 
 void CurlAdaptor::finish_request_resumable(std::unique_ptr<CurlResponse> &&response) noexcept {
@@ -97,10 +94,7 @@ std::unique_ptr<CurlResponse> CurlAdaptor::withdraw_response(int request_id) noe
   return std::move(req_info.response);
 }
 
-void CurlAdaptor::finish_request(int request_id) noexcept {
-  std::unique_ptr<CurlRequest> request = processing_requests_holder.extract(request_id);
-  if (request) {
-    request->detach_multi_and_easy_handles();
-  }
+void CurlAdaptor::finish_request(const CurlRequest &request) noexcept {
+  request.detach_multi_and_easy_handles();
 }
 } // namespace curl_async

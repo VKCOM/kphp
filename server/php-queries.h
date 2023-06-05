@@ -71,7 +71,7 @@ struct rpc_send {
 
 struct net_query_t {
   slot_id_t slot_id;
-  std::variant<net_queries_data::rpc_send, database_drivers::Request *, curl_async::CurlRequest *> data;
+  std::variant<net_queries_data::rpc_send, database_drivers::Request *, std::reference_wrapper<const curl_async::CurlRequest>> data;
 };
 
 #pragma pack(push, 4)

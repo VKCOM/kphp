@@ -70,9 +70,9 @@ private:
 
 namespace curl_async {
 
-class CurlRequest : public ManagedThroughDlAllocator, vk::not_copyable {
+class CurlRequest {
 public:
-  static std::unique_ptr<CurlRequest> build(curl_easy easy_id);
+  static CurlRequest build(curl_easy easy_id);
 
   void send_async() const;
   void finish_request(Optional<string> &&respone = false) const;

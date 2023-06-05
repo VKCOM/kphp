@@ -193,9 +193,9 @@ void php_worker_run_net_queue(PhpWorker *worker __attribute__((unused))) {
                    php_assert(query->slot_id == data->request_id);
                    vk::singleton<database_drivers::Adaptor>::get().process_external_db_request_net_query(std::unique_ptr<database_drivers::Request>(data));
                  },
-                 [&](curl_async::CurlRequest *request) {
-                   php_assert(query->slot_id == request->request_id);
-                   vk::singleton<curl_async::CurlAdaptor>::get().process_request_net_query(std::unique_ptr<curl_async::CurlRequest>(request));
+                 [&](const curl_async::CurlRequest &request) {
+                   php_assert(query->slot_id == request.request_id);
+                   vk::singleton<curl_async::CurlAdaptor>::get().process_request_net_query(request);
                  }},
                query->data);
   }
