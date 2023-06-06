@@ -265,7 +265,7 @@ void command_net_write_run_rpc(command_t *base_command, void *data) {
   assert (command->data != nullptr);
   if (data == nullptr) { //send to /dev/null
     vkprintf (3, "failed to send rpc request %d\n", slot_id);
-    on_net_event(create_rpc_error_event(slot_id, TL_ERROR_NO_CONNECTIONS, "Failed to send query, timeout expired", nullptr));
+    on_net_event(create_rpc_error_event(slot_id, TL_ERROR_NO_CONNECTIONS_IN_RPC_CLIENT, "Failed to send query, timeout expired", nullptr));
   } else {
     auto *d = (connection *)data;
     //assert (d->status == conn_ready);

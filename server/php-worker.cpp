@@ -168,7 +168,7 @@ void php_worker_run_rpc_send_query(int32_t request_id, const net_queries_data::r
   } else {
     int new_conn_cnt = create_new_connections(target);
     if (new_conn_cnt <= 0 && get_target_connection(target, 1) == nullptr) {
-      on_net_event(create_rpc_error_event(slot_id, TL_ERROR_NO_CONNECTIONS, "Failed to establish connection [probably reconnect timeout is not expired]", nullptr));
+      on_net_event(create_rpc_error_event(slot_id, TL_ERROR_NO_CONNECTIONS_IN_RPC_CLIENT, "Failed to establish connection [probably reconnect timeout is not expired]", nullptr));
       return;
     }
 
