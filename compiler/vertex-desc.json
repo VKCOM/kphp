@@ -581,6 +581,15 @@
     }
   },
   {
+    "comment": "proxy vertex for named argument",
+    "name": "op_named_arg",
+    "base_name": "meta_op_base",
+    "sons": {
+      "name" : 0,
+      "expr" : 1
+    }
+  },
+  {
     "comment": "variadic argument: array()...",
     "name": "op_varg",
     "base_name": "meta_op_base",

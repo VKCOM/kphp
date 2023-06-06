@@ -605,6 +605,11 @@ void DeduceImplicitTypesAndCastsPass::on_func_call(VertexAdaptor<op_func_call> c
 
   FunctionPtr f_called = call->func_id;
   auto call_args = call->args();
+  for (auto & arg : call_args) {
+    if (arg->type() == op_named_arg) {
+      arg = arg.as<op_named_arg>()->expr();
+    }
+  }
   auto f_called_params = f_called->get_params();
 
   // if we are calling `f<T>`, then `f` has not been instantiated yet at this point, so we have a generic func call
