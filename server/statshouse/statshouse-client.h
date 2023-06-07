@@ -22,7 +22,6 @@ private:
   int port = 0;
   int sock_fd = 0;
   std::string host;
-  std::vector<std::pair<std::string, std::string>> tags;
 
   StatsHouseClient();
   ~StatsHouseClient();

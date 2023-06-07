@@ -610,7 +610,6 @@ void ServerStats::add_request_stats(double script_time_sec, double net_time_sec,
   using namespace statshouse;
   vk::singleton<WorkerStatsBuffer>::get().add_query_stat(GenericQueryStatKey::memory_used, worker_type_, memory_used);
   vk::singleton<WorkerStatsBuffer>::get().add_query_stat(GenericQueryStatKey::real_memory_used, worker_type_, real_memory_used);
-  vk::singleton<WorkerStatsBuffer>::get().add_query_stat(GenericQueryStatKey::total_allocated_by_curl, worker_type_, curl_total_allocated);
 
   vk::singleton<WorkerStatsBuffer>::get().add_query_stat(GenericQueryStatKey::script_time, worker_type_, script_time.count());
   vk::singleton<WorkerStatsBuffer>::get().add_query_stat(GenericQueryStatKey::net_time, worker_type_, net_time.count());
