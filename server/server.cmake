@@ -2,6 +2,7 @@ prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
         master-name.cpp
         confdata-binlog-replay.cpp
         confdata-stats.cpp
+        curl-adaptor.cpp
         shared-data.cpp
         http-server-context.cpp
         json-logger.cpp

@@ -9,8 +9,10 @@
 #include "common/rpc-error-codes.h"
 #include "common/wrappers/overloaded.h"
 #include "net/net-connections.h"
+#include "runtime/curl.h"
 #include "runtime/job-workers/job-interface.h"
 #include "runtime/rpc.h"
+#include "server/curl-adaptor.h"
 #include "server/database-drivers/adaptor.h"
 #include "server/database-drivers/request.h"
 #include "server/job-workers/job-stats.h"
@@ -191,7 +193,10 @@ void php_worker_run_net_queue(PhpWorker *worker __attribute__((unused))) {
                    php_assert(query->slot_id == data->request_id);
                    vk::singleton<database_drivers::Adaptor>::get().process_external_db_request_net_query(std::unique_ptr<database_drivers::Request>(data));
                  },
-               },
+                 [&](const curl_async::CurlRequest &request) {
+                   php_assert(query->slot_id == request.request_id);
+                   vk::singleton<curl_async::CurlAdaptor>::get().process_request_net_query(request);
+                 }},
                query->data);
   }
 }
