@@ -648,7 +648,7 @@ public:
 static array<double> rpc_request_need_timer;
 
 static void process_rpc_timeout(int request_id) {
-  process_rpc_error(request_id, TL_ERROR_QUERY_TIMEOUT, "Timeout in KPHP runtime");
+  process_rpc_error(request_id, TL_ERROR_TIMEOUT_IN_RPC_CLIENT, "Timeout in KPHP runtime");
 }
 
 static void process_rpc_timeout(kphp_event_timer *timer) {
