@@ -233,7 +233,7 @@ void JsonLogger::write_log_with_demangled_backtrace(vk::string_view message,int 
   json_out_it->append_key("msg").append_raw_string(message);
   json_out_it->finish_json_and_flush(json_log_fd_);
 
-  ++json_logs_count;
+  json_logs_count = json_logs_count + 1;
 }
 
 void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at,
@@ -258,7 +258,7 @@ void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at
   json_out_it->append_key("msg").append_raw_string(message);
   json_out_it->finish_json_and_flush(json_log_fd_);
 
-  ++json_logs_count;
+  json_logs_count = json_logs_count + 1;
 }
 
 void JsonLogger::write_log_with_backtrace(vk::string_view message, int type) noexcept {
