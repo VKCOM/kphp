@@ -41,40 +41,29 @@ bool check_signal_critical_section(int sig_num, const char *sig_name) {
 
 namespace kphp_runtime_signal_handlers {
 
-static void sigalrm_in_net_context() {
-  PhpScript::time_limit_exceeded = true;
-}
-
-static void sigalrm_in_script_context() {
-  PhpScript::time_limit_exceeded = true;
-  if (is_json_log_on_timeout_enabled) {
-    vk::singleton<JsonLogger>::get().write_log_with_backtrace("Maximum execution time exceeded", E_ERROR);
-  }
-}
-
-static void sigalrm_set_hard_timeout() {
-  static itimerval timer;
-  memset(&timer, 0, sizeof(itimerval));
-  timer.it_value.tv_sec = 1;
-  setitimer(ITIMER_REAL, &timer, nullptr);
-}
-
 static void sigalrm_handler(int signum) {
   kwrite_str(2, "in sigalrm_handler\n");
   if (check_signal_critical_section(signum, "SIGALRM")) {
     // There are 3 possible situations when a timeout occurs
-    // [1] code in net context
-    //                        --> save the timeout fact in order to process it in the script context
-    // [2] code in script context and this is the first timeout
-    //                        --> process timeout and setup hard timeout which is deadline of shutdown functions call @see try_run_shutdown_functions_on_timeout
-    // [3] code in script context and this is the second timeout
-    //                        --> time to start shutdown functions has expired, emergency shutdown
     if (!PhpScript::in_script_context) {
-      sigalrm_in_net_context();
+      // [1] code in net context
+      // save the timeout fact in order to process it in the script context
+      PhpScript::time_limit_exceeded = true;
     } else if (!PhpScript::time_limit_exceeded) {
-      sigalrm_in_script_context();
-      sigalrm_set_hard_timeout();
+      // [2] code in script context and this is the first timeout
+      // process timeout
+      PhpScript::time_limit_exceeded = true;
+      if (is_json_log_on_timeout_enabled) {
+        vk::singleton<JsonLogger>::get().write_log_with_backtrace("Maximum execution time exceeded", E_ERROR);
+      }
+      // setup hard timeout which is deadline of shutdown functions call @see try_run_shutdown_functions_on_timeout
+      static itimerval timer;
+      memset(&timer, 0, sizeof(itimerval));
+      timer.it_value.tv_sec = 1;
+      setitimer(ITIMER_REAL, &timer, nullptr);
     } else {
+      // [3] code in script context and this is the second timeout
+      // ime to start shutdown functions has expired, emergency shutdown
       perform_error_if_running("timeout exit\n", script_error_t::timeout);
     }
   }

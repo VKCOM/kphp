@@ -84,7 +84,7 @@ void PhpScript::try_run_shutdown_functions_on_timeout() noexcept {
 
 void PhpScript::check_net_context_errors() noexcept {
   php_assert(PhpScript::in_script_context);
-  if (memory_limit_exceeded ) {
+  if (memory_limit_exceeded) {
     vk::singleton<OomHandler>::get().invoke();
     perform_error_if_running("memory limit exit\n", script_error_t::memory_limit);
   }
