@@ -50,7 +50,8 @@ public:
 private:
   JsonLogger() = default;
 
-  sig_atomic_t json_logs_count{0};
+  // it's incremented from signal handler sometimes => it must be volatile sig_atomic_t to prevent data races
+  volatile sig_atomic_t json_logs_count{0};
 
   int64_t release_version_{0};
   int json_log_fd_{-1};
