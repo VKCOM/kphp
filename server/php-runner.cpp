@@ -58,25 +58,37 @@ void PhpScript::error(const char *error_message, script_error_t error_type) noex
   setcontext_portable(&exit_context);
 }
 
-void PhpScript::check_delayed_timeout() noexcept {
+void PhpScript::try_run_shutdown_functions_on_timeout() noexcept {
   // The delayed timeout check is performed in the following cases
   // [1] context swap
   // [2] start_resumable
-  // TODO add check_delayed_timeout in some buildin functions
+  // TODO add try_run_shutdown_functions_on_timeout in some buildin functions
   php_assert(PhpScript::in_script_context);
-  if (time_limit_exceeded) {
-    on_request_timeout_error();
+  if (!time_limit_exceeded) {
+    return;
   }
+  if (vk::singleton<OomHandler>::get().is_running()) {
+    perform_error_if_running("timeout exit in OOM handler\n", script_error_t::timeout);
+    return;
+  }
+
+  if (dl::is_malloc_replaced()) {
+    dl::rollback_malloc_replacement();
+  }
+
+  if (get_shutdown_functions_count() != 0 && get_shutdown_functions_status() == shutdown_functions_status::not_executed) {
+    run_shutdown_functions_from_timeout();
+  }
+  perform_error_if_running("timeout exit\n", script_error_t::timeout);
 }
 
-void PhpScript::check_delayed_errors() noexcept {
+void PhpScript::check_net_context_errors() noexcept {
   php_assert(PhpScript::in_script_context);
-  check_delayed_timeout();
-  if (memory_limit_exceeded) {
-    memory_limit_exceeded = false;
+  if (memory_limit_exceeded ) {
     vk::singleton<OomHandler>::get().invoke();
     perform_error_if_running("memory limit exit\n", script_error_t::memory_limit);
   }
+  try_run_shutdown_functions_on_timeout();
 }
 
 PhpScriptStack::PhpScriptStack(size_t stack_size) noexcept
@@ -172,31 +184,13 @@ void PhpScript::init(script_t *script, php_query_data *data_to_set) noexcept {
   PhpScript::memory_limit_exceeded = false;
 }
 
-void PhpScript::on_request_timeout_error() {
-  // note: this function runs only when is_running=true
-
-  if (vk::singleton<OomHandler>::get().is_running()) {
-    perform_error_if_running("timeout exit in OOM handler\n", script_error_t::timeout);
-    return;
-  }
-
-  if (dl::is_malloc_replaced()) {
-    dl::rollback_malloc_replacement();
-  }
-
-  if (get_shutdown_functions_count() != 0 && get_shutdown_functions_status() == shutdown_functions_status::not_executed) {
-    run_shutdown_functions_from_timeout();
-  }
-  perform_error_if_running("timeout exit\n", script_error_t::timeout);
-}
-
 int PhpScript::swapcontext_helper(ucontext_t_portable *oucp, const ucontext_t_portable *ucp) {
   stack_end = reinterpret_cast<char *>(ucp->uc_stack.ss_sp) + ucp->uc_stack.ss_size;
   return swapcontext_portable(oucp, ucp);
 }
 
 void PhpScript::pause() noexcept {
-  check_delayed_timeout();
+  try_run_shutdown_functions_on_timeout();
   //fprintf (stderr, "pause: \n");
   in_script_context = false;
 #if ASAN_ENABLED
@@ -207,7 +201,7 @@ void PhpScript::pause() noexcept {
   __sanitizer_finish_switch_fiber(nullptr, &main_thread_stack, &main_thread_stacksize);
 #endif
   in_script_context = true;
-  check_delayed_errors();
+  check_net_context_errors();
   //fprintf (stderr, "pause: ended\n");
 }
 
@@ -424,7 +418,7 @@ void PhpScript::run() noexcept {
   init_runtime_environment(data, run_mem, script_memory_size, oom_handling_memory_size);
   dl::leave_critical_section();
   php_assert (dl::in_critical_section == 0); // To ensure that no critical section is left at the end of the initialization
-  check_delayed_errors();
+  check_net_context_errors();
 
   CurException = Optional<bool>{};
   run_main->run();
@@ -458,7 +452,7 @@ void PhpScript::run() noexcept {
 void PhpScript::reset_script_timeout() noexcept {
   // php_script_set_timeout has a side effect of setting the PhpScript::time_limit_exceeded to false;
   // and we really do need this before executing shutdown functions otherwise shutdown functions will be terminated
-  // after the first swap context back to script at PhpScript::check_delayed_errors()
+  // after the first swap context back to script at PhpScript::check_net_context_errors()
   set_timeout(script_timeout);
 }
 

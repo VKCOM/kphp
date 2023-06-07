@@ -74,5 +74,5 @@ class TestOomHandler(KphpServerAutoTestCase):
         self.assertEqual(resp.status_code, 500)
         self.kphp_server.assert_log([
             "allocations_cnt=[1-9]\\d?,memory_allocated=8\\d{5},estimate_memory_usage\\(arr\\)=8\\d{5}",
-            "timeout exit in OOM handler",
+            "timeout exit",
         ], timeout=5)

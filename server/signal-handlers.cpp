@@ -1,3 +1,7 @@
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2023 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
 #include "server/signal-handlers.h"
 
 #include <execinfo.h>
@@ -48,10 +52,10 @@ static void sigalrm_in_script_context() {
   }
 }
 
-static void sigalrm_set_timeout_ex() {
+static void sigalrm_set_hard_timeout() {
   static itimerval timer;
   memset(&timer, 0, sizeof(itimerval));
-  timer.it_value.tv_sec = 2;
+  timer.it_value.tv_sec = 1;
   setitimer(ITIMER_REAL, &timer, nullptr);
 }
 
@@ -62,14 +66,14 @@ static void sigalrm_handler(int signum) {
     // [1] code in net context
     //                        --> save the timeout fact in order to process it in the script context
     // [2] code in script context and this is the first timeout
-    //                        --> process timeout and setup ex timeout which is deadline of shutdown functions call @see check_delayed_timeout
+    //                        --> process timeout and setup hard timeout which is deadline of shutdown functions call @see try_run_shutdown_functions_on_timeout
     // [3] code in script context and this is the second timeout
     //                        --> time to start shutdown functions has expired, emergency shutdown
     if (!PhpScript::in_script_context) {
       sigalrm_in_net_context();
     } else if (!PhpScript::time_limit_exceeded) {
       sigalrm_in_script_context();
-      sigalrm_set_timeout_ex();
+      sigalrm_set_hard_timeout();
     } else {
       perform_error_if_running("timeout exit\n", script_error_t::timeout);
     }
@@ -200,6 +204,8 @@ void sigabrt_handler(int) {
 }
 } // namespace kphp_runtime_signal_handlers
 
+
+//mark no return
 void perform_error_if_running(const char *msg, script_error_t error_type) {
   if (PhpScript::in_script_context) {
     kwrite_str(2, msg);
