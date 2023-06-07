@@ -139,6 +139,9 @@ class KphpServer(Engine):
                     del log_record["tags"]["logname_id"]
                 del log_record["tags"]["process_type"]
                 del log_record["tags"]["pid"]
+                if not got_tags.get("cluster", ""):
+                    raise RuntimeError("Got an empty cluster in json log: {}".format(got_tags))
+                del log_record["tags"]["cluster"]
                 self._json_logs.append(log_record)
 
     def assert_json_log(self, expect, message="Can't wait expected json log", timeout=60):
