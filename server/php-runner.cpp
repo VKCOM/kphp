@@ -10,7 +10,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <exception>
-#include <execinfo.h>
 #include <sys/mman.h>
 #include <sys/time.h>
 #include <unistd.h>
@@ -18,8 +17,6 @@
 #include "common/fast-backtrace.h"
 #include "common/kernel-version.h"
 #include "common/kprintf.h"
-#include "common/server/crash-dump.h"
-#include "common/server/signals.h"
 #include "common/wrappers/memory-utils.h"
 #include "net/net-connections.h"
 
@@ -35,6 +32,7 @@
 #include "server/php-queries.h"
 #include "server/server-log.h"
 #include "server/server-stats.h"
+#include "server/signal-handlers.h"
 
 query_stats_t query_stats;
 long long query_stats_id = 1;
@@ -42,30 +40,6 @@ long long query_stats_id = 1;
 namespace {
 //TODO: sometimes I need to call old handlers
 //TODO: recheck!
-void kwrite_str(int fd, const char *s) noexcept {
-  kwrite(fd, s, static_cast<int>(strlen(s)));
-}
-
-bool check_signal_critical_section(int sig_num, const char *sig_name) {
-  if (dl::in_critical_section) {
-    const size_t message_1kw_size = 100;
-    char message_1kw[message_1kw_size];
-    snprintf(message_1kw, message_1kw_size, "in critical section: pending %s caught\n", sig_name);
-    kwrite_str(2, message_1kw);
-    dl::pending_signals = dl::pending_signals | (1ll << sig_num);
-    return false;
-  }
-  dl::pending_signals = 0;
-  return true;
-}
-
-void perform_error_if_running(const char *msg, script_error_t error_type) {
-  if (PhpScript::in_script_context) {
-    kwrite_str(2, msg);
-    PhpScript::error(msg, error_type);
-    assert ("unreachable point" && 0);
-  }
-}
 
 [[maybe_unused]] const void *main_thread_stack = nullptr;
 [[maybe_unused]] size_t main_thread_stacksize = 0;
@@ -512,175 +486,6 @@ volatile bool PhpScript::in_script_context = false;
 volatile bool PhpScript::time_limit_exceeded = false;
 volatile bool PhpScript::memory_limit_exceeded = false;
 
-void write_str(int fd, const char *s) noexcept {
-  write(fd, s, std::min(strlen(s), size_t{1000}));
-}
-
-namespace kphp_runtime_signal_handlers {
-
-static void sigalrm_in_net_context() {
-  PhpScript::time_limit_exceeded = true;
-}
-
-static void sigalrm_in_script_context() {
-  PhpScript::time_limit_exceeded = true;
-  if (is_json_log_on_timeout_enabled) {
-    vk::singleton<JsonLogger>::get().write_log_with_backtrace("Maximum execution time exceeded", E_ERROR);
-  }
-}
-
-static void sigalrm_set_timeout_ex() {
-  static itimerval timer;
-  memset(&timer, 0, sizeof(itimerval));
-  timer.it_value.tv_sec = 2;
-  setitimer(ITIMER_REAL, &timer, nullptr);
-}
-
-static void sigalrm_handler(int signum) {
-  kwrite_str(2, "in sigalrm_handler\n");
-  if (check_signal_critical_section(signum, "SIGALRM")) {
-    // There are 3 possible situations when a timeout occurs
-    // [1] code in net context
-    //                        --> save the timeout fact in order to process it in the script context
-    // [2] code in script context and this is the first timeout
-    //                        --> process timeout and setup ex timeout which is deadline of shutdown functions call @see check_delayed_timeout
-    // [3] code in script context and this is the second timeout
-    //                        --> time to start shutdown functions has expired, emergency shutdown
-    if (!PhpScript::in_script_context) {
-      sigalrm_in_net_context();
-    } else if (!PhpScript::time_limit_exceeded) {
-      sigalrm_in_script_context();
-      sigalrm_set_timeout_ex();
-    } else {
-      perform_error_if_running("timeout exit\n", script_error_t::timeout);
-    }
-  }
-}
-
-static void sigusr2_handler(int signum) {
-  kwrite_str(2, "in sigusr2_handler\n");
-  if (check_signal_critical_section(signum, "SIGUSR2")) {
-    PhpScript::memory_limit_exceeded = true;
-    if (PhpScript::in_script_context) {
-      perform_error_if_running("memory limit exit\n", script_error_t::memory_limit);
-    }
-  }
-}
-
-static void php_assert_handler(int signum) {
-  kwrite_str(2, "in php_assert_handler (SIGRTMIN+1 signal)\n");
-  if (check_signal_critical_section(signum, "SIGRTMIN+1")) {
-    perform_error_if_running("php assert error\n", script_error_t::php_assert);
-  }
-}
-
-static void stack_overflow_handler(int signum) {
-  kwrite_str(2, "in stack_overflow_handler (SIGRTMIN+2 signal)\n");
-  if (check_signal_critical_section(signum, "SIGRTMIN+2")) {
-    perform_error_if_running("stack overflow error\n", script_error_t::stack_overflow);
-  }
-}
-
-void print_http_data() {
-  if (!PhpScript::in_script_context) {
-    return;
-  }
-  if (!PhpScript::current_script) {
-    write_str(2, "\nPHPScriptBase::current_script is nullptr\n");
-  } else if (PhpScript::current_script->data) {
-    if (http_query_data *data = PhpScript::current_script->data->http_data) {
-      write_str(2, "\nuri\n");
-      write(2, data->uri, data->uri_len);
-      write_str(2, "\nget\n");
-      write(2, data->get, data->get_len);
-      write_str(2, "\nheaders\n");
-      write(2, data->headers, data->headers_len);
-      write_str(2, "\npost\n");
-      if (data->post && data->post_len > 0) {
-        write(2, data->post, data->post_len);
-      }
-    }
-  }
-}
-
-void print_prologue(int64_t cur_time) noexcept {
-  write_str(2, engine_tag);
-
-  char buf[13];
-  char *s = buf + 13;
-  auto t = static_cast<int>(cur_time);
-  *--s = 0;
-  do {
-    *--s = static_cast<char>(t % 10 + '0');
-    t /= 10;
-  } while (t > 0);
-  write_str(2, s);
-  write_str(2, engine_pid);
-}
-
-void kill_workers() noexcept {
-#if defined(__APPLE__)
-  if (master_flag == 1) {
-    killpg(getpgid(pid), SIGKILL);
-  }
-#endif
-}
-
-void sigsegv_handler(int signum, siginfo_t *info, void *ucontext) {
-  crash_dump_write(static_cast<ucontext_t *>(ucontext));
-
-  const int64_t cur_time = time(nullptr);
-  print_prologue(cur_time);
-
-  void *trace[64];
-  const int trace_size = backtrace(trace, 64);
-
-  void *addr = info->si_addr;
-  if (PhpScript::in_script_context && PhpScript::current_script->script_stack.is_protected(static_cast<char *>(addr))) {
-    vk::singleton<JsonLogger>::get().write_stack_overflow_log(E_ERROR);
-    write_str(2, "Error -1: Callstack overflow\n");
-    print_http_data();
-    dl_print_backtrace(trace, trace_size);
-    if (dl::in_critical_section) {
-      vk::singleton<JsonLogger>::get().fsync_log_file();
-      kwrite_str(2, "In critical section: calling _exit (124)\n");
-      _exit(124);
-    } else {
-      PhpScript::error("sigsegv(stack overflow)", script_error_t::stack_overflow);
-    }
-  } else {
-    const char *msg = signum == SIGBUS ? "SIGBUS terminating program" : "SIGSEGV terminating program";
-    vk::singleton<JsonLogger>::get().write_log(msg, static_cast<int>(ServerLog::Critical), cur_time, trace, trace_size, true);
-    vk::singleton<JsonLogger>::get().fsync_log_file();
-    write_str(2, "Error -2: Segmentation fault\n");
-    print_http_data();
-    dl_print_backtrace(trace, trace_size);
-    kill_workers();
-    raise(SIGQUIT); // hack for generate core dump
-    _exit(123);
-  }
-}
-
-void sigabrt_handler(int) {
-  const int64_t cur_time = time(nullptr);
-  void *trace[64];
-  const int trace_size = backtrace(trace, 64);
-  vk::string_view msg{dl_get_assert_message()};
-  if (msg.empty()) {
-    msg = "SIGABRT terminating program";
-  }
-  vk::singleton<JsonLogger>::get().write_log(msg, static_cast<int>(ServerLog::Critical), cur_time, trace, trace_size, true);
-  vk::singleton<JsonLogger>::get().fsync_log_file();
-
-  print_prologue(cur_time);
-  write_str(2, "SIGABRT terminating program\n");
-  print_http_data();
-  dl_print_backtrace(trace, trace_size);
-  kill_workers();
-  _exit(EXIT_FAILURE);
-}
-} // namespace kphp_runtime_signal_handlers
-
 static __inline__ void *get_sp() {
   return __builtin_frame_address(0);
 }
@@ -697,27 +502,6 @@ void check_stack_overflow() {
       _exit(1);
     }
   }
-}
-
-//C interface
-void init_handlers() {
-  constexpr size_t SEGV_STACK_SIZE = 65536;
-  static std::array<char, SEGV_STACK_SIZE> buffer;
-
-  stack_t segv_stack;
-  segv_stack.ss_sp = buffer.data();
-  segv_stack.ss_flags = 0;
-  segv_stack.ss_size = SEGV_STACK_SIZE;
-  sigaltstack(&segv_stack, nullptr);
-
-  ksignal(SIGALRM, kphp_runtime_signal_handlers::sigalrm_handler);
-  ksignal(SIGUSR2, kphp_runtime_signal_handlers::sigusr2_handler);
-  ksignal(SIGPHPASSERT, kphp_runtime_signal_handlers::php_assert_handler);
-  ksignal(SIGSTACKOVERFLOW, kphp_runtime_signal_handlers::stack_overflow_handler);
-
-  dl_sigaction(SIGSEGV, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, kphp_runtime_signal_handlers::sigsegv_handler);
-  dl_sigaction(SIGBUS, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, kphp_runtime_signal_handlers::sigsegv_handler);
-  dl_signal(SIGABRT, kphp_runtime_signal_handlers::sigabrt_handler);
 }
 
 void PhpScript::disable_timeout() noexcept {

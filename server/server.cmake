@@ -28,6 +28,7 @@ prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
         slot-ids-factory.cpp
         workers-control.cpp
         shared-data-worker-cache.cpp
+        signal-handlers.cpp
         statshouse/statshouse-client.cpp
         statshouse/add-metrics-batch.cpp
         statshouse/worker-stats-buffer.cpp)

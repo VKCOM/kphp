@@ -85,6 +85,7 @@
 #include "server/server-log.h"
 #include "server/server-stats.h"
 #include "server/shared-data-worker-cache.h"
+#include "server/signal-handlers.h"
 #include "server/statshouse/statshouse-client.h"
 #include "server/statshouse/worker-stats-buffer.h"
 #include "server/workers-control.h"

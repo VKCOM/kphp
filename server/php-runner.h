@@ -56,8 +56,6 @@ extern long long query_stats_id;
 
 void dump_query_stats();
 
-void init_handlers();
-
 class PhpScriptStack : vk::not_copyable {
 public:
   explicit PhpScriptStack(size_t stack_size) noexcept;
