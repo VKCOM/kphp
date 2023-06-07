@@ -2440,6 +2440,7 @@ void free_runtime_environment() {
 
 void worker_global_init() noexcept {
   worker_global_init_slot_factories();
+  vk::singleton<JsonLogger>::get().reset_json_logs_count();
 }
 
 void read_engine_tag(const char *file_name) {
