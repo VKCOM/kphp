@@ -122,8 +122,8 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         zstd.cpp)
 
 set_source_files_properties(
-        ${BASE_DIR}/server/php-runner.cpp
         ${BASE_DIR}/server/php-engine.cpp
+        ${BASE_DIR}/server/signal-handlers.cpp
         ${BASE_DIR}/runtime/interface.cpp
         ${COMMON_DIR}/dl-utils-lite.cpp
         ${COMMON_DIR}/netconf.cpp

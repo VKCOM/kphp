@@ -1051,6 +1051,10 @@ void finish_script(int exit_code __attribute__((unused))) {
   assert (0);
 }
 
+void check_script_timeout() {
+  PhpScript::current_script->try_run_shutdown_functions_on_timeout();
+}
+
 void reset_script_timeout() {
   PhpScript::current_script->reset_script_timeout();
 }
