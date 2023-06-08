@@ -39,10 +39,11 @@ bool check_signal_critical_section(int sig_num, const char *sig_name) {
   return true;
 }
 
-void job_worker_sigalrm_handler(int signum) {
+void default_sigalrm_handler(int signum) {
+  // Always used in job workers.
   // It's critical for job workers to terminate as soon as possible after normal timeout.
   // Because timeouts are usually small and always used for fine-grained job duration control
-  kwrite_str(2, "in job_worker_sigalrm_handler\n");
+  kwrite_str(2, "in default_sigalrm_handler\n");
   if (check_signal_critical_section(signum, "SIGALRM")) {
     PhpScript::time_limit_exceeded = true;
     if (PhpScript::in_script_context) {
@@ -69,7 +70,7 @@ void sigalrm_handler(int signum) {
       if (is_json_log_on_timeout_enabled) {
         vk::singleton<JsonLogger>::get().write_log_with_backtrace("Maximum execution time exceeded", E_ERROR);
       }
-      if (hard_timeout != 0 && get_shutdown_functions_count() > 0) {
+      if (get_shutdown_functions_count() > 0) {
         // setup hard timeout which is deadline of shutdown functions call @see try_run_shutdown_functions_on_timeout
         static itimerval timer;
         memset(&timer, 0, sizeof(itimerval));
@@ -234,7 +235,7 @@ void init_handlers() {
   segv_stack.ss_size = SEGV_STACK_SIZE;
   sigaltstack(&segv_stack, nullptr);
 
-  ksignal(SIGALRM, sigalrm_handler);
+  ksignal(SIGALRM, default_sigalrm_handler);
   ksignal(SIGUSR2, sigusr2_handler);
   ksignal(SIGPHPASSERT, php_assert_handler);
   ksignal(SIGSTACKOVERFLOW, stack_overflow_handler);
@@ -245,7 +246,7 @@ void init_handlers() {
 }
 
 void worker_global_init_handlers(WorkerType worker_type) {
-  if (worker_type == WorkerType::job_worker) {
-    ksignal(SIGALRM, job_worker_sigalrm_handler);
+  if (worker_type == WorkerType::general_worker && hard_timeout > 0) {
+    ksignal(SIGALRM, sigalrm_handler);
   }
 }
