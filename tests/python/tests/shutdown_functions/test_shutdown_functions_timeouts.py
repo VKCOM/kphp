@@ -46,7 +46,7 @@ class TestShutdownFunctionsTimeouts(KphpServerAutoTestCase):
             ])
         self.assertEqual(resp.text, "ERROR")
         self.assertEqual(resp.status_code, 500)
-        self.kphp_server.assert_log(["Critical error during script execution: timeout exit"], timeout=5)
+        self.kphp_server.assert_log(["Critical error during script execution: hard timeout exit"], timeout=5)
 
     # TODO enable shutdown functions call if timeout occurs in net context
     # def test_timeout_from_resumable_in_main_thread(self):
