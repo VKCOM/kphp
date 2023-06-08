@@ -11,6 +11,7 @@
 #include "runtime/kphp_core.h"
 #include "runtime/optional.h"
 #include "server/php-query-data.h"
+#include "server/workers-control.h"
 
 extern string_buffer *coub;//TODO static
 using shutdown_function_type = std::function<void()>;
@@ -190,7 +191,7 @@ void init_runtime_environment(php_query_data *data, void *mem, size_t script_mem
 void free_runtime_environment();
 
 // called only once at the beginning of each worker
-void worker_global_init() noexcept;
+void worker_global_init(WorkerType worker_type) noexcept;
 
 void use_utf8();
 

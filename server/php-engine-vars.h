@@ -65,6 +65,7 @@ extern int rpc_stopped;
  ***/
 extern int sql_target_id;
 extern int script_timeout;
+extern double hard_timeout;
 extern int disable_access_log;
 extern int force_clear_sql_connection;
 extern long long static_buffer_length_limit;

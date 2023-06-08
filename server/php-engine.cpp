@@ -1636,7 +1636,7 @@ void start_server() {
     worker_type = start_master();
   }
 
-  worker_global_init();
+  worker_global_init(worker_type);
   generic_event_loop(worker_type, !master_flag);
 }
 
@@ -2183,6 +2183,9 @@ int main_args_handler(int i, const char *long_option) {
     case 2033: {
       return read_option_to(long_option, 0.0, 0.5, oom_handling_memory_ratio);
     }
+    case 2034: {
+      return read_option_to(long_option, 0.0, 5.0, hard_timeout);
+    }
     default:
       return -1;
   }
@@ -2289,6 +2292,7 @@ void parse_main_args(int argc, char *argv[]) {
                                                                                           "messages count = coefficient * processes_count");
   parse_option("runtime-config", required_argument, 2032, "JSON file path that will be available at runtime as 'mixed' via 'kphp_runtime_config()");
   parse_option("oom-handling-memory-ratio", required_argument, 2033, "memory ratio of overall script memory to handle OOM errors (default: 0.00)");
+  parse_option("hard-time-limit", required_argument, 2034, "time limit for script termination after the main timeout has expired (default: 1 sec). Use 0 to disable");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
   // TODO: remove it after successful migration from kphb.readyV2 to kphb.readyV3

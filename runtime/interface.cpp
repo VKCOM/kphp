@@ -53,20 +53,21 @@
 #include "runtime/udp.h"
 #include "runtime/url.h"
 #include "runtime/zlib.h"
-#include "server/server-config.h"
 #include "server/curl-adaptor.h"
 #include "server/database-drivers/adaptor.h"
 #include "server/database-drivers/mysql/mysql.h"
 #include "server/database-drivers/pgsql/pgsql.h"
-#include "server/shared-data-worker-cache.h"
 #include "server/job-workers/job-message.h"
 #include "server/json-logger.h"
 #include "server/numa-configuration.h"
 #include "server/php-engine-vars.h"
 #include "server/php-queries.h"
 #include "server/php-query-data.h"
-#include "server/php-worker.h"
 #include "server/php-runner.h"
+#include "server/php-worker.h"
+#include "server/server-config.h"
+#include "server/shared-data-worker-cache.h"
+#include "server/signal-handlers.h"
 #include "server/workers-control.h"
 
 static enum {
@@ -2438,9 +2439,10 @@ void free_runtime_environment() {
   dl::free_script_allocator();
 }
 
-void worker_global_init() noexcept {
+void worker_global_init(WorkerType worker_type) noexcept {
   worker_global_init_slot_factories();
   vk::singleton<JsonLogger>::get().reset_json_logs_count();
+  worker_global_init_handlers(worker_type);
 }
 
 void read_engine_tag(const char *file_name) {
