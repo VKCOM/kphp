@@ -56,15 +56,21 @@ static void sigalrm_handler(int signum) {
       if (is_json_log_on_timeout_enabled) {
         vk::singleton<JsonLogger>::get().write_log_with_backtrace("Maximum execution time exceeded", E_ERROR);
       }
-      // setup hard timeout which is deadline of shutdown functions call @see try_run_shutdown_functions_on_timeout
-      static itimerval timer;
-      memset(&timer, 0, sizeof(itimerval));
-      timer.it_value.tv_sec = 1;
-      setitimer(ITIMER_REAL, &timer, nullptr);
+      if (get_shutdown_functions_count() > 0) {
+        // setup hard timeout which is deadline of shutdown functions call @see try_run_shutdown_functions_on_timeout
+        static itimerval timer;
+        memset(&timer, 0, sizeof(itimerval));
+        timer.it_value.tv_sec = 1;
+        setitimer(ITIMER_REAL, &timer, nullptr);
+      } else {
+        // if there's no shutdown functions terminate script now
+        perform_error_if_running("soft timeout exit\n", script_error_t::timeout);
+      }
     } else {
+      kwrite_str(2, "hard timeout expired\n");
       // [3] code in script context and this is the second timeout
-      // ime to start shutdown functions has expired, emergency shutdown
-      perform_error_if_running("timeout exit\n", script_error_t::timeout);
+      // time to start shutdown functions has expired, emergency shutdown
+      perform_error_if_running("hard timeout exit\n", script_error_t::timeout);
     }
   }
 }
