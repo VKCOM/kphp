@@ -13,6 +13,7 @@
 #include "runtime/critical_section.h"
 #include "runtime/interface.h"
 #include "server/json-logger.h"
+#include "server/php-engine-vars.h"
 #include "server/server-log.h"
 
 namespace {
@@ -68,11 +69,11 @@ void sigalrm_handler(int signum) {
       if (is_json_log_on_timeout_enabled) {
         vk::singleton<JsonLogger>::get().write_log_with_backtrace("Maximum execution time exceeded", E_ERROR);
       }
-      if (get_shutdown_functions_count() > 0) {
+      if (hard_timeout != 0 && get_shutdown_functions_count() > 0) {
         // setup hard timeout which is deadline of shutdown functions call @see try_run_shutdown_functions_on_timeout
         static itimerval timer;
         memset(&timer, 0, sizeof(itimerval));
-        timer.it_value.tv_sec = 1;
+        timer.it_value.tv_sec = hard_timeout;
         setitimer(ITIMER_REAL, &timer, nullptr);
       } else {
         // if there's no shutdown functions terminate script now
