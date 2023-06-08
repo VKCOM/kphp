@@ -37,11 +37,23 @@ bool check_signal_critical_section(int sig_num, const char *sig_name) {
   dl::pending_signals = 0;
   return true;
 }
+
+void job_worker_sigalrm_handler(int signum) {
+  // It's critical for job workers to terminate as soon as possible after normal timeout.
+  // Because timeouts are usually small and always used for fine-grained job duration control
+  kwrite_str(2, "in job_worker_sigalrm_handler\n");
+  if (check_signal_critical_section(signum, "SIGALRM")) {
+    PhpScript::time_limit_exceeded = true;
+    if (PhpScript::in_script_context) {
+      if (is_json_log_on_timeout_enabled) {
+        vk::singleton<JsonLogger>::get().write_log_with_backtrace("Maximum execution time exceeded", E_ERROR);
+      }
+      perform_error_if_running("timeout exit\n", script_error_t::timeout);
+    }
+  }
 }
 
-namespace kphp_runtime_signal_handlers {
-
-static void sigalrm_handler(int signum) {
+void sigalrm_handler(int signum) {
   kwrite_str(2, "in sigalrm_handler\n");
   if (check_signal_critical_section(signum, "SIGALRM")) {
     // There are 3 possible situations when a timeout occurs
@@ -75,7 +87,7 @@ static void sigalrm_handler(int signum) {
   }
 }
 
-static void sigusr2_handler(int signum) {
+void sigusr2_handler(int signum) {
   kwrite_str(2, "in sigusr2_handler\n");
   if (check_signal_critical_section(signum, "SIGUSR2")) {
     PhpScript::memory_limit_exceeded = true;
@@ -85,14 +97,14 @@ static void sigusr2_handler(int signum) {
   }
 }
 
-static void php_assert_handler(int signum) {
+void php_assert_handler(int signum) {
   kwrite_str(2, "in php_assert_handler (SIGRTMIN+1 signal)\n");
   if (check_signal_critical_section(signum, "SIGRTMIN+1")) {
     perform_error_if_running("php assert error\n", script_error_t::php_assert);
   }
 }
 
-static void stack_overflow_handler(int signum) {
+void stack_overflow_handler(int signum) {
   kwrite_str(2, "in stack_overflow_handler (SIGRTMIN+2 signal)\n");
   if (check_signal_critical_section(signum, "SIGRTMIN+2")) {
     perform_error_if_running("stack overflow error\n", script_error_t::stack_overflow);
@@ -197,7 +209,7 @@ void sigabrt_handler(int) {
   kill_workers();
   _exit(EXIT_FAILURE);
 }
-} // namespace kphp_runtime_signal_handlers
+} // namespace
 
 
 //mark no return
@@ -220,12 +232,18 @@ void init_handlers() {
   segv_stack.ss_size = SEGV_STACK_SIZE;
   sigaltstack(&segv_stack, nullptr);
 
-  ksignal(SIGALRM, kphp_runtime_signal_handlers::sigalrm_handler);
-  ksignal(SIGUSR2, kphp_runtime_signal_handlers::sigusr2_handler);
-  ksignal(SIGPHPASSERT, kphp_runtime_signal_handlers::php_assert_handler);
-  ksignal(SIGSTACKOVERFLOW, kphp_runtime_signal_handlers::stack_overflow_handler);
+  ksignal(SIGALRM, sigalrm_handler);
+  ksignal(SIGUSR2, sigusr2_handler);
+  ksignal(SIGPHPASSERT, php_assert_handler);
+  ksignal(SIGSTACKOVERFLOW, stack_overflow_handler);
 
-  dl_sigaction(SIGSEGV, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, kphp_runtime_signal_handlers::sigsegv_handler);
-  dl_sigaction(SIGBUS, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, kphp_runtime_signal_handlers::sigsegv_handler);
-  dl_signal(SIGABRT, kphp_runtime_signal_handlers::sigabrt_handler);
+  dl_sigaction(SIGSEGV, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, sigsegv_handler);
+  dl_sigaction(SIGBUS, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, sigsegv_handler);
+  dl_signal(SIGABRT, sigabrt_handler);
+}
+
+void worker_global_init_handlers(WorkerType worker_type) {
+  if (worker_type == WorkerType::job_worker) {
+    ksignal(SIGALRM, job_worker_sigalrm_handler);
+  }
 }
