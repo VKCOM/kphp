@@ -2184,7 +2184,7 @@ int main_args_handler(int i, const char *long_option) {
       return read_option_to(long_option, 0.0, 0.5, oom_handling_memory_ratio);
     }
     case 2034: {
-      return read_option_to(long_option, 0, 5, hard_timeout);
+      return read_option_to(long_option, 0.0, 5.0, hard_timeout);
     }
     default:
       return -1;

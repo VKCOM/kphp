@@ -54,7 +54,7 @@ int master_sfd_inited = 0;
  ***/
 int sql_target_id = -1;
 int script_timeout = 0;
-int hard_timeout = 1;
+double hard_timeout = 1.0;
 int disable_access_log = 0;
 int force_clear_sql_connection = 0;
 long long static_buffer_length_limit = -1;

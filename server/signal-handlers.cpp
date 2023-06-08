@@ -73,7 +73,8 @@ void sigalrm_handler(int signum) {
         // setup hard timeout which is deadline of shutdown functions call @see try_run_shutdown_functions_on_timeout
         static itimerval timer;
         memset(&timer, 0, sizeof(itimerval));
-        timer.it_value.tv_sec = hard_timeout;
+        timer.it_value.tv_sec = static_cast<decltype(timer.it_value.tv_sec)>(std::floor(hard_timeout));
+        timer.it_value.tv_usec = static_cast<decltype(timer.it_value.tv_usec)>(1e6 * (hard_timeout - std::floor(hard_timeout)));
         setitimer(ITIMER_REAL, &timer, nullptr);
       } else {
         // if there's no shutdown functions terminate script now
