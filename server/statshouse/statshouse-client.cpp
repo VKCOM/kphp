@@ -133,7 +133,8 @@ void StatsHouseClient::master_send_metrics() {
     return;
   }
   const char *cluster_name = vk::singleton<ServerConfig>::get().get_cluster_name();
-  statshouse_stats_t stats{{{"cluster", cluster_name}}};
+  const std::vector<std::pair<std::string, std::string >> tags = {{"cluster", cluster_name}};
+  statshouse_stats_t stats{tags};
   stats.stats_prefix = "kphp";
   char *buf = get_engine_default_prepare_stats_buffer();
 
