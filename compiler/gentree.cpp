@@ -656,7 +656,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow, const PhpDocComment *phpdoc) {
       return_flag = false; // array is valid postfix expression operand
       break;
     case tok_tuple:
-      res = get_func_call<op_tuple, op_err>();
+      res = get_func_call<op_tuple, op_none>();
       CE (!kphp_error(res.as<op_tuple>()->size(), "tuple() must have at least one argument"));
       break;
     case tok_shape:
