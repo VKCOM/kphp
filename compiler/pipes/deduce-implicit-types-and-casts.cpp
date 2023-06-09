@@ -605,12 +605,62 @@ void DeduceImplicitTypesAndCastsPass::on_func_call(VertexAdaptor<op_func_call> c
 
   FunctionPtr f_called = call->func_id;
   auto call_args = call->args();
-  for (auto & arg : call_args) {
-    if (arg->type() == op_named_arg) {
-      arg = arg.as<op_named_arg>()->expr();
+//  for (auto & arg : call_args) {
+//    if (arg->type() == op_named_arg) {
+//      arg = arg.as<op_named_arg>()->expr();
+//    }
+//  }
+
+  auto f_called_params = f_called->get_params();
+
+
+// map call_args to params
+  const int stub = -1;
+  int fst_named = stub;
+  int lst_positional = stub;
+  for (int i = 0; i < call_args.size(); ++i) {
+    if (fst_named == stub && call_args[i]->type() == op_named_arg) {
+      fst_named = i;
+    }
+    if (call_args[i]->type() != op_named_arg) {
+      lst_positional = i;
     }
   }
-  auto f_called_params = f_called->get_params();
+
+  kphp_error(fst_named == stub || fst_named > lst_positional, "Cannot use positional argument after named argument");
+
+  std::vector<VertexPtr> mapping(call_args.size(), VertexPtr{});
+
+  // trivial
+  for (int i = 0; i <= lst_positional; ++i) {
+    mapping[i] = call_args[i];
+  }
+
+  // TODO think about default arguments
+
+  if (fst_named != stub) {
+    for (int pos = fst_named; pos < call_args.size(); ++pos) {
+      auto cur_call_arg = call_args[pos].as<op_named_arg>();
+      printf("cur_call_arg.name = %s\n", cur_call_arg->name()->get_string().c_str());
+      bool found = false;
+      for (int i = 0; i < f_called_params.size(); ++i) {
+        assert(f_called_params[i]->type() == op_func_param);
+        auto param_name = f_called_params[i].as<op_func_param>()->var()->str_val;
+        printf("\tparam_name = %s\n", param_name.c_str());
+        if (cur_call_arg->name()->get_string() == param_name) { // TODO(mkornaukhov03) think about case?
+          found = true;
+          mapping[i] = cur_call_arg->expr(); // assert i < mapping.size()
+          break;
+        }
+      }
+      kphp_error(found, "Appropriate parameter for named argument is not found");
+    }
+  }
+
+  for (int i = 0; i < call_args.size(); ++i) {
+//    kphp_error(!mapping[i], "Not enough arguments for function call");
+    call_args[i] = mapping[i];
+  }
 
   // if we are calling `f<T>`, then `f` has not been instantiated yet at this point, so we have a generic func call
   // at first, we need to know all generic types (call->reifiedTs)
