@@ -9,6 +9,11 @@ function may_throw(bool $cond, string $msg) {
 }
 
 /** @kphp-required */
+function shutdown_simple() {
+  fprintf(STDERR, "execute simple shutdown\n");
+}
+
+/** @kphp-required */
 function shutdown_exception_warning() {
   $msg = "running shutdown handler";
   try {
@@ -62,6 +67,12 @@ function shutdown_fork_wait() {
   fprintf(STDERR, "after wait\n");
 }
 
+/** @kphp-required */
+function shutdown_send_rpc() {
+    fprintf(STDERR, "try send rpc from shutdown\n");
+    send_rpc(8081, 0.5);
+}
+
 function forked_func(int $i, float $duration = 0.5): int {
   fprintf(STDERR, "before yield\n");
   sched_yield_sleep($duration); // wait net
@@ -93,6 +104,12 @@ function do_register_shutdown_function(string $fn) {
       break;
     case "shutdown_fork_wait":
       register_shutdown_function("shutdown_fork_wait");
+      break;
+    case "shutdown_simple":
+      register_shutdown_function("shutdown_simple");
+      break;
+    case "shutdown_send_rpc":
+      register_shutdown_function("shutdown_send_rpc");
       break;
   }
 }
@@ -182,6 +199,9 @@ function main() {
         $master_port = (int)$action["master_port"];
         $duration = (float)$action["duration"];
         send_rpc($master_port, $duration);
+        break;
+      case "critical_error":
+        critical_error("this code shouldn't be executed");
         break;
       case "register_shutdown_function":
         do_register_shutdown_function((string)$action["msg"]);
