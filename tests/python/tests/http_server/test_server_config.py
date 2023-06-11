@@ -11,7 +11,4 @@ class TestServerConfig(KphpServerAutoTestCase):
     def test_cluster_name_from_config(self):
         resp = self.kphp_server.http_request("/server-status", http_port=self.kphp_server.master_port)
         self.assertEqual(resp.status_code, 200)
-        print("haha1")
-        print(resp.content.decode("utf-8").split('\n')[0].split("\t")[1])
-        print("haha2")
         self.assertEqual(resp.content.decode("utf-8").split('\n')[0].split("\t")[1], "custom_cluster_name")

@@ -1,32 +1,44 @@
+import re
 from python.tests.curl.curl_test_case import CurlTestCase
 
 
-class TestCurl(CurlTestCase):
-    test_case_uri="/test_curl"
+class TestCurlResumable(CurlTestCase):
+    test_case_uri="/test_curl_resumable"
 
-    def test_curl_get_return_transfer(self):
+    def _assert_resumable_logs(self):
+        server_log = self.kphp_server.get_log()
+        pattern = "start_resumable_function(.|\n)*start_curl_query(.|\n)*end_resumable_function(.|\n)*end_curl_query"
+        if not re.search(pattern, ''.join(server_log)):
+            raise RuntimeError("cannot find match for pattern \"" + pattern + "\n")
+
+
+    def test_curl_resumable_get_return_transfer(self):
         self.assertEqual(self._curl_request("/echo/test_get"), {
             "exec_result": self._prepare_result("/echo/test_get", "GET")
         })
+        self._assert_resumable_logs();
 
-    def test_curl_get_no_return_transfer(self):
+    def test_curl_resumable_get_no_return_transfer(self):
+        # return_transfer is set to true forcefully inside curl_exec_concurrently()
         self.assertEqual(self._curl_request("/echo/test_get", return_transfer=0), {
-            "exec_result": True,
-            "output_buffer": self._prepare_result("/echo/test_get", "GET")
+            "exec_result": self._prepare_result("/echo/test_get", "GET")
         })
+        self._assert_resumable_logs();
 
-    def test_curl_post_return_transfer(self):
+    def test_curl_resumable_post_return_transfer(self):
         self.assertEqual(self._curl_request("/echo/test_post", post={"hello": "world!"}), {
             "exec_result": self._prepare_result("/echo/test_post", "POST", {"POST_BODY": {"hello": "world!"}})
         })
+        self._assert_resumable_logs();
 
-    def test_curl_post_no_return_transfer(self):
+    def test_curl_resumable_post_no_return_transfer(self):
+        # return_transfer is set to true forcefully inside curl_exec_concurrently()
         self.assertEqual(self._curl_request("/echo/test_post", return_transfer=0, post={"hello": "world!"}), {
-            "exec_result": True,
-            "output_buffer": self._prepare_result("/echo/test_post", "POST", {"POST_BODY": {"hello": "world!"}})
+            "exec_result": self._prepare_result("/echo/test_post", "POST", {"POST_BODY": {"hello": "world!"}})
         })
+        self._assert_resumable_logs();
 
-    def test_curl_out_headers(self):
+    def test_curl_resumable_out_headers(self):
         self.assertEqual(
             self._curl_request("/echo/test_headers", headers=["hello: world", "foo: bar"]), {
                 "exec_result": self._prepare_result("/echo/test_headers", "GET", extra={
@@ -34,22 +46,22 @@ class TestCurl(CurlTestCase):
                     "HTTP_FOO": "bar"
                 })})
 
-    def test_curl_timeout(self):
+    def test_curl_resumable_timeout(self):
         self.assertEqual(self._curl_request("/echo/test_get", timeout=0.1), {
             "exec_result": False
         })
 
-    def test_curl_nonexistent_url(self):
+    def test_curl_resumable_nonexistent_url(self):
         self.assertEqual(self._curl_request("nonexistent_url"), {
             "exec_result": False
         })
 
-    def test_curl_connection_only_success(self):
+    def test_curl_resumable_connection_only_success(self):
         self.assertEqual(self._curl_request("/echo/test_get", connect_only=True), {
             "exec_result": ''
         })
 
-    def test_curl_connection_only_fail(self):
+    def test_curl_resumable_connection_only_fail(self):
         self.assertEqual(self._curl_request("nonexistent_url", connect_only=True), {
             "exec_result": False
         })

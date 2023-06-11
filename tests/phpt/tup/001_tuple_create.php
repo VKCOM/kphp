@@ -16,4 +16,21 @@ function demo() {
     echo "string = ", $string, "\n";
 }
 
+function demo2() {
+    $a = tuple(
+        1,
+        'str',
+    );
+
+    /** @var int $int */
+    /** @var string $string */
+
+    $int = $a[0];
+    $string = $a[1];
+
+    echo "int = ", $int, "\n";
+    echo "string = ", $string, "\n";
+}
+
 demo();
+demo2();

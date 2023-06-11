@@ -178,6 +178,11 @@ function main() {
         do_sleep(0.001);
         rpc_flush();
         break;
+      case "send_long_rpc":
+        $master_port = (int)$action["master_port"];
+        $duration = (float)$action["duration"];
+        send_rpc($master_port, $duration);
+        break;
       case "register_shutdown_function":
         do_register_shutdown_function((string)$action["msg"]);
         break;

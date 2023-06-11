@@ -5,6 +5,7 @@
 #pragma once
 #include <array>
 #include <atomic>
+#include <csignal>
 
 #include "common/functional/identity.h"
 #include "common/mixin/not_copyable.h"
@@ -26,6 +27,14 @@ public:
   void set_extra_info(vk::string_view extra_info) noexcept;
   void set_env(vk::string_view env) noexcept;
 
+  uint64_t get_json_logs_count() const noexcept {
+    return json_logs_count;
+  }
+
+  void reset_json_logs_count() noexcept {
+    json_logs_count = 0;
+  }
+
   // ATTENTION: this function isn't signal-safety and cannot be used inside signal handlers
   void write_log_with_demangled_backtrace(vk::string_view message, int type, int64_t created_at, void *const *trace, int64_t trace_size, bool uncaught);
 
@@ -40,6 +49,9 @@ public:
 
 private:
   JsonLogger() = default;
+
+  // it's incremented from signal handler sometimes => it must be volatile sig_atomic_t to prevent data races
+  volatile sig_atomic_t json_logs_count{0};
 
   int64_t release_version_{0};
   int json_log_fd_{-1};

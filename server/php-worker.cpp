@@ -9,8 +9,10 @@
 #include "common/rpc-error-codes.h"
 #include "common/wrappers/overloaded.h"
 #include "net/net-connections.h"
+#include "runtime/curl.h"
 #include "runtime/job-workers/job-interface.h"
 #include "runtime/rpc.h"
+#include "server/curl-adaptor.h"
 #include "server/database-drivers/adaptor.h"
 #include "server/database-drivers/request.h"
 #include "server/job-workers/job-stats.h"
@@ -168,7 +170,7 @@ void php_worker_run_rpc_send_query(int32_t request_id, const net_queries_data::r
   } else {
     int new_conn_cnt = create_new_connections(target);
     if (new_conn_cnt <= 0 && get_target_connection(target, 1) == nullptr) {
-      on_net_event(create_rpc_error_event(slot_id, TL_ERROR_NO_CONNECTIONS, "Failed to establish connection [probably reconnect timeout is not expired]", nullptr));
+      on_net_event(create_rpc_error_event(slot_id, TL_ERROR_NO_CONNECTIONS_IN_RPC_CLIENT, "Failed to establish connection [probably reconnect timeout is not expired]", nullptr));
       return;
     }
 
@@ -191,7 +193,10 @@ void php_worker_run_net_queue(PhpWorker *worker __attribute__((unused))) {
                    php_assert(query->slot_id == data->request_id);
                    vk::singleton<database_drivers::Adaptor>::get().process_external_db_request_net_query(std::unique_ptr<database_drivers::Request>(data));
                  },
-               },
+                 [&](const curl_async::CurlRequest &request) {
+                   php_assert(query->slot_id == request.request_id);
+                   vk::singleton<curl_async::CurlAdaptor>::get().process_request_net_query(request);
+                 }},
                query->data);
   }
 }

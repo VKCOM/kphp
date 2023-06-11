@@ -56,8 +56,6 @@ extern long long query_stats_id;
 
 void dump_query_stats();
 
-void init_handlers();
-
 class PhpScriptStack : vk::not_copyable {
 public:
   explicit PhpScriptStack(size_t stack_size) noexcept;
@@ -90,8 +88,6 @@ class PhpScript {
 private:
   int swapcontext_helper(ucontext_t_portable *oucp, const ucontext_t_portable *ucp);
 
-  void on_request_timeout_error();
-
   void assert_state(run_state_t expected);
 
 public:
@@ -123,7 +119,8 @@ public:
   PhpScript(size_t mem_size, double oom_handling_memory_ratio, size_t stack_size) noexcept;
   ~PhpScript() noexcept;
 
-  void check_delayed_errors() noexcept;
+  void try_run_shutdown_functions_on_timeout() noexcept;
+  void check_net_context_errors() noexcept;
 
   void init(script_t *script, php_query_data *data_to_set) noexcept;
 

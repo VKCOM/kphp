@@ -11,9 +11,10 @@
 #include "common/algorithms/find.h"
 #include "common/fast-backtrace.h"
 #include "common/wrappers/likely.h"
+#include "runtime/kphp-backtrace.h"
+#include "server/server-config.h"
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
-#include "runtime/kphp-backtrace.h"
 
 namespace {
 
@@ -231,6 +232,8 @@ void JsonLogger::write_log_with_demangled_backtrace(vk::string_view message,int 
 
   json_out_it->append_key("msg").append_raw_string(message);
   json_out_it->finish_json_and_flush(json_log_fd_);
+
+  json_logs_count = json_logs_count + 1;
 }
 
 void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at,
@@ -254,6 +257,8 @@ void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at
 
   json_out_it->append_key("msg").append_raw_string(message);
   json_out_it->finish_json_and_flush(json_log_fd_);
+
+  json_logs_count = json_logs_count + 1;
 }
 
 void JsonLogger::write_log_with_backtrace(vk::string_view message, int type) noexcept {
@@ -303,6 +308,7 @@ void JsonLogger::write_general_info(JsonBuffer *json_out_it, int type, int64_t c
     json_out_it->append_key("logname_id").append_integer(logname_id);
   }
   json_out_it->append_key("pid").append_integer(pid);
+  json_out_it->append_key("cluster").append_string(vk::singleton<ServerConfig>::get().get_cluster_name());
   json_out_it->append_raw(uncaught ? R"json("uncaught":true)json" : R"json("uncaught":false)json");
   json_out_it->finish<'}'>();
 

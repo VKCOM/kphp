@@ -53,18 +53,21 @@
 #include "runtime/udp.h"
 #include "runtime/url.h"
 #include "runtime/zlib.h"
-#include "server/server-config.h"
+#include "server/curl-adaptor.h"
 #include "server/database-drivers/adaptor.h"
 #include "server/database-drivers/mysql/mysql.h"
 #include "server/database-drivers/pgsql/pgsql.h"
-#include "server/shared-data-worker-cache.h"
 #include "server/job-workers/job-message.h"
 #include "server/json-logger.h"
 #include "server/numa-configuration.h"
 #include "server/php-engine-vars.h"
 #include "server/php-queries.h"
 #include "server/php-query-data.h"
+#include "server/php-runner.h"
 #include "server/php-worker.h"
+#include "server/server-config.h"
+#include "server/shared-data-worker-cache.h"
+#include "server/signal-handlers.h"
 #include "server/workers-control.h"
 
 static enum {
@@ -102,12 +105,19 @@ void f$ob_clean() {
   coub->clean();
 }
 
+static inline void reset_gzip_header() {
+  if (ob_cur_buffer == 0) {
+    http_need_gzip &= ~4;
+  }
+}
+
 bool f$ob_end_clean() {
   if (ob_cur_buffer == 0) {
     return false;
   }
 
   coub = &oub[--ob_cur_buffer];
+  reset_gzip_header();
   return true;
 }
 
@@ -118,7 +128,7 @@ Optional<string> f$ob_get_clean() {
 
   string result = coub->str();
   coub = &oub[--ob_cur_buffer];
-
+  reset_gzip_header();
   return result;
 }
 
@@ -634,15 +644,15 @@ int get_shutdown_functions_count() {
 }
 
 void run_shutdown_functions_from_timeout() {
-// TODO: now it sometimes leads to critical errors in runtime. Need to rework it generally.
-//  // to safely run the shutdown handlers in the timeout context, we set
-//  // a recovery point to be used from the user-called die/exit;
-//  // without that, exit would lead to a finished state instead of the error state
-//  // we were about to enter (since timeout is an error state)
-//  shutdown_functions_status_value = shutdown_functions_status::running_from_timeout;
-//  if (setjmp(timeout_exit) == 0) {
-//    run_shutdown_functions();
-//  }
+  shutdown_functions_status_value = shutdown_functions_status::running_from_timeout;
+  // to safely run the shutdown handlers in the timeout context, we set
+  // a recovery point to be used from the user-called die/exit;
+  // without that, exit would lead to a finished state instead of the error state
+  // we were about to enter (since timeout is an error state)
+  reset_script_timeout();
+  if (setjmp(timeout_exit) == 0) {
+    run_shutdown_functions();
+  }
 }
 
 void run_shutdown_functions_from_script() {
@@ -669,6 +679,7 @@ void f$register_shutdown_function(const shutdown_function_type &f) {
 }
 
 void finish(int64_t exit_code) {
+  check_script_timeout();
   if (!finished) {
     finished = true;
     forcibly_stop_profiler();
@@ -2388,6 +2399,7 @@ static void free_runtime_libs() {
   database_drivers::free_pgsql_lib();
 #endif
   vk::singleton<database_drivers::Adaptor>::get().reset();
+  vk::singleton<curl_async::CurlAdaptor>::get().reset();
   vk::singleton<OomHandler>::get().reset();
   free_interface_lib();
   hard_reset_var(JsonEncoderError::msg);
@@ -2427,8 +2439,10 @@ void free_runtime_environment() {
   dl::free_script_allocator();
 }
 
-void worker_global_init() noexcept {
+void worker_global_init(WorkerType worker_type) noexcept {
   worker_global_init_slot_factories();
+  vk::singleton<JsonLogger>::get().reset_json_logs_count();
+  worker_global_init_handlers(worker_type);
 }
 
 void read_engine_tag(const char *file_name) {

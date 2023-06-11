@@ -16,6 +16,7 @@ static constexpr slot_id_t MAX_SLOT_ID = 2000000000;
 SlotIdsFactory rpc_ids_factory;
 SlotIdsFactory parallel_job_ids_factory;
 SlotIdsFactory external_db_requests_factory;
+SlotIdsFactory curl_requests_factory;
 
 
 void SlotIdsFactory::init() {
@@ -37,16 +38,19 @@ void init_slot_factories() {
   rpc_ids_factory.renew();
   parallel_job_ids_factory.renew();
   external_db_requests_factory.renew();
+  curl_requests_factory.renew();
 }
 
 void free_slot_factories() {
   rpc_ids_factory.clear();
   parallel_job_ids_factory.clear();
   external_db_requests_factory.clear();
+  curl_requests_factory.clear();
 }
 
 void worker_global_init_slot_factories() {
   rpc_ids_factory.init();
   parallel_job_ids_factory.init();
   external_db_requests_factory.init();
+  curl_requests_factory.init();
 }
