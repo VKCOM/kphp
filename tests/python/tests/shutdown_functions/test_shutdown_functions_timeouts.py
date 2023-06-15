@@ -15,7 +15,7 @@ class TestShutdownFunctionsTimeouts(KphpServerAutoTestCase):
             json=[
                 {"op": "register_shutdown_function", "msg": "shutdown_simple"},
                 {"op": "register_shutdown_function", "msg": "shutdown_send_rpc"},
-                {"op": "sleep", "duration": 1},
+                {"op": "sleep", "duration": 1.2},
                 {"op": "send_long_rpc", "duration": 0.1, "master_port": self.kphp_server.master_port},
                 {"op": "critical_error"},
             ])
@@ -29,7 +29,7 @@ class TestShutdownFunctionsTimeouts(KphpServerAutoTestCase):
             json=[
                 {"op": "register_shutdown_function", "msg": "shutdown_simple"},
                 {"op": "register_shutdown_function", "msg": "shutdown_send_rpc"},
-                {"op": "sleep", "duration": 1},
+                {"op": "sleep", "duration": 1.5},
                 {"op": "resumable_long_work", "duration": 0.2},
                 {"op": "critical_error"},
             ])
