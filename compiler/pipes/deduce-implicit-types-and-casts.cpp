@@ -5,6 +5,9 @@
 #include "compiler/pipes/deduce-implicit-types-and-casts.h"
 #include "compiler/pipes/transform-to-smart-instanceof.h"
 
+#include <optional>
+#include <vector>
+
 #include "compiler/compiler-core.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/generics-mixins.h"
@@ -591,7 +594,10 @@ void DeduceImplicitTypesAndCastsPass::patch_call_args(VertexAdaptor<op_func_call
 
   std::vector<int> mismatched_named_arg;
   std::unordered_set<vk::string_view> unique_names;
-  unique_names.reserve(30);
+  unique_names.reserve(10); // TODO check that no one overwrites
+  mismatched_named_arg.reserve(10);
+
+
 
   // named args
   while (call_arg_idx < call_args.size() && call_arg_idx < f_called_params.size()) {
