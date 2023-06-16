@@ -67,18 +67,21 @@ enum class EventTypeEnum {
   etCurlStarted = 130,
   etCurlFinished = 131,
   etCurlFailed = 132,
-  etCurlMultiStarted = 133,
-  etCurlMultiAddHandle = 134,
-  etCurlMultiRemoveHandle = 135,
-  etCurlMultiFinished = 136,
+  etCurlAddAttributeString = 133,
+  etCurlAddAttributeInt32 = 134,
 
-  etExternalProgramStarted = 140,
-  etExternalProgramFinished = 141,
-  etExternalProgramFailed = 142,
+  etCurlMultiStarted = 140,
+  etCurlMultiAddHandle = 141,
+  etCurlMultiRemoveHandle = 142,
+  etCurlMultiFinished = 143,
 
-  etFileIOStarted = 150,
-  etFileIOFinished = 151,
-  etFileIOFailed = 152,
+  etExternalProgramStarted = 150,
+  etExternalProgramFinished = 151,
+  etExternalProgramFailed = 152,
+
+  etFileIOStarted = 160,
+  etFileIOFinished = 161,
+  etFileIOFailed = 162,
 };
 
 class tracing_binary_buffer {
@@ -391,6 +394,22 @@ struct BinlogWriter {
     cur_binlog.write_event_type(EventTypeEnum::etCurlFailed, errorCodePositive);
     cur_binlog.write_int32(curlHandleID);
     cur_binlog.write_float32(timeOffset);
+  }
+
+  static void onCurlAddedAttributeString(int curlHandleID, const string &key, const string &value) {
+    int idx1 = cur_binlog.register_string_if_const(key);
+    cur_binlog.write_event_type(EventTypeEnum::etCurlAddAttributeString, 0);  // curlHandleID may not fit 24 bits
+    cur_binlog.write_int32(curlHandleID);
+    cur_binlog.write_string(key, idx1);
+    cur_binlog.write_string_inlined(value);
+  }
+
+  static void onCurlAddedAttributeInt32(int curlHandleID, const string &key, int value) {
+    int idx1 = cur_binlog.register_string_if_const(key);
+    cur_binlog.write_event_type(EventTypeEnum::etCurlAddAttributeInt32, 0);
+    cur_binlog.write_int32(curlHandleID);
+    cur_binlog.write_string(key, idx1);
+    cur_binlog.write_int32(value);
   }
 
   static void onCurlMultiStarted(int curlMultiID, float timeOffset) {

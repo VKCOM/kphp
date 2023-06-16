@@ -46,7 +46,7 @@ size_t curl_write(char *data, size_t size, size_t nmemb, void *userdata);
 
 class BaseContext : vk::not_copyable {
 public:
-  int64_t uniq_id{0};
+  int uniq_id{0};
   int64_t error_num{0};
   char error_msg[CURL_ERROR_SIZE + 1]{'\0'};
 
@@ -1024,7 +1024,8 @@ namespace curl_async {
 
 CurlRequest CurlRequest::build(curl_easy easy_id) {
   curl_multi multi_id = f$curl_multi_init();
-  if (!multi_id || !get_context<EasyContext>(easy_id)) {
+  const EasyContext *easy_context = get_context<EasyContext>(easy_id);
+  if (!multi_id || !easy_context) {
     throw std::runtime_error{"failed to get context"};
   }
 
@@ -1037,6 +1038,10 @@ CurlRequest CurlRequest::build(curl_easy easy_id) {
   Optional<int64_t> status = f$curl_multi_add_handle(multi_id, easy_id);
   if (!status.has_value() || status.val()) {
     throw std::runtime_error{"failed to add handle"};
+  }
+
+  if (kphp_tracing::is_turned_on()) {
+    kphp_tracing::on_curl_add_attribute(easy_context->uniq_id, string("curl_exec_concurrently"), 1);
   }
   return {easy_id, multi_id};
 }
@@ -1084,6 +1089,7 @@ void CurlRequest::finish_request(Optional<string> &&response) const {
 
 void CurlRequest::detach_multi_and_easy_handles() const noexcept {
   f$curl_multi_remove_handle(multi_id, easy_id);
+  f$curl_multi_close(multi_id);
 }
 
 static int curl_epoll_cb(int fd, void *data, event_t *ev) {

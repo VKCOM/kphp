@@ -54,7 +54,7 @@ extern int cur_trace_level;
   return cur_trace_level >= 1;
 }
 
-int64_t generate_uniq_id();
+int generate_uniq_id();
 
 using on_trace_finish_callback_t = std::function<bool(double)>;
 using on_trace_enums_callback_t = std::function<array<std::tuple<int64_t, string, array<string>>>()>;
@@ -80,14 +80,16 @@ void on_job_worker_start(int job_id, const string &job_class_name, double start_
 void on_job_worker_finish(int job_id);
 void on_job_worker_fail(int job_id, int error_code);
 
-void on_curl_exec_start(int64_t curl_handle, const string &url);
-void on_curl_exec_finish(int64_t curl_handle, int bytes_recv);
-void on_curl_exec_fail(int64_t curl_handle, int error_code);
+void on_curl_exec_start(int curl_handle, const string &url);
+void on_curl_exec_finish(int curl_handle, int bytes_recv);
+void on_curl_exec_fail(int curl_handle, int error_code);
+void on_curl_add_attribute(int curl_handle, const string &key, const string &value);
+void on_curl_add_attribute(int curl_handle, const string &key, int value);
 
-void on_curl_multi_init(int64_t multi_handle);
-void on_curl_multi_add_handle(int64_t multi_handle, int64_t curl_handle, const string &url);
-void on_curl_multi_remove_handle(int64_t multi_handle, int64_t curl_handle, int bytes_recv);
-void on_curl_multi_close(int64_t multi_handle);
+void on_curl_multi_init(int multi_handle);
+void on_curl_multi_add_handle(int multi_handle, int curl_handle, const string &url);
+void on_curl_multi_remove_handle(int multi_handle, int curl_handle, int bytes_recv);
+void on_curl_multi_close(int multi_handle);
 
 void on_external_program_start(int exec_id, BuiltinFuncID func_id, const string &command);
 void on_external_program_finish(int exec_id, bool success, int64_t exit_code);

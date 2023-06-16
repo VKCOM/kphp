@@ -109,7 +109,7 @@ static on_trace_enums_callback_t cur_on_enums_callback;
 static on_rpc_provide_details_typed_t cur_on_rpc_details_typed_callback;
 static on_rpc_provide_details_untyped_t cur_on_rpc_details_untyped_callback;
 
-int64_t generate_uniq_id() {
+int generate_uniq_id() {
   return f$mt_rand();
 }
 
@@ -253,37 +253,45 @@ void on_job_worker_fail(int job_id, int error_code) {
   BinlogWriter::onJobWorkerFailed(job_id, -error_code, calc_time_offset(now_timestamp));
 }
 
-void on_curl_exec_start(int64_t curl_handle, const string &url) {
+void on_curl_exec_start(int curl_handle, const string &url) {
   double now_timestamp = calc_now_timestamp();
   BinlogWriter::onCurlStarted(curl_handle, url, calc_time_offset(now_timestamp));
 }
 
-void on_curl_exec_finish(int64_t curl_handle, int bytes_recv) {
+void on_curl_exec_finish(int curl_handle, int bytes_recv) {
   double now_timestamp = calc_now_timestamp();
   BinlogWriter::onCurlFinished(curl_handle, bytes_recv, calc_time_offset(now_timestamp));
 }
 
-void on_curl_exec_fail(int64_t curl_handle, int error_code) {
+void on_curl_exec_fail(int curl_handle, int error_code) {
   double now_timestamp = calc_now_timestamp();
   BinlogWriter::onCurlFailed(curl_handle, -error_code, calc_time_offset(now_timestamp));
 }
 
-void on_curl_multi_init(int64_t multi_handle) {
+void on_curl_add_attribute(int curl_handle, const string &key, const string &value) {
+  BinlogWriter::onCurlAddedAttributeString(curl_handle, key, value);
+}
+
+void on_curl_add_attribute(int curl_handle, const string &key, int value) {
+  BinlogWriter::onCurlAddedAttributeInt32(curl_handle, key, value);
+}
+
+void on_curl_multi_init(int multi_handle) {
   double now_timestamp = calc_now_timestamp();
   BinlogWriter::onCurlMultiStarted(multi_handle, calc_time_offset(now_timestamp));
 }
 
-void on_curl_multi_add_handle(int64_t multi_handle, int64_t curl_handle, const string &url) {
+void on_curl_multi_add_handle(int multi_handle, int curl_handle, const string &url) {
   double now_timestamp = calc_now_timestamp();
   BinlogWriter::onCurlMultiAddHandle(multi_handle, curl_handle, url, calc_time_offset(now_timestamp));
 }
 
-void on_curl_multi_remove_handle(int64_t multi_handle, int64_t curl_handle, int bytes_recv) {
+void on_curl_multi_remove_handle(int multi_handle, int curl_handle, int bytes_recv) {
   double now_timestamp = calc_now_timestamp();
   BinlogWriter::onCurlMultiRemoveHandle(multi_handle, curl_handle, bytes_recv, calc_time_offset(now_timestamp));
 }
 
-void on_curl_multi_close(int64_t multi_handle) {
+void on_curl_multi_close(int multi_handle) {
   double now_timestamp = calc_now_timestamp();
   BinlogWriter::onCurlMultiFinished(multi_handle, calc_time_offset(now_timestamp));
 }
