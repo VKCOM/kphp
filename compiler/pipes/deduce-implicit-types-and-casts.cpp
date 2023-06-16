@@ -559,6 +559,77 @@ void DeduceImplicitTypesAndCastsPass::on_phpdoc_for_var(VertexAdaptor<op_phpdoc_
   phpdocs_for_vars.emplace_front(v_phpdoc);
 }
 
+void DeduceImplicitTypesAndCastsPass::patch_call_args(VertexAdaptor<op_func_call> &call, VertexRange f_called_params) {
+  auto call_args = call->args();
+
+  auto find_corresponding_param = [&f_called_params](const std::string &call_arg_name) -> std::optional<VertexAdaptor<op_func_param>> {
+  for (auto param: f_called_params) {
+    if (param.as<op_func_param>()->var()->get_string() == call_arg_name) {
+      return param.as<op_func_param>();
+    }
+  }
+  return std::nullopt;
+  };
+
+  std::vector<VertexAdaptor<op_func_param>> call_arg_to_func_param(call_args.size());
+  int call_arg_idx = 0;
+
+  // positional args
+  while (call_arg_idx < call_args.size() && call_arg_idx < f_called_params.size() && call_args[call_arg_idx]->type() != op_named_arg) {
+    call_arg_to_func_param[call_arg_idx] = f_called_params[call_arg_idx].as<op_func_param>();
+
+    if (call_arg_idx < f_called_params.size() && f_called_params[call_arg_idx]->extra_type == op_ex_param_variadic) {
+      int vararg_idx = call_arg_idx;
+      while (call_arg_idx < call_args.size()) {
+        call_arg_to_func_param[call_arg_idx] = f_called_params[vararg_idx].as<op_func_param>();
+        call_arg_idx++;
+      }
+      break;
+    }
+    call_arg_idx++;
+  }
+
+  std::vector<int> mismatched_named_arg;
+  std::unordered_set<vk::string_view> unique_names;
+  unique_names.reserve(30);
+
+  // named args
+  while (call_arg_idx < call_args.size() && call_arg_idx < f_called_params.size()) {
+    kphp_error(call_args[call_arg_idx]->type() == op_named_arg, "Positional arguments after named ones are prohibited");
+    auto as_named = call_args[call_arg_idx].as<op_named_arg>();
+
+    if (auto [_, absent] = unique_names.insert(as_named->name()->get_string()); !absent) {
+      kphp_error(false, fmt_format("Named arguments with the same name: \"{}\"", as_named->name()->get_string()));
+    }
+
+    std::optional<VertexAdaptor<op_func_param>> corresp_func_param = find_corresponding_param(as_named->name()->get_string());
+    if (corresp_func_param.has_value()) {
+      call_arg_to_func_param[call_arg_idx] = corresp_func_param.value();
+    } else {
+      mismatched_named_arg.push_back(call_arg_idx);
+    }
+    call_arg_idx++;
+  }
+
+  // if function declaration has variadic, then we should patch each extra named arg with it
+  if (!f_called_params.empty() && f_called_params.back()->extra_type == op_ex_param_variadic) {
+    for (auto idx: mismatched_named_arg) {
+      call_arg_to_func_param[idx] = f_called_params.back().as<op_func_param>();
+    }
+  }
+
+  for (call_arg_idx = 0; call_arg_idx < call_args.size(); ++call_arg_idx) {
+    if (call_arg_to_func_param[call_arg_idx] && call_arg_to_func_param[call_arg_idx]->type_hint) {
+      if (auto as_named = call_args[call_arg_idx].try_as<op_named_arg>()) {
+        patch_call_arg_on_func_call(call_arg_to_func_param[call_arg_idx], as_named->expr(), call);
+      } else {
+        patch_call_arg_on_func_call(call_arg_to_func_param[call_arg_idx], call_args[call_arg_idx], call);
+      }
+    }
+  }
+
+}
+
 // for every `f(...)`, bind func_id
 // for every call argument, patch it to fit @param of f()
 // if f() is a generic function `f<T1,T2,...>(...)`, deduce instantiation Ts (save call->reifiedTs)
@@ -605,62 +676,7 @@ void DeduceImplicitTypesAndCastsPass::on_func_call(VertexAdaptor<op_func_call> c
 
   FunctionPtr f_called = call->func_id;
   auto call_args = call->args();
-//  for (auto & arg : call_args) {
-//    if (arg->type() == op_named_arg) {
-//      arg = arg.as<op_named_arg>()->expr();
-//    }
-//  }
-
   auto f_called_params = f_called->get_params();
-
-
-// map call_args to params
-  const int stub = -1;
-  int fst_named = stub;
-  int lst_positional = stub;
-  for (int i = 0; i < call_args.size(); ++i) {
-    if (fst_named == stub && call_args[i]->type() == op_named_arg) {
-      fst_named = i;
-    }
-    if (call_args[i]->type() != op_named_arg) {
-      lst_positional = i;
-    }
-  }
-
-  kphp_error(fst_named == stub || fst_named > lst_positional, "Cannot use positional argument after named argument");
-
-  std::vector<VertexPtr> mapping(call_args.size(), VertexPtr{});
-
-  // trivial
-  for (int i = 0; i <= lst_positional; ++i) {
-    mapping[i] = call_args[i];
-  }
-
-  // TODO think about default arguments
-
-  if (fst_named != stub) {
-    for (int pos = fst_named; pos < call_args.size(); ++pos) {
-      auto cur_call_arg = call_args[pos].as<op_named_arg>();
-      printf("cur_call_arg.name = %s\n", cur_call_arg->name()->get_string().c_str());
-      bool found = false;
-      for (int i = 0; i < f_called_params.size(); ++i) {
-        assert(f_called_params[i]->type() == op_func_param);
-        auto param_name = f_called_params[i].as<op_func_param>()->var()->str_val;
-        printf("\tparam_name = %s\n", param_name.c_str());
-        if (cur_call_arg->name()->get_string() == param_name) { // TODO(mkornaukhov03) think about case?
-          found = true;
-          mapping[i] = cur_call_arg->expr(); // assert i < mapping.size()
-          break;
-        }
-      }
-      kphp_error(found, "Appropriate parameter for named argument is not found");
-    }
-  }
-
-  for (int i = 0; i < call_args.size(); ++i) {
-//    kphp_error(!mapping[i], "Not enough arguments for function call");
-    call_args[i] = mapping[i];
-  }
 
   // if we are calling `f<T>`, then `f` has not been instantiated yet at this point, so we have a generic func call
   // at first, we need to know all generic types (call->reifiedTs)
@@ -694,18 +710,7 @@ void DeduceImplicitTypesAndCastsPass::on_func_call(VertexAdaptor<op_func_call> c
   }
 
   // now, loop through every argument and potentially patch it
-  for (int i = 0; i < f_called_params.size() && i < call_args.size(); ++i) {
-    auto param = f_called_params[i].as<op_func_param>();
-
-    if (param->type_hint) {
-      patch_call_arg_on_func_call(param, call_args[i], call);
-      if (param->extra_type == op_ex_param_variadic) {    // all the rest arguments are meant to be passed to this param
-        for (++i; i < call_args.size(); ++i) {            // here, they are not replaced with an array: see CheckFuncCallsAndVarargPass
-          patch_call_arg_on_func_call(param, call_args[i], call);
-        }
-      }
-    }
-  }
+  patch_call_args(call, f_called_params);
 }
 
 // a helper to print a human-readable error for `f()` when f not found
