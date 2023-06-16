@@ -24,7 +24,7 @@ struct rpc_request {
     };
   };
   uint32_t function_magic{0};
-  int32_t actor_port{0}; // if positive: actor_id; if negative: actor_id=0, it's port
+  int32_t actor_or_port{0}; // if positive: actor_id; if negative: actor_id=0, it's port
 };
 
 extern long long rpc_tl_results_last_query_num;

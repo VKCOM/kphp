@@ -122,7 +122,7 @@ public:
 
   void write_string(const string &v, int idx_in_table) {
     if (idx_in_table > 0) {
-      *pos++ = static_cast<int>(idx_in_table) << 8;
+      *pos++ = idx_in_table << 8;
     } else {
       write_string_inlined(v);
     }
@@ -300,10 +300,10 @@ struct BinlogWriter {
     cur_binlog.write_float32(timeOffset);
   }
 
-  static void onRpcQuerySend(int rpcQueryID, int actorPort, unsigned int tlMagic, int bytesSent, float timeOffset, bool isNoResult) {
+  static void onRpcQuerySend(int rpcQueryID, int actorOrPort, unsigned int tlMagic, int bytesSent, float timeOffset, bool isNoResult) {
     cur_binlog.write_event_type(EventTypeEnum::etRpcQuerySend, bytesSent);
     cur_binlog.write_int32(isNoResult ? -rpcQueryID : rpcQueryID);
-    cur_binlog.write_uint32(static_cast<unsigned int>(actorPort));
+    cur_binlog.write_uint32(static_cast<unsigned int>(actorOrPort));
     cur_binlog.write_uint32(tlMagic);
     cur_binlog.write_float32(timeOffset);
   }

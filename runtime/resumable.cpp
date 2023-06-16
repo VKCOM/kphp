@@ -83,7 +83,7 @@ struct started_resumable_info : resumable_info {
 
 int64_t first_forked_resumable_id;
 int64_t first_array_forked_resumable_id;
-int64_t current_forked_resumable_id = 1123456789;
+int64_t current_forked_resumable_id = FORK_START_ID;
 forked_resumable_info *forked_resumables;
 forked_resumable_info gotten_forked_resumable_info;
 uint32_t forked_resumables_size;

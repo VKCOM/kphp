@@ -728,11 +728,11 @@ int64_t rpc_send(const class_instance<C$RpcConnection> &conn, double timeout, bo
 
   cur->resumable_id = register_forked_resumable(new rpc_resumable(q_id));
   cur->function_magic = function_magic;
-  cur->actor_port = conn.get()->actor_id > 0 ? conn.get()->actor_id : -conn.get()->port;
+  cur->actor_or_port = conn.get()->actor_id > 0 ? conn.get()->actor_id : -conn.get()->port;
   cur->timer = nullptr;
 
   if (kphp_tracing::is_turned_on()) {
-    kphp_tracing::on_rpc_query_send(q_id, cur->actor_port, cur->function_magic, static_cast<int>(request_size), send_timestamp, ignore_answer);
+    kphp_tracing::on_rpc_query_send(q_id, cur->actor_or_port, cur->function_magic, static_cast<int>(request_size), send_timestamp, ignore_answer);
   }
 
   if (ignore_answer) {

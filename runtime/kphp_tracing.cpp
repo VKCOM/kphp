@@ -11,6 +11,7 @@
 #include "runtime/job-workers/job-interface.h"
 #include "runtime/interface.h"
 #include "runtime/math_functions.h"
+#include "runtime/resumable.h"
 #include "runtime/string_functions.h"
 #include "runtime/tl/rpc_function.h"
 #include "runtime/tl/tl_magics_decoding.h"
@@ -168,7 +169,7 @@ static inline float calc_time_offset(double now_timestamp) noexcept {
 }
 
 static inline int calc_coroutine_id(int64_t fork_id) noexcept {
-  return fork_id > 0 ? static_cast<int>(fork_id - 1123456000) : 0;
+  return fork_id > 0 ? static_cast<int>(fork_id - FORK_START_ID + 1) : 0;
 }
 
 [[gnu::noinline]] [[gnu::cold]] static void provide_advanced_mem_details() {
@@ -214,8 +215,8 @@ void on_fork_provide_name(int64_t fork_id, const string &fork_typeid) {
   BinlogWriter::onCoroutineProvideDesc(calc_coroutine_id(fork_id), desc);
 }
 
-void on_rpc_query_send(int rpc_query_id, int actor_port, unsigned int tl_magic, int bytes_sent, double start_timestamp, bool is_no_result) {
-  BinlogWriter::onRpcQuerySend(rpc_query_id, actor_port, tl_magic, bytes_sent, calc_time_offset(start_timestamp), is_no_result);
+void on_rpc_query_send(int rpc_query_id, int actor_or_port, unsigned int tl_magic, int bytes_sent, double start_timestamp, bool is_no_result) {
+  BinlogWriter::onRpcQuerySend(rpc_query_id, actor_or_port, tl_magic, bytes_sent, calc_time_offset(start_timestamp), is_no_result);
 }
 
 void on_rpc_query_finish(int rpc_query_id, int bytes_recv) {
@@ -339,9 +340,9 @@ void on_php_script_warning(const string &warning_message) {
 // what we do here:
 // 1) invoke php callback — it returns whether we should flush this trace or not
 //    (we are in script context, so php callback may write stats via rpc requests)
-// 2) if yes, binlog is flushed (if it's the first time after worker launch, all enums are flushed also)
-// 3) if no, probably "flush_strings" line is written to a traces file; see kphp_tracing_binlog.cpp
-// note, that we may probably be in net context; it's assumed that php code does no rpc queries
+// 2) if yes, binlog is flushed as well as all strings accumulated in "flush_strings_binlog" since the last flush
+//    (if it's the first time after worker launch, all enums are flushed also)
+// 3) if no, save newly-created binlog strings, see 'else' branch below
 void on_php_script_finish_ok(double net_time, double script_time) {
   // note, that this function is called always, even if tracing is turned off,
   // because probably it was on, but turned off in the middle of execution, which is also a point of interest
@@ -417,6 +418,7 @@ void on_php_script_finish_ok(double net_time, double script_time) {
 // todo think about OOM, we want to flush traces on soft OOM
 void on_php_script_finish_terminated() {
   if (cur_trace_level != -1) {
+    dl::CriticalSectionGuard lock;
     flush_strings_binlog.append_current_php_script_strings();
   }
 }

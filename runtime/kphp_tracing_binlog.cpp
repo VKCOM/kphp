@@ -79,13 +79,14 @@ void tracing_binary_buffer::finish_cur_chunk_start_next() {
     last_chunk->size_bytes = get_cur_chunk_size();
   }
 
-  char *mem = reinterpret_cast<char *>(use_heap_memory ? dl::heap_allocate(BUF_CHUNK_SIZE) : dl::allocate(BUF_CHUNK_SIZE));
-  one_chunk *chunk = reinterpret_cast<one_chunk *>(mem);
-  chunk->buf = reinterpret_cast<int *>(mem + sizeof(one_chunk));
-  chunk->size_bytes = 0;
-  chunk->prev_chunk = last_chunk;
+  void *mem = use_heap_memory ? dl::heap_allocate(BUF_CHUNK_SIZE) : dl::allocate(BUF_CHUNK_SIZE);
+  one_chunk *next_chunk = new (mem) one_chunk{
+    reinterpret_cast<int *>(reinterpret_cast<char *>(mem) + sizeof(one_chunk)),
+    0,
+    last_chunk
+  };
 
-  last_chunk = chunk;
+  last_chunk = next_chunk;
   pos = last_chunk->buf;
 }
 
@@ -110,6 +111,11 @@ void tracing_binary_buffer::write_event_type(EventTypeEnum event_type, int custo
   if (unlikely(custom24bits < 0 || custom24bits >= 1 << 24)) {
     php_warning("custom24bits %d overflow next to event_type %d", custom24bits, static_cast<int>(event_type));
   }
+
+  // 128 bytes are enough for all possible events in binlog, they are tiny in fact, 24 bytes max
+  // write_event_type() is called for every event (see BinlogWriter methods),
+  // and checks inside write_int() and other primitive functions aren't presented intentionally
+  // if an event will contain an inlined string (not an indexed one), write_string_inlined() will also check size
   alloc_next_chunk_if_not_enough(128);
   write_uint32(static_cast<unsigned int>(custom24bits << 8) + static_cast<unsigned int>(event_type));
 }

@@ -71,7 +71,7 @@ void on_fork_finish(int64_t fork_id);
 void on_fork_switch(int64_t fork_id);
 void on_fork_provide_name(int64_t fork_id, const string &fork_typeid);
 
-void on_rpc_query_send(int rpc_query_id, int actor_port, unsigned int tl_magic, int bytes_sent, double start_timestamp, bool is_no_result);
+void on_rpc_query_send(int rpc_query_id, int actor_or_port, unsigned int tl_magic, int bytes_sent, double start_timestamp, bool is_no_result);
 void on_rpc_query_finish(int rpc_query_id, int bytes_recv);
 void on_rpc_query_fail(int rpc_query_id, int error_code);
 void on_rpc_query_provide_details_after_send(const class_instance<C$VK$TL$RpcFunction> &typed_f, const mixed &untyped_obj);
