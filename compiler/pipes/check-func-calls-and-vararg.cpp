@@ -4,6 +4,9 @@
 
 #include "compiler/pipes/check-func-calls-and-vararg.h"
 
+#include <tuple>
+#include <vector>
+
 #include "compiler/modulite-check-rules.h"
 #include "compiler/data/src-file.h"
 #include "compiler/rewrite-rules/replace-extern-func-calls.h"
@@ -26,48 +29,41 @@ VertexPtr CheckFuncCallsAndVarargPass::on_enter_vertex(VertexPtr root) {
   return root;
 }
 
-// calling a function with variadic arguments involves some transformations:
-//   function fun($x, ...$args)
-// transformations will be:
-//   fun(1, 2, 3) -> fun(1, [2, 3])
-//   fun(1, ...$arr) -> fun(1, $arr)
-//   fun(1, 2, 3, ...$arr1, ...$arr2) -> fun(1, array_merge([2, 3], $arr1, $arr2))
-// here we also deal with unpacking fixed-size arrays into positional arguments:
-//   fun(...[1]) -> fun(1)
-//   fun(...[1,2]) -> fun(1, [2])
-//   fun(...[1, ...[2, ...[3, ...$rest]]]) => fun(1, array_merge([2,3], $rest))
-// this is done here (not in deducing types), as $f(...$variadic) — in invoke, not func call — are applicable only here
-VertexAdaptor<op_func_call> CheckFuncCallsAndVarargPass::process_varargs(VertexAdaptor<op_func_call> call, FunctionPtr f_called) {
-  std::vector<VertexPtr> flattened_call_args;
-  flattened_call_args.reserve(call->args().size());
-  VertexRange f_params = f_called->get_params();
+namespace {
+struct VarargAppendOptions {
+  int variadic_func_param_idx;
+  bool is_just_single_arg_forwarded;
+  bool needs_wrap_array_merge;
+};
 
-  // at first, convert f(1, ...[2, ...[3]], ...$all, ...[5]) to f(1,2,3,...$all,5)
+std::vector<VertexPtr> flatten_call_args(VertexRange args, VertexRange func_params) {
+  std::vector<VertexPtr> flattened_call_args;
+  flattened_call_args.reserve(args.size());
   std::function<void(VertexPtr)> flatten_call_varg = [&flattened_call_args, &flatten_call_varg](VertexPtr inner) {
-    inner = VertexUtil::get_actual_value(inner);
-    if (auto as_array = inner.try_as<op_array>()) {
-      for (VertexPtr item : as_array->args()) {
-        kphp_error(item->type() != op_double_arrow, "Passed unpacked ...[array] must be a vector, without => keys");
-        kphp_assert(item->type() != op_varg);
-        flattened_call_args.emplace_back(item);
-      }
-    } else if (auto as_merge = inner.try_as<op_func_call>(); as_merge && as_merge->str_val == "array_merge_spread") {
-      for (VertexPtr item : as_merge->args()) {
-        kphp_assert(item->type() == op_conv_array);
-        flatten_call_varg(item.as<op_conv_array>()->expr());
-      }
-    } else {
-      auto wrap_varg = VertexAdaptor<op_varg>::create(inner).set_location(inner);
-      flattened_call_args.emplace_back(wrap_varg);
+  inner = VertexUtil::get_actual_value(inner);
+  if (auto as_array = inner.try_as<op_array>()) {
+    for (VertexPtr item: as_array->args()) {
+      kphp_error(item->type() != op_double_arrow, "Passed unpacked ...[array] must be a vector, without => keys");
+      kphp_assert(item->type() != op_varg);
+      flattened_call_args.emplace_back(item);
     }
+  } else if (auto as_merge = inner.try_as<op_func_call>(); as_merge && as_merge->str_val == "array_merge_spread") {
+    for (VertexPtr item: as_merge->args()) {
+      kphp_assert(item->type() == op_conv_array);
+      flatten_call_varg(item.as<op_conv_array>()->expr());
+    }
+  } else {
+    auto wrap_varg = VertexAdaptor<op_varg>::create(inner).set_location(inner);
+    flattened_call_args.emplace_back(wrap_varg);
+  }
   };
 
-  for (VertexPtr call_arg : call->args()) {
+  for (VertexPtr call_arg: args) {
     if (auto as_varg = call_arg.try_as<op_varg>()) {
       size_t n_before = flattened_call_args.size();
       flatten_call_varg(as_varg->array());
-      for (size_t i = n_before; i <= flattened_call_args.size() && i < f_params.size(); ++i) {
-        auto ith_param = f_params[i].as<op_func_param>();
+      for (size_t i = n_before; i <= flattened_call_args.size() && i < func_params.size(); ++i) {
+        auto ith_param = func_params[i].as<op_func_param>();
         kphp_error(!ith_param->is_cast_param, fmt_format("Invalid place for unpack, because param ${} is @kphp-infer cast", ith_param->var()->str_val));
       }
     } else {
@@ -75,16 +71,20 @@ VertexAdaptor<op_func_call> CheckFuncCallsAndVarargPass::process_varargs(VertexA
     }
   }
 
+  return flattened_call_args;
+}
+
+std::tuple<std::vector<VertexPtr>, std::vector<VertexPtr>, VarargAppendOptions> detect_variadic_args(const std::vector<VertexPtr> &flattened_call_args, FunctionPtr f_called) {
   std::vector<VertexPtr> new_call_args;
   bool is_just_single_arg_forwarded = false;
   bool needs_wrap_array_merge = false;
   std::vector<VertexPtr> variadic_args_passed;
+//   variadic_args_passed.reserve(flattened_call_args.size()); TODO uncomment and measure memory and time consumption
   int i_func_param = 0;
 
-  // then, having f($x,$y,...$rest) and a call f(1,2,3,...$all,5), detect that variadic_args_passed = [3,...$all,5]
   for (int i_call_arg = 0; i_call_arg < flattened_call_args.size(); ++i_call_arg) {
     VertexPtr ith_call_arg = flattened_call_args[i_call_arg];
-    bool is_variadic_param = f_called->has_variadic_param && i_func_param == f_params.size() - 1;
+    bool is_variadic_param = f_called->has_variadic_param && i_func_param == f_called->get_params().size() - 1;
 
     if (!is_variadic_param) {
       i_func_param++;
@@ -94,7 +94,7 @@ VertexAdaptor<op_func_call> CheckFuncCallsAndVarargPass::process_varargs(VertexA
     }
 
     if (auto unpack_as_varg = ith_call_arg.try_as<op_varg>()) {
-      if (i_call_arg == flattened_call_args.size() - 1 && i_func_param == f_params.size() - 1 && variadic_args_passed.empty()) {
+      if (i_call_arg == flattened_call_args.size() - 1 && i_func_param == f_called->get_params().size() - 1 && variadic_args_passed.empty()) {
         // variadic just have been forwarded, e.g. f(...$args) transformed to f($args) without any array_merge
         variadic_args_passed.emplace_back(VertexUtil::create_conv_to(tp_array, unpack_as_varg->array()));
         is_just_single_arg_forwarded = true;
@@ -108,16 +108,19 @@ VertexAdaptor<op_func_call> CheckFuncCallsAndVarargPass::process_varargs(VertexA
     }
   }
 
-  // append $rest = (from variadic_args_passed) as the last new_call_args
-  if (f_called->has_variadic_param && i_func_param == f_params.size() - 1) {
-    if (is_just_single_arg_forwarded) {
+  return {std::move(new_call_args), std::move(variadic_args_passed), VarargAppendOptions{i_func_param, is_just_single_arg_forwarded, needs_wrap_array_merge}};
+}
+
+void append_variadic(std::vector<VertexPtr> &new_call_args, const std::vector<VertexPtr> & variadic_args_passed, VarargAppendOptions opts, FunctionPtr f_called, Location loc) {
+  if (f_called->has_variadic_param && opts.variadic_func_param_idx == f_called->get_params().size() - 1) {
+    if (opts.is_just_single_arg_forwarded) {
       // optimization: f(...$args) transformed to f($args) without any array_merge
       kphp_assert(variadic_args_passed.size() == 1);
       new_call_args.emplace_back(variadic_args_passed.front());
 
-    } else if (!needs_wrap_array_merge) {
+    } else if (!opts.needs_wrap_array_merge) {
       // f(1, 2, 3) transformed into f([1,2,3])
-      auto rest_array = VertexAdaptor<op_array>::create(variadic_args_passed).set_location(call);
+      auto rest_array = VertexAdaptor<op_array>::create(variadic_args_passed).set_location(loc);
       new_call_args.emplace_back(rest_array);
 
     } else {
@@ -138,16 +141,43 @@ VertexAdaptor<op_func_call> CheckFuncCallsAndVarargPass::process_varargs(VertexA
           }
           seq_items.emplace_back(variadic_args_passed[i]);
         }
-        auto seq_array = VertexAdaptor<op_array>::create(seq_items).set_location(call);
+        auto seq_array = VertexAdaptor<op_array>::create(seq_items).set_location(loc);
         variadic_args_conv_array.emplace_back(seq_array);
       }
 
-      auto merge_arrays = VertexAdaptor<op_func_call>::create(variadic_args_conv_array).set_location(call);
+      auto merge_arrays = VertexAdaptor<op_func_call>::create(variadic_args_conv_array).set_location(loc);
       merge_arrays->str_val = "array_merge";
       merge_arrays->func_id = G->get_function(merge_arrays->str_val);
       new_call_args.emplace_back(merge_arrays);
     }
   }
+}
+}
+
+
+
+// calling a function with variadic arguments involves some transformations:
+//   function fun($x, ...$args)
+// transformations will be:
+//   fun(1, 2, 3) -> fun(1, [2, 3])
+//   fun(1, ...$arr) -> fun(1, $arr)
+//   fun(1, 2, 3, ...$arr1, ...$arr2) -> fun(1, array_merge([2, 3], $arr1, $arr2))
+// here we also deal with unpacking fixed-size arrays into positional arguments:
+//   fun(...[1]) -> fun(1)
+//   fun(...[1,2]) -> fun(1, [2])
+//   fun(...[1, ...[2, ...[3, ...$rest]]]) => fun(1, array_merge([2,3], $rest))
+// this is done here (not in deducing types), as $f(...$variadic) — in invoke, not func call — are applicable only here
+VertexAdaptor<op_func_call> CheckFuncCallsAndVarargPass::process_varargs(VertexAdaptor<op_func_call> call, FunctionPtr f_called) {
+  VertexRange f_params = f_called->get_params();
+
+  // at first, convert f(1, ...[2, ...[3]], ...$all, ...[5]) to f(1,2,3,...$all,5)
+  std::vector<VertexPtr> flattened_call_args = flatten_call_args(call->args(), f_params);
+
+  // then, having f($x,$y,...$rest) and a call f(1,2,3,...$all,5), detect that variadic_args_passed = [3,...$all,5]
+  auto [new_call_args, variadic_args_passed, opts] = detect_variadic_args(flattened_call_args, f_called);
+
+  // append $rest = (from variadic_args_passed) as the last new_call_args
+  append_variadic(new_call_args, variadic_args_passed, opts, f_called, call->location);
 
   auto new_call = VertexAdaptor<op_func_call>::create(new_call_args).set_location(call);
   new_call->extra_type = call->extra_type;

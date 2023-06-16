@@ -597,8 +597,6 @@ void DeduceImplicitTypesAndCastsPass::patch_call_args(VertexAdaptor<op_func_call
   unique_names.reserve(10); // TODO check that no one overwrites
   mismatched_named_arg.reserve(10);
 
-
-
   // named args
   while (call_arg_idx < call_args.size() && call_arg_idx < f_called_params.size()) {
     kphp_error(call_args[call_arg_idx]->type() == op_named_arg, "Positional arguments after named ones are prohibited");
