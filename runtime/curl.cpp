@@ -177,7 +177,6 @@ public:
 
   bool return_transfer{false};
   bool connection_only{false};
-  size_t bytes_recv{0};
 };
 
 class MultiContext : public BaseContext {
@@ -682,9 +681,8 @@ mixed f$curl_exec(curl_easy easy_id) noexcept {
     return false;
   }
 
-  easy_context->bytes_recv = easy_context->received_data.size();
   if (kphp_tracing::is_turned_on()) {
-    kphp_tracing::on_curl_exec_finish(easy_context->uniq_id, easy_context->bytes_recv);
+    kphp_tracing::on_curl_exec_finish(easy_context->uniq_id, easy_context->get_info(CURLINFO_SIZE_DOWNLOAD).to_int());
   }
   if (easy_context->return_transfer) {
     return easy_context->received_data.concat_and_get_string();
@@ -837,7 +835,6 @@ Optional<int64_t> f$curl_multi_add_handle(curl_multi multi_id, curl_easy easy_id
 
 Optional<string> f$curl_multi_getcontent(curl_easy easy_id) noexcept {
   if (auto *easy_context = get_context<EasyContext>(easy_id)) {
-    easy_context->bytes_recv = easy_context->received_data.size();
     return easy_context->return_transfer ? easy_context->received_data.concat_and_get_string() : Optional<string>{};
   }
   return false;
@@ -927,7 +924,7 @@ Optional<int64_t> f$curl_multi_remove_handle(curl_multi multi_id, curl_easy easy
   if (auto *multi_context = get_context<MultiContext>(multi_id)) {
     if (auto *easy_context = get_context<EasyContext>(easy_id)) {
       if (kphp_tracing::is_turned_on()) {
-        kphp_tracing::on_curl_multi_remove_handle(multi_context->uniq_id, easy_context->uniq_id, easy_context->bytes_recv);
+        kphp_tracing::on_curl_multi_remove_handle(multi_context->uniq_id, easy_context->uniq_id, easy_context->get_info(CURLINFO_SIZE_DOWNLOAD).to_int());
       }
       multi_context->error_num = dl::critical_section_call(curl_multi_remove_handle, multi_context->multi_handle, easy_context->easy_handle);
       return multi_context->error_num;
