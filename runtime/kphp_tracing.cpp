@@ -369,10 +369,10 @@ void on_php_script_finish_ok(double net_time, double script_time) {
     provide_mem_info();
     BinlogWriter::onSpanAddedAttributeFloat32(SPECIAL_SPAN_ID_ROOT, string("kphp.net_time", 13), static_cast<float>(net_time));
     BinlogWriter::onSpanAddedAttributeFloat32(SPECIAL_SPAN_ID_ROOT, string("kphp.script_time", 16), static_cast<float>(script_time));
-    BinlogWriter::onSpanAddedAttributeInt32(SPECIAL_SPAN_ID_ROOT, string("kphp.binlog_size", 16), cur_binlog.calc_total_size() + 8);
     BinlogWriter::onSpanAddedAttributeInt32(SPECIAL_SPAN_ID_ROOT, string("workers.general", 15), std::get<3>(webserver_stats));
     BinlogWriter::onSpanAddedAttributeInt32(SPECIAL_SPAN_ID_ROOT, string("workers.general_free", 20), std::get<2>(webserver_stats));
     BinlogWriter::onSpanAddedAttributeInt32(SPECIAL_SPAN_ID_ROOT, string("workers.job", 11), f$get_job_workers_number());
+    BinlogWriter::onSpanAddedAttributeInt32(SPECIAL_SPAN_ID_ROOT, string("kphp.binlog_size", 16), cur_binlog.calc_total_size() + 8);
     BinlogWriter::onSpanFinished(SPECIAL_SPAN_ID_ROOT, calc_time_offset(now_timestamp));
 
     // once per worker: flush enums (before any trace flush)
