@@ -594,7 +594,7 @@ void DeduceImplicitTypesAndCastsPass::patch_call_args(VertexAdaptor<op_func_call
 
   std::vector<int> mismatched_named_arg;
   std::unordered_set<vk::string_view> unique_names;
-  unique_names.reserve(10); // TODO check that no one overwrites
+  unique_names.reserve(10);
   mismatched_named_arg.reserve(10);
 
   // named args
@@ -621,6 +621,9 @@ void DeduceImplicitTypesAndCastsPass::patch_call_args(VertexAdaptor<op_func_call
       call_arg_to_func_param[idx] = f_called_params.back().as<op_func_param>();
     }
   }
+
+  kphp_error(!(f_called_params.back()->extra_type == op_ex_param_variadic && !mismatched_named_arg.empty()), fmt_format("Unknown parameter name: %s", call_args[mismatched_named_arg.front()].as<op_named_arg>()->name()->get_string()));
+
 
   for (call_arg_idx = 0; call_arg_idx < call_args.size(); ++call_arg_idx) {
     if (call_arg_to_func_param[call_arg_idx] && call_arg_to_func_param[call_arg_idx]->type_hint) {

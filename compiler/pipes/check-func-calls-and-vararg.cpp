@@ -6,6 +6,7 @@
 
 #include <tuple>
 #include <vector>
+#include <unordered_set>
 
 #include "compiler/modulite-check-rules.h"
 #include "compiler/data/src-file.h"
@@ -80,6 +81,17 @@ std::tuple<std::vector<VertexPtr>, std::vector<VertexPtr>, VarargAppendOptions> 
   bool needs_wrap_array_merge = false;
   std::vector<VertexPtr> variadic_args_passed;
 //   variadic_args_passed.reserve(flattened_call_args.size()); TODO uncomment and measure memory and time consumption
+
+  std::unordered_set<std::string> func_arg_names;
+//  for (auto param : f_called->get_params()) {
+//    if (param.as<op_func_param>()->var()->get_string())
+//  }
+  std::for_each(f_called->get_params().begin(), f_called->get_params().end(), [&](VertexPtr param) {
+    if (param.as<op_func_param>()->extra_type != op_ex_param_variadic) {
+      func_arg_names.insert(param.as<op_func_param>()->var()->get_string());
+    }
+  });
+
   int i_func_param = 0;
 
   for (int i_call_arg = 0; i_call_arg < flattened_call_args.size(); ++i_call_arg) {
@@ -88,8 +100,15 @@ std::tuple<std::vector<VertexPtr>, std::vector<VertexPtr>, VarargAppendOptions> 
 
     if (!is_variadic_param) {
       i_func_param++;
-      new_call_args.emplace_back(ith_call_arg);
-      kphp_error(ith_call_arg->type() != op_varg, "It's prohibited to unpack non-fixed arrays where positional arguments expected");
+
+      if (auto as_named = ith_call_arg.try_as<op_named_arg>(); as_named && func_arg_names.count(as_named->name()->get_string()) == 0) {
+        // foo($a, ...$args);    foo(name : val, a: 1) --> foo(a : 1, ["name" : val])
+        auto as_double_arrow = VertexAdaptor<op_double_arrow>::create(as_named->name(), as_named->expr());
+        variadic_args_passed.emplace_back(as_double_arrow);
+      } else {
+        new_call_args.emplace_back(ith_call_arg);
+        kphp_error(ith_call_arg->type() != op_varg, "It's prohibited to unpack non-fixed arrays where positional arguments expected");
+      }
       continue;
     }
 
@@ -107,6 +126,8 @@ std::tuple<std::vector<VertexPtr>, std::vector<VertexPtr>, VarargAppendOptions> 
       variadic_args_passed.emplace_back(ith_call_arg);
     }
   }
+
+
 
   return {std::move(new_call_args), std::move(variadic_args_passed), VarargAppendOptions{i_func_param, is_just_single_arg_forwarded, needs_wrap_array_merge}};
 }
