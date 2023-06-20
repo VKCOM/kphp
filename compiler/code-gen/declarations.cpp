@@ -902,7 +902,7 @@ static void do_compile_accept_json_visitor(CodeGenerator &W, ClassPtr klass, boo
 }
 
 void ClassDeclaration::compile_accept_json_visitor(CodeGenerator &W, ClassPtr klass) {
-  for (auto[encoder, to_encode] : klass->json_encoders) {
+  for (auto [encoder, to_encode] : klass->json_encoders) {
     W << NL;
     do_compile_accept_json_visitor(W, klass, to_encode, encoder, true);
   }
