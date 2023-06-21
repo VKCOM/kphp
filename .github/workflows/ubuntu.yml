@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: focal
+          - os: jammy
             compiler: g++
             cpp: 17
             asan: off
