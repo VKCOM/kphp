@@ -170,7 +170,7 @@ def parse_args():
         type=str,
         dest="cxx_name",
         default="g++",
-        choices=["g++", "clang++", "clang++-11"],
+        choices=["g++", "clang++", "clang++-16"],
         help="specify cxx for compiling kphp and running tests"
     )
 
