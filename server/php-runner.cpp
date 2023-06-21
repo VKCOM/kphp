@@ -25,6 +25,7 @@
 #include "runtime/curl.h"
 #include "runtime/exception.h"
 #include "runtime/interface.h"
+#include "runtime/kphp_tracing.h"
 #include "runtime/oom_handler.h"
 #include "runtime/profiler.h"
 #include "server/json-logger.h"
@@ -202,6 +203,9 @@ void PhpScript::pause() noexcept {
 #endif
   in_script_context = true;
   check_net_context_errors();
+  if (kphp_tracing::is_turned_on()) {
+    kphp_tracing::on_switch_context_to_script(last_net_time_delta);
+  }
   //fprintf (stderr, "pause: ended\n");
 }
 
@@ -260,6 +264,7 @@ void PhpScript::update_net_time() noexcept {
     }
   }
   net_time += net_add;
+  last_net_time_delta = net_add;
 
   cur_timestamp = new_cur_timestamp;
 }
@@ -303,6 +308,7 @@ void PhpScript::finish() noexcept {
   if (save_state == run_state_t::error) {
     assert (error_message != nullptr);
     kprintf("Critical error during script execution: %s\n", error_message);
+    kphp_tracing::on_php_script_finish_terminated();
   }
   if (save_state == run_state_t::error || script_mem_stats.real_memory_used >= 100000000) {
     if (data != nullptr) {
@@ -440,7 +446,7 @@ void PhpScript::run() noexcept {
       // run shutdown functions with an empty exception context; then recover it before we proceed
       auto saved_exception = CurException;
       CurException = Optional<bool>{};
-      run_shutdown_functions_from_script();
+      run_shutdown_functions_from_script(ShutdownType::exception);
       // only nothrow shutdown callbacks are allowed by the compiler, so the CurException should be null
       php_assert(CurException.is_null());
       CurException = saved_exception;

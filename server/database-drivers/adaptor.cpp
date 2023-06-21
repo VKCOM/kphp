@@ -32,6 +32,10 @@ public:
   explicit RequestResumable(int request_id)
     : request_id(request_id) {}
 
+  bool is_internal_resumable() const noexcept final {
+    return true;
+  }
+
 protected:
   bool run() noexcept final {
     auto &adaptor = vk::singleton<database_drivers::Adaptor>::get();

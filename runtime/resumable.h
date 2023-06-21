@@ -13,6 +13,8 @@ extern bool resumable_finished;
 
 extern const char *last_wait_error;
 
+constexpr int FORK_START_ID = 1123456789;
+
 #define WAIT return false;
 #define RETURN(x) output_->save <ReturnT> (x); return true;
 #define RETURN_VOID() output_->save_void (); return true;
@@ -60,6 +62,10 @@ public:
 
   bool resume(int64_t resumable_id, Storage *input);
   void *get_stack_ptr() { return pos__; }
+
+  virtual bool is_internal_resumable() const noexcept {
+    return false;
+  }
 
   static void update_output();
 };

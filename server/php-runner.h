@@ -82,6 +82,7 @@ private:
  */
 class PhpScript {
   double cur_timestamp{0}, net_time{0}, script_time{0};
+  double last_net_time_delta{0};
   int queries_cnt{0};
   int long_queries_cnt{0};
 

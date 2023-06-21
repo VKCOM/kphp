@@ -36,7 +36,7 @@ public:
     return vk::none_of_equal(-1, job_result_fd_idx, read_job_result_fd, write_job_fd);
   }
 
-  int send_job(JobSharedMessage *job_request);
+  bool send_job(JobSharedMessage *job_request);
 
 private:
   JobWorkerClient() = default;

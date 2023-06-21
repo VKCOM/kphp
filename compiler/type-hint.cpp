@@ -223,6 +223,7 @@ const TypeHint *TypeHintCallable::create(std::vector<const TypeHint *> &&arg_typ
     hash.feed_hash(161121);
   }
   hash.feed_inner(return_type);
+  hash.feed_hash(161122);
 
   return hash.get_existing() ?: hash.add_because_doesnt_exist(
     new TypeHintCallable(std::move(arg_types), return_type)

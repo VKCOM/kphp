@@ -7,6 +7,7 @@
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/src-file.h"
+#include "compiler/data/generics-mixins.h"
 #include "compiler/generics-reification.h"
 #include "compiler/vertex-util.h"
 #include "compiler/lambda-utils.h"

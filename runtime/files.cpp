@@ -18,6 +18,7 @@
 
 #include "runtime/critical_section.h"
 #include "runtime/interface.h"
+#include "runtime/kphp_tracing.h"
 #include "runtime/streams.h"
 #include "runtime/string_functions.h"//php_buf, TODO
 
@@ -50,7 +51,10 @@ int32_t open_safe(const char *pathname, int32_t flags, mode_t mode) {
   return opened_fd;
 }
 
-ssize_t read_safe(int32_t fd, void *buf, size_t len) {
+ssize_t read_safe(int32_t fd, void *buf, size_t len, const string &file_name) {
+  if (kphp_tracing::is_turned_on()) {
+    kphp_tracing::on_file_io_start(fd, file_name, false);
+  }
   dl::enter_critical_section();//OK
   size_t full_len = len;
   do {
@@ -60,6 +64,9 @@ ssize_t read_safe(int32_t fd, void *buf, size_t len) {
         continue;
       }
       dl::leave_critical_section();
+      if (kphp_tracing::is_turned_on()) {
+        kphp_tracing::on_file_io_fail(fd, -errno);  // errno is positive, pass negative
+      }
       return -1;
     }
     php_assert (cur_res >= 0);
@@ -71,11 +78,17 @@ ssize_t read_safe(int32_t fd, void *buf, size_t len) {
     len -= cur_res;
   } while (len > (size_t)0);
   dl::leave_critical_section();
+  if (kphp_tracing::is_turned_on()) {
+    kphp_tracing::on_file_io_finish(fd, full_len - len);
+  }
 
   return full_len - len;
 }
 
-ssize_t write_safe(int32_t fd, const void *buf, size_t len) {
+ssize_t write_safe(int32_t fd, const void *buf, size_t len, const string &file_name) {
+  if (kphp_tracing::is_turned_on()) {
+    kphp_tracing::on_file_io_start(fd, file_name, true);
+  }
   dl::enter_critical_section();//OK
   size_t full_len = len;
   do {
@@ -85,6 +98,9 @@ ssize_t write_safe(int32_t fd, const void *buf, size_t len) {
         continue;
       }
       dl::leave_critical_section();
+      if (kphp_tracing::is_turned_on()) {
+        kphp_tracing::on_file_io_fail(fd, -errno);  // errno is positive, pass negative
+      }
       return -1;
     }
     php_assert (cur_res >= 0);
@@ -93,6 +109,9 @@ ssize_t write_safe(int32_t fd, const void *buf, size_t len) {
     len -= cur_res;
   } while (len > (size_t)0);
   dl::leave_critical_section();
+  if (kphp_tracing::is_turned_on()) {
+    kphp_tracing::on_file_io_finish(fd, full_len - len);
+  }
 
   return full_len - len;
 }
@@ -156,10 +175,10 @@ bool f$copy(const string &from, const string &to) {
   size_t size = stat_buf.st_size;
   while (size > 0) {
     size_t len = min(size, (size_t)PHP_BUF_LEN);
-    if (read_safe(read_fd, php_buf, len) < (ssize_t)len) {
+    if (read_safe(read_fd, php_buf, len, from) < (ssize_t)len) {
       break;
     }
-    if (write_safe(write_fd, php_buf, len) < (ssize_t)len) {
+    if (write_safe(write_fd, php_buf, len, to) < (ssize_t)len) {
       break;
     }
     size -= len;
@@ -213,7 +232,7 @@ Optional<array<string>> f$file(const string &name) {
 
   dl::enter_critical_section();//OK
   char *s = &res[0];
-  if (read_safe(file_fd, s, size) < (ssize_t)size) {
+  if (read_safe(file_fd, s, size, name) < (ssize_t)size) {
     close_safe(file_fd);
     dl::leave_critical_section();
     return false;
@@ -856,7 +875,7 @@ Optional<string> file_file_get_contents(const string &name) {
   string res(static_cast<string::size_type>(size), false);
 
   dl::enter_critical_section();//OK
-  if (read_safe(file_fd, &res[0], size) < (ssize_t)size) {
+  if (read_safe(file_fd, &res[0], size, name) < (ssize_t)size) {
     close_safe(file_fd);
     dl::leave_critical_section();
     return false;
@@ -882,7 +901,7 @@ static Optional<int64_t> file_file_put_contents(const string &name, const string
     return false;
   }
 
-  if (write_safe(file_fd, content.c_str(), content.size()) < (ssize_t)content.size()) {
+  if (write_safe(file_fd, content.c_str(), content.size(), name) < (ssize_t)content.size()) {
     close(file_fd);
     unlink(name.c_str());
     dl::leave_critical_section();

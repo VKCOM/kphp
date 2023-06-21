@@ -81,6 +81,8 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         json-functions.cpp
         json-writer.cpp
         kphp-backtrace.cpp
+        kphp_tracing.cpp
+        kphp_tracing_binlog.cpp
         mail.cpp
         math_functions.cpp
         mbstring.cpp

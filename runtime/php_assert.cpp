@@ -23,6 +23,7 @@
 #include "runtime/critical_section.h"
 #include "runtime/exception.h"
 #include "runtime/kphp-backtrace.h"
+#include "runtime/kphp_tracing.h"
 #include "runtime/on_kphp_warning_callback.h"
 #include "runtime/resumable.h"
 #include "runtime/interface.h"
@@ -153,7 +154,11 @@ static void php_warning_impl(bool out_of_memory, int error_type, char const *mes
 
   dl::leave_critical_section();
   if (allocations_allowed) {
-    OnKphpWarningCallback::get().invoke_callback(string(buf));
+    string warning_message = string(buf);
+    OnKphpWarningCallback::get().invoke_callback(warning_message);
+    if (kphp_tracing::is_turned_on()) {
+      kphp_tracing::on_php_script_warning(warning_message);
+    }
   }
 
   if (is_demangled_stacktrace_logs_enabled) {

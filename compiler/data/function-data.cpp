@@ -8,6 +8,7 @@
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/generics-mixins.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"

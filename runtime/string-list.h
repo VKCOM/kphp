@@ -47,6 +47,10 @@ public:
     str_ = string{};
   }
 
+  size_t size() const noexcept {
+    return len_;
+  }
+
   ~string_list() {
     reset();
   }

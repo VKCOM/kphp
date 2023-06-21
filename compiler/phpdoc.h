@@ -29,6 +29,7 @@ enum class PhpDocType {
   kphp_throws,
   kphp_template,
   kphp_generic,
+  kphp_tracing,
   kphp_param,
   kphp_return,
   kphp_memcache_class,

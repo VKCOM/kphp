@@ -1436,6 +1436,10 @@ void reopen_json_log() {
     if (!vk::singleton<JsonLogger>::get().reopen_log_file(worker_json_log_file_name)) {
       vkprintf(-1, "failed to open log '%s': error=%s", worker_json_log_file_name, strerror(errno));
     }
+    snprintf(worker_json_log_file_name, PATH_MAX, "%s.traces.jsonl", logname);
+    if (!vk::singleton<JsonLogger>::get().reopen_traces_file(worker_json_log_file_name)) {
+      vkprintf(-1, "failed to open log '%s': error=%s", worker_json_log_file_name, strerror(errno));
+    }
   }
 }
 
