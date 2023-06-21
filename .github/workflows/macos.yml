@@ -1,12 +1,13 @@
 name: macos
 
 on:
-  push:
+  pull_request:
     branches:
     - master
 
 env:
   HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: true
+  HOMEBREW_NO_INSTALL_FROM_API: ""
 
 jobs:
   build-macos:
@@ -22,8 +23,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-      
-      # because of https://github.com/orgs/Homebrew/discussions/4612
+
+    # because of https://github.com/orgs/Homebrew/discussions/4612
     - name: Check Environment
       run: |
         export HOMEBREW_NO_INSTALL_FROM_API=0
@@ -36,13 +37,13 @@ jobs:
         brew install python@3.13 re2c coreutils libiconv googletest shivammathur/php/php@7.4
         brew link --overwrite --force shivammathur/php/php@7.4
         /opt/homebrew/opt/python@3.13/libexec/bin/python -m pip install --upgrade pip --user --break-system-packages && /opt/homebrew/opt/python@3.13/libexec/bin/pip install --break-system-packages jsonschema six
-      
+
     - name: Run cmake
       run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DDOWNLOAD_MISSING_LIBRARIES=On -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build
 
     - name: Build all
       run: make -C ${{runner.workspace}}/build -j$(nproc) all
-      
+
     - name: Run unit tests
       run: make -C ${{runner.workspace}}/build -j$(nproc) test
 
