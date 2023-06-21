@@ -1400,6 +1400,11 @@ class KphpJobWorkerResponseError implements KphpJobWorkerResponse {
   const JOB_CLIENT_MEMORY_LIMIT_ERROR = -1001; // client doesn't have enough memory to accept job response
   const JOB_NOTHING_REPLIED_ERROR = -2001;     // kphp_job_worker_store_response() was not succeeded
 
+  const JOB_STORE_RESPONSE_INCORRECT_CALL_ERROR = -3000;
+  const JOB_STORE_RESPONSE_NOT_ENOUGH_SHARED_MESSAGES_ERROR = -3001;
+  const JOB_STORE_RESPONSE_TOO_BIG_ERROR = -3002;
+  const JOB_STORE_RESPONSE_CANT_SEND_ERROR = -3003;
+
   public function getError() ::: string;
   public function getErrorCode() ::: int; // returns one of listed above error codes
 }
@@ -1409,7 +1414,8 @@ function kphp_job_worker_start_no_reply(KphpJobWorkerRequest $request, float $ti
 function kphp_job_worker_start_multi(KphpJobWorkerRequest[] $request, float $timeout) ::: (future<KphpJobWorkerResponse> | false)[];
 
 function kphp_job_worker_fetch_request() ::: KphpJobWorkerRequest;
-function kphp_job_worker_store_response(KphpJobWorkerResponse $response) ::: void;
+// returns 0 on success, < 0 - on errors. All possible error codes are constants like KphpJobWorkerResponseError::JOB_STORE_RESPONSE_*
+function kphp_job_worker_store_response(KphpJobWorkerResponse $response) ::: int;
 
 function is_kphp_job_workers_enabled() ::: bool;
 
