@@ -10,10 +10,9 @@
 #include "runtime/storage.h"
 
 extern bool resumable_finished;
+extern int64_t first_forked_resumable_id;
 
 extern const char *last_wait_error;
-
-constexpr int FORK_START_ID = 1123456789;
 
 #define WAIT return false;
 #define RETURN(x) output_->save <ReturnT> (x); return true;
