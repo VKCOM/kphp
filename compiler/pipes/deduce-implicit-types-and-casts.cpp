@@ -603,7 +603,7 @@ void DeduceImplicitTypesAndCastsPass::patch_call_args(VertexAdaptor<op_func_call
     auto as_named = call_args[call_arg_idx].as<op_named_arg>();
 
     if (auto [_, absent] = unique_names.insert(as_named->name()->get_string()); !absent) {
-      kphp_error(false, fmt_format("Named arguments with the same name: \"{}\"", as_named->name()->get_string()));
+      kphp_error(false, fmt_format("Named arguments with duplicated name: \'{}\'", as_named->name()->get_string()));
     }
 
     std::optional<VertexAdaptor<op_func_param>> corresp_func_param = find_corresponding_param(as_named->name()->get_string());
@@ -622,7 +622,10 @@ void DeduceImplicitTypesAndCastsPass::patch_call_args(VertexAdaptor<op_func_call
     }
   }
 
-  kphp_error(!(f_called_params.back()->extra_type == op_ex_param_variadic && !mismatched_named_arg.empty()), fmt_format("Unknown parameter name: %s", call_args[mismatched_named_arg.front()].as<op_named_arg>()->name()->get_string()));
+
+  const bool ok = mismatched_named_arg.size() == 0 || f_called_params.back()->extra_type == op_ex_param_variadic;
+
+  kphp_error(ok, fmt_format("Unknown parameter name: {}", call_args[mismatched_named_arg.front()].as<op_named_arg>()->name()->get_string()));
 
 
   for (call_arg_idx = 0; call_arg_idx < call_args.size(); ++call_arg_idx) {

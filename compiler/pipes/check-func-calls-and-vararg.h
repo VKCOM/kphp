@@ -12,6 +12,7 @@ class CheckFuncCallsAndVarargPass final : public FunctionPassBase {
 
   VertexPtr maybe_autofill_missing_call_arg(VertexAdaptor<op_func_call> call, FunctionPtr f_called, VertexAdaptor<op_func_param> param);
   VertexPtr create_CompileTimeLocation_call_arg(const Location &call_location);
+  VertexAdaptor<op_func_call> reorder_with_defaults(VertexAdaptor<op_func_call> call, FunctionPtr f);
 
 public:
   std::string get_description() override {
