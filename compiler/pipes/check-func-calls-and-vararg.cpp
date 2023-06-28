@@ -213,7 +213,6 @@ VertexAdaptor<op_func_call> CheckFuncCallsAndVarargPass::reorder_with_defaults(V
     call_arg_idx++;
   } else {
     int lst_idx = std::distance(std::find_if(call_arg_to_func_param.rbegin(), call_arg_to_func_param.rend(), [](VertexPtr v) { return static_cast<bool>(v); }), call_arg_to_func_param.rend());
-    kphp_assert_msg(lst_idx != 0 || func_params.size() == 0, "Cannot reorder params correctly");
     call_arg_to_func_param.resize(lst_idx);
     for (int i = 0; i < lst_idx; ++i) {
       if (!call_arg_to_func_param[i]) {
