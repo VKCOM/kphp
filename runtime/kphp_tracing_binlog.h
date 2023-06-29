@@ -362,7 +362,9 @@ struct BinlogWriter {
       wait_time_encoded = microseconds;
     } else {
       wait_time_encoded = microseconds / 1000;
-      wait_time_encoded &= MAX_MILLI_TIME_MASK;
+      if (wait_time_encoded > MAX_MILLI_TIME_MASK) {
+        wait_time_encoded = MAX_MILLI_TIME_MASK;
+      }
       wait_time_encoded |= UPPER_BOUND_MICRO_TIME_MASK;
     }
     cur_binlog.write_event_type(EventTypeEnum::etScriptWaitNet, wait_time_encoded);
