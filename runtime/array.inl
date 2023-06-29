@@ -1964,6 +1964,9 @@ void array<T>::ksort(const T1 &compare) {
     mutate_if_map_shared();
   }
 
+  const auto prev_show_migration_php8_warning = show_migration_php8_warning;
+  free_migration_php8();
+
   array<key_type> keys(array_size(n, 0, true));
   for (string_hash_entry *it = p->begin(); it != p->end(); it = p->next(it)) {
     if (p->is_string_hash_entry(it)) {
@@ -2008,6 +2011,8 @@ void array<T>::ksort(const T1 &compare) {
   }
   prev->next = p->get_pointer(p->end());
   p->end()->prev = p->get_pointer(prev);
+
+  show_migration_php8_warning = prev_show_migration_php8_warning;
 }
 
 
