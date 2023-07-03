@@ -138,6 +138,7 @@ jobs:
 
     - name: Setup Environment
       run: |
+        brew update-reset # because of https://github.com/andreylzmw/kphp/actions/runs/5443231564/jobs/9899501452
         brew tap shivammathur/php
         brew update
         brew install re2c cmake coreutils openssl libiconv re2 pcre yaml-cpp zstd googletest shivammathur/php/php@7.4
