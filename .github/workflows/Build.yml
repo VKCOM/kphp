@@ -140,7 +140,6 @@ jobs:
       run: |
         brew tap shivammathur/php
         # because of https://github.com/andreylzmw/kphp/actions/runs/5443231564/jobs/9899501452
-        brew untap homebrew/homebrew-cask-drivers
         brew reinstall cask
         brew update
         brew install re2c cmake coreutils openssl libiconv re2 pcre yaml-cpp zstd googletest shivammathur/php/php@7.4
