@@ -1,4 +1,4 @@
-@ok php8
+@php8 ok
 <?php
 
 function test($a, $b, $c = "c", $d = "d", $e = "e") {
