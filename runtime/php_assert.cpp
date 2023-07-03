@@ -207,9 +207,14 @@ const char *php_uncaught_exception_error(const class_instance<C$Throwable> &ex) 
   const int64_t current_time = time(nullptr);
   const char *message = ex->$message.empty() ? "(empty)" : ex->$message.c_str();
   const char *src_file = kbasename(ex->$file.c_str());
-  vk::singleton<JsonLogger>::get().write_log(
-    dl_pstr("Unhandled %s from %s:%" PRIi64 "; Error %" PRIi64 "; Message: %s", ex->get_class(), src_file, ex->$line, ex->$code, message),
-    E_ERROR, current_time, ex->raw_trace.get_const_vector_pointer(), ex->raw_trace.count(), true);
+  vk::string_view log_message = dl_pstr("Unhandled %s from %s:%" PRIi64 "; Error %" PRIi64 "; Message: %s", ex->get_class(), src_file, ex->$line, ex->$code, message);
+  if (is_demangled_stacktrace_logs_enabled) {
+    vk::singleton<JsonLogger>::get().write_log_with_demangled_backtrace(log_message, E_ERROR, current_time,
+                                                                        ex->raw_trace.get_const_vector_pointer(), ex->raw_trace.count(), true);
+  } else {
+    vk::singleton<JsonLogger>::get().write_log(log_message, E_ERROR, current_time,
+                                               ex->raw_trace.get_const_vector_pointer(), ex->raw_trace.count(), true);
+  }
 
   const char *msg = dl_pstr("%s%" PRIi64 "%sError %" PRIi64 ": %s.\nUnhandled %s caught in file %s at line %" PRIi64 ".\n"
                             "Backtrace:\n%s",

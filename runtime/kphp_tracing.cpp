@@ -169,7 +169,7 @@ static inline float calc_time_offset(double now_timestamp) noexcept {
 }
 
 static inline int calc_coroutine_id(int64_t fork_id) noexcept {
-  return fork_id > 0 ? static_cast<int>(fork_id - FORK_START_ID + 1) : 0;
+  return fork_id > 0 ? static_cast<int>(fork_id - first_forked_resumable_id + 1) : 0;
 }
 
 [[gnu::noinline]] [[gnu::cold]] static void provide_advanced_mem_details() {

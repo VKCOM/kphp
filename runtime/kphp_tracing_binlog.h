@@ -350,7 +350,24 @@ struct BinlogWriter {
   }
 
   static void onWaitNet(int microseconds) {
-    cur_binlog.write_event_type(EventTypeEnum::etScriptWaitNet, microseconds);
+    static constexpr int32_t UPPER_BOUND_MICRO_TIME_MASK = 0x00f00000; // 15'728'640
+    static constexpr int32_t MAX_MILLI_TIME_MASK         = 0x000fffff; //  1'048'575
+    // Here is dynamic precision hack to store wait times > 16 sec in 24 bits:
+    //    - if time < UPPER_BOUND_MICRO_TIME_MASK (~15.73 sec) it's stored as microseconds
+    //    - else it's stored as milliseconds in lowest 20 bits (e.g. max value is ~ 1048.58 sec)
+    // Note: It's compatible with any binlog reader version.
+    //       The only problem is that old binlog reader will see values between ~15.73 sec and ~16.78 sec for large wait times
+    int wait_time_encoded;
+    if (microseconds < UPPER_BOUND_MICRO_TIME_MASK) {
+      wait_time_encoded = microseconds;
+    } else {
+      wait_time_encoded = microseconds / 1000;
+      if (wait_time_encoded > MAX_MILLI_TIME_MASK) {
+        wait_time_encoded = MAX_MILLI_TIME_MASK;
+      }
+      wait_time_encoded |= UPPER_BOUND_MICRO_TIME_MASK;
+    }
+    cur_binlog.write_event_type(EventTypeEnum::etScriptWaitNet, wait_time_encoded);
   }
 
   static void onScriptShuttingDown(float timeOffset, bool isRegularShutdown) {
