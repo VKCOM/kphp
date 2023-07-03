@@ -1,6 +1,8 @@
 FROM ubuntu:22.04
 ARG DEBIAN_FRONTEND=noninteractive
 
+COPY "tests/python/requirements.txt" /tmp/
+
 # package software-properties-common, repo ppa:ondrej/php are only required for installing
 # php 7.4 on ubuntu 22, where default php version is 8.1
 
@@ -13,8 +15,11 @@ RUN apt update && \
     apt install -y --no-install-recommends \
       git cmake make g++ lld gperf netcat \
       python3-minimal python3-dev libpython3-dev python3-jsonschema python3-setuptools python3-pip && \
-    pip3 install -r ../../tests/python/requirements.txt && \
-    apt install -y --no-install-recommends curl-kphp-vk kphp-timelib libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
+    pip3 install -r /tmp/requirements.txt
+
+COPY . /tmp/
+
+RUN apt install -y --no-install-recommends curl-kphp-vk kphp-timelib libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
       libzstd-dev libyaml-cpp-dev libnghttp2-dev zlib1g-dev php7.4-dev mysql-server libmysqlclient-dev libnuma-dev unzip \
       libldap-dev libkrb5-dev postgresql postgresql-server-dev-all && \
     rm -rf /var/lib/apt/lists/*
