@@ -190,7 +190,7 @@ VertexAdaptor<op_func_call> CheckFuncCallsAndVarargPass::reorder_with_defaults(V
   return -1;
   };
 
-  std::vector<VertexPtr> call_arg_to_func_param(func_params.size());
+  std::vector<VertexPtr> call_arg_to_func_param(std::max(func_params.size(), call_params.size()));
 
   int call_arg_idx = 0;
   // positional args
@@ -382,11 +382,6 @@ VertexPtr CheckFuncCallsAndVarargPass::on_func_call(VertexAdaptor<op_func_call> 
 //    }
 //  }
   call = reorder_with_defaults(call, f);
-
-  if (f->name == "foo") {
-    puts("DEBUG: ");
-    call.debugPrint();
-  }
 
   int call_n_params = call_params.size();
   int delta_this = f->has_implicit_this_arg() ? 1 : 0;    // not to count implicit $this on error output
