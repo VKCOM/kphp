@@ -117,9 +117,6 @@ jobs:
 
     - name: Setup Environment
       run: |
-        brew reinstall cask
-        brew cask doctor
-        brew doctor
         brew update-reset
         brew tap shivammathur/php
         # because of https://github.com/andreylzmw/kphp/actions/runs/5443231564/jobs/9899501452
