@@ -12,7 +12,7 @@ template<class T>
 struct is_trivially_copyable {
 #if __GNUG__ && __GNUC__ < 5
   // works identically in common cases, but there are subtle differneces: https://stackoverflow.com/questions/12754886/has-trivial-copy-behaves-differently-in-clang-and-gcc-whos-right
-  static constexpr bool value = __has_trivial_copy(T);
+  static constexpr bool value = __is_trivially_copyable(T);
 #else
   static constexpr bool value = std::is_trivially_copyable<T>::value;
 #endif
