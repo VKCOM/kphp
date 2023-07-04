@@ -118,6 +118,8 @@ jobs:
     - name: Setup Environment
       run: |
         brew update-reset
+        brew link --overwrite openssl@3
+        brew cleanup
         brew doctor
         brew reinstall cask
         brew tap shivammathur/php
