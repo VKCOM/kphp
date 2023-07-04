@@ -118,10 +118,10 @@ jobs:
     - name: Setup Environment
       run: |
         brew update-reset
-        brew doctor
-        brew reinstall cask
         brew cleanup
         brew link openssl@3
+        brew doctor
+        brew reinstall cask
         brew tap shivammathur/php
         # because of https://github.com/andreylzmw/kphp/actions/runs/5443231564/jobs/9899501452
         brew update
