@@ -122,6 +122,7 @@ jobs:
         brew cleanup
         brew doctor
         brew reinstall cask
+        brew update
         brew tap shivammathur/php
         # because of https://github.com/andreylzmw/kphp/actions/runs/5443231564/jobs/9899501452
         brew update
