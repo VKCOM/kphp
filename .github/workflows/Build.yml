@@ -119,7 +119,8 @@ jobs:
       run: |
         brew update-reset
         brew cleanup
-        brew link ---overwrite openssl@3
+        brew unlink openssl@1.1
+        brew link openssl@3
         brew doctor
         brew reinstall cask
         brew tap shivammathur/php
