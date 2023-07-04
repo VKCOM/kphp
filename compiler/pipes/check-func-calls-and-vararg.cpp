@@ -217,7 +217,7 @@ VertexAdaptor<op_func_call> CheckFuncCallsAndVarargPass::reorder_with_defaults(V
     for (int i = 0; i < lst_idx; ++i) {
       if (!call_arg_to_func_param[i]) {
         kphp_error(func_params[i].as<op_func_param>()->has_default_value(), "Not enough arguments for function call");
-        call_arg_to_func_param[i] = func_params[i].as<op_func_param>()->default_value();
+        call_arg_to_func_param[i] = func_params[i].as<op_func_param>()->default_value().clone();
       }
     }
   }
@@ -232,7 +232,7 @@ VertexAdaptor<op_func_call> CheckFuncCallsAndVarargPass::reorder_with_defaults(V
     for (int missing_i = call_params.size(); missing_i < func_params.size(); ++missing_i) {
       if (VertexPtr auto_added = maybe_autofill_missing_call_arg(new_call, f, func_params[missing_i].as<op_func_param>())) {
         for (int def_i = call_params.size(); def_i < missing_i; ++def_i) {
-          new_call = VertexUtil::add_call_arg(func_params[def_i].as<op_func_param>()->default_value(), new_call, false);
+          new_call = VertexUtil::add_call_arg(func_params[def_i].as<op_func_param>()->default_value().clone(), new_call, false);
         }
         new_call = VertexUtil::add_call_arg(auto_added, new_call, false);
         call_params = new_call->args();
