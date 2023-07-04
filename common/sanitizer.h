@@ -4,24 +4,17 @@
 
 #pragma once
 
-#if defined(__SANITIZE_ADDRESS__)
+#if defined(__SANITIZE_ADDRESS__) || defined(__has_feature)
 # define ASAN_ENABLED 1
 # include <sanitizer/asan_interface.h>
-#elif defined(__has_feature)
-# if __has_feature(address_sanitizer)
-#  define ASAN_ENABLED 1
-# include <sanitizer/asan_interface.h>
-# endif
-#endif
-
-#if !defined(ASAN_ENABLED)
+#else
 # define ASAN_ENABLED 0
 #endif
 
 #if defined(__clang__)
-  #define ubsan_supp(x) __attribute__((no_sanitize(x)))
+# define ubsan_supp(x) __attribute__((no_sanitize(x)))
 #else
-  #define ubsan_supp(x) __attribute__((no_sanitize_undefined))
+# define ubsan_supp(x) __attribute__((no_sanitize_undefined))
 #endif
 
 #if !defined(USAN_ENABLED)
