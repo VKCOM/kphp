@@ -1,7 +1,7 @@
 FROM ubuntu:22.04
 ARG DEBIAN_FRONTEND=noninteractive
 
-COPY "tests/python/requirements.txt" /tmp/
+COPY tests/python/requirements.txt /tmp/
 
 # package software-properties-common, repo ppa:ondrej/php are only required for installing
 # php 7.4 on ubuntu 22, where default php version is 8.1
