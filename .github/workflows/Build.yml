@@ -141,7 +141,7 @@ jobs:
       run: |
         export HOMEBREW_NO_INSTALL_FROM_API=0 
         env
-        brew untap homebrew/cask
+        brew untap --force homebrew/cask
 
     - name: Setup Environment
       run: |
