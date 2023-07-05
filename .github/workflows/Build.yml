@@ -137,6 +137,9 @@ jobs:
         path: 'h3'
         ref: stable-3.x
 
+    - name: Check Environment
+      run: env | grep NO_INSTALL | brew tap
+
     - name: Setup Environment
       run: |
         brew tap shivammathur/php
