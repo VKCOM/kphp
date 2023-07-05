@@ -7,6 +7,7 @@ on:
 
 env:
   HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: true
+  HOMEBREW_NO_INSTALL_FROM_API: ""
   kphp_root_dir: /home/kitten/kphp
   kphp_polyfills_dir: /home/kitten/kphp/kphp-polyfills
   kphp_build_dir: /home/kitten/kphp/build
@@ -139,6 +140,7 @@ jobs:
     - name: Setup Environment
       run: |
         brew tap shivammathur/php
+        brew update
         # because of https://github.com/andreylzmw/kphp/actions/runs/5443231564/jobs/9899501452
         brew install re2c cmake coreutils openssl libiconv re2 pcre yaml-cpp zstd googletest shivammathur/php/php@7.4
         brew link --overwrite --force shivammathur/php/php@7.4
