@@ -32,6 +32,11 @@ jobs:
           #   cpp: 20
           #   asan: on
           #   ubsan: off
+          - os: buster
+            compiler: clang++-16
+            cpp: 17
+            asan: off
+            ubsan: off
           - os: jammy
             # compiler: g++
             compiler: clang++-16

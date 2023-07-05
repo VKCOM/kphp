@@ -26,4 +26,15 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/* && \
     update-alternatives --set php /usr/bin/php7.4
 
+# install clang-16
+
+RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
+RUN apt-add-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-16 main"
+RUN apt-get update
+RUN apt-get install -y clang-16 clang-tools-16 clang-16-doc libclang-common-16-dev libclang-16-dev libclang1-16 clang-format-16 python3-clang-16 clangd-16 clang-tidy-16
+
+# sanitizers
+RUN apt-get install libclang-rt-16-dev
+
+
 RUN useradd -ms /bin/bash kitten
