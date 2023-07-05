@@ -488,7 +488,7 @@ int net_reactor_run_timers(net_reactor_ctx_t *ctx) {
   wait_time = ctx->timer_heap[1]->wakeup_time - precise_now;
   if (wait_time > 0) {
     // do not remove this useful debug!
-    tvkprintf(net_events, 3, "%d event timers, next in %.3f seconds\n", ctx->timer_heap_size, wait_time);
+    tvkprintf(net_events, 4, "%d event timers, next in %.3f seconds\n", ctx->timer_heap_size, wait_time);
     return (int)(std::min(100.0, wait_time) * 1000) + 1; // min to prevent integer overflow
   }
 

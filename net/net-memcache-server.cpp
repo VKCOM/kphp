@@ -127,7 +127,7 @@ int mcs_execute (struct connection *c, int op) {
     skip = D->query_len - D->key_offset - D->key_len;
     assert (advance_skip_read_ptr (&c->In, skip) == skip);
 
-    vkprintf(1, "mc_set: op=%d, key '%s', key_len=%d, flags=%lld, time=%lld, value_len=%lld\n", op, key_buffer, D->key_len, D->args[0], D->args[1], D->args[2]);
+    vkprintf(4, "mc: set op=%d, key '%s', key_len=%d, flags=%lld, time=%lld, value_len=%lld\n", op, key_buffer, D->key_len, D->args[0], D->args[1], D->args[2]);
 
   restart_set:
 
@@ -177,7 +177,7 @@ int mcs_execute (struct connection *c, int op) {
     key_buffer[D->key_len] = 0;
     D->query_type = op -= mct_set_resume - mct_set;
 
-    vkprintf(1, "mc_set_resume: op=%d, key '%s', key_len=%d, flags=%lld, time=%lld, value_len=%lld\n", op, key_buffer, D->key_len, D->args[0], D->args[1], D->args[2]);
+    vkprintf(4, "mc: set_resume op=%d, key '%s', key_len=%d, flags=%lld, time=%lld, value_len=%lld\n", op, key_buffer, D->key_len, D->args[0], D->args[1], D->args[2]);
 
     goto restart_set;
 
@@ -270,10 +270,10 @@ int mcs_execute (struct connection *c, int op) {
     key_buffer[D->key_len] = 0;
 
     if (op == mct_delete) {
-      vkprintf(1, "mc_delete: key '%s', key_len=%d\n", key_buffer, D->key_len);
+      vkprintf(4, "mc de key '%s', key_len=%d\n", key_buffer, D->key_len);
       res = MCS_FUNC(c)->mc_delete (c, key_buffer, D->key_len);
     } else { 
-      vkprintf(1, "mc_incr: op=%d, key '%s', key_len=%d, arg=%lld\n", op, key_buffer, D->key_len, D->args[0]);
+      vkprintf(4, "mc_incr: op=%d, key '%s', key_len=%d, arg=%lld\n", op, key_buffer, D->key_len, D->args[0]);
       res = MCS_FUNC(c)->mc_incr (c, op - mct_incr, key_buffer, D->key_len, D->args[0]);
     }
     
@@ -329,7 +329,7 @@ int mcs_parse_execute (struct connection *c) {
   int len;
   long long tt;
 
-  vkprintf(2, "c->pending_queries = %d, c->status = %d\n", c->pending_queries, c->status);
+  vkprintf(4, "in mcs_execute c->pending_queries = %d, c->status = %d\n", c->pending_queries, c->status);
   while (c->status == conn_expect_query || c->status == conn_reading_query) {
     len = nbit_ready_bytes (&c->Q);
     ptr = ptr_s = static_cast<char*>(nbit_get_ptr (&c->Q));
@@ -588,7 +588,7 @@ int mcs_parse_execute (struct connection *c) {
           if (!strncmp (key_buffer, "@#$AuTh$#@", 10)) {
             assert (advance_skip_read_ptr (&c->In, D->query_len) == D->query_len);
 
-            vkprintf(1, "got AUTH: delete '%s'\n", key_buffer);
+            vkprintf(4, "mc got AUTH: delete '%s'\n", key_buffer);
 
             if (c->In.total_bytes) {
               c->status = conn_error;
@@ -630,9 +630,9 @@ int mcs_parse_execute (struct connection *c) {
         if (!MCS_FUNC(c)->execute) {
           MCS_FUNC(c)->execute = mcs_execute;
         }
-        vkprintf(2, "c->pending_queries = %d, c->status = %d\n", c->pending_queries, c->status);
+        vkprintf(4, "mc c->pending_queries = %d, c->status = %d\n", c->pending_queries, c->status);
         int res = MCS_FUNC(c)->execute (c, D->query_type);
-        vkprintf(2, "c->pending_queries = %d, c->status = %d, res = %d\n", c->pending_queries, c->status, res);
+        vkprintf(4, "mc c->pending_queries = %d, c->status = %d, res = %d\n", c->pending_queries, c->status, res);
         if (res > 0) {
           c->status = conn_reading_query;
           return res;   // need more bytes
@@ -648,7 +648,6 @@ int mcs_parse_execute (struct connection *c) {
           c->status = conn_expect_query;
         }
 
-        vkprintf(2, "c->pending_queries = %d, c->status = %d\n", c->pending_queries, c->status);
         assert ((c->pending_queries && (c->status == conn_wait_net || c->status == conn_wait_aio)) || (!c->pending_queries && c->status == conn_expect_query) || c->status == conn_error);
 
         if (c->status == conn_wait_net || c->status == conn_wait_aio) {
@@ -729,7 +728,7 @@ int return_one_key_list (struct connection *c, const char *key, int key_len, int
   const size_t buff_size = 16;
   static char buff[buff_size];
 
-  vkprintf(1, "result = %d\n", res);
+  vkprintf(4, "result = %d\n", res);
 
   if (!R_cnt) {
     if (res == 0x7fffffff) {
@@ -802,7 +801,7 @@ int return_one_key_list_long(struct connection *c, const char *key, int key_len,
   const size_t buf_size = 16;
   static char buff[buf_size];
 
-  vkprintf(1, "result = %d\n", res);
+  vkprintf(4, "result = %d\n", res);
 
   if (!R_cnt) {
     if (res == 0x7fffffff) {

@@ -445,7 +445,7 @@ static void resumable_add_finished(int64_t resumable_id) {
     finished_resumables_size *= 2;
   }
 
-  tvkprintf(resumable, 1, "Resumable %" PRIi64 " put to position %" PRIu32 " of finished list\n", resumable_id, finished_resumables_count);
+  tvkprintf(resumable, 2, "Resumable %" PRIi64 " put to position %" PRIu32 " of finished list\n", resumable_id, finished_resumables_count);
   finished_resumables[finished_resumables_count++] = resumable_id;
 }
 
@@ -532,7 +532,7 @@ static void continue_resumable(resumable_info *res, int64_t resumable_id) noexce
 }
 
 void resumable_run_ready(int64_t resumable_id) {
-  tvkprintf(resumable, 1, "Run ready %" PRIi64 "\n", resumable_id);
+  tvkprintf(resumable, 2, "Run ready %" PRIi64 "\n", resumable_id);
   if (resumable_id > 1000000000) {
     forked_resumable_info *res = get_forked_resumable_info(resumable_id);
     php_assert(res->queue_id >= 0);
@@ -575,7 +575,7 @@ void run_scheduler(double dead_line_time) {
     started_resumable_info *res = get_started_resumable_info(resumable_id);
     php_assert(res->continuation == nullptr);
 
-    tvkprintf(resumable, 1, "Process %" PRIi64 "(%s) with parent %" PRIi64 " in scheduler\n",
+    tvkprintf(resumable, 2, "Process %" PRIi64 "(%s) with parent %" PRIi64 " in scheduler\n",
               resumable_id, is_yielded ? "yielded" : "not yielded", res->parent_id);
     int64_t parent_id = res->parent_id;
     if (parent_id == 0) {

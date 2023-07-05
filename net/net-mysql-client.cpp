@@ -168,7 +168,7 @@ int sqlc_flush_packet (struct connection *c, int packet_len) {
       }
       assert (packet_len == pad_bytes);
     }
-    vkprintf (2, "sqlc_flush_query: padding with %d bytes\n", pad_bytes);
+    vkprintf(4, "sqlc_flush_query: padding with %d bytes\n", pad_bytes);
     if (pad_bytes > 0) {
       static char pad_str[16];
       assert (pad_bytes <= 15);
@@ -191,13 +191,13 @@ static int sqlc_inner_authorise (struct connection *c) {
   struct mysql_auth_packet_end *T;
   char scramble_len = 20;
 
-  vkprintf(2, "server_auth_packet received, len=%d\n", D->packet_len);
+  vkprintf(4, "server_auth_packet received, len=%d\n", D->packet_len);
   if (len >= 0x800) {
-    vkprintf(1, "server_auth_packet too large\n");
+    vkprintf(4, "server_auth_packet too large\n");
     return -1;
   }
   if (len < 46) {
-    vkprintf(1, "server_auth_packet too small\n");
+    vkprintf(4, "server_auth_packet too small\n");
     return -1;
   }
   assert (force_ready_bytes (&c->In, len+4) >= len+4);
@@ -205,7 +205,7 @@ static int sqlc_inner_authorise (struct connection *c) {
   q = p + len;
 
   if (*p != 10) {
-    vkprintf(1, "server_auth_packet has bad protocol version\n");
+    vkprintf(4, "server_auth_packet has bad protocol version\n");
     return -1;
   }
 
@@ -218,7 +218,7 @@ static int sqlc_inner_authorise (struct connection *c) {
   }
 
   if (p == q) {
-    vkprintf(1, "unterminated version string in server_auth_packet\n");
+    vkprintf(4, "unterminated version string in server_auth_packet\n");
     return -1;
   }
 
@@ -233,27 +233,27 @@ static int sqlc_inner_authorise (struct connection *c) {
   size_t expected_length = sizeof (struct mysql_auth_packet_end);
   if (((struct mysql_auth_packet_end*)p)->proto_len){
     if (strncmp(((struct mysql_auth_packet_end*)p)->proto, "mysql_native_password", 21)){
-      vkprintf(1, "unknown auth_proto %s\n", ((struct mysql_auth_packet_end*)p)->proto);
+      vkprintf(4, "unknown auth_proto %s\n", ((struct mysql_auth_packet_end*)p)->proto);
       return -1;
     }
     expected_length += 22;
   }
 
   if (q - p != expected_length) {
-    vkprintf (1, "server_auth_packet has incorrect size\n");
+    vkprintf(4, "server_auth_packet has incorrect size\n");
     return -1;
   }
 
   int res = !SQLC_FUNC(c)->is_mysql_same_datacenter_check_disabled() && SQLC_FUNC(c)->sql_check_perm ? SQLC_FUNC(c)->sql_check_perm (c) : 1;
 
   if (res < 0 || !(res &= 3)) {
-    vkprintf (1, "check_perm forbids access for connection %d\n", c->fd);
+    vkprintf(4, "check_perm forbids access for connection %d\n", c->fd);
     return -1;
   }
 
   D->crypto_flags = res;
 
-  vkprintf(2, "crypto flags here = %d\n", D->crypto_flags);
+  vkprintf(4, "crypto flags here = %d\n", D->crypto_flags);
 
   if ((res & 2) && p - r >= 8 && !memcmp(r, "5.0.239-", 8) && SQLC_FUNC(c)->sql_init_crypto && SQLC_FUNC(c)->sql_init_crypto (c, r + 8, p - r - 9) > 0) {
     D->crypto_flags &= 2;
@@ -262,10 +262,10 @@ static int sqlc_inner_authorise (struct connection *c) {
     D->crypto_flags &= 1;
   }
 
-  vkprintf(2, "crypto flags adjusted %d\n", D->crypto_flags);
+  vkprintf(4, "crypto flags adjusted %d\n", D->crypto_flags);
 
   if (!(D->crypto_flags & 3)) {
-    vkprintf(1, "unable to initialise cryptography, closing connection %d\n", c->fd);
+    vkprintf(4, "unable to initialise cryptography, closing connection %d\n", c->fd);
     return -1;
   }
 
@@ -275,7 +275,7 @@ static int sqlc_inner_authorise (struct connection *c) {
   const char *sql_user = SQLC_FUNC(c)->sql_get_user(c);
   const char *sql_password = SQLC_FUNC(c)->sql_get_password(c);
 
-  vkprintf(1, "mysql db: %s; user: %s; password: *\n", sql_database, sql_user);
+  vkprintf(4, "mysql db: %s; user: %s; password: *\n", sql_database, sql_user);
 
   sha1 ((unsigned char *)sql_password, strlen (sql_password), (unsigned char *)stage1_hash);
   memcpy (password_sha1, T->scramble1, 8);
@@ -310,7 +310,7 @@ int sqlc_parse_execute (struct connection *c) {
   struct sqlc_data *D = SQLC_DATA(c);
   int len = nbit_total_ready_bytes (&c->Q);
   static unsigned int psize;
-  vkprintf(2, "sqlc_parse_execute(%d), status=%d, bytes=%d, packet_state=%d, packet_len=%d\n", c->fd, c->status, len, D->packet_state, D->packet_len);
+  vkprintf(4, "sqlc_parse_execute(%d), status=%d, bytes=%d, packet_state=%d, packet_len=%d\n", c->fd, c->status, len, D->packet_state, D->packet_len);
   char *p;
 
   while (len > 0 && !(c->flags & (C_FAILED | C_STOPREAD))) {
@@ -337,7 +337,7 @@ int sqlc_parse_execute (struct connection *c) {
     }
     /* complete packet ready */
     c->last_response_time = precise_now;
-    vkprintf(2, "client packet ready: len=%d, seq_num=%d\n", D->packet_len, D->packet_seq);
+    vkprintf(4, "client packet ready: len=%d, seq_num=%d\n", D->packet_len, D->packet_seq);
     if (D->auth_state == sql_noauth) {
       int res = sqlc_inner_authorise(c);
       if (res < 0) {
@@ -368,11 +368,11 @@ int sqlc_parse_execute (struct connection *c) {
       if (SQLC_FUNC(c)->sql_authorized (c)) {
         c->status = conn_error;
         c->error = -1;
-        vkprintf(2, "sql authorisation failed\n");
+        vkprintf(4, "sql authorisation failed\n");
         return 0;
       }
 
-      vkprintf(2, "outcoming authorization successful\n");
+      vkprintf(4, "outcoming authorization successful\n");
 
     } else 
     if (D->auth_state == sql_auth_initdb) {
@@ -380,7 +380,7 @@ int sqlc_parse_execute (struct connection *c) {
       if (D->packet_len == 0 || *p) {
         c->status = conn_error;
         c->error = -1;
-        vkprintf(2, "ok packet expected in response to initdb\n");
+        vkprintf(4, "ok packet expected in response to initdb\n");
         return 0;
       }
       D->auth_state = sql_auth_ok;
@@ -393,7 +393,7 @@ int sqlc_parse_execute (struct connection *c) {
         kprintf ("ok packet expected\n");
         return 0;
       }*/
-      vkprintf(2, "outcoming initdb successful\n");
+      vkprintf(4, "outcoming initdb successful\n");
       SQLC_FUNC(c)->sql_becomes_ready (c);
       return 0;
     } else {
@@ -402,7 +402,7 @@ int sqlc_parse_execute (struct connection *c) {
       assert (D->auth_state == sql_auth_ok);
 
       //dump_connection_buffers (c);
-      vkprintf(2, "execute, op=%d\n", op);
+      vkprintf(4, "execute, op=%d\n", op);
 
       int keep_total_bytes = c->In.total_bytes;
 
@@ -526,7 +526,7 @@ int sqlc_default_check_perm (struct connection *c) {
 }
 
 int sqlc_init_crypto (struct connection *c, char *key, int key_len) {
-  vkprintf(2, "sqlc_init_crypto (%p [fd=%d], '%.*s' [%d])\n", c, c->fd, key_len, key, key_len);
+  vkprintf(4, "sqlc_init_crypto (%p [fd=%d], '%.*s' [%d])\n", c, c->fd, key_len, key, key_len);
 
   if (c->crypto) {
     return -1;
@@ -544,7 +544,7 @@ int sqlc_init_crypto (struct connection *c, char *key, int key_len) {
 
   int mytime = time (0);
 
-  vkprintf(3, "remote time %d, local %d\n", utime, mytime);
+  vkprintf(4, "remote time %d, local %d\n", utime, mytime);
 
   if (abs (mytime - utime) > 10) {
     return -1;

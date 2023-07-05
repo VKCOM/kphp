@@ -74,7 +74,7 @@ int is_same_data_center(struct connection *c, int is_client) {
   }
 
   char buffer_local[SOCKADDR_STORAGE_BUFFER_SIZE], buffer_remote[SOCKADDR_STORAGE_BUFFER_SIZE];
-  vkprintf(3, "check_same_data_center(%d): %s -> %s\n", c->fd, sockaddr_storage_to_buffer(&c->local_endpoint, buffer_local),
+  vkprintf(4, "check_same_data_center(%d): %s -> %s\n", c->fd, sockaddr_storage_to_buffer(&c->local_endpoint, buffer_local),
            sockaddr_storage_to_buffer(&c->remote_endpoint, buffer_remote));
   if (c->flags & C_IPV6) { // we don't use it now
     assert(c->local_endpoint.ss_family == AF_INET6);
