@@ -30,8 +30,6 @@ RUN apt-get install -y clang-16 clang-tools-16 clang-16-doc libclang-common-16-d
 # sanitizers
 RUN apt-get install libclang-rt-16-dev
 
-RUN clang++-16
-
 # set php7.4 as default
 RUN update-alternatives --set php /usr/bin/php7.4
 

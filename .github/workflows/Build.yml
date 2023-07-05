@@ -33,7 +33,8 @@ jobs:
           #   asan: on
           #   ubsan: off
           - os: jammy
-            compiler: g++
+            # compiler: g++
+            compiler: clang++-16
             cpp: 20
             asan: on
             ubsan: off
