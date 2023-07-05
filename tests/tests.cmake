@@ -8,7 +8,8 @@ if(KPHP_TESTS)
         endif()
         target_link_options(${TEST_NAME} PRIVATE ${NO_PIE})
 
-        gtest_discover_tests(${TEST_NAME})
+        # because of https://github.com/VKCOM/kphp/actions/runs/5463884925/jobs/9945150190
+        gtest_discover_tests(${TEST_NAME} PROPERTIES TIMEOUT 600)
         set_target_properties(${TEST_NAME} PROPERTIES FOLDER tests)
     endfunction()
 
