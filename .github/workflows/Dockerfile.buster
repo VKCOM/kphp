@@ -19,9 +19,9 @@ RUN apt-get update && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
       git cmake-data=3.18* cmake=3.18* make g++ gperf netcat \
-      python3-minimal python3-dev libpython3-dev python3-pip python3-setuptools && \
+      python3-minimal python3-dev libpython3-dev python3-pip python3-setuptools mysql-server libmysqlclient-dev && \
     pip3 install -r /tmp/requirements.txt && \
-    apt-get install -y --no-install-recommends curl-kphp-vk mysql-server libmysqlclient-dev kphp-timelib libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
+    apt-get install -y --no-install-recommends curl-kphp-vk kphp-timelib libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
       libzstd-dev libyaml-cpp-dev libnghttp2-dev zlib1g-dev php7.4-dev libldap-dev libkrb5-dev \
       postgresql postgresql-server-dev-all libnuma-dev composer && \
     rm -rf /var/lib/apt/lists/* && \
