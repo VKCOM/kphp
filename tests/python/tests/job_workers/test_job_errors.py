@@ -95,9 +95,12 @@ class TestJobErrors(KphpServerAutoTestCase):
         eq = 0
         got_error_code = ''
         for i in range(results):
-            if job_result[i]["error_code"] == error_code: eq += 1
-            else: got_error_code = job_result[i]["error_code"]
-        if eq == 0: self.assertEqual(got_error_code, error_code)
+            if job_result[i]["error_code"] == error_code:
+                eq += 1
+            else:
+                got_error_code = job_result[i]["error_code"]
+        if eq == 0:
+            self.assertEqual(got_error_code, error_code)
 
         corr_buffers = buffers-(results-eq)
 

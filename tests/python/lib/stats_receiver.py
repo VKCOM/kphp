@@ -65,7 +65,8 @@ class StatsReceiver:
         new_stats = {}
         lines = self._stats_file_read_fd.readlines()
         for stat_line in filter(None, lines):
-            if stat_line[-1] != "\n": return False
+            if stat_line[-1] != "\n":
+                return False
             try:
                 stat, value = stat_line.split(":")
                 value, _ = value.split("|")
