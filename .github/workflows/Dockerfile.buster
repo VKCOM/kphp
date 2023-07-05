@@ -28,11 +28,8 @@ RUN apt-get update && \
 
 # install clang-16
 
-RUN echo "deb http://deb.debian.org/debian stretch main" >> /etc/apt/sources.list
-RUN echo "deb http://deb.debian.org/debian stretch-updates main" >> /etc/apt/sources.list
-RUN echo "deb http://security.debian.org stretch/updates main" >> /etc/apt/sources.list
-
 RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
+RUN echo "deb http://apt.llvm.org/buster/ llvm-toolchain-buster-16 main" >> /etc/apt/sources.list
 RUN apt-get update
 RUN apt-get install -y clang-16 clang-tools-16 clang-16-doc libclang-common-16-dev libclang-16-dev libclang1-16 clang-format-16 python3-clang-16 clangd-16 clang-tidy-16
 
