@@ -38,8 +38,7 @@ void php_query_rpc_answer::run(PhpWorker *worker) noexcept {
     connection *c = worker->conn;
     int *q = (int *)data;
     int qsize = data_len;
-
-    vkprintf (2, "going to send %d bytes as an answer [req_id = %016llx]\n", qsize, worker->req_id);
+    tvkprintf(php_connections, 3, "going to send %d bytes as an answer [req_id = %016llx]\n", qsize, worker->req_id);
     send_rpc_query(c, q[2] == 0 ? TL_RPC_REQ_RESULT : TL_RPC_REQ_ERROR, worker->req_id, q, qsize);
   }
   php_script->query_readed();

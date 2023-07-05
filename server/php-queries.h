@@ -10,8 +10,11 @@
 #include <variant>
 
 #include "common/sanitizer.h"
+#include "common/kprintf.h"
 #include "server/slot-ids-factory.h"
 #include "server/php-queries-types.h"
+
+DECLARE_VERBOSITY(php_connections);
 
 extern SlotIdsFactory parallel_job_ids_factory;
 extern SlotIdsFactory external_db_requests_factory;
