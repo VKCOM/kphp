@@ -102,7 +102,7 @@ class TestJobErrors(KphpServerAutoTestCase):
         if eq == 0:
             self.assertEqual(got_error_code, error_code)
 
-        corr_buffers = buffers-(results-eq)
+        corr_buffers = buffers - (results - eq)
 
         self.kphp_server.assert_stats(
             initial_stats=stats_before,
