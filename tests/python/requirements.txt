@@ -9,5 +9,5 @@ pytest-postgresql==4.1.1
 psycopg==3.1.9
 pytest-xdist==3.3.1
 zstandard==0.21.0
-jsonschema==23.1.0
+jsonschema==4.17.3
 setuptools==67.6.1
