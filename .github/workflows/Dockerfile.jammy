@@ -20,7 +20,13 @@ RUN apt update && \
     pip3 install portalocker psutil requests-toolbelt pytest pytest-xdist pytest-mysql pytest-postgresql psycopg zstandard && \
     rm -rf /var/lib/apt/lists/*
 
-RUN apt-get install libclang-rt-16-dev
+# install clang-16
+RUN apt-get install clang-format clang-tidy clang-tools clang clangd libc++-dev libc++1 libc++abi-dev libc++abi1 libclang-dev libclang1 liblldb-dev libllvm-ocaml-dev libomp-dev libomp5 lld lldb llvm-dev llvm-runtime llvm python3-clang
+
+RUN deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-16 main
+RUN deb-src http://apt.llvm.org/jammy/ llvm-toolchain-jammy-16 main
+
+RUN clang++-16
 
 # set php7.4 as default
 RUN update-alternatives --set php /usr/bin/php7.4
