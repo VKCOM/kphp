@@ -98,8 +98,6 @@ struct http_server_functions default_http_server = {
 int hts_default_execute (struct connection *c, int op) {
   struct hts_data *D = HTS_DATA(c);
 
-  vkprintf(1, "http_server: op=%d, header_size=%d\n", op, D->header_size);
-
   if (op != htqt_empty) {
     netw_queries++;
     if (op != htqt_get) {
@@ -133,6 +131,7 @@ int hts_init_accepted (struct connection *c __attribute__((unused))) {//TODO: th
 }
 
 int hts_close_connection (struct connection *c, int who) {
+  tvkprintf(net_connections, 3, "server close https conn %d\n", c->fd);
   http_connections--;
 
   if (HTS_FUNC(c)->ht_close != NULL) {
@@ -208,6 +207,7 @@ int write_http_error (struct connection *c, int code) {
 }
 
 int hts_parse_execute (struct connection *c) {
+  tvkprintf(net_connections, 3, "server start processing https conn %d\n", c->fd);
   struct hts_data *D = HTS_DATA(c);
   char *ptr, *ptr_s, *ptr_e;
   int len;
@@ -222,7 +222,7 @@ int hts_parse_execute (struct connection *c) {
     }
 
     while (ptr < ptr_e && c->parse_state != htqp_done) {
-
+      tvkprintf(net_connections, 4, "server parse conn %d in state %d\n", c->fd, c->parse_state);
       switch (c->parse_state) {
         case htqp_start:
           //fprintf (stderr, "htqp_start: ptr=%p (%.8s), hsize=%d, qf=%d, words=%d\n", ptr, ptr, D->header_size, D->query_flags, D->query_words);
@@ -632,6 +632,7 @@ int hts_parse_execute (struct connection *c) {
 
 
 int hts_std_wakeup (struct connection *c) {
+  tvkprintf(net_connections, 3, "server standard https wakeup on conn %d\n", c->fd);
   if (c->status == conn_wait_net || c->status == conn_wait_aio) {
     c->status = conn_expect_query;
     HTS_FUNC(c)->ht_wakeup (c);
@@ -647,6 +648,7 @@ int hts_std_wakeup (struct connection *c) {
 }
 
 int hts_std_alarm (struct connection *c) {
+  tvkprintf(net_connections, 3, "server standard https alarm on conn %d\n", c->fd);
   HTS_FUNC(c)->ht_alarm (c);
   if (c->Out.total_bytes > 0) {
     c->flags |= C_WANTWR;

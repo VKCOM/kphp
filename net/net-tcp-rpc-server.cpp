@@ -99,7 +99,7 @@ struct tcp_rpc_server_functions default_tcp_rpc_server = {
 };
 
 int tcp_rpcs_default_execute (struct connection *c, int op, raw_message_t *raw) {
-  vkprintf (1, "rpcs_execute: fd=%d, op=%d, len=%d\n", c->fd, op, raw->total_bytes);
+  tvkprintf(net_connections, 4, "rpcs_execute: fd=%d, op=%d, len=%d\n", c->fd, op, raw->total_bytes);
   if (op == TL_RPC_PING && raw->total_bytes == 12) {
     c->last_response_time = precise_now;    
     static int Q[12];
@@ -109,7 +109,7 @@ int tcp_rpcs_default_execute (struct connection *c, int op, raw_message_t *raw) 
     P[1] = Q[1];
     P[2] = Q[2];
 
-    vkprintf (2, "received ping from %s (val = %lld)\n", sockaddr_storage_to_string(&c->remote_endpoint), *(long long *)(P + 1));
+    tvkprintf(net_connections, 4, "received ping from %s (val = %lld)\n", sockaddr_storage_to_string(&c->remote_endpoint), *(long long *)(P + 1));
 
     tcp_rpc_conn_send_data (c, 12, P);
     flush_later (c);
@@ -238,7 +238,7 @@ static int tcp_rpcs_process_handshake_packet (struct connection *c, raw_message_
   assert (rwm_fetch_data (msg, &P, D->packet_len) == D->packet_len);
   memcpy (&D->remote_pid, &P.sender_pid, sizeof (struct process_id));
   if (matches_pid(&PID, &P.peer_pid) == no_pid_match) {
-    vkprintf (1, "PID mismatch during handshake: local %08x:%hu:%hu:%u, remote %08x:%hu:%hu:%u\n",
+    tvkprintf(net_connections, 4, "PID mismatch during handshake: local %08x:%hu:%hu:%u, remote %08x:%hu:%hu:%u\n",
                  PID.ip, PID.port, PID.pid, PID.utime, P.peer_pid.ip, P.peer_pid.port, P.peer_pid.pid, P.peer_pid.utime);
     tcp_rpcs_send_handshake_error_packet (c, -4);
     return -4;
@@ -260,7 +260,7 @@ static int __raw_msg_to_conn (void *extra, const void *data, int len) {
 }
 
 int tcp_rpcs_parse_execute (struct connection *c) {
-  vkprintf (4, "%s. in_total_bytes = %d\n", __func__, c->in.total_bytes);  
+  tvkprintf(net_connections, 4, "%s. in_total_bytes = %d\n", __func__, c->in.total_bytes);
   struct tcp_rpc_data *D = TCP_RPC_DATA(c);
   int len;
 
@@ -281,7 +281,7 @@ int tcp_rpcs_parse_execute (struct connection *c) {
         D->packet_len &= 0x7fffffff;
       }
       if ((D->packet_len > TCP_RPCS_FUNC(c)->max_packet_len && TCP_RPCS_FUNC(c)->max_packet_len > 0))  {
-        vkprintf (1, "error while parsing packet: bad packet length %d\n", D->packet_len);
+        tvkprintf(net_connections, 4, "error while parsing packet: bad packet length %d\n", D->packet_len);
         c->status = conn_error;
         c->error = -1;
         return 0;
@@ -289,7 +289,7 @@ int tcp_rpcs_parse_execute (struct connection *c) {
       if (D->packet_len <= 0 || (D->packet_len & 0xc0000003)) {
         if (D->in_packet_num <= -2 && (D->packet_len == 0x656c6564 || D->packet_len == 0x74617473 || D->packet_len == 0x73726576 || D->packet_len == 0x20746567 || D->packet_len == 0x20746573 || D->packet_len == 0x20646461
                                                                    || D->packet_len == 0x6c706572 || D->packet_len == 0x72636e69 || D->packet_len == 0x72636564) && TCP_RPCS_FUNC(c)->memcache_fallback_type) {
-          vkprintf (1, "switching to memcache fallback for connection %d\n", c->fd);
+          tvkprintf(net_connections, 4, "switching to memcache fallback for connection %d\n", c->fd);
           memset (c->custom_data, 0, sizeof (c->custom_data));
           c->type = static_cast<conn_type_t*>(TCP_RPCS_FUNC(c)->memcache_fallback_type);
           c->extra = TCP_RPCS_FUNC(c)->memcache_fallback_extra;
@@ -307,7 +307,7 @@ int tcp_rpcs_parse_execute (struct connection *c) {
           rwm_process (&c->in, c->in.total_bytes, cb, c);
           rwm_free (&c->in);
           if (c->type->init_accepted (c) < 0) {
-            vkprintf (1, "memcache init_accepted() returns error for connection %d\n", c->fd);
+            tvkprintf(net_connections, 4, "memcache init_accepted() returns error for connection %d\n", c->fd);
             c->status = conn_error;
             c->error = -33;
             return 0;
@@ -316,7 +316,7 @@ int tcp_rpcs_parse_execute (struct connection *c) {
           return c->type->parse_execute (c);
         }
         if (D->in_packet_num <= -2 && (D->packet_len == 0x44414548 || D->packet_len == 0x54534f50 || D->packet_len == 0x20544547) && TCP_RPCS_FUNC(c)->http_fallback_type) {
-          vkprintf (1, "switching to http fallback for connection %d\n", c->fd);
+          tvkprintf(net_connections, 4, "switching to http fallback for connection %d\n", c->fd);
           memset (c->custom_data, 0, sizeof (c->custom_data));
           c->type = static_cast<conn_type_t*>(TCP_RPCS_FUNC(c)->http_fallback_type);
           c->extra = TCP_RPCS_FUNC(c)->http_fallback_extra;
@@ -334,7 +334,7 @@ int tcp_rpcs_parse_execute (struct connection *c) {
           rwm_process (&c->in, c->in.total_bytes, cb, c);
           rwm_free (&c->in);
           if (c->type->init_accepted (c) < 0) {
-            vkprintf (1, "http init_accepted() returns error for connection %d\n", c->fd);
+            tvkprintf(net_connections, 4, "http init_accepted() returns error for connection %d\n", c->fd);
             c->status = conn_error;
             c->error = -33;
             return 0;
@@ -342,7 +342,7 @@ int tcp_rpcs_parse_execute (struct connection *c) {
           nbit_set (&c->Q, &c->In);
           return c->type->parse_execute (c);
         }
-        vkprintf (1, "error while parsing packet: bad packet length %d\n", D->packet_len);
+        tvkprintf(net_connections, 4, "error while parsing packet: bad packet length %d\n", D->packet_len);
         c->status = conn_error;
         c->error = -1;
         return 0;
@@ -354,7 +354,7 @@ int tcp_rpcs_parse_execute (struct connection *c) {
       continue;
     }
     if (D->packet_len < 16) {
-      vkprintf (1, "error while parsing packet: bad packet length %d\n", D->packet_len);
+      tvkprintf(net_connections, 4, "error while parsing packet: bad packet length %d\n", D->packet_len);
       c->status = conn_error;
       c->error = -1;
       return 0;
@@ -372,7 +372,7 @@ int tcp_rpcs_parse_execute (struct connection *c) {
     assert (rwm_fetch_data_back (&msg, &crc32, 4) == 4);
     D->packet_crc32 = rwm_custom_crc32 (&msg, D->packet_len - 4, D->custom_crc_partial);
     if (crc32 != D->packet_crc32) {
-      vkprintf(1, "error while parsing packet: crc32 = %08x != %08x\n", D->packet_crc32, crc32);
+      tvkprintf(net_connections, 4, "error while parsing packet: crc32 = %08x != %08x\n", D->packet_crc32, crc32);
       c->status = conn_error;
       c->error = -1;
       rwm_free (&msg);
@@ -396,7 +396,7 @@ int tcp_rpcs_parse_execute (struct connection *c) {
     }
 
     if (!(D->crypto_flags & 256) && D->packet_num != D->in_packet_num) {
-      vkprintf (1, "error while parsing packet: got packet num %d, expected %d\n", D->packet_num, D->in_packet_num);
+      tvkprintf(net_connections, 4, "error while parsing packet: got packet num %d, expected %d\n", D->packet_num, D->in_packet_num);
       c->status = conn_error;
       c->error = -1;
       rwm_free (&msg);
@@ -506,7 +506,7 @@ int tcp_rpcs_init_accepted (struct connection *c) {
 
   if (TCP_RPCS_FUNC(c)->rpc_check_perm) {
     int res = TCP_RPCS_FUNC(c)->rpc_check_perm (c);
-    vkprintf(4, "rpcs_check_perm for connection %d: %s -> %s = %d\n", c->fd, sockaddr_storage_to_string(&c->remote_endpoint), sockaddr_storage_to_string(&c->local_endpoint), res);
+    tvkprintf(net_connections, 4, "rpcs_check_perm for connection %d: %s -> %s = %d\n", c->fd, sockaddr_storage_to_string(&c->remote_endpoint), sockaddr_storage_to_string(&c->local_endpoint), res);
     if (res < 0) {
       return res;
     }
@@ -634,7 +634,7 @@ int tcp_rpcs_init_crypto (struct connection *c, struct tcp_rpc_nonce_packet *P) 
 int tcp_rpcs_flush_packet (struct connection *c) {
   if (c->crypto) {
     int pad_bytes = c->type->crypto_needed_output_bytes (c);
-    vkprintf (2, "tcp_rpcs_flush_packet: padding with %d bytes\n", pad_bytes);    
+    tvkprintf(net_connections, 4, "tcp_rpcs_flush_packet: padding with %d bytes\n", pad_bytes);
     if (pad_bytes > 0) {
       assert (!(pad_bytes & 3));
       static int pad_str[3] = {4, 4, 4};
@@ -648,7 +648,7 @@ int tcp_rpcs_flush_packet (struct connection *c) {
 int tcp_rpcs_flush (struct connection *c) {
   if (c->crypto) {
     int pad_bytes = c->type->crypto_needed_output_bytes (c);
-    vkprintf (2, "rpcs_flush: padding with %d bytes\n", pad_bytes);
+    tvkprintf(net_connections, 4, "rpcs_flush: padding with %d bytes\n", pad_bytes);
     if (pad_bytes > 0) {
       assert (!(pad_bytes & 3));
       static int pad_str[3] = {4, 4, 4};

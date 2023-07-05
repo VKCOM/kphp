@@ -10,11 +10,14 @@
 #include <sys/socket.h>
 
 #include "common/macos-ports.h"
+#include "common/kprintf.h"
 
 #include "net/net-buffers.h"
 #include "net/net-events.h"
 #include "net/net-msg.h"
 #include "net/net-sockaddr-storage.h"
+
+DECLARE_VERBOSITY(net_connections);
 
 #define MAX_TARGETS 65536
 #define PRIME_TARGETS 99961
