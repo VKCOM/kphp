@@ -137,11 +137,10 @@ jobs:
         path: 'h3'
         ref: stable-3.x
 
-    # because of https://github.com/andreylzmw/kphp/actions/runs/5443231564/jobs/9899501452
+    # because of https://github.com/orgs/Homebrew/discussions/4612
     - name: Check Environment
       run: |
-        export HOMEBREW_NO_INSTALL_FROM_API=0 
-        env
+        export HOMEBREW_NO_INSTALL_FROM_API=0
         brew untap --force homebrew/cask
 
     - name: Setup Environment
