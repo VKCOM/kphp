@@ -138,7 +138,10 @@ jobs:
         ref: stable-3.x
 
     - name: Check Environment
-      run: env | grep NO_INSTALL | brew tap
+      run: |
+        export HOMEBREW_NO_INSTALL_FROM_API=0 
+        env
+        brew untap homebrew/core
 
     - name: Setup Environment
       run: |
