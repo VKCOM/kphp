@@ -70,7 +70,7 @@ class StatsReceiver:
                 stat, value = stat_line.split(":")
                 value, _ = value.split("|")
             except ValueError:
-                print("Got inconsistent stats count: old={} new={}".format(len(self._stats), len(new_stats)))
+                print("Got bad stat line: {}".format(stat_line))
                 return False
             value = float(value.strip())
             new_stats[stat.strip()] = value.is_integer() and int(value) or value
