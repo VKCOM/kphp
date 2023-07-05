@@ -141,7 +141,7 @@ static int initialize_pseudo_random() {
   if (fd >= 0) {
     r = read(fd, rand_buf, 16);
     if (r > 0) {
-      vkprintf(2, "added %d bytes of real entropy to the seed\n", r);
+      tvkprintf(net_crypto_aes, 4, "added %d bytes of real entropy to the seed\n", r);
     }
     close(fd);
 
