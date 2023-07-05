@@ -35,6 +35,8 @@
 #include "server/server-stats.h"
 #include "server/signal-handlers.h"
 
+DEFINE_VERBOSITY(php_code);
+
 query_stats_t query_stats;
 long long query_stats_id = 1;
 
@@ -143,6 +145,7 @@ PhpScript::PhpScript(size_t mem_size, double oom_handling_memory_ratio, size_t s
   , oom_handling_memory_ratio(oom_handling_memory_ratio)
   , run_mem(static_cast<char *>(mmap(nullptr, mem_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0)))
   , script_stack(stack_size) {
+  tvkprintf(php_code, 1, "initialize PHP-script\n");
   // fprintf (stderr, "PHPScriptBase: constructor\n");
   // fprintf (stderr, "[%p -> %p] [%p -> %p]\n", run_stack, run_stack_end, run_mem, run_mem + mem_size);
 }
@@ -310,15 +313,18 @@ void PhpScript::finish() noexcept {
     kprintf("Critical error during script execution: %s\n", error_message);
     kphp_tracing::on_php_script_finish_terminated();
   }
-  if (save_state == run_state_t::error || script_mem_stats.real_memory_used >= 100000000) {
-    if (data != nullptr) {
-      http_query_data *http_data = data->http_data;
-      if (http_data != nullptr) {
-        assert (http_data->headers);
 
-        kprintf("HEADERS: len = %d\n%.*s\nEND HEADERS\n", http_data->headers_len, min(http_data->headers_len, 1 << 16), http_data->headers);
-        kprintf("POST: len = %d\n%.*s\nEND POST\n", http_data->post_len, min(http_data->post_len, 1 << 16), http_data->post == nullptr ? "" : http_data->post);
-      }
+  if (save_state == run_state_t::error) {
+    switch (error_type) {
+      case script_error_t::memory_limit:
+        kprintf("Detailed memory stats: total allocations = %zd, total memory allocated = %zd, huge memory pieces = %zd, small memory pieces = %zd, defragmentation calls = %zd\n",
+                script_mem_stats.total_allocations, script_mem_stats.total_memory_allocated, script_mem_stats.huge_memory_pieces, script_mem_stats.small_memory_pieces, script_mem_stats.defragmentation_calls);
+        break;
+      case script_error_t::timeout:
+        kprintf("Script timeout value = %d\n", script_timeout);
+        break ;
+      default:
+        break;
     }
   }
 
@@ -337,7 +343,7 @@ void PhpScript::finish() noexcept {
         }
       }
     }
-    kprintf("[worked = %.3lf, net = %.3lf, script = %.3lf, queries_cnt = %5d, long_queries_cnt = %5d, static_memory = %9d, peak_memory = %9d, total_memory = %9d] %s\n",
+    kprintf("[worked = %.3lf, net = %.3lf, script = %.3lf, queries_cnt = %5d, long_queries_cnt = %5d, heap_memory_used = %9d, peak_script_memory = %9d, total_script_memory = %9d] %s\n",
             script_time + net_time, net_time, script_time, queries_cnt, long_queries_cnt,
             (int)dl::get_heap_memory_used(),
             (int)script_mem_stats.max_real_memory_used,
