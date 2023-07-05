@@ -28,7 +28,7 @@ RUN apt-get update
 RUN apt-get install -y clang-16 clang-tools-16 clang-16-doc libclang-common-16-dev libclang-16-dev libclang1-16 clang-format-16 python3-clang-16 clangd-16 clang-tidy-16
 
 # sanitizers
-RUN apt-get install libclang-rt-17-dev
+RUN apt-get install libclang-rt-16-dev
 
 RUN clang++-16
 
