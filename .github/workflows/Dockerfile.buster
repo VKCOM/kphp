@@ -28,6 +28,10 @@ RUN apt-get update && \
 
 # install clang-16
 
+RUN echo "deb http://deb.debian.org/debian stretch main" | tee /etc/apt/sources.list
+RUN echo "deb http://deb.debian.org/debian stretch-updates main" | tee /etc/apt/sources.list
+RUN echo "deb http://security.debian.org stretch/updates main" | tee /etc/apt/sources.list
+
 RUN apt-get install software-properties-common
 RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
 RUN apt-add-repository "deb http://apt.llvm.org/buster/ llvm-toolchain-buster-16 main"
