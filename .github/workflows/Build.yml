@@ -33,7 +33,7 @@ jobs:
             asan: on
             ubsan: off
           - os: jammy
-            compiler: clang++-16
+            compiler: clang++
             cpp: 20
             asan: on
             ubsan: off
