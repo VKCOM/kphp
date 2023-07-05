@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <sanitizer/asan_interface.h>
+
 #if defined(__SANITIZE_ADDRESS__)
 # define ASAN_ENABLED 1
 # include <sanitizer/asan_interface.h>

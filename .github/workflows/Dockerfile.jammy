@@ -20,6 +20,9 @@ RUN apt update && \
     pip3 install portalocker psutil requests-toolbelt pytest pytest-xdist pytest-mysql pytest-postgresql psycopg zstandard && \
     rm -rf /var/lib/apt/lists/*
 
+RUN update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-16 100
+RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-16 100
+
 # set php7.4 as default
 RUN update-alternatives --set php /usr/bin/php7.4
 
