@@ -19,9 +19,9 @@
 #endif
 
 #if defined(__clang__)
- #define ubsan_supp(x) __attribute__((no_sanitize(x)))
+  #define ubsan_supp(x) __attribute__((no_sanitize(x)))
 #else
- #define ubsan_supp(x) __attribute__((no_sanitize_undefined))
+  #define ubsan_supp(x) __attribute__((no_sanitize_undefined))
 #endif
 
 #if !defined(USAN_ENABLED)
