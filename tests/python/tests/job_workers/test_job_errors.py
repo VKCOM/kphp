@@ -93,14 +93,13 @@ class TestJobErrors(KphpServerAutoTestCase):
         results = 2
 
         eq = 0
-        got_error_code = ''
         for i in range(results):
             if job_result[i]["error_code"] == error_code:
                 eq += 1
-            else:
-                got_error_code = job_result[i]["error_code"]
+
         if eq == 0 or (eq == 1 and got_error_code != self.JOB_TIMEOUT_ERROR):
-            self.assertEqual(got_error_code, error_code)
+            self.assertEqual(job_result[0]["error_code"], error_code)
+            self.assertEqual(job_result[1]["error_code"], error_code)
 
         corr_buffers = buffers - (results - eq)
 
