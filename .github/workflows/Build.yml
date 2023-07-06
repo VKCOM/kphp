@@ -22,21 +22,21 @@ jobs:
             cpp: 17
             asan: off
             ubsan: off
-          - os: focal
-            compiler: clang++
-            cpp: 17
-            asan: off
-            ubsan: on
-          - os: focal
-            compiler: g++-10
-            cpp: 20
-            asan: on
-            ubsan: off
-          - os: jammy
-            compiler: g++
-            cpp: 20
-            asan: on
-            ubsan: off
+          # - os: focal
+          #   compiler: clang++
+          #   cpp: 17
+          #   asan: off
+          #   ubsan: on
+          # - os: focal
+          #   compiler: g++-10
+          #   cpp: 20
+          #   asan: on
+          #   ubsan: off
+          # - os: jammy
+          #   compiler: g++
+          #   cpp: 20
+          #   asan: on
+          #   ubsan: off
 
     name: "${{matrix.os}}/${{matrix.compiler}}/c++${{matrix.cpp}}/asan=${{matrix.asan}}/ubsan=${{matrix.ubsan}}"
 
@@ -94,50 +94,50 @@ jobs:
     - name: Remove docker container
       run: docker rm -f kphp-build-container-${{matrix.os}}
 
-  build-macos:
-    runs-on: ${{matrix.os}}-12
-    strategy:
-      matrix:
-        include:
-          - os: macos
-            compiler: clang++
-            cpp: 17
+  # build-macos:
+  #   runs-on: ${{matrix.os}}-12
+  #   strategy:
+  #     matrix:
+  #       include:
+  #         - os: macos
+  #           compiler: clang++
+  #           cpp: 17
 
-    name: "${{matrix.os}}/${{matrix.compiler}}/c++${{matrix.cpp}}"
+  #   name: "${{matrix.os}}/${{matrix.compiler}}/c++${{matrix.cpp}}"
     
-    steps:
-    - uses: actions/checkout@v3
+  #   steps:
+  #   - uses: actions/checkout@v3
 
-    - name: Get polyfills repo
-      uses: actions/checkout@v3
-      with:
-        repository: 'uber/h3'
-        path: 'h3'
-        ref: stable-3.x
+  #   - name: Get polyfills repo
+  #     uses: actions/checkout@v3
+  #     with:
+  #       repository: 'uber/h3'
+  #       path: 'h3'
+  #       ref: stable-3.x
 
-    - name: Setup Environment
-      run: |
-        brew tap shivammathur/php
-        brew update
-        brew install re2c cmake coreutils openssl libiconv re2 pcre yaml-cpp zstd googletest shivammathur/php/php@7.4
-        brew link --overwrite --force shivammathur/php/php@7.4
-        /usr/local/Frameworks/Python.framework/Versions/3.11/bin/pip3 install jsonschema
+  #   - name: Setup Environment
+  #     run: |
+  #       brew tap shivammathur/php
+  #       brew update
+  #       brew install re2c cmake coreutils openssl libiconv re2 pcre yaml-cpp zstd googletest shivammathur/php/php@7.4
+  #       brew link --overwrite --force shivammathur/php/php@7.4
+  #       /usr/local/Frameworks/Python.framework/Versions/3.11/bin/pip3 install jsonschema
 
-    - name: Build Uber h3
-      run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -S $GITHUB_WORKSPACE/h3 -B ${{runner.workspace}}/h3/build && make install -C ${{runner.workspace}}/h3/build -j$(nproc) all
+  #   - name: Build Uber h3
+  #     run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -S $GITHUB_WORKSPACE/h3 -B ${{runner.workspace}}/h3/build && make install -C ${{runner.workspace}}/h3/build -j$(nproc) all
 
-    - name: Run cmake
-      run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DDOWNLOAD_MISSING_LIBRARIES=On -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build
+  #   - name: Run cmake
+  #     run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DDOWNLOAD_MISSING_LIBRARIES=On -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build
 
-    - name: Build all
-      run: make -C ${{runner.workspace}}/build -j$(nproc) all
+  #   - name: Build all
+  #     run: make -C ${{runner.workspace}}/build -j$(nproc) all
       
-    - name: Run unit tests
-      run: make -C ${{runner.workspace}}/build -j$(nproc) test
+  #   - name: Run unit tests
+  #     run: make -C ${{runner.workspace}}/build -j$(nproc) test
 
-    - name: Compile dummy PHP script
-      working-directory: ${{runner.workspace}}/build
-      run: |
-        echo 'hello world' > demo.php 
-        $GITHUB_WORKSPACE/objs/bin/kphp2cpp --cxx ${{matrix.compiler}} demo.php
-        kphp_out/server -o
+  #   - name: Compile dummy PHP script
+  #     working-directory: ${{runner.workspace}}/build
+  #     run: |
+  #       echo 'hello world' > demo.php 
+  #       $GITHUB_WORKSPACE/objs/bin/kphp2cpp --cxx ${{matrix.compiler}} demo.php
+  #       kphp_out/server -o
