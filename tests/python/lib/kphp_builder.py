@@ -123,7 +123,7 @@ class KphpBuilder:
         env.setdefault("KPHP_THREADS_COUNT", "3")
         env.setdefault("KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS", "1")
         env.setdefault("KPHP_ENABLE_FULL_PERFORMANCE_ANALYZE", "1")
-        env.setdefault("KPHP_PROFILER", "2")
+        env.setdefault("KPHP_PROFILER", "0")
         if sys.platform != "darwin":
             env.setdefault("KPHP_DYNAMIC_INCREMENTAL_LINKAGE", "1")
         if "KPHP_INCLUDE_DIR" in env:
