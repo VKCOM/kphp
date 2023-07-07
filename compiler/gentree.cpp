@@ -858,16 +858,18 @@ VertexPtr GenTree::get_expression() {
 
 VertexPtr GenTree::get_func_call_arg() {
   skip_phpdoc_tokens();
-  VertexPtr name = get_expression();
-//  name.debugPrint();
-//  assert(name->type() == op_func_name);
+  VertexPtr name_or_val = get_expression();
+
+  // in case of named argument 'name_or_val' is a name
   if (cur->type() == tok_colon) {
-    puts("!!!!!!!");
     next_cur();
     VertexPtr value = get_expression();
-    return VertexAdaptor<op_named_arg>::create(VertexUtil::create_string_const(name->get_string()), value);
+    CE (!kphp_error(name_or_val, "Bad value of named argument"));
+    return VertexAdaptor<op_named_arg>::create(VertexUtil::create_string_const(name_or_val->get_string()), value);
   }
-  return name;
+
+  // in case of positional argument 'name_or_val' is a value
+  return name_or_val;
 }
 
 VertexPtr GenTree::get_def_value() {

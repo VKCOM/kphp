@@ -112,13 +112,12 @@ std::tuple<std::vector<VertexPtr>, std::vector<VertexPtr>, VarargAppendOptions> 
     if (auto unpack_as_varg = ith_call_arg.try_as<op_varg>()) {
       if (i_call_arg == flattened_call_args.size() - 1 && i_func_param == f_called->get_params().size() - 1 && variadic_args_passed.empty()) {
         // variadic just have been forwarded, e.g. f(...$args) transformed to f($args) without any array_merge
-        variadic_args_passed.emplace_back(VertexUtil::create_conv_to(tp_array, unpack_as_varg->array()));
         is_just_single_arg_forwarded = true;
       } else {
         // f(...$args, ...$another) transformed to f(array_merge($args, $another))
-        variadic_args_passed.emplace_back(VertexUtil::create_conv_to(tp_array, unpack_as_varg->array()));
         needs_wrap_array_merge = true;
       }
+      variadic_args_passed.emplace_back(VertexUtil::create_conv_to(tp_array, unpack_as_varg->array()));
     } else if (auto as_named = ith_call_arg.try_as<op_named_arg>(); as_named && func_arg_names.count(as_named->name()->get_string()) == 0) {
       // foo($a, ...$args);    foo(name : val, a: 1) --> foo(a : 1, ["name" : val])
       auto as_double_arrow = VertexAdaptor<op_double_arrow>::create(as_named->name(), as_named->expr());
@@ -176,8 +175,6 @@ void append_variadic(std::vector<VertexPtr> &new_call_args, const std::vector<Ve
 }
 
 VertexAdaptor<op_func_call> CheckFuncCallsAndVarargPass::reorder_with_defaults(VertexAdaptor<op_func_call> call, FunctionPtr f) {
-
-
   auto call_params = call->args();
   auto func_params = f->get_params();
   auto find_corresponding_param = [&](const std::string &call_arg_name) -> int {

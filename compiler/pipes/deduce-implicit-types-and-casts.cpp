@@ -584,8 +584,7 @@ void DeduceImplicitTypesAndCastsPass::patch_call_args(VertexAdaptor<op_func_call
     if (call_arg_idx < f_called_params.size() && f_called_params[call_arg_idx]->extra_type == op_ex_param_variadic) {
       int vararg_idx = call_arg_idx;
       while (call_arg_idx < call_args.size()) {
-        call_arg_to_func_param[call_arg_idx] = f_called_params[vararg_idx].as<op_func_param>();
-        call_arg_idx++;
+        call_arg_to_func_param[call_arg_idx++] = f_called_params[vararg_idx].as<op_func_param>();
       }
       break;
     }

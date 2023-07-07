@@ -1446,17 +1446,7 @@ void compile_function(VertexAdaptor<op_function> func_root, CodeGenerator &W) {
       W << VarDeclaration(var);
     }
   }
-
-//  if (func->has_variadic_param) {
-//    auto params = func->get_params();
-//    kphp_assert(!params.empty());
-//    auto variadic_arg = std::prev(params.end());
-//    auto name_of_variadic_param = VarName(variadic_arg->as<op_func_param>()->var()->var_id);
-//    W << "if (!" << name_of_variadic_param << ".is_vector())" << BEGIN;
-//    W << "php_warning(\"pass associative array(" << name_of_variadic_param << ") to variadic function: " << FunctionName(func) << "\");" << NL;
-//    W << name_of_variadic_param << " = f$array_values(" << name_of_variadic_param << ");" << NL;
-//    W << END << NL;
-//  }
+  
   W << AsSeq{func_root->cmd()} << END << NL;
 }
 
