@@ -163,6 +163,7 @@ function send_rpc(int $master_port, float $duration, bool $expect_resume = true)
 function main() {
   foreach (json_decode(file_get_contents('php://input')) as $action) {
     switch ($action["op"]) {
+      fprintf(STDERR, $action["op"] . "\n");
       case "sigsegv":
         do_sigsegv();
         break;
@@ -176,7 +177,9 @@ function main() {
         do_long_work((int)$action["duration"]);
         break;
       case "resumable_long_work":
+        fprintf(STDERR, "start resumable_long_work\n");
         long_resumable((int)$action["duration"]);
+        fprintf(STDERR, "finish resumable_long_work\n");
         break;
       case "fork_wait_resumable_long_work":
         $f = fork(long_resumable((int)$action["duration"]));
