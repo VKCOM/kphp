@@ -842,7 +842,21 @@ bool wait_without_result(int64_t resumable_id, double timeout) {
   }
 
   if (resumable->queue_id > 0) {
-    php_warning("Resumable is already waited by other thread");
+    int waiter_id = resumable->queue_id;
+    Resumable *waiter_fork = nullptr;
+    Resumable *waiter_resumable = nullptr;
+    int fork_id = -1;
+    if (is_started_resumable_id(waiter_id)) {
+      auto *info = get_started_resumable_info(waiter_id);
+      waiter_resumable = info->continuation;
+      fork_id = info->fork_id;
+      if (fork_id != 0) {
+        waiter_fork = get_forked_resumable_info(fork_id)->continuation;
+      }
+    }
+    php_warning("Resumable is already waited by other thread: waiter=%d(%s), fork=%d(%s), running_resumable_id=%d",
+                waiter_id, waiter_resumable ? typeid(*waiter_resumable).name() : "null", fork_id, waiter_fork ? typeid(*waiter_fork).name() : "null",
+                static_cast<int>(runned_resumable_id));
     last_wait_error = "Someone already waits for this resumable";
     return false;
   }
