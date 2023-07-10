@@ -270,7 +270,7 @@ int mcs_execute (struct connection *c, int op) {
     key_buffer[D->key_len] = 0;
 
     if (op == mct_delete) {
-      vkprintf(4, "mc de key '%s', key_len=%d\n", key_buffer, D->key_len);
+      vkprintf(4, "mc_delete: key '%s', key_len=%d\\n", key_buffer, D->key_len);
       res = MCS_FUNC(c)->mc_delete (c, key_buffer, D->key_len);
     } else { 
       vkprintf(4, "mc_incr: op=%d, key '%s', key_len=%d, arg=%lld\n", op, key_buffer, D->key_len, D->args[0]);
