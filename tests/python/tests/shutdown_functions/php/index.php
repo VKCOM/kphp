@@ -162,8 +162,8 @@ function send_rpc(int $master_port, float $duration, bool $expect_resume = true)
 
 function main() {
   foreach (json_decode(file_get_contents('php://input')) as $action) {
+    fprintf(STDERR, $action["op"] . "\n");
     switch ($action["op"]) {
-      fprintf(STDERR, $action["op"] . "\n");
       case "sigsegv":
         do_sigsegv();
         break;
