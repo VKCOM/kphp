@@ -656,6 +656,10 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       *res_finish = Node();
       break;
     }
+    case op_yield:
+    case op_yield_from:
+      kphp_error(false, "yield isn't supported");
+      break;
     case op_set: {
       auto set_op = tree_node.as<op_set>();
       Node a, b;

@@ -226,6 +226,14 @@ VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root) {
     }
   }
 
+  // replace octal number representation (0o123 (php) -> 0123 (c++))
+  if (auto int_const_vertex = root.try_as<op_int_const>()) {
+    std::string str = int_const_vertex->str_val;
+    if (str.find('o') == 1) {
+      int_const_vertex->str_val.erase(1, 1);
+    }
+  }
+
   return root;
 }
 

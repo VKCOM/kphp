@@ -378,6 +378,7 @@ const TypeHint *PhpDocTypeHintParser::parse_simple_type() {
       cur_tok++;
       return TypeHintPrimitive::create(tp_False);
     case tok_true:
+      kphp_error(0, "Standalone true type is not supported");
       cur_tok++;
       return TypeHintPrimitive::create(tp_bool);
     case tok_null:
@@ -412,6 +413,9 @@ const TypeHint *PhpDocTypeHintParser::parse_simple_type() {
         return TypeHintArray::create(type_hints.back());
       }
       return TypeHintArray::create_array_of_any();
+    case tok_iterable:
+      cur_tok++;
+      return TypeHintPrimitive::create(tp_iterable);
     case tok_at: {      // @tl\...
       cur_tok++;
       if (!cur_tok->str_val.starts_with("tl\\")) {
@@ -684,7 +688,13 @@ const TypeHint *PhpDocTypeHintParser::parse_shape_type() {
 
 const TypeHint *PhpDocTypeHintParser::parse_type_expression() {
   const TypeHint *result = parse_type_array();
-  if (cur_tok->type() != tok_or) {
+
+  auto is_intersection_type_cur_tok = [this]() {
+    return cur_tok->type() == tok_and
+           && (cur_tok + 1)->type() != tok_var_name;
+  }; // T& $var_name -> false, but T1&T2 $var_name -> true
+
+  if (cur_tok->type() != tok_or && !is_intersection_type_cur_tok()) {
     return result;
   }
 
@@ -703,7 +713,10 @@ const TypeHint *PhpDocTypeHintParser::parse_type_expression() {
   };
 
   on_each_item(result);
-  while (cur_tok->type() == tok_or) {
+  while (cur_tok->type() == tok_or || is_intersection_type_cur_tok()) {
+    if (cur_tok->type() == tok_and) {
+      kphp_error(0, "Intersection types is not supported");
+    }
     cur_tok++;
     on_each_item(parse_type_array());
 

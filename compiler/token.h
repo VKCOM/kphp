@@ -41,6 +41,7 @@ enum TokenType {
   tok_array,
   tok_tuple,
   tok_shape,
+  tok_iterable,
   tok_as,
   tok_case,
   tok_switch,
@@ -56,6 +57,8 @@ enum TokenType {
   tok_do,
   tok_eval,
   tok_return,
+  tok_yield,
+  tok_from,
   tok_list,
   tok_include,
   tok_include_once,
@@ -68,6 +71,7 @@ enum TokenType {
   tok_static,
   tok_final,
   tok_abstract,
+  tok_readonly,
   tok_goto,
   tok_isset,
   tok_declare,
@@ -165,6 +169,7 @@ enum TokenType {
   tok_conv_array,
   tok_conv_object,
   tok_conv_bool,
+  tok_conv_iterable,
 
   tok_false,
   tok_true,
@@ -179,6 +184,7 @@ enum TokenType {
 
   tok_try,
   tok_catch,
+  tok_finally,
 
   tok_public,
   tok_private,
