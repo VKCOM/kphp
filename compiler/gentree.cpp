@@ -2194,7 +2194,7 @@ VertexPtr GenTree::get_statement(const PhpDocComment *phpdoc) {
       }
       CE (!kphp_error(!catch_list.empty(), "Expected at least 1 'catch' statement"));
 
-      VertexPtr finally_op;
+      VertexPtr finally_op = VertexAdaptor<op_none>::create();
       if (test_expect(tok_finally)) {
         finally_op = get_finally();
         CE(!kphp_error(finally_op, "Cannot parse finally statement"));
