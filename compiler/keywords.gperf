@@ -25,6 +25,7 @@ array, tok_array
 tuple, tok_tuple
 shape, tok_shape
 Array, tok_array
+iterable, tok_iterable
 as, tok_as
 case, tok_case
 switch, tok_switch
@@ -39,8 +40,11 @@ global, tok_global
 static, tok_static
 final, tok_final
 abstract, tok_abstract
+readonly, tok_readonly
 goto, tok_goto
 return, tok_return
+yield, tok_yield
+from, tok_from
 list, tok_list
 include, tok_require
 include_once, tok_require_once
@@ -91,6 +95,7 @@ new, tok_new
 throw, tok_throw
 try, tok_try
 catch, tok_catch
+finally, tok_finally
 namespace, tok_namespace
 public, tok_public
 private, tok_private

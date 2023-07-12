@@ -185,6 +185,9 @@ PrimitiveType TypeData::get_real_ptype() const {
   if (p == tp_any && (or_null_flag() || or_false_flag())) {
     return tp_bool;
   }
+  if (p == tp_iterable) {
+    kphp_error(false, "Iterable type isn't supported");
+  }
   return p;
 }
 
@@ -781,6 +784,7 @@ int type_strlen(const TypeData *type) {
       return STRLEN_INT;
     case tp_float:
       return STRLEN_FLOAT;
+    case tp_iterable: // STRLEN_ARRAY_(array), because STRLEN_CLASS(Traversable) not implemented (will be subject to change)
     case tp_array:
     case tp_tuple:
     case tp_shape:
