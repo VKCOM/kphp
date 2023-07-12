@@ -6,7 +6,7 @@
 
 #include <climits>
 #include <cstdint>
-#include "common/type_traits/is_copyable.h"
+#include <type_traits>
 
 namespace job_workers {
 
@@ -24,13 +24,13 @@ protected:
 
   PipeIO() = default;
 
-  template<typename T, typename = typename std::enable_if<vk::is_trivially_copyable<T>::value>::type>
+  template<typename T, typename = typename std::enable_if<std::is_trivially_copyable<T>::value>::type>
   void copy_to_buffer(T x) {
     memcpy(buf + buf_end_pos, &x, sizeof(T));
     buf_end_pos += sizeof(T);
   }
 
-  template<typename T, typename = typename std::enable_if<vk::is_trivially_copyable<T>::value>::type>
+  template<typename T, typename = typename std::enable_if<std::is_trivially_copyable<T>::value>::type>
   void extract_from_buffer(T &dest) {
     memcpy(&dest, buf, sizeof(T));
   }
