@@ -1874,19 +1874,43 @@
       "str": "catch"
     }
   },
+
+  {
+    "comment": "finally { cmd() }",
+    "name": "op_finally",
+    "base_name": "meta_op_base",
+    "sons": {
+      "cmd": {
+        "id": 0,
+        "type": "op_seq"
+      }
+    },
+    "props": {
+      "rl": "rl_common",
+      "cnst": "cnst_not_func",
+      "type": "common_op",
+      "str": "finally"
+    }
+  },
+
   {
     "comment": "try { try_cmd()... } catch_list<op_catch>()...; catches_all is true if all exceptions are handled by this try statement",
     "sons": {
       "try_cmd": {
         "id": 0,
         "type": "op_seq"
+      },
+      "finally_cmd": {
+        "id": -1,
+        "type": "op_finally"
       }
     },
     "ranges": {
       "catch_list": [
         1,
-        0
+        -1
       ]
+
     },
     "name": "op_try",
     "base_name": "meta_op_base",

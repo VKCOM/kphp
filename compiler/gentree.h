@@ -66,6 +66,7 @@ public:
   VertexPtr get_expression();
   VertexPtr get_statement(const PhpDocComment *phpdoc = nullptr);
   VertexAdaptor<op_catch> get_catch();
+  VertexAdaptor<op_finally> get_finally();
   void get_instance_var_list(const PhpDocComment *phpdoc, FieldModifiers modifiers, const TypeHint *type_hint);
   void get_traits_uses();
   void get_use();
@@ -152,4 +153,3 @@ private:
   FunctionPtr cur_function;         // = functions_stack.back()
   SrcFilePtr processing_file;
 };
-
