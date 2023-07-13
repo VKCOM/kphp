@@ -2012,11 +2012,13 @@ VertexAdaptor<op_catch> GenTree::get_catch() {
 }
 
 VertexAdaptor<op_finally> GenTree::get_finally() {
+  auto location = auto_location();
+
   CE (expect(tok_finally, "'finally'"));
   auto finally_body = get_statement();
   CE (!kphp_error(finally_body, "Cannot parse finally block"));
 
-  auto finally_op = VertexAdaptor<op_finally>::create(finally_body.as<op_seq>());
+  auto finally_op = VertexAdaptor<op_finally>::create(finally_body.as<op_seq>()).set_location(location);
 
   return finally_op;
 }
@@ -2195,11 +2197,10 @@ VertexPtr GenTree::get_statement(const PhpDocComment *phpdoc) {
       }
       CE (!kphp_error(!catch_list.empty(), "Expected at least 1 'catch' statement"));
 
-      VertexPtr finally_op = VertexAdaptor<op_none>::create();
+      VertexPtr finally_op = VertexAdaptor<op_empty>::create();
       if (test_expect(tok_finally)) {
         finally_op = get_finally();
         CE(!kphp_error(finally_op, "Cannot parse finally statement"));
-        finally_op.set_location(location);
       }
 
       return VertexAdaptor<op_try>::create(VertexUtil::embrace(try_body), std::move(catch_list), finally_op).set_location(location);
