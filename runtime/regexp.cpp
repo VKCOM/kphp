@@ -606,7 +606,9 @@ void regexp::clean() {
 
 regexp::~regexp() {
   clean();
-  free(regex_compilation_warning);
+  if (use_heap_memory && regex_compilation_warning) {
+    free(regex_compilation_warning);
+  }
 }
 
 
