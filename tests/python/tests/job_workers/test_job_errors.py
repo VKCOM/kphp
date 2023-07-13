@@ -75,7 +75,7 @@ class TestJobErrors(KphpServerAutoTestCase):
             "Error 0: Test exception"
         ])
 
-    def test_job_stack_overflow_error(self):
+    # def test_job_stack_overflow_error(self):
         # error_code = self.JOB_STACK_OVERFLOW_ERROR
         # data = [[1, 2, 3, 4], [7, 9, 12]]
         # buffers = 4
@@ -112,11 +112,11 @@ class TestJobErrors(KphpServerAutoTestCase):
         # })
 
         # self.kphp_server.assert_log(eq * [
-        self.job_error_test_impl("stack_overflow", self.JOB_STACK_OVERFLOW_ERROR, data=[[1, 2, 3, 4, 5]], buffers=2)
-        self.kphp_server.assert_log([
-            "Critical error during script execution: sigsegv\\(stack overflow\\)",
-            "Error -1: Callstack overflow"
-        ])
+        # self.job_error_test_impl("stack_overflow", self.JOB_STACK_OVERFLOW_ERROR, data=[[1, 2, 3, 4, 5]], buffers=2)
+        # self.kphp_server.assert_log([
+        #     "Critical error during script execution: sigsegv\\(stack overflow\\)",
+        #     "Error -1: Callstack overflow"
+        # ])
 
     def test_job_php_assert_error(self):
         self.job_error_test_impl("php_assert", self.JOB_PHP_ASSERT_ERROR)

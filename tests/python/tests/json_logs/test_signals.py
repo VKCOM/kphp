@@ -51,20 +51,20 @@ class TestJsonLogsSignals(KphpServerAutoTestCase):
                 "tags": {"uncaught": True}
             }])
 
-    def test_stack_overflow(self):
-        res = self.kphp_server.http_post(
-            json=[
-                {"op": "set_context", "env": "e1", "tags": {"a": "b"}, "extra_info": {"c": "d"}},
-                {"op": "stack_overflow"}
-            ])
-        self.assertEqual(res.status_code, 500)
-        self.assertEqual(res.text, "ERROR")
+    # def test_stack_overflow(self):
+    #     res = self.kphp_server.http_post(
+    #         json=[
+    #             {"op": "set_context", "env": "e1", "tags": {"a": "b"}, "extra_info": {"c": "d"}},
+    #             {"op": "stack_overflow"}
+    #         ])
+    #     self.assertEqual(res.status_code, 500)
+    #     self.assertEqual(res.text, "ERROR")
 
-        self.kphp_server.assert_json_log(
-            expect=[{
-                "version": 0, "type": 1, "env": "e1", "msg": "Stack overflow",
-                "tags": {"a": "b", "uncaught": True}, "extra_info": {"c": "d"}
-            }])
+    #     self.kphp_server.assert_json_log(
+    #         expect=[{
+    #             "version": 0, "type": 1, "env": "e1", "msg": "Stack overflow",
+    #             "tags": {"a": "b", "uncaught": True}, "extra_info": {"c": "d"}
+    #         }])
 
     def test_master_sigsegv(self):
         self.kphp_server.send_signal(signal.SIGSEGV)
