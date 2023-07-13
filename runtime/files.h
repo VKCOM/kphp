@@ -19,9 +19,9 @@ int32_t open_safe(const char *pathname, int32_t flags);
 
 int32_t open_safe(const char *pathname, int32_t flags, mode_t mode);
 
-ssize_t read_safe(int32_t fd, void *buf, size_t len);
+ssize_t read_safe(int32_t fd, void *buf, size_t len, const string &file_name);
 
-ssize_t write_safe(int32_t fd, const void *buf, size_t len);
+ssize_t write_safe(int32_t fd, const void *buf, size_t len, const string &file_name);
 
 
 string f$basename(const string &name, const string &suffix = string());

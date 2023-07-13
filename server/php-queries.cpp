@@ -1051,6 +1051,10 @@ void finish_script(int exit_code __attribute__((unused))) {
   assert (0);
 }
 
+void check_script_timeout() {
+  PhpScript::current_script->try_run_shutdown_functions_on_timeout();
+}
+
 void reset_script_timeout() {
   PhpScript::current_script->reset_script_timeout();
 }
@@ -1102,14 +1106,14 @@ const char *net_event_t::get_description() const noexcept {
   std::visit(overloaded{
     [this](const net_events_data::rpc_answer &event) {
       auto *r = get_rpc_request(slot_id);
-      snprintf(BUF.data(), BUF.size(), "RPC_RESPONSE: actor_id=%" PRIi64 ", tl_function=%s(0x%08x), response_magic=0x%08x, bytes_length=%d",
-                           r->actor_id, tl_function_magic_to_name(r->function_magic), r->function_magic,
+      snprintf(BUF.data(), BUF.size(), "RPC_RESPONSE: actor_id=%d, tl_function=%s(0x%08x), response_magic=0x%08x, bytes_length=%d",
+                           r->actor_or_port, tl_magic_convert_to_name(r->function_magic), r->function_magic,
                            event.result_len >= 4 ? *reinterpret_cast<unsigned int *>(event.result) : 0, event.result_len);
     },
     [this](const net_events_data::rpc_error &event) {
       auto *r = get_rpc_request(slot_id);
-      snprintf(BUF.data(), BUF.size(), "RPC_ERROR: actor_id=%" PRIi64 ", tl_function_magic=0x%08x, error_code=%d, error_message=%s",
-                           r->actor_id, r->function_magic, event.error_code, event.error_message);
+      snprintf(BUF.data(), BUF.size(), "RPC_ERROR: actor_id=%d, tl_function_magic=0x%08x, error_code=%d, error_message=%s",
+                           r->actor_or_port, r->function_magic, event.error_code, event.error_message);
     },
     [](const net_events_data::job_worker_answer &event) {
       if (event.job_result) {
@@ -1120,6 +1124,9 @@ const char *net_event_t::get_description() const noexcept {
     },
     [](const database_drivers::Response *) {
       snprintf(BUF.data(), BUF.size(), "EXTERNAL_DB_ANSWER");
+    },
+    [](const curl_async::CurlResponse *) {
+      snprintf(BUF.data(), BUF.size(), "CURL_ASYNC_RESPONSE");
     },
   }, data);
   return BUF.data();

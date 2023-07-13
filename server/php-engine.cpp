@@ -85,6 +85,7 @@
 #include "server/server-log.h"
 #include "server/server-stats.h"
 #include "server/shared-data-worker-cache.h"
+#include "server/signal-handlers.h"
 #include "server/statshouse/statshouse-client.h"
 #include "server/statshouse/worker-stats-buffer.h"
 #include "server/workers-control.h"
@@ -265,7 +266,7 @@ void command_net_write_run_rpc(command_t *base_command, void *data) {
   assert (command->data != nullptr);
   if (data == nullptr) { //send to /dev/null
     vkprintf (3, "failed to send rpc request %d\n", slot_id);
-    on_net_event(create_rpc_error_event(slot_id, TL_ERROR_NO_CONNECTIONS, "Failed to send query, timeout expired", nullptr));
+    on_net_event(create_rpc_error_event(slot_id, TL_ERROR_NO_CONNECTIONS_IN_RPC_CLIENT, "Failed to send query, timeout expired", nullptr));
   } else {
     auto *d = (connection *)data;
     //assert (d->status == conn_ready);
@@ -1435,6 +1436,10 @@ void reopen_json_log() {
     if (!vk::singleton<JsonLogger>::get().reopen_log_file(worker_json_log_file_name)) {
       vkprintf(-1, "failed to open log '%s': error=%s", worker_json_log_file_name, strerror(errno));
     }
+    snprintf(worker_json_log_file_name, PATH_MAX, "%s.traces.jsonl", logname);
+    if (!vk::singleton<JsonLogger>::get().reopen_traces_file(worker_json_log_file_name)) {
+      vkprintf(-1, "failed to open log '%s': error=%s", worker_json_log_file_name, strerror(errno));
+    }
   }
 }
 
@@ -1635,7 +1640,7 @@ void start_server() {
     worker_type = start_master();
   }
 
-  worker_global_init();
+  worker_global_init(worker_type);
   generic_event_loop(worker_type, !master_flag);
 }
 
@@ -2182,6 +2187,9 @@ int main_args_handler(int i, const char *long_option) {
     case 2033: {
       return read_option_to(long_option, 0.0, 0.5, oom_handling_memory_ratio);
     }
+    case 2034: {
+      return read_option_to(long_option, 0.0, 5.0, hard_timeout);
+    }
     default:
       return -1;
   }
@@ -2288,6 +2296,7 @@ void parse_main_args(int argc, char *argv[]) {
                                                                                           "messages count = coefficient * processes_count");
   parse_option("runtime-config", required_argument, 2032, "JSON file path that will be available at runtime as 'mixed' via 'kphp_runtime_config()");
   parse_option("oom-handling-memory-ratio", required_argument, 2033, "memory ratio of overall script memory to handle OOM errors (default: 0.00)");
+  parse_option("hard-time-limit", required_argument, 2034, "time limit for script termination after the main timeout has expired (default: 1 sec). Use 0 to disable");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
   // TODO: remove it after successful migration from kphb.readyV2 to kphb.readyV3

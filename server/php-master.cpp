@@ -71,11 +71,12 @@
 #include "server/php-master-warmup.h"
 #include "server/server-log.h"
 
-#include "server/server-config.h"
+#include "server/job-workers/job-stats.h"
 #include "server/job-workers/job-worker-client.h"
 #include "server/job-workers/job-workers-context.h"
-#include "server/job-workers/job-stats.h"
 #include "server/job-workers/shared-memory-manager.h"
+#include "server/json-logger.h"
+#include "server/server-config.h"
 
 using job_workers::JobWorkersContext;
 
@@ -1102,6 +1103,11 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, stats_tag_kphp_server) {
   const auto cpu_stats = server_stats.cpu[1].get_stat();
   stats->add_gauge_stat("cpu.stime", cpu_stats.cpu_s_usage);
   stats->add_gauge_stat("cpu.utime", cpu_stats.cpu_u_usage);
+
+  auto total_workers_json_count = vk::singleton<ServerStats>::get().collect_json_count_stat();
+  uint64_t master_json_logs_count = vk::singleton<JsonLogger>::get().get_json_logs_count();
+  stats->add_gauge_stat("server.total_json_logs_count", std::get<0>(total_workers_json_count) + master_json_logs_count);
+  stats->add_gauge_stat("server.total_json_traces_count", std::get<1>(total_workers_json_count));
 
   instance_cache_get_memory_stats().write_stats_to(stats, "instance_cache");
   stats->add_gauge_stat("instance_cache.memory.buffer_swaps_ok", instance_cache_memory_swaps_ok);

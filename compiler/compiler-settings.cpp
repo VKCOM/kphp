@@ -152,6 +152,7 @@ void append_apple_options(std::string &cxx_flags, std::string &ld_flags) noexcep
               " -lepoll-shim"
               " -L" EPOLL_SHIM_LIB_DIR
               " -L" + common_path + "/lib"
+              " -undefined dynamic_lookup"
 #ifdef PDO_DRIVER_PGSQL
               " -L" + common_path + "/opt/libpq/lib"
 #endif

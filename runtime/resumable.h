@@ -10,6 +10,7 @@
 #include "runtime/storage.h"
 
 extern bool resumable_finished;
+extern int64_t first_forked_resumable_id;
 
 extern const char *last_wait_error;
 
@@ -60,6 +61,10 @@ public:
 
   bool resume(int64_t resumable_id, Storage *input);
   void *get_stack_ptr() { return pos__; }
+
+  virtual bool is_internal_resumable() const noexcept {
+    return false;
+  }
 
   static void update_output();
 };

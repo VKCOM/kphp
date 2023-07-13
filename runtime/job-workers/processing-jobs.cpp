@@ -2,13 +2,14 @@
 // Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include "runtime/job-workers/processing-jobs.h"
+
 #include "runtime/net_events.h"
+#include "runtime/kphp_tracing.h"
 #include "runtime/instance-copy-processor.h"
 
 #include "server/job-workers/job-message.h"
 #include "server/job-workers/shared-memory-manager.h"
-
-#include "runtime/job-workers/processing-jobs.h"
 
 namespace job_workers {
 
@@ -45,6 +46,9 @@ int64_t ProcessingJobs::finish_job_impl(int job_id, job_workers::FinishedJob *jo
   auto &ready_job = processing_[job_id];
 
   if (job_result) {
+    if (kphp_tracing::is_turned_on()) {
+      kphp_tracing::on_job_worker_finish(job_id);
+    }
     ready_job.response = std::move(job_result->response);
     job_result->~FinishedJob();
     dl::deallocate(job_result, sizeof(job_workers::FinishedJob));
@@ -57,6 +61,9 @@ int64_t ProcessingJobs::finish_job_impl(int job_id, job_workers::FinishedJob *jo
     } else {
       error.get()->error = string{"Not enough memory for accepting job response"};
       error.get()->error_code = client_oom_error;
+    }
+    if (kphp_tracing::is_turned_on()) {
+      kphp_tracing::on_job_worker_fail(job_id, error.get()->error_code);
     }
     ready_job.response = std::move(error);
   }

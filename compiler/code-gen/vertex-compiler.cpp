@@ -13,6 +13,7 @@
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/files/json-encoder-tags.h"
+#include "compiler/code-gen/files/tracing-autogen.h"
 #include "compiler/code-gen/naming.h"
 #include "compiler/code-gen/raw-data.h"
 #include "compiler/data/class-data.h"
@@ -796,10 +797,17 @@ VertexAdaptor<op_func_call> patch_compiling_json_impl_call(CodeGenerator &W, Ver
 }
 
 void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_call_mode mode = func_call_mode::simple) {
-  if (root->str_val == "make_clone" && tinf::get_type(root->args()[0])->is_primitive_type()) {
-    // avoid generating make_clone call for primitive types such that (int, double, bool) just for beauty
-    W << root->args()[0];
-    return;
+  if (root->func_id->is_extern()) {
+    if (root->str_val == "make_clone" && tinf::get_type(root->args()[0])->is_primitive_type()) {
+      // avoid generating make_clone call for primitive types such that (int, double, bool) just for beauty
+      W << root->args()[0];
+      return;
+    }
+    if (root->str_val == "kphp_tracing_func_enter_branch") {
+      // we are inside a function marked with @kphp-tracing
+      W << "_tr_f.enter_branch(" << root->args()[0] << ")";
+      return;
+    }
   }
 
   if (FFIRoot::is_ffi_scope_call(root)) {
@@ -1344,6 +1352,9 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
   for (auto var : func->local_var_ids) {
     W << VarPlainDeclaration(var);         // inplace variables are stored as Resumable class fields as well
   }
+  if (func->kphp_tracing) { // append KphpTracingFuncCallGuard as a member variable also ('start()' is called below)
+    TracingAutogen::codegen_runtime_func_guard_declaration(W, func);
+  }
 
   W << Indent(-2) << "public:" << NL << Indent(+2);
 
@@ -1375,6 +1386,9 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
     FunctionSignatureGenerator(W).set_final() << "bool run()" << BEGIN;
   }
   W << "RESUMABLE_BEGIN" << NL << Indent(+2);
+  if (func->kphp_tracing) {
+    TracingAutogen::codegen_runtime_func_guard_start(W, func);
+  }
 
   W << AsSeq{func_root->cmd()} << NL;
 
@@ -1421,6 +1435,10 @@ void compile_function(VertexAdaptor<op_function> func_root, CodeGenerator &W) {
 
   W << FunctionDeclaration(func, false) << " " << BEGIN;
 
+  if (func->kphp_tracing) {
+    TracingAutogen::codegen_runtime_func_guard_declaration(W, func);
+    TracingAutogen::codegen_runtime_func_guard_start(W, func);
+  }
   compile_tracing_profiler(func, W);
 
   for (auto var : func->local_var_ids) {

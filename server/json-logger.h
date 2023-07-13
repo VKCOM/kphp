@@ -5,6 +5,7 @@
 #pragma once
 #include <array>
 #include <atomic>
+#include <csignal>
 
 #include "common/functional/identity.h"
 #include "common/mixin/not_copyable.h"
@@ -19,12 +20,26 @@ public:
   void init(int64_t release_version) noexcept;
 
   bool reopen_log_file(const char *log_file_name) noexcept;
+  bool reopen_traces_file(const char *traces_file_name) noexcept;
 
   void fsync_log_file() const noexcept;
 
   void set_tags(vk::string_view tags) noexcept;
   void set_extra_info(vk::string_view extra_info) noexcept;
   void set_env(vk::string_view env) noexcept;
+
+  uint64_t get_json_logs_count() const noexcept {
+    return json_logs_count;
+  }
+
+  uint64_t get_json_traces_count() const noexcept {
+    return json_traces_count;
+  }
+
+  void reset_json_logs_count() noexcept {
+    json_logs_count = 0;
+    json_traces_count = 0;
+  }
 
   // ATTENTION: this function isn't signal-safety and cannot be used inside signal handlers
   void write_log_with_demangled_backtrace(vk::string_view message, int type, int64_t created_at, void *const *trace, int64_t trace_size, bool uncaught);
@@ -36,13 +51,20 @@ public:
   void write_log_with_backtrace(vk::string_view message, int type) noexcept;
   void write_stack_overflow_log(int type) noexcept;
 
+  void write_trace_line(const char *json_buf, size_t buf_len) noexcept;
+
   void reset_buffers() noexcept;
 
 private:
   JsonLogger() = default;
 
+  // it's incremented from signal handler sometimes => it must be volatile sig_atomic_t to prevent data races
+  volatile sig_atomic_t json_logs_count{0};
+  volatile sig_atomic_t json_traces_count{0};
+
   int64_t release_version_{0};
-  int json_log_fd_{-1};
+  int json_log_fd_{-1};   // kphp_log.json
+  int traces_log_fd_{-1}; // kphp_log.traces.jsonl
 
 #if __cplusplus >= 201703
   static_assert(std::atomic<bool>::is_always_lock_free);

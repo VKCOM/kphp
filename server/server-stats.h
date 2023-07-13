@@ -48,6 +48,7 @@ public:
     uint16_t total_workers{0};
   };
   WorkersStat collect_workers_stat(WorkerType worker_type) const noexcept;
+  std::tuple<uint64_t, uint64_t> collect_json_count_stat() const noexcept;
 
 private:
   friend class vk::singleton<ServerStats>;

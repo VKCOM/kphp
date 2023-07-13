@@ -127,8 +127,7 @@ private:
   static void compile_get_class(CodeGenerator &W, ClassPtr klass);
   static void compile_get_hash(CodeGenerator &W, ClassPtr klass);
   static void compile_accept_visitor_methods(CodeGenerator &W, ClassPtr klass);
-  static void compile_msgpack_serialize(CodeGenerator &W, ClassPtr klass);
-  static void compile_msgpack_deserialize(CodeGenerator &W, ClassPtr klass);
+  static void compile_msgpack_declarations(CodeGenerator &W, ClassPtr klass);
   static void compile_virtual_builtin_functions(CodeGenerator &W, ClassPtr klass);
   static void compile_wakeup(CodeGenerator &W, ClassPtr klass);
 
@@ -137,12 +136,26 @@ private:
 
   static void compile_accept_visitor(CodeGenerator &W, ClassPtr klass, const char *visitor_type);
   static void compile_generic_accept(CodeGenerator &W, ClassPtr klass);
-  static void compile_accept_json_visitor(CodeGenerator &W, ClassPtr klass, bool to_encode, ClassPtr json_encoder);
+  static void compile_accept_json_visitor(CodeGenerator &W, ClassPtr klass);
   IncludesCollector compile_front_includes(CodeGenerator &W) const;
   void compile_back_includes(CodeGenerator &W, IncludesCollector &&front_includes) const;
   void compile_job_worker_shared_memory_piece_methods(CodeGenerator &W, bool compile_declaration_only = false) const;
   void declare_all_variables(VertexPtr v, CodeGenerator &W) const;
   std::unique_ptr<TlDependentTypesUsings> detect_if_needs_tl_usings() const;
+};
+
+struct ClassMembersDefinition : CodeGenRootCmd {
+  ClassPtr klass;
+  explicit ClassMembersDefinition(ClassPtr klass)
+    : klass(klass) {}
+  void compile(CodeGenerator &W) const final;
+
+private:
+  static void compile_generic_accept(CodeGenerator &W, ClassPtr klass);
+  static void compile_generic_accept_instantiations(CodeGenerator &W, ClassPtr klass, vk::string_view type);
+  static void compile_accept_json_visitor(CodeGenerator &W, ClassPtr klass);
+  static void compile_msgpack_serialize(CodeGenerator &W, ClassPtr klass);
+  static void compile_msgpack_deserialize(CodeGenerator &W, ClassPtr klass);
 };
 
 struct StaticLibraryRunGlobal {

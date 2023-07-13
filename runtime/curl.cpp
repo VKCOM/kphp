@@ -12,11 +12,16 @@
 
 #include "runtime/critical_section.h"
 #include "runtime/interface.h"
+#include "runtime/kphp_tracing.h"
 #include "runtime/string-list.h"
 
 #include "common/macos-ports.h"
 #include "common/smart_ptrs/singleton.h"
 #include "common/wrappers/to_array.h"
+#include "net/net-events.h"
+#include "net/net-reactor.h"
+#include "server/curl-adaptor.h"
+#include "server/slot-ids-factory.h"
 
 static_assert(LIBCURL_VERSION_NUM >= 0x071c00, "Outdated libcurl");
 static_assert(CURL_MAX_WRITE_SIZE <= (1 << 30), "CURL_MAX_WRITE_SIZE expected to be less than (1 << 30)");
@@ -41,6 +46,7 @@ size_t curl_write(char *data, size_t size, size_t nmemb, void *userdata);
 
 class BaseContext : vk::not_copyable {
 public:
+  int uniq_id{0};
   int64_t error_num{0};
   char error_msg[CURL_ERROR_SIZE + 1]{'\0'};
 
@@ -170,6 +176,7 @@ public:
   Optional<string> private_data{false};
 
   bool return_transfer{false};
+  bool connection_only{false};
 };
 
 class MultiContext : public BaseContext {
@@ -404,6 +411,7 @@ void post_fields_option_setter(EasyContext *easy_context, CURLoption, const mixe
 
 constexpr int64_t CURLOPT_RETURNTRANSFER = 1234567;
 constexpr int64_t CURLOPT_INFO_HEADER_OUT = 7654321;
+constexpr int64_t FUNCTION_TXTS_CURLOPT_CONNECT_ONLY = 200004;
 
 bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) noexcept {
   if (option == CURLOPT_INFO_HEADER_OUT) {
@@ -422,6 +430,10 @@ bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) 
   if (option == CURLOPT_RETURNTRANSFER) {
     easy_context->return_transfer = (value.to_int() == 1ll);
     return true;
+  }
+
+  if (option == FUNCTION_TXTS_CURLOPT_CONNECT_ONLY) {
+    easy_context->connection_only = (value.to_int() == 1ll);
   }
 
   struct EasyOptionHandler {
@@ -595,6 +607,7 @@ curl_easy f$curl_init(const string &url) noexcept {
   auto &easy_contexts = vk::singleton<CurlContexts>::get().easy_contexts;
   EasyContext *&easy_context = easy_contexts.emplace_back();
   easy_context = new(dl::allocate(sizeof(EasyContext))) EasyContext(easy_contexts.count());
+  easy_context->uniq_id = kphp_tracing::generate_uniq_id();
 
   dl::critical_section_call([&easy_context] { easy_context->easy_handle = curl_easy_init(); });
   if (unlikely(!easy_context->easy_handle)) {
@@ -653,13 +666,24 @@ mixed f$curl_exec(curl_easy easy_id) noexcept {
     return false;
   }
 
+  if (kphp_tracing::is_turned_on()) {
+    string url = easy_context->get_info(CURLINFO_EFFECTIVE_URL).as_string();
+    kphp_tracing::on_curl_exec_start(easy_context->uniq_id, url);
+  }
+
   easy_context->cleanup_for_next_request();
   easy_context->error_num = dl::critical_section_call(curl_easy_perform, easy_context->easy_handle);
 
   if (easy_context->error_num != CURLE_OK && easy_context->error_num != CURLE_PARTIAL_FILE) {
+    if (kphp_tracing::is_turned_on()) {
+      kphp_tracing::on_curl_exec_fail(easy_context->uniq_id, -easy_context->error_num); // error_num > 0, pass negative
+    }
     return false;
   }
 
+  if (kphp_tracing::is_turned_on()) {
+    kphp_tracing::on_curl_exec_finish(easy_context->uniq_id, easy_context->get_info(CURLINFO_SIZE_DOWNLOAD).to_int());
+  }
   if (easy_context->return_transfer) {
     return easy_context->received_data.concat_and_get_string();
   }
@@ -778,6 +802,7 @@ curl_multi f$curl_multi_init() noexcept {
   auto &multi_contexts = vk::singleton<CurlContexts>::get().multi_contexts;
   MultiContext *&multi = multi_contexts.emplace_back();
   multi = new(dl::allocate(sizeof(MultiContext))) MultiContext;
+  multi->uniq_id = kphp_tracing::generate_uniq_id();
 
   dl::critical_section_call([&multi] { multi->multi_handle = curl_multi_init(); });
   if (unlikely(multi->multi_handle == nullptr)) {
@@ -785,12 +810,21 @@ curl_multi f$curl_multi_init() noexcept {
     php_warning("Could not initialize a new curl multi handle");
     return 0;
   }
-  return multi_contexts.count();
+
+  int64_t multi_handle = multi_contexts.count();
+  if (kphp_tracing::is_turned_on()) {
+    kphp_tracing::on_curl_multi_init(multi->uniq_id);
+  }
+  return multi_handle;
 }
 
 Optional<int64_t> f$curl_multi_add_handle(curl_multi multi_id, curl_easy easy_id) noexcept {
   if (auto *multi_context = get_context<MultiContext>(multi_id)) {
     if (auto *easy_context = get_context<EasyContext>(easy_id)) {
+      if (kphp_tracing::is_turned_on()) {
+        string url = easy_context->get_info(CURLINFO_EFFECTIVE_URL).as_string();
+        kphp_tracing::on_curl_multi_add_handle(multi_context->uniq_id, easy_context->uniq_id, url);
+      }
       easy_context->cleanup_for_next_request();
       multi_context->error_num = dl::critical_section_call(curl_multi_add_handle, multi_context->multi_handle, easy_context->easy_handle);
       return multi_context->error_num;
@@ -889,6 +923,9 @@ Optional<array<int64_t>> f$curl_multi_info_read(curl_multi multi_id, int64_t &ms
 Optional<int64_t> f$curl_multi_remove_handle(curl_multi multi_id, curl_easy easy_id) noexcept {
   if (auto *multi_context = get_context<MultiContext>(multi_id)) {
     if (auto *easy_context = get_context<EasyContext>(easy_id)) {
+      if (kphp_tracing::is_turned_on()) {
+        kphp_tracing::on_curl_multi_remove_handle(multi_context->uniq_id, easy_context->uniq_id, easy_context->get_info(CURLINFO_SIZE_DOWNLOAD).to_int());
+      }
       multi_context->error_num = dl::critical_section_call(curl_multi_remove_handle, multi_context->multi_handle, easy_context->easy_handle);
       return multi_context->error_num;
     }
@@ -904,6 +941,9 @@ Optional<int64_t> f$curl_multi_errno(curl_multi multi_id) noexcept {
 void f$curl_multi_close(curl_multi multi_id) noexcept {
   if (auto *multi_context = get_context<MultiContext>(multi_id)) {
     vk::singleton<CurlContexts>::get().multi_contexts.set_value(multi_id - 1, nullptr);
+    if (kphp_tracing::is_turned_on()) {
+      kphp_tracing::on_curl_multi_close(multi_context->uniq_id);
+    }
     multi_context->release();
   }
 }
@@ -979,3 +1019,145 @@ void free_curl_lib() noexcept {
   clear_contexts(vk::singleton<CurlContexts>::get().multi_contexts);
   vk::singleton<CurlMemoryUsage>::get().total_allocated = 0;
 }
+
+namespace curl_async {
+
+CurlRequest CurlRequest::build(curl_easy easy_id) {
+  curl_multi multi_id = f$curl_multi_init();
+  const EasyContext *easy_context = get_context<EasyContext>(easy_id);
+  if (!multi_id || !easy_context) {
+    throw std::runtime_error{"failed to get context"};
+  }
+
+  // it is pointless to use stdout during concurrent request processing
+  bool ok = f$curl_setopt(easy_id, CURLOPT_RETURNTRANSFER, 1);
+  if (!ok) {
+    throw std::runtime_error{"failed to set returntransfer option"};
+  }
+
+  Optional<int64_t> status = f$curl_multi_add_handle(multi_id, easy_id);
+  if (!status.has_value() || status.val()) {
+    throw std::runtime_error{"failed to add handle"};
+  }
+
+  if (kphp_tracing::is_turned_on()) {
+    kphp_tracing::on_curl_add_attribute(easy_context->uniq_id, string("curl_exec_concurrently"), 1);
+  }
+  return {easy_id, multi_id};
+}
+
+CurlRequest::CurlRequest(curl_easy easy_id, curl_multi multi_id) noexcept
+  : easy_id(easy_id)
+  , multi_id(multi_id)
+  , request_id(curl_requests_factory.create_slot()) {}
+
+static int curl_socketfunction_cb(CURL *easy, curl_socket_t fd, int action, void *userp, void *socketp);
+
+void CurlRequest::send_async() const {
+  auto *easy_context = get_context<EasyContext>(easy_id);
+  auto *multi_context = get_context<MultiContext>(multi_id);
+  if (!easy_context || !multi_context) {
+    finish_request();
+    return;
+  }
+
+  multi_context->set_option_safe(CURLMOPT_SOCKETFUNCTION, curl_socketfunction_cb);
+  multi_context->set_option_safe(CURLMOPT_SOCKETDATA, this);
+
+  int running_handles = 0;
+  multi_context->error_num = dl::critical_section_call(curl_multi_socket_action, multi_context->multi_handle, CURL_SOCKET_TIMEOUT, 0, &running_handles);
+
+  if (easy_context->connection_only) {
+    auto info = f$curl_multi_info_read(multi_id);
+    if (info.has_value()) {
+      const int64_t *result = info.val().find_value(string{"result"});
+      if (result && *result == 0) {
+        finish_request(string{});
+        return;
+      }
+    }
+  }
+  if (!running_handles || multi_context->error_num != CURLM_OK) {
+    finish_request();
+  }
+}
+
+void CurlRequest::finish_request(Optional<string> &&response) const {
+  auto curl_response = std::make_unique<CurlResponse>(std::move(response), request_id);
+  vk::singleton<CurlAdaptor>::get().finish_request_resumable(std::move(curl_response));
+}
+
+void CurlRequest::detach_multi_and_easy_handles() const noexcept {
+  f$curl_multi_remove_handle(multi_id, easy_id);
+  f$curl_multi_close(multi_id);
+}
+
+static int curl_epoll_cb(int fd, void *data, event_t *ev) {
+  auto *curl_request = static_cast<CurlRequest *>(data);
+  php_assert(curl_request);
+
+  int flags = 0;
+  if (ev->ready & EVT_READ) {
+    flags |= CURL_CSELECT_IN;
+  }
+  if (ev->ready & EVT_WRITE) {
+    flags |= CURL_CSELECT_OUT;
+  }
+
+  auto *multi_context = get_context<MultiContext>(curl_request->multi_id);
+  if (!multi_context) {
+    curl_request->finish_request();
+    return 0;
+  }
+
+  int running_handles = 0;
+  multi_context->error_num = dl::critical_section_call(curl_multi_socket_action, multi_context->multi_handle, fd, flags, &running_handles);
+
+  if (multi_context->error_num != CURLM_OK) {
+    curl_request->finish_request();
+    return 0;
+  }
+
+  if (!running_handles) {
+    auto *easy_context = get_context<EasyContext>(curl_request->easy_id);
+    if (!easy_context) {
+      curl_request->finish_request();
+      return 0;
+    }
+
+    string content = easy_context->received_data.concat_and_get_string();
+    curl_request->finish_request(std::move(content));
+  }
+  return 0;
+}
+
+static int curl_socketfunction_cb(CURL */*easy*/, curl_socket_t fd, int action, void *userp, void */*socketp*/) {
+  auto *curl_request = static_cast<CurlRequest *>(userp);
+  php_assert(curl_request);
+
+  switch (action) {
+    case CURL_POLL_IN:
+    case CURL_POLL_OUT:
+    case CURL_POLL_INOUT: {
+      int events = EVT_SPEC | EVT_LEVEL;
+      if (action != CURL_POLL_IN) {
+        events |= EVT_WRITE;
+      }
+      if (action != CURL_POLL_OUT) {
+        events |= EVT_READ;
+      }
+      epoll_insert(fd, events);
+      epoll_sethandler(fd, 0, curl_epoll_cb, curl_request);
+      break;
+    }
+    case CURL_POLL_REMOVE: {
+      epoll_remove(fd);
+      break;
+    }
+    default:
+      break;
+  }
+
+  return 0;
+}
+} // namespace curl_async

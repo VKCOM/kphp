@@ -5,6 +5,7 @@
 #include "compiler/generics-reification.h"
 
 #include "compiler/data/function-data.h"
+#include "compiler/data/generics-mixins.h"
 #include "compiler/function-pass.h"
 #include "compiler/phpdoc.h"
 #include "compiler/type-hint.h"

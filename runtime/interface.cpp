@@ -34,6 +34,7 @@
 #include "runtime/job-workers/server-functions.h"
 #include "runtime/json-processor-utils.h"
 #include "runtime/kphp-backtrace.h"
+#include "runtime/kphp_tracing.h"
 #include "runtime/math_functions.h"
 #include "runtime/memcache.h"
 #include "runtime/mysql.h"
@@ -53,18 +54,21 @@
 #include "runtime/udp.h"
 #include "runtime/url.h"
 #include "runtime/zlib.h"
-#include "server/server-config.h"
+#include "server/curl-adaptor.h"
 #include "server/database-drivers/adaptor.h"
 #include "server/database-drivers/mysql/mysql.h"
 #include "server/database-drivers/pgsql/pgsql.h"
-#include "server/shared-data-worker-cache.h"
 #include "server/job-workers/job-message.h"
 #include "server/json-logger.h"
 #include "server/numa-configuration.h"
 #include "server/php-engine-vars.h"
 #include "server/php-queries.h"
 #include "server/php-query-data.h"
+#include "server/php-runner.h"
 #include "server/php-worker.h"
+#include "server/server-config.h"
+#include "server/shared-data-worker-cache.h"
+#include "server/signal-handlers.h"
 #include "server/workers-control.h"
 
 static enum {
@@ -102,12 +106,19 @@ void f$ob_clean() {
   coub->clean();
 }
 
+static inline void reset_gzip_header() {
+  if (ob_cur_buffer == 0) {
+    http_need_gzip &= ~4;
+  }
+}
+
 bool f$ob_end_clean() {
   if (ob_cur_buffer == 0) {
     return false;
   }
 
   coub = &oub[--ob_cur_buffer];
+  reset_gzip_header();
   return true;
 }
 
@@ -118,7 +129,7 @@ Optional<string> f$ob_get_clean() {
 
   string result = coub->str();
   coub = &oub[--ob_cur_buffer];
-
+  reset_gzip_header();
   return result;
 }
 
@@ -578,7 +589,7 @@ void f$fastcgi_finish_request(int64_t exit_code) {
       //TODO console_set_result
       fflush(stderr);
 
-      write_safe(1, oub[ob_total_buffer].buffer(), oub[ob_total_buffer].size());
+      write_safe(1, oub[ob_total_buffer].buffer(), oub[ob_total_buffer].size(), {});
 
       //TODO move to finish_script
       free_runtime_environment();
@@ -615,7 +626,11 @@ void f$fastcgi_finish_request(int64_t exit_code) {
   coub->clean();
 }
 
-void run_shutdown_functions() {
+void run_shutdown_functions(ShutdownType shutdown_type) {
+  if (kphp_tracing::is_turned_on()) {
+    kphp_tracing::on_shutdown_functions_start(static_cast<int>(shutdown_type));
+  }
+
   php_assert(dl::is_malloc_replaced() == false);
   forcibly_stop_all_running_resumables();
 
@@ -623,6 +638,9 @@ void run_shutdown_functions() {
   for (int i = 0; i < shutdown_functions_count; i++) {
     shutdown_functions[i]();
   }
+
+  // don't wrap this call into if(kphp_tracing::is_turned_on()), intentionally
+  kphp_tracing::on_php_script_finish_ok(f$get_net_time(), f$get_script_time());
 }
 
 shutdown_functions_status get_shutdown_functions_status() {
@@ -634,18 +652,18 @@ int get_shutdown_functions_count() {
 }
 
 void run_shutdown_functions_from_timeout() {
-// TODO: now it sometimes leads to critical errors in runtime. Need to rework it generally.
-//  // to safely run the shutdown handlers in the timeout context, we set
-//  // a recovery point to be used from the user-called die/exit;
-//  // without that, exit would lead to a finished state instead of the error state
-//  // we were about to enter (since timeout is an error state)
-//  shutdown_functions_status_value = shutdown_functions_status::running_from_timeout;
-//  if (setjmp(timeout_exit) == 0) {
-//    run_shutdown_functions();
-//  }
+  shutdown_functions_status_value = shutdown_functions_status::running_from_timeout;
+  // to safely run the shutdown handlers in the timeout context, we set
+  // a recovery point to be used from the user-called die/exit;
+  // without that, exit would lead to a finished state instead of the error state
+  // we were about to enter (since timeout is an error state)
+  reset_script_timeout();
+  if (setjmp(timeout_exit) == 0) {
+    run_shutdown_functions(ShutdownType::timeout);
+  }
 }
 
-void run_shutdown_functions_from_script() {
+void run_shutdown_functions_from_script(ShutdownType shutdown_type) {
   shutdown_functions_status_value = shutdown_functions_status::running;
   // when running shutdown functions from a normal (non-timeout) context,
   // reset the timer to give shutdown functions a new span of time to avoid
@@ -653,7 +671,7 @@ void run_shutdown_functions_from_script() {
   // if shutdown functions can't finish with that time quota, they will
   // be interrupted as usual
   reset_script_timeout();
-  run_shutdown_functions();
+  run_shutdown_functions(shutdown_type);
 }
 
 void f$register_shutdown_function(const shutdown_function_type &f) {
@@ -668,13 +686,12 @@ void f$register_shutdown_function(const shutdown_function_type &f) {
   new(&shutdown_functions[shutdown_functions_count++]) shutdown_function_type(f);
 }
 
-void finish(int64_t exit_code) {
+void finish(int64_t exit_code, bool from_exit) {
+  check_script_timeout();
   if (!finished) {
     finished = true;
     forcibly_stop_profiler();
-    if (shutdown_functions_count != 0) {
-      run_shutdown_functions_from_script();
-    }
+    run_shutdown_functions_from_script(from_exit ? ShutdownType::exit : ShutdownType::normal);
   }
 
   f$fastcgi_finish_request(exit_code);
@@ -692,9 +709,9 @@ void f$exit(const mixed &v) {
 
   if (v.is_string()) {
     *coub << v;
-    finish(0);
+    finish(0, true);
   } else {
-    finish(v.to_int());
+    finish(v.to_int(), true);
   }
 }
 
@@ -1037,7 +1054,7 @@ public:
       }
 
       dl::enter_critical_section();//OK
-      if (write_safe(file_fd, buf + pos, (size_t)file_size) < (ssize_t)file_size) {
+      if (write_safe(file_fd, buf + pos, (size_t)file_size, file_name) < (ssize_t)file_size) {
         file_size = -UPLOAD_ERR_CANT_WRITE;
       }
 
@@ -1101,7 +1118,7 @@ public:
         php_assert (to_erase >= to_leave);
 
         dl::enter_critical_section();//OK
-        if (write_safe(file_fd, buf + pos - buf_pos, (size_t)to_write) < (ssize_t)to_write) {
+        if (write_safe(file_fd, buf + pos - buf_pos, (size_t)to_write, file_name) < (ssize_t)to_write) {
           close_safe(file_fd);
           dl::leave_critical_section();
           return -UPLOAD_ERR_CANT_WRITE;
@@ -1119,7 +1136,7 @@ public:
 
       dl::enter_critical_section();//OK
       int to_write = (int)(s - (buf + pos - buf_pos));
-      if (write_safe(file_fd, buf + pos - buf_pos, (size_t)to_write) < (ssize_t)to_write) {
+      if (write_safe(file_fd, buf + pos - buf_pos, (size_t)to_write, file_name) < (ssize_t)to_write) {
         close_safe(file_fd);
         dl::leave_critical_section();
         return -UPLOAD_ERR_CANT_WRITE;
@@ -2322,6 +2339,7 @@ static void init_runtime_libs() {
   init_rpc_lib();
   init_openssl_lib();
   init_math_functions();
+  kphp_tracing::init_tracing_lib();
   init_slot_factories();
 
   init_string_buffer_lib(static_cast<int>(static_buffer_length_limit));
@@ -2367,6 +2385,7 @@ static void free_runtime_libs() {
   free_tcp_lib();
   free_timelib();
   OnKphpWarningCallback::get().reset();
+  kphp_tracing::free_tracing_lib();
   free_slot_factories();
 
   free_job_client_interface_lib();
@@ -2388,6 +2407,7 @@ static void free_runtime_libs() {
   database_drivers::free_pgsql_lib();
 #endif
   vk::singleton<database_drivers::Adaptor>::get().reset();
+  vk::singleton<curl_async::CurlAdaptor>::get().reset();
   vk::singleton<OomHandler>::get().reset();
   free_interface_lib();
   hard_reset_var(JsonEncoderError::msg);
@@ -2427,8 +2447,10 @@ void free_runtime_environment() {
   dl::free_script_allocator();
 }
 
-void worker_global_init() noexcept {
+void worker_global_init(WorkerType worker_type) noexcept {
   worker_global_init_slot_factories();
+  vk::singleton<JsonLogger>::get().reset_json_logs_count();
+  worker_global_init_handlers(worker_type);
 }
 
 void read_engine_tag(const char *file_name) {
@@ -2450,7 +2472,7 @@ void read_engine_tag(const char *file_name) {
   if (size > MAX_SIZE) {
     size = MAX_SIZE;
   }
-  if (read_safe(file_fd, buf, size) < (ssize_t)size) {
+  if (read_safe(file_fd, buf, size, {}) < (ssize_t)size) {
     assert ("Can't read file with engine tag" && 0);
   }
   close(file_fd);

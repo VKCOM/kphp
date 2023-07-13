@@ -212,7 +212,7 @@ mixed f$getimagesize(const string &name) {
     read_size = size;
   }
 
-  if (read_size < 12 || read_safe(read_fd, buf, read_size) < static_cast<ssize_t>(read_size)) {
+  if (read_size < 12 || read_safe(read_fd, buf, read_size, name) < static_cast<ssize_t>(read_size)) {
     close(read_fd);
     dl::leave_critical_section();
     return false;
@@ -245,7 +245,7 @@ mixed f$getimagesize(const string &name) {
           return false;
         }
         memcpy(image, buf, read_size);
-        if (read_safe(read_fd, image + read_size, size - read_size) < static_cast<ssize_t>(size - read_size)) {
+        if (read_safe(read_fd, image + read_size, size - read_size, name) < static_cast<ssize_t>(size - read_size)) {
           dl::deallocate(image, size);
           close(read_fd);
           dl::leave_critical_section();
