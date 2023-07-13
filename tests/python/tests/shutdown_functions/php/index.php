@@ -70,7 +70,7 @@ function shutdown_fork_wait() {
 /** @kphp-required */
 function shutdown_send_rpc() {
     fprintf(STDERR, "try send rpc from shutdown\n");
-    send_rpc(8081, 0.5);
+    rpc_flush();
 }
 
 function forked_func(int $i, float $duration = 0.5): int {
