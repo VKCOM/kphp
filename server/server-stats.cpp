@@ -17,6 +17,7 @@
 
 #include "server/workers-control.h"
 
+#include "server/json-logger.h"
 #include "server/server-stats.h"
 #include "server/statshouse/statshouse-client.h"
 #include "server/statshouse/worker-stats-buffer.h"
@@ -120,6 +121,8 @@ struct MiscStat : WithStatType<uint64_t> {
     max_special_connections,
     active_special_connections,
     worker_status,
+    json_logs_count,
+    json_traces_count,
     worker_activity_counter,
     types_count
   };
@@ -470,6 +473,8 @@ struct WorkerProcessStats : private vk::not_copyable {
     vm_stats.set_worker_stats(get_virtual_memory_stat(), worker_index);
     idle_stats.set_worker_stats(get_idle_stat(), worker_index);
     misc_stats.inc_stat(MiscStat::Key::worker_activity_counter, worker_index);
+    misc_stats.set_stat(MiscStat::Key::json_logs_count, worker_index, vk::singleton<JsonLogger>::get().get_json_logs_count());
+    misc_stats.set_stat(MiscStat::Key::json_traces_count, worker_index, vk::singleton<JsonLogger>::get().get_json_traces_count());
   }
 
   void update_worker_special_connections(uint64_t active_connections, uint64_t max_connections, uint16_t worker_index) noexcept {
@@ -490,6 +495,8 @@ struct WorkerProcessStats : private vk::not_copyable {
     misc_stats.set_stat(MiscStat::Key::worker_activity_counter, worker_index, 1);
     misc_stats.set_stat(MiscStat::Key::process_pid, worker_index, worker_pid);
     misc_stats.set_stat(MiscStat::Key::worker_status, worker_index, MiscStat::worker_idle);
+    misc_stats.set_stat(MiscStat::Key::json_logs_count, worker_index, 0);
+    misc_stats.set_stat(MiscStat::Key::json_traces_count, worker_index, 0);
     update_worker_special_connections(active_connections, max_connections, worker_index);
     update_worker_stats(worker_index);
   }
@@ -610,7 +617,6 @@ void ServerStats::add_request_stats(double script_time_sec, double net_time_sec,
   using namespace statshouse;
   vk::singleton<WorkerStatsBuffer>::get().add_query_stat(GenericQueryStatKey::memory_used, worker_type_, memory_used);
   vk::singleton<WorkerStatsBuffer>::get().add_query_stat(GenericQueryStatKey::real_memory_used, worker_type_, real_memory_used);
-  vk::singleton<WorkerStatsBuffer>::get().add_query_stat(GenericQueryStatKey::total_allocated_by_curl, worker_type_, curl_total_allocated);
 
   vk::singleton<WorkerStatsBuffer>::get().add_query_stat(GenericQueryStatKey::script_time, worker_type_, script_time.count());
   vk::singleton<WorkerStatsBuffer>::get().add_query_stat(GenericQueryStatKey::net_time, worker_type_, net_time.count());
@@ -902,6 +908,18 @@ ServerStats::WorkersStat ServerStats::collect_workers_stat(WorkerType worker_typ
   }
   result.total_workers = last - first;
   return result;
+}
+
+std::tuple<uint64_t, uint64_t> ServerStats::collect_json_count_stat() const noexcept {
+  const auto &workers_misc = shared_stats_->workers.misc_stats;
+  uint64_t sum_json_logs_count = 0;
+  uint64_t sum_json_traces_count = 0;
+  const auto &workers_control = vk::singleton<WorkersControl>::get();
+  for (uint16_t w = 0; w != workers_control.get_total_workers_count(); ++w) {
+    sum_json_logs_count += workers_misc.get_stat(MiscStat::Key::json_logs_count, w);
+    sum_json_traces_count += workers_misc.get_stat(MiscStat::Key::json_traces_count, w);
+  }
+  return {sum_json_logs_count, sum_json_traces_count};
 }
 
 uint64_t ServerStats::get_worker_activity_counter(uint16_t worker_process_id) const noexcept {

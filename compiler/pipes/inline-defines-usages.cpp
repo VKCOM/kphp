@@ -4,7 +4,6 @@
 
 #include "compiler/pipes/inline-defines-usages.h"
 
-#include "compiler/data/class-data.h"
 #include "compiler/data/define-data.h"
 #include "compiler/modulite-check-rules.h"
 #include "compiler/name-gen.h"
@@ -60,7 +59,9 @@ VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root) {
         auto access_class = def->class_id;
         check_access(class_id, lambda_class_id, FieldModifiers{def->access}, access_class, "const", def->as_human_readable());
       }
-      root = def->val.clone().set_location_recursively(root);
+      auto wrapped = VertexAdaptor<op_define_val>::create(def->val.clone()).set_location_recursively(root);
+      wrapped->define_id = def;
+      root = wrapped;
     }
   }
 

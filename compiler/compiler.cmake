@@ -40,6 +40,7 @@ prepend(KPHP_COMPILER_DATA_SOURCES data/
         lib-data.cpp
         generics-mixins.cpp
         kphp-json-tags.cpp
+        kphp-tracing-tags.cpp
         modulite-data.cpp
         performance-inspections.cpp
         src-dir.cpp
@@ -88,6 +89,7 @@ prepend(KPHP_COMPILER_CODEGEN_SOURCES code-gen/
         files/tl2cpp/tl2cpp-utils.cpp
         files/tl2cpp/tl2cpp.cpp
         files/shape-keys.cpp
+        files/tracing-autogen.cpp
         files/type-tagger.cpp
         files/vars-cpp.cpp
         files/vars-reset.cpp
@@ -213,6 +215,10 @@ prepend(KPHP_COMPILER_SOURCES ${KPHP_COMPILER_DIR}/
 
 if(APPLE)
     set_source_files_properties(${KPHP_COMPILER_DIR}/lexer.cpp PROPERTIES COMPILE_FLAGS -Wno-deprecated-register)
+endif()
+
+if(COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "14.0.0")
+    set_source_files_properties(${KPHP_COMPILER_DIR}/ffi/c_parser/yy_parser_generated.cpp PROPERTIES COMPILE_FLAGS -Wno-unused-but-set-variable)
 endif()
 
 list(APPEND KPHP_COMPILER_SOURCES

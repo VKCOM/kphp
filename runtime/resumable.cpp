@@ -7,6 +7,8 @@
 #include "common/kprintf.h"
 
 #include "runtime/net_events.h"
+#include "server/php-queries.h"
+#include "runtime/kphp_tracing.h"
 
 DEFINE_VERBOSITY(resumable);
 
@@ -30,20 +32,20 @@ static Storage *get_storage(int64_t resumable_id);
 bool check_started_storage(Storage *s);
 bool check_forked_storage(Storage *s);
 
-static inline void update_current_resumable_id(int64_t new_id);
+static inline void update_current_resumable_id(int64_t new_id, bool is_internal);
 
 bool Resumable::resume(int64_t resumable_id, Storage *input) {
   php_assert(!input || check_started_storage(input) || check_forked_storage(input));
   int64_t parent_id = runned_resumable_id;
 
   input_ = input;
-  update_current_resumable_id(resumable_id);
+  update_current_resumable_id(resumable_id, is_internal_resumable());
 
   bool res = run();
 
   // must not be used
   input_ = nullptr;
-  update_current_resumable_id(parent_id);
+  update_current_resumable_id(parent_id, is_internal_resumable());
 
   return res;
 }
@@ -51,6 +53,8 @@ bool Resumable::resume(int64_t resumable_id, Storage *input) {
 void Resumable::update_output() {
   output_ = in_main_thread() ? nullptr : get_storage(runned_resumable_id);
 }
+
+int64_t first_forked_resumable_id;
 
 namespace {
 
@@ -79,7 +83,6 @@ struct started_resumable_info : resumable_info {
   int64_t fork_id;
 };
 
-int64_t first_forked_resumable_id;
 int64_t first_array_forked_resumable_id;
 int64_t current_forked_resumable_id = 1123456789;
 forked_resumable_info *forked_resumables;
@@ -206,7 +209,7 @@ int64_t register_forked_resumable(Resumable *resumable) {
   return res_id;
 }
 
-static inline void update_current_resumable_id(int64_t new_id) {
+static inline void update_current_resumable_id(int64_t new_id, bool is_internal) {
   int64_t old_running_fork = f$get_running_fork_id();
   runned_resumable_id = new_id;
   int64_t new_running_fork = f$get_running_fork_id();
@@ -217,6 +220,9 @@ static inline void update_current_resumable_id(int64_t new_id) {
     }
     if (new_running_fork) {
       get_forked_resumable_info(new_running_fork)->running_time -= get_precise_now();
+    }
+    if (!is_internal && kphp_tracing::is_turned_on()) {
+      kphp_tracing::on_fork_switch(new_running_fork);
     }
   }
   Resumable::update_output();
@@ -345,7 +351,12 @@ static void free_resumable_continuation(resumable_info *res) noexcept {
 
 static void finish_forked_resumable(int64_t resumable_id) noexcept {
   forked_resumable_info *res = get_forked_resumable_info(resumable_id);
+  bool is_internal = res->continuation->is_internal_resumable();
+
   free_resumable_continuation(res);
+  if (!is_internal && kphp_tracing::is_turned_on()) {
+    kphp_tracing::on_fork_finish(resumable_id);
+  }
 
   if (res->queue_id > 100000000) {
     php_assert(is_started_resumable_id(res->queue_id));
@@ -471,6 +482,7 @@ static void debug_print_resumables() noexcept {
 static bool wait_started_resumable(int64_t resumable_id) noexcept;
 
 Storage *start_resumable_impl(Resumable *resumable) noexcept {
+  check_script_timeout();
   int64_t id = register_started_resumable(resumable);
 
   if (resumable->resume(id, nullptr)) {
@@ -495,6 +507,13 @@ Storage *start_resumable_impl(Resumable *resumable) noexcept {
 
 int64_t fork_resumable(Resumable *resumable) noexcept {
   int64_t id = register_forked_resumable(resumable);
+
+  if (kphp_tracing::is_turned_on()) {
+    kphp_tracing::on_fork_start(id);
+    if (unlikely(kphp_tracing::cur_trace_level >= 2)) {
+      kphp_tracing::on_fork_provide_name(id, string{typeid(*resumable).name()});
+    }
+  }
 
   if (resumable->resume(id, nullptr)) {
     finish_forked_resumable(id);
@@ -721,6 +740,10 @@ static int32_t wait_timeout_wakeup_id = -1;
 
 class wait_resumable final : public ResumableWithTimer {
 public:
+  bool is_internal_resumable() const noexcept final {
+    return true;
+  }
+
   explicit wait_resumable(int64_t child_id) noexcept:
     child_id_(child_id) {
   }
@@ -819,7 +842,21 @@ bool wait_without_result(int64_t resumable_id, double timeout) {
   }
 
   if (resumable->queue_id > 0) {
-    php_warning("Resumable is already waited by other thread");
+    int waiter_id = resumable->queue_id;
+    Resumable *waiter_fork = nullptr;
+    Resumable *waiter_resumable = nullptr;
+    int fork_id = -1;
+    if (is_started_resumable_id(waiter_id)) {
+      auto *info = get_started_resumable_info(waiter_id);
+      waiter_resumable = info->continuation;
+      fork_id = info->fork_id;
+      if (fork_id != 0) {
+        waiter_fork = get_forked_resumable_info(fork_id)->continuation;
+      }
+    }
+    php_warning("Resumable is already waited by other thread: waiter=%d(%s), fork=%d(%s), running_resumable_id=%d",
+                waiter_id, waiter_resumable ? typeid(*waiter_resumable).name() : "null", fork_id, waiter_fork ? typeid(*waiter_fork).name() : "null",
+                static_cast<int>(runned_resumable_id));
     last_wait_error = "Someone already waits for this resumable";
     return false;
   }
@@ -1067,35 +1104,14 @@ Optional<int64_t> wait_queue_next_synchronously(int64_t queue_id) {
   return q->first_finished_function == -2 ? 0 : -q->first_finished_function;
 }
 
-void wait_all_forks() noexcept {
-  if (!in_main_thread()) {
-    return;
-  }
-
-  // TODO CurException should be null?
-  auto saved_exception = std::move(CurException);
-  for (int64_t fork_id = first_array_forked_resumable_id; fork_id < current_forked_resumable_id; ++fork_id) {
-    if (get_forked_resumable(fork_id)) {
-      wait_forked_resumable(fork_id, get_precise_now() + MAX_TIMEOUT);
-    }
-    Storage *output = get_forked_storage(fork_id);
-    if (output->tag == Storage::tagger<thrown_exception>::get_tag()) {
-      CurException = Optional<bool>{};
-      output->load<void>();
-      // TODO assert?
-      if (!CurException.is_null()) {
-        // write exception into logs and continue
-        php_uncaught_exception_error(CurException, true);
-      }
-    }
-  }
-  CurException = std::move(saved_exception);
-}
-
 static int32_t wait_queue_timeout_wakeup_id = -1;
 
 class wait_queue_resumable final : public ResumableWithTimer {
 public:
+  bool is_internal_resumable() const noexcept final {
+    return true;
+  }
+
   explicit wait_queue_resumable(int64_t queue_id) noexcept:
     queue_id_(queue_id) {
   }
@@ -1160,8 +1176,8 @@ Optional<int64_t> f$wait_queue_next(int64_t queue_id, double timeout) {
     wait_net(0);
 
     return q->first_finished_function == -2
-      ? Optional<int64_t>{false}
-      : Optional<int64_t>{-q->first_finished_function};
+           ? Optional<int64_t>{false}
+           : Optional<int64_t>{-q->first_finished_function};
   }
 
   bool has_timeout = true;
@@ -1178,8 +1194,8 @@ Optional<int64_t> f$wait_queue_next(int64_t queue_id, double timeout) {
 
     q = get_wait_queue(queue_id);//can change in scheduler
     return q->first_finished_function == -2
-      ? Optional<int64_t>{false}
-      : Optional<int64_t>{-q->first_finished_function};
+           ? Optional<int64_t>{false}
+           : Optional<int64_t>{-q->first_finished_function};
   }
 
   wait_queue_resumable *res = new wait_queue_resumable(queue_id);

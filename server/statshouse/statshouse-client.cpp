@@ -14,11 +14,12 @@
 #include "common/tl/methods/string.h"
 #include "net/net-connections.h"
 #include "runtime/critical_section.h"
+#include "server/server-config.h"
 #include "server/server-log.h"
 
 namespace {
 
-constexpr int STATSHOUSE_HEADER_OFFSET = 3 * sizeof(int32_t); // for magic, fields_mask and vector size
+constexpr int STATSHOUSE_HEADER_OFFSET = 3 * sizeof(int32_t);                  // for magic, fields_mask and vector size
 constexpr int STATSHOUSE_UDP_BUFFER_THRESHOLD = static_cast<int>(65507 * 0.8); // 80% of max UDP packet size
 
 class statshouse_stats_t : public stats_t {
@@ -128,6 +129,11 @@ bool StatsHouseClient::init_connection() {
 }
 
 void StatsHouseClient::master_send_metrics() {
+  if (port == 0 || (sock_fd <= 0 && !init_connection())) {
+    return;
+  }
+  const char *cluster_name = vk::singleton<ServerConfig>::get().get_cluster_name();
+  const std::vector<std::pair<std::string, std::string >> tags = {{"cluster", cluster_name}};
   statshouse_stats_t stats{tags};
   stats.stats_prefix = "kphp";
   char *buf = get_engine_default_prepare_stats_buffer();
@@ -149,13 +155,7 @@ void StatsHouseClient::send_metrics(char *result, int len) {
   }
 }
 
-StatsHouseClient::StatsHouseClient() {
-  if (const char *hostname = kdb_gethostname()) {
-    tags = {{"host", std::string(hostname)}};
-  } else {
-    log_server_error("Can't gethostname for statshouse metrics: %s", strerror(errno));
-  }
-}
+StatsHouseClient::StatsHouseClient() {}
 
 StatsHouseClient::~StatsHouseClient() {
   if (sock_fd > 0) {

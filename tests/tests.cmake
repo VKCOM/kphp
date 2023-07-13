@@ -12,6 +12,10 @@ if(KPHP_TESTS)
         set_target_properties(${TEST_NAME} PROPERTIES FOLDER tests)
     endfunction()
 
+    if(APPLE)
+        add_link_options(-undefined dynamic_lookup)
+    endif()
+
     enable_testing()
     include(common/common-tests.cmake)
     include(net/net-tests.cmake)

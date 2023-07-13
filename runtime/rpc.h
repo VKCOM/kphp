@@ -18,10 +18,13 @@ struct rpc_request {
   union {
     kphp_event_timer *timer;
     char *answer;
-    const char *error;
+    struct {
+      const char *error;
+      int32_t error_code;
+    };
   };
   uint32_t function_magic{0};
-  int64_t actor_id{-1};
+  int32_t actor_or_port{0}; // if positive: actor_id; if negative: actor_id=0, it's port
 };
 
 extern long long rpc_tl_results_last_query_num;
@@ -44,11 +47,13 @@ rpc_request *get_rpc_request(slot_id_t request_id);
 
 void process_rpc_answer(int32_t request_id, char *result, int32_t result_len);
 
-void process_rpc_error(int32_t request_id, int32_t error_code, const char *error_message);
+void process_rpc_error(int32_t request_id, int32_t error_code, const char *error_message, bool is_fake_error = false);
 
 void rpc_parse_restore_previous();
 
-const char *last_rpc_error_get();
+const char *last_rpc_error_message_get();
+
+int32_t last_rpc_error_code_get();
 
 void last_rpc_error_reset();
 
@@ -114,11 +119,11 @@ struct C$RpcConnection final : public refcountable_php_classes<C$RpcConnection>,
   int32_t host_num{-1};
   int32_t port{-1};
   int32_t timeout_ms{-1};
-  int64_t actor_id{-1};
+  int32_t actor_id{-1};
   int32_t connect_timeout{-1};
   int32_t reconnect_timeout{-1};
 
-  C$RpcConnection(int32_t host_num, int32_t port, int32_t tmeout_ms, int64_t actor_id, int32_t connect_timeout, int32_t reconnect_timeout);
+  C$RpcConnection(int32_t host_num, int32_t port, int32_t tmeout_ms, int32_t actor_id, int32_t connect_timeout, int32_t reconnect_timeout);
 
   const char *get_class() const  noexcept {
     return R"(RpcConnection)";

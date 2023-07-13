@@ -9,7 +9,7 @@
 /*** Calculate const_type for all nodes ***/
 class CalcConstTypePass final : public FunctionPassBase {
   void calc_const_type_of_class_fields(ClassPtr klass);
-
+  int inlined_define_cnt{0};
 public:
 
   void on_start() override;
@@ -19,4 +19,5 @@ public:
   }
 
   VertexPtr on_exit_vertex(VertexPtr v) override;
+  VertexPtr on_enter_vertex(VertexPtr v) override;
 };

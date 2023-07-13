@@ -14,6 +14,8 @@ std::string gen_anonymous_function_name(FunctionPtr parent_function);
 std::string gen_unique_name(const std::string& prefix, FunctionPtr function = FunctionPtr{});
 std::string gen_const_string_name(const std::string &str);
 std::string gen_const_regexp_name(const std::string &str);
+bool is_object_suitable_for_hashing(VertexPtr vertex);
+std::string gen_const_object_name(const VertexAdaptor<op_define_val> &array);
 bool is_array_suitable_for_hashing(VertexPtr vertex);
 std::string gen_const_array_name(const VertexAdaptor<op_array> &array);
 

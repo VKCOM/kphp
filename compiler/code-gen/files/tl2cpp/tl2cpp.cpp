@@ -180,13 +180,35 @@ void write_tl_query_handlers(CodeGenerator &W) {
     W << cpp_tl_const_str(s) << ".assign_raw (&raw[" << const_string_shifts[i++] << "]);" << NL;
   });
   W << END << NL << NL;
-  W << "const char * tl_function_magic_to_name(uint32_t magic) noexcept " << BEGIN
-    << "switch (magic) " << BEGIN;
-  for (const auto &[magic, tl_fun]: tl->functions) {
-    W << fmt_format("case {:#010x}U: return \"{}\";", static_cast<uint32_t>(tl_fun->id), tl_fun->name.c_str()) << NL;
+
+  // to decode tl magics to strings at runtime, codegen everything
+  // having two linear arrays (tl_magic_ids and tl_magic_names) is enough for our cases and compiles fast
+  // see runtime/tl/tl_magics_decoding.cpp
+
+  W << "static const unsigned int tl_magic_ids[" << tl->functions.size() << "] = " << BEGIN;
+  for (const auto &[magic, tl_fun] : tl->functions) {
+    W << fmt_format("{:#010x}U,", static_cast<unsigned int>(tl_fun->id)) << NL;
   }
-  W << "default: return \"__unknown__\";" << NL << END << NL;
-  W << END << NL;
+  W << END << ";" << NL;
+
+  W << "static const char *tl_magic_names[" << tl->functions.size() << "] = " << BEGIN;
+  for (const auto &[magic, tl_fun] : tl->functions) {
+    W << "\"" << tl_fun->name.c_str() << "\"," << NL;
+  }
+  W << END << ";" << NL << NL;
+
+  W << "void tl_magic_fill_all_functions_impl(array<string> &out) noexcept " << BEGIN
+    << "out.reserve(" << tl->functions.size() << ", 0, false);" << NL
+    << "for (int i=0; i<" << tl->functions.size() << "; ++i)" << BEGIN
+    << "out.set_value(static_cast<int64_t>(tl_magic_ids[i]), string(tl_magic_names[i]));" << NL << END
+    << NL << END << NL;
+
+  W << "const char *tl_magic_convert_to_name_impl(unsigned int magic) noexcept " << BEGIN
+    << "for (int i=0; i<" << tl->functions.size() << "; ++i)" << BEGIN
+    << "if (tl_magic_ids[i] == magic) return tl_magic_names[i];" << NL << END
+    << "return \"__unknown__\";"
+    << NL << END << NL;
+
   W << CloseFile();
 
   modules.clear();

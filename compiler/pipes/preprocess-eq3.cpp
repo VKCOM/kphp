@@ -3,9 +3,9 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "compiler/pipes/preprocess-eq3.h"
+#include "compiler/vertex-util.h"
 
 #include "common/algorithms/contains.h"
-#include "common/wrappers/likely.h"
 
 VertexPtr PreprocessEq3Pass::on_exit_vertex(VertexPtr root) {
   if (root->type() == op_eq3) {
@@ -13,8 +13,10 @@ VertexPtr PreprocessEq3Pass::on_exit_vertex(VertexPtr root) {
     VertexPtr a = eq_op->lhs();
     VertexPtr b = eq_op->rhs();
 
-    if (a->type() == op_null || b->type() == op_null) {
-      root = convert_eq3_null_to_isset(root, a->type() == op_null ? b : a);
+    auto a_unwrapped = VertexUtil::unwrap_inlined_define(a);
+    auto b_unwrapped = VertexUtil::unwrap_inlined_define(b);
+    if (a_unwrapped->type() == op_null || b_unwrapped->type() == op_null) {
+      root = convert_eq3_null_to_isset(root, a_unwrapped->type() == op_null ? b : a);
     }
   }
 
@@ -29,11 +31,13 @@ inline VertexPtr PreprocessEq3Pass::convert_eq3_null_to_isset(VertexPtr eq_op, V
   while (v->type() == op_index) {
     v = v.as<op_index>()->array();
   }
-  if (vk::any_of_equal(v->type(), op_var, op_instance_prop, op_array)) {
+
+  auto unwrapped = VertexUtil::unwrap_inlined_define(v);
+  if (vk::any_of_equal(unwrapped->type(), op_var, op_instance_prop, op_array) || (unwrapped->type() == op_func_call && unwrapped.try_as<op_func_call>()->extra_type == op_ex_constructor_call)) {
     // it's a kludge to make "real world" PHP code compile
     // TODO: can we get rid of this?
-    if (v->has_get_string() &&
-        (v->get_string() == "connection" || vk::contains(v->get_string(), "MC"))) {
+    if (unwrapped->has_get_string() &&
+        (unwrapped->get_string() == "connection" || vk::contains(unwrapped->get_string(), "MC"))) {
       return eq_op;
     }
 

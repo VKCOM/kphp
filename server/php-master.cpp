@@ -52,10 +52,10 @@
 
 #include "runtime/confdata-global-manager.h"
 #include "runtime/instance-cache.h"
-#include "server/cluster-name.h"
 #include "server/confdata-binlog-replay.h"
 #include "server/http-server-context.h"
 #include "server/lease-rpc-client.h"
+#include "server/master-name.h"
 #include "server/numa-configuration.h"
 #include "server/php-engine-vars.h"
 #include "server/php-engine.h"
@@ -71,10 +71,12 @@
 #include "server/php-master-warmup.h"
 #include "server/server-log.h"
 
+#include "server/job-workers/job-stats.h"
 #include "server/job-workers/job-worker-client.h"
 #include "server/job-workers/job-workers-context.h"
-#include "server/job-workers/job-stats.h"
 #include "server/job-workers/shared-memory-manager.h"
+#include "server/json-logger.h"
+#include "server/server-config.h"
 
 using job_workers::JobWorkersContext;
 
@@ -493,7 +495,9 @@ bool all_job_workers_killed() {
 WorkerType start_master() {
   initial_verbosity = verbosity;
 
-  kprintf("[%s] [%s]\n", vk::singleton<ClusterName>::get().get_shmem_name(), vk::singleton<ClusterName>::get().get_socket_name());
+  kprintf("[master_name=%s] [cluster_name=%s] [shmem_name=%s] [socket_name=%s]\n",
+          vk::singleton<MasterName>::get().get_master_name(), vk::singleton<ServerConfig>::get().get_cluster_name(),
+          vk::singleton<MasterName>::get().get_shmem_name(), vk::singleton<MasterName>::get().get_socket_name());
 
   vkprintf(1, "start master: begin\n");
 
@@ -520,7 +524,7 @@ WorkerType start_master() {
 
   //TODO: other signals, daemonize, change user...
   if (shared_data == nullptr) {
-    shared_data = get_shared_data(vk::singleton<ClusterName>::get().get_shmem_name());
+    shared_data = get_shared_data(vk::singleton<MasterName>::get().get_shmem_name());
   }
 
   int attempts_to_start = 2;
@@ -721,7 +725,7 @@ static const sockaddr_un *get_socket_addr() {
   static bool inited = false;
 
   if (!inited) {
-    init_sockaddr_un(&unix_socket_addr, vk::singleton<ClusterName>::get().get_socket_name());
+    init_sockaddr_un(&unix_socket_addr, vk::singleton<MasterName>::get().get_socket_name());
     inited = true;
   }
 
@@ -922,7 +926,8 @@ std::string php_master_prepare_stats(bool add_worker_pids) {
     // engine_tag may be ended with "["
     oss << "kphp_version\t" << atoll(engine_tag) << "\n";
   }
-  oss << "cluster_name\t" << vk::singleton<ClusterName>::get().get_cluster_name() << "\n"
+  oss << "cluster_name\t" << vk::singleton<ServerConfig>::get().get_cluster_name() << "\n"
+      << "master_name\t" << vk::singleton<MasterName>::get().get_master_name() << "\n"
       << "min_worker_uptime\t" << min_uptime << "\n"
       << "max_worker_uptime\t" << max_uptime << "\n"
       << "total_workers\t" << general_workers_stat.total_workers + job_workers_stat.total_workers << "\n"
@@ -1043,7 +1048,9 @@ int php_master_rpc_stats(const std::optional<std::vector<std::string>> &sorted_f
 std::string get_master_stats_html() {
   const auto worker_stats = vk::singleton<ServerStats>::get().collect_workers_stat(WorkerType::general_worker);
   std::ostringstream html;
-  html << "total_workers\t" << worker_stats.total_workers << "\n"
+  html << "cluster_name\t" << vk::singleton<ServerConfig>::get().get_cluster_name() << "\n"
+       << "master_name\t" << vk::singleton<MasterName>::get().get_master_name() << "\n"
+       << "total_workers\t" << worker_stats.total_workers << "\n"
        << "free_workers\t" << worker_stats.total_workers - worker_stats.running_workers << "\n"
        << "working_workers\t" << worker_stats.running_workers << "\n"
        << "working_but_waiting_workers\t" << worker_stats.waiting_workers << "\n"
@@ -1096,6 +1103,11 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, stats_tag_kphp_server) {
   const auto cpu_stats = server_stats.cpu[1].get_stat();
   stats->add_gauge_stat("cpu.stime", cpu_stats.cpu_s_usage);
   stats->add_gauge_stat("cpu.utime", cpu_stats.cpu_u_usage);
+
+  auto total_workers_json_count = vk::singleton<ServerStats>::get().collect_json_count_stat();
+  uint64_t master_json_logs_count = vk::singleton<JsonLogger>::get().get_json_logs_count();
+  stats->add_gauge_stat("server.total_json_logs_count", std::get<0>(total_workers_json_count) + master_json_logs_count);
+  stats->add_gauge_stat("server.total_json_traces_count", std::get<1>(total_workers_json_count));
 
   instance_cache_get_memory_stats().write_stats_to(stats, "instance_cache");
   stats->add_gauge_stat("instance_cache.memory.buffer_swaps_ok", instance_cache_memory_swaps_ok);
@@ -1251,7 +1263,7 @@ bool init_http_sockets_if_needed() {
       if (socket_fd != -1) {
         close(socket_fd);
       }
-      socket_fd = sock_dgram(vk::singleton<ClusterName>::get().get_socket_name());
+      socket_fd = sock_dgram(vk::singleton<MasterName>::get().get_socket_name());
       me->ask_http_fds_generation = static_cast<int>(generation);
       changed = 1;
     }
@@ -1357,7 +1369,7 @@ void check_and_instance_cache_try_swap_memory() {
 static void cron() {
   if (!other->is_alive || in_old_master_on_restart()) {
     // write stats at the beginning to avoid spikes in graphs
-    send_data_to_statsd_with_prefix(vk::singleton<ClusterName>::get().get_statsd_prefix(), stats_tag_kphp_server);
+    send_data_to_statsd_with_prefix(vk::singleton<ServerConfig>::get().get_statsd_prefix(), stats_tag_kphp_server);
     vk::singleton<StatsHouseClient>::get().master_send_metrics();
   }
   create_all_outbound_connections();

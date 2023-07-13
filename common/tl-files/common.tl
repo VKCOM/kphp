@@ -51,6 +51,7 @@ rpcInvokeReqExtra#f3ef81a9 {flags:#}
   return_request_sizes:flags.3?%True
   return_failed_subqueries:flags.4?%True
   return_query_stats:flags.6?%True
+  no_result:flags.7?%True // Currently for proxy only. Client goes to proxy, it clears this bit and sends query to engine. Client does not wait for answer.
   // Bits 17, 22, 24 was used in before, but their support was dropped
   wait_binlog_pos:flags.16?long // Perform query only after position in binlog is at least this
   string_forward_keys:flags.18?%(Vector string) // For cluster that are split by string (like pmemcached in some modes) - first specified string is used to choose target, then it is deleted from vector
@@ -60,6 +61,7 @@ rpcInvokeReqExtra#f3ef81a9 {flags:#}
   custom_timeout_ms:flags.23?int  // Custom timeout for query
   supported_compression_version:flags.25?int // note, that client support compression, to possibly compress answers
   random_delay:flags.26?double // starting query would be delayed by random number, not grater than given
+  return_view_number:flags.27?%True // GMS2 related parameter: return view number in response
   = RpcInvokeReqExtra flags;
 
 rpcReqResultExtra#c5011709 {flags:#} 
@@ -89,6 +91,10 @@ left {X:Type} {Y:Type} value:X = Either X Y;
 right {X:Type} {Y:Type} value:Y = Either X Y;
 
 ---functions---
+
+@any rpcDestActor#7568aabd {X:Type} actor_id:long query:!X = X;
+@any rpcDestActorFlags#f0a5acf7 {X:Type} actor_id:long flags:# extra:%(RpcInvokeReqExtra flags) query:!X = X;
+@any rpcDestFlags#e352035e {X:Type} flags:# extra:%(RpcInvokeReqExtra flags) query:!X = X;
 
 @any rpcInvokeReq#2374df3d {X:Type} query_id:long query:!X = RpcReqResult X;
 

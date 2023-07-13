@@ -3,10 +3,11 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "worker-stats-buffer.h"
+#include "common/resolver.h"
 #include "common/tl/constants/statshouse.h"
 #include "runtime/critical_section.h"
+#include "server/server-config.h"
 #include "statshouse-client.h"
-#include "common/resolver.h"
 
 namespace statshouse {
 
@@ -78,14 +79,12 @@ void WorkerStatsBuffer::make_metric(std::vector<StatsHouseMetric> &metrics, cons
 void WorkerStatsBuffer::flush() {
   dl::CriticalSectionGuard critical_section;
   std::vector<StatsHouseMetric> metrics;
-  const char *hostname = kdb_gethostname();
+  const char *cluster_name = vk::singleton<ServerConfig>::get().get_cluster_name();
 
   for (size_t i = 0; i < static_cast<size_t>(WorkerType::types_count); ++i) {
     std::vector<tag> tags;
+    tags.emplace_back("cluster", cluster_name);
     tags.emplace_back("worker_type", i == static_cast<size_t>(WorkerType::general_worker) ? "general" : "job");
-    if (hostname != nullptr) {
-      tags.emplace_back("host", hostname);
-    }
 
     make_generic_metric(metrics, "kphp_requests_outgoing_queries", GenericQueryStatKey::outgoing_queries, i, tags);
     make_generic_metric(metrics, "kphp_requests_outgoing_long_queries", GenericQueryStatKey::outgoing_long_queries, i, tags);
@@ -94,13 +93,10 @@ void WorkerStatsBuffer::flush() {
 
     make_generic_metric(metrics, "kphp_memory_script_usage", GenericQueryStatKey::memory_used, i, tags);
     make_generic_metric(metrics, "kphp_memory_script_real_usage", GenericQueryStatKey::real_memory_used, i, tags);
-    make_generic_metric(metrics, "kphp_memory_script_total_allocated_by_curl", GenericQueryStatKey::total_allocated_by_curl, i, tags);
   }
 
   std::vector<tag> tags;
-  if (hostname != nullptr) {
-    tags.emplace_back("host", hostname);
-  }
+  tags.emplace_back("cluster_name", cluster_name);
 
   make_metric(metrics, "kphp_jobs_queue_time", QueryStatKey::job_wait_time, tags);
   make_metric(metrics, "kphp_memory_job_request_usage", QueryStatKey::job_request_memory_usage, tags);

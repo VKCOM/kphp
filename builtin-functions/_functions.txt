@@ -14,6 +14,7 @@ if (0) {
 }
 
 require_once __DIR__ . '/kphp_internal.txt';
+require_once __DIR__ . '/kphp_tracing.txt';
 require_once __DIR__ . '/uberh3.txt';
 require_once __DIR__ . '/spl.txt';
 require_once __DIR__ . '/ffi.txt';
@@ -101,6 +102,10 @@ final class McMemcache implements Memcache {
 
 final class mysqli {
     private function __construct() ::: \mysqli;
+}
+
+final class DeflateContext {
+    private function __construct() ::: DeflateContext;
 }
 
 /** @var mixed $_SERVER */
@@ -204,6 +209,8 @@ function get_net_queries_count() ::: int;
 function get_engine_uptime() ::: int;
 function get_engine_version() ::: string;
 function get_engine_workers_number() ::: int;
+function get_kphp_cluster_name(): string;
+
 // get_webserver_stats returns a tuple of (running_workers, waiting_workers, ready_for_accept_workers, total_workers)
 function get_webserver_stats() ::: tuple(int, int, int, int);
 
@@ -513,9 +520,29 @@ function openssl_encrypt($data ::: string, $method ::: string, $key ::: string, 
 function openssl_decrypt($data ::: string, $method ::: string, $key ::: string, $options ::: int = 0, $iv ::: string  = '',
                         $tag ::: string = '', $aad ::: string = '') ::: string | false;
 
+define('ZLIB_ENCODING_RAW', -0x0f);
+define('ZLIB_ENCODING_DEFLATE', 0x0f);
+define('ZLIB_ENCODING_GZIP', 0x1f);
+
+define('ZLIB_NO_FLUSH', 0);
+define('ZLIB_PARTIAL_FLUSH', 1);
+define('ZLIB_SYNC_FLUSH', 2);
+define('ZLIB_FULL_FLUSH', 3);
+define('ZLIB_FINISH', 4);
+define('ZLIB_BLOCK', 5);
+define('ZLIB_TREES', 6);
+
+define('ZLIB_FILTERED', 1);
+define('ZLIB_HUFFMAN_ONLY', 2);
+define('ZLIB_RLE', 3);
+define('ZLIB_FIXED', 4);
+define('ZLIB_DEFAULT_STRATEGY', 0);
+
 define('PHP_QUERY_RFC1738', 1);
 define('PHP_QUERY_RFC3986', 2);
 
+function deflate_init(int $encoding, array $options = []) ::: ?DeflateContext;
+function deflate_add(DeflateContext $context, string $data, int $flush_mode = ZLIB_SYNC_FLUSH) ::: string | false;
 function gzencode ($str ::: string, $level ::: int = -1) ::: string;
 function gzdecode ($str ::: string) ::: string;
 function gzcompress ($str ::: string, $level ::: int = -1) ::: string;
@@ -624,7 +651,7 @@ function dechex ($number ::: int) ::: string;
 function hex2bin ($str ::: string) ::: string;
 function hexdec ($number ::: string) ::: int;
 function htmlentities ($str ::: string) ::: string;
-function html_entity_decode ($str ::: string, $flags ::: int = ENT_COMPAT, $encoding ::: string = '1251') ::: string;
+function html_entity_decode ($str ::: string, $flags ::: int = ENT_COMPAT, $encoding ::: string = "cp1251") ::: string;
 function htmlspecialchars ($str ::: string, $flags ::: int = ENT_COMPAT) ::: string;
 function htmlspecialchars_decode ($str ::: string, $flags ::: int = ENT_COMPAT) ::: string;
 function levenshtein ($str1 ::: string, $str2 ::: string) ::: int;
@@ -732,13 +759,13 @@ function setlocale ($category ::: int, $locale ::: string) ::: string | false;
 
 function iconv ($input_encoding ::: string, $output_encoding ::: string, $input_str ::: string) ::: string | false;
 
-function mb_check_encoding ($str ::: string, $encoding ::: string = "1251") ::: bool;
-function mb_strlen ($str ::: string, $encoding ::: string = "1251") ::: int;
-function mb_strpos ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $encoding ::: string = "1251") ::: int | false;
-function mb_stripos ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $encoding ::: string = "1251") ::: int | false;
-function mb_strtolower ($str ::: string, $encoding ::: string = "1251") ::: string;
-function mb_strtoupper ($str ::: string, $encoding ::: string = "1251") ::: string;
-function mb_substr ($str ::: string, $start ::: int, $length ::: mixed = PHP_INT_MAX, $encoding ::: string = "1251") ::: string;
+function mb_check_encoding ($str ::: string, $encoding ::: string = "cp1251") ::: bool;
+function mb_strlen ($str ::: string, $encoding ::: string = "cp1251") ::: int;
+function mb_strpos ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $encoding ::: string = "cp1251") ::: int | false;
+function mb_stripos ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $encoding ::: string = "cp1251") ::: int | false;
+function mb_strtolower ($str ::: string, $encoding ::: string = "cp1251") ::: string;
+function mb_strtoupper ($str ::: string, $encoding ::: string = "cp1251") ::: string;
+function mb_substr ($str ::: string, $start ::: int, $length ::: mixed = PHP_INT_MAX, $encoding ::: string = "cp1251") ::: string;
 
 define('PHP_ROUND_HALF_UP', 123423141);
 define('PHP_ROUND_HALF_DOWN', 123423144);
@@ -965,8 +992,6 @@ function rpc_server_fetch_request() ::: @tl\RpcFunction;
 /** @kphp-extern-func-info can_throw */
 function rpc_server_store_response(@tl\RpcFunctionReturnResult $response) ::: void;
 
-function convert_tl_function_magic_to_name(int $magic): string;
-
 /** @kphp-extern-func-info can_throw resumable cpp_template_call */
 function wait(future<any> | false $id) ::: ^1[*] | null;
 /** @kphp-extern-func-info can_throw resumable cpp_template_call */
@@ -989,8 +1014,6 @@ function get_running_fork_id() ::: future <void>;
 function get_fork_stat(future<any> $fork) ::: mixed[] | false;
 
 function query_x2 ($x ::: int) ::: int;
-
-function set_wait_all_forks_on_finish(bool $wait = true) ::: bool;
 
 /**
  * conversions
@@ -1060,6 +1083,9 @@ function curl_getinfo ($curl_handle ::: int, $option ::: int = 0) ::: mixed;
 function curl_error ($curl_handle ::: int) ::: string;
 function curl_errno ($curl_handle ::: int) ::: int;
 function curl_close ($curl_handle ::: int) ::: void;
+
+/** @kphp-extern-func-info resumable */
+function curl_exec_concurrently($curl_handle ::: int, $timeout ::: float = 1.0): ?string;
 
 function curl_multi_init () ::: int;
 function curl_multi_add_handle ($multi_handle ::: int, $curl_handle ::: int) ::: int|false;
@@ -1374,6 +1400,11 @@ class KphpJobWorkerResponseError implements KphpJobWorkerResponse {
   const JOB_CLIENT_MEMORY_LIMIT_ERROR = -1001; // client doesn't have enough memory to accept job response
   const JOB_NOTHING_REPLIED_ERROR = -2001;     // kphp_job_worker_store_response() was not succeeded
 
+  const JOB_STORE_RESPONSE_INCORRECT_CALL_ERROR = -3000;
+  const JOB_STORE_RESPONSE_NOT_ENOUGH_SHARED_MESSAGES_ERROR = -3001;
+  const JOB_STORE_RESPONSE_TOO_BIG_ERROR = -3002;
+  const JOB_STORE_RESPONSE_CANT_SEND_ERROR = -3003;
+
   public function getError() ::: string;
   public function getErrorCode() ::: int; // returns one of listed above error codes
 }
@@ -1383,7 +1414,8 @@ function kphp_job_worker_start_no_reply(KphpJobWorkerRequest $request, float $ti
 function kphp_job_worker_start_multi(KphpJobWorkerRequest[] $request, float $timeout) ::: (future<KphpJobWorkerResponse> | false)[];
 
 function kphp_job_worker_fetch_request() ::: KphpJobWorkerRequest;
-function kphp_job_worker_store_response(KphpJobWorkerResponse $response) ::: void;
+// returns 0 on success, < 0 - on errors. All possible error codes are constants like KphpJobWorkerResponseError::JOB_STORE_RESPONSE_*
+function kphp_job_worker_store_response(KphpJobWorkerResponse $response) ::: int;
 
 function is_kphp_job_workers_enabled() ::: bool;
 
@@ -1400,6 +1432,10 @@ function set_migration_php8_warning ($mask ::: int) ::: void;
 function set_detect_incorrect_encoding_names_warning(bool $show) ::: void;
 
 function set_json_log_on_timeout_mode(bool $enabled) ::: void;
+
+function set_json_log_demangle_stacktrace(bool $enable) ::: void;
+
+function set_use_updated_gmmktime(bool $enable) ::: void;
 
 // re-initialize given ArrayIterator with another array;
 // in KPHP it returns the same ArrayIterator that is ready to be used

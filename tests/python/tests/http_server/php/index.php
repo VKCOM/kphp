@@ -122,6 +122,31 @@ if (isset($_SERVER["JOB_ID"])) {
     }
 
     echo "OK";
+} else if ($_SERVER["PHP_SELF"] === "/test_script_gzip_header") {
+    switch($_GET["type"]) {
+      case "gzip":
+        ob_start("ob_gzhandler");
+        echo 'OK';
+        break;
+      case "reset":
+        ob_start("ob_gzhandler");
+        echo 'OK';
+        ob_end_flush();
+        break;
+      case "ignore-second-handler":
+        header('Transfer-Encoding: chunked');
+        $chunk = "OK";
+        printf("%X\r\n", strlen($chunk));
+        echo $chunk . "\r\n";
+        flush(); // flush headers so the handler below should not affect them anymore
+        ob_start("ob_gzhandler");
+        $chunk = "OK";
+        printf("%X\r\n", strlen($chunk));
+        echo $chunk . "\r\n";
+        printf("0\r\n\r\n");
+
+        break;
+    }
 } else if ($_SERVER["PHP_SELF"] === "/test_ignore_user_abort") {
     register_shutdown_function('shutdown_function');
     /** @var I */

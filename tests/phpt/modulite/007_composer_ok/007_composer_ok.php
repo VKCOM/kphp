@@ -1,5 +1,4 @@
 @ok
-KPHP_ENABLE_MODULITE=1
 KPHP_COMPOSER_ROOT={dir}
 <?php
 require_once __DIR__ . '/vendor/autoload.php';

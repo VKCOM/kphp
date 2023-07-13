@@ -56,6 +56,36 @@ public:
 
 template<class FunctionPassT>
 void run_function_pass(VertexPtr &vertex, FunctionPassT *pass) {
+#ifdef __x86_64__
+  constexpr size_t STACK_INIT_CAP = 1000;
+  constexpr uintptr_t MASK = 1UL << 49;
+
+  std::vector<VertexPtr *> vertex_stack;
+  vertex_stack.reserve(STACK_INIT_CAP);
+
+  vertex_stack.push_back(&vertex);
+
+  while (!vertex_stack.empty()) {
+    VertexPtr *cur_vertex = vertex_stack.back();
+
+    if (reinterpret_cast<uintptr_t>(cur_vertex) & MASK) {
+      vertex_stack.pop_back();
+      cur_vertex = reinterpret_cast<VertexPtr *>(reinterpret_cast<uintptr_t>(cur_vertex) ^ MASK);
+      stage::set_location((*cur_vertex)->get_location());
+      *cur_vertex = pass->on_exit_vertex(*cur_vertex);
+      continue;
+    }
+
+    stage::set_location((*cur_vertex)->get_location());
+    *cur_vertex = pass->on_enter_vertex(*cur_vertex);
+    vertex_stack.back() = reinterpret_cast<VertexPtr *>(reinterpret_cast<uintptr_t>(cur_vertex) | MASK);
+    if (!pass->user_recursion(*cur_vertex)) {
+      for (auto *son_iter = (*cur_vertex)->rbegin(); son_iter != (*cur_vertex)->rend(); ++son_iter) {
+        vertex_stack.push_back(&*son_iter);
+      }
+    }
+  }
+#else
   stage::set_location(vertex->get_location());
 
   vertex = pass->on_enter_vertex(vertex);
@@ -66,7 +96,9 @@ void run_function_pass(VertexPtr &vertex, FunctionPassT *pass) {
     }
   }
 
+  stage::set_location(vertex->get_location());
   vertex = pass->on_exit_vertex(vertex);
+#endif
 }
 
 template<class FunctionPassT, Operation Op>

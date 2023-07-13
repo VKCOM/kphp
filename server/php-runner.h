@@ -5,7 +5,6 @@
 #pragma once
 
 #include <csetjmp>
-#include <csignal>
 
 #include "common/dl-utils-lite.h"
 #include "common/mixin/not_copyable.h"
@@ -57,11 +56,6 @@ extern long long query_stats_id;
 
 void dump_query_stats();
 
-void init_handlers();
-
-extern std::array<void *, 128> sigalrm_last_backtrace;
-extern volatile std::sig_atomic_t sigalrm_last_backtrace_size;
-
 class PhpScriptStack : vk::not_copyable {
 public:
   explicit PhpScriptStack(size_t stack_size) noexcept;
@@ -88,13 +82,12 @@ private:
  */
 class PhpScript {
   double cur_timestamp{0}, net_time{0}, script_time{0};
+  double last_net_time_delta{0};
   int queries_cnt{0};
   int long_queries_cnt{0};
 
 private:
   int swapcontext_helper(ucontext_t_portable *oucp, const ucontext_t_portable *ucp);
-
-  void on_request_timeout_error();
 
   void assert_state(run_state_t expected);
 
@@ -127,7 +120,8 @@ public:
   PhpScript(size_t mem_size, double oom_handling_memory_ratio, size_t stack_size) noexcept;
   ~PhpScript() noexcept;
 
-  void check_delayed_errors() noexcept;
+  void try_run_shutdown_functions_on_timeout() noexcept;
+  void check_net_context_errors() noexcept;
 
   void init(script_t *script, php_query_data *data_to_set) noexcept;
 

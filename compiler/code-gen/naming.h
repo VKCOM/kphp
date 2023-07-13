@@ -70,7 +70,7 @@ public:
       if (inline_) {
         W_ << "inline ";
       }
-      if (virtual_) {
+      if (!definition_ && virtual_) {
         W_ << "virtual ";
       }
       is_empty_ = false;
@@ -122,6 +122,11 @@ public:
     return std::move(*this);
   }
 
+  FunctionSignatureGenerator &&set_definition(bool new_value = true) && noexcept {
+    definition_ = new_value;
+    return std::move(*this);
+  }
+
 private:
   template<class T>
   FunctionSignatureGenerator &&generate_specifiers(const T &value) noexcept {
@@ -134,11 +139,11 @@ private:
         W_ << " noexcept ";
       }
 
-      if (final_) {
+      if (!definition_ && final_) {
         W_ << " final ";
       }
 
-      if (overridden_) {
+      if (!definition_ && overridden_) {
         W_ << " override ";
       }
 
@@ -166,6 +171,7 @@ private:
   bool final_ = false;
   bool pure_virtual_ = false;
   bool inline_ = false;
+  bool definition_ = false;
 };
 
 struct FunctionName {

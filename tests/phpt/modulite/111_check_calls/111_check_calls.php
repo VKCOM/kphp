@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_MODULITE=1
 /restricted to call Utils111\\Hidden111::demo\(\), it's internal in @utils/
 /restricted to call globalDemo\(\), it's not required by @feed/
 /restricted to call Messages111\\Core111\\Core111::demo1\(\), @msg\/core is internal in @msg/

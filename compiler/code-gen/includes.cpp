@@ -62,6 +62,10 @@ void IncludesCollector::add_function_body_depends(const FunctionPtr &function) {
     }
   }
 
+  for (VarPtr const_var : function->explicit_const_var_ids) {
+    add_var_signature_depends(const_var);
+  }
+
   for (auto to_include : function->class_dep) {
     add_class_include(to_include);
   }
@@ -129,6 +133,27 @@ void IncludesCollector::add_raw_filename_include(const std::string &file_name) {
   internal_headers_.emplace(file_name);
 }
 
+void IncludesCollector::add_vertex_depends(VertexPtr v) {
+  if (!v) {
+    return;
+  }
+  for (VertexPtr child : *v) {
+    add_vertex_depends(child);
+  }
+  if (auto as_func_call = v.try_as<op_func_call>()) {
+    if (as_func_call->func_id) {
+      const auto &header_full_name = as_func_call->func_id->header_full_name;
+      if (!header_full_name.empty()) {
+        add_raw_filename_include(as_func_call->func_id->header_full_name);
+      }
+    }
+    add_function_signature_depends(as_func_call->func_id);
+  }
+  if (auto as_var = v.try_as<op_var>()) {
+    add_var_signature_depends(as_var->var_id);
+  }
+}
+
 void IncludesCollector::compile(CodeGenerator &W) const {
   for (const auto &lib_header : lib_headers_) {
     if (!prev_headers_.count(lib_header.first)) {
@@ -146,7 +171,7 @@ void IncludesCollector::compile(CodeGenerator &W) const {
       class_to_include = klass;
     }
     if (class_to_include && !prev_classes_.count(class_to_include)) {
-      class_headers.emplace(class_to_include->get_subdir() + "/" + class_to_include->header_name);
+      class_headers.emplace(class_to_include->get_subdir() + "/" + class_to_include->h_filename);
     }
   }
   for (const auto &class_header : class_headers) {

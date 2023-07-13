@@ -9,9 +9,10 @@
 #include "common/rpc-error-codes.h"
 #include "common/wrappers/overloaded.h"
 #include "net/net-connections.h"
+#include "runtime/curl.h"
 #include "runtime/job-workers/job-interface.h"
-#include "runtime/kphp-backtrace.h"
 #include "runtime/rpc.h"
+#include "server/curl-adaptor.h"
 #include "server/database-drivers/adaptor.h"
 #include "server/database-drivers/request.h"
 #include "server/job-workers/job-stats.h"
@@ -22,7 +23,6 @@
 #include "server/php-sql-connections.h"
 #include "server/php-worker.h"
 #include "server/server-stats.h"
-#include "server/server-log.h"
 
 PhpWorker *active_worker = nullptr;
 
@@ -58,16 +58,7 @@ double PhpWorker::enter_lifecycle() noexcept {
     get_utime_monotonic();
   } while (!paused);
 
-  if (conn->status != conn_wait_net) {
-    std::array<char, 256> backtrace{'\0'};
-    parse_kphp_backtrace(backtrace.data(), backtrace.size(), sigalrm_last_backtrace.data(), sigalrm_last_backtrace_size);
-    std::array<char, 512> message{};
-    snprintf(message.data(), message.size(),
-             "Connection suspended without waiting for net. PhpWorker state %d, connection status %d, PhpScript state %d\n"
-             "Stacktrace of last sigalrm:\n"
-             "%s", state, conn->status, php_script != nullptr ? static_cast<int>(php_script->state) : -1, backtrace.data());
-    dl_assert(conn->status == conn_wait_net, message.data());
-  }
+  assert(conn->status == conn_wait_net);
   return get_timeout();
 }
 
@@ -179,7 +170,7 @@ void php_worker_run_rpc_send_query(int32_t request_id, const net_queries_data::r
   } else {
     int new_conn_cnt = create_new_connections(target);
     if (new_conn_cnt <= 0 && get_target_connection(target, 1) == nullptr) {
-      on_net_event(create_rpc_error_event(slot_id, TL_ERROR_NO_CONNECTIONS, "Failed to establish connection [probably reconnect timeout is not expired]", nullptr));
+      on_net_event(create_rpc_error_event(slot_id, TL_ERROR_NO_CONNECTIONS_IN_RPC_CLIENT, "Failed to establish connection [probably reconnect timeout is not expired]", nullptr));
       return;
     }
 
@@ -202,7 +193,10 @@ void php_worker_run_net_queue(PhpWorker *worker __attribute__((unused))) {
                    php_assert(query->slot_id == data->request_id);
                    vk::singleton<database_drivers::Adaptor>::get().process_external_db_request_net_query(std::unique_ptr<database_drivers::Request>(data));
                  },
-               },
+                 [&](const curl_async::CurlRequest &request) {
+                   php_assert(query->slot_id == request.request_id);
+                   vk::singleton<curl_async::CurlAdaptor>::get().process_request_net_query(request);
+                 }},
                query->data);
   }
 }

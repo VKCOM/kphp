@@ -24,8 +24,9 @@ class KphpServer(Engine):
         self._master_port = get_port()
         self._options["--http-port"] = self._http_port
         self._options["--master-port"] = self._master_port
-        self._options["--cluster-name"] = \
+        self._options["--master-name"] = \
             "kphp_server_{}".format("".join(chr(ord('A') + int(c)) for c in str(self._http_port)))
+        self._options["--server-config"] = self.get_server_config_path()
         self._options["--disable-sql"] = True
         self._options["--workers-num"] = 1
         self._options["--allow-loopback"] = None
@@ -38,6 +39,9 @@ class KphpServer(Engine):
             self.start()
 
     def start(self, start_msgs=None):
+        with open(self.get_server_config_path(), mode="w+t", encoding="utf-8") as fd:
+            fd.write(
+                "cluster_name: kphp_server_{}".format("".join(chr(ord('A') + int(c)) for c in str(self._http_port))))
         super(KphpServer, self).start(start_msgs)
         self._json_logs = []
         self._json_log_file_read_fd = open(self._log_file + ".json", 'r')
@@ -46,6 +50,8 @@ class KphpServer(Engine):
         super(KphpServer, self).stop()
         if self._json_log_file_read_fd:
             self._json_log_file_read_fd.close()
+        if os.path.exists(self.get_server_config_path()):
+            os.remove(self.get_server_config_path())
 
     def set_error_tag(self, tag):
         error_tag_file = None
@@ -133,6 +139,9 @@ class KphpServer(Engine):
                     del log_record["tags"]["logname_id"]
                 del log_record["tags"]["process_type"]
                 del log_record["tags"]["pid"]
+                if not got_tags.get("cluster", ""):
+                    raise RuntimeError("Got an empty cluster in json log: {}".format(got_tags))
+                del log_record["tags"]["cluster"]
                 self._json_logs.append(log_record)
 
     def assert_json_log(self, expect, message="Can't wait expected json log", timeout=60):
@@ -171,3 +180,6 @@ class KphpServer(Engine):
 
     def get_workers(self):
         return self._engine_process.children()
+
+    def get_server_config_path(self):
+        return os.path.join(self._working_dir, "server_config.yml")

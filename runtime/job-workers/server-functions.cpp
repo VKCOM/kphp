@@ -42,31 +42,31 @@ class_instance<C$KphpJobWorkerRequest> f$kphp_job_worker_fetch_request() noexcep
   return result;
 }
 
-void f$kphp_job_worker_store_response(const class_instance<C$KphpJobWorkerResponse> &response) noexcept {
+int64_t f$kphp_job_worker_store_response(const class_instance<C$KphpJobWorkerResponse> &response) noexcept {
   if (response.is_null()) {
     php_warning("Can't store job response: the response shouldn't be null");
-    return;
+    return job_workers::store_response_incorrect_call_error;
   }
   if (!f$is_kphp_job_workers_enabled()) {
     php_warning("Can't store job response %s: job workers disabled", response.get_class());
-    return;
+    return job_workers::store_response_incorrect_call_error;
   }
   if (!current_job.send_reply) {
     php_warning("Can't store job response %s: this is a not job request", response.get_class());
-    return;
+    return job_workers::store_response_incorrect_call_error;
   }
   auto &memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
   auto *response_memory = memory_manager.acquire_shared_message<job_workers::JobSharedMessage>();
   if (!response_memory) {
-    php_warning("Can't store job response %s: not enough shared memory", response.get_class());
-    return;
+    php_warning("Can't store job response %s: not enough shared messages", response.get_class());
+    return job_workers::store_response_not_enough_shared_messages_error;
   }
   response_memory->instance = copy_instance_into_other_memory(response, response_memory->resource,
                                                               ExtraRefCnt::for_job_worker_communication, job_workers::request_extra_shared_memory);
   if (response_memory->instance.is_null()) {
     php_warning("Can't store job response %s: too big response", response.get_class());
     memory_manager.release_shared_message(response_memory);
-    return;
+    return job_workers::store_response_too_big_error;
   }
 
   dl::CriticalSectionSmartGuard critical_section;
@@ -74,7 +74,9 @@ void f$kphp_job_worker_store_response(const class_instance<C$KphpJobWorkerRespon
     memory_manager.release_shared_message(response_memory);
     critical_section.leave_critical_section();
     php_warning("Can't store job response %s: %s", response.get_class(), err);
+    return job_workers::store_response_cant_send_error;
   } else {
     memory_manager.detach_shared_message_from_this_proc(response_memory);
+    return 0;
   }
 }

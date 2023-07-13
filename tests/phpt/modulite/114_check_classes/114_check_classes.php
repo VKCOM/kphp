@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_MODULITE=1
 /in global scope/
 /restricted to use Feed114\\Infra114\\Strings114, @feed\/infra is internal in @feed/
 /in other114/

@@ -11,11 +11,14 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/generics-mixins.h"
 #include "compiler/data/kphp-json-tags.h"
+#include "compiler/data/kphp-tracing-tags.h"
 #include "compiler/data/src-file.h"
 #include "compiler/phpdoc.h"
 #include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
+#include "compiler/vertex-util.h"
 #include "compiler/vertex.h"
 
 /*
@@ -327,6 +330,14 @@ private:
             kphp_error(itemT.def_hint, fmt_format("Could not parse generic T default after '{}='", itemT.nameT));
             GenericsDeclarationMixin::check_declarationT_def_hint(itemT.def_hint, itemT.nameT);
           }
+        }
+        break;
+      }
+
+      case PhpDocType::kphp_tracing: {
+        bool is_static_method_wrap = f_->class_id && f_->modifiers.is_static() && f_->is_auto_inherited;
+        if (!is_static_method_wrap) {
+          f_->kphp_tracing = KphpTracingDeclarationMixin::create_for_function_from_phpdoc(f_, tag.value);
         }
         break;
       }

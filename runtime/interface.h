@@ -11,6 +11,7 @@
 #include "runtime/kphp_core.h"
 #include "runtime/optional.h"
 #include "server/php-query-data.h"
+#include "server/workers-control.h"
 
 extern string_buffer *coub;//TODO static
 using shutdown_function_type = std::function<void()>;
@@ -55,20 +56,25 @@ void f$setrawcookie(const string &name, const string &value, int64_t expire = 0,
 
 int64_t f$ignore_user_abort(Optional<bool> enable = Optional<bool>());
 
+enum class ShutdownType {
+  normal,
+  exit,
+  exception,
+  timeout,
+};
+
 void run_shutdown_functions_from_timeout();
-void run_shutdown_functions_from_script();
+void run_shutdown_functions_from_script(ShutdownType shutdown_type);
 
 int get_shutdown_functions_count();
 shutdown_functions_status get_shutdown_functions_status();
 
 void f$register_shutdown_function(const shutdown_function_type &f);
 
-bool f$set_wait_all_forks_on_finish(bool wait = true) noexcept;
-
 void f$fastcgi_finish_request(int64_t exit_code = 0);
 
 __attribute__((noreturn))
-void finish(int64_t exit_code, bool allow_forks_waiting);
+void finish(int64_t exit_code, bool from_exit);
 
 __attribute__((noreturn))
 void f$exit(const mixed &v = 0);
@@ -166,6 +172,8 @@ string f$get_engine_version();
 
 int64_t f$get_engine_workers_number();
 
+string f$get_kphp_cluster_name();
+
 std::tuple<int64_t, int64_t, int64_t, int64_t> f$get_webserver_stats();
 
 void arg_add(const char *value);
@@ -190,7 +198,7 @@ void init_runtime_environment(php_query_data *data, void *mem, size_t script_mem
 void free_runtime_environment();
 
 // called only once at the beginning of each worker
-void worker_global_init() noexcept;
+void worker_global_init(WorkerType worker_type) noexcept;
 
 void use_utf8();
 
@@ -212,6 +220,12 @@ extern bool is_json_log_on_timeout_enabled;
 
 inline void f$set_json_log_on_timeout_mode(bool enabled) {
   is_json_log_on_timeout_enabled = enabled;
+}
+
+extern bool is_demangled_stacktrace_logs_enabled;
+
+inline void f$set_json_log_demangle_stacktrace(bool enable) {
+  is_demangled_stacktrace_logs_enabled = enable;
 }
 
 int64_t f$numa_get_bound_node();

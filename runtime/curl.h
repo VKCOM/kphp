@@ -67,3 +67,32 @@ private:
 
   friend class vk::singleton<CurlMemoryUsage>;
 };
+
+namespace curl_async {
+
+class CurlRequest {
+public:
+  static CurlRequest build(curl_easy easy_id);
+
+  void send_async() const;
+  void finish_request(Optional<string> &&respone = false) const;
+  void detach_multi_and_easy_handles() const noexcept;
+
+  const curl_easy easy_id{0};
+  const curl_multi multi_id{0};
+  const int request_id{0};
+
+private:
+  CurlRequest(curl_easy easy_id, curl_multi multi_id) noexcept;
+};
+
+class CurlResponse : public ManagedThroughDlAllocator, vk::not_copyable {
+public:
+  CurlResponse(Optional<string> &&response, int bound_request_id) noexcept
+    : response(std::move(response))
+    , bound_request_id(bound_request_id) {}
+
+  Optional<string> response;
+  const int bound_request_id{0};
+};
+} // namespace curl_async

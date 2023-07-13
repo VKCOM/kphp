@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_MODULITE=1
 /in global scope/
 /restricted to use global \$in_plain_115, it's not required by @plain/
 /in Post115::demo/

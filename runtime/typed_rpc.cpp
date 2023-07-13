@@ -7,6 +7,7 @@
 #include "common/containers/final_action.h"
 #include "common/rpc-error-codes.h"
 
+#include "runtime/kphp_tracing.h"
 #include "runtime/resumable.h"
 #include "runtime/rpc.h"
 #include "runtime/tl/rpc_server.h"
@@ -53,9 +54,9 @@ private:
       ready = rpc_get_and_parse(query_.get()->query_id, -1);
       TRY_WAIT(rpc_get_and_parse_resumable_label_0, ready, bool);
       if (!ready) {
-        php_assert (last_rpc_error_get());
+        php_assert (last_rpc_error_message_get());
         query_.get()->result_fetcher.reset();
-        RETURN(error_factory_.make_error(last_rpc_error_get(), TL_ERROR_UNKNOWN));
+        RETURN(error_factory_.make_error(last_rpc_error_message_get(), last_rpc_error_code_get()));
       }
 
       CurrentProcessingQuery::get().set_current_tl_function(query_);
@@ -160,6 +161,9 @@ int64_t typed_rpc_tl_query_impl(const class_instance<C$RpcConnection> &connectio
   const int64_t query_id = rpc_send(connection, timeout, ignore_answer);
   if (query_id <= 0) {
     return 0;
+  }
+  if (unlikely(kphp_tracing::cur_trace_level >= 2)) {
+    kphp_tracing::on_rpc_query_provide_details_after_send(req.get_tl_function(), {});
   }
   if (flush) {
     f$rpc_flush();

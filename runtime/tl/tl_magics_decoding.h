@@ -8,6 +8,5 @@
 
 #include "runtime/kphp_core.h"
 
-const char *tl_function_magic_to_name(uint32_t magic) noexcept;
-
-string f$convert_tl_function_magic_to_name(int64_t magic) noexcept;
+const char *tl_magic_convert_to_name(uint32_t magic) noexcept;
+array<string> tl_magic_get_all_functions() noexcept;

@@ -59,7 +59,7 @@
 #include "runtime/json-functions.h"
 #include "runtime/profiler.h"
 #include "runtime/rpc.h"
-#include "server/cluster-name.h"
+#include "server/server-config.h"
 #include "server/confdata-binlog-replay.h"
 #include "server/database-drivers/adaptor.h"
 #include "server/database-drivers/connector.h"
@@ -70,6 +70,7 @@
 #include "server/json-logger.h"
 #include "server/lease-config-parser.h"
 #include "server/lease-context.h"
+#include "server/master-name.h"
 #include "server/numa-configuration.h"
 #include "server/php-engine-vars.h"
 #include "server/php-init-scripts.h"
@@ -84,6 +85,7 @@
 #include "server/server-log.h"
 #include "server/server-stats.h"
 #include "server/shared-data-worker-cache.h"
+#include "server/signal-handlers.h"
 #include "server/statshouse/statshouse-client.h"
 #include "server/statshouse/worker-stats-buffer.h"
 #include "server/workers-control.h"
@@ -264,7 +266,7 @@ void command_net_write_run_rpc(command_t *base_command, void *data) {
   assert (command->data != nullptr);
   if (data == nullptr) { //send to /dev/null
     vkprintf (3, "failed to send rpc request %d\n", slot_id);
-    on_net_event(create_rpc_error_event(slot_id, TL_ERROR_NO_CONNECTIONS, "Failed to send query, timeout expired", nullptr));
+    on_net_event(create_rpc_error_event(slot_id, TL_ERROR_NO_CONNECTIONS_IN_RPC_CLIENT, "Failed to send query, timeout expired", nullptr));
   } else {
     auto *d = (connection *)data;
     //assert (d->status == conn_ready);
@@ -1434,6 +1436,10 @@ void reopen_json_log() {
     if (!vk::singleton<JsonLogger>::get().reopen_log_file(worker_json_log_file_name)) {
       vkprintf(-1, "failed to open log '%s': error=%s", worker_json_log_file_name, strerror(errno));
     }
+    snprintf(worker_json_log_file_name, PATH_MAX, "%s.traces.jsonl", logname);
+    if (!vk::singleton<JsonLogger>::get().reopen_traces_file(worker_json_log_file_name)) {
+      vkprintf(-1, "failed to open log '%s': error=%s", worker_json_log_file_name, strerror(errno));
+    }
   }
 }
 
@@ -1634,7 +1640,7 @@ void start_server() {
     worker_type = start_master();
   }
 
-  worker_global_init();
+  worker_global_init(worker_type);
   generic_event_loop(worker_type, !master_flag);
 }
 
@@ -1840,11 +1846,23 @@ int main_args_handler(int i, const char *long_option) {
       return 0;
     }
     case 's': {
-      if (const char *err = vk::singleton<ClusterName>::get().set_cluster_name(optarg)) {
+      OPTION_ADD_DEPRECATION_MESSAGE("-s/--cluster-name");
+      if (const char *err = vk::singleton<MasterName>::get().set_master_name(optarg, true)) {
+        kprintf("--%s option: %s\n", long_option, err);
+        return -1;
+      }
+      vk::singleton<ServerConfig>::get().set_cluster_name(optarg, true);
+      return 0;
+    }
+    case 1998: {
+      if (const char *err = vk::singleton<MasterName>::get().set_master_name(optarg, false)) {
         kprintf("--%s option: %s\n", long_option, err);
         return -1;
       }
       return 0;
+    }
+    case 1999: {
+      return vk::singleton<ServerConfig>::get().init_from_config(optarg);
     }
     case 't': {
       script_timeout = static_cast<int>(normalize_script_timeout(atoi(optarg)));
@@ -2169,6 +2187,9 @@ int main_args_handler(int i, const char *long_option) {
     case 2033: {
       return read_option_to(long_option, 0.0, 0.5, oom_handling_memory_ratio);
     }
+    case 2034: {
+      return read_option_to(long_option, 0.0, 5.0, hard_timeout);
+    }
     default:
       return -1;
   }
@@ -2224,7 +2245,9 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("workers-num", required_argument, 'f', "the total workers number");
   parse_option("once", optional_argument, 'o', "run script once");
   parse_option("master-port", required_argument, 'p', "port for memcached interface to master");
-  parse_option("cluster-name", required_argument, 's', "only one kphp with same cluster name will be run on one machine");
+  parse_common_option(OPT_DEPRECATED, nullptr, "cluster-name", required_argument, 's', "only one kphp with same cluster name will be run on one machine");
+  parse_option("master-name", required_argument, 1998, "only one kphp with same master name will be run on one machine");
+  parse_option("server-config", required_argument, 1999, "get server settings from config file (e.g. cluster name)");
   parse_option("time-limit", required_argument, 't', "time limit for script in seconds");
   parse_option("small-acsess-log", optional_argument, 'U', "don't write get data in log. If used twice (or with value 2), disables access log.");
   parse_option("fatal-warnings", no_argument, 'K', "script is killed, when warning happened");
@@ -2273,6 +2296,7 @@ void parse_main_args(int argc, char *argv[]) {
                                                                                           "messages count = coefficient * processes_count");
   parse_option("runtime-config", required_argument, 2032, "JSON file path that will be available at runtime as 'mixed' via 'kphp_runtime_config()");
   parse_option("oom-handling-memory-ratio", required_argument, 2033, "memory ratio of overall script memory to handle OOM errors (default: 0.00)");
+  parse_option("hard-time-limit", required_argument, 2034, "time limit for script termination after the main timeout has expired (default: 1 sec). Use 0 to disable");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
   // TODO: remove it after successful migration from kphb.readyV2 to kphb.readyV3
