@@ -5,12 +5,12 @@
 #include "runtime/exec.h"
 
 #include <cstdlib>
-#include <functional>
 
 #include "common/smart_ptrs/unique_ptr_with_delete_function.h"
 #include "runtime/kphp_tracing.h"
 
-static size_t strip_trailing_whitespace(char *buffer, int bytes_read) {
+namespace {
+size_t strip_trailing_whitespace(char *buffer, int bytes_read) {
   size_t l = bytes_read;
   while (l-- > 0 && isspace((reinterpret_cast<unsigned char *>(buffer))[l])){};
   if (l != (bytes_read - 1)) {
@@ -20,7 +20,7 @@ static size_t strip_trailing_whitespace(char *buffer, int bytes_read) {
   return bytes_read;
 }
 
-static void pclose_wrapper(FILE *f) {
+void pclose_wrapper(FILE *f) {
   pclose(f);
 }
 
@@ -30,9 +30,8 @@ struct ExecStatus {
   string last_line;
 };
 
-using ExecHandler = std::function<size_t(char *, std::size_t)>;
-
-static ExecStatus exec_impl(const string &cmd, const ExecHandler &handler) {
+template <typename ExecHandler>
+ExecStatus exec_impl(const string &cmd, ExecHandler &&handler) {
   if (cmd.empty()) {
     php_warning("Cannot execute a blank command");
     return {};
@@ -69,7 +68,7 @@ static ExecStatus exec_impl(const string &cmd, const ExecHandler &handler) {
   return {true, ret, last_line};
 }
 
-static ExecStatus passthru_impl(const string &cmd) {
+ExecStatus passthru_impl(const string &cmd) {
   if (cmd.empty()) {
     php_warning("Cannot execute a blank command");
     return {};
@@ -84,7 +83,7 @@ static ExecStatus passthru_impl(const string &cmd) {
   std::array<char, 4096> BUFF = {};
   std::size_t bytes_read = 0;
   const int fd = fileno(fp.get());
-  while ((bytes_read = read(fd, BUFF.data(),  BUFF.size())) > 0) {
+  while ((bytes_read = read(fd, BUFF.data(), BUFF.size())) > 0) {
     [[maybe_unused]] auto bytes_written = write(STDOUT_FILENO, BUFF.data(), bytes_read);
     [[maybe_unused]] auto res = fflush(stdout);
   }
@@ -95,6 +94,7 @@ static ExecStatus passthru_impl(const string &cmd) {
   }
   return {true, ret, {}};
 }
+} // namespace
 
 int64_t &get_dummy_result_code() noexcept {
   static int64_t result_code = 0;
