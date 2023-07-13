@@ -6,8 +6,6 @@ COPY tests/python/requirements.txt /tmp/
 # package software-properties-common, repo ppa:ondrej/php are only required for installing
 # php 7.4 on ubuntu 22, where default php version is 8.1
 
-# python3.7 python3-pip python3.7-distutils python3.7-dev libpython3.7-dev python3-jsonschema python3-setuptools mysql-server libmysqlclient-dev && \
-# python3.7 -m pip install pip && python3.7 -m pip install -r /tmp/requirements.txt && \
 RUN apt update && \
     apt install -y --no-install-recommends apt-utils ca-certificates gnupg wget software-properties-common pkg-config && \
     wget -qO /etc/apt/trusted.gpg.d/vkpartner.asc https://artifactory-external.vkpartner.ru/artifactory/api/gpg/key/public && \
@@ -17,8 +15,8 @@ RUN apt update && \
     apt update && \
     apt install -y --no-install-recommends \
       git cmake make g++ lld gperf netcat \
-      python3 python3-pip python3-dev libpython3-dev python3-jsonschema python3-setuptools mysql-server libmysqlclient-dev && \
-    pip3 install -r /tmp/requirements.txt && \
+      python3.7 python3-pip python3.7-distutils python3.7-dev libpython3.7-dev python3-jsonschema python3-setuptools mysql-server libmysqlclient-dev && \
+    python3.7 -m pip install pip && python3.7 -m pip install -r /tmp/requirements.txt && \
     apt install -y --no-install-recommends curl-kphp-vk kphp-timelib libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
       libzstd-dev libyaml-cpp-dev libnghttp2-dev zlib1g-dev php7.4-dev libnuma-dev unzip \
       libldap-dev libkrb5-dev postgresql postgresql-server-dev-all && \
