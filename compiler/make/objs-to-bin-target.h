@@ -8,6 +8,7 @@
 
 #include "compiler/compiler-settings.h"
 #include "compiler/make/target.h"
+//#include "cross-compile.h"
 
 class Objs2BinTarget : public Target {
 public:
@@ -25,7 +26,14 @@ public:
 #endif
     std::stringstream ss;
     ss << settings->cxx.get() << " " << settings->cxx_toolchain_option.get()
-       << " -o " << target() << open_dep << dep_list() << close_dep << settings->ld_flags.get();
+       << " -o " << output() << open_dep << dep_list() << close_dep << settings->ld_flags.get();
+//    add_a(ss, settings->target.get(), settings->sys_root.get());
+//    if (!settings->target.get().empty() && !settings->sys_root.get().empty()) {
+//      ss << " --target=" << settings->target.get() << " --sysroot=" << settings->sys_root.get();
+//    }
+    if (!settings->sys_root.get().empty()) {
+      ss << " --sysroot=" << settings->sys_root.get();
+    }
     if (need_libdl_) {
       ss << " -ldl";
     }

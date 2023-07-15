@@ -13,7 +13,7 @@ class Objs2StaticLibTarget : public Target {
 public:
   std::string get_cmd() final {
     std::stringstream ss;
-    ss << settings->archive_creator.get() << " rcs " << target() << " " << dep_list();
+    ss << settings->archive_creator.get() << " rcs " << output() << " " << dep_list();
     return ss.str();
   }
 };

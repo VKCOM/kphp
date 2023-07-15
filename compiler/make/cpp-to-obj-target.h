@@ -17,7 +17,7 @@ public:
     std::stringstream ss;
     const auto cpp_list = dep_list();
     ss << settings->cxx.get() <<
-       " -c -o " << target() <<
+       " -c -o " << output() <<
        " " << cpp_list;
     const auto &cxx_flags = get_file()->compile_with_debug_info_flag ? settings->cxx_flags_with_debug : settings->cxx_flags_default;
     // make #include "runtime-headers.h" capture generated pch file
@@ -31,6 +31,12 @@ public:
     }
     ss << " " << cxx_flags.flags.get();
 
+    if (!settings->sys_root.get().empty()) {
+      ss << " --sysroot=" << settings->sys_root.get();
+    }
+//    if (!settings->target.get().empty() && !settings->sys_root.get().empty()) {
+//      ss << " --target=" << settings->target.get() << " --sysroot=" << settings->sys_root.get();
+//    }
     return ss.str();
   }
 

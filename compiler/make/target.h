@@ -48,7 +48,7 @@ public:
 
   void force_changed(long long new_mtime);
   bool require();
-  std::string target();
+  std::string output();
   std::string dep_list();
 
   void set_file(File *new_file);

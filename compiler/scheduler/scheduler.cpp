@@ -90,7 +90,7 @@ void Scheduler::execute() {
 }
 
 void Scheduler::set_threads_count(int new_threads_count) {
-  assert (1 <= new_threads_count && new_threads_count <= MAX_THREADS_COUNT);
+  assert (1 <= new_threads_count && new_threads_count < MAX_THREADS_COUNT);
   threads_count = new_threads_count;
 }
 

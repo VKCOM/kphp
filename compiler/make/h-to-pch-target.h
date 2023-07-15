@@ -20,9 +20,12 @@ public:
     std::stringstream ss;
     const auto &cxx_flags = get_file()->compile_with_debug_info_flag ? settings->cxx_flags_with_debug : settings->cxx_flags_default;
     ss << settings->cxx.get() <<
-       " -c -o " << target() <<
+       " -c -o " << output() <<
        " -x c++-header " << deps[0]->get_name() <<
        " " << cxx_flags.flags.get();
+//    if (!settings->sys_root.get().empty()) {
+//      ss << " --sysroot=" << settings->sys_root.get();
+//    }
 
     // printf("compile pch cmd line %s\n", ss.str().c_str());
     return ss.str();

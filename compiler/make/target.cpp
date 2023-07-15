@@ -42,7 +42,7 @@ void Target::force_changed(long long new_mtime) {
   }
 }
 
-std::string Target::target() {
+std::string Target::output() {
   return get_name();
 }
 
