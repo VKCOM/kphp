@@ -32,6 +32,8 @@ struct ExecStatus {
 
 template <typename ExecHandler>
 ExecStatus exec_impl(const string &cmd, ExecHandler &&handler) {
+  dl::CriticalSectionGuard heap_guard;
+
   if (cmd.empty()) {
     php_warning("Cannot execute a blank command");
     return {};
