@@ -113,3 +113,15 @@ inline auto make_unique_on_script_memory(Args &&... args) noexcept {
   static_assert(std::is_base_of<ManagedThroughDlAllocator, T>{}, "ManagedThroughDlAllocator should be base for T");
   return std::make_unique<T>(std::forward<Args>(args)...);
 }
+
+void *operator new(size_t size) __attribute__((weak));
+void *operator new(size_t size, const std::nothrow_t &) noexcept __attribute__((weak));
+void *operator new[](size_t size) __attribute__((weak));
+void *operator new[](size_t size, const std::nothrow_t &) noexcept __attribute__((weak));
+
+void operator delete(void *mem) noexcept __attribute__((weak));
+void operator delete(void *mem, const std::nothrow_t &) noexcept __attribute__((weak));
+void operator delete[](void *mem) noexcept __attribute__((weak));
+void operator delete[](void *mem, const std::nothrow_t &) noexcept __attribute__((weak));
+void operator delete(void *mem, size_t) noexcept __attribute__((weak));
+void operator delete[](void *mem, size_t) noexcept __attribute__((weak));
