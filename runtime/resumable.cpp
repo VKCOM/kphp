@@ -329,7 +329,7 @@ Resumable *get_started_resumable(int64_t resumable_id) {
 static void add_resumable_to_queue(int64_t resumable_id, forked_resumable_info *resumable) {
   int64_t queue_id = resumable->queue_id;
   wait_queue *q = get_wait_queue(queue_id);
-  tvkprintf(resumable, 1, "Push resumable %" PRIi64 " to queue %" PRIi64 "(%" PRIi64 ", %" PRIi64 ", %" PRIi32 ") at %.6lf\n",
+  tvkprintf(resumable, 2, "Push resumable %" PRIi64 " to queue %" PRIi64 "(%" PRIi64 ", %" PRIi64 ", %" PRIi32 ") at %.6lf\n",
             resumable_id, resumable->queue_id, q->resumable_id, q->first_finished_function, q->left_functions, (update_precise_now(), get_precise_now()));
 
   resumable->queue_id = q->first_finished_function;
@@ -555,7 +555,7 @@ void run_scheduler(double timeout) __attribute__((section("run_scheduler_section
 static int64_t scheduled_resumable_id = 0;
 
 void run_scheduler(double dead_line_time) {
-  tvkprintf(resumable, 1, "Run scheduler %" PRIu32 "\n", finished_resumables_count);
+  tvkprintf(resumable, 2, "Run scheduler %" PRIu32 "\n", finished_resumables_count);
   int32_t left_resumables = 1000;
   bool force_run_next = false;
   while (resumable_has_finished() && --left_resumables >= 0) {
@@ -922,7 +922,7 @@ static int64_t wait_queue_push(int64_t queue_id, int64_t resumable_id) {
   if (resumable->queue_id == 0) {
     resumable->queue_id = queue_id;
 
-    tvkprintf(resumable, 1, "Link resumable %" PRIi64 " with queue %" PRIi64 " at %.6lf\n",
+    tvkprintf(resumable, 2, "Link resumable %" PRIi64 " with queue %" PRIi64 " at %.6lf\n",
               resumable_id, queue_id, (update_precise_now(), get_precise_now()));
     q->left_functions++;
   } else {
@@ -1138,7 +1138,7 @@ static void process_wait_queue_timeout(kphp_event_timer *timer) {
 Optional<int64_t> f$wait_queue_next(int64_t queue_id, double timeout) {
   resumable_finished = true;
 
-  tvkprintf(resumable, 1, "Waiting for queue %" PRIi64 "\n", queue_id);
+  tvkprintf(resumable, 2, "Waiting for queue %" PRIi64 "\n", queue_id);
   if (!is_wait_queue_id(queue_id)) {
     if (queue_id != -1) {
       php_warning("Wrong queue_id %" PRIi64 " in function wait_queue_next", queue_id);

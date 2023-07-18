@@ -1526,7 +1526,7 @@ WorkerType run_master() {
     for (int i = 0; i < job_workers_to_kill; ++i) {
       kill_worker(WorkerType::job_worker);
     }
-    for (int i = 0; i < job_workers_to_run && !failed; ++i) {
+    for (int i = 0; i < job_workers_to_run; ++i) {
       if (run_worker(WorkerType::job_worker)) {
         tvkprintf(job_workers, 1, "launched new job worker with pid = %d\n", pid);
         return WorkerType::job_worker;

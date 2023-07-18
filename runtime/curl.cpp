@@ -662,7 +662,7 @@ bool f$curl_setopt_array(curl_easy easy_id, const array<mixed> &options) noexcep
 }
 
 mixed f$curl_exec(curl_easy easy_id) noexcept {
-  constexpr double long_curl_query = 2 * 10e-2; // 0.2 sec
+  constexpr double long_curl_query = 1 * 10e-2; // 0.1 sec
   auto *easy_context = get_context<EasyContext>(easy_id);
   if (!easy_context) {
     return false;

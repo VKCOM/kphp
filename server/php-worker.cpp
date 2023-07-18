@@ -32,36 +32,42 @@ double PhpWorker::enter_lifecycle() noexcept {
   }
   on_wakeup();
 
-  tvkprintf(php_runner, 3, "PHP-worker [state = %d, php-script state = %d, conn status = %d] lifecycle [req_id = %016llx]\n",
-            state, php_script ? static_cast<int>(php_script->state) : -1, conn->status, req_id);
+  tvkprintf(php_runner, 3, "PHP-worker enter lifecycle [php-script state = %d, conn status = %d] lifecycle [req_id = %016llx]\n",
+            php_script ? static_cast<int>(php_script->state) : -1, conn->status, req_id);
   paused = false;
   do {
     switch (state) {
       case phpq_try_start:
+        tvkprintf(php_runner, 1, "PHP-worker try start [req_id = %016llx]\n", req_id);
         state_try_start();
         break;
 
       case phpq_init_script:
+        tvkprintf(php_runner, 1, "PHP-worker init PHP-script [req_id = %016llx]\n", req_id);
         state_init_script();
         break;
 
       case phpq_run:
+        tvkprintf(php_runner, 3, "execute PHP-worker [req_id = %016llx]\n", req_id);
         state_run();
         break;
 
       case phpq_free_script:
+        get_utime_monotonic();
+        tvkprintf(php_runner, 1, "PHP-worker free PHP-script [query worked = %.5lf] [query waited for start = %.5lf] [req_id = %016llx]\n", precise_now - start_time, start_time - init_time, req_id);
         state_free_script();
         break;
 
       case phpq_finish:
+        tvkprintf(php_runner, 1, "finish PHP-worker [req_id = %016llx]\n", req_id);
         state_finish();
         return 0;
     }
     get_utime_monotonic();
   } while (!paused);
 
-  tvkprintf(php_runner, 3, "PHP-worker [state = %d, php-script state = %d, conn status = %d] return in net reactor [req_id = %016llx]\n",
-            state, php_script ? static_cast<int>(php_script->state) : -1, conn->status, req_id);
+  tvkprintf(php_runner, 3, "PHP-worker [php-script state = %d, conn status = %d] return in net reactor [req_id = %016llx]\n",
+            php_script ? static_cast<int>(php_script->state) : -1, conn->status, req_id);
   assert(conn->status == conn_wait_net);
   return get_timeout();
 }
@@ -88,7 +94,6 @@ void PhpWorker::on_wakeup() noexcept {
 }
 
 void PhpWorker::state_try_start() noexcept {
-  tvkprintf(php_runner, 1, "PHP-worker try start [req_id = %016llx]\n", req_id);
   if (terminate_flag) {
     state = phpq_finish;
     return;
@@ -140,7 +145,6 @@ void PhpWorker::state_init_script() noexcept {
 
   get_utime_monotonic();
   start_time = precise_now;
-  tvkprintf(php_runner, 1, "init PHP-script inside PHP-worker [req_id = %016llx]\n", req_id);
   assert(active_worker == nullptr);
   active_worker = this;
   vk::singleton<ServerStats>::get().set_running_worker_status();
@@ -389,13 +393,8 @@ void PhpWorker::state_free_script() noexcept {
   php_worker_run_flag = 0;
   int f = 0;
 
-  get_utime_monotonic();
-  double worked = precise_now - start_time;
-  double waited = start_time - init_time;
-
   assert(active_worker == this);
   active_worker = nullptr;
-  tvkprintf(php_runner, 1, "PHP-worker free PHP-script [query worked = %.5lf] [query waited for start = %.5lf] [req_id = %016llx]\n", worked, waited, req_id);
   vk::singleton<ServerStats>::get().set_idle_worker_status();
   if (mode == once_worker) {
     static int left = run_once_count;
