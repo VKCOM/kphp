@@ -71,6 +71,8 @@ ExecStatus exec_impl(const string &cmd, ExecHandler &&handler) {
 }
 
 ExecStatus passthru_impl(const string &cmd) {
+  dl::CriticalSectionGuard heap_guard;
+
   if (cmd.empty()) {
     php_warning("Cannot execute a blank command");
     return {};
