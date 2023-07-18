@@ -542,7 +542,7 @@ int hts_func_execute(connection *c, int op) {
     return -501;
   }
 
-  vkprintf (1, "start https execute: connection #%d, op=%d, header_size=%d, data_size=%d, http_version=%d\n",
+  vkprintf (1, "start http server execute: connection #%d, op=%d, header_size=%d, data_size=%d, http_version=%d\n",
             c->fd, op, D->header_size, D->data_size, D->http_ver);
 
   if (!vk::any_of_equal(D->query_type, htqt_get, htqt_post, htqt_head)) {
@@ -890,7 +890,7 @@ static void send_rpc_error(connection *c, long long req_id, int error_code, cons
 }
 
 int rpcx_execute(connection *c, int op, raw_message *raw) {
-  vkprintf(1, "rpc execute: fd=%d, op=%d, len=%d\n", c->fd, op, raw->total_bytes);
+  vkprintf(2, "rpc execute: fd=%d, op=%d, len=%d\n", c->fd, op, raw->total_bytes);
 
   int len = raw->total_bytes;
 

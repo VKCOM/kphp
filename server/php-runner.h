@@ -17,7 +17,7 @@
 #include "server/php-query-data.h"
 #include "server/ucontext-portable.h"
 
-DECLARE_VERBOSITY(php_code);
+DECLARE_VERBOSITY(php_runner);
 
 enum class run_state_t {
   finished,

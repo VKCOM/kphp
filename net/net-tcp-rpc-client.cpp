@@ -238,7 +238,7 @@ int tcp_rpcc_parse_execute (struct connection *c) {
       }
       assert (rwm_fetch_lookup (&c->in, &D->packet_len, 4) == 4);
       if (D->packet_len <= 0 || (D->packet_len & 3) || (D->packet_len > TCP_RPCC_FUNC(c)->max_packet_len && TCP_RPCC_FUNC(c)->max_packet_len > 0)) {
-        tvkprintf(net_connections, 4, "error while parsing packet: bad packet length %d\n", D->packet_len);
+        kprintf("error while parsing packet: bad packet length %d\n", D->packet_len);
         c->status = conn_error;
         c->error = -1;
         return 0;
@@ -250,7 +250,7 @@ int tcp_rpcc_parse_execute (struct connection *c) {
       continue;
     }
     if (D->packet_len < 16) {
-      tvkprintf(net_connections, 4, "error while parsing packet: bad packet length %d\n", D->packet_len);
+      kprintf("error while parsing packet: bad packet length %d\n", D->packet_len);
       c->status = conn_error;
       c->error = -1;
       return 0;
@@ -273,7 +273,7 @@ int tcp_rpcc_parse_execute (struct connection *c) {
     assert (rwm_fetch_data_back (&msg, &crc32, 4) == 4);
     D->packet_crc32 = rwm_custom_crc32 (&msg, D->packet_len - 4, D->custom_crc_partial);
     if (crc32 != D->packet_crc32) {
-      tvkprintf(net_connections, 4, "error while parsing packet: crc32 = %08x != %08x\n", D->packet_crc32, crc32);
+      kprintf("error while parsing packet: crc32 = %08x != %08x\n", D->packet_crc32, crc32);
       c->status = conn_error;
       c->error = -1;
       rwm_free (&msg);
@@ -291,7 +291,7 @@ int tcp_rpcc_parse_execute (struct connection *c) {
     int res = -1;
 
     if (D->packet_num != D->in_packet_num) {
-      tvkprintf(net_connections, 4, "error while parsing packet: got packet num %d, expected %d\n", D->packet_num, D->in_packet_num);
+      kprintf("error while parsing packet: got packet num %d, expected %d\n", D->packet_num, D->in_packet_num);
       c->status = conn_error;
       c->error = -1;
       rwm_free (&msg);

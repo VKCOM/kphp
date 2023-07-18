@@ -54,7 +54,7 @@ const char *unix_socket_path(const char *directory, const char *owner, uint16_t 
   static struct sockaddr_un path;
 
   if (snprintf(path.sun_path, sizeof(path.sun_path), "%s/%s/%d", directory, owner, port) >= sizeof(path.sun_path)) {
-    vkprintf(4, "Too long UNIX socket path: \"%s/%s/%d\": %zu bytes exceeds\n", directory, owner, port, sizeof(path.sun_path));
+    kprintf("Too long UNIX socket path: \"%s/%s/%d\": %zu bytes exceeds\n", directory, owner, port, sizeof(path.sun_path));
     return NULL;
   }
 
@@ -68,13 +68,13 @@ int prepare_unix_socket_directory(const char *directory, const char *username, c
 
   struct passwd *passwd = getpwnam(username);
   if (!passwd) {
-    vkprintf(4, "Cannot getpwnam() for %s: %s\n", username, strerror(errno));
+    vkprintf(1, "Cannot getpwnam() for %s: %s\n", username, strerror(errno));
     return -1;
   }
 
   struct group *group = getgrnam(groupname);
   if (!group) {
-    vkprintf(4, "Cannot getgrnam() for %s: %s\n", groupname, strerror(errno));
+    vkprintf(1, "Cannot getgrnam() for %s: %s\n", groupname, strerror(errno));
     return -1;
   }
 
@@ -84,7 +84,7 @@ int prepare_unix_socket_directory(const char *directory, const char *username, c
       vkprintf(4, "Trying to create UNIX socket directory: \"%s\"\n", directory);
       const mode_t dirmode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
       if (mkdir(directory, dirmode) == -1 && errno != EEXIST) {
-        vkprintf(4, "Cannot mkdir() UNIX socket directory: \"%s\": %s\n", directory, strerror(errno));
+        vkprintf(1, "Cannot mkdir() UNIX socket directory: \"%s\": %s\n", directory, strerror(errno));
         return -1;
       }
     }
@@ -93,7 +93,7 @@ int prepare_unix_socket_directory(const char *directory, const char *username, c
   }
 
   if (dirfd == -1) {
-    vkprintf(4, "Cannot open() UNIX socket directory: \"%s\": %s\n", directory, strerror(errno));
+    vkprintf(1, "Cannot open() UNIX socket directory: \"%s\": %s\n", directory, strerror(errno));
     return -1;
   }
 
@@ -101,7 +101,7 @@ int prepare_unix_socket_directory(const char *directory, const char *username, c
   if (groupdirfd == -1) {
     if (errno == ENOENT) {
       if (mkdirat(dirfd, group->gr_name, S_IRUSR) == -1 && errno != EEXIST) {
-        vkprintf(4, "Cannot mkdirat() UNIX socket group directory: \"%s/%s\": %s\n", directory, groupname, strerror(errno));
+        vkprintf(1, "Cannot mkdirat() UNIX socket group directory: \"%s/%s\": %s\n", directory, groupname, strerror(errno));
         close(dirfd);
         return -1;
       }
@@ -110,7 +110,7 @@ int prepare_unix_socket_directory(const char *directory, const char *username, c
     }
 
     if (groupdirfd == -1) {
-      vkprintf(4, "Cannot openat() UNIX socket group directory: \"%s/%s\": %s\n", directory, groupname, strerror(errno));
+      vkprintf(1, "Cannot openat() UNIX socket group directory: \"%s/%s\": %s\n", directory, groupname, strerror(errno));
       close(dirfd);
       return -1;
     }
@@ -118,7 +118,7 @@ int prepare_unix_socket_directory(const char *directory, const char *username, c
 
   struct stat groupdirst;
   if (fstat(groupdirfd, &groupdirst) == -1) {
-    vkprintf(4, "Cannot fstatat() UNIX socket group directory: \"%s/%s\": %s\n", directory, groupname, strerror(errno));
+    vkprintf(1, "Cannot fstatat() UNIX socket group directory: \"%s/%s\": %s\n", directory, groupname, strerror(errno));
     close(groupdirfd);
     close(dirfd);
     return -1;
@@ -126,7 +126,7 @@ int prepare_unix_socket_directory(const char *directory, const char *username, c
 
   if (groupdirst.st_uid != passwd->pw_uid || groupdirst.st_gid != group->gr_gid) {
     if (fchown(groupdirfd, passwd->pw_uid, group->gr_gid)) {
-      vkprintf(4, "Cannot fchown() UNIX socket group directory: \"%s/%s\": %s\n", directory, groupname, strerror(errno));
+      vkprintf(1, "Cannot fchown() UNIX socket group directory: \"%s/%s\": %s\n", directory, groupname, strerror(errno));
       close(groupdirfd);
       close(dirfd);
       return -1;
@@ -136,7 +136,7 @@ int prepare_unix_socket_directory(const char *directory, const char *username, c
   const mode_t groupdirmode = S_IRWXU | S_IRGRP | S_IXGRP;
   if ((groupdirst.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO)) != groupdirmode) {
     if (fchmod(groupdirfd, groupdirmode) == -1) {
-      vkprintf(4, "Cannot fchmod() UNIX socket owner directory: \"%s/%s\": %s\n", directory, username, strerror(errno));
+      vkprintf(1, "Cannot fchmod() UNIX socket owner directory: \"%s/%s\": %s\n", directory, username, strerror(errno));
       close(groupdirfd);
       close(dirfd);
       return -1;
@@ -257,7 +257,7 @@ int server_socket(int port, struct in_addr in_addr, int backlog, int mode) {
     addr.sin_port = htons(port);
     addr.sin_addr = in_addr;
     if (bind(sfd, (struct sockaddr *) &addr, sizeof(addr)) == -1) {
-      vkprintf(4, "bind(%s:%d): %s\n", inet_ntoa(in_addr), port, strerror(errno));
+      kprintf("bind(%s:%d): %s\n", inet_ntoa(in_addr), port, strerror(errno));
       close(sfd);
       return -1;
     }
@@ -270,7 +270,7 @@ int server_socket(int port, struct in_addr in_addr, int backlog, int mode) {
     addr.sin6_addr = in6addr_any;
 
     if (bind(sfd, (struct sockaddr *) &addr, sizeof(addr)) == -1) {
-      vkprintf(4, "bind(%s:%d): %s\n", inet_ntoa(in_addr), port, strerror(errno));
+      kprintf("bind(%s:%d): %s\n", inet_ntoa(in_addr), port, strerror(errno));
       close(sfd);
       return -1;
     }
@@ -307,7 +307,7 @@ int server_socket_unix(const struct sockaddr_un *addr, int backlog, int mode) {
     unlink(addr->sun_path);
 
     if (bind(fd, (struct sockaddr *) addr, sizeof(*addr)) == -1) {
-      vkprintf(4, "bind(%s): %s\n", addr->sun_path, strerror(errno));
+      kprintf("bind(%s): %s\n", addr->sun_path, strerror(errno));
       close(fd);
       return -1;
     }
@@ -407,7 +407,7 @@ int client_socket_unix(const struct sockaddr_un *addr, int mode) {
     socket_maximize_sndbuf(fd, 0);
     socket_maximize_rcvbuf(fd, 0);
     if (connect(fd, (struct sockaddr *) addr, sizeof(*addr)) == -1 && errno != EINPROGRESS) {
-      vkprintf(4, "Cannot connect() to \"%s\": %s\n", addr->sun_path, strerror(errno));
+      kprintf("Cannot connect() to \"%s\": %s\n", addr->sun_path, strerror(errno));
       close(fd);
       return -1;
     }

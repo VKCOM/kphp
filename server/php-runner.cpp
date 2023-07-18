@@ -35,7 +35,7 @@
 #include "server/server-stats.h"
 #include "server/signal-handlers.h"
 
-DEFINE_VERBOSITY(php_code);
+DEFINE_VERBOSITY(php_runner);
 
 query_stats_t query_stats;
 long long query_stats_id = 1;
@@ -145,7 +145,7 @@ PhpScript::PhpScript(size_t mem_size, double oom_handling_memory_ratio, size_t s
   , oom_handling_memory_ratio(oom_handling_memory_ratio)
   , run_mem(static_cast<char *>(mmap(nullptr, mem_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0)))
   , script_stack(stack_size) {
-  tvkprintf(php_code, 1, "initialize PHP-script\n");
+  tvkprintf(php_runner, 1, "initialize PHP-script\n");
   // fprintf (stderr, "PHPScriptBase: constructor\n");
   // fprintf (stderr, "[%p -> %p] [%p -> %p]\n", run_stack, run_stack_end, run_mem, run_mem + mem_size);
 }
@@ -314,18 +314,11 @@ void PhpScript::finish() noexcept {
     kphp_tracing::on_php_script_finish_terminated();
   }
 
-  if (save_state == run_state_t::error) {
-    switch (error_type) {
-      case script_error_t::memory_limit:
-        kprintf("Detailed memory stats: total allocations = %zd, total memory allocated = %zd, huge memory pieces = %zd, small memory pieces = %zd, defragmentation calls = %zd\n",
-                script_mem_stats.total_allocations, script_mem_stats.total_memory_allocated, script_mem_stats.huge_memory_pieces, script_mem_stats.small_memory_pieces, script_mem_stats.defragmentation_calls);
-        break;
-      case script_error_t::timeout:
-        kprintf("Script timeout value = %d\n", script_timeout);
-        break ;
-      default:
-        break;
-    }
+  if (error_type == script_error_t::memory_limit || script_mem_stats.real_memory_used > max_memory / 2) {
+    kprintf("Detailed memory stats: total allocations = %zd, total memory allocated = %zd, huge memory pieces = %zd, small memory pieces = %zd, defragmentation calls = %zd,"
+            "real memory used = %zd, max real memory used = %zd, memory used = %zd, max memory used = %zd, memory_limit = %zd\n",
+            script_mem_stats.total_allocations, script_mem_stats.total_memory_allocated, script_mem_stats.huge_memory_pieces, script_mem_stats.small_memory_pieces, script_mem_stats.defragmentation_calls,
+            script_mem_stats.real_memory_used, script_mem_stats.max_real_memory_used, script_mem_stats.memory_used, script_mem_stats.max_memory_used,  script_mem_stats.memory_limit);
   }
 
   const size_t buf_size = 5000;

@@ -370,7 +370,7 @@ int changed = 0;
 int failed = 0;
 int socket_fd = -1;
 int to_exit = 0;
-int general_worker_to_kill = 0, general_worker_to_run = 0;
+int general_workers_to_kill = 0, general_workers_to_run = 0;
 int job_workers_to_kill = 0, job_workers_to_run = 0;
 long long generation;
 int receive_fd_attempts_cnt = 0;
@@ -1173,7 +1173,7 @@ int php_master_http_execute(struct connection *c, int op) {
 void run_master_off_in_graceful_shutdown() {
   kprintf("master off in graceful shutdown\n");
   assert(state == master_state::off_in_graceful_shutdown);
-  general_worker_to_kill = vk::singleton<WorkersControl>::get().get_running_count(WorkerType::general_worker);
+  general_workers_to_kill = vk::singleton<WorkersControl>::get().get_running_count(WorkerType::general_worker);
   if (all_http_workers_killed()) {
     if (all_job_workers_killed()) {
       to_exit = 1;
@@ -1198,7 +1198,7 @@ void run_master_off_in_graceful_restart() {
 
   if (other->to_kill_generation > me->generation) {
     // old master kills as many workers as new master told
-    general_worker_to_kill = other->to_kill;
+    general_workers_to_kill = other->to_kill;
   }
 
   if (all_http_workers_killed()) {
@@ -1298,7 +1298,7 @@ void run_master_on() {
   if (done) {
     const auto &control = vk::singleton<WorkersControl>::get();
     const int total_workers = control.get_alive_count(WorkerType::general_worker) + (other->is_alive ? other->running_http_workers_n + other->dying_http_workers_n : 0);
-    general_worker_to_run = std::max(0, int{control.get_count(WorkerType::general_worker)} - total_workers);
+    general_workers_to_run = std::max(0, int{control.get_count(WorkerType::general_worker)} - total_workers);
     job_workers_to_run = control.get_count(WorkerType::job_worker) - control.get_alive_count(WorkerType::job_worker);
 
     if (other->is_alive) {
@@ -1360,7 +1360,6 @@ void check_and_instance_cache_try_swap_memory() {
 }
 
 static void cron() {
-  tvkprintf(master_process, 2, "master process cron work\n");
   if (!other->is_alive || in_old_master_on_restart()) {
     // write stats at the beginning to avoid spikes in graphs
     send_data_to_statsd_with_prefix(vk::singleton<ServerConfig>::get().get_statsd_prefix(), stats_tag_kphp_server);
@@ -1407,6 +1406,12 @@ static void cron() {
   instance_cache_purge_expired_elements();
   check_and_instance_cache_try_swap_memory();
   confdata_binlog_update_cron();
+  tvkprintf(master_process, 3, "master process cron work [utime = %llu, stime = %llu, alive_workers_count = %d]. "
+                                 "General workers details [running general workers = %d, waiting general workers = %d, ready for accept general workers = %d]. "
+                                 "Job workers details [running job workers = %d, waiting job workers = %d, ready for accept job workers = %d].\n",
+            utime, stime, alive_workers_count,
+            general_workers_stat.running_workers, general_workers_stat.waiting_workers, general_workers_stat.ready_for_accept_workers,
+            job_workers_stat.running_workers, job_workers_stat.waiting_workers, job_workers_stat.ready_for_accept_workers);
 }
 
 auto get_steady_tp_ms_now() noexcept {
@@ -1473,7 +1478,7 @@ WorkerType run_master() {
     changed = 0;
     failed = 0;
     to_exit = 0;
-    general_worker_to_kill = general_worker_to_run = 0;
+    general_workers_to_kill = general_workers_to_run = 0;
     job_workers_to_kill = job_workers_to_run = 0;
 
     update_workers();
@@ -1513,24 +1518,25 @@ WorkerType run_master() {
 
     me->generation = generation;
 
-    if (general_worker_to_kill != 0 || general_worker_to_run != 0 || job_workers_to_kill != 0 || job_workers_to_run != 0) {
-      tvkprintf(master_process, 2, "[general_worker_to_kill = %d] [general_worker_to_run = %d] [job_workers_to_kill = %d] [job_workers_to_run = %d]\n",
-                general_worker_to_kill, general_worker_to_run, job_workers_to_kill, job_workers_to_run);
+    if (general_workers_to_kill != 0 || general_workers_to_run != 0 || job_workers_to_kill != 0 || job_workers_to_run != 0) {
+      tvkprintf(master_process, 2, "[general_workers_to_kill = %d] [general_workers_to_run = %d] [job_workers_to_kill = %d] [job_workers_to_run = %d]\n",
+                general_workers_to_kill, general_workers_to_run, job_workers_to_kill, job_workers_to_run);
     }
 
     for (int i = 0; i < job_workers_to_kill; ++i) {
       kill_worker(WorkerType::job_worker);
     }
-    for (int i = 0; i < job_workers_to_run; ++i) {
+    for (int i = 0; i < job_workers_to_run && !failed; ++i) {
       if (run_worker(WorkerType::job_worker)) {
+        tvkprintf(job_workers, 1, "launched new job worker with pid = %d\n", pid);
         return WorkerType::job_worker;
       }
     }
 
-    for (int i = 0; i < general_worker_to_kill; ++i) {
+    for (int i = 0; i < general_workers_to_kill; ++i) {
       kill_worker(WorkerType::general_worker);
     }
-    for (int i = 0; i < general_worker_to_run; ++i) {
+    for (int i = 0; i < general_workers_to_run && !failed; ++i) {
       if (run_worker(WorkerType::general_worker)) {
         return WorkerType::general_worker;
       }
