@@ -14,7 +14,7 @@ OnKphpWarningCallback &OnKphpWarningCallback::get() {
   return state;
 }
 
-bool OnKphpWarningCallback::set_callback(on_kphp_warning_callback_type new_callback) {
+bool OnKphpWarningCallback::set_callback(on_kphp_warning_callback_type &&new_callback) {
   if (in_registered_callback) {
     return false;
   }
@@ -52,8 +52,8 @@ void OnKphpWarningCallback::reset() {
   in_registered_callback = false;
 }
 
-void f$register_kphp_on_warning_callback(const on_kphp_warning_callback_type &callback) {
-  bool set_successfully = OnKphpWarningCallback::get().set_callback(callback);
+void register_kphp_on_warning_callback_impl(on_kphp_warning_callback_type &&callback) {
+  bool set_successfully = OnKphpWarningCallback::get().set_callback(std::move(callback));
   if (!set_successfully) {
     php_warning("It's forbidden to register new on warning callback inside registered one.");
   }
