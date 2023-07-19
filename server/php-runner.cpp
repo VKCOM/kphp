@@ -145,7 +145,6 @@ PhpScript::PhpScript(size_t mem_size, double oom_handling_memory_ratio, size_t s
   , oom_handling_memory_ratio(oom_handling_memory_ratio)
   , run_mem(static_cast<char *>(mmap(nullptr, mem_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0)))
   , script_stack(stack_size) {
-  tvkprintf(php_runner, 1, "initialize PHP-script\n");
   // fprintf (stderr, "PHPScriptBase: constructor\n");
   // fprintf (stderr, "[%p -> %p] [%p -> %p]\n", run_stack, run_stack_end, run_mem, run_mem + mem_size);
 }
