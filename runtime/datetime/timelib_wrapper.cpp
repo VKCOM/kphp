@@ -1,6 +1,5 @@
 #include "runtime/datetime/timelib_wrapper.h"
 
-#include <functional>
 #include <kphp/timelib/timelib.h>
 #if ASAN_ENABLED
 #include <sanitizer/lsan_interface.h>
@@ -250,7 +249,7 @@ std::pair<int64_t, bool> php_timelib_strtotime(const string &tz_name, const stri
 
 static timelib_error_container *last_errors_global = nullptr;
 
-using ScriptMemGuard = decltype(std::function{make_malloc_replacement_with_script_allocator})::result_type;
+using ScriptMemGuard = decltype(make_malloc_replacement_with_script_allocator());
 
 // NB: should be called under script allocator, because of calls to free() inside timelib_error_container_dtor()
 static void update_errors_warnings(timelib_error_container *last_errors, [[maybe_unused]] const ScriptMemGuard &guard) {

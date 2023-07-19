@@ -8,6 +8,7 @@
 
 #include "common/wrappers/string_view.h"
 
+#include "runtime/critical_section.h"
 #include "runtime/kphp_core.h"
 #include "runtime/optional.h"
 #include "server/php-query-data.h"
@@ -69,7 +70,14 @@ void run_shutdown_functions_from_script(ShutdownType shutdown_type);
 int get_shutdown_functions_count();
 shutdown_functions_status get_shutdown_functions_status();
 
-void f$register_shutdown_function(const shutdown_function_type &f);
+void register_shutdown_function_impl(shutdown_function_type &&f);
+
+template <typename F>
+void f$register_shutdown_function(F &&f) {
+  // std::function sometimes uses heap, when constructed from captured lambda. So it must be constructed under critical section only.
+  dl::CriticalSectionGuard heap_guard;
+  register_shutdown_function_impl(shutdown_function_type{std::forward<F>(f)});
+}
 
 void f$fastcgi_finish_request(int64_t exit_code = 0);
 

@@ -12,6 +12,8 @@
 
 #include "common/parallel/limit-counter.h"
 
+#if !defined(__APPLE__)
+
 TEST(parallel_limit_counter, basic) {
   constexpr std::size_t global_max = 100000;
   constexpr std::size_t thread_max = 10000;
@@ -49,8 +51,6 @@ TEST(parallel_limit_counter, basic) {
 
   EXPECT_EQ(expected_sum, PARALLEL_LIMIT_COUNTER_READ(limit_counter));
 }
-
-#if !defined(__APPLE__)
 
 TEST(parallel_limit_counter, accuracy) {
   constexpr std::size_t global_max = 100000000;

@@ -53,6 +53,8 @@ string f$uniqid(const string &prefix, bool more_entropy) {
 
 
 Optional<string> f$iconv(const string &input_encoding, const string &output_encoding, const string &input_str) {
+  dl::CriticalSectionGuard heap_guard;
+
   iconv_t cd;
   if ((cd = iconv_open(output_encoding.c_str(), input_encoding.c_str())) == (iconv_t)-1) {
     php_warning("unsupported iconv from \"%s\" to \"%s\"", input_encoding.c_str(), output_encoding.c_str());

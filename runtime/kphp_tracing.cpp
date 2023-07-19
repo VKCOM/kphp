@@ -645,17 +645,17 @@ int64_t f$kphp_tracing_get_level() {
   return kphp_tracing::cur_trace_level;
 }
 
-void f$kphp_tracing_register_on_finish(const kphp_tracing::on_trace_finish_callback_t &cb_should_be_flushed) {
-  kphp_tracing::cur_on_finish_callback = cb_should_be_flushed;
+void kphp_tracing_register_on_finish_impl(kphp_tracing::on_trace_finish_callback_t &&cb_should_be_flushed) {
+  kphp_tracing::cur_on_finish_callback = std::move(cb_should_be_flushed);
 }
 
-void f$kphp_tracing_register_enums_provider(const kphp_tracing::on_trace_enums_callback_t &cb_custom_enums) {
-  kphp_tracing::cur_on_enums_callback = cb_custom_enums;
+void kphp_tracing_register_enums_provider_impl(kphp_tracing::on_trace_enums_callback_t &&cb_custom_enums) {
+  kphp_tracing::cur_on_enums_callback = std::move(cb_custom_enums);
 }
 
-void f$kphp_tracing_register_rpc_details_provider(const kphp_tracing::on_rpc_provide_details_typed_t &cb_for_typed, const kphp_tracing::on_rpc_provide_details_untyped_t &cb_for_untyped) {
-  kphp_tracing::cur_on_rpc_details_typed_callback = cb_for_typed;
-  kphp_tracing::cur_on_rpc_details_untyped_callback = cb_for_untyped;
+void kphp_tracing_register_rpc_details_provider_impl(kphp_tracing::on_rpc_provide_details_typed_t &&cb_for_typed, kphp_tracing::on_rpc_provide_details_untyped_t &&cb_for_untyped) {
+  kphp_tracing::cur_on_rpc_details_typed_callback = std::move(cb_for_typed);
+  kphp_tracing::cur_on_rpc_details_untyped_callback = std::move(cb_for_untyped);
 }
 
 class_instance<C$KphpSpan> f$kphp_tracing_start_span(const string &title, const string &short_desc, double start_timestamp) {

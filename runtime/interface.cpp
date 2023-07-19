@@ -674,7 +674,7 @@ void run_shutdown_functions_from_script(ShutdownType shutdown_type) {
   run_shutdown_functions(shutdown_type);
 }
 
-void f$register_shutdown_function(const shutdown_function_type &f) {
+void register_shutdown_function_impl(shutdown_function_type &&f) {
   if (shutdown_functions_count == MAX_SHUTDOWN_FUNCTIONS) {
     php_warning("Too many shutdown functions registered, ignore next one\n");
     return;
@@ -683,7 +683,7 @@ void f$register_shutdown_function(const shutdown_function_type &f) {
   // it's matter because the destructor of 'shutdown_function_type' is called now
   dl::CriticalSectionGuard critical_section;
   // I really need this, because this memory can contain random trash, if previouse script failed
-  new(&shutdown_functions[shutdown_functions_count++]) shutdown_function_type(f);
+  new(&shutdown_functions[shutdown_functions_count++]) shutdown_function_type{std::move(f)};
 }
 
 void finish(int64_t exit_code, bool from_exit) {

@@ -6,6 +6,7 @@
 
 #include <functional>
 
+#include "runtime/critical_section.h"
 #include "runtime/kphp_core.h"
 #include "runtime/refcountable_php_classes.h"
 
@@ -249,9 +250,29 @@ class_instance<C$KphpDiv> f$kphp_tracing_init(const string &root_span_title);
 void f$kphp_tracing_set_level(int64_t trace_level);
 int64_t f$kphp_tracing_get_level();
 
-void f$kphp_tracing_register_on_finish(const kphp_tracing::on_trace_finish_callback_t &cb_should_be_flushed);
-void f$kphp_tracing_register_enums_provider(const kphp_tracing::on_trace_enums_callback_t &cb_custom_enums);
-void f$kphp_tracing_register_rpc_details_provider(const kphp_tracing::on_rpc_provide_details_typed_t &cb_for_typed, const kphp_tracing::on_rpc_provide_details_untyped_t &cb_for_untyped);
+void kphp_tracing_register_on_finish_impl(kphp_tracing::on_trace_finish_callback_t &&cb_should_be_flushed);
+void kphp_tracing_register_enums_provider_impl(kphp_tracing::on_trace_enums_callback_t &&cb_custom_enums);
+void kphp_tracing_register_rpc_details_provider_impl(kphp_tracing::on_rpc_provide_details_typed_t &&cb_for_typed, kphp_tracing::on_rpc_provide_details_untyped_t &&cb_for_untyped);
+
+template <typename F>
+void f$kphp_tracing_register_on_finish(F &&cb_should_be_flushed) {
+  // std::function sometimes uses heap, when constructed from captured lambda. So it must be constructed under critical section only.
+  dl::CriticalSectionGuard heap_guard;
+  kphp_tracing_register_on_finish_impl(kphp_tracing::on_trace_finish_callback_t{std::forward<F>(cb_should_be_flushed)});
+}
+
+template <typename F>
+void f$kphp_tracing_register_enums_provider(F &&cb_custom_enums) {
+  dl::CriticalSectionGuard heap_guard;
+  kphp_tracing_register_enums_provider_impl(kphp_tracing::on_trace_enums_callback_t{std::forward<F>(cb_custom_enums)});
+}
+
+template <typename F1, typename F2>
+void f$kphp_tracing_register_rpc_details_provider(F1 &&cb_for_typed, F2 &&cb_for_untyped) {
+  dl::CriticalSectionGuard heap_guard;
+  kphp_tracing_register_rpc_details_provider_impl(kphp_tracing::on_rpc_provide_details_typed_t{std::forward<F1>(cb_for_typed)},
+                                                  kphp_tracing::on_rpc_provide_details_untyped_t{std::forward<F2>(cb_for_untyped)});
+}
 
 class_instance<C$KphpSpan> f$kphp_tracing_start_span(const string &title, const string &short_desc, double start_timestamp);
 class_instance<C$KphpSpan> f$kphp_tracing_get_root_span();

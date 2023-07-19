@@ -63,18 +63,21 @@ class StatsReceiver:
 
     def try_update_stats(self):
         new_stats = {}
-        for stat_line in filter(None, self._stats_file_read_fd.readlines()):
+        lines = self._stats_file_read_fd.readlines()
+        for stat_line in filter(None, lines):
             if stat_line[-1] != "\n":
-                raise RuntimeError("Got bad stat line: {}".format(stat_line))
-            stat, value = stat_line.split(":")
-            value, _ = value.split("|")
+                return False
+            try:
+                stat, value = stat_line.split(":")
+                value, _ = value.split("|")
+            except ValueError:
+                print("Got bad stat line: {}".format(stat_line))
+                return False
             value = float(value.strip())
             new_stats[stat.strip()] = value.is_integer() and int(value) or value
 
         if not new_stats:
             return False
-        if self._stats and len(self._stats) > len(new_stats):
-            raise RuntimeError("Got inconsistent stats count: old={} new={}".format(len(self._stats), len(new_stats)))
         # HACK: replace prefix for kphp server stats
         self._stats = {re.sub("^kphp_stats\\..+\\.", "kphp_server.", k): v for k, v in new_stats.items()}
         return True

@@ -380,7 +380,6 @@ bool f$openssl_public_encrypt(const string &data, string &result, const string &
     if (!from_cache) {
       EVP_PKEY_free(pkey);
     }
-    critical_section.leave_critical_section();
     php_warning("RSA public encrypt failed");
     result = string();
     return false;
@@ -389,7 +388,6 @@ bool f$openssl_public_encrypt(const string &data, string &result, const string &
   if (!from_cache) {
     EVP_PKEY_free(pkey);
   }
-  critical_section.leave_critical_section();
   result = string(php_buf, key_size);
   return true;
 }
@@ -432,7 +430,6 @@ bool f$openssl_private_decrypt(const string &data, string &result, const string 
   if (!from_cache) {
     EVP_PKEY_free(pkey);
   }
-  critical_section.leave_critical_section();
   if (len == -1) {
     //php_warning ("RSA private decrypt failed");
     result = string();
@@ -699,8 +696,9 @@ static Stream ssl_stream_socket_client(const string &url, int64_t &error_number,
     RETURN_ERROR_FORMAT(false, -2, "Wrong port specified in url \"%s\"", url);
   }
 
-  struct hostent *h;
-  if (!(h = kdb_gethostbyname(host.c_str())) || !h->h_addr_list || !h->h_addr_list[0]) {
+  // gethostbyname often uses heap => it must be under critical section, otherwise we will get UB on timeout in the middle of it
+  struct hostent *h = dl::critical_section_call(kdb_gethostbyname, host.c_str());
+  if (!h || !h->h_addr_list || !h->h_addr_list[0]) {
     RETURN_ERROR_FORMAT(false, -3, "Can't resolve host \"%s\"", host);
   }
 
