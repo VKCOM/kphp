@@ -287,7 +287,7 @@ void net_reactor_fetch_events(net_reactor_ctx_t *ctx, int num_events) {
 void net_reactor_update_timer_counters(net_reactor_ctx_t *ctx, int timeout) {
   const double wait_time = ctx->last_wait - ctx->wait_start;
   if (wait_time > (timeout / 1000.0 + 0.5)) {
-    tvkprintf(net_events, 0, "epoll-wait worked too long: %.3fs\n", wait_time);
+    kprintf("epoll-wait worked too long: %.3fs\n", wait_time);
   }
   ctx->total_idle_time += wait_time;
   ctx->average_idle_time += wait_time;

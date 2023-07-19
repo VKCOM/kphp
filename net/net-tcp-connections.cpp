@@ -93,7 +93,7 @@ int prealloc_tcp_buffers() {
   for (i = tcp_buffers_number - 1; i >= 0; i--) {
     msg_buffer_t *X = alloc_msg_buffer(tcp_buffers_size);
     if (!X) {
-      kprintf("cannot allocate tcp receive buffer : calling _exit(2)\n");
+      kprintf("cannot allocate tcp receive buffer : calling exit(2)\n");
       exit(2);
     }
     tvkprintf(net_connections, 4, "allocated %d byte tcp receive buffer #%d at %p\n", msg_buffer_size(X), i, X);
@@ -148,7 +148,6 @@ int tcp_server_writer(struct connection *c) {
       r = writev(c->fd, iov, iovcnt);
 
       tvkprintf(net_connections, 4, "send/writev() to %d: %d written out of %d in %d chunks\n", c->fd, r, s, iovcnt);
-      tvkprintf(net_connections, 4, "send() %s\n", strerror(errno));
 
       if (r > 0) {
         rwm_fetch_data(out, 0, r);

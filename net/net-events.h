@@ -92,10 +92,8 @@ static inline int epoll_fetch_events(int timeout) {
     events = 0;
   }
   if (events < 0) {
-    tvkprintf(net_events, 4, "epoll_wait(): %m\n");
+    kprintf("epoll_wait(): %m\n");
   }
-  tvkprintf(net_events, 4, "epoll_wait(%d, ...) = %d\n", main_thread_reactor.epoll_fd, events);
-
   net_reactor_fetch_events(&main_thread_reactor, events);
 
   return events;
