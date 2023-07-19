@@ -532,7 +532,7 @@ static void continue_resumable(resumable_info *res, int64_t resumable_id) noexce
 }
 
 void resumable_run_ready(int64_t resumable_id) {
-  tvkprintf(resumable, 2, "Run ready %" PRIi64 "\n", resumable_id);
+  tvkprintf(resumable, 2, "Run ready resumable %" PRIi64 "\n", resumable_id);
   if (resumable_id > 1000000000) {
     forked_resumable_info *res = get_forked_resumable_info(resumable_id);
     php_assert(res->queue_id >= 0);
@@ -555,7 +555,7 @@ void run_scheduler(double timeout) __attribute__((section("run_scheduler_section
 static int64_t scheduled_resumable_id = 0;
 
 void run_scheduler(double dead_line_time) {
-  tvkprintf(resumable, 2, "Run scheduler %" PRIu32 "\n", finished_resumables_count);
+  tvkprintf(resumable, 2, "Run scheduler with finished resumables count %" PRIu32 "\n", finished_resumables_count);
   int32_t left_resumables = 1000;
   bool force_run_next = false;
   while (resumable_has_finished() && --left_resumables >= 0) {
@@ -1138,7 +1138,7 @@ static void process_wait_queue_timeout(kphp_event_timer *timer) {
 Optional<int64_t> f$wait_queue_next(int64_t queue_id, double timeout) {
   resumable_finished = true;
 
-  tvkprintf(resumable, 2, "Waiting for queue %" PRIi64 "\n", queue_id);
+  tvkprintf(resumable, 3, "Waiting for queue %" PRIi64 "\n", queue_id);
   if (!is_wait_queue_id(queue_id)) {
     if (queue_id != -1) {
       php_warning("Wrong queue_id %" PRIi64 " in function wait_queue_next", queue_id);
