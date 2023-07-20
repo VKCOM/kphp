@@ -35,6 +35,8 @@
 #include "server/server-stats.h"
 #include "server/signal-handlers.h"
 
+DEFINE_VERBOSITY(php_runner);
+
 query_stats_t query_stats;
 long long query_stats_id = 1;
 
@@ -312,16 +314,12 @@ void PhpScript::finish() noexcept {
     kprintf("Critical error during script execution: %s\n", error_message);
     kphp_tracing::on_php_script_finish_terminated();
   }
-  if (save_state == run_state_t::error || script_mem_stats.real_memory_used >= 100000000) {
-    if (data != nullptr) {
-      http_query_data *http_data = data->http_data;
-      if (http_data != nullptr) {
-        assert (http_data->headers);
 
-        kprintf("HEADERS: len = %d\n%.*s\nEND HEADERS\n", http_data->headers_len, min(http_data->headers_len, 1 << 16), http_data->headers);
-        kprintf("POST: len = %d\n%.*s\nEND POST\n", http_data->post_len, min(http_data->post_len, 1 << 16), http_data->post == nullptr ? "" : http_data->post);
-      }
-    }
+  if (error_type == script_error_t::memory_limit || script_mem_stats.real_memory_used > max_memory / 2) {
+    kprintf("Detailed memory stats: total allocations = %zd, total memory allocated = %zd, huge memory pieces = %zd, small memory pieces = %zd, defragmentation calls = %zd,"
+            "real memory used = %zd, max real memory used = %zd, memory used = %zd, max memory used = %zd, memory_limit = %zd\n",
+            script_mem_stats.total_allocations, script_mem_stats.total_memory_allocated, script_mem_stats.huge_memory_pieces, script_mem_stats.small_memory_pieces, script_mem_stats.defragmentation_calls,
+            script_mem_stats.real_memory_used, script_mem_stats.max_real_memory_used, script_mem_stats.memory_used, script_mem_stats.max_memory_used,  script_mem_stats.memory_limit);
   }
 
   const size_t buf_size = 5000;
@@ -339,7 +337,7 @@ void PhpScript::finish() noexcept {
         }
       }
     }
-    kprintf("[worked = %.3lf, net = %.3lf, script = %.3lf, queries_cnt = %5d, long_queries_cnt = %5d, static_memory = %9d, peak_memory = %9d, total_memory = %9d] %s\n",
+    kprintf("[worked = %.3lf, net = %.3lf, script = %.3lf, queries_cnt = %5d, long_queries_cnt = %5d, heap_memory_used = %9d, peak_script_memory = %9d, total_script_memory = %9d] %s\n",
             script_time + net_time, net_time, script_time, queries_cnt, long_queries_cnt,
             (int)dl::get_heap_memory_used(),
             (int)script_mem_stats.max_real_memory_used,

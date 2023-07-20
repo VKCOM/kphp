@@ -9,12 +9,15 @@
 #include "common/dl-utils-lite.h"
 #include "common/mixin/not_copyable.h"
 #include "common/sanitizer.h"
+#include "common/kprintf.h"
 
 #include "server/php-engine-vars.h"
 #include "server/php-init-scripts.h"
 #include "server/php-queries-types.h"
 #include "server/php-query-data.h"
 #include "server/ucontext-portable.h"
+
+DECLARE_VERBOSITY(php_runner);
 
 enum class run_state_t {
   finished,

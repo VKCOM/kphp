@@ -223,7 +223,7 @@ int sqlp_becomes_ready(connection *c) {
 
 int sqlp_check_ready(connection *c) {
   if (c->status == conn_ready && c->In.total_bytes > 0) {
-    vkprintf (-1, "have %d bytes in outbound sql connection %d in state ready, closing connection\n", c->In.total_bytes, c->fd);
+    kprintf("have %d bytes in outbound sql connection %d in state ready, closing connection\n", c->In.total_bytes, c->fd);
     c->status = conn_error;
     c->error = -3;
     fail_connection(c, -3);
@@ -237,7 +237,7 @@ int sqlp_check_ready(connection *c) {
   if (c->status == conn_wait_answer || c->status == conn_reading_answer) {
     if (!(c->flags & C_FAILED) && c->last_query_sent_time < precise_now - RESPONSE_FAIL_TIMEOUT - c->last_query_time && c->last_response_time < precise_now - RESPONSE_FAIL_TIMEOUT - c
       ->last_query_time && !(SQLC_DATA(c)->extra_flags & 1)) {
-      vkprintf (1, "failing outbound connection %d, status=%d, response_status=%d, last_response=%.6f, last_query=%.6f, now=%.6f\n", c->fd, c->status, SQLC_DATA(c)
+      tvkprintf(php_connections, 1, "failing outbound connection %d, status=%d, response_status=%d, last_response=%.6f, last_query=%.6f, now=%.6f\n", c->fd, c->status, SQLC_DATA(c)
         ->response_state, c->last_response_time, c->last_query_sent_time, precise_now);
       c->error = -5;
       fail_connection(c, -5);
@@ -259,7 +259,7 @@ int sqlp_authorized(connection *c) {
     SQLC_DATA(c)->auth_state = sql_auth_ok;
     c->status = conn_ready;
     SQLC_DATA(c)->packet_state = 0;
-    vkprintf (1, "outcoming initdb successful\n");
+    tvkprintf(php_connections, 1, "outcoming initdb successful\n");
     SQLC_FUNC(c)->sql_becomes_ready(c);
     return 0;
   }
@@ -292,11 +292,10 @@ int proxy_client_execute(connection *c, int op) {
   if (b_len >= 5) {
     field_cnt = buffer[4] & 0xff;
   }
-
-  vkprintf (1, "proxy_db_client: op=%d, packet_len=%d, response_state=%d, field_num=%d\n", op, D->packet_len, D->response_state, field_cnt);
+  tvkprintf(php_connections, 3, "proxy client execute: op=%d, packet_len=%d, response_state=%d, field_num=%d\n", op, D->packet_len, D->response_state, field_cnt);
 
   if (c->first_query == (conn_query *)c) {
-    vkprintf (-1, "response received for empty query list? op=%d\n", op);
+    kprintf("response received for empty query list? op=%d\n", op);
     return SKIP_ALL_BYTES;
   }
 
@@ -325,7 +324,7 @@ int proxy_client_execute(connection *c, int op) {
         dl_unreachable ("looks like unused code");
         SQLC_DATA(c)->extra_flags |= 2;
         if (c->first_query->requester->generation != c->first_query->req_generation) {
-          vkprintf (1, "outbound connection %d: nowhere to forward replication stream, closing\n", c->fd);
+          tvkprintf (php_connections, 3, "outbound connection %d: nowhere to forward replication stream, closing\n", c->fd);
           c->status = conn_error;
         }
       } else if (field_cnt == 0 || field_cnt == 0xff) {
@@ -369,7 +368,7 @@ int proxy_client_execute(connection *c, int op) {
       }
       break;
     case resp_done:
-      vkprintf (-1, "unexpected packet from server!\n");
+      kprintf("unexpected packet from server!\n");
       assert (0);
   }
 

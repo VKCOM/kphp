@@ -85,7 +85,7 @@ unsigned get_my_ipv4() {
   if (force_ipv4_mask != 0xff000000 || force_ipv4_ip != (10 << 24)) {
     assert(my_ip != 0 && "can't choose ip in given subnet");
   }
-  vkprintf (1, "using main IP %d.%d.%d.%d/%d at interface %s\n", (my_ip >> 24), (my_ip >> 16) & 255, (my_ip >> 8) & 255, my_ip & 255,
+  vkprintf (2, "using main IP %d.%d.%d.%d/%d at interface %s\n", (my_ip >> 24), (my_ip >> 16) & 255, (my_ip >> 8) & 255, my_ip & 255,
             __builtin_clz(~my_netmask), my_iface ?: "(none)");
   freeifaddrs(ifa_first);
   return my_ip;
@@ -106,10 +106,10 @@ int get_my_ipv6(unsigned char ipv6[16]) {
       continue;
     }
     memcpy(ip, &((struct sockaddr_in6 *)ifa->ifa_addr)->sin6_addr, 16);
-    vkprintf (2, "test IP %s at interface %s\n", ipv6_to_print(ip), ifa->ifa_name);
+    vkprintf (4, "test IP %s at interface %s\n", ipv6_to_print(ip), ifa->ifa_name);
 
     if ((ip[0] & 0xf0) != 0x30 && (ip[0] & 0xf0) != 0x20) {
-      vkprintf (2, "not a global ipv6 address\n");
+      vkprintf (4, "not a global ipv6 address\n");
       continue;
     }
 
@@ -139,7 +139,7 @@ int get_my_ipv6(unsigned char ipv6[16]) {
       m++;
     }
   }
-  vkprintf (1, "using main IP %s/%d at interface %s\n", ipv6_to_print(ipv6), m, my_iface);
+  vkprintf (2, "using main IP %s/%d at interface %s\n", ipv6_to_print(ipv6), m, my_iface);
   freeifaddrs(ifa_first);
   return 1;
 }
