@@ -49,7 +49,7 @@ bool aes_key_add(aes_key_t *aes_key) {
     aes_key_t *added_key = aes_loaded_keys[i];
 
     if (aes_key->id == added_key->id || !strcmp(aes_key->filename, added_key->filename)) {
-      tvkprintf(net_crypto_aes, 4, "Cannot add AES key %d(\"%s\"): already added %d(\"%s\")\n", aes_key->id, aes_key->filename, added_key->id, added_key->filename);
+      tvkprintf(net_crypto_aes, 1, "Cannot add AES key %d(\"%s\"): already added %d(\"%s\")\n", aes_key->id, aes_key->filename, added_key->id, added_key->filename);
       return false;
     }
   }
@@ -57,7 +57,7 @@ bool aes_key_add(aes_key_t *aes_key) {
   aes_loaded_keys = static_cast<aes_key_t**>(realloc(aes_loaded_keys, sizeof(aes_key) * (aes_loaded_keys_size + 1)));
   aes_loaded_keys[aes_loaded_keys_size++] = aes_key;
 
-  tvkprintf(net_crypto_aes, 4, "Add AES key %u(\"%s\")\n", aes_key->id, aes_key->filename);
+  tvkprintf(net_crypto_aes, 1, "Add AES key %u(\"%s\")\n", aes_key->id, aes_key->filename);
 
   return true;
 }
@@ -67,7 +67,7 @@ static bool aes_key_set_default(const char *filename) {
     for (size_t i = 0; i < aes_loaded_keys_size; ++i) {
       aes_key_t *key = aes_loaded_keys[i];
       if (!strcmp(key->filename, filename)) {
-        tvkprintf(net_crypto_aes, 4, "Setting default AES key to: %d(\"%s\")\n", key->id, key->filename);
+        tvkprintf(net_crypto_aes, 1, "Setting default AES key to: %d(\"%s\")\n", key->id, key->filename);
         default_aes_key = key;
         return true;
       }
@@ -93,23 +93,23 @@ aes_key_t *aes_key_load_memory(const char* filename, uint8_t *key, int32_t key_l
 static aes_key_t *aes_key_load_fd(int fd, const char *filename) {
   struct stat st;
   if (fstat(fd, &st) == -1) {
-    tvkprintf(net_crypto_aes, 4, "Cannot fstat() AES key fd: %d(\"%s\"): %m\n", fd, filename);
+    tvkprintf(net_crypto_aes, 1, "Cannot fstat() AES key fd: %d(\"%s\"): %m\n", fd, filename);
     return NULL;
   }
 
   if (st.st_size < AES_KEY_MIN_LEN) {
-    tvkprintf(net_crypto_aes, 4, "Ignoring too small AES key: %jd(min %d)\n", (intmax_t)(st.st_size), AES_KEY_MIN_LEN);
+    tvkprintf(net_crypto_aes, 1, "Ignoring too small AES key: %jd(min %d)\n", (intmax_t)(st.st_size), AES_KEY_MIN_LEN);
     return NULL;
   }
 
   if (st.st_size > AES_KEY_MAX_LEN) {
-    tvkprintf(net_crypto_aes, 4, "Ignoring too large AES key: %jd(max %d)\n", (intmax_t)(st.st_size), AES_KEY_MAX_LEN);
+    tvkprintf(net_crypto_aes, 1, "Ignoring too large AES key: %jd(max %d)\n", (intmax_t)(st.st_size), AES_KEY_MAX_LEN);
     return NULL;
   }
 
   char buffer[AES_KEY_MAX_LEN];
   if (!read_exact(fd, buffer, st.st_size)) {
-    tvkprintf(net_crypto_aes, 4, "Cannot read AES key fd: %d: %m\n", fd);
+    tvkprintf(net_crypto_aes, 1, "Cannot read AES key fd: %d: %m\n", fd);
     return NULL;
   }
 
@@ -127,7 +127,7 @@ static bool aes_key_load_file(int fd, const char *path) {
   close(fd);
   if (!key) {
     free(tmp_path);
-    tvkprintf(net_crypto_aes, 4, "Cannot load AES key from fd: %d(\"%s\"): %m\n", fd, path);
+    tvkprintf(net_crypto_aes, 1, "Cannot load AES key from fd: %d(\"%s\"): %m\n", fd, path);
     return false;
   }
 
@@ -147,14 +147,14 @@ static bool aes_key_load_dir(int fd) {
     const int fd = openat(dir_fd, entry->d_name, O_NOFOLLOW);
     if (fd == -1) {
       if(errno != ELOOP) {
-        tvkprintf(net_crypto_aes, 4, "Cannot openat() AES key dir entry: \"%s\": %m\n", entry->d_name);
+        tvkprintf(net_crypto_aes, 1, "Cannot openat() AES key dir entry: \"%s\": %m\n", entry->d_name);
       }
       continue;
     }
 
     struct stat st;
     if (fstat(fd, &st) == -1) {
-      tvkprintf(net_crypto_aes, 4, "Cannot fstatat() AES key dir entry: \"%s\": %m\n", entry->d_name);
+      tvkprintf(net_crypto_aes, 1, "Cannot fstatat() AES key dir entry: \"%s\": %m\n", entry->d_name);
       continue;
     }
 
@@ -170,7 +170,7 @@ static bool aes_key_load_dir(int fd) {
   char buffer[NAME_MAX + 1];
   if (readlinkat(dir_fd, "default", buffer, sizeof(buffer)) == -1) {
     assert(!closedir(dir));
-    tvkprintf(net_crypto_aes, 4, "Cannot readlinkat() \"default\" AES key symlink\n");
+    tvkprintf(net_crypto_aes, 1, "Cannot readlinkat() \"default\" AES key symlink\n");
     return false;
   }
   assert(!closedir(dir));
@@ -181,14 +181,14 @@ static bool aes_key_load_dir(int fd) {
 bool aes_key_load_path(const char *path) {
   const int fd = open(path, O_RDONLY);
   if (fd == -1) {
-    tvkprintf(net_crypto_aes, 4, "Cannot open() AES key path: \"%s\": %m\n", path);
+    tvkprintf(net_crypto_aes, 1, "Cannot open() AES key path: \"%s\": %m\n", path);
     return false;
   }
 
   struct stat st;
   if (fstat(fd, &st) == -1) {
     close(fd);
-    tvkprintf(net_crypto_aes, 4, "Cannot fstat() AES key path fd: %d: %m\n", fd);
+    tvkprintf(net_crypto_aes, 1, "Cannot fstat() AES key path fd: %d: %m\n", fd);
     return false;
   }
 
@@ -201,7 +201,7 @@ bool aes_key_load_path(const char *path) {
   }
 
   close(fd);
-  tvkprintf(net_crypto_aes, 4, "Unexpected file type for AES key path: %u\n", S_IFMT & st.st_mode);
+  tvkprintf(net_crypto_aes, 1, "Unexpected file type for AES key path: %u\n", S_IFMT & st.st_mode);
 
   return false;
 }

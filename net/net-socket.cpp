@@ -156,24 +156,24 @@ int prepare_unix_socket(const char *path, const char *username, const char *grou
 
   const struct passwd *passwd = getpwnam(username);
   if (!passwd) {
-    vkprintf(4, "Cannot getpwnam() for %s: %s\n", username, strerror(errno));
+    vkprintf(1, "Cannot getpwnam() for %s: %s\n", username, strerror(errno));
     return -1;
   }
 
   const struct group *group = getgrnam(groupname);
   if (!group) {
-    vkprintf(4, "Cannot getgrnam() for %s: %s\n", groupname, strerror(errno));
+    vkprintf(1, "Cannot getgrnam() for %s: %s\n", groupname, strerror(errno));
     return -1;
   }
 
   if (chown(path, passwd->pw_uid, group->gr_gid)) {
-    vkprintf(4, "Cannot chown() \"%s\" to %s:%s: %s\n", path, username, groupname, strerror(errno));
+    vkprintf(1, "Cannot chown() \"%s\" to %s:%s: %s\n", path, username, groupname, strerror(errno));
     return -1;
   }
 
   const mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP;
   if (chmod(path, mode)) {
-    vkprintf(4, "Cannot chmod() \"%s\" to %u: %s\n", path, mode, strerror(errno));
+    vkprintf(1, "Cannot chmod() \"%s\" to %u: %s\n", path, mode, strerror(errno));
     return -1;
   }
 

@@ -149,6 +149,10 @@ int tcp_server_writer(struct connection *c) {
 
       tvkprintf(net_connections, 4, "send/writev() to %d: %d written out of %d in %d chunks\n", c->fd, r, s, iovcnt);
 
+      if (r < 0) {
+        perror("send()");
+      }
+
       if (r > 0) {
         rwm_fetch_data(out, 0, r);
         t += r;
@@ -265,7 +269,7 @@ static int tcp_server_reader_inner(struct connection *c, bool once) {
       }
       tvkprintf(net_connections, 4, "recv() from %d: %d read out of %d. Crypto = %d\n", c->fd, r, s, c->crypto != 0);
       if (r < 0 && errno != EAGAIN) {
-        tvkprintf(net_connections, 4, "recv(): %s\n", strerror(errno));
+        tvkprintf(net_connections, 1, "recv(): %s\n", strerror(errno));
       }
 
       if (r > 0) {

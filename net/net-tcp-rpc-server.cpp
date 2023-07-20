@@ -238,7 +238,7 @@ static int tcp_rpcs_process_handshake_packet (struct connection *c, raw_message_
   assert (rwm_fetch_data (msg, &P, D->packet_len) == D->packet_len);
   memcpy (&D->remote_pid, &P.sender_pid, sizeof (struct process_id));
   if (matches_pid(&PID, &P.peer_pid) == no_pid_match) {
-    tvkprintf(net_connections, 4, "PID mismatch during handshake: local %08x:%hu:%hu:%u, remote %08x:%hu:%hu:%u\n",
+    tvkprintf(net_connections, 1, "PID mismatch during handshake: local %08x:%hu:%hu:%u, remote %08x:%hu:%hu:%u\n",
                  PID.ip, PID.port, PID.pid, PID.utime, P.peer_pid.ip, P.peer_pid.port, P.peer_pid.pid, P.peer_pid.utime);
     tcp_rpcs_send_handshake_error_packet (c, -4);
     return -4;
@@ -281,7 +281,7 @@ int tcp_rpcs_parse_execute (struct connection *c) {
         D->packet_len &= 0x7fffffff;
       }
       if ((D->packet_len > TCP_RPCS_FUNC(c)->max_packet_len && TCP_RPCS_FUNC(c)->max_packet_len > 0))  {
-        tvkprintf(net_connections, 4, "error while parsing packet: bad packet length %d\n", D->packet_len);
+        tvkprintf(net_connections, 1, "error while parsing packet: bad packet length %d\n", D->packet_len);
         c->status = conn_error;
         c->error = -1;
         return 0;
@@ -307,7 +307,7 @@ int tcp_rpcs_parse_execute (struct connection *c) {
           rwm_process (&c->in, c->in.total_bytes, cb, c);
           rwm_free (&c->in);
           if (c->type->init_accepted (c) < 0) {
-            tvkprintf(net_connections, 4, "memcache init_accepted() returns error for connection %d\n", c->fd);
+            tvkprintf(net_connections, 1, "memcache init_accepted() returns error for connection %d\n", c->fd);
             c->status = conn_error;
             c->error = -33;
             return 0;
@@ -334,7 +334,7 @@ int tcp_rpcs_parse_execute (struct connection *c) {
           rwm_process (&c->in, c->in.total_bytes, cb, c);
           rwm_free (&c->in);
           if (c->type->init_accepted (c) < 0) {
-            tvkprintf(net_connections, 4, "http init_accepted() returns error for connection %d\n", c->fd);
+            tvkprintf(net_connections, 1, "http init_accepted() returns error for connection %d\n", c->fd);
             c->status = conn_error;
             c->error = -33;
             return 0;
@@ -342,7 +342,7 @@ int tcp_rpcs_parse_execute (struct connection *c) {
           nbit_set (&c->Q, &c->In);
           return c->type->parse_execute (c);
         }
-        tvkprintf(net_connections, 4, "error while parsing packet: bad packet length %d\n", D->packet_len);
+        tvkprintf(net_connections, 1, "error while parsing packet: bad packet length %d\n", D->packet_len);
         c->status = conn_error;
         c->error = -1;
         return 0;
@@ -354,7 +354,7 @@ int tcp_rpcs_parse_execute (struct connection *c) {
       continue;
     }
     if (D->packet_len < 16) {
-      tvkprintf(net_connections, 4, "error while parsing packet: bad packet length %d\n", D->packet_len);
+      tvkprintf(net_connections, 1, "error while parsing packet: bad packet length %d\n", D->packet_len);
       c->status = conn_error;
       c->error = -1;
       return 0;
@@ -372,7 +372,7 @@ int tcp_rpcs_parse_execute (struct connection *c) {
     assert (rwm_fetch_data_back (&msg, &crc32, 4) == 4);
     D->packet_crc32 = rwm_custom_crc32 (&msg, D->packet_len - 4, D->custom_crc_partial);
     if (crc32 != D->packet_crc32) {
-      tvkprintf(net_connections, 4, "error while parsing packet: crc32 = %08x != %08x\n", D->packet_crc32, crc32);
+      tvkprintf(net_connections, 1, "error while parsing packet: crc32 = %08x != %08x\n", D->packet_crc32, crc32);
       c->status = conn_error;
       c->error = -1;
       rwm_free (&msg);
@@ -396,7 +396,7 @@ int tcp_rpcs_parse_execute (struct connection *c) {
     }
 
     if (!(D->crypto_flags & 256) && D->packet_num != D->in_packet_num) {
-      tvkprintf(net_connections, 4, "error while parsing packet: got packet num %d, expected %d\n", D->packet_num, D->in_packet_num);
+      tvkprintf(net_connections, 1, "error while parsing packet: got packet num %d, expected %d\n", D->packet_num, D->in_packet_num);
       c->status = conn_error;
       c->error = -1;
       rwm_free (&msg);

@@ -378,7 +378,7 @@ int server_reader(struct connection *c) {
 
       tvkprintf(net_connections, 4, "recv() from %d: %d read out of %d\n", c->fd, r, s);
       if (r < 0 && errno != EAGAIN) {
-        tvkprintf(net_connections, 4, "recv(): %s\n", strerror(errno));
+        tvkprintf(net_connections, 1, "recv(): %s\n", strerror(errno));
       }
 
       if (r > 0) {
@@ -856,7 +856,7 @@ int server_read_write(struct connection *c) {
   }
 
   if (c->error || c->status == conn_error || (c->status == conn_write_close && !(c->flags & C_WANTWR)) || (c->flags & C_FAILED)) {
-    tvkprintf(net_connections, 4, "conn %d: closing and cleaning (error code=%d)\n", c->fd, c->error);
+    tvkprintf(net_connections, 1, "conn %d: closing and cleaning (error code=%d)\n", c->fd, c->error);
 
     if (c->interrupted) {
       // Here is delayed connection closing described above at case (2)
@@ -903,7 +903,7 @@ int server_read_write_gateway(int fd __attribute__((unused)), void *data, event_
     if (ev->epoll_ready & EPOLLERR) {
       int error;
       if (!socket_error(c->fd, &error)) {
-        tvkprintf(net_connections, 3, "got error for tcp socket #%d, %s : %s\n", c->fd, sockaddr_storage_to_string(&c->remote_endpoint), strerror(error));
+        tvkprintf(net_connections, 1, "got error for tcp socket #%d, %s : %s\n", c->fd, sockaddr_storage_to_string(&c->remote_endpoint), strerror(error));
       }
     }
   }
@@ -1055,7 +1055,7 @@ int accept_new_connections(struct connection *cc) {
     const int cfd = accept4(cc->fd, (struct sockaddr *)&peer, &peer_addrlen, SOCK_CLOEXEC);
     if (cfd < 0) {
       if (!acc) {
-        tvkprintf(net_connections, 4, "accept(%d) unexpectedly returns %d: %m\n", cc->fd, cfd);
+        tvkprintf(net_connections, 1, "accept(%d) unexpectedly returns %d: %m\n", cc->fd, cfd);
       }
       break;
     }
@@ -1752,13 +1752,13 @@ int create_new_connections(conn_target_t *S) {
 
     if (cfd < 0) {
       compute_next_reconnect(S);
-      tvkprintf(net_connections, 4, "error connecting to %s: %m\n", sockaddr_storage_to_string(&endpoint));
+      tvkprintf(net_connections, 1, "error connecting to %s: %m\n", sockaddr_storage_to_string(&endpoint));
       return count;
     }
     if (cfd >= MAX_EVENTS || cfd >= MAX_CONNECTIONS) {
       close(cfd);
       compute_next_reconnect(S);
-      tvkprintf(net_connections, 4, "out of sockets when connecting to %s\n", sockaddr_storage_to_string(&endpoint));
+      tvkprintf(net_connections, 1, "out of sockets when connecting to %s\n", sockaddr_storage_to_string(&endpoint));
       return count;
     }
 
