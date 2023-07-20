@@ -377,6 +377,9 @@ int server_reader(struct connection *c) {
       }
 
       tvkprintf(net_connections, 4, "recv() from %d: %d read out of %d\n", c->fd, r, s);
+      if (r < 0 && errno != EAGAIN) {
+        tvkprintf(net_connections, 4, "recv(): %s\n", strerror(errno));
+      }
 
       if (r > 0) {
 
@@ -1052,7 +1055,7 @@ int accept_new_connections(struct connection *cc) {
     const int cfd = accept4(cc->fd, (struct sockaddr *)&peer, &peer_addrlen, SOCK_CLOEXEC);
     if (cfd < 0) {
       if (!acc) {
-        // accept(%d) unexpectedly returns cfd
+        tvkprintf(net_connections, 4, "accept(%d) unexpectedly returns %d: %m\n", cc->fd, cfd);
       }
       break;
     }
@@ -1748,14 +1751,14 @@ int create_new_connections(conn_target_t *S) {
     const int cfd = S->type->create_outbound ? S->type->create_outbound(&endpoint) : make_client_socket(&endpoint);
 
     if (cfd < 0) {
-      // error connecting to sockaddr_storage_to_string(&endpoint)
       compute_next_reconnect(S);
+      tvkprintf(net_connections, 4, "error connecting to %s: %m\n", sockaddr_storage_to_string(&endpoint));
       return count;
     }
     if (cfd >= MAX_EVENTS || cfd >= MAX_CONNECTIONS) {
-      // error out of sockets when connecting to sockaddr_storage_to_string(&endpoint)
       close(cfd);
       compute_next_reconnect(S);
+      tvkprintf(net_connections, 4, "out of sockets when connecting to %s\n", sockaddr_storage_to_string(&endpoint));
       return count;
     }
 
