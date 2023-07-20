@@ -561,7 +561,6 @@ WorkerType start_master() {
 }
 
 int run_worker(WorkerType worker_type) {
-  kprintf("master create %s\n", worker_type == WorkerType::general_worker ? "general worker" : "job worker");
   dl_block_all_signals();
 
   assert (vk::singleton<WorkersControl>::get().get_all_alive() < WorkersControl::max_workers_count);
@@ -651,8 +650,7 @@ int run_worker(WorkerType worker_type) {
   }
 
   dl_restore_signal_mask();
-
-  kprintf("new worker launched [pid = %d]\n", (int)new_pid);
+  kprintf("master create %s [pid = %d]\n", worker_type == WorkerType::general_worker ? "general worker" : "job worker", (int)new_pid);
 
   worker_info_t *worker = workers[vk::singleton<WorkersControl>::get().get_all_alive() - 1] = new_worker();
   worker->pid = new_pid;
