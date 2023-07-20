@@ -150,7 +150,7 @@ int tcp_server_writer(struct connection *c) {
       tvkprintf(net_connections, 4, "send/writev() to %d: %d written out of %d in %d chunks\n", c->fd, r, s, iovcnt);
 
       if (r < 0) {
-        perror("send()");
+        tvkprintf(net_connections, 1, "writev(): %m\n");
       }
 
       if (r > 0) {

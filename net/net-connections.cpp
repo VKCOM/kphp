@@ -246,6 +246,8 @@ int server_writer(struct connection *c) {
             kprintf("Too much EAGAINs for connection %d (%s), dropping\n", c->fd, sockaddr_storage_to_string(&c->remote_endpoint));
             fail_connection(c, -123);
           }
+        } else {
+          tvkprintf(net_connections, 1, "writev(): %m\n");
         }
       } else {
         c->eagain_count = 0;
