@@ -662,7 +662,7 @@ bool f$curl_setopt_array(curl_easy easy_id, const array<mixed> &options) noexcep
 }
 
 mixed f$curl_exec(curl_easy easy_id) noexcept {
-  constexpr double long_curl_query = 1 * 10e-2; // 0.1 sec
+  constexpr double long_curl_query = 2 * 10e-2; // 0.2 sec
   auto *easy_context = get_context<EasyContext>(easy_id);
   if (!easy_context) {
     return false;
@@ -678,8 +678,9 @@ mixed f$curl_exec(curl_easy easy_id) noexcept {
   easy_context->error_num = dl::critical_section_call(curl_easy_perform, easy_context->easy_handle);
   double request_finish_time = dl_time();
   if (request_finish_time - request_start_time >= long_curl_query) {
+    const string &url = easy_context->get_info(CURLINFO_EFFECTIVE_URL).as_string();
     kprintf("LONG curl query : %f. Curl id = %d, url = %s\n", request_finish_time - request_start_time,
-            easy_context->uniq_id, easy_context->get_info(CURLINFO_EFFECTIVE_URL).as_string().c_str());
+            easy_context->uniq_id, url.substr(0, url.size() < 100 ? url.size() : 100).c_str());
   }
   if (easy_context->error_num != CURLE_OK && easy_context->error_num != CURLE_PARTIAL_FILE) {
     if (kphp_tracing::is_turned_on()) {
