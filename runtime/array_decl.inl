@@ -12,13 +12,12 @@
 #endif
 
 struct array_size {
-  int64_t int_size = 0;
-  int64_t string_size = 0;
-  bool is_vector = false;
+  int64_t int_size{0};
+  bool is_vector{false};
 
   array_size() = default;
 
-  inline array_size(int64_t int_size, int64_t string_size, bool is_vector);
+  inline array_size(int64_t int_size, bool is_vector);
 
   inline array_size operator+(const array_size &other) const;
 
@@ -60,8 +59,6 @@ struct array_inner_control {
   array_list_hash_entry last;
   uint32_t int_size;
   uint32_t int_buf_size;
-  uint32_t string_size;
-  uint32_t string_buf_size;
 };
 
 template<class T>
@@ -80,16 +77,9 @@ private:
 
   struct int_hash_entry : list_hash_entry {
     T value;
+    bool is_int{false};
 
-    int64_t int_key;
-
-    inline key_type get_key() const;
-  };
-
-  struct string_hash_entry : list_hash_entry {
-    T value;
-
-    int64_t int_key;
+    int64_t int_key{0};
     string string_key;
 
     inline key_type get_key() const;
@@ -100,7 +90,6 @@ private:
   // to not add extra checks they are left in `array_inner`
   struct array_inner_fields_for_map {
     uint64_t modulo_helper_int_buf_size{0};
-    uint64_t modulo_helper_string_buf_size{0};
   };
 
   struct array_inner : array_inner_control {
@@ -142,9 +131,9 @@ private:
     inline static uint32_t choose_bucket(int64_t key, uint32_t buf_size, uint64_t modulo_helper) __attribute__ ((always_inline));
 
     inline static size_t sizeof_vector(uint32_t int_size) __attribute__((always_inline));
-    inline static size_t sizeof_map(uint32_t int_size, uint32_t string_size) __attribute__((always_inline));
-    inline static size_t estimate_size(int64_t &new_int_size, int64_t &new_string_size, bool is_vector);
-    inline static array_inner *create(int64_t new_int_size, int64_t new_string_size, bool is_vector);
+    inline static size_t sizeof_map(uint32_t int_size) __attribute__((always_inline));
+    inline static size_t estimate_size(int64_t &new_int_size, bool is_vector);
+    inline static array_inner *create(int64_t new_int_size, bool is_vector);
 
     inline static array_inner *empty_array() __attribute__ ((always_inline));
 

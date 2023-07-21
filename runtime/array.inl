@@ -12,21 +12,17 @@
   #error "this file must be included only from kphp_core.h"
 #endif
 
-array_size::array_size(int64_t int_size, int64_t string_size, bool is_vector) :
+array_size::array_size(int64_t int_size, bool is_vector) :
   int_size(int_size),
-  string_size(string_size),
   is_vector(is_vector) {}
 
 array_size array_size::operator+(const array_size &other) const {
-  return array_size(int_size + other.int_size, string_size + other.string_size, is_vector && other.is_vector);
+  return {int_size + other.int_size, is_vector && other.is_vector};
 }
 
 array_size &array_size::cut(int64_t length) {
   if (int_size > length) {
     int_size = length;
-  }
-  if (string_size > length) {
-    string_size = length;
   }
   return *this;
 }
@@ -34,10 +30,6 @@ array_size &array_size::cut(int64_t length) {
 array_size &array_size::min(const array_size &other) {
   if (int_size > other.int_size) {
     int_size = other.int_size;
-  }
-
-  if (string_size > other.string_size) {
-    string_size = other.string_size;
   }
 
   is_vector &= other.is_vector;
@@ -103,12 +95,7 @@ void sort(T *begin_init, T *end_init, const T1 &compare) {
 
 template<class T>
 typename array<T>::key_type array<T>::int_hash_entry::get_key() const {
-  return key_type(int_key);
-}
-
-template<class T>
-typename array<T>::key_type array<T>::string_hash_entry::get_key() const {
-  return key_type(string_key);
+  return is_int ? key_type{int_key} : key_type{string_key};
 }
 
 template<class T>
@@ -237,21 +224,19 @@ size_t array<T>::array_inner::sizeof_vector(uint32_t int_size) {
 }
 
 template<class T>
-size_t array<T>::array_inner::sizeof_map(uint32_t int_size, uint32_t string_size) {
-  return sizeof(array_inner_fields_for_map) + sizeof(array_inner) + int_size * sizeof(int_hash_entry) + string_size * sizeof(string_hash_entry);
+size_t array<T>::array_inner::sizeof_map(uint32_t int_size) {
+  return sizeof(array_inner_fields_for_map) + sizeof(array_inner) + int_size * sizeof(int_hash_entry);
 }
 
 template<class T>
-size_t array<T>::array_inner::estimate_size(int64_t &new_int_size, int64_t &new_string_size, bool is_vector) {
+size_t array<T>::array_inner::estimate_size(int64_t &new_int_size, bool is_vector) {
   new_int_size = std::max(new_int_size, int64_t{0});
-  new_string_size = std::max(new_string_size, int64_t{0});
 
-  if (new_int_size + new_string_size > MAX_HASHTABLE_SIZE) {
-    php_critical_error ("max array size exceeded: int_size = %" PRIi64 ", string_size = %" PRIi64, new_int_size, new_string_size);
+  if (new_int_size > MAX_HASHTABLE_SIZE) {
+    php_critical_error ("max array size exceeded: int_size = %" PRIi64, new_int_size);
   }
 
   if (is_vector) {
-    php_assert (new_string_size == 0);
     new_int_size += 2;
     return sizeof_vector(static_cast<uint32_t>(new_int_size));
   }
@@ -261,17 +246,12 @@ size_t array<T>::array_inner::estimate_size(int64_t &new_int_size, int64_t &new_
     new_int_size += 2;
   }
 
-  new_string_size = 2 * new_string_size + 3;
-  if (new_string_size % 5 == 0) {
-    new_string_size += 2;
-  }
-
-  return sizeof_map(static_cast<uint32_t>(new_int_size), static_cast<uint32_t>(new_string_size));
+  return sizeof_map(static_cast<uint32_t>(new_int_size));
 }
 
 template<class T>
-typename array<T>::array_inner *array<T>::array_inner::create(int64_t new_int_size, int64_t new_string_size, bool is_vector) {
-  const size_t mem_size = estimate_size(new_int_size, new_string_size, is_vector);
+typename array<T>::array_inner *array<T>::array_inner::create(int64_t new_int_size, bool is_vector) {
+  const size_t mem_size = estimate_size(new_int_size, is_vector);
   if (is_vector) {
     auto p = reinterpret_cast<array_inner *>(dl::allocate(mem_size));
     p->ref_cnt = 0;
@@ -295,9 +275,6 @@ typename array<T>::array_inner *array<T>::array_inner::create(int64_t new_int_si
 
   p->int_buf_size = static_cast<uint32_t>(new_int_size);
   p->fields_for_map().modulo_helper_int_buf_size = fastmod::computeM_u32(p->int_buf_size);
-
-  p->string_buf_size = static_cast<uint32_t>(new_string_size);
-  p->fields_for_map().modulo_helper_string_buf_size = fastmod::computeM_u32(p->string_buf_size);
 
   p->int_size = 0;
   p->string_size = 0;
@@ -637,13 +614,11 @@ bool array<T>::array_inner::is_vector_internal_or_last_index(int64_t key) const 
 template<class T>
 size_t array<T>::array_inner::estimate_memory_usage() const {
   int64_t int_elements = int_size;
-  int64_t string_elements = 0;
   const bool vector_structure = is_vector();
   if (vector_structure) {
-    return estimate_size(int_elements, string_elements, vector_structure);
+    return estimate_size(int_elements, vector_structure);
   }
-  string_elements = string_size;
-  return estimate_size(++int_elements, ++string_elements, vector_structure);
+  return estimate_size(++int_elements, vector_structure);
 }
 
 template<class T>
@@ -984,7 +959,7 @@ array<T>::array():
 
 template<class T>
 array<T>::array(const array_size &s) :
-  p(array_inner::create(s.int_size, s.string_size, s.is_vector)) {
+  p(array_inner::create(s.int_size, s.is_vector)) {
 }
 
 template<class T>
@@ -1024,7 +999,7 @@ template<class... Args>
 inline array<T> array<T>::create(Args &&... args) {
   static_assert((std::is_convertible<std::decay_t<Args>, T>::value && ...), "Args type must be convertible to T");
 
-  array<T> res{array_size{sizeof...(args), 0, true}};
+  array<T> res{array_size{sizeof...(args), true}};
   (res.p->emplace_back_vector_value(std::forward<Args>(args)), ...);
   return res;
 }
@@ -1571,7 +1546,7 @@ int64_t array<T>::count() const {
 
 template<class T>
 array_size array<T>::size() const {
-  return array_size(p->int_size, p->string_size, is_vector());
+  return {p->int_size, is_vector()};
 }
 
 template<class T>
@@ -1964,7 +1939,7 @@ void array<T>::ksort(const T1 &compare) {
     mutate_if_map_shared();
   }
 
-  array<key_type> keys(array_size(n, 0, true));
+  array<key_type> keys(array_size(n, true));
   for (string_hash_entry *it = p->begin(); it != p->end(); it = p->next(it)) {
     if (p->is_string_hash_entry(it)) {
       keys.p->push_back_vector_value(it->get_key());
