@@ -1085,7 +1085,7 @@ function curl_errno ($curl_handle ::: int) ::: int;
 function curl_close ($curl_handle ::: int) ::: void;
 
 /** @kphp-extern-func-info resumable */
-function curl_exec_concurrently($curl_handle ::: int, $timeout ::: float = 1.0): ?string;
+function curl_exec_concurrently($curl_handle ::: int, $timeout ::: float = 1.0): string|false;
 
 function curl_multi_init () ::: int;
 function curl_multi_add_handle ($multi_handle ::: int, $curl_handle ::: int) ::: int|false;

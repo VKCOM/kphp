@@ -542,7 +542,7 @@ int hts_func_execute(connection *c, int op) {
     return -501;
   }
 
-  vkprintf (1, "in hts_execute: connection #%d, op=%d, header_size=%d, data_size=%d, http_version=%d\n",
+  vkprintf (1, "start http server execute: connection #%d, op=%d, header_size=%d, data_size=%d, http_version=%d\n",
             c->fd, op, D->header_size, D->data_size, D->http_ver);
 
   if (!vk::any_of_equal(D->query_type, htqt_get, htqt_post, htqt_head)) {
@@ -553,7 +553,7 @@ int hts_func_execute(connection *c, int op) {
   if (D->data_size > 0) {
     int have_bytes = get_total_ready_bytes(&c->In);
     if (have_bytes < D->data_size + D->header_size && D->data_size < MAX_POST_SIZE) {
-      vkprintf (1, "-- need %d more bytes, waiting\n", D->data_size + D->header_size - have_bytes);
+      vkprintf (2, "-- need %d more bytes, waiting\n", D->data_size + D->header_size - have_bytes);
       return D->data_size + D->header_size - have_bytes;
     }
   }
@@ -565,18 +565,12 @@ int hts_func_execute(connection *c, int op) {
   qHeadersLen = D->header_size - D->first_line_size;
   assert (D->first_line_size > 0 && D->first_line_size <= D->header_size);
 
-  vkprintf (1, "===============\n%.*s\n==============\n", D->header_size, ReqHdr);
-  vkprintf (1, "%d,%d,%d,%d\n", D->host_offset, D->host_size, D->uri_offset, D->uri_size);
-
-  vkprintf (1, "hostname: '%.*s'\n", D->host_size, ReqHdr + D->host_offset);
-  vkprintf (1, "URI: '%.*s'\n", D->uri_size, ReqHdr + D->uri_offset);
-
 //  D->query_flags &= ~QF_KEEPALIVE;
 
   if (0 < D->data_size && D->data_size < MAX_POST_SIZE) {
     assert (read_in(&c->In, Post, D->data_size) == D->data_size);
     Post[D->data_size] = 0;
-    vkprintf (1, "have %d POST bytes: `%.80s`\n", D->data_size, Post);
+    vkprintf (2, "have %d POST bytes: `%.80s`\n", D->data_size, Post);
     qPost = Post;
     qPostLen = D->data_size;
   } else {
@@ -606,7 +600,7 @@ int hts_func_execute(connection *c, int op) {
     return -418;
   }
 
-  vkprintf (1, "OK, lets do something\n");
+  vkprintf (1, "start response processing on fd %d\n", c->fd);
 
   const char *query_type_str = nullptr;
   switch (D->query_type) {
@@ -896,7 +890,7 @@ static void send_rpc_error(connection *c, long long req_id, int error_code, cons
 }
 
 int rpcx_execute(connection *c, int op, raw_message *raw) {
-  vkprintf(1, "rpcx_execute: fd=%d, op=%d, len=%d\n", c->fd, op, raw->total_bytes);
+  vkprintf(2, "rpc execute: fd=%d, op=%d, len=%d\n", c->fd, op, raw->total_bytes);
 
   int len = raw->total_bytes;
 

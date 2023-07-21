@@ -287,7 +287,7 @@ void net_reactor_fetch_events(net_reactor_ctx_t *ctx, int num_events) {
 void net_reactor_update_timer_counters(net_reactor_ctx_t *ctx, int timeout) {
   const double wait_time = ctx->last_wait - ctx->wait_start;
   if (wait_time > (timeout / 1000.0 + 0.5)) {
-    tvkprintf(net_events, 0, "epoll-wait worked too long: %.3fs\n", wait_time);
+    kprintf("epoll-wait worked too long: %.3fs\n", wait_time);
   }
   ctx->total_idle_time += wait_time;
   ctx->average_idle_time += wait_time;
@@ -488,7 +488,7 @@ int net_reactor_run_timers(net_reactor_ctx_t *ctx) {
   wait_time = ctx->timer_heap[1]->wakeup_time - precise_now;
   if (wait_time > 0) {
     // do not remove this useful debug!
-    tvkprintf(net_events, 3, "%d event timers, next in %.3f seconds\n", ctx->timer_heap_size, wait_time);
+    tvkprintf(net_events, 4, "%d event timers, next in %.3f seconds\n", ctx->timer_heap_size, wait_time);
     return (int)(std::min(100.0, wait_time) * 1000) + 1; // min to prevent integer overflow
   }
 

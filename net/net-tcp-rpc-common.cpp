@@ -26,7 +26,7 @@ OPTION_PARSER(OPT_RPC, "no-crc32c", no_argument, "Force use of CRC32 instead of 
 //   Flag 1 - can not edit this message. Need to make copy.
 
 void tcp_rpc_conn_send (struct connection *c, raw_message_t *raw, int flags) {
-  vkprintf (3, "%s: sending message of size %d to conn fd=%d\n", __func__, raw->total_bytes, c->fd);
+  tvkprintf(net_connections, 4, "%s: sending message of size %d to conn fd=%d\n", __func__, raw->total_bytes, c->fd);
   assert (!(raw->total_bytes & 3));
   int Q[2];
   Q[0] = raw->total_bytes + 12;
@@ -51,7 +51,7 @@ void tcp_rpc_conn_send_data (struct connection *c, int len, void *Q) {
 }
 
 void net_rpc_send_ping (struct connection *c, long long ping_id) {
-  vkprintf (2, "Sending ping to fd=%d. ping_id = %lld\n", c->fd, ping_id);
+  tvkprintf(net_connections, 4, "Sending ping to fd=%d. ping_id = %lld\n", c->fd, ping_id);
   assert(c->flags & C_RAWMSG);
   static int P[20];
   P[0] = TL_RPC_PING;

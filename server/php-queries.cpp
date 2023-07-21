@@ -32,6 +32,8 @@
 
 #define MAX_NET_ERROR_LEN 128
 
+DEFINE_VERBOSITY(php_connections)
+
 static char last_net_error[MAX_NET_ERROR_LEN + 1];
 
 static void save_last_net_error(const char *s) {

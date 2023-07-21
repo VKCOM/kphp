@@ -150,7 +150,7 @@ void socket_maximize_sndbuf(int socket, int max) {
     }
   }
 
-  vkprintf(2, "<%d send buffer was %d, now %d\n", socket, old_size, last_good);
+  vkprintf(4, "<%d send buffer was %d, now %d\n", socket, old_size, last_good);
 }
 
 void socket_maximize_rcvbuf(int socket, int max) {
@@ -185,5 +185,5 @@ void socket_maximize_rcvbuf(int socket, int max) {
     }
   }
 
-  vkprintf(2, ">%d receive buffer was %d, now %d\n", socket, old_size, last_good);
+  vkprintf(4, ">%d receive buffer was %d, now %d\n", socket, old_size, last_good);
 }

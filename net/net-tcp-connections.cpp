@@ -93,10 +93,10 @@ int prealloc_tcp_buffers() {
   for (i = tcp_buffers_number - 1; i >= 0; i--) {
     msg_buffer_t *X = alloc_msg_buffer(tcp_buffers_size);
     if (!X) {
-      vkprintf(0, "**FATAL**: cannot allocate tcp receive buffer\n");
+      kprintf("cannot allocate tcp receive buffer : calling exit(2)\n");
       exit(2);
     }
-    vkprintf(3, "allocated %d byte tcp receive buffer #%d at %p\n", msg_buffer_size(X), i, X);
+    tvkprintf(net_connections, 4, "allocated %d byte tcp receive buffer #%d at %p\n", msg_buffer_size(X), i, X);
     tcp_recv_buffers[i] = X;
     tcp_recv_iovec[i + 1].iov_base = X->data;
     tcp_recv_iovec[i + 1].iov_len = msg_buffer_size(X);
@@ -115,6 +115,7 @@ int prealloc_tcp_buffers() {
     15.08.2013: now C_WANTRD is never cleared anymore (we don't understand what bug we were fixing originally by this)
 */
 int tcp_server_writer(struct connection *c) {
+  tvkprintf(net_connections, 3, "tcp server writer on conn %d\n", c->fd);
   int r, s, t = 0, check_watermark;
 
   assert(c->status != conn_connecting);
@@ -146,11 +147,10 @@ int tcp_server_writer(struct connection *c) {
 
       r = writev(c->fd, iov, iovcnt);
 
-      if (verbosity > 2) {
-        kprintf("send/writev() to %d: %d written out of %d in %d chunks\n", c->fd, r, s, iovcnt);
-        if (r < 0) {
-          perror("send()");
-        }
+      tvkprintf(net_connections, 4, "send/writev() to %d: %d written out of %d in %d chunks\n", c->fd, r, s, iovcnt);
+
+      if (r < 0) {
+        tvkprintf(net_connections, 1, "writev(): %m\n");
       }
 
       if (r > 0) {
@@ -250,8 +250,7 @@ static int tcp_server_reader_inner(struct connection *c, bool once) {
         r = recvmsg(c->fd, &msg, MSG_DONTWAIT);
         if (r >= 0) {
           assert(!(msg.msg_flags & MSG_TRUNC || msg.msg_flags & MSG_CTRUNC));
-
-          vkprintf(4, "Ancillary data size: %" PRIu64 "\n", static_cast<int64_t>(msg.msg_controllen));
+          tvkprintf(net_connections, 4, "Ancillary data size: %" PRIu64 "\n", static_cast<int64_t>(msg.msg_controllen));
 
           if (c->type->ancillary_data_received) {
             for (struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg); cmsg; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
@@ -268,10 +267,9 @@ static int tcp_server_reader_inner(struct connection *c, bool once) {
       if (r < s || once) {
         c->flags |= C_NORD;
       }
-
-      vkprintf(3, "recv() from %d: %d read out of %d. Crypto = %d\n", c->fd, r, s, c->crypto != 0);
+      tvkprintf(net_connections, 4, "recv() from %d: %d read out of %d. Crypto = %d\n", c->fd, r, s, c->crypto != 0);
       if (r < 0 && errno != EAGAIN) {
-        vkprintf(1, "recv(): %s\n", strerror(errno));
+        tvkprintf(net_connections, 1, "recv(): %s\n", strerror(errno));
       }
 
       if (r > 0) {
@@ -320,7 +318,7 @@ static int tcp_server_reader_inner(struct connection *c, bool once) {
         for (i = 0; i < p - 1; i++) {
           msg_buffer_t *X = alloc_msg_buffer(tcp_buffers_size);
           if (!X) {
-            vkprintf(0, "**FATAL**: cannot allocate tcp receive buffer\n");
+            kprintf("**FATAL**: cannot allocate tcp receive buffer\n");
             exit(2);
           }
           tcp_recv_buffers[i] = X;
@@ -344,8 +342,7 @@ static int tcp_server_reader_inner(struct connection *c, bool once) {
 
           rwm_fetch_data(cin, 0, r1);
           c->skip_bytes = s += r1;
-
-          vkprintf(3, "skipped %d bytes, %d more to skip\n", r1, -s);
+          tvkprintf(net_connections, 4, "skipped %d bytes, %d more to skip\n", r1, -s);
           if (s) {
             continue;
           }
@@ -356,8 +353,7 @@ static int tcp_server_reader_inner(struct connection *c, bool once) {
           if (r1 >= s) {
             c->skip_bytes = s = 0;
           }
-
-          vkprintf(2, "fetched %d bytes, %d available bytes, %d more to load\n", r, r1, s ? s - r1 : 0);
+          tvkprintf(net_connections, 4, "fetched %d bytes, %d available bytes, %d more to load\n", r, r1, s ? s - r1 : 0);
           if (s) {
             continue;
           }
@@ -423,10 +419,12 @@ static int tcp_server_reader_inner(struct connection *c, bool once) {
 }
 
 int tcp_server_reader(struct connection *c) {
+  tvkprintf(net_connections, 3, "tcp server reader on conn %d\n", c->fd);
   return tcp_server_reader_inner(c, true);
 }
 
 int tcp_server_reader_till_end(struct connection *c) {
+  tvkprintf(net_connections, 3, "tcp server reader till end on conn %d\n", c->fd);
   return tcp_server_reader_inner(c, false);
 }
 

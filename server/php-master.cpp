@@ -87,6 +87,8 @@ extern const char *engine_tag;
 
 #define PHP_MASTER_VERSION "0.1"
 
+DEFINE_VERBOSITY(master_process)
+
 DEFINE_VERBOSITY(graceful_restart)
 
 static int cpu_cnt;
@@ -367,7 +369,8 @@ int signal_fd;
 int changed = 0;
 int failed = 0;
 int socket_fd = -1;
-int to_kill = 0, to_run = 0, to_exit = 0;
+int to_exit = 0;
+int general_workers_to_kill = 0, general_workers_to_run = 0;
 int job_workers_to_kill = 0, job_workers_to_run = 0;
 long long generation;
 int receive_fd_attempts_cnt = 0;
@@ -407,7 +410,7 @@ void delete_worker(worker_info_t *w) {
 }
 
 void terminate_worker(worker_info_t *w) {
-  vkprintf(1, "kill_worker: send SIGTERM to [pid = %d]\n", (int)w->pid);
+  kprintf("master terminate worker: send SIGTERM to [pid = %d]\n", (int)w->pid);
   kill(w->pid, SIGTERM);
   w->is_dying = 1;
   w->kill_time = my_now + 35;
@@ -446,10 +449,8 @@ void kill_hanging_workers() {
         continue;
       }
       if (!worker->is_dying && worker->last_activity_time + get_max_hanging_time_sec() <= my_now) {
-        vkprintf(1, "No stats received from worker [pid = %d]. Terminate it\n", static_cast<int>(worker->pid));
-        if (workers[i]->type == WorkerType::job_worker) {
-          tvkprintf(job_workers, 1, "No stats received from job worker [pid = %d]. Terminate it\n", static_cast<int>(worker->pid));
-        }
+        tvkprintf(master_process, 1, "No stats received from %s [pid = %d]. Terminate it\n",
+                  worker->type == WorkerType::general_worker ? "general worker" : "job worker", static_cast<int>(worker->pid));
         workers_hung++;
         terminate_worker(worker);
         last_terminated = my_now;
@@ -460,10 +461,8 @@ void kill_hanging_workers() {
 
   for (int i = 0; i < vk::singleton<WorkersControl>::get().get_all_alive(); i++) {
     if (workers[i]->is_dying && workers[i]->kill_time <= my_now && workers[i]->kill_flag == 0) {
-      vkprintf(1, "kill_hanging_worker: send SIGKILL to [pid = %d]\n", (int)workers[i]->pid);
-      if (workers[i]->type == WorkerType::job_worker) {
-        tvkprintf(job_workers, 1, "kill hanging job worker: send SIGKILL to [pid = %d]\n", (int)workers[i]->pid);
-      }
+      kprintf("master kill hanging %s : send SIGKILL to [pid = %d]\n",
+                workers[i]->type == WorkerType::general_worker ? "general worker" : "job worker", static_cast<int>(workers[i]->pid));
       kill(workers[i]->pid, SIGKILL);
       workers_killed++;
 
@@ -499,7 +498,7 @@ WorkerType start_master() {
           vk::singleton<MasterName>::get().get_master_name(), vk::singleton<ServerConfig>::get().get_cluster_name(),
           vk::singleton<MasterName>::get().get_shmem_name(), vk::singleton<MasterName>::get().get_socket_name());
 
-  vkprintf(1, "start master: begin\n");
+  tvkprintf(master_process, 1, "start master initilaizing\n");
 
   sigemptyset(&empty_mask);
 
@@ -530,7 +529,7 @@ WorkerType start_master() {
   int attempts_to_start = 2;
   int is_inited = 0;
   while (attempts_to_start-- > 0) {
-    vkprintf(1, "attempt to init master. [left attempts = %d]\n", attempts_to_start);
+    tvkprintf(master_process, 1, "attempt to init master. [left attempts = %d]\n", attempts_to_start);
     shared_data_lock(shared_data);
 
     shared_data_update(shared_data);
@@ -544,7 +543,7 @@ WorkerType start_master() {
     shared_data_unlock(shared_data);
 
     if (!is_inited) {
-      vkprintf(1, "other restart is in progress. sleep 5 seconds. [left attempts = %d]\n", attempts_to_start);
+      tvkprintf(master_process, 1, "other restart is in progress. sleep 5 seconds. [left attempts = %d]\n", attempts_to_start);
       sleep(5);
     } else {
       break;
@@ -552,11 +551,11 @@ WorkerType start_master() {
   }
 
   if (!is_inited) {
-    vkprintf(0, "Failed to init master. It seems that two other masters are running\n");
+    kprintf("Failed to init master. It seems that two other masters are running\n");
     _exit(1);
   }
 
-  vkprintf(1, "start master: end\n");
+  kprintf("finish master initialization\n");
 
   return run_master();
 }
@@ -573,12 +572,12 @@ int run_worker(WorkerType worker_type) {
     log_server_critical("fork error on launching %s worker: %s", (worker_type == WorkerType::general_worker ? "general" : "job"), strerror(errno));
     assert(false);
   }
-  assert (new_pid != -1 && "failed to fork");
+  dl_assert(new_pid != -1, "failed to fork");
 
   if (new_pid == 0) {
     prctl(PR_SET_PDEATHSIG, SIGKILL); // TODO: or SIGTERM
     if (getppid() != me->pid) {
-      vkprintf(0, "parent is dead just after start\n");
+      kprintf("parent process is dead just after start\n");
       exit(123);
     }
 
@@ -651,8 +650,7 @@ int run_worker(WorkerType worker_type) {
   }
 
   dl_restore_signal_mask();
-
-  vkprintf(1, "new worker launched [pid = %d]\n", (int)new_pid);
+  kprintf("master create %s [pid = %d]\n", worker_type == WorkerType::general_worker ? "general worker" : "job worker", (int)new_pid);
 
   worker_info_t *worker = workers[vk::singleton<WorkersControl>::get().get_all_alive() - 1] = new_worker();
   worker->pid = new_pid;
@@ -671,7 +669,7 @@ int run_worker(WorkerType worker_type) {
 }
 
 void remove_worker(pid_t pid) {
-  vkprintf(2, "remove workers [pid = %d]\n", static_cast<int>(pid));
+  tvkprintf(master_process, 1, "master remove worker [pid = %d]\n", static_cast<int>(pid));
   const auto &workers_control = vk::singleton<WorkersControl>::get();
   for (int i = 0; i < workers_control.get_all_alive(); i++) {
     if (workers[i]->pid == pid) {
@@ -684,7 +682,7 @@ void remove_worker(pid_t pid) {
       delete_worker(workers[i]);
 
       workers[i] = workers[workers_control.get_all_alive()];
-      vkprintf(1, "worker removed: [general running = %d] [general dying = %d]\n",
+      tvkprintf(master_process, 1, "worker removed: [general running = %d] [general dying = %d]\n",
                int{workers_control.get_running_count(WorkerType::general_worker)},
                int{workers_control.get_dying_count(WorkerType::general_worker)});
       return;
@@ -1143,7 +1141,7 @@ int php_master_http_execute(struct connection *c, int op) {
   struct hts_data *D = HTS_DATA(c);
   char ReqHdr[MAX_HTTP_HEADER_SIZE];
 
-  vkprintf(1, "in php_master_http_execute: connection #%d, op=%d, header_size=%d, data_size=%d, http_version=%d\n",
+  tvkprintf(master_process, 1, "master http execute connection #%d, op=%d, header_size=%d, data_size=%d, http_version=%d\n",
            c->fd, op, D->header_size, D->data_size, D->http_ver);
 
   if (D->query_type != htqt_get) {
@@ -1155,12 +1153,6 @@ int php_master_http_execute(struct connection *c, int op) {
   assert (read_in(&c->In, &ReqHdr, D->header_size) == D->header_size);
 
   assert (D->first_line_size > 0 && D->first_line_size <= D->header_size);
-
-  vkprintf(1, "===============\n%.*s\n==============\n", D->header_size, ReqHdr);
-  vkprintf(1, "%d,%d,%d,%d\n", D->host_offset, D->host_size, D->uri_offset, D->uri_size);
-
-  vkprintf(1, "hostname: '%.*s'\n", D->host_size, ReqHdr + D->host_offset);
-  vkprintf(1, "URI: '%.*s'\n", D->uri_size, ReqHdr + D->uri_offset);
 
   const char *allowed_query = "/server-status";
   if (D->uri_size == strlen(allowed_query) && strncmp(ReqHdr + D->uri_offset, allowed_query, static_cast<size_t>(D->uri_size)) == 0) {
@@ -1176,11 +1168,10 @@ int php_master_http_execute(struct connection *c, int op) {
 
 
 /*** Main loop functions ***/
-
 void run_master_off_in_graceful_shutdown() {
-  vkprintf(2, "state: master_state::off_in_graceful_shutdown\n");
+  kprintf("master off in graceful shutdown\n");
   assert(state == master_state::off_in_graceful_shutdown);
-  to_kill = vk::singleton<WorkersControl>::get().get_running_count(WorkerType::general_worker);
+  general_workers_to_kill = vk::singleton<WorkersControl>::get().get_running_count(WorkerType::general_worker);
   if (all_http_workers_killed()) {
     if (all_job_workers_killed()) {
       to_exit = 1;
@@ -1192,9 +1183,9 @@ void run_master_off_in_graceful_shutdown() {
 }
 
 void run_master_off_in_graceful_restart() {
-  vkprintf(2, "state: master_state::off_in_graceful_restart\n");
+  kprintf("master off in graceful restart\n");
   assert (other->is_alive);
-  vkprintf(2, "other->to_kill_generation > me->generation --- %lld > %lld\n", other->to_kill_generation, me->generation);
+  tvkprintf(graceful_restart, 2, "other->to_kill_generation > me->generation --- %lld > %lld\n", other->to_kill_generation, me->generation);
 
   if (other->is_alive && other->ask_http_fds_generation > me->generation) {
     send_fds_via_socket(vk::singleton<HttpServerContext>::get().http_socket_fds());
@@ -1205,7 +1196,7 @@ void run_master_off_in_graceful_restart() {
 
   if (other->to_kill_generation > me->generation) {
     // old master kills as many workers as new master told
-    to_kill = other->to_kill;
+    general_workers_to_kill = other->to_kill;
   }
 
   if (all_http_workers_killed()) {
@@ -1231,7 +1222,7 @@ bool init_http_sockets_if_needed() {
   bool can_ask_http_fds = other->is_alive && other->own_http_fds &&
                           other->http_ports_count == me->http_ports_count && std::equal(me->http_ports, me->http_ports + me->http_ports_count, other->http_ports);
   if (!can_ask_http_fds) {
-    vkprintf(1, "Create http sockets\n");
+    tvkprintf(master_process, 1, "master create http sockets\n");
 
     bool ok = http_ctx.master_create_http_sockets();
     assert(ok && "failed to create HTTP sockets");
@@ -1272,7 +1263,7 @@ bool init_http_sockets_if_needed() {
 }
 
 void run_master_on() {
-  vkprintf(2, "state: master_state::on\n");
+  tvkprintf(master_process, 3, "master state on\n");
 
   static double prev_attempt = 0;
   if (!master_sfd_inited && !other->is_alive && prev_attempt + 1 < my_now) {
@@ -1284,7 +1275,7 @@ void run_master_on() {
 
         failed_cnt++;
         if (failed_cnt > 2000) {
-          vkprintf(-1, "cannot open master server socket at port %d: %m\n", master_port);
+          kprintf("cannot open master server socket at port %d: %m\n", master_port);
           exit(1);
         }
       } else {
@@ -1305,7 +1296,7 @@ void run_master_on() {
   if (done) {
     const auto &control = vk::singleton<WorkersControl>::get();
     const int total_workers = control.get_alive_count(WorkerType::general_worker) + (other->is_alive ? other->running_http_workers_n + other->dying_http_workers_n : 0);
-    to_run = std::max(0, int{control.get_count(WorkerType::general_worker)} - total_workers);
+    general_workers_to_run = std::max(0, int{control.get_count(WorkerType::general_worker)} - total_workers);
     job_workers_to_run = control.get_count(WorkerType::job_worker) - control.get_alive_count(WorkerType::job_worker);
 
     if (other->is_alive) {
@@ -1318,7 +1309,7 @@ void run_master_on() {
       bool warmup_timeout_expired = warm_up_ctx.warmup_timeout_expired();
       if (set_to_kill > 0 && (need_more_workers_for_warmup || is_instance_cache_hot_enough || warmup_timeout_expired)) {
         // new master tells to old master how many workers it must kill
-        vkprintf(1, "[set_to_kill = %d] [need_more_workers_for_warmup = %d] [is_instance_cache_hot_enough = %d] [new_instance_cache_size / old_instance_cache_size = %u / %u] [warmup_timeout_expired = %d]\n",
+        tvkprintf(graceful_restart, 1, "[set_to_kill = %d] [need_more_workers_for_warmup = %d] [is_instance_cache_hot_enough = %d] [new_instance_cache_size / old_instance_cache_size = %u / %u] [warmup_timeout_expired = %d]\n",
                         set_to_kill, need_more_workers_for_warmup,
                         is_instance_cache_hot_enough, me->instance_cache_elements_cached, other->instance_cache_elements_cached,
                         warmup_timeout_expired);
@@ -1334,7 +1325,7 @@ void run_master_on() {
 }
 
 int signal_epoll_handler(int fd, void *data __attribute__((unused)), event_t *ev __attribute__((unused))) {
-  vkprintf(2, "signal_epoll_handler\n");
+  tvkprintf(master_process, 2, "master epoll handler\n");
   signalfd_siginfo fdsi{};
   int s = (int)read(signal_fd, &fdsi, sizeof(signalfd_siginfo));
   if (s == -1) {
@@ -1342,7 +1333,7 @@ int signal_epoll_handler(int fd, void *data __attribute__((unused)), event_t *ev
     return 0;
   }
   dl_assert (s == sizeof(signalfd_siginfo), dl_pstr("got %d bytes of %d expected", s, (int)sizeof(signalfd_siginfo)));
-  vkprintf(2, "signal %u received\n", fdsi.ssi_signo);
+  tvkprintf(master_process, 2, "signal %u received\n", fdsi.ssi_signo);
   if (fdsi.ssi_signo == SIGTERM && !in_sigterm) {
     const char *message = "master got SIGTERM, starting graceful shutdown.\n";
     kwrite(2, message, strlen(message));
@@ -1413,6 +1404,12 @@ static void cron() {
   instance_cache_purge_expired_elements();
   check_and_instance_cache_try_swap_memory();
   confdata_binlog_update_cron();
+  tvkprintf(master_process, 3, "master process cron work [utime = %llu, stime = %llu, alive_workers_count = %d]. "
+                                 "General workers details [running general workers = %d, waiting general workers = %d, ready for accept general workers = %d]. "
+                                 "Job workers details [running job workers = %d, waiting job workers = %d, ready for accept job workers = %d].\n",
+            utime, stime, alive_workers_count,
+            general_workers_stat.running_workers, general_workers_stat.waiting_workers, general_workers_stat.ready_for_accept_workers,
+            job_workers_stat.running_workers, job_workers_stat.waiting_workers, job_workers_stat.ready_for_accept_workers);
 }
 
 auto get_steady_tp_ms_now() noexcept {
@@ -1472,15 +1469,14 @@ WorkerType run_master() {
   auto prev_cron_start_tp = get_steady_tp_ms_now();
   WarmUpContext::get().reset();
   while (true) {
-    vkprintf(2, "run_master iteration: begin\n");
+    tvkprintf(master_process, 3, "start master interation\n");
 
     my_now = dl_time();
 
     changed = 0;
     failed = 0;
-    to_kill = 0;
-    to_run = 0;
     to_exit = 0;
+    general_workers_to_kill = general_workers_to_run = 0;
     job_workers_to_kill = job_workers_to_run = 0;
 
     update_workers();
@@ -1520,8 +1516,9 @@ WorkerType run_master() {
 
     me->generation = generation;
 
-    if (to_kill != 0 || to_run != 0 || job_workers_to_kill != 0 || job_workers_to_run != 0) {
-      vkprintf(1, "[to_kill = %d] [to_run = %d] [job_workers_to_kill = %d] [job_workers_to_run = %d]\n", to_kill, to_run, job_workers_to_kill, job_workers_to_run);
+    if (general_workers_to_kill != 0 || general_workers_to_run != 0 || job_workers_to_kill != 0 || job_workers_to_run != 0) {
+      tvkprintf(master_process, 2, "[general_workers_to_kill = %d] [general_workers_to_run = %d] [job_workers_to_kill = %d] [job_workers_to_run = %d]\n",
+                general_workers_to_kill, general_workers_to_run, job_workers_to_kill, job_workers_to_run);
     }
 
     for (int i = 0; i < job_workers_to_kill; ++i) {
@@ -1534,14 +1531,15 @@ WorkerType run_master() {
       }
     }
 
-    while (to_kill-- > 0) {
+    for (int i = 0; i < general_workers_to_kill; ++i) {
       kill_worker(WorkerType::general_worker);
     }
-    while (to_run-- > 0 && !failed) {
+    for (int i = 0; i < general_workers_to_run && !failed; ++i) {
       if (run_worker(WorkerType::general_worker)) {
         return WorkerType::general_worker;
       }
     }
+
     kill_hanging_workers();
 
     me->running_http_workers_n = vk::singleton<WorkersControl>::get().get_running_count(WorkerType::general_worker);
@@ -1550,7 +1548,7 @@ WorkerType run_master() {
 
     if (state != master_state::off_in_graceful_shutdown) {
       if (changed && other->is_alive) {
-        vkprintf(1, "wakeup other master [pid = %d]\n", (int)other->pid);
+        tvkprintf(graceful_restart, 1, "wakeup other master [pid = %d]\n", (int)other->pid);
         kill(other->pid, SIGPOLL);
       }
     }
@@ -1558,7 +1556,7 @@ WorkerType run_master() {
     shared_data_unlock(shared_data);
 
     if (to_exit) {
-      vkprintf(1, "all workers killed. Exit\n");
+      kprintf("master kill all workers. Exit\n");
       _exit(0);
     }
 
@@ -1570,7 +1568,7 @@ WorkerType run_master() {
       workers_send_signal(SIGUSR1);
     }
 
-    vkprintf(2, "run_master iteration: end\n");
+    tvkprintf(master_process, 3, "finish master interation\n");
 
     using namespace std::chrono_literals;
     auto wait_time = 1s - (get_steady_tp_ms_now() - prev_cron_start_tp);

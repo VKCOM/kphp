@@ -70,7 +70,7 @@ conn_type_t ct_tcp_rpc_client = get_default_tcp_rpc_client_conn_type();
 
 
 int tcp_rpcc_default_execute (struct connection *c, int op, raw_message_t *raw) {
-  vkprintf (1, "rpcc_execute: fd=%d, op=%d, len=%d\n", c->fd, op, raw->total_bytes);
+  tvkprintf(net_connections, 3, "rpcc_execute: fd=%d, op=%d, len=%d\n", c->fd, op, raw->total_bytes);
   if (op == TL_RPC_PING && raw->total_bytes == 12) {
     c->last_response_time = precise_now;    
     static int Q[12];
@@ -80,7 +80,7 @@ int tcp_rpcc_default_execute (struct connection *c, int op, raw_message_t *raw) 
     P[1] = Q[1];
     P[2] = Q[2];
     
-    vkprintf (2, "received ping from %s (val = %lld)\n", sockaddr_storage_to_string(&c->remote_endpoint), *(long long *)(P + 1));
+    tvkprintf(net_connections, 4, "received ping from %s (val = %lld)\n", sockaddr_storage_to_string(&c->remote_endpoint), *(long long *)(P + 1));
     tcp_rpc_conn_send_data (c, 12, P);
     return 0;
   }
@@ -101,8 +101,7 @@ static int tcp_rpcc_process_nonce_packet (struct connection *c, raw_message_t *m
   }
 
   assert (rwm_fetch_data (msg, &P, D->packet_len) == D->packet_len);
-
-  vkprintf (2, "Processing nonce packet, crypto schema: %d, key select: %d\n", P.crypto_schema, P.key_select);
+  tvkprintf(net_connections, 4, "Processing nonce packet, crypto schema: %d, key select: %d\n", P.crypto_schema, P.key_select);
 
   switch (P.crypto_schema) {
   case RPC_CRYPTO_NONE:
@@ -136,12 +135,12 @@ static int tcp_rpcc_process_nonce_packet (struct connection *c, raw_message_t *m
   default:
     return -4;
   }
-  vkprintf (2, "Processed nonce packet, crypto flags = %d\n", D->crypto_flags);
+  tvkprintf(net_connections, 4, "Processed nonce packet, crypto flags = %d\n", D->crypto_flags);
   return 0;
 }
 
 static int tcp_rpcc_send_handshake_packet (struct connection *c) {
-  vkprintf(2, "tcp_rpcc_send_handshake_packet\n");
+  tvkprintf(net_connections, 4, "tcp_rpcc_send_handshake_packet\n");
   struct tcp_rpc_data *D = TCP_RPC_DATA (c);
   static struct tcp_rpc_handshake_packet P;
   if (!PID.ip) {
@@ -183,7 +182,7 @@ static int tcp_rpcc_send_handshake_error_packet (struct connection *c, int error
 }
 
 static int tcp_rpcc_process_handshake_packet (struct connection *c, raw_message_t *msg) {
-  vkprintf(2, "tcp_rpcc_process_handshake_packet\n");
+  tvkprintf(net_connections, 4, "tcp_rpcc_process_handshake_packet\n");
 
   struct tcp_rpc_data *D = TCP_RPC_DATA(c);
   static struct tcp_rpc_handshake_packet P;
@@ -223,7 +222,7 @@ static int tcp_rpcc_process_handshake_packet (struct connection *c, raw_message_
 }
 
 int tcp_rpcc_parse_execute (struct connection *c) {
-  vkprintf (4, "%s. in_total_bytes = %d\n", __func__, c->in.total_bytes);
+  tvkprintf (net_connections, 4, "%s. in_total_bytes = %d\n", __func__, c->in.total_bytes);
   struct tcp_rpc_data *D = TCP_RPC_DATA(c);
   int len;
 
@@ -239,7 +238,7 @@ int tcp_rpcc_parse_execute (struct connection *c) {
       }
       assert (rwm_fetch_lookup (&c->in, &D->packet_len, 4) == 4);
       if (D->packet_len <= 0 || (D->packet_len & 3) || (D->packet_len > TCP_RPCC_FUNC(c)->max_packet_len && TCP_RPCC_FUNC(c)->max_packet_len > 0)) {
-        vkprintf (1, "error while parsing packet: bad packet length %d\n", D->packet_len);
+        tvkprintf(net_connections, 1, "error while parsing packet: bad packet length %d\n", D->packet_len);
         c->status = conn_error;
         c->error = -1;
         return 0;
@@ -251,7 +250,7 @@ int tcp_rpcc_parse_execute (struct connection *c) {
       continue;
     }
     if (D->packet_len < 16) {
-      vkprintf (1, "error while parsing packet: bad packet length %d\n", D->packet_len);
+      tvkprintf(net_connections, 1, "error while parsing packet: bad packet length %d\n", D->packet_len);
       c->status = conn_error;
       c->error = -1;
       return 0;
@@ -274,7 +273,7 @@ int tcp_rpcc_parse_execute (struct connection *c) {
     assert (rwm_fetch_data_back (&msg, &crc32, 4) == 4);
     D->packet_crc32 = rwm_custom_crc32 (&msg, D->packet_len - 4, D->custom_crc_partial);
     if (crc32 != D->packet_crc32) {
-      vkprintf(1, "error while parsing packet: crc32 = %08x != %08x\n", D->packet_crc32, crc32);
+      tvkprintf(net_connections, 1, "error while parsing packet: crc32 = %08x != %08x\n", D->packet_crc32, crc32);
       c->status = conn_error;
       c->error = -1;
       rwm_free (&msg);
@@ -286,16 +285,13 @@ int tcp_rpcc_parse_execute (struct connection *c) {
     assert (rwm_fetch_lookup (&msg, &D->packet_type, 4) == 4);
     D->packet_len -= 12;
 
-    if (verbosity > 2) {
-      kprintf ("received packet from connection %d\n", c->fd);
-      rwm_dump (&msg);
-    }
-
+    tvkprintf(net_connections, 4, "received packet from connection %d\n", c->fd);
+//    rwm_dump (&msg);
 
     int res = -1;
 
     if (D->packet_num != D->in_packet_num) {
-      vkprintf (1, "error while parsing packet: got packet num %d, expected %d\n", D->packet_num, D->in_packet_num);
+      tvkprintf(net_connections, 1, "error while parsing packet: got packet num %d, expected %d\n", D->packet_num, D->in_packet_num);
       c->status = conn_error;
       c->error = -1;
       rwm_free (&msg);
@@ -387,7 +383,7 @@ int tcp_rpcc_connected (struct connection *c) {
   }
 
   char buffer_local[SOCKADDR_STORAGE_BUFFER_SIZE], buffer_remote[SOCKADDR_STORAGE_BUFFER_SIZE];
-  vkprintf(2, "RPC connection #%d: %s -> %s connected, crypto_flags = %d\n", c->fd, sockaddr_storage_to_buffer(&c->local_endpoint, buffer_local),
+  tvkprintf(net_connections, 4, "RPC connection #%d: %s -> %s connected, crypto_flags = %d\n", c->fd, sockaddr_storage_to_buffer(&c->local_endpoint, buffer_local),
            sockaddr_storage_to_buffer(&c->remote_endpoint, buffer_remote), TCP_RPC_DATA(c)->crypto_flags);
 
   assert (TCP_RPCC_FUNC(c)->rpc_init_crypto);
@@ -440,7 +436,7 @@ int tcp_rpcc_init_fake_crypto (struct connection *c) {
 
 
 int tcp_rpcc_init_outbound (struct connection *c) {
-  vkprintf (3, "rpcc_init_outbound (%d)\n", c->fd);
+  tvkprintf(net_connections, 4, "rpcc_init_outbound (%d)\n", c->fd);
   struct tcp_rpc_data *D = TCP_RPC_DATA(c);
   c->last_query_sent_time = precise_now;
   D->custom_crc_partial = crc32_partial;
@@ -500,8 +496,7 @@ int tcp_rpcc_init_crypto (struct connection *c) {
 
 int tcp_rpcc_start_crypto (struct connection *c, char *nonce, int key_select) {
   struct tcp_rpc_data *D = TCP_RPC_DATA(c);
-
-  vkprintf (2, "rpcc_start_crypto: key_select = %d\n", key_select);
+  tvkprintf(net_connections, 4, "rpcc_start_crypto: key_select = %d\n", key_select);
 
   if (c->crypto) {
     return -1;
@@ -531,7 +526,7 @@ int tcp_rpcc_start_crypto (struct connection *c, char *nonce, int key_select) {
 void tcp_rpcc_flush_crypto (struct connection *c) {
   if (c->crypto) {
     int pad_bytes = c->type->crypto_needed_output_bytes (c);
-    vkprintf (2, "rpcc_flush_packet: padding with %d bytes\n", pad_bytes);
+    tvkprintf(net_connections, 4, "rpcc_flush_packet: padding with %d bytes\n", pad_bytes);
     if (pad_bytes > 0) {
       assert (!(pad_bytes & 3));
       static int pad_str[3] = {4, 4, 4};
@@ -554,7 +549,7 @@ int tcp_rpcc_flush_packet_later (struct connection *c) {
 int tcp_rpcc_flush (struct connection *c) {
   if (c->crypto) {
     int pad_bytes = c->type->crypto_needed_output_bytes (c);
-    vkprintf (2, "rpcs_flush: padding with %d bytes\n", pad_bytes);
+    tvkprintf(net_connections, 4, "rpcs_flush: padding with %d bytes\n", pad_bytes);
     if (pad_bytes > 0) {
       assert (!(pad_bytes & 3));
       static int pad_str[3] = {4, 4, 4};
