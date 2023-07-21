@@ -265,7 +265,7 @@ private:
     if (const auto extra_ref_cnt = get_memory_ref_cnt()) {
       arr.set_reference_counter_to(extra_ref_cnt);
     }
-    const bool primitive_array = is_primitive<T>{} && arr.size().string_size == 0;
+    const bool primitive_array = is_primitive<T>{} && arr.is_vector();
     return primitive_array || Basic::process_range(first, arr.end());
   }
 

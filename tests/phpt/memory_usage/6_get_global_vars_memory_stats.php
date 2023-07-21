@@ -95,9 +95,9 @@ function class_static_vars() {
 function test_get_global_vars_memory_stats() {
 #ifndef KPHP
   $greater_than_16 = [
-    "\$dynamic_array" => 72,
-    "static_vars::\$dynamic_array" => 72,
-    "ClassWithStaticVars::\$dynamic_array" => 72,
+    "\$dynamic_array" => 64,
+    "static_vars::\$dynamic_array" => 64,
+    "ClassWithStaticVars::\$dynamic_array" => 64,
     "ClassWithStaticVars::\$dynamic_string" => 19,
     "\$dynamic_string" => 19,
     "static_vars::\$dynamic_string" => 19
