@@ -336,6 +336,7 @@ ext/standard/tests/array/in_array_variation1.phpt
 ext/standard/tests/array/in_array_variation2.phpt
 ext/standard/tests/array/natsort_basic.phpt
 ext/standard/tests/array/negative_index.phpt
+ext/standard/tests/array/array_shuffle_basic.phpt
 ext/standard/tests/bug64370_var2.phpt
 ext/standard/tests/bug71827.phpt
 ext/standard/tests/file/002.phpt

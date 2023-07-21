@@ -429,7 +429,7 @@ function preg_quote ($str ::: string, $delimiter ::: string = '') ::: string;
 function preg_last_error() ::: int;
 function preg_split ($pattern ::: regexp, $subject ::: string, $limit ::: int = -1, $flags ::: int = 0) ::: mixed[] | false;
 
-function shuffle (&$a ::: array) ::: void;
+function shuffle (&$a ::: array) ::: bool;
 function sort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
 function rsort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
 function usort (&$a ::: array, callable(^1[*] $x, ^1[*] $y):int $callback) ::: void;

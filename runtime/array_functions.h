@@ -231,7 +231,7 @@ array<mixed> f$range(const mixed &from, const mixed &to, int64_t step = 1);
 
 
 template<class T>
-void f$shuffle(array<T> &a);
+bool f$shuffle(array<T> &a);
 
 template<class T>
 void f$sort(array<T> &a, int64_t flag = SORT_REGULAR);
@@ -1309,23 +1309,31 @@ bool f$array_is_list(const array<T> &a) {
 
 
 template<class T>
-void f$shuffle(array<T> &a) {
+bool f$shuffle(array<T> &a) {
   int64_t n = a.count();
-  if (n <= 1) {
-    return;
+
+  if (n == 0) {
+    return true;
   }
 
-  array<T> result(array_size(n, 0, true));
-  const auto &const_arr = a;
-  for (const auto &it : const_arr) {
-    result.push_back(it.get_value());
+  if (!a.is_vector()) {
+    array<T> tmp(array_size(n, 0, true));
+    const auto &const_arr = a;
+    for (const auto &it : const_arr) {
+      tmp.push_back(it.get_value());
+    }
+    a = std::move(tmp);
+  }
+
+  if (n == 1) {
+    return true;
   }
 
   for (int64_t i = 1; i < n; i++) {
-    swap(result[i], result[f$mt_rand(0, i)]);
+    swap(a[i], a[f$mt_rand(0, i)]);
   }
 
-  a = std::move(result);
+  return true;
 }
 
 template<class T>
