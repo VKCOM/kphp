@@ -68,6 +68,7 @@ enum TokenType {
   tok_static,
   tok_final,
   tok_abstract,
+  tok_readonly,
   tok_goto,
   tok_isset,
   tok_declare,

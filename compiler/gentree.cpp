@@ -1669,15 +1669,21 @@ void GenTree::parse_extends_implements() {
 
 VertexPtr GenTree::get_class(const PhpDocComment *phpdoc, ClassType class_type) {
   ClassModifiers modifiers;
-  if (test_expect(tok_abstract)) {
-    modifiers.set_abstract();
-  } else if (test_expect(tok_final)) {
-    modifiers.set_final();
+  bool is_readonly{false};
+
+  while (vk::any_of_equal(cur->type(), tok_final, tok_abstract, tok_readonly)) {
+    if (test_expect(tok_abstract)) {
+      modifiers.set_abstract();
+    } else if (test_expect(tok_final)) {
+      modifiers.set_final();
+    } else if (test_expect(tok_readonly)) {
+      is_readonly = true;
+    }
+    next_cur();
   }
 
-  if (modifiers.is_abstract() || modifiers.is_final()) {
-    next_cur();
-    CE(!kphp_error(cur->type() == tok_class, "`class` epxtected after abstract/final keyword"));
+  if (modifiers.is_abstract() || modifiers.is_final() || is_readonly) {
+    CE(!kphp_error(cur->type() == tok_class, "`class` epxtected after abstract/final/readonly keyword"));
   }
 
   CE(vk::any_of_equal(cur->type(), tok_class, tok_interface, tok_trait));
@@ -1704,6 +1710,10 @@ VertexPtr GenTree::get_class(const PhpDocComment *phpdoc, ClassType class_type) 
   StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, cur_class->gen_holder_function(full_class_name));
 
   cur_class->modifiers = modifiers;
+  if (is_readonly) {
+    cur_class->is_readonly = is_readonly;
+    kphp_error(0, "  `readonly` classes is not supported");
+  }
   if (cur_class->is_interface()) {
     cur_class->modifiers.set_abstract();
   }
@@ -2089,11 +2099,12 @@ VertexPtr GenTree::get_statement(const PhpDocComment *phpdoc) {
         return get_const_after_explicit_access_modifier(access);
       }
     // fall through
+    case tok_readonly:
     case tok_final:
     case tok_abstract:
       if (cur_function->type == FunctionData::func_class_holder) {
         return get_class_member(phpdoc);
-      } else if (vk::any_of_equal(cur->type(), tok_final, tok_abstract)) {
+      } else if (vk::any_of_equal(cur->type(), tok_final, tok_abstract, tok_readonly)) {
         return get_class(phpdoc, ClassType::klass);
       }
       next_cur();

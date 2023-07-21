@@ -64,6 +64,7 @@ public:
   bool has_custom_constructor{false};
   bool is_serializable{false};
   bool has_job_shared_memory_piece{false};
+  bool is_readonly{false};
 
   SrcFilePtr file_id;
   ModulitePtr modulite;
