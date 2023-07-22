@@ -1,0 +1,5 @@
+if(EXISTS "/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/kphp/unittests-net[1]_tests.cmake")
+  include("/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/kphp/unittests-net[1]_tests.cmake")
+else()
+  add_test(unittests-net_NOT_BUILT unittests-net_NOT_BUILT)
+endif()

@@ -1,0 +1,39 @@
+/* Security configuration of the "hello" example. */
+
+/* Definition of the execute interface. */
+execute: kl.core.Execute
+
+/* Import the file with the declaration of basic security policy aliases. */
+use nk.base._
+
+/* Declaration of entities. */
+use EDL Einit
+use EDL kl.core.Core
+
+use EDL kphp.Kphp
+
+@INIT_EXTERNAL_ENTITIES@
+
+/* Execution of entities allowed. */
+execute {
+    grant ()
+}
+
+/* Request messages allowed. */
+request {
+    grant ()
+}
+
+/* Response messages allowed. */
+response {
+    grant ()
+}
+
+error {
+    grant ()
+}
+
+/* Calls to the security interface are ignored. */
+security {
+    grant ()
+}

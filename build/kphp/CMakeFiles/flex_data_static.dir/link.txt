@@ -1,0 +1,2 @@
+/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-ar qc ../../kphp/objs/flex/libvk-flex-data.a CMakeFiles/flex_data_static.dir/objs/generated/auto/flex/vk-flex-data.cpp.o CMakeFiles/flex_data_static.dir/flex/flex.cpp.o
+/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-ranlib ../../kphp/objs/flex/libvk-flex-data.a

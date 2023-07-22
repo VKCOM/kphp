@@ -1,0 +1,46 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/_deps/kphp-timelib-subbuild/CMakeFiles/kphp-timelib-populate"
+		},
+		{
+			"file" : "/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/_deps/kphp-timelib-subbuild/CMakeFiles/kphp-timelib-populate.rule"
+		},
+		{
+			"file" : "/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/_deps/kphp-timelib-subbuild/CMakeFiles/kphp-timelib-populate-complete.rule"
+		},
+		{
+			"file" : "/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/_deps/kphp-timelib-subbuild/kphp-timelib-populate-prefix/src/kphp-timelib-populate-stamp/kphp-timelib-populate-build.rule"
+		},
+		{
+			"file" : "/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/_deps/kphp-timelib-subbuild/kphp-timelib-populate-prefix/src/kphp-timelib-populate-stamp/kphp-timelib-populate-configure.rule"
+		},
+		{
+			"file" : "/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/_deps/kphp-timelib-subbuild/kphp-timelib-populate-prefix/src/kphp-timelib-populate-stamp/kphp-timelib-populate-download.rule"
+		},
+		{
+			"file" : "/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/_deps/kphp-timelib-subbuild/kphp-timelib-populate-prefix/src/kphp-timelib-populate-stamp/kphp-timelib-populate-install.rule"
+		},
+		{
+			"file" : "/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/_deps/kphp-timelib-subbuild/kphp-timelib-populate-prefix/src/kphp-timelib-populate-stamp/kphp-timelib-populate-mkdir.rule"
+		},
+		{
+			"file" : "/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/_deps/kphp-timelib-subbuild/kphp-timelib-populate-prefix/src/kphp-timelib-populate-stamp/kphp-timelib-populate-patch.rule"
+		},
+		{
+			"file" : "/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/_deps/kphp-timelib-subbuild/kphp-timelib-populate-prefix/src/kphp-timelib-populate-stamp/kphp-timelib-populate-test.rule"
+		},
+		{
+			"file" : "/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/_deps/kphp-timelib-subbuild/kphp-timelib-populate-prefix/src/kphp-timelib-populate-stamp/kphp-timelib-populate-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"kphp-timelib-populate"
+		],
+		"name" : "kphp-timelib-populate"
+	}
+}

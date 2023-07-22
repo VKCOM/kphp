@@ -1,0 +1,6 @@
+entities:
+
+- name: kphp.Kphp
+@INIT_Kphp_ENTITY_CONNECTIONS@
+
+@INIT_EXTERNAL_ENTITIES@

@@ -1,0 +1,3 @@
+/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/_deps/kphp-timelib-subbuild/CMakeFiles/kphp-timelib-populate.dir
+/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/_deps/kphp-timelib-subbuild/CMakeFiles/edit_cache.dir
+/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/_deps/kphp-timelib-subbuild/CMakeFiles/rebuild_cache.dir
