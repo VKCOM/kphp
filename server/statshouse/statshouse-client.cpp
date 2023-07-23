@@ -1,164 +1,126 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2021 LLC «V Kontakte»
+// Copyright (c) 2023 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "server/statshouse/statshouse-client.h"
 
-#include <fcntl.h>
-#include <unistd.h>
-
-#include "common/resolver.h"
-#include "common/server/stats.h"
-#include "common/stats/provider.h"
-#include "common/tl/constants/statshouse.h"
-#include "common/tl/methods/string.h"
-#include "net/net-connections.h"
+#include "common/precise-time.h"
+#include "compiler/stats.h"
 #include "runtime/critical_section.h"
+#include "runtime/instance-cache.h"
+#include "server/json-logger.h"
 #include "server/server-config.h"
-#include "server/server-log.h"
+#include "server/server-stats.h"
 
-namespace {
+StatsHouseClient *StatsHouseClient::inner = nullptr;
 
-constexpr int STATSHOUSE_HEADER_OFFSET = 3 * sizeof(int32_t);                  // for magic, fields_mask and vector size
-constexpr int STATSHOUSE_UDP_BUFFER_THRESHOLD = static_cast<int>(65507 * 0.8); // 80% of max UDP packet size
+StatsHouseClient::StatsHouseClient(std::string ip, int port)
+  : transport(ip, port){};
 
-class statshouse_stats_t : public stats_t {
-public:
-  explicit statshouse_stats_t(const std::vector<std::pair<std::string, std::string>> &tags)
-    : tags(tags) {}
-
-  void add_general_stat(const char *, const char *, ...) noexcept final {
-    // ignore it
-  }
-
-  bool need_aggregated_stats() noexcept final {
-    return false;
-  }
-
-  void flush() {
-    auto metrics_batch = StatsHouseAddMetricsBatch{.fields_mask = vk::tl::statshouse::add_metrics_batch_fields_mask::ALL, .metrics_size = counter};
-    vk::tl::store_to_buffer(sb.buff, STATSHOUSE_HEADER_OFFSET, metrics_batch);
-    vk::singleton<StatsHouseClient>::get().send_metrics(sb.buff, sb.pos);
-
-    sb.pos = STATSHOUSE_HEADER_OFFSET;
-    counter = 0;
-  }
-
-  void flush_if_needed() {
-    if (sb.pos < STATSHOUSE_UDP_BUFFER_THRESHOLD) {
-      return;
-    }
-    flush();
-  }
-
-protected:
-  void add_stat(char type [[maybe_unused]], const char *key, double value) noexcept final {
-    auto metric = make_statshouse_value_metric(normalize_key(key, "_%s", stats_prefix), value, tags);
-    auto len = vk::tl::store_to_buffer(sb.buff + sb.pos, sb.size, metric);
-    sb.pos += len;
-    ++counter;
-    flush_if_needed();
-  }
-
-  void add_stat(char type, const char *key, long long value) noexcept final {
-    add_stat(type, key, static_cast<double>(value));
-  }
-
-  void add_stat_with_tag_type(char type [[maybe_unused]], const char *key, const char *type_tag, double value) noexcept final {
-    std::vector<std::pair<std::string, std::string>> metric_tags = {{"type", std::string(type_tag)}, {"host", std::string(kdb_gethostname())}};
-    auto metric = make_statshouse_value_metric(normalize_key(key, "_%s", stats_prefix), value, metric_tags);
-    auto len = vk::tl::store_to_buffer(sb.buff + sb.pos, sb.size, metric);
-    sb.pos += len;
-    ++counter;
-    flush_if_needed();
-  }
-
-  void add_stat_with_tag_type(char type, const char *key, const char *type_tag, long long value) noexcept final {
-    add_stat_with_tag_type(type, key, type_tag, static_cast<double>(value));
-  }
-
-  void add_multiple_stats(const char *key, std::vector<double> &&values) noexcept final {
-    auto metric = make_statshouse_value_metrics(normalize_key(key, "_%s", stats_prefix), std::move(values), tags);
-    auto len = vk::tl::store_to_buffer(sb.buff + sb.pos, sb.size - sb.pos, metric);
-    sb.pos += len;
-    ++counter;
-    flush_if_needed();
-  }
-
-private:
-  int counter{0};
-  const std::vector<std::pair<std::string, std::string>> &tags;
-};
-
-} // namespace
-
-void StatsHouseClient::set_port(int value) {
-  this->port = value;
-}
-
-void StatsHouseClient::set_host(std::string value) {
-  this->host = std::move(value);
-}
-
-bool StatsHouseClient::init_connection() {
-  if (sock_fd <= 0) {
-    sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock_fd < 0) {
-      log_server_error("Can't create statshouse socket");
-      return false;
-    }
-  }
-  fcntl(sock_fd, F_SETFL, O_NONBLOCK);
-
-  hostent *h;
-  std::string hostname = host.empty() ? "localhost" : host;
-  if (!(h = gethostbyname(hostname.c_str())) || h->h_addrtype != AF_INET || h->h_length != 4 || !h->h_addr_list || !h->h_addr) {
-    log_server_error("Can't resolve statshouse host: %s", host.c_str());
-    return false;
-  }
-  struct sockaddr_in addr {};
-  memset(&addr, 0, sizeof(addr));
-  addr.sin_family = AF_INET;
-  addr.sin_port = htons(port);
-  addr.sin_addr.s_addr = (*reinterpret_cast<uint32_t *>(h->h_addr));
-  if (connect(sock_fd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) < 0) {
-    log_server_error("Can't connect to statshouse host: %s", hostname.c_str());
-    return false;
-  }
-  return true;
-}
-
-void StatsHouseClient::master_send_metrics() {
-  if (port == 0 || (sock_fd <= 0 && !init_connection())) {
-    return;
-  }
+void StatsHouseClient::add_request_stats(WorkerType raw_worker_type, uint64_t script_time_ns, uint64_t net_time_ns, uint64_t memory_used,
+                                         uint64_t real_memory_used, uint64_t script_queries, uint64_t long_script_queries) {
   const char *cluster_name = vk::singleton<ServerConfig>::get().get_cluster_name();
-  const std::vector<std::pair<std::string, std::string >> tags = {{"cluster", cluster_name}};
-  statshouse_stats_t stats{tags};
-  stats.stats_prefix = "kphp";
-  char *buf = get_engine_default_prepare_stats_buffer();
+  std::string worker_type = raw_worker_type == WorkerType::general_worker ? "general" : "job";
+  transport.metric("kphp_request_time").tag(cluster_name).tag("script").tag(worker_type).write_value(script_time_ns);
+  transport.metric("kphp_request_time").tag(cluster_name).tag("net").tag(worker_type).write_value(net_time_ns);
 
-  sb_init(&stats.sb, buf, STATS_BUFFER_LEN);
-  stats.sb.pos = STATSHOUSE_HEADER_OFFSET;
-  prepare_common_stats_with_tag_mask(&stats, stats_tag_kphp_server);
-  stats.flush();
+  transport.metric("kphp_memory_script_usage").tag(cluster_name).tag("used").tag(worker_type).write_value(memory_used);
+  transport.metric("kphp_memory_script_usage").tag(cluster_name).tag("free").tag(worker_type).write_value(real_memory_used);
+
+  transport.metric("kphp_requests_outgoing_queries").tag(cluster_name).tag("net").tag(worker_type).write_value(script_queries);
+  transport.metric("kphp_requests_outgoing_long_queries").tag(cluster_name).tag("net").tag(worker_type).write_value(long_script_queries);
 }
 
-void StatsHouseClient::send_metrics(char *result, int len) {
-  if (port == 0 || (sock_fd <= 0 && !init_connection())) {
-    return;
-  }
+void StatsHouseClient::add_job_stats(uint64_t job_wait_ns, uint64_t request_memory_used, uint64_t request_real_memory_used, uint64_t response_memory_used,
+                                     uint64_t response_real_memory_used) {
+  const char *cluster_name = vk::singleton<ServerConfig>::get().get_cluster_name();
+  transport.metric("kphp_job_queue_time").tag(cluster_name).write_value(job_wait_ns);
 
-  ssize_t slen = send(sock_fd, result, len, 0);
-  if (slen < 0) {
-    log_server_error("Can't send metrics to statshouse (len = %i): %s", len, strerror(errno));
-  }
+  transport.metric("kphp_job_request_memory_usage").tag(cluster_name).tag("used").write_value(request_memory_used);
+  transport.metric("kphp_job_request_memory_usage").tag(cluster_name).tag("real_used").write_value(request_real_memory_used);
+
+  transport.metric("kphp_job_response_memory_usage").tag(cluster_name).tag("used").write_value(response_memory_used);
+  transport.metric("kphp_job_response_memory_usage").tag(cluster_name).tag("real_used").write_value(response_real_memory_used);
 }
 
-StatsHouseClient::StatsHouseClient() {}
+void StatsHouseClient::add_job_common_memory_stats(uint64_t job_common_request_memory_used, uint64_t job_common_request_real_memory_used) {
+  const char *cluster_name = vk::singleton<ServerConfig>::get().get_cluster_name();
+  transport.metric("kphp_job_common_request_memory").tag(cluster_name).tag("used").write_value(job_common_request_memory_used);
+  transport.metric("kphp_job_common_request_memory").tag(cluster_name).tag("real_used").write_value(job_common_request_real_memory_used);
+}
 
-StatsHouseClient::~StatsHouseClient() {
-  if (sock_fd > 0) {
-    close(sock_fd);
+void StatsHouseClient::add_common_master_stats(const workers_stats_t &workers_stats, const memory_resource::MemoryStats &memory_stats, double cpu_s_usage,
+                                               double cpu_u_usage, long long int instance_cache_memory_swaps_ok,
+                                               long long int instance_cache_memory_swaps_fail) {
+  const char *cluster_name = vk::singleton<ServerConfig>::get().get_cluster_name();
+  if (engine_tag) {
+    transport.metric("kphp_version").tag(cluster_name).write_value(atoll(engine_tag));
   }
+
+  transport.metric("kphp_uptime").tag(cluster_name).write_value(get_uptime());
+
+  const auto general_worker_group = vk::singleton<ServerStats>::get().collect_workers_stat(WorkerType::general_worker);
+  transport.metric("kphp_workers_general_processes").tag(cluster_name).tag("working").write_value(general_worker_group.running_workers);
+  transport.metric("kphp_workers_general_processes").tag(cluster_name).tag("working_but_waiting").write_value(general_worker_group.waiting_workers);
+  transport.metric("kphp_workers_general_processes").tag(cluster_name).tag("ready_for_accept").write_value(general_worker_group.ready_for_accept_workers);
+
+  const auto job_worker_group = vk::singleton<ServerStats>::get().collect_workers_stat(WorkerType::job_worker);
+  transport.metric("kphp_workers_job_processes").tag(cluster_name).tag("working").write_value(job_worker_group.running_workers);
+  transport.metric("kphp_workers_job_processes").tag(cluster_name).tag("working_but_waiting").write_value(job_worker_group.waiting_workers);
+
+  transport.metric("kphp_server_workers").tag(cluster_name).tag("started").write_value(workers_stats.tot_workers_started);
+  transport.metric("kphp_server_workers").tag(cluster_name).tag("dead").write_value(workers_stats.tot_workers_dead);
+  transport.metric("kphp_server_workers").tag(cluster_name).tag("strange_dead").write_value(workers_stats.tot_workers_strange_dead);
+  transport.metric("kphp_server_workers").tag(cluster_name).tag("killed").write_value(workers_stats.workers_killed);
+  transport.metric("kphp_server_workers").tag(cluster_name).tag("hung").write_value(workers_stats.workers_hung);
+  transport.metric("kphp_server_workers").tag(cluster_name).tag("terminated").write_value(workers_stats.workers_terminated);
+  transport.metric("kphp_server_workers").tag(cluster_name).tag("failed").write_value(workers_stats.workers_failed);
+
+  transport.metric("kphp_cpu_usage").tag(cluster_name).tag("stime").write_value(cpu_s_usage);
+  transport.metric("kphp_cpu_usage").tag(cluster_name).tag("utime").write_value(cpu_u_usage);
+
+  auto total_workers_json_count = vk::singleton<ServerStats>::get().collect_json_count_stat();
+  uint64_t master_json_logs_count = vk::singleton<JsonLogger>::get().get_json_logs_count();
+  transport.metric("kphp_server_total_json_logs_count").tag(cluster_name).write_value(std::get<0>(total_workers_json_count) + master_json_logs_count);
+  transport.metric("kphp_server_total_json_traces_count").tag(cluster_name).write_value(std::get<1>(total_workers_json_count));
+
+  transport.metric("kphp_instance_cache_memory").tag(cluster_name).tag("limit").write_value(memory_stats.memory_limit);
+  transport.metric("kphp_instance_cache_memory").tag(cluster_name).tag("used").write_value(memory_stats.memory_used);
+  transport.metric("kphp_instance_cache_memory").tag(cluster_name).tag("real_used").write_value(memory_stats.real_memory_used);
+  transport.metric("kphp_instance_cache_memory").tag(cluster_name).tag("defragmentation_calls").write_value(memory_stats.defragmentation_calls);
+  transport.metric("kphp_instance_cache_memory").tag(cluster_name).tag("huge_memory_pieces").write_value(memory_stats.huge_memory_pieces);
+  transport.metric("kphp_instance_cache_memory").tag(cluster_name).tag("small_memory_pieces").write_value(memory_stats.small_memory_pieces);
+
+  transport.metric("kphp_instance_cache_memory_buffer_swaps").tag(cluster_name).tag("ok").write_value(instance_cache_memory_swaps_ok);
+  transport.metric("kphp_instance_cache_memory_buffer_swaps").tag(cluster_name).tag("fail").write_value(instance_cache_memory_swaps_fail);
+
+  const auto &instance_cache_element_stats = instance_cache_get_stats();
+  transport.metric("kphp_instance_cache_elements").tag(cluster_name).tag("stored").write_value(instance_cache_element_stats.elements_stored);
+  transport.metric("kphp_instance_cache_elements")
+    .tag(cluster_name)
+    .tag("stored_with_delay")
+    .write_value(instance_cache_element_stats.elements_stored_with_delay);
+  transport.metric("kphp_instance_cache_elements")
+    .tag(cluster_name)
+    .tag("storing_skipped_due_recent_update")
+    .write_value(instance_cache_element_stats.elements_storing_skipped_due_recent_update);
+  transport.metric("kphp_instance_cache_elements")
+    .tag(cluster_name)
+    .tag("storing_delayed_due_mutex")
+    .write_value(instance_cache_element_stats.elements_storing_delayed_due_mutex);
+  transport.metric("kphp_instance_cache_elements").tag(cluster_name).tag("fetched").write_value(instance_cache_element_stats.elements_fetched);
+  transport.metric("kphp_instance_cache_elements").tag(cluster_name).tag("missed").write_value(instance_cache_element_stats.elements_missed);
+  transport.metric("kphp_instance_cache_elements").tag(cluster_name).tag("missed_earlier").write_value(instance_cache_element_stats.elements_missed_earlier);
+  transport.metric("kphp_instance_cache_elements").tag(cluster_name).tag("expired").write_value(instance_cache_element_stats.elements_expired);
+  transport.metric("kphp_instance_cache_elements").tag(cluster_name).tag("created").write_value(instance_cache_element_stats.elements_created);
+  transport.metric("kphp_instance_cache_elements").tag(cluster_name).tag("destroyed").write_value(instance_cache_element_stats.elements_destroyed);
+  transport.metric("kphp_instance_cache_elements").tag(cluster_name).tag("cached").write_value(instance_cache_element_stats.elements_cached);
+  transport.metric("kphp_instance_cache_elements")
+    .tag(cluster_name)
+    .tag("logically_expired_and_ignored")
+    .write_value(instance_cache_element_stats.elements_logically_expired_and_ignored);
+  transport.metric("kphp_instance_cache_elements")
+    .tag(cluster_name)
+    .tag("logically_expired_but_fetched")
+    .write_value(instance_cache_element_stats.elements_logically_expired_but_fetched);
 }
