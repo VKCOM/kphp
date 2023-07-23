@@ -1,21 +1,21 @@
 Performing C SOURCE FILE Test CMAKE_HAVE_LIBC_PTHREAD failed with the following output:
 Change Dir: /opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp
 
-Run Build Command(s):/usr/bin/make -f Makefile cmTC_c58a0/fast && /usr/bin/make  -f CMakeFiles/cmTC_c58a0.dir/build.make CMakeFiles/cmTC_c58a0.dir/build
+Run Build Command(s):/usr/bin/make -f Makefile cmTC_32787/fast && /usr/bin/make  -f CMakeFiles/cmTC_32787.dir/build.make CMakeFiles/cmTC_32787.dir/build
 make[1]: Entering directory '/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp'
-Building C object CMakeFiles/cmTC_c58a0.dir/src.c.o
-/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-gcc -DCMAKE_HAVE_LIBC_PTHREAD  -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard  -o CMakeFiles/cmTC_c58a0.dir/src.c.o -c /opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp/src.c
-Linking C executable cmTC_c58a0
-/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/cmake -E cmake_link_script CMakeFiles/cmTC_c58a0.dir/link.txt --verbose=1
-/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-gcc -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard  -Wl,-z,noexecstack -Wl,-z,now -static  CMakeFiles/cmTC_c58a0.dir/src.c.o -o cmTC_c58a0 
-/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-ld: CMakeFiles/cmTC_c58a0.dir/src.c.o: in function `main':
+Building C object CMakeFiles/cmTC_32787.dir/src.c.o
+/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-gcc -DCMAKE_HAVE_LIBC_PTHREAD  -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard  -o CMakeFiles/cmTC_32787.dir/src.c.o -c /opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp/src.c
+Linking C executable cmTC_32787
+/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/cmake -E cmake_link_script CMakeFiles/cmTC_32787.dir/link.txt --verbose=1
+/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-gcc -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard  -Wl,-z,noexecstack -Wl,-z,now -static  CMakeFiles/cmTC_32787.dir/src.c.o -o cmTC_32787 
+/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-ld: CMakeFiles/cmTC_32787.dir/src.c.o: in function `main':
 src.c:(.text.startup+0x30): undefined reference to `pthread_create'
 /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-ld: src.c:(.text.startup+0x40): undefined reference to `pthread_cancel'
 /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-ld: src.c:(.text.startup+0x54): undefined reference to `pthread_exit'
 collect2: error: ld returned 1 exit status
-make[1]: *** [CMakeFiles/cmTC_c58a0.dir/build.make:99: cmTC_c58a0] Error 1
+make[1]: *** [CMakeFiles/cmTC_32787.dir/build.make:99: cmTC_32787] Error 1
 make[1]: Leaving directory '/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp'
-make: *** [Makefile:127: cmTC_c58a0/fast] Error 2
+make: *** [Makefile:127: cmTC_32787/fast] Error 2
 
 
 Source file was:

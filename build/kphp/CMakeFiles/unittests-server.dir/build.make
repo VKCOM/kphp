@@ -618,7 +618,6 @@ kphp/unittests-server: kphp/CMakeFiles/net_src.dir/net/net-msg.cpp.o
 kphp/unittests-server: kphp/CMakeFiles/unittests-server.dir/build.make
 kphp/unittests-server: ../kphp/objs/flex/libvk-flex-data.a
 kphp/unittests-server: /opt/curl7600/lib/libcurl.a
-kphp/unittests-server: /opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/libssl.a
 kphp/unittests-server: /opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/libgtest_main.a
 kphp/unittests-server: /opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/libgtest.a
 kphp/unittests-server: kphp/CMakeFiles/unittests-server.dir/link.txt

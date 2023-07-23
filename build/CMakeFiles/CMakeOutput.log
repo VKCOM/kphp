@@ -29,18 +29,18 @@ The CXX compiler identification is GNU, found in "/opt/KasperskyOS-Community-Edi
 Detecting C compiler ABI info compiled with the following output:
 Change Dir: /opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp
 
-Run Build Command(s):/usr/bin/make -f Makefile cmTC_38833/fast && /usr/bin/make  -f CMakeFiles/cmTC_38833.dir/build.make CMakeFiles/cmTC_38833.dir/build
+Run Build Command(s):/usr/bin/make -f Makefile cmTC_a3274/fast && /usr/bin/make  -f CMakeFiles/cmTC_a3274.dir/build.make CMakeFiles/cmTC_a3274.dir/build
 make[1]: Entering directory '/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp'
-Building C object CMakeFiles/cmTC_38833.dir/CMakeCCompilerABI.c.o
-/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-gcc   -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard    -v -o CMakeFiles/cmTC_38833.dir/CMakeCCompilerABI.c.o -c /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/share/cmake/Modules/CMakeCCompilerABI.c
+Building C object CMakeFiles/cmTC_a3274.dir/CMakeCCompilerABI.c.o
+/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-gcc   -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard    -v -o CMakeFiles/cmTC_a3274.dir/CMakeCCompilerABI.c.o -c /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/share/cmake/Modules/CMakeCCompilerABI.c
 Using built-in specs.
 COLLECT_GCC=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-gcc
 Target: aarch64-kos
 Configured with: ../src/configure --prefix=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain --target=aarch64-kos --enable-build-with-cxx --enable-languages=c,c++,ada --enable-checking=release --enable-gold --enable-lto --enable-initfini-array --disable-nls --disable-werror --with-arch=armv8-a --with-gnu-as --with-as=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-as --with-gnu-ld --with-ld=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-ld --with-sysroot=/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos --with-native-system-header-dir=/include --with-local-prefix=/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos --with-pkgversion='Kaspersky Lab' --with-bugurl=https://kas.pr/kasperskyos-forum-en --with-system-zlib --with-mpfr=/build-products-manifest/staging/host/mpfr --with-gmp=/build-products-manifest/staging/host/gmp --with-mpc=/build-products-manifest/staging/host/mpc --with-ppl=/build-products-manifest/staging/host/ppl --with-isl=/build-products-manifest/staging/host/isl --with-cloog=/build-products-manifest/staging/host/cloog --with-libelf=/build-products-manifest/staging/host/libelf --with-host-libstdcxx='-static-libgcc -lstdc++ -lm' --disable-default-pie --disable-decimal-float --disable-libstdcxx-pch --disable-libatomic --disable-libgomp --disable-libmudflap --disable-libquadmath --disable-libffi --disable-libvtv --disable-fixincludes --disable-libssp --enable-tls --disable-multilib --enable-c99 --enable-plugins --enable-long-long --enable-libstdcxx --enable-libstdcxx-time --enable-__cxa_atexit --enable-libsanitizer --enable-linker-build-id --enable-cet --with-headers=yes --enable-threads=posix --disable-shared
 Thread model: posix
 gcc version 9.2.1 20191208 (Kaspersky Lab) 
-COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'CMakeFiles/cmTC_38833.dir/CMakeCCompilerABI.c.o' '-c' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64'
- /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/cc1 -quiet -v /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/share/cmake/Modules/CMakeCCompilerABI.c -ffixed-x18 -quiet -dumpbase CMakeCCompilerABI.c -mbranch-protection=standard -march=armv8-a -mlittle-endian -mabi=lp64 -auxbase-strip CMakeFiles/cmTC_38833.dir/CMakeCCompilerABI.c.o -O2 -version -fstack-protector-strong -fstack-clash-protection -o /tmp/cck4Bdi4.s
+COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'CMakeFiles/cmTC_a3274.dir/CMakeCCompilerABI.c.o' '-c' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64'
+ /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/cc1 -quiet -v /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/share/cmake/Modules/CMakeCCompilerABI.c -ffixed-x18 -quiet -dumpbase CMakeCCompilerABI.c -mbranch-protection=standard -march=armv8-a -mlittle-endian -mabi=lp64 -auxbase-strip CMakeFiles/cmTC_a3274.dir/CMakeCCompilerABI.c.o -O2 -version -fstack-protector-strong -fstack-clash-protection -o /tmp/ccIlSgJf.s
 GNU C17 (Kaspersky Lab) version 9.2.1 20191208 (aarch64-kos)
 	compiled by GNU C version 8.3.0, GMP version 4.3.2, MPFR version 2.4.2, MPC version 0.8.1, isl version isl-0.15-GMP
 
@@ -58,15 +58,15 @@ GNU C17 (Kaspersky Lab) version 9.2.1 20191208 (aarch64-kos)
 
 GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072
 Compiler executable checksum: 4e952ed1305e0bde0a07710e18ffb9f1
-COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'CMakeFiles/cmTC_38833.dir/CMakeCCompilerABI.c.o' '-c' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64'
- /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-as -v -EL -march=armv8-a -mabi=lp64 -o CMakeFiles/cmTC_38833.dir/CMakeCCompilerABI.c.o /tmp/cck4Bdi4.s
+COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'CMakeFiles/cmTC_a3274.dir/CMakeCCompilerABI.c.o' '-c' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64'
+ /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-as -v -EL -march=armv8-a -mabi=lp64 -o CMakeFiles/cmTC_a3274.dir/CMakeCCompilerABI.c.o /tmp/ccIlSgJf.s
 GNU assembler version 2.38 (aarch64-kos) using BFD version (Kaspersky Lab) 2.38.20220317
 COMPILER_PATH=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/../../../../aarch64-kos/bin/
 LIBRARY_PATH=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/../../../../aarch64-kos/lib/:/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/
-COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'CMakeFiles/cmTC_38833.dir/CMakeCCompilerABI.c.o' '-c' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64'
-Linking C executable cmTC_38833
-/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/cmake -E cmake_link_script CMakeFiles/cmTC_38833.dir/link.txt --verbose=1
-/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-gcc -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard  -Wl,-z,noexecstack -Wl,-z,now -v CMakeFiles/cmTC_38833.dir/CMakeCCompilerABI.c.o -o cmTC_38833 
+COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'CMakeFiles/cmTC_a3274.dir/CMakeCCompilerABI.c.o' '-c' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64'
+Linking C executable cmTC_a3274
+/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/cmake -E cmake_link_script CMakeFiles/cmTC_a3274.dir/link.txt --verbose=1
+/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-gcc -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard  -Wl,-z,noexecstack -Wl,-z,now -v CMakeFiles/cmTC_a3274.dir/CMakeCCompilerABI.c.o -o cmTC_a3274 
 Using built-in specs.
 COLLECT_GCC=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-gcc
 COLLECT_LTO_WRAPPER=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/lto-wrapper
@@ -76,9 +76,9 @@ Thread model: posix
 gcc version 9.2.1 20191208 (Kaspersky Lab) 
 COMPILER_PATH=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/../../../../aarch64-kos/bin/
 LIBRARY_PATH=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/../../../../aarch64-kos/lib/:/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/
-COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'cmTC_38833' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64'
- /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/collect2 -plugin /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/liblto_plugin.so -plugin-opt=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/lto-wrapper -plugin-opt=-fresolution=/tmp/cceB2EVn.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lvfs -plugin-opt=-pass-through=-lenv -plugin-opt=-pass-through=-lsignald -plugin-opt=-pass-through=-lkos -plugin-opt=-pass-through=-lrtlcom -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc --sysroot=/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos --build-id --eh-frame-hdr -dc -dp -e _start -dynamic-linker /lib/ld.elf_so -X -EL -m aarch64elf -dc -dp -e _start -dynamic-linker /lib/ld.elf_so --fix-cortex-a53-843419 -o cmTC_38833 /opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crt0.a /opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crti.o /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/crtbegin.o -L/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1 -L/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/../../../../aarch64-kos/lib -L/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib -z noexecstack -z now CMakeFiles/cmTC_38833.dir/CMakeCCompilerABI.c.o -lgcc -lc --start-group -lvfs -lenv -lsignald -lkos -lrtlcom -lc --end-group -lgcc -lc /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/crtend.o /opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crtn.o
-COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'cmTC_38833' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64'
+COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'cmTC_a3274' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64'
+ /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/collect2 -plugin /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/liblto_plugin.so -plugin-opt=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/lto-wrapper -plugin-opt=-fresolution=/tmp/ccmHYmcH.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lvfs -plugin-opt=-pass-through=-lenv -plugin-opt=-pass-through=-lsignald -plugin-opt=-pass-through=-lkos -plugin-opt=-pass-through=-lrtlcom -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc --sysroot=/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos --build-id --eh-frame-hdr -dc -dp -e _start -dynamic-linker /lib/ld.elf_so -X -EL -m aarch64elf -dc -dp -e _start -dynamic-linker /lib/ld.elf_so --fix-cortex-a53-843419 -o cmTC_a3274 /opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crt0.a /opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crti.o /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/crtbegin.o -L/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1 -L/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/../../../../aarch64-kos/lib -L/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib -z noexecstack -z now CMakeFiles/cmTC_a3274.dir/CMakeCCompilerABI.c.o -lgcc -lc --start-group -lvfs -lenv -lsignald -lkos -lrtlcom -lc --end-group -lgcc -lc /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/crtend.o /opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crtn.o
+COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'cmTC_a3274' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64'
 make[1]: Leaving directory '/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp'
 
 
@@ -102,18 +102,18 @@ Parsed C implicit link information from above output:
   link line regex: [^( *|.*[/\])(aarch64-kos-ld|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\]+-)?ld|collect2)[^/\]*( |$)]
   ignore line: [Change Dir: /opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp]
   ignore line: []
-  ignore line: [Run Build Command(s):/usr/bin/make -f Makefile cmTC_38833/fast && /usr/bin/make  -f CMakeFiles/cmTC_38833.dir/build.make CMakeFiles/cmTC_38833.dir/build]
+  ignore line: [Run Build Command(s):/usr/bin/make -f Makefile cmTC_a3274/fast && /usr/bin/make  -f CMakeFiles/cmTC_a3274.dir/build.make CMakeFiles/cmTC_a3274.dir/build]
   ignore line: [make[1]: Entering directory '/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp']
-  ignore line: [Building C object CMakeFiles/cmTC_38833.dir/CMakeCCompilerABI.c.o]
-  ignore line: [/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-gcc   -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard    -v -o CMakeFiles/cmTC_38833.dir/CMakeCCompilerABI.c.o -c /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/share/cmake/Modules/CMakeCCompilerABI.c]
+  ignore line: [Building C object CMakeFiles/cmTC_a3274.dir/CMakeCCompilerABI.c.o]
+  ignore line: [/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-gcc   -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard    -v -o CMakeFiles/cmTC_a3274.dir/CMakeCCompilerABI.c.o -c /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/share/cmake/Modules/CMakeCCompilerABI.c]
   ignore line: [Using built-in specs.]
   ignore line: [COLLECT_GCC=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-gcc]
   ignore line: [Target: aarch64-kos]
   ignore line: [Configured with: ../src/configure --prefix=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain --target=aarch64-kos --enable-build-with-cxx --enable-languages=c,c++,ada --enable-checking=release --enable-gold --enable-lto --enable-initfini-array --disable-nls --disable-werror --with-arch=armv8-a --with-gnu-as --with-as=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-as --with-gnu-ld --with-ld=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-ld --with-sysroot=/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos --with-native-system-header-dir=/include --with-local-prefix=/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos --with-pkgversion='Kaspersky Lab' --with-bugurl=https://kas.pr/kasperskyos-forum-en --with-system-zlib --with-mpfr=/build-products-manifest/staging/host/mpfr --with-gmp=/build-products-manifest/staging/host/gmp --with-mpc=/build-products-manifest/staging/host/mpc --with-ppl=/build-products-manifest/staging/host/ppl --with-isl=/build-products-manifest/staging/host/isl --with-cloog=/build-products-manifest/staging/host/cloog --with-libelf=/build-products-manifest/staging/host/libelf --with-host-libstdcxx='-static-libgcc -lstdc++ -lm' --disable-default-pie --disable-decimal-float --disable-libstdcxx-pch --disable-libatomic --disable-libgomp --disable-libmudflap --disable-libquadmath --disable-libffi --disable-libvtv --disable-fixincludes --disable-libssp --enable-tls --disable-multilib --enable-c99 --enable-plugins --enable-long-long --enable-libstdcxx --enable-libstdcxx-time --enable-__cxa_atexit --enable-libsanitizer --enable-linker-build-id --enable-cet --with-headers=yes --enable-threads=posix --disable-shared]
   ignore line: [Thread model: posix]
   ignore line: [gcc version 9.2.1 20191208 (Kaspersky Lab) ]
-  ignore line: [COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'CMakeFiles/cmTC_38833.dir/CMakeCCompilerABI.c.o' '-c' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64']
-  ignore line: [ /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/cc1 -quiet -v /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/share/cmake/Modules/CMakeCCompilerABI.c -ffixed-x18 -quiet -dumpbase CMakeCCompilerABI.c -mbranch-protection=standard -march=armv8-a -mlittle-endian -mabi=lp64 -auxbase-strip CMakeFiles/cmTC_38833.dir/CMakeCCompilerABI.c.o -O2 -version -fstack-protector-strong -fstack-clash-protection -o /tmp/cck4Bdi4.s]
+  ignore line: [COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'CMakeFiles/cmTC_a3274.dir/CMakeCCompilerABI.c.o' '-c' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64']
+  ignore line: [ /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/cc1 -quiet -v /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/share/cmake/Modules/CMakeCCompilerABI.c -ffixed-x18 -quiet -dumpbase CMakeCCompilerABI.c -mbranch-protection=standard -march=armv8-a -mlittle-endian -mabi=lp64 -auxbase-strip CMakeFiles/cmTC_a3274.dir/CMakeCCompilerABI.c.o -O2 -version -fstack-protector-strong -fstack-clash-protection -o /tmp/ccIlSgJf.s]
   ignore line: [GNU C17 (Kaspersky Lab) version 9.2.1 20191208 (aarch64-kos)]
   ignore line: [	compiled by GNU C version 8.3.0  GMP version 4.3.2  MPFR version 2.4.2  MPC version 0.8.1  isl version isl-0.15-GMP]
   ignore line: []
@@ -131,15 +131,15 @@ Parsed C implicit link information from above output:
   ignore line: []
   ignore line: [GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072]
   ignore line: [Compiler executable checksum: 4e952ed1305e0bde0a07710e18ffb9f1]
-  ignore line: [COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'CMakeFiles/cmTC_38833.dir/CMakeCCompilerABI.c.o' '-c' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64']
-  ignore line: [ /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-as -v -EL -march=armv8-a -mabi=lp64 -o CMakeFiles/cmTC_38833.dir/CMakeCCompilerABI.c.o /tmp/cck4Bdi4.s]
+  ignore line: [COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'CMakeFiles/cmTC_a3274.dir/CMakeCCompilerABI.c.o' '-c' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64']
+  ignore line: [ /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-as -v -EL -march=armv8-a -mabi=lp64 -o CMakeFiles/cmTC_a3274.dir/CMakeCCompilerABI.c.o /tmp/ccIlSgJf.s]
   ignore line: [GNU assembler version 2.38 (aarch64-kos) using BFD version (Kaspersky Lab) 2.38.20220317]
   ignore line: [COMPILER_PATH=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/../../../../aarch64-kos/bin/]
   ignore line: [LIBRARY_PATH=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/../../../../aarch64-kos/lib/:/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/]
-  ignore line: [COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'CMakeFiles/cmTC_38833.dir/CMakeCCompilerABI.c.o' '-c' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64']
-  ignore line: [Linking C executable cmTC_38833]
-  ignore line: [/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/cmake -E cmake_link_script CMakeFiles/cmTC_38833.dir/link.txt --verbose=1]
-  ignore line: [/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-gcc -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard  -Wl -z noexecstack -Wl -z now -v CMakeFiles/cmTC_38833.dir/CMakeCCompilerABI.c.o -o cmTC_38833 ]
+  ignore line: [COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'CMakeFiles/cmTC_a3274.dir/CMakeCCompilerABI.c.o' '-c' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64']
+  ignore line: [Linking C executable cmTC_a3274]
+  ignore line: [/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/cmake -E cmake_link_script CMakeFiles/cmTC_a3274.dir/link.txt --verbose=1]
+  ignore line: [/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-gcc -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard  -Wl -z noexecstack -Wl -z now -v CMakeFiles/cmTC_a3274.dir/CMakeCCompilerABI.c.o -o cmTC_a3274 ]
   ignore line: [Using built-in specs.]
   ignore line: [COLLECT_GCC=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-gcc]
   ignore line: [COLLECT_LTO_WRAPPER=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/lto-wrapper]
@@ -149,13 +149,13 @@ Parsed C implicit link information from above output:
   ignore line: [gcc version 9.2.1 20191208 (Kaspersky Lab) ]
   ignore line: [COMPILER_PATH=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/../../../../aarch64-kos/bin/]
   ignore line: [LIBRARY_PATH=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/../../../../aarch64-kos/lib/:/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/]
-  ignore line: [COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'cmTC_38833' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64']
-  link line: [ /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/collect2 -plugin /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/liblto_plugin.so -plugin-opt=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/lto-wrapper -plugin-opt=-fresolution=/tmp/cceB2EVn.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lvfs -plugin-opt=-pass-through=-lenv -plugin-opt=-pass-through=-lsignald -plugin-opt=-pass-through=-lkos -plugin-opt=-pass-through=-lrtlcom -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc --sysroot=/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos --build-id --eh-frame-hdr -dc -dp -e _start -dynamic-linker /lib/ld.elf_so -X -EL -m aarch64elf -dc -dp -e _start -dynamic-linker /lib/ld.elf_so --fix-cortex-a53-843419 -o cmTC_38833 /opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crt0.a /opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crti.o /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/crtbegin.o -L/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1 -L/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/../../../../aarch64-kos/lib -L/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib -z noexecstack -z now CMakeFiles/cmTC_38833.dir/CMakeCCompilerABI.c.o -lgcc -lc --start-group -lvfs -lenv -lsignald -lkos -lrtlcom -lc --end-group -lgcc -lc /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/crtend.o /opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crtn.o]
+  ignore line: [COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'cmTC_a3274' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64']
+  link line: [ /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/collect2 -plugin /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/liblto_plugin.so -plugin-opt=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/lto-wrapper -plugin-opt=-fresolution=/tmp/ccmHYmcH.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lvfs -plugin-opt=-pass-through=-lenv -plugin-opt=-pass-through=-lsignald -plugin-opt=-pass-through=-lkos -plugin-opt=-pass-through=-lrtlcom -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc --sysroot=/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos --build-id --eh-frame-hdr -dc -dp -e _start -dynamic-linker /lib/ld.elf_so -X -EL -m aarch64elf -dc -dp -e _start -dynamic-linker /lib/ld.elf_so --fix-cortex-a53-843419 -o cmTC_a3274 /opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crt0.a /opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crti.o /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/crtbegin.o -L/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1 -L/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/../../../../aarch64-kos/lib -L/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib -z noexecstack -z now CMakeFiles/cmTC_a3274.dir/CMakeCCompilerABI.c.o -lgcc -lc --start-group -lvfs -lenv -lsignald -lkos -lrtlcom -lc --end-group -lgcc -lc /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/crtend.o /opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crtn.o]
     arg [/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/collect2] ==> ignore
     arg [-plugin] ==> ignore
     arg [/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/liblto_plugin.so] ==> ignore
     arg [-plugin-opt=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/lto-wrapper] ==> ignore
-    arg [-plugin-opt=-fresolution=/tmp/cceB2EVn.res] ==> ignore
+    arg [-plugin-opt=-fresolution=/tmp/ccmHYmcH.res] ==> ignore
     arg [-plugin-opt=-pass-through=-lgcc] ==> ignore
     arg [-plugin-opt=-pass-through=-lc] ==> ignore
     arg [-plugin-opt=-pass-through=-lvfs] ==> ignore
@@ -187,7 +187,7 @@ Parsed C implicit link information from above output:
     arg [/lib/ld.elf_so] ==> ignore
     arg [--fix-cortex-a53-843419] ==> ignore
     arg [-o] ==> ignore
-    arg [cmTC_38833] ==> ignore
+    arg [cmTC_a3274] ==> ignore
     arg [/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crt0.a] ==> lib [/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crt0.a]
     arg [/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crti.o] ==> obj [/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crti.o]
     arg [/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/crtbegin.o] ==> obj [/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/crtbegin.o]
@@ -196,7 +196,7 @@ Parsed C implicit link information from above output:
     arg [-L/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib] ==> dir [/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib]
     arg [-znoexecstack] ==> ignore
     arg [-znow] ==> ignore
-    arg [CMakeFiles/cmTC_38833.dir/CMakeCCompilerABI.c.o] ==> ignore
+    arg [CMakeFiles/cmTC_a3274.dir/CMakeCCompilerABI.c.o] ==> ignore
     arg [-lgcc] ==> lib [gcc]
     arg [-lc] ==> lib [c]
     arg [--start-group] ==> ignore
@@ -223,18 +223,18 @@ Parsed C implicit link information from above output:
 Detecting CXX compiler ABI info compiled with the following output:
 Change Dir: /opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp
 
-Run Build Command(s):/usr/bin/make -f Makefile cmTC_6cdcf/fast && /usr/bin/make  -f CMakeFiles/cmTC_6cdcf.dir/build.make CMakeFiles/cmTC_6cdcf.dir/build
+Run Build Command(s):/usr/bin/make -f Makefile cmTC_639f7/fast && /usr/bin/make  -f CMakeFiles/cmTC_639f7.dir/build.make CMakeFiles/cmTC_639f7.dir/build
 make[1]: Entering directory '/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp'
-Building CXX object CMakeFiles/cmTC_6cdcf.dir/CMakeCXXCompilerABI.cpp.o
-/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-g++   -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard    -v -o CMakeFiles/cmTC_6cdcf.dir/CMakeCXXCompilerABI.cpp.o -c /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/share/cmake/Modules/CMakeCXXCompilerABI.cpp
+Building CXX object CMakeFiles/cmTC_639f7.dir/CMakeCXXCompilerABI.cpp.o
+/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-g++   -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard    -v -o CMakeFiles/cmTC_639f7.dir/CMakeCXXCompilerABI.cpp.o -c /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/share/cmake/Modules/CMakeCXXCompilerABI.cpp
 Using built-in specs.
 COLLECT_GCC=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-g++
 Target: aarch64-kos
 Configured with: ../src/configure --prefix=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain --target=aarch64-kos --enable-build-with-cxx --enable-languages=c,c++,ada --enable-checking=release --enable-gold --enable-lto --enable-initfini-array --disable-nls --disable-werror --with-arch=armv8-a --with-gnu-as --with-as=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-as --with-gnu-ld --with-ld=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-ld --with-sysroot=/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos --with-native-system-header-dir=/include --with-local-prefix=/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos --with-pkgversion='Kaspersky Lab' --with-bugurl=https://kas.pr/kasperskyos-forum-en --with-system-zlib --with-mpfr=/build-products-manifest/staging/host/mpfr --with-gmp=/build-products-manifest/staging/host/gmp --with-mpc=/build-products-manifest/staging/host/mpc --with-ppl=/build-products-manifest/staging/host/ppl --with-isl=/build-products-manifest/staging/host/isl --with-cloog=/build-products-manifest/staging/host/cloog --with-libelf=/build-products-manifest/staging/host/libelf --with-host-libstdcxx='-static-libgcc -lstdc++ -lm' --disable-default-pie --disable-decimal-float --disable-libstdcxx-pch --disable-libatomic --disable-libgomp --disable-libmudflap --disable-libquadmath --disable-libffi --disable-libvtv --disable-fixincludes --disable-libssp --enable-tls --disable-multilib --enable-c99 --enable-plugins --enable-long-long --enable-libstdcxx --enable-libstdcxx-time --enable-__cxa_atexit --enable-libsanitizer --enable-linker-build-id --enable-cet --with-headers=yes --enable-threads=posix --disable-shared
 Thread model: posix
 gcc version 9.2.1 20191208 (Kaspersky Lab) 
-COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'CMakeFiles/cmTC_6cdcf.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64'
- /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/cc1plus -quiet -v /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/share/cmake/Modules/CMakeCXXCompilerABI.cpp -ffixed-x18 -quiet -dumpbase CMakeCXXCompilerABI.cpp -mbranch-protection=standard -march=armv8-a -mlittle-endian -mabi=lp64 -auxbase-strip CMakeFiles/cmTC_6cdcf.dir/CMakeCXXCompilerABI.cpp.o -O2 -version -fstack-protector-strong -fstack-clash-protection -ffixed-x18 -o /tmp/ccnAFaC6.s
+COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'CMakeFiles/cmTC_639f7.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64'
+ /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/cc1plus -quiet -v /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/share/cmake/Modules/CMakeCXXCompilerABI.cpp -ffixed-x18 -quiet -dumpbase CMakeCXXCompilerABI.cpp -mbranch-protection=standard -march=armv8-a -mlittle-endian -mabi=lp64 -auxbase-strip CMakeFiles/cmTC_639f7.dir/CMakeCXXCompilerABI.cpp.o -O2 -version -fstack-protector-strong -fstack-clash-protection -ffixed-x18 -o /tmp/ccA0yqMh.s
 GNU C++14 (Kaspersky Lab) version 9.2.1 20191208 (aarch64-kos)
 	compiled by GNU C version 8.3.0, GMP version 4.3.2, MPFR version 2.4.2, MPC version 0.8.1, isl version isl-0.15-GMP
 
@@ -255,15 +255,15 @@ GNU C++14 (Kaspersky Lab) version 9.2.1 20191208 (aarch64-kos)
 
 GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072
 Compiler executable checksum: 26aee5bfe55b384582fe943d2b9b628f
-COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'CMakeFiles/cmTC_6cdcf.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64'
- /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-as -v -EL -march=armv8-a -mabi=lp64 -o CMakeFiles/cmTC_6cdcf.dir/CMakeCXXCompilerABI.cpp.o /tmp/ccnAFaC6.s
+COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'CMakeFiles/cmTC_639f7.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64'
+ /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-as -v -EL -march=armv8-a -mabi=lp64 -o CMakeFiles/cmTC_639f7.dir/CMakeCXXCompilerABI.cpp.o /tmp/ccA0yqMh.s
 GNU assembler version 2.38 (aarch64-kos) using BFD version (Kaspersky Lab) 2.38.20220317
 COMPILER_PATH=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/../../../../aarch64-kos/bin/
 LIBRARY_PATH=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/../../../../aarch64-kos/lib/:/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/
-COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'CMakeFiles/cmTC_6cdcf.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64'
-Linking CXX executable cmTC_6cdcf
-/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/cmake -E cmake_link_script CMakeFiles/cmTC_6cdcf.dir/link.txt --verbose=1
-/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-g++ -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard  -Wl,-z,noexecstack -Wl,-z,now -v CMakeFiles/cmTC_6cdcf.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_6cdcf 
+COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'CMakeFiles/cmTC_639f7.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64'
+Linking CXX executable cmTC_639f7
+/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/cmake -E cmake_link_script CMakeFiles/cmTC_639f7.dir/link.txt --verbose=1
+/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-g++ -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard  -Wl,-z,noexecstack -Wl,-z,now -v CMakeFiles/cmTC_639f7.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_639f7 
 Using built-in specs.
 COLLECT_GCC=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-g++
 COLLECT_LTO_WRAPPER=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/lto-wrapper
@@ -273,9 +273,9 @@ Thread model: posix
 gcc version 9.2.1 20191208 (Kaspersky Lab) 
 COMPILER_PATH=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/../../../../aarch64-kos/bin/
 LIBRARY_PATH=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/../../../../aarch64-kos/lib/:/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/
-COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'cmTC_6cdcf' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64'
- /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/collect2 -plugin /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/liblto_plugin.so -plugin-opt=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/lto-wrapper -plugin-opt=-fresolution=/tmp/ccCOOrKo.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lvfs -plugin-opt=-pass-through=-lenv -plugin-opt=-pass-through=-lsignald -plugin-opt=-pass-through=-lkos -plugin-opt=-pass-through=-lrtlcom -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc --sysroot=/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos --build-id --eh-frame-hdr -dc -dp -e _start -dynamic-linker /lib/ld.elf_so -X -EL -m aarch64elf -dc -dp -e _start -dynamic-linker /lib/ld.elf_so --fix-cortex-a53-843419 -o cmTC_6cdcf /opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crt0.a /opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crti.o /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/crtbegin.o -L/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1 -L/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/../../../../aarch64-kos/lib -L/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib -z noexecstack -z now CMakeFiles/cmTC_6cdcf.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc -lc --start-group -lvfs -lenv -lsignald -lkos -lrtlcom -lc --end-group -lgcc -lc /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/crtend.o /opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crtn.o
-COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'cmTC_6cdcf' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64'
+COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'cmTC_639f7' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64'
+ /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/collect2 -plugin /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/liblto_plugin.so -plugin-opt=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/lto-wrapper -plugin-opt=-fresolution=/tmp/ccoVkJjK.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lvfs -plugin-opt=-pass-through=-lenv -plugin-opt=-pass-through=-lsignald -plugin-opt=-pass-through=-lkos -plugin-opt=-pass-through=-lrtlcom -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc --sysroot=/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos --build-id --eh-frame-hdr -dc -dp -e _start -dynamic-linker /lib/ld.elf_so -X -EL -m aarch64elf -dc -dp -e _start -dynamic-linker /lib/ld.elf_so --fix-cortex-a53-843419 -o cmTC_639f7 /opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crt0.a /opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crti.o /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/crtbegin.o -L/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1 -L/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/../../../../aarch64-kos/lib -L/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib -z noexecstack -z now CMakeFiles/cmTC_639f7.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc -lc --start-group -lvfs -lenv -lsignald -lkos -lrtlcom -lc --end-group -lgcc -lc /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/crtend.o /opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crtn.o
+COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'cmTC_639f7' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64'
 make[1]: Leaving directory '/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp'
 
 
@@ -305,18 +305,18 @@ Parsed CXX implicit link information from above output:
   link line regex: [^( *|.*[/\])(aarch64-kos-ld|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\]+-)?ld|collect2)[^/\]*( |$)]
   ignore line: [Change Dir: /opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp]
   ignore line: []
-  ignore line: [Run Build Command(s):/usr/bin/make -f Makefile cmTC_6cdcf/fast && /usr/bin/make  -f CMakeFiles/cmTC_6cdcf.dir/build.make CMakeFiles/cmTC_6cdcf.dir/build]
+  ignore line: [Run Build Command(s):/usr/bin/make -f Makefile cmTC_639f7/fast && /usr/bin/make  -f CMakeFiles/cmTC_639f7.dir/build.make CMakeFiles/cmTC_639f7.dir/build]
   ignore line: [make[1]: Entering directory '/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp']
-  ignore line: [Building CXX object CMakeFiles/cmTC_6cdcf.dir/CMakeCXXCompilerABI.cpp.o]
-  ignore line: [/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-g++   -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard    -v -o CMakeFiles/cmTC_6cdcf.dir/CMakeCXXCompilerABI.cpp.o -c /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/share/cmake/Modules/CMakeCXXCompilerABI.cpp]
+  ignore line: [Building CXX object CMakeFiles/cmTC_639f7.dir/CMakeCXXCompilerABI.cpp.o]
+  ignore line: [/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-g++   -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard    -v -o CMakeFiles/cmTC_639f7.dir/CMakeCXXCompilerABI.cpp.o -c /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/share/cmake/Modules/CMakeCXXCompilerABI.cpp]
   ignore line: [Using built-in specs.]
   ignore line: [COLLECT_GCC=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-g++]
   ignore line: [Target: aarch64-kos]
   ignore line: [Configured with: ../src/configure --prefix=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain --target=aarch64-kos --enable-build-with-cxx --enable-languages=c,c++,ada --enable-checking=release --enable-gold --enable-lto --enable-initfini-array --disable-nls --disable-werror --with-arch=armv8-a --with-gnu-as --with-as=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-as --with-gnu-ld --with-ld=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-ld --with-sysroot=/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos --with-native-system-header-dir=/include --with-local-prefix=/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos --with-pkgversion='Kaspersky Lab' --with-bugurl=https://kas.pr/kasperskyos-forum-en --with-system-zlib --with-mpfr=/build-products-manifest/staging/host/mpfr --with-gmp=/build-products-manifest/staging/host/gmp --with-mpc=/build-products-manifest/staging/host/mpc --with-ppl=/build-products-manifest/staging/host/ppl --with-isl=/build-products-manifest/staging/host/isl --with-cloog=/build-products-manifest/staging/host/cloog --with-libelf=/build-products-manifest/staging/host/libelf --with-host-libstdcxx='-static-libgcc -lstdc++ -lm' --disable-default-pie --disable-decimal-float --disable-libstdcxx-pch --disable-libatomic --disable-libgomp --disable-libmudflap --disable-libquadmath --disable-libffi --disable-libvtv --disable-fixincludes --disable-libssp --enable-tls --disable-multilib --enable-c99 --enable-plugins --enable-long-long --enable-libstdcxx --enable-libstdcxx-time --enable-__cxa_atexit --enable-libsanitizer --enable-linker-build-id --enable-cet --with-headers=yes --enable-threads=posix --disable-shared]
   ignore line: [Thread model: posix]
   ignore line: [gcc version 9.2.1 20191208 (Kaspersky Lab) ]
-  ignore line: [COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'CMakeFiles/cmTC_6cdcf.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64']
-  ignore line: [ /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/cc1plus -quiet -v /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/share/cmake/Modules/CMakeCXXCompilerABI.cpp -ffixed-x18 -quiet -dumpbase CMakeCXXCompilerABI.cpp -mbranch-protection=standard -march=armv8-a -mlittle-endian -mabi=lp64 -auxbase-strip CMakeFiles/cmTC_6cdcf.dir/CMakeCXXCompilerABI.cpp.o -O2 -version -fstack-protector-strong -fstack-clash-protection -ffixed-x18 -o /tmp/ccnAFaC6.s]
+  ignore line: [COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'CMakeFiles/cmTC_639f7.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64']
+  ignore line: [ /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/cc1plus -quiet -v /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/share/cmake/Modules/CMakeCXXCompilerABI.cpp -ffixed-x18 -quiet -dumpbase CMakeCXXCompilerABI.cpp -mbranch-protection=standard -march=armv8-a -mlittle-endian -mabi=lp64 -auxbase-strip CMakeFiles/cmTC_639f7.dir/CMakeCXXCompilerABI.cpp.o -O2 -version -fstack-protector-strong -fstack-clash-protection -ffixed-x18 -o /tmp/ccA0yqMh.s]
   ignore line: [GNU C++14 (Kaspersky Lab) version 9.2.1 20191208 (aarch64-kos)]
   ignore line: [	compiled by GNU C version 8.3.0  GMP version 4.3.2  MPFR version 2.4.2  MPC version 0.8.1  isl version isl-0.15-GMP]
   ignore line: []
@@ -337,15 +337,15 @@ Parsed CXX implicit link information from above output:
   ignore line: []
   ignore line: [GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072]
   ignore line: [Compiler executable checksum: 26aee5bfe55b384582fe943d2b9b628f]
-  ignore line: [COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'CMakeFiles/cmTC_6cdcf.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64']
-  ignore line: [ /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-as -v -EL -march=armv8-a -mabi=lp64 -o CMakeFiles/cmTC_6cdcf.dir/CMakeCXXCompilerABI.cpp.o /tmp/ccnAFaC6.s]
+  ignore line: [COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'CMakeFiles/cmTC_639f7.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64']
+  ignore line: [ /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-as -v -EL -march=armv8-a -mabi=lp64 -o CMakeFiles/cmTC_639f7.dir/CMakeCXXCompilerABI.cpp.o /tmp/ccA0yqMh.s]
   ignore line: [GNU assembler version 2.38 (aarch64-kos) using BFD version (Kaspersky Lab) 2.38.20220317]
   ignore line: [COMPILER_PATH=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/../../../../aarch64-kos/bin/]
   ignore line: [LIBRARY_PATH=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/../../../../aarch64-kos/lib/:/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/]
-  ignore line: [COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'CMakeFiles/cmTC_6cdcf.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64']
-  ignore line: [Linking CXX executable cmTC_6cdcf]
-  ignore line: [/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/cmake -E cmake_link_script CMakeFiles/cmTC_6cdcf.dir/link.txt --verbose=1]
-  ignore line: [/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-g++ -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard  -Wl -z noexecstack -Wl -z now -v CMakeFiles/cmTC_6cdcf.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_6cdcf ]
+  ignore line: [COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'CMakeFiles/cmTC_639f7.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64']
+  ignore line: [Linking CXX executable cmTC_639f7]
+  ignore line: [/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/cmake -E cmake_link_script CMakeFiles/cmTC_639f7.dir/link.txt --verbose=1]
+  ignore line: [/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-g++ -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard  -Wl -z noexecstack -Wl -z now -v CMakeFiles/cmTC_639f7.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_639f7 ]
   ignore line: [Using built-in specs.]
   ignore line: [COLLECT_GCC=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-g++]
   ignore line: [COLLECT_LTO_WRAPPER=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/lto-wrapper]
@@ -355,13 +355,13 @@ Parsed CXX implicit link information from above output:
   ignore line: [gcc version 9.2.1 20191208 (Kaspersky Lab) ]
   ignore line: [COMPILER_PATH=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/../../../../aarch64-kos/bin/]
   ignore line: [LIBRARY_PATH=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/:/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/../../../../aarch64-kos/lib/:/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/]
-  ignore line: [COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'cmTC_6cdcf' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64']
-  link line: [ /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/collect2 -plugin /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/liblto_plugin.so -plugin-opt=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/lto-wrapper -plugin-opt=-fresolution=/tmp/ccCOOrKo.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lvfs -plugin-opt=-pass-through=-lenv -plugin-opt=-pass-through=-lsignald -plugin-opt=-pass-through=-lkos -plugin-opt=-pass-through=-lrtlcom -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc --sysroot=/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos --build-id --eh-frame-hdr -dc -dp -e _start -dynamic-linker /lib/ld.elf_so -X -EL -m aarch64elf -dc -dp -e _start -dynamic-linker /lib/ld.elf_so --fix-cortex-a53-843419 -o cmTC_6cdcf /opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crt0.a /opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crti.o /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/crtbegin.o -L/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1 -L/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/../../../../aarch64-kos/lib -L/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib -z noexecstack -z now CMakeFiles/cmTC_6cdcf.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc -lc --start-group -lvfs -lenv -lsignald -lkos -lrtlcom -lc --end-group -lgcc -lc /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/crtend.o /opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crtn.o]
+  ignore line: [COLLECT_GCC_OPTIONS='-fstack-protector-strong' '-fstack-clash-protection' '-O2' '-mbranch-protection=standard' '-v' '-o' 'cmTC_639f7' '-march=armv8-a' '-mlittle-endian' '-mabi=lp64']
+  link line: [ /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/collect2 -plugin /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/liblto_plugin.so -plugin-opt=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/lto-wrapper -plugin-opt=-fresolution=/tmp/ccoVkJjK.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lvfs -plugin-opt=-pass-through=-lenv -plugin-opt=-pass-through=-lsignald -plugin-opt=-pass-through=-lkos -plugin-opt=-pass-through=-lrtlcom -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc --sysroot=/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos --build-id --eh-frame-hdr -dc -dp -e _start -dynamic-linker /lib/ld.elf_so -X -EL -m aarch64elf -dc -dp -e _start -dynamic-linker /lib/ld.elf_so --fix-cortex-a53-843419 -o cmTC_639f7 /opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crt0.a /opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crti.o /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/crtbegin.o -L/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1 -L/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/../../../../aarch64-kos/lib -L/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib -z noexecstack -z now CMakeFiles/cmTC_639f7.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc -lc --start-group -lvfs -lenv -lsignald -lkos -lrtlcom -lc --end-group -lgcc -lc /opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/crtend.o /opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crtn.o]
     arg [/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/collect2] ==> ignore
     arg [-plugin] ==> ignore
     arg [/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/liblto_plugin.so] ==> ignore
     arg [-plugin-opt=/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/libexec/gcc/aarch64-kos/9.2.1/lto-wrapper] ==> ignore
-    arg [-plugin-opt=-fresolution=/tmp/ccCOOrKo.res] ==> ignore
+    arg [-plugin-opt=-fresolution=/tmp/ccoVkJjK.res] ==> ignore
     arg [-plugin-opt=-pass-through=-lgcc] ==> ignore
     arg [-plugin-opt=-pass-through=-lc] ==> ignore
     arg [-plugin-opt=-pass-through=-lvfs] ==> ignore
@@ -393,7 +393,7 @@ Parsed CXX implicit link information from above output:
     arg [/lib/ld.elf_so] ==> ignore
     arg [--fix-cortex-a53-843419] ==> ignore
     arg [-o] ==> ignore
-    arg [cmTC_6cdcf] ==> ignore
+    arg [cmTC_639f7] ==> ignore
     arg [/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crt0.a] ==> lib [/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crt0.a]
     arg [/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crti.o] ==> obj [/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib/crti.o]
     arg [/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/crtbegin.o] ==> obj [/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/lib/gcc/aarch64-kos/9.2.1/crtbegin.o]
@@ -402,7 +402,7 @@ Parsed CXX implicit link information from above output:
     arg [-L/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib] ==> dir [/opt/KasperskyOS-Community-Edition-1.1.1.13/sysroot-aarch64-kos/lib]
     arg [-znoexecstack] ==> ignore
     arg [-znow] ==> ignore
-    arg [CMakeFiles/cmTC_6cdcf.dir/CMakeCXXCompilerABI.cpp.o] ==> ignore
+    arg [CMakeFiles/cmTC_639f7.dir/CMakeCXXCompilerABI.cpp.o] ==> ignore
     arg [-lstdc++] ==> lib [stdc++]
     arg [-lm] ==> lib [m]
     arg [-lgcc] ==> lib [gcc]
@@ -431,13 +431,13 @@ Parsed CXX implicit link information from above output:
 Performing C++ SOURCE FILE Test NO_PIE_IS_FOUND succeeded with the following output:
 Change Dir: /opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp
 
-Run Build Command(s):/usr/bin/make -f Makefile cmTC_b6a8b/fast && /usr/bin/make  -f CMakeFiles/cmTC_b6a8b.dir/build.make CMakeFiles/cmTC_b6a8b.dir/build
+Run Build Command(s):/usr/bin/make -f Makefile cmTC_2b4dd/fast && /usr/bin/make  -f CMakeFiles/cmTC_2b4dd.dir/build.make CMakeFiles/cmTC_2b4dd.dir/build
 make[1]: Entering directory '/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp'
-Building CXX object CMakeFiles/cmTC_b6a8b.dir/src.cxx.o
-/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-g++ -DNO_PIE_IS_FOUND  -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard    -no-pie -o CMakeFiles/cmTC_b6a8b.dir/src.cxx.o -c /opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp/src.cxx
-Linking CXX executable cmTC_b6a8b
-/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/cmake -E cmake_link_script CMakeFiles/cmTC_b6a8b.dir/link.txt --verbose=1
-/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-g++ -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard  -Wl,-z,noexecstack -Wl,-z,now -static  CMakeFiles/cmTC_b6a8b.dir/src.cxx.o -o cmTC_b6a8b 
+Building CXX object CMakeFiles/cmTC_2b4dd.dir/src.cxx.o
+/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-g++ -DNO_PIE_IS_FOUND  -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard    -no-pie -o CMakeFiles/cmTC_2b4dd.dir/src.cxx.o -c /opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTC_2b4dd
+/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/cmake -E cmake_link_script CMakeFiles/cmTC_2b4dd.dir/link.txt --verbose=1
+/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-g++ -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard  -Wl,-z,noexecstack -Wl,-z,now -static  CMakeFiles/cmTC_2b4dd.dir/src.cxx.o -o cmTC_2b4dd 
 make[1]: Leaving directory '/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp'
 
 
@@ -446,13 +446,13 @@ int main() { return 0; }
 Determining if the include file pthread.h exists passed with the following output:
 Change Dir: /opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp
 
-Run Build Command(s):/usr/bin/make -f Makefile cmTC_ae0e1/fast && /usr/bin/make  -f CMakeFiles/cmTC_ae0e1.dir/build.make CMakeFiles/cmTC_ae0e1.dir/build
+Run Build Command(s):/usr/bin/make -f Makefile cmTC_662f2/fast && /usr/bin/make  -f CMakeFiles/cmTC_662f2.dir/build.make CMakeFiles/cmTC_662f2.dir/build
 make[1]: Entering directory '/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp'
-Building C object CMakeFiles/cmTC_ae0e1.dir/CheckIncludeFile.c.o
-/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-gcc   -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard  -o CMakeFiles/cmTC_ae0e1.dir/CheckIncludeFile.c.o -c /opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp/CheckIncludeFile.c
-Linking C executable cmTC_ae0e1
-/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/cmake -E cmake_link_script CMakeFiles/cmTC_ae0e1.dir/link.txt --verbose=1
-/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-gcc -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard  -Wl,-z,noexecstack -Wl,-z,now -static  CMakeFiles/cmTC_ae0e1.dir/CheckIncludeFile.c.o -o cmTC_ae0e1 
+Building C object CMakeFiles/cmTC_662f2.dir/CheckIncludeFile.c.o
+/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-gcc   -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard  -o CMakeFiles/cmTC_662f2.dir/CheckIncludeFile.c.o -c /opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp/CheckIncludeFile.c
+Linking C executable cmTC_662f2
+/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/cmake -E cmake_link_script CMakeFiles/cmTC_662f2.dir/link.txt --verbose=1
+/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-gcc -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard  -Wl,-z,noexecstack -Wl,-z,now -static  CMakeFiles/cmTC_662f2.dir/CheckIncludeFile.c.o -o cmTC_662f2 
 make[1]: Leaving directory '/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp'
 
 
@@ -460,13 +460,13 @@ make[1]: Leaving directory '/opt/KasperskyOS-Community-Edition-1.1.1.13/examples
 Performing C++ SOURCE FILE Test DEBUG_COMPRESSION_IS_FOUND succeeded with the following output:
 Change Dir: /opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp
 
-Run Build Command(s):/usr/bin/make -f Makefile cmTC_7135d/fast && /usr/bin/make  -f CMakeFiles/cmTC_7135d.dir/build.make CMakeFiles/cmTC_7135d.dir/build
+Run Build Command(s):/usr/bin/make -f Makefile cmTC_faaea/fast && /usr/bin/make  -f CMakeFiles/cmTC_faaea.dir/build.make CMakeFiles/cmTC_faaea.dir/build
 make[1]: Entering directory '/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp'
-Building CXX object CMakeFiles/cmTC_7135d.dir/src.cxx.o
-/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-g++ -DDEBUG_COMPRESSION_IS_FOUND  -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard    -gz=zlib -std=c++17 -o CMakeFiles/cmTC_7135d.dir/src.cxx.o -c /opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp/src.cxx
-Linking CXX executable cmTC_7135d
-/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/cmake -E cmake_link_script CMakeFiles/cmTC_7135d.dir/link.txt --verbose=1
-/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-g++ -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard  -Wl,-z,noexecstack -Wl,-z,now -static  CMakeFiles/cmTC_7135d.dir/src.cxx.o -o cmTC_7135d 
+Building CXX object CMakeFiles/cmTC_faaea.dir/src.cxx.o
+/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-g++ -DDEBUG_COMPRESSION_IS_FOUND  -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard    -gz=zlib -std=c++17 -o CMakeFiles/cmTC_faaea.dir/src.cxx.o -c /opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTC_faaea
+/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/cmake -E cmake_link_script CMakeFiles/cmTC_faaea.dir/link.txt --verbose=1
+/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-g++ -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard  -Wl,-z,noexecstack -Wl,-z,now -static  CMakeFiles/cmTC_faaea.dir/src.cxx.o -o cmTC_faaea 
 make[1]: Leaving directory '/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp'
 
 
@@ -475,13 +475,13 @@ int main() { return 0; }
 Performing C++ SOURCE FILE Test NO_SANITIZE_IS_FOUND succeeded with the following output:
 Change Dir: /opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp
 
-Run Build Command(s):/usr/bin/make -f Makefile cmTC_bd00e/fast && /usr/bin/make  -f CMakeFiles/cmTC_bd00e.dir/build.make CMakeFiles/cmTC_bd00e.dir/build
+Run Build Command(s):/usr/bin/make -f Makefile cmTC_2deeb/fast && /usr/bin/make  -f CMakeFiles/cmTC_2deeb.dir/build.make CMakeFiles/cmTC_2deeb.dir/build
 make[1]: Entering directory '/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp'
-Building CXX object CMakeFiles/cmTC_bd00e.dir/src.cxx.o
-/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-g++ -DNO_SANITIZE_IS_FOUND  -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard    -fno-sanitize=all -std=c++17 -o CMakeFiles/cmTC_bd00e.dir/src.cxx.o -c /opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp/src.cxx
-Linking CXX executable cmTC_bd00e
-/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/cmake -E cmake_link_script CMakeFiles/cmTC_bd00e.dir/link.txt --verbose=1
-/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-g++ -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard  -Wl,-z,noexecstack -Wl,-z,now -static  CMakeFiles/cmTC_bd00e.dir/src.cxx.o -o cmTC_bd00e 
+Building CXX object CMakeFiles/cmTC_2deeb.dir/src.cxx.o
+/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-g++ -DNO_SANITIZE_IS_FOUND  -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard    -fno-sanitize=all -std=c++17 -o CMakeFiles/cmTC_2deeb.dir/src.cxx.o -c /opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp/src.cxx
+Linking CXX executable cmTC_2deeb
+/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/cmake -E cmake_link_script CMakeFiles/cmTC_2deeb.dir/link.txt --verbose=1
+/opt/KasperskyOS-Community-Edition-1.1.1.13/toolchain/bin/aarch64-kos-g++ -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard  -Wl,-z,noexecstack -Wl,-z,now -static  CMakeFiles/cmTC_2deeb.dir/src.cxx.o -o cmTC_2deeb 
 make[1]: Leaving directory '/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build/CMakeFiles/CMakeTmp'
 
 

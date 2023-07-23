@@ -8,5 +8,5 @@ CXX_INCLUDES = -I/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build
 
 CXX_FLAGS = -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-protection=standard -std=gnu++11 -Wall -Wundef -Wformat -Wno-shadow -Wcast-qual -Wcast-align -Wpointer-arith -Wconversion -Wsequence-point -Werror=return-type -Wno-error=deprecated-declarations -fvisibility=hidden -fvisibility-inlines-hidden -fcommon -fno-threadsafe-statics -fno-omit-frame-pointer -fexceptions -fno-check-new -frtti -g -fdata-sections -ffunction-sections -fwrapv -fno-strict-aliasing -fno-stack-protector -ggdb -fno-omit-frame-pointer -fno-common -fsigned-char -march=armv8.2-a+crypto -Werror -Wall -Wextra -Wunused-function -Wfloat-conversion -Wno-sign-compare -Wuninitialized -Wno-redundant-move -Wno-missing-field-initializers -gz=zlib -fdebug-prefix-map=\"/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp/build=/opt/KasperskyOS-Community-Edition-1.1.1.13/examples/kphp\" -std=c++17
 
-# Custom defines: kphp/CMakeFiles/popular_common.dir/common/version-string.cpp.o_DEFINES = COMMIT="2eeddb3c380827eb7bf709a46e809dbb0f099c8b branch andreylzmw/kaspersky-os";BUILD_TIMESTAMP=1690069030
+# Custom defines: kphp/CMakeFiles/popular_common.dir/common/version-string.cpp.o_DEFINES = COMMIT="2eeddb3c380827eb7bf709a46e809dbb0f099c8b ";BUILD_TIMESTAMP=1690072289
 

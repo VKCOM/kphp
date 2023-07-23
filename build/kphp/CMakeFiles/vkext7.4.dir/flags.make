@@ -12,5 +12,5 @@ CXX_FLAGS = -fstack-protector-strong -fstack-clash-protection -O2 -mbranch-prote
 
 # Custom flags: kphp/CMakeFiles/vkext7.4.dir/vkext/vkext-rpc.cpp.o_FLAGS = -Wno-format-security
 
-# Custom defines: kphp/CMakeFiles/vkext7.4.dir/common/version-string.cpp.o_DEFINES = COMMIT="2eeddb3c380827eb7bf709a46e809dbb0f099c8b branch andreylzmw/kaspersky-os";BUILD_TIMESTAMP=1690069030
+# Custom defines: kphp/CMakeFiles/vkext7.4.dir/common/version-string.cpp.o_DEFINES = COMMIT="2eeddb3c380827eb7bf709a46e809dbb0f099c8b ";BUILD_TIMESTAMP=1690072289
 
