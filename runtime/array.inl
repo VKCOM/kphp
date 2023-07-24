@@ -626,7 +626,7 @@ bool array<T>::mutate_if_vector_shared(uint32_t mul) {
 template<class T>
 bool array<T>::mutate_to_size_if_vector_shared(int64_t int_size) {
   if (p->ref_cnt > 0) {
-    array_inner *new_array = array_inner::create(int_size, 0, true);
+    array_inner *new_array = array_inner::create(int_size, true);
 
     const auto size = static_cast<uint32_t>(p->int_size);
     T *it = (T *)p->int_entries;
@@ -645,7 +645,7 @@ bool array<T>::mutate_to_size_if_vector_shared(int64_t int_size) {
 template<class T>
 bool array<T>::mutate_if_map_shared(uint32_t mul) {
   if (p->ref_cnt > 0) {
-    array_inner *new_array = array_inner::create(p->int_size * mul + 1, p->string_size * mul + 1, false);
+    array_inner *new_array = array_inner::create(p->int_size * mul + 1, false);
 
     for (const int_hash_entry *it = p->begin(); it != p->end(); it = p->next(it)) {
       if (p->is_string_hash_entry(it)) {
@@ -799,7 +799,7 @@ typename array<T>::iterator array<T>::end() {
 
 template<class T>
 void array<T>::convert_to_map() {
-  array_inner *new_array = array_inner::create(p->int_size + 4, p->int_size + 4, false);
+  array_inner *new_array = array_inner::create(p->int_size + 4, false);
 
   T *elements = reinterpret_cast<T *>(p->int_entries);
   const bool move_values = p->ref_cnt == 0;
@@ -827,7 +827,7 @@ void array<T>::copy_from(const array<T1> &other) {
     return;
   }
 
-  array_inner *new_array = array_inner::create(other.p->int_size, other.p->string_size, other.is_vector());
+  array_inner *new_array = array_inner::create(other.p->int_size, other.is_vector());
 
   if (new_array->is_vector()) {
     uint32_t size = other.p->int_size;
@@ -865,7 +865,7 @@ void array<T>::move_from(array<T1> &&other) noexcept {
     return;
   }
 
-  array_inner *new_array = array_inner::create(other.p->int_size, other.p->string_size, other.is_vector());
+  array_inner *new_array = array_inner::create(other.p->int_size, other.is_vector());
 
   if (new_array->is_vector()) {
     uint32_t size = other.p->int_size;
@@ -1593,7 +1593,7 @@ array<T> &array<T>::operator+=(const array<T> &other) {
         uint32_t my_size = p->int_size;
         T *my_it = (T *)p->int_entries;
 
-        array_inner *new_array = array_inner::create(max(size, my_size), 0, true);
+        array_inner *new_array = array_inner::create(max(size, my_size), true);
 
         for (uint32_t i = 0; i < my_size; i++) {
           new_array->push_back_vector_value(my_it[i]);
@@ -1617,7 +1617,7 @@ array<T> &array<T>::operator+=(const array<T> &other) {
 
       return *this;
     } else {
-      array_inner *new_array = array_inner::create(p->int_size + other.p->int_size + 4, other.p->string_size + 4, false);
+      array_inner *new_array = array_inner::create(p->int_size + other.p->int_size + 4, false);
       T *it = (T *)p->int_entries;
 
       for (uint32_t i = 0; i != p->int_size; i++) {
@@ -1817,7 +1817,7 @@ void array<T>::sort(const T1 &compare, bool renumber) {
     }
 
     if (!is_vector()) {
-      array_inner *res = array_inner::create(n, 0, true);
+      array_inner *res = array_inner::create(n, true);
       for (int_hash_entry *it = p->begin(); it != p->end(); it = p->next(it)) {
         res->push_back_vector_value(it->value);
       }
