@@ -12,6 +12,10 @@
   #error "this file must be included only from kphp_core.h"
 #endif
 
+array_size::array_size(int64_t int_size, bool is_vector) :
+  int_size(int_size),
+  is_vector(is_vector) {}
+
 array_size::array_size(int64_t int_size, int64_t string_size, bool is_vector) :
   int_size(int_size + string_size),
   is_vector(is_vector) {}
@@ -255,7 +259,6 @@ typename array<T>::array_inner *array<T>::array_inner::create(int64_t new_int_si
   p->fields_for_map().modulo_helper_int_buf_size = fastmod::computeM_u32(p->int_buf_size);
 
   p->int_size = 0;
-  p->string_size = 0;
   return p;
 }
 
@@ -463,7 +466,7 @@ auto &array<T>::array_inner::find_map_entry(S &self, const char *key, string::si
   uint32_t bucket = self.choose_bucket(precomputed_hash);
   while (string_entries[bucket].next != EMPTY_POINTER &&
          (string_entries[bucket].int_key != precomputed_hash || str_not_eq(string_entries[bucket].string_key, key, key_size))) {
-    if (unlikely (++bucket == self.string_buf_size)) {
+    if (unlikely (++bucket == self.int_buf_size)) {
       bucket = 0;
     }
   }
@@ -722,6 +725,11 @@ void array<T>::mutate_to_map_if_vector_or_map_need_string() {
 }
 
 template<class T>
+void array<T>::reserve(int64_t int_size, int64_t string_size, bool make_vector_if_possible) {
+  reserve(int_size + string_size, make_vector_if_possible);
+}
+
+template<class T>
 void array<T>::reserve(int64_t int_size, bool make_vector_if_possible) {
   if (int_size > int64_t{p->int_buf_size}) {
     if (is_vector() && make_vector_if_possible) {
@@ -836,7 +844,7 @@ void array<T>::copy_from(const array<T1> &other) {
       new_array->push_back_vector_value(convert_to<T>::convert(it[i]));
     }
   } else {
-    for (const typename array<T1>::string_hash_entry *it = other.p->begin(); it != other.p->end(); it = other.p->next(it)) {
+    for (const typename array<T1>::int_hash_entry *it = other.p->begin(); it != other.p->end(); it = other.p->next(it)) {
       if (other.p->is_string_hash_entry(it)) {
         new_array->set_map_value(overwrite_element::YES, it->int_key, it->string_key, convert_to<T>::convert(it->value));
       } else {
@@ -848,7 +856,6 @@ void array<T>::copy_from(const array<T1> &other) {
   p = new_array;
 
   php_assert (new_array->int_size == other.p->int_size);
-  php_assert (new_array->string_size == other.p->string_size);
 }
 
 template<class T>
