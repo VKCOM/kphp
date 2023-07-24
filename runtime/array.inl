@@ -613,7 +613,7 @@ template<class T>
 bool array<T>::is_pseudo_vector() const {
   int64_t n = 0;
   for (auto element : *this) {
-    if (!element.is_int) {
+    if (element.is_string_key()) {
       return false;
     }
     if (element.get_key().as_int() != n++) {
@@ -896,7 +896,6 @@ void array<T>::move_from(array<T1> &&other) noexcept {
 
   p = new_array;
   php_assert (new_array->int_size == other.p->int_size);
-  php_assert (new_array->string_size == other.p->string_size);
 
   other = array<T1>{};
 }
@@ -1719,7 +1718,7 @@ void array<T>::push_back_iterator(const array_iterator<T1> &it) noexcept {
   if (it.self_->is_vector()) {
     emplace_back(*reinterpret_cast<const T1 *>(it.entry_));
   } else {
-    auto *entry = reinterpret_cast<typename array_iterator<T1>::string_hash_type *>(it.entry_);
+    auto *entry = reinterpret_cast<typename array_iterator<T1>::int_hash_type *>(it.entry_);
     if (it.self_->is_string_hash_entry(entry)) {
       mutate_to_map_if_vector_or_map_need_string();
 
@@ -1926,7 +1925,7 @@ void array<T>::ksort(const T1 &compare) {
       int_hash_entry *string_entries = p->int_entries;
       uint32_t bucket = p->choose_bucket(int_key);
       while ((string_entries[bucket].int_key != int_key || string_entries[bucket].string_key != string_key)) {
-        if (unlikely (++bucket == p->string_buf_size)) {
+        if (unlikely (++bucket == p->int_buf_size)) {
           bucket = 0;
         }
       }

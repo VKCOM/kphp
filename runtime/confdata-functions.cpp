@@ -162,7 +162,7 @@ array<mixed> f$confdata_get_values_by_any_wildcard(const string &wildcard) noexc
     // it must be an array (we loaded it this way)
     const auto &second_key_array = iter->second.as_array();
     const auto inserting_size = second_key_array.size() + result.size();
-    result.reserve(inserting_size.int_size, inserting_size.string_size, inserting_size.is_vector);
+    result.reserve(inserting_size.int_size, inserting_size.is_vector);
     for (const auto &section_it : iter->second) {
       result.set_value(string{section_suffix}.append(section_it.get_key()), section_it.get_value());
     }

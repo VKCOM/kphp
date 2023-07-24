@@ -352,7 +352,6 @@ array<array<T>> f$array_chunk(const array<T> &a, int64_t chunk_size, bool preser
   array_size new_size = a.size().cut(chunk_size);
   if (!preserve_keys) {
     new_size.int_size = min(chunk_size, a.count());
-    new_size.string_size = 0;
     new_size.is_vector = true;
   }
 
@@ -409,7 +408,7 @@ array<T> f$array_slice(const array<T> &a, int64_t offset, const mixed &length_va
   }
 
   array_size result_size = a.size().cut(length);
-  result_size.is_vector = (!preserve_keys && result_size.string_size == 0) || (preserve_keys && offset == 0 && a.is_vector());
+  result_size.is_vector = !preserve_keys || (preserve_keys && offset == 0 && a.is_vector());
 
   array<T> result(result_size);
   auto it = a.middle(offset);
