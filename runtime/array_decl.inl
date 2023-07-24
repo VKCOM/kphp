@@ -17,7 +17,7 @@ struct array_size {
 
   array_size() = default;
 
-  inline array_size(int64_t int_size, bool is_vector);
+  inline array_size(int64_t int_size, int64_t string_size, bool is_vector);
 
   inline array_size operator+(const array_size &other) const;
 
