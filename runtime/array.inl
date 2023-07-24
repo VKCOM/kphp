@@ -611,11 +611,11 @@ bool array<T>::is_vector() const {
 
 template<class T>
 bool array<T>::is_pseudo_vector() const {
-  if (p->string_size) {
-    return false;
-  }
   int64_t n = 0;
   for (auto element : *this) {
+    if (!element.is_int) {
+      return false;
+    }
     if (element.get_key().as_int() != n++) {
       return false;
     }
