@@ -110,7 +110,7 @@ bool array<T>::is_int_key(const typename array<T>::key_type &key) {
 template<>
 inline typename array<Unknown>::array_inner *array<Unknown>::array_inner::empty_array() {
   static array_inner_control empty_array{
-    0, ExtraRefCnt::for_global_const, -1,
+    1, ExtraRefCnt::for_global_const, -1,
     {0, 0},
     0, 2,
   };
