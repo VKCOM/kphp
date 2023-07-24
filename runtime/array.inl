@@ -694,7 +694,7 @@ void array<T>::mutate_if_map_needed_int() {
 
   // not shared (ref_cnt == 0)
   if (p->int_size * 5 > 3 * p->int_buf_size) {
-    int64_t new_int_size = max(int64_t{p->int_size * 2 + 1}, int64_t{p->string_size});
+    int64_t new_int_size = p->int_size * 2 + 1;
     array_inner *new_array = array_inner::create(new_int_size, false);
 
     for (int_hash_entry *it = p->begin(); it != p->end(); it = p->next(it)) {
@@ -1490,7 +1490,7 @@ bool array<T>::empty() const {
 
 template<class T>
 int64_t array<T>::count() const {
-  return p->int_size + p->string_size;
+  return p->int_size;
 }
 
 template<class T>
@@ -1633,10 +1633,9 @@ array<T> &array<T>::operator+=(const array<T> &other) {
     }
 
     uint32_t new_int_size = p->int_size + other.p->int_size;
-    uint32_t new_string_size = p->string_size + other.p->string_size;
 
-    if (new_int_size * 5 > 3 * p->int_buf_size || new_string_size * 5 > 3 * p->string_buf_size || p->ref_cnt > 0) {
-      array_inner *new_array = array_inner::create(max(new_int_size, 2 * p->int_size) + 1, max(new_string_size, 2 * p->string_size) + 1, false);
+    if (new_int_size * 5 > 3 * p->int_buf_size || p->ref_cnt > 0) {
+      array_inner *new_array = array_inner::create(max(new_int_size, 2 * p->int_size) + 1, false);
 
       for (const int_hash_entry *it = p->begin(); it != p->end(); it = p->next(it)) {
         if (p->is_string_hash_entry(it)) {
