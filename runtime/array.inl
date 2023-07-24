@@ -238,6 +238,7 @@ typename array<T>::array_inner *array<T>::array_inner::create(int64_t new_int_si
   const size_t mem_size = estimate_size(new_int_size, is_vector);
   if (is_vector) {
     auto p = reinterpret_cast<array_inner *>(dl::allocate(mem_size));
+    p->is_vector_internal = true;
     p->ref_cnt = 0;
     p->max_key = -1;
     p->int_size = 0;
@@ -250,6 +251,7 @@ typename array<T>::array_inner *array<T>::array_inner::create(int64_t new_int_si
   };
 
   array_inner *p = shift_pointer_to_array_inner(dl::allocate0(mem_size));
+  p->is_vector_internal = false;
   p->ref_cnt = 0;
   p->max_key = -1;
   p->end()->next = p->get_pointer(p->end());
