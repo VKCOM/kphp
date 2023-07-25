@@ -7,11 +7,14 @@
 #include <memory>
 
 #include "common/algorithms/hashes.h"
+#include "common/kprintf.h"
 #include "runtime/dummy-visitor-methods.h"
 #include "runtime/kphp_core.h"
 #include "runtime/net_events.h"
 #include "runtime/resumable.h"
 #include "runtime/to-array-processor.h"
+
+DECLARE_VERBOSITY(rpc);
 
 struct rpc_request {
   int64_t resumable_id; // == 0 - default, > 0 if not finished, -1 if received an answer, -2 if received an error, -3 if answer was gotten
