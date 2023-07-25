@@ -534,14 +534,25 @@ VertexPtr GenTree::get_expr_top(bool was_arrow, const PhpDocComment *phpdoc) {
       break;
     }
     case tok_varg: {
-      bool good_prefix = cur != tokens.begin() && vk::any_of_equal(std::prev(cur)->type(), tok_comma, tok_oppar, tok_opbrk);
+      auto prev_tok_type = std::prev(cur)->type();
+      bool good_prefix = cur != tokens.begin() && vk::any_of_equal(prev_tok_type, tok_comma, tok_oppar, tok_opbrk);
       CE (!kphp_error(good_prefix, "It's not allowed using `...` in this place"));
 
       next_cur();
+      auto next_tok_type = cur->type(); // next relative to tok_varg
       res = get_expression();
       // since the argument for the spread operator can be anything,
       // we do not check the type of the expression here
-      res = VertexAdaptor<op_varg>::create(res).set_location(res);
+      if (res) {
+        res = VertexAdaptor<op_varg>::create(res).set_location(res);
+      } else {
+        if (prev_tok_type == tok_oppar && next_tok_type == tok_clpar) { // f(...) - only this syntax is possible
+          res = VertexAdaptor<op_ellipsis>::create();
+          kphp_error(0, "First class callable syntax is not supported");
+        } else {
+          kphp_error(0, "Сan not parse first class callable syntax");
+        }
+      }
       break;
     }
     case tok_str:

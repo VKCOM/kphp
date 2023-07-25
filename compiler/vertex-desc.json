@@ -589,6 +589,11 @@
     }
   },
   {
+    "comment": "$f(...), when used first-class callable",
+    "name": "op_ellipsis",
+    "base_name": "meta_op_base"
+  },
+  {
     "comment": "var(); or var() = default_value(); type hints and @param are stored in type_hint",
     "name": "op_func_param",
     "base_name": "meta_op_base",
