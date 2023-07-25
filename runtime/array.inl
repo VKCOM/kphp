@@ -353,6 +353,7 @@ T &array<T>::array_inner::emplace_int_key_map_value(overwrite_element policy, in
 
   if (int_entries[bucket].next == EMPTY_POINTER) {
     int_entries[bucket].int_key = int_key;
+    int_entries[bucket].is_int = true;
 
     int_entries[bucket].prev = end()->prev;
     get_entry(end()->prev)->next = get_pointer(&int_entries[bucket]);
@@ -509,6 +510,7 @@ std::pair<T &, bool> array<T>::array_inner::emplace_string_key_map_value(overwri
   bool inserted = false;
   if (string_entries[bucket].next == EMPTY_POINTER) {
     string_entries[bucket].int_key = int_key;
+    string_entries[bucket].is_int = false;
     new(&string_entries[bucket].string_key) string{std::forward<STRING>(string_key)};
 
     string_entries[bucket].prev = end()->prev;
