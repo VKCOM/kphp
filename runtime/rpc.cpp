@@ -24,8 +24,11 @@
 #include "runtime/tl/rpc_server.h"
 #include "runtime/tl/rpc_tl_query.h"
 #include "runtime/tl/tl_builtins.h"
+#include "runtime/tl/tl_magics_decoding.h"
 #include "runtime/zlib.h"
 #include "server/php-queries.h"
+
+DEFINE_VERBOSITY(rpc);
 
 static const int GZIP_PACKED = 0x3072cfa1;
 
@@ -816,8 +819,12 @@ void process_rpc_error(int32_t request_id, int32_t error_code, const char *error
     php_assert (request->resumable_id != -1);
     return;
   }
-  if (!is_fake_error && kphp_tracing::is_turned_on()) {
-    kphp_tracing::on_rpc_query_fail(request_id, error_code);
+  if (!is_fake_error) {
+    tvkprintf(rpc, 1, "RPC error: error_code=%d, request_id=%d, tl_function=%s(0x%08x), actor_id=%d\n",
+             error_code, request_id, tl_magic_convert_to_name(request->function_magic), request->function_magic, request->actor_or_port);
+    if (kphp_tracing::is_turned_on()) {
+      kphp_tracing::on_rpc_query_fail(request_id, error_code);
+    }
   }
   int64_t resumable_id = request->resumable_id;
   request->resumable_id = -2;

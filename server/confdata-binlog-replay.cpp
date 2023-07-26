@@ -11,6 +11,7 @@
 #include <map>
 
 #include "common/binlog/binlog-replayer.h"
+#include "common/dl-utils-lite.h"
 #include "common/precise-time.h"
 #include "common/server/engine-settings.h"
 #include "common/server/init-binlog.h"
@@ -189,7 +190,9 @@ public:
         *updating_confdata_storage_ = previous_confdata_storage;
       } else {
         // strictly speaking, they should be identical, but it's too hard to verify
-        assert(updating_confdata_storage_->size() == previous_confdata_storage.size());
+        dl_assert(updating_confdata_storage_->size() == previous_confdata_storage.size(),
+                  dl_pstr("Can't update confdata from binlog: 'updating_confdata' and 'previous_confdata' must be identical, "
+                          "but they have different sizes (%zu != %zu)\n", updating_confdata_storage_->size(), previous_confdata_storage.size()));
       }
     }
   }
