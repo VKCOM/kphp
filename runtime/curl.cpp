@@ -947,6 +947,7 @@ Optional<int64_t> f$curl_multi_errno(curl_multi multi_id) noexcept {
 
 void f$curl_multi_close(curl_multi multi_id) noexcept {
   if (auto *multi_context = get_context<MultiContext>(multi_id)) {
+    dl::CriticalSectionGuard critical_section;
     vk::singleton<CurlContexts>::get().multi_contexts.set_value(multi_id - 1, nullptr);
     if (kphp_tracing::is_turned_on()) {
       kphp_tracing::on_curl_multi_close(multi_context->uniq_id);
