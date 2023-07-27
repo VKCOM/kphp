@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <chrono>
 #include <functional>
 
 #include "runtime/critical_section.h"
@@ -353,3 +354,34 @@ public:
   }
 };
 
+template <typename T>
+struct OverheadCalc {
+  static double overhead;
+  static int cnt;
+  double start;
+
+  OverheadCalc();
+  ~OverheadCalc();
+};
+
+template <typename T>
+double OverheadCalc<T>::overhead = 0.0;
+template <typename T>
+int OverheadCalc<T>::cnt = 0.0;
+
+inline double calc_now() noexcept {
+  return std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
+}
+
+template <typename T>
+OverheadCalc<T>::OverheadCalc() : start(calc_now()) {
+}
+
+template <typename T>
+OverheadCalc<T>::~OverheadCalc() {
+  overhead += calc_now() - start;
+  cnt++;
+}
+
+struct ForkSwitch {};
+struct InternalForkSwitch {};

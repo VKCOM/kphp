@@ -210,6 +210,7 @@ int64_t register_forked_resumable(Resumable *resumable) {
 }
 
 static inline void update_current_resumable_id(int64_t new_id, bool is_internal) {
+  OverheadCalc<ForkSwitch> a;
   int64_t old_running_fork = f$get_running_fork_id();
   runned_resumable_id = new_id;
   int64_t new_running_fork = f$get_running_fork_id();

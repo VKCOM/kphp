@@ -201,10 +201,15 @@ void PhpScript::pause() noexcept {
 #if ASAN_ENABLED
   __sanitizer_start_switch_fiber(nullptr, main_thread_stack, main_thread_stacksize);
 #endif
+  before_pause_timestamp = calc_now();
   assert(swapcontext_helper(&run_context, &exit_context) == 0);
 #if ASAN_ENABLED
   __sanitizer_finish_switch_fiber(nullptr, &main_thread_stack, &main_thread_stacksize);
 #endif
+  assert(before_resume_timestamp > 0);
+  swapcontext_overhead += calc_now() - before_resume_timestamp;
+  before_resume_timestamp = -1;
+  swapcontext_cnt++;
   in_script_context = true;
   check_net_context_errors();
   if (kphp_tracing::is_turned_on()) {
@@ -217,7 +222,12 @@ void PhpScript::resume() noexcept {
 #if ASAN_ENABLED
   __sanitizer_start_switch_fiber(nullptr, run_context.uc_stack.ss_sp, run_context.uc_stack.ss_size);
 #endif
+  before_resume_timestamp = calc_now();
   assert(swapcontext_helper(&exit_context, &run_context) == 0);
+  assert(before_pause_timestamp > 0);
+  swapcontext_overhead += calc_now() - before_pause_timestamp;
+  before_pause_timestamp = -1;
+  swapcontext_cnt++;
 #if ASAN_ENABLED
   __sanitizer_finish_switch_fiber(nullptr, nullptr, nullptr);
 #endif
@@ -337,6 +347,8 @@ void PhpScript::finish() noexcept {
         }
       }
     }
+    kprintf("fork switch overhead: %lf (%lf), cnt = %d\n", OverheadCalc<ForkSwitch>::overhead, OverheadCalc<ForkSwitch>::overhead / (net_time + script_time), OverheadCalc<ForkSwitch>::cnt);
+    kprintf("swapcontext overhead: %lf (%lf), cnt = %d\n", swapcontext_overhead, swapcontext_overhead / (net_time + script_time), swapcontext_cnt);
     kprintf("[worked = %.3lf, net = %.3lf, script = %.3lf, queries_cnt = %5d, long_queries_cnt = %5d, heap_memory_used = %9d, peak_script_memory = %9d, total_script_memory = %9d] %s\n",
             script_time + net_time, net_time, script_time, queries_cnt, long_queries_cnt,
             (int)dl::get_heap_memory_used(),
@@ -349,6 +361,12 @@ void PhpScript::clear() noexcept {
   assert_state(run_state_t::uncleared);
   run_main->clear();
   free_runtime_environment();
+  swapcontext_overhead = 0;
+  swapcontext_cnt = 0;
+  before_resume_timestamp = -1;
+  before_pause_timestamp = -1;
+  OverheadCalc<ForkSwitch>::overhead = 0;
+  OverheadCalc<ForkSwitch>::cnt = 0;
   state = run_state_t::empty;
   if (use_madvise_dontneed) {
     if (dl::get_script_memory_stats().real_memory_used > memory_used_to_recreate_script) {

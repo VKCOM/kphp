@@ -89,6 +89,11 @@ class PhpScript {
   int queries_cnt{0};
   int long_queries_cnt{0};
 
+  double before_resume_timestamp = -1;
+  double before_pause_timestamp = -1;
+  double swapcontext_overhead = 0;
+  int swapcontext_cnt = 0;
+
 private:
   int swapcontext_helper(ucontext_t_portable *oucp, const ucontext_t_portable *ucp);
 
