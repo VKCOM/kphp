@@ -684,7 +684,13 @@ const TypeHint *PhpDocTypeHintParser::parse_shape_type() {
 
 const TypeHint *PhpDocTypeHintParser::parse_type_expression() {
   const TypeHint *result = parse_type_array();
-  if (cur_tok->type() != tok_or) {
+
+  auto is_intersection_type_cur_tok = [this]() {
+    return cur_tok->type() == tok_and
+           && (cur_tok + 1)->type() != tok_var_name;
+  }; // T& $var_name -> false, but T1&T2 $var_name -> true
+
+  if (cur_tok->type() != tok_or && !is_intersection_type_cur_tok()) {
     return result;
   }
 
@@ -703,7 +709,10 @@ const TypeHint *PhpDocTypeHintParser::parse_type_expression() {
   };
 
   on_each_item(result);
-  while (cur_tok->type() == tok_or) {
+  while (cur_tok->type() == tok_or || is_intersection_type_cur_tok()) {
+    if (cur_tok->type() == tok_and) {
+      kphp_error(0, "Intersection types is not supported");
+    }
     cur_tok++;
     on_each_item(parse_type_array());
 
