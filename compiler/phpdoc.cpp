@@ -378,6 +378,7 @@ const TypeHint *PhpDocTypeHintParser::parse_simple_type() {
       cur_tok++;
       return TypeHintPrimitive::create(tp_False);
     case tok_true:
+      kphp_error(0, "Standalone true type is not supported");
       cur_tok++;
       return TypeHintPrimitive::create(tp_bool);
     case tok_null:
