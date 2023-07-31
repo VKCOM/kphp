@@ -2099,6 +2099,9 @@ VertexPtr GenTree::get_statement(const PhpDocComment *phpdoc) {
     case tok_public:
     case tok_private:
       if (std::next(cur, 1)->type() == tok_const) {
+        if (cur_class->class_type == ClassType::trait) {
+          kphp_error(0, "\"const\" member is not supported in trait");
+        }
         next_cur();
 
         auto access = AccessModifiers::public_;
