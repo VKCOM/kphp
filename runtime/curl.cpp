@@ -1021,10 +1021,38 @@ void clear_contexts(array<CTX *> &contexts) {
   hard_reset_var(contexts);
 }
 
+class CurlEpollFdTracker : vk::not_copyable {
+public:
+  void add_fd(int fd) noexcept {
+    int64_t dummy{};
+    used_fds_.emplace_value(fd, dummy);
+  }
+
+  void remove_fd(int fd) noexcept {
+    used_fds_.unset(fd);
+  }
+
+  void dispose_all_fds_from_epoll() noexcept {
+    for (auto it : used_fds_) {
+      int fd = it.get_int_key();
+      epoll_remove(fd);
+      remove_fd(fd);
+    }
+    hard_reset_var(used_fds_);
+  }
+
+private:
+  CurlEpollFdTracker() = default;
+  friend class vk::singleton<CurlEpollFdTracker>;
+
+  array<int64_t> used_fds_;
+};
+
 void free_curl_lib() noexcept {
   dl::CriticalSectionGuard critical_section;
   clear_contexts(vk::singleton<CurlContexts>::get().easy_contexts);
   clear_contexts(vk::singleton<CurlContexts>::get().multi_contexts);
+  vk::singleton<CurlEpollFdTracker>::get().dispose_all_fds_from_epoll();
   vk::singleton<CurlMemoryUsage>::get().total_allocated = 0;
 }
 
@@ -1140,6 +1168,8 @@ static int curl_epoll_cb(int fd, void *data, event_t *ev) {
 }
 
 static int curl_socketfunction_cb(CURL */*easy*/, curl_socket_t fd, int action, void *userp, void */*socketp*/) {
+  dl::CriticalSectionGuard critical_section;
+
   auto *curl_request = static_cast<CurlRequest *>(userp);
   php_assert(curl_request);
 
@@ -1156,10 +1186,12 @@ static int curl_socketfunction_cb(CURL */*easy*/, curl_socket_t fd, int action, 
       }
       epoll_insert(fd, events);
       epoll_sethandler(fd, 0, curl_epoll_cb, curl_request);
+      vk::singleton<CurlEpollFdTracker>::get().add_fd(fd);
       break;
     }
     case CURL_POLL_REMOVE: {
       epoll_remove(fd);
+      vk::singleton<CurlEpollFdTracker>::get().remove_fd(fd);
       break;
     }
     default:
