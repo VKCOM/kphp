@@ -35,6 +35,12 @@ TEST(lexer_test, test_php_tokens) {
 
     {";", {"tok_semicolon(;)"}},
 
+    {"} finally {", {"tok_clbrc(})", "tok_finally(finally)", "tok_opbrc({)"}},
+    {"function finally()", {"tok_function(function)", "tok_finally(finally)", "tok_oppar(()", "tok_clpar())"}},
+    {"public function finally()", {"tok_public(public)", "tok_function(function)", "tok_finally(finally)", "tok_oppar(()", "tok_clpar())"}},
+    {"private static function finally", {"tok_private(private)", "tok_static(static)", "tok_function(function)", "tok_finally(finally)"}},
+    {"const finally", {"tok_const(const)", "tok_finally(finally)"}},
+
     {"new Exception()", {"tok_new(new)", "tok_func_name(Exception)", "tok_oppar(()", "tok_clpar())"}},
     {"new \\Exception()", {"tok_new(new)", "tok_func_name(\\Exception)", "tok_oppar(()", "tok_clpar())"}},
     {"new Exception('test')", {"tok_new(new)", "tok_func_name(Exception)", "tok_oppar(()", "tok_str(test)", "tok_clpar())"}},
