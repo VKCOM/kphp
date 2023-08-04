@@ -51,6 +51,8 @@ struct array_list_hash_entry {
   list_entry_pointer_type prev;
 };
 
+struct ArrayBucketDummyStrTag{};
+
 struct array_inner_control {
   // This stub field is needed to ensure the alignment during the const arrays generation
   // TODO: figure out something smarter
@@ -78,7 +80,6 @@ private:
 
   struct int_hash_entry : list_hash_entry {
     T value;
-    bool is_int;
 
     int64_t int_key;
     string string_key;

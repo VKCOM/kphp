@@ -99,7 +99,7 @@ void sort(T *begin_init, T *end_init, const T1 &compare) {
 
 template<class T>
 typename array<T>::key_type array<T>::int_hash_entry::get_key() const {
-  return is_int ? key_type{int_key} : key_type{string_key};
+  return string_key.is_dummy_string() ? key_type{int_key} : key_type{string_key};
 }
 
 template<class T>
@@ -189,7 +189,7 @@ typename array<T>::int_hash_entry *array<T>::array_inner::end() {
 
 template<class T>
 bool array<T>::array_inner::is_string_hash_entry(const int_hash_entry *ptr) const {
-  return !ptr->is_int;
+  return !ptr->string_key.is_dummy_string();
 }
 
 template<class T>
@@ -353,7 +353,7 @@ T &array<T>::array_inner::emplace_int_key_map_value(overwrite_element policy, in
 
   if (int_entries[bucket].next == EMPTY_POINTER) {
     int_entries[bucket].int_key = int_key;
-    int_entries[bucket].is_int = true;
+    new(&int_entries[bucket].string_key) string{ArrayBucketDummyStrTag{}};
 
     int_entries[bucket].prev = end()->prev;
     get_entry(end()->prev)->next = get_pointer(&int_entries[bucket]);
@@ -510,7 +510,6 @@ std::pair<T &, bool> array<T>::array_inner::emplace_string_key_map_value(overwri
   bool inserted = false;
   if (string_entries[bucket].next == EMPTY_POINTER) {
     string_entries[bucket].int_key = int_key;
-    string_entries[bucket].is_int = false;
     new(&string_entries[bucket].string_key) string{std::forward<STRING>(string_key)};
 
     string_entries[bucket].prev = end()->prev;
