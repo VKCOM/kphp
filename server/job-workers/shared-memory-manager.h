@@ -81,9 +81,7 @@ public:
   void forcibly_release_all_attached_messages() noexcept;
 
   bool set_memory_limit(size_t memory_limit) noexcept;
-  bool set_shared_messages_count(size_t shared_messages_count) noexcept;
   bool set_per_process_memory_limit(size_t per_process_memory_limit) noexcept;
-  bool set_shared_messages_count_process_multiplier(size_t shared_messages_count_process_multiplier) noexcept;
   bool set_shared_memory_distribution_weights(const std::array<double, 1 + JOB_EXTRA_MEMORY_BUFFER_BUCKETS> &weights) noexcept;
 
   bool request_extra_memory_for_resource(memory_resource::unsynchronized_pool_resource &resource, size_t required_size) noexcept;
@@ -102,9 +100,7 @@ private:
   friend class vk::singleton<SharedMemoryManager>;
 
   size_t memory_limit_{0};
-  size_t shared_messages_count_{0};
   size_t per_process_memory_limit_{0};
-  size_t shared_messages_count_process_multiplier_{0};
   // weights for distributing shared memory between buffers groups
   // quantity of i-th memory piece is calculated like (w[i]/sum(w) * memory_limit_) / memory_piece_size
   struct shared_memory_buffers_group_info {

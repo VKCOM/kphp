@@ -19,10 +19,6 @@ void SharedMemoryManager::init() noexcept {
 
   const size_t processes = vk::singleton<WorkersControl>::get().get_total_workers_count();
   assert(processes);
-  if (!shared_messages_count_) {
-    auto mul = shared_messages_count_process_multiplier_ ? shared_messages_count_process_multiplier_ : JOB_DEFAULT_SHARED_MESSAGES_COUNT_PROCESS_MULTIPLIER;
-    shared_messages_count_ = processes * mul;
-  }
   if (!memory_limit_) {
     auto mul = per_process_memory_limit_ ? per_process_memory_limit_ : JOB_DEFAULT_MEMORY_LIMIT_PROCESS_MULTIPLIER;
     memory_limit_ = processes * mul + sizeof(ControlBlock);
@@ -62,18 +58,10 @@ void SharedMemoryManager::init() noexcept {
 }
 
 bool SharedMemoryManager::set_memory_limit(size_t memory_limit) noexcept {
-  if (memory_limit < JOB_DEFAULT_SHARED_MESSAGES_COUNT_PROCESS_MULTIPLIER * sizeof(JobSharedMessage) + sizeof(ControlBlock)) {
+  if (memory_limit < sizeof(JobSharedMessage) + sizeof(ControlBlock)) {
     return false;
   }
   memory_limit_ = memory_limit;
-  return true;
-}
-
-bool SharedMemoryManager::set_shared_messages_count(size_t shared_messages_count) noexcept {
-  if (shared_messages_count < JOB_DEFAULT_SHARED_MESSAGES_COUNT_PROCESS_MULTIPLIER) {
-    return false;
-  }
-  shared_messages_count_ = shared_messages_count;
   return true;
 }
 
@@ -82,14 +70,6 @@ bool SharedMemoryManager::set_per_process_memory_limit(size_t per_process_memory
     return false;
   }
   per_process_memory_limit_ = per_process_memory_limit;
-  return true;
-}
-
-bool SharedMemoryManager::set_shared_messages_count_process_multiplier(size_t shared_messages_count_process_multiplier) noexcept {
-  if (shared_messages_count_process_multiplier < JOB_DEFAULT_SHARED_MESSAGES_COUNT_PROCESS_MULTIPLIER) {
-    return false;
-  }
-  shared_messages_count_process_multiplier_ = shared_messages_count_process_multiplier;
   return true;
 }
 

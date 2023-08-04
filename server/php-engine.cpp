@@ -14,6 +14,7 @@
 #include <netinet/in.h>
 #include <poll.h>
 #include <re2/re2.h>
+#include <string>
 #include <sys/mman.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -2020,13 +2021,27 @@ int main_args_handler(int i, const char *long_option) {
       return 0;
     }
     case 2018: {
-      const int messages_count = atoi(optarg);
-      if (messages_count <= 0) {
-        kprintf("--%s option: couldn't parse argument\n", long_option);
+      constexpr size_t dist_size = 1 + job_workers::JOB_EXTRA_MEMORY_BUFFER_BUCKETS;
+      std::array<double, dist_size> weights;
+      try {
+        std::stringstream ss(optarg);
+        int num = 0;
+        while (ss.good()) {
+          std::string t;
+          std::getline(ss, t, ',');
+          auto s = vk::trim(t);
+          weights[num++] = std::stod(std::string{s.begin(), s.end()});
+          if (num > dist_size) {
+            kprintf("--%s option: can't parse distribution - 10 digits expected\n", long_option);
+            return -1;
+          }
+        }
+      } catch(const std::exception &e) {
+        kprintf("--%s option: can't parse distribution - %s\n", long_option, e.what());
         return -1;
       }
-      if (!vk::singleton<job_workers::SharedMemoryManager>::get().set_shared_messages_count(static_cast<size_t>(messages_count))) {
-        kprintf("--%s option: too small\n", long_option);
+      if (!vk::singleton<job_workers::SharedMemoryManager>::get().set_shared_memory_distribution_weights(weights)) {
+        kprintf("--%s option: too small weight for the shared messages\n", long_option);
         return -1;
       }
       return 0;
@@ -2150,18 +2165,6 @@ int main_args_handler(int i, const char *long_option) {
       }
       return 0;
     }
-    case 2031: {
-      const int messages_count_multiplier = atoi(optarg);
-      if (messages_count_multiplier <= 0) {
-        kprintf("--%s option: couldn't parse argument\n", long_option);
-        return -1;
-      }
-      if (!vk::singleton<job_workers::SharedMemoryManager>::get().set_shared_messages_count_process_multiplier(static_cast<size_t>(messages_count_multiplier))) {
-        kprintf("--%s option: too small\n", long_option);
-        return -1;
-      }
-      return 0;
-    }
     case 2032: {
       std::ifstream file(optarg);
       if (!file) {
@@ -2264,7 +2267,9 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("warmup-timeout", required_argument, 2015, "the maximum time for the instance cache warm up in seconds");
   parse_option("job-workers-ratio", required_argument, 2016, "the jobs workers ratio of the overall workers number");
   parse_option("job-workers-shared-memory-size", required_argument, 2017, "the total size of shared memory used for job workers related communication");
-  parse_option("job-workers-shared-messages", required_argument, 2018, "the total count of the shared messages for job workers related communication");
+  parse_option("job-workers-shared-memory-distribution-weights", required_argument, 2018, "Weights for distributing shared memory between fixed size buffers.\n"
+                                                                                          "10 comma separated digits: '2, 2, 2, 2, 1, 1, 1, 1, 1, 1'\n"
+                                                                                          "For each of 10 groups: 128kb, 256kb, ... , 64mb buffers.");
   parse_option("lease-stop-ready-timeout", required_argument, 2019, "timeout for RPC_STOP_READY acknowledgement waiting in seconds (default: 0)");
   parse_option("mysql-user", required_argument, 2020, "MySQL user");
   parse_option("mysql-password", required_argument, 2021, "MySQL password");
@@ -2286,8 +2291,6 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("sigterm-wait-time", required_argument, 2029, "Time to wait before termination on SIGTERM");
   parse_option("job-workers-shared-memory-size-process-multiplier", required_argument, 2030, "Per process memory size used to calculate the total size of shared memory for job workers related communication:\n"
                                                                                              "memory limit = per_process_memory * processes_count");
-  parse_option("job-workers-shared-messages-process-multiplier", required_argument, 2031, "Coefficient used to calculate the total count of the shared messages for job workers related communication:\n"
-                                                                                          "messages count = coefficient * processes_count");
   parse_option("runtime-config", required_argument, 2032, "JSON file path that will be available at runtime as 'mixed' via 'kphp_runtime_config()");
   parse_option("oom-handling-memory-ratio", required_argument, 2033, "memory ratio of overall script memory to handle OOM errors (default: 0.00)");
   parse_option("hard-time-limit", required_argument, 2034, "time limit for script termination after the main timeout has expired (default: 1 sec). Use 0 to disable");
