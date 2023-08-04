@@ -101,8 +101,11 @@ public:
   inline explicit string(int32_t i): string(static_cast<int64_t>(i)) {}
   inline explicit string(double f);
 
-
   ~string() noexcept;
+
+  // Achtung! Do not use it!
+  inline string(std::nullptr_t) noexcept;
+  inline bool is_dummy_string() const noexcept;
 
   inline string &operator=(const string &str) noexcept;
   inline string &operator=(string &&str) noexcept;

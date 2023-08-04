@@ -270,6 +270,13 @@ string::string(double f) {
   }
 }
 
+string::string(std::nullptr_t) noexcept
+  : p(nullptr) {}
+
+bool string::is_dummy_string() const noexcept {
+  return p == nullptr;
+}
+
 string &string::operator=(const string &str) noexcept {
   return assign(str);
 }

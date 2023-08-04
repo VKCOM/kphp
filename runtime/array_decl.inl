@@ -78,7 +78,6 @@ private:
 
   struct int_hash_entry : list_hash_entry {
     T value;
-    bool is_int;
 
     int64_t int_key;
     string string_key;
