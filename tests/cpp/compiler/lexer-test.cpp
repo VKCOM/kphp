@@ -51,6 +51,15 @@ TEST(lexer_test, test_php_tokens) {
     {"readonly abstract class A {", {"tok_readonly(readonly)", "tok_abstract(abstract)", "tok_class(class)", "tok_func_name(A)", "tok_opbrc({)"}},
     {"abstract readonly class A {", {"tok_abstract(abstract)", "tok_readonly(readonly)", "tok_class(class)", "tok_func_name(A)", "tok_opbrc({)"}},
 
+    // first class callable syntax
+    {"f(...)", {"tok_func_name(f)", "tok_oppar(()", "tok_varg(...)", "tok_clpar())"}},
+    {"'f'(...)", {"tok_str(f)", "tok_oppar(()", "tok_varg(...)", "tok_clpar())"}},
+    {"$obj->method(...)", {"tok_var_name($obj)", "tok_arrow(->)", "tok_func_name(method)", "tok_oppar(()", "tok_varg(...)", "tok_clpar())"}},
+    {"Foo::method(...)", {"tok_func_name(Foo::method)", "tok_oppar(()", "tok_varg(...)", "tok_clpar())"}},
+    {"$f(...)", {"tok_var_name($f)", "tok_oppar(()", "tok_varg(...)", "tok_clpar())"}},
+    // splat operator
+    {"f(...$args)", {"tok_func_name(f)", "tok_oppar(()", "tok_varg(...)", "tok_var_name($args)", "tok_clpar())"}},
+
     {"'abc'", {"tok_str(abc)"}},
     {"12 + 4", {"tok_int_const(12)", "tok_plus(+)", "tok_int_const(4)"}},
     {"12_100 + 4_5.56", {"tok_int_const_sep(12_100)", "tok_plus(+)", "tok_float_const_sep(4_5.56)"}},
@@ -137,7 +146,6 @@ TEST(lexer_test, test_php_tokens) {
     // combined tests
     {"echo \"{$x->y}\";", {"tok_echo(echo)", "tok_str_begin(\")", "tok_expr_begin({)", "tok_var_name($x)", "tok_arrow(->)", "tok_func_name(y)", "tok_expr_end(})", "tok_str_end(\")", "tok_semicolon(;)"}},
   };
-
   for (const auto &test : tests) {
     std::string input = "<?php\n" + test.input;
     auto tokens = php_text_to_tokens(input);
