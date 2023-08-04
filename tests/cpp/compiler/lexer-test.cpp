@@ -45,6 +45,12 @@ TEST(lexer_test, test_php_tokens) {
     {"new \\Exception()", {"tok_new(new)", "tok_func_name(\\Exception)", "tok_oppar(()", "tok_clpar())"}},
     {"new Exception('test')", {"tok_new(new)", "tok_func_name(Exception)", "tok_oppar(()", "tok_str(test)", "tok_clpar())"}},
 
+    {"readonly class A {", {"tok_readonly(readonly)", "tok_class(class)", "tok_func_name(A)", "tok_opbrc({)"}},
+    {"readonly final class A {", {"tok_readonly(readonly)", "tok_final(final)", "tok_class(class)", "tok_func_name(A)", "tok_opbrc({)"}},
+    {"final readonly class A {", {"tok_final(final)", "tok_readonly(readonly)", "tok_class(class)", "tok_func_name(A)", "tok_opbrc({)"}},
+    {"readonly abstract class A {", {"tok_readonly(readonly)", "tok_abstract(abstract)", "tok_class(class)", "tok_func_name(A)", "tok_opbrc({)"}},
+    {"abstract readonly class A {", {"tok_abstract(abstract)", "tok_readonly(readonly)", "tok_class(class)", "tok_func_name(A)", "tok_opbrc({)"}},
+
     {"'abc'", {"tok_str(abc)"}},
     {"12 + 4", {"tok_int_const(12)", "tok_plus(+)", "tok_int_const(4)"}},
     {"12_100 + 4_5.56", {"tok_int_const_sep(12_100)", "tok_plus(+)", "tok_float_const_sep(4_5.56)"}},
