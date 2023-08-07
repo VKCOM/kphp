@@ -6,6 +6,8 @@
 
 #include "server/statshouse/statshouse.h"
 
+#include <cassert>
+
 #include "common/mixin/not_copyable.h"
 #include "runtime/memory_resource/memory_resource.h"
 #include "server/workers-control.h"
@@ -13,7 +15,7 @@
 
 class StatsHouseClient : vk::not_copyable {
 public:
-  void static init(std::string ip, int port) {
+  static void init(std::string ip, int port) {
     static StatsHouseClient client{ip, port};
     inner = &client;
   }
@@ -22,9 +24,9 @@ public:
     return inner != nullptr;
   }
 
-  static StatsHouseClient *get() {
+  static StatsHouseClient &get() {
     assert(inner);
-    return inner;
+    return *inner;
   }
 
   void add_request_stats(WorkerType raw_worker_type, uint64_t script_time_ns, uint64_t net_time_ns, uint64_t memory_used, uint64_t real_memory_used,
@@ -42,7 +44,7 @@ public:
                                long long int instance_cache_memory_swaps_ok, long long int instance_cache_memory_swaps_fail);
 
 private:
-  explicit StatsHouseClient(std::string ip, int port);
+  explicit StatsHouseClient(const std::string& ip, int port);
 
   static StatsHouseClient *inner;
   statshouse::TransportUDP transport;

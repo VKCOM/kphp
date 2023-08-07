@@ -1402,7 +1402,7 @@ static void cron() {
     send_data_to_statsd_with_prefix(vk::singleton<ServerConfig>::get().get_statsd_prefix(), stats_tag_kphp_server);
     if (StatsHouseClient::has()) {
       const auto cpu_stats = server_stats.cpu[1].get_stat();
-      StatsHouseClient::get()->add_common_master_stats(workers_stats, instance_cache_get_memory_stats(), cpu_stats.cpu_s_usage, cpu_stats.cpu_u_usage,
+      StatsHouseClient::get().add_common_master_stats(workers_stats, instance_cache_get_memory_stats(), cpu_stats.cpu_s_usage, cpu_stats.cpu_u_usage,
                                                        instance_cache_memory_swaps_ok, instance_cache_memory_swaps_fail);
     }
   }

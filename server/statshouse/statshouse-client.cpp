@@ -5,30 +5,30 @@
 #include "server/statshouse/statshouse-client.h"
 
 #include "common/precise-time.h"
-#include "compiler/stats.h"
-#include "runtime/critical_section.h"
 #include "runtime/instance-cache.h"
+#include "server/job-workers/job-stats.h"
+#include "server/job-workers/shared-memory-manager.h"
 #include "server/json-logger.h"
 #include "server/server-config.h"
 #include "server/server-stats.h"
 
 StatsHouseClient *StatsHouseClient::inner = nullptr;
 
-StatsHouseClient::StatsHouseClient(std::string ip, int port)
+StatsHouseClient::StatsHouseClient(const std::string& ip, int port)
   : transport(ip, port){};
 
 void StatsHouseClient::add_request_stats(WorkerType raw_worker_type, uint64_t script_time_ns, uint64_t net_time_ns, uint64_t memory_used,
                                          uint64_t real_memory_used, uint64_t script_queries, uint64_t long_script_queries) {
   const char *cluster_name = vk::singleton<ServerConfig>::get().get_cluster_name();
-  std::string worker_type = raw_worker_type == WorkerType::general_worker ? "general" : "job";
+  const char *worker_type = raw_worker_type == WorkerType::general_worker ? "general" : "job";
   transport.metric("kphp_request_time").tag(cluster_name).tag("script").tag(worker_type).write_value(script_time_ns);
   transport.metric("kphp_request_time").tag(cluster_name).tag("net").tag(worker_type).write_value(net_time_ns);
 
   transport.metric("kphp_memory_script_usage").tag(cluster_name).tag("used").tag(worker_type).write_value(memory_used);
   transport.metric("kphp_memory_script_usage").tag(cluster_name).tag("free").tag(worker_type).write_value(real_memory_used);
 
-  transport.metric("kphp_requests_outgoing_queries").tag(cluster_name).tag("net").tag(worker_type).write_value(script_queries);
-  transport.metric("kphp_requests_outgoing_long_queries").tag(cluster_name).tag("net").tag(worker_type).write_value(long_script_queries);
+  transport.metric("kphp_requests_outgoing_queries").tag(cluster_name).tag(worker_type).write_value(script_queries);
+  transport.metric("kphp_requests_outgoing_long_queries").tag(cluster_name).tag(worker_type).write_value(long_script_queries);
 }
 
 void StatsHouseClient::add_job_stats(uint64_t job_wait_ns, uint64_t request_memory_used, uint64_t request_real_memory_used, uint64_t response_memory_used,
@@ -87,9 +87,11 @@ void StatsHouseClient::add_common_master_stats(const workers_stats_t &workers_st
   transport.metric("kphp_instance_cache_memory").tag(cluster_name).tag("limit").write_value(memory_stats.memory_limit);
   transport.metric("kphp_instance_cache_memory").tag(cluster_name).tag("used").write_value(memory_stats.memory_used);
   transport.metric("kphp_instance_cache_memory").tag(cluster_name).tag("real_used").write_value(memory_stats.real_memory_used);
-  transport.metric("kphp_instance_cache_memory").tag(cluster_name).tag("defragmentation_calls").write_value(memory_stats.defragmentation_calls);
-  transport.metric("kphp_instance_cache_memory").tag(cluster_name).tag("huge_memory_pieces").write_value(memory_stats.huge_memory_pieces);
-  transport.metric("kphp_instance_cache_memory").tag(cluster_name).tag("small_memory_pieces").write_value(memory_stats.small_memory_pieces);
+
+  transport.metric("kphp_instance_cache_memory_defragmentation_calls").tag(cluster_name).write_value(memory_stats.defragmentation_calls);
+
+  transport.metric("kphp_instance_cache_memory_pieces").tag(cluster_name).tag("huge").write_value(memory_stats.huge_memory_pieces);
+  transport.metric("kphp_instance_cache_memory_pieces").tag(cluster_name).tag("small").write_value(memory_stats.small_memory_pieces);
 
   transport.metric("kphp_instance_cache_memory_buffer_swaps").tag(cluster_name).tag("ok").write_value(instance_cache_memory_swaps_ok);
   transport.metric("kphp_instance_cache_memory_buffer_swaps").tag(cluster_name).tag("fail").write_value(instance_cache_memory_swaps_fail);
