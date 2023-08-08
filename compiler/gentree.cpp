@@ -2018,6 +2018,13 @@ VertexAdaptor<op_catch> GenTree::get_catch() {
   CE (expect(tok_oppar, "'('"));
   auto exception_class = cur->str_val;
   CE (expect(tok_func_name, "type that implements Throwable"));
+  bool is_multiple_exception_types = false;
+  while (cur->type() == tok_or) { // processing catching multiple exception types (ExceptionType1 | ExceptionType2 | ...)
+    expect(tok_or, "union types");
+    CE (expect(tok_func_name, "type that implements Throwable"));
+    is_multiple_exception_types = true;
+  }
+  kphp_error(!is_multiple_exception_types, "Catching multiple exception types isn't supported");
   auto exception_var_name = get_expression();
   CE (!kphp_error(exception_var_name, "Cannot parse catch"));
   CE (!kphp_error(exception_var_name->type() == op_var, "Expected variable name in 'catch'"));
