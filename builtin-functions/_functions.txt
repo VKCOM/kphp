@@ -993,7 +993,7 @@ function rpc_server_fetch_request() ::: @tl\RpcFunction;
 function rpc_server_store_response(@tl\RpcFunctionReturnResult $response) ::: void;
 
 /** @kphp-extern-func-info can_throw resumable cpp_template_call */
-function wait(future<any> | false $id) ::: ^1[*] | null;
+function wait(future<any> | false $id, float $timeout = -1.0) ::: ^1[*] | null;
 /** @kphp-extern-func-info can_throw resumable cpp_template_call */
 function wait_multi (future<any>[] $resumables) ::: (^1[*][*] | null)[];
 /** @kphp-extern-func-info can_throw cpp_template_call */
