@@ -5,6 +5,6 @@ class X2Request implements KphpJobWorkerRequest {
   public $tag = "";
   public $redirect_chain_len = 0;
   public $master_port = 0;
-  public $sleep_time_sec = 0;
+  public $sleep_time_sec = 0.0;
   public $error_type = "";
 }
