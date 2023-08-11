@@ -210,7 +210,7 @@ private:
   inline void mutate_if_map_needed_string();
   inline void mutate_to_map_if_vector_or_map_need_string();
 
-  inline void convert_to_map();
+  inline void convert_to_map(bool string_part_is_expected = true);
 
   template<class T1>
   inline void copy_from(const array<T1> &other);

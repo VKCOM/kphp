@@ -874,8 +874,12 @@ typename array<T>::iterator array<T>::end() {
 
 
 template<class T>
-void array<T>::convert_to_map() {
-  array_inner *new_array = array_inner::create(p->int_size + 4, p->int_size + 4, false);
+void array<T>::convert_to_map(bool string_part_is_expected) {
+  // there are operations on vector that don't require string buckets to be used, e.g:
+  // unset($arr[int]), $arr[int] with key out of range, sort(), ksort();
+  // we still create small string bucket storage just in case though
+  const int64_t new_string_size = string_part_is_expected ? p->int_size : p->int_size / 10;
+  array_inner *new_array = array_inner::create(p->int_size + 4, new_string_size  + 4, false);
 
   T *elements = reinterpret_cast<T *>(p->int_entries);
   const bool move_values = p->ref_cnt == 0;
@@ -1096,7 +1100,7 @@ T &array<T>::operator[](int64_t int_key) {
       }
     }
 
-    convert_to_map();
+    convert_to_map(false);
   } else {
     mutate_if_map_needed_int();
   }
@@ -1506,7 +1510,7 @@ T array<T>::unset(int64_t int_key) {
       mutate_if_vector_shared();
       return p->unset_vector_value();
     }
-    convert_to_map();
+    convert_to_map(false);
   } else {
     mutate_if_map_shared();
   }
@@ -1919,7 +1923,7 @@ void array<T>::sort(const T1 &compare, bool renumber) {
   }
 
   if (is_vector()) {
-    convert_to_map();
+    convert_to_map(false);
   } else {
     mutate_if_map_shared();
   }
@@ -1959,7 +1963,7 @@ void array<T>::ksort(const T1 &compare) {
   }
 
   if (is_vector()) {
-    convert_to_map();
+    convert_to_map(false);
   } else {
     mutate_if_map_shared();
   }
