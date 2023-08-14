@@ -823,7 +823,7 @@ bool wait_without_result(int64_t resumable_id, double timeout) {
   }
 
   bool has_timeout = true;
-  if (timeout <= 0 || timeout > MAX_TIMEOUT) {
+  if (timeout < 0 || timeout > MAX_TIMEOUT) {
     has_timeout = false;
     timeout = MAX_TIMEOUT;
   } else {

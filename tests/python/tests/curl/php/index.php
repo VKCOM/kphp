@@ -78,7 +78,7 @@ function test_curl($curl_resumable = false) {
   ob_start();
 
   fwrite(STDERR, "start_curl_query\n");
-  $output = $curl_resumable ? curl_exec_concurrently($ch, $timeout_s) : curl_exec($ch);
+  $output = $curl_resumable ? curl_exec_concurrently($ch, $timeout_s ?? -1) : curl_exec($ch);
   fwrite(STDERR, "end_curl_query\n");
   curl_close($ch);
 
@@ -101,7 +101,7 @@ function test_curl_reuse_handle($curl_resumable = false) {
   if (!$curl_resumable) {
     curl_setopt($ch, CURLOPT_TIMEOUT_MS, $timeout_s * 1000);
   }
-  $output1 = $curl_resumable ? curl_exec_concurrently($ch, $timeout_s) : curl_exec($ch);
+  $output1 = $curl_resumable ? curl_exec_concurrently($ch, $timeout_s ?? -1) : curl_exec($ch);
   if (!$curl_resumable) {
     curl_setopt($ch, CURLOPT_TIMEOUT_MS, 0);
   }

@@ -887,7 +887,7 @@ int server_read_write(struct connection *c) {
 }
 
 int server_read_write_gateway(int fd __attribute__((unused)), void *data, event_t *ev) {
-  tvkprintf(net_connections, 3, "server read write gateway on fd %d", fd);
+  tvkprintf(net_connections, 3, "server read write gateway on fd %d\n", fd);
   struct connection *c = (struct connection *)data;
   assert(c);
   assert(c->type);

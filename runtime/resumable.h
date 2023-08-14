@@ -177,8 +177,8 @@ T f$wait(int64_t resumable_id, double timeout = -1.0) {
 }
 
 template<typename T>
-T f$wait(Optional<int64_t> resumable_id) {
-  return f$wait<T>(resumable_id.val());
+T f$wait(Optional<int64_t> resumable_id, double timeout = -1.0) {
+  return f$wait<T>(resumable_id.val(), timeout);
 }
 
 template<typename T>
