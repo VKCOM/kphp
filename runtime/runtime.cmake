@@ -116,6 +116,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         uber-h3.cpp
         udp.cpp
         tcp.cpp
+        thread-pool.cpp
         url.cpp
         vkext.cpp
         vkext_stats.cpp

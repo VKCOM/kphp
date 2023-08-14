@@ -50,6 +50,7 @@
 #include "runtime/streams.h"
 #include "runtime/string_functions.h"
 #include "runtime/tcp.h"
+#include "runtime/thread-pool.h"
 #include "runtime/typed_rpc.h"
 #include "runtime/udp.h"
 #include "runtime/url.h"
@@ -738,6 +739,28 @@ Optional<string> f$ip2ulong(const string &ip) {
   char buf[buf_size];
   int len = snprintf(buf, buf_size, "%u", ntohl(result.s_addr));
   return string(buf, len);
+}
+
+int64_t f$thread_pool_test_load(int64_t size, int64_t n) {
+  constexpr auto job = [](int n) {
+    int64_t res = 0;
+    for (int i = 0; i < n; ++i) {
+      res += i;
+    }
+    return res;
+  };
+  auto & pool = vk::singleton<ThreadPool>::get().pool();
+  int64_t result = 0;
+  {
+    dl::CriticalSectionGuard guard;
+    BS::multi_future<int64_t> futures;
+    for (int thread = 0; thread < size; ++thread) {
+      futures.push_back(pool.submit(job, n));
+    }
+    auto results = futures.get();
+    std::for_each(results.begin(), results.end(), [&](int64_t local){result += local;});
+  }
+  return result;
 }
 
 string f$long2ip(int64_t num) {
@@ -2345,6 +2368,8 @@ static void init_runtime_libs() {
   init_string_buffer_lib(static_cast<int>(static_buffer_length_limit));
 
   init_interface_lib();
+
+  vk::singleton<ThreadPool>::get().init();
 }
 
 static void free_shutdown_functions() {
@@ -2369,6 +2394,8 @@ static void free_interface_lib() {
 
 static void free_runtime_libs() {
   php_assert (dl::in_critical_section == 0);
+
+  vk::singleton<ThreadPool>::get().stop();
 
   forcibly_stop_and_flush_profiler();
   free_bcmath_lib();
