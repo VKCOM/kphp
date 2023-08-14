@@ -170,6 +170,7 @@ void LexerData::hack_last_tokens() {
       {tok_object, tok_conv_object},
       {tok_bool,   tok_conv_bool},
       {tok_boolean, tok_conv_bool},
+      {tok_iterable, tok_conv_iterable},
     };
     for (auto &cast : casts) {
       // check the middle token, the one that goes before ')'

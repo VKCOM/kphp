@@ -25,6 +25,7 @@ array, tok_array
 tuple, tok_tuple
 shape, tok_shape
 Array, tok_array
+iterable, tok_iterable
 as, tok_as
 case, tok_case
 switch, tok_switch

@@ -413,6 +413,9 @@ const TypeHint *PhpDocTypeHintParser::parse_simple_type() {
         return TypeHintArray::create(type_hints.back());
       }
       return TypeHintArray::create_array_of_any();
+    case tok_iterable:
+      cur_tok++;
+      return TypeHintPrimitive::create(tp_iterable);
     case tok_at: {      // @tl\...
       cur_tok++;
       if (!cur_tok->str_val.starts_with("tl\\")) {

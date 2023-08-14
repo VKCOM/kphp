@@ -41,6 +41,7 @@ enum TokenType {
   tok_array,
   tok_tuple,
   tok_shape,
+  tok_iterable,
   tok_as,
   tok_case,
   tok_switch,
@@ -166,6 +167,7 @@ enum TokenType {
   tok_conv_array,
   tok_conv_object,
   tok_conv_bool,
+  tok_conv_iterable,
 
   tok_false,
   tok_true,
