@@ -682,9 +682,15 @@ bool array<T>::mutate_to_size_if_vector_shared(int64_t int_size) {
 }
 
 template<class T>
-bool array<T>::mutate_if_map_shared(uint32_t mul) {
+bool array<T>::mutate_if_map_shared(bool need_expand) {
   if (p->ref_cnt > 0) {
-    array_inner *new_array = array_inner::create(p->int_size * mul + 1, p->string_size * mul + 1, false);
+    int64_t new_int_size = p->int_size;
+    int64_t new_string_size = p->string_size;
+    if (need_expand) {
+      new_int_size = 5 * new_int_size / 3;
+      new_string_size = 5 * new_string_size / 3;
+    }
+    array_inner *new_array = array_inner::create(new_int_size + 1, new_string_size + 1, false);
 
     for (const string_hash_entry *it = p->begin(); it != p->end(); it = p->next(it)) {
       if (p->is_string_hash_entry(it)) {
@@ -727,7 +733,7 @@ void array<T>::mutate_to_size(int64_t int_size) {
 
 template<class T>
 void array<T>::mutate_if_map_needed_int() {
-  if (mutate_if_map_shared(2)) {
+  if (mutate_if_map_shared(true)) {
     return;
   }
 
@@ -754,7 +760,7 @@ void array<T>::mutate_if_map_needed_int() {
 
 template<class T>
 void array<T>::mutate_if_map_needed_string() {
-  if (mutate_if_map_shared(2)) {
+  if (mutate_if_map_shared(true)) {
     return;
   }
 
