@@ -1043,20 +1043,20 @@ int php_master_rpc_stats(const std::optional<std::vector<std::string>> &sorted_f
   return 0;
 }
 
-std::string get_master_stats_html() {
+std::string get_master_stats_http() {
   const auto worker_stats = vk::singleton<ServerStats>::get().collect_workers_stat(WorkerType::general_worker);
-  std::ostringstream html;
-  html << "cluster_name\t" << vk::singleton<ServerConfig>::get().get_cluster_name() << "\n"
+  std::ostringstream ss;
+  ss << "cluster_name\t" << vk::singleton<ServerConfig>::get().get_cluster_name() << "\n"
        << "master_name\t" << vk::singleton<MasterName>::get().get_master_name() << "\n"
        << "total_workers\t" << worker_stats.total_workers << "\n"
        << "free_workers\t" << worker_stats.total_workers - worker_stats.running_workers << "\n"
        << "working_workers\t" << worker_stats.running_workers << "\n"
        << "working_but_waiting_workers\t" << worker_stats.waiting_workers << "\n"
        << std::fixed << std::setprecision(3);
-  for (int i = 1; i <= 3; ++i) {
-    html << "running_workers_avg_" << periods_desc[i] << "\t" << server_stats.misc_stat_for_general_workers[i].get_stat().running_workers_avg << "\n";
+  for (int i = 1; i < periods_n; ++i) {
+    ss << "running_workers_avg_" << periods_desc[i] << "\t" << server_stats.misc_stat_for_general_workers[i].get_stat().running_workers_avg << "\n";
   }
-  return html.str();
+  return ss.str();
 }
 
 static long long int instance_cache_memory_swaps_ok = 0;
@@ -1156,7 +1156,7 @@ int php_master_http_execute(struct connection *c, int op) {
 
   const char *allowed_query = "/server-status";
   if (D->uri_size == strlen(allowed_query) && strncmp(ReqHdr + D->uri_offset, allowed_query, static_cast<size_t>(D->uri_size)) == 0) {
-    std::string stat_html = get_master_stats_html();
+    std::string stat_html = get_master_stats_http();
     write_basic_http_header(c, 200, 0, static_cast<int>(stat_html.length()), nullptr, "text/plain; charset=UTF-8");
     write_out(&c->Out, stat_html.c_str(), static_cast<int>(stat_html.length()));
     return 0;
