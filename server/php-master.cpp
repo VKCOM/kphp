@@ -159,34 +159,58 @@ struct CpuStatSegment {
 struct MiscStat {
   int running_workers_max;
   double running_workers_avg;
+
+  int ready_for_accept_workers_max;
+  double ready_for_accept_workers_avg;
+
+  double incoming_qps_avg;
 };
 
 struct MiscStatTimestamp {
   double timestamp;
   int running_workers;
+  int ready_for_accept_workers;
+  uint64_t total_incoming_qps;
 };
 
 struct MiscStatSegment {
   using Stat = MiscStat;
 
   unsigned long long stat_cnt;
+
   unsigned long long running_workers_sum;
   int running_workers_max;
+
+  unsigned long long ready_for_accept_workers_sum;
+  int ready_for_accept_workers_max;
+
+  uint64_t qps_sum_first;
+  uint64_t qps_sum_last;
+
   double first_timestamp, last_timestamp;
 
   void update(const MiscStatTimestamp &from) {
     last_timestamp = from.timestamp;
     stat_cnt++;
     running_workers_sum += from.running_workers;
+    ready_for_accept_workers_sum += from.ready_for_accept_workers;
     if (from.running_workers > running_workers_max) {
       running_workers_max = from.running_workers;
     }
+    if (from.ready_for_accept_workers > ready_for_accept_workers_max) {
+      ready_for_accept_workers_max = from.ready_for_accept_workers;
+    }
+    qps_sum_last = from.total_incoming_qps;
   }
 
   void init(const MiscStatTimestamp &from) {
     stat_cnt = 0;
     running_workers_max = 0;
     running_workers_sum = 0;
+    ready_for_accept_workers_sum = 0;
+    ready_for_accept_workers_max = 0;
+    qps_sum_first = from.total_incoming_qps;
+    qps_sum_last = 0;
     first_timestamp = from.timestamp;
     update(from);
   }
@@ -197,7 +221,9 @@ struct MiscStatSegment {
 
   MiscStat get_stat() {
     auto running_workers_avg = stat_cnt != 0 ? static_cast<double>(running_workers_sum) / static_cast<double>(stat_cnt) : -1.0;
-    return {running_workers_max, running_workers_avg};
+    auto ready_for_accept_workers_avg = stat_cnt != 0 ? static_cast<double>(ready_for_accept_workers_sum) / static_cast<double>(stat_cnt) : -1.0;
+    double incoming_qps_avg = qps_sum_last ? (qps_sum_last - qps_sum_first) / duration() : 0;
+    return {running_workers_max, running_workers_avg, ready_for_accept_workers_max, ready_for_accept_workers_avg, incoming_qps_avg};
   }
 };
 
@@ -305,6 +331,20 @@ struct Stats {
       out << "\nrunning_workers_max(" << misc_desc << ")\t";
       for (int i = 1; i < periods_n; i++) {
         out << " " << misc_stat_for_general_workers[i].get_stat().running_workers_max;
+      }
+      out << "\n";
+      out << std::fixed << std::setprecision(3) << "ready_for_accept_workers_avg(" << misc_desc << ")\t";
+      for (int i = 1; i < periods_n; i++) {
+        out << " " << misc_stat_for_general_workers[i].get_stat().ready_for_accept_workers_avg;
+      }
+      out << "\nready_for_accept_workers_max(" << misc_desc << ")\t";
+      for (int i = 1; i < periods_n; i++) {
+        out << " " << misc_stat_for_general_workers[i].get_stat().ready_for_accept_workers_max;
+      }
+      out << "\n";
+      out << std::fixed << std::setprecision(3) << "general_workers_incoming_qps_avg(" << misc_desc << ")\t";
+      for (int i = 1; i < periods_n; i++) {
+        out << " " << misc_stat_for_general_workers[i].get_stat().incoming_qps_avg;
       }
       out << "\n";
     }
@@ -1389,8 +1429,10 @@ static void cron() {
     stime += w->my_info.stime;
     w->stats->update(cpu_timestamp);
   }
+  auto total_general_workers_qps = vk::singleton<ServerStats>::get().get_total_general_workers_incoming_qps();
   const auto general_workers_stat = vk::singleton<ServerStats>::get().collect_workers_stat(WorkerType::general_worker);
-  server_stats.update_misc_stat_for_general_workers(MiscStatTimestamp{my_now, general_workers_stat.running_workers});
+  server_stats.update_misc_stat_for_general_workers(MiscStatTimestamp{my_now, general_workers_stat.running_workers,
+                                                                      general_workers_stat.ready_for_accept_workers, total_general_workers_qps});
   const auto job_workers_stat = vk::singleton<ServerStats>::get().collect_workers_stat(WorkerType::job_worker);
   server_stats.update_misc_stat_for_job_workers(MiscStatTimestamp{my_now, job_workers_stat.running_workers});
 

@@ -925,3 +925,7 @@ std::tuple<uint64_t, uint64_t> ServerStats::collect_json_count_stat() const noex
 uint64_t ServerStats::get_worker_activity_counter(uint16_t worker_process_id) const noexcept {
   return shared_stats_->workers.misc_stats.get_stat(MiscStat::Key::worker_activity_counter, worker_process_id);
 }
+
+uint64_t ServerStats::get_total_general_workers_incoming_qps() const noexcept {
+  return shared_stats_->general_workers.total_queries_stat[QueriesStat::Key::incoming_queries].load(std::memory_order_relaxed);
+}
