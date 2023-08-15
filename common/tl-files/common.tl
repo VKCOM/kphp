@@ -61,16 +61,17 @@ rpcInvokeReqExtra#f3ef81a9 {flags:#}
   custom_timeout_ms:flags.23?int  // Custom timeout for query
   supported_compression_version:flags.25?int // note, that client support compression, to possibly compress answers
   random_delay:flags.26?double // starting query would be delayed by random number, not grater than given
-  return_view_number:flags.27?%True // GMS2 related parameter: return view number in response
+  return_view_number:flags.27?%True // Barsic related parameter: return view number in response
   = RpcInvokeReqExtra flags;
 
-rpcReqResultExtra#c5011709 {flags:#} 
-    binlog_pos:flags.0?long  binlog_time:flags.1?long 
+rpcReqResultExtra#c5011709 {flags:#}
+    binlog_pos:flags.0?long  binlog_time:flags.1?long
     engine_pid:flags.2?%net.Pid
     request_size:flags.3?int response_size:flags.3?int
     failed_subqueries:flags.4?int
     compression_version:flags.5?int
     stats:flags.6?%(Dictionary string)
+    epoch_number:flags.27?%long view_number:flags.27?%long
     = RpcReqResultExtra flags;
 
 
