@@ -257,15 +257,7 @@ size_t array<T>::array_inner::estimate_size(int64_t &new_int_size, int64_t &new_
   }
 
   new_int_size = 2 * new_int_size + 3;
-  if (new_int_size % 5 == 0) {
-    new_int_size += 2;
-  }
-
   new_string_size = 2 * new_string_size + 3;
-  if (new_string_size % 5 == 0) {
-    new_string_size += 2;
-  }
-
   return sizeof_map(static_cast<uint32_t>(new_int_size), static_cast<uint32_t>(new_string_size));
 }
 
@@ -741,7 +733,7 @@ void array<T>::mutate_if_map_needed_int() {
 
   // not shared (ref_cnt == 0)
   if (p->int_size * 5 > 3 * p->int_buf_size) {
-    int64_t new_int_size = max(int64_t{p->int_size * 2 + 1}, int64_t{p->string_size});
+    int64_t new_int_size = max(int64_t{p->int_buf_size}, int64_t{p->string_size});
     int64_t new_string_size = max(int64_t{p->string_size}, int64_t{p->string_buf_size >> 1} - 1);
     array_inner *new_array = array_inner::create(new_int_size, new_string_size, false);
 
@@ -769,7 +761,7 @@ void array<T>::mutate_if_map_needed_string() {
   // not shared (ref_cnt == 0)
   if (p->string_size * 5 > 3 * p->string_buf_size) {
     int64_t new_int_size = max(int64_t{p->int_size}, int64_t{p->int_buf_size >> 1} - 1);
-    int64_t new_string_size = max(int64_t{p->string_size * 2 + 1}, int64_t{p->int_size});
+    int64_t new_string_size = max(int64_t{p->string_buf_size}, int64_t{p->int_size});
     array_inner *new_array = array_inner::create(new_int_size, new_string_size, false);
 
     for (string_hash_entry *it = p->begin(); it != p->end(); it = p->next(it)) {
