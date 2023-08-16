@@ -2368,8 +2368,6 @@ static void init_runtime_libs() {
   init_string_buffer_lib(static_cast<int>(static_buffer_length_limit));
 
   init_interface_lib();
-
-  vk::singleton<ThreadPool>::get().init();
 }
 
 static void free_shutdown_functions() {
