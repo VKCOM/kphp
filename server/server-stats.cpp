@@ -123,6 +123,7 @@ struct MiscStat : WithStatType<uint64_t> {
     worker_status,
     json_logs_count,
     json_traces_count,
+    threads_count,
     worker_activity_counter,
     types_count
   };
@@ -475,6 +476,7 @@ struct WorkerProcessStats : private vk::not_copyable {
     misc_stats.inc_stat(MiscStat::Key::worker_activity_counter, worker_index);
     misc_stats.set_stat(MiscStat::Key::json_logs_count, worker_index, vk::singleton<JsonLogger>::get().get_json_logs_count());
     misc_stats.set_stat(MiscStat::Key::json_traces_count, worker_index, vk::singleton<JsonLogger>::get().get_json_traces_count());
+    misc_stats.set_stat(MiscStat::Key::threads_count, worker_index, get_self_threads_count());
   }
 
   void update_worker_special_connections(uint64_t active_connections, uint64_t max_connections, uint16_t worker_index) noexcept {
@@ -920,6 +922,16 @@ std::tuple<uint64_t, uint64_t> ServerStats::collect_json_count_stat() const noex
     sum_json_traces_count += workers_misc.get_stat(MiscStat::Key::json_traces_count, w);
   }
   return {sum_json_logs_count, sum_json_traces_count};
+}
+
+uint64_t ServerStats::collect_threads_count_stat() const noexcept {
+  const auto &workers_misc = shared_stats_->workers.misc_stats;
+  uint64_t sum_threads_count = 0;
+  const auto &workers_control = vk::singleton<WorkersControl>::get();
+  for (uint16_t w = 0; w != workers_control.get_total_workers_count(); ++w) {
+    sum_threads_count += workers_misc.get_stat(MiscStat::Key::threads_count, w);
+  }
+  return sum_threads_count;
 }
 
 uint64_t ServerStats::get_worker_activity_counter(uint16_t worker_process_id) const noexcept {
