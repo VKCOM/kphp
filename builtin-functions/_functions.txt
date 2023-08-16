@@ -672,7 +672,7 @@ function wordwrap ($str ::: string, $width ::: int = 75, $break ::: string = '\n
 function ip2long ($ip ::: string) ::: int | false;
 function ip2ulong ($ip ::: string) ::: string | false;
 function long2ip ($ip ::: int) ::: string;
-function thread_pool_test_load($size ::: int, $n ::: int) ::: int;
+function thread_pool_test_load($size ::: int, $n ::: int) ::: float;
 
 function get_magic_quotes_gpc() ::: bool;
 function php_sapi_name() ::: string;

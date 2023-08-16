@@ -741,19 +741,19 @@ Optional<string> f$ip2ulong(const string &ip) {
   return string(buf, len);
 }
 
-int64_t f$thread_pool_test_load(int64_t size, int64_t n) {
+double f$thread_pool_test_load(int64_t size, int64_t n) {
   constexpr auto job = [](int n) {
-    int64_t res = 0;
+    double res = 0;
     for (int i = 0; i < n; ++i) {
-      res += i;
+      res += (i * 7) / (i % 3 + 1);
     }
     return res;
   };
   auto & pool = vk::singleton<ThreadPool>::get().pool();
-  int64_t result = 0;
+  double result = 0;
   {
     dl::CriticalSectionGuard guard;
-    BS::multi_future<int64_t> futures;
+    BS::multi_future<double> futures;
     for (int thread = 0; thread < size; ++thread) {
       futures.push_back(pool.submit(job, n));
     }
