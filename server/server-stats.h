@@ -40,6 +40,7 @@ public:
   void write_stats_to(std::ostream &os, bool add_worker_pids) const noexcept;
 
   uint64_t get_worker_activity_counter(uint16_t worker_process_id) const noexcept;
+  uint64_t get_total_general_workers_incoming_qps() const noexcept;
 
   struct WorkersStat {
     uint16_t running_workers{0};
