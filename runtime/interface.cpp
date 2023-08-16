@@ -2395,8 +2395,6 @@ static void free_interface_lib() {
 static void free_runtime_libs() {
   php_assert (dl::in_critical_section == 0);
 
-  vk::singleton<ThreadPool>::get().stop();
-
   forcibly_stop_and_flush_profiler();
   free_bcmath_lib();
   free_exception_lib();
@@ -2478,6 +2476,7 @@ void worker_global_init(WorkerType worker_type) noexcept {
   worker_global_init_slot_factories();
   vk::singleton<JsonLogger>::get().reset_json_logs_count();
   worker_global_init_handlers(worker_type);
+  vk::singleton<ThreadPool>::get().init();
 }
 
 void read_engine_tag(const char *file_name) {

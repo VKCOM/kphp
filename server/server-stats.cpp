@@ -499,6 +499,7 @@ struct WorkerProcessStats : private vk::not_copyable {
     misc_stats.set_stat(MiscStat::Key::worker_status, worker_index, MiscStat::worker_idle);
     misc_stats.set_stat(MiscStat::Key::json_logs_count, worker_index, 0);
     misc_stats.set_stat(MiscStat::Key::json_traces_count, worker_index, 0);
+    misc_stats.set_stat(MiscStat::Key::types_count, worker_index, 0);
     update_worker_special_connections(active_connections, max_connections, worker_index);
     update_worker_stats(worker_index);
   }
