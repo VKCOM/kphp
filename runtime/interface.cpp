@@ -741,11 +741,11 @@ Optional<string> f$ip2ulong(const string &ip) {
   return string(buf, len);
 }
 
-double f$thread_pool_test_load(int64_t size, int64_t n) {
-  constexpr auto job = [](int n) {
+double f$thread_pool_test_load(int64_t size, int64_t n, int64_t a, int64_t b) {
+  constexpr auto job = [](int64_t n, int64_t a, int64_t b) {
     double res = 0;
     for (int i = 0; i < n; ++i) {
-      res += (i * 7) / (i % 17 + 1);
+      res += (i * a + 1) / (i % b + 1);
     }
     return res;
   };
@@ -755,7 +755,7 @@ double f$thread_pool_test_load(int64_t size, int64_t n) {
     dl::CriticalSectionGuard guard;
     BS::multi_future<double> futures;
     for (int thread = 0; thread < size; ++thread) {
-      futures.push_back(pool.submit(job, n));
+      futures.push_back(pool.submit(job, n, a, b));
     }
     auto results = futures.get();
     std::for_each(results.begin(), results.end(), [&](int64_t local){result += local;});

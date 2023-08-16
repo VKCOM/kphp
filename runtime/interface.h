@@ -94,7 +94,7 @@ Optional<int64_t> f$ip2long(const string &ip);
 
 Optional<string> f$ip2ulong(const string &ip);
 
-double f$thread_pool_test_load(int64_t size, int64_t n);
+double f$thread_pool_test_load(int64_t size, int64_t n, int64_t a, int64_t b);
 
 string f$long2ip(int64_t num);
 
