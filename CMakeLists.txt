@@ -67,9 +67,10 @@ install(TARGETS kphp-full-runtime
 install(DIRECTORY ${COMMON_DIR}
                   ${BASE_DIR}/runtime
                   ${BASE_DIR}/server
+                  ${BASE_DIR}/third-party
         COMPONENT KPHP
         DESTINATION ${INSTALL_KPHP_SOURCE}
-        FILES_MATCHING REGEX ".*\\.(h|inl)$")
+        FILES_MATCHING REGEX ".*\\.(hpp|h|inl)$")
 
 install(FILES ${OBJS_DIR}/php_lib_version.sha256
         COMPONENT KPHP
