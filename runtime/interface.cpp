@@ -741,11 +741,11 @@ Optional<string> f$ip2ulong(const string &ip) {
   return string(buf, len);
 }
 
-double f$thread_pool_test_load(int64_t size, int64_t n, int64_t a, int64_t b) {
-  constexpr auto job = [](int64_t n, int64_t a, int64_t b) {
+double f$thread_pool_test_load(int64_t size, int64_t n, double a, double b) {
+  constexpr auto job = [](int64_t n, double a, double b) {
     double res = 0;
     for (int i = 0; i < n; ++i) {
-      res += (i * a + 1) / (i % b + 1);
+      res += (i * a + 1) / (i * b + 1);
     }
     return res;
   };
