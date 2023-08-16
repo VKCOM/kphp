@@ -20,7 +20,6 @@ class RegisterKphpConfiguration final : public SyncPipeF<FunctionPtr> {
 
   void register_confdata_blacklist(VertexPtr value) const noexcept;
   void register_confdata_predefined_wildcard(VertexPtr value) const noexcept;
-  void register_mysql_db_name(VertexPtr value) const noexcept;
   void register_net_dc_mask(VertexPtr value) const noexcept;
 
   void handle_constant_function_palette(const ClassMemberConstant &c);
@@ -42,6 +41,8 @@ class RegisterKphpConfiguration final : public SyncPipeF<FunctionPtr> {
   const vk::string_view warmup_timeout_sec_key_{"--warmup-timeout"};
 
   const vk::string_view oom_handling_memory_ratio_key_{"--oom-handling-memory-ratio"};
+
+  const vk::string_view job_workers_shared_memory_distribution_weights_{"--job-workers-shared-memory-distribution-weights"};
 
 public:
   void execute(FunctionPtr function, DataStream<FunctionPtr> &unused_os) final;

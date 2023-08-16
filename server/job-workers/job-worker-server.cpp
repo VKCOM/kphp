@@ -262,8 +262,8 @@ bool JobWorkerServer::reply_is_expected() const noexcept {
 }
 
 void JobWorkerServer::flush_job_stat() noexcept {
-  vk::singleton<ServerStats>::get().add_job_stats(job_stat.job_wait_time, job_stat.job_request_max_real_memory_used, job_stat.job_request_max_memory_used,
-                                                  job_stat.job_response_max_real_memory_used, job_stat.job_response_max_memory_used);
+  vk::singleton<ServerStats>::get().add_job_stats(job_stat.job_wait_time, job_stat.job_request_max_memory_used, job_stat.job_request_max_real_memory_used,
+                                                  job_stat.job_response_max_memory_used, job_stat.job_response_max_real_memory_used);
   job_stat = {};
 }
 } // namespace job_workers
