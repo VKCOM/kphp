@@ -197,7 +197,7 @@ void kprintf_ (const char *file, int line, const char *format, ...) {
       }
       break;
     }
-    int n = snprintf (mp_kprintf_buf, sizeof (mp_kprintf_buf), "[%d][%4d-%02d-%02d %02d:%02d:%02d.%06d %s %4d] ", getpid(), t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, (int) tv.tv_usec, file, line);
+    int n = snprintf (mp_kprintf_buf, sizeof (mp_kprintf_buf), "[%d][%4d-%02d-%02d %02d:%02d:%02d.%06d %s %4d]\n", getpid(), t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, (int) tv.tv_usec, file, line);
     if (n < sizeof (mp_kprintf_buf) - 1) {
       errno = old_errno;
       va_list ap;
@@ -215,7 +215,7 @@ void kprintf_ (const char *file, int line, const char *format, ...) {
     while (flock (2, LOCK_UN) < 0 && errno == EINTR);
     errno = old_errno;
   } else {
-    fprintf (stderr, "[%d][%4d-%02d-%02d %02d:%02d:%02d.%06d %s %4d] ", getpid(), t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, (int) tv.tv_usec, file, line);
+    fprintf (stderr, "[%d][%4d-%02d-%02d %02d:%02d:%02d.%06d %s %4d]\n", getpid(), t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, (int) tv.tv_usec, file, line);
     errno = old_errno;
     va_list ap;
     va_start (ap, format);
