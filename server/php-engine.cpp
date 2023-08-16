@@ -60,6 +60,7 @@
 #include "runtime/json-functions.h"
 #include "runtime/profiler.h"
 #include "runtime/rpc.h"
+#include "runtime/thread-pool.h"
 #include "server/server-config.h"
 #include "server/confdata-binlog-replay.h"
 #include "server/database-drivers/adaptor.h"
@@ -83,6 +84,7 @@
 #include "server/php-runner.h"
 #include "server/php-sql-connections.h"
 #include "server/php-worker.h"
+#include "server/server-config.h"
 #include "server/server-log.h"
 #include "server/server-stats.h"
 #include "server/shared-data-worker-cache.h"
@@ -2187,6 +2189,9 @@ int main_args_handler(int i, const char *long_option) {
     case 2034: {
       return read_option_to(long_option, 0.0, 5.0, hard_timeout);
     }
+    case 2035: {
+      return read_option_to(long_option, 0.0, 5.0, thread_pool_ratio);
+    }
     default:
       return -1;
   }
@@ -2294,6 +2299,7 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("runtime-config", required_argument, 2032, "JSON file path that will be available at runtime as 'mixed' via 'kphp_runtime_config()");
   parse_option("oom-handling-memory-ratio", required_argument, 2033, "memory ratio of overall script memory to handle OOM errors (default: 0.00)");
   parse_option("hard-time-limit", required_argument, 2034, "time limit for script termination after the main timeout has expired (default: 1 sec). Use 0 to disable");
+  parse_option("thread-pool-ratio", required_argument, 2035, "the thread pool size ratio of the overall cpu numbers");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
   // TODO: remove it after successful migration from kphb.readyV2 to kphb.readyV3

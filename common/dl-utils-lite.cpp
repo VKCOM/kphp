@@ -20,6 +20,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
+#include <dirent.h>
 
 #include "common/stats/provider.h"
 #include "common/wrappers/pathname.h"
@@ -241,6 +242,24 @@ mem_info_t get_self_mem_stats() {
 
   close (fd);
   return info;
+}
+
+int get_self_threads_count() {
+  DIR * tasks = opendir("/proc/self/task");
+  if (tasks == nullptr) {
+    return -1;
+  }
+  int count = 0;
+  struct dirent * task = readdir(tasks);
+  while (task != nullptr && count < 1000) {
+    count++;
+    task = readdir(tasks);
+  }
+  closedir(tasks);
+  /**
+   * subtract from the result ".", "..", "self"
+   * */
+  return count - 3;
 }
 
 int get_pid_info (pid_t pid, pid_info_t *info) {

@@ -50,6 +50,7 @@
 #include "runtime/streams.h"
 #include "runtime/string_functions.h"
 #include "runtime/tcp.h"
+#include "runtime/thread-pool.h"
 #include "runtime/typed_rpc.h"
 #include "runtime/udp.h"
 #include "runtime/url.h"
@@ -738,6 +739,28 @@ Optional<string> f$ip2ulong(const string &ip) {
   char buf[buf_size];
   int len = snprintf(buf, buf_size, "%u", ntohl(result.s_addr));
   return string(buf, len);
+}
+
+double f$thread_pool_test_load(int64_t size, int64_t n, double a, double b) {
+  constexpr auto job = [](int64_t n, double a, double b) {
+    double res = 0;
+    for (int i = 0; i < n; ++i) {
+      res += (i * a + 1) / (i * b + 1);
+    }
+    return res;
+  };
+  auto & pool = vk::singleton<ThreadPool>::get().pool();
+  double result = 0;
+  {
+    dl::CriticalSectionGuard guard;
+    BS::multi_future<double> futures;
+    for (int thread = 0; thread < size; ++thread) {
+      futures.push_back(pool.submit(job, n, a, b));
+    }
+    auto results = futures.get();
+    std::for_each(results.begin(), results.end(), [&](int64_t local){result += local;});
+  }
+  return result;
 }
 
 string f$long2ip(int64_t num) {
@@ -2451,6 +2474,7 @@ void worker_global_init(WorkerType worker_type) noexcept {
   worker_global_init_slot_factories();
   vk::singleton<JsonLogger>::get().reset_json_logs_count();
   worker_global_init_handlers(worker_type);
+  vk::singleton<ThreadPool>::get().init();
 }
 
 void read_engine_tag(const char *file_name) {
