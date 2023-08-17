@@ -101,7 +101,7 @@ DepLevelContainer::const_iterator &DepLevelContainer::const_iterator::operator++
 }
 
 static inline int array_len() {
-  return (10 * sizeof(int)) / sizeof(double);
+  return (8 * sizeof(int)) / sizeof(double);
 }
 
 std::vector<int> compile_arrays_raw_representation(const DepLevelContainer &const_raw_array_vars, CodeGenerator &W) {
@@ -149,18 +149,15 @@ std::vector<int> compile_arrays_raw_representation(const DepLevelContainer &cons
     shifts.push_back(shift);
     shift += array_len_in_doubles;
 
-    // stub, ref_cnt
-    W << "{ .is = { .a = 0, .b = " << ExtraRefCnt::for_global_const << "}},";
+    // is_vector_internal, ref_cnt
+    W << "{ .is = { .a = 1, .b = " << ExtraRefCnt::for_global_const << "}},";
     // max_key
     W << "{ .i64 = " << array_size - 1 << "},";
     // end_.next, end_.prev
     W << "{ .is = { .a = 0, .b = 0}},";
 
     // int_size, int_buf_size
-    W << "{ .is = { .a = " << array_size << ", .b = " << array_size << "}},";
-
-    // string_size, string_buf_size
-    W << "{ .is = { .a = 0 , .b = " << std::numeric_limits<uint32_t>::max() << " }}";
+    W << "{ .is = { .a = " << array_size << ", .b = " << array_size << "}}";
 
     auto args_end = vertex->args().end();
     for (auto it = vertex->args().begin(); it != args_end; ++it) {
