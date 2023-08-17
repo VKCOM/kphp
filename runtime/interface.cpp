@@ -2434,6 +2434,7 @@ static void free_runtime_libs() {
   vk::singleton<OomHandler>::get().reset();
   free_interface_lib();
   hard_reset_var(JsonEncoderError::msg);
+  vk::singleton<MapStat>::get().reset();
 }
 
 void global_init_runtime_libs() {
