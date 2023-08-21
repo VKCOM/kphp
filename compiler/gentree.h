@@ -93,6 +93,7 @@ public:
   template<Operation Op, Operation EmptyOp, class FuncT, class ResultType = typename vk::function_traits<FuncT>::ResultType>
   VertexAdaptor<op_seq> get_multi_call(FuncT &&f, bool parenthesis = false);
   VertexAdaptor<op_return> get_return();
+  VertexAdaptor<op_yield> get_yield();
   template<Operation Op>
   VertexAdaptor<Op> get_break_or_continue();
   VertexAdaptor<op_foreach> get_foreach();

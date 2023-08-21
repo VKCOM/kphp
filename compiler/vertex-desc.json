@@ -940,6 +940,29 @@
     }
   },
   {
+    "comment": "yield expr()",
+    "name": "op_yield",
+    "base_name": "meta_op_base",
+    "sons": {
+      "expr": {
+        "id": 0,
+        "optional": true
+      }
+
+    },
+    "props": {
+      "rl": "rl_op",
+      "cnst": "cnst_not_func",
+      "type": "common_op",
+      "str": "yield"
+    }
+  },
+  {
+    "comment": "yield from expr()",
+    "name": "op_yield_from",
+    "base_name": "op_yield"
+  },
+  {
     "comment": "lsh() == rhs()",
     "name": "op_eq2",
     "base_name": "meta_op_binary",

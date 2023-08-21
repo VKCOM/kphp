@@ -57,6 +57,8 @@ enum TokenType {
   tok_do,
   tok_eval,
   tok_return,
+  tok_yield,
+  tok_from,
   tok_list,
   tok_include,
   tok_include_once,

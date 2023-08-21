@@ -636,6 +636,12 @@ VertexPtr GenTree::get_expr_top(bool was_arrow, const PhpDocComment *phpdoc) {
       return_flag = was_arrow;
       break;
     }
+    case tok_yield: {
+      next_cur();
+      res = get_yield();
+      kphp_error(false, "yield isn't supported");
+      break;
+    }
     case tok_static:
       next_cur();
       res = get_lambda_function(phpdoc, FunctionModifiers::static_lambda());
@@ -1020,7 +1026,8 @@ VertexAdaptor<op_return> GenTree::get_return() {
   auto location = auto_location();
   next_cur();
   skip_phpdoc_tokens();
-  VertexPtr return_val = get_expression();
+  VertexPtr return_val;
+  return_val = get_expression();
   if (!return_val && cur_function->is_main_function()) {
     return_val = VertexAdaptor<op_null>::create();
   }
@@ -1035,10 +1042,34 @@ VertexAdaptor<op_return> GenTree::get_return() {
     }
     ret = VertexAdaptor<op_return>::create(return_val);
   }
+
   CE (expect(tok_semicolon, "';'"));
   return ret.set_location(location);
 }
 
+VertexAdaptor<op_yield> GenTree::get_yield() {
+  auto location = auto_location();
+  next_cur();
+  skip_phpdoc_tokens();
+
+  bool is_yield_from = test_expect(tok_from); // processing the construction "yield from ..."
+  if (is_yield_from) {
+    next_cur();
+  }
+
+  VertexPtr yield_val = get_expression();
+  if (!yield_val) {
+    yield_val = VertexAdaptor<op_null>::create();
+  }
+
+  VertexAdaptor<op_yield> yield;
+  if (is_yield_from) {
+    yield = VertexAdaptor<op_yield_from>::create(yield_val);
+  } else {
+    yield = VertexAdaptor<op_yield>::create(yield_val);
+  }
+  return yield.set_location(location);
+}
 
 template<Operation Op>
 VertexAdaptor<Op> GenTree::get_break_or_continue() {
@@ -2066,6 +2097,11 @@ VertexPtr GenTree::get_statement(const PhpDocComment *phpdoc) {
     }
     case tok_return:
       return get_return();
+    case tok_yield: {
+      auto res = get_yield();
+      CE(expect(tok_semicolon, "';'"));
+      return res;
+    }
     case tok_continue:
       return get_break_or_continue<op_continue>();
     case tok_break:

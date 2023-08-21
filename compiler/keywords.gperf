@@ -43,6 +43,8 @@ abstract, tok_abstract
 readonly, tok_readonly
 goto, tok_goto
 return, tok_return
+yield, tok_yield
+from, tok_from
 list, tok_list
 include, tok_require
 include_once, tok_require_once
