@@ -140,7 +140,7 @@ void RegisterKphpConfiguration::handle_constant_runtime_options(const ClassMembe
     } else if (vk::any_of_equal(*opt_key,
                                 warmup_workers_part_key_, warmup_instance_cache_elements_part_key_, warmup_timeout_sec_key_,
                                 oom_handling_memory_ratio_key_, mysql_db_name_key_, job_workers_shared_memory_distribution_weights_,
-                                thread_pool_ratio_key_)) {
+                                thread_pool_size_key_)) {
       generic_register_simple_option(opt_pair->value(), *opt_key);
     } else {
       kphp_error(0, fmt_format("Got unexpected option {}::{}['{}']",

@@ -3,7 +3,7 @@
 
 class KphpConfiguration {
   const DEFAULT_RUNTIME_OPTIONS = [
-    "--thread-pool-ratio" => "0.42",
+    "--thread-pool-size" => "10",
   ];
 }
 
