@@ -2190,7 +2190,13 @@ int main_args_handler(int i, const char *long_option) {
       return read_option_to(long_option, 0.0, 5.0, hard_timeout);
     }
     case 2035: {
-      return read_option_to(long_option, 0.0, 5.0, thread_pool_ratio);
+      double thread_pool_ratio = 0.0;
+      int res = read_option_to(long_option, 0.0, 10.0, thread_pool_ratio);
+      thread_pool_size = static_cast<int>(std::ceil(std::thread::hardware_concurrency() * thread_pool_ratio));
+      return res;
+    }
+    case 2036: {
+      return read_option_to(long_option, 0UL, UINT64_MAX, thread_pool_size);
     }
     default:
       return -1;
@@ -2300,6 +2306,7 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("oom-handling-memory-ratio", required_argument, 2033, "memory ratio of overall script memory to handle OOM errors (default: 0.00)");
   parse_option("hard-time-limit", required_argument, 2034, "time limit for script termination after the main timeout has expired (default: 1 sec). Use 0 to disable");
   parse_option("thread-pool-ratio", required_argument, 2035, "the thread pool size ratio of the overall cpu numbers");
+  parse_option("thread-pool-size", required_argument, 2036, "the total threads num per worker");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
   // TODO: remove it after successful migration from kphb.readyV2 to kphb.readyV3
