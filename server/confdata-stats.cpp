@@ -83,9 +83,8 @@ void ConfdataStats::write_stats_to(stats_t *stats, const memory_resource::Memory
   stats->add_gauge_stat("confdata.updates.ignored", ignored_updates);
   stats->add_gauge_stat("confdata.updates.total", total_updates);
 
-  if (stats->need_aggregated_stats()) {
-    stats->add_gauge_stat("confdata.elements.total", total_elements);
-  }
+  stats->add_gauge_stat("confdata.elements.total", total_elements);
+
   stats->add_gauge_stat_with_type_tag("confdata.elements", "simple_key", simple_key_elements);
   stats->add_gauge_stat_with_type_tag("confdata.elements", "one_dot_wildcard", one_dot_wildcard_elements);
   stats->add_gauge_stat_with_type_tag("confdata.elements", "two_dots_wildcard", two_dots_wildcard_elements);

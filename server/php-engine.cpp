@@ -1422,7 +1422,6 @@ void cron() {
   }
   vk::singleton<SharedDataWorkerCache>::get().on_worker_cron();
   vk::singleton<ServerStats>::get().update_this_worker_stats();
-//  vk::new_singleton<StatsHouseClient>::get().add_common_master_stats();
 }
 
 void reopen_json_log() {

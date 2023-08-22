@@ -77,7 +77,7 @@
 #include "server/job-workers/shared-memory-manager.h"
 #include "server/json-logger.h"
 #include "server/server-config.h"
-#include "server/workers_stats.h"
+#include "server/workers-stats.h"
 
 using job_workers::JobWorkersContext;
 
@@ -1116,15 +1116,13 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, stats_tag_kphp_server) {
   stats->add_gauge_stat("workers.job.processes.working", job_worker_group.running_workers);
   stats->add_gauge_stat("workers.job.processes.working_but_waiting", job_worker_group.waiting_workers);
 
-  if (stats->need_aggregated_stats()) {
-    auto running_stats = server_stats.misc_stat_for_general_workers[1].get_stat();
-    stats->add_gauge_stat("workers.general.processes.running.avg_1m", running_stats.running_workers_avg);
-    stats->add_gauge_stat("workers.general.processes.running.max_1m", running_stats.running_workers_max);
+  auto running_stats = server_stats.misc_stat_for_general_workers[1].get_stat();
+  stats->add_gauge_stat("workers.general.processes.running.avg_1m", running_stats.running_workers_avg);
+  stats->add_gauge_stat("workers.general.processes.running.max_1m", running_stats.running_workers_max);
 
-    running_stats = server_stats.misc_stat_for_job_workers[1].get_stat();
-    stats->add_gauge_stat("workers.job.processes.running.avg_1m", running_stats.running_workers_avg);
-    stats->add_gauge_stat("workers.job.processes.running.max_1m", running_stats.running_workers_max);
-  }
+  running_stats = server_stats.misc_stat_for_job_workers[1].get_stat();
+  stats->add_gauge_stat("workers.job.processes.running.avg_1m", running_stats.running_workers_avg);
+  stats->add_gauge_stat("workers.job.processes.running.max_1m", running_stats.running_workers_max);
 
   stats->add_gauge_stat("server.workers.started", workers_stats.tot_workers_started);
   stats->add_gauge_stat("server.workers.dead", workers_stats.tot_workers_dead);

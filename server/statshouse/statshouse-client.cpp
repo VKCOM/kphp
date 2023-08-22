@@ -11,10 +11,11 @@
 #include "server/json-logger.h"
 #include "server/server-config.h"
 #include "server/server-stats.h"
+#include "server/workers-stats.h"
 
 StatsHouseClient *StatsHouseClient::inner = nullptr;
 
-StatsHouseClient::StatsHouseClient(const std::string& ip, int port)
+StatsHouseClient::StatsHouseClient(const std::string &ip, int port)
   : transport(ip, port){};
 
 void StatsHouseClient::add_request_stats(WorkerType raw_worker_type, uint64_t script_time_ns, uint64_t net_time_ns, uint64_t memory_used,
@@ -49,9 +50,9 @@ void StatsHouseClient::add_job_common_memory_stats(uint64_t job_common_request_m
   transport.metric("kphp_job_common_request_memory").tag(cluster_name).tag("real_used").write_value(job_common_request_real_memory_used);
 }
 
-void StatsHouseClient::add_common_master_stats(const workers_stats_t &workers_stats, const memory_resource::MemoryStats &memory_stats, double cpu_s_usage,
-                                               double cpu_u_usage, long long int instance_cache_memory_swaps_ok,
-                                               long long int instance_cache_memory_swaps_fail) {
+void StatsHouseClient::add_common_master_stats(const workers_stats_t &workers_stats, const memory_resource::MemoryStats &memory_stats,
+                                               double cpu_s_usage, double cpu_u_usage,
+                                               long long int instance_cache_memory_swaps_ok, long long int instance_cache_memory_swaps_fail) {
   const char *cluster_name = vk::singleton<ServerConfig>::get().get_cluster_name();
   if (engine_tag) {
     transport.metric("kphp_version").tag(cluster_name).write_value(atoll(engine_tag));

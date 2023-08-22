@@ -701,30 +701,22 @@ uint64_t kb2bytes(uint64_t kb) noexcept {
 
 template<typename T, typename Mapper = vk::identity>
 void write_to(stats_t *stats, const char *prefix, const char *suffix, const AggregatedSamples<T> &samples, const Mapper &mapper = {}) {
-  if (stats->need_aggregated_stats()) {
-    stats->add_gauge_stat(mapper(samples.percentiles.p50), prefix, suffix, ".p50");
-    stats->add_gauge_stat(mapper(samples.percentiles.p75), prefix, suffix, ".p75");
-    stats->add_gauge_stat(mapper(samples.percentiles.p90), prefix, suffix, ".p90");
-    stats->add_gauge_stat(mapper(samples.percentiles.p95), prefix, suffix, ".p95");
-    stats->add_gauge_stat(mapper(samples.percentiles.p99), prefix, suffix, ".p99");
-    stats->add_gauge_stat(mapper(samples.percentiles.max), prefix, suffix, ".max");
-  }
+  stats->add_gauge_stat(mapper(samples.percentiles.p50), prefix, suffix, ".p50");
+  stats->add_gauge_stat(mapper(samples.percentiles.p75), prefix, suffix, ".p75");
+  stats->add_gauge_stat(mapper(samples.percentiles.p90), prefix, suffix, ".p90");
+  stats->add_gauge_stat(mapper(samples.percentiles.p95), prefix, suffix, ".p95");
+  stats->add_gauge_stat(mapper(samples.percentiles.p99), prefix, suffix, ".p99");
+  stats->add_gauge_stat(mapper(samples.percentiles.max), prefix, suffix, ".max");
 }
 
 template<typename T, typename Mapper = vk::identity>
 void write_to(stats_t *stats, const char *prefix, const char *suffix, const WorkerSamples<T> &samples, const Mapper &mapper = {}) {
-  if (stats->need_aggregated_stats()) {
-    stats->add_gauge_stat(mapper(samples.percentiles.p50), prefix, suffix, ".p50");
-    stats->add_gauge_stat(mapper(samples.percentiles.p75), prefix, suffix, ".p75");
-    stats->add_gauge_stat(mapper(samples.percentiles.p90), prefix, suffix, ".p90");
-    stats->add_gauge_stat(mapper(samples.percentiles.p95), prefix, suffix, ".p95");
-    stats->add_gauge_stat(mapper(samples.percentiles.p99), prefix, suffix, ".p99");
-    stats->add_gauge_stat(mapper(samples.percentiles.max), prefix, suffix, ".max");
-  } else {
-    const uint16_t workers_count = vk::singleton<WorkersControl>::get().get_total_workers_count();
-    std::vector<double> values(samples.samples.begin(), samples.samples.begin() + workers_count);
-    stats->add_multiple_gauge_stats(std::move(values), prefix, suffix);
-  }
+  stats->add_gauge_stat(mapper(samples.percentiles.p50), prefix, suffix, ".p50");
+  stats->add_gauge_stat(mapper(samples.percentiles.p75), prefix, suffix, ".p75");
+  stats->add_gauge_stat(mapper(samples.percentiles.p90), prefix, suffix, ".p90");
+  stats->add_gauge_stat(mapper(samples.percentiles.p95), prefix, suffix, ".p95");
+  stats->add_gauge_stat(mapper(samples.percentiles.p99), prefix, suffix, ".p99");
+  stats->add_gauge_stat(mapper(samples.percentiles.max), prefix, suffix, ".max");
 }
 
 void write_to(stats_t *stats, const char *prefix, const WorkerAggregatedStats &agg, const WorkerSharedStats &shared) noexcept {

@@ -43,10 +43,6 @@ public:
     // ignore it
   }
 
-  bool need_aggregated_stats() noexcept final {
-    return true;
-  }
-
 protected:
   void add_stat(char type, const char *key, double value) noexcept final {
     sb_printf(&sb, "%s.%s:", stats_prefix, normalize_key(key, "%s", ""));
@@ -71,10 +67,6 @@ protected:
     sb_printf(&sb, "%lld", value);
     sb_printf(&sb, "|%c\n", type);
   };
-
-  void add_multiple_stats(const char *key [[maybe_unused]], std::vector<double> &&values [[maybe_unused]]) noexcept final {
-    assert(false && "unimplemented");
-  }
 };
 } // namespace
 

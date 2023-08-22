@@ -11,7 +11,7 @@
 #include "common/mixin/not_copyable.h"
 #include "runtime/memory_resource/memory_resource.h"
 #include "server/workers-control.h"
-#include "server/workers_stats.h"
+#include "server/workers-stats.h"
 
 class StatsHouseClient : vk::not_copyable {
 public:
@@ -44,7 +44,7 @@ public:
                                long long int instance_cache_memory_swaps_ok, long long int instance_cache_memory_swaps_fail);
 
 private:
-  explicit StatsHouseClient(const std::string& ip, int port);
+  explicit StatsHouseClient(const std::string &ip, int port);
 
   static StatsHouseClient *inner;
   statshouse::TransportUDP transport;

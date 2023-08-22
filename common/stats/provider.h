@@ -67,23 +67,12 @@ public:
     add_gauge_stat(stat_key, value);
   }
 
-  void add_multiple_gauge_stats(std::vector<double> &&values, const char *key1, const char *key2 = "") noexcept {
-    const size_t key1_len = std::strlen(key1);
-    const size_t key2_len = std::strlen(key2);
-    char stat_key[key1_len + key2_len + 1];
-    std::memcpy(stat_key, key1, key1_len);
-    std::memcpy(stat_key + key1_len, key2, key2_len + 1);
-
-    add_multiple_stats(stat_key, std::move(values));
-  }
-
   template<typename T>
   void add_gauge_stat(const std::atomic<T> &value, const char *key1, const char *key2 = "", const char *key3 = "") noexcept {
     add_gauge_stat(value.load(std::memory_order_relaxed), key1, key2, key3);
   }
 
   virtual void add_general_stat(const char *key, const char *value_format, ...) noexcept __attribute__((format(printf, 3, 4))) = 0;
-  virtual bool need_aggregated_stats() noexcept = 0;
 
   virtual ~stats_t() = default;
 
@@ -93,8 +82,6 @@ protected:
 
   virtual void add_stat_with_tag_type(char type, const char *key, const char *type_tag, double value) noexcept = 0;
   virtual void add_stat_with_tag_type(char type, const char *key, const char *type_tag, long long value) noexcept = 0;
-
-  virtual void add_multiple_stats(const char *key, std::vector<double> &&values) noexcept = 0;
 
   char *normalize_key(const char *key, const char *format, const char *prefix) noexcept;
 };
