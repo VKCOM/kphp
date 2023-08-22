@@ -2196,7 +2196,7 @@ int main_args_handler(int i, const char *long_option) {
       return res;
     }
     case 2036: {
-      return read_option_to(long_option, 0UL, UINT64_MAX, thread_pool_size);
+      return read_option_to(long_option, 0, 2048, thread_pool_size);
     }
     default:
       return -1;

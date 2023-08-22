@@ -40,4 +40,4 @@ private:
   BS::thread_pool * thread_pool_ptr{nullptr};
 };
 
-extern uint64_t thread_pool_size;
+extern int thread_pool_size;

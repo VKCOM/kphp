@@ -26,4 +26,4 @@ void ThreadPool::init() noexcept {
   }
 }
 
-uint64_t thread_pool_size = 0;
+int thread_pool_size = 0;
