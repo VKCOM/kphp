@@ -38,11 +38,11 @@ class KphpServer(Engine):
         if auto_start:
             self.start()
 
-    def start(self, start_msgs=None):
+    def start(self, start_msgs=None, start_statshouse=None):
         with open(self.get_server_config_path(), mode="w+t", encoding="utf-8") as fd:
             fd.write(
                 "cluster_name: kphp_server_{}".format("".join(chr(ord('A') + int(c)) for c in str(self._http_port))))
-        super(KphpServer, self).start(start_msgs)
+        super(KphpServer, self).start(start_msgs, start_statshouse)
         self._json_logs = []
         self._json_log_file_read_fd = open(self._log_file + ".json", 'r')
 

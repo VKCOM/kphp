@@ -2084,7 +2084,13 @@ int main_args_handler(int i, const char *long_option) {
         kprintf("--%s option: can't find ':'\n", long_option);
         return -1;
       }
-      StatsHouseClient::init(std::string(optarg, colon - optarg), atoi(colon + 1));
+      auto host = std::string(optarg, colon - optarg);
+      auto port = atoi(colon + 1);
+      if (host.empty()) {
+        host = "127.0.0.1";
+      }
+
+      StatsHouseClient::init(host, port);
       return 0;
     }
     case 2027: {
