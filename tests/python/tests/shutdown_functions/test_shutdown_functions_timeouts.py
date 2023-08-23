@@ -6,6 +6,7 @@ class TestShutdownFunctionsTimeouts(KphpServerAutoTestCase):
     def extra_class_setup(cls):
         cls.kphp_server.update_options({
             "--time-limit": 1,
+            "--hard-time-limit": 2,
             "--verbosity-resumable=2": True,
         })
 
