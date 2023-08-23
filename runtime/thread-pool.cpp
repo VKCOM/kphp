@@ -9,7 +9,6 @@
 
 
 void ThreadPool::init() noexcept {
-  int thread_pool_size = static_cast<int>(std::ceil(std::thread::hardware_concurrency() * thread_pool_ratio));
   if (!is_thread_pool_available() && thread_pool_size > 0) {
     /**
      * linux does not determinize the thread to which the signal will arrive,
@@ -27,4 +26,4 @@ void ThreadPool::init() noexcept {
   }
 }
 
-double thread_pool_ratio = 0;
+uint32_t thread_pool_size = 0;
