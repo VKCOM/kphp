@@ -8,8 +8,10 @@
 
 #include <cassert>
 
+#include "common/dl-utils-lite.h"
 #include "common/mixin/not_copyable.h"
 #include "runtime/memory_resource/memory_resource.h"
+#include "server/job-workers/job-stats.h"
 #include "server/workers-control.h"
 #include "server/workers-stats.h"
 
@@ -37,6 +39,8 @@ public:
 
   void add_job_common_memory_stats(uint64_t job_common_request_memory_used, uint64_t job_common_request_real_memory_used);
 
+  void add_worker_memory_stats(WorkerType raw_worker_type, const mem_info_t &mem_stats);
+
   /**
    * Must be called from master process only
    */
@@ -45,6 +49,14 @@ public:
 
 private:
   explicit StatsHouseClient(const std::string &ip, int port);
+
+  void add_job_workers_shared_memory_stats(const char *cluster_name, const job_workers::JobStats &job_stats);
+
+  size_t add_job_workers_shared_messages_stats(const char *cluster_name, const job_workers::JobStats::MemoryBufferStats &memory_buffers_stats,
+                                               size_t buffer_size);
+
+  size_t add_job_workers_shared_memory_buffers_stats(const char *cluster_name, const job_workers::JobStats::MemoryBufferStats &memory_buffers_stats,
+                                                     const char *size_tag, size_t buffer_size);
 
   static StatsHouseClient *inner;
   statshouse::TransportUDP transport;
