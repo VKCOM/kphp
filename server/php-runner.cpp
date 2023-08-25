@@ -427,6 +427,7 @@ void PhpScript::run() noexcept {
   check_net_context_errors();
 
   CurException = Optional<bool>{};
+  PhpScript::last_script_start_time = get_utime_monotonic();
   run_main->run();
   if (CurException.is_null()) {
     set_script_result(nullptr);
@@ -485,6 +486,7 @@ ucontext_t_portable PhpScript::exit_context;
 volatile bool PhpScript::in_script_context = false;
 volatile bool PhpScript::time_limit_exceeded = false;
 volatile bool PhpScript::memory_limit_exceeded = false;
+double PhpScript::last_script_start_time = 0;
 
 static __inline__ void *get_sp() {
   return __builtin_frame_address(0);

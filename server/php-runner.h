@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <csetjmp>
-
 #include "common/dl-utils-lite.h"
 #include "common/kprintf.h"
 #include "common/mixin/not_copyable.h"
@@ -100,6 +98,7 @@ public:
   volatile static bool in_script_context;
   volatile static bool time_limit_exceeded;
   volatile static bool memory_limit_exceeded;
+  static double last_script_start_time;
 
   run_state_t state{run_state_t::empty};
   const char *error_message{nullptr};
@@ -111,7 +110,6 @@ public:
   PhpScriptStack script_stack;
 
   ucontext_t_portable run_context{};
-  sigjmp_buf timeout_handler{};
 
   script_t *run_main{nullptr};
   php_query_data *data{nullptr};

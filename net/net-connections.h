@@ -240,6 +240,7 @@ extern int active_connections;
 extern int active_special_connections, max_special_connections;
 extern int outbound_connections, active_outbound_connections, ready_outbound_connections;
 extern int conn_generation;
+extern double last_conn_start_processing;
 extern int ready_targets;
 extern long long total_failed_connections, total_connect_failures, unused_connections_closed;
 extern const char *unix_socket_directory;

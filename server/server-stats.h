@@ -50,6 +50,7 @@ public:
   };
   WorkersStat collect_workers_stat(WorkerType worker_type) const noexcept;
   std::tuple<uint64_t, uint64_t> collect_json_count_stat() const noexcept;
+  std::tuple<double, double> collect_script_timeouts_stat() const noexcept;
   uint64_t collect_threads_count_stat() const noexcept;
 
 private:

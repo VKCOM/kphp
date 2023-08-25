@@ -33,6 +33,8 @@ enum php_worker_state_t {
  */
 class PhpWorker {
 public:
+  static double last_worker_init_time;
+
   struct connection *conn;
 
   php_query_data *data;

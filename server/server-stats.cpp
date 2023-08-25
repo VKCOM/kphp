@@ -12,6 +12,7 @@
 #include "common/smart_iterators/transform_iterator.h"
 #include "common/wrappers/memory-utils.h"
 #include "net/net-events.h"
+#include "net/net-connections.h"
 
 #include "runtime/curl.h"
 
@@ -19,6 +20,7 @@
 
 #include "server/json-logger.h"
 #include "server/server-stats.h"
+#include "server/php-worker.h"
 #include "server/statshouse/statshouse-manager.h"
 
 namespace {
@@ -128,6 +130,14 @@ struct MiscStat : WithStatType<uint64_t> {
   };
 };
 
+struct TimeoutStat : WithStatType<double> {
+  enum class Key {
+    connection_process_time,
+    script_init_time,
+    types_count
+  };
+};
+
 template<class E, class T = typename E::StatType>
 struct EnumTable : std::array<T, static_cast<size_t>(E::Key::types_count)> {
   using Base = std::array<T, static_cast<size_t>(E::Key::types_count)>;
@@ -186,6 +196,16 @@ EnumTable<VMStat> get_virtual_memory_stat() noexcept {
   result[VMStat::Key::rss_peak_kb] = mem_stats.rss_peak;
   result[VMStat::Key::rss_kb] = mem_stats.rss;
   result[VMStat::Key::shm_kb] = mem_stats.rss_shmem + mem_stats.rss_file;
+  return result;
+}
+
+EnumTable<TimeoutStat> get_script_time_stat() noexcept {
+  EnumTable<TimeoutStat> result;
+  double conn_accept_time = last_conn_start_processing;
+  double php_worker_init_time = PhpWorker::last_worker_init_time < last_conn_start_processing ? get_utime_monotonic() : PhpWorker::last_worker_init_time;
+  double php_script_start_time = PhpScript::last_script_start_time < php_worker_init_time ? get_utime_monotonic() : PhpScript::last_script_start_time;
+  result[TimeoutStat::Key::connection_process_time] = (php_script_start_time - conn_accept_time) * 1000;
+  result[TimeoutStat::Key::script_init_time] = (php_script_start_time - php_worker_init_time) * 1000;
   return result;
 }
 
@@ -466,12 +486,14 @@ struct WorkerProcessStats : private vk::not_copyable {
   WorkerStatsBundle<MiscStat> misc_stats{};
   WorkerStatsBundle<QueriesStat> query_stats{};
   WorkerStatsBundle<IdleStat> idle_stats{};
+  WorkerStatsBundle<TimeoutStat> script_time_stats{};
 
   void update_worker_stats(uint16_t worker_index) noexcept {
     malloc_stats.set_worker_stats(get_malloc_stat(), worker_index);
     heap_stats.set_worker_stats(get_heap_stat(), worker_index);
     vm_stats.set_worker_stats(get_virtual_memory_stat(), worker_index);
     idle_stats.set_worker_stats(get_idle_stat(), worker_index);
+    script_time_stats.set_worker_stats(get_script_time_stat(), worker_index);
     misc_stats.inc_stat(MiscStat::Key::worker_activity_counter, worker_index);
     misc_stats.set_stat(MiscStat::Key::json_logs_count, worker_index, vk::singleton<JsonLogger>::get().get_json_logs_count());
     misc_stats.set_stat(MiscStat::Key::json_traces_count, worker_index, vk::singleton<JsonLogger>::get().get_json_traces_count());
@@ -900,6 +922,19 @@ std::tuple<uint64_t, uint64_t> ServerStats::collect_json_count_stat() const noex
     sum_json_traces_count += workers_misc.get_stat(MiscStat::Key::json_traces_count, w);
   }
   return {sum_json_logs_count, sum_json_traces_count};
+}
+
+std::tuple<double, double> ServerStats::collect_script_timeouts_stat() const noexcept {
+  const auto &workers_script_timeouts = shared_stats_->workers.script_time_stats;
+  double sum_script_init_time = 0;
+  double sum_connection_process_time = 0;
+  const auto &workers_control = vk::singleton<WorkersControl>::get();
+  for (uint16_t w = 0; w != workers_control.get_total_workers_count(); ++w) {
+    sum_script_init_time += workers_script_timeouts.get_stat(TimeoutStat::Key::script_init_time, w);
+    sum_connection_process_time += workers_script_timeouts.get_stat(TimeoutStat::Key::connection_process_time, w);
+  }
+  int workers_count = workers_control.get_total_workers_count();
+  return {sum_script_init_time / workers_count, sum_connection_process_time / workers_count};
 }
 
 uint64_t ServerStats::collect_threads_count_stat() const noexcept {

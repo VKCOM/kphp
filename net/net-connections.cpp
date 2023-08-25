@@ -65,7 +65,7 @@ int outbound_connections, active_outbound_connections, ready_outbound_connection
 long long outbound_connections_created, inbound_connections_accepted;
 int ready_targets;
 int conn_generation;
-
+double last_conn_start_processing = 0;
 static void(*on_active_special_connections_update_callback)() = []{};
 
 const char *unix_socket_directory = "/var/run/engine";
@@ -1170,6 +1170,7 @@ int accept_new_connections(struct connection *cc) {
                    max_special_connections);
         }
         ++active_special_connections;
+        last_conn_start_processing = get_utime_monotonic();
         on_active_special_connections_update_callback();
         if (active_special_connections >= max_special_connections) {
           return EVA_REMOVE;

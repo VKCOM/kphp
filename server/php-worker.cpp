@@ -24,6 +24,8 @@
 #include "server/php-worker.h"
 #include "server/server-stats.h"
 
+double PhpWorker::last_worker_init_time = 0;
+
 PhpWorker *active_worker = nullptr;
 
 double PhpWorker::enter_lifecycle() noexcept {
@@ -460,6 +462,7 @@ PhpWorker::PhpWorker(php_worker_mode_t mode_, connection *c, http_query_data *ht
   , mode(mode_)
   , req_id(req_id_)
 {
+  PhpWorker::last_worker_init_time = init_time;
   assert(c != nullptr);
   if (conn->target) {
     target_fd = static_cast<int>(conn->target - Targets);
