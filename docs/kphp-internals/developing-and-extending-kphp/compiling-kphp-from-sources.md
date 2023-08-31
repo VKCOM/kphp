@@ -107,34 +107,6 @@ cmake ..
 sudo make install
 ```
 
-##### MacOS with Apple M1 chipset
-
-```note
-Probably, there is an easier way to do this, but I couldn't find it, at least for late 2021.
-```
-
-Follow the steps above. Later on, you'll have to patch the [libucontext](https://github.com/kaniini/libucontext) library locally.
-```bash
-git clone https://github.com/kaniini/libucontext
-cd libucontext
-nano Makefile
-```
-Find assignment to `LIBUCONTEXT_LINKER_FLAGS` and replace it with:
-```text
-LIBUCONTEXT_LINKER_FLAGS = -dynamiclib -install_name ${LIBUCONTEXT_SONAME} -current_version ${LIBUCONTEXT_SOVERSION} -compatibility_version ${LIBUCONTEXT_SOVERSION}
-```
-Now we are ready to make libucontext:
-```
-make FREESTANDING=yes ARCH=aarch64
-```
-Finally, copy resulting files to the default brew search folder `/opt/homebrew`:
-```
-cp libucontext.a /opt/homebrew/lib
-cp libucontext.dylib /opt/homebrew/lib
-cp -r include/* /opt/homebrew/include/
-```
-
-
 ##### Other Linux
 Make sure you are using the same package list. You may use system default libcurl package, it would work, but without DNS resolving. `uber-h3` must be installed from sources.
 

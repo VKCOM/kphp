@@ -3,9 +3,6 @@ if(KPHP_TESTS)
         set(TEST_NAME unittests-${TEST_NAME})
         add_executable(${TEST_NAME} ${ARGN})
         target_link_libraries(${TEST_NAME} PRIVATE GTest::GTest GTest::Main gmock ${SRC_LIBS} vk::popular_common)
-        if(NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" AND APPLE)
-            target_link_libraries(${TEST_NAME} PRIVATE /opt/homebrew/lib/libucontext.a)
-        endif()
         target_link_options(${TEST_NAME} PRIVATE ${NO_PIE})
 
         # because of https://github.com/VKCOM/kphp/actions/runs/5463884925/jobs/9945150190

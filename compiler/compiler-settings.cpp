@@ -332,12 +332,6 @@ void CompilerSettings::init() {
   ld_flags.value_ += " -L /usr/local/lib";
 #endif
 
-#if defined(__APPLE__) && defined(__arm64__)
-  // for development under M1, manual installation of libucontext is needed
-  // see the docs: https://vkcom.github.io/kphp/kphp-internals/developing-and-extending-kphp/compiling-kphp-from-sources.html
-  ld_flags.value_ += " /opt/homebrew/lib/libucontext.a";
-#endif
-
   std::vector<vk::string_view> external_libs{"pthread", "m", "dl"};
 
 #ifdef PDO_DRIVER_MYSQL
