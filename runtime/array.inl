@@ -345,8 +345,9 @@ template<class ...Args>
 T &array<T>::array_inner::emplace_int_key_map_value(overwrite_element policy, int64_t int_key, Args &&... args) noexcept {
   static_assert(std::is_constructible<T, Args...>{}, "should be constructible");
   uint32_t bucket = choose_bucket(int_key);
-  while (int_entries[bucket].next != EMPTY_POINTER && int_entries[bucket].int_key != int_key) {
-    if (unlikely (++bucket == int_buf_size)) {
+  while (int_entries[bucket].next != EMPTY_POINTER &&
+         (int_entries[bucket].int_key != int_key || !int_entries[bucket].string_key.is_dummy_string())) {
+    if (unlikely(++bucket == int_buf_size)) {
       bucket = 0;
     }
   }
@@ -390,7 +391,8 @@ T array<T>::array_inner::unset_vector_value() {
 template<class T>
 T array<T>::array_inner::unset_map_value(int64_t int_key) {
   uint32_t bucket = choose_bucket(int_key);
-  while (int_entries[bucket].next != EMPTY_POINTER && int_entries[bucket].int_key != int_key) {
+  while (int_entries[bucket].next != EMPTY_POINTER &&
+         (int_entries[bucket].int_key != int_key || !int_entries[bucket].string_key.is_dummy_string())) {
     if (unlikely (++bucket == int_buf_size)) {
       bucket = 0;
     }
@@ -444,7 +446,8 @@ template<class T>
 template<class S>
 auto &array<T>::array_inner::find_map_entry(S &self, int64_t int_key) noexcept {
   uint32_t bucket = self.choose_bucket(int_key);
-  while (self.int_entries[bucket].next != EMPTY_POINTER && self.int_entries[bucket].int_key != int_key) {
+  while (self.int_entries[bucket].next != EMPTY_POINTER &&
+         (self.int_entries[bucket].int_key != int_key || !self.int_entries[bucket].string_key.is_dummy_string())) {
     if (unlikely (++bucket == self.int_buf_size)) {
       bucket = 0;
     }
@@ -468,7 +471,7 @@ auto &array<T>::array_inner::find_map_entry(S &self, const char *key, string::si
   auto *string_entries = self.int_entries;
   uint32_t bucket = self.choose_bucket(precomputed_hash);
   while (string_entries[bucket].next != EMPTY_POINTER &&
-         (string_entries[bucket].int_key != precomputed_hash || str_not_eq(string_entries[bucket].string_key, key, key_size))) {
+         (string_entries[bucket].int_key != precomputed_hash || string_entries[bucket].string_key.is_dummy_string() || str_not_eq(string_entries[bucket].string_key, key, key_size))) {
     if (unlikely (++bucket == self.int_buf_size)) {
       bucket = 0;
     }
@@ -501,7 +504,8 @@ std::pair<T &, bool> array<T>::array_inner::emplace_string_key_map_value(overwri
 
   int_hash_entry *string_entries = int_entries;
   uint32_t bucket = choose_bucket(int_key);
-  while (string_entries[bucket].next != EMPTY_POINTER && (string_entries[bucket].int_key != int_key || string_entries[bucket].string_key != string_key)) {
+  while (string_entries[bucket].next != EMPTY_POINTER &&
+         (string_entries[bucket].int_key != int_key || string_entries[bucket].string_key.is_dummy_string() || string_entries[bucket].string_key != string_key)) {
     if (unlikely (++bucket == int_buf_size)) {
       bucket = 0;
     }
@@ -539,7 +543,8 @@ template<class T>
 T array<T>::array_inner::unset_map_value(const string &string_key, int64_t precomputed_hash) {
   int_hash_entry *string_entries = int_entries;
   uint32_t bucket = choose_bucket(precomputed_hash);
-  while (string_entries[bucket].next != EMPTY_POINTER && (string_entries[bucket].int_key != precomputed_hash || string_entries[bucket].string_key != string_key)) {
+  while (string_entries[bucket].next != EMPTY_POINTER &&
+         (string_entries[bucket].int_key != precomputed_hash || string_entries[bucket].string_key.is_dummy_string() || string_entries[bucket].string_key != string_key)) {
     if (unlikely (++bucket == int_buf_size)) {
       bucket = 0;
     }
@@ -1910,7 +1915,7 @@ void array<T>::ksort(const T1 &compare) {
     if (is_int_key(keysp[j])) {
       int64_t int_key = keysp[j].to_int();
       uint32_t bucket = p->choose_bucket(int_key);
-      while (p->int_entries[bucket].int_key != int_key) {
+      while (p->int_entries[bucket].int_key != int_key || !p->int_entries[bucket].string_key.is_dummy_string()) {
         if (unlikely (++bucket == p->int_buf_size)) {
           bucket = 0;
         }
@@ -1921,7 +1926,7 @@ void array<T>::ksort(const T1 &compare) {
       int64_t int_key = string_key.hash();
       int_hash_entry *string_entries = p->int_entries;
       uint32_t bucket = p->choose_bucket(int_key);
-      while ((string_entries[bucket].int_key != int_key || string_entries[bucket].string_key != string_key)) {
+      while ((string_entries[bucket].int_key != int_key || string_entries[bucket].string_key.is_dummy_string() || string_entries[bucket].string_key != string_key)) {
         if (unlikely (++bucket == p->int_buf_size)) {
           bucket = 0;
         }

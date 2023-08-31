@@ -50,7 +50,8 @@ Checks: |-
   -bugprone-easily-swappable-parameters,
   -misc-no-recursion,
   -misc-const-correctness,
-  -cppcoreguidelines-avoid-const-or-ref-data-members
+  -cppcoreguidelines-avoid-const-or-ref-data-members,
+  -cppcoreguidelines-macro-usage
 
 CheckOptions:
   - key:             bugprone-suspicious-string-compare.WarnOnImplicitComparison
