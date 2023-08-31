@@ -27,7 +27,6 @@ public:
   using inner_type = const_conditional_t<typename array_type::array_inner>;
   using list_hash_type = const_conditional_t<typename array_type::list_hash_entry>;
   using int_hash_type = const_conditional_t<typename array_type::int_hash_entry>;
-  using string_hash_type = const_conditional_t<typename array_type::string_hash_entry>;
 
   inline constexpr array_iterator() noexcept __attribute__ ((always_inline)) = default;
 
@@ -69,28 +68,28 @@ public:
   }
 
   inline bool is_string_key() const noexcept __attribute__ ((always_inline)) ubsan_supp("alignment") {
-    return !self_->is_vector() && self_->is_string_hash_entry(static_cast<const string_hash_type *>(entry_));
+    return !self_->is_vector() && self_->is_string_hash_entry(static_cast<const int_hash_type *>(entry_));
   }
 
   inline const_conditional_t<string> &get_string_key() noexcept __attribute__ ((always_inline)) {
-    return static_cast<string_hash_type *>(entry_)->string_key;
+    return static_cast<int_hash_type *>(entry_)->string_key;
   }
 
   inline const string &get_string_key() const noexcept __attribute__ ((always_inline)) {
-    return static_cast<const string_hash_type *>(entry_)->string_key;
+    return static_cast<const int_hash_type *>(entry_)->string_key;
   }
 
   inline array_iterator &operator++() noexcept __attribute__ ((always_inline)) ubsan_supp("alignment") {
     entry_ = self_->is_vector()
              ? reinterpret_cast<list_hash_type *>(reinterpret_cast<value_type *>(entry_) + 1)
-             : self_->next(static_cast<string_hash_type *>(entry_));
+             : self_->next(static_cast<int_hash_type *>(entry_));
     return *this;
   }
 
   inline array_iterator &operator--() noexcept __attribute__ ((always_inline)) ubsan_supp("alignment") {
     entry_ = self_->is_vector()
              ? reinterpret_cast<list_hash_type *>(reinterpret_cast<value_type *>(entry_) - 1)
-             : self_->prev(static_cast<string_hash_type *>(entry_));
+             : self_->prev(static_cast<int_hash_type *>(entry_));
     return *this;
   }
 
@@ -165,7 +164,7 @@ public:
       }
     }
 
-    string_hash_type *result = nullptr;
+    int_hash_type *result = nullptr;
     if (n < 0) {
       result = arr.p->end();
       while (n < 0) {
