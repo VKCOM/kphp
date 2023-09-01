@@ -12,6 +12,7 @@ class TestJobInsideJob(KphpServerAutoTestCase):
             "--workers-num": cls.WORKERS_NUM,
             "--job-workers-ratio": cls.JOB_WORKERS_RATIO,
             "--verbosity-job-workers=2": True,
+            "--verbosity-php-runner=2": True,
         })
 
     def _test_job_redirect_chain(self, *, data, redirect_chain_len, timeout_error=False):

@@ -37,7 +37,10 @@ function shutdown_after_long_work() {
 
 /** @kphp-required */
 function shutdown_endless_loop() {
-  while (true) {}
+  fprintf(STDERR, "running shutdown endless loop\n");
+  while (true) {
+    sleep(1);
+  }
 }
 
 /** @kphp-required */

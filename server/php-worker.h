@@ -45,9 +45,9 @@ public:
   script_error_t terminate_reason;
   const char *error_message;
 
-  //for wait query
-  int waiting;
-  int wakeup_flag;
+  // net waiting info
+  bool waiting;
+  bool wakeup_flag;
   double wakeup_time;
 
   double init_time;
@@ -70,9 +70,11 @@ public:
 
   void answer_query(void *ans) noexcept;
   void wait(int timeout_ms) noexcept;
+  void stop_wait_if_wakeup() noexcept;
   void wakeup() noexcept;
   void run_query() noexcept;
-  void on_wakeup() noexcept;
+  double on_wakeup() noexcept;
+  double on_alarm() noexcept;
   void set_result(script_result *res) noexcept;
 
 private:
