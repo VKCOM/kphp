@@ -337,11 +337,67 @@ void PhpScript::finish() noexcept {
         }
       }
     }
-    kprintf("[worked = %.3lf, net = %.3lf, script = %.3lf, queries_cnt = %5d, long_queries_cnt = %5d, heap_memory_used = %9d, peak_script_memory = %9d, total_script_memory = %9d] %s\n",
+
+    const double avg_creation_time = (vk::singleton<MapStat>::get().create.time * 1000) / vk::singleton<MapStat>::get().create.count;
+    const double eff_creation_time = avg_creation_time / script_time;
+    const double avg_dispose_time = (vk::singleton<MapStat>::get().dispose.time * 1000) / vk::singleton<MapStat>::get().dispose.count;
+    const double eff_dispose_time = avg_dispose_time / script_time;
+    const double avg_emplace_time = (vk::singleton<MapStat>::get().emplace.time * 1000) / vk::singleton<MapStat>::get().emplace.count;
+    const double eff_emplace_time = avg_emplace_time / script_time;
+    const double avg_find_time = (vk::singleton<MapStat>::get().find.time * 1000) / vk::singleton<MapStat>::get().find.count;
+    const double eff_find_time = avg_find_time / script_time;
+    const double avg_unset_time = (vk::singleton<MapStat>::get().unset.time * 1000) / vk::singleton<MapStat>::get().unset.count;
+    const double eff_unset_time = avg_unset_time / script_time;
+
+    const double total_array_time = vk::singleton<MapStat>::get().create.time + vk::singleton<MapStat>::get().dispose.time
+                                    + vk::singleton<MapStat>::get().emplace.time + vk::singleton<MapStat>::get().find.time
+                                    + vk::singleton<MapStat>::get().unset.time;
+    const double array_by_script_time = total_array_time / (script_time * 1000);
+    const auto [total_allocations, total_memory_allocated] = f$memory_get_allocations();
+
+    kprintf("\n[worked = %.3lf, net = %.3lf, script = %.3lf,"
+            " queries_cnt = %5d, long_queries_cnt = %5d, heap_memory_used = %9d,"
+            " peak_script_memory = %9d, total_script_memory = %9d\n"
+            " map_mem_allocated = %9zu, map_mem_deallocated = %9zu\n"
+            " map_create_count = %9zu, map_create_time_milli = %9f, map_create_avg_time_micro = %9f, eff = %9f\n"
+            " map_dispose_count = %9zu, map_dispose_time_milli = %9f, map_dispose_avg_time_micro = %9f, eff = %9f\n"
+            " map_emplace_count = %9zu, map_emplace_time_milli = %9f, map_emplace_avg_time_micro = %9f, eff = %9f\n"
+            " map_find_count = %9zu, map_find_time_milli = %9f, map_find_avg_time_micro = %9f, eff = %9f\n"
+            " map_unset_count = %9zu, map_unset_time_milli = %9f, map_unset_avg_time_micro = %9f, eff = %9f\n"
+            " total_array_time = %9f, array_by_script_time = %9f\n"
+            " total_allocations = %9zu, total_memory_allocated = %9zu"
+            "] %s\n",
             script_time + net_time, net_time, script_time, queries_cnt, long_queries_cnt,
             (int)dl::get_heap_memory_used(),
             (int)script_mem_stats.max_real_memory_used,
-            (int)script_mem_stats.real_memory_used, buf);
+            (int)script_mem_stats.real_memory_used,
+            vk::singleton<MapStat>::get().mem_allocated,
+            vk::singleton<MapStat>::get().mem_deallocated,
+            vk::singleton<MapStat>::get().create.count,
+            vk::singleton<MapStat>::get().create.time,
+            avg_creation_time,
+            eff_creation_time,
+            vk::singleton<MapStat>::get().dispose.count,
+            vk::singleton<MapStat>::get().dispose.time,
+            avg_dispose_time,
+            eff_dispose_time,
+            vk::singleton<MapStat>::get().emplace.count,
+            vk::singleton<MapStat>::get().emplace.time,
+            avg_emplace_time,
+            eff_emplace_time,
+            vk::singleton<MapStat>::get().find.count,
+            vk::singleton<MapStat>::get().find.time,
+            avg_find_time,
+            eff_find_time,
+            vk::singleton<MapStat>::get().unset.count,
+            vk::singleton<MapStat>::get().unset.time,
+            avg_unset_time,
+            eff_unset_time,
+            total_array_time,
+            array_by_script_time,
+            total_allocations,
+            total_memory_allocated,
+            buf);
   }
 }
 

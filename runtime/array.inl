@@ -4,13 +4,32 @@
 
 #pragma once
 
+#include <chrono>
 #include <type_traits>
 
 #include "common/algorithms/fastmod.h"
+#include "common/array_stat.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
   #error "this file must be included only from kphp_core.h"
 #endif
+
+class Profiler {
+  StatNode &stat_;
+  std::chrono::steady_clock::time_point start_{};
+
+public:
+  Profiler(StatNode &stat) noexcept
+    : stat_(stat)
+    , start_(std::chrono::steady_clock::now()) {}
+
+  ~Profiler() noexcept {
+    auto now = std::chrono::steady_clock::now();
+    std::chrono::duration<double, std::milli> diff = now - start_;
+    stat_.time += diff.count();
+    stat_.count += 1;
+  }
+};
 
 array_size::array_size(int64_t int_size, int64_t string_size, bool is_vector) :
   int_size(int_size),
@@ -283,6 +302,9 @@ typename array<T>::array_inner *array<T>::array_inner::create(int64_t new_int_si
     return p;
   }
 
+  vk::singleton<MapStat>::get().mem_allocated += mem_size;
+  Profiler profiler{vk::singleton<MapStat>::get().create};
+
   auto shift_pointer_to_array_inner = [](void *mem) {
     return reinterpret_cast<array_inner *>(static_cast<char *>(mem) + sizeof(array_inner_fields_for_map));
   };
@@ -318,6 +340,7 @@ void array<T>::array_inner::dispose() {
         return;
       }
 
+      Profiler profiler{vk::singleton<MapStat>::get().dispose};
       for (const string_hash_entry *it = begin(); it != end(); it = next(it)) {
         it->value.~T();
         if (is_string_hash_entry(it)) {
@@ -327,7 +350,9 @@ void array<T>::array_inner::dispose() {
 
       php_assert(this != empty_array());
       auto shifted_this = reinterpret_cast<char *>(this) - sizeof(array_inner_fields_for_map);
-      dl::deallocate(shifted_this, sizeof_map(int_buf_size, string_buf_size));
+      auto size = sizeof_map(int_buf_size, string_buf_size);
+      dl::deallocate(shifted_this, size);
+      vk::singleton<MapStat>::get().mem_deallocated += size;
     }
   }
 }
@@ -383,6 +408,7 @@ T &array<T>::array_inner::set_vector_value(int64_t int_key, const T &v) {
 template<class T>
 template<class ...Args>
 T &array<T>::array_inner::emplace_int_key_map_value(overwrite_element policy, int64_t int_key, Args &&... args) noexcept {
+  Profiler profiler{vk::singleton<MapStat>::get().emplace};
   static_assert(std::is_constructible<T, Args...>{}, "should be constructible");
   uint32_t bucket = choose_bucket_int(int_key);
   while (int_entries[bucket].next != EMPTY_POINTER && int_entries[bucket].int_key != int_key) {
@@ -428,6 +454,7 @@ T array<T>::array_inner::unset_vector_value() {
 
 template<class T>
 T array<T>::array_inner::unset_map_value(int64_t int_key) {
+  Profiler profiler{vk::singleton<MapStat>::get().unset};
   uint32_t bucket = choose_bucket_int(int_key);
   while (int_entries[bucket].next != EMPTY_POINTER && int_entries[bucket].int_key != int_key) {
     if (unlikely (++bucket == int_buf_size)) {
@@ -519,6 +546,7 @@ auto &array<T>::array_inner::find_map_entry(S &self, const char *key, string::si
 template<class T>
 template<class ...Key>
 const T *array<T>::array_inner::find_map_value(Key &&... key) const noexcept {
+  Profiler profiler{vk::singleton<MapStat>::get().find};
   const auto &entry = find_map_entry(*this, std::forward<Key>(key)...);
   return entry.next != EMPTY_POINTER ? &entry.value : nullptr;
 }
@@ -537,6 +565,7 @@ template<class T>
 template<class STRING, class ...Args>
 std::pair<T &, bool> array<T>::array_inner::emplace_string_key_map_value(overwrite_element policy, int64_t int_key, STRING &&string_key, Args &&... args) noexcept {
   static_assert(std::is_same<std::decay_t<STRING>, string>::value, "string_key should be string");
+  Profiler profiler{vk::singleton<MapStat>::get().emplace};
 
   string_hash_entry *string_entries = get_string_entries();
   uint32_t bucket = choose_bucket_string(int_key);
@@ -576,6 +605,7 @@ T &array<T>::array_inner::set_map_value(overwrite_element policy, int64_t int_ke
 
 template<class T>
 T array<T>::array_inner::unset_map_value(const string &string_key, int64_t precomputed_hash) {
+  Profiler profiler{vk::singleton<MapStat>::get().unset};
   string_hash_entry *string_entries = get_string_entries();
   uint32_t bucket = choose_bucket_string(precomputed_hash);
   while (string_entries[bucket].next != EMPTY_POINTER && (string_entries[bucket].int_key != precomputed_hash || string_entries[bucket].string_key != string_key)) {
