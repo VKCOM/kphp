@@ -25,7 +25,7 @@ inline size_t get_memory_used(size_t acquired, size_t released, size_t buffer_si
 StatsHouseClient::StatsHouseClient(const std::string &ip, int port)
   : transport(ip, port){};
 
-void StatsHouseClient::add_request_stats(WorkerType raw_worker_type, uint64_t script_time_ns, uint64_t net_time_ns, uint64_t memory_used,
+void StatsHouseClient::send_request_stats(WorkerType raw_worker_type, uint64_t script_time_ns, uint64_t net_time_ns, uint64_t memory_used,
                                          uint64_t real_memory_used, uint64_t script_queries, uint64_t long_script_queries) {
   const char *cluster_name = vk::singleton<ServerConfig>::get().get_cluster_name();
   const char *worker_type = raw_worker_type == WorkerType::general_worker ? "general" : "job";
@@ -39,7 +39,7 @@ void StatsHouseClient::add_request_stats(WorkerType raw_worker_type, uint64_t sc
   transport.metric("kphp_requests_outgoing_long_queries").tag(cluster_name).tag(worker_type).write_value(long_script_queries);
 }
 
-void StatsHouseClient::add_job_stats(uint64_t job_wait_ns, uint64_t request_memory_used, uint64_t request_real_memory_used, uint64_t response_memory_used,
+void StatsHouseClient::send_job_stats(uint64_t job_wait_ns, uint64_t request_memory_used, uint64_t request_real_memory_used, uint64_t response_memory_used,
                                      uint64_t response_real_memory_used) {
   const char *cluster_name = vk::singleton<ServerConfig>::get().get_cluster_name();
   transport.metric("kphp_job_queue_time").tag(cluster_name).write_value(job_wait_ns);
@@ -51,13 +51,13 @@ void StatsHouseClient::add_job_stats(uint64_t job_wait_ns, uint64_t request_memo
   transport.metric("kphp_job_response_memory_usage").tag(cluster_name).tag("real_used").write_value(response_real_memory_used);
 }
 
-void StatsHouseClient::add_job_common_memory_stats(uint64_t job_common_request_memory_used, uint64_t job_common_request_real_memory_used) {
+void StatsHouseClient::send_job_common_memory_stats(uint64_t job_common_request_memory_used, uint64_t job_common_request_real_memory_used) {
   const char *cluster_name = vk::singleton<ServerConfig>::get().get_cluster_name();
   transport.metric("kphp_job_common_request_memory").tag(cluster_name).tag("used").write_value(job_common_request_memory_used);
   transport.metric("kphp_job_common_request_memory").tag(cluster_name).tag("real_used").write_value(job_common_request_real_memory_used);
 }
 
-void StatsHouseClient::add_worker_memory_stats(WorkerType raw_worker_type, const mem_info_t &mem_stats) {
+void StatsHouseClient::send_worker_memory_stats(WorkerType raw_worker_type, const mem_info_t &mem_stats) {
   const char *cluster_name = vk::singleton<ServerConfig>::get().get_cluster_name();
   const char *worker_type = raw_worker_type == WorkerType::general_worker ? "general" : "job";
   transport.metric("kphp_workers_memory").tag(cluster_name).tag(worker_type).tag("vm_peak").write_value(mem_stats.vm_peak);
@@ -66,7 +66,7 @@ void StatsHouseClient::add_worker_memory_stats(WorkerType raw_worker_type, const
   transport.metric("kphp_workers_memory").tag(cluster_name).tag(worker_type).tag("rss_peak").write_value(mem_stats.rss_peak);
 }
 
-void StatsHouseClient::add_common_master_stats(const workers_stats_t &workers_stats, const memory_resource::MemoryStats &memory_stats, double cpu_s_usage,
+void StatsHouseClient::send_common_master_stats(const workers_stats_t &workers_stats, const memory_resource::MemoryStats &memory_stats, double cpu_s_usage,
                                                double cpu_u_usage, long long int instance_cache_memory_swaps_ok,
                                                long long int instance_cache_memory_swaps_fail) {
   const char *cluster_name = vk::singleton<ServerConfig>::get().get_cluster_name();
@@ -147,15 +147,11 @@ void StatsHouseClient::add_common_master_stats(const workers_stats_t &workers_st
     .write_value(unpack(instance_cache_element_stats.elements_logically_expired_but_fetched));
 
   using namespace job_workers;
-  const JobStats &job_stats = vk::singleton<SharedMemoryManager>::get().get_stats();
-  transport.metric("kphp_workers_jobs_queue_size").tag(cluster_name).write_value(unpack(job_stats.job_queue_size));
-
-  transport.metric("kphp_workers_job_messages").tag(cluster_name).tag("reserved").write_value(job_stats.messages.count);
-  transport.metric("kphp_workers_job_messages").tag(cluster_name).tag("acquire_fails").write_value(unpack(job_stats.messages.acquire_fails));
-  transport.metric("kphp_workers_job_messages").tag(cluster_name).tag("acquire").write_value(unpack(job_stats.messages.acquired));
-  transport.metric("kphp_workers_job_messages").tag(cluster_name).tag("released").write_value(unpack(job_stats.messages.released));
-
-  this->add_job_workers_shared_memory_stats(cluster_name, job_stats);
+  if (vk::singleton<job_workers::SharedMemoryManager>::get().is_initialized()) {
+    const JobStats &job_stats = vk::singleton<SharedMemoryManager>::get().get_stats();
+    transport.metric("kphp_workers_jobs_queue_size").tag(cluster_name).write_value(unpack(job_stats.job_queue_size));
+    this->add_job_workers_shared_memory_stats(cluster_name, job_stats);
+  }
 }
 
 void StatsHouseClient::add_job_workers_shared_memory_stats(const char *cluster_name, const job_workers::JobStats &job_stats) {

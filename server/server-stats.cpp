@@ -619,7 +619,8 @@ void ServerStats::add_request_stats(double script_time_sec, double net_time_sec,
 
   using namespace statshouse;
   if (StatsHouseClient::has()) {
-    StatsHouseClient::get().add_request_stats(worker_type_, script_time.count(), net_time.count(), memory_used, real_memory_used, script_queries, long_script_queries);
+    StatsHouseClient::get().send_request_stats(worker_type_, script_time.count(), net_time.count(), memory_used, real_memory_used, script_queries,
+                                               long_script_queries);
   }
 }
 
@@ -629,7 +630,8 @@ void ServerStats::add_job_stats(double job_wait_time_sec, int64_t request_memory
   shared_stats_->job_workers.add_job_stats(job_wait_time.count(), request_memory_used, request_real_memory_used, response_memory_used, response_real_memory_used);
 
   if (StatsHouseClient::has()) {
-    StatsHouseClient::get().add_job_stats(job_wait_time.count(), request_memory_used, request_real_memory_used, response_memory_used, response_real_memory_used);
+    StatsHouseClient::get().send_job_stats(job_wait_time.count(), request_memory_used, request_real_memory_used, response_memory_used,
+                                           response_real_memory_used);
   }
 }
 
@@ -637,7 +639,7 @@ void ServerStats::add_job_common_memory_stats(int64_t common_request_memory_used
   shared_stats_->job_workers.add_job_common_memory_stats(common_request_memory_used, common_request_real_memory_used);
 
   if (StatsHouseClient::has()) {
-    StatsHouseClient::get().add_job_common_memory_stats(common_request_memory_used, common_request_real_memory_used);
+    StatsHouseClient::get().send_job_common_memory_stats(common_request_memory_used, common_request_real_memory_used);
   }
 }
 
@@ -650,7 +652,7 @@ void ServerStats::update_this_worker_stats() noexcept {
 
   if (StatsHouseClient::has() && (now_tp - last_update_statshouse >= std::chrono::seconds{1})) {
     auto virtual_memory_stat = get_self_mem_stats();
-    StatsHouseClient::get().add_worker_memory_stats(worker_type_, virtual_memory_stat);
+    StatsHouseClient::get().send_worker_memory_stats(worker_type_, virtual_memory_stat);
     last_update_statshouse = now_tp;
   }
 }

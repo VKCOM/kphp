@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "server/statshouse/statshouse.h"
+#include "third-party/statshouse.h"
 
 #include <cassert>
 
@@ -31,20 +31,20 @@ public:
     return *inner;
   }
 
-  void add_request_stats(WorkerType raw_worker_type, uint64_t script_time_ns, uint64_t net_time_ns, uint64_t memory_used, uint64_t real_memory_used,
+  void send_request_stats(WorkerType raw_worker_type, uint64_t script_time_ns, uint64_t net_time_ns, uint64_t memory_used, uint64_t real_memory_used,
                          uint64_t script_queries, uint64_t long_script_queries);
 
-  void add_job_stats(uint64_t job_wait_ns, uint64_t request_memory_used, uint64_t request_real_memory_used, uint64_t response_memory_used,
+  void send_job_stats(uint64_t job_wait_ns, uint64_t request_memory_used, uint64_t request_real_memory_used, uint64_t response_memory_used,
                      uint64_t response_real_memory_used);
 
-  void add_job_common_memory_stats(uint64_t job_common_request_memory_used, uint64_t job_common_request_real_memory_used);
+  void send_job_common_memory_stats(uint64_t job_common_request_memory_used, uint64_t job_common_request_real_memory_used);
 
-  void add_worker_memory_stats(WorkerType raw_worker_type, const mem_info_t &mem_stats);
+  void send_worker_memory_stats(WorkerType raw_worker_type, const mem_info_t &mem_stats);
 
   /**
    * Must be called from master process only
    */
-  void add_common_master_stats(const workers_stats_t &workers_stats, const memory_resource::MemoryStats &memory_stats, double cpu_s_usage, double cpu_u_usage,
+  void send_common_master_stats(const workers_stats_t &workers_stats, const memory_resource::MemoryStats &memory_stats, double cpu_s_usage, double cpu_u_usage,
                                long long int instance_cache_memory_swaps_ok, long long int instance_cache_memory_swaps_fail);
 
 private:
