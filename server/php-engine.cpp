@@ -438,6 +438,8 @@ int hts_php_wakeup(connection *c) {
   if (c->status == conn_wait_net || c->status == conn_wait_aio) {
     c->status = conn_expect_query;
     HTS_FUNC(c)->ht_wakeup(c);
+  } else if (c->status == conn_wait_timeout) {
+    HTS_FUNC(c)->ht_alarm(c);
   }
   if (c->Out.total_bytes > 0) {
     c->flags |= C_WANTWR;
@@ -449,6 +451,7 @@ int hts_php_wakeup(connection *c) {
 
 
 int hts_func_wakeup(connection *c);
+int hts_func_alarm(connection *c);
 int hts_func_execute(connection *c, int op);
 int hts_func_close(connection *c, int who);
 
@@ -456,7 +459,7 @@ http_server_functions http_methods = [] {
   auto res = http_server_functions();
   res.execute = hts_func_execute;
   res.ht_wakeup = hts_func_wakeup;
-  res.ht_alarm = hts_func_wakeup;
+  res.ht_alarm = hts_func_alarm;
   res.ht_close = hts_func_close;
 
   return res;
@@ -522,7 +525,7 @@ int do_hts_func_wakeup(connection *c, bool flag) {
 
   auto *worker = reinterpret_cast<PhpWorker *>(D->extra);
   assert(worker);
-  std::optional<double> timeout = worker->enter_lifecycle();
+  std::optional<double> timeout = worker->on_wakeup();
   if (!timeout.has_value()) {
     php_worker.reset();
     hts_at_query_end(c, flag);
@@ -629,13 +632,33 @@ int hts_func_wakeup(connection *c) {
   return do_hts_func_wakeup(c, true);
 }
 
+int hts_func_alarm(connection *c) {
+  hts_data *D = HTS_DATA(c);
+
+  assert (c->status == conn_wait_timeout);
+  c->status = conn_expect_query;
+
+  auto *worker = reinterpret_cast<PhpWorker *>(D->extra);
+  assert(worker);
+  std::optional<double> timeout = worker->on_alarm();
+  if (!timeout.has_value()) {
+    php_worker.reset();
+    hts_at_query_end(c, true);
+  } else {
+    assert (*timeout > 0);
+    assert (c->pending_queries >= 0 && c->status == conn_wait_net);
+    set_connection_timeout(c, *timeout);
+  }
+  return 0;
+}
+
 int hts_func_close(connection *c, int who __attribute__((unused))) {
   hts_data *D = HTS_DATA(c);
 
   auto *worker = reinterpret_cast<PhpWorker *>(D->extra);
   if (worker != nullptr) {
     worker->terminate(1, script_error_t::http_connection_close, "http connection close");
-    std::optional<double> timeout = worker->enter_lifecycle();
+    std::optional<double> timeout = worker->on_wakeup();
     D->extra = nullptr;
     assert ("worker is unfinished after closing connection" && !timeout.has_value());
     php_worker.reset();
@@ -647,8 +670,6 @@ int hts_func_close(connection *c, int who __attribute__((unused))) {
   RPC INTERFACE
  ***/
 int rpcs_php_wakeup(connection *c);
-
-int rpcc_php_wakeup(connection *c);
 
 conn_type_t ct_php_engine_rpc_server = [] {
   auto res = conn_type_t();
@@ -675,6 +696,8 @@ conn_type_t ct_php_engine_rpc_server = [] {
 
   return res;
 }();
+
+int rpcc_php_wakeup(connection *c);
 
 conn_type_t ct_php_rpc_client = [] {
   auto res = conn_type_t();
@@ -707,6 +730,8 @@ int rpcs_php_wakeup(connection *c) {
   if (c->status == conn_wait_net) {
     c->status = conn_expect_query;
     TCP_RPCS_FUNC(c)->rpc_wakeup(c);
+  } else if (c->status == conn_wait_timeout) {
+    TCP_RPCS_FUNC(c)->rpc_alarm(c);
   }
   if (c->out_p.total_bytes > 0) {
     c->flags |= C_WANTWR;
@@ -720,6 +745,8 @@ int rpcc_php_wakeup(connection *c) {
   if (c->status == conn_wait_net) {
     c->status = conn_expect_query;
     TCP_RPCC_FUNC(c)->rpc_wakeup(c);
+  } else if (c->status == conn_wait_timeout) {
+    TCP_RPCC_FUNC(c)->rpc_alarm(c);
   }
   if (c->out.total_bytes > 0) {
     c->flags |= C_WANTWR;
@@ -730,6 +757,7 @@ int rpcc_php_wakeup(connection *c) {
 }
 
 int rpcx_func_wakeup(connection *c);
+int rpcx_func_alarm(connection *c);
 int rpcx_func_close(connection *c, int who);
 
 int rpcc_func_ready(connection *c);
@@ -742,7 +770,7 @@ tcp_rpc_server_functions rpc_methods = [] {
   res.rpc_check_perm = tcp_rpcs_default_check_perm;
   res.rpc_init_crypto = tcp_rpcs_init_crypto;
   res.rpc_wakeup = rpcx_func_wakeup; //replaced
-  res.rpc_alarm = rpcx_func_wakeup; //replaced
+  res.rpc_alarm = rpcx_func_alarm; //replaced
   res.rpc_close = rpcx_func_close; //replaced
 
   return res;
@@ -759,7 +787,7 @@ tcp_rpc_client_functions rpc_client_methods = [] {
   res.rpc_start_crypto = tcp_rpcc_start_crypto;
   res.rpc_ready = rpcc_func_ready;
   res.rpc_wakeup = rpcx_func_wakeup; //replaced
-  res.rpc_alarm = rpcx_func_wakeup; //replaced
+  res.rpc_alarm = rpcx_func_alarm; //replaced
   res.rpc_close = rpcx_func_close; //replaced
 
   return res;
@@ -821,7 +849,27 @@ int rpcx_func_wakeup(connection *c) {
 
   auto *worker = reinterpret_cast<PhpWorker *>(D->extra);
   assert(worker);
-  std::optional<double> timeout = worker->enter_lifecycle();
+  std::optional<double> timeout = worker->on_wakeup();
+  if (!timeout.has_value()) {
+    php_worker.reset();
+    rpcx_at_query_end(c);
+  } else {
+    assert (c->pending_queries >= 0 && c->status == conn_wait_net);
+    assert (*timeout > 0);
+    set_connection_timeout(c, *timeout);
+  }
+  return 0;
+}
+
+int rpcx_func_alarm(connection *c) {
+  auto *D = TCP_RPC_DATA(c);
+
+  assert(c->status == conn_wait_timeout);
+  c->status = conn_expect_query;
+
+  auto *worker = reinterpret_cast<PhpWorker *>(D->extra);
+  assert(worker);
+  std::optional<double> timeout = worker->on_alarm();
   if (!timeout.has_value()) {
     php_worker.reset();
     rpcx_at_query_end(c);
@@ -852,7 +900,7 @@ int rpcx_func_close(connection *c, int who __attribute__((unused))) {
   auto *worker = reinterpret_cast<PhpWorker *>(D->extra);
   if (worker != nullptr) {
     worker->terminate(1, script_error_t::rpc_connection_close, "rpc connection close");
-    std::optional<double> timeout = worker->enter_lifecycle();
+    std::optional<double> timeout = worker->on_wakeup();
     D->extra = nullptr;
     assert ("worker is unfinished after closing connection" && !timeout.has_value());
     php_worker.reset();
@@ -1015,7 +1063,6 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       }
       auto custom_settings = try_fetch_lookup_custom_worker_settings();
       double actual_script_timeout = custom_settings.has_timeout() ? normalize_script_timeout(custom_settings.php_timeout_ms / 1000.0) : script_timeout;
-      set_connection_timeout(c, actual_script_timeout);
 
       std::vector<int> buffer(len / sizeof(int));
       auto fetched_bytes = tl_fetch_data(buffer.data(), len);
@@ -1029,6 +1076,7 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       php_worker.emplace(run_once ? once_worker : rpc_worker, c, std::move(rpc_data), req_id, actual_script_timeout);
       D->extra = &php_worker.value();
 
+      set_connection_timeout(c, actual_script_timeout);
       c->status = conn_wait_net;
       rpcx_func_wakeup(c);
       break;
