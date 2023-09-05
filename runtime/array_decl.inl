@@ -78,7 +78,7 @@ private:
   using entry_pointer_type = list_entry_pointer_type;
   using list_hash_entry = array_list_hash_entry;
 
-  struct int_hash_entry : list_hash_entry {
+  struct array_bucket : list_hash_entry {
     T value;
 
     int64_t int_key;
@@ -104,24 +104,24 @@ private:
 
     static constexpr entry_pointer_type EMPTY_POINTER = 0;
 
-    int_hash_entry int_entries[KPHP_ARRAY_TAIL_SIZE];
+    array_bucket int_entries[KPHP_ARRAY_TAIL_SIZE];
 
     inline bool is_vector() const __attribute__ ((always_inline));
 
     inline list_hash_entry *get_entry(entry_pointer_type pointer) const __attribute__ ((always_inline));
     inline entry_pointer_type get_pointer(list_hash_entry *entry) const __attribute__ ((always_inline));
 
-    inline const int_hash_entry *begin() const __attribute__ ((always_inline)) ubsan_supp("alignment");
-    inline const int_hash_entry *next(const int_hash_entry *ptr) const __attribute__ ((always_inline)) ubsan_supp("alignment");
-    inline const int_hash_entry *prev(const int_hash_entry *ptr) const __attribute__ ((always_inline)) ubsan_supp("alignment");
-    inline const int_hash_entry *end() const __attribute__ ((always_inline)) ubsan_supp("alignment");
+    inline const array_bucket *begin() const __attribute__ ((always_inline)) ubsan_supp("alignment");
+    inline const array_bucket *next(const array_bucket *ptr) const __attribute__ ((always_inline)) ubsan_supp("alignment");
+    inline const array_bucket *prev(const array_bucket *ptr) const __attribute__ ((always_inline)) ubsan_supp("alignment");
+    inline const array_bucket *end() const __attribute__ ((always_inline)) ubsan_supp("alignment");
 
-    inline int_hash_entry *begin() __attribute__ ((always_inline)) ubsan_supp("alignment");
-    inline int_hash_entry *next(int_hash_entry *ptr) __attribute__ ((always_inline)) ubsan_supp("alignment");
-    inline int_hash_entry *prev(int_hash_entry *ptr) __attribute__ ((always_inline)) ubsan_supp("alignment");
-    inline int_hash_entry *end() __attribute__ ((always_inline)) ubsan_supp("alignment");
+    inline array_bucket *begin() __attribute__ ((always_inline)) ubsan_supp("alignment");
+    inline array_bucket *next(array_bucket *ptr) __attribute__ ((always_inline)) ubsan_supp("alignment");
+    inline array_bucket *prev(array_bucket *ptr) __attribute__ ((always_inline)) ubsan_supp("alignment");
+    inline array_bucket *end() __attribute__ ((always_inline)) ubsan_supp("alignment");
 
-    inline bool is_string_hash_entry(const int_hash_entry *ptr) const __attribute__ ((always_inline));
+    inline bool is_string_hash_entry(const array_bucket *ptr) const __attribute__ ((always_inline));
 
     inline array_inner_fields_for_map &fields_for_map() __attribute__((always_inline));
     inline const array_inner_fields_for_map &fields_for_map() const __attribute__((always_inline));

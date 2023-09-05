@@ -26,7 +26,7 @@ public:
   using key_type = typename array_type::key_type;
   using inner_type = const_conditional_t<typename array_type::array_inner>;
   using list_hash_type = const_conditional_t<typename array_type::list_hash_entry>;
-  using int_hash_type = const_conditional_t<typename array_type::int_hash_entry>;
+  using bucket_type = const_conditional_t<typename array_type::array_bucket>;
 
   inline constexpr array_iterator() noexcept __attribute__ ((always_inline)) = default;
 
@@ -40,11 +40,11 @@ public:
   }
 
   inline value_type &get_value() noexcept __attribute__ ((always_inline)) {
-    return self_->is_vector() ? *reinterpret_cast<value_type *>(entry_) : static_cast<int_hash_type *>(entry_)->value;
+    return self_->is_vector() ? *reinterpret_cast<value_type *>(entry_) : static_cast<bucket_type *>(entry_)->value;
   }
 
   inline const value_type &get_value() const noexcept __attribute__ ((always_inline)) {
-    return self_->is_vector() ? *reinterpret_cast<value_type *>(entry_) : static_cast<int_hash_type *>(entry_)->value;
+    return self_->is_vector() ? *reinterpret_cast<value_type *>(entry_) : static_cast<bucket_type *>(entry_)->value;
   }
 
   inline key_type get_key() const noexcept __attribute__ ((always_inline)) {
@@ -60,36 +60,36 @@ public:
   }
 
   inline int64_t get_int_key() noexcept __attribute__ ((always_inline)) {
-    return static_cast<int_hash_type *>(entry_)->int_key;
+    return static_cast<bucket_type *>(entry_)->int_key;
   }
 
   inline int64_t get_int_key() const noexcept __attribute__ ((always_inline)) {
-    return static_cast<const int_hash_type *>(entry_)->int_key;
+    return static_cast<const bucket_type *>(entry_)->int_key;
   }
 
   inline bool is_string_key() const noexcept __attribute__ ((always_inline)) ubsan_supp("alignment") {
-    return !self_->is_vector() && self_->is_string_hash_entry(static_cast<const int_hash_type *>(entry_));
+    return !self_->is_vector() && self_->is_string_hash_entry(static_cast<const bucket_type *>(entry_));
   }
 
   inline const_conditional_t<string> &get_string_key() noexcept __attribute__ ((always_inline)) {
-    return static_cast<int_hash_type *>(entry_)->string_key;
+    return static_cast<bucket_type *>(entry_)->string_key;
   }
 
   inline const string &get_string_key() const noexcept __attribute__ ((always_inline)) {
-    return static_cast<const int_hash_type *>(entry_)->string_key;
+    return static_cast<const bucket_type *>(entry_)->string_key;
   }
 
   inline array_iterator &operator++() noexcept __attribute__ ((always_inline)) ubsan_supp("alignment") {
     entry_ = self_->is_vector()
              ? reinterpret_cast<list_hash_type *>(reinterpret_cast<value_type *>(entry_) + 1)
-             : self_->next(static_cast<int_hash_type *>(entry_));
+             : self_->next(static_cast<bucket_type *>(entry_));
     return *this;
   }
 
   inline array_iterator &operator--() noexcept __attribute__ ((always_inline)) ubsan_supp("alignment") {
     entry_ = self_->is_vector()
              ? reinterpret_cast<list_hash_type *>(reinterpret_cast<value_type *>(entry_) - 1)
-             : self_->prev(static_cast<int_hash_type *>(entry_));
+             : self_->prev(static_cast<bucket_type *>(entry_));
     return *this;
   }
 
@@ -164,7 +164,7 @@ public:
       }
     }
 
-    int_hash_type *result = nullptr;
+    bucket_type *result = nullptr;
     if (n < 0) {
       result = arr.p->end();
       while (n < 0) {

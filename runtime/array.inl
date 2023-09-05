@@ -98,7 +98,7 @@ void sort(T *begin_init, T *end_init, const T1 &compare) {
 } // namespace dl
 
 template<class T>
-typename array<T>::key_type array<T>::int_hash_entry::get_key() const {
+typename array<T>::key_type array<T>::array_bucket::get_key() const {
   return string_key.is_dummy_string() ? key_type{int_key} : key_type{string_key};
 }
 
@@ -148,47 +148,47 @@ typename array<T>::entry_pointer_type array<T>::array_inner::get_pointer(list_ha
 
 
 template<class T>
-const typename array<T>::int_hash_entry *array<T>::array_inner::begin() const {
-  return (const int_hash_entry *)get_entry(last.next);
+const typename array<T>::array_bucket *array<T>::array_inner::begin() const {
+  return (const array_bucket *)get_entry(last.next);
 }
 
 template<class T>
-const typename array<T>::int_hash_entry *array<T>::array_inner::next(const int_hash_entry *ptr) const {
-  return (const int_hash_entry *)get_entry(ptr->next);
+const typename array<T>::array_bucket *array<T>::array_inner::next(const array_bucket *ptr) const {
+  return (const array_bucket *)get_entry(ptr->next);
 }
 
 template<class T>
-const typename array<T>::int_hash_entry *array<T>::array_inner::prev(const int_hash_entry *ptr) const {
-  return (const int_hash_entry *)get_entry(ptr->prev);
+const typename array<T>::array_bucket *array<T>::array_inner::prev(const array_bucket *ptr) const {
+  return (const array_bucket *)get_entry(ptr->prev);
 }
 
 template<class T>
-const typename array<T>::int_hash_entry *array<T>::array_inner::end() const {
+const typename array<T>::array_bucket *array<T>::array_inner::end() const {
   return const_cast<array<T>::array_inner *>(this)->end();
 }
 
 template<class T>
-typename array<T>::int_hash_entry *array<T>::array_inner::begin() {
-  return (int_hash_entry *)get_entry(end()->next);
+typename array<T>::array_bucket *array<T>::array_inner::begin() {
+  return (array_bucket *)get_entry(end()->next);
 }
 
 template<class T>
-typename array<T>::int_hash_entry *array<T>::array_inner::next(int_hash_entry *ptr) {
-  return (int_hash_entry *)get_entry(ptr->next);
+typename array<T>::array_bucket *array<T>::array_inner::next(array_bucket *ptr) {
+  return (array_bucket *)get_entry(ptr->next);
 }
 
 template<class T>
-typename array<T>::int_hash_entry *array<T>::array_inner::prev(int_hash_entry *ptr) {
-  return (int_hash_entry *)get_entry(ptr->prev);
+typename array<T>::array_bucket *array<T>::array_inner::prev(array_bucket *ptr) {
+  return (array_bucket *)get_entry(ptr->prev);
 }
 
 template<class T>
-typename array<T>::int_hash_entry *array<T>::array_inner::end() {
-  return (int_hash_entry * ) &last;
+typename array<T>::array_bucket *array<T>::array_inner::end() {
+  return (array_bucket * ) &last;
 }
 
 template<class T>
-bool array<T>::array_inner::is_string_hash_entry(const int_hash_entry *ptr) const {
+bool array<T>::array_inner::is_string_hash_entry(const array_bucket *ptr) const {
   return !ptr->string_key.is_dummy_string();
 }
 
@@ -209,7 +209,7 @@ size_t array<T>::array_inner::sizeof_vector(uint32_t int_size) {
 
 template<class T>
 size_t array<T>::array_inner::sizeof_map(uint32_t int_size) {
-  return sizeof(array_inner_fields_for_map) + sizeof(array_inner) + int_size * sizeof(int_hash_entry);
+  return sizeof(array_inner_fields_for_map) + sizeof(array_inner) + int_size * sizeof(array_bucket);
 }
 
 template<class T>
@@ -278,7 +278,7 @@ void array<T>::array_inner::dispose() {
         return;
       }
 
-      for (const int_hash_entry *it = begin(); it != end(); it = next(it)) {
+      for (const array_bucket *it = begin(); it != end(); it = next(it)) {
         it->value.~T();
         if (is_string_hash_entry(it)) {
           it->string_key.~string();
@@ -425,7 +425,7 @@ T array<T>::array_inner::unset_map_value(int64_t int_key) {
 
       if (wnt > j || wnt <= bucket) {
         list_hash_entry *ei = int_entries + ri, *ej = int_entries + rj;
-        memcpy(ei, ej, sizeof(int_hash_entry));
+        memcpy(ei, ej, sizeof(array_bucket));
         ej->next = EMPTY_POINTER;
 
         get_entry(ei->prev)->next = get_pointer(ei);
@@ -502,7 +502,7 @@ template<class STRING, class ...Args>
 std::pair<T &, bool> array<T>::array_inner::emplace_string_key_map_value(overwrite_element policy, int64_t int_key, STRING &&string_key, Args &&... args) noexcept {
   static_assert(std::is_same<std::decay_t<STRING>, string>::value, "string_key should be string");
 
-  int_hash_entry *string_entries = int_entries;
+  array_bucket *string_entries = int_entries;
   uint32_t bucket = choose_bucket(int_key);
   while (string_entries[bucket].next != EMPTY_POINTER &&
          (string_entries[bucket].int_key != int_key || string_entries[bucket].string_key.is_dummy_string() || string_entries[bucket].string_key != string_key)) {
@@ -541,7 +541,7 @@ T &array<T>::array_inner::set_map_value(overwrite_element policy, int64_t int_ke
 
 template<class T>
 T array<T>::array_inner::unset_map_value(const string &string_key, int64_t precomputed_hash) {
-  int_hash_entry *string_entries = int_entries;
+  array_bucket *string_entries = int_entries;
   uint32_t bucket = choose_bucket(precomputed_hash);
   while (string_entries[bucket].next != EMPTY_POINTER &&
          (string_entries[bucket].int_key != precomputed_hash || string_entries[bucket].string_key.is_dummy_string() || string_entries[bucket].string_key != string_key)) {
@@ -578,7 +578,7 @@ T array<T>::array_inner::unset_map_value(const string &string_key, int64_t preco
 
       if (wnt > j || wnt <= bucket) {
         list_hash_entry *ei = string_entries + ri, *ej = string_entries + rj;
-        memcpy(ei, ej, sizeof(int_hash_entry));
+        memcpy(ei, ej, sizeof(array_bucket));
         ej->next = EMPTY_POINTER;
 
         get_entry(ei->prev)->next = get_pointer(ei);
@@ -658,7 +658,7 @@ bool array<T>::mutate_if_map_shared(uint32_t mul) {
   if (p->ref_cnt > 0) {
     array_inner *new_array = array_inner::create(p->int_size * mul + 1, false);
 
-    for (const int_hash_entry *it = p->begin(); it != p->end(); it = p->next(it)) {
+    for (const array_bucket *it = p->begin(); it != p->end(); it = p->next(it)) {
       if (p->is_string_hash_entry(it)) {
         new_array->set_map_value(overwrite_element::YES, it->int_key, it->string_key, it->value);
       } else {
@@ -708,7 +708,7 @@ void array<T>::mutate_if_map_needed_int() {
     int64_t new_int_size = p->int_size * 2 + 1;
     array_inner *new_array = array_inner::create(new_int_size, false);
 
-    for (int_hash_entry *it = p->begin(); it != p->end(); it = p->next(it)) {
+    for (array_bucket *it = p->begin(); it != p->end(); it = p->next(it)) {
       if (p->is_string_hash_entry(it)) {
         new_array->emplace_string_key_map_value(overwrite_element::YES,
                                                 it->int_key, std::move(it->string_key), std::move(it->value));
@@ -752,7 +752,7 @@ void array<T>::reserve(int64_t int_size, bool make_vector_if_possible) {
         }
         php_assert (new_array->max_key == p->max_key);
       } else {
-        for (const int_hash_entry *it = p->begin(); it != p->end(); it = p->next(it)) {
+        for (const array_bucket *it = p->begin(); it != p->end(); it = p->next(it)) {
           if (p->is_string_hash_entry(it)) {
             new_array->set_map_value(overwrite_element::YES, it->int_key, it->string_key, it->value);
           } else {
@@ -852,7 +852,7 @@ void array<T>::copy_from(const array<T1> &other) {
       new_array->push_back_vector_value(convert_to<T>::convert(it[i]));
     }
   } else {
-    for (const typename array<T1>::int_hash_entry *it = other.p->begin(); it != other.p->end(); it = other.p->next(it)) {
+    for (const typename array<T1>::array_bucket *it = other.p->begin(); it != other.p->end(); it = other.p->next(it)) {
       if (other.p->is_string_hash_entry(it)) {
         new_array->set_map_value(overwrite_element::YES, it->int_key, it->string_key, convert_to<T>::convert(it->value));
       } else {
@@ -1091,7 +1091,7 @@ T &array<T>::operator[](const const_iterator &it) noexcept {
     const auto key = static_cast<int64_t>(reinterpret_cast<const T *>(it.entry_) - reinterpret_cast<const T *>(it.self_->int_entries));
     return operator[](key);
   }
-  auto *entry = reinterpret_cast<const int_hash_entry *>(it.entry_);
+  auto *entry = reinterpret_cast<const array_bucket *>(it.entry_);
   if (it.self_->is_string_hash_entry(entry)) {
     mutate_to_map_if_vector_or_map_need_string();
     return p->emplace_string_key_map_value(overwrite_element::NO, entry->int_key, entry->string_key).first;
@@ -1256,7 +1256,7 @@ void array<T>::set_value(const const_iterator &it) noexcept {
     emplace_value(key, *reinterpret_cast<const T *>(it.entry_));
     return;
   }
-  auto *entry = reinterpret_cast<const int_hash_entry *>(it.entry_);
+  auto *entry = reinterpret_cast<const array_bucket *>(it.entry_);
   if (it.self_->is_string_hash_entry(entry)) {
     mutate_to_map_if_vector_or_map_need_string();
     p->emplace_string_key_map_value(overwrite_element::YES, entry->int_key, entry->string_key, entry->value);
@@ -1329,7 +1329,7 @@ const T *array<T>::find_value(const const_iterator &it) const noexcept {
     const auto key = static_cast<int64_t>(reinterpret_cast<const T *>(it.entry_) - reinterpret_cast<const T *>(it.self_->int_entries));
     return find_value(key);
   } else {
-    auto *entry = reinterpret_cast<const int_hash_entry *>(it.entry_);
+    auto *entry = reinterpret_cast<const array_bucket *>(it.entry_);
     return it.self_->is_string_hash_entry(entry)
            ? find_value(entry->string_key, entry->int_key)
            : find_value(entry->int_key);
@@ -1558,7 +1558,7 @@ const array<T> array<T>::operator+(const array<T> &other) const {
       }
     }
   } else {
-    for (const int_hash_entry *it = p->begin(); it != p->end(); it = p->next(it)) {
+    for (const array_bucket *it = p->begin(); it != p->end(); it = p->next(it)) {
       if (p->is_string_hash_entry(it)) {
         result.p->set_map_value(overwrite_element::YES, it->int_key, it->string_key, it->value);
       } else {
@@ -1581,7 +1581,7 @@ const array<T> array<T>::operator+(const array<T> &other) const {
       }
     }
   } else {
-    for (const int_hash_entry *it = other.p->begin(); it != other.p->end(); it = other.p->next(it)) {
+    for (const array_bucket *it = other.p->begin(); it != other.p->end(); it = other.p->next(it)) {
       if (other.p->is_string_hash_entry(it)) {
         result.p->set_map_value(overwrite_element::NO, it->int_key, it->string_key, it->value);
       } else {
@@ -1651,7 +1651,7 @@ array<T> &array<T>::operator+=(const array<T> &other) {
     if (new_int_size * 5 > 3 * p->int_buf_size || p->ref_cnt > 0) {
       array_inner *new_array = array_inner::create(max(new_int_size, 2 * p->int_size) + 1, false);
 
-      for (const int_hash_entry *it = p->begin(); it != p->end(); it = p->next(it)) {
+      for (const array_bucket *it = p->begin(); it != p->end(); it = p->next(it)) {
         if (p->is_string_hash_entry(it)) {
           new_array->set_map_value(overwrite_element::YES, it->int_key, it->string_key, it->value);
         } else {
@@ -1672,7 +1672,7 @@ array<T> &array<T>::operator+=(const array<T> &other) {
       p->set_map_value(overwrite_element::NO, i, it[i]);
     }
   } else {
-    for (int_hash_entry *it = other.p->begin(); it != other.p->end(); it = other.p->next(it)) {
+    for (array_bucket *it = other.p->begin(); it != other.p->end(); it = other.p->next(it)) {
       if (other.p->is_string_hash_entry(it)) {
         p->set_map_value(overwrite_element::NO, it->int_key, it->string_key, it->value);
       } else {
@@ -1724,7 +1724,7 @@ void array<T>::push_back_iterator(const array_iterator<T1> &it) noexcept {
   if (it.self_->is_vector()) {
     emplace_back(*reinterpret_cast<const T1 *>(it.entry_));
   } else {
-    auto *entry = reinterpret_cast<typename array_iterator<T1>::int_hash_type *>(it.entry_);
+    auto *entry = reinterpret_cast<typename array_iterator<T1>::bucket_type *>(it.entry_);
     if (it.self_->is_string_hash_entry(entry)) {
       mutate_to_map_if_vector_or_map_need_string();
 
@@ -1832,7 +1832,7 @@ void array<T>::sort(const T1 &compare, bool renumber) {
 
     if (!is_vector()) {
       array_inner *res = array_inner::create(n, true);
-      for (int_hash_entry *it = p->begin(); it != p->end(); it = p->next(it)) {
+      for (array_bucket *it = p->begin(); it != p->end(); it = p->next(it)) {
         res->push_back_vector_value(it->value);
       }
 
@@ -1861,18 +1861,18 @@ void array<T>::sort(const T1 &compare, bool renumber) {
     mutate_if_map_shared();
   }
 
-  int_hash_entry **arTmp = (int_hash_entry **)dl::allocate(n * sizeof(int_hash_entry * ));
+  array_bucket **arTmp = (array_bucket **)dl::allocate(n * sizeof(array_bucket * ));
   uint32_t i = 0;
-  for (int_hash_entry *it = p->begin(); it != p->end(); it = p->next(it)) {
-    arTmp[i++] = (int_hash_entry *)it;
+  for (array_bucket *it = p->begin(); it != p->end(); it = p->next(it)) {
+    arTmp[i++] = (array_bucket *)it;
   }
   php_assert (i == n);
 
   const auto hash_entry_cmp =
-    [&compare](const int_hash_entry *lhs, const int_hash_entry *rhs) {
+    [&compare](const array_bucket *lhs, const array_bucket *rhs) {
       return compare(lhs->value, rhs->value) > 0;
     };
-  dl::sort<int_hash_entry *, decltype(hash_entry_cmp)>(arTmp, arTmp + n, hash_entry_cmp);
+  dl::sort<array_bucket *, decltype(hash_entry_cmp)>(arTmp, arTmp + n, hash_entry_cmp);
 
   arTmp[0]->prev = p->get_pointer(p->end());
   p->end()->next = p->get_pointer(arTmp[0]);
@@ -1883,7 +1883,7 @@ void array<T>::sort(const T1 &compare, bool renumber) {
   arTmp[n - 1]->next = p->get_pointer(p->end());
   p->end()->prev = p->get_pointer(arTmp[n - 1]);
 
-  dl::deallocate(arTmp, n * sizeof(int_hash_entry * ));
+  dl::deallocate(arTmp, n * sizeof(array_bucket * ));
 }
 
 
@@ -1924,7 +1924,7 @@ void array<T>::ksort(const T1 &compare) {
     } else {
       string string_key = keysp[j].to_string();
       int64_t int_key = string_key.hash();
-      int_hash_entry *string_entries = p->int_entries;
+      array_bucket *string_entries = p->int_entries;
       uint32_t bucket = p->choose_bucket(int_key);
       while ((string_entries[bucket].int_key != int_key || string_entries[bucket].string_key.is_dummy_string() || string_entries[bucket].string_key != string_key)) {
         if (unlikely (++bucket == p->int_buf_size)) {
@@ -1963,7 +1963,7 @@ T array<T>::pop() {
   }
 
   mutate_if_map_shared();
-  int_hash_entry *it = p->prev(p->end());
+  array_bucket *it = p->prev(p->end());
 
   return p->is_string_hash_entry(it) ?
     p->unset_map_value(it->string_key, it->int_key) :
@@ -1998,7 +1998,7 @@ T array<T>::shift() {
     bool is_v = new_size.is_vector;
 
     array_inner *new_array = array_inner::create(new_size.int_size, is_v);
-    int_hash_entry *it = p->begin();
+    array_bucket *it = p->begin();
     T res = it->value;
 
     it = p->next(it);
@@ -2037,7 +2037,7 @@ int64_t array<T>::unshift(const T &val) {
     bool is_v = new_size.is_vector;
 
     array_inner *new_array = array_inner::create(new_size.int_size + 1, is_v);
-    int_hash_entry *it = p->begin();
+    array_bucket *it = p->begin();
 
     if (is_v) {
       new_array->push_back_vector_value(val);
