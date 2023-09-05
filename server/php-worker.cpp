@@ -3,6 +3,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include <cassert>
+#include <utility>
 #include <poll.h>
 
 #include "common/precise-time.h"
@@ -24,6 +25,8 @@
 #include "server/php-worker.h"
 #include "server/server-stats.h"
 
+std::optional<PhpWorker> php_worker_storage;
+
 PhpWorker *active_worker = nullptr;
 
 double PhpWorker::enter_lifecycle() noexcept {
@@ -33,7 +36,7 @@ double PhpWorker::enter_lifecycle() noexcept {
   on_wakeup();
 
   tvkprintf(php_runner, 3, "PHP-worker enter lifecycle [php-script state = %d, conn status = %d] lifecycle [req_id = %016llx]\n",
-            php_script ? static_cast<int>(php_script->state) : -1, conn->status, req_id);
+            php_script.has_value() ? static_cast<int>(php_script->state) : -1, conn->status, req_id);
   paused = false;
   do {
     switch (state) {
@@ -67,7 +70,7 @@ double PhpWorker::enter_lifecycle() noexcept {
   } while (!paused);
 
   tvkprintf(php_runner, 3, "PHP-worker [php-script state = %d, conn status = %d] return in net reactor [req_id = %016llx]\n",
-            php_script ? static_cast<int>(php_script->state) : -1, conn->status, req_id);
+            php_script.has_value() ? static_cast<int>(php_script->state) : -1, conn->status, req_id);
   assert(conn->status == conn_wait_net);
   return get_timeout();
 }
@@ -154,12 +157,13 @@ void PhpWorker::state_init_script() noexcept {
 
   script_t *script = get_script();
   dl_assert(script != nullptr, "failed to get script");
-  if (php_script == nullptr) {
-    php_script = new PhpScript(max_memory, oom_handling_memory_ratio, 8 << 20);
+  if (!php_script.has_value()) {
+    php_script.emplace(max_memory, oom_handling_memory_ratio, 8 << 20);
   }
   dl::init_critical_section();
-  php_script->init(script, data);
-  php_script->set_timeout(timeout);
+  php_script.value().init(script, data);
+  data = null_query_data{};
+  php_script.value().set_timeout(timeout);
   state = phpq_run;
 }
 
@@ -416,9 +420,8 @@ void PhpWorker::state_free_script() noexcept {
 
   static int finished_queries = 0;
   if ((++finished_queries) % queries_to_recreate_script == 0
-      || (!use_madvise_dontneed && php_script->memory_get_total_usage() > memory_used_to_recreate_script)) {
-    delete php_script;
-    php_script = nullptr;
+      || (!use_madvise_dontneed && php_script.value().memory_get_total_usage() > memory_used_to_recreate_script)) {
+    php_script.reset();
     finished_queries = 0;
   }
 
@@ -442,10 +445,10 @@ double PhpWorker::get_timeout() const noexcept {
   return time_left;
 }
 
-PhpWorker::PhpWorker(php_worker_mode_t mode_, connection *c, http_query_data *http_data, rpc_query_data *rpc_data, job_query_data *job_data,
+PhpWorker::PhpWorker(php_worker_mode_t mode_, connection *c, php_query_data_t query_data,
                        long long int req_id_, double timeout)
   : conn(c)
-  , data(php_query_data_create(http_data, rpc_data, job_data))
+  , data(std::move(query_data))
   , paused(false)
   , flushed_http_connection(false)
   , terminate_flag(false)
@@ -468,9 +471,4 @@ PhpWorker::PhpWorker(php_worker_mode_t mode_, connection *c, http_query_data *ht
     target_fd = -1;
   }
   tvkprintf(php_runner, 1, "initialize PHP-worker [req_id = %016llx]\n", req_id);
-}
-
-PhpWorker::~PhpWorker() {
-  php_query_data_free(data);
-  data = nullptr;
 }

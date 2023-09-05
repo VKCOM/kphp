@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "common/dl-utils-lite.h"
 #include "common/kprintf.h"
 #include "common/mixin/not_copyable.h"
@@ -122,7 +124,7 @@ public:
   ucontext_t_portable run_context{};
 
   script_t *run_main{nullptr};
-  php_query_data *data{nullptr};
+  php_query_data_t data{null_query_data{}};
   script_result *res{nullptr};
 
   static void script_context_entrypoint() noexcept;
@@ -134,7 +136,7 @@ public:
   void try_run_shutdown_functions_on_timeout() noexcept;
   void check_net_context_errors() noexcept;
 
-  void init(script_t *script, php_query_data *data_to_set) noexcept;
+  void init(script_t *script, php_query_data_t data_to_set) noexcept;
 
   void pause() noexcept;
   void ask_query(php_query_base_t *q) noexcept;

@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <exception>
+#include <utility>
 #include <sys/mman.h>
 #include <sys/time.h>
 #include <unistd.h>
@@ -153,9 +154,13 @@ PhpScript::PhpScript(size_t mem_size, double oom_handling_memory_ratio, size_t s
 
 PhpScript::~PhpScript() noexcept {
   munmap(run_mem, mem_size);
+  if (std::holds_alternative<rpc_query_data>(data)) {
+    // free dynamic allocated buffer for rpc @see rpcx_execute
+    free(std::get<rpc_query_data>(data).data);
+  }
 }
 
-void PhpScript::init(script_t *script, php_query_data *data_to_set) noexcept {
+void PhpScript::init(script_t *script, php_query_data_t data_to_set) noexcept {
   assert (script != nullptr);
   assert_state(run_state_t::empty);
 
@@ -171,7 +176,7 @@ void PhpScript::init(script_t *script, php_query_data *data_to_set) noexcept {
   makecontext_portable(&run_context, &script_context_entrypoint, 0);
 
   run_main = script;
-  data = data_to_set;
+  data = std::move(data_to_set);
 
   state = run_state_t::ready;
 
@@ -337,8 +342,8 @@ void PhpScript::finish() noexcept {
   static char buf[buf_size];
   buf[0] = 0;
   if (disable_access_log < 2) {
-    if (data != nullptr) {
-      http_query_data *http_data = data->http_data;
+    if (std::holds_alternative<http_query_data>(data)) {
+      http_query_data *http_data = &std::get<http_query_data>(data);
       if (http_data != nullptr) {
         if (disable_access_log) {
           snprintf(buf, buf_size, "[uri = %.*s?<truncated>]", min(http_data->uri_len, 200), http_data->uri);
@@ -406,26 +411,6 @@ void PhpScript::query_answered() noexcept {
 }
 
 void PhpScript::run() noexcept {
-  if (data != nullptr) {
-    http_query_data *http_data = data->http_data;
-    if (http_data != nullptr) {
-      //fprintf (stderr, "arguments\n");
-      //fprintf (stderr, "[uri = %.*s]\n", http_data->uri_len, http_data->uri);
-      //fprintf (stderr, "[get = %.*s]\n", http_data->get_len, http_data->get);
-      //fprintf (stderr, "[headers = %.*s]\n", http_data->headers_len, http_data->headers);
-      //fprintf (stderr, "[post = %.*s]\n", http_data->post_len, http_data->post);
-    }
-
-    rpc_query_data *rpc_data = data->rpc_data;
-    if (rpc_data != nullptr) {
-      /*
-      fprintf (stderr, "N = %d\n", rpc_data->len);
-      for (int i = 0; i < rpc_data->len; i++) {
-        fprintf (stderr, "%d: %10d\n", i, rpc_data->data[i]);
-      }
-      */
-    }
-  }
   assert (run_main->run != nullptr);
 
   dl::enter_critical_section();

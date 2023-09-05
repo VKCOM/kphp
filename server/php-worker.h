@@ -35,7 +35,7 @@ class PhpWorker {
 public:
   struct connection *conn;
 
-  php_query_data *data;
+  php_query_data_t data;
 
   bool paused;
   bool flushed_http_connection;
@@ -58,9 +58,8 @@ public:
   long long req_id;
   int target_fd;
 
-  PhpWorker(php_worker_mode_t mode_, connection *c, http_query_data *http_data, rpc_query_data *rpc_data, job_query_data *job_data,
-             long long req_id_, double timeout);
-  ~PhpWorker();
+  PhpWorker(php_worker_mode_t mode_, connection *c, php_query_data_t php_query_data, long long req_id_, double timeout);
+  ~PhpWorker() = default;
 
   double enter_lifecycle() noexcept;
 
@@ -81,5 +80,7 @@ private:
   void state_free_script() noexcept;
   void state_finish() noexcept;
 };
+
+extern std::optional<PhpWorker> php_worker_storage;
 
 extern PhpWorker *active_worker;

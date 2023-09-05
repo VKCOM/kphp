@@ -314,7 +314,7 @@ command_t *create_command_net_writer(const char *data, int data_len, command_t *
 int run_once_count = 1;
 int queries_to_recreate_script = 100;
 
-PhpScript *php_script;
+std::optional<PhpScript> php_script;
 
 int has_pending_scripts() {
   return php_worker_run_flag || pending_http_queue.first_query != (conn_query *)&pending_http_queue;
@@ -525,7 +525,7 @@ int do_hts_func_wakeup(connection *c, bool flag) {
   assert(worker);
   double timeout = worker->enter_lifecycle();
   if (timeout == 0) {
-    delete worker;
+    php_worker_storage.reset();
     hts_at_query_end(c, flag);
   } else {
     assert (timeout > 0);
@@ -613,14 +613,13 @@ int hts_func_execute(connection *c, int op) {
   }
 
   /** save query here **/
-  http_query_data *http_data = http_query_data_create(qUri, qUriLen, qGet, qGetLen, qHeaders, qHeadersLen, qPost,
-                                                      qPostLen, query_type_str, D->query_flags & QF_KEEPALIVE,
-                                                      inet_sockaddr_address(&c->remote_endpoint),
-                                                      inet_sockaddr_port(&c->remote_endpoint));
+  php_query_data_t http_data = http_query_data{qUri, qGet, qHeaders, qPost, query_type_str,
+                                   qUriLen, qGetLen, qHeadersLen, qPostLen, static_cast<int>(strlen(query_type_str)),
+                               D->query_flags & QF_KEEPALIVE, inet_sockaddr_address(&c->remote_endpoint),   inet_sockaddr_port(&c->remote_endpoint)};
 
   static long long http_script_req_id = 0;
-  PhpWorker *worker = new PhpWorker(http_worker, c, http_data, nullptr, nullptr, ++http_script_req_id, script_timeout);
-  D->extra = worker;
+  php_worker_storage.emplace(http_worker, c, std::move(http_data), ++http_script_req_id, script_timeout);
+  D->extra = &php_worker_storage.value();
 
   set_connection_timeout(c, script_timeout);
   c->status = conn_wait_net;
@@ -640,7 +639,7 @@ int hts_func_close(connection *c, int who __attribute__((unused))) {
     double timeout = worker->enter_lifecycle();
     D->extra = nullptr;
     assert ("worker is unfinished after closing connection" && timeout == 0);
-    delete worker;
+    php_worker_storage.reset();
   }
   return 0;
 }
@@ -825,7 +824,7 @@ int rpcx_func_wakeup(connection *c) {
   assert(worker);
   double timeout = worker->enter_lifecycle();
   if (timeout == 0) {
-    delete worker;
+    php_worker_storage.reset();
     rpcx_at_query_end(c);
   } else {
     assert (c->pending_queries >= 0 && c->status == conn_wait_net);
@@ -844,7 +843,7 @@ int rpcx_func_close(connection *c, int who __attribute__((unused))) {
     double timeout = worker->enter_lifecycle();
     D->extra = nullptr;
     assert ("worker is unfinished after closing connection" && timeout == 0);
-    delete worker;
+    php_worker_storage.reset();
 
     if (!has_pending_scripts()) {
       lease_set_ready();
@@ -1010,19 +1009,19 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       double actual_script_timeout = custom_settings.has_timeout() ? normalize_script_timeout(custom_settings.php_timeout_ms / 1000.0) : script_timeout;
       set_connection_timeout(c, actual_script_timeout);
 
-      char buf[len + 1];
-      auto fetched_bytes = tl_fetch_data(buf, len);
+      char *buffer = static_cast<char *>(malloc(len + 1));
+      auto fetched_bytes = tl_fetch_data(buffer, len);
       if (fetched_bytes == -1) {
         client_rpc_error(c, req_id, tl_fetch_error_code(), tl_fetch_error_string());
         return 0;
       }
       assert(fetched_bytes == len);
       auto *D = TCP_RPC_DATA(c);
-      rpc_query_data *rpc_data = rpc_query_data_create(std::move(header), reinterpret_cast<int *>(buf), len / static_cast<int>(sizeof(int)), D->remote_pid.ip,
-                                                       D->remote_pid.port, D->remote_pid.pid, D->remote_pid.utime);
+      php_query_data_t rpc_data = rpc_query_data{std::move(header), reinterpret_cast<int *>(buffer), len / static_cast<int>(sizeof(int)),
+                                D->remote_pid.ip, D->remote_pid.port, D->remote_pid.pid, D->remote_pid.utime};
 
-      PhpWorker *worker = new PhpWorker(run_once ? once_worker : rpc_worker, c, nullptr, rpc_data, nullptr, req_id, actual_script_timeout);
-      D->extra = worker;
+      php_worker_storage.emplace(run_once ? once_worker : rpc_worker, c, std::move(rpc_data), req_id, actual_script_timeout);
+      D->extra = &php_worker_storage.value();
 
       c->status = conn_wait_net;
       rpcx_func_wakeup(c);

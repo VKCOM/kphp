@@ -30,7 +30,7 @@ public:
     global_init_runtime_libs();
     global_init_script_allocator();
 
-    init_runtime_environment(nullptr, script_memory, script_memory_size);
+    init_runtime_environment(null_query_data{}, script_memory, script_memory_size);
     php_disable_warnings = true;
     php_warning_level = 0;
   }

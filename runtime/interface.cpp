@@ -18,6 +18,7 @@
 #include "common/algorithms/string-algorithms.h"
 #include "common/macos-ports.h"
 #include "common/tl/constants/common.h"
+#include "common/wrappers/overloaded.h"
 
 #include "net/net-connections.h"
 #include "runtime/array_functions.h"
@@ -1544,7 +1545,7 @@ static void save_rpc_query_headers(const tl_query_header_t &header) {
   }
 }
 
-static void init_superglobals(const http_query_data &http_data, const rpc_query_data &rpc_data, const job_query_data &job_data) {
+static void init_superglobals_impl(const http_query_data &http_data, const rpc_query_data &rpc_data, const job_query_data &job_data) {
   rpc_parse(rpc_data.data, rpc_data.len);
 
   reset_superglobals();
@@ -1801,47 +1802,26 @@ static http_query_data empty_http_data;
 static rpc_query_data empty_rpc_data;
 static job_query_data empty_job_data;
 
-void init_superglobals(php_query_data *data) {
-  http_query_data *http_data;
-  rpc_query_data *rpc_data;
-  job_query_data *job_data;
-  if (data != nullptr) {
-    if (data->rpc_data != nullptr) {
-      php_assert (data->http_data == nullptr);
-      php_assert (data->job_data == nullptr);
+void init_superglobals(const php_query_data_t &data) {
+  // init superglobals depending on the request type
+  std::visit(overloaded{
+    [](const rpc_query_data &rpc_data) {
       query_type = QUERY_TYPE_RPC;
-
-      http_data = &empty_http_data;
-      rpc_data = data->rpc_data;
-      job_data = &empty_job_data;
-    } else if (data->http_data != nullptr) {
-      php_assert (data->rpc_data == nullptr);
-      php_assert (data->job_data == nullptr);
+      init_superglobals_impl(empty_http_data, rpc_data, empty_job_data);
+    },
+    [](const http_query_data &http_data) {
       query_type = QUERY_TYPE_HTTP;
-
-      http_data = data->http_data;
-      rpc_data = &empty_rpc_data;
-      job_data = &empty_job_data;
-    } else {
-      php_assert (data->job_data != nullptr);
-      php_assert (data->rpc_data == nullptr);
-      php_assert (data->http_data == nullptr);
-
+      init_superglobals_impl(http_data, empty_rpc_data, empty_job_data);
+    },
+    [](const job_query_data &job_data) {
       query_type = QUERY_TYPE_JOB;
-
-      http_data = &empty_http_data;
-      rpc_data = &empty_rpc_data;
-      job_data = data->job_data;
+      init_superglobals_impl(empty_http_data, empty_rpc_data, job_data);
+    },
+    [](const null_query_data &) {
+      query_type = QUERY_TYPE_CONSOLE;
+      init_superglobals_impl(empty_http_data, empty_rpc_data, empty_job_data);
     }
-  } else {
-    query_type = QUERY_TYPE_CONSOLE;
-
-    http_data = &empty_http_data;
-    rpc_data = &empty_rpc_data;
-    job_data = &empty_job_data;
-  }
-
-  init_superglobals(*http_data, *rpc_data, *job_data);
+  }, data);
 }
 
 double f$get_net_time() {
@@ -2456,7 +2436,7 @@ void global_init_script_allocator() {
   dl::global_init_script_allocator();
 }
 
-void init_runtime_environment(php_query_data *data, void *mem, size_t script_mem_size, size_t oom_handling_mem_size) {
+void init_runtime_environment(const php_query_data_t &data, void *mem, size_t script_mem_size, size_t oom_handling_mem_size) {
   dl::init_script_allocator(mem, script_mem_size, oom_handling_mem_size);
   reset_global_interface_vars();
   init_runtime_libs();
