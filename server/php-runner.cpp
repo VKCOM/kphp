@@ -307,7 +307,8 @@ void PhpScript::finish() noexcept {
   const auto &script_mem_stats = dl::get_script_memory_stats();
   state = run_state_t::uncleared;
   update_net_time();
-  vk::singleton<ServerStats>::get().add_request_stats(script_time, net_time, queries_cnt, long_queries_cnt, script_mem_stats.max_memory_used,
+  vk::singleton<ServerStats>::get().add_request_stats(script_time, net_time, last_script_start_time - last_worker_init_time, last_script_start_time - last_conn_start_processing_time,
+                                                      queries_cnt, long_queries_cnt, script_mem_stats.max_memory_used,
                                                       script_mem_stats.max_real_memory_used, vk::singleton<CurlMemoryUsage>::get().total_allocated, error_type);
   if (save_state == run_state_t::error) {
     assert (error_message != nullptr);
@@ -486,6 +487,8 @@ ucontext_t_portable PhpScript::exit_context;
 volatile bool PhpScript::in_script_context = false;
 volatile bool PhpScript::time_limit_exceeded = false;
 volatile bool PhpScript::memory_limit_exceeded = false;
+double PhpScript::last_conn_start_processing_time = 0;
+double PhpScript::last_worker_init_time = 0;
 double PhpScript::last_script_start_time = 0;
 
 static __inline__ void *get_sp() {

@@ -98,6 +98,9 @@ public:
   volatile static bool in_script_context;
   volatile static bool time_limit_exceeded;
   volatile static bool memory_limit_exceeded;
+
+  static double last_conn_start_processing_time;
+  static double last_worker_init_time;
   static double last_script_start_time;
 
   run_state_t state{run_state_t::empty};

@@ -12,7 +12,6 @@
 #include "common/smart_iterators/transform_iterator.h"
 #include "common/wrappers/memory-utils.h"
 #include "net/net-events.h"
-#include "net/net-connections.h"
 
 #include "runtime/curl.h"
 
@@ -40,6 +39,8 @@ struct ScriptSamples : WithStatType<uint64_t> {
     working_time,
     net_time,
     script_time,
+    script_init_time,
+    connection_process_time,
     types_count
   };
 };
@@ -51,6 +52,8 @@ struct QueriesStat : WithStatType<uint64_t> {
     outgoing_long_queries,
     script_time,
     net_time,
+    script_init_time,
+    connection_process_time,
     types_count
   };
 };
@@ -130,14 +133,6 @@ struct MiscStat : WithStatType<uint64_t> {
   };
 };
 
-struct TimeoutStat : WithStatType<double> {
-  enum class Key {
-    connection_process_time,
-    script_init_time,
-    types_count
-  };
-};
-
 template<class E, class T = typename E::StatType>
 struct EnumTable : std::array<T, static_cast<size_t>(E::Key::types_count)> {
   using Base = std::array<T, static_cast<size_t>(E::Key::types_count)>;
@@ -199,16 +194,6 @@ EnumTable<VMStat> get_virtual_memory_stat() noexcept {
   return result;
 }
 
-EnumTable<TimeoutStat> get_script_time_stat() noexcept {
-  EnumTable<TimeoutStat> result;
-  double conn_accept_time = last_conn_start_processing;
-  double php_worker_init_time = PhpWorker::last_worker_init_time < last_conn_start_processing ? get_utime_monotonic() : PhpWorker::last_worker_init_time;
-  double php_script_start_time = PhpScript::last_script_start_time < php_worker_init_time ? get_utime_monotonic() : PhpScript::last_script_start_time;
-  result[TimeoutStat::Key::connection_process_time] = (php_script_start_time - conn_accept_time) * 1000;
-  result[TimeoutStat::Key::script_init_time] = (php_script_start_time - php_worker_init_time) * 1000;
-  return result;
-}
-
 EnumTable<MallocStat> get_malloc_stat() noexcept {
   EnumTable<MallocStat> result;
   const auto malloc_info = get_malloc_stats();
@@ -235,13 +220,16 @@ EnumTable<IdleStat> get_idle_stat() noexcept {
   return result;
 }
 
-EnumTable<QueriesStat> make_queries_stat(uint64_t script_queries, uint64_t long_script_queries, uint64_t script_time_ns, uint64_t net_time_ns) noexcept {
+EnumTable<QueriesStat> make_queries_stat(uint64_t script_queries, uint64_t long_script_queries,
+                                         uint64_t script_time_ns, uint64_t net_time_ns, uint64_t script_init_time_ns, uint64_t connection_process_time_ns) noexcept {
   EnumTable<QueriesStat> result;
   result[QueriesStat::Key::incoming_queries] = 1;
   result[QueriesStat::Key::outgoing_queries] = script_queries;
   result[QueriesStat::Key::outgoing_long_queries] = long_script_queries;
   result[QueriesStat::Key::script_time] = script_time_ns;
   result[QueriesStat::Key::net_time] = net_time_ns;
+  result[QueriesStat::Key::script_init_time] = script_init_time_ns;
+  result[QueriesStat::Key::connection_process_time] = connection_process_time_ns;
   return result;
 }
 
@@ -316,6 +304,8 @@ struct WorkerSharedStats : private vk::not_copyable {
     sample[ScriptSamples::Key::working_time] = queries[QueriesStat::Key::net_time] + queries[QueriesStat::Key::script_time];
     sample[ScriptSamples::Key::net_time] = queries[QueriesStat::Key::net_time];
     sample[ScriptSamples::Key::script_time] = queries[QueriesStat::Key::script_time];
+    sample[ScriptSamples::Key::connection_process_time] = queries[QueriesStat::Key::connection_process_time];
+    sample[ScriptSamples::Key::script_init_time] = queries[QueriesStat::Key::script_init_time];
     script_samples.add_sample(sample);
   }
 
@@ -486,14 +476,12 @@ struct WorkerProcessStats : private vk::not_copyable {
   WorkerStatsBundle<MiscStat> misc_stats{};
   WorkerStatsBundle<QueriesStat> query_stats{};
   WorkerStatsBundle<IdleStat> idle_stats{};
-  WorkerStatsBundle<TimeoutStat> script_time_stats{};
 
   void update_worker_stats(uint16_t worker_index) noexcept {
     malloc_stats.set_worker_stats(get_malloc_stat(), worker_index);
     heap_stats.set_worker_stats(get_heap_stat(), worker_index);
     vm_stats.set_worker_stats(get_virtual_memory_stat(), worker_index);
     idle_stats.set_worker_stats(get_idle_stat(), worker_index);
-    script_time_stats.set_worker_stats(get_script_time_stat(), worker_index);
     misc_stats.inc_stat(MiscStat::Key::worker_activity_counter, worker_index);
     misc_stats.set_stat(MiscStat::Key::json_logs_count, worker_index, vk::singleton<JsonLogger>::get().get_json_logs_count());
     misc_stats.set_stat(MiscStat::Key::json_traces_count, worker_index, vk::singleton<JsonLogger>::get().get_json_traces_count());
@@ -628,12 +616,15 @@ void ServerStats::after_fork(pid_t worker_pid, uint64_t active_connections, uint
   last_update_aggr_stats = std::chrono::steady_clock::now();
 }
 
-void ServerStats::add_request_stats(double script_time_sec, double net_time_sec, int64_t script_queries, int64_t long_script_queries, int64_t memory_used,
+void ServerStats::add_request_stats(double script_time_sec, double net_time_sec, double script_init_time_sec, double connection_process_time_sec,
+                                    int64_t script_queries, int64_t long_script_queries, int64_t memory_used,
                                     int64_t real_memory_used, int64_t curl_total_allocated, script_error_t error) noexcept {
   auto &stats = worker_type_ == WorkerType::job_worker ? shared_stats_->job_workers : shared_stats_->general_workers;
   const auto script_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(script_time_sec));
   const auto net_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(net_time_sec));
-  const auto queries_stat = make_queries_stat(script_queries, long_script_queries, script_time.count(), net_time.count());
+  const auto script_init_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(script_init_time_sec));
+  const auto connection_process_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(connection_process_time_sec));
+  const auto queries_stat = make_queries_stat(script_queries, long_script_queries, script_time.count(), net_time.count(), script_init_time.count(), connection_process_time.count());
 
   stats.add_request_stats(queries_stat, error, memory_used, real_memory_used, curl_total_allocated);
   shared_stats_->workers.add_worker_stats(queries_stat, worker_process_id_);
@@ -748,6 +739,8 @@ void write_to(stats_t *stats, const char *prefix, const WorkerAggregatedStats &a
 
   stats->add_gauge_stat(ns2double(shared.total_queries_stat[QueriesStat::Key::script_time]), prefix, ".requests.script_time.total");
   stats->add_gauge_stat(ns2double(shared.total_queries_stat[QueriesStat::Key::net_time]), prefix, ".requests.net_time.total");
+  stats->add_gauge_stat(ns2double(shared.total_queries_stat[QueriesStat::Key::script_init_time]), prefix, ".requests.script_init_time.total");
+  stats->add_gauge_stat(ns2double(shared.total_queries_stat[QueriesStat::Key::connection_process_time]), prefix, ".requests.connection_process_time.total");
   stats->add_gauge_stat(shared.total_queries_stat[QueriesStat::Key::incoming_queries], prefix, ".requests.total_incoming_queries");
   stats->add_gauge_stat(shared.total_queries_stat[QueriesStat::Key::outgoing_queries], prefix, ".requests.total_outgoing_queries");
   stats->add_gauge_stat(shared.total_queries_stat[QueriesStat::Key::outgoing_long_queries], prefix, ".requests.total_outgoing_long_queries");
@@ -756,6 +749,8 @@ void write_to(stats_t *stats, const char *prefix, const WorkerAggregatedStats &a
   write_to(stats, prefix, ".requests.outgoing_long_queries", agg.script_samples[ScriptSamples::Key::outgoing_long_queries]);
   write_to(stats, prefix, ".requests.script_time", agg.script_samples[ScriptSamples::Key::script_time], ns2double);
   write_to(stats, prefix, ".requests.net_time", agg.script_samples[ScriptSamples::Key::net_time], ns2double);
+  write_to(stats, prefix, ".requests.script_init_time", agg.script_samples[ScriptSamples::Key::script_init_time], ns2double);
+  write_to(stats, prefix, ".requests.connection_process_time", agg.script_samples[ScriptSamples::Key::connection_process_time], ns2double);
   write_to(stats, prefix, ".requests.working_time", agg.script_samples[ScriptSamples::Key::working_time], ns2double);
   write_to(stats, prefix, ".memory.script_usage", agg.script_samples[ScriptSamples::Key::memory_used]);
   write_to(stats, prefix, ".memory.script_real_usage", agg.script_samples[ScriptSamples::Key::real_memory_used]);
@@ -922,19 +917,6 @@ std::tuple<uint64_t, uint64_t> ServerStats::collect_json_count_stat() const noex
     sum_json_traces_count += workers_misc.get_stat(MiscStat::Key::json_traces_count, w);
   }
   return {sum_json_logs_count, sum_json_traces_count};
-}
-
-std::tuple<double, double> ServerStats::collect_script_timeouts_stat() const noexcept {
-  const auto &workers_script_timeouts = shared_stats_->workers.script_time_stats;
-  double sum_script_init_time = 0;
-  double sum_connection_process_time = 0;
-  const auto &workers_control = vk::singleton<WorkersControl>::get();
-  for (uint16_t w = 0; w != workers_control.get_total_workers_count(); ++w) {
-    sum_script_init_time += workers_script_timeouts.get_stat(TimeoutStat::Key::script_init_time, w);
-    sum_connection_process_time += workers_script_timeouts.get_stat(TimeoutStat::Key::connection_process_time, w);
-  }
-  int workers_count = workers_control.get_total_workers_count();
-  return {sum_script_init_time / workers_count, sum_connection_process_time / workers_count};
 }
 
 uint64_t ServerStats::collect_threads_count_stat() const noexcept {
