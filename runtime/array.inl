@@ -124,7 +124,7 @@ typename array<T>::array_inner *array<T>::array_inner::empty_array() {
 
 template<class T>
 uint32_t array<T>::array_inner::choose_bucket(int64_t key) const {
-  uint64_t modulo_helper = fields_for_map().modulo_helper_int_buf_size;
+  uint64_t modulo_helper = fields_for_map().modulo_helper_buf_size;
   return fastmod::fastmod_u32(static_cast<uint32_t>(key << 2), modulo_helper, buf_size);
 }
 
@@ -258,7 +258,7 @@ typename array<T>::array_inner *array<T>::array_inner::create(int64_t new_int_si
   p->end()->prev = p->get_pointer(p->end());
 
   p->buf_size = static_cast<uint32_t>(new_int_size);
-  p->fields_for_map().modulo_helper_int_buf_size = fastmod::computeM_u32(p->buf_size);
+  p->fields_for_map().modulo_helper_buf_size = fastmod::computeM_u32(p->buf_size);
 
   p->size = 0;
   return p;

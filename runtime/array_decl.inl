@@ -91,7 +91,7 @@ private:
   // but sometimes, for simplicity, we use them in vector too
   // to not add extra checks they are left in `array_inner`
   struct array_inner_fields_for_map {
-    uint64_t modulo_helper_int_buf_size{0};
+    uint64_t modulo_helper_buf_size{0};
   };
 
   struct array_inner : array_inner_control {
