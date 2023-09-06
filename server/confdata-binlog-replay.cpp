@@ -50,13 +50,13 @@ public:
     if (dot_pos != std::string::npos) {
       const auto dot_key = key.substr(0, dot_pos + 1);
       if (prev_key != dot_key) {
-        if (counter.int_size > 1) {
+        if (counter.size > 1) {
           size_hints_[prev_key] = counter;
         }
         prev_key = dot_key;
         counter = array_size{};
       }
-      ++counter.int_size;
+      ++counter.size;
 
     }
     return dot_pos;

@@ -12,28 +12,28 @@
   #error "this file must be included only from kphp_core.h"
 #endif
 
-array_size::array_size(int64_t int_size, bool is_vector) :
-  int_size(int_size),
-  is_vector(is_vector) {}
+array_size::array_size(int64_t int_size, bool is_vector)
+  : size(int_size)
+  , is_vector(is_vector) {}
 
-array_size::array_size(int64_t int_size, int64_t string_size, bool is_vector) :
-  int_size(int_size + string_size),
-  is_vector(is_vector) {}
+array_size::array_size(int64_t int_size, int64_t string_size, bool is_vector)
+  : size(int_size + string_size)
+  , is_vector(is_vector) {}
 
 array_size array_size::operator+(const array_size &other) const {
-  return {int_size + other.int_size, 0, is_vector && other.is_vector};
+  return {size + other.size, 0, is_vector && other.is_vector};
 }
 
 array_size &array_size::cut(int64_t length) {
-  if (int_size > length) {
-    int_size = length;
+  if (size > length) {
+    size = length;
   }
   return *this;
 }
 
 array_size &array_size::min(const array_size &other) {
-  if (int_size > other.int_size) {
-    int_size = other.int_size;
+  if (size > other.size) {
+    size = other.size;
   }
 
   is_vector &= other.is_vector;
@@ -922,7 +922,7 @@ array<T>::array():
 
 template<class T>
 array<T>::array(const array_size &s) :
-  p(array_inner::create(s.int_size, s.is_vector)) {
+  p(array_inner::create(s.size, s.is_vector)) {
 }
 
 template<class T>
@@ -1997,7 +1997,7 @@ T array<T>::shift() {
     array_size new_size = size().cut(count() - 1);
     bool is_v = new_size.is_vector;
 
-    array_inner *new_array = array_inner::create(new_size.int_size, is_v);
+    array_inner *new_array = array_inner::create(new_size.size, is_v);
     array_bucket *it = p->begin();
     T res = it->value;
 
@@ -2036,7 +2036,7 @@ int64_t array<T>::unshift(const T &val) {
     array_size new_size = size();
     bool is_v = new_size.is_vector;
 
-    array_inner *new_array = array_inner::create(new_size.int_size + 1, is_v);
+    array_inner *new_array = array_inner::create(new_size.size + 1, is_v);
     array_bucket *it = p->begin();
 
     if (is_v) {

@@ -12,7 +12,7 @@
 #endif
 
 struct array_size {
-  int64_t int_size{0};
+  int64_t size{0};
   bool is_vector{false};
 
   array_size() = default;

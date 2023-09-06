@@ -351,7 +351,7 @@ array<array<T>> f$array_chunk(const array<T> &a, int64_t chunk_size, bool preser
 
   array_size new_size = a.size().cut(chunk_size);
   if (!preserve_keys) {
-    new_size.int_size = min(chunk_size, a.count());
+    new_size.size = min(chunk_size, a.count());
     new_size.is_vector = true;
   }
 
@@ -1290,7 +1290,7 @@ void f$array_reserve_map_string_keys(array<T> &a, int64_t size) {
 template<class T1, class T2>
 void f$array_reserve_from(array<T1> &a, const array<T2> &base) {
   auto size_info = base.size();
-  f$array_reserve(a, size_info.int_size, size_info.is_vector);
+  f$array_reserve(a, size_info.size, size_info.is_vector);
 }
 
 template<class T>
