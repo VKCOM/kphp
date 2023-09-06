@@ -408,7 +408,7 @@ array<T> f$array_slice(const array<T> &a, int64_t offset, const mixed &length_va
   }
 
   array_size result_size = a.size().cut(length);
-  result_size.is_vector = !preserve_keys || (preserve_keys && offset == 0 && a.is_vector());
+  result_size.is_vector = (!preserve_keys && a.has_no_string_keys()) || (preserve_keys && offset == 0 && a.is_vector());
 
   array<T> result(result_size);
   auto it = a.middle(offset);

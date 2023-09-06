@@ -54,8 +54,6 @@ struct array_list_hash_entry {
 struct ArrayBucketDummyStrTag{};
 
 struct array_inner_control {
-  // This stub field is needed to ensure the alignment during the const arrays generation
-  // TODO: figure out something smarter
   bool is_vector_internal;
   int ref_cnt;
   int64_t max_key;
@@ -78,6 +76,9 @@ private:
   using entry_pointer_type = list_entry_pointer_type;
   using list_hash_entry = array_list_hash_entry;
 
+  // array_bucket struct represent array bucket
+  // if key is number, int_key contains this number, there is no string_key.
+  // if key is string, int_key contains hash of this string, string_key contains this string.
   struct array_bucket : list_hash_entry {
     T value;
 
@@ -87,21 +88,17 @@ private:
     inline key_type get_key() const;
   };
 
-  // `max_key` and `string_size` could be also be there
-  // but sometimes, for simplicity, we use them in vector too
-  // to not add extra checks they are left in `array_inner`
   struct array_inner_fields_for_map {
+    // this helper value is claimed to improve performance by avoiding % division
     uint64_t modulo_helper_buf_size{0};
+    // track number of string keys in map
+    // it is useful in some specific cases, see has_no_string_keys()
+    uint32_t string_size{0};
   };
 
   struct array_inner : array_inner_control {
-    //if key is number, int_key contains this number, there is no string_key.
-    //if key is string, int_key contains hash of this string, string_key contains this string.
-    //empty hash_entry identified by (next == EMPTY_POINTER)
-    //vector is_identified by string_buf_size == -1
-
     static constexpr uint32_t MAX_HASHTABLE_SIZE = (1 << 26);
-
+    //empty hash_entry identified by (next == EMPTY_POINTER)
     static constexpr entry_pointer_type EMPTY_POINTER = 0;
 
     array_bucket int_entries[KPHP_ARRAY_TAIL_SIZE];
@@ -126,7 +123,8 @@ private:
     inline array_inner_fields_for_map &fields_for_map() __attribute__((always_inline));
     inline const array_inner_fields_for_map &fields_for_map() const __attribute__((always_inline));
 
-    inline uint32_t choose_bucket(int64_t key) const __attribute__ ((always_inline));
+    inline uint32_t choose_bucket(int64_t key) const noexcept __attribute__ ((always_inline));
+    inline uint32_t choose_bucket(const array_inner_fields_for_map &fields, int64_t key) const noexcept __attribute__ ((always_inline));
 
     inline static size_t sizeof_vector(uint32_t int_size) __attribute__((always_inline));
     inline static size_t sizeof_map(uint32_t int_size) __attribute__((always_inline));
@@ -177,6 +175,7 @@ private:
     inline T unset_map_value(const string &string_key, int64_t precomputed_hash);
 
     bool is_vector_internal_or_last_index(int64_t key) const noexcept;
+    bool has_no_string_keys() const noexcept;
 
     size_t estimate_memory_usage() const;
 
@@ -247,8 +246,15 @@ public:
 
   inline void clear() __attribute__ ((always_inline));
 
+  // shows if internal storage is vector
   inline bool is_vector() const __attribute__ ((always_inline));
+  // internal storage may be map, but it still behaves exactly like vector
   inline bool is_pseudo_vector() const __attribute__ ((always_inline));
+  // and one more level deep: shows if there are no string keys in storage;
+  // it is useful in some specific cases like in shift() function,
+  // there we drop all int indexes, and if there will be also no string indexes
+  // we can create true vector
+  bool has_no_string_keys() const noexcept;
 
   T &operator[](int64_t int_key);
   T &operator[](int32_t key) { return (*this)[int64_t{key}]; }

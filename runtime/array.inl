@@ -123,9 +123,13 @@ typename array<T>::array_inner *array<T>::array_inner::empty_array() {
 }
 
 template<class T>
-uint32_t array<T>::array_inner::choose_bucket(int64_t key) const {
-  uint64_t modulo_helper = fields_for_map().modulo_helper_buf_size;
-  return fastmod::fastmod_u32(static_cast<uint32_t>(key << 2), modulo_helper, buf_size);
+uint32_t array<T>::array_inner::choose_bucket(int64_t key) const noexcept {
+  return choose_bucket(fields_for_map(), key);
+}
+
+template<class T>
+uint32_t array<T>::array_inner::choose_bucket(const array_inner_fields_for_map &fields, int64_t key) const noexcept {
+  return fastmod::fastmod_u32(static_cast<uint32_t>(key << 2), fields.modulo_helper_buf_size, buf_size);
 }
 
 template<class T>
@@ -257,10 +261,11 @@ typename array<T>::array_inner *array<T>::array_inner::create(int64_t new_int_si
   p->end()->next = p->get_pointer(p->end());
   p->end()->prev = p->get_pointer(p->end());
 
+  p->size = 0;
   p->buf_size = static_cast<uint32_t>(new_int_size);
   p->fields_for_map().modulo_helper_buf_size = fastmod::computeM_u32(p->buf_size);
+  p->fields_for_map().string_size = 0;
 
-  p->size = 0;
   return p;
 }
 
@@ -503,7 +508,8 @@ std::pair<T &, bool> array<T>::array_inner::emplace_string_key_map_value(overwri
   static_assert(std::is_same<std::decay_t<STRING>, string>::value, "string_key should be string");
 
   array_bucket *string_entries = int_entries;
-  uint32_t bucket = choose_bucket(int_key);
+  auto &fields = fields_for_map();
+  uint32_t bucket = choose_bucket(fields, int_key);
   while (string_entries[bucket].next != EMPTY_POINTER &&
          (string_entries[bucket].int_key != int_key || string_entries[bucket].string_key.is_dummy_string() || string_entries[bucket].string_key != string_key)) {
     if (unlikely (++bucket == buf_size)) {
@@ -524,7 +530,8 @@ std::pair<T &, bool> array<T>::array_inner::emplace_string_key_map_value(overwri
 
     new(&string_entries[bucket].value) T(std::forward<Args>(args)...);
 
-    size++;
+    ++size;
+    ++fields.string_size;
     inserted = true;
   } else if (policy == overwrite_element::YES) {
     string_entries[bucket].value = T(std::forward<Args>(args)...);
@@ -542,7 +549,8 @@ T &array<T>::array_inner::set_map_value(overwrite_element policy, int64_t int_ke
 template<class T>
 T array<T>::array_inner::unset_map_value(const string &string_key, int64_t precomputed_hash) {
   array_bucket *string_entries = int_entries;
-  uint32_t bucket = choose_bucket(precomputed_hash);
+  auto &fields = fields_for_map();
+  uint32_t bucket = choose_bucket(fields, precomputed_hash);
   while (string_entries[bucket].next != EMPTY_POINTER &&
          (string_entries[bucket].int_key != precomputed_hash || string_entries[bucket].string_key.is_dummy_string() || string_entries[bucket].string_key != string_key)) {
     if (unlikely (++bucket == buf_size)) {
@@ -562,7 +570,8 @@ T array<T>::array_inner::unset_map_value(const string &string_key, int64_t preco
 
     T res = std::move(string_entries[bucket].value);
 
-    size--;
+    --size;
+    --fields.string_size;
 
 #define FIXD(a) ((a) >= buf_size ? (a) - buf_size : (a))
 #define FIXU(a, m) ((a) <= (m) ? (a) + buf_size : (a))
@@ -601,6 +610,11 @@ bool array<T>::array_inner::is_vector_internal_or_last_index(int64_t key) const 
 }
 
 template<class T>
+bool array<T>::array_inner::has_no_string_keys() const noexcept {
+  return is_vector_internal ? true : fields_for_map().string_size == 0;
+}
+
+template<class T>
 size_t array<T>::array_inner::estimate_memory_usage() const {
   int64_t int_elements = size;
   const bool vector_structure = is_vector();
@@ -617,16 +631,24 @@ bool array<T>::is_vector() const {
 
 template<class T>
 bool array<T>::is_pseudo_vector() const {
+  if (p->is_vector_internal) {
+    return true;
+  }
+  if (!p->has_no_string_keys()) {
+    return false;
+  }
   int64_t n = 0;
   for (auto element : *this) {
-    if (element.is_string_key()) {
-      return false;
-    }
     if (element.get_key().as_int() != n++) {
       return false;
     }
   }
   return n == count();
+}
+
+template<class T>
+bool array<T>::has_no_string_keys() const noexcept {
+  return p->has_no_string_keys();
 }
 
 template<class T>
@@ -1995,7 +2017,7 @@ T array<T>::shift() {
     return res;
   } else {
     array_size new_size = size().cut(count() - 1);
-    bool is_v = new_size.is_vector;
+    const bool is_v = p->has_no_string_keys();
 
     array_inner *new_array = array_inner::create(new_size.size, is_v);
     array_bucket *it = p->begin();
@@ -2034,7 +2056,7 @@ int64_t array<T>::unshift(const T &val) {
     new(it) T(val);
   } else {
     array_size new_size = size();
-    bool is_v = new_size.is_vector;
+    const bool is_v = p->has_no_string_keys();
 
     array_inner *new_array = array_inner::create(new_size.size + 1, is_v);
     array_bucket *it = p->begin();
