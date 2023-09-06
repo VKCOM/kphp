@@ -82,10 +82,18 @@ private:
  * It stores state of the script: current execution point, pointers to allocated script memory, stack for script context, etc.
  */
 class PhpScript {
-  double cur_timestamp{0}, net_time{0}, script_time{0};
+  double cur_timestamp{0};
   double last_net_time_delta{0};
   int queries_cnt{0};
   int long_queries_cnt{0};
+
+  struct script_time_stats_t {
+    double net_time{0};
+    double script_time{0};
+    double conn_accept_time{0};
+    double worker_init_time{0};
+    double script_start_time{0};
+  };
 
 private:
   int swapcontext_helper(ucontext_t_portable *oucp, const ucontext_t_portable *ucp);
@@ -98,10 +106,7 @@ public:
   volatile static bool in_script_context;
   volatile static bool time_limit_exceeded;
   volatile static bool memory_limit_exceeded;
-
-  static double last_conn_start_processing_time;
-  static double last_worker_init_time;
-  static double last_script_start_time;
+  static script_time_stats_t script_time_stats;
 
   run_state_t state{run_state_t::empty};
   const char *error_message{nullptr};

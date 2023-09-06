@@ -2378,7 +2378,7 @@ int run_main(int argc, char **argv, php_mode mode) {
   max_special_connections = 1;
   set_on_active_special_connections_update_callback([] (bool on_accept) {
     if (on_accept) {
-      PhpScript::last_conn_start_processing_time = get_utime_monotonic();
+      PhpScript::script_time_stats.conn_accept_time = get_utime_monotonic();
     }
     vk::singleton<ServerStats>::get().update_active_connections(active_special_connections, max_special_connections);
   });
