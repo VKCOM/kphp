@@ -156,7 +156,7 @@ std::vector<int> compile_arrays_raw_representation(const DepLevelContainer &cons
     // end_.next, end_.prev
     W << "{ .is = { .a = 0, .b = 0}},";
 
-    // int_size, int_buf_size
+    // size, int_buf_size
     W << "{ .is = { .a = " << array_size << ", .b = " << array_size << "}}";
 
     auto args_end = vertex->args().end();

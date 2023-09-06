@@ -60,7 +60,7 @@ struct array_inner_control {
   int ref_cnt;
   int64_t max_key;
   array_list_hash_entry last;
-  uint32_t int_size;
+  uint32_t size;
   uint32_t int_buf_size;
 };
 

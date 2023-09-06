@@ -129,7 +129,7 @@ public:
 
   static inline array_iterator make_end(array_type &arr) noexcept __attribute__ ((always_inline)) {
     return arr.is_vector()
-           ? array_iterator{arr.p, reinterpret_cast<list_hash_type *>(reinterpret_cast<value_type *>(arr.p->int_entries) + arr.p->int_size)}
+           ? array_iterator{arr.p, reinterpret_cast<list_hash_type *>(reinterpret_cast<value_type *>(arr.p->int_entries) + arr.p->size)}
            : array_iterator{arr.p, arr.p->end()};
   }
 

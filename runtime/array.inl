@@ -241,7 +241,7 @@ typename array<T>::array_inner *array<T>::array_inner::create(int64_t new_int_si
     p->is_vector_internal = true;
     p->ref_cnt = 0;
     p->max_key = -1;
-    p->int_size = 0;
+    p->size = 0;
     p->int_buf_size = static_cast<uint32_t>(new_int_size);
     return p;
   }
@@ -260,7 +260,7 @@ typename array<T>::array_inner *array<T>::array_inner::create(int64_t new_int_si
   p->int_buf_size = static_cast<uint32_t>(new_int_size);
   p->fields_for_map().modulo_helper_int_buf_size = fastmod::computeM_u32(p->int_buf_size);
 
-  p->int_size = 0;
+  p->size = 0;
   return p;
 }
 
@@ -270,7 +270,7 @@ void array<T>::array_inner::dispose() {
     ref_cnt--;
     if (ref_cnt <= -1) {
       if (is_vector()) {
-        for (uint32_t i = 0; i < int_size; i++) {
+        for (uint32_t i = 0; i < size; i++) {
           ((T *)int_entries)[i].~T();
         }
 
@@ -305,10 +305,10 @@ template<class T>
 template<class ...Args>
 inline T &array<T>::array_inner::emplace_back_vector_value(Args &&... args) noexcept {
   static_assert(std::is_constructible<T, Args...>{}, "should be constructible");
-  php_assert (int_size < int_buf_size);
-  new(&((T *)int_entries)[int_size]) T(std::forward<Args>(args)...);
+  php_assert (size < int_buf_size);
+  new(&((T *)int_entries)[size]) T(std::forward<Args>(args)...);
   max_key++;
-  int_size++;
+  size++;
   return reinterpret_cast<T *>(int_entries)[max_key];
 }
 
@@ -364,7 +364,7 @@ T &array<T>::array_inner::emplace_int_key_map_value(overwrite_element policy, in
 
     new(&int_entries[bucket].value) T(std::forward<Args>(args)...);
 
-    int_size++;
+    size++;
 
     if (int_key > max_key) {
       max_key = int_key;
@@ -383,7 +383,7 @@ T &array<T>::array_inner::set_map_value(overwrite_element policy, int64_t int_ke
 
 template<class T>
 T array<T>::array_inner::unset_vector_value() {
-  --int_size;
+  --size;
   T res = std::move(reinterpret_cast<T *>(int_entries)[max_key--]);
   return res;
 }
@@ -409,7 +409,7 @@ T array<T>::array_inner::unset_map_value(int64_t int_key) {
 
     T res = std::move(int_entries[bucket].value);
 
-    int_size--;
+    size--;
 
 #define FIXD(a) ((a) >= int_buf_size ? (a) - int_buf_size : (a))
 #define FIXU(a, m) ((a) <= (m) ? (a) + int_buf_size : (a))
@@ -489,12 +489,12 @@ const T *array<T>::array_inner::find_map_value(Key &&... key) const noexcept {
 
 template<class T>
 const T *array<T>::array_inner::find_vector_value(int64_t int_key) const noexcept {
-  return int_key >= 0 && int_key < int_size ? &get_vector_value(int_key) : nullptr;
+  return int_key >= 0 && int_key < size ? &get_vector_value(int_key) : nullptr;
 }
 
 template<class T>
 T *array<T>::array_inner::find_vector_value(int64_t int_key) noexcept {
-  return int_key >= 0 && int_key < int_size ? &get_vector_value(int_key) : nullptr;
+  return int_key >= 0 && int_key < size ? &get_vector_value(int_key) : nullptr;
 }
 
 template<class T>
@@ -524,7 +524,7 @@ std::pair<T &, bool> array<T>::array_inner::emplace_string_key_map_value(overwri
 
     new(&string_entries[bucket].value) T(std::forward<Args>(args)...);
 
-    int_size++;
+    size++;
     inserted = true;
   } else if (policy == overwrite_element::YES) {
     string_entries[bucket].value = T(std::forward<Args>(args)...);
@@ -562,7 +562,7 @@ T array<T>::array_inner::unset_map_value(const string &string_key, int64_t preco
 
     T res = std::move(string_entries[bucket].value);
 
-    int_size--;
+    size--;
 
 #define FIXD(a) ((a) >= int_buf_size ? (a) - int_buf_size : (a))
 #define FIXU(a, m) ((a) <= (m) ? (a) + int_buf_size : (a))
@@ -597,12 +597,12 @@ T array<T>::array_inner::unset_map_value(const string &string_key, int64_t preco
 
 template<class T>
 bool array<T>::array_inner::is_vector_internal_or_last_index(int64_t key) const noexcept {
-  return key >= 0 && key <= int_size;
+  return key >= 0 && key <= size;
 }
 
 template<class T>
 size_t array<T>::array_inner::estimate_memory_usage() const {
-  int64_t int_elements = int_size;
+  int64_t int_elements = size;
   const bool vector_structure = is_vector();
   if (vector_structure) {
     return estimate_size(int_elements, vector_structure);
@@ -631,7 +631,7 @@ bool array<T>::is_pseudo_vector() const {
 
 template<class T>
 bool array<T>::mutate_if_vector_shared(uint32_t mul) {
-  return mutate_to_size_if_vector_shared(mul * int64_t{p->int_size});
+  return mutate_to_size_if_vector_shared(mul * int64_t{p->size});
 }
 
 template<class T>
@@ -639,7 +639,7 @@ bool array<T>::mutate_to_size_if_vector_shared(int64_t int_size) {
   if (p->ref_cnt > 0) {
     array_inner *new_array = array_inner::create(int_size, true);
 
-    const auto size = static_cast<uint32_t>(p->int_size);
+    const auto size = static_cast<uint32_t>(p->size);
     T *it = (T *)p->int_entries;
 
     for (uint32_t i = 0; i < size; i++) {
@@ -656,7 +656,7 @@ bool array<T>::mutate_to_size_if_vector_shared(int64_t int_size) {
 template<class T>
 bool array<T>::mutate_if_map_shared(uint32_t mul) {
   if (p->ref_cnt > 0) {
-    array_inner *new_array = array_inner::create(p->int_size * mul + 1, false);
+    array_inner *new_array = array_inner::create(p->size * mul + 1, false);
 
     for (const array_bucket *it = p->begin(); it != p->end(); it = p->next(it)) {
       if (p->is_string_hash_entry(it)) {
@@ -679,7 +679,7 @@ void array<T>::mutate_if_vector_needed_int() {
     return;
   }
 
-  if (p->int_size == p->int_buf_size) {
+  if (p->size == p->int_buf_size) {
     mutate_to_size(int64_t{p->int_buf_size} * 2);
   }
 }
@@ -704,8 +704,8 @@ void array<T>::mutate_if_map_needed_int() {
   }
 
   // not shared (ref_cnt == 0)
-  if (p->int_size * 5 > 3 * p->int_buf_size) {
-    int64_t new_int_size = p->int_size * 2 + 1;
+  if (p->size * 5 > 3 * p->int_buf_size) {
+    int64_t new_int_size = p->size * 2 + 1;
     array_inner *new_array = array_inner::create(new_int_size, false);
 
     for (array_bucket *it = p->begin(); it != p->end(); it = p->next(it)) {
@@ -747,7 +747,7 @@ void array<T>::reserve(int64_t int_size, bool make_vector_if_possible) {
       array_inner *new_array = array_inner::create(new_int_size, false);
 
       if (is_vector()) {
-        for (uint32_t it = 0; it != p->int_size; it++) {
+        for (uint32_t it = 0; it != p->size; it++) {
           new_array->set_map_value(overwrite_element::YES, it, ((T *)p->int_entries)[it]);
         }
         php_assert (new_array->max_key == p->max_key);
@@ -815,16 +815,16 @@ typename array<T>::iterator array<T>::end() {
 
 template<class T>
 void array<T>::convert_to_map() {
-  array_inner *new_array = array_inner::create(p->int_size + 4, false);
+  array_inner *new_array = array_inner::create(p->size + 4, false);
 
   T *elements = reinterpret_cast<T *>(p->int_entries);
   const bool move_values = p->ref_cnt == 0;
   if (move_values) {
-    for (uint32_t it = 0; it != p->int_size; it++) {
+    for (uint32_t it = 0; it != p->size; it++) {
       new_array->emplace_int_key_map_value(overwrite_element::YES, it, std::move(elements[it]));
     }
   } else {
-    for (uint32_t it = 0; it != p->int_size; it++) {
+    for (uint32_t it = 0; it != p->size; it++) {
       new_array->set_map_value(overwrite_element::YES, it, elements[it]);
     }
   }
@@ -843,10 +843,10 @@ void array<T>::copy_from(const array<T1> &other) {
     return;
   }
 
-  array_inner *new_array = array_inner::create(other.p->int_size, other.is_vector());
+  array_inner *new_array = array_inner::create(other.p->size, other.is_vector());
 
   if (new_array->is_vector()) {
-    uint32_t size = other.p->int_size;
+    uint32_t size = other.p->size;
     T1 *it = reinterpret_cast<T1 *>(other.p->int_entries);
     for (uint32_t i = 0; i < size; i++) {
       new_array->push_back_vector_value(convert_to<T>::convert(it[i]));
@@ -863,7 +863,7 @@ void array<T>::copy_from(const array<T1> &other) {
 
   p = new_array;
 
-  php_assert (new_array->int_size == other.p->int_size);
+  php_assert (new_array->size == other.p->size);
 }
 
 template<class T>
@@ -880,10 +880,10 @@ void array<T>::move_from(array<T1> &&other) noexcept {
     return;
   }
 
-  array_inner *new_array = array_inner::create(other.p->int_size, other.is_vector());
+  array_inner *new_array = array_inner::create(other.p->size, other.is_vector());
 
   if (new_array->is_vector()) {
-    uint32_t size = other.p->int_size;
+    uint32_t size = other.p->size;
     T1 *it = reinterpret_cast<T1 *>(other.p->int_entries);
     for (uint32_t i = 0; i < size; i++) {
       new_array->emplace_back_vector_value(convert_to<T>::convert(std::move(it[i])));
@@ -901,7 +901,7 @@ void array<T>::move_from(array<T1> &&other) noexcept {
   }
 
   p = new_array;
-  php_assert (new_array->int_size == other.p->int_size);
+  php_assert (new_array->size == other.p->size);
 
   other = array<T1>{};
 }
@@ -1025,7 +1025,7 @@ template<class T>
 T &array<T>::operator[](int64_t int_key) {
   if (is_vector()) {
     if (p->is_vector_internal_or_last_index(int_key)) {
-      if (int_key == p->int_size) {
+      if (int_key == p->size) {
         mutate_if_vector_needed_int();
         return p->emplace_back_vector_value();
       } else {
@@ -1109,7 +1109,7 @@ template<class ...Args>
 void array<T>::emplace_value(int64_t int_key, Args &&... args) noexcept {
   if (is_vector()) {
     if (p->is_vector_internal_or_last_index(int_key)) {
-      if (int_key == p->int_size) {
+      if (int_key == p->size) {
         mutate_if_vector_needed_int();
         p->emplace_back_vector_value(std::forward<Args>(args)...);
       } else {
@@ -1437,7 +1437,7 @@ bool array<T>::isset(const string &key, int64_t precomputed_hash) const noexcept
 template<class T>
 T array<T>::unset(int64_t int_key) {
   if (is_vector()) {
-    if (int_key < 0 || int_key >= p->int_size) {
+    if (int_key < 0 || int_key >= p->size) {
       return {};
     }
     if (int_key == p->max_key) {
@@ -1504,12 +1504,12 @@ bool array<T>::empty() const {
 
 template<class T>
 int64_t array<T>::count() const {
-  return p->int_size;
+  return p->size;
 }
 
 template<class T>
 array_size array<T>::size() const {
-  return {p->int_size, is_vector()};
+  return {p->size, is_vector()};
 }
 
 template<class T>
@@ -1545,7 +1545,7 @@ const array<T> array<T>::operator+(const array<T> &other) const {
   array<T> result(size() + other.size());
 
   if (is_vector()) {
-    uint32_t size = p->int_size;
+    uint32_t size = p->size;
     T *it = (T *)p->int_entries;
 
     if (result.is_vector()) {
@@ -1568,11 +1568,11 @@ const array<T> array<T>::operator+(const array<T> &other) const {
   }
 
   if (other.is_vector()) {
-    uint32_t size = other.p->int_size;
+    uint32_t size = other.p->size;
     T *it = (T *)other.p->int_entries;
 
     if (result.is_vector()) {
-      for (uint32_t i = p->int_size; i < size; i++) {
+      for (uint32_t i = p->size; i < size; i++) {
         result.p->push_back_vector_value(it[i]);
       }
     } else {
@@ -1600,11 +1600,11 @@ array<T> &array<T>::operator+=(const array<T> &other) {
   }
   if (is_vector()) {
     if (other.is_vector()) {
-      uint32_t size = other.p->int_size;
+      uint32_t size = other.p->size;
       T *it = (T *)other.p->int_entries;
 
       if (p->ref_cnt > 0) {
-        uint32_t my_size = p->int_size;
+        uint32_t my_size = p->size;
         T *my_it = (T *)p->int_entries;
 
         array_inner *new_array = array_inner::create(max(size, my_size), true);
@@ -1621,20 +1621,20 @@ array<T> &array<T>::operator+=(const array<T> &other) {
         p->int_buf_size = new_size;
       }
 
-      if (p->int_size > 0 && size > 0) {
+      if (p->size > 0 && size > 0) {
         php_warning("Strange usage of array operator += on two vectors. Did you mean array_merge?");
       }
 
-      for (uint32_t i = p->int_size; i < size; i++) {
+      for (uint32_t i = p->size; i < size; i++) {
         p->push_back_vector_value(it[i]);
       }
 
       return *this;
     } else {
-      array_inner *new_array = array_inner::create(p->int_size + other.p->int_size + 4, false);
+      array_inner *new_array = array_inner::create(p->size + other.p->size + 4, false);
       T *it = (T *)p->int_entries;
 
-      for (uint32_t i = 0; i != p->int_size; i++) {
+      for (uint32_t i = 0; i != p->size; i++) {
         new_array->set_map_value(overwrite_element::YES, i, it[i]);
       }
 
@@ -1646,10 +1646,10 @@ array<T> &array<T>::operator+=(const array<T> &other) {
       return *this;
     }
 
-    uint32_t new_int_size = p->int_size + other.p->int_size;
+    uint32_t new_int_size = p->size + other.p->size;
 
     if (new_int_size * 5 > 3 * p->int_buf_size || p->ref_cnt > 0) {
-      array_inner *new_array = array_inner::create(max(new_int_size, 2 * p->int_size) + 1, false);
+      array_inner *new_array = array_inner::create(max(new_int_size, 2 * p->size) + 1, false);
 
       for (const array_bucket *it = p->begin(); it != p->end(); it = p->next(it)) {
         if (p->is_string_hash_entry(it)) {
@@ -1665,7 +1665,7 @@ array<T> &array<T>::operator+=(const array<T> &other) {
   }
 
   if (other.is_vector()) {
-    uint32_t size = other.p->int_size;
+    uint32_t size = other.p->size;
     T *it = (T *)other.p->int_entries;
 
     for (uint32_t i = 0; i < size; i++) {
@@ -1776,7 +1776,7 @@ void array<T>::swap_int_keys(int64_t idx1, int64_t idx2) noexcept {
   }
 
   // this function is supposed to be used for vector optimization, else branch is just to be on the safe side
-  if (is_vector() && idx1 >= 0 && idx2 >= 0 && idx1 < p->int_size && idx2 < p->int_size) {
+  if (is_vector() && idx1 >= 0 && idx2 >= 0 && idx1 < p->size && idx2 < p->size) {
     mutate_if_vector_shared();
     std::swap(reinterpret_cast<T *>(p->int_entries)[idx1], reinterpret_cast<T *>(p->int_entries)[idx2]);
   } else {
@@ -1792,22 +1792,22 @@ void array<T>::swap_int_keys(int64_t idx1, int64_t idx2) noexcept {
 
 template<class T>
 void array<T>::fill_vector(int64_t num, const T &value) {
-  php_assert(is_vector() && p->int_size == 0 && num <= p->int_buf_size);
+  php_assert(is_vector() && p->size == 0 && num <= p->int_buf_size);
 
   std::uninitialized_fill((T *)p->int_entries, (T *)p->int_entries + num, value);
   p->max_key = num - 1;
-  p->int_size = static_cast<uint32_t>(num);
+  p->size = static_cast<uint32_t>(num);
 }
 
 template<class T>
 void array<T>::memcpy_vector(int64_t num __attribute__((unused)), const void *src_buf __attribute__((unused))) {
   if constexpr (std::is_trivially_copyable_v<T>) {
-    php_assert(is_vector() && p->int_size == 0 && num <= p->int_buf_size);
+    php_assert(is_vector() && p->size == 0 && num <= p->int_buf_size);
     mutate_if_vector_shared();
 
     memcpy(p->int_entries, src_buf, num * sizeof(T));
     p->max_key = num - 1;
-    p->int_size = static_cast<uint32_t>(num);
+    p->size = static_cast<uint32_t>(num);
   } else {
     php_critical_error("Can't memcpy array with not trivially copyable items");
   }
@@ -1989,7 +1989,7 @@ T array<T>::shift() {
     T res = *it;
 
     it->~T();
-    memmove((void *)it, it + 1, --p->int_size * sizeof(T));
+    memmove((void *)it, it + 1, --p->size * sizeof(T));
     p->max_key--;
 
     return res;
@@ -2029,7 +2029,7 @@ int64_t array<T>::unshift(const T &val) {
     mutate_if_vector_needed_int();
 
     T *it = (T *)p->int_entries;
-    memmove((void *)(it + 1), it, p->int_size++ * sizeof(T));
+    memmove((void *)(it + 1), it, p->size++ * sizeof(T));
     p->max_key++;
     new(it) T(val);
   } else {
