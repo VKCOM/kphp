@@ -198,7 +198,7 @@ void write_tl_query_handlers(CodeGenerator &W) {
   W << END << ";" << NL << NL;
 
   W << "void tl_magic_fill_all_functions_impl(array<string> &out) noexcept " << BEGIN
-    << "out.reserve(" << tl->functions.size() << ", 0, false);" << NL
+    << "out.reserve(" << tl->functions.size() << ", false);" << NL
     << "for (int i=0; i<" << tl->functions.size() << "; ++i)" << BEGIN
     << "out.set_value(static_cast<int64_t>(tl_magic_ids[i]), string(tl_magic_names[i]));" << NL << END
     << NL << END << NL;
