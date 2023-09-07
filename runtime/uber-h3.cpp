@@ -38,7 +38,7 @@ inline int32_t check_resolution_param(int64_t resolution) noexcept {
 
 template<class T>
 array<T> make_zeros_vector(int64_t elements) noexcept {
-  array<T> elements_vector{array_size{elements, 0, true}};
+  array<T> elements_vector{array_size{elements, true}};
   if (elements) {
     elements_vector.fill_vector(elements, 0);
   }
@@ -62,8 +62,8 @@ class GeoPolygonOwner {
 public:
   GeoPolygonOwner(const array<std::tuple<double, double>> &polygon_boundary,
                   const array<array<std::tuple<double, double>>> &holes) noexcept:
-    polygon_boundary_(array_size{polygon_boundary.count(), 0, true}),
-    holes_(array_size{holes.count(), 0, true}) {
+    polygon_boundary_(array_size{polygon_boundary.count(), true}),
+    holes_(array_size{holes.count(), true}) {
     for (const auto &boundary_vertex : polygon_boundary) {
       polygon_boundary_.emplace_back(deg2coord(boundary_vertex.get_value()));
     }
@@ -123,7 +123,7 @@ std::tuple<double, double> f$UberH3$$h3ToGeo(int64_t h3_index) noexcept {
 array<std::tuple<double, double>> f$UberH3$$h3ToGeoBoundary(int64_t h3_index) noexcept {
   GeoBoundary boundary;
   h3ToGeoBoundary(h3_index, &boundary);
-  array<std::tuple<double, double>> result{array_size{boundary.numVerts, 0, true}};
+  array<std::tuple<double, double>> result{array_size{boundary.numVerts, true}};
   for (int i = 0; i < boundary.numVerts; ++i) {
     result.emplace_back(coord2deg(boundary.verts[i]));
   }
@@ -203,7 +203,7 @@ Optional<array<std::tuple<int64_t, int64_t>>> f$UberH3$$kRingDistances(int64_t h
   }
 
   const int32_t neighbors_count = maxKringSize(checked_k);
-  array<std::tuple<int64_t, int64_t>> result{array_size{neighbors_count, 0, true}};
+  array<std::tuple<int64_t, int64_t>> result{array_size{neighbors_count, true}};
   if (neighbors_count) {
     auto neighbor_indexes = make_zeros_vector<H3Index>(neighbors_count);
     auto neighbor_distances = make_zeros_vector<int32_t>(neighbors_count);
@@ -237,7 +237,7 @@ Optional<array<std::tuple<int64_t, int64_t>>> f$UberH3$$hexRangeDistances(int64_
   }
 
   const int32_t neighbors_count = maxKringSize(checked_k);
-  array<std::tuple<int64_t, int64_t>> result{array_size{neighbors_count, 0, true}};
+  array<std::tuple<int64_t, int64_t>> result{array_size{neighbors_count, true}};
   if (neighbors_count) {
     auto neighbor_indexes = make_zeros_vector<H3Index>(neighbors_count);
     auto neighbor_distances = make_zeros_vector<int32_t>(neighbors_count);
@@ -422,7 +422,7 @@ Optional<array<int64_t>> f$UberH3$$polyfill(const array<std::tuple<double, doubl
   for (const auto &element : hexagon_indexes) {
     indexes_count += element.get_value() ? 1 : 0;
   }
-  array<int64_t> result_array{array_size{indexes_count, 0, true}};
+  array<int64_t> result_array{array_size{indexes_count, true}};
   for (const auto &element : hexagon_indexes) {
     if (auto h3_index = element.get_value()) {
       result_array.emplace_back(h3_index);

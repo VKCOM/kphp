@@ -444,7 +444,7 @@ mixed f$getimagesize(const string &name) {
   close(read_fd);
   dl::leave_critical_section();
 
-  array<mixed> result(array_size(4, 3, false));
+  array<mixed> result(array_size(7, false));
   result.push_back(width);
   result.push_back(height);
   result.push_back(type);
@@ -483,7 +483,7 @@ Optional<array<mixed>> f$posix_getpwuid(int64_t uid) {
   if (!pwd) {
     return false;
   }
-  array<mixed> result(array_size(0, 7, false));
+  array<mixed> result(array_size(7, false));
   result.set_value(string("name", 4), string(pwd->pw_name));
   result.set_value(string("passwd", 6), string(pwd->pw_passwd));
   result.set_value(string("uid", 3), static_cast<int64_t>(pwd->pw_uid));

@@ -389,7 +389,7 @@ array<mixed> f$getdate(int64_t timestamp) {
   time_t timestamp_t = timestamp;
   localtime_r(&timestamp_t, &t);
 
-  array<mixed> result(array_size(1, 10, false));
+  array<mixed> result(array_size(11, false));
 
   result.set_value(string("seconds", 7), t.tm_sec);
   result.set_value(string("minutes", 7), t.tm_min);
@@ -476,7 +476,7 @@ array<mixed> f$localtime(int64_t timestamp, bool is_associative) {
     return array<mixed>::create(t.tm_sec, t.tm_min, t.tm_hour, t.tm_mday, t.tm_mon, t.tm_year, t.tm_wday, t.tm_yday, t.tm_isdst);
   }
 
-  array<mixed> result(array_size(0, 9, false));
+  array<mixed> result(array_size(9, false));
 
   result.set_value(string("tm_sec", 6), t.tm_sec);
   result.set_value(string("tm_min", 6), t.tm_min);

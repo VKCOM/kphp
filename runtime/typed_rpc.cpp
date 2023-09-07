@@ -93,7 +93,7 @@ class typed_rpc_tl_query_result_resumable : public Resumable {
 public:
   explicit typed_rpc_tl_query_result_resumable(const array<int64_t> &query_ids, const RpcErrorFactory &error_factory) :
     query_ids_(query_ids),
-    unsorted_results_(array_size(query_ids_.count(), 0, false)),
+    unsorted_results_(array_size(query_ids_.count(), false)),
     error_factory_(error_factory) {
   }
 
@@ -222,7 +222,7 @@ array<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_impl(const 
 
 array<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_synchronously_impl(const array<int64_t> &query_ids,
                                                                                         const RpcErrorFactory &error_factory) {
-  array<class_instance<C$VK$TL$RpcResponse>> unsorted_results(array_size(query_ids.count(), 0, false));
+  array<class_instance<C$VK$TL$RpcResponse>> unsorted_results(array_size(query_ids.count(), false));
 
   if (query_ids.count() == 1) {
     const int64_t query_id = query_ids.begin().get_value();

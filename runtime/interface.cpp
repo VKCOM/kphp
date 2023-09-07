@@ -1777,7 +1777,7 @@ static void init_superglobals(const http_query_data &http_data, const rpc_query_
 
   if (arg_vars == nullptr) {
     if (http_data.get_len > 0) {
-      array<mixed> argv_array(array_size(1, 0, true));
+      array<mixed> argv_array(array_size(1, true));
       argv_array.push_back(get_str);
 
       v$argv = argv_array;

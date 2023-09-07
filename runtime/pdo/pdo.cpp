@@ -116,7 +116,7 @@ array<mixed> f$PDO$$errorInfo(const class_instance<C$PDO> &v$this) {
   }
   auto [error_code, error_msg] = v$this.get()->driver->error_info();
 
-  array<mixed> res(array_size{3, 0, true});
+  array<mixed> res(array_size{3, true});
   res[0] = sqlstate.val();
   res[1] = error_code == 0 ? mixed() : error_code;
   res[2] = strcmp(error_msg, "") == 0 ? mixed() : string{error_msg};

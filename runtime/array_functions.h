@@ -347,7 +347,7 @@ array<array<T>> f$array_chunk(const array<T> &a, int64_t chunk_size, bool preser
     return array<array<T>>();
   }
 
-  array<array<T>> result(array_size(a.count() / chunk_size + 1, 0, true));
+  array<array<T>> result(array_size(a.count() / chunk_size + 1, true));
 
   array_size new_size = a.size().cut(chunk_size);
   if (!preserve_keys) {
@@ -816,7 +816,7 @@ template<class T, class T1>
 array<T> f$array_intersect(const array<T> &a1, const array<T1> &a2) {
   array<T> result(a1.size().min(a2.size()));
 
-  array<int64_t> values(array_size(0, a2.count(), false));
+  array<int64_t> values(array_size(a2.count(), false));
   for (const auto &it : a2) {
     values.set_value(f$strval(it.get_value()), 1);
   }
@@ -865,8 +865,7 @@ template<class T, class T1, class Proj>
 array<T> array_diff_impl(const array<T> &a1, const array<T1> &a2, const Proj &projector) {
   array<T> result(a1.size());
 
-  constexpr bool is_int_keys = std::is_same<std::invoke_result_t<Proj, T1>, int64_t>::value;
-  array<int64_t> values(array_size(is_int_keys * a2.count(), (!is_int_keys) * a2.count(), false));
+  array<int64_t> values{array_size{a2.count(), false}};
 
   for (const auto &it : a2) {
     values.set_value(projector(it.get_value()), 1);
@@ -1012,7 +1011,7 @@ mixed f$array_rand(const array<T> &a, int64_t num) {
     return {};
   }
 
-  array<typename array<T>::key_type> result(array_size(num, 0, true));
+  array<typename array<T>::key_type> result(array_size(num, true));
   for (const auto &it : a) {
     if (f$mt_rand(0, --size) < num) {
       result.push_back(it.get_key());
@@ -1025,7 +1024,7 @@ mixed f$array_rand(const array<T> &a, int64_t num) {
 
 template<class T, class F>
 auto transform_to_vector(const array<T> &a, const F &op) {
-  array<typename vk::function_traits<F>::ResultType> result(array_size(a.count(), 0, true));
+  array<typename vk::function_traits<F>::ResultType> result(array_size(a.count(), true));
   for (const auto &it : a) {
     result.push_back(op(it));
   }
@@ -1058,7 +1057,7 @@ array<T> f$array_values(const array<T> &a) {
 
 template<class T>
 array<T> f$array_unique(const array<T> &a, int64_t flags) {
-  array<int64_t> values(array_size(a.count(), a.count(), false));
+  array<int64_t> values(array_size(a.count(), false));
   array<T> result(a.size());
 
   auto lookup = [flags, &values](const auto &value) -> int64_t & {
@@ -1088,7 +1087,7 @@ array<T> f$array_unique(const array<T> &a, int64_t flags) {
 
 template<class T>
 array<int64_t> f$array_count_values(const array<T> &a) {
-  array<int64_t> result(array_size(0, a.count(), false));
+  array<int64_t> result(array_size(a.count(), false));
 
   for (const auto &it : a) {
     ++result[f$strval(it.get_value())];
@@ -1141,7 +1140,7 @@ array<T> f$array_fill(int64_t start_index, int64_t num, const T &value) {
   if (num == 0) {
     return {};
   }
-  array<T> result(array_size(num, 0, start_index == 0));
+  array<T> result(array_size(num, start_index == 0));
 
   if (result.is_vector()) {
     result.fill_vector(num, value);
@@ -1155,20 +1154,10 @@ array<T> f$array_fill(int64_t start_index, int64_t num, const T &value) {
   return result;
 }
 
-template<class T1>
-array_size make_size_by_keys(const array<T1> &keys) noexcept {
-  static_assert(!std::is_same<T1, int>{}, "int is forbidden");
-  return array_size{
-    std::is_same<T1, string>{} ? 0 : keys.count(),
-    std::is_same<T1, int64_t>{} ? 0 : keys.count(),
-    false
-  };
-}
-
 template<class T1, class T>
 array<T> f$array_fill_keys(const array<T1> &keys, const T &value) {
   static_assert(!std::is_same<T1, int>{}, "int is forbidden");
-  array<T> result{make_size_by_keys(keys)};
+  array<T> result{array_size{keys.count(), false}};
   for (const auto &it : keys) {
     const auto &key = it.get_value();
     if (vk::is_type_in_list<T1, string, int64_t>{} || f$is_int(key)) {
@@ -1189,7 +1178,7 @@ array<T> f$array_combine(const array<T1> &keys, const array<T> &values) {
   }
 
   static_assert(!std::is_same<T1, int>{}, "int is forbidden");
-  array<T> result{make_size_by_keys(keys)};
+  array<T> result{array_size{keys.count(), false}};
   auto it_values = values.begin();
   auto it_keys = keys.begin();
   const auto it_keys_last = keys.end();
@@ -1314,7 +1303,7 @@ void f$shuffle(array<T> &a) {
     return;
   }
 
-  array<T> result(array_size(n, 0, true));
+  array<T> result(array_size(n, true));
   const auto &const_arr = a;
   for (const auto &it : const_arr) {
     result.push_back(it.get_value());
@@ -1526,7 +1515,7 @@ T f$getValueByPos(const array<T> &a, int64_t pos) {
 
 template<class T>
 array<T> f$create_vector(int64_t n, const T &default_value) {
-  array<T> res(array_size(n, 0, true));
+  array<T> res(array_size(n, true));
   for (int64_t i = 0; i < n; i++) {
     res.push_back(default_value);
   }

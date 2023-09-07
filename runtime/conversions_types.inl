@@ -153,7 +153,7 @@ inline string f$strval(mixed &&val) {
 
 template<class T>
 inline array<T> f$arrayval(const T &val) {
-  array<T> res(array_size(1, 0, true));
+  array<T> res(array_size(1, true));
   res.push_back(val);
   return res;
 }

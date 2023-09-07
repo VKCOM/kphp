@@ -348,7 +348,7 @@ struct t_Vector {
       CurrentProcessingQuery::get().raise_fetching_error("Vector size is negative");
       return {};
     }
-    array<mixed> result(array_size(std::min(n, 10000), 0, true));
+    array<mixed> result(array_size(std::min(n, 10000), true));
     for (int i = 0; i < n; ++i) {
       fetch_magic_if_not_bare(inner_magic, "Incorrect magic of inner type of type Vector");
       const mixed &cur_elem = elem_state.fetch();
@@ -595,7 +595,7 @@ struct t_Tuple {
 
   array<mixed> fetch() {
     CHECK_EXCEPTION(return array<mixed>());
-    array<mixed> result(array_size(size, 0, true));
+    array<mixed> result(array_size(size, true));
     for (int64_t i = 0; i < size; ++i) {
       fetch_magic_if_not_bare(inner_magic, "Incorrect magic of inner type of type Tuple");
       result.push_back(elem_state.fetch());
@@ -666,7 +666,7 @@ struct tl_array {
   }
 
   array<mixed> fetch() {
-    array<mixed> result(array_size(size, 0, true));
+    array<mixed> result(array_size(size, true));
     CHECK_EXCEPTION(return result);
     for (int64_t i = 0; i < size; ++i) {
       fetch_magic_if_not_bare(inner_magic, "Incorrect magic of inner type of tl array");

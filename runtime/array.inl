@@ -12,26 +12,22 @@
   #error "this file must be included only from kphp_core.h"
 #endif
 
-array_size::array_size(int64_t int_size, bool is_vector)
+array_size::array_size(int64_t int_size, bool is_vector) noexcept
   : size(int_size)
   , is_vector(is_vector) {}
 
-array_size::array_size(int64_t int_size, int64_t string_size, bool is_vector)
-  : size(int_size + string_size)
-  , is_vector(is_vector) {}
-
-array_size array_size::operator+(const array_size &other) const {
-  return {size + other.size, 0, is_vector && other.is_vector};
+array_size array_size::operator+(const array_size &other) const noexcept {
+  return {size + other.size, is_vector && other.is_vector};
 }
 
-array_size &array_size::cut(int64_t length) {
+array_size &array_size::cut(int64_t length) noexcept {
   if (size > length) {
     size = length;
   }
   return *this;
 }
 
-array_size &array_size::min(const array_size &other) {
+array_size &array_size::min(const array_size &other) noexcept {
   if (size > other.size) {
     size = other.size;
   }
@@ -984,7 +980,7 @@ template<class... Args>
 inline array<T> array<T>::create(Args &&... args) {
   static_assert((std::is_convertible<std::decay_t<Args>, T>::value && ...), "Args type must be convertible to T");
 
-  array<T> res{array_size{sizeof...(args), 0, true}};
+  array<T> res{array_size{sizeof...(args), true}};
   (res.p->emplace_back_vector_value(std::forward<Args>(args)), ...);
   return res;
 }
@@ -1923,7 +1919,7 @@ void array<T>::ksort(const T1 &compare) {
     mutate_if_map_shared();
   }
 
-  array<key_type> keys(array_size(n, 0, true));
+  array<key_type> keys(array_size(n, true));
   for (auto *it = p->begin(); it != p->end(); it = p->next(it)) {
     keys.p->push_back_vector_value(it->get_key());
   }

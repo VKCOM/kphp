@@ -17,14 +17,13 @@ struct array_size {
 
   array_size() = default;
 
-  inline array_size(int64_t int_size, bool is_vector);
-  inline array_size(int64_t int_size, int64_t string_size, bool is_vector);
+  inline array_size(int64_t int_size, bool is_vector) noexcept;
 
-  inline array_size operator+(const array_size &other) const;
+  inline array_size operator+(const array_size &other) const noexcept;
 
-  inline array_size &cut(int64_t length);
+  inline array_size &cut(int64_t length) noexcept;
 
-  inline array_size &min(const array_size &other);
+  inline array_size &min(const array_size &other) noexcept;
 };
 
 #if defined(__clang__) || (defined(__GNUC__) && __GNUC__ < 10)
