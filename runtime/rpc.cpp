@@ -1198,7 +1198,7 @@ bool f$rpc_mc_parse_raw_wildcard_with_flags_to_array(const string &raw_result, a
   if (cnt == 0) {
     return true;
   };
-  result.reserve(0, cnt + f$count(result), false);
+  result.reserve(cnt + f$count(result), false);
 
   for (int j = 0; j < cnt; ++j) {
     string key = f$fetch_string();

@@ -751,11 +751,6 @@ void array<T>::mutate_to_map_if_vector_or_map_need_string() {
 }
 
 template<class T>
-void array<T>::reserve(int64_t int_size, int64_t string_size, bool make_vector_if_possible) {
-  reserve(int_size + string_size, make_vector_if_possible);
-}
-
-template<class T>
 void array<T>::reserve(int64_t int_size, bool make_vector_if_possible) {
   if (int_size > int64_t{p->buf_size}) {
     if (is_vector() && make_vector_if_possible) {

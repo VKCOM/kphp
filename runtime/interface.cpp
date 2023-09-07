@@ -1513,7 +1513,7 @@ static void save_rpc_query_headers(const tl_query_header_t &header) {
   }
   if (header.flags & flag::string_forward_keys) {
     array<string> string_forward_keys;
-    string_forward_keys.reserve(header.string_forward_keys.size(), 0, true);
+    string_forward_keys.reserve(header.string_forward_keys.size(), true);
     for (const auto &str_key : header.string_forward_keys) {
       string_forward_keys.emplace_back(string(str_key.data(), str_key.size()));
     }
@@ -1521,7 +1521,7 @@ static void save_rpc_query_headers(const tl_query_header_t &header) {
   }
   if (header.flags & flag::int_forward_keys) {
     array<int64_t> int_forward_keys;
-    int_forward_keys.reserve(header.int_forward_keys.size(), 0, true);
+    int_forward_keys.reserve(header.int_forward_keys.size(), true);
     for (int int_key : header.int_forward_keys) {
       int_forward_keys.emplace_back(int_key);
     }

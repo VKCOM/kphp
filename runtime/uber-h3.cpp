@@ -50,7 +50,7 @@ inline array<int64_t> indexes2vector(const array<int64_t> &h3_indexes, bool alwa
   if (h3_indexes.is_vector() && !always_deep_copy) {
     h3_vector = h3_indexes;
   } else {
-    h3_vector.reserve(h3_indexes.count(), 0, true);
+    h3_vector.reserve(h3_indexes.count(), true);
     for (const auto &h3_index : h3_indexes) {
       h3_vector.emplace_back(h3_index.get_value());
     }
@@ -76,7 +76,7 @@ public:
         .numVerts = static_cast<int32_t>(vertexes.count()),
         .verts = nullptr
       });
-      holes_vertexes_.reserve(holes_vertexes_.count() + vertexes.count(), 0, true);
+      holes_vertexes_.reserve(holes_vertexes_.count() + vertexes.count(), true);
       for (const auto &hole_vertex : vertexes) {
         holes_vertexes_.emplace_back(deg2coord(hole_vertex.get_value()));
       }

@@ -387,7 +387,7 @@ struct t_Vector {
       CurrentProcessingQuery::get().raise_fetching_error("Vector size is negative");
       return;
     }
-    out.reserve(n, 0, true);
+    out.reserve(n, true);
 
     if (std::is_same<T, t_Double>{} && inner_magic == 0) {
       fetch_raw_vector_T<typename T::PhpType>(out, n);
@@ -623,7 +623,7 @@ struct t_Tuple {
 
   void typed_fetch_to(PhpType &out) {
     CHECK_EXCEPTION(return);
-    out.reserve(size, 0, true);
+    out.reserve(size, true);
 
     if (std::is_same<T, t_Double>{} && inner_magic == 0) {
       fetch_raw_vector_T<typename T::PhpType>(out, size);
@@ -696,7 +696,7 @@ struct tl_array {
 
   void typed_fetch_to(PhpType &out) {
     CHECK_EXCEPTION(return);
-    out.reserve(size, 0, true);
+    out.reserve(size, true);
 
     if (std::is_same<T, t_Double>{} && inner_magic == 0) {
       fetch_raw_vector_T<typename T::PhpType>(out, size);

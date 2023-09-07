@@ -38,7 +38,7 @@ array<mixed> dump_errors(const timelib_error_container &error) {
   array<mixed> result;
 
   array<string> result_warnings;
-  result_warnings.reserve(error.warning_count, 0, false);
+  result_warnings.reserve(error.warning_count, false);
   for (int i = 0; i < error.warning_count; i++) {
     result_warnings.set_value(error.warning_messages[i].position, string(error.warning_messages[i].message));
   }
@@ -46,7 +46,7 @@ array<mixed> dump_errors(const timelib_error_container &error) {
   result.set_value(string("warnings"), result_warnings);
 
   array<string> result_errors;
-  result_errors.reserve(error.error_count, 0, false);
+  result_errors.reserve(error.error_count, false);
   for (int i = 0; i < error.error_count; i++) {
     result_errors.set_value(error.error_messages[i].position, string(error.error_messages[i].message));
   }

@@ -420,7 +420,6 @@ public:
   bool is_equal_inner_pointer(const array &other) const noexcept;
 
   void reserve(int64_t int_size, bool make_vector_if_possible);
-  void reserve(int64_t int_size, int64_t string_size, bool make_vector_if_possible);
 
   size_t estimate_memory_usage() const;
 

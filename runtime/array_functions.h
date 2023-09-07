@@ -1258,22 +1258,22 @@ T f$array_unset(array<T> &arr, const mixed &key) {
 
 template<class T>
 void f$array_reserve(array<T> &a, int64_t int_size, int64_t string_size, bool make_vector_if_possible) {
-  a.reserve(int_size, string_size, make_vector_if_possible);
+  a.reserve(int_size + string_size, make_vector_if_possible);
 }
 
 template<class T>
 void f$array_reserve_vector(array<T> &a, int64_t size) {
-  a.reserve(size, 0, true);
+  a.reserve(size, true);
 }
 
 template<class T>
 void f$array_reserve_map_int_keys(array<T> &a, int64_t size) {
-  a.reserve(size, 0, false);
+  a.reserve(size, false);
 }
 
 template<class T>
 void f$array_reserve_map_string_keys(array<T> &a, int64_t size) {
-  a.reserve(0, size, false);
+  a.reserve(size, false);
 }
 
 template<class T1, class T2>

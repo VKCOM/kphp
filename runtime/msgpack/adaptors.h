@@ -215,7 +215,7 @@ template<class T>
 struct convert<array<T>> {
   const msgpack::object &operator()(const msgpack::object &obj, array<T> &res_arr) const {
     if (obj.type == stored_type::ARRAY) {
-      res_arr.reserve(obj.via.array.size, 0, true);
+      res_arr.reserve(obj.via.array.size, true);
 
       for (uint32_t i = 0; i < obj.via.array.size; ++i) {
         res_arr.set_value(static_cast<int64_t>(i), obj.via.array.ptr[i].as<T>());
