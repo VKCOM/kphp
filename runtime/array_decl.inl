@@ -178,10 +178,6 @@ private:
 
     size_t estimate_memory_usage() const;
 
-    constexpr array_inner(int ref_cnt, int64_t max_key, list_hash_entry end, uint32_t int_size, uint32_t int_buf_size) noexcept :
-      array_inner_control{0, ref_cnt, max_key, end, int_size, int_buf_size} {
-    }
-
     inline array_inner(const array_inner &other) = delete;
     inline array_inner &operator=(const array_inner &other) = delete;
   };
