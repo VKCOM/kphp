@@ -225,11 +225,8 @@ struct convert<array<T>> {
     }
 
     if (obj.type == stored_type::MAP) {
-      array_size size(0, false);
-      run_callbacks_on_map(
-        obj.via.map, [&size](int64_t, msgpack::object &) { size.size++; }, [&size](const string &, msgpack::object &) { size.size++; });
+      res_arr.reserve(obj.via.map.size, false);
 
-      res_arr.reserve(size.size, size.is_vector);
       run_callbacks_on_map(
         obj.via.map, [&res_arr](int64_t key, msgpack::object &value) { res_arr.set_value(key, value.as<T>()); },
         [&res_arr](const string &key, msgpack::object &value) { res_arr.set_value(key, value.as<T>()); });
