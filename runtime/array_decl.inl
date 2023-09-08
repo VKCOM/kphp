@@ -186,9 +186,9 @@ private:
   inline bool mutate_to_size_if_vector_shared(int64_t int_size);
   inline void mutate_to_size(int64_t int_size);
   inline bool mutate_if_map_shared(uint32_t mul = 1);
-  inline void mutate_if_vector_needed_int();
-  inline void mutate_if_map_needed_int();
-  inline void mutate_to_map_if_vector_or_map_need_string();
+  inline void mutate_if_vector_needs_space();
+  inline void mutate_if_map_needs_space();
+  inline void mutate_to_map_if_vector_or_map_need_space();
 
   inline void convert_to_map();
 

@@ -692,7 +692,7 @@ bool array<T>::mutate_if_map_shared(uint32_t mul) {
 }
 
 template<class T>
-void array<T>::mutate_if_vector_needed_int() {
+void array<T>::mutate_if_vector_needs_space() {
   if (mutate_if_vector_shared(2)) {
     return;
   }
@@ -716,7 +716,7 @@ void array<T>::mutate_to_size(int64_t int_size) {
 }
 
 template<class T>
-void array<T>::mutate_if_map_needed_int() {
+void array<T>::mutate_if_map_needs_space() {
   if (mutate_if_map_shared(2)) {
     return;
   }
@@ -742,11 +742,11 @@ void array<T>::mutate_if_map_needed_int() {
 }
 
 template<class T>
-void array<T>::mutate_to_map_if_vector_or_map_need_string() {
+void array<T>::mutate_to_map_if_vector_or_map_need_space() {
   if (is_vector()) {
     convert_to_map();
   } else {
-    mutate_if_map_needed_int();
+    mutate_if_map_needs_space();
   }
 }
 
@@ -1039,7 +1039,7 @@ T &array<T>::operator[](int64_t int_key) {
   if (is_vector()) {
     if (p->is_vector_internal_or_last_index(int_key)) {
       if (int_key == p->size) {
-        mutate_if_vector_needed_int();
+        mutate_if_vector_needs_space();
         return p->emplace_back_vector_value();
       } else {
         mutate_if_vector_shared();
@@ -1049,7 +1049,7 @@ T &array<T>::operator[](int64_t int_key) {
 
     convert_to_map();
   } else {
-    mutate_if_map_needed_int();
+    mutate_if_map_needs_space();
   }
 
   return p->emplace_int_key_map_value(overwrite_element::NO, int_key);
@@ -1062,7 +1062,7 @@ T &array<T>::operator[](const string &string_key) {
     return (*this)[int_val];
   }
 
-  mutate_to_map_if_vector_or_map_need_string();
+  mutate_to_map_if_vector_or_map_need_space();
   return p->emplace_string_key_map_value(overwrite_element::NO, string_key.hash(), string_key).first;
 }
 
@@ -1106,7 +1106,7 @@ T &array<T>::operator[](const const_iterator &it) noexcept {
   }
   auto *entry = reinterpret_cast<const array_bucket *>(it.entry_);
   if (it.self_->is_string_hash_entry(entry)) {
-    mutate_to_map_if_vector_or_map_need_string();
+    mutate_to_map_if_vector_or_map_need_space();
     return p->emplace_string_key_map_value(overwrite_element::NO, entry->int_key, entry->string_key).first;
   }
   return operator[](entry->int_key);
@@ -1123,7 +1123,7 @@ void array<T>::emplace_value(int64_t int_key, Args &&... args) noexcept {
   if (is_vector()) {
     if (p->is_vector_internal_or_last_index(int_key)) {
       if (int_key == p->size) {
-        mutate_if_vector_needed_int();
+        mutate_if_vector_needs_space();
         p->emplace_back_vector_value(std::forward<Args>(args)...);
       } else {
         mutate_if_vector_shared();
@@ -1134,7 +1134,7 @@ void array<T>::emplace_value(int64_t int_key, Args &&... args) noexcept {
 
     convert_to_map();
   } else {
-    mutate_if_map_needed_int();
+    mutate_if_map_needs_space();
   }
 
   p->emplace_int_key_map_value(overwrite_element::YES, int_key, std::forward<Args>(args)...);
@@ -1169,7 +1169,7 @@ void array<T>::emplace_value(const string &string_key, Args &&... args) noexcept
     return;
   }
 
-  mutate_to_map_if_vector_or_map_need_string();
+  mutate_to_map_if_vector_or_map_need_space();
   p->emplace_string_key_map_value(overwrite_element::YES,
                                   string_key.hash(), string_key, std::forward<Args>(args)...);
 }
@@ -1200,13 +1200,13 @@ void array<T>::set_value(tmp_string string_key, const T &v) noexcept {
 
 template<class T>
 void array<T>::set_value(const string &string_key, const T &v, int64_t precomputed_hash) noexcept {
-  mutate_to_map_if_vector_or_map_need_string();
+  mutate_to_map_if_vector_or_map_need_space();
   p->emplace_string_key_map_value(overwrite_element::YES, precomputed_hash, string_key, v);
 }
 
 template<class T>
 void array<T>::set_value(const string &string_key, T &&v, int64_t precomputed_hash) noexcept {
-  mutate_to_map_if_vector_or_map_need_string();
+  mutate_to_map_if_vector_or_map_need_space();
   p->emplace_string_key_map_value(overwrite_element::YES, precomputed_hash, string_key, std::move(v));
 }
 
@@ -1271,7 +1271,7 @@ void array<T>::set_value(const const_iterator &it) noexcept {
   }
   auto *entry = reinterpret_cast<const array_bucket *>(it.entry_);
   if (it.self_->is_string_hash_entry(entry)) {
-    mutate_to_map_if_vector_or_map_need_string();
+    mutate_to_map_if_vector_or_map_need_space();
     p->emplace_string_key_map_value(overwrite_element::YES, entry->int_key, entry->string_key, entry->value);
   } else {
     emplace_value(entry->int_key, entry->value);
@@ -1701,10 +1701,10 @@ template<class T>
 template<class ...Args>
 T &array<T>::emplace_back(Args &&... args) noexcept {
   if (is_vector()) {
-    mutate_if_vector_needed_int();
+    mutate_if_vector_needs_space();
     return p->emplace_back_vector_value(std::forward<Args>(args)...);
   } else {
-    mutate_if_map_needed_int();
+    mutate_if_map_needs_space();
     return p->emplace_int_key_map_value(overwrite_element::YES, get_next_key(), std::forward<Args>(args)...);
   }
 }
@@ -1739,7 +1739,7 @@ void array<T>::push_back_iterator(const array_iterator<T1> &it) noexcept {
   } else {
     auto *entry = reinterpret_cast<typename array_iterator<T1>::bucket_type *>(it.entry_);
     if (it.self_->is_string_hash_entry(entry)) {
-      mutate_to_map_if_vector_or_map_need_string();
+      mutate_to_map_if_vector_or_map_need_space();
 
       // don't overwrite existing element if we are in merge_recursive::YES mode,
       // this case will be handled further
@@ -1752,10 +1752,10 @@ void array<T>::push_back_iterator(const array_iterator<T1> &it) noexcept {
       start_merge_recursive<recursive>(value_ref, inserted, entry->value);
     } else {
       if (is_vector()) {
-        mutate_if_vector_needed_int();
+        mutate_if_vector_needs_space();
         p->push_back_vector_value(entry->value);
       } else {
-        mutate_if_map_needed_int();
+        mutate_if_map_needs_space();
         p->set_map_value(overwrite_element::YES, get_next_key(), entry->value);
       }
     }
@@ -2039,7 +2039,7 @@ T array<T>::shift() {
 template<class T>
 int64_t array<T>::unshift(const T &val) {
   if (is_vector()) {
-    mutate_if_vector_needed_int();
+    mutate_if_vector_needs_space();
 
     T *it = (T *)p->int_entries;
     memmove((void *)(it + 1), it, p->size++ * sizeof(T));
