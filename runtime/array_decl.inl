@@ -100,7 +100,7 @@ private:
     //empty hash_entry identified by (next == EMPTY_POINTER)
     static constexpr entry_pointer_type EMPTY_POINTER = 0;
 
-    array_bucket int_entries[KPHP_ARRAY_TAIL_SIZE];
+    array_bucket entries[KPHP_ARRAY_TAIL_SIZE];
 
     inline bool is_vector() const __attribute__ ((always_inline));
 
