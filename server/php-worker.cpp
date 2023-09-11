@@ -6,6 +6,7 @@
 #include <utility>
 #include <poll.h>
 
+#include "common/algorithms/find.h"
 #include "common/precise-time.h"
 #include "common/rpc-error-codes.h"
 #include "common/wrappers/overloaded.h"
@@ -233,7 +234,11 @@ void PhpWorker::state_run() noexcept {
         tvkprintf(php_runner, 3, "PHP-worker before swap context [req_id = %016llx]\n", req_id);
         php_script->iterate();
         tvkprintf(php_runner, 3, "PHP-worker after swap context [req_id = %016llx]\n", req_id);;
-        wait(0); // check for net events
+        if (!vk::any_of_equal(php_script->state, run_state_t::finished, run_state_t::error)) {
+          // We don't need to check net events when the script is going to finish.
+          // Otherwise we can fetch some net events related to this script that will be processed after the script termination.
+          wait(0);
+        }
         break;
       }
       case run_state_t::query: {
