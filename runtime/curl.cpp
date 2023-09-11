@@ -1101,6 +1101,15 @@ void CurlRequest::detach_multi_and_easy_handles() const noexcept {
 }
 
 static int curl_epoll_cb(int fd, void *data, event_t *ev) {
+  // Sometimes epoll callbacks can be invoked AFTER the related 'fd' is removed from epoll.
+  // It happens because our net_reactor at first stores epoll events from epoll_wait, and only then runs related callbacks (see epoll_fetch_events())
+  // Usually this situation is handled via some additional connection flags (conn_expect_query, C_WANTRD etc.)
+  // in callbacks like `server_read_write_gateway` and related.
+  // But here we try to keep it simple and not to do all of this stuff.
+  // So we need to check explicitly that this fd is still present in epoll reactor:
+  if (!(ev->state & EVT_IN_EPOLL)) {
+    return 0;
+  }
   auto *curl_request = static_cast<CurlRequest *>(data);
   php_assert(curl_request);
 
