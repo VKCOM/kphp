@@ -1,0 +1,19 @@
+{
+  "name": "vk/str-strings",
+  "type": "library",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "Archosauria\\": "./Archosauria",
+      "Dinosaur\\": "./Dinosaur",
+      "Vk\\TestSrt\\": "./Packages/vk-strings/src"
+    }
+  },
+  "require": {},
+  "repositories": [
+    {
+      "type": "path",
+      "url": "./Packages/vk-strings"
+    }
+  ]
+}
