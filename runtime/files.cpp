@@ -566,7 +566,7 @@ Optional<array<string>> f$scandir(const string &directory) {
     }
     return false;
   }
-  array<string> file_list(array_size(namelist_size, 0, true));
+  array<string> file_list(array_size(namelist_size, true));
   for (int i = 0; i < namelist_size; i++) {
     char const *file_name = namelist[i]->d_name;
     string::size_type file_name_length = (string::size_type)strlen(file_name);

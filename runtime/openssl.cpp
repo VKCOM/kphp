@@ -116,7 +116,7 @@ const HashTraits &find_hash_algorithm(const char *algo) noexcept {
 
 array<string> f$hash_algos() noexcept {
   const auto &supported_algorithms = get_supported_hash_algorithms();
-  array<string> result{array_size{static_cast<int64_t>(supported_algorithms.size()), 0, true}};
+  array<string> result{array_size{static_cast<int64_t>(supported_algorithms.size()), true}};
   for (const auto &algo : supported_algorithms) {
     result.emplace_back(string{algo.name});
   }

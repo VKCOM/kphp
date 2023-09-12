@@ -705,7 +705,7 @@ mixed f$curl_getinfo(curl_easy easy_id, int64_t option) noexcept {
   }
 
   if (option == 0) {
-    array<mixed> result(array_size(0, 26, false));
+    array<mixed> result(array_size(26, false));
     easy_context->add_info_into_array(result, "url", CURLINFO_EFFECTIVE_URL);
     easy_context->add_info_into_array(result, "content_type", CURLINFO_CONTENT_TYPE);
     easy_context->add_info_into_array(result, "http_code", CURLINFO_RESPONSE_CODE);
@@ -909,7 +909,7 @@ Optional<array<int64_t>> f$curl_multi_info_read(curl_multi multi_id, int64_t &ms
     CURLMsg *msg = dl::critical_section_call(curl_multi_info_read, multi_context->multi_handle, &msgs_in_queue_int);
     msgs_in_queue = msgs_in_queue_int;
     if (msg) {
-      array<int64_t> result{array_size{0, 3, false}};
+      array<int64_t> result{array_size{3, false}};
       result.set_value(string{"msg"}, static_cast<int64_t>(msg->msg));
       result.set_value(string{"result"}, static_cast<int64_t>(msg->data.result));
 

@@ -32,7 +32,7 @@ void OnKphpWarningCallback::invoke_callback(const string &warning_message) {
     array<string> arg_stacktrace;
     if (nptrs > 2) {
       // start with the 2nd frame: 0 is invoke_callback(), 1 is php_warning(), 2 is what we want
-      arg_stacktrace.reserve(nptrs - 2, 0, true);
+      arg_stacktrace.reserve(nptrs - 2, true);
       KphpBacktrace demangler{buffer.data() + 2, nptrs - 2};
       for (const char *name : demangler.make_demangled_backtrace_range()) {
         if (name) {

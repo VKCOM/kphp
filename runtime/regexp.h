@@ -253,7 +253,7 @@ inline string regexp::get_replacement(const string &replace_val, const string &s
 
 template<class T>
 string regexp::get_replacement(const T &replace_val, const string &subject, const int64_t count) const {
-  array<string> result_set(array_size(count, named_subpatterns_count, named_subpatterns_count == 0));
+  array<string> result_set(array_size(count + named_subpatterns_count, named_subpatterns_count == 0));
 
   if (named_subpatterns_count) {
     for (int64_t i = 0; i < count; i++) {

@@ -1845,35 +1845,17 @@ void compile_array(VertexAdaptor<op_array> root, CodeGenerator &W) {
   }
 
   bool has_double_arrow = false;
-  int int_cnt = 0, string_cnt = 0, xx_cnt = 0;
+  const int size = root->args().size();
   for (size_t key_id = 0; key_id < root->args().size(); ++key_id) {
     if (auto arrow = root->args()[key_id].try_as<op_double_arrow>()) {
       VertexPtr key = VertexUtil::get_actual_value(arrow->key());
       if (!has_double_arrow && key->type() == op_int_const) {
         if (key.as<op_int_const>()->str_val == std::to_string(key_id)) {
           root->args()[key_id] = arrow->value();
-          int_cnt++;
           continue;
         }
       }
       has_double_arrow = true;
-      PrimitiveType tp = tinf::get_type(key)->ptype();
-      if (tp == tp_int) {
-        int_cnt++;
-      } else {
-        if (tp == tp_string && key->type() == op_string) {
-          const std::string &key_str = key.as<op_string>()->str_val;
-          if (php_is_int(key_str.c_str(), key_str.size())) {
-            int_cnt++;
-          } else {
-            string_cnt++;
-          }
-        } else {
-          xx_cnt++;
-        }
-      }
-    } else {
-      int_cnt++;
     }
   }
   if (n <= 10 && !has_double_arrow && type->ptype() == tp_array && root->extra_type != op_ex_safe_version) {
@@ -1893,8 +1875,7 @@ void compile_array(VertexAdaptor<op_array> root, CodeGenerator &W) {
     W << "array <mixed>";
   }
   W << " (array_size ("
-    << int_cnt + xx_cnt << ", "
-    << string_cnt + xx_cnt << ", "
+    << size << ", "
     << (has_double_arrow ? "false" : "true") << "));" << NL;
   for (auto cur : root->args()) {
     W << arr_name;

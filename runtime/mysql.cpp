@@ -136,7 +136,7 @@ static void mysql_query_callback(const char *result_, int result_len) {
         *query_id_ptr = false;
         return;
       }
-      *field_names_ptr = array<string>(array_size(*field_cnt_ptr, 0, true));
+      *field_names_ptr = array<string>(array_size(*field_cnt_ptr, true));
 
       mysql_callback_state = 1;
       break;
@@ -179,9 +179,7 @@ static void mysql_query_callback(const char *result_, int result_len) {
       break;
     case 3:
       if (result[0] != 254) {
-        array<mixed>
-        row(array_size(*field_cnt_ptr,
-        *field_cnt_ptr, false));
+        array<mixed> row(array_size(*field_cnt_ptr, false));
         for (int i = 0; i < *field_cnt_ptr; i++) {
           is_null = false;
           mixed value = mysql_read_string(result, result_len, is_null, true);

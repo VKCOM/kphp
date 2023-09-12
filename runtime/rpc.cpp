@@ -1198,7 +1198,7 @@ bool f$rpc_mc_parse_raw_wildcard_with_flags_to_array(const string &raw_result, a
   if (cnt == 0) {
     return true;
   };
-  result.reserve(0, cnt + f$count(result), false);
+  result.reserve(cnt + f$count(result), false);
 
   for (int j = 0; j < cnt; ++j) {
     string key = f$fetch_string();
@@ -1352,7 +1352,7 @@ protected:
 public:
   explicit rpc_tl_query_result_resumable(const array<int64_t> &query_ids) :
     query_ids(query_ids),
-    tl_objects_unsorted(array_size(query_ids.count(), 0, false)),
+    tl_objects_unsorted(array_size(query_ids.count(), false)),
     queue_id(0),
     query_id(0) {
   }
@@ -1363,7 +1363,7 @@ array<array<mixed>> f$rpc_tl_query_result(const array<int64_t> &query_ids) {
 }
 
 array<array<mixed>> f$rpc_tl_query_result_synchronously(const array<int64_t> &query_ids) {
-  array<array<mixed>> tl_objects_unsorted(array_size(query_ids.count(), 0, false));
+  array<array<mixed>> tl_objects_unsorted(array_size(query_ids.count(), false));
   if (query_ids.count() == 1) {
     wait_without_result_synchronously_safe(query_ids.begin().get_value());
     tl_objects_unsorted[query_ids.begin().get_value()] = f$rpc_tl_query_result_one(query_ids.begin().get_value());

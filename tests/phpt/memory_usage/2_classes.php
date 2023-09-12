@@ -58,8 +58,8 @@ function test_class_with_dynamic_array() {
   } // total size = 16
 
 #ifndef KPHP
-  var_dump(248);
-  var_dump(16 + 248);
+  var_dump(240);
+  var_dump(16 + 240);
   return;
 #endif
   $instance = new MyClass2(10);
