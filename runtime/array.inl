@@ -1818,7 +1818,7 @@ void array<T>::memcpy_vector(int64_t num __attribute__((unused)), const void *sr
     php_assert(is_vector() && p->size == 0 && num <= p->buf_size);
     mutate_if_vector_shared();
 
-    memcpy(p->entries, src_buf, num * sizeof(T));
+    memcpy(reinterpret_cast<T *>(p->entries), src_buf, num * sizeof(T));
     p->max_key = num - 1;
     p->size = static_cast<uint32_t>(num);
   } else {
