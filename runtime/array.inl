@@ -106,7 +106,7 @@ bool array<T>::is_int_key(const typename array<T>::key_type &key) {
 template<>
 inline typename array<Unknown>::array_inner *array<Unknown>::array_inner::empty_array() {
   static array_inner_control empty_array{
-    1, ExtraRefCnt::for_global_const, -1,
+    true, ExtraRefCnt::for_global_const, -1,
     {0, 0},
     0, 2,
   };
@@ -1877,7 +1877,7 @@ void array<T>::sort(const T1 &compare, bool renumber) {
   array_bucket **arTmp = (array_bucket **)dl::allocate(n * sizeof(array_bucket * ));
   uint32_t i = 0;
   for (array_bucket *it = p->begin(); it != p->end(); it = p->next(it)) {
-    arTmp[i++] = (array_bucket *)it;
+    arTmp[i++] = it;
   }
   php_assert (i == n);
 
