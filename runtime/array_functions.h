@@ -57,28 +57,6 @@ array<T> f$array_filter(const array<T> &a, const T1 &callback) noexcept;
 template<class T, class T1>
 array<T> f$array_filter_by_key(const array<T> &a, const T1 &callback) noexcept;
 
-template<class T>
-T f$array_merge_spread(const T &a1);
-
-template<class T>
-T f$array_merge_spread(const T &a1, const T &a2);
-
-template<class T>
-T f$array_merge_spread(const T &a1, const T &a2, const T &a3, const T &a4 = T(), const T &a5 = T(), const T &a6 = T(),
-                const T &a7 = T(), const T &a8 = T(), const T &a9 = T(),
-                const T &a10 = T(), const T &a11 = T(), const T &a12 = T());
-
-template<class T>
-T f$array_merge(const T &a1);
-
-template<class T>
-T f$array_merge(const T &a1, const T &a2);
-
-template<class T>
-T f$array_merge(const T &a1, const T &a2, const T &a3, const T &a4 = T(), const T &a5 = T(), const T &a6 = T(),
-                const T &a7 = T(), const T &a8 = T(), const T &a9 = T(),
-                const T &a10 = T(), const T &a11 = T(), const T &a12 = T());
-
 template<class T, class T1>
 void f$array_merge_into(T &a, const T1 &another_array);
 
@@ -706,51 +684,47 @@ R f$array_reduce(const array<T> &a, const CallbackT &callback, InitialT initial)
   return result;
 }
 
-template<class T>
-T f$array_merge_spread(const T &a1) {
-  if (!a1.is_vector()) {
-    php_warning("Cannot unpack array with string keys");
-  }
-  return f$array_merge(a1);
+template<typename T>
+array<mixed> get_non_empty(const T & arg) {
+  return arg;
 }
 
-template<class T>
-T f$array_merge_spread(const T &a1, const T &a2) {
-  if (!a1.is_vector() || !a2.is_vector()) {
-    php_warning("Cannot unpack array with string keys");
+template<typename T, typename ...Args>
+array<mixed> get_non_empty(const T & head, const Args & ... tail) {
+  if (!head.empty()) {
+    return head;
   }
-  return f$array_merge(a1, a2);
+  return get_non_empty(std::forward<const Args>(tail)...);
 }
 
-template<class T>
-T f$array_merge_spread(const T &a1, const T &a2, const T &a3, const T &a4, const T &a5, const T &a6,
-                const T &a7, const T &a8, const T &a9,
-                const T &a10, const T &a11, const T &a12) {
-  if (!a1.is_vector() || !a2.is_vector() || !a3.is_vector() || !a4.is_vector() ||
-      !a5.is_vector() || !a6.is_vector() || !a7.is_vector() || !a8.is_vector() ||
-      !a9.is_vector() || !a10.is_vector() || !a11.is_vector() || !a12.is_vector()) {
-    php_warning("Cannot unpack array with string keys");
+template<typename ...Args, typename enable = typename std::enable_if_t<sizeof...(Args)>>
+array<mixed> f$array_merge(const Args & ... args) {
+  int number_of_empties = (... + args.empty());
+  if (number_of_empties == sizeof...(Args) - 1) {
+    // all is empty except one
+    return get_non_empty( std::forward<const Args>(args)...);
   }
-  return f$array_merge(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12);
-}
-
-template<class T>
-T f$array_merge(const T &a1) {
-  T result(a1.size());
-  result.merge_with(a1);
+  array<mixed> result{(args.size() + ... + array_size{})};
+  (result.merge_with(args), ...);
   return result;
 }
 
-template<class T>
-T f$array_merge(const T &a1, const T &a2) {
-  T result(a1.size() + a2.size());
-  result.merge_with(a1);
-  result.merge_with(a2);
-  return result;
+template<typename ...Args, typename enable = typename std::enable_if_t<sizeof...(Args)>>
+decltype(auto) f$array_merge_spread(const Args &...args) {
+  bool some_is_string = (... || !args.is_vector());
+  if (some_is_string) {
+    php_warning("Cannot unpack array with string keys");
+  }
+  return f$array_merge(std::forward<Args>(args)...);
 }
 
 template<class ReturnT, class ...Args>
 ReturnT f$array_merge_recursive(const Args &...args) {
+  int number_of_empties = (... + args.empty());
+  if (number_of_empties == sizeof...(Args) - 1) {
+    // all is empty except one
+    return get_non_empty( std::forward<const Args>(args)...);
+  }
   array<mixed> result{(args.size() + ... + array_size{})};
   (result.merge_with_recursive(args), ...);
   return result;
@@ -761,25 +735,6 @@ void f$array_merge_into(T &a, const T1 &another_array) {
   a.merge_with(another_array);
 }
 
-template<class T>
-T f$array_merge(const T &a1, const T &a2, const T &a3, const T &a4, const T &a5, const T &a6,
-                const T &a7, const T &a8, const T &a9,
-                const T &a10, const T &a11, const T &a12) {
-  T result(a1.size() + a2.size() + a3.size() + a4.size() + a5.size() + a6.size() + a7.size() + a8.size() + a9.size() + a10.size() + a11.size() + a12.size());
-  result.merge_with(a1);
-  result.merge_with(a2);
-  result.merge_with(a3);
-  result.merge_with(a4);
-  result.merge_with(a5);
-  result.merge_with(a6);
-  result.merge_with(a7);
-  result.merge_with(a8);
-  result.merge_with(a9);
-  result.merge_with(a10);
-  result.merge_with(a11);
-  result.merge_with(a12);
-  return result;
-}
 
 template<class T>
 T f$array_replace(const T &base_array, const T &replacements) {

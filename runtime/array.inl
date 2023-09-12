@@ -1565,6 +1565,12 @@ void array<T>::merge_with_recursive(const mixed &other) noexcept {
 
 template<class T>
 const array<T> array<T>::operator+(const array<T> &other) const {
+  if (other.empty()) {
+    return *this;
+  } else if (empty()) {
+    return other;
+  }
+
   array<T> result(size() + other.size());
 
   if (is_vector()) {
