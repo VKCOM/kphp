@@ -60,11 +60,14 @@ int fast_backtrace_without_recursions(void **buffer, int size) noexcept {
     stack_end = static_cast<char *>(__libc_stack_end);
   }
 #endif
+  return fast_backtrace_without_recursions_by_bp(get_bp(), stack_end, buffer, size);
+}
 
-  auto *bp = static_cast<stack_frame *>(get_bp());
+int fast_backtrace_without_recursions_by_bp(void *bp, void *stack_end_, void **buffer, int size) noexcept {
+  stack_frame *current_bp = static_cast<stack_frame *>(bp);
   int i = 0;
-  while (i < size && reinterpret_cast<char *>(bp) <= stack_end && !(reinterpret_cast<long>(bp) & (sizeof(long) - 1))) {
-    buffer[i++] = bp->ip;
+  while (i < size && reinterpret_cast<char *>(current_bp) <= stack_end_ && !(reinterpret_cast<long>(current_bp) & (sizeof(long) - 1))) {
+    buffer[i++] = current_bp->ip;
     for (int possible_recursion_len = 1; i >= 2 * possible_recursion_len; ++possible_recursion_len) {
       if (std::equal(buffer + i - possible_recursion_len, buffer + i, buffer + i - possible_recursion_len * 2)) {
         i -= possible_recursion_len;
@@ -72,11 +75,11 @@ int fast_backtrace_without_recursions(void **buffer, int size) noexcept {
       }
     }
 
-    stack_frame *p = bp->bp;
-    if (p <= bp) {
+    stack_frame *p = current_bp->bp;
+    if (p <= current_bp) {
       break;
     }
-    bp = p;
+    current_bp = p;
   }
   return i;
 }

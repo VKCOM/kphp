@@ -8,6 +8,7 @@
 #include <sys/time.h>
 
 #include "common/kprintf.h"
+#include "common/fast-backtrace.h"
 #include "common/server/crash-dump.h"
 #include "common/server/signals.h"
 #include "runtime/critical_section.h"
@@ -39,6 +40,23 @@ bool check_signal_critical_section(int sig_num, const char *sig_name) {
   return true;
 }
 
+int script_backtrace(void **buffer, int size) {
+  if (PhpScript::current_script == nullptr) {
+    return 0;
+  }
+  const ucontext_t_portable &context = PhpScript::current_script->run_context;
+  void *rbp = reinterpret_cast<void *>(context.uc_mcontext.gregs[REG_RBP]);
+  char *stack_start = PhpScript::current_script->script_stack.get_stack_ptr();
+  char *stack_end = stack_start + PhpScript::current_script->script_stack.get_stack_size();
+  return fast_backtrace_without_recursions_by_bp(rbp, stack_end, buffer, size);
+}
+
+void write_log_with_script_backtrace() {
+  std::array<void *, 64> trace{};
+  const int trace_size = script_backtrace(trace.data(), 64);
+  vk::singleton<JsonLogger>::get().write_log("Maximum execution time exceeded", E_ERROR, time(nullptr), trace.data(), trace_size, true);
+}
+
 void default_sigalrm_handler(int signum) {
   // Always used in job workers.
   // It's critical for job workers to terminate as soon as possible after normal timeout.
@@ -46,7 +64,11 @@ void default_sigalrm_handler(int signum) {
   kwrite_str(2, "in default_sigalrm_handler\n");
   if (check_signal_critical_section(signum, "SIGALRM")) {
     PhpScript::time_limit_exceeded = true;
-    if (PhpScript::in_script_context) {
+    if (!PhpScript::in_script_context) {
+      if (is_json_log_on_timeout_enabled) {
+        write_log_with_script_backtrace();
+      }
+    } else {
       if (is_json_log_on_timeout_enabled) {
         vk::singleton<JsonLogger>::get().write_log_with_backtrace("Maximum execution time exceeded", E_ERROR);
       }
@@ -61,7 +83,11 @@ void sigalrm_handler(int signum) {
     // There are 3 possible situations when a timeout occurs
     if (!PhpScript::in_script_context) {
       // [1] code in net context
+      // log timeout event with script backtrace
       // save the timeout fact in order to process it in the script context
+      if (is_json_log_on_timeout_enabled) {
+        write_log_with_script_backtrace();
+      }
       PhpScript::time_limit_exceeded = true;
     } else if (!PhpScript::time_limit_exceeded) {
       // [2] code in script context and this is the first timeout
