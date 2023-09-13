@@ -52,6 +52,15 @@ static inline bool should_this_usage_context_be_ignored(FunctionPtr usage_contex
       usage_context->class_id != usage_context->context_class) {
     return true; // NOLINT(readability-simplify-boolean-expr)
   }
+  // case 2.
+  // (no module): class Base { roar() { ... } }
+  // @mod       : class Derived { roar2() { self::roar() } }
+  // then KPHP implicitly creates Derived::roar() { parent::roar() }
+  // and warns (on parent::) that "Base::roar() is not required by @mod"
+  // solution: ignore such auto-created inherited methods
+  if (usage_context->is_auto_inherited) {
+    return true;
+  }
   return false;
 }
 
