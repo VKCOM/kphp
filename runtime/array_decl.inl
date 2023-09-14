@@ -102,7 +102,7 @@ private:
 
     array_bucket entries[KPHP_ARRAY_TAIL_SIZE];
 
-    inline bool is_vector() const __attribute__ ((always_inline));
+    inline bool is_vector() const noexcept __attribute__ ((always_inline));
 
     inline list_hash_entry *get_entry(entry_pointer_type pointer) const __attribute__ ((always_inline));
     inline entry_pointer_type get_pointer(list_hash_entry *entry) const __attribute__ ((always_inline));
@@ -125,8 +125,8 @@ private:
     inline uint32_t choose_bucket(int64_t key) const noexcept __attribute__ ((always_inline));
     inline uint32_t choose_bucket(const array_inner_fields_for_map &fields, int64_t key) const noexcept __attribute__ ((always_inline));
 
-    inline static size_t sizeof_vector(uint32_t int_size) __attribute__((always_inline));
-    inline static size_t sizeof_map(uint32_t int_size) __attribute__((always_inline));
+    inline static size_t sizeof_vector(uint32_t int_size) noexcept __attribute__((always_inline));
+    inline static size_t sizeof_map(uint32_t int_size) noexcept __attribute__((always_inline));
     inline static size_t estimate_size(int64_t &new_int_size, bool is_vector);
     inline static array_inner *create(int64_t new_int_size, bool is_vector);
 
@@ -176,7 +176,7 @@ private:
     bool is_vector_internal_or_last_index(int64_t key) const noexcept;
     bool has_no_string_keys() const noexcept;
 
-    size_t estimate_memory_usage() const;
+    size_t estimate_memory_usage() const noexcept;
 
     inline array_inner(const array_inner &other) = delete;
     inline array_inner &operator=(const array_inner &other) = delete;
@@ -417,7 +417,7 @@ public:
 
   void reserve(int64_t int_size, bool make_vector_if_possible);
 
-  size_t estimate_memory_usage() const;
+  size_t estimate_memory_usage() const noexcept;
 
   template<typename U>
   static array<T> convert_from(const array<U> &);
