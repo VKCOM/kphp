@@ -616,6 +616,16 @@ size_t array<T>::array_inner::estimate_memory_usage() const noexcept {
 }
 
 template<class T>
+size_t array<T>::array_inner::calculate_memory_for_copying() const noexcept {
+  int64_t int_elements = size;
+  const bool vector_structure = is_vector();
+  if (vector_structure) {
+    return estimate_size(int_elements, vector_structure);
+  }
+  return estimate_size(++int_elements, vector_structure);
+}
+
+template<class T>
 bool array<T>::is_vector() const {
   return p->is_vector();
 }
@@ -778,6 +788,11 @@ void array<T>::reserve(int64_t int_size, bool make_vector_if_possible) {
 template<class T>
 size_t array<T>::estimate_memory_usage() const noexcept {
   return p->estimate_memory_usage();
+}
+
+template<class T>
+size_t array<T>::calculate_memory_for_copying() const noexcept {
+  return p->calculate_memory_for_copying();
 }
 
 template<class T>

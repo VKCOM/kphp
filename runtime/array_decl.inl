@@ -177,6 +177,7 @@ private:
     bool has_no_string_keys() const noexcept;
 
     size_t estimate_memory_usage() const noexcept;
+    size_t calculate_memory_for_copying() const noexcept;
 
     inline array_inner(const array_inner &other) = delete;
     inline array_inner &operator=(const array_inner &other) = delete;
@@ -418,6 +419,7 @@ public:
   void reserve(int64_t int_size, bool make_vector_if_possible);
 
   size_t estimate_memory_usage() const noexcept;
+  size_t calculate_memory_for_copying() const noexcept;
 
   template<typename U>
   static array<T> convert_from(const array<U> &);
