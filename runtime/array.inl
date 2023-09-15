@@ -129,7 +129,7 @@ uint32_t array<T>::array_inner::choose_bucket(const array_inner_fields_for_map &
 }
 
 template<class T>
-bool array<T>::array_inner::is_vector() const {
+bool array<T>::array_inner::is_vector() const noexcept {
   return is_vector_internal;
 }
 
@@ -203,12 +203,12 @@ const typename array<T>::array_inner_fields_for_map &array<T>::array_inner::fiel
 }
 
 template<class T>
-size_t array<T>::array_inner::sizeof_vector(uint32_t int_size) {
+size_t array<T>::array_inner::sizeof_vector(uint32_t int_size) noexcept {
   return sizeof(array_inner) + int_size * sizeof(T);
 }
 
 template<class T>
-size_t array<T>::array_inner::sizeof_map(uint32_t int_size) {
+size_t array<T>::array_inner::sizeof_map(uint32_t int_size) noexcept {
   return sizeof(array_inner_fields_for_map) + sizeof(array_inner) + int_size * sizeof(array_bucket);
 }
 
@@ -611,7 +611,12 @@ bool array<T>::array_inner::has_no_string_keys() const noexcept {
 }
 
 template<class T>
-size_t array<T>::array_inner::estimate_memory_usage() const {
+size_t array<T>::array_inner::estimate_memory_usage() const noexcept {
+  return is_vector() ? sizeof_vector(buf_size) : sizeof_map(buf_size);
+}
+
+template<class T>
+size_t array<T>::array_inner::calculate_memory_for_copying() const noexcept {
   int64_t int_elements = size;
   const bool vector_structure = is_vector();
   if (vector_structure) {
@@ -781,8 +786,13 @@ void array<T>::reserve(int64_t int_size, bool make_vector_if_possible) {
 }
 
 template<class T>
-size_t array<T>::estimate_memory_usage() const {
+size_t array<T>::estimate_memory_usage() const noexcept {
   return p->estimate_memory_usage();
+}
+
+template<class T>
+size_t array<T>::calculate_memory_for_copying() const noexcept {
+  return p->calculate_memory_for_copying();
 }
 
 template<class T>

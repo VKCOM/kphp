@@ -249,7 +249,7 @@ private:
     if (arr.is_reference_counter(ExtraRefCnt::for_global_const)) {
       return true;
     }
-    if (unlikely(!is_enough_memory_for(arr.estimate_memory_usage()))) {
+    if (unlikely(!is_enough_memory_for(arr.calculate_memory_for_copying()))) {
       arr = array<T>();
       memory_limit_exceeded_ = true;
       return false;
