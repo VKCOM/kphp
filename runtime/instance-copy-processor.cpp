@@ -20,6 +20,8 @@ bool InstanceDeepCopyVisitor::process(string &str) noexcept {
     return true;
   }
 
+  // TODO: it seems we can use `str.estimate_memory_usage(str.size())` here,
+  //  because we don't need to take capacity into the account, only size.
   if (unlikely(!is_enough_memory_for(str.estimate_memory_usage()))) {
     str = string();
     memory_limit_exceeded_ = true;

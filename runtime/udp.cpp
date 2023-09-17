@@ -75,8 +75,9 @@ static Stream udp_stream_socket_client(const string &url, int64_t &error_number,
     return quit(sock_fd);
   }
 
-  struct hostent *h;
-  if (!(h = kdb_gethostbyname(host.c_str())) || !h->h_addr_list || !h->h_addr_list[0]) {
+  // gethostbyname often uses heap => it must be under critical section, otherwise we will get UB on timeout in the middle of it
+  struct hostent *h = dl::critical_section_call(kdb_gethostbyname, host.c_str());
+  if (!h || !h->h_addr_list || !h->h_addr_list[0]) {
     set_format_error(-3, "Can't resolve host \"%s\"", host);
     return quit(sock_fd);
   }

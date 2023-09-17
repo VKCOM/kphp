@@ -364,7 +364,7 @@ static int mcc_parse_execute (struct connection *c) {
     D->response_len += len;
 
     if (D->response_flags & 48) {
-      vkprintf (0, "bad response from memcache server at %s, connection %d\n", sockaddr_storage_to_string(&c->remote_endpoint), c->fd);
+      kprintf("bad response from memcache server at %s, connection %d\n", sockaddr_storage_to_string(&c->remote_endpoint), c->fd);
       c->error = -1;
       return 0;
     }
@@ -420,7 +420,7 @@ static int mcc_parse_execute (struct connection *c) {
             return 0;
           }
         } else if (D->response_type == mcrt_NONCE) {
-	    vkprintf (0, "bad response in NONCE from memcache server at %s, connection %d\n", sockaddr_storage_to_string(&c->remote_endpoint), c->fd);
+	          kprintf("bad response in NONCE from memcache server at %s, connection %d\n", sockaddr_storage_to_string(&c->remote_endpoint), c->fd);
             c->status = conn_error;
             c->error = -1;
             return 0;
@@ -450,7 +450,7 @@ static int mcc_parse_execute (struct connection *c) {
       }
       if (D->response_flags & 48) {
         //write_out (&c->Out, "CLIENT_ERROR\r\n", 14);
-	vkprintf (0, "bad response from memcache server at %s, connection %d\n", sockaddr_storage_to_string(&c->remote_endpoint), c->fd);
+	      kprintf("bad response from memcache server at %s, connection %d\n", sockaddr_storage_to_string(&c->remote_endpoint), c->fd);
         c->status = conn_error;
         c->error = -1;
 	return 0;
@@ -471,7 +471,7 @@ static int mcc_parse_execute (struct connection *c) {
 int mcc_connected (struct connection *c) {
   c->last_query_sent_time = precise_now;
 
-  vkprintf (2, "connection #%d: connected, crypto_flags = %d\n", c->fd, MCC_DATA(c)->crypto_flags);
+  vkprintf(4, "connection #%d: connected, crypto_flags = %d\n", c->fd, MCC_DATA(c)->crypto_flags);
   if (MCC_FUNC(c)->mc_check_perm) {
     int res = MCC_FUNC(c)->mc_check_perm (c);
     if (res < 0) {
@@ -627,7 +627,7 @@ int mcc_start_crypto (struct connection *c, char *key, int key_len) {
 int mcc_flush_query (struct connection *c) {
   if (c->crypto) {
     int pad_bytes = c->type->crypto_needed_output_bytes (c);
-    vkprintf(2, "mcc_flush_query: padding with %d bytes\n", pad_bytes);
+    vkprintf(4, "mc: flush query (padding with %d bytes)\n", pad_bytes);
     if (pad_bytes > 0) {
       static char pad_str[16] = {'\n', '\n', '\n', '\n', '\n', '\n', '\n', '\n', '\n', '\n', '\n', '\n', '\n', '\n', '\n', '\n'};
       assert (pad_bytes <= 15);

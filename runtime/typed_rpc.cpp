@@ -7,6 +7,7 @@
 #include "common/containers/final_action.h"
 #include "common/rpc-error-codes.h"
 
+#include "runtime/kphp_tracing.h"
 #include "runtime/resumable.h"
 #include "runtime/rpc.h"
 #include "runtime/tl/rpc_server.h"
@@ -92,7 +93,7 @@ class typed_rpc_tl_query_result_resumable : public Resumable {
 public:
   explicit typed_rpc_tl_query_result_resumable(const array<int64_t> &query_ids, const RpcErrorFactory &error_factory) :
     query_ids_(query_ids),
-    unsorted_results_(array_size(query_ids_.count(), 0, false)),
+    unsorted_results_(array_size(query_ids_.count(), false)),
     error_factory_(error_factory) {
   }
 
@@ -161,6 +162,9 @@ int64_t typed_rpc_tl_query_impl(const class_instance<C$RpcConnection> &connectio
   if (query_id <= 0) {
     return 0;
   }
+  if (unlikely(kphp_tracing::cur_trace_level >= 2)) {
+    kphp_tracing::on_rpc_query_provide_details_after_send(req.get_tl_function(), {});
+  }
   if (flush) {
     f$rpc_flush();
   }
@@ -218,7 +222,7 @@ array<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_impl(const 
 
 array<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_synchronously_impl(const array<int64_t> &query_ids,
                                                                                         const RpcErrorFactory &error_factory) {
-  array<class_instance<C$VK$TL$RpcResponse>> unsorted_results(array_size(query_ids.count(), 0, false));
+  array<class_instance<C$VK$TL$RpcResponse>> unsorted_results(array_size(query_ids.count(), false));
 
   if (query_ids.count() == 1) {
     const int64_t query_id = query_ids.begin().get_value();

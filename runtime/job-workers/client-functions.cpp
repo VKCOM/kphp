@@ -9,6 +9,7 @@
 #include "runtime/instance-copy-processor.h"
 #include "runtime/job-workers/job-interface.h"
 #include "runtime/job-workers/processing-jobs.h"
+#include "runtime/kphp_tracing.h"
 #include "runtime/resumable.h"
 
 #include "server/job-workers/job-message.h"
@@ -17,6 +18,7 @@
 #include "server/job-workers/shared-memory-manager.h"
 #include "server/php-engine-vars.h"
 #include "server/server-stats.h"
+#include "server/slot-ids-factory.h"
 
 #include "runtime/job-workers/client-functions.h"
 
@@ -26,6 +28,10 @@ public:
 
   explicit job_resumable(int job_id)
     : job_id(job_id) {}
+
+  bool is_internal_resumable() const noexcept final {
+    return true;
+  }
 
 protected:
   bool run() final {
@@ -58,23 +64,29 @@ JobMessageT *make_job_request_message(const class_instance<T> &instance) {
   return memory_request;
 }
 
+void init_job_request_metadata(job_workers::JobSharedMessage *job_message, bool no_reply, double timeout) {
+  const auto now = std::chrono::system_clock::now();
+
+  job_message->no_reply = no_reply;
+  job_message->job_timeout = timeout;
+  job_message->job_id = parallel_job_ids_factory.create_slot();
+  job_message->job_start_time = std::chrono::duration<double>{now.time_since_epoch()}.count();
+}
+
 int send_job_request_message(job_workers::JobSharedMessage *job_message, double timeout, job_workers::JobSharedMemoryPiece *common_job = nullptr, bool no_reply = false) {
   auto &client = vk::singleton<job_workers::JobWorkerClient>::get();
 
-  const auto now = std::chrono::system_clock::now();
-  job_message->job_start_time = std::chrono::duration<double>{now.time_since_epoch()}.count();
-  job_message->job_timeout = timeout;
-  job_message->no_reply = no_reply;
+  // save it here, as it's incorrect to use job_message after send
+  int job_id = job_message->job_id;
 
-  int job_id = 0;
   {
     dl::CriticalSectionSmartGuard critical_section;
     if (common_job) {
       job_message->bind_common_job(common_job);
     }
-    job_id = client.send_job(job_message);
+    bool success = client.send_job(job_message);
     auto &memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
-    if (job_id > 0) {
+    if (success) {
       memory_manager.detach_shared_message_from_this_proc(job_message);
     } else {
       if (common_job) {
@@ -134,8 +146,16 @@ Optional<int64_t> kphp_job_worker_start_impl(const class_instance<C$KphpJobWorke
   if (memory_request == nullptr) {
     return false;
   }
+  init_job_request_metadata(memory_request, no_reply, timeout);
+
+  int job_id = memory_request->job_id;
+  double job_start_time = memory_request->job_start_time;
 
   int job_resumable_id = send_job_request_message(memory_request, timeout, nullptr, no_reply);
+
+  if (kphp_tracing::is_turned_on()) {
+    kphp_tracing::on_job_worker_start(job_id, f$get_class(request), job_start_time, no_reply);
+  }
 
   if (job_resumable_id < 0) {
     return false;
@@ -224,8 +244,17 @@ array<Optional<int64_t>> f$kphp_job_worker_start_multi(const array<class_instanc
       php_assert(!common_job_instance.is_null());
       job_instance.get()->set_shared_memory_piece(common_job_instance);
     }
+    init_job_request_metadata(job_request, false, timeout);
+
+    int job_id = job_request->job_id;
+    double job_start_time = job_request->job_start_time;
 
     int job_resumable_id = send_job_request_message(job_request, timeout, common_job_request);
+
+    if (kphp_tracing::is_turned_on()) {
+      kphp_tracing::on_job_worker_start(job_id, f$get_class(req), job_start_time, false);
+    }
+
     if (job_resumable_id > 0) {
       res.set_value(it.get_key(), job_resumable_id);
     } else {

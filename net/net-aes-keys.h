@@ -8,8 +8,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "common/kprintf.h"
+
 #define	AES_KEY_MIN_LEN 32
 #define AES_KEY_MAX_LEN 256
+
+DECLARE_VERBOSITY(net_crypto_aes);
 
 struct aes_key {
   const char *filename;

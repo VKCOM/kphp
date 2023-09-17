@@ -9,7 +9,6 @@
 #if ASAN_ENABLED
 #include <sanitizer/lsan_interface.h>
 #endif
-#include "common/containers/final_action.h"
 #include "common/unicode/utf8-utils.h"
 
 #include "runtime/critical_section.h"
@@ -607,7 +606,9 @@ void regexp::clean() {
 
 regexp::~regexp() {
   clean();
-  free(regex_compilation_warning);
+  if (use_heap_memory && regex_compilation_warning) {
+    free(regex_compilation_warning);
+  }
 }
 
 
@@ -720,7 +721,7 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, bool all_
   }
 
   if (all_matches) {
-    matches = array<mixed>(array_size(subpatterns_count, named_subpatterns_count, named_subpatterns_count == 0));
+    matches = array<mixed>(array_size(subpatterns_count + named_subpatterns_count, named_subpatterns_count == 0));
     for (int32_t i = 0; i < subpatterns_count; i++) {
       if (named_subpatterns_count && !subpattern_names[i].empty()) {
         matches.set_value(subpattern_names[i], array<mixed>());
@@ -779,7 +780,7 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, bool all_
         matches[i].push_back(match_str);
       }
     } else {
-      array<mixed> result_set(array_size(count, named_subpatterns_count, named_subpatterns_count == 0));
+      array<mixed> result_set(array_size(count + named_subpatterns_count, named_subpatterns_count == 0));
 
       if (named_subpatterns_count) {
         for (int64_t i = 0; i < count; i++) {
@@ -839,7 +840,7 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, int64_t f
   }
 
   if (pattern_order) {
-    matches = array<mixed>(array_size(subpatterns_count, named_subpatterns_count, named_subpatterns_count == 0));
+    matches = array<mixed>(array_size(subpatterns_count + named_subpatterns_count, named_subpatterns_count == 0));
     for (int32_t i = 0; i < subpatterns_count; i++) {
       if (named_subpatterns_count && !subpattern_names[i].empty()) {
         matches.set_value(subpattern_names[i], array<mixed>());
@@ -911,7 +912,7 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, int64_t f
         }
       }
     } else {
-      array<mixed> result_set(array_size(count, named_subpatterns_count, named_subpatterns_count == 0));
+      array<mixed> result_set(array_size(count + named_subpatterns_count, named_subpatterns_count == 0));
 
       if (named_subpatterns_count) {
         for (int64_t i = 0; i < count; i++) {

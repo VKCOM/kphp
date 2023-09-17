@@ -14,6 +14,7 @@
 #include <netinet/in.h>
 #include <poll.h>
 #include <re2/re2.h>
+#include <string>
 #include <sys/mman.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -59,6 +60,7 @@
 #include "runtime/json-functions.h"
 #include "runtime/profiler.h"
 #include "runtime/rpc.h"
+#include "runtime/thread-pool.h"
 #include "server/server-config.h"
 #include "server/confdata-binlog-replay.h"
 #include "server/database-drivers/adaptor.h"
@@ -82,6 +84,7 @@
 #include "server/php-runner.h"
 #include "server/php-sql-connections.h"
 #include "server/php-worker.h"
+#include "server/server-config.h"
 #include "server/server-log.h"
 #include "server/server-stats.h"
 #include "server/shared-data-worker-cache.h"
@@ -542,7 +545,7 @@ int hts_func_execute(connection *c, int op) {
     return -501;
   }
 
-  vkprintf (1, "in hts_execute: connection #%d, op=%d, header_size=%d, data_size=%d, http_version=%d\n",
+  vkprintf (1, "start http server execute: connection #%d, op=%d, header_size=%d, data_size=%d, http_version=%d\n",
             c->fd, op, D->header_size, D->data_size, D->http_ver);
 
   if (!vk::any_of_equal(D->query_type, htqt_get, htqt_post, htqt_head)) {
@@ -553,7 +556,7 @@ int hts_func_execute(connection *c, int op) {
   if (D->data_size > 0) {
     int have_bytes = get_total_ready_bytes(&c->In);
     if (have_bytes < D->data_size + D->header_size && D->data_size < MAX_POST_SIZE) {
-      vkprintf (1, "-- need %d more bytes, waiting\n", D->data_size + D->header_size - have_bytes);
+      vkprintf (2, "-- need %d more bytes, waiting\n", D->data_size + D->header_size - have_bytes);
       return D->data_size + D->header_size - have_bytes;
     }
   }
@@ -565,18 +568,12 @@ int hts_func_execute(connection *c, int op) {
   qHeadersLen = D->header_size - D->first_line_size;
   assert (D->first_line_size > 0 && D->first_line_size <= D->header_size);
 
-  vkprintf (1, "===============\n%.*s\n==============\n", D->header_size, ReqHdr);
-  vkprintf (1, "%d,%d,%d,%d\n", D->host_offset, D->host_size, D->uri_offset, D->uri_size);
-
-  vkprintf (1, "hostname: '%.*s'\n", D->host_size, ReqHdr + D->host_offset);
-  vkprintf (1, "URI: '%.*s'\n", D->uri_size, ReqHdr + D->uri_offset);
-
 //  D->query_flags &= ~QF_KEEPALIVE;
 
   if (0 < D->data_size && D->data_size < MAX_POST_SIZE) {
     assert (read_in(&c->In, Post, D->data_size) == D->data_size);
     Post[D->data_size] = 0;
-    vkprintf (1, "have %d POST bytes: `%.80s`\n", D->data_size, Post);
+    vkprintf (2, "have %d POST bytes: `%.80s`\n", D->data_size, Post);
     qPost = Post;
     qPostLen = D->data_size;
   } else {
@@ -606,7 +603,7 @@ int hts_func_execute(connection *c, int op) {
     return -418;
   }
 
-  vkprintf (1, "OK, lets do something\n");
+  vkprintf (1, "start response processing on fd %d\n", c->fd);
 
   const char *query_type_str = nullptr;
   switch (D->query_type) {
@@ -896,7 +893,7 @@ static void send_rpc_error(connection *c, long long req_id, int error_code, cons
 }
 
 int rpcx_execute(connection *c, int op, raw_message *raw) {
-  vkprintf(1, "rpcx_execute: fd=%d, op=%d, len=%d\n", c->fd, op, raw->total_bytes);
+  vkprintf(2, "rpc execute: fd=%d, op=%d, len=%d\n", c->fd, op, raw->total_bytes);
 
   int len = raw->total_bytes;
 
@@ -1434,6 +1431,10 @@ void reopen_json_log() {
     char worker_json_log_file_name[PATH_MAX];
     snprintf(worker_json_log_file_name, PATH_MAX, "%s.json", logname);
     if (!vk::singleton<JsonLogger>::get().reopen_log_file(worker_json_log_file_name)) {
+      vkprintf(-1, "failed to open log '%s': error=%s", worker_json_log_file_name, strerror(errno));
+    }
+    snprintf(worker_json_log_file_name, PATH_MAX, "%s.traces.jsonl", logname);
+    if (!vk::singleton<JsonLogger>::get().reopen_traces_file(worker_json_log_file_name)) {
       vkprintf(-1, "failed to open log '%s': error=%s", worker_json_log_file_name, strerror(errno));
     }
   }
@@ -2022,13 +2023,27 @@ int main_args_handler(int i, const char *long_option) {
       return 0;
     }
     case 2018: {
-      const int messages_count = atoi(optarg);
-      if (messages_count <= 0) {
-        kprintf("--%s option: couldn't parse argument\n", long_option);
+      constexpr size_t dist_size = 1 + job_workers::JOB_EXTRA_MEMORY_BUFFER_BUCKETS;
+      std::array<double, dist_size> weights;
+      try {
+        std::stringstream ss(optarg);
+        int num = 0;
+        while (ss.good()) {
+          std::string t;
+          std::getline(ss, t, ',');
+          auto s = vk::trim(t);
+          weights[num++] = std::stod(std::string{s.begin(), s.end()});
+          if (num > dist_size) {
+            kprintf("--%s option: can't parse distribution - 10 digits expected\n", long_option);
+            return -1;
+          }
+        }
+      } catch(const std::exception &e) {
+        kprintf("--%s option: can't parse distribution - %s\n", long_option, e.what());
         return -1;
       }
-      if (!vk::singleton<job_workers::SharedMemoryManager>::get().set_shared_messages_count(static_cast<size_t>(messages_count))) {
-        kprintf("--%s option: too small\n", long_option);
+      if (!vk::singleton<job_workers::SharedMemoryManager>::get().set_shared_memory_distribution_weights(weights)) {
+        kprintf("--%s option: too small weight for the shared messages\n", long_option);
         return -1;
       }
       return 0;
@@ -2152,18 +2167,6 @@ int main_args_handler(int i, const char *long_option) {
       }
       return 0;
     }
-    case 2031: {
-      const int messages_count_multiplier = atoi(optarg);
-      if (messages_count_multiplier <= 0) {
-        kprintf("--%s option: couldn't parse argument\n", long_option);
-        return -1;
-      }
-      if (!vk::singleton<job_workers::SharedMemoryManager>::get().set_shared_messages_count_process_multiplier(static_cast<size_t>(messages_count_multiplier))) {
-        kprintf("--%s option: too small\n", long_option);
-        return -1;
-      }
-      return 0;
-    }
     case 2032: {
       std::ifstream file(optarg);
       if (!file) {
@@ -2185,6 +2188,15 @@ int main_args_handler(int i, const char *long_option) {
     }
     case 2034: {
       return read_option_to(long_option, 0.0, 5.0, hard_timeout);
+    }
+    case 2035: {
+      double thread_pool_ratio = 0.0;
+      int res = read_option_to(long_option, 0.0, 10.0, thread_pool_ratio);
+      thread_pool_size = static_cast<int>(std::ceil(std::thread::hardware_concurrency() * thread_pool_ratio));
+      return res;
+    }
+    case 2036: {
+      return read_option_to(long_option, 0U, 2048U, thread_pool_size);
     }
     default:
       return -1;
@@ -2266,7 +2278,9 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("warmup-timeout", required_argument, 2015, "the maximum time for the instance cache warm up in seconds");
   parse_option("job-workers-ratio", required_argument, 2016, "the jobs workers ratio of the overall workers number");
   parse_option("job-workers-shared-memory-size", required_argument, 2017, "the total size of shared memory used for job workers related communication");
-  parse_option("job-workers-shared-messages", required_argument, 2018, "the total count of the shared messages for job workers related communication");
+  parse_option("job-workers-shared-memory-distribution-weights", required_argument, 2018, "Weights for distributing shared memory between fixed size buffers.\n"
+                                                                                          "10 comma separated digits: '2, 2, 2, 2, 1, 1, 1, 1, 1, 1'\n"
+                                                                                          "For each of 10 groups: 128kb, 256kb, ... , 64mb buffers.");
   parse_option("lease-stop-ready-timeout", required_argument, 2019, "timeout for RPC_STOP_READY acknowledgement waiting in seconds (default: 0)");
   parse_option("mysql-user", required_argument, 2020, "MySQL user");
   parse_option("mysql-password", required_argument, 2021, "MySQL password");
@@ -2288,11 +2302,11 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("sigterm-wait-time", required_argument, 2029, "Time to wait before termination on SIGTERM");
   parse_option("job-workers-shared-memory-size-process-multiplier", required_argument, 2030, "Per process memory size used to calculate the total size of shared memory for job workers related communication:\n"
                                                                                              "memory limit = per_process_memory * processes_count");
-  parse_option("job-workers-shared-messages-process-multiplier", required_argument, 2031, "Coefficient used to calculate the total count of the shared messages for job workers related communication:\n"
-                                                                                          "messages count = coefficient * processes_count");
   parse_option("runtime-config", required_argument, 2032, "JSON file path that will be available at runtime as 'mixed' via 'kphp_runtime_config()");
   parse_option("oom-handling-memory-ratio", required_argument, 2033, "memory ratio of overall script memory to handle OOM errors (default: 0.00)");
   parse_option("hard-time-limit", required_argument, 2034, "time limit for script termination after the main timeout has expired (default: 1 sec). Use 0 to disable");
+  parse_option("thread-pool-ratio", required_argument, 2035, "the thread pool size ratio of the overall cpu numbers");
+  parse_option("thread-pool-size", required_argument, 2036, "the total threads num per worker");
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
   // TODO: remove it after successful migration from kphb.readyV2 to kphb.readyV3

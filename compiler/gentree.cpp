@@ -14,6 +14,7 @@
 #include "compiler/data/function-data.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/data/generics-mixins.h"
 #include "compiler/lambda-utils.h"
 #include "compiler/lexer.h"
 #include "compiler/name-gen.h"

@@ -127,7 +127,7 @@ void free_kphp_backtrace() noexcept {
 array<string> f$kphp_backtrace(bool pretty) noexcept {
   std::array<void *, 128> buffer{};
   const int32_t nptrs = fast_backtrace(buffer.data(), buffer.size());
-  array<string> backtrace{array_size{nptrs, 0, true}};
+  array<string> backtrace{array_size{nptrs, true}};
   KphpBacktrace demangler{buffer.data(), nptrs};
   for (const char *name : demangler.make_demangled_backtrace_range()) {
     const size_t len = name ? strlen(name) : 0;

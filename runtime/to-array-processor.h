@@ -89,7 +89,7 @@ private:
   template<class ...Args>
   void process_impl(const char *field_name, const std::tuple<Args...> &value) {
     ToArrayVisitor tuple_processor{with_class_names_};
-    tuple_processor.result_.reserve(sizeof...(Args), 0, true);
+    tuple_processor.result_.reserve(sizeof...(Args), true);
 
     process_tuple(value, tuple_processor, std::index_sequence_for<Args...>{});
     add_value(field_name, std::move(tuple_processor).flush_result());
@@ -98,7 +98,7 @@ private:
   template<size_t ...Is, typename ...T>
   void process_impl(const char *field_name, const shape<std::index_sequence<Is...>, T...> &value) {
     ToArrayVisitor shape_processor{with_class_names_};
-    shape_processor.result_.reserve(sizeof...(Is), 0, true);
+    shape_processor.result_.reserve(sizeof...(Is), true);
 
     process_shape(value, shape_processor);
     add_value(field_name, std::move(shape_processor).flush_result());

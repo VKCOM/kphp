@@ -9,6 +9,34 @@ class TestShutdownFunctionsTimeouts(KphpServerAutoTestCase):
             "--verbosity-resumable=2": True,
         })
 
+    def test_soft_timeout_checking_in_query(self):
+        # test that kphp check soft timeout in query inside swap context
+        resp = self.kphp_server.http_post(
+            json=[
+                {"op": "register_shutdown_function", "msg": "shutdown_simple"},
+                {"op": "register_shutdown_function", "msg": "shutdown_send_rpc"},
+                {"op": "sleep", "duration": 1.2},
+                {"op": "send_long_rpc", "duration": 0.1, "master_port": self.kphp_server.master_port},
+                {"op": "critical_error"},
+            ])
+        self.assertEqual(resp.text, "ERROR")
+        self.assertEqual(resp.status_code, 500)
+        self.kphp_server.assert_log(["execute simple shutdown", "try send rpc from shutdown"], timeout=5)
+
+    def test_soft_timeout_checking_in_resumable(self):
+        # test that kphp check soft timeout on resumable start
+        resp = self.kphp_server.http_post(
+            json=[
+                {"op": "register_shutdown_function", "msg": "shutdown_simple"},
+                {"op": "register_shutdown_function", "msg": "shutdown_send_rpc"},
+                {"op": "sleep", "duration": 1.5},
+                {"op": "resumable_long_work", "duration": 0.2},
+                {"op": "critical_error"},
+            ])
+        self.assertEqual(resp.text, "ERROR")
+        self.assertEqual(resp.status_code, 500)
+        self.kphp_server.assert_log(["execute simple shutdown", "try send rpc from shutdown"], timeout=5)
+
     def test_timeout_reset_at_shutdown_function(self):
         # test that the timeout timer resets, giving the shutdown functions a chance to complete
         # if they're executed *before* the timeout but after a long-running script

@@ -2,6 +2,7 @@ prepend(RUNTIME_TESTS_SOURCES ${BASE_DIR}/tests/cpp/runtime/
         _runtime-tests-env.cpp
         allocator-malloc-replacement-test.cpp
         array-test.cpp
+        array-int-string-keys-collision-test.cpp
         common-php-functions-test.cpp
         confdata-functions-test.cpp
         confdata-key-maker-test.cpp

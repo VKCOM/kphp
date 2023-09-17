@@ -101,7 +101,7 @@ int memcache_client_execute(connection *c, int op) {
   int len, x = 0;
   char *ptr;
 
-  vkprintf (1, "proxy_mc_client: op=%d, key_len=%d, arg#=%d, response_len=%d\n", op, D->key_len, D->arg_num, D->response_len);
+  tvkprintf(php_connections, 3, "proxy_mc_client: op=%d, key_len=%d, arg#=%d, response_len=%d\n", op, D->key_len, D->arg_num, D->response_len);
 
   if (op == mcrt_empty) {
     return SKIP_ALL_BYTES;
@@ -110,10 +110,8 @@ int memcache_client_execute(connection *c, int op) {
   conn_query *cur_query = nullptr;
   if (c->first_query == (conn_query *)c) {
     if (op != mcrt_VERSION) {
-      vkprintf (-1, "response received for empty query list? op=%d\n", op);
-      if (verbosity > -2) {
-        dump_connection_buffers(c);
-      }
+      kprintf("response received for empty query list? op=%d\n", op);
+      dump_connection_buffers(c);
       D->response_flags |= 16;
       return SKIP_ALL_BYTES;
     }
@@ -142,7 +140,7 @@ int memcache_client_execute(connection *c, int op) {
         assert (len > 0);
         ptr = reinterpret_cast<char *>(nbit_get_ptr(&c->Q));
       } else {
-        vkprintf(-1, "error at VALUE: op=%d, key_len=%d, arg_num=%d, value_len=%lld\n", op, D->key_len, D->arg_num, D->args[1]);
+        kprintf("error at VALUE: op=%d, key_len=%d, arg_num=%d, value_len=%lld\n", op, D->key_len, D->arg_num, D->args[1]);
 
         D->response_flags |= 16;
         return SKIP_ALL_BYTES;
@@ -151,7 +149,7 @@ int memcache_client_execute(connection *c, int op) {
         nbit_advance(&c->Q, 1);
       }
       if (ptr[0] != '\r' || (len > 1 ? ptr[1] : *((char *)nbit_get_ptr(&c->Q))) != '\n') {
-        vkprintf(-1, "missing cr/lf at VALUE: op=%d, key_len=%d, arg_num=%d, value_len=%lld\n", op, D->key_len, D->arg_num, D->args[1]);
+        kprintf("missing cr/lf at VALUE: op=%d, key_len=%d, arg_num=%d, value_len=%lld\n", op, D->key_len, D->arg_num, D->args[1]);
 
         assert (0);
 
@@ -160,7 +158,7 @@ int memcache_client_execute(connection *c, int op) {
       }
       len = 2;
 
-      //vkprintf (1, "mcc_value: op=%d, key_len=%d, flags=%lld, time=%lld, value_len=%lld\n", op, D->key_len, D->args[0], D->args[1], D->args[2]);
+      tvkprintf (php_connections, 3, "mcc_value: op=%d, key_len=%d, flags=%lld, time=%lld, value_len=%lld\n", op, D->key_len, D->args[0], D->args[1], D->args[2]);
 
       query_len = (int)(D->response_len + D->args[1] + len);
       reader = create_data_reader(c, query_len);
@@ -177,7 +175,7 @@ int memcache_client_execute(connection *c, int op) {
     }
     case mcrt_VERSION:
       c->unreliability >>= 1;
-      vkprintf (3, "mcc_got_version: op=%d, key_len=%d, unreliability=%d\n", op, D->key_len, c->unreliability);
+      tvkprintf(php_connections, 3, "mcc_got_version: op=%d, key_len=%d, unreliability=%d\n", op, D->key_len, c->unreliability);
 
       if (cur_query != nullptr) {
         query_len = D->response_len;
@@ -194,7 +192,7 @@ int memcache_client_execute(connection *c, int op) {
       return SKIP_ALL_BYTES;
 
     case mcrt_CLIENT_ERROR:
-      vkprintf (-1, "CLIENT_ERROR received from connection %d (%s)\n", c->fd, sockaddr_storage_to_string(&c->remote_endpoint));
+      kprintf("CLIENT_ERROR received from connection %d (%s)\n", c->fd, sockaddr_storage_to_string(&c->remote_endpoint));
       //client_errors_received++;
       /* fallthrough */
     case mcrt_ERROR:

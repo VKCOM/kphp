@@ -81,6 +81,8 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         json-functions.cpp
         json-writer.cpp
         kphp-backtrace.cpp
+        kphp_tracing.cpp
+        kphp_tracing_binlog.cpp
         mail.cpp
         math_functions.cpp
         mbstring.cpp
@@ -114,6 +116,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         uber-h3.cpp
         udp.cpp
         tcp.cpp
+        thread-pool.cpp
         url.cpp
         vkext.cpp
         vkext_stats.cpp
@@ -125,6 +128,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
 set_source_files_properties(
         ${BASE_DIR}/server/php-engine.cpp
         ${BASE_DIR}/server/signal-handlers.cpp
+        ${BASE_DIR}/server/json-logger.cpp
         ${BASE_DIR}/runtime/interface.cpp
         ${COMMON_DIR}/dl-utils-lite.cpp
         ${COMMON_DIR}/netconf.cpp

@@ -9,12 +9,15 @@
 #include "common/dl-utils-lite.h"
 #include "common/mixin/not_copyable.h"
 #include "common/sanitizer.h"
+#include "common/kprintf.h"
 
 #include "server/php-engine-vars.h"
 #include "server/php-init-scripts.h"
 #include "server/php-queries-types.h"
 #include "server/php-query-data.h"
 #include "server/ucontext-portable.h"
+
+DECLARE_VERBOSITY(php_runner);
 
 enum class run_state_t {
   finished,
@@ -82,6 +85,7 @@ private:
  */
 class PhpScript {
   double cur_timestamp{0}, net_time{0}, script_time{0};
+  double last_net_time_delta{0};
   int queries_cnt{0};
   int long_queries_cnt{0};
 

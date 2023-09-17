@@ -135,13 +135,12 @@ void RegisterKphpConfiguration::handle_constant_runtime_options(const ClassMembe
       register_confdata_blacklist(opt_pair->value());
     } else if (*opt_key == confdata_predefined_wildcard_key_) {
       register_confdata_predefined_wildcard(opt_pair->value());
-    } else if (*opt_key == mysql_db_name_key_) {
-      register_mysql_db_name(opt_pair->value());
     } else if (*opt_key == net_dc_mask_key_) {
       register_net_dc_mask(opt_pair->value());
     } else if (vk::any_of_equal(*opt_key,
                                 warmup_workers_part_key_, warmup_instance_cache_elements_part_key_, warmup_timeout_sec_key_,
-                                oom_handling_memory_ratio_key_)) {
+                                oom_handling_memory_ratio_key_, mysql_db_name_key_, job_workers_shared_memory_distribution_weights_,
+                                thread_pool_ratio_key_, thread_pool_size_key_)) {
       generic_register_simple_option(opt_pair->value(), *opt_key);
     } else {
       kphp_error(0, fmt_format("Got unexpected option {}::{}['{}']",
@@ -184,10 +183,6 @@ void RegisterKphpConfiguration::register_confdata_predefined_wildcard(VertexPtr 
     G->add_kphp_runtime_opt(static_cast<std::string>(confdata_predefined_wildcard_key_));
     G->add_kphp_runtime_opt(*wildcard_str_value);
   }
-}
-
-void RegisterKphpConfiguration::register_mysql_db_name(VertexPtr value) const noexcept {
-  generic_register_simple_option(value, mysql_db_name_key_);
 }
 
 void RegisterKphpConfiguration::register_net_dc_mask(VertexPtr value) const noexcept {

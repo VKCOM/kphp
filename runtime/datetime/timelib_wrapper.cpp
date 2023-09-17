@@ -1,6 +1,5 @@
 #include "runtime/datetime/timelib_wrapper.h"
 
-#include <functional>
 #include <kphp/timelib/timelib.h>
 #if ASAN_ENABLED
 #include <sanitizer/lsan_interface.h>
@@ -39,7 +38,7 @@ array<mixed> dump_errors(const timelib_error_container &error) {
   array<mixed> result;
 
   array<string> result_warnings;
-  result_warnings.reserve(error.warning_count, 0, false);
+  result_warnings.reserve(error.warning_count, false);
   for (int i = 0; i < error.warning_count; i++) {
     result_warnings.set_value(error.warning_messages[i].position, string(error.warning_messages[i].message));
   }
@@ -47,7 +46,7 @@ array<mixed> dump_errors(const timelib_error_container &error) {
   result.set_value(string("warnings"), result_warnings);
 
   array<string> result_errors;
-  result_errors.reserve(error.error_count, 0, false);
+  result_errors.reserve(error.error_count, false);
   for (int i = 0; i < error.error_count; i++) {
     result_errors.set_value(error.error_messages[i].position, string(error.error_messages[i].message));
   }
@@ -250,7 +249,7 @@ std::pair<int64_t, bool> php_timelib_strtotime(const string &tz_name, const stri
 
 static timelib_error_container *last_errors_global = nullptr;
 
-using ScriptMemGuard = decltype(std::function{make_malloc_replacement_with_script_allocator})::result_type;
+using ScriptMemGuard = decltype(make_malloc_replacement_with_script_allocator());
 
 // NB: should be called under script allocator, because of calls to free() inside timelib_error_container_dtor()
 static void update_errors_warnings(timelib_error_container *last_errors, [[maybe_unused]] const ScriptMemGuard &guard) {

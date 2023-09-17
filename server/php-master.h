@@ -7,4 +7,6 @@
 #include "net/net-connections.h"
 #include "server/workers-control.h"
 
+DECLARE_VERBOSITY(master_process);
+
 WorkerType start_master();

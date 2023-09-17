@@ -116,7 +116,7 @@ const HashTraits &find_hash_algorithm(const char *algo) noexcept {
 
 array<string> f$hash_algos() noexcept {
   const auto &supported_algorithms = get_supported_hash_algorithms();
-  array<string> result{array_size{static_cast<int64_t>(supported_algorithms.size()), 0, true}};
+  array<string> result{array_size{static_cast<int64_t>(supported_algorithms.size()), true}};
   for (const auto &algo : supported_algorithms) {
     result.emplace_back(string{algo.name});
   }
@@ -168,7 +168,7 @@ Optional<string> f$md5_file(const string &file_name, bool raw_output) {
   size_t size = stat_buf.st_size;
   while (size > 0) {
     size_t len = min(size, (size_t)PHP_BUF_LEN);
-    if (read_safe(read_fd, php_buf, len) < (ssize_t)len) {
+    if (read_safe(read_fd, php_buf, len, file_name) < (ssize_t)len) {
       break;
     }
     php_assert (MD5_Update(&c, static_cast <const void *> (php_buf), (unsigned long)len) == 1);
@@ -222,7 +222,7 @@ int64_t f$crc32_file(const string &file_name) {
   size_t size = stat_buf.st_size;
   while (size > 0) {
     size_t len = min(size, (size_t)PHP_BUF_LEN);
-    if (read_safe(read_fd, php_buf, len) < (ssize_t)len) {
+    if (read_safe(read_fd, php_buf, len, file_name) < (ssize_t)len) {
       break;
     }
     res = crc32_partial(php_buf, (int)len, res);
@@ -380,7 +380,6 @@ bool f$openssl_public_encrypt(const string &data, string &result, const string &
     if (!from_cache) {
       EVP_PKEY_free(pkey);
     }
-    critical_section.leave_critical_section();
     php_warning("RSA public encrypt failed");
     result = string();
     return false;
@@ -389,7 +388,6 @@ bool f$openssl_public_encrypt(const string &data, string &result, const string &
   if (!from_cache) {
     EVP_PKEY_free(pkey);
   }
-  critical_section.leave_critical_section();
   result = string(php_buf, key_size);
   return true;
 }
@@ -432,7 +430,6 @@ bool f$openssl_private_decrypt(const string &data, string &result, const string 
   if (!from_cache) {
     EVP_PKEY_free(pkey);
   }
-  critical_section.leave_critical_section();
   if (len == -1) {
     //php_warning ("RSA private decrypt failed");
     result = string();
@@ -699,8 +696,9 @@ static Stream ssl_stream_socket_client(const string &url, int64_t &error_number,
     RETURN_ERROR_FORMAT(false, -2, "Wrong port specified in url \"%s\"", url);
   }
 
-  struct hostent *h;
-  if (!(h = kdb_gethostbyname(host.c_str())) || !h->h_addr_list || !h->h_addr_list[0]) {
+  // gethostbyname often uses heap => it must be under critical section, otherwise we will get UB on timeout in the middle of it
+  struct hostent *h = dl::critical_section_call(kdb_gethostbyname, host.c_str());
+  if (!h || !h->h_addr_list || !h->h_addr_list[0]) {
     RETURN_ERROR_FORMAT(false, -3, "Can't resolve host \"%s\"", host);
   }
 

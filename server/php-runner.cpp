@@ -25,6 +25,7 @@
 #include "runtime/curl.h"
 #include "runtime/exception.h"
 #include "runtime/interface.h"
+#include "runtime/kphp_tracing.h"
 #include "runtime/oom_handler.h"
 #include "runtime/profiler.h"
 #include "server/json-logger.h"
@@ -33,6 +34,8 @@
 #include "server/server-log.h"
 #include "server/server-stats.h"
 #include "server/signal-handlers.h"
+
+DEFINE_VERBOSITY(php_runner);
 
 query_stats_t query_stats;
 long long query_stats_id = 1;
@@ -77,6 +80,8 @@ void PhpScript::try_run_shutdown_functions_on_timeout() noexcept {
   }
 
   if (get_shutdown_functions_count() != 0 && get_shutdown_functions_status() == shutdown_functions_status::not_executed) {
+    // set up state to running to execute shutdown functions
+    state = run_state_t::running;
     run_shutdown_functions_from_timeout();
   }
   perform_error_if_running("timeout exit\n", script_error_t::timeout);
@@ -202,6 +207,9 @@ void PhpScript::pause() noexcept {
 #endif
   in_script_context = true;
   check_net_context_errors();
+  if (kphp_tracing::is_turned_on()) {
+    kphp_tracing::on_switch_context_to_script(last_net_time_delta);
+  }
   //fprintf (stderr, "pause: ended\n");
 }
 
@@ -260,6 +268,7 @@ void PhpScript::update_net_time() noexcept {
     }
   }
   net_time += net_add;
+  last_net_time_delta = net_add;
 
   cur_timestamp = new_cur_timestamp;
 }
@@ -303,17 +312,14 @@ void PhpScript::finish() noexcept {
   if (save_state == run_state_t::error) {
     assert (error_message != nullptr);
     kprintf("Critical error during script execution: %s\n", error_message);
+    kphp_tracing::on_php_script_finish_terminated();
   }
-  if (save_state == run_state_t::error || script_mem_stats.real_memory_used >= 100000000) {
-    if (data != nullptr) {
-      http_query_data *http_data = data->http_data;
-      if (http_data != nullptr) {
-        assert (http_data->headers);
 
-        kprintf("HEADERS: len = %d\n%.*s\nEND HEADERS\n", http_data->headers_len, min(http_data->headers_len, 1 << 16), http_data->headers);
-        kprintf("POST: len = %d\n%.*s\nEND POST\n", http_data->post_len, min(http_data->post_len, 1 << 16), http_data->post == nullptr ? "" : http_data->post);
-      }
-    }
+  if (error_type == script_error_t::memory_limit || script_mem_stats.real_memory_used > max_memory / 2) {
+    kprintf("Detailed memory stats: total allocations = %zd, total memory allocated = %zd, huge memory pieces = %zd, small memory pieces = %zd, defragmentation calls = %zd,"
+            "real memory used = %zd, max real memory used = %zd, memory used = %zd, max memory used = %zd, memory_limit = %zd\n",
+            script_mem_stats.total_allocations, script_mem_stats.total_memory_allocated, script_mem_stats.huge_memory_pieces, script_mem_stats.small_memory_pieces, script_mem_stats.defragmentation_calls,
+            script_mem_stats.real_memory_used, script_mem_stats.max_real_memory_used, script_mem_stats.memory_used, script_mem_stats.max_memory_used,  script_mem_stats.memory_limit);
   }
 
   const size_t buf_size = 5000;
@@ -331,7 +337,7 @@ void PhpScript::finish() noexcept {
         }
       }
     }
-    kprintf("[worked = %.3lf, net = %.3lf, script = %.3lf, queries_cnt = %5d, long_queries_cnt = %5d, static_memory = %9d, peak_memory = %9d, total_memory = %9d] %s\n",
+    kprintf("[worked = %.3lf, net = %.3lf, script = %.3lf, queries_cnt = %5d, long_queries_cnt = %5d, heap_memory_used = %9d, peak_script_memory = %9d, total_script_memory = %9d] %s\n",
             script_time + net_time, net_time, script_time, queries_cnt, long_queries_cnt,
             (int)dl::get_heap_memory_used(),
             (int)script_mem_stats.max_real_memory_used,
@@ -440,7 +446,7 @@ void PhpScript::run() noexcept {
       // run shutdown functions with an empty exception context; then recover it before we proceed
       auto saved_exception = CurException;
       CurException = Optional<bool>{};
-      run_shutdown_functions_from_script();
+      run_shutdown_functions_from_script(ShutdownType::exception);
       // only nothrow shutdown callbacks are allowed by the compiler, so the CurException should be null
       php_assert(CurException.is_null());
       CurException = saved_exception;

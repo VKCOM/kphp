@@ -10,6 +10,7 @@
 #include "runtime/storage.h"
 
 extern bool resumable_finished;
+extern int64_t first_forked_resumable_id;
 
 extern const char *last_wait_error;
 
@@ -60,6 +61,10 @@ public:
 
   bool resume(int64_t resumable_id, Storage *input);
   void *get_stack_ptr() { return pos__; }
+
+  virtual bool is_internal_resumable() const noexcept {
+    return false;
+  }
 
   static void update_output();
 };
@@ -172,8 +177,8 @@ T f$wait(int64_t resumable_id, double timeout = -1.0) {
 }
 
 template<typename T>
-T f$wait(Optional<int64_t> resumable_id) {
-  return f$wait<T>(resumable_id.val());
+T f$wait(Optional<int64_t> resumable_id, double timeout = -1.0) {
+  return f$wait<T>(resumable_id.val(), timeout);
 }
 
 template<typename T>

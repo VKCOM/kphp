@@ -40,6 +40,7 @@ public:
   void write_stats_to(std::ostream &os, bool add_worker_pids) const noexcept;
 
   uint64_t get_worker_activity_counter(uint16_t worker_process_id) const noexcept;
+  uint64_t get_total_general_workers_incoming_qps() const noexcept;
 
   struct WorkersStat {
     uint16_t running_workers{0};
@@ -48,7 +49,8 @@ public:
     uint16_t total_workers{0};
   };
   WorkersStat collect_workers_stat(WorkerType worker_type) const noexcept;
-  uint64_t collect_json_logs_count_stat() const noexcept;
+  std::tuple<uint64_t, uint64_t> collect_json_count_stat() const noexcept;
+  uint64_t collect_threads_count_stat() const noexcept;
 
 private:
   friend class vk::singleton<ServerStats>;

@@ -8,6 +8,7 @@
 
 #include "common/wrappers/string_view.h"
 
+#include "runtime/critical_section.h"
 #include "runtime/kphp_core.h"
 #include "runtime/optional.h"
 #include "server/php-query-data.h"
@@ -56,18 +57,32 @@ void f$setrawcookie(const string &name, const string &value, int64_t expire = 0,
 
 int64_t f$ignore_user_abort(Optional<bool> enable = Optional<bool>());
 
+enum class ShutdownType {
+  normal,
+  exit,
+  exception,
+  timeout,
+};
+
 void run_shutdown_functions_from_timeout();
-void run_shutdown_functions_from_script();
+void run_shutdown_functions_from_script(ShutdownType shutdown_type);
 
 int get_shutdown_functions_count();
 shutdown_functions_status get_shutdown_functions_status();
 
-void f$register_shutdown_function(const shutdown_function_type &f);
+void register_shutdown_function_impl(shutdown_function_type &&f);
+
+template <typename F>
+void f$register_shutdown_function(F &&f) {
+  // std::function sometimes uses heap, when constructed from captured lambda. So it must be constructed under critical section only.
+  dl::CriticalSectionGuard heap_guard;
+  register_shutdown_function_impl(shutdown_function_type{std::forward<F>(f)});
+}
 
 void f$fastcgi_finish_request(int64_t exit_code = 0);
 
 __attribute__((noreturn))
-void finish(int64_t exit_code);
+void finish(int64_t exit_code, bool from_exit);
 
 __attribute__((noreturn))
 void f$exit(const mixed &v = 0);
@@ -78,6 +93,8 @@ void f$die(const mixed &v = 0);
 Optional<int64_t> f$ip2long(const string &ip);
 
 Optional<string> f$ip2ulong(const string &ip);
+
+double f$thread_pool_test_load(int64_t size, int64_t n, double a, double b);
 
 string f$long2ip(int64_t num);
 

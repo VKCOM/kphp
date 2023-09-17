@@ -26,8 +26,7 @@ public:
   using key_type = typename array_type::key_type;
   using inner_type = const_conditional_t<typename array_type::array_inner>;
   using list_hash_type = const_conditional_t<typename array_type::list_hash_entry>;
-  using int_hash_type = const_conditional_t<typename array_type::int_hash_entry>;
-  using string_hash_type = const_conditional_t<typename array_type::string_hash_entry>;
+  using bucket_type = const_conditional_t<typename array_type::array_bucket>;
 
   inline constexpr array_iterator() noexcept __attribute__ ((always_inline)) = default;
 
@@ -41,16 +40,16 @@ public:
   }
 
   inline value_type &get_value() noexcept __attribute__ ((always_inline)) {
-    return self_->is_vector() ? *reinterpret_cast<value_type *>(entry_) : static_cast<int_hash_type *>(entry_)->value;
+    return self_->is_vector() ? *reinterpret_cast<value_type *>(entry_) : static_cast<bucket_type *>(entry_)->value;
   }
 
   inline const value_type &get_value() const noexcept __attribute__ ((always_inline)) {
-    return self_->is_vector() ? *reinterpret_cast<value_type *>(entry_) : static_cast<int_hash_type *>(entry_)->value;
+    return self_->is_vector() ? *reinterpret_cast<value_type *>(entry_) : static_cast<bucket_type *>(entry_)->value;
   }
 
   inline key_type get_key() const noexcept __attribute__ ((always_inline)) {
     if (self_->is_vector()) {
-      return key_type{static_cast<int64_t>(reinterpret_cast<value_type *>(entry_) - reinterpret_cast<value_type *>(self_->int_entries))};
+      return key_type{static_cast<int64_t>(reinterpret_cast<value_type *>(entry_) - reinterpret_cast<value_type *>(self_->entries))};
     }
 
     if (is_string_key()) {
@@ -61,36 +60,36 @@ public:
   }
 
   inline int64_t get_int_key() noexcept __attribute__ ((always_inline)) {
-    return static_cast<int_hash_type *>(entry_)->int_key;
+    return static_cast<bucket_type *>(entry_)->int_key;
   }
 
   inline int64_t get_int_key() const noexcept __attribute__ ((always_inline)) {
-    return static_cast<const int_hash_type *>(entry_)->int_key;
+    return static_cast<const bucket_type *>(entry_)->int_key;
   }
 
   inline bool is_string_key() const noexcept __attribute__ ((always_inline)) ubsan_supp("alignment") {
-    return !self_->is_vector() && self_->is_string_hash_entry(static_cast<const string_hash_type *>(entry_));
+    return !self_->is_vector() && self_->is_string_hash_entry(static_cast<const bucket_type *>(entry_));
   }
 
   inline const_conditional_t<string> &get_string_key() noexcept __attribute__ ((always_inline)) {
-    return static_cast<string_hash_type *>(entry_)->string_key;
+    return static_cast<bucket_type *>(entry_)->string_key;
   }
 
   inline const string &get_string_key() const noexcept __attribute__ ((always_inline)) {
-    return static_cast<const string_hash_type *>(entry_)->string_key;
+    return static_cast<const bucket_type *>(entry_)->string_key;
   }
 
   inline array_iterator &operator++() noexcept __attribute__ ((always_inline)) ubsan_supp("alignment") {
     entry_ = self_->is_vector()
              ? reinterpret_cast<list_hash_type *>(reinterpret_cast<value_type *>(entry_) + 1)
-             : self_->next(static_cast<string_hash_type *>(entry_));
+             : self_->next(static_cast<bucket_type *>(entry_));
     return *this;
   }
 
   inline array_iterator &operator--() noexcept __attribute__ ((always_inline)) ubsan_supp("alignment") {
     entry_ = self_->is_vector()
              ? reinterpret_cast<list_hash_type *>(reinterpret_cast<value_type *>(entry_) - 1)
-             : self_->prev(static_cast<string_hash_type *>(entry_));
+             : self_->prev(static_cast<bucket_type *>(entry_));
     return *this;
   }
 
@@ -113,7 +112,7 @@ public:
   static inline array_iterator make_begin(std::add_const_t<array_type> &arr) noexcept __attribute__ ((always_inline)) {
     static_assert(std::is_const<T>{}, "expected to be const");
     return arr.is_vector()
-           ? array_iterator{arr.p, arr.p->int_entries}
+           ? array_iterator{arr.p, arr.p->entries}
            : array_iterator{arr.p, arr.p->begin()};
   }
 
@@ -121,7 +120,7 @@ public:
     static_assert(!std::is_const<T>{}, "expected to be mutable");
     if (arr.is_vector()) {
       arr.mutate_if_vector_shared();
-      return array_iterator{arr.p, arr.p->int_entries};
+      return array_iterator{arr.p, arr.p->entries};
     }
 
     arr.mutate_if_map_shared();
@@ -130,7 +129,7 @@ public:
 
   static inline array_iterator make_end(array_type &arr) noexcept __attribute__ ((always_inline)) {
     return arr.is_vector()
-           ? array_iterator{arr.p, reinterpret_cast<list_hash_type *>(reinterpret_cast<value_type *>(arr.p->int_entries) + arr.p->int_size)}
+           ? array_iterator{arr.p, reinterpret_cast<list_hash_type *>(reinterpret_cast<value_type *>(arr.p->entries) + arr.p->size)}
            : array_iterator{arr.p, arr.p->end()};
   }
 
@@ -148,7 +147,7 @@ public:
         return make_end(arr);
       }
 
-      return array_iterator{arr.p, reinterpret_cast<list_hash_type *>(reinterpret_cast<value_type *>(arr.p->int_entries) + n)};
+      return array_iterator{arr.p, reinterpret_cast<list_hash_type *>(reinterpret_cast<value_type *>(arr.p->entries) + n)};
     }
 
     if (n < -l / 2) {
@@ -165,7 +164,7 @@ public:
       }
     }
 
-    string_hash_type *result = nullptr;
+    bucket_type *result = nullptr;
     if (n < 0) {
       result = arr.p->end();
       while (n < 0) {

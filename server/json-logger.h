@@ -20,6 +20,7 @@ public:
   void init(int64_t release_version) noexcept;
 
   bool reopen_log_file(const char *log_file_name) noexcept;
+  bool reopen_traces_file(const char *traces_file_name) noexcept;
 
   void fsync_log_file() const noexcept;
 
@@ -31,8 +32,13 @@ public:
     return json_logs_count;
   }
 
+  uint64_t get_json_traces_count() const noexcept {
+    return json_traces_count;
+  }
+
   void reset_json_logs_count() noexcept {
     json_logs_count = 0;
+    json_traces_count = 0;
   }
 
   // ATTENTION: this function isn't signal-safety and cannot be used inside signal handlers
@@ -45,6 +51,8 @@ public:
   void write_log_with_backtrace(vk::string_view message, int type) noexcept;
   void write_stack_overflow_log(int type) noexcept;
 
+  void write_trace_line(const char *json_buf, size_t buf_len) noexcept;
+
   void reset_buffers() noexcept;
 
 private:
@@ -52,9 +60,11 @@ private:
 
   // it's incremented from signal handler sometimes => it must be volatile sig_atomic_t to prevent data races
   volatile sig_atomic_t json_logs_count{0};
+  volatile sig_atomic_t json_traces_count{0};
 
   int64_t release_version_{0};
-  int json_log_fd_{-1};
+  int json_log_fd_{-1};   // kphp_log.json
+  int traces_log_fd_{-1}; // kphp_log.traces.jsonl
 
 #if __cplusplus >= 201703
   static_assert(std::atomic<bool>::is_always_lock_free);

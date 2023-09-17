@@ -53,6 +53,8 @@ string f$uniqid(const string &prefix, bool more_entropy) {
 
 
 Optional<string> f$iconv(const string &input_encoding, const string &output_encoding, const string &input_str) {
+  dl::CriticalSectionGuard heap_guard;
+
   iconv_t cd;
   if ((cd = iconv_open(output_encoding.c_str(), input_encoding.c_str())) == (iconv_t)-1) {
     php_warning("unsupported iconv from \"%s\" to \"%s\"", input_encoding.c_str(), output_encoding.c_str());
@@ -212,7 +214,7 @@ mixed f$getimagesize(const string &name) {
     read_size = size;
   }
 
-  if (read_size < 12 || read_safe(read_fd, buf, read_size) < static_cast<ssize_t>(read_size)) {
+  if (read_size < 12 || read_safe(read_fd, buf, read_size, name) < static_cast<ssize_t>(read_size)) {
     close(read_fd);
     dl::leave_critical_section();
     return false;
@@ -245,7 +247,7 @@ mixed f$getimagesize(const string &name) {
           return false;
         }
         memcpy(image, buf, read_size);
-        if (read_safe(read_fd, image + read_size, size - read_size) < static_cast<ssize_t>(size - read_size)) {
+        if (read_safe(read_fd, image + read_size, size - read_size, name) < static_cast<ssize_t>(size - read_size)) {
           dl::deallocate(image, size);
           close(read_fd);
           dl::leave_critical_section();
@@ -442,7 +444,7 @@ mixed f$getimagesize(const string &name) {
   close(read_fd);
   dl::leave_critical_section();
 
-  array<mixed> result(array_size(4, 3, false));
+  array<mixed> result(array_size(7, false));
   result.push_back(width);
   result.push_back(height);
   result.push_back(type);
@@ -481,7 +483,7 @@ Optional<array<mixed>> f$posix_getpwuid(int64_t uid) {
   if (!pwd) {
     return false;
   }
-  array<mixed> result(array_size(0, 7, false));
+  array<mixed> result(array_size(7, false));
   result.set_value(string("name", 4), string(pwd->pw_name));
   result.set_value(string("passwd", 6), string(pwd->pw_passwd));
   result.set_value(string("uid", 3), static_cast<int64_t>(pwd->pw_uid));

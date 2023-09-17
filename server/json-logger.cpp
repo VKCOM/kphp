@@ -184,6 +184,14 @@ bool JsonLogger::reopen_log_file(const char *log_file_name) noexcept {
   return json_log_fd_ > 0;
 }
 
+bool JsonLogger::reopen_traces_file(const char *traces_file_name) noexcept {
+  if (traces_log_fd_ > 0) {
+    close(traces_log_fd_);
+  }
+  traces_log_fd_ = open(traces_file_name, O_WRONLY | O_APPEND | O_CREAT, 0640);
+  return traces_log_fd_ > 0;
+}
+
 void JsonLogger::fsync_log_file() const noexcept {
   if (json_log_fd_ > 0) {
     fsync(json_log_fd_);
@@ -259,6 +267,15 @@ void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at
   json_out_it->finish_json_and_flush(json_log_fd_);
 
   json_logs_count = json_logs_count + 1;
+}
+
+void JsonLogger::write_trace_line(const char *json_buf, size_t buf_len) noexcept {
+  if (traces_log_fd_ <= 0) {
+    return;
+  }
+
+  write(traces_log_fd_, json_buf, buf_len);
+  json_traces_count = json_traces_count + 1;
 }
 
 void JsonLogger::write_log_with_backtrace(vk::string_view message, int type) noexcept {

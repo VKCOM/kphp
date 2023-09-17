@@ -54,7 +54,7 @@ const char *unix_socket_path(const char *directory, const char *owner, uint16_t 
   static struct sockaddr_un path;
 
   if (snprintf(path.sun_path, sizeof(path.sun_path), "%s/%s/%d", directory, owner, port) >= sizeof(path.sun_path)) {
-    vkprintf(0, "Too long UNIX socket path: \"%s/%s/%d\": %zu bytes exceeds\n", directory, owner, port, sizeof(path.sun_path));
+    kprintf("Too long UNIX socket path: \"%s/%s/%d\": %zu bytes exceeds\n", directory, owner, port, sizeof(path.sun_path));
     return NULL;
   }
 
@@ -81,7 +81,7 @@ int prepare_unix_socket_directory(const char *directory, const char *username, c
   int dirfd = open(directory, O_DIRECTORY);
   if (dirfd == -1) {
     if (errno == ENOENT) {
-      vkprintf(1, "Trying to create UNIX socket directory: \"%s\"\n", directory);
+      vkprintf(4, "Trying to create UNIX socket directory: \"%s\"\n", directory);
       const mode_t dirmode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
       if (mkdir(directory, dirmode) == -1 && errno != EEXIST) {
         vkprintf(1, "Cannot mkdir() UNIX socket directory: \"%s\": %s\n", directory, strerror(errno));
@@ -257,7 +257,7 @@ int server_socket(int port, struct in_addr in_addr, int backlog, int mode) {
     addr.sin_port = htons(port);
     addr.sin_addr = in_addr;
     if (bind(sfd, (struct sockaddr *) &addr, sizeof(addr)) == -1) {
-      vkprintf(0, "bind(%s:%d): %s\n", inet_ntoa(in_addr), port, strerror(errno));
+      kprintf("bind(%s:%d): %s\n", inet_ntoa(in_addr), port, strerror(errno));
       close(sfd);
       return -1;
     }
@@ -270,7 +270,7 @@ int server_socket(int port, struct in_addr in_addr, int backlog, int mode) {
     addr.sin6_addr = in6addr_any;
 
     if (bind(sfd, (struct sockaddr *) &addr, sizeof(addr)) == -1) {
-      vkprintf(0, "bind(%s:%d): %s\n", inet_ntoa(in_addr), port, strerror(errno));
+      kprintf("bind(%s:%d): %s\n", inet_ntoa(in_addr), port, strerror(errno));
       close(sfd);
       return -1;
     }
@@ -303,11 +303,11 @@ int server_socket_unix(const struct sockaddr_un *addr, int backlog, int mode) {
     socket_maximize_rcvbuf(fd, 0);
     socket_maximize_sndbuf(fd, 0);
 
-    vkprintf(1, "Unlinking UNIX socket path: \"%s\"\n", addr->sun_path);
+    vkprintf(4, "Unlinking UNIX socket path: \"%s\"\n", addr->sun_path);
     unlink(addr->sun_path);
 
     if (bind(fd, (struct sockaddr *) addr, sizeof(*addr)) == -1) {
-      vkprintf(0, "bind(%s): %s\n", addr->sun_path, strerror(errno));
+      kprintf("bind(%s): %s\n", addr->sun_path, strerror(errno));
       close(fd);
       return -1;
     }
@@ -407,7 +407,7 @@ int client_socket_unix(const struct sockaddr_un *addr, int mode) {
     socket_maximize_sndbuf(fd, 0);
     socket_maximize_rcvbuf(fd, 0);
     if (connect(fd, (struct sockaddr *) addr, sizeof(*addr)) == -1 && errno != EINPROGRESS) {
-      vkprintf(0, "Cannot connect() to \"%s\": %s\n", addr->sun_path, strerror(errno));
+      kprintf("Cannot connect() to \"%s\": %s\n", addr->sun_path, strerror(errno));
       close(fd);
       return -1;
     }
