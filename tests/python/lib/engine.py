@@ -9,8 +9,7 @@ import time
 import json
 
 from .colors import cyan
-from .stats_receiver import StatsReceiver
-from .statshouse import Statshouse
+from .stats_receiver import StatsReceiver, StatsType
 from .port_generator import get_port
 from .tl_client import send_rpc_request
 
@@ -29,8 +28,7 @@ class Engine:
         self._working_dir = working_dir
         self._engine_name = os.path.basename(engine_bin).replace('-', '_')
         self._log_file = os.path.join(working_dir, self._engine_name + ".log")
-        self._stats_receiver = StatsReceiver(self._engine_name, working_dir)
-        self._statshouse = Statshouse(self._engine_name, working_dir)
+        self._stats_receiver = StatsReceiver(self._engine_name, working_dir, StatsType.STATSD)
         self._rpc_port = get_port()
         self._options = {
             "--log": self._log_file,
@@ -109,15 +107,12 @@ class Engine:
             raise RuntimeError("Can't create binlog")
         self._binlog_path = binlog_path
 
-    def start(self, start_msgs=None, start_statshouse=None):
+    def start(self, start_msgs=None):
         """
         Запустить движок
         :param start_msgs: Сообщение в логе, которое нужно проверить после запуска движка
-        :param start_statshouse: start statshouse "server"
         """
         self._stats_receiver.start()
-        if start_statshouse:
-            self._statshouse.start()
 
         cmd = [self._engine_bin]
         for option, value in self._options.items():
@@ -176,7 +171,6 @@ class Engine:
         self._log_file_read_fd.close()
         self._log_file_write_fd.close()
         self._stats_receiver.stop()
-        self._statshouse.stop()
         if not engine_stopped_properly:
             raise RuntimeError("Can't stop engine properly")
         self._check_status_code(status, signal.SIGTERM)
@@ -242,12 +236,6 @@ class Engine:
         self._stats_receiver.wait_next_stats(timeout)
         stats = self._stats_receiver.stats
         return {k[len(prefix):]: v for k, v in stats.items() if k.startswith(prefix)}
-
-    def check_statshouse_metrics(self, timeout=60):
-        """
-        :param timeout: Время ожидания очередной статы
-        """
-        self._statshouse.wait_metrics(timeout)
 
     def assert_stats(self, expected_added_stats, initial_stats=None,
                      prefix="", message="Can't wait expected stats", timeout=60):
