@@ -14,3 +14,4 @@ function test_yaml_escaping() {
 }
 
 test_yaml_escaping();
+
