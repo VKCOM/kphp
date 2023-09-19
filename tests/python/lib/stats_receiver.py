@@ -17,16 +17,15 @@ class StatsType(Enum):
 
 
 class StatsReceiver:
-    def __init__(self, engine_name, working_dir, stats_type, use_udp=False):
+    def __init__(self, engine_name, working_dir, stats_type):
         self._working_dir = working_dir
         self._port = get_port()
         self._stats_proc = None
         self._stats_type = stats_type
         self._stats_file = os.path.join(working_dir, engine_name + "." + stats_type.name.lower())
-        self._use_udp = use_udp
         self._stats_file_write_fd = None
         self._stats_file_read_fd = None
-        self._stats = {}
+        self._stats = {} if stats_type == StatsType.STATSD else ""
 
     @property
     def port(self):
@@ -39,9 +38,11 @@ class StatsReceiver:
     def start(self):
         print("\nStarting stats receiver on port {}".format(self._port))
         self._stats_file_write_fd = open(self._stats_file, 'wb')
-        self._stats_file_read_fd = open(self._stats_file, 'r')
+        self._stats_file_read_fd = open(self._stats_file, 'r',
+                                        errors="replace" if self._stats_type == StatsType.STATSHOUSE else "strict")
         self._stats_proc = psutil.Popen(
-            ["nc", "-l{}".format("u" if self._use_udp else ""), "" if platform == "darwin" else "-p", str(self._port)],
+            ["nc", "-l{}".format("u" if self._stats_type == StatsType.STATSHOUSE else ""),
+                "" if platform == "darwin" else "-p", str(self._port)],
             stdout=self._stats_file_write_fd,
             stderr=subprocess.STDOUT,
             cwd=self._working_dir
@@ -97,7 +98,6 @@ class StatsReceiver:
         return True
 
     def _try_update_stats_statshouse(self):
-        new_size = os.path.getsize(self._stats_file)
-        old_size = self._stats.get("stats_file_size", 0)
-        self._stats["stats_file_size"] = new_size
-        return new_size > old_size
+        added_stats = self._stats_file_read_fd.read()
+        self._stats += added_stats
+        return len(added_stats) > 0
