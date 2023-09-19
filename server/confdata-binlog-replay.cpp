@@ -11,6 +11,7 @@
 #include <map>
 
 #include "common/binlog/binlog-replayer.h"
+#include "common/dl-utils-lite.h"
 #include "common/precise-time.h"
 #include "common/server/engine-settings.h"
 #include "common/server/init-binlog.h"
@@ -49,18 +50,14 @@ public:
     if (dot_pos != std::string::npos) {
       const auto dot_key = key.substr(0, dot_pos + 1);
       if (prev_key != dot_key) {
-        if (counter.int_size + counter.string_size > 1) {
+        if (counter.size > 1) {
           size_hints_[prev_key] = counter;
         }
         prev_key = dot_key;
         counter = array_size{};
       }
-      const auto key_tail = key.substr(dot_pos + 1);
-      if (!key_tail.empty() && php_is_int(key_tail.data(), key_tail.size())) {
-        ++counter.int_size;
-      } else {
-        ++counter.string_size;
-      }
+      ++counter.size;
+
     }
     return dot_pos;
   }
@@ -189,7 +186,9 @@ public:
         *updating_confdata_storage_ = previous_confdata_storage;
       } else {
         // strictly speaking, they should be identical, but it's too hard to verify
-        assert(updating_confdata_storage_->size() == previous_confdata_storage.size());
+        dl_assert(updating_confdata_storage_->size() == previous_confdata_storage.size(),
+                  dl_pstr("Can't update confdata from binlog: 'updating_confdata' and 'previous_confdata' must be identical, "
+                          "but they have different sizes (%zu != %zu)\n", updating_confdata_storage_->size(), previous_confdata_storage.size()));
       }
     }
   }

@@ -36,7 +36,7 @@ void GlobalVarsMemoryStats::compile(CodeGenerator &W) const {
 
   FunctionSignatureGenerator(W) << "array<int64_t> " << getter_name_ << "(int64_t lower_bound) " << BEGIN
                                 << "array<int64_t> result;" << NL
-                                << "result.reserve(" << global_vars_count << ", " << global_vars_count << ", false);" << NL << NL;
+                                << "result.reserve(" << global_vars_count << ", false);" << NL << NL;
 
   for (size_t part_id = 0; part_id < global_var_parts.size(); ++part_id) {
     W << "void " << getter_name_ << "_" << part_id << "(int64_t lower_bound, array<int64_t> &result);" << NL

@@ -1,38 +1,8 @@
-from python.lib.testcase import KphpServerAutoTestCase
+from python.tests.curl.curl_test_case import CurlTestCase
 
 
-class TestCurl(KphpServerAutoTestCase):
-    maxDiff = 16 * 1024
-
-    @classmethod
-    def extra_class_setup(cls):
-        cls.kphp_server.update_options({
-            "--workers-num": 2,
-        })
-
-    def _curl_request(self, uri, return_transfer=1, post=None, headers=None):
-        resp = self.kphp_server.http_post(
-            uri="/test_curl",
-            json={
-                "url": "localhost:{}{}".format(self.kphp_server.http_port, uri),
-                "return_transfer": return_transfer,
-                "post": post,
-                "headers": headers
-            })
-        self.assertEqual(resp.status_code, 200)
-        return resp.json()
-
-    def _prepare_result(self, uri, method, extra=None):
-        res = {
-            "HTTP_ACCEPT": "*/*",
-            "HTTP_HOST": "localhost:{}".format(self.kphp_server.http_port),
-            "REQUEST_METHOD": method,
-            "REQUEST_URI": uri,
-            "SERVER_PROTOCOL": "HTTP/1.1"
-        }
-        if extra:
-            res.update(extra)
-        return res
+class TestCurl(CurlTestCase):
+    test_case_uri="/test_curl"
 
     def test_curl_get_return_transfer(self):
         self.assertEqual(self._curl_request("/echo/test_get"), {
@@ -63,3 +33,23 @@ class TestCurl(KphpServerAutoTestCase):
                     "HTTP_HELLO": "world",
                     "HTTP_FOO": "bar"
                 })})
+
+    def test_curl_timeout(self):
+        self.assertEqual(self._curl_request("/echo/test_get", timeout=0.1), {
+            "exec_result": False
+        })
+
+    def test_curl_nonexistent_url(self):
+        self.assertEqual(self._curl_request("nonexistent_url"), {
+            "exec_result": False
+        })
+
+    def test_curl_connection_only_success(self):
+        self.assertEqual(self._curl_request("/echo/test_get", connect_only=True), {
+            "exec_result": ''
+        })
+
+    def test_curl_connection_only_fail(self):
+        self.assertEqual(self._curl_request("nonexistent_url", connect_only=True), {
+            "exec_result": False
+        })

@@ -11,7 +11,7 @@ class TestJobSharedImmutableMessage(KphpServerAutoTestCase):
             "--job-workers-ratio": 0.8,
             "--verbosity-job-workers=2": True,
             "--job-workers-shared-memory-size": "80M",
-
+            "--job-workers-shared-memory-distribution-weights": '1,1,1,1,1,1,1,4,1,1',
         })
 
     def test_error_different_shared_memory_pieces(self):

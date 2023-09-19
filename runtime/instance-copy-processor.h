@@ -249,7 +249,7 @@ private:
     if (arr.is_reference_counter(ExtraRefCnt::for_global_const)) {
       return true;
     }
-    if (unlikely(!is_enough_memory_for(arr.estimate_memory_usage()))) {
+    if (unlikely(!is_enough_memory_for(arr.calculate_memory_for_copying()))) {
       arr = array<T>();
       memory_limit_exceeded_ = true;
       return false;
@@ -265,7 +265,7 @@ private:
     if (const auto extra_ref_cnt = get_memory_ref_cnt()) {
       arr.set_reference_counter_to(extra_ref_cnt);
     }
-    const bool primitive_array = is_primitive<T>{} && arr.size().string_size == 0;
+    const bool primitive_array = is_primitive<T>{} && arr.has_no_string_keys();
     return primitive_array || Basic::process_range(first, arr.end());
   }
 

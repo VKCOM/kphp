@@ -391,8 +391,11 @@ public:
     }
 
     const auto *result = element->instance_wrapper.get();
-    // used_elements uses a heap memory, it'll hold an element until the end of the request
-    used_elements_.emplace(std::move(element));
+    {
+      // used_elements uses a heap memory, it'll hold an element until the end of the request
+      dl::CriticalSectionGuard heap_guard;
+      used_elements_.emplace(std::move(element));
+    }
     return result;
   }
 
@@ -617,11 +620,14 @@ private:
         // replace element and save previous element into used_elements_;
         // it'll make it possible to free it without taking a storage_mutex lock
         it->second.swap(element);
-        if (element) {
-          // used_elements_ uses heap memory for its internal allocations
-          used_elements_.emplace(std::move(element));
+        {
+          dl::CriticalSectionGuard heap_guard;
+          if (element) {
+            // used_elements_ uses heap memory for its internal allocations
+            used_elements_.emplace(std::move(element));
+          }
+          used_elements_.emplace(it->second);
         }
-        used_elements_.emplace(it->second);
         return it->second.get();
       }
     }
@@ -650,6 +656,7 @@ private:
   // Elements are inserted here to ensure that they don't go away unexpectedly
   // std::unordered_set uses heap memory
   // vk::intrusive_ptr<ElementHolder> uses shared memory
+  // during script execution MUST be used only under critical section
   std::unordered_set<vk::intrusive_ptr<ElementHolder>, IntrusivePtrHash> used_elements_;
 
   // A local cache that can be used to get elements without taking a storage_mutex lock

@@ -5,11 +5,12 @@
 #include "runtime/exec.h"
 
 #include <cstdlib>
-#include <functional>
 
 #include "common/smart_ptrs/unique_ptr_with_delete_function.h"
+#include "runtime/kphp_tracing.h"
 
-static size_t strip_trailing_whitespace(char *buffer, int bytes_read) {
+namespace {
+size_t strip_trailing_whitespace(char *buffer, int bytes_read) {
   size_t l = bytes_read;
   while (l-- > 0 && isspace((reinterpret_cast<unsigned char *>(buffer))[l])){};
   if (l != (bytes_read - 1)) {
@@ -19,7 +20,7 @@ static size_t strip_trailing_whitespace(char *buffer, int bytes_read) {
   return bytes_read;
 }
 
-static void pclose_wrapper(FILE *f) {
+void pclose_wrapper(FILE *f) {
   pclose(f);
 }
 
@@ -29,9 +30,10 @@ struct ExecStatus {
   string last_line;
 };
 
-using ExecHandler = std::function<size_t(char *, std::size_t)>;
+template <typename ExecHandler>
+ExecStatus exec_impl(const string &cmd, ExecHandler &&handler) {
+  dl::CriticalSectionGuard heap_guard;
 
-static ExecStatus exec_impl(const string &cmd, const ExecHandler &handler) {
   if (cmd.empty()) {
     php_warning("Cannot execute a blank command");
     return {};
@@ -68,7 +70,9 @@ static ExecStatus exec_impl(const string &cmd, const ExecHandler &handler) {
   return {true, ret, last_line};
 }
 
-static ExecStatus passthru_impl(const string &cmd) {
+ExecStatus passthru_impl(const string &cmd) {
+  dl::CriticalSectionGuard heap_guard;
+
   if (cmd.empty()) {
     php_warning("Cannot execute a blank command");
     return {};
@@ -83,7 +87,7 @@ static ExecStatus passthru_impl(const string &cmd) {
   std::array<char, 4096> BUFF = {};
   std::size_t bytes_read = 0;
   const int fd = fileno(fp.get());
-  while ((bytes_read = read(fd, BUFF.data(),  BUFF.size())) > 0) {
+  while ((bytes_read = read(fd, BUFF.data(), BUFF.size())) > 0) {
     [[maybe_unused]] auto bytes_written = write(STDOUT_FILENO, BUFF.data(), bytes_read);
     [[maybe_unused]] auto res = fflush(stdout);
   }
@@ -94,6 +98,7 @@ static ExecStatus passthru_impl(const string &cmd) {
   }
   return {true, ret, {}};
 }
+} // namespace
 
 int64_t &get_dummy_result_code() noexcept {
   static int64_t result_code = 0;
@@ -101,7 +106,14 @@ int64_t &get_dummy_result_code() noexcept {
 }
 
 Optional<string> f$exec(const string &command) {
-  auto [success, _, last_line] = exec_impl(command, [](char */*buff*/, std::size_t size) { return size; });
+  int exec_id = kphp_tracing::generate_uniq_id();
+  if (kphp_tracing::is_turned_on()) {
+    kphp_tracing::on_external_program_start(exec_id, kphp_tracing::BuiltinFuncID::exec, command);
+  }
+  auto [success, exit_code, last_line] = exec_impl(command, [](char */*buff*/, std::size_t size) { return size; });
+  if (kphp_tracing::is_turned_on()) {
+    kphp_tracing::on_external_program_finish(exec_id, success, exit_code);
+  }
   return success ? Optional<string>{last_line} : Optional<string>{false};
 }
 
@@ -109,14 +121,20 @@ Optional<string> f$exec(const string &command, mixed &output, int64_t &result_co
   if (!output.is_array()) {
     output = array<mixed>();
   }
-  auto [success, result, last_line] = exec_impl(command, [&output](char *buff, std::size_t size) {
+  int exec_id = kphp_tracing::generate_uniq_id();
+  if (kphp_tracing::is_turned_on()) {
+    kphp_tracing::on_external_program_start(exec_id, kphp_tracing::BuiltinFuncID::exec, command);
+  }
+  auto [success, exit_code, last_line] = exec_impl(command, [&output](char *buff, std::size_t size) {
     const std::size_t bytes_read = strip_trailing_whitespace(buff, size);
     output.as_array().push_back(string(buff, bytes_read));
     return bytes_read;
   });
-
+  if (kphp_tracing::is_turned_on()) {
+    kphp_tracing::on_external_program_finish(exec_id, success, exit_code);
+  }
   if (success) {
-    result_code = result;
+    result_code = exit_code;
     return last_line;
   }
   return false;
@@ -124,14 +142,20 @@ Optional<string> f$exec(const string &command, mixed &output, int64_t &result_co
 
 // ultimate version of system(), the same as in php
 static Optional<string> php_system(const string &command, int64_t &result_code) {
-  auto [success, result, last_line] = exec_impl(command, [](char *buff, std::size_t size) {
+  int exec_id = kphp_tracing::generate_uniq_id();
+  if (kphp_tracing::is_turned_on()) {
+    kphp_tracing::on_external_program_start(exec_id, kphp_tracing::BuiltinFuncID::system, command);
+  }
+  auto [success, exit_code, last_line] = exec_impl(command, [](char *buff, std::size_t size) {
     [[maybe_unused]] auto bytes_written = write(STDOUT_FILENO, buff, size);
     [[maybe_unused]] auto res = fflush(stdout);
     return size;
   });
-
+  if (kphp_tracing::is_turned_on()) {
+    kphp_tracing::on_external_program_finish(exec_id, success, exit_code);
+  }
   if (success) {
-    result_code = result;
+    result_code = exit_code;
     return last_line;
   }
   return false;
@@ -145,9 +169,16 @@ int64_t f$system(const string &command, int64_t &result_code) {
 }
 
 Optional<bool> f$passthru(const string &command, int64_t &result_code) {
-  auto [success, result, _] = passthru_impl(command);
+  int exec_id = kphp_tracing::generate_uniq_id();
+  if (kphp_tracing::is_turned_on()) {
+    kphp_tracing::on_external_program_start(exec_id, kphp_tracing::BuiltinFuncID::passthru, command);
+  }
+  auto [success, exit_code, _] = passthru_impl(command);
+  if (kphp_tracing::is_turned_on()) {
+    kphp_tracing::on_external_program_finish(exec_id, success, exit_code);
+  }
   if (success) {
-    result_code = result;
+    result_code = exit_code;
     return {};
   }
   return false;

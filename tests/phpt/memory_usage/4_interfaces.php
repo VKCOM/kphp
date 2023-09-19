@@ -46,7 +46,7 @@ function test_interfaces() {
   var_dump(24);
   var_dump(40);
   var_dump(0);
-  var_dump(16 + 16 + 40 + 8 + 8 + 80);
+  var_dump(16 + 24 + 40 + 80);
   return;
 #endif
   var_dump(estimate_memory_usage(new MyClass1()));

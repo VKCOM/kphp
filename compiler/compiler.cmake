@@ -40,6 +40,7 @@ prepend(KPHP_COMPILER_DATA_SOURCES data/
         lib-data.cpp
         generics-mixins.cpp
         kphp-json-tags.cpp
+        kphp-tracing-tags.cpp
         modulite-data.cpp
         performance-inspections.cpp
         src-dir.cpp
@@ -88,6 +89,7 @@ prepend(KPHP_COMPILER_CODEGEN_SOURCES code-gen/
         files/tl2cpp/tl2cpp-utils.cpp
         files/tl2cpp/tl2cpp.cpp
         files/shape-keys.cpp
+        files/tracing-autogen.cpp
         files/type-tagger.cpp
         files/vars-cpp.cpp
         files/vars-reset.cpp

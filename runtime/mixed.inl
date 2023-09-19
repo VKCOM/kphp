@@ -604,7 +604,7 @@ const array<mixed> mixed::to_array() const {
     case type::INTEGER:
     case type::FLOAT:
     case type::STRING: {
-      array<mixed> res(array_size(1, 0, true));
+      array<mixed> res(array_size(1, true));
       res.push_back(*this);
       return res;
     }

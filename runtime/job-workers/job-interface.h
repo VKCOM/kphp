@@ -28,7 +28,11 @@ enum {
   server_php_script_error_offset = -100,
   client_timeout_error = -102, // same as script timeout
   client_oom_error = -1001,
-  server_nothing_replied_error = -2001
+  server_nothing_replied_error = -2001,
+  store_response_incorrect_call_error = -3000,
+  store_response_not_enough_shared_messages_error = -3001,
+  store_response_too_big_error = -3002,
+  store_response_cant_send_error = -3003,
 };
 
 struct SendingInstanceBase : virtual abstract_refcountable_php_interface {

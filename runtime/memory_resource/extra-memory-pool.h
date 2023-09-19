@@ -63,40 +63,10 @@ public:
     return raw_memory_ + index * buffer_size_;
   }
 
-  static int get_bucket(const extra_memory_pool &pool) noexcept {
-    return __builtin_ctzll(pool.get_buffer_size()) - 20;
-  }
-
-  static size_t get_size_by_bucket(size_t id) noexcept {
-    return 1 << (20 + id);
-  }
-
 private:
   uint8_t *raw_memory_{nullptr};
   size_t buffers_count_{0};
   size_t buffer_size_{0};
 };
-
-template<size_t N>
-size_t distribute_memory(std::array<extra_memory_raw_bucket, N> &extra_memory, size_t initial_count, uint8_t *raw, size_t size) noexcept {
-  size_t left_memory = size;
-  for (size_t i = 0; i != extra_memory.size(); ++i) {
-    // (2^i) MB
-    const size_t buffer_size = extra_memory_raw_bucket::get_size_by_bucket(i);
-    size_t buffers_count = left_memory / buffer_size;
-    if (i + 1 != extra_memory.size()) {
-      // (initial_count / 2^i)
-      buffers_count = std::min(std::max(initial_count >> i, size_t{1}), buffers_count);
-      const size_t left_memory_for_next = left_memory - buffers_count * buffer_size;
-      const size_t next_buffer_size = buffer_size << 1;
-      buffers_count += left_memory_for_next % next_buffer_size >= buffer_size;
-    }
-
-    left_memory -= buffers_count * buffer_size;
-    extra_memory[i].init(raw, buffers_count, buffer_size);
-    raw += buffers_count * buffer_size;
-  }
-  return left_memory;
-}
 
 } // namespace memory_resource

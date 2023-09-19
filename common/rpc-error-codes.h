@@ -47,9 +47,11 @@
 #define TL_ERROR_TOO_MANY_BAD_RESPONSES      (-3012)
 #define TL_ERROR_FLOOD_CONTROL               (-3013)
 
-#define TL_ERROR_UNKNOWN                     (-4000)
-#define TL_ERROR_RESPONSE_SYNTAX             (-4101)
-#define TL_ERROR_RESPONSE_NOT_FOUND          (-4102)
+#define TL_ERROR_UNKNOWN                         (-4000)
+#define TL_ERROR_RESPONSE_SYNTAX                 (-4101)
+#define TL_ERROR_RESPONSE_NOT_FOUND              (-4102)
+#define TL_ERROR_TIMEOUT_IN_RPC_CLIENT           (-4103)
+#define TL_ERROR_NO_CONNECTIONS_IN_RPC_CLIENT    (-4104)
 
 #define TL_IS_USER_ERROR(x)                  ((x) <= -1000 && (x) > -3000)
 

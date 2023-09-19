@@ -35,7 +35,8 @@ ClassData::ClassData(ClassType type) :
 void ClassData::set_name_and_src_name(const std::string &full_name) {
   this->name = full_name;
   this->src_name = std::string("C$").append(replace_backslashes(full_name));
-  this->header_name = replace_characters(src_name + ".h", '$', '@');
+  this->cpp_filename = replace_characters(src_name + ".cpp", '$', '@');
+  this->h_filename = replace_characters(src_name + ".h", '$', '@');
   this->type_hint = TypeHintInstance::create(full_name);
 
   size_t pos = full_name.find_last_of('\\');

@@ -7,6 +7,8 @@
 #include "common/kprintf.h"
 
 #include "runtime/net_events.h"
+#include "server/php-queries.h"
+#include "runtime/kphp_tracing.h"
 
 DEFINE_VERBOSITY(resumable);
 
@@ -30,20 +32,20 @@ static Storage *get_storage(int64_t resumable_id);
 bool check_started_storage(Storage *s);
 bool check_forked_storage(Storage *s);
 
-static inline void update_current_resumable_id(int64_t new_id);
+static inline void update_current_resumable_id(int64_t new_id, bool is_internal);
 
 bool Resumable::resume(int64_t resumable_id, Storage *input) {
   php_assert(!input || check_started_storage(input) || check_forked_storage(input));
   int64_t parent_id = runned_resumable_id;
 
   input_ = input;
-  update_current_resumable_id(resumable_id);
+  update_current_resumable_id(resumable_id, is_internal_resumable());
 
   bool res = run();
 
   // must not be used
   input_ = nullptr;
-  update_current_resumable_id(parent_id);
+  update_current_resumable_id(parent_id, is_internal_resumable());
 
   return res;
 }
@@ -51,6 +53,8 @@ bool Resumable::resume(int64_t resumable_id, Storage *input) {
 void Resumable::update_output() {
   output_ = in_main_thread() ? nullptr : get_storage(runned_resumable_id);
 }
+
+int64_t first_forked_resumable_id;
 
 namespace {
 
@@ -79,7 +83,6 @@ struct started_resumable_info : resumable_info {
   int64_t fork_id;
 };
 
-int64_t first_forked_resumable_id;
 int64_t first_array_forked_resumable_id;
 int64_t current_forked_resumable_id = 1123456789;
 forked_resumable_info *forked_resumables;
@@ -206,7 +209,7 @@ int64_t register_forked_resumable(Resumable *resumable) {
   return res_id;
 }
 
-static inline void update_current_resumable_id(int64_t new_id) {
+static inline void update_current_resumable_id(int64_t new_id, bool is_internal) {
   int64_t old_running_fork = f$get_running_fork_id();
   runned_resumable_id = new_id;
   int64_t new_running_fork = f$get_running_fork_id();
@@ -217,6 +220,9 @@ static inline void update_current_resumable_id(int64_t new_id) {
     }
     if (new_running_fork) {
       get_forked_resumable_info(new_running_fork)->running_time -= get_precise_now();
+    }
+    if (!is_internal && kphp_tracing::is_turned_on()) {
+      kphp_tracing::on_fork_switch(new_running_fork);
     }
   }
   Resumable::update_output();
@@ -323,7 +329,7 @@ Resumable *get_started_resumable(int64_t resumable_id) {
 static void add_resumable_to_queue(int64_t resumable_id, forked_resumable_info *resumable) {
   int64_t queue_id = resumable->queue_id;
   wait_queue *q = get_wait_queue(queue_id);
-  tvkprintf(resumable, 1, "Push resumable %" PRIi64 " to queue %" PRIi64 "(%" PRIi64 ", %" PRIi64 ", %" PRIi32 ") at %.6lf\n",
+  tvkprintf(resumable, 2, "Push resumable %" PRIi64 " to queue %" PRIi64 "(%" PRIi64 ", %" PRIi64 ", %" PRIi32 ") at %.6lf\n",
             resumable_id, resumable->queue_id, q->resumable_id, q->first_finished_function, q->left_functions, (update_precise_now(), get_precise_now()));
 
   resumable->queue_id = q->first_finished_function;
@@ -345,7 +351,12 @@ static void free_resumable_continuation(resumable_info *res) noexcept {
 
 static void finish_forked_resumable(int64_t resumable_id) noexcept {
   forked_resumable_info *res = get_forked_resumable_info(resumable_id);
+  bool is_internal = res->continuation->is_internal_resumable();
+
   free_resumable_continuation(res);
+  if (!is_internal && kphp_tracing::is_turned_on()) {
+    kphp_tracing::on_fork_finish(resumable_id);
+  }
 
   if (res->queue_id > 100000000) {
     php_assert(is_started_resumable_id(res->queue_id));
@@ -434,7 +445,7 @@ static void resumable_add_finished(int64_t resumable_id) {
     finished_resumables_size *= 2;
   }
 
-  tvkprintf(resumable, 1, "Resumable %" PRIi64 " put to position %" PRIu32 " of finished list\n", resumable_id, finished_resumables_count);
+  tvkprintf(resumable, 3, "Resumable %" PRIi64 " put to position %" PRIu32 " of finished list\n", resumable_id, finished_resumables_count);
   finished_resumables[finished_resumables_count++] = resumable_id;
 }
 
@@ -471,6 +482,7 @@ static void debug_print_resumables() noexcept {
 static bool wait_started_resumable(int64_t resumable_id) noexcept;
 
 Storage *start_resumable_impl(Resumable *resumable) noexcept {
+  check_script_timeout();
   int64_t id = register_started_resumable(resumable);
 
   if (resumable->resume(id, nullptr)) {
@@ -496,6 +508,13 @@ Storage *start_resumable_impl(Resumable *resumable) noexcept {
 int64_t fork_resumable(Resumable *resumable) noexcept {
   int64_t id = register_forked_resumable(resumable);
 
+  if (kphp_tracing::is_turned_on()) {
+    kphp_tracing::on_fork_start(id);
+    if (unlikely(kphp_tracing::cur_trace_level >= 2)) {
+      kphp_tracing::on_fork_provide_name(id, string{typeid(*resumable).name()});
+    }
+  }
+
   if (resumable->resume(id, nullptr)) {
     finish_forked_resumable(id);
   }
@@ -513,7 +532,7 @@ static void continue_resumable(resumable_info *res, int64_t resumable_id) noexce
 }
 
 void resumable_run_ready(int64_t resumable_id) {
-  tvkprintf(resumable, 1, "Run ready %" PRIi64 "\n", resumable_id);
+  tvkprintf(resumable, 2, "Run ready resumable %" PRIi64 "\n", resumable_id);
   if (resumable_id > 1000000000) {
     forked_resumable_info *res = get_forked_resumable_info(resumable_id);
     php_assert(res->queue_id >= 0);
@@ -536,7 +555,7 @@ void run_scheduler(double timeout) __attribute__((section("run_scheduler_section
 static int64_t scheduled_resumable_id = 0;
 
 void run_scheduler(double dead_line_time) {
-  tvkprintf(resumable, 1, "Run scheduler %" PRIu32 "\n", finished_resumables_count);
+  tvkprintf(resumable, 2, "Run scheduler with finished resumables count %" PRIu32 "\n", finished_resumables_count);
   int32_t left_resumables = 1000;
   bool force_run_next = false;
   while (resumable_has_finished() && --left_resumables >= 0) {
@@ -556,7 +575,7 @@ void run_scheduler(double dead_line_time) {
     started_resumable_info *res = get_started_resumable_info(resumable_id);
     php_assert(res->continuation == nullptr);
 
-    tvkprintf(resumable, 1, "Process %" PRIi64 "(%s) with parent %" PRIi64 " in scheduler\n",
+    tvkprintf(resumable, 3, "Process %" PRIi64 "(%s) with parent %" PRIi64 " in scheduler\n",
               resumable_id, is_yielded ? "yielded" : "not yielded", res->parent_id);
     int64_t parent_id = res->parent_id;
     if (parent_id == 0) {
@@ -721,6 +740,10 @@ static int32_t wait_timeout_wakeup_id = -1;
 
 class wait_resumable final : public ResumableWithTimer {
 public:
+  bool is_internal_resumable() const noexcept final {
+    return true;
+  }
+
   explicit wait_resumable(int64_t child_id) noexcept:
     child_id_(child_id) {
   }
@@ -800,7 +823,7 @@ bool wait_without_result(int64_t resumable_id, double timeout) {
   }
 
   bool has_timeout = true;
-  if (timeout <= 0 || timeout > MAX_TIMEOUT) {
+  if (timeout < 0 || timeout > MAX_TIMEOUT) {
     has_timeout = false;
     timeout = MAX_TIMEOUT;
   } else {
@@ -819,7 +842,21 @@ bool wait_without_result(int64_t resumable_id, double timeout) {
   }
 
   if (resumable->queue_id > 0) {
-    php_warning("Resumable is already waited by other thread");
+    int waiter_id = resumable->queue_id;
+    Resumable *waiter_fork = nullptr;
+    Resumable *waiter_resumable = nullptr;
+    int fork_id = -1;
+    if (is_started_resumable_id(waiter_id)) {
+      auto *info = get_started_resumable_info(waiter_id);
+      waiter_resumable = info->continuation;
+      fork_id = info->fork_id;
+      if (fork_id != 0) {
+        waiter_fork = get_forked_resumable_info(fork_id)->continuation;
+      }
+    }
+    php_warning("Resumable is already waited by other thread: waiter=%d(%s), fork=%d(%s), running_resumable_id=%d",
+                waiter_id, waiter_resumable ? typeid(*waiter_resumable).name() : "null", fork_id, waiter_fork ? typeid(*waiter_fork).name() : "null",
+                static_cast<int>(runned_resumable_id));
     last_wait_error = "Someone already waits for this resumable";
     return false;
   }
@@ -899,7 +936,7 @@ static int64_t wait_queue_push(int64_t queue_id, int64_t resumable_id) {
   if (resumable->queue_id == 0) {
     resumable->queue_id = queue_id;
 
-    tvkprintf(resumable, 1, "Link resumable %" PRIi64 " with queue %" PRIi64 " at %.6lf\n",
+    tvkprintf(resumable, 3, "Link resumable %" PRIi64 " with queue %" PRIi64 " at %.6lf\n",
               resumable_id, queue_id, (update_precise_now(), get_precise_now()));
     q->left_functions++;
   } else {
@@ -1071,6 +1108,10 @@ static int32_t wait_queue_timeout_wakeup_id = -1;
 
 class wait_queue_resumable final : public ResumableWithTimer {
 public:
+  bool is_internal_resumable() const noexcept final {
+    return true;
+  }
+
   explicit wait_queue_resumable(int64_t queue_id) noexcept:
     queue_id_(queue_id) {
   }
@@ -1111,7 +1152,7 @@ static void process_wait_queue_timeout(kphp_event_timer *timer) {
 Optional<int64_t> f$wait_queue_next(int64_t queue_id, double timeout) {
   resumable_finished = true;
 
-  tvkprintf(resumable, 1, "Waiting for queue %" PRIi64 "\n", queue_id);
+  tvkprintf(resumable, 3, "Waiting for queue %" PRIi64 "\n", queue_id);
   if (!is_wait_queue_id(queue_id)) {
     if (queue_id != -1) {
       php_warning("Wrong queue_id %" PRIi64 " in function wait_queue_next", queue_id);
@@ -1135,8 +1176,8 @@ Optional<int64_t> f$wait_queue_next(int64_t queue_id, double timeout) {
     wait_net(0);
 
     return q->first_finished_function == -2
-      ? Optional<int64_t>{false}
-      : Optional<int64_t>{-q->first_finished_function};
+           ? Optional<int64_t>{false}
+           : Optional<int64_t>{-q->first_finished_function};
   }
 
   bool has_timeout = true;
@@ -1153,8 +1194,8 @@ Optional<int64_t> f$wait_queue_next(int64_t queue_id, double timeout) {
 
     q = get_wait_queue(queue_id);//can change in scheduler
     return q->first_finished_function == -2
-      ? Optional<int64_t>{false}
-      : Optional<int64_t>{-q->first_finished_function};
+           ? Optional<int64_t>{false}
+           : Optional<int64_t>{-q->first_finished_function};
   }
 
   wait_queue_resumable *res = new wait_queue_resumable(queue_id);

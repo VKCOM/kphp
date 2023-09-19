@@ -9,8 +9,10 @@
 #include "common/rpc-error-codes.h"
 #include "common/wrappers/overloaded.h"
 #include "net/net-connections.h"
+#include "runtime/curl.h"
 #include "runtime/job-workers/job-interface.h"
 #include "runtime/rpc.h"
+#include "server/curl-adaptor.h"
 #include "server/database-drivers/adaptor.h"
 #include "server/database-drivers/request.h"
 #include "server/job-workers/job-stats.h"
@@ -30,32 +32,42 @@ double PhpWorker::enter_lifecycle() noexcept {
   }
   on_wakeup();
 
+  tvkprintf(php_runner, 3, "PHP-worker enter lifecycle [php-script state = %d, conn status = %d] lifecycle [req_id = %016llx]\n",
+            php_script ? static_cast<int>(php_script->state) : -1, conn->status, req_id);
   paused = false;
   do {
     switch (state) {
       case phpq_try_start:
+        tvkprintf(php_runner, 1, "PHP-worker try start [req_id = %016llx]\n", req_id);
         state_try_start();
         break;
 
       case phpq_init_script:
+        tvkprintf(php_runner, 1, "PHP-worker init PHP-script [req_id = %016llx]\n", req_id);
         state_init_script();
         break;
 
       case phpq_run:
+        tvkprintf(php_runner, 3, "execute PHP-worker [req_id = %016llx]\n", req_id);
         state_run();
         break;
 
       case phpq_free_script:
+        get_utime_monotonic();
+        tvkprintf(php_runner, 1, "PHP-worker free PHP-script [query worked = %.5lf] [query waited for start = %.5lf] [req_id = %016llx]\n", precise_now - start_time, start_time - init_time, req_id);
         state_free_script();
         break;
 
       case phpq_finish:
+        tvkprintf(php_runner, 1, "finish PHP-worker [req_id = %016llx]\n", req_id);
         state_finish();
         return 0;
     }
     get_utime_monotonic();
   } while (!paused);
 
+  tvkprintf(php_runner, 3, "PHP-worker [php-script state = %d, conn status = %d] return in net reactor [req_id = %016llx]\n",
+            php_script ? static_cast<int>(php_script->state) : -1, conn->status, req_id);
   assert(conn->status == conn_wait_net);
   return get_timeout();
 }
@@ -65,7 +77,7 @@ void PhpWorker::terminate(int flag, script_error_t terminate_reason_, const char
   terminate_reason = terminate_reason_;
   error_message = error_message_;
   if (flag) {
-    vkprintf(0, "php_worker_terminate\n");
+    kprintf("terminate PHP-worker with message %s\n", error_message_);
     conn = nullptr;
   }
 }
@@ -88,7 +100,7 @@ void PhpWorker::state_try_start() noexcept {
   }
 
   if (php_worker_run_flag) { // put connection into pending_http_query
-    vkprintf(2, "php script [req_id = %016llx] is waiting\n", req_id);
+    tvkprintf(php_runner, 2, "PHP-worker is waiting [req_id = %016llx]\n", req_id);
 
     auto *pending_q = reinterpret_cast<conn_query *>(malloc(sizeof(conn_query)));
 
@@ -133,7 +145,6 @@ void PhpWorker::state_init_script() noexcept {
 
   get_utime_monotonic();
   start_time = precise_now;
-  vkprintf(1, "START php script [req_id = %016llx]\n", req_id);
   assert(active_worker == nullptr);
   active_worker = this;
   vk::singleton<ServerStats>::get().set_running_worker_status();
@@ -168,7 +179,7 @@ void php_worker_run_rpc_send_query(int32_t request_id, const net_queries_data::r
   } else {
     int new_conn_cnt = create_new_connections(target);
     if (new_conn_cnt <= 0 && get_target_connection(target, 1) == nullptr) {
-      on_net_event(create_rpc_error_event(slot_id, TL_ERROR_NO_CONNECTIONS, "Failed to establish connection [probably reconnect timeout is not expired]", nullptr));
+      on_net_event(create_rpc_error_event(slot_id, TL_ERROR_NO_CONNECTIONS_IN_RPC_CLIENT, "Failed to establish connection [probably reconnect timeout is not expired]", nullptr));
       return;
     }
 
@@ -191,15 +202,20 @@ void php_worker_run_net_queue(PhpWorker *worker __attribute__((unused))) {
                    php_assert(query->slot_id == data->request_id);
                    vk::singleton<database_drivers::Adaptor>::get().process_external_db_request_net_query(std::unique_ptr<database_drivers::Request>(data));
                  },
-               },
+                 [&](const curl_async::CurlRequest &request) {
+                   php_assert(query->slot_id == request.request_id);
+                   vk::singleton<curl_async::CurlAdaptor>::get().process_request_net_query(request);
+                 }},
                query->data);
   }
 }
 
 void PhpWorker::state_run() noexcept {
+  tvkprintf(php_runner, 3, "execute PHP-worker [req_id = %016llx]\n", req_id);
   int f = 1;
   while (f) {
     if (terminate_flag) {
+      tvkprintf(php_runner, 1, "PHP-worker terminate PHP-script [req_id = %016llx]\n", req_id);
       php_script->terminate(error_message, terminate_reason);
     }
 
@@ -212,12 +228,12 @@ void PhpWorker::state_run() noexcept {
           paused = true;
           vk::singleton<ServerStats>::get().set_wait_net_worker_status();
           conn->status = conn_wait_net;
-          vkprintf(2, "php_script_iterate [req_id = %016llx] delayed due to net events\n", req_id);
+          tvkprintf(php_runner, 3, "PHP-script delayed due to net event [req_id = %016llx]\n", req_id);
           break;
         }
-        vkprintf(2, "before php_script_iterate [req_id = %016llx] (before swap context)\n", req_id);
+        tvkprintf(php_runner, 3, "PHP-worker before swap context [req_id = %016llx]\n", req_id);
         php_script->iterate();
-        vkprintf(2, "after php_script_iterate [req_id = %016llx] (after swap context)\n", req_id);
+        tvkprintf(php_runner, 3, "PHP-worker after swap context [req_id = %016llx]\n", req_id);;
         wait(0); // check for net events
         break;
       }
@@ -227,24 +243,24 @@ void PhpWorker::state_run() noexcept {
           paused = true;
           vk::singleton<ServerStats>::get().set_wait_net_worker_status();
           conn->status = conn_wait_net;
-          vkprintf(2, "query [req_id = %016llx] delayed due to net events\n", req_id);
+          tvkprintf(php_runner, 3, "PHP-worker delay query due to net events [req_id = %016llx]\n", req_id);
           break;
         }
-        vkprintf(2, "got query [req_id = %016llx]\n", req_id);
+        tvkprintf(php_runner, 2, "PHP-worker run query %016llx [req_id = %016llx]\n", query_stats_id, req_id);
         run_query();
         php_worker_run_net_queue(this);
         wait(0); // check for net events
         break;
       }
       case run_state_t::query_running: {
-        vkprintf(2, "paused due to query [req_id = %016llx]\n", req_id);
+        tvkprintf(php_runner, 2, "PHP-worker paused due to query [req_id = %016llx]\n", req_id);
         f = 0;
         paused = true;
         vk::singleton<ServerStats>::get().set_wait_net_worker_status();
         break;
       }
       case run_state_t::error: {
-        vkprintf(2, "php script [req_id = %016llx]: ERROR (probably timeout)\n", req_id);
+        tvkprintf(php_runner, 1, "PHP-worker catch error [req_id = %016llx]\n", req_id);
         if (dl::is_malloc_replaced()) {
           // in case the error happened when malloc was replaced
           dl::rollback_malloc_replacement();
@@ -281,7 +297,7 @@ void PhpWorker::state_run() noexcept {
         break;
       }
       case run_state_t::finished: {
-        vkprintf(2, "php script [req_id = %016llx]: OK (still can return RPC_ERROR)\n", req_id);
+        tvkprintf(php_runner, 1, "PHP-worker finish PHP-script [req_id = %016llx]\n", req_id);
         script_result *res = php_script->res;
         set_result(res);
         php_script->finish();
@@ -306,7 +322,7 @@ void PhpWorker::wait(int timeout_ms) noexcept {
     int new_net_events_cnt = epoll_fetch_events(0);
     // TODO: maybe we have to wait for timers too
     if (epoll_event_heap_size() > 0) {
-      vkprintf(2, "paused for some nonblocking net activity [req_id = %016llx]\n", req_id);
+      tvkprintf(php_runner, 3, "PHP-worker paused for nonblocking net activity [req_id = %016llx]\n", req_id);
       wakeup();
       return;
     } else {
@@ -317,7 +333,7 @@ void PhpWorker::wait(int timeout_ms) noexcept {
     if (!net_events_empty()) {
       waiting = 0;
     } else {
-      vkprintf(2, "paused for some blocking net activity [req_id = %016llx] [timeout = %.3lf]\n", req_id, timeout_ms * 0.001);
+      tvkprintf(php_runner, 3, "PHP-worker paused for blocking net activity [req_id = %016llx] [timeout = %.3lf]\n", req_id, timeout_ms * 0.001);
       wakeup_time = get_utime_monotonic() + timeout_ms * 0.001;
     }
   }
@@ -377,22 +393,14 @@ void PhpWorker::state_free_script() noexcept {
   php_worker_run_flag = 0;
   int f = 0;
 
-  get_utime_monotonic();
-  double worked = precise_now - start_time;
-  double waited = start_time - init_time;
-
   assert(active_worker == this);
   active_worker = nullptr;
-  vkprintf(1, "FINISH php script [query worked = %.5lf] [query waited for start = %.5lf] [req_id = %016llx]\n", worked, waited, req_id);
   vk::singleton<ServerStats>::get().set_idle_worker_status();
   if (mode == once_worker) {
     static int left = run_once_count;
     if (!--left) {
       turn_sigterm_on();
     }
-  }
-  if (worked + waited > 1.0) {
-    vkprintf(1, "ATTENTION php script [query worked = %.5lf] [query waited for start = %.5lf] [req_id = %016llx]\n", worked, waited, req_id);
   }
 
   while (pending_http_queue.first_query != (conn_query *)&pending_http_queue && !f) {
@@ -418,7 +426,6 @@ void PhpWorker::state_free_script() noexcept {
 }
 
 void PhpWorker::state_finish() noexcept {
-  vkprintf(2, "free php script [req_id = %016llx]\n", req_id);
   clear_shared_job_messages(); // it's here because `phpq_free_script` state is skipped when worker->terminate_flag == true
   lease_on_worker_finish(this);
 }
@@ -459,7 +466,7 @@ PhpWorker::PhpWorker(php_worker_mode_t mode_, connection *c, http_query_data *ht
   } else {
     target_fd = -1;
   }
-  vkprintf(2, "create php script [req_id = %016llx]\n", req_id);
+  tvkprintf(php_runner, 1, "initialize PHP-worker [req_id = %016llx]\n", req_id);
 }
 
 PhpWorker::~PhpWorker() {

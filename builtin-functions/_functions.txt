@@ -14,6 +14,7 @@ if (0) {
 }
 
 require_once __DIR__ . '/kphp_internal.txt';
+require_once __DIR__ . '/kphp_tracing.txt';
 require_once __DIR__ . '/uberh3.txt';
 require_once __DIR__ . '/spl.txt';
 require_once __DIR__ . '/ffi.txt';
@@ -671,6 +672,7 @@ function wordwrap ($str ::: string, $width ::: int = 75, $break ::: string = '\n
 function ip2long ($ip ::: string) ::: int | false;
 function ip2ulong ($ip ::: string) ::: string | false;
 function long2ip ($ip ::: int) ::: string;
+function thread_pool_test_load($size ::: int, $n ::: int, $a ::: float, $b ::: float) ::: float;
 
 function get_magic_quotes_gpc() ::: bool;
 function php_sapi_name() ::: string;
@@ -991,10 +993,8 @@ function rpc_server_fetch_request() ::: @tl\RpcFunction;
 /** @kphp-extern-func-info can_throw */
 function rpc_server_store_response(@tl\RpcFunctionReturnResult $response) ::: void;
 
-function convert_tl_function_magic_to_name(int $magic): string;
-
 /** @kphp-extern-func-info can_throw resumable cpp_template_call */
-function wait(future<any> | false $id) ::: ^1[*] | null;
+function wait(future<any> | false $id, float $timeout = -1.0) ::: ^1[*] | null;
 /** @kphp-extern-func-info can_throw resumable cpp_template_call */
 function wait_multi (future<any>[] $resumables) ::: (^1[*][*] | null)[];
 /** @kphp-extern-func-info can_throw cpp_template_call */
@@ -1084,6 +1084,9 @@ function curl_getinfo ($curl_handle ::: int, $option ::: int = 0) ::: mixed;
 function curl_error ($curl_handle ::: int) ::: string;
 function curl_errno ($curl_handle ::: int) ::: int;
 function curl_close ($curl_handle ::: int) ::: void;
+
+/** @kphp-extern-func-info resumable */
+function curl_exec_concurrently($curl_handle ::: int, $timeout ::: float = 1.0): string|false;
 
 function curl_multi_init () ::: int;
 function curl_multi_add_handle ($multi_handle ::: int, $curl_handle ::: int) ::: int|false;
@@ -1398,6 +1401,11 @@ class KphpJobWorkerResponseError implements KphpJobWorkerResponse {
   const JOB_CLIENT_MEMORY_LIMIT_ERROR = -1001; // client doesn't have enough memory to accept job response
   const JOB_NOTHING_REPLIED_ERROR = -2001;     // kphp_job_worker_store_response() was not succeeded
 
+  const JOB_STORE_RESPONSE_INCORRECT_CALL_ERROR = -3000;
+  const JOB_STORE_RESPONSE_NOT_ENOUGH_SHARED_MESSAGES_ERROR = -3001;
+  const JOB_STORE_RESPONSE_TOO_BIG_ERROR = -3002;
+  const JOB_STORE_RESPONSE_CANT_SEND_ERROR = -3003;
+
   public function getError() ::: string;
   public function getErrorCode() ::: int; // returns one of listed above error codes
 }
@@ -1407,7 +1415,8 @@ function kphp_job_worker_start_no_reply(KphpJobWorkerRequest $request, float $ti
 function kphp_job_worker_start_multi(KphpJobWorkerRequest[] $request, float $timeout) ::: (future<KphpJobWorkerResponse> | false)[];
 
 function kphp_job_worker_fetch_request() ::: KphpJobWorkerRequest;
-function kphp_job_worker_store_response(KphpJobWorkerResponse $response) ::: void;
+// returns 0 on success, < 0 - on errors. All possible error codes are constants like KphpJobWorkerResponseError::JOB_STORE_RESPONSE_*
+function kphp_job_worker_store_response(KphpJobWorkerResponse $response) ::: int;
 
 function is_kphp_job_workers_enabled() ::: bool;
 

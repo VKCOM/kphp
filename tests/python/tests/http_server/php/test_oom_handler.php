@@ -23,7 +23,7 @@ function make_oom_error() {
 }
 
 function make_timeout_error() {
-  safe_sleep(1.5);
+  safe_sleep(2);
 }
 
 function fake_query(float $time_to_sleep) {

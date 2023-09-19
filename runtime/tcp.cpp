@@ -4,7 +4,6 @@
 
 #include <cerrno>
 #include <fcntl.h>
-#include <functional>
 #include <netdb.h>
 #include <sys/poll.h>
 
@@ -25,7 +24,8 @@ std::byte opened_tcp_sockets_storage[sizeof(array<FILE *>)];
 array<FILE *> *opened_tcp_client_sockets = reinterpret_cast<array<FILE *> *>(opened_tcp_sockets_storage);
 
 namespace details {
-Optional<std::pair<string, int64_t>> parse_url(const string &url, const std::function<void(int64_t, const string &, string)> &faulter) {
+template <typename F>
+Optional<std::pair<string, int64_t>> parse_url(const string &url, F &&faulter) {
   string url_to_parse = url;
   if (!url_to_parse.starts_with(string("tcp://"))) {
     faulter(-7, string("\"%s\" doesn't start with tcp"), url_to_parse);
@@ -53,7 +53,8 @@ Optional<std::pair<string, int64_t>> parse_url(const string &url, const std::fun
   return std::pair<string, int64_t>(host, port);
 }
 
-Optional<int64_t> connect_to_address(const string &host, int64_t port, double end_time, const std::function<void(int64_t, const string &, string)> &faulter) {
+template <typename F>
+Optional<int64_t> connect_to_address(const string &host, int64_t port, double end_time, F &&faulter) {
   assert(dl::in_critical_section > 0);
   addrinfo *result = nullptr;
   int get_result = getaddrinfo(host.c_str(), string(port).c_str(), &tcp_hints, &result); /*allocation */

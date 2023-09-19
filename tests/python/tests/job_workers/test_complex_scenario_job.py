@@ -8,6 +8,7 @@ class TestComplexScenarioJob(KphpServerAutoTestCase):
     def extra_class_setup(cls):
         cls.kphp_server.update_options({
             "--workers-num": 18,
+            "--job-workers-shared-memory-distribution-weights": '2,2,2,2,1,1,1,1,1,1',
             "--job-workers-ratio": 0.16,
             "--verbosity-job-workers=2": True,
         })
@@ -62,11 +63,12 @@ class TestComplexScenarioJob(KphpServerAutoTestCase):
             for _ in pool.imap_unordered(self.do_test, range(requests_count)):
                 pass
         self.kphp_server.assert_stats(
+            timeout=10,
             prefix="kphp_server.workers_job_",
             expected_added_stats={
                 "memory_messages_shared_messages_buffers_acquired": requests_count * 10,
                 "memory_messages_shared_messages_buffers_released": requests_count * 10,
-                "memory_messages_shared_messages_buffers_reserved": 2 * (15 + 3),
+                "memory_messages_shared_messages_buffers_reserved": 164,
                 "jobs_queue_size": 0,
                 "jobs_sent": requests_count * 5,
                 "jobs_replied": requests_count * 5,

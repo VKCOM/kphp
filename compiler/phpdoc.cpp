@@ -13,6 +13,7 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/data/generics-mixins.h"
 #include "compiler/lexer.h"
 #include "compiler/modulite-check-rules.h"
 #include "compiler/name-gen.h"
@@ -41,7 +42,7 @@ struct KnownPhpDocTag {
 };
 
 class AllDocTags {
-  static constexpr int N_TAGS = 40;
+  static constexpr int N_TAGS = 41;
   static const KnownPhpDocTag ALL_TAGS[N_TAGS];
 
 public:
@@ -85,6 +86,7 @@ const KnownPhpDocTag AllDocTags::ALL_TAGS[] = {
   KnownPhpDocTag("@kphp-pure-function", PhpDocType::kphp_pure_function),
   KnownPhpDocTag("@kphp-template", PhpDocType::kphp_template),
   KnownPhpDocTag("@kphp-generic", PhpDocType::kphp_generic),
+  KnownPhpDocTag("@kphp-tracing", PhpDocType::kphp_tracing),
   KnownPhpDocTag("@kphp-param", PhpDocType::kphp_param),
   KnownPhpDocTag("@kphp-return", PhpDocType::kphp_return),
   KnownPhpDocTag("@kphp-memcache-class", PhpDocType::kphp_memcache_class),

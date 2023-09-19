@@ -49,6 +49,7 @@ private:
 extern SlotIdsFactory rpc_ids_factory;
 extern SlotIdsFactory parallel_job_ids_factory;
 extern SlotIdsFactory external_db_requests_factory;
+extern SlotIdsFactory curl_requests_factory;
 
 void init_slot_factories();
 void free_slot_factories();

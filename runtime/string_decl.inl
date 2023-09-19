@@ -31,6 +31,8 @@ struct tmp_string {
   bool empty() const noexcept { return size == 0; }
 };
 
+struct ArrayBucketDummyStrTag;
+
 class string {
 public:
   using size_type = string_size_type;
@@ -101,8 +103,13 @@ public:
   inline explicit string(int32_t i): string(static_cast<int64_t>(i)) {}
   inline explicit string(double f);
 
-
   ~string() noexcept;
+
+  // Achtung! Do not use it!
+  // This constructor intended ONLY for usage inside array's bucket
+  // in order to being able to distinguish which key type is stored there
+  inline explicit string(ArrayBucketDummyStrTag) noexcept;
+  inline bool is_dummy_string() const noexcept;
 
   inline string &operator=(const string &str) noexcept;
   inline string &operator=(string &&str) noexcept;
