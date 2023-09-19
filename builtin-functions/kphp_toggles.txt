@@ -1,0 +1,13 @@
+<?php
+
+// Functions declared in this file are actually toggles to enable or disable some functionality in KPHP runtime.
+
+function set_migration_php8_warning ($mask ::: int) ::: void;
+
+function set_detect_incorrect_encoding_names_warning(bool $show) ::: void;
+
+function set_json_log_on_timeout_mode(bool $enabled) ::: void;
+
+function set_json_log_demangle_stacktrace(bool $enable) ::: void;
+
+function set_use_updated_gmmktime(bool $enable) ::: void;
