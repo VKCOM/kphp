@@ -1394,7 +1394,7 @@ void check_and_instance_cache_try_swap_memory() {
   }
 }
 
-static void cron() {
+static void master_cron() {
   if (!other->is_alive || in_old_master_on_restart()) {
     // write stats at the beginning to avoid spikes in graphs
     send_data_to_statsd_with_prefix(vk::singleton<ServerConfig>::get().get_statsd_prefix(), stats_tag_kphp_server);
@@ -1620,7 +1620,7 @@ WorkerType run_master() {
     const auto new_tp = get_steady_tp_ms_now();
     if (new_tp - prev_cron_start_tp >= 1s) {
       prev_cron_start_tp = new_tp;
-      cron();
+      master_cron();
     }
   }
 }

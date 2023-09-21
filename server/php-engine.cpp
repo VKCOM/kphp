@@ -6,6 +6,7 @@
 
 #include <cassert>
 #include <cerrno>
+#include <chrono>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
@@ -1416,12 +1417,16 @@ static void sigusr1_handler(const int sig) {
   pending_signals = pending_signals | (1ll << sig);
 }
 
-void cron() {
+void worker_cron() {
   if (master_flag == -1 && getppid() == 1) {
     turn_sigterm_on();
   }
   vk::singleton<SharedDataWorkerCache>::get().on_worker_cron();
   vk::singleton<ServerStats>::get().update_this_worker_stats();
+  if (StatsHouseClient::has()) {
+    auto virtual_memory_stat = get_self_mem_stats();
+    StatsHouseClient::get().send_worker_memory_stats(virtual_memory_stat);
+  }
 }
 
 void reopen_json_log() {
@@ -1445,7 +1450,7 @@ void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port) n
   }
 
   int http_port, http_sfd = -1;
-  int prev_time = 0;
+  double last_cron_time = 0;
   double next_create_outbound = 0;
 
   switch (worker_type) {
@@ -1568,9 +1573,9 @@ void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port) n
       reopen_json_log();
     }
 
-    if (now != prev_time) {
-      prev_time = now;
-      cron();
+    if (precise_now - last_cron_time >= 1.0) {
+      last_cron_time = precise_now;
+      worker_cron();
     }
 
     if (worker_type == WorkerType::general_worker) {

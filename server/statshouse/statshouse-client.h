@@ -39,7 +39,7 @@ public:
 
   void send_job_common_memory_stats(uint64_t job_common_request_memory_used, uint64_t job_common_request_real_memory_used);
 
-  void send_worker_memory_stats(WorkerType raw_worker_type, const mem_info_t &mem_stats);
+  void send_worker_memory_stats(const mem_info_t &mem_stats);
 
   /**
    * Must be called from master process only

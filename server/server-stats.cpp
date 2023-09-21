@@ -604,7 +604,6 @@ void ServerStats::after_fork(pid_t worker_pid, uint64_t active_connections, uint
   gen_->seed(worker_pid);
   shared_stats_->workers.reset_worker_stats(worker_pid, active_connections, max_connections, worker_process_id_);
   last_update_aggr_stats = std::chrono::steady_clock::now();
-  last_update_statshouse = std::chrono::steady_clock::now();
 }
 
 void ServerStats::add_request_stats(double script_time_sec, double net_time_sec, int64_t script_queries, int64_t long_script_queries, int64_t memory_used,
@@ -648,12 +647,6 @@ void ServerStats::update_this_worker_stats() noexcept {
   if (now_tp - last_update_aggr_stats >= std::chrono::seconds{5}) {
     shared_stats_->workers.update_worker_stats(worker_process_id_);
     last_update_aggr_stats = now_tp;
-  }
-
-  if (StatsHouseClient::has() && (now_tp - last_update_statshouse >= std::chrono::seconds{1})) {
-    auto virtual_memory_stat = get_self_mem_stats();
-    StatsHouseClient::get().send_worker_memory_stats(worker_type_, virtual_memory_stat);
-    last_update_statshouse = now_tp;
   }
 }
 

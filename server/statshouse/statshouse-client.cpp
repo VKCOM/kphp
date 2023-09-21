@@ -8,6 +8,7 @@
 #include "runtime/instance-cache.h"
 #include "server/job-workers/shared-memory-manager.h"
 #include "server/json-logger.h"
+#include "server/php-engine-vars.h"
 #include "server/server-config.h"
 #include "server/server-stats.h"
 
@@ -57,9 +58,9 @@ void StatsHouseClient::send_job_common_memory_stats(uint64_t job_common_request_
   transport.metric("kphp_job_common_request_memory").tag(cluster_name).tag("real_used").write_value(job_common_request_real_memory_used);
 }
 
-void StatsHouseClient::send_worker_memory_stats(WorkerType raw_worker_type, const mem_info_t &mem_stats) {
+void StatsHouseClient::send_worker_memory_stats(const mem_info_t &mem_stats) {
   const char *cluster_name = vk::singleton<ServerConfig>::get().get_cluster_name();
-  const char *worker_type = raw_worker_type == WorkerType::general_worker ? "general" : "job";
+  const char *worker_type = process_type == ProcessType::job_worker ? "job" : "general";
   transport.metric("kphp_workers_memory").tag(cluster_name).tag(worker_type).tag("vm_peak").write_value(mem_stats.vm_peak);
   transport.metric("kphp_workers_memory").tag(cluster_name).tag(worker_type).tag("vm").write_value(mem_stats.vm);
   transport.metric("kphp_workers_memory").tag(cluster_name).tag(worker_type).tag("rss").write_value(mem_stats.rss);
