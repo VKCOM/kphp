@@ -1423,10 +1423,8 @@ void worker_cron() {
   }
   vk::singleton<SharedDataWorkerCache>::get().on_worker_cron();
   vk::singleton<ServerStats>::get().update_this_worker_stats();
-  if (StatsHouseClient::has()) {
-    auto virtual_memory_stat = get_self_mem_stats();
-    StatsHouseClient::get().send_worker_memory_stats(virtual_memory_stat);
-  }
+  auto virtual_memory_stat = get_self_mem_stats();
+  StatsHouseClient::get().send_worker_memory_stats(virtual_memory_stat);
 }
 
 void reopen_json_log() {

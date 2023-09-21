@@ -17,18 +17,12 @@
 
 class StatsHouseClient : vk::not_copyable {
 public:
-  static void init(std::string ip, int port) {
-    static StatsHouseClient client{ip, port};
-    inner = &client;
-  }
-
-  static bool has() {
-    return inner != nullptr;
+  static void init(const std::string &ip, int port) {
+    storage_impl(ip, port);
   }
 
   static StatsHouseClient &get() {
-    assert(inner);
-    return *inner;
+    return storage_impl({}, {});
   }
 
   void send_request_stats(WorkerType raw_worker_type, uint64_t script_time_ns, uint64_t net_time_ns, uint64_t memory_used, uint64_t real_memory_used,
@@ -48,7 +42,14 @@ public:
                                long long int instance_cache_memory_swaps_ok, long long int instance_cache_memory_swaps_fail);
 
 private:
+  StatsHouseClient() = default;
   explicit StatsHouseClient(const std::string &ip, int port);
+
+  // returns safe to use dummy instance if wasn't initialized
+  static StatsHouseClient &storage_impl(const std::string &ip, int port) {
+    static StatsHouseClient client{ip, port};
+    return client;
+  }
 
   void add_job_workers_shared_memory_stats(const char *cluster_name, const job_workers::JobStats &job_stats);
 
@@ -58,6 +59,5 @@ private:
   size_t add_job_workers_shared_memory_buffers_stats(const char *cluster_name, const job_workers::JobStats::MemoryBufferStats &memory_buffers_stats,
                                                      const char *size_tag, size_t buffer_size);
 
-  static StatsHouseClient *inner;
   statshouse::TransportUDP transport;
 };

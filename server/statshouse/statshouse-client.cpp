@@ -12,8 +12,6 @@
 #include "server/server-config.h"
 #include "server/server-stats.h"
 
-StatsHouseClient *StatsHouseClient::inner = nullptr;
-
 template<typename T>
 T unpack(const std::atomic<T> &value) {
   return value.load(std::memory_order_relaxed);
