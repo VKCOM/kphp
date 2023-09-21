@@ -17,7 +17,7 @@ struct expr_base;
 struct tl_scheme;
 
 struct tlo_parser {
-  static constexpr unsigned int MAX_SCHEMA_LEN = 1024 * 1024;
+  static constexpr unsigned int MAX_SCHEMA_LEN = 10 * 1024 * 1024;
 
   tlo_parser() = default;
   explicit tlo_parser(const char *tlo_path);
