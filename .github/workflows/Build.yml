@@ -127,7 +127,6 @@ jobs:
           - os: jammy
 
     steps:
-    - uses: actions/checkout@v3
 
     - name: Build and start Docker container
       run: |
