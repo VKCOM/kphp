@@ -1,2 +1,5 @@
 FROM debian:buster
 ARG DEBIAN_FRONTEND=noninteractive
+
+RUN apt update && \
+	apt install wget
