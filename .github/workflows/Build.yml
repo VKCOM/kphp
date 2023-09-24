@@ -131,7 +131,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Build and start Docker container:
+    - name: Build and start Docker container
       run: |
         docker build -f $GITHUB_WORKSPACE/.github/workflows/Dockerfile.${{matrix.os}}.install $GITHUB_WORKSPACE -t kphp-build-img-${{matrix.os}}.install
         docker run -dt --name kphp-build-container-${{matrix.os}}.install kphp-build-img-${{matrix.os}}.install
