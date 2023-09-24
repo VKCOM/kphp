@@ -6,6 +6,6 @@ RUN apt update && \
 	wget -qO /etc/apt/trusted.gpg.d/vkpartner.asc https://artifactory-external.vkpartner.ru/artifactory/api/gpg/key/public && \
 	echo "deb [arch=amd64] https://artifactory-external.vkpartner.ru/artifactory/kphp jammy main" | tee /etc/apt/sources.list.d/vkpartner.list
 
-RUN apt update && apt install -y php7.4-vkext kphp vk-tl-tools && \
+RUN apt update && apt install --fix-broken -y php7.4-vkext kphp vk-tl-tools && \
 	mkdir -p /var/www/vkontakte/data/www/vkontakte.com/tl/ && \
 	tl-compiler -e /var/www/vkontakte/data/www/vkontakte.com/tl/scheme.tlo /usr/share/vkontakte/examples/tl-files/common.tl /usr/share/vkontakte/examples/tl-files/tl.tl
