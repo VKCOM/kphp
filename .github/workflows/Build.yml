@@ -128,8 +128,6 @@ jobs:
           - os: jammy
             compiler: g++
 
-    name: "${{matrix.os}}"
-
     steps:
     - uses: actions/checkout@v3
 
@@ -139,7 +137,7 @@ jobs:
 
     - name: Add apt source
       run: |
-        echo "deb [arch=amd64] https://artifactory-external.vkpartner.ru/artifactory/kphp jammy main" | sudo tee /etc/apt/sources.list.d/vkpartner.list
+        echo "deb [arch=amd64] https://artifactory-external.vkpartner.ru/artifactory/kphp ${{matrix.os}} main" | sudo tee /etc/apt/sources.list.d/vkpartner.list
 
     - name: Install php7.4-vkext
       run: |
