@@ -1,15 +1,16 @@
 FROM debian:buster
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN apt update && \
-	apt install -y --no-install-recommends apt-utils ca-certificates gnupg wget software-properties-common pkg-config && \
+RUN apt-get update && \
 	apt-get install -y --no-install-recommends apt-utils ca-certificates gnupg wget lsb-release && \
     echo "deb https://deb.debian.org/debian buster-backports main" >> /etc/apt/sources.list && \ 
     wget -qO /etc/apt/trusted.gpg.d/vkpartner.asc https://artifactory-external.vkpartner.ru/artifactory/api/gpg/key/public && \
     echo "deb https://artifactory-external.vkpartner.ru/artifactory/kphp buster main" >> /etc/apt/sources.list && \
     wget -qO - https://packages.sury.org/php/apt.gpg | apt-key add - && \
-    echo "deb https://packages.sury.org/php/ buster main" >> /etc/apt/sources.list.d/php.list
+    echo "deb https://packages.sury.org/php/ buster main" >> /etc/apt/sources.list.d/php.list && \
+    rm -rf /var/lib/apt/lists/* && \
+    update-alternatives --set php /usr/bin/php7.4
 	
-RUN apt update && apt install -y git cmake make g++ lld gperf netcat php7.4-vkext kphp vk-tl-tools && \
+RUN apt-get update && apt-get install -y git cmake make g++ lld gperf netcat php7.4-vkext kphp vk-tl-tools && \
 	mkdir -p /var/www/vkontakte/data/www/vkontakte.com/tl/ && \
 	tl-compiler -e /var/www/vkontakte/data/www/vkontakte.com/tl/scheme.tlo /usr/share/vkontakte/examples/tl-files/common.tl /usr/share/vkontakte/examples/tl-files/tl.tl
