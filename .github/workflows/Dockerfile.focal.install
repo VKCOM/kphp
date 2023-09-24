@@ -4,7 +4,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN apt update && \
 	apt install -y --no-install-recommends apt-utils ca-certificates gnupg wget software-properties-common pkg-config && \
 	wget -qO /etc/apt/trusted.gpg.d/vkpartner.asc https://artifactory-external.vkpartner.ru/artifactory/api/gpg/key/public && \
-	echo "deb [arch=amd64] https://artifactory-external.vkpartner.ru/artifactory/kphp jammy main" | tee /etc/apt/sources.list.d/vkpartner.list
+	echo "deb https://artifactory-external.vkpartner.ru/artifactory/kphp focal main" >> /etc/apt/sources.list
 
 RUN apt update && apt install -y git cmake make g++ lld gperf netcat php7.4-vkext kphp vk-tl-tools && \
 	mkdir -p /var/www/vkontakte/data/www/vkontakte.com/tl/ && \
