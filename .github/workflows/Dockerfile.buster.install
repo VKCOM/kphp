@@ -2,7 +2,7 @@ FROM debian:buster
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt update && \
-	apt install -y wget && \
+	apt install -y wget git cmake make g++ lld gperf netcat && \
 	wget -qO /etc/apt/trusted.gpg.d/vkpartner.asc https://artifactory-external.vkpartner.ru/artifactory/api/gpg/key/public && \
 	echo "deb [arch=amd64] https://artifactory-external.vkpartner.ru/artifactory/kphp jammy main" | tee /etc/apt/sources.list.d/vkpartner.list
 	
