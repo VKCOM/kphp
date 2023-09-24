@@ -138,7 +138,7 @@ jobs:
 
     - name: Add trusted key
       run: docker exec kphp-build-container-${{matrix.os}}.install bash -c
-            "wget -qO /etc/apt/trusted.gpg.d/vkpartner.asc https://artifactory-external.vkpartner.ru/artifactory/api/gpg/key/public"
+            "apt install wget && wget -qO /etc/apt/trusted.gpg.d/vkpartner.asc https://artifactory-external.vkpartner.ru/artifactory/api/gpg/key/public"
 
     - name: Add apt source
       run: docker exec kphp-build-container-${{matrix.os}}.install bash -c 
