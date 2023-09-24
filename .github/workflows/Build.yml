@@ -158,8 +158,7 @@ jobs:
       run: |
         echo 'hello world' > demo.php && \
         kphp --mode=cli demo.php && \
-        ./kphp_out/cli &&
-        
+        ./kphp_out/cli
 
   build-macos:
     runs-on: ${{matrix.os}}-12
