@@ -122,18 +122,15 @@ jobs:
       matrix:
         include:
           - os: buster
-            compiler: g++
           - os: focal
-            compiler: g++
           - os: jammy
-            compiler: g++
 
     steps:
     - uses: actions/checkout@v3
 
     - name: Build and start Docker container
       run: |
-        docker build -f $GITHUB_WORKSPACE/.github/workflows/Dockerfile.${{matrix.os}}.install $GITHUB_WORKSPACE -t kphp-build-img-${{matrix.os}}.install
+        docker build -f $GITHUB_WORKSPACE/.github/workflows/Dockerfile.${{matrix.os}} $GITHUB_WORKSPACE -t kphp-build-img-${{matrix.os}}.install
         docker run -dt --name kphp-build-container-${{matrix.os}}.install kphp-build-img-${{matrix.os}}.install
 
     - name: Run php dummy script
