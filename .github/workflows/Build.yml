@@ -116,6 +116,51 @@ jobs:
     - name: Remove docker container
       run: docker rm -f kphp-build-container-${{matrix.os}}
 
+  install-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: buster
+            compiler: g++
+          - os: focal
+            compiler: g++
+          - os: jammy
+            compiler: g++
+
+    name: "${{matrix.os}}"
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Add trusted key
+      run: |
+        wget -qO /etc/apt/trusted.gpg.d/vkpartner.asc https://artifactory-external.vkpartner.ru/artifactory/api/gpg/key/public
+
+    - name: Add apt source
+      run: |
+        echo "deb [arch=amd64] https://artifactory-external.vkpartner.ru/artifactory/kphp jammy main" | sudo tee /etc/apt/sources.list.d/vkpartner.list
+
+    - name: Install php7.4-vkext
+      run: |
+        apt install software-properties-common && \
+        add-apt-repository ppa:ondrej/php -y && \
+        apt update && \
+        apt install php7.4-vkext
+
+    - name: Install kphp
+      run: |
+        apt install kphp vk-tl-tools && \
+        mkdir -p /var/www/vkontakte/data/www/vkontakte.com/tl/ && \
+        tl-compiler -e /var/www/vkontakte/data/www/vkontakte.com/tl/scheme.tlo /usr/share/vkontakte/examples/tl-files/common.tl /usr/share/vkontakte/examples/tl-files/tl.tl
+    
+    - name: Run php dummy script
+      run: |
+        echo 'hello world' > demo.php && \
+        kphp --mode=cli demo.php && \
+        ./kphp_out/cli &&
+        
+
   build-macos:
     runs-on: ${{matrix.os}}-12
     strategy:
