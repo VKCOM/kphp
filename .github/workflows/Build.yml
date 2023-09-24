@@ -11,6 +11,7 @@ env:
   kphp_root_dir: /home/kitten/kphp
   kphp_polyfills_dir: /home/kitten/kphp/kphp-polyfills
   kphp_build_dir: /home/kitten/kphp/build
+  demo_dir: "/home/kitten"
 
 jobs:
   # build-linux:
@@ -135,7 +136,7 @@ jobs:
 
     - name: Run php dummy script
       run: docker exec -u kitten kphp-build-container-${{matrix.os}}-install bash -c 
-        "cd ${{env.kphp_build_dir}} && echo 'hello world' > demo.php && kphp --mode=cli --cxx=g++ demo.php && ./kphp_out/cli -o --user kitten"
+        "cd ${{env.demo_dir}} && echo 'hello world' > demo.php && kphp --mode=cli --cxx=g++ demo.php && ./kphp_out/cli -o --user kitten"
 
   # build-macos:
   #   runs-on: ${{matrix.os}}-12
