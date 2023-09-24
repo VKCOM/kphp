@@ -135,7 +135,7 @@ jobs:
 
     - name: Run php dummy script
       run: docker exec kphp-build-container-${{matrix.os}}.install bash -c 
-            "echo '<?php echo "Hello World!" ?>' > demo.php && kphp --mode=cli demo.php && ./kphp_out/cli"
+            "echo '<?php echo "Hello World!"' > demo.php && kphp --mode=cli demo.php && ./kphp_out/cli"
 
   # build-macos:
   #   runs-on: ${{matrix.os}}-12
