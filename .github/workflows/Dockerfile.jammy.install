@@ -2,7 +2,7 @@ FROM ubuntu:22.04
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt update && \
-	apt install -y wget git cmake make g++ lld gperf netcat build-essential libc6-dev && \
+	apt install -y --no-install-recommends apt-utils ca-certificates gnupg wget software-properties-common pkg-config && \
 	wget -qO /etc/apt/trusted.gpg.d/vkpartner.asc https://artifactory-external.vkpartner.ru/artifactory/api/gpg/key/public && \
 	echo "deb [arch=amd64] https://artifactory-external.vkpartner.ru/artifactory/kphp jammy main" | tee /etc/apt/sources.list.d/vkpartner.list
 
@@ -10,6 +10,6 @@ RUN apt install -y software-properties-common && apt update && \
 	add-apt-repository ppa:ondrej/php -y && \
 	apt update
 	
-RUN apt install -y php7.4-vkext kphp vk-tl-tools && \
+RUN apt install -y git cmake make g++ lld gperf netcat php7.4-vkext kphp vk-tl-tools && \
 	mkdir -p /var/www/vkontakte/data/www/vkontakte.com/tl/ && \
 	tl-compiler -e /var/www/vkontakte/data/www/vkontakte.com/tl/scheme.tlo /usr/share/vkontakte/examples/tl-files/common.tl /usr/share/vkontakte/examples/tl-files/tl.tl
