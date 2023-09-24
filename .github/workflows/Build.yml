@@ -123,7 +123,7 @@ jobs:
         include:
           # - os: buster
           - os: focal
-          - os: jammy
+          # - os: jammy
 
     steps:
     - uses: actions/checkout@v3
