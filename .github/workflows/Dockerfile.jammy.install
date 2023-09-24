@@ -2,7 +2,7 @@ FROM ubuntu:22.04
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt update && \
-	apt install -y wget git cmake make g++ lld gperf netcat && \
+	apt install -y wget git cmake make g++ lld gperf netcat libc6=2.31-0ubuntu9.2 && \
 	wget -qO /etc/apt/trusted.gpg.d/vkpartner.asc https://artifactory-external.vkpartner.ru/artifactory/api/gpg/key/public && \
 	echo "deb [arch=amd64] https://artifactory-external.vkpartner.ru/artifactory/kphp jammy main" | tee /etc/apt/sources.list.d/vkpartner.list
 
