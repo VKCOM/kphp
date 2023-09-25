@@ -19,7 +19,7 @@
 
 #include "server/json-logger.h"
 #include "server/server-stats.h"
-#include "server/statshouse/statshouse-client.h"
+#include "server/statshouse/statshouse-metrics.h"
 
 namespace {
 
@@ -616,8 +616,7 @@ void ServerStats::add_request_stats(double script_time_sec, double net_time_sec,
   stats.add_request_stats(queries_stat, error, memory_used, real_memory_used, curl_total_allocated);
   shared_stats_->workers.add_worker_stats(queries_stat, worker_process_id_);
 
-  StatsHouseClient::get().send_request_stats(worker_type_, script_time.count(), net_time.count(), memory_used, real_memory_used, script_queries,
-                                             long_script_queries);
+  StatsHouseMetrics::get().add_request_stats(script_time.count(), net_time.count(), memory_used, real_memory_used, script_queries, long_script_queries);
 }
 
 void ServerStats::add_job_stats(double job_wait_time_sec, int64_t request_memory_used, int64_t request_real_memory_used, int64_t response_memory_used,
@@ -625,13 +624,13 @@ void ServerStats::add_job_stats(double job_wait_time_sec, int64_t request_memory
   const auto job_wait_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(job_wait_time_sec));
   shared_stats_->job_workers.add_job_stats(job_wait_time.count(), request_memory_used, request_real_memory_used, response_memory_used, response_real_memory_used);
 
-  StatsHouseClient::get().send_job_stats(job_wait_time.count(), request_memory_used, request_real_memory_used, response_memory_used, response_real_memory_used);
+  StatsHouseMetrics::get().add_job_stats(job_wait_time.count(), request_memory_used, request_real_memory_used, response_memory_used, response_real_memory_used);
 }
 
 void ServerStats::add_job_common_memory_stats(int64_t common_request_memory_used, int64_t common_request_real_memory_used) noexcept {
   shared_stats_->job_workers.add_job_common_memory_stats(common_request_memory_used, common_request_real_memory_used);
 
-  StatsHouseClient::get().send_job_common_memory_stats(common_request_memory_used, common_request_real_memory_used);
+  StatsHouseMetrics::get().add_job_common_memory_stats(common_request_memory_used, common_request_real_memory_used);
 }
 
 void ServerStats::update_this_worker_stats() noexcept {

@@ -64,7 +64,7 @@
 #include "server/server-stats.h"
 #include "server/shared-data-worker-cache.h"
 #include "server/shared-data.h"
-#include "server/statshouse/statshouse-client.h"
+#include "server/statshouse/statshouse-metrics.h"
 #include "server/workers-control.h"
 
 #include "server/php-master-restart.h"
@@ -1399,7 +1399,7 @@ static void master_cron() {
     // write stats at the beginning to avoid spikes in graphs
     send_data_to_statsd_with_prefix(vk::singleton<ServerConfig>::get().get_statsd_prefix(), stats_tag_kphp_server);
     const auto cpu_stats = server_stats.cpu[1].get_stat();
-    StatsHouseClient::get().send_common_master_stats(workers_stats, instance_cache_get_memory_stats(), cpu_stats.cpu_s_usage, cpu_stats.cpu_u_usage,
+    StatsHouseMetrics::get().add_common_master_stats(workers_stats, instance_cache_get_memory_stats(), cpu_stats.cpu_s_usage, cpu_stats.cpu_u_usage,
                                                      instance_cache_memory_swaps_ok, instance_cache_memory_swaps_fail);
   }
   create_all_outbound_connections();
