@@ -6,7 +6,7 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
-    'Vk\\TestSrt\\' => array($baseDir . '/Packages/vk-strings/src'),
-    'Dinosaur\\' => array($baseDir . '/Dinosaur'),
-    'Archosauria\\' => array($baseDir . '/Archosauria'),
+    'Vk\\TestSrt\\' => array($vendorDir . '/vk/strings/src'),
+    'Printer012\\' => array($baseDir . '/Printer012'),
+    'BasePrinter012\\' => array($baseDir . '/BasePrinter012'),
 );

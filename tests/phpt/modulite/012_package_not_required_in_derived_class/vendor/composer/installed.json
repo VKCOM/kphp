@@ -1,5 +1,27 @@
 {
-    "packages": [],
+    "packages": [
+        {
+            "name": "vk/strings",
+            "version": "0.0.1",
+            "version_normalized": "0.0.1.0",
+            "dist": {
+                "type": "path",
+                "url": "./packages/vk-strings",
+                "reference": "0bbbd1fe63f5142d8c529bb2d8d6651418afe292"
+            },
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "Vk\\TestSrt\\": "src/"
+                }
+            },
+            "transport-options": {
+                "relative": true
+            },
+            "install-path": "../vk/strings"
+        }
+    ],
     "dev": true,
     "dev-package-names": []
 }

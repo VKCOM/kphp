@@ -4,52 +4,48 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInitbb52b28c50e98dd784e86af97f9f0592
+class ComposerStaticInit451b6d5135cd4eb8e84df3fc66c39587
 {
     public static $prefixLengthsPsr4 = array (
         'V' => 
         array (
             'Vk\\TestSrt\\' => 11,
         ),
-        'D' => 
+        'P' => 
         array (
-            'Dinosaur\\' => 9,
+            'Printer012\\' => 11,
         ),
-        'A' => 
+        'B' => 
         array (
-            'Archosauria\\' => 12,
+            'BasePrinter012\\' => 15,
         ),
     );
 
     public static $prefixDirsPsr4 = array (
         'Vk\\TestSrt\\' => 
         array (
-            0 => __DIR__ . '/../..' . '/Packages/vk-strings/src',
+            0 => __DIR__ . '/..' . '/vk/strings/src',
         ),
-        'Dinosaur\\' => 
+        'Printer012\\' => 
         array (
-            0 => __DIR__ . '/../..' . '/Dinosaur',
+            0 => __DIR__ . '/../..' . '/Printer012',
         ),
-        'Archosauria\\' => 
+        'BasePrinter012\\' => 
         array (
-            0 => __DIR__ . '/../..' . '/Archosauria',
+            0 => __DIR__ . '/../..' . '/BasePrinter012',
         ),
     );
 
     public static $classMap = array (
-        'Archosauria\\AppendStr' => __DIR__ . '/../..' . '/Archosauria/AppendStr.php',
-        'Archosauria\\Thecodontia' => __DIR__ . '/../..' . '/Archosauria/Thecodontia.php',
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
-        'Dinosaur\\EoraptorLunensis' => __DIR__ . '/../..' . '/Dinosaur/EoraptorLunensis.php',
-        'Vk\\TestSrt\\SomeStr' => __DIR__ . '/../..' . '/Packages/vk-strings/src/SomeStr.php',
     );
 
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInitbb52b28c50e98dd784e86af97f9f0592::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInitbb52b28c50e98dd784e86af97f9f0592::$prefixDirsPsr4;
-            $loader->classMap = ComposerStaticInitbb52b28c50e98dd784e86af97f9f0592::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit451b6d5135cd4eb8e84df3fc66c39587::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit451b6d5135cd4eb8e84df3fc66c39587::$prefixDirsPsr4;
+            $loader->classMap = ComposerStaticInit451b6d5135cd4eb8e84df3fc66c39587::$classMap;
 
         }, null, ClassLoader::class);
     }

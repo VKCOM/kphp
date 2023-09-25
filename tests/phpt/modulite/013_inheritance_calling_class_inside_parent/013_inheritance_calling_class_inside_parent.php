@@ -4,4 +4,4 @@
 require_once 'kphp_tester_include.php';
 #endif
 
-\Dinosaur013\EoraptorLunensis013::roar2();
+\Printer013\Printer013::print();

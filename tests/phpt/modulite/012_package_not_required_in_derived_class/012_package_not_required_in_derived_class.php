@@ -5,6 +5,5 @@ KPHP_COMPOSER_ROOT={dir}
 require_once 'kphp_tester_include.php';
 #endif
 require_once __DIR__ . '/vendor/autoload.php';
-require_once __DIR__ . '/Dinosaur012/EoraptorLunensis012.php';
 
-\Dinosaur012\EoraptorLunensis012::roar2();
+\Printer012\Printer012::print();
