@@ -13,7 +13,7 @@ class TestStatshouseSmoke(KphpServerAutoTestCase):
         cls.statshouse.start()
         cls.kphp_server.update_options({
             "--workers-num": cls.WORKERS_NUM,
-            "--statshouse-client": ":" + str(cls.statshouse.port),
+            "--statshouse-client": "localhost:" + str(cls.statshouse.port),
         })
 
     @classmethod

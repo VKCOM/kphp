@@ -2085,7 +2085,7 @@ int main_args_handler(int i, const char *long_option) {
       }
       auto host = std::string(optarg, colon - optarg);
       auto port = atoi(colon + 1);
-      if (host.empty()) {
+      if (host.empty() || host == "localhost") {
         host = "127.0.0.1";
       }
 
