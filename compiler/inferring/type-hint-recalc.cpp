@@ -173,7 +173,10 @@ void TypeHintFuture::recalc_type_data_in_context_of_call(TypeData *dst, VertexPt
 void TypeHintNotNull::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const {
   TypeData nested(*TypeData::get_type(tp_any));
   inner->recalc_type_data_in_context_of_call(&nested, call);
-  dst->set_lca(&nested, !drop_not_false, !drop_not_null);
+  TypeData::LCAFlags flags = TypeData::LCAFlags::for_phpdoc();
+  flags.save_or_false = !drop_not_false;
+  flags.save_or_null = !drop_not_null;
+  dst->set_lca(&nested, std::move(flags));
 }
 
 void TypeHintInstance::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__ ((unused))) const {
