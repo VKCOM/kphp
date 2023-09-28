@@ -28,6 +28,22 @@ public:
     client.init_common_tags(cluster, host);
   }
 
+  void on_worker_cron() {
+    generic_cron_check_if_tag_host_needed();
+  }
+
+  void on_master_cron() {
+    generic_cron_check_if_tag_host_needed();
+  }
+
+  /**
+   * This toggle turns on host tag for all statshouse metrics in all workers and master processes during the next 30 sec.
+   * See generic_cron_check_if_tag_host_needed() for details.
+   */
+  void turn_on_host_tag_toggle() {
+    need_write_enable_tag_host = true;
+  }
+
   void add_request_stats(uint64_t script_time_ns, uint64_t net_time_ns, uint64_t memory_used, uint64_t real_memory_used,
                          uint64_t script_queries, uint64_t long_script_queries);
 
@@ -46,6 +62,7 @@ public:
 
 private:
   StatsHouseClient client;
+  bool need_write_enable_tag_host = false;
 
   StatsHouseMetrics() = default;
   explicit StatsHouseMetrics(const std::string &ip, int port);
@@ -55,6 +72,8 @@ private:
     static StatsHouseMetrics client{ip, port};
     return client;
   }
+
+  void generic_cron_check_if_tag_host_needed();
 
   void add_job_workers_shared_memory_stats(const job_workers::JobStats &job_stats);
 

@@ -1424,6 +1424,7 @@ void worker_cron() {
   vk::singleton<ServerStats>::get().update_this_worker_stats();
   auto virtual_memory_stat = get_self_mem_stats();
   StatsHouseMetrics::get().add_worker_memory_stats(virtual_memory_stat);
+  StatsHouseMetrics::get().on_worker_cron();
 }
 
 void reopen_json_log() {

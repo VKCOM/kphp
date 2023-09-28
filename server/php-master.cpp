@@ -1404,6 +1404,7 @@ static void master_cron() {
   }
   create_all_outbound_connections();
   vk::singleton<ServerStats>::get().aggregate_stats();
+  StatsHouseMetrics::get().on_master_cron();
 
   unsigned long long cpu_total = 0;
   unsigned long long utime = 0;

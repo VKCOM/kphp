@@ -4,12 +4,15 @@
 
 #include "server/statshouse/statshouse-metrics.h"
 
+#include <chrono>
+
 #include "common/precise-time.h"
 #include "runtime/instance-cache.h"
 #include "server/job-workers/shared-memory-manager.h"
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
 #include "server/server-stats.h"
+#include "server/shared-data.h"
 
 namespace {
 template<typename T>
@@ -35,8 +38,38 @@ StatsHouseMetrics::StatsHouseMetrics(const std::string &ip, int port)
   : client(ip, port){};
 
 
-void StatsHouseMetrics::set_tag_cluster(std::string_view cluster) {
-  client.set_tag_cluster(cluster);
+void StatsHouseMetrics::generic_cron_check_if_tag_host_needed() {
+  using namespace std::chrono_literals;
+
+  static SharedData::time_point last_check_tp;
+  auto now_tp = SharedData::clock::now();
+
+  // check is done every 5 sec
+  if (now_tp - last_check_tp < 5s) {
+    return;
+  }
+  last_check_tp = now_tp;
+
+  auto &shared_data = vk::singleton<SharedData>::get();
+
+  if (need_write_enable_tag_host) {
+    // if php script called kphp_turn_on_host_tag_in_inner_statshouse_metrics_toggle()
+    // we store current time in shared memory to make other processes enable host tag.
+    // NB: so far it never happens in master process
+    shared_data.store_start_use_host_in_statshouse_metrics_timestamp(now_tp);
+    need_write_enable_tag_host = false;
+    client.enable_tag_host();
+    return;
+  }
+
+  // then every process checks the timestamp from shared memory to decide whether to enable host tag or not
+  auto tp = shared_data.load_start_use_host_in_statshouse_metrics_timestamp();
+  if (now_tp - tp < 30s) {
+    client.enable_tag_host();
+  } else {
+    // if 30 secs has already passed, disable tag host
+    client.disable_tag_host();
+  }
 }
 
 void StatsHouseMetrics::add_request_stats(uint64_t script_time_ns, uint64_t net_time_ns, uint64_t memory_used,

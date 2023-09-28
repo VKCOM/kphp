@@ -12,6 +12,7 @@
 #include "runtime/kphp_core.h"
 #include "runtime/optional.h"
 #include "server/php-query-data.h"
+#include "server/statshouse/statshouse-metrics.h"
 #include "server/workers-control.h"
 
 extern string_buffer *coub;//TODO static
@@ -236,6 +237,10 @@ extern bool is_demangled_stacktrace_logs_enabled;
 
 inline void f$set_json_log_demangle_stacktrace(bool enable) {
   is_demangled_stacktrace_logs_enabled = enable;
+}
+
+inline void f$kphp_turn_on_host_tag_in_inner_statshouse_metrics_toggle() {
+  StatsHouseMetrics::get().turn_on_host_tag_toggle();
 }
 
 int64_t f$numa_get_bound_node();
