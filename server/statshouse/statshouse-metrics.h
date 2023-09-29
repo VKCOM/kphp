@@ -10,6 +10,7 @@
 #include "common/mixin/not_copyable.h"
 #include "runtime/memory_resource/memory_resource.h"
 #include "server/job-workers/job-stats.h"
+#include "server/php-runner.h"
 #include "server/statshouse/statshouse-client.h"
 #include "server/workers-control.h"
 #include "server/workers-stats.h"
@@ -44,7 +45,7 @@ public:
     need_write_enable_tag_host = true;
   }
 
-  void add_request_stats(uint64_t script_time_ns, uint64_t net_time_ns, uint64_t memory_used, uint64_t real_memory_used,
+  void add_request_stats(uint64_t script_time_ns, uint64_t net_time_ns, script_error_t error, uint64_t memory_used, uint64_t real_memory_used,
                          uint64_t script_queries, uint64_t long_script_queries);
 
   void add_job_stats(uint64_t job_wait_ns, uint64_t request_memory_used, uint64_t request_real_memory_used, uint64_t response_memory_used,

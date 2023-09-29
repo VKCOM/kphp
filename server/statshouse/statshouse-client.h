@@ -15,7 +15,7 @@ public:
 
   void init_common_tags(std::string_view cluster, std::string_view host);
 
-  statshouse::TransportUDPBase::MetricBuilder metric(std::string_view name);
+  statshouse::TransportUDPBase::MetricBuilder metric(std::string_view name, bool force_tag_host = false);
 
   void enable_tag_host() {
     host_enabled = true;

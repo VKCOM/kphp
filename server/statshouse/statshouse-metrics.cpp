@@ -32,6 +32,22 @@ const char *get_current_worker_type() {
     default: return "";
   }
 }
+
+const char *script_error_to_str(script_error_t error) {
+  switch (error) {
+    case script_error_t::no_error:                return "ok";
+    case script_error_t::memory_limit:            return "memory_limit";
+    case script_error_t::timeout:                 return "timeout";
+    case script_error_t::exception:               return "exception";
+    case script_error_t::stack_overflow:          return "stack_overflow";
+    case script_error_t::php_assert:              return "php_assert";
+    case script_error_t::http_connection_close:   return "http_connection_close";
+    case script_error_t::rpc_connection_close:    return "rpc_connection_close";
+    case script_error_t::net_event_error:         return "net_event_error";
+    case script_error_t::post_data_loading_error: return "post_data_loading_error";
+    default:                                      return "unclassified_error";
+  }
+}
 } // namespace
 
 StatsHouseMetrics::StatsHouseMetrics(const std::string &ip, int port)
@@ -72,12 +88,21 @@ void StatsHouseMetrics::generic_cron_check_if_tag_host_needed() {
   }
 }
 
-void StatsHouseMetrics::add_request_stats(uint64_t script_time_ns, uint64_t net_time_ns, uint64_t memory_used,
+void StatsHouseMetrics::add_request_stats(uint64_t script_time_ns, uint64_t net_time_ns, script_error_t error, uint64_t memory_used,
                                          uint64_t real_memory_used, uint64_t script_queries, uint64_t long_script_queries) {
   const char *worker_type = get_current_worker_type();
+  const char *status = script_error_to_str(error);
 
-  client.metric("kphp_request_time").tag("script").tag(worker_type).write_value(script_time_ns);
-  client.metric("kphp_request_time").tag("net").tag(worker_type).write_value(net_time_ns);
+  client.metric("kphp_request_time").tag("script").tag(worker_type).tag(status).write_value(script_time_ns);
+  client.metric("kphp_request_time").tag("net").tag(worker_type).tag(status).write_value(net_time_ns);
+
+  client.metric("kphp_by_host_request_time", true).tag("script").tag(worker_type).write_value(script_time_ns);
+  client.metric("kphp_by_host_request_time", true).tag("net").tag(worker_type).write_value(net_time_ns);
+
+  if (error != script_error_t::no_error) {
+    client.metric("kphp_request_errors").tag(status).tag(worker_type).write_count(1);
+    client.metric("kphp_by_host_request_errors", true).tag(status).tag(worker_type).write_count(1);
+  }
 
   client.metric("kphp_memory_script_usage").tag("used").tag(worker_type).write_value(memory_used);
   client.metric("kphp_memory_script_usage").tag("real_used").tag(worker_type).write_value(real_memory_used);
@@ -109,6 +134,11 @@ void StatsHouseMetrics::add_worker_memory_stats(const mem_info_t &mem_stats) {
   client.metric("kphp_workers_memory").tag(worker_type).tag("vm").write_value(mem_stats.vm);
   client.metric("kphp_workers_memory").tag(worker_type).tag("rss").write_value(mem_stats.rss);
   client.metric("kphp_workers_memory").tag(worker_type).tag("rss_peak").write_value(mem_stats.rss_peak);
+
+  client.metric("kphp_by_host_workers_memory", true).tag(worker_type).tag("vm_peak").write_value(mem_stats.vm_peak);
+  client.metric("kphp_by_host_workers_memory", true).tag(worker_type).tag("vm").write_value(mem_stats.vm);
+  client.metric("kphp_by_host_workers_memory", true).tag(worker_type).tag("rss").write_value(mem_stats.rss);
+  client.metric("kphp_by_host_workers_memory", true).tag(worker_type).tag("rss_peak").write_value(mem_stats.rss_peak);
 }
 
 void StatsHouseMetrics::add_common_master_stats(const workers_stats_t &workers_stats, const memory_resource::MemoryStats &memory_stats, double cpu_s_usage,
@@ -137,8 +167,11 @@ void StatsHouseMetrics::add_common_master_stats(const workers_stats_t &workers_s
   client.metric("kphp_server_workers").tag("terminated").write_value(workers_stats.workers_terminated);
   client.metric("kphp_server_workers").tag("failed").write_value(workers_stats.workers_failed);
 
-  client.metric("kphp_cpu_usage").tag("stime").write_value(cpu_s_usage);
-  client.metric("kphp_cpu_usage").tag("utime").write_value(cpu_u_usage);
+  client.metric("kphp_cpu_usage").tag("sys").write_value(cpu_s_usage);
+  client.metric("kphp_cpu_usage").tag("user").write_value(cpu_u_usage);
+
+  client.metric("kphp_by_host_cpu_usage", true).tag("sys").write_value(cpu_s_usage);
+  client.metric("kphp_by_host_cpu_usage", true).tag("user").write_value(cpu_u_usage);
 
   auto total_workers_json_count = vk::singleton<ServerStats>::get().collect_json_count_stat();
   uint64_t master_json_logs_count = vk::singleton<JsonLogger>::get().get_json_logs_count();

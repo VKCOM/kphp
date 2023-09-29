@@ -9,10 +9,10 @@ void StatsHouseClient::init_common_tags(std::string_view cluster, std::string_vi
   tag_host = host;
 }
 
-statshouse::TransportUDPBase::MetricBuilder StatsHouseClient::metric(std::string_view name) {
+statshouse::TransportUDPBase::MetricBuilder StatsHouseClient::metric(std::string_view name, bool force_tag_host) {
   auto builder = transport.metric(name);
   builder.tag(tag_cluster);
-  if (host_enabled) {
+  if (host_enabled || force_tag_host) {
     builder.tag("host", tag_host);
   }
   return builder;
