@@ -53,10 +53,10 @@ static inline bool should_this_usage_context_be_ignored(FunctionPtr usage_contex
     return true; // NOLINT(readability-simplify-boolean-expr)
   }
   // case 2.
-  // (no module): class Base { roar() { ... } }
-  // @mod       : class Derived { roar2() { self::roar() } }
-  // then KPHP implicitly creates Derived::roar() { parent::roar() }
-  // and warns (on parent::) that "Base::roar() is not required by @mod"
+  // (no module): class Base { printAppend() { ... } }
+  // @mod       : class Derived { print() { self::printAppend() } }
+  // then KPHP implicitly creates Derived::printAppend() { parent::printAppend() }
+  // and warns (on parent::) that "Base::printAppend() is not required by @mod"
   // solution: ignore such auto-created inherited methods
   if (usage_context->is_auto_inherited) {
     return true;
