@@ -1,4 +1,10 @@
+if (YAML)
+prepend(RUNTIME_TESTS_YAML_SOURCES /extensions-tests/
+	yaml-test.cpp)
+endif()
+
 prepend(RUNTIME_TESTS_SOURCES ${BASE_DIR}/tests/cpp/runtime/
+        ${RUNTIME_TESTS_YAML_SOURCES}
         _runtime-tests-env.cpp
         allocator-malloc-replacement-test.cpp
         array-test.cpp
@@ -21,7 +27,6 @@ prepend(RUNTIME_TESTS_SOURCES ${BASE_DIR}/tests/cpp/runtime/
         memory_resource/unsynchronized_pool_resource-test.cpp
         string-list-test.cpp
         string-test.cpp
-        yaml-test.cpp
         zstd-test.cpp)
 
 allow_deprecated_declarations_for_apple(${BASE_DIR}/tests/cpp/runtime/inter-process-mutex-test.cpp)

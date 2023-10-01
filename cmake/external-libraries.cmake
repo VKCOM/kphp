@@ -74,3 +74,6 @@ if(APPLE)
     add_definitions(-DEPOLL_SHIM_LIB_DIR="${epoll_BINARY_DIR}/src")
     set(EPOLL_SHIM_LIB epoll-shim)
 endif()
+
+option(YAML "build yaml" OFF)
+cmake_print_variables(YAML)

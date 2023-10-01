@@ -3,7 +3,7 @@
 #include "runtime/optional.h"
 #include "runtime/streams.h"
 #include "runtime/critical_section.h"
-#include "runtime/yaml.h"
+#include "yaml.h"
 
 /*
  * convert YAML::Node to mixed after parsing a YAML document into YAML::Node
