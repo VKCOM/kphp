@@ -64,7 +64,6 @@
 #include "server/server-stats.h"
 #include "server/shared-data-worker-cache.h"
 #include "server/shared-data.h"
-#include "server/statshouse/add-metrics-batch.h"
 #include "server/statshouse/statshouse-client.h"
 #include "server/workers-control.h"
 
@@ -78,6 +77,7 @@
 #include "server/job-workers/shared-memory-manager.h"
 #include "server/json-logger.h"
 #include "server/server-config.h"
+#include "server/workers-stats.h"
 
 using job_workers::JobWorkersContext;
 
@@ -101,13 +101,8 @@ static sigset_t empty_mask;
 static double my_now;
 
 /*** Stats ***/
-static long tot_workers_started{0};
-static long tot_workers_dead{0};
-static long tot_workers_strange_dead{0};
-static long workers_killed{0};
-static long workers_hung{0};
-static long workers_terminated{0};
-static long workers_failed{0};
+
+static workers_stats_t workers_stats{};
 
 struct CpuStatTimestamp {
   double timestamp;
@@ -461,7 +456,7 @@ void terminate_worker(worker_info_t *w) {
   if (w->type == WorkerType::general_worker) {
     changed = 1;
   }
-  workers_terminated++;
+  workers_stats.workers_terminated++;
 }
 
 int kill_worker(WorkerType worker_type) {
@@ -492,7 +487,7 @@ void kill_hanging_workers() {
       if (!worker->is_dying && worker->last_activity_time + get_max_hanging_time_sec() <= my_now) {
         tvkprintf(master_process, 1, "No stats received from %s [pid = %d]. Terminate it\n",
                   worker->type == WorkerType::general_worker ? "general worker" : "job worker", static_cast<int>(worker->pid));
-        workers_hung++;
+        workers_stats.workers_hung++;
         terminate_worker(worker);
         last_terminated = my_now;
         break;
@@ -505,7 +500,7 @@ void kill_hanging_workers() {
       kprintf("master kill hanging %s : send SIGKILL to [pid = %d]\n",
                 workers[i]->type == WorkerType::general_worker ? "general worker" : "job worker", static_cast<int>(workers[i]->pid));
       kill(workers[i]->pid, SIGKILL);
-      workers_killed++;
+      workers_stats.workers_killed++;
 
       workers[i]->kill_flag = 1;
 
@@ -606,7 +601,7 @@ int run_worker(WorkerType worker_type) {
 
   assert (vk::singleton<WorkersControl>::get().get_all_alive() < WorkersControl::max_workers_count);
 
-  tot_workers_started++;
+  workers_stats.tot_workers_started++;
   const uint16_t worker_unique_id = vk::singleton<WorkersControl>::get().on_worker_creating(worker_type);
   pid_t new_pid = fork();
   if (new_pid == -1) {
@@ -718,7 +713,7 @@ void remove_worker(pid_t pid) {
       if (workers[i]->type == WorkerType::general_worker && !workers[i]->is_dying) {
         failed++;
       }
-      workers_failed++;
+      workers_stats.workers_failed++;
 
       delete_worker(workers[i]);
 
@@ -739,9 +734,9 @@ void update_workers() {
     pid_t pid = waitpid(-1, &status, WNOHANG);
     if (pid > 0) {
       if (!WIFEXITED (status)) {
-        tot_workers_strange_dead++;
+        workers_stats.tot_workers_strange_dead++;
       }
-      tot_workers_dead++;
+      workers_stats.tot_workers_dead++;
       remove_worker(pid);
       changed = 1;
     } else {
@@ -972,13 +967,13 @@ std::string php_master_prepare_stats(bool add_worker_pids) {
       << "total_workers\t" << general_workers_stat.total_workers + job_workers_stat.total_workers << "\n"
       << "running_workers\t" << general_workers_stat.running_workers + job_workers_stat.running_workers << "\n"
       << "paused_workers\t" << general_workers_stat.waiting_workers + job_workers_stat.waiting_workers << "\n"
-      << "tot_workers_started\t" << tot_workers_started << "\n"
-      << "tot_workers_dead\t" << tot_workers_dead << "\n"
-      << "tot_workers_strange_dead\t" << tot_workers_strange_dead << "\n"
-      << "workers_killed\t" << workers_killed << "\n"
-      << "workers_hung\t" << workers_hung << "\n"
-      << "workers_terminated\t" << workers_terminated << "\n"
-      << "workers_failed\t" << workers_failed << "\n";
+      << "tot_workers_started\t" << workers_stats.tot_workers_started << "\n"
+      << "tot_workers_dead\t" << workers_stats.tot_workers_dead << "\n"
+      << "tot_workers_strange_dead\t" << workers_stats.tot_workers_strange_dead << "\n"
+      << "workers_killed\t" << workers_stats.workers_killed << "\n"
+      << "workers_hung\t" << workers_stats.workers_hung << "\n"
+      << "workers_terminated\t" << workers_stats.workers_terminated << "\n"
+      << "workers_failed\t" << workers_stats.workers_failed << "\n";
   stats.write_stats_to(oss, add_worker_pids);
 
   std::for_each(workers, last_worker, [&oss](const worker_info_t *w) {
@@ -1121,23 +1116,21 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, stats_tag_kphp_server) {
   stats->add_gauge_stat("workers.job.processes.working", job_worker_group.running_workers);
   stats->add_gauge_stat("workers.job.processes.working_but_waiting", job_worker_group.waiting_workers);
 
-  if (stats->need_aggregated_stats()) {
-    auto running_stats = server_stats.misc_stat_for_general_workers[1].get_stat();
-    stats->add_gauge_stat("workers.general.processes.running.avg_1m", running_stats.running_workers_avg);
-    stats->add_gauge_stat("workers.general.processes.running.max_1m", running_stats.running_workers_max);
+  auto running_stats = server_stats.misc_stat_for_general_workers[1].get_stat();
+  stats->add_gauge_stat("workers.general.processes.running.avg_1m", running_stats.running_workers_avg);
+  stats->add_gauge_stat("workers.general.processes.running.max_1m", running_stats.running_workers_max);
 
-    running_stats = server_stats.misc_stat_for_job_workers[1].get_stat();
-    stats->add_gauge_stat("workers.job.processes.running.avg_1m", running_stats.running_workers_avg);
-    stats->add_gauge_stat("workers.job.processes.running.max_1m", running_stats.running_workers_max);
-  }
+  running_stats = server_stats.misc_stat_for_job_workers[1].get_stat();
+  stats->add_gauge_stat("workers.job.processes.running.avg_1m", running_stats.running_workers_avg);
+  stats->add_gauge_stat("workers.job.processes.running.max_1m", running_stats.running_workers_max);
 
-  stats->add_gauge_stat("server.workers.started", tot_workers_started);
-  stats->add_gauge_stat("server.workers.dead", tot_workers_dead);
-  stats->add_gauge_stat("server.workers.strange_dead", tot_workers_strange_dead);
-  stats->add_gauge_stat("server.workers.killed", workers_killed);
-  stats->add_gauge_stat("server.workers.hung", workers_hung);
-  stats->add_gauge_stat("server.workers.terminated", workers_terminated);
-  stats->add_gauge_stat("server.workers.failed", workers_failed);
+  stats->add_gauge_stat("server.workers.started", workers_stats.tot_workers_started);
+  stats->add_gauge_stat("server.workers.dead", workers_stats.tot_workers_dead);
+  stats->add_gauge_stat("server.workers.strange_dead", workers_stats.tot_workers_strange_dead);
+  stats->add_gauge_stat("server.workers.killed", workers_stats.workers_killed);
+  stats->add_gauge_stat("server.workers.hung", workers_stats.workers_hung);
+  stats->add_gauge_stat("server.workers.terminated", workers_stats.workers_terminated);
+  stats->add_gauge_stat("server.workers.failed", workers_stats.workers_failed);
 
   const auto cpu_stats = server_stats.cpu[1].get_stat();
   stats->add_gauge_stat("cpu.stime", cpu_stats.cpu_s_usage);
@@ -1405,7 +1398,11 @@ static void cron() {
   if (!other->is_alive || in_old_master_on_restart()) {
     // write stats at the beginning to avoid spikes in graphs
     send_data_to_statsd_with_prefix(vk::singleton<ServerConfig>::get().get_statsd_prefix(), stats_tag_kphp_server);
-    vk::singleton<StatsHouseClient>::get().master_send_metrics();
+    if (StatsHouseClient::has()) {
+      const auto cpu_stats = server_stats.cpu[1].get_stat();
+      StatsHouseClient::get().send_common_master_stats(workers_stats, instance_cache_get_memory_stats(), cpu_stats.cpu_s_usage, cpu_stats.cpu_u_usage,
+                                                       instance_cache_memory_swaps_ok, instance_cache_memory_swaps_fail);
+    }
   }
   create_all_outbound_connections();
   vk::singleton<ServerStats>::get().aggregate_stats();

@@ -90,7 +90,6 @@
 #include "server/shared-data-worker-cache.h"
 #include "server/signal-handlers.h"
 #include "server/statshouse/statshouse-client.h"
-#include "server/statshouse/worker-stats-buffer.h"
 #include "server/workers-control.h"
 
 using job_workers::JobWorkersContext;
@@ -1423,7 +1422,6 @@ void cron() {
   }
   vk::singleton<SharedDataWorkerCache>::get().on_worker_cron();
   vk::singleton<ServerStats>::get().update_this_worker_stats();
-  vk::singleton<statshouse::WorkerStatsBuffer>::get().flush_if_needed();
 }
 
 void reopen_json_log() {
@@ -1677,7 +1675,6 @@ void init_all() {
 
   init_php_scripts();
   vk::singleton<ServerStats>::get().set_idle_worker_status();
-  vk::singleton<StatsHouseClient>::get();
 
   worker_id = (int)lrand48();
 
@@ -2086,11 +2083,13 @@ int main_args_handler(int i, const char *long_option) {
         kprintf("--%s option: can't find ':'\n", long_option);
         return -1;
       }
+      auto host = std::string(optarg, colon - optarg);
+      auto port = atoi(colon + 1);
+      if (host.empty() || host == "localhost") {
+        host = "127.0.0.1";
+      }
 
-      auto &statshouse_client = vk::singleton<StatsHouseClient>::get();
-      statshouse_client.set_host(std::string(optarg, colon - optarg));
-      statshouse_client.set_port(atoi(colon + 1));
-      vk::singleton<statshouse::WorkerStatsBuffer>::get().enable();
+      StatsHouseClient::init(host, port);
       return 0;
     }
     case 2027: {

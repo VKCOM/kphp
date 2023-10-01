@@ -20,7 +20,6 @@
 #include "server/json-logger.h"
 #include "server/server-stats.h"
 #include "server/statshouse/statshouse-client.h"
-#include "server/statshouse/worker-stats-buffer.h"
 
 namespace {
 
@@ -604,7 +603,8 @@ void ServerStats::after_fork(pid_t worker_pid, uint64_t active_connections, uint
   worker_type_ = worker_type;
   gen_->seed(worker_pid);
   shared_stats_->workers.reset_worker_stats(worker_pid, active_connections, max_connections, worker_process_id_);
-  last_update_ = std::chrono::steady_clock::now();
+  last_update_aggr_stats = std::chrono::steady_clock::now();
+  last_update_statshouse = std::chrono::steady_clock::now();
 }
 
 void ServerStats::add_request_stats(double script_time_sec, double net_time_sec, int64_t script_queries, int64_t long_script_queries, int64_t memory_used,
@@ -618,13 +618,10 @@ void ServerStats::add_request_stats(double script_time_sec, double net_time_sec,
   shared_stats_->workers.add_worker_stats(queries_stat, worker_process_id_);
 
   using namespace statshouse;
-  vk::singleton<WorkerStatsBuffer>::get().add_query_stat(GenericQueryStatKey::memory_used, worker_type_, memory_used);
-  vk::singleton<WorkerStatsBuffer>::get().add_query_stat(GenericQueryStatKey::real_memory_used, worker_type_, real_memory_used);
-
-  vk::singleton<WorkerStatsBuffer>::get().add_query_stat(GenericQueryStatKey::script_time, worker_type_, script_time.count());
-  vk::singleton<WorkerStatsBuffer>::get().add_query_stat(GenericQueryStatKey::net_time, worker_type_, net_time.count());
-  vk::singleton<WorkerStatsBuffer>::get().add_query_stat(GenericQueryStatKey::outgoing_queries, worker_type_, script_queries);
-  vk::singleton<WorkerStatsBuffer>::get().add_query_stat(GenericQueryStatKey::outgoing_long_queries, worker_type_, long_script_queries);
+  if (StatsHouseClient::has()) {
+    StatsHouseClient::get().send_request_stats(worker_type_, script_time.count(), net_time.count(), memory_used, real_memory_used, script_queries,
+                                               long_script_queries);
+  }
 }
 
 void ServerStats::add_job_stats(double job_wait_time_sec, int64_t request_memory_used, int64_t request_real_memory_used, int64_t response_memory_used,
@@ -632,27 +629,31 @@ void ServerStats::add_job_stats(double job_wait_time_sec, int64_t request_memory
   const auto job_wait_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(job_wait_time_sec));
   shared_stats_->job_workers.add_job_stats(job_wait_time.count(), request_memory_used, request_real_memory_used, response_memory_used, response_real_memory_used);
 
-  using namespace statshouse;
-  vk::singleton<WorkerStatsBuffer>::get().add_query_stat(QueryStatKey::job_wait_time, job_wait_time.count());
-  vk::singleton<WorkerStatsBuffer>::get().add_query_stat(QueryStatKey::job_request_memory_usage, request_memory_used);
-  vk::singleton<WorkerStatsBuffer>::get().add_query_stat(QueryStatKey::job_request_real_memory_usage, request_real_memory_used);
-  vk::singleton<WorkerStatsBuffer>::get().add_query_stat(QueryStatKey::job_response_memory_usage, response_memory_used);
-  vk::singleton<WorkerStatsBuffer>::get().add_query_stat(QueryStatKey::job_response_real_memory_usage, response_real_memory_used);
+  if (StatsHouseClient::has()) {
+    StatsHouseClient::get().send_job_stats(job_wait_time.count(), request_memory_used, request_real_memory_used, response_memory_used,
+                                           response_real_memory_used);
+  }
 }
 
 void ServerStats::add_job_common_memory_stats(int64_t common_request_memory_used, int64_t common_request_real_memory_used) noexcept {
   shared_stats_->job_workers.add_job_common_memory_stats(common_request_memory_used, common_request_real_memory_used);
 
-  using namespace statshouse;
-  vk::singleton<WorkerStatsBuffer>::get().add_query_stat(QueryStatKey::job_common_request_memory_usage, common_request_memory_used);
-  vk::singleton<WorkerStatsBuffer>::get().add_query_stat(QueryStatKey::job_common_request_real_memory_usage, common_request_real_memory_used);
+  if (StatsHouseClient::has()) {
+    StatsHouseClient::get().send_job_common_memory_stats(common_request_memory_used, common_request_real_memory_used);
+  }
 }
 
 void ServerStats::update_this_worker_stats() noexcept {
   const auto now_tp = std::chrono::steady_clock::now();
-  if (now_tp - last_update_ >= std::chrono::seconds{5}) {
+  if (now_tp - last_update_aggr_stats >= std::chrono::seconds{5}) {
     shared_stats_->workers.update_worker_stats(worker_process_id_);
-    last_update_ = now_tp;
+    last_update_aggr_stats = now_tp;
+  }
+
+  if (StatsHouseClient::has() && (now_tp - last_update_statshouse >= std::chrono::seconds{1})) {
+    auto virtual_memory_stat = get_self_mem_stats();
+    StatsHouseClient::get().send_worker_memory_stats(worker_type_, virtual_memory_stat);
+    last_update_statshouse = now_tp;
   }
 }
 
@@ -674,11 +675,11 @@ void ServerStats::set_running_worker_status() noexcept {
 
 void ServerStats::aggregate_stats() noexcept {
   const auto now_tp = std::chrono::steady_clock::now();
-  if (now_tp - last_update_ < std::chrono::seconds{5}) {
+  if (now_tp - last_update_aggr_stats < std::chrono::seconds{5}) {
     return;
   }
 
-  last_update_ = now_tp;
+  last_update_aggr_stats = now_tp;
   const auto &workers_control = vk::singleton<WorkersControl>::get();
 
   const uint16_t general_workers = workers_control.get_count(WorkerType::general_worker);
@@ -709,30 +710,22 @@ uint64_t kb2bytes(uint64_t kb) noexcept {
 
 template<typename T, typename Mapper = vk::identity>
 void write_to(stats_t *stats, const char *prefix, const char *suffix, const AggregatedSamples<T> &samples, const Mapper &mapper = {}) {
-  if (stats->need_aggregated_stats()) {
-    stats->add_gauge_stat(mapper(samples.percentiles.p50), prefix, suffix, ".p50");
-    stats->add_gauge_stat(mapper(samples.percentiles.p75), prefix, suffix, ".p75");
-    stats->add_gauge_stat(mapper(samples.percentiles.p90), prefix, suffix, ".p90");
-    stats->add_gauge_stat(mapper(samples.percentiles.p95), prefix, suffix, ".p95");
-    stats->add_gauge_stat(mapper(samples.percentiles.p99), prefix, suffix, ".p99");
-    stats->add_gauge_stat(mapper(samples.percentiles.max), prefix, suffix, ".max");
-  }
+  stats->add_gauge_stat(mapper(samples.percentiles.p50), prefix, suffix, ".p50");
+  stats->add_gauge_stat(mapper(samples.percentiles.p75), prefix, suffix, ".p75");
+  stats->add_gauge_stat(mapper(samples.percentiles.p90), prefix, suffix, ".p90");
+  stats->add_gauge_stat(mapper(samples.percentiles.p95), prefix, suffix, ".p95");
+  stats->add_gauge_stat(mapper(samples.percentiles.p99), prefix, suffix, ".p99");
+  stats->add_gauge_stat(mapper(samples.percentiles.max), prefix, suffix, ".max");
 }
 
 template<typename T, typename Mapper = vk::identity>
 void write_to(stats_t *stats, const char *prefix, const char *suffix, const WorkerSamples<T> &samples, const Mapper &mapper = {}) {
-  if (stats->need_aggregated_stats()) {
-    stats->add_gauge_stat(mapper(samples.percentiles.p50), prefix, suffix, ".p50");
-    stats->add_gauge_stat(mapper(samples.percentiles.p75), prefix, suffix, ".p75");
-    stats->add_gauge_stat(mapper(samples.percentiles.p90), prefix, suffix, ".p90");
-    stats->add_gauge_stat(mapper(samples.percentiles.p95), prefix, suffix, ".p95");
-    stats->add_gauge_stat(mapper(samples.percentiles.p99), prefix, suffix, ".p99");
-    stats->add_gauge_stat(mapper(samples.percentiles.max), prefix, suffix, ".max");
-  } else {
-    const uint16_t workers_count = vk::singleton<WorkersControl>::get().get_total_workers_count();
-    std::vector<double> values(samples.samples.begin(), samples.samples.begin() + workers_count);
-    stats->add_multiple_gauge_stats(std::move(values), prefix, suffix);
-  }
+  stats->add_gauge_stat(mapper(samples.percentiles.p50), prefix, suffix, ".p50");
+  stats->add_gauge_stat(mapper(samples.percentiles.p75), prefix, suffix, ".p75");
+  stats->add_gauge_stat(mapper(samples.percentiles.p90), prefix, suffix, ".p90");
+  stats->add_gauge_stat(mapper(samples.percentiles.p95), prefix, suffix, ".p95");
+  stats->add_gauge_stat(mapper(samples.percentiles.p99), prefix, suffix, ".p99");
+  stats->add_gauge_stat(mapper(samples.percentiles.max), prefix, suffix, ".max");
 }
 
 void write_to(stats_t *stats, const char *prefix, const WorkerAggregatedStats &agg, const WorkerSharedStats &shared) noexcept {

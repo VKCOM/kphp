@@ -7,6 +7,7 @@
 #include <cstring>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace vk {
 namespace tlo_parsing {
@@ -17,17 +18,14 @@ struct expr_base;
 struct tl_scheme;
 
 struct tlo_parser {
-  static constexpr unsigned int MAX_SCHEMA_LEN = 1024 * 1024;
-
   tlo_parser() = default;
   explicit tlo_parser(const char *tlo_path);
-  ~tlo_parser();
 
   template<typename T>
   T get_value() {
     check_pos(sizeof(T));
     T res{};
-    memcpy(&res, data + pos, sizeof(T));
+    memcpy(&res, data.data() + pos, sizeof(T));
     pos += sizeof(T);
     return res;
   }
@@ -49,7 +47,7 @@ struct tlo_parser {
   size_t len;
   size_t pos;
   std::unique_ptr<tl_scheme> tl_sch;
-  char data[MAX_SCHEMA_LEN + 1];
+  std::vector<char> data;
 };
 
 } // namespace tlo_parsing
