@@ -18,6 +18,7 @@
 #include "compiler/type-hint.h"
 
 namespace {
+
 void check_class_immutableness(ClassPtr klass) {
   if (!klass->is_immutable) {
     return;
@@ -27,7 +28,7 @@ void check_class_immutableness(ClassPtr klass) {
     std::unordered_set<ClassPtr> sub_classes;
     field.var->tinf_node.get_type()->get_all_class_types_inside(sub_classes);
     for (auto sub_class : sub_classes) {
-      kphp_error(sub_class->is_immutable,
+      kphp_error(sub_class->is_immutable || sub_class->is_interface(),
                  fmt_format("Field {} of immutable class {} should be immutable too, but class {} is mutable",
                             TermStringFormat::paint(std::string{field.local_name()}, TermStringFormat::red),
                             TermStringFormat::paint(klass->name, TermStringFormat::red),
@@ -39,6 +40,19 @@ void check_class_immutableness(ClassPtr klass) {
              fmt_format("Immutable class {} has mutable base {}",
                         TermStringFormat::paint(klass->name, TermStringFormat::red),
                         TermStringFormat::paint(klass->parent_class->name, TermStringFormat::red)));
+}
+
+ClassPtr derived_immutability_check(ClassPtr klass) {
+  for (const auto & derived : klass->derived_classes) {
+    if (!derived->is_immutable && !derived->is_interface()) {
+      return derived;
+    }
+    ClassPtr descendant = derived_immutability_check(derived);
+    if (descendant) {
+      return descendant;
+    }
+  }
+  return {};
 }
 
 void process_job_worker_class(ClassPtr klass) {
@@ -70,20 +84,24 @@ void process_job_worker_class(ClassPtr klass) {
 void check_instance_cache_fetch_call(VertexAdaptor<op_func_call> call) {
   auto klass = tinf::get_type(call)->class_type();
   kphp_assert(klass);
-  klass->deeply_require_instance_cache_visitor();
   kphp_error(klass->is_immutable,
              fmt_format("Can not fetch instance of mutable class {} with instance_cache_fetch call", klass->name));
+  klass->deeply_require_instance_cache_visitor();
 }
 
 void check_instance_cache_store_call(VertexAdaptor<op_func_call> call) {
   const auto *type = tinf::get_type(call->args()[1]);
   kphp_error_return(type->ptype() == tp_Class, "Called instance_cache_store() with a non-instance argument");
   auto klass = type->class_type();
-  klass->deeply_require_instance_cache_visitor();
-  kphp_error(!klass->is_polymorphic_or_has_polymorphic_member(),
-             "Can not store instance with interface inside with instance_cache_store call");
-  kphp_error(klass->is_immutable,
+  kphp_error(!klass->is_empty_class(), fmt_format("Can not store instance of empty class {} with instance_cache_store call", klass->name));
+  kphp_error_return(klass->is_immutable || klass->is_interface(),
              fmt_format("Can not store instance of mutable class {} with instance_cache_store call", klass->name));
+  ClassPtr derived = derived_immutability_check(klass);
+  kphp_error(!derived, fmt_format("Can not store polymorphic type {} with mutable derived class {}", klass->name, derived->name));
+  klass->deeply_require_instance_cache_visitor();
+  if (klass->is_polymorphic_or_has_polymorphic_member()) {
+    klass->deeply_require_virtual_builtin_functions();
+  }
 }
 
 void to_array_debug_on_class(ClassPtr klass) {
