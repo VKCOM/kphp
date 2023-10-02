@@ -5198,9 +5198,6 @@ int renew_tl_config(const char *name) {
   return 1;
 }
 
-#define MAX_TL_CONFIG_SIZE (1 << 20)
-
-
 static int read_tl_config_open(const char *name, struct stat *stat) {
   int fd = open(name, O_RDONLY);
 
@@ -5220,13 +5217,6 @@ static int read_tl_config_open(const char *name, struct stat *stat) {
 
   if (stat->st_size == 0) {
     fprintf(stderr, "Empty file '%s'\n", name);
-
-    close(fd);
-    return -1;
-  }
-
-  if (stat->st_size > MAX_TL_CONFIG_SIZE) {
-    fprintf(stderr, "Too big .tlo file '%s' (more than %lld)\n", name, (long long)MAX_TL_CONFIG_SIZE);
 
     close(fd);
     return -1;
