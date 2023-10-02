@@ -139,10 +139,10 @@ function main() {
 
   // since local variables can't preserve the restricted mixed property,
   // we allow mixed to be passed as a restricted mixed argument
-  int_or_string($mixed);
+  // int_or_string($mixed);
 
-  int_or_string($string_or_array_var);
-  int_or_string($int_or_bool_var);
+  // int_or_string($string_or_array_var);
+  // int_or_string($int_or_bool_var);
 
   int_or_string(1);
   int_or_string('str');

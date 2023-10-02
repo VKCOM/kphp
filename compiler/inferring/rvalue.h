@@ -28,6 +28,7 @@ struct RValue {
   bool drop_or_null{false};
   bool ffi_drop_ref{false};
   bool ffi_take_addr{false};
+  bool phpdoc{false};
 };
 
 // take &T cdata type and return it as T;

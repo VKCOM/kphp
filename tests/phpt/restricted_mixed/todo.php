@@ -1,12 +1,6 @@
 @ok
 <?php
 
-/**
- * we don't propagate mixed union info to vars right now,
- * so using an incorrect default init is not an error yet
- * @param int|string $x
- */
-function int_or_string_null_default($x = null) {}
 
 /** @return float|boolean */
 function get_float_or_bool() { return 0.5; }
@@ -24,8 +18,6 @@ function mismatching_check($x) {
 }
 
 function test() {
-  int_or_string_null_default();
-
   // unions as return values are not preserved as types yet
   expect_int_or_string(get_float_or_bool());
 

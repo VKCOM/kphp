@@ -8,6 +8,7 @@
 #include "common/wrappers/likely.h"
 
 #include "compiler/data/class-data.h"
+#include "compiler/data/var-data.h"
 #include "compiler/inferring/edge.h"
 #include "compiler/inferring/type-inferer.h"
 #include "compiler/stage.h"
@@ -108,6 +109,7 @@ void NodeRecalc::set_lca_at(const MultiKey *key, const RValue &rvalue) {
   lca_flags.save_or_null = !rvalue.drop_or_null;
   lca_flags.ffi_drop_ref = rvalue.ffi_drop_ref;
   lca_flags.ffi_take_addr = rvalue.ffi_take_addr;
+  lca_flags.phpdoc = rvalue.phpdoc;
   new_type_->set_lca_at(*key, type, lca_flags);
 
   if (unlikely(new_type_->error_flag())) {
@@ -144,7 +146,9 @@ void NodeRecalc::set_lca(const TypeData *type, const MultiKey *key /* = nullptr*
 }
 
 void NodeRecalc::set_lca(VarPtr var) {
-  set_lca_at(nullptr, as_rvalue(var));
+  auto resp = as_rvalue(var);
+  resp.phpdoc = var->tinf_node.type_restriction != nullptr; // var with restriction --> match php doc
+  set_lca_at(nullptr, resp);
 }
 
 void NodeRecalc::set_lca(ClassPtr klass) {

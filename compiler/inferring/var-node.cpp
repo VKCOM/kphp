@@ -3,6 +3,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "compiler/inferring/var-node.h"
+#include "compiler/inferring/type-node.h"
 
 #include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
@@ -35,7 +36,11 @@ void VarNodeRecalc::do_recalc() {
   }
   // at first, we just calculate new_type_ without any checks
   for (const tinf::Edge *e : node->get_edges_from_this()) {
-    set_lca_at(e->from_at, as_rvalue(e->to));
+    auto rval = as_rvalue(e->to);
+    if (auto tp_node = dynamic_cast<tinf::TypeNode *>(e->to); tp_node) {
+      rval.phpdoc = true;
+    }
+    set_lca_at(e->from_at, rval);
     inferer_->add_node(e->to);
   }
 
@@ -54,7 +59,7 @@ void VarNodeRecalc::do_recalc() {
 
     for (const tinf::Edge *e : node->get_edges_from_this()) {
       TypeData *before_type = new_type_->clone();
-      set_lca_at(e->from_at, as_rvalue(e->to));
+      set_lca_at(e->from_at, as_rvalue(e->to)); // TODO(mkornaukhov03) should we add phpdoc flag?
 
       satisfied = !new_type_->error_flag() && is_less_or_equal_type(new_type_, node->type_restriction);
       if (!satisfied) {
