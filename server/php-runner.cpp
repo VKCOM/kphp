@@ -308,7 +308,11 @@ void PhpScript::finish() noexcept {
   state = run_state_t::uncleared;
   update_net_time();
   double script_init_time_sec = script_time_stats.script_start_time - script_time_stats.worker_init_time;
-  double connection_process_time_sec = script_time_stats.script_start_time - script_time_stats.conn_accept_time;
+  double connection_process_time_sec = 0;
+  if (process_type == ProcessType::http_worker) {
+    connection_process_time_sec = script_time_stats.worker_init_time - script_time_stats.conn_accept_time;
+  }
+
   vk::singleton<ServerStats>::get().add_request_stats(script_time_stats.script_time, script_time_stats.net_time, script_init_time_sec, connection_process_time_sec,
                                                       queries_cnt, long_queries_cnt, script_mem_stats.max_memory_used,
                                                       script_mem_stats.max_real_memory_used, vk::singleton<CurlMemoryUsage>::get().total_allocated, error_type);

@@ -40,7 +40,7 @@ struct ScriptSamples : WithStatType<uint64_t> {
     net_time,
     script_time,
     script_init_time,
-    connection_process_time,
+    http_connection_process_time,
     types_count
   };
 };
@@ -53,7 +53,7 @@ struct QueriesStat : WithStatType<uint64_t> {
     script_time,
     net_time,
     script_init_time,
-    connection_process_time,
+    http_connection_process_time,
     types_count
   };
 };
@@ -229,7 +229,7 @@ EnumTable<QueriesStat> make_queries_stat(uint64_t script_queries, uint64_t long_
   result[QueriesStat::Key::script_time] = script_time_ns;
   result[QueriesStat::Key::net_time] = net_time_ns;
   result[QueriesStat::Key::script_init_time] = script_init_time_ns;
-  result[QueriesStat::Key::connection_process_time] = connection_process_time_ns;
+  result[QueriesStat::Key::http_connection_process_time] = connection_process_time_ns;
   return result;
 }
 
@@ -304,7 +304,7 @@ struct WorkerSharedStats : private vk::not_copyable {
     sample[ScriptSamples::Key::working_time] = queries[QueriesStat::Key::net_time] + queries[QueriesStat::Key::script_time];
     sample[ScriptSamples::Key::net_time] = queries[QueriesStat::Key::net_time];
     sample[ScriptSamples::Key::script_time] = queries[QueriesStat::Key::script_time];
-    sample[ScriptSamples::Key::connection_process_time] = queries[QueriesStat::Key::connection_process_time];
+    sample[ScriptSamples::Key::http_connection_process_time] = queries[QueriesStat::Key::http_connection_process_time];
     sample[ScriptSamples::Key::script_init_time] = queries[QueriesStat::Key::script_init_time];
     script_samples.add_sample(sample);
   }
@@ -623,8 +623,8 @@ void ServerStats::add_request_stats(double script_time_sec, double net_time_sec,
   const auto script_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(script_time_sec));
   const auto net_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(net_time_sec));
   const auto script_init_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(script_init_time_sec));
-  const auto connection_process_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(connection_process_time_sec));
-  const auto queries_stat = make_queries_stat(script_queries, long_script_queries, script_time.count(), net_time.count(), script_init_time.count(), connection_process_time.count());
+  const auto http_connection_process_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(connection_process_time_sec));
+  const auto queries_stat = make_queries_stat(script_queries, long_script_queries, script_time.count(), net_time.count(), script_init_time.count(), http_connection_process_time.count());
 
   stats.add_request_stats(queries_stat, error, memory_used, real_memory_used, curl_total_allocated);
   shared_stats_->workers.add_worker_stats(queries_stat, worker_process_id_);
@@ -740,7 +740,7 @@ void write_to(stats_t *stats, const char *prefix, const WorkerAggregatedStats &a
   stats->add_gauge_stat(ns2double(shared.total_queries_stat[QueriesStat::Key::script_time]), prefix, ".requests.script_time.total");
   stats->add_gauge_stat(ns2double(shared.total_queries_stat[QueriesStat::Key::net_time]), prefix, ".requests.net_time.total");
   stats->add_gauge_stat(ns2double(shared.total_queries_stat[QueriesStat::Key::script_init_time]), prefix, ".requests.script_init_time.total");
-  stats->add_gauge_stat(ns2double(shared.total_queries_stat[QueriesStat::Key::connection_process_time]), prefix, ".requests.connection_process_time.total");
+  stats->add_gauge_stat(ns2double(shared.total_queries_stat[QueriesStat::Key::http_connection_process_time]), prefix, ".requests.http_connection_process_time.total");
   stats->add_gauge_stat(shared.total_queries_stat[QueriesStat::Key::incoming_queries], prefix, ".requests.total_incoming_queries");
   stats->add_gauge_stat(shared.total_queries_stat[QueriesStat::Key::outgoing_queries], prefix, ".requests.total_outgoing_queries");
   stats->add_gauge_stat(shared.total_queries_stat[QueriesStat::Key::outgoing_long_queries], prefix, ".requests.total_outgoing_long_queries");
@@ -750,7 +750,7 @@ void write_to(stats_t *stats, const char *prefix, const WorkerAggregatedStats &a
   write_to(stats, prefix, ".requests.script_time", agg.script_samples[ScriptSamples::Key::script_time], ns2double);
   write_to(stats, prefix, ".requests.net_time", agg.script_samples[ScriptSamples::Key::net_time], ns2double);
   write_to(stats, prefix, ".requests.script_init_time", agg.script_samples[ScriptSamples::Key::script_init_time], ns2double);
-  write_to(stats, prefix, ".requests.connection_process_time", agg.script_samples[ScriptSamples::Key::connection_process_time], ns2double);
+  write_to(stats, prefix, ".requests.http_connection_process_time", agg.script_samples[ScriptSamples::Key::http_connection_process_time], ns2double);
   write_to(stats, prefix, ".requests.working_time", agg.script_samples[ScriptSamples::Key::working_time], ns2double);
   write_to(stats, prefix, ".memory.script_usage", agg.script_samples[ScriptSamples::Key::memory_used]);
   write_to(stats, prefix, ".memory.script_real_usage", agg.script_samples[ScriptSamples::Key::real_memory_used]);
