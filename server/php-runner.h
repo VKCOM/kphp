@@ -90,7 +90,7 @@ class PhpScript {
   struct script_time_stats_t {
     double net_time{0};
     double script_time{0};
-    double conn_accept_time{0};
+    double http_conn_accept_time{0};
     double worker_init_time{0};
     double script_start_time{0};
   };
@@ -106,7 +106,9 @@ public:
   volatile static bool in_script_context;
   volatile static bool time_limit_exceeded;
   volatile static bool memory_limit_exceeded;
+
   static script_time_stats_t script_time_stats;
+  static rusage_info_t script_init_rusage;
 
   run_state_t state{run_state_t::empty};
   const char *error_message{nullptr};
@@ -156,6 +158,7 @@ public:
   void reset_script_timeout() noexcept;
   double get_net_time() const noexcept;
   double get_script_time() noexcept;
+  rusage_info_t get_script_rusage() noexcept;
   int get_net_queries_count() const noexcept;
   long long memory_get_total_usage() const noexcept;
 
