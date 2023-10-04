@@ -66,23 +66,23 @@ include(${COMMON_DIR}/unicode/unicode.cmake)
 #        DESTINATION ${INSTALL_KPHP_SOURCE}
 #        FILES_MATCHING REGEX ".*\\.(h|inl)$")
 
-install(FILES ${OBJS_DIR}/php_lib_version.sha256
-        COMPONENT KPHP
-        DESTINATION ${INSTALL_KPHP_SOURCE}/objs)
+#install(FILES ${OBJS_DIR}/php_lib_version.sha256
+#        COMPONENT KPHP
+#        DESTINATION ${INSTALL_KPHP_SOURCE}/objs)
+#
+#install(FILES ${BASE_DIR}/functions.txt ${COMMON_DIR}/php-functions.h
+#        COMPONENT KPHP
+#        DESTINATION ${INSTALL_KPHP_SOURCE}/)
+#
+#install(FILES ${AUTO_DIR}/runtime/runtime-headers.h
+#        COMPONENT KPHP
+#        DESTINATION ${INSTALL_KPHP_SOURCE}/objs/generated/auto/runtime/)
 
-install(FILES ${BASE_DIR}/functions.txt ${COMMON_DIR}/php-functions.h
-        COMPONENT KPHP
-        DESTINATION ${INSTALL_KPHP_SOURCE}/)
-
-install(FILES ${AUTO_DIR}/runtime/runtime-headers.h
-        COMPONENT KPHP
-        DESTINATION ${INSTALL_KPHP_SOURCE}/objs/generated/auto/runtime/)
-
-set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "vk-flex-data, curl-kphp-vk, libuber-h3, libpcre3-dev, libre2-dev, libyaml-cpp-dev, libssl-dev, zlib1g-dev, \
-                                       libzstd-dev, g++, libnghttp2-dev, libmsgpack-dev, kphp-timelib")
-set(CPACK_DEBIAN_KPHP_PACKAGE_RECOMMENDS "php7.4-vkext, vk-tl-tools")
-set(CPACK_DEBIAN_KPHP_DESCRIPTION "kphp2cpp compiler and runtime for it")
-set(CPACK_DEBIAN_KPHP_PACKAGE_NAME "kphp")
+#set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "vk-flex-data, curl-kphp-vk, libuber-h3, libpcre3-dev, libre2-dev, libyaml-cpp-dev, libssl-dev, zlib1g-dev, \
+#                                       libzstd-dev, g++, libnghttp2-dev, libmsgpack-dev, kphp-timelib")
+#set(CPACK_DEBIAN_KPHP_PACKAGE_RECOMMENDS "php7.4-vkext, vk-tl-tools")
+#set(CPACK_DEBIAN_KPHP_DESCRIPTION "kphp2cpp compiler and runtime for it")
+#set(CPACK_DEBIAN_KPHP_PACKAGE_NAME "kphp")
 
 add_custom_target(force_clean_all
                   COMMAND rm -rf ${OBJS_DIR}
