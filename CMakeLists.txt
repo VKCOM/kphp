@@ -40,31 +40,31 @@ include(${COMMON_DIR}/common.cmake)
 include(${COMMON_DIR}/tl/tl.cmake)
 include(${COMMON_DIR}/unicode/unicode.cmake)
 
-include(${BASE_DIR}/runtime/runtime.cmake)
-include(${BASE_DIR}/server/server.cmake)
-include(${BASE_DIR}/compiler/compiler.cmake)
+#include(${BASE_DIR}/runtime/runtime.cmake)
+#include(${BASE_DIR}/server/server.cmake)
+#include(${BASE_DIR}/compiler/compiler.cmake)
 
-include(${BASE_DIR}/tests/tests.cmake)
+#include(${BASE_DIR}/tests/tests.cmake)
 
-add_custom_target(kphp ALL DEPENDS ${OBJS_DIR}/php_lib_version.sha256)
-add_dependencies(kphp kphp2cpp kphp-full-runtime)
+#add_custom_target(kphp ALL DEPENDS ${OBJS_DIR}/php_lib_version.sha256)
+#add_dependencies(kphp kphp2cpp kphp-full-runtime)
 
-install(TARGETS kphp2cpp
-        COMPONENT KPHP
-        RUNTIME DESTINATION ${VK_INSTALL_DIR}/bin/)
-install_symlink(${VK_INSTALL_DIR}/bin/kphp2cpp bin/kphp KPHP)
+#install(TARGETS kphp2cpp
+#        COMPONENT KPHP
+#        RUNTIME DESTINATION ${VK_INSTALL_DIR}/bin/)
+#install_symlink(${VK_INSTALL_DIR}/bin/kphp2cpp bin/kphp KPHP)
 
-install(TARGETS kphp-full-runtime
-        COMPONENT KPHP
-        LIBRARY DESTINATION ${INSTALL_KPHP_SOURCE}/objs
-        ARCHIVE DESTINATION ${INSTALL_KPHP_SOURCE}/objs)
+#install(TARGETS kphp-full-runtime
+#        COMPONENT KPHP
+#        LIBRARY DESTINATION ${INSTALL_KPHP_SOURCE}/objs
+#        ARCHIVE DESTINATION ${INSTALL_KPHP_SOURCE}/objs)
 
-install(DIRECTORY ${COMMON_DIR}
-                  ${BASE_DIR}/runtime
-                  ${BASE_DIR}/server
-        COMPONENT KPHP
-        DESTINATION ${INSTALL_KPHP_SOURCE}
-        FILES_MATCHING REGEX ".*\\.(h|inl)$")
+#install(DIRECTORY ${COMMON_DIR}
+#                  ${BASE_DIR}/runtime
+#                  ${BASE_DIR}/server
+#        COMPONENT KPHP
+#        DESTINATION ${INSTALL_KPHP_SOURCE}
+#        FILES_MATCHING REGEX ".*\\.(h|inl)$")
 
 install(FILES ${OBJS_DIR}/php_lib_version.sha256
         COMPONENT KPHP
