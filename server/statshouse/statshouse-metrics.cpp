@@ -11,6 +11,7 @@
 #include "server/job-workers/shared-memory-manager.h"
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
+#include "server/php-runner.h"
 #include "server/server-stats.h"
 #include "server/shared-data.h"
 

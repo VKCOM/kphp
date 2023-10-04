@@ -10,10 +10,11 @@
 #include "common/mixin/not_copyable.h"
 #include "runtime/memory_resource/memory_resource.h"
 #include "server/job-workers/job-stats.h"
-#include "server/php-runner.h"
 #include "server/statshouse/statshouse-client.h"
 #include "server/workers-control.h"
 #include "server/workers-stats.h"
+
+enum class script_error_t : uint8_t;
 
 class StatsHouseMetrics : vk::not_copyable {
 public:
