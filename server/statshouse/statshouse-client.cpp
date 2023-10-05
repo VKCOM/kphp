@@ -4,11 +4,6 @@
 
 #include "server/statshouse/statshouse-client.h"
 
-void StatsHouseClient::init_common_tags(std::string_view cluster, std::string_view host) {
-  tag_cluster = cluster;
-  tag_host = host;
-}
-
 statshouse::TransportUDPBase::MetricBuilder StatsHouseClient::metric(std::string_view name, bool force_tag_host) {
   auto builder = transport.metric(name);
   builder.tag(tag_cluster);

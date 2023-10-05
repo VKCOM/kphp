@@ -16,26 +16,22 @@
 
 enum class script_error_t : uint8_t;
 
-class StatsHouseMetrics : vk::not_copyable {
+class StatsHouseManager : vk::not_copyable {
 public:
-  static void init_client(const std::string &ip, int port) {
+  static void init(const std::string &ip, int port) {
     storage_impl(ip, port);
   }
 
-  static StatsHouseMetrics &get() {
+  static StatsHouseManager &get() {
     return storage_impl({}, {});
   }
 
-  void init_common_tags(std::string_view cluster, std::string_view host) {
-    client.init_common_tags(cluster, host);
-  }
+  void set_common_tags();
 
-  void on_worker_cron() {
+  // Runs in master and workers cron with 1 sec period
+  void generic_cron() {
     generic_cron_check_if_tag_host_needed();
-  }
-
-  void on_master_cron() {
-    generic_cron_check_if_tag_host_needed();
+    set_common_tags();
   }
 
   /**
@@ -66,12 +62,12 @@ private:
   StatsHouseClient client;
   bool need_write_enable_tag_host = false;
 
-  StatsHouseMetrics() = default;
-  explicit StatsHouseMetrics(const std::string &ip, int port);
+  StatsHouseManager() = default;
+  explicit StatsHouseManager(const std::string &ip, int port);
 
   // returns safe to use dummy instance if wasn't initialized
-  static StatsHouseMetrics &storage_impl(const std::string &ip, int port) {
-    static StatsHouseMetrics client{ip, port};
+  static StatsHouseManager &storage_impl(const std::string &ip, int port) {
+    static StatsHouseManager client{ip, port};
     return client;
   }
 

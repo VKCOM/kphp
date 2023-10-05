@@ -13,9 +13,15 @@ public:
 
   StatsHouseClient(const std::string &ip, int port) : transport(ip, port) {}
 
-  void init_common_tags(std::string_view cluster, std::string_view host);
-
   statshouse::TransportUDPBase::MetricBuilder metric(std::string_view name, bool force_tag_host = false);
+
+  void set_tag_cluster(std::string_view cluster) {
+    tag_cluster = cluster;
+  }
+
+  void set_tag_host(std::string_view host) {
+    tag_host = host;
+  }
 
   void enable_tag_host() {
     host_enabled = true;

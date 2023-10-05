@@ -2,16 +2,18 @@
 // Copyright (c) 2023 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "server/statshouse/statshouse-metrics.h"
+#include "server/statshouse/statshouse-manager.h"
 
 #include <chrono>
 
 #include "common/precise-time.h"
+#include "common/resolver.h"
 #include "runtime/instance-cache.h"
 #include "server/job-workers/shared-memory-manager.h"
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
 #include "server/php-runner.h"
+#include "server/server-config.h"
 #include "server/server-stats.h"
 #include "server/shared-data.h"
 
@@ -51,11 +53,15 @@ const char *script_error_to_str(script_error_t error) {
 }
 } // namespace
 
-StatsHouseMetrics::StatsHouseMetrics(const std::string &ip, int port)
+StatsHouseManager::StatsHouseManager(const std::string &ip, int port)
   : client(ip, port){};
 
+void StatsHouseManager::set_common_tags() {
+  client.set_tag_cluster(vk::singleton<ServerConfig>::get().get_cluster_name());
+  client.set_tag_host(kdb_gethostname());
+}
 
-void StatsHouseMetrics::generic_cron_check_if_tag_host_needed() {
+void StatsHouseManager::generic_cron_check_if_tag_host_needed() {
   using namespace std::chrono_literals;
 
   static SharedData::time_point last_check_tp;
@@ -89,7 +95,7 @@ void StatsHouseMetrics::generic_cron_check_if_tag_host_needed() {
   }
 }
 
-void StatsHouseMetrics::add_request_stats(uint64_t script_time_ns, uint64_t net_time_ns, script_error_t error, uint64_t memory_used,
+void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_time_ns, script_error_t error, uint64_t memory_used,
                                          uint64_t real_memory_used, uint64_t script_queries, uint64_t long_script_queries) {
   const char *worker_type = get_current_worker_type();
   const char *status = script_error_to_str(error);
@@ -112,7 +118,7 @@ void StatsHouseMetrics::add_request_stats(uint64_t script_time_ns, uint64_t net_
   client.metric("kphp_requests_outgoing_long_queries").tag(worker_type).write_value(long_script_queries);
 }
 
-void StatsHouseMetrics::add_job_stats(uint64_t job_wait_ns, uint64_t request_memory_used, uint64_t request_real_memory_used, uint64_t response_memory_used,
+void StatsHouseManager::add_job_stats(uint64_t job_wait_ns, uint64_t request_memory_used, uint64_t request_real_memory_used, uint64_t response_memory_used,
                                      uint64_t response_real_memory_used) {
   client.metric("kphp_job_queue_time").write_value(job_wait_ns);
 
@@ -123,13 +129,13 @@ void StatsHouseMetrics::add_job_stats(uint64_t job_wait_ns, uint64_t request_mem
   client.metric("kphp_job_response_memory_usage").tag("real_used").write_value(response_real_memory_used);
 }
 
-void StatsHouseMetrics::add_job_common_memory_stats(uint64_t job_common_request_memory_used, uint64_t job_common_request_real_memory_used) {
+void StatsHouseManager::add_job_common_memory_stats(uint64_t job_common_request_memory_used, uint64_t job_common_request_real_memory_used) {
   dl::CriticalSectionGuard guard; // It's called from script context, so we need to ensure SIGALRM won't interrupt us here
   client.metric("kphp_job_common_request_memory").tag("used").write_value(job_common_request_memory_used);
   client.metric("kphp_job_common_request_memory").tag("real_used").write_value(job_common_request_real_memory_used);
 }
 
-void StatsHouseMetrics::add_worker_memory_stats(const mem_info_t &mem_stats) {
+void StatsHouseManager::add_worker_memory_stats(const mem_info_t &mem_stats) {
   const char *worker_type = get_current_worker_type();
   client.metric("kphp_workers_memory").tag(worker_type).tag("vm_peak").write_value(mem_stats.vm_peak);
   client.metric("kphp_workers_memory").tag(worker_type).tag("vm").write_value(mem_stats.vm);
@@ -142,7 +148,7 @@ void StatsHouseMetrics::add_worker_memory_stats(const mem_info_t &mem_stats) {
   client.metric("kphp_by_host_workers_memory", true).tag(worker_type).tag("rss_peak").write_value(mem_stats.rss_peak);
 }
 
-void StatsHouseMetrics::add_common_master_stats(const workers_stats_t &workers_stats, const memory_resource::MemoryStats &memory_stats, double cpu_s_usage,
+void StatsHouseManager::add_common_master_stats(const workers_stats_t &workers_stats, const memory_resource::MemoryStats &memory_stats, double cpu_s_usage,
                                                double cpu_u_usage, long long int instance_cache_memory_swaps_ok,
                                                long long int instance_cache_memory_swaps_fail) {
   if (engine_tag) {
@@ -214,7 +220,7 @@ void StatsHouseMetrics::add_common_master_stats(const workers_stats_t &workers_s
   }
 }
 
-void StatsHouseMetrics::add_job_workers_shared_memory_stats(const job_workers::JobStats &job_stats) {
+void StatsHouseManager::add_job_workers_shared_memory_stats(const job_workers::JobStats &job_stats) {
   using namespace job_workers;
 
   size_t total_used = this->add_job_workers_shared_messages_stats(job_stats.messages, JOB_SHARED_MESSAGE_BYTES);
@@ -231,7 +237,7 @@ void StatsHouseMetrics::add_job_workers_shared_memory_stats(const job_workers::J
   client.metric("kphp_job_workers_shared_memory").tag("used").write_value(total_used);
 }
 
-size_t StatsHouseMetrics::add_job_workers_shared_messages_stats(const job_workers::JobStats::MemoryBufferStats &memory_buffers_stats,
+size_t StatsHouseManager::add_job_workers_shared_messages_stats(const job_workers::JobStats::MemoryBufferStats &memory_buffers_stats,
                                                                size_t buffer_size) {
   using namespace job_workers;
 
@@ -247,7 +253,7 @@ size_t StatsHouseMetrics::add_job_workers_shared_messages_stats(const job_worker
   return memory_used;
 }
 
-size_t StatsHouseMetrics::add_job_workers_shared_memory_buffers_stats(const job_workers::JobStats::MemoryBufferStats &memory_buffers_stats, const char *size_tag,
+size_t StatsHouseManager::add_job_workers_shared_memory_buffers_stats(const job_workers::JobStats::MemoryBufferStats &memory_buffers_stats, const char *size_tag,
                                                                      size_t buffer_size) {
   using namespace job_workers;
 

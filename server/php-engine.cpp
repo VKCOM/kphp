@@ -89,7 +89,7 @@
 #include "server/server-stats.h"
 #include "server/shared-data-worker-cache.h"
 #include "server/signal-handlers.h"
-#include "server/statshouse/statshouse-metrics.h"
+#include "server/statshouse/statshouse-manager.h"
 #include "server/workers-control.h"
 
 using job_workers::JobWorkersContext;
@@ -1423,8 +1423,8 @@ void worker_cron() {
   vk::singleton<SharedDataWorkerCache>::get().on_worker_cron();
   vk::singleton<ServerStats>::get().update_this_worker_stats();
   auto virtual_memory_stat = get_self_mem_stats();
-  StatsHouseMetrics::get().add_worker_memory_stats(virtual_memory_stat);
-  StatsHouseMetrics::get().on_worker_cron();
+  StatsHouseManager::get().add_worker_memory_stats(virtual_memory_stat);
+  StatsHouseManager::get().generic_cron();
 }
 
 void reopen_json_log() {
@@ -1667,7 +1667,7 @@ void init_all() {
     }
     log_server_warning(deprecation_warning);
   }
-  StatsHouseMetrics::get().init_common_tags(vk::singleton<ServerConfig>::get().get_cluster_name(), kdb_gethostname());
+  StatsHouseManager::get().set_common_tags();
 
   global_init_runtime_libs();
   global_init_php_scripts();
@@ -2093,7 +2093,7 @@ int main_args_handler(int i, const char *long_option) {
         host = "127.0.0.1";
       }
 
-      StatsHouseMetrics::init_client(host, port);
+      StatsHouseManager::init(host, port);
       return 0;
     }
     case 2027: {

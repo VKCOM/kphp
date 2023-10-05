@@ -41,7 +41,7 @@ prepend(KPHP_JOB_WORKERS_SOURCES ${BASE_DIR}/server/job-workers/
 
 prepend(KPHP_STATSHOUSE_SOURCES ${BASE_DIR}/server/statshouse/
         statshouse-client.cpp
-        statshouse-metrics.cpp)
+        statshouse-manager.cpp)
 
 prepend(KPHP_DATABASE_DRIVERS_SOURCES ${BASE_DIR}/server/database-drivers/
         adaptor.cpp
