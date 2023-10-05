@@ -2,7 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "vkext/vkext-schema-memcache.h"
+#include "vkext/vkext-rpc-tl-serialization.h"
 
 #include <errno.h>
 #include <cinttypes>
@@ -1098,7 +1098,7 @@ void _extra_dec_ref(struct rpc_query *q) {
   q->extra_free = 0;
 }
 
-struct rpc_query *vk_memcache_query_one(struct rpc_connection *c, double timeout, VK_ZVAL_API_P arr, int ignore_answer) {
+struct rpc_query *vk_rpc_tl_query_one_impl(struct rpc_connection *c, double timeout, VK_ZVAL_API_P arr, int ignore_answer) {
   do_rpc_clean();
   START_TIMER (tmp);
   void *res = store_function(arr);
@@ -1124,7 +1124,7 @@ struct rpc_query *vk_memcache_query_one(struct rpc_connection *c, double timeout
   return q;
 }
 
-zval **vk_memcache_query_result_one(struct tl_tree *T) {
+zval **vk_rpc_tl_query_result_one_impl(struct tl_tree *T) {
   tl_parse_init();
   START_TIMER (tmp);
   zval **r = fetch_function(T);
@@ -1134,7 +1134,7 @@ zval **vk_memcache_query_result_one(struct tl_tree *T) {
   return r;
 }
 
-void vk_memcache_query_many(struct rpc_connection *c, VK_ZVAL_API_P arr, double timeout, zval **r, int ignore_answer) {
+void vk_rpc_tl_query_impl(struct rpc_connection *c, VK_ZVAL_API_P arr, double timeout, zval **r, int ignore_answer) {
   VK_ZVAL_API_P zkey;
   array_init (*r);
   unsigned long index;
@@ -1144,7 +1144,7 @@ void vk_memcache_query_many(struct rpc_connection *c, VK_ZVAL_API_P arr, double 
     if (VK_ZSTR_P_NON_EMPTY(key)) {
       index = 0;
     }
-    struct rpc_query *q = vk_memcache_query_one(c, timeout, zkey, ignore_answer);
+    struct rpc_query *q = vk_rpc_tl_query_one_impl(c, timeout, zkey, ignore_answer);
     if (VK_ZSTR_P_NON_EMPTY(key)) {
       if (q) {
         if (ignore_answer) {
@@ -1174,7 +1174,7 @@ long long vk_queries_count(INTERNAL_FUNCTION_PARAMETERS) {
   return total_working_qid;
 }
 
-void vk_memcache_query(INTERNAL_FUNCTION_PARAMETERS) {
+void vk_rpc_tl_query(INTERNAL_FUNCTION_PARAMETERS) {
   ADD_CNT (parse);
   START_TIMER (parse);
   int argc = ZEND_NUM_ARGS ();
@@ -1221,7 +1221,7 @@ void vk_memcache_query(INTERNAL_FUNCTION_PARAMETERS) {
   }
   END_TIMER (parse);
 
-  vk_memcache_query_many(c, VK_ZVAL_ARRAY_TO_API_P(z[1]), timeout, &return_value, ignore_answer);
+  vk_rpc_tl_query_impl(c, VK_ZVAL_ARRAY_TO_API_P(z[1]), timeout, &return_value, ignore_answer);
 //  if (do_rpc_flush_server (c->server, timeout) < 0) {
   if (do_rpc_flush(timeout) < 0) {
     vkext_reset_error();
@@ -1231,7 +1231,7 @@ void vk_memcache_query(INTERNAL_FUNCTION_PARAMETERS) {
   }
 }
 
-void vk_memcache_query1(INTERNAL_FUNCTION_PARAMETERS) {
+void vk_rpc_tl_query_one(INTERNAL_FUNCTION_PARAMETERS) {
   ADD_CNT (parse);
   START_TIMER (parse);
   int argc = ZEND_NUM_ARGS ();
@@ -1264,7 +1264,7 @@ void vk_memcache_query1(INTERNAL_FUNCTION_PARAMETERS) {
 
   END_TIMER (parse);
 
-  struct rpc_query *q = vk_memcache_query_one(c, timeout, VK_ZVAL_ARRAY_TO_API_P(z[1]), 0);
+  struct rpc_query *q = vk_rpc_tl_query_one_impl(c, timeout, VK_ZVAL_ARRAY_TO_API_P(z[1]), 0);
   if (do_rpc_flush(timeout) < 0) {
     vkext_reset_error();
     vkext_error(VKEXT_ERROR_NETWORK, "Can't send query");
@@ -1305,7 +1305,7 @@ static zval *make_query_result_or_error(zval **r, const char *error_msg, int err
   return _err;
 }
 
-void vk_memcache_query_result_many(struct rpc_queue *Q, double timeout, zval **r) {
+void vk_rpc_tl_query_result_impl(struct rpc_queue *Q, double timeout, zval **r) {
   array_init (*r);
   while (!do_rpc_queue_empty(Q)) {
     long long qid = do_rpc_queue_next(Q, timeout);
@@ -1320,14 +1320,14 @@ void vk_memcache_query_result_many(struct rpc_queue *Q, double timeout, zval **r
     if (do_rpc_get_and_parse(qid, timeout - precise_now) < 0) {
       continue;
     }
-    zval *res = make_query_result_or_error(vk_memcache_query_result_one(T),
+    zval *res = make_query_result_or_error(vk_rpc_tl_query_result_one_impl(T),
                                            "Response not found, probably timed out",
                                            TL_ERROR_RESPONSE_NOT_FOUND);
     vk_add_index_zval_nod (*r, qid, res);
   }
 }
 
-void vk_memcache_query_result1(INTERNAL_FUNCTION_PARAMETERS) {
+void vk_rpc_tl_query_result_one(INTERNAL_FUNCTION_PARAMETERS) {
   ADD_CNT (parse);
   START_TIMER (parse);
   int argc = ZEND_NUM_ARGS ();
@@ -1362,13 +1362,13 @@ void vk_memcache_query_result1(INTERNAL_FUNCTION_PARAMETERS) {
     efree(r);
     return;
   }
-  zval *r = make_query_result_or_error(vk_memcache_query_result_one(T), "Response not found, probably timed out",
+  zval *r = make_query_result_or_error(vk_rpc_tl_query_result_one_impl(T), "Response not found, probably timed out",
                                        TL_ERROR_RESPONSE_NOT_FOUND);
   RETVAL_ZVAL(r, false, true);
   efree(r);
 }
 
-void vk_memcache_query_result(INTERNAL_FUNCTION_PARAMETERS) {
+void vk_rpc_tl_query_result(INTERNAL_FUNCTION_PARAMETERS) {
   ADD_CNT (parse);
   START_TIMER (parse);
   int argc = ZEND_NUM_ARGS ();
@@ -1418,7 +1418,7 @@ void vk_memcache_query_result(INTERNAL_FUNCTION_PARAMETERS) {
 
   zval *R = NULL;
   VK_ALLOC_INIT_ZVAL(R);
-  vk_memcache_query_result_many(Q, timeout, &R);
+  vk_rpc_tl_query_result_impl(Q, timeout, &R);
 
   array_init (return_value);
   NEW_INIT_Z_STR_P(key);
