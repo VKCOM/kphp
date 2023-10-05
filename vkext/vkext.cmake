@@ -50,6 +50,7 @@ prepend(VKEXT_SOURCES ${VKEXT_DIR}/
         vkext-rpc.cpp
         vkext-tl-parse.cpp
         vkext-tl-memcache.cpp
+        vkext-rpc-req-error.cpp
         vkext-rpc-tl-serialization.cpp
         vkext-errors.cpp
         vkext-stats.cpp

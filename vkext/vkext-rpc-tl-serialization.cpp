@@ -22,6 +22,7 @@
 
 #include "vkext/vkext-errors.h"
 #include "vkext/vkext-rpc-include.h"
+#include "vkext/vkext-rpc-req-error.h"
 #include "vkext/vkext-rpc.h"
 #include "vkext/vkext-tl-parse.h"
 #include "vkext/vkext.h"
@@ -1048,23 +1049,18 @@ zval **fetch_function(struct tl_tree *T) {
   fprintf (stderr, "Fetch begin: T->id = %s, T->ref_cnt = %d, T->flags = %d\n", ((struct tl_tree_type *)T)->type->id, ((struct tl_tree_type *)T)->self.ref_cnt, ((struct tl_tree_type *)T)->self.flags);
 #endif
 //  INC_REF (T);
-  int x = do_rpc_lookup_int(NULL);
-  if (x == TL_RPC_REQ_ERROR) {
-    assert (tl_parse_int() == TL_RPC_REQ_ERROR);
-    tl_parse_long();
-    int error_code = tl_parse_int();
-    char *s = 0;
-    int l = tl_parse_string(&s);
-//    fprintf (stderr, "Error_code %d: error %.*s\n", error_code, l, s);
-    *_arr = make_query_result_or_error(NULL, l >= 0 ? s : "unknown", error_code);
-    if (s) {
-      free(s);
-    }
-    DEC_REF (T);
 
+  int pos = tl_parse_save_pos();
+  vkext_rpc::RpcError rpc_error;
+  rpc_error.try_fetch();
+  if (rpc_error.error.has_value()) {
+    *_arr = make_query_result_or_error(NULL, rpc_error.error->error_msg.c_str(), rpc_error.error->error_code);
+    DEC_REF (T);
     END_TIMER(fetch_function)
     return _arr;
   }
+  tl_parse_restore_pos(pos);
+
   void *res = TLUNI_START (fIP, _Data + 1, _arr, vars);
 //  DEC_REF (T);
   if (res == TLUNI_OK) {
