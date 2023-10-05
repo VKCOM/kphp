@@ -37,7 +37,6 @@ struct RpcReqResultExtra {
 };
 
 struct RpcReqError {
-  long long query_id{0};
   int error_code{0};
   std::string error_msg;
 

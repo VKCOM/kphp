@@ -53,7 +53,7 @@ void tl::RpcReqResultExtra::tl_fetch(int flags) {
 }
 
 void tl::RpcReqError::tl_fetch() {
-  query_id = tl_parse_long();
+  tl_parse_long(); // unused query_id
   error_code = tl_parse_int();
   error_msg = tl_parse_string();
 }

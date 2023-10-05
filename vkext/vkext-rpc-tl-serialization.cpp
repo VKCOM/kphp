@@ -214,7 +214,9 @@ static void tl_tree_debug_print(struct tl_tree *tree, int shift) {
 static const char *reqResult_underscore_class_name = "VK\\TL\\_common\\Types\\rpcResponseOk";
 static const char *reqResult_header_class_name = "VK\\TL\\_common\\Types\\rpcResponseHeader";
 static const char *reqResult_error_class_name = "VK\\TL\\_common\\Types\\rpcResponseError";
+static const char *rpcReqResultExtra_class_name = "VK\\TL\\_common\\Types\\rpcReqResultExtra";
 static const char *rpcFunctionReturnResult_class_name = "VK\\TL\\RpcFunctionReturnResult";
+static const char *engine_pid_class_name = "VK\\TL\\net\\Types\\net_pid";
 static const char *true_type_class_name = "VK\\TL\\_common\\Types\\true";
 static const char *vk_tl_prefix = "VK\\TL\\";
 static const char *php_common_namespace = "_common";
@@ -529,7 +531,7 @@ static zval *create_php_instance(const char *class_name) {
   return ci;
 }
 
-static zval *make_query_result_or_error(zval **r, const char *error_msg, int error_code);
+static zval *make_query_result_or_error(zval **r, const vkext_rpc::tl::RpcReqError &error, const vkext_rpc::tl::RpcReqResultExtra *header = nullptr, int extra_flags = 0);
 
 /**
  * This function extracts ORIGINAL tl name from given php class name.
@@ -1054,7 +1056,7 @@ zval **fetch_function(struct tl_tree *T) {
   vkext_rpc::RpcError rpc_error;
   rpc_error.try_fetch();
   if (rpc_error.error.has_value()) {
-    *_arr = make_query_result_or_error(NULL, rpc_error.error->error_msg.c_str(), rpc_error.error->error_code);
+    *_arr = make_query_result_or_error(NULL, rpc_error.error.value(), rpc_error.header.has_value() ? &rpc_error.header.value() : nullptr, rpc_error.flags);
     DEC_REF (T);
     END_TIMER(fetch_function)
     return _arr;
@@ -1080,7 +1082,7 @@ zval **fetch_function(struct tl_tree *T) {
     if (*_arr) {
       zval_dtor (*_arr);
     }
-    *_arr = make_query_result_or_error(NULL, "Can't parse response", TL_ERROR_RESPONSE_SYNTAX);
+    *_arr = make_query_result_or_error(NULL, {TL_ERROR_RESPONSE_SYNTAX, "Can't parse response"});
     return _arr;
   }
 }
@@ -1274,7 +1276,72 @@ void vk_rpc_tl_query_one(INTERNAL_FUNCTION_PARAMETERS) {
   }
 }
 
-static zval *make_query_result_or_error(zval **r, const char *error_msg, int error_code) {
+static zval *convert_rpc_extra_header_to_php_repr(const vkext_rpc::tl::RpcReqResultExtra &header) {
+  zval *res;
+
+  if (typed_mode) {
+    res = create_php_instance(rpcReqResultExtra_class_name);
+  } else {
+    VK_ALLOC_INIT_ZVAL (res);
+    array_init (res);
+  }
+
+  if (header.binlog_pos.has_value()) {
+    set_field_int(&res, header.binlog_pos.value(), "binlog_pos", -1);
+  }
+  if (header.binlog_time.has_value()) {
+    set_field_int(&res, header.binlog_time.value(), "binlog_time", -1);
+  }
+  if (header.engine_pid.has_value()) {
+    zval *engine_pid_field;
+
+    if (typed_mode) {
+      engine_pid_field = create_php_instance(engine_pid_class_name);
+    } else {
+      VK_ALLOC_INIT_ZVAL(engine_pid_field);
+      array_init (engine_pid_field);
+    }
+    set_field_int(&engine_pid_field, header.engine_pid->ip, "ip", -1);
+    set_field_int(&engine_pid_field, header.engine_pid->port_pid, "port_pid", -1);
+    set_field_int(&engine_pid_field, header.engine_pid->utime, "utime", -1);
+
+    set_field(&res, engine_pid_field, "engine_pid", -1); // it frees allocated zval for engine_pid_field
+  }
+  if (header.request_size.has_value()) {
+    set_field_int(&res, header.request_size.value(), "request_size", -1);
+  }
+  if (header.response_size.has_value()) {
+    set_field_int(&res, header.response_size.value(), "response_size", -1);
+  }
+  if (header.failed_subqueries.has_value()) {
+    set_field_int(&res, header.failed_subqueries.value(), "failed_subqueries", -1);
+  }
+  if (header.compression_version.has_value()) {
+    set_field_int(&res, header.compression_version.value(), "compression_version", -1);
+  }
+  if (header.stats.has_value()) {
+    zval *stats_field;
+    VK_ALLOC_INIT_ZVAL (stats_field);
+    array_init (stats_field);
+
+    for (const auto &[key, value] : header.stats.value()) {
+      zval str_val;
+      ZVAL_STRING(&str_val, value.c_str());
+      add_assoc_zval(stats_field, key.c_str(), &str_val);
+    }
+    set_field(&res, stats_field, "stats", -1); // it frees allocated zval for stats_field
+  }
+  if (header.epoch_number.has_value()) {
+    set_field_int(&res, header.epoch_number.value(), "epoch_number", -1);
+  }
+  if (header.view_number.has_value()) {
+    set_field_int(&res, header.view_number.value(), "view_number", -1);
+  }
+
+  return res;
+}
+
+static zval *make_query_result_or_error(zval **r, const vkext_rpc::tl::RpcReqError &error, const vkext_rpc::tl::RpcReqResultExtra *header, int extra_flags) {
   if (r) {
     return *r;
   }
@@ -1283,22 +1350,38 @@ static zval *make_query_result_or_error(zval **r, const char *error_msg, int err
     case 0: {
       VK_ALLOC_INIT_ZVAL (_err);
       array_init (_err);
-      char *x = estrdup (error_msg);
+      char *x = estrdup (error.error_msg.c_str());
       set_field_string(&_err, x, "__error", 0);
       efree (x);
-      set_field_int(&_err, error_code, "__error_code", 0);
+      set_field_int(&_err, error.error_code, "__error_code", 0);
       break;
     }
     case 1: {
       _err = create_php_instance(reqResult_error_class_name);
-      char *_x = estrdup (error_msg);
+      char *_x = estrdup (error.error_msg.c_str());
       set_field_string(&_err, _x, "error", 0);
       efree (_x);
-      set_field_int(&_err, error_code, "error_code", 0);
+      set_field_int(&_err, error.error_code, "error_code", 0);
       break;
     }
   }
-  return _err;
+  if (!header) {
+    return _err;
+  }
+
+  zval *wrapped_err;
+  if (typed_mode) {
+    wrapped_err = create_php_instance(reqResult_header_class_name);
+  } else {
+    VK_ALLOC_INIT_ZVAL(wrapped_err);
+    array_init(wrapped_err);
+  }
+  zval *header_php_repr = convert_rpc_extra_header_to_php_repr(*header);
+
+  set_field_int(&wrapped_err, extra_flags, "flags", -1);
+  set_field(&wrapped_err, header_php_repr, "extra", -1);
+  set_field(&wrapped_err, _err, "result", -1);
+  return wrapped_err;
 }
 
 void vk_rpc_tl_query_result_impl(struct rpc_queue *Q, double timeout, zval **r) {
@@ -1316,9 +1399,7 @@ void vk_rpc_tl_query_result_impl(struct rpc_queue *Q, double timeout, zval **r) 
     if (do_rpc_get_and_parse(qid, timeout - precise_now) < 0) {
       continue;
     }
-    zval *res = make_query_result_or_error(vk_rpc_tl_query_result_one_impl(T),
-                                           "Response not found, probably timed out",
-                                           TL_ERROR_RESPONSE_NOT_FOUND);
+    zval *res = make_query_result_or_error(vk_rpc_tl_query_result_one_impl(T), {TL_ERROR_RESPONSE_NOT_FOUND, "Response not found, probably timed out"});
     vk_add_index_zval_nod (*r, qid, res);
   }
 }
@@ -1339,8 +1420,7 @@ void vk_rpc_tl_query_result_one(INTERNAL_FUNCTION_PARAMETERS) {
   long long qid = parse_zend_long(VK_ZVAL_ARRAY_TO_API_P(z[0]));
   struct rpc_query *q = rpc_query_get(qid);
   if (!q) {
-    zval *r = make_query_result_or_error(NULL, "No answer received or duplicate/wrong query_id",
-                                         TL_ERROR_WRONG_QUERY_ID);
+    zval *r = make_query_result_or_error(NULL, {TL_ERROR_WRONG_QUERY_ID, "No answer received or duplicate/wrong query_id"});
     RETVAL_ZVAL(r, false, true);
     efree(r);
     return;
@@ -1352,14 +1432,12 @@ void vk_rpc_tl_query_result_one(INTERNAL_FUNCTION_PARAMETERS) {
   auto *T = reinterpret_cast<tl_tree *>(q->extra);
   INC_REF (T);
   if (do_rpc_get_and_parse(qid, timeout - precise_now) < 0) {
-    zval *r = make_query_result_or_error(NULL, "Response not found, probably timed out",
-                                         TL_ERROR_RESPONSE_NOT_FOUND);
+    zval *r = make_query_result_or_error(NULL, {TL_ERROR_RESPONSE_NOT_FOUND, "Response not found, probably timed out"});
     RETVAL_ZVAL(r, false, true);
     efree(r);
     return;
   }
-  zval *r = make_query_result_or_error(vk_rpc_tl_query_result_one_impl(T), "Response not found, probably timed out",
-                                       TL_ERROR_RESPONSE_NOT_FOUND);
+  zval *r = make_query_result_or_error(vk_rpc_tl_query_result_one_impl(T), {TL_ERROR_RESPONSE_NOT_FOUND, "Response not found, probably timed out"});
   RETVAL_ZVAL(r, false, true);
   efree(r);
 }
@@ -1437,7 +1515,7 @@ void vk_rpc_tl_query_result(INTERNAL_FUNCTION_PARAMETERS) {
         if (r) {
           add_assoc_zval_ex(return_value, key->val, key->len, VK_ZVAL_API_TO_ZVALP(r));
         } else {
-          zval *_err = make_query_result_or_error(NULL, "Response not found, probably timed out", TL_ERROR_RESPONSE_NOT_FOUND);
+          zval *_err = make_query_result_or_error(NULL, {TL_ERROR_RESPONSE_NOT_FOUND, "Response not found, probably timed out"});
           vk_add_assoc_zval_ex_nod (return_value, key->val, key->len, _err);
         }
 
@@ -1445,7 +1523,7 @@ void vk_rpc_tl_query_result(INTERNAL_FUNCTION_PARAMETERS) {
         if (r) {
           add_index_zval(return_value, index, VK_ZVAL_API_TO_ZVALP(r));
         } else {
-          zval *_err = make_query_result_or_error(NULL, "Response not found, probably timed out", TL_ERROR_RESPONSE_NOT_FOUND);
+          zval *_err = make_query_result_or_error(NULL, {TL_ERROR_RESPONSE_NOT_FOUND, "Response not found, probably timed out"});
           vk_add_index_zval_nod (return_value, index, _err);
         }
       }
