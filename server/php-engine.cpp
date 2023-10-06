@@ -6,6 +6,7 @@
 
 #include <cassert>
 #include <cerrno>
+#include <chrono>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
@@ -61,7 +62,6 @@
 #include "runtime/profiler.h"
 #include "runtime/rpc.h"
 #include "runtime/thread-pool.h"
-#include "server/server-config.h"
 #include "server/confdata-binlog-replay.h"
 #include "server/database-drivers/adaptor.h"
 #include "server/database-drivers/connector.h"
@@ -89,7 +89,7 @@
 #include "server/server-stats.h"
 #include "server/shared-data-worker-cache.h"
 #include "server/signal-handlers.h"
-#include "server/statshouse/statshouse-client.h"
+#include "server/statshouse/statshouse-manager.h"
 #include "server/workers-control.h"
 
 using job_workers::JobWorkersContext;
@@ -1416,12 +1416,15 @@ static void sigusr1_handler(const int sig) {
   pending_signals = pending_signals | (1ll << sig);
 }
 
-void cron() {
+void worker_cron() {
   if (master_flag == -1 && getppid() == 1) {
     turn_sigterm_on();
   }
   vk::singleton<SharedDataWorkerCache>::get().on_worker_cron();
   vk::singleton<ServerStats>::get().update_this_worker_stats();
+  auto virtual_memory_stat = get_self_mem_stats();
+  StatsHouseManager::get().add_worker_memory_stats(virtual_memory_stat);
+  StatsHouseManager::get().generic_cron();
 }
 
 void reopen_json_log() {
@@ -1445,7 +1448,7 @@ void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port) n
   }
 
   int http_port, http_sfd = -1;
-  int prev_time = 0;
+  double last_cron_time = 0;
   double next_create_outbound = 0;
 
   switch (worker_type) {
@@ -1568,9 +1571,9 @@ void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port) n
       reopen_json_log();
     }
 
-    if (now != prev_time) {
-      prev_time = now;
-      cron();
+    if (precise_now - last_cron_time >= 1.0) {
+      last_cron_time = precise_now;
+      worker_cron();
     }
 
     if (worker_type == WorkerType::general_worker) {
@@ -1664,6 +1667,7 @@ void init_all() {
     }
     log_server_warning(deprecation_warning);
   }
+  StatsHouseManager::get().set_common_tags();
 
   global_init_runtime_libs();
   global_init_php_scripts();
@@ -2089,7 +2093,7 @@ int main_args_handler(int i, const char *long_option) {
         host = "127.0.0.1";
       }
 
-      StatsHouseClient::init(host, port);
+      StatsHouseManager::init(host, port);
       return 0;
     }
     case 2027: {

@@ -19,7 +19,7 @@
 
 #include "server/json-logger.h"
 #include "server/server-stats.h"
-#include "server/statshouse/statshouse-client.h"
+#include "server/statshouse/statshouse-manager.h"
 
 namespace {
 
@@ -604,7 +604,6 @@ void ServerStats::after_fork(pid_t worker_pid, uint64_t active_connections, uint
   gen_->seed(worker_pid);
   shared_stats_->workers.reset_worker_stats(worker_pid, active_connections, max_connections, worker_process_id_);
   last_update_aggr_stats = std::chrono::steady_clock::now();
-  last_update_statshouse = std::chrono::steady_clock::now();
 }
 
 void ServerStats::add_request_stats(double script_time_sec, double net_time_sec, int64_t script_queries, int64_t long_script_queries, int64_t memory_used,
@@ -617,11 +616,7 @@ void ServerStats::add_request_stats(double script_time_sec, double net_time_sec,
   stats.add_request_stats(queries_stat, error, memory_used, real_memory_used, curl_total_allocated);
   shared_stats_->workers.add_worker_stats(queries_stat, worker_process_id_);
 
-  using namespace statshouse;
-  if (StatsHouseClient::has()) {
-    StatsHouseClient::get().send_request_stats(worker_type_, script_time.count(), net_time.count(), memory_used, real_memory_used, script_queries,
-                                               long_script_queries);
-  }
+  StatsHouseManager::get().add_request_stats(script_time.count(), net_time.count(), error, memory_used, real_memory_used, script_queries, long_script_queries);
 }
 
 void ServerStats::add_job_stats(double job_wait_time_sec, int64_t request_memory_used, int64_t request_real_memory_used, int64_t response_memory_used,
@@ -629,18 +624,13 @@ void ServerStats::add_job_stats(double job_wait_time_sec, int64_t request_memory
   const auto job_wait_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(job_wait_time_sec));
   shared_stats_->job_workers.add_job_stats(job_wait_time.count(), request_memory_used, request_real_memory_used, response_memory_used, response_real_memory_used);
 
-  if (StatsHouseClient::has()) {
-    StatsHouseClient::get().send_job_stats(job_wait_time.count(), request_memory_used, request_real_memory_used, response_memory_used,
-                                           response_real_memory_used);
-  }
+  StatsHouseManager::get().add_job_stats(job_wait_time.count(), request_memory_used, request_real_memory_used, response_memory_used, response_real_memory_used);
 }
 
 void ServerStats::add_job_common_memory_stats(int64_t common_request_memory_used, int64_t common_request_real_memory_used) noexcept {
   shared_stats_->job_workers.add_job_common_memory_stats(common_request_memory_used, common_request_real_memory_used);
 
-  if (StatsHouseClient::has()) {
-    StatsHouseClient::get().send_job_common_memory_stats(common_request_memory_used, common_request_real_memory_used);
-  }
+  StatsHouseManager::get().add_job_common_memory_stats(common_request_memory_used, common_request_real_memory_used);
 }
 
 void ServerStats::update_this_worker_stats() noexcept {
@@ -648,12 +638,6 @@ void ServerStats::update_this_worker_stats() noexcept {
   if (now_tp - last_update_aggr_stats >= std::chrono::seconds{5}) {
     shared_stats_->workers.update_worker_stats(worker_process_id_);
     last_update_aggr_stats = now_tp;
-  }
-
-  if (StatsHouseClient::has() && (now_tp - last_update_statshouse >= std::chrono::seconds{1})) {
-    auto virtual_memory_stat = get_self_mem_stats();
-    StatsHouseClient::get().send_worker_memory_stats(worker_type_, virtual_memory_stat);
-    last_update_statshouse = now_tp;
   }
 }
 

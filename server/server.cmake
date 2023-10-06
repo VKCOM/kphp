@@ -29,8 +29,7 @@ prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
         slot-ids-factory.cpp
         workers-control.cpp
         shared-data-worker-cache.cpp
-        signal-handlers.cpp
-        statshouse/statshouse-client.cpp)
+        signal-handlers.cpp)
 
 prepend(KPHP_JOB_WORKERS_SOURCES ${BASE_DIR}/server/job-workers/
         job-stats.cpp
@@ -39,6 +38,10 @@ prepend(KPHP_JOB_WORKERS_SOURCES ${BASE_DIR}/server/job-workers/
         job-workers-context.cpp
         pipe-io.cpp
         shared-memory-manager.cpp)
+
+prepend(KPHP_STATSHOUSE_SOURCES ${BASE_DIR}/server/statshouse/
+        statshouse-client.cpp
+        statshouse-manager.cpp)
 
 prepend(KPHP_DATABASE_DRIVERS_SOURCES ${BASE_DIR}/server/database-drivers/
         adaptor.cpp
@@ -65,6 +68,7 @@ endif()
 set(KPHP_SERVER_ALL_SOURCES
     ${KPHP_SERVER_SOURCES}
     ${KPHP_JOB_WORKERS_SOURCES}
+    ${KPHP_STATSHOUSE_SOURCES}
     ${KPHP_DATABASE_DRIVERS_SOURCES}
     ${KPHP_DATABASE_DRIVERS_MYSQL_SOURCES}
     ${KPHP_DATABASE_DRIVERS_PGSQL_SOURCES})
