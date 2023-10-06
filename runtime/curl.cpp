@@ -10,6 +10,8 @@
 #include <curl/easy.h>
 #include <curl/multi.h>
 
+#include <iostream> // for debug
+
 #include "runtime/critical_section.h"
 #include "runtime/interface.h"
 #include "runtime/kphp_tracing.h"
@@ -114,6 +116,20 @@ public:
         const CURLcode res = dl::critical_section_call([&] { return curl_easy_getinfo (easy_handle, what, &value); });
         return res == CURLE_OK ? mixed{value} : mixed{false};
       }
+      case CURLINFO_SLIST: {
+        curl_certinfo *value = nullptr;
+        const CURLcode res = dl::critical_section_call([&] { return curl_easy_getinfo (easy_handle, what, &value); });
+        curl_slist *sl = *value->certinfo; // get **curl_slist certs field from curl_certinfo structure
+
+        array<string> certs;
+        while (sl) {
+          certs.emplace_back(string(sl->data));
+          sl = sl->next;
+        }
+
+        return res == CURLE_OK ? mixed(certs) : mixed{false};
+      }
+
       default:
         php_critical_error("Got unknown curl info type '%d'", type);
         __builtin_unreachable();
@@ -583,6 +599,8 @@ bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) 
       {CURLOPT_TCP_KEEPIDLE,         long_option_setter},
       {CURLOPT_TCP_KEEPINTVL,        long_option_setter},
       {CURLOPT_PRIVATE,              private_option_setter},
+      {CURLOPT_SSL_VERIFYSTATUS,     long_option_setter},
+      {CURLOPT_CERTINFO,             long_option_setter}
     });
 
   constexpr size_t CURLOPT_OPTION_OFFSET = 200000;
@@ -728,6 +746,7 @@ mixed f$curl_getinfo(curl_easy easy_id, int64_t option) noexcept {
     easy_context->add_info_into_array(result, "redirect_time", CURLINFO_REDIRECT_TIME);
     easy_context->add_info_into_array(result, "redirect_url", CURLINFO_REDIRECT_URL);
     easy_context->add_info_into_array(result, "primary_ip", CURLINFO_PRIMARY_IP);
+    easy_context->add_info_into_array(result, "certinfo", CURLINFO_CERTINFO);
     easy_context->add_info_into_array(result, "primary_port", CURLINFO_PRIMARY_PORT);
     easy_context->add_info_into_array(result, "local_ip", CURLINFO_LOCAL_IP);
     easy_context->add_info_into_array(result, "local_port", CURLINFO_LOCAL_PORT);
@@ -779,6 +798,7 @@ mixed f$curl_getinfo(curl_easy easy_id, int64_t option) noexcept {
       CURLINFO_RTSP_CSEQ_RECV,
       CURLINFO_RTSP_SERVER_CSEQ,
       CURLINFO_RTSP_SESSION_ID,
+      CURLINFO_CERTINFO
     });
 
   constexpr size_t CURLINFO_OPTION_OFFSET = 100000;
