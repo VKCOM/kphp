@@ -50,7 +50,7 @@ prepend(KPHP_RUNTIME_PDO_PGSQL_SOURCES pdo/pgsql/
 endif()
 
 if (YAML)
-prepend(KPHP_RUNTIME_YAML_SOURCES /yaml/
+prepend(KPHP_RUNTIME_YAML_SOURCES /
 	yaml.cpp)
 endif()
 

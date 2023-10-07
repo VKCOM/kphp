@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "runtime/files.h"
-#include "runtime/yaml/yaml.h"
+#include "runtime/yaml.h"
 
 TEST(yaml_test, test_yaml_string) {
   mixed example = string("string");

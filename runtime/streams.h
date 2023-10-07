@@ -6,7 +6,7 @@
 
 #include "runtime/kphp_core.h"
 
-using Stream =mixed;
+using Stream = mixed;
 
 
 constexpr int64_t STREAM_SET_BLOCKING_OPTION = 0;
