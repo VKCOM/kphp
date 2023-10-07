@@ -24,7 +24,6 @@ public:
   const WorkersStats &get_cached_worker_stats() const noexcept;
 
 private:
-  std::chrono::steady_clock::time_point last_update_;
   WorkersStats cached_worker_stats;
 
   SharedDataWorkerCache() = default;

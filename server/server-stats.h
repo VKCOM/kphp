@@ -60,7 +60,6 @@ private:
   WorkerType worker_type_{WorkerType::general_worker};
   uint16_t worker_process_id_{0};
   std::chrono::steady_clock::time_point last_update_aggr_stats;
-  std::chrono::steady_clock::time_point last_update_statshouse;
 
   std::mt19937 *gen_{nullptr};
 

@@ -13,11 +13,7 @@ void SharedDataWorkerCache::init_defaults() noexcept {
 }
 
 void SharedDataWorkerCache::on_worker_cron() noexcept {
-  const auto now = std::chrono::steady_clock::now();
-  if (now - last_update_ >= std::chrono::seconds{1}) {
-    cached_worker_stats = vk::singleton<SharedData>::get().load_worker_stats();
-    last_update_ = now;
-  }
+  cached_worker_stats = vk::singleton<SharedData>::get().load_worker_stats();
 }
 
 const WorkersStats &SharedDataWorkerCache::get_cached_worker_stats() const noexcept {
