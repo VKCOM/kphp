@@ -1116,10 +1116,6 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, stats_tag_kphp_server) {
   stats->add_gauge_stat("workers.job.processes.working", job_worker_group.running_workers);
   stats->add_gauge_stat("workers.job.processes.working_but_waiting", job_worker_group.waiting_workers);
 
-  auto [avg_script_init_time, avg_connection_process_time] = vk::singleton<ServerStats>::get().collect_script_timeouts_stat();
-  stats->add_gauge_stat("workers.avg_script_init_time_ms", avg_script_init_time);
-  stats->add_gauge_stat("workers.avg_connection_process_time_ms", avg_connection_process_time);
-
   auto running_stats = server_stats.misc_stat_for_general_workers[1].get_stat();
   stats->add_gauge_stat("workers.general.processes.running.avg_1m", running_stats.running_workers_avg);
   stats->add_gauge_stat("workers.general.processes.running.max_1m", running_stats.running_workers_max);

@@ -653,7 +653,7 @@ void ServerStats::add_request_stats(double script_time_sec, double net_time_sec,
   stats.add_request_stats(queries_stat, error, memory_used, real_memory_used, curl_total_allocated);
   shared_stats_->workers.add_worker_stats(queries_stat, worker_process_id_);
 
-  StatsHouseManager::get().add_request_stats(script_time.count(), net_time.count(), error, memory_used, real_memory_used, script_queries, long_script_queries);
+  StatsHouseManager::get().add_request_stats(script_time.count(), net_time.count(), error, memory_used, real_memory_used, script_queries, long_script_queries, script_rusage);
 }
 
 void ServerStats::add_job_stats(double job_wait_time_sec, int64_t request_memory_used, int64_t request_real_memory_used, int64_t response_memory_used,
