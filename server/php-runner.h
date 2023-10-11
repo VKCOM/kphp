@@ -108,7 +108,7 @@ public:
   volatile static bool memory_limit_exceeded;
 
   static script_time_stats_t script_time_stats;
-  static rusage_info_t script_init_rusage;
+  rusage_info_t script_init_rusage;
 
   run_state_t state{run_state_t::empty};
   const char *error_message{nullptr};

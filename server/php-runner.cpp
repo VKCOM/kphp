@@ -505,7 +505,6 @@ volatile bool PhpScript::in_script_context = false;
 volatile bool PhpScript::time_limit_exceeded = false;
 volatile bool PhpScript::memory_limit_exceeded = false;
 PhpScript::script_time_stats_t PhpScript::script_time_stats;
-rusage_info_t PhpScript::script_init_rusage;
 
 static __inline__ void *get_sp() {
   return __builtin_frame_address(0);
