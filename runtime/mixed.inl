@@ -1063,7 +1063,7 @@ int64_t mixed::compare(const mixed &rhs) const {
       return spaceship(as_array(), rhs.as_array());
     }
 
-    php_warning("Unsupported operand types for operator < or <= (%s and %s)", get_type_c_str(), rhs.get_type_c_str());
+    php_warning("Types \'%s\' and \'%s\' cannot be compared using operators <, <= or ==", get_type_c_str(), rhs.get_type_c_str());
     return is_array() ? 1 : -1;
   }
 
