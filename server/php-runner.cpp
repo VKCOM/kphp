@@ -178,8 +178,8 @@ void PhpScript::init(script_t *script, php_query_data *data_to_set) noexcept {
   error_message = "??? error";
 
   script_time_stats.script_start_time = get_utime_monotonic();
-  script_time_stats.script_time = 0;
-  script_time_stats.net_time = 0;
+  script_time = 0;
+  net_time = 0;
   script_init_rusage = get_rusage_info();
 
   queries_cnt = 0;
@@ -270,7 +270,7 @@ void PhpScript::update_net_time() noexcept {
       kprintf("Awakening net event: %s\n", event->get_description());
     }
   }
-  script_time_stats.net_time += net_add;
+  net_time += net_add;
   last_net_time_delta = net_add;
 
   cur_timestamp = new_cur_timestamp;
@@ -278,7 +278,7 @@ void PhpScript::update_net_time() noexcept {
 
 void PhpScript::update_script_time() noexcept {
   double new_cur_timestamp = dl_time();
-  script_time_stats.script_time += new_cur_timestamp - cur_timestamp;
+  script_time += new_cur_timestamp - cur_timestamp;
   cur_timestamp = new_cur_timestamp;
 }
 
@@ -317,7 +317,7 @@ void PhpScript::finish() noexcept {
   }
   script_rusage_t script_rusage = get_script_rusage();
 
-  vk::singleton<ServerStats>::get().add_request_stats(script_time_stats.script_time, script_time_stats.net_time, script_init_time_sec, connection_process_time_sec,
+  vk::singleton<ServerStats>::get().add_request_stats(script_time, net_time, script_init_time_sec, connection_process_time_sec,
                                                       queries_cnt, long_queries_cnt, script_mem_stats.max_memory_used,
                                                       script_mem_stats.max_real_memory_used, vk::singleton<CurlMemoryUsage>::get().total_allocated, script_rusage, error_type);
   if (save_state == run_state_t::error) {
@@ -349,7 +349,7 @@ void PhpScript::finish() noexcept {
       }
     }
     kprintf("[worked = %.3lf, net = %.3lf, script = %.3lf, queries_cnt = %5d, long_queries_cnt = %5d, heap_memory_used = %9d, peak_script_memory = %9d, total_script_memory = %9d] %s\n",
-            script_time_stats.script_time + script_time_stats.net_time, script_time_stats.net_time, script_time_stats.script_time, queries_cnt, long_queries_cnt,
+            script_time + net_time, net_time, script_time, queries_cnt, long_queries_cnt,
             (int)dl::get_heap_memory_used(),
             (int)script_mem_stats.max_real_memory_used,
             (int)script_mem_stats.real_memory_used, buf);
@@ -474,7 +474,7 @@ void PhpScript::reset_script_timeout() noexcept {
 }
 
 double PhpScript::get_net_time() const noexcept {
-  return script_time_stats.net_time;
+  return net_time;
 }
 
 long long PhpScript::memory_get_total_usage() const noexcept {
@@ -484,7 +484,7 @@ long long PhpScript::memory_get_total_usage() const noexcept {
 double PhpScript::get_script_time() noexcept {
   assert_state(run_state_t::running);
   update_script_time();
-  return script_time_stats.script_time;
+  return script_time;
 }
 
 script_rusage_t PhpScript::get_script_rusage() noexcept {

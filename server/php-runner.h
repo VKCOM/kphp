@@ -83,13 +83,13 @@ private:
  */
 class PhpScript {
   double cur_timestamp{0};
+  double net_time{0};
+  double script_time{0};
   double last_net_time_delta{0};
   int queries_cnt{0};
   int long_queries_cnt{0};
 
   struct script_time_stats_t {
-    double net_time{0};
-    double script_time{0};
     double http_conn_accept_time{0};
     double worker_init_time{0};
     double script_start_time{0};
