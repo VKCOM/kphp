@@ -362,7 +362,7 @@ int get_cpu_total (unsigned long long *cpu_total) {
   return 1;
 }
 
-rusage_info_t get_rusage_info() {
+script_rusage_t get_rusage_info() {
   rusage usage;
   memset(&usage, 0, sizeof(rusage));
   if (getrusage(RUSAGE_SELF, &usage) != 0) {

@@ -59,7 +59,7 @@ struct mem_info_t {
   uint32_t rss_shmem;
 };
 
-struct rusage_info_t {
+struct script_rusage_t {
   double user_time;
   double system_time;
   long voluntary_context_switches;
@@ -71,5 +71,5 @@ int get_self_threads_count();
 int get_pid_info (pid_t pid, pid_info_t *info);
 unsigned long long get_pid_start_time (pid_t pid);
 int get_cpu_total (unsigned long long *cpu_total);
-rusage_info_t get_rusage_info();
+script_rusage_t get_rusage_info();
 

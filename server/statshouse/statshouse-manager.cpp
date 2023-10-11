@@ -96,7 +96,7 @@ void StatsHouseManager::generic_cron_check_if_tag_host_needed() {
 }
 
 void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_time_ns, script_error_t error, uint64_t memory_used,
-                                         uint64_t real_memory_used, uint64_t script_queries, uint64_t long_script_queries, rusage_info_t script_rusage) {
+                                         uint64_t real_memory_used, uint64_t script_queries, uint64_t long_script_queries, script_rusage_t script_rusage) {
   const char *worker_type = get_current_worker_type();
   const char *status = script_error_to_str(error);
 

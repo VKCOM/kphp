@@ -636,7 +636,7 @@ void ServerStats::after_fork(pid_t worker_pid, uint64_t active_connections, uint
 
 void ServerStats::add_request_stats(double script_time_sec, double net_time_sec, double script_init_time_sec, double connection_process_time_sec,
                                     int64_t script_queries, int64_t long_script_queries, int64_t memory_used,
-                                    int64_t real_memory_used, int64_t curl_total_allocated, rusage_info_t script_rusage, script_error_t error) noexcept {
+                                    int64_t real_memory_used, int64_t curl_total_allocated, script_rusage_t script_rusage, script_error_t error) noexcept {
   auto &stats = worker_type_ == WorkerType::job_worker ? shared_stats_->job_workers : shared_stats_->general_workers;
   const auto script_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(script_time_sec));
   const auto net_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(net_time_sec));
