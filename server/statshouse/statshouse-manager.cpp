@@ -96,17 +96,21 @@ void StatsHouseManager::generic_cron_check_if_tag_host_needed() {
 }
 
 void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_time_ns, script_error_t error, uint64_t memory_used,
-                                         uint64_t real_memory_used, uint64_t script_queries, uint64_t long_script_queries, script_rusage_t script_rusage) {
+                                         uint64_t real_memory_used, uint64_t script_queries, uint64_t long_script_queries,
+                                          uint64_t script_user_time_ns, uint64_t script_system_time_ns,
+                                          uint64_t voluntary_context_switches, uint64_t involuntary_context_switches) {
   const char *worker_type = get_current_worker_type();
   const char *status = script_error_to_str(error);
 
   client.metric("kphp_request_time").tag("script").tag(worker_type).tag(status).write_value(script_time_ns);
   client.metric("kphp_request_time").tag("net").tag(worker_type).tag(status).write_value(net_time_ns);
-  client.metric("kphp_request_time").tag("user").tag(worker_type).tag(status).write_value(script_rusage.user_time);
-  client.metric("kphp_request_time").tag("system").tag(worker_type).tag(status).write_value(script_rusage.system_time);
+  client.metric("kphp_request_cpu_time").tag("user").tag(worker_type).tag(status).write_value(script_user_time_ns);
+  client.metric("kphp_request_cpu_time").tag("system").tag(worker_type).tag(status).write_value(script_system_time_ns);
 
   client.metric("kphp_by_host_request_time", true).tag("script").tag(worker_type).write_value(script_time_ns);
   client.metric("kphp_by_host_request_time", true).tag("net").tag(worker_type).write_value(net_time_ns);
+  client.metric("kphp_by_host_request_cpu_time", true).tag("user").tag(worker_type).tag(status).write_value(script_user_time_ns);
+  client.metric("kphp_by_host_request_cpu_time", true).tag("system").tag(worker_type).tag(status).write_value(script_system_time_ns);
 
   if (error != script_error_t::no_error) {
     client.metric("kphp_request_errors").tag(status).tag(worker_type).write_count(1);
@@ -119,8 +123,11 @@ void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_
   client.metric("kphp_requests_outgoing_queries").tag(worker_type).write_value(script_queries);
   client.metric("kphp_requests_outgoing_long_queries").tag(worker_type).write_value(long_script_queries);
 
-  client.metric("kphp_requests_scheduler_context_switches").tag("voluntary").tag(status).write_value(script_rusage.voluntary_context_switches);
-  client.metric("kphp_requests_scheduler_context_switches").tag("involuntary").tag(status).write_value(script_rusage.involuntary_context_switches);
+  client.metric("kphp_request_scheduler_context_switches").tag("voluntary").tag(status).write_value(voluntary_context_switches);
+  client.metric("kphp_request_scheduler_context_switches").tag("involuntary").tag(status).write_value(involuntary_context_switches);
+
+  client.metric("kphp_by_host_request_scheduler_context_switches", true).tag("voluntary").tag(status).write_value(voluntary_context_switches);
+  client.metric("kphp_by_host_request_scheduler_context_switches", true).tag("involuntary").tag(status).write_value(involuntary_context_switches);
 }
 
 void StatsHouseManager::add_job_stats(uint64_t job_wait_ns, uint64_t request_memory_used, uint64_t request_real_memory_used, uint64_t response_memory_used,

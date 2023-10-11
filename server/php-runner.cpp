@@ -315,7 +315,7 @@ void PhpScript::finish() noexcept {
   if (process_type == ProcessType::http_worker) {
     connection_process_time_sec = script_time_stats.worker_init_time - script_time_stats.http_conn_accept_time;
   }
-  script_rusage_t script_rusage = get_script_rusage();
+  process_rusage_t script_rusage = get_script_rusage();
 
   vk::singleton<ServerStats>::get().add_request_stats(script_time, net_time, script_init_time_sec, connection_process_time_sec,
                                                       queries_cnt, long_queries_cnt, script_mem_stats.max_memory_used,
@@ -487,8 +487,8 @@ double PhpScript::get_script_time() noexcept {
   return script_time;
 }
 
-script_rusage_t PhpScript::get_script_rusage() noexcept {
-  script_rusage_t current_rusage = get_rusage_info();
+process_rusage_t PhpScript::get_script_rusage() noexcept {
+  process_rusage_t current_rusage = get_rusage_info();
   return {current_rusage.user_time - script_init_rusage.user_time,
           current_rusage.system_time - script_init_rusage.system_time,
           current_rusage.voluntary_context_switches - script_init_rusage.voluntary_context_switches,

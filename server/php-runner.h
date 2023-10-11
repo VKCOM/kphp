@@ -108,7 +108,7 @@ public:
   volatile static bool memory_limit_exceeded;
 
   static script_time_stats_t script_time_stats;
-  script_rusage_t script_init_rusage;
+  process_rusage_t script_init_rusage;
 
   run_state_t state{run_state_t::empty};
   const char *error_message{nullptr};
@@ -158,7 +158,7 @@ public:
   void reset_script_timeout() noexcept;
   double get_net_time() const noexcept;
   double get_script_time() noexcept;
-  script_rusage_t get_script_rusage() noexcept;
+  process_rusage_t get_script_rusage() noexcept;
   int get_net_queries_count() const noexcept;
   long long memory_get_total_usage() const noexcept;
 
