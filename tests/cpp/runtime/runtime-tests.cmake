@@ -1,5 +1,5 @@
 if (YAML)
-prepend(RUNTIME_TESTS_YAML_SOURCES /extensions-tests/
+prepend(RUNTIME_TESTS_YAML_SOURCES /
 	yaml-test.cpp)
 endif()
 
