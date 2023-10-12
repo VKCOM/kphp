@@ -1,0 +1,22 @@
+name: "@engines"
+description: ""
+namespace: "Engines015\\"
+
+# "Public API" of the modulite: classes, functions, constants, etc.
+# Symbols not listed here will be internal.
+export:
+  - "FriendsEngineTrait015"
+  - "LikesEngineTrait015"
+  - "MusicEngineTrait015"
+  - "TestEngine015"
+  - "VideosEngineTrait015"
+
+# Class members to exclude, they override "export".
+force-internal:
+
+# Dependencies: other modulites, global classes, defines, etc.
+require:
+  - "\\ExternalEngines015\\Tweets015::printTweetsLikesCountByUser()"
+
+# Granting partial access to internal symbols, "as an exception".
+allow-internal-access:

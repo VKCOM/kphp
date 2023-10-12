@@ -1,5 +1,5 @@
 name: "@feed"
-namespace: "\\Feed006"
+namespace: "\\Feed126"
 
 export:
   - "PubFeed"
