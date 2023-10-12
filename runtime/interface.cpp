@@ -403,19 +403,19 @@ void f$setcookie(const string &name, const string &value, int64_t expire, const 
 }
 
 int64_t f$ignore_user_abort(Optional<bool> enable) {
-  php_assert(active_worker != nullptr && active_worker->conn != nullptr);
+  php_assert(php_worker.has_value() && php_worker->conn != nullptr);
   if (enable.is_null()) {
     return ignore_level;
   } else if (enable.val()) {
-    active_worker->conn->ignored = true;
+    php_worker->conn->ignored = true;
     return ignore_level++;
   } else {
     int prev = ignore_level > 0 ? ignore_level-- : 0;
     if (ignore_level == 0) {
-      active_worker->conn->ignored = false;
+      php_worker->conn->ignored = false;
     }
-    if (active_worker->conn->interrupted && !active_worker->conn->ignored) {
-      active_worker->conn->status = conn_error;
+    if (php_worker->conn->interrupted && !php_worker->conn->ignored) {
+      php_worker->conn->status = conn_error;
       f$exit(1);
     }
     return prev;
@@ -559,13 +559,13 @@ static int ob_merge_buffers() {
 }
 
 void f$flush() {
-  php_assert(ob_cur_buffer >= 0 && active_worker != nullptr);
+  php_assert(ob_cur_buffer >= 0 && php_worker.has_value());
 
   string_buffer const * http_body = compress_http_query_body(&oub[ob_system_level]);
   string_buffer const * http_headers = nullptr;
-  if (!active_worker->flushed_http_connection) {
+  if (!php_worker->flushed_http_connection) {
     http_headers = get_headers();
-    active_worker->flushed_http_connection = true;
+    php_worker->flushed_http_connection = true;
   }
   http_send_immediate_response(http_headers ? http_headers->buffer() : nullptr, http_headers ? http_headers->size() : 0,
                                http_body->buffer(), http_body->size());
@@ -575,7 +575,7 @@ void f$flush() {
 
 void f$fastcgi_finish_request(int64_t exit_code) {
   int const ob_total_buffer = ob_merge_buffers();
-  if (active_worker != nullptr && active_worker->flushed_http_connection) {
+  if (php_worker.has_value() && php_worker->flushed_http_connection) {
     string const raw_response = oub[ob_total_buffer].str();
     http_set_result(nullptr, 0, raw_response.c_str(), raw_response.size(), static_cast<int32_t>(exit_code));
     php_assert (0);
@@ -1546,7 +1546,7 @@ static void save_rpc_query_headers(const tl_query_header_t &header) {
 }
 
 static void init_superglobals_impl(const http_query_data &http_data, const rpc_query_data &rpc_data, const job_query_data &job_data) {
-  rpc_parse(rpc_data.data, rpc_data.len);
+  rpc_parse(rpc_data.data.data(), rpc_data.data.size());
 
   reset_superglobals();
 
@@ -1736,10 +1736,10 @@ static void init_superglobals_impl(const http_query_data &http_data, const rpc_q
   if (rpc_data.header.qid) {
     v$_SERVER.set_value(string("RPC_REQUEST_ID"), f$strval(static_cast<int64_t>(rpc_data.header.qid)));
     save_rpc_query_headers(rpc_data.header);
-    v$_SERVER.set_value(string("RPC_REMOTE_IP"), static_cast<int>(rpc_data.ip));
-    v$_SERVER.set_value(string("RPC_REMOTE_PORT"), static_cast<int>(rpc_data.port));
-    v$_SERVER.set_value(string("RPC_REMOTE_PID"), static_cast<int>(rpc_data.pid));
-    v$_SERVER.set_value(string("RPC_REMOTE_UTIME"), rpc_data.utime);
+    v$_SERVER.set_value(string("RPC_REMOTE_IP"), static_cast<int>(rpc_data.remote_pid.ip));
+    v$_SERVER.set_value(string("RPC_REMOTE_PORT"), static_cast<int>(rpc_data.remote_pid.port));
+    v$_SERVER.set_value(string("RPC_REMOTE_PID"), static_cast<int>(rpc_data.remote_pid.pid));
+    v$_SERVER.set_value(string("RPC_REMOTE_UTIME"), rpc_data.remote_pid.utime);
   }
   is_head_query = false;
   if (http_data.request_method_len) {
@@ -1799,7 +1799,7 @@ static void init_superglobals_impl(const http_query_data &http_data, const rpc_q
 }
 
 static http_query_data empty_http_data;
-static rpc_query_data empty_rpc_data;
+static rpc_query_data empty_rpc_data{tl_query_header_t(), {}, {}};
 static job_query_data empty_job_data;
 
 void init_superglobals(const php_query_data_t &data) {

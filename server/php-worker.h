@@ -81,6 +81,4 @@ private:
   void state_finish() noexcept;
 };
 
-extern std::optional<PhpWorker> php_worker_storage;
-
-extern PhpWorker *active_worker;
+extern std::optional<PhpWorker> php_worker;

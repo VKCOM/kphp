@@ -154,13 +154,9 @@ PhpScript::PhpScript(size_t mem_size, double oom_handling_memory_ratio, size_t s
 
 PhpScript::~PhpScript() noexcept {
   munmap(run_mem, mem_size);
-  if (std::holds_alternative<rpc_query_data>(data)) {
-    // free dynamic allocated buffer for rpc @see rpcx_execute
-    free(std::get<rpc_query_data>(data).data);
-  }
 }
 
-void PhpScript::init(script_t *script, php_query_data_t data_to_set) noexcept {
+void PhpScript::init(script_t *script, php_query_data_t *data_to_set) noexcept {
   assert (script != nullptr);
   assert_state(run_state_t::empty);
 
@@ -176,7 +172,7 @@ void PhpScript::init(script_t *script, php_query_data_t data_to_set) noexcept {
   makecontext_portable(&run_context, &script_context_entrypoint, 0);
 
   run_main = script;
-  data = std::move(data_to_set);
+  data = data_to_set;
 
   state = run_state_t::ready;
 
@@ -342,8 +338,8 @@ void PhpScript::finish() noexcept {
   static char buf[buf_size];
   buf[0] = 0;
   if (disable_access_log < 2) {
-    if (std::holds_alternative<http_query_data>(data)) {
-      http_query_data *http_data = &std::get<http_query_data>(data);
+    if (data != nullptr && std::holds_alternative<http_query_data>(*data)) {
+      http_query_data *http_data = &std::get<http_query_data>(*data);
       if (http_data != nullptr) {
         if (disable_access_log) {
           snprintf(buf, buf_size, "[uri = %.*s?<truncated>]", min(http_data->uri_len, 200), http_data->uri);
@@ -417,7 +413,7 @@ void PhpScript::run() noexcept {
   in_script_context = true;
   auto oom_handling_memory_size = static_cast<size_t>(std::ceil(mem_size * oom_handling_memory_ratio));
   auto script_memory_size = mem_size - oom_handling_memory_size;
-  init_runtime_environment(data, run_mem, script_memory_size, oom_handling_memory_size);
+  init_runtime_environment(*data, run_mem, script_memory_size, oom_handling_memory_size);
   dl::leave_critical_section();
   php_assert (dl::in_critical_section == 0); // To ensure that no critical section is left at the end of the initialization
   check_net_context_errors();

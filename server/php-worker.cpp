@@ -25,9 +25,7 @@
 #include "server/php-worker.h"
 #include "server/server-stats.h"
 
-std::optional<PhpWorker> php_worker_storage;
-
-PhpWorker *active_worker = nullptr;
+std::optional<PhpWorker> php_worker;
 
 double PhpWorker::enter_lifecycle() noexcept {
   if (finish_time < precise_now + 0.01) {
@@ -148,8 +146,6 @@ void PhpWorker::state_init_script() noexcept {
 
   get_utime_monotonic();
   start_time = precise_now;
-  assert(active_worker == nullptr);
-  active_worker = this;
   vk::singleton<ServerStats>::get().set_running_worker_status();
 
   // init memory allocator for queries
@@ -161,9 +157,8 @@ void PhpWorker::state_init_script() noexcept {
     php_script.emplace(max_memory, oom_handling_memory_ratio, 8 << 20);
   }
   dl::init_critical_section();
-  php_script.value().init(script, data);
-  data = null_query_data{};
-  php_script.value().set_timeout(timeout);
+  php_script->init(script, &data);
+  php_script->set_timeout(timeout);
   state = phpq_run;
 }
 
@@ -397,8 +392,6 @@ void PhpWorker::state_free_script() noexcept {
   php_worker_run_flag = 0;
   int f = 0;
 
-  assert(active_worker == this);
-  active_worker = nullptr;
   vk::singleton<ServerStats>::get().set_idle_worker_status();
   if (mode == once_worker) {
     static int left = run_once_count;

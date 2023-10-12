@@ -72,7 +72,7 @@ int jobs_server_php_wakeup(connection *c) {
   double timeout = worker->enter_lifecycle();
 
   if (timeout == 0) {
-    php_worker_storage.reset();
+    php_worker.reset();
     jobs_server_at_query_end(c);
   } else {
     assert(c->pending_queries >= 0 && c->status == conn_wait_net);
@@ -175,8 +175,8 @@ int JobWorkerServer::job_parse_execute(connection *c) noexcept {
 
   php_query_data_t job_data =  job_query_data{job, [](JobSharedMessage *job_response) {
                                                return vk::singleton<JobWorkerServer>::get().send_job_reply(job_response);}};
-  php_worker_storage.emplace(job_worker, c, std::move(job_data), job->job_id, left_job_time);
-  reinterpret_cast<JobCustomData *>(c->custom_data)->worker = &php_worker_storage.value();
+  php_worker.emplace(job_worker, c, std::move(job_data), job->job_id, left_job_time);
+  reinterpret_cast<JobCustomData *>(c->custom_data)->worker = &php_worker.value();
 
   set_connection_timeout(c, left_job_time);
   c->status = conn_wait_net;

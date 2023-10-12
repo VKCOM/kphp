@@ -5,8 +5,10 @@
 #pragma once
 
 #include <variant>
+#include <cstring>
 
 #include "common/tl/query-header.h"
+#include "common/dl-utils-lite.h"
 
 
 struct http_query_data {
@@ -19,13 +21,8 @@ struct http_query_data {
 
 struct rpc_query_data {
   tl_query_header_t header;
-
-  int *data;
-  int len;
-  unsigned ip;
-  short port;
-  short pid;
-  int utime;
+  std::vector<int> data;
+  process_id remote_pid;
 };
 
 namespace job_workers {
