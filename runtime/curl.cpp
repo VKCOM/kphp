@@ -378,6 +378,27 @@ void ftp_auth_option_setter(EasyContext *easy_context, CURLoption option, const 
   set_enumerated_option<800000>(options, easy_context, option, value);
 }
 
+void header_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
+  constexpr static auto options = vk::to_array({CURLHEADER_UNIFIED, CURLHEADER_SEPARATE});
+  set_enumerated_option<810000>(options, easy_context, option, value);
+}
+
+// new function for CURLOPT_POSTREDIR option logic
+void redirpost_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
+  long val = static_cast<long>(value.to_int());
+  constexpr size_t OPTION_OFFSET = 820000;
+
+  if (easy_context->check_option_value<OPTION_OFFSET, 7u>(val)) {
+    val -= OPTION_OFFSET;
+    if (val == 3ll) {
+      val = 7ll;
+    } else {
+      val = 1ll << val;
+    }
+    easy_context->set_option_safe(option, val);
+  }
+}
+
 void ftp_method_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
   constexpr static auto options = vk::to_array({CURLFTPMETHOD_MULTICWD, CURLFTPMETHOD_NOCWD, CURLFTPMETHOD_SINGLECWD});
   set_enumerated_option<900000>(options, easy_context, option, value);
@@ -446,6 +467,10 @@ bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) 
       easy_context->set_option(CURLOPT_VERBOSE, 0);
     }
     return true;
+  }
+
+  if (option == CURLOPT_POSTREDIR) {
+    easy_context->set_option(CURLOPT_FOLLOWLOCATION, 1);
   }
 
   if (option == CURLOPT_RETURNTRANSFER) {
@@ -614,7 +639,12 @@ bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) 
       {CURLOPT_SASL_IR,              long_option_setter},
 
       {CURLOPT_CONNECT_TO,           linked_list_option_setter},
-      {CURLOPT_PROXYHEADER,          linked_list_option_setter}
+      {CURLOPT_PROXYHEADER,          linked_list_option_setter},
+
+      {CURLOPT_EXPECT_100_TIMEOUT_MS,     long_option_setter},
+      {CURLOPT_HAPPY_EYEBALLS_TIMEOUT_MS, long_option_setter},
+      {CURLOPT_HEADEROPT,                 header_option_setter},
+      {CURLOPT_POSTREDIR,                 redirpost_option_setter}
     });
 
   constexpr size_t CURLOPT_OPTION_OFFSET = 200000;
