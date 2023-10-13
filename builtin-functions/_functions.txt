@@ -1271,8 +1271,19 @@ define('CURLOPT_TCP_KEEPALIVE', 200123);
 define('CURLOPT_TCP_KEEPIDLE', 200124);
 define('CURLOPT_TCP_KEEPINTVL', 200125);
 define('CURLOPT_PRIVATE', 200126);
-define('CURLOPT_SSL_VERIFYSTATUS', 200127); // new, it works
-define('CURLOPT_CERTINFO', 200128);
+
+define('CURLOPT_SSL_VERIFYSTATUS', 200127); // work
+define('CURLOPT_CERTINFO', 200128);         // work, but with troubles
+define('CURLOPT_NOPROGRESS', 200129);       // work
+define('CURLOPT_NOSIGNAL', 200130);         // work
+define('CURLOPT_PATH_AS_IS', 200131);       // work
+define('CURLOPT_PIPEWAIT', 200132);         // work
+define('CURLOPT_SASL_IR', 200133);          // work
+
+// new slist options
+define('CURLOPT_CONNECT_TO', 200134);       // work
+define('CURLOPT_PROXYHEADER', 200135);      // work
+
 
 define('CURLPROXY_HTTP', 400000);
 define('CURLPROXY_HTTP_1_0', 400001);
