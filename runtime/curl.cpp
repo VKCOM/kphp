@@ -76,6 +76,8 @@ protected:
   ~BaseContext() = default;
 };
 
+// std::pair<string, string> split_t() 
+
 class EasyContext : public BaseContext {
 public:
   explicit EasyContext(int64_t self_handler_id) noexcept:
@@ -119,12 +121,14 @@ public:
       case CURLINFO_SLIST: {
         curl_certinfo *value = nullptr;
         const CURLcode res = dl::critical_section_call([&] { return curl_easy_getinfo (easy_handle, what, &value); });
-        curl_slist *sl = *value->certinfo; // get **curl_slist certs field from curl_certinfo structure
-
         array<string> certs;
-        while (sl) {
-          certs.emplace_back(string(sl->data));
-          sl = sl->next;
+
+        for (size_t i = 0; i < value->num_of_certs; ++i) {
+          curl_slist *sl = value->certinfo[i];
+          while (sl) {
+            certs.emplace_back(string(sl->data));
+            sl = sl->next;
+          }
         }
 
         return res == CURLE_OK ? mixed(certs) : mixed{false};
@@ -599,8 +603,18 @@ bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) 
       {CURLOPT_TCP_KEEPIDLE,         long_option_setter},
       {CURLOPT_TCP_KEEPINTVL,        long_option_setter},
       {CURLOPT_PRIVATE,              private_option_setter},
+
+      // new options
       {CURLOPT_SSL_VERIFYSTATUS,     long_option_setter},
-      {CURLOPT_CERTINFO,             long_option_setter}
+      {CURLOPT_CERTINFO,             long_option_setter},
+      {CURLOPT_NOPROGRESS,           long_option_setter},
+      {CURLOPT_NOSIGNAL,             long_option_setter},
+      {CURLOPT_PATH_AS_IS,           long_option_setter},
+      {CURLOPT_PIPEWAIT,             long_option_setter},
+      {CURLOPT_SASL_IR,              long_option_setter},
+
+      {CURLOPT_CONNECT_TO,           linked_list_option_setter},
+      {CURLOPT_PROXYHEADER,          linked_list_option_setter}
     });
 
   constexpr size_t CURLOPT_OPTION_OFFSET = 200000;
