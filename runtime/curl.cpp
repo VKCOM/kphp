@@ -10,8 +10,6 @@
 #include <curl/easy.h>
 #include <curl/multi.h>
 
-#include <iostream> // for debug
-
 #include "runtime/critical_section.h"
 #include "runtime/interface.h"
 #include "runtime/kphp_tracing.h"
@@ -76,6 +74,7 @@ protected:
   ~BaseContext() = default;
 };
 
+// function for dictionary creation from curl_slist
 // std::pair<string, string> split_t() 
 
 class EasyContext : public BaseContext {
@@ -383,6 +382,12 @@ void header_option_setter(EasyContext *easy_context, CURLoption option, const mi
   set_enumerated_option<810000>(options, easy_context, option, value);
 }
 
+void proto_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
+  // it is needed if kphp doesn't support scp protocol.
+  easy_context->set_option_safe(option, static_cast<long>(value & ~CURLPROTO_SCP));
+  //easy_context->set_option_safe(option, static_cast<long>(value.to_int()));
+}
+
 // new function for CURLOPT_POSTREDIR option logic
 void redirpost_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
   long val = static_cast<long>(value.to_int());
@@ -644,7 +649,9 @@ bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) 
       {CURLOPT_EXPECT_100_TIMEOUT_MS,     long_option_setter},
       {CURLOPT_HAPPY_EYEBALLS_TIMEOUT_MS, long_option_setter},
       {CURLOPT_HEADEROPT,                 header_option_setter},
-      {CURLOPT_POSTREDIR,                 redirpost_option_setter}
+      {CURLOPT_POSTREDIR,                 redirpost_option_setter},
+      {CURLOPT_PROTOCOLS,                 proto_option_setter},
+      {CURLOPT_REDIR_PROTOCOLS,           long_option_setter}
     });
 
   constexpr size_t CURLOPT_OPTION_OFFSET = 200000;
