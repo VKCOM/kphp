@@ -177,11 +177,14 @@ void PhpScript::init(script_t *script, php_query_data *data_to_set) noexcept {
 
   error_message = "??? error";
 
+  script_time_stats.script_start_time = get_utime_monotonic();
   script_time = 0;
   net_time = 0;
-  cur_timestamp = dl_time();
+  script_init_rusage = get_rusage_info();
+
   queries_cnt = 0;
   long_queries_cnt = 0;
+  cur_timestamp = dl_time();
 
   query_stats_id++;
   memset(&query_stats, 0, sizeof(query_stats));
@@ -307,8 +310,16 @@ void PhpScript::finish() noexcept {
   const auto &script_mem_stats = dl::get_script_memory_stats();
   state = run_state_t::uncleared;
   update_net_time();
-  vk::singleton<ServerStats>::get().add_request_stats(script_time, net_time, queries_cnt, long_queries_cnt, script_mem_stats.max_memory_used,
-                                                      script_mem_stats.max_real_memory_used, vk::singleton<CurlMemoryUsage>::get().total_allocated, error_type);
+  double script_init_time_sec = script_time_stats.script_start_time - script_time_stats.worker_init_time;
+  double connection_process_time_sec = 0;
+  if (process_type == ProcessType::http_worker) {
+    connection_process_time_sec = script_time_stats.worker_init_time - script_time_stats.http_conn_accept_time;
+  }
+  process_rusage_t script_rusage = get_script_rusage();
+
+  vk::singleton<ServerStats>::get().add_request_stats(script_time, net_time, script_init_time_sec, connection_process_time_sec,
+                                                      queries_cnt, long_queries_cnt, script_mem_stats.max_memory_used,
+                                                      script_mem_stats.max_real_memory_used, vk::singleton<CurlMemoryUsage>::get().total_allocated, script_rusage, error_type);
   if (save_state == run_state_t::error) {
     assert (error_message != nullptr);
     kprintf("Critical error during script execution: %s\n", error_message);
@@ -476,6 +487,14 @@ double PhpScript::get_script_time() noexcept {
   return script_time;
 }
 
+process_rusage_t PhpScript::get_script_rusage() noexcept {
+  process_rusage_t current_rusage = get_rusage_info();
+  return {current_rusage.user_time - script_init_rusage.user_time,
+          current_rusage.system_time - script_init_rusage.system_time,
+          current_rusage.voluntary_context_switches - script_init_rusage.voluntary_context_switches,
+          current_rusage.involuntary_context_switches - script_init_rusage.involuntary_context_switches};
+}
+
 int PhpScript::get_net_queries_count() const noexcept {
   return queries_cnt;
 }
@@ -485,6 +504,7 @@ ucontext_t_portable PhpScript::exit_context;
 volatile bool PhpScript::in_script_context = false;
 volatile bool PhpScript::time_limit_exceeded = false;
 volatile bool PhpScript::memory_limit_exceeded = false;
+PhpScript::script_time_stats_t PhpScript::script_time_stats;
 
 static __inline__ void *get_sp() {
   return __builtin_frame_address(0);

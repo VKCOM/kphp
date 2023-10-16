@@ -460,6 +460,7 @@ PhpWorker::PhpWorker(php_worker_mode_t mode_, connection *c, http_query_data *ht
   , mode(mode_)
   , req_id(req_id_)
 {
+  PhpScript::script_time_stats.worker_init_time = init_time;
   assert(c != nullptr);
   if (conn->target) {
     target_fd = static_cast<int>(conn->target - Targets);

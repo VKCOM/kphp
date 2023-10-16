@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <csetjmp>
-
 #include "common/dl-utils-lite.h"
 #include "common/kprintf.h"
 #include "common/mixin/not_copyable.h"
@@ -84,10 +82,18 @@ private:
  * It stores state of the script: current execution point, pointers to allocated script memory, stack for script context, etc.
  */
 class PhpScript {
-  double cur_timestamp{0}, net_time{0}, script_time{0};
+  double cur_timestamp{0};
+  double net_time{0};
+  double script_time{0};
   double last_net_time_delta{0};
   int queries_cnt{0};
   int long_queries_cnt{0};
+
+  struct script_time_stats_t {
+    double http_conn_accept_time{0};
+    double worker_init_time{0};
+    double script_start_time{0};
+  };
 
 private:
   int swapcontext_helper(ucontext_t_portable *oucp, const ucontext_t_portable *ucp);
@@ -101,6 +107,9 @@ public:
   volatile static bool time_limit_exceeded;
   volatile static bool memory_limit_exceeded;
 
+  static script_time_stats_t script_time_stats;
+  process_rusage_t script_init_rusage;
+
   run_state_t state{run_state_t::empty};
   const char *error_message{nullptr};
   script_error_t error_type{script_error_t::no_error};
@@ -111,7 +120,6 @@ public:
   PhpScriptStack script_stack;
 
   ucontext_t_portable run_context{};
-  sigjmp_buf timeout_handler{};
 
   script_t *run_main{nullptr};
   php_query_data *data{nullptr};
@@ -150,6 +158,7 @@ public:
   void reset_script_timeout() noexcept;
   double get_net_time() const noexcept;
   double get_script_time() noexcept;
+  process_rusage_t get_script_rusage() noexcept;
   int get_net_queries_count() const noexcept;
   long long memory_get_total_usage() const noexcept;
 

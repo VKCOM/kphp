@@ -18,6 +18,7 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <sys/time.h>
+#include <sys/resource.h>
 #include <time.h>
 #include <unistd.h>
 #include <dirent.h>
@@ -359,4 +360,16 @@ int get_cpu_total (unsigned long long *cpu_total) {
 
   close (fd);
   return 1;
+}
+
+process_rusage_t get_rusage_info() {
+  rusage usage;
+  memset(&usage, 0, sizeof(rusage));
+  if (getrusage(RUSAGE_SELF, &usage) != 0) {
+    fprintf(stderr, "error while colling getrusage %s\n", strerror(errno));
+  }
+  double user_time = usage.ru_utime.tv_sec + (usage.ru_utime.tv_usec / 1E6);
+  double system_time = usage.ru_stime.tv_sec + (usage.ru_stime.tv_usec / 1E6);
+
+  return {user_time, system_time, usage.ru_nvcsw, usage.ru_nivcsw};
 }
