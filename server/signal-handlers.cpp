@@ -64,10 +64,10 @@ int script_backtrace(void **buffer, int size) {
   return fast_backtrace_without_recursions_by_bp(rbp, stack_end, buffer, size);
 }
 
-void write_log_with_script_backtrace() {
+void write_log_with_script_backtrace(vk::string_view message, int type) {
   std::array<void *, 64> trace{};
   const int trace_size = script_backtrace(trace.data(), 64);
-  vk::singleton<JsonLogger>::get().write_log("Maximum execution time exceeded", E_ERROR, time(nullptr), trace.data(), trace_size, true);
+  vk::singleton<JsonLogger>::get().write_log(message, type, time(nullptr), trace.data(), trace_size, true);
 }
 
 void default_sigalrm_handler(int signum) {
@@ -79,7 +79,7 @@ void default_sigalrm_handler(int signum) {
     PhpScript::time_limit_exceeded = true;
     if (!PhpScript::in_script_context) {
       if (is_json_log_on_timeout_enabled) {
-        write_log_with_script_backtrace();
+        write_log_with_script_backtrace("Maximum execution time exceeded", E_ERROR);
       }
     } else {
       if (is_json_log_on_timeout_enabled) {
@@ -99,7 +99,7 @@ void sigalrm_handler(int signum) {
       // log timeout event with script backtrace
       // save the timeout fact in order to process it in the script context
       if (is_json_log_on_timeout_enabled) {
-        write_log_with_script_backtrace();
+        write_log_with_script_backtrace("Maximum execution time exceeded", E_ERROR);
       }
       PhpScript::time_limit_exceeded = true;
     } else if (!PhpScript::time_limit_exceeded) {
