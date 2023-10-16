@@ -239,17 +239,17 @@ function array_splice (&$a ::: array, $offset ::: int, $length ::: int, $replace
 /** @kphp-extern-func-info cpp_template_call cpp_variadic_call
  *  @kphp-pure-function
  */
-function array_merge (...$a) ::: mixed[];
+function array_merge (...$a ::: array) ::: mixed[];
 /**
  * @kphp-extern-func-info cpp_template_call cpp_variadic_call
  * @kphp-pure-function
  */
-function array_merge_recursive (...$a) ::: mixed[];
+function array_merge_recursive (...$a ::: array) ::: mixed[];
 function array_merge_into (&$a ::: array, $another_array ::: array) ::: void;
 /** @kphp-extern-func-info cpp_template_call cpp_variadic_call
  *  @kphp-pure-function
  */
-function array_merge_spread (...$a) ::: mixed[];
+function array_merge_spread (...$a ::: array) ::: mixed[];
 /** @kphp-extern-func-info cpp_template_call */
 function array_replace ($base_array ::: array,
             $replacements_1 ::: array = array(), $replacements_2  ::: array = array(), $replacements_3  ::: array = array(),

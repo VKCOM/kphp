@@ -697,12 +697,17 @@ array<mixed> get_non_empty(const T & head, const Args & ... tail) {
   return get_non_empty(std::forward<const Args>(tail)...);
 }
 
-template<typename ...Args, typename enable = typename std::enable_if_t<sizeof...(Args)>>
+template<typename T>
+array<mixed> f$array_merge() {
+  return {};
+}
+
+template<typename ...Args>
 array<mixed> f$array_merge(const Args & ... args) {
   int number_of_empties = (... + args.empty());
   if (number_of_empties == sizeof...(Args) - 1) {
     // all is empty except one
-    return get_non_empty( std::forward<const Args>(args)...);
+    return get_non_empty(std::forward<const Args>(args)...);
   }
   array<mixed> result{(args.size() + ... + array_size{})};
   (result.merge_with(args), ...);
