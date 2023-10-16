@@ -98,6 +98,7 @@ void StatsHouseManager::generic_cron_check_if_tag_host_needed() {
 void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_time_ns, script_error_t error, uint64_t memory_used,
                                          uint64_t real_memory_used, uint64_t script_queries, uint64_t long_script_queries,
                                           uint64_t script_user_time_ns, uint64_t script_system_time_ns,
+                                          uint64_t script_init_time, uint64_t http_connection_process_time,
                                           uint64_t voluntary_context_switches, uint64_t involuntary_context_switches) {
   const char *worker_type = get_current_worker_type();
   const char *status = script_error_to_str(error);
@@ -106,11 +107,15 @@ void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_
   client.metric("kphp_request_time").tag("net").tag(worker_type).tag(status).write_value(net_time_ns);
   client.metric("kphp_request_cpu_time").tag("user").tag(worker_type).tag(status).write_value(script_user_time_ns);
   client.metric("kphp_request_cpu_time").tag("system").tag(worker_type).tag(status).write_value(script_system_time_ns);
+  client.metric("kphp_request_load_time").tag("script_init").tag(worker_type).tag(status).write_value(script_init_time);
+  client.metric("kphp_request_load_time").tag("http_connection_process").tag(worker_type).tag(status).write_value(http_connection_process_time);
 
   client.metric("kphp_by_host_request_time", true).tag("script").tag(worker_type).write_value(script_time_ns);
   client.metric("kphp_by_host_request_time", true).tag("net").tag(worker_type).write_value(net_time_ns);
   client.metric("kphp_by_host_request_cpu_time", true).tag("user").tag(worker_type).tag(status).write_value(script_user_time_ns);
   client.metric("kphp_by_host_request_cpu_time", true).tag("system").tag(worker_type).tag(status).write_value(script_system_time_ns);
+  client.metric("kphp_by_host_request_load_time", true).tag("script_init").tag(worker_type).tag(status).write_value(script_init_time);
+  client.metric("kphp_by_host_request_load_time", true).tag("http_connection_process").tag(worker_type).tag(status).write_value(http_connection_process_time);
 
   if (error != script_error_t::no_error) {
     client.metric("kphp_request_errors").tag(status).tag(worker_type).write_count(1);

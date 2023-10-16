@@ -45,6 +45,7 @@ public:
   void add_request_stats(uint64_t script_time_ns, uint64_t net_time_ns, script_error_t error, uint64_t memory_used, uint64_t real_memory_used,
                          uint64_t script_queries, uint64_t long_script_queries,
                          uint64_t script_user_time_ns, uint64_t script_system_time_ns,
+                         uint64_t script_init_time, uint64_t http_connection_process_time,
                          uint64_t voluntary_context_switches, uint64_t involuntary_context_switches);
 
   void add_job_stats(uint64_t job_wait_ns, uint64_t request_memory_used, uint64_t request_real_memory_used, uint64_t response_memory_used,
