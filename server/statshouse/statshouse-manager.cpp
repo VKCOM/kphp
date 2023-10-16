@@ -120,8 +120,6 @@ void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_
   if (process_type == ProcessType::http_worker) {
     client.metric("kphp_by_host_http_connection_process_time", true).tag(status).write_value(http_connection_process_time);
   }
-  client.metric("kphp_by_host_request_load_time", true).tag("script_init").tag(worker_type).tag(status).write_value(script_init_time);
-  client.metric("kphp_by_host_request_load_time", true).tag("http_connection_process").tag(worker_type).tag(status).write_value(http_connection_process_time);
 
   if (error != script_error_t::no_error) {
     client.metric("kphp_request_errors").tag(status).tag(worker_type).write_count(1);
