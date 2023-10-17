@@ -49,6 +49,8 @@ public:
   // todo: functions bellow use backtrace which isn't async-signal safety
   void write_log(vk::string_view message, int type, int64_t created_at, void *const *trace, int64_t trace_size, bool uncaught) noexcept;
   void write_log_with_backtrace(vk::string_view message, int type) noexcept;
+  void write_log_with_script_backtrace(vk::string_view message, int type) noexcept;
+
   void write_stack_overflow_log(int type) noexcept;
 
   void write_trace_line(const char *json_buf, size_t buf_len) noexcept;

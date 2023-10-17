@@ -46,7 +46,11 @@ void default_sigalrm_handler(int signum) {
   kwrite_str(2, "in default_sigalrm_handler\n");
   if (check_signal_critical_section(signum, "SIGALRM")) {
     PhpScript::time_limit_exceeded = true;
-    if (PhpScript::in_script_context) {
+    if (!PhpScript::in_script_context) {
+      if (is_json_log_on_timeout_enabled) {
+        vk::singleton<JsonLogger>::get().write_log_with_script_backtrace("Maximum execution time exceeded", E_ERROR);
+      }
+    } else {
       if (is_json_log_on_timeout_enabled) {
         vk::singleton<JsonLogger>::get().write_log_with_backtrace("Maximum execution time exceeded", E_ERROR);
       }
@@ -61,7 +65,11 @@ void sigalrm_handler(int signum) {
     // There are 3 possible situations when a timeout occurs
     if (!PhpScript::in_script_context) {
       // [1] code in net context
+      // log timeout event with script backtrace
       // save the timeout fact in order to process it in the script context
+      if (is_json_log_on_timeout_enabled) {
+        vk::singleton<JsonLogger>::get().write_log_with_script_backtrace("Maximum execution time exceeded", E_ERROR);
+      }
       PhpScript::time_limit_exceeded = true;
     } else if (!PhpScript::time_limit_exceeded) {
       // [2] code in script context and this is the first timeout
