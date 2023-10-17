@@ -313,7 +313,7 @@ void JsonLogger::write_log_with_script_backtrace(vk::string_view message, int ty
   dl_assert(!PhpScript::in_script_context, "JsonLogger::write_log_with_script_backtrace must be called only in net context");
   std::array<void *, 64> trace{};
   const int trace_size = script_backtrace(trace.data(), trace.size());
-  vk::singleton<JsonLogger>::get().write_log(message, type, time(nullptr), trace.data(), trace_size, true);
+  write_log(message, type, time(nullptr), trace.data(), trace_size, true);
 }
 
 
