@@ -1247,6 +1247,26 @@ public:
     return static_cast<bool>(ret);
   }
 
+  int64_t verify(const string &public_key) const noexcept {
+    if (!x509_) {
+      return -1;
+    }
+    dl::CriticalSectionSmartGuard critical_section;
+
+    bool from_cache = false;
+    EVP_PKEY *pkey = openssl_get_public_evp(public_key, from_cache);
+    if (pkey == nullptr) {
+      critical_section.leave_critical_section();
+      php_warning("Parameter key is not a valid public key");
+      return -1;
+    }
+    int64_t result = X509_verify(x509_, pkey);
+    if (!from_cache) {
+      EVP_PKEY_free(pkey);
+    }
+    return result;
+  }
+
   ~X509_parser() noexcept {
     dl::CriticalSectionGuard critical_section;
     stop_x509_processing(x509_);
@@ -1391,6 +1411,10 @@ X509_ptr X509_parser::processing_x509_;
 
 Optional<array<mixed>> f$openssl_x509_parse(const string &data, bool shortnames /* = true */) {
   return X509_parser{data}.parse(shortnames);
+}
+
+int64_t f$openssl_x509_verify(const string &signature, const string &public_key) {
+  return X509_parser{signature}.verify(public_key);
 }
 
 mixed f$openssl_x509_checkpurpose(const string &data, int64_t purpose) {
