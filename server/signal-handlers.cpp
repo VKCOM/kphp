@@ -66,7 +66,7 @@ int script_backtrace(void **buffer, int size) {
 
 void write_log_with_script_backtrace(vk::string_view message, int type) {
   std::array<void *, 64> trace{};
-  const int trace_size = script_backtrace(trace.data(), 64);
+  const int trace_size = script_backtrace(trace.data(), trace.size());
   vk::singleton<JsonLogger>::get().write_log(message, type, time(nullptr), trace.data(), trace_size, true);
 }
 
