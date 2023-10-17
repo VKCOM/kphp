@@ -8,7 +8,6 @@
 #include <sys/time.h>
 
 #include "common/kprintf.h"
-#include "common/fast-backtrace.h"
 #include "common/server/crash-dump.h"
 #include "common/server/signals.h"
 #include "runtime/critical_section.h"
@@ -40,36 +39,6 @@ bool check_signal_critical_section(int sig_num, const char *sig_name) {
   return true;
 }
 
-int script_backtrace(void **buffer, int size) {
-  if (PhpScript::current_script == nullptr) {
-    return 0;
-  }
-  const ucontext_t_portable &context = PhpScript::current_script->run_context;
-#if defined(__APPLE__)
-#if defined(__arm64__)
-  void *rbp = reinterpret_cast<void *>(context.uc_mcontext->__ss.__fp);
-#else
-  void *rbp = reinterpret_cast<void *>(context.uc_mcontext->__ss.__rsp);
-#endif
-#elif defined(__x86_64__)
-  void *rbp = reinterpret_cast<void *>(context.uc_mcontext.gregs[REG_RBP]);
-#elif defined(__aarch64__) || defined(__arm64__)
-  void *rbp = reinterpret_cast<void *>(context.uc_mcontext.fp);
-#else
-  void *rbp = nullptr;
-  size = 0;
-#endif
-  char *stack_start = PhpScript::current_script->script_stack.get_stack_ptr();
-  char *stack_end = stack_start + PhpScript::current_script->script_stack.get_stack_size();
-  return fast_backtrace_without_recursions_by_bp(rbp, stack_end, buffer, size);
-}
-
-void write_log_with_script_backtrace(vk::string_view message, int type) {
-  std::array<void *, 64> trace{};
-  const int trace_size = script_backtrace(trace.data(), trace.size());
-  vk::singleton<JsonLogger>::get().write_log(message, type, time(nullptr), trace.data(), trace_size, true);
-}
-
 void default_sigalrm_handler(int signum) {
   // Always used in job workers.
   // It's critical for job workers to terminate as soon as possible after normal timeout.
@@ -79,7 +48,7 @@ void default_sigalrm_handler(int signum) {
     PhpScript::time_limit_exceeded = true;
     if (!PhpScript::in_script_context) {
       if (is_json_log_on_timeout_enabled) {
-        write_log_with_script_backtrace("Maximum execution time exceeded", E_ERROR);
+        vk::singleton<JsonLogger>::get().write_log_with_script_backtrace("Maximum execution time exceeded", E_ERROR);
       }
     } else {
       if (is_json_log_on_timeout_enabled) {
@@ -99,7 +68,7 @@ void sigalrm_handler(int signum) {
       // log timeout event with script backtrace
       // save the timeout fact in order to process it in the script context
       if (is_json_log_on_timeout_enabled) {
-        write_log_with_script_backtrace("Maximum execution time exceeded", E_ERROR);
+        vk::singleton<JsonLogger>::get().write_log_with_script_backtrace("Maximum execution time exceeded", E_ERROR);
       }
       PhpScript::time_limit_exceeded = true;
     } else if (!PhpScript::time_limit_exceeded) {
