@@ -946,11 +946,11 @@ void db_run_query(int host_num, const char *request, int request_len, int timeou
 }
 
 void http_send_immediate_response(const char *headers, int headers_len, const char *body, int body_len) {
-  php_assert(active_worker != nullptr);
-  if (active_worker->mode == http_worker) {
-    write_out(&active_worker->conn->Out, headers, headers_len);
-    write_out(&active_worker->conn->Out, body, body_len);
-    flush_connection_output(active_worker->conn);
+  php_assert(php_worker.has_value());
+  if (php_worker->mode == http_worker) {
+    write_out(&php_worker->conn->Out, headers, headers_len);
+    write_out(&php_worker->conn->Out, body, body_len);
+    flush_connection_output(php_worker->conn);
   } else {
     php_warning("Immediate HTTP response available only from HTTP worker");
   }

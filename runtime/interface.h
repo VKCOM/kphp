@@ -167,7 +167,7 @@ bool f$is_uploaded_file(const string &filename);
 bool f$move_uploaded_file(const string &oldname, const string &newname);
 
 
-void init_superglobals(php_query_data *data);
+void init_superglobals(const php_query_data_t &data);
 
 
 double f$get_net_time();
@@ -204,7 +204,7 @@ Optional<array<mixed>> f$getopt(const string &options, array<string> longopts = 
 void global_init_runtime_libs();
 void global_init_script_allocator();
 
-void init_runtime_environment(php_query_data *data, void *mem, size_t script_mem_size, size_t oom_handling_mem_size = 0);
+void init_runtime_environment(const php_query_data_t &data, void *mem, size_t script_mem_size, size_t oom_handling_mem_size = 0);
 
 void free_runtime_environment();
 

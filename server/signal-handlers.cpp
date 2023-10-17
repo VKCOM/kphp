@@ -120,8 +120,8 @@ void print_http_data() {
   }
   if (!PhpScript::current_script) {
     write_str(2, "\nPHPScriptBase::current_script is nullptr\n");
-  } else if (PhpScript::current_script->data) {
-    if (http_query_data *data = PhpScript::current_script->data->http_data) {
+  } else if (PhpScript::current_script->data != nullptr && std::holds_alternative<http_query_data>(*PhpScript::current_script->data)) {
+      http_query_data *data = &std::get<http_query_data>(*PhpScript::current_script->data);
       write_str(2, "\nuri\n");
       write(2, data->uri, data->uri_len);
       write_str(2, "\nget\n");
@@ -132,7 +132,6 @@ void print_http_data() {
       if (data->post && data->post_len > 0) {
         write(2, data->post, data->post_len);
       }
-    }
   }
 }
 
