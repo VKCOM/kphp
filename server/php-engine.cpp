@@ -983,7 +983,7 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       int64_t left_bytes_without_headers = tl_fetch_unread();
 
       len -= (left_bytes_with_headers - left_bytes_without_headers);
-      assert(len % 4 == 0);
+      assert(len % sizeof(int) == 0);
 
       long long req_id = header.qid;
 
@@ -1009,7 +1009,7 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       double actual_script_timeout = custom_settings.has_timeout() ? normalize_script_timeout(custom_settings.php_timeout_ms / 1000.0) : script_timeout;
       set_connection_timeout(c, actual_script_timeout);
 
-      std::vector<int> buffer((len + sizeof(int)) / sizeof(int));
+      std::vector<int> buffer(len / sizeof(int));
       auto fetched_bytes = tl_fetch_data(buffer.data(), len);
       if (fetched_bytes == -1) {
         client_rpc_error(c, req_id, tl_fetch_error_code(), tl_fetch_error_string());

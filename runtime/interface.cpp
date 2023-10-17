@@ -1799,7 +1799,7 @@ static void init_superglobals_impl(const http_query_data &http_data, const rpc_q
 }
 
 static http_query_data empty_http_data;
-static rpc_query_data empty_rpc_data{tl_query_header_t(), {}, {}};
+static rpc_query_data empty_rpc_data;
 static job_query_data empty_job_data;
 
 void init_superglobals(const php_query_data_t &data) {
