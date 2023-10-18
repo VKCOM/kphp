@@ -64,6 +64,7 @@ public:
   // for lambdas: a function that contains this lambda ($this is captured from outer_function, it can also be a lambda on nesting)
   // for generic instantiations: refs to an original (a generic) function
   // for __invoke method of a lambda: refs to a lambda function that's called from this __invoke
+  // for inherited context functions Base::f(static=Derived): refs to Base::f (where it was cloned from)
   FunctionPtr outer_function;
 
   // use($var1, &$var2) for lambdas, implicit vars for arrow lambdas; auto-captured $this is also here, the first one
