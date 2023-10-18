@@ -170,6 +170,7 @@ void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_cl
   std::string ctx_function_name = replace_backslashes(parent_class->name) + "$$" + local_name + "$$" + replace_backslashes(child_class->name);
   FunctionPtr context_function = FunctionData::clone_from(parent_f, ctx_function_name);
   context_function->context_class = child_class;
+  context_function->outer_function = parent_f;
   CloneNestedLambdasPass::run_if_lambdas_inside(context_function, &function_stream);
   stage::set_file(child_class->file_id);
   stage::set_function(FunctionPtr{});
