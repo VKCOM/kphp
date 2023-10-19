@@ -35,9 +35,9 @@ prepend(COMMON_TL_METHODS_SOURCES ${COMMON_DIR}/tl/methods/
         rwm.cpp
         string.cpp)
 
-if (APPLE AND CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
+if (NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
     prepend(COMMON_UCONTEXT_SOURCES ${COMMON_DIR}/ucontext/
-            ucontext.cpp)
+            ucontext-arm.cpp)
 endif()
 
 set(COMMON_ALL_SOURCES
