@@ -11,6 +11,7 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/data/src-dir.h"
 #include "compiler/name-gen.h"
 #include "compiler/stage.h"
 #include "compiler/threading/profiler.h"
@@ -267,7 +268,7 @@ void SortAndInheritClassesF::inherit_class_from_interface(ClassPtr child_class, 
   interface_class->derived_classes.emplace_back(child_class);
 }
 
-void SortAndInheritClassesF::clone_members_from_traits(std::vector<TraitPtr> &&traits, ClassPtr ready_class, DataStream<FunctionPtr> &function_stream) {
+void SortAndInheritClassesF::clone_members_from_traits(const std::vector<TraitPtr> &traits, ClassPtr ready_class, DataStream<FunctionPtr> &function_stream) {
   for (size_t i = 0; i < traits.size(); ++i) {
     auto check_other_traits_doesnt_contain_method_and_clone = [&](FunctionPtr method) {
       if (!clone_method(method, ready_class, function_stream)) {
@@ -308,13 +309,19 @@ void SortAndInheritClassesF::on_class_ready(ClassPtr klass, DataStream<FunctionP
   stage::set_file(klass->file_id);
   std::vector<TraitPtr> traits;
 
+  // assign modulite to a class (from .modulite.yaml in a containing directory)
+  if (klass->file_id) {
+    klass->modulite = klass->file_id->dir->nested_files_modulite;
+  }
+
   // we have to resolve traits first to see overridden methods before static inheritance
   for (const auto &dep : klass->get_str_dependents()) {
     if (dep.type == ClassType::trait) {
       traits.emplace_back(G->get_class(dep.class_name));
     }
   }
-  clone_members_from_traits(std::move(traits), klass, function_stream);
+  klass->traits_uses = std::move(traits);
+  clone_members_from_traits(klass->traits_uses, klass, function_stream);
 
   for (const auto &dep : klass->get_str_dependents()) {
     ClassPtr dep_class = G->get_class(dep.class_name);

@@ -1,4 +1,5 @@
 @kphp_should_fail
+/restricted to use Feed126\\PrivTrait, it's internal in @feed/
 <?php
 #ifndef KPHP
 require_once 'kphp_tester_include.php';

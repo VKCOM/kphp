@@ -40,9 +40,8 @@ CalcRealDefinesAndAssignModulitesF::CalcRealDefinesAndAssignModulitesF() : Base(
 }
 
 void CalcRealDefinesAndAssignModulitesF::execute(FunctionPtr f, DataStream<FunctionPtr> &unused_os) {
-  if (f->type == FunctionData::func_class_holder) {
-    f->class_id->modulite = f->file_id->dir->nested_files_modulite;
-  }
+  // modulites to classes are assigned before (in SortAndInheritClassesF)
+  // here we assign f->modulite
 
   // not just f->file_id, because if f = (method cloned from trait), then f->file_id = (file with trait)
   // but we need a file of a containing class, since a trait might be imported from another modulite
@@ -64,7 +63,7 @@ void CalcRealDefinesAndAssignModulitesF::on_finish(DataStream<FunctionPtr> &os) 
   stage::die_if_global_errors();
 
   for (ClassPtr klass : G->get_classes()) {
-    if (!klass->parent_class && klass->implements.empty()) {
+    if (!klass->parent_class && klass->implements.empty() && klass->traits_uses.empty()) {
       continue;
     }
 
@@ -79,6 +78,11 @@ void CalcRealDefinesAndAssignModulitesF::on_finish(DataStream<FunctionPtr> &os) 
     for (ClassPtr interface : klass->implements) {
       if (klass->modulite != interface->modulite) {
         modulite_check_when_use_class(f_klass, interface);
+      }
+    }
+    for (TraitPtr trait : klass->traits_uses) {
+      if (klass->modulite != trait->modulite) {
+        modulite_check_when_use_class(f_klass, trait);
       }
     }
   }

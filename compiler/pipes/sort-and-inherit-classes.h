@@ -29,7 +29,7 @@ private:
   void inherit_instance_method_from_parent(ClassPtr child_class, const ClassMemberInstanceMethod &parent_method);
 
   void inherit_class_from_interface(ClassPtr child_class, InterfacePtr interface_class);
-  static void clone_members_from_traits(std::vector<TraitPtr> &&traits, ClassPtr ready_class, DataStream<FunctionPtr> &function_stream);
+  static void clone_members_from_traits(const std::vector<TraitPtr> &traits, ClassPtr ready_class, DataStream<FunctionPtr> &function_stream);
 
   decltype(ht)::HTNode *get_not_ready_dependency(ClassPtr klass);
 

@@ -51,6 +51,7 @@ public:
 
   ClassPtr parent_class;                       // extends
   std::vector<InterfacePtr> implements;
+  std::vector<TraitPtr> traits_uses;
   std::vector<ClassPtr> derived_classes;
   FunctionPtr construct_function;
 
