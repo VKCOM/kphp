@@ -354,17 +354,11 @@ void ssl_version_option_setter(EasyContext *easy_context, CURLoption option, con
 }
 
 void auth_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
-  long val = static_cast<long>(value.to_int());
-  constexpr size_t OPTION_OFFSET = 600000;
-  if (easy_context->check_option_value<OPTION_OFFSET, 1u << 4u>(val)) {
-    val -= OPTION_OFFSET;
-    val = (val & 1) * CURLAUTH_BASIC +
-          ((val >> 1) & 1) * CURLAUTH_DIGEST +
-          // curl-kphp-vk doesn't support this option
-          // ((val >> 2) & 1) * CURLAUTH_GSSNEGOTIATE +
-          ((val >> 3) & 1) * CURLAUTH_NTLM;
-    easy_context->set_option_safe(option, val);
-  }
+  easy_context->set_option_safe(option, (unsigned long)value.as_int() & ~CURLAUTH_GSSNEGOTIATE);
+}
+
+void timevalue_large_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
+  easy_context->set_option_safe(option, (curl_off_t)static_cast<long>(value.to_int()));
 }
 
 void ip_resolve_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
@@ -384,7 +378,7 @@ void header_option_setter(EasyContext *easy_context, CURLoption option, const mi
 
 void proto_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
   // it is needed if kphp doesn't support scp protocol.
-  easy_context->set_option_safe(option, static_cast<long>(value & ~CURLPROTO_SCP));
+  easy_context->set_option_safe(option, static_cast<long>(value.as_int() & ~CURLPROTO_SCP));
   //easy_context->set_option_safe(option, static_cast<long>(value.to_int()));
 }
 
@@ -651,7 +645,31 @@ bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) 
       {CURLOPT_HEADEROPT,                 header_option_setter},
       {CURLOPT_POSTREDIR,                 redirpost_option_setter},
       {CURLOPT_PROTOCOLS,                 proto_option_setter},
-      {CURLOPT_REDIR_PROTOCOLS,           long_option_setter}
+      {CURLOPT_REDIR_PROTOCOLS,           long_option_setter},
+      {CURLOPT_DISALLOW_USERNAME_IN_URL,  long_option_setter},
+      {CURLOPT_DNS_SHUFFLE_ADDRESSES,     long_option_setter},
+      {CURLOPT_HAPROXYPROTOCOL,           long_option_setter},
+      {CURLOPT_DNS_USE_GLOBAL_CACHE,      long_option_setter},
+      {CURLOPT_FTPAPPEND,                 long_option_setter},
+      {CURLOPT_FTPLISTONLY,               long_option_setter},
+      {CURLOPT_HTTP09_ALLOWED,            long_option_setter},
+      {CURLOPT_KEEP_SENDING_ON_ERROR,     long_option_setter},
+      {CURLOPT_PROXY_SSL_VERIFYPEER,      long_option_setter},
+      {CURLOPT_SUPPRESS_CONNECT_HEADERS,  long_option_setter},
+      {CURLOPT_TCP_FASTOPEN,              long_option_setter},
+      {CURLOPT_TFTP_NO_OPTIONS,           long_option_setter},
+
+      {CURLOPT_SOCKS5_AUTH,               auth_option_setter},
+      {CURLOPT_SSL_OPTIONS,               long_option_setter},
+      {CURLOPT_PROXY_SSL_OPTIONS,         long_option_setter},
+
+      {CURLOPT_PROXY_SSL_VERIFYHOST,      long_option_setter},
+      {CURLOPT_PROXY_SSLVERSION,          ssl_version_option_setter},
+      {CURLOPT_STREAM_WEIGHT,             long_option_setter},
+      {CURLOPT_TIMEVALUE,                 long_option_setter},
+      {CURLOPT_TIMECONDITION,             long_option_setter},
+      {CURLOPT_TIMEVALUE_LARGE,           timevalue_large_option_setter},
+      {CURLOPT_SSH_AUTH_TYPES,            long_option_setter}
     });
 
   constexpr size_t CURLOPT_OPTION_OFFSET = 200000;

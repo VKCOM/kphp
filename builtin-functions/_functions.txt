@@ -1273,26 +1273,49 @@ define('CURLOPT_TCP_KEEPINTVL', 200125);
 define('CURLOPT_PRIVATE', 200126);
 
 // new options
-define('CURLOPT_SSL_VERIFYSTATUS', 200127); // work
+define('CURLOPT_SSL_VERIFYSTATUS', 200127);
 define('CURLOPT_CERTINFO', 200128);         // work, but with troubles
-define('CURLOPT_NOPROGRESS', 200129);       // work
-define('CURLOPT_NOSIGNAL', 200130);         // work
-define('CURLOPT_PATH_AS_IS', 200131);       // work
-define('CURLOPT_PIPEWAIT', 200132);         // work
-define('CURLOPT_SASL_IR', 200133);          // work
+define('CURLOPT_NOPROGRESS', 200129);
+define('CURLOPT_NOSIGNAL', 200130);
+define('CURLOPT_PATH_AS_IS', 200131);
+define('CURLOPT_PIPEWAIT', 200132);
+define('CURLOPT_SASL_IR', 200133);
 
 // new slist options
-define('CURLOPT_CONNECT_TO', 200134);       // work
-define('CURLOPT_PROXYHEADER', 200135);      // work
+define('CURLOPT_CONNECT_TO', 200134);
+define('CURLOPT_PROXYHEADER', 200135);
 
 // new int options
-define('CURLOPT_EXPECT_100_TIMEOUT_MS', 200136);     // work
-define('CURLOPT_HAPPY_EYEBALLS_TIMEOUT_MS', 200137); // work
-define('CURLOPT_HEADEROPT', 200138);        // work
-define('CURLOPT_POSTREDIR', 200139);        // work
-define('CURLOPT_PROTOCOLS', 200140);        // work (but the scp proto doesn't work)
-define('CURLOPT_REDIR_PROTOCOLS', 200141);  // ? (most likely, the same problem will arise with scp as in CURLOPT_PROTOCOLS)
+define('CURLOPT_EXPECT_100_TIMEOUT_MS', 200136);
+define('CURLOPT_HAPPY_EYEBALLS_TIMEOUT_MS', 200137);
+define('CURLOPT_HEADEROPT', 200138);
+define('CURLOPT_POSTREDIR', 200139);
+define('CURLOPT_PROTOCOLS', 200140);        // work (but the scp proto doesn't work in curl 7.60.0)
+define('CURLOPT_REDIR_PROTOCOLS', 200141);  // most likely, the same problem will arise with scp as in CURLOPT_PROTOCOLS
 
+define('CURLOPT_DISALLOW_USERNAME_IN_URL', 200142);
+define('CURLOPT_DNS_SHUFFLE_ADDRESSES', 200143);
+define('CURLOPT_HAPROXYPROTOCOL', 200144);
+define('CURLOPT_DNS_USE_GLOBAL_CACHE', 200145);
+define('CURLOPT_FTPAPPEND', 200146);
+define('CURLOPT_FTPASCII', CURLOPT_TRANSFERTEXT);
+define('CURLOPT_FTPLISTONLY', 200147);
+define('CURLOPT_HTTP09_ALLOWED', 200148);
+define('CURLOPT_KEEP_SENDING_ON_ERROR', 200149);
+define('CURLOPT_PROXY_SSL_VERIFYPEER', 200150);
+define('CURLOPT_SUPPRESS_CONNECT_HEADERS', 200151);
+define('CURLOPT_TCP_FASTOPEN', 200152);
+define('CURLOPT_TFTP_NO_OPTIONS', 200153);
+
+define('CURLOPT_SOCKS5_AUTH', 200154);
+define('CURLOPT_SSL_OPTIONS', 200155);
+define('CURLOPT_PROXY_SSL_OPTIONS', 200156);
+define('CURLOPT_PROXY_SSL_VERIFYHOST', 200157);
+define('CURLOPT_PROXY_SSLVERSION', 200158);
+define('CURLOPT_STREAM_WEIGHT', 200159);
+define('CURLOPT_TIMEVALUE', 200160);
+define('CURLOPT_TIMECONDITION', 200161);
+define('CURLOPT_TIMEVALUE_LARGE', 200162);
 
 define('CURLPROXY_HTTP', 400000);
 define('CURLPROXY_HTTP_1_0', 400001);
@@ -1309,13 +1332,31 @@ define('CURL_SSLVERSION_TLSv1_0', 4);
 define('CURL_SSLVERSION_TLSv1_1', 5);
 define('CURL_SSLVERSION_TLSv1_2', 6);
 
-define('CURLAUTH_BASIC', 600001);
-define('CURLAUTH_DIGEST', 600002);
-// curl-kphp-vk не поддеживает эту опцию
-// define('CURLAUTH_GSSNEGOTIATE', 600004);
-define('CURLAUTH_NTLM', 600008);
-define('CURLAUTH_ANYSAFE', 600014);
-define('CURLAUTH_ANY', 600015);
+// bitmasks for CURLOPT_SSH_AUTH_TYPES option
+// define('CURLSSH_AUTH_ANY',      ~0);
+// define('CURLSSH_AUTH_NONE',      0);
+// define('CURLSSH_AUTH_PUBLICKEY', 1<<0);
+// define('CURLSSH_AUTH_PASSWORD',  1<<1);
+// define('CURLSSH_AUTH_HOST',      1<<2);
+// define('CURLSSH_AUTH_KEYBOARD',  1<<3);
+
+// bitmasks for CURLAUTH options
+define('CURLAUTH_NONE',   0);
+define('CURLAUTH_BASIC',  1<<0);
+define('CURLAUTH_DIGEST', 1<<1);
+// curl-kphp-vk doesn't support this option
+// define('CURLAUTH_GSSNEGOTIATE', 1<<2);
+define('CURLAUTH_NTLM',   1<<3);
+define('CURLAUTH_DIGEST_IE', 1<<4);
+define('CURLAUTH_ANYSAFE', ~(CURLAUTH_BASIC|CURLAUTH_DIGEST_IE));
+define('CURLAUTH_ANY', ~CURLAUTH_DIGEST_IE);
+
+// bitmasks for SSL options
+define('CURLSSLOPT_ALLOW_BEAST', 1<<0);
+define('CURLSSLOPT_NO_REVOKE',   1<<1);
+
+define('CURL_TIMECOND_IFMODSINCE', 0);
+define('CURL_TIMECOND_IFUNMODSINCE', 1);
 
 define('CURL_IPRESOLVE_WHATEVER', 700000);
 define('CURL_IPRESOLVE_V4', 700001);
@@ -1325,17 +1366,17 @@ define('CURLFTPAUTH_DEFAULT', 800000);
 define('CURLFTPAUTH_SSL', 800001);
 define('CURLFTPAUTH_TLS', 800002);
 
-// new flags for CURLOPT_HEADEROPT option
+// flags for CURLOPT_HEADEROPT option
 define('CURLHEADER_UNIFIED', 810000);
 define('CURLHEADER_SEPARATE', 810001);
 
-// new flags for CURLOPT_POSTREDIR option
+// flags for CURLOPT_POSTREDIR option
 define('CURL_REDIR_POST_301', 820000);
 define('CURL_REDIR_POST_302', 820001);
 define('CURL_REDIR_POST_303', 820002);
 define('CURL_REDIR_POST_ALL', 820003);
 
-// new flags for CURLOPT_PROTOCOLS option
+// bitmasks for CURLOPT_PROTOCOLS option
 define('CURLPROTO_HTTP',   1<<0);
 define('CURLPROTO_HTTPS',  1<<1);
 define('CURLPROTO_FTP',    1<<2);
