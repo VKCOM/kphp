@@ -74,8 +74,19 @@ protected:
   ~BaseContext() = default;
 };
 
-// function for dictionary creation from curl_slist
-// std::pair<string, string> split_t() 
+// function for creation a dictionary from curl_slist
+std::pair<string, string> split_certinfo_elems(const string &elem) {
+  string::size_type p = elem.find_first_of(string(":"), 0);
+
+  if (p == string::npos) {
+    return std::pair<string, string>(string(""), elem);
+  }
+
+  string key = elem.substr(0, p);
+  string value = elem.substr(p+1, elem.size() - p);
+
+  return std::pair<string, string>(key, value);
+}
 
 class EasyContext : public BaseContext {
 public:
@@ -120,14 +131,17 @@ public:
       case CURLINFO_SLIST: {
         curl_certinfo *value = nullptr;
         const CURLcode res = dl::critical_section_call([&] { return curl_easy_getinfo (easy_handle, what, &value); });
-        array<string> certs;
+        array<array<string>> certs;
 
         for (size_t i = 0; i < value->num_of_certs; ++i) {
           curl_slist *sl = value->certinfo[i];
+          array<string> cert;
           while (sl) {
-            certs.emplace_back(string(sl->data));
+            std::pair<string, string> kv = split_certinfo_elems(string(sl->data));
+            cert.set_value(kv.first, kv.second);
             sl = sl->next;
           }
+          certs.emplace_back(cert);
         }
 
         return res == CURLE_OK ? mixed(certs) : mixed{false};

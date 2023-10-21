@@ -1275,7 +1275,7 @@ define('CURLOPT_PRIVATE', 200126);
 
 // new options
 define('CURLOPT_SSL_VERIFYSTATUS', 200127);
-define('CURLOPT_CERTINFO', 200128);         // work, but with troubles
+define('CURLOPT_CERTINFO', 200128);         // work (output error of string filed "Signed Certificate Timestamp")
 define('CURLOPT_NOPROGRESS', 200129);
 define('CURLOPT_NOSIGNAL', 200130);
 define('CURLOPT_PATH_AS_IS', 200131);
