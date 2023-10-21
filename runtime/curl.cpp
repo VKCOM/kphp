@@ -669,7 +669,10 @@ bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) 
       {CURLOPT_TIMEVALUE,                 long_option_setter},
       {CURLOPT_TIMECONDITION,             long_option_setter},
       {CURLOPT_TIMEVALUE_LARGE,           timevalue_large_option_setter},
-      {CURLOPT_SSH_AUTH_TYPES,            long_option_setter}
+
+      {CURLOPT_ABSTRACT_UNIX_SOCKET, string_option_setter},
+      {CURLOPT_DEFAULT_PROTOCOL,     string_option_setter},
+      {CURLOPT_DNS_INTERFACE,        string_option_setter}
     });
 
   constexpr size_t CURLOPT_OPTION_OFFSET = 200000;
@@ -892,6 +895,54 @@ void f$curl_close(curl_easy easy_id) noexcept {
     vk::singleton<CurlContexts>::get().easy_contexts.set_value(easy_id - 1, nullptr);
     easy_context->release();
   }
+}
+
+mixed f$curl_version() noexcept {
+  curl_version_info_data *curl_info = curl_version_info(CURLVERSION_NOW);
+
+  if (!curl_info) {
+    return false;
+  }
+
+  array<mixed> info;
+  info.set_value(string("version_number"), mixed(static_cast<int>(curl_info->version_num)));
+  info.set_value(string("age"),            mixed(static_cast<int>(curl_info->age)));
+  info.set_value(string("features"),       mixed(curl_info->features));
+  info.set_value(string("ssl_version_number"), mixed(static_cast<int>(curl_info->ssl_version_num)));
+  info.set_value(string("version"),        mixed(string((curl_info->version) ? curl_info->version : "")));
+  info.set_value(string("host"),           mixed(string((curl_info->host)    ? curl_info->host    : "")));
+  info.set_value(string("ssl_version"),    mixed(string((curl_info->ssl_version)  ? curl_info->ssl_version  : "")));
+  info.set_value(string("libz_version"),   mixed(string((curl_info->libz_version) ? curl_info->libz_version : "")));
+
+  array<string> protocols;
+
+  char **p = (char **) curl_info->protocols;
+  while (*p) {
+    protocols.emplace_back(string(*p));
+    ++p;
+  }
+  info.set_value(string("protocols"), mixed(protocols));
+  
+  if (curl_info->age >= 1) {
+    info.set_value(string("ares"), mixed(string((curl_info->ares) ? curl_info->ares : "")));
+    info.set_value(string("ares_num"), mixed(curl_info->ares_num));
+  }
+
+  if (curl_info->age >= 2) {
+    info.set_value(string("libidn"), mixed(string((curl_info->libidn) ? curl_info->libidn : "")));
+  }
+
+  if (curl_info->age >= 3) {
+    info.set_value(string("iconv_ver_num"),  mixed(curl_info->iconv_ver_num));
+    info.set_value(string("libssh_version"), mixed(string((curl_info->libssh_version) ? curl_info->libssh_version : "")));
+  }
+
+  if (curl_info->age >= 4) {
+    info.set_value(string("brotli_ver_num"), mixed(static_cast<int>(curl_info->brotli_ver_num)));
+    info.set_value(string("brotli_version"), mixed(string((curl_info->brotli_version) ? curl_info->brotli_version : "")));
+  }
+
+  return mixed(info);
 }
 
 curl_multi f$curl_multi_init() noexcept {
