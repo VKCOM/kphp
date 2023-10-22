@@ -1654,7 +1654,7 @@ class DateTimeImmutable implements DateTimeInterface {
 
 function getenv(string $varname = '', bool $local_only = false): mixed;
 
-function yaml_emit_file ($filename ::: string, $data ::: mixed) ::: bool;
-function yaml_emit ($data ::: mixed) ::: string;
-function yaml_parse_file ($filename ::: string, $pos ::: int = 0) ::: mixed;
-function yaml_parse ($data ::: string, $pos ::: int = 0) ::: mixed;
+function yaml_emit_file(string $filename, mixed $data): bool;
+function yaml_emit(mixed $data): string;
+function yaml_parse_file(string $filename, int $pos = 0): mixed;
+function yaml_parse(string $data, int $pos = 0): mixed;

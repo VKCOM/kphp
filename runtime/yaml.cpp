@@ -2,7 +2,7 @@
 
 #include "runtime/optional.h"
 #include "runtime/streams.h"
-#include "yaml.h"
+#include "runtime/yaml.h"
 
 /*
  * convert YAML::Node to mixed after parsing a YAML document into YAML::Node
@@ -12,7 +12,9 @@ static void yaml_node_to_mixed(const YAML::Node &node, mixed &data, const string
   if (node.IsScalar()) {
     const string string_data(node.as<std::string>().c_str());
     // check whether the primitive is put in quotes in the source YAML
-    const bool string_data_has_quotes = (source[node.Mark().pos] == '"' && source[node.Mark().pos + string_data.size() + 1] == '"');
+    const bool string_data_has_quotes =
+      (source[node.Mark().pos] == '"' && source[node.Mark().pos + string_data.size() + 1] == '"') ||
+      (source[node.Mark().pos] == '\'' && source[node.Mark().pos + string_data.size() + 1] == '\'');
     // if so, it is a string
     if (string_data_has_quotes) {
       data = string_data;
@@ -64,7 +66,8 @@ static string yaml_print_key(const mixed &data_key) noexcept {
   if (data_key.is_string()) {
     return data_key.as_string();
   }
-  return string(data_key.as_int()); // key can not be an array; bool and float keys are cast to int
+  // key can not be an array; bool and float keys are cast to int
+  return string(data_key.as_int());
 }
 
 /*
@@ -73,26 +76,27 @@ static string yaml_print_key(const mixed &data_key) noexcept {
 static string yaml_escape(const string &data) noexcept {
   string escaped_data;
   for (size_t i = 0; i < data.size(); ++i) {
-    if (data[i] == 10) { // line feed - code 10
-      escaped_data.push_back(92); // backslash
+    const char& current_char = data[i];
+    if (current_char == '\n') { // line feed
+      escaped_data.push_back('\\');
       escaped_data.push_back('n');
-    } else if (data[i] == 8) { // backspace - code 8
-      escaped_data.push_back(92); // backslash
+    } else if (current_char == '\b') { // backspace
+      escaped_data.push_back('\\');
       escaped_data.push_back('b');
-    } else if (data[i] == 9) { // horizontal tab - code 9
-      escaped_data.push_back(92); // backslash
+    } else if (current_char == '\t') { // horizontal tab
+      escaped_data.push_back('\\');
       escaped_data.push_back('t');
-    } else if (data[i] == 11) { // vertical tab - code 11
-      escaped_data.push_back(92); // backslash
+    } else if (current_char == '\v') { // vertical tab
+      escaped_data.push_back('\\');
       escaped_data.push_back('v');
-    } else if (data[i] == 34) { // double quotation mark - code 34
-      escaped_data.push_back(92); // backslash
-      escaped_data.push_back(34); // double quotation mark
-    } else if (data[i] == 92) { // backslash - code 92
-      escaped_data.push_back(92);
-      escaped_data.push_back(92); // double backslash
+    } else if (current_char == '\"') {
+      escaped_data.push_back('\\');
+      escaped_data.push_back('"');
+    } else if (current_char == '\\') {
+      escaped_data.push_back('\\');
+      escaped_data.push_back('\\');
     } else {
-      escaped_data.push_back(data[i]);
+      escaped_data.push_back(current_char);
     }
   }
   return escaped_data;
@@ -102,22 +106,21 @@ static string yaml_escape(const string &data) noexcept {
  * get a YAML representation of mixed in a string variable
  */
 static void mixed_to_string(const mixed &data, string &string_data, const uint8_t nesting_level = 0) noexcept {
-  string buffer;
   if (!data.is_array()) {
     if (data.is_null()) {
-      buffer.push_back('~'); // tilda is a YAML representation of NULL
+      string_data.push_back('~'); // tilda is a YAML representation of NULL
     } else if (data.is_string()) {
-      buffer.push_back('"'); // cover string entry in double quotes
-      buffer.append(yaml_escape(data.as_string())); // escape special characters
-      buffer.push_back('"');
+      string_data.push_back('"'); // cover string entry in double quotes
+      string_data.append(yaml_escape(data.as_string())); // escape special characters
+      string_data.push_back('"');
     } else if (data.is_int()) {
-      buffer.append(data.as_int());
+      string_data.append(data.as_int());
     } else if (data.is_float()) {
-      buffer.append(data.as_double());
+      string_data.append(data.as_double());
     } else if (data.is_bool()) {
-      buffer = (data.as_bool()) ? string("true") : string("false");
+      const string bool_repr = (data.as_bool()) ? string("true") : string("false");
+      string_data.append(bool_repr);
     }
-    string_data.append(buffer);
     string_data.push_back('\n');
     return;
   }
@@ -126,23 +129,26 @@ static void mixed_to_string(const mixed &data, string &string_data, const uint8_
     string_data.append("[]\n"); // an empty array is represented as [] in YAML
     return;
   }
-  const bool data_array_is_vector = data_array.is_pseudo_vector(); // check if an array has keys increasing by 1 starting from 0
+  // check if an array has keys increasing by 1 starting from 0
+  const bool data_array_is_vector = data_array.is_pseudo_vector();
   for (const auto &it : data_array) {
     const mixed &data_piece = it.get_value();
-    buffer = yaml_print_tabs(nesting_level);
+    string_data.append(yaml_print_tabs(nesting_level));
     if (data_array_is_vector) {
-      buffer.push_back('-');
+      string_data.push_back('-');
     } else {
-      buffer.append(yaml_print_key(it.get_key()));
-      buffer.push_back(':');
+      string_data.append(yaml_print_key(it.get_key()));
+      string_data.push_back(':');
     }
     if (data_piece.is_array() && !data_piece.as_array().empty()) {
-      buffer.push_back('\n'); // if an element of an array is also a non-empty array, print it on the next line
+      // if an element of an array is also a non-empty array, print it on the next line
+      string_data.push_back('\n');
     } else {
-      buffer.push_back(' '); // if an element of an array is a primitive or an empty array, print it after a space
+      // if an element of an array is a primitive or an empty array, print it after a space
+      string_data.push_back(' ');
     }
-    string_data.append(buffer);
-    mixed_to_string(data_piece, string_data, nesting_level + 1); // for entries of an array, increase nesting level
+    // for entries of an array, increase nesting level
+    mixed_to_string(data_piece, string_data, nesting_level + 1);
   }
 }
 
@@ -170,12 +176,12 @@ string f$yaml_emit(const mixed &data) {
 mixed f$yaml_parse_file(const string &filename, int pos) {
   if (filename.empty()) {
     php_warning("Filename cannot be empty");
-    return {};
+    return false;
   }
   Optional<string> data = f$file_get_contents(filename);
   if (data.is_false()) {
     php_warning("Error while reading file \"%s\"", filename.c_str());
-    return {};
+    return false;
   }
   return f$yaml_parse(data.ref(), pos);
 }
