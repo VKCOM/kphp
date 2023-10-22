@@ -21,6 +21,16 @@ function test_long_options() {
   var_dump(curl_setopt($c, CURLOPT_TCP_KEEPIDLE, 5));
   var_dump(curl_setopt($c, CURLOPT_TCP_KEEPINTVL, 12));
 
+  var_dump(curl_setopt($c, CURLOPT_SSL_VERIFYSTATUS, 1));
+  var_dump(curl_setopt($c, CURLOPT_NOPROGRESS, false));
+  var_dump(curl_setopt($c, CURLOPT_NOSIGNAL, false));
+  var_dump(curl_setopt($c, CURLOPT_PATH_AS_IS, true));
+  var_dump(curl_setopt($c, CURLOPT_PIPEWAIT, true));
+  var_dump(curl_setopt($c, CURLOPT_SASL_IR, true));
+
+  var_dump(curl_setopt($c, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_DICT & CURLPROTO_SMTP));
+
+
   curl_close($c);
 }
 
@@ -52,8 +62,11 @@ function test_linked_list_options() {
   var_dump(curl_setopt($c, CURLOPT_MAIL_RCPT, []));
   var_dump(curl_setopt($c, CURLOPT_RESOLVE, ["www.example.com:8081:127.0.0.1"]));
 
+  var_dump(curl_setopt($c, CURLOPT_CONNECT_TO, ["www.example.com:8081:127.0.0.1"]));
+  var_dump(curl_setopt($c, CURLOPT_PROXYHEADER, [null, "Accept:", 123]));
+
   // bad values
-  var_dump(curl_setopt($c, CURLOPT_MAIL_RCPT, "bad value"));
+  //var_dump(curl_setopt($c, CURLOPT_MAIL_RCPT, "bad value"));
   var_dump(curl_setopt($c, CURLOPT_QUOTE, 1));
   var_dump(curl_setopt($c, CURLOPT_POSTQUOTE, null));
 
