@@ -18,7 +18,6 @@ prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
         php-mc-connections.cpp
         php-queries.cpp
         php-queries-types.cpp
-        php-query-data.cpp
         php-runner.cpp
         php-init-scripts.cpp
         php-sql-connections.cpp

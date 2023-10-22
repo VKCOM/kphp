@@ -1,0 +1,15 @@
+name: "@messages011"
+description: ""
+namespace: "Messages011\\"
+
+export:
+  - "MessagesLogger011"
+
+force-internal:
+
+require:
+  - "\\Logs011\\BaseLog011"
+  - "\\Logs011\\BaseLog011::createLog()"
+  - "\\Logs011\\BaseLog011::logAction()"
+
+allow-internal-access:

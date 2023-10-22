@@ -65,8 +65,7 @@ int outbound_connections, active_outbound_connections, ready_outbound_connection
 long long outbound_connections_created, inbound_connections_accepted;
 int ready_targets;
 int conn_generation;
-
-static void(*on_active_special_connections_update_callback)() = []{};
+static void(*on_active_special_connections_update_callback)(bool on_accept) = [](bool){};
 
 const char *unix_socket_directory = "/var/run/engine";
 SAVE_STRING_OPTION_PARSER(OPT_NETWORK, "unix-socket-directory", unix_socket_directory, "path to directory with UNIX sockets");
@@ -81,7 +80,7 @@ static void connections_constructor() {
   bucket_salt = lrand48();
 }
 
-void set_on_active_special_connections_update_callback(void (*callback)()) noexcept {
+void set_on_active_special_connections_update_callback(void (*callback)(bool)) noexcept {
   assert(callback);
   on_active_special_connections_update_callback = callback;
 }
@@ -642,7 +641,7 @@ void close_special_connection(struct connection *c) {
   tvkprintf(net_connections, 3, "close special conn %d\n", c->fd);
   if (c->basic_type != ct_listen) {
     --active_special_connections;
-    on_active_special_connections_update_callback();
+    on_active_special_connections_update_callback(false);
     if (active_special_connections < max_special_connections && Connections[c->listening].basic_type == ct_listen &&
         Connections[c->listening].generation == c->listening_generation) {
       epoll_insert(c->listening, EVT_READ | EVT_LEVEL);
@@ -1170,7 +1169,7 @@ int accept_new_connections(struct connection *cc) {
                    max_special_connections);
         }
         ++active_special_connections;
-        on_active_special_connections_update_callback();
+        on_active_special_connections_update_callback(true);
         if (active_special_connections >= max_special_connections) {
           return EVA_REMOVE;
         }

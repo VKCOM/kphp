@@ -15,6 +15,7 @@
 #include "server/server-config.h"
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
+#include "server/php-runner.h"
 
 namespace {
 
@@ -73,6 +74,30 @@ bool copy_raw_string(char *&out, size_t out_size, vk::string_view str) noexcept 
     }
   }
   return i == str.size();
+}
+
+int script_backtrace(void **buffer, int size) {
+  if (PhpScript::current_script == nullptr) {
+    return 0;
+  }
+  const ucontext_t_portable &context = PhpScript::current_script->run_context;
+#if defined(__APPLE__)
+#if defined(__arm64__)
+  void *rbp = reinterpret_cast<void *>(context.uc_mcontext->__ss.__fp);
+#else
+  void *rbp = reinterpret_cast<void *>(context.uc_mcontext->__ss.__rsp);
+#endif
+#elif defined(__x86_64__)
+  void *rbp = reinterpret_cast<void *>(context.uc_mcontext.gregs[REG_RBP]);
+#elif defined(__aarch64__) || defined(__arm64__)
+  void *rbp = reinterpret_cast<void *>(context.uc_mcontext.fp);
+#else
+  void *rbp = nullptr;
+  size = 0;
+#endif
+  char *stack_start = PhpScript::current_script->script_stack.get_stack_ptr();
+  char *stack_end = stack_start + PhpScript::current_script->script_stack.get_stack_size();
+  return fast_backtrace_without_recursions_by_bp(rbp, stack_end, buffer, size);
 }
 
 } // namespace
@@ -283,6 +308,14 @@ void JsonLogger::write_log_with_backtrace(vk::string_view message, int type) noe
   const int trace_size = backtrace(trace.data(), trace.size());
   write_log(message, type, time(nullptr), trace.data(), trace_size, true);
 }
+
+void JsonLogger::write_log_with_script_backtrace(vk::string_view message, int type) noexcept {
+  dl_assert(!PhpScript::in_script_context, "JsonLogger::write_log_with_script_backtrace must be called only in net context");
+  std::array<void *, 64> trace{};
+  const int trace_size = script_backtrace(trace.data(), trace.size());
+  write_log(message, type, time(nullptr), trace.data(), trace_size, true);
+}
+
 
 void JsonLogger::write_stack_overflow_log(int type) noexcept {
   std::array<void *, 64> trace{};
