@@ -684,9 +684,19 @@ bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) 
       {CURLOPT_TIMECONDITION,             long_option_setter},
       {CURLOPT_TIMEVALUE_LARGE,           timevalue_large_option_setter},
 
-      {CURLOPT_ABSTRACT_UNIX_SOCKET, string_option_setter},
-      {CURLOPT_DEFAULT_PROTOCOL,     string_option_setter},
-      {CURLOPT_DNS_INTERFACE,        string_option_setter}
+      {CURLOPT_ABSTRACT_UNIX_SOCKET,  string_option_setter},
+      {CURLOPT_DEFAULT_PROTOCOL,      string_option_setter},
+      {CURLOPT_ENCODING,              string_option_setter},
+      {CURLOPT_KEYPASSWD,             string_option_setter},
+      {CURLOPT_KRB4LEVEL,             string_option_setter},
+      {CURLOPT_LOGIN_OPTIONS,         string_option_setter},
+      {CURLOPT_PINNEDPUBLICKEY,       string_option_setter},
+      {CURLOPT_PRE_PROXY,             string_option_setter},
+      {CURLOPT_PROXY_CAINFO,          string_option_setter},
+      {CURLOPT_PROXY_CAPATH,          string_option_setter},
+      {CURLOPT_PROXY_CRLFILE,         string_option_setter},
+      {CURLOPT_PROXY_KEYPASSWD,       string_option_setter},
+      {CURLOPT_PROXY_PINNEDPUBLICKEY, string_option_setter}
     });
 
   constexpr size_t CURLOPT_OPTION_OFFSET = 200000;
