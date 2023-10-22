@@ -1,5 +1,5 @@
 name: "@feed"
-namespace: "\\Feed126"
+namespace: "\\Feed006\\"
 
 export:
   - "PubFeed"
@@ -7,4 +7,3 @@ export:
 force-internal:
 
 require:
-

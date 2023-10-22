@@ -13,8 +13,8 @@ force-internal:
 # Dependencies: other modulites, global classes, defines, etc.
 require:
   - "\\Engines014\\LikesEngineTrait014"
-  - "\\Engines014\\LikesEngineTrait014::print()"
-  - "\\Engines014\\LikesEngineTrait014::printTweetsLikes()"
+  - "\\ExternalEngines014\\Tweets014::printTweetsLikesCountByUser()"
+  - "\\ExternalEngines014\\Tweets014"
 
 
 # Granting partial access to internal symbols, "as an exception".

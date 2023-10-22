@@ -16,6 +16,7 @@ force-internal:
 
 # Dependencies: other modulites, global classes, defines, etc.
 require:
+  - "\\ExternalEngines015\\Tweets015"
   - "\\ExternalEngines015\\Tweets015::printTweetsLikesCountByUser()"
 
 # Granting partial access to internal symbols, "as an exception".

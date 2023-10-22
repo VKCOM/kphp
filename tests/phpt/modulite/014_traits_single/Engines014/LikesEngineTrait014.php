@@ -9,5 +9,6 @@ trait LikesEngineTrait014 {
 
   public static function printTweetsLikes(): void {
     \ExternalEngines014\Tweets014::printTweetsLikesCountByUser();
+    $_ = new \ExternalEngines014\Tweets014();
   }
 }
