@@ -83,9 +83,9 @@ int script_backtrace(void **buffer, int size) {
   const ucontext_t_portable &context = PhpScript::current_script->run_context;
 #if defined(__APPLE__)
 #if defined(__arm64__)
-  void *rbp = reinterpret_cast<void *>(context.uc_mcontext->__ss.__fp);
+  void *rbp = reinterpret_cast<void *>(context.uc_mcontext.fp);
 #else
-  void *rbp = reinterpret_cast<void *>(context.uc_mcontext->__ss.__rsp);
+  void *rbp = reinterpret_cast<void *>(context.uc_mcontext->__ss.__rbp);
 #endif
 #elif defined(__x86_64__)
   void *rbp = reinterpret_cast<void *>(context.uc_mcontext.gregs[REG_RBP]);
