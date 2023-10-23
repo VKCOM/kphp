@@ -1365,7 +1365,7 @@ static zval *make_query_result_or_error(zval **r, const vkext_rpc::tl::RpcReqErr
       break;
     }
   }
-  if (!header) {
+  if (!header || !VK_INI_BOOL("tl.enable_rpc_error_with_header_fetching")) {
     return _err;
   }
 

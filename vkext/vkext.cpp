@@ -36,6 +36,7 @@ PHP_INI_MH (on_change_conffile);
 PHP_INI_BEGIN ()
     PHP_INI_ENTRY ("tl.conffile", 0, PHP_INI_ALL, on_change_conffile)
     PHP_INI_ENTRY ("tl.conffile_autoreload", 0, PHP_INI_ALL, 0)
+    PHP_INI_ENTRY ("tl.enable_rpc_error_with_header_fetching", 0, PHP_INI_ALL, 0)
     PHP_INI_ENTRY ("vkext.ping_timeout", 0, PHP_INI_ALL, 0)
     PHP_INI_ENTRY ("vkext.use_unix", 0, PHP_INI_ALL, 0)
     PHP_INI_ENTRY ("vkext.unix_socket_directory", "/var/run/engine", PHP_INI_ALL, 0)
