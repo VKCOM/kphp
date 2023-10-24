@@ -431,6 +431,11 @@ Optional<string> f$realpath(const string &path) {
 }
 
 static Optional<string> full_realpath(const string &path) { // realpath resolving only dirname to work with unexisted files
+  
+  if (!strncmp(path.c_str(), "popen://", 8)) {
+  	return path;
+  }
+  
   static char full_realpath_cache_storage[sizeof(array<string>)];
   static array<string> *full_realpath_cache = reinterpret_cast <array<string> *> (full_realpath_cache_storage);
   static long long full_realpath_last_query_num = -1;
@@ -958,3 +963,4 @@ void free_files_lib() {
   dl::leave_critical_section();
 }
 
+#include "files_popen.cpp"
