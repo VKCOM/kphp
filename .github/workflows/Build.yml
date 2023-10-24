@@ -85,9 +85,9 @@ jobs:
     #   run: docker exec kphp-build-container-${{matrix.os}} bash -c 
     #           "make -C ${{env.kphp_build_dir}} -j$(nproc) test"
 
-    # - name: Compile dummy PHP script
-    #   run: docker exec kphp-build-container-${{matrix.os}} bash -c 
-    #           "cd ${{env.kphp_build_dir}} && echo 'hello world' > demo.php && ${{env.kphp_root_dir}}/objs/bin/kphp2cpp --cxx ${{matrix.compiler}} demo.php && kphp_out/server -o --user kitten"
+    - name: Compile dummy PHP script
+      run: docker exec kphp-build-container-${{matrix.os}} bash -c 
+              "cd ${{env.kphp_build_dir}} && echo 'hello world' > demo.php && ${{env.kphp_root_dir}}/objs/bin/kphp2cpp --cxx ${{matrix.compiler}} demo.php && kphp_out/server -o --user kitten"
 
     # - name: Polyfills composer install
     #   run: docker exec kphp-build-container-${{matrix.os}} bash -c
@@ -120,11 +120,11 @@ jobs:
 
     - name: Install deb package
       run: docker exec kphp-build-container-${{matrix.os}} bash -c
-            "cd ${{env.kphp_build_dir}} && dpkg -i vk-flex-data_1.0.1_amd64.deb && dpkg -i kphp_1.0.1_amd64.deb"
+            "cd ${{env.kphp_build_dir}} && dpkg -i ./vk-flex-data_1.0.1_amd64.deb && dpkg -i ./kphp_1.0.1_amd64.deb"
 
-    - name: Compile dummy script
+    - name: Run php dummy script
       run: docker exec kphp-build-container-${{matrix.os}} bash -c
-            "cd ${{env.demo_dir}} && echo 'hello world' > demo.php && kphp --mode=cli --cxx=g++ demo.php && ./kphp_out/cli -o --user kitten"
+             "cd ${{env.kphp_build_dir}} && kphp --mode=cli demo.php && ./kphp_out/cli"
 
     - name: Remove docker container
       run: docker rm -f kphp-build-container-${{matrix.os}}

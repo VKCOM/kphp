@@ -288,7 +288,7 @@ void CompilerSettings::init() {
   ss << " -iquote" << kphp_src_path.get()
      << " -iquote " << kphp_src_path.get() << "objs/generated/auto/runtime";
   ss << " -Wall -fwrapv -Wno-parentheses -Wno-trigraphs";
-  ss << " -fno-strict-aliasing -fno-omit-frame-pointer ";
+  ss << " -fno-strict-aliasing -fno-omit-frame-pointer -fno-lto";
 #ifdef __x86_64__
   ss << " -march=sandybridge";
 #elif __aarch64__
