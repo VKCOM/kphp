@@ -8,3 +8,5 @@
 
 array<string> f$getenv() noexcept;
 Optional<string> f$getenv(const string &varname, bool local_only = false) noexcept;
+
+#include "env_putenv.h"
