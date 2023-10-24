@@ -1282,8 +1282,8 @@ static zval *convert_rpc_extra_header_to_php_repr(const vkext_rpc::tl::RpcReqRes
   if (typed_mode) {
     res = create_php_instance(rpcReqResultExtra_class_name);
   } else {
-    VK_ALLOC_INIT_ZVAL (res);
-    array_init (res);
+    VK_ALLOC_INIT_ZVAL(res);
+    array_init(res);
   }
 
   if (header.binlog_pos.has_value()) {
@@ -1299,7 +1299,7 @@ static zval *convert_rpc_extra_header_to_php_repr(const vkext_rpc::tl::RpcReqRes
       engine_pid_field = create_php_instance(engine_pid_class_name);
     } else {
       VK_ALLOC_INIT_ZVAL(engine_pid_field);
-      array_init (engine_pid_field);
+      array_init(engine_pid_field);
     }
     set_field_int(&engine_pid_field, header.engine_pid->ip, "ip", -1);
     set_field_int(&engine_pid_field, header.engine_pid->port_pid, "port_pid", -1);
@@ -1321,8 +1321,8 @@ static zval *convert_rpc_extra_header_to_php_repr(const vkext_rpc::tl::RpcReqRes
   }
   if (header.stats.has_value()) {
     zval *stats_field;
-    VK_ALLOC_INIT_ZVAL (stats_field);
-    array_init (stats_field);
+    VK_ALLOC_INIT_ZVAL(stats_field);
+    array_init(stats_field);
 
     for (const auto &[key, value] : header.stats.value()) {
       zval str_val;
@@ -1348,19 +1348,19 @@ static zval *make_query_result_or_error(zval **r, const vkext_rpc::tl::RpcReqErr
   zval *_err;
   switch (typed_mode) {
     case 0: {
-      VK_ALLOC_INIT_ZVAL (_err);
-      array_init (_err);
-      char *x = estrdup (error.error_msg.c_str());
+      VK_ALLOC_INIT_ZVAL(_err);
+      array_init(_err);
+      char *x = estrdup(error.error_msg.c_str());
       set_field_string(&_err, x, "__error", 0);
-      efree (x);
+      efree(x);
       set_field_int(&_err, error.error_code, "__error_code", 0);
       break;
     }
     case 1: {
       _err = create_php_instance(reqResult_error_class_name);
-      char *_x = estrdup (error.error_msg.c_str());
+      char *_x = estrdup(error.error_msg.c_str());
       set_field_string(&_err, _x, "error", 0);
-      efree (_x);
+      efree(_x);
       set_field_int(&_err, error.error_code, "error_code", 0);
       break;
     }
