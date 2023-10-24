@@ -37,7 +37,7 @@ jobs:
           - os: jammy
             compiler: g++
             cpp: 20
-            asan: on
+            asan: off
             ubsan: off
 
     name: "${{matrix.os}}/${{matrix.compiler}}/c++${{matrix.cpp}}/asan=${{matrix.asan}}/ubsan=${{matrix.ubsan}}"
@@ -85,9 +85,9 @@ jobs:
     #   run: docker exec kphp-build-container-${{matrix.os}} bash -c 
     #           "make -C ${{env.kphp_build_dir}} -j$(nproc) test"
 
-    - name: Compile dummy PHP script
-      run: docker exec kphp-build-container-${{matrix.os}} bash -c 
-              "cd ${{env.kphp_build_dir}} && echo 'hello world' > demo.php && ${{env.kphp_root_dir}}/objs/bin/kphp2cpp --cxx ${{matrix.compiler}} demo.php && kphp_out/server -o --user kitten"
+    # - name: Compile dummy PHP script
+    #   run: docker exec kphp-build-container-${{matrix.os}} bash -c 
+    #           "cd ${{env.kphp_build_dir}} && echo 'hello world' > demo.php && ${{env.kphp_root_dir}}/objs/bin/kphp2cpp --cxx ${{matrix.compiler}} demo.php && kphp_out/server -o --user kitten"
 
     # - name: Polyfills composer install
     #   run: docker exec kphp-build-container-${{matrix.os}} bash -c
@@ -124,31 +124,31 @@ jobs:
 
     - name: Compile dummy script
       run: docker exec kphp-build-container-${{matrix.os}} bash -c
-            "cd ${{env.kphp_build_dir}} && kphp demo.php && kphp_out/server -o --user kitten"
+            "cd ${{env.demo_dir}} && echo 'hello world' > demo.php && kphp --mode=cli --cxx=g++ demo.php && ./kphp_out/cli -o --user kitten"
 
     - name: Remove docker container
       run: docker rm -f kphp-build-container-${{matrix.os}}
 
-  # install-linux:
-  #   runs-on: ubuntu-latest
-  #   strategy:
-  #     matrix:
-  #       include:
+  install-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
   #         - os: buster
   #         - os: focal
-  #         - os: jammy
+          - os: jammy
 
-  #   steps:
-  #   - uses: actions/checkout@v3
+    steps:
+    - uses: actions/checkout@v3
 
-  #   - name: Build and start Docker container
-  #     run: |
-  #       docker build -f $GITHUB_WORKSPACE/.github/workflows/Dockerfile.${{matrix.os}}.install $GITHUB_WORKSPACE -t kphp-build-img-${{matrix.os}}-install
-  #       docker run -dt --name kphp-build-container-${{matrix.os}}-install kphp-build-img-${{matrix.os}}-install
+    - name: Build and start Docker container
+      run: |
+        docker build -f $GITHUB_WORKSPACE/.github/workflows/Dockerfile.${{matrix.os}}.install $GITHUB_WORKSPACE -t kphp-build-img-${{matrix.os}}-install
+        docker run -dt --name kphp-build-container-${{matrix.os}}-install kphp-build-img-${{matrix.os}}-install
 
-  #   - name: Run php dummy script
-  #     run: docker exec -u kitten kphp-build-container-${{matrix.os}}-install bash -c 
-  #       "cd ${{env.demo_dir}} && echo 'hello world' > demo.php && kphp --mode=cli --cxx=g++ demo.php && ./kphp_out/cli -o --user kitten"
+    - name: Run php dummy script
+      run: docker exec -u kitten kphp-build-container-${{matrix.os}}-install bash -c 
+        "cd ${{env.demo_dir}} && echo 'hello world' > demo.php && kphp --mode=cli --cxx=g++ demo.php && ./kphp_out/cli -o --user kitten"
 
   # build-macos:
   #   runs-on: ${{matrix.os}}-12

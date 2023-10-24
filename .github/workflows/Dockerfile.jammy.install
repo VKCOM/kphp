@@ -10,26 +10,8 @@ RUN apt install -y software-properties-common && apt update && \
 	add-apt-repository ppa:ondrej/php -y && \
 	apt update
 	
-# RUN apt install -y git cmake make g++ lld gperf netcat php7.4-vkext kphp vk-tl-tools && \
-# 	mkdir -p /var/www/vkontakte/data/www/vkontakte.com/tl/ && \
-# 	tl-compiler -e /var/www/vkontakte/data/www/vkontakte.com/tl/scheme.tlo /usr/share/vkontakte/examples/tl-files/common.tl /usr/share/vkontakte/examples/tl-files/tl.tl
-
-RUN apt update && \
-	apt install -y git cmake make g++ lld gperf netcat build-essential binutils lintian debhelper dh-make devscripts
-
-RUN apt-cache search kphp-test
-
-RUN export DEBEMAIL="andreylzmw@gmail.com"
-RUN export DEBFULLNAME="Andrey Arutiunian"
-
-RUN dh_make
-
-RUN ls
-
-RUN cd debian && cat control && cat copyright && cat rules
-
-RUN dpkg-buildpackage
-
-RUN dpkg -i 
+RUN apt install -y git cmake make g++ lld gperf netcat php7.4-vkext kphp vk-tl-tools && \
+	mkdir -p /var/www/vkontakte/data/www/vkontakte.com/tl/ && \
+	tl-compiler -e /var/www/vkontakte/data/www/vkontakte.com/tl/scheme.tlo /usr/share/vkontakte/examples/tl-files/common.tl /usr/share/vkontakte/examples/tl-files/tl.tl
 
 RUN useradd -ms /bin/bash kitten
