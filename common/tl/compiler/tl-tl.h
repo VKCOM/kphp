@@ -27,7 +27,7 @@
 #define TLS_EXPR_TYPE 0xecc9da78
 #define TLS_EXPR_NAT 0xdcb49bd8
 
-#define TLS_NAT_CONST 0x8ce940b1
+#define TLS_NAT_CONST 0xdcb49bd8
 #define TLS_NAT_VAR 0x4e8a14f0
 #define TLS_TYPE_VAR 0x0142ceae
 #define TLS_ARRAY 0xd9fb20de
