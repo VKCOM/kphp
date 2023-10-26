@@ -128,7 +128,7 @@ jobs:
 
     - name: Run php dummy script
       run: docker exec kphp-build-container-${{matrix.os}} bash -c
-             "cd ${{env.kphp_build_dir}} && kphp --mode=cli demo.php && ./kphp_out/cli"
+             'cd ${{env.kphp_build_dir}} && su kitten -c "kphp --version && ./kphp_out/cli -o --user kitten'
 
     - name: Remove docker container
       run: docker rm -f kphp-build-container-${{matrix.os}}
