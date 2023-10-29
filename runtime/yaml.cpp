@@ -55,7 +55,7 @@ static void yaml_node_to_mixed(const YAML::Node &node, mixed &data, const string
 /*
  * print tabs in quantity of nesting_level (used to print nested YAML entries)
  */
-static string yaml_print_tabs(const uint8_t nesting_level) noexcept {
+static string yaml_print_tabs(const int nesting_level) noexcept {
   return string(2 * nesting_level, ' ');
 }
 
@@ -105,7 +105,7 @@ static string yaml_escape(const string &data) noexcept {
 /*
  * get a YAML representation of mixed in a string variable
  */
-static void mixed_to_string(const mixed &data, string &string_data, const uint8_t nesting_level = 0) noexcept {
+static void mixed_to_string(const mixed &data, string &string_data, const int nesting_level = 0) noexcept {
   if (!data.is_array()) {
     if (data.is_null()) {
       string_data.push_back('~'); // tilda is a YAML representation of NULL
