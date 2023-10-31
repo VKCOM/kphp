@@ -11,4 +11,7 @@ struct RpcError {
   string error_msg = {};
 
   bool try_fetch() noexcept;
+
+private:
+  void fetch_and_skip_header(int flags) const noexcept;
 };
