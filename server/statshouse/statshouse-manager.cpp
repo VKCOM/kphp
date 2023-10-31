@@ -250,10 +250,8 @@ void StatsHouseManager::add_init_master_stats(uint64_t total_init_ns, uint64_t c
 
 void StatsHouseManager::add_extended_instance_cache_stats(const std::string_view &type, const std::string_view &status, const string &key, uint64_t size) {
   dl::CriticalSectionGuard guard;
-  if (key_normalization_function) {
-    string normalize_key = key_normalization_function(key);
-    client.metric("kphp_instance_cache_value_size", true).tag(type).tag(status).tag(normalize_key.c_str()).write_value(size);
-  }
+  string normalize_key = key_normalization_function(key);
+  client.metric("kphp_instance_cache_value_size", true).tag(type).tag(status).tag(normalize_key.c_str()).write_value(size);
 }
 
 void StatsHouseManager::add_job_workers_shared_memory_stats(const job_workers::JobStats &job_stats) {

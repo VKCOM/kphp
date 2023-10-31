@@ -312,7 +312,7 @@ public:
       // failed to insert the element due to some problems (e.g. memory, depth limit)
       if (unlikely(!detach_processor.is_ok())) {
         if (detach_processor.is_memory_limit_exceeded()) {
-          fire_warning(detach_processor, instance_wrapper.get_class());
+          fire_warning(instance_wrapper.get_class());
           return InstanceCacheStoreStatus::memory_limit_exceeded;
         }
 
@@ -570,8 +570,8 @@ private:
           // failed to acquire an allocator lock; try later
           return;
         }
-        fire_warning(detach_processor, delayed_instance.instance_wrapper->get_class());
         if (detach_processor.is_memory_limit_exceeded()) {
+          fire_warning(delayed_instance.instance_wrapper->get_class());
           return;
         }
       } else {
@@ -638,11 +638,9 @@ private:
     return nullptr;
   }
 
-  void fire_warning(const InstanceDeepCopyVisitor &detach_processor, const char *class_name) noexcept {
-    if (detach_processor.is_memory_limit_exceeded()) {
-      php_warning("Memory limit exceeded on saving instance of class '%s' into cache", class_name);
-      context_->memory_swap_required = true;
-    }
+  void fire_warning(const char *class_name) noexcept {
+    php_warning("Memory limit exceeded on saving instance of class '%s' into cache", class_name);
+    context_->memory_swap_required = true;
   }
 
   SharedMemoryData *current_{nullptr};

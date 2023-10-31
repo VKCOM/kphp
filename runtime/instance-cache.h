@@ -85,6 +85,14 @@ void instance_cache_purge_expired_elements();
 void instance_cache_release_all_resources_acquired_by_this_proc();
 
 template<typename ClassInstanceType>
+void send_extended_instance_cache_stats_if_enabled(std::string_view op, InstanceCacheStoreStatus status, const string &key, const ClassInstanceType &instance) {
+  if (StatsHouseManager::get().is_extended_instance_cache_stats_enabled()) {
+    int64_t size = f$estimate_memory_usage(key) + f$estimate_memory_usage(instance);
+    StatsHouseManager::get().add_extended_instance_cache_stats(op, impl_::instance_cache_store_status_to_str(status), key, size);
+  }
+}
+
+template<typename ClassInstanceType>
 bool f$instance_cache_store(const string &key, const ClassInstanceType &instance, int64_t ttl = 0) {
   static_assert(is_class_instance<ClassInstanceType>::value, "class_instance<> type expected");
   if (instance.is_null()) {
@@ -92,8 +100,7 @@ bool f$instance_cache_store(const string &key, const ClassInstanceType &instance
   }
   InstanceCopyistImpl<ClassInstanceType> instance_wrapper{instance};
   InstanceCacheStoreStatus status = impl_::instance_cache_store(key, instance_wrapper, ttl);
-  int64_t size = f$estimate_memory_usage(key) + f$estimate_memory_usage(instance);
-  StatsHouseManager::get().add_extended_instance_cache_stats("store", impl_::instance_cache_store_status_to_str(status), key, size);
+  send_extended_instance_cache_stats_if_enabled("store", status, key, instance);
   return status == InstanceCacheStoreStatus::success;
 }
 
@@ -106,13 +113,13 @@ ClassInstanceType f$instance_cache_fetch(const string &class_name, const string 
     if (auto wrapper = dynamic_cast<const InstanceCopyistImpl<ClassInstanceType> *>(base_wrapper)) {
       auto result = wrapper->get_instance();
       php_assert(!result.is_null());
-      int64_t size = f$estimate_memory_usage(result);
-      StatsHouseManager::get().add_extended_instance_cache_stats("fetch", "success", key, size);
+      send_extended_instance_cache_stats_if_enabled("fetch", InstanceCacheStoreStatus::success, key, result);
       return result;
     } else {
       php_warning("Trying to fetch incompatible instance class: expect '%s', got '%s'",
                   class_name.c_str(), base_wrapper->get_class());
-      StatsHouseManager::get().add_extended_instance_cache_stats("fetch", "failed", key);
+      ClassInstanceType empty = {};
+      send_extended_instance_cache_stats_if_enabled("fetch", InstanceCacheStoreStatus::failed, key, empty);
     }
   }
   return {};

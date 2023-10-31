@@ -48,6 +48,10 @@ public:
     this->key_normalization_function = _function;
   }
 
+  bool is_extended_instance_cache_stats_enabled() {
+    return this->key_normalization_function != nullptr;
+  }
+
   void add_request_stats(uint64_t script_time_ns, uint64_t net_time_ns, script_error_t error, const memory_resource::MemoryStats &script_memory_stats,
                          uint64_t script_queries, uint64_t long_script_queries,
                          uint64_t script_user_time_ns, uint64_t script_system_time_ns,
@@ -72,6 +76,9 @@ public:
    */
   void add_init_master_stats(uint64_t total_init_ns, uint64_t confdata_init_ns);
 
+  /**
+   * before calling the method, be sure to is_extended_instance_cache_stats_enabled() is true
+   */
   void add_extended_instance_cache_stats(const std::string_view &type, const std::string_view &status, const string &key, uint64_t size = 0);
 
 private:
