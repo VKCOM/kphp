@@ -11,7 +11,6 @@
 #include "runtime/instance-cache.h"
 #include "server/job-workers/shared-memory-manager.h"
 #include "server/json-logger.h"
-#include "server/php-engine-vars.h"
 #include "server/php-runner.h"
 #include "server/server-config.h"
 #include "server/server-stats.h"
@@ -247,6 +246,14 @@ void StatsHouseManager::add_common_master_stats(const workers_stats_t &workers_s
 void StatsHouseManager::add_init_master_stats(uint64_t total_init_ns, uint64_t confdata_init_ns) {
   client.metric("kphp_by_host_master_total_init_time", true).write_value(total_init_ns);
   client.metric("kphp_by_host_master_confdata_init_time", true).write_value(confdata_init_ns);
+}
+
+void StatsHouseManager::add_extended_instance_cache_stats(const std::string_view &type, const std::string_view &status, const string &key, uint64_t size) {
+  dl::CriticalSectionGuard guard;
+  if (key_normalization_function) {
+    string normalize_key = key_normalization_function(key);
+    client.metric("kphp_instance_cache_value_size", true).tag(type).tag(status).tag(normalize_key.c_str()).write_value(size);
+  }
 }
 
 void StatsHouseManager::add_job_workers_shared_memory_stats(const job_workers::JobStats &job_stats) {

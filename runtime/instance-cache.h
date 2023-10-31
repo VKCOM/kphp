@@ -18,13 +18,18 @@
 
 #include "common/mixin/not_copyable.h"
 
+#include "memory_usage.h"
 #include "runtime/instance-copy-processor.h"
 #include "runtime/kphp_core.h"
 #include "runtime/shape.h"
+#include "server/statshouse/statshouse-manager.h"
+
+enum class InstanceCacheStoreStatus;
 
 namespace impl_ {
 
-bool instance_cache_store(const string &key, const InstanceCopyistBase &instance_wrapper, int64_t ttl);
+std::string_view instance_cache_store_status_to_str(InstanceCacheStoreStatus status);
+InstanceCacheStoreStatus instance_cache_store(const string &key, const InstanceCopyistBase &instance_wrapper, int64_t ttl);
 const InstanceCopyistBase *instance_cache_fetch_wrapper(const string &key, bool even_if_expired);
 
 } // namespace impl_
@@ -59,6 +64,15 @@ enum class InstanceCacheSwapStatus {
   swap_is_finished, // swap succeeded
   swap_is_forbidden // swap is not possible - the memory is still being used
 };
+
+enum class InstanceCacheStoreStatus {
+  success,
+  skipped,
+  memory_limit_exceeded,
+  delayed,
+  failed
+};
+
 // these function should be called from master
 InstanceCacheSwapStatus instance_cache_try_swap_memory();
 // these function should be called from master
@@ -77,7 +91,10 @@ bool f$instance_cache_store(const string &key, const ClassInstanceType &instance
     return false;
   }
   InstanceCopyistImpl<ClassInstanceType> instance_wrapper{instance};
-  return impl_::instance_cache_store(key, instance_wrapper, ttl);
+  InstanceCacheStoreStatus status = impl_::instance_cache_store(key, instance_wrapper, ttl);
+  int64_t size = f$estimate_memory_usage(key) + f$estimate_memory_usage(instance);
+  StatsHouseManager::get().add_extended_instance_cache_stats("store", impl_::instance_cache_store_status_to_str(status), key, size);
+  return status == InstanceCacheStoreStatus::success;
 }
 
 template<typename ClassInstanceType>
@@ -89,10 +106,13 @@ ClassInstanceType f$instance_cache_fetch(const string &class_name, const string 
     if (auto wrapper = dynamic_cast<const InstanceCopyistImpl<ClassInstanceType> *>(base_wrapper)) {
       auto result = wrapper->get_instance();
       php_assert(!result.is_null());
+      int64_t size = f$estimate_memory_usage(result);
+      StatsHouseManager::get().add_extended_instance_cache_stats("fetch", "success", key, size);
       return result;
     } else {
       php_warning("Trying to fetch incompatible instance class: expect '%s', got '%s'",
                   class_name.c_str(), base_wrapper->get_class());
+      StatsHouseManager::get().add_extended_instance_cache_stats("fetch", "failed", key);
     }
   }
   return {};

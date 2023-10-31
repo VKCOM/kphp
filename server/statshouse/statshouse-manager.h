@@ -14,6 +14,8 @@
 #include "server/workers-control.h"
 #include "server/workers-stats.h"
 
+using normalization_function = std::function<string(const string &)>;
+
 enum class script_error_t : uint8_t;
 
 class StatsHouseManager : vk::not_copyable {
@@ -42,6 +44,10 @@ public:
     need_write_enable_tag_host = true;
   }
 
+  void set_normalization_function(normalization_function &&_function) {
+    this->key_normalization_function = _function;
+  }
+
   void add_request_stats(uint64_t script_time_ns, uint64_t net_time_ns, script_error_t error, const memory_resource::MemoryStats &script_memory_stats,
                          uint64_t script_queries, uint64_t long_script_queries,
                          uint64_t script_user_time_ns, uint64_t script_system_time_ns,
@@ -66,9 +72,12 @@ public:
    */
   void add_init_master_stats(uint64_t total_init_ns, uint64_t confdata_init_ns);
 
+  void add_extended_instance_cache_stats(const std::string_view &type, const std::string_view &status, const string &key, uint64_t size = 0);
+
 private:
   StatsHouseClient client;
   bool need_write_enable_tag_host = false;
+  normalization_function key_normalization_function = nullptr;
 
   StatsHouseManager() = default;
   explicit StatsHouseManager(const std::string &ip, int port);
