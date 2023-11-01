@@ -54,6 +54,23 @@ else()
     add_link_options(-L${kphp-timelib_SOURCE_DIR}/objs)
 endif()
 
+find_library(KPHP_H3 kphp-h3)
+if(KPHP_H3)
+    add_library(kphp-h3 STATIC IMPORTED ${KPHP_H3})
+else()
+    handle_missing_library("kphp-h3")
+    FetchContent_Declare(
+            kphp-h3
+            GIT_REPOSITORY https://github.com/VKCOM/uber-h3.git
+            GIT_TAG        v3.7.1
+    )
+    message(STATUS "---------------------")
+    FetchContent_MakeAvailable(kphp-h3)
+    include_directories(${kphp-h3_BINARY_DIR}/src/h3lib/include)
+    add_definitions(-DKPHP_H3_LIB_DIR="${kphp-h3_BINARY_DIR}/lib")
+    add_link_options(-L${kphp-h3_BINARY_DIR}/lib)
+endif()
+
 if(APPLE)
     if (DEFINED ENV{EPOLL_SHIM_REPO})
         FetchContent_Declare(

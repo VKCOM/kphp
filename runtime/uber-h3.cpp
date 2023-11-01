@@ -4,7 +4,7 @@
 
 #include "runtime/uber-h3.h"
 
-#include <h3/h3api.h>
+#include <h3api.h>
 
 namespace {
 
