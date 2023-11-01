@@ -97,16 +97,6 @@ git checkout osx-platform
 echo 'export "EPOLL_SHIM_REPO=$(pwd)" >> ~/.bash_profile'
 ```
 
-Clone somewhere local [h3 from GitHub]({{site.url_package_h3_mac}}) and switch to *stable-3.x* branch.
-```bash
-git clone https://github.com/uber/h3.git
-git checkout stable-3.x
-mkdir build
-cd build
-cmake ..
-sudo make install
-```
-
 ##### Other Linux
 Make sure you are using the same package list. You may use system default libcurl package, it would work, but without DNS resolving. `uber-h3` must be installed from sources.
 
