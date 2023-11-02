@@ -872,12 +872,8 @@ static bool check_tasks_manager_pid(process_id_t tasks_manager_pid) {
 
 static double normalize_script_timeout(double timeout_sec) {
   if (timeout_sec < 1) {
-    kprintf("Too small script timeout: %f sec, should be [%d..%d] sec", timeout_sec, 1, MAX_SCRIPT_TIMEOUT);
+    kprintf("Too small script timeout: %f sec, should be at least 1 sec\n", timeout_sec);
     return 1;
-  }
-  if (timeout_sec > MAX_SCRIPT_TIMEOUT) {
-    kprintf("Too big script timeout: %f sec, should be [%d..%d] sec", timeout_sec, 1, MAX_SCRIPT_TIMEOUT);
-    return MAX_SCRIPT_TIMEOUT;
   }
   return timeout_sec;
 }

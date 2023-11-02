@@ -513,10 +513,6 @@ void PhpScript::set_timeout(double t) noexcept {
   disable_timeout();
   static itimerval timer;
 
-  if (t > MAX_SCRIPT_TIMEOUT) {
-    return;
-  }
-
   int sec = (int)t, usec = (int)((t - sec) * 1000000);
   timer.it_value.tv_sec = sec;
   timer.it_value.tv_usec = usec;
