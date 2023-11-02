@@ -33,8 +33,6 @@ extern double oom_handling_memory_ratio;
 extern int worker_id;
 extern int pid;
 
-extern int no_sql;
-
 extern ProcessType process_type;
 
 extern int master_flag;
