@@ -33,6 +33,8 @@ struct ScriptSamples : WithStatType<uint64_t> {
   enum class Key {
     memory_used = 0,
     real_memory_used,
+    memory_allocated_total,
+    memory_allocations_count,
     total_allocated_by_curl,
     outgoing_queries,
     outgoing_long_queries,
@@ -312,6 +314,8 @@ struct WorkerSharedStats : private vk::not_copyable {
     EnumTable<ScriptSamples> sample;
     sample[ScriptSamples::Key::memory_used] = script_memory_stats.memory_used;
     sample[ScriptSamples::Key::real_memory_used] = script_memory_stats.real_memory_used;
+    sample[ScriptSamples::Key::memory_allocated_total] = script_memory_stats.total_memory_allocated;
+    sample[ScriptSamples::Key::memory_allocations_count] = script_memory_stats.total_allocations;
     sample[ScriptSamples::Key::total_allocated_by_curl] = curl_total_allocated;
     sample[ScriptSamples::Key::outgoing_queries] = queries[QueriesStat::Key::outgoing_queries];
     sample[ScriptSamples::Key::outgoing_long_queries] = queries[QueriesStat::Key::outgoing_long_queries];
@@ -788,6 +792,8 @@ void write_to(stats_t *stats, const char *prefix, const WorkerAggregatedStats &a
   write_to(stats, prefix, ".requests.working_time", agg.script_samples[ScriptSamples::Key::working_time], ns2double);
   write_to(stats, prefix, ".memory.script_usage", agg.script_samples[ScriptSamples::Key::memory_used]);
   write_to(stats, prefix, ".memory.script_real_usage", agg.script_samples[ScriptSamples::Key::real_memory_used]);
+  write_to(stats, prefix, ".memory.script_allocated_total", agg.script_samples[ScriptSamples::Key::memory_allocated_total]);
+  write_to(stats, prefix, ".memory.script_allocations_count", agg.script_samples[ScriptSamples::Key::memory_allocations_count]);
   write_to(stats, prefix, ".memory.script_total_allocated_by_curl", agg.script_samples[ScriptSamples::Key::total_allocated_by_curl]);
 
   write_to(stats, prefix, ".memory.currently_script_heap_usage_bytes", agg.heap_samples[HeapStat::Key::script_heap_memory_usage]);

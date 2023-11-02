@@ -129,6 +129,9 @@ void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_
   client.metric("kphp_memory_script_usage").tag("used").tag(worker_type).write_value(script_memory_stats.memory_used);
   client.metric("kphp_memory_script_usage").tag("real_used").tag(worker_type).write_value(script_memory_stats.real_memory_used);
 
+  client.metric("kphp_memory_script_allocated_total").tag(worker_type).write_value(script_memory_stats.total_memory_allocated);
+  client.metric("kphp_memory_script_allocations_count").tag(worker_type).write_value(script_memory_stats.total_allocations);
+
   client.metric("kphp_requests_outgoing_queries").tag(worker_type).write_value(script_queries);
   client.metric("kphp_requests_outgoing_long_queries").tag(worker_type).write_value(long_script_queries);
 
