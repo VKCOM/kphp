@@ -302,7 +302,7 @@ struct WorkerSharedStats : private vk::not_copyable {
   }
 
   void add_request_stats(const EnumTable<QueriesStat> &queries, script_error_t error,
-                         uint64_t memory_used, uint64_t real_memory_used, uint64_t curl_total_allocated) noexcept {
+                         const memory_resource::MemoryStats &script_memory_stats, uint64_t curl_total_allocated) noexcept {
     errors[static_cast<size_t>(error)].fetch_add(1, std::memory_order_relaxed);
 
     for (size_t i = 0; i != queries.size(); ++i) {
@@ -310,8 +310,8 @@ struct WorkerSharedStats : private vk::not_copyable {
     }
 
     EnumTable<ScriptSamples> sample;
-    sample[ScriptSamples::Key::memory_used] = memory_used;
-    sample[ScriptSamples::Key::real_memory_used] = real_memory_used;
+    sample[ScriptSamples::Key::memory_used] = script_memory_stats.memory_used;
+    sample[ScriptSamples::Key::real_memory_used] = script_memory_stats.real_memory_used;
     sample[ScriptSamples::Key::total_allocated_by_curl] = curl_total_allocated;
     sample[ScriptSamples::Key::outgoing_queries] = queries[QueriesStat::Key::outgoing_queries];
     sample[ScriptSamples::Key::outgoing_long_queries] = queries[QueriesStat::Key::outgoing_long_queries];
@@ -635,8 +635,7 @@ void ServerStats::after_fork(pid_t worker_pid, uint64_t active_connections, uint
 }
 
 void ServerStats::add_request_stats(double script_time_sec, double net_time_sec, double script_init_time_sec, double connection_process_time_sec,
-                                    int64_t script_queries, int64_t long_script_queries, int64_t memory_used,
-                                    int64_t real_memory_used, int64_t curl_total_allocated, process_rusage_t script_rusage, script_error_t error) noexcept {
+                                    int64_t script_queries, int64_t long_script_queries, const memory_resource::MemoryStats &script_memory_stats, int64_t curl_total_allocated, process_rusage_t script_rusage, script_error_t error) noexcept {
   auto &stats = worker_type_ == WorkerType::job_worker ? shared_stats_->job_workers : shared_stats_->general_workers;
   const auto script_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(script_time_sec));
   const auto net_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(net_time_sec));
@@ -650,10 +649,10 @@ void ServerStats::add_request_stats(double script_time_sec, double net_time_sec,
                                               script_rusage.voluntary_context_switches, script_rusage.involuntary_context_switches);
 
 
-  stats.add_request_stats(queries_stat, error, memory_used, real_memory_used, curl_total_allocated);
+  stats.add_request_stats(queries_stat, error, script_memory_stats, curl_total_allocated);
   shared_stats_->workers.add_worker_stats(queries_stat, worker_process_id_);
 
-  StatsHouseManager::get().add_request_stats(script_time.count(), net_time.count(), error, memory_used, real_memory_used, script_queries, long_script_queries,
+  StatsHouseManager::get().add_request_stats(script_time.count(), net_time.count(), error, script_memory_stats, script_queries, long_script_queries,
                                              script_user_time.count(), script_system_time.count(),
                                              script_init_time.count(), http_connection_process_time.count(),
                                              script_rusage.voluntary_context_switches, script_rusage.involuntary_context_switches);
