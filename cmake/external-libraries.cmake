@@ -61,8 +61,8 @@ else()
     handle_missing_library("h3")
     FetchContent_Declare(
             h3
-            GIT_REPOSITORY https://github.com/andreylzmw/uber-h3.git
-            GIT_TAG        vkphp
+            GIT_REPOSITORY https://github.com/VKCOM/uber-h3.git
+            GIT_TAG        fetch_content
     )
     message(STATUS "---------------------")
     FetchContent_MakeAvailable(h3)
