@@ -590,7 +590,7 @@ void regexp::clean() {
   subpatterns_count = 0;
   named_subpatterns_count = 0;
   is_utf8 = false;
-  use_heap_memory = false;
+  use_heap_memory = (dl::get_script_memory_stats().memory_limit == 0);
 
   if (pcre_regexp != nullptr) {
     pcre_free(pcre_regexp);
