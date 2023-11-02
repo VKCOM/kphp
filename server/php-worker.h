@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "server/php-query-data.h"
 #include "server/php-runner.h"
 #include "server/php-queries.h"
@@ -61,7 +63,7 @@ public:
   PhpWorker(php_worker_mode_t mode_, connection *c, php_query_data_t php_query_data, long long req_id_, double timeout);
   ~PhpWorker() = default;
 
-  double enter_lifecycle() noexcept;
+  std::optional<double> enter_lifecycle() noexcept;
 
   void terminate(int flag, script_error_t terminate_reason_, const char *error_message_) noexcept;
   double get_timeout() const noexcept;

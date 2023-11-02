@@ -523,13 +523,13 @@ int do_hts_func_wakeup(connection *c, bool flag) {
 
   auto *worker = reinterpret_cast<PhpWorker *>(D->extra);
   assert(worker);
-  double timeout = worker->enter_lifecycle();
-  if (timeout == 0) {
+  std::optional<double> timeout = worker->enter_lifecycle();
+  if (!timeout.has_value()) {
     php_worker.reset();
     hts_at_query_end(c, flag);
   } else {
-    assert (timeout > 0);
-    set_connection_timeout(c, timeout);
+    assert (*timeout > 0);
+    set_connection_timeout(c, *timeout);
     assert (c->pending_queries >= 0 && c->status == conn_wait_net);
   }
   return 0;
@@ -636,9 +636,9 @@ int hts_func_close(connection *c, int who __attribute__((unused))) {
   auto *worker = reinterpret_cast<PhpWorker *>(D->extra);
   if (worker != nullptr) {
     worker->terminate(1, script_error_t::http_connection_close, "http connection close");
-    double timeout = worker->enter_lifecycle();
+    std::optional<double> timeout = worker->enter_lifecycle();
     D->extra = nullptr;
-    assert ("worker is unfinished after closing connection" && timeout == 0);
+    assert ("worker is unfinished after closing connection" && !timeout.has_value());
     php_worker.reset();
   }
   return 0;
@@ -822,14 +822,21 @@ int rpcx_func_wakeup(connection *c) {
 
   auto *worker = reinterpret_cast<PhpWorker *>(D->extra);
   assert(worker);
-  double timeout = worker->enter_lifecycle();
-  if (timeout == 0) {
+  std::optional<double> timeout = worker->enter_lifecycle();
+  if (!timeout.has_value()) {
     php_worker.reset();
     rpcx_at_query_end(c);
   } else {
-    assert (c->pending_queries >= 0 && c->status == conn_wait_net);
-    assert (timeout > 0);
-    set_connection_timeout(c, timeout);
+    if (c->pending_queries < 0 || c->status != conn_wait_net) {
+      std::array<char, 512> message{};
+      snprintf(message.data(), message.size(), "PhpWorker state %d, PhpScript state %d. Connection pending queries %d, status %d. "
+                                               "Net timeout %f, finish_time %f, now %f. PhpScript wait net %d\n",
+              worker->state, php_script.has_value() ? (int)php_script->state : -1, c->pending_queries, c->status, timeout.value(),
+               worker->finish_time, precise_now, worker->waiting);
+      dl_assert(c->pending_queries >= 0 && c->status == conn_wait_net, message.data());
+    }
+    assert (*timeout > 0);
+    set_connection_timeout(c, *timeout);
   }
   return 0;
 }
@@ -840,9 +847,9 @@ int rpcx_func_close(connection *c, int who __attribute__((unused))) {
   auto *worker = reinterpret_cast<PhpWorker *>(D->extra);
   if (worker != nullptr) {
     worker->terminate(1, script_error_t::rpc_connection_close, "rpc connection close");
-    double timeout = worker->enter_lifecycle();
+    std::optional<double> timeout = worker->enter_lifecycle();
     D->extra = nullptr;
-    assert ("worker is unfinished after closing connection" && timeout == 0);
+    assert ("worker is unfinished after closing connection" && !timeout.has_value());
     php_worker.reset();
 
     if (!has_pending_scripts()) {
