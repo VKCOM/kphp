@@ -79,22 +79,21 @@ apt install git cmake make g++ gperf python3-minimal python3-jsonschema \
 ```
 
 
-##### MacOS with Intel chipset
+##### MacOS
 Make sure you have `brew` and `clang` (at least `Apple clang version 10.0.0`)
 ```bash
+# Install dependencies
 brew tap shivammathur/php
 brew update
 brew install re2c cmake coreutils openssl libiconv re2 pcre yaml-cpp zstd googletest shivammathur/php/php@7.4
 brew link --overwrite shivammathur/php/php@7.4
 pip3 install jsonschema
-```
-Clone somewhere local [epoll-shim from GitHub]({{site.url_package_epoll_shim}}) and switch to *osx-platform* branch.
-Add env variable `EPOLL_SHIM_REPO` to your bash profile. It allows to avoid of cloning `epoll-shim` on each clean cmake call.
-```bash
-git clone https://github.com/VKCOM/epoll-shim.git
-cd epoll-shim
-git checkout osx-platform
-echo 'export "EPOLL_SHIM_REPO=$(pwd)" >> ~/.bash_profile'
+
+# Build kphp
+git clone https://github.com/VKCOM/kphp.git && cd kphp
+mkdir build && cd build
+cmake .. -DDOWNLOAD_MISSING_LIBRARIES=On
+make -j$(nproc)
 ```
 
 ##### Other Linux
