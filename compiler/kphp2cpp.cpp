@@ -324,6 +324,7 @@ int main(int argc, char *argv[]) {
   }
 
   if (settings->verbosity.get() >= 3) {
+    std::cerr << "Version: " << get_version_string() << std::endl;
     parser.dump_options(std::cerr);
   }
 
