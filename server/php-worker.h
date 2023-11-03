@@ -65,7 +65,6 @@ public:
 
   void terminate(int flag, script_error_t terminate_reason_, const char *error_message_) noexcept;
   double get_timeout() const noexcept;
-  double get_last_initialisation_time() const noexcept;
 
   void answer_query(void *ans) noexcept;
   void wait(int timeout_ms) noexcept;

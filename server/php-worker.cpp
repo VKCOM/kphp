@@ -28,7 +28,7 @@
 std::optional<PhpWorker> php_worker;
 
 double PhpWorker::enter_lifecycle() noexcept {
-  if (finish_time < get_utime_monotonic() + get_last_initialisation_time()) {
+  if (finish_time < precise_now + 0.01) {
     terminate(0, script_error_t::timeout, "timeout");
   }
   on_wakeup();
@@ -436,11 +436,6 @@ double PhpWorker::get_timeout() const noexcept {
     time_left = 0.00001;
   }
   return time_left;
-}
-
-double PhpWorker::get_last_initialisation_time() const noexcept {
-  double last_initialisation_time = PhpScript::script_time_stats.script_start_time - PhpScript::script_time_stats.worker_init_time;
-  return max(0.01, last_initialisation_time);
 }
 
 PhpWorker::PhpWorker(php_worker_mode_t mode_, connection *c, php_query_data_t query_data,
