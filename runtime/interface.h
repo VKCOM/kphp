@@ -245,6 +245,7 @@ inline void f$kphp_turn_on_host_tag_in_inner_statshouse_metrics_toggle() {
 
 template <typename F>
 inline void f$kphp_extended_instance_cache_metrics_init(F &&callback) {
+  dl::CriticalSectionGuard guard;
   StatsHouseManager::get().set_normalization_function(normalization_function{std::forward<F>(callback)});
 }
 

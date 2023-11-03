@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cassert>
+#include <functional>
 
 #include "common/dl-utils-lite.h"
 #include "common/mixin/not_copyable.h"
@@ -45,11 +46,11 @@ public:
   }
 
   void set_normalization_function(normalization_function &&_function) {
-    this->key_normalization_function = _function;
+    this->instance_cache_key_normalization_function = std::move(_function);
   }
 
   bool is_extended_instance_cache_stats_enabled() {
-    return this->key_normalization_function != nullptr;
+    return this->instance_cache_key_normalization_function != nullptr;
   }
 
   void add_request_stats(uint64_t script_time_ns, uint64_t net_time_ns, script_error_t error, const memory_resource::MemoryStats &script_memory_stats,
@@ -79,12 +80,12 @@ public:
   /**
    * before calling the method, be sure to is_extended_instance_cache_stats_enabled() is true
    */
-  void add_extended_instance_cache_stats(const std::string_view &type, const std::string_view &status, const string &key, uint64_t size = 0);
+  void add_extended_instance_cache_stats(const std::string_view type, const std::string_view status, const string &key, uint64_t size = 0);
 
 private:
   StatsHouseClient client;
   bool need_write_enable_tag_host = false;
-  normalization_function key_normalization_function = nullptr;
+  normalization_function instance_cache_key_normalization_function = nullptr;
 
   StatsHouseManager() = default;
   explicit StatsHouseManager(const std::string &ip, int port);
