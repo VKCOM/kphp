@@ -155,6 +155,8 @@ void dl_block_all_signals () {
   sigdelset(&mask, SIGBUS);
   sigdelset(&mask, SIGFPE);
   sigdelset(&mask, SIGILL);
+  // Allow SIGQUIT to generate coredump in signal handlers
+  sigdelset(&mask, SIGQUIT);
   int err = sigprocmask (SIG_SETMASK, &mask, &old_mask);
   old_mask_inited = 1;
   dl_passert (err != -1, "failed to block all signals");
