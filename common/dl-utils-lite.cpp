@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <dirent.h>
 
+#include "common/server/crash-dump.h"
 #include "common/stats/provider.h"
 #include "common/wrappers/pathname.h"
 
@@ -167,19 +168,21 @@ void dl_allow_all_signals () {
   dl_passert (err != -1, "failed to allow all signals");
 }
 
-static void runtime_handler (const int sig) {
+static void runtime_handler (const int sig, siginfo_t *info __attribute__((unused)), void *ucontext) {
   fprintf (stderr, "%s caught, terminating program\n", strsignal(sig));
+  crash_dump_write(static_cast<ucontext_t *>(ucontext));
   dl_print_backtrace();
   dl_print_backtrace_gdb();
+  raise(SIGQUIT);
   _exit (EXIT_FAILURE);
 }
 
 void dl_set_default_handlers () {
-  dl_signal (SIGSEGV, runtime_handler);
-  dl_signal (SIGBUS, runtime_handler);
-  dl_signal (SIGFPE, runtime_handler);
-  dl_signal (SIGILL, runtime_handler);
-  dl_signal (SIGABRT, runtime_handler);
+  dl_sigaction(SIGSEGV, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, runtime_handler);
+  dl_sigaction(SIGBUS, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, runtime_handler);
+  dl_sigaction(SIGFPE, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, runtime_handler);
+  dl_sigaction(SIGILL, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, runtime_handler);
+  dl_sigaction(SIGABRT, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, runtime_handler);
 }
 
 char *dl_pstr (char const *msg, ...) {
