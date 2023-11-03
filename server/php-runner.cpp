@@ -178,7 +178,6 @@ void PhpScript::init(script_t *script, php_query_data_t *data_to_set) noexcept {
 
   error_message = "??? error";
 
-  script_time_stats.script_start_time = get_utime_monotonic();
   script_time = 0;
   net_time = 0;
   script_init_rusage = get_rusage_info();
@@ -419,6 +418,7 @@ void PhpScript::run() noexcept {
   check_net_context_errors();
 
   CurException = Optional<bool>{};
+  script_time_stats.script_start_time = get_utime_monotonic();
   run_main->run();
   if (CurException.is_null()) {
     set_script_result(nullptr);
