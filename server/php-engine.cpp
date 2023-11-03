@@ -2322,8 +2322,6 @@ void init_default() {
     kprintf ("fatal: not enough workers for general purposes\n");
     exit(1);
   }
-
-  dl_set_default_handlers();
   now = (int)time(nullptr);
 
   pid = getpid();
@@ -2365,6 +2363,7 @@ void init_default() {
 
 int run_main(int argc, char **argv, php_mode mode) {
   init_version_string(NAME_VERSION);
+  dl_set_default_handlers();
   dl_block_all_signals();
 #if !ASAN_ENABLED
   set_core_dump_rlimit(1LL << 40);

@@ -12,6 +12,7 @@
 #include "common/unicode/utf8-utils.h"
 
 #include "runtime/critical_section.h"
+#include "server/php-engine-vars.h"
 
 int64_t preg_replace_count_dummy;
 
@@ -314,7 +315,7 @@ void regexp::init(const string &regexp_string, const char *function, const char 
   static array<regexp *> *regexp_cache = (array<regexp *> *)regexp_cache_storage;
   static long long regexp_last_query_num = -1;
 
-  use_heap_memory = (dl::get_script_memory_stats().memory_limit == 0);
+  use_heap_memory = (process_type == ProcessType::master);
 
   if (!use_heap_memory) {
     if (dl::query_num != regexp_last_query_num) {
@@ -411,7 +412,7 @@ void regexp::init(const char *regexp_string, int64_t regexp_len, const char *fun
 
   static_SB.clean().append(regexp_string + 1, static_cast<size_t>(regexp_end - 1));
 
-  use_heap_memory = (dl::get_script_memory_stats().memory_limit == 0);
+  use_heap_memory = (process_type == ProcessType::master);
 
   auto malloc_replacement_guard = make_malloc_replacement_with_script_allocator(!use_heap_memory);
 
@@ -590,7 +591,7 @@ void regexp::clean() {
   subpatterns_count = 0;
   named_subpatterns_count = 0;
   is_utf8 = false;
-  use_heap_memory = false;
+  use_heap_memory = (process_type == ProcessType::master);
 
   if (pcre_regexp != nullptr) {
     pcre_free(pcre_regexp);
