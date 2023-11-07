@@ -13,6 +13,7 @@
 #include "server/statshouse/statshouse-client.h"
 #include "server/workers-control.h"
 #include "server/workers-stats.h"
+#include "server/confdata-stats.h"
 
 enum class script_error_t : uint8_t;
 
@@ -60,6 +61,11 @@ public:
    */
   void add_common_master_stats(const workers_stats_t &workers_stats, const memory_resource::MemoryStats &memory_stats, double cpu_s_usage, double cpu_u_usage,
                                long long int instance_cache_memory_swaps_ok, long long int instance_cache_memory_swaps_fail);
+
+  /**
+   * Must be called from master process only
+   */
+  void add_init_master_stats(uint64_t total_init_ns, uint64_t confdata_init_ns);
 
 private:
   StatsHouseClient client;
