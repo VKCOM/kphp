@@ -13,7 +13,6 @@
 #include "server/statshouse/statshouse-client.h"
 #include "server/workers-control.h"
 #include "server/workers-stats.h"
-#include "server/confdata-stats.h"
 
 enum class script_error_t : uint8_t;
 
