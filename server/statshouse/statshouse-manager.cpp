@@ -95,8 +95,8 @@ void StatsHouseManager::generic_cron_check_if_tag_host_needed() {
   }
 }
 
-void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_time_ns, script_error_t error, uint64_t memory_used,
-                                         uint64_t real_memory_used, uint64_t script_queries, uint64_t long_script_queries,
+void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_time_ns, script_error_t error,
+                                          const memory_resource::MemoryStats &script_memory_stats, uint64_t script_queries, uint64_t long_script_queries,
                                           uint64_t script_user_time_ns, uint64_t script_system_time_ns,
                                           uint64_t script_init_time, uint64_t http_connection_process_time,
                                           uint64_t voluntary_context_switches, uint64_t involuntary_context_switches) {
@@ -126,8 +126,11 @@ void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_
     client.metric("kphp_by_host_request_errors", true).tag(status).tag(worker_type).write_count(1);
   }
 
-  client.metric("kphp_memory_script_usage").tag("used").tag(worker_type).write_value(memory_used);
-  client.metric("kphp_memory_script_usage").tag("real_used").tag(worker_type).write_value(real_memory_used);
+  client.metric("kphp_memory_script_usage").tag("used").tag(worker_type).write_value(script_memory_stats.memory_used);
+  client.metric("kphp_memory_script_usage").tag("real_used").tag(worker_type).write_value(script_memory_stats.real_memory_used);
+
+  client.metric("kphp_memory_script_allocated_total").tag(worker_type).write_value(script_memory_stats.total_memory_allocated);
+  client.metric("kphp_memory_script_allocations_count").tag(worker_type).write_value(script_memory_stats.total_allocations);
 
   client.metric("kphp_requests_outgoing_queries").tag(worker_type).write_value(script_queries);
   client.metric("kphp_requests_outgoing_long_queries").tag(worker_type).write_value(long_script_queries);

@@ -318,8 +318,7 @@ void PhpScript::finish() noexcept {
   process_rusage_t script_rusage = get_script_rusage();
 
   vk::singleton<ServerStats>::get().add_request_stats(script_time, net_time, script_init_time_sec, connection_process_time_sec,
-                                                      queries_cnt, long_queries_cnt, script_mem_stats.max_memory_used,
-                                                      script_mem_stats.max_real_memory_used, vk::singleton<CurlMemoryUsage>::get().total_allocated, script_rusage, error_type);
+                                                      queries_cnt, long_queries_cnt, script_mem_stats, vk::singleton<CurlMemoryUsage>::get().total_allocated, script_rusage, error_type);
   if (save_state == run_state_t::error) {
     assert (error_message != nullptr);
     kprintf("Critical error during script execution: %s\n", error_message);
@@ -513,10 +512,6 @@ void PhpScript::disable_timeout() noexcept {
 void PhpScript::set_timeout(double t) noexcept {
   disable_timeout();
   static itimerval timer;
-
-  if (t > MAX_SCRIPT_TIMEOUT) {
-    return;
-  }
 
   int sec = (int)t, usec = (int)((t - sec) * 1000000);
   timer.it_value.tv_sec = sec;

@@ -42,7 +42,7 @@ public:
     need_write_enable_tag_host = true;
   }
 
-  void add_request_stats(uint64_t script_time_ns, uint64_t net_time_ns, script_error_t error, uint64_t memory_used, uint64_t real_memory_used,
+  void add_request_stats(uint64_t script_time_ns, uint64_t net_time_ns, script_error_t error, const memory_resource::MemoryStats &script_memory_stats,
                          uint64_t script_queries, uint64_t long_script_queries,
                          uint64_t script_user_time_ns, uint64_t script_system_time_ns,
                          uint64_t script_init_time, uint64_t http_connection_process_time,

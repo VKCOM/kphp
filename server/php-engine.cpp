@@ -133,7 +133,7 @@ tcp_rpc_client_functions tcp_rpc_client_outbound = [] {
   OUTBOUND CONNECTIONS
  ***/
 
-static int db_port = 3306;
+static int db_port = -1;
 static const char *db_host = "localhost";
 
 conn_type_t ct_tcp_rpc_client_read_all = [] {
@@ -872,12 +872,8 @@ static bool check_tasks_manager_pid(process_id_t tasks_manager_pid) {
 
 static double normalize_script_timeout(double timeout_sec) {
   if (timeout_sec < 1) {
-    kprintf("Too small script timeout: %f sec, should be [%d..%d] sec", timeout_sec, 1, MAX_SCRIPT_TIMEOUT);
+    kprintf("Too small script timeout: %f sec, should be at least 1 sec\n", timeout_sec);
     return 1;
-  }
-  if (timeout_sec > MAX_SCRIPT_TIMEOUT) {
-    kprintf("Too big script timeout: %f sec, should be [%d..%d] sec", timeout_sec, 1, MAX_SCRIPT_TIMEOUT);
-    return MAX_SCRIPT_TIMEOUT;
   }
   return timeout_sec;
 }
@@ -1522,9 +1518,7 @@ void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port) n
     vk::singleton<JobWorkerClient>::get().init(logname_id);
   }
 
-  if (no_sql) {
-    sql_target_id = -1;
-  } else {
+  if (db_port != -1) {
     vkprintf(1, "mysql host: %s; port: %d\n", db_host, db_port);
     sql_target_id = get_target(db_host, db_port, &db_ct);
     assert (sql_target_id != -1);
@@ -1868,10 +1862,6 @@ int main_args_handler(int i, const char *long_option) {
       if (optarg) {
         return read_option_to(long_option, 1, std::numeric_limits<int>::max(), run_once_count);
       }
-      return 0;
-    }
-    case 'q': {
-      no_sql = 1;
       return 0;
     }
     case 'Q': {
@@ -2231,6 +2221,7 @@ DEPRECATED_OPTION("use-unix", no_argument);
 DEPRECATED_OPTION_SHORT("json-log", "j", no_argument);
 DEPRECATED_OPTION_SHORT("crc32c", "C", no_argument);
 DEPRECATED_OPTION_SHORT("tl-schema", "T", required_argument);
+DEPRECATED_OPTION_SHORT("disable-sql", "q", no_argument);
 
 void parse_main_args(int argc, char *argv[]) {
   usage_set_other_args_desc("");
@@ -2246,7 +2237,6 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("rpc-client", required_argument, 'w', "host and port for client mode (host:port)");
   parse_option("hard-memory-limit", required_argument, 'm', "maximal size of memory used by script");
   parse_option("force-clear-sql", no_argument, 'R', "force clear sql connection every script run");
-  parse_option("disable-sql", no_argument, 'q', "disable using sql");
   parse_option("sql-port", required_argument, 'Q', "sql port");
   parse_option("static-buffers-size", required_argument, 'L', "limit for static buffers length (e.g. limits script output size)");
   parse_option("error-tag", required_argument, 'E', "name of file with engine tag showed on every warning");

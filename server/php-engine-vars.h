@@ -19,7 +19,6 @@
  ***/
 
 #define DEFAULT_SCRIPT_TIMEOUT 30
-#define MAX_SCRIPT_TIMEOUT (60 * 7)
 
 enum class ProcessType { master, http_worker, rpc_worker, job_worker };
 
@@ -33,8 +32,6 @@ extern double oom_handling_memory_ratio;
 
 extern int worker_id;
 extern int pid;
-
-extern int no_sql;
 
 extern ProcessType process_type;
 
