@@ -315,9 +315,8 @@ void regexp::init(const string &regexp_string, const char *function, const char 
   static char regexp_cache_storage[sizeof(array<regexp *>)];
   static array<regexp *> *regexp_cache = (array<regexp *> *)regexp_cache_storage;
   static long long regexp_last_query_num = -1;
-  // check that process is master and script is not running
-  use_heap_memory = (process_type == ProcessType::master
-                     && !(php_script.has_value() && php_script->is_running()));
+
+  use_heap_memory = !(php_script.has_value() && php_script->is_running());
 
   if (!use_heap_memory) {
     if (dl::query_num != regexp_last_query_num) {
@@ -414,8 +413,7 @@ void regexp::init(const char *regexp_string, int64_t regexp_len, const char *fun
 
   static_SB.clean().append(regexp_string + 1, static_cast<size_t>(regexp_end - 1));
 
-  use_heap_memory = (process_type == ProcessType::master
-                     && !(php_script.has_value() && php_script->is_running()));
+  use_heap_memory = !(php_script.has_value() && php_script->is_running());
 
   auto malloc_replacement_guard = make_malloc_replacement_with_script_allocator(!use_heap_memory);
 
@@ -594,8 +592,7 @@ void regexp::clean() {
   subpatterns_count = 0;
   named_subpatterns_count = 0;
   is_utf8 = false;
-  use_heap_memory = (process_type == ProcessType::master
-                     && !(php_script.has_value() && php_script->is_running()));
+  use_heap_memory = !(php_script.has_value() && php_script->is_running());
 
   if (pcre_regexp != nullptr) {
     pcre_free(pcre_regexp);
