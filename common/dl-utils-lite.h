@@ -12,7 +12,7 @@
 #include "common/wrappers/likely.h"
 
 enum class ExtraSignalAction {
-  GENERATE_COREDUMP
+  GENERATE_COREDUMP = 1
 };
 
 double dl_time ();
