@@ -9,6 +9,7 @@
 #include "common/containers/final_action.h"
 #include "common/smart_ptrs/singleton.h"
 #include "server/php-engine-vars.h"
+#include "server/php-runner.h"
 
 // these constants are a part of the private timelib API, but PHP uses them internally;
 // we define them here locally
@@ -215,7 +216,7 @@ std::pair<int64_t, bool> php_timelib_strtotime(const string &tz_name, const stri
     return {0, false};
   }
 
-  bool use_heap_memory = (process_type == ProcessType::master);
+  bool use_heap_memory = !(php_script.has_value() && php_script->is_running());
   auto malloc_replacement_guard = make_malloc_replacement_with_script_allocator(!use_heap_memory);
 
   timelib_time *now = timelib_time_ctor();
