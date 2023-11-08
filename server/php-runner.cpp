@@ -536,7 +536,7 @@ void PhpScript::terminate(const char *error_message_, script_error_t error_type_
   error_message = error_message_;
 }
 
-bool PhpScript::is_running() noexcept {
+bool PhpScript::is_running() const noexcept {
   return vk::any_of_equal(state, run_state_t::running, run_state_t::query,
                           run_state_t::query_running, run_state_t::ready,
                           run_state_t::error);

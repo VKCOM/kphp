@@ -168,7 +168,7 @@ public:
   void disable_timeout() noexcept;
   void set_timeout(double t) noexcept;
 
-  bool is_running() noexcept;
+  bool is_running() const noexcept;
 };
 
 extern std::optional<PhpScript> php_script;
