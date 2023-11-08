@@ -244,6 +244,11 @@ void StatsHouseManager::add_common_master_stats(const workers_stats_t &workers_s
   }
 }
 
+void StatsHouseManager::add_init_master_stats(uint64_t total_init_ns, uint64_t confdata_init_ns) {
+  client.metric("kphp_by_host_master_total_init_time", true).write_value(total_init_ns);
+  client.metric("kphp_by_host_master_confdata_init_time", true).write_value(confdata_init_ns);
+}
+
 void StatsHouseManager::add_job_workers_shared_memory_stats(const job_workers::JobStats &job_stats) {
   using namespace job_workers;
 

@@ -63,6 +63,7 @@
 #include "runtime/rpc.h"
 #include "runtime/thread-pool.h"
 #include "server/confdata-binlog-replay.h"
+#include "server/confdata-stats.h"
 #include "server/database-drivers/adaptor.h"
 #include "server/database-drivers/connector.h"
 #include "server/job-workers/job-worker-client.h"
@@ -1641,6 +1642,8 @@ char **get_runtime_options(int *count) noexcept;
 void init_all() {
   srand48((long)cycleclock_now());
 
+  auto start_time = std::chrono::steady_clock::now();
+
   //init pending_http_queue
   pending_http_queue.first_query = pending_http_queue.last_query = (conn_query *)&pending_http_queue;
   php_worker_run_flag = 0;
@@ -1674,6 +1677,10 @@ void init_all() {
   worker_id = (int)lrand48();
 
   init_confdata_binlog_reader();
+
+  auto end_time = std::chrono::steady_clock::now();
+  uint64_t total_init_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(start_time - end_time).count();
+  StatsHouseManager::get().add_init_master_stats(total_init_ns, ConfdataStats::get().initial_loading_time.count());
 }
 
 void init_logname(const char *src) {

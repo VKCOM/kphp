@@ -61,6 +61,11 @@ public:
   void add_common_master_stats(const workers_stats_t &workers_stats, const memory_resource::MemoryStats &memory_stats, double cpu_s_usage, double cpu_u_usage,
                                long long int instance_cache_memory_swaps_ok, long long int instance_cache_memory_swaps_fail);
 
+  /**
+   * Must be called from master process only
+   */
+  void add_init_master_stats(uint64_t total_init_ns, uint64_t confdata_init_ns);
+
 private:
   StatsHouseClient client;
   bool need_write_enable_tag_host = false;
