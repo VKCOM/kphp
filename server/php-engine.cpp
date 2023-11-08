@@ -829,11 +829,17 @@ int rpcx_func_wakeup(connection *c) {
   } else {
     if (c->pending_queries < 0 || c->status != conn_wait_net) {
       std::array<char, 512> message{};
+      int id = rand();
       snprintf(message.data(), message.size(), "PhpWorker state %d, PhpScript state %d. Connection pending queries %d, status %d. "
-                                               "Net timeout %f, finish_time %f, now %f. PhpScript wait net %d\n",
+                                               "Net timeout %f, finish_time %f, now %f. PhpScript wait net %d. Assert id %d\n",
               worker->state, php_script.has_value() ? (int)php_script->state : -1, c->pending_queries, c->status, timeout.value(),
-               worker->finish_time, precise_now, worker->waiting);
-      dl_cassert(c->pending_queries >= 0 && c->status == conn_wait_net, message.data());
+               worker->finish_time, precise_now, worker->waiting, id);
+      // write only in 10% actions
+      if (id % 100 < 10) {
+        dl_cassert(c->pending_queries >= 0 && c->status == conn_wait_net, message.data());
+      } else {
+        dl_assert(c->pending_queries >= 0 && c->status == conn_wait_net, message.data());
+      }
     }
     assert (*timeout > 0);
     set_connection_timeout(c, *timeout);
