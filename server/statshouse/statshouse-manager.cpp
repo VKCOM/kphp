@@ -248,10 +248,10 @@ void StatsHouseManager::add_init_master_stats(uint64_t total_init_ns, uint64_t c
   client.metric("kphp_by_host_master_confdata_init_time", true).write_value(confdata_init_ns);
 }
 
-void StatsHouseManager::add_extended_instance_cache_stats(const std::string_view type, const std::string_view status, const string &key, uint64_t size) {
+void StatsHouseManager::add_extended_instance_cache_stats(std::string_view type, std::string_view status, const string &key, uint64_t size) {
   dl::CriticalSectionGuard guard;
   string normalize_key = instance_cache_key_normalization_function(key);
-  client.metric("kphp_instance_cache_value_size", true).tag(type).tag(status).tag(normalize_key.c_str()).write_value(size);
+  client.metric("kphp_instance_cache_data_size", true).tag(type).tag(status).tag(normalize_key.c_str()).write_value(size);
 }
 
 void StatsHouseManager::add_job_workers_shared_memory_stats(const job_workers::JobStats &job_stats) {

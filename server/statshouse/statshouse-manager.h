@@ -80,7 +80,7 @@ public:
   /**
    * before calling the method, be sure to is_extended_instance_cache_stats_enabled() is true
    */
-  void add_extended_instance_cache_stats(const std::string_view type, const std::string_view status, const string &key, uint64_t size = 0);
+  void add_extended_instance_cache_stats(std::string_view type, std::string_view status, const string &key, uint64_t size = 0);
 
 private:
   StatsHouseClient client;
