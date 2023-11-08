@@ -833,7 +833,7 @@ int rpcx_func_wakeup(connection *c) {
                                                "Net timeout %f, finish_time %f, now %f. PhpScript wait net %d\n",
               worker->state, php_script.has_value() ? (int)php_script->state : -1, c->pending_queries, c->status, timeout.value(),
                worker->finish_time, precise_now, worker->waiting);
-      dl_assert(c->pending_queries >= 0 && c->status == conn_wait_net, message.data());
+      dl_cassert(c->pending_queries >= 0 && c->status == conn_wait_net, message.data());
     }
     assert (*timeout > 0);
     set_connection_timeout(c, *timeout);

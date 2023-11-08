@@ -201,7 +201,7 @@ void sigsegv_handler(int signum, siginfo_t *info, void *ucontext) {
   }
 }
 
-void sigabrt_handler(int) {
+void sigabrt_handler(int, siginfo_t *info, void *) {
   const int64_t cur_time = time(nullptr);
   void *trace[64];
   const int trace_size = backtrace(trace, 64);
@@ -217,6 +217,9 @@ void sigabrt_handler(int) {
   print_http_data();
   dl_print_backtrace(trace, trace_size);
   kill_workers();
+  if (info->si_value.sival_int == 42) {
+    raise(SIGQUIT); // hack for generate core dump
+  }
   _exit(EXIT_FAILURE);
 }
 } // namespace
@@ -249,7 +252,7 @@ void init_handlers() {
 
   dl_sigaction(SIGSEGV, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, sigsegv_handler);
   dl_sigaction(SIGBUS, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, sigsegv_handler);
-  dl_signal(SIGABRT, sigabrt_handler);
+  dl_sigaction(SIGABRT, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK| SA_RESTART, sigabrt_handler);
 }
 
 void worker_global_init_handlers(WorkerType worker_type) {
