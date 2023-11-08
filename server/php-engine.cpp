@@ -828,7 +828,7 @@ int rpcx_func_wakeup(connection *c) {
     rpcx_at_query_end(c);
   } else {
     if (c->pending_queries < 0 || c->status != conn_wait_net) {
-      std::array<char, 512> message{};
+      std::array<char, 1024> message{'\0'};
       int id = rand();
       snprintf(message.data(), message.size(), "PhpWorker state %d, PhpScript state %d. Connection pending queries %d, status %d. "
                                                "Net timeout %f, finish_time %f, now %f. PhpScript wait net %d. Assert id %d\n",
