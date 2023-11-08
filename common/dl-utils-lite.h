@@ -11,6 +11,10 @@
 #include "common/cycleclock.h"
 #include "common/wrappers/likely.h"
 
+enum class ExtraSignalAction {
+  GENERATE_COREDUMP
+};
+
 double dl_time ();
 
 sigset_t dl_get_empty_sigset ();
@@ -40,7 +44,7 @@ void dl_assert__ (const char *expr, const char *file_name, const char *func_name
 
 #define dl_assert(f, str) dl_assert_impl (f, str, 0, 0)
 #define dl_passert(f, str) dl_assert_impl (f, str, 1, 0)
-#define dl_cassert(f, str) dl_assert_impl(f, str, 0, 1)
+#define dl_assert_with_coredump(f, str) dl_assert_impl(f, str, 0, 1)
 #define dl_unreachable(str) dl_assert (0, str)
 
 struct pid_info_t {

@@ -105,8 +105,7 @@ void dl_assert__(const char *expr __attribute__((unused)), const char *file_name
   fprintf(stderr, "%s\n", assert_message.data());
   sigval value{0};
   if (generate_coredump) {
-    // pass extra flag to generate coredump in sigabrt_handler
-    value.sival_int = 42;
+    value.sival_int = static_cast<int>(ExtraSignalAction::GENERATE_COREDUMP);
   }
   sigqueue(getpid(), SIGABRT, value);
 }

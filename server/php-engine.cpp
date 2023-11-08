@@ -836,7 +836,7 @@ int rpcx_func_wakeup(connection *c) {
                worker->finish_time, precise_now, worker->waiting, id % 100);
       // write only in 1% actions
       if (id % 100 == 0) {
-        dl_cassert(c->pending_queries >= 0 && c->status == conn_wait_net, message.data());
+        dl_assert_with_coredump(c->pending_queries >= 0 && c->status == conn_wait_net, message.data());
       } else {
         dl_assert(c->pending_queries >= 0 && c->status == conn_wait_net, message.data());
       }

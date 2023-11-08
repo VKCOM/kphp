@@ -217,7 +217,7 @@ void sigabrt_handler(int, siginfo_t *info, void *) {
   print_http_data();
   dl_print_backtrace(trace, trace_size);
   kill_workers();
-  if (info->si_value.sival_int == 42) {
+  if (static_cast<ExtraSignalAction>(info->si_value.sival_int) == ExtraSignalAction::GENERATE_COREDUMP) {
     raise(SIGQUIT); // hack for generate core dump
   }
   _exit(EXIT_FAILURE);
