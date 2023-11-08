@@ -71,6 +71,7 @@ enum class InstanceCacheOpStatus {
   memory_limit_exceeded,
   memory_swap_required,
   delayed,
+  not_found,
   failed
 };
 
@@ -117,10 +118,12 @@ ClassInstanceType f$instance_cache_fetch(const string &class_name, const string 
       send_extended_instance_cache_stats_if_enabled("fetch", InstanceCacheOpStatus::success, key, result);
       return result;
     } else {
+      send_extended_instance_cache_stats_if_enabled("fetch", InstanceCacheOpStatus::failed, key, ClassInstanceType{});
       php_warning("Trying to fetch incompatible instance class: expect '%s', got '%s'",
                   class_name.c_str(), base_wrapper->get_class());
-      send_extended_instance_cache_stats_if_enabled("fetch", InstanceCacheOpStatus::failed, key, ClassInstanceType{});
     }
+  } else {
+    send_extended_instance_cache_stats_if_enabled("fetch", InstanceCacheOpStatus::not_found, key, ClassInstanceType{});
   }
   return {};
 }

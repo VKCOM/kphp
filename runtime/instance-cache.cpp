@@ -684,8 +684,9 @@ std::string_view instance_cache_store_status_to_str(InstanceCacheOpStatus status
     case InstanceCacheOpStatus::skipped:                 return "skipped";
     case InstanceCacheOpStatus::memory_limit_exceeded:   return "memory_limit_exceeded";
     case InstanceCacheOpStatus::delayed:                 return "delayed";
+    case InstanceCacheOpStatus::not_found:               return "not_found";
     case InstanceCacheOpStatus::failed:                  return "failed";
-    default:                                                return "unknown";
+    default:                                             return "unknown";
   }
 }
 
