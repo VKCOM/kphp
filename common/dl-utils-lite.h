@@ -11,6 +11,10 @@
 #include "common/cycleclock.h"
 #include "common/wrappers/likely.h"
 
+enum class ExtraSignalAction {
+  GENERATE_COREDUMP = 1
+};
+
 double dl_time ();
 
 sigset_t dl_get_empty_sigset ();
@@ -31,15 +35,16 @@ char* dl_pstr (char const *message, ...) __attribute__ ((format (printf, 1, 2)))
 const char *dl_get_assert_message() noexcept;
 
 void dl_assert__ (const char *expr, const char *file_name, const char *func_name,
-                  int line, const char *desc, int use_perror);
+                  int line, const char *desc, int use_perror, int generate_coredump);
 
-#define dl_assert_impl(f, str, use_perror) \
+#define dl_assert_impl(f, str, use_perror, generate_coredump) \
   if (unlikely(!(f))) {\
-    dl_assert__ (#f, __FILE__, __FUNCTION__, __LINE__, str, use_perror);\
+    dl_assert__ (#f, __FILE__, __FUNCTION__, __LINE__, str, use_perror, generate_coredump);\
   }
 
-#define dl_assert(f, str) dl_assert_impl (f, str, 0)
-#define dl_passert(f, str) dl_assert_impl (f, str, 1)
+#define dl_assert(f, str) dl_assert_impl (f, str, 0, 0)
+#define dl_passert(f, str) dl_assert_impl (f, str, 1, 0)
+#define dl_assert_with_coredump(f, str) dl_assert_impl(f, str, 0, 1)
 #define dl_unreachable(str) dl_assert (0, str)
 
 struct pid_info_t {
