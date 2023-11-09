@@ -1690,7 +1690,7 @@ void init_all() {
   init_confdata_binlog_reader();
 
   auto end_time = std::chrono::steady_clock::now();
-  uint64_t total_init_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(start_time - end_time).count();
+  uint64_t total_init_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count();
   StatsHouseManager::get().add_init_master_stats(total_init_ns, ConfdataStats::get().initial_loading_time.count());
 }
 
