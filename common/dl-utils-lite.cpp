@@ -97,14 +97,14 @@ void __assert_fail(const char *assertion, const char *file, unsigned int line, c
   __builtin_unreachable();
 }
 
-void dl_assert__(const char *expr __attribute__((unused)), const char *file_name, const char *func_name,
-                 int line, const char *desc, int use_perror, int generate_coredump __attribute__((unused))) {
+void dl_assert__([[maybe_unused]] const char *expr, const char *file_name, const char *func_name,
+                 int line, const char *desc, int use_perror, [[maybe_unused]] int generate_coredump) {
   snprintf(assert_message.data(), assert_message.size(),
            "dl_assert failed [%s:%d: %s]: %s%s%s", kbasename(file_name), line, func_name, desc,
            use_perror ? "; errno message = " : "",
            use_perror ? strerror(errno) : "");
   fprintf(stderr, "%s\n", assert_message.data());
-#ifdef __unix__
+#if defined(__unix__) && defined(_POSIX_VERSION)
   sigval value{0};
   if (generate_coredump) {
     value.sival_int = static_cast<int>(ExtraSignalAction::GENERATE_COREDUMP);
