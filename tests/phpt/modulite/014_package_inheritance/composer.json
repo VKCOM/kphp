@@ -1,0 +1,15 @@
+{
+  "name": "phpt/014",
+  "require": {
+    "vk/strings": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "Test\\": "Test"
+    }
+  },
+  "repositories": [{
+    "type": "path",
+    "url": "./packages/vk-strings"
+  }]
+}
