@@ -98,17 +98,21 @@ void __assert_fail(const char *assertion, const char *file, unsigned int line, c
 }
 
 void dl_assert__(const char *expr __attribute__((unused)), const char *file_name, const char *func_name,
-                 int line, const char *desc, int use_perror, int generate_coredump) {
+                 int line, const char *desc, int use_perror, int generate_coredump __attribute__((unused))) {
   snprintf(assert_message.data(), assert_message.size(),
            "dl_assert failed [%s:%d: %s]: %s%s%s", kbasename(file_name), line, func_name, desc,
            use_perror ? "; errno message = " : "",
            use_perror ? strerror(errno) : "");
   fprintf(stderr, "%s\n", assert_message.data());
+#ifdef __unix__
   sigval value{0};
   if (generate_coredump) {
     value.sival_int = static_cast<int>(ExtraSignalAction::GENERATE_COREDUMP);
   }
   sigqueue(getpid(), SIGABRT, value);
+#else
+  abort();
+#endif
 }
 
 static sigset_t old_mask;
