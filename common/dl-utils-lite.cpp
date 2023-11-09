@@ -104,7 +104,7 @@ void dl_assert__([[maybe_unused]] const char *expr, const char *file_name, const
            use_perror ? "; errno message = " : "",
            use_perror ? strerror(errno) : "");
   fprintf(stderr, "%s\n", assert_message.data());
-#if defined(_POSIX_VERSION)
+#if _POSIX_VERSION >= 200112L
   sigval value{0};
   if (generate_coredump) {
     value.sival_int = static_cast<int>(ExtraSignalAction::GENERATE_COREDUMP);
