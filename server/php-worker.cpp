@@ -28,7 +28,7 @@
 
 std::optional<PhpWorker> php_worker;
 
-double PhpWorker::enter_lifecycle() noexcept {
+std::optional<double> PhpWorker::enter_lifecycle() noexcept {
   tvkprintf(php_runner, 3, "PHP-worker enter lifecycle [php-script state = %d, conn status = %d] [req_id = %016llx]\n",
             php_script.has_value() ? static_cast<int>(php_script->state) : -1, conn->status, req_id);
   paused = false;
@@ -79,7 +79,7 @@ void PhpWorker::terminate(int flag, script_error_t terminate_reason_, const char
   }
 }
 
-double PhpWorker::on_wakeup() noexcept {
+std::optional<double> PhpWorker::on_wakeup() noexcept {
   tvkprintf(php_runner, 2, "PHP-worker wakeup [req_id = %016llx]\n", req_id);
   get_utime_monotonic();
   if (vk::any_of_equal(state, phpq_try_start, phpq_init_script) && finish_time < precise_now + 0.01) {
@@ -89,7 +89,7 @@ double PhpWorker::on_wakeup() noexcept {
   return enter_lifecycle();
 }
 
-double PhpWorker::on_alarm() noexcept {
+std::optional<double> PhpWorker::on_alarm() noexcept {
   // on_alarm can be called on two possible situations
   // [1] script timeout has been triggered PhpScript::time_limit_exceeded is true
   // [2] wait_time to wait for the network has been used up

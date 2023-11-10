@@ -69,15 +69,15 @@ int jobs_server_php_wakeup(connection *c) {
 
   auto *worker = reinterpret_cast<JobCustomData *>(c->custom_data)->worker;
   assert(worker);
-  double timeout = worker->on_wakeup();
+  std::optional<double> timeout = worker->on_wakeup();
 
-  if (timeout == 0) {
+  if (!timeout.has_value()) {
     php_worker.reset();
     jobs_server_at_query_end(c);
   } else {
     assert(c->pending_queries >= 0 && c->status == conn_wait_net);
-    assert(timeout > 0);
-    set_connection_timeout(c, timeout);
+    assert(*timeout > 0);
+    set_connection_timeout(c, *timeout);
   }
   return 0;
 }
@@ -89,8 +89,8 @@ int jobs_server_php_alarm(connection *c) {
   auto *worker = reinterpret_cast<JobCustomData *>(c->custom_data)->worker;
   assert(worker);
 
-  double timeout = worker->on_alarm();
-  if (timeout == 0) {
+  std::optional<double> timeout = worker->on_alarm();
+  if (!timeout.has_value()) {
     php_worker.reset();
     jobs_server_at_query_end(c);
   } else {

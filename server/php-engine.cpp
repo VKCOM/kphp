@@ -525,8 +525,8 @@ int do_hts_func_wakeup(connection *c, bool flag) {
 
   auto *worker = reinterpret_cast<PhpWorker *>(D->extra);
   assert(worker);
-  double timeout = worker->on_wakeup();
-  if (timeout == 0) {
+  std::optional<double> timeout = worker->on_wakeup();
+  if (!timeout.has_value()) {
     php_worker.reset();
     hts_at_query_end(c, flag);
   } else {
@@ -640,14 +640,14 @@ int hts_func_alarm(connection *c) {
 
   auto *worker = reinterpret_cast<PhpWorker *>(D->extra);
   assert(worker);
-  double timeout = worker->on_alarm();
-  if (timeout == 0) {
+  std::optional<double> timeout = worker->on_alarm();
+  if (!timeout.has_value()) {
     php_worker.reset();
     hts_at_query_end(c, true);
   } else {
-    assert (timeout > 0);
+    assert (*timeout > 0);
     assert (c->pending_queries >= 0 && c->status == conn_wait_net);
-    set_connection_timeout(c, timeout);
+    set_connection_timeout(c, *timeout);
   }
   return 0;
 }
@@ -658,7 +658,7 @@ int hts_func_close(connection *c, int who __attribute__((unused))) {
   auto *worker = reinterpret_cast<PhpWorker *>(D->extra);
   if (worker != nullptr) {
     worker->terminate(1, script_error_t::http_connection_close, "http connection close");
-    double timeout = worker->on_wakeup();
+    std::optional<double> timeout = worker->on_wakeup();
     D->extra = nullptr;
     assert ("worker is unfinished after closing connection" && !timeout.has_value());
     php_worker.reset();
@@ -849,14 +849,14 @@ int rpcx_func_wakeup(connection *c) {
 
   auto *worker = reinterpret_cast<PhpWorker *>(D->extra);
   assert(worker);
-  double timeout = worker->on_wakeup();
-  if (timeout == 0) {
+  std::optional<double> timeout = worker->on_wakeup();
+  if (!timeout.has_value()) {
     php_worker.reset();
     rpcx_at_query_end(c);
   } else {
     assert (c->pending_queries >= 0 && c->status == conn_wait_net);
-    assert (timeout > 0);
-    set_connection_timeout(c, timeout);
+    assert (*timeout > 0);
+    set_connection_timeout(c, *timeout);
   }
   return 0;
 }
@@ -869,8 +869,8 @@ int rpcx_func_alarm(connection *c) {
 
   auto *worker = reinterpret_cast<PhpWorker *>(D->extra);
   assert(worker);
-  double timeout = worker->on_alarm();
-  if (timeout == 0) {
+  std::optional<double> timeout = worker->on_alarm();
+  if (!timeout.has_value()) {
     php_worker.reset();
     rpcx_at_query_end(c);
   } else {
@@ -900,7 +900,7 @@ int rpcx_func_close(connection *c, int who __attribute__((unused))) {
   auto *worker = reinterpret_cast<PhpWorker *>(D->extra);
   if (worker != nullptr) {
     worker->terminate(1, script_error_t::rpc_connection_close, "rpc connection close");
-    double timeout = worker->on_wakeup();
+    std::optional<double> timeout = worker->on_wakeup();
     D->extra = nullptr;
     assert ("worker is unfinished after closing connection" && !timeout.has_value());
     php_worker.reset();
