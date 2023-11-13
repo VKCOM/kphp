@@ -46,7 +46,11 @@ void default_sigalrm_handler(int signum) {
   kwrite_str(2, "in default_sigalrm_handler\n");
   if (check_signal_critical_section(signum, "SIGALRM")) {
     PhpScript::time_limit_exceeded = true;
-    if (PhpScript::in_script_context) {
+    if (!PhpScript::in_script_context) {
+      if (is_json_log_on_timeout_enabled) {
+        vk::singleton<JsonLogger>::get().write_log_with_script_backtrace("Maximum execution time exceeded", E_ERROR);
+      }
+    } else {
       if (is_json_log_on_timeout_enabled) {
         vk::singleton<JsonLogger>::get().write_log_with_backtrace("Maximum execution time exceeded", E_ERROR);
       }
@@ -61,7 +65,11 @@ void sigalrm_handler(int signum) {
     // There are 3 possible situations when a timeout occurs
     if (!PhpScript::in_script_context) {
       // [1] code in net context
+      // log timeout event with script backtrace
       // save the timeout fact in order to process it in the script context
+      if (is_json_log_on_timeout_enabled) {
+        vk::singleton<JsonLogger>::get().write_log_with_script_backtrace("Maximum execution time exceeded", E_ERROR);
+      }
       PhpScript::time_limit_exceeded = true;
     } else if (!PhpScript::time_limit_exceeded) {
       // [2] code in script context and this is the first timeout
@@ -120,8 +128,8 @@ void print_http_data() {
   }
   if (!PhpScript::current_script) {
     write_str(2, "\nPHPScriptBase::current_script is nullptr\n");
-  } else if (PhpScript::current_script->data) {
-    if (http_query_data *data = PhpScript::current_script->data->http_data) {
+  } else if (PhpScript::current_script->data != nullptr && std::holds_alternative<http_query_data>(*PhpScript::current_script->data)) {
+      http_query_data *data = &std::get<http_query_data>(*PhpScript::current_script->data);
       write_str(2, "\nuri\n");
       write(2, data->uri, data->uri_len);
       write_str(2, "\nget\n");
@@ -132,7 +140,6 @@ void print_http_data() {
       if (data->post && data->post_len > 0) {
         write(2, data->post, data->post_len);
       }
-    }
   }
 }
 
@@ -194,7 +201,7 @@ void sigsegv_handler(int signum, siginfo_t *info, void *ucontext) {
   }
 }
 
-void sigabrt_handler(int) {
+void sigabrt_handler(int, siginfo_t *info, void *) {
   const int64_t cur_time = time(nullptr);
   void *trace[64];
   const int trace_size = backtrace(trace, 64);
@@ -210,6 +217,9 @@ void sigabrt_handler(int) {
   print_http_data();
   dl_print_backtrace(trace, trace_size);
   kill_workers();
+  if (static_cast<ExtraSignalAction>(info->si_value.sival_int) == ExtraSignalAction::GENERATE_COREDUMP) {
+    raise(SIGQUIT); // hack for generate core dump
+  }
   _exit(EXIT_FAILURE);
 }
 } // namespace
@@ -242,7 +252,7 @@ void init_handlers() {
 
   dl_sigaction(SIGSEGV, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, sigsegv_handler);
   dl_sigaction(SIGBUS, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, sigsegv_handler);
-  dl_signal(SIGABRT, sigabrt_handler);
+  dl_sigaction(SIGABRT, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK| SA_RESTART, sigabrt_handler);
 }
 
 void worker_global_init_handlers(WorkerType worker_type) {

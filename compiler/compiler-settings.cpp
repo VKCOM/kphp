@@ -332,6 +332,15 @@ void CompilerSettings::init() {
   ld_flags.value_ += " -L /usr/local/lib";
 #endif
 
+#ifdef KPHP_H3_LIB_DIR
+  ld_flags.value_ += " -L" KPHP_H3_LIB_DIR;
+#else
+  // kphp-h3 is usually installed in /usr/local/lib;
+  // LDD may not find a library in /usr/local/lib if we don't add it here
+  // TODO: can we avoid this hardcoded library path?
+  ld_flags.value_ += " -L /usr/local/lib";
+#endif
+
   std::vector<vk::string_view> external_libs{"pthread", "m", "dl"};
 
 #ifdef PDO_DRIVER_MYSQL

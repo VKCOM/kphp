@@ -12,6 +12,7 @@
 #include "runtime/kphp_core.h"
 #include "runtime/optional.h"
 #include "server/php-query-data.h"
+#include "server/statshouse/statshouse-manager.h"
 #include "server/workers-control.h"
 
 extern string_buffer *coub;//TODO static
@@ -166,7 +167,7 @@ bool f$is_uploaded_file(const string &filename);
 bool f$move_uploaded_file(const string &oldname, const string &newname);
 
 
-void init_superglobals(php_query_data *data);
+void init_superglobals(const php_query_data_t &data);
 
 
 double f$get_net_time();
@@ -203,7 +204,7 @@ Optional<array<mixed>> f$getopt(const string &options, array<string> longopts = 
 void global_init_runtime_libs();
 void global_init_script_allocator();
 
-void init_runtime_environment(php_query_data *data, void *mem, size_t script_mem_size, size_t oom_handling_mem_size = 0);
+void init_runtime_environment(const php_query_data_t &data, void *mem, size_t script_mem_size, size_t oom_handling_mem_size = 0);
 
 void free_runtime_environment();
 
@@ -236,6 +237,16 @@ extern bool is_demangled_stacktrace_logs_enabled;
 
 inline void f$set_json_log_demangle_stacktrace(bool enable) {
   is_demangled_stacktrace_logs_enabled = enable;
+}
+
+inline void f$kphp_turn_on_host_tag_in_inner_statshouse_metrics_toggle() {
+  StatsHouseManager::get().turn_on_host_tag_toggle();
+}
+
+template <typename F>
+inline void f$kphp_extended_instance_cache_metrics_init(F &&callback) {
+  dl::CriticalSectionGuard guard;
+  StatsHouseManager::get().set_normalization_function(normalization_function{std::forward<F>(callback)});
 }
 
 int64_t f$numa_get_bound_node();

@@ -8,10 +8,10 @@
 #include "vkext/vk_zend.h"
 
 long long vk_queries_count(INTERNAL_FUNCTION_PARAMETERS);
-void vk_memcache_query(INTERNAL_FUNCTION_PARAMETERS);
-void vk_memcache_query1(INTERNAL_FUNCTION_PARAMETERS);
-void vk_memcache_query_result(INTERNAL_FUNCTION_PARAMETERS);
-void vk_memcache_query_result1(INTERNAL_FUNCTION_PARAMETERS);
+void vk_rpc_tl_query(INTERNAL_FUNCTION_PARAMETERS);
+void vk_rpc_tl_query_one(INTERNAL_FUNCTION_PARAMETERS);
+void vk_rpc_tl_query_result(INTERNAL_FUNCTION_PARAMETERS);
+void vk_rpc_tl_query_result_one(INTERNAL_FUNCTION_PARAMETERS);
 extern int typed_mode;
 extern const char *tl_current_function_name;
 

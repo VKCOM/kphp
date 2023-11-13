@@ -297,6 +297,10 @@ VertexPtr CheckFuncCallsAndVarargPass::on_func_call(VertexAdaptor<op_func_call> 
     bool is_instance_call = f->modifiers.is_instance();
     bool is_constructor_call = f->is_constructor() && !f->class_id->is_lambda_class();
     if (f->type == FunctionData::func_local && !is_instance_call) {
+      // static::f() (and some other cases) could be earlier replaced by Base::f(static=Derived)
+      if (f->modifiers.is_static() && f->context_class && f->outer_function) {
+        f = f->outer_function;  // refs back to Base::f()
+      }
       modulite_check_when_call_function(current_function, f);
     } else if (f->type == FunctionData::func_local && is_constructor_call) {
       modulite_check_when_use_class(current_function, f->class_id);

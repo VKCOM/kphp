@@ -128,7 +128,7 @@ jobs:
 
     - name: Run php dummy script
       run: docker exec kphp-build-container-${{matrix.os}} bash -c
-             'cd ${{env.kphp_build_dir}} && su kitten -c "kphp --version && ./kphp_out/cli -o --user kitten'
+            "сd ${{env.kphp_build_dir}} && echo 'hello world' > test.php && kphp --mode=cli test.php && ./kphp_out/cli"
 
     - name: Remove docker container
       run: docker rm -f kphp-build-container-${{matrix.os}}
@@ -197,6 +197,26 @@ jobs:
 
   #   - name: Build all
   #     run: make -C ${{runner.workspace}}/build -j$(nproc) all
+
+#     # because of https://github.com/orgs/Homebrew/discussions/4612
+#     - name: Check Environment
+#       run: |
+#         export HOMEBREW_NO_INSTALL_FROM_API=0
+#         brew untap --force homebrew/cask
+
+#     - name: Setup Environment
+#       run: |
+#         brew tap shivammathur/php
+#         brew update
+#         brew install re2c cmake coreutils openssl libiconv re2 pcre yaml-cpp zstd googletest shivammathur/php/php@7.4 python@3.12
+#         brew link --overwrite --force shivammathur/php/php@7.4
+#         /usr/local/Frameworks/Python.framework/Versions/3.12/bin/python3.12 -m pip install --upgrade pip --break-system-packages && /usr/local/Frameworks/Python.framework/Versions/3.12/bin/pip3 install jsonschema install --break-system-packages jsonschema
+
+#     - name: Run cmake
+#       run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DDOWNLOAD_MISSING_LIBRARIES=On -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build
+
+#     - name: Build all
+#       run: make -C ${{runner.workspace}}/build -j$(nproc) all
       
   #   - name: Run unit tests
   #     run: make -C ${{runner.workspace}}/build -j$(nproc) test

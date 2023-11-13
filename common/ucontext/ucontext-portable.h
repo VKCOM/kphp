@@ -4,7 +4,7 @@
 
 #pragma once
 
-#if !(defined(__APPLE__) && defined(__arm64__))
+#ifdef __x86_64__
 // for x86 mac or x86/arm linux, we just use makecontext(), ucontext_t and other native functions
 #include <ucontext.h>
 
@@ -16,7 +16,7 @@
 
 #else
 // for M1, we can't use native makecontext() and others: they compile, but hang up when called
-#include "common/ucontext/ucontext.h"
+#include "common/ucontext/ucontext-arm.h"
 
 #define ucontext_t_portable libucontext_ucontext
 #define setcontext_portable libucontext_setcontext

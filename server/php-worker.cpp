@@ -3,8 +3,10 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include <cassert>
+#include <utility>
 #include <poll.h>
 
+#include "common/algorithms/find.h"
 #include "common/precise-time.h"
 #include "common/rpc-error-codes.h"
 #include "common/wrappers/overloaded.h"
@@ -24,16 +26,16 @@
 #include "server/php-worker.h"
 #include "server/server-stats.h"
 
-PhpWorker *active_worker = nullptr;
+std::optional<PhpWorker> php_worker;
 
-double PhpWorker::enter_lifecycle() noexcept {
+std::optional<double> PhpWorker::enter_lifecycle() noexcept {
   if (finish_time < precise_now + 0.01) {
     terminate(0, script_error_t::timeout, "timeout");
   }
   on_wakeup();
 
   tvkprintf(php_runner, 3, "PHP-worker enter lifecycle [php-script state = %d, conn status = %d] lifecycle [req_id = %016llx]\n",
-            php_script ? static_cast<int>(php_script->state) : -1, conn->status, req_id);
+            php_script.has_value() ? static_cast<int>(php_script->state) : -1, conn->status, req_id);
   paused = false;
   do {
     switch (state) {
@@ -61,13 +63,13 @@ double PhpWorker::enter_lifecycle() noexcept {
       case phpq_finish:
         tvkprintf(php_runner, 1, "finish PHP-worker [req_id = %016llx]\n", req_id);
         state_finish();
-        return 0;
+        return std::nullopt;
     }
     get_utime_monotonic();
   } while (!paused);
 
   tvkprintf(php_runner, 3, "PHP-worker [php-script state = %d, conn status = %d] return in net reactor [req_id = %016llx]\n",
-            php_script ? static_cast<int>(php_script->state) : -1, conn->status, req_id);
+            php_script.has_value() ? static_cast<int>(php_script->state) : -1, conn->status, req_id);
   assert(conn->status == conn_wait_net);
   return get_timeout();
 }
@@ -145,8 +147,6 @@ void PhpWorker::state_init_script() noexcept {
 
   get_utime_monotonic();
   start_time = precise_now;
-  assert(active_worker == nullptr);
-  active_worker = this;
   vk::singleton<ServerStats>::get().set_running_worker_status();
 
   // init memory allocator for queries
@@ -154,11 +154,11 @@ void PhpWorker::state_init_script() noexcept {
 
   script_t *script = get_script();
   dl_assert(script != nullptr, "failed to get script");
-  if (php_script == nullptr) {
-    php_script = new PhpScript(max_memory, oom_handling_memory_ratio, 8 << 20);
+  if (!php_script.has_value()) {
+    php_script.emplace(max_memory, oom_handling_memory_ratio, 8 << 20);
   }
   dl::init_critical_section();
-  php_script->init(script, data);
+  php_script->init(script, &data);
   php_script->set_timeout(timeout);
   state = phpq_run;
 }
@@ -234,7 +234,11 @@ void PhpWorker::state_run() noexcept {
         tvkprintf(php_runner, 3, "PHP-worker before swap context [req_id = %016llx]\n", req_id);
         php_script->iterate();
         tvkprintf(php_runner, 3, "PHP-worker after swap context [req_id = %016llx]\n", req_id);;
-        wait(0); // check for net events
+        if (!vk::any_of_equal(php_script->state, run_state_t::finished, run_state_t::error)) {
+          // We don't need to check net events when the script is going to finish.
+          // Otherwise we can fetch some net events related to this script that will be processed after the script termination.
+          wait(0);
+        }
         break;
       }
       case run_state_t::query: {
@@ -393,8 +397,6 @@ void PhpWorker::state_free_script() noexcept {
   php_worker_run_flag = 0;
   int f = 0;
 
-  assert(active_worker == this);
-  active_worker = nullptr;
   vk::singleton<ServerStats>::get().set_idle_worker_status();
   if (mode == once_worker) {
     static int left = run_once_count;
@@ -417,8 +419,7 @@ void PhpWorker::state_free_script() noexcept {
   static int finished_queries = 0;
   if ((++finished_queries) % queries_to_recreate_script == 0
       || (!use_madvise_dontneed && php_script->memory_get_total_usage() > memory_used_to_recreate_script)) {
-    delete php_script;
-    php_script = nullptr;
+    php_script.reset();
     finished_queries = 0;
   }
 
@@ -442,10 +443,10 @@ double PhpWorker::get_timeout() const noexcept {
   return time_left;
 }
 
-PhpWorker::PhpWorker(php_worker_mode_t mode_, connection *c, http_query_data *http_data, rpc_query_data *rpc_data, job_query_data *job_data,
+PhpWorker::PhpWorker(php_worker_mode_t mode_, connection *c, php_query_data_t query_data,
                        long long int req_id_, double timeout)
   : conn(c)
-  , data(php_query_data_create(http_data, rpc_data, job_data))
+  , data(std::move(query_data))
   , paused(false)
   , flushed_http_connection(false)
   , terminate_flag(false)
@@ -460,6 +461,7 @@ PhpWorker::PhpWorker(php_worker_mode_t mode_, connection *c, http_query_data *ht
   , mode(mode_)
   , req_id(req_id_)
 {
+  PhpScript::script_time_stats.worker_init_time = init_time;
   assert(c != nullptr);
   if (conn->target) {
     target_fd = static_cast<int>(conn->target - Targets);
@@ -467,9 +469,4 @@ PhpWorker::PhpWorker(php_worker_mode_t mode_, connection *c, http_query_data *ht
     target_fd = -1;
   }
   tvkprintf(php_runner, 1, "initialize PHP-worker [req_id = %016llx]\n", req_id);
-}
-
-PhpWorker::~PhpWorker() {
-  php_query_data_free(data);
-  data = nullptr;
 }

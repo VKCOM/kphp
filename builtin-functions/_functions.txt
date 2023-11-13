@@ -14,6 +14,7 @@ if (0) {
 }
 
 require_once __DIR__ . '/kphp_internal.txt';
+require_once __DIR__ . '/kphp_toggles.txt';
 require_once __DIR__ . '/kphp_tracing.txt';
 require_once __DIR__ . '/uberh3.txt';
 require_once __DIR__ . '/spl.txt';
@@ -497,6 +498,7 @@ function openssl_sign ($data ::: string, &$signature ::: string, $priv_key_id ::
 function openssl_verify ($data ::: string, $signature ::: string, $pub_key_id ::: string, $signature_alg ::: int = 1) ::: int;
 function openssl_random_pseudo_bytes ($length ::: int) ::: string | false;
 function openssl_x509_parse ($x509cert ::: string, $shortnames ::: bool = true) ::: mixed[] | false;
+function openssl_x509_verify ($x509cert ::: string, $public_key ::: string) ::: int;
 function openssl_x509_checkpurpose ($x509cert ::: string, $purpose ::: int) ::: mixed;
 
 define('PKCS7_TEXT', 0x1);
@@ -1427,16 +1429,6 @@ function zstd_compress(string $data, int $level = 3) ::: string | false;
 function zstd_uncompress(string $data) ::: string | false;
 function zstd_compress_dict(string $data, string $dict) ::: string | false;
 function zstd_uncompress_dict(string $data, string $dict) ::: string | false;
-
-function set_migration_php8_warning ($mask ::: int) ::: void;
-
-function set_detect_incorrect_encoding_names_warning(bool $show) ::: void;
-
-function set_json_log_on_timeout_mode(bool $enabled) ::: void;
-
-function set_json_log_demangle_stacktrace(bool $enable) ::: void;
-
-function set_use_updated_gmmktime(bool $enable) ::: void;
 
 // re-initialize given ArrayIterator with another array;
 // in KPHP it returns the same ArrayIterator that is ready to be used
