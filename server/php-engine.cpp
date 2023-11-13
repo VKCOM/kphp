@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <random>
 #include <limits>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -828,13 +829,16 @@ int rpcx_func_wakeup(connection *c) {
   } else {
     if (c->pending_queries < 0 || c->status != conn_wait_net) {
       std::array<char, 1024> message{'\0'};
-      int id = rand();
+      std::random_device rd;
+      std::mt19937 gen(rd());
+      std::uniform_int_distribution<> dis(1, 1000);
+      int id = dis(gen);
       snprintf(message.data(), message.size(), "PhpWorker state %d, PhpScript state %d. Connection pending queries %d, status %d. "
-                                               "Net timeout %f, finish_time %f, now %f. PhpScript wait net %d. Assert id %d\n",
+                                               "Net timeout %f, finish_time %f, now %f. PhpScript wait net %d. Coredump generated %s\n",
               worker->state, php_script.has_value() ? (int)php_script->state : -1, c->pending_queries, c->status, timeout.value(),
-               worker->finish_time, precise_now, worker->waiting, id % 1000);
+               worker->finish_time, precise_now, worker->waiting, id == 1000? "true" : "false");
       // write only in 0.1% actions
-      if (id % 1000 == 0) {
+      if (id == 1000) {
         dl_assert_with_coredump(c->pending_queries >= 0 && c->status == conn_wait_net, message.data());
       } else {
         dl_assert(c->pending_queries >= 0 && c->status == conn_wait_net, message.data());
