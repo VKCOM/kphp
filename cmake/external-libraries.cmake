@@ -54,10 +54,8 @@ else()
     add_link_options(-L${kphp-timelib_SOURCE_DIR}/objs)
 endif()
 
-find_library(KPHP_H3 h3)
-if(KPHP_H3)
-    add_library(h3 STATIC IMPORTED ${KPHP_H3})
-else()
+find_library(KPHP_h3 h3)
+if(NOT KPHP_h3)
     handle_missing_library("h3")
     FetchContent_Declare(
             h3
