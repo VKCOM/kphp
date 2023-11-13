@@ -23,8 +23,8 @@
 #include "vkext/vkext-flex.h"
 #include "vkext/vkext-iconv.h"
 #include "vkext/vkext-json.h"
+#include "vkext/vkext-rpc-tl-serialization.h"
 #include "vkext/vkext-rpc.h"
-#include "vkext/vkext-schema-memcache.h"
 #include "vkext/vkext-tl-memcache.h"
 
 #if __GNUC__ >= 6
@@ -36,6 +36,7 @@ PHP_INI_MH (on_change_conffile);
 PHP_INI_BEGIN ()
     PHP_INI_ENTRY ("tl.conffile", 0, PHP_INI_ALL, on_change_conffile)
     PHP_INI_ENTRY ("tl.conffile_autoreload", 0, PHP_INI_ALL, 0)
+    PHP_INI_ENTRY ("tl.enable_rpc_error_with_header_fetching", 0, PHP_INI_ALL, 0)
     PHP_INI_ENTRY ("vkext.ping_timeout", 0, PHP_INI_ALL, 0)
     PHP_INI_ENTRY ("vkext.use_unix", 0, PHP_INI_ALL, 0)
     PHP_INI_ENTRY ("vkext.unix_socket_directory", "/var/run/engine", PHP_INI_ALL, 0)
@@ -980,7 +981,7 @@ PHP_FUNCTION (rpc_tl_query) {
   ADD_CNT(total);
   START_TIMER(total);
   vkext_reset_error();
-  vk_memcache_query(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  vk_rpc_tl_query(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
@@ -988,7 +989,7 @@ PHP_FUNCTION (rpc_tl_query_one) {
   ADD_CNT(total);
   START_TIMER(total);
   vkext_reset_error();
-  vk_memcache_query1(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  vk_rpc_tl_query_one(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
@@ -997,7 +998,7 @@ PHP_FUNCTION (typed_rpc_tl_query) {
   START_TIMER(total);
   vkext_reset_error();
   typed_mode = 1;
-  vk_memcache_query(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  vk_rpc_tl_query(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   typed_mode = 0;
   tl_current_function_name = NULL;
   END_TIMER(total);
@@ -1008,7 +1009,7 @@ PHP_FUNCTION (typed_rpc_tl_query_one) {
   START_TIMER(total);
   vkext_reset_error();
   typed_mode = 1;
-  vk_memcache_query1(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  vk_rpc_tl_query_one(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   typed_mode = 0;
   tl_current_function_name = NULL;
   END_TIMER(total);
@@ -1017,14 +1018,14 @@ PHP_FUNCTION (typed_rpc_tl_query_one) {
 PHP_FUNCTION (rpc_tl_query_result) {
   ADD_CNT(total);
   START_TIMER(total);
-  vk_memcache_query_result(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  vk_rpc_tl_query_result(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
 PHP_FUNCTION (rpc_tl_query_result_one) {
   ADD_CNT(total);
   START_TIMER(total);
-  vk_memcache_query_result1(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  vk_rpc_tl_query_result_one(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
@@ -1032,7 +1033,7 @@ PHP_FUNCTION (typed_rpc_tl_query_result_one) {
   ADD_CNT(total);
   START_TIMER(total);
   typed_mode = 1;
-  vk_memcache_query_result1(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  vk_rpc_tl_query_result_one(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   typed_mode = 0;
   tl_current_function_name = NULL;
   END_TIMER(total);
@@ -1042,7 +1043,7 @@ PHP_FUNCTION (typed_rpc_tl_query_result) {
   ADD_CNT(total);
   START_TIMER(total);
   typed_mode = 1;
-  vk_memcache_query_result(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  vk_rpc_tl_query_result(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   typed_mode = 0;
   tl_current_function_name = NULL;
   END_TIMER(total);

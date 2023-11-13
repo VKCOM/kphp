@@ -1,6 +1,11 @@
 @ok
 <?php
 
+function test_static_preg_errors() {
+  var_dump(preg_match('[ \(\)+-]/', 'simple', $matches));
+  var_dump(preg_match('[\]sigsegv', 'simple', $matches));
+}
+
 function test_preg_errors_constants() {
   var_dump(PREG_NO_ERROR);
   var_dump(PREG_INTERNAL_ERROR);
@@ -66,6 +71,7 @@ function test_preg_errors_offset() {
   var_dump(preg_last_error() == PREG_BAD_UTF8_ERROR);
 }
 
+test_static_preg_errors();
 test_preg_errors_constants();
 test_preg_errors();
 test_preg_errors_offset();

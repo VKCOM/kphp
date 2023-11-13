@@ -52,6 +52,15 @@ static inline bool should_this_usage_context_be_ignored(FunctionPtr usage_contex
       usage_context->class_id != usage_context->context_class) {
     return true; // NOLINT(readability-simplify-boolean-expr)
   }
+  // case 2.
+  // (no module): class Base { printAppend() { ... } }
+  // @mod       : class Derived { print() { self::printAppend() } }
+  // then KPHP implicitly creates Derived::printAppend() { parent::printAppend() }
+  // and warns (on parent::) that "Base::printAppend() is not required by @mod"
+  // solution: ignore such auto-created inherited methods
+  if (usage_context->is_auto_inherited) {
+    return true;
+  }
   return false;
 }
 

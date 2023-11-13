@@ -20,6 +20,7 @@
 #include "runtime/resumable.h"
 #include "runtime/string_functions.h"
 #include "runtime/tl/rpc_function.h"
+#include "runtime/tl/rpc_req_error.h"
 #include "runtime/tl/rpc_request.h"
 #include "runtime/tl/rpc_server.h"
 #include "runtime/tl/rpc_tl_query.h"
@@ -1016,10 +1017,12 @@ bool f$store_long(int64_t v) {
 
 
 int32_t tl_parse_int() {
-  return TRY_CALL(int32_t, int32_t, (rpc_fetch_int()));
+  CHECK_EXCEPTION(return 0);
+  return rpc_fetch_int();
 }
 
 long long tl_parse_long() {
+  CHECK_EXCEPTION(return 0);
   TRY_CALL_VOID(int, check_rpc_data_len(2));
   long long result = *reinterpret_cast<const long long *>(rpc_data);
   rpc_data += 2;
@@ -1028,15 +1031,18 @@ long long tl_parse_long() {
 }
 
 double tl_parse_double() {
-  return TRY_CALL(double, double, (f$fetch_double()));
+  CHECK_EXCEPTION(return 0.0);
+  return f$fetch_double();
 }
 
 double tl_parse_float() {
-  return TRY_CALL(double, double, (f$fetch_float()));
+  CHECK_EXCEPTION(return 0.0);
+  return f$fetch_float();
 }
 
 string tl_parse_string() {
-  return TRY_CALL(string, string, (f$fetch_string()));
+  CHECK_EXCEPTION(return {});
+  return f$fetch_string();
 }
 
 void tl_parse_end() {
@@ -1065,29 +1071,12 @@ array<mixed> tl_fetch_error(const char *error, int error_code) {
 long long rpc_tl_results_last_query_num = -1;
 
 bool try_fetch_rpc_error(array<mixed> &out_if_error) {
-  int x = rpc_lookup_int();
-  if (x == TL_RPC_REQ_ERROR && CurException.is_null()) {
-    php_assert (tl_parse_int() == TL_RPC_REQ_ERROR);
-    if (CurException.is_null()) {
-      tl_parse_long();
-      if (CurException.is_null()) {
-        int error_code = tl_parse_int();
-        if (CurException.is_null()) {
-          string error = tl_parse_string();
-          if (CurException.is_null()) {
-            out_if_error = tl_fetch_error(error, error_code);
-            return true;
-          }
-        }
-      }
-    }
+  RpcError rpc_error;
+  if (!rpc_error.try_fetch()) {
+    return false;
   }
-  if (!CurException.is_null()) {
-    out_if_error = tl_fetch_error(CurException->$message, TL_ERROR_SYNTAX);
-    CurException = Optional<bool>{};
-    return true;
-  }
-  return false;
+  out_if_error = tl_fetch_error(rpc_error.error_msg, rpc_error.error_code);
+  return true;
 }
 
 class_instance<RpcTlQuery> store_function(const mixed &tl_object) {

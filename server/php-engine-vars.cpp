@@ -23,8 +23,6 @@ double oom_handling_memory_ratio = 0.00;
 int worker_id = -1;
 int pid = -1;
 
-int no_sql = 0;
-
 ProcessType process_type = ProcessType::master;
 
 int master_flag = 0; // 1 -- master, 0 -- single process, -1 -- child
