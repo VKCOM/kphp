@@ -50,3 +50,5 @@ function _tmp_substr($str ::: string, $start ::: int, $length ::: int = PHP_INT_
 
 /** @kphp-internal-param-readonly $str */
 function _tmp_trim($str ::: string, $what ::: string = " \n\r\t\v\0"): _tmp_string;
+
+function _curl_setopt_fn_header_write(int $easy_id, int $option, callable(int, string):int $callable): bool;

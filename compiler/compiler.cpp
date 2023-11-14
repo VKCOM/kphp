@@ -248,6 +248,7 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PassC<InlineDefinesUsagesPass>{}
     >> PassC<PreprocessEq3Pass>{}
     >> PassC<PreprocessExceptions>{}
+    >> PipeC<EarlyOptimizationF>{}
     >> SyncC<ParseAndApplyPhpdocF>{}
     // from this point, @param/@return are parsed in all functions, we can calculate and use assumptions
     // lambdas don't traverse this part of pipeline — they are processed by containing functions as vertices
@@ -255,7 +256,6 @@ bool compiler_execute(CompilerSettings *settings) {
     // do NOT insert any pipe before, see DeduceImplicitTypesAndCastsPass::check_function()
     >> PassC<DeduceImplicitTypesAndCastsPass>{}
     >> PipeC<InstantiateGenericsAndLambdasF>{} >> use_nth_output_tag<0>{}
-    >> PipeC<EarlyOptimizationF>{}
     >> SyncC<GenerateVirtualMethodsF>{}
     >> PipeC<ConvertInvokeToFuncCallF>{}
     >> PassC<CheckFuncCallsAndVarargPass>{}
