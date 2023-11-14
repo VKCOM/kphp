@@ -121,7 +121,7 @@ void process_job_worker_class(ClassPtr klass) {
 void check_instance_cache_fetch_call(VertexAdaptor<op_func_call> call) {
   auto klass = tinf::get_type(call)->class_type();
   kphp_assert(klass);
-  kphp_error(klass->is_immutable,
+  kphp_error(klass->is_immutable || klass->is_interface(),
              fmt_format("Can not fetch instance of mutable class {} with instance_cache_fetch call", klass->name));
   klass->deeply_require_instance_cache_visitor();
 }
