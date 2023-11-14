@@ -18,7 +18,6 @@
 #include "compiler/type-hint.h"
 
 namespace {
-
 void check_class_immutableness(ClassPtr klass) {
   if (!klass->is_immutable) {
     return;
@@ -42,17 +41,55 @@ void check_class_immutableness(ClassPtr klass) {
                         TermStringFormat::paint(klass->parent_class->name, TermStringFormat::red)));
 }
 
-ClassPtr derived_immutability_check(ClassPtr klass) {
-  for (const auto & derived : klass->derived_classes) {
-    if (!derived->is_immutable && !derived->is_interface()) {
-      return derived;
+std::list<ClassPtr> find_not_ic_compatibility_derivatives(ClassPtr klass);
+
+void check_fields_ic_compatibility(ClassPtr klass) {
+  klass->members.for_each([klass](const ClassMemberInstanceField &field) {
+    kphp_assert(field.var->marked_as_const);
+    std::unordered_set<ClassPtr> sub_classes;
+    field.var->tinf_node.get_type()->get_all_class_types_inside(sub_classes);
+    for (auto sub_class : sub_classes) {
+      // sub_class already checked for is_immutable || is_interface @see check_class_immutableness
+      check_fields_ic_compatibility(sub_class);
+      std::list<ClassPtr> descendants = find_not_ic_compatibility_derivatives(sub_class);
+      for (auto & element : descendants) {
+        kphp_error(false, fmt_format("Field {} of immutable class {} has mutable derived {}",
+                                     TermStringFormat::paint(std::string{field.local_name()}, TermStringFormat::red),
+                                     TermStringFormat::paint(klass->name, TermStringFormat::red),
+                                     TermStringFormat::paint(element->name, TermStringFormat::red)));
+      }
     }
-    ClassPtr descendant = derived_immutability_check(derived);
-    if (descendant) {
-      return descendant;
+  });
+}
+
+void check_derivatives_ic_compatibility(ClassPtr klass) {
+  std::list<ClassPtr> descendants = find_not_ic_compatibility_derivatives(klass);
+  for (const auto &element : descendants) {
+    kphp_error(false, fmt_format("Can not store polymorphic type {} with mutable derived class {}", klass->name, element->name));
+  }
+}
+
+std::list<ClassPtr> find_not_ic_compatibility_derivatives(ClassPtr klass) {
+  bool has_mutable_subtree = false;
+  std::list<ClassPtr> mutable_children{};
+  for (const auto & derived : klass->derived_classes) {
+    if (derived->is_subtree_immutable == SubtreeImmutableType::immutable) {
+      // continue
+    } else if (derived->is_subtree_immutable == SubtreeImmutableType::not_immutable) {
+      // do not save them because they have already been processed
+      has_mutable_subtree = true;
+    } else if (!derived->is_immutable && !derived->is_interface()) {
+      mutable_children.push_back(derived);
+    } else {
+      check_fields_ic_compatibility(derived);
+      std::list<ClassPtr> descendant = find_not_ic_compatibility_derivatives(derived);
+      mutable_children.splice(mutable_children.end(), descendant);
     }
   }
-  return {};
+
+  klass->is_subtree_immutable = has_mutable_subtree || !mutable_children.empty()
+                                  ? SubtreeImmutableType::not_immutable : SubtreeImmutableType::immutable;
+  return mutable_children;
 }
 
 void process_job_worker_class(ClassPtr klass) {
@@ -96,8 +133,8 @@ void check_instance_cache_store_call(VertexAdaptor<op_func_call> call) {
   kphp_error(!klass->is_empty_class(), fmt_format("Can not store instance of empty class {} with instance_cache_store call", klass->name));
   kphp_error_return(klass->is_immutable || klass->is_interface(),
              fmt_format("Can not store instance of mutable class {} with instance_cache_store call", klass->name));
-  ClassPtr derived = derived_immutability_check(klass);
-  kphp_error(!derived, fmt_format("Can not store polymorphic type {} with mutable derived class {}", klass->name, derived->name));
+  check_fields_ic_compatibility(klass);
+  check_derivatives_ic_compatibility(klass);
   klass->deeply_require_instance_cache_visitor();
   if (klass->is_polymorphic_or_has_polymorphic_member()) {
     klass->deeply_require_virtual_builtin_functions();

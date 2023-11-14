@@ -23,6 +23,12 @@ struct FFIClassDataMixin;
 struct FFIScopeDataMixin;
 namespace kphp_json { class KphpJsonTagList; }
 
+enum class SubtreeImmutableType {
+  immutable,
+  not_immutable,
+  not_visited
+};
+
 enum class ClassType {
   klass,
   interface,
@@ -59,6 +65,7 @@ public:
 
   bool can_be_php_autoloaded{false};
   bool is_immutable{false};
+  std::atomic<SubtreeImmutableType> is_subtree_immutable{SubtreeImmutableType::not_visited};
   bool really_used{false};
   bool is_tl_class{false};
   bool has_custom_constructor{false};
