@@ -1,5 +1,8 @@
 ---
-quote: "'single'quotes'are'not'escaped'double\"quotes\"are\"escaped\""
-newline: "1\n2\n3\n4\n5\nnewlines"
-other: "backslash\\horizontal tab\tvertical tab\vevery\b last\b symbol\b is\b erased\b"
+string_in_double_quotes: "'single'quotes'are'not'escaped'double\"quotes\"are\"escaped\""
+string_in_single_quotes: 'string inside single quotes'
+string_without_quotes: this is a string
+number_in_single_quotes_i_string: '12345'
+newline_symbols: "1\n2\n3\n4\n5\nnewlines"
+string_with_escaped_symbols: "backslash\\horizontal tab\tvertical tab\vevery\b last\b symbol\b is\b erased\b"
 ...
