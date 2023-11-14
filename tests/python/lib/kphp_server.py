@@ -27,7 +27,6 @@ class KphpServer(Engine):
         self._options["--master-name"] = \
             "kphp_server_{}".format("".join(chr(ord('A') + int(c)) for c in str(self._http_port)))
         self._options["--server-config"] = self.get_server_config_path()
-        self._options["--disable-sql"] = True
         self._options["--workers-num"] = 1
         self._options["--allow-loopback"] = None
         self._options["--dump-next-queries"] = None

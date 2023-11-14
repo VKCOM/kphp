@@ -114,6 +114,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         string_buffer.cpp
         string_cache.cpp
         string_functions.cpp
+        tl/rpc_req_error.cpp
         tl/rpc_tl_query.cpp
         tl/rpc_response.cpp
         tl/rpc_server.cpp

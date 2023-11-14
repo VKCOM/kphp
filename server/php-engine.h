@@ -57,10 +57,6 @@ void pnet_query_delete(conn_query *q);
 extern int run_once_count;
 extern int queries_to_recreate_script;
 
-class PhpScript;
-
-extern std::optional<PhpScript> php_script;
-
 void turn_sigterm_on();
 
 connection *get_target_connection(conn_target_t *S, int force_flag);

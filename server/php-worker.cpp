@@ -6,6 +6,7 @@
 #include <utility>
 #include <poll.h>
 
+#include "common/algorithms/find.h"
 #include "common/precise-time.h"
 #include "common/rpc-error-codes.h"
 #include "common/wrappers/overloaded.h"
@@ -27,7 +28,7 @@
 
 std::optional<PhpWorker> php_worker;
 
-double PhpWorker::enter_lifecycle() noexcept {
+std::optional<double> PhpWorker::enter_lifecycle() noexcept {
   if (finish_time < precise_now + 0.01) {
     terminate(0, script_error_t::timeout, "timeout");
   }
@@ -62,7 +63,7 @@ double PhpWorker::enter_lifecycle() noexcept {
       case phpq_finish:
         tvkprintf(php_runner, 1, "finish PHP-worker [req_id = %016llx]\n", req_id);
         state_finish();
-        return 0;
+        return std::nullopt;
     }
     get_utime_monotonic();
   } while (!paused);
@@ -233,7 +234,11 @@ void PhpWorker::state_run() noexcept {
         tvkprintf(php_runner, 3, "PHP-worker before swap context [req_id = %016llx]\n", req_id);
         php_script->iterate();
         tvkprintf(php_runner, 3, "PHP-worker after swap context [req_id = %016llx]\n", req_id);;
-        wait(0); // check for net events
+        if (!vk::any_of_equal(php_script->state, run_state_t::finished, run_state_t::error)) {
+          // We don't need to check net events when the script is going to finish.
+          // Otherwise we can fetch some net events related to this script that will be processed after the script termination.
+          wait(0);
+        }
         break;
       }
       case run_state_t::query: {
@@ -413,7 +418,7 @@ void PhpWorker::state_free_script() noexcept {
 
   static int finished_queries = 0;
   if ((++finished_queries) % queries_to_recreate_script == 0
-      || (!use_madvise_dontneed && php_script.value().memory_get_total_usage() > memory_used_to_recreate_script)) {
+      || (!use_madvise_dontneed && php_script->memory_get_total_usage() > memory_used_to_recreate_script)) {
     php_script.reset();
     finished_queries = 0;
   }

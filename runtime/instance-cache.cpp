@@ -289,11 +289,11 @@ public:
     context_ = nullptr;
   }
 
-  bool store(const string &key, const InstanceCopyistBase &instance_wrapper, int64_t ttl) noexcept {
+  InstanceCacheOpStatus store(const string &key, const InstanceCopyistBase &instance_wrapper, int64_t ttl) noexcept {
     ic_debug("store '%s'\n", key.c_str());
     php_assert(current_ && context_);
     if (context_->memory_swap_required) {
-      return false;
+      return InstanceCacheOpStatus::memory_swap_required;
     }
 
     sync_delayed();
@@ -301,7 +301,7 @@ public:
     auto &data = current_->get_data(key);
     update_now();
     if (is_element_insertion_can_be_skipped(data, key)) {
-      return false;
+      return InstanceCacheOpStatus::skipped;
     }
 
     InstanceDeepCopyVisitor detach_processor{context_->memory_resource, ExtraRefCnt::for_instance_cache};
@@ -311,8 +311,12 @@ public:
     if (!inserted_element) {
       // failed to insert the element due to some problems (e.g. memory, depth limit)
       if (unlikely(!detach_processor.is_ok())) {
-        fire_warning(detach_processor, instance_wrapper.get_class());
-        return false;
+        if (detach_processor.is_memory_limit_exceeded()) {
+          fire_warning(instance_wrapper.get_class());
+          return InstanceCacheOpStatus::memory_limit_exceeded;
+        }
+
+        return InstanceCacheOpStatus::failed;
       }
       // failed to acquire a lock, save the instance into the script memory container, we'll try again later
       class_instance<DelayedInstance> delayed_instance;
@@ -320,13 +324,13 @@ public:
       delayed_instance.get()->instance_wrapper = instance_wrapper.shallow_copy();
       storing_delayed_.set_value(key, std::move(delayed_instance));
       context_->stats.elements_storing_delayed_due_mutex.fetch_add(1, std::memory_order_relaxed);
-      return false;
+      return InstanceCacheOpStatus::delayed;
     }
     ic_debug("element '%s' was successfully inserted\n", key.c_str());
     context_->stats.elements_stored.fetch_add(1, std::memory_order_relaxed);
     // request_cache_ uses a script memory
     request_cache_.set_value(key, inserted_element);
-    return true;
+    return InstanceCacheOpStatus::success;
   }
 
   const InstanceCopyistBase *fetch(const string &key, bool even_if_expired) {
@@ -566,8 +570,8 @@ private:
           // failed to acquire an allocator lock; try later
           return;
         }
-        fire_warning(detach_processor, delayed_instance.instance_wrapper->get_class());
         if (detach_processor.is_memory_limit_exceeded()) {
+          fire_warning(delayed_instance.instance_wrapper->get_class());
           return;
         }
       } else {
@@ -634,11 +638,9 @@ private:
     return nullptr;
   }
 
-  void fire_warning(const InstanceDeepCopyVisitor &detach_processor, const char *class_name) noexcept {
-    if (detach_processor.is_memory_limit_exceeded()) {
-      php_warning("Memory limit exceeded on saving instance of class '%s' into cache", class_name);
-      context_->memory_swap_required = true;
-    }
+  void fire_warning(const char *class_name) noexcept {
+    php_warning("Memory limit exceeded on saving instance of class '%s' into cache", class_name);
+    context_->memory_swap_required = true;
   }
 
   SharedMemoryData *current_{nullptr};
@@ -676,7 +678,19 @@ private:
   size_t purge_shard_offset_{0};
 };
 
-bool instance_cache_store(const string &key, const InstanceCopyistBase &instance_wrapper, int64_t ttl) {
+std::string_view instance_cache_store_status_to_str(InstanceCacheOpStatus status) {
+  switch (status) {
+    case InstanceCacheOpStatus::success:                 return "success";
+    case InstanceCacheOpStatus::skipped:                 return "skipped";
+    case InstanceCacheOpStatus::memory_limit_exceeded:   return "memory_limit_exceeded";
+    case InstanceCacheOpStatus::delayed:                 return "delayed";
+    case InstanceCacheOpStatus::not_found:               return "not_found";
+    case InstanceCacheOpStatus::failed:                  return "failed";
+    default:                                             return "unknown";
+  }
+}
+
+InstanceCacheOpStatus instance_cache_store(const string &key, const InstanceCopyistBase &instance_wrapper, int64_t ttl) {
   return InstanceCache::get().store(key, instance_wrapper, ttl);
 }
 
