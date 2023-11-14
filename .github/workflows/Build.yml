@@ -159,3 +159,108 @@ jobs:
         echo 'hello world' > demo.php 
         $GITHUB_WORKSPACE/objs/bin/kphp2cpp --cxx ${{matrix.compiler}} demo.php
         kphp_out/server -o
+
+  build-macos-h3-brew:
+    runs-on: ${{matrix.os}}-12
+    strategy:
+      matrix:
+        include:
+          - os: macos
+            compiler: clang++
+            cpp: 17
+
+    name: "${{matrix.os}}/${{matrix.compiler}}/c++${{matrix.cpp}}"
+    
+    steps:
+    - uses: actions/checkout@v3
+
+    # because of https://github.com/orgs/Homebrew/discussions/4612
+    - name: Check Environment
+      run: |
+        export HOMEBREW_NO_INSTALL_FROM_API=0
+        brew untap --force homebrew/cask
+
+    - name: Setup Environment
+      run: |
+        brew tap shivammathur/php
+        brew update
+        brew install re2c cmake coreutils openssl libiconv re2 pcre yaml-cpp zstd googletest shivammathur/php/php@7.4 python@3.12
+        brew link --overwrite --force shivammathur/php/php@7.4
+        /usr/local/Frameworks/Python.framework/Versions/3.12/bin/python3.12 -m pip install --upgrade pip --break-system-packages && /usr/local/Frameworks/Python.framework/Versions/3.12/bin/pip3 install jsonschema install --break-system-packages jsonschema
+
+    - name: Install h3 from brew
+      run: |
+        brew tap troy4eg/kphp
+        brew install troy4eg/kphp/h3
+
+    - name: Run cmake
+      run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DDOWNLOAD_MISSING_LIBRARIES=On -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build
+
+    - name: Build all
+      run: make -C ${{runner.workspace}}/build -j$(nproc) all
+      
+    - name: Run unit tests
+      run: make -C ${{runner.workspace}}/build -j$(nproc) test
+
+    - name: Compile dummy PHP script
+      working-directory: ${{runner.workspace}}/build
+      run: |
+        echo 'hello world' > demo.php 
+        $GITHUB_WORKSPACE/objs/bin/kphp2cpp --cxx ${{matrix.compiler}} demo.php
+        kphp_out/server -o
+
+  build-macos-h3-make:
+    runs-on: ${{matrix.os}}-12
+    strategy:
+      matrix:
+        include:
+          - os: macos
+            compiler: clang++
+            cpp: 17
+
+    name: "${{matrix.os}}/${{matrix.compiler}}/c++${{matrix.cpp}}"
+    
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Get polyfills repo
+      uses: actions/checkout@v3
+      with:
+        repository: 'uber/h3'
+        path: 'h3'
+        ref: stable-3.x
+
+    # because of https://github.com/orgs/Homebrew/discussions/4612
+    - name: Check Environment
+      run: |
+        export HOMEBREW_NO_INSTALL_FROM_API=0
+        brew untap --force homebrew/cask
+
+    - name: Setup Environment
+      run: |
+        brew tap shivammathur/php
+        brew update
+        brew install re2c cmake coreutils openssl libiconv re2 pcre yaml-cpp zstd googletest shivammathur/php/php@7.4 python@3.12
+        brew link --overwrite --force shivammathur/php/php@7.4
+        /usr/local/Frameworks/Python.framework/Versions/3.12/bin/python3.12 -m pip install --upgrade pip --break-system-packages && /usr/local/Frameworks/Python.framework/Versions/3.12/bin/pip3 install jsonschema install --break-system-packages jsonschema
+
+    - name: Install h3 from source
+      run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -S $GITHUB_WORKSPACE/h3 -B ${{runner.workspace}}/h3/build && make install -C ${{runner.workspace}}/h3/build -j$(nproc) all
+
+
+    - name: Run cmake
+      run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DDOWNLOAD_MISSING_LIBRARIES=On -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build
+
+    - name: Build all
+      run: make -C ${{runner.workspace}}/build -j$(nproc) all
+      
+    - name: Run unit tests
+      run: make -C ${{runner.workspace}}/build -j$(nproc) test
+
+    - name: Compile dummy PHP script
+      working-directory: ${{runner.workspace}}/build
+      run: |
+        echo 'hello world' > demo.php 
+        $GITHUB_WORKSPACE/objs/bin/kphp2cpp --cxx ${{matrix.compiler}} demo.php
+        kphp_out/server -o
+
