@@ -66,6 +66,7 @@ public:
   bool can_be_php_autoloaded{false};
   bool is_immutable{false};
   std::atomic<SubtreeImmutableType> is_subtree_immutable{SubtreeImmutableType::not_visited};
+  std::atomic<bool> process_fields_ic_compatibility{false};
   bool really_used{false};
   bool is_tl_class{false};
   bool has_custom_constructor{false};

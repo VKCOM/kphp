@@ -44,6 +44,10 @@ void check_class_immutableness(ClassPtr klass) {
 std::list<ClassPtr> find_not_ic_compatibility_derivatives(ClassPtr klass);
 
 void check_fields_ic_compatibility(ClassPtr klass) {
+  if (klass->process_fields_ic_compatibility) {
+    return;
+  }
+  klass->process_fields_ic_compatibility = true;
   klass->members.for_each([klass](const ClassMemberInstanceField &field) {
     kphp_assert(field.var->marked_as_const);
     std::unordered_set<ClassPtr> sub_classes;
@@ -60,6 +64,7 @@ void check_fields_ic_compatibility(ClassPtr klass) {
       }
     }
   });
+  klass->process_fields_ic_compatibility = false;
 }
 
 void check_derivatives_ic_compatibility(ClassPtr klass) {
