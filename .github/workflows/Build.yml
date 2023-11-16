@@ -157,8 +157,13 @@ jobs:
       working-directory: ${{runner.workspace}}/build
       run: |
         echo 'hello world' > demo.php 
-        $GITHUB_WORKSPACE/objs/bin/kphp2cpp --cxx ${{matrix.compiler}} demo.php
-        kphp_out/server -o
+        $GITHUB_WORKSPACE/objs/bin/kphp2cpp --mode=cli --cxx ${{matrix.compiler}} demo.php
+        kphp_out/cli -o
+
+    - name: dyld_info
+      working-directory: ${{runner.workspace}}/build
+      run: |
+        dyld_info kphp_out/cli | grep h3
 
   build-macos-h3-brew:
     runs-on: ${{matrix.os}}-12
@@ -206,8 +211,13 @@ jobs:
       working-directory: ${{runner.workspace}}/build
       run: |
         echo 'hello world' > demo.php 
-        $GITHUB_WORKSPACE/objs/bin/kphp2cpp --cxx ${{matrix.compiler}} demo.php
-        kphp_out/server -o
+        $GITHUB_WORKSPACE/objs/bin/kphp2cpp --mode=cli --cxx ${{matrix.compiler}} demo.php
+        kphp_out/cli -o
+
+    - name: dyld_info
+      working-directory: ${{runner.workspace}}/build
+      run: |
+        dyld_info kphp_out/cli | grep h3
 
   build-macos-h3-make:
     runs-on: ${{matrix.os}}-12
@@ -247,7 +257,6 @@ jobs:
     - name: Install h3 from source
       run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -S $GITHUB_WORKSPACE/h3 -B ${{runner.workspace}}/h3/build && make install -C ${{runner.workspace}}/h3/build -j$(nproc) all
 
-
     - name: Run cmake
       run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DDOWNLOAD_MISSING_LIBRARIES=On -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build
 
@@ -261,6 +270,11 @@ jobs:
       working-directory: ${{runner.workspace}}/build
       run: |
         echo 'hello world' > demo.php 
-        $GITHUB_WORKSPACE/objs/bin/kphp2cpp --cxx ${{matrix.compiler}} demo.php
-        kphp_out/server -o
+        $GITHUB_WORKSPACE/objs/bin/kphp2cpp --mode=cli --cxx ${{matrix.compiler}} demo.php
+        kphp_out/cli -o
+
+    - name: dyld_info
+      working-directory: ${{runner.workspace}}/build
+      run: |
+        dyld_info kphp_out/cli | grep h3
 
