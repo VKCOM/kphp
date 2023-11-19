@@ -755,6 +755,7 @@ bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) 
       {CURLOPT_LOGIN_OPTIONS,         string_option_setter},
       {CURLOPT_PINNEDPUBLICKEY,       string_option_setter},
       {CURLOPT_PRE_PROXY,             string_option_setter},
+      {CURLOPT_PROXY_SERVICE_NAME,    string_option_setter},
       {CURLOPT_PROXY_CAINFO,          string_option_setter},
       {CURLOPT_PROXY_CAPATH,          string_option_setter},
       {CURLOPT_PROXY_CRLFILE,         string_option_setter},

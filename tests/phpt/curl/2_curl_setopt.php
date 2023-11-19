@@ -35,8 +35,8 @@ function test_long_options() {
 
   var_dump(curl_setopt($c, CURLOPT_POSTREDIR, CURL_REDIR_POST_301 | CURL_REDIR_POST_302));
   var_dump(curl_setopt($c, CURLOPT_POSTREDIR, CURL_REDIR_POST_ALL));
-  var_dump(curl_setopt($c, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_FTP);
-  var_dump(curl_setopt($c, CURLOPT_PROTOCOLS, CURLPROTO_ALL);
+  var_dump(curl_setopt($c, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_FTP));
+  var_dump(curl_setopt($c, CURLOPT_PROTOCOLS, CURLPROTO_ALL));
   var_dump(curl_setopt($c, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_DICT | CURLPROTO_SMTP));
   var_dump(curl_setopt($c, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_ALL));
 
