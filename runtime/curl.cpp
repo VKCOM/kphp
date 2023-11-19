@@ -171,9 +171,10 @@ public:
     set_option(CURLOPT_VERBOSE, 0L);
     set_option(CURLOPT_ERRORBUFFER, error_msg);
     set_option(CURLOPT_WRITEFUNCTION, curl_write);
-    //set_option(CURLOPT_HEADERFUNCTION, curl_write_header); 
+    set_option(CURLOPT_HEADERFUNCTION, curl_write_header); 
 
     set_option(CURLOPT_WRITEDATA, static_cast<void *>(this));
+    set_option(CURLOPT_HEADERDATA, static_cast<void *>(this));
     set_option(CURLOPT_DNS_USE_GLOBAL_CACHE, 1L);
     set_option(CURLOPT_DNS_CACHE_TIMEOUT, 120L);
     set_option(CURLOPT_MAXREDIRS, 20L);
@@ -315,7 +316,7 @@ size_t curl_write_header(char *data, size_t size, size_t nmemb, void *userdata) 
       if (easy_context->write.method == KPHP_CURL_RETURN && length > 0) {
         return easy_context->received_data.push_string(data, length) ? length : 0;
       } else {
-        //print(data, length);
+        print(data, length);
       }
       break;
     case KPHP_CURL_USER:
@@ -834,8 +835,7 @@ bool curl_setopt_fn_header_write(curl_easy easy_id, int64_t option, std::functio
     switch (option) {
       case CURLSETOPT_HEADERFUNCTION:
         easy_context->write_header.callable = callable;
-        easy_context->write_header.method = KPHP_CURL_IGNORE;
-        easy_context->set_option_safe(CURLOPT_HEADERFUNCTION, curl_write_header);
+        easy_context->write_header.method = KPHP_CURL_USER;
         break;
       case CURLSETOPT_WRITEFUNCTION:
         easy_context->write.callable = callable;
