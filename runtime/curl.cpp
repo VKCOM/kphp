@@ -46,6 +46,7 @@ constexpr int64_t KPHP_CURL_STDOUT = 0;
 constexpr int64_t KPHP_CURL_RETURN = 1;
 constexpr int64_t KPHP_CURL_USER = 2;
 constexpr int64_t KPHP_CURL_IGNORE = 3;
+constexpr int64_t KPHP_CURL_DIRECT = 4;
 
 
 size_t curl_write_header(char *data, size_t size, size_t nmemb, void *userdata);
@@ -172,6 +173,7 @@ public:
     set_option(CURLOPT_VERBOSE, 0L);
     set_option(CURLOPT_ERRORBUFFER, error_msg);
     set_option(CURLOPT_WRITEFUNCTION, curl_write);
+    set_option(CURLOPT_FILE, static_cast<void *>(this));
     set_option(CURLOPT_HEADERFUNCTION, curl_write_header); 
 
     set_option(CURLOPT_WRITEDATA, static_cast<void *>(this));
@@ -218,10 +220,21 @@ public:
   struct {
     std::function<size_t(curl_easy ch, string data)> callable{NULL};
     int64_t method{KPHP_CURL_STDOUT};
-  } write, write_header;
+  } write_handler;
+
+  struct {
+    std::function<size_t(curl_easy ch, string data)> callable{NULL};
+    int64_t method{KPHP_CURL_STDOUT};
+    Stream *fp{nullptr};
+  } write_header_handler
+
+  struct {
+    std::function<size_t(curl_easy ch, curl_easy fp, size_t $length)> callable{NULL};
+    int64_t method{KPHP_CURL_DIRECT};
+    Stream *fp{nullptr};
+  } read_handler
 
   std::function<size_t(curl_easy ch, double dltotal, double dlnow, double ultotal, double ulnow)> progress_callable{NULL};
-  //std::function<int(curl_easy ch, string data)> read_callable{NULL};
 
   array<curl_slist *> slists_to_free;
   array<curl_httppost *> httpposts_to_free;
@@ -284,18 +297,18 @@ size_t curl_write(char *data, size_t size, size_t nmemb, void *userdata) {
   auto *easy_context = static_cast<EasyContext *>(userdata);
   size_t length = size * nmemb;
 
-  switch(easy_context->write.method) {
+  switch(easy_context->write_handler.method) {
     case KPHP_CURL_STDOUT:
       print(data, length);
       break;
     case KPHP_CURL_USER:
       try {
-        return easy_context->write.callable(easy_context->self_id, string(data));
+        return easy_context->write_handler.callable(easy_context->self_id, string(data));
       } catch (std::exception &ex) {
         php_warning("Cannot call the CURLOPT_WRITEFUNCTION");
         fprintf(stderr, "Error: %s\n", ex.what());
-        easy_context->write.callable = NULL;
-        easy_context->write.method = KPHP_CURL_STDOUT;
+        easy_context->write_handler.callable = NULL;
+        easy_context->write_handler.method = KPHP_CURL_STDOUT;
         length = 0;
       }
       break;
@@ -311,9 +324,9 @@ size_t curl_write_header(char *data, size_t size, size_t nmemb, void *userdata) 
   auto *easy_context = static_cast<EasyContext *>(userdata);
   size_t length = size * nmemb;
 
-  switch (easy_context->write_header.method) {
+  switch (easy_context->write_header_handler.method) {
     case KPHP_CURL_STDOUT:
-      if (easy_context->write.method == KPHP_CURL_RETURN && length > 0) {
+      if (easy_context->write_handler.method == KPHP_CURL_RETURN && length > 0) {
         return easy_context->received_data.push_string(data, length) ? length : 0;
       } else {
         print(data, length);
@@ -321,12 +334,12 @@ size_t curl_write_header(char *data, size_t size, size_t nmemb, void *userdata) 
       break;
     case KPHP_CURL_USER:
       try {
-        return easy_context->write_header.callable(easy_context->self_id, string(data));
+        return easy_context->write_header_handler.callable(easy_context->self_id, string(data));
       } catch (std::exception &ex) {
         php_warning("Cannot call the CURLOPT_HEADERFUNCTION");
         fprintf(stderr, "Error: %s\n", ex.what());
-        easy_context->write_header.callable = NULL;
-        easy_context->write_header.method = KPHP_CURL_STDOUT;
+        easy_context->write_header_handler.callable = NULL;
+        easy_context->write_header_handler.method = KPHP_CURL_STDOUT;
         length = 0;
       }
       break;
@@ -354,6 +367,29 @@ size_t curl_progress(void *userdata, double dltotal, double dlnow, double ultota
   }
   return rval;
 }
+
+// size_t curl_read(char *data, size_t size, size_t nmemb, void *userdata) {
+//   auto *easy_context = static_cast<EasyContext *>(userdata);
+//   int length = 0;
+
+//   switch (easy_context->read_handler.method) {
+//     case KPHP_CURL_DIRECT:
+//       if (easy_context->read_handler.fp) {
+//         length = fread(string(data), size, nmemb, easy_context->read_handler.fp);
+//       }
+//       break;
+//     case KPHP_CURL_USER:
+//       try {
+//         easy_context->read_handler.callable(easy_context->self_id, string(data), /*stream ?*/);
+//         length = std::min((int) (size * nmemb), Z_STRLEN(retval));
+//       } catch (std::exception &ex) {
+//         php_warning("Cannot call the CURLOPT_READFUNCTION");
+//         fprintf(stderr, "Error: %s\n", ex.what());
+//         easy_context->read_handler.callable = NULL;
+//       }
+//       break;
+//   }
+// }
 
 // this is a callback called from curl_easy_perform
 int64_t curl_info_header_out(CURL *, curl_infotype type, char *buf, size_t buf_len, void *userdata) {
@@ -491,6 +527,10 @@ void redirpost_option_setter(EasyContext *easy_context, CURLoption option, const
     easy_context->set_option_safe(option, val);
   }
 }
+
+void fopen_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
+  easy_context->set_option_safe(option, value);
+} 
 
 void ftp_method_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
   constexpr static auto options = vk::to_array({CURLFTPMETHOD_MULTICWD, CURLFTPMETHOD_NOCWD, CURLFTPMETHOD_SINGLECWD});
@@ -775,7 +815,9 @@ bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) 
       {CURLOPT_PROXY_CAPATH,          string_option_setter},
       {CURLOPT_PROXY_CRLFILE,         string_option_setter},
       {CURLOPT_PROXY_KEYPASSWD,       string_option_setter},
-      {CURLOPT_PROXY_PINNEDPUBLICKEY, string_option_setter}
+      {CURLOPT_PROXY_PINNEDPUBLICKEY, string_option_setter},
+
+      {CURLOPT_FILE,                  fopen_option_setter}
     });
 
   constexpr size_t CURLOPT_OPTION_OFFSET = 200000;
@@ -848,12 +890,12 @@ bool curl_setopt_fn_header_write(curl_easy easy_id, int64_t option, std::functio
   if (auto *easy_context = get_context<EasyContext>(easy_id)) {
     switch (option) {
       case CURLSETOPT_HEADERFUNCTION:
-        easy_context->write_header.callable = callable;
-        easy_context->write_header.method = KPHP_CURL_USER;
+        easy_context->write_header_handler.callable = callable;
+        easy_context->write_header_handler.method = KPHP_CURL_USER;
         break;
       case CURLSETOPT_WRITEFUNCTION:
-        easy_context->write.callable = callable;
-        easy_context->write.method = KPHP_CURL_USER;
+        easy_context->write_handler.callable = callable;
+        easy_context->write_handler.method = KPHP_CURL_USER;
         break;
       default:
         php_warning("Can't set curl option %" PRIi64, option);
