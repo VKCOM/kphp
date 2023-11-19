@@ -50,6 +50,7 @@ constexpr int64_t KPHP_CURL_IGNORE = 3;
 
 size_t curl_write_header(char *data, size_t size, size_t nmemb, void *userdata);
 size_t curl_write(char *data, size_t size, size_t nmemb, void *userdata);
+size_t curl_progress(void *userdata, double dltotal, double dlnow, double ultotal, double ulnow);
 
 class BaseContext : vk::not_copyable {
 public:
@@ -215,13 +216,12 @@ public:
   string_list received_data;
 
   struct {
-    std::function<int(curl_easy ch, string data)> callable{NULL};
+    std::function<size_t(curl_easy ch, string data)> callable{NULL};
     int64_t method{KPHP_CURL_STDOUT};
   } write, write_header;
 
+  std::function<size_t(curl_easy ch, double dltotal, double dlnow, double ultotal, double ulnow)> progress_callable{NULL};
   //std::function<int(curl_easy ch, string data)> read_callable{NULL};
-  //std::function<int(curl_easy ch, string data)> progress_callable{NULL};
-
 
   array<curl_slist *> slists_to_free;
   array<curl_httppost *> httpposts_to_free;
@@ -292,7 +292,7 @@ size_t curl_write(char *data, size_t size, size_t nmemb, void *userdata) {
       try {
         return easy_context->write.callable(easy_context->self_id, string(data));
       } catch (std::exception &ex) {
-        php_warning("Could not call the CURLOPT_WRITEFUNCTION");
+        php_warning("Cannot call the CURLOPT_WRITEFUNCTION");
         fprintf(stderr, "Error: %s\n", ex.what());
         easy_context->write.callable = NULL;
         easy_context->write.method = KPHP_CURL_STDOUT;
@@ -323,7 +323,7 @@ size_t curl_write_header(char *data, size_t size, size_t nmemb, void *userdata) 
       try {
         return easy_context->write_header.callable(easy_context->self_id, string(data));
       } catch (std::exception &ex) {
-        php_warning("Could not call the CURLOPT_HEADERFUNCTION");
+        php_warning("Cannot call the CURLOPT_HEADERFUNCTION");
         fprintf(stderr, "Error: %s\n", ex.what());
         easy_context->write_header.callable = NULL;
         easy_context->write_header.method = KPHP_CURL_STDOUT;
@@ -338,6 +338,21 @@ size_t curl_write_header(char *data, size_t size, size_t nmemb, void *userdata) 
   }
   string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_ON;
   return std::exchange(string_buffer::string_buffer_error_flag, STRING_BUFFER_ERROR_FLAG_OFF) == STRING_BUFFER_ERROR_FLAG_FAILED ? 0 : length;
+}
+
+size_t curl_progress(void *userdata, double dltotal, double dlnow, double ultotal, double ulnow) {
+  auto *easy_context = static_cast<EasyContext *>(userdata);
+  size_t rval = 0;
+  try {
+    rval = easy_context->progress_callable(easy_context->self_id, dltotal, dlnow, ultotal, ulnow);
+  } catch (std::exception &ex) {
+    php_warning("Cannot call the CURLOPT_PROGRESSFUNCTION");
+    fprintf(stderr, "Error: %s\n", ex.what());
+    easy_context->progress_callable = NULL;
+    easy_context->set_option(CURLOPT_NOPROGRESS, true);
+    rval = 1;
+  }
+  return rval;
 }
 
 // this is a callback called from curl_easy_perform
@@ -829,10 +844,8 @@ bool f$curl_setopt(curl_easy easy_id, int64_t option, const mixed &value) noexce
 constexpr int64_t CURLSETOPT_HEADERFUNCTION = 210000;
 constexpr int64_t CURLSETOPT_WRITEFUNCTION = 210001;
 
-bool curl_setopt_fn_header_write(curl_easy easy_id, int64_t option, std::function<int(curl_easy ch, string data)> callable) noexcept {
+bool curl_setopt_fn_header_write(curl_easy easy_id, int64_t option, std::function<size_t(curl_easy ch, string data)> callable) noexcept {
   if (auto *easy_context = get_context<EasyContext>(easy_id)) {
-    easy_context->error_num = CURLE_OK;
-    
     switch (option) {
       case CURLSETOPT_HEADERFUNCTION:
         easy_context->write_header.callable = callable;
@@ -846,10 +859,20 @@ bool curl_setopt_fn_header_write(curl_easy easy_id, int64_t option, std::functio
         php_warning("Can't set curl option %" PRIi64, option);
         return false;
     }
-    if (easy_context->error_num == CURLE_OK)
-      return true;
+    return true;
+  }
+  return false;
+}
 
-    php_warning("Can't set curl option %" PRIi64, option);
+bool curl_setopt_fn_progress(curl_easy easy_id, int64_t option, std::function<size_t(curl_easy ch, double dltotal, double dlnow, double ultotal, double ulnow)> callable) noexcept {
+  if (auto *easy_context = get_context<EasyContext>(easy_id)) {
+    easy_context->progress_callable = callable;
+    easy_context->error_num = CURLE_OK;
+    easy_context->set_option_safe(CURLOPT_PROGRESSFUNCTION, curl_progress);
+    easy_context->set_option_safe(CURLOPT_PROGRESSDATA, static_cast<void *>(easy_context));
+    if (easy_context->error_num != CURLE_OK)
+      php_warning("Can't set curl option %" PRIi64, option);
+    return easy_context->error_num == CURLE_OK;
   }
   return false;
 }

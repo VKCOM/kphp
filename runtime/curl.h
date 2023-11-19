@@ -19,12 +19,20 @@ void f$curl_reset(curl_easy easy_id) noexcept;
 
 bool f$curl_setopt(curl_easy easy_id, int64_t option, const mixed &value) noexcept;
 
-bool curl_setopt_fn_header_write(curl_easy easy_id, int64_t option, std::function<int(curl_easy ch, string data)> callable) noexcept;
+bool curl_setopt_fn_progress(curl_easy easy_id, int64_t option, std::function<size_t(curl_easy ch, double dltotal, double dlnow, double ultotal, double ulnow)> callable) noexcept;
+
+bool curl_setopt_fn_header_write(curl_easy easy_id, int64_t option, std::function<size_t(curl_easy ch, string data)> callable) noexcept;
 
 template <typename F>
 bool f$_curl_setopt_fn_header_write(curl_easy easy_id, int64_t option, F &&callable) {
   dl::CriticalSectionGuard heap_guard;
   return curl_setopt_fn_header_write(easy_id, option, std::forward<F>(callable));
+}
+
+template <typename F>
+bool f$_curl_setopt_fn_progress(curl_easy easy_id, int64_t option, F &&callable) {
+  dl::CriticalSectionGuard heap_guard;
+  return curl_setopt_fn_progress(easy_id, option, std::forward<F>(callable));
 }
 
 bool f$curl_setopt_array(curl_easy easy_id, const array<mixed> &options) noexcept;
