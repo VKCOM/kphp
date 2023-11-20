@@ -23,12 +23,10 @@ inline uint32_t get_default_threads_count() noexcept {
 template<class T>
 struct TLS {
 private:
-  static constexpr std::size_t PAGE_SIZE = 4096;
   static constexpr std::size_t CACHE_LINE_SIZE = 64;
-  struct TLSRaw {
+  struct alignas(CACHE_LINE_SIZE) TLSRaw {
     T data{};
-    volatile int locker = 0;
-    char dummy[CACHE_LINE_SIZE];
+//    char dummy[CACHE_LINE_SIZE];
   };
 
   TLSRaw arr[MAX_THREADS_COUNT + 1];
@@ -66,19 +64,6 @@ public:
 
   int size() {
     return MAX_THREADS_COUNT + 1;
-  }
-
-  T *lock_get() {
-    TLSRaw *raw = get_raw();
-    bool ok = try_lock(&raw->locker);
-    assert(ok);
-    return &raw->data;
-  }
-
-  void unlock_get(T *ptr) {
-    TLSRaw *raw = get_raw();
-    assert(&raw->data == ptr);
-    unlock(&raw->locker);
   }
 };
 
