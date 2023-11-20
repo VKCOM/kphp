@@ -160,11 +160,6 @@ jobs:
         $GITHUB_WORKSPACE/objs/bin/kphp2cpp --mode=cli --cxx ${{matrix.compiler}} demo.php
         kphp_out/cli -o
 
-    - name: dyld_info
-      working-directory: ${{runner.workspace}}/build
-      run: |
-        dyld_info kphp_out/cli | grep h3
-
   build-macos-h3-brew:
     runs-on: ${{matrix.os}}-12
     strategy:
@@ -213,11 +208,6 @@ jobs:
         echo 'hello world' > demo.php 
         $GITHUB_WORKSPACE/objs/bin/kphp2cpp --mode=cli --cxx ${{matrix.compiler}} demo.php
         kphp_out/cli -o
-
-    - name: dyld_info
-      working-directory: ${{runner.workspace}}/build
-      run: |
-        dyld_info kphp_out/cli | grep h3
 
   build-macos-h3-make:
     runs-on: ${{matrix.os}}-12
@@ -272,9 +262,3 @@ jobs:
         echo 'hello world' > demo.php 
         $GITHUB_WORKSPACE/objs/bin/kphp2cpp --mode=cli --cxx ${{matrix.compiler}} demo.php
         kphp_out/cli -o
-
-    - name: dyld_info
-      working-directory: ${{runner.workspace}}/build
-      run: |
-        dyld_info kphp_out/cli | grep h3
-
