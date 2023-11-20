@@ -53,3 +53,4 @@ function _tmp_trim($str ::: string, $what ::: string = " \n\r\t\v\0"): _tmp_stri
 
 function _curl_setopt_fn_header_write(int $easy_id, int $option, callable(int, string):int $callable): bool;
 function _curl_setopt_fn_progress(int $easy_id, int $option, callable(int, float, float, float, float):int $callable): bool;
+function _curl_setopt_fn_read(int $easy_id, int $option, callable(int, mixed, int):string $callable): bool;

@@ -10,6 +10,7 @@
  
 #include "runtime/kphp_core.h"
 #include "runtime/critical_section.h"
+#include "runtime/streams.h"
 
 using curl_easy = int64_t;
 
@@ -18,6 +19,8 @@ curl_easy f$curl_init(const string &url = string{}) noexcept;
 void f$curl_reset(curl_easy easy_id) noexcept;
 
 bool f$curl_setopt(curl_easy easy_id, int64_t option, const mixed &value) noexcept;
+
+bool curl_setopt_fn_read(curl_easy easy_id, int64_t option, std::function<string(curl_easy ch, Stream fp, size_t length)> callable) noexcept;
 
 bool curl_setopt_fn_progress(curl_easy easy_id, int64_t option, std::function<size_t(curl_easy ch, double dltotal, double dlnow, double ultotal, double ulnow)> callable) noexcept;
 
@@ -33,6 +36,12 @@ template <typename F>
 bool f$_curl_setopt_fn_progress(curl_easy easy_id, int64_t option, F &&callable) {
   dl::CriticalSectionGuard heap_guard;
   return curl_setopt_fn_progress(easy_id, option, std::forward<F>(callable));
+}
+
+template <typename F>
+bool f$_curl_setopt_fn_read(curl_easy easy_id, int64_t option, F &&callable) {
+  dl::CriticalSectionGuard heap_guard;
+  return curl_setopt_fn_read(easy_id, option, std::forward<F>(callable));
 }
 
 bool f$curl_setopt_array(curl_easy easy_id, const array<mixed> &options) noexcept;

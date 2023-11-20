@@ -48,10 +48,10 @@ constexpr int64_t KPHP_CURL_USER = 2;
 constexpr int64_t KPHP_CURL_IGNORE = 3;
 constexpr int64_t KPHP_CURL_DIRECT = 4;
 
-
 size_t curl_write_header(char *data, size_t size, size_t nmemb, void *userdata);
 size_t curl_write(char *data, size_t size, size_t nmemb, void *userdata);
 size_t curl_progress(void *userdata, double dltotal, double dlnow, double ultotal, double ulnow);
+size_t curl_read(char *data, size_t size, size_t nmemb, void *userdata);
 
 class BaseContext : vk::not_copyable {
 public:
@@ -173,8 +173,11 @@ public:
     set_option(CURLOPT_VERBOSE, 0L);
     set_option(CURLOPT_ERRORBUFFER, error_msg);
     set_option(CURLOPT_WRITEFUNCTION, curl_write);
-    set_option(CURLOPT_FILE, static_cast<void *>(this));
-    set_option(CURLOPT_HEADERFUNCTION, curl_write_header); 
+    // TO-DO
+    //set_option(CURLOPT_FILE, static_cast<void *>(this));
+    set_option(CURLOPT_HEADERFUNCTION, curl_write_header);
+    set_option(CURLOPT_READFUNCTION, curl_read);
+    set_option(CURLOPT_INFILE, static_cast<void *>(this));
 
     set_option(CURLOPT_WRITEDATA, static_cast<void *>(this));
     set_option(CURLOPT_HEADERDATA, static_cast<void *>(this));
@@ -224,15 +227,15 @@ public:
 
   struct {
     std::function<size_t(curl_easy ch, string data)> callable{NULL};
-    int64_t method{KPHP_CURL_STDOUT};
-    Stream *fp{nullptr};
-  } write_header_handler
+    int64_t method{KPHP_CURL_IGNORE};
+    Stream fp{NULL};
+  } write_header_handler;
 
   struct {
-    std::function<size_t(curl_easy ch, curl_easy fp, size_t $length)> callable{NULL};
+    std::function<string(curl_easy ch, Stream fp, size_t length)> callable{NULL};
     int64_t method{KPHP_CURL_DIRECT};
-    Stream *fp{nullptr};
-  } read_handler
+    Stream fp{NULL};
+  } read_handler;
 
   std::function<size_t(curl_easy ch, double dltotal, double dlnow, double ultotal, double ulnow)> progress_callable{NULL};
 
@@ -368,28 +371,37 @@ size_t curl_progress(void *userdata, double dltotal, double dlnow, double ultota
   return rval;
 }
 
-// size_t curl_read(char *data, size_t size, size_t nmemb, void *userdata) {
-//   auto *easy_context = static_cast<EasyContext *>(userdata);
-//   int length = 0;
+size_t curl_read(char *data, size_t size, size_t nmemb, void *userdata) {
+  auto *easy_context = static_cast<EasyContext *>(userdata);
+  int length = 0;
 
-//   switch (easy_context->read_handler.method) {
-//     case KPHP_CURL_DIRECT:
-//       if (easy_context->read_handler.fp) {
-//         length = fread(string(data), size, nmemb, easy_context->read_handler.fp);
-//       }
-//       break;
-//     case KPHP_CURL_USER:
-//       try {
-//         easy_context->read_handler.callable(easy_context->self_id, string(data), /*stream ?*/);
-//         length = std::min((int) (size * nmemb), Z_STRLEN(retval));
-//       } catch (std::exception &ex) {
-//         php_warning("Cannot call the CURLOPT_READFUNCTION");
-//         fprintf(stderr, "Error: %s\n", ex.what());
-//         easy_context->read_handler.callable = NULL;
-//       }
-//       break;
-//   }
-// }
+  switch (easy_context->read_handler.method) {
+    case KPHP_CURL_DIRECT:
+      if (!easy_context->read_handler.fp.is_null()) {
+        //length = strlen(fread(data, size, nmemb, std::FILE fp));
+        Optional<string> temp = f$fread(easy_context->read_handler.fp, (int64_t) size * nmemb);
+        if (temp.is_null()) {
+          break;
+        } 
+        data = strdup(string(temp.val()).buffer());
+        length = (int) strlen(data);
+        break;
+      }
+      break;
+    case KPHP_CURL_USER:
+      try {
+        int rlength = (int) string(easy_context->read_handler.callable(easy_context->self_id, easy_context->read_handler.fp, size * nmemb)).size();
+        length = std::min((int) (size * nmemb), rlength);
+      } catch (std::exception &ex) {
+        php_warning("Cannot call the CURLOPT_READFUNCTION");
+        fprintf(stderr, "Error: %s\n", ex.what());
+        easy_context->read_handler.callable = NULL;
+        easy_context->read_handler.fp = NULL;
+      }
+      break;
+  }
+  return length;
+}
 
 // this is a callback called from curl_easy_perform
 int64_t curl_info_header_out(CURL *, curl_infotype type, char *buf, size_t buf_len, void *userdata) {
@@ -528,8 +540,22 @@ void redirpost_option_setter(EasyContext *easy_context, CURLoption option, const
   }
 }
 
-void fopen_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
-  easy_context->set_option_safe(option, value);
+void stream_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
+  // TO-DO: storing pointer in stream in curl_handler structure
+  switch (option) {
+    case CURLOPT_INFILE:
+      // set Stream value to curl_read_handler
+      easy_context->read_handler.fp = (Stream) value;
+      break;
+    case CURLOPT_FILE:
+      // TO-DO
+      // pass
+      break;
+    default:
+      // do nothing
+      break;
+  }
+  easy_context->set_option_safe(option, static_cast<void *>(easy_context));
 } 
 
 void ftp_method_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
@@ -607,7 +633,7 @@ bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) 
   }
 
   if (option == CURLOPT_RETURNTRANSFER) {
-    easy_context->write.method = (value.to_int() == 1ll) ? KPHP_CURL_RETURN : KPHP_CURL_STDOUT;
+    easy_context->write_handler.method = (value.to_int() == 1ll) ? KPHP_CURL_RETURN : KPHP_CURL_STDOUT;
     return true;
   }
 
@@ -817,7 +843,7 @@ bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) 
       {CURLOPT_PROXY_KEYPASSWD,       string_option_setter},
       {CURLOPT_PROXY_PINNEDPUBLICKEY, string_option_setter},
 
-      {CURLOPT_FILE,                  fopen_option_setter}
+      {CURLOPT_INFILE,  stream_option_setter}
     });
 
   constexpr size_t CURLOPT_OPTION_OFFSET = 200000;
@@ -852,7 +878,6 @@ curl_easy f$curl_init(const string &url) noexcept {
     return 0;
   }
 
-  easy_context->write_header.method = KPHP_CURL_IGNORE;
   easy_context->set_default_options();
   if (unlikely(!url.empty() && easy_context->set_option_safe(CURLOPT_URL, url.c_str()) != CURLE_OK)) {
     dl::critical_section_call([&easy_contexts] { easy_contexts.pop()->release(); });
@@ -903,6 +928,7 @@ bool curl_setopt_fn_header_write(curl_easy easy_id, int64_t option, std::functio
     }
     return true;
   }
+  php_warning("Can't set curl option %" PRIi64, option);
   return false;
 }
 
@@ -916,6 +942,16 @@ bool curl_setopt_fn_progress(curl_easy easy_id, int64_t option, std::function<si
       php_warning("Can't set curl option %" PRIi64, option);
     return easy_context->error_num == CURLE_OK;
   }
+  return false;
+}
+
+bool curl_setopt_fn_read(curl_easy easy_id, int64_t option, std::function<string(curl_easy ch, Stream fp, size_t length)> callable) noexcept {
+  if (auto *easy_context = get_context<EasyContext>(easy_id)) {
+    easy_context->read_handler.callable = callable;
+    easy_context->read_handler.method = KPHP_CURL_USER;
+    return true;
+  }
+  php_warning("Can't set curl option %" PRIi64, option);
   return false;
 }
 
@@ -962,10 +998,10 @@ mixed f$curl_exec(curl_easy easy_id) noexcept {
   if (kphp_tracing::is_turned_on()) {
     kphp_tracing::on_curl_exec_finish(easy_context->uniq_id, easy_context->get_info(CURLINFO_SIZE_DOWNLOAD).to_int());
   }
-  if (easy_context->write.method == KPHP_CURL_RETURN) {
+  if (easy_context->write_handler.method == KPHP_CURL_RETURN) {
     return easy_context->received_data.concat_and_get_string();
   }
-  if (easy_context->write_header.method == KPHP_CURL_RETURN) {
+  if (easy_context->write_header_handler.method == KPHP_CURL_RETURN) {
     return string();
   }
 
@@ -1166,7 +1202,7 @@ Optional<int64_t> f$curl_multi_add_handle(curl_multi multi_id, curl_easy easy_id
 
 Optional<string> f$curl_multi_getcontent(curl_easy easy_id) noexcept {
   if (auto *easy_context = get_context<EasyContext>(easy_id)) {
-    return (easy_context->write.method == KPHP_CURL_RETURN) ? easy_context->received_data.concat_and_get_string() : Optional<string>{};
+    return (easy_context->write_handler.method == KPHP_CURL_RETURN) ? easy_context->received_data.concat_and_get_string() : Optional<string>{};
   }
   return false;
 }
