@@ -90,8 +90,7 @@ public:
 
   template<size_t... Is, typename... T>
   void process(const shape<std::index_sequence<Is...>, T...> &value) {
-    int64_t memory[] = {process(value.template get<Is>())...};
-    estimated_elements_memory_ += std::accumulate(std::begin(memory), std::end(memory), 0);
+    ([this, value] { process(value.template get<Is>()); }(), ...);
   }
 
   template<typename T>
