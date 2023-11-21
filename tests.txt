@@ -1,0 +1,32 @@
+[   9/1969] [31mfailed [0m /Users/andrey/dev/work/kphp-fix-h3/tests/phpt/datetime/09_create_from_format.php [31m(got php and kphp diff)[0m
+[  30/1969] [31mfailed [0m /Users/andrey/dev/work/kphp-fix-h3/tests/phpt/uber_h3/3_grid_traversal.php [31m(got php error)[0m
+[  33/1969] [31mfailed [0m /Users/andrey/dev/work/kphp-fix-h3/tests/phpt/dl/1040_exec.php [31m(got php and kphp diff)[0m
+[  40/1969] [31mfailed [0m /Users/andrey/dev/work/kphp-fix-h3/tests/phpt/dl/484_strftime.php [31m(got php and kphp diff)[0m
+[  53/1969] [31mfailed [0m /Users/andrey/dev/work/kphp-fix-h3/tests/phpt/datetime/02_create.php [31m(got php and kphp diff)[0m
+[  61/1969] [31mfailed [0m /Users/andrey/dev/work/kphp-fix-h3/tests/phpt/uber_h3/2_index_inspection.php [31m(got php error)[0m
+[  63/1969] [31mfailed [0m /Users/andrey/dev/work/kphp-fix-h3/tests/phpt/uber_h3/4_hierarchical_grid.php [31m(got php error)[0m
+[  72/1969] [31mfailed [0m /Users/andrey/dev/work/kphp-fix-h3/tests/phpt/datetime/01_format.php [31m(got kphp runtime error)[0m
+[  95/1969] [31mfailed [0m /Users/andrey/dev/work/kphp-fix-h3/tests/phpt/datetime/06_set_date.php [31m(got kphp runtime error)[0m
+[  99/1969] [31mfailed [0m /Users/andrey/dev/work/kphp-fix-h3/tests/phpt/uber_h3/1_indexing.php [31m(got php error)[0m
+[ 104/1969] [31mfailed [0m /Users/andrey/dev/work/kphp-fix-h3/tests/phpt/uber_h3/5_region.php [31m(got php error)[0m
+[ 160/1969] [31mfailed [0m /Users/andrey/dev/work/kphp-fix-h3/tests/phpt/datetime/03_set_timestamp.php [31m(got kphp runtime error)[0m
+[ 163/1969] [31mfailed [0m /Users/andrey/dev/work/kphp-fix-h3/tests/phpt/datetime/04_modify.php [31m(got kphp runtime error)[0m
+[ 185/1969] [31mfailed [0m /Users/andrey/dev/work/kphp-fix-h3/tests/phpt/datetime/10_get_offset.php [31m(got php and kphp diff)[0m
+[ 188/1969] [31mfailed [0m /Users/andrey/dev/work/kphp-fix-h3/tests/phpt/datetime/16_add_sub_date_interval.php [31m(got kphp runtime error)[0m
+[ 227/1969] [31mfailed [0m /Users/andrey/dev/work/kphp-fix-h3/tests/phpt/datetime/07_set_time.php [31m(got kphp runtime error)[0m
+[ 271/1969] [31mfailed [0m /Users/andrey/dev/work/kphp-fix-h3/tests/phpt/datetime/18_diff_date_interval.php [31m(got kphp runtime error)[0m
+[ 385/1969] [31mfailed [0m /Users/andrey/dev/work/kphp-fix-h3/tests/phpt/zstd/1_compress.php [31m(got php error)[0m
+[ 394/1969] [31mfailed [0m /Users/andrey/dev/work/kphp-fix-h3/tests/phpt/string_functions/007_strspn.php [31m(got php and kphp diff)[0m
+[ 479/1969] [31mfailed [0m /Users/andrey/dev/work/kphp-fix-h3/tests/phpt/datetime/17_sub_relative_interval_warning.php [31m(can't find 1th runtime warning pattern)[0m
+[ 529/1969] [31mfailed [0m /Users/andrey/dev/work/kphp-fix-h3/tests/phpt/datetime/05_modify_wrong_modifier.php [31m(can't find 1th runtime warning pattern)[0m
+[ 723/1969] [31mfailed [0m /Users/andrey/dev/work/kphp-fix-h3/tests/phpt/shutdown_functions/no_leak_in_lambda_error.php [31m(got kphp runtime error)[0m
+[ 731/1969] [31mfailed [0m /Users/andrey/dev/work/kphp-fix-h3/tests/phpt/zstd/3_compress_uncompress.php [31m(got php error)[0m
+[ 806/1969] [31mfailed [0m /Users/andrey/dev/work/kphp-fix-h3/tests/phpt/constants/005_object_ref.php [31m(got php error)[0m
+[ 863/1969] [31mfailed [0m /Users/andrey/dev/work/kphp-fix-h3/tests/phpt/constants/010_arrow_access.php [31m(got php error)[0m
+[ 893/1969] [31mfailed [0m /Users/andrey/dev/work/kphp-fix-h3/tests/phpt/zstd/2_uncompress.php [31m(got php error)[0m
+[ 944/1969] [31mfailed [0m /Users/andrey/dev/work/kphp-fix-h3/tests/phpt/dl/1018_regex_many_groups.php [31m(got kphp runtime error)[0m
+[ 960/1969] [31mfailed [0m /Users/andrey/dev/work/kphp-fix-h3/tests/phpt/constants/004_object_in_array.php [31m(got php error)[0m
+[ 993/1969] [31mfailed [0m /Users/andrey/dev/work/kphp-fix-h3/tests/phpt/constants/007_nested_object.php [31m(got php error)[0m
+[1382/1969] [31mfailed [0m /Users/andrey/dev/work/kphp-fix-h3/tests/phpt/constants/006_object_as_class_const.php [31m(got php error)[0m
+[1719/1969] [31mfailed [0m /Users/andrey/dev/work/kphp-fix-h3/tests/phpt/constants/003_object_as_const.php [31m(got php error)[0m
+  [31mfailed:  [0m31
