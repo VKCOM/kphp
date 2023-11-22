@@ -81,8 +81,7 @@ void PhpWorker::terminate(int flag, script_error_t terminate_reason_, const char
 
 std::optional<double> PhpWorker::on_wakeup() noexcept {
   tvkprintf(php_runner, 2, "PHP-worker wakeup [req_id = %016llx]\n", req_id);
-  get_utime_monotonic();
-  if (vk::any_of_equal(state, phpq_try_start, phpq_init_script) && finish_time < precise_now + 0.01) {
+  if (vk::any_of_equal(state, phpq_try_start, phpq_init_script) && finish_time < get_utime_monotonic() + 0.01) {
     terminate(0, script_error_t::timeout, "early timeout");
   }
   stop_wait_if_wakeup();
@@ -90,16 +89,13 @@ std::optional<double> PhpWorker::on_wakeup() noexcept {
 }
 
 std::optional<double> PhpWorker::on_alarm() noexcept {
-  // on_alarm can be called on two possible situations
-  // [1] script timeout has been triggered PhpScript::time_limit_exceeded is true
-  // [2] wait_time to wait for the network has been used up
   tvkprintf(php_runner, 2, "PHP-worker alarm while script timeout %s [req_id = %016llx]\n", PhpScript::time_limit_exceeded ? "true": "false", req_id);
   get_utime_monotonic();
   if (PhpScript::time_limit_exceeded) {
-    // why wakeup time is not correct here?
     wakeup_flag = true;
     if (php_script.has_value() && vk::any_of_equal(php_script->state, run_state_t::query_running, run_state_t::query)) {
-      // restore php_script state to run shutdown functions
+      // restore php_script state to run shutdown functions if
+      // script timeout has been triggered PhpScript::time_limit_exceeded is true
       php_script->state = run_state_t::ready;
     }
   }
