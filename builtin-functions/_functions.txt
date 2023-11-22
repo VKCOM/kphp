@@ -1334,8 +1334,7 @@ define('CURLOPT_PROXY_PINNEDPUBLICKEY', 200174);
 
 // new stream options
 define('CURLOPT_INFILE', 200175);
-define('CURLOPT_STDERR', 200176);
-define('CURLOPT_FILE', 200177);
+define('CURLOPT_FILE', 200176);
 
 // callable options
 define('CURLOPT_HEADERFUNCTION', 210000);

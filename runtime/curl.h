@@ -10,9 +10,9 @@
  
 #include "runtime/kphp_core.h"
 #include "runtime/critical_section.h"
-#include "runtime/streams.h"
 
 using curl_easy = int64_t;
+using Stream =mixed;
 
 curl_easy f$curl_init(const string &url = string{}) noexcept;
 
