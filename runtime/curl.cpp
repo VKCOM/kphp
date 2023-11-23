@@ -225,13 +225,13 @@ public:
   struct {
     write_callable callable{NULL};
     int64_t method{KPHP_CURL_STDOUT};
-    Stream *stream{nullptr};
+    const Stream *stream{nullptr};
   } write_handler, write_header_handler;
 
   struct {
     read_callable callable{NULL};
     int64_t method{KPHP_CURL_DIRECT};
-    Stream *stream{nullptr};
+    const Stream *stream{nullptr};
   } read_handler;
 
   progress_callable progress_callable{NULL};
@@ -581,7 +581,7 @@ void stream_option_setter(EasyContext *easy_context, CURLoption option, const mi
     case CURLOPT_INFILE:
       // store Stream value in read_handler
       easy_context->read_handler.method = KPHP_CURL_USER;
-      easy_context->read_handler.stream = (Stream *) &value;
+      easy_context->read_handler.stream = &value;
       break;
     case CURLOPT_FILE:
       {
@@ -597,7 +597,7 @@ void stream_option_setter(EasyContext *easy_context, CURLoption option, const mi
         }
       }
       // store Stream value in write_handler
-      easy_context->write_handler.stream = (Stream *) &value;
+      easy_context->write_handler.stream = &value;
       easy_context->write_handler.method = KPHP_CURL_FILE;
       break;
     case CURLOPT_WRITEHEADER:
@@ -614,7 +614,7 @@ void stream_option_setter(EasyContext *easy_context, CURLoption option, const mi
         }
       }
       // store Stream value in write_header_handler
-      easy_context->write_header_handler.stream = (Stream *) &value;
+      easy_context->write_header_handler.stream = &value;
       easy_context->write_header_handler.method = KPHP_CURL_FILE;
       break;
     default:
