@@ -316,10 +316,11 @@ size_t curl_write(char *data, size_t size, size_t nmemb, void *userdata) {
         return easy_context->write_handler.callable(easy_context->self_id, string(data));
       } catch (std::exception &ex) {
         php_warning("Cannot call the CURLOPT_WRITEFUNCTION");
-        fprintf(stderr, "Error: %s\n", ex.what());
+        //fprintf(stderr, "Error: %s\n", ex.what());
         easy_context->write_handler.callable = NULL;
         easy_context->write_handler.method = KPHP_CURL_STDOUT;
-        length = 0;
+        length = -1;
+        return length;
       }
     case KPHP_CURL_RETURN:
       return easy_context->received_data.push_string(data, length) ? length : 0;
@@ -341,6 +342,16 @@ size_t curl_write_header(char *data, size_t size, size_t nmemb, void *userdata) 
         print(data, length);
       }
       break;
+    case KPHP_CURL_FILE:
+      {
+        Optional<int64_t> temp = f$fwrite(easy_context->write_header_handler.fp, string(data));
+        if (temp.is_null()) {
+          length = 0;
+        } else {
+          length = temp.val();
+        }
+      }
+      return length;
     case KPHP_CURL_USER:
       try {
         return easy_context->write_header_handler.callable(easy_context->self_id, string(data));
@@ -356,7 +367,7 @@ size_t curl_write_header(char *data, size_t size, size_t nmemb, void *userdata) 
       return length;
 
     default:
-      return 0;
+      return -1;
   }
   string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_ON;
   return std::exchange(string_buffer::string_buffer_error_flag, STRING_BUFFER_ERROR_FLAG_OFF) == STRING_BUFFER_ERROR_FLAG_FAILED ? 0 : length;
@@ -550,7 +561,7 @@ void redirpost_option_setter(EasyContext *easy_context, CURLoption option, const
 void stream_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
   switch (option) {
     case CURLOPT_INFILE:
-      // store Stream value in curl_read_handler
+      // store Stream value in read_handler
       easy_context->read_handler.method = KPHP_CURL_USER;
       easy_context->read_handler.fp = (Stream) value;
       break;
@@ -567,9 +578,26 @@ void stream_option_setter(EasyContext *easy_context, CURLoption option, const mi
           return;
         }
       }
-      // store Stream value in curl_write_handler
+      // store Stream value in write_handler
       easy_context->write_handler.fp = (Stream) value;
       easy_context->write_handler.method = KPHP_CURL_FILE;
+      break;
+    case CURLOPT_WRITEHEADER:
+      {
+        string temp = value.as_string();
+        string::size_type p = temp.find_first_of(string("://"), 0);
+
+        if ((p == string::npos) || (!f$is_writeable(temp.substr(p+1, temp.size()-p)))) {      
+          php_warning ("%s(): The provided file handle must be writable", value.as_string().c_str());
+          easy_context->write_header_handler.fp = NULL;
+          easy_context->write_header_handler.method = KPHP_CURL_IGNORE;
+          easy_context->error_num = CURLE_WRITE_ERROR;
+          return;
+        }
+      }
+      // store Stream value in write_header_handler
+      easy_context->write_header_handler.fp = (Stream) value;
+      easy_context->write_header_handler.method = KPHP_CURL_FILE;
       break;
     default:
       // do nothing
@@ -863,8 +891,9 @@ bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) 
       {CURLOPT_PROXY_KEYPASSWD,       string_option_setter},
       {CURLOPT_PROXY_PINNEDPUBLICKEY, string_option_setter},
 
-      {CURLOPT_INFILE,  stream_option_setter},
-      {CURLOPT_FILE,    stream_option_setter}
+      {CURLOPT_INFILE,      stream_option_setter},
+      {CURLOPT_FILE,        stream_option_setter},
+      {CURLOPT_WRITEHEADER, stream_option_setter}
     });
 
   constexpr size_t CURLOPT_OPTION_OFFSET = 200000;
@@ -1024,13 +1053,13 @@ mixed f$curl_exec(curl_easy easy_id) noexcept {
     return easy_context->received_data.concat_and_get_string();
   }
 
-  // if (easy_context->write_handler.method == KPHP_CURL_FILE && !easy_context->write_handler.fp.is_null()) {
-  //   // fflush();
-  // }
+  if (easy_context->write_handler.method == KPHP_CURL_FILE && !easy_context->write_handler.fp.is_null()) {
+    f$fflush(easy_context->write_handler.fp);
+  }
 
-  // if (easy_context->write_header_handler.method == KPHP_CURL_FILE && !easy_context->write_header_handler.fp.is_null()) {
-  //   // fflush();
-  // }
+  if (easy_context->write_header_handler.method == KPHP_CURL_FILE && !easy_context->write_header_handler.fp.is_null()) {
+    f$fflush(easy_context->write_header_handler.fp);
+  }
 
   if (easy_context->write_header_handler.method == KPHP_CURL_RETURN) {
     return string();
