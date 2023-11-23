@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.16)
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 project(kphp
         VERSION 1.0.1
         LANGUAGES CXX
