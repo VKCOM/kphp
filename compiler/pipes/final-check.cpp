@@ -4,6 +4,8 @@
 
 #include "compiler/pipes/final-check.h"
 
+#include <stack>
+
 #include "common/termformat/termformat.h"
 #include "common/algorithms/string-algorithms.h"
 #include "common/algorithms/contains.h"
@@ -41,13 +43,13 @@ void check_class_immutableness(ClassPtr klass) {
                         TermStringFormat::paint(klass->parent_class->name, TermStringFormat::red)));
 }
 
-std::list<ClassPtr> find_not_ic_compatibility_derivatives(ClassPtr klass);
+std::vector<ClassPtr> find_not_ic_compatibility_derivatives(ClassPtr klass);
 
 void check_fields_ic_compatibility(ClassPtr klass) {
-  if (klass->process_fields_ic_compatibility) {
+  bool flag = false;
+  if (!klass->process_fields_ic_compatibility.compare_exchange_strong(flag, true)) {
     return;
   }
-  klass->process_fields_ic_compatibility = true;
   klass->members.for_each([klass](const ClassMemberInstanceField &field) {
     kphp_assert(field.var->marked_as_const);
     std::unordered_set<ClassPtr> sub_classes;
@@ -55,7 +57,7 @@ void check_fields_ic_compatibility(ClassPtr klass) {
     for (auto sub_class : sub_classes) {
       // sub_class already checked for is_immutable || is_interface @see check_class_immutableness
       check_fields_ic_compatibility(sub_class);
-      std::list<ClassPtr> descendants = find_not_ic_compatibility_derivatives(sub_class);
+      std::vector<ClassPtr> descendants = find_not_ic_compatibility_derivatives(sub_class);
       for (auto & element : descendants) {
         kphp_error(false, fmt_format("Field {} of immutable class {} has mutable derived {}",
                                      TermStringFormat::paint(std::string{field.local_name()}, TermStringFormat::red),
@@ -64,36 +66,38 @@ void check_fields_ic_compatibility(ClassPtr klass) {
       }
     }
   });
-  klass->process_fields_ic_compatibility = false;
+  klass->process_fields_ic_compatibility.store(false);
 }
 
 void check_derivatives_ic_compatibility(ClassPtr klass) {
-  std::list<ClassPtr> descendants = find_not_ic_compatibility_derivatives(klass);
+  std::vector<ClassPtr> descendants = find_not_ic_compatibility_derivatives(klass);
   for (const auto &element : descendants) {
     kphp_error(false, fmt_format("Can not store polymorphic type {} with mutable derived class {}", klass->name, element->name));
   }
 }
 
-std::list<ClassPtr> find_not_ic_compatibility_derivatives(ClassPtr klass) {
+std::vector<ClassPtr> find_not_ic_compatibility_derivatives(ClassPtr klass) {
   bool has_mutable_subtree = false;
-  std::list<ClassPtr> mutable_children{};
-  for (const auto & derived : klass->derived_classes) {
-    if (derived->is_subtree_immutable == SubtreeImmutableType::immutable) {
-      // continue
-    } else if (derived->is_subtree_immutable == SubtreeImmutableType::not_immutable) {
-      // do not save them because they have already been processed
-      has_mutable_subtree = true;
-    } else if (!derived->is_immutable && !derived->is_interface()) {
-      mutable_children.push_back(derived);
-    } else {
-      check_fields_ic_compatibility(derived);
-      std::list<ClassPtr> descendant = find_not_ic_compatibility_derivatives(derived);
-      mutable_children.splice(mutable_children.end(), descendant);
+  std::vector<ClassPtr> mutable_children{};
+  std::vector<ClassPtr> queue = {klass};
+  while (!queue.empty()) {
+    ClassPtr current = queue.back();
+    queue.pop_back();
+    for (const auto & derived : current->derived_classes) {
+      if (derived->is_subtree_immutable.load() == SubtreeImmutableType::immutable) {
+        // continue
+      } else if (derived->is_subtree_immutable.load() == SubtreeImmutableType::not_immutable) {
+        has_mutable_subtree = true;
+      } else if (!derived->is_immutable && !derived->is_interface()) {
+        mutable_children.push_back(derived);
+      } else {
+        check_fields_ic_compatibility(derived);
+        queue.push_back(derived);
+      }
     }
   }
-
-  klass->is_subtree_immutable = has_mutable_subtree || !mutable_children.empty()
-                                  ? SubtreeImmutableType::not_immutable : SubtreeImmutableType::immutable;
+  klass->is_subtree_immutable.store(has_mutable_subtree || !mutable_children.empty()
+                                      ? SubtreeImmutableType::not_immutable : SubtreeImmutableType::immutable);
   return mutable_children;
 }
 
