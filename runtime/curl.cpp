@@ -234,8 +234,8 @@ public:
     const Stream *stream{nullptr};
   } read_handler;
 
-  progress_callable progress_callable{NULL};
-  xferinfo_callable xferinfo_callable{NULL};
+  progress_callable progress_callable_{NULL};
+  xferinfo_callable xferinfo_callable_{NULL};
 
   array<curl_slist *> slists_to_free;
   array<curl_httppost *> httpposts_to_free;
@@ -378,11 +378,11 @@ size_t curl_progress(void *userdata, double dltotal, double dlnow, double ultota
   auto *easy_context = static_cast<EasyContext *>(userdata);
   size_t rval = 0;
   try {
-    rval = easy_context->progress_callable(easy_context->self_id, dltotal, dlnow, ultotal, ulnow);
+    rval = easy_context->progress_callable_(easy_context->self_id, dltotal, dlnow, ultotal, ulnow);
   } catch (std::exception &ex) {
     php_warning("Cannot call the CURLOPT_PROGRESSFUNCTION");
     //fprintf(stderr, "Error: %s\n", ex.what());
-    easy_context->progress_callable = NULL;
+    easy_context->progress_callable_ = NULL;
     easy_context->set_option(CURLOPT_NOPROGRESS, true);
     if (rval)
       rval = 1;
@@ -427,11 +427,11 @@ size_t curl_xferinfo(void *userdata, curl_off_t dltotal, curl_off_t dlnow, curl_
   auto *easy_context = static_cast<EasyContext *>(userdata);
   size_t rval = 0;
   try {
-    rval = easy_context->xferinfo_callable(easy_context->self_id, dltotal, dlnow, ultotal, ulnow);
+    rval = easy_context->xferinfo_callable_(easy_context->self_id, dltotal, dlnow, ultotal, ulnow);
   } catch (std::exception &ex) {
     php_warning("Cannot call the CURLOPT_XFERINFOFUNCTION");
     //fprintf(stderr, "Error: %s\n", ex.what());
-    easy_context->xferinfo_callable = NULL;
+    easy_context->xferinfo_callable_ = NULL;
     easy_context->set_option(CURLOPT_NOPROGRESS, true);
     if (rval)
       rval = 1;
@@ -1003,7 +1003,7 @@ bool curl_setopt_fn_header_write(curl_easy easy_id, int64_t option, write_callab
 
 bool curl_setopt_fn_xferinfo(curl_easy easy_id, int64_t option, xferinfo_callable callable) noexcept {
   if (auto *easy_context = get_context<EasyContext>(easy_id)) {
-    easy_context->xferinfo_callable = callable;
+    easy_context->xferinfo_callable_ = callable;
     easy_context->error_num = CURLE_OK;
     easy_context->set_option_safe(CURLOPT_XFERINFOFUNCTION, curl_xferinfo);
     easy_context->set_option_safe(CURLOPT_XFERINFODATA, static_cast<void *>(easy_context));
@@ -1016,7 +1016,7 @@ bool curl_setopt_fn_xferinfo(curl_easy easy_id, int64_t option, xferinfo_callabl
 
 bool curl_setopt_fn_progress(curl_easy easy_id, int64_t option, progress_callable callable) noexcept {
   if (auto *easy_context = get_context<EasyContext>(easy_id)) {
-    easy_context->progress_callable = callable;
+    easy_context->progress_callable_ = callable;
     easy_context->error_num = CURLE_OK;
     easy_context->set_option_safe(CURLOPT_PROGRESSFUNCTION, curl_progress);
     easy_context->set_option_safe(CURLOPT_PROGRESSDATA, static_cast<void *>(easy_context));

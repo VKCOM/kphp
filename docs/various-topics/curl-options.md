@@ -115,6 +115,3 @@ Because of the cURL 7.60.0:
 
 ## What about callables?
 // not ready yet
-
-## CURLinfos for `curl_getinfo()`
-// not ready yet
