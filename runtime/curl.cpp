@@ -1129,7 +1129,7 @@ mixed f$curl_getinfo(curl_easy easy_id, int64_t option) noexcept {
     easy_context->add_info_into_array(result, "redirect_time", CURLINFO_REDIRECT_TIME);
     easy_context->add_info_into_array(result, "redirect_url", CURLINFO_REDIRECT_URL);
     easy_context->add_info_into_array(result, "primary_ip", CURLINFO_PRIMARY_IP);
-    easy_context->add_info_into_array(result, "certinfo", CURLINFO_CERTINFO);
+    // easy_context->add_info_into_array(result, "certinfo", CURLINFO_CERTINFO);
     easy_context->add_info_into_array(result, "primary_port", CURLINFO_PRIMARY_PORT);
     easy_context->add_info_into_array(result, "local_ip", CURLINFO_LOCAL_IP);
     easy_context->add_info_into_array(result, "local_port", CURLINFO_LOCAL_PORT);
