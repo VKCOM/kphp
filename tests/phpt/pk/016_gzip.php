@@ -19,7 +19,7 @@ var_dump(gzuncompress($compressed));
 var_dump(gzdecode($encoded));
 
 
-function dump_test($ctx) {
+function dump_test_deflate($ctx, $deflated_chunks) {
     $chunks = ['myxa', 'myxophyta', 'myxopod', 'nab', 'nabbed', 'nabbing', 'nabit', 'nabk', 'nabob', 'nacarat', 'nacelle'];
     $out = "";
     for($i = 0; $i < count($chunks); $i++) {
@@ -27,6 +27,22 @@ function dump_test($ctx) {
         $out .= deflate_add($ctx, $chunks[$i], $type);
     }
     $out .= deflate_add($ctx, $chunks[count($chunks) - 1], ZLIB_FINISH);
+    var_dump(crc32($out));
+    return $out;
+}
+
+function dump_test_inflate($ctx, $chunks) {
+//     $chunks = ['myxa', 'myxophyta', 'myxopod', 'nab', 'nabbed', 'nabbing', 'nabit', 'nabk', 'nabob', 'nacarat', 'nacelle'];
+    $out = "";
+    for($i = 0; $i < count($chunks); $i++) {
+        $type = $i % 2 == 0 ? ZLIB_NO_FLUSH : ZLIB_SYNC_FLUSH;
+        $inflated = inflate_add($ctx, $chunks[$i], $type);
+        $chunks[] = $inflated;
+        $out .= $inflated;
+    }
+    $inflated = inflate_add($ctx, $chunks[count($chunks) - 1], ZLIB_FINISH);
+    $chunks[] = $inflated;
+    $out .= $inflated;
     var_dump(crc32($out));
     return $out;
 }
