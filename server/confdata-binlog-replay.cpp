@@ -36,6 +36,7 @@ struct {
   double soft_oom_threshold_ratio = 0.85;
   double hard_oom_threshold_ratio = 0.95;
   std::unique_ptr<re2::RE2> key_blacklist_pattern;
+  std::forward_list<vk::string_view> force_ignore_prefixes;
   std::unordered_set<vk::string_view> predefined_wildcards;
 
   bool is_enabled() const noexcept {
@@ -811,6 +812,16 @@ void set_confdata_blacklist_pattern(std::unique_ptr<re2::RE2> &&key_blacklist_pa
   confdata_settings.key_blacklist_pattern = std::move(key_blacklist_pattern);
 }
 
+void add_confdata_force_ignore_prefix(const char *key_ignore_prefix) noexcept {
+  assert(key_ignore_prefix && *key_ignore_prefix);
+  vk::string_view ignore_prefix{key_ignore_prefix};
+  // 'highload.vid*' => 'highload.vid'
+  while (ignore_prefix.ends_with("*")) {
+    ignore_prefix.remove_suffix(1);
+  }
+  confdata_settings.force_ignore_prefixes.emplace_front(ignore_prefix);
+}
+
 void add_confdata_predefined_wildcard(const char *wildcard) noexcept {
   assert(wildcard && *wildcard);
   vk::string_view wildcard_value{wildcard};
@@ -849,7 +860,8 @@ void init_confdata_binlog_reader() noexcept {
   auto &confdata_manager = ConfdataGlobalManager::get();
   confdata_manager.init(confdata_settings.memory_limit,
                         std::move(confdata_settings.predefined_wildcards),
-                        std::move(confdata_settings.key_blacklist_pattern));
+                        std::move(confdata_settings.key_blacklist_pattern),
+                        std::move(confdata_settings.force_ignore_prefixes));
 
   dl::set_current_script_allocator(confdata_manager.get_resource(), true);
   // engine_default_load_index and engine_default_read_binlog call exit(1) on errors,

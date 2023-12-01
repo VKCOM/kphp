@@ -2206,6 +2206,14 @@ int main_args_handler(int i, const char *long_option) {
     case 2036: {
       return read_option_to(long_option, 0U, 2048U, thread_pool_size);
     }
+    case 2037: {
+      if (!*optarg) {
+        kprintf("--%s option is empty\n", long_option);
+        return -1;
+      }
+      add_confdata_force_ignore_prefix(optarg);
+      return 0;
+    }
     default:
       return -1;
   }
@@ -2274,7 +2282,7 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("tasks-config", required_argument, 'S', "get lease worker settings from config file: mode and actor");
   parse_option("confdata-binlog", required_argument, 2004, "confdata binlog mask");
   parse_option("confdata-memory-limit", required_argument, 2005, "memory limit for confdata");
-  parse_option("confdata-blacklist", required_argument, 2006, "confdata key blacklist regex pattern");
+  parse_option("confdata-blacklist", required_argument, 2006, "confdata key blacklist regex pattern from PHP code, class KphpConfiguration");
   parse_option("confdata-predefined-wildcard", required_argument, 2007, "perdefine confdata wildcard for better performance");
   parse_option("php-version", no_argument, 2008, "show the compiled php code version and exit");
   parse_option("php-warnings-minimal-verbosity", required_argument, 2009, "set minimum verbosity level for php warnings");
@@ -2315,6 +2323,8 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("hard-time-limit", required_argument, 2034, "time limit for script termination after the main timeout has expired (default: 1 sec). Use 0 to disable");
   parse_option("thread-pool-ratio", required_argument, 2035, "the thread pool size ratio of the overall cpu numbers");
   parse_option("thread-pool-size", required_argument, 2036, "the total threads num per worker");
+  parse_option("confdata-force-ignore-keys-prefix", required_argument, 2037, "an emergency option, e.g. 'highload.vid*', to forcibly drop keys from snapshot/binlog; may be used multiple times");
+
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
   // TODO: remove it after successful migration from kphb.readyV2 to kphb.readyV3

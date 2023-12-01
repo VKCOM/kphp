@@ -13,6 +13,7 @@ void set_confdata_binlog_mask(const char *mask) noexcept;
 
 void set_confdata_memory_limit(size_t memory_limit) noexcept;
 void set_confdata_blacklist_pattern(std::unique_ptr<re2::RE2> &&key_blacklist_pattern) noexcept;
+void add_confdata_force_ignore_prefix(const char *key_ignore_prefix) noexcept;
 void add_confdata_predefined_wildcard(const char *wildcard) noexcept;
 void clear_confdata_predefined_wildcards() noexcept;
 
