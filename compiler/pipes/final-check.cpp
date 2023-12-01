@@ -4,7 +4,6 @@
 
 #include "compiler/pipes/final-check.h"
 
-#include <stack>
 
 #include "common/termformat/termformat.h"
 #include "common/algorithms/string-algorithms.h"
@@ -79,10 +78,10 @@ void check_derivatives_ic_compatibility(ClassPtr klass) {
 std::vector<ClassPtr> find_not_ic_compatibility_derivatives(ClassPtr klass) {
   bool has_mutable_subtree = false;
   std::vector<ClassPtr> mutable_children{};
-  std::vector<ClassPtr> queue = {klass};
-  while (!queue.empty()) {
-    ClassPtr current = queue.back();
-    queue.pop_back();
+  std::vector<ClassPtr> stack = {klass};
+  while (!stack.empty()) {
+    ClassPtr current = stack.back();
+    stack.pop_back();
     for (const auto & derived : current->derived_classes) {
       if (derived->is_subtree_immutable.load() == SubtreeImmutableType::immutable) {
         // continue
@@ -92,7 +91,7 @@ std::vector<ClassPtr> find_not_ic_compatibility_derivatives(ClassPtr klass) {
         mutable_children.push_back(derived);
       } else {
         check_fields_ic_compatibility(derived);
-        queue.push_back(derived);
+        stack.push_back(derived);
       }
     }
   }
