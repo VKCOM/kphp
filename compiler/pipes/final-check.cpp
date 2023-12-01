@@ -46,7 +46,7 @@ std::vector<ClassPtr> find_not_ic_compatibility_derivatives(ClassPtr klass);
 
 void check_fields_ic_compatibility(ClassPtr klass) {
   bool flag = false;
-  if (!klass->process_fields_ic_compatibility.compare_exchange_strong(flag, true)) {
+  if (!klass->process_fields_ic_compatibility.compare_exchange_strong(flag, true, std::memory_order_acq_rel)) {
     return;
   }
   klass->members.for_each([klass](const ClassMemberInstanceField &field) {
@@ -65,7 +65,7 @@ void check_fields_ic_compatibility(ClassPtr klass) {
       }
     }
   });
-  klass->process_fields_ic_compatibility.store(false);
+  klass->process_fields_ic_compatibility.store(false, std::memory_order_release);
 }
 
 void check_derivatives_ic_compatibility(ClassPtr klass) {
@@ -83,9 +83,9 @@ std::vector<ClassPtr> find_not_ic_compatibility_derivatives(ClassPtr klass) {
     ClassPtr current = stack.back();
     stack.pop_back();
     for (const auto & derived : current->derived_classes) {
-      if (derived->is_subtree_immutable.load() == SubtreeImmutableType::immutable) {
+      if (derived->is_subtree_immutable.load(std::memory_order_acquire) == SubtreeImmutableType::immutable) {
         // continue
-      } else if (derived->is_subtree_immutable.load() == SubtreeImmutableType::not_immutable) {
+      } else if (derived->is_subtree_immutable.load(std::memory_order_acquire) == SubtreeImmutableType::not_immutable) {
         has_mutable_subtree = true;
       } else if (!derived->is_immutable && !derived->is_interface()) {
         mutable_children.push_back(derived);
@@ -96,7 +96,8 @@ std::vector<ClassPtr> find_not_ic_compatibility_derivatives(ClassPtr klass) {
     }
   }
   klass->is_subtree_immutable.store(has_mutable_subtree || !mutable_children.empty()
-                                      ? SubtreeImmutableType::not_immutable : SubtreeImmutableType::immutable);
+                                      ? SubtreeImmutableType::not_immutable : SubtreeImmutableType::immutable,
+                                    std::memory_order_release);
   return mutable_children;
 }
 
