@@ -16,6 +16,7 @@ void write_event_stats(stats_t *stats, const char *name, const ConfdataStats::Ev
   stats->add_gauge_stat_with_type_tag(name, "total", event.total);
   stats->add_gauge_stat_with_type_tag(name, "blacklisted", event.blacklisted);
   stats->add_gauge_stat_with_type_tag(name, "ignored", event.ignored);
+  stats->add_gauge_stat_with_type_tag(name, "throttled_out", event.throttled_out);
   stats->add_gauge_stat_with_type_tag(name, "ttl_updated", event.ttl_updated);
 }
 

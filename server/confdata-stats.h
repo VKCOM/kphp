@@ -40,6 +40,7 @@ struct ConfdataStats : private vk::not_copyable {
       size_t total{0};
       size_t blacklisted{0};
       size_t ignored{0};
+      size_t throttled_out{0};
       size_t ttl_updated{0};
     };
 
@@ -62,6 +63,7 @@ struct ConfdataStats : private vk::not_copyable {
     size_t append_events{0};
 
     size_t unsupported_total_events{0};
+    size_t throttled_out_total_events{0};
   } event_counters;
 
   void on_update(const confdata_sample_storage &new_confdata,

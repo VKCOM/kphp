@@ -7,6 +7,7 @@
 #include <bitset>
 #include <chrono>
 #include <cinttypes>
+#include <cmath>
 #include <forward_list>
 #include <map>
 
@@ -28,10 +29,24 @@
 
 namespace {
 
+struct {
+  const char *binlog_mask{nullptr};
+  size_t memory_limit{2u * 1024u * 1024u * 1024u};
+  double soft_oom_threshold_ratio = 0.85;
+  double hard_oom_threshold_ratio = 0.95;
+  std::unique_ptr<re2::RE2> key_blacklist_pattern;
+  std::unordered_set<vk::string_view> predefined_wildcards;
+
+  bool is_enabled() const noexcept {
+    return binlog_mask;
+  }
+} confdata_settings;
+
 class ConfdataBinlogReplayer : vk::binlog::replayer {
 public:
   enum class OperationStatus {
     no_update,
+    throttled_out,
     blacklisted,
     ttl_update_only,
     full_update
@@ -43,6 +58,35 @@ public:
   }
 
   using vk::binlog::replayer::replay;
+
+  // To prevent OOM errors on confdata overflows we start to throttle events, when too little memory left:
+  // Soft OOM (85%) -- replay only existing keys related events until server restart
+  // Hard OOM (95%) -- ignore all events, don't read binlog at all until server restart
+  void update_memory_status(bool force_hard_oom = false) noexcept {
+    auto cur_usage = memory_resource_->get_memory_stats().real_memory_used;
+    hard_oom_reached_ = hard_oom_reached_ || cur_usage > hard_oom_memory_limit_ || force_hard_oom;
+    soft_oom_reached_ = soft_oom_reached_ || cur_usage > soft_oom_memory_limit_ || force_hard_oom;
+  }
+
+  enum class MemoryStatus {
+    NORMAL,
+    SOFT_OOM,
+    HARD_OOM
+  };
+
+  MemoryStatus get_memory_status() const noexcept {
+    if (hard_oom_reached_) return MemoryStatus::HARD_OOM;
+    if (soft_oom_reached_) return MemoryStatus::SOFT_OOM;
+    return MemoryStatus::NORMAL;
+  }
+
+  void raise_confdata_oom_error(const char *msg) const noexcept {
+    log_server_critical("%s: too little confdata shared memory left (%zu used / %zu limit), %zu events throttled",
+                        msg,
+                        memory_resource_->get_memory_stats().real_memory_used,
+                        memory_resource_->get_memory_stats().memory_limit,
+                        event_counters_.throttled_out_total_events);
+  }
 
   size_t try_reserve_for_snapshot(vk::string_view key, size_t search_from,
                                   vk::string_view &prev_key, array_size &counter) noexcept {
@@ -114,14 +158,20 @@ public:
 
     // disable the blacklist because we checked the keys during the previous step
     blacklist_enabled_ = false;
+    int ret_code = 0;
     for (int i = 0; i < nrecords; i++) {
       if (index_offset[i] >= 0) {
-        store_element(reinterpret_cast<const entry_type &>(index_binary_data[index_offset[i]]));
+        auto res = store_element(reinterpret_cast<const entry_type &>(index_binary_data[index_offset[i]]));
+        if (res == OperationStatus::throttled_out) {
+          ret_code = -1;
+          raise_confdata_oom_error("Can't read confdata snapshot on start");
+          break;
+        }
       }
     }
     blacklist_enabled_ = true;
     size_hints_.clear();
-    return 0;
+    return ret_code;
   }
 
   OperationStatus delete_element(const char *key, short key_len) noexcept {
@@ -146,6 +196,10 @@ public:
   void init(memory_resource::unsynchronized_pool_resource &memory_pool) noexcept {
     assert(!updating_confdata_storage_);
     updating_confdata_storage_ = new(&confdata_mem_)confdata_sample_storage{confdata_sample_storage::allocator_type{memory_pool}};
+
+    memory_resource_ = &memory_pool;
+    soft_oom_memory_limit_ = static_cast<size_t>(std::floor(confdata_settings.soft_oom_threshold_ratio * confdata_settings.memory_limit));
+    hard_oom_memory_limit_ = static_cast<size_t>(std::floor(confdata_settings.hard_oom_threshold_ratio * confdata_settings.memory_limit));
   }
 
   struct ConfdataUpdateResult {
@@ -207,7 +261,10 @@ public:
         return;
       }
       assert(head->second.size() <= std::numeric_limits<short>::max());
-      delete_element(head->second.c_str(), static_cast<short>(head->second.size()));
+      auto res = delete_element(head->second.c_str(), static_cast<short>(head->second.size()));
+      if (res == OperationStatus::throttled_out) {
+        return;
+      }
       assert(expired_elements == expiration_trace_.size() + 1);
       expired_elements = expiration_trace_.size();
     }
@@ -226,53 +283,57 @@ private:
     garbage_from_previous_confdata_sample_(new(&garbage_mem_) GarbageList{}),
     key_blacklist_(ConfdataGlobalManager::get().get_key_blacklist()),
     predefined_wildcards_(ConfdataGlobalManager::get().get_predefined_wildcards()) {
+
     add_handler([this](const lev_confdata_delete &E) {
-      update_event_stat(this->delete_element(E.key, E.key_len), event_counters_.delete_events);
+      return finish_operation(delete_element(E.key, E.key_len), event_counters_.delete_events);
     });
     add_handler([this](const lev_confdata_touch &E) {
-      update_event_stat(this->touch_element(E), event_counters_.touch_events);
+      return finish_operation(touch_element(E), event_counters_.touch_events);
     });
 
     add_handler([this](const lev_confdata_store_wrapper<lev_pmemcached_store, pmct_add> &E) {
-      update_event_stat(this->store_element(E), event_counters_.add_events);
+      return finish_operation(store_element(E), event_counters_.add_events);
     });
     add_handler([this](const lev_confdata_store_wrapper<lev_pmemcached_store, pmct_set> &E) {
-      update_event_stat(this->store_element(E), event_counters_.set_events);
+      return finish_operation(store_element(E), event_counters_.set_events);
     });
     add_handler([this](const lev_confdata_store_wrapper<lev_pmemcached_store, pmct_replace> &E) {
-      update_event_stat(this->store_element(E), event_counters_.replace_events);
+      return finish_operation(store_element(E), event_counters_.replace_events);
     });
 
     add_handler([this](const lev_confdata_store_wrapper<lev_pmemcached_store_forever, pmct_add> &E) {
-      update_event_stat(this->store_element(E), event_counters_.add_forever_events);
+      return finish_operation(store_element(E), event_counters_.add_forever_events);
     });
     add_handler([this](const lev_confdata_store_wrapper<lev_pmemcached_store_forever, pmct_set> &E) {
-      update_event_stat(this->store_element(E), event_counters_.set_forever_events);
+      return finish_operation(store_element(E), event_counters_.set_forever_events);
     });
     add_handler([this](const lev_confdata_store_wrapper<lev_pmemcached_store_forever, pmct_replace> &E) {
-      update_event_stat(this->store_element(E), event_counters_.replace_forever_events);
+      return finish_operation(store_element(E), event_counters_.replace_forever_events);
     });
 
     add_handler([this](const lev_confdata_get &E) {
       ++event_counters_.get_events;
-      this->unsupported_operation("get", E.key, E.key_len);
+      unsupported_operation("get", E.key, E.key_len);
     });
     add_handler([this](const lev_confdata_incr &E) {
       ++event_counters_.incr_events;
-      this->unsupported_operation("incr", E.key, E.key_len);
+      unsupported_operation("incr", E.key, E.key_len);
     });
     add_handler_range([this](const lev_confdata_incr_tiny_range &E) {
       ++event_counters_.incr_tiny_events;
-      this->unsupported_operation("incr tiny", E.key, E.key_len);
+      unsupported_operation("incr tiny", E.key, E.key_len);
     });
     add_handler([this](const lev_confdata_append &E) {
       ++event_counters_.append_events;
-      this->unsupported_operation("append", E.data, E.key_len);
+      unsupported_operation("append", E.data, E.key_len);
     });
   }
 
   template<typename F>
   OperationStatus generic_operation(const char *key, short key_len, int delay, const F &operation) noexcept {
+    if (get_memory_status() == MemoryStatus::HARD_OOM) {
+      return OperationStatus::throttled_out;
+    }
     // TODO assert?
     if (key_len < 0) {
       return OperationStatus::blacklisted;
@@ -286,30 +347,29 @@ private:
     assert(processing_value_.is_null());
     static_assert(std::is_same<short, int16_t>{}, "short is expected to be int16_t");
 
+    // The single key can be copied upto 3 times in std::map. It's special denormalization for predefined wildcards and two-dot keys.
+    // So `operation()` can be applied upto 3 times for the single log event.
+    // There's an invariant that all these copies are consistent. See asserts below.
+
     OperationStatus last_operation_status{OperationStatus::no_update};
     const auto predefined_wildcard_lengths = predefined_wildcards_.make_predefined_wildcard_len_range_by_key(key_view);
     for (size_t wildcard_len : predefined_wildcard_lengths) {
       assert(wildcard_len <= std::numeric_limits<int16_t>::max());
       processing_key_.update_with_predefined_wildcard(key, key_len, static_cast<int16_t>(wildcard_len));
       const auto operation_status = operation();
-      assert(last_operation_status != OperationStatus::full_update ||
-             operation_status == OperationStatus::full_update);
+      assert(last_operation_status != OperationStatus::full_update || operation_status == OperationStatus::full_update);
       last_operation_status = operation_status;
       if (operation_status != OperationStatus::full_update) {
         break;
       }
     }
 
-    if (predefined_wildcard_lengths.empty() ||
-        last_operation_status == OperationStatus::full_update) {
+    if (predefined_wildcard_lengths.empty() || last_operation_status == OperationStatus::full_update) {
       const auto first_key_type = processing_key_.update(key, key_len);
-      if (predefined_wildcard_lengths.empty() ||
-          first_key_type != ConfdataFirstKeyType::simple_key) {
+      if (predefined_wildcard_lengths.empty() || first_key_type != ConfdataFirstKeyType::simple_key) {
         const auto operation_status = operation();
-        assert(last_operation_status != OperationStatus::full_update ||
-               operation_status == OperationStatus::full_update);
-        if (operation_status == OperationStatus::full_update &&
-            first_key_type == ConfdataFirstKeyType::two_dots_wildcard) {
+        assert(last_operation_status != OperationStatus::full_update || operation_status == OperationStatus::full_update);
+        if (operation_status == OperationStatus::full_update && first_key_type == ConfdataFirstKeyType::two_dots_wildcard) {
           processing_key_.forcibly_change_first_key_wildcard_dots_from_two_to_one();
           const auto should_be_full = operation();
           assert(should_be_full == OperationStatus::full_update);
@@ -332,21 +392,27 @@ private:
     return last_operation_status;
   }
 
-  static void update_event_stat(OperationStatus status, ConfdataStats::EventCounters::Event &event) noexcept {
+  replay_binlog_result finish_operation(OperationStatus status, ConfdataStats::EventCounters::Event &event) noexcept {
     ++event.total;
     switch (status) {
       case OperationStatus::no_update:
         ++event.ignored;
-        return;
+        break;
+      case OperationStatus::throttled_out:
+        ++event.throttled_out;
+        ++event_counters_.throttled_out_total_events;
+        break;
       case OperationStatus::blacklisted:
         ++event.blacklisted;
-        return;
+        break;
       case OperationStatus::ttl_update_only:
         ++event.ttl_updated;
-        return;
+        break;
       case OperationStatus::full_update:
-        return;
+        break;
     }
+    update_memory_status();
+    return get_memory_status() == MemoryStatus::HARD_OOM ? REPLAY_BINLOG_STOP_READING : REPLAY_BINLOG_OK;
   }
 
   OperationStatus delete_processing_element() noexcept {
@@ -414,9 +480,11 @@ private:
   template<class BASE, int OPERATION>
   OperationStatus store_processing_element(const lev_confdata_store_wrapper<BASE, OPERATION> &E) noexcept {
     auto first_key_it = updating_confdata_storage_->find(processing_key_.get_first_key());
-    bool element_exists = true;
-    if (first_key_it == updating_confdata_storage_->end()) {
-      element_exists = false;
+    bool element_exists = first_key_it != updating_confdata_storage_->end();
+    if (!element_exists) {
+      if (get_memory_status() != MemoryStatus::NORMAL) {
+        return OperationStatus::throttled_out;
+      }
       // during the snapshot loading all keys are already sorted, so it makes sense to push it back
       first_key_it = updating_confdata_storage_->emplace_hint(first_key_it, processing_key_.make_first_key_copy(), mixed{});
     }
@@ -632,6 +700,10 @@ private:
 
   using GarbageList = std::forward_list<ConfdataGarbageNode>;
 
+  const memory_resource::unsynchronized_pool_resource *memory_resource_;
+  size_t soft_oom_memory_limit_, hard_oom_memory_limit_;
+  bool soft_oom_reached_{false}, hard_oom_reached_{false};
+
   std::aligned_storage_t<sizeof(confdata_sample_storage), alignof(confdata_sample_storage)> confdata_mem_;
   confdata_sample_storage *updating_confdata_storage_{nullptr};
   std::aligned_storage_t<sizeof(GarbageList), alignof(GarbageList)> garbage_mem_;
@@ -652,17 +724,6 @@ private:
   const ConfdataKeyBlacklist &key_blacklist_;
   const ConfdataPredefinedWildcards &predefined_wildcards_;
 };
-
-struct {
-  const char *binlog_mask{nullptr};
-  size_t memory_limit{2u * 1024u * 1024u * 1024u};
-  std::unique_ptr<re2::RE2> key_blacklist_pattern;
-  std::unordered_set<vk::string_view> predefined_wildcards;
-
-  bool is_enabled() const noexcept {
-    return binlog_mask;
-  }
-} confdata_settings;
 
 } // namespace
 
@@ -732,7 +793,10 @@ void init_confdata_binlog_reader() noexcept {
   engine_default_load_index(confdata_settings.binlog_mask);
   engine_default_read_binlog();
   confdata_binlog_replayer.delete_expired_elements();
-
+  if (confdata_binlog_replayer.get_memory_status() != ConfdataBinlogReplayer::MemoryStatus::NORMAL) {
+    confdata_binlog_replayer.raise_confdata_oom_error("Can't read confdata binlog on start");
+    exit(1);
+  }
   auto loaded_confdata = confdata_binlog_replayer.finish_confdata_update();
   assert(loaded_confdata.previous_confdata_garbage.empty());
 
@@ -753,6 +817,16 @@ void confdata_binlog_update_cron() noexcept {
     return;
   }
 
+  auto &confdata_binlog_replayer = ConfdataBinlogReplayer::get();
+  confdata_binlog_replayer.update_memory_status();
+
+  if (confdata_binlog_replayer.get_memory_status() == ConfdataBinlogReplayer::MemoryStatus::HARD_OOM) {
+    // Don't read binlog events at all. Just freeze confdata state until server restart.
+    // We can't replay even 'delete' events, because they lead to arrays detachment and copying
+    confdata_binlog_replayer.raise_confdata_oom_error("Confdata state is freezed until server restart");
+    return;
+  }
+
   auto &confdata_stats = ConfdataStats::get();
   confdata_stats.total_updating_time -= std::chrono::steady_clock::now().time_since_epoch();
   auto &confdata_manager = ConfdataGlobalManager::get();
@@ -760,18 +834,14 @@ void confdata_binlog_update_cron() noexcept {
   dl::set_current_script_allocator(mem_resource, true);
 
   auto &previous_confdata_sample = confdata_manager.get_current();
-  auto &confdata_binlog_replayer = ConfdataBinlogReplayer::get();
-  confdata_binlog_replayer.try_use_previous_confdata_storage_as_init(previous_confdata_sample.get_confdata());
 
+  confdata_binlog_replayer.try_use_previous_confdata_storage_as_init(previous_confdata_sample.get_confdata());
   binlog_try_read_events();
   confdata_binlog_replayer.delete_expired_elements();
-
-  if (confdata_binlog_replayer.has_new_confdata()){
+  if (confdata_binlog_replayer.has_new_confdata()) {
     if (confdata_manager.can_next_be_updated()) {
       auto updated_confdata = confdata_binlog_replayer.finish_confdata_update();
-      confdata_stats.on_update(updated_confdata.new_confdata,
-                               updated_confdata.previous_confdata_garbage_size,
-                               confdata_manager.get_predefined_wildcards());
+      confdata_stats.on_update(updated_confdata.new_confdata, updated_confdata.previous_confdata_garbage_size, confdata_manager.get_predefined_wildcards());
       previous_confdata_sample.save_garbage(std::move(updated_confdata.previous_confdata_garbage));
       const bool switched = confdata_manager.try_switch_to_next_sample(std::move(updated_confdata.new_confdata));
       assert(switched);
