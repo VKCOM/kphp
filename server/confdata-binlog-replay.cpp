@@ -10,6 +10,7 @@
 #include <cmath>
 #include <forward_list>
 #include <map>
+#include <string_view>
 
 #include "common/binlog/binlog-replayer.h"
 #include "common/dl-utils-lite.h"
@@ -59,25 +60,30 @@ public:
 
   using vk::binlog::replayer::replay;
 
-  // To prevent OOM errors on confdata overflows we start to throttle events, when too little memory left:
+  // To prevent OOM errors on confdata overflows we start to throttle events, when too little shared memory left:
   // Soft OOM (85%) -- replay only existing keys related events until server restart
   // Hard OOM (95%) -- ignore all events, don't read binlog at all until server restart
-  void update_memory_status(bool force_hard_oom = false) noexcept {
-    auto cur_usage = memory_resource_->get_memory_stats().real_memory_used;
-    hard_oom_reached_ = hard_oom_reached_ || cur_usage > hard_oom_memory_limit_ || force_hard_oom;
-    soft_oom_reached_ = soft_oom_reached_ || cur_usage > soft_oom_memory_limit_ || force_hard_oom;
-  }
-
   enum class MemoryStatus {
     NORMAL,
     SOFT_OOM,
     HARD_OOM
   };
 
-  MemoryStatus get_memory_status() const noexcept {
+  MemoryStatus get_memory_status() noexcept {
+    update_memory_status();
     if (hard_oom_reached_) return MemoryStatus::HARD_OOM;
     if (soft_oom_reached_) return MemoryStatus::SOFT_OOM;
     return MemoryStatus::NORMAL;
+  }
+
+  bool check_has_enough_memory(size_t need_bytes, std::string_view msg) noexcept {
+    if (memory_resource_->is_enough_memory_for(need_bytes)) {
+      return true;
+    }
+    log_server_critical("Not enough confdata shared memory. Processing key with first part = '%s'. %zu bytes needed by estimation for %s",
+                        processing_key_.get_first_key().c_str(), need_bytes, msg.data());
+    update_memory_status(true);
+    return false;
   }
 
   void raise_confdata_oom_error(const char *msg) const noexcept {
@@ -175,17 +181,23 @@ public:
   }
 
   OperationStatus delete_element(const char *key, short key_len) noexcept {
-    return generic_operation(key, key_len, -1, [this] { return delete_processing_element(); });
+    return generic_operation(key, key_len, -1, [this] {
+      return delete_processing_element(get_memory_status());
+    });
   }
 
   OperationStatus touch_element(const lev_confdata_touch &E) noexcept {
-    return generic_operation(E.key, static_cast<short>(E.key_len), E.delay, [this] { return touch_processing_element(); });
+    return generic_operation(E.key, static_cast<short>(E.key_len), E.delay, [this] {
+      return touch_processing_element(get_memory_status());
+    });
   }
 
   template<class BASE, int OPERATION>
   OperationStatus store_element(const lev_confdata_store_wrapper<BASE, OPERATION> &E) noexcept {
     // don't even try to capture E by value; it'll try to copy it and it would be very sad :(
-    return generic_operation(E.data, E.key_len, E.get_delay(), [this, &E] { return store_processing_element(E); });
+    return generic_operation(E.data, E.key_len, E.get_delay(), [this, &E] {
+      return store_processing_element(E, get_memory_status());
+    });
   }
 
   void unsupported_operation(const char *operation_name, const char *key, int key_len) noexcept {
@@ -233,10 +245,13 @@ public:
     return result;
   }
 
-  void try_use_previous_confdata_storage_as_init(const confdata_sample_storage &previous_confdata_storage) noexcept {
+  bool try_use_previous_confdata_storage_as_init(const confdata_sample_storage &previous_confdata_storage) noexcept {
     if (!confdata_has_any_updates_) {
       assert(garbage_from_previous_confdata_sample_->empty());
       if (updating_confdata_storage_->empty()) {
+        if (!check_has_enough_memory(confdata_sample_storage::allocator_type::max_value_type_size() * previous_confdata_storage.size(), "RB-tree copying")) {
+          return false;
+        }
         *updating_confdata_storage_ = previous_confdata_storage;
       } else {
         // strictly speaking, they should be identical, but it's too hard to verify
@@ -245,6 +260,7 @@ public:
                           "but they have different sizes (%zu != %zu)\n", updating_confdata_storage_->size(), previous_confdata_storage.size()));
       }
     }
+    return true;
   }
 
   bool has_new_confdata() const noexcept {
@@ -329,6 +345,12 @@ private:
     });
   }
 
+  void update_memory_status(bool force_oom = false) noexcept {
+    auto cur_usage = memory_resource_->get_memory_stats().real_memory_used;
+    hard_oom_reached_ = hard_oom_reached_ || cur_usage > hard_oom_memory_limit_ || force_oom;
+    soft_oom_reached_ = soft_oom_reached_ || cur_usage > soft_oom_memory_limit_ || force_oom;
+  }
+
   template<typename F>
   OperationStatus generic_operation(const char *key, short key_len, int delay, const F &operation) noexcept {
     if (get_memory_status() == MemoryStatus::HARD_OOM) {
@@ -357,6 +379,9 @@ private:
       assert(wildcard_len <= std::numeric_limits<int16_t>::max());
       processing_key_.update_with_predefined_wildcard(key, key_len, static_cast<int16_t>(wildcard_len));
       const auto operation_status = operation();
+      if (operation_status == OperationStatus::throttled_out && get_memory_status() == MemoryStatus::HARD_OOM) {
+        return OperationStatus::throttled_out;
+      }
       assert(last_operation_status != OperationStatus::full_update || operation_status == OperationStatus::full_update);
       last_operation_status = operation_status;
       if (operation_status != OperationStatus::full_update) {
@@ -368,10 +393,16 @@ private:
       const auto first_key_type = processing_key_.update(key, key_len);
       if (predefined_wildcard_lengths.empty() || first_key_type != ConfdataFirstKeyType::simple_key) {
         const auto operation_status = operation();
+        if (operation_status == OperationStatus::throttled_out && get_memory_status() == MemoryStatus::HARD_OOM) {
+          return OperationStatus::throttled_out;
+        }
         assert(last_operation_status != OperationStatus::full_update || operation_status == OperationStatus::full_update);
         if (operation_status == OperationStatus::full_update && first_key_type == ConfdataFirstKeyType::two_dots_wildcard) {
           processing_key_.forcibly_change_first_key_wildcard_dots_from_two_to_one();
           const auto should_be_full = operation();
+          if (operation_status == OperationStatus::throttled_out && get_memory_status() == MemoryStatus::HARD_OOM) {
+            return OperationStatus::throttled_out;
+          }
           assert(should_be_full == OperationStatus::full_update);
         }
         last_operation_status = operation_status;
@@ -411,11 +442,13 @@ private:
       case OperationStatus::full_update:
         break;
     }
-    update_memory_status();
     return get_memory_status() == MemoryStatus::HARD_OOM ? REPLAY_BINLOG_STOP_READING : REPLAY_BINLOG_OK;
   }
 
-  OperationStatus delete_processing_element() noexcept {
+  OperationStatus delete_processing_element(MemoryStatus memory_status) noexcept {
+    if (memory_status == MemoryStatus::HARD_OOM) {
+      return OperationStatus::throttled_out;
+    }
     auto first_key_it = updating_confdata_storage_->find(processing_key_.get_first_key());
     if (first_key_it == updating_confdata_storage_->end()) {
       return OperationStatus::no_update;
@@ -436,6 +469,11 @@ private:
       return OperationStatus::no_update;
     }
 
+    if (array_for_second_key.get_reference_counter() > 1) {
+      if (!check_has_enough_memory(array_for_second_key.calculate_memory_for_copying(), "array_for_second_key copying on delete")) {
+        return OperationStatus::throttled_out;
+      }
+    }
     // move deleted element data to garbage; it will be a copy with RC detachment
     put_confdata_var_into_garbage(array_for_second_key, ConfdataGarbageDestroyWay::shallow_first);
 
@@ -459,7 +497,10 @@ private:
     return OperationStatus::full_update;
   }
 
-  OperationStatus touch_processing_element() noexcept {
+  OperationStatus touch_processing_element(MemoryStatus memory_status) noexcept {
+    if (memory_status == MemoryStatus::HARD_OOM) {
+      return OperationStatus::throttled_out;
+    }
     auto first_key_it = updating_confdata_storage_->find(processing_key_.get_first_key());
     if (first_key_it == updating_confdata_storage_->end()) {
       return OperationStatus::no_update;
@@ -478,11 +519,25 @@ private:
   }
 
   template<class BASE, int OPERATION>
-  OperationStatus store_processing_element(const lev_confdata_store_wrapper<BASE, OPERATION> &E) noexcept {
+  OperationStatus store_processing_element(const lev_confdata_store_wrapper<BASE, OPERATION> &E, MemoryStatus memory_status) noexcept {
+    if (memory_status == MemoryStatus::HARD_OOM) {
+      return OperationStatus::throttled_out;
+    }
+
+    size_t bytes_for_node_emplacement = confdata_sample_storage::allocator_type::max_value_type_size();
+    size_t bytes_for_keys_copying = processing_key_.get_first_key().estimate_memory_usage() +  processing_key_.get_second_key().estimate_memory_usage();
+    size_t bytes_for_value_creating = 2 * 5 * E.get_data_size(); // 5 is just an approximate upper bound for zlib decoding factor
+                                                                 // by according to https://www.zlib.net/zlib_tech.html
+                                                                 // And twice larger just in case
+    size_t need_bytes_upper_bound_without_arrays_for_second_keys = bytes_for_node_emplacement + bytes_for_keys_copying + bytes_for_value_creating;
+    if (!check_has_enough_memory(need_bytes_upper_bound_without_arrays_for_second_keys, "for storing single entry")) {
+      return OperationStatus::throttled_out;
+    }
+
     auto first_key_it = updating_confdata_storage_->find(processing_key_.get_first_key());
     bool element_exists = first_key_it != updating_confdata_storage_->end();
     if (!element_exists) {
-      if (get_memory_status() != MemoryStatus::NORMAL) {
+      if (memory_status == MemoryStatus::SOFT_OOM) {
         return OperationStatus::throttled_out;
       }
       // during the snapshot loading all keys are already sorted, so it makes sense to push it back
@@ -504,9 +559,28 @@ private:
       return OperationStatus::ttl_update_only;
     }
 
+    // here and below inner arrays appear (a.k.a. `array_for_second_key`)
+    // they need for keys with dots and predefined wilcards
+    assert(vk::any_of_equal(processing_key_.get_first_key_type(),
+                            ConfdataFirstKeyType::one_dot_wildcard,
+                            ConfdataFirstKeyType::two_dots_wildcard,
+                            ConfdataFirstKeyType::predefined_wildcard));
+
     // null is inserted by the default
     if (first_key_it->second.is_null()) {
-      first_key_it->second = prepare_array_for(vk::string_view{first_key_it->first.c_str(), first_key_it->first.size()});
+      // create array for keys parts after dot (a.k.a. `array_for_second_key`)
+      auto size_hint_it = size_hints_.find(vk::string_view{first_key_it->first.c_str(), first_key_it->first.size()});
+      if (size_hint_it == size_hints_.end()) {
+        first_key_it->second = array<mixed>{};
+      } else {
+        if (!check_has_enough_memory(array<mixed>::estimate_size(size_hint_it->second.size, size_hint_it->second.is_vector) +
+                                     need_bytes_upper_bound_without_arrays_for_second_keys,
+                                     "array_for_second_key creating on store")) {
+          first_key_it->second = array<mixed>{};
+          return OperationStatus::throttled_out;
+        }
+        first_key_it->second = array<mixed>{size_hint_it->second};
+      }
     }
     assert(first_key_it->second.is_array());
     auto &array_for_second_key = first_key_it->second.as_array();
@@ -515,6 +589,11 @@ private:
       return OperationStatus::no_update;
     }
 
+    size_t bytes_for_copying_array_for_second_key = 3 * array_for_second_key.calculate_memory_for_copying(); // for possible copying and reallocation on insert
+    if (!check_has_enough_memory(bytes_for_copying_array_for_second_key + need_bytes_upper_bound_without_arrays_for_second_keys,
+                                 "array_for_second_key copying on store")) {
+      return OperationStatus::throttled_out;
+    }
     if (!prev_value) {
       // move old element data to garbage; it will be a copy with RC detachment
       put_confdata_var_into_garbage(array_for_second_key, ConfdataGarbageDestroyWay::shallow_first);
@@ -683,13 +762,6 @@ private:
     return processing_value_;
   }
 
-  array<mixed> prepare_array_for(vk::string_view key) const noexcept {
-    auto size_hint_it = size_hints_.find(key);
-    return size_hint_it != size_hints_.end()
-           ? array<mixed>{size_hint_it->second}
-           : array<mixed>{};
-  }
-
   bool is_key_blacklisted(vk::string_view key) const noexcept {
     return blacklist_enabled_ && key_blacklist_.is_blacklisted(key);
   }
@@ -818,7 +890,6 @@ void confdata_binlog_update_cron() noexcept {
   }
 
   auto &confdata_binlog_replayer = ConfdataBinlogReplayer::get();
-  confdata_binlog_replayer.update_memory_status();
 
   if (confdata_binlog_replayer.get_memory_status() == ConfdataBinlogReplayer::MemoryStatus::HARD_OOM) {
     // Don't read binlog events at all. Just freeze confdata state until server restart.
@@ -833,11 +904,24 @@ void confdata_binlog_update_cron() noexcept {
   auto &mem_resource = confdata_manager.get_resource();
   dl::set_current_script_allocator(mem_resource, true);
 
+  auto rollback_guard = vk::finally([&] {
+    dl::restore_default_script_allocator(true);
+    confdata_stats.total_updating_time += std::chrono::steady_clock::now().time_since_epoch();
+  });
+
   auto &previous_confdata_sample = confdata_manager.get_current();
 
-  confdata_binlog_replayer.try_use_previous_confdata_storage_as_init(previous_confdata_sample.get_confdata());
+  bool ok = confdata_binlog_replayer.try_use_previous_confdata_storage_as_init(previous_confdata_sample.get_confdata());
+  if (!ok) {
+    return;
+  }
   binlog_try_read_events();
   confdata_binlog_replayer.delete_expired_elements();
+
+  if (confdata_binlog_replayer.get_memory_status() == ConfdataBinlogReplayer::MemoryStatus::HARD_OOM) {
+    return;
+  }
+
   if (confdata_binlog_replayer.has_new_confdata()) {
     if (confdata_manager.can_next_be_updated()) {
       auto updated_confdata = confdata_binlog_replayer.finish_confdata_update();
@@ -851,9 +935,6 @@ void confdata_binlog_update_cron() noexcept {
   }
 
   confdata_manager.clear_unused_samples();
-
-  dl::restore_default_script_allocator(true);
-  confdata_stats.total_updating_time += std::chrono::steady_clock::now().time_since_epoch();
 }
 
 void write_confdata_stats_to(stats_t *stats) noexcept {
