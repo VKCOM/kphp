@@ -16,8 +16,10 @@ RUN apt update && \
     apt install -y --no-install-recommends \
       git cmake make g++ lld gperf netcat \
       python3.7 python3-pip python3.7-distutils python3.7-dev libpython3.7-dev python3-jsonschema python3-setuptools mysql-server libmysqlclient-dev && \
+    wget https://github.com/curl/curl/releases/download/curl-8_4_0/curl-8.4.0.zip && unzip curl-8.4.0.zip && cd curl-8.4.0 && ./configure --disable-shared --with-openssl --disable-lpad --disable-ldaps && make -j$(nproc) && make install && cd .. && \
+    mkdir /opt/curl840 && mkdir /opt/curl840/lib && mkdir /opt/curl840/include && cp /usr/local/lib/libcurl.a /opt/curl840/lib/ && cp -R /usr/local/include/curl/ /opt/curl840/include/ && \
     python3.7 -m pip install pip && python3.7 -m pip install -r /tmp/requirements.txt && \
-    apt install -y --no-install-recommends curl-kphp-vk kphp-timelib libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
+    apt install -y --no-install-recommends kphp-timelib libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
       libzstd-dev libyaml-cpp-dev libnghttp2-dev zlib1g-dev php7.4-dev libnuma-dev unzip \
       libldap-dev libkrb5-dev postgresql postgresql-server-dev-all && \
     rm -rf /var/lib/apt/lists/*

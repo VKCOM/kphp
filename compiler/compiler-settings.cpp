@@ -132,7 +132,7 @@ void append_curl(std::string &cxx_flags, std::string &ld_flags) noexcept {
     ld_flags += " -lcurl";
 #else
     // TODO make it as an option?
-    const std::string curl_dir = "/opt/curl7600";
+    const std::string curl_dir = "/opt/curl840";
     cxx_flags += " -I" + curl_dir + "/include/";
     ld_flags += " " + curl_dir + "/lib/libcurl.a";
 #endif
