@@ -21,7 +21,7 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       git unzip cmake-data=3.18* cmake=3.18* make g++ gperf netcat \
       python3.7 python3-dev libpython3-dev python3-pip python3-setuptools mysql-server libmysqlclient-dev && \
-    wget https://github.com/curl/curl/releases/download/curl-8_4_0/curl-8.4.0.zip && unzip curl-8.4.0.zip && cd curl-8.4.0 && ./configure --disable-shared --with-openssl --disable-lpad --disable-ldaps && make -j$(nproc) && make install && cd .. && \
+    wget https://github.com/curl/curl/releases/download/curl-8_4_0/curl-8.4.0.zip && unzip curl-8.4.0.zip && cd curl-8.4.0 && ./configure --disable-shared --disable-lpad --disable-ldaps && make -j$(nproc) && make install && cd .. && \
     mkdir /opt/curl840 && mkdir /opt/curl840/lib && mkdir /opt/curl840/include && cp /usr/local/lib/libcurl.a /opt/curl840/lib/ && cp -R /usr/local/include/curl/ /opt/curl840/include/ && \
     pip3 install -r /tmp/requirements.txt && \
     apt-get install -y --no-install-recommends curl-kphp-vk kphp-timelib libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
