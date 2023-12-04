@@ -149,8 +149,8 @@ void ConfdataStats::HeaviestSections::clear() {
 void ConfdataStats::HeaviestSections::register_section(const string *section_name, size_t size) {
   for (int ins_pos = 0; ins_pos < LEN; ++ins_pos) {
     if (size > sorted_desc[ins_pos].second) {
-      for (int shift_pos = LEN - 1; shift_pos >= ins_pos; --shift_pos) {
-        sorted_desc[shift_pos+1] = sorted_desc[shift_pos];
+      for (int shift_pos = LEN - 1; shift_pos > ins_pos; --shift_pos) {
+        sorted_desc[shift_pos] = sorted_desc[shift_pos - 1];
       }
       sorted_desc[ins_pos] = std::make_pair(section_name, size);
       break;
