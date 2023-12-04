@@ -33,10 +33,11 @@ jobs:
       run: |
         brew tap shivammathur/php
         brew update
-        brew install re2c cmake coreutils openssl libiconv re2 pcre yaml-cpp zstd googletest shivammathur/php/php@7.4 python@3.12
+        brew install re2c cmake coreutils openssl libiconv re2 pcre yaml-cpp zstd googletest shivammathur/php/php@7.4 python@3.12 go
         brew link --overwrite --force shivammathur/php/php@7.4
         /usr/local/Frameworks/Python.framework/Versions/3.12/bin/python3.12 -m pip install --upgrade pip --break-system-packages && /usr/local/Frameworks/Python.framework/Versions/3.12/bin/pip3 install jsonschema install --break-system-packages jsonschema
-      
+        go install github.com/vkcom/tl/cmd/tlgen@latest
+
     - name: Run cmake
       run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DDOWNLOAD_MISSING_LIBRARIES=On -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build
 

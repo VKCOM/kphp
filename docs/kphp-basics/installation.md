@@ -75,7 +75,7 @@ sudo apt install kphp vk-tl-tools
 sudo apt install php7.4-vkext
 
 sudo mkdir -p /var/www/vkontakte/data/www/vkontakte.com/tl/
-sudo tl-compiler -e /var/www/vkontakte/data/www/vkontakte.com/tl/scheme.tlo /usr/share/vkontakte/examples/tl-files/common.tl /usr/share/vkontakte/examples/tl-files/tl.tl
+sudo tlgen -ignoreGeneratedCode -tloPath /var/www/vkontakte/data/www/vkontakte.com/tl/scheme.tlo /usr/share/vkontakte/examples/tl-files/common.tl /usr/share/vkontakte/examples/tl-files/tl.tl
 ```
 
 

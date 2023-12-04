@@ -176,9 +176,10 @@ sudo cp ../objs/vkext/modules${PHP_VERSION}/vkext.so $(php-config${PHP_VERSION} 
 
 **Compiling .tlo for php.ini**
 
-Use the `tl-compiler` executable from `vk-tl-tools` package:
+Use the `tlgen` executable from `tlgen` package:  
+`-ignoreGeneratedCode` *- omits generated Golang code of (de)serializers. More on that see [here](https://github.com/vkcom/tl).*
 ```bash
-tl-compiler -e /path/to/output.tlo input1.tl input2.tl ...
+tlgen -ignoreGeneratedCode -tloPath /path/to/output.tlo input1.tl input2.tl ...
 ```
 
 
