@@ -10,6 +10,7 @@
 #include "common/resolver.h"
 #include "runtime/instance-cache.h"
 #include "server/job-workers/shared-memory-manager.h"
+#include "server/confdata-stats.h"
 #include "server/json-logger.h"
 #include "server/php-runner.h"
 #include "server/server-config.h"
@@ -171,9 +172,11 @@ void StatsHouseManager::add_worker_memory_stats(const mem_info_t &mem_stats) {
   client.metric("kphp_by_host_workers_memory", true).tag(worker_type).tag("rss_peak").write_value(mem_stats.rss_peak);
 }
 
-void StatsHouseManager::add_common_master_stats(const workers_stats_t &workers_stats, const memory_resource::MemoryStats &memory_stats, double cpu_s_usage,
-                                               double cpu_u_usage, long long int instance_cache_memory_swaps_ok,
-                                               long long int instance_cache_memory_swaps_fail) {
+void StatsHouseManager::add_common_master_stats(const workers_stats_t &workers_stats,
+                                                const memory_resource::MemoryStats &instance_cache_memory_stats,
+                                                const ConfdataStats &confdata_stats,
+                                                double cpu_s_usage, double cpu_u_usage,
+                                                long long int instance_cache_memory_swaps_ok, long long int instance_cache_memory_swaps_fail) {
   if (engine_tag) {
     client.metric("kphp_version").write_value(atoll(engine_tag));
   }
@@ -208,14 +211,14 @@ void StatsHouseManager::add_common_master_stats(const workers_stats_t &workers_s
   client.metric("kphp_server_total_json_logs_count").write_value(std::get<0>(total_workers_json_count) + master_json_logs_count);
   client.metric("kphp_server_total_json_traces_count").write_value(std::get<1>(total_workers_json_count));
 
-  client.metric("kphp_instance_cache_memory").tag("limit").write_value(memory_stats.memory_limit);
-  client.metric("kphp_instance_cache_memory").tag("used").write_value(memory_stats.memory_used);
-  client.metric("kphp_instance_cache_memory").tag("real_used").write_value(memory_stats.real_memory_used);
+  client.metric("kphp_instance_cache_memory").tag("limit").write_value(instance_cache_memory_stats.memory_limit);
+  client.metric("kphp_instance_cache_memory").tag("used").write_value(instance_cache_memory_stats.memory_used);
+  client.metric("kphp_instance_cache_memory").tag("real_used").write_value(instance_cache_memory_stats.real_memory_used);
 
-  client.metric("kphp_instance_cache_memory_defragmentation_calls").write_value(memory_stats.defragmentation_calls);
+  client.metric("kphp_instance_cache_memory_defragmentation_calls").write_value(instance_cache_memory_stats.defragmentation_calls);
 
-  client.metric("kphp_instance_cache_memory_pieces").tag("huge").write_value(memory_stats.huge_memory_pieces);
-  client.metric("kphp_instance_cache_memory_pieces").tag("small").write_value(memory_stats.small_memory_pieces);
+  client.metric("kphp_instance_cache_memory_pieces").tag("huge").write_value(instance_cache_memory_stats.huge_memory_pieces);
+  client.metric("kphp_instance_cache_memory_pieces").tag("small").write_value(instance_cache_memory_stats.small_memory_pieces);
 
   client.metric("kphp_instance_cache_memory_buffer_swaps").tag("ok").write_value(instance_cache_memory_swaps_ok);
   client.metric("kphp_instance_cache_memory_buffer_swaps").tag("fail").write_value(instance_cache_memory_swaps_fail);
@@ -234,6 +237,23 @@ void StatsHouseManager::add_common_master_stats(const workers_stats_t &workers_s
   client.metric("kphp_instance_cache_elements").tag("cached").write_value(unpack(instance_cache_element_stats.elements_cached));
   client.metric("kphp_instance_cache_elements").tag("logically_expired_and_ignored").write_value(unpack(instance_cache_element_stats.elements_logically_expired_and_ignored));
   client.metric("kphp_instance_cache_elements").tag("logically_expired_but_fetched").write_value(unpack(instance_cache_element_stats.elements_logically_expired_but_fetched));
+
+  const auto &confdata_memory_stats = confdata_stats.get_memory_stats();
+  client.metric("kphp_confdata_memory").tag("limit").write_value(confdata_memory_stats.memory_limit);
+  client.metric("kphp_confdata_memory").tag("used").write_value(confdata_memory_stats.memory_used);
+  client.metric("kphp_confdata_memory").tag("real_used").write_value(confdata_memory_stats.real_memory_used);
+
+  client.metric("kphp_confdata_events").tag("set").write_value(confdata_stats.event_counters.set_events.total + confdata_stats.event_counters.set_forever_events.total);
+  client.metric("kphp_confdata_events").tag("set_blacklisted").write_value(confdata_stats.event_counters.set_events.blacklisted + confdata_stats.event_counters.set_forever_events.blacklisted);
+  client.metric("kphp_confdata_events").tag("delete").write_value(confdata_stats.event_counters.delete_events.total);
+  client.metric("kphp_confdata_events").tag("delete_blacklisted").write_value(confdata_stats.event_counters.delete_events.blacklisted);
+  client.metric("kphp_confdata_events").tag("throttled_out").write_value(confdata_stats.event_counters.throttled_out_total_events);
+
+  for (const auto &[section_name, size] : confdata_stats.heaviest_sections_by_count.sorted_desc) {
+    if (section_name != nullptr && size > 0) { // section_name looks like "highload."
+      client.metric("kphp_confdata_sections_by_count").tag(section_name->c_str()).write_value(size);
+    }
+  }
 
   using namespace job_workers;
   if (vk::singleton<job_workers::SharedMemoryManager>::get().is_initialized()) {

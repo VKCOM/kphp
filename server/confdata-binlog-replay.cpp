@@ -955,6 +955,6 @@ void write_confdata_stats_to(stats_t *stats) noexcept {
     auto &binlog_replayer = ConfdataBinlogReplayer::get();
     confdata_stats.elements_with_delay = binlog_replayer.get_elements_with_delay_count();
     confdata_stats.event_counters = binlog_replayer.get_event_counters();
-    confdata_stats.write_stats_to(stats, ConfdataGlobalManager::get().get_resource().get_memory_stats());
+    confdata_stats.write_stats_to(stats);
   }
 }

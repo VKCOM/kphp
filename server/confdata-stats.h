@@ -66,10 +66,26 @@ struct ConfdataStats : private vk::not_copyable {
     size_t throttled_out_total_events{0};
   } event_counters;
 
+  struct HeaviestSections {
+    static constexpr int LEN = 10;
+
+    // store pointers, not to copy strings when sorting (they point to array keys located in shared mem)
+    std::array<std::pair<const string *, size_t>, LEN> sorted_desc;
+
+    void clear();
+    void register_section(const string *section_name, size_t size);
+  };
+
+  HeaviestSections heaviest_sections_by_count;
+  // in the future, we may want distribution by estimate_memory_usage():
+  // HeaviestSections heaviest_sections_by_mem;
+
+  const memory_resource::MemoryStats &get_memory_stats() const noexcept;
+
   void on_update(const confdata_sample_storage &new_confdata,
                  size_t previous_garbage_size,
                  const ConfdataPredefinedWildcards &predefined_wildcards) noexcept;
-  void write_stats_to(stats_t *stats, const memory_resource::MemoryStats &memory_stats) const noexcept;
+  void write_stats_to(stats_t *stats) const noexcept;
 
 private:
   ConfdataStats() = default;

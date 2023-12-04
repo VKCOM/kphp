@@ -19,6 +19,8 @@ using normalization_function = std::function<string(const string &)>;
 
 enum class script_error_t : uint8_t;
 
+struct ConfdataStats;
+
 class StatsHouseManager : vk::not_copyable {
 public:
   static void init(const std::string &ip, int port) {
@@ -69,7 +71,10 @@ public:
   /**
    * Must be called from master process only
    */
-  void add_common_master_stats(const workers_stats_t &workers_stats, const memory_resource::MemoryStats &memory_stats, double cpu_s_usage, double cpu_u_usage,
+  void add_common_master_stats(const workers_stats_t &workers_stats,
+                               const memory_resource::MemoryStats &instance_cache_memory_stats,
+                               const ConfdataStats &confdata_stats,
+                               double cpu_s_usage, double cpu_u_usage,
                                long long int instance_cache_memory_swaps_ok, long long int instance_cache_memory_swaps_fail);
 
   /**
