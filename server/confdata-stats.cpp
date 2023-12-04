@@ -73,12 +73,6 @@ void ConfdataStats::on_update(const confdata_sample_storage &new_confdata,
       }
     }
   }
-  // todo del
-  for (const auto &item : heaviest_sections_by_count.sorted_desc) {
-    if (item.first != nullptr) {
-      fprintf(stderr, "%s: %d\n", item.first->c_str(), (int)item.second);
-    }
-  }
 
   last_update_time_point = std::chrono::steady_clock::now();
 }
