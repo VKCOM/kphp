@@ -903,11 +903,15 @@ void confdata_binlog_update_cron() noexcept {
 
   auto &confdata_binlog_replayer = ConfdataBinlogReplayer::get();
 
-  if (confdata_binlog_replayer.get_memory_status() == ConfdataBinlogReplayer::MemoryStatus::HARD_OOM) {
-    // Don't read binlog events at all. Just freeze confdata state until server restart.
-    // We can't replay even 'delete' events, because they lead to arrays detachment and copying
-    confdata_binlog_replayer.raise_confdata_oom_error("Confdata state is freezed until server restart");
-    return;
+  switch (confdata_binlog_replayer.get_memory_status()) {
+    case ConfdataBinlogReplayer::MemoryStatus::HARD_OOM:
+      confdata_binlog_replayer.raise_confdata_oom_error("Confdata OOM hard - state is freezed until server restart");
+      return;
+    case ConfdataBinlogReplayer::MemoryStatus::SOFT_OOM:
+      confdata_binlog_replayer.raise_confdata_oom_error("Confdata OOM soft - ignore new key events until server restart");
+      break;
+    case ConfdataBinlogReplayer::MemoryStatus::NORMAL:
+      break;
   }
 
   auto &confdata_stats = ConfdataStats::get();
