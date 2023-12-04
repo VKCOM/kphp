@@ -56,7 +56,7 @@ endif()
 
 find_library(KPHP_H3 h3)
 if(KPHP_H3)
-    add_library(h3 STATIC IMPORTED ${KPHP_H3})
+    add_library(libh3 STATIC IMPORTED ${KPHP_H3})
 else()
     handle_missing_library("h3")
     FetchContent_Declare(

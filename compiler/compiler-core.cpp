@@ -465,7 +465,7 @@ VarPtr CompilerCore::create_var(const std::string &name, VarData::Type type) {
 
 VarPtr CompilerCore::get_global_var(const std::string &name, VarData::Type type,
                                     VertexPtr init_val, bool *is_new_inserted) {
-  TSHashTable<VarPtr>::HTNode *node = global_vars_ht.at(vk::std_hash(name));
+  auto *node = global_vars_ht.at(vk::std_hash(name));
   VarPtr new_var;
   if (!node->data) {
     AutoLocker<Lockable *> locker(node);
