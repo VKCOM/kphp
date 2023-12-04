@@ -44,10 +44,10 @@ def search_tl_client():
 def search_combined_tlo(working_dir):
     if _ENGINE_INSTALL_PATH:
         return _check_file("combined.tlo", _ENGINE_INSTALL_PATH, os.path.isfile)
-    tl_compiler_path = _check_file("objs/bin/tl-compiler", _KPHP_REPO, _check_bin)
+    tlgen_path = _check_file("tlgen", _KPHP_REPO, _check_bin)
     common_tl = _check_file("common/tl-files/common.tl", _KPHP_REPO, os.path.isfile)
     subprocess.call(
-        ["bash", "-c", "{} -e {} {}".format(tl_compiler_path, working_dir + "/combined.tlo", common_tl)],
+        ["bash", "-c", "{} -ignoreGeneratedCode -tloPath {} {}".format(tlgen_path, working_dir + "/combined.tlo", common_tl)],
         env={"ASAN_OPTIONS": "detect_leaks=0"}
     )
     return _check_file("combined.tlo", working_dir, os.path.isfile)
