@@ -72,7 +72,7 @@ echo "deb https://artifactory-external.vkpartner.ru/artifactory/kphp focal main"
 Install packages
 ```bash
 apt-get update
-apt install git cmake make g++ gperf python3-minimal python3-jsonschema \
+apt install git cmake make g++ gperf tlgen python3-minimal python3-jsonschema \
             curl-kphp-vk libuber-h3-dev kphp-timelib libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
             libzstd-dev libyaml-cpp-dev libnghttp2-dev zlib1g-dev php7.4-dev libmysqlclient-dev libnuma-dev \
             postgresql postgresql-server-dev-all libpq-dev libldap-dev libkrb5-dev
