@@ -68,7 +68,7 @@ echo "deb [arch=amd64] https://artifactory-external.vkpartner.ru/artifactory/kph
 
 ```bash
 sudo apt update
-sudo apt install kphp vk-tl-tools
+sudo apt install kphp vk-tl-tools tlgen
 
 # If you want to use php for development, you need to install vkext of the corresponding php version.
 # The following versions are available: 7.4, 8.0, 8.1, 8.2.

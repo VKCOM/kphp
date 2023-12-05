@@ -44,7 +44,7 @@ def search_tl_client():
 def search_combined_tlo(working_dir):
     if _ENGINE_INSTALL_PATH:
         return _check_file("combined.tlo", _ENGINE_INSTALL_PATH, os.path.isfile)
-    tlgen_path = _check_file("tlgen", _KPHP_REPO, _check_bin)
+    tlgen_path = _check_file("tlgen", "/usr/bin", _check_bin)
     common_tl = _check_file("common/tl-files/common.tl", _KPHP_REPO, os.path.isfile)
     subprocess.call(
         ["bash", "-c", "{} -ignoreGeneratedCode -tloPath {} {}".format(tlgen_path, working_dir + "/combined.tlo", common_tl)],
