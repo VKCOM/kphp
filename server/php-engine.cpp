@@ -63,6 +63,7 @@
 #include "runtime/rpc.h"
 #include "runtime/thread-pool.h"
 #include "server/confdata-binlog-replay.h"
+#include "server/confdata-stats.h"
 #include "server/database-drivers/adaptor.h"
 #include "server/database-drivers/connector.h"
 #include "server/job-workers/job-worker-client.h"
@@ -133,7 +134,7 @@ tcp_rpc_client_functions tcp_rpc_client_outbound = [] {
   OUTBOUND CONNECTIONS
  ***/
 
-static int db_port = 3306;
+static int db_port = -1;
 static const char *db_host = "localhost";
 
 conn_type_t ct_tcp_rpc_client_read_all = [] {
@@ -313,8 +314,6 @@ command_t *create_command_net_writer(const char *data, int data_len, command_t *
 
 int run_once_count = 1;
 int queries_to_recreate_script = 100;
-
-std::optional<PhpScript> php_script;
 
 int has_pending_scripts() {
   return php_worker_run_flag || pending_http_queue.first_query != (conn_query *)&pending_http_queue;
@@ -523,13 +522,13 @@ int do_hts_func_wakeup(connection *c, bool flag) {
 
   auto *worker = reinterpret_cast<PhpWorker *>(D->extra);
   assert(worker);
-  double timeout = worker->enter_lifecycle();
-  if (timeout == 0) {
+  std::optional<double> timeout = worker->enter_lifecycle();
+  if (!timeout.has_value()) {
     php_worker.reset();
     hts_at_query_end(c, flag);
   } else {
-    assert (timeout > 0);
-    set_connection_timeout(c, timeout);
+    assert (*timeout > 0);
+    set_connection_timeout(c, *timeout);
     assert (c->pending_queries >= 0 && c->status == conn_wait_net);
   }
   return 0;
@@ -636,9 +635,9 @@ int hts_func_close(connection *c, int who __attribute__((unused))) {
   auto *worker = reinterpret_cast<PhpWorker *>(D->extra);
   if (worker != nullptr) {
     worker->terminate(1, script_error_t::http_connection_close, "http connection close");
-    double timeout = worker->enter_lifecycle();
+    std::optional<double> timeout = worker->enter_lifecycle();
     D->extra = nullptr;
-    assert ("worker is unfinished after closing connection" && timeout == 0);
+    assert ("worker is unfinished after closing connection" && !timeout.has_value());
     php_worker.reset();
   }
   return 0;
@@ -822,14 +821,27 @@ int rpcx_func_wakeup(connection *c) {
 
   auto *worker = reinterpret_cast<PhpWorker *>(D->extra);
   assert(worker);
-  double timeout = worker->enter_lifecycle();
-  if (timeout == 0) {
+  std::optional<double> timeout = worker->enter_lifecycle();
+  if (!timeout.has_value()) {
     php_worker.reset();
     rpcx_at_query_end(c);
   } else {
-    assert (c->pending_queries >= 0 && c->status == conn_wait_net);
-    assert (timeout > 0);
-    set_connection_timeout(c, timeout);
+    if (c->pending_queries < 0 || c->status != conn_wait_net) {
+      std::array<char, 1024> message{'\0'};
+      int id = rand();
+      snprintf(message.data(), message.size(), "PhpWorker state %d, PhpScript state %d. Connection pending queries %d, status %d. "
+                                               "Net timeout %f, finish_time %f, now %f. PhpScript wait net %d. Assert id %d\n",
+              worker->state, php_script.has_value() ? (int)php_script->state : -1, c->pending_queries, c->status, timeout.value(),
+               worker->finish_time, precise_now, worker->waiting, id % 1000);
+      // write only in 0.1% actions
+      if (id % 1000 == 0) {
+        dl_assert_with_coredump(c->pending_queries >= 0 && c->status == conn_wait_net, message.data());
+      } else {
+        dl_assert(c->pending_queries >= 0 && c->status == conn_wait_net, message.data());
+      }
+    }
+    assert (*timeout > 0);
+    set_connection_timeout(c, *timeout);
   }
   return 0;
 }
@@ -840,9 +852,9 @@ int rpcx_func_close(connection *c, int who __attribute__((unused))) {
   auto *worker = reinterpret_cast<PhpWorker *>(D->extra);
   if (worker != nullptr) {
     worker->terminate(1, script_error_t::rpc_connection_close, "rpc connection close");
-    double timeout = worker->enter_lifecycle();
+    std::optional<double> timeout = worker->enter_lifecycle();
     D->extra = nullptr;
-    assert ("worker is unfinished after closing connection" && timeout == 0);
+    assert ("worker is unfinished after closing connection" && !timeout.has_value());
     php_worker.reset();
 
     if (!has_pending_scripts()) {
@@ -872,12 +884,8 @@ static bool check_tasks_manager_pid(process_id_t tasks_manager_pid) {
 
 static double normalize_script_timeout(double timeout_sec) {
   if (timeout_sec < 1) {
-    kprintf("Too small script timeout: %f sec, should be [%d..%d] sec", timeout_sec, 1, MAX_SCRIPT_TIMEOUT);
+    kprintf("Too small script timeout: %f sec, should be at least 1 sec\n", timeout_sec);
     return 1;
-  }
-  if (timeout_sec > MAX_SCRIPT_TIMEOUT) {
-    kprintf("Too big script timeout: %f sec, should be [%d..%d] sec", timeout_sec, 1, MAX_SCRIPT_TIMEOUT);
-    return MAX_SCRIPT_TIMEOUT;
   }
   return timeout_sec;
 }
@@ -1522,9 +1530,7 @@ void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port) n
     vk::singleton<JobWorkerClient>::get().init(logname_id);
   }
 
-  if (no_sql) {
-    sql_target_id = -1;
-  } else {
+  if (db_port != -1) {
     vkprintf(1, "mysql host: %s; port: %d\n", db_host, db_port);
     sql_target_id = get_target(db_host, db_port, &db_ct);
     assert (sql_target_id != -1);
@@ -1647,6 +1653,8 @@ char **get_runtime_options(int *count) noexcept;
 void init_all() {
   srand48((long)cycleclock_now());
 
+  auto start_time = std::chrono::steady_clock::now();
+
   //init pending_http_queue
   pending_http_queue.first_query = pending_http_queue.last_query = (conn_query *)&pending_http_queue;
   php_worker_run_flag = 0;
@@ -1680,6 +1688,10 @@ void init_all() {
   worker_id = (int)lrand48();
 
   init_confdata_binlog_reader();
+
+  auto end_time = std::chrono::steady_clock::now();
+  uint64_t total_init_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count();
+  StatsHouseManager::get().add_init_master_stats(total_init_ns, ConfdataStats::get().initial_loading_time.count());
 }
 
 void init_logname(const char *src) {
@@ -1868,10 +1880,6 @@ int main_args_handler(int i, const char *long_option) {
       if (optarg) {
         return read_option_to(long_option, 1, std::numeric_limits<int>::max(), run_once_count);
       }
-      return 0;
-    }
-    case 'q': {
-      no_sql = 1;
       return 0;
     }
     case 'Q': {
@@ -2231,6 +2239,7 @@ DEPRECATED_OPTION("use-unix", no_argument);
 DEPRECATED_OPTION_SHORT("json-log", "j", no_argument);
 DEPRECATED_OPTION_SHORT("crc32c", "C", no_argument);
 DEPRECATED_OPTION_SHORT("tl-schema", "T", required_argument);
+DEPRECATED_OPTION_SHORT("disable-sql", "q", no_argument);
 
 void parse_main_args(int argc, char *argv[]) {
   usage_set_other_args_desc("");
@@ -2246,7 +2255,6 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("rpc-client", required_argument, 'w', "host and port for client mode (host:port)");
   parse_option("hard-memory-limit", required_argument, 'm', "maximal size of memory used by script");
   parse_option("force-clear-sql", no_argument, 'R', "force clear sql connection every script run");
-  parse_option("disable-sql", no_argument, 'q', "disable using sql");
   parse_option("sql-port", required_argument, 'Q', "sql port");
   parse_option("static-buffers-size", required_argument, 'L', "limit for static buffers length (e.g. limits script output size)");
   parse_option("error-tag", required_argument, 'E', "name of file with engine tag showed on every warning");
@@ -2322,8 +2330,6 @@ void init_default() {
     kprintf ("fatal: not enough workers for general purposes\n");
     exit(1);
   }
-
-  dl_set_default_handlers();
   now = (int)time(nullptr);
 
   pid = getpid();
@@ -2365,6 +2371,7 @@ void init_default() {
 
 int run_main(int argc, char **argv, php_mode mode) {
   init_version_string(NAME_VERSION);
+  dl_set_default_handlers();
   dl_block_all_signals();
 #if !ASAN_ENABLED
   set_core_dump_rlimit(1LL << 40);

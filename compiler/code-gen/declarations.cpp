@@ -928,7 +928,9 @@ void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr
     compile_accept_visitor(W, klass, "ToArrayVisitor");
   }
 
-  if (klass->need_instance_memory_estimate_visitor) {
+  if (klass->need_instance_memory_estimate_visitor ||
+      // for kphp_instance_cache_value_size statshouse metrics
+      klass->need_instance_cache_visitors) {
     W << NL;
     compile_accept_visitor(W, klass, "InstanceMemoryEstimateVisitor");
   }
@@ -936,7 +938,9 @@ void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr
   if (klass->need_instance_cache_visitors) {
     W << NL;
     compile_accept_visitor(W, klass, "InstanceReferencesCountingVisitor");
+    W << NL;
     compile_accept_visitor(W, klass, "InstanceDeepCopyVisitor");
+    W << NL;
     compile_accept_visitor(W, klass, "InstanceDeepDestroyVisitor");
   }
 
@@ -1084,7 +1088,9 @@ void ClassMembersDefinition::compile(CodeGenerator &W) const {
     compile_generic_accept_instantiations(W, klass, "ToArrayVisitor");
   }
 
-  if (klass->need_instance_memory_estimate_visitor) {
+  if (klass->need_instance_memory_estimate_visitor ||
+      // for kphp_instance_cache_value_size statshouse metrics
+      klass->need_instance_cache_visitors) {
     W << NL;
     compile_generic_accept_instantiations(W, klass, "InstanceMemoryEstimateVisitor");
   }
@@ -1092,7 +1098,9 @@ void ClassMembersDefinition::compile(CodeGenerator &W) const {
   if (klass->need_instance_cache_visitors) {
     W << NL;
     compile_generic_accept_instantiations(W, klass, "InstanceReferencesCountingVisitor");
+    W << NL;
     compile_generic_accept_instantiations(W, klass, "InstanceDeepCopyVisitor");
+    W << NL;
     compile_generic_accept_instantiations(W, klass, "InstanceDeepDestroyVisitor");
   }
 

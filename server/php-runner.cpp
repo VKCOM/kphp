@@ -41,6 +41,8 @@ DEFINE_VERBOSITY(php_runner);
 query_stats_t query_stats;
 long long query_stats_id = 1;
 
+std::optional<PhpScript> php_script;
+
 namespace {
 //TODO: sometimes I need to call old handlers
 //TODO: recheck!
@@ -178,7 +180,6 @@ void PhpScript::init(script_t *script, php_query_data_t *data_to_set) noexcept {
 
   error_message = "??? error";
 
-  script_time_stats.script_start_time = get_utime_monotonic();
   script_time = 0;
   net_time = 0;
   script_init_rusage = get_rusage_info();
@@ -319,8 +320,7 @@ void PhpScript::finish() noexcept {
   process_rusage_t script_rusage = get_script_rusage();
 
   vk::singleton<ServerStats>::get().add_request_stats(script_time, net_time, script_init_time_sec, connection_process_time_sec,
-                                                      queries_cnt, long_queries_cnt, script_mem_stats.max_memory_used,
-                                                      script_mem_stats.max_real_memory_used, vk::singleton<CurlMemoryUsage>::get().total_allocated, script_rusage, error_type);
+                                                      queries_cnt, long_queries_cnt, script_mem_stats, vk::singleton<CurlMemoryUsage>::get().total_allocated, script_rusage, error_type);
   if (save_state == run_state_t::error) {
     assert (error_message != nullptr);
     kprintf("Critical error during script execution: %s\n", error_message);
@@ -419,6 +419,7 @@ void PhpScript::run() noexcept {
   check_net_context_errors();
 
   CurException = Optional<bool>{};
+  script_time_stats.script_start_time = get_utime_monotonic();
   run_main->run();
   if (CurException.is_null()) {
     set_script_result(nullptr);
@@ -514,10 +515,6 @@ void PhpScript::set_timeout(double t) noexcept {
   disable_timeout();
   static itimerval timer;
 
-  if (t > MAX_SCRIPT_TIMEOUT) {
-    return;
-  }
-
   int sec = (int)t, usec = (int)((t - sec) * 1000000);
   timer.it_value.tv_sec = sec;
   timer.it_value.tv_usec = usec;
@@ -537,4 +534,10 @@ void PhpScript::terminate(const char *error_message_, script_error_t error_type_
   state = run_state_t::error;
   error_type = error_type_;
   error_message = error_message_;
+}
+
+bool PhpScript::is_running() const noexcept {
+  return vk::any_of_equal(state, run_state_t::running, run_state_t::query,
+                          run_state_t::query_running, run_state_t::ready,
+                          run_state_t::error);
 }

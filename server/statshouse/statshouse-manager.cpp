@@ -11,7 +11,6 @@
 #include "runtime/instance-cache.h"
 #include "server/job-workers/shared-memory-manager.h"
 #include "server/json-logger.h"
-#include "server/php-engine-vars.h"
 #include "server/php-runner.h"
 #include "server/server-config.h"
 #include "server/server-stats.h"
@@ -95,8 +94,8 @@ void StatsHouseManager::generic_cron_check_if_tag_host_needed() {
   }
 }
 
-void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_time_ns, script_error_t error, uint64_t memory_used,
-                                         uint64_t real_memory_used, uint64_t script_queries, uint64_t long_script_queries,
+void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_time_ns, script_error_t error,
+                                          const memory_resource::MemoryStats &script_memory_stats, uint64_t script_queries, uint64_t long_script_queries,
                                           uint64_t script_user_time_ns, uint64_t script_system_time_ns,
                                           uint64_t script_init_time, uint64_t http_connection_process_time,
                                           uint64_t voluntary_context_switches, uint64_t involuntary_context_switches) {
@@ -126,8 +125,11 @@ void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_
     client.metric("kphp_by_host_request_errors", true).tag(status).tag(worker_type).write_count(1);
   }
 
-  client.metric("kphp_memory_script_usage").tag("used").tag(worker_type).write_value(memory_used);
-  client.metric("kphp_memory_script_usage").tag("real_used").tag(worker_type).write_value(real_memory_used);
+  client.metric("kphp_memory_script_usage").tag("used").tag(worker_type).write_value(script_memory_stats.memory_used);
+  client.metric("kphp_memory_script_usage").tag("real_used").tag(worker_type).write_value(script_memory_stats.real_memory_used);
+
+  client.metric("kphp_memory_script_allocated_total").tag(worker_type).write_value(script_memory_stats.total_memory_allocated);
+  client.metric("kphp_memory_script_allocations_count").tag(worker_type).write_value(script_memory_stats.total_allocations);
 
   client.metric("kphp_requests_outgoing_queries").tag(worker_type).write_value(script_queries);
   client.metric("kphp_requests_outgoing_long_queries").tag(worker_type).write_value(long_script_queries);
@@ -239,6 +241,17 @@ void StatsHouseManager::add_common_master_stats(const workers_stats_t &workers_s
     client.metric("kphp_workers_jobs_queue_size").write_value(unpack(job_stats.job_queue_size));
     this->add_job_workers_shared_memory_stats(job_stats);
   }
+}
+
+void StatsHouseManager::add_init_master_stats(uint64_t total_init_ns, uint64_t confdata_init_ns) {
+  client.metric("kphp_by_host_master_total_init_time", true).write_value(total_init_ns);
+  client.metric("kphp_by_host_master_confdata_init_time", true).write_value(confdata_init_ns);
+}
+
+void StatsHouseManager::add_extended_instance_cache_stats(std::string_view type, std::string_view status, const string &key, uint64_t size) {
+  dl::CriticalSectionGuard guard;
+  string normalize_key = instance_cache_key_normalization_function(key);
+  client.metric("kphp_instance_cache_data_size", true).tag(type).tag(status).tag(normalize_key.c_str()).write_value(size);
 }
 
 void StatsHouseManager::add_job_workers_shared_memory_stats(const job_workers::JobStats &job_stats) {

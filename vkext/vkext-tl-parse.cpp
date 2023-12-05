@@ -82,6 +82,17 @@ int tl_eparse_string(char **s) {
   return len;
 }
 
+std::string tl_parse_string() {
+  std::string res;
+  char *s = nullptr;
+  int l = tl_parse_string(&s);
+  if (l < 0) {
+    return res;
+  }
+  res.assign(s);
+  return res;
+}
+
 char *tl_parse_error() {
   return tl.error;
 }

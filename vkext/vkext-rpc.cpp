@@ -30,7 +30,7 @@
 
 #include "vkext/vkext-errors.h"
 #include "vkext/vkext-rpc-include.h"
-#include "vkext/vkext-schema-memcache.h"
+#include "vkext/vkext-rpc-tl-serialization.h"
 #include "vkext/vkext.h"
 
 struct process_id PID;

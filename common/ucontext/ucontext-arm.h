@@ -10,8 +10,8 @@
 
 struct libucontext_mcontext {
   unsigned long fault_address;
-  unsigned long regs[31];
-  unsigned long sp, pc, pstate;
+  unsigned long regs[29];
+  unsigned long fp, lr, sp, pc, pstate;
   long double __reserved[256];
 };
 
