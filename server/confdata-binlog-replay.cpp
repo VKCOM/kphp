@@ -10,6 +10,7 @@
 #include <cmath>
 #include <forward_list>
 #include <map>
+#include <optional>
 #include <string_view>
 
 #include "common/binlog/binlog-replayer.h"
@@ -36,6 +37,7 @@ struct {
   size_t memory_limit{2u * 1024u * 1024u * 1024u};
   double soft_oom_threshold_ratio = 0.85;
   double hard_oom_threshold_ratio = 0.95;
+  double confdata_update_timeout_sec = 0.3;
   std::unique_ptr<re2::RE2> key_blacklist_pattern;
   std::forward_list<vk::string_view> force_ignore_prefixes;
   std::unordered_set<vk::string_view> predefined_wildcards;
@@ -50,6 +52,7 @@ public:
   enum class OperationStatus {
     no_update,
     throttled_out,
+    timed_out,
     blacklisted,
     ttl_update_only,
     full_update
@@ -170,6 +173,7 @@ public:
     for (int i = 0; i < nrecords; i++) {
       if (index_offset[i] >= 0) {
         auto res = store_element(reinterpret_cast<const entry_type &>(index_binary_data[index_offset[i]]));
+        assert(res != OperationStatus::timed_out);
         if (res == OperationStatus::throttled_out) {
           ret_code = -1;
           raise_confdata_oom_error("Can't read confdata snapshot on start");
@@ -280,7 +284,7 @@ public:
       }
       assert(head->second.size() <= std::numeric_limits<short>::max());
       auto res = delete_element(head->second.c_str(), static_cast<short>(head->second.size()));
-      if (res == OperationStatus::throttled_out) {
+      if (res == OperationStatus::throttled_out || res == OperationStatus::timed_out) {
         return;
       }
       assert(expired_elements == expiration_trace_.size() + 1);
@@ -295,7 +299,24 @@ public:
   const ConfdataStats::EventCounters &get_event_counters() const noexcept {
     return event_counters_;
   }
+  
+  void on_start_update_cycle(double update_timeout_sec) noexcept {
+    binlog_update_start_time_point_ = std::chrono::steady_clock::now();
+    if (update_timeout_sec > 0) {
+      update_timeout_sec_ = std::chrono::duration<double>{update_timeout_sec};
+    }
+  }
 
+  bool on_finish_update_cycle() noexcept {
+    bool ok = !is_update_timeout_expired();
+    update_timeout_sec_.reset();
+    return ok;
+  }
+  
+  bool is_update_timeout_expired() const noexcept {
+    return update_timeout_sec_.has_value() &&
+           std::chrono::steady_clock::now() - binlog_update_start_time_point_ > update_timeout_sec_;
+  }
 private:
   ConfdataBinlogReplayer() noexcept:
     garbage_from_previous_confdata_sample_(new(&garbage_mem_) GarbageList{}),
@@ -355,6 +376,9 @@ private:
 
   template<typename F>
   OperationStatus generic_operation(const char *key, short key_len, int delay, const F &operation) noexcept {
+    if (is_update_timeout_expired()) {
+      return OperationStatus::timed_out;
+    }
     if (get_memory_status() == MemoryStatus::HARD_OOM) {
       return OperationStatus::throttled_out;
     }
@@ -426,7 +450,6 @@ private:
   }
 
   replay_binlog_result finish_operation(OperationStatus status, ConfdataStats::EventCounters::Event &event) noexcept {
-    ++event.total;
     switch (status) {
       case OperationStatus::no_update:
         ++event.ignored;
@@ -434,6 +457,9 @@ private:
       case OperationStatus::throttled_out:
         ++event.throttled_out;
         ++event_counters_.throttled_out_total_events;
+        break;
+      case OperationStatus::timed_out:
+        ++event_counters_.update_timeouts_total;
         break;
       case OperationStatus::blacklisted:
         ++event.blacklisted;
@@ -444,7 +470,11 @@ private:
       case OperationStatus::full_update:
         break;
     }
-    return get_memory_status() == MemoryStatus::HARD_OOM ? REPLAY_BINLOG_STOP_READING : REPLAY_BINLOG_OK;
+    if (get_memory_status() == MemoryStatus::HARD_OOM || status == OperationStatus::timed_out) {
+      return REPLAY_BINLOG_STOP_READING;
+    }
+    ++event.total;
+    return REPLAY_BINLOG_OK;
   }
 
   OperationStatus delete_processing_element(MemoryStatus memory_status) noexcept {
@@ -778,6 +808,9 @@ private:
   size_t soft_oom_memory_limit_, hard_oom_memory_limit_;
   bool soft_oom_reached_{false}, hard_oom_reached_{false};
 
+  std::chrono::steady_clock::time_point binlog_update_start_time_point_{std::chrono::nanoseconds::zero()};
+  std::optional<std::chrono::duration<double>> update_timeout_sec_;
+
   std::aligned_storage_t<sizeof(confdata_sample_storage), alignof(confdata_sample_storage)> confdata_mem_;
   confdata_sample_storage *updating_confdata_storage_{nullptr};
   std::aligned_storage_t<sizeof(GarbageList), alignof(GarbageList)> garbage_mem_;
@@ -811,6 +844,10 @@ void set_confdata_memory_limit(size_t memory_limit) noexcept {
 
 void set_confdata_blacklist_pattern(std::unique_ptr<re2::RE2> &&key_blacklist_pattern) noexcept {
   confdata_settings.key_blacklist_pattern = std::move(key_blacklist_pattern);
+}
+
+void set_confdata_update_timeout(double timeout_sec) noexcept {
+  confdata_settings.confdata_update_timeout_sec = timeout_sec;
 }
 
 void add_confdata_force_ignore_prefix(const char *key_ignore_prefix) noexcept {
@@ -876,8 +913,7 @@ void init_confdata_binlog_reader() noexcept {
   auto &confdata_binlog_replayer = ConfdataBinlogReplayer::get();
   confdata_binlog_replayer.init(confdata_manager.get_resource());
   engine_default_load_index(confdata_settings.binlog_mask);
-  engine_default_read_binlog();
-  confdata_binlog_replayer.delete_expired_elements();
+  update_confdata_state_from_binlog(true, 10 * confdata_settings.confdata_update_timeout_sec);
   if (confdata_binlog_replayer.get_memory_status() != ConfdataBinlogReplayer::MemoryStatus::NORMAL) {
     confdata_binlog_replayer.raise_confdata_oom_error("Can't read confdata binlog on start");
     exit(1);
@@ -932,8 +968,7 @@ void confdata_binlog_update_cron() noexcept {
   if (!ok) {
     return;
   }
-  binlog_try_read_events();
-  confdata_binlog_replayer.delete_expired_elements();
+  update_confdata_state_from_binlog(false, confdata_settings.confdata_update_timeout_sec);
 
   if (confdata_binlog_replayer.get_memory_status() == ConfdataBinlogReplayer::MemoryStatus::HARD_OOM) {
     return;
@@ -954,6 +989,27 @@ void confdata_binlog_update_cron() noexcept {
   }
 
   confdata_manager.clear_unused_samples();
+}
+
+bool update_confdata_state_from_binlog(bool is_initial_reading, double timeout_sec) noexcept {
+  auto &confdata_binlog_replayer = ConfdataBinlogReplayer::get();
+  confdata_binlog_replayer.on_start_update_cycle(timeout_sec);
+
+  if (is_initial_reading) {
+    engine_default_read_binlog();
+  } else {
+    binlog_try_read_events();
+  }
+
+  confdata_binlog_replayer.delete_expired_elements();
+
+  bool ok = confdata_binlog_replayer.on_finish_update_cycle();
+
+  if (!ok) {
+    // TODO: critical?
+    log_server_warning("Confdata binlog %supdate timeout %f sec expired", is_initial_reading ? "initial " : "", timeout_sec);
+  }
+  return ok;
 }
 
 void write_confdata_stats_to(stats_t *stats) noexcept {

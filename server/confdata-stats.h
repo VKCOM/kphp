@@ -64,6 +64,7 @@ struct ConfdataStats : private vk::not_copyable {
 
     size_t unsupported_total_events{0};
     size_t throttled_out_total_events{0};
+    size_t update_timeouts_total{0};
   } event_counters;
 
   struct HeaviestSections {

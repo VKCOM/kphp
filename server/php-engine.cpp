@@ -2215,6 +2215,12 @@ int main_args_handler(int i, const char *long_option) {
       add_confdata_force_ignore_prefix(optarg);
       return 0;
     }
+    case 2038: {
+      double timeout_sec;
+      int res = read_option_to(long_option, 0.0, std::numeric_limits<double>::max(), timeout_sec);
+      set_confdata_update_timeout(timeout_sec);
+      return res;
+    }
     default:
       return -1;
   }
@@ -2325,6 +2331,8 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("thread-pool-ratio", required_argument, 2035, "the thread pool size ratio of the overall cpu numbers");
   parse_option("thread-pool-size", required_argument, 2036, "the total threads num per worker");
   parse_option("confdata-force-ignore-keys-prefix", required_argument, 2037, "an emergency option, e.g. 'highload.vid*', to forcibly drop keys from snapshot/binlog; may be used multiple times");
+  parse_option("confdata-update-timeout", required_argument, 2038, "cron confdata binlog replaying will be forcibly stopped after the specified timeout (default: 0.3 sec)"
+                                                                   "Initial binlog is readed with x10 times larger timeout");
 
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
