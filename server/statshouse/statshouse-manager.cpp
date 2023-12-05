@@ -174,7 +174,6 @@ void StatsHouseManager::add_worker_memory_stats(const mem_info_t &mem_stats) {
 
 void StatsHouseManager::add_common_master_stats(const workers_stats_t &workers_stats,
                                                 const memory_resource::MemoryStats &instance_cache_memory_stats,
-                                                const ConfdataStats &confdata_stats,
                                                 double cpu_s_usage, double cpu_u_usage,
                                                 long long int instance_cache_memory_swaps_ok, long long int instance_cache_memory_swaps_fail) {
   if (engine_tag) {
@@ -237,23 +236,6 @@ void StatsHouseManager::add_common_master_stats(const workers_stats_t &workers_s
   client.metric("kphp_instance_cache_elements").tag("cached").write_value(unpack(instance_cache_element_stats.elements_cached));
   client.metric("kphp_instance_cache_elements").tag("logically_expired_and_ignored").write_value(unpack(instance_cache_element_stats.elements_logically_expired_and_ignored));
   client.metric("kphp_instance_cache_elements").tag("logically_expired_but_fetched").write_value(unpack(instance_cache_element_stats.elements_logically_expired_but_fetched));
-
-  const auto &confdata_memory_stats = confdata_stats.get_memory_stats();
-  client.metric("kphp_confdata_memory").tag("limit").write_value(confdata_memory_stats.memory_limit);
-  client.metric("kphp_confdata_memory").tag("used").write_value(confdata_memory_stats.memory_used);
-  client.metric("kphp_confdata_memory").tag("real_used").write_value(confdata_memory_stats.real_memory_used);
-
-  client.metric("kphp_confdata_events").tag("set").write_value(confdata_stats.event_counters.set_events.total + confdata_stats.event_counters.set_forever_events.total);
-  client.metric("kphp_confdata_events").tag("set_blacklisted").write_value(confdata_stats.event_counters.set_events.blacklisted + confdata_stats.event_counters.set_forever_events.blacklisted);
-  client.metric("kphp_confdata_events").tag("delete").write_value(confdata_stats.event_counters.delete_events.total);
-  client.metric("kphp_confdata_events").tag("delete_blacklisted").write_value(confdata_stats.event_counters.delete_events.blacklisted);
-  client.metric("kphp_confdata_events").tag("throttled_out").write_value(confdata_stats.event_counters.throttled_out_total_events);
-
-  for (const auto &[section_name, size] : confdata_stats.heaviest_sections_by_count.sorted_desc) {
-    if (section_name != nullptr && size > 0) { // section_name looks like "highload."
-      client.metric("kphp_confdata_sections_by_count").tag(section_name->c_str()).write_value(size);
-    }
-  }
 
   using namespace job_workers;
   if (vk::singleton<job_workers::SharedMemoryManager>::get().is_initialized()) {
@@ -321,4 +303,25 @@ size_t StatsHouseManager::add_job_workers_shared_memory_buffers_stats(const job_
   client.metric("kphp_job_workers_shared_extra_buffers").tag(size_tag).tag("released").write_value(released_buffers);
 
   return memory_used;
+}
+
+void StatsHouseManager::add_confdata_master_stats(const ConfdataStats &confdata_stats) {
+  const auto &memory_stats = confdata_stats.get_memory_stats();
+  client.metric("kphp_confdata_memory").tag("limit").write_value(memory_stats.memory_limit);
+  client.metric("kphp_confdata_memory").tag("used").write_value(memory_stats.memory_used);
+  client.metric("kphp_confdata_memory").tag("real_used").write_value(memory_stats.real_memory_used);
+
+  const auto &events = confdata_stats.event_counters;
+  client.metric("kphp_confdata_events").tag("set").write_value(events.set_events.total + events.set_forever_events.total);
+  client.metric("kphp_confdata_events").tag("set_blacklisted").write_value(events.set_events.blacklisted + events.set_forever_events.blacklisted);
+  client.metric("kphp_confdata_events").tag("delete").write_value(events.delete_events.total);
+  client.metric("kphp_confdata_events").tag("delete_blacklisted").write_value(events.delete_events.blacklisted);
+  client.metric("kphp_confdata_events").tag("throttled_out").write_value(events.throttled_out_total_events);
+
+  for (const auto &[section_name, size] : confdata_stats.heaviest_sections_by_count.sorted_desc) {
+    if (section_name != nullptr && size > 0) { // section_name looks like "highload."
+      client.metric("kphp_confdata_sections_by_count").tag(section_name->c_str()).write_value(size);
+      // fprintf(stderr, "%s: %d\n", section_name->c_str(), static_cast<int>(size));
+    }
+  }
 }

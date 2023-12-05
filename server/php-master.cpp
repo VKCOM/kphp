@@ -54,7 +54,6 @@
 #include "runtime/instance-cache.h"
 #include "runtime/thread-pool.h"
 #include "server/confdata-binlog-replay.h"
-#include "server/confdata-stats.h"
 #include "server/http-server-context.h"
 #include "server/lease-rpc-client.h"
 #include "server/master-name.h"
@@ -1400,7 +1399,7 @@ static void master_cron() {
     // write stats at the beginning to avoid spikes in graphs
     send_data_to_statsd_with_prefix(vk::singleton<ServerConfig>::get().get_statsd_prefix(), stats_tag_kphp_server);
     const auto cpu_stats = server_stats.cpu[1].get_stat();
-    StatsHouseManager::get().add_common_master_stats(workers_stats, instance_cache_get_memory_stats(), ConfdataStats::get(), cpu_stats.cpu_s_usage, cpu_stats.cpu_u_usage,
+    StatsHouseManager::get().add_common_master_stats(workers_stats, instance_cache_get_memory_stats(), cpu_stats.cpu_s_usage, cpu_stats.cpu_u_usage,
                                                      instance_cache_memory_swaps_ok, instance_cache_memory_swaps_fail);
   }
   create_all_outbound_connections();

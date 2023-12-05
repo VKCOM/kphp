@@ -73,7 +73,6 @@ public:
    */
   void add_common_master_stats(const workers_stats_t &workers_stats,
                                const memory_resource::MemoryStats &instance_cache_memory_stats,
-                               const ConfdataStats &confdata_stats,
                                double cpu_s_usage, double cpu_u_usage,
                                long long int instance_cache_memory_swaps_ok, long long int instance_cache_memory_swaps_fail);
 
@@ -86,6 +85,8 @@ public:
    * before calling the method, be sure to is_extended_instance_cache_stats_enabled() is true
    */
   void add_extended_instance_cache_stats(std::string_view type, std::string_view status, const string &key, uint64_t size = 0);
+
+  void add_confdata_master_stats(const ConfdataStats &confdata_stats);
 
 private:
   StatsHouseClient client;

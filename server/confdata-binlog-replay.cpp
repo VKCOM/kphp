@@ -27,6 +27,7 @@
 #include "server/confdata-binlog-events.h"
 #include "server/confdata-stats.h"
 #include "server/server-log.h"
+#include "server/statshouse/statshouse-manager.h"
 
 namespace {
 
@@ -942,6 +943,8 @@ void confdata_binlog_update_cron() noexcept {
     if (confdata_manager.can_next_be_updated()) {
       auto updated_confdata = confdata_binlog_replayer.finish_confdata_update();
       confdata_stats.on_update(updated_confdata.new_confdata, updated_confdata.previous_confdata_garbage_size, confdata_manager.get_predefined_wildcards());
+      // save confdata stats here (not from master cron), because pointers to strings (key names) may become incorrect
+      StatsHouseManager::get().add_confdata_master_stats(confdata_stats);
       previous_confdata_sample.save_garbage(std::move(updated_confdata.previous_confdata_garbage));
       const bool switched = confdata_manager.try_switch_to_next_sample(std::move(updated_confdata.new_confdata));
       assert(switched);
