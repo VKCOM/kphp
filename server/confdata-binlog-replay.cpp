@@ -501,7 +501,7 @@ private:
       return OperationStatus::no_update;
     }
 
-    if (array_for_second_key.get_reference_counter() > 1) {
+    if (array_for_second_key.get_reference_counter() > 1) { // means it's shared and need to be detached before modifying
       if (!check_has_enough_memory(array_for_second_key.calculate_memory_for_copying(), "array_for_second_key copying on delete")) {
         return OperationStatus::throttled_out;
       }
@@ -600,6 +600,10 @@ private:
 
     // null is inserted by the default
     if (first_key_it->second.is_null()) {
+      if (memory_status == MemoryStatus::SOFT_OOM) {
+        first_key_it->second = array<mixed>{}; // to fit asserts that it's array
+        return OperationStatus::throttled_out;
+      }
       // create array for keys parts after dot (a.k.a. `array_for_second_key`)
       auto size_hint_it = size_hints_.find(vk::string_view{first_key_it->first.c_str(), first_key_it->first.size()});
       if (size_hint_it == size_hints_.end()) {
@@ -617,6 +621,11 @@ private:
     assert(first_key_it->second.is_array());
     auto &array_for_second_key = first_key_it->second.as_array();
     const auto *prev_value = element_exists ? array_for_second_key.find_value(processing_key_.get_second_key()) : nullptr;
+
+    if (!prev_value && memory_status == MemoryStatus::SOFT_OOM) {
+      // in soft OOM we ignore new keys
+      return OperationStatus::throttled_out;
+    }
     if (!can_element_be_saved(E, prev_value != nullptr)) {
       return OperationStatus::no_update;
     }

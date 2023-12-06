@@ -138,6 +138,7 @@ void ConfdataStats::write_stats_to(stats_t *stats) const noexcept {
   stats->add_gauge_stat_with_type_tag("confdata.binlog_events", "incr_tiny", event_counters.incr_tiny_events);
   stats->add_gauge_stat_with_type_tag("confdata.binlog_events", "append", event_counters.append_events);
   stats->add_gauge_stat_with_type_tag("confdata.binlog_events", "unsupported_total", event_counters.unsupported_total_events);
+  stats->add_gauge_stat_with_type_tag("confdata.binlog_events", "throttled_out_total", event_counters.throttled_out_total_events);
 }
 
 void ConfdataStats::HeaviestSections::clear() {
