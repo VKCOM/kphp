@@ -108,13 +108,6 @@ void sigusr2_handler(int signum) {
   }
 }
 
-void php_assert_handler(int signum) {
-  kwrite_str(2, "in php_assert_handler (SIGRTMIN+1 signal)\n");
-  if (check_signal_critical_section(signum, "SIGRTMIN+1")) {
-    perform_error_if_running("php assert error\n", script_error_t::php_assert);
-  }
-}
-
 void stack_overflow_handler(int signum) {
   kwrite_str(2, "in stack_overflow_handler (SIGRTMIN+2 signal)\n");
   if (check_signal_critical_section(signum, "SIGRTMIN+2")) {
@@ -247,7 +240,6 @@ void init_handlers() {
 
   ksignal(SIGALRM, default_sigalrm_handler);
   ksignal(SIGUSR2, sigusr2_handler);
-  ksignal(SIGPHPASSERT, php_assert_handler);
   ksignal(SIGSTACKOVERFLOW, stack_overflow_handler);
 
   dl_sigaction(SIGSEGV, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, sigsegv_handler);

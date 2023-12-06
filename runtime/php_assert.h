@@ -30,7 +30,7 @@ struct C$Throwable;
 const char *php_uncaught_exception_error(const class_instance<C$Throwable> &ex) noexcept;
 
 void php_assert__(const char *msg, const char *file, int line) __attribute__((noreturn));
-void raise_php_assert_signal__();
+void php_assert_callback__();
 
 #define php_assert(EX) do {                          \
   if (unlikely(!(EX))) {                             \
@@ -40,7 +40,7 @@ void raise_php_assert_signal__();
 
 #define php_critical_error(format, ...) do {                                                              \
   php_error ("Critical error \"" format "\" in file %s on line %d", ##__VA_ARGS__, __FILE__, __LINE__);   \
-  raise_php_assert_signal__();                                                                            \
+  php_assert_callback__();                                                                                \
   fprintf (stderr, "_exiting in php_critical_error\n");                                                   \
   _exit (1);                                                                                              \
 } while(0)

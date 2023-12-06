@@ -29,6 +29,7 @@
 #include "runtime/kphp_tracing.h"
 #include "runtime/oom_handler.h"
 #include "runtime/profiler.h"
+#include "runtime/php_assert.h"
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
 #include "server/php-queries.h"
@@ -490,6 +491,11 @@ PhpScript::script_time_stats_t PhpScript::script_time_stats;
 
 static __inline__ void *get_sp() {
   return __builtin_frame_address(0);
+}
+
+void php_assert_callback__() {
+  assert(dl::in_critical_section == 0);
+  perform_error_if_running("php assert error\n", script_error_t::php_assert);
 }
 
 void check_stack_overflow() __attribute__ ((noinline));
