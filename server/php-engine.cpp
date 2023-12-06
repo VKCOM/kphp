@@ -2221,6 +2221,12 @@ int main_args_handler(int i, const char *long_option) {
       set_confdata_update_timeout(timeout_sec);
       return res;
     }
+    case 2039: {
+      double soft_oom_ratio;
+      int res = read_option_to(long_option, 0.0, CONFDATA_DEFAULT_HARD_OOM_RATIO, soft_oom_ratio);
+      set_confdata_soft_oom_ratio(soft_oom_ratio);
+      return res;
+    }
     default:
       return -1;
   }
@@ -2333,6 +2339,8 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("confdata-force-ignore-keys-prefix", required_argument, 2037, "an emergency option, e.g. 'highload.vid*', to forcibly drop keys from snapshot/binlog; may be used multiple times");
   parse_option("confdata-update-timeout", required_argument, 2038, "cron confdata binlog replaying will be forcibly stopped after the specified timeout (default: 0.3 sec)"
                                                                    "Initial binlog is readed with x10 times larger timeout");
+  parse_option("confdata-soft-oom-ratio", required_argument, 2039, "Memory limit ratio to start ignoring new keys related events (default: 0.85)."
+                                                                   "Can't be > hard oom ratio (0.95)");
 
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);

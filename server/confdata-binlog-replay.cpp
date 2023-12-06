@@ -35,8 +35,8 @@ namespace {
 struct {
   const char *binlog_mask{nullptr};
   size_t memory_limit{2u * 1024u * 1024u * 1024u};
-  double soft_oom_threshold_ratio = 0.85;
-  double hard_oom_threshold_ratio = 0.95;
+  double soft_oom_threshold_ratio = CONFDATA_DEFAULT_SOFT_OOM_RATIO;
+  double hard_oom_threshold_ratio = CONFDATA_DEFAULT_HARD_OOM_RATIO;
   double confdata_update_timeout_sec = 0.3;
   std::unique_ptr<re2::RE2> key_blacklist_pattern;
   std::forward_list<vk::string_view> force_ignore_prefixes;
@@ -833,6 +833,10 @@ private:
 };
 
 } // namespace
+
+void set_confdata_soft_oom_ratio(double soft_oom_ratio) noexcept {
+  confdata_settings.soft_oom_threshold_ratio = soft_oom_ratio;
+}
 
 void set_confdata_binlog_mask(const char *mask) noexcept {
   confdata_settings.binlog_mask = mask;
