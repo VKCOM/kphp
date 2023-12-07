@@ -2360,6 +2360,7 @@ void init_default() {
   now = (int)time(nullptr);
 
   pid = getpid();
+  master_pid = getpid();
   // RPC part
   PID.port = (short)rpc_port;
 

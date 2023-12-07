@@ -22,6 +22,7 @@ double oom_handling_memory_ratio = 0.00;
 
 int worker_id = -1;
 int pid = -1;
+int master_pid = -1;
 
 ProcessType process_type = ProcessType::master;
 
