@@ -74,7 +74,7 @@ public:
     HARD_OOM
   };
 
-  MemoryStatus get_memory_status() noexcept {
+  MemoryStatus current_memory_status() noexcept {
     update_memory_status();
     if (hard_oom_reached_) return MemoryStatus::HARD_OOM;
     if (soft_oom_reached_) return MemoryStatus::SOFT_OOM;
@@ -187,22 +187,25 @@ public:
   }
 
   OperationStatus delete_element(const char *key, short key_len) noexcept {
-    return generic_operation(key, key_len, -1, [this] {
-      return delete_processing_element(get_memory_status());
+    auto memory_status = current_memory_status();
+    return generic_operation(key, key_len, -1, memory_status, [this] (MemoryStatus memory_status) {
+      return delete_processing_element(memory_status);
     });
   }
 
   OperationStatus touch_element(const lev_confdata_touch &E) noexcept {
-    return generic_operation(E.key, static_cast<short>(E.key_len), E.delay, [this] {
-      return touch_processing_element(get_memory_status());
+    auto memory_status = current_memory_status();
+    return generic_operation(E.key, static_cast<short>(E.key_len), E.delay, memory_status, [this] (MemoryStatus memory_status) {
+      return touch_processing_element(memory_status);
     });
   }
 
   template<class BASE, int OPERATION>
   OperationStatus store_element(const lev_confdata_store_wrapper<BASE, OPERATION> &E) noexcept {
+    auto memory_status = current_memory_status();
     // don't even try to capture E by value; it'll try to copy it and it would be very sad :(
-    return generic_operation(E.data, E.key_len, E.get_delay(), [this, &E] {
-      return store_processing_element(E, get_memory_status());
+    return generic_operation(E.data, E.key_len, E.get_delay(), memory_status, [this, &E] (MemoryStatus memory_status) {
+      return store_processing_element(E, memory_status);
     });
   }
 
@@ -375,11 +378,12 @@ private:
   }
 
   template<typename F>
-  OperationStatus generic_operation(const char *key, short key_len, int delay, const F &operation) noexcept {
+  OperationStatus generic_operation(const char *key, short key_len, int delay, MemoryStatus memory_status, const F &operation) noexcept {
+    // memory_status is unchanged during the whole operation
     if (is_update_timeout_expired()) {
       return OperationStatus::timed_out;
     }
-    if (get_memory_status() == MemoryStatus::HARD_OOM) {
+    if (memory_status == MemoryStatus::HARD_OOM) {
       return OperationStatus::throttled_out;
     }
     // TODO assert?
@@ -404,7 +408,7 @@ private:
     for (size_t wildcard_len : predefined_wildcard_lengths) {
       assert(wildcard_len <= std::numeric_limits<int16_t>::max());
       processing_key_.update_with_predefined_wildcard(key, key_len, static_cast<int16_t>(wildcard_len));
-      const auto operation_status = operation();
+      const auto operation_status = operation(memory_status);
       if (operation_status == OperationStatus::throttled_out) {
         return OperationStatus::throttled_out;
       }
@@ -418,14 +422,14 @@ private:
     if (predefined_wildcard_lengths.empty() || last_operation_status == OperationStatus::full_update) {
       const auto first_key_type = processing_key_.update(key, key_len);
       if (predefined_wildcard_lengths.empty() || first_key_type != ConfdataFirstKeyType::simple_key) {
-        const auto operation_status = operation();
+        const auto operation_status = operation(memory_status);
         if (operation_status == OperationStatus::throttled_out) {
           return OperationStatus::throttled_out;
         }
         assert(last_operation_status != OperationStatus::full_update || operation_status == OperationStatus::full_update);
         if (operation_status == OperationStatus::full_update && first_key_type == ConfdataFirstKeyType::two_dots_wildcard) {
           processing_key_.forcibly_change_first_key_wildcard_dots_from_two_to_one();
-          const auto should_be_full = operation();
+          const auto should_be_full = operation(memory_status);
           if (operation_status == OperationStatus::throttled_out) {
             return OperationStatus::throttled_out;
           }
@@ -470,7 +474,7 @@ private:
       case OperationStatus::full_update:
         break;
     }
-    if (get_memory_status() == MemoryStatus::HARD_OOM || status == OperationStatus::timed_out) {
+    if (current_memory_status() == MemoryStatus::HARD_OOM || status == OperationStatus::timed_out) {
       return REPLAY_BINLOG_STOP_READING;
     }
     ++event.total;
@@ -927,7 +931,7 @@ void init_confdata_binlog_reader() noexcept {
   confdata_binlog_replayer.init(confdata_manager.get_resource());
   engine_default_load_index(confdata_settings.binlog_mask);
   update_confdata_state_from_binlog(true, 10 * confdata_settings.confdata_update_timeout_sec);
-  if (confdata_binlog_replayer.get_memory_status() != ConfdataBinlogReplayer::MemoryStatus::NORMAL) {
+  if (confdata_binlog_replayer.current_memory_status() != ConfdataBinlogReplayer::MemoryStatus::NORMAL) {
     confdata_binlog_replayer.raise_confdata_oom_error("Can't read confdata binlog on start");
     exit(1);
   }
@@ -953,7 +957,7 @@ void confdata_binlog_update_cron() noexcept {
 
   auto &confdata_binlog_replayer = ConfdataBinlogReplayer::get();
 
-  switch (confdata_binlog_replayer.get_memory_status()) {
+  switch (confdata_binlog_replayer.current_memory_status()) {
     case ConfdataBinlogReplayer::MemoryStatus::HARD_OOM:
       confdata_binlog_replayer.raise_confdata_oom_error("Confdata OOM hard - state is freezed until server restart");
       return;
@@ -983,7 +987,7 @@ void confdata_binlog_update_cron() noexcept {
   }
   update_confdata_state_from_binlog(false, confdata_settings.confdata_update_timeout_sec);
 
-  if (confdata_binlog_replayer.get_memory_status() == ConfdataBinlogReplayer::MemoryStatus::HARD_OOM) {
+  if (confdata_binlog_replayer.current_memory_status() == ConfdataBinlogReplayer::MemoryStatus::HARD_OOM) {
     return;
   }
 

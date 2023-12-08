@@ -322,7 +322,6 @@ void StatsHouseManager::add_confdata_master_stats(const ConfdataStats &confdata_
   for (const auto &[section_name, size] : confdata_stats.heaviest_sections_by_count.sorted_desc) {
     if (section_name != nullptr && size > 0) { // section_name looks like "highload."
       client.metric("kphp_confdata_sections_by_count").tag(section_name->c_str()).write_value(size);
-      // fprintf(stderr, "%s: %d\n", section_name->c_str(), static_cast<int>(size));
     }
   }
 }
