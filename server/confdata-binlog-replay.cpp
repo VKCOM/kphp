@@ -405,7 +405,7 @@ private:
       assert(wildcard_len <= std::numeric_limits<int16_t>::max());
       processing_key_.update_with_predefined_wildcard(key, key_len, static_cast<int16_t>(wildcard_len));
       const auto operation_status = operation();
-      if (operation_status == OperationStatus::throttled_out && get_memory_status() == MemoryStatus::HARD_OOM) {
+      if (operation_status == OperationStatus::throttled_out) {
         return OperationStatus::throttled_out;
       }
       assert(last_operation_status != OperationStatus::full_update || operation_status == OperationStatus::full_update);
@@ -419,14 +419,14 @@ private:
       const auto first_key_type = processing_key_.update(key, key_len);
       if (predefined_wildcard_lengths.empty() || first_key_type != ConfdataFirstKeyType::simple_key) {
         const auto operation_status = operation();
-        if (operation_status == OperationStatus::throttled_out && get_memory_status() == MemoryStatus::HARD_OOM) {
+        if (operation_status == OperationStatus::throttled_out) {
           return OperationStatus::throttled_out;
         }
         assert(last_operation_status != OperationStatus::full_update || operation_status == OperationStatus::full_update);
         if (operation_status == OperationStatus::full_update && first_key_type == ConfdataFirstKeyType::two_dots_wildcard) {
           processing_key_.forcibly_change_first_key_wildcard_dots_from_two_to_one();
           const auto should_be_full = operation();
-          if (operation_status == OperationStatus::throttled_out && get_memory_status() == MemoryStatus::HARD_OOM) {
+          if (operation_status == OperationStatus::throttled_out) {
             return OperationStatus::throttled_out;
           }
           assert(should_be_full == OperationStatus::full_update);
