@@ -84,11 +84,13 @@ function test_curl($curl_resumable = false) {
 
   fwrite(STDERR, $output);
   
-  $resp = ["exec_result" => $output];
+
+  $resp = ["exec_result" => to_json_safe($output)];
   if ($ob_json = ob_get_clean()) {
     $resp["output_buffer"] = json_decode($ob_json);
   }
   echo json_encode($resp);
+  fwrite(STDERR, json_encode($resp));
 }
 
 function test_curl_reuse_handle($curl_resumable = false) {

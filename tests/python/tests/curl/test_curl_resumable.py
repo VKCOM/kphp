@@ -52,8 +52,11 @@ class TestCurlResumable(CurlTestCase):
         })
 
     def test_curl_resumable_nonexistent_url(self):
+        # self.assertEqual(self._curl_request("nonexistent_url"), {
+        #     "exec_result": ''
+        # })
         self.assertEqual(self._curl_request("nonexistent_url"), {
-            "exec_result": ''
+            "exec_result": False
         })
 
     def test_curl_resumable_connection_only_success(self):
@@ -62,6 +65,9 @@ class TestCurlResumable(CurlTestCase):
         })
 
     def test_curl_resumable_connection_only_fail(self):
+        # self.assertEqual(self._curl_request("nonexistent_url", connect_only=True), {
+        #     "exec_result": ''
+        # })
         self.assertEqual(self._curl_request("nonexistent_url", connect_only=True), {
-            "exec_result": ''
+            "exec_result": False
         })
