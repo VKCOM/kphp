@@ -604,7 +604,7 @@ private:
 
     // null is inserted by the default
     if (first_key_it->second.is_null()) {
-      if (memory_status == MemoryStatus::SOFT_OOM) {
+      if (memory_status == MemoryStatus::SOFT_OOM) { // todo: unreachable?
         first_key_it->second = array<mixed>{}; // to fit asserts that it's array
         return OperationStatus::throttled_out;
       }
@@ -1023,7 +1023,6 @@ bool update_confdata_state_from_binlog(bool is_initial_reading, double timeout_s
   bool ok = confdata_binlog_replayer.on_finish_update_cycle();
 
   if (!ok) {
-    // TODO: critical?
     log_server_warning("Confdata binlog %supdate timeout %f sec expired", is_initial_reading ? "initial " : "", timeout_sec);
   }
   return ok;
