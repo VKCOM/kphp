@@ -168,21 +168,20 @@ public:
 
     // disable the blacklist because we checked the keys during the previous step
     blacklist_enabled_ = false;
-    int ret_code = 0;
     for (int i = 0; i < nrecords; i++) {
       if (index_offset[i] >= 0) {
-        auto res = store_element(reinterpret_cast<const entry_type &>(index_binary_data[index_offset[i]]));
-        assert(res != OperationStatus::timed_out); // we don't set timeout on snapshot reading
-        if (current_memory_status() != MemoryStatus::NORMAL) {
-          ret_code = -1;
-          raise_confdata_oom_error("Can't read confdata snapshot on start");
-          break;
-        }
+        store_element(reinterpret_cast<const entry_type &>(index_binary_data[index_offset[i]]));
       }
     }
     blacklist_enabled_ = true;
     size_hints_.clear();
-    return ret_code;
+
+    if (current_memory_status() != MemoryStatus::NORMAL) {
+      raise_confdata_oom_error("Can't read confdata snapshot on start");
+      return -1;
+    }
+
+    return 0;
   }
 
   OperationStatus delete_element(const char *key, short key_len) noexcept {
