@@ -252,6 +252,10 @@ public:
   // we can create true vector
   bool has_no_string_keys() const noexcept;
 
+  static size_t estimate_size(int64_t n, bool is_vector) noexcept {
+    return array_inner::estimate_size(n, is_vector);
+  }
+
   T &operator[](int64_t int_key);
   T &operator[](int32_t key) { return (*this)[int64_t{key}]; }
   T &operator[](const string &s);
