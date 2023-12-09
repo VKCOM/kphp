@@ -11,7 +11,6 @@
 #include <forward_list>
 #include <map>
 #include <optional>
-#include <string_view>
 
 #include "common/binlog/binlog-replayer.h"
 #include "common/dl-utils-lite.h"
@@ -35,8 +34,8 @@ namespace {
 struct {
   const char *binlog_mask{nullptr};
   size_t memory_limit{2u * 1024u * 1024u * 1024u};
-  double soft_oom_threshold_ratio = CONFDATA_DEFAULT_SOFT_OOM_RATIO;
-  double hard_oom_threshold_ratio = CONFDATA_DEFAULT_HARD_OOM_RATIO;
+  double soft_oom_threshold_ratio{CONFDATA_DEFAULT_SOFT_OOM_RATIO};
+  double hard_oom_threshold_ratio{CONFDATA_DEFAULT_HARD_OOM_RATIO};
   double confdata_update_timeout_sec = 0.3;
   std::unique_ptr<re2::RE2> key_blacklist_pattern;
   std::forward_list<vk::string_view> force_ignore_prefixes;
@@ -81,12 +80,12 @@ public:
     return MemoryStatus::NORMAL;
   }
 
-  bool check_has_enough_memory(size_t need_bytes, std::string_view msg) noexcept {
+  bool check_has_enough_memory(size_t need_bytes, const char *msg) noexcept {
     if (memory_resource_->is_enough_memory_for(need_bytes)) {
       return true;
     }
     log_server_critical("Not enough confdata shared memory. Processing key with first part = '%s'. %zu bytes needed by estimation for %s",
-                        processing_key_.get_first_key().c_str(), need_bytes, msg.data());
+                        processing_key_.get_first_key().c_str(), need_bytes, msg);
     update_memory_status(true);
     return false;
   }
@@ -173,8 +172,8 @@ public:
     for (int i = 0; i < nrecords; i++) {
       if (index_offset[i] >= 0) {
         auto res = store_element(reinterpret_cast<const entry_type &>(index_binary_data[index_offset[i]]));
-        assert(res != OperationStatus::timed_out);
-        if (res == OperationStatus::throttled_out) {
+        assert(res != OperationStatus::timed_out); // we don't set timeout on snapshot reading
+        if (current_memory_status() != MemoryStatus::NORMAL) {
           ret_code = -1;
           raise_confdata_oom_error("Can't read confdata snapshot on start");
           break;

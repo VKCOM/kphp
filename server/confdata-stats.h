@@ -21,7 +21,7 @@ struct ConfdataStats : private vk::not_copyable {
 
   size_t total_updates{0};
   size_t ignored_updates{0};
-  size_t timed_out_updates;
+  size_t timed_out_updates{0};
 
   size_t last_garbage_size{0};
   std::array<size_t, 100> garbage_statistic_{{0}};
