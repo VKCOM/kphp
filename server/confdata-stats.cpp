@@ -92,6 +92,7 @@ void ConfdataStats::write_stats_to(stats_t *stats) const noexcept {
 
   stats->add_gauge_stat("confdata.updates.ignored", ignored_updates);
   stats->add_gauge_stat("confdata.updates.total", total_updates);
+  stats->add_gauge_stat("confdata.updates.timed_out", timed_out_updates);
 
   stats->add_gauge_stat("confdata.elements.total", total_elements);
 

@@ -21,6 +21,7 @@ struct ConfdataStats : private vk::not_copyable {
 
   size_t total_updates{0};
   size_t ignored_updates{0};
+  size_t timed_out_updates;
 
   size_t last_garbage_size{0};
   std::array<size_t, 100> garbage_statistic_{{0}};
@@ -64,7 +65,6 @@ struct ConfdataStats : private vk::not_copyable {
 
     size_t unsupported_total_events{0};
     size_t throttled_out_total_events{0};
-    size_t update_timeouts_total{0};
   } event_counters;
 
   struct HeaviestSections {

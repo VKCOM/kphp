@@ -462,19 +462,21 @@ private:
         ++event.throttled_out;
         ++event_counters_.throttled_out_total_events;
         break;
-      case OperationStatus::timed_out:
-        ++event_counters_.update_timeouts_total;
-        break;
       case OperationStatus::blacklisted:
         ++event.blacklisted;
         break;
       case OperationStatus::ttl_update_only:
         ++event.ttl_updated;
         break;
+      case OperationStatus::timed_out:
       case OperationStatus::full_update:
         break;
     }
-    if (current_memory_status() == MemoryStatus::HARD_OOM || status == OperationStatus::timed_out) {
+    if (current_memory_status() == MemoryStatus::HARD_OOM) {
+      return REPLAY_BINLOG_STOP_READING;
+    }
+    if (status == OperationStatus::timed_out) {
+      ++ConfdataStats::get().timed_out_updates;
       return REPLAY_BINLOG_STOP_READING;
     }
     ++event.total;

@@ -318,7 +318,8 @@ void StatsHouseManager::add_confdata_master_stats(const ConfdataStats &confdata_
   client.metric("kphp_confdata_events").tag("delete_blacklisted").write_value(events.delete_events.blacklisted);
   client.metric("kphp_confdata_events").tag("throttled_out").write_value(events.throttled_out_total_events);
 
-  client.metric("kphp_confdata_update_timeouts").write_value(events.update_timeouts_total);
+  client.metric("kphp_confdata_update_fails").tag("ignored").write_value(confdata_stats.ignored_updates);
+  client.metric("kphp_confdata_update_fails").tag("timed_out").write_value(confdata_stats.timed_out_updates);
 
   for (const auto &[section_name, size] : confdata_stats.heaviest_sections_by_count.sorted_desc) {
     if (section_name != nullptr && size > 0) { // section_name looks like "highload."
