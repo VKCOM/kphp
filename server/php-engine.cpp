@@ -830,15 +830,13 @@ int rpcx_func_wakeup(connection *c) {
     if (c->pending_queries < 0 || c->status != conn_wait_net) {
       std::array<char, 1024> message{'\0'};
       std::random_device rd;
-      std::mt19937 gen(rd());
-      std::uniform_int_distribution<> dis(1, 1000);
-      int id = dis(gen);
+      int id = rd();
       snprintf(message.data(), message.size(), "PhpWorker state %d, PhpScript state %d. Connection pending queries %d, status %d. "
                                                "Net timeout %f, finish_time %f, now %f. PhpScript wait net %d. Coredump generated %s\n",
               worker->state, php_script.has_value() ? (int)php_script->state : -1, c->pending_queries, c->status, timeout.value(),
-               worker->finish_time, precise_now, worker->waiting, id == 1000? "true" : "false");
+               worker->finish_time, precise_now, worker->waiting, id % 1000 == 0? "true" : "false");
       // write only in 0.1% actions
-      if (id == 1000) {
+      if (id % 1000 == 0) {
         dl_assert_with_coredump(c->pending_queries >= 0 && c->status == conn_wait_net, message.data());
       } else {
         dl_assert(c->pending_queries >= 0 && c->status == conn_wait_net, message.data());
@@ -981,7 +979,7 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
     case TL_RPC_INVOKE_REQ: {
       if (php_worker.has_value()) {
         //check that another rpc request has already been processed
-        vkprintf(1, "get new RPC_INVOKE_REQ while another rpc query is running\n");
+        log_not_too_much( "get new RPC_INVOKE_REQ while another rpc query is running\n");
         return 0;
       }
       if (in_sigterm) {
