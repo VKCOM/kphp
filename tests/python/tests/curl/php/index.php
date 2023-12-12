@@ -81,16 +81,11 @@ function test_curl($curl_resumable = false) {
   $output = $curl_resumable ? curl_exec_concurrently($ch, $timeout_s ?? -1) : curl_exec($ch);
   fwrite(STDERR, "end_curl_query\n");
   curl_close($ch);
-
-  fwrite(STDERR, $output);
   
-
   $resp = ["exec_result" => to_json_safe($output)];
   if ($ob_json = ob_get_clean()) {
     $resp["output_buffer"] = json_decode($ob_json);
   }
-  echo json_encode($resp);
-  fwrite(STDERR, json_encode($resp));
 }
 
 function test_curl_reuse_handle($curl_resumable = false) {
