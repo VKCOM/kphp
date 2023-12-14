@@ -522,8 +522,20 @@ void ssl_version_option_setter(EasyContext *easy_context, CURLoption option, con
     {
       CURL_SSLVERSION_DEFAULT,
       CURL_SSLVERSION_TLSv1,
+      CURL_SSLVERSION_TLSv1_0,
+      CURL_SSLVERSION_TLSv1_1,
+      CURL_SSLVERSION_TLSv1_2,
       CURL_SSLVERSION_SSLv2,
       CURL_SSLVERSION_SSLv3,
+    });
+  set_enumerated_option<0>(options, easy_context, option, value);
+}
+
+void proxy_ssl_version_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
+  constexpr static auto options = vk::to_array(
+    {
+      CURL_SSLVERSION_DEFAULT,
+      CURL_SSLVERSION_TLSv1,
       CURL_SSLVERSION_TLSv1_0,
       CURL_SSLVERSION_TLSv1_1,
       CURL_SSLVERSION_TLSv1_2,
@@ -532,11 +544,7 @@ void ssl_version_option_setter(EasyContext *easy_context, CURLoption option, con
 }
 
 void auth_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
-  easy_context->set_option_safe(option, (unsigned long)value.as_int() & ~CURLAUTH_GSSNEGOTIATE);
-}
-
-void timevalue_large_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
-  easy_context->set_option_safe(option, (curl_off_t)static_cast<long>(value.to_int()));
+  easy_context->set_option_safe(option, (unsigned long)value.as_int());
 }
 
 void ip_resolve_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
@@ -552,28 +560,6 @@ void ftp_auth_option_setter(EasyContext *easy_context, CURLoption option, const 
 void header_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
   constexpr static auto options = vk::to_array({CURLHEADER_UNIFIED, CURLHEADER_SEPARATE});
   set_enumerated_option<810000>(options, easy_context, option, value);
-}
-
-void proto_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
-  // this is necessary if kphp (curl 7.60.0) does not support the scp protocol
-  easy_context->set_option_safe(option, static_cast<long>(value.as_int() & ~CURLPROTO_SCP));
-  //easy_context->set_option_safe(option, static_cast<long>(value.to_int()));
-}
-
-// new function for CURLOPT_POSTREDIR option logic
-void redirpost_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
-  long val = static_cast<long>(value.to_int());
-  constexpr size_t OPTION_OFFSET = 820000;
-
-  if (easy_context->check_option_value<OPTION_OFFSET, 7u>(val)) {
-    val -= OPTION_OFFSET;
-    if (val == 3ll) {
-      val = 7ll;
-    } else {
-      val = 1ll << val;
-    }
-    easy_context->set_option_safe(option, val);
-  }
 }
 
 void stream_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
@@ -855,22 +841,19 @@ bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) 
       {CURLOPT_PRIVATE,              private_option_setter},
 
       // new options
-      {CURLOPT_SSL_VERIFYSTATUS,     long_option_setter},
-      {CURLOPT_CERTINFO,             long_option_setter},
-      {CURLOPT_NOPROGRESS,           long_option_setter},
-      {CURLOPT_NOSIGNAL,             long_option_setter},
-      {CURLOPT_PATH_AS_IS,           long_option_setter},
-      {CURLOPT_PIPEWAIT,             long_option_setter},
-      {CURLOPT_SASL_IR,              long_option_setter},
-
-      {CURLOPT_CONNECT_TO,           linked_list_option_setter},
-      {CURLOPT_PROXYHEADER,          linked_list_option_setter},
-
+      {CURLOPT_SSL_VERIFYSTATUS,          long_option_setter},
+      {CURLOPT_DISALLOW_USERNAME_IN_URL,  long_option_setter},
+      {CURLOPT_CERTINFO,                  long_option_setter},
+      {CURLOPT_NOPROGRESS,                long_option_setter},
+      {CURLOPT_NOSIGNAL,                  long_option_setter},
+      {CURLOPT_PATH_AS_IS,                long_option_setter},
+      {CURLOPT_PIPEWAIT,                  long_option_setter},
+      {CURLOPT_SASL_IR,                   long_option_setter},
       {CURLOPT_EXPECT_100_TIMEOUT_MS,     long_option_setter},
       {CURLOPT_HAPPY_EYEBALLS_TIMEOUT_MS, long_option_setter},
       {CURLOPT_HEADEROPT,                 header_option_setter},
-      {CURLOPT_POSTREDIR,                 redirpost_option_setter},
-      {CURLOPT_PROTOCOLS,                 proto_option_setter},
+      {CURLOPT_POSTREDIR,                 long_option_setter},
+      {CURLOPT_PROTOCOLS,                 long_option_setter},
       {CURLOPT_REDIR_PROTOCOLS,           long_option_setter},
       {CURLOPT_DNS_SHUFFLE_ADDRESSES,     long_option_setter},
       {CURLOPT_HAPROXYPROTOCOL,           long_option_setter},
@@ -882,32 +865,61 @@ bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) 
       {CURLOPT_SUPPRESS_CONNECT_HEADERS,  long_option_setter},
       {CURLOPT_TCP_FASTOPEN,              long_option_setter},
       {CURLOPT_TFTP_NO_OPTIONS,           long_option_setter},
-
+      {CURLOPT_SSH_COMPRESSION,           long_option_setter},
+      {CURLOPT_SSL_FALSESTART,            long_option_setter},
+      {CURLOPT_HTTP09_ALLOWED,            long_option_setter},
+      {CURLOPT_MAIL_RCPT_ALLLOWFAILS,     long_option_setter},
+      {CURLOPT_MAXAGE_CONN,               long_option_setter},
+      {CURLOPT_MAXFILESIZE_LARGE,         off_option_setter},
+      {CURLOPT_MAXLIFETIME_CONN,          long_option_setter},
       {CURLOPT_SOCKS5_AUTH,               auth_option_setter},
       {CURLOPT_SSL_OPTIONS,               long_option_setter},
       {CURLOPT_PROXY_SSL_OPTIONS,         long_option_setter},
-
       {CURLOPT_PROXY_SSL_VERIFYHOST,      long_option_setter},
-      {CURLOPT_PROXY_SSLVERSION,          ssl_version_option_setter},
+      {CURLOPT_PROXY_SSLVERSION,          proxy_ssl_version_option_setter},
       {CURLOPT_STREAM_WEIGHT,             long_option_setter},
       {CURLOPT_TIMEVALUE,                 long_option_setter},
       {CURLOPT_TIMECONDITION,             long_option_setter},
-      {CURLOPT_TIMEVALUE_LARGE,           timevalue_large_option_setter},
+      {CURLOPT_TIMEVALUE_LARGE,           off_option_setter},
+      {CURLOPT_UPKEEP_INTERVAL_MS,        long_option_setter},
+      {CURLOPT_UPLOAD_BUFFERSIZE,         long_option_setter},
+      {CURLOPT_SSH_AUTH_TYPES,            long_option_setter},
 
-      {CURLOPT_ABSTRACT_UNIX_SOCKET,  string_option_setter},
-      {CURLOPT_DEFAULT_PROTOCOL,      string_option_setter},
-      {CURLOPT_ENCODING,              string_option_setter},
-      {CURLOPT_KEYPASSWD,             string_option_setter},
-      {CURLOPT_KRB4LEVEL,             string_option_setter},
-      {CURLOPT_LOGIN_OPTIONS,         string_option_setter},
-      {CURLOPT_PINNEDPUBLICKEY,       string_option_setter},
-      {CURLOPT_PRE_PROXY,             string_option_setter},
-      {CURLOPT_PROXY_SERVICE_NAME,    string_option_setter},
-      {CURLOPT_PROXY_CAINFO,          string_option_setter},
-      {CURLOPT_PROXY_CAPATH,          string_option_setter},
-      {CURLOPT_PROXY_CRLFILE,         string_option_setter},
-      {CURLOPT_PROXY_KEYPASSWD,       string_option_setter},
-      {CURLOPT_PROXY_PINNEDPUBLICKEY, string_option_setter},
+      {CURLOPT_CONNECT_TO,    linked_list_option_setter},
+      {CURLOPT_PROXYHEADER,   linked_list_option_setter},
+
+      {CURLOPT_ENCODING,                   string_option_setter},
+      {CURLOPT_ABSTRACT_UNIX_SOCKET,       string_option_setter},
+      {CURLOPT_DEFAULT_PROTOCOL,           string_option_setter},
+      {CURLOPT_DNS_INTERFACE,              string_option_setter}, // ? (only if build with c-ares)
+      {CURLOPT_DNS_LOCAL_IP4,              string_option_setter}, // ?
+      {CURLOPT_DNS_LOCAL_IP6,              string_option_setter}, // ?
+      {CURLOPT_KEYPASSWD,                  string_option_setter},
+      {CURLOPT_LOGIN_OPTIONS,              string_option_setter},
+      {CURLOPT_PINNEDPUBLICKEY,            string_option_setter},
+      {CURLOPT_PRE_PROXY,                  string_option_setter},
+      {CURLOPT_PROXY_SERVICE_NAME,         string_option_setter},
+      {CURLOPT_PROXY_CAINFO,               string_option_setter},
+      {CURLOPT_PROXY_CAPATH,               string_option_setter},
+      {CURLOPT_PROXY_CRLFILE,              string_option_setter},
+      {CURLOPT_PROXY_KEYPASSWD,            string_option_setter},
+      {CURLOPT_PROXY_PINNEDPUBLICKEY,      string_option_setter},
+      {CURLOPT_PROXY_SSLCERT,              string_option_setter},
+      {CURLOPT_PROXY_SSLCERTTYPE,          string_option_setter},
+      {CURLOPT_PROXY_SSL_CIPHER_LIST,      string_option_setter},
+      {CURLOPT_PROXY_TLS13_CIPHERS,        string_option_setter},
+      {CURLOPT_PROXY_SSLKEY,               string_option_setter},
+      {CURLOPT_PROXY_SSLKEYTYPE,           string_option_setter},
+      {CURLOPT_PROXY_TLSAUTH_PASSWORD,     string_option_setter},
+      {CURLOPT_PROXY_TLSAUTH_TYPE,         string_option_setter}, // if build OpenSSL with TLS-SRP
+      {CURLOPT_PROXY_TLSAUTH_USERNAME,     string_option_setter},
+      {CURLOPT_SASL_AUTHZID,               string_option_setter}, // OpenLDAP
+      {CURLOPT_SERVICE_NAME,               string_option_setter},
+      {CURLOPT_SSH_HOST_PUBLIC_KEY_SHA256, string_option_setter}, // if build with libssh2
+      {CURLOPT_SSL_EC_CURVES,              string_option_setter},
+      {CURLOPT_TLS13_CIPHERS,              string_option_setter},
+      {CURLOPT_UNIX_SOCKET_PATH,           string_option_setter},
+      {CURLOPT_XOAUTH2_BEARER,             string_option_setter}, // OpenLDAP
 
       {CURLOPT_INFILE,      stream_option_setter},
       {CURLOPT_FILE,        stream_option_setter},

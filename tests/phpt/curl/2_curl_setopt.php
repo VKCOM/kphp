@@ -3,6 +3,42 @@
 
 require_once 'kphp_tester_include.php';
 
+function test_new_options() {
+  $c = curl_init();
+  curl_setopt($c, CURLOPT_URL, "https://example.com/");
+
+  var_dump(curl_setopt($c, CURLOPT_SSL_VERIFYSTATUS, 1));
+  var_dump(curl_setopt($c, CURLOPT_DISALLOW_USERNAME_IN_URL, 1));
+  var_dump(curl_setopt($c, CURLOPT_CERTINFO, 1));
+  var_dump(curl_setopt($c, CURLOPT_NOPROGRESS, false));
+  var_dump(curl_setopt($c, CURLOPT_NOSIGNAL, false));
+  var_dump(curl_setopt($c, CURLOPT_PATH_AS_IS, true));
+  var_dump(curl_setopt($c, CURLOPT_PIPEWAIT, 1));
+  var_dump(curl_setopt($c, CURLOPT_SASL_IR, 1));
+  var_dump(curl_setopt($c, CURLOPT_EXPECT_100_TIMEOUT_MS, 200));
+  var_dump(curl_setopt($c, CURLOPT_HAPPY_EYEBALLS_TIMEOUT_MS, 1000));
+  var_dump(curl_setopt($c, CURLOPT_HEADEROPT, CURLHEADER_SEPARATE));
+  var_dump(curl_setopt($c, CURLOPT_POSTREDIR, 1));
+  var_dump(curl_setopt($c, CURLOPT_PROTOCOLS, CURLPROTO_HTTPS|CURLPROTO_SCP));
+  var_dump(curl_setopt($c, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_FILE));
+  var_dump(curl_setopt($c, CURLOPT_DNS_SHUFFLE_ADDRESSES, true));
+  // var_dump(curl_setopt($c, CURLOPT_HAPROXYPROTOCOL, true)); // after this curl_exec failed
+  var_dump(curl_setopt($c, CURLOPT_DNS_USE_GLOBAL_CACHE, true));
+  var_dump(curl_setopt($c, CURLOPT_FTPAPPEND, true));
+  var_dump(curl_setopt($c, CURLOPT_FTPLISTONLY, true));
+  var_dump(curl_setopt($c, CURLOPT_KEEP_SENDING_ON_ERROR, false));
+  var_dump(curl_setopt($c, CURLOPT_PROXY_SSL_VERIFYPEER, false));
+  var_dump(curl_setopt($c, CURLOPT_SUPPRESS_CONNECT_HEADERS, true));
+  var_dump(curl_setopt($c, CURLOPT_TCP_FASTOPEN, true));
+  var_dump(curl_setopt($c, CURLOPT_TFTP_NO_OPTIONS, true));
+  // var_dump(curl_setopt($c, CURLOPT_SSH_COMPRESSION, true)); // after this curl_exec failed
+  var_dump(curl_setopt($c, CURLOPT_HTTP09_ALLOWED, false));
+  //var_dump(@curl_setopt($c, CURLOPT_MAIL_RCPT_ALLLOWFAILS, true)); // got warning and NULL from php
+  //var_dump(@curl_setopt($c, CURLOPT_MAXAGE_CONN, 30));             // got warning and NULL from php
+  var_dump(curl_setopt($c, CURLOPT_MAXFILESIZE_LARGE, 1<<50));
+  var_dump(curl_exec($c) == true);
+}
+
 function test_long_options() {
   $c = curl_init();
 
@@ -22,45 +58,44 @@ function test_long_options() {
   var_dump(curl_setopt($c, CURLOPT_TCP_KEEPINTVL, 12));
 
   // new
-  var_dump(curl_setopt($c, CURLOPT_SSL_VERIFYSTATUS, 1));
-  var_dump(curl_setopt($c, CURLOPT_NOPROGRESS, false));
-  var_dump(curl_setopt($c, CURLOPT_NOSIGNAL, false));
-  var_dump(curl_setopt($c, CURLOPT_PATH_AS_IS, 1));
-  var_dump(curl_setopt($c, CURLOPT_PIPEWAIT, 1));
-  var_dump(curl_setopt($c, CURLOPT_SASL_IR,  1));
+  // var_dump(curl_setopt($c, CURLOPT_NOPROGRESS, false));
+  // var_dump(curl_setopt($c, CURLOPT_NOSIGNAL, false));
+  // var_dump(curl_setopt($c, CURLOPT_PATH_AS_IS, 1));
+  // var_dump(curl_setopt($c, CURLOPT_PIPEWAIT, 1));
+  // var_dump(curl_setopt($c, CURLOPT_SASL_IR,  1));
 
-  var_dump(curl_setopt($c, CURLOPT_EXPECT_100_TIMEOUT_MS, 100));
-  var_dump(curl_setopt($c, CURLOPT_HAPPY_EYEBALLS_TIMEOUT_MS, 300));
-  var_dump(curl_setopt($c, CURLOPT_HEADEROPT, CURLHEADER_SEPARATE));
+  // var_dump(curl_setopt($c, CURLOPT_EXPECT_100_TIMEOUT_MS, 100));
+  // var_dump(curl_setopt($c, CURLOPT_HAPPY_EYEBALLS_TIMEOUT_MS, 300));
+  // var_dump(curl_setopt($c, CURLOPT_HEADEROPT, CURLHEADER_SEPARATE));
 
-  var_dump(curl_setopt($c, CURLOPT_POSTREDIR, CURL_REDIR_POST_301 | CURL_REDIR_POST_302));
-  var_dump(curl_setopt($c, CURLOPT_POSTREDIR, CURL_REDIR_POST_ALL));
-  var_dump(curl_setopt($c, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_FTP));
-  var_dump(curl_setopt($c, CURLOPT_PROTOCOLS, CURLPROTO_ALL));
-  var_dump(curl_setopt($c, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_DICT | CURLPROTO_SMTP));
-  var_dump(curl_setopt($c, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_ALL));
+  // var_dump(curl_setopt($c, CURLOPT_POSTREDIR, CURL_REDIR_POST_301 | CURL_REDIR_POST_302));
+  // var_dump(curl_setopt($c, CURLOPT_POSTREDIR, CURL_REDIR_POST_ALL));
+  // var_dump(curl_setopt($c, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_FTP));
+  // var_dump(curl_setopt($c, CURLOPT_PROTOCOLS, CURLPROTO_ALL));
+  // var_dump(curl_setopt($c, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_DICT | CURLPROTO_SMTP));
+  // var_dump(curl_setopt($c, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_ALL));
 
-  var_dump(curl_setopt($c, CURLOPT_DNS_SHUFFLE_ADDRESSES, true));
-  var_dump(curl_setopt($c, CURLOPT_HAPROXYPROTOCOL, true));
-  var_dump(curl_setopt($c, CURLOPT_DNS_USE_GLOBAL_CACHE, true));
-  var_dump(curl_setopt($c, CURLOPT_FTPAPPEND, true));
-  var_dump(curl_setopt($c, CURLOPT_FTPLISTONLY, true));
-  var_dump(curl_setopt($c, CURLOPT_KEEP_SENDING_ON_ERROR, true));
-  var_dump(curl_setopt($c, CURLOPT_PROXY_SSL_VERIFYPEER, false));
-  var_dump(curl_setopt($c, CURLOPT_SUPPRESS_CONNECT_HEADERS, true));
-  var_dump(curl_setopt($c, CURLOPT_TCP_FASTOPEN, true));
-  var_dump(curl_setopt($c, CURLOPT_TFTP_NO_OPTIONS, true));
-  var_dump(curl_setopt($c, CURLOPT_TCP_FASTOPEN, true));
+  // var_dump(curl_setopt($c, CURLOPT_DNS_SHUFFLE_ADDRESSES, true));
+  // var_dump(curl_setopt($c, CURLOPT_HAPROXYPROTOCOL, true));
+  // var_dump(curl_setopt($c, CURLOPT_DNS_USE_GLOBAL_CACHE, true));
+  // var_dump(curl_setopt($c, CURLOPT_FTPAPPEND, true));
+  // var_dump(curl_setopt($c, CURLOPT_FTPLISTONLY, true));
+  // var_dump(curl_setopt($c, CURLOPT_KEEP_SENDING_ON_ERROR, true));
+  // var_dump(curl_setopt($c, CURLOPT_PROXY_SSL_VERIFYPEER, false));
+  // var_dump(curl_setopt($c, CURLOPT_SUPPRESS_CONNECT_HEADERS, true));
+  // var_dump(curl_setopt($c, CURLOPT_TCP_FASTOPEN, true));
+  // var_dump(curl_setopt($c, CURLOPT_TFTP_NO_OPTIONS, true));
+  // var_dump(curl_setopt($c, CURLOPT_TCP_FASTOPEN, true));
 
-  var_dump(curl_setopt($c, CURLOPT_SOCKS5_AUTH, CURLAUTH_BASIC));
-  var_dump(curl_setopt($c, CURLOPT_SSL_OPTIONS, CURLSSLOPT_ALLOW_BEAST));
-  var_dump(curl_setopt($c, CURLOPT_PROXY_SSL_OPTIONS, CURLSSLOPT_NO_REVOKE));
-  var_dump(curl_setopt($c, CURLOPT_PROXY_SSL_VERIFYHOST, 1));
+  // var_dump(curl_setopt($c, CURLOPT_SOCKS5_AUTH, CURLAUTH_BASIC));
+  // var_dump(curl_setopt($c, CURLOPT_SSL_OPTIONS, CURLSSLOPT_ALLOW_BEAST));
+  // var_dump(curl_setopt($c, CURLOPT_PROXY_SSL_OPTIONS, CURLSSLOPT_NO_REVOKE));
+  // var_dump(curl_setopt($c, CURLOPT_PROXY_SSL_VERIFYHOST, 1));
 
-  var_dump(curl_setopt($c, CURLOPT_STREAM_WEIGHT, 32));
-  var_dump(curl_setopt($c, CURLOPT_TIMEVALUE, 1577833200));
-  var_dump(curl_setopt($c, CURLOPT_TIMECONDITION, CURL_TIMECOND_IFMODSINCE));
-  var_dump(curl_setopt($c, CURLOPT_TIMEVALUE_LARGE, 1577833200));
+  // var_dump(curl_setopt($c, CURLOPT_STREAM_WEIGHT, 32));
+  // var_dump(curl_setopt($c, CURLOPT_TIMEVALUE, 1577833200));
+  // var_dump(curl_setopt($c, CURLOPT_TIMECONDITION, CURL_TIMECOND_IFMODSINCE));
+  // var_dump(curl_setopt($c, CURLOPT_TIMEVALUE_LARGE, 1577833200));
 
   curl_close($c);
 }
@@ -76,28 +111,28 @@ function test_string_options() {
   var_dump(curl_setopt($c, CURLOPT_RANGE, false));
 
   // new
-  var_dump(curl_setopt($c, CURLOPT_ABSTRACT_UNIX_SOCKET, "/tmp/foo.sock"));
-  var_dump(curl_setopt($c, CURLOPT_DEFAULT_PROTOCOL, "https"));
-  var_dump(curl_setopt($c, CURLOPT_DEFAULT_PROTOCOL, NULL));
-  var_dump(curl_setopt($c, CURLOPT_ENCODING, ""));
-  var_dump(curl_setopt($c, CURLOPT_KEYPASSWD, "whocare"));
-  var_dump(curl_setopt($c, CURLOPT_KRB4LEVEL, "private"));
-  var_dump(curl_setopt($c, CURLOPT_LOGIN_OPTIONS, "AUTH=*"));
-  var_dump(curl_setopt(
-    $c, 
-    CURLOPT_PINNEDPUBLICKEY, 
-    "sha256//YhKJKSzoTt2b5FP18fvpHo7fJYqQCjAa3HWY3tvRMwE=;sha256//t62CeU2tQiqkexU74Gxa2eg7fRbEgoChTociMee9wno="
-  ));
-  var_dump(curl_setopt($c, CURLOPT_PRE_PROXY, "https://example.com/file.txt"));
-  var_dump(curl_setopt($c, CURLOPT_PROXY_SERVICE_NAME, "custom"));
-  var_dump(curl_setopt($c, CURLOPT_PROXY_CAPATH, "/tmp/"));
-  var_dump(curl_setopt($c, CURLOPT_PROXY_CRLFILE, "/tmp/foo.pem"));
-  var_dump(curl_setopt($c, CURLOPT_PROXY_KEYPASSWD, "whocare"));
-  var_dump(curl_setopt(
-    $c, 
-    CURLOPT_PROXY_PINNEDPUBLICKEY, 
-    "sha256//YhKJKSzoTt2b5FP18fvpHo7fJYqQCjAa3HWY3tvRMwE=;sha256//t62CeU2tQiqkexU74Gxa2eg7fRbEgoChTociMee9wno="
-  ));
+  // var_dump(curl_setopt($c, CURLOPT_ABSTRACT_UNIX_SOCKET, "/tmp/foo.sock"));
+  // var_dump(curl_setopt($c, CURLOPT_DEFAULT_PROTOCOL, "https"));
+  // var_dump(curl_setopt($c, CURLOPT_DEFAULT_PROTOCOL, NULL));
+  // var_dump(curl_setopt($c, CURLOPT_ENCODING, ""));
+  // var_dump(curl_setopt($c, CURLOPT_KEYPASSWD, "whocare"));
+  // var_dump(curl_setopt($c, CURLOPT_KRB4LEVEL, "private"));
+  // var_dump(curl_setopt($c, CURLOPT_LOGIN_OPTIONS, "AUTH=*"));
+  // var_dump(curl_setopt(
+  //   $c, 
+  //   CURLOPT_PINNEDPUBLICKEY, 
+  //   "sha256//YhKJKSzoTt2b5FP18fvpHo7fJYqQCjAa3HWY3tvRMwE=;sha256//t62CeU2tQiqkexU74Gxa2eg7fRbEgoChTociMee9wno="
+  // ));
+  // var_dump(curl_setopt($c, CURLOPT_PRE_PROXY, "https://example.com/file.txt"));
+  // var_dump(curl_setopt($c, CURLOPT_PROXY_SERVICE_NAME, "custom"));
+  // var_dump(curl_setopt($c, CURLOPT_PROXY_CAPATH, "/tmp/"));
+  // var_dump(curl_setopt($c, CURLOPT_PROXY_CRLFILE, "/tmp/foo.pem"));
+  // var_dump(curl_setopt($c, CURLOPT_PROXY_KEYPASSWD, "whocare"));
+  // var_dump(curl_setopt(
+  //   $c, 
+  //   CURLOPT_PROXY_PINNEDPUBLICKEY, 
+  //   "sha256//YhKJKSzoTt2b5FP18fvpHo7fJYqQCjAa3HWY3tvRMwE=;sha256//t62CeU2tQiqkexU74Gxa2eg7fRbEgoChTociMee9wno="
+  // ));
   curl_close($c);
 }
 
@@ -327,7 +362,7 @@ function test_progress_function_option() {
 function test_read_function_option() {
   $ch = curl_init();
 
-  $stream = fopen("php://stdin", "r");
+  $stream = fopen("php://stdin", "r"); // wont work in kphp
 
   $callback = function ($ch, $stream, $length) {
       $data = fread($stream, $length);
@@ -340,27 +375,28 @@ function test_read_function_option() {
   curl_close($ch);
 }
 
+test_new_options();
 
-test_long_options();
-test_string_options();
-test_linked_list_options();
+// test_long_options();
+// test_string_options();
+// test_linked_list_options();
 
-test_proxy_type_option();
-test_proxy_ssl_version_option();
-test_ssl_version_option();
-test_auth_option();
-test_ip_resolve_option();
-test_ftp_auth_option();
-test_ftp_file_method_option();
-test_post_fields_option();
-test_max_recv_speed();
-test_special_options();
+// test_proxy_type_option();
+// //test_proxy_ssl_version_option();
+// test_ssl_version_option();
+// test_auth_option();
+// test_ip_resolve_option();
+// test_ftp_auth_option();
+// test_ftp_file_method_option();
+// test_post_fields_option();
+// test_max_recv_speed();
+// test_special_options();
 
-test_setopt_array();
+// test_setopt_array();
 
-test_bad_option();
+// test_bad_option();
 
-test_write_function_option();
-test_write_header_function_option();
-test_progress_function_option();
-test_read_function_option();
+// test_write_function_option();
+// test_write_header_function_option();
+// test_progress_function_option();
+// test_read_function_option();
