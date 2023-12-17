@@ -9,6 +9,8 @@
 #include "runtime/kphp_core.h"
 #include "runtime/storage.h"
 
+#include "common/kprintf.h"
+
 extern bool resumable_finished;
 extern int64_t first_forked_resumable_id;
 

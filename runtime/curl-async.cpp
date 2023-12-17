@@ -7,6 +7,8 @@
 #include "runtime/resumable.h"
 #include "server/curl-adaptor.h"
 
+#include "common/kprintf.h"
+
 namespace curl_async {
 
 class curl_exec_concurrently final : public Resumable {
@@ -37,9 +39,12 @@ public:
 
 Optional<string> f$curl_exec_concurrently(curl_easy easy_id, double timeout_s) {
   try {
+    kprintf("start\n");
     auto request = curl_async::CurlRequest::build(easy_id);
+    kprintf("start2\n");
     return start_resumable<Optional<string>>(new curl_async::curl_exec_concurrently(request, timeout_s));
   } catch (...) {
+    kprintf("bad\n");
     return false;
   }
 }

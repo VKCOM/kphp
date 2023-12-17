@@ -10,6 +10,8 @@
 #include <curl/easy.h>
 #include <curl/multi.h>
 
+#include "common/kprintf.h"
+
 #include "runtime/critical_section.h"
 #include "runtime/interface.h"
 #include "runtime/kphp_tracing.h"
@@ -1038,21 +1040,28 @@ CurlRequest CurlRequest::build(curl_easy easy_id) {
   curl_multi multi_id = f$curl_multi_init();
   const EasyContext *easy_context = get_context<EasyContext>(easy_id);
   if (!multi_id || !easy_context) {
+    kprintf("failed to get context\n");
     throw std::runtime_error{"failed to get context"};
   }
+  kprintf("pass1\n");
 
   // it is pointless to use stdout during concurrent request processing
   bool ok = f$curl_setopt(easy_id, CURLOPT_RETURNTRANSFER, 1);
   if (!ok) {
+    kprintf("ffailed to set returntransfer option\n");
     throw std::runtime_error{"failed to set returntransfer option"};
   }
+  kprintf("pass2\n");
 
   Optional<int64_t> status = f$curl_multi_add_handle(multi_id, easy_id);
   if (!status.has_value() || status.val()) {
+    kprintf("failed to add handle\n");
     throw std::runtime_error{"failed to add handle"};
   }
+  kprintf("pass3\n");
 
   if (kphp_tracing::is_turned_on()) {
+    kprintf("enter4\n");
     kphp_tracing::on_curl_add_attribute(easy_context->uniq_id, string("curl_exec_concurrently"), 1);
   }
   return {easy_id, multi_id};
