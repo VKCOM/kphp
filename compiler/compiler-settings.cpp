@@ -284,11 +284,13 @@ void CompilerSettings::init() {
 
   remove_extra_spaces(extra_cxx_flags.value_);
   std::stringstream ss;
-  ss << extra_cxx_flags.get();
-  ss << " -iquote" << kphp_src_path.get()
-     << " -iquote " << kphp_src_path.get() << "objs/generated/auto/runtime";
-  ss << " -Wall -fwrapv -Wno-parentheses -Wno-trigraphs";
-  ss << " -fno-strict-aliasing -fno-omit-frame-pointer";
+  ss << "-Wall "
+     << extra_cxx_flags.get()
+     << " -iquote" << kphp_src_path.get()
+     << " -iquote " << kphp_src_path.get()
+     << "objs/generated/auto/runtime"
+     << " -fwrapv -Wno-parentheses -Wno-trigraphs"
+     << " -fno-strict-aliasing -fno-omit-frame-pointer";
 #ifdef __x86_64__
   ss << " -march=sandybridge";
 #elif __aarch64__

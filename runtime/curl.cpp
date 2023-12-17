@@ -583,6 +583,7 @@ bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) 
       {CURLOPT_TCP_KEEPIDLE,         long_option_setter},
       {CURLOPT_TCP_KEEPINTVL,        long_option_setter},
       {CURLOPT_PRIVATE,              private_option_setter},
+      {CURLOPT_ACCEPT_ENCODING,      string_option_setter},
     });
 
   constexpr size_t CURLOPT_OPTION_OFFSET = 200000;
