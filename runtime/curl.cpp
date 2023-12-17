@@ -666,6 +666,7 @@ mixed f$curl_exec(curl_easy easy_id) noexcept {
   constexpr double long_curl_query = 2 * 1e-1; // 0.2 sec
   auto *easy_context = get_context<EasyContext>(easy_id);
   if (!easy_context) {
+    kprintf("bad1\n");
     return false;
   }
 
@@ -686,6 +687,7 @@ mixed f$curl_exec(curl_easy easy_id) noexcept {
     if (kphp_tracing::is_turned_on()) {
       kphp_tracing::on_curl_exec_fail(easy_context->uniq_id, -easy_context->error_num); // error_num > 0, pass negative
     }
+    kprintf("bad2\n");
     return false;
   }
 
@@ -693,6 +695,7 @@ mixed f$curl_exec(curl_easy easy_id) noexcept {
     kphp_tracing::on_curl_exec_finish(easy_context->uniq_id, easy_context->get_info(CURLINFO_SIZE_DOWNLOAD).to_int());
   }
   if (easy_context->return_transfer) {
+    kprintf("good\n");
     return easy_context->received_data.concat_and_get_string();
   }
 
