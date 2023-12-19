@@ -48,22 +48,22 @@ const char *gzuncompress_raw(vk::string_view s, string::size_type *result_len);
 /*
  * initialize context for incremental compression
  */
-class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mixed> & options = {});
+class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mixed> &options = {});
 
 /*
  * incremental data compression
  */
-Optional<string> f$deflate_add(const class_instance<C$DeflateContext> & context, const string & data, int64_t flush_type = Z_SYNC_FLUSH);
+Optional<string> f$deflate_add(const class_instance<C$DeflateContext> &context, const Optional<string> &data, int64_t flush_type = Z_SYNC_FLUSH);
 
 /*
  * initialize context for incremental uncompression
  */
-class_instance<C$InflateContext> f$inflate_init(int64_t encoding, const array<mixed> & options = {});
+class_instance<C$InflateContext> f$inflate_init(int64_t encoding, const array<mixed> &options = {});
 
 /*
  * incremental data uncompression
  */
-Optional<string> f$inflate_add(const class_instance<C$InflateContext> & context, const string & data, int64_t flush_type = Z_SYNC_FLUSH);
+Optional<string> f$inflate_add(const class_instance<C$InflateContext> &context, const Optional<string> &data, int64_t flush_type = Z_SYNC_FLUSH);
 
 /*
  * compress a string
@@ -103,12 +103,12 @@ int64_t f$readgzfile(const string &s); // parameter $use_include_path dropped
 /*
  * open a gz-file for reading or writing
  */
-Stream f$gzopen (const string &s, const string &mode); // parameter $use_include_path dropped
+Stream f$gzopen(const string &s, const string &mode); // parameter $use_include_path dropped
 
 /*
  * write the contents of $text to the given gz-file
  */
-Optional<int64_t> f$gzwrite (const Stream &stream, const string &text); // parameter $length dropped
+Optional<int64_t> f$gzwrite(const Stream &stream, const string &text); // parameter $length dropped
 
 /*
  * set the file position indicator for the given file pointer to the given offset byte

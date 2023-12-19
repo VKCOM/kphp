@@ -548,9 +548,9 @@ define('PHP_QUERY_RFC1738', 1);
 define('PHP_QUERY_RFC3986', 2);
 
 function deflate_init(int $encoding, array $options = []): ?DeflateContext;
-function deflate_add(DeflateContext $context, string $data, int $flush_mode = ZLIB_SYNC_FLUSH): string | false;
+function deflate_add(DeflateContext $context, string | false $data, int $flush_mode = ZLIB_SYNC_FLUSH): string | false;
 function inflate_init(int $encoding, array $options = []): ?InflateContext;
-function inflate_add(InflateContext $context, string $data, int $flush_mode = ZLIB_SYNC_FLUSH): string | false;
+function inflate_add(InflateContext $context, string | false $data, int $flush_mode = ZLIB_SYNC_FLUSH): string | false;
 function gzencode (string $str, int $level = -1): string;
 function gzdecode (string $str): string;
 function gzcompress (string $str, int $level = -1): string;

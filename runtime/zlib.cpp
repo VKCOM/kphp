@@ -7,9 +7,9 @@
 #include "runtime/critical_section.h"
 #include "runtime/string_functions.h"
 
-#define CHUNK_SIZE 8192
-
 namespace {
+
+#define CHUNK_SIZE 8192
 
 voidpf zlib_static_alloc(voidpf opaque, uInt items, uInt size) {
   int *buf_pos = (int *)opaque;
@@ -291,7 +291,12 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
   return context;
 }
 
-Optional<string> f$deflate_add(const class_instance<C$DeflateContext> &context, const string &data, int64_t flush_type) {
+Optional<string> f$deflate_add(const class_instance<C$DeflateContext> &context, const Optional<string> &data, int64_t flush_type) {
+  if (!data.has_value()) {
+    php_warning("deflate_add() : data is empty, returning false");
+    return false;
+  }
+
   switch (flush_type) {
     case Z_BLOCK:
     case Z_NO_FLUSH:
@@ -302,18 +307,18 @@ Optional<string> f$deflate_add(const class_instance<C$DeflateContext> &context, 
       break;
     default:
       php_warning("deflate_add() : flush type should be one of ZLIB_NO_FLUSH, ZLIB_PARTIAL_FLUSH, ZLIB_SYNC_FLUSH, ZLIB_FULL_FLUSH, ZLIB_FINISH, ZLIB_BLOCK, ZLIB_TREES");
-      return {};
+      return false;
   }
 
   dl::CriticalSectionGuard guard;
   z_stream *stream = &context.get()->stream;
-  int out_size = deflateBound(stream, data.size()) + 30;
+  int out_size = deflateBound(stream, data.val().size()) + 30;
   out_size = out_size < 64 ? 64 : out_size;
   char * buffer = static_cast<char *>(dl::script_allocator_malloc(out_size));
   auto finalizer = vk::finally([buffer](){dl::script_allocator_free(buffer);});
-  stream->next_in = const_cast<Bytef *>(reinterpret_cast<const Bytef *>(data.c_str()));
+  stream->next_in = const_cast<Bytef *>(reinterpret_cast<const Bytef *>(data.val().c_str()));
   stream->next_out = reinterpret_cast<Bytef *>(buffer);
-  stream->avail_in = data.size();
+  stream->avail_in = data.val().size();
   stream->avail_out = out_size;
 
   int status = Z_OK;
@@ -340,7 +345,7 @@ Optional<string> f$deflate_add(const class_instance<C$DeflateContext> &context, 
       return string(buffer, len);
     default:
       php_warning("deflate_add() : zlib error %s", zError(status));
-      return {};
+      return false;
   }
 }
 
@@ -387,7 +392,12 @@ class_instance<C$InflateContext> f$inflate_init(int64_t encoding, const array<mi
   return context;
 }
 
-Optional<string> f$inflate_add(const class_instance<C$InflateContext> &context, const string &data, int64_t flush_type) {
+Optional<string> f$inflate_add(const class_instance<C$InflateContext> &context, const Optional<string> &data, int64_t flush_type) {
+  if (!data.has_value()) {
+    php_warning("inflate_add() : data is empty, returning false");
+    return false;
+  }
+
   switch (flush_type) {
     case Z_BLOCK:
     case Z_NO_FLUSH:
@@ -398,7 +408,7 @@ Optional<string> f$inflate_add(const class_instance<C$InflateContext> &context, 
       break;
     default:
       php_warning("inflate_add() : flush type should be one of ZLIB_NO_FLUSH, ZLIB_PARTIAL_FLUSH, ZLIB_SYNC_FLUSH, ZLIB_FULL_FLUSH, ZLIB_FINISH, ZLIB_BLOCK, ZLIB_TREES");
-      return {};
+      return false;
   }
 
   dl::CriticalSectionGuard guard;
@@ -407,11 +417,11 @@ Optional<string> f$inflate_add(const class_instance<C$InflateContext> &context, 
 //  {
 //    inflateReset(&context.get()->stream);
 //  }
-  int in_size = data.size();
+  int in_size = data.val().size();
   int out_size = in_size > CHUNK_SIZE ? in_size : CHUNK_SIZE;
   char * buffer = static_cast<char *>(dl::script_allocator_malloc(out_size));
   auto finalizer = vk::finally([buffer](){dl::script_allocator_free(buffer);});
-  stream->next_in = const_cast<Bytef *>(reinterpret_cast<const Bytef *>(data.c_str()));
+  stream->next_in = const_cast<Bytef *>(reinterpret_cast<const Bytef *>(data.val().c_str()));
   stream->next_out = reinterpret_cast<Bytef *>(buffer);
   stream->avail_in = in_size;
   stream->avail_out = out_size;
@@ -439,7 +449,7 @@ Optional<string> f$inflate_add(const class_instance<C$InflateContext> &context, 
       return string(buffer, len);
     default:
       php_warning("inflate_add() : zlib error %s", zError(status));
-      return {};
+      return false;
   }
 }
 
