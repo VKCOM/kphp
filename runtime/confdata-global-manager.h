@@ -51,8 +51,9 @@ public:
   static ConfdataGlobalManager &get() noexcept;
 
   void init(size_t confdata_memory_limit,
-    std::unordered_set<vk::string_view> &&predefined_wilrdcards,
-            std::unique_ptr<re2::RE2> &&blacklist_pattern) noexcept;
+            std::unordered_set<vk::string_view> &&predefined_wilrdcards,
+            std::unique_ptr<re2::RE2> &&blacklist_pattern,
+            std::forward_list<vk::string_view> &&force_ignore_prefixes) noexcept;
 
   void force_release_all_resources_acquired_by_this_proc_if_init() noexcept {
     if (is_initialized()) {

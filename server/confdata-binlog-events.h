@@ -90,6 +90,10 @@ public:
     return size <= 0 ? mixed{string{}} : mc_get_value(mem, size, get_flags());
   }
 
+  size_t get_data_size() const noexcept {
+    return BASE::data_len;
+  }
+
   vk::string_view get_value_as_string() const noexcept {
     const char *mem = BASE::data + BASE::key_len;
     const int size = BASE::data_len;
