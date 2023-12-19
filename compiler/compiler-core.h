@@ -33,7 +33,7 @@ private:
   TSHashTable<FunctionPtr> functions_ht;
   TSHashTable<ClassPtr> classes_ht;
   TSHashTable<DefinePtr> defines_ht;
-  TSHashTable<VarPtr> global_vars_ht;
+  TSHashTable<VarPtr,2'000'000> global_vars_ht;
   TSHashTable<LibPtr, 1000> libs_ht;
   TSHashTable<ModulitePtr, 1000> modulites_ht;
   TSHashTable<ComposerJsonPtr, 1000> composer_json_ht;

@@ -95,11 +95,12 @@ ConfdataGlobalManager &ConfdataGlobalManager::get() noexcept {
 
 void ConfdataGlobalManager::init(size_t confdata_memory_limit,
                                  std::unordered_set<vk::string_view> &&predefined_wilrdcards,
-                                 std::unique_ptr<re2::RE2> &&blacklist_pattern) noexcept {
+                                 std::unique_ptr<re2::RE2> &&blacklist_pattern,
+                                 std::forward_list<vk::string_view> &&force_ignore_prefixes) noexcept {
   resource_.init(mmap_shared(confdata_memory_limit), confdata_memory_limit);
   confdata_samples_.init(resource_);
   predefined_wildcards_.set_wildcards(std::move(predefined_wilrdcards));
-  key_blacklist_.set_blacklist(std::move(blacklist_pattern));
+  key_blacklist_.set_blacklist(std::move(blacklist_pattern), std::move(force_ignore_prefixes));
 }
 
 ConfdataGlobalManager::~ConfdataGlobalManager() noexcept {
