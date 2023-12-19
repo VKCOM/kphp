@@ -964,7 +964,7 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
     case TL_RPC_INVOKE_REQ: {
       if (php_worker.has_value()) {
         //check that another rpc request has already been processed
-        log_not_too_much( "get new RPC_INVOKE_REQ while another rpc query is running\n");
+        log_server_warning( "get new RPC_INVOKE_REQ while another rpc query is running\n");
         return 0;
       }
       if (in_sigterm) {
