@@ -1299,7 +1299,7 @@ define('CURLOPT_PROXY_SSL_VERIFYPEER', 200147);
 define('CURLOPT_SUPPRESS_CONNECT_HEADERS', 200148);
 define('CURLOPT_TCP_FASTOPEN', 200149);
 define('CURLOPT_TFTP_NO_OPTIONS', 200150);
-define('CURLOPT_SSH_COMPRESSION', 200151);
+define('CURLOPT_SSH_COMPRESSION', 200151); // don't work (kphp failed)
 define('CURLOPT_SSL_FALSESTART', 200152); // work only on IOS with TLS backend (will be removed)
 define('CURLOPT_HTTP09_ALLOWED', 200153);
 define('CURLOPT_MAIL_RCPT_ALLLOWFAILS', 200154);
@@ -1311,24 +1311,25 @@ define('CURLOPT_SSL_OPTIONS', 200159);
 define('CURLOPT_PROXY_SSL_OPTIONS', 200160);
 define('CURLOPT_PROXY_SSL_VERIFYHOST', 200161);
 define('CURLOPT_PROXY_SSLVERSION', 200162); // without CURL_SSLVERSION_MAX_* options
-define('CURLOPT_STREAM_WEIGHT', 200163);
+define('CURLOPT_STREAM_WEIGHT', 200163); // don't work (kphp failed)
 define('CURLOPT_TIMEVALUE', 200164);
 define('CURLOPT_TIMECONDITION', 200165);
 define('CURLOPT_TIMEVALUE_LARGE', 200166);
 define('CURLOPT_UPKEEP_INTERVAL_MS', 200167);
 define('CURLOPT_UPLOAD_BUFFERSIZE', 200168);
-define('CURLOPT_SSH_AUTH_TYPES', 200169);
+define('CURLOPT_SSH_AUTH_TYPES', 200169); // kphp-curl doesn't support this option
 // new slist options
 define('CURLOPT_CONNECT_TO', 200170);
 define('CURLOPT_PROXYHEADER', 200171);
 // new string options
-define('CURLOPT_ENCODING', 200172);
+define('CURLOPT_ENCODING', 200172); 
+// curl must be build with zlib for decompressing gzip, with brotli – for brotli, with zstd – for zstd
 define('CURLOPT_ACCEPT_ENCODING', CURLOPT_ENCODING);
 define('CURLOPT_ABSTRACT_UNIX_SOCKET', 200173);
 define('CURLOPT_DEFAULT_PROTOCOL', 200174);
 define('CURLOPT_DNS_INTERFACE', 200175);
-define('CURLOPT_DNS_LOCAL_IP4', 200176);
-define('CURLOPT_DNS_LOCAL_IP6', 200177);
+define('CURLOPT_DNS_LOCAL_IP4', 200176); // curl must be build with c-ares library
+define('CURLOPT_DNS_LOCAL_IP6', 200177); // curl must be build with c-ares library
 define('CURLOPT_KEYPASSWD', 200178);
 define('CURLOPT_KRB4LEVEL', CURLOPT_KRBLEVEL);
 define('CURLOPT_LOGIN_OPTIONS', 200179);
@@ -1394,18 +1395,27 @@ define('CURLSSH_AUTH_HOST',      1<<2);
 define('CURLSSH_AUTH_KEYBOARD',  1<<3);
 
 // bitmasks for CURLAUTH options
-define('CURLAUTH_NONE',   0);
-define('CURLAUTH_BASIC',  1<<0);
-define('CURLAUTH_DIGEST', 1<<1);
-define('CURLAUTH_GSSNEGOTIATE', 1<<2);
-define('CURLAUTH_NTLM',   1<<3);
-define('CURLAUTH_DIGEST_IE', 1<<4);
-define('CURLAUTH_ANYSAFE', ~(CURLAUTH_BASIC|CURLAUTH_DIGEST_IE));
-define('CURLAUTH_ANY', ~CURLAUTH_DIGEST_IE);
+define('CURLAUTH_NONE',         0);
+define('CURLAUTH_BASIC',        1<<0);
+define('CURLAUTH_DIGEST',       1<<1);
+define('CURLAUTH_NEGOTIATE',    1<<2);
+define('CURLAUTH_GSSNEGOTIATE', CURLAUTH_NEGOTIATE);
+define('CURLAUTH_GSSAPI',       CURLAUTH_NEGOTIATE);
+define('CURLAUTH_NTLM',         1<<3);
+define('CURLAUTH_DIGEST_IE',    1<<4);
+define('CURLAUTH_ANYSAFE',      ~(CURLAUTH_BASIC|CURLAUTH_DIGEST_IE));
+define('CURLAUTH_ANY',          ~CURLAUTH_DIGEST_IE);
 
 // bitmasks for SSL options
 define('CURLSSLOPT_ALLOW_BEAST', 1<<0);
-define('CURLSSLOPT_NO_REVOKE',   1<<1);
+// define('CURLSSLOPT_NO_REVOKE', 1<<1);
+// CURLSSLOPT_NO_REVOKE is only supported for Schannel (the native Windows SSL library)
+define('CURLSSLOPT_NO_PARTIALCHAIN', 1<<2);
+// define('CURLSSLOPT_REVOKE_BEST_EFFORT', 1<<3);
+// CURLSSLOPT_REVOKE_BEST_EFFORT is only supported for Schannel (the native Windows SSL library)
+define('CURLSSLOPT_NATIVE_CA', 1<<4);
+// define('CURLSSLOPT_AUTO_CLIENT_CERT', 1<<5);
+// CURLSSLOPT_AUTO_CLIENT_CERT is only supported for Schannel (the native Windows SSL library)
 
 define('CURL_TIMECOND_NONE', 0);
 define('CURL_TIMECOND_IFMODSINCE', 1);

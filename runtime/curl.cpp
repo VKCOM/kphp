@@ -504,6 +504,16 @@ void set_enumerated_option(const std::array<T, N> &options, EasyContext *easy_co
   }
 }
 
+void timecond_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
+  constexpr static auto options = vk::to_array(
+    {
+      CURL_TIMECOND_NONE,
+      CURL_TIMECOND_IFMODSINCE,
+      CURL_TIMECOND_IFUNMODSINCE
+    });
+  set_enumerated_option<0>(options, easy_context, option, value);
+}
+
 void proxy_type_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
   constexpr static auto options = vk::to_array(
     {
@@ -526,7 +536,7 @@ void ssl_version_option_setter(EasyContext *easy_context, CURLoption option, con
       CURL_SSLVERSION_TLSv1_1,
       CURL_SSLVERSION_TLSv1_2,
       CURL_SSLVERSION_SSLv2,
-      CURL_SSLVERSION_SSLv3,
+      CURL_SSLVERSION_SSLv3
     });
   set_enumerated_option<0>(options, easy_context, option, value);
 }
@@ -538,7 +548,7 @@ void proxy_ssl_version_option_setter(EasyContext *easy_context, CURLoption optio
       CURL_SSLVERSION_TLSv1,
       CURL_SSLVERSION_TLSv1_0,
       CURL_SSLVERSION_TLSv1_1,
-      CURL_SSLVERSION_TLSv1_2,
+      CURL_SSLVERSION_TLSv1_2
     });
   set_enumerated_option<0>(options, easy_context, option, value);
 }
@@ -879,7 +889,7 @@ bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) 
       {CURLOPT_PROXY_SSLVERSION,          proxy_ssl_version_option_setter},
       {CURLOPT_STREAM_WEIGHT,             long_option_setter},
       {CURLOPT_TIMEVALUE,                 long_option_setter},
-      {CURLOPT_TIMECONDITION,             long_option_setter},
+      {CURLOPT_TIMECONDITION,             timecond_option_setter},
       {CURLOPT_TIMEVALUE_LARGE,           off_option_setter},
       {CURLOPT_UPKEEP_INTERVAL_MS,        long_option_setter},
       {CURLOPT_UPLOAD_BUFFERSIZE,         long_option_setter},
@@ -932,6 +942,7 @@ bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) 
     easy_context->error_num = CURLE_OK;
     curl_option.option_setter(easy_context, curl_option.option, value);
   }
+  fprintf(stderr, "error num for option %d is %d\n", (int)option, (int)easy_context->error_num);
   return easy_context->error_num == CURLE_OK;
 }
 
