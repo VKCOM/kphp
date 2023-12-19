@@ -6,12 +6,10 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <numeric>
 #include <stack>
 #include <tuple>
 #include <type_traits>
 #include <unordered_set>
-#include <utility>
 
 #include "common/mixin/not_copyable.h"
 #include "common/type_traits/list_of_types.h"
@@ -90,7 +88,7 @@ public:
 
   template<size_t... Is, typename... T>
   void process(const shape<std::index_sequence<Is...>, T...> &value) {
-    ([this, value] { process(value.template get<Is>()); }(), ...);
+    (process(value.template get<Is>()), ...);
   }
 
   template<typename T>
@@ -106,10 +104,10 @@ public:
 
 private:
   template<size_t Index = 0, typename Fn, typename... Args>
-  std::enable_if_t<Index == sizeof...(Args), void> for_each(const std::tuple<Args...> &value [[maybe_unused]], Fn func [[maybe_unused]]) {}
+  std::enable_if_t<Index == sizeof...(Args), void> for_each(const std::tuple<Args...> &value [[maybe_unused]], const Fn &func [[maybe_unused]]) {}
 
   template<size_t Index = 0, typename Fn, typename... Args>
-  std::enable_if_t<Index != sizeof...(Args), void> for_each(const std::tuple<Args...> &value, Fn func) {
+  std::enable_if_t<Index != sizeof...(Args), void> for_each(const std::tuple<Args...> &value, const Fn &func) {
     func(std::get<Index>(value));
     for_each<Index + 1, Fn, Args...>(value, func);
   }
@@ -161,6 +159,8 @@ private:
   };
 
   int64_t estimated_elements_memory_{0};
+
+  dl::CriticalSectionGuard guard;
   std::unordered_set<void *> processed_instances;
   std::stack<instance_element> last_instance_element;
 };
@@ -176,7 +176,7 @@ template<typename Int = int64_t, typename = std::enable_if_t<std::is_same<int64_
 array<int64_t> f$get_global_vars_memory_stats(Int limit = 0);
 
 template<typename Int, typename>
-array<int64_t> f$get_global_vars_memory_stats(Int lower_bound) {
+array<int64_t> f$get_global_vars_memory_stats(Int limit) {
   array<int64_t> get_global_vars_memory_stats_impl(int64_t) noexcept;
-  return get_global_vars_memory_stats_impl(lower_bound);
+  return get_global_vars_memory_stats_impl(limit);
 }
