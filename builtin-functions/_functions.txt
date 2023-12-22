@@ -1654,3 +1654,7 @@ class DateTimeImmutable implements DateTimeInterface {
 }
 
 function getenv(string $varname = '', bool $local_only = false): mixed;
+
+function predictXgb(string $kml_path, array $features): array< float >;
+function predictCatboost(string $kml_path, array $float_feats, array $cat_feats) : array< float >;
+function unsafeInitModels(array< string > $kml_files);

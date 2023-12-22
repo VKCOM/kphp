@@ -37,6 +37,13 @@ prepend(KPHP_RUNTIME_PDO_SOURCES pdo/
         pdo_statement.cpp
         abstract_pdo_driver.cpp)
 
+prepend(KPHP_RUNTIME_ML_SOURCES ml/
+        evaluators/catboost.cpp
+        evaluators/xgboost.cpp
+        kml-files-reader.cpp
+        kphp_ml.cpp
+        ml.cpp)
+
 if(PDO_DRIVER_MYSQL)
 prepend(KPHP_RUNTIME_PDO_MYSQL_SOURCES pdo/mysql/
         mysql_pdo_driver.cpp
@@ -58,6 +65,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         ${KPHP_RUNTIME_PDO_SOURCES}
         ${KPHP_RUNTIME_PDO_MYSQL_SOURCES}
         ${KPHP_RUNTIME_PDO_PGSQL_SOURCES}
+        ${KPHP_RUNTIME_ML_SOURCES}
         allocator.cpp
         array_functions.cpp
         bcmath.cpp

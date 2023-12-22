@@ -302,3 +302,13 @@ inline bool wrap_substr_args(string::size_type str_len, int64_t &start, int64_t 
 
   return true;
 }
+
+namespace std {
+template<>
+class hash<::string> {
+public:
+  size_t operator()(const ::string &s) const noexcept {
+    return s.hash();
+  }
+};
+} // namespace std
