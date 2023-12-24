@@ -30,6 +30,7 @@ public:
     resumable_id = vk::singleton<CurlAdaptor>::get().launch_request_resumable(request);
     response = f$wait<std::unique_ptr<CurlResponse>, false>(resumable_id, timeout_s);
     TRY_WAIT(curl_exec_concurrently_label, response, std::unique_ptr<CurlResponse>);
+    // kprintf("run %s\n", response->response.val().c_str());
     vk::singleton<CurlAdaptor>::get().finish_request(request);
     RETURN(response ? response->response : ReturnT{false});
     RESUMABLE_END

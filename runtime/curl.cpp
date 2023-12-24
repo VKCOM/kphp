@@ -667,6 +667,7 @@ bool f$curl_setopt_array(curl_easy easy_id, const array<mixed> &options) noexcep
 mixed f$curl_exec(curl_easy easy_id) noexcept {
   constexpr double long_curl_query = 2 * 1e-1; // 0.2 sec
   auto *easy_context = get_context<EasyContext>(easy_id);
+  kprintf("enter\n");
   if (!easy_context) {
     kprintf("bad1\n");
     return false;
@@ -698,7 +699,7 @@ mixed f$curl_exec(curl_easy easy_id) noexcept {
   }
   if (easy_context->return_transfer) {
     kprintf("good\n");
-    return easy_context->received_data.concat_and_get_string();
+  return easy_context->received_data.concat_and_get_string();
   }
 
   return true;

@@ -6,7 +6,7 @@ curl_setopt($ch, CURLOPT_URL, "nonexistent_url");
 
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
-$output = curl_exec_concurrently($ch, 1);
+$output = curl_exec($ch);
 	
 var_dump($output);
 
