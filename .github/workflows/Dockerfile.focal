@@ -14,7 +14,7 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       git unzip cmake make clang g++ g++-10 gperf netcat \
       python3.7 python3-pip python3.7-distutils python3.7-dev libpython3.7-dev python3-jsonschema python3-setuptools mysql-server libmysqlclient-dev && \
-    wget https://github.com/curl/curl/releases/download/curl-7_65_0/curl-7.65.0.zip && unzip curl-7.65.0.zip && cd curl-7.65.0 && ./configure --disable-shared --with-openssl --disable-lpad --disable-ldaps && make -j$(nproc) && make install && cd .. && \
+    wget https://github.com/curl/curl/releases/download/curl-7_65_1/curl-7.65.1.zip && unzip curl-7.65.1.zip && cd curl-7.65.1 && ./configure --disable-shared --with-openssl --disable-lpad --disable-ldaps && make -j$(nproc) && make install && cd .. && \
     mkdir /opt/curl840 && mkdir /opt/curl840/lib && mkdir /opt/curl840/include && cp /usr/local/lib/libcurl.a /opt/curl840/lib/ && cp -R /usr/local/include/curl/ /opt/curl840/include/ && \
     python3.7 -m pip install pip && python3.7 -m pip install -r /tmp/requirements.txt && \
     apt-get install -y --no-install-recommends kphp-timelib libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
