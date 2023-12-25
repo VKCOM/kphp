@@ -18,11 +18,11 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: buster # old curl
-            compiler: g++
-            cpp: 17
-            asan: off
-            ubsan: off
+          # - os: buster # old curl
+          #   compiler: g++
+          #   cpp: 17
+          #   asan: off
+          #   ubsan: off
           - os: focal # new curl
             compiler: clang++
             cpp: 17

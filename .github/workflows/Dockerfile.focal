@@ -14,8 +14,10 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       git unzip cmake make clang g++ g++-10 gperf netcat \
       python3.7 python3-pip python3.7-distutils python3.7-dev libpython3.7-dev python3-jsonschema python3-setuptools mysql-server libmysqlclient-dev && \
-    wget https://github.com/curl/curl/releases/download/curl-7_68_0/curl-7.68.0.zip && unzip curl-7.68.0.zip && cd curl-7.68.0 && ./configure --disable-shared --with-openssl --disable-lpad --disable-ldaps && make -j$(nproc) && make install && cd .. && \
-    mkdir /opt/curl840 && mkdir /opt/curl840/lib && mkdir /opt/curl840/include && cp /usr/local/lib/libcurl.a /opt/curl840/lib/ && cp -R /usr/local/include/curl/ /opt/curl840/include/ && \
+    apt-get install -y --no-install-recommends \
+      libssh2-1 libssh2-1-dev libbrotli-dev libglobus-gssapi-gsi-dev libglobus-gssapi-gsi4 libc-ares-dev libc-ares2 curl libgssapi-krb5-2 libkrb5-dev libcurl4-openssl-dev && \
+    wget https://github.com/curl/curl/releases/download/curl-8_4_0/curl-8.4.0.zip && unzip curl-8.4.0.zip && cd curl-8.4.0 && ./configure --with-openssl --with-libssh2 --enable-tls-srp --enable-ares && make -j$(nproc) && make && cd .. && \
+    mkdir /opt/curl840 && mkdir /opt/curl840/lib && mkdir /opt/curl840/include && cp /usr/lib/x86_64-linux-gnu/libcurl.a /opt/curl840/lib/ && cp -R /usr/include/x86_64-linux-gnu/curl/ /opt/curl840/include/ && \
     python3.7 -m pip install pip && python3.7 -m pip install -r /tmp/requirements.txt && \
     apt-get install -y --no-install-recommends kphp-timelib libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
       libzstd-dev libyaml-cpp-dev libnghttp2-dev zlib1g-dev php7.4-dev libldap-dev libkrb5-dev \

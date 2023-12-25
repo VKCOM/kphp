@@ -690,7 +690,6 @@ mixed f$curl_exec(curl_easy easy_id) noexcept {
     if (kphp_tracing::is_turned_on()) {
       kphp_tracing::on_curl_exec_fail(easy_context->uniq_id, -easy_context->error_num); // error_num > 0, pass negative
     }
-    kprintf("bad2 %ld\n", easy_context->error_num);
     return false;
   }
 
