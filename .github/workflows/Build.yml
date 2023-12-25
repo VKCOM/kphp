@@ -37,7 +37,7 @@ jobs:
           - os: jammy
             compiler: g++
             cpp: 20
-            asan: off
+            asan: on
             ubsan: off
 
     name: "${{matrix.os}}/${{matrix.compiler}}/c++${{matrix.cpp}}/asan=${{matrix.asan}}/ubsan=${{matrix.ubsan}}"
@@ -114,18 +114,6 @@ jobs:
       if: steps.python_tests.outcome == 'failure'
       run: exit 1
 
-    - name: Build deb package
-      run: docker exec kphp-build-container-${{matrix.os}} bash -c
-            'cd ${{env.kphp_build_dir}} && cpack -D CPACK_COMPONENTS_ALL="KPHP;FLEX" . && ls'
-
-    - name: Install deb package
-      run: docker exec kphp-build-container-${{matrix.os}} bash -c
-            "cd ${{env.kphp_build_dir}} && dpkg -i ./vk-flex-data_1.0.1_amd64.deb && dpkg -i ./kphp_1.0.1_amd64.deb"
-
-    - name: Run php dummy script
-      run: docker exec kphp-build-container-${{matrix.os}} bash -c
-            "сd ${{env.kphp_build_dir}} && echo 'hello world' > test.php && kphp --mode=cli test.php && ./kphp_out/cli"
-
     - name: Remove docker container
       run: docker rm -f kphp-build-container-${{matrix.os}}
 
@@ -134,9 +122,9 @@ jobs:
     strategy:
       matrix:
         include:
-  #         - os: buster
-  #         - os: focal
-          - os: jammy
+          - os: buster
+          - os: focal
+          # - os: jammy # TODO: enable after release to artifactory servers
 
     steps:
     - uses: actions/checkout@v3
@@ -150,56 +138,46 @@ jobs:
       run: docker exec -u kitten kphp-build-container-${{matrix.os}}-install bash -c 
         "cd ${{env.demo_dir}} && echo 'hello world' > demo.php && kphp --mode=cli --cxx=g++ demo.php && ./kphp_out/cli -o --user kitten"
 
-  # build-macos:
-  #   runs-on: ${{matrix.os}}-12
-  #   strategy:
-  #     matrix:
-  #       include:
-  #         - os: macos
-  #           compiler: clang++
-  #           cpp: 17
+  build-macos:
+    runs-on: ${{matrix.os}}-12
+    strategy:
+      matrix:
+        include:
+          - os: macos
+            compiler: clang++
+            cpp: 17
 
-  #   name: "${{matrix.os}}/${{matrix.compiler}}/c++${{matrix.cpp}}"
+    name: "${{matrix.os}}/${{matrix.compiler}}/c++${{matrix.cpp}}"
     
-  #   steps:
-  #   - uses: actions/checkout@v3
+    steps:
+    - uses: actions/checkout@v3
 
-  #   - name: Get polyfills repo
-  #     uses: actions/checkout@v3
-  #     with:
-  #       repository: 'uber/h3'
-  #       path: 'h3'
-  #       ref: stable-3.x
+    # because of https://github.com/orgs/Homebrew/discussions/4612
+    - name: Check Environment
+      run: |
+        export HOMEBREW_NO_INSTALL_FROM_API=0
+        brew untap --force homebrew/cask
 
-  #   # because of https://github.com/orgs/Homebrew/discussions/4612
-  #   - name: Check Environment
-  #     run: |
-  #       export HOMEBREW_NO_INSTALL_FROM_API=0
-  #       brew untap --force homebrew/cask
+    - name: Setup Environment
+      run: |
+        brew tap shivammathur/php
+        brew update
+        brew install re2c cmake coreutils openssl libiconv re2 pcre yaml-cpp zstd googletest shivammathur/php/php@7.4
+        brew link --overwrite --force shivammathur/php/php@7.4
+        /usr/local/Frameworks/Python.framework/Versions/3.12/bin/python3.12 -m pip install --upgrade pip --break-system-packages && /usr/local/Frameworks/Python.framework/Versions/3.12/bin/pip3 install jsonschema install --break-system-packages jsonschema
 
-  #   - name: Setup Environment
-  #     run: |
-  #       brew tap shivammathur/php
-  #       brew update
-  #       brew install re2c cmake coreutils openssl libiconv re2 pcre yaml-cpp zstd googletest shivammathur/php/php@7.4
-  #       brew link --overwrite --force shivammathur/php/php@7.4
-  #       /usr/local/Frameworks/Python.framework/Versions/3.11/bin/pip3 install jsonschema
+    - name: Run cmake
+      run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DDOWNLOAD_MISSING_LIBRARIES=On -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build
 
-  #   - name: Build Uber h3
-  #     run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -S $GITHUB_WORKSPACE/h3 -B ${{runner.workspace}}/h3/build && make install -C ${{runner.workspace}}/h3/build -j$(nproc) all
+    - name: Build all
+      run: make -C ${{runner.workspace}}/build -j$(nproc) all
+      
+    - name: Run unit tests
+      run: make -C ${{runner.workspace}}/build -j$(nproc) test
 
-  #   - name: Run cmake
-  #     run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DDOWNLOAD_MISSING_LIBRARIES=On -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build
-
-  #   - name: Build all
-  #     run: make -C ${{runner.workspace}}/build -j$(nproc) all
-
-  #   - name: Run unit tests
-  #     run: make -C ${{runner.workspace}}/build -j$(nproc) test
-
-  #   - name: Compile dummy PHP script
-  #     working-directory: ${{runner.workspace}}/build
-  #     run: |
-  #       echo 'hello world' > demo.php 
-  #       $GITHUB_WORKSPACE/objs/bin/kphp2cpp --cxx ${{matrix.compiler}} demo.php
-  #       kphp_out/server -o
+    - name: Compile dummy PHP script
+      working-directory: ${{runner.workspace}}/build
+      run: |
+        echo 'hello world' > demo.php 
+        $GITHUB_WORKSPACE/objs/bin/kphp2cpp --cxx ${{matrix.compiler}} demo.php
+        kphp_out/server -o

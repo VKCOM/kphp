@@ -97,7 +97,7 @@ int script_backtrace(void **buffer, int size) {
 #endif
   char *stack_start = PhpScript::current_script->script_stack.get_stack_ptr();
   char *stack_end = stack_start + PhpScript::current_script->script_stack.get_stack_size();
-  return fast_backtrace_without_recursions_by_bp(rbp, stack_end, buffer, size);
+  return fast_backtrace_by_bp(rbp, stack_end, buffer, size);
 }
 
 } // namespace

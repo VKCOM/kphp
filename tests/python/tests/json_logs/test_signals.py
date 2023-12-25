@@ -90,7 +90,9 @@ class TestJsonLogsSignals(KphpServerAutoTestCase):
 
     def test_master_sigabrt(self):
         self.kphp_server.send_signal(signal.SIGABRT)
-        self.kphp_server.restart()
+        with self.assertRaises(RuntimeError):
+            self.kphp_server.stop()
+        self.kphp_server.start()
         self.kphp_server.assert_json_log(
             expect=[{
                 "version": 0, "type": -1, "env": "", "msg": "SIGABRT terminating program",
