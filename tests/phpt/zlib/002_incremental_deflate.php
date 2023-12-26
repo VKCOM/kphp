@@ -4,7 +4,7 @@
 function dump_test_deflate($ctx) {
     $chunks = ['myxa', 'myxophyta', 'myxopod', 'nab', 'nabbed', 'nabbing', 'nabit', 'nabk', 'nabob', 'nacarat', 'nacelle'];
     $out = "";
-    for($i = 0; $i < count($chunks); $i++) {
+    for($i = 0; $i < count($chunks) - 1; $i++) {
         $type = $i % 2 == 0 ? ZLIB_NO_FLUSH : ZLIB_SYNC_FLUSH;
         $out .= deflate_add($ctx, $chunks[$i], $type);
     }

@@ -198,16 +198,7 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
   int memory = 8;
   int window = 15;
   int strategy = Z_DEFAULT_STRATEGY;
-//  auto extract_int_option = [&](int lbound, int ubound, const array_iterator<const mixed> & option, int & dst) {
-//    mixed value = option.get_value();
-//    if (value.is_int() && value.as_int() >= lbound && value.as_int() <= ubound) {
-//      dst = value.as_int();
-//      return 0;
-//    } else {
-//      php_warning("deflate_init() : option %s should be number between %d..%d", option.get_string_key().c_str(), lbound, ubound);
-//      return -1;
-//    }
-//  };
+
   switch (encoding) {
     case ZLIB_ENCODING_RAW:
     case ZLIB_ENCODING_DEFLATE:
@@ -217,51 +208,6 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
       php_warning("deflate_init() : encoding should be one of ZLIB_ENCODING_RAW, ZLIB_ENCODING_DEFLATE, ZLIB_ENCODING_GZIP");
       return {};
   }
-//  for (const auto &option : options) {
-//    mixed value;
-//    if (!option.is_string_key()) {
-//      php_warning("deflate_init() : unsupported option");
-//      return {};
-//    }
-//    if (option.get_string_key() == string("level")) {
-//      if (extract_int_option(-1, 9, option, level) != 0) {
-//        return {};
-//      }
-//    } else if (option.get_string_key() == string("memory")) {
-//      if (extract_int_option(1, 9, option, memory) != 0) {
-//        return {};
-//      }
-//    } else if (option.get_string_key() == string("window")) {
-//      if (extract_int_option(8, 15, option, window) != 0) {
-//        return {};
-//      }
-//    } else if (option.get_string_key() == string("strategy")) {
-//      value = option.get_value();
-//      if (value.is_int()) {
-//        switch (value.as_int()) {
-//          case Z_FILTERED:
-//          case Z_HUFFMAN_ONLY:
-//          case Z_RLE:
-//          case Z_FIXED:
-//          case Z_DEFAULT_STRATEGY:
-//            strategy = value.as_int();
-//            break;
-//          default:
-//            php_warning("deflate_init() : option strategy should be one of ZLIB_FILTERED, ZLIB_HUFFMAN_ONLY, ZLIB_RLE, ZLIB_FIXED or ZLIB_DEFAULT_STRATEGY");
-//            return {};
-//        }
-//      } else {
-//        php_warning("deflate_init() : option strategy should be one of ZLIB_FILTERED, ZLIB_HUFFMAN_ONLY, ZLIB_RLE, ZLIB_FIXED or ZLIB_DEFAULT_STRATEGY");
-//        return {};
-//      }
-//    } else if (option.get_string_key() == string("dictionary")) {
-//      php_warning("deflate_init() : option dictionary isn't supported yet");
-//      return {};
-//    } else {
-//      php_warning("deflate_init() : unknown option name \"%s\"", option.get_string_key().c_str());
-//      return {};
-//    }
-//  }
 
   if (parse_options(options, level, memory, window, strategy) != 0) {
     return {};
@@ -413,6 +359,7 @@ Optional<string> f$inflate_add(const class_instance<C$InflateContext> &context, 
 
   dl::CriticalSectionGuard guard;
   z_stream *stream = &context.get()->stream;
+// TODO: is it needed? test on big data
 //  if (stream->state == Z_STREAM_END)
 //  {
 //    inflateReset(&context.get()->stream);
