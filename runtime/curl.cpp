@@ -451,6 +451,10 @@ void long_option_setter(EasyContext *easy_context, CURLoption option, const mixe
   easy_context->set_option_safe(option, static_cast<long>(value.to_int()));
 }
 
+void test_stream_weight(EasyContext *easy_context, CURLoption option, const mixed &value) {
+  fprintf(stderr, "I can't support %d option, sorry. Got these args: %d, %d\n", (int)option, (int)value.to_int(),(int)easy_context->uniq_id);
+}
+
 void string_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
   easy_context->set_option_safe(option, value.to_string().c_str());
 }
@@ -887,7 +891,7 @@ bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) 
       {CURLOPT_PROXY_SSL_OPTIONS,         long_option_setter},
       {CURLOPT_PROXY_SSL_VERIFYHOST,      long_option_setter},
       {CURLOPT_PROXY_SSLVERSION,          proxy_ssl_version_option_setter},
-      {CURLOPT_STREAM_WEIGHT,             long_option_setter},
+      {CURLOPT_STREAM_WEIGHT,             test_stream_weight},
       {CURLOPT_TIMEVALUE,                 long_option_setter},
       {CURLOPT_TIMECONDITION,             timecond_option_setter},
       {CURLOPT_TIMEVALUE_LARGE,           off_option_setter},

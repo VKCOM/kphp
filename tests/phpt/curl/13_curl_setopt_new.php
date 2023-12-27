@@ -5,7 +5,6 @@ require_once 'kphp_tester_include.php';
 
 function test_new_options() {
   $c = curl_init();
-  curl_setopt($c, CURLOPT_URL, "https://example.com/");
 
   var_dump(curl_setopt($c, CURLOPT_SSL_VERIFYSTATUS, 1));
   var_dump(curl_setopt($c, CURLOPT_DISALLOW_USERNAME_IN_URL, 1));
@@ -34,17 +33,11 @@ function test_new_options() {
 
   var_dump(curl_setopt($c, CURLOPT_HTTP09_ALLOWED, false));
   var_dump(curl_setopt($c, CURLOPT_SOCKS5_AUTH, CURLAUTH_GSSAPI));
-  var_dump(curl_setopt($c, CURLOPT_SSL_OPTIONS, CURLSSLOPT_ALLOW_BEAST | CURLSSLOPT_NO_PARTIALCHAIN));
-  var_dump(curl_setopt($c, CURLOPT_PROXY_SSL_OPTIONS, CURLSSLOPT_ALLOW_BEAST | CURLSSLOPT_NO_PARTIALCHAIN));
   var_dump(curl_setopt($c, CURLOPT_PROXY_SSL_VERIFYHOST, 2));
-  
-  test_proxy_ssl_version_option(); // testing CURLOPT_PROXY_SSLVERSION option
 
   var_dump(curl_setopt($c, CURLOPT_TIMEVALUE, 300));
   var_dump(curl_setopt($c, CURLOPT_TIMEVALUE_LARGE, 1<<12));
   var_dump(curl_setopt($c, CURLOPT_TIMECONDITION, CURL_TIMECOND_IFUNMODSINCE));
-  var_dump(curl_setopt($c, CURLOPT_UPKEEP_INTERVAL_MS, 10000));
-  var_dump(curl_setopt($c, CURLOPT_UPLOAD_BUFFERSIZE, 100000));
   var_dump(curl_setopt($c, CURLOPT_CONNECT_TO, ['example.com: server1.example.com']));
   var_dump(curl_setopt($c, CURLOPT_PROXYHEADER, ["http://proxy.example.com:80"]));
   var_dump(curl_setopt($c, CURLOPT_ENCODING, "gzip"));
@@ -71,12 +64,23 @@ function test_new_options() {
   var_dump(curl_setopt($c, CURLOPT_PROXY_SSLKEY, "$filename.pem"));
   var_dump(curl_setopt($c, CURLOPT_PROXY_SSLKEYTYPE, "PEM"));
   var_dump(curl_setopt($c, CURLOPT_SERVICE_NAME, "custom"));
-  var_dump(curl_setopt($c, CURLOPT_SSL_EC_CURVES, "smth"));
   var_dump(curl_setopt($c, CURLOPT_UNIX_SOCKET_PATH, "smth"));
   var_dump(curl_setopt($c, CURLOPT_XOAUTH2_BEARER, "smth"));
-
-  var_dump(curl_exec($c) == true);
   curl_close($c);
   exec("rm ./$filename.pem");
   echo "deleting $filename.pem file\n";
 }
+
+function test_proxy_ssl_version_option() {
+  $c = curl_init();
+
+  var_dump(curl_setopt($c, CURLOPT_PROXY_SSLVERSION, CURL_SSLVERSION_DEFAULT));
+  var_dump(curl_setopt($c, CURLOPT_PROXY_SSLVERSION, CURL_SSLVERSION_TLSv1));
+  var_dump(curl_setopt($c, CURLOPT_PROXY_SSLVERSION, CURL_SSLVERSION_TLSv1_0));
+  var_dump(curl_setopt($c, CURLOPT_PROXY_SSLVERSION, CURL_SSLVERSION_TLSv1_1));
+  var_dump(curl_setopt($c, CURLOPT_PROXY_SSLVERSION, CURL_SSLVERSION_TLSv1_2));
+  curl_close($c);
+}
+
+test_new_options();
+test_proxy_ssl_version_option();

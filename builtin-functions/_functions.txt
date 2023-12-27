@@ -1300,7 +1300,7 @@ define('CURLOPT_SUPPRESS_CONNECT_HEADERS', 200148);
 define('CURLOPT_TCP_FASTOPEN', 200149);
 define('CURLOPT_TFTP_NO_OPTIONS', 200150);
 define('CURLOPT_SSH_COMPRESSION', 200151); // don't work (kphp failed)
-define('CURLOPT_SSL_FALSESTART', 200152); // work only on IOS with TLS backend (will be removed)
+define('CURLOPT_SSL_FALSESTART', 200152);  // work only on IOS with TLS backend (will be removed)
 define('CURLOPT_HTTP09_ALLOWED', 200153);
 define('CURLOPT_MAIL_RCPT_ALLLOWFAILS', 200154);
 define('CURLOPT_MAXAGE_CONN', 200155);
@@ -1311,13 +1311,13 @@ define('CURLOPT_SSL_OPTIONS', 200159);
 define('CURLOPT_PROXY_SSL_OPTIONS', 200160);
 define('CURLOPT_PROXY_SSL_VERIFYHOST', 200161);
 define('CURLOPT_PROXY_SSLVERSION', 200162); // without CURL_SSLVERSION_MAX_* options
-define('CURLOPT_STREAM_WEIGHT', 200163); // don't work (kphp failed)
+define('CURLOPT_STREAM_WEIGHT', 200163);    // don't work (kphp failed)
 define('CURLOPT_TIMEVALUE', 200164);
 define('CURLOPT_TIMECONDITION', 200165);
 define('CURLOPT_TIMEVALUE_LARGE', 200166);
 define('CURLOPT_UPKEEP_INTERVAL_MS', 200167);
 define('CURLOPT_UPLOAD_BUFFERSIZE', 200168);
-define('CURLOPT_SSH_AUTH_TYPES', 200169); // kphp-curl doesn't support this option
+define('CURLOPT_SSH_AUTH_TYPES', 200169);   // kphp-curl doesn't support this option
 // new slist options
 define('CURLOPT_CONNECT_TO', 200170);
 define('CURLOPT_PROXYHEADER', 200171);
