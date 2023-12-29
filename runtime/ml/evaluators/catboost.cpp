@@ -3,6 +3,8 @@
 
 using namespace cb_common;
 
+// TODO remove heap usage into buffer
+
 static inline uint64_t calc_hash(uint64_t a, uint64_t b) {
   static constexpr uint64_t MAGIC_MULT = 0x4906ba494954cb65ULL;
   return MAGIC_MULT * (a + MAGIC_MULT * b);
@@ -94,7 +96,7 @@ static double eval(const AOSCatboostModel &model, const array<double> &float_fea
   assert(cat_features.size().size == model.cat_feature_count);
 
   // Binarise features
-  std::vector<unsigned char> binary_features(model.binary_feature_count, 0);
+  std::vector<unsigned char> binary_features(model.binary_feature_count, 0); // HEAP
   int binary_feature_index = 0;
 
   // binarize float features
@@ -105,7 +107,7 @@ static double eval(const AOSCatboostModel &model, const array<double> &float_fea
     binary_feature_index++;
   }
 
-  std::vector<int> transposed_hash(model.cat_feature_count);
+  std::vector<int> transposed_hash(model.cat_feature_count); // HEAP
   for (int i = 0; i < model.cat_feature_count; ++i) {
     const string *s = cat_features.find_value(i);
     if (s == nullptr) {
@@ -117,7 +119,7 @@ static double eval(const AOSCatboostModel &model, const array<double> &float_fea
 
   // binarize one hot cat features
   if (!model.one_hot_cat_feature_index.empty()) {
-    std::unordered_map<int, int> cat_feature_packed_indexes;
+    std::unordered_map<int, int> cat_feature_packed_indexes; // HEAP
     for (int i = 0; i < model.cat_feature_count; ++i) {
       cat_feature_packed_indexes[model.cat_features_index[i]] = i;
     }
@@ -133,7 +135,7 @@ static double eval(const AOSCatboostModel &model, const array<double> &float_fea
 
   // binarize ctr features
   if (model.model_ctrs.used_model_ctrs_count > 0) {
-    std::vector<float> ctrs(model.model_ctrs.used_model_ctrs_count);
+    std::vector<float> ctrs(model.model_ctrs.used_model_ctrs_count); // HEAP
     calc_ctrs(model.model_ctrs, binary_features, transposed_hash, ctrs);
 
     for (int i = 0; i < model.ctr_feature_borders.size(); ++i) {
