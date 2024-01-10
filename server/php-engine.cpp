@@ -1840,7 +1840,11 @@ int main_args_handler(int i, const char *long_option) {
     }
     case 'm': {
       max_memory = parse_memory_limit_default(optarg, 'm');
-      assert((1 << 20) <= max_memory && max_memory <= (2047LL << 20));
+      const long long min_size = 1 << 20;
+      if (max_memory <= min_size) {
+        kprintf("--%s option: cannot be less than 1 megabyte\n", long_option);
+        return -1;
+      }
       return 0;
     }
     case 'f': {
