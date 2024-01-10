@@ -5,6 +5,7 @@
 #include "runtime/kphp_core.h"
 #include "runtime/ml/kml-files-reader.h"
 #include "runtime/ml/kphp_ml.h"
+#include "runtime/ml/ml.h"
 
 class EvalXgboost {
   kphp_ml::MLModel &model;

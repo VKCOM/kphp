@@ -6,10 +6,15 @@
 #include "runtime/ml/evaluators/catboost.h"
 #include "runtime/ml/evaluators/xgboost.h"
 
-std::unordered_map<std::string, kphp_ml::MLModel> LoadedModels;
-
 // TODO from to std::string to our ::string
-// For now some problems with std::hash
+// For now there are some problems with std::hash
+
+std::unordered_map<std::string, kphp_ml::MLModel> LoadedModels;
+std::string KmlDirPath;
+size_t PredictionBufferSize;
+char * PredictionBuffer = nullptr;
+
+
 
 void f$unsafeInitModels(const array<string> &kml_files) {
   for (const auto &kml_file : kml_files) {

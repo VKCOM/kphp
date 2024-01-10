@@ -14,3 +14,6 @@ array<double> f$predictCatboost(const string &kml_path, const array<array<double
 void f$unsafeInitModels(const array<string> &kml_files);
 
 extern std::unordered_map<std::string, kphp_ml::MLModel> LoadedModels;
+extern std::string KmlDirPath;
+extern size_t PredictionBufferSize;
+extern char * PredictionBuffer;

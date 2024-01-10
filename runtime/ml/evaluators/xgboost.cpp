@@ -3,10 +3,6 @@
 #include <functional>
 #include <string>
 
-constexpr size_t MAX_FEAT_CNT = 40'000;
-
-static char buffer[kphp_ml::BATCH_SIZE_XGB  * MAX_FEAT_CNT * 2 * sizeof(float)];
-
 struct XgbDensePredictor {
   struct MissingFloatPair {
     float at_vec_offset_0 = +1e+10;
@@ -85,15 +81,9 @@ array<double> EvalXgboost::predict_input(const array<array<double>> &float_featu
 
   const size_t rows_cnt = float_features.size().size;
 
+  float * linear_memory = reinterpret_cast<float*>(PredictionBuffer);
+  assert(linear_memory != nullptr);
 
-  /*
-   * For xgboost model we need only kphp_ml::BATCH_SIZE_XGB * xgb_model.num_features_present * 2
-   * Memory per request
-   * */
-
-
-//  float *linear_memory = new float[kphp_ml::BATCH_SIZE_XGB * xgb_model.num_features_present * 2]; // HEAP
-  float *linear_memory = reinterpret_cast<float*>(buffer); // HEAP
   XgbDensePredictor feat_vecs[kphp_ml::BATCH_SIZE_XGB];
 
   for (int i = 0; i < kphp_ml::BATCH_SIZE_XGB && i < rows_cnt; ++i) {
@@ -151,6 +141,5 @@ array<double> EvalXgboost::predict_input(const array<array<double>> &float_featu
     response[i] = xgb_model.transform_prediction(response[i]);
   }
 
-//  delete[] linear_memory; // HEAP
   return response;
 }

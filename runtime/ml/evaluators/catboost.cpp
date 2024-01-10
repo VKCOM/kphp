@@ -1,16 +1,45 @@
 #include "catboost.h"
+
 #include <cassert>
+
+#include "runtime/ml/ml.h"
 
 using namespace cb_common;
 
-// TODO remove heap usage into buffer
+static char *buffer;
+
+struct FlatMap {
+private:
+  std::pair<int, int> *data;
+  size_t size{0};
+  size_t capacity;
+
+public:
+  explicit FlatMap(std::pair<int, int> *data, size_t capacity)
+    : data(data)
+    , capacity(capacity) {}
+
+  void insert(int key, int value) {
+    assert(size < capacity);
+    data[size++] = std::pair{key, value};
+  }
+
+  int at(int key) {
+    for (size_t i = 0; i < size; ++i) {
+      if (data[i].first == key) {
+        return data[i].second;
+      }
+    }
+    throw std::out_of_range("No key \"" + std::to_string(key) + "\" in a map");
+  }
+};
 
 static inline uint64_t calc_hash(uint64_t a, uint64_t b) {
   static constexpr uint64_t MAGIC_MULT = 0x4906ba494954cb65ULL;
   return MAGIC_MULT * (a + MAGIC_MULT * b);
 }
 
-static uint64_t calc_hashes(const std::vector<unsigned char> &binarized_features, const std::vector<int> &hashed_cat_features,
+static uint64_t calc_hashes(const unsigned char * binarized_features, int * hashed_cat_features,
                             const std::vector<int> &transposed_cat_feature_indexes,
                             const std::vector<CatboostBinFeatureIndexValue> &binarized_feature_indexes) {
   uint64_t result = 0;
@@ -28,8 +57,8 @@ static uint64_t calc_hashes(const std::vector<unsigned char> &binarized_features
   return result;
 }
 
-static void calc_ctrs(const CatboostModelCtrsContainer &model_ctrs, const std::vector<unsigned char> &binarized_features,
-                      const std::vector<int> &hashed_cat_features, std::vector<float> &result) {
+static void calc_ctrs(const CatboostModelCtrsContainer &model_ctrs, unsigned char * binarized_features,
+                      int * hashed_cat_features, float * result) {
   int result_index = 0;
 
   for (int i = 0; i < model_ctrs.compressed_model_ctrs.size(); ++i) {
@@ -96,7 +125,12 @@ static double eval(const AOSCatboostModel &model, const array<double> &float_fea
   assert(cat_features.size().size == model.cat_feature_count);
 
   // Binarise features
-  std::vector<unsigned char> binary_features(model.binary_feature_count, 0); // HEAP
+  auto *binary_features = reinterpret_cast<unsigned char *>(buffer);
+  std::fill(binary_features, binary_features + model.binary_feature_count, 0);
+
+  buffer += model.binary_feature_count * sizeof(unsigned char);
+  buffer = reinterpret_cast<char *>(((ptrdiff_t)(buffer) + sizeof(int) - 1) / sizeof(int) * sizeof(int));
+
   int binary_feature_index = 0;
 
   // binarize float features
@@ -107,7 +141,8 @@ static double eval(const AOSCatboostModel &model, const array<double> &float_fea
     binary_feature_index++;
   }
 
-  std::vector<int> transposed_hash(model.cat_feature_count); // HEAP
+  auto *transposed_hash = reinterpret_cast<int *>(buffer);
+  buffer += model.cat_feature_count * sizeof(int);
   for (int i = 0; i < model.cat_feature_count; ++i) {
     const string *s = cat_features.find_value(i);
     if (s == nullptr) {
@@ -119,9 +154,11 @@ static double eval(const AOSCatboostModel &model, const array<double> &float_fea
 
   // binarize one hot cat features
   if (!model.one_hot_cat_feature_index.empty()) {
-    std::unordered_map<int, int> cat_feature_packed_indexes; // HEAP
+    FlatMap cat_feature_packed_indexes(reinterpret_cast<std::pair<int, int>*>(buffer), model.cat_feature_count);
+    buffer += sizeof(std::pair<int, int>) * model.cat_feature_count;
+
     for (int i = 0; i < model.cat_feature_count; ++i) {
-      cat_feature_packed_indexes[model.cat_features_index[i]] = i;
+      cat_feature_packed_indexes.insert(model.cat_features_index[i],  i);
     }
     for (int i = 0; i < model.one_hot_cat_feature_index.size(); ++i) {
       int cat_idx = cat_feature_packed_indexes.at(model.one_hot_cat_feature_index[i]);
@@ -135,7 +172,9 @@ static double eval(const AOSCatboostModel &model, const array<double> &float_fea
 
   // binarize ctr features
   if (model.model_ctrs.used_model_ctrs_count > 0) {
-    std::vector<float> ctrs(model.model_ctrs.used_model_ctrs_count); // HEAP
+    auto * ctrs = reinterpret_cast<float *>(buffer);
+    buffer += sizeof(float) * model.model_ctrs.used_model_ctrs_count;
+
     calc_ctrs(model.model_ctrs, binary_features, transposed_hash, ctrs);
 
     for (int i = 0; i < model.ctr_feature_borders.size(); ++i) {
@@ -179,6 +218,7 @@ array<double> EvalCatboost::predict_input(const array<array<double>> &float_feat
   assert(resp.is_vector());
 
   for (int row_id = 0; row_id < size; ++row_id) {
+    buffer = PredictionBuffer;
     resp.push_back(eval(cbm, *float_features.find_value(row_id), *cat_features.find_value(row_id)));
   }
   return resp;

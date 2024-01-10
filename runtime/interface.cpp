@@ -38,6 +38,7 @@
 #include "runtime/kphp_tracing.h"
 #include "runtime/math_functions.h"
 #include "runtime/memcache.h"
+#include "runtime/ml/init.h"
 #include "runtime/mysql.h"
 #include "runtime/net_events.h"
 #include "runtime/on_kphp_warning_callback.h"
@@ -2455,6 +2456,9 @@ void worker_global_init(WorkerType worker_type) noexcept {
   vk::singleton<JsonLogger>::get().reset_json_logs_count();
   worker_global_init_handlers(worker_type);
   vk::singleton<ThreadPool>::get().init();
+
+  PredictionBuffer = static_cast<char *>(aligned_alloc(PredictionBufferSize, alignof( std::max_align_t))); // fix size later
+  assert (PredictionBuffer != nullptr && "Cannot allocate memory for kml prediction buffer");
 }
 
 void read_engine_tag(const char *file_name) {
