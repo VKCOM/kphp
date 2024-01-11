@@ -13,10 +13,13 @@
 #include "runtime/streams.h"
 
 using curl_easy = int64_t;
-using read_callable = std::function<string(curl_easy ch, Stream stream, size_t length)>;
-using write_callable = std::function<size_t(curl_easy ch, string data)>;
-using progress_callable = std::function<size_t(curl_easy ch, double dltotal, double dlnow, double ultotal, double ulnow)>;
-using xferinfo_callable = std::function<size_t(curl_easy ch, int64_t dltotal, int64_t dlnow, int64_t ultotal, int64_t ulnow)>;
+
+namespace curl {
+  using on_read_callable = std::function<string(curl_easy ch, Stream stream, size_t length)>;
+  using on_write_callable = std::function<size_t(curl_easy ch, string data)>;
+  using on_progress_callable = std::function<size_t(curl_easy ch, double dltotal, double dlnow, double ultotal, double ulnow)>;
+  using on_xferinfo_callable = std::function<size_t(curl_easy ch, int64_t dltotal, int64_t dlnow, int64_t ultotal, int64_t ulnow)>;
+}
 
 curl_easy f$curl_init(const string &url = string{}) noexcept;
 
@@ -24,13 +27,13 @@ void f$curl_reset(curl_easy easy_id) noexcept;
 
 bool f$curl_setopt(curl_easy easy_id, int64_t option, const mixed &value) noexcept;
 
-bool curl_setopt_fn_read(curl_easy easy_id, int64_t option, read_callable callable) noexcept;
+bool curl_setopt_fn_read(curl_easy easy_id, int64_t option, curl::on_read_callable callable) noexcept;
 
-bool curl_setopt_fn_progress(curl_easy easy_id, int64_t option, progress_callable callable) noexcept;
+bool curl_setopt_fn_progress(curl_easy easy_id, int64_t option, curl::on_progress_callable callable) noexcept;
 
-bool curl_setopt_fn_xferinfo(curl_easy easy_id, int64_t option, xferinfo_callable callable) noexcept;
+bool curl_setopt_fn_xferinfo(curl_easy easy_id, int64_t option, curl::on_xferinfo_callable callable) noexcept;
 
-bool curl_setopt_fn_header_write(curl_easy easy_id, int64_t option, write_callable callable) noexcept;
+bool curl_setopt_fn_header_write(curl_easy easy_id, int64_t option, curl::on_write_callable callable) noexcept;
 
 template <typename F>
 bool f$_curl_setopt_fn_header_write(curl_easy easy_id, int64_t option, F &&callable) {
