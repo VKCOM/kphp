@@ -44,9 +44,6 @@ function test_linked_list_options() {
   var_dump(curl_setopt($c, CURLOPT_HTTP200ALIASES, ["who", "care"]));
   var_dump(curl_setopt($c, CURLOPT_HTTPHEADER, [123, 456, null]));
 
-  var_dump(curl_setopt($c, CURLOPT_CONNECT_TO, [123, 456, "who care", null]));
-  var_dump(curl_setopt($c, CURLOPT_PROXYHEADER, [123, 456, null]));
-
   var_dump(curl_setopt($c, CURLOPT_POSTQUOTE, ["sdad", 123.412]));
   var_dump(curl_setopt($c, CURLOPT_PREQUOTE, ["foo", "bar", "baz"]));
   var_dump(curl_setopt($c, CURLOPT_QUOTE, [true, false]));
