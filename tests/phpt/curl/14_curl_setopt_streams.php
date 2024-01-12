@@ -3,10 +3,11 @@
 
 require_once 'kphp_tester_include.php';
 
-$is_kphp = true;
-#ifndef KPHP
-$is_kphp = false;
-#endif
+// listen different ports for php and kphp 
+$port = 8080;
+if (kphp)
+  $port = 8081;
+$cmd = "php -S localhost:$port ./$filename_in";
 
 class Process {
   private $pid;
@@ -53,29 +54,24 @@ class Process {
 }
 
 function test_file_option() {
-  global $is_kphp;
+  global $port, $cmd;
   $filename_in = "input_test_file.txt";
   $filename_out = "output_test_file.txt";
   $fh_in = fopen("$filename_in", "w+");
   $fh_out = fopen("$filename_out", "w+");
   var_dump(fwrite($fh_in, "hello world!"));
 
-  // listen different ports for php and kphp 
-  $port = 8080;
-  if ($is_kphp) {
-    $port = 8081;
+  if (kphp)
     // got a different behavior for fopen() in "w+" mode
     // without rewind() in kphp the output file will be empty
     rewind($fh_in);
-  }
 
   $c = curl_init("http://localhost:$port");
-  $cmd = "php -S localhost:$port ./$filename_in";
 
   var_dump(curl_setopt($c, CURLOPT_FILE, $fh_out));
   var_dump(curl_setopt($c, CURLOPT_VERBOSE, 1)); // get all information about connections
   $server = new Process($cmd, $port);
-  usleep(1000 * 60); // sleep for 60 ms
+  usleep(1000 * 200);
   var_dump(curl_exec($c)); // true, if the connection to the localhost is successfull
 
   var_dump(rewind($fh_out));
@@ -86,12 +82,13 @@ function test_file_option() {
   curl_close($c);
   exec("rm ./$filename_in ./$filename_out");
   var_dump($server->stop());
+  usleep(1000 * 200); 
 }
 
 function test_infile_option() {
-  global $is_kphp;
+  global $port;
   $filename_in = "test_file.txt";
-  $filename_out = "server_file.php";
+  $filename_out = "router.php";
 
   $fh_in = fopen("$filename_in", "w+");
   $fh_out = fopen("$filename_out", "w+");
@@ -100,12 +97,8 @@ function test_infile_option() {
   var_dump(fwrite($fh_out, "var_dump(\$putdata);"));
   rewind($fh_in);
 
-  // listen different ports for php and kphp 
-  $port = 8080;
-  if ($is_kphp) {
-    $port = 8081;
+  if (kphp)
     rewind($fh_out);
-  }
 
   $c = curl_init("http://localhost:$port");
   $cmd = "php -S localhost:$port ./$filename_out";
@@ -116,7 +109,7 @@ function test_infile_option() {
   var_dump(curl_setopt($c, CURLOPT_VERBOSE, 1));
 
   $server = new Process($cmd, $port);
-  usleep(1000 * 60);
+  usleep(1000 * 200);
   var_dump(curl_exec($c));
 
   var_dump(fclose($fh_in));
@@ -124,31 +117,27 @@ function test_infile_option() {
   curl_close($c);
   exec("rm ./$filename_in ./$filename_out");
   var_dump($server->stop());
+  usleep(1000 * 200);
 }
 
 function test_writeheader_option() {
-  global $is_kphp;
-  $filename_in = "server_file.php";
+  global $port, $cmd;
+  $filename_in = "router.php";
   $filename_out = "test_file.txt";
 
   $fh_in = fopen("$filename_in", "w+");
   $fh_out = fopen("$filename_out", "w+");
   var_dump(fwrite($fh_in, "<?php\necho 'hello world\n';"));
 
-  // listen different ports for php and kphp 
-  $port = 8080;
-  if ($is_kphp) {
-    $port = 8081;
+  if (kphp)
     rewind($fh_in);
-  }
 
   $c = curl_init("http://localhost:$port");
-  $cmd = "php -S localhost:$port ./$filename_in";
   var_dump(curl_setopt($c, CURLOPT_WRITEHEADER, $fh_out));
   var_dump(curl_setopt($c, CURLOPT_VERBOSE, 1));
 
   $server = new Process($cmd, $port);
-  usleep(1000 * 60);
+  usleep(1000 * 200);
   var_dump(curl_exec($c));
 
   var_dump(rewind($fh_out));
@@ -158,6 +147,7 @@ function test_writeheader_option() {
   curl_close($c);
   exec("rm ./$filename_in ./$filename_out");
   var_dump($server->stop());
+  usleep(1000 * 200);
 }
 
 test_file_option();

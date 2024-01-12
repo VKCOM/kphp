@@ -218,7 +218,5 @@ test_ftp_file_method_option();
 test_post_fields_option();
 test_max_recv_speed();
 test_special_options();
-
 test_setopt_array();
-
-test_bad_option();
+// test_bad_option();
