@@ -10,51 +10,45 @@ $is_kphp = false;
 
 class Process {
   private $pid;
-  private $command;
-  private $outputs;
+  private $cmd;
+  private $port;
 
-  public function __construct($cl=false) {
-    if ($cl != false) {
-      $this->command = $cl;
-      $this->runcmd();
+  public function __construct($cmd, $port) {
+    if ($cmd) {
+      $this->cmd = 'nohup ' . $cmd . ' > /dev/null 2>&1 & echo $!';
+      $this->port = $port;
+      exec($this->cmd);
+    } else {
+        throw new Exception("The command for running a server on the port $port is empty!\n");
     }
-    $this->outputs = array();
   }
 
-  private function runcmd() {
-    $command = 'nohup ' . $this->command .' > /dev/null 2>&1 & echo $!';
-    exec($command, $this->outputs);
-    $this->pid = (int)$this->outputs[0];
-  }
-
-  public function getpid() {
-    exec("(ps aux | grep '[p]hp -S localhost' | awk '{print $2}')", $op);
-    $this->pid = $op[0];
-    return $this->pid;
+  public function update_pid() {
+    exec("lsof -i:$this->port | awk 'NR==2' | awk '{print $2}'", $op);
+    if (!isset($op[0])) {
+        throw new Exception("Couldn't define the pid of running server on the port $this->port");
+    }
+    return $this->pid = $op[0];
   }
 
   public function status() {
-    $command = 'ps -p ' . $this->pid;
-    exec($command, $op);
-    if (!isset($op[1])) 
-      return false;
-    return true;
+    $cmd = 'ps -p ' . $this->pid;
+    exec($cmd, $op);
+    return (isset($op[1]));
   }
 
   public function start() {
-    if ($this->command != '') 
-      $this->runcmd();
-    else 
-      return true;
+    $code = false;
+    if ($this->cmd)
+      exec($this->cmd, $op, $code);
+    return $code;
   }
 
   public function stop() {
-    $this->getpid();
-    $command = 'kill '. $this->pid;
-    exec($command);
-    if ($this->status() == false) 
-      return true;
-    return false;
+    $this->update_pid();
+    $cmd = 'kill '. $this->pid;
+    exec($cmd);
+    return $this->status() == false;
   }
 }
 
@@ -80,8 +74,8 @@ function test_file_option() {
 
   var_dump(curl_setopt($c, CURLOPT_FILE, $fh_out));
   var_dump(curl_setopt($c, CURLOPT_VERBOSE, 1)); // get all information about connections
-  $server = new Process($cmd);
-  usleep(1000 * 30); // sleep for 30 ms
+  $server = new Process($cmd, $port);
+  usleep(1000 * 60); // sleep for 60 ms
   var_dump(curl_exec($c)); // true, if the connection to the localhost is successfull
 
   var_dump(rewind($fh_out));
@@ -121,8 +115,8 @@ function test_infile_option() {
   var_dump(curl_setopt($c, CURLOPT_INFILE, $fh_in));
   var_dump(curl_setopt($c, CURLOPT_VERBOSE, 1));
 
-  $server = new Process($cmd);
-  usleep(1000 * 30);
+  $server = new Process($cmd, $port);
+  usleep(1000 * 60);
   var_dump(curl_exec($c));
 
   var_dump(fclose($fh_in));
@@ -132,5 +126,40 @@ function test_infile_option() {
   var_dump($server->stop());
 }
 
+function test_writeheader_option() {
+  global $is_kphp;
+  $filename_in = "server_file.php";
+  $filename_out = "test_file.txt";
+
+  $fh_in = fopen("$filename_in", "w+");
+  $fh_out = fopen("$filename_out", "w+");
+  var_dump(fwrite($fh_in, "<?php\necho 'hello world\n';"));
+
+  // listen different ports for php and kphp 
+  $port = 8080;
+  if ($is_kphp) {
+    $port = 8081;
+    rewind($fh_in);
+  }
+
+  $c = curl_init("http://localhost:$port");
+  $cmd = "php -S localhost:$port ./$filename_in";
+  var_dump(curl_setopt($c, CURLOPT_WRITEHEADER, $fh_out));
+  var_dump(curl_setopt($c, CURLOPT_VERBOSE, 1));
+
+  $server = new Process($cmd, $port);
+  usleep(1000 * 60);
+  var_dump(curl_exec($c));
+
+  var_dump(rewind($fh_out));
+  var_dump(fread($fh_out, 17));
+  var_dump(fclose($fh_in));
+  var_dump(fclose($fh_out));
+  curl_close($c);
+  exec("rm ./$filename_in ./$filename_out");
+  var_dump($server->stop());
+}
+
 test_file_option();
 test_infile_option();
+test_writeheader_option();
