@@ -411,9 +411,10 @@ size_t curl_read(char *data, size_t size, size_t nmemb, void *userdata) {
       break;
     case KPHP_CURL_USER:
       try {
-        // call user function and get length of return string value
-        int rlength = static_cast<int>(string(easy_context->read_handler.callable(easy_context->self_id, *easy_context->read_handler.stream, size * nmemb)).size());
+        string result = string(easy_context->read_handler.callable(easy_context->self_id, *easy_context->read_handler.stream, size * nmemb));
+        int rlength = static_cast<int>(result.size());
         length = std::min(static_cast<int>(size * nmemb), rlength);
+        memcpy(data, result.buffer(), length);
       } catch (std::exception &ex) {
         php_warning("Cannot call the CURLOPT_READFUNCTION");
         //fprintf(stderr, "Error: %s\n", ex.what());

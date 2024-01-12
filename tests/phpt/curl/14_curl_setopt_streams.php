@@ -7,7 +7,6 @@ require_once 'kphp_tester_include.php';
 $port = 8080;
 if (kphp)
   $port = 8081;
-$cmd = "php -S localhost:$port ./$filename_in";
 
 class Process {
   private $pid;
@@ -54,7 +53,7 @@ class Process {
 }
 
 function test_file_option() {
-  global $port, $cmd;
+  global $port;
   $filename_in = "input_test_file.txt";
   $filename_out = "output_test_file.txt";
   $fh_in = fopen("$filename_in", "w+");
@@ -67,6 +66,7 @@ function test_file_option() {
     rewind($fh_in);
 
   $c = curl_init("http://localhost:$port");
+  $cmd = "php -S localhost:$port ./$filename_in";
 
   var_dump(curl_setopt($c, CURLOPT_FILE, $fh_out));
   var_dump(curl_setopt($c, CURLOPT_VERBOSE, 1)); // get all information about connections
@@ -133,6 +133,7 @@ function test_writeheader_option() {
     rewind($fh_in);
 
   $c = curl_init("http://localhost:$port");
+  $cmd = "php -S localhost:$port ./$filename_in";
   var_dump(curl_setopt($c, CURLOPT_WRITEHEADER, $fh_out));
   var_dump(curl_setopt($c, CURLOPT_VERBOSE, 1));
 

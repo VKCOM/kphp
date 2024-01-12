@@ -184,6 +184,48 @@ function test_progressfunction_option() {
   usleep(1000 * 200);
 }
 
+function test_readfunction_option() {
+  global $port, $text;
+  $filename_in = "test_file.txt";
+  $filename_out = "router.php";
+
+  $fh_in = fopen("$filename_in", "w+");
+  $fh_out = fopen("$filename_out", "w+");
+  var_dump(fwrite($fh_in, "$text"));
+  var_dump(fwrite($fh_out, "<?php\n\$putdata = file_get_contents('php://input');\n"));
+  var_dump(fwrite($fh_out, "var_dump(\$putdata);"));
+  rewind($fh_in);
+
+  if (kphp)
+    rewind($fh_out);
+
+  $callback = function($c, $fh, $length) {
+    $result = fread($fh, $length);
+    return $result ?: "";
+  };
+
+  $c = curl_init("http://localhost:$port");
+  $cmd = "php -S localhost:$port ./$filename_out";
+
+  var_dump(curl_setopt($c, CURLOPT_PUT, true));
+  var_dump(curl_setopt($c, CURLOPT_INFILESIZE, filesize("./$filename_in")));
+  var_dump(curl_setopt($c, CURLOPT_INFILE, $fh_in));
+  var_dump(curl_setopt($c, CURLOPT_READFUNCTION, $callback));
+  var_dump(curl_setopt($c, CURLOPT_VERBOSE, 1));
+
+  $server = new Process($cmd, $port);
+  usleep(1000 * 200);
+  var_dump(curl_exec($c));
+
+  var_dump(fclose($fh_in));
+  var_dump(fclose($fh_out));
+  curl_close($c);
+  exec("rm ./$filename_in ./$filename_out");
+  var_dump($server->stop());
+  usleep(1000 * 200);
+}
+
 test_writefunction_option();
 test_headerfunction_option();
 test_progressfunction_option();
+test_readfunction_option();
