@@ -1,6 +1,7 @@
 #include "xgboost.h"
 
 #include <functional>
+#include <stdexcept>
 #include <string>
 
 struct XgbDensePredictor {

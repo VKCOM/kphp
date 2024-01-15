@@ -120,7 +120,7 @@ void kml_file_read_xgboost_trees_no_cat(KmlFileReader &f, [[maybe_unused]] int v
 
 template<class T>
 void kml_read_vec(KmlFileReader &f, std::vector<T> &v) {
-  static_assert(std::is_pod_v<T>);
+  static_assert(std::is_standard_layout_v<T> && std::is_trivial_v<T>);
   int s;
   f.read_int(s);
   v.resize(s);

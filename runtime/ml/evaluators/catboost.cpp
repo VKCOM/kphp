@@ -1,6 +1,8 @@
 #include "catboost.h"
 
 #include <cassert>
+#include <stdexcept>
+
 
 #include "runtime/ml/ml.h"
 

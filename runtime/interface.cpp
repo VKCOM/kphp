@@ -2457,7 +2457,7 @@ void worker_global_init(WorkerType worker_type) noexcept {
   worker_global_init_handlers(worker_type);
   vk::singleton<ThreadPool>::get().init();
 
-  PredictionBuffer = static_cast<char *>(aligned_alloc(PredictionBufferSize, alignof( std::max_align_t))); // fix size later
+  PredictionBuffer = static_cast<char *>(aligned_alloc(alignof( std::max_align_t), PredictionBufferSize));
   assert (PredictionBuffer != nullptr && "Cannot allocate memory for kml prediction buffer");
 }
 
