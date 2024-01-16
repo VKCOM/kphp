@@ -1840,7 +1840,11 @@ int main_args_handler(int i, const char *long_option) {
     }
     case 'm': {
       max_memory = parse_memory_limit_default(optarg, 'm');
-      assert((1 << 20) <= max_memory && max_memory <= (2047LL << 20));
+      const long long min_size = 1 << 20;
+      if (max_memory <= min_size) {
+        kprintf("--%s option: cannot be less than 1 megabyte\n", long_option);
+        return -1;
+      }
       return 0;
     }
     case 'f': {
@@ -1873,7 +1877,7 @@ int main_args_handler(int i, const char *long_option) {
       return vk::singleton<ServerConfig>::get().init_from_config(optarg);
     }
     case 't': {
-      script_timeout = static_cast<int>(normalize_script_timeout(atoi(optarg)));
+      script_timeout = static_cast<int>(normalize_script_timeout(parse_time_limit(optarg)));
       return 0;
     }
     case 'o': {
