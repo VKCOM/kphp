@@ -98,6 +98,7 @@ class PhpScript {
     double left_time_on_early_timeout{0};
     double script_finish_time{0};
     double worker_finish_time{0};
+    double http_conn_close_time{0};
   };
 
 private:

@@ -98,7 +98,7 @@ void StatsHouseManager::generic_cron_check_if_tag_host_needed() {
 void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_time_ns, script_error_t error,
                                           const memory_resource::MemoryStats &script_memory_stats, uint64_t script_queries, uint64_t long_script_queries,
                                           uint64_t script_user_time_ns, uint64_t script_system_time_ns,
-                                          uint64_t script_init_time, uint64_t script_free_time, uint64_t http_connection_process_time,
+                                          uint64_t script_init_time, uint64_t script_free_time, uint64_t http_connection_accept_time, uint64_t http_connection_close_time,
                                           uint64_t left_time_on_early_timeout,
                                           uint64_t voluntary_context_switches, uint64_t involuntary_context_switches) {
   const char *worker_type = get_current_worker_type();
@@ -111,7 +111,8 @@ void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_
   client.metric("kphp_request_init_time").tag(worker_type).tag(status).write_value(script_init_time);
   client.metric("kphp_request_free_time").tag(worker_type).tag(status).write_value(script_free_time);
   if (process_type == ProcessType::http_worker) {
-    client.metric("kphp_http_connection_process_time").tag(status).write_value(http_connection_process_time);
+    client.metric("kphp_http_connection_process_time").tag("accept").tag(status).write_value(http_connection_accept_time);
+    client.metric("kphp_http_connection_process_time").tag("close").tag(status).write_value(http_connection_close_time);
   }
 
   client.metric("kphp_by_host_request_time", true).tag("script").tag(worker_type).write_value(script_time_ns);
@@ -121,7 +122,8 @@ void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_
   client.metric("kphp_by_host_request_init_time", true).tag(worker_type).tag(status).write_value(script_init_time);
   client.metric("kphp_by_host_request_free_time", true).tag(worker_type).tag(status).write_value(script_free_time);
   if (process_type == ProcessType::http_worker) {
-    client.metric("kphp_by_host_http_connection_process_time", true).tag(status).write_value(http_connection_process_time);
+    client.metric("kphp_by_host_http_connection_process_time", true).tag("accept").tag(status).write_value(http_connection_accept_time);
+    client.metric("kphp_by_host_http_connection_process_time", true).tag("close").tag(status).write_value(http_connection_close_time);
   }
 
   if (error != script_error_t::no_error) {

@@ -316,9 +316,10 @@ void PhpScript::finish() noexcept {
   double script_init_time_sec = script_time_stats.script_start_time - script_time_stats.worker_init_time;
   double script_free_time_sec = script_time_stats.worker_finish_time - script_time_stats.script_finish_time;
   script_time_stats.script_finish_time = get_utime_monotonic();
-  double connection_process_time_sec = 0;
+  std::pair<double, double> connection_process_time_sec(0, 0);
   if (process_type == ProcessType::http_worker) {
-    connection_process_time_sec = script_time_stats.worker_init_time - script_time_stats.http_conn_accept_time;
+    connection_process_time_sec.first = script_time_stats.worker_init_time - script_time_stats.http_conn_accept_time;
+    connection_process_time_sec.second = script_time_stats.http_conn_close_time - script_time_stats.worker_finish_time;
   }
   process_rusage_t script_rusage = get_script_rusage();
 
