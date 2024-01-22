@@ -387,7 +387,11 @@ array<mixed> f$getdate(int64_t timestamp) {
   }
   tm t;
   time_t timestamp_t = timestamp;
-  localtime_r(&timestamp_t, &t);
+  tm * tp = localtime_r(&timestamp_t, &t);
+  if (tp == nullptr) {
+    php_warning("getdate overflow with timestamp %ld", timestamp);
+    memset(&t, 0, sizeof(tm));
+  }
 
   array<mixed> result(array_size(11, false));
 
