@@ -99,6 +99,7 @@ void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_
                                           const memory_resource::MemoryStats &script_memory_stats, uint64_t script_queries, uint64_t long_script_queries,
                                           uint64_t script_user_time_ns, uint64_t script_system_time_ns,
                                           uint64_t script_init_time, uint64_t http_connection_process_time,
+                                          uint64_t left_time_on_early_timeout,
                                           uint64_t voluntary_context_switches, uint64_t involuntary_context_switches) {
   const char *worker_type = get_current_worker_type();
   const char *status = script_error_to_str(error);
@@ -124,6 +125,10 @@ void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_
   if (error != script_error_t::no_error) {
     client.metric("kphp_request_errors").tag(status).tag(worker_type).write_count(1);
     client.metric("kphp_by_host_request_errors", true).tag(status).tag(worker_type).write_count(1);
+
+    if (error == script_error_t::timeout) {
+      client.metric("kphp_preventive_exit_left_time").tag("timeout").tag(worker_type).write_count(left_time_on_early_timeout);
+    }
   }
 
   client.metric("kphp_memory_script_usage").tag("used").tag(worker_type).write_value(script_memory_stats.memory_used);

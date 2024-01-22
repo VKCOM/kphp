@@ -82,6 +82,7 @@ void PhpWorker::terminate(int flag, script_error_t terminate_reason_, const char
 std::optional<double> PhpWorker::on_wakeup() noexcept {
   tvkprintf(php_runner, 2, "PHP-worker wakeup [req_id = %016llx]\n", req_id);
   if (vk::any_of_equal(state, phpq_try_start, phpq_init_script) && finish_time < get_utime_monotonic() + 0.01) {
+    PhpScript::script_time_stats.left_time_on_early_timeout = finish_time - get_utime_monotonic();
     terminate(0, script_error_t::timeout, "early timeout");
   }
   stop_wait_if_wakeup();

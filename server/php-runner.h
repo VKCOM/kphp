@@ -95,6 +95,7 @@ class PhpScript {
     double http_conn_accept_time{0};
     double worker_init_time{0};
     double script_start_time{0};
+    double left_time_on_early_timeout{0};
   };
 
 private:

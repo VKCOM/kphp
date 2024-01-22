@@ -320,7 +320,7 @@ void PhpScript::finish() noexcept {
   }
   process_rusage_t script_rusage = get_script_rusage();
 
-  vk::singleton<ServerStats>::get().add_request_stats(script_time, net_time, script_init_time_sec, connection_process_time_sec,
+  vk::singleton<ServerStats>::get().add_request_stats(script_time, net_time, script_init_time_sec, connection_process_time_sec, script_time_stats.left_time_on_early_timeout,
                                                       queries_cnt, long_queries_cnt, script_mem_stats, vk::singleton<CurlMemoryUsage>::get().total_allocated, script_rusage, error_type);
   if (save_state == run_state_t::error) {
     assert (error_message != nullptr);
