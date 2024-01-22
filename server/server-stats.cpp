@@ -42,6 +42,7 @@ struct ScriptSamples : WithStatType<uint64_t> {
     net_time,
     script_time,
     script_init_time,
+    script_free_time,
     http_connection_process_time,
     user_time,
     system_time,
@@ -59,6 +60,7 @@ struct QueriesStat : WithStatType<uint64_t> {
     script_time,
     net_time,
     script_init_time,
+    script_free_time,
     http_connection_process_time,
     user_time,
     system_time,
@@ -231,7 +233,8 @@ EnumTable<IdleStat> get_idle_stat() noexcept {
 }
 
 EnumTable<QueriesStat> make_queries_stat(uint64_t script_queries, uint64_t long_script_queries,
-                                         uint64_t script_time_ns, uint64_t net_time_ns, uint64_t script_init_time_ns, uint64_t connection_process_time_ns,
+                                         uint64_t script_time_ns, uint64_t net_time_ns,
+                                         uint64_t script_init_time_ns, uint64_t script_free_time_ns, uint64_t connection_process_time_ns,
                                          uint64_t user_time, uint64_t system_time,
                                          uint64_t voluntary_context_switches, uint64_t involuntary_context_switches) noexcept {
   EnumTable<QueriesStat> result;
@@ -241,6 +244,7 @@ EnumTable<QueriesStat> make_queries_stat(uint64_t script_queries, uint64_t long_
   result[QueriesStat::Key::script_time] = script_time_ns;
   result[QueriesStat::Key::net_time] = net_time_ns;
   result[QueriesStat::Key::script_init_time] = script_init_time_ns;
+  result[QueriesStat::Key::script_free_time] = script_free_time_ns;
   result[QueriesStat::Key::http_connection_process_time] = connection_process_time_ns;
   result[QueriesStat::Key::user_time] = user_time;
   result[QueriesStat::Key::system_time] = system_time;
@@ -324,6 +328,7 @@ struct WorkerSharedStats : private vk::not_copyable {
     sample[ScriptSamples::Key::script_time] = queries[QueriesStat::Key::script_time];
     sample[ScriptSamples::Key::http_connection_process_time] = queries[QueriesStat::Key::http_connection_process_time];
     sample[ScriptSamples::Key::script_init_time] = queries[QueriesStat::Key::script_init_time];
+    sample[ScriptSamples::Key::script_free_time] = queries[QueriesStat::Key::script_free_time];
     sample[ScriptSamples::Key::user_time] = queries[QueriesStat::Key::user_time];
     sample[ScriptSamples::Key::system_time] = queries[QueriesStat::Key::system_time];
     sample[ScriptSamples::Key::voluntary_context_switches] = queries[QueriesStat::Key::voluntary_context_switches];
@@ -638,19 +643,20 @@ void ServerStats::after_fork(pid_t worker_pid, uint64_t active_connections, uint
   last_update_aggr_stats = std::chrono::steady_clock::now();
 }
 
-void ServerStats::add_request_stats(double script_time_sec, double net_time_sec, double script_init_time_sec, double connection_process_time_sec, double left_time_on_early_timeout_sec,
+void ServerStats::add_request_stats(double script_time_sec, double net_time_sec, std::pair<double, double> script_init_free_time_sec, double connection_process_time_sec, double left_time_on_early_timeout_sec,
                                     int64_t script_queries, int64_t long_script_queries, const memory_resource::MemoryStats &script_memory_stats,
                                     int64_t curl_total_allocated, process_rusage_t script_rusage, script_error_t error) noexcept {
   auto &stats = worker_type_ == WorkerType::job_worker ? shared_stats_->job_workers : shared_stats_->general_workers;
   const auto script_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(script_time_sec));
   const auto net_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(net_time_sec));
-  const auto script_init_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(script_init_time_sec));
+  const auto script_init_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(script_init_free_time_sec.first));
+  const auto script_free_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(script_init_free_time_sec.second));
   const auto http_connection_process_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(connection_process_time_sec));
   const auto left_time_on_early_timeout = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(left_time_on_early_timeout_sec));
   const auto script_user_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(script_rusage.user_time));
   const auto script_system_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(script_rusage.system_time));
   const auto queries_stat = make_queries_stat(script_queries, long_script_queries, script_time.count(),
-                                              net_time.count(), script_init_time.count(), http_connection_process_time.count(),
+                                              net_time.count(), script_init_time.count(), script_free_time.count(), http_connection_process_time.count(),
                                               script_user_time.count(), script_system_time.count(),
                                               script_rusage.voluntary_context_switches, script_rusage.involuntary_context_switches);
 
@@ -660,7 +666,7 @@ void ServerStats::add_request_stats(double script_time_sec, double net_time_sec,
 
   StatsHouseManager::get().add_request_stats(script_time.count(), net_time.count(), error, script_memory_stats, script_queries, long_script_queries,
                                              script_user_time.count(), script_system_time.count(),
-                                             script_init_time.count(), http_connection_process_time.count(),
+                                             script_init_time.count(), script_free_time.count(), http_connection_process_time.count(),
                                              left_time_on_early_timeout.count(),
                                              script_rusage.voluntary_context_switches, script_rusage.involuntary_context_switches);
 }
@@ -773,6 +779,7 @@ void write_to(stats_t *stats, const char *prefix, const WorkerAggregatedStats &a
   stats->add_gauge_stat(ns2double(shared.total_queries_stat[QueriesStat::Key::script_time]), prefix, ".requests.script_time.total");
   stats->add_gauge_stat(ns2double(shared.total_queries_stat[QueriesStat::Key::net_time]), prefix, ".requests.net_time.total");
   stats->add_gauge_stat(ns2double(shared.total_queries_stat[QueriesStat::Key::script_init_time]), prefix, ".requests.script_init_time.total");
+  stats->add_gauge_stat(ns2double(shared.total_queries_stat[QueriesStat::Key::script_free_time]), prefix, ".requests.script_free_time.total");
   stats->add_gauge_stat(ns2double(shared.total_queries_stat[QueriesStat::Key::http_connection_process_time]), prefix, ".requests.http_connection_process_time.total");
   stats->add_gauge_stat(shared.total_queries_stat[QueriesStat::Key::incoming_queries], prefix, ".requests.total_incoming_queries");
   stats->add_gauge_stat(shared.total_queries_stat[QueriesStat::Key::outgoing_queries], prefix, ".requests.total_outgoing_queries");
@@ -787,6 +794,7 @@ void write_to(stats_t *stats, const char *prefix, const WorkerAggregatedStats &a
   write_to(stats, prefix, ".requests.script_time", agg.script_samples[ScriptSamples::Key::script_time], ns2double);
   write_to(stats, prefix, ".requests.net_time", agg.script_samples[ScriptSamples::Key::net_time], ns2double);
   write_to(stats, prefix, ".requests.script_init_time", agg.script_samples[ScriptSamples::Key::script_init_time], ns2double);
+  write_to(stats, prefix, ".requests.script_free_time", agg.script_samples[ScriptSamples::Key::script_free_time], ns2double);
   write_to(stats, prefix, ".requests.http_connection_process_time", agg.script_samples[ScriptSamples::Key::http_connection_process_time], ns2double);
   write_to(stats, prefix, ".requests.script_user_time", agg.script_samples[ScriptSamples::Key::user_time], ns2double);
   write_to(stats, prefix, ".requests.script_system_time", agg.script_samples[ScriptSamples::Key::system_time], ns2double);

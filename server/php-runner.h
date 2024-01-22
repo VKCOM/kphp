@@ -96,6 +96,8 @@ class PhpScript {
     double worker_init_time{0};
     double script_start_time{0};
     double left_time_on_early_timeout{0};
+    double script_finish_time{0};
+    double worker_finish_time{0};
   };
 
 private:

@@ -58,7 +58,7 @@ public:
   void add_request_stats(uint64_t script_time_ns, uint64_t net_time_ns, script_error_t error, const memory_resource::MemoryStats &script_memory_stats,
                          uint64_t script_queries, uint64_t long_script_queries,
                          uint64_t script_user_time_ns, uint64_t script_system_time_ns,
-                         uint64_t script_init_time, uint64_t http_connection_process_time,
+                         uint64_t script_init_time, uint64_t script_free_time, uint64_t http_connection_process_time,
                          uint64_t left_time_on_early_timeout,
                          uint64_t voluntary_context_switches, uint64_t involuntary_context_switches);
 

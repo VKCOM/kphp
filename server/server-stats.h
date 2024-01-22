@@ -20,7 +20,7 @@ class ServerStats : vk::not_copyable {
 public:
   void init() noexcept;
 
-  void add_request_stats(double script_time_sec, double net_time_sec, double script_init_time_sec, double connection_process_time_sec, double left_time_on_early_timeout_sec,
+  void add_request_stats(double script_time_sec, double net_time_sec, std::pair<double, double> script_init_free_time_sec, double connection_process_time_sec, double left_time_on_early_timeout_sec,
                          int64_t script_queries, int64_t long_script_queries,
                          const memory_resource::MemoryStats &script_memory_stats, int64_t curl_total_allocated,
                          process_rusage_t script_rusage, script_error_t error) noexcept;

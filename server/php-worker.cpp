@@ -446,6 +446,7 @@ void PhpWorker::state_free_script() noexcept {
 void PhpWorker::state_finish() noexcept {
   clear_shared_job_messages(); // it's here because `phpq_free_script` state is skipped when worker->terminate_flag == true
   lease_on_worker_finish(this);
+  PhpScript::script_time_stats.worker_finish_time = get_utime_monotonic();
 }
 
 double PhpWorker::get_timeout() const noexcept {
