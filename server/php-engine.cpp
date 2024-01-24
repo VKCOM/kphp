@@ -1595,11 +1595,11 @@ void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port) n
 
     if (worker_type == WorkerType::general_worker) {
       if (sigterm_on && precise_now > sigterm_time && !php_worker_run_flag && pending_http_queue.first_query == (conn_query *)&pending_http_queue) {
-        vkprintf(1, "Quitting because of sigterm\n");
+        kprintf("General worker is quitting because of SIGTERM\n");
         break;
       }
     } else if (worker_type == WorkerType::job_worker) {
-      if (sigterm_on && (precise_now > sigterm_time || !php_worker_run_flag)) {
+      if (sigterm_on && precise_now > sigterm_time && !php_worker_run_flag) {
         kprintf("Job worker is quitting because of SIGTERM\n");
         break;
       }
