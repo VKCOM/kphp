@@ -620,7 +620,7 @@ int hts_func_execute(connection *c, int op) {
                                D->query_flags & QF_KEEPALIVE, inet_sockaddr_address(&c->remote_endpoint),   inet_sockaddr_port(&c->remote_endpoint)};
 
   static long long http_script_req_id = 0;
-  php_worker.emplace(http_worker, c, std::move(http_data), ++http_script_req_id, script_timeout);
+  php_worker.emplace(PhpWorker{http_worker, c, std::move(http_data), ++http_script_req_id, static_cast<double>(script_timeout)});
   D->extra = &php_worker.value();
 
   set_connection_timeout(c, script_timeout);
@@ -1073,7 +1073,7 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       assert(fetched_bytes == len);
       auto *D = TCP_RPC_DATA(c);
       php_query_data_t rpc_data =  rpc_query_data{std::move(header), std::move(buffer), D->remote_pid};
-      php_worker.emplace(run_once ? once_worker : rpc_worker, c, std::move(rpc_data), req_id, actual_script_timeout);
+      php_worker.emplace(PhpWorker{run_once ? once_worker : rpc_worker, c, std::move(rpc_data), req_id, actual_script_timeout});
       D->extra = &php_worker.value();
 
       set_connection_timeout(c, actual_script_timeout);
