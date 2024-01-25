@@ -580,48 +580,48 @@ void header_option_setter(EasyContext *easy_context, CURLoption option, const mi
 }
 
 void stream_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
-  if (value.is_null()) {
-    php_warning ("The provided file handle must not be null");
-    //easy_context->error_num = CURLE_WRITE_ERROR;
-    easy_context->error_num = -1;
-    return;
-  }
+  easy_context->set_option_safe(option, static_cast<void *>(easy_context));
   switch (option) {
     case CURLOPT_INFILE:
+      if (value.is_null()) {
+        easy_context->read_handler.stream = nullptr;
+        easy_context->read_handler.method = KPHP_CURL_STDOUT;
+        return;
+      }
       // store Stream value in read_handler
       easy_context->read_handler.stream = &value;
       break;
     case CURLOPT_FILE:
-      {
-        string temp = value.as_string();
-        string::size_type p = temp.find_first_of(string("://"), 0);
+      if (value.is_null()) {
+        easy_context->write_handler.stream = nullptr;
+        easy_context->write_handler.method = KPHP_CURL_STDOUT;
+        return;
+      }
 
-        if ((p == string::npos) || (!f$is_writeable(temp.substr(p+1, temp.size()-p)))) {      
-          php_warning ("%s(): The provided file handle must be writable", value.as_string().c_str());
-          easy_context->write_handler.stream = nullptr;
-          easy_context->write_handler.method = KPHP_CURL_STDOUT;
-          //easy_context->error_num = CURLE_WRITE_ERROR;
-          easy_context->error_num = -1;
-          return;
-        }
+      if (get_stream_mode(value) <= O_RDONLY) {      
+        php_warning ("%s(): The provided file handle must be writable", value.as_string().c_str());
+        easy_context->write_handler.stream = nullptr;
+        easy_context->write_handler.method = KPHP_CURL_STDOUT;
+        easy_context->error_num = -1;
+        return;
       }
       // store Stream value in write_handler
       easy_context->write_handler.stream = &value;
       easy_context->write_handler.method = KPHP_CURL_FILE;
       break;
     case CURLOPT_WRITEHEADER:
-      {
-        string temp = value.as_string();
-        string::size_type p = temp.find_first_of(string("://"), 0);
+      if (value.is_null()) {
+        easy_context->write_header_handler.stream = nullptr;
+        easy_context->write_header_handler.method = KPHP_CURL_IGNORE;
+        return;
+      }
 
-        if ((p == string::npos) || (!f$is_writeable(temp.substr(p+1, temp.size()-p)))) {      
-          php_warning ("%s(): The provided file handle must be writable", value.as_string().c_str());
-          easy_context->write_header_handler.stream = nullptr;
-          easy_context->write_header_handler.method = KPHP_CURL_IGNORE;
-          //easy_context->error_num = CURLE_WRITE_ERROR;
-          easy_context->error_num = -1;
-          return;
-        }
+      if (get_stream_mode(value) <= O_RDONLY) {      
+        php_warning ("%s(): The provided file handle must be writable", value.as_string().c_str());
+        easy_context->write_header_handler.stream = nullptr;
+        easy_context->write_header_handler.method = KPHP_CURL_IGNORE;;
+        easy_context->error_num = -1;
+        return;
       }
       // store Stream value in write_header_handler
       easy_context->write_header_handler.stream = &value;
@@ -631,7 +631,6 @@ void stream_option_setter(EasyContext *easy_context, CURLoption option, const mi
       // do nothing
       return;
   }
-  easy_context->set_option_safe(option, static_cast<void *>(easy_context));
 } 
 
 void ftp_method_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
@@ -915,9 +914,9 @@ bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) 
       {CURLOPT_ENCODING,                   string_option_setter},
       {CURLOPT_ABSTRACT_UNIX_SOCKET,       string_option_setter},
       {CURLOPT_DEFAULT_PROTOCOL,           string_option_setter},
-      {CURLOPT_DNS_INTERFACE,              string_option_setter}, // ? (only if build with c-ares)
-      {CURLOPT_DNS_LOCAL_IP4,              string_option_setter}, // ?
-      {CURLOPT_DNS_LOCAL_IP6,              string_option_setter}, // ?
+      {CURLOPT_DNS_INTERFACE,              string_option_setter},
+      {CURLOPT_DNS_LOCAL_IP4,              string_option_setter},
+      {CURLOPT_DNS_LOCAL_IP6,              string_option_setter},
       {CURLOPT_KEYPASSWD,                  string_option_setter},
       {CURLOPT_LOGIN_OPTIONS,              string_option_setter},
       {CURLOPT_PINNEDPUBLICKEY,            string_option_setter},
@@ -935,15 +934,15 @@ bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) 
       {CURLOPT_PROXY_SSLKEY,               string_option_setter},
       {CURLOPT_PROXY_SSLKEYTYPE,           string_option_setter},
       {CURLOPT_PROXY_TLSAUTH_PASSWORD,     string_option_setter},
-      {CURLOPT_PROXY_TLSAUTH_TYPE,         string_option_setter}, // if build OpenSSL with TLS-SRP
+      {CURLOPT_PROXY_TLSAUTH_TYPE,         string_option_setter},
       {CURLOPT_PROXY_TLSAUTH_USERNAME,     string_option_setter},
-      {CURLOPT_SASL_AUTHZID,               string_option_setter}, // OpenLDAP
+      {CURLOPT_SASL_AUTHZID,               string_option_setter},
       {CURLOPT_SERVICE_NAME,               string_option_setter},
-      {CURLOPT_SSH_HOST_PUBLIC_KEY_SHA256, string_option_setter}, // if build with libssh2
+      {CURLOPT_SSH_HOST_PUBLIC_KEY_SHA256, string_option_setter},
       {CURLOPT_SSL_EC_CURVES,              string_option_setter},
       {CURLOPT_TLS13_CIPHERS,              string_option_setter},
       {CURLOPT_UNIX_SOCKET_PATH,           string_option_setter},
-      {CURLOPT_XOAUTH2_BEARER,             string_option_setter}, // OpenLDAP
+      {CURLOPT_XOAUTH2_BEARER,             string_option_setter},
 
       {CURLOPT_INFILE,      stream_option_setter},
       {CURLOPT_FILE,        stream_option_setter},

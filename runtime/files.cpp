@@ -958,3 +958,10 @@ void free_files_lib() {
   dl::leave_critical_section();
 }
 
+int get_stream_mode(const mixed &stream) {
+  FILE *file = get_file(stream);
+  if (file == nullptr) {
+    return -1;
+  }
+  return fcntl(fileno(file), F_GETFL);
+}
