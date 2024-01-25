@@ -112,7 +112,10 @@ public:
   void write_uint32(unsigned int v) { *pos++ = v; }
   void write_int64(int64_t v);
   void write_uint64(uint64_t v);
-  void write_float32(float v) { *pos++ = *reinterpret_cast<int *>(&v); }
+  void write_float32(float v) {
+    auto * __attribute__((may_alias)) ptr = reinterpret_cast<int *>(&v);
+    *pos++ = *ptr;
+  }
   void write_float64(double v);
 
   int register_string_if_const(const string &v) {

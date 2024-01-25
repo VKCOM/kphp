@@ -9,7 +9,7 @@
 #include "runtime/migration_php8.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
-  #error "this file must be included only from kphp_core.h"
+#error "this file must be included only from kphp_core.h"
 #endif
 
 static_assert(vk::all_of_equal(sizeof(string), sizeof(double), sizeof(array<mixed>)), "sizeof of array<mixed>, string and double must be equal");
@@ -84,8 +84,8 @@ mixed::mixed(const Optional<T> &v) noexcept {
 
 template<typename T, typename>
 mixed::mixed(Optional<T> &&v) noexcept {
-   auto init_from_lambda = [this](auto &&v) { this->init_from(std::move(v)); };
-   call_fun_on_optional_value(init_from_lambda, std::move(v));
+  auto init_from_lambda = [this](auto &&v) { this->init_from(std::move(v)); };
+  call_fun_on_optional_value(init_from_lambda, std::move(v));
 }
 
 mixed::mixed(const mixed &v) noexcept {
@@ -615,20 +615,50 @@ const array<mixed> mixed::to_array() const {
   }
 }
 
-bool &mixed::as_bool() { return *reinterpret_cast<bool *>(&storage_); }
-const bool &mixed::as_bool() const { return *reinterpret_cast<const bool *>(&storage_); }
+bool &mixed::as_bool()  __attribute__(()) {
+  auto * __attribute__((__may_alias__)) resp =  reinterpret_cast<bool *>(&storage_);
+  return *resp;
+}
+const bool &mixed::as_bool() const {
+  const auto * __attribute__((__may_alias__)) resp =  reinterpret_cast<const bool *>(&storage_);
+  return *resp;
+}
 
-int64_t &mixed::as_int() { return *reinterpret_cast<int64_t *>(&storage_); }
-const int64_t &mixed::as_int() const { return *reinterpret_cast<const int64_t *>(&storage_); }
+int64_t &mixed::as_int() {
+  auto * __attribute__((__may_alias__)) resp =  reinterpret_cast<int64_t *>(&storage_);
+  return *resp;
+}
+const int64_t &mixed::as_int() const {
+  const auto * __attribute__((__may_alias__)) resp =  reinterpret_cast<const int64_t *>(&storage_);
+  return *resp;
+}
 
-double &mixed::as_double() { return *reinterpret_cast<double *>(&storage_); }
-const double &mixed::as_double() const { return *reinterpret_cast<const double *>(&storage_); }
+double &mixed::as_double() {
+  auto * __attribute__((__may_alias__)) resp =  reinterpret_cast<double *>(&storage_);
+  return *resp;
+}
+const double &mixed::as_double() const {
+  const auto * __attribute__((__may_alias__)) resp =  reinterpret_cast<const double *>(&storage_);
+  return *resp;
+}
 
-string &mixed::as_string() { return *reinterpret_cast<string *>(&storage_); }
-const string &mixed::as_string() const { return *reinterpret_cast<const string *>(&storage_); }
+string &mixed::as_string() {
+  auto * __attribute__((__may_alias__)) resp =  reinterpret_cast<string *>(&storage_);
+  return *resp;
+}
+const string &mixed::as_string() const {
+  const auto * __attribute__((__may_alias__)) resp =  reinterpret_cast<const string *>(&storage_);
+  return *resp;
+}
 
-array<mixed> &mixed::as_array() { return *reinterpret_cast<array<mixed> *>(&storage_); }
-const array<mixed> &mixed::as_array() const { return *reinterpret_cast<const array<mixed> *>(&storage_); }
+array<mixed> &mixed::as_array() {
+  auto * __attribute__((__may_alias__)) resp =  reinterpret_cast<array<mixed> *>(&storage_);
+  return *resp;
+}
+const array<mixed> &mixed::as_array() const {
+  const auto * __attribute__((__may_alias__)) resp =  reinterpret_cast<const array<mixed> *>(&storage_);
+  return *resp;
+}
 
 
 int64_t mixed::safe_to_int() const {
