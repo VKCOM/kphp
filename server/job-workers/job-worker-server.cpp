@@ -184,6 +184,11 @@ int JobWorkerServer::job_parse_execute(connection *c) noexcept {
   double job_wait_time = now_time - job->job_start_time;
   double left_job_time = job->job_deadline_time() - now_time;
 
+  if (left_job_time < 0) {
+    tvkprintf(job_workers, 3, "Get new job with expired timeout\n");
+    ++vk::singleton<SharedMemoryManager>::get().get_stats().job_worker_skip_job_due_timeout_expired;
+  }
+
   tvkprintf(job_workers, 2, "got new job: <job_result_fd_idx, job_id> = <%d, %d>, left_job_time = %f, job_wait_time = %f, job_memory_ptr = %p\n",
             job->job_result_fd_idx, job->job_id, left_job_time, job_wait_time, job);
 
