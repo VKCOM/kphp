@@ -166,17 +166,12 @@ int JobWorkerServer::job_parse_execute(connection *c) noexcept {
     return -1;
   }
 
-  job_fd_rearmer.disable();
-
   auto &memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
   --memory_manager.get_stats().job_queue_size;
   memory_manager.attach_shared_message_to_this_proc(job);
   if (job->common_job) {
     memory_manager.attach_shared_message_to_this_proc(job->common_job);
   }
-  running_job = job;
-  reply_was_sent = false;
-  job_stat = {};
 
   auto now = std::chrono::system_clock::now();
   double now_time = std::chrono::duration<double>{now.time_since_epoch()}.count();
@@ -187,7 +182,15 @@ int JobWorkerServer::job_parse_execute(connection *c) noexcept {
   if (left_job_time < 0) {
     tvkprintf(job_workers, 3, "Get new job with expired timeout\n");
     ++vk::singleton<SharedMemoryManager>::get().get_stats().job_worker_skip_job_due_timeout_expired;
+    clear_shared_job_messages();
+    return 0;
   }
+
+  job_fd_rearmer.disable();
+
+  running_job = job;
+  reply_was_sent = false;
+  job_stat = {};
 
   tvkprintf(job_workers, 2, "got new job: <job_result_fd_idx, job_id> = <%d, %d>, left_job_time = %f, job_wait_time = %f, job_memory_ptr = %p\n",
             job->job_result_fd_idx, job->job_id, left_job_time, job_wait_time, job);
