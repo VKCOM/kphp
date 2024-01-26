@@ -34,7 +34,9 @@ enum class run_state_t {
 enum class script_error_t : uint8_t {
   no_error = 0,
   memory_limit,
-  timeout,
+  early_timeout,
+  soft_timeout,
+  hard_timeout,
   exception,
   stack_overflow,
   php_assert,
@@ -97,6 +99,11 @@ class PhpScript {
     double script_start_time{0};
   };
 
+  struct script_timeout_info_t {
+    timespec soft_timeout_timestamp{0, 0};
+    timespec process_timeout_timestamp{0, 0};
+  };
+
 private:
   int swapcontext_helper(ucontext_t_portable *oucp, const ucontext_t_portable *ucp);
 
@@ -109,6 +116,7 @@ public:
   volatile static bool time_limit_exceeded;
   volatile static bool memory_limit_exceeded;
 
+  static script_timeout_info_t script_timeout_info;
   static script_time_stats_t script_time_stats;
   process_rusage_t script_init_rusage;
 
@@ -134,7 +142,8 @@ public:
   PhpScript(size_t mem_size, double oom_handling_memory_ratio, size_t stack_size) noexcept;
   ~PhpScript() noexcept;
 
-  void try_run_shutdown_functions_on_timeout() noexcept;
+  void run_shutdown_functions_on_timeout() noexcept;
+  void check_soft_timeout() noexcept;
   void check_net_context_errors() noexcept;
 
   void init(script_t *script, php_query_data_t *data_to_set) noexcept;
@@ -161,6 +170,8 @@ public:
   void reset_script_timeout() noexcept;
   double get_net_time() const noexcept;
   double get_script_time() noexcept;
+  uint64_t get_timeout_delay() noexcept;
+  std::pair<double, double> get_initialization_time() noexcept;
   process_rusage_t get_script_rusage() noexcept;
   int get_net_queries_count() const noexcept;
   long long memory_get_total_usage() const noexcept;

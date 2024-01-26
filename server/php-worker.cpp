@@ -30,7 +30,7 @@ std::optional<PhpWorker> php_worker;
 
 std::optional<double> PhpWorker::enter_lifecycle() noexcept {
   if (finish_time < precise_now + 0.01) {
-    terminate(0, script_error_t::timeout, "timeout");
+    terminate(0, script_error_t::early_timeout, "early timeout");
   }
   on_wakeup();
 

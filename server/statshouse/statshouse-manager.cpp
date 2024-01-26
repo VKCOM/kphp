@@ -40,7 +40,9 @@ const char *script_error_to_str(script_error_t error) {
   switch (error) {
     case script_error_t::no_error:                return "ok";
     case script_error_t::memory_limit:            return "memory_limit";
-    case script_error_t::timeout:                 return "timeout";
+    case script_error_t::early_timeout:           return "early_timeout";
+    case script_error_t::soft_timeout:            return "soft_timeout";
+    case script_error_t::hard_timeout:            return "hard_timeout";
     case script_error_t::exception:               return "exception";
     case script_error_t::stack_overflow:          return "stack_overflow";
     case script_error_t::php_assert:              return "php_assert";
@@ -99,6 +101,7 @@ void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_
                                           const memory_resource::MemoryStats &script_memory_stats, uint64_t script_queries, uint64_t long_script_queries,
                                           uint64_t script_user_time_ns, uint64_t script_system_time_ns,
                                           uint64_t script_init_time, uint64_t http_connection_process_time,
+                                          uint64_t timeout_delay_ns,
                                           uint64_t voluntary_context_switches, uint64_t involuntary_context_switches) {
   const char *worker_type = get_current_worker_type();
   const char *status = script_error_to_str(error);
@@ -108,6 +111,7 @@ void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_
   client.metric("kphp_request_cpu_time").tag("user").tag(worker_type).tag(status).write_value(script_user_time_ns);
   client.metric("kphp_request_cpu_time").tag("system").tag(worker_type).tag(status).write_value(script_system_time_ns);
   client.metric("kphp_request_init_time").tag(worker_type).tag(status).write_value(script_init_time);
+  client.metric("kphp_request_timeout_delay").tag(worker_type).tag(status).write_value(timeout_delay_ns);
   if (process_type == ProcessType::http_worker) {
     client.metric("kphp_http_connection_process_time").tag(status).write_value(http_connection_process_time);
   }

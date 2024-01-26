@@ -47,6 +47,7 @@ struct ScriptSamples : WithStatType<uint64_t> {
     system_time,
     voluntary_context_switches,
     involuntary_context_switches,
+    process_timeout_delay,
     types_count
   };
 };
@@ -62,6 +63,7 @@ struct QueriesStat : WithStatType<uint64_t> {
     http_connection_process_time,
     user_time,
     system_time,
+    timeout_delay,
     voluntary_context_switches,
     involuntary_context_switches,
     types_count
@@ -233,6 +235,7 @@ EnumTable<IdleStat> get_idle_stat() noexcept {
 EnumTable<QueriesStat> make_queries_stat(uint64_t script_queries, uint64_t long_script_queries,
                                          uint64_t script_time_ns, uint64_t net_time_ns, uint64_t script_init_time_ns, uint64_t connection_process_time_ns,
                                          uint64_t user_time, uint64_t system_time,
+                                         uint64_t timeout_delay,
                                          uint64_t voluntary_context_switches, uint64_t involuntary_context_switches) noexcept {
   EnumTable<QueriesStat> result;
   result[QueriesStat::Key::incoming_queries] = 1;
@@ -244,6 +247,7 @@ EnumTable<QueriesStat> make_queries_stat(uint64_t script_queries, uint64_t long_
   result[QueriesStat::Key::http_connection_process_time] = connection_process_time_ns;
   result[QueriesStat::Key::user_time] = user_time;
   result[QueriesStat::Key::system_time] = system_time;
+  result[QueriesStat::Key::timeout_delay] = timeout_delay;
   result[QueriesStat::Key::voluntary_context_switches] = voluntary_context_switches;
   result[QueriesStat::Key::involuntary_context_switches] = involuntary_context_switches;
   return result;
@@ -328,6 +332,7 @@ struct WorkerSharedStats : private vk::not_copyable {
     sample[ScriptSamples::Key::system_time] = queries[QueriesStat::Key::system_time];
     sample[ScriptSamples::Key::voluntary_context_switches] = queries[QueriesStat::Key::voluntary_context_switches];
     sample[ScriptSamples::Key::involuntary_context_switches] = queries[QueriesStat::Key::involuntary_context_switches];
+    sample[ScriptSamples::Key::process_timeout_delay] = queries[QueriesStat::Key::timeout_delay];
     script_samples.add_sample(sample);
   }
 
@@ -639,7 +644,8 @@ void ServerStats::after_fork(pid_t worker_pid, uint64_t active_connections, uint
 }
 
 void ServerStats::add_request_stats(double script_time_sec, double net_time_sec, double script_init_time_sec, double connection_process_time_sec,
-                                    int64_t script_queries, int64_t long_script_queries, const memory_resource::MemoryStats &script_memory_stats, int64_t curl_total_allocated, process_rusage_t script_rusage, script_error_t error) noexcept {
+                                    int64_t script_queries, int64_t long_script_queries, const memory_resource::MemoryStats &script_memory_stats,
+                                    int64_t timeout_delay, int64_t curl_total_allocated, process_rusage_t script_rusage, script_error_t error) noexcept {
   auto &stats = worker_type_ == WorkerType::job_worker ? shared_stats_->job_workers : shared_stats_->general_workers;
   const auto script_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(script_time_sec));
   const auto net_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(net_time_sec));
@@ -650,6 +656,7 @@ void ServerStats::add_request_stats(double script_time_sec, double net_time_sec,
   const auto queries_stat = make_queries_stat(script_queries, long_script_queries, script_time.count(),
                                               net_time.count(), script_init_time.count(), http_connection_process_time.count(),
                                               script_user_time.count(), script_system_time.count(),
+                                              timeout_delay,
                                               script_rusage.voluntary_context_switches, script_rusage.involuntary_context_switches);
 
 
@@ -659,6 +666,7 @@ void ServerStats::add_request_stats(double script_time_sec, double net_time_sec,
   StatsHouseManager::get().add_request_stats(script_time.count(), net_time.count(), error, script_memory_stats, script_queries, long_script_queries,
                                              script_user_time.count(), script_system_time.count(),
                                              script_init_time.count(), http_connection_process_time.count(),
+                                             timeout_delay,
                                              script_rusage.voluntary_context_switches, script_rusage.involuntary_context_switches);
 }
 
@@ -757,7 +765,9 @@ void write_to(stats_t *stats, const char *prefix, const char *suffix, const Work
 
 void write_to(stats_t *stats, const char *prefix, const WorkerAggregatedStats &agg, const WorkerSharedStats &shared) noexcept {
   stats->add_gauge_stat(shared.errors[static_cast<size_t>(script_error_t::memory_limit)], prefix, ".errors.memory_limit_exceeded");
-  stats->add_gauge_stat(shared.errors[static_cast<size_t>(script_error_t::timeout)], prefix, ".errors.timeout");
+  stats->add_gauge_stat(shared.errors[static_cast<size_t>(script_error_t::early_timeout)], prefix, ".errors.early_timeout");
+  stats->add_gauge_stat(shared.errors[static_cast<size_t>(script_error_t::soft_timeout)], prefix, ".errors.soft_timeout");
+  stats->add_gauge_stat(shared.errors[static_cast<size_t>(script_error_t::hard_timeout)], prefix, ".errors.hard_timeout");
   stats->add_gauge_stat(shared.errors[static_cast<size_t>(script_error_t::exception)], prefix, ".errors.exception");
   stats->add_gauge_stat(shared.errors[static_cast<size_t>(script_error_t::stack_overflow)], prefix, ".errors.stack_overflow");
   stats->add_gauge_stat(shared.errors[static_cast<size_t>(script_error_t::php_assert)], prefix, ".errors.php_assert");

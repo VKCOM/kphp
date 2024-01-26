@@ -64,17 +64,10 @@ void PhpScript::error(const char *error_message, script_error_t error_type) noex
   setcontext_portable(&exit_context);
 }
 
-void PhpScript::try_run_shutdown_functions_on_timeout() noexcept {
-  // The delayed timeout check is performed in the following cases
-  // [1] context swap
-  // [2] start_resumable
-  // TODO add try_run_shutdown_functions_on_timeout in some buildin functions
-  php_assert(PhpScript::in_script_context);
-  if (!time_limit_exceeded) {
-    return;
-  }
+void PhpScript::run_shutdown_functions_on_timeout() noexcept {
+  php_assert(PhpScript::time_limit_exceeded);
   if (vk::singleton<OomHandler>::get().is_running()) {
-    perform_error_if_running("timeout exit in OOM handler\n", script_error_t::timeout);
+    perform_error_if_running("timeout exit in OOM handler\n", script_error_t::soft_timeout);
     return;
   }
 
@@ -87,7 +80,21 @@ void PhpScript::try_run_shutdown_functions_on_timeout() noexcept {
     state = run_state_t::running;
     run_shutdown_functions_from_timeout();
   }
-  perform_error_if_running("timeout exit\n", script_error_t::timeout);
+  perform_error_if_running("timeout exit\n", script_error_t::soft_timeout);
+}
+
+void PhpScript::check_soft_timeout() noexcept {
+  // The delayed timeout check is performed in the following cases
+  // [1] context swap
+  // [2] start_resumable
+  // TODO add check_soft_timeout in some buildin functions
+
+  php_assert(PhpScript::in_script_context);
+  if (!PhpScript::time_limit_exceeded) {
+    return;
+  }
+  clock_gettime(CLOCK_REALTIME, &PhpScript::script_timeout_info.process_timeout_timestamp);
+  run_shutdown_functions_on_timeout();
 }
 
 void PhpScript::check_net_context_errors() noexcept {
@@ -96,7 +103,6 @@ void PhpScript::check_net_context_errors() noexcept {
     vk::singleton<OomHandler>::get().invoke();
     perform_error_if_running("memory limit exit\n", script_error_t::memory_limit);
   }
-  try_run_shutdown_functions_on_timeout();
 }
 
 PhpScriptStack::PhpScriptStack(size_t stack_size) noexcept
@@ -200,7 +206,7 @@ int PhpScript::swapcontext_helper(ucontext_t_portable *oucp, const ucontext_t_po
 }
 
 void PhpScript::pause() noexcept {
-  try_run_shutdown_functions_on_timeout();
+  check_soft_timeout();
   //fprintf (stderr, "pause: \n");
   in_script_context = false;
 #if ASAN_ENABLED
@@ -212,6 +218,7 @@ void PhpScript::pause() noexcept {
 #endif
   in_script_context = true;
   check_net_context_errors();
+  check_soft_timeout();
   if (kphp_tracing::is_turned_on()) {
     kphp_tracing::on_switch_context_to_script(last_net_time_delta);
   }
@@ -312,15 +319,12 @@ void PhpScript::finish() noexcept {
   const auto &script_mem_stats = dl::get_script_memory_stats();
   state = run_state_t::uncleared;
   update_net_time();
-  double script_init_time_sec = script_time_stats.script_start_time - script_time_stats.worker_init_time;
-  double connection_process_time_sec = 0;
-  if (process_type == ProcessType::http_worker) {
-    connection_process_time_sec = script_time_stats.worker_init_time - script_time_stats.http_conn_accept_time;
-  }
+  auto [script_init_time_sec, connection_process_time_sec] = get_initialization_time();
   process_rusage_t script_rusage = get_script_rusage();
+  uint64_t timeout_delay = get_timeout_delay();
 
   vk::singleton<ServerStats>::get().add_request_stats(script_time, net_time, script_init_time_sec, connection_process_time_sec,
-                                                      queries_cnt, long_queries_cnt, script_mem_stats, vk::singleton<CurlMemoryUsage>::get().total_allocated, script_rusage, error_type);
+                                                      queries_cnt, long_queries_cnt, script_mem_stats, timeout_delay, vk::singleton<CurlMemoryUsage>::get().total_allocated, script_rusage, error_type);
   if (save_state == run_state_t::error) {
     assert (error_message != nullptr);
     kprintf("Critical error during script execution: %s\n", error_message);
@@ -449,7 +453,7 @@ void PhpScript::run() noexcept {
 }
 
 void PhpScript::reset_script_timeout() noexcept {
-  // php_script_set_timeout has a side effect of setting the PhpScript::time_limit_exceeded to false;
+  // php_script_set_timeout has a side effect of setting the PhpScript::script_timeout_info.soft_timeout_exceeded to false;
   // and we really do need this before executing shutdown functions otherwise shutdown functions will be terminated
   // after the first swap context back to script at PhpScript::check_net_context_errors()
   set_timeout(script_timeout);
@@ -469,6 +473,21 @@ double PhpScript::get_script_time() noexcept {
   return script_time;
 }
 
+uint64_t PhpScript::get_timeout_delay() noexcept {
+  uint64_t soft_timeout = script_timeout_info.soft_timeout_timestamp.tv_sec * (uint)1e9 + script_timeout_info.soft_timeout_timestamp.tv_nsec;
+  uint64_t process_timeout = script_timeout_info.process_timeout_timestamp.tv_sec * (uint)1e9 + script_timeout_info.process_timeout_timestamp.tv_nsec;
+  return process_timeout - soft_timeout;
+}
+
+std::pair<double, double> PhpScript::get_initialization_time() noexcept {
+  double script_init_time_sec = script_time_stats.script_start_time - script_time_stats.worker_init_time;
+  double connection_process_time_sec = 0;
+  if (process_type == ProcessType::http_worker) {
+    connection_process_time_sec = script_time_stats.worker_init_time - script_time_stats.http_conn_accept_time;
+  }
+  return {script_init_time_sec, connection_process_time_sec};
+}
+
 process_rusage_t PhpScript::get_script_rusage() noexcept {
   process_rusage_t current_rusage = get_rusage_info();
   return {current_rusage.user_time - script_init_rusage.user_time,
@@ -486,6 +505,7 @@ ucontext_t_portable PhpScript::exit_context;
 volatile bool PhpScript::in_script_context = false;
 volatile bool PhpScript::time_limit_exceeded = false;
 volatile bool PhpScript::memory_limit_exceeded = false;
+PhpScript::script_timeout_info_t PhpScript::script_timeout_info;
 PhpScript::script_time_stats_t PhpScript::script_time_stats;
 
 static __inline__ void *get_sp() {
