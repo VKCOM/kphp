@@ -21,4 +21,4 @@ function test_new_options() {
   curl_close($c);
 }
 
-// test_new_options();
+test_new_options();
