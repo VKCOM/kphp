@@ -579,9 +579,6 @@ static char opened_files_storage[sizeof(array<FILE *>)];
 static array<FILE *> *opened_files = reinterpret_cast <array<FILE *> *> (opened_files_storage);
 static long long opened_files_last_query_num = -1;
 
-
-static bool file_fclose(const Stream &stream);
-
 static FILE *get_file(const Stream &stream) {
   Optional<string> filename_optional = full_realpath(stream.to_string());
   if (!f$boolval(filename_optional)) {
@@ -597,7 +594,7 @@ static FILE *get_file(const Stream &stream) {
   return opened_files->get_value(filename);
 }
 
-static Stream file_fopen(const string &filename, const string &mode) {
+Stream file_stream_functions::fopen(const string &filename, const string &mode) const {
   if (dl::query_num != opened_files_last_query_num) {
     new(opened_files_storage) array<FILE *>();
 
@@ -612,11 +609,11 @@ static Stream file_fopen(const string &filename, const string &mode) {
   string real_filename = real_filename_optional.val();
   if (opened_files->has_key(real_filename)) {
     php_warning("File \"%s\" already opened. Closing previous one", real_filename.c_str());
-    file_fclose(real_filename);
+    f$fclose(real_filename);
   }
 
   dl::enter_critical_section();//NOT OK: opened_files
-  FILE *file = fopen(real_filename.c_str() + file_wrapper_name.size(), mode.c_str());
+  FILE *file = ::fopen(real_filename.c_str() + file_wrapper_name.size(), mode.c_str());
   if (file == nullptr) {
     dl::leave_critical_section();
     return false;
@@ -628,7 +625,7 @@ static Stream file_fopen(const string &filename, const string &mode) {
   return real_filename;
 }
 
-static Optional<int64_t> file_fwrite(const Stream &stream, const string &text) {
+Optional<int64_t> file_stream_functions::fwrite(const Stream &stream, const string &text) const {
   FILE *f = get_file(stream);
   if (f == nullptr) {
     return false;
@@ -639,7 +636,7 @@ static Optional<int64_t> file_fwrite(const Stream &stream, const string &text) {
   }
 
   dl::enter_critical_section();//OK
-  const auto res = fwrite(text.c_str(), text.size(), 1, f);
+  const auto res = ::fwrite(text.c_str(), text.size(), 1, f);
   dl::leave_critical_section();
 
   if (res == 0) {
@@ -649,7 +646,7 @@ static Optional<int64_t> file_fwrite(const Stream &stream, const string &text) {
   return text.size();
 }
 
-static int64_t file_fseek(const Stream &stream, int64_t offset, int64_t whence) {
+int64_t file_stream_functions::fseek(const Stream &stream, int64_t offset, int64_t whence) const {
   const static int whences[3] = {SEEK_SET, SEEK_END, SEEK_CUR};
   if ((uint64_t)whence >= 3u) {
     php_warning("Wrong parameter whence in function fseek");
@@ -663,24 +660,24 @@ static int64_t file_fseek(const Stream &stream, int64_t offset, int64_t whence) 
   }
 
   dl::enter_critical_section();//OK
-  int res = fseek(f, offset, static_cast<int32_t>(whence));
+  int res = ::fseek(f, offset, static_cast<int32_t>(whence));
   dl::leave_critical_section();
   return res;
 }
 
-static Optional<int64_t> file_ftell(const Stream &stream) {
+Optional<int64_t> file_stream_functions::ftell(const Stream &stream) const {
   FILE *f = get_file(stream);
   if (f == nullptr) {
     return false;
   }
 
   dl::enter_critical_section();//OK
-  int64_t result = ftell(f);
+  int64_t result = ::ftell(f);
   dl::leave_critical_section();
   return result;
 }
 
-static Optional<string> file_fread(const Stream &stream, int64_t length) {
+Optional<string> file_stream_functions::fread(const Stream &stream, int64_t length) const {
   if (length <= 0) {
     php_warning("Parameter length in function fread must be positive");
     return false;
@@ -698,7 +695,7 @@ static Optional<string> file_fread(const Stream &stream, int64_t length) {
   string res(static_cast<string::size_type>(length), false);
   dl::enter_critical_section();//OK
   clearerr(f);
-  size_t res_size = fread(&res[0], 1, static_cast<size_t>(length), f);
+  size_t res_size = ::fread(&res[0], 1, static_cast<size_t>(length), f);
   if (ferror(f)) {
     dl::leave_critical_section();
     php_warning("Error happened during fread from file \"%s\"", stream.to_string().c_str());
@@ -710,7 +707,7 @@ static Optional<string> file_fread(const Stream &stream, int64_t length) {
   return res;
 }
 
-static Optional<string> file_fgetc(const Stream &stream) {
+Optional<string> file_stream_functions::fgetc(const Stream &stream) const {
   FILE *f = get_file(stream);
   if (f == nullptr) {
     return false;
@@ -718,7 +715,7 @@ static Optional<string> file_fgetc(const Stream &stream) {
 
   dl::enter_critical_section();//OK
   clearerr(f);
-  int result = fgetc(f);
+  int result = ::fgetc(f);
   if (ferror(f)) {
     dl::leave_critical_section();
     php_warning("Error happened during fgetc from file \"%s\"", stream.to_string().c_str());
@@ -732,7 +729,7 @@ static Optional<string> file_fgetc(const Stream &stream) {
   return string(1, static_cast<char>(result));
 }
 
-static Optional<string> file_fgets(const Stream &stream, int64_t length) {
+Optional<string> file_stream_functions::fgets(const Stream &stream, int64_t length) const {
   FILE *f = get_file(stream);
   if (f == nullptr) {
     return false;
@@ -755,7 +752,7 @@ static Optional<string> file_fgets(const Stream &stream, int64_t length) {
   string res(static_cast<string::size_type>(length), false);
   dl::enter_critical_section();//OK
   clearerr(f);
-  char *result = fgets(&res[0], static_cast<int32_t>(length), f);
+  char *result = ::fgets(&res[0], static_cast<int32_t>(length), f);
   if (ferror(f)) {
     dl::leave_critical_section();
     php_warning("Error happened during fgets from file \"%s\"", stream.to_string().c_str());
@@ -770,7 +767,7 @@ static Optional<string> file_fgets(const Stream &stream, int64_t length) {
   return res;
 }
 
-static Optional<int64_t> file_fpassthru(const Stream &stream) {
+Optional<int64_t> file_stream_functions::fpassthru(const Stream &stream) const {
   FILE *f = get_file(stream);
   if (f == nullptr) {
     return false;
@@ -779,9 +776,9 @@ static Optional<int64_t> file_fpassthru(const Stream &stream) {
   int64_t result = 0;
 
   dl::enter_critical_section();//OK
-  while (!feof(f)) {
+  while (!::feof(f)) {
     clearerr(f);
-    size_t res_size = fread(&php_buf[0], 1, PHP_BUF_LEN, f);
+    size_t res_size = ::fread(&php_buf[0], 1, PHP_BUF_LEN, f);
     if (ferror(f)) {
       dl::leave_critical_section();
       php_warning("Error happened during fpassthru from file \"%s\"", stream.to_string().c_str());
@@ -794,29 +791,29 @@ static Optional<int64_t> file_fpassthru(const Stream &stream) {
   return result;
 }
 
-static bool file_fflush(const Stream &stream) {
+bool file_stream_functions::fflush(const Stream &stream) const {
   FILE *f = get_file(stream);
   if (f != nullptr) {
     dl::enter_critical_section();//OK
-    fflush(f);
+    ::fflush(f);
     dl::leave_critical_section();
     return true;
   }
   return false;
 }
 
-static bool file_feof(const Stream &stream) {
+bool file_stream_functions::feof(const Stream &stream) const {
   FILE *f = get_file(stream);
   if (f != nullptr) {
     dl::enter_critical_section();//OK
-    bool eof = (feof(f) != 0);
+    bool eof = (::feof(f) != 0);
     dl::leave_critical_section();
     return eof;
   }
   return true;
 }
 
-static bool file_fclose(const Stream &stream) {
+bool file_stream_functions::fclose(const Stream &stream) const {
   Optional<string> filename_optional = full_realpath(stream.to_string());
   if (!f$boolval(filename_optional)) {
     php_warning("Wrong file \"%s\" specified", stream.to_string().c_str());
@@ -825,7 +822,7 @@ static bool file_fclose(const Stream &stream) {
   string filename = filename_optional.val();
   if (dl::query_num == opened_files_last_query_num && opened_files->has_key(filename)) {
     dl::enter_critical_section();//NOT OK: opened_files
-    int result = fclose(opened_files->get_value(filename));
+    int result = ::fclose(opened_files->get_value(filename));
     opened_files->unset(filename);
     dl::leave_critical_section();
     return (result == 0);
@@ -834,7 +831,7 @@ static bool file_fclose(const Stream &stream) {
 }
 
 
-Optional<string> file_file_get_contents(const string &name) {
+Optional<string> file_stream_functions::file_get_contents(const string &name) const {
   auto offset = file_wrapper_name.size();
   if (strncmp(name.c_str(), file_wrapper_name.c_str(), offset)) {
     offset = 0;
@@ -886,7 +883,7 @@ Optional<string> file_file_get_contents(const string &name) {
   return res;
 }
 
-static Optional<int64_t> file_file_put_contents(const string &name, const string &content, int64_t flags) {
+Optional<int64_t> file_stream_functions::file_put_contents(const string &name, const string &content, int64_t flags) const {
   auto offset = file_wrapper_name.size();
   if (strncmp(name.c_str(), file_wrapper_name.c_str(), offset)) {
     offset = 0;
@@ -915,30 +912,8 @@ static Optional<int64_t> file_file_put_contents(const string &name, const string
 
 
 void global_init_files_lib() {
-  static stream_functions file_stream_functions;
-
-  file_stream_functions.name = string("file", 4);
-  file_stream_functions.fopen = file_fopen;
-  file_stream_functions.fwrite = file_fwrite;
-  file_stream_functions.fseek = file_fseek;
-  file_stream_functions.ftell = file_ftell;
-  file_stream_functions.fread = file_fread;
-  file_stream_functions.fgetc = file_fgetc;
-  file_stream_functions.fgets = file_fgets;
-  file_stream_functions.fpassthru = file_fpassthru;
-  file_stream_functions.fflush = file_fflush;
-  file_stream_functions.feof = file_feof;
-  file_stream_functions.fclose = file_fclose;
-
-  file_stream_functions.file_get_contents = file_file_get_contents;
-  file_stream_functions.file_put_contents = file_file_put_contents;
-
-  file_stream_functions.stream_socket_client = nullptr;
-  file_stream_functions.context_set_option = nullptr;
-  file_stream_functions.stream_set_option = nullptr;
-  file_stream_functions.get_fd = nullptr;
-
-  register_stream_functions(&file_stream_functions, true);
+  static file_stream_functions file_stream_functions_v;
+  register_stream_functions(&file_stream_functions_v, true);
 }
 
 void free_files_lib() {

@@ -4,55 +4,7 @@
 
 #pragma once
 
-#include "runtime/kphp_core.h"
-
-using Stream =mixed;
-
-
-constexpr int64_t STREAM_SET_BLOCKING_OPTION = 0;
-constexpr int64_t STREAM_SET_WRITE_BUFFER_OPTION = 1;
-constexpr int64_t STREAM_SET_READ_BUFFER_OPTION = 2;
-
-constexpr int64_t FILE_APPEND = 1;
-
-
-struct stream_functions {
-  string name;
-
-  Stream (*fopen)(const string &stream, const string &mode);
-
-  Stream (*stream_socket_client)(const string &url, int64_t &error_number, string &error_description, double timeout, int64_t flags, const mixed &context);
-
-  Optional<int64_t> (*fwrite)(const Stream &stream, const string &data);
-
-  int64_t (*fseek)(const Stream &stream, int64_t offset, int64_t whence);
-
-  Optional<int64_t> (*ftell)(const Stream &stream);
-
-  Optional<string> (*fread)(const Stream &stream, int64_t length);
-
-  Optional<string> (*fgetc)(const Stream &stream);
-
-  Optional<string> (*fgets)(const Stream &stream, int64_t length);
-
-  Optional<int64_t> (*fpassthru)(const Stream &stream);
-
-  bool (*fflush)(const Stream &stream);
-
-  bool (*feof)(const Stream &stream);
-
-  bool (*fclose)(const Stream &stream);
-
-  Optional<string> (*file_get_contents)(const string &url);
-
-  Optional<int64_t> (*file_put_contents)(const string &url, const string &content, int64_t flags);
-
-  bool (*context_set_option)(mixed &context, const string &option, const mixed &value);
-
-  bool (*stream_set_option)(const Stream &stream, int64_t option, int64_t value);
-
-  int32_t (*get_fd)(const Stream &stream);
-};
+#include "runtime/stream_functions.h"
 
 
 void register_stream_functions(const stream_functions *functions, bool is_default);
