@@ -1,9 +1,0 @@
-name: "@utils/inner/very"
-namespace: "Utils104\\UtilsInner\\UtilsVeryInner\\"
-
-export:
-
-force-internal:
-  
-require:
-

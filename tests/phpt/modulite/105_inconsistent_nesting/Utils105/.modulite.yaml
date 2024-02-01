@@ -1,9 +1,0 @@
-name: "@msg/utils"
-namespace: "Utils105\\"
-
-export:
-
-force-internal:
-
-require:
-

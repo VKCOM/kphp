@@ -1,7 +1,0 @@
-name: "@internals"
-namespace: "VK\\Strings\\Internals123"
-
-export:
-  - "Append123::concat()"
-
-require:

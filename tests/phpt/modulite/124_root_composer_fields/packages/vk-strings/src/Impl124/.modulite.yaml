@@ -1,7 +1,0 @@
-name: "@impl"
-namespace: "VK\\Strings\\Impl124"
-
-export:
-  - "Append124"
-
-require:

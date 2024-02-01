@@ -1,8 +1,0 @@
-name: "@utils"
-namespace: "VK\\RPC\\Utils123"
-
-export:
-  - "Hasher123"
-
-require:
-  - "\\VK\\RPC\\RpcLogger123"

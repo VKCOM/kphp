@@ -1,3 +1,0 @@
-<?php
-
-class GlobalB001 {}

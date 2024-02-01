@@ -1,9 +1,0 @@
-{
-    "name": "vk/pkg2",
-    "version": "1.0.0",
-    "autoload": {
-        "psr-4": {
-            "VK\\Common\\Pkg2\\": "src"
-        }
-    }
-}

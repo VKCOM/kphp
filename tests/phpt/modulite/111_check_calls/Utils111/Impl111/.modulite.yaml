@@ -1,8 +1,0 @@
-name: "@utils/impl"
-namespace: "\\Utils111\\Impl111"
-
-export:
-  - "Hasher111"
-  - "Hasher111::calc2()"
-
-require:

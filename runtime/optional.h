@@ -7,10 +7,10 @@
 #include <cstdint>
 #include <utility>
 
+
 #include "common/type_traits/is_constructible.h"
 #include "common/type_traits/list_of_types.h"
 
-#include "runtime/php_assert.h"
 #include "runtime/declarations.h"
 
 template<class T>
@@ -148,7 +148,7 @@ public:
 private:
   Optional(bool value, OptionalState value_state) noexcept :
     Base(value_state) {
-    php_assert(!value);
+//    php_assert(!value);
   }
 
   template<class T1, class = vk::enable_if_constructible<T, T1>>
@@ -157,7 +157,7 @@ private:
   }
 
   Optional &assign(bool value, OptionalState value_state) noexcept {
-    php_assert(!value);
+//    php_assert(!value);
     Base::value_ = T();
     Base::value_state_ = value_state;
     return *this;

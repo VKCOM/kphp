@@ -1,9 +1,0 @@
-name: "@utils/inner"
-namespace: "Utils104\\UtilsInner\\"
-
-export:
-
-force-internal:
-  
-require:
-

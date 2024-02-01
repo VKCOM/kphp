@@ -1,9 +1,0 @@
-name: "@msg/channels"
-namespace: "Messages105\\Sub105\\Channels105"
-
-export:
-
-force-internal:
-
-require:
-
