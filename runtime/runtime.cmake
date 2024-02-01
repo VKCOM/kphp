@@ -1,9 +1,15 @@
-prepend(RUNTIME_SRC ${BASE_DIR}/runtime/
-        tmp.cpp)
+prepend(RUNTIME_TYPES_SRC ${BASE_DIR}/runtime/kphp_types/definition/
+        string.cpp
+        string_buffer.cpp)
+
+prepend(RUNTIME_COMMON_SRC ${BASE_DIR}/runtime/
+        php_assert.cpp)
+
+set(RUNTIME_SRC ${RUNTIME_TYPES_SRC}
+        ${RUNTIME_COMMON_SRC})
 
 add_library(runtime_src OBJECT ${RUNTIME_SRC})
-
-target_include_directories(script_src PRIVATE ${BASE_DIR})
+set_property(TARGET runtime_src PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 file(GLOB_RECURSE KPHP_RUNTIME_ALL_HEADERS
         RELATIVE ${BASE_DIR}
