@@ -1,7 +1,0 @@
-name: "@internals/sub"
-namespace: "VK\\Strings\\Internals123\\Str123"
-
-export:
-  - "StrSlice123"
-
-require:

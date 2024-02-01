@@ -1,8 +1,0 @@
-{
-  "name": "vk/rpc",
-  "version": "0.0.1",
-  "type": "library",
-  "autoload": {
-    "files": ["rpc121.php"]
-  }
-}

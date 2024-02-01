@@ -1,9 +1,0 @@
-name: "@impl"
-namespace: "VK\\Strings\\StringImpl122\\"
-
-export:
-  - "StringImpl122"
-
-require:
-  - "\\VK\\Strings\\Strings122"
-    

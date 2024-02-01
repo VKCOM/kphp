@@ -1,9 +1,0 @@
-name: "@msg/core"
-namespace: "Messages106\\Core106\\"
-
-export:
-
-force-internal:
-
-require:
-  - "@msg/channels/infra"

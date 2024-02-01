@@ -1,8 +1,0 @@
-{
-  "name": "vk/strings",
-  "version": "0.0.1",
-  "type": "library",
-  "autoload": {
-    "files": ["strings121.php"]
-  }
-}

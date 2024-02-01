@@ -1,9 +1,0 @@
-name: "@msg/channels/infra"
-namespace: "Messages105\\Infra105"
-
-export:
-
-force-internal:
-
-require:
-

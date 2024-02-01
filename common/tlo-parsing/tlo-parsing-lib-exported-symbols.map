@@ -1,8 +1,0 @@
-TLO_PARSING_LIB {
-  global:
-    extern "C++" {
-      *vk::tlo_parsing::* ;
-    };
-  local:
-    *;
-};

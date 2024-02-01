@@ -12,6 +12,7 @@
       <file path="$PROJECT_DIR$/build" />
       <file path="$PROJECT_DIR$/cmake-build-debug" />
       <file path="$PROJECT_DIR$/docs/_site" />
+      <file path="$PROJECT_DIR$/objs" />
       <file path="$PROJECT_DIR$/objs/bin" />
       <file path="$PROJECT_DIR$/objs/flex" />
       <file path="$PROJECT_DIR$/objs/generated/auto/common" />
