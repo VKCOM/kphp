@@ -26,5 +26,5 @@ set_target_properties(kphplight PROPERTIES
         LIBRARY_OUTPUT_DIRECTORY ${BASE_DIR}/objs)
 
 
-target_link_libraries(platform PRIVATE kphplight)
-
+target_link_libraries(platform PRIVATE kphplight $<TARGET_OBJECTS:utils_src>)
+target_link_libraries(test PRIVATE kphplight GTest::gtest_main $<TARGET_OBJECTS:utils_src>)

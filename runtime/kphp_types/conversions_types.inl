@@ -143,20 +143,20 @@ inline string f$strval(Optional<T> &&val) {
   return val.has_value() ? f$strval(std::move(val.val())) : f$strval(false);
 }
 
-//inline string f$strval(const mixed &val) {
-//  return val.to_string();
-//}
-//
-//inline string f$strval(mixed &&val) {
-//  return val.is_string() ? std::move(val.as_string()) : val.to_string();
-//}
-//
-//template<class T>
-//inline array<T> f$arrayval(const T &val) {
-//  array<T> res(array_size(1, true));
-//  res.push_back(val);
-//  return res;
-//}
+inline string f$strval(const mixed &val) {
+  return val.to_string();
+}
+
+inline string f$strval(mixed &&val) {
+  return val.is_string() ? std::move(val.as_string()) : val.to_string();
+}
+
+template<class T>
+inline array<T> f$arrayval(const T &val) {
+  array<T> res(array_size(1, true));
+  res.push_back(val);
+  return res;
+}
 
 template<class T>
 inline const array<T> &f$arrayval(const array<T> &val) {

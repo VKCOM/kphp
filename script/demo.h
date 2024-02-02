@@ -2,5 +2,5 @@
 //crc64_with_comments:0000000000000000
 #pragma once
 #include "runtime-headers.h"
-string f$demo() noexcept ;
+void f$demo(script_context_t * ctx) noexcept ;
 

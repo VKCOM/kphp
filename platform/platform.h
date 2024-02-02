@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <cstdio>
 
 namespace platform {
 void *allocate(size_t n) noexcept; // allocate script memory

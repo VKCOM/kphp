@@ -1,12 +1,21 @@
-prepend(RUNTIME_TYPES_SRC ${BASE_DIR}/runtime/kphp_types/definition/
+prepend(RUNTIME_KPHP_TYPES_SRC ${BASE_DIR}/runtime/kphp_types/definition/
         string.cpp
-        string_buffer.cpp)
+        string_buffer.cpp
+        mixed.cpp)
+
+prepend(RUNTIME_TYPES_SRC ${BASE_DIR}/runtime/runtime_types/
+        string_cache.cpp)
+
+prepend(RUNTIME_STDLIB_SRC ${BASE_DIR}/runtime/stdlib/
+        interface.cpp)
 
 prepend(RUNTIME_COMMON_SRC ${BASE_DIR}/runtime/
         php_assert.cpp)
 
-set(RUNTIME_SRC ${RUNTIME_TYPES_SRC}
-        ${RUNTIME_COMMON_SRC})
+set(RUNTIME_SRC ${RUNTIME_KPHP_TYPES_SRC}
+                ${RUNTIME_TYPES_SRC}
+                ${RUNTIME_COMMON_SRC}
+                ${RUNTIME_STDLIB_SRC})
 
 add_library(runtime_src OBJECT ${RUNTIME_SRC})
 set_property(TARGET runtime_src PROPERTY POSITION_INDEPENDENT_CODE ON)
