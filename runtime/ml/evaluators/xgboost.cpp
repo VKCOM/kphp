@@ -13,7 +13,7 @@ struct XgbDensePredictor {
 
   void fill_vector_x_ht_direct(const kphp_ml::XgbModel &xgb_model, const array<double> &features_map, bool skipping_zeroes) noexcept {
     for (const auto &iter : features_map) {
-      const auto &feature_id = iter.get_key().as_int();
+      const auto &feature_id = iter.get_int_key();
       const auto &fvalue = iter.get_value();
       if (feature_id < 0 || feature_id >= xgb_model.max_required_features) {
         continue;
@@ -32,7 +32,7 @@ struct XgbDensePredictor {
 
   void fill_vector_x_ht_remap_str_key(const kphp_ml::XgbModel &xgb_model, const array<double> &features_map, bool skipping_zeroes) noexcept {
     for (const auto &iter : features_map) {
-      const auto &feature_name = iter.get_key().as_string();
+      const auto &feature_name = iter.get_string_key();
       const auto &fvalue = iter.get_value();
       if (skipping_zeroes && std::fabs(fvalue) < 1e-9) {
         continue;
@@ -50,7 +50,7 @@ struct XgbDensePredictor {
   void fill_vector_x_ht_remap_int_key(const kphp_ml::XgbModel &xgb_model, const array<double> &features_map, bool skipping_zeroes) noexcept {
 
     for (const auto &iter : features_map) {
-      const auto &feature_id = iter.get_key().as_int();
+      const auto &feature_id = iter.get_int_key();
       const auto &fvalue = iter.get_value();
       if (feature_id < 0 || feature_id >= xgb_model.max_required_features) {
         continue;
