@@ -95,12 +95,8 @@ array<double> EvalXgboost::predict_input(const array<array<double>> &float_featu
 
   auto iter_done = float_features.begin();
 
-  array<double> response;
-  const float base_score = xgb_model.transform_base_score();
-  response.reserve(rows_cnt, true);
-  for (int i = 0; i < rows_cnt; ++i) {
-    response.push_back(base_score);
-  }
+  array<double> response(array_size(rows_cnt, true));
+  response.fill_vector(rows_cnt, xgb_model.transform_base_score());
 
   for (int block_id = 0; block_id < batches_cnt; ++block_id) {
     const size_t batch_offset = block_id * kphp_ml::BATCH_SIZE_XGB;
