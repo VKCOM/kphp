@@ -98,6 +98,8 @@ array<double> EvalXgboost::predict_input(const array<array<double>> &float_featu
   array<double> response(array_size(rows_cnt, true));
   response.fill_vector(rows_cnt, xgb_model.transform_base_score());
 
+  double * response_raw = response.get_vector_pointer();
+
   for (int block_id = 0; block_id < batches_cnt; ++block_id) {
     const size_t batch_offset = block_id * kphp_ml::BATCH_SIZE_XGB;
     const size_t block_size = std::min(rows_cnt - batch_offset, kphp_ml::BATCH_SIZE_XGB);
@@ -129,13 +131,13 @@ array<double> EvalXgboost::predict_input(const array<array<double>> &float_featu
     for (const auto &tree : xgb_model.trees) {
       for (int i = 0; i < block_size; ++i) {
         int idx = batch_offset + i;
-        response[idx] += feat_vecs[i].predict_one_tree(tree);
+        response_raw[idx] += feat_vecs[i].predict_one_tree(tree);
       }
     }
   }
 
   for (int i = 0; i < rows_cnt; ++i) {
-    response[i] = xgb_model.transform_prediction(response[i]);
+    response_raw[i] = xgb_model.transform_prediction(response_raw[i]);
   }
 
   return response;
