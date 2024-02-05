@@ -4,6 +4,8 @@
 #include <stdexcept>
 #include <string>
 
+#define CALL_MEMBER_FN(object,ptrToMember)  ((object).*(ptrToMember))
+
 struct XgbDensePredictor {
   struct MissingFloatPair {
     float at_vec_offset_0 = +1e+10;
@@ -97,8 +99,24 @@ array<double> EvalXgboost::predict_input(const array<array<double>> &float_featu
 
   array<double> response(array_size(rows_cnt, true));
   response.fill_vector(rows_cnt, xgb_model.transform_base_score());
+  double * raw = response.get_vector_pointer();
 
-  double * response_raw = response.get_vector_pointer();
+  typedef void (XgbDensePredictor::*filler)(const kphp_ml::XgbModel &, const array<double> &, bool);
+  filler p;
+
+  switch (model.input_kind) {
+    case kphp_ml::InputKind::ht_remap_str_keys_to_fvalue:
+      p = &XgbDensePredictor::fill_vector_x_ht_remap_str_key;
+      break;
+    case kphp_ml::InputKind::ht_remap_int_keys_to_fvalue:
+      p = &XgbDensePredictor::fill_vector_x_ht_remap_int_key;
+      break;
+    case kphp_ml::InputKind::ht_direct_int_keys_to_fvalue:
+      p = &XgbDensePredictor::fill_vector_x_ht_direct;
+      break;
+    default:
+      __builtin_unreachable();
+  }
 
   for (int block_id = 0; block_id < batches_cnt; ++block_id) {
     const size_t batch_offset = block_id * kphp_ml::BATCH_SIZE_XGB;
@@ -106,38 +124,22 @@ array<double> EvalXgboost::predict_input(const array<array<double>> &float_featu
 
     XgbDensePredictor::MissingFloatPair missing;
     std::fill((uint64_t *)linear_memory, reinterpret_cast<uint64_t *>(linear_memory) + block_size * xgb_model.num_features_present, *(uint64_t *)&missing);
-    switch (model.input_kind) {
-      case kphp_ml::InputKind::ht_remap_str_keys_to_fvalue:
-        for (int i = 0; i < block_size; ++i) {
-          feat_vecs[i].fill_vector_x_ht_remap_str_key(xgb_model, iter_done.get_value(), xgb_model.skip_zeroes);
-          ++iter_done;
-        }
-        break;
-      case kphp_ml::InputKind::ht_remap_int_keys_to_fvalue:
-        for (int i = 0; i < block_size; ++i) {
-          feat_vecs[i].fill_vector_x_ht_remap_int_key(xgb_model, iter_done.get_value(), xgb_model.skip_zeroes);
-          ++iter_done;
-        }
-        break;
-      case kphp_ml::InputKind::ht_direct_int_keys_to_fvalue:
-        for (int i = 0; i < block_size; ++i) {
-          feat_vecs[i].fill_vector_x_ht_direct(xgb_model, iter_done.get_value(), xgb_model.skip_zeroes);
-          ++iter_done;
-        }
-        break;
-      default:
-        throw std::invalid_argument("unsupported input_kind for EvalXgboost"); // TODO remove it and give some KPHP-native verdict
+
+    for (int i = 0; i < block_size; ++i) {
+      CALL_MEMBER_FN(feat_vecs[i], p)(xgb_model, iter_done.get_value(), xgb_model.skip_zeroes);
+      ++iter_done;
     }
+
     for (const auto &tree : xgb_model.trees) {
       for (int i = 0; i < block_size; ++i) {
         int idx = batch_offset + i;
-        response_raw[idx] += feat_vecs[i].predict_one_tree(tree);
+        raw[idx] += feat_vecs[i].predict_one_tree(tree);
       }
     }
   }
 
   for (int i = 0; i < rows_cnt; ++i) {
-    response_raw[i] = xgb_model.transform_prediction(response_raw[i]);
+    raw[i] = xgb_model.transform_prediction(raw[i]);
   }
 
   return response;
