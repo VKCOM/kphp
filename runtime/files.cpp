@@ -609,7 +609,7 @@ Stream file_stream_functions::fopen(const string &filename, const string &mode) 
   string real_filename = real_filename_optional.val();
   if (opened_files->has_key(real_filename)) {
     php_warning("File \"%s\" already opened. Closing previous one", real_filename.c_str());
-    f$fclose(real_filename);
+    fclose(real_filename);
   }
 
   dl::enter_critical_section();//NOT OK: opened_files
