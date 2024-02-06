@@ -1,4 +1,11 @@
 #include "mbstring.h"
+#include "runtime/exception.h"
+
+#include "common/unicode/unicode-utils.h"
+#include "common/unicode/utf8-utils.h"
+
+#define MIN(a, b)  (((a)<(b))?(a):(b))
+#define MBFL_SUBSTR_UNTIL_END ((size_t) -1)
 
 bool mb_UTF8_check(const char *s) {
   do {
@@ -46,6 +53,23 @@ bool mb_UTF8_check(const char *s) {
 #ifdef MBFL
 extern "C" {
 	#include <kphp/libmbfl/mbfl/mbfilter.h>
+#include <kphp/libmbfl/mbfl/mbfilter_wchar.h>
+}
+
+#define KPHP_UNICODE_CASE_UPPER        0
+#define KPHP_UNICODE_CASE_LOWER        1
+#define KPHP_UNICODE_CASE_TITLE        2
+#define KPHP_UNICODE_CASE_FOLD         3
+#define KPHP_UNICODE_CASE_UPPER_SIMPLE 4
+#define KPHP_UNICODE_CASE_LOWER_SIMPLE 5
+#define KPHP_UNICODE_CASE_TITLE_SIMPLE 6
+#define KPHP_UNICODE_CASE_FOLD_SIMPLE  7
+#define KPHP_UNICODE_CASE_MODE_MAX     7
+
+static const char * DEFAULT_ENCODING = "UTF-8" ;
+
+static inline int mbfl_is_error(size_t len) {
+  return len >= (size_t) -16;
 }
 
 mbfl_string *convert_encoding(const char *str, const char *to, const char *from) {
@@ -149,10 +173,544 @@ bool f$mb_check_encoding(const mixed &value, const Optional<string> &encoding) {
 	return check_encoding(c_value, c_encoding);
 }
 
+static const mbfl_encoding *mb_get_encoding(const Optional<string> &enc_name) {
+  if (enc_name.has_value()) {
+    // no caching unlike PHP version - can be changed if we're going to add mbstring config
+    const mbfl_encoding *encoding;
+    encoding = mbfl_name2encoding(enc_name.val().c_str());
+    if (!encoding) {
+      return NULL;
+    } else {
+      return encoding;
+    }
+  }
+  return mbfl_name2encoding(DEFAULT_ENCODING); // change if we are going to use current encoding
+}
+
+int64_t f$mb_strlen(const string &str, const Optional<string> &enc_name){
+  const mbfl_encoding *encoding = mb_get_encoding(enc_name);
+  if (!encoding) {
+    php_critical_error ("encoding \"%s\" isn't supported in mb_strlen", enc_name.val().c_str());
+  }
+  mbfl_string _string;
+  mbfl_string_init(&_string);
+  _string.no_encoding = encoding->no_encoding;
+  _string.len = str.size();
+  _string.val = (unsigned char*)str.c_str();
+
+  size_t n = mbfl_strlen(&_string);
+
+  if (mbfl_is_error(n)) {
+    php_critical_error ("error working with \"%s\" string", str.c_str());
+  }
+
+  return (int64_t) n;
+
+}
+
+
+string f$mb_substr(const string &str, const int64_t start, const Optional<int64_t> &length, const Optional<string> &encoding){
+  size_t real_start, real_len;
+  bool len_is_null = !length.has_value();
+
+  const mbfl_encoding *enc = mb_get_encoding(encoding);
+
+  if (!enc) {
+    php_critical_error ("encoding \"%s\" isn't supported in mb_substr", encoding.val().c_str());
+  }
+
+  mbfl_string _string, result, *ret;
+  mbfl_string_init(&_string);
+  _string.no_encoding = enc->no_encoding;
+  _string.len = str.size();
+  _string.val = (unsigned char*)str.c_str();
+
+  size_t mblen = 0;
+  if (start < 0 || (!len_is_null && val(length) < 0)) {
+    mblen = mbfl_strlen(&_string);
+  }
+
+  if (start >= 0) {
+    real_start = (size_t) start;
+  } else if (-start < mblen) {
+    real_start = mblen + start;
+  } else {
+    real_start = 0;
+  }
+
+  /* if "length" position is negative, set it to the length
+         * needed to stop that many chars from the end of the string */
+  if (len_is_null) {
+    real_len = mbfl_strlen(&_string) + 1;
+  } else if (val(length) >= 0) {
+    real_len = (size_t) val(length);
+  } else if (real_start < mblen && - val(length) < mblen - real_start) {
+    real_len = (mblen - real_start) + val(length);
+  } else {
+    real_len = 0;
+  }
+
+  ret = mbfl_substr(&_string, &result, real_start, real_len);
+  php_assert(ret != NULL);
+  return string((const char*) ret->val, ret->len);
+}
+
+int64_t f$mb_substr_count(const string &haystack, const string &needle, const Optional<string> &encoding){
+
+  size_t n;
+  mbfl_string _haystack, _needle;
+
+  const mbfl_encoding *enc = mb_get_encoding(encoding);
+
+  if (!enc) {
+    php_critical_error ("encoding \"%s\" isn't supported in mb_substr_count", encoding.val().c_str());
+  }
+
+  mbfl_string_init(&_haystack);
+  _haystack.no_encoding = enc->no_encoding;
+  _haystack.len = haystack.size();
+  _haystack.val = (unsigned char*) haystack.c_str();
+
+  mbfl_string_init(&_needle);
+  _needle.no_encoding = enc->no_encoding;
+  _needle.len = needle.size();
+  _needle.val = (unsigned char*) needle.c_str();
+
+  if (needle.size() <= 0) {
+    php_warning("empty substring");
+  }
+
+  n = mbfl_substr_count(&_haystack, &_needle);
+
+  if (mbfl_is_error(n)) {
+    php_critical_error ("internal error");
+  }
+
+  return (int64_t) n;
+}
+
+string mb_convert_case(const string &str, const int64_t mode, const Optional<string> &encoding){
+
+  mixed unicode = f$mb_convert_encoding(str, string("UTF_8"), encoding.val());
+
+  if (unicode.is_string()) {
+    const string &unicode_str = unicode.to_string();
+
+    int len = str.size();
+    string unicode_res(len * 3, false);
+    const char *s = str.c_str();
+    int p = 0, ch = 0, res_len = 0;
+
+    switch(mode) {
+      case KPHP_UNICODE_CASE_UPPER:
+        while ((p = get_char_utf8(&ch, s)) > 0) {
+          s += p;
+          res_len += put_char_utf8(unicode_toupper(ch), &unicode_res[res_len]);
+        }
+        break;
+
+      case KPHP_UNICODE_CASE_LOWER:
+        while ((p = get_char_utf8(&ch, s)) > 0) {
+          s += p;
+          res_len += put_char_utf8(unicode_tolower(ch), &unicode_res[res_len]);
+        }
+        break;
+    }
+
+    if (p < 0) {
+      php_warning("Incorrect UTF-8 string \"%s\" in function mb_convert_case", str.c_str());
+    }
+    unicode_res.shrink(res_len);
+
+    mixed res = f$mb_convert_encoding(unicode_res, encoding.val(), string("UTF-8"));
+
+    if (res.is_string()) {
+      return res.to_string();
+    }
+    else {
+        php_critical_error ("encoding \"%s\" isn't supported in mb_convert_case", encoding.val().c_str());
+    }
+  }
+  else {
+    php_critical_error ("encoding \"%s\" isn't supported in mb_convert_case", encoding.val().c_str());
+  }
+
+//  if (mode < 0 || mode > PHP_UNICODE_CASE_MODE_MAX) {
+//    php_critical_error ("case mode isn't supported");
+//  }
+
+//  if (mode != PHP_UNICODE_CASE_UPPER || mode != PHP_UNICODE_CASE_LOWER) {
+//    php_critical_error ("case mode isn't supported");
+//  }
+//
+//  struct convert_case_data data;
+//  mbfl_convert_filter *from_wchar, *to_wchar;
+//  mbfl_string result, *result_ptr;
+//
+//  mbfl_memory_device device;
+//  mbfl_memory_device_init(&device, str.size() + 1, 0);
+//
+//  /* encoding -> wchar filter */
+//  to_wchar = mbfl_convert_filter_new(enc->no_encoding,
+//                                     (&mbfl_encoding_wchar)->no_encoding, convert_case_filter, NULL, &data);
+//  if (to_wchar == NULL) {
+//    mbfl_memory_device_clear(&device);
+//    php_critical_error ("encoding isn't supported");
+//  }
+//
+//  /* wchar -> encoding filter */
+//  from_wchar = mbfl_convert_filter_new((&mbfl_encoding_wchar)->no_encoding, enc->no_encoding, mbfl_memory_device_output,
+//                                       NULL, &device);
+//  if (from_wchar == NULL) {
+//    mbfl_convert_filter_delete(to_wchar);
+//    mbfl_memory_device_clear(&device);
+//    php_critical_error ("encoding isn't supported");
+//  }
+//
+//  data.next_filter = from_wchar;
+//  data.no_encoding = enc->no_encoding;
+//  data.case_mode = mode;
+//  data.title_mode = 0;
+//
+//  {
+//    /* feed data */
+//    const unsigned char *p = (const unsigned char *) str.c_str();
+//    size_t n = str.size();
+//    while (n > 0) {
+//      if ((*to_wchar->filter_function)(*p++, to_wchar) < 0) {
+//        break;
+//      }
+//      n--;
+//    }
+//  }
+//
+//  mbfl_convert_filter_flush(to_wchar);
+//  mbfl_convert_filter_flush(from_wchar);
+//  result_ptr = mbfl_memory_device_result(&device, &result);
+//  mbfl_convert_filter_delete(to_wchar);
+//  mbfl_convert_filter_delete(from_wchar);
+//
+//  if (!result_ptr) {
+//    THROW_EXCEPTION (new_Exception(string(__FILE__), __LINE__, string("mbfl error", 10)));
+//  }
+//
+//  return string((const char*) result_ptr->val, result_ptr->len);
+}
+
+string f$mb_strtoupper(const string &str, const Optional<string> &encoding){
+  return mb_convert_case(str, KPHP_UNICODE_CASE_UPPER, encoding);
+}
+
+string f$mb_strtolower(const string &str, const Optional<string> &encoding){
+  return mb_convert_case(str, KPHP_UNICODE_CASE_LOWER, encoding);
+}
+
+int64_t f$mb_strwidth(const string &str, const Optional<string> &encoding){
+  size_t n;
+
+  const mbfl_encoding *enc = mb_get_encoding(encoding);
+
+  if (!enc) {
+    php_critical_error ("encoding \"%s\" isn't supported in mb_strwidth", encoding.val().c_str());
+  }
+
+  mbfl_string _string;
+  mbfl_string_init(&_string);
+  _string.no_encoding = enc->no_encoding;
+  _string.len = str.size();
+  _string.val = (unsigned char*)str.c_str();
+
+  n = mbfl_strwidth(&_string);
+
+  return n;
+}
+
+Optional<int64_t> f$mb_strpos(const string &haystack, const string &needle, const int64_t offset, const Optional<string> &encoding){
+  int reverse = 0;
+  size_t real_offset = offset;
+  mbfl_string _haystack, _needle;
+  size_t n;
+
+  const mbfl_encoding *enc = mb_get_encoding(encoding);
+
+  if (!enc) {
+    php_critical_error ("encoding \"%s\" isn't supported in mb_strpos", encoding.val().c_str());
+  }
+
+  mbfl_string_init(&_haystack);
+  _haystack.no_encoding = enc->no_encoding;
+  _haystack.len = haystack.size();
+  _haystack.val = (unsigned char*) haystack.c_str();
+
+  mbfl_string_init(&_needle);
+  _needle.no_encoding = enc->no_encoding;
+  _needle.len = needle.size();
+  _needle.val = (unsigned char*) needle.c_str();
+
+  if (real_offset != 0) {
+    size_t slen = mbfl_strlen(&_haystack);
+    if (offset < 0) {
+      real_offset += slen;
+    }
+    if (real_offset > slen) {
+      php_warning ("offset not contained in string");
+      return false;
+    }
+  }
+
+  if (needle.size() <= 0) {
+    php_warning ("empty delimiter");
+    return false;
+  }
+
+  n = mbfl_strpos(&_haystack, &_needle, real_offset, reverse);
+  if (!mbfl_is_error(n)){
+    return n;
+  } else {
+    switch (-n) {
+      case 1:
+        break;
+      case 2:
+        php_warning ("Needle has not positive length");
+        break;
+      case 4:
+        php_warning ("Unknown encoding or conversion error");
+        break;
+      case 8:
+        php_warning ("Argument is empty");
+        break;
+      default:
+        php_warning ("Unknown error in mb_strpos");
+        break;
+    }
+    return false;
+  }
+}
+
+Optional<int64_t> f$mb_strrpos(const string &haystack, const string &needle, const int64_t offset, const Optional<string> &encoding){
+  int reverse = 1;
+  mbfl_string _haystack, _needle;
+  size_t n;
+
+  const mbfl_encoding *enc = mb_get_encoding(encoding);
+
+  if (!enc) {
+    php_critical_error ("encoding \"%s\" isn't supported in mb_strrpos", encoding.val().c_str());
+  }
+
+  mbfl_string_init(&_haystack);
+  _haystack.no_encoding = enc->no_encoding;
+  _haystack.len = haystack.size();
+  _haystack.val = (unsigned char*) haystack.c_str();
+
+  mbfl_string_init(&_needle);
+  _needle.no_encoding = enc->no_encoding;
+  _needle.len = needle.size();
+  _needle.val = (unsigned char*) needle.c_str();
+
+  if (offset != 0) {
+    size_t haystack_char_len = mbfl_strlen(&_haystack);
+    if ((offset > 0 && offset > haystack_char_len) ||
+        (offset < 0 && -offset > haystack_char_len)) {
+      php_warning ("Offset is greater than the length of haystack string");
+      return false;
+    }
+  }
+
+  n = mbfl_strpos(&_haystack, &_needle, offset, reverse);
+  if (!mbfl_is_error(n)) { return n; } else { return false; }
+
+}
+
+Optional<int64_t> f$mb_strripos(const string &haystack, const string &needle, const int64_t offset, const Optional<string> &encoding){
+  int reverse = 1;
+  int64_t real_offset = offset;
+  mbfl_string _haystack, _needle;
+  size_t n = (size_t) - 1;
+
+  const mbfl_encoding *enc = mb_get_encoding(encoding);
+
+  if (!enc) {
+    return n;
+  }
+
+  if (needle.size() == 0) {
+    php_warning ("Empty delimiter");
+    return false;
+  }
+
+  mbfl_string_init(&_haystack);
+  _haystack.no_encoding = enc->no_encoding;
+
+  mbfl_string_init(&_needle);
+  _needle.no_encoding = enc->no_encoding;
+
+  do {
+    /* We're using simple case-folding here, because we'd have to deal with remapping of
+		 * offsets otherwise. */
+
+    string lower_haystack = f$mb_strtolower(haystack, encoding);
+    _haystack.len = lower_haystack.size();
+    _haystack.val = (unsigned char*) lower_haystack.c_str();
+
+    if (!_haystack.val || _haystack.len == 0) {
+      break;
+    }
+
+    string lower_needle = f$mb_strtolower(needle, encoding);
+    _needle.len = lower_needle.size();
+    _needle.val = (unsigned char*) lower_needle.c_str();
+
+    if (!_needle.val || _needle.len == 0) {
+      break;
+    }
+
+    if (offset != 0) {
+      size_t haystack_char_len = mbfl_strlen(&_haystack);
+
+      if (reverse) {
+        if ((offset > 0 && (size_t)offset > haystack_char_len) ||
+            (offset < 0 && (size_t)(-offset) > haystack_char_len)) {
+          php_warning("Offset is greater than the length of haystack string");
+          break;
+        }
+      } else {
+        if (offset < 0) {
+          real_offset += (int64_t )haystack_char_len;
+        }
+        if (real_offset < 0 || (size_t)real_offset > haystack_char_len) {
+          php_warning("Offset not contained in string");
+          break;
+        }
+      }
+    }
+
+    n = mbfl_strpos(&_haystack, &_needle, real_offset, reverse);
+  } while(0);
+
+  if (!mbfl_is_error(n)) { return n; } else { return false; }
+}
+
+Optional<int64_t> f$mb_stripos(const string &haystack, const string &needle, const int64_t offset, const Optional<string> &encoding){
+  int reverse = 0;
+  int64_t real_offset = offset;
+  mbfl_string _haystack, _needle;
+  size_t n = (size_t) - 1;
+
+  const mbfl_encoding *enc = mb_get_encoding(encoding);
+
+  if (!enc) {
+    return n;
+  }
+
+  if (needle.size() == 0) {
+    php_warning ("Empty delimiter");
+    return false;
+  }
+
+  mbfl_string_init(&_haystack);
+  _haystack.no_encoding = enc->no_encoding;
+
+  mbfl_string_init(&_needle);
+  _needle.no_encoding = enc->no_encoding;
+
+  do {
+    /* We're using simple case-folding here, because we'd have to deal with remapping of
+		 * offsets otherwise. */
+
+    string lower_haystack = f$mb_strtolower(haystack, encoding);
+    _haystack.len = lower_haystack.size();
+    _haystack.val = (unsigned char*) lower_haystack.c_str();
+
+    if (!_haystack.val || _haystack.len == 0) {
+      break;
+    }
+
+    string lower_needle = f$mb_strtolower(needle, encoding);
+    _needle.len = lower_needle.size();
+    _needle.val = (unsigned char*) lower_needle.c_str();
+
+    if (!_needle.val || _needle.len == 0) {
+      break;
+    }
+
+    if (offset != 0) {
+      size_t haystack_char_len = mbfl_strlen(&_haystack);
+
+      if (reverse) {
+        if ((offset > 0 && (size_t)offset > haystack_char_len) ||
+            (offset < 0 && (size_t)(-offset) > haystack_char_len)) {
+          php_warning("Offset is greater than the length of haystack string");
+          break;
+        }
+      } else {
+        if (offset < 0) {
+          real_offset += (int64_t )haystack_char_len;
+        }
+        if (real_offset < 0 || (size_t)real_offset > haystack_char_len) {
+          php_warning("Offset not contained in string");
+          break;
+        }
+      }
+    }
+
+    n = mbfl_strpos(&_haystack, &_needle, real_offset, reverse);
+  } while(0);
+
+  if (!mbfl_is_error(n)) { return n; } else { return false; }
+}
+
+Optional<string> f$mb_strstr(const string &haystack, const string &needle, const bool before_needle, const Optional<string> &encoding) {
+  Optional<int64_t> start = f$mb_strpos(haystack, needle, 0, encoding);
+  if (start.has_value()) {
+    if (before_needle) {
+      return f$mb_substr(haystack, 0, val(start), encoding);
+    } else {
+      return f$mb_substr(haystack, val(start), false, encoding);
+    }
+  }
+  return false;
+}
+
+
+Optional<string> f$mb_stristr(const string &haystack, const string &needle, const bool before_needle, const Optional<string> &encoding){
+  Optional<int64_t> start = f$mb_stripos(haystack, needle, 0, encoding);
+  if (start.has_value()) {
+    if (before_needle) {
+      return f$mb_substr(haystack, 0, val(start), encoding);
+    } else {
+      return f$mb_substr(haystack, val(start), false, encoding);
+    }
+  }
+  return false;
+}
+
+Optional<string> f$mb_strrchr(const string &haystack, const string &needle, const bool before_needle, const Optional<string> &encoding){
+  Optional<int64_t> start = f$mb_strrpos(haystack, needle, 0, encoding);
+  if (start.has_value()) {
+    if (before_needle) {
+      return f$mb_substr(haystack, 0, val(start), encoding);
+    } else {
+      return f$mb_substr(haystack, val(start), false, encoding);
+    }
+  }
+  return false;
+}
+
+Optional<string> f$mb_strrichr(const string &haystack, const string &needle, const bool before_needle, const Optional<string> &encoding){
+  Optional<int64_t> start = f$mb_strripos(haystack, needle, 0, encoding);
+  if (start.has_value()) {
+    if (before_needle) {
+      return f$mb_substr(haystack, 0, val(start), encoding);
+    } else {
+      return f$mb_substr(haystack, val(start), false, encoding);
+    }
+  }
+  return false;
+}
+
 #else
 
-#include "common/unicode/unicode-utils.h"
-#include "common/unicode/utf8-utils.h"
 
 static bool is_detect_incorrect_encoding_names_warning{false};
 
