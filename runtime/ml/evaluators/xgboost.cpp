@@ -13,14 +13,11 @@ struct XgbDensePredictor {
   };
   float *vector_x{nullptr}; // assigned outside as a chunk in linear memory, 2 equal values per existing feature
 
-  void fill_vector_x_ht_direct(const kphp_ml::XgbModel &xgb_model, const array<double> &features_map, bool skipping_zeroes) noexcept {
+  void fill_vector_x_ht_direct(const kphp_ml::XgbModel &xgb_model, const array<double> &features_map) noexcept {
     for (const auto &iter : features_map) {
       const auto &feature_id = iter.get_int_key();
       const auto &fvalue = iter.get_value();
       if (feature_id < 0 || feature_id >= xgb_model.max_required_features) {
-        continue;
-      }
-      if (skipping_zeroes && std::fabs(fvalue) < 1e-9) {
         continue;
       }
 
@@ -32,11 +29,44 @@ struct XgbDensePredictor {
     }
   }
 
-  void fill_vector_x_ht_remap_str_key(const kphp_ml::XgbModel &xgb_model, const array<double> &features_map, bool skipping_zeroes) noexcept {
+  void fill_vector_x_ht_direct_sz(const kphp_ml::XgbModel &xgb_model, const array<double> &features_map) noexcept {
+    for (const auto &iter : features_map) {
+      const auto &feature_id = iter.get_int_key();
+      const auto &fvalue = iter.get_value();
+      if (feature_id < 0 || feature_id >= xgb_model.max_required_features) {
+        continue;
+      }
+      if (std::fabs(fvalue) < 1e-9) {
+        continue;
+      }
+
+      int vec_offset = xgb_model.offset_in_vec[feature_id];
+      if (vec_offset != -1) {
+        vector_x[vec_offset] = static_cast<float>(fvalue);
+        vector_x[vec_offset + 1] = static_cast<float>(fvalue);
+      }
+    }
+  }
+
+  void fill_vector_x_ht_remap_str_key(const kphp_ml::XgbModel &xgb_model, const array<double> &features_map) noexcept {
     for (const auto &iter : features_map) {
       const auto &feature_name = iter.get_string_key();
       const auto &fvalue = iter.get_value();
-      if (skipping_zeroes && std::fabs(fvalue) < 1e-9) {
+
+      auto found_it = xgb_model.reindex_map_str2int.find(feature_name.hash());
+      if (found_it != xgb_model.reindex_map_str2int.end()) {
+        int vec_offset = found_it->second;
+        vector_x[vec_offset] = static_cast<float>(fvalue);
+        vector_x[vec_offset + 1] = static_cast<float>(fvalue);
+      }
+    }
+  }
+
+  void fill_vector_x_ht_remap_str_key_sz(const kphp_ml::XgbModel &xgb_model, const array<double> &features_map) noexcept {
+    for (const auto &iter : features_map) {
+      const auto &feature_name = iter.get_string_key();
+      const auto &fvalue = iter.get_value();
+      if (std::fabs(fvalue) < 1e-9) {
         continue;
       }
 
@@ -49,7 +79,7 @@ struct XgbDensePredictor {
     }
   }
 
-  void fill_vector_x_ht_remap_int_key(const kphp_ml::XgbModel &xgb_model, const array<double> &features_map, bool skipping_zeroes) noexcept {
+  void fill_vector_x_ht_remap_int_key(const kphp_ml::XgbModel &xgb_model, const array<double> &features_map) noexcept {
 
     for (const auto &iter : features_map) {
       const auto &feature_id = iter.get_int_key();
@@ -57,7 +87,24 @@ struct XgbDensePredictor {
       if (feature_id < 0 || feature_id >= xgb_model.max_required_features) {
         continue;
       }
-      if (skipping_zeroes && std::fabs(fvalue) < 1e-9) {
+
+      int vec_offset = xgb_model.reindex_map_int2int[feature_id];
+      if (vec_offset != -1) {
+        vector_x[vec_offset] = static_cast<float>(fvalue);
+        vector_x[vec_offset + 1] = static_cast<float>(fvalue);
+      }
+    }
+  }
+
+  void fill_vector_x_ht_remap_int_key_sz(const kphp_ml::XgbModel &xgb_model, const array<double> &features_map) noexcept {
+
+    for (const auto &iter : features_map) {
+      const auto &feature_id = iter.get_int_key();
+      const auto &fvalue = iter.get_value();
+      if (feature_id < 0 || feature_id >= xgb_model.max_required_features) {
+        continue;
+      }
+      if (std::fabs(fvalue) < 1e-9) {
         continue;
       }
 
@@ -101,18 +148,18 @@ array<double> EvalXgboost::predict_input(const array<array<double>> &float_featu
   response.fill_vector(rows_cnt, xgb_model.transform_base_score());
   double * raw = response.get_vector_pointer();
 
-  typedef void (XgbDensePredictor::*filler)(const kphp_ml::XgbModel &, const array<double> &, bool);
+  typedef void (XgbDensePredictor::*filler)(const kphp_ml::XgbModel &, const array<double> &);
   filler p;
 
   switch (model.input_kind) {
     case kphp_ml::InputKind::ht_remap_str_keys_to_fvalue:
-      p = &XgbDensePredictor::fill_vector_x_ht_remap_str_key;
+      p = xgb_model.skip_zeroes ? &XgbDensePredictor::fill_vector_x_ht_remap_str_key_sz : &XgbDensePredictor::fill_vector_x_ht_remap_str_key;
       break;
     case kphp_ml::InputKind::ht_remap_int_keys_to_fvalue:
-      p = &XgbDensePredictor::fill_vector_x_ht_remap_int_key;
+      p = xgb_model.skip_zeroes ? &XgbDensePredictor::fill_vector_x_ht_remap_int_key_sz : &XgbDensePredictor::fill_vector_x_ht_remap_int_key;
       break;
     case kphp_ml::InputKind::ht_direct_int_keys_to_fvalue:
-      p = &XgbDensePredictor::fill_vector_x_ht_direct;
+      p = xgb_model.skip_zeroes ? &XgbDensePredictor::fill_vector_x_ht_direct_sz : &XgbDensePredictor::fill_vector_x_ht_direct;
       break;
     default:
       __builtin_unreachable();
@@ -126,7 +173,7 @@ array<double> EvalXgboost::predict_input(const array<array<double>> &float_featu
     std::fill((uint64_t *)linear_memory, reinterpret_cast<uint64_t *>(linear_memory) + block_size * xgb_model.num_features_present, *(uint64_t *)&missing);
 
     for (int i = 0; i < block_size; ++i) {
-      CALL_MEMBER_FN(feat_vecs[i], p)(xgb_model, iter_done.get_value(), xgb_model.skip_zeroes);
+      CALL_MEMBER_FN(feat_vecs[i], p)(xgb_model, iter_done.get_value());
       ++iter_done;
     }
 
