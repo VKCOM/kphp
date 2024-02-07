@@ -1,6 +1,5 @@
 #include "runtime/datetime/timelib_wrapper.h"
 
-#include <functional>
 #include <kphp/timelib/timelib.h>
 #if ASAN_ENABLED
 #include <sanitizer/lsan_interface.h>
@@ -9,6 +8,8 @@
 
 #include "common/containers/final_action.h"
 #include "common/smart_ptrs/singleton.h"
+#include "server/php-engine-vars.h"
+#include "server/php-runner.h"
 
 // these constants are a part of the private timelib API, but PHP uses them internally;
 // we define them here locally
@@ -39,7 +40,7 @@ array<mixed> dump_errors(const timelib_error_container &error) {
   array<mixed> result;
 
   array<string> result_warnings;
-  result_warnings.reserve(error.warning_count, 0, false);
+  result_warnings.reserve(error.warning_count, false);
   for (int i = 0; i < error.warning_count; i++) {
     result_warnings.set_value(error.warning_messages[i].position, string(error.warning_messages[i].message));
   }
@@ -47,7 +48,7 @@ array<mixed> dump_errors(const timelib_error_container &error) {
   result.set_value(string("warnings"), result_warnings);
 
   array<string> result_errors;
-  result_errors.reserve(error.error_count, 0, false);
+  result_errors.reserve(error.error_count, false);
   for (int i = 0; i < error.error_count; i++) {
     result_errors.set_value(error.error_messages[i].position, string(error.error_messages[i].message));
   }
@@ -215,7 +216,7 @@ std::pair<int64_t, bool> php_timelib_strtotime(const string &tz_name, const stri
     return {0, false};
   }
 
-  bool use_heap_memory = (dl::get_script_memory_stats().memory_limit == 0);
+  bool use_heap_memory = !(php_script.has_value() && php_script->is_running());
   auto malloc_replacement_guard = make_malloc_replacement_with_script_allocator(!use_heap_memory);
 
   timelib_time *now = timelib_time_ctor();
@@ -250,7 +251,7 @@ std::pair<int64_t, bool> php_timelib_strtotime(const string &tz_name, const stri
 
 static timelib_error_container *last_errors_global = nullptr;
 
-using ScriptMemGuard = decltype(std::function{make_malloc_replacement_with_script_allocator})::result_type;
+using ScriptMemGuard = decltype(make_malloc_replacement_with_script_allocator());
 
 // NB: should be called under script allocator, because of calls to free() inside timelib_error_container_dtor()
 static void update_errors_warnings(timelib_error_container *last_errors, [[maybe_unused]] const ScriptMemGuard &guard) {

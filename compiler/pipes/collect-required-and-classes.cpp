@@ -208,10 +208,6 @@ private:
   // moreover, symbols listed in "export" are used for classes collecting, see require_all_deps_of_modulite()
   // while parsing, cross-references like SomeClass or @another-m are not resolved, it will be done on all classes loaded
   ModulitePtr load_modulite_inside_dir(SrcDirPtr dir) {
-    if (!G->settings().modulite_enabled.get()) {
-      return {};
-    }
-
     if (dir->has_composer_json) {
       // composer packages are implicit modulites "#vendorname/packagename" ("#" + json->name)
       // for instance, if a modulite in a project calls a function from a package, it's auto checked to be required

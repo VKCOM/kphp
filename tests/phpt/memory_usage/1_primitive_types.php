@@ -45,12 +45,12 @@ function test_string() {
 function test_array() {
 #ifndef KPHP
   var_dump(0);
-  var_dump(104);
+  var_dump(96);
   var_dump(0);
-  var_dump(72);
+  var_dump(64);
   var_dump(0);
-  var_dump(72);
-  var_dump(144);
+  var_dump(64);
+  var_dump(128);
   return;
 #endif
   $x = ["hello"];

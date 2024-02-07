@@ -9,7 +9,7 @@ import time
 import json
 
 from .colors import cyan
-from .stats_receiver import StatsReceiver
+from .stats_receiver import StatsReceiver, StatsType
 from .port_generator import get_port
 from .tl_client import send_rpc_request
 
@@ -28,7 +28,7 @@ class Engine:
         self._working_dir = working_dir
         self._engine_name = os.path.basename(engine_bin).replace('-', '_')
         self._log_file = os.path.join(working_dir, self._engine_name + ".log")
-        self._stats_receiver = StatsReceiver(self._engine_name, working_dir)
+        self._stats_receiver = StatsReceiver(self._engine_name, working_dir, StatsType.STATSD)
         self._rpc_port = get_port()
         self._options = {
             "--log": self._log_file,
@@ -109,17 +109,21 @@ class Engine:
 
     def start(self, start_msgs=None):
         """
-        Запустить дижек
+        Запустить движок
         :param start_msgs: Сообщение в логе, которое нужно проверить после запуска движка
         """
         self._stats_receiver.start()
 
         cmd = [self._engine_bin]
-        for option, value in self._options.items():
-            if value is not None:
-                cmd.append(option)
-                if value is not True:
-                    cmd.append(str(value))
+        for option, value_raw in self._options.items():
+            if value_raw is not None:
+                value_list = value_raw
+                if type(value_raw) is not list:
+                    value_list = [value_raw]
+                for val in value_list:
+                    cmd.append(option)
+                    if val is not True:
+                        cmd.append(str(val))
 
         if self._binlog_path:
             cmd.append(self._binlog_path)
@@ -155,7 +159,7 @@ class Engine:
 
     def stop(self):
         """
-        Остановить движек и проверить, что все в порядке
+        Остановить движок и проверить, что все в порядке
         """
         if self._engine_process is None or not self._engine_process.is_running():
             return

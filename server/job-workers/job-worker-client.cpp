@@ -82,23 +82,20 @@ void JobWorkerClient::init(int job_result_slot) {
   }
 }
 
-int JobWorkerClient::send_job(JobSharedMessage *job_request) {
-  slot_id_t job_id = parallel_job_ids_factory.create_slot();
-
+bool JobWorkerClient::send_job(JobSharedMessage *job_request) {
   tvkprintf(job_workers, 2, "sending job: <job_result_fd_idx, job_id> = <%d, %d> , job_memory_ptr = %p, write_job_fd = %d\n",
-            job_result_fd_idx, job_id, job_request, write_job_fd);
+            job_result_fd_idx, job_request->job_id, job_request, write_job_fd);
 
-  job_request->job_id = job_id;
   job_request->job_result_fd_idx = job_result_fd_idx;
   bool success = job_writer.write_job(job_request, write_job_fd);
   if (!success) {
     ++vk::singleton<SharedMemoryManager>::get().get_stats().errors_pipe_client_write;
-    return -1;
+    return false;
   }
 
   ++vk::singleton<SharedMemoryManager>::get().get_stats().job_queue_size;
   ++vk::singleton<SharedMemoryManager>::get().get_stats().jobs_sent;
-  return job_id;
+  return true;
 }
 
 } // namespace job_workers

@@ -4,12 +4,8 @@
 
 #include "compiler/code-gen/raw-data.h"
 
-#include "compiler/code-gen/code-generator.h"
-#include "compiler/code-gen/common.h"
 #include "compiler/code-gen/vertex-compiler.h"
 #include "compiler/const-manipulations.h"
-#include "compiler/vertex-util.h"
-#include "compiler/inferring/type-data.h"
 
 void RawString::compile(CodeGenerator &W) const {
   W << "\"";
@@ -68,12 +64,47 @@ void RawString::compile(CodeGenerator &W) const {
   W << "\"";
 }
 
-static inline int array_len() {
-  return (10 * sizeof(int)) / sizeof(double);
+DepLevelContainer::const_iterator DepLevelContainer::begin() const {
+  size_t begin_idx = 0;
+  for (; begin_idx < mapping.size() && mapping[begin_idx].empty(); ++begin_idx) {
+  }
+  return {*this, begin_idx, 0};
 }
 
+const std::vector<VarPtr> &DepLevelContainer::vars_by_dep_level(size_t dep_level) const {
+  if (dep_level >= max_dep_level()) {
+    static const auto EMPTY = std::vector<VarPtr>{};
+    return EMPTY;
+  }
+  return mapping[dep_level];
+}
 
-std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &const_raw_array_vars, CodeGenerator &W) {
+void DepLevelContainer::add(VarPtr v) {
+  ++count;
+  auto dep_level = v->dependency_level;
+  if (dep_level >= mapping.size()) {
+    mapping.resize(dep_level + 1);
+  }
+  mapping[dep_level].emplace_back(v);
+}
+
+DepLevelContainer::const_iterator &DepLevelContainer::const_iterator::operator++() {
+  ++internal_index;
+  while (dep_level < owner.mapping.size() && internal_index >= owner.mapping[dep_level].size()) {
+    internal_index = 0;
+    ++dep_level;
+  }
+  if (dep_level == owner.mapping.size()) {
+    internal_index = 0;
+  }
+  return *this;
+}
+
+static inline int array_len() {
+  return (8 * sizeof(int)) / sizeof(double);
+}
+
+std::vector<int> compile_arrays_raw_representation(const DepLevelContainer &const_raw_array_vars, CodeGenerator &W) {
   if (const_raw_array_vars.empty()) {
     return {};
   }
@@ -118,18 +149,15 @@ std::vector<int> compile_arrays_raw_representation(const std::vector<VarPtr> &co
     shifts.push_back(shift);
     shift += array_len_in_doubles;
 
-    // stub, ref_cnt
-    W << "{ .is = { .a = 0, .b = " << ExtraRefCnt::for_global_const << "}},";
+    // is_vector_internal, ref_cnt
+    W << "{ .is = { .a = 1, .b = " << ExtraRefCnt::for_global_const << "}},";
     // max_key
     W << "{ .i64 = " << array_size - 1 << "},";
     // end_.next, end_.prev
     W << "{ .is = { .a = 0, .b = 0}},";
 
-    // int_size, int_buf_size
-    W << "{ .is = { .a = " << array_size << ", .b = " << array_size << "}},";
-
-    // string_size, string_buf_size
-    W << "{ .is = { .a = 0 , .b = " << std::numeric_limits<uint32_t>::max() << " }}";
+    // size, buf_size
+    W << "{ .is = { .a = " << array_size << ", .b = " << array_size << "}}";
 
     auto args_end = vertex->args().end();
     for (auto it = vertex->args().begin(); it != args_end; ++it) {

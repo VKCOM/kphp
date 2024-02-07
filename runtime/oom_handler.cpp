@@ -10,13 +10,13 @@
 #include "server/php-runner.h"
 #include "runtime/resumable.h"
 
-bool f$register_kphp_on_oom_callback(const on_oom_callback_t &callback) {
+bool register_kphp_on_oom_callback_impl(on_oom_callback_t &&callback) {
   OomHandler &oom_handler_ctx = vk::singleton<OomHandler>::get();
   if (PhpScript::current_script->oom_handling_memory_ratio == 0) {
     php_warning("Trying to register OOM handler callback with no memory to run it on. You need to specify '--oom-handling-memory-ratio' option for it.");
     return false;
   }
-  oom_handler_ctx.set_callback(callback);
+  oom_handler_ctx.set_callback(std::move(callback));
   return true;
 }
 
@@ -40,8 +40,8 @@ bool OomHandler::is_running() const noexcept {
   return callback_running_;
 }
 
-void OomHandler::set_callback(const on_oom_callback_t &callback) noexcept {
-  callback_ = callback;
+void OomHandler::set_callback(on_oom_callback_t &&callback) noexcept {
+  callback_ = std::move(callback);
 }
 
 void OomHandler::reset() noexcept {

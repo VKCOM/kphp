@@ -12,6 +12,7 @@
 #include "common/smart_ptrs/singleton.h"
 #include "common/stats/provider.h"
 
+#include "runtime/memory_resource/memory_resource.h"
 #include "server/php-runner.h"
 #include "server/workers-control.h"
 
@@ -19,8 +20,10 @@ class ServerStats : vk::not_copyable {
 public:
   void init() noexcept;
 
-  void add_request_stats(double script_time_sec, double net_time_sec, int64_t script_queries, int64_t long_script_queries, int64_t memory_used,
-                         int64_t real_memory_used, int64_t curl_total_allocated, script_error_t error) noexcept;
+  void add_request_stats(double script_time_sec, double net_time_sec, double script_init_time_sec, double connection_process_time_sec,
+                         int64_t script_queries, int64_t long_script_queries,
+                         const memory_resource::MemoryStats &script_memory_stats, int64_t curl_total_allocated,
+                         process_rusage_t script_rusage, script_error_t error) noexcept;
   void add_job_stats(double job_wait_time_sec, int64_t request_memory_used, int64_t request_real_memory_used, int64_t response_memory_used,
                      int64_t response_real_memory_used) noexcept;
   void add_job_common_memory_stats(int64_t common_request_memory_used, int64_t common_request_real_memory_used) noexcept;
@@ -40,6 +43,7 @@ public:
   void write_stats_to(std::ostream &os, bool add_worker_pids) const noexcept;
 
   uint64_t get_worker_activity_counter(uint16_t worker_process_id) const noexcept;
+  uint64_t get_total_general_workers_incoming_qps() const noexcept;
 
   struct WorkersStat {
     uint16_t running_workers{0};
@@ -48,6 +52,8 @@ public:
     uint16_t total_workers{0};
   };
   WorkersStat collect_workers_stat(WorkerType worker_type) const noexcept;
+  std::tuple<uint64_t, uint64_t> collect_json_count_stat() const noexcept;
+  uint64_t collect_threads_count_stat() const noexcept;
 
 private:
   friend class vk::singleton<ServerStats>;
@@ -56,7 +62,7 @@ private:
 
   WorkerType worker_type_{WorkerType::general_worker};
   uint16_t worker_process_id_{0};
-  std::chrono::steady_clock::time_point last_update_;
+  std::chrono::steady_clock::time_point last_update_aggr_stats;
 
   std::mt19937 *gen_{nullptr};
 

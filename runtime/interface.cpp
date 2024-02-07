@@ -18,6 +18,7 @@
 #include "common/algorithms/string-algorithms.h"
 #include "common/macos-ports.h"
 #include "common/tl/constants/common.h"
+#include "common/wrappers/overloaded.h"
 
 #include "net/net-connections.h"
 #include "runtime/array_functions.h"
@@ -34,6 +35,7 @@
 #include "runtime/job-workers/server-functions.h"
 #include "runtime/json-processor-utils.h"
 #include "runtime/kphp-backtrace.h"
+#include "runtime/kphp_tracing.h"
 #include "runtime/math_functions.h"
 #include "runtime/memcache.h"
 #include "runtime/mysql.h"
@@ -49,21 +51,26 @@
 #include "runtime/streams.h"
 #include "runtime/string_functions.h"
 #include "runtime/tcp.h"
+#include "runtime/thread-pool.h"
 #include "runtime/typed_rpc.h"
 #include "runtime/udp.h"
 #include "runtime/url.h"
 #include "runtime/zlib.h"
+#include "server/curl-adaptor.h"
 #include "server/database-drivers/adaptor.h"
 #include "server/database-drivers/mysql/mysql.h"
 #include "server/database-drivers/pgsql/pgsql.h"
-#include "server/shared-data-worker-cache.h"
 #include "server/job-workers/job-message.h"
 #include "server/json-logger.h"
 #include "server/numa-configuration.h"
 #include "server/php-engine-vars.h"
 #include "server/php-queries.h"
 #include "server/php-query-data.h"
+#include "server/php-runner.h"
 #include "server/php-worker.h"
+#include "server/server-config.h"
+#include "server/shared-data-worker-cache.h"
+#include "server/signal-handlers.h"
 #include "server/workers-control.h"
 
 static enum {
@@ -87,6 +94,7 @@ static int http_need_gzip;
 
 static bool is_utf8_enabled = false;
 bool is_json_log_on_timeout_enabled = true;
+bool is_demangled_stacktrace_logs_enabled = false;
 
 static int ignore_level = 0;
 
@@ -100,12 +108,19 @@ void f$ob_clean() {
   coub->clean();
 }
 
+static inline void reset_gzip_header() {
+  if (ob_cur_buffer == 0) {
+    http_need_gzip &= ~4;
+  }
+}
+
 bool f$ob_end_clean() {
   if (ob_cur_buffer == 0) {
     return false;
   }
 
   coub = &oub[--ob_cur_buffer];
+  reset_gzip_header();
   return true;
 }
 
@@ -116,7 +131,7 @@ Optional<string> f$ob_get_clean() {
 
   string result = coub->str();
   coub = &oub[--ob_cur_buffer];
-
+  reset_gzip_header();
   return result;
 }
 
@@ -388,19 +403,19 @@ void f$setcookie(const string &name, const string &value, int64_t expire, const 
 }
 
 int64_t f$ignore_user_abort(Optional<bool> enable) {
-  php_assert(active_worker != nullptr && active_worker->conn != nullptr);
+  php_assert(php_worker.has_value() && php_worker->conn != nullptr);
   if (enable.is_null()) {
     return ignore_level;
   } else if (enable.val()) {
-    active_worker->conn->ignored = true;
+    php_worker->conn->ignored = true;
     return ignore_level++;
   } else {
     int prev = ignore_level > 0 ? ignore_level-- : 0;
     if (ignore_level == 0) {
-      active_worker->conn->ignored = false;
+      php_worker->conn->ignored = false;
     }
-    if (active_worker->conn->interrupted && !active_worker->conn->ignored) {
-      active_worker->conn->status = conn_error;
+    if (php_worker->conn->interrupted && !php_worker->conn->ignored) {
+      php_worker->conn->status = conn_error;
       f$exit(1);
     }
     return prev;
@@ -508,7 +523,6 @@ shutdown_function_type *const shutdown_functions = reinterpret_cast<shutdown_fun
 shutdown_functions_status shutdown_functions_status_value = shutdown_functions_status::not_executed;
 jmp_buf timeout_exit;
 bool finished = false;
-bool wait_all_forks_on_finish = false;
 
 } // namespace
 
@@ -521,10 +535,10 @@ static const string_buffer * compress_http_query_body(string_buffer * http_query
   } else {
     if ((http_need_gzip & 5) == 5) {
       header("Content-Encoding: gzip", 22, true);
-      return zlib_encode(http_query_body->c_str(), http_query_body->size(), 6, ZLIB_ENCODE);
+      return zlib_encode(http_query_body->c_str(), http_query_body->size(), 6, ZLIB_ENCODING_GZIP);
     } else if ((http_need_gzip & 6) == 6) {
       header("Content-Encoding: deflate", 25, true);
-      return zlib_encode(http_query_body->c_str(), http_query_body->size(), 6, ZLIB_COMPRESS);
+      return zlib_encode(http_query_body->c_str(), http_query_body->size(), 6, ZLIB_ENCODING_DEFLATE);
     } else {
       return http_query_body;
     }
@@ -545,13 +559,13 @@ static int ob_merge_buffers() {
 }
 
 void f$flush() {
-  php_assert(ob_cur_buffer >= 0 && active_worker != nullptr);
+  php_assert(ob_cur_buffer >= 0 && php_worker.has_value());
 
   string_buffer const * http_body = compress_http_query_body(&oub[ob_system_level]);
   string_buffer const * http_headers = nullptr;
-  if (!active_worker->flushed_http_connection) {
+  if (!php_worker->flushed_http_connection) {
     http_headers = get_headers();
-    active_worker->flushed_http_connection = true;
+    php_worker->flushed_http_connection = true;
   }
   http_send_immediate_response(http_headers ? http_headers->buffer() : nullptr, http_headers ? http_headers->size() : 0,
                                http_body->buffer(), http_body->size());
@@ -561,7 +575,7 @@ void f$flush() {
 
 void f$fastcgi_finish_request(int64_t exit_code) {
   int const ob_total_buffer = ob_merge_buffers();
-  if (active_worker != nullptr && active_worker->flushed_http_connection) {
+  if (php_worker.has_value() && php_worker->flushed_http_connection) {
     string const raw_response = oub[ob_total_buffer].str();
     http_set_result(nullptr, 0, raw_response.c_str(), raw_response.size(), static_cast<int32_t>(exit_code));
     php_assert (0);
@@ -577,7 +591,7 @@ void f$fastcgi_finish_request(int64_t exit_code) {
       //TODO console_set_result
       fflush(stderr);
 
-      write_safe(1, oub[ob_total_buffer].buffer(), oub[ob_total_buffer].size());
+      write_safe(1, oub[ob_total_buffer].buffer(), oub[ob_total_buffer].size(), {});
 
       //TODO move to finish_script
       free_runtime_environment();
@@ -614,7 +628,11 @@ void f$fastcgi_finish_request(int64_t exit_code) {
   coub->clean();
 }
 
-void run_shutdown_functions() {
+void run_shutdown_functions(ShutdownType shutdown_type) {
+  if (kphp_tracing::is_turned_on()) {
+    kphp_tracing::on_shutdown_functions_start(static_cast<int>(shutdown_type));
+  }
+
   php_assert(dl::is_malloc_replaced() == false);
   forcibly_stop_all_running_resumables();
 
@@ -622,6 +640,9 @@ void run_shutdown_functions() {
   for (int i = 0; i < shutdown_functions_count; i++) {
     shutdown_functions[i]();
   }
+
+  // don't wrap this call into if(kphp_tracing::is_turned_on()), intentionally
+  kphp_tracing::on_php_script_finish_ok(f$get_net_time(), f$get_script_time());
 }
 
 shutdown_functions_status get_shutdown_functions_status() {
@@ -633,18 +654,18 @@ int get_shutdown_functions_count() {
 }
 
 void run_shutdown_functions_from_timeout() {
-// TODO: now it sometimes leads to critical errors in runtime. Need to rework it generally.
-//  // to safely run the shutdown handlers in the timeout context, we set
-//  // a recovery point to be used from the user-called die/exit;
-//  // without that, exit would lead to a finished state instead of the error state
-//  // we were about to enter (since timeout is an error state)
-//  shutdown_functions_status_value = shutdown_functions_status::running_from_timeout;
-//  if (setjmp(timeout_exit) == 0) {
-//    run_shutdown_functions();
-//  }
+  shutdown_functions_status_value = shutdown_functions_status::running_from_timeout;
+  // to safely run the shutdown handlers in the timeout context, we set
+  // a recovery point to be used from the user-called die/exit;
+  // without that, exit would lead to a finished state instead of the error state
+  // we were about to enter (since timeout is an error state)
+  reset_script_timeout();
+  if (setjmp(timeout_exit) == 0) {
+    run_shutdown_functions(ShutdownType::timeout);
+  }
 }
 
-void run_shutdown_functions_from_script() {
+void run_shutdown_functions_from_script(ShutdownType shutdown_type) {
   shutdown_functions_status_value = shutdown_functions_status::running;
   // when running shutdown functions from a normal (non-timeout) context,
   // reset the timer to give shutdown functions a new span of time to avoid
@@ -652,10 +673,10 @@ void run_shutdown_functions_from_script() {
   // if shutdown functions can't finish with that time quota, they will
   // be interrupted as usual
   reset_script_timeout();
-  run_shutdown_functions();
+  run_shutdown_functions(shutdown_type);
 }
 
-void f$register_shutdown_function(const shutdown_function_type &f) {
+void register_shutdown_function_impl(shutdown_function_type &&f) {
   if (shutdown_functions_count == MAX_SHUTDOWN_FUNCTIONS) {
     php_warning("Too many shutdown functions registered, ignore next one\n");
     return;
@@ -664,24 +685,15 @@ void f$register_shutdown_function(const shutdown_function_type &f) {
   // it's matter because the destructor of 'shutdown_function_type' is called now
   dl::CriticalSectionGuard critical_section;
   // I really need this, because this memory can contain random trash, if previouse script failed
-  new(&shutdown_functions[shutdown_functions_count++]) shutdown_function_type(f);
+  new(&shutdown_functions[shutdown_functions_count++]) shutdown_function_type{std::move(f)};
 }
 
-bool f$set_wait_all_forks_on_finish(bool wait) noexcept {
-  std::swap(wait_all_forks_on_finish, wait);
-  return wait;
-}
-
-void finish(int64_t exit_code, bool allow_forks_waiting) {
+void finish(int64_t exit_code, bool from_exit) {
+  check_script_timeout();
   if (!finished) {
     finished = true;
     forcibly_stop_profiler();
-    if (shutdown_functions_count != 0) {
-      run_shutdown_functions_from_script();
-    }
-    if (allow_forks_waiting && wait_all_forks_on_finish) {
-      wait_all_forks();
-    }
+    run_shutdown_functions_from_script(from_exit ? ShutdownType::exit : ShutdownType::normal);
   }
 
   f$fastcgi_finish_request(exit_code);
@@ -699,9 +711,9 @@ void f$exit(const mixed &v) {
 
   if (v.is_string()) {
     *coub << v;
-    finish(0, false);
+    finish(0, true);
   } else {
-    finish(v.to_int(), false);
+    finish(v.to_int(), true);
   }
 }
 
@@ -728,6 +740,28 @@ Optional<string> f$ip2ulong(const string &ip) {
   char buf[buf_size];
   int len = snprintf(buf, buf_size, "%u", ntohl(result.s_addr));
   return string(buf, len);
+}
+
+double f$thread_pool_test_load(int64_t size, int64_t n, double a, double b) {
+  constexpr auto job = [](int64_t n, double a, double b) {
+    double res = 0;
+    for (int i = 0; i < n; ++i) {
+      res += (i * a + 1) / (i * b + 1);
+    }
+    return res;
+  };
+  auto & pool = vk::singleton<ThreadPool>::get().pool();
+  double result = 0;
+  {
+    dl::CriticalSectionGuard guard;
+    BS::multi_future<double> futures;
+    for (int thread = 0; thread < size; ++thread) {
+      futures.push_back(pool.submit(job, n, a, b));
+    }
+    auto results = futures.get();
+    std::for_each(results.begin(), results.end(), [&](int64_t local){result += local;});
+  }
+  return result;
 }
 
 string f$long2ip(int64_t num) {
@@ -1044,7 +1078,7 @@ public:
       }
 
       dl::enter_critical_section();//OK
-      if (write_safe(file_fd, buf + pos, (size_t)file_size) < (ssize_t)file_size) {
+      if (write_safe(file_fd, buf + pos, (size_t)file_size, file_name) < (ssize_t)file_size) {
         file_size = -UPLOAD_ERR_CANT_WRITE;
       }
 
@@ -1108,7 +1142,7 @@ public:
         php_assert (to_erase >= to_leave);
 
         dl::enter_critical_section();//OK
-        if (write_safe(file_fd, buf + pos - buf_pos, (size_t)to_write) < (ssize_t)to_write) {
+        if (write_safe(file_fd, buf + pos - buf_pos, (size_t)to_write, file_name) < (ssize_t)to_write) {
           close_safe(file_fd);
           dl::leave_critical_section();
           return -UPLOAD_ERR_CANT_WRITE;
@@ -1126,7 +1160,7 @@ public:
 
       dl::enter_critical_section();//OK
       int to_write = (int)(s - (buf + pos - buf_pos));
-      if (write_safe(file_fd, buf + pos - buf_pos, (size_t)to_write) < (ssize_t)to_write) {
+      if (write_safe(file_fd, buf + pos - buf_pos, (size_t)to_write, file_name) < (ssize_t)to_write) {
         close_safe(file_fd);
         dl::leave_critical_section();
         return -UPLOAD_ERR_CANT_WRITE;
@@ -1480,7 +1514,7 @@ static void save_rpc_query_headers(const tl_query_header_t &header) {
   }
   if (header.flags & flag::string_forward_keys) {
     array<string> string_forward_keys;
-    string_forward_keys.reserve(header.string_forward_keys.size(), 0, true);
+    string_forward_keys.reserve(header.string_forward_keys.size(), true);
     for (const auto &str_key : header.string_forward_keys) {
       string_forward_keys.emplace_back(string(str_key.data(), str_key.size()));
     }
@@ -1488,7 +1522,7 @@ static void save_rpc_query_headers(const tl_query_header_t &header) {
   }
   if (header.flags & flag::int_forward_keys) {
     array<int64_t> int_forward_keys;
-    int_forward_keys.reserve(header.int_forward_keys.size(), 0, true);
+    int_forward_keys.reserve(header.int_forward_keys.size(), true);
     for (int int_key : header.int_forward_keys) {
       int_forward_keys.emplace_back(int_key);
     }
@@ -1511,8 +1545,8 @@ static void save_rpc_query_headers(const tl_query_header_t &header) {
   }
 }
 
-static void init_superglobals(const http_query_data &http_data, const rpc_query_data &rpc_data, const job_query_data &job_data) {
-  rpc_parse(rpc_data.data, rpc_data.len);
+static void init_superglobals_impl(const http_query_data &http_data, const rpc_query_data &rpc_data, const job_query_data &job_data) {
+  rpc_parse(rpc_data.data.data(), rpc_data.data.size());
 
   reset_superglobals();
 
@@ -1702,10 +1736,10 @@ static void init_superglobals(const http_query_data &http_data, const rpc_query_
   if (rpc_data.header.qid) {
     v$_SERVER.set_value(string("RPC_REQUEST_ID"), f$strval(static_cast<int64_t>(rpc_data.header.qid)));
     save_rpc_query_headers(rpc_data.header);
-    v$_SERVER.set_value(string("RPC_REMOTE_IP"), static_cast<int>(rpc_data.ip));
-    v$_SERVER.set_value(string("RPC_REMOTE_PORT"), static_cast<int>(rpc_data.port));
-    v$_SERVER.set_value(string("RPC_REMOTE_PID"), static_cast<int>(rpc_data.pid));
-    v$_SERVER.set_value(string("RPC_REMOTE_UTIME"), rpc_data.utime);
+    v$_SERVER.set_value(string("RPC_REMOTE_IP"), static_cast<int>(rpc_data.remote_pid.ip));
+    v$_SERVER.set_value(string("RPC_REMOTE_PORT"), static_cast<int>(rpc_data.remote_pid.port));
+    v$_SERVER.set_value(string("RPC_REMOTE_PID"), static_cast<int>(rpc_data.remote_pid.pid));
+    v$_SERVER.set_value(string("RPC_REMOTE_UTIME"), rpc_data.remote_pid.utime);
   }
   is_head_query = false;
   if (http_data.request_method_len) {
@@ -1744,7 +1778,7 @@ static void init_superglobals(const http_query_data &http_data, const rpc_query_
 
   if (arg_vars == nullptr) {
     if (http_data.get_len > 0) {
-      array<mixed> argv_array(array_size(1, 0, true));
+      array<mixed> argv_array(array_size(1, true));
       argv_array.push_back(get_str);
 
       v$argv = argv_array;
@@ -1768,47 +1802,26 @@ static http_query_data empty_http_data;
 static rpc_query_data empty_rpc_data;
 static job_query_data empty_job_data;
 
-void init_superglobals(php_query_data *data) {
-  http_query_data *http_data;
-  rpc_query_data *rpc_data;
-  job_query_data *job_data;
-  if (data != nullptr) {
-    if (data->rpc_data != nullptr) {
-      php_assert (data->http_data == nullptr);
-      php_assert (data->job_data == nullptr);
+void init_superglobals(const php_query_data_t &data) {
+  // init superglobals depending on the request type
+  std::visit(overloaded{
+    [](const rpc_query_data &rpc_data) {
       query_type = QUERY_TYPE_RPC;
-
-      http_data = &empty_http_data;
-      rpc_data = data->rpc_data;
-      job_data = &empty_job_data;
-    } else if (data->http_data != nullptr) {
-      php_assert (data->rpc_data == nullptr);
-      php_assert (data->job_data == nullptr);
+      init_superglobals_impl(empty_http_data, rpc_data, empty_job_data);
+    },
+    [](const http_query_data &http_data) {
       query_type = QUERY_TYPE_HTTP;
-
-      http_data = data->http_data;
-      rpc_data = &empty_rpc_data;
-      job_data = &empty_job_data;
-    } else {
-      php_assert (data->job_data != nullptr);
-      php_assert (data->rpc_data == nullptr);
-      php_assert (data->http_data == nullptr);
-
+      init_superglobals_impl(http_data, empty_rpc_data, empty_job_data);
+    },
+    [](const job_query_data &job_data) {
       query_type = QUERY_TYPE_JOB;
-
-      http_data = &empty_http_data;
-      rpc_data = &empty_rpc_data;
-      job_data = data->job_data;
+      init_superglobals_impl(empty_http_data, empty_rpc_data, job_data);
+    },
+    [](const null_query_data &) {
+      query_type = QUERY_TYPE_CONSOLE;
+      init_superglobals_impl(empty_http_data, empty_rpc_data, empty_job_data);
     }
-  } else {
-    query_type = QUERY_TYPE_CONSOLE;
-
-    http_data = &empty_http_data;
-    rpc_data = &empty_rpc_data;
-    job_data = &empty_job_data;
-  }
-
-  init_superglobals(*http_data, *rpc_data, *job_data);
+  }, data);
 }
 
 double f$get_net_time() {
@@ -1834,6 +1847,10 @@ string f$get_engine_version() {
 
 int64_t f$get_engine_workers_number() {
   return vk::singleton<WorkersControl>::get().get_total_workers_count();
+}
+
+string f$get_kphp_cluster_name() {
+  return string{vk::singleton<ServerConfig>::get().get_cluster_name()};
 }
 
 std::tuple<int64_t, int64_t, int64_t, int64_t> f$get_webserver_stats() {
@@ -2278,6 +2295,7 @@ static void init_interface_lib() {
   php_warning_level = std::max(2, php_warning_minimum_level);
   php_disable_warnings = 0;
   is_json_log_on_timeout_enabled = true;
+  is_demangled_stacktrace_logs_enabled = false;
   ignore_level = 0;
 
   const size_t engine_pid_buf_size = 20;
@@ -2324,6 +2342,7 @@ static void init_runtime_libs() {
   init_rpc_lib();
   init_openssl_lib();
   init_math_functions();
+  kphp_tracing::init_tracing_lib();
   init_slot_factories();
 
   init_string_buffer_lib(static_cast<int>(static_buffer_length_limit));
@@ -2369,6 +2388,7 @@ static void free_runtime_libs() {
   free_tcp_lib();
   free_timelib();
   OnKphpWarningCallback::get().reset();
+  kphp_tracing::free_tracing_lib();
   free_slot_factories();
 
   free_job_client_interface_lib();
@@ -2379,10 +2399,9 @@ static void free_runtime_libs() {
   free_kphp_backtrace();
 
   free_migration_php8();
-
-  #ifndef MBFL
+  free_use_updated_gmmktime();
   free_detect_incorrect_encoding_names();
-  #endif
+
   vk::singleton<JsonLogger>::get().reset_buffers();
 #ifdef PDO_DRIVER_MYSQL
   database_drivers::free_mysql_lib();
@@ -2391,6 +2410,7 @@ static void free_runtime_libs() {
   database_drivers::free_pgsql_lib();
 #endif
   vk::singleton<database_drivers::Adaptor>::get().reset();
+  vk::singleton<curl_async::CurlAdaptor>::get().reset();
   vk::singleton<OomHandler>::get().reset();
   free_interface_lib();
   hard_reset_var(JsonEncoderError::msg);
@@ -2416,7 +2436,7 @@ void global_init_script_allocator() {
   dl::global_init_script_allocator();
 }
 
-void init_runtime_environment(php_query_data *data, void *mem, size_t script_mem_size, size_t oom_handling_mem_size) {
+void init_runtime_environment(const php_query_data_t &data, void *mem, size_t script_mem_size, size_t oom_handling_mem_size) {
   dl::init_script_allocator(mem, script_mem_size, oom_handling_mem_size);
   reset_global_interface_vars();
   init_runtime_libs();
@@ -2430,8 +2450,11 @@ void free_runtime_environment() {
   dl::free_script_allocator();
 }
 
-void worker_global_init() noexcept {
+void worker_global_init(WorkerType worker_type) noexcept {
   worker_global_init_slot_factories();
+  vk::singleton<JsonLogger>::get().reset_json_logs_count();
+  worker_global_init_handlers(worker_type);
+  vk::singleton<ThreadPool>::get().init();
 }
 
 void read_engine_tag(const char *file_name) {
@@ -2453,7 +2476,7 @@ void read_engine_tag(const char *file_name) {
   if (size > MAX_SIZE) {
     size = MAX_SIZE;
   }
-  if (read_safe(file_fd, buf, size) < (ssize_t)size) {
+  if (read_safe(file_fd, buf, size, {}) < (ssize_t)size) {
     assert ("Can't read file with engine tag" && 0);
   }
   close(file_fd);

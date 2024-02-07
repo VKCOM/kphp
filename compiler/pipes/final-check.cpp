@@ -10,6 +10,7 @@
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/kphp-json-tags.h"
+#include "compiler/data/kphp-tracing-tags.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/data/vars-collector.h"
@@ -236,6 +237,11 @@ void check_estimate_memory_usage_call(VertexAdaptor<op_func_call> call) {
 void check_get_global_vars_memory_stats_call() {
   kphp_error_return(G->settings().enable_global_vars_memory_stats.get(),
                     "function get_global_vars_memory_stats() disabled, use KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS to enable");
+}
+
+static void check_kphp_tracing_func_enter_branch_call(FunctionPtr current_function) {
+  kphp_error(current_function->kphp_tracing && current_function->kphp_tracing->is_aggregate(),
+             "kphp_tracing_func_enter_branch() is available only inside functions with @kphp-tracing aggregate");
 }
 
 void check_register_shutdown_functions(VertexAdaptor<op_func_call> call) {
@@ -631,7 +637,6 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
           }
         }
       } else {
-        kphp_error(!var->is_constant(), "Can't use isset on const variable");
         const TypeData *type_info = tinf::get_type(var);
         kphp_error(type_info->can_store_null(),
                    fmt_format("isset({}) will be always true for {}", var->as_human_readable(), type_info->as_human_readable()));
@@ -783,6 +788,8 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
       check_estimate_memory_usage_call(call);
     } else if (function_name == "get_global_vars_memory_stats") {
       check_get_global_vars_memory_stats_call();
+    } else if (function_name == "kphp_tracing_func_enter_branch") {
+      check_kphp_tracing_func_enter_branch_call(current_function);
     } else if (function_name == "is_null") {
       const TypeData *arg_type = tinf::get_type(call->args()[0]);
       kphp_error(arg_type->can_store_null(), fmt_format("is_null() will be always false for {}", arg_type->as_human_readable()));

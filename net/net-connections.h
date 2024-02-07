@@ -10,11 +10,14 @@
 #include <sys/socket.h>
 
 #include "common/macos-ports.h"
+#include "common/kprintf.h"
 
 #include "net/net-buffers.h"
 #include "net/net-events.h"
 #include "net/net-msg.h"
 #include "net/net-sockaddr-storage.h"
+
+DECLARE_VERBOSITY(net_connections);
 
 #define MAX_TARGETS 65536
 #define PRIME_TARGETS 99961
@@ -241,7 +244,7 @@ extern int ready_targets;
 extern long long total_failed_connections, total_connect_failures, unused_connections_closed;
 extern const char *unix_socket_directory;
 
-void set_on_active_special_connections_update_callback(void (*callback)()) noexcept;
+void set_on_active_special_connections_update_callback(void (*callback)(bool on_accept)) noexcept;
 
 int init_listening_connection_mode(int fd, conn_type_t *type, void *extra, int mode);
 

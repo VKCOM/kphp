@@ -121,7 +121,7 @@ private:
     const auto array_size = json_array.size();
     // overwrite (but not just merge) array data
     array.clear();
-    array.reserve(array_size.int_size, array_size.string_size, array_size.is_vector);
+    array.reserve(array_size.size, array_size.is_vector);
 
     json_path_.enter(nullptr);
     for (const auto it : json_array) {

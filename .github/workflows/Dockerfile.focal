@@ -1,21 +1,23 @@
 FROM ubuntu:20.04
 ARG DEBIAN_FRONTEND=noninteractive
 
+COPY tests/python/requirements.txt /tmp/
+
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends apt-utils ca-certificates gnupg wget && \
+    apt-get install -y --no-install-recommends apt-utils ca-certificates gnupg wget pkg-config software-properties-common && \
     wget -qO /etc/apt/trusted.gpg.d/vkpartner.asc https://artifactory-external.vkpartner.ru/artifactory/api/gpg/key/public && \
     echo "deb https://artifactory-external.vkpartner.ru/artifactory/kphp focal main" >> /etc/apt/sources.list && \
     echo "deb http://apt.postgresql.org/pub/repos/apt focal-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
     wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
+    add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
       git cmake make clang g++ g++-10 gperf netcat \
-      python3-minimal python3-dev libpython3-dev python3-jsonschema python3-setuptools python3-pip && \
-    pip3 install wheel && \
+      python3.7 python3-pip python3.7-distutils python3.7-dev libpython3.7-dev python3-jsonschema python3-setuptools mysql-server libmysqlclient-dev && \
+    python3.7 -m pip install pip && python3.7 -m pip install -r /tmp/requirements.txt && \
     apt-get install -y --no-install-recommends curl-kphp-vk kphp-timelib libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
-      libzstd-dev libyaml-cpp-dev libnghttp2-dev zlib1g-dev php7.4-dev mysql-server libmysqlclient-dev libldap-dev libkrb5-dev \
+      libzstd-dev libyaml-cpp-dev libnghttp2-dev zlib1g-dev php7.4-dev libldap-dev libkrb5-dev \
       postgresql postgresql-server-dev-all libnuma-dev composer unzip && \
-    pip3 install portalocker psutil requests-toolbelt pytest pytest-xdist pytest-mysql pytest-postgresql psycopg zstandard && \
     rm -rf /var/lib/apt/lists/*
 
 ENV ASAN_OPTIONS=detect_leaks=0

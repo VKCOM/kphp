@@ -1,0 +1,50 @@
+<?php
+
+final class KphpDiv {
+  private function __construct();
+
+  function generateTraceCtxForChild(int $div_id, int $trace_flags): tuple(int, int);
+  function assignTraceCtx(int $int1, int $int2, ?int $override_div_id): int;
+  function getStartTimestamp(): float;
+  function getEndTimestamp(): float;
+}
+
+final class KphpSpan {
+  private function __construct();
+
+  function addAttributeString(string $key, string $value);
+  function addAttributeInt(string $key, int $value);
+  function addAttributeFloat(string $key, float $value);
+  function addAttributeBool(string $key, bool $value);
+  function addAttributeEnum(string $key, int $enum_id, int $value);
+
+  function addEvent(string $name, ?float $timestamp = null): KphpSpanEvent;
+  function addLink(KphpSpan $another);
+
+  function updateName(string $title, string $short_desc);
+  function finish(?float $end_timestamp = null);
+  function finishWithError(int $error_code, string $error_msg, ?float $end_timestamp = null);
+  function exclude();
+}
+
+final class KphpSpanEvent {
+  private function __construct();
+
+  function addAttributeString(string $key, string $value);
+  function addAttributeInt(string $key, int $value);
+  function addAttributeFloat(string $key, float $value);
+  function addAttributeBool(string $key, bool $value);
+}
+
+function kphp_tracing_init(string $root_span_title): KphpDiv;
+function kphp_tracing_set_level(int $trace_level): void;
+function kphp_tracing_get_level(): int;
+
+function kphp_tracing_register_on_finish(callable(float $now_timestamp):bool $cb_should_be_flushed);
+function kphp_tracing_register_enums_provider(callable():tuple(int, string, string[])[] $cb_custom_enums);
+function kphp_tracing_register_rpc_details_provider(callable(@tl\RpcFunction):string $cb_for_typed, callable(mixed):string $cb_for_untyped);
+
+function kphp_tracing_start_span(string $title, string $short_desc, float $start_timestamp): KphpSpan;
+function kphp_tracing_get_root_span(): KphpSpan;
+function kphp_tracing_get_current_active_span(): KphpSpan;
+function kphp_tracing_func_enter_branch(int $branch_num);

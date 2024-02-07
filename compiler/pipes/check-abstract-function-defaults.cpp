@@ -38,7 +38,7 @@ void CheckAbstractFunctionDefaults::execute(FunctionPtr interface_function, Data
     for (auto arg_id = interface_function->get_min_argn(); arg_id < interface_params.size(); ++arg_id) {
       auto derived_default = get_default(derived_params[arg_id]);
       auto interface_default = get_default(interface_params[arg_id]);
-      kphp_error(Vertex::deep_equal(derived_default, interface_default),
+      kphp_error(Vertex::deep_equal(VertexUtil::unwrap_inlined_define(derived_default), VertexUtil::unwrap_inlined_define(interface_default)),
                  fmt_format("default value of interface parameter:`{}` may not differ from value of derived parameter: `{}`, in function: {}",
                             TermStringFormat::paint(VertexPtrFormatter::to_string(interface_default), TermStringFormat::green),
                             TermStringFormat::paint(VertexPtrFormatter::to_string(derived_default), TermStringFormat::green),

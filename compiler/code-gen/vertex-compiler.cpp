@@ -13,6 +13,7 @@
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/files/json-encoder-tags.h"
+#include "compiler/code-gen/files/tracing-autogen.h"
 #include "compiler/code-gen/naming.h"
 #include "compiler/code-gen/raw-data.h"
 #include "compiler/data/class-data.h"
@@ -796,10 +797,17 @@ VertexAdaptor<op_func_call> patch_compiling_json_impl_call(CodeGenerator &W, Ver
 }
 
 void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_call_mode mode = func_call_mode::simple) {
-  if (root->str_val == "make_clone" && tinf::get_type(root->args()[0])->is_primitive_type()) {
-    // avoid generating make_clone call for primitive types such that (int, double, bool) just for beauty
-    W << root->args()[0];
-    return;
+  if (root->func_id->is_extern()) {
+    if (root->str_val == "make_clone" && tinf::get_type(root->args()[0])->is_primitive_type()) {
+      // avoid generating make_clone call for primitive types such that (int, double, bool) just for beauty
+      W << root->args()[0];
+      return;
+    }
+    if (root->str_val == "kphp_tracing_func_enter_branch") {
+      // we are inside a function marked with @kphp-tracing
+      W << "_tr_f.enter_branch(" << root->args()[0] << ")";
+      return;
+    }
   }
 
   if (FFIRoot::is_ffi_scope_call(root)) {
@@ -1344,6 +1352,9 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
   for (auto var : func->local_var_ids) {
     W << VarPlainDeclaration(var);         // inplace variables are stored as Resumable class fields as well
   }
+  if (func->kphp_tracing) { // append KphpTracingFuncCallGuard as a member variable also ('start()' is called below)
+    TracingAutogen::codegen_runtime_func_guard_declaration(W, func);
+  }
 
   W << Indent(-2) << "public:" << NL << Indent(+2);
 
@@ -1375,6 +1386,9 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
     FunctionSignatureGenerator(W).set_final() << "bool run()" << BEGIN;
   }
   W << "RESUMABLE_BEGIN" << NL << Indent(+2);
+  if (func->kphp_tracing) {
+    TracingAutogen::codegen_runtime_func_guard_start(W, func);
+  }
 
   W << AsSeq{func_root->cmd()} << NL;
 
@@ -1421,6 +1435,10 @@ void compile_function(VertexAdaptor<op_function> func_root, CodeGenerator &W) {
 
   W << FunctionDeclaration(func, false) << " " << BEGIN;
 
+  if (func->kphp_tracing) {
+    TracingAutogen::codegen_runtime_func_guard_declaration(W, func);
+    TracingAutogen::codegen_runtime_func_guard_start(W, func);
+  }
   compile_tracing_profiler(func, W);
 
   for (auto var : func->local_var_ids) {
@@ -1827,35 +1845,17 @@ void compile_array(VertexAdaptor<op_array> root, CodeGenerator &W) {
   }
 
   bool has_double_arrow = false;
-  int int_cnt = 0, string_cnt = 0, xx_cnt = 0;
+  const int size = root->args().size();
   for (size_t key_id = 0; key_id < root->args().size(); ++key_id) {
     if (auto arrow = root->args()[key_id].try_as<op_double_arrow>()) {
       VertexPtr key = VertexUtil::get_actual_value(arrow->key());
       if (!has_double_arrow && key->type() == op_int_const) {
         if (key.as<op_int_const>()->str_val == std::to_string(key_id)) {
           root->args()[key_id] = arrow->value();
-          int_cnt++;
           continue;
         }
       }
       has_double_arrow = true;
-      PrimitiveType tp = tinf::get_type(key)->ptype();
-      if (tp == tp_int) {
-        int_cnt++;
-      } else {
-        if (tp == tp_string && key->type() == op_string) {
-          const std::string &key_str = key.as<op_string>()->str_val;
-          if (php_is_int(key_str.c_str(), key_str.size())) {
-            int_cnt++;
-          } else {
-            string_cnt++;
-          }
-        } else {
-          xx_cnt++;
-        }
-      }
-    } else {
-      int_cnt++;
     }
   }
   if (n <= 10 && !has_double_arrow && type->ptype() == tp_array && root->extra_type != op_ex_safe_version) {
@@ -1875,8 +1875,7 @@ void compile_array(VertexAdaptor<op_array> root, CodeGenerator &W) {
     W << "array <mixed>";
   }
   W << " (array_size ("
-    << int_cnt + xx_cnt << ", "
-    << string_cnt + xx_cnt << ", "
+    << size << ", "
     << (has_double_arrow ? "false" : "true") << "));" << NL;
   for (auto cur : root->args()) {
     W << arr_name;

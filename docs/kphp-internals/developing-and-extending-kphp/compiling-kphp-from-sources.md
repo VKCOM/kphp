@@ -79,61 +79,22 @@ apt install git cmake make g++ gperf python3-minimal python3-jsonschema \
 ```
 
 
-##### MacOS with Intel chipset
+##### MacOS
 Make sure you have `brew` and `clang` (at least `Apple clang version 10.0.0`)
 ```bash
+# Install dependencies
 brew tap shivammathur/php
 brew update
 brew install re2c cmake coreutils openssl libiconv re2 pcre yaml-cpp zstd googletest shivammathur/php/php@7.4
 brew link --overwrite shivammathur/php/php@7.4
 pip3 install jsonschema
-```
-Clone somewhere local [epoll-shim from GitHub]({{site.url_package_epoll_shim}}) and switch to *osx-platform* branch.
-Add env variable `EPOLL_SHIM_REPO` to your bash profile. It allows to avoid of cloning `epoll-shim` on each clean cmake call.
-```bash
-git clone https://github.com/VKCOM/epoll-shim.git
-cd epoll-shim
-git checkout osx-platform
-echo 'export "EPOLL_SHIM_REPO=$(pwd)" >> ~/.bash_profile'
-```
 
-Clone somewhere local [h3 from GitHub]({{site.url_package_h3_mac}}) and switch to *stable-3.x* branch.
-```bash
-git clone https://github.com/uber/h3.git
-git checkout stable-3.x
-mkdir build
-cd build
-cmake ..
-sudo make install
+# Build kphp
+git clone https://github.com/VKCOM/kphp.git && cd kphp
+mkdir build && cd build
+cmake .. -DDOWNLOAD_MISSING_LIBRARIES=On
+make -j$(nproc)
 ```
-
-##### MacOS with Apple M1 chipset
-
-```note
-Probably, there is an easier way to do this, but I couldn't find it, at least for late 2021.
-```
-
-Follow the steps above. Later on, you'll have to patch the [libucontext](https://github.com/kaniini/libucontext) library locally.
-```bash
-git clone https://github.com/kaniini/libucontext
-cd libucontext
-nano Makefile
-```
-Find assignment to `LIBUCONTEXT_LINKER_FLAGS` and replace it with:
-```text
-LIBUCONTEXT_LINKER_FLAGS = -dynamiclib -install_name ${LIBUCONTEXT_SONAME} -current_version ${LIBUCONTEXT_SOVERSION} -compatibility_version ${LIBUCONTEXT_SOVERSION}
-```
-Now we are ready to make libucontext:
-```
-make FREESTANDING=yes ARCH=aarch64
-```
-Finally, copy resulting files to the default brew search folder `/opt/homebrew`:
-```
-cp libucontext.a /opt/homebrew/lib
-cp libucontext.dylib /opt/homebrew/lib
-cp -r include/* /opt/homebrew/include/
-```
-
 
 ##### Other Linux
 Make sure you are using the same package list. You may use system default libcurl package, it would work, but without DNS resolving. `uber-h3` must be installed from sources.

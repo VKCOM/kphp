@@ -131,3 +131,12 @@ void ConfdataKeyMaker::forcibly_change_first_key_wildcard_dots_from_two_to_one()
   second_key_ = string::make_const_string_on_memory(first_key_end, second_key_len, second_key_buffer_.data(), second_key_buffer_.size());
   first_key_type_ = ConfdataFirstKeyType::one_dot_wildcard;
 }
+
+bool ConfdataKeyBlacklist::is_key_forcibly_ignored_by_prefix(vk::string_view key) const noexcept {
+  for (const vk::string_view &prefix : force_ignore_prefixes_) {
+    if (key.starts_with(prefix)) {
+      return true;
+    }
+  }
+  return false;
+}

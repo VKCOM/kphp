@@ -68,7 +68,9 @@ public:
   SrcFilePtr file_id;
   ModulitePtr modulite;
   int location_line_num{-1};
-  std::string src_name, header_name;
+  std::string src_name;
+  std::string cpp_filename;
+  std::string h_filename;
 
   std::atomic<bool> need_to_array_debug_visitor{false};
   std::atomic<bool> need_instance_cache_visitors{false};

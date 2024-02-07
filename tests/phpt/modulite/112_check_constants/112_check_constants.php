@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_MODULITE=1
 /in global scope/
 /restricted to use Feed112\\Infra112\\Hidden112, it's internal in @feed\/infra/
 /restricted to use OTHER_112_CONST, it's internal in @other/

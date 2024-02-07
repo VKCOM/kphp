@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "common/sanitizer.h"
 
 #include "server/php-queries.h"
@@ -54,9 +56,6 @@ void pnet_query_delete(conn_query *q);
 
 extern int run_once_count;
 extern int queries_to_recreate_script;
-
-class PhpScript;
-extern PhpScript *php_script;
 
 void turn_sigterm_on();
 

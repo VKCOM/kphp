@@ -141,7 +141,7 @@ std::tuple<string, string, string, string> f$_explode_tuple4(const string &delim
 array<string> explode(char delimiter, const string &str, int64_t limit) {
   static char delimiter_storage[1] = {0};
   delimiter_storage[0] = delimiter;
-  array<string> res(array_size(limit < 10 ? limit : 1, 0, true));
+  array<string> res(array_size(limit < 10 ? limit : 1, true));
   walk_parts(delimiter_storage, 1, str, limit, [&](const char *s, string::size_type l) {
     res.push_back(string(s, l));
   });
@@ -158,7 +158,7 @@ array<string> f$explode(const string &delimiter, const string &str, int64_t limi
     return {};
   }
 
-  array<string> res(array_size(limit < 10 ? limit : 1, 0, true));
+  array<string> res(array_size(limit < 10 ? limit : 1, true));
   walk_parts(delimiter.c_str(), delimiter.size(), str, limit, [&](const char *s, string::size_type l) {
     res.push_back(string(s, l));
   });
@@ -171,7 +171,7 @@ array<mixed> range_int(int64_t from, int64_t to, int64_t step) {
       php_warning("Wrong parameters from = %" PRIi64 ", to = %" PRIi64 ", step = %" PRIi64 " in function range", from, to, step);
       return {};
     }
-    array<mixed> res(array_size((to - from + step) / step, 0, true));
+    array<mixed> res(array_size((to - from + step) / step, true));
     for (int64_t i = from; i <= to; i += step) {
       res.push_back(i);
     }
@@ -184,7 +184,7 @@ array<mixed> range_int(int64_t from, int64_t to, int64_t step) {
     if (step < 0) {
       step = -step;
     }
-    array<mixed> res(array_size((from - to + step) / step, 0, true));
+    array<mixed> res(array_size((from - to + step) / step, true));
     for (int64_t i = from; i >= to; i -= step) {
       res.push_back(i);
     }
@@ -203,13 +203,13 @@ array<mixed> range_string(const string &from_s, const string &to_s, int64_t step
   const int64_t from = static_cast<unsigned char>(from_s[0]);
   const int64_t to = static_cast<unsigned char>(to_s[0]);
   if (from < to) {
-    array<mixed> res(array_size(to - from + 1, 0, true));
+    array<mixed> res(array_size(to - from + 1, true));
     for (int64_t i = from; i <= to; i++) {
       res.push_back(f$chr(i));
     }
     return res;
   } else {
-    array<mixed> res(array_size(from - to + 1, 0, true));
+    array<mixed> res(array_size(from - to + 1, true));
     for (int64_t i = from; i >= to; i--) {
       res.push_back(f$chr(i));
     }

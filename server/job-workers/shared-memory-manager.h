@@ -81,9 +81,8 @@ public:
   void forcibly_release_all_attached_messages() noexcept;
 
   bool set_memory_limit(size_t memory_limit) noexcept;
-  bool set_shared_messages_count(size_t shared_messages_count) noexcept;
   bool set_per_process_memory_limit(size_t per_process_memory_limit) noexcept;
-  bool set_shared_messages_count_process_multiplier(size_t shared_messages_count_process_multiplier) noexcept;
+  bool set_shared_memory_distribution_weights(const std::array<double, 1 + JOB_EXTRA_MEMORY_BUFFER_BUCKETS> &weights) noexcept;
 
   bool request_extra_memory_for_resource(memory_resource::unsynchronized_pool_resource &resource, size_t required_size) noexcept;
 
@@ -93,15 +92,36 @@ public:
     return control_block_;
   }
 
+  size_t calc_shared_memory_buffers_distribution(size_t mem_size, std::array<size_t, 1 + JOB_EXTRA_MEMORY_BUFFER_BUCKETS> &group_buffers_counts) const noexcept;
+
 private:
   SharedMemoryManager() = default;
 
   friend class vk::singleton<SharedMemoryManager>;
 
   size_t memory_limit_{0};
-  size_t shared_messages_count_{0};
   size_t per_process_memory_limit_{0};
-  size_t shared_messages_count_process_multiplier_{0};
+  // weights for distributing shared memory between buffers groups
+  // quantity of i-th memory piece is calculated like (w[i]/sum(w) * memory_limit_) / memory_piece_size
+  struct shared_memory_buffers_group_info {
+    size_t buffer_size;
+    double weight;
+  };
+  std::array<shared_memory_buffers_group_info, 1 + JOB_EXTRA_MEMORY_BUFFER_BUCKETS> shared_memory_buffers_groups_{
+    {
+      {1 << JOB_SHARED_MESSAGE_SIZE_EXP,       2}, // 128KB messages
+      // and extra buffers:
+      {1 << (JOB_SHARED_MESSAGE_SIZE_EXP + 1), 2}, // 256KB
+      {1 << (JOB_SHARED_MESSAGE_SIZE_EXP + 2), 2}, // 512KB
+      {1 << (JOB_SHARED_MESSAGE_SIZE_EXP + 3), 2}, // 1MB
+      {1 << (JOB_SHARED_MESSAGE_SIZE_EXP + 4), 1}, // 2MB
+      {1 << (JOB_SHARED_MESSAGE_SIZE_EXP + 5), 1}, // 4MB
+      {1 << (JOB_SHARED_MESSAGE_SIZE_EXP + 6), 1}, // 8MB
+      {1 << (JOB_SHARED_MESSAGE_SIZE_EXP + 7), 1}, // 16MB
+      {1 << (JOB_SHARED_MESSAGE_SIZE_EXP + 8), 1}, // 32MB
+      {1 << (JOB_SHARED_MESSAGE_SIZE_EXP + 9), 1}, // 64MB
+    }
+  };
 
   struct alignas(8) ControlBlock {
     ControlBlock() noexcept {
@@ -115,8 +135,7 @@ private:
     std::array<WorkerProcessMeta, WorkersControl::max_workers_count> workers_table{};
     freelist_t free_messages{};
 
-    //  index => (1 << index) MB:
-    //    0 => 1MB, 1 => 2MB, 2 => 4MB, 3 => 8MB, 4 => 16MB, 5 => 32MB, 6 => 64MB
+    // 0 => 256KB, 1 => 512KB, 2 => 1MB, 3 => 2MB, 4 => 4MB, 5 => 8MB, 6 => 16MB, 7 => 32MB, 8 => 64MB
     std::array<freelist_t, JOB_EXTRA_MEMORY_BUFFER_BUCKETS> free_extra_memory{};
   };
   ControlBlock *control_block_{nullptr};

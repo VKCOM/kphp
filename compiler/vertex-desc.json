@@ -173,6 +173,20 @@
     "base_name": "meta_op_base"
   },
   {
+    "comment": "artificial vertex representing inlined define data",
+    "sons": {
+      "value" : 0
+    },
+    "name": "op_define_val",
+    "base_name": "meta_op_base",
+    "extra_fields": {
+      "define_id": {
+        "type": "DefinePtr",
+        "default": "{}"
+      }
+    }
+  },
+  {
     "extras": [
       "string"
     ],

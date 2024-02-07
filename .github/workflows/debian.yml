@@ -73,9 +73,5 @@ jobs:
       run: docker exec -u kitten kphp-build-container-${{matrix.os}} bash -c
               "composer install -d ${{env.kphp_polyfills_dir}}"
 
-    - name: Run python tests
-      run: docker exec -u kitten kphp-build-container-${{matrix.os}} bash -c
-              "GITHUB_ACTIONS=1 KPHP_TESTS_POLYFILLS_REPO=${{env.kphp_polyfills_dir}} KPHP_CXX=${{matrix.compiler}} python3 -m pytest --tb=native -n$(nproc) ${{env.kphp_root_dir}}/tests/python/"
-
     - name: Remove docker container
       run: docker rm -f kphp-build-container-${{matrix.os}}

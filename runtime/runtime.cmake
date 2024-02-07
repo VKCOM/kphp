@@ -72,6 +72,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         critical_section.cpp
         ctype.cpp
         curl.cpp
+        curl-async.cpp
         env.cpp
         exception.cpp
         exec.cpp
@@ -84,6 +85,8 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         json-functions.cpp
         json-writer.cpp
         kphp-backtrace.cpp
+        kphp_tracing.cpp
+        kphp_tracing_binlog.cpp
         mail.cpp
         math_functions.cpp
         memcache.cpp
@@ -108,6 +111,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         string_buffer.cpp
         string_cache.cpp
         string_functions.cpp
+        tl/rpc_req_error.cpp
         tl/rpc_tl_query.cpp
         tl/rpc_response.cpp
         tl/rpc_server.cpp
@@ -116,6 +120,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         uber-h3.cpp
         udp.cpp
         tcp.cpp
+        thread-pool.cpp
         url.cpp
         vkext.cpp
         vkext_stats.cpp
@@ -124,8 +129,9 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         zstd.cpp)
 
 set_source_files_properties(
-        ${BASE_DIR}/server/php-runner.cpp
         ${BASE_DIR}/server/php-engine.cpp
+        ${BASE_DIR}/server/signal-handlers.cpp
+        ${BASE_DIR}/server/json-logger.cpp
         ${BASE_DIR}/runtime/interface.cpp
         ${COMMON_DIR}/dl-utils-lite.cpp
         ${COMMON_DIR}/netconf.cpp

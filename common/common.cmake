@@ -35,11 +35,17 @@ prepend(COMMON_TL_METHODS_SOURCES ${COMMON_DIR}/tl/methods/
         rwm.cpp
         string.cpp)
 
+if (NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+    prepend(COMMON_UCONTEXT_SOURCES ${COMMON_DIR}/ucontext/
+            ucontext-arm.cpp)
+endif()
+
 set(COMMON_ALL_SOURCES
     ${COMMON_MAIN_SOURCES}
     ${COMMON_KFS_SOURCES}
     ${COMMON_TL_METHODS_SOURCES}
-    ${COMMON_TL_SOURCES})
+    ${COMMON_TL_SOURCES}
+    ${COMMON_UCONTEXT_SOURCES})
 
 if(COMPILER_CLANG)
     set_source_files_properties(${COMMON_DIR}/string-processing.cpp PROPERTIES COMPILE_FLAGS -Wno-invalid-source-encoding)

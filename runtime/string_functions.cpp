@@ -14,7 +14,7 @@
 #include "runtime/interface.h"
 
 const string COLON(",", 1);
-const string CP1251("1251", 4);
+const string CP1251("cp1251");
 const string DOT(".", 1);
 const string NEW_LINE("\n", 1);
 const string SPACE(" ", 1);
@@ -2326,12 +2326,12 @@ mixed f$str_ireplace(const mixed &search, const mixed &replace, const mixed &sub
 array<string> f$str_split(const string &str, int64_t split_length) {
   if (split_length <= 0) {
     php_warning ("Wrong parameter split_length = %" PRIi64 " in function str_split", split_length);
-    array<string> result(array_size(1, 0, true));
+    array<string> result(array_size(1, true));
     result.set_value(0, str);
     return result;
   }
 
-  array<string> result(array_size((str.size() + split_length - 1) / split_length, 0, true));
+  array<string> result(array_size((str.size() + split_length - 1) / split_length, true));
   string::size_type i = 0;
   for (i = 0; i + split_length <= str.size(); i += static_cast<string::size_type>(split_length)) {
     result.push_back(str.substr(i, static_cast<string::size_type>(split_length)));

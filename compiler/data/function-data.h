@@ -17,7 +17,6 @@
 #include "compiler/data/class-members.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/function-modifiers.h"
-#include "compiler/data/generics-mixins.h"
 #include "compiler/data/performance-inspections.h"
 #include "compiler/data/vertex-adaptor.h"
 #include "compiler/debug.h"
@@ -25,6 +24,9 @@
 #include "compiler/inferring/var-node.h"
 #include "compiler/threading/data-stream.h"
 #include "compiler/vertex-meta_op_base.h"
+
+class GenericsDeclarationMixin;
+class KphpTracingDeclarationMixin;
 
 class FunctionData {
   DEBUG_STRING_METHOD { return as_human_readable(); }
@@ -62,6 +64,7 @@ public:
   // for lambdas: a function that contains this lambda ($this is captured from outer_function, it can also be a lambda on nesting)
   // for generic instantiations: refs to an original (a generic) function
   // for __invoke method of a lambda: refs to a lambda function that's called from this __invoke
+  // for inherited context functions Base::f(static=Derived): refs to Base::f (where it was cloned from)
   FunctionPtr outer_function;
 
   // use($var1, &$var2) for lambdas, implicit vars for arrow lambdas; auto-captured $this is also here, the first one
@@ -153,6 +156,9 @@ public:
   // non-null for instantiations of generic functions, e.g. f<User>
   // describes a mapping between generic types (T) and actual instantiation types (User)
   GenericsInstantiationMixin *instantiationTs{nullptr};
+
+  // non-null for functions marked with @kphp-tracing, contains parsed tag contents
+  KphpTracingDeclarationMixin *kphp_tracing{nullptr};
 
   ClassPtr class_id;
   ClassPtr context_class;

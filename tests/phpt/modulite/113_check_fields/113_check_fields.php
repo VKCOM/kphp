@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_MODULITE=1
 /in global scope/
 /restricted to use Feed113\\Infra113\\Hidden113, it's internal in @feed\/infra/
 /in Post113::demo/

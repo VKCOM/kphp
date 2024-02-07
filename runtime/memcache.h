@@ -75,7 +75,7 @@ public:
     return sizeof(*this);
   }
 
-  array<host> hosts{array_size{1, 0, true}};
+  array<host> hosts{array_size{1, true}};
 };
 
 class_instance<C$McMemcache> f$McMemcache$$__construct(const class_instance<C$McMemcache> &v$this);
