@@ -71,3 +71,5 @@ void f$set_detect_incorrect_encoding_names_warning(bool show);
 void free_detect_incorrect_encoding_names();
 
 #endif
+
+void free_detect_incorrect_encoding_names();

@@ -50,6 +50,8 @@ bool mb_UTF8_check(const char *s) {
   php_assert (0);
 }
 
+static bool is_detect_incorrect_encoding_names_warning{false};
+
 #ifdef MBFL
 extern "C" {
 	#include <kphp/libmbfl/mbfl/mbfilter.h>
@@ -1052,3 +1054,11 @@ string f$mb_substr(const string &str, int64_t start, const mixed &length_var, co
 }
 
 #endif
+
+void f$set_detect_incorrect_encoding_names_warning(bool show) {
+  is_detect_incorrect_encoding_names_warning = show;
+}
+
+void free_detect_incorrect_encoding_names() {
+  is_detect_incorrect_encoding_names_warning = false;
+}
