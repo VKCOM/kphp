@@ -2227,8 +2227,14 @@ int main_args_handler(int i, const char *long_option) {
     }
     case 2039: {
       double soft_oom_ratio;
-      int res = read_option_to(long_option, 0.0, CONFDATA_DEFAULT_HARD_OOM_RATIO, soft_oom_ratio);
-      set_confdata_soft_oom_ratio(soft_oom_ratio);
+      int res = read_option_to(long_option, 0.0, 1.0, soft_oom_ratio);
+      if (soft_oom_ratio < CONFDATA_DEFAULT_HARD_OOM_RATIO) {
+        set_confdata_soft_oom_ratio(soft_oom_ratio);
+      } else {
+        kprintf("Confdata soft OOM degradation mode disabled\n");
+        set_confdata_soft_oom_ratio(1.0);
+        set_confdata_hard_oom_ratio(1.0);
+      }
       return res;
     }
     default:
