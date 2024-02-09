@@ -13,7 +13,11 @@ struct XgbDensePredictor {
   };
   float *vector_x{nullptr}; // assigned outside as a chunk in linear memory, 2 equal values per existing feature
 
-  void fill_vector_x_ht_direct(const kphp_ml::XgbModel &xgb_model, const array<double> &features_map) noexcept {
+  __attribute__((flatten)) void fill_vector_x_ht_direct(const kphp_ml::XgbModel &xgb_model, const array<double> &features_map) noexcept {
+    if (features_map.is_vector()) {
+      return; // make fallback
+    }
+    
     for (const auto &iter : features_map) {
       const auto &feature_id = iter.get_int_key();
       const auto &fvalue = iter.get_value();
@@ -29,7 +33,11 @@ struct XgbDensePredictor {
     }
   }
 
-  void fill_vector_x_ht_direct_sz(const kphp_ml::XgbModel &xgb_model, const array<double> &features_map) noexcept {
+  __attribute__((flatten)) void fill_vector_x_ht_direct_sz(const kphp_ml::XgbModel &xgb_model, const array<double> &features_map) noexcept {
+    if (features_map.is_vector()) {
+      return; // make fallback
+    }
+    
     for (const auto &iter : features_map) {
       const auto &feature_id = iter.get_int_key();
       const auto &fvalue = iter.get_value();
@@ -48,7 +56,11 @@ struct XgbDensePredictor {
     }
   }
 
-  void fill_vector_x_ht_remap_str_key(const kphp_ml::XgbModel &xgb_model, const array<double> &features_map) noexcept {
+  __attribute__((flatten)) void fill_vector_x_ht_remap_str_key(const kphp_ml::XgbModel &xgb_model, const array<double> &features_map) noexcept {
+    if (features_map.is_vector()) {
+      return; // make fallback
+    }
+    
     for (const auto &iter : features_map) {
       const auto &feature_name = iter.get_string_key();
       const auto &fvalue = iter.get_value();
@@ -62,7 +74,11 @@ struct XgbDensePredictor {
     }
   }
 
-  void fill_vector_x_ht_remap_str_key_sz(const kphp_ml::XgbModel &xgb_model, const array<double> &features_map) noexcept {
+  __attribute__((flatten)) void fill_vector_x_ht_remap_str_key_sz(const kphp_ml::XgbModel &xgb_model, const array<double> &features_map) noexcept {
+    if (features_map.is_vector()) {
+      return; // make fallback
+    }
+    
     for (const auto &iter : features_map) {
       const auto &feature_name = iter.get_string_key();
       const auto &fvalue = iter.get_value();
@@ -79,7 +95,10 @@ struct XgbDensePredictor {
     }
   }
 
-  void fill_vector_x_ht_remap_int_key(const kphp_ml::XgbModel &xgb_model, const array<double> &features_map) noexcept {
+  __attribute__((flatten)) void fill_vector_x_ht_remap_int_key(const kphp_ml::XgbModel &xgb_model, const array<double> &features_map) noexcept {
+    if (features_map.is_vector()) {
+      return; // make fallback
+    }
 
     for (const auto &iter : features_map) {
       const auto &feature_id = iter.get_int_key();
@@ -96,7 +115,10 @@ struct XgbDensePredictor {
     }
   }
 
-  void fill_vector_x_ht_remap_int_key_sz(const kphp_ml::XgbModel &xgb_model, const array<double> &features_map) noexcept {
+  __attribute__((flatten)) void fill_vector_x_ht_remap_int_key_sz(const kphp_ml::XgbModel &xgb_model, const array<double> &features_map) noexcept {
+    if (features_map.is_vector()) {
+      return; // make fallback
+    }
 
     for (const auto &iter : features_map) {
       const auto &feature_id = iter.get_int_key();
