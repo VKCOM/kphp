@@ -67,6 +67,48 @@ function test_class_with_dynamic_array() {
   var_dump(estimate_memory_usage($instance));
 }
 
+function test_class_with_cyclic_dependence() {
+  class ClassWithCyclicDependence {
+    public int $value = 0;
+    /** @var ClassWithCyclicDependence */
+    public $child;
+
+    public function __construct(int $value) {
+      $this->value = $value;
+      $this->child = $this;
+    }
+  }
+
+#ifndef KPHP
+  var_dump(24);
+  return;
+#endif
+  $instance = new ClassWithCyclicDependence(42);
+  var_dump(estimate_memory_usage($instance));
+}
+
+function test_class_with_cyclic_dependence_in_dynamic_array() {
+  class ClassWithCyclicDependenceInArray {
+  public int $value = 0; // 8
+  /** @var ClassWithCyclicDependenceInArray[] */
+  public $childs = []; // 8
+
+  public function __construct(int $value) {
+      $this->value = $value;
+      $this->childs[] = $this;
+    }
+  }
+
+#ifndef KPHP
+  var_dump(72);
+  return;
+#endif
+  $instance = new ClassWithCyclicDependenceInArray(42);
+  var_dump(estimate_memory_usage($instance));
+}
+
 test_empty_class();
 test_class_with_simple_fields();
 test_class_with_dynamic_array();
+test_class_with_cyclic_dependence();
+test_class_with_cyclic_dependence_in_dynamic_array();
