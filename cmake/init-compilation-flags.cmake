@@ -27,6 +27,9 @@ if(APPLE)
     else()
         message(FATAL_ERROR "unsupported arch: ${CMAKE_SYSTEM_PROCESSOR}")
     endif()
+else()
+    # Since Ubuntu 22.04 lto is enabled by default; breaks some builds
+    add_link_options(-fno-lto)
 endif()
 
 set(OPENSSL_USE_STATIC_LIBS TRUE)
