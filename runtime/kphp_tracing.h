@@ -9,6 +9,7 @@
 #include "runtime/critical_section.h"
 #include "runtime/kphp_core.h"
 #include "runtime/refcountable_php_classes.h"
+#include "runtime/memory_usage.h"
 
 // for detailed comments about tracing in general, see kphp_tracing.cpp
 
@@ -119,6 +120,8 @@ struct C$KphpDiv : public refcountable_php_classes<C$KphpDiv> {
 
   void assign_random_trace_id_if_empty();
   void to_json(char *buf, size_t buf_len) const;
+
+  void accept(InstanceMemoryEstimateVisitor &) noexcept {}
 };
 
 double f$KphpDiv$$getStartTimestamp(const class_instance<C$KphpDiv> &v$this);
@@ -148,6 +151,8 @@ struct C$KphpSpan : public refcountable_php_classes<C$KphpSpan> {
   void finish(const Optional<double> &manual_timestamp) const;
   void finishWithError(int64_t error_code, const string &error_msg, const Optional<double> &manual_timestamp) const;
   void exclude() const;
+
+  void accept(InstanceMemoryEstimateVisitor &) noexcept {}
 };
 
 inline void f$KphpSpan$$addAttributeString(const class_instance<C$KphpSpan> &v$this, const string &key, const string &value) {
