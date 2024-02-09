@@ -9,7 +9,7 @@
 #include "runtime/critical_section.h"
 #include "runtime/kphp_core.h"
 #include "runtime/refcountable_php_classes.h"
-#include "runtime/memory_usage.h"
+#include "runtime/dummy-visitor-methods.h"
 
 // for detailed comments about tracing in general, see kphp_tracing.cpp
 
@@ -110,7 +110,9 @@ void on_php_script_finish_terminated();
 
 // class KphpDiv
 
-struct C$KphpDiv : public refcountable_php_classes<C$KphpDiv> {
+struct C$KphpDiv : public refcountable_php_classes<C$KphpDiv>, private DummyVisitorMethods {
+  using DummyVisitorMethods::accept;
+
   double start_timestamp{0.0};  // all fields are inaccessible from PHP code
   double end_timestamp{0.0};    // (PHP code can only call f$KphpDiv$$ functions)
   int64_t trace_id{0};
@@ -120,8 +122,6 @@ struct C$KphpDiv : public refcountable_php_classes<C$KphpDiv> {
 
   void assign_random_trace_id_if_empty();
   void to_json(char *buf, size_t buf_len) const;
-
-  void accept(InstanceMemoryEstimateVisitor &) noexcept {}
 };
 
 double f$KphpDiv$$getStartTimestamp(const class_instance<C$KphpDiv> &v$this);
@@ -132,7 +132,9 @@ int64_t f$KphpDiv$$assignTraceCtx(class_instance<C$KphpDiv> v$this, int64_t int1
 
 // class KphpSpan
 
-struct C$KphpSpan : public refcountable_php_classes<C$KphpSpan> {
+struct C$KphpSpan : public refcountable_php_classes<C$KphpSpan>, private DummyVisitorMethods {
+  using DummyVisitorMethods::accept;
+
   int span_id{0};
 
   C$KphpSpan() = default;
@@ -151,8 +153,6 @@ struct C$KphpSpan : public refcountable_php_classes<C$KphpSpan> {
   void finish(const Optional<double> &manual_timestamp) const;
   void finishWithError(int64_t error_code, const string &error_msg, const Optional<double> &manual_timestamp) const;
   void exclude() const;
-
-  void accept(InstanceMemoryEstimateVisitor &) noexcept {}
 };
 
 inline void f$KphpSpan$$addAttributeString(const class_instance<C$KphpSpan> &v$this, const string &key, const string &value) {
