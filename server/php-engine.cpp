@@ -962,10 +962,6 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       return 0;
     }
     case TL_RPC_INVOKE_REQ: {
-      if (php_worker.has_value()) {
-        //check that another rpc request has already been processed
-        return 0;
-      }
       if (in_sigterm) {
         return 0;
       }
@@ -987,6 +983,11 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       long long req_id = header.qid;
 
       vkprintf(2, "got RPC_INVOKE_REQ [req_id = %016llx]\n", req_id);
+
+      if (php_worker.has_value()) {
+        send_rpc_error(c, req_id, TL_ERROR_CLIENT_ALREADY_PROCESS_REQ, "Client already process invoke req");
+        return 0;
+      }
 
       if (!check_tasks_invoker_pid(remote_pid)) {
         const size_t msg_buf_size = 1000;
