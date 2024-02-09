@@ -389,7 +389,7 @@ array<mixed> f$getdate(int64_t timestamp) {
   time_t timestamp_t = timestamp;
   tm * tp = localtime_r(&timestamp_t, &t);
   if (tp == nullptr) {
-    php_warning("getdate overflow with timestamp %" PRId64, timestamp);
+    php_warning("Error \"%s\" in getdate with timestamp %" PRId64, strerror(errno), timestamp);
     memset(&t, 0, sizeof(tm));
   }
 
