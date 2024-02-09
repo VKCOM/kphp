@@ -985,7 +985,7 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       vkprintf(2, "got RPC_INVOKE_REQ [req_id = %016llx]\n", req_id);
 
       if (php_worker.has_value()) {
-        send_rpc_error(c, req_id, TL_ERROR_CLIENT_ALREADY_PROCESS_REQ, "Client already process invoke req");
+        send_rpc_error(c, req_id, TL_ERROR_RPC_CLIENT_IS_BUSY, "Client is already processing request");
         return 0;
       }
 

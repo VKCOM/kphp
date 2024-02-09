@@ -52,7 +52,7 @@
 #define TL_ERROR_RESPONSE_NOT_FOUND              (-4102)
 #define TL_ERROR_TIMEOUT_IN_RPC_CLIENT           (-4103)
 #define TL_ERROR_NO_CONNECTIONS_IN_RPC_CLIENT    (-4104)
-#define TL_ERROR_CLIENT_ALREADY_PROCESS_REQ      (-4105)
+#define TL_ERROR_RPC_CLIENT_IS_BUSY              (-4105)
 
 #define TL_IS_USER_ERROR(x)                  ((x) <= -1000 && (x) > -3000)
 
