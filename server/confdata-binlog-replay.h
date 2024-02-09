@@ -13,6 +13,7 @@ static constexpr double CONFDATA_DEFAULT_SOFT_OOM_RATIO = 0.85;
 static constexpr double CONFDATA_DEFAULT_HARD_OOM_RATIO = 0.95;
 
 void set_confdata_soft_oom_ratio(double soft_oom_ratio) noexcept;
+void set_confdata_hard_oom_ratio(double hard_oom_ratio) noexcept;
 void set_confdata_binlog_mask(const char *mask) noexcept;
 
 void set_confdata_memory_limit(size_t memory_limit) noexcept;
