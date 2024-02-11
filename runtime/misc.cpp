@@ -70,18 +70,25 @@ Optional<string> f$iconv(const string &input_encoding, const string &output_enco
     char *output_buf = output_str.buffer();
 
     size_t res = iconv(cd, &input_buf, &input_len, &output_buf, &output_len);
-    if (res != (size_t)-1 || errno != E2BIG) {
+    // if errno is not E2BIG, then there is no need to allocate 4х more memory for a new string and try to call iconv function again
+    if (errno == E2BIG) {
+      /*
+        php_warning ("Error in iconv from \"%s\" to \"%s\" string \"%s\" at character %d at pos %d: %m", input_encoding.c_str(), output_encoding.c_str(), input_str.c_str(), (int)*input_buf, (int)(input_buf - input_str.c_str()));
+      */
+      iconv(cd, nullptr, nullptr, nullptr, nullptr);
+      continue;
+    }
+    size_t len = output_buf - output_str.c_str();
+    /* when passing the value false to the string constructor(size_type size, bool b),
+     * the new string will have an internal size identical to the one passed,
+     * however in some cases iconv will not write anything to the output_buf
+     * and thus the string will actually be empty
+     */
+    if (res != (size_t)-1 && (len != 0 || *output_str.c_str() == '\0')) {
       output_str.shrink(static_cast<string::size_type>(output_buf - output_str.c_str()));
       iconv_close(cd);
       return output_str;
     }
-/*
-    if (errno != E2BIG) {
-      php_warning ("Error in iconv from \"%s\" to \"%s\" string \"%s\" at character %d at pos %d: %m", input_encoding.c_str(), output_encoding.c_str(), input_str.c_str(), (int)*input_buf, (int)(input_buf - input_str.c_str()));
-      break;
-    }
-*/
-    iconv(cd, nullptr, nullptr, nullptr, nullptr);
   }
 
   iconv_close(cd);
