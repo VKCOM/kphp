@@ -11,6 +11,7 @@
 
 #include "common/algorithms/arithmetic.h"
 #include "common/container_of.h"
+#include "common/crypto/openssl-evp-digest.h"
 #include "common/md5.h"
 #include "common/precise-time.h"
 #include "common/wrappers/likely.h"
@@ -422,7 +423,7 @@ static int bbr_replay_work (bb_reader_t *R, int len) {
   assert (pos <= e->log_last_processed_pos);
   len = R->log_wptr_pos - e->log_last_processed_pos;
   R->buffer->err = rwm_process_from_offset (&R->buffer->raw, len, e->log_last_processed_pos - R->buffer->log_last_rpos, process_replay_work, R);
-  
+
   if (R->log_rptr_pos != pos) {
     e->wait_job_cb->attempts = 0;
   }
@@ -521,13 +522,13 @@ hash_t binlog_calc_hash (kfs_file_handle_t F, struct lev_rotate_to *next_rotate_
 
   assert (!close (fd));
   assert (*(int *) buffer == LEV_START);
-  int totsize = expected_size < 32768 ? expected_size : 32768;
+  size_t totsize = expected_size < 32768 ? expected_size : 32768;
   memset (buffer + totsize - 16, 0, 16);
 
   static unsigned char md[16];
-  md5 (buffer, totsize, md);
+  vk::md5({buffer, totsize}, md);
   free (buffer);
-  return *(hash_t *) md;
+  return *reinterpret_cast<hash_t *>(md);
 }
 
 hash_t bb_buffer_calc_binlog_hash (bb_buffer_t *B, struct lev_rotate_to *next_rotate_to) {
@@ -547,7 +548,7 @@ hash_t binlog_relax_hash (hash_t prev_hash, long long pos, unsigned log_crc32) {
   cbuff.prev_hash = prev_hash;
   cbuff.stpos = pos;
   cbuff.crc32 = log_crc32;
-  md5 ((unsigned char *) &cbuff, 20, MDBUF);
+  vk::md5({(unsigned char *) &cbuff, 20}, MDBUF);
   return *((hash_t *) MDBUF);
 }
 
