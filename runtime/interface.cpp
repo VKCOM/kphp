@@ -1942,7 +1942,7 @@ const Stream STDIN("php://stdin", 11);
 const Stream STDOUT("php://stdout", 12);
 const Stream STDERR("php://stderr", 12);
 
-static Stream php_fopen(const string &stream, const string &mode) {
+Stream php_stream_functions::fopen(const string &stream, const string &mode) const {
   if (eq2(stream, STDOUT) || eq2(stream, STDERR)) {
     if (!eq2(mode, string("w")) && !eq2(mode, string("a"))) {
       php_warning("%s should be opened in write or append mode", stream.to_string().c_str());
@@ -1963,7 +1963,7 @@ static Stream php_fopen(const string &stream, const string &mode) {
   return false;
 }
 
-static Optional<int64_t> php_fwrite(const Stream &stream, const string &text) {
+Optional<int64_t> php_stream_functions::fwrite(const Stream &stream, const string &text) const {
   if (eq2(stream, STDOUT)) {
     print(text);
     return text.size();
@@ -1983,7 +1983,7 @@ static Optional<int64_t> php_fwrite(const Stream &stream, const string &text) {
   return false;
 }
 
-static int64_t php_fseek(const Stream &stream, int64_t offset __attribute__((unused)), int64_t whence __attribute__((unused))) {
+int64_t php_stream_functions::fseek(const Stream &stream, int64_t offset __attribute__((unused)), int64_t whence __attribute__((unused))) const {
   if (eq2(stream, STDOUT) || eq2(stream, STDERR)) {
     php_warning("Can't use fseek with stream %s", stream.to_string().c_str());
     return -1;
@@ -2004,7 +2004,7 @@ static int64_t php_fseek(const Stream &stream, int64_t offset __attribute__((unu
   return -1;
 }
 
-static Optional<int64_t> php_ftell(const Stream &stream) {
+Optional<int64_t> php_stream_functions::ftell(const Stream &stream) const {
   if (eq2(stream, STDOUT) || eq2(stream, STDERR)) {
     php_warning("Can't use ftell with stream %s", stream.to_string().c_str());
     return false;
@@ -2025,7 +2025,7 @@ static Optional<int64_t> php_ftell(const Stream &stream) {
   return false;
 }
 
-static Optional<string> php_fread(const Stream &stream, int64_t length) {
+Optional<string> php_stream_functions::fread(const Stream &stream, int64_t length) const {
   if (length <= 0) {
     php_warning("Parameter length in function fread must be positive");
     return false;
@@ -2049,7 +2049,7 @@ static Optional<string> php_fread(const Stream &stream, int64_t length) {
   if (eq2(stream, STDIN)) {
     string res(static_cast<string::size_type>(length), false);
     dl::enter_critical_section();//OK
-    size_t res_size = fread(&res[0], static_cast<size_t>(length), 1, stdin);
+    size_t res_size = ::fread(&res[0], static_cast<size_t>(length), 1, stdin);
     dl::leave_critical_section();
     php_assert (res_size <= static_cast<size_t>(length));
     res.shrink(static_cast<string::size_type>(res_size));
@@ -2060,7 +2060,7 @@ static Optional<string> php_fread(const Stream &stream, int64_t length) {
   return false;
 }
 
-static Optional<string> php_fgetc(const Stream &stream) {
+Optional<string> php_stream_functions::fgetc(const Stream &stream) const {
   if (eq2(stream, STDOUT) || eq2(stream, STDERR)) {
     php_warning("Can't use fgetc with stream %s", stream.to_string().c_str());
     return false;
@@ -2075,7 +2075,7 @@ static Optional<string> php_fgetc(const Stream &stream) {
   if (eq2(stream, STDIN)) {
     dl::enter_critical_section();//OK
     clearerr(stdin);
-    int result = fgetc(stdin);
+    int result = ::fgetc(stdin);
     if (ferror(stdin)) {
       dl::leave_critical_section();
       php_warning("Error happened during fgetc with stream %s", stream.to_string().c_str());
@@ -2093,7 +2093,7 @@ static Optional<string> php_fgetc(const Stream &stream) {
   return false;
 }
 
-static Optional<string> php_fgets(const Stream &stream, int64_t length) {
+Optional<string> php_stream_functions::fgets(const Stream &stream, int64_t length) const {
   if (eq2(stream, STDOUT) || eq2(stream, STDERR)) {
     php_warning("Can't use fgetc with stream %s", stream.to_string().c_str());
     return false;
@@ -2116,7 +2116,7 @@ static Optional<string> php_fgets(const Stream &stream, int64_t length) {
     string res(static_cast<string::size_type>(length), false);
     dl::enter_critical_section();//OK
     clearerr(stdin);
-    char *result = fgets(&res[0], static_cast<int32_t>(length), stdin);
+    char *result = ::fgets(&res[0], static_cast<int32_t>(length), stdin);
     if (ferror(stdin)) {
       dl::leave_critical_section();
       php_warning("Error happened during fgets with stream %s", stream.to_string().c_str());
@@ -2135,7 +2135,7 @@ static Optional<string> php_fgets(const Stream &stream, int64_t length) {
   return false;
 }
 
-static Optional<int64_t> php_fpassthru(const Stream &stream) {
+Optional<int64_t> php_stream_functions::fpassthru(const Stream &stream) const {
   if (eq2(stream, STDOUT) || eq2(stream, STDERR)) {
     php_warning("Can't use fpassthru with stream %s", stream.to_string().c_str());
     return false;
@@ -2151,7 +2151,7 @@ static Optional<int64_t> php_fpassthru(const Stream &stream) {
   return false;
 }
 
-static bool php_fflush(const Stream &stream) {
+bool php_stream_functions::fflush(const Stream &stream) const {
   if (eq2(stream, STDOUT)) {
     //TODO implement this
     php_warning("fflush of %s is not implemented yet", stream.to_string().c_str());
@@ -2171,7 +2171,7 @@ static bool php_fflush(const Stream &stream) {
   return false;
 }
 
-static bool php_feof(const Stream &stream) {
+bool php_stream_functions::feof(const Stream &stream) const {
   if (eq2(stream, STDOUT) || eq2(stream, STDERR)) {
     php_warning("Can't use feof with stream %s", stream.to_string().c_str());
     return true;
@@ -2185,7 +2185,7 @@ static bool php_feof(const Stream &stream) {
 
   if (eq2(stream, STDIN)) {
     dl::enter_critical_section();//OK
-    bool eof = (feof(stdin) != 0);
+    bool eof = (::feof(stdin) != 0);
     dl::leave_critical_section();
     return eof;
   }
@@ -2194,7 +2194,7 @@ static bool php_feof(const Stream &stream) {
   return true;
 }
 
-static Optional<string> php_file_get_contents(const string &url) {
+Optional<string> php_stream_functions::file_get_contents(const string &url) const {
   if (eq2(url, STDOUT) || eq2(url, STDERR)) {
     php_warning("Can't use file_get_contents with stream %s", url.c_str());
     return false;
@@ -2213,7 +2213,7 @@ static Optional<string> php_file_get_contents(const string &url) {
   return false;
 }
 
-static Optional<int64_t> php_file_put_contents(const string &url, const string &content, int64_t flags __attribute__((unused))) {
+Optional<int64_t> php_stream_functions::file_put_contents(const string &url, const string &content, int64_t flags __attribute__((unused))) const {
   if (eq2(url, STDOUT)) {
     print(content);
     return content.size();
@@ -2233,7 +2233,7 @@ static Optional<int64_t> php_file_put_contents(const string &url, const string &
   return false;
 }
 
-static bool php_fclose(const Stream &stream) {
+bool php_stream_functions::fclose(const Stream &stream) const {
   if (eq2(stream, STDOUT) || eq2(stream, STDERR) || eq2(stream, INPUT)) {
     php_warning("Can't close stream %s", stream.to_string().c_str());
     return false;
@@ -2244,30 +2244,8 @@ static bool php_fclose(const Stream &stream) {
 }
 
 static void global_init_interface_lib() {
-  static stream_functions php_stream_functions;
-
-  php_stream_functions.name = string("php");
-  php_stream_functions.fopen = php_fopen;
-  php_stream_functions.fwrite = php_fwrite;
-  php_stream_functions.fseek = php_fseek;
-  php_stream_functions.ftell = php_ftell;
-  php_stream_functions.fread = php_fread;
-  php_stream_functions.fgetc = php_fgetc;
-  php_stream_functions.fgets = php_fgets;
-  php_stream_functions.fpassthru = php_fpassthru;
-  php_stream_functions.fflush = php_fflush;
-  php_stream_functions.feof = php_feof;
-  php_stream_functions.fclose = php_fclose;
-
-  php_stream_functions.file_get_contents = php_file_get_contents;
-  php_stream_functions.file_put_contents = php_file_put_contents;
-
-  php_stream_functions.stream_socket_client = nullptr;
-  php_stream_functions.context_set_option = nullptr;
-  php_stream_functions.stream_set_option = nullptr;
-  php_stream_functions.get_fd = nullptr;
-
-  register_stream_functions(&php_stream_functions, false);
+  static php_stream_functions php_stream_functions_v;
+  register_stream_functions(&php_stream_functions_v, false);
 }
 
 static void reset_global_interface_vars() {

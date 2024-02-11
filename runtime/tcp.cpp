@@ -24,7 +24,7 @@ std::byte opened_tcp_sockets_storage[sizeof(array<FILE *>)];
 array<FILE *> *opened_tcp_client_sockets = reinterpret_cast<array<FILE *> *>(opened_tcp_sockets_storage);
 
 namespace details {
-template <typename F>
+template<typename F>
 Optional<std::pair<string, int64_t>> parse_url(const string &url, F &&faulter) {
   string url_to_parse = url;
   if (!url_to_parse.starts_with(string("tcp://"))) {
@@ -53,7 +53,7 @@ Optional<std::pair<string, int64_t>> parse_url(const string &url, F &&faulter) {
   return std::pair<string, int64_t>(host, port);
 }
 
-template <typename F>
+template<typename F>
 Optional<int64_t> connect_to_address(const string &host, int64_t port, double end_time, F &&faulter) {
   assert(dl::in_critical_section > 0);
   addrinfo *result = nullptr;
@@ -66,7 +66,7 @@ Optional<int64_t> connect_to_address(const string &host, int64_t port, double en
    * addrinfo structures linked by the ai_next component.
    * There are several reasons for this. We will use the first element */
   addrinfo *rp = result;
-  auto finalizer = vk::finally([result](){freeaddrinfo(result);}); /*free allocation in destructor*/
+  auto finalizer = vk::finally([result]() { freeaddrinfo(result); }); /*free allocation in destructor*/
   int64_t socket_fd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
   if (socket_fd == -1) {
     faulter(-3, string("Can't create tcp socket. System call 'socket(...)' got error "), string(errno));
@@ -108,8 +108,18 @@ void register_socket(const Stream &stream, int64_t fd) {
 }
 } // namespace details
 
-Stream tcp_stream_socket_client(const string &url, int64_t &error_number, string &error_description, double timeout, int64_t flags __attribute__((unused)),
-                                const mixed &context __attribute__((unused))) {
+bool tcp_check_correct(const Stream &stream) {
+  if (dl::query_num != opened_tcp_client_sockets_last_query_num || !opened_tcp_client_sockets->has_key(stream.to_string())) {
+    php_warning("TCP socket \"%s\" is not opened", stream.to_string().c_str());
+    return false;
+  }
+
+  return true;
+}
+} // namespace
+
+Stream tcp_stream_functions::stream_socket_client(const string &url, int64_t &error_number, string &error_description, double timeout,
+                                                  int64_t flags __attribute__((unused)), const mixed &context __attribute__((unused))) const {
   dl::CriticalSectionGuard guard;
   if (timeout < 0) {
     timeout = DEFAULT_SOCKET_TIMEOUT;
@@ -142,16 +152,7 @@ Stream tcp_stream_socket_client(const string &url, int64_t &error_number, string
   return stream;
 }
 
-bool tcp_check_correct(const Stream &stream) {
-  if (dl::query_num != opened_tcp_client_sockets_last_query_num || !opened_tcp_client_sockets->has_key(stream.to_string())) {
-    php_warning("TCP socket \"%s\" is not opened", stream.to_string().c_str());
-    return false;
-  }
-
-  return true;
-}
-
-int tcp_get_fd(const Stream &stream) {
+int tcp_stream_functions::get_fd(const Stream &stream) const {
   if (!tcp_check_correct(stream)) {
     return -1;
   }
@@ -160,14 +161,14 @@ int tcp_get_fd(const Stream &stream) {
   return fileno(src);
 }
 
-Optional<int64_t> tcp_fwrite(const Stream &stream, const string &data) {
+Optional<int64_t> tcp_stream_functions::fwrite(const Stream &stream, const string &data) const {
   if (!tcp_check_correct(stream)) {
     return {};
   }
 
   FILE *src = opened_tcp_client_sockets->get_value(stream);
   dl::enter_critical_section();
-  int res = fwrite(data.c_str(), sizeof(char), data.size(), src);
+  int res = ::fwrite(data.c_str(), sizeof(char), data.size(), src);
   dl::leave_critical_section();
 
   if (res == -1) {
@@ -181,7 +182,7 @@ Optional<int64_t> tcp_fwrite(const Stream &stream, const string &data) {
   return res;
 }
 
-Optional<string> tcp_fread(const Stream &stream, int64_t length) {
+Optional<string> tcp_stream_functions::fread(const Stream &stream, int64_t length) const {
   if (!tcp_check_correct(stream)) {
     return {};
   }
@@ -189,7 +190,7 @@ Optional<string> tcp_fread(const Stream &stream, int64_t length) {
   string data(length, false);
   FILE *src = opened_tcp_client_sockets->get_value(stream);
   dl::enter_critical_section();
-  int res = fread(data.buffer(), sizeof(char), length, src);
+  int res = ::fread(data.buffer(), sizeof(char), length, src);
   dl::leave_critical_section();
 
   if (res == -1) {
@@ -203,7 +204,7 @@ Optional<string> tcp_fread(const Stream &stream, int64_t length) {
   return data.substr(0, res);
 }
 
-Optional<string> tcp_fgets(const Stream &stream, int64_t length) {
+Optional<string> tcp_stream_functions::fgets(const Stream &stream, int64_t length) const {
   if (!tcp_check_correct(stream)) {
     return {};
   }
@@ -214,7 +215,7 @@ Optional<string> tcp_fgets(const Stream &stream, int64_t length) {
   string data(length, false);
   FILE *src = opened_tcp_client_sockets->get_value(stream);
   dl::enter_critical_section();
-  char *res = fgets(data.buffer(), length, src);
+  char *res = ::fgets(data.buffer(), length, src);
   dl::leave_critical_section();
 
   if (res == nullptr) {
@@ -224,14 +225,14 @@ Optional<string> tcp_fgets(const Stream &stream, int64_t length) {
   return data.substr(0, end_pos);
 }
 
-Optional<string> tcp_fgetc(const Stream &stream) {
+Optional<string> tcp_stream_functions::fgetc(const Stream &stream) const {
   if (!tcp_check_correct(stream)) {
     return {};
   }
 
   FILE *src = opened_tcp_client_sockets->get_value(stream);
   dl::enter_critical_section();
-  int res = fgetc(src);
+  int res = ::fgetc(src);
   dl::leave_critical_section();
 
   if (res == -1) {
@@ -240,14 +241,14 @@ Optional<string> tcp_fgetc(const Stream &stream) {
   return f$chr(res);
 }
 
-bool tcp_fclose(const Stream &stream) {
+bool tcp_stream_functions::fclose(const Stream &stream) const {
   if (!tcp_check_correct(stream)) {
     return false;
   }
 
   FILE *src = opened_tcp_client_sockets->get_value(stream);
   dl::enter_critical_section();
-  int res = fclose(src);
+  int res = ::fclose(src);
   opened_tcp_client_sockets->unset(stream);
   dl::leave_critical_section();
 
@@ -258,14 +259,14 @@ bool tcp_fclose(const Stream &stream) {
   return true;
 }
 
-bool tcp_feof(const Stream &stream) {
+bool tcp_stream_functions::feof(const Stream &stream) const {
   if (!tcp_check_correct(stream)) {
     return false;
   }
 
   FILE *src = opened_tcp_client_sockets->get_value(stream);
   dl::enter_critical_section();
-  int res = feof(src);
+  int res = ::feof(src);
   dl::leave_critical_section();
 
   return res != 0;
@@ -274,8 +275,8 @@ bool tcp_feof(const Stream &stream) {
 /*
  * now available only blocking/non-blocking option
  * */
-bool tcp_stream_set_option(const Stream &stream, int64_t option, int64_t value) {
-  int fd = tcp_get_fd(stream);
+bool tcp_stream_functions::stream_set_option(const Stream &stream, int64_t option, int64_t value) const {
+  int fd = get_fd(stream);
   if (fd == -1) {
     return false;
   }
@@ -294,33 +295,10 @@ bool tcp_stream_set_option(const Stream &stream, int64_t option, int64_t value) 
       return false;
   }
 }
-} // namespace
 
 void global_init_tcp_lib() {
-  static stream_functions tcp_stream_functions;
-
-  tcp_stream_functions.name = string("tcp");
-  tcp_stream_functions.fopen = nullptr;
-  tcp_stream_functions.fwrite = tcp_fwrite;
-  tcp_stream_functions.fseek = nullptr;
-  tcp_stream_functions.ftell = nullptr;
-  tcp_stream_functions.fread = tcp_fread;
-  tcp_stream_functions.fgetc = tcp_fgetc;
-  tcp_stream_functions.fgets = tcp_fgets;
-  tcp_stream_functions.fpassthru = nullptr;
-  tcp_stream_functions.fflush = nullptr;
-  tcp_stream_functions.feof = tcp_feof;
-  tcp_stream_functions.fclose = tcp_fclose;
-
-  tcp_stream_functions.file_get_contents = nullptr;
-  tcp_stream_functions.file_put_contents = nullptr;
-
-  tcp_stream_functions.stream_socket_client = tcp_stream_socket_client;
-  tcp_stream_functions.context_set_option = nullptr;
-  tcp_stream_functions.stream_set_option = tcp_stream_set_option;
-  tcp_stream_functions.get_fd = tcp_get_fd;
-
-  register_stream_functions(&tcp_stream_functions, false);
+  static tcp_stream_functions tcp_stream_functions_v;
+  register_stream_functions(&tcp_stream_functions_v, false);
 }
 
 void free_tcp_lib() {
@@ -330,7 +308,7 @@ void free_tcp_lib() {
     for (array<FILE *>::iterator p = const_opened_tcp_sockets->begin(); p != const_opened_tcp_sockets->end();) {
       Stream key = p.get_key();
       ++p;
-      tcp_fclose(key);
+      f$fclose(key);
 
     }
     opened_tcp_client_sockets_last_query_num--;
