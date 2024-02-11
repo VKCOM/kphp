@@ -74,6 +74,7 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
     }
 
     switch (c->class_type) {
+      case ClassType::enumeration:
       case ClassType::klass:
         code_gen_start_root_task(os, std::make_unique<ClassDeclaration>(c));
         code_gen_start_root_task(os, std::make_unique<ClassMembersDefinition>(c));
