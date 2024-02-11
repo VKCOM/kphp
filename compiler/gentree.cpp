@@ -1599,7 +1599,7 @@ VertexAdaptor<op_function> GenTree::get_function(bool is_lambda, const PhpDocCom
     if (cur_function->is_constructor()) {
       VertexUtil::func_force_return(cur_function->root, ClassData::gen_vertex_this(Location(line_num)));
     } else {
-      VertexUtil::func_force_return(cur_function->root);
+      VertexUtil::func_force_return(cur_function->root, Location(line_num));
     }
   } else {
     CE(!kphp_error(cur_function->modifiers.is_abstract() || processing_file->is_builtin(), "function must have non-empty body"));

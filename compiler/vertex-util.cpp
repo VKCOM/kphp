@@ -100,20 +100,28 @@ VertexAdaptor<op_seq> VertexUtil::embrace(VertexPtr v) {
   return VertexAdaptor<op_seq>::create(v).set_location(v);
 }
 
-void VertexUtil::func_force_return(VertexAdaptor<op_function> func, VertexPtr val) {
+void VertexUtil::func_force_return(VertexAdaptor<op_function> func, Location return_loc, VertexPtr val) {
   VertexPtr cmd = func->cmd();
   assert (cmd->type() == op_seq);
 
   VertexAdaptor<op_return> return_node;
   if (val) {
-    return_node = VertexAdaptor<op_return>::create(val);
+    return_node = VertexAdaptor<op_return>::create(val).set_location(return_loc);
   } else {
-    return_node = VertexAdaptor<op_return>::create();
+    return_node = VertexAdaptor<op_return>::create().set_location(return_loc);
   }
 
   std::vector<VertexPtr> next = cmd->get_next();
   next.push_back(return_node);
   func->cmd_ref() = VertexAdaptor<op_seq>::create(next);
+}
+
+void VertexUtil::func_force_return(VertexAdaptor<op_function> func, VertexPtr val) {
+  Location return_loc;
+  if (val) {
+    return_loc = val->location;
+  }
+  func_force_return(func, return_loc, val);
 }
 
 bool VertexUtil::is_superglobal(const std::string &s) {
