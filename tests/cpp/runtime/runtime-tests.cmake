@@ -1,4 +1,10 @@
+if (YAML)
+prepend(RUNTIME_TESTS_YAML_SOURCES /
+	yaml-test.cpp)
+endif()
+
 prepend(RUNTIME_TESTS_SOURCES ${BASE_DIR}/tests/cpp/runtime/
+        ${RUNTIME_TESTS_YAML_SOURCES}
         _runtime-tests-env.cpp
         allocator-malloc-replacement-test.cpp
         array-test.cpp
