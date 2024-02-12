@@ -119,7 +119,7 @@ struct AOSCatboostModel : public CatboostModelBase {
   explicit AOSCatboostModel(CatboostModel &&oth)
     : CatboostModelBase(std::move(static_cast<CatboostModelBase &&>(oth))) {
     tree_split.resize(oth.tree_split_border.size());
-    for (int i = 0; i < oth.tree_split_border.size(); ++i) {
+    for (size_t i = 0; i < oth.tree_split_border.size(); ++i) {
       tree_split[i].border = oth.tree_split_border[i];
       tree_split[i].feature_index = oth.tree_split_feature_index[i];
       tree_split[i].xor_mask = oth.tree_split_xor_mask[i];

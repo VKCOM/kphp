@@ -158,7 +158,7 @@ array<double> EvalXgboost::predict_input(const array<array<double>> &float_featu
 
   XgbDensePredictor feat_vecs[kphp_ml::BATCH_SIZE_XGB];
 
-  for (int i = 0; i < kphp_ml::BATCH_SIZE_XGB && i < rows_cnt; ++i) {
+  for (size_t i = 0; i < kphp_ml::BATCH_SIZE_XGB && i < rows_cnt; ++i) {
     feat_vecs[i].vector_x = linear_memory + i * xgb_model.num_features_present * 2;
   }
 
@@ -194,20 +194,20 @@ array<double> EvalXgboost::predict_input(const array<array<double>> &float_featu
     XgbDensePredictor::MissingFloatPair missing;
     std::fill((uint64_t *)linear_memory, reinterpret_cast<uint64_t *>(linear_memory) + block_size * xgb_model.num_features_present, *(uint64_t *)&missing);
 
-    for (int i = 0; i < block_size; ++i) {
+    for (size_t i = 0; i < block_size; ++i) {
       CALL_MEMBER_FN(feat_vecs[i], p)(xgb_model, iter_done.get_value());
       ++iter_done;
     }
 
     for (const auto &tree : xgb_model.trees) {
-      for (int i = 0; i < block_size; ++i) {
-        int idx = batch_offset + i;
+      for (size_t i = 0; i < block_size; ++i) {
+        size_t idx = batch_offset + i;
         raw[idx] += feat_vecs[i].predict_one_tree(tree);
       }
     }
   }
 
-  for (int i = 0; i < rows_cnt; ++i) {
+  for (size_t i = 0; i < rows_cnt; ++i) {
     raw[i] = xgb_model.transform_prediction(raw[i]);
   }
 
