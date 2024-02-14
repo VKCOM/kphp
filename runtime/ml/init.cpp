@@ -28,8 +28,6 @@ void init_ml_runtime() {
       auto model = kml_file_read(iter->path().c_str());
       if (LoadedModels.count(model.model_name) != 0) {
         fprintf(stderr, "kml-model with name \"%s\" is already loaded", model.model_name.c_str());
-        exit(42);
-        // todo handle this properly
       }
 
       auto cur_model_prediction_size = std::visit(
