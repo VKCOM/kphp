@@ -16,6 +16,6 @@ struct GlobalVarsMemoryStats : CodeGenRootCmd {
 private:
   void compile_getter_part(CodeGenerator &W, const std::set<VarPtr> &global_vars, size_t part_id) const;
 
-  const std::string getter_name_{"get_global_vars_memory_stats_impl"};
+  const std::string getter_name_{"globals_memory_stats_impl"};  // hardcoded in runtime, see f$get_global_vars_memory_stats()
   SrcFilePtr main_file_;
 };

@@ -1,11 +1,13 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2020 LLC «V Kontakte»
+// Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "compiler/code-gen/files/vars-cpp.h"
+// todo rename to const-vars-init.cpp
+#include "compiler/code-gen/files/const-vars-cpp.h"
 
 #include "common/algorithms/hashes.h"
 
+// todo filter
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/includes.h"
@@ -52,7 +54,7 @@ static void add_dependent_declarations(VertexPtr vertex, std::set<VarPtr> &depen
   }
 }
 
-void compile_raw_array(CodeGenerator &W, const VarPtr &var, int shift) {
+static void compile_raw_array(CodeGenerator &W, const VarPtr &var, int shift) {
   if (shift == -1) {
     W << InitVar(var);
     W << VarName(var) << ".set_reference_counter_to(ExtraRefCnt::for_global_const);" << NL << NL;
@@ -62,9 +64,8 @@ void compile_raw_array(CodeGenerator &W, const VarPtr &var, int shift) {
   W << VarName(var) << ".assign_raw((char *) &raw_arrays[" << shift << "]);" << NL << NL;
 }
 
-static void compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> &vars, size_t part_id) {
-  std::string file_name = "vars" + std::to_string(part_id) + ".cpp";
-  W << OpenFile(file_name, "o_vars_" + std::to_string(part_id / 100), false);
+static void compile_constants_part(CodeGenerator &W, const std::vector<VarPtr> &vars, size_t part_id) {
+  W << OpenFile("constants" + std::to_string(part_id) + ".cpp", "o_constants", false);
 
   W << ExternInclude(G->settings().runtime_headers.get());
 
@@ -74,7 +75,7 @@ static void compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> &vars,
   std::set<VarPtr> dependent_vars;
 
   IncludesCollector includes;
-  for (auto var : vars) {
+  for (VarPtr var : vars) {
     if (!G->settings().is_static_lib_mode() || !var->is_builtin_global()) {
       includes.add_var_signature_depends(var);
       includes.add_vertex_depends(var->init_val);
@@ -83,7 +84,7 @@ static void compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> &vars,
   W << includes;
 
   W << OpenNamespace();
-  for (auto var : vars) {
+  for (VarPtr var : vars) {
     if (G->settings().is_static_lib_mode() && var->is_builtin_global()) {
       continue;
     }
@@ -112,7 +113,7 @@ static void compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> &vars,
   std::vector<VarPtr> extern_depends;
   std::set_difference(dependent_vars.begin(), dependent_vars.end(),
                       vars.begin(), vars.end(), std::back_inserter(extern_depends));
-  for (auto var : extern_depends) {
+  for (VarPtr var : extern_depends) {
     W << VarExternDeclaration(var);
   }
 
@@ -126,22 +127,22 @@ static void compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> &vars,
   kphp_assert(const_array_shifts.size() == const_raw_array_vars.size());
 
 
-  const size_t max_dep_level = std::max({const_raw_string_vars.max_dep_level(), const_raw_array_vars.max_dep_level(), other_const_vars.max_dep_level()});
+  const size_t max_dep_level = std::max({const_raw_string_vars.max_dep_level(), const_raw_array_vars.max_dep_level(), other_const_vars.max_dep_level(), 1ul});
 
   size_t str_idx = 0;
   size_t arr_idx = 0;
   for (size_t dep_level = 0; dep_level < max_dep_level; ++dep_level) {
-    FunctionSignatureGenerator(W) << NL << "void const_vars_init_priority_" << dep_level << "_file_" << part_id << "()" << BEGIN;
+    FunctionSignatureGenerator(W) << NL << "void const_vars_init_deplevel" << dep_level << "_file" << part_id << "()" << BEGIN;
 
-    for (const auto &var : const_raw_string_vars.vars_by_dep_level(dep_level)) {
+    for (VarPtr var : const_raw_string_vars.vars_by_dep_level(dep_level)) {
       W << VarName(var) << ".assign_raw (&raw[" << const_string_shifts[str_idx++] << "]);" << NL;
     }
 
-    for (const auto &var : const_raw_array_vars.vars_by_dep_level(dep_level)) {
+    for (VarPtr var : const_raw_array_vars.vars_by_dep_level(dep_level)) {
       compile_raw_array(W, var, const_array_shifts[arr_idx++]);
     }
 
-    for (const auto &var: other_const_vars.vars_by_dep_level(dep_level)) {
+    for (VarPtr var: other_const_vars.vars_by_dep_level(dep_level)) {
       W << InitVar(var);
       const auto *type_data = var->tinf_node.get_type();
       PrimitiveType ptype = type_data->ptype();
@@ -161,8 +162,7 @@ static void compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> &vars,
   W << CloseFile();
 }
 
-
-VarsCpp::VarsCpp(std::vector<int> &&max_dep_levels, size_t parts_cnt)
+ConstVarsInit::ConstVarsInit(std::vector<int> &&max_dep_levels, size_t parts_cnt)
   : max_dep_levels_(std::move(max_dep_levels))
   , parts_cnt_(parts_cnt) {
   kphp_assert(1 <= parts_cnt_);
@@ -171,8 +171,8 @@ VarsCpp::VarsCpp(std::vector<int> &&max_dep_levels, size_t parts_cnt)
                         G->settings().globals_split_count.get()));
 }
 
-void VarsCpp::compile(CodeGenerator &W) const {
-  W << OpenFile("vars.cpp", "", false);
+void ConstVarsInit::compile(CodeGenerator &W) const {
+  W << OpenFile("constants.cpp", "", false);
   W << OpenNamespace();
 
   FunctionSignatureGenerator(W) << "void const_vars_init() " << BEGIN;
@@ -181,11 +181,11 @@ void VarsCpp::compile(CodeGenerator &W) const {
   for (int dep_level = 0; dep_level <= very_max_dep_level; ++dep_level) {
     for (size_t part_id = 0; part_id < parts_cnt_; ++part_id) {
       if (dep_level <= max_dep_levels_[part_id]) {
-        auto init_fun = fmt_format("const_vars_init_priority_{}_file_{}();", dep_level, part_id);
+        auto func_name_i = fmt_format("const_vars_init_deplevel{}_file{}();", dep_level, part_id);
         // function declaration
-        W << "void " << init_fun << NL;
+        W << "void " << func_name_i << NL;
         // function call
-        W << init_fun << NL;
+        W << func_name_i << NL;
       }
     }
   }
@@ -194,11 +194,11 @@ void VarsCpp::compile(CodeGenerator &W) const {
   W << CloseFile();
 }
 
-VarsCppPart::VarsCppPart(std::vector<VarPtr> &&vars_of_part, size_t part_id)
+ConstVarsInitPart::ConstVarsInitPart(std::vector<VarPtr> &&vars_of_part, size_t part_id)
   : vars_of_part_(std::move(vars_of_part))
   , part_id(part_id) {}
 
-void VarsCppPart::compile(CodeGenerator &W) const {
+void ConstVarsInitPart::compile(CodeGenerator &W) const {
   std::sort(vars_of_part_.begin(), vars_of_part_.end());
-  compile_vars_part(W, vars_of_part_, part_id);
+  compile_constants_part(W, vars_of_part_, part_id);
 }

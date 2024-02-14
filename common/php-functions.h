@@ -232,31 +232,6 @@ bool php_try_to_int(const char *s, size_t l, int64_t *val) {
   return true;
 }
 
-//returns len of raw string representation or -1 on error
-inline int string_raw_len(int src_len) {
-  if (src_len < 0 || src_len >= (1 << 30) - 13) {
-    return -1;
-  }
-
-  return src_len + 13;
-}
-
-//returns len of raw string representation and writes it to dest or returns -1 on error
-inline int string_raw(char *dest, int dest_len, const char *src, int src_len) {
-  int raw_len = string_raw_len(src_len);
-  if (raw_len == -1 || raw_len > dest_len) {
-    return -1;
-  }
-  int *dest_int = reinterpret_cast <int *> (dest);
-  dest_int[0] = src_len;
-  dest_int[1] = src_len;
-  dest_int[2] = ExtraRefCnt::for_global_const;
-  memcpy(dest + 3 * sizeof(int), src, src_len);
-  dest[3 * sizeof(int) + src_len] = '\0';
-
-  return raw_len;
-}
-
 template<class T>
 inline constexpr int three_way_comparison(const T &lhs, const T &rhs) {
   return lhs < rhs ? -1 :
