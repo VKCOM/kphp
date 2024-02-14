@@ -74,9 +74,12 @@ prepend(KPHP_COMPILER_CODEGEN_SOURCES code-gen/
         code-generator.cpp
         declarations.cpp
         files/cmake-lists-txt.cpp
+        files/const-vars-cpp.cpp
         files/function-header.cpp
         files/function-source.cpp
-        files/global_vars_memory_stats.cpp
+        files/global-vars-memory-stats.cpp
+        files/global-vars-cpp.cpp
+        files/global-vars-reset.cpp
         files/init-scripts.cpp
         files/json-encoder-tags.cpp
         files/lib-header.cpp
@@ -91,8 +94,6 @@ prepend(KPHP_COMPILER_CODEGEN_SOURCES code-gen/
         files/shape-keys.cpp
         files/tracing-autogen.cpp
         files/type-tagger.cpp
-        files/vars-cpp.cpp
-        files/vars-reset.cpp
         includes.cpp
         raw-data.cpp
         vertex-compiler.cpp

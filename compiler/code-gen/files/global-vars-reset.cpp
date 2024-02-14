@@ -2,8 +2,9 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "compiler/code-gen/files/vars-reset.h"
+#include "compiler/code-gen/files/global-vars-reset.h"
 
+// todo filter
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/includes.h"
@@ -31,24 +32,24 @@ void GlobalVarsReset::declare_extern_for_init_val(VertexPtr v, std::set<VarPtr> 
   }
 }
 
-void GlobalVarsReset::compile_part(FunctionPtr func, const std::set<VarPtr> &used_vars, int part_i, CodeGenerator &W) {
+void GlobalVarsReset::compile_globals_reset_part(const std::set<VarPtr> &used_vars, int part_i, CodeGenerator &W) {
   IncludesCollector includes;
-  for (auto var : used_vars) {
+  for (VarPtr var : used_vars) {
     includes.add_var_signature_depends(var);
   }
   W << includes;
   W << OpenNamespace();
 
   std::set<VarPtr> externed_vars;
-  for (auto var : used_vars) {
+  for (VarPtr var : used_vars) {
     W << VarExternDeclaration(var);
     if (var->init_val) {
       declare_extern_for_init_val(var->init_val, externed_vars, W);
     }
   }
 
-  FunctionSignatureGenerator(W) << "void " << GlobalVarsResetFuncName(func, part_i) << " " << BEGIN;
-  for (auto var : used_vars) {
+  FunctionSignatureGenerator(W) << "void global_vars_reset" << part_i << "()" << BEGIN;
+  for (VarPtr var : used_vars) {
     if (G->settings().is_static_lib_mode() && var->is_builtin_global()) {
       continue;
     }
@@ -66,13 +67,16 @@ void GlobalVarsReset::compile_part(FunctionPtr func, const std::set<VarPtr> &use
   W << CloseNamespace();
 }
 
-void GlobalVarsReset::compile_func(FunctionPtr func, int parts_n, CodeGenerator &W) {
+void GlobalVarsReset::compile_globals_reset(int parts_n, CodeGenerator &W) {
   W << OpenNamespace();
-  FunctionSignatureGenerator(W) << "void " << GlobalVarsResetFuncName(func) << " " << BEGIN;
+  FunctionSignatureGenerator(W) << "void global_vars_reset()" << BEGIN;
 
-  for (int i = 0; i < parts_n; i++) {
-    W << "void " << GlobalVarsResetFuncName(func, i) << ";" << NL;
-    W << GlobalVarsResetFuncName(func, i) << ";" << NL;
+  for (int part_id = 0; part_id < parts_n; part_id++) {
+    const std::string func_name_i = "global_vars_reset" + std::to_string(part_id);
+    // function declaration
+    W << "void " << func_name_i << "();" << NL;
+    // function call
+    W << func_name_i << "();" << NL;
   }
 
   W << END;
@@ -81,27 +85,19 @@ void GlobalVarsReset::compile_func(FunctionPtr func, int parts_n, CodeGenerator 
 }
 
 void GlobalVarsReset::compile(CodeGenerator &W) const {
-  FunctionPtr main_func = main_file_->main_function;
-
   VarsCollector vars_collector{32};
-  vars_collector.collect_global_and_static_vars_from(main_func);
+  vars_collector.collect_global_and_static_vars_from(main_file_->main_function);
   auto used_vars = vars_collector.flush();
 
-  static const std::string vars_reset_src_prefix = "vars_reset.";
-  std::vector<std::string> src_names(used_vars.size());
   for (int i = 0; i < used_vars.size(); i++) {
-    src_names[i] = vars_reset_src_prefix + std::to_string(i) + "." + main_func->src_name;
-  }
-
-  for (int i = 0; i < used_vars.size(); i++) {
-    W << OpenFile(src_names[i], "o_vars_reset", false);
+    W << OpenFile("globals_reset." + std::to_string(i) + ".cpp", "o_globals_reset", false);
     W << ExternInclude(G->settings().runtime_headers.get());
-    compile_part(main_func, used_vars[i], i, W);
+    compile_globals_reset_part(used_vars[i], i, W);
     W << CloseFile();
   }
 
-  W << OpenFile(vars_reset_src_prefix + main_func->src_name, "", false);
+  W << OpenFile("globals_reset.cpp", "", false);
   W << ExternInclude(G->settings().runtime_headers.get());
-  compile_func(main_func, used_vars.size(), W);
+  compile_globals_reset(used_vars.size(), W);
   W << CloseFile();
 }

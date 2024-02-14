@@ -2,13 +2,14 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "compiler/code-gen/files/global_vars_memory_stats.h"
+#include "compiler/code-gen/files/global-vars-memory-stats.h"
 
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/includes.h"
 #include "compiler/code-gen/namespace.h"
 #include "compiler/code-gen/raw-data.h"
+#include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/vars-collector.h"
 #include "compiler/inferring/public.h"
@@ -30,17 +31,24 @@ void GlobalVarsMemoryStats::compile(CodeGenerator &W) const {
     global_vars_count += global_vars.size();
   }
 
-  W << OpenFile(getter_name_ + ".cpp", "", false)
+  W << OpenFile("globals_memory_stats.cpp", "", false)
     << ExternInclude(G->settings().runtime_headers.get())
     << OpenNamespace();
+
+  // we don't take libs into account here (don't call "global memory stats" for every lib),
+  // since we have to guarantee that libs were compiled with a necessary flag also
+  // (most likely, not, then C++ compilation will fail)
 
   FunctionSignatureGenerator(W) << "array<int64_t> " << getter_name_ << "(int64_t lower_bound) " << BEGIN
                                 << "array<int64_t> result;" << NL
                                 << "result.reserve(" << global_vars_count << ", false);" << NL << NL;
 
   for (size_t part_id = 0; part_id < global_var_parts.size(); ++part_id) {
-    W << "void " << getter_name_ << "_" << part_id << "(int64_t lower_bound, array<int64_t> &result);" << NL
-      << getter_name_ << "_" << part_id << "(lower_bound, result);" << NL << NL;
+    const std::string func_name_i = getter_name_ + std::to_string(part_id);
+    // function declaration
+    FunctionSignatureGenerator(W) << "void " << func_name_i << "(int64_t lower_bound, array<int64_t> &result)" << SemicolonAndNL();
+    // function call
+    W << func_name_i << "(lower_bound, result);" << NL << NL;
   }
 
   W << "return result;" << NL << END
@@ -53,7 +61,7 @@ void GlobalVarsMemoryStats::compile(CodeGenerator &W) const {
 }
 
 void GlobalVarsMemoryStats::compile_getter_part(CodeGenerator &W, const std::set<VarPtr> &global_vars, size_t part_id) const {
-  W << OpenFile(getter_name_ + "_" + std::to_string(part_id) + ".cpp", "o_" + getter_name_, false)
+  W << OpenFile("globals_memory_stats" + std::to_string(part_id) + ".cpp", "o_globals_memory_stats", false)
     << ExternInclude(G->settings().runtime_headers.get());
 
   IncludesCollector includes;
@@ -72,14 +80,16 @@ void GlobalVarsMemoryStats::compile_getter_part(CodeGenerator &W, const std::set
   W << includes << NL
     << OpenNamespace();
 
-  FunctionSignatureGenerator(W) << "static string get_raw_string(int raw_offset) " << BEGIN;
   const auto var_name_shifts = compile_raw_data(W, var_names);
+  W << NL;
+
+  FunctionSignatureGenerator(W) << "static string get_raw_string(int raw_offset) " << BEGIN;
   W << "string str;" << NL
     << "str.assign_raw(&raw[raw_offset]);" << NL
     << "return str;" << NL
     << END << NL << NL;
 
-  FunctionSignatureGenerator(W) << "void " << getter_name_ << "_" << part_id << "(int64_t lower_bound, array<int64_t> &result) " << BEGIN
+  FunctionSignatureGenerator(W) << "void " << getter_name_ << part_id << "(int64_t lower_bound, array<int64_t> &result) " << BEGIN
                                 << "int64_t estimation = 0;" << NL;
   size_t var_num = 0;
   for (auto global_var : global_vars) {

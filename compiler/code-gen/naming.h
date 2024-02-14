@@ -230,21 +230,3 @@ struct VarName {
     W << "v$" << var->name;
   }
 };
-
-struct GlobalVarsResetFuncName {
-  explicit GlobalVarsResetFuncName(FunctionPtr main_func, int part = -1) :
-    main_func_(main_func),
-    part_(part) {}
-
-  void compile(CodeGenerator &W) const {
-    W << FunctionName(main_func_) << "$global_vars_reset";
-    if (part_ >= 0) {
-      W << std::to_string(part_);
-    }
-    W << "()";
-  }
-
-private:
-  const FunctionPtr main_func_;
-  const int part_{-1};
-};

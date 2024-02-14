@@ -32,7 +32,7 @@ const ClassMemberInstanceField *VarData::as_class_instance_field() const {
   return class_id->members.get_instance_field(name);
 }
 
-// TODO Dirty HACK, should be removed
+// TODO Dirty HACK, should be removed !!
 bool VarData::does_name_eq_any_builtin_global(const std::string &name) {
   static const std::unordered_set<std::string> names = {
     "_SERVER", "_GET", "_POST", "_FILES", "_COOKIE", "_REQUEST", "_ENV", "argc", "argv",
@@ -41,6 +41,7 @@ bool VarData::does_name_eq_any_builtin_global(const std::string &name) {
   return names.find(name) != names.end();
 }
 
+// todo del
 bool operator<(VarPtr a, VarPtr b) {
   int cmp_res = a->name.compare(b->name);
 
