@@ -2,6 +2,8 @@
 
 #include <filesystem>
 
+#include "common/kprintf.h"
+
 #include "runtime/ml/kml-files-reader.h"
 
 template<class>
@@ -26,8 +28,11 @@ void init_ml_runtime() {
   for (auto iter = fs::recursive_directory_iterator(KmlDirPath), end = fs::recursive_directory_iterator(); iter != end; ++iter) {
     if (iter->path().extension() == ".kml") {
       auto model = kml_file_read(iter->path().c_str());
-      if (LoadedModels.count(model.model_name) != 0) {
-        fprintf(stderr, "kml-model with name \"%s\" is already loaded", model.model_name.c_str());
+
+      if (LoadedModels.count(model.model_name) == 0) {
+        kprintf("kml-model with name \"%s\" successfully loaded", model.model_name.c_str());
+      } else {
+        kprintf("kml-model with name \"%s\" is already loaded; previous one will be used", model.model_name.c_str());
       }
 
       auto cur_model_prediction_size = std::visit(
@@ -39,7 +44,7 @@ void init_ml_runtime() {
             return align_to(sizeof(char) * impl.binary_feature_count, sizeof(int)) + sizeof(int) * impl.cat_feature_count
                    + sizeof(std::pair<int, int>) * impl.cat_feature_count + sizeof(float) * impl.model_ctrs.used_model_ctrs_count;
           } else {
-            static_assert(always_false_v<impl_type>, "Cannot calculate memory required for a model to predict");
+            static_assert(always_false_v<impl_type>, "Cannot calculate memory required for a model to predict: unknown kml type");
           }
         },
         model.impl);
