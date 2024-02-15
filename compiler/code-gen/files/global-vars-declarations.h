@@ -9,11 +9,11 @@
 #include "compiler/code-gen/code-gen-root-cmd.h"
 #include "compiler/code-gen/code-generator.h"
 
-struct GlobalVarsCppPart : CodeGenRootCmd {
-  GlobalVarsCppPart(std::vector<VarPtr> &&vars_of_part, size_t part_id);
+struct GlobalVarsDeclarationsPart : CodeGenRootCmd {
+  GlobalVarsDeclarationsPart(std::vector<VarPtr> &&vars_of_part, size_t part_id);
   void compile(CodeGenerator &W) const final;
 
 private:
-  mutable std::vector<VarPtr> vars_of_part_;
+  std::vector<VarPtr> vars_of_part_;
   size_t part_id;
 };

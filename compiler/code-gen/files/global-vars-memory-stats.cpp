@@ -61,7 +61,7 @@ void GlobalVarsMemoryStats::compile(CodeGenerator &W) const {
 }
 
 void GlobalVarsMemoryStats::compile_getter_part(CodeGenerator &W, const std::set<VarPtr> &global_vars, size_t part_id) const {
-  W << OpenFile("globals_memory_stats" + std::to_string(part_id) + ".cpp", "o_globals_memory_stats", false)
+  W << OpenFile("globals_memory_stats." + std::to_string(part_id) + ".cpp", "o_globals_memory_stats", false)
     << ExternInclude(G->settings().runtime_headers.get());
 
   IncludesCollector includes;

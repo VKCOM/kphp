@@ -27,3 +27,4 @@ mixed::~mixed() noexcept {
   clear();
 }
 
+static_assert(sizeof(mixed) == SIZEOF_MIXED, "sizeof(mixed) at runtime doesn't match compile-time");

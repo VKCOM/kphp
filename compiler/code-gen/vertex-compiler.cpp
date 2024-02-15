@@ -2132,7 +2132,12 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       W << "Optional<bool>{}";
       break;
     case op_var:
-      W << VarName(root.as<op_var>()->var_id);
+      if (root.as<op_var>()->var_id->is_constant()) {
+        kphp_assert(root.as<op_var>()->var_id->offset_in_linear_mem >= 0);
+        W << "(*reinterpret_cast<" << type_out(tinf::get_type(root.as<op_var>()->var_id)) << "*>(constants_linear_mem+" << root.as<op_var>()->var_id->offset_in_linear_mem << "))";
+      } else {
+        W << VarName(root.as<op_var>()->var_id);
+      }
       break;
     case op_string:
       compile_string(root.as<op_string>(), W);

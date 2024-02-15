@@ -14,16 +14,17 @@
 
 #include "common/algorithms/hashes.h"
 
+#include "compiler/code-gen/const-globals-linear-mem.h"
+#include "compiler/compiler-settings.h"
+#include "compiler/composer.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/ffi-data.h"
-#include "compiler/compiler-settings.h"
+#include "compiler/function-colors.h"
 #include "compiler/index.h"
 #include "compiler/stats.h"
 #include "compiler/threading/data-stream.h"
 #include "compiler/threading/hash-table.h"
 #include "compiler/tl-classes.h"
-#include "compiler/composer.h"
-#include "compiler/function-colors.h"
 
 class CompilerCore {
 private:
@@ -33,7 +34,7 @@ private:
   TSHashTable<FunctionPtr> functions_ht;
   TSHashTable<ClassPtr> classes_ht;
   TSHashTable<DefinePtr> defines_ht;
-  TSHashTable<VarPtr,2'000'000> global_vars_ht;
+  TSHashTable<VarPtr,2'000'000> global_vars_ht;   // todo probably, separate mutable globals and constants
   TSHashTable<LibPtr, 1000> libs_ht;
   TSHashTable<ModulitePtr, 1000> modulites_ht;
   TSHashTable<ComposerJsonPtr, 1000> composer_json_ht;
@@ -47,6 +48,7 @@ private:
   bool is_untyped_rpc_tl_used{false};
   bool is_functions_txt_parsed{false};
   function_palette::Palette function_palette;
+  ConstantsLinearMem constants_linear_mem;
 
   inline bool try_require_file(SrcFilePtr file);
 
@@ -136,6 +138,10 @@ public:
 
   function_palette::Palette &get_function_palette() {
     return function_palette;
+  }
+
+  ConstantsLinearMem &get_constants_linear_mem() {
+    return constants_linear_mem;
   }
 
   void set_untyped_rpc_tl_used() {

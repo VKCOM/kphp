@@ -44,7 +44,9 @@ public:
   bool marked_as_const = false;
   bool is_read_only = true;
   bool is_foreach_reference = false;
+  // todo for constants only
   int dependency_level = 0;
+  int offset_in_linear_mem = -1;
 
   void set_uninited_flag(bool f);
   bool get_uninited_flag();

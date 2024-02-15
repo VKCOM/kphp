@@ -33,6 +33,13 @@ constexpr int STRLEN_VOID = STRLEN_ERROR;
 constexpr int STRLEN_FUTURE = STRLEN_ERROR;
 constexpr int STRLEN_FUTURE_QUEUE = STRLEN_ERROR;
 
+constexpr int SIZEOF_STRING = 8;
+constexpr int SIZEOF_ARRAY_ANY = 8;
+constexpr int SIZEOF_MIXED = 16;
+constexpr int SIZEOF_INSTANCE_ANY = 8;
+constexpr int SIZEOF_OPTIONAL = 8;
+constexpr int SIZEOF_REGEXP = 48;
+
 class ExtraRefCnt {
 public:
   enum extra_ref_cnt_value {
