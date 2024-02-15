@@ -9,10 +9,10 @@
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/files/cmake-lists-txt.h"
-#include "compiler/code-gen/files/const-vars-cpp.h"
+#include "compiler/code-gen/files/const-vars-init.h"
 #include "compiler/code-gen/files/function-header.h"
 #include "compiler/code-gen/files/function-source.h"
-#include "compiler/code-gen/files/global-vars-cpp.h"
+#include "compiler/code-gen/files/global-vars-declarations.h"
 #include "compiler/code-gen/files/global-vars-memory-stats.h"
 #include "compiler/code-gen/files/global-vars-reset.h"
 #include "compiler/code-gen/files/init-scripts.h"
@@ -70,6 +70,21 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
   const std::vector<ClassPtr> &all_classes = G->get_classes();
   std::set<ClassPtr> all_json_encoders;
 
+  std::vector<VarPtr> all_global_vars = G->get_global_vars();
+  for (FunctionPtr f : all_functions) {
+    all_global_vars.insert(all_global_vars.end(), f->static_var_ids.begin(), f->static_var_ids.end());
+  }
+  size_t parts_cnt = calc_count_of_parts(all_global_vars.size());
+
+  std::vector<VarPtr> all_constants;
+  for (VarPtr var : all_global_vars) {
+    if (var->is_constant()) {
+      all_constants.push_back(var);
+    }
+  }
+  // todo get_constants_linear_mem() should return const, and here we should use some init()?
+  G->get_constants_linear_mem().prepare_constants_linear_mem_and_assign_offsets(all_constants);
+
   for (FunctionPtr f : all_functions) {
     code_gen_start_root_task(os, std::make_unique<FunctionH>(f));
     code_gen_start_root_task(os, std::make_unique<FunctionCpp>(f));
@@ -104,12 +119,6 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
     code_gen_start_root_task(os, std::make_unique<GlobalVarsMemoryStats>(G->get_main_file()));
   }
   code_gen_start_root_task(os, std::make_unique<InitScriptsCpp>(G->get_main_file()));
-
-  std::vector<VarPtr> global_vars = G->get_global_vars();
-  for (FunctionPtr f : all_functions) {
-    global_vars.insert(global_vars.end(), f->static_var_ids.begin(), f->static_var_ids.end());
-  }
-  size_t parts_cnt = calc_count_of_parts(global_vars.size());
 
   std::unordered_map<std::string, int> functions_using_constants;
   std::unordered_map<std::string, int> functions_using_globals;
@@ -178,7 +187,7 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
   std::unordered_set<FunctionPtr> functions_having_static_vars;
   std::unordered_map<std::string, int> globals_by_type;
 
-  for (VarPtr var : global_vars) {
+  for (VarPtr var : all_global_vars) {
     if (var->is_constant()) {
       n_const_total++;
       const TypeData *type = tinf::get_type(var);
@@ -254,7 +263,7 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
   std::vector<std::vector<VarPtr>> globals_batches(parts_cnt);
   std::vector<std::vector<VarPtr>> constants_batches(parts_cnt);
   std::vector<int> max_dep_levels(parts_cnt);
-  for (VarPtr var : global_vars) {
+  for (VarPtr var : all_global_vars) {
     int part_id = vk::std_hash(var->name) % parts_cnt;
     if (var->is_constant()) {
       constants_batches[part_id].emplace_back(var);
@@ -264,7 +273,7 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
     }
   }
   for (size_t part_id = 0; part_id < parts_cnt; ++part_id) {
-    code_gen_start_root_task(os, std::make_unique<GlobalVarsCppPart>(std::move(globals_batches[part_id]), part_id));
+    code_gen_start_root_task(os, std::make_unique<GlobalVarsDeclarationsPart>(std::move(globals_batches[part_id]), part_id));
     code_gen_start_root_task(os, std::make_unique<ConstVarsInitPart>(std::move(constants_batches[part_id]), part_id));
   }
   code_gen_start_root_task(os, std::make_unique<ConstVarsInit>(std::move(max_dep_levels), parts_cnt));
@@ -336,6 +345,7 @@ void CodeGenF::prepare_generate_function(FunctionPtr func) {
     ? func->file_id->owner_lib->headers_dir() + func->header_name
     : func->subdir + "/" + func->header_name;
 
+  // todo should be not needed for static/global
   std::sort(func->static_var_ids.begin(), func->static_var_ids.end());
   std::sort(func->global_var_ids.begin(), func->global_var_ids.end());
   std::sort(func->local_var_ids.begin(), func->local_var_ids.end());

@@ -8,3 +8,5 @@
 string::~string() noexcept {
   destroy();
 }
+
+static_assert(sizeof(string) == SIZEOF_STRING, "sizeof(string) at runtime doesn't match compile-time");

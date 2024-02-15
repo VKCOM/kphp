@@ -25,7 +25,9 @@ void FunctionH::compile(CodeGenerator &W) const {
   W << includes;
 
   W << OpenNamespace();
-  for (auto const_var : function->explicit_header_const_var_ids) {
+  kphp_assert(function->explicit_header_const_var_ids.empty());
+  for (VarPtr const_var : function->explicit_header_const_var_ids) {
+    // todo what's it?
     W << VarExternDeclaration(const_var) << NL;
   }
 

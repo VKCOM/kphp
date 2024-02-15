@@ -4,16 +4,12 @@
 
 #include "compiler/code-gen/files/global-vars-reset.h"
 
-// todo filter
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/declarations.h"
-#include "compiler/code-gen/includes.h"
 #include "compiler/code-gen/namespace.h"
 #include "compiler/code-gen/vertex-compiler.h"
-#include "compiler/data/class-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/vars-collector.h"
-#include "compiler/vertex.h"
 
 GlobalVarsReset::GlobalVarsReset(SrcFilePtr main_file) :
   main_file_(main_file) {
@@ -23,7 +19,8 @@ void GlobalVarsReset::declare_extern_for_init_val(VertexPtr v, std::set<VarPtr> 
   if (auto var_vertex = v.try_as<op_var>()) {
     VarPtr var = var_vertex->var_id;
     if (externed_vars.insert(var).second) {
-      W << VarExternDeclaration(var);
+      // todo avoid duplicates
+      W << "extern char *constants_linear_mem;" << NL;
     }
     return;
   }
@@ -48,7 +45,7 @@ void GlobalVarsReset::compile_globals_reset_part(const std::set<VarPtr> &used_va
     }
   }
 
-  FunctionSignatureGenerator(W) << "void global_vars_reset" << part_i << "()" << BEGIN;
+  FunctionSignatureGenerator(W) << "void global_vars_reset_file" << part_i << "()" << BEGIN;
   for (VarPtr var : used_vars) {
     if (G->settings().is_static_lib_mode() && var->is_builtin_global()) {
       continue;
@@ -72,7 +69,7 @@ void GlobalVarsReset::compile_globals_reset(int parts_n, CodeGenerator &W) {
   FunctionSignatureGenerator(W) << "void global_vars_reset()" << BEGIN;
 
   for (int part_id = 0; part_id < parts_n; part_id++) {
-    const std::string func_name_i = "global_vars_reset" + std::to_string(part_id);
+    const std::string func_name_i = "global_vars_reset_file" + std::to_string(part_id);
     // function declaration
     W << "void " << func_name_i << "();" << NL;
     // function call

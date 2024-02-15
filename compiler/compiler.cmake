@@ -72,13 +72,14 @@ prepend(KPHP_COMPILER_INFERRING_SOURCES inferring/
 prepend(KPHP_COMPILER_CODEGEN_SOURCES code-gen/
         code-gen-task.cpp
         code-generator.cpp
+        const-globals-linear-mem.cpp
         declarations.cpp
         files/cmake-lists-txt.cpp
-        files/const-vars-cpp.cpp
+        files/const-vars-init.cpp
         files/function-header.cpp
         files/function-source.cpp
+        files/global-vars-declarations.cpp
         files/global-vars-memory-stats.cpp
-        files/global-vars-cpp.cpp
         files/global-vars-reset.cpp
         files/init-scripts.cpp
         files/json-encoder-tags.cpp

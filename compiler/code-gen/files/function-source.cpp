@@ -17,19 +17,19 @@ FunctionCpp::FunctionCpp(FunctionPtr function) :
 }
 
 void declare_global_vars(FunctionPtr function, CodeGenerator &W) {
-  for (auto global_var : function->global_var_ids) {
+  for (VarPtr global_var : function->global_var_ids) {
     W << VarExternDeclaration(global_var) << NL;
   }
 }
 
 void declare_const_vars(FunctionPtr function, CodeGenerator &W) {
-  for (auto const_var : function->explicit_const_var_ids) {
-    W << VarExternDeclaration(const_var) << NL;
+  if (!function->explicit_const_var_ids.empty()) {
+    W << "extern char *constants_linear_mem;" << NL;
   }
 }
 
 void declare_static_vars(FunctionPtr function, CodeGenerator &W) {
-  for (auto static_var : function->static_var_ids) {
+  for (VarPtr static_var : function->static_var_ids) {
     W << VarExternDeclaration(static_var) << NL;
   }
 }

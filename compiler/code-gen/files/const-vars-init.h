@@ -8,9 +8,8 @@
 
 #include "compiler/code-gen/code-gen-root-cmd.h"
 #include "compiler/code-gen/code-generator.h"
+#include "compiler/code-gen/raw-data.h" // todo del
 
-// todo rename file
-// todo rename; init?
 struct ConstVarsInit : CodeGenRootCmd {
   ConstVarsInit(std::vector<int> &&max_dep_levels, size_t parts_cnt);
   void compile(CodeGenerator &W) const final;

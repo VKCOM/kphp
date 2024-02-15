@@ -33,6 +33,7 @@ static re2::StringPiece RE2_submatch[MAX_SUBPATTERNS];
 int32_t regexp::submatch[3 * MAX_SUBPATTERNS];
 pcre_extra regexp::extra;
 
+static_assert(sizeof(regexp) == SIZEOF_REGEXP, "sizeof(regexp) at runtime doesn't match compile-time");
 
 regexp::regexp(const string &regexp_string) {
   init(regexp_string);
