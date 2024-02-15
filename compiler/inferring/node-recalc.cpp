@@ -103,7 +103,12 @@ void NodeRecalc::set_lca_at(const MultiKey *key, const RValue &rvalue) {
     key = &MultiKey::any_key(0);
   }
 
-  new_type_->set_lca_at(*key, type, !rvalue.drop_or_false, !rvalue.drop_or_null, rvalue.ffi_flags);
+  TypeData::LCAFlags lca_flags;
+  lca_flags.save_or_false = !rvalue.drop_or_false;
+  lca_flags.save_or_null = !rvalue.drop_or_null;
+  lca_flags.ffi_drop_ref = rvalue.ffi_drop_ref;
+  lca_flags.ffi_take_addr = rvalue.ffi_take_addr;
+  new_type_->set_lca_at(*key, type, lca_flags);
 
   if (unlikely(new_type_->error_flag())) {
     on_new_type_became_tpError(type, rvalue);

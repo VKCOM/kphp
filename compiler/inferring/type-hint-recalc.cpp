@@ -93,7 +93,7 @@ void TypeHintArgSubkeyGet::recalc_type_data_in_context_of_call(TypeData *dst, Ve
 }
 
 void TypeHintArray::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const {
-  dst->set_lca(TypeData::get_type(tp_array));
+  dst->set_lca(TypeData::get_type(tp_array), TypeData::LCAFlags::for_phpdoc());
   TypeData nested(*TypeData::get_type(tp_any));
   inner->recalc_type_data_in_context_of_call(&nested, call);
   dst->set_lca_at(MultiKey::any_key(1), &nested);
@@ -193,10 +193,10 @@ void TypeHintRefToMethod::recalc_type_data_in_context_of_call(TypeData *dst, Ver
 void TypeHintOptional::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const {
   inner->recalc_type_data_in_context_of_call(dst, call);
   if (or_null) {
-    dst->set_lca(TypeData::get_type(tp_Null));
+    dst->set_lca(TypeData::get_type(tp_Null), TypeData::LCAFlags::for_phpdoc());
   }
   if (or_false) {
-    dst->set_lca(TypeData::get_type(tp_False));
+    dst->set_lca(TypeData::get_type(tp_False), TypeData::LCAFlags::for_phpdoc());
   }
 }
 
@@ -207,7 +207,7 @@ void TypeHintPipe::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr 
 }
 
 void TypeHintPrimitive::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__ ((unused))) const {
-  dst->set_lca(TypeData::get_type(ptype));
+  dst->set_lca(TypeData::get_type(ptype), TypeData::LCAFlags::for_phpdoc());
 }
 
 void TypeHintObject::recalc_type_data_in_context_of_call(TypeData *dst __attribute__ ((unused)), VertexPtr call __attribute__ ((unused))) const {
