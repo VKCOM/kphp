@@ -36,7 +36,6 @@ const ClassMemberInstanceField *VarData::as_class_instance_field() const {
 bool VarData::does_name_eq_any_builtin_global(const std::string &name) {
   static const std::unordered_set<std::string> names = {
     "_SERVER", "_GET", "_POST", "_FILES", "_COOKIE", "_REQUEST", "_ENV", "argc", "argv",
-    "MC", "MC_True", "config", "Durov", "FullMCTime", "KPHP_MC_WRITE_STAT_PROBABILITY",
     "d$PHP_SAPI"};
   return names.find(name) != names.end();
 }

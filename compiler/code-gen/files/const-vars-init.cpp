@@ -83,7 +83,7 @@ static void compile_constants_part(CodeGenerator &W, const std::vector<VarPtr> &
 
   IncludesCollector includes;
   for (VarPtr var : vars) {
-    if (!G->settings().is_static_lib_mode() || !var->is_builtin_global()) {
+    if (!G->settings().is_static_lib_mode()) {
       includes.add_var_signature_depends(var);
       includes.add_vertex_depends(var->init_val);
     }
@@ -94,28 +94,21 @@ static void compile_constants_part(CodeGenerator &W, const std::vector<VarPtr> &
   W << "extern char *constants_linear_mem;" << NL << NL;
 
   for (VarPtr var : vars) {
-    if (G->settings().is_static_lib_mode() && var->is_builtin_global()) {
-      continue;
-    }
-
-    kphp_assert(var->is_constant());
-    if (var->is_constant()) { // todo unwrap
-      switch (var->init_val->type()) {
-        case op_string:
-          const_raw_string_vars.add(var);
-          break;
-        case op_array:
-          add_dependent_declarations(var->init_val, dependent_vars);
-          const_raw_array_vars.add(var);
-          break;
-        case op_var:
-          add_dependent_declarations(var->init_val, dependent_vars);
-          other_const_vars.add(var);
-          break;
-        default:
-          other_const_vars.add(var);
-          break;
-      }
+    switch (var->init_val->type()) {
+      case op_string:
+        const_raw_string_vars.add(var);
+        break;
+      case op_array:
+        add_dependent_declarations(var->init_val, dependent_vars);
+        const_raw_array_vars.add(var);
+        break;
+      case op_var:
+        add_dependent_declarations(var->init_val, dependent_vars);
+        other_const_vars.add(var);
+        break;
+      default:
+        other_const_vars.add(var);
+        break;
     }
   }
 
@@ -188,9 +181,13 @@ void ConstVarsInit::compile(CodeGenerator &W) const {
   W << NL;
   G->get_constants_linear_mem().codegen_counts_as_comments(W);
   W << "char *constants_linear_mem;" << NL << NL;
+  // todo this is in const-vars-init, not the best place, but it will be extracted to a "context" anyway
+  G->get_globals_linear_mem().codegen_counts_as_comments(W);
+  W << "char *globals_linear_mem;" << NL << NL;
 
   FunctionSignatureGenerator(W) << "void const_vars_init() " << BEGIN;
   W << "constants_linear_mem = new char[" << G->get_constants_linear_mem().get_total_linear_mem_size() << "];" << NL << NL;
+  W << "globals_linear_mem = new char[" << G->get_globals_linear_mem().get_total_linear_mem_size() << "];" << NL << NL;
 
   const int very_max_dep_level = *std::max_element(max_dep_levels_.begin(), max_dep_levels_.end());
   for (int dep_level = 0; dep_level <= very_max_dep_level; ++dep_level) {

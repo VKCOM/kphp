@@ -14,6 +14,18 @@
 #include "compiler/data/vars-collector.h"
 #include "compiler/inferring/public.h"
 
+struct GlobalInLinearMem {   // todo duplicate
+  VarPtr global_var;
+
+  explicit GlobalInLinearMem(VarPtr mutable_global_var)
+    : global_var(mutable_global_var) {}
+
+  void compile(CodeGenerator &W) const {
+    kphp_assert(global_var->offset_in_linear_mem >= 0);
+    W << "(*reinterpret_cast<" << type_out(tinf::get_type(global_var)) << "*>(globals_linear_mem+" << global_var->offset_in_linear_mem << "))";
+  }
+};
+
 GlobalVarsMemoryStats::GlobalVarsMemoryStats(SrcFilePtr main_file) :
   main_file_{main_file} {
 }
@@ -67,7 +79,7 @@ void GlobalVarsMemoryStats::compile_getter_part(CodeGenerator &W, const std::set
   IncludesCollector includes;
   std::vector<std::string> var_names;
   var_names.reserve(global_vars.size());
-  for (const auto &global_var : global_vars) {
+  for (VarPtr global_var : global_vars) {
     includes.add_var_signature_depends(global_var);
     std::string var_name;
     if (global_var->is_function_static_var()) {
@@ -82,6 +94,7 @@ void GlobalVarsMemoryStats::compile_getter_part(CodeGenerator &W, const std::set
 
   const auto var_name_shifts = compile_raw_data(W, var_names);
   W << NL;
+  W << "extern char *globals_linear_mem;" << NL;
 
   FunctionSignatureGenerator(W) << "static string get_raw_string(int raw_offset) " << BEGIN;
   W << "string str;" << NL
@@ -92,9 +105,12 @@ void GlobalVarsMemoryStats::compile_getter_part(CodeGenerator &W, const std::set
   FunctionSignatureGenerator(W) << "void " << getter_name_ << part_id << "(int64_t lower_bound, array<int64_t> &result) " << BEGIN
                                 << "int64_t estimation = 0;" << NL;
   size_t var_num = 0;
-  for (auto global_var : global_vars) {
-    W << VarDeclaration(global_var, true, false)
-      << "estimation = f$estimate_memory_usage(" << VarName(global_var) << ");" << NL
+  for (VarPtr global_var : global_vars) {
+    if (global_var->is_builtin_global()) {
+      W << VarExternDeclaration(global_var);
+    }
+    W << "// " << var_names[var_num] << NL
+      << "estimation = f$estimate_memory_usage(" << GlobalInLinearMem(global_var) << ");" << NL
       << "if (estimation > lower_bound) " << BEGIN
       << "result.set_value(get_raw_string(" << var_name_shifts[var_num++] << "), estimation);" << NL
       << END << NL;
