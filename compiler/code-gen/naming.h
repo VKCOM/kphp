@@ -223,8 +223,13 @@ struct VarName {
       return;
     }
 
+    // todo delete this if vkcom compiles
     if (var->is_function_static_var()) {
+      kphp_assert(0 && "unexpected is_function_static_var()");
       W << FunctionName(var->holder_func) << "$";
+    }
+    if (var->is_in_global_scope() && !var->is_builtin_global()) {
+      kphp_assert(0 && "unexpected is_global_var()");
     }
 
     W << "v$" << var->name;

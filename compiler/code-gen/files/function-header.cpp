@@ -25,12 +25,8 @@ void FunctionH::compile(CodeGenerator &W) const {
   W << includes;
 
   W << OpenNamespace();
-  if (!function->explicit_header_const_var_ids.empty()) {
-    // Constants that are required for initializing arguments with default values
-    W << "extern char *constants_linear_mem;" << NL;
-  }
-  for (VarPtr const_var : function->explicit_header_const_var_ids) {
-    W << VarExternDeclaration(const_var) << NL;
+  if (!function->explicit_header_const_var_ids.empty()) {   // default value of function argument is const var
+    W << "extern char *constants_linear_mem;" << NL;  // todo here and everywhere: it must be .compile() of some struct
   }
 
   if (function->is_inline) {
@@ -59,7 +55,6 @@ void FunctionH::compile(CodeGenerator &W) const {
 
     declare_global_vars(function, W);
     declare_const_vars(function, W);
-    declare_static_vars(function, W);
     W << UnlockComments();
     W << function->root << NL;
     W << LockComments();

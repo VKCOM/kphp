@@ -70,20 +70,26 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
   const std::vector<ClassPtr> &all_classes = G->get_classes();
   std::set<ClassPtr> all_json_encoders;
 
+  // todo store constants/globals separately in G (in different hashtables)
   std::vector<VarPtr> all_global_vars = G->get_global_vars();
   for (FunctionPtr f : all_functions) {
     all_global_vars.insert(all_global_vars.end(), f->static_var_ids.begin(), f->static_var_ids.end());
   }
+  // todo constants and globals should be split separately
   size_t parts_cnt = calc_count_of_parts(all_global_vars.size());
 
   std::vector<VarPtr> all_constants;
+  std::vector<VarPtr> all_mutable_globals;
   for (VarPtr var : all_global_vars) {
     if (var->is_constant()) {
       all_constants.push_back(var);
+    } else {
+      all_mutable_globals.push_back(var);
     }
   }
   // todo get_constants_linear_mem() should return const, and here we should use some init()?
   G->get_constants_linear_mem().prepare_constants_linear_mem_and_assign_offsets(all_constants);
+  G->get_globals_linear_mem().prepare_globals_linear_mem_and_assign_offsets(all_mutable_globals);
 
   for (FunctionPtr f : all_functions) {
     code_gen_start_root_task(os, std::make_unique<FunctionH>(f));
@@ -120,6 +126,7 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
   }
   code_gen_start_root_task(os, std::make_unique<InitScriptsCpp>(G->get_main_file()));
 
+  // todo split constants in some other way (needed for const_init functions splitting into files)
   std::vector<std::vector<VarPtr>> globals_batches(parts_cnt);
   std::vector<std::vector<VarPtr>> constants_batches(parts_cnt);
   std::vector<int> max_dep_levels(parts_cnt);
@@ -133,8 +140,10 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
     }
   }
   for (size_t part_id = 0; part_id < parts_cnt; ++part_id) {
-    code_gen_start_root_task(os, std::make_unique<GlobalVarsDeclarationsPart>(std::move(globals_batches[part_id]), part_id));
     code_gen_start_root_task(os, std::make_unique<ConstVarsInitPart>(std::move(constants_batches[part_id]), part_id));
+  }
+  if (!G->settings().is_static_lib_mode()) {
+    code_gen_start_root_task(os, std::make_unique<GlobalVarsDeclarations>(std::move(all_mutable_globals)));
   }
   code_gen_start_root_task(os, std::make_unique<ConstVarsInit>(std::move(max_dep_levels), parts_cnt));
   code_gen_start_root_task(os, std::make_unique<GlobalVarsReset>(G->get_main_file()));
@@ -187,6 +196,7 @@ void CodeGenF::prepare_generate_function(FunctionPtr func) {
     ? func->file_id->owner_lib->headers_dir() + func->header_name
     : func->subdir + "/" + func->header_name;
 
+  // todo should be not needed for static/global
   std::sort(func->static_var_ids.begin(), func->static_var_ids.end());
   std::sort(func->global_var_ids.begin(), func->global_var_ids.end());
   std::sort(func->local_var_ids.begin(), func->local_var_ids.end());

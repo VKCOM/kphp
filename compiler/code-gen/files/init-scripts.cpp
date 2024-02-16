@@ -145,26 +145,38 @@ void GlobalResetFunction::compile(CodeGenerator &W) const {
 }
 
 
-struct LibGlobalVarsReset {
-  const FunctionPtr &main_function;
-  LibGlobalVarsReset(const FunctionPtr &main_function);
+struct LibRunFunction {
+  FunctionPtr main_function;
+  LibRunFunction(FunctionPtr main_function);
   void compile(CodeGenerator &W) const;
 };
 
-LibGlobalVarsReset::LibGlobalVarsReset(const FunctionPtr &main_function) :
+LibRunFunction::LibRunFunction(FunctionPtr main_function) :
   main_function(main_function) {
 }
 
-void LibGlobalVarsReset::compile(CodeGenerator &W) const {
-  W << OpenNamespace();
-  W << "extern bool v$" << main_function->file_id->get_main_func_run_var_name() << ";" << NL;
-  W << CloseNamespace();
+#include "compiler/inferring/public.h"
 
+struct GlobalInLinearMem {   // todo duplicate
+  VarPtr global_var;
+
+  explicit GlobalInLinearMem(VarPtr mutable_global_var)
+    : global_var(mutable_global_var) {}
+
+  void compile(CodeGenerator &W) const {
+    kphp_assert(global_var->offset_in_linear_mem >= 0);
+    W << "(*reinterpret_cast<" << type_out(tinf::get_type(global_var)) << "*>(globals_linear_mem+" << global_var->offset_in_linear_mem << "))";
+  }
+};
+
+
+void LibRunFunction::compile(CodeGenerator &W) const {
+  // "run" functions just calls the main file of a lib
+  // it's guaranteed that it doesn't contain code except declarations (body_value is empty),
+  // that's why we shouldn't deal with `if (!called)` global
   W << StaticLibraryRunGlobal(gen_out_style::cpp) << BEGIN
     << "using namespace " << G->get_global_namespace() << ";" << NL
-    << "if (!v$" << main_function->file_id->get_main_func_run_var_name() << ")" << BEGIN
     << FunctionName(main_function) << "();" << NL
-    << END << NL
     << END << NL << NL;
 }
 
@@ -188,7 +200,7 @@ void InitScriptsCpp::compile(CodeGenerator &W) const {
   W << NL << StaticInit() << NL;
 
   if (G->settings().is_static_lib_mode()) {
-    W << LibGlobalVarsReset(main_file_id->main_function);
+    W << LibRunFunction(main_file_id->main_function);
     W << CloseFile();
     return;
   }

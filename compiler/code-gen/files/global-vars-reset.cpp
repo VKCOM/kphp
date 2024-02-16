@@ -10,26 +10,25 @@
 #include "compiler/code-gen/vertex-compiler.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/vars-collector.h"
+#include "compiler/inferring/public.h"
+
+struct GlobalInLinearMem {  // todo duplicate
+  VarPtr global_var;
+
+  explicit GlobalInLinearMem(VarPtr mutable_global_var)
+    : global_var(mutable_global_var) {}
+
+  void compile(CodeGenerator &W) const {
+    kphp_assert(global_var->offset_in_linear_mem >= 0);
+    W << "(*reinterpret_cast<" << type_out(tinf::get_type(global_var)) << "*>(globals_linear_mem+" << global_var->offset_in_linear_mem << "))";
+  }
+};
 
 GlobalVarsReset::GlobalVarsReset(SrcFilePtr main_file) :
   main_file_(main_file) {
 }
 
-void GlobalVarsReset::declare_extern_for_init_val(VertexPtr v, std::set<VarPtr> &externed_vars, CodeGenerator &W) {
-  if (auto var_vertex = v.try_as<op_var>()) {
-    VarPtr var = var_vertex->var_id;
-    if (externed_vars.insert(var).second) {
-      // todo avoid duplicates
-      W << "extern char *constants_linear_mem;" << NL;
-    }
-    return;
-  }
-  for (VertexPtr son : *v) {
-    declare_extern_for_init_val(son, externed_vars, W);
-  }
-}
-
-void GlobalVarsReset::compile_globals_reset_part(const std::set<VarPtr> &used_vars, int part_i, CodeGenerator &W) {
+void GlobalVarsReset::compile_globals_reset_part(const std::set<VarPtr> &used_vars, int part_id, CodeGenerator &W) {
   IncludesCollector includes;
   for (VarPtr var : used_vars) {
     includes.add_var_signature_depends(var);
@@ -37,21 +36,19 @@ void GlobalVarsReset::compile_globals_reset_part(const std::set<VarPtr> &used_va
   W << includes;
   W << OpenNamespace();
 
-  std::set<VarPtr> externed_vars;
-  for (VarPtr var : used_vars) {
-    W << VarExternDeclaration(var);
-    if (var->init_val) {
-      declare_extern_for_init_val(var->init_val, externed_vars, W);
-    }
-  }
+  W << NL;
+  W << "extern char *constants_linear_mem;" << NL;
+  W << "extern char *globals_linear_mem;" << NL << NL;
 
-  FunctionSignatureGenerator(W) << "void global_vars_reset_file" << part_i << "()" << BEGIN;
+  FunctionSignatureGenerator(W) << "void global_vars_reset_file" << part_id << "()" << BEGIN;
   for (VarPtr var : used_vars) {
     if (G->settings().is_static_lib_mode() && var->is_builtin_global()) {
       continue;
     }
 
-    W << "hard_reset_var(" << VarName(var);
+    // todo probably, output /* $var_name */ in GlobalInLinearMem always, don't forget about function statics
+    W << "// " << var->as_human_readable() << NL;
+    W << "hard_reset_var(" << GlobalInLinearMem(var);
     //FIXME: brk and comments
     if (var->init_val) {
       W << ", " << var->init_val;
@@ -82,6 +79,7 @@ void GlobalVarsReset::compile_globals_reset(int parts_n, CodeGenerator &W) {
 }
 
 void GlobalVarsReset::compile(CodeGenerator &W) const {
+  // todo seems weird, better provide globals from the outside
   VarsCollector vars_collector{32};
   vars_collector.collect_global_and_static_vars_from(main_file_->main_function);
   auto used_vars = vars_collector.flush();
