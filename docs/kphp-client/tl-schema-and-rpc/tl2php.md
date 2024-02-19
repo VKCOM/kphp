@@ -9,9 +9,10 @@ A console tool to generate PHP classes based on TL schema. TL schema must be bef
 
 ## How to make the .tlo file from TL schema
 
-*.tlo* file is a "compiled TL schema" file. You use `tl-compiler` to generate it from a set of **.tl* files. It is inside the `vk-tl-tools` package, that had been installed if you followed the installation instructions.
+*.tlo* file is a "compiled TL schema" file. You use `tlgen` to generate it from a set of **.tl* files. It is inside the `tlgen` package, that had been installed if you followed the installation instructions.  
+`-ignoreGeneratedCode` *- omits generated Golang code of (de)serializers. More on that see [here](https://github.com/vkcom/tl).*
 ```bash
-tl-compiler -e /path/to/output.tlo input1.tl input2.tl ...
+tlgen -ignoreGeneratedCode -tloPath /path/to/output.tlo input1.tl input2.tl ...
 ```
 
 

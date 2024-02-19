@@ -14,7 +14,7 @@ RUN apt update && \
     add-apt-repository ppa:deadsnakes/ppa && \
     apt update && \
     apt install -y --no-install-recommends \
-      git cmake make g++ lld gperf netcat \
+      git cmake make g++ lld gperf netcat tlgen \
       python3.7 python3-pip python3.7-distutils python3.7-dev libpython3.7-dev python3-jsonschema python3-setuptools mysql-server libmysqlclient-dev && \
     python3.7 -m pip install pip && python3.7 -m pip install -r /tmp/requirements.txt && \
     apt install -y --no-install-recommends curl-kphp-vk kphp-timelib libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \

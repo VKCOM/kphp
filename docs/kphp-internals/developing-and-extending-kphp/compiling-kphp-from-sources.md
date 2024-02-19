@@ -72,7 +72,7 @@ echo "deb https://artifactory-external.vkpartner.ru/artifactory/kphp focal main"
 Install packages
 ```bash
 apt-get update
-apt install git cmake make g++ gperf python3-minimal python3-jsonschema \
+apt install git cmake make g++ gperf tlgen python3-minimal python3-jsonschema \
             curl-kphp-vk libuber-h3-dev kphp-timelib libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
             libzstd-dev libyaml-cpp-dev libnghttp2-dev zlib1g-dev php7.4-dev libmysqlclient-dev libnuma-dev \
             postgresql postgresql-server-dev-all libpq-dev libldap-dev libkrb5-dev
@@ -176,9 +176,10 @@ sudo cp ../objs/vkext/modules${PHP_VERSION}/vkext.so $(php-config${PHP_VERSION} 
 
 **Compiling .tlo for php.ini**
 
-Use the `tl-compiler` executable from `vk-tl-tools` package:
+Use the `tlgen` executable from `tlgen` package:  
+`-ignoreGeneratedCode` *- omits generated Golang code of (de)serializers. More on that see [here](https://github.com/vkcom/tl).*
 ```bash
-tl-compiler -e /path/to/output.tlo input1.tl input2.tl ...
+tlgen -ignoreGeneratedCode -tloPath /path/to/output.tlo input1.tl input2.tl ...
 ```
 
 
