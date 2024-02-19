@@ -87,7 +87,6 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         math_functions.cpp
         mbstring.cpp
         memcache.cpp
-        memory_usage.cpp
         migration_php8.cpp
         misc.cpp
         mixed.cpp

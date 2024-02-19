@@ -20,7 +20,7 @@ class InstanceDeepDestroyVisitor;
 
 class ToArrayVisitor;
 
-class InstanceMemoryEstimateVisitor;
+class CommonMemoryEstimateVisitor;
 
 namespace job_workers {
 
@@ -45,7 +45,7 @@ struct SendingInstanceBase : virtual abstract_refcountable_php_interface {
 
   virtual void accept(ToArrayVisitor &) noexcept {}
 
-  virtual void accept(InstanceMemoryEstimateVisitor &) noexcept {}
+  virtual void accept(CommonMemoryEstimateVisitor &) noexcept {}
 
   virtual size_t virtual_builtin_sizeof() const noexcept = 0;
   virtual SendingInstanceBase *virtual_builtin_clone() const noexcept = 0;
@@ -108,7 +108,7 @@ struct C$KphpJobWorkerResponseError: public refcountable_polymorphic_php_classes
     return generic_accept(visitor);
   }
 
-  void accept(InstanceMemoryEstimateVisitor &visitor) noexcept;
+  void accept(CommonMemoryEstimateVisitor &visitor) noexcept;
 
   size_t virtual_builtin_sizeof() const  noexcept {
     return sizeof(*this);

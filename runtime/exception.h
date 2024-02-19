@@ -36,7 +36,7 @@ struct C$Throwable : public refcountable_polymorphic_php_classes_virt<> {
     }
   }
 
-  virtual void accept(InstanceMemoryEstimateVisitor &visitor) noexcept {
+  virtual void accept(CommonMemoryEstimateVisitor &visitor) noexcept {
     generic_accept(visitor);
   }
 

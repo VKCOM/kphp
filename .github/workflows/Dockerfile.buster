@@ -11,7 +11,7 @@ RUN apt-get update && \
     wget -qO - https://packages.sury.org/php/apt.gpg | apt-key add - && \
     echo "deb https://packages.sury.org/php/ buster main" >> /etc/apt/sources.list.d/php.list && \
     TEMP_DEB="$(mktemp)" && \
-    wget -O "$TEMP_DEB" 'https://dev.mysql.com/get/mysql-apt-config_0.8.22-1_all.deb' && \
+    wget -O "$TEMP_DEB" 'https://dev.mysql.com/get/mysql-apt-config_0.8.29-1_all.deb' && \
     dpkg -i "$TEMP_DEB" && \
     rm -f "$TEMP_DEB" && \
     echo "deb http://apt.postgresql.org/pub/repos/apt buster-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
