@@ -123,6 +123,8 @@ global $_COOKIE;
 global $_REQUEST;
 /** @var mixed $_ENV */
 global $_ENV;
+/** @var mixed $_SESSION */
+global $_SESSION;
 /** @var mixed $argc */
 global $argc;
 /** @var mixed $argv */

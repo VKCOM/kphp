@@ -124,7 +124,8 @@ bool VertexUtil::is_superglobal(const std::string &s) {
     "_FILES",
     "_COOKIE",
     "_REQUEST",
-    "_ENV"
+    "_ENV",
+    "_SESSION"
   };
   return vk::contains(names, s);
 }

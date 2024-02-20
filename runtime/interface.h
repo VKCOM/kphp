@@ -151,6 +151,7 @@ extern mixed v$_FILES;
 extern mixed v$_COOKIE;
 extern mixed v$_REQUEST;
 extern mixed v$_ENV;
+extern mixed v$_SESSION;
 
 const int32_t UPLOAD_ERR_OK = 0;
 const int32_t UPLOAD_ERR_INI_SIZE = 1;

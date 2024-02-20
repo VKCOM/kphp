@@ -900,6 +900,7 @@ mixed v$_FILES   __attribute__ ((weak));
 mixed v$_COOKIE  __attribute__ ((weak));
 mixed v$_REQUEST __attribute__ ((weak));
 mixed v$_ENV     __attribute__ ((weak));
+mixed v$_SESSION __attribute__ ((weak));
 
 mixed v$argc  __attribute__ ((weak));
 mixed v$argv  __attribute__ ((weak));
@@ -1467,9 +1468,9 @@ static void reset_superglobals() {
   hard_reset_var(v$_GET, array<mixed>());
   hard_reset_var(v$_POST, array<mixed>());
   hard_reset_var(v$_FILES, array<mixed>());
-  hard_reset_var(v$_COOKIE, array<mixed>());
   hard_reset_var(v$_REQUEST, array<mixed>());
   hard_reset_var(v$_ENV, array<mixed>());
+  hard_reset_var(v$_COOKIE, array<mixed>());
 
   dl::leave_critical_section();
 }
