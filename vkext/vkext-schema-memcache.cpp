@@ -4704,6 +4704,7 @@ struct tl_tree *read_nat_expr(int *var_num) {
     fprintf(stderr, "read_nat_expr: constructor = 0x%08x\n", x);
   }
   switch (x) {
+    case TLS_EXPR_NAT: // Legacy typo fix
     case TLS_NAT_CONST:
       return read_num_const(var_num);
     case TLS_NAT_VAR:
