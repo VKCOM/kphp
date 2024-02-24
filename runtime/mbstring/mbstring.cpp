@@ -293,14 +293,17 @@ int64_t f$mb_substr_count(const string &haystack, const string &needle, const Op
 
 string mb_convert_case(const string &str, const int64_t mode, const Optional<string> &encoding){
 
-  mixed unicode = f$mb_convert_encoding(str, string("UTF_8"), encoding.val());
+  mixed utf_8 = f$mb_convert_encoding(str, string("UTF_8"), encoding.val());
 
-  if (unicode.is_string()) {
-    const string &unicode_str = unicode.to_string();
+  if (utf_8.is_string()) {
+    string utf_8_str = utf_8.to_string();
+    if (strcmp(encoding.val().c_str(), "UTF_8")){
+      utf_8_str = str;
+    }
 
-    int len = str.size();
+    int len = utf_8_str.size();
     string unicode_res(len * 3, false);
-    const char *s = str.c_str();
+    const char *s = utf_8_str.c_str();
     int p = 0, ch = 0, res_len = 0;
 
     switch(mode) {
@@ -320,7 +323,7 @@ string mb_convert_case(const string &str, const int64_t mode, const Optional<str
     }
 
     if (p < 0) {
-      php_warning("Incorrect UTF-8 string \"%s\" in function mb_convert_case", str.c_str());
+      php_warning("Incorrect UTF-8 string \"%s\" in function mb_convert_case", utf_8_str.c_str());
     }
     unicode_res.shrink(res_len);
 

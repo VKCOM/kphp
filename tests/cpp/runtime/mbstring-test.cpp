@@ -25,6 +25,13 @@ TEST(mbstring_test, test_mb_strlen) {
   ASSERT_TRUE(real == predicted);
 }
 
+TEST(mbstring_test, test_mb_strlen_no_encoding) {
+  const int predicted = 12;
+  int real = 0;
+  real = f$mb_strlen(string("Hello world!"));
+  ASSERT_TRUE(real == predicted);
+}
+
 TEST(mbstring_test, test_mb_substr) {
   ASSERT_STREQ(f$mb_substr(string("Hello world"), 2, 3, string("UTF-8")).c_str(), "llo");
 }
