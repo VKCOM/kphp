@@ -142,7 +142,7 @@ allow_deprecated_declarations(${BASE_DIR}/runtime/allocator.cpp ${BASE_DIR}/runt
 allow_deprecated_declarations_for_apple(${BASE_DIR}/runtime/inter-process-mutex.cpp)
 
 vk_add_library(kphp_runtime OBJECT ${KPHP_RUNTIME_ALL_SOURCES})
-target_include_directories(kphp_runtime PUBLIC ${BASE_DIR} /opt/curl7600/include)
+target_include_directories(kphp_runtime PUBLIC ${BASE_DIR} /opt/curl840/include)
 
 add_dependencies(kphp_runtime kphp-timelib)
 
