@@ -146,7 +146,7 @@ target_include_directories(kphp_runtime PUBLIC ${BASE_DIR} /opt/curl840/include)
 
 add_dependencies(kphp_runtime kphp-timelib)
 
-prepare_cross_platform_libs(RUNTIME_LIBS yaml-cpp re2 zstd h3) # todo: linking between static libs is no-op, is this redundant? do we need to add mysqlclient here?
+prepare_cross_platform_libs(RUNTIME_LIBS yaml-cpp re2 zstd h3 ssh2 brotlicommon brotlidec cares) # todo: linking between static libs is no-op, is this redundant? do we need to add mysqlclient here?
 set(RUNTIME_LIBS vk::kphp_runtime vk::kphp_server vk::popular_common vk::unicode vk::common_src vk::binlog_src vk::net_src ${RUNTIME_LIBS} OpenSSL::Crypto m z pthread)
 vk_add_library(kphp-full-runtime STATIC)
 target_link_libraries(kphp-full-runtime PUBLIC ${RUNTIME_LIBS})
