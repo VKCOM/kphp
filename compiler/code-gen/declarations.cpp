@@ -932,7 +932,7 @@ void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr
       // for kphp_instance_cache_value_size statshouse metrics
       klass->need_instance_cache_visitors) {
     W << NL;
-    compile_accept_visitor(W, klass, "InstanceMemoryEstimateVisitor");
+    compile_accept_visitor(W, klass, "CommonMemoryEstimateVisitor");
   }
 
   if (klass->need_instance_cache_visitors) {
@@ -1092,7 +1092,7 @@ void ClassMembersDefinition::compile(CodeGenerator &W) const {
       // for kphp_instance_cache_value_size statshouse metrics
       klass->need_instance_cache_visitors) {
     W << NL;
-    compile_generic_accept_instantiations(W, klass, "InstanceMemoryEstimateVisitor");
+    compile_generic_accept_instantiations(W, klass, "CommonMemoryEstimateVisitor");
   }
 
   if (klass->need_instance_cache_visitors) {

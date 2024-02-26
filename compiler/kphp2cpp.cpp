@@ -182,7 +182,7 @@ std::string get_default_extra_cxxflags() noexcept {
 }
 
 std::string get_default_extra_ldflags() noexcept {
-  std::string flags{"-L${KPHP_PATH}/objs/flex -ggdb"};
+  std::string flags{"-L${KPHP_PATH}/objs/flex -ggdb -fno-lto"};
 #ifdef KPHP_HAS_NO_PIE
   flags += " " KPHP_HAS_NO_PIE;
 #endif

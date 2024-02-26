@@ -115,11 +115,15 @@ class Engine:
         self._stats_receiver.start()
 
         cmd = [self._engine_bin]
-        for option, value in self._options.items():
-            if value is not None:
-                cmd.append(option)
-                if value is not True:
-                    cmd.append(str(value))
+        for option, value_raw in self._options.items():
+            if value_raw is not None:
+                value_list = value_raw
+                if type(value_raw) is not list:
+                    value_list = [value_raw]
+                for val in value_list:
+                    cmd.append(option)
+                    if val is not True:
+                        cmd.append(str(val))
 
         if self._binlog_path:
             cmd.append(self._binlog_path)

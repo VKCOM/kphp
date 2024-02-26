@@ -5,6 +5,7 @@
 #pragma once
 #include <array>
 #include <re2/re2.h>
+#include <forward_list>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -112,18 +113,31 @@ private:
 };
 
 class ConfdataKeyBlacklist : vk::not_copyable {
+  bool is_key_forcibly_ignored_by_prefix(vk::string_view key) const noexcept;
+
 public:
-  void set_blacklist(std::unique_ptr<re2::RE2> &&blacklist_pattern) noexcept {
+  void set_blacklist(std::unique_ptr<re2::RE2> &&blacklist_pattern, std::forward_list<vk::string_view> &&force_ignore_prefixes) noexcept {
     blacklist_pattern_ = std::move(blacklist_pattern);
+    force_ignore_prefixes_ = std::move(force_ignore_prefixes);
   }
 
   bool is_blacklisted(vk::string_view key) const noexcept {
-    return blacklist_pattern_ &&
+    // from PHP class KphpConfiguration, e.g. for langs
+    if (blacklist_pattern_ &&
            re2::RE2::FullMatch(
              re2::StringPiece(key.data(), static_cast<uint32_t>(key.size())),
-             *blacklist_pattern_);
+             *blacklist_pattern_)) {
+      return true;
+    }
+    // emergency startup option to disable keys by prefix, e.g. 'highload.vid'
+    if (unlikely(!force_ignore_prefixes_.empty()) &&
+        is_key_forcibly_ignored_by_prefix(key)) {
+      return true;
+    }
+    return false;
   }
 
 private:
   std::unique_ptr<re2::RE2> blacklist_pattern_;
+  std::forward_list<vk::string_view> force_ignore_prefixes_;
 };

@@ -16,6 +16,7 @@ void write_event_stats(stats_t *stats, const char *name, const ConfdataStats::Ev
   stats->add_gauge_stat_with_type_tag(name, "total", event.total);
   stats->add_gauge_stat_with_type_tag(name, "blacklisted", event.blacklisted);
   stats->add_gauge_stat_with_type_tag(name, "ignored", event.ignored);
+  stats->add_gauge_stat_with_type_tag(name, "throttled_out", event.throttled_out);
   stats->add_gauge_stat_with_type_tag(name, "ttl_updated", event.ttl_updated);
 }
 
@@ -35,6 +36,8 @@ void ConfdataStats::on_update(const confdata_sample_storage &new_confdata,
   two_dots_wildcard_elements = 0;
   predefined_wildcards = 0;
   predefined_wildcard_elements = 0;
+  heaviest_sections_by_count.clear();
+
   for (const auto &section: new_confdata) {
     const vk::string_view first_key{section.first.c_str(), section.first.size()};
     switch (confdata_predefined_wildcards.detect_first_key_type(first_key)) {
@@ -49,6 +52,7 @@ void ConfdataStats::on_update(const confdata_sample_storage &new_confdata,
         if (!confdata_predefined_wildcards.has_wildcard_for_key(first_key)) {
           total_elements += section.second.as_array().count();
         }
+        heaviest_sections_by_count.register_section(&section.first, section.second.as_array().count());
         break;
       }
       case ConfdataFirstKeyType::two_dots_wildcard:
@@ -73,7 +77,13 @@ void ConfdataStats::on_update(const confdata_sample_storage &new_confdata,
   last_update_time_point = std::chrono::steady_clock::now();
 }
 
-void ConfdataStats::write_stats_to(stats_t *stats, const memory_resource::MemoryStats &memory_stats) const noexcept {
+const memory_resource::MemoryStats &ConfdataStats::get_memory_stats() const noexcept {
+  // both ConfdataStats and ConfdataGlobalManager are singletons
+  return ConfdataGlobalManager::get().get_resource().get_memory_stats();
+}
+
+void ConfdataStats::write_stats_to(stats_t *stats) const noexcept {
+  const auto &memory_stats = get_memory_stats();
   memory_stats.write_stats_to(stats, "confdata");
 
   stats->add_gauge_stat("confdata.initial_loading_duration", to_seconds(initial_loading_time));
@@ -82,6 +92,7 @@ void ConfdataStats::write_stats_to(stats_t *stats, const memory_resource::Memory
 
   stats->add_gauge_stat("confdata.updates.ignored", ignored_updates);
   stats->add_gauge_stat("confdata.updates.total", total_updates);
+  stats->add_gauge_stat("confdata.updates.timed_out", timed_out_updates);
 
   stats->add_gauge_stat("confdata.elements.total", total_elements);
 
@@ -128,4 +139,23 @@ void ConfdataStats::write_stats_to(stats_t *stats, const memory_resource::Memory
   stats->add_gauge_stat_with_type_tag("confdata.binlog_events", "incr_tiny", event_counters.incr_tiny_events);
   stats->add_gauge_stat_with_type_tag("confdata.binlog_events", "append", event_counters.append_events);
   stats->add_gauge_stat_with_type_tag("confdata.binlog_events", "unsupported_total", event_counters.unsupported_total_events);
+  stats->add_gauge_stat_with_type_tag("confdata.binlog_events", "throttled_out_total", event_counters.throttled_out_total_events);
+}
+
+void ConfdataStats::HeaviestSections::clear() {
+  for (int i = 0; i < LEN; ++i) {
+    sorted_desc[i] = std::make_pair(nullptr, 0);
+  }
+}
+
+void ConfdataStats::HeaviestSections::register_section(const string *section_name, size_t size) {
+  for (int ins_pos = 0; ins_pos < LEN; ++ins_pos) {
+    if (size > sorted_desc[ins_pos].second) {
+      for (int shift_pos = LEN - 1; shift_pos > ins_pos; --shift_pos) {
+        sorted_desc[shift_pos] = sorted_desc[shift_pos - 1];
+      }
+      sorted_desc[ins_pos] = std::make_pair(section_name, size);
+      break;
+    }
+  }
 }

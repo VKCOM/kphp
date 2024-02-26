@@ -826,20 +826,7 @@ int rpcx_func_wakeup(connection *c) {
     php_worker.reset();
     rpcx_at_query_end(c);
   } else {
-    if (c->pending_queries < 0 || c->status != conn_wait_net) {
-      std::array<char, 1024> message{'\0'};
-      int id = rand();
-      snprintf(message.data(), message.size(), "PhpWorker state %d, PhpScript state %d. Connection pending queries %d, status %d. "
-                                               "Net timeout %f, finish_time %f, now %f. PhpScript wait net %d. Assert id %d\n",
-              worker->state, php_script.has_value() ? (int)php_script->state : -1, c->pending_queries, c->status, timeout.value(),
-               worker->finish_time, precise_now, worker->waiting, id % 1000);
-      // write only in 0.1% actions
-      if (id % 1000 == 0) {
-        dl_assert_with_coredump(c->pending_queries >= 0 && c->status == conn_wait_net, message.data());
-      } else {
-        dl_assert(c->pending_queries >= 0 && c->status == conn_wait_net, message.data());
-      }
-    }
+    assert (c->pending_queries >= 0 && c->status == conn_wait_net);
     assert (*timeout > 0);
     set_connection_timeout(c, *timeout);
   }
@@ -996,6 +983,11 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       long long req_id = header.qid;
 
       vkprintf(2, "got RPC_INVOKE_REQ [req_id = %016llx]\n", req_id);
+
+      if (php_worker.has_value()) {
+        send_rpc_error(c, req_id, TL_ERROR_RPC_CLIENT_IS_BUSY, "Client is already processing request");
+        return 0;
+      }
 
       if (!check_tasks_invoker_pid(remote_pid)) {
         const size_t msg_buf_size = 1000;
@@ -1595,11 +1587,11 @@ void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port) n
 
     if (worker_type == WorkerType::general_worker) {
       if (sigterm_on && precise_now > sigterm_time && !php_worker_run_flag && pending_http_queue.first_query == (conn_query *)&pending_http_queue) {
-        vkprintf(1, "Quitting because of sigterm\n");
+        vkprintf(1, "General worker is quitting because of SIGTERM\n");
         break;
       }
     } else if (worker_type == WorkerType::job_worker) {
-      if (sigterm_on && (precise_now > sigterm_time || !php_worker_run_flag)) {
+      if (sigterm_on && !php_worker_run_flag) {
         kprintf("Job worker is quitting because of SIGTERM\n");
         break;
       }
@@ -1692,6 +1684,7 @@ void init_all() {
   auto end_time = std::chrono::steady_clock::now();
   uint64_t total_init_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count();
   StatsHouseManager::get().add_init_master_stats(total_init_ns, ConfdataStats::get().initial_loading_time.count());
+  StatsHouseManager::get().add_confdata_master_stats(ConfdataStats::get());
 }
 
 void init_logname(const char *src) {
@@ -1839,7 +1832,11 @@ int main_args_handler(int i, const char *long_option) {
     }
     case 'm': {
       max_memory = parse_memory_limit_default(optarg, 'm');
-      assert((1 << 20) <= max_memory && max_memory <= (2047LL << 20));
+      const long long min_size = 1 << 20;
+      if (max_memory <= min_size) {
+        kprintf("--%s option: cannot be less than 1 megabyte\n", long_option);
+        return -1;
+      }
       return 0;
     }
     case 'f': {
@@ -1872,7 +1869,7 @@ int main_args_handler(int i, const char *long_option) {
       return vk::singleton<ServerConfig>::get().init_from_config(optarg);
     }
     case 't': {
-      script_timeout = static_cast<int>(normalize_script_timeout(atoi(optarg)));
+      script_timeout = static_cast<int>(normalize_script_timeout(parse_time_limit(optarg)));
       return 0;
     }
     case 'o': {
@@ -2206,6 +2203,32 @@ int main_args_handler(int i, const char *long_option) {
     case 2036: {
       return read_option_to(long_option, 0U, 2048U, thread_pool_size);
     }
+    case 2037: {
+      if (!*optarg) {
+        kprintf("--%s option is empty\n", long_option);
+        return -1;
+      }
+      add_confdata_force_ignore_prefix(optarg);
+      return 0;
+    }
+    case 2038: {
+      double timeout_sec;
+      int res = read_option_to(long_option, 0.0, std::numeric_limits<double>::max(), timeout_sec);
+      set_confdata_update_timeout(timeout_sec);
+      return res;
+    }
+    case 2039: {
+      double soft_oom_ratio;
+      int res = read_option_to(long_option, 0.0, 1.0, soft_oom_ratio);
+      if (soft_oom_ratio < CONFDATA_DEFAULT_HARD_OOM_RATIO) {
+        set_confdata_soft_oom_ratio(soft_oom_ratio);
+      } else {
+        kprintf("Confdata soft OOM degradation mode disabled\n");
+        set_confdata_soft_oom_ratio(1.0);
+        set_confdata_hard_oom_ratio(1.0);
+      }
+      return res;
+    }
     default:
       return -1;
   }
@@ -2274,7 +2297,7 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("tasks-config", required_argument, 'S', "get lease worker settings from config file: mode and actor");
   parse_option("confdata-binlog", required_argument, 2004, "confdata binlog mask");
   parse_option("confdata-memory-limit", required_argument, 2005, "memory limit for confdata");
-  parse_option("confdata-blacklist", required_argument, 2006, "confdata key blacklist regex pattern");
+  parse_option("confdata-blacklist", required_argument, 2006, "confdata key blacklist regex pattern from PHP code, class KphpConfiguration");
   parse_option("confdata-predefined-wildcard", required_argument, 2007, "perdefine confdata wildcard for better performance");
   parse_option("php-version", no_argument, 2008, "show the compiled php code version and exit");
   parse_option("php-warnings-minimal-verbosity", required_argument, 2009, "set minimum verbosity level for php warnings");
@@ -2315,6 +2338,12 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("hard-time-limit", required_argument, 2034, "time limit for script termination after the main timeout has expired (default: 1 sec). Use 0 to disable");
   parse_option("thread-pool-ratio", required_argument, 2035, "the thread pool size ratio of the overall cpu numbers");
   parse_option("thread-pool-size", required_argument, 2036, "the total threads num per worker");
+  parse_option("confdata-force-ignore-keys-prefix", required_argument, 2037, "an emergency option, e.g. 'highload.vid*', to forcibly drop keys from snapshot/binlog; may be used multiple times");
+  parse_option("confdata-update-timeout", required_argument, 2038, "cron confdata binlog replaying will be forcibly stopped after the specified timeout (default: 0.3 sec)"
+                                                                   "Initial binlog is readed with x10 times larger timeout");
+  parse_option("confdata-soft-oom-ratio", required_argument, 2039, "Memory limit ratio to start ignoring new keys related events (default: 0.85)."
+                                                                   "Can't be > hard oom ratio (0.95)");
+
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
   // TODO: remove it after successful migration from kphb.readyV2 to kphb.readyV3
@@ -2333,6 +2362,7 @@ void init_default() {
   now = (int)time(nullptr);
 
   pid = getpid();
+  master_pid = getpid();
   // RPC part
   PID.port = (short)rpc_port;
 

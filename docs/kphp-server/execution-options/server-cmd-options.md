@@ -102,7 +102,7 @@ A unique name for the KPHP server, required if several KPHP servers are launched
   
 <aside>--time-limit {limit} / -t {limit}</aside>
  
-A time limit in seconds for script processing, default **30** for server mode and **infinity** for CLI mode. To override, pass a whole number. The maximum is 7 minutes (if passed a greater value, it would be ceiled).
+A time limit in seconds for script processing, default **30s** for server mode and **infinity** for CLI mode. To override, pass a whole number. (You can use the s/m/h/d prefix to set the limit in seconds/minutes/hours/days)
 
 <aside>--worker-queries-to-reload {n}</aside>
 

@@ -1,5 +1,7 @@
 <?php
 
+require_once('polymorphic_classes.php');
+
 function main() {
   switch ($_SERVER["PHP_SELF"]) {
     case "/store": {
@@ -12,6 +14,14 @@ function main() {
     }
     case "/delete": {
       test_delete();
+      return;
+    }
+    case "/polymorphic_store": {
+      test_polymorphic_store();
+      return;
+    }
+    case "/polymorphic_store_and_verify": {
+      test_polymorphic_fetch_and_modify();
       return;
     }
   }
