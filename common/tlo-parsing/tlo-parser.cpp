@@ -77,7 +77,8 @@ std::unique_ptr<type_expr_base> tlo_parser::read_type_expr() {
 std::unique_ptr<nat_expr_base> tlo_parser::read_nat_expr() {
   auto magic = get_value<unsigned int>();
   switch (magic) {
-    case TL_TLS_EXPR_NAT: {
+    case TL_TLS_EXPR_NAT: // Legacy typo fix
+    case TL_TLS_NAT_CONST: {
       return std::make_unique<nat_const>(this);
     }
     case TL_TLS_NAT_VAR: {
