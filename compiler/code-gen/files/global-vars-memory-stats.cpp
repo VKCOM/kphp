@@ -96,8 +96,9 @@ void GlobalVarsMemoryStats::compile_getter_part(CodeGenerator &W, const std::set
     W << VarDeclaration(global_var, true, false)
       << "estimation = f$estimate_memory_usage(" << VarName(global_var) << ");" << NL
       << "if (estimation > lower_bound) " << BEGIN
-      << "result.set_value(get_raw_string(" << var_name_shifts[var_num++] << "), estimation);" << NL
+      << "result.set_value(get_raw_string(" << var_name_shifts[var_num] << "), estimation);" << NL
       << END << NL;
+    var_num++;
   }
 
   W << END;
