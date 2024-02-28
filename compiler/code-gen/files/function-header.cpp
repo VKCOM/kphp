@@ -25,9 +25,11 @@ void FunctionH::compile(CodeGenerator &W) const {
   W << includes;
 
   W << OpenNamespace();
-  kphp_assert(function->explicit_header_const_var_ids.empty());
+  if (!function->explicit_header_const_var_ids.empty()) {
+    // Constants that are required for initializing arguments with default values
+    W << "extern char *constants_linear_mem;" << NL;
+  }
   for (VarPtr const_var : function->explicit_header_const_var_ids) {
-    // todo what's it?
     W << VarExternDeclaration(const_var) << NL;
   }
 
