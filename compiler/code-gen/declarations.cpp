@@ -441,16 +441,38 @@ ClassDeclaration::ClassDeclaration(ClassPtr klass) :
   klass(klass) {
 }
 
-void ClassDeclaration::declare_all_variables(VertexPtr vertex, CodeGenerator &W) const {
+static bool has_const_variable(VertexPtr vertex) {
+  if (!vertex) {
+    return false;
+  }
+  if (auto var = vertex.try_as<op_var>(); var && var->var_id && var->var_id->is_constant()) {
+    return true;
+  }
+  for (auto child : *vertex) {
+    if (has_const_variable(child)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+static void declare_global_variables(VertexPtr vertex, CodeGenerator &W) {
   if (!vertex) {
     return;
   }
   for (auto child: *vertex) {
-    declare_all_variables(child, W);
+    declare_global_variables(child, W);
   }
   if (auto var = vertex.try_as<op_var>()) {
     W << VarExternDeclaration(var->var_id);
   }
+}
+
+void ClassDeclaration::declare_all_variables(VertexPtr vertex, CodeGenerator &W) const {
+  if (has_const_variable(vertex)) {
+    W << "extern char *constants_linear_mem;" << NL;
+  }
+  declare_global_variables(vertex, W);
 }
 
 std::unique_ptr<TlDependentTypesUsings> ClassDeclaration::detect_if_needs_tl_usings() const {
