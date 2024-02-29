@@ -13,6 +13,7 @@
 #include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
 #include "compiler/inferring/type-data.h"
+#include "compiler/inferring/public.h"
 
 struct LabelName {
   int label_id;
@@ -224,12 +225,18 @@ struct VarName {
     }
 
     // todo delete this if vkcom compiles
+    // todo is it valid ???
+    // think about class static vars
     if (var->is_function_static_var()) {
-      kphp_assert(0 && "unexpected is_function_static_var()");
-      W << FunctionName(var->holder_func) << "$";
+//      kphp_assert(0 && "unexpected is_function_static_var()");
+      W << "(*reinterpret_cast<" << type_out(tinf::get_type(var)) << "*>(globals_linear_mem+" << var->offset_in_linear_mem << "))";
+      assert(var->offset_in_linear_mem != -1);
+      return;
     }
     if (var->is_in_global_scope() && !var->is_builtin_global()) {
-      kphp_assert(0 && "unexpected is_global_var()");
+      W << "(*reinterpret_cast<" << type_out(tinf::get_type(var)) << "*>(globals_linear_mem+" << var->offset_in_linear_mem << "))";
+      assert(var->offset_in_linear_mem != -1);
+      return;
     }
 
     W << "v$" << var->name;
