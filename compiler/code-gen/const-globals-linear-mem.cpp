@@ -41,9 +41,14 @@ int calc_sizeof_tuple_shape(const TypeData *type);
     case tp_future:
     case tp_future_queue:
       return type->use_optional() ? SIZEOF_OPTIONAL + 8 : 8;
+    case tp_any:
+      // for Unknown type
+      // TODO maybe skip such global variables on DropUnusedPass?
+      return 1;
     default:
       if (v) {
-        printf("> var = %s; recalculated = %d; is_uninited = %d\n", v->as_human_readable().c_str(), v->tinf_node.was_recalc_finished_at_least_once(), v->get_uninited_flag());
+        printf("> var = %s; recalculated = %d; is_uninited = %d; type = %s\n", v->as_human_readable().c_str(), v->tinf_node.was_recalc_finished_at_least_once(),
+               v->get_uninited_flag(), type_out(type, gen_out_style::cpp).c_str());
       }
       kphp_error(0, fmt_format("Unable to detect sizeof() for type = {}", type->as_human_readable()).c_str());
       return 0;
@@ -150,6 +155,9 @@ void GlobalsLinearMem::prepare_globals_linear_mem_and_assign_offsets(std::vector
   int offset = 0;
   for (VarPtr var : all_globals) {
     const TypeData *var_type = tinf::get_type(var);
+
+    // some global vars are not used but are not detected on DropUnusedPass somehow \shrug
+    // for now just skip them
     int cur_sizeof = (calc_sizeof_in_bytes_runtime(var_type, var) + 7) & -8; // min 8 bytes per variable
 
     var->offset_in_linear_mem = offset;
@@ -157,7 +165,7 @@ void GlobalsLinearMem::prepare_globals_linear_mem_and_assign_offsets(std::vector
     inc_count_by_origin(var);
 
     // todo comment this after testing in vkcom
-    if (var_type->use_optional() || !vk::any_of_equal(var_type->get_real_ptype(), tp_mixed, tp_bool, tp_int, tp_float, tp_string, tp_array, tp_Class)) {
+    if (var_type->use_optional() || !vk::any_of_equal(var_type->get_real_ptype(), tp_mixed, tp_bool, tp_int, tp_float, tp_string, tp_array, tp_Class, tp_any)) {
       debug_sizeof_static_asserts.push_back(var_type);
     }
   }
