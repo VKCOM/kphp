@@ -15,7 +15,7 @@ namespace {
 
 int calc_sizeof_tuple_shape(const TypeData *type);
 
-[[gnu::always_inline]] inline int calc_sizeof_in_bytes_runtime(const TypeData *type) {
+[[gnu::always_inline]] inline int calc_sizeof_in_bytes_runtime(const TypeData *type, VarPtr v = {}) {
   switch (type->get_real_ptype()) {
     case tp_int:
     case tp_float:
@@ -42,7 +42,10 @@ int calc_sizeof_tuple_shape(const TypeData *type);
     case tp_future_queue:
       return type->use_optional() ? SIZEOF_OPTIONAL + 8 : 8;
     default:
-      kphp_error(0, fmt_format("Unable to detect sizeof() for type = {}", type->as_human_readable()));
+      if (v) {
+        printf("> var = %s; recalculated = %d\n", v->as_human_readable().c_str(), v->tinf_node.was_recalc_finished_at_least_once());
+      }
+      kphp_error(0, fmt_format("Unable to detect sizeof() for type = {}", type->as_human_readable()).c_str());
       return 0;
   }
 }
@@ -103,7 +106,7 @@ void ConstantsLinearMem::prepare_constants_linear_mem_and_assign_offsets(std::ve
   int offset = 0;
   for (VarPtr var : all_constants) {
     const TypeData *var_type = tinf::get_type(var);
-    int cur_sizeof = (calc_sizeof_in_bytes_runtime(var_type) + 7) & -8; // min 8 bytes per variable
+    int cur_sizeof = (calc_sizeof_in_bytes_runtime(var_type, var) + 7) & -8; // min 8 bytes per variable
 
     var->offset_in_linear_mem = offset;
     offset += cur_sizeof;
@@ -147,7 +150,7 @@ void GlobalsLinearMem::prepare_globals_linear_mem_and_assign_offsets(std::vector
   int offset = 0;
   for (VarPtr var : all_globals) {
     const TypeData *var_type = tinf::get_type(var);
-    int cur_sizeof = (calc_sizeof_in_bytes_runtime(var_type) + 7) & -8; // min 8 bytes per variable
+    int cur_sizeof = (calc_sizeof_in_bytes_runtime(var_type, var) + 7) & -8; // min 8 bytes per variable
 
     var->offset_in_linear_mem = offset;
     offset += cur_sizeof;
