@@ -43,7 +43,7 @@ int calc_sizeof_tuple_shape(const TypeData *type);
       return type->use_optional() ? SIZEOF_OPTIONAL + 8 : 8;
     default:
       if (v) {
-        printf("> var = %s; recalculated = %d\n", v->as_human_readable().c_str(), v->tinf_node.was_recalc_finished_at_least_once());
+        printf("> var = %s; recalculated = %d; is_uninited = %d\n", v->as_human_readable().c_str(), v->tinf_node.was_recalc_finished_at_least_once(), v->get_uninited_flag());
       }
       kphp_error(0, fmt_format("Unable to detect sizeof() for type = {}", type->as_human_readable()).c_str());
       return 0;
