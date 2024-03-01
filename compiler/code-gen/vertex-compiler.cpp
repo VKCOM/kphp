@@ -1018,7 +1018,9 @@ void compile_foreach_ref_header(VertexAdaptor<op_foreach> root, CodeGenerator &W
 
 
   //save value
-  W << TypeName(tinf::get_type(x)) << " &";
+  if (auto v = x.try_as<op_var>(); !v || !v->var_id->is_global_var()) {
+    W << TypeName(tinf::get_type(x)) << " &";
+  }
   W << x << " = " << it << ".get_value();" << NL;
 
   //save key
