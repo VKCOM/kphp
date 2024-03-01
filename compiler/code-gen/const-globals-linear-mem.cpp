@@ -189,12 +189,13 @@ void GlobalsLinearMem::codegen_counts_as_comments(CodeGenerator &W) const {
 }
 
 void GlobalsLinearMem::codegen_debug_sizeof_static_asserts(CodeGenerator &W) const {
+  // most of classes use refcountable, maybe move it to class headers?
+  W << NL << "#include \"runtime-headers.h\"" << NL << NL;
   IncludesCollector includes;
   for (const TypeData *type : debug_sizeof_static_asserts) {
     includes.add_all_class_types(*type);
   }
   W << includes;
-  W << NL << "#include \"runtime/kphp_core.h\"" << NL << NL;
 
   for (const TypeData *type : debug_sizeof_static_asserts) {
     int mem = calc_sizeof_in_bytes_runtime(type);
