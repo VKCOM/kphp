@@ -165,9 +165,9 @@ void GlobalsLinearMem::prepare_globals_linear_mem_and_assign_offsets(std::vector
     inc_count_by_origin(var);
 
     // todo comment this after testing in vkcom
-    if (var_type->use_optional() || !vk::any_of_equal(var_type->get_real_ptype(), tp_mixed, tp_bool, tp_int, tp_float, tp_string, tp_array, tp_Class, tp_any)) {
-      debug_sizeof_static_asserts.push_back(var_type);
-    }
+//    if (var_type->use_optional() || !vk::any_of_equal(var_type->get_real_ptype(), tp_mixed, tp_bool, tp_int, tp_float, tp_string, tp_array, tp_Class, tp_any)) {
+      debug_sizeof_static_asserts.insert(var_type);
+//    }
   }
 
   total_mem_size = offset;

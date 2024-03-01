@@ -5,6 +5,7 @@
 #pragma once
 
 #include "compiler/data/data_ptr.h"
+#include <unordered_set>
 
 class TypeData;
 class CodeGenerator;
@@ -41,7 +42,7 @@ class GlobalsLinearMem {
   int total_count = 0;
   int total_mem_size = 0;
 
-  std::vector<const TypeData *> debug_sizeof_static_asserts;
+  std::unordered_set<const TypeData *> debug_sizeof_static_asserts;
 
   void inc_count_by_origin(VarPtr var);
 
