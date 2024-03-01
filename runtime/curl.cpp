@@ -1144,7 +1144,7 @@ static int curl_epoll_cb(int fd, void *data, event_t *ev) {
     }
 
     string content = easy_context->received_data.concat_and_get_string();
-    curl_request->finish_request(std::move(content));
+    curl_request->finish_request(!content.empty() ? std::move(content) : Optional<string>{false});
   }
   return 0;
 }
