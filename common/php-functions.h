@@ -39,6 +39,7 @@ constexpr int SIZEOF_MIXED = 16;
 constexpr int SIZEOF_INSTANCE_ANY = 8;
 constexpr int SIZEOF_OPTIONAL = 8;
 constexpr int SIZEOF_REGEXP = 48;
+constexpr int SIZEOF_UNKNOWN = 1;
 
 class ExtraRefCnt {
 public:

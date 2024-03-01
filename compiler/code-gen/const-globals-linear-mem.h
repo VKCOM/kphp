@@ -42,8 +42,6 @@ class GlobalsLinearMem {
   int total_count = 0;
   int total_mem_size = 0;
 
-  std::unordered_set<const TypeData *> debug_sizeof_static_asserts;
-
   void inc_count_by_origin(VarPtr var);
 
 public:
@@ -53,5 +51,4 @@ public:
   int get_total_linear_mem_size() const { return total_mem_size; }
 
   void codegen_counts_as_comments(CodeGenerator &W) const;
-  void codegen_debug_sizeof_static_asserts(CodeGenerator &W) const;
 };

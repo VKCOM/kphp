@@ -15,7 +15,7 @@ namespace {
 
 int calc_sizeof_tuple_shape(const TypeData *type);
 
-[[gnu::always_inline]] inline int calc_sizeof_in_bytes_runtime(const TypeData *type, VarPtr v = {}) {
+[[gnu::always_inline]] inline int calc_sizeof_in_bytes_runtime(const TypeData *type) {
   switch (type->get_real_ptype()) {
     case tp_int:
     case tp_float:
@@ -42,14 +42,9 @@ int calc_sizeof_tuple_shape(const TypeData *type);
     case tp_future_queue:
       return type->use_optional() ? SIZEOF_OPTIONAL + 8 : 8;
     case tp_any:
-      // for Unknown type
       // TODO maybe skip such global variables on DropUnusedPass?
-      return 1;
+      return SIZEOF_UNKNOWN;
     default:
-      if (v) {
-        printf("> var = %s; recalculated = %d; is_uninited = %d; type = %s\n", v->as_human_readable().c_str(), v->tinf_node.was_recalc_finished_at_least_once(),
-               v->get_uninited_flag(), type_out(type, gen_out_style::cpp).c_str());
-      }
       kphp_error(0, fmt_format("Unable to detect sizeof() for type = {}", type->as_human_readable()).c_str());
       return 0;
   }
@@ -111,7 +106,7 @@ void ConstantsLinearMem::prepare_constants_linear_mem_and_assign_offsets(std::ve
   int offset = 0;
   for (VarPtr var : all_constants) {
     const TypeData *var_type = tinf::get_type(var);
-    int cur_sizeof = (calc_sizeof_in_bytes_runtime(var_type, var) + 7) & -8; // min 8 bytes per variable
+    int cur_sizeof = (calc_sizeof_in_bytes_runtime(var_type) + 7) & -8; // min 8 bytes per variable
 
     var->offset_in_linear_mem = offset;
     offset += cur_sizeof;
@@ -158,16 +153,11 @@ void GlobalsLinearMem::prepare_globals_linear_mem_and_assign_offsets(std::vector
 
     // some global vars are not used but are not detected on DropUnusedPass somehow \shrug
     // for now just skip them
-    int cur_sizeof = (calc_sizeof_in_bytes_runtime(var_type, var) + 7) & -8; // min 8 bytes per variable
+    int cur_sizeof = (calc_sizeof_in_bytes_runtime(var_type) + 7) & -8; // min 8 bytes per variable
 
     var->offset_in_linear_mem = offset;
     offset += cur_sizeof;
     inc_count_by_origin(var);
-
-    // todo comment this after testing in vkcom
-//    if (var_type->use_optional() || !vk::any_of_equal(var_type->get_real_ptype(), tp_mixed, tp_bool, tp_int, tp_float, tp_string, tp_array, tp_Class, tp_any)) {
-      debug_sizeof_static_asserts.insert(var_type);
-//    }
   }
 
   total_mem_size = offset;
@@ -183,22 +173,5 @@ void GlobalsLinearMem::codegen_counts_as_comments(CodeGenerator &W) const {
   W << "// count(require_once) = " << count_of_require_once << NL;
   W << "// count(php globals) = " << count_of_php_globals << NL;
 
-  if (!debug_sizeof_static_asserts.empty()) {
-    codegen_debug_sizeof_static_asserts(W);
-  }
 }
 
-void GlobalsLinearMem::codegen_debug_sizeof_static_asserts(CodeGenerator &W) const {
-  // most of classes use refcountable, maybe move it to class headers?
-  W << NL << "#include \"runtime-headers.h\"" << NL << NL;
-  IncludesCollector includes;
-  for (const TypeData *type : debug_sizeof_static_asserts) {
-    includes.add_all_class_types(*type);
-  }
-  W << includes;
-
-  for (const TypeData *type : debug_sizeof_static_asserts) {
-    int mem = calc_sizeof_in_bytes_runtime(type);
-    W << "static_assert(" << mem << " == sizeof(" << type_out(type) << "));" << NL;
-  }
-}

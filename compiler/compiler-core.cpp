@@ -547,7 +547,7 @@ std::vector<VarPtr> CompilerCore::get_global_vars() {
   // static class variables are registered as globals, but if they're unused,
   // then their types were never calculated; we don't need to export them to vars.cpp
   // trait's fields are not used, too
-  // it happens because traits and classes have the same flow in most of passes in current
+  // it happens because traits and classes have the same flow in most of passes currently
   return global_vars_ht.get_all_if([](VarPtr v) {
     return v->tinf_node.was_recalc_finished_at_least_once();
   });

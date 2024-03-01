@@ -468,6 +468,11 @@ static void declare_global_variables(VertexPtr vertex, CodeGenerator &W) {
   }
 }
 
+// TODO rewrite it
+// For now 'declare_global_variables` is not valid
+// Maybe it's redundant?
+// I suppose there no cases where mutable global variables
+// are necessary for class declaration
 void ClassDeclaration::declare_all_variables(VertexPtr vertex, CodeGenerator &W) const {
   if (has_const_variable(vertex)) {
     W << "extern char *constants_linear_mem;" << NL;
