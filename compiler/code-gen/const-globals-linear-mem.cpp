@@ -194,6 +194,7 @@ void GlobalsLinearMem::codegen_debug_sizeof_static_asserts(CodeGenerator &W) con
     includes.add_all_class_types(*type);
   }
   W << includes;
+  W << NL << "#include \"runtime/kphp_core.h\"" << NL << NL;
 
   for (const TypeData *type : debug_sizeof_static_asserts) {
     int mem = calc_sizeof_in_bytes_runtime(type);
