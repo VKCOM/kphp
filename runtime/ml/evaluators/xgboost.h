@@ -3,19 +3,19 @@
 #include <string>
 
 #include "runtime/kphp_core.h"
+#include "runtime/ml/interface.h"
+#include "runtime/ml/internals.h"
 #include "runtime/ml/kml-files-reader.h"
-#include "runtime/ml/kphp_ml.h"
-#include "runtime/ml/ml.h"
 
 class EvalXgboost {
-  kphp_ml::MLModel &model;
+  ml_internals::MLModel &model;
 
 public:
-  explicit EvalXgboost(kphp_ml::MLModel &model) noexcept
+  explicit EvalXgboost(ml_internals::MLModel &model) noexcept
     : model(model) {
-    assert(model.model_kind == kphp_ml::ModelKind::xgboost_trees_no_cat);
-    assert(model.input_kind == kphp_ml::InputKind::ht_direct_int_keys_to_fvalue || model.input_kind == kphp_ml::InputKind::ht_remap_int_keys_to_fvalue
-           || model.input_kind == kphp_ml::InputKind::ht_remap_str_keys_to_fvalue);
+    assert(model.model_kind == ml_internals::ModelKind::xgboost_trees_no_cat);
+    assert(model.input_kind == ml_internals::InputKind::ht_direct_int_keys_to_fvalue || model.input_kind == ml_internals::InputKind::ht_remap_int_keys_to_fvalue
+           || model.input_kind == ml_internals::InputKind::ht_remap_str_keys_to_fvalue);
   }
 
   array<double> predict_input(const array<array<double>> &features) const;

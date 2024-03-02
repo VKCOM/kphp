@@ -2,8 +2,8 @@
 
 // TODO
 // Maybe kml-reader / kml-writer as lib?
-// Just to be synchronized
+// Just to be synchronized with standalone app
 
-#include "kphp_ml.h"
+#include "internals.h"
 
-kphp_ml::MLModel kml_file_read(const char *kml_filename);
+ml_internals::MLModel kml_file_read(const char *kml_filename);

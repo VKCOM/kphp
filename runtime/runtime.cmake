@@ -41,8 +41,8 @@ prepend(KPHP_RUNTIME_ML_SOURCES ml/
         evaluators/catboost.cpp
         evaluators/xgboost.cpp
         kml-files-reader.cpp
-        kphp_ml.cpp
-        ml.cpp
+        internals.cpp
+        interface.cpp
         init.cpp)
 
 if(PDO_DRIVER_MYSQL)

@@ -1,5 +1,5 @@
 #pragma once
 
-#include "runtime/ml/ml.h"
+#include "runtime/ml/interface.h"
 
 void init_ml_runtime();

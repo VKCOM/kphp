@@ -1,13 +1,13 @@
 #pragma once
 
-#include "catboost_common.h"
+#include "runtime/ml/catboost_common.h"
 
 #include <string>
 #include <unordered_map>
 #include <variant>
 #include <vector>
 
-namespace kphp_ml {
+namespace ml_internals {
 
 constexpr int KML_FILE_PREFIX = 0x718249F0;
 constexpr int KML_FILE_VERSION_100 = 100;
@@ -114,4 +114,4 @@ struct MLModel {
   std::variant<XgbModel, CbModel> impl;
 };
 
-} // namespace kphp_ml
+} // namespace ml_internals

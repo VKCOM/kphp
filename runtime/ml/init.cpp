@@ -38,9 +38,9 @@ void init_ml_runtime() {
       auto cur_model_prediction_size = std::visit(
         [](auto &impl) -> size_t {
           using impl_type = std::decay_t<decltype(impl)>;
-          if constexpr (std::is_same_v<kphp_ml::XgbModel, impl_type>) {
-            return 2 * kphp_ml::BATCH_SIZE_XGB * impl.num_features_present * 2 * sizeof(float);
-          } else if constexpr (std::is_same_v<kphp_ml::CbModel, impl_type>) {
+          if constexpr (std::is_same_v<ml_internals::XgbModel, impl_type>) {
+            return 2 * ml_internals::BATCH_SIZE_XGB * impl.num_features_present * 2 * sizeof(float);
+          } else if constexpr (std::is_same_v<ml_internals::CbModel, impl_type>) {
             return align_to(sizeof(char) * impl.binary_feature_count, sizeof(int)) + sizeof(int) * impl.cat_feature_count
                    + sizeof(std::pair<int, int>) * impl.cat_feature_count + sizeof(float) * impl.model_ctrs.used_model_ctrs_count;
           } else {

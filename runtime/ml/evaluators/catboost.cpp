@@ -4,7 +4,7 @@
 #include <stdexcept>
 
 
-#include "runtime/ml/ml.h"
+#include "runtime/ml/interface.h"
 
 using namespace cb_common;
 
@@ -107,8 +107,6 @@ static void calc_ctrs(const CatboostModelCtrsContainer &model_ctrs, unsigned cha
             total_count += good_count;
             result[result_index] = ctr.calc(good_count, total_count);
           } else {
-            // const int* ctrHistory = &ctrIntArray[bucket * 2];
-            // result[resultIdx] = ctr.Calc(ctrHistory[1], ctrHistory[0] + ctrHistory[1]);
             result[result_index] = ctr.calc(ctr_history[bucket * 2 + 1], ctr_history[bucket * 2] + ctr_history[bucket * 2 + 1]);
           }
         }

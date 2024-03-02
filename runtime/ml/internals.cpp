@@ -1,10 +1,10 @@
-#include "kphp_ml.h"
+#include "internals.h"
 
 #include <cmath>
 
-static_assert(sizeof(kphp_ml::XgbTreeNode) == 8, "unexpected sizeof(XgbTreeNode)");
+static_assert(sizeof(ml_internals::XgbTreeNode) == 8, "unexpected sizeof(XgbTreeNode)");
 
-namespace kphp_ml {
+namespace ml_internals {
 
 [[gnu::always_inline]] static inline float transform_base_score(XGTrainParamObjective tparam_objective, float base_score) {
   switch (tparam_objective) {
@@ -29,11 +29,11 @@ namespace kphp_ml {
 }
 
 float XgbModel::transform_base_score() const noexcept {
-  return kphp_ml::transform_base_score(tparam_objective, base_score);
+  return ml_internals::transform_base_score(tparam_objective, base_score);
 }
 
 double XgbModel::transform_prediction(double score) const noexcept {
-  score = kphp_ml::transform_prediction(tparam_objective, score);
+  score = ml_internals::transform_prediction(tparam_objective, score);
 
   switch (calibration.calibration_method) {
     case CalibrationMethod::platt_scaling:
@@ -46,4 +46,4 @@ double XgbModel::transform_prediction(double score) const noexcept {
   }
 }
 
-} // namespace kphp_ml
+} // namespace ml_internals

@@ -64,11 +64,11 @@ public:
 };
 
 // ModelKind::xgboost_trees_no_cat
-void kml_file_read_xgboost_trees_no_cat(KmlFileReader &f, [[maybe_unused]] int version, kphp_ml::MLModel &kml) {
-  auto &xgb_model = std::get<kphp_ml::XgbModel>(kml.impl);
+void kml_file_read_xgboost_trees_no_cat(KmlFileReader &f, [[maybe_unused]] int version, ml_internals::MLModel &kml) {
+  auto &xgb_model = std::get<ml_internals::XgbModel>(kml.impl);
 
-  xgb_model.tparam_objective = static_cast<kphp_ml::XGTrainParamObjective>(f.read_int());
-  f.read_bytes(&xgb_model.calibration, sizeof(kphp_ml::CalibrationMethod));
+  xgb_model.tparam_objective = static_cast<ml_internals::XGTrainParamObjective>(f.read_int());
+  f.read_bytes(&xgb_model.calibration, sizeof(ml_internals::CalibrationMethod));
   f.read_float(xgb_model.base_score);
   f.read_int(xgb_model.num_features_trained);
   f.read_int(xgb_model.num_features_present);
@@ -85,13 +85,13 @@ void kml_file_read_xgboost_trees_no_cat(KmlFileReader &f, [[maybe_unused]] int v
   }
   // todo compare performance with a single vector of all nodes of all trees (maybe, linear memory is better?)
   xgb_model.trees.resize(num_trees);
-  for (kphp_ml::XgbTree &tree : xgb_model.trees) {
+  for (ml_internals::XgbTree &tree : xgb_model.trees) {
     int num_nodes = f.read_int();
     if (num_nodes <= 0 || num_nodes > 10000) {
       throw std::invalid_argument("wrong num_nodes");
     }
     tree.nodes.resize(num_nodes);
-    f.read_bytes(tree.nodes.data(), sizeof(kphp_ml::XgbTreeNode) * num_nodes);
+    f.read_bytes(tree.nodes.data(), sizeof(ml_internals::XgbTreeNode) * num_nodes);
   }
 
   f.check_not_eof();
@@ -145,8 +145,8 @@ void kml_read_catboost_ctrs_container(KmlFileReader &f, [[maybe_unused]] cb_comm
   }
 }
 
-void kml_file_read_catboost_trees(KmlFileReader &f, [[maybe_unused]] int version, kphp_ml::MLModel &kml) {
-  auto &cb_model = std::get<kphp_ml::CbModel>(kml.impl);
+void kml_file_read_catboost_trees(KmlFileReader &f, [[maybe_unused]] int version, ml_internals::MLModel &kml) {
+  auto &cb_model = std::get<ml_internals::CbModel>(kml.impl);
 
   f.read_int(cb_model.float_feature_count);
   f.read_int(cb_model.cat_feature_count);
@@ -190,30 +190,30 @@ void kml_file_read_catboost_trees(KmlFileReader &f, [[maybe_unused]] int version
 
 } // namespace
 
-kphp_ml::MLModel kml_file_read(const char * kml_filename) {
-  kphp_ml::MLModel kml;
+ml_internals::MLModel kml_file_read(const char * kml_filename) {
+  ml_internals::MLModel kml;
   KmlFileReader f(kml_filename);
 
-  if (f.read_int() != kphp_ml::KML_FILE_PREFIX) {
+  if (f.read_int() != ml_internals::KML_FILE_PREFIX) {
     throw std::invalid_argument("wrong .kml file prefix");
   }
   int version = f.read_int();
-  if (version != kphp_ml::KML_FILE_VERSION_100) {
+  if (version != ml_internals::KML_FILE_VERSION_100) {
     throw std::invalid_argument("wrong .kml file version");
   }
 
-  kml.model_kind = static_cast<kphp_ml::ModelKind>(f.read_int());
-  kml.input_kind = static_cast<kphp_ml::InputKind>(f.read_int());
+  kml.model_kind = static_cast<ml_internals::ModelKind>(f.read_int());
+  kml.input_kind = static_cast<ml_internals::InputKind>(f.read_int());
   f.read_string(kml.model_name);
   f.check_not_eof();
 
   switch (kml.model_kind) {
-    case kphp_ml::ModelKind::xgboost_trees_no_cat:
-      kml.impl = kphp_ml::XgbModel();
+    case ml_internals::ModelKind::xgboost_trees_no_cat:
+      kml.impl = ml_internals::XgbModel();
       kml_file_read_xgboost_trees_no_cat(f, version, kml);
       break;
-    case kphp_ml::ModelKind::catboost_trees:
-      kml.impl = kphp_ml::CbModel();
+    case ml_internals::ModelKind::catboost_trees:
+      kml.impl = ml_internals::CbModel();
       kml_file_read_catboost_trees(f, version, kml);
       break;
     default:
