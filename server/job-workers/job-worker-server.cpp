@@ -69,15 +69,15 @@ int jobs_server_php_wakeup(connection *c) {
 
   auto *worker = reinterpret_cast<JobCustomData *>(c->custom_data)->worker;
   assert(worker);
-  double timeout = worker->enter_lifecycle();
+  std::optional<double> timeout = worker->enter_lifecycle();
 
-  if (timeout == 0) {
-    delete worker;
+  if (!timeout.has_value()) {
+    php_worker.reset();
     jobs_server_at_query_end(c);
   } else {
     assert(c->pending_queries >= 0 && c->status == conn_wait_net);
-    assert(timeout > 0);
-    set_connection_timeout(c, timeout);
+    assert(*timeout > 0);
+    set_connection_timeout(c, *timeout);
   }
   return 0;
 }
@@ -173,10 +173,10 @@ int JobWorkerServer::job_parse_execute(connection *c) noexcept {
   job_stat.job_request_max_real_memory_used = job_memory_stats.max_real_memory_used;
   job_stat.job_request_max_memory_used = job_memory_stats.max_memory_used;
 
-  job_query_data *job_data = job_query_data_create(job, [](JobSharedMessage *job_response) {
-    return vk::singleton<JobWorkerServer>::get().send_job_reply(job_response);
-  });
-  reinterpret_cast<JobCustomData *>(c->custom_data)->worker = new PhpWorker(job_worker, c, nullptr, nullptr, job_data, job->job_id, left_job_time);
+  php_query_data_t job_data =  job_query_data{job, [](JobSharedMessage *job_response) {
+                                               return vk::singleton<JobWorkerServer>::get().send_job_reply(job_response);}};
+  php_worker.emplace(job_worker, c, std::move(job_data), job->job_id, left_job_time);
+  reinterpret_cast<JobCustomData *>(c->custom_data)->worker = &php_worker.value();
 
   set_connection_timeout(c, left_job_time);
   c->status = conn_wait_net;
@@ -244,7 +244,7 @@ void JobWorkerServer::store_job_response_error(const char *error_msg, int error_
   auto &memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
   auto *response_memory = memory_manager.acquire_shared_message<job_workers::JobSharedMessage>();
   if (!response_memory) {
-    log_server_error("Can't store job response error: not enough shared memory.\nUnstored error details: error_code = %d, error_msg = %s", error_code, error_msg);
+    log_server_error("Can't store job response error: not enough shared messages.\nUnstored error details: error_code = %d, error_msg = %s", error_code, error_msg);
     return;
   }
 
@@ -262,8 +262,8 @@ bool JobWorkerServer::reply_is_expected() const noexcept {
 }
 
 void JobWorkerServer::flush_job_stat() noexcept {
-  vk::singleton<ServerStats>::get().add_job_stats(job_stat.job_wait_time, job_stat.job_request_max_real_memory_used, job_stat.job_request_max_memory_used,
-                                                  job_stat.job_response_max_real_memory_used, job_stat.job_response_max_memory_used);
+  vk::singleton<ServerStats>::get().add_job_stats(job_stat.job_wait_time, job_stat.job_request_max_memory_used, job_stat.job_request_max_real_memory_used,
+                                                  job_stat.job_response_max_memory_used, job_stat.job_response_max_real_memory_used);
   job_stat = {};
 }
 } // namespace job_workers

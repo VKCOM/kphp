@@ -1,13 +1,5 @@
 <?php
 
-/** @kphp-immutable-class */
-class A {
-  /** @var int */
-  public $a = 42;
-  /** @var string */
-  public $b = "hello";
-}
-
 /**
  * @kphp-required
  */
@@ -60,8 +52,9 @@ class RpcWorker implements I {
    }
 }
 
-
-if ($_SERVER["PHP_SELF"] === "/ini_get") {
+if (isset($_SERVER["JOB_ID"])) {
+  require_once "job_worker.php";
+} else if ($_SERVER["PHP_SELF"] === "/ini_get") {
   echo ini_get($_SERVER["QUERY_STRING"]);
 } else if (substr($_SERVER["PHP_SELF"], 0, 12) === "/test_limits") {
   echo json_encode($_SERVER);
@@ -90,6 +83,70 @@ if ($_SERVER["PHP_SELF"] === "/ini_get") {
   }
   file_put_contents("out.dat", $res === false ? "false" : $res);
   echo "OK";
+} else if ($_SERVER["PHP_SELF"] === "/test_script_flush") {
+    switch($_GET["type"]) {
+     case "one_flush":
+        echo "Hello ";
+        flush();
+        sleep(2);
+        echo "world";
+        return;
+
+     case "few_flush":
+        echo "This ";
+        flush();
+        sleep(2);
+        echo "is big ";
+        flush();
+        sleep(2);
+        echo "message";
+        return;
+
+     case "transfer_encoding_chunked":
+        header("Transfer-Encoding: chunked");
+
+        $chunk = "Hello world";
+        echo sprintf("%x\r\n", strlen($chunk)) . $chunk . "\r\n";
+        flush();
+        sleep(2);
+
+        $chunk = "Bye world";
+        echo sprintf("%x\r\n", strlen($chunk)) . $chunk . "\r\n";
+        return;
+
+     case "error_on_flush":
+        echo "Start work";
+        flush();
+        sleep(2);
+        throw new Exception('Exception');
+    }
+
+    echo "OK";
+} else if ($_SERVER["PHP_SELF"] === "/test_script_gzip_header") {
+    switch($_GET["type"]) {
+      case "gzip":
+        ob_start("ob_gzhandler");
+        echo 'OK';
+        break;
+      case "reset":
+        ob_start("ob_gzhandler");
+        echo 'OK';
+        ob_end_flush();
+        break;
+      case "ignore-second-handler":
+        header('Transfer-Encoding: chunked');
+        $chunk = "OK";
+        printf("%X\r\n", strlen($chunk));
+        echo $chunk . "\r\n";
+        flush(); // flush headers so the handler below should not affect them anymore
+        ob_start("ob_gzhandler");
+        $chunk = "OK";
+        printf("%X\r\n", strlen($chunk));
+        echo $chunk . "\r\n";
+        printf("0\r\n\r\n");
+
+        break;
+    }
 } else if ($_SERVER["PHP_SELF"] === "/test_ignore_user_abort") {
     register_shutdown_function('shutdown_function');
     /** @var I */
@@ -161,6 +218,8 @@ if ($_SERVER["PHP_SELF"] === "/ini_get") {
     echo "pid=" . posix_getpid();
 } else if ($_SERVER["PHP_SELF"] === "/test_script_errors") {
   critical_error("Test error");
+} else if ($_SERVER["PHP_SELF"] === "/test_oom_handler") {
+  require_once "test_oom_handler.php";
 } else {
     if ($_GET["hints"] === "yes") {
         send_http_103_early_hints(["Content-Type: text/plain or application/json", "Link: </script.js>; rel=preload; as=script"]);

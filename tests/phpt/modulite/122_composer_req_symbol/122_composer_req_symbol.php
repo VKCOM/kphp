@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_MODULITE=1
 KPHP_COMPOSER_ROOT={dir}
 /Strings122"/
 /Strings122::\$SIZE"/

@@ -36,18 +36,18 @@ tplTwo/*<TemplateMagic>*/(null);
 tplTwo(new TemplateMagic);
 
 
-interface Stringable {
+interface MStringable {
     function __toString(): string;
 }
 
-class S1 implements Stringable {
+class S1 implements MStringable {
     function __toString(): string {
         return "S1\n";
     }
 }
 
 /**
- * @kphp-generic T: Stringable | string
+ * @kphp-generic T: MStringable | string
  * @param T $toStr
  */
 function printToString($toStr) {

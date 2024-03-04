@@ -182,7 +182,7 @@ std::string get_default_extra_cxxflags() noexcept {
 }
 
 std::string get_default_extra_ldflags() noexcept {
-  std::string flags{"-L${KPHP_PATH}/objs/flex -ggdb"};
+  std::string flags{"-L${KPHP_PATH}/objs/flex -ggdb -fno-lto"};
 #ifdef KPHP_HAS_NO_PIE
   flags += " " KPHP_HAS_NO_PIE;
 #endif
@@ -291,8 +291,6 @@ int main(int argc, char *argv[]) {
              "composer-root", "KPHP_COMPOSER_ROOT");
   parser.add("Include autoload-dev section for the root composer file", settings->composer_autoload_dev,
              "composer-autoload-dev", "KPHP_COMPOSER_AUTOLOAD_DEV");
-  parser.add("Enable modulite experimental support", settings->modulite_enabled,
-             "enable-modulite", "KPHP_ENABLE_MODULITE");
   parser.add("Require functions typing (1 - @param / type hint is mandatory, 0 - auto infer or check if exists)", settings->require_functions_typing,
              "require-functions-typing", "KPHP_REQUIRE_FUNCTIONS_TYPING");
   parser.add("Require class typing (1 - @var / default value is mandatory, 0 - auto infer or check if exists)", settings->require_class_typing,
@@ -326,6 +324,7 @@ int main(int argc, char *argv[]) {
   }
 
   if (settings->verbosity.get() >= 3) {
+    std::cerr << "Version: " << get_version_string() << std::endl;
     parser.dump_options(std::cerr);
   }
 

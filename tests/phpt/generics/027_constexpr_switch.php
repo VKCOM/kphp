@@ -1,5 +1,6 @@
 @ok
 <?php
+require_once 'kphp_tester_include.php';
 
 class A {
     public int $value;
@@ -204,3 +205,50 @@ D1::info();
 D2::info();
 D3::info();
 D4::info();
+
+
+class ModelA {
+    public int $a = 0;
+}
+class ModelB {
+    public string $b = 'b';
+}
+
+function overloaded1(object $o) {
+    echo "overloaded function for ", get_class($o), "\n";
+    switch (classof($o)) {
+    case ModelA::class:
+        echo "a = ", $o->a;
+        break;
+    case ModelB::class:
+        echo "b = '", $o->b, "'";
+        break;
+    }
+    echo "\n";
+}
+
+overloaded1(new ModelA);
+overloaded1(new ModelB);
+
+
+/**
+ * @kphp-generic T
+ * @param T $o
+ */
+function overloaded2($o) {
+    switch (true) {
+    case true:
+        switch (classof($o)) {
+        case ModelA::class:
+            if ($o === null) echo 'o = null';
+            else echo "a = ", $o->a;
+            break;
+        default:
+            break;
+        }
+    }
+    echo "\n";
+}
+
+overloaded2(new ModelA);
+overloaded2(new ModelB);

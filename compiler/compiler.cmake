@@ -40,6 +40,7 @@ prepend(KPHP_COMPILER_DATA_SOURCES data/
         lib-data.cpp
         generics-mixins.cpp
         kphp-json-tags.cpp
+        kphp-tracing-tags.cpp
         modulite-data.cpp
         performance-inspections.cpp
         src-dir.cpp
@@ -72,6 +73,7 @@ prepend(KPHP_COMPILER_CODEGEN_SOURCES code-gen/
         code-gen-task.cpp
         code-generator.cpp
         declarations.cpp
+        files/cmake-lists-txt.cpp
         files/function-header.cpp
         files/function-source.cpp
         files/global_vars_memory_stats.cpp
@@ -87,6 +89,7 @@ prepend(KPHP_COMPILER_CODEGEN_SOURCES code-gen/
         files/tl2cpp/tl2cpp-utils.cpp
         files/tl2cpp/tl2cpp.cpp
         files/shape-keys.cpp
+        files/tracing-autogen.cpp
         files/type-tagger.cpp
         files/vars-cpp.cpp
         files/vars-reset.cpp
@@ -214,6 +217,10 @@ if(APPLE)
     set_source_files_properties(${KPHP_COMPILER_DIR}/lexer.cpp PROPERTIES COMPILE_FLAGS -Wno-deprecated-register)
 endif()
 
+if(COMPILER_CLANG AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "14.0.0")
+    set_source_files_properties(${KPHP_COMPILER_DIR}/ffi/c_parser/yy_parser_generated.cpp PROPERTIES COMPILE_FLAGS -Wno-unused-but-set-variable)
+endif()
+
 list(APPEND KPHP_COMPILER_SOURCES
      ${KPHP_COMPILER_COMMON}
      ${KEYWORDS_SET}
@@ -259,6 +266,9 @@ target_include_directories(kphp2cpp PUBLIC ${KPHP_COMPILER_DIR})
 
 prepare_cross_platform_libs(COMPILER_LIBS yaml-cpp re2)
 set(COMPILER_LIBS vk::kphp2cpp_src vk::tlo_parsing_src vk::popular_common ${COMPILER_LIBS} fmt::fmt OpenSSL::Crypto pthread)
+if(NOT APPLE)
+    list(APPEND COMPILER_LIBS stdc++fs)
+endif()
 
 target_link_libraries(kphp2cpp PRIVATE ${COMPILER_LIBS})
 target_link_options(kphp2cpp PRIVATE ${NO_PIE})

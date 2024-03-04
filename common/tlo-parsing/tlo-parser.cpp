@@ -24,31 +24,35 @@ tlo_parser::tlo_parser(const char *tlo_path) :
     error("%s", strerror(errno));
     return;
   }
-  len = fread(data, 1, sizeof(data), f);
+
+  std::fseek(f, 0, SEEK_END);
+  auto file_size = std::ftell(f);
+  std::rewind(f);
+  data.resize(file_size);
+
+  len = fread(data.data(), 1, file_size, f);
   std::fclose(f);
-  if (!(len > 0 && len < MAX_SCHEMA_LEN)) {
+  if (!(len > 0 && len == file_size)) {
     error("Error while reading file %s", tlo_path);
     return;
   }
   tl_sch = std::make_unique<tl_scheme>();
 }
 
-tlo_parser::~tlo_parser() = default;
-
 std::string tlo_parser::get_string() {
   check_pos(4);
-  size_t len = *reinterpret_cast<unsigned char *>(data + pos);
+  size_t len = *reinterpret_cast<unsigned char *>(data.data() + pos);
   if (len < 254) {
     pos += 1;
   } else {
-    len = *reinterpret_cast<unsigned int *>(data + pos);
+    len = *reinterpret_cast<unsigned int *>(data.data() + pos);
     pos += 4;
   }
   check_pos(len);
   size_t old_pos = pos;
   pos += len;
   pos += (-pos & 3);
-  return {data + old_pos, len};
+  return {data.data() + old_pos, len};
 }
 
 void tlo_parser::check_pos(size_t size) {
@@ -77,7 +81,8 @@ std::unique_ptr<type_expr_base> tlo_parser::read_type_expr() {
 std::unique_ptr<nat_expr_base> tlo_parser::read_nat_expr() {
   auto magic = get_value<unsigned int>();
   switch (magic) {
-    case TL_TLS_EXPR_NAT: {
+    case TL_TLS_EXPR_NAT: // Legacy typo fix
+    case TL_TLS_NAT_CONST: {
       return std::make_unique<nat_const>(this);
     }
     case TL_TLS_NAT_VAR: {

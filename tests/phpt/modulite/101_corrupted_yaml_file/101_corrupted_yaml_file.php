@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_MODULITE=1
 /Algo101\/\.modulite\.yaml:5/
 /"asdf":/
 /'export' has incorrect format/

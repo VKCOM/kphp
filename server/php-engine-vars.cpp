@@ -18,11 +18,11 @@ int initial_verbosity = 0;
 char *logname_pattern = nullptr;
 int logname_id = 0;
 long long max_memory = 1 << 29;
+double oom_handling_memory_ratio = 0.00;
 
 int worker_id = -1;
 int pid = -1;
-
-int no_sql = 0;
+int master_pid = -1;
 
 ProcessType process_type = ProcessType::master;
 
@@ -53,6 +53,7 @@ int master_sfd_inited = 0;
  ***/
 int sql_target_id = -1;
 int script_timeout = 0;
+double hard_timeout = 1.0;
 int disable_access_log = 0;
 int force_clear_sql_connection = 0;
 long long static_buffer_length_limit = -1;

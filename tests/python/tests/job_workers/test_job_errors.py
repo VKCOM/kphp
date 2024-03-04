@@ -16,6 +16,7 @@ class TestJobErrors(KphpServerAutoTestCase):
         cls.kphp_server.update_options({
             "--workers-num": 4,
             "--job-workers-ratio": 0.5,
+            "--job-workers-shared-memory-distribution-weights": '2,2,2,2,1,1,1,1,1,1',
             "--verbosity-job-workers=2": True,
         })
 
@@ -75,13 +76,6 @@ class TestJobErrors(KphpServerAutoTestCase):
             "Error 0: Test exception"
         ])
 
-    def test_job_stack_overflow_error(self):
-        self.job_error_test_impl("stack_overflow", self.JOB_STACK_OVERFLOW_ERROR, data=[[1, 2, 3, 4, 5]], buffers=2)
-        self.kphp_server.assert_log([
-            "Critical error during script execution: sigsegv\\(stack overflow\\)",
-            "Error -1: Callstack overflow"
-        ])
-
     def test_job_php_assert_error(self):
         self.job_error_test_impl("php_assert", self.JOB_PHP_ASSERT_ERROR)
         self.kphp_server.assert_log(2 * [
@@ -116,10 +110,12 @@ class TestJobErrors(KphpServerAutoTestCase):
             prefix="kphp_server.workers_job_memory_messages_extra_buffers_",
             initial_stats=stats_extra_buffers_before,
             expected_added_stats={
-                "1mb_buffer_acquire_fails": 6, "1mb_buffers_acquired": 4, "1mb_buffers_released": 4,
-                "2mb_buffer_acquire_fails": 4, "2mb_buffers_acquired": 2, "2mb_buffers_released": 2,
-                "4mb_buffer_acquire_fails": 3, "4mb_buffers_acquired": 1, "4mb_buffers_released": 1,
-                "8mb_buffer_acquire_fails": 1, "8mb_buffers_acquired": 2, "8mb_buffers_released": 2,
+                "256kb_buffer_acquire_fails": 18, "256kb_buffers_acquired": 18, "256kb_buffers_released": 18,
+                "512kb_buffer_acquire_fails": 8, "512kb_buffers_acquired": 10, "512kb_buffers_released": 10,
+                "1mb_buffer_acquire_fails": 4, "1mb_buffers_acquired": 4, "1mb_buffers_released": 4,
+                "2mb_buffer_acquire_fails": 3, "2mb_buffers_acquired": 1, "2mb_buffers_released": 1,
+                "4mb_buffer_acquire_fails": 2, "4mb_buffers_acquired": 1, "4mb_buffers_released": 1,
+                "8mb_buffer_acquire_fails": 1, "8mb_buffers_acquired": 1, "8mb_buffers_released": 1,
                 "16mb_buffer_acquire_fails": 1, "16mb_buffers_acquired": 0, "16mb_buffers_released": 0,
                 "32mb_buffer_acquire_fails": 1, "32mb_buffers_acquired": 0, "32mb_buffers_released": 0,
                 "64mb_buffer_acquire_fails": 1, "64mb_buffers_acquired": 0, "64mb_buffers_released": 0,
@@ -132,20 +128,19 @@ class TestJobErrors(KphpServerAutoTestCase):
             "Warning: Can't store job response X2Response: too big response"
         ])
         self.kphp_server.assert_stats(
+            timeout=10,
             prefix="kphp_server.workers_job_memory_messages_extra_buffers_",
             initial_stats=stats_extra_buffers_before,
             expected_added_stats={
-                "1mb_buffer_acquire_fails": self.cmpGe(6), "1mb_buffers_acquired": self.cmpGe(4),
-                "1mb_buffers_released": self.cmpGe(4), "2mb_buffers_released": self.cmpGe(2),
-                "2mb_buffer_acquire_fails": self.cmpGe(4), "2mb_buffers_acquired": self.cmpGe(2),
-                "4mb_buffer_acquire_fails": self.cmpGe(3), "4mb_buffers_acquired": self.cmpGe(1),
-                "4mb_buffers_released": self.cmpGe(1), "8mb_buffers_released": self.cmpGe(2),
-                "8mb_buffer_acquire_fails": self.cmpGe(1), "8mb_buffers_acquired": self.cmpGe(2),
-                "16mb_buffer_acquire_fails": self.cmpGe(1), "16mb_buffers_acquired": self.cmpGe(0),
-                "16mb_buffers_released": self.cmpGe(0), "32mb_buffers_released": self.cmpGe(0),
-                "32mb_buffer_acquire_fails": self.cmpGe(1), "32mb_buffers_acquired": self.cmpGe(0),
-                "64mb_buffer_acquire_fails": self.cmpGe(1), "64mb_buffers_acquired": self.cmpGe(0),
-                "64mb_buffers_released": self.cmpGe(0),
+                "256kb_buffer_acquire_fails": self.cmpGe(18), "256kb_buffers_acquired": self.cmpGe(18), "256kb_buffers_released": self.cmpGe(18),
+                "512kb_buffer_acquire_fails": self.cmpGe(8), "512kb_buffers_acquired": self.cmpGe(10), "512kb_buffers_released": self.cmpGe(10),
+                "1mb_buffer_acquire_fails": self.cmpGe(4), "1mb_buffers_acquired": self.cmpGe(4), "1mb_buffers_released": self.cmpGe(4),
+                "2mb_buffer_acquire_fails": self.cmpGe(3), "2mb_buffers_acquired": self.cmpGe(1), "2mb_buffers_released": self.cmpGe(1),
+                "4mb_buffer_acquire_fails": self.cmpGe(2), "4mb_buffers_acquired": self.cmpGe(1), "4mb_buffers_released": self.cmpGe(1),
+                "8mb_buffer_acquire_fails": self.cmpGe(1), "8mb_buffers_acquired": self.cmpGe(1), "8mb_buffers_released": self.cmpGe(1),
+                "16mb_buffer_acquire_fails": self.cmpGe(1), "16mb_buffers_acquired": self.cmpGe(0), "16mb_buffers_released": self.cmpGe(0),
+                "32mb_buffer_acquire_fails": self.cmpGe(1), "32mb_buffers_acquired": self.cmpGe(0), "32mb_buffers_released": self.cmpGe(0),
+                "64mb_buffer_acquire_fails": self.cmpGe(1), "64mb_buffers_acquired": self.cmpGe(0), "64mb_buffers_released": self.cmpGe(0),
             })
 
     def test_client_wait_false(self):

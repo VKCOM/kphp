@@ -487,7 +487,7 @@ mixed f$McMemcache$$get(const class_instance<C$McMemcache> &v$this, const mixed 
     }
     drivers_SB << "\r\n";
 
-    mc_res = array<mixed>(array_size(0, key_var.count(), false));
+    mc_res = array<mixed>(array_size(key_var.count(), false));
     auto cur_host = get_host(v$this->hosts);
     if (is_immediate_query) {
       mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, nullptr); //TODO wrong if we have no mc_proxy

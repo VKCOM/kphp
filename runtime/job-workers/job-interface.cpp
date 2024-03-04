@@ -97,6 +97,6 @@ class_instance<C$KphpJobWorkerResponseError> create_error_on_other_memory(int32_
   return error;
 }
 
-void C$KphpJobWorkerResponseError::accept(InstanceMemoryEstimateVisitor &visitor) noexcept {
+void C$KphpJobWorkerResponseError::accept(CommonMemoryEstimateVisitor &visitor) noexcept {
   return generic_accept(visitor);
 }

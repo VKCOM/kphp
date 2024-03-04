@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_MODULITE=1
 KPHP_COMPOSER_ROOT={dir}
 /restricted to call concatStr\(\), #vk\/strings is not required by @msg/
 /restricted to call rpcFunctionCallingVkStrings\(\), #vk\/rpc is not required by @msg/

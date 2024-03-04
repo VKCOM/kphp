@@ -10,7 +10,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <exception>
-#include <execinfo.h>
+#include <utility>
 #include <sys/mman.h>
 #include <sys/time.h>
 #include <unistd.h>
@@ -18,8 +18,6 @@
 #include "common/fast-backtrace.h"
 #include "common/kernel-version.h"
 #include "common/kprintf.h"
-#include "common/server/crash-dump.h"
-#include "common/server/signals.h"
 #include "common/wrappers/memory-utils.h"
 #include "net/net-connections.h"
 
@@ -28,51 +26,34 @@
 #include "runtime/curl.h"
 #include "runtime/exception.h"
 #include "runtime/interface.h"
+#include "runtime/kphp_tracing.h"
+#include "runtime/oom_handler.h"
 #include "runtime/profiler.h"
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
 #include "server/php-queries.h"
 #include "server/server-log.h"
 #include "server/server-stats.h"
+#include "server/signal-handlers.h"
+
+DEFINE_VERBOSITY(php_runner);
 
 query_stats_t query_stats;
 long long query_stats_id = 1;
 
+std::optional<PhpScript> php_script;
+
 namespace {
 //TODO: sometimes I need to call old handlers
 //TODO: recheck!
-void kwrite_str(int fd, const char *s) noexcept {
-  kwrite(fd, s, static_cast<int>(strlen(s)));
-}
-
-bool check_signal_critical_section(int sig_num, const char *sig_name) {
-  if (dl::in_critical_section) {
-    const size_t message_1kw_size = 100;
-    char message_1kw[message_1kw_size];
-    snprintf(message_1kw, message_1kw_size, "in critical section: pending %s caught\n", sig_name);
-    kwrite_str(2, message_1kw);
-    dl::pending_signals = dl::pending_signals | (1 << sig_num);
-    return false;
-  }
-  dl::pending_signals = 0;
-  return true;
-}
-
-void perform_error_if_running(const char *msg, script_error_t error_type) {
-  if (PhpScript::is_running) {
-    kwrite_str(2, msg);
-    PhpScript::error(msg, error_type);
-    assert ("unreachable point" && 0);
-  }
-}
 
 [[maybe_unused]] const void *main_thread_stack = nullptr;
 [[maybe_unused]] size_t main_thread_stacksize = 0;
 } // namespace
 
 void PhpScript::error(const char *error_message, script_error_t error_type) noexcept {
-  assert (is_running == true);
-  is_running = false;
+  assert (in_script_context == true);
+  in_script_context = false;
   current_script->state = run_state_t::error;
   current_script->error_message = error_message;
   current_script->error_type = error_type;
@@ -83,13 +64,39 @@ void PhpScript::error(const char *error_message, script_error_t error_type) noex
   setcontext_portable(&exit_context);
 }
 
-void PhpScript::check_tl() noexcept {
-  if (tl_flag) {
-    state = run_state_t::error;
-    error_type = script_error_t::timeout;
-    error_message = "Timeout exit";
-    pause();
+void PhpScript::try_run_shutdown_functions_on_timeout() noexcept {
+  // The delayed timeout check is performed in the following cases
+  // [1] context swap
+  // [2] start_resumable
+  // TODO add try_run_shutdown_functions_on_timeout in some buildin functions
+  php_assert(PhpScript::in_script_context);
+  if (!time_limit_exceeded) {
+    return;
   }
+  if (vk::singleton<OomHandler>::get().is_running()) {
+    perform_error_if_running("timeout exit in OOM handler\n", script_error_t::timeout);
+    return;
+  }
+
+  if (dl::is_malloc_replaced()) {
+    dl::rollback_malloc_replacement();
+  }
+
+  if (get_shutdown_functions_count() != 0 && get_shutdown_functions_status() == shutdown_functions_status::not_executed) {
+    // set up state to running to execute shutdown functions
+    state = run_state_t::running;
+    run_shutdown_functions_from_timeout();
+  }
+  perform_error_if_running("timeout exit\n", script_error_t::timeout);
+}
+
+void PhpScript::check_net_context_errors() noexcept {
+  php_assert(PhpScript::in_script_context);
+  if (memory_limit_exceeded) {
+    vk::singleton<OomHandler>::get().invoke();
+    perform_error_if_running("memory limit exit\n", script_error_t::memory_limit);
+  }
+  try_run_shutdown_functions_on_timeout();
 }
 
 PhpScriptStack::PhpScriptStack(size_t stack_size) noexcept
@@ -138,8 +145,9 @@ void PhpScriptStack::asan_stack_clear() const noexcept {
 #endif
 }
 
-PhpScript::PhpScript(size_t mem_size, size_t stack_size) noexcept
+PhpScript::PhpScript(size_t mem_size, double oom_handling_memory_ratio, size_t stack_size) noexcept
   : mem_size(mem_size)
+  , oom_handling_memory_ratio(oom_handling_memory_ratio)
   , run_mem(static_cast<char *>(mmap(nullptr, mem_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0)))
   , script_stack(stack_size) {
   // fprintf (stderr, "PHPScriptBase: constructor\n");
@@ -150,7 +158,7 @@ PhpScript::~PhpScript() noexcept {
   munmap(run_mem, mem_size);
 }
 
-void PhpScript::init(script_t *script, php_query_data *data_to_set) noexcept {
+void PhpScript::init(script_t *script, php_query_data_t *data_to_set) noexcept {
   assert (script != nullptr);
   assert_state(run_state_t::empty);
 
@@ -174,38 +182,16 @@ void PhpScript::init(script_t *script, php_query_data *data_to_set) noexcept {
 
   script_time = 0;
   net_time = 0;
-  cur_timestamp = dl_time();
+  script_init_rusage = get_rusage_info();
+
   queries_cnt = 0;
   long_queries_cnt = 0;
+  cur_timestamp = dl_time();
 
   query_stats_id++;
   memset(&query_stats, 0, sizeof(query_stats));
 
-  PhpScript::ml_flag = false;
-}
-
-void PhpScript::on_request_timeout_error() {
-  // note: this function runs only when is_running=true
-
-  if (dl::is_malloc_replaced()) {
-    dl::rollback_malloc_replacement();
-  }
-
-  // we can get here from a normal timeout *or* a timeout that happens after
-  // we tried to execute the shutdown functions from the timeout context;
-  // in the latter case, we should skip all everything here and go straight to the
-  // timeout exit context switching
-  auto shutdown_functions_status = get_shutdown_functions_status();
-  if (shutdown_functions_status != shutdown_functions_status::running_from_timeout) {
-    if (get_shutdown_functions_count() != 0 && get_shutdown_functions_status() == shutdown_functions_status::not_executed) {
-      // resetting a timer here will cause another SIGALRM to be received later
-      // that will bring us to this function again in case if we haven't finished
-      // executing shutdown functions yet
-      current_script->reset_script_timeout();
-      run_shutdown_functions_from_timeout();
-    }
-  }
-  perform_error_if_running("timeout exit\n", script_error_t::timeout);
+  PhpScript::memory_limit_exceeded = false;
 }
 
 int PhpScript::swapcontext_helper(ucontext_t_portable *oucp, const ucontext_t_portable *ucp) {
@@ -214,8 +200,9 @@ int PhpScript::swapcontext_helper(ucontext_t_portable *oucp, const ucontext_t_po
 }
 
 void PhpScript::pause() noexcept {
+  try_run_shutdown_functions_on_timeout();
   //fprintf (stderr, "pause: \n");
-  is_running = false;
+  in_script_context = false;
 #if ASAN_ENABLED
   __sanitizer_start_switch_fiber(nullptr, main_thread_stack, main_thread_stacksize);
 #endif
@@ -223,8 +210,11 @@ void PhpScript::pause() noexcept {
 #if ASAN_ENABLED
   __sanitizer_finish_switch_fiber(nullptr, &main_thread_stack, &main_thread_stacksize);
 #endif
-  is_running = true;
-  check_tl();
+  in_script_context = true;
+  check_net_context_errors();
+  if (kphp_tracing::is_turned_on()) {
+    kphp_tracing::on_switch_context_to_script(last_net_time_delta);
+  }
   //fprintf (stderr, "pause: ended\n");
 }
 
@@ -283,6 +273,7 @@ void PhpScript::update_net_time() noexcept {
     }
   }
   net_time += net_add;
+  last_net_time_delta = net_add;
 
   cur_timestamp = new_cur_timestamp;
 }
@@ -321,30 +312,34 @@ void PhpScript::finish() noexcept {
   const auto &script_mem_stats = dl::get_script_memory_stats();
   state = run_state_t::uncleared;
   update_net_time();
-  vk::singleton<ServerStats>::get().add_request_stats(script_time, net_time, queries_cnt, long_queries_cnt, script_mem_stats.max_memory_used,
-                                                      script_mem_stats.max_real_memory_used, vk::singleton<CurlMemoryUsage>::get().total_allocated, error_type);
+  double script_init_time_sec = script_time_stats.script_start_time - script_time_stats.worker_init_time;
+  double connection_process_time_sec = 0;
+  if (process_type == ProcessType::http_worker) {
+    connection_process_time_sec = script_time_stats.worker_init_time - script_time_stats.http_conn_accept_time;
+  }
+  process_rusage_t script_rusage = get_script_rusage();
+
+  vk::singleton<ServerStats>::get().add_request_stats(script_time, net_time, script_init_time_sec, connection_process_time_sec,
+                                                      queries_cnt, long_queries_cnt, script_mem_stats, vk::singleton<CurlMemoryUsage>::get().total_allocated, script_rusage, error_type);
   if (save_state == run_state_t::error) {
     assert (error_message != nullptr);
     kprintf("Critical error during script execution: %s\n", error_message);
+    kphp_tracing::on_php_script_finish_terminated();
   }
-  if (save_state == run_state_t::error || script_mem_stats.real_memory_used >= 100000000) {
-    if (data != nullptr) {
-      http_query_data *http_data = data->http_data;
-      if (http_data != nullptr) {
-        assert (http_data->headers);
 
-        kprintf("HEADERS: len = %d\n%.*s\nEND HEADERS\n", http_data->headers_len, min(http_data->headers_len, 1 << 16), http_data->headers);
-        kprintf("POST: len = %d\n%.*s\nEND POST\n", http_data->post_len, min(http_data->post_len, 1 << 16), http_data->post == nullptr ? "" : http_data->post);
-      }
-    }
+  if (error_type == script_error_t::memory_limit || script_mem_stats.real_memory_used > max_memory / 2) {
+    kprintf("Detailed memory stats: total allocations = %zd, total memory allocated = %zd, huge memory pieces = %zd, small memory pieces = %zd, defragmentation calls = %zd,"
+            "real memory used = %zd, max real memory used = %zd, memory used = %zd, max memory used = %zd, memory_limit = %zd\n",
+            script_mem_stats.total_allocations, script_mem_stats.total_memory_allocated, script_mem_stats.huge_memory_pieces, script_mem_stats.small_memory_pieces, script_mem_stats.defragmentation_calls,
+            script_mem_stats.real_memory_used, script_mem_stats.max_real_memory_used, script_mem_stats.memory_used, script_mem_stats.max_memory_used,  script_mem_stats.memory_limit);
   }
 
   const size_t buf_size = 5000;
   static char buf[buf_size];
   buf[0] = 0;
   if (disable_access_log < 2) {
-    if (data != nullptr) {
-      http_query_data *http_data = data->http_data;
+    if (data != nullptr && std::holds_alternative<http_query_data>(*data)) {
+      http_query_data *http_data = &std::get<http_query_data>(*data);
       if (http_data != nullptr) {
         if (disable_access_log) {
           snprintf(buf, buf_size, "[uri = %.*s?<truncated>]", min(http_data->uri_len, 200), http_data->uri);
@@ -354,7 +349,7 @@ void PhpScript::finish() noexcept {
         }
       }
     }
-    kprintf("[worked = %.3lf, net = %.3lf, script = %.3lf, queries_cnt = %5d, long_queries_cnt = %5d, static_memory = %9d, peak_memory = %9d, total_memory = %9d] %s\n",
+    kprintf("[worked = %.3lf, net = %.3lf, script = %.3lf, queries_cnt = %5d, long_queries_cnt = %5d, heap_memory_used = %9d, peak_script_memory = %9d, total_script_memory = %9d] %s\n",
             script_time + net_time, net_time, script_time, queries_cnt, long_queries_cnt,
             (int)dl::get_heap_memory_used(),
             (int)script_mem_stats.max_real_memory_used,
@@ -400,7 +395,7 @@ void PhpScript::set_script_result(script_result *res_to_set) noexcept {
 }
 
 void PhpScript::query_readed() noexcept {
-  assert (is_running == false);
+  assert (in_script_context == false);
   assert_state(run_state_t::query);
   state = run_state_t::query_running;
 }
@@ -412,39 +407,19 @@ void PhpScript::query_answered() noexcept {
 }
 
 void PhpScript::run() noexcept {
-  if (data != nullptr) {
-    http_query_data *http_data = data->http_data;
-    if (http_data != nullptr) {
-      //fprintf (stderr, "arguments\n");
-      //fprintf (stderr, "[uri = %.*s]\n", http_data->uri_len, http_data->uri);
-      //fprintf (stderr, "[get = %.*s]\n", http_data->get_len, http_data->get);
-      //fprintf (stderr, "[headers = %.*s]\n", http_data->headers_len, http_data->headers);
-      //fprintf (stderr, "[post = %.*s]\n", http_data->post_len, http_data->post);
-    }
-
-    rpc_query_data *rpc_data = data->rpc_data;
-    if (rpc_data != nullptr) {
-      /*
-      fprintf (stderr, "N = %d\n", rpc_data->len);
-      for (int i = 0; i < rpc_data->len; i++) {
-        fprintf (stderr, "%d: %10d\n", i, rpc_data->data[i]);
-      }
-      */
-    }
-  }
   assert (run_main->run != nullptr);
 
   dl::enter_critical_section();
-  is_running = true;
-  init_runtime_environment(data, run_mem, mem_size);
-  if (sigsetjmp(timeout_handler, true) != 0) { // set up a timeout recovery point
-    on_request_timeout_error(); // this call will not return (it changes the context)
-  }
+  in_script_context = true;
+  auto oom_handling_memory_size = static_cast<size_t>(std::ceil(mem_size * oom_handling_memory_ratio));
+  auto script_memory_size = mem_size - oom_handling_memory_size;
+  init_runtime_environment(*data, run_mem, script_memory_size, oom_handling_memory_size);
   dl::leave_critical_section();
   php_assert (dl::in_critical_section == 0); // To ensure that no critical section is left at the end of the initialization
-  check_tl();
+  check_net_context_errors();
 
   CurException = Optional<bool>{};
+  script_time_stats.script_start_time = get_utime_monotonic();
   run_main->run();
   if (CurException.is_null()) {
     set_script_result(nullptr);
@@ -464,7 +439,7 @@ void PhpScript::run() noexcept {
       // run shutdown functions with an empty exception context; then recover it before we proceed
       auto saved_exception = CurException;
       CurException = Optional<bool>{};
-      run_shutdown_functions_from_script();
+      run_shutdown_functions_from_script(ShutdownType::exception);
       // only nothrow shutdown callbacks are allowed by the compiler, so the CurException should be null
       php_assert(CurException.is_null());
       CurException = saved_exception;
@@ -474,11 +449,10 @@ void PhpScript::run() noexcept {
 }
 
 void PhpScript::reset_script_timeout() noexcept {
-  // php_script_set_timeout has a side effect of setting the tl_flag to false;
-  // we want to avoid that, since timeout should set tl_flag to true
-  bool current_tl_flag = tl_flag;
+  // php_script_set_timeout has a side effect of setting the PhpScript::time_limit_exceeded to false;
+  // and we really do need this before executing shutdown functions otherwise shutdown functions will be terminated
+  // after the first swap context back to script at PhpScript::check_net_context_errors()
   set_timeout(script_timeout);
-  tl_flag = current_tl_flag;
 }
 
 double PhpScript::get_net_time() const noexcept {
@@ -495,168 +469,24 @@ double PhpScript::get_script_time() noexcept {
   return script_time;
 }
 
+process_rusage_t PhpScript::get_script_rusage() noexcept {
+  process_rusage_t current_rusage = get_rusage_info();
+  return {current_rusage.user_time - script_init_rusage.user_time,
+          current_rusage.system_time - script_init_rusage.system_time,
+          current_rusage.voluntary_context_switches - script_init_rusage.voluntary_context_switches,
+          current_rusage.involuntary_context_switches - script_init_rusage.involuntary_context_switches};
+}
+
 int PhpScript::get_net_queries_count() const noexcept {
   return queries_cnt;
 }
 
 PhpScript *volatile PhpScript::current_script;
 ucontext_t_portable PhpScript::exit_context;
-volatile bool PhpScript::is_running = false;
-volatile bool PhpScript::tl_flag = false;
-volatile bool PhpScript::ml_flag = false;
-
-void write_str(int fd, const char *s) noexcept {
-  write(fd, s, std::min(strlen(s), size_t{1000}));
-}
-
-namespace kphp_runtime_signal_handlers {
-
-static void sigalrm_handler(int signum) {
-  kwrite_str(2, "in sigalrm_handler\n");
-  if (check_signal_critical_section(signum, "SIGALRM")) {
-    PhpScript::tl_flag = true;
-    // if script is not actually running, don't bother (sigalrm handler is called
-    // even if timeout happens after the script already finished its execution)
-    if (PhpScript::is_running) {
-      if (is_json_log_on_timeout_enabled) {
-        vk::singleton<JsonLogger>::get().write_log_with_backtrace("Maximum execution time exceeded", E_ERROR);
-      }
-      // we need to (in that order):
-      // [1] run the shutdown handlers
-      // [2] change the context to the worker
-      // [3] execute the error handling state
-      // previously, we performed [2] and [3] right here,
-      // but now we also need to run the shutdown handlers which is
-      // can contain arbitrary code and should not be executed from the signal handler;
-      // therefore, we break out of this signal handler to a prepared recovery point
-      // (without changing the script context) and then do all required steps
-      PhpScript::current_script->script_stack.asan_stack_unpoison();
-      siglongjmp(PhpScript::current_script->timeout_handler, 1);
-    }
-  }
-}
-
-static void sigusr2_handler(int signum) {
-  kwrite_str(2, "in sigusr2_handler\n");
-  if (check_signal_critical_section(signum, "SIGUSR2")) {
-    PhpScript::ml_flag = true;
-    perform_error_if_running("memory limit exit\n", script_error_t::memory_limit);
-  }
-}
-
-static void php_assert_handler(int signum) {
-  kwrite_str(2, "in php_assert_handler (SIGRTMIN+1 signal)\n");
-  if (check_signal_critical_section(signum, "SIGRTMIN+1")) {
-    perform_error_if_running("php assert error\n", script_error_t::php_assert);
-  }
-}
-
-static void stack_overflow_handler(int signum) {
-  kwrite_str(2, "in stack_overflow_handler (SIGRTMIN+2 signal)\n");
-  if (check_signal_critical_section(signum, "SIGRTMIN+2")) {
-    perform_error_if_running("stack overflow error\n", script_error_t::stack_overflow);
-  }
-}
-
-void print_http_data() {
-  if (!PhpScript::is_running) {
-    return;
-  }
-  if (!PhpScript::current_script) {
-    write_str(2, "\nPHPScriptBase::current_script is nullptr\n");
-  } else if (PhpScript::current_script->data) {
-    if (http_query_data *data = PhpScript::current_script->data->http_data) {
-      write_str(2, "\nuri\n");
-      write(2, data->uri, data->uri_len);
-      write_str(2, "\nget\n");
-      write(2, data->get, data->get_len);
-      write_str(2, "\nheaders\n");
-      write(2, data->headers, data->headers_len);
-      write_str(2, "\npost\n");
-      if (data->post && data->post_len > 0) {
-        write(2, data->post, data->post_len);
-      }
-    }
-  }
-}
-
-void print_prologue(int64_t cur_time) noexcept {
-  write_str(2, engine_tag);
-
-  char buf[13];
-  char *s = buf + 13;
-  auto t = static_cast<int>(cur_time);
-  *--s = 0;
-  do {
-    *--s = static_cast<char>(t % 10 + '0');
-    t /= 10;
-  } while (t > 0);
-  write_str(2, s);
-  write_str(2, engine_pid);
-}
-
-void kill_workers() noexcept {
-#if defined(__APPLE__)
-  if (master_flag == 1) {
-    killpg(getpgid(pid), SIGKILL);
-  }
-#endif
-}
-
-void sigsegv_handler(int signum, siginfo_t *info, void *ucontext) {
-  crash_dump_write(static_cast<ucontext_t *>(ucontext));
-
-  const int64_t cur_time = time(nullptr);
-  print_prologue(cur_time);
-
-  void *trace[64];
-  const int trace_size = backtrace(trace, 64);
-
-  void *addr = info->si_addr;
-  if (PhpScript::is_running && PhpScript::current_script->script_stack.is_protected(static_cast<char *>(addr))) {
-    vk::singleton<JsonLogger>::get().write_stack_overflow_log(E_ERROR);
-    write_str(2, "Error -1: Callstack overflow\n");
-    print_http_data();
-    dl_print_backtrace(trace, trace_size);
-    if (dl::in_critical_section) {
-      vk::singleton<JsonLogger>::get().fsync_log_file();
-      kwrite_str(2, "In critical section: calling _exit (124)\n");
-      _exit(124);
-    } else {
-      PhpScript::error("sigsegv(stack overflow)", script_error_t::stack_overflow);
-    }
-  } else {
-    const char *msg = signum == SIGBUS ? "SIGBUS terminating program" : "SIGSEGV terminating program";
-    vk::singleton<JsonLogger>::get().write_log(msg, static_cast<int>(ServerLog::Critical), cur_time, trace, trace_size, true);
-    vk::singleton<JsonLogger>::get().fsync_log_file();
-    write_str(2, "Error -2: Segmentation fault\n");
-    print_http_data();
-    dl_print_backtrace(trace, trace_size);
-    kill_workers();
-    raise(SIGQUIT); // hack for generate core dump
-    _exit(123);
-  }
-}
-
-void sigabrt_handler(int) {
-  const int64_t cur_time = time(nullptr);
-  void *trace[64];
-  const int trace_size = backtrace(trace, 64);
-  vk::string_view msg{dl_get_assert_message()};
-  if (msg.empty()) {
-    msg = "SIGABRT terminating program";
-  }
-  vk::singleton<JsonLogger>::get().write_log(msg, static_cast<int>(ServerLog::Critical), cur_time, trace, trace_size, true);
-  vk::singleton<JsonLogger>::get().fsync_log_file();
-
-  print_prologue(cur_time);
-  write_str(2, "SIGABRT terminating program\n");
-  print_http_data();
-  dl_print_backtrace(trace, trace_size);
-  kill_workers();
-  _exit(EXIT_FAILURE);
-}
-}
+volatile bool PhpScript::in_script_context = false;
+volatile bool PhpScript::time_limit_exceeded = false;
+volatile bool PhpScript::memory_limit_exceeded = false;
+PhpScript::script_time_stats_t PhpScript::script_time_stats;
 
 static __inline__ void *get_sp() {
   return __builtin_frame_address(0);
@@ -665,7 +495,7 @@ static __inline__ void *get_sp() {
 void check_stack_overflow() __attribute__ ((noinline));
 
 void check_stack_overflow() {
-  if (PhpScript::is_running) {
+  if (PhpScript::in_script_context) {
     void *sp = get_sp();
     if (PhpScript::current_script->script_stack.check_stack_overflow(static_cast<char *>(sp))) {
       vk::singleton<JsonLogger>::get().write_stack_overflow_log(E_ERROR);
@@ -674,27 +504,6 @@ void check_stack_overflow() {
       _exit(1);
     }
   }
-}
-
-//C interface
-void init_handlers() {
-  constexpr size_t SEGV_STACK_SIZE = 65536;
-  static std::array<char, SEGV_STACK_SIZE> buffer;
-
-  stack_t segv_stack;
-  segv_stack.ss_sp = buffer.data();
-  segv_stack.ss_flags = 0;
-  segv_stack.ss_size = SEGV_STACK_SIZE;
-  sigaltstack(&segv_stack, nullptr);
-
-  ksignal(SIGALRM, kphp_runtime_signal_handlers::sigalrm_handler);
-  ksignal(SIGUSR2, kphp_runtime_signal_handlers::sigusr2_handler);
-  ksignal(SIGPHPASSERT, kphp_runtime_signal_handlers::php_assert_handler);
-  ksignal(SIGSTACKOVERFLOW, kphp_runtime_signal_handlers::stack_overflow_handler);
-
-  dl_sigaction(SIGSEGV, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, kphp_runtime_signal_handlers::sigsegv_handler);
-  dl_sigaction(SIGBUS, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, kphp_runtime_signal_handlers::sigsegv_handler);
-  dl_signal(SIGABRT, kphp_runtime_signal_handlers::sigabrt_handler);
 }
 
 void PhpScript::disable_timeout() noexcept {
@@ -706,15 +515,11 @@ void PhpScript::set_timeout(double t) noexcept {
   disable_timeout();
   static itimerval timer;
 
-  if (t > MAX_SCRIPT_TIMEOUT) {
-    return;
-  }
-
   int sec = (int)t, usec = (int)((t - sec) * 1000000);
   timer.it_value.tv_sec = sec;
   timer.it_value.tv_usec = usec;
 
-  PhpScript::tl_flag = false;
+  PhpScript::time_limit_exceeded = false;
   setitimer(ITIMER_REAL, &timer, nullptr);
 }
 
@@ -729,4 +534,10 @@ void PhpScript::terminate(const char *error_message_, script_error_t error_type_
   state = run_state_t::error;
   error_type = error_type_;
   error_message = error_message_;
+}
+
+bool PhpScript::is_running() const noexcept {
+  return vk::any_of_equal(state, run_state_t::running, run_state_t::query,
+                          run_state_t::query_running, run_state_t::ready,
+                          run_state_t::error);
 }

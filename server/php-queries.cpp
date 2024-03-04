@@ -19,6 +19,7 @@
 
 #include "runtime/allocator.h"
 #include "runtime/job-workers/processing-jobs.h"
+#include "runtime/tl/tl_magics_decoding.h"
 #include "runtime/rpc.h"
 
 #include "server/database-drivers/adaptor.h"
@@ -30,6 +31,8 @@
 #include "server/php-worker.h"
 
 #define MAX_NET_ERROR_LEN 128
+
+DEFINE_VERBOSITY(php_connections)
 
 static char last_net_error[MAX_NET_ERROR_LEN + 1];
 
@@ -51,7 +54,7 @@ static void save_last_net_error(const char *s) {
 
 /** create connection query **/
 php_query_http_load_post_answer_t *php_query_http_load(char *buf, int min_len, int max_len) {
-  assert (PhpScript::is_running);
+  assert (PhpScript::in_script_context);
 
   //DO NOT use query after script is terminated!!!
   php_query_http_load_post_t q;
@@ -309,7 +312,7 @@ void chain_append(chain_t *chain, data_reader_t *reader) {
 
 /** test x^2 query **/
 php_query_x2_answer_t *php_query_x2(int x) {
-  assert (PhpScript::is_running);
+  assert (PhpScript::in_script_context);
 
   //DO NOT use query after script is terminated!!!
   php_query_x2_t q;
@@ -322,7 +325,7 @@ php_query_x2_answer_t *php_query_x2(int x) {
 
 /** create connection query **/
 php_query_connect_answer_t *php_query_connect(const char *host, int port, protocol_type protocol) {
-  assert (PhpScript::is_running);
+  assert (PhpScript::in_script_context);
 
   //DO NOT use query after script is terminated!!!
   php_query_connect_t q;
@@ -714,21 +717,6 @@ sql_ansgen_t *sql_ansgen_packet_create() {
 }
 
 /** new rpc interface **/
-static SlotIdsFactory rpc_ids_factory;
-SlotIdsFactory parallel_job_ids_factory;
-SlotIdsFactory external_db_requests_factory;
-
-static void init_slots() {
-  rpc_ids_factory.init();
-  parallel_job_ids_factory.init();
-  external_db_requests_factory.init();
-}
-
-static void clear_slots() {
-  rpc_ids_factory.clear();
-  parallel_job_ids_factory.clear();
-  external_db_requests_factory.clear();
-}
 
 template<class DataT, int N>
 class StaticQueue {
@@ -802,7 +790,7 @@ static StaticQueue<net_event_t, 2000000> net_events;
 static StaticQueue<net_query_t, 2000000> net_queries;
 
 void *dl_allocate_safe(size_t size) {
-  if (size == 0 || PhpScript::ml_flag) {
+  if (size == 0 || PhpScript::memory_limit_exceeded) {
     return nullptr;
   }
 
@@ -842,7 +830,7 @@ void unalloc_net_event(net_event_t *event) {
 
 int create_rpc_error_event(slot_id_t slot_id, int error_code, const char *error_message, net_event_t **res) {
   net_event_t *event;
-  if (!rpc_ids_factory.is_valid_slot(slot_id)) {
+  if (!rpc_ids_factory.is_from_current_script_execution(slot_id)) {
     return 0;
   }
   int status = alloc_net_event(slot_id, &event);
@@ -859,7 +847,7 @@ int create_rpc_error_event(slot_id_t slot_id, int error_code, const char *error_
 int create_rpc_answer_event(slot_id_t slot_id, int len, net_event_t **res) {
   PhpQueriesStats::get_rpc_queries_stat().register_answer(len);
   net_event_t *event;
-  if (!rpc_ids_factory.is_valid_slot(slot_id)) {
+  if (!rpc_ids_factory.is_from_current_script_execution(slot_id)) {
     return 0;
   }
   int status = alloc_net_event(slot_id, &event);
@@ -885,7 +873,7 @@ int create_rpc_answer_event(slot_id_t slot_id, int len, net_event_t **res) {
 }
 
 int create_job_worker_answer_event(job_workers::JobSharedMessage *job_result) {
-  if (!parallel_job_ids_factory.is_valid_slot(job_result->job_id)) {
+  if (!parallel_job_ids_factory.is_from_current_script_execution(job_result->job_id)) {
     return 0;
   }
   net_event_t *event = nullptr;
@@ -958,13 +946,13 @@ void db_run_query(int host_num, const char *request, int request_len, int timeou
 }
 
 void http_send_immediate_response(const char *headers, int headers_len, const char *body, int body_len) {
-  php_assert(active_worker != nullptr);
-  if (active_worker->mode == http_worker) {
-    write_out(&active_worker->conn->Out, headers, headers_len);
-    write_out(&active_worker->conn->Out, body, body_len);
-    flush_connection_output(active_worker->conn);
+  php_assert(php_worker.has_value());
+  if (php_worker->mode == http_worker) {
+    write_out(&php_worker->conn->Out, headers, headers_len);
+    write_out(&php_worker->conn->Out, body, body_len);
+    flush_connection_output(php_worker->conn);
   } else {
-    php_warning("Early hints available only from HTTP worker");
+    php_warning("Immediate HTTP response available only from HTTP worker");
   }
 }
 
@@ -985,7 +973,7 @@ slot_id_t rpc_send_query(int host_num, char *request, int request_size, int time
 }
 
 void wait_net_events(int timeout_ms) {
-  assert (PhpScript::is_running);
+  assert (PhpScript::in_script_context);
   php_query_wait_t q;
   q.timeout_ms = timeout_ms;
 
@@ -1001,7 +989,7 @@ const net_event_t *get_last_net_event() {
 }
 
 void rpc_answer(const char *res, int res_len) {
-  assert (PhpScript::is_running);
+  assert (PhpScript::in_script_context);
   php_query_rpc_answer q;
   q.data = res;
   q.data_len = res_len;
@@ -1065,6 +1053,10 @@ void finish_script(int exit_code __attribute__((unused))) {
   assert (0);
 }
 
+void check_script_timeout() {
+  PhpScript::current_script->try_run_shutdown_functions_on_timeout();
+}
+
 void reset_script_timeout() {
   PhpScript::current_script->reset_script_timeout();
 }
@@ -1098,7 +1090,6 @@ int query_x2(int x) {
 
 void init_drivers() {
   init_readers();
-  init_slots();
 }
 
 void php_queries_start() {
@@ -1107,7 +1098,6 @@ void php_queries_start() {
 
 void php_queries_finish() {
   qmem_clear();
-  clear_slots();
 
   net_events.clear();
   net_queries.clear();
@@ -1118,14 +1108,14 @@ const char *net_event_t::get_description() const noexcept {
   std::visit(overloaded{
     [this](const net_events_data::rpc_answer &event) {
       auto *r = get_rpc_request(slot_id);
-      snprintf(BUF.data(), BUF.size(), "RPC_RESPONSE: actor_id=%" PRIi64 ", tl_function_magic=0x%08x, response_magic=0x%08x, bytes_length=%d",
-                           r->actor_id, r->function_magic,
+      snprintf(BUF.data(), BUF.size(), "RPC_RESPONSE: actor_id=%d, tl_function=%s(0x%08x), response_magic=0x%08x, bytes_length=%d",
+                           r->actor_or_port, tl_magic_convert_to_name(r->function_magic), r->function_magic,
                            event.result_len >= 4 ? *reinterpret_cast<unsigned int *>(event.result) : 0, event.result_len);
     },
     [this](const net_events_data::rpc_error &event) {
       auto *r = get_rpc_request(slot_id);
-      snprintf(BUF.data(), BUF.size(), "RPC_ERROR: actor_id=%" PRIi64 ", tl_function_magic=0x%08x, error_code=%d, error_message=%s",
-                           r->actor_id, r->function_magic, event.error_code, event.error_message);
+      snprintf(BUF.data(), BUF.size(), "RPC_ERROR: actor_id=%d, tl_function_magic=0x%08x, error_code=%d, error_message=%s",
+                           r->actor_or_port, r->function_magic, event.error_code, event.error_message);
     },
     [](const net_events_data::job_worker_answer &event) {
       if (event.job_result) {
@@ -1136,6 +1126,9 @@ const char *net_event_t::get_description() const noexcept {
     },
     [](const database_drivers::Response *) {
       snprintf(BUF.data(), BUF.size(), "EXTERNAL_DB_ANSWER");
+    },
+    [](const curl_async::CurlResponse *) {
+      snprintf(BUF.data(), BUF.size(), "CURL_ASYNC_RESPONSE");
     },
   }, data);
   return BUF.data();

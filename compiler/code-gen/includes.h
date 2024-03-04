@@ -5,6 +5,7 @@
 #pragma once
 
 #include "compiler/code-gen/code-generator.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/inferring/type-data.h"
 
 struct ExternInclude {
@@ -33,6 +34,8 @@ public:
   void add_function_body_depends(const FunctionPtr &function);
   void add_function_signature_depends(const FunctionPtr &function);
   void add_var_signature_depends(const VarPtr &var);
+  void add_vertex_depends(VertexPtr v);
+
 
   void add_class_forward_declaration(const ClassPtr &klass);
   void add_var_signature_forward_declarations(const VarPtr &var);

@@ -7,6 +7,7 @@ on:
 
 env:
   HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: true
+  HOMEBREW_NO_INSTALL_FROM_API: ""
   kphp_root_dir: /home/kitten/kphp
   kphp_polyfills_dir: /home/kitten/kphp/kphp-polyfills
   kphp_build_dir: /home/kitten/kphp/build
@@ -54,7 +55,7 @@ jobs:
       id: docker-image-cache
       with:
         path: kphp-build-env-${{matrix.os}}.tar
-        key: docker-image-cache-${{matrix.os}}-${{ hashFiles('.github/workflows/Dockerfile.*') }}
+        key: docker-image-cache-${{matrix.os}}-${{ hashFiles('.github/workflows/Dockerfile.*', 'tests/python/requirements.txt') }}
 
     - name: Build and save docker image
       if: steps.docker-image-cache.outputs.cache-hit != 'true'
@@ -95,7 +96,7 @@ jobs:
       id: python_tests
       continue-on-error: true
       run: docker exec kphp-build-container-${{matrix.os}} bash -c
-              "chown -R kitten /home && su kitten -c 'GITHUB_ACTIONS=1 KPHP_TESTS_POLYFILLS_REPO=${{env.kphp_polyfills_dir}} KPHP_CXX=${{matrix.compiler}} python3 -m pytest --tb=native -n$(nproc) ${{env.kphp_root_dir}}/tests/python/'"
+              "chown -R kitten /home && su kitten -c 'GITHUB_ACTIONS=1 KPHP_TESTS_POLYFILLS_REPO=${{env.kphp_polyfills_dir}} KPHP_CXX=${{matrix.compiler}} python3.7 -m pytest --tb=native -n$(nproc) ${{env.kphp_root_dir}}/tests/python/'"
 
     - name: Prepare python tests artifacts
       if: steps.python_tests.outcome == 'failure'
@@ -129,12 +130,11 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Get polyfills repo
-      uses: actions/checkout@v3
-      with:
-        repository: 'uber/h3'
-        path: 'h3'
-        ref: stable-3.x
+    # because of https://github.com/orgs/Homebrew/discussions/4612
+    - name: Check Environment
+      run: |
+        export HOMEBREW_NO_INSTALL_FROM_API=0
+        brew untap --force homebrew/cask
 
     - name: Setup Environment
       run: |
@@ -142,10 +142,7 @@ jobs:
         brew update
         brew install re2c cmake coreutils openssl libiconv re2 pcre yaml-cpp zstd googletest shivammathur/php/php@7.4
         brew link --overwrite --force shivammathur/php/php@7.4
-        /usr/local/Frameworks/Python.framework/Versions/3.11/bin/pip3 install jsonschema
-
-    - name: Build Uber h3
-      run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -S $GITHUB_WORKSPACE/h3 -B ${{runner.workspace}}/h3/build && make install -C ${{runner.workspace}}/h3/build -j$(nproc) all
+        /usr/local/Frameworks/Python.framework/Versions/3.12/bin/python3.12 -m pip install --upgrade pip --break-system-packages && /usr/local/Frameworks/Python.framework/Versions/3.12/bin/pip3 install jsonschema install --break-system-packages jsonschema
 
     - name: Run cmake
       run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DDOWNLOAD_MISSING_LIBRARIES=On -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build

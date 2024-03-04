@@ -8,9 +8,12 @@
 
 #include "common/wrappers/string_view.h"
 
+#include "runtime/critical_section.h"
 #include "runtime/kphp_core.h"
 #include "runtime/optional.h"
 #include "server/php-query-data.h"
+#include "server/statshouse/statshouse-manager.h"
+#include "server/workers-control.h"
 
 extern string_buffer *coub;//TODO static
 using shutdown_function_type = std::function<void()>;
@@ -41,6 +44,8 @@ Optional<int64_t> f$ob_get_length();
 
 int64_t f$ob_get_level();
 
+void f$flush();
+
 void f$header(const string &str, bool replace = true, int64_t http_response_code = 0);
 
 array<string> f$headers_list();
@@ -53,20 +58,32 @@ void f$setrawcookie(const string &name, const string &value, int64_t expire = 0,
 
 int64_t f$ignore_user_abort(Optional<bool> enable = Optional<bool>());
 
+enum class ShutdownType {
+  normal,
+  exit,
+  exception,
+  timeout,
+};
+
 void run_shutdown_functions_from_timeout();
-void run_shutdown_functions_from_script();
+void run_shutdown_functions_from_script(ShutdownType shutdown_type);
 
 int get_shutdown_functions_count();
 shutdown_functions_status get_shutdown_functions_status();
 
-void f$register_shutdown_function(const shutdown_function_type &f);
+void register_shutdown_function_impl(shutdown_function_type &&f);
 
-bool f$set_wait_all_forks_on_finish(bool wait = true) noexcept;
+template <typename F>
+void f$register_shutdown_function(F &&f) {
+  // std::function sometimes uses heap, when constructed from captured lambda. So it must be constructed under critical section only.
+  dl::CriticalSectionGuard heap_guard;
+  register_shutdown_function_impl(shutdown_function_type{std::forward<F>(f)});
+}
 
 void f$fastcgi_finish_request(int64_t exit_code = 0);
 
 __attribute__((noreturn))
-void finish(int64_t exit_code, bool allow_forks_waiting);
+void finish(int64_t exit_code, bool from_exit);
 
 __attribute__((noreturn))
 void f$exit(const mixed &v = 0);
@@ -77,6 +94,8 @@ void f$die(const mixed &v = 0);
 Optional<int64_t> f$ip2long(const string &ip);
 
 Optional<string> f$ip2ulong(const string &ip);
+
+double f$thread_pool_test_load(int64_t size, int64_t n, double a, double b);
 
 string f$long2ip(int64_t num);
 
@@ -148,7 +167,7 @@ bool f$is_uploaded_file(const string &filename);
 bool f$move_uploaded_file(const string &oldname, const string &newname);
 
 
-void init_superglobals(php_query_data *data);
+void init_superglobals(const php_query_data_t &data);
 
 
 double f$get_net_time();
@@ -163,6 +182,10 @@ int64_t f$get_engine_uptime();
 string f$get_engine_version();
 
 int64_t f$get_engine_workers_number();
+
+string f$get_kphp_cluster_name();
+
+std::tuple<int64_t, int64_t, int64_t, int64_t> f$get_webserver_stats();
 
 void arg_add(const char *value);
 
@@ -181,9 +204,12 @@ Optional<array<mixed>> f$getopt(const string &options, array<string> longopts = 
 void global_init_runtime_libs();
 void global_init_script_allocator();
 
-void init_runtime_environment(php_query_data *data, void *mem, size_t mem_size);
+void init_runtime_environment(const php_query_data_t &data, void *mem, size_t script_mem_size, size_t oom_handling_mem_size = 0);
 
 void free_runtime_environment();
+
+// called only once at the beginning of each worker
+void worker_global_init(WorkerType worker_type) noexcept;
 
 void use_utf8();
 
@@ -205,6 +231,22 @@ extern bool is_json_log_on_timeout_enabled;
 
 inline void f$set_json_log_on_timeout_mode(bool enabled) {
   is_json_log_on_timeout_enabled = enabled;
+}
+
+extern bool is_demangled_stacktrace_logs_enabled;
+
+inline void f$set_json_log_demangle_stacktrace(bool enable) {
+  is_demangled_stacktrace_logs_enabled = enable;
+}
+
+inline void f$kphp_turn_on_host_tag_in_inner_statshouse_metrics_toggle() {
+  StatsHouseManager::get().turn_on_host_tag_toggle();
+}
+
+template <typename F>
+inline void f$kphp_extended_instance_cache_metrics_init(F &&callback) {
+  dl::CriticalSectionGuard guard;
+  StatsHouseManager::get().set_normalization_function(normalization_function{std::forward<F>(callback)});
 }
 
 int64_t f$numa_get_bound_node();

@@ -44,7 +44,7 @@ void StaticInit::compile(CodeGenerator &W) const {
                                   << "return " << RawString(G->settings().php_code_version.get()) << ";" << NL
                                   << END << NL << NL;
 
-    FunctionSignatureGenerator(W) << ("char **get_runtime_options(int *count)") << BEGIN;
+    FunctionSignatureGenerator(W) << ("char **get_runtime_options([[maybe_unused]] int *count)") << BEGIN;
     const auto &runtime_opts = G->get_kphp_runtime_opts();
     if (runtime_opts.empty()) {
       W << "return nullptr;" << NL;
@@ -109,7 +109,7 @@ struct RunFunction {
   void compile(CodeGenerator &W) const {
     FunctionSignatureGenerator(W) << "void " << FunctionName(function) << "$run() " << BEGIN
       << "TRY_CALL_VOID (void, " << FunctionName(function) << "());" << NL
-      << "finish (0, true);" << NL
+      << "finish (0, false);" << NL
       << END;
     W << NL;
   }

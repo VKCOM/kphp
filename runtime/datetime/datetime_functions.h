@@ -16,6 +16,8 @@ string f$date_default_timezone_get();
 
 array<mixed> f$getdate(int64_t timestamp = std::numeric_limits<int64_t>::min());
 
+void f$set_use_updated_gmmktime(bool enable);
+
 string f$gmdate(const string &format, int64_t timestamp = std::numeric_limits<int64_t>::min());
 
 int64_t f$gmmktime(int64_t h = std::numeric_limits<int64_t>::min(),
@@ -30,6 +32,8 @@ array<mixed> f$localtime(int64_t timestamp = std::numeric_limits<int64_t>::min()
 double microtime_monotonic();
 
 double microtime();
+
+void free_use_updated_gmmktime();
 
 mixed f$microtime(bool get_as_float = false);
 string f$_microtime_string();

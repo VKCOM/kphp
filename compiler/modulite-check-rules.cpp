@@ -52,19 +52,17 @@ static inline bool should_this_usage_context_be_ignored(FunctionPtr usage_contex
       usage_context->class_id != usage_context->context_class) {
     return true; // NOLINT(readability-simplify-boolean-expr)
   }
+  // case 2.
+  // (no module): class Base { printAppend() { ... } }
+  // @mod       : class Derived { print() { self::printAppend() } }
+  // then KPHP implicitly creates Derived::printAppend() { parent::printAppend() }
+  // and warns (on parent::) that "Base::printAppend() is not required by @mod"
+  // solution: ignore such auto-created inherited methods
+  if (usage_context->is_auto_inherited) {
+    return true;
+  }
   return false;
 }
-
-static inline bool is_env_modulite_enabled() {
-  // 0 disabled, 1 enabled with errors, 2 enabled with warnings
-  return G->settings().modulite_enabled.get();
-}
-
-// we do all checks if 1/2, but for 2, we just output to console instead of an error
-// todo this will be removed after testing for a month in production
-#define kphp_error_modulite(cond, str) \
-  if (G->settings().modulite_enabled.get() == 2) { kphp_notice(str); } \
-  else { kphp_error(cond, str); }
 
 // class A is exported from a modulite when
 // - "A" is declared in 'export'
@@ -341,7 +339,7 @@ public:
     , desc(fmt_format("use global {}", TermStringFormat::paint_bold("$" + global_var_name))) {}
 
   [[gnu::cold]] void print_error_symbol_is_not_exported() {
-    kphp_error_modulite(0, fmt_format("[modulite] restricted to {}, it's internal in {}", desc, another_m->modulite_name));
+    kphp_error(0, fmt_format("[modulite] restricted to {}, it's internal in {}", desc, another_m->modulite_name));
   }
 
   [[gnu::cold]] void print_error_submodulite_is_not_exported() {
@@ -350,32 +348,28 @@ public:
     while (is_submodulite_exported(child_internal, usage_context, false)) {
       child_internal = child_internal->parent;
     }
-    kphp_error_modulite(0, fmt_format("[modulite] restricted to {}, {} is internal in {}", desc, child_internal->modulite_name, child_internal->parent->modulite_name));
+    kphp_error(0, fmt_format("[modulite] restricted to {}, {} is internal in {}", desc, child_internal->modulite_name, child_internal->parent->modulite_name));
   }
 
   [[gnu::cold]] void print_error_modulite_is_not_required() {
     if (inside_m->composer_json && another_m->composer_json) {
-      kphp_error_modulite(0, fmt_format("[modulite] restricted to {}, {} is not required by {} in composer.json", desc, another_m->modulite_name, inside_m->modulite_name));
+      kphp_error(0, fmt_format("[modulite] restricted to {}, {} is not required by {} in composer.json", desc, another_m->modulite_name, inside_m->modulite_name));
     } else {
-      kphp_error_modulite(0, fmt_format("[modulite] restricted to {}, {} is not required by {}", desc, another_m->modulite_name, inside_m->modulite_name));
+      kphp_error(0, fmt_format("[modulite] restricted to {}, {} is not required by {}", desc, another_m->modulite_name, inside_m->modulite_name));
     }
   }
 
   [[gnu::cold]] void print_error_symbol_is_not_required() {
     if (inside_m->is_composer_package) {
-      kphp_error_modulite(0, fmt_format("[modulite] restricted to {}, it does not belong to package {}", desc, inside_m->modulite_name));
+      kphp_error(0, fmt_format("[modulite] restricted to {}, it does not belong to package {}", desc, inside_m->modulite_name));
     } else {
-      kphp_error_modulite(0, fmt_format("[modulite] restricted to {}, it's not required by {}", desc, inside_m->modulite_name));
+      kphp_error(0, fmt_format("[modulite] restricted to {}, it's not required by {}", desc, inside_m->modulite_name));
     }
   }
 };
 
 
 void modulite_check_when_use_class(FunctionPtr usage_context, ClassPtr klass) {
-  if (!is_env_modulite_enabled()) {
-    return;
-  }
-
   ModulitePtr inside_m = usage_context->modulite;
   ModulitePtr another_m = klass->modulite;
   if (inside_m == another_m || should_this_usage_context_be_ignored(usage_context)) {
@@ -413,10 +407,6 @@ void modulite_check_when_use_class(FunctionPtr usage_context, ClassPtr klass) {
 }
 
 void modulite_check_when_use_global_const(FunctionPtr usage_context, DefinePtr used_c) {
-  if (!is_env_modulite_enabled()) {
-    return;
-  }
-
   ModulitePtr inside_m = usage_context->modulite;
   ModulitePtr another_m = used_c->modulite;
   if (inside_m == another_m || should_this_usage_context_be_ignored(usage_context)) {
@@ -454,10 +444,6 @@ void modulite_check_when_use_global_const(FunctionPtr usage_context, DefinePtr u
 }
 
 void modulite_check_when_use_constant(FunctionPtr usage_context, DefinePtr used_c, ClassPtr requested_class) {
-  if (!is_env_modulite_enabled()) {
-    return;
-  }
-
   ModulitePtr inside_m = usage_context->modulite;
   ModulitePtr another_m = requested_class->modulite;
   if (inside_m == another_m || should_this_usage_context_be_ignored(usage_context)) {
@@ -496,10 +482,6 @@ void modulite_check_when_use_constant(FunctionPtr usage_context, DefinePtr used_
 }
 
 void modulite_check_when_call_function(FunctionPtr usage_context, FunctionPtr called_f) {
-  if (!is_env_modulite_enabled()) {
-    return;
-  }
-
   ModulitePtr inside_m = usage_context->modulite;
   ModulitePtr another_m = called_f->modulite;
   if (inside_m == another_m || should_this_usage_context_be_ignored(usage_context)) {
@@ -544,10 +526,6 @@ void modulite_check_when_call_function(FunctionPtr usage_context, FunctionPtr ca
 }
 
 void modulite_check_when_use_static_field(FunctionPtr usage_context, VarPtr property, ClassPtr requested_class) {
-  if (!is_env_modulite_enabled()) {
-    return;
-  }
-
   ModulitePtr inside_m = usage_context->modulite;
   ModulitePtr another_m = requested_class->modulite;
   if (inside_m == another_m || should_this_usage_context_be_ignored(usage_context)) {
@@ -586,10 +564,6 @@ void modulite_check_when_use_static_field(FunctionPtr usage_context, VarPtr prop
 }
 
 void modulite_check_when_global_keyword(FunctionPtr usage_context, const std::string &global_var_name) {
-  if (!is_env_modulite_enabled()) {
-    return;
-  }
-
   ModulitePtr inside_m = usage_context->modulite;
   if (should_this_usage_context_be_ignored(usage_context)) {
     return;

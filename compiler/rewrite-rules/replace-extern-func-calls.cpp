@@ -12,6 +12,7 @@
 #include "compiler/data/define-data.h"
 #include "compiler/data/kphp-json-tags.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/kphp-tracing-tags.h"
 #include "compiler/vertex-util.h"
 
 /*
@@ -179,13 +180,10 @@ static VertexPtr replace_JsonEncoder_getLastError(VertexAdaptor<op_func_call> ca
   return call;
 }
 
-// `classof(expr)` => `assumption(expr)::class`
-static VertexPtr replace_classof(FunctionPtr current_function, VertexAdaptor<op_func_call> call) {
-  ClassPtr klassT = assume_class_of_expr(current_function, call->args()[0], call).try_as_class();
-  kphp_error_act(klassT, "classof() used for non-instance", return call);
-  auto v_class_name = VertexAdaptor<op_string>::create();
-  v_class_name->str_val = klassT->name;
-  return v_class_name;
+// `classof(expr)` should be replaced in advance: it's not a regular function, it's available only in f<T>
+static VertexPtr replace_classof([[maybe_unused]] FunctionPtr current_function, VertexAdaptor<op_func_call> call) {
+  kphp_error(0, "classof() used incorrectly: it's a keyword to be used only for a single variable which is a generic parameter");
+  return call;
 }
 
 
@@ -229,6 +227,15 @@ VertexPtr maybe_replace_extern_func_call(FunctionPtr current_function, VertexAda
   // classof($expr)
   if (f_name == "classof" && n_args == 1) {
     return replace_classof(current_function, call);
+  }
+
+  // register_shutdown_function(f_shutdown) — automatically mark f_shutdown with @kphp-tracing
+  // (it's also a kind of "replace when extern", that's why placed here, but can be moved to another place)
+  if (f_name == "register_shutdown_function" && n_args >= 1) {
+    FunctionPtr f_shutdown = call->args()[0].as<op_callback_of_builtin>()->func_id;
+    if (f_shutdown && !f_shutdown->kphp_tracing) {
+      f_shutdown->kphp_tracing = KphpTracingDeclarationMixin::create_for_shutdown_function(f_shutdown);
+    }
   }
 
   return call;

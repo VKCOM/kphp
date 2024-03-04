@@ -29,7 +29,7 @@ const memory_resource::MemoryStats &get_script_memory_stats() noexcept;
 size_t get_heap_memory_used() noexcept;
 
 void global_init_script_allocator() noexcept;
-void init_script_allocator(void *buffer, size_t buffer_size) noexcept; // init script allocator with arena of n bytes at buf
+void init_script_allocator(void *buffer, size_t script_mem_size, size_t oom_handling_mem_size) noexcept;
 void free_script_allocator() noexcept;
 
 void *allocate(size_t n) noexcept; // allocate script memory

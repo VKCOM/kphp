@@ -49,6 +49,14 @@ function do_http_worker() {
       get_stats_by_rpc();
       return;
     }
+    case "/get_webserver_stats": {
+      $stats = get_webserver_stats();
+      echo "running_workers:".$stats[0]."\n";
+      echo "waiting_workers:".$stats[1]."\n";
+      echo "ready_for_accept_workers:".$stats[2]."\n";
+      echo "total_workers:".$stats[3]."\n";
+      return;
+    }
   }
 
   run_default();

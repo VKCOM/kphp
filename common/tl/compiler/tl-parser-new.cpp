@@ -2946,7 +2946,7 @@ void write_tree(struct tl_combinator_tree *T, int extra, tree_var_value_t **v, i
       write_args(T, v, last_var);
       break;
     case type_num_value:
-      wint(TLS_NAT_CONST);
+      wint(TLS_EXPR_NAT); // This is a typo. It must be TLS_NAT_CONST, but we have to maintain this for backward compatibility
       wint(T->type_flags);
       break;
     case type_num:

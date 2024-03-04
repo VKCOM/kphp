@@ -124,8 +124,6 @@ public:
   KphpOption<std::string> composer_root;
   KphpOption<bool> composer_autoload_dev;
 
-  KphpOption<uint64_t> modulite_enabled;   // 0 disabled, 1 enabled with errors, 2 enabled with warnings
-
   KphpOption<bool> force_make;
   KphpOption<bool> no_make;
   KphpOption<uint64_t> jobs_count;

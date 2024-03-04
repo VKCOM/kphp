@@ -152,6 +152,7 @@ void append_apple_options(std::string &cxx_flags, std::string &ld_flags) noexcep
               " -lepoll-shim"
               " -L" EPOLL_SHIM_LIB_DIR
               " -L" + common_path + "/lib"
+              " -undefined dynamic_lookup"
 #ifdef PDO_DRIVER_PGSQL
               " -L" + common_path + "/opt/libpq/lib"
 #endif
@@ -283,11 +284,13 @@ void CompilerSettings::init() {
 
   remove_extra_spaces(extra_cxx_flags.value_);
   std::stringstream ss;
-  ss << extra_cxx_flags.get();
-  ss << " -iquote" << kphp_src_path.get()
-     << " -iquote " << kphp_src_path.get() << "objs/generated/auto/runtime";
-  ss << " -Wall -fwrapv -Wno-parentheses -Wno-trigraphs";
-  ss << " -fno-strict-aliasing -fno-omit-frame-pointer";
+  ss << "-Wall "
+     << extra_cxx_flags.get()
+     << " -iquote" << kphp_src_path.get()
+     << " -iquote " << kphp_src_path.get()
+     << "objs/generated/auto/runtime"
+     << " -fwrapv -Wno-parentheses -Wno-trigraphs"
+     << " -fno-strict-aliasing -fno-omit-frame-pointer";
 #ifdef __x86_64__
   ss << " -march=sandybridge";
 #elif __aarch64__
@@ -331,10 +334,13 @@ void CompilerSettings::init() {
   ld_flags.value_ += " -L /usr/local/lib";
 #endif
 
-#if defined(__APPLE__) && defined(__arm64__)
-  // for development under M1, manual installation of libucontext is needed
-  // see the docs: https://vkcom.github.io/kphp/kphp-internals/developing-and-extending-kphp/compiling-kphp-from-sources.html
-  ld_flags.value_ += " /opt/homebrew/lib/libucontext.a";
+#ifdef KPHP_H3_LIB_DIR
+  ld_flags.value_ += " -L" KPHP_H3_LIB_DIR;
+#else
+  // kphp-h3 is usually installed in /usr/local/lib;
+  // LDD may not find a library in /usr/local/lib if we don't add it here
+  // TODO: can we avoid this hardcoded library path?
+  ld_flags.value_ += " -L /usr/local/lib";
 #endif
 
   std::vector<vk::string_view> external_libs{"pthread", "m", "dl"};

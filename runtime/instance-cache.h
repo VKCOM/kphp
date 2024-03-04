@@ -20,11 +20,16 @@
 
 #include "runtime/instance-copy-processor.h"
 #include "runtime/kphp_core.h"
+#include "runtime/memory_usage.h"
 #include "runtime/shape.h"
+#include "server/statshouse/statshouse-manager.h"
+
+enum class InstanceCacheOpStatus;
 
 namespace impl_ {
 
-bool instance_cache_store(const string &key, const InstanceCopyistBase &instance_wrapper, int64_t ttl);
+std::string_view instance_cache_store_status_to_str(InstanceCacheOpStatus status);
+InstanceCacheOpStatus instance_cache_store(const string &key, const InstanceCopyistBase &instance_wrapper, int64_t ttl);
 const InstanceCopyistBase *instance_cache_fetch_wrapper(const string &key, bool even_if_expired);
 
 } // namespace impl_
@@ -59,6 +64,17 @@ enum class InstanceCacheSwapStatus {
   swap_is_finished, // swap succeeded
   swap_is_forbidden // swap is not possible - the memory is still being used
 };
+
+enum class InstanceCacheOpStatus {
+  success,
+  skipped,
+  memory_limit_exceeded,
+  memory_swap_required,
+  delayed,
+  not_found,
+  failed
+};
+
 // these function should be called from master
 InstanceCacheSwapStatus instance_cache_try_swap_memory();
 // these function should be called from master
@@ -71,13 +87,23 @@ void instance_cache_purge_expired_elements();
 void instance_cache_release_all_resources_acquired_by_this_proc();
 
 template<typename ClassInstanceType>
+void send_extended_instance_cache_stats_if_enabled(std::string_view op, InstanceCacheOpStatus status, const string &key, const ClassInstanceType &instance) {
+  if (StatsHouseManager::get().is_extended_instance_cache_stats_enabled()) {
+    int64_t size = f$estimate_memory_usage(key) + f$estimate_memory_usage(instance);
+    StatsHouseManager::get().add_extended_instance_cache_stats(op, impl_::instance_cache_store_status_to_str(status), key, size);
+  }
+}
+
+template<typename ClassInstanceType>
 bool f$instance_cache_store(const string &key, const ClassInstanceType &instance, int64_t ttl = 0) {
   static_assert(is_class_instance<ClassInstanceType>::value, "class_instance<> type expected");
   if (instance.is_null()) {
     return false;
   }
   InstanceCopyistImpl<ClassInstanceType> instance_wrapper{instance};
-  return impl_::instance_cache_store(key, instance_wrapper, ttl);
+  InstanceCacheOpStatus status = impl_::instance_cache_store(key, instance_wrapper, ttl);
+  send_extended_instance_cache_stats_if_enabled("store", status, key, instance);
+  return status == InstanceCacheOpStatus::success;
 }
 
 template<typename ClassInstanceType>
@@ -89,11 +115,19 @@ ClassInstanceType f$instance_cache_fetch(const string &class_name, const string 
     if (auto wrapper = dynamic_cast<const InstanceCopyistImpl<ClassInstanceType> *>(base_wrapper)) {
       auto result = wrapper->get_instance();
       php_assert(!result.is_null());
+      send_extended_instance_cache_stats_if_enabled("fetch", InstanceCacheOpStatus::success, key, result);
       return result;
     } else {
-      php_warning("Trying to fetch incompatible instance class: expect '%s', got '%s'",
-                  class_name.c_str(), base_wrapper->get_class());
+      send_extended_instance_cache_stats_if_enabled("fetch", InstanceCacheOpStatus::failed, key, ClassInstanceType{});
+      if constexpr (std::is_polymorphic_v<ClassInstanceType>) {
+        php_warning("Trying to fetch polymorphic instance class '%s' that was stored by base type", base_wrapper->get_class());
+      } else {
+        php_warning("Trying to fetch incompatible instance class: expect '%s', got '%s'",
+                    class_name.c_str(), base_wrapper->get_class());
+      }
     }
+  } else {
+    send_extended_instance_cache_stats_if_enabled("fetch", InstanceCacheOpStatus::not_found, key, ClassInstanceType{});
   }
   return {};
 }

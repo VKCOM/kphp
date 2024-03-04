@@ -17,10 +17,6 @@ public:
     va_end(ap);
   }
 
-  bool need_aggregated_stats() noexcept final {
-    return true;
-  }
-
 protected:
   void add_stat(char type [[maybe_unused]], const char *key, double value) noexcept final {
     sb_printf(&sb, "%s\t", key);
@@ -44,9 +40,5 @@ protected:
     sb_printf(&sb, "%s.%s\t", key, type_tag);
     sb_printf(&sb, "%lld", value);
     sb_printf(&sb, "\n");
-  }
-
-  void add_multiple_stats(const char *key [[maybe_unused]], std::vector<double> &&values [[maybe_unused]]) noexcept final {
-    assert(false && "unimplemented");
   }
 };

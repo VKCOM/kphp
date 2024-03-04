@@ -13,8 +13,9 @@ void init_global_confdata_confdata() {
   initiated = true;
 
   pid = 0;
+  std::forward_list<vk::string_view> force_ignore_prefixes;
   auto &global_manager = ConfdataGlobalManager::get();
-  global_manager.init(1024 * 1024 * 16, std::unordered_set<vk::string_view>{}, nullptr);
+  global_manager.init(1024 * 1024 * 16, std::unordered_set<vk::string_view>{}, nullptr, std::move(force_ignore_prefixes));
   auto confdata_sample_storage = global_manager.get_current().get_confdata();
 
   confdata_sample_storage[string{"_key_1"}] = string{"value_1"};

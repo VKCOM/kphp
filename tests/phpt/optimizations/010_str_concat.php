@@ -222,6 +222,76 @@ function append_static($parts) {
   return $static_s;
 }
 
+function test_md5_1() {
+  // 11 chars
+  $a = '11111111111';
+  $b = '11111111111';
+  $c = '11111111111';
+  $b .= substr(md5($a . $b . $c), 0, 10);
+  var_dump($b);
+}
+
+function test_md5_2() {
+  $a = '11111111111';
+  $b = '11111111111';
+  $c = '11111111111';
+  $b = $b . substr(md5($a . $b . $c), 0, 10);
+  var_dump($b);
+}
+
+function test_md5_3() {
+  // 12 chars
+  $a = '111111111111';
+  $b = '111111111111';
+  $c = '111111111111';
+  $b .= substr(md5($a . $b . $c), 0, 10);
+  var_dump($b);
+}
+
+function tmp_expr_safe_set_value() {
+  $a = ['aaa'];
+  $a['b'] = substr($a['b'], 0, 1);
+  var_dump($a);
+  $a[substr($a['a'], 0, 1)] = 'aaa';
+  var_dump($a);
+}
+
+function tmp_expr_safe_set_op1() {
+  $a = 'aaa';
+  $a = $a . substr($a, 0, 1);
+  var_dump($a);
+}
+
+function tmp_expr_safe_set_op2() {
+  $a = 'aaa';
+  $a = substr($a, 0, 1);
+  var_dump($a);
+}
+
+function tmp_expr_safe_push_back() {
+  $a = ['aaa'];
+  $a[] = substr($a[0], 0, 1);
+  var_dump($a);
+}
+
+function tmp_expr_safe_push_back_return() {
+  $a = ['aaa'];
+  var_dump($a[] = substr($a[0], 0, 1));
+  var_dump($a);
+}
+
+function tmp_expr_safe_index() {
+  $a = ['a' => 'aaa', 'aa' => 'bbb'];
+  var_dump($a[substr($a['a'], 0, 1)]);
+  var_dump($a['a' . substr($a['a'], 0, 1)]);
+}
+
+function tmp_concat() {
+  $a = 'aaaa';
+  $x = substr($a, 0, 1) . substr($a, 0, 1) . substr($a, 0, 1);
+  var_dump($x);
+}
+
 class StringWrapper {
   public string $str = '';
   public function __toString(): string {
@@ -280,4 +350,16 @@ for ($i = 0; $i < 2; $i++) {
   var_dump($s_ref);
   appendref($s_ref, $str_parts[0], (string)$str_parts[1], (string)$str_parts[2], $str_parts[3]);
   var_dump($s_ref);
+
+  test_md5_1();
+  test_md5_2();
+  test_md5_3();
+
+  tmp_expr_safe_set_value();
+  tmp_expr_safe_set_op1();
+  tmp_expr_safe_set_op2();
+  tmp_expr_safe_push_back();
+  tmp_expr_safe_push_back_return();
+  tmp_expr_safe_index();
+  tmp_concat();
 }

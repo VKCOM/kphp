@@ -34,11 +34,11 @@ def search_kphp2cpp():
 
 
 def search_engine_bin(engine_name):
-    return _check_file("bin/" + engine_name, _ENGINE_INSTALL_PATH, _check_bin)
+    return _check_file("bin/" + engine_name, _ENGINE_INSTALL_PATH, _check_bin) if _ENGINE_INSTALL_PATH else engine_name
 
 
 def search_tl_client():
-    return _check_file("bin/tlclient", _ENGINE_INSTALL_PATH, _check_bin)
+    return _check_file("bin/tlclient", _ENGINE_INSTALL_PATH, _check_bin) if _ENGINE_INSTALL_PATH else "tlclient"
 
 
 def search_combined_tlo(working_dir):

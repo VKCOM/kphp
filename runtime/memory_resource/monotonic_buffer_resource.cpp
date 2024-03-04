@@ -6,6 +6,7 @@
 
 #include <array>
 #include "runtime/allocator.h"
+#include "runtime/oom_handler.h"
 
 namespace memory_resource {
 
@@ -49,6 +50,8 @@ void monotonic_buffer::critical_dump(void *mem, size_t size) const noexcept {
 }
 
 void monotonic_buffer_resource::raise_oom(size_t size) const noexcept {
+  vk::singleton<OomHandler>::get().invoke();
+
   auto mem_pool_size = stats_.memory_limit;
   size_t mem_available = mem_pool_size - stats_.memory_used;
   if (mem_available < size) {

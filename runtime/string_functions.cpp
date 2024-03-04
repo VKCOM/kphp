@@ -14,7 +14,7 @@
 #include "runtime/interface.h"
 
 const string COLON(",", 1);
-const string CP1251("1251", 4);
+const string CP1251("cp1251");
 const string DOT(".", 1);
 const string NEW_LINE("\n", 1);
 const string SPACE(" ", 1);
@@ -2326,12 +2326,12 @@ mixed f$str_ireplace(const mixed &search, const mixed &replace, const mixed &sub
 array<string> f$str_split(const string &str, int64_t split_length) {
   if (split_length <= 0) {
     php_warning ("Wrong parameter split_length = %" PRIi64 " in function str_split", split_length);
-    array<string> result(array_size(1, 0, true));
+    array<string> result(array_size(1, true));
     result.set_value(0, str);
     return result;
   }
 
-  array<string> result(array_size((str.size() + split_length - 1) / split_length, 0, true));
+  array<string> result(array_size((str.size() + split_length - 1) / split_length, true));
   string::size_type i = 0;
   for (i = 0; i + split_length <= str.size(); i += static_cast<string::size_type>(split_length)) {
     result.push_back(str.substr(i, static_cast<string::size_type>(split_length)));
@@ -2932,17 +2932,22 @@ string str_concat(const string &s1, const string &s2) {
   return string(new_size, true).append_unsafe(s1).append_unsafe(s2).finish_append();
 }
 
-string str_concat(const string &s1, const string &s2, const string &s3) {
-  auto new_size = s1.size() + s2.size() + s3.size();
-  return string(new_size, true).append_unsafe(s1).append_unsafe(s2).append_unsafe(s3).finish_append();
+string str_concat(str_concat_arg s1, str_concat_arg s2) {
+  auto new_size = s1.size + s2.size;
+  return string(new_size, true).append_unsafe(s1.as_tmp_string()).append_unsafe(s2.as_tmp_string()).finish_append();
 }
 
-string str_concat(const string &s1, const string &s2, const string &s3, const string &s4) {
-  auto new_size = s1.size() + s2.size() + s3.size() + s4.size();
-  return string(new_size, true).append_unsafe(s1).append_unsafe(s2).append_unsafe(s3).append_unsafe(s4).finish_append();
+string str_concat(str_concat_arg s1, str_concat_arg s2, str_concat_arg s3) {
+  auto new_size = s1.size + s2.size + s3.size;
+  return string(new_size, true).append_unsafe(s1.as_tmp_string()).append_unsafe(s2.as_tmp_string()).append_unsafe(s3.as_tmp_string()).finish_append();
 }
 
-string str_concat(const string &s1, const string &s2, const string &s3, const string &s4, const string &s5) {
-  auto new_size = s1.size() + s2.size() + s3.size() + s4.size() + s5.size();
-  return string(new_size, true).append_unsafe(s1).append_unsafe(s2).append_unsafe(s3).append_unsafe(s4).append_unsafe(s5).finish_append();
+string str_concat(str_concat_arg s1, str_concat_arg s2, str_concat_arg s3, str_concat_arg s4) {
+  auto new_size = s1.size + s2.size + s3.size + s4.size;
+  return string(new_size, true).append_unsafe(s1.as_tmp_string()).append_unsafe(s2.as_tmp_string()).append_unsafe(s3.as_tmp_string()).append_unsafe(s4.as_tmp_string()).finish_append();
+}
+
+string str_concat(str_concat_arg s1, str_concat_arg s2, str_concat_arg s3, str_concat_arg s4, str_concat_arg s5) {
+  auto new_size = s1.size + s2.size + s3.size + s4.size + s5.size;
+  return string(new_size, true).append_unsafe(s1.as_tmp_string()).append_unsafe(s2.as_tmp_string()).append_unsafe(s3.as_tmp_string()).append_unsafe(s4.as_tmp_string()).append_unsafe(s5.as_tmp_string()).finish_append();
 }

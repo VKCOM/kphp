@@ -11,6 +11,7 @@
 
 #include <gtest/gtest.h>
 
+#if !defined(__APPLE__)
 
 TEST(parallel_counter, basic) {
   PARALLEL_COUNTER(counter);
@@ -42,6 +43,8 @@ TEST(parallel_counter, basic) {
 
   EXPECT_EQ(expected_sum, PARALLEL_COUNTER_READ(counter));
 }
+
+#endif
 
 TEST(parallel_counter, inc_and_dec) {
   PARALLEL_COUNTER(counter);

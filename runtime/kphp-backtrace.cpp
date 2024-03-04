@@ -91,6 +91,28 @@ const char *KphpBacktrace::make_line(const char *symbol, bool full_trace) noexce
   return name_buffer_.data();
 }
 
+void parse_kphp_backtrace(char * buffer, size_t buffer_len, void * const * raw_backtrace, int backtrace_len) {
+  if (buffer_len == 0) {
+    return;
+  }
+  buffer[0] = '\0';
+  const char *sep = ";\n";
+  KphpBacktrace demangler{raw_backtrace, backtrace_len};
+  size_t cur_len = 0;
+  for (const char *name : demangler.make_demangled_backtrace_range()) {
+    const size_t len = name ? strlen(name) : 0;
+    if (len == 0) {
+      continue;
+    }
+    if (cur_len + len + std::strlen(sep) + 1 > buffer_len) {
+      break;
+    }
+    std::strcat(buffer, name);
+    std::strcat(buffer, sep);
+    cur_len += len + std::strlen(sep);
+  }
+}
+
 void free_kphp_backtrace() noexcept {
   if (KphpBacktrace::last_used_symbols_.empty()) {
     return;
@@ -105,7 +127,7 @@ void free_kphp_backtrace() noexcept {
 array<string> f$kphp_backtrace(bool pretty) noexcept {
   std::array<void *, 128> buffer{};
   const int32_t nptrs = fast_backtrace(buffer.data(), buffer.size());
-  array<string> backtrace{array_size{nptrs, 0, true}};
+  array<string> backtrace{array_size{nptrs, true}};
   KphpBacktrace demangler{buffer.data(), nptrs};
   for (const char *name : demangler.make_demangled_backtrace_range()) {
     const size_t len = name ? strlen(name) : 0;

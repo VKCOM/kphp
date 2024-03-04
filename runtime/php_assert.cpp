@@ -23,8 +23,10 @@
 #include "runtime/critical_section.h"
 #include "runtime/exception.h"
 #include "runtime/kphp-backtrace.h"
+#include "runtime/kphp_tracing.h"
 #include "runtime/on_kphp_warning_callback.h"
 #include "runtime/resumable.h"
+#include "runtime/interface.h"
 
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
@@ -152,10 +154,19 @@ static void php_warning_impl(bool out_of_memory, int error_type, char const *mes
 
   dl::leave_critical_section();
   if (allocations_allowed) {
-    OnKphpWarningCallback::get().invoke_callback(string(buf));
+    string warning_message = string(buf);
+    OnKphpWarningCallback::get().invoke_callback(warning_message);
+    if (kphp_tracing::is_turned_on()) {
+      kphp_tracing::on_php_script_warning(warning_message);
+    }
   }
 
-  vk::singleton<JsonLogger>::get().write_log(buf, error_type, cur_time, buffer, nptrs, out_of_memory || die_on_fail || error_type == E_ERROR);
+  if (is_demangled_stacktrace_logs_enabled) {
+    vk::singleton<JsonLogger>::get().write_log_with_demangled_backtrace(
+      buf, error_type, cur_time, buffer, nptrs, out_of_memory || die_on_fail || error_type == E_ERROR);
+  } else {
+    vk::singleton<JsonLogger>::get().write_log(buf, error_type, cur_time, buffer, nptrs, out_of_memory || die_on_fail || error_type == E_ERROR);
+  }
 
   if (die_on_fail) {
     raise_php_assert_signal__();
@@ -192,19 +203,23 @@ void php_out_of_memory_warning(char const *message, ...) {
   va_end(args);
 }
 
-const char *php_uncaught_exception_error(const class_instance<C$Throwable> &ex, bool from_fork) noexcept {
+const char *php_uncaught_exception_error(const class_instance<C$Throwable> &ex) noexcept {
   const int64_t current_time = time(nullptr);
   const char *message = ex->$message.empty() ? "(empty)" : ex->$message.c_str();
-  const char *fork_msg = from_fork ? " in fork" : "";
   const char *src_file = kbasename(ex->$file.c_str());
-  vk::singleton<JsonLogger>::get().write_log(
-    dl_pstr("Unhandled %s%s from %s:%" PRIi64 "; Error %" PRIi64 "; Message: %s", ex->get_class(), fork_msg, src_file, ex->$line, ex->$code, message),
-    E_ERROR, current_time, ex->raw_trace.get_const_vector_pointer(), ex->raw_trace.count(), true);
+  vk::string_view log_message = dl_pstr("Unhandled %s from %s:%" PRIi64 "; Error %" PRIi64 "; Message: %s", ex->get_class(), src_file, ex->$line, ex->$code, message);
+  if (is_demangled_stacktrace_logs_enabled) {
+    vk::singleton<JsonLogger>::get().write_log_with_demangled_backtrace(log_message, E_ERROR, current_time,
+                                                                        ex->raw_trace.get_const_vector_pointer(), ex->raw_trace.count(), true);
+  } else {
+    vk::singleton<JsonLogger>::get().write_log(log_message, E_ERROR, current_time,
+                                               ex->raw_trace.get_const_vector_pointer(), ex->raw_trace.count(), true);
+  }
 
-  const char *msg = dl_pstr("%s%" PRIi64 "%sError %" PRIi64 ": %s.\nUnhandled %s%s caught in file %s at line %" PRIi64 ".\n"
+  const char *msg = dl_pstr("%s%" PRIi64 "%sError %" PRIi64 ": %s.\nUnhandled %s caught in file %s at line %" PRIi64 ".\n"
                             "Backtrace:\n%s",
                             engine_tag, current_time, engine_pid,
-                            ex->$code, message, ex->get_class(), fork_msg, src_file, ex->$line,
+                            ex->$code, message, ex->get_class(), src_file, ex->$line,
                             exception_trace_as_string(ex).c_str());
   fprintf(stderr, "%s", msg);
   fprintf(stderr, "-------------------------------\n\n");

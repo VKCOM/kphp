@@ -20,6 +20,7 @@
  *    and therefore pipes __construct and __invoke of that class
  * 2) it instantiates generic functions knowing T1, etc
  *    and therefore pipes a newly-created function (an instantiated clone of generic function)
+ *    (note, that in InstantiateGenericFunctionPass, func_id and similar are not set: f is yet to pass the pipeline)
  */
 
 class InstantiateGenericFunctionPass final : public FunctionPassBase {
@@ -38,6 +39,7 @@ public:
 
   VertexPtr on_enter_vertex(VertexPtr root) override {
     if (auto as_phpdoc_var = root.try_as<op_phpdoc_var>()) {
+      // inside f<A>, replace `@var T[] $v` with `@var A[] $v`
       as_phpdoc_var->type_hint = phpdoc_replace_genericTs_with_reified(as_phpdoc_var->type_hint, instantiationTs);
 
     } else if (auto as_call = root.try_as<op_func_call>()) {
@@ -48,15 +50,22 @@ public:
           type_hint = phpdoc_replace_genericTs_with_reified(type_hint, instantiationTs);
         }
       }
+      // inside f<A>, replace `classof($o)` with "A" if `f<T>(T $o)` called as `f(expr_assumed_A)`
+      if (as_call->str_val == "classof" && as_call->size() == 1 && as_call->extra_type != op_ex_func_call_arrow) {
+        if (auto as_var = as_call->args().begin()->try_as<op_var>()) {
+          if (const TypeHint *param_type_hint = get_param_type_hint_if_generic(as_var->str_val)) {
+            if (const auto *as_genericT = param_type_hint->try_as<TypeHintGenericT>()) {
+              return replace_with_string_const_if_T_is_class(as_genericT->nameT, root);
+            }
+          }
+        }
+      }
 
     } else if (auto as_var = root.try_as<op_var>()) {
-      auto param = generic_function->find_param_by_name(as_var->str_val);
-      if (param && param->type_hint && param->type_hint->has_genericT_inside() && find_param_by_name(as_var->str_val)) {
-        if (const auto *as_class_string = param->type_hint->try_as<TypeHintClassString>()) {
-          const TypeHint *instT = instantiationTs->find(as_class_string->inner->try_as<TypeHintGenericT>()->nameT);
-          if (instT && instT->try_as<TypeHintInstance>()) {
-            return VertexUtil::create_string_const(instT->try_as<TypeHintInstance>()->full_class_name).set_location(root);
-          }
+      // inside f<A>, replace `$cn` with "A" if `f<T>(class-string<T> $cn)` called as `f(A::class)`
+      if (const TypeHint *param_type_hint = get_param_type_hint_if_generic(as_var->str_val)) {
+        if (const auto *as_class_string = param_type_hint->try_as<TypeHintClassString>()) {
+          return replace_with_string_const_if_T_is_class(as_class_string->inner->try_as<TypeHintGenericT>()->nameT, root);
         }
       }
 
@@ -74,6 +83,23 @@ public:
     }
 
     return false;
+  }
+
+  VertexPtr replace_with_string_const_if_T_is_class(const std::string &nameT, VertexPtr v_to_replace) {
+    if (const TypeHint *instT = instantiationTs->find(nameT)) {
+      if (const auto *as_instance = instT->try_as<TypeHintInstance>()) {
+        return VertexUtil::create_string_const(as_instance->full_class_name).set_location(v_to_replace);
+      }
+    }
+    return v_to_replace;
+  }
+
+  const TypeHint *get_param_type_hint_if_generic(const std::string &var_name) {
+    auto param = generic_function->find_param_by_name(var_name);
+    if (param && param->type_hint && param->type_hint->has_genericT_inside() && find_param_by_name(var_name)) {
+      return param->type_hint;
+    }
+    return nullptr;
   }
 
   VertexAdaptor<op_func_param> find_param_by_name(const std::string &var_name) {

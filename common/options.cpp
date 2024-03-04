@@ -274,7 +274,7 @@ int convert_bytes_num_to_string(long long bytes, char *res, int res_size) {
 }
 
 int parse_time_limit(const char *s) {
-  int x;
+  int x = 0;
   char c = 0;
   if (sscanf(s, "%d%c", &x, &c) < 1) {
     kprintf ("Parsing time limit for option fail: %s\n", s);

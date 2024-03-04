@@ -32,6 +32,10 @@ public:
   explicit RequestResumable(int request_id)
     : request_id(request_id) {}
 
+  bool is_internal_resumable() const noexcept final {
+    return true;
+  }
+
 protected:
   bool run() noexcept final {
     auto &adaptor = vk::singleton<database_drivers::Adaptor>::get();
@@ -61,7 +65,7 @@ void Adaptor::create_outbound_connections() noexcept {
 }
 
 int Adaptor::initiate_connect(std::unique_ptr<Connector> &&connector) noexcept {
-  assert(PhpScript::is_running);
+  assert(PhpScript::in_script_context);
 
   // DO NOT use query after script is terminated!!!
   ::external_driver_connect q{std::move(connector)};
@@ -133,7 +137,7 @@ void Adaptor::process_external_db_request_net_query(std::unique_ptr<Request> &&r
 
 void Adaptor::finish_request_resumable(std::unique_ptr<Response> &&response) noexcept {
   int event_status = 0;
-  if (external_db_requests_factory.is_valid_slot(response->bound_request_id)) {
+  if (external_db_requests_factory.is_from_current_script_execution(response->bound_request_id)) {
     ::net_event_t *event = nullptr;
     event_status = ::alloc_net_event(response->bound_request_id, &event);
     if (event_status > 0) {

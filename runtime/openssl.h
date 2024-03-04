@@ -61,6 +61,8 @@ Optional<string> f$openssl_random_pseudo_bytes(int64_t length);
 
 Optional<array<mixed>> f$openssl_x509_parse(const string &data, bool shortnames = true);
 
+int64_t f$openssl_x509_verify(const string &certificate, const string &public_key);
+
 mixed f$openssl_x509_checkpurpose(const string &data, int64_t purpose);
 
 bool f$openssl_pkcs7_sign(const string &infile, const string &outfile,

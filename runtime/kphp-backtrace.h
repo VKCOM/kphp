@@ -44,4 +44,6 @@ private:
 
 array<string> f$kphp_backtrace(bool pretty = true) noexcept;
 
+void parse_kphp_backtrace(char * buffer, size_t buffer_len, void * const * raw_backtrace, int backtrace_len);
+
 void free_kphp_backtrace() noexcept;

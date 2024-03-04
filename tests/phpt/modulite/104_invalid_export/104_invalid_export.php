@@ -1,5 +1,4 @@
 @kphp_should_fail
-KPHP_ENABLE_MODULITE=1
 /'require' contains a member of @utils; you should require @utils directly, not its members/
 /"\\\\AAA104"/
 /'export' contains a symbol that does not belong to @algo/

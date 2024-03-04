@@ -198,7 +198,7 @@ inline bool eq2(const TupleT &lhs, const array<Arg> &rhs, std::index_sequence<In
 
 template<class Arg, class ...Args>
 inline bool eq2(const std::tuple<Args...> &lhs, const array<Arg> &rhs) {
-  if (!rhs.is_vector() || sizeof...(Args) != rhs.size().int_size) {
+  if (!rhs.is_vector() || sizeof...(Args) != rhs.size().size) {
     return false;
   }
   return eq2(lhs, rhs, std::make_index_sequence<sizeof...(Args)>{});
@@ -497,7 +497,7 @@ inline bool equals(const TupleT &lhs, const array<Arg> &rhs, std::index_sequence
 
 template<class Arg, class ...Args>
 inline bool equals(const std::tuple<Args...> &lhs, const array<Arg> &rhs) {
-  if (!rhs.is_vector() || sizeof...(Args) != rhs.size().int_size) {
+  if (!rhs.is_vector() || sizeof...(Args) != rhs.size().size) {
     return false;
   }
   return equals(lhs, rhs, std::make_index_sequence<sizeof...(Args)>{});

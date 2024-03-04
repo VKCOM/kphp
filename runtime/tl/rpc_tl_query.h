@@ -47,10 +47,15 @@ public:
   void raise_fetching_error(const char *format, ...) __attribute__ ((format (printf, 2, 3)));
   void raise_storing_error(const char *format, ...) __attribute__ ((format (printf, 2, 3)));
 
+  // called from generated TL serializers (from autogen)
+  void set_last_stored_tl_function_magic(uint32_t tl_magic) { last_stored_tl_function_magic_ = tl_magic; }
+  uint32_t get_last_stored_tl_function_magic() const { return last_stored_tl_function_magic_; }
+
   const string &get_current_tl_function_name() const {
     return current_tl_function_name_;
   }
 
 private:
   string current_tl_function_name_;
+  uint32_t last_stored_tl_function_magic_{0};
 };

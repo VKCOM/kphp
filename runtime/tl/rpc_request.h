@@ -30,6 +30,7 @@ public:
   }
 
   bool empty() const { return storing_function_.is_null(); }
+  const class_instance<C$VK$TL$RpcFunction>& get_tl_function() const { return storing_function_; }
 
   virtual std::unique_ptr<RpcRequestResult> store_request() const = 0;
   virtual ~RpcRequest() = default;

@@ -12,6 +12,7 @@
 #include "runtime/critical_section.h"
 #include "runtime/datetime/timelib_wrapper.h"
 #include "runtime/string_functions.h"
+#include "server/server-log.h"
 
 extern long timezone;
 
@@ -33,7 +34,9 @@ static void set_default_timezone_id(const char *timezone_id) {
 
 static const char *suffix[] = {"st", "nd", "rd", "th"};
 
-static time_t gmmktime(struct tm *tm) {
+static bool use_updated_gmmktime = false;
+
+static time_t deprecated_gmmktime(struct tm * tm) {
   char *tz = getenv("TZ");
   setenv("TZ", "", 1);
   tzset();
@@ -384,9 +387,13 @@ array<mixed> f$getdate(int64_t timestamp) {
   }
   tm t;
   time_t timestamp_t = timestamp;
-  localtime_r(&timestamp_t, &t);
+  tm * tp = localtime_r(&timestamp_t, &t);
+  if (tp == nullptr) {
+    php_warning("Error \"%s\" in getdate with timestamp %" PRId64, strerror(errno), timestamp);
+    memset(&t, 0, sizeof(tm));
+  }
 
-  array<mixed> result(array_size(1, 10, false));
+  array<mixed> result(array_size(11, false));
 
   result.set_value(string("seconds", 7), t.tm_sec);
   result.set_value(string("minutes", 7), t.tm_min);
@@ -403,6 +410,10 @@ array<mixed> f$getdate(int64_t timestamp) {
   return result;
 }
 
+void f$set_use_updated_gmmktime(bool enable) {
+  use_updated_gmmktime = enable;
+}
+
 string f$gmdate(const string &format, int64_t timestamp) {
   if (timestamp == std::numeric_limits<int64_t>::min()) {
     timestamp = time(nullptr);
@@ -415,6 +426,7 @@ string f$gmdate(const string &format, int64_t timestamp) {
 }
 
 int64_t f$gmmktime(int64_t h, int64_t m, int64_t s, int64_t month, int64_t day, int64_t year) {
+  dl::CriticalSectionGuard guard;
   tm t;
   time_t timestamp_t = time(nullptr);
   gmtime_r(&timestamp_t, &t);
@@ -428,7 +440,11 @@ int64_t f$gmmktime(int64_t h, int64_t m, int64_t s, int64_t month, int64_t day, 
   }
 
   if (s != std::numeric_limits<int64_t>::min()) {
-    t.tm_sec = static_cast<int32_t>(s - timezone);
+    if (use_updated_gmmktime) {
+      t.tm_sec = static_cast<int32_t>(s);
+    } else {
+      t.tm_sec = static_cast<int32_t>(s - timezone);
+    }
   }
 
   if (month != std::numeric_limits<int64_t>::min()) {
@@ -444,7 +460,12 @@ int64_t f$gmmktime(int64_t h, int64_t m, int64_t s, int64_t month, int64_t day, 
   }
 
   t.tm_isdst = -1;
-  return gmmktime(&t) - 3 * 3600;
+
+  if (use_updated_gmmktime) {
+    return timegm(&t);
+  } else {
+    return deprecated_gmmktime(&t) - 3 * 3600;
+  }
 }
 
 array<mixed> f$localtime(int64_t timestamp, bool is_associative) {
@@ -459,7 +480,7 @@ array<mixed> f$localtime(int64_t timestamp, bool is_associative) {
     return array<mixed>::create(t.tm_sec, t.tm_min, t.tm_hour, t.tm_mday, t.tm_mon, t.tm_year, t.tm_wday, t.tm_yday, t.tm_isdst);
   }
 
-  array<mixed> result(array_size(0, 9, false));
+  array<mixed> result(array_size(9, false));
 
   result.set_value(string("tm_sec", 6), t.tm_sec);
   result.set_value(string("tm_min", 6), t.tm_min);
@@ -472,6 +493,10 @@ array<mixed> f$localtime(int64_t timestamp, bool is_associative) {
   result.set_value(string("tm_isdst", 8), t.tm_isdst);
 
   return result;
+}
+
+void free_use_updated_gmmktime() {
+  use_updated_gmmktime = false;
 }
 
 

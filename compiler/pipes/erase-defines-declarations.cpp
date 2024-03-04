@@ -18,6 +18,7 @@ VertexPtr EraseDefinesDeclarationsPass::on_exit_vertex(VertexPtr root) {
       auto var = VertexAdaptor<op_var>::create().set_location(root);
       var->extra_type = op_ex_var_superglobal;
       var->str_val = "d$" + define->name;
+      var->is_const = true;
 
       auto new_root = VertexAdaptor<op_set>::create(var, define->val).set_location(root);
       root = new_root;

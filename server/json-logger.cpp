@@ -11,8 +11,11 @@
 #include "common/algorithms/find.h"
 #include "common/fast-backtrace.h"
 #include "common/wrappers/likely.h"
+#include "runtime/kphp-backtrace.h"
+#include "server/server-config.h"
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
+#include "server/php-runner.h"
 
 namespace {
 
@@ -71,6 +74,30 @@ bool copy_raw_string(char *&out, size_t out_size, vk::string_view str) noexcept 
     }
   }
   return i == str.size();
+}
+
+int script_backtrace(void **buffer, int size) {
+  if (PhpScript::current_script == nullptr) {
+    return 0;
+  }
+  const ucontext_t_portable &context = PhpScript::current_script->run_context;
+#if defined(__APPLE__)
+#if defined(__arm64__)
+  void *rbp = reinterpret_cast<void *>(context.uc_mcontext.fp);
+#else
+  void *rbp = reinterpret_cast<void *>(context.uc_mcontext->__ss.__rbp);
+#endif
+#elif defined(__x86_64__)
+  void *rbp = reinterpret_cast<void *>(context.uc_mcontext.gregs[REG_RBP]);
+#elif defined(__aarch64__) || defined(__arm64__)
+  void *rbp = reinterpret_cast<void *>(context.uc_mcontext.fp);
+#else
+  void *rbp = nullptr;
+  size = 0;
+#endif
+  char *stack_start = PhpScript::current_script->script_stack.get_stack_ptr();
+  char *stack_end = stack_start + PhpScript::current_script->script_stack.get_stack_size();
+  return fast_backtrace_by_bp(rbp, stack_end, buffer, size);
 }
 
 } // namespace
@@ -182,6 +209,14 @@ bool JsonLogger::reopen_log_file(const char *log_file_name) noexcept {
   return json_log_fd_ > 0;
 }
 
+bool JsonLogger::reopen_traces_file(const char *traces_file_name) noexcept {
+  if (traces_log_fd_ > 0) {
+    close(traces_log_fd_);
+  }
+  traces_log_fd_ = open(traces_file_name, O_WRONLY | O_APPEND | O_CREAT, 0640);
+  return traces_log_fd_ > 0;
+}
+
 void JsonLogger::fsync_log_file() const noexcept {
   if (json_log_fd_ > 0) {
     fsync(json_log_fd_);
@@ -206,7 +241,8 @@ void JsonLogger::set_env(vk::string_view env) noexcept {
   }
 }
 
-void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at, void *const *trace, int64_t trace_size, bool uncaught) noexcept {
+void JsonLogger::write_log_with_demangled_backtrace(vk::string_view message,int type, int64_t created_at,
+                                                    void *const *trace, int64_t trace_size, bool uncaught) {
   if (json_log_fd_ <= 0) {
     return;
   }
@@ -216,6 +252,90 @@ void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at
   }
   assert(json_out_it != buffers_.end());
 
+  write_general_info(json_out_it, type, created_at, uncaught);
+
+  KphpBacktrace demangler{trace, static_cast<int32_t>(trace_size)};
+  json_out_it->append_key("trace").start<'['>();
+  for (const char *name : demangler.make_demangled_backtrace_range()) {
+    if (name && strcmp(name, "") != 0) {
+      json_out_it->append_raw_string(name);
+    }
+  }
+  json_out_it->finish<']'>();
+
+  json_out_it->append_key("msg").append_raw_string(message);
+  json_out_it->finish_json_and_flush(json_log_fd_);
+
+  json_logs_count = json_logs_count + 1;
+}
+
+void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at,
+                           void *const *trace, int64_t trace_size, bool uncaught) noexcept {
+  if (json_log_fd_ <= 0) {
+    return;
+  }
+
+  auto *json_out_it = buffers_.begin();
+  for (; json_out_it != buffers_.end() && !json_out_it->try_start_json(); ++json_out_it) {
+  }
+  assert(json_out_it != buffers_.end());
+
+  write_general_info(json_out_it, type, created_at, uncaught);
+
+  json_out_it->append_key("trace").start<'['>();
+  for (int64_t i = 0; i < trace_size; i++) {
+    json_out_it->append_hex_as_string(reinterpret_cast<int64_t>(trace[i]));
+  }
+  json_out_it->finish<']'>();
+
+  json_out_it->append_key("msg").append_raw_string(message);
+  json_out_it->finish_json_and_flush(json_log_fd_);
+
+  json_logs_count = json_logs_count + 1;
+}
+
+void JsonLogger::write_trace_line(const char *json_buf, size_t buf_len) noexcept {
+  if (traces_log_fd_ <= 0) {
+    return;
+  }
+
+  write(traces_log_fd_, json_buf, buf_len);
+  json_traces_count = json_traces_count + 1;
+}
+
+void JsonLogger::write_log_with_backtrace(vk::string_view message, int type) noexcept {
+  std::array<void *, 64> trace{};
+  const int trace_size = backtrace(trace.data(), trace.size());
+  write_log(message, type, time(nullptr), trace.data(), trace_size, true);
+}
+
+void JsonLogger::write_log_with_script_backtrace(vk::string_view message, int type) noexcept {
+  dl_assert(!PhpScript::in_script_context, "JsonLogger::write_log_with_script_backtrace must be called only in net context");
+  std::array<void *, 64> trace{};
+  const int trace_size = script_backtrace(trace.data(), trace.size());
+  write_log(message, type, time(nullptr), trace.data(), trace_size, true);
+}
+
+
+void JsonLogger::write_stack_overflow_log(int type) noexcept {
+  std::array<void *, 64> trace{};
+  const int trace_size = fast_backtrace_without_recursions(trace.data(), trace.size());
+  write_log("Stack overflow", type, time(nullptr), trace.data(), trace_size, true);
+}
+
+void JsonLogger::reset_buffers() noexcept {
+  tags_available_ = false;
+  extra_info_available_ = false;
+  env_available_ = false;
+  tags_ = {};
+  extra_info_ = {};
+  env_ = {};
+  for (auto &buffer: buffers_) {
+    buffer.force_reset();
+  }
+}
+
+void JsonLogger::write_general_info(JsonBuffer *json_out_it, int type, int64_t created_at, bool uncaught) {
   json_out_it->append_key("version").append_integer(release_version_);
   json_out_it->append_key("type").append_integer(type);
   json_out_it->append_key("created_at").append_integer(created_at);
@@ -238,43 +358,12 @@ void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at
     json_out_it->append_key("logname_id").append_integer(logname_id);
   }
   json_out_it->append_key("pid").append_integer(pid);
+  json_out_it->append_key("cluster").append_string(vk::singleton<ServerConfig>::get().get_cluster_name());
   json_out_it->append_raw(uncaught ? R"json("uncaught":true)json" : R"json("uncaught":false)json");
   json_out_it->finish<'}'>();
 
   if (extra_info_available_) {
     json_out_it->append_key("extra_info").start<'{'>().append_raw(extra_info_).finish<'}'>();
   }
-
-  json_out_it->append_key("trace").start<'['>();
-  for (int64_t i = 0; i < trace_size; i++) {
-    json_out_it->append_hex_as_string(reinterpret_cast<int64_t>(trace[i]));
-  }
-  json_out_it->finish<']'>();
-
-  json_out_it->append_key("msg").append_raw_string(message);
-  json_out_it->finish_json_and_flush(json_log_fd_);
 }
 
-void JsonLogger::write_log_with_backtrace(vk::string_view message, int type) noexcept {
-  std::array<void *, 64> trace{};
-  const int trace_size = backtrace(trace.data(), trace.size());
-  write_log(message, type, time(nullptr), trace.data(), trace_size, true);
-}
-
-void JsonLogger::write_stack_overflow_log(int type) noexcept {
-  std::array<void *, 64> trace{};
-  const int trace_size = fast_backtrace_without_recursions(trace.data(), trace.size());
-  write_log("Stack overflow", type, time(nullptr), trace.data(), trace_size, true);
-}
-
-void JsonLogger::reset_buffers() noexcept {
-  tags_available_ = false;
-  extra_info_available_ = false;
-  env_available_ = false;
-  tags_ = {};
-  extra_info_ = {};
-  env_ = {};
-  for (auto &buffer: buffers_) {
-    buffer.force_reset();
-  }
-}

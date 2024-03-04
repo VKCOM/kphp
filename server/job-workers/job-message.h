@@ -12,18 +12,23 @@
 
 namespace job_workers {
 
-// this constant is used for calculating total available messages count:
-//    messages count = the processes number * JOB_DEFAULT_SHARED_MESSAGES_COUNT_PROCESS_MULTIPLIER
-constexpr size_t JOB_DEFAULT_SHARED_MESSAGES_COUNT_PROCESS_MULTIPLIER = 2;
+constexpr size_t JOB_SHARED_MESSAGE_SIZE_EXP = 17;
 // the size of the job shared message (without extra memory)
-constexpr size_t JOB_SHARED_MESSAGE_BYTES = 512 * 1024; // 512KB
+constexpr size_t JOB_SHARED_MESSAGE_BYTES = 1 << JOB_SHARED_MESSAGE_SIZE_EXP; // 128KB
 // the number of buckets for extra shared memory,
-//    it is started from (2 * JOB_SHARED_MESSAGE_BYTES) Bytes and double for the next:
-//      0 => 1MB, 1 => 2MB, 2 => 4MB, 3 => 8MB, 4 => 16MB, 5 => 32MB, 6 => 64MB
-constexpr size_t JOB_EXTRA_MEMORY_BUFFER_BUCKETS = 7;
+//      0 => 256KB, 1 => 512KB, 2 => 1MB, 3 => 2MB, 4 => 4MB, 5 => 8MB, 6 => 16MB, 7 => 32MB, 8 => 64MB
+constexpr size_t JOB_EXTRA_MEMORY_BUFFER_BUCKETS = 9;
 // the default multiplier for getting shared memory limit for job workers messaging:
 //    the default value for shared memory = the processes number * JOB_DEFAULT_MEMORY_LIMIT_PROCESS_MULTIPLIER
 constexpr size_t JOB_DEFAULT_MEMORY_LIMIT_PROCESS_MULTIPLIER = 8 * 1024 * 1024; // 8MB for 1 process
+
+inline int get_extra_shared_memory_buffers_group_idx(size_t size) noexcept {
+  return __builtin_ctzll(size) - (JOB_SHARED_MESSAGE_SIZE_EXP + 1);
+}
+
+inline size_t get_extra_shared_memory_buffer_size(size_t group_idx) noexcept {
+  return 1 << (JOB_SHARED_MESSAGE_SIZE_EXP + 1 + group_idx);
+}
 
 struct JobSharedMemoryPiece;
 

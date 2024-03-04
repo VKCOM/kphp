@@ -12,7 +12,7 @@ namespace memory_resource {
 
 constexpr size_t unsynchronized_pool_resource::MAX_CHUNK_BLOCK_SIZE_;
 
-void unsynchronized_pool_resource::init(void *buffer, size_t buffer_size) noexcept {
+void unsynchronized_pool_resource::init(void *buffer, size_t buffer_size, size_t oom_handling_buffer_size) noexcept {
   monotonic_buffer_resource::init(buffer, buffer_size);
 
   huge_pieces_.hard_reset();
@@ -20,10 +20,18 @@ void unsynchronized_pool_resource::init(void *buffer, size_t buffer_size) noexce
   free_chunks_.fill(details::memory_chunk_list{});
 
   extra_memory_head_ = &extra_memory_tail_;
+
+  oom_handling_memory_size_ = oom_handling_buffer_size;
 }
 
 void unsynchronized_pool_resource::hard_reset() noexcept {
   init(memory_begin_, memory_end_ - memory_begin_);
+  oom_handling_memory_size_ = 0;
+}
+
+void unsynchronized_pool_resource::unfreeze_oom_handling_memory() noexcept {
+  memory_end_ += oom_handling_memory_size_;
+  oom_handling_memory_size_ = 0;
 }
 
 void unsynchronized_pool_resource::perform_defragmentation() noexcept {

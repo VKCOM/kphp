@@ -9,6 +9,7 @@
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/declarations.h"
+#include "compiler/code-gen/files/cmake-lists-txt.h"
 #include "compiler/code-gen/files/function-header.h"
 #include "compiler/code-gen/files/function-source.h"
 #include "compiler/code-gen/files/json-encoder-tags.h"
@@ -17,6 +18,7 @@
 #include "compiler/code-gen/files/lib-header.h"
 #include "compiler/code-gen/files/tl2cpp/tl2cpp.h"
 #include "compiler/code-gen/files/shape-keys.h"
+#include "compiler/code-gen/files/tracing-autogen.h"
 #include "compiler/code-gen/files/type-tagger.h"
 #include "compiler/code-gen/files/vars-cpp.h"
 #include "compiler/code-gen/files/vars-reset.h"
@@ -48,6 +50,7 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
   vk::singleton<CppDestDirInitializer>::get().wait();
 
   G->get_ffi_root().bind_symbols();
+  TracingAutogen::finished_appending_and_prepare();
 
   stage::set_name("GenerateCode");
   stage::set_file(SrcFilePtr());
@@ -73,6 +76,7 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
     switch (c->class_type) {
       case ClassType::klass:
         code_gen_start_root_task(os, std::make_unique<ClassDeclaration>(c));
+        code_gen_start_root_task(os, std::make_unique<ClassMembersDefinition>(c));
         break;
       case ClassType::interface:
         code_gen_start_root_task(os, std::make_unique<InterfaceDeclaration>(c));
@@ -133,6 +137,11 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
     code_gen_start_root_task(os, std::make_unique<TypeTagger>(vk::singleton<ForkableTypeStorage>::get().flush_forkable_types(), vk::singleton<ForkableTypeStorage>::get().flush_waitable_types()));
     code_gen_start_root_task(os, std::make_unique<ShapeKeys>(TypeHintShape::get_all_registered_keys()));
     code_gen_start_root_task(os, std::make_unique<JsonEncoderTags>(std::move(all_json_encoders)));
+    code_gen_start_root_task(os, std::make_unique<CmakeListsTxt>());
+  }
+
+  if (!TracingAutogen::empty()) {
+    code_gen_start_root_task(os, std::make_unique<TracingAutogen>());
   }
 
   code_gen_start_root_task(os, std::make_unique<TlSchemaToCpp>());
@@ -161,6 +170,10 @@ void CodeGenF::prepare_generate_function(FunctionPtr func) {
   std::sort(func->static_var_ids.begin(), func->static_var_ids.end());
   std::sort(func->global_var_ids.begin(), func->global_var_ids.end());
   std::sort(func->local_var_ids.begin(), func->local_var_ids.end());
+
+  if (func->kphp_tracing) {
+    TracingAutogen::register_function_marked_kphp_tracing(func);
+  }
 }
 
 std::string CodeGenF::calc_subdir_for_function(FunctionPtr func) {

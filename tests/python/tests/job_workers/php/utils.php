@@ -37,3 +37,9 @@ function safe_sleep(float $sleep_time_sec) {
     sched_yield_sleep(0.01);
   } while(microtime(true) - $s < $sleep_time_sec);
 }
+
+function assert_eq3($actual, $expected, $msg = "") {
+    if ($expected !== $actual) {
+        critical_error($msg);
+    }
+}

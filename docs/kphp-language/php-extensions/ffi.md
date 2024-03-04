@@ -499,6 +499,26 @@ to the library being loaded.
 
 ## Useful tricks and hints
 
+### Handling string results that are not null-terminated
+
+Imagine that some C function result is declared as `const char*`. KPHP would try to create a `string` value, assuming that `const char*` contains a C-string value that is null-terminated.
+
+If that's not the case and `const char*` is not null-terminated, you may need to declare that return type as something that is not `const char*`; a type like `const uint8_t*` should do the trick. While still compatible on the calling convention level, this allows us to disable the auto-conversion.
+
+After acquiring a `const uint8_t*` pointer that holds some raw data, you can construct a string yourself if you know its real length by using `\FFI::string()` function.
+
+```php
+$cdef = FFI::cdef('
+    const uint8_t *get_data(int size);
+');
+
+$size = 10;
+$raw_bytes = $cdef->get_data($size);
+$s = FFI::string($raw_bytes, $size);
+```
+
+Keep in mind that FFI/KPHP don't know anything about the data encoding. You may need to convert the raw bytes to some other valid state before using `\FFI::string()`. KPHP strings can contain binary data, but some string functions may not be binary-safe.
+
 ### Cross-library types
 
 When you have more than one FFI scope, you may need to use the same type between them.

@@ -12,19 +12,18 @@
 #endif
 
 struct array_size {
-  int64_t int_size = 0;
-  int64_t string_size = 0;
-  bool is_vector = false;
+  int64_t size{0};
+  bool is_vector{false};
 
   array_size() = default;
 
-  inline array_size(int64_t int_size, int64_t string_size, bool is_vector);
+  inline array_size(int64_t int_size, bool is_vector) noexcept;
 
-  inline array_size operator+(const array_size &other) const;
+  inline array_size operator+(const array_size &other) const noexcept;
 
-  inline array_size &cut(int64_t length);
+  inline array_size &cut(int64_t length) noexcept;
 
-  inline array_size &min(const array_size &other);
+  inline array_size &min(const array_size &other) noexcept;
 };
 
 #if defined(__clang__) || (defined(__GNUC__) && __GNUC__ < 10)
@@ -51,17 +50,15 @@ struct array_list_hash_entry {
   list_entry_pointer_type prev;
 };
 
+struct ArrayBucketDummyStrTag{};
+
 struct array_inner_control {
-  // This stub field is needed to ensure the alignment during the const arrays generation
-  // TODO: figure out something smarter
-  int stub;
+  bool is_vector_internal;
   int ref_cnt;
   int64_t max_key;
   array_list_hash_entry last;
-  uint32_t int_size;
-  uint32_t int_buf_size;
-  uint32_t string_size;
-  uint32_t string_buf_size;
+  uint32_t size;
+  uint32_t buf_size;
 };
 
 template<class T>
@@ -78,15 +75,10 @@ private:
   using entry_pointer_type = list_entry_pointer_type;
   using list_hash_entry = array_list_hash_entry;
 
-  struct int_hash_entry : list_hash_entry {
-    T value;
-
-    int64_t int_key;
-
-    inline key_type get_key() const;
-  };
-
-  struct string_hash_entry : list_hash_entry {
+  // array_bucket struct represent array bucket
+  // if key is number, int_key contains this number, there is no string_key.
+  // if key is string, int_key contains hash of this string, string_key contains this string.
+  struct array_bucket : list_hash_entry {
     T value;
 
     int64_t int_key;
@@ -95,56 +87,48 @@ private:
     inline key_type get_key() const;
   };
 
-  // `max_key` and `string_size` could be also be there
-  // but sometimes, for simplicity, we use them in vector too
-  // to not add extra checks they are left in `array_inner`
   struct array_inner_fields_for_map {
-    uint64_t modulo_helper_int_buf_size{0};
-    uint64_t modulo_helper_string_buf_size{0};
+    // this helper value is claimed to improve performance by avoiding % division
+    uint64_t modulo_helper_buf_size{0};
+    // track number of string keys in map
+    // it is useful in some specific cases, see has_no_string_keys()
+    uint32_t string_size{0};
   };
 
   struct array_inner : array_inner_control {
-    //if key is number, int_key contains this number, there is no string_key.
-    //if key is string, int_key contains hash of this string, string_key contains this string.
-    //empty hash_entry identified by (next == EMPTY_POINTER)
-    //vector is_identified by string_buf_size == -1
-
     static constexpr uint32_t MAX_HASHTABLE_SIZE = (1 << 26);
-
+    //empty hash_entry identified by (next == EMPTY_POINTER)
     static constexpr entry_pointer_type EMPTY_POINTER = 0;
 
-    int_hash_entry int_entries[KPHP_ARRAY_TAIL_SIZE];
+    array_bucket entries[KPHP_ARRAY_TAIL_SIZE];
 
-    inline bool is_vector() const __attribute__ ((always_inline));
+    inline bool is_vector() const noexcept __attribute__ ((always_inline));
 
     inline list_hash_entry *get_entry(entry_pointer_type pointer) const __attribute__ ((always_inline));
     inline entry_pointer_type get_pointer(list_hash_entry *entry) const __attribute__ ((always_inline));
 
-    inline const string_hash_entry *begin() const __attribute__ ((always_inline)) ubsan_supp("alignment");
-    inline const string_hash_entry *next(const string_hash_entry *p) const __attribute__ ((always_inline)) ubsan_supp("alignment");
-    inline const string_hash_entry *prev(const string_hash_entry *p) const __attribute__ ((always_inline)) ubsan_supp("alignment");
-    inline const string_hash_entry *end() const __attribute__ ((always_inline)) ubsan_supp("alignment");
+    inline const array_bucket *begin() const __attribute__ ((always_inline)) ubsan_supp("alignment");
+    inline const array_bucket *next(const array_bucket *ptr) const __attribute__ ((always_inline)) ubsan_supp("alignment");
+    inline const array_bucket *prev(const array_bucket *ptr) const __attribute__ ((always_inline)) ubsan_supp("alignment");
+    inline const array_bucket *end() const __attribute__ ((always_inline)) ubsan_supp("alignment");
 
-    inline string_hash_entry *begin() __attribute__ ((always_inline)) ubsan_supp("alignment");
-    inline string_hash_entry *next(string_hash_entry *p) __attribute__ ((always_inline)) ubsan_supp("alignment");
-    inline string_hash_entry *prev(string_hash_entry *p) __attribute__ ((always_inline)) ubsan_supp("alignment");
-    inline string_hash_entry *end() __attribute__ ((always_inline)) ubsan_supp("alignment");
+    inline array_bucket *begin() __attribute__ ((always_inline)) ubsan_supp("alignment");
+    inline array_bucket *next(array_bucket *ptr) __attribute__ ((always_inline)) ubsan_supp("alignment");
+    inline array_bucket *prev(array_bucket *ptr) __attribute__ ((always_inline)) ubsan_supp("alignment");
+    inline array_bucket *end() __attribute__ ((always_inline)) ubsan_supp("alignment");
 
-    inline bool is_string_hash_entry(const string_hash_entry *p) const __attribute__ ((always_inline));
-    inline const string_hash_entry *get_string_entries() const __attribute__ ((always_inline));
-    inline string_hash_entry *get_string_entries() __attribute__ ((always_inline));
+    inline bool is_string_hash_entry(const array_bucket *ptr) const __attribute__ ((always_inline));
 
     inline array_inner_fields_for_map &fields_for_map() __attribute__((always_inline));
     inline const array_inner_fields_for_map &fields_for_map() const __attribute__((always_inline));
 
-    inline uint32_t choose_bucket_int(int64_t key) const __attribute__ ((always_inline));
-    inline uint32_t choose_bucket_string(int64_t key) const __attribute__ ((always_inline));
-    inline static uint32_t choose_bucket(int64_t key, uint32_t buf_size, uint64_t modulo_helper) __attribute__ ((always_inline));
+    inline uint32_t choose_bucket(int64_t key) const noexcept __attribute__ ((always_inline));
+    inline uint32_t choose_bucket(const array_inner_fields_for_map &fields, int64_t key) const noexcept __attribute__ ((always_inline));
 
-    inline static size_t sizeof_vector(uint32_t int_size) __attribute__((always_inline));
-    inline static size_t sizeof_map(uint32_t int_size, uint32_t string_size) __attribute__((always_inline));
-    inline static size_t estimate_size(int64_t &new_int_size, int64_t &new_string_size, bool is_vector);
-    inline static array_inner *create(int64_t new_int_size, int64_t new_string_size, bool is_vector);
+    inline static size_t sizeof_vector(uint32_t int_size) noexcept __attribute__((always_inline));
+    inline static size_t sizeof_map(uint32_t int_size) noexcept __attribute__((always_inline));
+    inline static size_t estimate_size(int64_t &new_int_size, bool is_vector);
+    inline static array_inner *create(int64_t new_int_size, bool is_vector);
 
     inline static array_inner *empty_array() __attribute__ ((always_inline));
 
@@ -190,12 +174,10 @@ private:
     inline T unset_map_value(const string &string_key, int64_t precomputed_hash);
 
     bool is_vector_internal_or_last_index(int64_t key) const noexcept;
+    bool has_no_string_keys() const noexcept;
 
-    size_t estimate_memory_usage() const;
-
-    constexpr array_inner(int ref_cnt, int64_t max_key, list_hash_entry end, uint32_t int_size, uint32_t int_buf_size, uint32_t string_size, uint32_t string_buf_size) noexcept :
-      array_inner_control{0, ref_cnt, max_key, end, int_size, int_buf_size, string_size, string_buf_size} {
-    }
+    size_t estimate_memory_usage() const noexcept;
+    size_t calculate_memory_for_copying() const noexcept;
 
     inline array_inner(const array_inner &other) = delete;
     inline array_inner &operator=(const array_inner &other) = delete;
@@ -205,10 +187,9 @@ private:
   inline bool mutate_to_size_if_vector_shared(int64_t int_size);
   inline void mutate_to_size(int64_t int_size);
   inline bool mutate_if_map_shared(uint32_t mul = 1);
-  inline void mutate_if_vector_needed_int();
-  inline void mutate_if_map_needed_int();
-  inline void mutate_if_map_needed_string();
-  inline void mutate_to_map_if_vector_or_map_need_string();
+  inline void mutate_if_vector_needs_space();
+  inline void mutate_if_map_needs_space();
+  inline void mutate_to_map_if_vector_or_map_need_space();
 
   inline void convert_to_map();
 
@@ -261,8 +242,19 @@ public:
 
   inline void clear() __attribute__ ((always_inline));
 
+  // shows if internal storage is vector
   inline bool is_vector() const __attribute__ ((always_inline));
+  // internal storage may be map, but it still behaves exactly like vector
   inline bool is_pseudo_vector() const __attribute__ ((always_inline));
+  // and one more level deep: shows if there are no string keys in storage;
+  // it is useful in some specific cases like in shift() function,
+  // there we drop all int indexes, and if there will be also no string indexes
+  // we can create true vector
+  bool has_no_string_keys() const noexcept;
+
+  static size_t estimate_size(int64_t n, bool is_vector) noexcept {
+    return array_inner::estimate_size(n, is_vector);
+  }
 
   T &operator[](int64_t int_key);
   T &operator[](int32_t key) { return (*this)[int64_t{key}]; }
@@ -428,9 +420,10 @@ public:
 
   bool is_equal_inner_pointer(const array &other) const noexcept;
 
-  void reserve(int64_t int_size, int64_t string_size, bool make_vector_if_possible);
+  void reserve(int64_t int_size, bool make_vector_if_possible);
 
-  size_t estimate_memory_usage() const;
+  size_t estimate_memory_usage() const noexcept;
+  size_t calculate_memory_for_copying() const noexcept;
 
   template<typename U>
   static array<T> convert_from(const array<U> &);

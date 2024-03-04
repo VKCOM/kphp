@@ -10,6 +10,7 @@
 #include "runtime/storage.h"
 
 extern bool resumable_finished;
+extern int64_t first_forked_resumable_id;
 
 extern const char *last_wait_error;
 
@@ -61,6 +62,10 @@ public:
   bool resume(int64_t resumable_id, Storage *input);
   void *get_stack_ptr() { return pos__; }
 
+  virtual bool is_internal_resumable() const noexcept {
+    return false;
+  }
+
   static void update_output();
 };
 
@@ -89,8 +94,6 @@ int64_t wait_queue_create(const array<int64_t> &resumable_ids);
 void unregister_wait_queue(int64_t queue_id);
 int64_t wait_queue_push_unsafe(int64_t queue_id, int64_t resumable_id);
 Optional<int64_t> wait_queue_next_synchronously(int64_t queue_id);
-
-void wait_all_forks() noexcept;
 
 void global_init_resumable_lib();
 void init_resumable_lib();
@@ -174,8 +177,8 @@ T f$wait(int64_t resumable_id, double timeout = -1.0) {
 }
 
 template<typename T>
-T f$wait(Optional<int64_t> resumable_id) {
-  return f$wait<T>(resumable_id.val());
+T f$wait(Optional<int64_t> resumable_id, double timeout = -1.0) {
+  return f$wait<T>(resumable_id.val(), timeout);
 }
 
 template<typename T>
@@ -232,3 +235,5 @@ template<typename T>
 T f$wait_multi(const array<int64_t> &resumable_ids) {
   return start_resumable<T>(new wait_multi_resumable<T>(resumable_ids));
 }
+
+void forcibly_stop_all_running_resumables();

@@ -29,6 +29,18 @@ function do_http_worker() {
       test_jobs_in_wait_queue();
       return;
     }
+    case "/test_nonblocking_wait_ready_job_after_cpu_work": {
+      test_nonblocking_wait_ready_job_after_work("cpu");
+      return;
+    }
+    case "/test_nonblocking_wait_ready_job_after_net_work": {
+      test_nonblocking_wait_ready_job_after_work("net");
+      return;
+    }
+    case "/test_several_waits_on_one_job": {
+      test_several_waits_on_one_job();
+      return;
+    }
     case "/test_complex_scenario": {
       require_once "ComplexScenario/_http_scenario.php";
       run_http_complex_scenario();
@@ -93,7 +105,7 @@ function send_jobs($context, float $timeout = -1.0, bool $no_reply = false): arr
     $req->redirect_chain_len = (int)$context["redirect-chain-len"];
     $req->master_port = (int)$context["master-port"];
     $req->arr_request = (array)$arr;
-    $req->sleep_time_sec = (int)$context["job-sleep-time-sec"];
+    $req->sleep_time_sec = (float)$context["job-sleep-time-sec"];
     $req->error_type = (string)$context["error-type"];
     if ($no_reply) {
       $ok = kphp_job_worker_start_no_reply($req, $timeout);
@@ -112,13 +124,13 @@ function send_jobs($context, float $timeout = -1.0, bool $no_reply = false): arr
   return $ids;
 }
 
-function gather_jobs($ids): array {
+function gather_jobs($ids, float $timeout = -1): array {
   $result = [];
   foreach($ids as $id) {
     /**
      * @var KphpJobWorkerResponse
      */
-    $resp = wait($id);
+    $resp = wait($id, $timeout);
     if ($resp instanceof X2Response) {
       $result[] = ["data" => $resp->arr_reply, "stats" => $resp->stats];
     } else if ($resp instanceof KphpJobWorkerResponseError) {
@@ -203,6 +215,71 @@ function test_jobs_in_wait_queue() {
   ksort($result);
 
   echo json_encode(["jobs-result" => array_values($result)]);
+}
+
+function forkable(float $sleep_time_sec) {
+    sched_yield_sleep($sleep_time_sec);
+    return null;
+}
+
+$must_be_unreachable = true;
+
+function control_fork() {
+    global $must_be_unreachable;
+    sched_yield();
+    if ($must_be_unreachable) {
+      critical_error("Must be unreachable\n");
+    }
+    return null;
+}
+
+function test_nonblocking_wait_ready_job_after_work(string $type) {
+  global $must_be_unreachable;
+  $context = json_decode(file_get_contents('php://input'));
+  $ids = send_jobs($context);
+  fprintf(STDERR, "<pid=%d> after send\n", posix_getpid());
+  $job_sleep_time = (float)$context["job-sleep-time-sec"];
+  if ($type === "cpu") {
+    safe_sleep($job_sleep_time * 2);
+  } else if ($type === "net") {
+    $future = fork(forkable($job_sleep_time * 2));
+    wait($future);
+  } else {
+    critical_error("Unknown type at test_nonblocking_wait_ready_job_after_work");
+  }
+  fprintf(STDERR, "<pid=%d> before receive\n", posix_getpid());
+  $control_fork = fork(control_fork());
+  $must_be_unreachable = true;
+  $result = gather_jobs($ids, 0);
+  $must_be_unreachable = false;
+  wait($control_fork);
+  fprintf(STDERR, "<pid=%d> after receive\n", posix_getpid());
+  echo json_encode(["jobs-result" => $result]);
+}
+
+function test_several_waits_on_one_job() {
+  global $must_be_unreachable;
+  $context = json_decode(file_get_contents('php://input'));
+  $job_id = send_jobs($context)[0];
+  $ans = wait($job_id, 0);
+  assert_eq3($ans, null, "Job must not be ready yet");
+  $ans = wait($job_id, 0.1);
+  assert_eq3($ans, null, "Job must not be ready yet");
+  $ans = wait($job_id, 0);
+  assert_eq3($ans, null, "Job must not be ready yet");
+  $ans = wait($job_id, 0.2);
+
+  $control_fork = fork(control_fork());
+  $must_be_unreachable = true;
+  for ($i = 0; $i < 100; $i++) {
+    assert_eq3($ans, null, "Job must not be ready yet");
+    $ans = wait($job_id, 0);
+  }
+  $must_be_unreachable = false;
+  wait($control_fork);
+
+  assert_eq3($ans, null, "Job must not be ready yet");
+  echo json_encode(["jobs-result" => gather_jobs([$job_id], 0.3)]);
 }
 
 function test_client_wait_false() {
