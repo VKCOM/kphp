@@ -160,6 +160,7 @@ public:
   }
 
   void release() noexcept {
+    printf("libcurl version = %s\n", curl_version());
     curl_easy_cleanup(easy_handle);
     cleanup_slists_and_posts();
     this->~EasyContext();
@@ -1131,6 +1132,11 @@ static int curl_epoll_cb(int fd, void *data, event_t *ev) {
   int running_handles = 0;
   multi_context->error_num = dl::critical_section_call(curl_multi_socket_action, multi_context->multi_handle, fd, flags, &running_handles);
 
+  // if (multi_context->error_num) {
+  //   curl_request->finish_request(Optional<string>{false});
+  //   return 0;
+  // }
+
   if (multi_context->error_num != CURLM_OK) {
     curl_request->finish_request();
     return 0;
@@ -1143,10 +1149,38 @@ static int curl_epoll_cb(int fd, void *data, event_t *ev) {
       return 0;
     }
 
-    string content = easy_context->received_data.concat_and_get_string();
-    // check if CURLOPT_CONNECT_ONLY
-    printf("test = %d\n", easy_context->connection_only);
-    curl_request->finish_request(!content.empty() ? std::move(content) : Optional<string>{false});
+    string data = easy_context->received_data.concat_and_get_string();
+    string header = easy_context->received_header.concat_and_get_string();
+
+    printf("HEADER = %s\n", header.c_str());
+    printf("DATA = %s\n", data.c_str());
+    // bool return_content = true;
+    // bool connection_only = easy_context->connection_only;
+    // // default if connection_only
+    // // if connection_only and url non exist in test this code is unreachable
+    // bool url_exist = true;
+    // if (!connection_only)
+    //   url_exist = easy_context->get_info(CURLINFO_RESPONSE_CODE).to_int() == 200;
+
+    // if (connection_only)
+    //   if (url_exist)
+    //     return_content = true;
+    //   else
+    //     return_content = false;
+    // else if (url_exist)
+    //   return_content = true;
+    // else
+    //   return_content = false;
+
+    // received_header
+
+    // if (CURLE_OK == dl::critical_section_call(curl_easy_perform, easy_context->easy_handle))
+    //   curl_request->finish_request(std::move(content));
+    // else
+    //   curl_request->finish_request(Optional<string>{false});
+
+    curl_request->finish_request(std::move(data));
+
   }
   return 0;
 }
