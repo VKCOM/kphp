@@ -11,6 +11,9 @@
 #include "compiler/data/var-data.h"
 #include "compiler/inferring/public.h"
 
+static ConstantsLinearMem constants_linear_mem;
+static GlobalsLinearMem globals_linear_mem;
+
 namespace {
 
 int calc_sizeof_tuple_shape(const TypeData *type);
@@ -97,7 +100,9 @@ void ConstantsLinearMem::inc_count_by_type(const TypeData *type) {
   }
 }
 
-void ConstantsLinearMem::prepare_constants_linear_mem_and_assign_offsets(std::vector<VarPtr> &all_constants) {
+void ConstantsLinearMem::prepare_mem_and_assign_offsets(std::vector<VarPtr> &all_constants) {
+  ConstantsLinearMem &mem = constants_linear_mem;
+
   std::sort(all_constants.begin(), all_constants.end(), [](VarPtr c1, VarPtr c2) -> bool {
     return c1->name.compare(c2->name) < 0;
   });
@@ -109,22 +114,11 @@ void ConstantsLinearMem::prepare_constants_linear_mem_and_assign_offsets(std::ve
 
     var->offset_in_linear_mem = offset;
     offset += cur_sizeof;
-    inc_count_by_type(var_type);
+    mem.inc_count_by_type(var_type);
   }
 
-  total_mem_size = offset;
-  total_count = all_constants.size();
-}
-
-void ConstantsLinearMem::codegen_counts_as_comments(CodeGenerator &W) const {
-  W << "// total_mem_size = " << total_mem_size << NL;
-  W << "// total_count = " << total_count << NL;
-  W << "// count(string) = " << count_of_type_string << NL;
-  W << "// count(regexp) = " << count_of_type_regexp << NL;
-  W << "// count(array) = " << count_of_type_array << NL;
-  W << "// count(mixed) = " << count_of_type_mixed << NL;
-  W << "// count(instance) = " << count_of_type_instance << NL;
-  W << "// count(other) = " << count_of_type_other << NL;
+  mem.total_mem_size = offset;
+  mem.total_count = all_constants.size();
 }
 
 void GlobalsLinearMem::inc_count_by_origin(VarPtr var) {
@@ -141,7 +135,9 @@ void GlobalsLinearMem::inc_count_by_origin(VarPtr var) {
   } 
 }
 
-void GlobalsLinearMem::prepare_globals_linear_mem_and_assign_offsets(std::vector<VarPtr> &all_globals) {
+void GlobalsLinearMem::prepare_mem_and_assign_offsets(std::vector<VarPtr> &all_globals) {
+  GlobalsLinearMem &mem = globals_linear_mem;
+
   std::sort(all_globals.begin(), all_globals.end(), [](VarPtr c1, VarPtr c2) -> bool {
     return c1->name.compare(c2->name) < 0;
   });
@@ -153,41 +149,82 @@ void GlobalsLinearMem::prepare_globals_linear_mem_and_assign_offsets(std::vector
 
     var->offset_in_linear_mem = offset;
     offset += cur_sizeof;
-    inc_count_by_origin(var);
+    mem.inc_count_by_origin(var);
 
     // todo comment this after testing in vkcom
     if (var_type->use_optional() || !vk::any_of_equal(var_type->get_real_ptype(), tp_mixed, tp_bool, tp_int, tp_float, tp_string, tp_array, tp_Class)) {
-      debug_sizeof_static_asserts.push_back(var_type);
+      mem.debug_sizeof_static_asserts.push_back(var_type);
     }
   }
 
-  total_mem_size = offset;
-  total_count = all_globals.size();
+  mem.total_mem_size = offset;
+  mem.total_count = all_globals.size();
 }
 
-void GlobalsLinearMem::codegen_counts_as_comments(CodeGenerator &W) const {
-  W << "// total_mem_size = " << total_mem_size << NL;
-  W << "// total_count = " << total_count << NL;
-  W << "// count(static fields) = " << count_of_static_fields << NL;
-  W << "// count(function statics) = " << count_of_function_statics << NL;
-  W << "// count(nonconst defines) = " << count_of_nonconst_defines << NL;
-  W << "// count(require_once) = " << count_of_require_once << NL;
-  W << "// count(php globals) = " << count_of_php_globals << NL;
-
-  if (!debug_sizeof_static_asserts.empty()) {
-    codegen_debug_sizeof_static_asserts(W);
+void ConstantsLinearMemDeclaration::compile(CodeGenerator &W) const {
+  if (is_extern) {
+    W << "extern char *c_linear_mem;" << NL;
+    return;
   }
+
+  const ConstantsLinearMem &mem = constants_linear_mem;
+  W << "// total_mem_size = " << mem.total_mem_size << NL;
+  W << "// total_count = " << mem.total_count << NL;
+  W << "// count(string) = " << mem.count_of_type_string << NL;
+  W << "// count(regexp) = " << mem.count_of_type_regexp << NL;
+  W << "// count(array) = " << mem.count_of_type_array << NL;
+  W << "// count(mixed) = " << mem.count_of_type_mixed << NL;
+  W << "// count(instance) = " << mem.count_of_type_instance << NL;
+  W << "// count(other) = " << mem.count_of_type_other << NL;
+
+  W << "char *c_linear_mem;" << NL;
 }
 
-void GlobalsLinearMem::codegen_debug_sizeof_static_asserts(CodeGenerator &W) const {
-  IncludesCollector includes;
-  for (const TypeData *type : debug_sizeof_static_asserts) {
-    includes.add_all_class_types(*type);
+void GlobalsLinearMemDeclaration::compile(CodeGenerator &W) const {
+  if (is_extern) {
+    W << "extern char *g_linear_mem;" << NL;
+    return;
   }
-  W << includes;
 
-  for (const TypeData *type : debug_sizeof_static_asserts) {
-    int mem = calc_sizeof_in_bytes_runtime(type);
-    W << "static_assert(" << mem << " == sizeof(" << type_out(type) << "));" << NL;
+  const GlobalsLinearMem &mem = globals_linear_mem;
+  W << "// total_mem_size = " << mem.total_mem_size << NL;
+  W << "// total_count = " << mem.total_count << NL;
+  W << "// count(static fields) = " << mem.count_of_static_fields << NL;
+  W << "// count(function statics) = " << mem.count_of_function_statics << NL;
+  W << "// count(nonconst defines) = " << mem.count_of_nonconst_defines << NL;
+  W << "// count(require_once) = " << mem.count_of_require_once << NL;
+  W << "// count(php globals) = " << mem.count_of_php_globals << NL;
+
+  {
+    IncludesCollector includes;
+    for (const TypeData *type : mem.debug_sizeof_static_asserts) {
+      includes.add_all_class_types(*type);
+    }
+    W << includes;
+
+    for (const TypeData *type : mem.debug_sizeof_static_asserts) {
+      int mem = calc_sizeof_in_bytes_runtime(type);
+      W << "static_assert(" << mem << " == sizeof(" << type_out(type) << "));" << NL;
+    }
   }
+
+  W << "char *g_linear_mem;" << NL;
+}
+
+void ConstantsLinearMemAllocation::compile(CodeGenerator &W) const {
+  W << "c_linear_mem = new char[" << constants_linear_mem.get_total_linear_mem_size() << "];" << NL;
+}
+
+void GlobalsLinearMemAllocation::compile(CodeGenerator &W) const {
+  W << "g_linear_mem = new char[" << globals_linear_mem.get_total_linear_mem_size() << "];" << NL;
+}
+
+void ConstantVarInLinearMem::compile(CodeGenerator &W) const {
+  kphp_assert(const_var->offset_in_linear_mem >= 0); // todo del
+  W << "(*reinterpret_cast<" << type_out(tinf::get_type(const_var)) << "*>(c_linear_mem+" << const_var->offset_in_linear_mem << "))";
+}
+
+void GlobalVarInLinearMem::compile(CodeGenerator &W) const {
+  kphp_assert(global_var->offset_in_linear_mem >= 0); // todo del
+  W << "(*reinterpret_cast<" << type_out(tinf::get_type(global_var)) << "*>(g_linear_mem+" << global_var->offset_in_linear_mem << "))";
 }

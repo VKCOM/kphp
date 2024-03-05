@@ -155,21 +155,6 @@ LibRunFunction::LibRunFunction(FunctionPtr main_function) :
   main_function(main_function) {
 }
 
-#include "compiler/inferring/public.h"
-
-struct GlobalInLinearMem {   // todo duplicate
-  VarPtr global_var;
-
-  explicit GlobalInLinearMem(VarPtr mutable_global_var)
-    : global_var(mutable_global_var) {}
-
-  void compile(CodeGenerator &W) const {
-    kphp_assert(global_var->offset_in_linear_mem >= 0);
-    W << "(*reinterpret_cast<" << type_out(tinf::get_type(global_var)) << "*>(globals_linear_mem+" << global_var->offset_in_linear_mem << "))";
-  }
-};
-
-
 void LibRunFunction::compile(CodeGenerator &W) const {
   // "run" functions just calls the main file of a lib
   // it's guaranteed that it doesn't contain code except declarations (body_value is empty),

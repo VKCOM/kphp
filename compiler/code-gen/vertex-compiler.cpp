@@ -11,6 +11,7 @@
 
 #include "common/wrappers/likely.h"
 #include "compiler/code-gen/common.h"
+#include "compiler/code-gen/const-globals-linear-mem.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/files/json-encoder-tags.h"
 #include "compiler/code-gen/files/tracing-autogen.h"
@@ -2132,13 +2133,10 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       W << "Optional<bool>{}";
       break;
     case op_var:
-      // todo use << GlobalInLinearMem
       if (root.as<op_var>()->var_id->is_constant()) {
-        kphp_assert(root.as<op_var>()->var_id->offset_in_linear_mem >= 0);
-        W << "(*reinterpret_cast<" << type_out(tinf::get_type(root.as<op_var>()->var_id)) << "*>(constants_linear_mem+" << root.as<op_var>()->var_id->offset_in_linear_mem << "))";
+        W << ConstantVarInLinearMem(root.as<op_var>()->var_id);
       } else if (root.as<op_var>()->var_id->is_in_global_scope() && !root.as<op_var>()->var_id->is_builtin_global()) {
-        kphp_assert(root.as<op_var>()->var_id->offset_in_linear_mem >= 0);
-        W << "(*reinterpret_cast<" << type_out(tinf::get_type(root.as<op_var>()->var_id)) << "*>(globals_linear_mem+" << root.as<op_var>()->var_id->offset_in_linear_mem << "))";
+        W << GlobalVarInLinearMem(root.as<op_var>()->var_id);
       } else {
         W << VarName(root.as<op_var>()->var_id);
       }

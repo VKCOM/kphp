@@ -14,7 +14,6 @@
 
 #include "common/algorithms/hashes.h"
 
-#include "compiler/code-gen/const-globals-linear-mem.h"
 #include "compiler/compiler-settings.h"
 #include "compiler/composer.h"
 #include "compiler/data/data_ptr.h"
@@ -49,8 +48,6 @@ private:
   bool is_untyped_rpc_tl_used{false};
   bool is_functions_txt_parsed{false};
   function_palette::Palette function_palette;
-  ConstantsLinearMem constants_linear_mem;  // todo it must not be here; probably, static field of a codegen class
-  GlobalsLinearMem globals_linear_mem;
 
   inline bool try_require_file(SrcFilePtr file);
 
@@ -142,14 +139,6 @@ public:
 
   function_palette::Palette &get_function_palette() {
     return function_palette;
-  }
-
-  ConstantsLinearMem &get_constants_linear_mem() {
-    return constants_linear_mem;
-  }
-
-  GlobalsLinearMem &get_globals_linear_mem() {
-    return globals_linear_mem;
   }
 
   void set_untyped_rpc_tl_used() {

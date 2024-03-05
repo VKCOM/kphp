@@ -5,24 +5,13 @@
 #include "compiler/code-gen/files/global-vars-reset.h"
 
 #include "compiler/code-gen/common.h"
+#include "compiler/code-gen/const-globals-linear-mem.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/namespace.h"
 #include "compiler/code-gen/vertex-compiler.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/vars-collector.h"
 #include "compiler/inferring/public.h"
-
-struct GlobalInLinearMem {  // todo duplicate
-  VarPtr global_var;
-
-  explicit GlobalInLinearMem(VarPtr mutable_global_var)
-    : global_var(mutable_global_var) {}
-
-  void compile(CodeGenerator &W) const {
-    kphp_assert(global_var->offset_in_linear_mem >= 0);
-    W << "(*reinterpret_cast<" << type_out(tinf::get_type(global_var)) << "*>(globals_linear_mem+" << global_var->offset_in_linear_mem << "))";
-  }
-};
 
 GlobalVarsReset::GlobalVarsReset(std::vector<VarPtr> &&all_globals) :
   all_globals(std::move(all_globals)) {
@@ -37,8 +26,7 @@ void GlobalVarsReset::compile_globals_reset_part(const std::vector<VarPtr> &used
   W << OpenNamespace();
 
   W << NL;
-  W << "extern char *constants_linear_mem;" << NL;
-  W << "extern char *globals_linear_mem;" << NL << NL;
+  W << ConstantsLinearMemDeclaration(true) << GlobalsLinearMemDeclaration(true) << NL;
 
   FunctionSignatureGenerator(W) << "void global_vars_reset_file" << part_id << "()" << BEGIN;
   for (VarPtr var : used_vars) {
@@ -46,10 +34,9 @@ void GlobalVarsReset::compile_globals_reset_part(const std::vector<VarPtr> &used
       continue;
     }
 
-    // todo probably, output /* $var_name */ in GlobalInLinearMem always, don't forget about function statics
+    // todo probably, inline hard_reset_var() body, since it uses new(&)?
     W << "// " << var->as_human_readable() << NL;
-    W << "hard_reset_var(" << GlobalInLinearMem(var);
-    //FIXME: brk and comments
+    W << "hard_reset_var(" << GlobalVarInLinearMem(var);
     if (var->init_val) {
       W << ", " << var->init_val;
     }

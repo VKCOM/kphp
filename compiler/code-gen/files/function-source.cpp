@@ -5,6 +5,7 @@
 #include "compiler/code-gen/files/function-source.h"
 
 #include "compiler/code-gen/common.h"
+#include "compiler/code-gen/const-globals-linear-mem.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/includes.h"
 #include "compiler/code-gen/namespace.h"
@@ -18,7 +19,7 @@ FunctionCpp::FunctionCpp(FunctionPtr function) :
 
 void declare_global_vars(FunctionPtr function, CodeGenerator &W) {
   if (!function->global_var_ids.empty() || !function->static_var_ids.empty()) {
-    W << "extern char *globals_linear_mem;" << NL;
+    W << GlobalsLinearMemDeclaration(true) << NL;
   }
   // todo do something about builtin globals (declarations also)
   for (VarPtr var : function->global_var_ids) {
@@ -30,7 +31,7 @@ void declare_global_vars(FunctionPtr function, CodeGenerator &W) {
 
 void declare_const_vars(FunctionPtr function, CodeGenerator &W) {
   if (!function->explicit_const_var_ids.empty()) {
-    W << "extern char *constants_linear_mem;" << NL;
+    W << ConstantsLinearMemDeclaration(true) << NL;
   }
 }
 

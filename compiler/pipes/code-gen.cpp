@@ -7,6 +7,7 @@
 #include "compiler/code-gen/code-gen-task.h"
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
+#include "compiler/code-gen/const-globals-linear-mem.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/files/cmake-lists-txt.h"
 #include "compiler/code-gen/files/const-vars-init.h"
@@ -78,9 +79,8 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
   std::vector<VarPtr> all_constants = G->get_constants_vars();
   size_t n_batches_constants = calc_count_of_parts(all_constants.size());
 
-  // todo get_constants_linear_mem() should return const, and here we should use some init()?
-  G->get_constants_linear_mem().prepare_constants_linear_mem_and_assign_offsets(all_constants);
-  G->get_globals_linear_mem().prepare_globals_linear_mem_and_assign_offsets(all_globals);
+  ConstantsLinearMem::prepare_mem_and_assign_offsets(all_constants);
+  GlobalsLinearMem::prepare_mem_and_assign_offsets(all_globals);
 
   for (FunctionPtr f : all_functions) {
     code_gen_start_root_task(os, std::make_unique<FunctionH>(f));

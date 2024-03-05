@@ -6,24 +6,13 @@
 
 #include "common/algorithms/hashes.h"
 
+#include "compiler/code-gen/const-globals-linear-mem.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/namespace.h"
 #include "compiler/code-gen/vertex-compiler.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/inferring/public.h"
-
-struct ConstInLinearMem {
-  VarPtr const_var;
-  
-  explicit ConstInLinearMem(VarPtr const_var)
-    : const_var(const_var) {}
-
-  void compile(CodeGenerator &W) const {
-    kphp_assert(const_var->offset_in_linear_mem >= 0);
-    W << "(*reinterpret_cast<" << type_out(tinf::get_type(const_var)) << "*>(constants_linear_mem+" << const_var->offset_in_linear_mem << "))";
-  }
-};
 
 // todo rename
 struct InitVar {
@@ -37,11 +26,11 @@ struct InitVar {
     if (init_val->type() == op_conv_regexp) {
       const auto &location = init_val->get_location();
       kphp_assert(location.function && location.file);
-      W << ConstInLinearMem(var) << ".init (" << var->init_val << ", " << RawString(location.function->name) << ", "
+      W << ConstantVarInLinearMem(var) << ".init (" << var->init_val << ", " << RawString(location.function->name) << ", "
         << RawString(location.file->relative_file_name + ':' + std::to_string(location.line))
         << ");" << NL;
     } else {
-      W << ConstInLinearMem(var) << " = " << var->init_val << ";" << NL;
+      W << ConstantVarInLinearMem(var) << " = " << var->init_val << ";" << NL;
     }
 
     stage::set_location(save_location);
@@ -64,11 +53,11 @@ static void add_dependent_declarations(VertexPtr vertex, std::set<VarPtr> &depen
 static void compile_raw_array(CodeGenerator &W, const VarPtr &var, int shift) {
   if (shift == -1) {
     W << InitVar(var);
-    W << ConstInLinearMem(var) << ".set_reference_counter_to(ExtraRefCnt::for_global_const);" << NL << NL;
+    W << ConstantVarInLinearMem(var) << ".set_reference_counter_to(ExtraRefCnt::for_global_const);" << NL << NL;
     return;
   }
 
-  W << ConstInLinearMem(var) << ".assign_raw((char *) &raw_arrays[" << shift << "]);" << NL << NL;
+  W << ConstantVarInLinearMem(var) << ".assign_raw((char *) &raw_arrays[" << shift << "]);" << NL << NL;
 }
 
 static void compile_constants_part(CodeGenerator &W, const std::vector<VarPtr> &vars, size_t part_id) {
@@ -91,7 +80,7 @@ static void compile_constants_part(CodeGenerator &W, const std::vector<VarPtr> &
   W << includes;
 
   W << OpenNamespace();
-  W << "extern char *constants_linear_mem;" << NL << NL;
+  W << ConstantsLinearMemDeclaration(true) << NL;
 
   for (VarPtr var : vars) {
     switch (var->init_val->type()) {
@@ -138,10 +127,12 @@ static void compile_constants_part(CodeGenerator &W, const std::vector<VarPtr> &
     FunctionSignatureGenerator(W) << NL << "void const_vars_init_deplevel" << dep_level << "_file" << part_id << "()" << BEGIN;
 
     for (VarPtr var : const_raw_string_vars.vars_by_dep_level(dep_level)) {
-      W << ConstInLinearMem(var) << ".assign_raw (&raw[" << const_string_shifts[str_idx++] << "]);" << NL;
+//      W << "// " << var->as_human_readable() << NL;
+      W << ConstantVarInLinearMem(var) << ".assign_raw (&raw[" << const_string_shifts[str_idx++] << "]);" << NL;
     }
 
     for (VarPtr var : const_raw_array_vars.vars_by_dep_level(dep_level)) {
+//      W << "// " << var->as_human_readable() << NL;
       compile_raw_array(W, var, const_array_shifts[arr_idx++]);
     }
 
@@ -150,7 +141,7 @@ static void compile_constants_part(CodeGenerator &W, const std::vector<VarPtr> &
       const auto *type_data = var->tinf_node.get_type();
       PrimitiveType ptype = type_data->ptype();
       if (vk::any_of_equal(ptype, tp_array, tp_mixed, tp_string)) {
-        W << ConstInLinearMem(var);
+        W << ConstantVarInLinearMem(var);
         if (type_data->use_optional()) {
           W << ".val()";
         }
@@ -179,15 +170,13 @@ void ConstVarsInit::compile(CodeGenerator &W) const {
   W << OpenNamespace();
 
   W << NL;
-  G->get_constants_linear_mem().codegen_counts_as_comments(W);
-  W << "char *constants_linear_mem;" << NL << NL;
+  W << ConstantsLinearMemDeclaration(false) << NL;
   // todo this is in const-vars-init, not the best place, but it will be extracted to a "context" anyway
-  G->get_globals_linear_mem().codegen_counts_as_comments(W);
-  W << "char *globals_linear_mem;" << NL << NL;
+  W << GlobalsLinearMemDeclaration(false) << NL;
 
   FunctionSignatureGenerator(W) << "void const_vars_init() " << BEGIN;
-  W << "constants_linear_mem = new char[" << G->get_constants_linear_mem().get_total_linear_mem_size() << "];" << NL << NL;
-  W << "globals_linear_mem = new char[" << G->get_globals_linear_mem().get_total_linear_mem_size() << "];" << NL << NL;
+  W << ConstantsLinearMemAllocation() << NL;
+  W << GlobalsLinearMemAllocation() << NL;
 
   const int very_max_dep_level = *std::max_element(max_dep_levels_.begin(), max_dep_levels_.end());
   for (int dep_level = 0; dep_level <= very_max_dep_level; ++dep_level) {

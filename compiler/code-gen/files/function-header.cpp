@@ -26,7 +26,7 @@ void FunctionH::compile(CodeGenerator &W) const {
 
   W << OpenNamespace();
   if (!function->explicit_header_const_var_ids.empty()) {   // default value of function argument is const var
-    W << "extern char *constants_linear_mem;" << NL;  // todo here and everywhere: it must be .compile() of some struct
+    W << ConstantsLinearMemDeclaration(true) << NL;
   }
 
   if (function->is_inline) {
