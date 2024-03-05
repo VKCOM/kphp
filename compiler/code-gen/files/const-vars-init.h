@@ -11,7 +11,7 @@
 #include "compiler/code-gen/raw-data.h" // todo del
 
 struct ConstVarsInit : CodeGenRootCmd {
-  ConstVarsInit(std::vector<int> &&max_dep_levels, size_t parts_cnt);
+  ConstVarsInit(std::vector<int> &&max_dep_levels, size_t n_batches_constants);
   void compile(CodeGenerator &W) const final;
 
 private:

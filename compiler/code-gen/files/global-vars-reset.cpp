@@ -24,11 +24,11 @@ struct GlobalInLinearMem {  // todo duplicate
   }
 };
 
-GlobalVarsReset::GlobalVarsReset(SrcFilePtr main_file) :
-  main_file_(main_file) {
+GlobalVarsReset::GlobalVarsReset(std::vector<VarPtr> &&all_globals) :
+  all_globals(std::move(all_globals)) {
 }
 
-void GlobalVarsReset::compile_globals_reset_part(const std::set<VarPtr> &used_vars, int part_id, CodeGenerator &W) {
+void GlobalVarsReset::compile_globals_reset_part(const std::vector<VarPtr> &used_vars, int part_id, CodeGenerator &W) {
   IncludesCollector includes;
   for (VarPtr var : used_vars) {
     includes.add_var_signature_depends(var);
@@ -79,20 +79,21 @@ void GlobalVarsReset::compile_globals_reset(int parts_n, CodeGenerator &W) {
 }
 
 void GlobalVarsReset::compile(CodeGenerator &W) const {
-  // todo seems weird, better provide globals from the outside
+  // todo check in vkcom, how many globals exist in all_globals, not not used (not found by VarsCollector)
+  // todo if a small amount, then get rid on VarsCollector (it's also used for globals_memory_stats)
   VarsCollector vars_collector{32};
-  vars_collector.collect_global_and_static_vars_from(main_file_->main_function);
+  vars_collector.collect_global_and_static_vars_from(G->get_main_file()->main_function);
   auto used_vars = vars_collector.flush();
 
-  for (int i = 0; i < used_vars.size(); i++) {
+  for (int i = 0; i < 1; i++) {
     W << OpenFile("globals_reset." + std::to_string(i) + ".cpp", "o_globals_reset", false);
     W << ExternInclude(G->settings().runtime_headers.get());
-    compile_globals_reset_part(used_vars[i], i, W);
+    compile_globals_reset_part(all_globals, i, W);
     W << CloseFile();
   }
 
   W << OpenFile("globals_reset.cpp", "", false);
   W << ExternInclude(G->settings().runtime_headers.get());
-  compile_globals_reset(used_vars.size(), W);
+  compile_globals_reset(1, W);
   W << CloseFile();
 }

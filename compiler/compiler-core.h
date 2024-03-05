@@ -34,7 +34,8 @@ private:
   TSHashTable<FunctionPtr> functions_ht;
   TSHashTable<ClassPtr> classes_ht;
   TSHashTable<DefinePtr> defines_ht;
-  TSHashTable<VarPtr,2'000'000> global_vars_ht;   // todo probably, separate mutable globals and constants
+  TSHashTable<VarPtr,2'000'000> constants_ht;   // auto-collected constants (const strings / arrays / regexps / pure func calls); are inited once in a master process
+  TSHashTable<VarPtr> globals_ht;               // mutable globals (vars in global scope, class static fields); are reset for each php script inside worker processes
   TSHashTable<LibPtr, 1000> libs_ht;
   TSHashTable<ModulitePtr, 1000> modulites_ht;
   TSHashTable<ComposerJsonPtr, 1000> composer_json_ht;
@@ -106,11 +107,13 @@ public:
   DefinePtr get_define(std::string_view name);
 
   VarPtr create_var(const std::string &name, VarData::Type type);
-  VarPtr get_global_var(const std::string &name, VarData::Type type, VertexPtr init_val, bool *is_new_inserted = nullptr);
+  VarPtr get_global_var(const std::string &name, VertexPtr init_val);
+  VarPtr get_constant_var(const std::string &name, VertexPtr init_val, bool *is_new_inserted = nullptr);
   VarPtr create_local_var(FunctionPtr function, const std::string &name, VarData::Type type);
 
   SrcFilePtr get_main_file() { return main_file; }
   std::vector<VarPtr> get_global_vars();
+  std::vector<VarPtr> get_constants_vars();
   std::vector<ClassPtr> get_classes();
   std::vector<InterfacePtr> get_interfaces();
   std::vector<DefinePtr> get_defines();

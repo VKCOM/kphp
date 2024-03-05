@@ -10,10 +10,10 @@
 #include "compiler/code-gen/code-generator.h"
 
 struct GlobalVarsDeclarations : CodeGenRootCmd {
-  GlobalVarsDeclarations(std::vector<VarPtr> &&all_mutable_globals);
+  GlobalVarsDeclarations(std::vector<VarPtr> &&all_globals);
   
   void compile(CodeGenerator &W) const final;
 
 private:
-  std::vector<VarPtr> all_mutable_globals;
+  std::vector<VarPtr> all_globals;
 };

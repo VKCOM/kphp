@@ -463,59 +463,65 @@ VarPtr CompilerCore::create_var(const std::string &name, VarData::Type type) {
   return var;
 }
 
-VarPtr CompilerCore::get_global_var(const std::string &name, VarData::Type type,
-                                    VertexPtr init_val, bool *is_new_inserted) {
-  auto *node = global_vars_ht.at(vk::std_hash(name));
+VarPtr CompilerCore::get_global_var(const std::string &name, VertexPtr init_val) {
+  auto *node = globals_ht.at(vk::std_hash(name));
+
+  if (!node->data) {
+    AutoLocker<Lockable *> locker(node);
+    if (!node->data) {
+      node->data = create_var(name, VarData::var_global_t);
+      node->data->init_val = init_val;
+    }
+  }
+
+  return node->data;
+}
+
+VarPtr CompilerCore::get_constant_var(const std::string &name, VertexPtr init_val, bool *is_new_inserted) {
+  auto *node = constants_ht.at(vk::std_hash(name));
   VarPtr new_var;
   if (!node->data) {
     AutoLocker<Lockable *> locker(node);
     if (!node->data) {
-      new_var = create_var(name, type);
+      new_var = create_var(name, VarData::var_const_t);
       new_var->init_val = init_val;
       node->data = new_var;
+      // note, that when a string 'str' meets in several places in php code (same for [1,2,3] and other consts)
+      // it's created by a thread that first found it, and all others just ref to the same node
+      // it means, that var->init_val->location is unstable (the first found occurrence),
+      // but since we never output init_val->location for constants, codegen remains stable
     }
   }
 
-  if (init_val) {
-    AutoLocker<Lockable *> locker(node);
-    // to avoid of unstable locations, order them
-    if (node->data->init_val && node->data->init_val->get_location() < init_val->get_location()) {
-      std::swap(node->data->init_val, init_val);
-    }
-  }
-
-  VarPtr var = node->data;
   if (is_new_inserted) {
     *is_new_inserted = static_cast<bool>(new_var);
   }
+
+  VarPtr var = node->data;
+  // assert that one and the same init_val leads to one and the same var
   if (!new_var) {
+    kphp_assert(init_val);
+    kphp_assert(var->init_val->type() == init_val->type());
     kphp_assert_msg(var->name == name, fmt_format("bug in compiler (hash collision) {} {}", var->name, name));
-    if (init_val) {
-      kphp_assert(var->init_val->type() == init_val->type());
-      switch (init_val->type()) {
-        case op_string:
-          kphp_assert(var->init_val->get_string() == init_val->get_string());
-          break;
-        case op_conv_regexp: {
-          std::string &new_regexp = init_val.as<op_conv_regexp>()->expr().as<op_string>()->str_val;
-          std::string &hashed_regexp = var->init_val.as<op_conv_regexp>()->expr().as<op_string>()->str_val;
-          std::string msg = "hash collision: " + new_regexp + "; " + hashed_regexp;
 
-          kphp_assert_msg(hashed_regexp == new_regexp, msg.c_str());
-          break;
-        }
-        case op_array: {
-          std::string new_array_repr = VertexPtrFormatter::to_string(init_val);
-          std::string hashed_array_repr = VertexPtrFormatter::to_string(var->init_val);
-
-          std::string msg = "hash collision: " + new_array_repr + "; " + hashed_array_repr;
-
-          kphp_assert_msg(new_array_repr == hashed_array_repr, msg.c_str());
-          break;
-        }
-        default:
-          break;
+    switch (init_val->type()) {
+      case op_string:
+        kphp_assert(var->init_val->get_string() == init_val->get_string());
+        break;
+      case op_conv_regexp: {
+        const std::string &new_regexp = init_val.as<op_conv_regexp>()->expr().as<op_string>()->str_val;
+        const std::string &hashed_regexp = var->init_val.as<op_conv_regexp>()->expr().as<op_string>()->str_val;
+        kphp_assert_msg(hashed_regexp == new_regexp, fmt_format("hash collision of regexp: {} vs {}", new_regexp, hashed_regexp));
+        break;
       }
+      case op_array: {
+        std::string new_array_repr = VertexPtrFormatter::to_string(init_val);
+        std::string hashed_array_repr = VertexPtrFormatter::to_string(var->init_val);
+        kphp_assert_msg(new_array_repr == hashed_array_repr, fmt_format("hash collision of arrays: {} vs {}", new_array_repr, hashed_array_repr));
+        break;
+      }
+      default:
+        break;
     }
   }
   return var;
@@ -547,10 +553,18 @@ std::vector<VarPtr> CompilerCore::get_global_vars() {
   // static class variables are registered as globals, but if they're unused,
   // then their types were never calculated; we don't need to export them to vars.cpp
   // todo what if no?
-  return global_vars_ht.get_all();
-  return global_vars_ht.get_all_if([](VarPtr v) {
+//  return globals_ht.get_all();
+  return globals_ht.get_all_if([](VarPtr v) {
+    if (!v->tinf_node.was_recalc_finished_at_least_once()) {
+      printf("!was_recalc_finished_at_least_once %s\n", v->name.c_str());
+      kphp_assert(0);
+    }
     return v->tinf_node.was_recalc_finished_at_least_once();
   });
+}
+
+std::vector<VarPtr> CompilerCore::get_constants_vars() {
+  return constants_ht.get_all();
 }
 
 std::vector<ClassPtr> CompilerCore::get_classes() {

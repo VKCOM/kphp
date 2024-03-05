@@ -165,9 +165,9 @@ static void compile_constants_part(CodeGenerator &W, const std::vector<VarPtr> &
   W << CloseFile();
 }
 
-ConstVarsInit::ConstVarsInit(std::vector<int> &&max_dep_levels, size_t parts_cnt)
+ConstVarsInit::ConstVarsInit(std::vector<int> &&max_dep_levels, size_t n_batches_constants)
   : max_dep_levels_(std::move(max_dep_levels))
-  , parts_cnt_(parts_cnt) {
+  , parts_cnt_(n_batches_constants) {
   kphp_assert(1 <= parts_cnt_);
   kphp_error(parts_cnt_ <= G->settings().globals_split_count.get(),
              fmt_format("Too many globals initialization .cpp files({}) for the specified globals_split_count({})", parts_cnt_,

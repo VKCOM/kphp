@@ -272,7 +272,7 @@ VertexPtr CollectConstVarsPass::create_const_variable(VertexPtr root, Location l
   var->extra_type = op_ex_var_const;
   var->location = loc;
 
-  VarPtr var_id = G->get_global_var(name, VarData::var_const_t, VertexUtil::unwrap_inlined_define(root));
+  VarPtr var_id = G->get_constant_var(name, VertexUtil::unwrap_inlined_define(root));
   set_var_dep_level(var_id);
 
   if (composite_const_depth_ > 0) {

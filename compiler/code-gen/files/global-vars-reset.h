@@ -10,13 +10,13 @@
 #include "compiler/data/vertex-adaptor.h"
 
 struct GlobalVarsReset : CodeGenRootCmd {
-  explicit GlobalVarsReset(SrcFilePtr main_file);
+  explicit GlobalVarsReset(std::vector<VarPtr> &&all_globals);
 
   void compile(CodeGenerator &W) const final;
 
-  static void compile_globals_reset_part(const std::set<VarPtr> &used_vars, int part_id, CodeGenerator &W);
+  static void compile_globals_reset_part(const std::vector<VarPtr> &used_vars, int part_id, CodeGenerator &W);
   static void compile_globals_reset(int parts_n, CodeGenerator &W);
 
 private:
-  SrcFilePtr main_file_;
+  std::vector<VarPtr> all_globals;
 };
