@@ -233,7 +233,8 @@ void set_var_dep_level(VarPtr var_id) {
 VertexPtr CollectConstVarsPass::on_exit_vertex(VertexPtr root) {
   if (root->const_type == cnst_const_val) {
     composite_const_depth_ -= static_cast<int>(IsComposite::visit(root));
-    if (ShouldStoreOnBottomUp::visit(root)) {
+    if (ShouldStoreOnBottomUp::visit(root)
+        && !current_function->is_extern()) { // don't extract constants from extern func default arguments, they are in C++ runtime
       root = ProcessBeforeReplace::visit(root);
       root = create_const_variable(root, root->location);
     }

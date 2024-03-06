@@ -486,10 +486,17 @@ VarPtr CompilerCore::get_constant_var(const std::string &name, VertexPtr init_va
       new_var = create_var(name, VarData::var_const_t);
       new_var->init_val = init_val;
       node->data = new_var;
-      // note, that when a string 'str' meets in several places in php code (same for [1,2,3] and other consts)
-      // it's created by a thread that first found it, and all others just ref to the same node
-      // it means, that var->init_val->location is unstable (the first found occurrence),
       // but since we never output init_val->location for constants, codegen remains stable
+    }
+  }
+
+  // when a string 'str' meets in several places in php code (same for [1,2,3] and other consts)
+  // it's created by a thread that first found it, and all others just ref to the same node
+  // here we make var->init_val->location stable, as it's sometimes used in code generation (locations of regexps, for example)
+  if (!new_var) {
+    AutoLocker<Lockable *> locker(node);
+    if (node->data->init_val->get_location() < init_val->get_location()) {
+      std::swap(node->data->init_val, init_val);
     }
   }
 
@@ -550,13 +557,18 @@ VarPtr CompilerCore::create_local_var(FunctionPtr function, const std::string &n
 }
 
 std::vector<VarPtr> CompilerCore::get_global_vars() {
+  // todo wrong comment
   // static class variables are registered as globals, but if they're unused,
   // then their types were never calculated; we don't need to export them to vars.cpp
   // todo what if no?
 //  return globals_ht.get_all();
   return globals_ht.get_all_if([](VarPtr v) {
+    // todo comment if vkcom compiles
+    if (v->is_class_static_var() && v->class_id->is_trait()) {
+      return false;
+    }
     if (!v->tinf_node.was_recalc_finished_at_least_once()) {
-      printf("!was_recalc_finished_at_least_once %s\n", v->name.c_str());
+      printf("!was_recalc_finished_at_least_once g %s\n", v->name.c_str());
       kphp_assert(0);
     }
     return v->tinf_node.was_recalc_finished_at_least_once();
@@ -564,7 +576,14 @@ std::vector<VarPtr> CompilerCore::get_global_vars() {
 }
 
 std::vector<VarPtr> CompilerCore::get_constants_vars() {
-  return constants_ht.get_all();
+  return constants_ht.get_all_if([](VarPtr v) {
+    if (!v->tinf_node.was_recalc_finished_at_least_once()) {
+      printf("!was_recalc_finished_at_least_once c %s\n", v->name.c_str());
+      kphp_assert(0);
+    }
+    return v->tinf_node.was_recalc_finished_at_least_once();
+  });
+//  return constants_ht.get_all();
 }
 
 std::vector<ClassPtr> CompilerCore::get_classes() {

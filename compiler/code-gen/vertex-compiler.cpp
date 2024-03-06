@@ -1018,7 +1018,9 @@ void compile_foreach_ref_header(VertexAdaptor<op_foreach> root, CodeGenerator &W
     BEGIN;
 
 
-  //save value
+  // save value: codegen `T &v$name = it.get_value()`
+  // note, that in global scope `v$name` remains a C++ variable (though other mutable globals are placed in linear mem)
+  // (there are also compile-time checks that foreach-ref global vars aren't used outside a loop)
   W << TypeName(tinf::get_type(x)) << " &";
   W << x << " = " << it << ".get_value();" << NL;
 
@@ -1681,9 +1683,9 @@ bool try_compile_append_inplace(VertexAdaptor<op_set_dot> root, CodeGenerator &W
     // append all strings directly to the $lhs without creating a temporary
     // string for the $rhs result; also, grow $lhs accordingly, so it
     // can fit all the string parts
-    if (root->lhs()->type() == op_var) {
-      kphp_assert(tinf::get_type(root->lhs().as<op_var>())->ptype() == tp_string);
-      compile_string_build_impl(root->rhs().as<op_string_build>(), VarName{root->lhs().as<op_var>()->var_id}, lhs_type, W);
+    if (auto as_var = root->lhs().try_as<op_var>(); as_var && !as_var->var_id->is_in_global_scope()) {
+      kphp_assert(tinf::get_type(as_var)->ptype() == tp_string);
+      compile_string_build_impl(root->rhs().as<op_string_build>(), VarName{as_var->var_id}, lhs_type, W);
       return true;
     }
     W << "(" << BEGIN;
@@ -2132,15 +2134,21 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
     case op_null:
       W << "Optional<bool>{}";
       break;
-    case op_var:
-      if (root.as<op_var>()->var_id->is_constant()) {
-        W << ConstantVarInLinearMem(root.as<op_var>()->var_id);
-      } else if (root.as<op_var>()->var_id->is_in_global_scope() && !root.as<op_var>()->var_id->is_builtin_global()) {
-        W << GlobalVarInLinearMem(root.as<op_var>()->var_id);
+    case op_var: {
+      VarPtr var_id = root.as<op_var>()->var_id;
+      if (var_id->is_constant()) {
+        // auto-extracted constant variables (const strings, arrays, etc.) in codegen are not C++ variables:
+        // instead, they all are places in linear memory chunks, accessed by reinterpret_cast
+        W << ConstantVarInLinearMem(var_id);
+      } else if (var_id->is_in_global_scope() && !var_id->is_builtin_global() && !var_id->is_foreach_reference) {
+        // mutable globals are also placed in linear memory (separately from constants)
+        // with the only exception of `foreach (... as &$ref)` in global scope, see compile_foreach_ref_header()
+        W << GlobalVarInLinearMem(var_id);
       } else {
-        W << VarName(root.as<op_var>()->var_id);
+        W << VarName(var_id);
       }
       break;
+    }
     case op_string:
       compile_string(root.as<op_string>(), W);
       break;

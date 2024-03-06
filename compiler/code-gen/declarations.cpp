@@ -441,16 +441,17 @@ ClassDeclaration::ClassDeclaration(ClassPtr klass) :
   klass(klass) {
 }
 
-void ClassDeclaration::declare_all_variables(VertexPtr vertex, CodeGenerator &W) const {
-  if (!vertex) {
-    return;
-  }
-  for (auto child: *vertex) {
-    declare_all_variables(child, W);
-  }
+bool ClassDeclaration::has_constant_usage_in_init_val(VertexPtr vertex) const {
   if (auto var = vertex.try_as<op_var>()) {
-    W << VarExternDeclaration(var->var_id);
+    kphp_assert(var->var_id->is_constant());
+    return true;
   }
+  for (VertexPtr child: *vertex) {
+    if (has_constant_usage_in_init_val(child)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 std::unique_ptr<TlDependentTypesUsings> ClassDeclaration::detect_if_needs_tl_usings() const {
@@ -480,11 +481,15 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
     tl_dep_usings->compile_dependencies(W);
   }
 
+  bool any_const_in_init_val = false;
   klass->members.for_each([&](const ClassMemberInstanceField &f) {
-    if (f.var->init_val) {
-      declare_all_variables(f.var->init_val, W);
+    if (!any_const_in_init_val && f.var->init_val) {
+      any_const_in_init_val |= has_constant_usage_in_init_val(f.var->init_val);
     }
   });
+  if (any_const_in_init_val) {
+    W << ConstantsLinearMemDeclaration(true);
+  }
 
   auto get_all_interfaces = [klass = this->klass] {
     auto transform_to_src_name = [](CodeGenerator &W, InterfacePtr i) { W << i->src_name.c_str(); };

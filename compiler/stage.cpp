@@ -121,6 +121,23 @@ std::string Location::as_human_readable() const {
   return out;
 }
 
+bool operator<(const Location &lhs, const Location &rhs) {
+  if (lhs.file && rhs.file) {
+    if (const int cmp = lhs.file->file_name.compare(rhs.file->file_name)) {
+      return cmp < 0;
+    }
+  } else if (lhs.file || rhs.file) {
+    return static_cast<bool>(rhs.file);
+  }
+  if (lhs.line != rhs.line) {
+    return lhs.line < rhs.line;
+  }
+  if (lhs.function && rhs.function) {
+    return lhs.function->name < rhs.function->name;
+  }
+  return static_cast<bool>(rhs.function);
+}
+
 namespace stage {
 static TLS<StageInfo> stage_info;
 } // namespace stage

@@ -167,6 +167,7 @@ ConstVarsInit::ConstVarsInit(std::vector<int> &&max_dep_levels, size_t n_batches
 
 void ConstVarsInit::compile(CodeGenerator &W) const {
   W << OpenFile("const_vars_init.cpp", "", false);
+  W << ExternInclude(G->settings().runtime_headers.get());    // todo delete after dropping static_assert
   W << OpenNamespace();
 
   W << NL;
