@@ -96,7 +96,7 @@ jobs:
       id: python_tests
       continue-on-error: true
       run: docker exec kphp-build-container-${{matrix.os}} bash -c
-              "chown -R kitten /home && su kitten -c 'GITHUB_ACTIONS=1 KPHP_TESTS_POLYFILLS_REPO=${{env.kphp_polyfills_dir}} KPHP_CXX=${{matrix.compiler}} python3.7 -m pytest --tb=native -s ${{env.kphp_root_dir}}/tests/python/tests/curl/test_curl_resumable.py'"
+              "chown -R kitten /home && su kitten -c 'KPHP_TESTS_POLYFILLS_REPO=${{env.kphp_polyfills_dir}} KPHP_CXX=${{matrix.compiler}} python3.7 -m pytest --tb=native -s ${{env.kphp_root_dir}}/tests/python/tests/curl/test_curl_resumable.py'"
 
     - name: Prepare python tests artifacts
       if: steps.python_tests.outcome == 'failure'
