@@ -32,6 +32,14 @@ TEST(mbstring_test, test_mb_strlen_no_encoding) {
   ASSERT_TRUE(real == predicted);
 }
 
+TEST(mbstring_test, test_mb_strcut) {
+  ASSERT_STREQ(f$mb_strcut(string("Hello world"), 2, 3, string("UTF-8")).c_str(), "llo");
+}
+
+TEST(mbstring_test, test_mb_strcut_null_length) {
+  ASSERT_STREQ(f$mb_strcut(string("Hello world"), 3, false, string("UTF-8")).c_str(), "lo world");
+}
+
 TEST(mbstring_test, test_mb_substr) {
   ASSERT_STREQ(f$mb_substr(string("Hello world"), 2, 3, string("UTF-8")).c_str(), "llo");
 }

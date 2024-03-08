@@ -19,6 +19,8 @@ mixed f$mb_convert_encoding(const mixed &str, const string &to_encoding, const m
 
 int64_t f$mb_strlen(const string &str, const Optional<string> &encoding=false);
 
+string f$mb_strcut(const string &str, const int64_t start, const Optional<int64_t> &length=0, const Optional<string> &encoding=false);
+
 string f$mb_substr(const string &str, const int64_t start, const Optional<int64_t> &length=0, const Optional<string> &encoding=false);
 
 int64_t f$mb_substr_count(const string &haystack, const string &needle, const Optional<string> &encoding=false);

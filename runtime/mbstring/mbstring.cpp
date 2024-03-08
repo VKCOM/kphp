@@ -210,6 +210,51 @@ int64_t f$mb_strlen(const string &str, const Optional<string> &enc_name){
 
 }
 
+string f$mb_strcut(const string &str, const int64_t start, const Optional<int64_t> &length, const Optional<string> &encoding){
+  int64_t _start, _length;
+  bool len_is_null = !length.has_value();
+  const mbfl_encoding *enc = mb_get_encoding(encoding);
+
+  if (!enc) {
+    php_critical_error ("encoding \"%s\" isn't supported in mb_strcut", encoding.val().c_str());
+  }
+
+  mbfl_string _string, result, *ret;
+  mbfl_string_init(&_string);
+  _string.no_encoding = enc->no_encoding;
+  _string.len = str.size();
+  _string.val = (unsigned char*)str.c_str();
+
+  if (len_is_null) {
+    _length = _string.len;
+  } else {
+    _length = length.val();
+  }
+
+  _start = start;
+  if (start < 0) {
+    _start = _string.len + start;
+    if (_start < 0) {
+      _start = 0;
+    }
+  }
+
+  if (_length < 0) {
+    _length = (_string.len - _start) + _length;
+    if (_length < 0) {
+      _length = 0;
+    }
+  }
+
+  if (_start > _length) {
+    return string();
+  }
+
+  ret = mbfl_strcut(&_string, &result, _start, _length);
+  php_assert(ret != NULL);
+  return string((const char*) ret->val, ret->len);
+}
+
 
 string f$mb_substr(const string &str, const int64_t start, const Optional<int64_t> &length, const Optional<string> &encoding){
   size_t real_start, real_len;
