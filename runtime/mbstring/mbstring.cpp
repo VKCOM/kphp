@@ -189,6 +189,41 @@ static const mbfl_encoding *mb_get_encoding(const Optional<string> &enc_name) {
   return mbfl_name2encoding(DEFAULT_ENCODING); // change if we are going to use current encoding
 }
 
+array<string> f$mb_str_split(const string &str, const int64_t &length, const Optional<string> &encoding){
+  if (length <= 0) {
+    php_critical_error ("mb_str_split(): Argument #2 ($length) must be greater than 0");
+  } else if (length > INT_MAX / 4) {
+    php_critical_error ("mb_str_split(): Argument #2 ($length) is too large");
+  }
+
+  const mbfl_encoding *enc = mb_get_encoding(encoding);
+  if (!enc) {
+    php_critical_error ("encoding \"%s\" isn't supported in mb_strlen", encoding.val().c_str());
+  }
+
+  array<string> result = array<string>();
+
+  if (!str.size()) {
+    return result;
+  }
+
+  mbfl_string _string;
+  mbfl_string_init(&_string);
+  _string.no_encoding = enc->no_encoding;
+  _string.len = str.size();
+  _string.val = (unsigned char*)str.c_str();
+
+  size_t n = mbfl_strlen(&_string);     // take into account the number of bytes in the encoding character
+  size_t char_length = _string.len / n; // get the number of bytes of a character
+  size_t chunk_length = char_length * (size_t)length;
+
+  for (auto i = 0; i < _string.len; i += chunk_length) {
+    result.push_back(str.substr(i, chunk_length));
+    // result.push_back(string(reinterpret_cast<const char*>(_string.val) + i, chunk_length));
+  }
+  return result;
+}
+
 int64_t f$mb_strlen(const string &str, const Optional<string> &enc_name){
   const mbfl_encoding *encoding = mb_get_encoding(enc_name);
   if (!encoding) {

@@ -1649,6 +1649,8 @@ function getenv(string $varname = '', bool $local_only = false): mixed;
 
 function mb_check_encoding(array|string $value, ?string $encoding = null): bool;
 function mb_convert_encoding(array|string $string, string $to_encoding, array|string|null $from_encoding = null): array|string|false;
+
+function mb_str_split(string $string, int $length = 1, ?string $encoding = null): array;
 function mb_strcut(string $string, int $start, ?int $length = null, ?string $encoding = null): string;
 function mb_substr(string $string, int $start, ?int $length = null, ?string $encoding = null): string;
 function mb_strlen(string $string, ?string $encoding = null): int;
