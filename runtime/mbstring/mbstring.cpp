@@ -189,16 +189,31 @@ static const mbfl_encoding *mb_get_encoding(const Optional<string> &enc_name) {
   return mbfl_name2encoding(DEFAULT_ENCODING); // change if we are going to use current encoding
 }
 
+Optional<string> f$mb_preferred_mime_name(const string &enc_name) {
+  const mbfl_encoding *encoding;
+  encoding = mbfl_name2encoding(enc_name.c_str());
+  if (!encoding) {
+    php_critical_error("encoding must be a valid encoding, \"%s\" given", enc_name.c_str());
+  }
+  const char *preferred_name = (encoding->mime_name && encoding->mime_name[0] != '\0') ? encoding->mime_name : NULL;
+  if (preferred_name == NULL || *preferred_name == '\0') {
+    php_warning("No MIME preferred name corresponding to \"%s\"", enc_name.c_str());
+    return false;
+  } else {
+    return string(preferred_name);
+  }
+}
+
 array<string> f$mb_str_split(const string &str, const int64_t &length, const Optional<string> &encoding){
   if (length <= 0) {
-    php_critical_error ("mb_str_split(): Argument #2 ($length) must be greater than 0");
+    php_critical_error("length argument must be greater than 0");
   } else if (length > INT_MAX / 4) {
-    php_critical_error ("mb_str_split(): Argument #2 ($length) is too large");
+    php_critical_error("length argument is too large");
   }
 
   const mbfl_encoding *enc = mb_get_encoding(encoding);
   if (!enc) {
-    php_critical_error ("encoding \"%s\" isn't supported in mb_strlen", encoding.val().c_str());
+    php_critical_error("encoding \"%s\" isn't supported in mb_strlen", encoding.val().c_str());
   }
 
   array<string> result = array<string>();
