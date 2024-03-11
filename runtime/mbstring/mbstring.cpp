@@ -68,7 +68,14 @@ extern "C" {
 #define KPHP_UNICODE_CASE_FOLD_SIMPLE  7
 #define KPHP_UNICODE_CASE_MODE_MAX     7
 
+// TO-DO:
+// #define MBFL_BAD_INPUT (-1)
+
 static const char * DEFAULT_ENCODING = "UTF-8" ;
+
+static inline array<string> get_supported_encodings();
+
+static const array<string> supported_encodings_list = get_supported_encodings();
 
 static inline int mbfl_is_error(size_t len) {
   return len >= (size_t) -16;
@@ -187,6 +194,18 @@ static const mbfl_encoding *mb_get_encoding(const Optional<string> &enc_name) {
     }
   }
   return mbfl_name2encoding(DEFAULT_ENCODING); // change if we are going to use current encoding
+}
+
+static inline array<string> get_supported_encodings() {
+  array<string> result;
+  for (const mbfl_encoding **encodings = mbfl_get_supported_encodings(); *encodings; encodings++) {
+    result.push_back(string((*encodings)->name));
+  }
+  return result;
+}
+
+array<string> f$mb_list_encodings() {
+  return supported_encodings_list;
 }
 
 Optional<string> f$mb_preferred_mime_name(const string &enc_name) {
