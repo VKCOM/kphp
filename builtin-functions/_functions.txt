@@ -1657,3 +1657,4 @@ function getenv(string $varname = '', bool $local_only = false): mixed;
 
 function kml_xgb_predict(string $model_name, array $features): array< float >;
 function kml_catboost_predict(string $model_name, array $float_feats, array $cat_feats) : array< float >;
+function kml_catboost_predict_multi(string $model_name, array $float_feats, array $cat_feats) : array< array< float > >;

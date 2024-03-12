@@ -29,6 +29,10 @@ public:
     fi.read((char *)&v, sizeof(int));
   }
 
+  void read_uint32(uint32_t &v) noexcept {
+    fi.read((char *)&v, sizeof(uint32_t));
+  }
+
   void read_uint64(uint64_t &v) noexcept {
     fi.read((char *)&v, sizeof(uint64_t));
   }
@@ -50,6 +54,10 @@ public:
 
   void read_bool(bool &v) noexcept {
     v = static_cast<bool>(read_int());
+  }
+
+  void read_byte(unsigned char &v) noexcept {
+    read_bytes((void *)&v, sizeof(unsigned char));
   }
 
   void read_bytes(void *v, size_t len) noexcept {
@@ -137,11 +145,100 @@ void kml_read_2d_vec(KmlFileReader &f, std::vector<std::vector<T>> &v) {
   }
 }
 
+void kml_read_catboost_bin_feat_index_value(KmlFileReader &f, cb_common::CatboostBinFeatureIndexValue &idx_val) {
+  f.read_int(idx_val.bin_index);
+  f.read_bool(idx_val.check_value_equal);
+  f.read_byte(idx_val.value);
+}
+
+void kml_read_catboost_projection(KmlFileReader &f, cb_common::CatboostProjection &proj) {
+  kml_read_vec(f, proj.transposed_cat_feature_indexes);
+
+  int sz;
+  f.read_int(sz);
+  proj.binarized_indexes.resize(sz);
+  for (auto &item : proj.binarized_indexes) {
+    kml_read_catboost_bin_feat_index_value(f, item);
+  }
+}
+
+void kml_read_catboost_model_ctr(KmlFileReader &f, cb_common::CatboostModelCtr &model_ctr) {
+  f.read_uint64(model_ctr.base_hash);
+  int tmp;
+  f.read_int(tmp);
+  model_ctr.base_ctr_type = static_cast<cb_common::CatboostModelCtrType>(tmp);
+  f.read_int(model_ctr.target_border_idx);
+  f.read_float(model_ctr.prior_num);
+  f.read_float(model_ctr.prior_denom);
+  f.read_float(model_ctr.shift);
+  f.read_float(model_ctr.scale);
+}
+
+void kml_read_catboost_compressed_model_ctr(KmlFileReader &f, cb_common::CatboostCompressedModelCtr &ctr) {
+  kml_read_catboost_projection(f, ctr.projection);
+  int sz;
+  f.read_int(sz);
+  ctr.model_ctrs.resize(sz);
+  for (auto &item : ctr.model_ctrs) {
+    kml_read_catboost_model_ctr(f, item);
+  }
+}
+
+void kml_read_catboost_catboost_ctr_mean_history(KmlFileReader &f, cb_common::CatboostCtrMeanHistory &vt) {
+  f.read_float(vt.sum);
+  f.read_int(vt.count);
+}
+
+void kml_read_catboost_ctr_value_table(KmlFileReader &f, cb_common::CatboostCtrValueTable &vt) {
+  int sz;
+  f.read_int(sz);
+  vt.index_hash_viewer.reserve(sz);
+  for (int i = 0; i < sz; ++i) {
+    uint64_t key;
+    f.read_uint64(key);
+    uint32_t val;
+    f.read_uint32(val);
+    vt.index_hash_viewer[key] = val;
+  }
+
+  f.read_int(vt.target_classes_count);
+  f.read_int(vt.counter_denominator);
+
+  f.read_int(sz);
+  vt.ctr_mean_history.resize(sz);
+  for (auto &item : vt.ctr_mean_history) {
+    kml_read_catboost_catboost_ctr_mean_history(f, item);
+  }
+
+  kml_read_vec(f, vt.ctr_total);
+}
+
+void kml_write_catboost_ctr_data(KmlFileReader &f, cb_common::CatboostCtrData &cmc) {
+  int sz;
+  f.read_int(sz);
+  cmc.learn_ctrs.reserve(sz);
+  for (int i = 0; i < sz; ++i) {
+    uint64_t key;
+    f.read_uint64(key);
+
+    kml_read_catboost_ctr_value_table(f, cmc.learn_ctrs[key]);
+  }
+}
+
 void kml_read_catboost_ctrs_container(KmlFileReader &f, [[maybe_unused]] cb_common::CatboostModelCtrsContainer &ctr) {
   bool has;
   f.read_bool(has);
   if (has) {
-    throw std::runtime_error("ModelCtrsContainer is not supported yet");
+    f.read_int(ctr.used_model_ctrs_count);
+
+    int cmc_size;
+    f.read_int(cmc_size);
+    ctr.compressed_model_ctrs.resize(cmc_size);
+    for (auto &item : ctr.compressed_model_ctrs) {
+      kml_read_catboost_compressed_model_ctr(f, item);
+    }
+
+    kml_write_catboost_ctr_data(f, ctr.ctr_data);
   }
 }
 

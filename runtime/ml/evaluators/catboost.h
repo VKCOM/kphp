@@ -17,4 +17,5 @@ public:
   }
 
   array<double> predict_input(const array<array<double>> &float_features, const array<array<string>> &cat_features) const;
+  array<array<double>> predict_input_multi(const array<array<double>> &float_features, const array<array<string>> &cat_features) const;
 };

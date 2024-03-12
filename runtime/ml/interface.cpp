@@ -35,3 +35,14 @@ array<double> f$kml_catboost_predict(const string &model_name, const array<array
 
   return evaluator.predict_input(float_feats, string_feats);
 }
+
+array<array<double>> f$kml_catboost_predict_multi(const string &model_name, const array<array<double>> &float_feats, const array<array<string>> &string_feats) {
+  const auto &kml_iter = LoadedModels.find(std::string(model_name.c_str()));
+  if (kml_iter == LoadedModels.end()) {
+    return {};
+  }
+
+  EvalCatboost evaluator(kml_iter->second);
+
+  return evaluator.predict_input_multi(float_feats, string_feats);
+}

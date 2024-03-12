@@ -11,6 +11,8 @@
 
 array<double> f$kml_xgb_predict(const string &model_name, const array<array<double>> & features);
 array<double> f$kml_catboost_predict(const string &model_name, const array<array<double>> &float_feats, const array<array<string>> &string_feats);
+array<array<double>> f$kml_catboost_predict_multi(const string &model_name, const array<array<double>> &float_feats, const array<array<string>> &string_feats);
+
 
 extern std::unordered_map<std::string, ml_internals::MLModel> LoadedModels;
 extern std::string KmlDirPath;

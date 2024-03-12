@@ -206,6 +206,101 @@ static double eval(const AOSCatboostModel &model, const array<double> &float_fea
   return model.scale * result + model.bias;
 }
 
+static array<double> eval_multi(const AOSCatboostModel &model, const array<double> &float_features, const array<string> &cat_features) {
+  assert(float_features.size().size == model.float_feature_count);
+  assert(cat_features.size().size == model.cat_feature_count);
+
+  // Binarise features
+  auto *binary_features = reinterpret_cast<unsigned char *>(buffer);
+  std::fill(binary_features, binary_features + model.binary_feature_count, 0);
+
+  buffer += model.binary_feature_count * sizeof(unsigned char);
+  buffer = reinterpret_cast<char *>(((ptrdiff_t)(buffer) + sizeof(int) - 1) / sizeof(int) * sizeof(int));
+
+  int binary_feature_index = 0;
+
+  // binarize float features
+  for (int i = 0; i < model.float_feature_borders.size(); ++i) {
+    for (double border : model.float_feature_borders[i]) {
+      binary_features[binary_feature_index] += static_cast<unsigned char>((*float_features.find_value(model.float_features_index[i])) > border);
+    }
+    binary_feature_index++;
+  }
+
+  auto *transposed_hash = reinterpret_cast<int *>(buffer);
+  buffer += model.cat_feature_count * sizeof(int);
+  for (int i = 0; i < model.cat_feature_count; ++i) {
+    const string *s = cat_features.find_value(i);
+    if (s == nullptr) {
+      transposed_hash[i] = 0x7fffffff;
+    } else {
+      transposed_hash[i] = get_hash(s->c_str(), model.cat_features_hashes); // todo cat_feature_hashes part of model?
+    }
+  }
+
+  // binarize one hot cat features
+  if (!model.one_hot_cat_feature_index.empty()) {
+    FlatMap cat_feature_packed_indexes(reinterpret_cast<std::pair<int, int>*>(buffer), model.cat_feature_count);
+    buffer += sizeof(std::pair<int, int>) * model.cat_feature_count;
+
+    for (int i = 0; i < model.cat_feature_count; ++i) {
+      cat_feature_packed_indexes.insert(model.cat_features_index[i],  i);
+    }
+    for (int i = 0; i < model.one_hot_cat_feature_index.size(); ++i) {
+      int cat_idx = cat_feature_packed_indexes.at(model.one_hot_cat_feature_index[i]);
+      int hash = transposed_hash[cat_idx];
+      for (int border_idx = 0; border_idx < model.one_hot_hash_values[i].size(); ++border_idx) {
+        binary_features[binary_feature_index] |= static_cast<unsigned char>(hash == model.one_hot_hash_values[i][border_idx]) * (border_idx + 1);
+      }
+      binary_feature_index++;
+    }
+  }
+
+  // binarize ctr features
+  if (model.model_ctrs.used_model_ctrs_count > 0) {
+    auto * ctrs = reinterpret_cast<float *>(buffer);
+    buffer += sizeof(float) * model.model_ctrs.used_model_ctrs_count;
+
+    calc_ctrs(model.model_ctrs, binary_features, transposed_hash, ctrs);
+
+    for (int i = 0; i < model.ctr_feature_borders.size(); ++i) {
+      for (float border : model.ctr_feature_borders[i]) {
+        binary_features[binary_feature_index] += static_cast<unsigned char>(ctrs[i] > border);
+      }
+      binary_feature_index++;
+    }
+  }
+
+  // Extract and sum values from trees
+
+  array<double> results;
+  results.fill_vector(model.dimension, 0.0);
+  const auto* leaf_values_ptr = model.leaf_values_vec.data();
+  int tree_splits_index = 0;
+
+  for (int tree_id = 0; tree_id < model.tree_count; ++tree_id) {
+    int current_tree_depth = model.tree_depth[tree_id];
+    int index = 0;
+    for (int depth = 0; depth < current_tree_depth; ++depth) {
+      auto border = model.tree_split[tree_splits_index + depth].border;
+      auto feature_index = model.tree_split[tree_splits_index + depth].feature_index;
+      auto xor_mask = model.tree_split[tree_splits_index + depth].xor_mask;
+      index |= ((binary_features[feature_index] ^ xor_mask) >= border) << depth;
+    }
+    for (int i = 0; i < model.dimension; ++i) {
+      results[i] += leaf_values_ptr[index][i];
+    }
+    tree_splits_index += current_tree_depth;
+    leaf_values_ptr += (1 << current_tree_depth);
+  }
+  for (int i = 0; i < model.dimension; ++i) {
+    results[i] = results[i] * model.scale + model.biases[i];
+  }
+  return results;
+
+
+}
+
 array<double> EvalCatboost::predict_input(const array<array<double>> &float_features, const array<array<string>> &cat_features) const {
   const auto &cbm = std::get<AOSCatboostModel>(model.impl);
 
@@ -220,6 +315,24 @@ array<double> EvalCatboost::predict_input(const array<array<double>> &float_feat
   for (int row_id = 0; row_id < size; ++row_id) {
     buffer = PredictionBuffer;
     resp.push_back(eval(cbm, *float_features.find_value(row_id), *cat_features.find_value(row_id)));
+  }
+  return resp;
+}
+
+array<array<double>> EvalCatboost::predict_input_multi(const array<array<double>> &float_features, const array<array<string>> &cat_features) const {
+  const auto &cbm = std::get<AOSCatboostModel>(model.impl);
+
+  const auto [size, is_vec] = float_features.size();
+  assert(is_vec);
+  assert(cat_features.size().size == size && cat_features.size().is_vector == is_vec);
+
+  array<array<double>> resp;
+  resp.reserve(size, true);
+  assert(resp.is_vector());
+
+  for (int row_id = 0; row_id < size; ++row_id) {
+    buffer = PredictionBuffer;
+    resp.push_back(eval_multi(cbm, *float_features.find_value(row_id), *cat_features.find_value(row_id)));
   }
   return resp;
 }
