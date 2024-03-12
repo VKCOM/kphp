@@ -17,6 +17,8 @@ bool f$mb_check_encoding(const mixed &value, const Optional<string> &encoding);
 
 mixed f$mb_convert_encoding(const mixed &str, const string &to_encoding, const mixed &from_encoding);
 
+array<string> f$mb_encoding_aliases(const string &encoding);
+
 array<string> f$mb_list_encodings();
 
 Optional<string> f$mb_preferred_mime_name(const string &$encoding);

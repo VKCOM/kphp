@@ -196,9 +196,25 @@ static const mbfl_encoding *mb_get_encoding(const Optional<string> &enc_name) {
   return mbfl_name2encoding(DEFAULT_ENCODING); // change if we are going to use current encoding
 }
 
+array<string> f$mb_encoding_aliases(const string &encoding) {
+  const mbfl_encoding *enc = mb_get_encoding(encoding);
+  if (!enc) {
+    php_critical_error("encoding \"%s\" isn't supported in mb_encoding_aliases", encoding.c_str());
+  }
+
+  array<string> result;
+  if (enc->aliases) {
+    const char *(*aliases)[] = enc->aliases;
+    for (int i = 0; (*aliases)[i]; ++i) {
+      result.push_back(string((*aliases)[i]));
+    }
+  }
+  return result;
+}
+
 static inline array<string> get_supported_encodings() {
   array<string> result;
-  for (const mbfl_encoding **encodings = mbfl_get_supported_encodings(); *encodings; encodings++) {
+  for (const mbfl_encoding **encodings = mbfl_get_supported_encodings(); *encodings; ++encodings) {
     result.push_back(string((*encodings)->name));
   }
   return result;
