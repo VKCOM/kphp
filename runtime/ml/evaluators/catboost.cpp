@@ -273,7 +273,7 @@ static array<double> eval_multi(const AOSCatboostModel &model, const array<doubl
 
   // Extract and sum values from trees
 
-  array<double> results;
+  array<double> results(array_size(model.dimension, true));
   results.fill_vector(model.dimension, 0.0);
   const auto* leaf_values_ptr = model.leaf_values_vec.data();
   int tree_splits_index = 0;
@@ -314,7 +314,7 @@ array<double> EvalCatboost::predict_input(const array<array<double>> &float_feat
 
   for (int row_id = 0; row_id < size; ++row_id) {
     buffer = PredictionBuffer;
-    resp.push_back(eval(cbm, *float_features.find_value(row_id), *cat_features.find_value(row_id)));
+    resp.emplace_back(eval(cbm, *float_features.find_value(row_id), *cat_features.find_value(row_id)));
   }
   return resp;
 }
@@ -327,12 +327,12 @@ array<array<double>> EvalCatboost::predict_input_multi(const array<array<double>
   assert(cat_features.size().size == size && cat_features.size().is_vector == is_vec);
 
   array<array<double>> resp;
-  resp.reserve(size, true);
+//  resp.reserve(size, true);
   assert(resp.is_vector());
 
   for (int row_id = 0; row_id < size; ++row_id) {
     buffer = PredictionBuffer;
-    resp.push_back(eval_multi(cbm, *float_features.find_value(row_id), *cat_features.find_value(row_id)));
+    resp.emplace_back(eval_multi(cbm, *float_features.find_value(row_id), *cat_features.find_value(row_id)));
   }
   return resp;
 }
