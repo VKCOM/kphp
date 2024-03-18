@@ -36,7 +36,6 @@
  * - 'callable' and 'object' convert a function into a generic one
  */
 
-
 class ParseAndApplyPhpDocForFunction {
   FunctionPtr f_;
   bool infer_cast_{false};
@@ -116,16 +115,15 @@ public:
       // if KPHP_REQUIRE_FUNCTIONS_TYPING = 0, only check types if given, typing everything is not mandatory
       G->settings().require_functions_typing.get() &&
       // if 1, typing is mandatory, except these conditions
-      f_->type == FunctionData::func_local &&
-      !f_->is_lambda() &&                         // lambdas may have implicitly deduced types, they are going to be checked later
-      !f_->disabled_warnings.count("return");  // "@kphp-disable-warnings return" in function phpdoc
+      f_->type == FunctionData::func_local && !f_->is_lambda() && // lambdas may have implicitly deduced types, they are going to be checked later
+      !f_->disabled_warnings.count("return");                     // "@kphp-disable-warnings return" in function phpdoc
 
     if (needs_to_be_fully_typed) {
       check_all_arguments_have_param_or_type_hint();
     }
     if (!f_->return_typehint) {
       f_->return_typehint = auto_create_return_type_if_not_provided();
-      if (!f_->return_typehint && needs_to_be_fully_typed) {  // if @return not set, assume void
+      if (!f_->return_typehint && needs_to_be_fully_typed) { // if @return not set, assume void
         f_->return_typehint = TypeHintPrimitive::create(tp_void);
       }
     }
@@ -184,7 +182,7 @@ private:
       }
 
       if (const auto *as_callable = cur_func_param->type_hint->try_as<TypeHintCallable>()) {
-        if (!as_callable->is_typed_callable()) {    // we will generate common interfaces for typed callables in on_finish()
+        if (!as_callable->is_typed_callable()) { // we will generate common interfaces for typed callables in on_finish()
           GenericsDeclarationMixin::make_function_generic_on_callable_arg(f_, cur_func_param);
         }
       } else if (!f_->is_extern() && cur_func_param->type_hint->try_as<TypeHintObject>()) {
@@ -196,12 +194,14 @@ private:
   // for `f<...TArg>`, there must be a variadic parameter annotated `TArg ...$name`
   void check_variadic_generic_f_has_necessary_param() {
     VertexRange f_params = f_->get_params();
-    auto last_param = f_params[f_params.size()-1].as<op_func_param>();
+    auto last_param = f_params[f_params.size() - 1].as<op_func_param>();
     kphp_assert(last_param->extra_type == op_ex_param_variadic);
 
     const auto *as_array = last_param->type_hint ? last_param->type_hint->try_as<TypeHintArray>() : nullptr;
-    bool is_declared_ok = as_array && as_array->inner->try_as<TypeHintGenericT>() && as_array->inner->try_as<TypeHintGenericT>()->nameT == f_->genericTs->itemsT.back().nameT;
-    kphp_error(is_declared_ok, fmt_format("Invalid @param declaration for a variadic generic.\nMust declare @param {} ...${}", f_->genericTs->itemsT.back().nameT, last_param->var()->str_val));
+    bool is_declared_ok =
+      as_array && as_array->inner->try_as<TypeHintGenericT>() && as_array->inner->try_as<TypeHintGenericT>()->nameT == f_->genericTs->itemsT.back().nameT;
+    kphp_error(is_declared_ok, fmt_format("Invalid @param declaration for a variadic generic.\nMust declare @param {} ...${}",
+                                          f_->genericTs->itemsT.back().nameT, last_param->var()->str_val));
   }
 
   static inline const GenericsDeclarationMixin *get_genericTs_for_phpdoc_parsing(FunctionPtr f_) {
@@ -390,7 +390,8 @@ private:
         is >> color_name;
 
         kphp_error_return(!color_name.empty(), "An empty tag value");
-        kphp_error_return(G->get_function_palette().color_exists(color_name), "Color missing in palette (either a misprint or a new color that needs to be added)");
+        kphp_error_return(G->get_function_palette().color_exists(color_name),
+                          "Color missing in palette (either a misprint or a new color that needs to be added)");
 
         f_->colors.add(G->get_function_palette().get_color_by_name(color_name));
         break;
@@ -413,9 +414,8 @@ private:
         std::istringstream is(tag.value_as_string());
         std::string param_name;
         is >> param_name;
-        auto it = std::find_if(func_params_.begin(), func_params_.end(), [&param_name](VertexPtr v) {
-          return v.as<op_func_param>()->var()->str_val == vk::string_view(param_name).substr(1);
-        });
+        auto it = std::find_if(func_params_.begin(), func_params_.end(),
+                               [&param_name](VertexPtr v) { return v.as<op_func_param>()->var()->str_val == vk::string_view(param_name).substr(1); });
         kphp_error_return(it != func_params_.end(), "kphp-internal-param-readonly used for non-existing param");
         int param_index = std::distance(func_params_.begin(), it);
         kphp_error_return(param_index <= std::numeric_limits<int8_t>::max(), "kphp-internal-param-readonly index overflow");
@@ -430,7 +430,7 @@ private:
 
   void parse_return_doc_tag(const PhpDocTag &tag) {
     auto tag_parsed = tag.value_as_type_and_var_name(phpdoc_from_fun_, get_genericTs_for_phpdoc_parsing(f_));
-    if (!tag_parsed) {    // an error has already been printed
+    if (!tag_parsed) { // an error has already been printed
       return;
     }
 
@@ -448,7 +448,7 @@ private:
 
   void parse_param_doc_tag(const PhpDocTag &tag) {
     auto tag_parsed = tag.value_as_type_and_var_name(phpdoc_from_fun_, get_genericTs_for_phpdoc_parsing(f_));
-    if (!tag_parsed) {    // an error has already been printed
+    if (!tag_parsed) { // an error has already been printed
       return;
     }
 
@@ -470,7 +470,9 @@ private:
     }
 
     if (param->extra_type == op_ex_param_variadic) {
-      kphp_error(param->type_hint->try_as<TypeHintArray>(), fmt_format("@param for a variadic parameter is not an array.\nDeclare either @param T ...${} or @param T[] ${}", param->var()->str_val, param->var()->str_val));
+      kphp_error(param->type_hint->try_as<TypeHintArray>(),
+                 fmt_format("@param for a variadic parameter is not an array.\nDeclare either @param T ...${} or @param T[] ${}", param->var()->str_val,
+                            param->var()->str_val));
     }
 
     if (infer_cast_) {
@@ -483,7 +485,7 @@ private:
 
   // when both type hint and phpdoc for a param/return exist,
   // check their compatibility and choose one of them
-  const TypeHint *merge_php_hint_and_phpdoc(const TypeHint *php_hint, const TypeHint *phpdoc_hint, bool is_param __attribute__ ((unused))) {
+  const TypeHint *merge_php_hint_and_phpdoc(const TypeHint *php_hint, const TypeHint *phpdoc_hint, bool is_param __attribute__((unused))) {
     if (php_hint == phpdoc_hint) {
       return php_hint;
     }
@@ -504,9 +506,9 @@ private:
     }
     // todo this is commented out, as currently vkcom has tons of mismatches
     // some tests in phpt/phpdocs/ are also marked with '@todo'
-//    if (!does_php_hint_match_phpdoc(php_hint, phpdoc_hint)) {
-//      print_error_php_hint_and_phpdoc_mismatch(php_hint, phpdoc_hint, is_param);
-//    }
+    //    if (!does_php_hint_match_phpdoc(php_hint, phpdoc_hint)) {
+    //      print_error_php_hint_and_phpdoc_mismatch(php_hint, phpdoc_hint, is_param);
+    //    }
 
     return phpdoc_hint;
   }
@@ -546,7 +548,8 @@ private:
         return true;
       }
       if (const auto *doc_pipe = phpdoc_hint->try_as<TypeHintPipe>()) {
-        return std::all_of(doc_pipe->items.begin(), doc_pipe->items.end(), [](const TypeHint *item_hint) -> bool { return item_hint->try_as<TypeHintArray>(); });
+        return std::all_of(doc_pipe->items.begin(), doc_pipe->items.end(),
+                           [](const TypeHint *item_hint) -> bool { return item_hint->try_as<TypeHintArray>(); });
       }
       return false;
     }
@@ -574,8 +577,8 @@ private:
     stage::set_location(f_->root->location);
     std::string php_hint_str = php_hint == TypeHintArray::create_array_of_any() ? "array" : php_hint->as_human_readable();
     std::string doc_hint_str = phpdoc_hint->as_human_readable();
-    kphp_error(0, fmt_format("php type hint {} mismatches with {} {}{}",
-                             TermStringFormat::paint_green(php_hint_str), is_param ? "@param" : "@return", TermStringFormat::paint_green(doc_hint_str),
+    kphp_error(0, fmt_format("php type hint {} mismatches with {} {}{}", TermStringFormat::paint_green(php_hint_str), is_param ? "@param" : "@return",
+                             TermStringFormat::paint_green(doc_hint_str),
                              phpdoc_from_fun_ == f_ ? "" : " inherited from " + phpdoc_from_fun_->as_human_readable()));
   }
 
@@ -631,7 +634,6 @@ private:
     return nullptr;
   }
 };
-
 
 class ParseAndApplyPhpDocForClass {
   ClassPtr klass;
@@ -718,7 +720,7 @@ private:
       kphp_error(type_hint, fmt_format("Specify @var to {}", var->as_human_readable()));
       return type_hint;
     }
-    if (klass->is_lambda_class()) {   // they are auto-generated, not coming from PHP code
+    if (klass->is_lambda_class()) { // they are auto-generated, not coming from PHP code
       return nullptr;
     }
 
@@ -743,12 +745,8 @@ private:
 
       case PhpDocType::kphp_warn_performance:
         try {
-          klass->members.for_each([&tag](const ClassMemberInstanceMethod &f) {
-            f.function->performance_inspections_for_warning.set_from_php_doc(tag.value);
-          });
-          klass->members.for_each([&tag](const ClassMemberStaticMethod &f) {
-            f.function->performance_inspections_for_warning.set_from_php_doc(tag.value);
-          });
+          klass->members.for_each([&tag](const ClassMemberInstanceMethod &f) { f.function->performance_inspections_for_warning.set_from_php_doc(tag.value); });
+          klass->members.for_each([&tag](const ClassMemberStaticMethod &f) { f.function->performance_inspections_for_warning.set_from_php_doc(tag.value); });
         } catch (const std::exception &ex) {
           kphp_error(false, fmt_format("@kphp-warn-performance bad tag: {}", ex.what()));
         }
@@ -756,12 +754,8 @@ private:
 
       case PhpDocType::kphp_analyze_performance:
         try {
-          klass->members.for_each([&tag](const ClassMemberInstanceMethod &f) {
-            f.function->performance_inspections_for_analysis.set_from_php_doc(tag.value);
-          });
-          klass->members.for_each([&tag](const ClassMemberStaticMethod &f) {
-            f.function->performance_inspections_for_analysis.set_from_php_doc(tag.value);
-          });
+          klass->members.for_each([&tag](const ClassMemberInstanceMethod &f) { f.function->performance_inspections_for_analysis.set_from_php_doc(tag.value); });
+          klass->members.for_each([&tag](const ClassMemberStaticMethod &f) { f.function->performance_inspections_for_analysis.set_from_php_doc(tag.value); });
         } catch (const std::exception &ex) {
           kphp_error(false, fmt_format("@kphp-analyze-performance bad tag: {}", ex.what()));
         }
@@ -779,11 +773,10 @@ private:
   }
 };
 
-
 void ParseAndApplyPhpdocF::execute(FunctionPtr function, DataStream<FunctionPtr> &unused_os) {
   stage::set_name("Apply phpdocs");
   stage::set_function(function);
-  kphp_assert (function);
+  kphp_assert(function);
 
   if (function->type == FunctionData::func_class_holder) {
     ParseAndApplyPhpDocForClass{function};

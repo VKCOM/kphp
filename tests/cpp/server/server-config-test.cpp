@@ -13,7 +13,7 @@ TEST(server_config_test, test_usage) {
 
 TEST(server_config_test, test_long_name) {
   ASSERT_STREQ(vk::singleton<ServerConfig>::get().set_cluster_name("default", false), nullptr);
-  
+
   ASSERT_STREQ(vk::singleton<ServerConfig>::get().get_cluster_name(), "default");
   ASSERT_STREQ(vk::singleton<ServerConfig>::get().get_statsd_prefix(), "kphp_stats.default");
 

@@ -3,7 +3,7 @@
 #include "runtime/migration_php8.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
-  #error "this file must be included only from kphp_core.h"
+#error "this file must be included only from kphp_core.h"
 #endif
 
 namespace impl_ {
@@ -16,19 +16,18 @@ inline bool optional_equals_impl(const Optional<T1> &lhs, const T2 &rhs);
 template<class T1, class T2>
 inline bool optional_lt_impl(const Optional<T1> &lhs, const T2 &rhs);
 template<class T1, class T2>
-inline enable_if_t_is_not_optional<T1, bool>  optional_lt_impl(const T1 &lhs, const Optional<T2> &rhs);
+inline enable_if_t_is_not_optional<T1, bool> optional_lt_impl(const T1 &lhs, const Optional<T2> &rhs);
 
 } // namespace impl_
 
-template<class FunT, class T, class ...Args>
-inline decltype(auto) call_fun_on_optional_value(FunT && fun, const Optional<T> &opt, Args &&... args);
-template<class FunT, class T, class ...Args>
-inline decltype(auto) call_fun_on_optional_value(FunT && fun, Optional<T> &&opt, Args &&... args);
-
+template<class FunT, class T, class... Args>
+inline decltype(auto) call_fun_on_optional_value(FunT &&fun, const Optional<T> &opt, Args &&...args);
+template<class FunT, class T, class... Args>
+inline decltype(auto) call_fun_on_optional_value(FunT &&fun, Optional<T> &&opt, Args &&...args);
 
 template<class T, class U>
 inline enable_if_one_of_types_is_unknown<T, U> eq2(const T &, const U &) {
-  php_assert ("Comparison of Unknown" && 0);
+  php_assert("Comparison of Unknown" && 0);
   return false;
 }
 
@@ -78,7 +77,7 @@ inline bool eq2(const string &lhs, bool rhs) {
 }
 
 // see https://www.php.net/manual/en/migration80.incompatible.php#migration80.incompatible.core.string-number-comparision
-template <typename T>
+template<typename T>
 inline bool eq2_number_string_as_php8(T lhs, const string &rhs) {
   auto rhs_float = 0.0;
   const auto rhs_is_string_number = rhs.try_to_float(&rhs_float);
@@ -98,11 +97,8 @@ inline bool eq2(int64_t lhs, const string &rhs) {
       return php7_result;
     }
 
-    php_warning("Comparison (operator ==) results in PHP 7 and PHP 8 are different for %" PRIi64 " and \"%s\" (PHP7: %s, PHP8: %s)",
-                lhs,
-                rhs.c_str(),
-                php7_result ? "true" : "false",
-                php8_result ? "true" : "false");
+    php_warning("Comparison (operator ==) results in PHP 7 and PHP 8 are different for %" PRIi64 " and \"%s\" (PHP7: %s, PHP8: %s)", lhs, rhs.c_str(),
+                php7_result ? "true" : "false", php8_result ? "true" : "false");
   }
 
   return php7_result;
@@ -119,11 +115,8 @@ inline bool eq2(double lhs, const string &rhs) {
       return php7_result;
     }
 
-    php_warning("Comparison (operator ==) results in PHP 7 and PHP 8 are different for %lf and \"%s\" (PHP7: %s, PHP8: %s)",
-                lhs,
-                rhs.c_str(),
-                php7_result ? "true" : "false",
-                php8_result ? "true" : "false");
+    php_warning("Comparison (operator ==) results in PHP 7 and PHP 8 are different for %lf and \"%s\" (PHP7: %s, PHP8: %s)", lhs, rhs.c_str(),
+                php7_result ? "true" : "false", php8_result ? "true" : "false");
   }
 
   return php7_result;
@@ -171,57 +164,57 @@ inline bool eq2(const array<T> &lhs, const string &rhs) {
   return eq2(rhs, lhs);
 }
 
-template<class TupleLhsT, class TupleRhsT, size_t ...Indices>
+template<class TupleLhsT, class TupleRhsT, size_t... Indices>
 inline bool eq2(const TupleLhsT &lhs, const TupleRhsT &rhs, std::index_sequence<Indices...>) {
   return vk::all_of_equal(true, eq2(std::get<Indices>(lhs), std::get<Indices>(rhs))...);
 }
 
-template<class ...Args>
+template<class... Args>
 inline bool eq2(const std::tuple<Args...> &lhs, const std::tuple<Args...> &rhs) {
   return eq2(lhs, rhs, std::make_index_sequence<sizeof...(Args)>{});
 }
 
-template<class ...Args, class ...Args2>
+template<class... Args, class... Args2>
 inline std::enable_if_t<sizeof...(Args) == sizeof...(Args2), bool> eq2(const std::tuple<Args...> &lhs, const std::tuple<Args2...> &rhs) {
   return eq2(lhs, rhs, std::make_index_sequence<sizeof...(Args)>{});
 }
 
-template<class ...Args, class ...Args2>
+template<class... Args, class... Args2>
 inline std::enable_if_t<sizeof...(Args) != sizeof...(Args2), bool> eq2(const std::tuple<Args...> &, const std::tuple<Args2...> &) {
   return false;
 }
 
-template<class TupleT, class Arg, size_t ...Indices>
+template<class TupleT, class Arg, size_t... Indices>
 inline bool eq2(const TupleT &lhs, const array<Arg> &rhs, std::index_sequence<Indices...>) {
   return vk::all_of_equal(true, eq2(std::get<Indices>(lhs), rhs.get_value(Indices))...);
 }
 
-template<class Arg, class ...Args>
+template<class Arg, class... Args>
 inline bool eq2(const std::tuple<Args...> &lhs, const array<Arg> &rhs) {
   if (!rhs.is_vector() || sizeof...(Args) != rhs.size().size) {
     return false;
   }
   return eq2(lhs, rhs, std::make_index_sequence<sizeof...(Args)>{});
 }
-template<class Arg, class ...Args>
+template<class Arg, class... Args>
 inline bool eq2(const array<Arg> &lhs, const std::tuple<Args...> &rhs) {
   return eq2(rhs, lhs);
 }
 
-template<class ...Args>
+template<class... Args>
 inline bool eq2(bool lhs, const std::tuple<Args...> &) {
   return lhs;
 }
-template<class ...Args>
+template<class... Args>
 inline bool eq2(const std::tuple<Args...> &lhs, bool rhs) {
   return eq2(rhs, lhs);
 }
 
-template<class T, class ...Args>
+template<class T, class... Args>
 inline bool eq2(const T &, const std::tuple<Args...> &) {
   return false;
 }
-template<class T, class ...Args>
+template<class T, class... Args>
 inline bool eq2(const std::tuple<Args...> &lhs, const T &rhs) {
   return eq2(rhs, lhs);
 }
@@ -295,7 +288,7 @@ inline bool eq2(const mixed &lhs, const string &rhs) {
 
 template<class T>
 inline bool eq2(const array<T> &lhs, const mixed &rhs) {
-  if (likely (rhs.is_array())) {
+  if (likely(rhs.is_array())) {
     return eq2(lhs, rhs.as_array());
   }
 
@@ -377,7 +370,6 @@ template<class T>
 inline disable_if_one_of_types_is_unknown<T, T> equals(const T &lhs, const T &rhs) {
   return lhs == rhs;
 }
-
 
 template<class T>
 inline bool equals(const array<T> &lhs, const array<T> &rhs) {
@@ -474,35 +466,34 @@ inline bool equals(const class_instance<T> &lhs, const class_instance<T> &rhs) {
   return lhs == rhs;
 }
 
-template<class TupleLhsT, class TupleRhsT, size_t ...Indices>
+template<class TupleLhsT, class TupleRhsT, size_t... Indices>
 inline bool equals(const TupleLhsT &lhs, const TupleRhsT &rhs, std::index_sequence<Indices...>) {
   return vk::all_of_equal(true, equals(std::get<Indices>(lhs), std::get<Indices>(rhs))...);
 }
 
-template<class ...Args>
+template<class... Args>
 inline bool equals(const std::tuple<Args...> &lhs, const std::tuple<Args...> &rhs) {
   return equals(lhs, rhs, std::make_index_sequence<sizeof...(Args)>{});
 }
 
-template<class ...Args, class ...Args2>
+template<class... Args, class... Args2>
 inline bool equals(const std::tuple<Args...> &lhs, const std::tuple<Args2...> &rhs) {
-  return sizeof...(Args) == sizeof...(Args2) &&
-         equals(lhs, rhs, std::make_index_sequence<sizeof...(Args)>{});
+  return sizeof...(Args) == sizeof...(Args2) && equals(lhs, rhs, std::make_index_sequence<sizeof...(Args)>{});
 }
 
-template<class TupleT, class Arg, size_t ...Indices>
+template<class TupleT, class Arg, size_t... Indices>
 inline bool equals(const TupleT &lhs, const array<Arg> &rhs, std::index_sequence<Indices...>) {
   return vk::all_of_equal(true, equals(std::get<Indices>(lhs), rhs.get_value(Indices))...);
 }
 
-template<class Arg, class ...Args>
+template<class Arg, class... Args>
 inline bool equals(const std::tuple<Args...> &lhs, const array<Arg> &rhs) {
   if (!rhs.is_vector() || sizeof...(Args) != rhs.size().size) {
     return false;
   }
   return equals(lhs, rhs, std::make_index_sequence<sizeof...(Args)>{});
 }
-template<class Arg, class ...Args>
+template<class Arg, class... Args>
 inline bool equals(const array<Arg> &lhs, const std::tuple<Args...> &rhs) {
   return equals(rhs, lhs);
 }
@@ -512,10 +503,9 @@ inline std::enable_if_t<std::is_base_of<T1, T2>{} || std::is_base_of<T2, T1>{}, 
   return dynamic_cast<void *>(lhs.get()) == dynamic_cast<void *>(rhs.get());
 }
 template<class T1, class T2>
-inline std::enable_if_t<!std::is_base_of<T1, T2>{} && !std::is_base_of<T2, T1>{}, bool>  equals(const class_instance<T1> &, const class_instance<T2> &) {
+inline std::enable_if_t<!std::is_base_of<T1, T2>{} && !std::is_base_of<T2, T1>{}, bool> equals(const class_instance<T1> &, const class_instance<T2> &) {
   return false;
 }
-
 
 template<class T1, class T2>
 inline bool equals(const Optional<T1> &lhs, const T2 &rhs) {
@@ -638,29 +628,27 @@ bool optional_equals_impl(const Optional<T1> &lhs, const T2 &rhs) {
   auto equals_lambda = [](const auto &l, const auto &r) {
     // if (is_null(lhs)) { return is_null(r); }
     // else return equals(r, l); - parameters are swapped to cope with Optional on right side
-    return std::is_same<decltype(l), const mixed &>{} ?
-           f$is_null(r) :
-           equals(r, l);
+    return std::is_same<decltype(l), const mixed &>{} ? f$is_null(r) : equals(r, l);
   };
   return call_fun_on_optional_value(equals_lambda, lhs, rhs);
 }
 
 template<class T1, class T2>
 inline bool optional_lt_impl(const Optional<T1> &lhs, const T2 &rhs) {
-  auto lt_lambda = [](const auto &l, const auto &r) { return lt(l, r);};
+  auto lt_lambda = [](const auto &l, const auto &r) { return lt(l, r); };
   return call_fun_on_optional_value(lt_lambda, lhs, rhs);
 }
 
 template<class T1, class T2>
-inline enable_if_t_is_not_optional<T1, bool>  optional_lt_impl(const T1 &lhs, const Optional<T2> &rhs) {
-  auto lt_reversed_args_lambda = [](const auto &l, const auto &r) { return lt(r, l);};
+inline enable_if_t_is_not_optional<T1, bool> optional_lt_impl(const T1 &lhs, const Optional<T2> &rhs) {
+  auto lt_reversed_args_lambda = [](const auto &l, const auto &r) { return lt(r, l); };
   return call_fun_on_optional_value(lt_reversed_args_lambda, rhs, lhs);
 }
 
 } // namespace impl_
 
-template<class FunT, class T, class ...Args>
-decltype(auto) call_fun_on_optional_value(FunT && fun, const Optional<T> &opt, Args &&... args) {
+template<class FunT, class T, class... Args>
+decltype(auto) call_fun_on_optional_value(FunT &&fun, const Optional<T> &opt, Args &&...args) {
   switch (opt.value_state()) {
     case OptionalState::has_value:
       return fun(opt.val(), std::forward<Args>(args)...);
@@ -673,8 +661,8 @@ decltype(auto) call_fun_on_optional_value(FunT && fun, const Optional<T> &opt, A
   }
 }
 
-template<class FunT, class T, class ...Args>
-decltype(auto) call_fun_on_optional_value(FunT && fun, Optional<T> &&opt, Args &&... args) {
+template<class FunT, class T, class... Args>
+decltype(auto) call_fun_on_optional_value(FunT &&fun, Optional<T> &&opt, Args &&...args) {
   switch (opt.value_state()) {
     case OptionalState::has_value:
       return fun(std::move(opt.val()), std::forward<Args>(args)...);

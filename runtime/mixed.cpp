@@ -26,4 +26,3 @@ void mixed::clear() noexcept {
 mixed::~mixed() noexcept {
   clear();
 }
-

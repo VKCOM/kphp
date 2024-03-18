@@ -4,46 +4,48 @@
 
 #pragma once
 
-#include <vector>
 #include <string>
+#include <vector>
 
 #include "compiler/data/data_ptr.h"
 #include "compiler/debug.h"
-
 
 // represents composer.json structure (the parts we care about)
 // they are used for autoloading (in the same manner as Composer does)
 // and as implicit modulites
 class ComposerJsonData {
-  DEBUG_STRING_METHOD { return package_name; }
+  DEBUG_STRING_METHOD {
+    return package_name;
+  }
 
-  ComposerJsonPtr get_self_ptr() { return ComposerJsonPtr(this); }
+  ComposerJsonPtr get_self_ptr() {
+    return ComposerJsonPtr(this);
+  }
 
 public:
   struct RequireItem {
     std::string package_name;
     std::string version;
-    bool is_dev;                // whether it's in "require-dev"
+    bool is_dev; // whether it's in "require-dev"
   };
 
   struct AutoloadPsr0Item {
     std::string prefix;
     std::vector<std::string> dirs;
-    bool prefix_is_classname;   // if true, psr-0 key is "ns\\class" not "ns\\"; dirs.size = 1, dirs[0] is a .php file
-    bool is_dev;                // whether it's in "autoload-dev"
+    bool prefix_is_classname; // if true, psr-0 key is "ns\\class" not "ns\\"; dirs.size = 1, dirs[0] is a .php file
+    bool is_dev;              // whether it's in "autoload-dev"
   };
 
   struct AutoloadPsr4Item {
     std::string prefix;
     std::vector<std::string> dirs;
-    bool is_dev;                // whether it's in "autoload-dev"
+    bool is_dev; // whether it's in "autoload-dev"
   };
 
   struct AutoloadFileItem {
     std::string file_name;
-    bool is_dev;                // whether it's in "autoload-dev"
+    bool is_dev; // whether it's in "autoload-dev"
   };
-  
 
   explicit ComposerJsonData(const std::string &json_filename);
 

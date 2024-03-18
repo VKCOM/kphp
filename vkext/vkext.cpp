@@ -31,29 +31,19 @@
 #pragma GCC diagnostic ignored "-Wdate-time"
 #endif
 
-PHP_INI_MH (on_change_conffile);
+PHP_INI_MH(on_change_conffile);
 
-PHP_INI_BEGIN ()
-    PHP_INI_ENTRY ("tl.conffile", 0, PHP_INI_ALL, on_change_conffile)
-    PHP_INI_ENTRY ("tl.conffile_autoreload", 0, PHP_INI_ALL, 0)
-    PHP_INI_ENTRY ("tl.enable_rpc_error_with_header_fetching", 0, PHP_INI_ALL, 0)
-    PHP_INI_ENTRY ("vkext.ping_timeout", 0, PHP_INI_ALL, 0)
-    PHP_INI_ENTRY ("vkext.use_unix", 0, PHP_INI_ALL, 0)
-    PHP_INI_ENTRY ("vkext.unix_socket_directory", "/var/run/engine", PHP_INI_ALL, 0)
-PHP_INI_END ()
+PHP_INI_BEGIN()
+PHP_INI_ENTRY("tl.conffile", 0, PHP_INI_ALL, on_change_conffile)
+PHP_INI_ENTRY("tl.conffile_autoreload", 0, PHP_INI_ALL, 0)
+PHP_INI_ENTRY("tl.enable_rpc_error_with_header_fetching", 0, PHP_INI_ALL, 0)
+PHP_INI_ENTRY("vkext.ping_timeout", 0, PHP_INI_ALL, 0)
+PHP_INI_ENTRY("vkext.use_unix", 0, PHP_INI_ALL, 0)
+PHP_INI_ENTRY("vkext.unix_socket_directory", "/var/run/engine", PHP_INI_ALL, 0)
+PHP_INI_END()
 
-zend_module_entry vkext_module_entry = {
-  STANDARD_MODULE_HEADER,
-  VKEXT_NAME,
-  ext_functions,
-  PHP_MINIT(vkext),
-  PHP_MSHUTDOWN(vkext),
-  PHP_RINIT(vkext),
-  PHP_RSHUTDOWN(vkext),
-  NULL,
-  VKEXT_VERSION,
-  STANDARD_MODULE_PROPERTIES
-};
+zend_module_entry vkext_module_entry = {STANDARD_MODULE_HEADER, VKEXT_NAME,           ext_functions, PHP_MINIT(vkext), PHP_MSHUTDOWN(vkext),
+                                        PHP_RINIT(vkext),       PHP_RSHUTDOWN(vkext), NULL,          VKEXT_VERSION,    STANDARD_MODULE_PROPERTIES};
 
 ZEND_GET_MODULE(vkext)
 
@@ -98,16 +88,15 @@ double get_double_time_since_epoch() {
 #define BUFF_LEN (1 << 16)
 static char buff[BUFF_LEN];
 char *wptr;
-//int buff_pos;
+// int buff_pos;
 
 char *result_buff;
 int result_buff_len;
 int result_buff_pos;
 #define cur_buff_len ((wptr - buff) + result_buff_pos)
 
-
 void init_buff(int tmp) {
-  //buff_pos = 0;
+  // buff_pos = 0;
   wptr = buff;
   result_buff_len = 0;
   result_buff_pos = 0;
@@ -115,16 +104,16 @@ void init_buff(int tmp) {
 
 void free_buff() {
   if (result_buff_len) {
-    efree (result_buff);
+    efree(result_buff);
   }
 }
 
 void realloc_buff() {
   if (!result_buff_len) {
-    result_buff = static_cast<char *>(emalloc (BUFF_LEN));
+    result_buff = static_cast<char *>(emalloc(BUFF_LEN));
     result_buff_len = BUFF_LEN;
   } else {
-    result_buff = static_cast<char *>(erealloc (result_buff, 2 * result_buff_len));
+    result_buff = static_cast<char *>(erealloc(result_buff, 2 * result_buff_len));
     result_buff_len *= 2;
   }
 }
@@ -147,22 +136,21 @@ char *finish_buff() {
   }
 }
 
-#define likely(x) __builtin_expect((x),1)
-#define unlikely(x) __builtin_expect((x),0)
+#define likely(x) __builtin_expect((x), 1)
+#define unlikely(x) __builtin_expect((x), 0)
 #define min(x, y) ((x) < (y) ? (x) : (y))
 
 void write_buff(const char *s, int l) {
   while (l > 0) {
-    if (unlikely (wptr == buff + BUFF_LEN)) {
+    if (unlikely(wptr == buff + BUFF_LEN)) {
       flush_buff();
     }
-    int ll = min (l, buff + BUFF_LEN - wptr);
+    int ll = min(l, buff + BUFF_LEN - wptr);
     memcpy(wptr, s, ll);
     wptr += ll;
     s += ll;
     l -= ll;
   }
-
 }
 
 int write_buff_get_pos() {
@@ -177,7 +165,7 @@ void write_buff_set_pos(int pos) {
     wptr = (pos - result_buff_pos) + buff;
     return;
   }
-  //result_buff_pos -= (pos - (wptr - buff));
+  // result_buff_pos -= (pos - (wptr - buff));
   result_buff_pos = pos;
   wptr = buff;
 }
@@ -194,16 +182,15 @@ void write_buff_char_pos(char c, int pos) {
   *(result_buff + pos) = c;
 }
 
-
 void write_buff_char(char c) {
-  if (unlikely (wptr == buff + BUFF_LEN)) {
+  if (unlikely(wptr == buff + BUFF_LEN)) {
     flush_buff();
   }
   *(wptr++) = c;
 }
 
 void write_buff_char_2(char c1, char c2) {
-  if (unlikely (wptr >= buff + BUFF_LEN - 1)) {
+  if (unlikely(wptr >= buff + BUFF_LEN - 1)) {
     flush_buff();
   }
   *(wptr++) = c1;
@@ -211,7 +198,7 @@ void write_buff_char_2(char c1, char c2) {
 }
 
 void write_buff_char_3(char c1, char c2, char c3) {
-  if (unlikely (wptr >= buff + BUFF_LEN - 2)) {
+  if (unlikely(wptr >= buff + BUFF_LEN - 2)) {
     flush_buff();
   }
   *(wptr++) = c1;
@@ -220,7 +207,7 @@ void write_buff_char_3(char c1, char c2, char c3) {
 }
 
 void write_buff_char_4(char c1, char c2, char c3, char c4) {
-  if (unlikely (wptr >= buff + BUFF_LEN - 3)) {
+  if (unlikely(wptr >= buff + BUFF_LEN - 3)) {
     flush_buff();
   }
   *(wptr++) = c1;
@@ -230,7 +217,7 @@ void write_buff_char_4(char c1, char c2, char c3, char c4) {
 }
 
 inline void write_buff_char_5(char c1, char c2, char c3, char c4, char c5) {
-  if (unlikely (wptr >= buff + BUFF_LEN - 4)) {
+  if (unlikely(wptr >= buff + BUFF_LEN - 4)) {
     flush_buff();
   }
   *wptr++ = c1;
@@ -241,7 +228,7 @@ inline void write_buff_char_5(char c1, char c2, char c3, char c4, char c5) {
 }
 
 inline void write_buff_char_6(char c1, char c2, char c3, char c4, char c5, char c6) {
-  if (unlikely (wptr >= buff + BUFF_LEN - 5)) {
+  if (unlikely(wptr >= buff + BUFF_LEN - 5)) {
     flush_buff();
   }
   *wptr++ = c1;
@@ -253,14 +240,14 @@ inline void write_buff_char_6(char c1, char c2, char c3, char c4, char c5, char 
 }
 
 void write_buff_long(long x) {
-  if (unlikely (wptr + 25 > buff + BUFF_LEN)) {
+  if (unlikely(wptr + 25 > buff + BUFF_LEN)) {
     flush_buff();
   }
   wptr += snprintf(wptr, 25, "%ld", x);
 }
 
 void write_buff_double(double x) {
-  if (unlikely (wptr + 100 > buff + BUFF_LEN)) {
+  if (unlikely(wptr + 100 > buff + BUFF_LEN)) {
     flush_buff();
   }
   wptr += snprintf(wptr, 100, "%f", x);
@@ -463,9 +450,12 @@ int win_to_utf8(const char *s, int len, bool escape) {
     if (state == 3 && 0xd800 <= cur_num && cur_num <= 0xdfff) {
       cur_num = 32;
     }
-    if (state == 3 && (!escape || (cur_num >= 32 && cur_num != 33 && cur_num != 34 && cur_num != 36 && cur_num != 39 && cur_num != 60 && cur_num != 62 && cur_num != 92 && cur_num != 8232 && cur_num != 8233 && cur_num < 0x80000000))) {
+    if (state == 3
+        && (!escape
+            || (cur_num >= 32 && cur_num != 33 && cur_num != 34 && cur_num != 36 && cur_num != 39 && cur_num != 60 && cur_num != 62 && cur_num != 92
+                && cur_num != 8232 && cur_num != 8233 && cur_num < 0x80000000))) {
       write_buff_set_pos(save_pos);
-      assert (save_pos == write_buff_get_pos());
+      assert(save_pos == write_buff_get_pos());
       (escape ? write_char_utf8 : write_char_utf8_no_escape)(cur_num);
     } else if (state == 3 && cur_num >= 0x80000000) {
       write_char_utf8(win_to_utf8_convert[(unsigned char)(s[i])]);
@@ -505,7 +495,7 @@ void set_debug_handlers() {
   signal(SIGABRT, sigabrt_debug_handler);
 }
 
-PHP_MINIT_FUNCTION (vkext) {
+PHP_MINIT_FUNCTION(vkext) {
   set_debug_handlers();
   REGISTER_INI_ENTRIES();
   rpc_on_minit(module_number);
@@ -514,31 +504,31 @@ PHP_MINIT_FUNCTION (vkext) {
   return SUCCESS;
 }
 
-PHP_INI_MH (on_change_conffile) {
+PHP_INI_MH(on_change_conffile) {
   if (!new_value) {
     return FAILURE;
   }
-  int x = read_tl_config(VK_ZSTR_VAL (new_value));
+  int x = read_tl_config(VK_ZSTR_VAL(new_value));
   return x < 0 ? FAILURE : SUCCESS;
 }
 
-PHP_RINIT_FUNCTION (vkext) {
+PHP_RINIT_FUNCTION(vkext) {
   check_reload_tl_config();
   rpc_on_rinit(module_number);
   return SUCCESS;
 }
 
-PHP_MSHUTDOWN_FUNCTION (vkext) {
+PHP_MSHUTDOWN_FUNCTION(vkext) {
   UNREGISTER_INI_ENTRIES();
   return SUCCESS;
 }
 
-PHP_RSHUTDOWN_FUNCTION (vkext) {
+PHP_RSHUTDOWN_FUNCTION(vkext) {
   rpc_on_rshutdown(module_number);
   return SUCCESS;
 }
 
-PHP_FUNCTION (vk_utf8_to_win) {
+PHP_FUNCTION(vk_utf8_to_win) {
   char *text;
   VK_LEN_T text_len = 0;
   long max_len = 0;
@@ -554,12 +544,11 @@ PHP_FUNCTION (vk_utf8_to_win) {
     res[max_len] = 0;
   }
   res = r >= 0 ? res : text;
-  VK_RETVAL_STRING_DUP (res);
+  VK_RETVAL_STRING_DUP(res);
   free_buff();
 }
 
-
-PHP_FUNCTION (vk_win_to_utf8) {
+PHP_FUNCTION(vk_win_to_utf8) {
   char *text;
   long text_len = 0;
   bool escape = true;
@@ -570,25 +559,25 @@ PHP_FUNCTION (vk_win_to_utf8) {
   win_to_utf8(text, text_len, escape);
   write_buff_char(0);
   char *res = finish_buff();
-  char *new_res = estrdup (res);
+  char *new_res = estrdup(res);
   free_buff();
-  VK_RETURN_STRING_NOD (new_res);
+  VK_RETURN_STRING_NOD(new_res);
 }
 
-PHP_FUNCTION (vk_upcase) {
+PHP_FUNCTION(vk_upcase) {
   char *text;
   VK_LEN_T text_length = 0;
   if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &text, &text_length) == FAILURE) {
     return;
   }
-  char *new_text = estrdup (text);
+  char *new_text = estrdup(text);
   for (VK_LEN_T i = 0; i < text_length; i++) {
     new_text[i] = upcase_char(new_text[i]);
   }
-  VK_RETURN_STRING_NOD (new_text);
+  VK_RETURN_STRING_NOD(new_text);
 }
 
-PHP_FUNCTION (vk_flex) {
+PHP_FUNCTION(vk_flex) {
   char *name;
   long name_len = 0;
   char *case_name;
@@ -608,10 +597,10 @@ PHP_FUNCTION (vk_flex) {
     fprintf(stderr, "lang_id = %ld\n", lang_id);
   }
   char *res = do_flex(name, name_len, case_name, case_name_len, sex == 1, type, type_len, lang_id);
-  VK_RETURN_STRING_NOD (res);
+  VK_RETURN_STRING_NOD(res);
 }
 
-PHP_FUNCTION (vk_json_encode) {
+PHP_FUNCTION(vk_json_encode) {
   zval *parameter;
 
   if (zend_parse_parameters(ZEND_NUM_ARGS(), "z", &parameter) == FAILURE) {
@@ -626,13 +615,13 @@ PHP_FUNCTION (vk_json_encode) {
 
   write_buff_char(0);
   char *res = finish_buff();
-  char *new_res = estrdup (res);
+  char *new_res = estrdup(res);
   free_buff();
-  VK_RETURN_STRING_NOD (new_res);
+  VK_RETURN_STRING_NOD(new_res);
 }
 
 char ws[256] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
-//char lb[256] = {0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+// char lb[256] = {0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
 static inline int is_html_opt_symb(char c) {
   return (c == '<' || c == '>' || c == '(' || c == ')' || c == '{' || c == '}' || c == '/' || c == '"' || c == ':' || c == ',' || c == ';');
@@ -640,11 +629,11 @@ static inline int is_html_opt_symb(char c) {
 
 static inline int is_space(char c) {
   return ws[(unsigned char)c];
-  //return (c == '\n' || c == '\r' || c == ' ' || c == '\t');
+  // return (c == '\n' || c == '\r' || c == ' ' || c == '\t');
 }
 
 static inline int is_linebreak(char c) {
-  //return lb[(unsigned char)c];
+  // return lb[(unsigned char)c];
   return c == '\n';
 }
 
@@ -675,7 +664,7 @@ static inline int is_pre_tag(const char *s) {
   return 0;
 }
 
-PHP_FUNCTION (vk_whitespace_pack) {
+PHP_FUNCTION(vk_whitespace_pack) {
   char *text, *ctext;
   VK_LEN_T text_length = 0;
   long html_opt = 0;
@@ -683,13 +672,13 @@ PHP_FUNCTION (vk_whitespace_pack) {
     return;
   }
   init_buff(text_length);
-  //init_buff (0);
+  // init_buff (0);
   int level = 0;
-  //int i = 0;
+  // int i = 0;
   ctext = text;
   char *start = text;
-  //fprintf (stderr, "%lf\n", get_double_time_since_epoch ());
-  //const char *ctext = text;
+  // fprintf (stderr, "%lf\n", get_double_time_since_epoch ());
+  // const char *ctext = text;
   while (*text) {
     if (is_space(*text) && !level) {
       int linebreak = 0;
@@ -700,7 +689,7 @@ PHP_FUNCTION (vk_whitespace_pack) {
         text++;
       }
       if (!html_opt || ((ctext != start && !is_html_opt_symb(*(ctext - 1))) && (*text && !is_html_opt_symb(*text)))) {
-        //if (0) {
+        // if (0) {
         write_buff_char(linebreak ? '\n' : ' ');
       }
       ctext = text;
@@ -725,21 +714,20 @@ PHP_FUNCTION (vk_whitespace_pack) {
     }
     ctext = text;
   }
-  //fprintf (stderr, "\n");
+  // fprintf (stderr, "\n");
   write_buff_char(0);
-  //fprintf (stderr, "%lf\n", get_double_time_since_epoch ());
+  // fprintf (stderr, "%lf\n", get_double_time_since_epoch ());
   char *res = finish_buff();
-  //fprintf (stderr, "%lf\n", get_double_time_since_epoch ());
-  char *new_res = estrdup (res);
-  //fprintf (stderr, "%lf\n", get_double_time_since_epoch ());
+  // fprintf (stderr, "%lf\n", get_double_time_since_epoch ());
+  char *new_res = estrdup(res);
+  // fprintf (stderr, "%lf\n", get_double_time_since_epoch ());
   VK_RETVAL_STRING_NOD(new_res);
   free_buff();
-  //fprintf (stderr, "%lf\n", get_double_time_since_epoch ());
+  // fprintf (stderr, "%lf\n", get_double_time_since_epoch ());
 }
 
-
-PHP_FUNCTION (vk_hello_world) {
-  char *s = static_cast<char *>(emalloc (4));
+PHP_FUNCTION(vk_hello_world) {
+  char *s = static_cast<char *>(emalloc(4));
   s[0] = 'A';
   s[1] = 0;
   s[2] = 'A';
@@ -747,229 +735,228 @@ PHP_FUNCTION (vk_hello_world) {
   VK_RETURN_STRINGL_NOD(s, 4);
 }
 
-PHP_FUNCTION (vkext_full_version) {
+PHP_FUNCTION(vkext_full_version) {
   ADD_CNT(total);
   START_TIMER(total);
   VK_RETVAL_STRING_DUP(get_version_string());
   END_TIMER(total);
 }
 
-PHP_FUNCTION (new_rpc_connection) {
+PHP_FUNCTION(new_rpc_connection) {
   ADD_CNT(total);
   START_TIMER(total);
   php_new_rpc_connection(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (rpc_clean) {
+PHP_FUNCTION(rpc_clean) {
   ADD_CNT(total);
   START_TIMER(total);
   php_rpc_clean(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (rpc_send) {
+PHP_FUNCTION(rpc_send) {
   ADD_CNT(total);
   START_TIMER(total);
   php_rpc_send(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (rpc_send_noflush) {
+PHP_FUNCTION(rpc_send_noflush) {
   ADD_CNT(total);
   START_TIMER(total);
   php_rpc_send_noflush(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (rpc_flush) {
+PHP_FUNCTION(rpc_flush) {
   ADD_CNT(total);
   START_TIMER(total);
   php_rpc_flush(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (rpc_get_and_parse) {
+PHP_FUNCTION(rpc_get_and_parse) {
   ADD_CNT(total);
   START_TIMER(total);
   php_rpc_get_and_parse(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (rpc_get) {
+PHP_FUNCTION(rpc_get) {
   ADD_CNT(total);
   START_TIMER(total);
   php_rpc_get(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (rpc_parse) {
+PHP_FUNCTION(rpc_parse) {
   ADD_CNT(total);
   START_TIMER(total);
   php_rpc_parse(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (set_fail_rpc_on_int32_overflow) {
+PHP_FUNCTION(set_fail_rpc_on_int32_overflow) {
   ADD_CNT(total);
   START_TIMER(total);
   set_fail_rpc_on_int32_overflow(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (store_int) {
+PHP_FUNCTION(store_int) {
   ADD_CNT(total);
   START_TIMER(total);
   php_rpc_store_int(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (store_long) {
+PHP_FUNCTION(store_long) {
   ADD_CNT(total);
   START_TIMER(total);
   php_rpc_store_long(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (store_string) {
+PHP_FUNCTION(store_string) {
   ADD_CNT(total);
   START_TIMER(total);
   php_rpc_store_string(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (store_double) {
+PHP_FUNCTION(store_double) {
   ADD_CNT(total);
   START_TIMER(total);
   php_rpc_store_double(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (store_float) {
+PHP_FUNCTION(store_float) {
   ADD_CNT(total);
   START_TIMER(total);
   php_rpc_store_float(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (store_many) {
+PHP_FUNCTION(store_many) {
   ADD_CNT(total);
   START_TIMER(total);
   php_rpc_store_many(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (store_header) {
+PHP_FUNCTION(store_header) {
   ADD_CNT(total);
   START_TIMER(total);
   php_rpc_store_header(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (fetch_int) {
+PHP_FUNCTION(fetch_int) {
   ADD_CNT(total);
   START_TIMER(total);
   php_rpc_fetch_int(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (fetch_lookup_int) {
+PHP_FUNCTION(fetch_lookup_int) {
   ADD_CNT(total);
   START_TIMER(total);
   php_rpc_fetch_lookup_int(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (fetch_lookup_data) {
+PHP_FUNCTION(fetch_lookup_data) {
   ADD_CNT(total);
   START_TIMER(total);
   php_rpc_fetch_lookup_data(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (fetch_memcache_value) {
+PHP_FUNCTION(fetch_memcache_value) {
   ADD_CNT(total);
   START_TIMER(total);
   php_rpc_fetch_memcache_value(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-
-PHP_FUNCTION (fetch_long) {
+PHP_FUNCTION(fetch_long) {
   ADD_CNT(total);
   START_TIMER(total);
   php_rpc_fetch_long(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (fetch_double) {
+PHP_FUNCTION(fetch_double) {
   ADD_CNT(total);
   START_TIMER(total);
   php_rpc_fetch_double(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (fetch_float) {
+PHP_FUNCTION(fetch_float) {
   ADD_CNT(total);
   START_TIMER(total);
   php_rpc_fetch_float(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (fetch_string) {
+PHP_FUNCTION(fetch_string) {
   ADD_CNT(total);
   START_TIMER(total);
   php_rpc_fetch_string(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (fetch_end) {
+PHP_FUNCTION(fetch_end) {
   ADD_CNT(total);
   START_TIMER(total);
   php_rpc_fetch_end(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (fetch_eof) {
+PHP_FUNCTION(fetch_eof) {
   ADD_CNT(total);
   START_TIMER(total);
   php_rpc_fetch_end(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (rpc_queue_create) {
+PHP_FUNCTION(rpc_queue_create) {
   ADD_CNT(total);
   START_TIMER(total);
   php_rpc_queue_create(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (rpc_queue_empty) {
+PHP_FUNCTION(rpc_queue_empty) {
   ADD_CNT(total);
   START_TIMER(total);
   php_rpc_queue_empty(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (rpc_queue_next) {
+PHP_FUNCTION(rpc_queue_next) {
   ADD_CNT(total);
   START_TIMER(total);
   php_rpc_queue_next(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (rpc_queue_push) {
+PHP_FUNCTION(rpc_queue_push) {
   ADD_CNT(total);
   START_TIMER(total);
   php_rpc_queue_push(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (vk_clear_stats) {
-  memset(&stats, 0, offsetof (struct stats, malloc));
+PHP_FUNCTION(vk_clear_stats) {
+  memset(&stats, 0, offsetof(struct stats, malloc));
 }
 
-PHP_FUNCTION (rpc_tl_pending_queries_count) {
+PHP_FUNCTION(rpc_tl_pending_queries_count) {
   ADD_CNT(total);
   START_TIMER(total);
   vkext_reset_error();
@@ -977,7 +964,7 @@ PHP_FUNCTION (rpc_tl_pending_queries_count) {
   END_TIMER(total);
 }
 
-PHP_FUNCTION (rpc_tl_query) {
+PHP_FUNCTION(rpc_tl_query) {
   ADD_CNT(total);
   START_TIMER(total);
   vkext_reset_error();
@@ -985,7 +972,7 @@ PHP_FUNCTION (rpc_tl_query) {
   END_TIMER(total);
 }
 
-PHP_FUNCTION (rpc_tl_query_one) {
+PHP_FUNCTION(rpc_tl_query_one) {
   ADD_CNT(total);
   START_TIMER(total);
   vkext_reset_error();
@@ -993,7 +980,7 @@ PHP_FUNCTION (rpc_tl_query_one) {
   END_TIMER(total);
 }
 
-PHP_FUNCTION (typed_rpc_tl_query) {
+PHP_FUNCTION(typed_rpc_tl_query) {
   ADD_CNT(total);
   START_TIMER(total);
   vkext_reset_error();
@@ -1004,7 +991,7 @@ PHP_FUNCTION (typed_rpc_tl_query) {
   END_TIMER(total);
 }
 
-PHP_FUNCTION (typed_rpc_tl_query_one) {
+PHP_FUNCTION(typed_rpc_tl_query_one) {
   ADD_CNT(total);
   START_TIMER(total);
   vkext_reset_error();
@@ -1015,21 +1002,21 @@ PHP_FUNCTION (typed_rpc_tl_query_one) {
   END_TIMER(total);
 }
 
-PHP_FUNCTION (rpc_tl_query_result) {
+PHP_FUNCTION(rpc_tl_query_result) {
   ADD_CNT(total);
   START_TIMER(total);
   vk_rpc_tl_query_result(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (rpc_tl_query_result_one) {
+PHP_FUNCTION(rpc_tl_query_result_one) {
   ADD_CNT(total);
   START_TIMER(total);
   vk_rpc_tl_query_result_one(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (typed_rpc_tl_query_result_one) {
+PHP_FUNCTION(typed_rpc_tl_query_result_one) {
   ADD_CNT(total);
   START_TIMER(total);
   typed_mode = 1;
@@ -1039,7 +1026,7 @@ PHP_FUNCTION (typed_rpc_tl_query_result_one) {
   END_TIMER(total);
 }
 
-PHP_FUNCTION (typed_rpc_tl_query_result) {
+PHP_FUNCTION(typed_rpc_tl_query_result) {
   ADD_CNT(total);
   START_TIMER(total);
   typed_mode = 1;
@@ -1049,7 +1036,7 @@ PHP_FUNCTION (typed_rpc_tl_query_result) {
   END_TIMER(total);
 }
 
-PHP_FUNCTION (rpc_get_last_send_error) {
+PHP_FUNCTION(rpc_get_last_send_error) {
   ADD_CNT(total);
   START_TIMER(total);
   vkext_get_errors(return_value);
@@ -1058,7 +1045,7 @@ PHP_FUNCTION (rpc_get_last_send_error) {
 
 extern long error_verbosity;
 
-PHP_FUNCTION (vk_set_error_verbosity) {
+PHP_FUNCTION(vk_set_error_verbosity) {
   ADD_CNT(total);
   START_TIMER(total);
   long t;
@@ -1071,28 +1058,28 @@ PHP_FUNCTION (vk_set_error_verbosity) {
   RETURN_TRUE;
 }
 
-PHP_FUNCTION (tl_config_load_file) {
+PHP_FUNCTION(tl_config_load_file) {
   ADD_CNT(total);
   START_TIMER(total);
   php_tl_config_load_file(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (vkext_prepare_stats) {
+PHP_FUNCTION(vkext_prepare_stats) {
   ADD_CNT(total);
   START_TIMER(total);
   php_vk_prepare_stats(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (enable_internal_rpc_queries) {
+PHP_FUNCTION(enable_internal_rpc_queries) {
   ADD_CNT(total);
   START_TIMER(total);
   enable_internal_rpc_queries(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
-PHP_FUNCTION (disable_internal_rpc_queries) {
+PHP_FUNCTION(disable_internal_rpc_queries) {
   ADD_CNT(total);
   START_TIMER(total);
   disable_internal_rpc_queries(INTERNAL_FUNCTION_PARAM_PASSTHRU);

@@ -5,9 +5,9 @@
 #ifndef KDB_COMMON_CRYPTO_AES256_X86_64_H
 #define KDB_COMMON_CRYPTO_AES256_X86_64_H
 
-#include <sys/cdefs.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <sys/cdefs.h>
 
 #include "common/crypto/aes256.h"
 

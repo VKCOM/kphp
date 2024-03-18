@@ -18,7 +18,8 @@
 
 struct InitVar {
   VarPtr var;
-  explicit InitVar(VarPtr var) : var(var) {}
+  explicit InitVar(VarPtr var)
+    : var(var) {}
 
   void compile(CodeGenerator &W) const {
     Location save_location = stage::get_location();
@@ -27,10 +28,8 @@ struct InitVar {
     if (init_val->type() == op_conv_regexp) {
       const auto &location = init_val->get_location();
       kphp_assert(location.function && location.file);
-      W << VarName(var) << ".init (" << var->init_val << ", "
-        << RawString(location.function->name) << ", "
-        << RawString(location.file->relative_file_name + ':' + std::to_string(location.line))
-        << ");" << NL;
+      W << VarName(var) << ".init (" << var->init_val << ", " << RawString(location.function->name) << ", "
+        << RawString(location.file->relative_file_name + ':' + std::to_string(location.line)) << ");" << NL;
     } else {
       W << VarName(var) << " = " << var->init_val << ";" << NL;
     }
@@ -39,12 +38,11 @@ struct InitVar {
   }
 };
 
-
 static void add_dependent_declarations(VertexPtr vertex, std::set<VarPtr> &dependent_vars) {
   if (!vertex) {
     return;
   }
-  for (auto child: *vertex) {
+  for (auto child : *vertex) {
     add_dependent_declarations(child, dependent_vars);
   }
   if (auto var = vertex.try_as<op_var>()) {
@@ -110,21 +108,18 @@ static void compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> &vars,
   }
 
   std::vector<VarPtr> extern_depends;
-  std::set_difference(dependent_vars.begin(), dependent_vars.end(),
-                      vars.begin(), vars.end(), std::back_inserter(extern_depends));
+  std::set_difference(dependent_vars.begin(), dependent_vars.end(), vars.begin(), vars.end(), std::back_inserter(extern_depends));
   for (auto var : extern_depends) {
     W << VarExternDeclaration(var);
   }
 
   std::vector<std::string> values(const_raw_string_vars.size());
-  std::transform(const_raw_string_vars.begin(), const_raw_string_vars.end(),
-                 values.begin(),
-                 [](const VarPtr &var){ return var->init_val.as<op_string>()->get_string(); });
+  std::transform(const_raw_string_vars.begin(), const_raw_string_vars.end(), values.begin(),
+                 [](const VarPtr &var) { return var->init_val.as<op_string>()->get_string(); });
   auto const_string_shifts = compile_raw_data(W, values);
 
   const std::vector<int> const_array_shifts = compile_arrays_raw_representation(const_raw_array_vars, W);
   kphp_assert(const_array_shifts.size() == const_raw_array_vars.size());
-
 
   const size_t max_dep_level = std::max({const_raw_string_vars.max_dep_level(), const_raw_array_vars.max_dep_level(), other_const_vars.max_dep_level()});
 
@@ -141,7 +136,7 @@ static void compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> &vars,
       compile_raw_array(W, var, const_array_shifts[arr_idx++]);
     }
 
-    for (const auto &var: other_const_vars.vars_by_dep_level(dep_level)) {
+    for (const auto &var : other_const_vars.vars_by_dep_level(dep_level)) {
       W << InitVar(var);
       const auto *type_data = var->tinf_node.get_type();
       PrimitiveType ptype = type_data->ptype();
@@ -161,11 +156,10 @@ static void compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> &vars,
   W << CloseFile();
 }
 
-
 VarsCpp::VarsCpp(std::vector<int> &&max_dep_levels, size_t parts_cnt)
   : max_dep_levels_(std::move(max_dep_levels))
   , parts_cnt_(parts_cnt) {
-  kphp_assert (1 <= parts_cnt_ && parts_cnt_ <= 1024);
+  kphp_assert(1 <= parts_cnt_ && parts_cnt_ <= 1024);
 }
 
 void VarsCpp::compile(CodeGenerator &W) const {

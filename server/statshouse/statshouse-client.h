@@ -9,9 +9,11 @@
 class StatsHouseClient {
 public:
   // Safe to use dummy instance
-  StatsHouseClient() : transport({}, {}) {}
+  StatsHouseClient()
+    : transport({}, {}) {}
 
-  StatsHouseClient(const std::string &ip, int port) : transport(ip, port) {}
+  StatsHouseClient(const std::string &ip, int port)
+    : transport(ip, port) {}
 
   statshouse::TransportUDPBase::MetricBuilder metric(std::string_view name, bool force_tag_host = false);
 

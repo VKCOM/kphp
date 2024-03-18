@@ -79,9 +79,8 @@ private:
 
   const WorkersControl &control_;
 
-  WarmUpContext() noexcept:
-    control_(vk::singleton<WorkersControl>::get()) {
-  }
+  WarmUpContext() noexcept
+    : control_(vk::singleton<WorkersControl>::get()) {}
 
   friend vk::singleton<WarmUpContext>;
 };

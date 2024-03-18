@@ -4,12 +4,12 @@
 
 #include <gtest/gtest.h>
 
-#include "compiler/ffi/ffi_parser.h"
-#include "compiler/ffi/c_parser/lexer.h"
 #include "compiler/data/ffi-data.h"
+#include "compiler/ffi/c_parser/lexer.h"
+#include "compiler/ffi/ffi_parser.h"
 
 static std::string ffi_test_join_types(const FFIParseResult &parse_result) {
-  std::vector<const FFIType*> types;
+  std::vector<const FFIType *> types;
   for (const FFIType *type : parse_result) {
     types.emplace_back(type);
   }
@@ -24,7 +24,7 @@ static std::string ffi_test_join_types(const FFIParseResult &parse_result) {
 }
 
 TEST(ffi_test, test_lexer) {
-  using token_type = ffi::YYParser::token_type ;
+  using token_type = ffi::YYParser::token_type;
 
   struct testCase {
     std::string input;
@@ -539,10 +539,7 @@ TEST(ffi_test, test_typedef) {
   };
   std::vector<testCase> tests = {
     // simple typedefs and usages
-    {
-      "typedef int16_t i16; void f(i16 x);",
-      "void f(int16_t x)"
-    },
+    {"typedef int16_t i16; void f(i16 x);", "void f(int16_t x)"},
 
     // typedef on top of another typedef
     {

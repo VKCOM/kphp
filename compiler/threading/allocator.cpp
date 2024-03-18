@@ -7,8 +7,8 @@
 #include <cstdlib>
 #include <memory.h>
 
-#include "common/sanitizer.h"
 #include "common/container_of.h"
+#include "common/sanitizer.h"
 #include "common/wrappers/likely.h"
 
 #include "compiler/threading/tls.h"
@@ -56,7 +56,7 @@ public:
   }
 
   block_t *block_alloc(size_t size) {
-    size_t block_size = size + offsetof (block_t, data);
+    size_t block_size = size + offsetof(block_t, data);
     block_t *res;
     if (size >= MAX_BLOCK_SIZE) {
       res = (block_t *)__libc_malloc(block_size);
@@ -66,8 +66,8 @@ public:
         res = free_blocks[bucket_id];
         free_blocks[bucket_id] = res->next;
       } else {
-        if (unlikely (left < block_size)) {
-          assert (malloc != __libc_malloc);
+        if (unlikely(left < block_size)) {
+          assert(malloc != __libc_malloc);
           buf = (char *)__libc_malloc(1 << 26);
           left = 1 << 26;
         }
@@ -135,7 +135,7 @@ public:
 static TLS<ZAllocatorRaw> zallocator;
 
 void *malloc(size_t size) {
-  assert (malloc != __libc_malloc);
+  assert(malloc != __libc_malloc);
   return zallocator->alloc(size);
 }
 void *calloc(size_t size_a, size_t size_b) {
@@ -144,9 +144,9 @@ void *calloc(size_t size_a, size_t size_b) {
 void *realloc(void *ptr, size_t size) {
   return zallocator->realloc(ptr, size);
 }
-__attribute__((error("memalign function is assert(0), don't use it")))
-void *memalign(size_t aligment __attribute__((unused)), size_t size __attribute__((unused))) {
-  assert (0);
+__attribute__((error("memalign function is assert(0), don't use it"))) void *memalign(size_t aligment __attribute__((unused)),
+                                                                                      size_t size __attribute__((unused))) {
+  assert(0);
   return nullptr;
 }
 void free(void *ptr) {

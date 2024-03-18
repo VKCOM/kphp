@@ -4,10 +4,10 @@
 
 #include "compiler/pipes/filter-only-actually-used.h"
 
+#include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
-#include "compiler/compiler-core.h"
 #include "compiler/threading/profiler.h"
 
 namespace {
@@ -19,10 +19,9 @@ struct ThrowGraphNode {
   FunctionPtr f;
   std::vector<VertexAdaptor<op_try>> &try_stack;
 
-  ThrowGraphNode(FunctionPtr f, std::vector<VertexAdaptor<op_try>> &try_stack):
-    f{f},
-    try_stack{try_stack}
-  {}
+  ThrowGraphNode(FunctionPtr f, std::vector<VertexAdaptor<op_try>> &try_stack)
+    : f{f}
+    , try_stack{try_stack} {}
 };
 
 void calc_throws_dfs(FunctionPtr callee, IdMap<std::vector<ThrowGraphNode>> &throws_graph) {
@@ -71,8 +70,7 @@ void calc_throws_and_body_value_through_call_edges(std::vector<FunctionAndEdges>
         kphp_assert(edge.called_f);
         throws_graph[edge.called_f].emplace_back(fun, edge.try_stack);
       }
-      if (fun->body_seq == FunctionData::body_value::unknown
-          && edge.called_f->body_seq != FunctionData::body_value::empty) {
+      if (fun->body_seq == FunctionData::body_value::unknown && edge.called_f->body_seq != FunctionData::body_value::empty) {
         non_empty_body_graph[edge.called_f].emplace_back(fun);
       }
     }
@@ -96,9 +94,7 @@ void calc_throws_and_body_value_through_call_edges(std::vector<FunctionAndEdges>
   }
 }
 
-
-void calc_actually_used_dfs(FunctionPtr from, IdMap<FunctionPtr> &used_functions,
-                            const IdMap<std::vector<EdgeInfo>> &call_graph) {
+void calc_actually_used_dfs(FunctionPtr from, IdMap<FunctionPtr> &used_functions, const IdMap<std::vector<EdgeInfo>> &call_graph) {
   used_functions[from] = from;
 
   for (const auto &to : call_graph[from]) {
@@ -112,7 +108,7 @@ void mark_profiler_dfs(FunctionPtr caller, const IdMap<std::vector<EdgeInfo>> &c
   if (caller->profiler_state == FunctionData::profiler_status::disable) {
     return;
   }
-  for (const auto &edge: call_graph[caller]) {
+  for (const auto &edge : call_graph[caller]) {
     if (edge.called_f->profiler_state == FunctionData::profiler_status::disable) {
       edge.called_f->profiler_state = FunctionData::profiler_status::enable_as_child;
       mark_profiler_dfs(edge.called_f, call_graph);
@@ -121,35 +117,33 @@ void mark_profiler_dfs(FunctionPtr caller, const IdMap<std::vector<EdgeInfo>> &c
 }
 
 struct DfsException : std::runtime_error {
-  DfsException(FunctionPtr f, std::string &&msg) :
-    runtime_error(std::move(msg)),
-    function(f) {}
+  DfsException(FunctionPtr f, std::string &&msg)
+    : runtime_error(std::move(msg))
+    , function(f) {}
 
   FunctionPtr function;
 };
 
 void mark_performance_inspections_dfs(FunctionPtr caller, const IdMap<std::vector<EdgeInfo>> &call_graph) {
-  for (const auto &edge: call_graph[caller]) {
+  for (const auto &edge : call_graph[caller]) {
     if (edge.called_f->is_extern()) {
       continue;
     }
     const auto analyse_inherit_res = edge.called_f->performance_inspections_for_analysis.merge_with_caller(caller->performance_inspections_for_analysis);
     if (analyse_inherit_res.first == PerformanceInspections::InheritStatus::conflict) {
-      throw DfsException{edge.called_f,
-                         fmt_format("@kphp-analyze-performance conflict, one caller enables '{}' while other disables it",
-                                    PerformanceInspections::inspection2string(analyse_inherit_res.second))};
+      throw DfsException{edge.called_f, fmt_format("@kphp-analyze-performance conflict, one caller enables '{}' while other disables it",
+                                                   PerformanceInspections::inspection2string(analyse_inherit_res.second))};
     }
     const auto warning_inherit_res = edge.called_f->performance_inspections_for_warning.merge_with_caller(caller->performance_inspections_for_warning);
     if (warning_inherit_res.first != PerformanceInspections::InheritStatus::no_need) {
       edge.called_f->performance_inspections_for_warning_parents.emplace_front(caller);
     }
     if (warning_inherit_res.first == PerformanceInspections::InheritStatus::conflict) {
-      throw DfsException{edge.called_f,
-                         fmt_format("@kphp-warn-performance conflict, one caller enables '{}' while other disables it\n"
-                                    "Enabled by: {}\nDisabled by: {}",
-                                    PerformanceInspections::inspection2string(warning_inherit_res.second),
-                                    edge.called_f->get_performance_inspections_warning_chain(warning_inherit_res.second, false),
-                                    edge.called_f->get_performance_inspections_warning_chain(warning_inherit_res.second, true))};
+      throw DfsException{edge.called_f, fmt_format("@kphp-warn-performance conflict, one caller enables '{}' while other disables it\n"
+                                                   "Enabled by: {}\nDisabled by: {}",
+                                                   PerformanceInspections::inspection2string(warning_inherit_res.second),
+                                                   edge.called_f->get_performance_inspections_warning_chain(warning_inherit_res.second, false),
+                                                   edge.called_f->get_performance_inspections_warning_chain(warning_inherit_res.second, true))};
     }
     if (vk::any_of_equal(PerformanceInspections::InheritStatus::ok, analyse_inherit_res.first, warning_inherit_res.first)) {
       mark_performance_inspections_dfs(edge.called_f, call_graph);
@@ -167,13 +161,11 @@ IdMap<FunctionPtr> calc_actually_used_having_call_edges(std::vector<FunctionAndE
 
   for (const auto &f_and_e : all) {
     FunctionPtr fun = f_and_e.first;
-    const bool should_be_used_apriori =
-      fun->is_main_function() ||
-      fun->type == FunctionData::func_class_holder || // classes should be carried along the pipeline
-      (fun->is_extern() && vk::any_of_equal(fun->name, "wait", "make_clone")) ||
-      fun->kphp_lib_export ||
-      (fun->modifiers.is_instance() && fun->local_name() == ClassData::NAME_OF_TO_STRING) ||
-      (fun->modifiers.is_instance() && fun->local_name() == ClassData::NAME_OF_WAKEUP);
+    const bool should_be_used_apriori = fun->is_main_function() || fun->type == FunctionData::func_class_holder
+                                        || // classes should be carried along the pipeline
+                                        (fun->is_extern() && vk::any_of_equal(fun->name, "wait", "make_clone")) || fun->kphp_lib_export
+                                        || (fun->modifiers.is_instance() && fun->local_name() == ClassData::NAME_OF_TO_STRING)
+                                        || (fun->modifiers.is_instance() && fun->local_name() == ClassData::NAME_OF_WAKEUP);
     if (should_be_used_apriori && !used_functions[fun]) {
       calc_actually_used_dfs(fun, used_functions, call_graph);
     }
@@ -203,13 +195,9 @@ void remove_unused_class_methods(const std::vector<FunctionAndEdges> &all, const
     FunctionPtr fun = f_and_e.first;
     if (fun->type == FunctionData::func_class_holder) {
       fun->class_id->members.remove_if(
-        [&used_functions](const ClassMemberStaticMethod &m) {
-          return get_index(m.function) == -1 || !used_functions[m.function];
-        });
+        [&used_functions](const ClassMemberStaticMethod &m) { return get_index(m.function) == -1 || !used_functions[m.function]; });
       fun->class_id->members.remove_if(
-        [&used_functions](const ClassMemberInstanceMethod &m) {
-          return get_index(m.function) == -1 || !used_functions[m.function];
-        });
+        [&used_functions](const ClassMemberInstanceMethod &m) { return get_index(m.function) == -1 || !used_functions[m.function]; });
     }
   }
 }
@@ -233,13 +221,13 @@ void FilterOnlyActuallyUsedFunctionsF::on_finish(DataStream<FunctionPtr> &os) {
   }
 
   // uncomment this to debug "invalid index of IdMap: -1"
-//  for (const auto &f_and_e : all) {
-//    for (const auto &edge : f_and_e.second) {
-//      if (get_index(edge.called_f) == -1) {
-//        printf("-1 of %s -> %s\n", f_and_e.first->name.c_str(), edge.called_f->name.c_str());
-//      }
-//    }
-//  }
+  //  for (const auto &f_and_e : all) {
+  //    for (const auto &edge : f_and_e.second) {
+  //      if (get_index(edge.called_f) == -1) {
+  //        printf("-1 of %s -> %s\n", f_and_e.first->name.c_str(), edge.called_f->name.c_str());
+  //      }
+  //    }
+  //  }
 
   stage::set_name("Calc throws and body value");
   stage::set_file(SrcFilePtr());
@@ -269,4 +257,3 @@ void FilterOnlyActuallyUsedFunctionsF::on_finish(DataStream<FunctionPtr> &os) {
     }
   }
 }
-

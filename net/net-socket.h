@@ -17,16 +17,16 @@
 extern in_addr settings_addr;
 extern int backlog;
 
-#define SM_DGRAM      0x00000001
-#define SM_IPV6       0x00000002
-#define SM_IPV6_ONLY  0x00000004
-#define SM_LOWPRIO    0x00000008
-#define SM_REUSE      0x00000010
-#define SM_UNIX       0x00000020
-#define SM_REUSEPORT  0x00000040
-#define SM_SPECIAL    0x00010000
-#define SM_NOQACK     0x00020000
-#define SM_RAWMSG     0x00040000
+#define SM_DGRAM 0x00000001
+#define SM_IPV6 0x00000002
+#define SM_IPV6_ONLY 0x00000004
+#define SM_LOWPRIO 0x00000008
+#define SM_REUSE 0x00000010
+#define SM_UNIX 0x00000020
+#define SM_REUSEPORT 0x00000040
+#define SM_SPECIAL 0x00010000
+#define SM_NOQACK 0x00020000
+#define SM_RAWMSG 0x00040000
 
 void set_backlog(const char *arg);
 int server_socket(int port, struct in_addr in_addr, int backlog, int mode);
@@ -42,17 +42,17 @@ int prepare_unix_socket(const char *path, const char *username, const char *grou
 bool set_fd_nonblocking(int fd);
 
 static inline int is_4in6(const unsigned char ipv6[16]) {
-  return !*((long long *) ipv6) && ((int *) ipv6)[2] == -0x10000;
+  return !*((long long *)ipv6) && ((int *)ipv6)[2] == -0x10000;
 }
 
 static inline unsigned extract_4in6(const unsigned char ipv6[16]) {
-  return (((unsigned *) ipv6)[3]);
+  return (((unsigned *)ipv6)[3]);
 }
 
 static inline void set_4in6(unsigned char ipv6[16], unsigned ip) {
-  *(long long *) ipv6 = 0;
-  ((int *) ipv6)[2] = -0x10000;
-  ((unsigned *) ipv6)[3] = ip;
+  *(long long *)ipv6 = 0;
+  ((int *)ipv6)[2] = -0x10000;
+  ((unsigned *)ipv6)[3] = ip;
 }
 
 static inline int socket_ioctl(int fd, unsigned long request) {

@@ -17,8 +17,8 @@
 
 int maxconn = MAX_CONNECTIONS;
 
-void set_maxconn (const char *arg) {
-  maxconn = atoi (arg);
+void set_maxconn(const char *arg) {
+  maxconn = atoi(arg);
   if (maxconn <= 0 || maxconn > MAX_CONNECTIONS) {
     maxconn = MAX_CONNECTIONS;
   }
@@ -71,7 +71,6 @@ int file_rlimit_init() {
   return 0;
 }
 
-
 int raise_file_rlimit(int maxfiles) {
   struct rlimit rlim;
 
@@ -114,7 +113,6 @@ int raise_stack_rlimit(int maxstack) {
   return 0;
 }
 
-
 int set_core_dump_rlimit(long long size_limit) {
   struct rlimit rlim;
   rlim.rlim_cur = size_limit;
@@ -126,7 +124,6 @@ int set_core_dump_rlimit(long long size_limit) {
   }
   return 0;
 }
-
 
 int adjust_oom_score(int oom_score_adj) {
   const size_t path_size = 64, str_size = 16;
@@ -150,7 +147,7 @@ int adjust_oom_score(int oom_score_adj) {
 }
 
 int get_pipe_max_limit() {
-  FILE* f = fopen("/proc/sys/fs/pipe-max-size", "r");
+  FILE *f = fopen("/proc/sys/fs/pipe-max-size", "r");
   if (f == NULL) {
     kprintf("Can't close /proc/sys/fs/pipe-max-size: %m\n");
     return 0;

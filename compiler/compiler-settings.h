@@ -100,11 +100,7 @@ public:
 
 class CompilerSettings : vk::not_copyable {
 public:
-  enum color_settings {
-    auto_colored,
-    not_colored,
-    colored
-  };
+  enum color_settings { auto_colored, not_colored, colored };
 
   KphpOption<std::string> main_file;
 

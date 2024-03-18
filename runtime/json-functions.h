@@ -21,7 +21,7 @@ constexpr int64_t JSON_AVAILABLE_FLAGS_TYPED = JSON_PRETTY_PRINT | JSON_PRESERVE
 struct JsonPath {
   constexpr static int MAX_DEPTH = 8;
 
-  std::array<const char*, MAX_DEPTH> arr;
+  std::array<const char *, MAX_DEPTH> arr;
   unsigned depth = 0;
 
   void enter(const char *key) noexcept {
@@ -176,7 +176,7 @@ string f$vk_json_encode_safe(const T &v, bool simple_encode = true) noexcept {
   if (unlikely(string_buffer::string_buffer_error_flag == STRING_BUFFER_ERROR_FLAG_FAILED)) {
     static_SB.clean();
     string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_OFF;
-    THROW_EXCEPTION (new_Exception(string(__FILE__), __LINE__, string("json_encode buffer overflow", 27)));
+    THROW_EXCEPTION(new_Exception(string(__FILE__), __LINE__, string("json_encode buffer overflow", 27)));
     return {};
   }
   string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_OFF;

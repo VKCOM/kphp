@@ -45,8 +45,10 @@ void TlConstructorDecl::compile(CodeGenerator &W) const {
 
   if (needs_typed_fetch_store) {
     std::string php_type = get_php_runtime_type(constructor, false);
-    FunctionSignatureGenerator(W) << "static void typed_store(const " << php_type << " *tl_object" << (!params.empty() ? ", " + params : "") << ")" << SemicolonAndNL();
-    FunctionSignatureGenerator(W) << "static void typed_fetch_to(" << php_type << " *tl_object" << (!params.empty() ? ", " + params : "") << ")" << SemicolonAndNL();
+    FunctionSignatureGenerator(W) << "static void typed_store(const " << php_type << " *tl_object" << (!params.empty() ? ", " + params : "") << ")"
+                                  << SemicolonAndNL();
+    FunctionSignatureGenerator(W) << "static void typed_fetch_to(" << php_type << " *tl_object" << (!params.empty() ? ", " + params : "") << ")"
+                                  << SemicolonAndNL();
   }
   W << END << ";\n\n";
 }
@@ -74,14 +76,16 @@ void TlConstructorDef::compile(CodeGenerator &W) const {
   if (needs_typed_fetch_store) {
     std::string php_type = get_php_runtime_type(constructor, false);
     W << template_decl << NL;
-    FunctionSignatureGenerator(W) << "void " << full_struct_name + "::typed_store(const " << php_type << " *tl_object" << (!params.empty() ? ", " + params : "") << ") " << BEGIN;
+    FunctionSignatureGenerator(W) << "void " << full_struct_name + "::typed_store(const " << php_type << " *tl_object" << (!params.empty() ? ", " + params : "")
+                                  << ") " << BEGIN;
     W << CombinatorStore(constructor, CombinatorPart::LEFT, true);
     W << END << "\n\n";
 
     W << template_decl << NL;
-    FunctionSignatureGenerator(W) << "void " << full_struct_name << "::typed_fetch_to(" << php_type << " *tl_object" << (!params.empty() ? ", " + params : "") << ") " << BEGIN;
+    FunctionSignatureGenerator(W) << "void " << full_struct_name << "::typed_fetch_to(" << php_type << " *tl_object" << (!params.empty() ? ", " + params : "")
+                                  << ") " << BEGIN;
     W << CombinatorFetch(constructor, CombinatorPart::LEFT, true);
     W << END << "\n\n";
   }
 }
-}
+} // namespace tl2cpp

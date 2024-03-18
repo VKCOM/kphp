@@ -9,8 +9,7 @@ namespace vk {
 
 namespace detail {
 template<class C, class T>
-auto contains(const C &c, const T &x, int) ->
-  std::enable_if_t<std::is_same<decltype(c.find(x)), decltype(std::end(c))>::value, bool> {
+auto contains(const C &c, const T &x, int) -> std::enable_if_t<std::is_same<decltype(c.find(x)), decltype(std::end(c))>::value, bool> {
   return c.find(x) != std::end(c);
 }
 
@@ -26,9 +25,8 @@ bool contains(const C &v, const T &x, ...) {
 
 } // namespace detail
 
-
-template<class C, class T, typename = decltype(std::end(std::declval<const C&>()))>
-bool contains(const C& c, const T& x) {
+template<class C, class T, typename = decltype(std::end(std::declval<const C &>()))>
+bool contains(const C &c, const T &x) {
   return detail::contains(c, x, 0);
 }
 

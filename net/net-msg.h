@@ -4,10 +4,10 @@
 
 #pragma once
 
+#include <functional>
 #include <stdint.h>
 #include <stdlib.h>
 #include <sys/uio.h>
-#include <functional>
 
 #include "common/crc32.h"
 #include "common/crypto/aes256.h"
@@ -27,11 +27,11 @@ int rwm_total_msgs();
 #define RM_PREPEND_RESERVE 128
 
 typedef struct raw_message {
-  msg_part_t *first, *last;      // 'last' doesn't increase refcnt of pointed msg_part
-  int total_bytes;               // bytes in the chain (extra bytes ignored even if present)
-  int magic;                     // one of RM_INIT_MAGIC
-  int first_offset;              // offset of first used byte inside first buffer data
-  int last_offset;               // offset after last used byte inside last buffer data
+  msg_part_t *first, *last; // 'last' doesn't increase refcnt of pointed msg_part
+  int total_bytes;          // bytes in the chain (extra bytes ignored even if present)
+  int magic;                // one of RM_INIT_MAGIC
+  int first_offset;         // offset of first used byte inside first buffer data
+  int last_offset;          // offset after last used byte inside last buffer data
 } raw_message_t;
 
 /* NB: struct raw_message itself is never allocated or freed by the following functions since
@@ -62,7 +62,8 @@ void rwm_union_unique(raw_message_t *head, raw_message_t *tail);
 int rwm_split(raw_message_t *raw, raw_message_t *tail, int bytes);
 int rwm_split_head(raw_message_t *head, raw_message_t *raw, int bytes);
 void *rwm_prepend_alloc(raw_message_t *raw, int alloc_bytes);
-void *rwm_postpone_alloc_ext(raw_message_t *raw, int min_alloc_bytes, int max_alloc_bytes, int prepend_reserve, int continue_buffer, int small_buffer, int std_buffer, int *allocated);
+void *rwm_postpone_alloc_ext(raw_message_t *raw, int min_alloc_bytes, int max_alloc_bytes, int prepend_reserve, int continue_buffer, int small_buffer,
+                             int std_buffer, int *allocated);
 void *rwm_postpone_alloc(raw_message_t *raw, int alloc_bytes);
 
 void rwm_steal(raw_message_t *dst, raw_message_t *src);
@@ -92,7 +93,8 @@ int rwm_encrypt_decrypt(raw_message_t *raw, int bytes, struct vk_aes_ctx *ctx, u
 int rwm_encrypt_decrypt_cbc(raw_message_t *raw, int bytes, struct vk_aes_ctx *ctx, unsigned char iv[16]);
 
 typedef void (*rwm_encrypt_decrypt_to_callback_t)(struct vk_aes_ctx *ctx, const void *src, void *dst, int l, unsigned char *iv);
-int rwm_encrypt_decrypt_to(raw_message_t *raw, raw_message_t *res, int bytes, struct vk_aes_ctx *ctx, rwm_encrypt_decrypt_to_callback_t crypt_cb, unsigned char *iv);
+int rwm_encrypt_decrypt_to(raw_message_t *raw, raw_message_t *res, int bytes, struct vk_aes_ctx *ctx, rwm_encrypt_decrypt_to_callback_t crypt_cb,
+                           unsigned char *iv);
 
 int rwm_process_and_advance(raw_message_t *raw, int bytes, const std::function<void(const void *, int)> &callback);
 int rwm_process(const raw_message_t *raw, int bytes, const std::function<int(const void *, int)> &callback);

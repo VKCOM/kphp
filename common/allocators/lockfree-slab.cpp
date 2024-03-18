@@ -107,7 +107,6 @@ static inline void lockfree_slab_cache_free_local(lockfree_slab_cache_tls_t *cac
   }
 }
 
-
 void *lockfree_slab_cache_alloc(lockfree_slab_cache_tls_t *cache_tls) {
   void *object = lockfree_slab_cache_alloc_internal(cache_tls);
 
@@ -141,7 +140,7 @@ void *lockfree_slab_cache_alloc(lockfree_slab_cache_tls_t *cache_tls) {
 }
 
 void lockfree_slab_cache_free(lockfree_slab_cache_tls_t *cache_tls, void *object) {
-  lockfree_slab_block_t *block = (lockfree_slab_block_t *)((uintptr_t)(object) & cache_tls->cache->block_alignment);
+  lockfree_slab_block_t *block = (lockfree_slab_block_t *)((uintptr_t)(object)&cache_tls->cache->block_alignment);
 
   if (block->cache_tls != cache_tls) {
     freelist_put(&block->cache_tls->waiting, object);

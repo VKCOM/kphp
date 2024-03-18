@@ -58,14 +58,14 @@ void check_var_init_value(const VarPtr &var) {
       if (!duplications.empty()) {
         const char *static_prefix = (var->is_function_static_var() || var->is_class_static_var()) ? "static " : "";
         stage::set_location(const_array->get_location());
-        kphp_warning(fmt_format("Got array duplicate keys ['{}'] in '{}{}' init value",
-                                vk::join(duplications, "', '"), static_prefix, var->as_human_readable()));
+        kphp_warning(
+          fmt_format("Got array duplicate keys ['{}'] in '{}{}' init value", vk::join(duplications, "', '"), static_prefix, var->as_human_readable()));
       }
     }
   }
 }
 
-}
+} // namespace
 
 void CommonAnalyzerPass::check_set(VertexAdaptor<op_set> to_check) {
   VertexPtr left = to_check->lhs();
@@ -74,7 +74,7 @@ void CommonAnalyzerPass::check_set(VertexAdaptor<op_set> to_check) {
     VarPtr lvar = left.as<op_var>()->var_id;
     VarPtr rvar = right.as<op_var>()->var_id;
     if (lvar->name == rvar->name) {
-      kphp_warning ("Assigning variable to itself\n");
+      kphp_warning("Assigning variable to itself\n");
     }
   }
 }
@@ -102,8 +102,8 @@ VertexPtr CommonAnalyzerPass::on_enter_vertex(VertexPtr vertex) {
     }
   }
   if (vertex->type() == op_set) {
-    //TODO: $x = (int)$x;
-    //check_set(vertex.as<op_set>());
+    // TODO: $x = (int)$x;
+    // check_set(vertex.as<op_set>());
     return vertex;
   }
   return vertex;

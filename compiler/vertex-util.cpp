@@ -90,7 +90,8 @@ VertexAdaptor<op_var> VertexUtil::create_superlocal_var(const std::string &name_
 VertexAdaptor<op_switch> VertexUtil::create_switch_vertex(FunctionPtr cur_function, VertexPtr switch_condition, std::vector<VertexPtr> &&cases) {
   auto temp_var_condition_on_switch = create_superlocal_var("condition_on_switch", cur_function);
   auto temp_var_matched_with_one_case = create_superlocal_var("matched_with_one_case", cur_function);
-  return VertexAdaptor<op_switch>::create(switch_condition, temp_var_condition_on_switch, temp_var_matched_with_one_case, std::move(cases)).set_location(switch_condition);
+  return VertexAdaptor<op_switch>::create(switch_condition, temp_var_condition_on_switch, temp_var_matched_with_one_case, std::move(cases))
+    .set_location(switch_condition);
 }
 
 VertexAdaptor<op_seq> VertexUtil::embrace(VertexPtr v) {
@@ -102,7 +103,7 @@ VertexAdaptor<op_seq> VertexUtil::embrace(VertexPtr v) {
 
 void VertexUtil::func_force_return(VertexAdaptor<op_function> func, VertexPtr val) {
   VertexPtr cmd = func->cmd();
-  assert (cmd->type() == op_seq);
+  assert(cmd->type() == op_seq);
 
   VertexAdaptor<op_return> return_node;
   if (val) {
@@ -117,15 +118,7 @@ void VertexUtil::func_force_return(VertexAdaptor<op_function> func, VertexPtr va
 }
 
 bool VertexUtil::is_superglobal(const std::string &s) {
-  static std::set<std::string> names = {
-    "_SERVER",
-    "_GET",
-    "_POST",
-    "_FILES",
-    "_COOKIE",
-    "_REQUEST",
-    "_ENV"
-  };
+  static std::set<std::string> names = {"_SERVER", "_GET", "_POST", "_FILES", "_COOKIE", "_REQUEST", "_ENV"};
   return vk::contains(names, s);
 }
 
@@ -190,9 +183,12 @@ VertexPtr VertexUtil::create_conv_to(PrimitiveType targetType, VertexPtr x) {
 
 VertexAdaptor<meta_op_unary> VertexUtil::create_conv_to_lval(PrimitiveType targetType, VertexPtr x) {
   switch (targetType) {
-    case tp_array : return VertexAdaptor<op_conv_array_l>::create(x).set_location(x);
-    case tp_int   : return VertexAdaptor<op_conv_int_l>::create(x).set_location(x);
-    case tp_string: return VertexAdaptor<op_conv_string_l>::create(x).set_location(x);
+    case tp_array:
+      return VertexAdaptor<op_conv_array_l>::create(x).set_location(x);
+    case tp_int:
+      return VertexAdaptor<op_conv_int_l>::create(x).set_location(x);
+    case tp_string:
+      return VertexAdaptor<op_conv_string_l>::create(x).set_location(x);
     default:
       return {};
   }

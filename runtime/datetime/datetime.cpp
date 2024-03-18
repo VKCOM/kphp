@@ -33,8 +33,7 @@ class_instance<C$DateTime> f$DateTime$$add(const class_instance<C$DateTime> &sel
   return self;
 }
 
-class_instance<C$DateTime> f$DateTime$$createFromFormat(const string &format, const string &datetime,
-                                                        const class_instance<C$DateTimeZone> &timezone) noexcept {
+class_instance<C$DateTime> f$DateTime$$createFromFormat(const string &format, const string &datetime, const class_instance<C$DateTimeZone> &timezone) noexcept {
   auto [time, _] = php_timelib_date_initialize(timezone.is_null() ? string{} : timezone->timezone, datetime, format.c_str());
   if (!time) {
     return {};

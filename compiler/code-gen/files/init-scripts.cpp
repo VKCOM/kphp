@@ -18,9 +18,8 @@ struct StaticInit {
   void compile(CodeGenerator &W) const;
 };
 
-
 void StaticInit::compile(CodeGenerator &W) const {
-  for (LibPtr lib: G->get_libs()) {
+  for (LibPtr lib : G->get_libs()) {
     if (lib && !lib->is_raw_php()) {
       W << OpenNamespace(lib->lib_namespace());
       FunctionSignatureGenerator(W) << "void global_init_lib_scripts()" << SemicolonAndNL();
@@ -29,7 +28,7 @@ void StaticInit::compile(CodeGenerator &W) const {
   }
 
   W << OpenNamespace();
-  FunctionSignatureGenerator(W)  << "void const_vars_init()" << SemicolonAndNL() << NL;
+  FunctionSignatureGenerator(W) << "void const_vars_init()" << SemicolonAndNL() << NL;
 
   FunctionSignatureGenerator(W) << "void tl_str_const_init()" << SemicolonAndNL();
   if (G->get_untyped_rpc_tl_used()) {
@@ -40,9 +39,8 @@ void StaticInit::compile(CodeGenerator &W) const {
   if (G->settings().is_static_lib_mode()) {
     FunctionSignatureGenerator(W) << "void global_init_lib_scripts() " << BEGIN;
   } else {
-    FunctionSignatureGenerator(W) << ("const char *get_php_scripts_version()") << BEGIN
-                                  << "return " << RawString(G->settings().php_code_version.get()) << ";" << NL
-                                  << END << NL << NL;
+    FunctionSignatureGenerator(W) << ("const char *get_php_scripts_version()") << BEGIN << "return " << RawString(G->settings().php_code_version.get()) << ";"
+                                  << NL << END << NL << NL;
 
     FunctionSignatureGenerator(W) << ("char **get_runtime_options([[maybe_unused]] int *count)") << BEGIN;
     const auto &runtime_opts = G->get_kphp_runtime_opts();
@@ -57,13 +55,12 @@ void StaticInit::compile(CodeGenerator &W) const {
       for (size_t i = 0; i != runtime_opts.size(); ++i) {
         W << "arg" << i << "," << NL;
       }
-      W << END << ";" << NL
-        << "return argv;" << NL;
+      W << END << ";" << NL << "return argv;" << NL;
     }
     W << END << NL << NL;
 
     FunctionSignatureGenerator(W) << ("void global_init_php_scripts() ") << BEGIN;
-    for (LibPtr lib: G->get_libs()) {
+    for (LibPtr lib : G->get_libs()) {
       if (lib && !lib->is_raw_php()) {
         W << lib->lib_namespace() << "::global_init_lib_scripts();" << NL;
       }
@@ -81,7 +78,7 @@ void StaticInit::compile(CodeGenerator &W) const {
   const auto &ffi = G->get_ffi_root();
   const auto &ffi_shared_libs = ffi.get_shared_libs();
   if (!ffi_shared_libs.empty()) {
-    W << "ffi_env_instance = FFIEnv{" << ffi_shared_libs.size() << ", " <<  ffi.get_dynamic_symbols_num() << "};" << NL;
+    W << "ffi_env_instance = FFIEnv{" << ffi_shared_libs.size() << ", " << ffi.get_dynamic_symbols_num() << "};" << NL;
     W << "ffi_env_instance.funcs.dlopen = dlopen;" << NL;
     W << "ffi_env_instance.funcs.dlsym = dlsym;" << NL;
     for (const auto &lib : ffi_shared_libs) {
@@ -104,17 +101,15 @@ void StaticInit::compile(CodeGenerator &W) const {
 
 struct RunFunction {
   FunctionPtr function;
-  RunFunction(FunctionPtr function) : function(function) {}
+  RunFunction(FunctionPtr function)
+    : function(function) {}
 
   void compile(CodeGenerator &W) const {
-    FunctionSignatureGenerator(W) << "void " << FunctionName(function) << "$run() " << BEGIN
-      << "TRY_CALL_VOID (void, " << FunctionName(function) << "());" << NL
-      << "finish (0, false);" << NL
-      << END;
+    FunctionSignatureGenerator(W) << "void " << FunctionName(function) << "$run() " << BEGIN << "TRY_CALL_VOID (void, " << FunctionName(function) << "());"
+                                  << NL << "finish (0, false);" << NL << END;
     W << NL;
   }
 };
-
 
 struct GlobalResetFunction {
   FunctionPtr function;
@@ -122,12 +117,11 @@ struct GlobalResetFunction {
   void compile(CodeGenerator &W) const;
 };
 
-GlobalResetFunction::GlobalResetFunction(FunctionPtr function) :
-  function(function) {
-}
+GlobalResetFunction::GlobalResetFunction(FunctionPtr function)
+  : function(function) {}
 
 void GlobalResetFunction::compile(CodeGenerator &W) const {
-  for (LibPtr lib: G->get_libs()) {
+  for (LibPtr lib : G->get_libs()) {
     if (lib && !lib->is_raw_php()) {
       W << OpenNamespace(lib->lib_namespace());
       FunctionSignatureGenerator(W) << "void lib_global_vars_reset()" << SemicolonAndNL();
@@ -138,7 +132,7 @@ void GlobalResetFunction::compile(CodeGenerator &W) const {
   FunctionSignatureGenerator(W) << "void " << FunctionName(function) << "$global_reset() " << BEGIN;
   W << "void " << GlobalVarsResetFuncName(function) << ";" << NL;
   W << GlobalVarsResetFuncName(function) << ";" << NL;
-  for (LibPtr lib: G->get_libs()) {
+  for (LibPtr lib : G->get_libs()) {
     if (lib && !lib->is_raw_php()) {
       W << lib->lib_namespace() << "::lib_global_vars_reset();" << NL;
     }
@@ -146,49 +140,39 @@ void GlobalResetFunction::compile(CodeGenerator &W) const {
   W << END << NL;
 }
 
-
 struct LibGlobalVarsReset {
   const FunctionPtr &main_function;
   LibGlobalVarsReset(const FunctionPtr &main_function);
   void compile(CodeGenerator &W) const;
 };
 
-LibGlobalVarsReset::LibGlobalVarsReset(const FunctionPtr &main_function) :
-  main_function(main_function) {
-}
+LibGlobalVarsReset::LibGlobalVarsReset(const FunctionPtr &main_function)
+  : main_function(main_function) {}
 
 void LibGlobalVarsReset::compile(CodeGenerator &W) const {
   W << OpenNamespace();
-  FunctionSignatureGenerator(W) << "void lib_global_vars_reset() " << BEGIN
-                                << "void " << GlobalVarsResetFuncName(main_function) << ";" << NL
-                                << GlobalVarsResetFuncName(main_function) << ";" << NL
-                                << END << NL << NL;
+  FunctionSignatureGenerator(W) << "void lib_global_vars_reset() " << BEGIN << "void " << GlobalVarsResetFuncName(main_function) << ";" << NL
+                                << GlobalVarsResetFuncName(main_function) << ";" << NL << END << NL << NL;
   W << "extern bool v$" << main_function->file_id->get_main_func_run_var_name() << ";" << NL;
   W << CloseNamespace();
 
-  W << StaticLibraryRunGlobal(gen_out_style::cpp) << BEGIN
-    << "using namespace " << G->get_global_namespace() << ";" << NL
-    << "if (!v$" << main_function->file_id->get_main_func_run_var_name() << ")" << BEGIN
-    << FunctionName(main_function) << "();" << NL
-    << END << NL
-    << END << NL << NL;
+  W << StaticLibraryRunGlobal(gen_out_style::cpp) << BEGIN << "using namespace " << G->get_global_namespace() << ";" << NL << "if (!v$"
+    << main_function->file_id->get_main_func_run_var_name() << ")" << BEGIN << FunctionName(main_function) << "();" << NL << END << NL << END << NL << NL;
 }
 
-
-InitScriptsCpp::InitScriptsCpp(SrcFilePtr main_file_id) :
-  main_file_id(main_file_id) {}
+InitScriptsCpp::InitScriptsCpp(SrcFilePtr main_file_id)
+  : main_file_id(main_file_id) {}
 
 void InitScriptsCpp::compile(CodeGenerator &W) const {
   W << OpenFile("init_php_scripts.cpp", "", false);
 
-  W << ExternInclude(G->settings().runtime_headers.get()) <<
-    ExternInclude("server/php-init-scripts.h");
+  W << ExternInclude(G->settings().runtime_headers.get()) << ExternInclude("server/php-init-scripts.h");
 
   W << Include(main_file_id->main_function->header_full_name);
 
   if (!G->get_ffi_root().get_shared_libs().empty()) {
     W << ExternInclude("runtime/ffi.h"); // FFI env singleton
-    W << ExternInclude("dlfcn.h"); // dlopen, dlsym
+    W << ExternInclude("dlfcn.h");       // dlopen, dlsym
   }
 
   if (!G->settings().is_static_lib_mode()) {
@@ -215,9 +199,7 @@ void InitScriptsCpp::compile(CodeGenerator &W) const {
 
   W << FunctionName(main_file_id->main_function) << "$global_reset();" << NL;
 
-  W << "set_script ("
-    << FunctionName(main_file_id->main_function) << "$run, "
-    << FunctionName(main_file_id->main_function) << "$global_reset);" << NL;
+  W << "set_script (" << FunctionName(main_file_id->main_function) << "$run, " << FunctionName(main_file_id->main_function) << "$global_reset);" << NL;
 
   W << END;
 
@@ -238,8 +220,6 @@ void CppMainFile::compile(CodeGenerator &W) const {
   W << OpenFile("main.cpp");
   W << ExternInclude("server/php-engine.h") << NL;
 
-  W << "int main(int argc, char *argv[]) " << BEGIN
-    << "return run_main(argc, argv, php_mode::" << G->settings().mode.get() << ")" << SemicolonAndNL{}
-    << END;
+  W << "int main(int argc, char *argv[]) " << BEGIN << "return run_main(argc, argv, php_mode::" << G->settings().mode.get() << ")" << SemicolonAndNL{} << END;
   W << CloseFile();
 }

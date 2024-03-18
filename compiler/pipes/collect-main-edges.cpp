@@ -4,12 +4,12 @@
 
 #include "compiler/pipes/collect-main-edges.h"
 
+#include "common/php-functions.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/define-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/function-pass.h"
-#include "compiler/vertex-util.h"
 #include "compiler/inferring/edge.h"
 #include "compiler/inferring/ifi.h"
 #include "compiler/inferring/public.h"
@@ -18,7 +18,7 @@
 #include "compiler/inferring/restriction-non-void.h"
 #include "compiler/inferring/type-node.h"
 #include "compiler/type-hint.h"
-#include "common/php-functions.h"
+#include "compiler/vertex-util.h"
 
 namespace {
 
@@ -194,16 +194,14 @@ void CollectMainEdgesPass::create_edges_to_recalc_arg_ref(const TypeHint *type_h
     if (call_arg) {
       tinf::Edge *e = new tinf::Edge;
       e->from = tinf::get_tinf_node(dependent_vertex);
-      e->to = call_arg->type() == op_callback_of_builtin
-              ? tinf::get_tinf_node(call_arg.as<op_callback_of_builtin>()->func_id, -1)
-              : tinf::get_tinf_node(call_arg);
+      e->to =
+        call_arg->type() == op_callback_of_builtin ? tinf::get_tinf_node(call_arg.as<op_callback_of_builtin>()->func_id, -1) : tinf::get_tinf_node(call_arg);
       e->from_at = nullptr;
       tinf::get_inferer()->add_edge(e);
       tinf::get_inferer()->add_node(e->to);
     }
   });
 }
-
 
 // handle @var phpdoc for local/static vars inside a function (or global vars, for top-level functions)
 void CollectMainEdgesPass::on_var_phpdoc(VertexAdaptor<op_phpdoc_var> var_op) {
@@ -249,7 +247,6 @@ void CollectMainEdgesPass::on_func_call_extern_modifying_arg_type(VertexAdaptor<
     create_set(dest_array_arg, another_array_arg);
   }
 
-
   if (extern_function->name == "wait_queue_push") {
     VertexRange args = call->args();
     LValue future_queue_arg = as_lvalue(args[0]);
@@ -263,8 +260,8 @@ void CollectMainEdgesPass::on_func_call_extern_modifying_arg_type(VertexAdaptor<
 // array_filter($a, function($v) { ... }), array_filter($a, 'cb') and similar
 // (not to php functions with callable arguments! built-in only)
 void CollectMainEdgesPass::on_passed_callback_to_builtin(VertexAdaptor<op_func_call> call, int param_i, VertexAdaptor<op_callback_of_builtin> v_callback) {
-  FunctionPtr call_function = call->func_id;            // array_filter, etc
-  FunctionPtr provided_callback = v_callback->func_id;  // typically, a lambda or __invoke method
+  FunctionPtr call_function = call->func_id;           // array_filter, etc
+  FunctionPtr provided_callback = v_callback->func_id; // typically, a lambda or __invoke method
   auto callback_param = call_function->get_params()[param_i].as<op_func_param>();
   const auto *type_hint_callable = callback_param->type_hint->try_as<TypeHintCallable>();
 
@@ -345,8 +342,7 @@ void CollectMainEdgesPass::on_func_call(VertexAdaptor<op_func_call> call) {
     //   we create a set-edge, as we need to infer this 'any' (remember, that $x has a type restriction created in on_function)
     // * the paragraph above about 'any' refers only to PHP functions; built-ins accepting 'any' need only a postponed check
     // * cast params go their own way
-    bool should_create_set_to_infer = (!param->type_hint || param->type_hint->has_tp_any_inside())
-                                      && !function->is_extern() && !is_cast_param;
+    bool should_create_set_to_infer = (!param->type_hint || param->type_hint->has_tp_any_inside()) && !function->is_extern() && !is_cast_param;
 
     if (should_create_set_to_infer) {
       create_set(as_lvalue(function, i), arg);
@@ -469,7 +465,7 @@ void CollectMainEdgesPass::on_set_op(VertexPtr v) {
     lhs_var = as_prop->var_id;
     type_hint = as_prop->var_id->as_class_instance_field()->type_hint;
   } else if (auto as_var = lval.try_as<op_var>()) {
-    if (as_var->var_id->is_class_static_var()) {        // A::$prop++
+    if (as_var->var_id->is_class_static_var()) { // A::$prop++
       lhs_var = as_var->var_id;
       type_hint = as_var->var_id->as_class_static_field()->type_hint;
     }
@@ -501,9 +497,7 @@ void CollectMainEdgesPass::ifi_fix(VertexPtr v) {
       }
     }
 
-    const auto is_indexing_func_call = [](VertexPtr v) {
-      return v->type() == op_func_call && v.as<op_func_call>()->func_id->is_result_indexing;
-    };
+    const auto is_indexing_func_call = [](VertexPtr v) { return v->type() == op_func_call && v.as<op_func_call>()->func_id->is_result_indexing; };
     if ((cur->type() == op_var && ifi_tp != ifi_unset) || (ifi_tp > ifi_isset && (cur->type() == op_index || is_indexing_func_call(cur)))) {
       tinf::Node *node = tinf::get_tinf_node(cur);
       if (node->isset_flags == 0) {
@@ -636,7 +630,7 @@ void CollectMainEdgesPass::on_finish() {
 
 template<class CollectionT>
 void CollectMainEdgesPass::call_on_var(const CollectionT &collection) {
-  for (const auto &el: collection) {
+  for (const auto &el : collection) {
     on_var(el);
   }
 }

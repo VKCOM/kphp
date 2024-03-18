@@ -59,12 +59,12 @@ class SharedMemoryManager : vk::not_copyable {
 public:
   void init() noexcept;
 
-  template <typename JobMessageT>
+  template<typename JobMessageT>
   JobMessageT *acquire_shared_message() noexcept {
     assert(control_block_);
     dl::CriticalSectionGuard critical_section;
     if (void *free_mem = freelist_get(&control_block_->free_messages)) {
-      auto *message = new(free_mem) JobMessageT{};
+      auto *message = new (free_mem) JobMessageT{};
       control_block_->workers_table[logname_id].attach(message);
       ++control_block_->stats.messages.acquired;
       return message;
@@ -107,21 +107,19 @@ private:
     size_t buffer_size;
     double weight;
   };
-  std::array<shared_memory_buffers_group_info, 1 + JOB_EXTRA_MEMORY_BUFFER_BUCKETS> shared_memory_buffers_groups_{
-    {
-      {1 << JOB_SHARED_MESSAGE_SIZE_EXP,       2}, // 128KB messages
-      // and extra buffers:
-      {1 << (JOB_SHARED_MESSAGE_SIZE_EXP + 1), 2}, // 256KB
-      {1 << (JOB_SHARED_MESSAGE_SIZE_EXP + 2), 2}, // 512KB
-      {1 << (JOB_SHARED_MESSAGE_SIZE_EXP + 3), 2}, // 1MB
-      {1 << (JOB_SHARED_MESSAGE_SIZE_EXP + 4), 1}, // 2MB
-      {1 << (JOB_SHARED_MESSAGE_SIZE_EXP + 5), 1}, // 4MB
-      {1 << (JOB_SHARED_MESSAGE_SIZE_EXP + 6), 1}, // 8MB
-      {1 << (JOB_SHARED_MESSAGE_SIZE_EXP + 7), 1}, // 16MB
-      {1 << (JOB_SHARED_MESSAGE_SIZE_EXP + 8), 1}, // 32MB
-      {1 << (JOB_SHARED_MESSAGE_SIZE_EXP + 9), 1}, // 64MB
-    }
-  };
+  std::array<shared_memory_buffers_group_info, 1 + JOB_EXTRA_MEMORY_BUFFER_BUCKETS> shared_memory_buffers_groups_{{
+    {1 << JOB_SHARED_MESSAGE_SIZE_EXP, 2}, // 128KB messages
+    // and extra buffers:
+    {1 << (JOB_SHARED_MESSAGE_SIZE_EXP + 1), 2}, // 256KB
+    {1 << (JOB_SHARED_MESSAGE_SIZE_EXP + 2), 2}, // 512KB
+    {1 << (JOB_SHARED_MESSAGE_SIZE_EXP + 3), 2}, // 1MB
+    {1 << (JOB_SHARED_MESSAGE_SIZE_EXP + 4), 1}, // 2MB
+    {1 << (JOB_SHARED_MESSAGE_SIZE_EXP + 5), 1}, // 4MB
+    {1 << (JOB_SHARED_MESSAGE_SIZE_EXP + 6), 1}, // 8MB
+    {1 << (JOB_SHARED_MESSAGE_SIZE_EXP + 7), 1}, // 16MB
+    {1 << (JOB_SHARED_MESSAGE_SIZE_EXP + 8), 1}, // 32MB
+    {1 << (JOB_SHARED_MESSAGE_SIZE_EXP + 9), 1}, // 64MB
+  }};
 
   struct alignas(8) ControlBlock {
     ControlBlock() noexcept {

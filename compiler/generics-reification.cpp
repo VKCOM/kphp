@@ -11,7 +11,6 @@
 #include "compiler/type-hint.h"
 #include "compiler/vertex-util.h"
 
-
 /*
  * The word "reification" means deducing generic T to instantiate generic functions/classes.
  *    function f<T>(T $arg) {}
@@ -134,7 +133,8 @@ static const TypeHint *reify_instantiationT_from_expr(FunctionPtr current_functi
 // having a call `f($arg)`, where f is `f<T>`, and $arg is `@param T[] $array`, deduce T
 // for example, if an assumption for $arg is A[], then T is A
 // this function is called for every generic argument of `f()` invocation
-static void reify_genericT_from_call_argument(FunctionPtr current_function, FunctionPtr generic_function, const TypeHint *param_hint, VertexAdaptor<op_func_call> call, VertexPtr &call_arg, bool old_syntax) {
+static void reify_genericT_from_call_argument(FunctionPtr current_function, FunctionPtr generic_function, const TypeHint *param_hint,
+                                              VertexAdaptor<op_func_call> call, VertexPtr &call_arg, bool old_syntax) {
   kphp_assert(param_hint->has_genericT_inside() && generic_function->genericTs != nullptr);
 
   param_hint = param_hint->unwrap_optional();
@@ -205,7 +205,8 @@ static void reify_genericT_from_call_argument(FunctionPtr current_function, Func
 // "auto deducing" for generic arguments is typically called "reification"
 // note, that if a PHP user calls f explicitly using `f/*<T1, T2>*/(...)`, this is NOT called:
 // this is called for auto-reification, when /*<...>*/ is omitted, meant to be obviously reified
-void reify_function_genericTs_on_generic_func_call(FunctionPtr current_function, FunctionPtr generic_function, VertexAdaptor<op_func_call> call, bool old_syntax) {
+void reify_function_genericTs_on_generic_func_call(FunctionPtr current_function, FunctionPtr generic_function, VertexAdaptor<op_func_call> call,
+                                                   bool old_syntax) {
   kphp_assert(generic_function->is_generic() && generic_function->genericTs);
 
   call->reifiedTs = new GenericsInstantiationMixin(call->location);
@@ -300,8 +301,8 @@ static void check_reifiedT_extends_hint(const std::string &nameT, const TypeHint
     kphp_assert(0 && "unexpected extends_hint branch");
   }
 
-  kphp_error(err.empty(),
-             fmt_format("Calculated generic <{}> = {} breaks condition '{}:{}'.\n{}", nameT, TermStringFormat::paint_green(instantiationT->as_human_readable()), nameT, extends_hint->as_human_readable(), err));
+  kphp_error(err.empty(), fmt_format("Calculated generic <{}> = {} breaks condition '{}:{}'.\n{}", nameT,
+                                     TermStringFormat::paint_green(instantiationT->as_human_readable()), nameT, extends_hint->as_human_readable(), err));
 }
 
 // when all generic T of `f<T1, T2, ...>()` have been auto-reified or parsed from /*<php comment>*/,
@@ -317,7 +318,8 @@ void check_reifiedTs_for_generic_func_call(const GenericsDeclarationMixin *gener
     }
     // prohibit f<array>() and others any-containing (even if set explicitly)
     if (!old_syntax) {
-      kphp_error(!instantiationT->has_tp_any_inside(), fmt_format("Generics <{}> = {} should be strict, it must not contain 'any' inside", itemT.nameT, TermStringFormat::paint_green(instantiationT->as_human_readable())));
+      kphp_error(!instantiationT->has_tp_any_inside(), fmt_format("Generics <{}> = {} should be strict, it must not contain 'any' inside", itemT.nameT,
+                                                                  TermStringFormat::paint_green(instantiationT->as_human_readable())));
     }
 
     if (itemT.extends_hint) {
@@ -368,7 +370,9 @@ public:
     }
 
     if (is_op_var_generic(root)) {
-      kphp_error(0, fmt_format("Variadic argument ...${} used incorrectly in a variadic generic.\nIt can not be replaced with N={} copies here.\nFor example, f(${}) is incorrect, but f(...${}) is okay.", variadic_var_name, n_variadic, variadic_var_name, variadic_var_name));
+      kphp_error(0, fmt_format("Variadic argument ...${} used incorrectly in a variadic generic.\nIt can not be replaced with N={} copies here.\nFor example, "
+                               "f(${}) is incorrect, but f(...${}) is okay.",
+                               variadic_var_name, n_variadic, variadic_var_name, variadic_var_name));
     }
 
     return root;
@@ -442,12 +446,12 @@ public:
     new_args_vector.reserve(call->size() - 1 + n_variadic);
 
     for (VertexPtr arg : call->args()) {
-      if (is_op_varg_op_var_generic(arg)) {   // f(1, 2, ...$here)
+      if (is_op_varg_op_var_generic(arg)) { // f(1, 2, ...$here)
         occured_varg = true;
         for (int i = 1; i <= n_variadic; ++i) {
           new_args_vector.emplace_back(create_ith_op_var(arg, i));
         }
-      } else if (is_array_creation && is_op_var_generic(arg)) {   // [1, 2, ...$here] (actually array_merge_spread(1, 2, $here))
+      } else if (is_array_creation && is_op_var_generic(arg)) { // [1, 2, ...$here] (actually array_merge_spread(1, 2, $here))
         occured_varg = true;
         for (int i = 1; i <= n_variadic; ++i) {
           std::vector<VertexPtr> ith_wrap{create_ith_op_var(arg, i)};

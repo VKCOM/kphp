@@ -33,9 +33,7 @@ void ConfdataPredefinedWildcards::set_wildcards(std::unordered_set<vk::string_vi
 
 ConfdataFirstKeyType ConfdataPredefinedWildcards::detect_first_key_type(vk::string_view first_key) const noexcept {
   const auto type = get_wildcard_type(first_key);
-  return type != ConfdataFirstKeyType::predefined_wildcard || has_wildcard(first_key)
-         ? type
-         : ConfdataFirstKeyType::simple_key;
+  return type != ConfdataFirstKeyType::predefined_wildcard || has_wildcard(first_key) ? type : ConfdataFirstKeyType::simple_key;
 }
 
 ConfdataFirstKeyType ConfdataPredefinedWildcards::get_wildcard_type(vk::string_view wildcard) noexcept {
@@ -84,8 +82,8 @@ void ConfdataKeyMaker::init_second_key(const char *second_key, int16_t second_ke
   if (second_key_key_len && php_try_to_int(second_key, second_key_key_len, &key_as_int)) {
     second_key_ = key_as_int;
   } else {
-    second_key_ = string::make_const_string_on_memory(second_key, static_cast<string::size_type>(second_key_key_len),
-                                                      second_key_buffer_.data(), second_key_buffer_.size());
+    second_key_ =
+      string::make_const_string_on_memory(second_key, static_cast<string::size_type>(second_key_key_len), second_key_buffer_.data(), second_key_buffer_.size());
   }
 }
 
@@ -116,8 +114,7 @@ void ConfdataKeyMaker::update_with_predefined_wildcard(const char *key, int16_t 
   reset_raw(key, key_len);
   php_assert(wildcard_len > 0 && wildcard_len <= key_len);
   first_key_type_ = ConfdataFirstKeyType::predefined_wildcard;
-  first_key_ = string::make_const_string_on_memory(key, static_cast<string::size_type>(wildcard_len),
-                                                   first_key_buffer_.data(), first_key_buffer_.size());
+  first_key_ = string::make_const_string_on_memory(key, static_cast<string::size_type>(wildcard_len), first_key_buffer_.data(), first_key_buffer_.size());
   init_second_key(key + wildcard_len, static_cast<int16_t>(key_len - wildcard_len));
 }
 

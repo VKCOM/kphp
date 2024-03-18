@@ -41,7 +41,7 @@ VertexPtr CalcConstTypePass::on_exit_vertex(VertexPtr v) {
   // for now only pure functions and
   // constructors in defines can be `cnst_const_val`-ed
   if (auto as_func_call = v.try_as<op_func_call>()) {
-    const bool can_be_const = as_func_call->func_id && ((as_func_call->func_id->is_constructor() && inlined_define_cnt > 0)|| as_func_call->func_id->is_pure);
+    const bool can_be_const = as_func_call->func_id && ((as_func_call->func_id->is_constructor() && inlined_define_cnt > 0) || as_func_call->func_id->is_pure);
     if (!can_be_const) {
       v->const_type = cnst_nonconst_val;
       return v;
@@ -63,7 +63,7 @@ VertexPtr CalcConstTypePass::on_exit_vertex(VertexPtr v) {
       break;
     }
     default:
-      kphp_error (0, fmt_format("Unknown cnst-type for [op = {}]", v->type()));
+      kphp_error(0, fmt_format("Unknown cnst-type for [op = {}]", v->type()));
       kphp_fail();
       break;
   }

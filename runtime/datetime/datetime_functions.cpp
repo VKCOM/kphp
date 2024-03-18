@@ -4,10 +4,10 @@
 
 #include "runtime/datetime/datetime_functions.h"
 
+#include <chrono>
 #include <clocale>
 #include <ctime>
 #include <sys/time.h>
-#include <chrono>
 
 #include "runtime/critical_section.h"
 #include "runtime/datetime/timelib_wrapper.h"
@@ -36,7 +36,7 @@ static const char *suffix[] = {"st", "nd", "rd", "th"};
 
 static bool use_updated_gmmktime = false;
 
-static time_t deprecated_gmmktime(struct tm * tm) {
+static time_t deprecated_gmmktime(struct tm *tm) {
   char *tz = getenv("TZ");
   setenv("TZ", "", 1);
   tzset();
@@ -113,7 +113,6 @@ void iso_week_number(int y, int doy, int weekday, int &iw, int &iy) {
     }
   }
 }
-
 
 static string date(const string &format, const tm &t, int64_t timestamp, bool local) {
   string_buffer &SB = static_SB_spare;
@@ -374,7 +373,7 @@ bool f$date_default_timezone_set(const string &s) {
     php_warning("Timezone %s is not supported, use %s instead", PHP_TIMELIB_TZ_GMT4, PHP_TIMELIB_TZ_GMT3);
     return false;
   }
-  php_critical_error ("unsupported default timezone \"%s\"", s.c_str());
+  php_critical_error("unsupported default timezone \"%s\"", s.c_str());
 }
 
 string f$date_default_timezone_get() {
@@ -387,7 +386,7 @@ array<mixed> f$getdate(int64_t timestamp) {
   }
   tm t;
   time_t timestamp_t = timestamp;
-  tm * tp = localtime_r(&timestamp_t, &t);
+  tm *tp = localtime_r(&timestamp_t, &t);
   if (tp == nullptr) {
     php_warning("Error \"%s\" in getdate with timestamp %" PRId64, strerror(errno), timestamp);
     memset(&t, 0, sizeof(tm));
@@ -499,16 +498,15 @@ void free_use_updated_gmmktime() {
   use_updated_gmmktime = false;
 }
 
-
 double microtime_monotonic() {
   struct timespec T;
-  php_assert (clock_gettime(CLOCK_MONOTONIC, &T) >= 0);
+  php_assert(clock_gettime(CLOCK_MONOTONIC, &T) >= 0);
   return static_cast<double>(T.tv_sec) + static_cast<double>(T.tv_nsec) * 1e-9;
 }
 
 static string microtime_string() {
   struct timespec T;
-  php_assert (clock_gettime(CLOCK_REALTIME, &T) >= 0);
+  php_assert(clock_gettime(CLOCK_REALTIME, &T) >= 0);
   const size_t buf_size = 45;
   char buf[buf_size];
   int len = snprintf(buf, buf_size, "0.%09d %d", (int)T.tv_nsec, (int)T.tv_sec);
@@ -517,7 +515,7 @@ static string microtime_string() {
 
 double microtime() {
   struct timespec T;
-  php_assert (clock_gettime(CLOCK_REALTIME, &T) >= 0);
+  php_assert(clock_gettime(CLOCK_REALTIME, &T) >= 0);
   return static_cast<double>(T.tv_sec) + static_cast<double>(T.tv_nsec) * 1e-9;
 }
 
@@ -529,8 +527,12 @@ mixed f$microtime(bool get_as_float) {
   }
 }
 
-double f$_microtime_float() { return microtime(); }
-string f$_microtime_string() { return microtime_string(); }
+double f$_microtime_float() {
+  return microtime();
+}
+string f$_microtime_string() {
+  return microtime_string();
+}
 
 int64_t f$mktime(int64_t h, int64_t m, int64_t s, int64_t month, int64_t day, int64_t year) {
   tm t;
@@ -607,10 +609,8 @@ int64_t hrtime_int() {
 
 array<int64_t> hrtime_array() {
   auto since_epoch = std::chrono::steady_clock::now().time_since_epoch();
-  return array<int64_t>::create(
-    std::chrono::duration_cast<std::chrono::seconds>(since_epoch).count(),
-    std::chrono::nanoseconds{since_epoch % std::chrono::seconds{1}}.count()
-  );
+  return array<int64_t>::create(std::chrono::duration_cast<std::chrono::seconds>(since_epoch).count(),
+                                std::chrono::nanoseconds{since_epoch % std::chrono::seconds{1}}.count());
 }
 
 mixed f$hrtime(bool as_number) {
@@ -620,11 +620,15 @@ mixed f$hrtime(bool as_number) {
   return hrtime_array();
 }
 
-array<int64_t> f$_hrtime_array() { return hrtime_array(); }
-int64_t f$_hrtime_int() { return hrtime_int(); }
+array<int64_t> f$_hrtime_array() {
+  return hrtime_array();
+}
+int64_t f$_hrtime_int() {
+  return hrtime_int();
+}
 
 void init_datetime_lib() {
-  dl::enter_critical_section();//OK
+  dl::enter_critical_section(); // OK
 
   set_default_timezone_id(PHP_TIMELIB_TZ_MOSCOW);
 

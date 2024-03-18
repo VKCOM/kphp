@@ -64,4 +64,3 @@ struct connection *epoll_insert_pipe(enum pipe_type type, int pipe_fd, conn_type
   epoll_insert(pipe_fd, (c->flags & C_WANTRD ? EVT_READ : 0) | (c->flags & C_WANTWR ? EVT_WRITE : 0) | extra_flags);
   return c;
 }
-

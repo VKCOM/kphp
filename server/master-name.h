@@ -16,9 +16,15 @@ class MasterName : vk::not_copyable {
 public:
   const char *set_master_name(const char *cluster_name, bool deprecated) noexcept;
 
-  const char *get_master_name() const noexcept { return master_name_.data(); }
-  const char *get_socket_name() const noexcept { return socket_name_.data(); }
-  const char *get_shmem_name() const noexcept { return shmem_name_.data(); }
+  const char *get_master_name() const noexcept {
+    return master_name_.data();
+  }
+  const char *get_socket_name() const noexcept {
+    return socket_name_.data();
+  }
+  const char *get_shmem_name() const noexcept {
+    return shmem_name_.data();
+  }
 
 private:
   static constexpr size_t MAX_SOCKET_NAME_LEN = sizeof(std::declval<sockaddr_un>().sun_path) - 1;

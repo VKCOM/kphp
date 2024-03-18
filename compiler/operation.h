@@ -23,19 +23,8 @@ enum OperationExtra {
   op_ex_safe_version,
 };
 
-enum RLValueType {
-  val_error = 0,
-  val_r,
-  val_l,
-  val_none
-};
-enum ConstValueType {
-  cnst_error_ = 0,
-  cnst_not_val,
-  cnst_nonconst_val,
-  cnst_const_val
-};
-
+enum RLValueType { val_error = 0, val_r, val_l, val_none };
+enum ConstValueType { cnst_error_ = 0, cnst_not_val, cnst_nonconst_val, cnst_const_val };
 
 struct OpProperties {
   Operation op;
@@ -55,7 +44,7 @@ struct OpProperties {
 
 struct OpInfo {
   static int was_init_static;
-  //TODO: assert that 255 is enough
+  // TODO: assert that 255 is enough
   static Operation tok_to_op[255];
   static Operation tok_to_binary_op[255];
   static Operation tok_to_unary_op[255];
@@ -119,4 +108,3 @@ public:
     return properties(op).fixity;
   }
 };
-

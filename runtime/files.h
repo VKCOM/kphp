@@ -12,7 +12,6 @@
 
 extern const string LETTER_a;
 
-
 int32_t close_safe(int32_t fd);
 
 int32_t open_safe(const char *pathname, int32_t flags);
@@ -22,7 +21,6 @@ int32_t open_safe(const char *pathname, int32_t flags, mode_t mode);
 ssize_t read_safe(int32_t fd, void *buf, size_t len, const string &file_name);
 
 ssize_t write_safe(int32_t fd, const void *buf, size_t len, const string &file_name);
-
 
 string f$basename(const string &name, const string &suffix = string());
 
@@ -67,7 +65,6 @@ bool f$unlink(const string &name);
 Optional<array<string>> f$scandir(const string &directory);
 
 Optional<string> file_file_get_contents(const string &name);
-
 
 void global_init_files_lib();
 

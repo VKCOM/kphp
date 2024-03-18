@@ -29,12 +29,9 @@ VertexPtr remove_conv_wrap(VertexPtr vertex) noexcept {
 }
 
 bool is_pure_nary_operation(VertexPtr vertex) noexcept {
-  return vk::any_of_equal(vertex->type(), op_minus, op_plus, op_not,
-                          op_add, op_mul, op_sub, op_div, op_mod, op_pow,
-                          op_and, op_or, op_xor, op_shl, op_shr,
-                          op_log_xor_let, op_log_and_let, op_log_or_let, op_log_and, op_log_or,
-                          op_eq2, op_eq3, op_le, op_lt,
-                          op_spaceship, op_null_coalesce, op_ternary, op_isset, op_string_build);
+  return vk::any_of_equal(vertex->type(), op_minus, op_plus, op_not, op_add, op_mul, op_sub, op_div, op_mod, op_pow, op_and, op_or, op_xor, op_shl, op_shr,
+                          op_log_xor_let, op_log_and_let, op_log_or_let, op_log_and, op_log_or, op_eq2, op_eq3, op_le, op_lt, op_spaceship, op_null_coalesce,
+                          op_ternary, op_isset, op_string_build);
 }
 
 template<bool full>
@@ -54,12 +51,9 @@ std::string get_description_for_help_impl(VertexPtr expr) {
         if (raw_str.size() < constexpr_str->size()) {
           raw_str.append("<...>");
         }
-        std::replace_if(raw_str.begin(), raw_str.end(),
-                        [](char c) {
-                          return iscntrl(c) || vk::any_of_equal(c, '"', '\'', '\\');
-                        }, '?');
-        raw_str.erase(std::unique(raw_str.begin(), raw_str.end(),
-                                  [](char lhs, char rhs) { return vk::any_of_equal(lhs, '?', ' ') && lhs == rhs; }),
+        std::replace_if(
+          raw_str.begin(), raw_str.end(), [](char c) { return iscntrl(c) || vk::any_of_equal(c, '"', '\'', '\\'); }, '?');
+        raw_str.erase(std::unique(raw_str.begin(), raw_str.end(), [](char lhs, char rhs) { return vk::any_of_equal(lhs, '?', ' ') && lhs == rhs; }),
                       raw_str.end());
         return "'" + vk::replace_all(raw_str, "?", "<...>") + "'";
       }
@@ -67,8 +61,8 @@ std::string get_description_for_help_impl(VertexPtr expr) {
     case op_instance_prop:
       return (full ? "variable " : "") + TermStringFormat::paint_green(expr.as<op_instance_prop>()->var_id->as_human_readable());
     case op_func_call:
-      return (full ? "function call " : "") + TermStringFormat::paint_green(expr.as<op_func_call>()->func_id->as_human_readable(false)) +
-             "(" + vk::join(expr.as<op_func_call>()->args(), ", ", get_description_for_help_impl<false>) + ")";
+      return (full ? "function call " : "") + TermStringFormat::paint_green(expr.as<op_func_call>()->func_id->as_human_readable(false)) + "("
+             + vk::join(expr.as<op_func_call>()->args(), ", ", get_description_for_help_impl<false>) + ")";
     case op_index: {
       std::string key;
       auto op_index_vertex = expr.as<op_index>();
@@ -142,8 +136,8 @@ bool is_same_var_expression(VertexPtr lhs, VertexPtr rhs) noexcept {
 
 VertexPtr get_first_arg_from_builtin_call(VertexAdaptor<op_func_call> func_call, vk::string_view func_name) noexcept {
   return func_call && func_call->func_id->is_extern() && func_call->func_id->name == func_name && !func_call->args().empty()
-         ? remove_conv_wrap(func_call->args().front())
-         : VertexPtr{};
+           ? remove_conv_wrap(func_call->args().front())
+           : VertexPtr{};
 }
 
 VertexPtr get_first_arg_from_array_merge_call(VertexAdaptor<op_func_call> func_call) noexcept {
@@ -151,14 +145,7 @@ VertexPtr get_first_arg_from_array_merge_call(VertexAdaptor<op_func_call> func_c
 }
 
 constexpr auto get_reserve_function_names() noexcept {
-  return vk::to_array(
-    {
-      "array_reserve",
-      "array_reserve_vector",
-      "array_reserve_map_int_keys",
-      "array_reserve_map_string_keys",
-      "array_reserve_from"
-    });
+  return vk::to_array({"array_reserve", "array_reserve_vector", "array_reserve_map_int_keys", "array_reserve_map_string_keys", "array_reserve_from"});
 }
 
 VertexPtr get_first_arg_from_array_reserve_call(VertexAdaptor<op_func_call> func_call) noexcept {
@@ -177,10 +164,8 @@ bool is_var_can_be_optimized_in_loop(VertexAdaptor<op_var> op_var_vertex) noexce
 bool is_op_index_sequence_with_non_int_keys(VertexPtr expr) noexcept {
   expr = remove_conv_wrap(expr);
   if (auto op_index_vertex = expr.try_as<op_index>()) {
-    return !op_index_vertex->has_key() ||
-           tinf::get_type(op_index_vertex->key())->get_real_ptype() != tp_int ||
-           is_op_index_sequence_with_non_int_keys(op_index_vertex->array()) ||
-           is_op_index_sequence_with_non_int_keys(op_index_vertex->key());
+    return !op_index_vertex->has_key() || tinf::get_type(op_index_vertex->key())->get_real_ptype() != tp_int
+           || is_op_index_sequence_with_non_int_keys(op_index_vertex->array()) || is_op_index_sequence_with_non_int_keys(op_index_vertex->key());
   }
   return vk::none_of_equal(expr->type(), op_var, op_int_const, op_float_const);
 }
@@ -230,9 +215,8 @@ void AnalyzePerformance::analyze_set_array_value(VertexAdaptor<op_set_value> op_
   if (is_enabled<PerformanceInspections::array_merge_into>()) {
     const auto first_arg = get_first_arg_from_array_merge_call(op_set_value_vertex->value().try_as<op_func_call>());
     auto first_arg_array_index = first_arg.try_as<op_index>();
-    if (first_arg_array_index && first_arg_array_index->has_key() &&
-        is_same_var_expression(op_set_value_vertex->key(), first_arg_array_index->key()) &&
-        is_same_var_expression(op_set_value_vertex->array(), first_arg_array_index->array())) {
+    if (first_arg_array_index && first_arg_array_index->has_key() && is_same_var_expression(op_set_value_vertex->key(), first_arg_array_index->key())
+        && is_same_var_expression(op_set_value_vertex->array(), first_arg_array_index->array())) {
       trigger_array_merge(first_arg);
     }
   }
@@ -306,12 +290,11 @@ void AnalyzePerformance::run_second_pass_on_loop_exit(VertexPtr vertex, uint64_t
       }
     }
     if (auto op_string_build_vertex = vertex.try_as<op_string_build>()) {
-      auto first_it = std::adjacent_find(op_string_build_vertex->begin(), op_string_build_vertex->end(),
-                                         [this](VertexPtr lhs, VertexPtr rhs) {
-                                           return is_constant_expression_in_this_loop(lhs) && is_constant_expression_in_this_loop(rhs);
-                                         });
-      auto last_it = std::find_if_not(first_it, op_string_build_vertex->end(),
-                                      [this](VertexPtr vertex) { return is_constant_expression_in_this_loop(vertex); });
+      auto first_it = std::adjacent_find(op_string_build_vertex->begin(), op_string_build_vertex->end(), [this](VertexPtr lhs, VertexPtr rhs) {
+        return is_constant_expression_in_this_loop(lhs) && is_constant_expression_in_this_loop(rhs);
+      });
+      auto last_it =
+        std::find_if_not(first_it, op_string_build_vertex->end(), [this](VertexPtr vertex) { return is_constant_expression_in_this_loop(vertex); });
       VertexRange constant_expressions_range{first_it, last_it};
       if (!constant_expressions_range.empty()) {
         auto message = "string building " + join_string_build_elements(constant_expressions_range) + " can be saved in a separate variable out of loop";
@@ -335,8 +318,8 @@ void AnalyzePerformance::run_second_pass_on_loop_exit(VertexPtr vertex, uint64_t
       auto array_var = remove_conv_wrap(op_set_value_vertex->array()).try_as<op_var>();
       auto array_set_key = remove_conv_wrap(op_set_value_vertex->key()).try_as<op_var>();
       auto foreach_key = op_foreach_loop_exit->params()->key();
-      if (array_var && !array_var->var_id->is_in_global_scope() && !reserved_arrays_.count(array_var->var_id) &&
-          array_set_key && array_set_key->var_id == foreach_key->var_id) {
+      if (array_var && !array_var->var_id->is_in_global_scope() && !reserved_arrays_.count(array_var->var_id) && array_set_key
+          && array_set_key->var_id == foreach_key->var_id) {
         auto message = get_description_for_help(array_var) + " can be reserved with array_reserve functions family out of loop";
         trigger_inspection_on_second_pass(op_set_value_vertex, PerformanceInspections::array_reserve, std::move(message));
         enabled_inspections &= ~PerformanceInspections::array_reserve;
@@ -404,9 +387,8 @@ bool AnalyzePerformance::is_constant_expression_in_this_loop(VertexPtr vertex) c
     return is_var_can_be_optimized_in_loop(op_var_vertex) && !loop_data_for_second_pass_.back().first_pass_modified_vars.count(op_var_vertex->var_id);
   }
   if (auto op_index_vertex = vertex.try_as<op_index>()) {
-    return op_index_vertex->has_key() &&
-           is_constant_expression_in_this_loop(op_index_vertex->key()) &&
-           is_constant_expression_in_this_loop(op_index_vertex->array());
+    return op_index_vertex->has_key() && is_constant_expression_in_this_loop(op_index_vertex->key())
+           && is_constant_expression_in_this_loop(op_index_vertex->array());
   }
   if (auto op_func_call_vertex = vertex.try_as<op_func_call>()) {
     if (op_func_call_vertex->func_id->is_pure) {
@@ -422,8 +404,8 @@ bool AnalyzePerformance::is_constant_expression_in_this_loop(VertexPtr vertex) c
 
 void AnalyzePerformance::trigger_array_merge(VertexPtr first_arg) noexcept {
   auto first_arg_help = get_description_for_help_impl<false>(first_arg);
-  auto message = "expression " + first_arg_help + " = array_merge(" + first_arg_help + ", <...>) " +
-                 "can be replaced with array_merge_into(" + first_arg_help + ", <...>)";
+  auto message =
+    "expression " + first_arg_help + " = array_merge(" + first_arg_help + ", <...>) " + "can be replaced with array_merge_into(" + first_arg_help + ", <...>)";
   trigger_inspection(PerformanceInspections::array_merge_into, std::move(message));
 }
 
@@ -445,8 +427,7 @@ void AnalyzePerformance::trigger_inspection(PerformanceInspections::Inspections 
   }
 }
 
-void AnalyzePerformance::trigger_inspection_on_second_pass(VertexPtr inspected_vertex,
-                                                           PerformanceInspections::Inspections inspection,
+void AnalyzePerformance::trigger_inspection_on_second_pass(VertexPtr inspected_vertex, PerformanceInspections::Inspections inspection,
                                                            std::string message) noexcept {
   const auto origin_location = stage::get_location();
   stage::set_location(inspected_vertex->get_location());
@@ -594,16 +575,10 @@ void PerformanceIssuesReport::add_issues_and_require_flush(FunctionPtr function,
   if (issues.empty()) {
     return;
   }
-  FunctionPerformanceIssues function_issues{
-    function->file_id->relative_file_name,
-    prepare_for_json(function->as_human_readable(false)),
-    std::move(issues)
-  };
-  std::sort(function_issues.issues.begin(), function_issues.issues.end(),
-            [](const AnalyzePerformance::Issue &lhs, const AnalyzePerformance::Issue &rhs) {
-              return std::tie(lhs.line, lhs.inspection, lhs.description) <
-                     std::tie(rhs.line, rhs.inspection, rhs.description);
-            });
+  FunctionPerformanceIssues function_issues{function->file_id->relative_file_name, prepare_for_json(function->as_human_readable(false)), std::move(issues)};
+  std::sort(function_issues.issues.begin(), function_issues.issues.end(), [](const AnalyzePerformance::Issue &lhs, const AnalyzePerformance::Issue &rhs) {
+    return std::tie(lhs.line, lhs.inspection, lhs.description) < std::tie(rhs.line, rhs.inspection, rhs.description);
+  });
   std::lock_guard<std::mutex> lock{mutex_};
   report_.emplace_back(std::move(function_issues));
 }
@@ -646,9 +621,8 @@ void PerformanceIssuesReport::flush_to(FILE *out) noexcept {
   fprintf(out, "[");
   const char *line_begin = "\n";
   for (const auto &record : full_report) {
-    fmt_fprintf(out, R"json({}{{"location": "{}:{}", "function": "{}", "inspection": "{}", "description": "{}"}})json",
-                line_begin, record.file_name, record.issue.line, record.function_name,
-                PerformanceInspections::inspection2string(record.issue.inspection), record.issue.description);
+    fmt_fprintf(out, R"json({}{{"location": "{}:{}", "function": "{}", "inspection": "{}", "description": "{}"}})json", line_begin, record.file_name,
+                record.issue.line, record.function_name, PerformanceInspections::inspection2string(record.issue.inspection), record.issue.description);
     line_begin = ",\n";
   }
   fprintf(out, "\n]\n");

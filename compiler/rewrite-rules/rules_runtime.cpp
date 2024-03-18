@@ -4,9 +4,9 @@
 
 #include "compiler/rewrite-rules/rules_runtime.h"
 
+#include "compiler/data/function-data.h"
 #include "compiler/inferring/public.h"
 #include "compiler/type-hint.h"
-#include "compiler/data/function-data.h"
 #include "compiler/vertex-util.h"
 
 namespace rewrite_rules {
@@ -125,15 +125,13 @@ bool is_same(VertexPtr x, VertexPtr y) {
         x_key = x_index->key();
         y_key = y_index->key();
       }
-      return is_same(x_index->array(), y_index->array()) &&
-             is_same(x_key, y_key);
+      return is_same(x_index->array(), y_index->array()) && is_same(x_key, y_key);
     }
 
     case op_instance_prop: {
       auto x_instance_prop = x.as<op_instance_prop>();
       auto y_instance_prop = y.as<op_instance_prop>();
-      return is_same(x_instance_prop->instance(), y_instance_prop->instance()) &&
-             x_instance_prop->get_string() == y_instance_prop->get_string();
+      return is_same(x_instance_prop->instance(), y_instance_prop->instance()) && x_instance_prop->get_string() == y_instance_prop->get_string();
     }
 
     case op_false:
@@ -216,9 +214,7 @@ bool contains(VertexPtr tree, VertexPtr x) {
   if (is_same(tree, x)) {
     return true;
   }
-  return std::any_of(tree->begin(), tree->end(), [x](VertexPtr e) {
-    return contains(e, x);
-  });
+  return std::any_of(tree->begin(), tree->end(), [x](VertexPtr e) { return contains(e, x); });
 }
 
 bool contains_var(VertexPtr tree, VertexPtr var) {

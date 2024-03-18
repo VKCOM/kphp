@@ -10,7 +10,7 @@
 
 #include "server/http-server-context.h"
 
-//ATTENTION: do NOT change this structures without changing the magic
+// ATTENTION: do NOT change this structures without changing the magic
 #define SHARED_DATA_MAGIC 0x3b720002
 
 struct master_data_t {
@@ -57,7 +57,7 @@ static constexpr size_t MASTER_DATA_T_SIZEOF = 272;
 static constexpr size_t SHARED_DATA_T_SIZEOF = 680;
 #elif defined(__x86_64__)
 static constexpr size_t SHARED_DATA_T_SIZEOF = 656;
-#elif defined(__arm64__) || defined (__aarch64__)
+#elif defined(__arm64__) || defined(__aarch64__)
 static constexpr size_t SHARED_DATA_T_SIZEOF = 664;
 #else
 #error "Unsupported arch"

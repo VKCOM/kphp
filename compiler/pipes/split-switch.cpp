@@ -7,16 +7,15 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/src-file.h"
 #include "compiler/function-pass.h"
-#include "compiler/vertex-util.h"
 #include "compiler/name-gen.h"
+#include "compiler/vertex-util.h"
 
 class SplitSwitchPass final : public FunctionPassBase {
 private:
   int depth{0};
   std::vector<FunctionPtr> new_functions;
 
-  static VertexPtr fix_break_continue(VertexAdaptor<meta_op_goto> goto_op,
-                                      const std::string &state_name, int cycle_depth) {
+  static VertexPtr fix_break_continue(VertexAdaptor<meta_op_goto> goto_op, const std::string &state_name, int cycle_depth) {
     int depth = -1;
     VertexPtr label = goto_op->level();
     if (label->type() == op_int_const) {
@@ -31,17 +30,14 @@ private:
     state->str_val = state_name;
     auto expr = VertexAdaptor<op_set>::create(state, minus_one);
 
-    //TODO: auto_return instead of return true!
+    // TODO: auto_return instead of return true!
     auto true_val = VertexAdaptor<op_true>::create();
     auto new_return = VertexAdaptor<op_return>::create(true_val);
     auto seq = VertexAdaptor<op_seq>::create(expr, new_return);
     return seq;
   }
 
-  static VertexPtr prepare_switch_func(
-    VertexPtr root,
-    const std::string &state_name,
-    int cycle_depth) {
+  static VertexPtr prepare_switch_func(VertexPtr root, const std::string &state_name, int cycle_depth) {
     if (root->type() == op_return) {
       auto one = VertexUtil::create_int_const(1);
       auto state = VertexAdaptor<op_var>::create();
@@ -55,7 +51,7 @@ private:
     }
 
     for (auto &i : *root) {
-      //TODO: hack... write proper Range
+      // TODO: hack... write proper Range
       bool is_cycle = OpInfo::type(i->type()) == cycle_op;
       i = prepare_switch_func(i, state_name, cycle_depth + is_cycle);
     }
@@ -132,7 +128,6 @@ public:
       case_res_copy->str_val = case_res_name;
       case_res_copy->extra_type = op_ex_var_superlocal;
       auto run_func = VertexAdaptor<op_set>::create(case_res, func_call);
-
 
       auto zero = VertexUtil::create_int_const(0);
       auto one = VertexUtil::create_int_const(1);

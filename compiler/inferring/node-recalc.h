@@ -12,6 +12,7 @@ protected:
   TypeData *new_type_;
   tinf::Node *node_;
   tinf::TypeInferer *inferer_;
+
 public:
   const TypeData *new_type();
   void add_dependency_impl(tinf::Node *from, tinf::Node *to, const MultiKey *from_at);

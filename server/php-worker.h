@@ -6,25 +6,13 @@
 
 #include <optional>
 
+#include "server/php-queries.h"
 #include "server/php-query-data.h"
 #include "server/php-runner.h"
-#include "server/php-queries.h"
 
+enum php_worker_mode_t { http_worker, rpc_worker, once_worker, job_worker };
 
-enum php_worker_mode_t {
-  http_worker,
-  rpc_worker,
-  once_worker,
-  job_worker
-};
-
-enum php_worker_state_t {
-  phpq_try_start,
-  phpq_init_script,
-  phpq_run,
-  phpq_free_script,
-  phpq_finish
-};
+enum php_worker_state_t { phpq_try_start, phpq_init_script, phpq_run, phpq_free_script, phpq_finish };
 
 /**
  * Logical PHP worker, not related to physical worker process.
@@ -45,7 +33,7 @@ public:
   script_error_t terminate_reason;
   const char *error_message;
 
-  //for wait query
+  // for wait query
   int waiting;
   int wakeup_flag;
   double wakeup_time;

@@ -14,9 +14,8 @@ class RpcRequestResult;
 
 class RpcRequest {
 public:
-  explicit RpcRequest(class_instance<C$VK$TL$RpcFunction> function) :
-    storing_function_(std::move(function)) {
-  }
+  explicit RpcRequest(class_instance<C$VK$TL$RpcFunction> function)
+    : storing_function_(std::move(function)) {}
 
   string tl_function_name() const {
     string class_name{storing_function_.get()->get_class()};
@@ -29,8 +28,12 @@ public:
     return class_name;
   }
 
-  bool empty() const { return storing_function_.is_null(); }
-  const class_instance<C$VK$TL$RpcFunction>& get_tl_function() const { return storing_function_; }
+  bool empty() const {
+    return storing_function_.is_null();
+  }
+  const class_instance<C$VK$TL$RpcFunction> &get_tl_function() const {
+    return storing_function_;
+  }
 
   virtual std::unique_ptr<RpcRequestResult> store_request() const = 0;
   virtual ~RpcRequest() = default;
@@ -119,6 +122,6 @@ public:
 } // namespace impl_
 
 template<class T0, unsigned int inner_magic0>
-struct t_ReqResult;   // the definition appears after the TL scheme codegen, during the site build
+struct t_ReqResult; // the definition appears after the TL scheme codegen, during the site build
 //
 using KphpRpcRequest = impl_::KphpRpcRequest<t_ReqResult>;

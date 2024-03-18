@@ -10,26 +10,26 @@
 
 #include <stdbool.h>
 
-#define EVT_READ        4
-#define EVT_WRITE       2
-#define EVT_SPEC        1
-#define EVT_RW          (EVT_READ | EVT_WRITE)
-#define EVT_RWX         (EVT_READ | EVT_WRITE | EVT_SPEC)
-#define EVT_LEVEL       8
-#define EVT_OPEN        0x80
-#define EVT_CLOSED      0x40
-#define EVT_IN_EPOLL    0x20
-#define EVT_NEW         0x100
-#define EVT_NOHUP       0x200
-#define EVT_FROM_EPOLL  0x400
-#define EVT_FAKE        0x800
+#define EVT_READ 4
+#define EVT_WRITE 2
+#define EVT_SPEC 1
+#define EVT_RW (EVT_READ | EVT_WRITE)
+#define EVT_RWX (EVT_READ | EVT_WRITE | EVT_SPEC)
+#define EVT_LEVEL 8
+#define EVT_OPEN 0x80
+#define EVT_CLOSED 0x40
+#define EVT_IN_EPOLL 0x20
+#define EVT_NEW 0x100
+#define EVT_NOHUP 0x200
+#define EVT_FROM_EPOLL 0x400
+#define EVT_FAKE 0x800
 
-#define EVA_CONTINUE  0
-#define EVA_RERUN     -2
-#define EVA_REMOVE    -3
-#define EVA_DESTROY   -5
-#define EVA_ERROR     -8
-#define EVA_FATAL     -666
+#define EVA_CONTINUE 0
+#define EVA_RERUN -2
+#define EVA_REMOVE -3
+#define EVA_DESTROY -5
+#define EVA_ERROR -8
+#define EVA_FATAL -666
 
 typedef void (*epoll_func_vector_t)();
 extern epoll_func_vector_t epoll_pre_runqueue, epoll_post_runqueue, epoll_pre_event;

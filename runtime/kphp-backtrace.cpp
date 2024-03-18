@@ -79,19 +79,14 @@ const char *KphpBacktrace::make_line(const char *symbol, bool full_trace) noexce
     free(real_name);
   }
   if (full_trace) {
-    snprintf(trace_buffer_.data(), trace_buffer_.size(), "%.*s : %s+%.*s%s\n",
-             static_cast<int32_t>(mangled_name - symbol),
-             symbol,
-             name_buffer_.data(),
-             static_cast<int32_t>(offset_end - offset_begin - 1),
-             offset_begin + 1,
-             offset_end + 1);
+    snprintf(trace_buffer_.data(), trace_buffer_.size(), "%.*s : %s+%.*s%s\n", static_cast<int32_t>(mangled_name - symbol), symbol, name_buffer_.data(),
+             static_cast<int32_t>(offset_end - offset_begin - 1), offset_begin + 1, offset_end + 1);
     return trace_buffer_.data();
   }
   return name_buffer_.data();
 }
 
-void parse_kphp_backtrace(char * buffer, size_t buffer_len, void * const * raw_backtrace, int backtrace_len) {
+void parse_kphp_backtrace(char *buffer, size_t buffer_len, void *const *raw_backtrace, int backtrace_len) {
   if (buffer_len == 0) {
     return;
   }
@@ -137,8 +132,7 @@ array<string> f$kphp_backtrace(bool pretty) noexcept {
     vk::string_view func_name{name, len};
     // depending on the compilation options the fast_backtrace function and f$kphp_backtrace
     // may be present or absent inside a backtrace
-    if (func_name.starts_with(__FUNCTION__) &&
-        vk::string_view{__PRETTY_FUNCTION__}.ends_with(func_name)) {
+    if (func_name.starts_with(__FUNCTION__) && vk::string_view{__PRETTY_FUNCTION__}.ends_with(func_name)) {
       backtrace.clear();
       continue;
     }

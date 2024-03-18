@@ -39,7 +39,6 @@ bool json_append_char(unsigned int c) noexcept {
   return false;
 }
 
-
 bool do_json_encode_string_php(const JsonPath &json_path, const char *s, int len, int64_t options) noexcept {
   int begin_pos = static_SB.size();
   if (options & JSON_UNESCAPED_UNICODE) {
@@ -95,7 +94,7 @@ bool do_json_encode_string_php(const JsonPath &json_path, const char *s, int len
       case 14 ... 31:
         json_append_one_char(s[pos]);
         break;
-      case -128 ... -1: {
+      case -128 ... - 1: {
         const int a = s[pos];
         if ((a & 0x40) == 0) {
           return fire_error(pos);
@@ -177,7 +176,7 @@ bool do_json_encode_string_vkext(const char *s, int len) noexcept {
 
   for (int pos = 0; pos < len; pos++) {
     char c = s[pos];
-    if (unlikely (static_cast<unsigned int>(c) < 32u)) {
+    if (unlikely(static_cast<unsigned int>(c) < 32u)) {
       switch (c) {
         case '\b':
           static_SB.append_char('\\');
@@ -224,7 +223,7 @@ string JsonPath::to_string() const {
   }
   unsigned num_parts = std::clamp(depth, 0U, static_cast<unsigned>(arr.size()));
   string result;
-  result.reserve_at_least((num_parts+1) * 8);
+  result.reserve_at_least((num_parts + 1) * 8);
   result.push_back('/');
   for (unsigned i = 0; i < num_parts; i++) {
     const char *key = arr[i];
@@ -246,11 +245,10 @@ string JsonPath::to_string() const {
 
 namespace impl_ {
 
-JsonEncoder::JsonEncoder(int64_t options, bool simple_encode, const char *json_obj_magic_key) noexcept:
-  options_(options),
-  simple_encode_(simple_encode),
-  json_obj_magic_key_(json_obj_magic_key) {
-}
+JsonEncoder::JsonEncoder(int64_t options, bool simple_encode, const char *json_obj_magic_key) noexcept
+  : options_(options)
+  , simple_encode_(simple_encode)
+  , json_obj_magic_key_(json_obj_magic_key) {}
 
 bool JsonEncoder::encode(bool b) noexcept {
   if (b) {
@@ -325,29 +323,22 @@ bool do_json_decode(const char *s, int s_len, int &i, mixed &v, const char *json
   json_skip_blanks(s, i);
   switch (s[i]) {
     case 'n':
-      if (s[i + 1] == 'u' &&
-          s[i + 2] == 'l' &&
-          s[i + 3] == 'l') {
+      if (s[i + 1] == 'u' && s[i + 2] == 'l' && s[i + 3] == 'l') {
         i += 4;
         return true;
       }
       break;
     case 't':
-      if (s[i + 1] == 'r' &&
-          s[i + 2] == 'u' &&
-          s[i + 3] == 'e') {
+      if (s[i + 1] == 'r' && s[i + 2] == 'u' && s[i + 3] == 'e') {
         i += 4;
-        new(&v) mixed(true);
+        new (&v) mixed(true);
         return true;
       }
       break;
     case 'f':
-      if (s[i + 1] == 'a' &&
-          s[i + 2] == 'l' &&
-          s[i + 3] == 's' &&
-          s[i + 4] == 'e') {
+      if (s[i + 1] == 'a' && s[i + 2] == 'l' && s[i + 3] == 's' && s[i + 4] == 'e') {
         i += 5;
-        new(&v) mixed(false);
+        new (&v) mixed(false);
         return true;
       }
       break;
@@ -409,8 +400,7 @@ bool do_json_decode(const char *s, int s_len, int &i, mixed &v, const char *json
                   }
 
                   if (0xD7FF < num && num < 0xE000) {
-                    if (s[i + 1] == '\\' && s[i + 2] == 'u' &&
-                        isxdigit(s[i + 3]) && isxdigit(s[i + 4]) && isxdigit(s[i + 5]) && isxdigit(s[i + 6])) {
+                    if (s[i + 1] == '\\' && s[i + 2] == 'u' && isxdigit(s[i + 3]) && isxdigit(s[i + 4]) && isxdigit(s[i + 5]) && isxdigit(s[i + 6])) {
                       i += 2;
                       int u = 0;
                       for (int t = 0; t < 4; t++) {
@@ -464,7 +454,7 @@ bool do_json_decode(const char *s, int s_len, int &i, mixed &v, const char *json
         }
         value.shrink(l);
 
-        new(&v) mixed(value);
+        new (&v) mixed(value);
         i++;
         return true;
       }
@@ -491,7 +481,7 @@ bool do_json_decode(const char *s, int s_len, int &i, mixed &v, const char *json
         i++;
       }
 
-      new(&v) mixed(res);
+      new (&v) mixed(res);
       return true;
     }
     case '{': {
@@ -528,7 +518,7 @@ bool do_json_decode(const char *s, int s_len, int &i, mixed &v, const char *json
         res[string{json_obj_magic_key}] = true;
       }
 
-      new(&v) mixed(res);
+      new (&v) mixed(res);
       return true;
     }
     default: {
@@ -540,7 +530,7 @@ bool do_json_decode(const char *s, int s_len, int &i, mixed &v, const char *json
         int64_t intval = 0;
         if (php_try_to_int(s + i, j - i, &intval)) {
           i = j;
-          new(&v) mixed(intval);
+          new (&v) mixed(intval);
           return true;
         }
 
@@ -548,7 +538,7 @@ bool do_json_decode(const char *s, int s_len, int &i, mixed &v, const char *json
         double floatval = strtod(s + i, &end_ptr);
         if (end_ptr == s + j) {
           i = j;
-          new(&v) mixed(floatval);
+          new (&v) mixed(floatval);
           return true;
         }
       }

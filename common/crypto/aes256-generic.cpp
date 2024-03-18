@@ -79,4 +79,3 @@ void crypto_generic_aes256_ctr_encrypt(vk_aes_ctx_t *vk_ctx, const uint8_t *in, 
 }
 
 #pragma GCC diagnostic pop
-

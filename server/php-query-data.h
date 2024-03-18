@@ -4,12 +4,11 @@
 
 #pragma once
 
-#include <variant>
 #include <cstring>
+#include <variant>
 
-#include "common/tl/query-header.h"
 #include "common/dl-utils-lite.h"
-
+#include "common/tl/query-header.h"
 
 struct http_query_data {
   char const *uri, *get, *headers, *post, *request_method;
@@ -26,17 +25,14 @@ struct rpc_query_data {
 };
 
 namespace job_workers {
-  struct JobSharedMessage;
+struct JobSharedMessage;
 } // namespace job_workers
 
 struct job_query_data {
   job_workers::JobSharedMessage *job_request;
-  const char *(*send_reply) (job_workers::JobSharedMessage *job_response);
+  const char *(*send_reply)(job_workers::JobSharedMessage *job_response);
 };
 
 using null_query_data = std::monostate;
 
-using php_query_data_t = std::variant<null_query_data,
-                                      http_query_data,
-                                      rpc_query_data,
-                                      job_query_data>;
+using php_query_data_t = std::variant<null_query_data, http_query_data, rpc_query_data, job_query_data>;

@@ -22,10 +22,10 @@ static const stream_functions *default_stream_functions;
 void register_stream_functions(const stream_functions *functions, bool is_default) {
   string wrapper_name = functions->name;
 
-  php_assert (dl::query_num == 0);
-  php_assert (functions != nullptr);
-  php_assert (!wrappers.isset(wrapper_name));
-  php_assert (strlen(wrapper_name.c_str()) == wrapper_name.size());
+  php_assert(dl::query_num == 0);
+  php_assert(functions != nullptr);
+  php_assert(!wrappers.isset(wrapper_name));
+  php_assert(strlen(wrapper_name.c_str()) == wrapper_name.size());
 
   if (wrapper_name.size() > max_wrapper_name_size) {
     max_wrapper_name_size = wrapper_name.size();
@@ -34,7 +34,7 @@ void register_stream_functions(const stream_functions *functions, bool is_defaul
   wrappers.set_value(wrapper_name, functions);
 
   if (is_default) {
-    php_assert (default_stream_functions == nullptr);
+    php_assert(default_stream_functions == nullptr);
     default_stream_functions = functions;
   }
 }
@@ -48,16 +48,14 @@ static const stream_functions *get_stream_functions_from_url(const string &url) 
     return nullptr;
   }
 
-  void *res = memmem(static_cast<const void *> (url.c_str()), url.size(),
-                     static_cast<const void *> ("://"), 3);
+  void *res = memmem(static_cast<const void *>(url.c_str()), url.size(), static_cast<const void *>("://"), 3);
   if (res != nullptr) {
-    const char *wrapper_end = static_cast<const char *> (res);
+    const char *wrapper_end = static_cast<const char *>(res);
     return get_stream_functions(string(url.c_str(), static_cast<string::size_type>(wrapper_end - url.c_str())));
   }
 
   return default_stream_functions;
 }
-
 
 mixed f$stream_context_create(const mixed &options) {
   mixed result;
@@ -129,12 +127,10 @@ bool f$stream_context_set_option(mixed &context, const mixed &options_var) {
   return !was_error;
 }
 
-
 mixed error_number_dummy;
 mixed error_description_dummy;
 
-mixed f$stream_socket_client(const string &url, mixed &error_number, mixed &error_description,
-                           double timeout, int64_t flags, const mixed &context) {
+mixed f$stream_socket_client(const string &url, mixed &error_number, mixed &error_description, double timeout, int64_t flags, const mixed &context) {
   if (flags != STREAM_CLIENT_CONNECT) {
     php_warning("Wrong parameter flags = %" PRIi64 " in function stream_socket_client", flags);
     error_number = -1001;
@@ -211,7 +207,6 @@ int64_t f$stream_set_read_buffer(const Stream &stream, int64_t size) {
 
   return functions->stream_set_option(stream, STREAM_SET_READ_BUFFER_OPTION, size);
 }
-
 
 static void stream_array_to_fd_set(const mixed &streams_var, fd_set *fds, int32_t *nfds) {
   FD_ZERO(fds);
@@ -320,8 +315,8 @@ Optional<int64_t> f$stream_select(mixed &read, mixed &write, mixed &except, cons
     return false;
   }
 
-//TODO use pselect
-  dl::enter_critical_section();//OK
+  // TODO use pselect
+  dl::enter_critical_section(); // OK
   int32_t select_result = select(nfds + 1, &rfds, &wfds, &efds, timeout);
   dl::leave_critical_section();
 
@@ -337,22 +332,20 @@ Optional<int64_t> f$stream_select(mixed &read, mixed &write, mixed &except, cons
   return select_result;
 }
 
-
-#define STREAM_FUNCTION_BODY(function_name, error_result)                                             \
-  const string &url = stream.to_string();                                                             \
-                                                                                                      \
-  const stream_functions *functions = get_stream_functions_from_url (url);                            \
-  if (functions == nullptr) {                                                                            \
-    php_warning ("Can't find appropriate wrapper for \"%s\"", url.c_str());                           \
-    return error_result;                                                                              \
-  }                                                                                                   \
-  if (functions->function_name == nullptr) {                                                             \
-    php_warning ("Wrapper \"%s\" doesn't support function " #function_name, functions->name.c_str()); \
-    return error_result;                                                                              \
-  }                                                                                                   \
-                                                                                                      \
+#define STREAM_FUNCTION_BODY(function_name, error_result)                                                                                                      \
+  const string &url = stream.to_string();                                                                                                                      \
+                                                                                                                                                               \
+  const stream_functions *functions = get_stream_functions_from_url(url);                                                                                      \
+  if (functions == nullptr) {                                                                                                                                  \
+    php_warning("Can't find appropriate wrapper for \"%s\"", url.c_str());                                                                                     \
+    return error_result;                                                                                                                                       \
+  }                                                                                                                                                            \
+  if (functions->function_name == nullptr) {                                                                                                                   \
+    php_warning("Wrapper \"%s\" doesn't support function " #function_name, functions->name.c_str());                                                           \
+    return error_result;                                                                                                                                       \
+  }                                                                                                                                                            \
+                                                                                                                                                               \
   return functions->function_name
-
 
 Stream f$fopen(const string &stream, const string &mode) {
   STREAM_FUNCTION_BODY(fopen, false)(url, mode);
@@ -411,8 +404,7 @@ Optional<int64_t> f$vfprintf(const Stream &stream, const string &format, const a
   return f$fwrite(stream, text);
 }
 
-Optional<int64_t> f$fputcsv(const Stream &stream, const array<mixed> &fields, string delimiter,
-                            string enclosure, string escape) {
+Optional<int64_t> f$fputcsv(const Stream &stream, const array<mixed> &fields, string delimiter, string enclosure, string escape) {
   if (delimiter.empty()) {
     php_warning("delimiter must be a character");
     return false;
@@ -434,8 +426,7 @@ Optional<int64_t> f$fputcsv(const Stream &stream, const array<mixed> &fields, st
   char delimiter_char = delimiter[0];
   char enclosure_char = enclosure[0];
   string_buffer csvline;
-  string to_enclose = string(" \t\r\n", 4).append(string(1, delimiter_char))
-                                          .append(string(1, enclosure_char));
+  string to_enclose = string(" \t\r\n", 4).append(string(1, delimiter_char)).append(string(1, enclosure_char));
   if (escape_char != PHP_CSV_NO_ESCAPE) {
     to_enclose.append(string(1, static_cast<char>(escape_char)));
   }
@@ -491,7 +482,7 @@ static const char *fgetcsv_lookup_trailing_spaces(const char *ptr, size_t len) {
     ptr += inc_len;
     len -= inc_len;
   }
-  quit_loop:
+quit_loop:
   switch (last_chars[1]) {
     case '\n':
       if (last_chars[0] == '\r') {
@@ -503,7 +494,6 @@ static const char *fgetcsv_lookup_trailing_spaces(const char *ptr, size_t len) {
   }
   return ptr;
 }
-
 
 Optional<array<mixed>> f$fgetcsv(const Stream &stream, int64_t length, string delimiter, string enclosure, string escape) {
   if (delimiter.empty()) {
@@ -573,7 +563,7 @@ Optional<array<mixed>> f$fgetcsv(const Stream &stream, int64_t length, string de
     if (inc_len != 0 && *bptr == enclosure_char) {
       int state = 0;
 
-      bptr++;        /* move on to first character in field */
+      bptr++; /* move on to first character in field */
       hunk_begin = bptr;
 
       /* 2A. handle enclosure delimited field */
@@ -623,8 +613,7 @@ Optional<array<mixed>> f$fgetcsv(const Stream &stream, int64_t length, string de
                 line_end_len = buf_len - (size_t)(limit - buf);
 
                 state = 0;
-              }
-                break;
+              } break;
             }
             break;
 
@@ -684,7 +673,7 @@ Optional<array<mixed>> f$fgetcsv(const Stream &stream, int64_t length, string de
         inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mblen(bptr, limit - bptr)) : 0);
       }
 
-      quit_loop_2:
+    quit_loop_2:
       /* look up for a delimiter */
       for (;;) {
         switch (inc_len) {
@@ -707,7 +696,7 @@ Optional<array<mixed>> f$fgetcsv(const Stream &stream, int64_t length, string de
         inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mblen(bptr, limit - bptr)) : 0);
       }
 
-      quit_loop_3:
+    quit_loop_3:
       tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
       bptr += inc_len;
     } else {
@@ -734,7 +723,7 @@ Optional<array<mixed>> f$fgetcsv(const Stream &stream, int64_t length, string de
         bptr += inc_len;
         inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mblen(bptr, limit - bptr)) : 0);
       }
-      quit_loop_4:
+    quit_loop_4:
       tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
 
       char const *comp_end = (char *)fgetcsv_lookup_trailing_spaces(tmp_buffer.c_str(), tmp_buffer.size());

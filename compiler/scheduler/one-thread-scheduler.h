@@ -16,6 +16,7 @@ private:
   std::vector<Node *> nodes;
   std::queue<Node *> sync_nodes;
   TaskPull *task_pull;
+
 public:
   OneThreadScheduler();
 

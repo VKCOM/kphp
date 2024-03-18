@@ -18,7 +18,7 @@ array<array<string>> make_backtrace(void **trace, int trace_size) noexcept {
   const size_t buf_size = 20;
   char buf[buf_size];
   for (int i = 1; i < trace_size; i++) {
-    dl::enter_critical_section();//OK
+    dl::enter_critical_section(); // OK
     snprintf(buf, buf_size, "%p", trace[i]);
     dl::leave_critical_section();
     array<string> current{array_size{1, false}};
@@ -45,20 +45,40 @@ array<array<string>> f$debug_backtrace() {
 
 Throwable CurException;
 
-string f$Exception$$getMessage(const Exception &e) { return e->$message; }
-string f$Error$$getMessage(const Error &e) { return e->$message; }
+string f$Exception$$getMessage(const Exception &e) {
+  return e->$message;
+}
+string f$Error$$getMessage(const Error &e) {
+  return e->$message;
+}
 
-int64_t f$Exception$$getCode(const Exception &e) { return e->$code; }
-int64_t f$Error$$getCode(const Error &e) { return e->$code; }
+int64_t f$Exception$$getCode(const Exception &e) {
+  return e->$code;
+}
+int64_t f$Error$$getCode(const Error &e) {
+  return e->$code;
+}
 
-string f$Exception$$getFile(const Exception &e) { return e->$file; }
-string f$Error$$getFile(const Error &e) { return e->$file; }
+string f$Exception$$getFile(const Exception &e) {
+  return e->$file;
+}
+string f$Error$$getFile(const Error &e) {
+  return e->$file;
+}
 
-int64_t f$Exception$$getLine(const Exception &e) { return e->$line; }
-int64_t f$Error$$getLine(const Error &e) { return e->$line; }
+int64_t f$Exception$$getLine(const Exception &e) {
+  return e->$line;
+}
+int64_t f$Error$$getLine(const Error &e) {
+  return e->$line;
+}
 
-array<array<string>> f$Exception$$getTrace(const Exception &e) { return e->trace; }
-array<array<string>> f$Error$$getTrace(const Error &e) { return e->trace; }
+array<array<string>> f$Exception$$getTrace(const Exception &e) {
+  return e->trace;
+}
+array<array<string>> f$Error$$getTrace(const Error &e) {
+  return e->trace;
+}
 
 Exception f$Exception$$__construct(const Exception &v$this, const string &message, int64_t code) {
   exception_initialize(v$this, message, code);
@@ -85,7 +105,6 @@ Exception new_Exception(const string &file, int64_t line, const string &message,
   return f$_exception_set_location(f$Exception$$__construct(Exception().alloc(), message, code), file, line);
 }
 
-
 Exception f$err(const string &file, int64_t line, const string &code, const string &desc) {
   return new_Exception(file, line, (static_SB.clean() << "ERR_" << code << ": " << desc).str(), 0);
 }
@@ -111,10 +130,13 @@ void exception_initialize(const Throwable &e, const string &message, int64_t cod
   e->trace = make_backtrace(buffer, trace_size);
 }
 
-string f$Exception$$getTraceAsString(const Exception &e) { return exception_trace_as_string(e); }
-string f$Error$$getTraceAsString(const Error &e) { return exception_trace_as_string(e); }
+string f$Exception$$getTraceAsString(const Exception &e) {
+  return exception_trace_as_string(e);
+}
+string f$Error$$getTraceAsString(const Error &e) {
+  return exception_trace_as_string(e);
+}
 
 void free_exception_lib() {
   hard_reset_var(CurException);
 }
-

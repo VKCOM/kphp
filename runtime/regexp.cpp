@@ -19,10 +19,10 @@ int64_t preg_replace_count_dummy;
 
 // TODO: remove when/if we migrate to pcre2
 #ifndef PCRE2_ERROR_BADOFFSET
-#  define PCRE2_ERROR_BADOFFSET -33
+#define PCRE2_ERROR_BADOFFSET -33
 #endif
 #ifndef PCRE2_UNSET
-#  define PCRE2_UNSET -1
+#define PCRE2_UNSET -1
 #endif
 
 static re2::StringPiece RE2_submatch[MAX_SUBPATTERNS];
@@ -32,7 +32,6 @@ static re2::StringPiece RE2_submatch[MAX_SUBPATTERNS];
 // submatch[2 * i + 1] - end position of match
 int32_t regexp::submatch[3 * MAX_SUBPATTERNS];
 pcre_extra regexp::extra;
-
 
 regexp::regexp(const string &regexp_string) {
   init(regexp_string);
@@ -44,10 +43,10 @@ regexp::regexp(const char *regexp_string, int64_t regexp_len) {
 
 void regexp::pattern_compilation_warning(const char *function, const char *file, char const *message, ...) noexcept {
   va_list args;
-  va_start (args, message);
+  va_start(args, message);
   char buf[1024];
   vsnprintf(buf, sizeof(buf), message, args);
-  va_end (args);
+  va_end(args);
 
   if (function || file) {
     php_warning("%s [in function %s() at %s]", buf, function ? function : "unknown_function", file ? file : "unknown_file");
@@ -87,7 +86,7 @@ bool regexp::is_valid_RE2_regexp(const char *regexp_string, int64_t regexp_len, 
 
   for (int64_t i = 0; i < regexp_len; i++) {
     switch (regexp_string[i]) {
-      case -128 ... -1:
+      case -128 ... - 1:
       case 1 ... 35:
       case 37 ... 39:
       case ',' ... '>':
@@ -206,15 +205,13 @@ bool regexp::is_valid_RE2_regexp(const char *regexp_string, int64_t regexp_len, 
           if (regexp_string[i] == '\\') {
             switch (regexp_string[i + 1]) {
               case 'x':
-                if (isxdigit(regexp_string[i + 2]) &&
-                    isxdigit(regexp_string[i + 3])) {
+                if (isxdigit(regexp_string[i + 2]) && isxdigit(regexp_string[i + 3])) {
                   i += 3;
                   continue;
                 }
                 return false;
               case '0':
-                if ('0' <= regexp_string[i + 2] && regexp_string[i + 2] <= '7' &&
-                    '0' <= regexp_string[i + 3] && regexp_string[i + 3] <= '7') {
+                if ('0' <= regexp_string[i + 2] && regexp_string[i + 2] <= '7' && '0' <= regexp_string[i + 3] && regexp_string[i + 3] <= '7') {
                   i += 3;
                   continue;
                 }
@@ -257,15 +254,13 @@ bool regexp::is_valid_RE2_regexp(const char *regexp_string, int64_t regexp_len, 
       case '\\':
         switch (regexp_string[i + 1]) {
           case 'x':
-            if (isxdigit(regexp_string[i + 2]) &&
-                isxdigit(regexp_string[i + 3])) {
+            if (isxdigit(regexp_string[i + 2]) && isxdigit(regexp_string[i + 3])) {
               i += 3;
               break;
             }
             return false;
           case '0':
-            if ('0' <= regexp_string[i + 2] && regexp_string[i + 2] <= '7' &&
-                '0' <= regexp_string[i + 3] && regexp_string[i + 3] <= '7') {
+            if ('0' <= regexp_string[i + 2] && regexp_string[i + 2] <= '7' && '0' <= regexp_string[i + 3] && regexp_string[i + 3] <= '7') {
               i += 3;
               break;
             }
@@ -300,7 +295,8 @@ bool regexp::is_valid_RE2_regexp(const char *regexp_string, int64_t regexp_len, 
 
         prev_is_group = true;
         break;
-      default: php_critical_error ("wrong char range assumed");
+      default:
+        php_critical_error("wrong char range assumed");
     }
   }
   if (brackets_depth != 0) {
@@ -320,13 +316,13 @@ void regexp::init(const string &regexp_string, const char *function, const char 
 
   if (!use_heap_memory) {
     if (dl::query_num != regexp_last_query_num) {
-      new(regexp_cache_storage) array<regexp *>();
+      new (regexp_cache_storage) array<regexp *>();
       regexp_last_query_num = dl::query_num;
     }
 
     regexp *re = regexp_cache->get_value(regexp_string);
     if (re != nullptr) {
-      php_assert (!re->use_heap_memory);
+      php_assert(!re->use_heap_memory);
 
       subpatterns_count = re->subpatterns_count;
       named_subpatterns_count = re->named_subpatterns_count;
@@ -345,8 +341,8 @@ void regexp::init(const string &regexp_string, const char *function, const char 
   init(regexp_string.c_str(), regexp_string.size(), function, file);
 
   if (!use_heap_memory) {
-    regexp *re = static_cast <regexp *> (dl::allocate(sizeof(regexp)));
-    new(re) regexp();
+    regexp *re = static_cast<regexp *>(dl::allocate(sizeof(regexp)));
+    new (re) regexp();
 
     re->subpatterns_count = subpatterns_count;
     re->named_subpatterns_count = named_subpatterns_count;
@@ -432,7 +428,7 @@ void regexp::init(const char *regexp_string, int64_t regexp_len, const char *fun
       case 'm':
         pcre_options |= PCRE_MULTILINE;
         RE2_options.set_one_line(false);
-        can_use_RE2 = false;//supported by RE2::Regexp but disabled in an interface while not using posix_syntax
+        can_use_RE2 = false; // supported by RE2::Regexp but disabled in an interface while not using posix_syntax
         break;
       case 's':
         pcre_options |= PCRE_DOTALL;
@@ -456,7 +452,7 @@ void regexp::init(const char *regexp_string, int64_t regexp_len, const char *fun
         break;
       case 'U':
         pcre_options |= PCRE_UNGREEDY;
-        can_use_RE2 = false;//supported by RE2::Regexp but there is no such an option
+        can_use_RE2 = false; // supported by RE2::Regexp but there is no such an option
         break;
       case 'X':
         pcre_options |= PCRE_EXTRA;
@@ -492,8 +488,8 @@ void regexp::init(const char *regexp_string, int64_t regexp_len, const char *fun
     __lsan_ignore_object(RE2_regexp);
 #endif
     if (!RE2_regexp->ok()) {
-      pattern_compilation_warning(function, file, "RE2 compilation of regexp \"%s\" failed. Error %d at %s",
-        static_SB.c_str(), RE2_regexp->error_code(), RE2_regexp->error().c_str());
+      pattern_compilation_warning(function, file, "RE2 compilation of regexp \"%s\" failed. Error %d at %s", static_SB.c_str(), RE2_regexp->error_code(),
+                                  RE2_regexp->error().c_str());
 
       delete RE2_regexp;
       RE2_regexp = nullptr;
@@ -501,13 +497,13 @@ void regexp::init(const char *regexp_string, int64_t regexp_len, const char *fun
       std::string min_str;
       std::string max_str;
 
-      if (!RE2_regexp->PossibleMatchRange(&min_str, &max_str, 1) || min_str.empty()) {//rough estimate for "can match empty string"
+      if (!RE2_regexp->PossibleMatchRange(&min_str, &max_str, 1) || min_str.empty()) { // rough estimate for "can match empty string"
         need_pcre = true;
       }
     }
 
-    //We can not mimic PCRE now, but we can't check this. There is no such a function in the interface.
-    //So just ignore this distinction
+    // We can not mimic PCRE now, but we can't check this. There is no such a function in the interface.
+    // So just ignore this distinction
   }
 
   if (RE2_regexp == nullptr || need_pcre) {
@@ -524,16 +520,16 @@ void regexp::init(const char *regexp_string, int64_t regexp_len, const char *fun
     }
   }
 
-  //compile has finished
+  // compile has finished
 
   named_subpatterns_count = 0;
   if (RE2_regexp) {
     subpatterns_count = RE2_regexp->NumberOfCapturingGroups();
   } else {
-    php_assert (pcre_fullinfo(pcre_regexp, nullptr, PCRE_INFO_CAPTURECOUNT, &subpatterns_count) == 0);
+    php_assert(pcre_fullinfo(pcre_regexp, nullptr, PCRE_INFO_CAPTURECOUNT, &subpatterns_count) == 0);
 
     if (subpatterns_count) {
-      php_assert (pcre_fullinfo(pcre_regexp, nullptr, PCRE_INFO_NAMECOUNT, &named_subpatterns_count) == 0);
+      php_assert(pcre_fullinfo(pcre_regexp, nullptr, PCRE_INFO_NAMECOUNT, &named_subpatterns_count) == 0);
 
       if (named_subpatterns_count > 0) {
         subpattern_names = new string[subpatterns_count + 1];
@@ -542,10 +538,10 @@ void regexp::init(const char *regexp_string, int64_t regexp_len, const char *fun
 #endif
 
         int32_t name_entry_size = 0;
-        php_assert (pcre_fullinfo(pcre_regexp, nullptr, PCRE_INFO_NAMEENTRYSIZE, &name_entry_size) == 0);
+        php_assert(pcre_fullinfo(pcre_regexp, nullptr, PCRE_INFO_NAMEENTRYSIZE, &name_entry_size) == 0);
 
         char *name_table;
-        php_assert (pcre_fullinfo(pcre_regexp, nullptr, PCRE_INFO_NAMETABLE, &name_table) == 0);
+        php_assert(pcre_fullinfo(pcre_regexp, nullptr, PCRE_INFO_NAMETABLE, &name_table) == 0);
 
         for (int64_t i = 0; i < named_subpatterns_count; i++) {
           int64_t name_id = (((unsigned char)name_table[0]) << 8) + (unsigned char)name_table[1];
@@ -613,7 +609,6 @@ regexp::~regexp() {
   }
 }
 
-
 int64_t regexp::pcre_last_error;
 
 int64_t regexp::exec(const string &subject, int64_t offset, bool second_try) const {
@@ -632,7 +627,7 @@ int64_t regexp::exec(const string &subject, int64_t offset, bool second_try) con
     int64_t count = -1;
     for (int64_t i = 0; i < subpatterns_count; i++) {
       if (RE2_submatch[i].data()) {
-        submatch[i + i]     = static_cast<int32_t>(RE2_submatch[i].data() - subject.c_str());
+        submatch[i + i] = static_cast<int32_t>(RE2_submatch[i].data() - subject.c_str());
         submatch[i + i + 1] = static_cast<int32_t>(submatch[i + i] + RE2_submatch[i].size());
         count = i;
       } else {
@@ -640,20 +635,19 @@ int64_t regexp::exec(const string &subject, int64_t offset, bool second_try) con
         submatch[i + i + 1] = PCRE2_UNSET;
       }
     }
-    php_assert (count >= 0);
+    php_assert(count >= 0);
 
     return count + 1;
   }
 
-  php_assert (pcre_regexp);
+  php_assert(pcre_regexp);
 
   int32_t options = second_try ? PCRE_NO_UTF8_CHECK | PCRE_NOTEMPTY_ATSTART : PCRE_NO_UTF8_CHECK;
-  dl::enter_critical_section();//OK
-  int64_t count = pcre_exec(pcre_regexp, &extra, subject.c_str(), subject.size(),
-                            static_cast<int32_t>(offset), options, submatch, 3 * subpatterns_count);
+  dl::enter_critical_section(); // OK
+  int64_t count = pcre_exec(pcre_regexp, &extra, subject.c_str(), subject.size(), static_cast<int32_t>(offset), options, submatch, 3 * subpatterns_count);
   dl::leave_critical_section();
 
-  php_assert (count != 0);
+  php_assert(count != 0);
   if (count == PCRE_ERROR_NOMATCH) {
     return 0;
   }
@@ -664,7 +658,6 @@ int64_t regexp::exec(const string &subject, int64_t offset, bool second_try) con
 
   return count;
 }
-
 
 Optional<int64_t> regexp::match(const string &subject, bool all_matches) const {
   pcre_last_error = 0;
@@ -679,7 +672,7 @@ Optional<int64_t> regexp::match(const string &subject, bool all_matches) const {
     return false;
   }
 
-  bool second_try = false;//set after matching an empty string
+  bool second_try = false; // set after matching an empty string
   pcre_last_error = 0;
 
   int64_t result = 0;
@@ -732,7 +725,7 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, bool all_
     }
   }
 
-  bool second_try = false;//set after matching an empty string
+  bool second_try = false; // set after matching an empty string
   pcre_last_error = 0;
 
   int64_t result = 0;
@@ -853,7 +846,7 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, int64_t f
     matches = array<mixed>();
   }
 
-  bool second_try = false;//set after matching an empty string
+  bool second_try = false; // set after matching an empty string
 
   int64_t result = 0;
   auto empty_match = array<mixed>::create(string(), PCRE2_UNSET);
@@ -971,8 +964,8 @@ Optional<array<mixed>> regexp::split(const string &subject, int64_t limit, int64
     return false;
   }
 
-  bool no_empty       = flags & PREG_SPLIT_NO_EMPTY;
-  bool delim_capture  = flags & PREG_SPLIT_DELIM_CAPTURE;
+  bool no_empty = flags & PREG_SPLIT_NO_EMPTY;
+  bool delim_capture = flags & PREG_SPLIT_DELIM_CAPTURE;
   bool offset_capture = flags & PREG_SPLIT_OFFSET_CAPTURE;
 
   if (flags & ~(PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_OFFSET_CAPTURE)) {
@@ -1068,11 +1061,10 @@ int64_t regexp::last_error() {
     case PCRE2_ERROR_BADOFFSET:
       return PHP_PCRE_INTERNAL_ERROR;
     default:
-      php_assert (0);
+      php_assert(0);
       exit(1);
   }
 }
-
 
 string f$preg_quote(const string &str, const string &delimiter) {
   const string::size_type len = str.size();
@@ -1132,4 +1124,3 @@ void regexp::global_init() {
 void global_init_regexp_lib() {
   regexp::global_init();
 }
-

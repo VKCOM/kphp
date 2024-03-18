@@ -2,8 +2,8 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include <cstring>
 #include <cinttypes>
+#include <cstring>
 #include <execinfo.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -12,18 +12,14 @@
 #include "common/fast-backtrace.h"
 #include "common/wrappers/likely.h"
 #include "runtime/kphp-backtrace.h"
-#include "server/server-config.h"
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
 #include "server/php-runner.h"
+#include "server/server-config.h"
 
 namespace {
 
-enum {
-  ServerLogCritical = -1,
-  ServerLogError = -2,
-  ServerLogWarning = -3
-};
+enum { ServerLogCritical = -1, ServerLogError = -2, ServerLogWarning = -3 };
 
 template<size_t N>
 void copy_if_enough_size(vk::string_view src, vk::string_view &dest, std::array<char, N> &buffer, volatile std::atomic<bool> &availability_flag) noexcept {
@@ -241,8 +237,8 @@ void JsonLogger::set_env(vk::string_view env) noexcept {
   }
 }
 
-void JsonLogger::write_log_with_demangled_backtrace(vk::string_view message,int type, int64_t created_at,
-                                                    void *const *trace, int64_t trace_size, bool uncaught) {
+void JsonLogger::write_log_with_demangled_backtrace(vk::string_view message, int type, int64_t created_at, void *const *trace, int64_t trace_size,
+                                                    bool uncaught) {
   if (json_log_fd_ <= 0) {
     return;
   }
@@ -269,8 +265,7 @@ void JsonLogger::write_log_with_demangled_backtrace(vk::string_view message,int 
   json_logs_count = json_logs_count + 1;
 }
 
-void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at,
-                           void *const *trace, int64_t trace_size, bool uncaught) noexcept {
+void JsonLogger::write_log(vk::string_view message, int type, int64_t created_at, void *const *trace, int64_t trace_size, bool uncaught) noexcept {
   if (json_log_fd_ <= 0) {
     return;
   }
@@ -316,7 +311,6 @@ void JsonLogger::write_log_with_script_backtrace(vk::string_view message, int ty
   write_log(message, type, time(nullptr), trace.data(), trace_size, true);
 }
 
-
 void JsonLogger::write_stack_overflow_log(int type) noexcept {
   std::array<void *, 64> trace{};
   const int trace_size = fast_backtrace_without_recursions(trace.data(), trace.size());
@@ -330,7 +324,7 @@ void JsonLogger::reset_buffers() noexcept {
   tags_ = {};
   extra_info_ = {};
   env_ = {};
-  for (auto &buffer: buffers_) {
+  for (auto &buffer : buffers_) {
     buffer.force_reset();
   }
 }
@@ -366,4 +360,3 @@ void JsonLogger::write_general_info(JsonBuffer *json_out_it, int type, int64_t c
     json_out_it->append_key("extra_info").start<'{'>().append_raw(extra_info_).finish<'}'>();
   }
 }
-

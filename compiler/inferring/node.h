@@ -4,12 +4,12 @@
 
 #pragma once
 
-#include <string>
 #include <forward_list>
+#include <string>
 
 #include "compiler/debug.h"
-#include "compiler/location.h"
 #include "compiler/inferring/type-data.h"
+#include "compiler/location.h"
 #include "compiler/threading/locks.h"
 
 namespace tinf {
@@ -19,7 +19,9 @@ class Edge;
 class TypeInferer;
 
 class Node : public Lockable {
-  DEBUG_STRING_METHOD { return as_human_readable(); }
+  DEBUG_STRING_METHOD {
+    return as_human_readable();
+  }
 
 private:
   // this list contains edges from=this to=other
@@ -46,10 +48,8 @@ protected:
   int recalc_state_{recalc_st_waiting};
 
 public:
-
-  int isset_flags{0};   // ifi bitmask, see get_ifi_id(): for example, when is_integer($a) then node of $a has this flags
-  int isset_was{0};     // used to find "result may differ from PHP" error, see RestrictionIsset
-
+  int isset_flags{0}; // ifi bitmask, see get_ifi_id(): for example, when is_integer($a) then node of $a has this flags
+  int isset_was{0};   // used to find "result may differ from PHP" error, see RestrictionIsset
 
   std::string as_human_readable() const;
 

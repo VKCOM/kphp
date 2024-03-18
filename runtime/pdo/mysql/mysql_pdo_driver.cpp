@@ -10,10 +10,10 @@
 #include "runtime/pdo/mysql/mysql_pdo_emulated_statement.h"
 #include "runtime/pdo/pdo.h"
 #include "runtime/pdo/pdo_statement.h"
-#include "server/database-drivers/mysql/mysql.h"
+#include "server/database-drivers/adaptor.h"
 #include "server/database-drivers/mysql/mysql-connector.h"
 #include "server/database-drivers/mysql/mysql-response.h"
-#include "server/database-drivers/adaptor.h"
+#include "server/database-drivers/mysql/mysql.h"
 #include "server/php-queries.h"
 
 namespace pdo::mysql {
@@ -64,7 +64,8 @@ void MysqlPdoDriver::connect(const class_instance<C$PDO> &v$this, const string &
     }
   }
 
-  std::unique_ptr<database_drivers::Connector> connector = std::make_unique<database_drivers::MysqlConnector>(ctx, host, username.val(), password.val(), db_name, port);
+  std::unique_ptr<database_drivers::Connector> connector =
+    std::make_unique<database_drivers::MysqlConnector>(ctx, host, username.val(), password.val(), db_name, port);
   connector_id = vk::singleton<database_drivers::Adaptor>::get().initiate_connect(std::move(connector));
 }
 
@@ -94,7 +95,7 @@ std::pair<int, const char *> MysqlPdoDriver::error_info() noexcept {
   }
 
   MYSQL *mysql = connector->ctx;
-  return { LIB_MYSQL_CALL(mysql_errno(mysql)), LIB_MYSQL_CALL(mysql_error(mysql)) };
+  return {LIB_MYSQL_CALL(mysql_errno(mysql)), LIB_MYSQL_CALL(mysql_error(mysql))};
 }
 
 } // namespace pdo::mysql

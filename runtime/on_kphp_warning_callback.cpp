@@ -8,7 +8,6 @@
 
 #include "runtime/kphp-backtrace.h"
 
-
 OnKphpWarningCallback &OnKphpWarningCallback::get() {
   static OnKphpWarningCallback state;
   return state;

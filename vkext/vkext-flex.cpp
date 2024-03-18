@@ -15,7 +15,7 @@ char *do_flex(const char *name, size_t name_len, const char *case_name, size_t c
   const size_t error_msg_buf_size = 1000;
   static char ERROR_MSG_BUF[error_msg_buf_size] = {'\0'};
   ERROR_MSG_BUF[0] = '\0';
-  vk::string_view res = flex(vk::string_view{name, name_len},vk::string_view{case_name, case_name_len}, sex, vk::string_view{type, type_len}, lang_id, buff,
+  vk::string_view res = flex(vk::string_view{name, name_len}, vk::string_view{case_name, case_name_len}, sex, vk::string_view{type, type_len}, lang_id, buff,
                              ERROR_MSG_BUF, error_msg_buf_size);
   if (verbosity && ERROR_MSG_BUF[0] != '\0') {
     fprintf(stderr, "%s\n", ERROR_MSG_BUF);

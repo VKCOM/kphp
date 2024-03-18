@@ -56,7 +56,7 @@ void Module::compile_tl_cpp_file(CodeGenerator &W) const {
       }
     }
   }
-  for (const auto &f: target_functions) {
+  for (const auto &f : target_functions) {
     W << TlFunctionDef(f);
   }
   W << CloseFile();
@@ -125,13 +125,9 @@ bool Module::is_empty() const {
   if (G->get_untyped_rpc_tl_used()) {
     return false;
   }
-  return
-    std::all_of(target_functions.begin(), target_functions.end(), [](const auto *f) {
-      return !TlFunctionDecl::does_tl_function_need_typed_fetch_store(f);
-    }) &&
-    std::all_of(target_types.begin(), target_types.end(), [](const auto *t) {
-      return !TlTypeDeclaration::does_tl_type_need_typed_fetch_store(t);
-    });
+  return std::all_of(target_functions.begin(), target_functions.end(),
+                     [](const auto *f) { return !TlFunctionDecl::does_tl_function_need_typed_fetch_store(f); })
+         && std::all_of(target_types.begin(), target_types.end(), [](const auto *t) { return !TlTypeDeclaration::does_tl_type_need_typed_fetch_store(t); });
 }
 
-}
+} // namespace tl2cpp

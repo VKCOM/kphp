@@ -17,27 +17,25 @@ public:
     return thread_pool_ptr != nullptr;
   }
 
-  BS::thread_pool& pool() noexcept {
-    dl_assert(is_thread_pool_available(), "thread pool in uninitialized or initialized with size less or equal to zero")
-    return *thread_pool_ptr;
+  BS::thread_pool &pool() noexcept {
+    dl_assert(is_thread_pool_available(), "thread pool in uninitialized or initialized with size less or equal to zero") return *thread_pool_ptr;
   }
 
   void stop() noexcept {
     /** Here we need to stop all running threads to ensure independence of requests
-   * todo find a way to kill threads. It can be done by pthread_kill
-   * */
-   if (thread_pool_ptr != nullptr) {
-     thread_pool_ptr->wait_for_tasks();
-   }
+     * todo find a way to kill threads. It can be done by pthread_kill
+     * */
+    if (thread_pool_ptr != nullptr) {
+      thread_pool_ptr->wait_for_tasks();
+    }
   }
-
 
 private:
   ThreadPool() = default;
 
   friend class vk::singleton<ThreadPool>;
 
-  BS::thread_pool * thread_pool_ptr{nullptr};
+  BS::thread_pool *thread_pool_ptr{nullptr};
 };
 
 extern uint32_t thread_pool_size;

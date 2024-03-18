@@ -10,9 +10,25 @@
 
 namespace tl2cpp {
 const std::string T_TYPE = "Type";
-const std::unordered_set<std::string> CUSTOM_IMPL_TYPES
-  {"#", T_TYPE, "Int", "Long", "Double", "Float", "String", "Bool", "True", "False", "Vector", "Maybe", "Tuple",
-   "Dictionary", "DictionaryField", "IntKeyDictionary", "IntKeyDictionaryField", "LongKeyDictionary", "LongKeyDictionaryField"};
+const std::unordered_set<std::string> CUSTOM_IMPL_TYPES{"#",
+                                                        T_TYPE,
+                                                        "Int",
+                                                        "Long",
+                                                        "Double",
+                                                        "Float",
+                                                        "String",
+                                                        "Bool",
+                                                        "True",
+                                                        "False",
+                                                        "Vector",
+                                                        "Maybe",
+                                                        "Tuple",
+                                                        "Dictionary",
+                                                        "DictionaryField",
+                                                        "IntKeyDictionary",
+                                                        "IntKeyDictionaryField",
+                                                        "LongKeyDictionary",
+                                                        "LongKeyDictionaryField"};
 
 static const std::string VK_name_prefix = "VK\\";
 vk::tlo_parsing::tl_scheme *tl;
@@ -63,7 +79,7 @@ std::string get_magic_fetching(const vk::tlo_parsing::type_expr_base *arg_type_e
         }
       }
     }
-    return fmt_format( R"(fetch_magic_if_not_bare(inner_magic{}, "{}");)", arg_as_type_var->var_num, error_msg);
+    return fmt_format(R"(fetch_magic_if_not_bare(inner_magic{}, "{}");)", arg_as_type_var->var_num, error_msg);
   }
   return "";
 }
@@ -78,8 +94,8 @@ vk::tlo_parsing::type *get_this_from_renamed_tl_scheme(const vk::tlo_parsing::ty
 }
 
 vk::tlo_parsing::combinator *get_this_from_renamed_tl_scheme(const vk::tlo_parsing::combinator *c) {
-  return c->is_constructor() ?
-         G->get_tl_classes().get_scheme()->get_constructor_by_magic(c->id) : G->get_tl_classes().get_scheme()->get_function_by_magic(c->id);
+  return c->is_constructor() ? G->get_tl_classes().get_scheme()->get_constructor_by_magic(c->id)
+                             : G->get_tl_classes().get_scheme()->get_function_by_magic(c->id);
 }
 
 std::string get_php_namespace(const std::string &tl_name) {
@@ -130,7 +146,8 @@ vk::tlo_parsing::type *get_tl_type_of_php_class(ClassPtr interface) {
 ClassPtr get_php_class_of_tl_constructor_specialization(const vk::tlo_parsing::combinator *c, const std::string &specialization_suffix) {
   auto *c_from_renamed = get_this_from_renamed_tl_scheme(c);
   std::string php_namespace = get_php_namespace(c_from_renamed->name);
-  std::string php_class_name = G->settings().tl_namespace_prefix.get() + php_namespace + "\\Types\\" + replace_characters(c_from_renamed->name, '.', '_') + specialization_suffix;
+  std::string php_class_name =
+    G->settings().tl_namespace_prefix.get() + php_namespace + "\\Types\\" + replace_characters(c_from_renamed->name, '.', '_') + specialization_suffix;
   return G->get_class(php_class_name);
 }
 
@@ -169,7 +186,8 @@ ClassPtr get_php_class_of_tl_type_specialization(const vk::tlo_parsing::type *t,
   kphp_assert(is_type_dependent(t_from_renamed, G->get_tl_classes().get_scheme().get()));
   std::string php_namespace = get_php_namespace(t_from_renamed->name);
   std::string lookup_name = t_from_renamed->is_polymorphic() ? t_from_renamed->name : t_from_renamed->constructors[0]->name;
-  std::string php_class_name = G->settings().tl_namespace_prefix.get() + php_namespace + "\\Types\\" + replace_characters(lookup_name, '.', '_') + specialization_suffix;
+  std::string php_class_name =
+    G->settings().tl_namespace_prefix.get() + php_namespace + "\\Types\\" + replace_characters(lookup_name, '.', '_') + specialization_suffix;
   return G->get_class(php_class_name);
 }
 
@@ -210,7 +228,8 @@ std::string get_tl_function_name_of_php_class(ClassPtr klass) {
 ClassPtr get_php_class_of_tl_function_result(const vk::tlo_parsing::combinator *f) {
   auto *f_from_renamed = get_this_from_renamed_tl_scheme(f);
   std::string php_namespace = get_php_namespace(f_from_renamed->name);
-  std::string php_class_name = G->settings().tl_namespace_prefix.get() + php_namespace + "\\Functions\\" + replace_characters(f_from_renamed->name, '.', '_') + "_result";
+  std::string php_class_name =
+    G->settings().tl_namespace_prefix.get() + php_namespace + "\\Functions\\" + replace_characters(f_from_renamed->name, '.', '_') + "_result";
   return G->get_class(php_class_name);
 }
 
@@ -231,20 +250,19 @@ bool is_php_class_a_tl_constructor(ClassPtr klass) {
 // will produce a isearch\isearch_typeInfo_arg2_item { int type, double probability } class and we'll get:
 // isearch.typeInfo n:# data:n*[isearch\isearch_typeInfo_arg2_item] = isearch.TypeInfo
 bool is_php_class_a_tl_array_item(ClassPtr klass) {
-  return klass->is_tl_class && klass->is_class() && klass->name.find("Types\\") != std::string::npos &&
-         klass->name.find("_arg") != std::string::npos && klass->name.find("_item") != std::string::npos;
+  return klass->is_tl_class && klass->is_class() && klass->name.find("Types\\") != std::string::npos && klass->name.find("_arg") != std::string::npos
+         && klass->name.find("_item") != std::string::npos;
 }
 
 bool is_tl_type_a_php_array(const vk::tlo_parsing::type *t) {
-  return t->id == TL_VECTOR || t->id == TL_TUPLE || t->id == TL_DICTIONARY ||
-         t->id == TL_INT_KEY_DICTIONARY || t->id == TL_LONG_KEY_DICTIONARY;
+  return t->id == TL_VECTOR || t->id == TL_TUPLE || t->id == TL_DICTIONARY || t->id == TL_INT_KEY_DICTIONARY || t->id == TL_LONG_KEY_DICTIONARY;
 }
 
 bool is_tl_type_wrapped_to_Optional(const vk::tlo_parsing::type *type) {
   // [fields_mask.n? | Maybe] [int|string|array|double|bool] -- with Optional
   // [fields_mask.n? | Maybe] [class_instance<T>|Optional<T>|var] -- without Optional
-  return is_tl_type_a_php_array(type) || vk::any_of_equal(type->id, TL_INT, TL_DOUBLE, TL_FLOAT, TL_STRING) || type->name == "Bool" || type->is_integer_variable()
-                                      || type->id == TL_LONG;
+  return is_tl_type_a_php_array(type) || vk::any_of_equal(type->id, TL_INT, TL_DOUBLE, TL_FLOAT, TL_STRING) || type->name == "Bool"
+         || type->is_integer_variable() || type->id == TL_LONG;
 }
 
 // classes VK\TL\*\Types\* are a non-interface types that correspond to the TL-constructors
@@ -332,7 +350,6 @@ std::string get_template_definition(const vk::tlo_parsing::combinator *construct
   return "<" + vk::join(typenames, ", ") + ">";
 }
 
-
 std::string get_php_runtime_type(const vk::tlo_parsing::combinator *c, bool wrap_to_class_instance, const std::string &type_name) {
   auto *c_from_renamed = get_this_from_renamed_tl_scheme(c);
   std::string res;
@@ -361,7 +378,7 @@ std::string get_php_runtime_type(const vk::tlo_parsing::combinator *c, bool wrap
 
 std::string get_php_runtime_type(const vk::tlo_parsing::type *t) {
   auto *t_from_renamed = get_this_from_renamed_tl_scheme(t);
-  if (t_from_renamed->is_polymorphic()) {    // then we'll use a type name instead of the constructor name
+  if (t_from_renamed->is_polymorphic()) { // then we'll use a type name instead of the constructor name
     return get_php_runtime_type(t_from_renamed->constructors[0].get(), true, t_from_renamed->name);
   }
   return get_php_runtime_type(t_from_renamed->constructors[0].get(), true);
@@ -373,8 +390,8 @@ std::string get_tl_object_field_access(const std::unique_ptr<vk::tlo_parsing::ar
     if (auto *type_var = arg->type_expr->as<vk::tlo_parsing::type_var>()) {
       std::string serializer_type_name = "T" + std::to_string(type_var->var_num);
       std::string field_access_type = rw_type == field_rw_type::READ ? "read" : "write";
-      return fmt_format("get_serialization_target_from_optional_field<{}, FieldAccessType::{}>(tl_object->${})",
-                        serializer_type_name, field_access_type, arg->name);
+      return fmt_format("get_serialization_target_from_optional_field<{}, FieldAccessType::{}>(tl_object->${})", serializer_type_name, field_access_type,
+                        arg->name);
     } else {
       vk::tlo_parsing::type *type = type_of(arg->type_expr);
       kphp_assert(type);
@@ -400,4 +417,4 @@ bool is_type_dependent(const vk::tlo_parsing::combinator *constructor, const vk:
 bool is_type_dependent(const vk::tlo_parsing::type *type, const vk::tlo_parsing::tl_scheme *scheme) {
   return is_type_dependent(type->constructors[0].get(), scheme);
 }
-}
+} // namespace tl2cpp

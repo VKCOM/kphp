@@ -4,18 +4,7 @@
 
 #ifndef __TL_PARSER_NEW_H__
 #define __TL_PARSER_NEW_H__
-enum lex_type {
-  lex_error,
-  lex_char,
-  lex_triple_minus,
-  lex_uc_ident,
-  lex_lc_ident,
-  lex_eof,
-  lex_none,
-  lex_num,
-  lex_attribute
-};
-
+enum lex_type { lex_error, lex_char, lex_triple_minus, lex_uc_ident, lex_lc_ident, lex_eof, lex_none, lex_num, lex_attribute };
 
 struct curlex {
   char *ptr;
@@ -34,7 +23,6 @@ struct parse {
   int line_pos;
   struct curlex lex;
 };
-
 
 enum tree_type {
   type_tl_program,
@@ -85,31 +73,29 @@ struct tree {
   int filename_len;
 };
 
+#define TL_ACT(x)                                                                                                                                              \
+  (x == act_var             ? "act_var"                                                                                                                        \
+   : x == act_field         ? "act_field"                                                                                                                      \
+   : x == act_plus          ? "act_plus"                                                                                                                       \
+   : x == act_type          ? "act_type"                                                                                                                       \
+   : x == act_nat_const     ? "act_nat_const"                                                                                                                  \
+   : x == act_array         ? "act_array"                                                                                                                      \
+   : x == act_question_mark ? "act_question_mark"                                                                                                              \
+   : x == act_union         ? "act_union"                                                                                                                      \
+   : x == act_arg           ? "act_arg"                                                                                                                        \
+   : x == act_opt_field     ? "act_opt_field"                                                                                                                  \
+                            : "act_unknown")
 
-#define TL_ACT(x) (x == act_var ? "act_var" : x == act_field ? "act_field" : x == act_plus ? "act_plus" : x == act_type ? "act_type" : x == act_nat_const ? "act_nat_const" : x == act_array ? "act_array" : x == act_question_mark ? "act_question_mark" : \
-    x == act_union ? "act_union" : x == act_arg ? "act_arg" : x == act_opt_field ? "act_opt_field" : "act_unknown")
+#define TL_TYPE(x)                                                                                                                                             \
+  (x == type_num         ? "type_num"                                                                                                                          \
+   : x == type_type      ? "type_type"                                                                                                                         \
+   : x == type_list_item ? "type_list_item"                                                                                                                    \
+   : x == type_list      ? "type_list"                                                                                                                         \
+   : x == type_num_value ? "type_num_value"                                                                                                                    \
+                         : "type_unknown")
+enum combinator_tree_action { act_var, act_field, act_plus, act_type, act_nat_const, act_array, act_question_mark, act_union, act_arg, act_opt_field };
 
-#define TL_TYPE(x) (x == type_num ? "type_num" : x == type_type ? "type_type" : x == type_list_item ? "type_list_item" : x == type_list ? "type_list" : x == type_num_value ? "type_num_value" : "type_unknown")
-enum combinator_tree_action {
-  act_var,
-  act_field,
-  act_plus,
-  act_type,
-  act_nat_const,
-  act_array,
-  act_question_mark,
-  act_union,
-  act_arg,
-  act_opt_field
-};
-
-enum combinator_tree_type {
-  type_num,
-  type_num_value,
-  type_type,
-  type_list_item,
-  type_list
-};
+enum combinator_tree_type { type_num, type_num_value, type_type, type_list_item, type_list };
 
 struct tl_combinator_tree {
   enum combinator_tree_action act;
@@ -122,14 +108,13 @@ struct tl_combinator_tree {
   long long type_flags;
 };
 
-
 struct tl_program {
   int types_num;
   int functions_num;
   int constructors_num;
   struct tl_type **types;
   struct tl_function **functions;
-//  struct tl_constuctor **constructors;
+  //  struct tl_constuctor **constructors;
 };
 
 struct tl_type {
@@ -151,11 +136,11 @@ struct tl_constructor {
   char *print_id;
   char *real_id;
   unsigned name;
-  unsigned int read:1;
-  unsigned int write:1;
-  unsigned int internal:1;
-  unsigned int kphp:1;
-  unsigned int is_function:1;
+  unsigned int read : 1;
+  unsigned int write : 1;
+  unsigned int internal : 1;
+  unsigned int kphp : 1;
+  unsigned int is_function : 1;
   struct tl_type *type;
 
   struct tl_combinator_tree *left;

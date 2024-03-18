@@ -19,8 +19,8 @@ struct Helper : private vk::not_copyable {
   Trie<T *> trie;
   T *on_fail;
 
-  explicit Helper(T *on_fail) :
-    on_fail(on_fail) {
+  explicit Helper(T *on_fail)
+    : on_fail(on_fail) {
     assert(on_fail != nullptr);
   }
 
@@ -63,11 +63,11 @@ inline std::vector<std::string> expand_template_(vk::string_view str_template) {
 
       while (si < sn && str_template[si] != ']') {
         if (si + 1 < sn && str_template[si + 1] == '-') {
-          assert (si + 2 < sn);
+          assert(si + 2 < sn);
 
           char l = str_template[si];
           char r = str_template[si + 2];
-          assert (l < r);
+          assert(l < r);
           for (char c = l; c <= r; c++) {
             to_append += c;
           }
@@ -78,7 +78,7 @@ inline std::vector<std::string> expand_template_(vk::string_view str_template) {
           si++;
         }
       }
-      assert (si < sn);
+      assert(si < sn);
       si++;
     } else {
       to_append += str_template[si];

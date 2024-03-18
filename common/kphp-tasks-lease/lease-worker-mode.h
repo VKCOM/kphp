@@ -44,7 +44,7 @@ inline const char *lease_worker_mode_str(LeaseWorkerMode mode) {
   return "unreachable";
 }
 
-template <typename T>
+template<typename T>
 LeaseWorkerMode get_lease_mode(const std::optional<T> &mode) {
   return mode.has_value() ? LeaseWorkerMode::QUEUE_TYPES : LeaseWorkerMode::ALL_QUEUES;
 }

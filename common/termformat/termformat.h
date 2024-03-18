@@ -8,28 +8,9 @@
 
 class TermStringFormat {
 public:
-  enum color {
-    grey,
-    red,
-    green,
-    yellow,
-    blue,
-    magenta,
-    cyan,
-    white,
-    COLORS_CNT
-  };
+  enum color { grey, red, green, yellow, blue, magenta, cyan, white, COLORS_CNT };
 
-  enum text_attribute {
-    bold,
-    dark,
-    italic,
-    underline,
-    blink,
-    inverse,
-    strikethrough,
-    TEXT_ATTRIBUTES_CNT
-  };
+  enum text_attribute { bold, dark, italic, underline, blink, inverse, strikethrough, TEXT_ATTRIBUTES_CNT };
 
   static std::string paint(const std::string &s, color c, bool reset_at_the_end = true);
   static std::string paint_background(const std::string &s, color c, bool reset_at_the_end = true);

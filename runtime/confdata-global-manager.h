@@ -17,10 +17,7 @@
 
 using confdata_sample_storage = memory_resource::stl::map<string, mixed, memory_resource::unsynchronized_pool_resource, stl_string_less>;
 
-enum class ConfdataGarbageDestroyWay {
-  shallow_first,
-  deep_last
-};
+enum class ConfdataGarbageDestroyWay { shallow_first, deep_last };
 
 struct ConfdataGarbageNode {
   mixed value;
@@ -50,9 +47,7 @@ class ConfdataGlobalManager : vk::not_copyable {
 public:
   static ConfdataGlobalManager &get() noexcept;
 
-  void init(size_t confdata_memory_limit,
-            std::unordered_set<vk::string_view> &&predefined_wilrdcards,
-            std::unique_ptr<re2::RE2> &&blacklist_pattern,
+  void init(size_t confdata_memory_limit, std::unordered_set<vk::string_view> &&predefined_wilrdcards, std::unique_ptr<re2::RE2> &&blacklist_pattern,
             std::forward_list<vk::string_view> &&force_ignore_prefixes) noexcept;
 
   void force_release_all_resources_acquired_by_this_proc_if_init() noexcept {

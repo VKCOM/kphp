@@ -14,14 +14,14 @@ static __thread char str_buf[STRING_PROCESS_BUF_SIZE];
 static __thread int str_buf_n = 0;
 __thread int sp_errno = 0;
 
-void sp_init () {
+void sp_init() {
   str_buf_n = 0;
 }
 
-char *sp_str_alloc (int len) {
-//  we don't need to reset error level on each call
-//  we check error level only once after all allocations have done
-//  sp_errno = 0; // reset error level
+char *sp_str_alloc(int len) {
+  //  we don't need to reset error level on each call
+  //  we check error level only once after all allocations have done
+  //  sp_errno = 0; // reset error level
   len++;
   if (str_buf_n + len > STRING_PROCESS_BUF_SIZE) {
     sp_errno = 2;
@@ -34,10 +34,10 @@ char *sp_str_alloc (int len) {
   return res;
 }
 
-char *sp_str_pre_alloc (int len) {
-//  we don't need to reset error level on each call
-//  we check error level only once after all allocations have done
-//  sp_errno = 0; // reset error level
+char *sp_str_pre_alloc(int len) {
+  //  we don't need to reset error level on each call
+  //  we check error level only once after all allocations have done
+  //  sp_errno = 0; // reset error level
   if (str_buf_n + len + 1 > STRING_PROCESS_BUF_SIZE) {
     sp_errno = 2;
     return NULL;
@@ -46,24 +46,24 @@ char *sp_str_pre_alloc (int len) {
   return str_buf + str_buf_n;
 }
 
-static inline int cmp_char (const void *a, const void *b) {
+static inline int cmp_char(const void *a, const void *b) {
   return (int)(*(char *)a) - (int)(*(char *)b);
 }
 
-char *sp_sort (const char *s) {
-  int l = strlen (s);
-  char *t = sp_str_alloc (l);
+char *sp_sort(const char *s) {
+  int l = strlen(s);
+  char *t = sp_str_alloc(l);
   if (t != 0) {
-    memcpy (t, s, (l + 1) * sizeof (char));
-    qsort (t, l, sizeof (char), cmp_char);
+    memcpy(t, s, (l + 1) * sizeof(char));
+    qsort(t, l, sizeof(char), cmp_char);
   }
 
   return t;
 }
 
-char *sp_to_upper (const char *s) {
-  int l = strlen (s);
-  char *t = sp_str_alloc (l);
+char *sp_to_upper(const char *s) {
+  int l = strlen(s);
+  char *t = sp_str_alloc(l);
   if (t != 0) {
     int i;
     for (i = 0; i <= l; i++) {
@@ -114,7 +114,7 @@ char *sp_to_upper (const char *s) {
   return t;
 }
 
-static inline char to_lower (const char c) {
+static inline char to_lower(const char c) {
   switch ((unsigned char)c) {
     case 'A' ... 'Z':
     case 0xC0 ... 0xDF:
@@ -144,21 +144,21 @@ static inline char to_lower (const char c) {
   return c;
 }
 
-char *sp_to_lower (const char *s) {
-  int l = strlen (s);
-  char *t = sp_str_alloc (l);
+char *sp_to_lower(const char *s) {
+  int l = strlen(s);
+  char *t = sp_str_alloc(l);
   if (t != 0) {
     int i;
     for (i = 0; i <= l; i++) {
-      t[i] = to_lower (s[i]);
+      t[i] = to_lower(s[i]);
     }
   }
 
   return t;
 }
 
-static inline char simplify (const char c) {
-  unsigned char cc = to_lower (c);
+static inline char simplify(const char c) {
+  unsigned char cc = to_lower(c);
   switch (cc) {
     case '0' ... '9':
     case 'a' ... 'z':
@@ -175,7 +175,7 @@ static inline char simplify (const char c) {
     case 0xB3:     // CYRILLIC SMALL LETTER BYELORUSSIAN-UKRAINIAN I
     case 0xBF:     // CYRILLIC SMALL LETTER YI
       return 'i';
-    case 0xBE:     // CYRILLIC SMALL LETTER DZE
+    case 0xBE: // CYRILLIC SMALL LETTER DZE
       return 's';
     case 0x9A:     // CYRILLIC SMALL LETTER LJE
       return 0xEB; // CYRILLIC SMALL LETTER EL
@@ -190,37 +190,37 @@ static inline char simplify (const char c) {
       return 0xFD; // CYRILLIC SMALL LETTER E
     case 0xBC:     // CYRILLIC SMALL LETTER JE
       return 'j';
-    case 0xA9:     // COPYRIGHT SIGN
+    case 0xA9: // COPYRIGHT SIGN
       return 'c';
-    case 0xAE:     // REGISTERED SIGN
+    case 0xAE: // REGISTERED SIGN
       return 'r';
-    case 0xB5:     // MICRO SIGN
+    case 0xB5: // MICRO SIGN
       return 'm';
   }
   return 0;
 }
 
-char *sp_simplify (const char *s) {
-  int l = strlen (s);
-  char *t = sp_str_pre_alloc (l);
+char *sp_simplify(const char *s) {
+  int l = strlen(s);
+  char *t = sp_str_pre_alloc(l);
   if (t != 0) {
     int nl = 0, i;
     for (i = 0; i < l; i++) {
-      char c = simplify (s[i]);
+      char c = simplify(s[i]);
       if (c != 0) {
         t[nl++] = c;
       }
     }
     t[nl] = 0;
 
-    char *new_t = sp_str_alloc (nl);
-    assert (t == new_t);
+    char *new_t = sp_str_alloc(nl);
+    assert(t == new_t);
   }
 
   return t;
 }
 
-static inline char conv_letter (const char c) {
+static inline char conv_letter(const char c) {
   switch (c) {
     case 'a':
       return 'à';
@@ -301,7 +301,7 @@ static inline char conv_letter (const char c) {
   }
 }
 
-static inline char next_character (const char *s, int *_i) {
+static inline char next_character(const char *s, int *_i) {
   int i = *_i;
   char cur = s[i];
   if (cur == '&') {
@@ -313,7 +313,7 @@ static inline char next_character (const char *s, int *_i) {
         r = r * 10 + s[i] - '0';
       }
       if (s[i] == ';') {
-        int c = simplify_character (r);
+        int c = simplify_character(r);
         if (c <= 255) {
           cur = c;
         } else {
@@ -339,48 +339,48 @@ static inline char next_character (const char *s, int *_i) {
   return cur;
 }
 
-char *sp_full_simplify (const char *s) {
-  int l = strlen (s);
-  char *t = sp_str_pre_alloc (l);
+char *sp_full_simplify(const char *s) {
+  int l = strlen(s);
+  char *t = sp_str_pre_alloc(l);
   if (t != 0) {
     int nl = 0, i;
     for (i = 0; i < l; i++) {
-      char c = next_character (s, &i);
-      c = simplify (c);
+      char c = next_character(s, &i);
+      c = simplify(c);
       if (c != 0) {
-        t[nl++] = conv_letter (c);
+        t[nl++] = conv_letter(c);
       }
     }
     t[nl] = 0;
 
-    char *new_t = sp_str_alloc (nl);
-    assert (t == new_t);
+    char *new_t = sp_str_alloc(nl);
+    assert(t == new_t);
   }
 
   return t;
 }
 
-char *sp_deunicode (const char *s) {
-  int l = strlen (s);
-  char *t = sp_str_pre_alloc (l);
+char *sp_deunicode(const char *s) {
+  int l = strlen(s);
+  char *t = sp_str_pre_alloc(l);
   if (t != 0) {
     int nl = 0, i;
     for (i = 0; i < l; i++) {
-      char c = next_character (s, &i);
+      char c = next_character(s, &i);
       if (c != 0) {
         t[nl++] = c;
       }
     }
     t[nl] = 0;
 
-    char *new_t = sp_str_alloc (nl);
-    assert (t == new_t);
+    char *new_t = sp_str_alloc(nl);
+    assert(t == new_t);
   }
 
   return t;
 }
 
-char *sp_remove_repeats (const char *s) {
+char *sp_remove_repeats(const char *s) {
   int l = strlen(s);
   char *t = sp_str_pre_alloc(l);
   if (t != 0) {
@@ -394,13 +394,13 @@ char *sp_remove_repeats (const char *s) {
     t[nl] = 0;
 
     char *new_t = sp_str_alloc(nl);
-    assert (t == new_t);
+    assert(t == new_t);
   }
 
   return t;
 }
 
-char *sp_to_cyrillic (const char *s) {
+char *sp_to_cyrillic(const char *s) {
   int l = strlen(s);
   char *t = sp_str_alloc(l);
   if (t != 0) {
@@ -418,7 +418,7 @@ char *sp_to_cyrillic (const char *s) {
   return t;
 }
 
-char *sp_words_only (const char *s) {
+char *sp_words_only(const char *s) {
   int l = strlen(s);
   char *t = sp_str_pre_alloc(l + 2);
   if (t != 0) {
@@ -438,7 +438,7 @@ char *sp_words_only (const char *s) {
     t[nl] = 0;
 
     char *new_t = sp_str_alloc(nl);
-    assert (t == new_t);
+    assert(t == new_t);
   }
 
   return t;

@@ -7,20 +7,15 @@
 #include "common/options.h"
 #include "common/tl2php/gen-php-code.h"
 #include "common/tl2php/tl-hints.h"
-#include "common/tlo-parsing/tlo-parsing.h"
 #include "common/tlo-parsing/tl-objects.h"
+#include "common/tlo-parsing/tlo-parsing.h"
 #include "common/version-string.h"
 
 namespace vk {
 namespace tl {
-int convert_tlo_to_php(const char *tlo_file_path,
-                       const std::string &out_php_dir,
-                       const std::string &combined2_tl_file,
-                       bool forcibly_overwrite_dir,
-                       bool generate_tests,
-                       bool generate_tl_internals) {
-  std::cout << "Generating PHP classes" << std::endl
-            << "  schema file: '" << tlo_file_path << "'" << std::endl;
+int convert_tlo_to_php(const char *tlo_file_path, const std::string &out_php_dir, const std::string &combined2_tl_file, bool forcibly_overwrite_dir,
+                       bool generate_tests, bool generate_tl_internals) {
+  std::cout << "Generating PHP classes" << std::endl << "  schema file: '" << tlo_file_path << "'" << std::endl;
   if (!combined2_tl_file.empty()) {
     std::cout << "  combined2.tl file: '" << combined2_tl_file << "'" << std::endl;
   }
@@ -106,14 +101,13 @@ void get_bool_option_from_env(bool &option_value, const char *env, bool default_
     if (env_value == nullptr) {
       return;
     }
-    option_value = static_cast <bool> (atoi(env_value));
+    option_value = static_cast<bool>(atoi(env_value));
   }
 }
 
 static void get_options_from_env() {
   get_bool_option_from_env(generate_tl_internals, "TL2PHP_GEN_TL_INTERNALS", false);
 }
-
 
 int main(int argc, char *argv[]) {
   static constexpr char version_str[]{"tl2php-0.1.0"};

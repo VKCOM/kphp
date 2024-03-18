@@ -428,11 +428,9 @@ int tcp_server_reader_till_end(struct connection *c) {
   return tcp_server_reader_inner(c, false);
 }
 
-
-
 /* 0 = all ok, >0 = so much more bytes needed to encrypt last block */
 int tcp_aes_crypto_encrypt_output(struct connection *c) {
-  struct aes_crypto *T = static_cast<aes_crypto*>(c->crypto);
+  struct aes_crypto *T = static_cast<aes_crypto *>(c->crypto);
   assert(c->crypto);
   raw_message_t *out = &c->out;
 
@@ -457,7 +455,7 @@ int tcp_aes_crypto_encrypt_output(struct connection *c) {
 
 /* 0 = all ok, >0 = so much more bytes needed to decrypt last block */
 int tcp_aes_crypto_decrypt_input(struct connection *c) {
-  struct aes_crypto *T = static_cast<aes_crypto*>(c->crypto);
+  struct aes_crypto *T = static_cast<aes_crypto *>(c->crypto);
   assert(c->crypto);
   raw_message_t *in = &c->in_u;
 

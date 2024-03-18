@@ -6,8 +6,8 @@
 
 #include <memory>
 
-#include "common/smart_ptrs/singleton.h"
 #include "common/mixin/not_copyable.h"
+#include "common/smart_ptrs/singleton.h"
 #include "runtime/signal_safe_hashtable.h"
 
 namespace curl_async {

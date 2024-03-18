@@ -27,7 +27,9 @@ public:
   }
 
   template<typename T>
-  bool process(T &) noexcept { return true; }
+  bool process(T &) noexcept {
+    return true;
+  }
 
   template<typename T>
   bool process(Optional<T> &value) noexcept {
@@ -43,12 +45,12 @@ public:
     return true;
   }
 
-  template<typename ...Args>
+  template<typename... Args>
   bool process(std::tuple<Args...> &value) noexcept {
     return process_tuple(value);
   }
 
-  template<size_t ...Is, typename ...T>
+  template<size_t... Is, typename... T>
   bool process(shape<std::index_sequence<Is...>, T...> &value) noexcept {
     const bool child_res[] = {child_.process(value.template get<Is>())...};
     return std::all_of(std::begin(child_res), std::end(child_res), [](bool r) { return r; });
@@ -63,15 +65,18 @@ public:
     return true;
   }
 
-  bool is_ok() const noexcept { return is_ok_; }
+  bool is_ok() const noexcept {
+    return is_ok_;
+  }
 
-  ExtraRefCnt get_memory_ref_cnt() const noexcept { return memory_ref_cnt_; }
+  ExtraRefCnt get_memory_ref_cnt() const noexcept {
+    return memory_ref_cnt_;
+  }
 
 protected:
-  InstanceDeepBasicVisitor(Child &child, ExtraRefCnt memory_ref_cnt = ExtraRefCnt::extra_ref_cnt_value(0)) noexcept:
-    memory_ref_cnt_(memory_ref_cnt),
-    child_(child) {
-  }
+  InstanceDeepBasicVisitor(Child &child, ExtraRefCnt memory_ref_cnt = ExtraRefCnt::extra_ref_cnt_value(0)) noexcept
+    : memory_ref_cnt_(memory_ref_cnt)
+    , child_(child) {}
 
   template<typename Iterator>
   bool process_range(Iterator first, Iterator last) noexcept {
@@ -88,13 +93,13 @@ protected:
   }
 
 private:
-  template<size_t Index = 0, typename ...Args>
+  template<size_t Index = 0, typename... Args>
   std::enable_if_t<Index != sizeof...(Args), bool> process_tuple(std::tuple<Args...> &value) noexcept {
     bool res = child_.process(std::get<Index>(value));
     return process_tuple<Index + 1>(value) && res;
   }
 
-  template<size_t Index = 0, typename ...Args>
+  template<size_t Index = 0, typename... Args>
   std::enable_if_t<Index == sizeof...(Args), bool> process_tuple(std::tuple<Args...> &) noexcept {
     return true;
   }
@@ -115,10 +120,9 @@ public:
   using Basic = impl_::InstanceDeepBasicVisitor<InstanceReferencesCountingVisitor>;
   using Basic::operator();
 
-  explicit InstanceReferencesCountingVisitor(std::unordered_map<void *, uint32_t> &instances_refcnt_table) :
-    Basic(*this),
-    instances_refcnt_table(instances_refcnt_table) {
-  }
+  explicit InstanceReferencesCountingVisitor(std::unordered_map<void *, uint32_t> &instances_refcnt_table)
+    : Basic(*this)
+    , instances_refcnt_table(instances_refcnt_table) {}
 
   template<typename I>
   bool process_instance(class_instance<I> &instance) noexcept {
@@ -164,8 +168,7 @@ public:
   using Basic::operator();
   using Basic::get_memory_ref_cnt;
 
-  InstanceDeepCopyVisitor(memory_resource::unsynchronized_pool_resource &memory_pool,
-                          ExtraRefCnt memory_ref_cnt = ExtraRefCnt::extra_ref_cnt_value(0),
+  InstanceDeepCopyVisitor(memory_resource::unsynchronized_pool_resource &memory_pool, ExtraRefCnt memory_ref_cnt = ExtraRefCnt::extra_ref_cnt_value(0),
                           ResourceCallbackOOM oom_callback = nullptr) noexcept;
 
   template<class T>
@@ -357,14 +360,12 @@ class InstanceCopyistImpl;
 template<typename I>
 class InstanceCopyistImpl<class_instance<I>> final : public InstanceCopyistBase {
 public:
-  explicit InstanceCopyistImpl(const class_instance<I> &instance) noexcept:
-    instance_(instance) {
-  }
+  explicit InstanceCopyistImpl(const class_instance<I> &instance) noexcept
+    : instance_(instance) {}
 
-  InstanceCopyistImpl(class_instance<I> &&instance, ExtraRefCnt memory_ref_cnt) noexcept:
-    instance_(std::move(instance)),
-    memory_ref_cnt_(memory_ref_cnt) {
-  }
+  InstanceCopyistImpl(class_instance<I> &&instance, ExtraRefCnt memory_ref_cnt) noexcept
+    : instance_(std::move(instance))
+    , memory_ref_cnt_(memory_ref_cnt) {}
 
   const char *get_class() const noexcept final {
     return instance_.get_class();
@@ -405,8 +406,7 @@ private:
 };
 
 template<class T>
-class_instance<T> copy_instance_into_other_memory(const class_instance<T> &instance,
-                                                  memory_resource::unsynchronized_pool_resource &memory_pool,
+class_instance<T> copy_instance_into_other_memory(const class_instance<T> &instance, memory_resource::unsynchronized_pool_resource &memory_pool,
                                                   ExtraRefCnt memory_ref_cnt = ExtraRefCnt{ExtraRefCnt::extra_ref_cnt_value(0)},
                                                   ResourceCallbackOOM oom_callback = nullptr) noexcept {
   dl::MemoryReplacementGuard shared_memory_guard{memory_pool};

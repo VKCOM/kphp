@@ -14,15 +14,13 @@ using vk::tlo_parsing::FLAG_NOCONS;
 void TypeStore::compile(CodeGenerator &W) const {
   // todo: CHECK_EXCEPTION(return); ??? Should we interrupt storing if the exception was thrown? (Right now it's inconsistent with fetching)
   auto store_params = get_optional_args_for_call(type->constructors[0]);
-  store_params.insert(store_params.begin(),
-                      typed_mode ? (type->is_polymorphic() ? "conv_obj" : "tl_object.get()") : "tl_object");
+  store_params.insert(store_params.begin(), typed_mode ? (type->is_polymorphic() ? "conv_obj" : "tl_object.get()") : "tl_object");
   std::string store_call = (typed_mode ? "typed_store(" : "store(") + vk::join(store_params, ", ") + ");";
 
   if (typed_mode) {
     W << "if (tl_object.is_null()) " << BEGIN
-      << "CurrentProcessingQuery::get().raise_storing_error(\"Instance expected, but false given while storing tl type\");" << NL
-      << "return;" << NL
-      << END << NL;
+      << "CurrentProcessingQuery::get().raise_storing_error(\"Instance expected, but false given while storing tl type\");" << NL << "return;" << NL << END
+      << NL;
   }
   // non-polymorphic types — 1 constructor — forwards a ::store() into the constructor without 'magic'
   if (!type->is_polymorphic()) {
@@ -47,16 +45,13 @@ void TypeStore::compile(CodeGenerator &W) const {
       W << "const " << cpp_class << " *conv_obj = tl_object.template cast_to<" << cpp_class << ">().get();" << NL;
       W << cpp_tl_struct_name("c_", c->name, template_str) << "::" << store_call << NL << END;
     }
-    W << (first ? "" : " else ") << BEGIN
-      << "CurrentProcessingQuery::get().raise_storing_error(\"Invalid constructor %s of type %s\", "
-      << "tl_object.get_class(), \"" << type->name << "\");" << NL
-      << END << NL;
+    W << (first ? "" : " else ") << BEGIN << "CurrentProcessingQuery::get().raise_storing_error(\"Invalid constructor %s of type %s\", "
+      << "tl_object.get_class(), \"" << type->name << "\");" << NL << END << NL;
 
     // untyped TL: ifs with constructor_name checks
   } else {
     bool first = true;
-    W << "const string &c_name = tl_arr_get(tl_object, "
-      << register_tl_const_str("_") << ", 0, " << hash_tl_const_str("_") << "L).to_string();" << NL;
+    W << "const string &c_name = tl_arr_get(tl_object, " << register_tl_const_str("_") << ", 0, " << hash_tl_const_str("_") << "L).to_string();" << NL;
     for (const auto &c : type->constructors) {
       W << (first ? "if " : " else if ");
       first = false;
@@ -67,10 +62,8 @@ void TypeStore::compile(CodeGenerator &W) const {
       }
       W << cpp_tl_struct_name("c_", c->name, template_str) << "::" << store_call << NL << END;
     }
-    W << (first ? "" : " else ") << BEGIN
-      << "CurrentProcessingQuery::get().raise_storing_error(\"Invalid constructor %s of type %s\", "
-      << "c_name.c_str(), \"" << type->name << "\");" << NL
-      << END << NL;
+    W << (first ? "" : " else ") << BEGIN << "CurrentProcessingQuery::get().raise_storing_error(\"Invalid constructor %s of type %s\", "
+      << "c_name.c_str(), \"" << type->name << "\");" << NL << END << NL;
   }
 }
 
@@ -122,8 +115,7 @@ void TypeFetch::compile(CodeGenerator &W) const {
     if (!typed_mode) {
       W << "result = " << cpp_tl_struct_name("c_", c->name, template_str) << "::" << fetch_call << NL;
       if (has_name) {
-        W << "result.set_value(" << register_tl_const_str("_") << ", " << register_tl_const_str(c->name) << ", " << hash_tl_const_str("_") << "L);"
-          << NL;
+        W << "result.set_value(" << register_tl_const_str("_") << ", " << register_tl_const_str(c->name) << ", " << hash_tl_const_str("_") << "L);" << NL;
       }
     } else {
       W << get_php_runtime_type(c.get(), true) << " result;" << NL;
@@ -140,8 +132,8 @@ void TypeFetch::compile(CodeGenerator &W) const {
     if (!typed_mode) {
       W << "result = " << cpp_tl_struct_name("c_", default_constructor->name, template_str) << "::" << fetch_call << NL;
       if (has_name) {
-        W << "result.set_value(" << register_tl_const_str("_") << ", " << register_tl_const_str(default_constructor->name) << ", "
-          << hash_tl_const_str("_") << "L);" << NL;
+        W << "result.set_value(" << register_tl_const_str("_") << ", " << register_tl_const_str(default_constructor->name) << ", " << hash_tl_const_str("_")
+          << "L);" << NL;
       }
     } else {
       W << get_php_runtime_type(default_constructor, true) << " result;" << NL;
@@ -173,8 +165,7 @@ void TlTypeDeclaration::compile(CodeGenerator &W) const {
     W << template_decl << NL;
   }
   W << "struct " << struct_name << " " << BEGIN;
-  W << "using PhpType = "
-    << (needs_typed_fetch_store ? get_php_runtime_type(t) : "tl_undefined_php_type") << ";" << NL;
+  W << "using PhpType = " << (needs_typed_fetch_store ? get_php_runtime_type(t) : "tl_undefined_php_type") << ";" << NL;
   std::vector<std::string> constructor_params;
   std::vector<std::string> constructor_inits;
   for (const auto &arg : constructor->args) {
@@ -201,8 +192,8 @@ void TlTypeDeclaration::compile(CodeGenerator &W) const {
     FunctionSignatureGenerator(W) << "array<mixed> fetch()" << SemicolonAndNL();
   }
   if (needs_typed_fetch_store) {
-    FunctionSignatureGenerator(W)  << "void typed_store(const PhpType &tl_object)" << SemicolonAndNL();
-    FunctionSignatureGenerator(W)  << "void typed_fetch_to(PhpType &tl_object)" << SemicolonAndNL();
+    FunctionSignatureGenerator(W) << "void typed_store(const PhpType &tl_object)" << SemicolonAndNL();
+    FunctionSignatureGenerator(W) << "void typed_fetch_to(PhpType &tl_object)" << SemicolonAndNL();
   }
   W << END << ";\n\n";
 }
@@ -240,4 +231,4 @@ void TlTypeDefinition::compile(CodeGenerator &W) const {
     W << END << "\n\n";
   }
 }
-}
+} // namespace tl2cpp

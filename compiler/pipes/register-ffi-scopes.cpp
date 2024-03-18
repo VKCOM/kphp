@@ -4,11 +4,11 @@
 
 #include "compiler/pipes/register-ffi-scopes.h"
 
-#include "compiler/name-gen.h"
-#include "compiler/ffi/ffi_parser.h"
 #include "compiler/const-manipulations.h"
-#include "compiler/data/src-file.h"
 #include "compiler/data/ffi-data.h"
+#include "compiler/data/src-file.h"
+#include "compiler/ffi/ffi_parser.h"
+#include "compiler/name-gen.h"
 #include "compiler/type-hint.h"
 #include "compiler/vertex-util.h"
 
@@ -119,9 +119,7 @@ private:
       var->set_string(field->str);
       VertexPtr default_value;
       const TypeHint *type_hint = G->get_ffi_root().create_type_hint(field->members[0], result.scope);
-      kphp_error_return(type_hint, fmt_format("unsupported C {} field type: {}",
-                                              is_struct ? "struct" : "union",
-                                              ffi_decltype_string(field->members[0])));
+      kphp_error_return(type_hint, fmt_format("unsupported C {} field type: {}", is_struct ? "struct" : "union", ffi_decltype_string(field->members[0])));
       cdata_class->members.add_instance_field(var, default_value, FieldModifiers{}.set_public(), nullptr, type_hint);
       cdata_class_ref->members.add_instance_field(var, default_value, FieldModifiers{}.set_public(), nullptr, type_hint);
     }
@@ -142,9 +140,7 @@ private:
   }
 
   VertexPtr make_ffi_load_call(VertexAdaptor<op_func_call> call, FFIScopeDataMixin *scope, const FFIParseResult &result) {
-    kphp_error_act(register_scope(scope, result),
-                   fmt_format("duplicate definition of `{}` scope", result.scope),
-                   return call);
+    kphp_error_act(register_scope(scope, result), fmt_format("duplicate definition of `{}` scope", result.scope), return call);
 
     auto scope_class = ClassPtr{new ClassData{ClassType::ffi_scope}};
     scope_class->ffi_scope_mixin = scope;
@@ -198,9 +194,7 @@ private:
 
     auto *scope = new FFIScopeDataMixin{};
     FFIParseResult result = ffi_parse_file(code, scope->typedefs);
-    kphp_error_act(result.err.message.empty(),
-                   fmt_format("FFI::cdef(): line {}: {}", result.err.line, result.err.message),
-                   return call);
+    kphp_error_act(result.err.message.empty(), fmt_format("FFI::cdef(): line {}: {}", result.err.line, result.err.message), return call);
     if (result.scope.empty()) {
       result.scope = gen_anonymous_scope_name(current_function);
     }
@@ -244,15 +238,11 @@ private:
 
     auto *scope = new FFIScopeDataMixin{};
     FFIParseResult result = ffi_parse_file(file_contents, scope->typedefs);
-    kphp_error_act(result.err.message.empty(),
-                   fmt_format("FFI::load(): line {}: {}", result.err.line, result.err.message),
-                   return call);
+    kphp_error_act(result.err.message.empty(), fmt_format("FFI::load(): line {}: {}", result.err.line, result.err.message), return call);
     scope->scope_name = result.scope;
     scope->enum_constants = result.enum_constants;
 
-    kphp_error_act(result.static_lib.empty() || result.lib.empty(),
-                   "can't use both FFI_LIB and FFI_STATIC_LIB at the same time",
-                   return call);
+    kphp_error_act(result.static_lib.empty() || result.lib.empty(), "can't use both FFI_LIB and FFI_STATIC_LIB at the same time", return call);
 
     FFIRoot &ffi = G->get_ffi_root();
 
@@ -266,7 +256,8 @@ private:
   }
 
 public:
-  explicit RegisterFFIScopes(DataStream<FunctionPtr> &os): os{os} {};
+  explicit RegisterFFIScopes(DataStream<FunctionPtr> &os)
+    : os{os} {};
 
   std::string get_description() override {
     return "Register FFI scopes";

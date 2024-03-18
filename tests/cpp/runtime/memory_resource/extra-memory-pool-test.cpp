@@ -44,7 +44,7 @@ void do_extra_memory_pool_test() {
   auto buffer = std::make_unique<uint8_t[]>(N);
   memset(buffer.get(), c, N);
 
-  auto *extra_pool = new(buffer.get()) mr::extra_memory_pool{N};
+  auto *extra_pool = new (buffer.get()) mr::extra_memory_pool{N};
 
   ASSERT_EQ(extra_pool->get_pool_payload_size(), N - pool_sizeof);
   ASSERT_EQ(extra_pool->get_buffer_size(), N);

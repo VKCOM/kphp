@@ -11,42 +11,33 @@
 
 string AMPERSAND("&", 1);
 
-
-//string f$base64_decode (const string &s) {
-//  int result_len = (s.size() + 3) / 4 * 3;
-//  string res (result_len, false);
-//  result_len = base64_decode (s.c_str(), reinterpret_cast <unsigned char *> (res.buffer()), result_len + 1);
+// string f$base64_decode (const string &s) {
+//   int result_len = (s.size() + 3) / 4 * 3;
+//   string res (result_len, false);
+//   result_len = base64_decode (s.c_str(), reinterpret_cast <unsigned char *> (res.buffer()), result_len + 1);
 //
-//  if (result_len < 0) {
-//    return string();
-//  }
+//   if (result_len < 0) {
+//     return string();
+//   }
 //
-//  res.shrink (result_len);
-//  return res;
-//}
+//   res.shrink (result_len);
+//   return res;
+// }
 
-static const short base64_reverse_table[256] = {
-  -2, -2, -2, -2, -2, -2, -2, -2, -2, -1, -1, -2, -2, -1, -2, -2,
-  -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2,
-  -1, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, 62, -2, -2, -2, 63,
-  52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -2, -2, -2, -2, -2, -2,
-  -2, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-  15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -2, -2, -2, -2, -2,
-  -2, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
-  41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -2, -2, -2, -2, -2,
-  -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2,
-  -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2,
-  -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2,
-  -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2,
-  -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2,
-  -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2,
-  -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2,
-  -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2
-};
+static const short base64_reverse_table[256] = {-2, -2, -2, -2, -2, -2, -2, -2, -2, -1, -1, -2, -2, -1, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2,
+                                                -2, -2, -2, -2, -2, -2, -1, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, 62, -2, -2, -2, 63, 52, 53, 54, 55,
+                                                56, 57, 58, 59, 60, 61, -2, -2, -2, -2, -2, -2, -2, 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12,
+                                                13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -2, -2, -2, -2, -2, -2, 26, 27, 28, 29, 30, 31, 32,
+                                                33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -2, -2, -2, -2, -2, -2, -2,
+                                                -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2,
+                                                -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2,
+                                                -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2,
+                                                -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2,
+                                                -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2};
 
 /* Function f$base64_decode ported from https://github.com/php/php-src/blob/master/ext/standard/base64.c#L130
  * "This product includes PHP software, freely available from <http://www.php.net/software/>".
-*/
+ */
 Optional<string> f$base64_decode(const string &s, bool strict) {
   /* run through the whole string, converting as we go */
   string::size_type result_len = (s.size() + 3) / 4 * 3;
@@ -113,16 +104,17 @@ Optional<string> f$base64_decode(const string &s, bool strict) {
 }
 
 int base64_encode(const unsigned char *const input, int ilen, char *output, int olen) {
-  static const char* const symbols64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+  static const char *const symbols64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 
   auto next_input_uchar = [input, ilen](int &i) {
-    if (i >= ilen) return static_cast<unsigned char>(0);
+    if (i >= ilen)
+      return static_cast<unsigned char>(0);
     return input[i++];
   };
 
   int i, j = 0;
   char buf[4];
-  for (i = 0; i < ilen; ) {
+  for (i = 0; i < ilen;) {
     int old_i = i;
     int o = next_input_uchar(i);
     o <<= 8;
@@ -130,7 +122,7 @@ int base64_encode(const unsigned char *const input, int ilen, char *output, int 
     o <<= 8;
     o |= next_input_uchar(i);
     int l = i - old_i;
-    assert (l > 0 && l <= 3);
+    assert(l > 0 && l <= 3);
     int u;
     for (u = 3; u >= 0; u--) {
       buf[u] = symbols64[o & 63];
@@ -138,14 +130,13 @@ int base64_encode(const unsigned char *const input, int ilen, char *output, int 
     }
     if (l == 1) {
       buf[2] = buf[3] = '=';
-    }
-    else if (l == 2) {
+    } else if (l == 2) {
       buf[3] = '=';
     }
     if (j + 3 >= olen) {
       return -1;
     }
-    memcpy (&output[j], buf, 4);
+    memcpy(&output[j], buf, 4);
     j += 4;
   }
   if (j >= olen) {
@@ -158,7 +149,7 @@ int base64_encode(const unsigned char *const input, int ilen, char *output, int 
 string f$base64_encode(const string &s) {
   int result_len = (s.size() + 2) / 3 * 4;
   string res(result_len, false);
-  result_len = base64_encode(reinterpret_cast <const unsigned char *> (s.c_str()), (int)s.size(), res.buffer(), result_len + 1);
+  result_len = base64_encode(reinterpret_cast<const unsigned char *>(s.c_str()), (int)s.size(), res.buffer(), result_len + 1);
 
   if (result_len != 0) {
     return {};
@@ -168,7 +159,7 @@ string f$base64_encode(const string &s) {
 }
 
 static void parse_str_set_array_value(mixed &arr, const char *left_br_pos, int key_len, const string &value) {
-  php_assert (*left_br_pos == '[');
+  php_assert(*left_br_pos == '[');
   const char *right_br_pos = (const char *)memchr(left_br_pos + 1, ']', key_len - 1);
   if (right_br_pos != nullptr) {
     string next_key(left_br_pos + 1, static_cast<string::size_type>(right_br_pos - left_br_pos - 1));
@@ -194,7 +185,8 @@ void parse_str_set_value(mixed &arr, const string &key, const string &value) {
   const char *key_c = key.c_str();
   const char *left_br_pos = (const char *)memchr(key_c, '[', key.size());
   if (left_br_pos != nullptr) {
-    return parse_str_set_array_value(arr[string(key_c, static_cast<string::size_type>(left_br_pos - key_c))], left_br_pos, (int)(key_c + key.size() - left_br_pos), value);
+    return parse_str_set_array_value(arr[string(key_c, static_cast<string::size_type>(left_br_pos - key_c))], left_br_pos,
+                                     (int)(key_c + key.size() - left_br_pos), value);
   }
 
   arr.set_value(key, value);
@@ -294,7 +286,7 @@ array<mixed> php_url_parse_ex(const char *str, string::size_type length) {
       }
     }
   } else if (e) { /* no scheme; starts with colon: look for port */
-    parse_port:
+  parse_port:
     p = e + 1;
     pp = p;
 
@@ -325,7 +317,7 @@ array<mixed> php_url_parse_ex(const char *str, string::size_type length) {
     goto just_path;
   }
 
-  parse_host:
+parse_host:
   /* Binary-safe strcspn(s, "/?#") */
   e = ue;
   if ((p = static_cast<const char *>(memchr(s, '/', e - s)))) {
@@ -390,7 +382,7 @@ array<mixed> php_url_parse_ex(const char *str, string::size_type length) {
 
   s = e;
 
-  just_path:
+just_path:
 
   e = ue;
   p = static_cast<const char *>(memchr(s, '#', (e - s)));
@@ -428,21 +420,21 @@ mixed f$parse_url(const string &s, int64_t component) {
 
   if (component != -1) {
     switch (component) {
-      case 0:             // PHP_URL_SCHEME
+      case 0: // PHP_URL_SCHEME
         return url_as_array.get_value(string("scheme", 6));
-      case 1:             // PHP_URL_HOST
+      case 1: // PHP_URL_HOST
         return url_as_array.get_value(string("host", 4));
-      case 2:             // PHP_URL_PORT
+      case 2: // PHP_URL_PORT
         return url_as_array.get_value(string("port", 4));
-      case 3:             // PHP_URL_USER
+      case 3: // PHP_URL_USER
         return url_as_array.get_value(string("user", 4));
-      case 4:             // PHP_URL_PASS
+      case 4: // PHP_URL_PASS
         return url_as_array.get_value(string("pass", 4));
-      case 5:             // PHP_URL_PATH
+      case 5: // PHP_URL_PATH
         return url_as_array.get_value(string("path", 4));
-      case 6:             // PHP_URL_QUERY
+      case 6: // PHP_URL_QUERY
         return url_as_array.get_value(string("query", 5));
-      case 7:             // PHP_URL_FRAGMENT
+      case 7: // PHP_URL_FRAGMENT
         return url_as_array.get_value(string("fragment", 8));
       default:
         php_warning("Wrong parameter component = %" PRIi64 " in function parse_url", component);
@@ -472,16 +464,14 @@ string f$rawurldecode(const string &s) {
   return static_SB.str();
 }
 
-
-static const char *good_url_symbols =
-  "00000000000000000000000000000000"
-  "00000000000001101111111111000000"
-  "01111111111111111111111111100001"
-  "01111111111111111111111111100000"
-  "00000000000000000000000000000000"
-  "00000000000000000000000000000000"
-  "00000000000000000000000000000000"
-  "00000000000000000000000000000000";//[0-9a-zA-Z-_.]
+static const char *good_url_symbols = "00000000000000000000000000000000"
+                                      "00000000000001101111111111000000"
+                                      "01111111111111111111111111100001"
+                                      "01111111111111111111111111100000"
+                                      "00000000000000000000000000000000"
+                                      "00000000000000000000000000000000"
+                                      "00000000000000000000000000000000"
+                                      "00000000000000000000000000000000"; //[0-9a-zA-Z-_.]
 
 string f$rawurlencode(const string &s) {
   static_SB.clean().reserve(3 * s.size());

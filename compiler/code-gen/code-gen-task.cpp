@@ -2,8 +2,8 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "compiler/code-gen/code-gen-root-cmd.h"
 #include "compiler/code-gen/code-gen-task.h"
+#include "compiler/code-gen/code-gen-root-cmd.h"
 
 // this os exists to be passed to CodeGenerator constructor,
 // but it won't be used actually, as CodeGenerator is not created in "just calc hashes" mode
@@ -22,7 +22,7 @@ CodeGenSchedulerTask::CodeGenSchedulerTask(DataStream<std::unique_ptr<CodeGenRoo
 void CodeGenSchedulerTask::execute() {
   AutoProfiler profler{get_code_gen_profiler()};
   stage::set_name("Code generation");
-  
+
   cmd->compile(W);
   // if a command produced diff since the previous kphp launch, forward it next, it will be re-launched and saved
   if (W.was_diff_in_any_file()) {

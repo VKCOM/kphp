@@ -16,16 +16,12 @@
 
 void command_net_write_run_sql(command_t *base_command, void *data);
 
-command_t command_net_write_sql_base = {
-  .run = command_net_write_run_sql,
-  .free = command_net_write_free
-};
+command_t command_net_write_sql_base = {.run = command_net_write_run_sql, .free = command_net_write_free};
 
 static const char *mysql_db_name = "dbname_not_set";
 static const char *mysql_user = "fake";
 static const char *mysql_password = "fake";
 static bool is_mysql_same_datacenter_check_disabled = false;
-
 
 int proxy_client_execute(connection *c, int op);
 
@@ -59,18 +55,10 @@ mysql_client_functions db_client_outbound = [] {
   res.sql_check_perm = sqlc_default_check_perm;
   res.sql_init_crypto = sqlc_init_crypto;
   // when connecting to MySQL from PHP and KPHP, login credentials do not matter due to rpc proxy, only db name matters
-  res.sql_get_database = [](connection*) {
-    return mysql_db_name;
-  };
-  res.sql_get_user = [](connection*) {
-    return mysql_user;
-  };
-  res.sql_get_password = [](connection*) {
-    return mysql_password;
-  };
-  res.is_mysql_same_datacenter_check_disabled = []() {
-    return is_mysql_same_datacenter_check_disabled;
-  };
+  res.sql_get_database = [](connection *) { return mysql_db_name; };
+  res.sql_get_user = [](connection *) { return mysql_user; };
+  res.sql_get_password = [](connection *) { return mysql_password; };
+  res.is_mysql_same_datacenter_check_disabled = []() { return is_mysql_same_datacenter_check_disabled; };
 
   return res;
 }();
@@ -87,12 +75,12 @@ conn_target_t db_ct = [] {
 }();
 
 void command_net_write_run_sql(command_t *base_command, void *data) {
-  //fprintf (stderr, "command_net_write [ptr=%p]\n", base_command);
+  // fprintf (stderr, "command_net_write [ptr=%p]\n", base_command);
   auto *command = (command_net_write_t *)base_command;
 
-  assert (command->data != nullptr);
+  assert(command->data != nullptr);
   auto *d = (connection *)data;
-  assert (d->status == conn_ready);
+  assert(d->status == conn_ready);
 
   /*
   {
@@ -109,14 +97,13 @@ void command_net_write_run_sql(command_t *base_command, void *data) {
   }
   */
 
-  assert (write_out(&(d)->Out, command->data, command->len) == command->len);
-  SQLC_FUNC (d)->sql_flush_packet(d, command->len - 4);
+  assert(write_out(&(d)->Out, command->data, command->len) == command->len);
+  SQLC_FUNC(d)->sql_flush_packet(d, command->len - 4);
 
   flush_connection_output(d);
   d->last_query_sent_time = precise_now;
   d->status = conn_wait_answer;
   SQLC_DATA(d)->response_state = resp_first;
-
 
   free(command->data);
   command->data = nullptr;
@@ -152,12 +139,11 @@ void php_worker_run_sql_query_packet(PhpWorker *worker, php_net_query_packet_t *
   double timeout = fix_timeout(query->timeout) + precise_now;
   if (conn != nullptr && conn->status == conn_ready) {
     write_out(&conn->Out, query->data, query->data_len);
-    SQLC_FUNC (conn)->sql_flush_packet(conn, query->data_len - 4);
+    SQLC_FUNC(conn)->sql_flush_packet(conn, query->data_len - 4);
     flush_connection_output(conn);
     conn->last_query_sent_time = precise_now;
     conn->status = conn_wait_answer;
     SQLC_DATA(conn)->response_state = resp_first;
-
 
     ansgen->func->set_writer(ansgen, nullptr);
     ansgen->func->ready(ansgen, nullptr);
@@ -196,13 +182,13 @@ int sql_query_done(conn_query *q) {
 int sqlp_becomes_ready(connection *c) {
   conn_query *q;
 
-
   while (c->target->first_query != (conn_query *)(c->target)) {
     q = c->target->first_query;
-    //    fprintf (stderr, "processing delayed query %p for target %p initiated by %p (%d:%d<=%d)\n", q, c->target, q->requester, q->requester->fd, q->req_generation, q->requester->generation);
+    //    fprintf (stderr, "processing delayed query %p for target %p initiated by %p (%d:%d<=%d)\n", q, c->target, q->requester, q->requester->fd,
+    //    q->req_generation, q->requester->generation);
     if (q->requester != nullptr && q->requester->generation == q->req_generation) {
       q->requester->queries_ok++;
-      //waiting_queries--;
+      // waiting_queries--;
 
       auto *net_ansgen = (net_ansgen_t *)q->extra;
       create_pnet_query(q->requester, c, net_ansgen, q->timer.wakeup_time);
@@ -214,7 +200,7 @@ int sqlp_becomes_ready(connection *c) {
       ansgen->func->ready(ansgen, c);
       break;
     } else {
-      //waiting_queries--;
+      // waiting_queries--;
       pnet_query_delete(q);
     }
   }
@@ -235,18 +221,18 @@ int sqlp_check_ready(connection *c) {
     return c->ready = cr_failed;
   }
   if (c->status == conn_wait_answer || c->status == conn_reading_answer) {
-    if (!(c->flags & C_FAILED) && c->last_query_sent_time < precise_now - RESPONSE_FAIL_TIMEOUT - c->last_query_time && c->last_response_time < precise_now - RESPONSE_FAIL_TIMEOUT - c
-      ->last_query_time && !(SQLC_DATA(c)->extra_flags & 1)) {
-      tvkprintf(php_connections, 1, "failing outbound connection %d, status=%d, response_status=%d, last_response=%.6f, last_query=%.6f, now=%.6f\n", c->fd, c->status, SQLC_DATA(c)
-        ->response_state, c->last_response_time, c->last_query_sent_time, precise_now);
+    if (!(c->flags & C_FAILED) && c->last_query_sent_time < precise_now - RESPONSE_FAIL_TIMEOUT - c->last_query_time
+        && c->last_response_time < precise_now - RESPONSE_FAIL_TIMEOUT - c->last_query_time && !(SQLC_DATA(c)->extra_flags & 1)) {
+      tvkprintf(php_connections, 1, "failing outbound connection %d, status=%d, response_status=%d, last_response=%.6f, last_query=%.6f, now=%.6f\n", c->fd,
+                c->status, SQLC_DATA(c)->response_state, c->last_response_time, c->last_query_sent_time, precise_now);
       c->error = -5;
       fail_connection(c, -5);
       return c->ready = cr_failed;
     }
   }
-  return c->ready = (c->status == conn_ready ? cr_ok : (SQLC_DATA(c)->auth_state == sql_auth_ok ? cr_stopped : cr_busy));  /* was cr_busy instead of cr_stopped */
+  return c->ready =
+           (c->status == conn_ready ? cr_ok : (SQLC_DATA(c)->auth_state == sql_auth_ok ? cr_stopped : cr_busy)); /* was cr_busy instead of cr_stopped */
 }
-
 
 int sqlp_authorized(connection *c) {
   nbw_iterator_t it;
@@ -292,7 +278,8 @@ int proxy_client_execute(connection *c, int op) {
   if (b_len >= 5) {
     field_cnt = buffer[4] & 0xff;
   }
-  tvkprintf(php_connections, 3, "proxy client execute: op=%d, packet_len=%d, response_state=%d, field_num=%d\n", op, D->packet_len, D->response_state, field_cnt);
+  tvkprintf(php_connections, 3, "proxy client execute: op=%d, packet_len=%d, response_state=%d, field_num=%d\n", op, D->packet_len, D->response_state,
+            field_cnt);
 
   if (c->first_query == (conn_query *)c) {
     kprintf("response received for empty query list? op=%d\n", op);
@@ -307,11 +294,11 @@ int proxy_client_execute(connection *c, int op) {
   int x;
   switch (D->response_state) {
     case resp_first:
-      //forward_response (c, D->packet_len, SQLC_DATA(c)->extra_flags & 1);
+      // forward_response (c, D->packet_len, SQLC_DATA(c)->extra_flags & 1);
       x = sql_query_packet(c->first_query, reader);
 
       if (!reader->readed) {
-        assert (advance_skip_read_ptr(&c->In, query_len) == query_len);
+        assert(advance_skip_read_ptr(&c->In, query_len) == query_len);
       }
 
       if (x) {
@@ -321,10 +308,10 @@ int proxy_client_execute(connection *c, int op) {
       }
 
       if (field_cnt == 0 && (SQLC_DATA(c)->extra_flags & 1)) {
-        dl_unreachable ("looks like unused code");
+        dl_unreachable("looks like unused code");
         SQLC_DATA(c)->extra_flags |= 2;
         if (c->first_query->requester->generation != c->first_query->req_generation) {
-          tvkprintf (php_connections, 3, "outbound connection %d: nowhere to forward replication stream, closing\n", c->fd);
+          tvkprintf(php_connections, 3, "outbound connection %d: nowhere to forward replication stream, closing\n", c->fd);
           c->status = conn_error;
         }
       } else if (field_cnt == 0 || field_cnt == 0xff) {
@@ -336,10 +323,10 @@ int proxy_client_execute(connection *c, int op) {
       }
       break;
     case resp_reading_fields:
-      //forward_response (c, D->packet_len, 0);
+      // forward_response (c, D->packet_len, 0);
       x = sql_query_packet(c->first_query, reader);
       if (!reader->readed) {
-        assert (advance_skip_read_ptr(&c->In, query_len) == query_len);
+        assert(advance_skip_read_ptr(&c->In, query_len) == query_len);
       }
 
       if (x) {
@@ -353,10 +340,10 @@ int proxy_client_execute(connection *c, int op) {
       }
       break;
     case resp_reading_rows:
-      //forward_response (c, D->packet_len, 0);
+      // forward_response (c, D->packet_len, 0);
       x = sql_query_packet(c->first_query, reader);
       if (!reader->readed) {
-        assert (advance_skip_read_ptr(&c->In, query_len) == query_len);
+        assert(advance_skip_read_ptr(&c->In, query_len) == query_len);
       }
       if (x) {
         fail_connection(c, -8);
@@ -369,11 +356,11 @@ int proxy_client_execute(connection *c, int op) {
       break;
     case resp_done:
       kprintf("unexpected packet from server!\n");
-      assert (0);
+      assert(0);
   }
 
   if (D->response_state == resp_done) {
-//    query_complete (c, 1);
+    //    query_complete (c, 1);
     x = sql_query_done(c->first_query);
     if (x) {
       fail_connection(c, -9);
@@ -381,11 +368,11 @@ int proxy_client_execute(connection *c, int op) {
       return 0;
     }
 
-    //active_queries--;
+    // active_queries--;
     c->unreliability >>= 1;
     c->status = conn_ready;
     c->last_query_time = precise_now - c->last_query_sent_time;
-    //SQLC_DATA(c)->extra_flags &= -2;
+    // SQLC_DATA(c)->extra_flags &= -2;
     sqlp_becomes_ready(c);
   }
 

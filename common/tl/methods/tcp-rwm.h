@@ -14,9 +14,9 @@
 struct tl_out_methods_tcp_raw_msg final : tl_out_methods_network_rwm_base<tl_out_methods_tcp_raw_msg> {
   connection_t *conn{};
   raw_message_t rwm{};
-  
-  explicit tl_out_methods_tcp_raw_msg(connection_t *conn) :
-    conn(conn) {
+
+  explicit tl_out_methods_tcp_raw_msg(connection_t *conn)
+    : conn(conn) {
     rwm_init(&rwm, 0);
   }
 

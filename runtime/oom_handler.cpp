@@ -7,8 +7,8 @@
 #include "common/kprintf.h"
 #include "runtime/allocator.h"
 #include "runtime/php_assert.h"
-#include "server/php-runner.h"
 #include "runtime/resumable.h"
+#include "server/php-runner.h"
 
 bool register_kphp_on_oom_callback_impl(on_oom_callback_t &&callback) {
   OomHandler &oom_handler_ctx = vk::singleton<OomHandler>::get();

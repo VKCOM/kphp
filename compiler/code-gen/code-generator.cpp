@@ -2,10 +2,9 @@
 // Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "compiler/compiler-core.h"
 #include "compiler/code-gen/code-generator.h"
+#include "compiler/compiler-core.h"
 #include "compiler/data/src-file.h"
-
 
 void CodeGenerator::open_file_create_writer(bool compile_with_debug_info_flag, bool compile_with_crc, const std::string &file_name, const std::string &subdir) {
   std::string full_file_name = G->cpp_dir;
@@ -60,8 +59,8 @@ void CodeGenerator::close_file_clear_writer() {
     kphp_assert(data != nullptr);
     data->end_line();
     data->set_calculated_hashes(hash_of_cpp, hash_of_comments);
-    os << data;       // pass it to WriteFilesF
-    data = nullptr;   // do not delete data, as it will be used by and deleted by WriteFilesF
+    os << data;     // pass it to WriteFilesF
+    data = nullptr; // do not delete data, as it will be used by and deleted by WriteFilesF
   }
 }
 

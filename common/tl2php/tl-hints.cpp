@@ -20,9 +20,9 @@ void trim(std::string &str) {
 }
 
 struct FileLineReader {
-  explicit FileLineReader(const std::string &combined2_tl_file) :
-    combined2_tl_file_(combined2_tl_file),
-    combined2_tl_(combined2_tl_file_) {
+  explicit FileLineReader(const std::string &combined2_tl_file)
+    : combined2_tl_file_(combined2_tl_file)
+    , combined2_tl_(combined2_tl_file_) {
     if (!combined2_tl_) {
       raise_parsing_excpetion(std::strerror(errno));
     }
@@ -33,8 +33,7 @@ struct FileLineReader {
     if (line_number_) {
       line_hint = ":" + std::to_string(line_number_);
     }
-    throw std::runtime_error{
-      "Error on reading tl hints from '" + combined2_tl_file_ + line_hint + "': " + std::string{what}};
+    throw std::runtime_error{"Error on reading tl hints from '" + combined2_tl_file_ + line_hint + "': " + std::string{what}};
   }
 
   void check_pos(size_t pos, const char *what) {
@@ -55,7 +54,9 @@ struct FileLineReader {
     return !line_.empty();
   }
 
-  const std::string &get_current_line() const { return line_; }
+  const std::string &get_current_line() const {
+    return line_;
+  }
 
 private:
   const std::string combined2_tl_file_;

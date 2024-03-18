@@ -12,7 +12,6 @@
 #include "compiler/debug.h"
 #include "compiler/inferring/primitive-type.h"
 
-
 // do not confuse TypeHint with TypeData!
 // TypeData is a part of _type inferring_; it's mutable and plain, it represents current inferred state of every vertex
 class TypeData;
@@ -34,11 +33,13 @@ class TypeData;
  * When bound to a function, they must be replaced with actual context, see phpdoc_finalize_type_hint_and_resolve()
  */
 class TypeHint {
-  DEBUG_STRING_METHOD { return as_human_readable(); }
+  DEBUG_STRING_METHOD {
+    return as_human_readable();
+  }
 
   // these fields are calculated only once for every unique type hint
-  uint64_t hash{0};   // a unique hash: only unique type hints are actually created
-  int flags{0};       // bits of flag_mask, to store often-used properties and return them without tree traversing
+  uint64_t hash{0}; // a unique hash: only unique type hints are actually created
+  int flags{0};     // bits of flag_mask, to store often-used properties and return them without tree traversing
 
   // to leave public interface more clear, don't expose setters, use friend
   friend class HasherOfTypeHintForOptimization;
@@ -58,26 +59,45 @@ protected:
     flag_potentially_casts_rhs = 1 << 10,
   };
 
-  explicit TypeHint(int self_flags_without_children) : flags(self_flags_without_children) {}
+  explicit TypeHint(int self_flags_without_children)
+    : flags(self_flags_without_children) {}
 
 public:
-  virtual ~TypeHint() = default;  // though instances of TypeHint are never deleted :)
+  virtual ~TypeHint() = default; // though instances of TypeHint are never deleted :)
 
   template<class Derived>
   const Derived *try_as() const {
     return dynamic_cast<const Derived *>(this);
   }
 
-  bool has_instances_inside() const { return flags & flag_contains_instances_inside; }
-  bool has_self_static_parent_inside() const { return flags & flag_contains_self_static_parent_inside; }
-  bool has_argref_inside() const { return flags & flag_contains_argref_inside; }
-  bool has_tp_any_inside() const { return flags & flag_contains_tp_any_inside; }
-  bool has_callables_inside() const { return flags & flag_contains_callables_inside; }
-  bool has_genericT_inside() const { return flags & flag_contains_genericT_inside; }
-  bool has_autogeneric_inside() const { return flags & flag_contains_autogeneric_inside; }
-  bool has_flag_maybe_casts_rhs() const { return flags & flag_potentially_casts_rhs; }
+  bool has_instances_inside() const {
+    return flags & flag_contains_instances_inside;
+  }
+  bool has_self_static_parent_inside() const {
+    return flags & flag_contains_self_static_parent_inside;
+  }
+  bool has_argref_inside() const {
+    return flags & flag_contains_argref_inside;
+  }
+  bool has_tp_any_inside() const {
+    return flags & flag_contains_tp_any_inside;
+  }
+  bool has_callables_inside() const {
+    return flags & flag_contains_callables_inside;
+  }
+  bool has_genericT_inside() const {
+    return flags & flag_contains_genericT_inside;
+  }
+  bool has_autogeneric_inside() const {
+    return flags & flag_contains_autogeneric_inside;
+  }
+  bool has_flag_maybe_casts_rhs() const {
+    return flags & flag_potentially_casts_rhs;
+  }
 
-  bool is_typedata_constexpr() const { return !has_argref_inside() && !has_self_static_parent_inside() && !has_genericT_inside(); }
+  bool is_typedata_constexpr() const {
+    return !has_argref_inside() && !has_self_static_parent_inside() && !has_genericT_inside();
+  }
   const TypeData *to_type_data() const;
   const TypeHint *unwrap_optional() const;
 
@@ -263,22 +283,26 @@ class TypeHintCallable : public TypeHint {
     , arg_types(arg_types)
     , return_type(return_type) {}
 
-  mutable InterfacePtr interface{nullptr};    // for typed callables; will be created on demand, see get_interface()
+  mutable InterfacePtr interface { nullptr }; // for typed callables; will be created on demand, see get_interface()
 
 public:
-  std::vector<const TypeHint *> arg_types;    // for typed callables
-  const TypeHint *return_type{nullptr};       // for typed callables
-  FunctionPtr f_bound_to{nullptr};            // for untyped callables: not just 'callable', but bound to a function
+  std::vector<const TypeHint *> arg_types; // for typed callables
+  const TypeHint *return_type{nullptr};    // for typed callables
+  FunctionPtr f_bound_to{nullptr};         // for untyped callables: not just 'callable', but bound to a function
 
   static const TypeHint *create(std::vector<const TypeHint *> &&arg_types, const TypeHint *return_type);
   static const TypeHint *create_untyped_callable();
   static const TypeHint *create_ptr_to_function(FunctionPtr f_bound_to);
 
-  bool is_untyped_callable() const { return return_type == nullptr; }
-  bool is_typed_callable() const { return return_type != nullptr; }
+  bool is_untyped_callable() const {
+    return return_type == nullptr;
+  }
+  bool is_typed_callable() const {
+    return return_type != nullptr;
+  }
 
-  InterfacePtr get_interface() const;         // for typed callables
-  ClassPtr get_lambda_class() const;          // for untyped callables: a class that wraps a bound lambda
+  InterfacePtr get_interface() const; // for typed callables
+  ClassPtr get_lambda_class() const;  // for untyped callables: a class that wraps a bound lambda
 
   std::string as_human_readable() const final;
   void traverse(const TraverserCallbackT &callback) const final;
@@ -429,7 +453,9 @@ public:
   const TypeHint *replace_children_custom(const ReplacerCallbackT &callback) const final;
   void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr func_call) const final;
 
-  ClassPtr resolve() const { return klass ?: resolve_and_set_klass(); }
+  ClassPtr resolve() const {
+    return klass ?: resolve_and_set_klass();
+  }
 };
 
 /**

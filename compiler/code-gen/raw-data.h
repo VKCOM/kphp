@@ -10,8 +10,8 @@
 #include "common/php-functions.h"
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
-#include "compiler/vertex.h"
 #include "compiler/data/var-data.h"
+#include "compiler/vertex.h"
 
 struct DepLevelContainer {
   DepLevelContainer() {
@@ -75,9 +75,8 @@ private:
 
 class RawString {
 public:
-  explicit RawString(vk::string_view str) :
-    str(str) {
-  }
+  explicit RawString(vk::string_view str)
+    : str(str) {}
 
   void compile(CodeGenerator &W) const;
 
@@ -87,9 +86,7 @@ private:
 
 std::vector<int> compile_arrays_raw_representation(const DepLevelContainer &const_raw_array_vars, CodeGenerator &W);
 
-template <typename Container,
-  typename = decltype(std::declval<Container>().begin()),
-  typename = decltype(std::declval<Container>().end())>
+template<typename Container, typename = decltype(std::declval<Container>().begin()), typename = decltype(std::declval<Container>().end())>
 std::vector<int> compile_raw_data(CodeGenerator &W, const Container &values) {
   std::string raw_data;
   std::vector<int> const_string_shifts(values.size());
@@ -100,11 +97,11 @@ std::vector<int> compile_raw_data(CodeGenerator &W, const Container &values) {
       raw_data.append(shift_to_align, 0);
     }
     int raw_len = string_raw_len(static_cast<int>(s.size()));
-    kphp_assert (raw_len != -1);
+    kphp_assert(raw_len != -1);
     const_string_shifts[ii] = (int)raw_data.size();
     raw_data.append(raw_len, 0);
     int err = string_raw(&raw_data[const_string_shifts[ii]], raw_len, s.c_str(), (int)s.size());
-    kphp_assert (err == raw_len);
+    kphp_assert(err == raw_len);
     ii++;
   }
   if (!raw_data.empty()) {
@@ -112,4 +109,3 @@ std::vector<int> compile_raw_data(CodeGenerator &W, const Container &values) {
   }
   return const_string_shifts;
 }
-

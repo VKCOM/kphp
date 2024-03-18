@@ -18,13 +18,11 @@ struct OpenFile {
   std::string subdir;
   bool compile_with_debug_info_flag;
   bool compile_with_crc;
-  OpenFile(const std::string &file_name, const std::string &subdir = "",
-           bool compile_with_debug_info_flag = true, bool compile_with_crc = true) :
-    file_name(file_name),
-    subdir(subdir),
-    compile_with_debug_info_flag(compile_with_debug_info_flag),
-    compile_with_crc(compile_with_crc) {
-  }
+  OpenFile(const std::string &file_name, const std::string &subdir = "", bool compile_with_debug_info_flag = true, bool compile_with_crc = true)
+    : file_name(file_name)
+    , subdir(subdir)
+    , compile_with_debug_info_flag(compile_with_debug_info_flag)
+    , compile_with_crc(compile_with_crc) {}
 
   void compile(CodeGenerator &W) const {
     W.open_file_create_writer(compile_with_debug_info_flag, compile_with_crc, file_name, subdir);
@@ -39,9 +37,8 @@ struct CloseFile {
 
 struct UpdateLocation {
   const Location &location;
-  explicit UpdateLocation(const Location &location):
-    location(location) {
-  }
+  explicit UpdateLocation(const Location &location)
+    : location(location) {}
   void compile(CodeGenerator &W) const {
     if (!W.is_comments_locked()) {
       stage::set_location(location);
@@ -58,7 +55,8 @@ struct NewLine {
 
 struct Indent {
   int val;
-  Indent(int val) : val(val) { }
+  Indent(int val)
+    : val(val) {}
   inline void compile(CodeGenerator &W) const {
     W.indent(val);
   }
@@ -94,10 +92,7 @@ struct UnlockComments {
   }
 };
 
-enum class join_mode {
-  one_line,
-  multiple_lines
-};
+enum class join_mode { one_line, multiple_lines };
 
 template<typename T>
 struct ValueSelfGen {
@@ -111,12 +106,11 @@ struct ValueSelfGen {
 template<typename T, typename F = ValueSelfGen<T>>
 class JoinValues {
 public:
-  JoinValues(const T &values_container, const char *sep, join_mode mode = join_mode::one_line, const F &value_gen = {}) :
-    values_container_(values_container),
-    sep_(sep),
-    mode_(mode),
-    value_gen_(value_gen) {
-  }
+  JoinValues(const T &values_container, const char *sep, join_mode mode = join_mode::one_line, const F &value_gen = {})
+    : values_container_(values_container)
+    , sep_(sep)
+    , mode_(mode)
+    , value_gen_(value_gen) {}
 
   void compile(CodeGenerator &W) const {
     auto it = std::begin(values_container_);

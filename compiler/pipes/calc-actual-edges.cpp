@@ -5,9 +5,9 @@
 #include "compiler/pipes/calc-actual-edges.h"
 
 #include "compiler/compiler-core.h"
-#include "compiler/inferring/public.h"
 #include "compiler/data/class-data.h"
 #include "compiler/function-pass.h"
+#include "compiler/inferring/public.h"
 
 // handle_exception reports whether a thrown_class will be caught by any of the given try blocks;
 // try_stack should contain the innermost try block in its end.

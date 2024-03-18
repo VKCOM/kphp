@@ -97,7 +97,7 @@ void TypeTagger::compile_loader_header(CodeGenerator &W, const IncludesCollector
   W << CloseFile{};
 }
 
-template <typename It>
+template<typename It>
 static void compile_loader_instantiations_batch(CodeGenerator &W, const IncludesCollector &includes, It begin, It end, std::size_t batch) noexcept {
   W << OpenFile{fmt_format("_loader_instantiations{}.cpp", batch)};
   W << ExternInclude{G->settings().runtime_headers.get()};

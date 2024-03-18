@@ -60,7 +60,7 @@ string f$_explode_nth(const string &delimiter, const string &str, int64_t index)
   }
   int result_index = 0;
   string res;
-  walk_parts(delimiter.c_str(), delimiter.size(), str, index+2, [&](const char *s, string::size_type l) {
+  walk_parts(delimiter.c_str(), delimiter.size(), str, index + 2, [&](const char *s, string::size_type l) {
     if (result_index++ == index) {
       res = string(s, l);
     }
@@ -85,9 +85,14 @@ std::tuple<string, string> f$_explode_tuple2(const string &delimiter, const stri
       return; // this result index will be discarded, don't allocate the string
     }
     switch (index) {
-      case 0: std::get<0>(res) = string(s, l); return;
-      case 1: std::get<1>(res) = string(s, l); return;
-      default: return;
+      case 0:
+        std::get<0>(res) = string(s, l);
+        return;
+      case 1:
+        std::get<1>(res) = string(s, l);
+        return;
+      default:
+        return;
     }
   });
   return res;
@@ -106,10 +111,17 @@ std::tuple<string, string, string> f$_explode_tuple3(const string &delimiter, co
       return; // this result index will be discarded, don't allocate the string
     }
     switch (index) {
-      case 0: std::get<0>(res) = string(s, l); return;
-      case 1: std::get<1>(res) = string(s, l); return;
-      case 2: std::get<2>(res) = string(s, l); return;
-      default: return;
+      case 0:
+        std::get<0>(res) = string(s, l);
+        return;
+      case 1:
+        std::get<1>(res) = string(s, l);
+        return;
+      case 2:
+        std::get<2>(res) = string(s, l);
+        return;
+      default:
+        return;
     }
   });
   return res;
@@ -128,11 +140,20 @@ std::tuple<string, string, string, string> f$_explode_tuple4(const string &delim
       return; // this result index will be discarded, don't allocate the string
     }
     switch (index) {
-      case 0: std::get<0>(res) = string(s, l); return;
-      case 1: std::get<1>(res) = string(s, l); return;
-      case 2: std::get<2>(res) = string(s, l); return;
-      case 3: std::get<3>(res) = string(s, l); return;
-      default: return;
+      case 0:
+        std::get<0>(res) = string(s, l);
+        return;
+      case 1:
+        std::get<1>(res) = string(s, l);
+        return;
+      case 2:
+        std::get<2>(res) = string(s, l);
+        return;
+      case 3:
+        std::get<3>(res) = string(s, l);
+        return;
+      default:
+        return;
     }
   });
   return res;
@@ -142,9 +163,7 @@ array<string> explode(char delimiter, const string &str, int64_t limit) {
   static char delimiter_storage[1] = {0};
   delimiter_storage[0] = delimiter;
   array<string> res(array_size(limit < 10 ? limit : 1, true));
-  walk_parts(delimiter_storage, 1, str, limit, [&](const char *s, string::size_type l) {
-    res.push_back(string(s, l));
-  });
+  walk_parts(delimiter_storage, 1, str, limit, [&](const char *s, string::size_type l) { res.push_back(string(s, l)); });
   return res;
 }
 
@@ -159,9 +178,7 @@ array<string> f$explode(const string &delimiter, const string &str, int64_t limi
   }
 
   array<string> res(array_size(limit < 10 ? limit : 1, true));
-  walk_parts(delimiter.c_str(), delimiter.size(), str, limit, [&](const char *s, string::size_type l) {
-    res.push_back(string(s, l));
-  });
+  walk_parts(delimiter.c_str(), delimiter.size(), str, limit, [&](const char *s, string::size_type l) { res.push_back(string(s, l)); });
   return res;
 }
 
@@ -198,7 +215,7 @@ array<mixed> range_string(const string &from_s, const string &to_s, int64_t step
     return {};
   }
   if (step != 1) {
-    php_critical_error ("unsupported step = %" PRIi64 " in function range", step);
+    php_critical_error("unsupported step = %" PRIi64 " in function range", step);
   }
   const int64_t from = static_cast<unsigned char>(from_s[0]);
   const int64_t to = static_cast<unsigned char>(to_s[0]);
@@ -232,7 +249,7 @@ array<int64_t> f$array_diff(const array<int64_t> &a1, const array<int64_t> &a2) 
 string implode_string_vector(const string &s, const array<string> &a) {
   // we use a precondition here that array is not empty: count-1 is not negative, elems[0] is valid
   int64_t count = a.count();
-  const string* elems = a.get_const_vector_pointer();
+  const string *elems = a.get_const_vector_pointer();
 
   int result_size = 0;
   for (int64_t i = 0; i < count; i++) {

@@ -8,16 +8,16 @@
 #include <string>
 
 #include "common/php-functions.h"
+#include "compiler/compiler-core.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/define-data.h"
 #include "compiler/data/var-data.h"
-#include "compiler/compiler-core.h"
 #include "compiler/name-gen.h"
 #include "compiler/operation.h"
 #include "compiler/pipes/check-access-modifiers.h"
 #include "compiler/utils/string-utils.h"
-#include "compiler/vertex.h"
 #include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 template<typename T>
 struct ConstManipulations {
@@ -25,33 +25,61 @@ public:
   virtual ~ConstManipulations() = default;
 
 protected:
-  virtual T on_trivial(VertexPtr v) { return on_non_const(v); }
+  virtual T on_trivial(VertexPtr v) {
+    return on_non_const(v);
+  }
 
-  virtual T on_conv(VertexAdaptor<meta_op_unary> v) { return on_non_const(v); }
+  virtual T on_conv(VertexAdaptor<meta_op_unary> v) {
+    return on_non_const(v);
+  }
 
-  virtual T on_unary(VertexAdaptor<meta_op_unary> v) { return on_non_const(v); }
+  virtual T on_unary(VertexAdaptor<meta_op_unary> v) {
+    return on_non_const(v);
+  }
 
-  virtual T on_binary(VertexAdaptor<meta_op_binary> v) { return on_non_const(v); }
+  virtual T on_binary(VertexAdaptor<meta_op_binary> v) {
+    return on_non_const(v);
+  }
 
-  virtual T on_double_arrow(VertexAdaptor<op_double_arrow> v) { return on_non_const(v); }
+  virtual T on_double_arrow(VertexAdaptor<op_double_arrow> v) {
+    return on_non_const(v);
+  }
 
-  virtual bool on_array_value([[maybe_unused]] VertexAdaptor<op_array> array, [[maybe_unused]] size_t ind) { return false; }
+  virtual bool on_array_value([[maybe_unused]] VertexAdaptor<op_array> array, [[maybe_unused]] size_t ind) {
+    return false;
+  }
 
-  virtual T on_array_finish(VertexAdaptor<op_array> v) { return on_non_const(v); }
+  virtual T on_array_finish(VertexAdaptor<op_array> v) {
+    return on_non_const(v);
+  }
 
-  virtual T on_func_name(VertexAdaptor<op_func_name> v) { return on_non_const(v); }
+  virtual T on_func_name(VertexAdaptor<op_func_name> v) {
+    return on_non_const(v);
+  }
 
-  virtual T on_var(VertexAdaptor<op_var> v) { return on_non_const(v); }
+  virtual T on_var(VertexAdaptor<op_var> v) {
+    return on_non_const(v);
+  }
 
-  virtual T on_instance_prop(VertexAdaptor<op_instance_prop> v) { return on_non_const(v); }
+  virtual T on_instance_prop(VertexAdaptor<op_instance_prop> v) {
+    return on_non_const(v);
+  }
 
-  virtual T on_define_val(VertexAdaptor<op_define_val> v) { return on_non_const(v); }
+  virtual T on_define_val(VertexAdaptor<op_define_val> v) {
+    return on_non_const(v);
+  }
 
-  virtual T on_func_call(VertexAdaptor<op_func_call> v) { return on_non_const(v); }
+  virtual T on_func_call(VertexAdaptor<op_func_call> v) {
+    return on_non_const(v);
+  }
 
-  virtual T on_alloc(VertexAdaptor<op_alloc> v) { return on_non_const(v); }
+  virtual T on_alloc(VertexAdaptor<op_alloc> v) {
+    return on_non_const(v);
+  }
 
-  virtual T on_non_const([[maybe_unused]] VertexPtr vertex) { return T(); }
+  virtual T on_non_const([[maybe_unused]] VertexPtr vertex) {
+    return T();
+  }
 
   virtual T on_array(VertexAdaptor<op_array> v) {
     VertexRange arr = v->args();
@@ -63,7 +91,9 @@ protected:
     return on_array_finish(v);
   }
 
-  virtual bool on_index_key([[maybe_unused]] VertexPtr key) { return false; }
+  virtual bool on_index_key([[maybe_unused]] VertexPtr key) {
+    return false;
+  }
 
   virtual T on_index(VertexAdaptor<op_index> index) {
     if (index->has_key() && !on_index_key(index->key())) {
@@ -149,8 +179,7 @@ protected:
 
 // CheckConst is used as Base class below
 // And in name-gen.cpp, to check -- whether we should hash and utilize as const variable or not
-struct CheckConst
-  : ConstManipulations<bool> {
+struct CheckConst : ConstManipulations<bool> {
 public:
   static bool is_const(VertexPtr v) {
     static CheckConst check_const;
@@ -207,11 +236,9 @@ protected:
   }
 };
 
-
 // CheckConstWithDefines is used in CalcRealDefinesValues pass
 // To choose correct `def->val->const_type` (cnst_const_val or def_var)
-struct CheckConstWithDefines final
-  : CheckConst {
+struct CheckConstWithDefines final : CheckConst {
 public:
   bool is_const(VertexPtr v) {
     return visit(v);
@@ -257,10 +284,10 @@ private:
   int in_concat = 0;
 };
 
-struct CheckConstAccess final
-  : CheckConst {
+struct CheckConstAccess final : CheckConst {
 private:
   ClassPtr caller_class_id;
+
 public:
   void check(VertexPtr v, ClassPtr class_id) {
     caller_class_id = class_id;
@@ -299,8 +326,7 @@ static inline std::string collect_string_concatenation(VertexPtr v, bool allow_d
 
 // MakeConst is used in CalcRealDefinesValues pass
 // To choose correct `def->val->const_type` (cnst_const_val or def_var)
-struct MakeConst final
-  : ConstManipulations<VertexPtr> {
+struct MakeConst final : ConstManipulations<VertexPtr> {
 public:
   VertexPtr make_const(VertexPtr v) {
     return visit(v);
@@ -383,10 +409,8 @@ protected:
   VertexPtr on_func_call(VertexAdaptor<op_func_call> v) final {
     return v;
   }
-
 };
-struct CommonHash
-  : ConstManipulations<void> {
+struct CommonHash : ConstManipulations<void> {
 
   void feed_hash(uint64_t val) {
     cur_hash = cur_hash * HASH_MULT + val;
@@ -501,8 +525,7 @@ struct ObjectHash final : CommonHash {
   }
 };
 
-struct VertexPtrFormatter final
-  : ConstManipulations<std::string> {
+struct VertexPtrFormatter final : ConstManipulations<std::string> {
   static std::string to_string(VertexPtr v) {
     static VertexPtrFormatter serializer;
     return serializer.visit(VertexUtil::get_actual_value(v));
@@ -574,8 +597,7 @@ protected:
   }
 };
 
-struct CanGenerateRawArray final
-  : ConstManipulations<bool> {
+struct CanGenerateRawArray final : ConstManipulations<bool> {
 public:
   static bool is_raw(VertexAdaptor<op_array> v) {
     static CanGenerateRawArray can_generate_raw;
@@ -611,4 +633,3 @@ protected:
     return true;
   }
 };
-

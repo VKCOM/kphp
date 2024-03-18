@@ -10,9 +10,11 @@
 #include "compiler/compiler-core.h"
 
 struct OpenNamespace {
-  OpenNamespace() : OpenNamespace(G->get_global_namespace()) { }
+  OpenNamespace()
+    : OpenNamespace(G->get_global_namespace()) {}
 
-  explicit OpenNamespace(const std::string &ns) : ns_(ns) {}
+  explicit OpenNamespace(const std::string &ns)
+    : ns_(ns) {}
 
   void compile(CodeGenerator &W) const {
     if (!ns_.empty()) {

@@ -43,15 +43,9 @@ void JobStats::write_stats_to(stats_t *stats) const noexcept {
 
   size_t currently_used = messages.write_stats_to(stats, "workers.job.memory.messages.shared_messages.", JOB_SHARED_MESSAGE_BYTES);
   constexpr std::array<const char *, JOB_EXTRA_MEMORY_BUFFER_BUCKETS> extra_memory_prefixes{
-    "workers.job.memory.messages.extra_buffers.256kb.",
-    "workers.job.memory.messages.extra_buffers.512kb.",
-    "workers.job.memory.messages.extra_buffers.1mb.",
-    "workers.job.memory.messages.extra_buffers.2mb.",
-    "workers.job.memory.messages.extra_buffers.4mb.",
-    "workers.job.memory.messages.extra_buffers.8mb.",
-    "workers.job.memory.messages.extra_buffers.16mb.",
-    "workers.job.memory.messages.extra_buffers.32mb.",
-    "workers.job.memory.messages.extra_buffers.64mb.",
+    "workers.job.memory.messages.extra_buffers.256kb.", "workers.job.memory.messages.extra_buffers.512kb.", "workers.job.memory.messages.extra_buffers.1mb.",
+    "workers.job.memory.messages.extra_buffers.2mb.",   "workers.job.memory.messages.extra_buffers.4mb.",   "workers.job.memory.messages.extra_buffers.8mb.",
+    "workers.job.memory.messages.extra_buffers.16mb.",  "workers.job.memory.messages.extra_buffers.32mb.",  "workers.job.memory.messages.extra_buffers.64mb.",
   };
   for (size_t i = 0; i != JOB_EXTRA_MEMORY_BUFFER_BUCKETS; ++i) {
     const size_t buffer_size = get_extra_shared_memory_buffer_size(i);

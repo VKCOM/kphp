@@ -1,7 +1,7 @@
 #pragma once
 
 #ifndef INCLUDED_FROM_KPHP_CORE
-  #error "this file must be included only from kphp_core.h"
+#error "this file must be included only from kphp_core.h"
 #endif
 
 #define STRING_BUFFER_ERROR_FLAG_ON -1
@@ -40,7 +40,7 @@ public:
 
   inline void append_unsafe(const char *str, int len);
 
-  inline void append_char(char c) __attribute__ ((always_inline));//unsafe
+  inline void append_char(char c) __attribute__((always_inline)); // unsafe
 
   inline void reserve(int len);
 

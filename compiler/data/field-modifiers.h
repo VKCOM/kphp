@@ -12,9 +12,8 @@
 class FieldModifiers {
 public:
   FieldModifiers() = default;
-  explicit FieldModifiers(AccessModifiers access_modifiers) :
-    access_modifier_(access_modifiers) {
-  }
+  explicit FieldModifiers(AccessModifiers access_modifiers)
+    : access_modifier_(access_modifiers) {}
 
   FieldModifiers &set_public() {
     kphp_error(!is_private() && !is_protected(), "Mupliple access modifiers (e.g. public and private at the same time) are not allowed");
@@ -34,16 +33,26 @@ public:
     return *this;
   }
 
-  bool is_public()    const { return access_modifier_ == AccessModifiers::public_;    }
-  bool is_private()   const { return access_modifier_ == AccessModifiers::private_;   }
-  bool is_protected() const { return access_modifier_ == AccessModifiers::protected_; }
+  bool is_public() const {
+    return access_modifier_ == AccessModifiers::public_;
+  }
+  bool is_private() const {
+    return access_modifier_ == AccessModifiers::private_;
+  }
+  bool is_protected() const {
+    return access_modifier_ == AccessModifiers::protected_;
+  }
 
   std::string to_string() const {
     switch (access_modifier_) {
-      case AccessModifiers::public_   : return "public";
-      case AccessModifiers::private_  : return "private";
-      case AccessModifiers::protected_: return "protected";
-      default: return "";
+      case AccessModifiers::public_:
+        return "public";
+      case AccessModifiers::private_:
+        return "private";
+      case AccessModifiers::protected_:
+        return "protected";
+      default:
+        return "";
     }
   }
 

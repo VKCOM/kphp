@@ -16,7 +16,6 @@ int64_t f$hexdec(const string &number) noexcept;
 
 double f$lcg_value();
 
-
 void f$mt_srand(int64_t seed = std::numeric_limits<int64_t>::min()) noexcept;
 
 int64_t f$mt_rand(int64_t l, int64_t r) noexcept;
@@ -25,7 +24,6 @@ int64_t f$mt_rand() noexcept;
 
 int64_t f$mt_getrandmax() noexcept;
 
-
 void f$srand(int64_t seed = std::numeric_limits<int64_t>::min()) noexcept;
 
 int64_t f$rand(int64_t l, int64_t r) noexcept;
@@ -33,7 +31,6 @@ int64_t f$rand(int64_t l, int64_t r) noexcept;
 int64_t f$rand() noexcept;
 
 int64_t f$getrandmax() noexcept;
-
 
 template<class T>
 inline T f$min(const array<T> &a);
@@ -45,13 +42,13 @@ template<class T>
 inline T f$min(const T &arg1);
 
 template<class T, class... Args>
-inline T f$min(const T &arg1, const T &arg2, Args&&... args);
+inline T f$min(const T &arg1, const T &arg2, Args &&...args);
 
 template<class T>
 inline T f$max(const T &arg1);
 
 template<class T, class... Args>
-inline T f$max(const T &arg1, const T &arg2, Args&&... args);
+inline T f$max(const T &arg1, const T &arg2, Args &&...args);
 
 // TODO REMOVE?
 constexpr int64_t PHP_ROUND_HALF_UP = 123423141;
@@ -131,7 +128,6 @@ void init_math_functions() noexcept;
  *
  */
 
-
 template<class T>
 T f$min(const array<T> &a) {
   if (a.count() == 0) {
@@ -171,8 +167,8 @@ T f$min(const T &arg1) {
   return arg1;
 }
 
-template<class T, class ...Args>
-T f$min(const T &arg1, const T &arg2, Args&& ...args) {
+template<class T, class... Args>
+T f$min(const T &arg1, const T &arg2, Args &&...args) {
   return f$min<T>(lt(arg1, arg2) ? arg1 : arg2, std::forward<Args>(args)...);
 }
 
@@ -181,8 +177,8 @@ T f$max(const T &arg1) {
   return arg1;
 }
 
-template<class T, class ...Args>
-T f$max(const T &arg1, const T &arg2, Args&& ...args) {
+template<class T, class... Args>
+T f$max(const T &arg1, const T &arg2, Args &&...args) {
   return f$max<T>(lt(arg2, arg1) ? arg1 : arg2, std::forward<Args>(args)...);
 }
 

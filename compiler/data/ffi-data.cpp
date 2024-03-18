@@ -4,9 +4,9 @@
 
 #include "compiler/data/ffi-data.h"
 
-#include "compiler/type-hint.h"
-#include "compiler/data/function-data.h"
 #include "common/algorithms/contains.h"
+#include "compiler/data/function-data.h"
+#include "compiler/type-hint.h"
 
 static std::vector<FFIBuiltinType> make_builtin_types() {
   auto make_builtin_type = [](FFITypeKind kind, std::string php_class_name, std::string c_name) {
@@ -20,22 +20,15 @@ static std::vector<FFIBuiltinType> make_builtin_types() {
   };
 
   std::vector<FFIBuiltinType> result = {
-    make_builtin_type(FFITypeKind::Void, "FFI\\CData_void", "void"),
-    make_builtin_type(FFITypeKind::Bool, "FFI\\CData_bool", "bool"),
-    make_builtin_type(FFITypeKind::Char, "FFI\\CData_char", "char"),
-    make_builtin_type(FFITypeKind::Float, "FFI\\CData_float", "float"),
-    make_builtin_type(FFITypeKind::Double, "FFI\\CData_double", "double"),
-    make_builtin_type(FFITypeKind::Int8, "FFI\\CData_int8", "int8_t"),
-    make_builtin_type(FFITypeKind::Int16, "FFI\\CData_int16", "int16_t"),
-    make_builtin_type(FFITypeKind::Int32, "FFI\\CData_int32", "int32_t"),
-    make_builtin_type(FFITypeKind::Int64, "FFI\\CData_int64", "int64_t"),
-    make_builtin_type(FFITypeKind::Uint8, "FFI\\CData_uint8", "uint8_t"),
-    make_builtin_type(FFITypeKind::Uint16, "FFI\\CData_uint16", "uint16_t"),
-    make_builtin_type(FFITypeKind::Uint32, "FFI\\CData_uint32", "uint32_t"),
+    make_builtin_type(FFITypeKind::Void, "FFI\\CData_void", "void"),         make_builtin_type(FFITypeKind::Bool, "FFI\\CData_bool", "bool"),
+    make_builtin_type(FFITypeKind::Char, "FFI\\CData_char", "char"),         make_builtin_type(FFITypeKind::Float, "FFI\\CData_float", "float"),
+    make_builtin_type(FFITypeKind::Double, "FFI\\CData_double", "double"),   make_builtin_type(FFITypeKind::Int8, "FFI\\CData_int8", "int8_t"),
+    make_builtin_type(FFITypeKind::Int16, "FFI\\CData_int16", "int16_t"),    make_builtin_type(FFITypeKind::Int32, "FFI\\CData_int32", "int32_t"),
+    make_builtin_type(FFITypeKind::Int64, "FFI\\CData_int64", "int64_t"),    make_builtin_type(FFITypeKind::Uint8, "FFI\\CData_uint8", "uint8_t"),
+    make_builtin_type(FFITypeKind::Uint16, "FFI\\CData_uint16", "uint16_t"), make_builtin_type(FFITypeKind::Uint32, "FFI\\CData_uint32", "uint32_t"),
     make_builtin_type(FFITypeKind::Uint64, "FFI\\CData_uint64", "uint64_t"),
 
-    make_builtin_type(FFITypeKind::Unknown, "FFI\\CData", "cdata"),
-    make_builtin_type(FFITypeKind::Unknown, "", "unknown"),
+    make_builtin_type(FFITypeKind::Unknown, "FFI\\CData", "cdata"),          make_builtin_type(FFITypeKind::Unknown, "", "unknown"),
   };
 
   return result;
@@ -227,7 +220,7 @@ const TypeHint *FFIRoot::create_type_hint(const FFIType *type, const std::string
       if (!return_type) {
         return nullptr;
       }
-      std::vector<const TypeHint*> param_types;
+      std::vector<const TypeHint *> param_types;
       param_types.reserve(type->members.size() - 1);
       for (int i = 1; i < type->members.size(); i++) {
         kphp_assert(type->members[i]->kind == FFITypeKind::Var);
@@ -256,8 +249,8 @@ const TypeHint *FFIRoot::unboxed_type_hint(const FFIType *type, const std::strin
   return create_type_hint(type, scope_name);
 }
 
-std::vector<FFIScopeDataMixin*> FFIRoot::get_scopes() const {
-  std::vector<FFIScopeDataMixin*> result;
+std::vector<FFIScopeDataMixin *> FFIRoot::get_scopes() const {
+  std::vector<FFIScopeDataMixin *> result;
   result.reserve(scopes.size());
   for (const auto &it : scopes) {
     result.emplace_back(it.second);
@@ -283,9 +276,7 @@ bool FFIRoot::register_scope(const std::string &scope_name, FFIScopeDataMixin *d
 int FFIRoot::get_shared_lib_id(const std::string &path) {
   std::lock_guard<std::mutex> locker{mutex};
 
-  const auto &it = std::find_if(shared_libs.begin(), shared_libs.end(), [&](const FFISharedLib &x){
-    return x.path == path;
-  });
+  const auto &it = std::find_if(shared_libs.begin(), shared_libs.end(), [&](const FFISharedLib &x) { return x.path == path; });
   if (it != shared_libs.end()) {
     return std::distance(shared_libs.begin(), it);
   }
@@ -315,9 +306,7 @@ void FFIRoot::bind_symbols() {
 }
 
 bool FFIRoot::is_ffi_scope_call(VertexAdaptor<op_func_call> call) {
-  return call->extra_type == op_ex_func_call_arrow &&
-         call->func_id->class_id &&
-         call->func_id->class_id->is_ffi_scope();
+  return call->extra_type == op_ex_func_call_arrow && call->func_id->class_id && call->func_id->class_id->is_ffi_scope();
 }
 
 struct TypePrinter {
@@ -325,7 +314,7 @@ struct TypePrinter {
   bool name_mangling = false;
   std::string scope_name;
 
-  std::string format_list(std::vector<FFIType*>::const_iterator begin, std::vector<FFIType*>::const_iterator end, char sep = ',') const {
+  std::string format_list(std::vector<FFIType *>::const_iterator begin, std::vector<FFIType *>::const_iterator end, char sep = ',') const {
     std::string result;
     for (auto it = begin; it != end; ++it) {
       result += format_type(*it);

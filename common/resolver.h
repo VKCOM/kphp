@@ -8,9 +8,9 @@
 #include <netdb.h>
 
 extern int kdb_hosts_loaded;
-int kdb_load_hosts ();
+int kdb_load_hosts();
 
-struct hostent *kdb_gethostbyname (const char *name);
+struct hostent *kdb_gethostbyname(const char *name);
 const char *kdb_gethostname();
 
 #endif

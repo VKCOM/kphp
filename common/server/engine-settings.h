@@ -53,9 +53,7 @@ engine_settings_t *get_engine_settings();
 // this is a way to avoid linkage errors,
 // when some part like kfs is not linked
 typedef struct {
-  const char* (*char_stats)();
+  const char *(*char_stats)();
 } engine_settings_handlers_t;
 
 extern engine_settings_handlers_t engine_settings_handlers;
-
-

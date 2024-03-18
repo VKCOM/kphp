@@ -5,12 +5,11 @@
 #include "compiler/type-hint.h"
 
 #include "compiler/data/function-data.h"
-#include "compiler/vertex-util.h"
 #include "compiler/inferring/public.h"
+#include "compiler/vertex-util.h"
 
 // recalc_type_data_in_context_of_call() from type-hint.h for all ancestors
 // they are implemented in a separate .cpp file to leave type-hint.cpp more clear, as recalculation is a separate inferring part
-
 
 void TypeHintArgRef::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const {
   if (auto vertex = VertexUtil::get_call_arg_ref(arg_num, call)) {
@@ -44,21 +43,18 @@ void TypeHintArgRefCallbackCall::recalc_type_data_in_context_of_call(TypeData *d
       return;
     }
 
-    std::vector<VertexPtr> fake_call_params;    // e.g., only one here for fake array_filter call: ^2[*]
+    std::vector<VertexPtr> fake_call_params; // e.g., only one here for fake array_filter call: ^2[*]
     for (const auto *callback_param_hint : callback_param->type_hint->try_as<TypeHintCallable>()->arg_types) {
-      prevent_recursion_thread_safe([provided_callback](std::vector<std::string> &recursion) {
-        recursion.emplace_back(provided_callback->name);
-      });
+      prevent_recursion_thread_safe([provided_callback](std::vector<std::string> &recursion) { recursion.emplace_back(provided_callback->name); });
 
-      auto fake_call_param = VertexAdaptor<op_none>::create();  // it has no contents, only tinf_node
-      TypeData *type_of_passed = TypeData::get_type(tp_any)->clone();  // type of passed ^2[*]
+      auto fake_call_param = VertexAdaptor<op_none>::create();        // it has no contents, only tinf_node
+      TypeData *type_of_passed = TypeData::get_type(tp_any)->clone(); // type of passed ^2[*]
       callback_param_hint->recalc_type_data_in_context_of_call(type_of_passed, call);
       fake_call_param->tinf_node.set_type(type_of_passed);
       fake_call_params.emplace_back(fake_call_param);
 
-      prevent_recursion_thread_safe([provided_callback](std::vector<std::string> &recursion) {
-        recursion.erase(std::find(recursion.begin(), recursion.end(), provided_callback->name));
-      });
+      prevent_recursion_thread_safe(
+        [provided_callback](std::vector<std::string> &recursion) { recursion.erase(std::find(recursion.begin(), recursion.end(), provided_callback->name)); });
     }
     auto fake_func_call = VertexAdaptor<op_func_call>::create(fake_call_params);
     fake_func_call->func_id = provided_callback;
@@ -146,7 +142,7 @@ static void recalc_ffi_type(TypeData *dst, const std::string &scope_name, const 
   }
 }
 
-void TypeHintFFIType::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__ ((unused))) const {
+void TypeHintFFIType::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__((unused))) const {
   recalc_ffi_type(dst, scope_name, type);
 }
 
@@ -158,7 +154,7 @@ void TypeHintFFIScopeArgRef::recalc_type_data_in_context_of_call(TypeData *dst, 
   }
 }
 
-void TypeHintFFIScope::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__ ((unused))) const {
+void TypeHintFFIScope::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__((unused))) const {
   dst->set_lca(G->get_class(FFIRoot::scope_class_name(scope_name))->type_data);
 }
 
@@ -176,16 +172,16 @@ void TypeHintNotNull::recalc_type_data_in_context_of_call(TypeData *dst, VertexP
   dst->set_lca(&nested, !drop_not_false, !drop_not_null);
 }
 
-void TypeHintInstance::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__ ((unused))) const {
+void TypeHintInstance::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__((unused))) const {
   dst->set_lca(resolve()->type_data);
 }
 
-void TypeHintRefToField::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__ ((unused))) const {
+void TypeHintRefToField::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__((unused))) const {
   kphp_error(0, "Syntax ClassName::field is available only in a combination with generics");
   dst->set_lca(tp_any);
 }
 
-void TypeHintRefToMethod::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__ ((unused))) const {
+void TypeHintRefToMethod::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__((unused))) const {
   kphp_error(0, "Syntax ClassName::method() is available only in a combination with generics");
   dst->set_lca(tp_any);
 }
@@ -206,11 +202,11 @@ void TypeHintPipe::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr 
   }
 }
 
-void TypeHintPrimitive::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__ ((unused))) const {
+void TypeHintPrimitive::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__((unused))) const {
   dst->set_lca(TypeData::get_type(ptype));
 }
 
-void TypeHintObject::recalc_type_data_in_context_of_call(TypeData *dst __attribute__ ((unused)), VertexPtr call __attribute__ ((unused))) const {
+void TypeHintObject::recalc_type_data_in_context_of_call(TypeData *dst __attribute__((unused)), VertexPtr call __attribute__((unused))) const {
   // 'object' keyword is allowed only in params of functions
   // (it remains for extern functions, but for PHP functions it converts a function into generic and drops away)
   dst->set_lca(tp_object);
@@ -239,12 +235,11 @@ void TypeHintTuple::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr
   }
 }
 
-void TypeHintGenericT::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__ ((unused))) const {
+void TypeHintGenericT::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__((unused))) const {
   dst->set_lca(tp_Error);
   kphp_assert(0 && "generic T not instantiated before type inferring");
 }
 
-void TypeHintClassString::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__ ((unused))) const {
+void TypeHintClassString::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__((unused))) const {
   dst->set_ptype(tp_string);
 }
-

@@ -23,7 +23,7 @@ bool SrcFile::load() {
   int err;
 
   int fid = open(file_name.c_str(), O_RDONLY);
-  kphp_assert_msg (fid >= 0, fmt_format("failed to open file [{}] : {}", file_name, strerror(errno)));
+  kphp_assert_msg(fid >= 0, fmt_format("failed to open file [{}] : {}", file_name, strerror(errno)));
 
   struct stat buf;
   err = fstat(fid, &buf);
@@ -36,7 +36,7 @@ bool SrcFile::load() {
   kphp_assert_msg(err >= 0, fmt_format("Can't read file [{}]: {}", file_name, strerror(errno)));
 
   for (int i = 0, prev_i = 0; i < file_size; i++) {
-    if (unlikely (text[i] == 0)) {
+    if (unlikely(text[i] == 0)) {
       kphp_warning(fmt_format("symbol with code zero was replaced by space in file [{}] at [{}]", file_name, i));
       text[i] = ' ';
     }

@@ -18,7 +18,7 @@ const char *username, *groupname;
 
 OPTION_PARSER_SHORT(OPT_GENERIC, "user", 'u', required_argument, "sets user name to make setuid") {
   if (username) {
-    kprintf ("wrong option -u%s, username is already defined as '%s'.\n", optarg, username);
+    kprintf("wrong option -u%s, username is already defined as '%s'.\n", optarg, username);
     exit(1);
   }
   username = strdup(optarg);
@@ -27,7 +27,7 @@ OPTION_PARSER_SHORT(OPT_GENERIC, "user", 'u', required_argument, "sets user name
 
 OPTION_PARSER_SHORT(OPT_GENERIC, "group", 'g', required_argument, "sets group name to make setgid") {
   if (groupname) {
-    kprintf ("wrong option -g%s, groupname is already defined as '%s'.\n", optarg, groupname);
+    kprintf("wrong option -g%s, groupname is already defined as '%s'.\n", optarg, groupname);
     exit(1);
   }
   groupname = strdup(optarg);
@@ -53,7 +53,7 @@ const char *engine_username() {
   static char *cached_username = nullptr;
   if (cached_uid != uid) {
     const struct passwd *passwd = getpwuid(uid);
-    if(!passwd) {
+    if (!passwd) {
       vkprintf(0, "Cannot getpwuid() for %d\n", uid);
       assert("Cannot get NSS passwd entry" && passwd);
     }
@@ -85,7 +85,7 @@ const char *engine_groupname() {
     }
 
     const struct passwd *passwd = getpwnam(username);
-    if(!passwd) {
+    if (!passwd) {
       vkprintf(0, "Cannot getpwnam() for %s\n", username);
       assert("Cannot get NSS passwd entry" && passwd);
     }
@@ -109,7 +109,7 @@ static int change_user_group(const char *user_name, const char *group_name) {
   /* lose root privileges if we have them */
   if (getuid() == 0 || geteuid() == 0) {
     if (is_empty_user_name(user_name)) {
-      kprintf ("You are trying to run the script as root, if you are sure of this, specify the user explicitly with the command --user\n");
+      kprintf("You are trying to run the script as root, if you are sure of this, specify the user explicitly with the command --user\n");
       exit(1);
     }
 
@@ -119,19 +119,19 @@ static int change_user_group(const char *user_name, const char *group_name) {
     }
 
     if ((pw = getpwnam(user_name)) == 0) {
-      kprintf ("change_user_group: can't find the user %s to switch to\n", user_name);
+      kprintf("change_user_group: can't find the user %s to switch to\n", user_name);
       return -1;
     }
     gid_t gid = pw->pw_gid;
     if (setgroups(1, &gid) < 0) {
-      kprintf ("change_user_group: failed to clear supplementary groups list: %m\n");
+      kprintf("change_user_group: failed to clear supplementary groups list: %m\n");
       return -1;
     }
 
     if (group_name) {
       struct group *g = getgrnam(group_name);
       if (g == nullptr) {
-        kprintf ("change_user_group: can't find the group %s to switch to\n", group_name);
+        kprintf("change_user_group: can't find the group %s to switch to\n", group_name);
         return -1;
       }
       gid = g->gr_gid;
@@ -142,7 +142,7 @@ static int change_user_group(const char *user_name, const char *group_name) {
     }
 
     if (setuid(pw->pw_uid) < 0) {
-      kprintf ("change_user_group: failed to assume identity of user %s\n", user_name);
+      kprintf("change_user_group: failed to assume identity of user %s\n", user_name);
       return -1;
     }
   } else {
@@ -167,7 +167,7 @@ static int change_user_group(const char *user_name, const char *group_name) {
 
 void do_relogin() {
   if (change_user_group(username, groupname) < 0) {
-    kprintf ("fatal: cannot change user:group to %s:%s\n", engine_username(), engine_groupname());
+    kprintf("fatal: cannot change user:group to %s:%s\n", engine_username(), engine_groupname());
     exit(1);
   }
 }

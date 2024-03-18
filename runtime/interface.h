@@ -15,7 +15,7 @@
 #include "server/statshouse/statshouse-manager.h"
 #include "server/workers-control.h"
 
-extern string_buffer *coub;//TODO static
+extern string_buffer *coub; // TODO static
 using shutdown_function_type = std::function<void()>;
 
 enum class shutdown_functions_status {
@@ -50,11 +50,13 @@ void f$header(const string &str, bool replace = true, int64_t http_response_code
 
 array<string> f$headers_list();
 
-void f$send_http_103_early_hints(const array<string> & headers);
+void f$send_http_103_early_hints(const array<string> &headers);
 
-void f$setcookie(const string &name, const string &value, int64_t expire = 0, const string &path = string(), const string &domain = string(), bool secure = false, bool http_only = false);
+void f$setcookie(const string &name, const string &value, int64_t expire = 0, const string &path = string(), const string &domain = string(),
+                 bool secure = false, bool http_only = false);
 
-void f$setrawcookie(const string &name, const string &value, int64_t expire = 0, const string &path = string(), const string &domain = string(), bool secure = false, bool http_only = false);
+void f$setrawcookie(const string &name, const string &value, int64_t expire = 0, const string &path = string(), const string &domain = string(),
+                    bool secure = false, bool http_only = false);
 
 int64_t f$ignore_user_abort(Optional<bool> enable = Optional<bool>());
 
@@ -73,7 +75,7 @@ shutdown_functions_status get_shutdown_functions_status();
 
 void register_shutdown_function_impl(shutdown_function_type &&f);
 
-template <typename F>
+template<typename F>
 void f$register_shutdown_function(F &&f) {
   // std::function sometimes uses heap, when constructed from captured lambda. So it must be constructed under critical section only.
   dl::CriticalSectionGuard heap_guard;
@@ -82,14 +84,11 @@ void f$register_shutdown_function(F &&f) {
 
 void f$fastcgi_finish_request(int64_t exit_code = 0);
 
-__attribute__((noreturn))
-void finish(int64_t exit_code, bool from_exit);
+__attribute__((noreturn)) void finish(int64_t exit_code, bool from_exit);
 
-__attribute__((noreturn))
-void f$exit(const mixed &v = 0);
+__attribute__((noreturn)) void f$exit(const mixed &v = 0);
 
-__attribute__((noreturn))
-void f$die(const mixed &v = 0);
+__attribute__((noreturn)) void f$die(const mixed &v = 0);
 
 Optional<int64_t> f$ip2long(const string &ip);
 
@@ -102,7 +101,6 @@ string f$long2ip(int64_t num);
 Optional<array<string>> f$gethostbynamel(const string &name);
 
 Optional<string> f$inet_pton(const string &address);
-
 
 void print(const char *s, size_t s_len);
 
@@ -120,23 +118,20 @@ void dbg_echo(const string &s);
 
 void dbg_echo(const string_buffer &sb);
 
-inline int64_t f$print(const string& s) {
+inline int64_t f$print(const string &s) {
   print(s);
   return 1;
 }
 
-inline void f$echo(const string& s) {
+inline void f$echo(const string &s) {
   print(s);
 }
 
-inline void f$dbg_echo(const string& s) {
+inline void f$dbg_echo(const string &s) {
   dbg_echo(s);
 }
 
-
-
 bool f$get_magic_quotes_gpc();
-
 
 string f$php_sapi_name();
 
@@ -161,21 +156,17 @@ const int32_t UPLOAD_ERR_NO_TMP_DIR = 6;
 const int32_t UPLOAD_ERR_CANT_WRITE = 7;
 const int32_t UPLOAD_ERR_EXTENSION = 8;
 
-
 bool f$is_uploaded_file(const string &filename);
 
 bool f$move_uploaded_file(const string &oldname, const string &newname);
 
-
 void init_superglobals(const php_query_data_t &data);
-
 
 double f$get_net_time();
 
 double f$get_script_time();
 
 int64_t f$get_net_queries_count();
-
 
 int64_t f$get_engine_uptime();
 
@@ -243,7 +234,7 @@ inline void f$kphp_turn_on_host_tag_in_inner_statshouse_metrics_toggle() {
   StatsHouseManager::get().turn_on_host_tag_toggle();
 }
 
-template <typename F>
+template<typename F>
 inline void f$kphp_extended_instance_cache_metrics_init(F &&callback) {
   dl::CriticalSectionGuard guard;
   StatsHouseManager::get().set_normalization_function(normalization_function{std::forward<F>(callback)});

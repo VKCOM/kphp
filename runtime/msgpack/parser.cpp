@@ -199,19 +199,19 @@ parse_return unpack_stack::consume(Visitor &visitor) {
 enum class msgpack_cs : uint32_t {
   HEADER = 0x00, // nil
 
-// MSGPACK_CS_ = 0x01,
-// MSGPACK_CS_ = 0x02,  // false
-// MSGPACK_CS_ = 0x03,  // true
+  // MSGPACK_CS_ = 0x01,
+  // MSGPACK_CS_ = 0x02,  // false
+  // MSGPACK_CS_ = 0x03,  // true
 
-//  bin and ext support is removed
-//
-//  BIN_8 = 0x04,
-//  BIN_16 = 0x05,
-//  BIN_32 = 0x06,
-//
-//  EXT_8 = 0x07,
-//  EXT_16 = 0x08,
-//  EXT_32 = 0x09,
+  //  bin and ext support is removed
+  //
+  //  BIN_8 = 0x04,
+  //  BIN_16 = 0x05,
+  //  BIN_32 = 0x06,
+  //
+  //  EXT_8 = 0x07,
+  //  EXT_16 = 0x08,
+  //  EXT_32 = 0x09,
 
   FLOAT = 0x0a,
   DOUBLE = 0x0b,
@@ -224,13 +224,13 @@ enum class msgpack_cs : uint32_t {
   INT_32 = 0x12,
   INT_64 = 0x13,
 
-//  ext support is removed
-//
-//  FIXEXT_1 = 0x14,
-//  FIXEXT_2 = 0x15,
-//  FIXEXT_4 = 0x16,
-//  FIXEXT_8 = 0x17,
-//  FIXEXT_16 = 0x18,
+  //  ext support is removed
+  //
+  //  FIXEXT_1 = 0x14,
+  //  FIXEXT_2 = 0x15,
+  //  FIXEXT_4 = 0x16,
+  //  FIXEXT_8 = 0x17,
+  //  FIXEXT_16 = 0x18,
 
   STR_8 = 0x19,  // str8
   STR_16 = 0x1a, // str16

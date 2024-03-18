@@ -6,14 +6,13 @@
 
 #include <functional>
 #include <memory>
-#include <string>
 #include <optional>
+#include <string>
 #include <vector>
 
 #include "common/pid.h"
 #include "common/rpc-error-codes.h"
 #include "common/tl/methods/base.h"
-
 
 struct tl_query_header_t;
 
@@ -22,11 +21,10 @@ struct result_header_settings {
   int compression_version;
 };
 
-
 struct connection;
 struct raw_message;
 
-void tl_fetch_set_error_format(int errnum, const char *format, ...) __attribute__ (( format(printf, 2, 3)));
+void tl_fetch_set_error_format(int errnum, const char *format, ...) __attribute__((format(printf, 2, 3)));
 void tl_fetch_set_error(int errnum, const char *s);
 
 void tl_setup_result_header(const struct tl_query_header_t *header);
@@ -51,7 +49,6 @@ void tl_fetch_mark();
 void tl_fetch_mark_restore();
 void tl_fetch_mark_delete();
 
-
 int tl_fetch_string_len(int max_len);
 int tl_fetch_pad();
 int tl_fetch_data(void *buf, int len);
@@ -61,7 +58,7 @@ int tl_fetch_string0(char *buf, int max_len);
 
 bool tl_fetch_error();
 int tl_fetch_error_code();
-const char* tl_fetch_error_string();
+const char *tl_fetch_error_string();
 
 int tl_fetch_end();
 
@@ -88,7 +85,7 @@ void tl_store_bool_stat(int x);
 void tl_store_raw_data(const void *s, int len);
 void tl_store_raw_data_nopad(const void *s, int len);
 int tl_store_pad();
-void  tl_store_string(const char *s, int len);
+void tl_store_string(const char *s, int len);
 void tl_store_string0(const char *s);
 int tl_store_clear();
 int tl_store_end();

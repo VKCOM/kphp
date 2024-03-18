@@ -23,7 +23,7 @@ public:
   static VertexAdaptor<meta_op_unary> create_conv_to_lval(PrimitiveType targetType, VertexPtr x);
   static VertexPtr create_int_const(int64_t number);
   static VertexAdaptor<op_string> create_string_const(const std::string &s);
-  static VertexAdaptor<op_var> create_superlocal_var(const std::string& name_prefix, FunctionPtr cur_function);
+  static VertexAdaptor<op_var> create_superlocal_var(const std::string &name_prefix, FunctionPtr cur_function);
   static VertexAdaptor<op_switch> create_switch_vertex(FunctionPtr cur_function, VertexPtr switch_condition, std::vector<VertexPtr> &&cases);
 
   static VertexPtr unwrap_array_value(VertexPtr v);

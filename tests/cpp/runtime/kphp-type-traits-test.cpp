@@ -1,12 +1,10 @@
 #include <gtest/gtest.h>
 
-
 #include "runtime/kphp_core.h"
 #include "runtime/kphp_type_traits.h"
 #include "runtime/refcountable_php_classes.h"
 
-struct Stub : refcountable_php_classes<Stub> {
-};
+struct Stub : refcountable_php_classes<Stub> {};
 
 TEST(kphp_type_traits_test, test_is_class_instance_inside) {
   static_assert(!is_class_instance_inside<int64_t>{}, "except false");
@@ -59,8 +57,6 @@ TEST(kphp_type_traits_test, test_is_class_instance_inside) {
   static_assert(is_class_instance_inside<std::tuple<array<shape<std::index_sequence<1>, class_instance<Stub>>>>>{}, "except true");
   static_assert(is_class_instance_inside<std::tuple<shape<std::index_sequence<1>, std::tuple<class_instance<Stub>>>>>{}, "except true");
   static_assert(is_class_instance_inside<
-    std::tuple<string,
-      shape<std::index_sequence<1>,
-        Optional<std::tuple<
-          array<shape<std::index_sequence<1>, class_instance<Stub>>>>>>>>{}, "except true");
+                  std::tuple<string, shape<std::index_sequence<1>, Optional<std::tuple<array<shape<std::index_sequence<1>, class_instance<Stub>>>>>>>>{},
+                "except true");
 }

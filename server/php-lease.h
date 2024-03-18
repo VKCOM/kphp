@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "common/kprintf.h"
 #include "common/kphp-tasks-lease/lease-worker-mode.h"
 #include "common/kphp-tasks-lease/lease-worker-settings.h"
+#include "common/kprintf.h"
 #include "common/pid.h"
 
 #include "server/lease-rpc-client.h"

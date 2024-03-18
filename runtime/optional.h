@@ -10,34 +10,25 @@
 #include "common/type_traits/is_constructible.h"
 #include "common/type_traits/list_of_types.h"
 
-#include "runtime/php_assert.h"
 #include "runtime/declarations.h"
+#include "runtime/php_assert.h"
 
 template<class T>
 class Optional;
 
 template<class T>
-struct is_optional : std::false_type {
-};
+struct is_optional : std::false_type {};
 
 template<class T>
-struct is_optional<Optional<T>> : std::true_type {
-};
-
+struct is_optional<Optional<T>> : std::true_type {};
 
 template<class T, class T1>
-struct is_conversion_in_optional_allowed : std::is_constructible<T, T1> {
-};
+struct is_conversion_in_optional_allowed : std::is_constructible<T, T1> {};
 
 template<class T>
-struct is_conversion_in_optional_allowed<T, bool> : std::true_type {
-};
+struct is_conversion_in_optional_allowed<T, bool> : std::true_type {};
 
-enum class OptionalState : uint8_t {
-  has_value = 0,
-  false_value = 1,
-  null_value = 2
-};
+enum class OptionalState : uint8_t { has_value = 0, false_value = 1, null_value = 2 };
 
 template<class T>
 class OptionalBase {
@@ -75,14 +66,12 @@ public:
 
 protected:
   template<class T1>
-  OptionalBase(T1 &&value, OptionalState value_state) noexcept :
-    value_(std::forward<T1>(value)),
-    value_state_(value_state) {
-  }
+  OptionalBase(T1 &&value, OptionalState value_state) noexcept
+    : value_(std::forward<T1>(value))
+    , value_state_(value_state) {}
 
-  explicit OptionalBase(OptionalState value_state) noexcept :
-    value_state_(value_state) {
-  }
+  explicit OptionalBase(OptionalState value_state) noexcept
+    : value_state_(value_state) {}
 
   OptionalBase() = default;
   ~OptionalBase() = default;
@@ -107,24 +96,20 @@ public:
 
   Optional() = default;
 
-  Optional(bool value) noexcept :
-    Optional(value, OptionalState::false_value) {
-  }
+  Optional(bool value) noexcept
+    : Optional(value, OptionalState::false_value) {}
 
   template<class T1, class = enable_if_allowed<T1>>
-  Optional(T1 &&value) noexcept :
-    Optional(std::forward<T1>(value), OptionalState::has_value) {
-  }
+  Optional(T1 &&value) noexcept
+    : Optional(std::forward<T1>(value), OptionalState::has_value) {}
 
   template<class T1, class = enable_if_allowed<T1>>
-  Optional(const Optional<T1> &other) noexcept :
-    Optional(other.val(), other.value_state()) {
-  }
+  Optional(const Optional<T1> &other) noexcept
+    : Optional(other.val(), other.value_state()) {}
 
   template<class T1, class = enable_if_allowed<T1>>
-  Optional(Optional<T1> &&other) noexcept :
-    Optional(std::move(other.val()), other.value_state()) {
-  }
+  Optional(Optional<T1> &&other) noexcept
+    : Optional(std::move(other.val()), other.value_state()) {}
 
   Optional &operator=(bool x) noexcept {
     return assign(x, OptionalState::false_value);
@@ -146,15 +131,14 @@ public:
   }
 
 private:
-  Optional(bool value, OptionalState value_state) noexcept :
-    Base(value_state) {
+  Optional(bool value, OptionalState value_state) noexcept
+    : Base(value_state) {
     php_assert(!value);
   }
 
   template<class T1, class = vk::enable_if_constructible<T, T1>>
-  Optional(T1 &&value, OptionalState value_state) noexcept :
-    Base(std::forward<T1>(value), value_state) {
-  }
+  Optional(T1 &&value, OptionalState value_state) noexcept
+    : Base(std::forward<T1>(value), value_state) {}
 
   Optional &assign(bool value, OptionalState value_state) noexcept {
     php_assert(!value);
@@ -181,9 +165,8 @@ public:
 
   Optional() = default;
 
-  Optional(bool value) noexcept:
-    Base(value, value ? OptionalState::has_value : OptionalState::false_value) {
-  }
+  Optional(bool value) noexcept
+    : Base(value, value ? OptionalState::has_value : OptionalState::false_value) {}
 
   Optional &operator=(bool value) noexcept {
     Base::value_ = value;

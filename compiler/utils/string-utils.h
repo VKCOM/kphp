@@ -114,8 +114,9 @@ static inline std::string replace_characters(std::string s, char from, char to) 
 }
 
 static inline void replace_non_alphanum_inplace(std::string &s, char to = '_') {
-  //std::not_fn
-  std::replace_if(s.begin(), s.end(), [](auto c) { return !is_alphanum(c); }, to);
+  // std::not_fn
+  std::replace_if(
+    s.begin(), s.end(), [](auto c) { return !is_alphanum(c); }, to);
 }
 
 static inline std::string replace_non_alphanum(std::string s, char to = '_') {

@@ -30,14 +30,12 @@ template<typename T0, unsigned int inner_magic0, typename T1, unsigned int inner
 void t_Either<T0, inner_magic0, T1, inner_magic1>::typed_store(const PhpType &tl_object) {
   if (f$is_a<typename left__<typename T0::PhpType, typename T1::PhpType>::type>(tl_object)) {
     f$store_int(0x0a29cd5d);
-    const typename left__<typename T0::PhpType, typename T1::PhpType>::type *conv_obj = tl_object.template cast_to<typename left__<typename T0::PhpType, typename T1::PhpType>::type>().get();
-    c_left<T0, inner_magic0, T1, inner_magic1>::typed_store(conv_obj, std::move(X), std::move(Y));
-  } else if (f$is_a<typename right__<typename T0::PhpType, typename T1::PhpType>::type>(tl_object)) {
-    f$store_int(0xdf3ecb3b);
-    const typename right__<typename T0::PhpType, typename T1::PhpType>::type *conv_obj = tl_object.template cast_to<typename right__<typename T0::PhpType, typename T1::PhpType>::type>().get();
-    c_right<T0, inner_magic0, T1, inner_magic1>::typed_store(conv_obj, std::move(X), std::move(Y));
-  } else {
-    CurrentProcessingQuery::get().raise_storing_error("Invalid constructor %s of type %s", tl_object.get_class(), "Either");
+    const typename left__<typename T0::PhpType, typename T1::PhpType>::type *conv_obj = tl_object.template cast_to<typename left__<typename T0::PhpType,
+typename T1::PhpType>::type>().get(); c_left<T0, inner_magic0, T1, inner_magic1>::typed_store(conv_obj, std::move(X), std::move(Y)); } else if (f$is_a<typename
+right__<typename T0::PhpType, typename T1::PhpType>::type>(tl_object)) { f$store_int(0xdf3ecb3b); const typename right__<typename T0::PhpType, typename
+T1::PhpType>::type *conv_obj = tl_object.template cast_to<typename right__<typename T0::PhpType, typename T1::PhpType>::type>().get(); c_right<T0, inner_magic0,
+T1, inner_magic1>::typed_store(conv_obj, std::move(X), std::move(Y)); } else { CurrentProcessingQuery::get().raise_storing_error("Invalid constructor %s of type
+%s", tl_object.get_class(), "Either");
   }
 }
 */
@@ -46,14 +44,13 @@ struct TypeStore {
   std::string template_str;
   bool typed_mode;
 
-  TypeStore(const vk::tlo_parsing::type *type, std::string template_str, bool typed_mode = false) :
-    type(type),
-    template_str(std::move(template_str)),
-    typed_mode(typed_mode) {}
+  TypeStore(const vk::tlo_parsing::type *type, std::string template_str, bool typed_mode = false)
+    : type(type)
+    , template_str(std::move(template_str))
+    , typed_mode(typed_mode) {}
 
   void compile(CodeGenerator &W) const;
 };
-
 
 // Generated code example:
 /*
@@ -111,14 +108,13 @@ struct TypeFetch {
   std::string template_str;
   bool typed_mode;
 
-  inline TypeFetch(const vk::tlo_parsing::type *type, std::string template_str, bool typed_mode = false) :
-    type(type),
-    template_str(std::move(template_str)),
-    typed_mode(typed_mode) {}
+  inline TypeFetch(const vk::tlo_parsing::type *type, std::string template_str, bool typed_mode = false)
+    : type(type)
+    , template_str(std::move(template_str))
+    , typed_mode(typed_mode) {}
 
   void compile(CodeGenerator &W) const;
 };
-
 
 /*
  * Typed TL example:
@@ -160,8 +156,8 @@ struct TlTypeDeclaration {
     return !get_all_php_classes_of_tl_type(t).empty();
   }
 
-  explicit TlTypeDeclaration(const vk::tlo_parsing::type *t) :
-    t(t) {}
+  explicit TlTypeDeclaration(const vk::tlo_parsing::type *t)
+    : t(t) {}
 
   void compile(CodeGenerator &W) const;
 };
@@ -169,9 +165,9 @@ struct TlTypeDeclaration {
 struct TlTypeDefinition {
   const vk::tlo_parsing::type *t;
 
-  explicit TlTypeDefinition(const vk::tlo_parsing::type *t) :
-    t(t) {}
+  explicit TlTypeDefinition(const vk::tlo_parsing::type *t)
+    : t(t) {}
 
   void compile(CodeGenerator &W) const;
 };
-}
+} // namespace tl2cpp

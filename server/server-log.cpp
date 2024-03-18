@@ -27,9 +27,9 @@ void write_log_server_impl(ServerLog type, const char *format, ...) noexcept {
   std::array<char, 2048> buffer{};
 
   va_list ap;
-  va_start (ap, format);
+  va_start(ap, format);
   vsnprintf(buffer.data(), buffer.size(), format, ap);
-  va_end (ap);
+  va_end(ap);
 
   kprintf("%s: %s\n", level2str(type), buffer.data());
   vk::singleton<JsonLogger>::get().write_log_with_backtrace(buffer.data(), static_cast<int>(type));

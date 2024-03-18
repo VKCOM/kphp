@@ -7,44 +7,44 @@
 #include "compiler/inferring/public.h"
 
 const std::multimap<Operation, PrimitiveType> CheckConversionsPass::forbidden_conversions = {
-  {op_conv_int,      tp_Class},
-  {op_conv_int_l,    tp_Class},
-  {op_conv_float,    tp_Class},
-//  {op_conv_string,   tp_Class}, // allowed for classes with __toString()
+  {op_conv_int, tp_Class},
+  {op_conv_int_l, tp_Class},
+  {op_conv_float, tp_Class},
+  //  {op_conv_string,   tp_Class}, // allowed for classes with __toString()
   {op_conv_string_l, tp_Class},
-  {op_conv_array,    tp_Class},
-  {op_conv_array_l,  tp_Class},
-  {op_conv_object,   tp_Class},
-  {op_conv_mixed,    tp_Class},
-  {op_conv_regexp,   tp_Class},
+  {op_conv_array, tp_Class},
+  {op_conv_array_l, tp_Class},
+  {op_conv_object, tp_Class},
+  {op_conv_mixed, tp_Class},
+  {op_conv_regexp, tp_Class},
 
-  {op_conv_int,      tp_array},
-  {op_conv_int_l,    tp_array},
-  {op_conv_float,    tp_array},
-  {op_conv_string,   tp_array},
+  {op_conv_int, tp_array},
+  {op_conv_int_l, tp_array},
+  {op_conv_float, tp_array},
+  {op_conv_string, tp_array},
   {op_conv_string_l, tp_array},
-  {op_conv_object,   tp_array},
+  {op_conv_object, tp_array},
 
-  {op_conv_bool,     tp_tuple},
-  {op_conv_int,      tp_tuple},
-  {op_conv_int_l,    tp_tuple},
-  {op_conv_float,    tp_tuple},
-  {op_conv_string,   tp_tuple},
+  {op_conv_bool, tp_tuple},
+  {op_conv_int, tp_tuple},
+  {op_conv_int_l, tp_tuple},
+  {op_conv_float, tp_tuple},
+  {op_conv_string, tp_tuple},
   {op_conv_string_l, tp_tuple},
-  {op_conv_object,   tp_tuple},
-  {op_conv_regexp,   tp_tuple},
+  {op_conv_object, tp_tuple},
+  {op_conv_regexp, tp_tuple},
 
-  {op_conv_bool,     tp_shape},
-  {op_conv_int,      tp_shape},
-  {op_conv_int_l,    tp_shape},
-  {op_conv_float,    tp_shape},
-  {op_conv_string,   tp_shape},
+  {op_conv_bool, tp_shape},
+  {op_conv_int, tp_shape},
+  {op_conv_int_l, tp_shape},
+  {op_conv_float, tp_shape},
+  {op_conv_string, tp_shape},
   {op_conv_string_l, tp_shape},
-  {op_conv_array,    tp_shape},
-  {op_conv_array_l,  tp_shape},
-  {op_conv_object,   tp_shape},
-  {op_conv_mixed,    tp_shape},
-  {op_conv_regexp,   tp_shape},
+  {op_conv_array, tp_shape},
+  {op_conv_array_l, tp_shape},
+  {op_conv_object, tp_shape},
+  {op_conv_mixed, tp_shape},
+  {op_conv_regexp, tp_shape},
 };
 
 VertexPtr CheckConversionsPass::on_enter_vertex(VertexPtr vertex) {
@@ -63,8 +63,7 @@ VertexPtr CheckConversionsPass::on_enter_vertex(VertexPtr vertex) {
       return !is_conversion_of_optional && converted_expr_type->ptype() == operation_and_type.second;
     });
 
-    kphp_error(!is_forbidden_conversion, fmt_format("conversion from {} to {} is forbidden",
-                                                    converted_expr_type->as_human_readable(),
+    kphp_error(!is_forbidden_conversion, fmt_format("conversion from {} to {} is forbidden", converted_expr_type->as_human_readable(),
                                                     TermStringFormat::paint_green(OpInfo::str(vertex->type()))));
   }
   return vertex;

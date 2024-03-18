@@ -4,9 +4,8 @@
 
 #pragma once
 
-
 /*** Core ***/
-//Consists mostly of functions that require synchronization
+// Consists mostly of functions that require synchronization
 
 #include <map>
 #include <string>
@@ -14,16 +13,16 @@
 
 #include "common/algorithms/hashes.h"
 
+#include "compiler/compiler-settings.h"
+#include "compiler/composer.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/ffi-data.h"
-#include "compiler/compiler-settings.h"
+#include "compiler/function-colors.h"
 #include "compiler/index.h"
 #include "compiler/stats.h"
 #include "compiler/threading/data-stream.h"
 #include "compiler/threading/hash-table.h"
 #include "compiler/tl-classes.h"
-#include "compiler/composer.h"
-#include "compiler/function-colors.h"
 
 class CompilerCore {
 private:
@@ -33,7 +32,7 @@ private:
   TSHashTable<FunctionPtr> functions_ht;
   TSHashTable<ClassPtr> classes_ht;
   TSHashTable<DefinePtr> defines_ht;
-  TSHashTable<VarPtr,2'000'000> global_vars_ht;
+  TSHashTable<VarPtr, 2'000'000> global_vars_ht;
   TSHashTable<LibPtr, 1000> libs_ht;
   TSHashTable<ModulitePtr, 1000> modulites_ht;
   TSHashTable<ComposerJsonPtr, 1000> composer_json_ht;
@@ -74,9 +73,9 @@ public:
   void require_function(const std::string &name, DataStream<FunctionPtr> &os);
   void require_function(FunctionPtr function, DataStream<FunctionPtr> &os);
 
-  template <class CallbackT>
+  template<class CallbackT>
   void operate_on_function_locking(const std::string &name, CallbackT callback) {
-    static_assert(std::is_constructible<std::function<void(FunctionPtr&)>, CallbackT>::value, "invalid callback signature");
+    static_assert(std::is_constructible<std::function<void(FunctionPtr &)>, CallbackT>::value, "invalid callback signature");
 
     TSHashTable<FunctionPtr>::HTNode *node = functions_ht.at(vk::std_hash(name));
     AutoLocker<Lockable *> locker(node);
@@ -106,7 +105,9 @@ public:
   VarPtr get_global_var(const std::string &name, VarData::Type type, VertexPtr init_val, bool *is_new_inserted = nullptr);
   VarPtr create_local_var(FunctionPtr function, const std::string &name, VarData::Type type);
 
-  SrcFilePtr get_main_file() { return main_file; }
+  SrcFilePtr get_main_file() {
+    return main_file;
+  }
   std::vector<VarPtr> get_global_vars();
   std::vector<ClassPtr> get_classes();
   std::vector<InterfacePtr> get_interfaces();
@@ -125,10 +126,16 @@ public:
 
   void try_load_tl_classes();
   void init_composer_class_loader();
-  const TlClasses &get_tl_classes() const { return tl_classes; }
+  const TlClasses &get_tl_classes() const {
+    return tl_classes;
+  }
 
-  void add_kphp_runtime_opt(std::string opt) { kphp_runtime_opts.emplace_back(std::move(opt)); }
-  const std::vector<std::string> &get_kphp_runtime_opts() const { return kphp_runtime_opts; }
+  void add_kphp_runtime_opt(std::string opt) {
+    kphp_runtime_opts.emplace_back(std::move(opt));
+  }
+  const std::vector<std::string> &get_kphp_runtime_opts() const {
+    return kphp_runtime_opts;
+  }
 
   void set_function_palette(function_palette::Palette &&palette) {
     function_palette = palette;
@@ -158,4 +165,3 @@ public:
 };
 
 extern CompilerCore *G;
-

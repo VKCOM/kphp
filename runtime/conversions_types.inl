@@ -1,7 +1,7 @@
 #pragma once
 
 #ifndef INCLUDED_FROM_KPHP_CORE
-  #error "this file must be included only from kphp_core.h"
+#error "this file must be included only from kphp_core.h"
 #endif
 
 template<class T, class = enable_for_bool_int_double<T>>
@@ -27,7 +27,7 @@ inline bool f$boolval(const class_instance<T> &val) {
   return !val.is_null();
 }
 
-template<class ...Args>
+template<class... Args>
 inline bool f$boolval(const std::tuple<Args...> &) {
   return true;
 }
@@ -69,12 +69,11 @@ inline int64_t f$intval(tmp_string s) {
   return string::to_int(s.data, s.size);
 }
 
-
 inline int64_t f$safe_intval(bool val) {
   return val;
 }
 
-inline  int64_t f$safe_intval(int64_t val) {
+inline int64_t f$safe_intval(int64_t val) {
   return val;
 }
 
@@ -111,7 +110,6 @@ template<class T>
 inline double f$floatval(const Optional<T> &val) {
   return val.has_value() ? f$floatval(val.val()) : 0;
 }
-
 
 inline string f$strval(bool val) {
   return (val ? string("1", 1) : string());

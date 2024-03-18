@@ -16,7 +16,7 @@ static inline void parallel_maximum_balance_maximum(parallel_maximum_t *maximum,
   tls->counter = maximum->thread_max / 2;
   maximum->global_reserve += maximum->thread_max;
 
-  if(tls->counter > maximum->global_count) {
+  if (tls->counter > maximum->global_count) {
     tls->counter = maximum->global_count;
   }
 
@@ -68,7 +68,7 @@ void parallel_maximum_sub_slow_path(parallel_maximum_t *maximum, parallel_maximu
 
   parallel_maximum_globalize_maximum(maximum, tls);
 
-  if (maximum->global_count  < value) {
+  if (maximum->global_count < value) {
     pthread_mutex_unlock(&maximum->mtx);
     return;
   }

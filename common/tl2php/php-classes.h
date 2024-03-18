@@ -18,18 +18,7 @@ struct tl_scheme;
 
 namespace tl {
 
-enum class php_field_type {
-  t_string,
-  t_int,
-  t_mixed,
-  t_double,
-  t_bool,
-  t_bool_true,
-  t_array,
-  t_maybe,
-  t_class,
-  t_unknown
-};
+enum class php_field_type { t_string, t_int, t_mixed, t_double, t_bool, t_bool_true, t_array, t_maybe, t_class, t_unknown };
 
 bool is_or_null_possible(php_field_type internal_type);
 
@@ -76,33 +65,73 @@ struct PhpClasses {
   std::unordered_map<std::string, std::reference_wrapper<const PhpClassRepresentation>> all_classes;
   std::unordered_multimap<int, std::reference_wrapper<const PhpClassRepresentation>> magic_to_classes;
 
-  static const char *tl_parent_namespace() { return "VK"; }
-  static const char *tl_namespace() { return "TL"; }
-  static const char *tl_full_namespace() { return R"(VK\TL)"; }
+  static const char *tl_parent_namespace() {
+    return "VK";
+  }
+  static const char *tl_namespace() {
+    return "TL";
+  }
+  static const char *tl_full_namespace() {
+    return R"(VK\TL)";
+  }
 
-  static const char *types_namespace() { return "Types"; }
-  static const char *functions_namespace() { return "Functions"; }
-  static const char *common_engine_namespace() { return "_common"; }
+  static const char *types_namespace() {
+    return "Types";
+  }
+  static const char *functions_namespace() {
+    return "Functions";
+  }
+  static const char *common_engine_namespace() {
+    return "_common";
+  }
 
-  static const char *rpc_response_type() { return "RpcResponse"; }
-  static const char *rpc_response_type_with_tl_namespace() { return R"(TL\RpcResponse)"; }
+  static const char *rpc_response_type() {
+    return "RpcResponse";
+  }
+  static const char *rpc_response_type_with_tl_namespace() {
+    return R"(TL\RpcResponse)";
+  }
 
-  static const char *rpc_response_ok() { return "rpcResponseOk"; }
-  static const char *rpc_response_ok_with_tl_namespace() { return R"(TL\_common\Types\rpcResponseOk)"; }
-  static const char *rpc_response_ok_with_tl_full_namespace() { return R"(VK\TL\_common\Types\rpcResponseOk)"; }
+  static const char *rpc_response_ok() {
+    return "rpcResponseOk";
+  }
+  static const char *rpc_response_ok_with_tl_namespace() {
+    return R"(TL\_common\Types\rpcResponseOk)";
+  }
+  static const char *rpc_response_ok_with_tl_full_namespace() {
+    return R"(VK\TL\_common\Types\rpcResponseOk)";
+  }
 
-  static const char *rpc_response_header() { return "rpcResponseHeader"; }
-  static const char *rpc_response_header_with_tl_namespace() { return R"(TL\_common\Types\rpcResponseHeader)"; }
-  static const char *rpc_response_header_with_tl_full_namespace() { return R"(VK\TL\_common\Types\rpcResponseHeader)"; }
+  static const char *rpc_response_header() {
+    return "rpcResponseHeader";
+  }
+  static const char *rpc_response_header_with_tl_namespace() {
+    return R"(TL\_common\Types\rpcResponseHeader)";
+  }
+  static const char *rpc_response_header_with_tl_full_namespace() {
+    return R"(VK\TL\_common\Types\rpcResponseHeader)";
+  }
 
-  static const char *rpc_response_error() { return "rpcResponseError"; }
-  static const char *rpc_response_error_with_tl_namespace() { return R"(TL\_common\Types\rpcResponseError)"; }
-  static const char *rpc_response_error_with_tl_full_namespace() { return R"(VK\TL\_common\Types\rpcResponseError)"; }
+  static const char *rpc_response_error() {
+    return "rpcResponseError";
+  }
+  static const char *rpc_response_error_with_tl_namespace() {
+    return R"(TL\_common\Types\rpcResponseError)";
+  }
+  static const char *rpc_response_error_with_tl_full_namespace() {
+    return R"(VK\TL\_common\Types\rpcResponseError)";
+  }
 
-  static const char *rpc_function() { return "RpcFunction"; }
+  static const char *rpc_function() {
+    return "RpcFunction";
+  }
 
-  static const char *rpc_function_return_result() { return "RpcFunctionReturnResult"; }
-  static const char *rpc_function_return_result_with_tl_namespace() { return R"(TL\RpcFunctionReturnResult)"; }
+  static const char *rpc_function_return_result() {
+    return "RpcFunctionReturnResult";
+  }
+  static const char *rpc_function_return_result_with_tl_namespace() {
+    return R"(TL\RpcFunctionReturnResult)";
+  }
 };
 
 } // namespace tl

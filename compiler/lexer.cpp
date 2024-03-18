@@ -26,12 +26,12 @@ void LexerData::new_line() {
   line_num++;
 }
 
-LexerData::LexerData(vk::string_view new_code) :
-  code(new_code.data()),
-  code_end(code + new_code.size()),
-  code_len(new_code.size()) {
+LexerData::LexerData(vk::string_view new_code)
+  : code(new_code.data())
+  , code_end(code + new_code.size())
+  , code_len(new_code.size()) {
   new_line();
-  tokens.reserve(static_cast<size_t >(code_len * 0.3));
+  tokens.reserve(static_cast<size_t>(code_len * 0.3));
 }
 
 void LexerData::pass(int shift) {
@@ -43,19 +43,19 @@ void LexerData::pass_raw(int shift) {
   code += shift;
 }
 
-template <typename ...Args>
-void LexerData::add_token_(int shift, Args&& ...tok) {
-  kphp_assert (code + shift <= code_end);
+template<typename... Args>
+void LexerData::add_token_(int shift, Args &&...tok) {
+  kphp_assert(code + shift <= code_end);
   tokens.emplace_back(std::forward<Args>(tok)...);
   tokens.back().line_num = line_num;
   tokens.back().debug_str = vk::string_view(code, code + shift);
-  //fprintf (stderr, "[%d] %.*s : %d\n", tok->type(), tok->debug_str.length(), tok->debug_str.begin(), line_num);
+  // fprintf (stderr, "[%d] %.*s : %d\n", tok->type(), tok->debug_str.length(), tok->debug_str.begin(), line_num);
   pass(shift);
   hack_last_tokens();
 }
 
-template <typename ...Args>
-void LexerData::add_token(int shift, Args&& ...tok) {
+template<typename... Args>
+void LexerData::add_token(int shift, Args &&...tok) {
   flush_str();
   add_token_(shift, std::forward<Args>(tok)...);
 }
@@ -105,24 +105,19 @@ bool LexerData::are_last_tokens() {
   return true;
 }
 
-template<typename ...Args>
-bool LexerData::are_last_tokens(TokenType type1, Args ...args) {
-  return tokens.size() >= (sizeof...(args) + 1) &&
-         tokens[tokens.size() - sizeof...(args) - 1].type() == type1 &&
-         are_last_tokens(args...);
+template<typename... Args>
+bool LexerData::are_last_tokens(TokenType type1, Args... args) {
+  return tokens.size() >= (sizeof...(args) + 1) && tokens[tokens.size() - sizeof...(args) - 1].type() == type1 && are_last_tokens(args...);
 }
 
-template<typename ...Args>
-bool LexerData::are_last_tokens(any_token_tag, Args ...args) {
-  return tokens.size() >= (sizeof...(args) + 1) &&
-         are_last_tokens(args...);
+template<typename... Args>
+bool LexerData::are_last_tokens(any_token_tag, Args... args) {
+  return tokens.size() >= (sizeof...(args) + 1) && are_last_tokens(args...);
 }
 
-template<TokenType token, typename ...Args>
-bool LexerData::are_last_tokens(except_token_tag<token>, Args ...args) {
-  return tokens.size() >= (sizeof...(args) + 1) &&
-         tokens[tokens.size() - sizeof...(args) - 1].type() != token &&
-         are_last_tokens(args...);
+template<TokenType token, typename... Args>
+bool LexerData::are_last_tokens(except_token_tag<token>, Args... args) {
+  return tokens.size() >= (sizeof...(args) + 1) && tokens[tokens.size() - sizeof...(args) - 1].type() != token && are_last_tokens(args...);
 }
 
 vk::string_view LexerData::strip_whitespaces(char space_char, std::size_t spaces_to_skip, vk::string_view source) noexcept {
@@ -154,22 +149,14 @@ void LexerData::hack_last_tokens() {
     return;
   }
 
-  auto remove_last_tokens = [this](size_t cnt) {
-    tokens.erase(std::prev(tokens.end(), cnt), tokens.end());
-  };
+  auto remove_last_tokens = [this](size_t cnt) { tokens.erase(std::prev(tokens.end(), cnt), tokens.end()); };
 
   // perform a cast array matching only if we have something
   // that looks like a cast (a token surrounded by parenthesis)
   if (are_last_tokens(tok_oppar, any_token_tag{}, tok_clpar)) {
     static TokenType casts[][2] = {
-      {tok_int,    tok_conv_int},
-      {tok_float,  tok_conv_float},
-      {tok_double,  tok_conv_float},
-      {tok_string, tok_conv_string},
-      {tok_array,  tok_conv_array},
-      {tok_object, tok_conv_object},
-      {tok_bool,   tok_conv_bool},
-      {tok_boolean, tok_conv_bool},
+      {tok_int, tok_conv_int},     {tok_float, tok_conv_float},   {tok_double, tok_conv_float}, {tok_string, tok_conv_string},
+      {tok_array, tok_conv_array}, {tok_object, tok_conv_object}, {tok_bool, tok_conv_bool},    {tok_boolean, tok_conv_bool},
     };
     for (auto &cast : casts) {
       // check the middle token, the one that goes before ')'
@@ -284,7 +271,8 @@ void LexerData::hack_last_tokens() {
    * A kludge to parse functions with such names correctly in functions.txt;
    * but keep them as a separate token kinds as they need a slightly different parsing
    */
-  if (are_last_tokens(tok_function, tok_var_dump) || are_last_tokens(tok_function, tok_dbg_echo) || are_last_tokens(tok_function, tok_print) || are_last_tokens(tok_function, tok_echo)) {
+  if (are_last_tokens(tok_function, tok_var_dump) || are_last_tokens(tok_function, tok_dbg_echo) || are_last_tokens(tok_function, tok_print)
+      || are_last_tokens(tok_function, tok_echo)) {
     tokens.back() = {tok_func_name, tokens.back().str_val};
   }
 
@@ -312,7 +300,6 @@ int LexerData::get_line_num() {
   return line_num;
 }
 
-
 bool parse_with_helper(LexerData *lexer_data, const std::unique_ptr<Helper<TokenLexer>> &h) {
   const char *s = lexer_data->get_code();
 
@@ -326,7 +313,7 @@ bool parse_with_helper(LexerData *lexer_data, const std::unique_ptr<Helper<Token
 
 bool TokenLexerError::parse(LexerData *lexer_data) const {
   stage::set_line(lexer_data->get_line_num());
-  kphp_error (0, error_str.c_str());
+  kphp_error(0, error_str.c_str());
   return false;
 }
 
@@ -451,7 +438,7 @@ bool TokenLexerNum::parse(LexerData *lexer_data) const {
         break;
       }
       case binary: {
-        switch(*t) {
+        switch (*t) {
           case '0':
           case '1':
             t++;
@@ -554,7 +541,7 @@ bool TokenLexerNum::parse(LexerData *lexer_data) const {
       }
 
       case finish: {
-        assert (0);
+        assert(0);
       }
     }
   }
@@ -569,7 +556,7 @@ bool TokenLexerNum::parse(LexerData *lexer_data) const {
     }
   }
 
-  assert (t != s);
+  assert(t != s);
 
   auto token_type = is_float ? tok_float_const : tok_int_const;
 
@@ -581,7 +568,6 @@ bool TokenLexerNum::parse(LexerData *lexer_data) const {
 
   return true;
 }
-
 
 bool TokenLexerSimpleString::parse(LexerData *lexer_data) const {
   std::string str;
@@ -649,7 +635,7 @@ bool TokenLexerOctChar::parse(LexerData *lexer_data) const {
     }
   }
 
-  //TODO: \777
+  // TODO: \777
   lexer_data->append_char(val);
   lexer_data->pass_raw((int)(t - s));
   return true;
@@ -747,7 +733,7 @@ void TokenLexerStringExpr::init() {
   h->add_simple_rule("\"", &vk::singleton<TokenLexerString>::get());
   h->add_rule("[a-zA-Z_$\\]", &vk::singleton<TokenLexerName>::get());
 
-  //TODO: double (?)
+  // TODO: double (?)
   h->add_rule("[0-9]|.[0-9]", &vk::singleton<TokenLexerNum>::get());
 
   h->add_rule(" |\t|\n|\r", &vk::singleton<TokenLexerSkip>::get());
@@ -755,9 +741,9 @@ void TokenLexerStringExpr::init() {
 }
 
 bool TokenLexerStringExpr::parse(LexerData *lexer_data) const {
-  assert (h != nullptr);
+  assert(h != nullptr);
   const char *s = lexer_data->get_code();
-  assert (*s == '{');
+  assert(*s == '{');
   lexer_data->add_token(1, tok_expr_begin);
 
   int bal = 0;
@@ -782,7 +768,6 @@ bool TokenLexerStringExpr::parse(LexerData *lexer_data) const {
   }
   return true;
 }
-
 
 void TokenLexerString::add_esc(const std::string &s, char c) {
   h->add_simple_rule(s, new TokenLexerAppendChar(c, (int)s.size()));
@@ -832,10 +817,10 @@ void TokenLexerHeredocString::init() {
 }
 
 bool TokenLexerString::parse(LexerData *lexer_data) const {
-  assert (h != nullptr);
+  assert(h != nullptr);
   const char *s = lexer_data->get_code();
   int is_heredoc = s[0] == '<';
-  assert (!is_heredoc);
+  assert(!is_heredoc);
 
   lexer_data->add_token(1, tok_str_begin);
 
@@ -860,11 +845,11 @@ bool TokenLexerString::parse(LexerData *lexer_data) const {
 bool TokenLexerHeredocString::parse(LexerData *lexer_data) const {
   const char *s = lexer_data->get_code();
   int is_heredoc = s[0] == '<';
-  assert (is_heredoc);
+  assert(is_heredoc);
 
   std::string tag;
   const char *st = s;
-  assert (s[1] == '<' && s[2] == '<');
+  assert(s[1] == '<' && s[2] == '<');
 
   s += 3;
 
@@ -902,11 +887,11 @@ bool TokenLexerHeredocString::parse(LexerData *lexer_data) const {
 
   if (!single_quote) {
     lexer_data->add_token((int)(s - st), tok_str_begin);
-    assert (s == lexer_data->get_code());
+    assert(s == lexer_data->get_code());
   } else {
     lexer_data->start_str();
     lexer_data->pass_raw((int)(s - st));
-    assert (s == lexer_data->get_code());
+    assert(s == lexer_data->get_code());
   }
   bool first = true;
   while (true) {
@@ -942,7 +927,8 @@ bool TokenLexerHeredocString::parse(LexerData *lexer_data) const {
             lexer_data->add_token((int)(t - st - semicolon), tok_str_end);
           } else {
             lexer_data->flush_str();
-            lexer_data->pass_raw((int)(t - st - semicolon));;
+            lexer_data->pass_raw((int)(t - st - semicolon));
+            ;
           }
           if (std::size_t indent = spaces_count ?: tabs_count) {
             lexer_data->add_token(0, tok_str_skip_indent, spaces_start, spaces_start + indent);
@@ -969,10 +955,9 @@ bool TokenLexerHeredocString::parse(LexerData *lexer_data) const {
 }
 
 bool TokenLexerComment::parse(LexerData *lexer_data) const {
-  const char *s = lexer_data->get_code(),
-    *st = s;
+  const char *s = lexer_data->get_code(), *st = s;
 
-  assert (s[0] == '/' || s[0] == '#');
+  assert(s[0] == '/' || s[0] == '#');
   if (s[0] == '#' || s[1] == '/') {
     while (s[0] && s[0] != '\n') {
       s++;
@@ -1030,7 +1015,7 @@ bool TokenLexerIfndefComment::parse(LexerData *lexer_data) const {
 }
 
 bool TokenLexerWithHelper::parse(LexerData *lexer_data) const {
-  assert (h != nullptr);
+  assert(h != nullptr);
   return parse_with_helper(lexer_data, h);
 }
 
@@ -1047,7 +1032,7 @@ void TokenLexerCommon::init() {
   assert(!h);
   h = std::make_unique<Helper<TokenLexer>>(new TokenLexerError("No <common token> found"));
 
-  add_rule(h, ":::", tok_triple_colon);   // used in functions.txt to express cast params
+  add_rule(h, ":::", tok_triple_colon); // used in functions.txt to express cast params
 
   add_rule(h, "=", tok_eq1);
   add_rule(h, "==", tok_eq2);
@@ -1210,7 +1195,6 @@ bool TokenLexerGlobal::parse(LexerData *lexer_data) const {
     lexer_data->pass_raw(strlen("<?"));
   }
 
-
   while (true) {
     const char *s = lexer_data->get_code();
     const char *t = s;
@@ -1289,4 +1273,3 @@ std::vector<Token> phpdoc_to_tokens(vk::string_view text) {
   }
   return lexer_data.move_tokens();
 }
-

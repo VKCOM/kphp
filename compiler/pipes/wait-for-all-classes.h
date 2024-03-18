@@ -6,11 +6,12 @@
 
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
-#include "compiler/threading/data-stream.h"
 #include "compiler/pipes/sync.h"
+#include "compiler/threading/data-stream.h"
 
-class WaitForAllClassesF final: public SyncPipeF<FunctionPtr, FunctionPtr> {
+class WaitForAllClassesF final : public SyncPipeF<FunctionPtr, FunctionPtr> {
   using Base = SyncPipeF<FunctionPtr, FunctionPtr>;
+
 public:
   bool forward_to_next_pipe(const FunctionPtr &f) final {
     if (f->type == FunctionData::func_local || f->type == FunctionData::func_class_holder) {

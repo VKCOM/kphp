@@ -4,8 +4,8 @@
 
 #include "vkext/vkext-rpc-tl-serialization.h"
 
-#include <errno.h>
 #include <cinttypes>
+#include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
@@ -49,7 +49,7 @@
 //#define VLOG
 
 #ifdef VLOG
-#define Z fprintf (stderr, "%d\n", __LINE__);
+#define Z fprintf(stderr, "%d\n", __LINE__);
 #else
 #define Z
 #endif
@@ -71,8 +71,8 @@ static unsigned string_hash(const char *s) {
   return h;
 }
 
-#define tl_type_id_cmp(a, b) (strcmp ((a)->id, (b)->id))
-#define tl_type_id_hash(a) (string_hash ((a)->id))
+#define tl_type_id_cmp(a, b) (strcmp((a)->id, (b)->id))
+#define tl_type_id_hash(a) (string_hash((a)->id))
 DEFINE_HASH_STDNOZ_ALLOC(tl_type_id, struct tl_type *, tl_type_id_cmp, tl_type_id_hash);
 
 /*struct hash_elem_tl_type_id *tl_type_id_arr[(1 << 12)];
@@ -226,81 +226,80 @@ static const char *php_common_namespace = "_common";
 
 void check_buffer_overflow(int len) {
   if (len > PHP_CLASS_NAME_BUFFER_LENGTH) {
-    php_error_docref(NULL, E_ERROR,
-                     "Internal class name buffer overflow (rpc typed mode)");
+    php_error_docref(NULL, E_ERROR, "Internal class name buffer overflow (rpc typed mode)");
   }
 }
 
 #define MAX_DEPTH 10000
 
 struct tl_type *tl_type_get_by_id(const char *s) {
-  assert (cur_config);
+  assert(cur_config);
   struct tl_type t;
   t.id = (char *)s;
-  //struct hash_elem_tl_type_id *h = hash_lookup_tl_type_id (&tl_type_id_hash_table, &t);
+  // struct hash_elem_tl_type_id *h = hash_lookup_tl_type_id (&tl_type_id_hash_table, &t);
   struct hash_elem_tl_type_id *h = hash_lookup_tl_type_id(cur_config->ht_tid, &t);
   return h ? h->x : 0;
 }
 
 struct tl_combinator *tl_fun_get_by_id(const char *s) {
-  assert (cur_config);
+  assert(cur_config);
   struct tl_combinator c;
   c.id = (char *)s;
-  //struct hash_elem_tl_fun_id *h = hash_lookup_tl_fun_id (&tl_fun_id_hash_table, &c);
+  // struct hash_elem_tl_fun_id *h = hash_lookup_tl_fun_id (&tl_fun_id_hash_table, &c);
   struct hash_elem_tl_fun_id *h = hash_lookup_tl_fun_id(cur_config->ht_fid, &c);
   return h ? h->x : 0;
 }
 
 struct tl_combinator *tl_fun_get_by_name(int name) {
-  assert (cur_config);
+  assert(cur_config);
   struct tl_combinator c;
   c.name = name;
-  //struct hash_elem_tl_fun_name *h = hash_lookup_tl_fun_name (&tl_fun_name_hash_table, &c);
+  // struct hash_elem_tl_fun_name *h = hash_lookup_tl_fun_name (&tl_fun_name_hash_table, &c);
   struct hash_elem_tl_fun_name *h = hash_lookup_tl_fun_name(cur_config->ht_fname, &c);
   return h ? h->x : 0;
 }
 
 struct tl_type *tl_type_get_by_name(int name) {
-  assert (cur_config);
+  assert(cur_config);
   struct tl_type t;
   t.name = name;
-  //struct hash_elem_tl_type_name *h = hash_lookup_tl_type_name (&tl_type_name_hash_table, &t);
+  // struct hash_elem_tl_type_name *h = hash_lookup_tl_type_name (&tl_type_name_hash_table, &t);
   struct hash_elem_tl_type_name *h = hash_lookup_tl_type_name(cur_config->ht_tname, &t);
   return h ? h->x : 0;
 }
 
 void tl_type_insert_name(struct tl_type *t) {
-  assert (cur_config);
+  assert(cur_config);
   if (t->name) {
-    assert (!tl_type_get_by_name(t->name));
-    //hash_insert_tl_type_name (&tl_type_name_hash_table, t);
+    assert(!tl_type_get_by_name(t->name));
+    // hash_insert_tl_type_name (&tl_type_name_hash_table, t);
     hash_insert_tl_type_name(cur_config->ht_tname, t);
   } else {
     if (!tl_type_get_by_name(t->name)) {
-      //hash_insert_tl_type_name (&tl_type_name_hash_table, t);
+      // hash_insert_tl_type_name (&tl_type_name_hash_table, t);
       hash_insert_tl_type_name(cur_config->ht_tname, t);
     }
   }
 }
 
 void tl_type_insert_id(struct tl_type *t) {
-  assert (cur_config);
-  assert (!tl_type_get_by_id(t->id));
-  //hash_insert_tl_type_id (&tl_type_id_hash_table, t);
+  assert(cur_config);
+  assert(!tl_type_get_by_id(t->id));
+  // hash_insert_tl_type_id (&tl_type_id_hash_table, t);
   hash_insert_tl_type_id(cur_config->ht_tid, t);
 }
 
 void tl_fun_insert_id(struct tl_combinator *t) {
-  assert (cur_config);
-  assert (!tl_fun_get_by_id(t->id));
-  //hash_insert_tl_fun_id (&tl_fun_id_hash_table, t);
+  assert(cur_config);
+  assert(!tl_fun_get_by_id(t->id));
+  // hash_insert_tl_fun_id (&tl_fun_id_hash_table, t);
   hash_insert_tl_fun_id(cur_config->ht_fid, t);
 }
 
 void tl_fun_insert_name(struct tl_combinator *t) {
-  assert (cur_config);
-  assert (!tl_fun_get_by_name(t->name));
-  //hash_insert_tl_fun_name (&tl_fun_name_hash_table, t);
+  assert(cur_config);
+  assert(!tl_fun_get_by_name(t->name));
+  // hash_insert_tl_fun_name (&tl_fun_name_hash_table, t);
   hash_insert_tl_fun_name(cur_config->ht_fname, t);
 }
 
@@ -334,10 +333,7 @@ static void get_php_namespace_by_tl_name(char *dst, const char *tl_name) {
   dst[dot_pos] = 0;
 }
 
-enum php_prefix_t {
-  FUNCTIONS,
-  TYPES
-};
+enum php_prefix_t { FUNCTIONS, TYPES };
 
 static void get_php_prefix(char *dst, const char *tl_name, enum php_prefix_t php_prefix_type) {
   static char php_namespace[50];
@@ -367,8 +363,7 @@ static int make_tl_class_name(char *dst, const char *prefix, const char *tl_name
  * The same as tl_gen::is_tl_type_a_php_array(...)
  */
 int is_php_array(struct tl_type *t) {
-  if (t->name == TL_VECTOR || t->name == TL_TUPLE || t->name == TL_DICTIONARY ||
-      t->name == TL_INT_KEY_DICTIONARY || t->name == TL_LONG_KEY_DICTIONARY) {
+  if (t->name == TL_VECTOR || t->name == TL_TUPLE || t->name == TL_DICTIONARY || t->name == TL_INT_KEY_DICTIONARY || t->name == TL_LONG_KEY_DICTIONARY) {
     return 1;
   } else {
     return 0;
@@ -376,8 +371,8 @@ int is_php_array(struct tl_type *t) {
 }
 
 int is_php_builtin(struct tl_type *t) {
-  if (t->name == TL_INT || t->name == TL_DOUBLE || t->name == TL_FLOAT || t->name == TL_LONG || t->name == TL_STRING ||
-      !strcmp(t->id, "Bool") || !strcmp(t->id, "Maybe") || !strcmp(t->id, "#")) {
+  if (t->name == TL_INT || t->name == TL_DOUBLE || t->name == TL_FLOAT || t->name == TL_LONG || t->name == TL_STRING || !strcmp(t->id, "Bool")
+      || !strcmp(t->id, "Maybe") || !strcmp(t->id, "#")) {
     return 1;
   } else {
     return 0;
@@ -442,8 +437,7 @@ int get_full_tree_type_name(char *dst, struct tl_tree_type *tree, const char *co
       } else if (!strcmp(cur_type->id, "Bool")) {
         dst += make_tl_class_name(dst, "", "bool", "", '\0');
       } else {
-        php_error_docref(NULL, E_ERROR,
-                         "Unexpected type %s during creating instance", cur_type->id);
+        php_error_docref(NULL, E_ERROR, "Unexpected type %s during creating instance", cur_type->id);
       }
       return dst - start_dst;
     } else if (is_tl_type_flat(cur_type, NULL)) {
@@ -484,8 +478,7 @@ int get_full_tree_type_name(char *dst, struct tl_tree_type *tree, const char *co
       }
       case NODE_TYPE_ARRAY:
       case NODE_TYPE_VAR_TYPE: {
-        php_error_docref(NULL, E_ERROR,
-                         "Unexpected node type %d during creating instance", TYPE(child));
+        php_error_docref(NULL, E_ERROR, "Unexpected node type %d during creating instance", TYPE(child));
         break;
       }
     }
@@ -507,8 +500,7 @@ static void get_php_class_name(char *dst, struct tl_tree_type *tree, int num) {
     } else if (!strcmp(constructor_name, "reqError")) {
       make_tl_class_name(dst, "", reqResult_error_class_name, "", '\0');
     } else {
-      php_error_docref(NULL, E_WARNING,
-                       "Unknown constructor of ReqResult: %s", constructor_name);
+      php_error_docref(NULL, E_WARNING, "Unknown constructor of ReqResult: %s", constructor_name);
     }
   } else {
     static char php_prefix[PHP_PREFIX_BUFFER_LENGTH];
@@ -523,15 +515,16 @@ static void get_php_class_name(char *dst, struct tl_tree_type *tree, int num) {
 }
 
 static zval *create_php_instance(const char *class_name) {
-  //fprintf(stderr, "creating instance of class %s\n", class_name);
+  // fprintf(stderr, "creating instance of class %s\n", class_name);
   zval *ci;
-  VK_ALLOC_INIT_ZVAL (ci);
+  VK_ALLOC_INIT_ZVAL(ci);
   zend_class_entry *ce = vk_get_class(class_name);
   object_init_ex(ci, ce);
   return ci;
 }
 
-static zval *make_query_result_or_error(zval **r, const vkext_rpc::tl::RpcReqError &error, const vkext_rpc::tl::RpcReqResultExtra *header = nullptr, int extra_flags = 0);
+static zval *make_query_result_or_error(zval **r, const vkext_rpc::tl::RpcReqError &error, const vkext_rpc::tl::RpcReqResultExtra *header = nullptr,
+                                        int extra_flags = 0);
 
 /**
  * This function extracts ORIGINAL tl name from given php class name.
@@ -579,22 +572,22 @@ void get_current_combinator_name(char *dst, const char *php_class_name) {
 
 /* {{{ PHP arrays interaction */
 VK_ZVAL_API_P get_field(zval *arr, const char *id, int num, zval **dst) {
-  //fprintf(stderr, "@@@@@@@ get_field %s %d\n", id, num);
-  ADD_CNT (get_field);
-  START_TIMER (get_field);
-  assert (arr);
-//  fprintf (stderr, "arr = %p, type = %d\n", arr, (int)Z_TYPE_PP (arr));
-  if (Z_TYPE_P (arr) != IS_ARRAY && Z_TYPE_P (arr) != IS_OBJECT) {
-//    fprintf (stderr, "=(\n");
-    END_TIMER (get_field);
+  // fprintf(stderr, "@@@@@@@ get_field %s %d\n", id, num);
+  ADD_CNT(get_field);
+  START_TIMER(get_field);
+  assert(arr);
+  //  fprintf (stderr, "arr = %p, type = %d\n", arr, (int)Z_TYPE_PP (arr));
+  if (Z_TYPE_P(arr) != IS_ARRAY && Z_TYPE_P(arr) != IS_OBJECT) {
+    //    fprintf (stderr, "=(\n");
+    END_TIMER(get_field);
     return 0;
   }
 
   VK_ZVAL_API_P t = NULL;
   if (id && strlen(id)) {
-    switch (Z_TYPE_P (arr)) {
+    switch (Z_TYPE_P(arr)) {
       case IS_ARRAY:
-        t = vk_zend_hash_find(Z_ARRVAL_P (arr), id, VK_STR_API_LEN(strlen(id)));
+        t = vk_zend_hash_find(Z_ARRVAL_P(arr), id, VK_STR_API_LEN(strlen(id)));
         break;
       case IS_OBJECT:
         if (!strcmp(id, "_")) {
@@ -602,12 +595,12 @@ VK_ZVAL_API_P get_field(zval *arr, const char *id, int num, zval **dst) {
           vk_get_class_name(arr, php_class_name);
           char current_combinator_name[PHP_CLASS_NAME_BUFFER_LENGTH];
           get_current_combinator_name(current_combinator_name, php_class_name);
-          //fprintf(stderr, "got _ = %s\n", current_combinator_name);
+          // fprintf(stderr, "got _ = %s\n", current_combinator_name);
           VK_ALLOC_INIT_ZVAL(*dst);
           VK_ZVAL_STRING_DUP(*dst, current_combinator_name);
-          //fprintf(stderr, "######### %s\n", current_combinator_name);
+          // fprintf(stderr, "######### %s\n", current_combinator_name);
         } else {
-          //fprintf(stderr, "reading instance property %s\n", id);
+          // fprintf(stderr, "reading instance property %s\n", id);
           if (strlen(id)) {
             *dst = vk_zend_read_public_property(arr, id);
           } else {
@@ -625,74 +618,74 @@ VK_ZVAL_API_P get_field(zval *arr, const char *id, int num, zval **dst) {
   }
 
   if (Z_TYPE_P(arr) == IS_OBJECT) {
-    END_TIMER (get_field);
+    END_TIMER(get_field);
     return t;
   }
 
   if (t) {
-    END_TIMER (get_field);
+    END_TIMER(get_field);
     return t;
   }
 
-  t = vk_zend_hash_index_find(Z_ARRVAL_P (arr), num);
+  t = vk_zend_hash_index_find(Z_ARRVAL_P(arr), num);
   if (t) {
-    END_TIMER (get_field);
+    END_TIMER(get_field);
     return t;
   }
-  END_TIMER (get_field);
+  END_TIMER(get_field);
   return 0;
 }
 
 void array_set_field(zval **arr, zval *val, const char *id, long long num) {
-  ADD_CNT (array_set_field);
-  START_TIMER (array_set_field);
+  ADD_CNT(array_set_field);
+  START_TIMER(array_set_field);
   if (!*arr) {
     php_error_docref(NULL, E_WARNING, "In fetching of the function: %s\nAttempt to array_set_field() of NULL tl object", tl_current_function_name);
-    VK_ALLOC_INIT_ZVAL (*arr);
-    array_init (*arr);
+    VK_ALLOC_INIT_ZVAL(*arr);
+    array_init(*arr);
   }
-  assert (val);
-  assert (*arr && Z_TYPE_P(*arr) == IS_ARRAY);
-  #ifdef VLOG
-  fprintf (stderr, "set_field: num:%d val_type:%d arr:%p\n", num, Z_TYPE_P (val), *arr);
-  #endif
+  assert(val);
+  assert(*arr && Z_TYPE_P(*arr) == IS_ARRAY);
+#ifdef VLOG
+  fprintf(stderr, "set_field: num:%d val_type:%d arr:%p\n", num, Z_TYPE_P(val), *arr);
+#endif
   if (id && strlen(id)) {
-    vk_add_assoc_zval_nod (*arr, (char *)id, val);
+    vk_add_assoc_zval_nod(*arr, (char *)id, val);
   } else {
-    vk_add_index_zval_nod (*arr, num, val);
+    vk_add_index_zval_nod(*arr, num, val);
   }
-  END_TIMER (array_set_field);
+  END_TIMER(array_set_field);
 }
 
 void set_field(zval **arr, zval *val, const char *id, long long num) {
-  //fprintf(stderr, "~~~ set_field %s %lld\n", id, num);
-  ADD_CNT (set_field);
-  START_TIMER (set_field);
+  // fprintf(stderr, "~~~ set_field %s %lld\n", id, num);
+  ADD_CNT(set_field);
+  START_TIMER(set_field);
   if (!*arr) {
     php_error_docref(NULL, E_WARNING, "In fetching of the function: %s\nAttempt to set_field() of NULL tl object", tl_current_function_name);
-    VK_ALLOC_INIT_ZVAL (*arr);
-    array_init (*arr);
+    VK_ALLOC_INIT_ZVAL(*arr);
+    array_init(*arr);
   }
   switch (typed_mode) {
     case 0: {
-      assert (val);
-      assert (*arr && Z_TYPE_P(*arr) == IS_ARRAY);
-      #ifdef VLOG
-      fprintf (stderr, "set_field: num:%d val_type:%d arr:%p\n", num, Z_TYPE_P (val), *arr);
-      #endif
+      assert(val);
+      assert(*arr && Z_TYPE_P(*arr) == IS_ARRAY);
+#ifdef VLOG
+      fprintf(stderr, "set_field: num:%d val_type:%d arr:%p\n", num, Z_TYPE_P(val), *arr);
+#endif
       if (id && strlen(id)) {
-        vk_add_assoc_zval_nod (*arr, (char *)id, val);
+        vk_add_assoc_zval_nod(*arr, (char *)id, val);
       } else {
-        vk_add_index_zval_nod (*arr, num, val);
+        vk_add_index_zval_nod(*arr, num, val);
       }
       break;
     }
     case 1: {
-      assert (val);
-      assert (*arr && Z_TYPE_P(*arr) == IS_OBJECT);
-      #ifdef VLOG
-      fprintf (stderr, "set_field: num:%d val_type:%d arr:%p\n", num, Z_TYPE_P (val), *arr);
-      #endif
+      assert(val);
+      assert(*arr && Z_TYPE_P(*arr) == IS_OBJECT);
+#ifdef VLOG
+      fprintf(stderr, "set_field: num:%d val_type:%d arr:%p\n", num, Z_TYPE_P(val), *arr);
+#endif
       if (id && strlen(id)) {
         vk_zend_update_public_property_nod(*arr, id, val);
       } else {
@@ -704,30 +697,30 @@ void set_field(zval **arr, zval *val, const char *id, long long num) {
       break;
     }
   }
-  END_TIMER (set_field);
+  END_TIMER(set_field);
 }
 
 void set_field_string(zval **arr, char *val, const char *id, int num) {
-  ADD_CNT (set_field_string);
-  START_TIMER (set_field_string);
+  ADD_CNT(set_field_string);
+  START_TIMER(set_field_string);
   if (!*arr) {
     php_error_docref(NULL, E_WARNING, "In fetching of the function: %s\nAttempt to set_field_string() of NULL tl object", tl_current_function_name);
-    VK_ALLOC_INIT_ZVAL (*arr);
-    array_init (*arr);
+    VK_ALLOC_INIT_ZVAL(*arr);
+    array_init(*arr);
   }
   switch (typed_mode) {
     case 0:
-      assert (val);
-      assert (*arr && Z_TYPE_P(*arr) == IS_ARRAY);
+      assert(val);
+      assert(*arr && Z_TYPE_P(*arr) == IS_ARRAY);
       if (id && strlen(id)) {
-        vk_add_assoc_string_dup (*arr, (char *)id, val);
+        vk_add_assoc_string_dup(*arr, (char *)id, val);
       } else {
-        vk_add_index_string_dup (*arr, num, val);
+        vk_add_index_string_dup(*arr, num, val);
       }
       break;
     case 1:
-      assert (val);
-      assert (*arr && Z_TYPE_P(*arr) == IS_OBJECT);
+      assert(val);
+      assert(*arr && Z_TYPE_P(*arr) == IS_OBJECT);
       if (id && strlen(id)) {
         vk_zend_update_public_property_string(*arr, id, val);
       } else {
@@ -738,21 +731,21 @@ void set_field_string(zval **arr, char *val, const char *id, int num) {
       }
       break;
   }
-  END_TIMER (set_field_string);
+  END_TIMER(set_field_string);
 }
 
 void set_field_int(zval **arr, int val, const char *id, int num) {
-  ADD_CNT (set_field_int);
-  START_TIMER (set_field_int);
+  ADD_CNT(set_field_int);
+  START_TIMER(set_field_int);
   if (!*arr) {
     php_error_docref(NULL, E_WARNING, "In fetching of the function: %s\nAttempt to set_field_int() of NULL tl object", tl_current_function_name);
-    VK_ALLOC_INIT_ZVAL (*arr);
-    array_init (*arr);
+    VK_ALLOC_INIT_ZVAL(*arr);
+    array_init(*arr);
   }
   switch (typed_mode) {
     case 0:
       if (id && strlen(id)) {
-        add_assoc_long (*arr, (char *)id, val);
+        add_assoc_long(*arr, (char *)id, val);
       } else {
         add_index_long(*arr, num, val);
       }
@@ -768,11 +761,11 @@ void set_field_int(zval **arr, int val, const char *id, int num) {
       }
       break;
   }
-  END_TIMER (set_field_int);
+  END_TIMER(set_field_int);
 }
 
 int get_array_size(zval **arr) {
-  return zend_hash_num_elements (Z_ARRVAL_P(*arr));
+  return zend_hash_num_elements(Z_ARRVAL_P(*arr));
 }
 /* }}} */
 
@@ -811,7 +804,7 @@ long long var_nat_const_to_int(void *x) {
 }
 
 void *int_to_var_nat_const(long long x) {
-  if (use_var_nat_full_form (x)) {
+  if (use_var_nat_full_form(x)) {
     auto *T = reinterpret_cast<tl_tree_nat_const *>(zzemalloc(sizeof(tl_tree_nat_const)));
     T->self.ref_cnt = 1;
     T->self.flags = 0;
@@ -830,9 +823,9 @@ void *int_to_var_nat_const(long long x) {
 }
 
 void *int_to_var_nat_const_init(long long x) {
-  if (use_var_nat_full_form (x)) {
+  if (use_var_nat_full_form(x)) {
     tl_tree_nat_const *T = reinterpret_cast<tl_tree_nat_const *>(zzmalloc(sizeof(*T)));
-    ADD_PMALLOC (sizeof(*T));
+    ADD_PMALLOC(sizeof(*T));
     T->self.ref_cnt = 1;
     T->self.flags = 0;
     T->self.methods = &tl_pnat_const_full_methods;
@@ -845,7 +838,6 @@ void *int_to_var_nat_const_init(long long x) {
     return (void *)(long)(x * 2 - 0x80000001l);
   }
 }
-
 
 int get_constructor(struct tl_type *t, const char *id) {
   int i;
@@ -871,7 +863,7 @@ struct tl_tree *__vars[MAX_VARS];
 struct tl_tree **last_var_ptr;
 
 struct tl_tree **get_var_space(struct tl_tree **vars, int n) {
-//  fprintf (stderr, "get_var_space: %d\n", n);
+  //  fprintf (stderr, "get_var_space: %d\n", n);
   if (vars - n < __vars) {
     vkext_reset_error();
     vkext_error(VKEXT_ERROR_NOT_ENOUGH_MEMORY, "Not enough memory");
@@ -890,7 +882,6 @@ struct tl_tree **get_var_space(struct tl_tree **vars, int n) {
   return vars - n;
 }
 
-
 void tl_parse_on_rinit() {
   last_var_ptr = __vars + MAX_VARS;
 }
@@ -898,7 +889,7 @@ void tl_parse_on_rinit() {
 void tl_parse_on_rshutdown() {
   while (last_var_ptr < __vars + MAX_VARS) {
     if (*last_var_ptr) {
-      DEC_REF (*last_var_ptr);
+      DEC_REF(*last_var_ptr);
       *last_var_ptr = 0;
     }
     last_var_ptr++;
@@ -909,8 +900,8 @@ void tl_parse_on_rshutdown() {
 void *_Data[MAX_SIZE];
 
 typedef void *(*fpr_t)(void **IP, void **Data, zval **arr, struct tl_tree **vars);
-#define TLUNI_NEXT return (*(fpr_t *) IP) (IP + 1, Data, arr, vars);
-#define TLUNI_START(IP, Data, arr, vars) (*(fpr_t *) IP) (IP + 1, Data, arr, vars)
+#define TLUNI_NEXT return (*(fpr_t *)IP)(IP + 1, Data, arr, vars);
+#define TLUNI_START(IP, Data, arr, vars) (*(fpr_t *)IP)(IP + 1, Data, arr, vars)
 
 #define TLUNI_OK (void *)1l
 #define TLUNI_FAIL (void *)0
@@ -918,7 +909,7 @@ typedef void *(*fpr_t)(void **IP, void **Data, zval **arr, struct tl_tree **vars
 void **fIP;
 
 inline void tl_debug(const char *s __attribute__((unused)), int n __attribute__((unused))) {
-  //fprintf(stderr, "%s\n", s);
+  // fprintf(stderr, "%s\n", s);
 }
 
 /* {{{ Interface functions */
@@ -926,7 +917,7 @@ inline void tl_debug(const char *s __attribute__((unused)), int n __attribute__(
 struct tl_tree *store_function(VK_ZVAL_API_P arr) {
   ADD_CNT(store_function)
   START_TIMER(store_function)
-  assert (arr);
+  assert(arr);
   zval *dst;
   // IN PHP5 r == &dst => lifetime is limited by scope of this function
   VK_ZVAL_API_P r = get_field(VK_ZVAL_API_TO_ZVALP(arr), "_", 0, &dst);
@@ -939,7 +930,7 @@ struct tl_tree *store_function(VK_ZVAL_API_P arr) {
   struct tl_combinator *c;
   char *s = 0;
   int l = 0;
-  if (VK_Z_API_TYPE (r) == IS_STRING) {
+  if (VK_Z_API_TYPE(r) == IS_STRING) {
     int l;
     s = parse_zend_string(r, &l);
     c = tl_fun_get_by_id(s);
@@ -948,20 +939,20 @@ struct tl_tree *store_function(VK_ZVAL_API_P arr) {
     c = tl_fun_get_by_name(l);
   }
   if (!c) {
-    #ifdef VLOG
-    if (Z_TYPE_PP (r) == IS_STRING) {
-      fprintf (stderr, "Function %s not found\n", s);
+#ifdef VLOG
+    if (Z_TYPE_PP(r) == IS_STRING) {
+      fprintf(stderr, "Function %s not found\n", s);
     } else {
-      fprintf (stderr, "Function %d not found\n", l);
+      fprintf(stderr, "Function %d not found\n", l);
     }
-    #endif
+#endif
     vkext_reset_error();
-    if (VK_Z_API_TYPE (r) == IS_STRING) {
+    if (VK_Z_API_TYPE(r) == IS_STRING) {
       vkext_error_format(VKEXT_ERROR_UNKNOWN_CONSTRUCTOR, "Function %s not found", s);
     } else {
       vkext_error_format(VKEXT_ERROR_UNKNOWN_CONSTRUCTOR, "Function %d not found", l);
     }
-    if (VK_Z_API_TYPE (arr) == IS_OBJECT) {
+    if (VK_Z_API_TYPE(arr) == IS_OBJECT) {
       zval_ptr_dtor(r);
       efree(dst);
     }
@@ -970,7 +961,7 @@ struct tl_tree *store_function(VK_ZVAL_API_P arr) {
   }
   if (!allow_internal_rpc_queries && (c->flags & COMBINATOR_FLAG_INTERNAL)) {
     php_error_docref(NULL, E_WARNING, "### DEPRECATED TL FEATURE ###:\nStoring of internal tl function %s\n", c->id);
-    if (VK_Z_API_TYPE (arr) == IS_OBJECT) {
+    if (VK_Z_API_TYPE(arr) == IS_OBJECT) {
       zval_ptr_dtor(r);
       efree(dst);
     }
@@ -978,18 +969,18 @@ struct tl_tree *store_function(VK_ZVAL_API_P arr) {
     return 0;
   }
 #ifdef VLOG
-  fprintf (stderr, "Storing functions %s\n", c->id);
+  fprintf(stderr, "Storing functions %s\n", c->id);
 #endif
   tl_current_function_name = c->id;
   struct tl_tree **vars = get_var_space(__vars + MAX_VARS, c->var_num);
   if (!vars) {
     vkext_reset_error();
-    if (VK_Z_API_TYPE (r) == IS_STRING) {
+    if (VK_Z_API_TYPE(r) == IS_STRING) {
       vkext_error_format(VKEXT_ERROR_NOT_ENOUGH_MEMORY, "Not enough memory to store %s", s);
     } else {
       vkext_error_format(VKEXT_ERROR_NOT_ENOUGH_MEMORY, "Not enough memory to store %d", l);
     }
-    if (VK_Z_API_TYPE (arr) == IS_OBJECT) {
+    if (VK_Z_API_TYPE(arr) == IS_OBJECT) {
       zval_ptr_dtor(r);
       efree(dst);
     }
@@ -998,11 +989,12 @@ struct tl_tree *store_function(VK_ZVAL_API_P arr) {
   }
   static zval *_arr[MAX_DEPTH];
   _arr[0] = VK_ZVAL_API_TO_ZVALP(arr);
-  void *res = TLUNI_START (c->IP, _Data, _arr, vars);
+  void *res = TLUNI_START(c->IP, _Data, _arr, vars);
 #ifdef VLOG
   if (res) {
     void *T = res;
-    fprintf (stderr, "Store end: T->id = %s, T->ref_cnt = %d, T->flags = %d\n", ((struct tl_tree_type *)T)->type->id, ((struct tl_tree_type *)T)->self.ref_cnt, ((struct tl_tree_type *)T)->self.flags);
+    fprintf(stderr, "Store end: T->id = %s, T->ref_cnt = %d, T->flags = %d\n", ((struct tl_tree_type *)T)->type->id, ((struct tl_tree_type *)T)->self.ref_cnt,
+            ((struct tl_tree_type *)T)->self.flags);
   }
 #endif
   if (res) {
@@ -1018,14 +1010,14 @@ struct tl_tree *store_function(VK_ZVAL_API_P arr) {
     dynamic_tree_nodes++;
     total_ref_cnt++;
   } else {
-    if (VK_Z_API_TYPE (r) == IS_STRING) {
+    if (VK_Z_API_TYPE(r) == IS_STRING) {
       vkext_error_format(VKEXT_ERROR_CONSTRUCTION, "Failed to store %s", s);
     } else {
       vkext_error_format(VKEXT_ERROR_CONSTRUCTION, "Failed to store %d", l);
     }
   }
-//  assert (((struct tl_tree *)res)->ref_cnt > 0);
-  if (VK_Z_API_TYPE (arr) == IS_OBJECT) {
+  //  assert (((struct tl_tree *)res)->ref_cnt > 0);
+  if (VK_Z_API_TYPE(arr) == IS_OBJECT) {
     zval_ptr_dtor(r);
     efree(dst);
   }
@@ -1038,33 +1030,34 @@ zval **fetch_function(struct tl_tree *T) {
   START_TIMER(fetch_function)
 #ifdef VLOG
   int *cptr;
-  for (cptr = (int *)inbuf->rptr; cptr < (int *)inbuf->wptr; cptr ++) {
-    fprintf (stderr, "Int %d (%08x)\n", *cptr, *cptr);
+  for (cptr = (int *)inbuf->rptr; cptr < (int *)inbuf->wptr; cptr++) {
+    fprintf(stderr, "Int %d (%08x)\n", *cptr, *cptr);
   }
 #endif
-  assert (T);
+  assert(T);
   struct tl_tree **vars = __vars + MAX_VARS;
   static zval *_arr[MAX_DEPTH];
   *_arr = 0;
   *(_Data) = T;
 #ifdef VLOG
-  fprintf (stderr, "Fetch begin: T->id = %s, T->ref_cnt = %d, T->flags = %d\n", ((struct tl_tree_type *)T)->type->id, ((struct tl_tree_type *)T)->self.ref_cnt, ((struct tl_tree_type *)T)->self.flags);
+  fprintf(stderr, "Fetch begin: T->id = %s, T->ref_cnt = %d, T->flags = %d\n", ((struct tl_tree_type *)T)->type->id, ((struct tl_tree_type *)T)->self.ref_cnt,
+          ((struct tl_tree_type *)T)->self.flags);
 #endif
-//  INC_REF (T);
+  //  INC_REF (T);
 
   int pos = tl_parse_save_pos();
   vkext_rpc::RpcError rpc_error;
   rpc_error.try_fetch();
   if (rpc_error.error.has_value()) {
     *_arr = make_query_result_or_error(NULL, rpc_error.error.value(), rpc_error.header.has_value() ? &rpc_error.header.value() : nullptr, rpc_error.flags);
-    DEC_REF (T);
+    DEC_REF(T);
     END_TIMER(fetch_function)
     return _arr;
   }
   tl_parse_restore_pos(pos);
 
-  void *res = TLUNI_START (fIP, _Data + 1, _arr, vars);
-//  DEC_REF (T);
+  void *res = TLUNI_START(fIP, _Data + 1, _arr, vars);
+  //  DEC_REF (T);
   if (res == TLUNI_OK) {
     tl_parse_end();
     if (tl_parse_error()) {
@@ -1075,12 +1068,12 @@ zval **fetch_function(struct tl_tree *T) {
   if (res == TLUNI_OK) {
     if (!*_arr) {
       VK_ALLOC_INIT_ZVAL(*_arr);
-      ZVAL_BOOL (*_arr, 1);
+      ZVAL_BOOL(*_arr, 1);
     }
     return _arr;
   } else {
     if (*_arr) {
-      zval_dtor (*_arr);
+      zval_dtor(*_arr);
     }
     *_arr = make_query_result_or_error(NULL, {TL_ERROR_RESPONSE_SYNTAX, "Can't parse response"});
     return _arr;
@@ -1091,31 +1084,31 @@ void _extra_dec_ref(struct rpc_query *q) {
   if (q->extra) {
     total_tl_working--;
   }
-  DEC_REF (q->extra);
+  DEC_REF(q->extra);
   q->extra = 0;
   q->extra_free = 0;
 }
 
 struct rpc_query *vk_rpc_tl_query_one_impl(struct rpc_connection *c, double timeout, VK_ZVAL_API_P arr, int ignore_answer) {
   do_rpc_clean();
-  START_TIMER (tmp);
+  START_TIMER(tmp);
   void *res = store_function(arr);
-  END_TIMER (tmp);
+  END_TIMER(tmp);
   if (!res) {
     return 0;
   }
   struct rpc_query *q;
   if (!(q = do_rpc_send_noflush(c, timeout, ignore_answer))) {
-    DEC_REF (res);
+    DEC_REF(res);
     vkext_error(VKEXT_ERROR_NETWORK, "Can't send packet");
     return 0;
   }
   if (q == (struct rpc_query *)1) { // answer is ignored
-    assert (ignore_answer);
-    DEC_REF (res);
+    assert(ignore_answer);
+    DEC_REF(res);
     return q;
   }
-  assert (!ignore_answer);
+  assert(!ignore_answer);
   q->extra = res;
   q->extra_free = _extra_dec_ref;
   total_tl_working++;
@@ -1124,17 +1117,17 @@ struct rpc_query *vk_rpc_tl_query_one_impl(struct rpc_connection *c, double time
 
 zval **vk_rpc_tl_query_result_one_impl(struct tl_tree *T) {
   tl_parse_init();
-  START_TIMER (tmp);
+  START_TIMER(tmp);
   zval **r = fetch_function(T);
-  //fprintf(stderr, "~~~~ after fetch:\n");
-  //php_debug_zval_dump(*r, 1);
-  END_TIMER (tmp);
+  // fprintf(stderr, "~~~~ after fetch:\n");
+  // php_debug_zval_dump(*r, 1);
+  END_TIMER(tmp);
   return r;
 }
 
 void vk_rpc_tl_query_impl(struct rpc_connection *c, VK_ZVAL_API_P arr, double timeout, zval **r, int ignore_answer) {
   VK_ZVAL_API_P zkey;
-  array_init (*r);
+  array_init(*r);
   unsigned long index;
   NEW_INIT_Z_STR_P(key);
 
@@ -1164,7 +1157,8 @@ void vk_rpc_tl_query_impl(struct rpc_connection *c, VK_ZVAL_API_P arr, double ti
         add_index_bool(*r, index, 0);
       }
     }
-  } VK_ZEND_HASH_FOREACH_END();
+  }
+  VK_ZEND_HASH_FOREACH_END();
 }
 
 long long vk_queries_count(INTERNAL_FUNCTION_PARAMETERS) {
@@ -1173,20 +1167,20 @@ long long vk_queries_count(INTERNAL_FUNCTION_PARAMETERS) {
 }
 
 void vk_rpc_tl_query(INTERNAL_FUNCTION_PARAMETERS) {
-  ADD_CNT (parse);
-  START_TIMER (parse);
-  int argc = ZEND_NUM_ARGS ();
+  ADD_CNT(parse);
+  START_TIMER(parse);
+  int argc = ZEND_NUM_ARGS();
   VK_ZVAL_API_ARRAY z[5];
   if (argc < 2) {
     vkext_reset_error();
     vkext_error(VKEXT_ERROR_INVALID_CALL, "Not enough parameters for rpc_tl_query");
-    END_TIMER (parse);
+    END_TIMER(parse);
     RETURN_EMPTY_ARRAY();
   }
-  if (zend_get_parameters_array_ex (argc > 4 ? 4 : argc, z) == FAILURE) {
+  if (zend_get_parameters_array_ex(argc > 4 ? 4 : argc, z) == FAILURE) {
     vkext_reset_error();
     vkext_error(VKEXT_ERROR_INVALID_CALL, "Can't parse parameters for rpc_tl_query");
-    END_TIMER (parse);
+    END_TIMER(parse);
     RETURN_EMPTY_ARRAY();
   }
 
@@ -1194,16 +1188,16 @@ void vk_rpc_tl_query(INTERNAL_FUNCTION_PARAMETERS) {
   if (fd == VK_INCORRECT_FD) {
     vkext_reset_error();
     vkext_error(VKEXT_ERROR_WRONG_TYPE, "Invalid connection type");
-    END_TIMER (parse);
+    END_TIMER(parse);
     RETURN_EMPTY_ARRAY();
   }
 
   struct rpc_connection *c = rpc_connection_get(fd);
-//  if (!c || !c->server || c->server->status != rpc_status_connected) {
+  //  if (!c || !c->server || c->server->status != rpc_status_connected) {
   if (!c || !c->servers) {
     vkext_reset_error();
     vkext_error(VKEXT_ERROR_NETWORK, "Invalid connection in rpc_tl_query");
-    END_TIMER (parse);
+    END_TIMER(parse);
     RETURN_EMPTY_ARRAY();
   }
 
@@ -1212,38 +1206,38 @@ void vk_rpc_tl_query(INTERNAL_FUNCTION_PARAMETERS) {
   update_precise_now();
   timeout += precise_now;
 
-  if (VK_Z_API_TYPE (VK_ZVAL_ARRAY_TO_API_P(z[1])) != IS_ARRAY) {
+  if (VK_Z_API_TYPE(VK_ZVAL_ARRAY_TO_API_P(z[1])) != IS_ARRAY) {
     vkext_reset_error();
     vkext_error(VKEXT_ERROR_INVALID_CALL, "Can't parse parameters for rpc_tl_query");
     RETURN_EMPTY_ARRAY();
   }
-  END_TIMER (parse);
+  END_TIMER(parse);
 
   vk_rpc_tl_query_impl(c, VK_ZVAL_ARRAY_TO_API_P(z[1]), timeout, &return_value, ignore_answer);
-//  if (do_rpc_flush_server (c->server, timeout) < 0) {
+  //  if (do_rpc_flush_server (c->server, timeout) < 0) {
   if (do_rpc_flush(timeout) < 0) {
     vkext_reset_error();
     vkext_error(VKEXT_ERROR_NETWORK, "Can't send query");
-    zval_dtor (return_value);
+    zval_dtor(return_value);
     RETURN_EMPTY_ARRAY();
   }
 }
 
 void vk_rpc_tl_query_one(INTERNAL_FUNCTION_PARAMETERS) {
-  ADD_CNT (parse);
-  START_TIMER (parse);
-  int argc = ZEND_NUM_ARGS ();
+  ADD_CNT(parse);
+  START_TIMER(parse);
+  int argc = ZEND_NUM_ARGS();
   VK_ZVAL_API_ARRAY z[5];
   if (argc < 2) {
     vkext_reset_error();
     vkext_error(VKEXT_ERROR_INVALID_CALL, "Not enough parameters for rpc_tl_query_one");
-    END_TIMER (parse);
+    END_TIMER(parse);
     RETURN_FALSE;
   }
-  if (zend_get_parameters_array_ex (argc > 3 ? 3 : argc, z) == FAILURE) {
+  if (zend_get_parameters_array_ex(argc > 3 ? 3 : argc, z) == FAILURE) {
     vkext_reset_error();
     vkext_error(VKEXT_ERROR_INVALID_CALL, "Can't parse parameters for rpc_tl_query_one");
-    END_TIMER (parse);
+    END_TIMER(parse);
     RETURN_FALSE;
   }
 
@@ -1252,7 +1246,7 @@ void vk_rpc_tl_query_one(INTERNAL_FUNCTION_PARAMETERS) {
   if (!c || !c->servers) {
     vkext_reset_error();
     vkext_error(VKEXT_ERROR_NETWORK, "Invalid connection in rpc_tl_query");
-    END_TIMER (parse);
+    END_TIMER(parse);
     RETURN_FALSE;
   }
 
@@ -1260,13 +1254,13 @@ void vk_rpc_tl_query_one(INTERNAL_FUNCTION_PARAMETERS) {
   update_precise_now();
   timeout += precise_now;
 
-  END_TIMER (parse);
+  END_TIMER(parse);
 
   struct rpc_query *q = vk_rpc_tl_query_one_impl(c, timeout, VK_ZVAL_ARRAY_TO_API_P(z[1]), 0);
   if (do_rpc_flush(timeout) < 0) {
     vkext_reset_error();
     vkext_error(VKEXT_ERROR_NETWORK, "Can't send query");
-    zval_dtor (return_value);
+    zval_dtor(return_value);
     RETURN_FALSE;
   }
   if (q) {
@@ -1385,7 +1379,7 @@ static zval *make_query_result_or_error(zval **r, const vkext_rpc::tl::RpcReqErr
 }
 
 void vk_rpc_tl_query_result_impl(struct rpc_queue *Q, double timeout, zval **r) {
-  array_init (*r);
+  array_init(*r);
   while (!do_rpc_queue_empty(Q)) {
     long long qid = do_rpc_queue_next(Q, timeout);
     if (qid <= 0) {
@@ -1394,27 +1388,27 @@ void vk_rpc_tl_query_result_impl(struct rpc_queue *Q, double timeout, zval **r) 
     struct rpc_query *q = rpc_query_get(qid);
     tl_tree *T = reinterpret_cast<tl_tree *>(q->extra);
     tl_current_function_name = q->fun_name;
-    INC_REF (T);
+    INC_REF(T);
 
     if (do_rpc_get_and_parse(qid, timeout - precise_now) < 0) {
       continue;
     }
     zval *res = make_query_result_or_error(vk_rpc_tl_query_result_one_impl(T), {TL_ERROR_RESPONSE_NOT_FOUND, "Response not found, probably timed out"});
-    vk_add_index_zval_nod (*r, qid, res);
+    vk_add_index_zval_nod(*r, qid, res);
   }
 }
 
 void vk_rpc_tl_query_result_one(INTERNAL_FUNCTION_PARAMETERS) {
-  ADD_CNT (parse);
-  START_TIMER (parse);
-  int argc = ZEND_NUM_ARGS ();
+  ADD_CNT(parse);
+  START_TIMER(parse);
+  int argc = ZEND_NUM_ARGS();
   VK_ZVAL_API_ARRAY z[5];
   if (argc < 1) {
-    END_TIMER (parse);
+    END_TIMER(parse);
     RETURN_FALSE;
   }
-  if (zend_get_parameters_array_ex (argc > 1 ? 2 : argc, z) == FAILURE) {
-    END_TIMER (parse);
+  if (zend_get_parameters_array_ex(argc > 1 ? 2 : argc, z) == FAILURE) {
+    END_TIMER(parse);
     RETURN_FALSE;
   }
   long long qid = parse_zend_long(VK_ZVAL_ARRAY_TO_API_P(z[0]));
@@ -1428,9 +1422,9 @@ void vk_rpc_tl_query_result_one(INTERNAL_FUNCTION_PARAMETERS) {
   tl_current_function_name = q->fun_name;
   update_precise_now();
   double timeout = (argc < 2) ? q->timeout : precise_now + parse_zend_double(VK_ZVAL_ARRAY_TO_API_P(z[1]));
-  END_TIMER (parse);
+  END_TIMER(parse);
   auto *T = reinterpret_cast<tl_tree *>(q->extra);
-  INC_REF (T);
+  INC_REF(T);
   if (do_rpc_get_and_parse(qid, timeout - precise_now) < 0) {
     zval *r = make_query_result_or_error(NULL, {TL_ERROR_RESPONSE_NOT_FOUND, "Response not found, probably timed out"});
     RETVAL_ZVAL(r, false, true);
@@ -1443,31 +1437,31 @@ void vk_rpc_tl_query_result_one(INTERNAL_FUNCTION_PARAMETERS) {
 }
 
 void vk_rpc_tl_query_result(INTERNAL_FUNCTION_PARAMETERS) {
-  ADD_CNT (parse);
-  START_TIMER (parse);
-  int argc = ZEND_NUM_ARGS ();
+  ADD_CNT(parse);
+  START_TIMER(parse);
+  int argc = ZEND_NUM_ARGS();
   VK_ZVAL_API_ARRAY z[5];
   if (argc < 1) {
-    END_TIMER (parse);
+    END_TIMER(parse);
     RETURN_FALSE;
   }
-  if (zend_get_parameters_array_ex (argc > 1 ? 2 : argc, z) == FAILURE) {
-    END_TIMER (parse);
+  if (zend_get_parameters_array_ex(argc > 1 ? 2 : argc, z) == FAILURE) {
+    END_TIMER(parse);
     RETURN_FALSE;
   }
   VK_ZVAL_API_P arr = VK_ZVAL_ARRAY_TO_API_P(z[0]);
-  if (VK_Z_API_TYPE (arr) != IS_ARRAY) {
+  if (VK_Z_API_TYPE(arr) != IS_ARRAY) {
     RETURN_FALSE;
   }
 
   VK_ZVAL_API_P zkey;
 
-  int max_size = zend_hash_num_elements (VK_Z_API_ARRVAL(arr));
+  int max_size = zend_hash_num_elements(VK_Z_API_ARRVAL(arr));
   long long qids[max_size];
   int size = 0;
 
   VK_ZEND_HASH_FOREACH_VAL(VK_Z_API_ARRVAL(arr), zkey) {
-    assert (size < max_size);
+    assert(size < max_size);
     qids[size++] = parse_zend_long(zkey);
     if (!qids[size - 1]) {
       size--;
@@ -1477,24 +1471,25 @@ void vk_rpc_tl_query_result(INTERNAL_FUNCTION_PARAMETERS) {
         delete_query_from_queue_ex(q);
       }
     }
-  } VK_ZEND_HASH_FOREACH_END();
+  }
+  VK_ZEND_HASH_FOREACH_END();
 
   long long Qid = do_rpc_queue_create(size, qids);
   if (!Qid) {
-    END_TIMER (parse);
+    END_TIMER(parse);
     RETURN_FALSE;
   }
   struct rpc_queue *Q = rpc_queue_get(Qid);
-  assert (Q);
+  assert(Q);
   update_precise_now();
   double timeout = (argc < 2) ? Q->timeout : precise_now + parse_zend_double(VK_ZVAL_ARRAY_TO_API_P(z[1]));
-  END_TIMER (parse);
+  END_TIMER(parse);
 
   zval *R = NULL;
   VK_ALLOC_INIT_ZVAL(R);
   vk_rpc_tl_query_result_impl(Q, timeout, &R);
 
-  array_init (return_value);
+  array_init(return_value);
   NEW_INIT_Z_STR_P(key);
   unsigned long index;
 
@@ -1506,17 +1501,17 @@ void vk_rpc_tl_query_result(INTERNAL_FUNCTION_PARAMETERS) {
     long long qid = parse_zend_long(zkey);
     if (qid > 0) {
       VK_ZVAL_API_P r;
-      if ((r = vk_zend_hash_index_find(Z_ARRVAL_P (R), qid)) == NULL) {
+      if ((r = vk_zend_hash_index_find(Z_ARRVAL_P(R), qid)) == NULL) {
         r = 0;
       } else {
-        VK_ZAPI_TRY_ADDREF_P (r);
+        VK_ZAPI_TRY_ADDREF_P(r);
       }
       if (VK_ZSTR_P_NON_EMPTY(key)) {
         if (r) {
           add_assoc_zval_ex(return_value, key->val, key->len, VK_ZVAL_API_TO_ZVALP(r));
         } else {
           zval *_err = make_query_result_or_error(NULL, {TL_ERROR_RESPONSE_NOT_FOUND, "Response not found, probably timed out"});
-          vk_add_assoc_zval_ex_nod (return_value, key->val, key->len, _err);
+          vk_add_assoc_zval_ex_nod(return_value, key->val, key->len, _err);
         }
 
       } else {
@@ -1524,15 +1519,15 @@ void vk_rpc_tl_query_result(INTERNAL_FUNCTION_PARAMETERS) {
           add_index_zval(return_value, index, VK_ZVAL_API_TO_ZVALP(r));
         } else {
           zval *_err = make_query_result_or_error(NULL, {TL_ERROR_RESPONSE_NOT_FOUND, "Response not found, probably timed out"});
-          vk_add_index_zval_nod (return_value, index, _err);
+          vk_add_index_zval_nod(return_value, index, _err);
         }
       }
     }
+  }
+  VK_ZEND_HASH_FOREACH_END();
 
-  } VK_ZEND_HASH_FOREACH_END();
-
-  zval_dtor (R);
-  efree (R);
+  zval_dtor(R);
+  efree(R);
   do_rpc_queue_free(Qid);
 }
 /* }}} */
@@ -1542,7 +1537,7 @@ void vk_rpc_tl_query_result(INTERNAL_FUNCTION_PARAMETERS) {
 void *tls_push(void **IP, void **Data, zval **arr, struct tl_tree **vars) {
   tl_debug(__FUNCTION__, -1);
   *(Data++) = *(IP++);
-  INC_REF (*(Data - 1));
+  INC_REF(*(Data - 1));
   TLUNI_NEXT;
 }
 
@@ -1587,7 +1582,6 @@ void *tls_store_int(void **IP, void **Data, zval **arr, struct tl_tree **vars) {
 
 /**** Combinator store code {{{ ****/
 
-
 void *tlcomb_store_const_int(void **IP, void **Data, zval **arr, struct tl_tree **vars) {
   tl_debug(__FUNCTION__, -1);
   do_rpc_store_int((long)*(IP++));
@@ -1631,7 +1625,7 @@ void *tlcomb_store_any_function(void **IP, void **Data, zval **arr, struct tl_tr
   char *s = parse_zend_string(r, &l);
   struct tl_combinator *c = tl_fun_get_by_id(s);
 #ifdef VLOG
-  fprintf (stderr, "Storing functions %s\n", c->id);
+  fprintf(stderr, "Storing functions %s\n", c->id);
 #endif
   if (!c) {
     vkext_reset_error();
@@ -1652,7 +1646,7 @@ void *tlcomb_store_any_function(void **IP, void **Data, zval **arr, struct tl_tr
     }
     return 0;
   }
-  void *res = TLUNI_START (c->IP, Data, arr, new_vars);
+  void *res = TLUNI_START(c->IP, Data, arr, new_vars);
   if (!res) {
     vkext_error_format(VKEXT_ERROR_CONSTRUCTION, "Can't store arguments of %s", s);
     if (Z_TYPE_P(*arr) == IS_OBJECT) {
@@ -1683,18 +1677,18 @@ void *tlcomb_store_any_function(void **IP, void **Data, zval **arr, struct tl_tr
  * IP
  *
  ****/
- /*
-  * This function is called on fetching of any tl type. It fetches it to *arr.
-  */
+/*
+ * This function is called on fetching of any tl type. It fetches it to *arr.
+ */
 void *tlcomb_fetch_type(void **IP, void **Data, zval **arr, struct tl_tree **vars) {
   tl_debug(__FUNCTION__, -1);
   auto *e = *reinterpret_cast<tl_tree_type **>(--Data);
-  assert (e);
+  assert(e);
   struct tl_type *t = e->type;
-  assert (t);
-   //fprintf(stderr, "^^^^^^^^^^^^ Fetching type %s. Flags %d\n", t->id, e->self.flags);
+  assert(t);
+  // fprintf(stderr, "^^^^^^^^^^^^ Fetching type %s. Flags %d\n", t->id, e->self.flags);
 #ifdef VLOG
-  fprintf (stderr, "Fetching type %s. Flags %d\n", t->id, e->self.flags);
+  fprintf(stderr, "Fetching type %s. Flags %d\n", t->id, e->self.flags);
 #endif
   int n = -1;
   if (e->self.flags & FLAG_BARE) {
@@ -1705,30 +1699,30 @@ void *tlcomb_fetch_type(void **IP, void **Data, zval **arr, struct tl_tree **var
     int p = tl_parse_save_pos();
     int x = tl_parse_int();
     if (tl_parse_error()) {
-      DEC_REF (e);
+      DEC_REF(e);
       return 0;
     }
-    #ifdef VLOG
-    fprintf (stderr, "cosntructor name = %08x\n", x);
-    #endif
+#ifdef VLOG
+    fprintf(stderr, "cosntructor name = %08x\n", x);
+#endif
     n = get_constructor_by_name(t, x);
     if (n < 0) {
-      #ifdef VLOG
-      fprintf (stderr, "Checking for default constructor\n");
-      #endif
+#ifdef VLOG
+      fprintf(stderr, "Checking for default constructor\n");
+#endif
       if (t->flags & FLAG_DEFAULT_CONSTRUCTOR) {
         n = t->constructors_num - 1;
         tl_parse_restore_pos(p);
       }
     }
     if (n < 0) {
-      DEC_REF (e);
+      DEC_REF(e);
       return 0;
     }
   }
   if (n >= 0) {
 #ifdef VLOG
-    fprintf (stderr, "Fetching constructor %s\n", t->constructors[n]->id);
+    fprintf(stderr, "Fetching constructor %s\n", t->constructors[n]->id);
 #endif
     *(Data) = e;
     *arr = 0;
@@ -1741,22 +1735,22 @@ void *tlcomb_fetch_type(void **IP, void **Data, zval **arr, struct tl_tree **var
         char class_name[PHP_CLASS_NAME_BUFFER_LENGTH];
         get_php_class_name(class_name, e, n);
         if (!strcmp(class_name, true_type_class_name)) {
-          VK_ALLOC_INIT_ZVAL (*arr);
-          ZVAL_TRUE (*arr);
+          VK_ALLOC_INIT_ZVAL(*arr);
+          ZVAL_TRUE(*arr);
         } else {
           *arr = create_php_instance(class_name);
         }
       } else {
-        VK_ALLOC_INIT_ZVAL (*arr);
-        array_init (*arr);
+        VK_ALLOC_INIT_ZVAL(*arr);
+        array_init(*arr);
       }
     }
     struct tl_tree **new_vars = get_var_space(vars, t->constructors[n]->var_num);
     if (!new_vars) {
       return 0;
     }
-    //fprintf(stderr, "^^^^^ call constructor %s\n", t->constructors[n]->id);
-    void *res = TLUNI_START (t->constructors[n]->fIP, Data + 1, arr, new_vars); // here the fetching is done
+    // fprintf(stderr, "^^^^^ call constructor %s\n", t->constructors[n]->id);
+    void *res = TLUNI_START(t->constructors[n]->fIP, Data + 1, arr, new_vars); // here the fetching is done
     if (res != TLUNI_OK) {
       return 0;
     }
@@ -1784,7 +1778,7 @@ void *tlcomb_fetch_type(void **IP, void **Data, zval **arr, struct tl_tree **var
                                                                                                       // the first is *arr
                                                                                                       // the second is newly created wrapper of result
         if (is_wrapped) {
-          vk_zend_update_public_property_nod(*arr, result_field_name, result);                        // and here the first owner disappears
+          vk_zend_update_public_property_nod(*arr, result_field_name, result); // and here the first owner disappears
         }
         // after wrapping
         // *arr :: RpcResponseOk
@@ -1792,11 +1786,11 @@ void *tlcomb_fetch_type(void **IP, void **Data, zval **arr, struct tl_tree **var
         // -------------------------- $value :: memcache_get_result[]
       }
     }
-    DEC_REF (e);
+    DEC_REF(e);
     TLUNI_NEXT;
   } else {
 #ifdef VLOG
-    fprintf (stderr, "Fetching any constructor\n");
+    fprintf(stderr, "Fetching any constructor\n");
 #endif
     php_error_docref(NULL, E_WARNING,
                      "### DEPRECATED TL FEATURE ###: "
@@ -1811,18 +1805,18 @@ void *tlcomb_fetch_type(void **IP, void **Data, zval **arr, struct tl_tree **var
       if (!new_vars) {
         return 0;
       }
-      void *r = TLUNI_START (t->constructors[n]->IP, Data + 1, arr, new_vars);
+      void *r = TLUNI_START(t->constructors[n]->IP, Data + 1, arr, new_vars);
       if (r == TLUNI_OK) {
         if (!(e->self.flags & FLAG_BARE) && !(t->flags & FLAG_NOCONS)) {
           set_field_string(arr, t->constructors[n]->id, "_", 0);
         }
-        DEC_REF (e);
+        DEC_REF(e);
         TLUNI_NEXT;
       }
-      assert (tl_parse_restore_pos(k));
+      assert(tl_parse_restore_pos(k));
       tl_parse_clear_error();
     }
-    DEC_REF (e);
+    DEC_REF(e);
     return 0;
   }
 }
@@ -1837,20 +1831,20 @@ void *tlcomb_store_bool(void **IP, void **Data, zval **arr, struct tl_tree **var
  ****/
 void *tlcomb_store_type(void **IP, void **Data, zval **arr, struct tl_tree **vars) {
   tl_debug(__FUNCTION__, -1);
-  //struct tl_type *t = *(IP ++);
+  // struct tl_type *t = *(IP ++);
   auto *e = *reinterpret_cast<tl_tree_type **>(--Data);
-  assert (e);
+  assert(e);
   struct tl_type *t = e->type;
-  assert (t);
+  assert(t);
 #ifdef VLOG
-  fprintf (stderr, "Storing type %s[%x]. *arr = %p\n", t->id, t->name, *arr);
+  fprintf(stderr, "Storing type %s[%x]. *arr = %p\n", t->id, t->name, *arr);
 #endif
 
   if (t->name == TYPE_NAME_BOOL) {
     DEC_REF(e);
-    #ifdef VLOG
+#ifdef VLOG
     fprintf(stderr, "Using hack to store bool\n");
-    #endif
+#endif
     return tlcomb_store_bool(IP, Data, arr, vars);
   }
 
@@ -1876,7 +1870,7 @@ void *tlcomb_store_type(void **IP, void **Data, zval **arr, struct tl_tree **var
         if (n < 0) {
           vkext_reset_error();
           vkext_error_format(VKEXT_ERROR_UNKNOWN_CONSTRUCTOR, "Unknown constructor %s for type %s", s, t->id);
-          DEC_REF (e);
+          DEC_REF(e);
           if (Z_TYPE_P(*arr) == IS_OBJECT) {
             zval_ptr_dtor(v);
             efree(dst);
@@ -1894,7 +1888,7 @@ void *tlcomb_store_type(void **IP, void **Data, zval **arr, struct tl_tree **var
   }
   if (n >= 0) {
 #ifdef VLOG
-    fprintf (stderr, "Storing constructor %s\n", t->constructors[n]->id);
+    fprintf(stderr, "Storing constructor %s\n", t->constructors[n]->id);
 #endif
     *(Data) = e;
     if (!(e->self.flags & FLAG_BARE) && strcmp(t->constructors[n]->id, "_")) {
@@ -1906,16 +1900,16 @@ void *tlcomb_store_type(void **IP, void **Data, zval **arr, struct tl_tree **var
       vkext_error_format(VKEXT_ERROR_NOT_ENOUGH_MEMORY, "Not enough memory to store %s[%s]", t->id, t->constructors[n]->id);
       return 0;
     }
-    if (TLUNI_START (t->constructors[n]->IP, Data + 1, arr, new_vars) != TLUNI_OK) {
+    if (TLUNI_START(t->constructors[n]->IP, Data + 1, arr, new_vars) != TLUNI_OK) {
       vkext_error_format(VKEXT_ERROR_CONSTRUCTION, "Fail to store %s[%s]", t->id, t->constructors[n]->id);
-      DEC_REF (e);
+      DEC_REF(e);
       return 0;
     }
-    DEC_REF (e);
+    DEC_REF(e);
     TLUNI_NEXT;
   } else {
 #ifdef VLOG
-    fprintf (stderr, "Storing any constructor\n");
+    fprintf(stderr, "Storing any constructor\n");
 #endif
     php_error_docref(NULL, E_WARNING,
                      "### DEPRECATED TL FEATURE ###: "
@@ -1935,16 +1929,16 @@ void *tlcomb_store_type(void **IP, void **Data, zval **arr, struct tl_tree **var
         vkext_error_format(VKEXT_ERROR_NOT_ENOUGH_MEMORY, "Not enough memory to store %s", t->id);
         return 0;
       }
-      void *r = TLUNI_START (t->constructors[n]->IP, Data + 1, arr, new_vars);
+      void *r = TLUNI_START(t->constructors[n]->IP, Data + 1, arr, new_vars);
       if (r == TLUNI_OK) {
-        DEC_REF (e);
+        DEC_REF(e);
         TLUNI_NEXT;
       }
-      assert (do_rpc_store_set_pos(k));
+      assert(do_rpc_store_set_pos(k));
     }
     vkext_reset_error();
     vkext_error_format(VKEXT_ERROR_UNKNOWN, "Can't store type %s: constructor not specified [WTF this shouldn't be compilable in TL]", t->id);
-    DEC_REF (e);
+    DEC_REF(e);
     return 0;
   }
 }
@@ -1961,14 +1955,14 @@ void *tlcomb_store_field(void **IP, void **Data, zval **arr, struct tl_tree **va
   int num = (long)*(IP++);
   int type_magic = (long)*(IP++);
 #ifdef VLOG
-  fprintf (stderr, "store_field: id = %s, num = %d\n", id, num);
+  fprintf(stderr, "store_field: id = %s, num = %d\n", id, num);
 #endif
 
   zval *dst;
   // IN PHP5 v == &dst => lifetime is limited by scope of this function
   VK_ZVAL_API_P v = get_field(*arr, id, num, &dst);
 #ifdef VLOG
-  fprintf (stderr, "store_field: field %p\n", v);
+  fprintf(stderr, "store_field: field %p\n", v);
 #endif
   if (!v) {
     vkext_reset_error();
@@ -1982,7 +1976,6 @@ void *tlcomb_store_field(void **IP, void **Data, zval **arr, struct tl_tree **va
   TLUNI_NEXT;
 }
 
-
 /****
  *
  * Data: [data] => [data]
@@ -1994,7 +1987,6 @@ void *tlcomb_store_field_end(void **IP, void **Data, zval **arr, struct tl_tree 
   --arr;
   TLUNI_NEXT;
 }
-
 
 /****
  *
@@ -2009,14 +2001,13 @@ void *tlcomb_fetch_field_end(void **IP, void **Data, zval **arr, struct tl_tree 
   int num = (long)*(IP++);
   if (!*arr) {
     php_error_docref(NULL, E_WARNING, "In fetching of the function: %s\nField is NULL after fetching", tl_current_function_name);
-    VK_ALLOC_INIT_ZVAL (*arr);
-    array_init (*arr);
+    VK_ALLOC_INIT_ZVAL(*arr);
+    array_init(*arr);
   }
   set_field((arr - 1), *arr, id, num);
   arr--;
   TLUNI_NEXT;
 }
-
 
 /****
  *
@@ -2029,22 +2020,22 @@ void *tlcomb_store_array(void **IP, void **Data, zval **arr, struct tl_tree **va
   void **newIP = static_cast<void **>(*(IP++));
   int multiplicity = var_nat_const_to_int(*(--Data));
 #ifdef VLOG
-  fprintf (stderr, "multiplicity %d. *arr = %p\n", multiplicity, *arr);
+  fprintf(stderr, "multiplicity %d. *arr = %p\n", multiplicity, *arr);
 #endif
-  DEC_REF (*Data);
+  DEC_REF(*Data);
   int i;
   for (i = 0; i < multiplicity; i++) {
     VK_ZVAL_API_P w = get_field(*arr, 0, i, NULL);
-    #ifdef VLOG
-    fprintf (stderr, "field = %p\n", w ? *w : 0);
-    #endif
+#ifdef VLOG
+    fprintf(stderr, "field = %p\n", w ? *w : 0);
+#endif
     if (!w) {
       vkext_reset_error();
       vkext_error_format(VKEXT_ERROR_INVALID_ARRAY_SIZE, "No element #%d in array", i);
       return 0;
     }
     *(++arr) = VK_ZVAL_API_TO_ZVALP(w);
-    if (TLUNI_START (newIP, Data, arr, vars) != TLUNI_OK) {
+    if (TLUNI_START(newIP, Data, arr, vars) != TLUNI_OK) {
       vkext_error_format(VKEXT_ERROR_CONSTRUCTION, "Can't parse element #%d in array", i);
       --arr;
       return 0;
@@ -2065,15 +2056,15 @@ void *tlcomb_fetch_array(void **IP, void **Data, zval **arr, struct tl_tree **va
   int num = (long)*(IP++);
   int is_flat = (long)*(IP++);
   const char *owner_name = (char *)*(IP++);
-  //fprintf(stderr, "~~~~~~~~~ owner name = %s flat = %d\n", owner_name, is_flat);
+  // fprintf(stderr, "~~~~~~~~~ owner name = %s flat = %d\n", owner_name, is_flat);
   void **newIP = static_cast<void **>(*(IP++));
   int multiplicity = var_nat_const_to_int(*(--Data));
 #ifdef VLOG
-  fprintf (stderr, "multiplicity %d\n", multiplicity);
+  fprintf(stderr, "multiplicity %d\n", multiplicity);
 #endif
-  DEC_REF (*Data);
-  VK_ALLOC_INIT_ZVAL (*arr);
-  array_init (*arr);
+  DEC_REF(*Data);
+  VK_ALLOC_INIT_ZVAL(*arr);
+  array_init(*arr);
   for (int i = 0; i < multiplicity; i++) {
     *(++arr) = 0;
     if (!is_flat) {
@@ -2087,11 +2078,11 @@ void *tlcomb_fetch_array(void **IP, void **Data, zval **arr, struct tl_tree **va
         check_buffer_overflow(make_tl_class_name(class_name, php_prefix, owner_name, buf, '_'));
         *arr = create_php_instance(class_name);
       } else {
-        VK_ALLOC_INIT_ZVAL (*arr);
-        array_init (*arr);
+        VK_ALLOC_INIT_ZVAL(*arr);
+        array_init(*arr);
       }
     }
-    if (TLUNI_START (newIP, Data, arr, vars) != TLUNI_OK) {
+    if (TLUNI_START(newIP, Data, arr, vars) != TLUNI_OK) {
       if (!is_flat) {
         zval_ptr_dtor(VK_ZVALP_TO_API_ZVALP(*arr));
         *arr = 0;
@@ -2101,8 +2092,8 @@ void *tlcomb_fetch_array(void **IP, void **Data, zval **arr, struct tl_tree **va
     }
     if (!*arr) {
       php_error_docref(NULL, E_WARNING, "In fetching of the function: %s\nElement of tl array is NULL after fetching", tl_current_function_name);
-      VK_ALLOC_INIT_ZVAL (*arr);
-      array_init (*arr);
+      VK_ALLOC_INIT_ZVAL(*arr);
+      array_init(*arr);
     }
     vk_add_index_zval_nod(*(arr - 1), i, *arr);
     --arr;
@@ -2126,7 +2117,7 @@ void *tlcomb_store_int(void **IP, void **Data, zval **arr, struct tl_tree **vars
   int64_t v = parse_zend_long(Z_PP_TO_ZAPI_P(arr));
   const auto &v32 = static_cast<int32_t>(v);
 #ifdef VLOG
-  fprintf (stderr, "Got int %d (0x%08x)\n", v32, v32);
+  fprintf(stderr, "Got int %d (0x%08x)\n", v32, v32);
 #endif
   if (fail_rpc_on_int32_overflow && is_int32_overflow(v)) {
     vkext_reset_error();
@@ -2148,13 +2139,13 @@ void *tlcomb_fetch_int(void **IP, void **Data, zval **arr, struct tl_tree **vars
   tl_debug(__FUNCTION__, -1);
   int a = tl_parse_int();
 #ifdef VLOG
-  fprintf (stderr, "!!!%d (0x%08x). error %s\n", a, a, tl_parse_error () ? tl_parse_error () : "none");
+  fprintf(stderr, "!!!%d (0x%08x). error %s\n", a, a, tl_parse_error() ? tl_parse_error() : "none");
 #endif
   if (tl_parse_error()) {
     return 0;
   }
-  VK_ALLOC_INIT_ZVAL (*arr);
-  ZVAL_LONG (*arr, a);
+  VK_ALLOC_INIT_ZVAL(*arr);
+  ZVAL_LONG(*arr, a);
   TLUNI_NEXT;
 }
 
@@ -2170,8 +2161,8 @@ void *tlcomb_fetch_long(void **IP, void **Data, zval **arr, struct tl_tree **var
   if (tl_parse_error()) {
     return 0;
   }
-  VK_ALLOC_INIT_ZVAL (*arr);
-  ZVAL_LONG (*arr, a);
+  VK_ALLOC_INIT_ZVAL(*arr);
+  ZVAL_LONG(*arr, a);
   TLUNI_NEXT;
 }
 
@@ -2187,8 +2178,8 @@ void *tlcomb_fetch_double(void **IP, void **Data, zval **arr, struct tl_tree **v
   if (tl_parse_error()) {
     return 0;
   }
-  VK_ALLOC_INIT_ZVAL (*arr);
-  ZVAL_DOUBLE (*arr, a);
+  VK_ALLOC_INIT_ZVAL(*arr);
+  ZVAL_DOUBLE(*arr, a);
   TLUNI_NEXT;
 }
 
@@ -2204,8 +2195,8 @@ void *tlcomb_fetch_float(void **IP, void **Data, zval **arr, struct tl_tree **va
   if (tl_parse_error()) {
     return 0;
   }
-  VK_ALLOC_INIT_ZVAL (*arr);
-  ZVAL_DOUBLE (*arr, a);
+  VK_ALLOC_INIT_ZVAL(*arr);
+  ZVAL_DOUBLE(*arr, a);
   TLUNI_NEXT;
 }
 
@@ -2221,10 +2212,10 @@ void *tlcomb_fetch_false(void **IP, void **Data, zval **arr, struct tl_tree **va
     return 0;
   }
 #ifdef VLOG
-    fprintf (stderr, "fetch false\n");
+  fprintf(stderr, "fetch false\n");
 #endif
-  VK_ALLOC_INIT_ZVAL (*arr);
-  ZVAL_FALSE (*arr);
+  VK_ALLOC_INIT_ZVAL(*arr);
+  ZVAL_FALSE(*arr);
   TLUNI_NEXT;
 }
 
@@ -2240,10 +2231,10 @@ void *tlcomb_fetch_true(void **IP, void **Data, zval **arr, struct tl_tree **var
     return 0;
   }
 #ifdef VLOG
-    fprintf (stderr, "fetch true\n");
+  fprintf(stderr, "fetch true\n");
 #endif
-  VK_ALLOC_INIT_ZVAL (*arr);
-  ZVAL_TRUE (*arr);
+  VK_ALLOC_INIT_ZVAL(*arr);
+  ZVAL_TRUE(*arr);
   TLUNI_NEXT;
 }
 
@@ -2259,24 +2250,24 @@ void *tlcomb_fetch_vector(void **IP, void **Data, zval **arr, struct tl_tree **v
   if (tl_parse_error()) {
     return 0;
   }
-  VK_ALLOC_INIT_ZVAL (*arr);
-  array_init (*arr);
+  VK_ALLOC_INIT_ZVAL(*arr);
+  array_init(*arr);
   void **newIP = static_cast<void **>(*(IP++));
 
 #ifdef VLOG
-  fprintf (stderr, "multiplicity %d\n", n);
+  fprintf(stderr, "multiplicity %d\n", n);
 #endif
   int i;
   for (i = 0; i < n; i++) {
     *(++arr) = 0;
-    if (TLUNI_START (newIP, Data, arr, vars) != TLUNI_OK) {
+    if (TLUNI_START(newIP, Data, arr, vars) != TLUNI_OK) {
       --arr;
       return 0;
     }
     if (!*arr) {
       php_error_docref(NULL, E_WARNING, "In fetching of the function: %s\nElement of Vector is NULL after fetching", tl_current_function_name);
-      VK_ALLOC_INIT_ZVAL (*arr);
-      array_init (*arr);
+      VK_ALLOC_INIT_ZVAL(*arr);
+      array_init(*arr);
     }
     vk_add_index_zval_nod(*(arr - 1), i, *arr);
     --arr;
@@ -2296,12 +2287,12 @@ void *tlcomb_fetch_dictionary(void **IP, void **Data, zval **arr, struct tl_tree
   if (tl_parse_error()) {
     return 0;
   }
-  VK_ALLOC_INIT_ZVAL (*arr);
-  array_init (*arr);
+  VK_ALLOC_INIT_ZVAL(*arr);
+  array_init(*arr);
   void **newIP = static_cast<void **>(*(IP++));
 
 #ifdef VLOG
-  fprintf (stderr, "multiplicity %d\n", n);
+  fprintf(stderr, "multiplicity %d\n", n);
 #endif
   int i;
   for (i = 0; i < n; i++) {
@@ -2312,15 +2303,15 @@ void *tlcomb_fetch_dictionary(void **IP, void **Data, zval **arr, struct tl_tree
       return 0;
     }
 
-    if (TLUNI_START (newIP, Data, arr, vars) != TLUNI_OK) {
+    if (TLUNI_START(newIP, Data, arr, vars) != TLUNI_OK) {
       free(s);
       --arr;
       return 0;
     }
     if (!*arr) {
       php_error_docref(NULL, E_WARNING, "In fetching of the function: %s\nElement of Dictionary is NULL after fetching", tl_current_function_name);
-      VK_ALLOC_INIT_ZVAL (*arr);
-      array_init (*arr);
+      VK_ALLOC_INIT_ZVAL(*arr);
+      array_init(*arr);
     }
     array_set_field(arr - 1, *arr, s, 0);
     --arr;
@@ -2335,12 +2326,12 @@ void *tlcomb_fetch_int_key_dictionary(void **IP, void **Data, zval **arr, struct
   if (tl_parse_error()) {
     return 0;
   }
-  VK_ALLOC_INIT_ZVAL (*arr);
-  array_init (*arr);
+  VK_ALLOC_INIT_ZVAL(*arr);
+  array_init(*arr);
   void **newIP = static_cast<void **>(*(IP++));
 
 #ifdef VLOG
-  fprintf (stderr, "multiplicity %d\n", n);
+  fprintf(stderr, "multiplicity %d\n", n);
 #endif
   int i;
   for (i = 0; i < n; i++) {
@@ -2350,14 +2341,14 @@ void *tlcomb_fetch_int_key_dictionary(void **IP, void **Data, zval **arr, struct
       return 0;
     }
 
-    if (TLUNI_START (newIP, Data, arr, vars) != TLUNI_OK) {
+    if (TLUNI_START(newIP, Data, arr, vars) != TLUNI_OK) {
       --arr;
       return 0;
     }
     if (!*arr) {
       php_error_docref(NULL, E_WARNING, "In fetching of the function: %s\nElement of IntKeyDictionary is NULL after fetching", tl_current_function_name);
-      VK_ALLOC_INIT_ZVAL (*arr);
-      array_init (*arr);
+      VK_ALLOC_INIT_ZVAL(*arr);
+      array_init(*arr);
     }
     array_set_field(arr - 1, *arr, NULL, key);
     --arr;
@@ -2371,12 +2362,12 @@ void *tlcomb_fetch_long_key_dictionary(void **IP, void **Data, zval **arr, struc
   if (tl_parse_error()) {
     return 0;
   }
-  VK_ALLOC_INIT_ZVAL (*arr);
-  array_init (*arr);
+  VK_ALLOC_INIT_ZVAL(*arr);
+  array_init(*arr);
   void **newIP = static_cast<void **>(*(IP++));
 
 #ifdef VLOG
-  fprintf (stderr, "multiplicity %d\n", n);
+  fprintf(stderr, "multiplicity %d\n", n);
 #endif
   int i;
   for (i = 0; i < n; i++) {
@@ -2386,14 +2377,14 @@ void *tlcomb_fetch_long_key_dictionary(void **IP, void **Data, zval **arr, struc
       return 0;
     }
 
-    if (TLUNI_START (newIP, Data, arr, vars) != TLUNI_OK) {
+    if (TLUNI_START(newIP, Data, arr, vars) != TLUNI_OK) {
       --arr;
       return 0;
     }
     if (!*arr) {
       php_error_docref(NULL, E_WARNING, "In fetching of the function: %s\nElement of LongKeyDictionary i NULL after fetching", tl_current_function_name);
-      VK_ALLOC_INIT_ZVAL (*arr);
-      array_init (*arr);
+      VK_ALLOC_INIT_ZVAL(*arr);
+      array_init(*arr);
     }
     array_set_field(arr - 1, *arr, NULL, key);
     --arr;
@@ -2410,7 +2401,7 @@ void *tlcomb_fetch_long_key_dictionary(void **IP, void **Data, zval **arr, struc
 void *tlcomb_fetch_maybe(void **IP, void **Data, zval **arr, struct tl_tree **vars) {
   tl_debug(__FUNCTION__, -1);
   void **newIP = static_cast<void **>(*(IP++));
-  if (TLUNI_START (newIP, Data, arr, vars) != TLUNI_OK) {
+  if (TLUNI_START(newIP, Data, arr, vars) != TLUNI_OK) {
     --arr;
     return 0;
   }
@@ -2422,11 +2413,11 @@ void *tlcomb_fetch_maybe_false(void **IP, void **Data, zval **arr, struct tl_tre
   if (tl_parse_error()) {
     return 0;
   }
-  VK_ALLOC_INIT_ZVAL (*arr);
+  VK_ALLOC_INIT_ZVAL(*arr);
   if (typed_mode) {
-    ZVAL_NULL (*arr);
+    ZVAL_NULL(*arr);
   } else {
-    ZVAL_FALSE (*arr);
+    ZVAL_FALSE(*arr);
   };
   TLUNI_NEXT;
 }
@@ -2462,13 +2453,12 @@ void *tlcomb_store_var_num(void **IP, void **Data, zval **arr, struct tl_tree **
   int var_num = (long)*(IP++);
   int a = parse_zend_long(Z_PP_TO_ZAPI_P(arr));
   if (vars[var_num]) {
-    DEC_REF (vars[var_num]);
+    DEC_REF(vars[var_num]);
   }
   vars[var_num] = reinterpret_cast<tl_tree *>(int_to_var_nat_const(a));
   do_rpc_store_int(a);
   TLUNI_NEXT;
 }
-
 
 /*****
  *
@@ -2480,16 +2470,16 @@ void *tlcomb_fetch_var_num(void **IP, void **Data, zval **arr, struct tl_tree **
   tl_debug(__FUNCTION__, -1);
   int x = tl_parse_int();
 #ifdef VLOG
-  fprintf (stderr, "%d\n", x);
+  fprintf(stderr, "%d\n", x);
 #endif
   if (tl_parse_error()) {
     return 0;
   }
   VK_ALLOC_INIT_ZVAL(*arr);
-  ZVAL_LONG (*arr, x);
+  ZVAL_LONG(*arr, x);
   int var_num = (long)*(IP++);
   if (vars[var_num]) {
-    DEC_REF (vars[var_num]);
+    DEC_REF(vars[var_num]);
   }
   vars[var_num] = reinterpret_cast<tl_tree *>(int_to_var_nat_const(x));
 
@@ -2506,7 +2496,7 @@ void *tlcomb_fetch_check_var_num(void **IP, void **Data, zval **arr, struct tl_t
   tl_debug(__FUNCTION__, -1);
   int x = tl_parse_int();
 #ifdef VLOG
-  fprintf (stderr, "%d\n", x);
+  fprintf(stderr, "%d\n", x);
 #endif
   if (tl_parse_error()) {
     return 0;
@@ -2536,7 +2526,7 @@ void *tlcomb_store_var_type(void **IP, void **Data, zval **arr, struct tl_tree *
     return 0;
   }
   if (vars[var_num]) {
-    DEC_REF (vars[var_num]);
+    DEC_REF(vars[var_num]);
     vars[var_num] = 0;
   }
   struct tl_type *t = tl_type_get_by_id(a);
@@ -2594,7 +2584,7 @@ void *tlcomb_store_double(void **IP, void **Data, zval **arr, struct tl_tree **v
  *****/
 void *tlcomb_store_float(void **IP, void **Data, zval **arr, struct tl_tree **vars) {
   tl_debug(__FUNCTION__, -1);
-  float a = (float) parse_zend_double(Z_PP_TO_ZAPI_P(arr));
+  float a = (float)parse_zend_double(Z_PP_TO_ZAPI_P(arr));
   do_rpc_store_float(a);
   TLUNI_NEXT;
 }
@@ -2613,7 +2603,7 @@ void *tlcomb_store_maybe(void **IP, void **Data, zval **arr, struct tl_tree **va
     VK_ZVAL_API_P w = get_field(*arr, "result", 2, NULL);
     *(++arr) = VK_ZVAL_API_TO_ZVALP(w);
   }
-  if (TLUNI_START (newIP, Data, arr, vars) != TLUNI_OK) {
+  if (TLUNI_START(newIP, Data, arr, vars) != TLUNI_OK) {
     --arr;
     return 0;
   }
@@ -2642,7 +2632,7 @@ void *tlcomb_store_bool(void **IP, void **Data, zval **arr, struct tl_tree **var
 void *tlcomb_store_vector(void **IP, void **Data, zval **arr, struct tl_tree **vars) {
   tl_debug(__FUNCTION__, -1);
   void **newIP = static_cast<void **>(*(IP++));
-  if (Z_TYPE_P (*arr) != IS_ARRAY) {
+  if (Z_TYPE_P(*arr) != IS_ARRAY) {
     vkext_reset_error();
     vkext_error(VKEXT_ERROR_WRONG_TYPE, "Can't store not array as vector");
     return 0;
@@ -2654,16 +2644,16 @@ void *tlcomb_store_vector(void **IP, void **Data, zval **arr, struct tl_tree **v
   int i;
   for (i = 0; i < multiplicity; i++) {
     VK_ZVAL_API_P w = get_field(*arr, 0, i, NULL);
-    #ifdef VLOG
-    fprintf (stderr, "field = %p\n", w ? *w : 0);
-    #endif
+#ifdef VLOG
+    fprintf(stderr, "field = %p\n", w ? *w : 0);
+#endif
     if (!w) {
       vkext_reset_error();
       vkext_error_format(VKEXT_ERROR_INVALID_ARRAY_SIZE, "No element #%d in array", i);
       return 0;
     }
     *(++arr) = VK_ZVAL_API_TO_ZVALP(w);
-    if (TLUNI_START (newIP, Data, arr, vars) != TLUNI_OK) {
+    if (TLUNI_START(newIP, Data, arr, vars) != TLUNI_OK) {
       --arr;
       vkext_error_format(VKEXT_ERROR_CONSTRUCTION, "Can't store element #%d of vector", i);
       return 0;
@@ -2682,7 +2672,7 @@ void *tlcomb_store_vector(void **IP, void **Data, zval **arr, struct tl_tree **v
 void *tlcomb_store_dictionary(void **IP, void **Data, zval **arr, struct tl_tree **vars) {
   tl_debug(__FUNCTION__, -1);
   void **newIP = static_cast<void **>(*(IP++));
-  if (Z_TYPE_P (*arr) != IS_ARRAY) {
+  if (Z_TYPE_P(*arr) != IS_ARRAY) {
     vkext_reset_error();
     vkext_error(VKEXT_ERROR_WRONG_TYPE, "Can't store not array as dictionary");
     return 0;
@@ -2707,14 +2697,15 @@ void *tlcomb_store_dictionary(void **IP, void **Data, zval **arr, struct tl_tree
     }
 
     *(++arr) = VK_ZVAL_API_TO_ZVALP(zkey);
-    if (TLUNI_START (newIP, Data, arr, vars) != TLUNI_OK) {
+    if (TLUNI_START(newIP, Data, arr, vars) != TLUNI_OK) {
       vkext_error_format(VKEXT_ERROR_CONSTRUCTION, "Fail while storing key %s in dictionary", key->val);
       --arr;
       return 0;
     }
     --arr;
     i++;
-  } VK_ZEND_HASH_FOREACH_END();
+  }
+  VK_ZEND_HASH_FOREACH_END();
 
   if (i != multiplicity) {
     vkext_reset_error();
@@ -2727,7 +2718,7 @@ void *tlcomb_store_dictionary(void **IP, void **Data, zval **arr, struct tl_tree
 void *tlcomb_store_int_key_dictionary(void **IP, void **Data, zval **arr, struct tl_tree **vars) {
   tl_debug(__FUNCTION__, -1);
   void **newIP = static_cast<void **>(*(IP++));
-  if (Z_TYPE_P (*arr) != IS_ARRAY) {
+  if (Z_TYPE_P(*arr) != IS_ARRAY) {
     vkext_reset_error();
     vkext_error(VKEXT_ERROR_WRONG_TYPE, "Can't store not array as dictionary");
     return 0;
@@ -2741,17 +2732,18 @@ void *tlcomb_store_int_key_dictionary(void **IP, void **Data, zval **arr, struct
   NEW_INIT_Z_STR_P(key);
   zend_ulong index;
   VK_ZEND_HASHES_FOREACH_KEY_VAL(Z_ARRVAL_P(*arr), index, key, zkey) {
-        do_rpc_store_int((int)index);
+    do_rpc_store_int((int)index);
 
-        *(++arr) = VK_ZVAL_API_TO_ZVALP(zkey);
-        if (TLUNI_START (newIP, Data, arr, vars) != TLUNI_OK) {
-          vkext_error_format(VKEXT_ERROR_CONSTRUCTION, "Fail while storing key %s in dictionary", key->val);
-          --arr;
-          return 0;
-        }
-        --arr;
-        i++;
-      } VK_ZEND_HASH_FOREACH_END();
+    *(++arr) = VK_ZVAL_API_TO_ZVALP(zkey);
+    if (TLUNI_START(newIP, Data, arr, vars) != TLUNI_OK) {
+      vkext_error_format(VKEXT_ERROR_CONSTRUCTION, "Fail while storing key %s in dictionary", key->val);
+      --arr;
+      return 0;
+    }
+    --arr;
+    i++;
+  }
+  VK_ZEND_HASH_FOREACH_END();
 
   if (i != multiplicity) {
     vkext_reset_error();
@@ -2764,7 +2756,7 @@ void *tlcomb_store_int_key_dictionary(void **IP, void **Data, zval **arr, struct
 void *tlcomb_store_long_key_dictionary(void **IP, void **Data, zval **arr, struct tl_tree **vars) {
   tl_debug(__FUNCTION__, -1);
   void **newIP = static_cast<void **>(*(IP++));
-  if (Z_TYPE_P (*arr) != IS_ARRAY) {
+  if (Z_TYPE_P(*arr) != IS_ARRAY) {
     vkext_reset_error();
     vkext_error(VKEXT_ERROR_WRONG_TYPE, "Can't store not array as dictionary");
     return 0;
@@ -2779,17 +2771,18 @@ void *tlcomb_store_long_key_dictionary(void **IP, void **Data, zval **arr, struc
   zend_ulong index;
 
   VK_ZEND_HASHES_FOREACH_KEY_VAL(Z_ARRVAL_P(*arr), index, key, zkey) {
-        do_rpc_store_long((long long)index);
+    do_rpc_store_long((long long)index);
 
-        *(++arr) = VK_ZVAL_API_TO_ZVALP(zkey);
-        if (TLUNI_START (newIP, Data, arr, vars) != TLUNI_OK) {
-          vkext_error_format(VKEXT_ERROR_CONSTRUCTION, "Fail while storing key %s in dictionary", key->val);
-          --arr;
-          return 0;
-        }
-        --arr;
-        i++;
-      } VK_ZEND_HASH_FOREACH_END();
+    *(++arr) = VK_ZVAL_API_TO_ZVALP(zkey);
+    if (TLUNI_START(newIP, Data, arr, vars) != TLUNI_OK) {
+      vkext_error_format(VKEXT_ERROR_CONSTRUCTION, "Fail while storing key %s in dictionary", key->val);
+      --arr;
+      return 0;
+    }
+    --arr;
+    i++;
+  }
+  VK_ZEND_HASH_FOREACH_END();
 
   if (i != multiplicity) {
     vkext_reset_error();
@@ -2825,14 +2818,14 @@ void *tlcomb_check_bit(void **IP, void **Data, zval **arr, struct tl_tree **vars
   long b = (long)*(IP++);
   long o = (long)*(IP++);
 #ifdef VLOG
-  fprintf (stderr, "check_bit. var_num = %ld, bit_num = %ld, offset = %ld\n", n, b, o);
+  fprintf(stderr, "check_bit. var_num = %ld, bit_num = %ld, offset = %ld\n", n, b, o);
 #endif
   long x = 0;
   if (vars[n] != NULL) {
     x = var_nat_const_to_int(vars[n]);
   }
 #ifdef VLOG
-  fprintf (stderr, "check_bit. var_num = %ld, bit_num = %ld, offset = %ld, var_value = %ld\n", n, b, o, x);
+  fprintf(stderr, "check_bit. var_num = %ld, bit_num = %ld, offset = %ld, var_value = %ld\n", n, b, o, x);
 #endif
   if (!(x & (1 << b))) {
     IP += o;
@@ -2853,15 +2846,15 @@ void *tlcomb_check_bit(void **IP, void **Data, zval **arr, struct tl_tree **vars
 void *tluni_check_type(void **IP, void **Data, zval **arr, struct tl_tree **vars) {
   tl_debug(__FUNCTION__, -1);
   auto *res = *reinterpret_cast<tl_tree_type **>(--Data);
-//  fprintf (stderr, "res = %p, res->type = %p, *IP = %p, *IP->id = %s\n", res, res->type, *IP, ((struct tl_type *)*IP)->id);
+  //  fprintf (stderr, "res = %p, res->type = %p, *IP = %p, *IP->id = %s\n", res, res->type, *IP, ((struct tl_type *)*IP)->id);
 
-  if (TL_TREE_METHODS (res)->type(reinterpret_cast<tl_tree *>(res)) != NODE_TYPE_TYPE) {
+  if (TL_TREE_METHODS(res)->type(reinterpret_cast<tl_tree *>(res)) != NODE_TYPE_TYPE) {
     return 0;
   }
   if (res->type != *(IP++)) {
     return 0;
   }
-//  if ((res->self.flags & FLAGS_MASK) != (long)*(IP ++)) { return 0; }
+  //  if ((res->self.flags & FLAGS_MASK) != (long)*(IP ++)) { return 0; }
 
   int i;
   for (i = res->children_num - 1; i >= 0; i--) {
@@ -2893,7 +2886,7 @@ void *tluni_check_nat_const(void **IP, void **Data, zval **arr, struct tl_tree *
 void *tluni_check_array(void **IP, void **Data, zval **arr, struct tl_tree **vars) {
   tl_debug(__FUNCTION__, -1);
   auto *res = *reinterpret_cast<tl_tree_array **>(--Data);
-  if (TL_TREE_METHODS (res)->type(reinterpret_cast<tl_tree *>(res)) != NODE_TYPE_ARRAY) {
+  if (TL_TREE_METHODS(res)->type(reinterpret_cast<tl_tree *>(res)) != NODE_TYPE_ARRAY) {
     return 0;
   }
   if (res->args_num != (long)*(IP++)) {
@@ -2943,17 +2936,17 @@ void *tluni_set_nat_var(void **IP, void **Data, zval **arr, struct tl_tree **var
   tl_debug(__FUNCTION__, -1);
   long p = (long)*(IP++);
   if (vars[p]) {
-    DEC_REF (vars[p]);
+    DEC_REF(vars[p]);
   }
   vars[p] = 0;
   void *a = *(--Data);
   void *x = int_to_var_nat_const(var_nat_const_to_int(a) + (long)*(IP++));
-  //DEC_REF (a);
-  //void *x = *(--Data) + 2 * (long)*(IP ++);
-  //fprintf (stderr, "c = %lld\n", (long long)var_nat_const_to_int (x));
-  //if (!TL_IS_NAT_VAR (x)) {  return 0; }
+  // DEC_REF (a);
+  // void *x = *(--Data) + 2 * (long)*(IP ++);
+  // fprintf (stderr, "c = %lld\n", (long long)var_nat_const_to_int (x));
+  // if (!TL_IS_NAT_VAR (x)) {  return 0; }
   if (var_nat_const_to_int(x) < 0) {
-    DEC_REF (x);
+    DEC_REF(x);
     return 0;
   }
   vars[p] = reinterpret_cast<tl_tree *>(x);
@@ -2970,18 +2963,17 @@ void *tluni_set_type_var(void **IP, void **Data, zval **arr, struct tl_tree **va
   tl_debug(__FUNCTION__, -1);
   long p = (long)*(IP++);
   if (vars[p]) {
-    DEC_REF (vars[p]);
+    DEC_REF(vars[p]);
   }
   vars[p] = 0;
-//  fprintf (stderr, "p = %ld, var = %p, var->type = %s\n", p, vars[p], ((struct tl_tree_type *)vars[p])->type->id);
+  //  fprintf (stderr, "p = %ld, var = %p, var->type = %s\n", p, vars[p], ((struct tl_tree_type *)vars[p])->type->id);
   vars[p] = *reinterpret_cast<tl_tree **>(--Data);
-  if (TL_IS_NAT_VAR (vars[p])) {
+  if (TL_IS_NAT_VAR(vars[p])) {
     return 0;
   }
-  INC_REF (vars[p]);
+  INC_REF(vars[p]);
   TLUNI_NEXT;
 }
-
 
 /*****
  *
@@ -2992,16 +2984,15 @@ void *tluni_set_type_var(void **IP, void **Data, zval **arr, struct tl_tree **va
 void *tluni_check_nat_var(void **IP, void **Data, zval **arr, struct tl_tree **vars) {
   tl_debug(__FUNCTION__, -1);
   long p = (long)*(IP++);
-  //void *x = *(--Data) + 2 * (long)*(IP ++);
+  // void *x = *(--Data) + 2 * (long)*(IP ++);
   void *x = int_to_var_nat_const(var_nat_const_to_int(--Data) + (long)*(IP++));
   if (vars[p] != x) {
-    DEC_REF (x);
+    DEC_REF(x);
     return 0;
   }
-  DEC_REF (x);
+  DEC_REF(x);
   TLUNI_NEXT;
 }
-
 
 /*****
  *
@@ -3013,12 +3004,11 @@ void *tluni_check_type_var(void **IP, void **Data, zval **arr, struct tl_tree **
   tl_debug(__FUNCTION__, -1);
   tl_tree *x = *reinterpret_cast<tl_tree **>(--Data);
   tl_tree *y = vars[(long)*(IP++)];
-  if (!TL_TREE_METHODS (y)->eq(y, x)) {
+  if (!TL_TREE_METHODS(y)->eq(y, x)) {
     return 0;
   }
   TLUNI_NEXT;
 }
-
 
 /*****
  *
@@ -3041,17 +3031,16 @@ void *tlsub_create_array(void **IP, void **Data, zval **arr, struct tl_tree **va
     x->args[i] = reinterpret_cast<arg *>(zzemalloc(sizeof(*x->args[i])));
     x->args[i]->id = *reinterpret_cast<char **>(IP++);
     x->args[i]->type = *reinterpret_cast<tl_tree **>(--Data);
-//    TL_TREE_METHODS (x->args[i]->type)->inc_ref (x->args[i]->type);
+    //    TL_TREE_METHODS (x->args[i]->type)->inc_ref (x->args[i]->type);
   }
   x->multiplicity = *reinterpret_cast<tl_tree **>(--Data);
 #ifdef VLOG
-  fprintf (stderr, "Create array\n");
+  fprintf(stderr, "Create array\n");
 #endif
-//  TL_TREE_METHODS (x->multiplicity)->inc_ref (x->multiplicity);
+  //  TL_TREE_METHODS (x->multiplicity)->inc_ref (x->multiplicity);
   *(Data++) = x;
   TLUNI_NEXT;
 }
-
 
 /*****
  *
@@ -3070,17 +3059,17 @@ void *tlsub_create_type(void **IP, void **Data, zval **arr, struct tl_tree **var
   x->self.methods = &tl_type_methods;
   x->type = *reinterpret_cast<tl_type **>(IP++);
 #ifdef VLOG
-  fprintf (stderr, "Create type %s. flags = %d\n", x->type->id, x->self.flags);
+  fprintf(stderr, "Create type %s. flags = %d\n", x->type->id, x->self.flags);
 #endif
   x->children_num = x->type->arity;
   x->children = reinterpret_cast<tl_tree **>(zzemalloc(sizeof(void *) * x->children_num));
   int i;
   for (i = x->children_num - 1; i >= 0; i--) {
     x->children[i] = *reinterpret_cast<tl_tree **>(--Data);
-//    TL_TREE_METHODS (x->children[i])->inc_ref (x->children[i]);
+    //    TL_TREE_METHODS (x->children[i])->inc_ref (x->children[i]);
   }
   *(Data++) = x;
-//  fprintf (stderr, "create type %s\n", x->type->id);
+  //  fprintf (stderr, "create type %s\n", x->type->id);
   TLUNI_NEXT;
 }
 
@@ -3109,20 +3098,20 @@ void *tlsub_push_type_var(void **IP, void **Data, zval **arr, struct tl_tree **v
   tl_debug(__FUNCTION__, -1);
   *(Data++) = vars[(long)*(IP++)];
 #ifdef VLOG
-  fprintf (stderr, "Push type var\n");
+  fprintf(stderr, "Push type var\n");
 #endif
-  INC_REF (*(Data - 1));
+  INC_REF(*(Data - 1));
   TLUNI_NEXT;
 }
 
 void *tlsub_push_nat_var(void **IP, void **Data, zval **arr, struct tl_tree **vars) {
   tl_debug(__FUNCTION__, -1);
   int p = (long)*(IP++);
-//  *(Data ++) = ((void *)vars[p]) + 2 * (long) *(IP ++);
-//  fprintf (stderr, "vars[p] = %p\n", vars[p]);
+  //  *(Data ++) = ((void *)vars[p]) + 2 * (long) *(IP ++);
+  //  fprintf (stderr, "vars[p] = %p\n", vars[p]);
   *(Data++) = int_to_var_nat_const(var_nat_const_to_int(vars[p]) + (long)*(IP++));
 #ifdef VLOG
-  fprintf (stderr, "Push nat var. Data = %lld\n", var_nat_const_to_int (*(Data - 1)));
+  fprintf(stderr, "Push nat var. Data = %lld\n", var_nat_const_to_int(*(Data - 1)));
 #endif
   TLUNI_NEXT;
 }
@@ -3130,9 +3119,8 @@ void *tlsub_push_nat_var(void **IP, void **Data, zval **arr, struct tl_tree **va
 
 /**** Default tree methods {{{ ****/
 
-
 int tl_tree_eq_type(struct tl_tree *_x, struct tl_tree *_y) {
-  if (TL_TREE_METHODS (_y)->type((tl_tree *)_y) != NODE_TYPE_TYPE) {
+  if (TL_TREE_METHODS(_y)->type((tl_tree *)_y) != NODE_TYPE_TYPE) {
     return 0;
   }
   auto *x = (tl_tree_type *)_x;
@@ -3145,7 +3133,7 @@ int tl_tree_eq_type(struct tl_tree *_x, struct tl_tree *_y) {
   }
   int i;
   for (i = 0; i < x->children_num; i++) {
-    if (!TL_TREE_METHODS (x->children[i])->eq(x->children[i], y->children[i])) {
+    if (!TL_TREE_METHODS(x->children[i])->eq(x->children[i], y->children[i])) {
       return 0;
     }
   }
@@ -3153,7 +3141,7 @@ int tl_tree_eq_type(struct tl_tree *_x, struct tl_tree *_y) {
 }
 
 int tl_tree_eq_array(struct tl_tree *_x, struct tl_tree *_y) {
-  if (TL_TREE_METHODS (_y)->type((tl_tree *)_y) != NODE_TYPE_ARRAY) {
+  if (TL_TREE_METHODS(_y)->type((tl_tree *)_y) != NODE_TYPE_ARRAY) {
     return 0;
   }
   auto *x = (tl_tree_array *)_x;
@@ -3178,7 +3166,7 @@ int tl_tree_eq_array(struct tl_tree *_x, struct tl_tree *_y) {
         return 0;
       }
     }
-    if (!TL_TREE_METHODS (x->args[i]->type)->eq(x->args[i]->type, y->args[i]->type)) {
+    if (!TL_TREE_METHODS(x->args[i]->type)->eq(x->args[i]->type, y->args[i]->type)) {
       return 0;
     }
   }
@@ -3186,30 +3174,29 @@ int tl_tree_eq_array(struct tl_tree *_x, struct tl_tree *_y) {
 }
 
 int tl_tree_eq_nat_const(struct tl_tree *x, struct tl_tree *y) {
-  //return (x == y);
+  // return (x == y);
   return var_nat_const_to_int(x) == var_nat_const_to_int(y);
 }
 
 void tl_tree_inc_ref_type(struct tl_tree *x) {
   total_ref_cnt++;
   x->ref_cnt++;
-  //fprintf (stderr, "Inc_ref: type %s\n", ((struct tl_tree_type *)x)->type->id);
+  // fprintf (stderr, "Inc_ref: type %s\n", ((struct tl_tree_type *)x)->type->id);
 }
 
 void tl_tree_inc_ref_array(struct tl_tree *x) {
   total_ref_cnt++;
-  //fprintf (stderr, "Inc_ref: array\n");
+  // fprintf (stderr, "Inc_ref: array\n");
   x->ref_cnt++;
 }
 
-void tl_tree_inc_ref_nat_const(struct tl_tree *x) {
-}
+void tl_tree_inc_ref_nat_const(struct tl_tree *x) {}
 
 void tl_tree_inc_ref_nat_const_full(struct tl_tree *x) {
   total_ref_cnt++;
   x->ref_cnt++;
 #ifdef VLOG
-  fprintf (stderr, "Inc_ref: nat_const_full. value = %lld, new refcnt = %d\n", ((struct tl_tree_nat_const*)x)->value, x->ref_cnt);
+  fprintf(stderr, "Inc_ref: nat_const_full. value = %lld, new refcnt = %d\n", ((struct tl_tree_nat_const *)x)->value, x->ref_cnt);
 #endif
 }
 
@@ -3217,7 +3204,7 @@ void tl_tree_dec_ref_type(struct tl_tree *_x) {
   total_ref_cnt--;
   auto *x = (tl_tree_type *)_x;
 #ifdef VLOG
-  fprintf (stderr, "Dec_ref: type %s. Self ref_cnt = %d, children_num = %d\n", x->type->id, x->self.ref_cnt, x->children_num);
+  fprintf(stderr, "Dec_ref: type %s. Self ref_cnt = %d, children_num = %d\n", x->type->id, x->self.ref_cnt, x->children_num);
 #endif
   x->self.ref_cnt--;
   if (x->self.ref_cnt > 0) {
@@ -3226,7 +3213,7 @@ void tl_tree_dec_ref_type(struct tl_tree *_x) {
   dynamic_tree_nodes--;
   int i;
   for (i = 0; i < x->children_num; i++) {
-    DEC_REF (x->children[i]);
+    DEC_REF(x->children[i]);
   }
   zzefree(x->children, sizeof(void *) * x->children_num);
   zzefree(x, sizeof(*x));
@@ -3235,7 +3222,7 @@ void tl_tree_dec_ref_type(struct tl_tree *_x) {
 void tl_tree_dec_ref_array(struct tl_tree *_x) {
   total_ref_cnt--;
 #ifdef VLOG
-  fprintf (stderr, "Dec_ref: array\n");
+  fprintf(stderr, "Dec_ref: array\n");
 #endif
   auto *x = (tl_tree_array *)_x;
   x->self.ref_cnt--;
@@ -3244,9 +3231,9 @@ void tl_tree_dec_ref_array(struct tl_tree *_x) {
   }
   dynamic_tree_nodes--;
   int i;
-  DEC_REF (x->multiplicity);
+  DEC_REF(x->multiplicity);
   for (i = 0; i < x->args_num; i--) {
-    DEC_REF (x->args[i]->type);
+    DEC_REF(x->args[i]->type);
     zzefree(x->args[i], sizeof(*x->args[i]));
   }
   zzefree(x->args, sizeof(void *) * x->args_num);
@@ -3257,7 +3244,7 @@ void tl_tree_dec_ref_ptype(struct tl_tree *_x) {
   total_ref_cnt--;
   auto *x = (tl_tree_type *)_x;
 #ifdef VLOG
-  fprintf (stderr, "Dec_ref: persistent type %s. Self ref_cnt = %d, children_num = %d\n", x->type->id, x->self.ref_cnt, x->children_num);
+  fprintf(stderr, "Dec_ref: persistent type %s. Self ref_cnt = %d, children_num = %d\n", x->type->id, x->self.ref_cnt, x->children_num);
 #endif
   x->self.ref_cnt--;
   if (x->self.ref_cnt > 0) {
@@ -3266,19 +3253,19 @@ void tl_tree_dec_ref_ptype(struct tl_tree *_x) {
   persistent_tree_nodes--;
   int i;
   for (i = 0; i < x->children_num; i++) {
-    DEC_REF (x->children[i]);
+    DEC_REF(x->children[i]);
   }
   zzfree(x->children, sizeof(void *) * x->children_num);
-  ADD_PFREE (sizeof(void *) * x->children_num);
+  ADD_PFREE(sizeof(void *) * x->children_num);
   zzfree(x, sizeof(*x));
-  ADD_PFREE (sizeof(*x));
+  ADD_PFREE(sizeof(*x));
 }
 
 void tl_tree_dec_ref_pvar_type(struct tl_tree *_x) {
   total_ref_cnt--;
   auto *x = (tl_tree_var_type *)_x;
 #ifdef VLOG
-  fprintf (stderr, "Dec_ref: persistent var_type\n");
+  fprintf(stderr, "Dec_ref: persistent var_type\n");
 #endif
   x->self.ref_cnt--;
   if (x->self.ref_cnt > 0) {
@@ -3286,14 +3273,14 @@ void tl_tree_dec_ref_pvar_type(struct tl_tree *_x) {
   }
   persistent_tree_nodes--;
   zzfree(x, sizeof(*x));
-  ADD_PFREE (sizeof(*x));
+  ADD_PFREE(sizeof(*x));
 }
 
 void tl_tree_dec_ref_pvar_num(struct tl_tree *_x) {
   total_ref_cnt--;
   auto *x = (tl_tree_var_num *)_x;
 #ifdef VLOG
-  fprintf (stderr, "Dec_ref: persistent var_num\n");
+  fprintf(stderr, "Dec_ref: persistent var_num\n");
 #endif
   x->self.ref_cnt--;
   if (x->self.ref_cnt > 0) {
@@ -3301,13 +3288,13 @@ void tl_tree_dec_ref_pvar_num(struct tl_tree *_x) {
   }
   persistent_tree_nodes--;
   zzfree(x, sizeof(*x));
-  ADD_PFREE (sizeof(*x));
+  ADD_PFREE(sizeof(*x));
 }
 
 void tl_tree_dec_ref_parray(struct tl_tree *_x) {
   total_ref_cnt--;
 #ifdef VLOG
-  fprintf (stderr, "Dec_ref: persistent array\n");
+  fprintf(stderr, "Dec_ref: persistent array\n");
 #endif
   auto *x = (tl_tree_array *)_x;
   x->self.ref_cnt--;
@@ -3316,31 +3303,30 @@ void tl_tree_dec_ref_parray(struct tl_tree *_x) {
   }
   persistent_tree_nodes--;
   int i;
-  DEC_REF (x->multiplicity);
+  DEC_REF(x->multiplicity);
   for (i = 0; i < x->args_num; i++) {
-    DEC_REF (x->args[i]->type);
+    DEC_REF(x->args[i]->type);
     if (x->args[i]->id) {
-      ADD_PFREE (strlen(x->args[i]->id));
+      ADD_PFREE(strlen(x->args[i]->id));
       zzstrfree(x->args[i]->id);
-//      free (x->args[i]->id);
+      //      free (x->args[i]->id);
     }
     zzfree(x->args[i], sizeof(*x->args[i]));
-    ADD_PFREE (sizeof(*(x->args[i])));
+    ADD_PFREE(sizeof(*(x->args[i])));
   }
   zzfree(x->args, sizeof(void *) * x->args_num);
-  ADD_PFREE (sizeof(void *) * x->args_num);
+  ADD_PFREE(sizeof(void *) * x->args_num);
   zzfree(x, sizeof(*x));
-  ADD_PFREE (sizeof(*x));
+  ADD_PFREE(sizeof(*x));
 }
 
-void tl_tree_dec_ref_nat_const(struct tl_tree *_x) {
-}
+void tl_tree_dec_ref_nat_const(struct tl_tree *_x) {}
 
 void tl_tree_dec_ref_nat_const_full(struct tl_tree *_x) {
   total_ref_cnt--;
   _x->ref_cnt--;
 #ifdef VLOG
-  fprintf (stderr, "Dec_ref: nat_const_full at %p. value = %lld, new ref_cnt = %d\n", _x, ((struct tl_tree_nat_const*)_x)->value, _x->ref_cnt);
+  fprintf(stderr, "Dec_ref: nat_const_full at %p. value = %lld, new ref_cnt = %d\n", _x, ((struct tl_tree_nat_const *)_x)->value, _x->ref_cnt);
 #endif
   if (_x->ref_cnt > 0) {
     return;
@@ -3354,14 +3340,14 @@ void tl_tree_dec_ref_pnat_const_full(struct tl_tree *_x) {
   total_ref_cnt--;
 #ifdef VLOG
 
-  fprintf (stderr, "Dec_ref: pnat_const_full. value = %lld, new ref_cnt = %d\n", ((struct tl_tree_nat_const*)_x)->value, _x->ref_cnt);
+  fprintf(stderr, "Dec_ref: pnat_const_full. value = %lld, new ref_cnt = %d\n", ((struct tl_tree_nat_const *)_x)->value, _x->ref_cnt);
 #endif
   if (_x->ref_cnt > 0) {
     return;
   }
   persistent_tree_nodes--;
   zzfree(_x, sizeof(struct tl_tree_nat_const));
-  ADD_FREE (sizeof(struct tl_tree_nat_const));
+  ADD_FREE(sizeof(struct tl_tree_nat_const));
 }
 
 int tl_tree_type_type(struct tl_tree *x) {
@@ -3466,7 +3452,7 @@ struct tl_tree_methods tl_pnat_const_full_methods = {
 /* gen IP {{{ */
 void **IP_dup(void **x, int l) {
   void **r = static_cast<void **>(zzmalloc(sizeof(void *) * l));
-  ADD_PMALLOC (sizeof(void *) * l);
+  ADD_PMALLOC(sizeof(void *) * l);
   memcpy(r, x, sizeof(void *) * l);
   return r;
 }
@@ -3492,8 +3478,8 @@ int gen_uni(struct tl_tree *t, void **IP, int max_size, int *vars) {
   if (max_size <= 10) {
     return -1;
   }
-  assert (t);
-  int x = TL_TREE_METHODS (t)->type(t);
+  assert(t);
+  int x = TL_TREE_METHODS(t)->type(t);
   int l = 0;
   int i;
   int j;
@@ -3537,14 +3523,14 @@ int gen_uni(struct tl_tree *t, void **IP, int max_size, int *vars) {
     case NODE_TYPE_VAR_TYPE:
       i = ((struct tl_tree_var_type *)t)->var_num;
       if (!vars[i]) {
-        IP[l++] = (void *) tluni_set_type_var;
+        IP[l++] = (void *)tluni_set_type_var;
         IP[l++] = (void *)(long)i;
-//      IP[l ++] = (void *)(long)(t->flags & FLAGS_MASK);
+        //      IP[l ++] = (void *)(long)(t->flags & FLAGS_MASK);
         vars[i] = 1;
       } else if (vars[i] == 1) {
-        IP[l++] = (void *) tluni_check_type_var;
+        IP[l++] = (void *)tluni_check_type_var;
         IP[l++] = (void *)(long)i;
-//      IP[l ++] = (void *)(long)(t->flags & FLAGS_MASK);
+        //      IP[l ++] = (void *)(long)(t->flags & FLAGS_MASK);
       } else {
         return -1;
       }
@@ -3566,7 +3552,7 @@ int gen_uni(struct tl_tree *t, void **IP, int max_size, int *vars) {
       }
       return l;
     default:
-      assert (0);
+      assert(0);
       return -1;
   }
 }
@@ -3575,11 +3561,11 @@ int gen_create(struct tl_tree *t, void **IP, int max_size, int *vars) {
   if (max_size <= 10) {
     return -1;
   }
-  int x = TL_TREE_METHODS (t)->type(t);
+  int x = TL_TREE_METHODS(t)->type(t);
   int l = 0;
-  if (!TL_IS_NAT_VAR (t) && (t->flags & FLAG_NOVAR)) {
+  if (!TL_IS_NAT_VAR(t) && (t->flags & FLAG_NOVAR)) {
     IP[l++] = (void *)tls_push;
-//    TL_TREE_METHODS (t)->inc_ref (t);
+    //    TL_TREE_METHODS (t)->inc_ref (t);
     IP[l++] = (void *)(t);
     return l;
   }
@@ -3610,7 +3596,7 @@ int gen_create(struct tl_tree *t, void **IP, int max_size, int *vars) {
       return l;
     case NODE_TYPE_ARRAY:
       t2 = (tl_tree_array *)t;
-      assert (t2->multiplicity);
+      assert(t2->multiplicity);
       y = gen_create(t2->multiplicity, IP + l, max_size - l, vars);
       if (y < 0) {
         return -1;
@@ -3618,8 +3604,8 @@ int gen_create(struct tl_tree *t, void **IP, int max_size, int *vars) {
       l += y;
 
       for (i = 0; i < t2->args_num; i++) {
-        assert (t2->args[i]);
-        //y = gen_field_store (t2->args[i], IP + l, max_size - l, vars, i);
+        assert(t2->args[i]);
+        // y = gen_field_store (t2->args[i], IP + l, max_size - l, vars, i);
         y = gen_create(t2->args[i]->type, IP + l, max_size - l, vars);
         if (y < 0) {
           return -1;
@@ -3640,7 +3626,7 @@ int gen_create(struct tl_tree *t, void **IP, int max_size, int *vars) {
     case NODE_TYPE_VAR_TYPE:
       IP[l++] = (void *)tlsub_push_type_var;
       IP[l++] = (void *)(long)((struct tl_tree_var_type *)t)->var_num;
-      //IP[l ++] = (void *)(long)(t->flags & FLAGS_MASK);
+      // IP[l ++] = (void *)(long)(t->flags & FLAGS_MASK);
       return l;
     case NODE_TYPE_VAR_NUM:
       IP[l++] = (void *)tlsub_push_nat_var;
@@ -3648,7 +3634,7 @@ int gen_create(struct tl_tree *t, void **IP, int max_size, int *vars) {
       IP[l++] = (void *)(long)((struct tl_tree_var_num *)t)->dif;
       return l;
     default:
-      assert (0);
+      assert(0);
       return -1;
   }
 }
@@ -3680,7 +3666,7 @@ int gen_array_store(struct tl_tree_array *a, void **IP, int max_size, int *vars)
     return -1;
   }
   IP[l++] = (void *)tlsub_ret_ok;
-//  c->IP = IP_dup (IP, l);
+  //  c->IP = IP_dup (IP, l);
   return l;
 }
 
@@ -3711,7 +3697,7 @@ int gen_array_fetch(struct tl_tree_array *a, void **IP, int max_size, int *vars)
     return -1;
   }
   IP[l++] = (void *)tlsub_ret_ok;
-//  c->IP = IP_dup (IP, l);
+  //  c->IP = IP_dup (IP, l);
   return l;
 }
 
@@ -3727,7 +3713,7 @@ static unsigned int get_magic_of_arg_type(struct arg *arg) {
 }
 
 int gen_field_store(struct arg *arg, void **IP, int max_size, int *vars, int num, int flat) {
-  assert (arg);
+  assert(arg);
   if (max_size <= 10) {
     return -1;
   }
@@ -3744,22 +3730,22 @@ int gen_field_store(struct arg *arg, void **IP, int max_size, int *vars, int num
     IP[l++] = (void *)(long)num;
     IP[l++] = (void *)(long)get_magic_of_arg_type(arg);
   } else {
-    assert (!num);
+    assert(!num);
   }
   if (arg->var_num >= 0) {
-    assert (TL_TREE_METHODS(arg->type)->type(arg->type) == NODE_TYPE_TYPE);
+    assert(TL_TREE_METHODS(arg->type)->type(arg->type) == NODE_TYPE_TYPE);
     int t = ((struct tl_tree_type *)arg->type)->type->name;
     if (t == NAME_VAR_TYPE) {
-      IP[l++] = (void *) tlcomb_store_var_type;
+      IP[l++] = (void *)tlcomb_store_var_type;
       IP[l++] = (void *)(long)arg->var_num;
       IP[l++] = (void *)(long)(arg->type->flags & FLAGS_MASK);
     } else {
-      assert (t == NAME_VAR_NUM);
+      assert(t == NAME_VAR_NUM);
       IP[l++] = (void *)tlcomb_store_var_num;
       IP[l++] = (void *)(long)arg->var_num;
     }
   } else {
-    int t = TL_TREE_METHODS (arg->type)->type(arg->type);
+    int t = TL_TREE_METHODS(arg->type)->type(arg->type);
     if ((t == NODE_TYPE_TYPE || t == NODE_TYPE_VAR_TYPE)) {
       tl_tree_type *t1 = (tl_tree_type *)(arg->type);
 
@@ -3774,15 +3760,15 @@ int gen_field_store(struct arg *arg, void **IP, int max_size, int *vars, int num
           }
         }
         void **_IP = t1->type->constructors[0]->IP;
-        assert (_IP[0] == tluni_check_type);
-        assert (_IP[1] == t1->type);
+        assert(_IP[0] == tluni_check_type);
+        assert(_IP[1] == t1->type);
         if (l + t1->type->constructors[0]->IP_len + 10 > max_size) {
           return -1;
         }
         memcpy(IP + l, _IP + 2, sizeof(void *) * (t1->type->constructors[0]->IP_len - 2));
 
         l += t1->type->constructors[0]->IP_len - 2;
-        assert (IP[l - 1] == tlsub_ret_ok);
+        assert(IP[l - 1] == tlsub_ret_ok);
         l--;
       } else {
         int r = gen_create(arg->type, IP + l, max_size - l, vars);
@@ -3796,7 +3782,7 @@ int gen_field_store(struct arg *arg, void **IP, int max_size, int *vars, int num
         IP[l++] = (void *)tlcomb_store_type;
       }
     } else {
-      assert (t == NODE_TYPE_ARRAY);
+      assert(t == NODE_TYPE_ARRAY);
       int r = gen_create(((struct tl_tree_array *)arg->type)->multiplicity, IP + l, max_size - l, vars);
       if (r < 0) {
         return -1;
@@ -3827,7 +3813,7 @@ int gen_field_store(struct arg *arg, void **IP, int max_size, int *vars, int num
 }
 
 int gen_field_fetch(struct arg *arg, void **IP, int max_size, int *vars, int num, int flat, const char *owner_name) {
-  assert (arg);
+  assert(arg);
   if (max_size <= 30) {
     return -1;
   }
@@ -3837,21 +3823,21 @@ int gen_field_fetch(struct arg *arg, void **IP, int max_size, int *vars, int num
     IP[l++] = (void *)(long)arg->exist_var_num;
     IP[l++] = (void *)(long)arg->exist_var_bit;
     IP[l++] = 0;
-//    fprintf (stderr, "r = %d\n", l);
-//    fprintf (stderr, "n = %ld\n", (long)(IP[1]));
-//    fprintf (stderr, "b = %ld\n", (long)(IP[2]));
+    //    fprintf (stderr, "r = %d\n", l);
+    //    fprintf (stderr, "n = %ld\n", (long)(IP[1]));
+    //    fprintf (stderr, "b = %ld\n", (long)(IP[2]));
   }
   if (!flat) {
     IP[l++] = (void *)tls_arr_push;
   }
   if (arg->var_num >= 0) {
-    assert (TL_TREE_METHODS(arg->type)->type(arg->type) == NODE_TYPE_TYPE);
+    assert(TL_TREE_METHODS(arg->type)->type(arg->type) == NODE_TYPE_TYPE);
     int t = ((struct tl_tree_type *)arg->type)->type->name;
     if (t == NAME_VAR_TYPE) {
       fprintf(stderr, "Not supported yet\n");
-      assert (0);
+      assert(0);
     } else {
-      assert (t == NAME_VAR_NUM);
+      assert(t == NAME_VAR_NUM);
       if (vars[arg->var_num] == 0) {
         IP[l++] = (void *)tlcomb_fetch_var_num;
         IP[l++] = (void *)(long)arg->var_num;
@@ -3864,7 +3850,7 @@ int gen_field_fetch(struct arg *arg, void **IP, int max_size, int *vars, int num
       }
     }
   } else {
-    int t = TL_TREE_METHODS (arg->type)->type(arg->type);
+    int t = TL_TREE_METHODS(arg->type)->type(arg->type);
     if (t == NODE_TYPE_TYPE || t == NODE_TYPE_VAR_TYPE) {
       auto *t1 = (tl_tree_type *)(arg->type);
 
@@ -3879,15 +3865,15 @@ int gen_field_fetch(struct arg *arg, void **IP, int max_size, int *vars, int num
           }
         }
         void **_IP = t1->type->constructors[0]->fIP;
-        assert (_IP[0] == tluni_check_type);
-        assert (_IP[1] == t1->type);
+        assert(_IP[0] == tluni_check_type);
+        assert(_IP[1] == t1->type);
         if (l + t1->type->constructors[0]->fIP_len + 10 > max_size) {
           return -1;
         }
         memcpy(IP + l, _IP + 2, sizeof(void *) * (t1->type->constructors[0]->fIP_len - 2));
 
         l += t1->type->constructors[0]->fIP_len - 2;
-        assert (IP[l - 1] == tlsub_ret_ok);
+        assert(IP[l - 1] == tlsub_ret_ok);
         l--;
       } else {
         int r = gen_create(arg->type, IP + l, max_size - l, vars);
@@ -3901,7 +3887,7 @@ int gen_field_fetch(struct arg *arg, void **IP, int max_size, int *vars, int num
         IP[l++] = (void *)tlcomb_fetch_type;
       }
     } else {
-      assert (t == NODE_TYPE_ARRAY);
+      assert(t == NODE_TYPE_ARRAY);
       struct tl_tree_array *array_tree = (struct tl_tree_array *)arg->type;
       int r = gen_create(array_tree->multiplicity, IP + l, max_size - l, vars);
       if (r < 0) {
@@ -3933,15 +3919,15 @@ int gen_field_fetch(struct arg *arg, void **IP, int max_size, int *vars, int num
   }
   if (arg->exist_var_num >= 0) {
     IP[3] = (void *)(long)(l - 4);
-//    fprintf (stderr, "r = %d\n", l);
-//    fprintf (stderr, "n = %ld\n", (long)(IP[1]));
-//    fprintf (stderr, "b = %ld\n", (long)(IP[2]));
+    //    fprintf (stderr, "r = %d\n", l);
+    //    fprintf (stderr, "n = %ld\n", (long)(IP[1]));
+    //    fprintf (stderr, "b = %ld\n", (long)(IP[2]));
   }
   return l;
 }
 
 int gen_field_excl_store(struct arg *arg, void **IP, int max_size, int *vars, int num) {
-  assert (arg);
+  assert(arg);
   if (max_size <= 10) {
     return -1;
   }
@@ -3951,10 +3937,10 @@ int gen_field_excl_store(struct arg *arg, void **IP, int max_size, int *vars, in
   IP[l++] = (void *)(long)num;
   IP[l++] = (void *)(long)get_magic_of_arg_type(arg);
 
-  //fprintf (stderr, "arg->var_num = %d, arg->flags = %x\n", arg->var_num, arg->flags);
-  assert (arg->var_num < 0);
-  int t = TL_TREE_METHODS (arg->type)->type(arg->type);
-  assert (t == NODE_TYPE_TYPE || t == NODE_TYPE_VAR_TYPE);
+  // fprintf (stderr, "arg->var_num = %d, arg->flags = %x\n", arg->var_num, arg->flags);
+  assert(arg->var_num < 0);
+  int t = TL_TREE_METHODS(arg->type)->type(arg->type);
+  assert(t == NODE_TYPE_TYPE || t == NODE_TYPE_VAR_TYPE);
   IP[l++] = (void *)tlcomb_store_any_function;
   int x = gen_uni(arg->type, IP + l, max_size - l, vars);
   if (x < 0) {
@@ -3969,9 +3955,8 @@ int gen_field_excl_store(struct arg *arg, void **IP, int max_size, int *vars, in
   return l;
 }
 
-
 int gen_constructor_store(struct tl_combinator *c, void **IP, int max_size) {
-  assert (IP);
+  assert(IP);
   if (c->IP) {
     return c->IP_len;
   }
@@ -3979,7 +3964,7 @@ int gen_constructor_store(struct tl_combinator *c, void **IP, int max_size) {
     return -1;
   }
   int l = 0;
-  assert (!c->IP);
+  assert(!c->IP);
   int vars[c->var_num];
   memset(vars, 0, sizeof(int) * c->var_num);
   int x = gen_uni(c->result, IP + l, max_size - l, vars);
@@ -3987,7 +3972,7 @@ int gen_constructor_store(struct tl_combinator *c, void **IP, int max_size) {
     return -1;
   }
   l += x;
-  switch(c->name) {
+  switch (c->name) {
     case NAME_INT: {
       IP[l++] = (void *)(tlcomb_store_int);
       IP[l++] = (void *)(tlsub_ret_ok);
@@ -4036,8 +4021,8 @@ int gen_constructor_store(struct tl_combinator *c, void **IP, int max_size) {
       tIP[1] = (void *)((long)0);
       tIP[2] = (void *)(tlcomb_store_type);
       tIP[3] = (void *)(tlsub_ret_ok);
-      IP[l++] = (void *) IP_dup(tIP, 4);
-      IP[l++] = (void *) tlsub_ret_ok;
+      IP[l++] = (void *)IP_dup(tIP, 4);
+      IP[l++] = (void *)tlsub_ret_ok;
       c->IP = IP_dup(IP, l);
       c->IP_len = l;
       return l;
@@ -4100,7 +4085,7 @@ int gen_constructor_store(struct tl_combinator *c, void **IP, int max_size) {
   }
 
   int arg_idx = -1;
-  assert(TYPE (c->result) == NODE_TYPE_TYPE);
+  assert(TYPE(c->result) == NODE_TYPE_TYPE);
   const struct tl_type *t = ((struct tl_tree_type *)c->result)->type;
   if (is_tl_type_flat(t, &arg_idx)) {
     x = gen_field_store(c->args[arg_idx], IP + l, max_size - l, vars, 0, 1);
@@ -4117,17 +4102,17 @@ int gen_constructor_store(struct tl_combinator *c, void **IP, int max_size) {
     return l;
   }
 
-  assert (!c->args_num || (c->args && c->args[0]));
+  assert(!c->args_num || (c->args && c->args[0]));
   for (int i = 0; i < c->args_num; i++) {
     if (!(c->args[i]->flags & FLAG_OPT_VAR) && !is_arg_named_fields_mask_bit(c->args[i])) {
-//  fprintf (stderr, "%d\n", __LINE__);
+      //  fprintf (stderr, "%d\n", __LINE__);
       x = gen_field_store(c->args[i], IP + l, max_size - l, vars, i + 1, 0);
-//  fprintf (stderr, "%d\n", __LINE__);
+      //  fprintf (stderr, "%d\n", __LINE__);
       if (x < 0) {
         return -1;
       }
       l += x;
-//    fprintf (stderr, ".");
+      //    fprintf (stderr, ".");
     }
   }
   if (max_size - l <= 10) {
@@ -4143,7 +4128,7 @@ int gen_function_store(struct tl_combinator *c, void **IP, int max_size) {
   if (max_size <= 10) {
     return -1;
   }
-  assert (!c->IP);
+  assert(!c->IP);
   int l = 0;
   IP[l++] = (void *)(tls_store_int);
   IP[l++] = (void *)(long)c->name;
@@ -4156,14 +4141,14 @@ int gen_function_store(struct tl_combinator *c, void **IP, int max_size) {
       if (c->args[i]->flags & FLAG_EXCL) {
         x = gen_field_excl_store(c->args[i], IP + l, max_size - l, vars, i + 1);
       } else {
-//      fprintf (stderr, "(");
+        //      fprintf (stderr, "(");
         x = gen_field_store(c->args[i], IP + l, max_size - l, vars, i + 1, 0);
       }
       if (x < 0) {
         return -1;
       }
       l += x;
-//    fprintf (stderr, ".");
+      //    fprintf (stderr, ".");
     }
   }
   int r = gen_create(c->result, IP + l, max_size - l, vars);
@@ -4188,7 +4173,7 @@ int gen_constructor_fetch(struct tl_combinator *c, void **IP, int max_size) {
     return -1;
   }
   int l = 0;
-  assert (!c->fIP);
+  assert(!c->fIP);
   int i;
   int vars[c->var_num];
   memset(vars, 0, sizeof(int) * c->var_num);
@@ -4321,7 +4306,7 @@ int gen_constructor_fetch(struct tl_combinator *c, void **IP, int max_size) {
     }
   }
   int arg_idx = -1;
-  assert(TYPE (c->result) == NODE_TYPE_TYPE);
+  assert(TYPE(c->result) == NODE_TYPE_TYPE);
   const struct tl_type *t = ((struct tl_tree_type *)c->result)->type;
   if (is_tl_type_flat(t, &arg_idx)) {
     x = gen_field_fetch(c->args[arg_idx], IP + l, max_size - l, vars, arg_idx + 1, 1, c->id);
@@ -4344,7 +4329,7 @@ int gen_constructor_fetch(struct tl_combinator *c, void **IP, int max_size) {
         return -1;
       }
       l += x;
-//    fprintf (stderr, ".");
+      //    fprintf (stderr, ".");
     }
   }
   if (max_size - l <= 10) {
@@ -4384,17 +4369,17 @@ void delete_combinator(struct tl_combinator *c) {
   }
   if (c->IP) {
     zzfree(c->IP, c->IP_len);
-    ADD_PFREE (c->IP_len);
+    ADD_PFREE(c->IP_len);
   }
   if (c->fIP) {
     zzfree(c->fIP, c->fIP_len);
-    ADD_PFREE (c->fIP_len);
+    ADD_PFREE(c->fIP_len);
   }
   if (c->result) {
-    DEC_REF (c->result);
+    DEC_REF(c->result);
   }
   if (c->id) {
-    ADD_PFREE (strlen(c->id));
+    ADD_PFREE(strlen(c->id));
     zzstrfree(c->id);
   }
   int i;
@@ -4402,17 +4387,17 @@ void delete_combinator(struct tl_combinator *c) {
     for (i = 0; i < c->args_num; i++) {
       if (c->args[i]) {
         if (c->args[i]->type) {
-          DEC_REF (c->args[i]->type);
+          DEC_REF(c->args[i]->type);
         }
         zzfree(c->args[i], sizeof(*c->args[i]));
-        ADD_PFREE (sizeof(*c->args[i]));
+        ADD_PFREE(sizeof(*c->args[i]));
       }
     }
     zzfree(c->args, sizeof(void *) * c->args_num);
-    ADD_PFREE (sizeof(void *) * c->args_num);
+    ADD_PFREE(sizeof(void *) * c->args_num);
   }
   zzfree(c, sizeof(*c));
-  ADD_PFREE (sizeof(*c));
+  ADD_PFREE(sizeof(*c));
 }
 
 void delete_type(struct tl_type *t) {
@@ -4420,7 +4405,7 @@ void delete_type(struct tl_type *t) {
     return;
   }
   if (t->id) {
-    ADD_PFREE (strlen(t->id));
+    ADD_PFREE(strlen(t->id));
     zzstrfree(t->id);
   }
   if (t->constructors_num && t->constructors) {
@@ -4429,11 +4414,11 @@ void delete_type(struct tl_type *t) {
       delete_combinator(t->constructors[i]);
     }
     zzfree(t->constructors, t->constructors_num * sizeof(void *));
-    ADD_PFREE (t->constructors_num * sizeof(void *));
+    ADD_PFREE(t->constructors_num * sizeof(void *));
   }
   tl_types--;
   zzfree(t, sizeof(*t));
-  ADD_PFREE (sizeof(*t));
+  ADD_PFREE(sizeof(*t));
 }
 
 void tl_config_delete(struct tl_config *config) {
@@ -4451,7 +4436,7 @@ void tl_config_delete(struct tl_config *config) {
   zzfree(config->ht_tname, size);
   zzfree(config->ht_fname->E, sizeof(void *) * (1 << 12));
   zzfree(config->ht_fname, size);
-  ADD_PFREE ((size + (1 << 12) * sizeof(void *)) * 4);
+  ADD_PFREE((size + (1 << 12) * sizeof(void *)) * 4);
   int i;
   for (i = 0; i < config->tn; i++) {
     if (config->tps[i]) {
@@ -4459,17 +4444,17 @@ void tl_config_delete(struct tl_config *config) {
     }
   }
   zzfree(config->tps, config->tn * sizeof(void *));
-  ADD_PFREE (config->tn * sizeof(void *));
+  ADD_PFREE(config->tn * sizeof(void *));
   for (i = 0; i < config->fn; i++) {
     if (config->fns[i]) {
       delete_combinator(config->fns[i]);
     }
   }
   zzfree(config->fns, config->fn * sizeof(void *));
-  ADD_PFREE (config->fn * sizeof(void *));
+  ADD_PFREE(config->fn * sizeof(void *));
 
   zzfree(config, sizeof(*config));
-  ADD_PFREE (sizeof(*config));
+  ADD_PFREE(sizeof(*config));
 }
 
 void tl_delete_old_configs() {
@@ -4483,7 +4468,7 @@ void tl_delete_old_configs() {
 
 void tl_config_alloc() {
   cur_config = reinterpret_cast<tl_config *>(zzmalloc0(sizeof(*cur_config)));
-  ADD_PMALLOC (sizeof(*cur_config));
+  ADD_PMALLOC(sizeof(*cur_config));
   config_list_pos++;
   if (config_list_pos >= CONFIG_LIST_SIZE) {
     config_list_pos -= CONFIG_LIST_SIZE;
@@ -4494,7 +4479,7 @@ void tl_config_alloc() {
   cur_config->ht_tid->size = (1 << 12);
   cur_config->ht_tid->mask = (1 << 12) - 1;
   cur_config->ht_tid->E = reinterpret_cast<hash_elem_tl_type_id **>(zzmalloc0(sizeof(hash_elem_tl_type_id *) * (1 << 12)));
-  cur_config->ht_fid = reinterpret_cast<hash_table_tl_fun_id*>(zzmalloc(size));
+  cur_config->ht_fid = reinterpret_cast<hash_table_tl_fun_id *>(zzmalloc(size));
   cur_config->ht_fid->size = (1 << 12);
   cur_config->ht_fid->mask = (1 << 12) - 1;
   cur_config->ht_fid->E = reinterpret_cast<hash_elem_tl_fun_id **>(zzmalloc0(sizeof(hash_elem_tl_fun_id *) * (1 << 12)));
@@ -4508,8 +4493,8 @@ void tl_config_alloc() {
   cur_config->ht_fname->E = reinterpret_cast<hash_elem_tl_fun_name **>(zzmalloc0(sizeof(hash_elem_tl_fun_name *) * (1 << 12)));
   cur_config->pos = config_list_pos;
 
-  ADD_PMALLOC (size * 4);
-  ADD_PMALLOC (sizeof(void *) * (1 << 12) * 4);
+  ADD_PMALLOC(size * 4);
+  ADD_PMALLOC(sizeof(void *) * (1 << 12) * 4);
 }
 
 void tl_config_back() {
@@ -4586,7 +4571,7 @@ tl_tree *read_num_const(int *var_num) {
 
 tl_tree *read_num_var(int *var_num) {
   auto *T = reinterpret_cast<tl_tree_var_num *>(zzmalloc(sizeof(tl_tree_var_num)));
-  ADD_PMALLOC (sizeof(*T));
+  ADD_PMALLOC(sizeof(*T));
   T->self.flags = 0;
   T->self.ref_cnt = 1;
   total_ref_cnt++;
@@ -4613,8 +4598,8 @@ tl_tree *read_num_var(int *var_num) {
 
 struct tl_tree *read_type_var(int *var_num) {
   auto *T = reinterpret_cast<tl_tree_var_type *>(zzmalloc0(sizeof(tl_tree_var_type)));
-  ADD_PMALLOC (sizeof(*T));
-//  T->self.flags = 0;
+  ADD_PMALLOC(sizeof(*T));
+  //  T->self.flags = 0;
   T->self.ref_cnt = 1;
   total_ref_cnt++;
   persistent_tree_nodes++;
@@ -4636,7 +4621,7 @@ struct tl_tree *read_type_var(int *var_num) {
 
 tl_tree *read_array(int *var_num) {
   auto *T = reinterpret_cast<tl_tree_array *>(zzmalloc0(sizeof(tl_tree_array)));
-  ADD_PMALLOC (sizeof(*T));
+  ADD_PMALLOC(sizeof(*T));
   T->self.ref_cnt = 1;
   total_ref_cnt++;
   persistent_tree_nodes++;
@@ -4656,7 +4641,7 @@ tl_tree *read_array(int *var_num) {
     return 0;
   }
   T->args = reinterpret_cast<arg **>(zzmalloc0(sizeof(void *) * T->args_num));
-  ADD_PMALLOC (sizeof(void *) * T->args_num);
+  ADD_PMALLOC(sizeof(void *) * T->args_num);
   if (read_args_list(T->args, T->args_num, var_num) < 0) {
     return 0;
   }
@@ -4672,7 +4657,7 @@ tl_tree *read_array(int *var_num) {
 
 struct tl_tree *read_type(int *var_num) {
   auto *T = reinterpret_cast<tl_tree_type *>(zzmalloc0(sizeof(tl_tree_type)));
-  ADD_PMALLOC (sizeof(*T));
+  ADD_PMALLOC(sizeof(*T));
   T->self.ref_cnt = 1;
   total_ref_cnt++;
   persistent_tree_nodes++;
@@ -4695,7 +4680,7 @@ struct tl_tree *read_type(int *var_num) {
     return 0;
   }
   T->children = reinterpret_cast<tl_tree **>(zzmalloc0(sizeof(tl_tree *) * T->children_num));
-  ADD_PMALLOC (sizeof(void *) * T->children_num);
+  ADD_PMALLOC(sizeof(void *) * T->children_num);
   int i;
   T->self.flags |= FLAG_NOVAR;
   for (i = 0; i < T->children_num; i++) {
@@ -4723,7 +4708,7 @@ struct tl_tree *read_type(int *var_num) {
     if (!T->children[i]) {
       return 0;
     }
-    if (!TL_IS_NAT_VAR (T->children[i]) && !(T->children[i]->flags & FLAG_NOVAR)) {
+    if (!TL_IS_NAT_VAR(T->children[i]) && !(T->children[i]->flags & FLAG_NOVAR)) {
       T->self.flags &= ~FLAG_NOVAR;
     }
   }
@@ -4780,7 +4765,7 @@ struct tl_tree *read_nat_expr(int *var_num) {
     fprintf(stderr, "read_nat_expr: constructor = 0x%08x\n", x);
   }
   switch (x) {
-    case TLS_EXPR_NAT:  // because of legacy typo in TL compiler we must maintain this for backward compatibility
+    case TLS_EXPR_NAT: // because of legacy typo in TL compiler we must maintain this for backward compatibility
     case TLS_NAT_CONST:
       return read_num_const(var_num);
     case TLS_NAT_VAR:
@@ -4817,7 +4802,7 @@ int read_args_list(arg **args, int args_num, int *var_num) {
     args[i] = reinterpret_cast<arg *>(zzmalloc0(sizeof(arg)));
     args[i]->exist_var_num = -1;
     args[i]->exist_var_bit = 0;
-    ADD_PMALLOC (sizeof(struct arg));
+    ADD_PMALLOC(sizeof(struct arg));
     if (schema_version == 1) {
       if (tl_parse_int() != TLS_ARG) {
         return -1;
@@ -4830,8 +4815,8 @@ int read_args_list(arg **args, int args_num, int *var_num) {
     if (tl_parse_string(&args[i]->id) < 0) {
       return -1;
     }
-    ADD_MALLOC (strlen(args[i]->id));
-    ADD_PMALLOC (strlen(args[i]->id));
+    ADD_MALLOC(strlen(args[i]->id));
+    ADD_PMALLOC(strlen(args[i]->id));
     args[i]->flags = tl_parse_int();
     if (schema_version >= 3) {
       int x = args[i]->flags & 6;
@@ -4876,24 +4861,8 @@ int read_args_list(arg **args, int args_num, int *var_num) {
       args[i]->flags |= FLAG_NOVAR;
     }
     static char sflags[2000];
-    static int flags_v[7] = {
-      FLAG_OPT_VAR,
-      FLAG_EXCL,
-      FLAG_OPT_FIELD,
-      FLAG_NOVAR,
-      FLAG_BARE,
-      FLAG_DEFAULT_CONSTRUCTOR,
-      FLAG_NOCONS
-    };
-    static const char *flags_n[7] = {
-      "FLAG_OPT_VAR",
-      "FLAG_EXCL",
-      "FLAG_OPT_FIELD",
-      "FLAG_NOVAR",
-      "FLAG_BARE",
-      "FLAG_DEFAULT_CONSTRUCTOR",
-      "FLAG_NOCONS"
-    };
+    static int flags_v[7] = {FLAG_OPT_VAR, FLAG_EXCL, FLAG_OPT_FIELD, FLAG_NOVAR, FLAG_BARE, FLAG_DEFAULT_CONSTRUCTOR, FLAG_NOCONS};
+    static const char *flags_n[7] = {"FLAG_OPT_VAR", "FLAG_EXCL", "FLAG_OPT_FIELD", "FLAG_NOVAR", "FLAG_BARE", "FLAG_DEFAULT_CONSTRUCTOR", "FLAG_NOCONS"};
     int pp = 0, j;
     sflags[0] = 0;
     for (j = 0; j < 7; ++j) {
@@ -4915,7 +4884,7 @@ int read_combinator_args_list(struct tl_combinator *c) {
   }
   c->args = reinterpret_cast<arg **>(zzmalloc0(sizeof(arg *) * c->args_num));
   c->var_num = 0;
-  ADD_PMALLOC (sizeof(void *) * c->args_num);
+  ADD_PMALLOC(sizeof(void *) * c->args_num);
   return read_args_list(c->args, c->args_num, &c->var_num);
 }
 
@@ -4961,7 +4930,7 @@ static bool check_constructor(struct tl_combinator *constructor) {
   // test {t1:Type} {t2:Type} ... = Test t2 t1
   // и вообще любого расхождения в порядке
   // arg_idx = child_idx для всех переменных типа Type
-  assert (TYPE(constructor->result) == NODE_TYPE_TYPE);
+  assert(TYPE(constructor->result) == NODE_TYPE_TYPE);
   struct tl_tree_type *res_tree = (struct tl_tree_type *)constructor->result;
   for (int i = 0; i < res_tree->children_num; ++i) {
     if (TYPE(res_tree->children[i]) == NODE_TYPE_VAR_TYPE) {
@@ -5001,42 +4970,42 @@ struct tl_combinator *read_combinators(int v) {
     zzfree(c, sizeof(*c));
     return 0;
   }
-  ADD_MALLOC (strlen(c->id));
-  ADD_PMALLOC (strlen(c->id));
+  ADD_MALLOC(strlen(c->id));
+  ADD_PMALLOC(strlen(c->id));
   int x = tl_parse_int();
   struct tl_type *t = tl_type_get_by_name(x);
   if (!t && (x || v != 3)) {
-    ADD_PFREE (strlen(c->id));
+    ADD_PFREE(strlen(c->id));
     zzfree(c->id, strlen(c->id));
     zzfree(c, sizeof(*c));
     return 0;
   }
-  assert (t || (!x && v == 3));
+  assert(t || (!x && v == 3));
   if (v == 2) {
     if (t->extra >= t->constructors_num) {
       zzfree(c, sizeof(*c));
       return 0;
     }
-    assert (t->extra < t->constructors_num);
+    assert(t->extra < t->constructors_num);
     t->constructors[t->extra++] = c;
     tl_constructors++;
     c->is_fun = 0;
   } else {
-    assert (v == 3);
+    assert(v == 3);
     tl_fun_insert_id(c);
     tl_fun_insert_name(c);
     tl_functions++;
     c->is_fun = 1;
   }
   if (read_combinator_left(c) < 0) {
-    //delete_combinator (c);
+    // delete_combinator (c);
     return 0;
   }
   if (read_combinator_right(c) < 0) {
-    //delete_combinator (c);
+    // delete_combinator (c);
     return 0;
   }
-  ADD_PMALLOC (sizeof(*c));
+  ADD_PMALLOC(sizeof(*c));
   if (schema_version >= 4) {
     c->flags = tl_parse_int();
   }
@@ -5055,8 +5024,8 @@ struct tl_type *read_types() {
     zzfree(t, sizeof(*t));
     return 0;
   }
-  ADD_MALLOC (strlen(t->id));
-  ADD_PMALLOC (strlen(t->id));
+  ADD_MALLOC(strlen(t->id));
+  ADD_PMALLOC(strlen(t->id));
 
   t->constructors_num = tl_parse_int();
   if (tl_parse_error() || t->constructors_num < 0 || t->constructors_num > 1000) {
@@ -5081,12 +5050,11 @@ struct tl_type *read_types() {
   tl_type_insert_name(t);
   tl_type_insert_id(t);
   tl_types++;
-  ADD_PMALLOC (sizeof(*t));
-  ADD_PMALLOC (sizeof(void *) * t->constructors_num);
-  //fprintf (stderr, "Adding type %s. Name %d\n", t->id, t->name);
+  ADD_PMALLOC(sizeof(*t));
+  ADD_PMALLOC(sizeof(void *) * t->constructors_num);
+  // fprintf (stderr, "Adding type %s. Name %d\n", t->id, t->name);
   return t;
 }
-
 
 int MAGIC = 0x850230aa;
 char *tl_config_name = 0;
@@ -5135,16 +5103,17 @@ int renew_tl_config(const char *name) {
   }
 
   auto new_crc64 = crc64_partial(inbuf->rptr, ((char *)inbuf->wptr) - (char *)inbuf->rptr, -1ll);
-  if (new_tl_config_version < tl_config_version || (new_tl_config_version == tl_config_version && new_tl_config_date < tl_config_date) || config_crc64 == new_crc64) {
+  if (new_tl_config_version < tl_config_version || (new_tl_config_version == tl_config_version && new_tl_config_date < tl_config_date)
+      || config_crc64 == new_crc64) {
     return 0;
   }
 
   tl_config_alloc();
-//  int x;
+  //  int x;
 
-//  struct tl_type *tps [10000];
+  //  struct tl_type *tps [10000];
   int tn = 0;
-//  struct tl_combinator *fns [10000];
+  //  struct tl_combinator *fns [10000];
   int fn = 0;
   int cn;
 
@@ -5156,7 +5125,7 @@ int renew_tl_config(const char *name) {
 
   cur_config->tps = reinterpret_cast<tl_type **>(zzmalloc0(sizeof(tl_type *) * tn));
   cur_config->tn = tn;
-  ADD_PMALLOC (tn * sizeof(void *));
+  ADD_PMALLOC(tn * sizeof(void *));
   struct tl_type **tps = cur_config->tps;
   if (verbosity >= 2) {
     fprintf(stderr, "Found %d types\n", tn);
@@ -5207,7 +5176,7 @@ int renew_tl_config(const char *name) {
   }
   cur_config->fn = fn;
   cur_config->fns = reinterpret_cast<tl_combinator **>(zzmalloc0(sizeof(tl_combinator *) * fn));
-  ADD_PMALLOC (fn * sizeof(void *));
+  ADD_PMALLOC(fn * sizeof(void *));
   struct tl_combinator **fns = cur_config->fns;
 
   if (verbosity >= 2) {
@@ -5258,13 +5227,13 @@ int renew_tl_config(const char *name) {
 
   if (name != tl_config_name) {
     if (tl_config_name) {
-      ADD_PFREE (strlen(tl_config_name));
+      ADD_PFREE(strlen(tl_config_name));
       zzstrfree(tl_config_name);
       tl_config_name = NULL;
     }
 
     tl_config_name = zzstrdup(name);
-    ADD_PMALLOC (strlen(name));
+    ADD_PMALLOC(strlen(name));
   }
 
   config_crc64 = new_crc64;
@@ -5302,12 +5271,12 @@ static int read_tl_config_open(const char *name, struct stat *stat) {
 
 static int read_tl_config_process(const char *name, int fd, struct stat *stat) {
   if (verbosity >= 2) {
-    fprintf(stderr, "File found. Name %s. size = %lld\n", name, (long long) stat->st_size);
+    fprintf(stderr, "File found. Name %s. size = %lld\n", name, (long long)stat->st_size);
   }
 
   char *s = static_cast<char *>(malloc(stat->st_size));
-  assert (lseek(fd, 0, SEEK_SET) == 0);
-  assert (read(fd, s, stat->st_size) == stat->st_size);
+  assert(lseek(fd, 0, SEEK_SET) == 0);
+  assert(read(fd, s, stat->st_size) == stat->st_size);
   close(fd);
   do_rpc_parse(s, stat->st_size);
   int res = renew_tl_config(name);

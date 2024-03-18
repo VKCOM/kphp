@@ -75,7 +75,8 @@ unsigned get_my_ipv4() {
     }
     unsigned ip = ntohl(((struct sockaddr_in *)ifa->ifa_addr)->sin_addr.s_addr);
     unsigned mask = ntohl(((struct sockaddr_in *)ifa->ifa_netmask)->sin_addr.s_addr);
-    vkprintf (2, "%08x %08x (%08x == %08x)\t%s\t-> %d,%d\n", ip, mask, (ip & force_ipv4_mask), force_ipv4_ip, ifa->ifa_name, (ip & force_ipv4_mask) == force_ipv4_ip, mask < my_netmask);
+    vkprintf(2, "%08x %08x (%08x == %08x)\t%s\t-> %d,%d\n", ip, mask, (ip & force_ipv4_mask), force_ipv4_ip, ifa->ifa_name,
+             (ip & force_ipv4_mask) == force_ipv4_ip, mask < my_netmask);
     if ((ip & force_ipv4_mask) == force_ipv4_ip && (!my_ip || mask < my_netmask)) {
       my_ip = ip;
       my_netmask = mask;
@@ -85,8 +86,8 @@ unsigned get_my_ipv4() {
   if (force_ipv4_mask != 0xff000000 || force_ipv4_ip != (10 << 24)) {
     assert(my_ip != 0 && "can't choose ip in given subnet");
   }
-  vkprintf (2, "using main IP %d.%d.%d.%d/%d at interface %s\n", (my_ip >> 24), (my_ip >> 16) & 255, (my_ip >> 8) & 255, my_ip & 255,
-            __builtin_clz(~my_netmask), my_iface ?: "(none)");
+  vkprintf(2, "using main IP %d.%d.%d.%d/%d at interface %s\n", (my_ip >> 24), (my_ip >> 16) & 255, (my_ip >> 8) & 255, my_ip & 255, __builtin_clz(~my_netmask),
+           my_iface ?: "(none)");
   freeifaddrs(ifa_first);
   return my_ip;
 }
@@ -106,10 +107,10 @@ int get_my_ipv6(unsigned char ipv6[16]) {
       continue;
     }
     memcpy(ip, &((struct sockaddr_in6 *)ifa->ifa_addr)->sin6_addr, 16);
-    vkprintf (4, "test IP %s at interface %s\n", ipv6_to_print(ip), ifa->ifa_name);
+    vkprintf(4, "test IP %s at interface %s\n", ipv6_to_print(ip), ifa->ifa_name);
 
     if ((ip[0] & 0xf0) != 0x30 && (ip[0] & 0xf0) != 0x20) {
-      vkprintf (4, "not a global ipv6 address\n");
+      vkprintf(4, "not a global ipv6 address\n");
       continue;
     }
 
@@ -139,7 +140,7 @@ int get_my_ipv6(unsigned char ipv6[16]) {
       m++;
     }
   }
-  vkprintf (2, "using main IP %s/%d at interface %s\n", ipv6_to_print(ipv6), m, my_iface);
+  vkprintf(2, "using main IP %s/%d at interface %s\n", ipv6_to_print(ipv6), m, my_iface);
   freeifaddrs(ifa_first);
   return 1;
 }

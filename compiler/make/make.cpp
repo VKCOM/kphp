@@ -4,17 +4,17 @@
 
 #include "compiler/make/make.h"
 
+#include <dirent.h>
 #include <forward_list>
 #include <queue>
 #include <unordered_map>
-#include <dirent.h>
 
 #include "common/wrappers/mkdir_recursive.h"
 #include "common/wrappers/pathname.h"
 
 #include "compiler/compiler-core.h"
-#include "compiler/data/lib-data.h"
 #include "compiler/data/ffi-data.h"
+#include "compiler/data/lib-data.h"
 #include "compiler/make/cpp-to-obj-target.h"
 #include "compiler/make/file-target.h"
 #include "compiler/make/h-to-pch-target.h"
@@ -32,7 +32,7 @@ private:
   const CompilerSettings &settings;
 
   void target_set_file(Target *target, File *file) {
-    assert (file->target == nullptr);
+    assert(file->target == nullptr);
     target->set_file(file);
     file->target = target;
   }
@@ -68,10 +68,9 @@ private:
   }
 
 public:
-  MakeSetup(FILE *stats_file, const CompilerSettings &compiler_settings) noexcept:
-    make(stats_file),
-    settings(compiler_settings) {
-  }
+  MakeSetup(FILE *stats_file, const CompilerSettings &compiler_settings) noexcept
+    : make(stats_file)
+    , settings(compiler_settings) {}
 
   Target *create_cpp_target(File *cpp) {
     return create_target(new FileTarget(), std::vector<Target *>(), cpp);
@@ -107,11 +106,10 @@ public:
   }
 };
 
-
 static void copy_static_lib_to_out_dir(File &&static_archive) {
   Index out_dir;
   out_dir.set_dir(G->settings().static_lib_out_dir.get());
-  out_dir.del_extra_files();    // todo seems that this invocation does nothing, as files are empty
+  out_dir.del_extra_files(); // todo seems that this invocation does nothing, as files are empty
 
   // copy static archive
   LibData out_lib(G->settings().static_lib_name.get(), out_dir.get_dir());
@@ -132,7 +130,7 @@ static void copy_static_lib_to_out_dir(File &&static_archive) {
   Index out_headers_dir;
   out_headers_dir.set_dir(out_lib.headers_dir());
   // copy cpp header files of this static archive
-  for (File *header_file: headers_tmp_dir.get_files()) {
+  for (File *header_file : headers_tmp_dir.get_files()) {
     hard_link_or_copy(header_file->path, out_headers_dir.get_dir() + header_file->name);
     header_file->unlink();
   }
@@ -144,19 +142,19 @@ static std::forward_list<File *> collect_imported_libs() {
 
   std::forward_list<File *> imported_libs;
   imported_libs.emplace_front(new File{G->settings().link_file.get()});
-  for (const auto &lib: G->get_libs()) {
+  for (const auto &lib : G->get_libs()) {
     if (lib && !lib->is_raw_php()) {
       std::string lib_runtime_sha256 = CompilerSettings::read_runtime_sha256_file(lib->runtime_lib_sha256_file());
 
       kphp_error_act(binary_runtime_sha256 == lib_runtime_sha256,
-                     fmt_format("Mismatching between sha256 of binary runtime '{}' and lib runtime '{}'",
-                                G->settings().runtime_sha256_file.get(), lib->runtime_lib_sha256_file()),
+                     fmt_format("Mismatching between sha256 of binary runtime '{}' and lib runtime '{}'", G->settings().runtime_sha256_file.get(),
+                                lib->runtime_lib_sha256_file()),
                      continue);
       imported_libs.emplace_front(new File{lib->static_archive_path()});
     }
   }
 
-  for (File *file: imported_libs) {
+  for (File *file : imported_libs) {
     kphp_error_act(file->read_stat() > 0, fmt_format("Can't read mtime of link_file [{}]", file->path), continue);
     if (G->settings().verbosity.get() >= 1) {
       fmt_fprintf(stderr, "Use static lib [{}]\n", file->path);
@@ -168,7 +166,7 @@ static std::forward_list<File *> collect_imported_libs() {
 }
 
 static long long get_imported_header_mtime(const std::string &header_path, const std::forward_list<Index> &imported_headers) {
-  for (const Index &lib_headers_dir: imported_headers) {
+  for (const Index &lib_headers_dir : imported_headers) {
     if (File *header = lib_headers_dir.get_file(header_path)) {
       return header->mtime;
     }
@@ -185,7 +183,7 @@ File *prepare_precompiled_header(Index *obj_dir, MakeSetup &make, File &runtime_
   if (with_debug && flags == settings.cxx_flags_default) {
     return nullptr;
   }
-  if (access(flags.pch_dir.get().c_str(), F_OK) != -1) {  // if a folder in /tmp exists, this pch was already made
+  if (access(flags.pch_dir.get().c_str(), F_OK) != -1) { // if a folder in /tmp exists, this pch was already made
     return nullptr;
   }
 
@@ -300,7 +298,7 @@ static std::unordered_map<File *, long long> create_dep_mtime(const Index &cpp_d
       continue;
     }
 
-    for (auto *including_file: file_includes_it->second) {
+    for (auto *including_file : file_includes_it->second) {
       auto &including_file_mtime = dep_mtime[including_file];
       if (including_file_mtime < mtime) {
         including_file_mtime = mtime;
@@ -311,8 +309,7 @@ static std::unordered_map<File *, long long> create_dep_mtime(const Index &cpp_d
   return dep_mtime;
 }
 
-static std::vector<File *> create_obj_files(MakeSetup *make, Index &obj_dir, const Index &cpp_dir,
-                                            const std::forward_list<Index> &imported_headers) {
+static std::vector<File *> create_obj_files(MakeSetup *make, Index &obj_dir, const Index &cpp_dir, const std::forward_list<Index> &imported_headers) {
   std::unordered_map<File *, long long> dep_mtime = create_dep_mtime(cpp_dir, imported_headers);
   std::vector<File *> objs;
   for (const auto &cpp_file : cpp_dir.get_files()) {
@@ -349,8 +346,7 @@ static std::vector<File *> create_obj_files(MakeSetup *make, Index &obj_dir, con
     for (File *f : deps) {
       vk::hash_combine(hash, vk::std_hash(f->name));
     }
-    auto intermediate_file_name = fmt_format("{}_{:x}.{}", name_and_files.first, hash,
-                                             G->settings().dynamic_incremental_linkage.get() ? "so" : "o");
+    auto intermediate_file_name = fmt_format("{}_{:x}.{}", name_and_files.first, hash, G->settings().dynamic_incremental_linkage.get() ? "so" : "o");
     File *obj_file = obj_dir.insert_file(std::move(intermediate_file_name));
     make->create_objs2obj_target(std::move(deps), obj_file);
     objs.push_back(obj_file);
@@ -359,11 +355,10 @@ static std::vector<File *> create_obj_files(MakeSetup *make, Index &obj_dir, con
   return objs;
 }
 
-static std::vector<File *> kphp_make_target(Index &obj_dir, const Index &cpp_dir,
-                      const std::forward_list<Index> &imported_headers, MakeSetup &make) {
+static std::vector<File *> kphp_make_target(Index &obj_dir, const Index &cpp_dir, const std::forward_list<Index> &imported_headers, MakeSetup &make) {
   std::vector<File *> lib_objs;
   auto imported_libs = collect_imported_libs();
-  for (File *link_file: imported_libs) {
+  for (File *link_file : imported_libs) {
     make.create_cpp_target(link_file);
     lib_objs.emplace_back(link_file);
   }
@@ -372,14 +367,14 @@ static std::vector<File *> kphp_make_target(Index &obj_dir, const Index &cpp_dir
   return objs;
 }
 
-static std::vector<File *> kphp_make_static_lib_target(Index &obj_dir, const Index &cpp_dir,
-                                 const std::forward_list<Index> &imported_headers, MakeSetup &make) {
+static std::vector<File *> kphp_make_static_lib_target(Index &obj_dir, const Index &cpp_dir, const std::forward_list<Index> &imported_headers,
+                                                       MakeSetup &make) {
   return create_obj_files(&make, obj_dir, cpp_dir, imported_headers);
 }
 
 static std::forward_list<Index> collect_imported_headers() {
   std::forward_list<Index> imported_headers;
-  for (const auto &lib: G->get_libs()) {
+  for (const auto &lib : G->get_libs()) {
     if (lib && !lib->is_raw_php()) {
       imported_headers.emplace_front();
       imported_headers.front().sync_with_dir(lib->lib_dir());

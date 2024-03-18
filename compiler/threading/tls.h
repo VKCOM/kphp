@@ -41,10 +41,8 @@ private:
   }
 
 public:
-  TLS() :
-    arr() {
-  }
-
+  TLS()
+    : arr() {}
 
   T &get() {
     return get_raw()->data;

@@ -27,7 +27,7 @@ void SharedMemoryManager::init() noexcept {
   const auto *raw_mem_start = raw_mem;
   const auto *raw_mem_finish = raw_mem + memory_limit_;
 
-  control_block_ = new(raw_mem) ControlBlock{};
+  control_block_ = new (raw_mem) ControlBlock{};
   raw_mem += sizeof(ControlBlock);
   const size_t left_memory = memory_limit_ - sizeof(ControlBlock);
 
@@ -141,7 +141,7 @@ bool SharedMemoryManager::request_extra_memory_for_resource(memory_resource::uns
     auto &free_extra_buffers = control_block_->free_extra_memory[i];
     dl::CriticalSectionGuard critical_section;
     if (auto *extra_mem = freelist_get(&free_extra_buffers)) {
-      resource.add_extra_memory(new(extra_mem) memory_resource::extra_memory_pool{buffer_real_size});
+      resource.add_extra_memory(new (extra_mem) memory_resource::extra_memory_pool{buffer_real_size});
       ++control_block_->stats.extra_memory[i].acquired;
       return true;
     }
@@ -155,7 +155,9 @@ JobStats &SharedMemoryManager::get_stats() noexcept {
   return control_block_->stats;
 }
 
-size_t SharedMemoryManager::calc_shared_memory_buffers_distribution(size_t mem_size, std::array<size_t, 1 + JOB_EXTRA_MEMORY_BUFFER_BUCKETS> &group_buffers_counts) const noexcept {
+size_t
+SharedMemoryManager::calc_shared_memory_buffers_distribution(size_t mem_size,
+                                                             std::array<size_t, 1 + JOB_EXTRA_MEMORY_BUFFER_BUCKETS> &group_buffers_counts) const noexcept {
   auto calc_group_buffers_count = [&](const shared_memory_buffers_group_info &cur_g) -> size_t {
     double sum = 0;
     for (auto &g : shared_memory_buffers_groups_) {
@@ -175,7 +177,7 @@ size_t SharedMemoryManager::calc_shared_memory_buffers_distribution(size_t mem_s
   assert(total_used_mem <= mem_size);
   // distribute left memory starting with the largest buffers
   size_t unused_mem = mem_size - total_used_mem;
-  for (size_t i = shared_memory_buffers_groups_.size(); i-- > 0; ) {
+  for (size_t i = shared_memory_buffers_groups_.size(); i-- > 0;) {
     auto &g = shared_memory_buffers_groups_[i];
     size_t cnt = unused_mem / g.buffer_size;
     group_buffers_counts[i] += cnt;

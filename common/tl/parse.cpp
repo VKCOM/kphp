@@ -31,7 +31,6 @@ STATS_PROVIDER(tl, 2000) {
   stats->add_histogram_stat("rpc_sent_errors", rpc_sent_errors);
 }
 
-
 struct tl_state {
   std::unique_ptr<tl_in_methods> in_methods;
   std::unique_ptr<tl_out_methods> out_methods;
@@ -55,10 +54,10 @@ thread_local tl_state *tlio = &tlio_v.back();
 
 void tl_fetch_set_error_format(int errnum, const char *format, ...) {
   if (!tlio->error) {
-    assert (format);
+    assert(format);
     static char s[10000];
     va_list l;
-    va_start (l, format);
+    va_start(l, format);
     vsnprintf(s, sizeof(s) - 1, format, l);
     va_end(l);
     vkprintf(2, "Error %s\n", s);
@@ -105,9 +104,8 @@ void tl_fetch_set_error(int errnum, std::string error) {
   }
 }
 
-
 void tl_fetch_set_error(int errnum, const char *s) {
-  assert (s);
+  assert(s);
   return tl_fetch_set_error(errnum, std::string(s));
 }
 
@@ -130,7 +128,6 @@ void tl_setup_result_header(const tl_query_header_t *header) {
   }
 }
 
-
 void tl_store_init(std::unique_ptr<tl_out_methods> methods, int64_t size) {
   tlio->out_methods = std::move(methods);
   memset(&tlio->header_settings, 0, sizeof(tlio->header_settings));
@@ -140,9 +137,8 @@ void tl_store_init(std::unique_ptr<tl_out_methods> methods, int64_t size) {
   tlio->out_remaining = size;
 }
 
-
 static int tl_store_end_impl(int op, bool noheader) {
-  auto *out_methods = dynamic_cast<tl_out_methods_network*>(tlio->out_methods.get());
+  auto *out_methods = dynamic_cast<tl_out_methods_network *>(tlio->out_methods.get());
   if (!out_methods) {
     return 0;
   }
@@ -172,7 +168,7 @@ static int tl_store_end_impl(int op, bool noheader) {
         }
       }
     }
-    assert (!(tlio->out_pos & 3));
+    assert(!(tlio->out_pos & 3));
     static thread_local char buffer[1000000];
     int size = vk::tl::save_to_buffer(buffer, sizeof(buffer), [op, &header, qid = tlio->qid] {
       tl_store_int(op);
@@ -201,7 +197,7 @@ void tlio_pop() {
 }
 
 void tl_compress_written(int version) {
-  auto *methods = dynamic_cast<tl_out_methods_network*>(tlio->out_methods.get());
+  auto *methods = dynamic_cast<tl_out_methods_network *>(tlio->out_methods.get());
   assert(methods);
   int new_size = methods->compress(version);
   assert(new_size % 4 == 0);
@@ -342,11 +338,11 @@ void tl_store_raw_data_nopad(const void *buf, int len) {
 }
 
 void *tl_store_get_ptr(int size) {
-  assert (tl_store_check(size) >= 0);
+  assert(tl_store_check(size) >= 0);
   if (!size) {
     return 0;
   }
-  assert (size >= 0);
+  assert(size >= 0);
   void *x = tlio->out_methods->store_get_ptr(size);
   tlio->out_pos += size;
   tlio->out_remaining -= size;
@@ -435,7 +431,7 @@ int tl_store_end() {
 }
 
 int tl_store_pad() {
-  assert (tl_store_check(0) >= 0);
+  assert(tl_store_check(0) >= 0);
   int x = 0;
   int pad = (-tlio->out_pos) & 3;
   tl_store_raw_data_nopad(&x, pad);
@@ -447,7 +443,7 @@ static int get_tl_string_len(int len) {
 }
 
 static int tl_store_string_len(int len) {
-  assert (len >= 0);
+  assert(len >= 0);
   if (len < 254) {
     assert(tl_store_check(1) >= 0);
     tl_store_raw_data_nopad(&len, 1);
@@ -464,28 +460,28 @@ void tl_store_string(const char *s, int len) {
 }
 
 void tl_store_raw_data(const void *s, int len) {
-  assert (tl_store_check(len) >= 0);
+  assert(tl_store_check(len) >= 0);
   tl_store_raw_data_nopad(s, len);
   tl_store_pad();
 }
 
 void tl_store_int(int x) {
-  assert (tl_store_check(4) >= 0);
+  assert(tl_store_check(4) >= 0);
   tl_store_raw_data_nopad(&x, 4);
 }
 
 void tl_store_long(long long x) {
-  assert (tl_store_check(8) >= 0);
+  assert(tl_store_check(8) >= 0);
   tl_store_raw_data_nopad(&x, 8);
 }
 
 void tl_store_double(double x) {
-  assert (tl_store_check(8) >= 0);
+  assert(tl_store_check(8) >= 0);
   tl_store_raw_data_nopad(&x, 8);
 }
 
 void tl_store_float(float x) {
-  assert (tl_store_check(sizeof(x)) >= 0);
+  assert(tl_store_check(sizeof(x)) >= 0);
   tl_store_raw_data_nopad(&x, sizeof(x));
 }
 
@@ -524,10 +520,9 @@ int tl_fetch_error_code() {
   return tlio->errnum;
 }
 
-const char* tl_fetch_error_string() {
+const char *tl_fetch_error_string() {
   return tlio->error.has_value() ? tlio->error->c_str() : nullptr;
 }
-
 
 int tl_fetch_check(int nbytes) {
   if (!tl_is_fetch_inited()) {
@@ -536,12 +531,14 @@ int tl_fetch_check(int nbytes) {
   }
   if (nbytes >= 0) {
     if (tlio->in_remaining < nbytes) {
-      tl_fetch_set_error_format(TL_ERROR_SYNTAX, "Trying to read %d bytes at position %" PRIi64 " (size = %" PRIi64 ")", nbytes, tlio->in_pos, tlio->in_pos + tlio->in_remaining);
+      tl_fetch_set_error_format(TL_ERROR_SYNTAX, "Trying to read %d bytes at position %" PRIi64 " (size = %" PRIi64 ")", nbytes, tlio->in_pos,
+                                tlio->in_pos + tlio->in_remaining);
       return -1;
     }
   } else {
     if (tlio->in_pos < -nbytes) {
-      tl_fetch_set_error_format(TL_ERROR_SYNTAX, "Trying to read %d bytes at position %" PRIi64 " (size = %" PRIi64 ")", nbytes, tlio->in_pos, tlio->in_pos + tlio->in_remaining);
+      tl_fetch_set_error_format(TL_ERROR_SYNTAX, "Trying to read %d bytes at position %" PRIi64 " (size = %" PRIi64 ")", nbytes, tlio->in_pos,
+                                tlio->in_pos + tlio->in_remaining);
       return -1;
     }
   }

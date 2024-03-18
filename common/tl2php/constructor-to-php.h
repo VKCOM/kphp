@@ -10,9 +10,7 @@ namespace tl {
 
 class ConstructorToPhp final : public CombinatorToPhp {
 public:
-  ConstructorToPhp(TlToPhpClassesConverter &tl_to_php,
-                   const tlo_parsing::combinator &tl_constructor,
-                   CombinatorToPhp &outer_converter,
+  ConstructorToPhp(TlToPhpClassesConverter &tl_to_php, const tlo_parsing::combinator &tl_constructor, CombinatorToPhp &outer_converter,
                    const tlo_parsing::type_expr &outer_type_expr);
 
 private:

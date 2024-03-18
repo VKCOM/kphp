@@ -20,9 +20,8 @@ class ServerStats : vk::not_copyable {
 public:
   void init() noexcept;
 
-  void add_request_stats(double script_time_sec, double net_time_sec, double script_init_time_sec, double connection_process_time_sec,
-                         int64_t script_queries, int64_t long_script_queries,
-                         const memory_resource::MemoryStats &script_memory_stats, int64_t curl_total_allocated,
+  void add_request_stats(double script_time_sec, double net_time_sec, double script_init_time_sec, double connection_process_time_sec, int64_t script_queries,
+                         int64_t long_script_queries, const memory_resource::MemoryStats &script_memory_stats, int64_t curl_total_allocated,
                          process_rusage_t script_rusage, script_error_t error) noexcept;
   void add_job_stats(double job_wait_time_sec, int64_t request_memory_used, int64_t request_real_memory_used, int64_t response_memory_used,
                      int64_t response_real_memory_used) noexcept;
@@ -34,8 +33,7 @@ public:
   void set_wait_net_worker_status() noexcept;
   void set_running_worker_status() noexcept;
 
-  void after_fork(pid_t worker_pid, uint64_t active_connections, uint64_t max_connections,
-                  uint16_t worker_process_id, WorkerType worker_type) noexcept;
+  void after_fork(pid_t worker_pid, uint64_t active_connections, uint64_t max_connections, uint16_t worker_process_id, WorkerType worker_type) noexcept;
 
   // these functions should be called only from the master process
   void aggregate_stats() noexcept;

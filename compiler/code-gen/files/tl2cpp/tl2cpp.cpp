@@ -48,7 +48,7 @@ namespace tl2cpp {
 static void collect_target_objects() {
   auto should_exclude_tl_type = [](const std::unique_ptr<vk::tlo_parsing::type> &t) {
     return CUSTOM_IMPL_TYPES.find(t->name) != CUSTOM_IMPL_TYPES.end()
-           || t->name == "engine.Query";                        // it's the only type with !X; can we get rid of it in the future?
+           || t->name == "engine.Query"; // it's the only type with !X; can we get rid of it in the future?
   };
   auto should_exclude_tl_function = [](const std::unique_ptr<vk::tlo_parsing::combinator> &f) {
     return !G->settings().gen_tl_internals.get() && f->is_internal_function();
@@ -93,16 +93,11 @@ void write_rpc_server_functions(CodeGenerator &W) {
   W << "switch(function_magic) " << BEGIN;
   for (const auto &f : kphp_functions) {
     W << fmt_format("case {:#010x}: ", static_cast<unsigned int>(f->id)) << BEGIN;
-    W << get_php_runtime_type(f, true) << " request;" << NL
-      << "request.alloc();" << NL
-      << "CurrentRpcServerQuery::get().save(" << cpp_tl_struct_name("f_", f->name) << "::rpc_server_typed_fetch(request.get()));" << NL
-      << "return request;" << NL
-      << END << NL;
+    W << get_php_runtime_type(f, true) << " request;" << NL << "request.alloc();" << NL << "CurrentRpcServerQuery::get().save("
+      << cpp_tl_struct_name("f_", f->name) << "::rpc_server_typed_fetch(request.get()));" << NL << "return request;" << NL << END << NL;
   }
-  W << "default: " << BEGIN
-    << "php_warning(\"Unexpected function magic on fetching request in rpc server: 0x%08x\", function_magic);" << NL
-    << "return {};" << NL
-    << END << NL;
+  W << "default: " << BEGIN << "php_warning(\"Unexpected function magic on fetching request in rpc server: 0x%08x\", function_magic);" << NL << "return {};"
+    << NL << END << NL;
   W << END << NL;
   W << END << NL;
   W << CloseFile();
@@ -114,8 +109,7 @@ void write_tl_query_handlers(CodeGenerator &W) {
   }
 
   auto parsing_result = vk::tlo_parsing::parse_tlo(G->settings().tl_schema_file.get().c_str(), false);
-  kphp_error_return(parsing_result.parsed_schema,
-                    fmt_format("Error while reading tlo: {}", parsing_result.error));
+  kphp_error_return(parsing_result.parsed_schema, fmt_format("Error while reading tlo: {}", parsing_result.error));
 
   tl = parsing_result.parsed_schema.get();
   try {
@@ -142,16 +136,15 @@ void write_tl_query_handlers(CodeGenerator &W) {
     // we do this to avoid t_ReqResult-related dependencies inside the runtime
     FunctionSignatureGenerator(W) << "array<mixed> gen$tl_fetch_wrapper(std::unique_ptr<tl_func_base> stored_fetcher) " << BEGIN
                                   << "tl_exclamation_fetch_wrapper X(std::move(stored_fetcher));" << NL
-                                  << "return t_ReqResult<tl_exclamation_fetch_wrapper, 0>(std::move(X)).fetch();" << NL
-                                  << END << NL << NL;
+                                  << "return t_ReqResult<tl_exclamation_fetch_wrapper, 0>(std::move(X)).fetch();" << NL << END << NL << NL;
     // a hash table that contains all TL functions;
     // it's passed to the runtime just like the fetch wrapper
     W << "array<tl_storer_ptr> gen$tl_storers_ht;" << NL;
     FunctionSignatureGenerator(W) << "void fill_tl_storers_ht() " << BEGIN;
     for (const auto &module_name : modules_with_functions) {
       for (const auto &f : modules[module_name].target_functions) {
-        W << "gen$tl_storers_ht.set_value(" << register_tl_const_str(f->name) << ", " << "&" << cpp_tl_struct_name("f_", f->name) << "::store, "
-          << hash_tl_const_str(f->name) << "L);" << NL;
+        W << "gen$tl_storers_ht.set_value(" << register_tl_const_str(f->name) << ", "
+          << "&" << cpp_tl_struct_name("f_", f->name) << "::store, " << hash_tl_const_str(f->name) << "L);" << NL;
       }
     }
     W << END << NL;
@@ -162,23 +155,18 @@ void write_tl_query_handlers(CodeGenerator &W) {
   W << OpenFile("tl_const_vars.h", "tl");
   W << "#pragma once" << NL;
   W << ExternInclude(G->settings().runtime_headers.get());
-  std::for_each(tl_const_vars.begin(), tl_const_vars.end(), [&W](const std::string &s) {
-    W << "extern string " << cpp_tl_const_str(s) << ";" << NL;
-  });
+  std::for_each(tl_const_vars.begin(), tl_const_vars.end(), [&W](const std::string &s) { W << "extern string " << cpp_tl_const_str(s) << ";" << NL; });
   W << CloseFile();
 
   W << OpenFile("tl_const_vars.cpp", "tl", false);
   W << ExternInclude(G->settings().runtime_headers.get());
   W << Include("tl/tl_const_vars.h");
-  std::for_each(tl_const_vars.begin(), tl_const_vars.end(), [&W](const std::string &s) {
-    W << "string " << cpp_tl_const_str(s) << ";" << NL;
-  });
+  std::for_each(tl_const_vars.begin(), tl_const_vars.end(), [&W](const std::string &s) { W << "string " << cpp_tl_const_str(s) << ";" << NL; });
   auto const_string_shifts = compile_raw_data(W, tl_const_vars);
   FunctionSignatureGenerator(W) << "void tl_str_const_init() " << BEGIN;
   size_t i = 0;
-  std::for_each(tl_const_vars.begin(), tl_const_vars.end(), [&](const std::string &s) {
-    W << cpp_tl_const_str(s) << ".assign_raw (&raw[" << const_string_shifts[i++] << "]);" << NL;
-  });
+  std::for_each(tl_const_vars.begin(), tl_const_vars.end(),
+                [&](const std::string &s) { W << cpp_tl_const_str(s) << ".assign_raw (&raw[" << const_string_shifts[i++] << "]);" << NL; });
   W << END << NL << NL;
 
   // to decode tl magics to strings at runtime, codegen everything
@@ -197,24 +185,19 @@ void write_tl_query_handlers(CodeGenerator &W) {
   }
   W << END << ";" << NL << NL;
 
-  W << "void tl_magic_fill_all_functions_impl(array<string> &out) noexcept " << BEGIN
-    << "out.reserve(" << tl->functions.size() << ", false);" << NL
-    << "for (int i=0; i<" << tl->functions.size() << "; ++i)" << BEGIN
-    << "out.set_value(static_cast<int64_t>(tl_magic_ids[i]), string(tl_magic_names[i]));" << NL << END
-    << NL << END << NL;
+  W << "void tl_magic_fill_all_functions_impl(array<string> &out) noexcept " << BEGIN << "out.reserve(" << tl->functions.size() << ", false);" << NL
+    << "for (int i=0; i<" << tl->functions.size() << "; ++i)" << BEGIN << "out.set_value(static_cast<int64_t>(tl_magic_ids[i]), string(tl_magic_names[i]));"
+    << NL << END << NL << END << NL;
 
-  W << "const char *tl_magic_convert_to_name_impl(unsigned int magic) noexcept " << BEGIN
-    << "for (int i=0; i<" << tl->functions.size() << "; ++i)" << BEGIN
-    << "if (tl_magic_ids[i] == magic) return tl_magic_names[i];" << NL << END
-    << "return \"__unknown__\";"
-    << NL << END << NL;
+  W << "const char *tl_magic_convert_to_name_impl(unsigned int magic) noexcept " << BEGIN << "for (int i=0; i<" << tl->functions.size() << "; ++i)" << BEGIN
+    << "if (tl_magic_ids[i] == magic) return tl_magic_names[i];" << NL << END << "return \"__unknown__\";" << NL << END << NL;
 
   W << CloseFile();
 
   modules.clear();
   modules_with_functions.clear();
 }
-} // namespace tl_gen
+} // namespace tl2cpp
 
 void TlSchemaToCpp::compile(CodeGenerator &W) const {
   tl2cpp::write_tl_query_handlers(W);

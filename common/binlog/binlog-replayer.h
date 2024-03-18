@@ -109,14 +109,10 @@ struct call_handler_dispatcher<replay_binlog_result> {
   }
 };
 
-
-
 template<typename Handler, typename T>
 replay_binlog_result call_handler(const Handler &handler, const T &E) {
   return call_handler_dispatcher<decltype(handler(E))>::call(handler, E);
 }
-
-
 
 template<typename T>
 std::function<int(const lev_generic &, int)> get_handler_wrapper(T &&handler_) {
@@ -146,14 +142,14 @@ class replayer {
   using handler_func_t = std::function<int(const lev_generic &, int)>;
 
   struct handler_record {
-    explicit handler_record(handler_func_t handler, handler_func_t size_handler, std::string name, lev_type_t base_magic) :
-      handler{std::move(handler)},
-      size_handler{std::move(size_handler)},
-      name{std::move(name)},
-      calls{0},
-      time_spent{0},
-      base_magic{base_magic},
-      used_space{0} {}
+    explicit handler_record(handler_func_t handler, handler_func_t size_handler, std::string name, lev_type_t base_magic)
+      : handler{std::move(handler)}
+      , size_handler{std::move(size_handler)}
+      , name{std::move(name)}
+      , calls{0}
+      , time_spent{0}
+      , base_magic{base_magic}
+      , used_space{0} {}
 
     int operator()(const lev_generic &E, int size) const {
       double start_time = get_network_time();
@@ -217,9 +213,8 @@ class replayer {
   }
 
 public:
-
-  explicit replayer(std::function<int(const lev_generic *, int)> default_handler) :
-    default_handler(std::move(default_handler)) {}
+  explicit replayer(std::function<int(const lev_generic *, int)> default_handler)
+    : default_handler(std::move(default_handler)) {}
 
   explicit replayer() = default;
 
@@ -240,10 +235,8 @@ public:
     if (base_magic == 0) {
       base_magic = magic;
     }
-    handler_record h{detail::get_handler_wrapper(std::forward<T>(handler)),
-                     detail::get_handler_wrapper([](const detail::event_by_handler<T> &) {}),
-                     detail::get_name_helper::get_name<typename detail::event_by_handler<T>>(),
-                     base_magic};
+    handler_record h{detail::get_handler_wrapper(std::forward<T>(handler)), detail::get_handler_wrapper([](const detail::event_by_handler<T> &) {}),
+                     detail::get_name_helper::get_name<typename detail::event_by_handler<T>>(), base_magic};
     bool inserted = handlers.emplace(magic, std::move(h)).second;
     assert(inserted);
     return *this;
@@ -251,12 +244,12 @@ public:
 
   template<typename T>
   replayer &add_skip_handler() {
-    return add_handler([](const T&){});
+    return add_handler([](const T &) {});
   }
 
   template<typename T>
   replayer &add_skip_handler_range() {
-    return add_handler_range([](const T&){});
+    return add_handler_range([](const T &) {});
   }
 
   template<typename T>
@@ -282,7 +275,6 @@ public:
   static size_t get_event_size(const T &EE) {
     return detail::get_size_helper::get_size(EE);
   }
-
 };
 
 } // namespace binlog

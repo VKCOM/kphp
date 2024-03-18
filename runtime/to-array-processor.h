@@ -38,7 +38,7 @@ public:
   explicit ToArrayVisitor(bool with_class_names)
     : with_class_names_(with_class_names) {}
 
-  array<mixed> flush_result() && noexcept {
+  array<mixed> flush_result() &&noexcept {
     return std::move(result_);
   }
 
@@ -86,7 +86,7 @@ private:
     add_value(field_name, instance.is_null() ? mixed{} : f$to_array_debug(instance, with_class_names_));
   }
 
-  template<class ...Args>
+  template<class... Args>
   void process_impl(const char *field_name, const std::tuple<Args...> &value) {
     ToArrayVisitor tuple_processor{with_class_names_};
     tuple_processor.result_.reserve(sizeof...(Args), true);
@@ -95,7 +95,7 @@ private:
     add_value(field_name, std::move(tuple_processor).flush_result());
   }
 
-  template<size_t ...Is, typename ...T>
+  template<size_t... Is, typename... T>
   void process_impl(const char *field_name, const shape<std::index_sequence<Is...>, T...> &value) {
     ToArrayVisitor shape_processor{with_class_names_};
     shape_processor.result_.reserve(sizeof...(Is), true);

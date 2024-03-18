@@ -4,8 +4,8 @@
 
 #pragma once
 #include <array>
-#include <re2/re2.h>
 #include <forward_list>
+#include <re2/re2.h>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -16,12 +16,7 @@
 
 #include "runtime/kphp_core.h"
 
-enum class ConfdataFirstKeyType {
-  simple_key,
-  one_dot_wildcard,
-  two_dots_wildcard,
-  predefined_wildcard
-};
+enum class ConfdataFirstKeyType { simple_key, one_dot_wildcard, two_dots_wildcard, predefined_wildcard };
 
 class ConfdataPredefinedWildcards : vk::not_copyable {
 public:
@@ -39,14 +34,8 @@ public:
         end = begin + wildcards_it->second.size();
       }
     }
-    auto r = vk::make_filter_iterator_range(
-      [key_tail](vk::string_view wildcard_tail) {
-        return key_tail.starts_with(wildcard_tail);
-      }, begin, end);
-    return vk::make_transform_iterator_range(
-      [this](vk::string_view wildcard_tail) {
-        return shortest_wildcard_ + wildcard_tail.size();
-      }, r.begin(), r.end());
+    auto r = vk::make_filter_iterator_range([key_tail](vk::string_view wildcard_tail) { return key_tail.starts_with(wildcard_tail); }, begin, end);
+    return vk::make_transform_iterator_range([this](vk::string_view wildcard_tail) { return shortest_wildcard_ + wildcard_tail.size(); }, r.begin(), r.end());
   }
 
   size_t get_max_wildcards_for_element() const noexcept {
@@ -89,13 +78,23 @@ public:
 
   void forcibly_change_first_key_wildcard_dots_from_two_to_one() noexcept;
 
-  ConfdataFirstKeyType get_first_key_type() const noexcept { return first_key_type_; }
+  ConfdataFirstKeyType get_first_key_type() const noexcept {
+    return first_key_type_;
+  }
 
-  const string &get_first_key() const noexcept { return first_key_; }
-  const mixed &get_second_key() const noexcept { return second_key_; }
+  const string &get_first_key() const noexcept {
+    return first_key_;
+  }
+  const mixed &get_second_key() const noexcept {
+    return second_key_;
+  }
 
-  string make_first_key_copy() const noexcept { return first_key_.copy_and_make_not_shared(); }
-  mixed make_second_key_copy() const noexcept { return second_key_.is_string() ? mixed{second_key_.as_string().copy_and_make_not_shared()} : second_key_; }
+  string make_first_key_copy() const noexcept {
+    return first_key_.copy_and_make_not_shared();
+  }
+  mixed make_second_key_copy() const noexcept {
+    return second_key_.is_string() ? mixed{second_key_.as_string().copy_and_make_not_shared()} : second_key_;
+  }
 
 private:
   void reset_raw(const char *key, int16_t key_len) noexcept;
@@ -123,15 +122,11 @@ public:
 
   bool is_blacklisted(vk::string_view key) const noexcept {
     // from PHP class KphpConfiguration, e.g. for langs
-    if (blacklist_pattern_ &&
-           re2::RE2::FullMatch(
-             re2::StringPiece(key.data(), static_cast<uint32_t>(key.size())),
-             *blacklist_pattern_)) {
+    if (blacklist_pattern_ && re2::RE2::FullMatch(re2::StringPiece(key.data(), static_cast<uint32_t>(key.size())), *blacklist_pattern_)) {
       return true;
     }
     // emergency startup option to disable keys by prefix, e.g. 'highload.vid'
-    if (unlikely(!force_ignore_prefixes_.empty()) &&
-        is_key_forcibly_ignored_by_prefix(key)) {
+    if (unlikely(!force_ignore_prefixes_.empty()) && is_key_forcibly_ignored_by_prefix(key)) {
       return true;
     }
     return false;

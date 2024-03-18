@@ -32,6 +32,7 @@ protected:
 
   std::vector<Target *> deps;
   const CompilerSettings *settings{nullptr};
+
 public:
   long long priority;
   double start_time;

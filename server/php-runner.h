@@ -69,8 +69,12 @@ public:
   void asan_stack_unpoison() const noexcept;
   void asan_stack_clear() const noexcept;
 
-  char *get_stack_ptr() const noexcept { return run_stack_; }
-  size_t get_stack_size() const noexcept { return stack_size_; }
+  char *get_stack_ptr() const noexcept {
+    return run_stack_;
+  }
+  size_t get_stack_size() const noexcept {
+    return stack_size_;
+  }
 
 private:
   const size_t stack_size_{0};
@@ -124,7 +128,7 @@ public:
   ucontext_t_portable run_context{};
 
   script_t *run_main{nullptr};
-  //logically it's a reference but since we initialize this value in init() it has a pointer type
+  // logically it's a reference but since we initialize this value in init() it has a pointer type
   php_query_data_t *data{nullptr};
   script_result *res{nullptr};
 

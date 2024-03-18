@@ -10,11 +10,11 @@
 namespace {
 voidpf zlib_static_alloc(voidpf opaque, uInt items, uInt size) {
   int *buf_pos = (int *)opaque;
-  php_assert (items != 0 && (PHP_BUF_LEN - *buf_pos) / items >= size);
+  php_assert(items != 0 && (PHP_BUF_LEN - *buf_pos) / items >= size);
 
   int pos = *buf_pos;
   *buf_pos += items * size;
-  php_assert (*buf_pos <= PHP_BUF_LEN);
+  php_assert(*buf_pos <= PHP_BUF_LEN);
   return php_buf + pos;
 }
 
@@ -39,13 +39,13 @@ const string_buffer *zlib_encode(const char *s, int32_t s_len, int32_t level, in
   unsigned int res_len = (unsigned int)compressBound(s_len) + 30;
   static_SB.clean().reserve(res_len);
 
-  dl::enter_critical_section();//OK
-  int ret = deflateInit2 (&strm, level, Z_DEFLATED, encoding, MAX_MEM_LEVEL, Z_DEFAULT_STRATEGY);
+  dl::enter_critical_section(); // OK
+  int ret = deflateInit2(&strm, level, Z_DEFLATED, encoding, MAX_MEM_LEVEL, Z_DEFAULT_STRATEGY);
   if (ret == Z_OK) {
     strm.avail_in = (unsigned int)s_len;
-    strm.next_in = reinterpret_cast <Bytef *> (const_cast <char *> (s));
+    strm.next_in = reinterpret_cast<Bytef *>(const_cast<char *>(s));
     strm.avail_out = res_len;
-    strm.next_out = reinterpret_cast <Bytef *> (static_SB.buffer());
+    strm.next_out = reinterpret_cast<Bytef *>(static_SB.buffer());
 
     ret = deflate(&strm, Z_FINISH);
     deflateEnd(&strm);
@@ -70,7 +70,7 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
   int memory = 8;
   int window = 15;
   int strategy = Z_DEFAULT_STRATEGY;
-  auto extract_int_option = [&](int lbound, int ubound, const array_iterator<const mixed> & option, int & dst) {
+  auto extract_int_option = [&](int lbound, int ubound, const array_iterator<const mixed> &option, int &dst) {
     mixed value = option.get_value();
     if (value.is_int() && value.as_int() >= lbound && value.as_int() <= ubound) {
       dst = value.as_int();
@@ -169,7 +169,8 @@ Optional<string> f$deflate_add(const class_instance<C$DeflateContext> &context, 
     case Z_FINISH:
       break;
     default:
-      php_warning("deflate_add() : flush type should be one of ZLIB_NO_FLUSH, ZLIB_PARTIAL_FLUSH, ZLIB_SYNC_FLUSH, ZLIB_FULL_FLUSH, ZLIB_FINISH, ZLIB_BLOCK, ZLIB_TREES");
+      php_warning(
+        "deflate_add() : flush type should be one of ZLIB_NO_FLUSH, ZLIB_PARTIAL_FLUSH, ZLIB_SYNC_FLUSH, ZLIB_FULL_FLUSH, ZLIB_FINISH, ZLIB_BLOCK, ZLIB_TREES");
       return {};
   }
 
@@ -177,8 +178,8 @@ Optional<string> f$deflate_add(const class_instance<C$DeflateContext> &context, 
   z_stream *stream = &context.get()->stream;
   int out_size = deflateBound(stream, data.size()) + 30;
   out_size = out_size < 64 ? 64 : out_size;
-  char * buffer = static_cast<char *>(dl::script_allocator_malloc(out_size));
-  auto finalizer = vk::finally([buffer](){dl::script_allocator_free(buffer);});
+  char *buffer = static_cast<char *>(dl::script_allocator_malloc(out_size));
+  auto finalizer = vk::finally([buffer]() { dl::script_allocator_free(buffer); });
   stream->next_in = const_cast<Bytef *>(reinterpret_cast<const Bytef *>(data.c_str()));
   stream->next_out = reinterpret_cast<Bytef *>(buffer);
   stream->avail_in = data.size();

@@ -34,4 +34,3 @@ std::unique_ptr<tl_func_base> CurrentRpcServerQuery::extract() noexcept {
 void CurrentRpcServerQuery::reset() noexcept {
   this->query.reset(nullptr);
 }
-

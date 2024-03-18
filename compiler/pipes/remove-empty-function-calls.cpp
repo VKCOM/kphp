@@ -4,9 +4,9 @@
 
 #include "compiler/pipes/remove-empty-function-calls.h"
 
-#include "compiler/vertex.h"
-#include "compiler/data/src-file.h"
 #include "compiler/compiler-core.h"
+#include "compiler/data/src-file.h"
+#include "compiler/vertex.h"
 
 static bool is_empty_func_call(VertexPtr v) {
   return v->type() == op_func_call && v.as<op_func_call>()->func_id->body_seq == FunctionData::body_value::empty;
@@ -27,7 +27,7 @@ VertexPtr RemoveEmptyFunctionCallsPass::on_exit_vertex(VertexPtr v) {
   }
 
   if (v->type() == op_seq) {
-    auto is_empty = [](VertexPtr v) { return v->type() == op_null || v->type() == op_empty;};
+    auto is_empty = [](VertexPtr v) { return v->type() == op_null || v->type() == op_empty; };
     if (std::any_of(v->begin(), v->end(), is_empty)) {
       std::vector<VertexPtr> next;
       std::remove_copy_if(v->begin(), v->end(), std::back_inserter(next), is_empty);

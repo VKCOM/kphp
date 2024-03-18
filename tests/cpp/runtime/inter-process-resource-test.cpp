@@ -12,10 +12,18 @@ void set_pid_and_user_id(pid_t p) {
 }
 
 struct ResourceStub {
-  void init(int v) { value = v; }
-  void reset(int v) { value = v; }
-  void clear() { value = 0; }
-  void destroy() { value = -1; }
+  void init(int v) {
+    value = v;
+  }
+  void reset(int v) {
+    value = v;
+  }
+  void clear() {
+    value = 0;
+  }
+  void destroy() {
+    value = -1;
+  }
 
   int value{0};
 };
@@ -133,7 +141,6 @@ TEST(inter_process_resource_manager_test, test_acqure_release_resource) {
   resource_manager.release_resource(resource2);
 }
 
-
 TEST(inter_process_resource_manager_test, test_is_next_resource_unused) {
   set_pid_and_user_id(1);
 
@@ -188,7 +195,6 @@ TEST(inter_process_resource_manager_test, acquire_release_clear_scenario) {
   resource_manager.clear_dirty_unused_resources_in_sequence();
   ASSERT_EQ(r2->value, 0);
 }
-
 
 TEST(inter_process_resource_manager_test, acquire_force_release_clear_scenario) {
   set_pid_and_user_id(1);

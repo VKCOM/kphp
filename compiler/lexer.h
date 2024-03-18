@@ -17,33 +17,39 @@
 struct LexerData : private vk::not_copyable {
   explicit LexerData(vk::string_view new_code);
   void new_line();
-  const char *get_code() const { return code; }
-  vk::string_view get_code_view() const { return vk::string_view{code, code_end}; };
+  const char *get_code() const {
+    return code;
+  }
+  vk::string_view get_code_view() const {
+    return vk::string_view{code, code_end};
+  };
   void pass(int shift);
   void pass_raw(int shift);
-  template <typename ...Args>
-  void add_token_(int shift, Args&& ...tok);
-  template <typename ...Args>
-  void add_token(int shift, Args&& ...tok);
+  template<typename... Args>
+  void add_token_(int shift, Args &&...tok);
+  template<typename... Args>
+  void add_token(int shift, Args &&...tok);
   void start_str();
   void append_char(int c);
   void flush_str();
   void hack_last_tokens();
   void set_dont_hack_last_tokens();
 
-  struct any_token_tag{};
+  struct any_token_tag {};
   template<TokenType token>
-  struct except_token_tag{};
-  template<typename ...Args>
-  bool are_last_tokens(TokenType type1, Args ...args);
-  template<typename ...Args>
-  bool are_last_tokens(any_token_tag type1, Args ...args);
-  template<TokenType token, typename ...Args>
-  bool are_last_tokens(except_token_tag<token> type1, Args ...args);
+  struct except_token_tag {};
+  template<typename... Args>
+  bool are_last_tokens(TokenType type1, Args... args);
+  template<typename... Args>
+  bool are_last_tokens(any_token_tag type1, Args... args);
+  template<TokenType token, typename... Args>
+  bool are_last_tokens(except_token_tag<token> type1, Args... args);
   bool are_last_tokens();
-  int get_num_tokens() const { return tokens.size(); }
+  int get_num_tokens() const {
+    return tokens.size();
+  }
 
-  std::vector<Token>&& move_tokens();
+  std::vector<Token> &&move_tokens();
   int get_line_num();
 
 private:
@@ -65,15 +71,14 @@ struct TokenLexer : private vk::not_copyable {
   virtual ~TokenLexer() = default;
 };
 
-//TODO ??
+// TODO ??
 bool parse_with_helper(LexerData *lexer_data, const std::unique_ptr<Helper<TokenLexer>> &h);
 
 struct TokenLexerError final : TokenLexer {
   std::string error_str;
 
-  explicit TokenLexerError(std::string error_str = "unknown_error") :
-    error_str(std::move(error_str)) {
-  }
+  explicit TokenLexerError(std::string error_str = "unknown_error")
+    : error_str(std::move(error_str)) {}
 
   bool parse(LexerData *lexer_data) const final;
 };
@@ -93,10 +98,9 @@ struct TokenLexerSimpleString final : TokenLexer {
 struct TokenLexerAppendChar final : TokenLexer {
   int c, pass;
 
-  TokenLexerAppendChar(int c, int pass) :
-    c(c),
-    pass(pass) {
-  }
+  TokenLexerAppendChar(int c, int pass)
+    : c(c)
+    , pass(pass) {}
 
   bool parse(LexerData *lexer_data) const final;
 };
@@ -140,7 +144,6 @@ struct TokenLexerString final : TokenLexer {
   bool parse(LexerData *lexer_data) const final;
 };
 
-
 struct TokenLexerComment final : TokenLexer {
   bool parse(LexerData *lexer_data) const final;
 };
@@ -160,10 +163,9 @@ struct TokenLexerToken final : TokenLexer {
   TokenType tp;
   int len;
 
-  TokenLexerToken(TokenType tp, int len) :
-    tp(tp),
-    len(len) {
-  }
+  TokenLexerToken(TokenType tp, int len)
+    : tp(tp)
+    , len(len) {}
 
   bool parse(LexerData *lexer_data) const final;
 };
@@ -176,9 +178,8 @@ struct TokenLexerCommon final : TokenLexerWithHelper {
 
 struct TokenLexerSkip final : TokenLexer {
   int n;
-  explicit TokenLexerSkip(int n = 1) :
-    n(n) {
-  }
+  explicit TokenLexerSkip(int n = 1)
+    : n(n) {}
 
   bool parse(LexerData *lexer_data) const final;
 };

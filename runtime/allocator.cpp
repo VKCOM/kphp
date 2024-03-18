@@ -290,7 +290,8 @@ void write_last_malloc_replacement_stacktrace(char *buf, size_t buf_size) noexce
   parse_kphp_backtrace(buf, buf_size, raw_backtrace, backtrace_size);
 }
 
-MemoryReplacementGuard::MemoryReplacementGuard(memory_resource::unsynchronized_pool_resource &memory_resource, bool force_enable_disable) : force_enable_disable_(force_enable_disable) {
+MemoryReplacementGuard::MemoryReplacementGuard(memory_resource::unsynchronized_pool_resource &memory_resource, bool force_enable_disable)
+  : force_enable_disable_(force_enable_disable) {
   dl::enter_critical_section();
   dl::set_current_script_allocator(memory_resource, force_enable_disable_);
 }

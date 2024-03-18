@@ -23,8 +23,8 @@ bool tl_parse_restore_pos(int pos);
 struct tl_exclamation_fetch_wrapper {
   std::unique_ptr<tl_func_base> fetcher;
 
-  explicit tl_exclamation_fetch_wrapper(std::unique_ptr<tl_func_base> fetcher) :
-    fetcher(std::move(fetcher)) {}
+  explicit tl_exclamation_fetch_wrapper(std::unique_ptr<tl_func_base> fetcher)
+    : fetcher(std::move(fetcher)) {}
 
   tl_exclamation_fetch_wrapper() = default;
   tl_exclamation_fetch_wrapper(tl_exclamation_fetch_wrapper &&) = default;
@@ -41,7 +41,7 @@ struct tl_exclamation_fetch_wrapper {
   }
 };
 
-using tl_storer_ptr = std::unique_ptr<tl_func_base>(*)(const mixed &);
+using tl_storer_ptr = std::unique_ptr<tl_func_base> (*)(const mixed &);
 
 inline mixed tl_arr_get(const mixed &arr, const string &str_key, int64_t num_key, int64_t precomputed_hash = 0) {
   if (!arr.is_array()) {
@@ -76,7 +76,7 @@ inline void fetch_magic_if_not_bare(unsigned int inner_magic, const char *error_
 }
 
 template<class T>
-inline void fetch_raw_vector_T(array<T> &out __attribute__ ((unused)), int64_t n_elems __attribute__ ((unused))) {
+inline void fetch_raw_vector_T(array<T> &out __attribute__((unused)), int64_t n_elems __attribute__((unused))) {
   php_assert(0 && "never called in runtime");
 }
 
@@ -86,7 +86,7 @@ inline void fetch_raw_vector_T<double>(array<double> &out, int64_t n_elems) {
 }
 
 template<class T>
-inline void store_raw_vector_T(const array<T> &v __attribute__ ((unused))) {
+inline void store_raw_vector_T(const array<T> &v __attribute__((unused))) {
   php_assert(0 && "never called in runtime");
 }
 
@@ -104,29 +104,22 @@ inline void store_raw_vector_T<double>(const array<double> &v) {
 //  3. mixed (long in TL scheme or mixed in the phpdoc) UPD: it will be wrapped after the int64_t transition is over
 
 template<typename S>
-struct need_Optional : vk::is_type_in_list<S, double, string, bool, int64_t> {
-};
+struct need_Optional : vk::is_type_in_list<S, double, string, bool, int64_t> {};
 
 template<typename S>
-struct need_Optional<array<S>> : std::true_type {
-};
+struct need_Optional<array<S>> : std::true_type {};
 
-enum class FieldAccessType {
-  read,
-  write
-};
+enum class FieldAccessType { read, write };
 
 // C++14 if constexpr
 template<typename SerializerT, FieldAccessType ac, typename OptionalFieldT>
-inline std::enable_if_t<need_Optional<typename SerializerT::PhpType>::value && ac == FieldAccessType::read,
-                                      const typename SerializerT::PhpType &>
+inline std::enable_if_t<need_Optional<typename SerializerT::PhpType>::value && ac == FieldAccessType::read, const typename SerializerT::PhpType &>
 get_serialization_target_from_optional_field(const OptionalFieldT &v) {
   return v.val();
 }
 
 template<typename SerializerT, FieldAccessType ac, typename OptionalFieldT>
-inline std::enable_if_t<need_Optional<typename SerializerT::PhpType>::value && ac == FieldAccessType::write,
-                                      typename SerializerT::PhpType &>
+inline std::enable_if_t<need_Optional<typename SerializerT::PhpType>::value && ac == FieldAccessType::write, typename SerializerT::PhpType &>
 get_serialization_target_from_optional_field(OptionalFieldT &v) {
   return v.ref();
 }
@@ -156,7 +149,7 @@ struct t_Int {
   }
 
   void typed_fetch_to(PhpType &out) {
-    CHECK_EXCEPTION(return);
+    CHECK_EXCEPTION(return );
     out = rpc_fetch_int();
   }
 
@@ -191,7 +184,7 @@ struct t_Long {
   }
 
   void typed_fetch_to(PhpType &out) {
-    CHECK_EXCEPTION(return);
+    CHECK_EXCEPTION(return );
     out = f$fetch_long();
   }
 };
@@ -213,7 +206,7 @@ struct t_Double {
   }
 
   void typed_fetch_to(PhpType &out) {
-    CHECK_EXCEPTION(return);
+    CHECK_EXCEPTION(return );
     out = f$fetch_double();
   }
 };
@@ -235,7 +228,7 @@ struct t_Float {
   }
 
   void typed_fetch_to(PhpType &out) {
-    CHECK_EXCEPTION(return);
+    CHECK_EXCEPTION(return );
     out = f$fetch_float();
   }
 };
@@ -257,7 +250,7 @@ struct t_String {
   }
 
   void typed_fetch_to(PhpType &out) {
-    CHECK_EXCEPTION(return);
+    CHECK_EXCEPTION(return );
     out = f$fetch_string();
   }
 };
@@ -289,7 +282,7 @@ struct t_Bool {
   }
 
   void typed_fetch_to(PhpType &out) {
-    CHECK_EXCEPTION(return);
+    CHECK_EXCEPTION(return );
     auto magic = static_cast<unsigned int>(rpc_fetch_int());
     if (magic != TL_BOOL_TRUE && magic != TL_BOOL_FALSE) {
       CurrentProcessingQuery::get().raise_fetching_error("Incorrect magic of type Bool: 0x%08x", magic);
@@ -311,7 +304,7 @@ struct t_True {
   void typed_store(const PhpType &__attribute__((unused))) {}
 
   void typed_fetch_to(PhpType &out) {
-    CHECK_EXCEPTION(return);
+    CHECK_EXCEPTION(return );
     out = true;
   }
 };
@@ -320,8 +313,8 @@ template<typename T, unsigned int inner_magic>
 struct t_Vector {
   T elem_state;
 
-  explicit t_Vector(T param_type) :
-    elem_state(std::move(param_type)) {}
+  explicit t_Vector(T param_type)
+    : elem_state(std::move(param_type)) {}
 
   void store(const mixed &v) {
     if (!v.is_array()) {
@@ -381,7 +374,7 @@ struct t_Vector {
   }
 
   void typed_fetch_to(PhpType &out) {
-    CHECK_EXCEPTION(return);
+    CHECK_EXCEPTION(return );
     int n = rpc_fetch_int();
     if (n < 0) {
       CurrentProcessingQuery::get().raise_fetching_error("Vector size is negative");
@@ -399,7 +392,7 @@ struct t_Vector {
       PhpElemT cur_elem;
       elem_state.typed_fetch_to(cur_elem);
       out.push_back(std::move(cur_elem));
-      CHECK_EXCEPTION(return);
+      CHECK_EXCEPTION(return );
     }
   }
 };
@@ -410,8 +403,8 @@ struct t_Maybe {
 
   T elem_state;
 
-  explicit t_Maybe(T param_type) :
-    elem_state(std::move(param_type)) {}
+  explicit t_Maybe(T param_type)
+    : elem_state(std::move(param_type)) {}
 
   void store(const mixed &v) {
     const string &name = f$strval(tl_arr_get(v, tl_str_underscore, 0, tl_str_underscore_hash));
@@ -463,7 +456,7 @@ struct t_Maybe {
   }
 
   void typed_fetch_to(PhpType &out) {
-    CHECK_EXCEPTION(return);
+    CHECK_EXCEPTION(return );
     auto magic = static_cast<unsigned int>(rpc_fetch_int());
     switch (magic) {
       case TL_MAYBE_FALSE: {
@@ -489,8 +482,8 @@ template<typename KeyT, typename ValueT, unsigned int inner_value_magic>
 struct tl_Dictionary_impl {
   ValueT value_state;
 
-  explicit tl_Dictionary_impl(ValueT value_type) :
-    value_state(std::move(value_type)) {}
+  explicit tl_Dictionary_impl(ValueT value_type)
+    : value_state(std::move(value_type)) {}
 
   void store(const mixed &v) {
     if (!v.is_array()) {
@@ -541,7 +534,7 @@ struct tl_Dictionary_impl {
   }
 
   void typed_fetch_to(PhpType &out) {
-    CHECK_EXCEPTION(return);
+    CHECK_EXCEPTION(return );
     int32_t n = rpc_fetch_int();
     if (n < 0) {
       CurrentProcessingQuery::get().raise_fetching_error("Dictionary size is negative");
@@ -554,7 +547,7 @@ struct tl_Dictionary_impl {
       typename ValueT::PhpType elem;
       value_state.typed_fetch_to(elem);
       out.set_value(key, std::move(elem));
-      CHECK_EXCEPTION(return);
+      CHECK_EXCEPTION(return );
     }
   }
 };
@@ -573,9 +566,9 @@ struct t_Tuple {
   T elem_state;
   int64_t size;
 
-  t_Tuple(T param_type, int64_t size) :
-    elem_state(std::move(param_type)),
-    size(size) {}
+  t_Tuple(T param_type, int64_t size)
+    : elem_state(std::move(param_type))
+    , size(size) {}
 
   void store(const mixed &v) {
     if (!v.is_array()) {
@@ -622,7 +615,7 @@ struct t_Tuple {
   }
 
   void typed_fetch_to(PhpType &out) {
-    CHECK_EXCEPTION(return);
+    CHECK_EXCEPTION(return );
     out.reserve(size, true);
 
     if (std::is_same<T, t_Double>{} && inner_magic == 0) {
@@ -635,7 +628,7 @@ struct t_Tuple {
       fetch_magic_if_not_bare(inner_magic, "Incorrect magic of inner type of type Tuple");
       elem_state.typed_fetch_to(elem);
       out.push_back(std::move(elem));
-      CHECK_EXCEPTION(return);
+      CHECK_EXCEPTION(return );
     }
   }
 };
@@ -645,9 +638,9 @@ struct tl_array {
   int64_t size;
   T cell;
 
-  tl_array(int64_t size, T cell) :
-    size(size),
-    cell(std::move(cell)) {}
+  tl_array(int64_t size, T cell)
+    : size(size)
+    , cell(std::move(cell)) {}
 
   void store(const mixed &v) {
     if (!v.is_array()) {
@@ -695,7 +688,7 @@ struct tl_array {
   }
 
   void typed_fetch_to(PhpType &out) {
-    CHECK_EXCEPTION(return);
+    CHECK_EXCEPTION(return );
     out.reserve(size, true);
 
     if (std::is_same<T, t_Double>{} && inner_magic == 0) {
@@ -708,7 +701,7 @@ struct tl_array {
       fetch_magic_if_not_bare(inner_magic, "Incorrect magic of inner type of tl array");
       cell.typed_fetch_to(elem);
       out.push_back(std::move(elem));
-      CHECK_EXCEPTION(return);
+      CHECK_EXCEPTION(return );
     }
   }
 };

@@ -48,5 +48,3 @@ private:
   std::atomic<std::uint64_t> memory_rss_{0};
   std::atomic<std::uint64_t> memory_rss_peak_{0};
 };
-
-

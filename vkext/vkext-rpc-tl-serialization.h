@@ -16,7 +16,7 @@ extern int typed_mode;
 extern const char *tl_current_function_name;
 
 struct tl_type {
-//  struct tl_type_methods *methods;
+  //  struct tl_type_methods *methods;
   char *id;
   unsigned name;
   int arity;
@@ -94,11 +94,11 @@ extern struct tl_tree_methods tl_var_type_methods;
 extern struct tl_tree_methods tl_pvar_num_methods;
 extern struct tl_tree_methods tl_pvar_type_methods;
 #define TL_IS_NAT_VAR(x) (((long)x) & 1)
-#define TL_TREE_METHODS(x) (TL_IS_NAT_VAR (x) ? &tl_nat_const_methods : ((struct tl_tree *)(x))->methods)
+#define TL_TREE_METHODS(x) (TL_IS_NAT_VAR(x) ? &tl_nat_const_methods : ((struct tl_tree *)(x))->methods)
 
-#define DEC_REF(x) (TL_TREE_METHODS(x)->dec_ref (reinterpret_cast<tl_tree *>(x)))
-#define INC_REF(x) (TL_TREE_METHODS(x)->inc_ref (reinterpret_cast<tl_tree *>(x)))
-#define TYPE(x) (TL_TREE_METHODS(x)->type (reinterpret_cast<tl_tree *>(x)))
+#define DEC_REF(x) (TL_TREE_METHODS(x)->dec_ref(reinterpret_cast<tl_tree *>(x)))
+#define INC_REF(x) (TL_TREE_METHODS(x)->inc_ref(reinterpret_cast<tl_tree *>(x)))
+#define TYPE(x) (TL_TREE_METHODS(x)->type(reinterpret_cast<tl_tree *>(x)))
 
 typedef unsigned long long tl_tree_hash_t;
 
@@ -112,7 +112,7 @@ struct tl_tree_methods {
 struct tl_tree {
   int ref_cnt;
   int flags;
-  //tl_tree_hash_t hash;
+  // tl_tree_hash_t hash;
   struct tl_tree_methods *methods;
   const char *forwarded_fun_name;
 };
@@ -167,7 +167,7 @@ struct arg {
 };
 
 struct tl_combinator {
-  //struct tl_combinator_methods *methods;
+  // struct tl_combinator_methods *methods;
   char *id;
   unsigned name;
   int is_fun;

@@ -16,26 +16,23 @@
 // based on
 // https://github.com/miloyip/itoa-benchmark/blob/master/src/sse2.cpp
 
-#include <cstdint>
 #include <cassert>
+#include <cstdint>
 #include <emmintrin.h>
 
 #include "common/algorithms/fastmod.h"
 
 namespace impl_ {
 inline char lookup_digit_table(size_t x) noexcept {
-  static constexpr char digit_table[200] = {
-    '0', '0', '0', '1', '0', '2', '0', '3', '0', '4', '0', '5', '0', '6', '0', '7', '0', '8', '0', '9',
-    '1', '0', '1', '1', '1', '2', '1', '3', '1', '4', '1', '5', '1', '6', '1', '7', '1', '8', '1', '9',
-    '2', '0', '2', '1', '2', '2', '2', '3', '2', '4', '2', '5', '2', '6', '2', '7', '2', '8', '2', '9',
-    '3', '0', '3', '1', '3', '2', '3', '3', '3', '4', '3', '5', '3', '6', '3', '7', '3', '8', '3', '9',
-    '4', '0', '4', '1', '4', '2', '4', '3', '4', '4', '4', '5', '4', '6', '4', '7', '4', '8', '4', '9',
-    '5', '0', '5', '1', '5', '2', '5', '3', '5', '4', '5', '5', '5', '6', '5', '7', '5', '8', '5', '9',
-    '6', '0', '6', '1', '6', '2', '6', '3', '6', '4', '6', '5', '6', '6', '6', '7', '6', '8', '6', '9',
-    '7', '0', '7', '1', '7', '2', '7', '3', '7', '4', '7', '5', '7', '6', '7', '7', '7', '8', '7', '9',
-    '8', '0', '8', '1', '8', '2', '8', '3', '8', '4', '8', '5', '8', '6', '8', '7', '8', '8', '8', '9',
-    '9', '0', '9', '1', '9', '2', '9', '3', '9', '4', '9', '5', '9', '6', '9', '7', '9', '8', '9', '9'
-  };
+  static constexpr char digit_table[200] = {'0', '0', '0', '1', '0', '2', '0', '3', '0', '4', '0', '5', '0', '6', '0', '7', '0', '8', '0', '9', '1', '0', '1',
+                                            '1', '1', '2', '1', '3', '1', '4', '1', '5', '1', '6', '1', '7', '1', '8', '1', '9', '2', '0', '2', '1', '2', '2',
+                                            '2', '3', '2', '4', '2', '5', '2', '6', '2', '7', '2', '8', '2', '9', '3', '0', '3', '1', '3', '2', '3', '3', '3',
+                                            '4', '3', '5', '3', '6', '3', '7', '3', '8', '3', '9', '4', '0', '4', '1', '4', '2', '4', '3', '4', '4', '4', '5',
+                                            '4', '6', '4', '7', '4', '8', '4', '9', '5', '0', '5', '1', '5', '2', '5', '3', '5', '4', '5', '5', '5', '6', '5',
+                                            '7', '5', '8', '5', '9', '6', '0', '6', '1', '6', '2', '6', '3', '6', '4', '6', '5', '6', '6', '6', '7', '6', '8',
+                                            '6', '9', '7', '0', '7', '1', '7', '2', '7', '3', '7', '4', '7', '5', '7', '6', '7', '7', '7', '8', '7', '9', '8',
+                                            '0', '8', '1', '8', '2', '8', '3', '8', '4', '8', '5', '8', '6', '8', '7', '8', '8', '8', '9', '9', '0', '9', '1',
+                                            '9', '2', '9', '3', '9', '4', '9', '5', '9', '6', '9', '7', '9', '8', '9', '9'};
   return digit_table[x];
 }
 
@@ -272,14 +269,14 @@ char *simd_int64_to_string(int64_t value, char *out_buffer) {
 #else
 // as written above, the same functions for M1 are just implemented without simd
 // todo anyone who wants to practice some low-level magic — welcome to implement a proper SIMD form with ARM intrinsics
+#include <array>
+#include <cinttypes>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
-#include <array>
-#include <cinttypes>
 
-template <size_t S, typename T>
-inline int simd_value_to_string(char *out_buffer, const char* format, T value) noexcept {
+template<size_t S, typename T>
+inline int simd_value_to_string(char *out_buffer, const char *format, T value) noexcept {
   std::array<char, S> buffer{};
   int n = snprintf(buffer.data(), S, format, value);
   memcpy(out_buffer, buffer.data(), n);
@@ -287,7 +284,8 @@ inline int simd_value_to_string(char *out_buffer, const char* format, T value) n
 }
 
 char *simd_uint32_to_string(uint32_t value, char *out_buffer) noexcept {
-  return out_buffer + simd_value_to_string<11>(out_buffer, "%u", value);;
+  return out_buffer + simd_value_to_string<11>(out_buffer, "%u", value);
+  ;
 }
 
 char *simd_int32_to_string(int32_t value, char *out_buffer) noexcept {

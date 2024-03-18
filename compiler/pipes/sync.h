@@ -12,9 +12,10 @@ template<typename In, typename Out>
 class SyncPipeFBase {
 protected:
   DataStream<In> tmp_stream;
+
 public:
-  SyncPipeFBase() :
-    tmp_stream(true) {}
+  SyncPipeFBase()
+    : tmp_stream(true) {}
 
   virtual void execute(In input, DataStream<Out> &) {
     tmp_stream << std::move(input);
@@ -25,10 +26,8 @@ public:
 };
 } // namespace sync_detail
 
-
 template<typename In, typename Out = In>
-class SyncPipeF : public sync_detail::SyncPipeFBase<In, Out> {
-};
+class SyncPipeF : public sync_detail::SyncPipeFBase<In, Out> {};
 
 template<typename T>
 class SyncPipeF<T, T> : public sync_detail::SyncPipeFBase<T, T> {
@@ -41,7 +40,7 @@ public:
 
   void on_finish(DataStream<T> &os) override {
     stage::die_if_global_errors();
-    for (auto &element: this->tmp_stream.flush()) {
+    for (auto &element : this->tmp_stream.flush()) {
       if (forward_to_next_pipe(element)) {
         os << std::move(element);
       }

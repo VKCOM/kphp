@@ -8,7 +8,8 @@
 #include <utility>
 
 struct FormatCallInfo {
-  FormatCallInfo() : args(VertexRange(Vertex::iterator{}, Vertex::iterator{})) {}
+  FormatCallInfo()
+    : args(VertexRange(Vertex::iterator{}, Vertex::iterator{})) {}
   // stores a variable that contains all the call arguments,
   // if all arguments are constant
   VertexAdaptor<op_var> var;
@@ -22,10 +23,7 @@ struct FormatCallInfo {
 };
 
 struct FormatPart {
-  enum class FormatSpecType {
-    decimal,
-    string
-  };
+  enum class FormatSpecType { decimal, string };
 
   explicit FormatPart(std::string value)
     : value(std::move(value)) {}
@@ -100,9 +98,7 @@ VertexPtr ConvertSprintfCallsPass::convert_sprintf_call(VertexAdaptor<op_func_ca
     return call;
   }
 
-  const auto count_specifiers = std::count_if(parts.begin(), parts.end(), [](const FormatPart &part) {
-    return part.is_specifier();
-  });
+  const auto count_specifiers = std::count_if(parts.begin(), parts.end(), [](const FormatPart &part) { return part.is_specifier(); });
 
   FormatCallInfo info;
 

@@ -6,10 +6,10 @@
 
 #include <mysql/mysql.h>
 
-#include "server/database-drivers/mysql/mysql.h"
+#include "server/database-drivers/adaptor.h"
 #include "server/database-drivers/mysql/mysql-request.h"
 #include "server/database-drivers/mysql/mysql-response.h"
-#include "server/database-drivers/adaptor.h"
+#include "server/database-drivers/mysql/mysql.h"
 #include "server/php-engine.h"
 
 namespace database_drivers {

@@ -4,11 +4,11 @@
 
 #pragma once
 
-#include <string>
 #include <forward_list>
+#include <string>
 
-#include "compiler/data/data_ptr.h"
 #include "common/wrappers/string_view.h"
+#include "compiler/data/data_ptr.h"
 
 class KphpTracingDeclarationMixin {
   static std::string generate_default_span_title(FunctionPtr f);
@@ -23,7 +23,9 @@ public:
   std::string aggregate_name;
   std::forward_list<std::pair<int, std::string>> branches;
 
-  bool is_aggregate() const { return !aggregate_name.empty(); }
+  bool is_aggregate() const {
+    return !aggregate_name.empty();
+  }
 
   static KphpTracingDeclarationMixin *create_for_function_from_phpdoc(FunctionPtr f, vk::string_view value);
   static KphpTracingDeclarationMixin *create_for_shutdown_function(FunctionPtr f);

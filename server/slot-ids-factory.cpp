@@ -18,7 +18,6 @@ SlotIdsFactory parallel_job_ids_factory;
 SlotIdsFactory external_db_requests_factory;
 SlotIdsFactory curl_requests_factory;
 
-
 void SlotIdsFactory::init() {
   end_slot_id = begin_slot_id = static_cast<slot_id_t>(rd() % (MAX_SLOT_ID / 4) + MIN_SLOT_ID);
 }

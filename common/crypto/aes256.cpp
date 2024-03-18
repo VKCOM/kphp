@@ -5,16 +5,16 @@
 #include "common/crypto/aes256.h"
 
 #include <assert.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <string.h>
 
 #include "common/cpuid.h"
 #include "common/crypto/aes256-aarch64.h"
+#include "common/crypto/aes256-arm64.h"
 #include "common/crypto/aes256-generic.h"
 #include "common/crypto/aes256-x86_64.h"
-#include "common/crypto/aes256-arm64.h"
 #include "common/secure-bzero.h"
 
 static bool use_hw_acceleration = true;
@@ -52,7 +52,7 @@ void vk_aes_set_encrypt_key(vk_aes_ctx_t *ctx, const uint8_t *key, int bits) {
       ctx->ctr_crypt = crypto_aarch64_aes256_ctr_encrypt;
       return;
     }
-#endif 
+#endif
   }
 
   crypto_generic_aes256_set_encrypt_key(ctx, key);
@@ -86,7 +86,7 @@ void vk_aes_set_decrypt_key(vk_aes_ctx_t *ctx, const uint8_t *key, int bits) {
       ctx->ige_crypt = crypto_aarch64_aes256_ige_decrypt;
       return;
     }
-#endif 
+#endif
   }
 
   crypto_generic_aes256_set_decrypt_key(ctx, key);

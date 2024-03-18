@@ -9,8 +9,8 @@
 #include "common/precise-time.h"
 #include "common/resolver.h"
 #include "runtime/instance-cache.h"
-#include "server/job-workers/shared-memory-manager.h"
 #include "server/confdata-stats.h"
+#include "server/job-workers/shared-memory-manager.h"
 #include "server/json-logger.h"
 #include "server/php-runner.h"
 #include "server/server-config.h"
@@ -29,26 +29,41 @@ inline size_t get_memory_used(size_t acquired, size_t released, size_t buffer_si
 
 const char *get_current_worker_type() {
   switch (process_type) {
-    case ProcessType::http_worker: return "http";
-    case ProcessType::rpc_worker:  return "rpc";
-    case ProcessType::job_worker:  return "job";
-    default: return "";
+    case ProcessType::http_worker:
+      return "http";
+    case ProcessType::rpc_worker:
+      return "rpc";
+    case ProcessType::job_worker:
+      return "job";
+    default:
+      return "";
   }
 }
 
 const char *script_error_to_str(script_error_t error) {
   switch (error) {
-    case script_error_t::no_error:                return "ok";
-    case script_error_t::memory_limit:            return "memory_limit";
-    case script_error_t::timeout:                 return "timeout";
-    case script_error_t::exception:               return "exception";
-    case script_error_t::stack_overflow:          return "stack_overflow";
-    case script_error_t::php_assert:              return "php_assert";
-    case script_error_t::http_connection_close:   return "http_connection_close";
-    case script_error_t::rpc_connection_close:    return "rpc_connection_close";
-    case script_error_t::net_event_error:         return "net_event_error";
-    case script_error_t::post_data_loading_error: return "post_data_loading_error";
-    default:                                      return "unclassified_error";
+    case script_error_t::no_error:
+      return "ok";
+    case script_error_t::memory_limit:
+      return "memory_limit";
+    case script_error_t::timeout:
+      return "timeout";
+    case script_error_t::exception:
+      return "exception";
+    case script_error_t::stack_overflow:
+      return "stack_overflow";
+    case script_error_t::php_assert:
+      return "php_assert";
+    case script_error_t::http_connection_close:
+      return "http_connection_close";
+    case script_error_t::rpc_connection_close:
+      return "rpc_connection_close";
+    case script_error_t::net_event_error:
+      return "net_event_error";
+    case script_error_t::post_data_loading_error:
+      return "post_data_loading_error";
+    default:
+      return "unclassified_error";
   }
 }
 } // namespace
@@ -97,9 +112,8 @@ void StatsHouseManager::generic_cron_check_if_tag_host_needed() {
 
 void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_time_ns, script_error_t error,
                                           const memory_resource::MemoryStats &script_memory_stats, uint64_t script_queries, uint64_t long_script_queries,
-                                          uint64_t script_user_time_ns, uint64_t script_system_time_ns,
-                                          uint64_t script_init_time, uint64_t http_connection_process_time,
-                                          uint64_t voluntary_context_switches, uint64_t involuntary_context_switches) {
+                                          uint64_t script_user_time_ns, uint64_t script_system_time_ns, uint64_t script_init_time,
+                                          uint64_t http_connection_process_time, uint64_t voluntary_context_switches, uint64_t involuntary_context_switches) {
   const char *worker_type = get_current_worker_type();
   const char *status = script_error_to_str(error);
 
@@ -143,7 +157,7 @@ void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_
 }
 
 void StatsHouseManager::add_job_stats(uint64_t job_wait_ns, uint64_t request_memory_used, uint64_t request_real_memory_used, uint64_t response_memory_used,
-                                     uint64_t response_real_memory_used) {
+                                      uint64_t response_real_memory_used) {
   client.metric("kphp_job_queue_time").write_value(job_wait_ns);
 
   client.metric("kphp_job_request_memory_usage").tag("used").write_value(request_memory_used);
@@ -172,10 +186,9 @@ void StatsHouseManager::add_worker_memory_stats(const mem_info_t &mem_stats) {
   client.metric("kphp_by_host_workers_memory", true).tag(worker_type).tag("rss_peak").write_value(mem_stats.rss_peak);
 }
 
-void StatsHouseManager::add_common_master_stats(const workers_stats_t &workers_stats,
-                                                const memory_resource::MemoryStats &instance_cache_memory_stats,
-                                                double cpu_s_usage, double cpu_u_usage,
-                                                long long int instance_cache_memory_swaps_ok, long long int instance_cache_memory_swaps_fail) {
+void StatsHouseManager::add_common_master_stats(const workers_stats_t &workers_stats, const memory_resource::MemoryStats &instance_cache_memory_stats,
+                                                double cpu_s_usage, double cpu_u_usage, long long int instance_cache_memory_swaps_ok,
+                                                long long int instance_cache_memory_swaps_fail) {
   if (engine_tag) {
     client.metric("kphp_version").write_value(atoll(engine_tag));
   }
@@ -225,8 +238,12 @@ void StatsHouseManager::add_common_master_stats(const workers_stats_t &workers_s
   const auto &instance_cache_element_stats = instance_cache_get_stats();
   client.metric("kphp_instance_cache_elements").tag("stored").write_value(unpack(instance_cache_element_stats.elements_stored));
   client.metric("kphp_instance_cache_elements").tag("stored_with_delay").write_value(unpack(instance_cache_element_stats.elements_stored_with_delay));
-  client.metric("kphp_instance_cache_elements").tag("storing_skipped_due_recent_update").write_value(unpack(instance_cache_element_stats.elements_storing_skipped_due_recent_update));
-  client.metric("kphp_instance_cache_elements").tag("storing_delayed_due_mutex").write_value(unpack(instance_cache_element_stats.elements_storing_delayed_due_mutex));
+  client.metric("kphp_instance_cache_elements")
+    .tag("storing_skipped_due_recent_update")
+    .write_value(unpack(instance_cache_element_stats.elements_storing_skipped_due_recent_update));
+  client.metric("kphp_instance_cache_elements")
+    .tag("storing_delayed_due_mutex")
+    .write_value(unpack(instance_cache_element_stats.elements_storing_delayed_due_mutex));
   client.metric("kphp_instance_cache_elements").tag("fetched").write_value(unpack(instance_cache_element_stats.elements_fetched));
   client.metric("kphp_instance_cache_elements").tag("missed").write_value(unpack(instance_cache_element_stats.elements_missed));
   client.metric("kphp_instance_cache_elements").tag("missed_earlier").write_value(unpack(instance_cache_element_stats.elements_missed_earlier));
@@ -234,8 +251,12 @@ void StatsHouseManager::add_common_master_stats(const workers_stats_t &workers_s
   client.metric("kphp_instance_cache_elements").tag("created").write_value(unpack(instance_cache_element_stats.elements_created));
   client.metric("kphp_instance_cache_elements").tag("destroyed").write_value(unpack(instance_cache_element_stats.elements_destroyed));
   client.metric("kphp_instance_cache_elements").tag("cached").write_value(unpack(instance_cache_element_stats.elements_cached));
-  client.metric("kphp_instance_cache_elements").tag("logically_expired_and_ignored").write_value(unpack(instance_cache_element_stats.elements_logically_expired_and_ignored));
-  client.metric("kphp_instance_cache_elements").tag("logically_expired_but_fetched").write_value(unpack(instance_cache_element_stats.elements_logically_expired_but_fetched));
+  client.metric("kphp_instance_cache_elements")
+    .tag("logically_expired_and_ignored")
+    .write_value(unpack(instance_cache_element_stats.elements_logically_expired_and_ignored));
+  client.metric("kphp_instance_cache_elements")
+    .tag("logically_expired_but_fetched")
+    .write_value(unpack(instance_cache_element_stats.elements_logically_expired_but_fetched));
 
   using namespace job_workers;
   if (vk::singleton<job_workers::SharedMemoryManager>::get().is_initialized()) {
@@ -273,8 +294,7 @@ void StatsHouseManager::add_job_workers_shared_memory_stats(const job_workers::J
   client.metric("kphp_job_workers_shared_memory").tag("used").write_value(total_used);
 }
 
-size_t StatsHouseManager::add_job_workers_shared_messages_stats(const job_workers::JobStats::MemoryBufferStats &memory_buffers_stats,
-                                                               size_t buffer_size) {
+size_t StatsHouseManager::add_job_workers_shared_messages_stats(const job_workers::JobStats::MemoryBufferStats &memory_buffers_stats, size_t buffer_size) {
   using namespace job_workers;
 
   const size_t acquired_buffers = unpack(memory_buffers_stats.acquired);
@@ -289,8 +309,8 @@ size_t StatsHouseManager::add_job_workers_shared_messages_stats(const job_worker
   return memory_used;
 }
 
-size_t StatsHouseManager::add_job_workers_shared_memory_buffers_stats(const job_workers::JobStats::MemoryBufferStats &memory_buffers_stats, const char *size_tag,
-                                                                     size_t buffer_size) {
+size_t StatsHouseManager::add_job_workers_shared_memory_buffers_stats(const job_workers::JobStats::MemoryBufferStats &memory_buffers_stats,
+                                                                      const char *size_tag, size_t buffer_size) {
   using namespace job_workers;
 
   const size_t acquired_buffers = unpack(memory_buffers_stats.acquired);

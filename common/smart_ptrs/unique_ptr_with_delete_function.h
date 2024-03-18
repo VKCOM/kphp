@@ -26,7 +26,7 @@ public:
   }
 };
 
-template <class T>
+template<class T>
 using unique_ptr_with_free = std::unique_ptr<T, free_wrapper>;
 
-}
+} // namespace vk

@@ -40,7 +40,9 @@ public:
   void run_node(Node *node);
 
   void finish();
-  bool is_finished() const { return finish_flag; }
+  bool is_finished() const {
+    return finish_flag;
+  }
 
 private:
   void do_run_queue();

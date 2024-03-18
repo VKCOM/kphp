@@ -2,7 +2,6 @@
 #include <gtest/gtest.h>
 #include <random>
 
-
 #include "runtime/memory_resource/details/memory_ordered_chunk_list.h"
 #include "runtime/memory_resource/monotonic_buffer_resource.h"
 #include "tests/cpp/runtime/memory_resource/details/test-helpers.h"

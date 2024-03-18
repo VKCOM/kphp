@@ -28,25 +28,11 @@
 
 #define PING_TIMEOUT 0.1
 
-enum rpc_status {
-  rpc_status_disconnected,
-  rpc_status_failed,
-  rpc_status_connected
-};
+enum rpc_status { rpc_status_disconnected, rpc_status_failed, rpc_status_connected };
 
-enum query_status {
-  query_status_sent,
-  query_status_running,
-  query_status_receiving,
-  query_status_error,
-  query_status_ok
-};
+enum query_status { query_status_sent, query_status_running, query_status_receiving, query_status_error, query_status_ok };
 
-enum parse_status {
-  parse_status_expecting_query,
-  parse_status_reading_query,
-  parse_status_skipping_query
-};
+enum parse_status { parse_status_expecting_query, parse_status_reading_query, parse_status_skipping_query };
 
 struct rpc_buffer {
   unsigned int magic;
@@ -124,7 +110,6 @@ struct rpc_queue {
   struct tree_qid *completed;
 };
 
-
 extern int fetch_extra;
 struct rpc_queue *rpc_queue_get(long long id);
 struct rpc_server *rpc_server_get(int fd);
@@ -145,9 +130,10 @@ int do_rpc_fetch_get_pos(char **error);
 int do_rpc_fetch_set_pos(int pos, char **error);
 
 struct rpc_query *rpc_query_get(long long qid);
-//struct rpc_server *do_new_rpc_connection (unsigned host, int port, double timeout, char **error, int *errnum);
-//long long do_rpc_send_noflush (struct rpc_server *server, double timeout);
-struct rpc_connection *do_new_rpc_connection(unsigned host, int port, int num, long long default_actor_id, double default_query_timeout, double connect_timeout, double retry_timeout, char **error, int *errnum);
+// struct rpc_server *do_new_rpc_connection (unsigned host, int port, double timeout, char **error, int *errnum);
+// long long do_rpc_send_noflush (struct rpc_server *server, double timeout);
+struct rpc_connection *do_new_rpc_connection(unsigned host, int port, int num, long long default_actor_id, double default_query_timeout, double connect_timeout,
+                                             double retry_timeout, char **error, int *errnum);
 struct rpc_query *do_rpc_send_noflush(struct rpc_connection *c, double timeout, int ignore_answer);
 int do_rpc_flush_server(struct rpc_server *server, double timeout);
 int do_rpc_flush(double timeout);
@@ -163,7 +149,6 @@ void do_rpc_queue_free(long long QN);
 int do_rpc_queue_empty(struct rpc_queue *Q);
 long long do_rpc_queue_next(struct rpc_queue *Q, double timeout);
 void delete_query_from_queue_ex(struct rpc_query *q);
-
 
 void set_fail_rpc_on_int32_overflow(INTERNAL_FUNCTION_PARAMETERS);
 void php_new_rpc_connection(INTERNAL_FUNCTION_PARAMETERS);
@@ -230,15 +215,14 @@ extern int global_errnum;
 
 #define RPC_CHUNK_SIZE 64
 
-
 #define RPC_NONCE 0x7acb87aa
 #define RPC_HANDSHAKE 0x7682eef5
 #define RPC_HANDSHAKE_ERROR 0x6a27beda
 
 #define GLOBAL_GENERATION 0
 struct rpc_nonce {
-  int key_select;        /* least significant 32 bits of key to use */
-  int crypto_schema;     /* 0 = NONE, 1 = AES */
+  int key_select;    /* least significant 32 bits of key to use */
+  int crypto_schema; /* 0 = NONE, 1 = AES */
   int crypto_ts;
   char crypto_nonce[16];
 };
@@ -263,9 +247,14 @@ struct rpc_handshake_error {
   struct process_id sender_pid;
 };
 
-#define DECLARE_STAT(x) long long x ## _cnt; long long x ## _ticks; double x ## _time;
+#define DECLARE_STAT(x)                                                                                                                                        \
+  long long x##_cnt;                                                                                                                                           \
+  long long x##_ticks;                                                                                                                                         \
+  double x##_time;
 #define TACT_SPEED (1e-6 / 2266)
-#define PRINT_STAT(x) "%20s %20lld %20lld %10.6f %10.6f %lld\n", #x, stats.x ## _cnt, stats.x ## _ticks, stats.x ## _ticks * TACT_SPEED, stats.x ## _time, (long long)(stats.x ## _ticks / (stats.x ## _cnt ? stats.x ## _cnt : 1))
+#define PRINT_STAT(x)                                                                                                                                          \
+  "%20s %20lld %20lld %10.6f %10.6f %lld\n", #x, stats.x##_cnt, stats.x##_ticks, stats.x##_ticks *TACT_SPEED, stats.x##_time,                                  \
+    (long long)(stats.x##_ticks / (stats.x##_cnt ? stats.x##_cnt : 1))
 
 struct stats {
   DECLARE_STAT(utime);
@@ -315,24 +304,31 @@ extern struct stats stats;
 #ifdef __LP64__
 #define VV_RETURN_LONG(value) RETURN_LONG(value)
 #else
-#define VV_RETURN_LONG(value) static char ___buf[32]; (void) sprintf (___buf, "%lld", value); RETURN_STRING (___buf, 1);
+#define VV_RETURN_LONG(value)                                                                                                                                  \
+  static char ___buf[32];                                                                                                                                      \
+  (void)sprintf(___buf, "%lld", value);                                                                                                                        \
+  RETURN_STRING(___buf, 1);
 #endif
 
 char *vv_strdup(const char *s, int len);
 char *vv_estrdup(const char *s, int len);
 
-#define VV_STR_RETURN_NOD(_value, _value_len) \
-    return_value->type = IS_STRING;  \
-    return_value->value.str.len = _value_len;  \
-    return_value->value.str.val = _value;  \
+#define VV_STR_RETURN_NOD(_value, _value_len)                                                                                                                  \
+  return_value->type = IS_STRING;                                                                                                                              \
+  return_value->value.str.len = _value_len;                                                                                                                    \
+  return_value->value.str.val = _value;
 
-#define VV_STR_RETURN_DUP(_value, _value_len) \
-    return_value->type = IS_STRING;  \
-    return_value->value.str.len = _value_len;  \
-    return_value->value.str.val = vv_estrdup (_value, _value_len);  \
+#define VV_STR_RETURN_DUP(_value, _value_len)                                                                                                                  \
+  return_value->type = IS_STRING;                                                                                                                              \
+  return_value->value.str.len = _value_len;                                                                                                                    \
+  return_value->value.str.val = vv_estrdup(_value, _value_len);
 
-
-#define VV_STR_RETURN(value, value_len, dup) if (dup) { VV_STR_RETURN_DUP(value,value_len);} else { VV_STR_RETURN_NOD(value,value_len);}
+#define VV_STR_RETURN(value, value_len, dup)                                                                                                                   \
+  if (dup) {                                                                                                                                                   \
+    VV_STR_RETURN_DUP(value, value_len);                                                                                                                       \
+  } else {                                                                                                                                                     \
+    VV_STR_RETURN_NOD(value, value_len);                                                                                                                       \
+  }
 
 //#define DEBUG_TIMER
 //#define DEBUG_TICKS
@@ -341,33 +337,37 @@ char *vv_estrdup(const char *s, int len);
 //#define PRINT_DEBUG_INFO
 
 #ifdef DEBUG_TIMER
-  #ifdef DEBUG_TICKS
-    #define START_TIMER(x) stats.x ## _time -= get_utime_monotonic (); stats.x ## _ticks -= cycleclock_now();
-    #define END_TIMER(x) stats.x ## _time += get_utime_monotonic (); stats.x ## _ticks += cycleclock_now() + 1;
-  #else
-    #define START_TIMER(x) stats.x ## _time -= get_utime_monotonic ();
-    #define END_TIMER(x) stats.x ## _time += get_utime_monotonic (); 
-  #endif
+#ifdef DEBUG_TICKS
+#define START_TIMER(x)                                                                                                                                         \
+  stats.x##_time -= get_utime_monotonic();                                                                                                                     \
+  stats.x##_ticks -= cycleclock_now();
+#define END_TIMER(x)                                                                                                                                           \
+  stats.x##_time += get_utime_monotonic();                                                                                                                     \
+  stats.x##_ticks += cycleclock_now() + 1;
 #else
-  #ifdef DEBUG_TICKS
-    #define START_TIMER(x) stats.x ## _ticks -= cycleclock_now();
-    #define END_TIMER(x) stats.x ## _ticks += cycleclock_now() + 1;
-  #else
-    #define START_TIMER(x) ;
-    #define END_TIMER(x) ;
-  #endif
+#define START_TIMER(x) stats.x##_time -= get_utime_monotonic();
+#define END_TIMER(x) stats.x##_time += get_utime_monotonic();
+#endif
+#else
+#ifdef DEBUG_TICKS
+#define START_TIMER(x) stats.x##_ticks -= cycleclock_now();
+#define END_TIMER(x) stats.x##_ticks += cycleclock_now() + 1;
+#else
+#define START_TIMER(x) ;
+#define END_TIMER(x) ;
+#endif
 #endif
 
 #ifdef DEBUG_TICKS
-  #define START_TICKS(x) stats.x ## _ticks -= cycleclock_now();
-  #define END_TICKS(x) stats.x ## _ticks += cycleclock_now() + 1;
+#define START_TICKS(x) stats.x##_ticks -= cycleclock_now();
+#define END_TICKS(x) stats.x##_ticks += cycleclock_now() + 1;
 #else
-  #define START_TICKS(x) ;
-  #define END_TICKS(x) ;
+#define START_TICKS(x) ;
+#define END_TICKS(x) ;
 #endif
 
 #ifdef DEBUG_CNT
-#define ADD_CNT(x) stats.x ## _cnt ++;
+#define ADD_CNT(x) stats.x##_cnt++;
 #else
 #define ADD_CNT(x) ;
 #endif
@@ -394,10 +394,9 @@ char *vv_estrdup(const char *s, int len);
 #define ADD_EFREE(x) ;
 #define ADD_PFREE(x) ;
 #define ADD_RFREE(x) ;
-#define ADD_REALLOC(x,y) ;
-#define ADD_EREALLOC(x,y) ;
-#define ADD_PREALLOC(x,y) ;
-#define ADD_RREALLOC(x,y) ;
+#define ADD_REALLOC(x, y) ;
+#define ADD_EREALLOC(x, y) ;
+#define ADD_PREALLOC(x, y) ;
+#define ADD_RREALLOC(x, y) ;
 #endif
 #endif
-

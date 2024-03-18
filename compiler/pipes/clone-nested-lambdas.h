@@ -21,8 +21,8 @@ public:
     return "Clone nested lambdas";
   }
 
-  explicit CloneNestedLambdasPass(DataStream<FunctionPtr> *function_stream) :
-    function_stream(function_stream) {}
+  explicit CloneNestedLambdasPass(DataStream<FunctionPtr> *function_stream)
+    : function_stream(function_stream) {}
 
   VertexPtr on_enter_vertex(VertexPtr root) override {
     if (auto as_op_lambda = root.try_as<op_lambda>()) {

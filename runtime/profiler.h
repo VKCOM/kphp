@@ -18,9 +18,8 @@
 template<class T>
 class TracingProfilerListNode : vk::not_copyable {
 public:
-  explicit TracingProfilerListNode(T *next = nullptr) :
-    next_(next) {
-  }
+  explicit TracingProfilerListNode(T *next = nullptr)
+    : next_(next) {}
 
   T *get_next() const noexcept {
     return next_;
@@ -82,7 +81,6 @@ protected:
   Stats self_stats_;
   std::unordered_map<const FunctionStatsBase *, Stats> callees_;
 };
-
 
 class FunctionStatsNoLabel final : public FunctionStatsBase, public TracingProfilerListNode<FunctionStatsNoLabel> {
 public:
@@ -148,12 +146,8 @@ protected:
 
   template<class FunctionTag>
   static FunctionStatsNoLabel &get_function_stats() noexcept {
-    static FunctionStatsNoLabel function_stats{
-      FunctionTag::file_name(),
-      FunctionTag::function_name(),
-      FunctionTag::function_line(),
-      FunctionTag::profiler_level()
-    };
+    static FunctionStatsNoLabel function_stats{FunctionTag::file_name(), FunctionTag::function_name(), FunctionTag::function_line(),
+                                               FunctionTag::profiler_level()};
     if (FunctionTag::is_root()) {
       forcibly_dump_log_on_finish(FunctionTag::profiler_level() == 1 ? FunctionTag::function_name() : nullptr);
     }
@@ -197,10 +191,18 @@ public:
 
 class ShutdownProfiler final : AutoProfiler<ShutdownProfiler> {
 public:
-  static constexpr const char *file_name() noexcept { return "(unknown)"; }
-  static constexpr const char *function_name() noexcept { return "<shutdown caller>"; }
-  static constexpr size_t function_line() noexcept { return 0; }
-  static constexpr size_t profiler_level() noexcept { return 2; }
+  static constexpr const char *file_name() noexcept {
+    return "(unknown)";
+  }
+  static constexpr const char *function_name() noexcept {
+    return "<shutdown caller>";
+  }
+  static constexpr size_t function_line() noexcept {
+    return 0;
+  }
+  static constexpr size_t profiler_level() noexcept {
+    return 2;
+  }
   static bool is_root() noexcept;
 };
 

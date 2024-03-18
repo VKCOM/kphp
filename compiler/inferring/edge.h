@@ -11,12 +11,11 @@ namespace tinf {
 class Node;
 
 class Edge {
-public :
+public:
   Node *from;
   Node *to;
 
   const MultiKey *from_at;
 };
-
 
 } // namespace tinf

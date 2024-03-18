@@ -107,10 +107,8 @@ void CheckModificationsOfConstVars::check_modifications(VertexPtr v, bool write_
           if (!const_var->marked_as_const) {
             return;
           }
-          const bool modification_allowed = const_var->class_id &&
-                                            const_var->class_id->construct_function == current_function &&
-                                            v->type() == op_instance_prop &&
-                                            v.as<op_instance_prop>()->instance()->get_string() == "this";
+          const bool modification_allowed = const_var->class_id && const_var->class_id->construct_function == current_function && v->type() == op_instance_prop
+                                            && v.as<op_instance_prop>()->instance()->get_string() == "this";
           static constexpr auto constant_prefix = "d$";
 
           if (vk::string_view(const_var->name).starts_with(constant_prefix)) { // constant

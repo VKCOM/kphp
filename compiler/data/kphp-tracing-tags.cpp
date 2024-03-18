@@ -13,12 +13,12 @@ int KphpTracingDeclarationMixin::parse_level_attr(vk::string_view beg, size_t &p
   int level = 0;
   int len = beg.size();
 
-  for (; pos_end < len && isspace(beg[pos_end]); ++pos_end) {}
+  for (; pos_end < len && isspace(beg[pos_end]); ++pos_end) {
+  }
   for (; pos_end < len && isdigit(beg[pos_end]); ++pos_end) {
     level = level * 10 + (beg[pos_end] - '0');
   }
-  kphp_error_act(level >= 1 && level <= 2,
-                 "invalid 'level' in @kphp-tracing: expected to be 1/2", return 1);
+  kphp_error_act(level >= 1 && level <= 2, "invalid 'level' in @kphp-tracing: expected to be 1/2", return 1);
 
   return level;
 }
@@ -27,7 +27,8 @@ std::string KphpTracingDeclarationMixin::parse_string_attr(vk::string_view beg, 
   std::string out;
   size_t len = beg.size();
 
-  for (; pos_end < len && isspace(beg[pos_end]); ++pos_end) {}
+  for (; pos_end < len && isspace(beg[pos_end]); ++pos_end) {
+  }
 
   char quote = '\0';
   if (pos_end < len && (beg[pos_end] == '"' || beg[pos_end] == '\'')) {
@@ -35,7 +36,7 @@ std::string KphpTracingDeclarationMixin::parse_string_attr(vk::string_view beg, 
     pos_end++;
   }
 
-  for (; pos_end < len; ++pos_end) {  // eat a string until it ends
+  for (; pos_end < len; ++pos_end) { // eat a string until it ends
     char c = beg[pos_end];
     if (isspace(c) && quote == '\0') {
       break;
@@ -59,14 +60,13 @@ std::pair<int, std::string> KphpTracingDeclarationMixin::parse_branch_attr(vk::s
   int branch_num = 0;
   size_t len = beg.size();
 
-  for (; pos_end < len && isspace(beg[pos_end]); ++pos_end) {}
+  for (; pos_end < len && isspace(beg[pos_end]); ++pos_end) {
+  }
   for (; pos_end < len && isdigit(beg[pos_end]); ++pos_end) {
     branch_num = branch_num * 10 + (beg[pos_end] - '0');
   }
-  kphp_error_act(branch_num != 0 && pos_end < len && beg[pos_end] == ':',
-                 "invalid 'branch' format in @kphp-tracing", return {});
-  kphp_error_act(branch_num >= 1 && branch_num <= 3,
-                 "invalid 'branch' in @kphp-tracing: number can be 1/2/3 only", return {});
+  kphp_error_act(branch_num != 0 && pos_end < len && beg[pos_end] == ':', "invalid 'branch' format in @kphp-tracing", return {});
+  kphp_error_act(branch_num >= 1 && branch_num <= 3, "invalid 'branch' in @kphp-tracing: number can be 1/2/3 only", return {});
   pos_end++;
 
   size_t pos_end_str = 0;
@@ -95,7 +95,7 @@ std::string KphpTracingDeclarationMixin::generate_default_span_title(FunctionPtr
   }
   title += static_cast<std::string>(class_name) + "::" + f->local_name();
   if (size_t rpos = title.rfind("$$"); rpos != std::string::npos) {
-    title = title.substr(0, rpos);  // drop context class
+    title = title.substr(0, rpos); // drop context class
   }
   return title;
 }
@@ -145,6 +145,6 @@ KphpTracingDeclarationMixin *KphpTracingDeclarationMixin::create_for_shutdown_fu
   KphpTracingDeclarationMixin *m = new KphpTracingDeclarationMixin();
 
   m->span_title = generate_default_span_title(f);
-  
+
   return m;
 }

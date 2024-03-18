@@ -14,11 +14,9 @@
 #include "compiler/data/function-data.h"
 #include "compiler/data/kphp-tracing-tags.h"
 
-
 std::vector<FunctionPtr> TracingAutogen::all_with_aggregate;
 std::vector<vk::string_view> TracingAutogen::all_aggregate_names;
 std::mutex TracingAutogen::mu;
-
 
 // from BuiltinFuncID in runtime
 constexpr int _shift_for_branch = 16;
@@ -81,8 +79,8 @@ void TracingAutogen::codegen_runtime_func_guard_start(CodeGenerator &W, Function
     return;
   }
 
-  auto it = std::lower_bound(all_with_aggregate.begin(), all_with_aggregate.end(), f,
-                             [](FunctionPtr a, FunctionPtr b) { return a->name.compare(b->name) < 0; });
+  auto it =
+    std::lower_bound(all_with_aggregate.begin(), all_with_aggregate.end(), f, [](FunctionPtr a, FunctionPtr b) { return a->name.compare(b->name) < 0; });
   int func_id = it == all_with_aggregate.end() ? 0 : it - all_with_aggregate.begin() + 1;
 
   auto it_agg = std::lower_bound(all_aggregate_names.begin(), all_aggregate_names.end(), f->kphp_tracing->aggregate_name);
@@ -92,8 +90,7 @@ void TracingAutogen::codegen_runtime_func_guard_start(CodeGenerator &W, Function
 }
 
 void TracingAutogen::finished_appending_and_prepare() {
-  std::sort(all_with_aggregate.begin(), all_with_aggregate.end(),
-            [](FunctionPtr a, FunctionPtr b) { return a->name.compare(b->name) < 0; });
+  std::sort(all_with_aggregate.begin(), all_with_aggregate.end(), [](FunctionPtr a, FunctionPtr b) { return a->name.compare(b->name) < 0; });
 
   std::set<vk::string_view> uniq_aggregates_sorted;
   for (FunctionPtr f : all_with_aggregate) {

@@ -9,8 +9,10 @@
 #include "compiler/debug.h"
 
 class LibData {
-  DEBUG_STRING_METHOD { return lib_name_; }
-  
+  DEBUG_STRING_METHOD {
+    return lib_name_;
+  }
+
 public:
   LibData(const std::string &lib_name, const std::string &lib_dir);
   LibData(const std::string &lib_require_name);
@@ -25,9 +27,15 @@ public:
   std::string functions_txt_file() const;
   std::string runtime_lib_sha256_file() const;
   const std::string &lib_dir() const;
-  const std::string &lib_namespace() const { return lib_name_; }
-  const std::string &unified_lib_dir() const { return unified_lib_dir_; }
-  bool is_raw_php() const { return is_raw_php_; }
+  const std::string &lib_namespace() const {
+    return lib_name_;
+  }
+  const std::string &unified_lib_dir() const {
+    return unified_lib_dir_;
+  }
+  bool is_raw_php() const {
+    return is_raw_php_;
+  }
 
   static const char *headers_tmp_dir();
   static const char *functions_txt_tmp_file();

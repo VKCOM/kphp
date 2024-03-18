@@ -4,21 +4,21 @@
 
 #include "compiler/data/class-data.h"
 
-#include <string>
 #include <queue>
+#include <string>
 
 #include "common/termformat/termformat.h"
 #include "common/wrappers/string_view.h"
 
 #include "compiler/compiler-core.h"
+#include "compiler/data/define-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
-#include "compiler/vertex-util.h"
 #include "compiler/inferring/type-data.h"
 #include "compiler/name-gen.h"
 #include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
-#include "compiler/data/define-data.h"
+#include "compiler/vertex-util.h"
 
 const char *ClassData::NAME_OF_VIRT_CLONE = "__virt_clone$";
 const char *ClassData::NAME_OF_CLONE = "__clone";
@@ -26,11 +26,10 @@ const char *ClassData::NAME_OF_CONSTRUCT = "__construct";
 const char *ClassData::NAME_OF_TO_STRING = "__toString";
 const char *ClassData::NAME_OF_WAKEUP = "__wakeup";
 
-ClassData::ClassData(ClassType type) :
-  class_type(type),
-  members(this),
-  type_data(TypeData::create_for_class(ClassPtr(this))) {
-}
+ClassData::ClassData(ClassType type)
+  : class_type(type)
+  , members(this)
+  , type_data(TypeData::create_for_class(ClassPtr(this))) {}
 
 void ClassData::set_name_and_src_name(const std::string &full_name) {
   this->name = full_name;
@@ -50,26 +49,14 @@ void ClassData::set_name_and_src_name(const std::string &full_name) {
 }
 
 void ClassData::debugPrint() {
-  const char *str_class_type =
-    is_interface() ? "interface" :
-    is_trait() ? "trait" : "class";
+  const char *str_class_type = is_interface() ? "interface" : is_trait() ? "trait" : "class";
   fmt_print("=== {} {}\n", str_class_type, name);
 
-  members.for_each([](ClassMemberConstant &m) {
-    fmt_print("const {}\n", m.local_name());
-  });
-  members.for_each([](ClassMemberStaticField &m) {
-    fmt_print("static ${}\n", m.local_name());
-  });
-  members.for_each([](ClassMemberStaticMethod &m) {
-    fmt_print("static {}()\n", m.local_name());
-  });
-  members.for_each([](ClassMemberInstanceField &m) {
-    fmt_print("var ${}\n", m.local_name());
-  });
-  members.for_each([](ClassMemberInstanceMethod &m) {
-    fmt_print("method {}()\n", m.local_name());
-  });
+  members.for_each([](ClassMemberConstant &m) { fmt_print("const {}\n", m.local_name()); });
+  members.for_each([](ClassMemberStaticField &m) { fmt_print("static ${}\n", m.local_name()); });
+  members.for_each([](ClassMemberStaticMethod &m) { fmt_print("static {}()\n", m.local_name()); });
+  members.for_each([](ClassMemberInstanceField &m) { fmt_print("var ${}\n", m.local_name()); });
+  members.for_each([](ClassMemberInstanceMethod &m) { fmt_print("method {}()\n", m.local_name()); });
 }
 
 std::string ClassData::as_human_readable() const {
@@ -84,7 +71,7 @@ std::string ClassData::as_human_readable() const {
 }
 
 FunctionPtr ClassData::gen_holder_function(const std::string &name) {
-  std::string func_name = "$" + replace_backslashes(name);  // function-wrapper for class
+  std::string func_name = "$" + replace_backslashes(name); // function-wrapper for class
   auto func_params = VertexAdaptor<op_func_param_list>::create();
   auto func_body = VertexAdaptor<op_seq>::create();
   auto func_root = VertexAdaptor<op_function>::create(func_params, func_body);
@@ -114,9 +101,7 @@ FunctionPtr ClassData::add_virt_clone() {
   std::string virt_clone_f_name = replace_backslashes(name) + "$$" + NAME_OF_VIRT_CLONE;
 
   auto param_list = VertexAdaptor<op_func_param_list>::create(gen_param_this({}));
-  auto body = !modifiers.is_abstract()
-              ? VertexAdaptor<op_seq>::create(VertexAdaptor<op_return>::create(clone_this))
-              : VertexAdaptor<op_seq>::create();
+  auto body = !modifiers.is_abstract() ? VertexAdaptor<op_seq>::create(VertexAdaptor<op_return>::create(clone_this)) : VertexAdaptor<op_seq>::create();
   auto v_op_function = VertexAdaptor<op_function>::create(param_list, body);
 
   FunctionPtr f_virt_clone = FunctionData::create_function(virt_clone_f_name, v_op_function, FunctionData::func_local);
@@ -126,7 +111,7 @@ FunctionPtr ClassData::add_virt_clone() {
   f_virt_clone->modifiers = FunctionModifiers::instance_public();
   f_virt_clone->root.set_location_recursively(Location(location_line_num));
 
-  members.add_instance_method(f_virt_clone);    // don't need a lock here, it's invoked from a sync pipe
+  members.add_instance_method(f_virt_clone); // don't need a lock here, it's invoked from a sync pipe
   return f_virt_clone;
 }
 
@@ -160,7 +145,8 @@ void ClassData::create_default_constructor_if_required(DataStream<FunctionPtr> &
   }
 }
 
-void ClassData::create_constructor(VertexAdaptor<op_func_param_list> param_list, VertexAdaptor<op_seq> body, const PhpDocComment *phpdoc, DataStream<FunctionPtr> &os) {
+void ClassData::create_constructor(VertexAdaptor<op_func_param_list> param_list, VertexAdaptor<op_seq> body, const PhpDocComment *phpdoc,
+                                   DataStream<FunctionPtr> &os) {
   auto func = VertexAdaptor<op_function>::create(param_list, body);
   func.set_location_recursively(Location{location_line_num});
   create_constructor(func);
@@ -338,24 +324,22 @@ bool ClassData::is_polymorphic_or_has_polymorphic_member() const {
 }
 
 bool ClassData::has_polymorphic_member_dfs(std::unordered_set<ClassPtr> &checked) const {
-  return nullptr != members.find_member(
-    [&checked](const ClassMemberInstanceField &field) {
-      std::unordered_set<ClassPtr> sub_classes;
-      field.var->tinf_node.get_type()->get_all_class_types_inside(sub_classes);
-      for (auto klass : sub_classes) {
-        if (checked.insert(klass).second) {
-          if (klass->is_polymorphic_class() || klass->has_polymorphic_member_dfs(checked)) {
-            return true;
-          }
+  return nullptr != members.find_member([&checked](const ClassMemberInstanceField &field) {
+    std::unordered_set<ClassPtr> sub_classes;
+    field.var->tinf_node.get_type()->get_all_class_types_inside(sub_classes);
+    for (auto klass : sub_classes) {
+      if (checked.insert(klass).second) {
+        if (klass->is_polymorphic_class() || klass->has_polymorphic_member_dfs(checked)) {
+          return true;
         }
       }
-      return false;
-    });
+    }
+    return false;
+  });
 }
 
 bool ClassData::does_need_codegen() const {
-  return !is_builtin() && !is_trait() &&
-         (really_used || is_tl_class);
+  return !is_builtin() && !is_trait() && (really_used || is_tl_class);
 }
 
 bool operator<(const ClassPtr &lhs, const ClassPtr &rhs) {

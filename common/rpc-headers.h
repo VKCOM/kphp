@@ -35,7 +35,7 @@ struct RpcHeaders {
   int length{-1};
   int num{-1};
 
-  int op{-1};  // will be replaced with magic in send_rpc_query()
+  int op{-1}; // will be replaced with magic in send_rpc_query()
   long long req_id{-1};
 
   explicit RpcHeaders(int op)

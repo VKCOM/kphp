@@ -15,16 +15,13 @@
 class CodeGenerator;
 
 namespace tl2cpp {
-extern const std::unordered_set<std::string> CUSTOM_IMPL_TYPES;    // from tl_builtins.h
+extern const std::unordered_set<std::string> CUSTOM_IMPL_TYPES; // from tl_builtins.h
 extern vk::tlo_parsing::tl_scheme *tl;
 extern const vk::tlo_parsing::combinator *cur_combinator;
 extern const std::string T_TYPE;
 extern std::set<std::string> tl_const_vars;
 
-enum class field_rw_type {
-  READ,
-  WRITE
-};
+enum class field_rw_type { READ, WRITE };
 
 std::string get_tl_object_field_access(const std::unique_ptr<vk::tlo_parsing::arg> &arg, field_rw_type rw_type);
 
@@ -71,4 +68,4 @@ bool is_tl_type_wrapped_to_Optional(const vk::tlo_parsing::type *type);
 
 bool is_type_dependent(const vk::tlo_parsing::type *type, const vk::tlo_parsing::tl_scheme *);
 bool is_type_dependent(const vk::tlo_parsing::combinator *constructor, const vk::tlo_parsing::tl_scheme *);
-}
+} // namespace tl2cpp

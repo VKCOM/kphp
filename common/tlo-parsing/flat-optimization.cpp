@@ -31,10 +31,9 @@ struct InlineArg {
 
 class ExprCloner : public const_expr_visitor {
 public:
-  ExprCloner(const expr_base &old_expr, const InlineArg &donor) :
-    old_expr_(old_expr),
-    donor_(donor) {
-  }
+  ExprCloner(const expr_base &old_expr, const InlineArg &donor)
+    : old_expr_(old_expr)
+    , donor_(donor) {}
 
   std::unique_ptr<type_expr_base> clone() {
     donor_.argument->type_expr->visit(*this);
@@ -141,10 +140,9 @@ private:
 
 class ArgFlatOptimizer : public expr_visitor {
 public:
-  ArgFlatOptimizer(tl_scheme &scheme) :
-    scheme_(scheme),
-    processed_types_(scheme.types.size() + scheme.functions.size()) {
-  }
+  ArgFlatOptimizer(tl_scheme &scheme)
+    : scheme_(scheme)
+    , processed_types_(scheme.types.size() + scheme.functions.size()) {}
 
   void perform_optimization(combinator &tl_combinator) {
     assert(to_inline_.empty());
@@ -231,8 +229,7 @@ private:
     }
 
     if (processing_arg_ && !expr.is_bare()) {
-      throw std::runtime_error{
-        "Error on processing '" + processing_combinator_->name + "." + processing_arg_->name + "': bare expected for " + where};
+      throw std::runtime_error{"Error on processing '" + processing_combinator_->name + "." + processing_arg_->name + "': bare expected for " + where};
     }
 
     // Do not forget to insert!
@@ -245,18 +242,15 @@ private:
   void prepare_type_to_inline(const type &tl_type) {
     assert(to_inline_.empty());
 
-    static const std::unordered_set<std::string> array_types{
-      "Vector", "Tuple", "Dictionary", "IntKeyDictionary", "LongKeyDictionary"
-    };
+    static const std::unordered_set<std::string> array_types{"Vector", "Tuple", "Dictionary", "IntKeyDictionary", "LongKeyDictionary"};
 
     // do not perform flat optimizations for array types
     if (array_types.count(tl_type.name)) {
       return;
     }
 
-    if (tl_type.constructors.size() != 1 ||
-        tl_type.constructors.front()->name.size() != tl_type.name.size() ||
-        strcasecmp(tl_type.constructors.front()->name.c_str(), tl_type.name.c_str())) {
+    if (tl_type.constructors.size() != 1 || tl_type.constructors.front()->name.size() != tl_type.name.size()
+        || strcasecmp(tl_type.constructors.front()->name.c_str(), tl_type.name.c_str())) {
       return;
     }
 

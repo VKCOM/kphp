@@ -22,7 +22,6 @@ class RestrictionStacktraceFinder {
   bool find_call_trace_with_error(tinf::Node *cur_node, const TypeData *expected_type);
 
 public:
-
   RestrictionStacktraceFinder(tinf::Node *cur_node, const TypeData *expected_type);
 
   std::string get_stacktrace_text();

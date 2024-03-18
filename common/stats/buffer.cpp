@@ -28,9 +28,9 @@ void sb_printf(stats_buffer_t *sb, const char *format, ...) {
     return;
   }
   va_list ap;
-  va_start (ap, format);
+  va_start(ap, format);
   sb->pos += vsnprintf(sb->buff + sb->pos, sb->size - sb->pos, format, ap);
-  va_end (ap);
+  va_end(ap);
   if (sb->pos >= sb->size) {
     sb_truncate(sb);
   }

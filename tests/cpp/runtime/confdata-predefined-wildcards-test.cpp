@@ -48,7 +48,6 @@ TEST(confdata_predefined_wildcards_test, test_empty) {
   ASSERT_FALSE(w.has_wildcard_for_key("abc.def."));
 }
 
-
 TEST(confdata_predefined_wildcards_test, test_simple) {
   ConfdataPredefinedWildcards w;
 

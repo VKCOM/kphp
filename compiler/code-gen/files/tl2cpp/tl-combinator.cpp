@@ -19,10 +19,10 @@ inline std::vector<std::string> get_not_optional_fields_masks(const vk::tlo_pars
   return res;
 }
 
-CombinatorGen::CombinatorGen(const vk::tlo_parsing::combinator *combinator, CombinatorPart part, bool typed_mode) :
-  combinator(combinator),
-  part(part),
-  typed_mode(typed_mode) {
+CombinatorGen::CombinatorGen(const vk::tlo_parsing::combinator *combinator, CombinatorPart part, bool typed_mode)
+  : combinator(combinator)
+  , part(part)
+  , typed_mode(typed_mode) {
   kphp_error(!(part == CombinatorPart::RIGHT && combinator->is_constructor()), "Storing/fetching of constructor right part is never needed and strange");
   this->var_num_access = (combinator->is_function() && part == CombinatorPart::LEFT ? "tl_func_state->" : "");
 }
@@ -75,17 +75,16 @@ void CombinatorStore::gen_arg_processing(CodeGenerator &W, const std::unique_ptr
     return;
   }
   if (arg->is_fields_mask_optional()) {
-    W << fmt_format("if ({}{} & (1 << {})) ", var_num_access,
-                    combinator->get_var_num_arg(arg->exist_var_num)->name,
-                    arg->exist_var_bit) << BEGIN;
+    W << fmt_format("if ({}{} & (1 << {})) ", var_num_access, combinator->get_var_num_arg(arg->exist_var_num)->name, arg->exist_var_bit) << BEGIN;
     if (typed_mode) {
       // check that field under the field mask is set
       std::string value_check = get_value_absence_check_for_optional_arg(arg);
       if (!value_check.empty()) {
         W << "if (" << value_check << ") " << BEGIN;
-        W
-          << fmt_format(R"(CurrentProcessingQuery::get().raise_storing_error("Optional field %s of %s is not set, but corresponding fields mask bit is set", "{}", "{}");)",
-                        arg->name, combinator->name) << NL;
+        W << fmt_format(
+          R"(CurrentProcessingQuery::get().raise_storing_error("Optional field %s of %s is not set, but corresponding fields mask bit is set", "{}", "{}");)",
+          arg->name, combinator->name)
+          << NL;
         W << "return" << (combinator->is_function() ? " {};" : ";") << NL;
         W << END << NL;
       }
@@ -101,35 +100,28 @@ void CombinatorStore::gen_arg_processing(CodeGenerator &W, const std::unique_ptr
     kphp_assert(as_type_var);
     if (!typed_mode) {
       W << "auto _cur_arg = "
-        << fmt_format("tl_arr_get(tl_object, {}, {}, {}L)", tl2cpp::register_tl_const_str(arg->name), arg->idx, tl2cpp::hash_tl_const_str(arg->name))
-        << ";" << NL;
+        << fmt_format("tl_arr_get(tl_object, {}, {}, {}L)", tl2cpp::register_tl_const_str(arg->name), arg->idx, tl2cpp::hash_tl_const_str(arg->name)) << ";"
+        << NL;
       W << "string target_f_name = "
-        << fmt_format("tl_arr_get(_cur_arg, {}, 0, {}L).as_string()", tl2cpp::register_tl_const_str("_"), tl2cpp::hash_tl_const_str("_"))
-        << ";" << NL;
+        << fmt_format("tl_arr_get(_cur_arg, {}, 0, {}L).as_string()", tl2cpp::register_tl_const_str("_"), tl2cpp::hash_tl_const_str("_")) << ";" << NL;
       W << "if (!tl_storers_ht.has_key(target_f_name)) " << BEGIN
-        << "CurrentProcessingQuery::get().raise_storing_error(\"Function %s not found in tl-scheme\", target_f_name.c_str());" << NL
-        << "return {};" << NL
+        << "CurrentProcessingQuery::get().raise_storing_error(\"Function %s not found in tl-scheme\", target_f_name.c_str());" << NL << "return {};" << NL
         << END << NL;
       W << "const auto &storer_kv = tl_storers_ht.get_value(target_f_name);" << NL;
       W << "tl_func_state->" << combinator->get_var_num_arg(as_type_var->var_num)->name << ".fetcher = storer_kv(_cur_arg);" << NL;
     } else {
-      W << "if (tl_object->$" << arg->name << ".is_null()) " << BEGIN
-        << R"(CurrentProcessingQuery::get().raise_storing_error("Field \")" << arg->name << R"(\" not found in tl object");)" << NL
-        << "return {};" << NL
-        << END << NL;
-      W << "tl_func_state->" << combinator->get_var_num_arg(as_type_var->var_num)->name << ".fetcher = "
-        << tl2cpp::get_tl_object_field_access(arg, tl2cpp::field_rw_type::READ) << ".get()->store();" << NL;
+      W << "if (tl_object->$" << arg->name << ".is_null()) " << BEGIN << R"(CurrentProcessingQuery::get().raise_storing_error("Field \")" << arg->name
+        << R"(\" not found in tl object");)" << NL << "return {};" << NL << END << NL;
+      W << "tl_func_state->" << combinator->get_var_num_arg(as_type_var->var_num)->name
+        << ".fetcher = " << tl2cpp::get_tl_object_field_access(arg, tl2cpp::field_rw_type::READ) << ".get()->store();" << NL;
     }
   } else if (arg->var_num != -1 && tl2cpp::type_of(arg->type_expr)->is_integer_variable()) {
     // save the field mask for the future use;
     // it can be either a local variable or a struct field
     if (!typed_mode) {
-      W << fmt_format("{}{} = tl_arr_get(tl_object, {}, {}, {}L).to_int();",
-                      var_num_access,
-                      combinator->get_var_num_arg(arg->var_num)->name,
-                      tl2cpp::register_tl_const_str(arg->name),
-                      arg->idx,
-                      tl2cpp::hash_tl_const_str(arg->name)) << NL;
+      W << fmt_format("{}{} = tl_arr_get(tl_object, {}, {}, {}L).to_int();", var_num_access, combinator->get_var_num_arg(arg->var_num)->name,
+                      tl2cpp::register_tl_const_str(arg->name), arg->idx, tl2cpp::hash_tl_const_str(arg->name))
+        << NL;
     } else {
       W << var_num_access << combinator->get_var_num_arg(arg->var_num)->name << " = " << tl2cpp::get_tl_object_field_access(arg, tl2cpp::field_rw_type::READ)
         << ";" << NL;
@@ -179,9 +171,7 @@ void CombinatorFetch::gen_before_args_processing(CodeGenerator &W) const {
 
 void CombinatorFetch::gen_arg_processing(CodeGenerator &W, const std::unique_ptr<vk::tlo_parsing::arg> &arg) const {
   if (arg->is_fields_mask_optional()) {
-    W << fmt_format("if ({}{} & (1 << {})) ", var_num_access,
-                    combinator->get_var_num_arg(arg->exist_var_num)->name,
-                    arg->exist_var_bit) << BEGIN;
+    W << fmt_format("if ({}{} & (1 << {})) ", var_num_access, combinator->get_var_num_arg(arg->exist_var_num)->name, arg->exist_var_bit) << BEGIN;
   }
   W << tl2cpp::TypeExprFetch(arg, var_num_access, typed_mode);
   if (arg->var_num != -1 && tl2cpp::type_of(arg->type_expr)->is_integer_variable()) {
@@ -210,8 +200,8 @@ void CombinatorFetch::gen_result_expr_processing(CodeGenerator &W) const {
   // although, during the function fetching we need a magic value of the original type (even if it was flattened).
   // To handle this, there is an original_result_constructor_id function field that stores a real type 'magic' if the type is flattened and 0 otherwise.
   if (!combinator->original_result_constructor_id) {
-    const auto &magic_fetching = tl2cpp::get_magic_fetching(combinator->result.get(),
-                                                            fmt_format("Incorrect magic in result of function: {}", tl2cpp::cur_combinator->name));
+    const auto &magic_fetching =
+      tl2cpp::get_magic_fetching(combinator->result.get(), fmt_format("Incorrect magic in result of function: {}", tl2cpp::cur_combinator->name));
     if (!magic_fetching.empty()) {
       W << magic_fetching << NL;
     }
@@ -230,9 +220,7 @@ void CombinatorFetch::gen_result_expr_processing(CodeGenerator &W) const {
     return;
   }
   // for every 'getChatInfo implements RpcFunction' there is a 'getChatInfo_result implements RpcFunctionReturnResult'
-  W << tl2cpp::get_php_runtime_type(combinator, true, combinator->name + "_result") << " result;" << NL
-    << "result.alloc();" << NL
-    << tl2cpp::get_full_value(combinator->result.get(), "") + ".typed_fetch_to(result->$value);" << NL
-    << "return result;" << NL;
+  W << tl2cpp::get_php_runtime_type(combinator, true, combinator->name + "_result") << " result;" << NL << "result.alloc();" << NL
+    << tl2cpp::get_full_value(combinator->result.get(), "") + ".typed_fetch_to(result->$value);" << NL << "return result;" << NL;
 }
-}
+} // namespace tl2cpp

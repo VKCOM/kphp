@@ -49,8 +49,8 @@ static inline void crash_dump_write_uint64(uint64_t value, crash_dump_buffer_t *
   crash_dump_write_uint32(static_cast<uint32_t>(value & 0xFFFFFFFF), buffer);
 }
 
-static inline void crash_dump_write_reg(const char* reg_name, size_t reg_name_size, uint64_t reg_value, crash_dump_buffer_t *buffer) {
-  assert(reg_name_size +buffer->position <= sizeof(buffer->scratchpad));
+static inline void crash_dump_write_reg(const char *reg_name, size_t reg_name_size, uint64_t reg_value, crash_dump_buffer_t *buffer) {
+  assert(reg_name_size + buffer->position <= sizeof(buffer->scratchpad));
   memcpy(&buffer->scratchpad[buffer->position], reg_name, reg_name_size);
   buffer->position += reg_name_size;
   crash_dump_write_uint64(reg_value, buffer);
@@ -111,7 +111,7 @@ static inline void crash_dump_prepare_registers(crash_dump_buffer_t *buffer, voi
   crash_dump_write_reg(LITERAL_WITH_LENGTH("R14=0x"), uc->uc_mcontext.gregs[REG_R14], buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("R15=0x"), uc->uc_mcontext.gregs[REG_R15], buffer);
 #endif
-#elif defined(__arm64__) || defined (__aarch64__)
+#elif defined(__arm64__) || defined(__aarch64__)
   const auto *uc = static_cast<ucontext_t_portable *>(ucontext);
 
   crash_dump_write_reg(LITERAL_WITH_LENGTH("SP=0x"), uc->uc_mcontext.sp, buffer);

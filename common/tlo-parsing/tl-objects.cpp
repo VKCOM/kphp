@@ -45,8 +45,8 @@ type_var::type_var(tlo_parser *reader) {
   }
 }
 
-arg::arg(tlo_parser *reader, int idx) :
-  idx(idx) {
+arg::arg(tlo_parser *reader, int idx)
+  : idx(idx) {
   int schema_flag_opt_field;
   int schema_flag_has_vars;
   if (reader->tl_sch->scheme_version >= 3) {
@@ -95,7 +95,7 @@ type_array::type_array(tlo_parser *reader) {
     args.emplace_back(std::make_unique<arg>(reader, i + 1));
   }
   flags = FLAG_NOVAR;
-  for (const auto &arg: args) {
+  for (const auto &arg : args) {
     if (!(arg->flags & FLAG_NOVAR)) {
       flags &= ~FLAG_NOVAR;
       break;
@@ -115,8 +115,8 @@ nat_var::nat_var(tlo_parser *reader) {
   flags = 0;
 }
 
-combinator::combinator(tlo_parser *reader, combinator_type kind) :
-  kind(kind) {
+combinator::combinator(tlo_parser *reader, combinator_type kind)
+  : kind(kind) {
   cur_parsed_combinator = this;
   id = reader->get_value<int>();
   name = reader->get_string();
@@ -130,19 +130,19 @@ combinator::combinator(tlo_parser *reader, combinator_type kind) :
     }
   } else {
     if (left_type != TL_TLS_COMBINATOR_LEFT_BUILTIN) {
-      reader->error("Error while parsing combinator %s: unexpected left_type\nExpected %08x, but was %08x",
-                    name.c_str(), TL_TLS_COMBINATOR_LEFT_BUILTIN, left_type);
+      reader->error("Error while parsing combinator %s: unexpected left_type\nExpected %08x, but was %08x", name.c_str(), TL_TLS_COMBINATOR_LEFT_BUILTIN,
+                    left_type);
       return;
     }
   }
   auto tls_ctor_right_v2 = reader->get_value<unsigned int>();
   if (tls_ctor_right_v2 != TL_TLS_COMBINATOR_RIGHT) {
-    reader->error("Error while parsing combinator %s: unexpected tls_combinator_right_v\nExpected %08x, but was %08x",
-                  name.c_str(), TL_TLS_COMBINATOR_RIGHT, tls_ctor_right_v2);
+    reader->error("Error while parsing combinator %s: unexpected tls_combinator_right_v\nExpected %08x, but was %08x", name.c_str(), TL_TLS_COMBINATOR_RIGHT,
+                  tls_ctor_right_v2);
     return;
   }
   result = reader->read_type_expr();
-  for (const auto &arg: args) {
+  for (const auto &arg : args) {
     if (arg->var_num != -1) {
       var_num_to_arg_idx.emplace_back(arg->var_num, arg->idx - 1);
     }
@@ -165,7 +165,7 @@ size_t combinator::get_type_parameter_input_index(int var_num) const {
   const auto *template_args = result->as<type_expr>();
   assert(template_args);
   size_t template_arg_number = 0;
-  for (const auto &child: template_args->children) {
+  for (const auto &child : template_args->children) {
     const auto *child_type_var = child->as<type_var>();
     if (child_type_var && child_type_var->var_num == var_num) {
       break;
@@ -210,15 +210,11 @@ bool combinator::is_kphp_rpc_server_function() const {
 }
 
 static void verify_hardcoded_magics(unsigned int id, const std::string &name) {
-  static const std::map<std::string, unsigned int> hardcoded_magics = {{"#",     TL_SHARP_ID},
-                                                                       {"Type",  TL_TYPE_ID},
-                                                                       {"True",  TL_TRUE_ID},
-                                                                       {"Maybe", TL_MAYBE_ID}};
+  static const std::map<std::string, unsigned int> hardcoded_magics = {{"#", TL_SHARP_ID}, {"Type", TL_TYPE_ID}, {"True", TL_TRUE_ID}, {"Maybe", TL_MAYBE_ID}};
   auto it = hardcoded_magics.find(name);
   if (it != hardcoded_magics.end()) {
     if (id != it->second) {
-      fprintf(stderr, "FATAL ERROR!\nFor type %s hardcoded magic: %08x, but actual magic: %08x",
-              name.c_str(), it->second, id);
+      fprintf(stderr, "FATAL ERROR!\nFor type %s hardcoded magic: %08x, but actual magic: %08x", name.c_str(), it->second, id);
       assert(false);
     }
   }
@@ -233,7 +229,7 @@ type::type(tlo_parser *reader) {
     flags |= FLAG_NOCONS;
   }
   arity = reader->get_value<int>();
-  reader->get_value<int64_t>();  // probably, should use it
+  reader->get_value<int64_t>(); // probably, should use it
   verify_hardcoded_magics(id, name);
 }
 
@@ -280,15 +276,13 @@ vk::tlo_parsing::combinator *tl_scheme::get_constructor_by_magic(int magic) cons
 }
 
 std::string flags_to_str(int v) {
-  constexpr std::pair<int, const char *> available_flags[] = {
-    {FLAG_BARE,                "FLAG_BARE"},
-    {FLAG_NOCONS,              "FLAG_NOCONS"},
-    {FLAG_OPT_VAR,             "FLAG_OPT_VAR"},
-    {FLAG_EXCL,                "FLAG_EXCL"},
-    {FLAG_OPT_FIELD,           "FLAG_OPT_FIELD"},
-    {FLAG_NOVAR,               "FLAG_NOVAR"},
-    {FLAG_DEFAULT_CONSTRUCTOR, "FLAG_DEFAULT_CONSTRUCTOR"}
-  };
+  constexpr std::pair<int, const char *> available_flags[] = {{FLAG_BARE, "FLAG_BARE"},
+                                                              {FLAG_NOCONS, "FLAG_NOCONS"},
+                                                              {FLAG_OPT_VAR, "FLAG_OPT_VAR"},
+                                                              {FLAG_EXCL, "FLAG_EXCL"},
+                                                              {FLAG_OPT_FIELD, "FLAG_OPT_FIELD"},
+                                                              {FLAG_NOVAR, "FLAG_NOVAR"},
+                                                              {FLAG_DEFAULT_CONSTRUCTOR, "FLAG_DEFAULT_CONSTRUCTOR"}};
 
   std::string result;
   for (const auto &flag : available_flags) {
@@ -316,11 +310,11 @@ std::string tl_scheme::to_str() const {
   ss << "TL-SCHEME:\n";
   ss << "scheme-version: " << scheme_version << "\n";
   ss << "types:\n";
-  for (const auto &t: types) {
+  for (const auto &t : types) {
     ss << t.second->to_str();
   }
   ss << "functions:\n";
-  for (const auto &f: functions) {
+  for (const auto &f : functions) {
     ss << f.second->to_str();
   }
   return ss.str();
@@ -345,9 +339,9 @@ vk::tlo_parsing::combinator *vk::tlo_parsing::tl_scheme::get_function_by_magic(i
 bool type::is_polymorphic() const {
   assert(!constructors.empty());
   // тип полиморфный <=> это php interface, у которого php class-конструкторы, если
-  return constructors.size() > 1 ||                                     // либо несколько конструкторов
-         constructors.front()->name.size() != name.size() ||            // либо один, но его название отличается
-         strcasecmp(constructors.front()->name.c_str(), name.c_str());  // (значит, планируется добавление других в будущем)
+  return constructors.size() > 1 ||                                    // либо несколько конструкторов
+         constructors.front()->name.size() != name.size() ||           // либо один, но его название отличается
+         strcasecmp(constructors.front()->name.c_str(), name.c_str()); // (значит, планируется добавление других в будущем)
 }
 
 bool type::is_integer_variable() const {
@@ -357,12 +351,12 @@ bool type::is_integer_variable() const {
 std::string type::to_str() const {
   std::stringstream ss;
   ss.width(8);
-  ss << "type: " << name << "\n" <<
-     "\tid: " << to_hex_str(id) << "\n" <<
-     "\tarity: " << arity << "\n" <<
-     "\tflags: " << flags_to_str(flags) << "\n" <<
-     "constructors:\n";
-  for (const auto &c: constructors) {
+  ss << "type: " << name << "\n"
+     << "\tid: " << to_hex_str(id) << "\n"
+     << "\tarity: " << arity << "\n"
+     << "\tflags: " << flags_to_str(flags) << "\n"
+     << "constructors:\n";
+  for (const auto &c : constructors) {
     ss << c->to_str();
   }
   return ss.str();
@@ -387,20 +381,18 @@ bool type::is_builtin() const {
 }
 
 bool type::has_fields_mask() const {
-  return std::all_of(constructors.begin(), constructors.end(), [](const std::unique_ptr<combinator> & c) {
-    return c->has_fields_mask();
-  });
+  return std::all_of(constructors.begin(), constructors.end(), [](const std::unique_ptr<combinator> &c) { return c->has_fields_mask(); });
 }
 
 std::string combinator::to_str() const {
   std::stringstream ss;
   ss.width(8);
-  ss << "combinator: " << name << "\n" <<
-     "\tid: " << to_hex_str(id) << "\n" <<
-     "\tkind: " << (kind == combinator::combinator_type::FUNCTION ? "function" : "constructor") << "\n" <<
-     "\ttype_id: " << to_hex_str(type_id) << "\n" <<
-     "args:\n";
-  for (const auto &arg: args) {
+  ss << "combinator: " << name << "\n"
+     << "\tid: " << to_hex_str(id) << "\n"
+     << "\tkind: " << (kind == combinator::combinator_type::FUNCTION ? "function" : "constructor") << "\n"
+     << "\ttype_id: " << to_hex_str(type_id) << "\n"
+     << "args:\n";
+  for (const auto &arg : args) {
     ss << arg->to_str();
   }
   ss << "result_type:\n" << result->to_str();
@@ -408,29 +400,23 @@ std::string combinator::to_str() const {
 }
 
 bool combinator::is_generic() const {
-  return std::any_of(args.begin(), args.end(), [](const std::unique_ptr<arg> &arg) {
-    return arg->is_type();
-  });
+  return std::any_of(args.begin(), args.end(), [](const std::unique_ptr<arg> &arg) { return arg->is_type(); });
 }
 
 bool combinator::is_dependent() const {
-  return std::any_of(args.begin(), args.end(), [](const std::unique_ptr<arg> &arg) {
-    return arg->is_optional() && arg->is_sharp();
-  });
+  return std::any_of(args.begin(), args.end(), [](const std::unique_ptr<arg> &arg) { return arg->is_optional() && arg->is_sharp(); });
 }
 
 bool combinator::has_fields_mask() const {
-  return std::any_of(args.begin(), args.end(), [](const std::unique_ptr<arg> &arg) {
-    return arg->is_fields_mask_optional();
-  });
+  return std::any_of(args.begin(), args.end(), [](const std::unique_ptr<arg> &arg) { return arg->is_fields_mask_optional(); });
 }
 
 std::string nat_var::to_str() const {
   std::stringstream ss;
   ss.width(8);
-  ss << "diff: " << diff << "\n" <<
-     "var_num: " << var_num << "\n" <<
-     "flags: " << flags_to_str(flags) << "\n";
+  ss << "diff: " << diff << "\n"
+     << "var_num: " << var_num << "\n"
+     << "flags: " << flags_to_str(flags) << "\n";
   return ss.str();
 }
 
@@ -441,8 +427,8 @@ std::string nat_var::get_name() const {
 std::string nat_const::to_str() const {
   std::stringstream ss;
   ss.width(8);
-  ss << "value: " << num << "\n" <<
-     "flags: " << flags_to_str(flags) << "\n";
+  ss << "value: " << num << "\n"
+     << "flags: " << flags_to_str(flags) << "\n";
   return ss.str();
 }
 
@@ -454,15 +440,15 @@ std::string type_array::to_str() const {
   ss << "\tcell_len: " << cell_len << "\n";
   ss << "\tmultiplicity: " << multiplicity->to_str() << "\n";
   ss << "args:\n";
-  for (const auto &arg: args) {
+  for (const auto &arg : args) {
     ss << arg->to_str();
   }
   return ss.str();
 }
-type_array::type_array(int cell_len, std::unique_ptr<nat_expr_base> multiplicity, std::vector<std::unique_ptr<arg>> args) :
-  cell_len(cell_len),
-  multiplicity(std::move(multiplicity)),
-  args(std::move(args)) {}
+type_array::type_array(int cell_len, std::unique_ptr<nat_expr_base> multiplicity, std::vector<std::unique_ptr<arg>> args)
+  : cell_len(cell_len)
+  , multiplicity(std::move(multiplicity))
+  , args(std::move(args)) {}
 
 std::string arg::to_str() const {
   std::stringstream ss;
@@ -506,8 +492,8 @@ std::string type_var::to_str() const {
   return ss.str();
 }
 
-type_var::type_var(int var_num) :
-  var_num(var_num) {}
+type_var::type_var(int var_num)
+  : var_num(var_num) {}
 
 std::string type_var::get_name() const {
   return owner->get_var_num_arg(var_num)->name;
@@ -520,15 +506,15 @@ std::string type_expr::to_str() const {
   ss << "\tflags: " << flags_to_str(flags) << "\n";
   ss << "\ttype_id: " << to_hex_str(type_id) << "\n";
   ss << "\ttype_expr:\n";
-  for (const auto &child: children) {
+  for (const auto &child : children) {
     ss << child->to_str() << "\n";
   }
   return ss.str();
 }
 
-type_expr::type_expr(int type_id, std::vector<std::unique_ptr<expr_base>> children) :
-  type_id(type_id),
-  children(std::move(children)) {}
+type_expr::type_expr(int type_id, std::vector<std::unique_ptr<expr_base>> children)
+  : type_id(type_id)
+  , children(std::move(children)) {}
 
 bool expr_base::is_bare() const {
   return flags & FLAG_BARE;

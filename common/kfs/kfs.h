@@ -36,9 +36,10 @@ int kfs_file_compute_initialization_vector(struct kfs_file_info *FI);
 void kfs_buffer_crypt(kfs_file_handle_t F, void *buff, long long size, long long off);
 /* for decryption snapshot in load_index functions */
 long long kfs_read_file(kfs_file_handle_t F, void *buff, long long size);
-#define kfs_read_file_assert(F, buff, size) \
-  { \
-    long long __saved_size_t1 = size; assert (kfs_read_file (F, buff, __saved_size_t1) == __saved_size_t1); \
+#define kfs_read_file_assert(F, buff, size)                                                                                                                    \
+  {                                                                                                                                                            \
+    long long __saved_size_t1 = size;                                                                                                                          \
+    assert(kfs_read_file(F, buff, __saved_size_t1) == __saved_size_t1);                                                                                        \
   }
 
 #endif

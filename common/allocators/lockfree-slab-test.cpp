@@ -18,12 +18,12 @@
 #include <gtest/gtest.h>
 
 TEST(lockfree_slab, basic) {
-  const std::size_t sizes[] = { 8, 12, 16, 31, 100 };
+  const std::size_t sizes[] = {8, 12, 16, 31, 100};
 
   for (const auto *size = std::begin(sizes); size != std::end(sizes); ++size) {
     const std::size_t pointers_size = 1000;
 
-    std::vector<void*> pointers;
+    std::vector<void *> pointers;
     pointers.reserve(pointers_size);
 
     lockfree_slab_cache_t cache;
@@ -36,7 +36,7 @@ TEST(lockfree_slab, basic) {
     }
 
     std::shuffle(pointers.begin(), pointers.end(), std::mt19937{});
-    for(auto *pointer : pointers) {
+    for (auto *pointer : pointers) {
       lockfree_slab_cache_free(&cache_tls, pointer);
     }
 
@@ -52,16 +52,16 @@ TEST(lockfree_slab, alloc0) {
   lockfree_slab_cache_register_thread(&cache, &cache_tls);
 
   const std::size_t pointers_size = 1000;
-  std::vector<void*> pointers;
+  std::vector<void *> pointers;
   pointers.reserve(pointers_size);
   for (std::size_t i = 0; i < pointers_size; ++i) {
     pointers.push_back(lockfree_slab_cache_alloc0(&cache_tls));
   }
 
-  for(auto *pointer : pointers) {
-    const auto *begin = static_cast<const char*>(pointer);
+  for (auto *pointer : pointers) {
+    const auto *begin = static_cast<const char *>(pointer);
     const auto *end = std::next(begin, object_size);
-    const auto *found = std::find_if(begin, end,[](const char value) { return value != 0; });
+    const auto *found = std::find_if(begin, end, [](const char value) { return value != 0; });
 
     EXPECT_EQ(found, end);
   }
@@ -78,7 +78,7 @@ TEST(lockfree_slab, stress) {
       queue_.push(elem);
     }
 
-    void* pop() {
+    void *pop() {
       std::lock_guard<std::mutex> guard(mtx_);
 
       if (queue_.empty()) {
@@ -93,7 +93,7 @@ TEST(lockfree_slab, stress) {
 
   private:
     std::mutex mtx_;
-    std::queue<void*> queue_;
+    std::queue<void *> queue_;
   };
 
   lockfree_slab_cache_t cache;

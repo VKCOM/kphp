@@ -55,7 +55,6 @@ struct memory_stat_t {
   long long swap_used;
 };
 
-
 static int read_whole_file(const char *filename, void *output, int olen) {
   int fd = open(filename, O_RDONLY), n = -1;
   if (fd < 0) {
@@ -90,7 +89,7 @@ static int parse_statm(const char *buf, long long *a, int m) {
   static long long page_size = -1;
   if (page_size < 0) {
     page_size = sysconf(_SC_PAGESIZE);
-    assert (page_size > 0);
+    assert(page_size > 0);
   }
   int i;
   if (m > 7) {
@@ -113,7 +112,7 @@ static int parse_statm(const char *buf, long long *a, int m) {
 int am_get_memory_usage(pid_t pid, long long *a, int m) {
   char proc_filename[32];
   char buf[4096];
-  assert (snprintf(proc_filename, sizeof(proc_filename), "/proc/%d/statm", (int)pid) < sizeof(proc_filename));
+  assert(snprintf(proc_filename, sizeof(proc_filename), "/proc/%d/statm", (int)pid) < sizeof(proc_filename));
   if (read_whole_file(proc_filename, buf, sizeof(buf)) < 0) {
     return -1;
   }
@@ -193,7 +192,8 @@ void register_stats_provider(stats_provider_t provider) {
   auto &providers = get_registered_storage();
   providers.push_back(provider);
   for (int i = providers.size() - 1; i > 0; i--) {
-    if (providers[i - 1].priority > providers[i].priority || (providers[i - 1].priority == providers[i].priority && strcmp(providers[i - 1].name, providers[i].name) > 0)) {
+    if (providers[i - 1].priority > providers[i].priority
+        || (providers[i - 1].priority == providers[i].priority && strcmp(providers[i - 1].name, providers[i].name) > 0)) {
       std::swap(providers[i], providers[i - 1]);
     } else {
       break;
@@ -258,8 +258,7 @@ STATS_PROVIDER(general, 0) {
   stats->add_general_stat("hostname", "%s", kdb_gethostname() ?: "failed_to_get_hostname");
 }
 
-static void resource_usage_statistics(stats_t *stats, const char *prefix,
-                                      struct rusage *usage) {
+static void resource_usage_statistics(stats_t *stats, const char *prefix, struct rusage *usage) {
   double cpu_time;
 
   cpu_time = usage->ru_utime.tv_sec + (usage->ru_utime.tv_usec / 1E6);

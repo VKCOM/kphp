@@ -137,7 +137,7 @@ int memcache_client_execute(connection *c, int op) {
         }
         nbit_advance(&c->Q, (int)D->args[1]);
         len = nbit_ready_bytes(&c->Q);
-        assert (len > 0);
+        assert(len > 0);
         ptr = reinterpret_cast<char *>(nbit_get_ptr(&c->Q));
       } else {
         kprintf("error at VALUE: op=%d, key_len=%d, arg_num=%d, value_len=%lld\n", op, D->key_len, D->arg_num, D->args[1]);
@@ -151,14 +151,15 @@ int memcache_client_execute(connection *c, int op) {
       if (ptr[0] != '\r' || (len > 1 ? ptr[1] : *((char *)nbit_get_ptr(&c->Q))) != '\n') {
         kprintf("missing cr/lf at VALUE: op=%d, key_len=%d, arg_num=%d, value_len=%lld\n", op, D->key_len, D->arg_num, D->args[1]);
 
-        assert (0);
+        assert(0);
 
         D->response_flags |= 16;
         return SKIP_ALL_BYTES;
       }
       len = 2;
 
-      tvkprintf (php_connections, 3, "mcc_value: op=%d, key_len=%d, flags=%lld, time=%lld, value_len=%lld\n", op, D->key_len, D->args[0], D->args[1], D->args[2]);
+      tvkprintf(php_connections, 3, "mcc_value: op=%d, key_len=%d, flags=%lld, time=%lld, value_len=%lld\n", op, D->key_len, D->args[0], D->args[1],
+                D->args[2]);
 
       query_len = (int)(D->response_len + D->args[1] + len);
       reader = create_data_reader(c, query_len);
@@ -170,7 +171,7 @@ int memcache_client_execute(connection *c, int op) {
       if (reader->readed) {
         return 0;
       }
-      assert (advance_skip_read_ptr(&c->In, query_len) == query_len);
+      assert(advance_skip_read_ptr(&c->In, query_len) == query_len);
       return 0;
     }
     case mcrt_VERSION:
@@ -193,10 +194,10 @@ int memcache_client_execute(connection *c, int op) {
 
     case mcrt_CLIENT_ERROR:
       kprintf("CLIENT_ERROR received from connection %d (%s)\n", c->fd, sockaddr_storage_to_string(&c->remote_endpoint));
-      //client_errors_received++;
+      // client_errors_received++;
       /* fallthrough */
     case mcrt_ERROR:
-      //errors_received++;
+      // errors_received++;
       /*if (verbosity > -2 && errors_received < 32) {
         dump_connection_buffers (c);
         if (c->first_query != (conn_query *) c && c->first_query->req_generation == c->first_query->requester->generation) {
@@ -206,7 +207,7 @@ int memcache_client_execute(connection *c, int op) {
 
       fail_connection(c, -5);
       c->ready = cr_failed;
-      //conn_query will be closed during connection closing
+      // conn_query will be closed during connection closing
       return SKIP_ALL_BYTES;
     case mcrt_STORED:
     case mcrt_NOTSTORED:
@@ -230,7 +231,7 @@ int memcache_client_execute(connection *c, int op) {
       if (reader->readed) {
         return 0;
       }
-      assert (advance_skip_read_ptr(&c->In, query_len) == query_len);
+      assert(advance_skip_read_ptr(&c->In, query_len) == query_len);
       return 0;
       break;
 
@@ -239,10 +240,10 @@ int memcache_client_execute(connection *c, int op) {
       return SKIP_ALL_BYTES;
 
     default:
-      assert ("unknown state" && 0);
+      assert("unknown state" && 0);
   }
 
-  assert ("unreachable position" && 0);
+  assert("unreachable position" && 0);
   return 0;
 }
 
@@ -276,7 +277,7 @@ void php_worker_run_mc_query_packet(PhpWorker *worker, php_net_query_packet_t *q
 
   if (conn->status != conn_connecting) {
     write_out(&conn->Out, query->data, query->data_len);
-    MCC_FUNC (conn)->flush_query(conn);
+    MCC_FUNC(conn)->flush_query(conn);
   } else {
     if (conn->Tmp == nullptr) {
       conn->Tmp = alloc_head_buffer();

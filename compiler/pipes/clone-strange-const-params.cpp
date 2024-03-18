@@ -26,7 +26,8 @@ VertexPtr CloneStrangeConstParams::on_enter_vertex(VertexPtr root) {
   };
 
   if (passed_params.size() > params_of_called_func.size()) {
-    auto msg = fmt_format("func: {}, passed_cnt: {}, params_of_func_cnt: {}\n", func_call->func_id->as_human_readable(), passed_params.size(), params_of_called_func.size());
+    auto msg = fmt_format("func: {}, passed_cnt: {}, params_of_func_cnt: {}\n", func_call->func_id->as_human_readable(), passed_params.size(),
+                          params_of_called_func.size());
     kphp_assert_msg(false, msg);
   }
   for (size_t i = 0; i < passed_params.size() - func_call->func_id->has_variadic_param; ++i) {

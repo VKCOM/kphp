@@ -30,8 +30,8 @@
  *    (functions and classes could be assigned some pipes before, but there's no reason to split them)
  */
 
-
-CalcRealDefinesAndAssignModulitesF::CalcRealDefinesAndAssignModulitesF() : Base() {
+CalcRealDefinesAndAssignModulitesF::CalcRealDefinesAndAssignModulitesF()
+  : Base() {
   auto val = VertexAdaptor<op_string>::create();
   val->set_string(G->settings().get_version());
   DefineData *data = new DefineData("KPHP_COMPILER_VERSION", val, DefineData::def_const);

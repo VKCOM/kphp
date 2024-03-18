@@ -40,17 +40,19 @@ struct AcquiredReleased {
   size_t released{};
 };
 
-#define ASSERT_ACQUIRED(stat, before) {     \
-  const size_t new_stat = (stat).acquired;  \
-  ASSERT_GT(new_stat, before.acquired);     \
-  before.acquired = new_stat;               \
-}
+#define ASSERT_ACQUIRED(stat, before)                                                                                                                          \
+  {                                                                                                                                                            \
+    const size_t new_stat = (stat).acquired;                                                                                                                   \
+    ASSERT_GT(new_stat, before.acquired);                                                                                                                      \
+    before.acquired = new_stat;                                                                                                                                \
+  }
 
-#define ASSERT_RELEASED(stat, before) {     \
-  const size_t new_stat = (stat).released;  \
-  ASSERT_GT(new_stat, before.released);     \
-  before.released = new_stat;               \
-}
+#define ASSERT_RELEASED(stat, before)                                                                                                                          \
+  {                                                                                                                                                            \
+    const size_t new_stat = (stat).released;                                                                                                                   \
+    ASSERT_GT(new_stat, before.released);                                                                                                                      \
+    before.released = new_stat;                                                                                                                                \
+  }
 
 void worker_function() {
   AcquiredReleased messages;
@@ -121,10 +123,10 @@ void worker_function() {
   }
 }
 
-#define ASSERT_BUFFER(stat, expected_count, expected_acquired)  \
-  ASSERT_EQ((stat).count, (expected_count));                    \
-  ASSERT_EQ((stat).acquire_fails, 0);                           \
-  ASSERT_EQ((stat).acquired, (expected_acquired));              \
+#define ASSERT_BUFFER(stat, expected_count, expected_acquired)                                                                                                 \
+  ASSERT_EQ((stat).count, (expected_count));                                                                                                                   \
+  ASSERT_EQ((stat).acquire_fails, 0);                                                                                                                          \
+  ASSERT_EQ((stat).acquired, (expected_acquired));                                                                                                             \
   ASSERT_EQ((stat).released, (expected_acquired));
 
 TEST(shared_memory_manager_test, test_manager) {
@@ -176,7 +178,6 @@ TEST(shared_memory_manager_test, test_manager) {
   // 64mb
   ASSERT_BUFFER(stats.extra_memory[8], 0, 0);
 }
-
 
 TEST(shared_memory_manager_test, test_size_by_bucket_id) {
   ASSERT_EQ(get_extra_shared_memory_buffer_size(0), 256 * 1024);

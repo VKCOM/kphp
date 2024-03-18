@@ -14,4 +14,4 @@ int get_pipe_max_limit();
 
 #define MAX_CONNECTIONS 65536
 extern int maxconn;
-void set_maxconn (const char *arg);
+void set_maxconn(const char *arg);

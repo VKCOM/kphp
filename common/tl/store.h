@@ -87,7 +87,7 @@ size_t store_vector_impl(bool store_size, Range &&range, Storer &&store_func, st
   auto last = std::end(std::forward<Range>(range));
 
   int local_size{};
-  int &size = store_size ? *reinterpret_cast<int*>(tl_store_get_ptr(sizeof(int))) : local_size;
+  int &size = store_size ? *reinterpret_cast<int *>(tl_store_get_ptr(sizeof(int))) : local_size;
   size = 0;
   std::for_each(first, last, [&store_func, &size](const range_value_type<Range> &value) {
     if (store_func(value)) {
@@ -127,14 +127,11 @@ size_t store_vector_impl(bool store_size, Range &&range, Storer &&, std::true_ty
 
 template<typename Range, typename Storer = storer<range_value_type<Range>>>
 size_t store_vector(bool store_size, Range &&range, Storer &&store_func = {}) {
-  return detail::store_vector_impl(
-    store_size, std::forward<Range>(range), std::forward<Storer>(store_func),
-    std::integral_constant<bool,
-      std::is_same<std::decay_t<Storer>, storer<range_value_type<Range>>>{} &&
-      detail::good_for_raw_store<range_value_type<Range>>{} &&
-      std::is_constructible<vk::span<const range_value_type<Range>>, Range &&>{}
-    >{},
-    std::is_same<std::invoke_result_t<Storer, const range_value_type<Range> &>, void>{});
+  return detail::store_vector_impl(store_size, std::forward<Range>(range), std::forward<Storer>(store_func), std::integral_constant < bool,
+                                   std::is_same<std::decay_t<Storer>, storer<range_value_type<Range>>>{}
+                                     && detail::good_for_raw_store<range_value_type<Range>>{}
+                                     && std::is_constructible<vk::span<const range_value_type<Range>>, Range &&>{} > {},
+                                   std::is_same<std::invoke_result_t<Storer, const range_value_type<Range> &>, void>{});
 }
 
 } // namespace detail
@@ -182,7 +179,6 @@ struct storer<std::vector<T, Allocator>, false> {
     store_vector(s);
   }
 };
-
 
 } // namespace tl
 } // namespace vk

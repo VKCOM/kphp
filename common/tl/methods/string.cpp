@@ -11,11 +11,11 @@
 #include "common/tl/parse.h"
 
 struct tl_in_methods_str final : tl_in_methods {
-  const char* in = nullptr;
-  const char* mark = nullptr;
+  const char *in = nullptr;
+  const char *mark = nullptr;
 
-  explicit tl_in_methods_str(const char *s) :
-    in(s) {}
+  explicit tl_in_methods_str(const char *s)
+    : in(s) {}
 
   void fetch_raw_data(void *buf, int len) noexcept override {
     memcpy(buf, in, len);
@@ -44,7 +44,7 @@ struct tl_in_methods_str final : tl_in_methods {
     in = mark;
     mark = nullptr;
   }
-  void fetch_mark_delete() noexcept  override {
+  void fetch_mark_delete() noexcept override {
     mark = nullptr;
   }
   int decompress(int) noexcept override {
@@ -54,7 +54,8 @@ struct tl_in_methods_str final : tl_in_methods {
 
 struct tl_out_methods_str final : tl_out_methods {
   char *str;
-  explicit tl_out_methods_str(char *str) : str(str) {}
+  explicit tl_out_methods_str(char *str)
+    : str(str) {}
   void *store_get_ptr(int len) noexcept override {
     void *r = str;
     str += len;

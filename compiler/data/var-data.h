@@ -12,19 +12,12 @@
 #include "compiler/inferring/var-node.h"
 
 class VarData {
-  DEBUG_STRING_METHOD { return as_human_readable(); }
-  
+  DEBUG_STRING_METHOD {
+    return as_human_readable();
+  }
+
 public:
-  enum Type {
-    var_unknown_t = 0,
-    var_local_t,
-    var_local_inplace_t,
-    var_global_t,
-    var_param_t,
-    var_const_t,
-    var_static_t,
-    var_instance_t
-  };
+  enum Type { var_unknown_t = 0, var_local_t, var_local_inplace_t, var_global_t, var_param_t, var_const_t, var_static_t, var_instance_t };
 
   Type type_ = var_unknown_t;
   int id = -1;
@@ -51,7 +44,9 @@ public:
 
   explicit VarData(Type type);
 
-  inline Type &type() { return type_; }
+  inline Type &type() {
+    return type_;
+  }
 
   std::string as_human_readable() const;
 

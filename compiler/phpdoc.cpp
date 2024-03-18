@@ -7,22 +7,21 @@
 #include <cstdio>
 #include <utility>
 
-#include "common/termformat/termformat.h"
 #include "common/php-functions.h"
+#include "common/termformat/termformat.h"
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/function-data.h"
-#include "compiler/data/src-file.h"
 #include "compiler/data/generics-mixins.h"
+#include "compiler/data/src-file.h"
+#include "compiler/ffi/ffi_parser.h"
 #include "compiler/lexer.h"
 #include "compiler/modulite-check-rules.h"
 #include "compiler/name-gen.h"
 #include "compiler/stage.h"
 #include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
-#include "compiler/ffi/ffi_parser.h"
 #include "compiler/vertex-util.h"
-
 
 static constexpr unsigned int calcHashOfTagName(const char *start, const char *end) {
   unsigned int hash = 5381;
@@ -38,7 +37,9 @@ struct KnownPhpDocTag {
   const char *tag_name;
 
   constexpr KnownPhpDocTag(const char *tag_name, PhpDocType type)
-    : hash(calcHashOfTagName(tag_name, tag_name + __builtin_strlen(tag_name))), type(type), tag_name(tag_name) {}
+    : hash(calcHashOfTagName(tag_name, tag_name + __builtin_strlen(tag_name)))
+    , type(type)
+    , tag_name(tag_name) {}
 };
 
 class AllDocTags {
@@ -49,7 +50,7 @@ public:
   [[gnu::always_inline]] static PhpDocType name2type(const char *start, const char *end) {
     unsigned int hash = calcHashOfTagName(start, end);
 
-    for (const KnownPhpDocTag &tag: ALL_TAGS) {
+    for (const KnownPhpDocTag &tag : ALL_TAGS) {
       if (tag.hash == hash) {
         return tag.type;
       }
@@ -58,7 +59,7 @@ public:
   }
 
   static const char *type2name(PhpDocType type) {
-    for (const KnownPhpDocTag &tag: ALL_TAGS) {
+    for (const KnownPhpDocTag &tag : ALL_TAGS) {
       if (tag.type == type) {
         return tag.tag_name;
       }
@@ -110,7 +111,6 @@ const KnownPhpDocTag AllDocTags::ALL_TAGS[] = {
   KnownPhpDocTag("@kphp-internal-result-array2tuple", PhpDocType::kphp_internal_result_array2tuple),
   KnownPhpDocTag("@kphp-internal-param-readonly", PhpDocType::kphp_internal_param_readonly),
 };
-
 
 PhpDocComment::PhpDocComment(vk::string_view phpdoc_str) {
   const char *c = phpdoc_str.data();
@@ -187,7 +187,7 @@ PhpDocTag::TypeAndVarName PhpDocTag::value_as_type_and_var_name(FunctionPtr curr
   if (tokens.front().type() == tok_var_name) {
     var_name = tokens.front().str_val;
     tok_iter++;
-    if (tokens.size() <= 2) {     // only tok_end is left
+    if (tokens.size() <= 2) { // only tok_end is left
       return {nullptr, var_name};
     }
   }
@@ -199,8 +199,7 @@ PhpDocTag::TypeAndVarName PhpDocTag::value_as_type_and_var_name(FunctionPtr curr
   } catch (std::runtime_error &ex) {
     kphp_error(0, fmt_format("{}: {}\n{}",
                              TermStringFormat::paint_red(TermStringFormat::add_text_attribute("Could not parse " + get_tag_name(), TermStringFormat::bold)),
-                             TermStringFormat::add_text_attribute(value_as_string(), TermStringFormat::underline),
-                             ex.what()));
+                             TermStringFormat::add_text_attribute(value_as_string(), TermStringFormat::underline), ex.what()));
   }
 
   if (!type_hint) {
@@ -210,14 +209,13 @@ PhpDocTag::TypeAndVarName PhpDocTag::value_as_type_and_var_name(FunctionPtr curr
   if (var_name.empty()) {
     kphp_assert(tok_iter != tokens.end());
     // phpdoc|type $var_name maybe comment
-    if (tok_iter->type() == tok_var_name) {   // tok_iter — right after the parsing is finished
+    if (tok_iter->type() == tok_var_name) { // tok_iter — right after the parsing is finished
       var_name = tok_iter->str_val;
     }
   }
 
   return {type_hint, var_name};
 }
-
 
 const TypeHint *PhpDocTypeHintParser::parse_classname(const std::string &phpdoc_class_name) {
   cur_tok++;
@@ -280,7 +278,7 @@ const TypeHint *PhpDocTypeHintParser::parse_ffi_cdata() {
       need_space = true;
     } else if (tok == tok_times) {
       cdef.push_back('*');
-    }  else if (tok == tok_opbrk) {
+    } else if (tok == tok_opbrk) {
       cdef.push_back('[');
     } else if (tok == tok_clbrk) {
       cdef.push_back(']');
@@ -397,13 +395,13 @@ const TypeHint *PhpDocTypeHintParser::parse_simple_type() {
       return parse_shape_type();
     case tok_callable:
       cur_tok++;
-      if (cur_tok->type() == tok_oppar) {    // callable(...) : ... — typed callable
+      if (cur_tok->type() == tok_oppar) { // callable(...) : ... — typed callable
         return parse_typed_callable();
       }
       return TypeHintCallable::create_untyped_callable();
     case tok_array:
       cur_tok++;
-      if (vk::any_of_equal(cur_tok->type(), tok_lt, tok_oppar)) {   // array<...>
+      if (vk::any_of_equal(cur_tok->type(), tok_lt, tok_oppar)) { // array<...>
         const auto &type_hints = parse_nested_type_hints();
         if (type_hints.empty() || type_hints.size() > 2) {
           throw std::runtime_error{"array<...> has to be parameterized with one type or two types at most"};
@@ -412,24 +410,24 @@ const TypeHint *PhpDocTypeHintParser::parse_simple_type() {
         return TypeHintArray::create(type_hints.back());
       }
       return TypeHintArray::create_array_of_any();
-    case tok_at: {      // @tl\...
+    case tok_at: { // @tl\...
       cur_tok++;
       if (!cur_tok->str_val.starts_with("tl\\")) {
         throw std::runtime_error("Invalid magic namespace after '@'");
       }
       return parse_classname(G->settings().tl_namespace_prefix.get() + std::string(cur_tok->str_val).substr(3));
     }
-    case tok_xor:       // ^1, ^2[*] (for functions.txt)
+    case tok_xor: // ^1, ^2[*] (for functions.txt)
       cur_tok++;
       return parse_arg_ref();
-    case tok_question:  // ?string == string|null; ?string[] == string[]|null
+    case tok_question: // ?string == string|null; ?string[] == string[]|null
       cur_tok++;
       return TypeHintOptional::create(parse_type_expression(), true, false);
     case tok_object:
       cur_tok++;
       return TypeHintObject::create();
     case tok_class:
-      if ((cur_tok + 1)->type() == tok_minus && (cur_tok + 2)->type() == tok_string) {  // class-string<T>
+      if ((cur_tok + 1)->type() == tok_minus && (cur_tok + 2)->type() == tok_string) { // class-string<T>
         cur_tok += 3;
         const auto *nested = parse_nested_one_type_hint();
         if (!nested->try_as<TypeHintGenericT>()) {
@@ -507,7 +505,7 @@ const TypeHint *PhpDocTypeHintParser::parse_simple_type() {
   throw std::runtime_error(fmt_format("can't parse '{}'", cur_tok->str_val));
 }
 
-const TypeHint *PhpDocTypeHintParser::parse_arg_ref() {   // ^1, ^2[*][*], ^3()
+const TypeHint *PhpDocTypeHintParser::parse_arg_ref() { // ^1, ^2[*][*], ^3()
   if (cur_tok->type() != tok_int_const) {
     throw std::runtime_error("Invalid number after ^");
   }
@@ -531,7 +529,7 @@ const TypeHint *PhpDocTypeHintParser::parse_arg_ref() {   // ^1, ^2[*][*], ^3()
 const TypeHint *PhpDocTypeHintParser::parse_type_array() {
   const TypeHint *inner = parse_simple_type();
 
-  if (cur_tok->type() == tok_double_colon) {      // T::methodName(), T::fieldName
+  if (cur_tok->type() == tok_double_colon) { // T::methodName(), T::fieldName
     cur_tok++;
     if (cur_tok->type() == tok_func_name && (cur_tok + 1)->type() == tok_oppar && (cur_tok + 2)->type() == tok_clpar) {
       inner = TypeHintRefToMethod::create(inner, std::string(cur_tok->str_val));
@@ -588,7 +586,7 @@ const TypeHint *PhpDocTypeHintParser::parse_nested_one_type_hint() {
   return sub_type;
 }
 
-const TypeHint *PhpDocTypeHintParser::parse_typed_callable() {  // callable(int, int):?string, callable(int $x), callable():void
+const TypeHint *PhpDocTypeHintParser::parse_typed_callable() { // callable(int, int):?string, callable(int $x), callable():void
   if (cur_tok->type() != tok_oppar) {
     throw std::runtime_error("expected '('");
   }
@@ -602,7 +600,7 @@ const TypeHint *PhpDocTypeHintParser::parse_typed_callable() {  // callable(int,
     }
     arg_types.emplace_back(parse_type_expression());
 
-    if (cur_tok->type() == tok_var_name) {  // callable(int $x) — var name is like a comment in declaration
+    if (cur_tok->type() == tok_var_name) { // callable(int $x) — var name is like a comment in declaration
       cur_tok++;
     }
     if (cur_tok->type() == tok_comma) {
@@ -692,7 +690,7 @@ const TypeHint *PhpDocTypeHintParser::parse_type_expression() {
   bool was_raw_bool = false;
   bool was_false = false;
   bool was_null = false;
-  
+
   auto on_each_item = [&](const TypeHint *item) {
     items.emplace_back(item);
     if (const auto *as_primitive = item->try_as<TypeHintPrimitive>()) {
@@ -728,7 +726,7 @@ const TypeHint *PhpDocTypeHintParser::parse_type_expression() {
 
 const TypeHint *PhpDocTypeHintParser::parse_from_tokens(std::vector<Token>::const_iterator &tok_iter) {
   cur_tok = tok_iter;
-  const TypeHint *v = parse_type_expression();      // could throw an exception
+  const TypeHint *v = parse_type_expression(); // could throw an exception
 
   // "?int ...$args" == "(?int)[] $args", "int|false ...$a" == "(int|false)[] $a"; handle "..." after all has been parsed
   if (cur_tok->type() == tok_varg) {
@@ -737,7 +735,7 @@ const TypeHint *PhpDocTypeHintParser::parse_from_tokens(std::vector<Token>::cons
   }
 
   tok_iter = cur_tok;
-  return v;                                   // not null if an exception was not thrown
+  return v; // not null if an exception was not thrown
 }
 
 const TypeHint *PhpDocTypeHintParser::parse_from_tokens_silent(std::vector<Token>::const_iterator &tok_iter) noexcept {
@@ -791,8 +789,8 @@ const TypeHint *phpdoc_finalize_type_hint_and_resolve(const TypeHint *type_hint,
         if (vk::any_of_equal(as_ffi->type->kind, FFITypeKind::Struct, FFITypeKind::Union)) {
           ClassPtr klass = G->get_class(FFIRoot::cdata_class_name(as_ffi->scope_name, as_ffi->type->str));
           kphp_error_return(klass, fmt_format("Could not find ffi_cdata<{}, {}>", as_ffi->scope_name, as_ffi->type->str));
-          bool tags_ok = (as_ffi->type->kind == FFITypeKind::Struct && klass->ffi_class_mixin->ffi_type->kind == FFITypeKind::StructDef) ||
-                         (as_ffi->type->kind == FFITypeKind::Union && klass->ffi_class_mixin->ffi_type->kind == FFITypeKind::UnionDef);
+          bool tags_ok = (as_ffi->type->kind == FFITypeKind::Struct && klass->ffi_class_mixin->ffi_type->kind == FFITypeKind::StructDef)
+                         || (as_ffi->type->kind == FFITypeKind::Union && klass->ffi_class_mixin->ffi_type->kind == FFITypeKind::UnionDef);
           kphp_error_return(tags_ok, fmt_format("Mismatched union/struct tag for ffi_cdata<{}, {}>", as_ffi->scope_name, as_ffi->type->str));
         }
       }
@@ -801,9 +799,10 @@ const TypeHint *phpdoc_finalize_type_hint_and_resolve(const TypeHint *type_hint,
 
   if (type_hint->has_autogeneric_inside()) {
     // 'callable' and 'object' are allowed only standalone; fire an error for 'callable[]' and other nested
-    kphp_error(type_hint->try_as<TypeHintObject>() ||
-               (type_hint->try_as<TypeHintCallable>() && type_hint->try_as<TypeHintCallable>()->is_untyped_callable()),
-               "Keywords 'callable' and 'object' have special treatment, they are not real types.\nThey can be used for a parameter, implicitly converting a function into generic.\nThey can NOT be used inside arrays, tuples, etc. — only as a standalone keyword.\nConsider using typed callables instead of 'callable', and generic functions/classes instead of 'object'.");
+    kphp_error(type_hint->try_as<TypeHintObject>() || (type_hint->try_as<TypeHintCallable>() && type_hint->try_as<TypeHintCallable>()->is_untyped_callable()),
+               "Keywords 'callable' and 'object' have special treatment, they are not real types.\nThey can be used for a parameter, implicitly converting a "
+               "function into generic.\nThey can NOT be used inside arrays, tuples, etc. — only as a standalone keyword.\nConsider using typed callables "
+               "instead of 'callable', and generic functions/classes instead of 'object'.");
   }
 
   if (type_hint->has_callables_inside()) {
@@ -813,7 +812,6 @@ const TypeHint *phpdoc_finalize_type_hint_and_resolve(const TypeHint *type_hint,
         if (as_callable->is_typed_callable() && !as_callable->has_genericT_inside()) {
           as_callable->get_interface();
         }
-
       }
     });
   }
@@ -832,7 +830,6 @@ const TypeHint *phpdoc_replace_genericTs_with_reified(const TypeHint *type_hint,
   }
 
   return type_hint->replace_children_custom([reifiedTs](const TypeHint *child) {
-
     if (const auto *as_genericT = child->try_as<TypeHintGenericT>()) {
       const TypeHint *replacement = reifiedTs->find(as_genericT->nameT);
       return replacement ?: child;
@@ -891,7 +888,7 @@ const TypeHint *phpdoc_convert_default_value_to_type_hint(VertexPtr init_val) {
     }
     case op_div:
       return TypeHintPrimitive::create(tp_float);
-      
+
     default:
       // 'null' or something strange as a default — can't detect, will report "specify @var manually"
       return {};

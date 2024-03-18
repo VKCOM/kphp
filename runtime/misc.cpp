@@ -28,7 +28,7 @@ string f$uniqid(const string &prefix, bool more_entropy) {
     f$usleep(1);
   }
 
-  dl::enter_critical_section();//OK
+  dl::enter_critical_section(); // OK
 
   struct timeval tv;
   gettimeofday(&tv, nullptr);
@@ -51,7 +51,6 @@ string f$uniqid(const string &prefix, bool more_entropy) {
   return static_SB.str();
 }
 
-
 Optional<string> f$iconv(const string &input_encoding, const string &output_encoding, const string &input_str) {
   dl::CriticalSectionGuard heap_guard;
 
@@ -66,7 +65,7 @@ Optional<string> f$iconv(const string &input_encoding, const string &output_enco
 
     size_t input_len = input_str.size();
     size_t output_len = output_str.size();
-    char *input_buf = const_cast <char *> (input_str.c_str());
+    char *input_buf = const_cast<char *>(input_str.c_str());
     char *output_buf = output_str.buffer();
 
     size_t res = iconv(cd, &input_buf, &input_len, &output_buf, &output_len);
@@ -75,19 +74,18 @@ Optional<string> f$iconv(const string &input_encoding, const string &output_enco
       iconv_close(cd);
       return output_str;
     }
-/*
-    if (errno != E2BIG) {
-      php_warning ("Error in iconv from \"%s\" to \"%s\" string \"%s\" at character %d at pos %d: %m", input_encoding.c_str(), output_encoding.c_str(), input_str.c_str(), (int)*input_buf, (int)(input_buf - input_str.c_str()));
-      break;
-    }
-*/
+    /*
+        if (errno != E2BIG) {
+          php_warning ("Error in iconv from \"%s\" to \"%s\" string \"%s\" at character %d at pos %d: %m", input_encoding.c_str(), output_encoding.c_str(),
+       input_str.c_str(), (int)*input_buf, (int)(input_buf - input_str.c_str())); break;
+        }
+    */
     iconv(cd, nullptr, nullptr, nullptr, nullptr);
   }
 
   iconv_close(cd);
   return false;
 }
-
 
 void f$sleep(int64_t seconds) {
   if (seconds <= 0 || seconds > 1800) {
@@ -107,14 +105,14 @@ void f$usleep(int64_t micro_seconds) {
 
   struct itimerval timer, old_timer;
   memset(&timer, 0, sizeof(timer));
-  dl::enter_critical_section();//OK
+  dl::enter_critical_section(); // OK
   setitimer(ITIMER_REAL, &timer, &old_timer);
   dl::leave_critical_section();
   long long time_left = old_timer.it_value.tv_sec * 1000000ll + old_timer.it_value.tv_usec;
 
-//  fprintf (stderr, "time_left = %lld, sleep_time = %d\n", time_left, sleep_time);
+  //  fprintf (stderr, "time_left = %lld, sleep_time = %d\n", time_left, sleep_time);
   if (time_left == 0) {
-    dl::enter_critical_section();//OK
+    dl::enter_critical_section(); // OK
     usleep(static_cast<uint32_t>(sleep_time));
     dl::leave_critical_section();
     return;
@@ -123,7 +121,7 @@ void f$usleep(int64_t micro_seconds) {
   if (time_left > sleep_time) {
     double start_time = microtime_monotonic();
 
-    dl::enter_critical_section();//OK
+    dl::enter_critical_section(); // OK
     usleep(static_cast<uint32_t>(sleep_time));
     dl::leave_critical_section();
 
@@ -133,18 +131,17 @@ void f$usleep(int64_t micro_seconds) {
   }
 
   if (time_left <= 1) {
-//    raise (SIGALRM);
-//    return;
+    //    raise (SIGALRM);
+    //    return;
     time_left = 1;
   }
 
   timer.it_value.tv_sec = time_left / 1000000;
   timer.it_value.tv_usec = time_left % 1000000;
-  dl::enter_critical_section();//OK
+  dl::enter_critical_section(); // OK
   setitimer(ITIMER_REAL, &timer, nullptr);
   dl::leave_critical_section();
 }
-
 
 static const char php_sig_gif[3] = {'G', 'I', 'F'};
 static const char php_sig_jpg[3] = {(char)0xff, (char)0xd8, (char)0xff};
@@ -152,20 +149,9 @@ static const char php_sig_png[8] = {(char)0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x
 static const char php_sig_jpc[4] = {(char)0xff, 0x4f, (char)0xff, 0x51};
 static const char php_sig_jp2[12] = {0x00, 0x00, 0x00, 0x0c, 'j', 'P', ' ', ' ', 0x0d, 0x0a, (char)0x87, 0x0a};
 
-static const char *mime_type_string[11] = {
-  "",
-  "image/gif",
-  "image/jpeg",
-  "image/png",
-  "application/x-shockwave-flash",
-  "image/psd",
-  "image/x-ms-bmp",
-  "image/tiff",
-  "image/tiff",
-  "application/octet-stream",
-  "image/jp2"
-};
-
+static const char *mime_type_string[11] = {"",          "image/gif",      "image/jpeg", "image/png",  "application/x-shockwave-flash",
+                                           "image/psd", "image/x-ms-bmp", "image/tiff", "image/tiff", "application/octet-stream",
+                                           "image/jp2"};
 
 static const int M_SOF0 = 0xC0;
 static const int M_SOF1 = 0xC1;
@@ -187,7 +173,7 @@ static const int M_COM = 0xFE;
 static const int M_PSEUDO = 0xFFD8;
 
 mixed f$getimagesize(const string &name) {
-  dl::enter_critical_section();//OK
+  dl::enter_critical_section(); // OK
   struct stat stat_buf;
   int read_fd = open(name.c_str(), O_RDONLY);
   if (read_fd < 0) {
@@ -200,7 +186,7 @@ mixed f$getimagesize(const string &name) {
     return false;
   }
 
-  if (!S_ISREG (stat_buf.st_mode)) {
+  if (!S_ISREG(stat_buf.st_mode)) {
     close(read_fd);
     dl::leave_critical_section();
     php_warning("Regular file expected as first argument in function getimagesize, \"%s\" is given", name.c_str());
@@ -222,7 +208,7 @@ mixed f$getimagesize(const string &name) {
 
   int width = 0, height = 0, bits = 0, channels = 0, type = IMAGETYPE_UNKNOWN;
   switch (buf[0]) {
-    case 'G': //gif
+    case 'G': // gif
       if (!strncmp((const char *)buf, php_sig_gif, sizeof(php_sig_gif))) {
         type = IMAGETYPE_GIF;
         width = buf[6] | (buf[7] << 8);
@@ -235,7 +221,7 @@ mixed f$getimagesize(const string &name) {
         return false;
       }
       break;
-    case 0xff: //jpg or jpc
+    case 0xff: // jpg or jpc
       if (!strncmp((const char *)buf, php_sig_jpg, sizeof(php_sig_jpg))) {
         type = IMAGETYPE_JPEG;
 
@@ -355,7 +341,7 @@ mixed f$getimagesize(const string &name) {
         return false;
       }
       break;
-    case 0x00: //jp2
+    case 0x00: // jp2
       if (read_size >= 54 && !strncmp((const char *)buf, php_sig_jp2, sizeof(php_sig_jp2))) {
         type = IMAGETYPE_JP2;
 
@@ -424,7 +410,7 @@ mixed f$getimagesize(const string &name) {
         return false;
       }
       break;
-    case 0x89: //png
+    case 0x89: // png
       if (read_size >= 25 && !strncmp((const char *)buf, php_sig_png, sizeof(php_sig_png))) {
         type = IMAGETYPE_PNG;
         width = (buf[16] << 24) + (buf[17] << 16) + (buf[18] << 8) + buf[19];
@@ -461,23 +447,22 @@ mixed f$getimagesize(const string &name) {
   return result;
 }
 
-
 int64_t f$posix_getpid() {
-  dl::enter_critical_section();//OK
+  dl::enter_critical_section(); // OK
   auto result = getpid();
   dl::leave_critical_section();
   return result;
 }
 
 int64_t f$posix_getuid() {
-  dl::enter_critical_section();//OK
+  dl::enter_critical_section(); // OK
   auto result = getuid();
   dl::leave_critical_section();
   return result;
 }
 
 Optional<array<mixed>> f$posix_getpwuid(int64_t uid) {
-  dl::enter_critical_section();//OK
+  dl::enter_critical_section(); // OK
   passwd *pwd = getpwuid(static_cast<uint32_t>(uid));
   dl::leave_critical_section();
   if (!pwd) {
@@ -493,7 +478,6 @@ Optional<array<mixed>> f$posix_getpwuid(int64_t uid) {
   result.set_value(string("shell", 5), string(pwd->pw_shell));
   return result;
 }
-
 
 void do_print_r(const mixed &v, int depth) {
   if (depth == 10) {
@@ -663,7 +647,6 @@ void do_var_export(const mixed &v, int depth, char endc = 0) {
   *coub << '\n';
 }
 
-
 string f$print_r(const mixed &v, bool buffered) {
   if (buffered) {
     f$ob_start();
@@ -708,7 +691,7 @@ string f$cp1251(const string &utf8_string) {
   return f$vk_utf8_to_win(utf8_string);
 }
 
-void f$kphp_set_context_on_error(const array<mixed> &tags, const array<mixed> &extra_info, const string& env) {
+void f$kphp_set_context_on_error(const array<mixed> &tags, const array<mixed> &extra_info, const string &env) {
   auto &json_logger = vk::singleton<JsonLogger>::get();
   static_SB.clean();
 

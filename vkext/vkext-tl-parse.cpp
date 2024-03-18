@@ -75,7 +75,7 @@ int tl_eparse_string(char **s) {
     *s = 0;
     return -1;
   }
-  char *t = static_cast<char *>(emalloc (len + 1));
+  char *t = static_cast<char *>(emalloc(len + 1));
   memcpy(t, *s, len);
   t[len] = 0;
   *s = t;
@@ -108,7 +108,7 @@ void tl_parse_end() {
   if (tl.error) {
     return;
   }
-  if (!do_rpc_fetch_eof(const_cast<const char**>(&tl.error))) {
+  if (!do_rpc_fetch_eof(const_cast<const char **>(&tl.error))) {
     tl_set_error("Extra data");
   }
 }

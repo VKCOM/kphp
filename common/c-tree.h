@@ -5,7 +5,6 @@
 #include <assert.h>
 #include <stdbool.h>
 
-
 #define __DEFINE_TREE(prefix, name, value_t, value_compare, y_t, y_compare, new_tree_node, free_tree_node)                                                     \
   __DECLARE_TREE(prefix, name, value_t, y_t)                                                                                                                   \
                                                                                                                                                                \
@@ -250,7 +249,7 @@
   prefix void tree_free_##name(tree_##name##_t *T);                                                                                                            \
   __DEFINE_TREE(prefix, name, value_t, value_compare, y_t, y_compare, tree_alloc_##name, tree_free_##name)                                                     \
   tree_##name##_t *tree_alloc_##name(value_t x, y_t y) {                                                                                                       \
-    tree_##name##_t *T = reinterpret_cast<tree_##name##_t *>(malloc(sizeof(tree_##name##_t)));                                                                                                      \
+    tree_##name##_t *T = reinterpret_cast<tree_##name##_t *>(malloc(sizeof(tree_##name##_t)));                                                                 \
     assert(T);                                                                                                                                                 \
     T->x = x;                                                                                                                                                  \
     T->y = y;                                                                                                                                                  \
@@ -491,7 +490,6 @@ static inline void tree_act_any_ex2(struct tree_any_ptr *T, void (*f)(void *, vo
       }                                                                                                                                                        \
     }                                                                                                                                                          \
   }
-
 
 #define DEFINE_HASH_STDNOZ_ALLOC_PREFIX(prefix, name, value_t, value_compare, value_hash)                                                                      \
   DECLARE_HASH_TYPE(name, value_t)                                                                                                                             \

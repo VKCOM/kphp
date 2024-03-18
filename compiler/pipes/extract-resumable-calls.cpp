@@ -5,9 +5,9 @@
 #include "compiler/pipes/extract-resumable-calls.h"
 
 #include "compiler/compiler-core.h"
-#include "compiler/vertex-util.h"
 #include "compiler/inferring/public.h"
 #include "compiler/name-gen.h"
+#include "compiler/vertex-util.h"
 
 VertexPtr *ExtractResumableCallsPass::skip_conv_and_sets(VertexPtr *replace) noexcept {
   if (auto set_modify = replace->try_as<op_set_modify>()) {

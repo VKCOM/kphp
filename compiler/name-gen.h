@@ -11,7 +11,7 @@
 
 std::string gen_anonymous_scope_name(FunctionPtr parent_function);
 std::string gen_anonymous_function_name(FunctionPtr parent_function);
-std::string gen_unique_name(const std::string& prefix, FunctionPtr function = FunctionPtr{});
+std::string gen_unique_name(const std::string &prefix, FunctionPtr function = FunctionPtr{});
 std::string gen_const_string_name(const std::string &str);
 std::string gen_const_regexp_name(const std::string &str);
 bool is_object_suitable_for_hashing(VertexPtr vertex);

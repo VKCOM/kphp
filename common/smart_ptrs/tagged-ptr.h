@@ -40,7 +40,7 @@ static inline uint16_t tagged_ptr_get_next_tag(const tagged_ptr_t *tagged_ptr) {
 
 static inline void tagged_ptr_pack(tagged_ptr_t *tagged_ptr, void *ptr, uint16_t tag) {
   tagged_ptr_cast_unit_t cast_unit;
-  cast_unit.value = (uintptr_t) ptr;
+  cast_unit.value = (uintptr_t)ptr;
   cast_unit.tag[TAGGED_PTR_TAG_INDEX] = tag;
   tagged_ptr->value = cast_unit.value;
 }

@@ -9,14 +9,11 @@
 namespace vk {
 namespace tl {
 
-ConstructorToPhp::ConstructorToPhp(TlToPhpClassesConverter &tl_to_php,
-                                   const tlo_parsing::combinator &tl_constructor,
-                                   CombinatorToPhp &outer_converter,
-                                   const tlo_parsing::type_expr &outer_type_expr) :
-  CombinatorToPhp(tl_to_php, tl_constructor),
-  outer_converter_(outer_converter),
-  outer_type_expr_(outer_type_expr) {
-}
+ConstructorToPhp::ConstructorToPhp(TlToPhpClassesConverter &tl_to_php, const tlo_parsing::combinator &tl_constructor, CombinatorToPhp &outer_converter,
+                                   const tlo_parsing::type_expr &outer_type_expr)
+  : CombinatorToPhp(tl_to_php, tl_constructor)
+  , outer_converter_(outer_converter)
+  , outer_type_expr_(outer_type_expr) {}
 
 std::unique_ptr<CombinatorToPhp> ConstructorToPhp::clone(const std::vector<php_field_type> &type_stack) const {
   auto result = std::make_unique<ConstructorToPhp>(tl_to_php_, tl_combinator_, outer_converter_, outer_type_expr_);

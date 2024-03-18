@@ -4,9 +4,9 @@
 
 #pragma once
 
+#include <cctype>
 #include <climits>
 #include <cstring>
-#include <cctype>
 #include <limits>
 #include <type_traits>
 
@@ -58,8 +58,8 @@ public:
   };
 
   // wrapping this into a class helps avoid the global namespace pollution
-  ExtraRefCnt(extra_ref_cnt_value value) noexcept:
-    value_(value) {}
+  ExtraRefCnt(extra_ref_cnt_value value) noexcept
+    : value_(value) {}
 
   operator int() const noexcept {
     return static_cast<int>(value_);
@@ -69,7 +69,7 @@ private:
   extra_ref_cnt_value value_;
 };
 
-inline int64_t string_hash(const char *p, size_t l) __attribute__ ((always_inline)) ubsan_supp("alignment");
+inline int64_t string_hash(const char *p, size_t l) __attribute__((always_inline)) ubsan_supp("alignment");
 
 int64_t string_hash(const char *p, size_t l) {
   constexpr uint64_t HASH_MUL = 1915239017;
@@ -135,7 +135,7 @@ inline bool php_is_numeric(const char *s) {
   return *s == '\0';
 }
 
-inline bool php_is_int(const char *s, size_t l) __attribute__ ((always_inline));
+inline bool php_is_int(const char *s, size_t l) __attribute__((always_inline));
 
 bool php_is_int(const char *s, size_t l) {
   if (l == 0) {
@@ -177,8 +177,7 @@ bool php_is_int(const char *s, size_t l) {
   return true;
 }
 
-
-inline bool php_try_to_int(const char *s, size_t l, int64_t *val) __attribute__ ((always_inline));
+inline bool php_try_to_int(const char *s, size_t l, int64_t *val) __attribute__((always_inline));
 
 bool php_try_to_int(const char *s, size_t l, int64_t *val) {
   int64_t mul = 1;
@@ -232,7 +231,7 @@ bool php_try_to_int(const char *s, size_t l, int64_t *val) {
   return true;
 }
 
-//returns len of raw string representation or -1 on error
+// returns len of raw string representation or -1 on error
 inline int string_raw_len(int src_len) {
   if (src_len < 0 || src_len >= (1 << 30) - 13) {
     return -1;
@@ -241,13 +240,13 @@ inline int string_raw_len(int src_len) {
   return src_len + 13;
 }
 
-//returns len of raw string representation and writes it to dest or returns -1 on error
+// returns len of raw string representation and writes it to dest or returns -1 on error
 inline int string_raw(char *dest, int dest_len, const char *src, int src_len) {
   int raw_len = string_raw_len(src_len);
   if (raw_len == -1 || raw_len > dest_len) {
     return -1;
   }
-  int *dest_int = reinterpret_cast <int *> (dest);
+  int *dest_int = reinterpret_cast<int *>(dest);
   dest_int[0] = src_len;
   dest_int[1] = src_len;
   dest_int[2] = ExtraRefCnt::for_global_const;
@@ -259,6 +258,5 @@ inline int string_raw(char *dest, int dest_len, const char *src, int src_len) {
 
 template<class T>
 inline constexpr int three_way_comparison(const T &lhs, const T &rhs) {
-  return lhs < rhs ? -1 :
-         (rhs < lhs ?  1 : 0);
+  return lhs < rhs ? -1 : (rhs < lhs ? 1 : 0);
 }

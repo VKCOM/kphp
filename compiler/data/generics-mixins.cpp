@@ -60,13 +60,12 @@
  * For `f<T>` with T=SomeClass, an instantiated function is named "f$_$SomeClass".
  */
 
-
 // an old syntax has only @kphp-template with $argument inside (or many such tags)
 static void create_from_phpdoc_kphp_template_old_syntax(FunctionPtr f, GenericsDeclarationMixin *out, const PhpDocComment *phpdoc) {
   for (const PhpDocTag &tag : phpdoc->tags) {
     switch (tag.type) {
       case PhpDocType::kphp_template: {
-        std::string nameT;    // can be before $arg
+        std::string nameT; // can be before $arg
         const TypeHint *extends_hint = nullptr;
         for (const auto &var_name : split_skipping_delimeters(tag.value, ", ")) {
           if (var_name[0] != '$') {
@@ -96,7 +95,7 @@ static void create_from_phpdoc_kphp_template_old_syntax(FunctionPtr f, GenericsD
       case PhpDocType::kphp_return: {
         kphp_error_return(!out->empty(), "@kphp-template must precede @kphp-return");
         if (auto tag_parsed = tag.value_as_type_and_var_name(f, out)) {
-          f->return_typehint = tag_parsed.type_hint;    // typically, T or T::field
+          f->return_typehint = tag_parsed.type_hint; // typically, T or T::field
         }
         break;
       }
@@ -123,12 +122,14 @@ static void create_from_phpdoc_kphp_generic_new_syntax(FunctionPtr current_funct
           auto cur_tok = tokens.cbegin();
           bool is_variadic = false;
 
-          if (cur_tok->type() == tok_varg) {  // not T, but ...T (variadic generic)
+          if (cur_tok->type() == tok_varg) { // not T, but ...T (variadic generic)
             is_variadic = true;
             cur_tok++;
           }
 
-          kphp_error_return(cur_tok->type() != tok_var_name, fmt_format("'@kphp-generic ${}' is an invalid syntax: provide T names, not variables.\nProbably, you want:\n* @kphp-generic T\n* @param T ${}", cur_tok->str_val, cur_tok->str_val));
+          kphp_error_return(cur_tok->type() != tok_var_name, fmt_format("'@kphp-generic ${}' is an invalid syntax: provide T names, not variables.\nProbably, "
+                                                                        "you want:\n* @kphp-generic T\n* @param T ${}",
+                                                                        cur_tok->str_val, cur_tok->str_val));
           kphp_error_return(cur_tok->type() == tok_func_name, fmt_format("Can't parse generic declaration: can't detect T from '{}'", s));
 
           std::string nameT = static_cast<std::string>(cur_tok->str_val);
@@ -149,7 +150,8 @@ static void create_from_phpdoc_kphp_generic_new_syntax(FunctionPtr current_funct
             kphp_error_return(def_hint, fmt_format("Can't parse generic declaration <{}> after '='", nameT));
             kphp_error_return(cur_tok->type() != tok_colon, fmt_format("Can't parse generic declaration <{}>: ':' should go before a default value", nameT));
           }
-          kphp_error_return(cur_tok->type() != tok_func_name, "Can't parse generic declaration: use a comma to separate generic T ('T1, T2' instead of 'T1 T2')");
+          kphp_error_return(cur_tok->type() != tok_func_name,
+                            "Can't parse generic declaration: use a comma to separate generic T ('T1, T2' instead of 'T1 T2')");
           kphp_error_return(cur_tok->type() == tok_end, fmt_format("Can't parse generic declaration <{}>: unexpected end", nameT));
 
           out->add_itemT(nameT, extends_hint, def_hint, is_variadic);
@@ -172,14 +174,16 @@ static void create_from_phpdoc_kphp_generic_new_syntax(FunctionPtr current_funct
   kphp_assert(!out->empty());
 }
 
-
 std::string GenericsDeclarationMixin::as_human_readable() const {
-  return "<" + vk::join(itemsT, ", ", [](const GenericsItem &itemT) {
-    if (itemT.is_variadic) {
-      return "..." + itemT.nameT;
-    }
-    return itemT.nameT;
-  }) + ">";
+  return "<"
+         + vk::join(itemsT, ", ",
+                    [](const GenericsItem &itemT) {
+                      if (itemT.is_variadic) {
+                        return "..." + itemT.nameT;
+                      }
+                      return itemT.nameT;
+                    })
+         + ">";
 }
 
 bool GenericsDeclarationMixin::has_nameT(const std::string &nameT) const {
@@ -215,11 +219,9 @@ std::string GenericsDeclarationMixin::prompt_provide_commentTs_human_readable(Ve
   return "Please, provide all generic types using syntax " + call_str + "/*<" + t_str + ">*/" + params_str;
 }
 
-
 std::string GenericsInstantiationPhpComment::as_human_readable() const {
   return "/*<" + vk::join(vectorTs, ", ", [](const TypeHint *instantiationT) { return instantiationT->as_human_readable(); }) + ">*/";
 }
-
 
 GenericsInstantiationMixin::GenericsInstantiationMixin(const GenericsInstantiationMixin &rhs) {
   if (rhs.commentTs != nullptr) {
@@ -229,9 +231,7 @@ GenericsInstantiationMixin::GenericsInstantiationMixin(const GenericsInstantiati
 
 std::string GenericsInstantiationMixin::as_human_readable() const {
   if (!instantiations.empty()) {
-    return vk::join(instantiations, ", ", [](const auto &pair) {
-      return pair.first + "=" + pair.second->as_human_readable();
-    });
+    return vk::join(instantiations, ", ", [](const auto &pair) { return pair.first + "=" + pair.second->as_human_readable(); });
   }
 
   if (commentTs != nullptr) {
@@ -246,8 +246,8 @@ void GenericsInstantiationMixin::provideT(const std::string &nameT, const TypeHi
     const TypeHint *previous_inst = insertion_result.first->second;
     FunctionPtr generic_function = call.as<op_func_call>()->func_id;
     kphp_error(previous_inst == instantiationT,
-               fmt_format("Couldn't reify generic <{}> for call: it's both {} and {}.\n{}",
-                          nameT, previous_inst->as_human_readable(), instantiationT->as_human_readable(), generic_function->genericTs->prompt_provide_commentTs_human_readable(call)));
+               fmt_format("Couldn't reify generic <{}> for call: it's both {} and {}.\n{}", nameT, previous_inst->as_human_readable(),
+                          instantiationT->as_human_readable(), generic_function->genericTs->prompt_provide_commentTs_human_readable(call)));
   }
 }
 
@@ -266,25 +266,20 @@ std::string GenericsInstantiationMixin::generate_instantiated_name(const std::st
   return name;
 }
 
-
 // having parsed and resolved 'T: SomeInterface' in @kphp-generic, check that extends_hint
 void GenericsDeclarationMixin::check_declarationT_extends_hint(const TypeHint *extends_hint, const std::string &nameT) {
   // we allow only 'T: SomeClass' / 'T: SomeInterface' and 'T: callable' created implicitly
   // if an unknown class is specified, an error was printed before (on resolving)
-  if (!extends_hint ||
-      extends_hint->try_as<TypeHintCallable>() ||   // 'T: callable' is created implicitly for untyped 'callable' params
-      extends_hint->try_as<TypeHintObject>() ||     // 'T: object'
-      extends_hint->try_as<TypeHintInstance>() ||   // 'T: BaseClass' / 'T: SomeInterface'
-      extends_hint->try_as<TypeHintPipe>()) {       // 'T: int|string' / 'T: SomeInterface|SomeInterface2'
+  if (!extends_hint || extends_hint->try_as<TypeHintCallable>() || // 'T: callable' is created implicitly for untyped 'callable' params
+      extends_hint->try_as<TypeHintObject>() ||                    // 'T: object'
+      extends_hint->try_as<TypeHintInstance>() ||                  // 'T: BaseClass' / 'T: SomeInterface'
+      extends_hint->try_as<TypeHintPipe>()) {                      // 'T: int|string' / 'T: SomeInterface|SomeInterface2'
     return;
   }
 
-  kphp_error_return(!extends_hint->try_as<TypeHintOptional>(),
-                    "A generic T can't extend ?Some or Some|false");
-  kphp_error_return(!extends_hint->try_as<TypeHintPrimitive>(),
-                    "A generic T can't extend a primitive, what does it mean?");
-  kphp_error_return(!extends_hint->try_as<TypeHintArray>(),
-                    "A generic T can't extend an array; use just T in declaration, and T[] in @param");
+  kphp_error_return(!extends_hint->try_as<TypeHintOptional>(), "A generic T can't extend ?Some or Some|false");
+  kphp_error_return(!extends_hint->try_as<TypeHintPrimitive>(), "A generic T can't extend a primitive, what does it mean?");
+  kphp_error_return(!extends_hint->try_as<TypeHintArray>(), "A generic T can't extend an array; use just T in declaration, and T[] in @param");
   kphp_error_return(0, fmt_format("Strange or unsupported extends condition in generic T after '{}:'", nameT));
 }
 
@@ -308,7 +303,7 @@ bool GenericsDeclarationMixin::is_new_kphp_generic_syntax(const PhpDocComment *p
 // creates genericTs as an empty object, ready for parsing
 GenericsDeclarationMixin *GenericsDeclarationMixin::create_for_function_empty(FunctionPtr f) {
   auto *out = new GenericsDeclarationMixin();
-  (void)f;  // reserved for the future
+  (void)f; // reserved for the future
   return out;
 }
 
@@ -358,7 +353,6 @@ void GenericsDeclarationMixin::make_function_generic_on_callable_arg(FunctionPtr
   const TypeHint *extends_hint_callable = TypeHintCallable::create_untyped_callable();
   f->genericTs->add_itemT(nameT, extends_hint_callable, nullptr);
 }
-
 
 void GenericsDeclarationMixin::make_function_generic_on_object_arg(FunctionPtr f, VertexPtr func_param) {
   if (!f->genericTs) {

@@ -33,18 +33,16 @@ struct ClassNameWithNamespace {
 
 struct PhpVariable {
   // implicit conversation is ok
-  PhpVariable(const PhpClassField &field) :
-    name(field.field_name),
-    type(field.field_value_type),
-    php_doc_type(field.php_doc_type),
-    under_field_mask(!field.field_mask_name.empty()) {
-  }
+  PhpVariable(const PhpClassField &field)
+    : name(field.field_name)
+    , type(field.field_value_type)
+    , php_doc_type(field.php_doc_type)
+    , under_field_mask(!field.field_mask_name.empty()) {}
 
-  PhpVariable(std::string field_name, php_field_type field_type, vk::string_view field_php_doc_type) :
-    name(std::move(field_name)),
-    type(field_type),
-    php_doc_type(field_php_doc_type) {
-  }
+  PhpVariable(std::string field_name, php_field_type field_type, vk::string_view field_php_doc_type)
+    : name(std::move(field_name))
+    , type(field_type)
+    , php_doc_type(field_php_doc_type) {}
 
   std::string name;
   php_field_type type;

@@ -17,7 +17,9 @@ class memory_chunk_tree : vk::not_copyable {
 public:
   class tree_node;
 
-  void hard_reset() noexcept { root_ = nullptr; }
+  void hard_reset() noexcept {
+    root_ = nullptr;
+  }
   void insert(void *mem, size_t size) noexcept;
   tree_node *extract(size_t size) noexcept;
   tree_node *extract_smallest() noexcept;

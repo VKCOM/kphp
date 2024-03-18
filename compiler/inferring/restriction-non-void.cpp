@@ -8,7 +8,8 @@
 #include "compiler/inferring/type-data.h"
 #include "compiler/inferring/var-node.h"
 
-RestrictionNonVoid::RestrictionNonVoid(tinf::Node *node) : node(node) {}
+RestrictionNonVoid::RestrictionNonVoid(tinf::Node *node)
+  : node(node) {}
 
 bool RestrictionNonVoid::is_restriction_broken() {
   return node->get_type()->ptype() == tp_void;

@@ -4,18 +4,17 @@
 
 #include "compiler/code-gen/writer-data.h"
 
+#include "common/wrappers/fmt_format.h"
 #include "compiler/data/src-file.h"
 #include "compiler/stage.h"
-#include "common/wrappers/fmt_format.h"
 
-WriterData::WriterData(File *file, bool compile_with_crc) :
-  file(file),
-  lines(),
-  text(),
-  hash_of_cpp(-1),
-  hash_of_comments(-1),
-  compile_with_crc_flag(compile_with_crc) {
-}
+WriterData::WriterData(File *file, bool compile_with_crc)
+  : file(file)
+  , lines()
+  , text()
+  , hash_of_cpp(-1)
+  , hash_of_comments(-1)
+  , compile_with_crc_flag(compile_with_crc) {}
 
 void WriterData::begin_line() {
   lines.emplace_back((int)text.size());
@@ -37,10 +36,7 @@ void WriterData::add_location(SrcFilePtr file, int line) {
   if (lines.back().file && !(lines.back().file == file)) {
     return;
   }
-  kphp_error (
-    !lines.back().file || lines.back().file == file,
-    fmt_format("{}|{}", file->file_name, lines.back().file->file_name)
-  );
+  kphp_error(!lines.back().file || lines.back().file == file, fmt_format("{}|{}", file->file_name, lines.back().file->file_name));
   lines.back().file = file;
   if (line != -1) {
     lines.back().line_ids.insert(line);
@@ -132,13 +128,12 @@ void WriterData::dump(std::string &dest_str, const std::vector<Line>::iterator &
       }
     }
 
-
     if (t == 0) {
       if (r == -1) {
         l = -1;
       }
-      //fprintf (stderr, "l = %d, r = %d\n", l, r);
-      assert (l <= r);
+      // fprintf (stderr, "l = %d, r = %d\n", l, r);
+      assert(l <= r);
       rev.resize(r - l + 1, -1);
     } else if (t == 2) {
       while (cur_line != end) {
@@ -147,7 +142,6 @@ void WriterData::dump(std::string &dest_str, const std::vector<Line>::iterator &
       }
     }
   }
-
 }
 
 void WriterData::dump(std::string &dest_str) {
@@ -158,10 +152,7 @@ void WriterData::dump(std::string &dest_str) {
       continue;
     }
 
-    auto j = std::find_if(std::next(i), lines.end(),
-                          [i](const Line &l) {
-                            return (l.file && i->file != l.file) || l.brk;
-                          });
+    auto j = std::find_if(std::next(i), lines.end(), [i](const Line &l) { return (l.file && i->file != l.file) || l.brk; });
     dump(dest_str, i, j, i->file);
     i = j;
   }

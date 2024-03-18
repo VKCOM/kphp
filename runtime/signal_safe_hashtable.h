@@ -13,10 +13,10 @@
  * STL unordered_map wrapper which is safe to use in KPHP runtime environment.
  * All modifiable operations are guarded with dl::CriticalSectionGuard.
  */
-template <typename Key, typename Value>
+template<typename Key, typename Value>
 class SignalSafeHashtable {
 public:
-  template <typename S>
+  template<typename S>
   bool insert(const Key &key, S &&value) noexcept {
     static_assert(std::is_same_v<std::remove_cv_t<Value>, std::remove_cv_t<S>>);
 
@@ -25,7 +25,7 @@ public:
     return res.second;
   }
 
-  template <typename S>
+  template<typename S>
   bool insert_or_assign(const Key &key, S &&value) noexcept {
     static_assert(std::is_same_v<std::remove_cv_t<Value>, std::remove_cv_t<S>>);
 
@@ -65,10 +65,11 @@ public:
     return ht.end();
   }
 
-  void clear () {
+  void clear() {
     dl::CriticalSectionGuard guard;
     ht.clear();
   }
+
 private:
   std::unordered_map<Key, Value> ht;
 };

@@ -20,43 +20,87 @@
 
 #define INCLUDED_FROM_KPHP_CORE
 
-#include "string_decl.inl"
 #include "array_decl.inl"
 #include "class_instance_decl.inl"
 #include "mixed_decl.inl"
 #include "string_buffer_decl.inl"
+#include "string_decl.inl"
 
-#include "string.inl"
 #include "array.inl"
 #include "class_instance.inl"
-#include "mixed.inl"
-#include "string_buffer.inl"
-#include "conversions_types.inl"
 #include "comparison_operators.inl"
+#include "conversions_types.inl"
+#include "mixed.inl"
+#include "string.inl"
+#include "string_buffer.inl"
 
 #undef INCLUDED_FROM_KPHP_CORE
 
-#define FFI_CALL(call) ({ dl::CriticalSectionGuard critical_section___; (call); })
-#define FFI_INVOKE_CALLBACK(call) ({ dl::NonCriticalSectionGuard non_critical_section___; (call); })
+#define FFI_CALL(call)                                                                                                                                         \
+  ({                                                                                                                                                           \
+    dl::CriticalSectionGuard critical_section___;                                                                                                              \
+    (call);                                                                                                                                                    \
+  })
+#define FFI_INVOKE_CALLBACK(call)                                                                                                                              \
+  ({                                                                                                                                                           \
+    dl::NonCriticalSectionGuard non_critical_section___;                                                                                                       \
+    (call);                                                                                                                                                    \
+  })
 
-#define SAFE_SET_OP(a, op, b, b_type) ({b_type b_tmp___ = b; a op std::move(b_tmp___);})
-#define SAFE_SET_FUNC_OP(a, func, b, b_type) ({b_type b_tmp___ = b; func (a, b_tmp___);})
-#define SAFE_INDEX(a, b, b_type) a[({b_type b_tmp___ = b; b_tmp___;})]
-#define SAFE_SET_VALUE(a, b, b_type, c, c_type) ({b_type b_tmp___ = b; c_type c_tmp___ = c; (a).set_value (b_tmp___, c_tmp___);})
-#define SAFE_PUSH_BACK(a, b, b_type) ({b_type b_tmp___ = b; a.push_back (b_tmp___);})
-#define SAFE_PUSH_BACK_RETURN(a, b, b_type) ({b_type b_tmp___ = b; a.push_back_return (b_tmp___);})
-#define NOERR(a, a_type) ({php_disable_warnings++; a_type a_tmp___ = a; php_disable_warnings--; a_tmp___;})
-#define NOERR_VOID(a) ({php_disable_warnings++; a; php_disable_warnings--;})
+#define SAFE_SET_OP(a, op, b, b_type)                                                                                                                          \
+  ({                                                                                                                                                           \
+    b_type b_tmp___ = b;                                                                                                                                       \
+    a op std::move(b_tmp___);                                                                                                                                  \
+  })
+#define SAFE_SET_FUNC_OP(a, func, b, b_type)                                                                                                                   \
+  ({                                                                                                                                                           \
+    b_type b_tmp___ = b;                                                                                                                                       \
+    func(a, b_tmp___);                                                                                                                                         \
+  })
+#define SAFE_INDEX(a, b, b_type)                                                                                                                               \
+  a[({                                                                                                                                                         \
+    b_type b_tmp___ = b;                                                                                                                                       \
+    b_tmp___;                                                                                                                                                  \
+  })]
+#define SAFE_SET_VALUE(a, b, b_type, c, c_type)                                                                                                                \
+  ({                                                                                                                                                           \
+    b_type b_tmp___ = b;                                                                                                                                       \
+    c_type c_tmp___ = c;                                                                                                                                       \
+    (a).set_value(b_tmp___, c_tmp___);                                                                                                                         \
+  })
+#define SAFE_PUSH_BACK(a, b, b_type)                                                                                                                           \
+  ({                                                                                                                                                           \
+    b_type b_tmp___ = b;                                                                                                                                       \
+    a.push_back(b_tmp___);                                                                                                                                     \
+  })
+#define SAFE_PUSH_BACK_RETURN(a, b, b_type)                                                                                                                    \
+  ({                                                                                                                                                           \
+    b_type b_tmp___ = b;                                                                                                                                       \
+    a.push_back_return(b_tmp___);                                                                                                                              \
+  })
+#define NOERR(a, a_type)                                                                                                                                       \
+  ({                                                                                                                                                           \
+    php_disable_warnings++;                                                                                                                                    \
+    a_type a_tmp___ = a;                                                                                                                                       \
+    php_disable_warnings--;                                                                                                                                    \
+    a_tmp___;                                                                                                                                                  \
+  })
+#define NOERR_VOID(a)                                                                                                                                          \
+  ({                                                                                                                                                           \
+    php_disable_warnings++;                                                                                                                                    \
+    a;                                                                                                                                                         \
+    php_disable_warnings--;                                                                                                                                    \
+  })
 
 #define f$likely likely
 #define f$unlikely unlikely
 
-template<typename T, typename ...Args>
-void hard_reset_var(T &var, Args &&... args) noexcept {
-  new(&var) T(std::forward<Args>(args)...);
+template<typename T, typename... Args>
+void hard_reset_var(T &var, Args &&...args) noexcept {
+  new (&var) T(std::forward<Args>(args)...);
 }
 
-inline constexpr int64_t operator "" _i64(unsigned long long int v) noexcept {
+inline constexpr int64_t operator"" _i64(unsigned long long int v) noexcept {
   return static_cast<int64_t>(v);
 }
 
@@ -68,7 +112,6 @@ inline double divide(const string &lhs, int64_t rhs);
 
 inline double divide(const mixed &lhs, int64_t rhs);
 
-
 inline double divide(int64_t lhs, double rhs);
 
 inline double divide(double lhs, double rhs) ubsan_supp("float-divide-by-zero");
@@ -76,7 +119,6 @@ inline double divide(double lhs, double rhs) ubsan_supp("float-divide-by-zero");
 inline double divide(const string &lhs, double rhs);
 
 inline double divide(const mixed &lhs, double rhs);
-
 
 inline double divide(int64_t lhs, const string &rhs);
 
@@ -86,7 +128,6 @@ inline double divide(const string &lhs, const string &rhs);
 
 inline double divide(const mixed &lhs, const string &rhs);
 
-
 inline double divide(int64_t lhs, const mixed &rhs);
 
 inline double divide(double lhs, const mixed &rhs);
@@ -94,7 +135,6 @@ inline double divide(double lhs, const mixed &rhs);
 inline double divide(const string &lhs, const mixed &rhs);
 
 inline double divide(const mixed &lhs, const mixed &rhs);
-
 
 inline double divide(bool lhs, bool rhs);
 
@@ -116,20 +156,17 @@ inline double divide(bool lhs, const class_instance<T> &rhs);
 template<class T>
 inline double divide(const class_instance<T> &lhs, bool rhs);
 
-
 template<class T, class T1>
 inline double divide(const array<T> &lhs, const T1 &rhs);
 
 template<class T, class T1>
 inline double divide(const T1 &lhs, const array<T> &rhs);
 
-
 template<class T, class T1>
 inline double divide(const class_instance<T> &lhs, const T1 &rhs);
 
 template<class T, class T1>
 inline double divide(const T1 &lhs, const class_instance<T> &rhs);
-
 
 template<class T>
 inline double divide(const array<T> &lhs, const array<T> &rhs);
@@ -149,12 +186,11 @@ inline double divide(const array<T> &lhs, const class_instance<T1> &rhs);
 template<class T, class T1>
 inline double divide(const class_instance<T1> &lhs, const array<T> &rhs);
 
+template<class T1, class T2>
+inline double divide(const Optional<T1> &lhs, const T2 &rhs); // not defined
 
 template<class T1, class T2>
-inline double divide(const Optional<T1> &lhs, const T2 &rhs); //not defined
-
-template<class T1, class T2>
-inline double divide(const T1 &lhs, const Optional<T2> &rhs); //not defined
+inline double divide(const T1 &lhs, const Optional<T2> &rhs); // not defined
 
 template<class T1, class T2>
 inline int64_t spaceship(const T1 &lhs, const T2 &rhs) {
@@ -222,16 +258,13 @@ inline mixed &power_self(mixed &base, const mixed &exp) {
 template<class T1, class T2>
 inline T1 &divide_self(T1 &lhs, const T2 &rhs);
 
-
 inline int64_t &modulo_self(int64_t &lhs, int64_t rhs);
 
 template<class T1, class T2>
 inline T1 &modulo_self(T1 &lhs, const T2 &rhs);
 
-
 template<class T0, class T>
 inline void assign(T0 &dest, const T &from);
-
 
 inline bool &boolval_ref(bool &val);
 
@@ -241,7 +274,6 @@ inline const bool &boolval_ref(const bool &val);
 
 inline const bool &boolval_ref(const mixed &val);
 
-
 inline int64_t &intval_ref(int64_t &val, const char *function);
 
 inline int64_t &intval_ref(mixed &val, const char *function);
@@ -249,7 +281,6 @@ inline int64_t &intval_ref(mixed &val, const char *function);
 inline const int64_t &intval_ref(const int64_t &val, const char *function);
 
 inline const int64_t &intval_ref(const mixed &val, const char *function);
-
 
 inline double &floatval_ref(double &val);
 
@@ -259,7 +290,6 @@ inline const double &floatval_ref(const double &val);
 
 inline const double &floatval_ref(const mixed &val);
 
-
 inline string &strval_ref(string &val, const char *function);
 
 inline string &strval_ref(mixed &val, const char *function);
@@ -267,7 +297,6 @@ inline string &strval_ref(mixed &val, const char *function);
 inline const string &strval_ref(const string &val, const char *function);
 
 inline const string &strval_ref(const mixed &val, const char *function);
-
 
 template<class T>
 inline array<T> &arrayval_ref(array<T> &val, const char *function);
@@ -296,7 +325,6 @@ inline bool f$empty(const class_instance<T> &);
 template<class T>
 inline bool f$empty(const Optional<T> &);
 
-
 template<class T>
 bool f$is_numeric(const T &);
 template<class T>
@@ -322,13 +350,11 @@ template<class T>
 inline bool f$is_float(const Optional<T> &v);
 inline bool f$is_float(const mixed &v);
 
-
 template<class T>
 inline bool f$is_scalar(const T &v);
 template<class T>
 inline bool f$is_scalar(const Optional<T> &v);
 inline bool f$is_scalar(const mixed &v);
-
 
 template<class T>
 inline bool f$is_string(const T &v);
@@ -336,19 +362,16 @@ template<class T>
 inline bool f$is_string(const Optional<T> &v);
 inline bool f$is_string(const mixed &v);
 
-
 template<class T>
 inline bool f$is_array(const T &v);
 template<class T>
 inline bool f$is_array(const Optional<T> &v);
 inline bool f$is_array(const mixed &v);
 
-
 template<class T>
 bool f$is_object(const T &);
 template<class T>
 inline bool f$is_object(const class_instance<T> &v);
-
 
 template<class T>
 inline bool f$is_integer(const T &v);
@@ -398,7 +421,6 @@ inline string f$get_class(const class_instance<T> &v);
 template<class T>
 inline int64_t f$get_hash_of_class(const class_instance<T> &klass);
 
-
 inline int64_t f$count(const mixed &v);
 
 template<class T>
@@ -407,16 +429,14 @@ inline int64_t f$count(const Optional<T> &a);
 template<class T>
 inline int64_t f$count(const array<T> &a);
 
-template<class ...Args>
+template<class... Args>
 inline int64_t f$count(const std::tuple<Args...> &a);
 
 template<class T>
 inline int64_t f$count(const T &v);
 
-
 template<class T>
 int64_t f$sizeof(const T &v);
-
 
 inline string &append(string &dest, tmp_string from);
 inline string &append(string &dest, const string &from);
@@ -434,12 +454,10 @@ inline mixed &append(mixed &dest, const T &from);
 template<class T0, class T>
 inline T0 &append(T0 &dest, const T &from);
 
-
 inline string f$gettype(const mixed &v);
 
 template<class T>
 inline bool f$function_exists(const T &a1);
-
 
 constexpr int32_t E_ERROR = 1;
 constexpr int32_t E_WARNING = 2;
@@ -466,8 +484,7 @@ inline int64_t f$error_reporting();
 
 inline void f$warning(const string &message);
 
-#define f$critical_error(message) \
-  php_critical_error("%s", message.c_str());
+#define f$critical_error(message) php_critical_error("%s", message.c_str());
 
 inline int64_t f$memory_get_static_usage();
 
@@ -491,7 +508,6 @@ inline int64_t f$get_reference_counter(const string &v);
 
 inline int64_t f$get_reference_counter(const mixed &v);
 
-
 template<class T>
 inline T &val(T &x);
 
@@ -509,7 +525,6 @@ inline T &val(Optional<T> &x);
 
 template<class T>
 inline T &ref(Optional<T> &x);
-
 
 template<class T>
 inline typename array<T>::iterator begin(array<T> &x);
@@ -559,7 +574,6 @@ inline typename array<T>::const_iterator end(const Optional<array<T>> &x);
 template<class T>
 inline typename array<T>::const_iterator const_end(const Optional<array<T>> &x);
 
-
 inline void clear_array(mixed &v);
 
 template<class T>
@@ -575,7 +589,6 @@ template<class T>
 inline void unset(class_instance<T> &x);
 
 inline void unset(mixed &x);
-
 
 /*
  *
@@ -599,7 +612,6 @@ double divide(const mixed &lhs, int64_t rhs) {
   return divide(f$floatval(lhs), rhs);
 }
 
-
 double divide(int64_t lhs, double rhs) {
   return divide(static_cast<double>(lhs), rhs);
 }
@@ -620,7 +632,6 @@ double divide(const mixed &lhs, double rhs) {
   return divide(f$floatval(lhs), rhs);
 }
 
-
 double divide(int64_t lhs, const string &rhs) {
   return divide(lhs, f$floatval(rhs));
 }
@@ -637,7 +648,6 @@ double divide(const mixed &lhs, const string &rhs) {
   return divide(lhs, f$floatval(rhs));
 }
 
-
 double divide(int64_t lhs, const mixed &rhs) {
   return divide(lhs, f$floatval(rhs));
 }
@@ -653,7 +663,6 @@ double divide(const string &lhs, const mixed &rhs) {
 double divide(const mixed &lhs, const mixed &rhs) {
   return divide(f$floatval(lhs), f$floatval(rhs));
 }
-
 
 double divide(bool lhs, bool rhs) {
   php_warning("Both arguments of operator '/' are bool");
@@ -696,7 +705,6 @@ double divide(const class_instance<T> &, bool) {
   return 0.0;
 }
 
-
 template<class T, class T1>
 double divide(const array<T> &lhs, const T1 &rhs) {
   php_warning("First argument of operator '/' is array");
@@ -709,7 +717,6 @@ double divide(const T1 &lhs, const array<T> &rhs) {
   return divide(lhs, f$count(rhs));
 }
 
-
 template<class T, class T1>
 double divide(const class_instance<T> &, const T1 &rhs) {
   php_warning("First argument of operator '/' is object");
@@ -721,7 +728,6 @@ double divide(const T1 &lhs, const class_instance<T> &) {
   php_warning("Second argument of operator '/' is object");
   return lhs;
 }
-
 
 template<class T>
 double divide(const array<T> &, const array<T> &) {
@@ -759,7 +765,6 @@ double divide(const class_instance<T1> &, const array<T> &) {
   return 0.0;
 }
 
-
 int64_t modulo(int64_t lhs, int64_t rhs) {
   if (rhs == 0) {
     php_warning("Modulo by zero");
@@ -787,12 +792,10 @@ int64_t modulo(const T1 &lhs, const T2 &rhs) {
   return div % mod;
 }
 
-
 template<class T1, class T2>
 T1 &divide_self(T1 &lhs, const T2 &rhs) {
   return lhs = divide(lhs, rhs);
 }
-
 
 int64_t &modulo_self(int64_t &lhs, int64_t rhs) {
   return lhs = modulo(lhs, rhs);
@@ -802,7 +805,6 @@ template<class T1, class T2>
 T1 &modulo_self(T1 &lhs, const T2 &rhs) {
   return lhs = modulo(lhs, rhs);
 }
-
 
 template<class T0, class T>
 void assign(T0 &dest, const T &from) {
@@ -825,7 +827,6 @@ const bool &boolval_ref(const mixed &val) {
   return val.as_bool("unknown");
 }
 
-
 int64_t &intval_ref(int64_t &val, const char *) {
   return val;
 }
@@ -841,7 +842,6 @@ const int64_t &intval_ref(const int64_t &val, const char *) {
 const int64_t &intval_ref(const mixed &val, const char *function) {
   return val.as_int(function);
 }
-
 
 double &floatval_ref(double &val) {
   return val;
@@ -859,7 +859,6 @@ const double &floatval_ref(const mixed &val) {
   return val.as_float("unknown");
 }
 
-
 string &strval_ref(string &val, const char *) {
   return val;
 }
@@ -875,7 +874,6 @@ const string &strval_ref(const string &val, const char *) {
 const string &strval_ref(const mixed &val, const char *function) {
   return val.as_string(function);
 }
-
 
 template<class T>
 array<T> &arrayval_ref(array<T> &val, const char *) {
@@ -968,7 +966,6 @@ mixed convert_to<mixed>::convert(T1 &&val) {
   return mixed{std::forward<T1>(val)};
 }
 
-
 template<class T, class>
 inline bool f$empty(const T &v) {
   return v == 0;
@@ -986,7 +983,7 @@ bool f$empty(const array<T> &a) {
 
 template<class T>
 bool f$empty(const class_instance<T> &o) {
-  return o.is_null();   // false/null inside instance (in PHP, empty(false)=true behaves identically)
+  return o.is_null(); // false/null inside instance (in PHP, empty(false)=true behaves identically)
 }
 
 bool f$empty(const mixed &v) {
@@ -1004,7 +1001,7 @@ int64_t f$count(const mixed &v) {
 
 template<class T>
 int64_t f$count(const Optional<T> &a) {
-  auto count_lambda = [](const auto &v) { return f$count(v);};
+  auto count_lambda = [](const auto &v) { return f$count(v); };
   return call_fun_on_optional_value(count_lambda, a);
 }
 
@@ -1013,8 +1010,8 @@ int64_t f$count(const array<T> &a) {
   return a.count();
 }
 
-template<class ...Args>
-inline int64_t f$count(const std::tuple<Args...> &a __attribute__ ((unused))) {
+template<class... Args>
+inline int64_t f$count(const std::tuple<Args...> &a __attribute__((unused))) {
   return static_cast<int64_t>(std::tuple_size<std::tuple<Args...>>::value);
 }
 
@@ -1024,12 +1021,10 @@ int64_t f$count(const T &) {
   return 1;
 }
 
-
 template<class T>
 int64_t f$sizeof(const T &v) {
   return f$count(v);
 }
-
 
 template<class T>
 bool f$is_numeric(const T &) {
@@ -1050,7 +1045,6 @@ inline bool f$is_numeric(const Optional<T> &v) {
   return v.has_value() ? f$is_numeric(v.val()) : false;
 }
 
-
 template<class T>
 bool f$is_null(const T &) {
   return false;
@@ -1070,7 +1064,6 @@ bool f$is_null(const mixed &v) {
   return v.is_null();
 }
 
-
 template<class T>
 bool f$is_bool(const T &) {
   return std::is_same<T, bool>::value;
@@ -1084,7 +1077,6 @@ inline bool f$is_bool(const Optional<T> &v) {
 bool f$is_bool(const mixed &v) {
   return v.is_bool();
 }
-
 
 template<class T>
 bool f$is_int(const T &) {
@@ -1101,7 +1093,6 @@ bool f$is_int(const mixed &v) {
   return v.is_int();
 }
 
-
 template<class T>
 bool f$is_float(const T &) {
   return std::is_same<T, double>::value;
@@ -1116,7 +1107,6 @@ bool f$is_float(const mixed &v) {
   return v.is_float();
 }
 
-
 template<class T>
 bool f$is_scalar(const T &) {
   return std::is_arithmetic<T>::value || std::is_same<T, string>::value;
@@ -1124,14 +1114,13 @@ bool f$is_scalar(const T &) {
 
 template<class T>
 inline bool f$is_scalar(const Optional<T> &v) {
-  auto is_scalar_lambda = [](const auto &v) { return f$is_scalar(v);};
+  auto is_scalar_lambda = [](const auto &v) { return f$is_scalar(v); };
   return call_fun_on_optional_value(is_scalar_lambda, v);
 }
 
 bool f$is_scalar(const mixed &v) {
   return v.is_scalar();
 }
-
 
 template<class T>
 bool f$is_string(const T &) {
@@ -1146,7 +1135,6 @@ inline bool f$is_string(const Optional<T> &v) {
 bool f$is_string(const mixed &v) {
   return v.is_string();
 }
-
 
 template<class T>
 inline bool f$is_array(const T &) {
@@ -1171,7 +1159,6 @@ template<class T>
 bool f$is_object(const class_instance<T> &v) {
   return !v.is_null();
 }
-
 
 template<class T>
 bool f$is_integer(const T &v) {
@@ -1223,13 +1210,11 @@ const char *get_type_c_str(const class_instance<T> &) {
   return "object";
 }
 
-
 template<class T>
 string f$get_type(const T &v) {
   const char *res = get_type_c_str(v);
   return {res, static_cast<string::size_type>(strlen(res))};
 }
-
 
 string f$get_class(bool) {
   php_warning("Called get_class() on boolean");
@@ -1309,7 +1294,6 @@ T0 &append(T0 &dest, const T &from) {
   return dest;
 }
 
-
 string f$gettype(const mixed &v) {
   return v.get_type_str();
 }
@@ -1318,7 +1302,6 @@ template<class T>
 bool f$function_exists(const T &) {
   return true;
 }
-
 
 mixed f$error_get_last() {
   return {};
@@ -1365,25 +1348,21 @@ int64_t f$memory_get_total_usage() {
 
 array<int64_t> f$memory_get_detailed_stats() {
   const auto &stats = dl::get_script_memory_stats();
-  return array<int64_t>(
-    {
-      std::make_pair(string{"memory_limit"}, static_cast<int64_t>(stats.memory_limit)),
-      std::make_pair(string{"real_memory_used"}, static_cast<int64_t>(stats.real_memory_used)),
-      std::make_pair(string{"memory_used"}, static_cast<int64_t>(stats.memory_used)),
-      std::make_pair(string{"max_real_memory_used"}, static_cast<int64_t>(stats.max_real_memory_used)),
-      std::make_pair(string{"max_memory_used"}, static_cast<int64_t>(stats.max_memory_used)),
-      std::make_pair(string{"defragmentation_calls"}, static_cast<int64_t>(stats.defragmentation_calls)),
-      std::make_pair(string{"huge_memory_pieces"}, static_cast<int64_t>(stats.huge_memory_pieces)),
-      std::make_pair(string{"small_memory_pieces"}, static_cast<int64_t>(stats.small_memory_pieces)),
-      std::make_pair(string{"heap_memory_used"}, static_cast<int64_t>(dl::get_heap_memory_used()))
-    });
+  return array<int64_t>({std::make_pair(string{"memory_limit"}, static_cast<int64_t>(stats.memory_limit)),
+                         std::make_pair(string{"real_memory_used"}, static_cast<int64_t>(stats.real_memory_used)),
+                         std::make_pair(string{"memory_used"}, static_cast<int64_t>(stats.memory_used)),
+                         std::make_pair(string{"max_real_memory_used"}, static_cast<int64_t>(stats.max_real_memory_used)),
+                         std::make_pair(string{"max_memory_used"}, static_cast<int64_t>(stats.max_memory_used)),
+                         std::make_pair(string{"defragmentation_calls"}, static_cast<int64_t>(stats.defragmentation_calls)),
+                         std::make_pair(string{"huge_memory_pieces"}, static_cast<int64_t>(stats.huge_memory_pieces)),
+                         std::make_pair(string{"small_memory_pieces"}, static_cast<int64_t>(stats.small_memory_pieces)),
+                         std::make_pair(string{"heap_memory_used"}, static_cast<int64_t>(dl::get_heap_memory_used()))});
 }
 
 std::tuple<int64_t, int64_t> f$memory_get_allocations() {
   const auto &stats = dl::get_script_memory_stats();
   return {stats.total_allocations, stats.total_memory_allocated};
 }
-
 
 template<class T>
 int64_t f$get_reference_counter(const array<T> &v) {
@@ -1402,7 +1381,6 @@ int64_t f$get_reference_counter(const string &v) {
 int64_t f$get_reference_counter(const mixed &v) {
   return v.get_reference_counter();
 }
-
 
 template<class T>
 T &val(T &x) {
@@ -1434,7 +1412,6 @@ T &ref(Optional<T> &x) {
   return x.ref();
 }
 
-
 template<class T>
 typename array<T>::iterator begin(array<T> &x) {
   return x.begin();
@@ -1450,7 +1427,6 @@ typename array<T>::const_iterator const_begin(const array<T> &x) {
   return x.begin();
 }
 
-
 array<mixed>::iterator begin(mixed &x) {
   return x.begin();
 }
@@ -1462,7 +1438,6 @@ array<mixed>::const_iterator begin(const mixed &x) {
 array<mixed>::const_iterator const_begin(const mixed &x) {
   return x.begin();
 }
-
 
 template<class T>
 typename array<T>::iterator begin(Optional<array<T>> &x) {
@@ -1487,7 +1462,6 @@ typename array<T>::const_iterator const_begin(const Optional<array<T>> &x) {
   }
   return x.val().begin();
 }
-
 
 template<class T>
 typename array<T>::iterator end(array<T> &x) {
@@ -1516,7 +1490,6 @@ array<mixed>::const_iterator const_end(const mixed &x) {
   return x.end();
 }
 
-
 template<class T>
 typename array<T>::iterator end(Optional<array<T>> &x) {
   return x.val().end();
@@ -1531,7 +1504,6 @@ template<class T>
 typename array<T>::const_iterator const_end(const Optional<array<T>> &x) {
   return x.val().end();
 }
-
 
 void clear_array(mixed &v) {
   v.clear();
@@ -1562,7 +1534,7 @@ void unset(mixed &x) {
 }
 
 template<typename T>
-inline decltype(auto) check_not_null(T&& val) {
+inline decltype(auto) check_not_null(T &&val) {
   if (f$is_null(val)) {
     php_warning("not_null is called on null");
   }
@@ -1570,7 +1542,7 @@ inline decltype(auto) check_not_null(T&& val) {
 }
 
 template<typename T>
-inline decltype(auto) check_not_false(T&& val) {
+inline decltype(auto) check_not_false(T &&val) {
   if (f$is_bool(val) && !f$boolval(val)) {
     php_warning("not_false is called on false");
   }

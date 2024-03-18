@@ -47,8 +47,8 @@ public:
   }
 
 private:
-  ConfdataLocalManager() :
-    global_manager_{ConfdataGlobalManager::get()} {};
+  ConfdataLocalManager()
+    : global_manager_{ConfdataGlobalManager::get()} {};
 
   ConfdataGlobalManager &global_manager_;
   const ConfdataSample *acquired_sample_{nullptr};
@@ -176,8 +176,7 @@ array<mixed> f$confdata_get_values_by_any_wildcard(const string &wildcard) noexc
         break;
       case ConfdataFirstKeyType::predefined_wildcard:
         // not a subset of any other prefixes
-        if (!vk::contains(section_wildcard, ".") &&
-            predefined_wildcards.is_most_common_predefined_wildcard(section_wildcard)) {
+        if (!vk::contains(section_wildcard, ".") && predefined_wildcards.is_most_common_predefined_wildcard(section_wildcard)) {
           merge_into_result(it);
         }
         break;

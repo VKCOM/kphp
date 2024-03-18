@@ -8,7 +8,6 @@
 
 #include "compiler/function-pass.h"
 
-
 class AnalyzePerformance final : public FunctionPassBase {
 public:
   std::string get_description() final {
@@ -26,6 +25,7 @@ public:
     PerformanceInspections::Inspections inspection;
     std::string description;
   };
+
 private:
   void analyze_func_call(VertexAdaptor<op_func_call> op_func_call_vertex) noexcept;
   void analyze_set(VertexAdaptor<op_set> op_set_vertex) noexcept;

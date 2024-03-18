@@ -82,24 +82,10 @@ const KnownJsonAttr AllJsonAttrs::ALL_ATTRS[] = {
   KnownJsonAttr("fields", json_attr_fields),
 };
 
-static constexpr int ATTRS_ALLOWED_FOR_FIELD =
-  json_attr_rename |
-  json_attr_skip |
-  json_attr_array_as_hashmap |
-  json_attr_raw_string |
-  json_attr_required |
-  json_attr_float_precision |
-  json_attr_skip_if_default |
-  0;
+static constexpr int ATTRS_ALLOWED_FOR_FIELD = json_attr_rename | json_attr_skip | json_attr_array_as_hashmap | json_attr_raw_string | json_attr_required
+                                               | json_attr_float_precision | json_attr_skip_if_default | 0;
 static constexpr int ATTRS_ALLOWED_FOR_CLASS =
-  json_attr_float_precision |
-  json_attr_skip_if_default |
-  json_attr_visibility_policy |
-  json_attr_rename_policy |
-  json_attr_flatten |
-  json_attr_fields |
-  0;
-
+  json_attr_float_precision | json_attr_skip_if_default | json_attr_visibility_policy | json_attr_rename_policy | json_attr_flatten | json_attr_fields | 0;
 
 static bool does_type_hint_allow_null(const TypeHint *type_hint) noexcept {
   if (const auto *as_optional = type_hint->try_as<TypeHintOptional>()) {
@@ -138,8 +124,7 @@ static RenamePolicy parse_rename_policy(vk::string_view rhs) noexcept {
   if (rhs == "camelCase") {
     return RenamePolicy::camel_case;
   }
-  kphp_error(rhs == "none",
-             fmt_format("@kphp-json '{}' should be none|snake_case|camelCase, got '{}'", AllJsonAttrs::type2name(json_attr_rename_policy), rhs));
+  kphp_error(rhs == "none", fmt_format("@kphp-json '{}' should be none|snake_case|camelCase, got '{}'", AllJsonAttrs::type2name(json_attr_rename_policy), rhs));
   return RenamePolicy::none;
 }
 
@@ -147,8 +132,7 @@ static VisibilityPolicy parse_visibility_policy(vk::string_view rhs) noexcept {
   if (rhs == "all") {
     return VisibilityPolicy::all;
   }
-  kphp_error(rhs == "public",
-             fmt_format("@kphp-json '{}' should be all|public, got '{}'", AllJsonAttrs::type2name(json_attr_visibility_policy), rhs));
+  kphp_error(rhs == "public", fmt_format("@kphp-json '{}' should be all|public, got '{}'", AllJsonAttrs::type2name(json_attr_visibility_policy), rhs));
   return VisibilityPolicy::public_only;
 }
 
@@ -192,8 +176,7 @@ static bool parse_bool_or_true_if_nothing(JsonAttrType attr_type, vk::string_vie
   if (rhs.empty() || rhs == "true" || rhs == "1") {
     return true;
   }
-  kphp_error(rhs == "false" || rhs == "0",
-             fmt_format("@kphp-json '{}' should be empty or true|false, got '{}'", AllJsonAttrs::type2name(attr_type), rhs));
+  kphp_error(rhs == "false" || rhs == "0", fmt_format("@kphp-json '{}' should be empty or true|false, got '{}'", AllJsonAttrs::type2name(attr_type), rhs));
   return false;
 }
 
@@ -260,7 +243,6 @@ static KphpJsonTag parse_kphp_json_tag(FunctionPtr resolve_context, vk::string_v
   return json_tag;
 }
 
-
 void KphpJsonTagList::add_tag(const KphpJsonTag &json_tag) {
   // when adding, check for duplicates
   // if both 'for' and no-'for' for the same attr exist, 'for' must be placed below: it allows linear pattern matching
@@ -268,13 +250,16 @@ void KphpJsonTagList::add_tag(const KphpJsonTag &json_tag) {
     if (existing.attr_type == json_tag.attr_type) {
       if (existing.for_encoder == json_tag.for_encoder) {
         kphp_error(existing.for_encoder, fmt_format("@kphp-json '{}' is duplicated", AllJsonAttrs::type2name(json_tag.attr_type)));
-        kphp_error(!existing.for_encoder, fmt_format("@kphp-json for {} '{}' is duplicated", existing.for_encoder->as_human_readable(), AllJsonAttrs::type2name(json_tag.attr_type)));
+        kphp_error(!existing.for_encoder,
+                   fmt_format("@kphp-json for {} '{}' is duplicated", existing.for_encoder->as_human_readable(), AllJsonAttrs::type2name(json_tag.attr_type)));
       } else if (existing.for_encoder) {
-        kphp_error(json_tag.for_encoder, fmt_format("@kphp-json for {} '{}' should be placed below @kphp-json '{}' without for", existing.for_encoder->as_human_readable(), AllJsonAttrs::type2name(json_tag.attr_type), AllJsonAttrs::type2name(json_tag.attr_type)));
+        kphp_error(json_tag.for_encoder,
+                   fmt_format("@kphp-json for {} '{}' should be placed below @kphp-json '{}' without for", existing.for_encoder->as_human_readable(),
+                              AllJsonAttrs::type2name(json_tag.attr_type), AllJsonAttrs::type2name(json_tag.attr_type)));
       }
     }
   }
-  
+
   tags.emplace_back(json_tag);
 }
 
@@ -296,7 +281,8 @@ void KphpJsonTagList::validate_tags_compatibility(ClassPtr above_class) const {
       case json_attr_fields:
         if (above_class) {
           for (const auto &field_name : split_skipping_delimeters(tag.fields, ",")) {
-            kphp_error(above_class->members.has_field(field_name), fmt_format("@kphp-json 'fields' specifies '{}', but such field doesn't exist in class {}", field_name, above_class->as_human_readable()));
+            kphp_error(above_class->members.has_field(field_name), fmt_format("@kphp-json 'fields' specifies '{}', but such field doesn't exist in class {}",
+                                                                              field_name, above_class->as_human_readable()));
           }
         }
       default:
@@ -319,8 +305,7 @@ void KphpJsonTagList::check_flatten_class(ClassPtr flatten_class) const {
     }
   });
 
-  kphp_error(members_count == 1,
-             "@kphp-json 'flatten' class must have exactly one field");
+  kphp_error(members_count == 1, "@kphp-json 'flatten' class must have exactly one field");
   kphp_error(!flatten_class->parent_class && flatten_class->derived_classes.empty(),
              "@kphp-json 'flatten' class can not extend anything or have derived classes");
 }
@@ -349,7 +334,6 @@ const KphpJsonTagList *KphpJsonTagList::create_from_phpdoc(FunctionPtr resolve_c
   list->validate_tags_compatibility(above_class);
   return list;
 }
-
 
 std::string transform_json_name_to(RenamePolicy policy, vk::string_view name) noexcept {
   switch (policy) {
@@ -411,7 +395,7 @@ FieldJsonSettings merge_and_inherit_json_tags(const ClassMemberInstanceField &fi
   for (const KphpJsonTag &encoder_const : *json_encoder->kphp_json_tags) {
     const KphpJsonTag *override_klass_tag{nullptr};
     if (klass->kphp_json_tags) {
-      override_klass_tag = klass->kphp_json_tags->find_tag([encoder_const, json_encoder](const KphpJsonTag &tag){
+      override_klass_tag = klass->kphp_json_tags->find_tag([encoder_const, json_encoder](const KphpJsonTag &tag) {
         return tag.attr_type == encoder_const.attr_type && (!tag.for_encoder || tag.for_encoder == json_encoder);
       });
     }

@@ -9,8 +9,8 @@
 #include <stddef.h>
 #include <sys/socket.h>
 
-#include "common/macos-ports.h"
 #include "common/kprintf.h"
+#include "common/macos-ports.h"
 
 #include "net/net-buffers.h"
 #include "net/net-events.h"
@@ -30,29 +30,29 @@ DECLARE_VERBOSITY(net_connections);
 #define SKIP_ALL_BYTES (0x80000000)
 
 /* for connection flags */
-#define C_WANTRD    0x00000001
-#define C_WANTWR    0x00000002
-#define C_WANTRW    (C_WANTRD | C_WANTWR)
-#define C_INCONN    0x00000004
-#define C_ERROR     0x00000008
-#define C_NORD      0x00000010
-#define C_NOWR      0x00000020
-#define C_NORW      (C_NORD | C_NOWR)
-#define C_INQUERY   0x00000040
-#define C_FAILED    0x00000080
-#define C_ALARM     0x00000100
-#define C_AIO       0x00000200
+#define C_WANTRD 0x00000001
+#define C_WANTWR 0x00000002
+#define C_WANTRW (C_WANTRD | C_WANTWR)
+#define C_INCONN 0x00000004
+#define C_ERROR 0x00000008
+#define C_NORD 0x00000010
+#define C_NOWR 0x00000020
+#define C_NORW (C_NORD | C_NOWR)
+#define C_INQUERY 0x00000040
+#define C_FAILED 0x00000080
+#define C_ALARM 0x00000100
+#define C_AIO 0x00000200
 #define C_INTIMEOUT 0x00000400
-#define C_STOPREAD  0x00000800
-#define C_REPARSE   0x00001000
-#define C_DFLUSH    0x00002000
-#define C_IPV6      0x00004000
-#define C_FAKE      0x00008000
-#define C_SPECIAL   0x00010000
-#define C_NOQACK    0x00020000
-#define C_RAWMSG    0x00040000
-#define C_UNIX      0x00080000
-#define C_CRYPTOIN  0x00100000
+#define C_STOPREAD 0x00000800
+#define C_REPARSE 0x00001000
+#define C_DFLUSH 0x00002000
+#define C_IPV6 0x00004000
+#define C_FAKE 0x00008000
+#define C_SPECIAL 0x00010000
+#define C_NOQACK 0x00020000
+#define C_RAWMSG 0x00040000
+#define C_UNIX 0x00080000
+#define C_CRYPTOIN 0x00100000
 #define C_CRYPTOOUT 0x00200000
 
 #define C_PERMANENT (C_IPV6 | C_RAWMSG | C_UNIX)
@@ -107,26 +107,26 @@ typedef struct conn_functions {
   int magic;
   int flags; /* may contain for example C_RAWMSG; (partially) inherited by inbound/outbound connections */
   const char *title;
-  int (*accept)(struct connection *c);         /* invoked for listen/accept connections of this type */
-  int (*init_accepted)(struct connection *c);  /* initialize a new accept()'ed connection */
-  int (*create_outbound)(const struct sockaddr_storage *endpoint);  /* creates new outbound fd */
-  int (*run)(struct connection *c);            /* invoked when an event related to connection of this type occurs */
-  int (*reader)(struct connection *c);         /* invoked from run() for reading network data */
-  int (*writer)(struct connection *c);         /* invoked from run() for writing data */
-  int (*close)(struct connection *c, int who); /* invoked from run() whenever we need to close connection */
-  int (*free_buffers)(struct connection *c);   /* invoked from close() to free all buffers */
-  int (*parse_execute)(struct connection *c);  /* invoked from reader() for parsing and executing one query */
-  int (*init_outbound)(struct connection *c);  /* initializes newly created outbound connection */
-  int (*connected)(struct connection *c);      /* invoked from run() when outbound connection is established */
-  int (*wakeup)(struct connection *c);         /* invoked from run() when pending_queries == 0 */
-  int (*alarm)(struct connection *c);          /* invoked when timer is out */
+  int (*accept)(struct connection *c);                             /* invoked for listen/accept connections of this type */
+  int (*init_accepted)(struct connection *c);                      /* initialize a new accept()'ed connection */
+  int (*create_outbound)(const struct sockaddr_storage *endpoint); /* creates new outbound fd */
+  int (*run)(struct connection *c);                                /* invoked when an event related to connection of this type occurs */
+  int (*reader)(struct connection *c);                             /* invoked from run() for reading network data */
+  int (*writer)(struct connection *c);                             /* invoked from run() for writing data */
+  int (*close)(struct connection *c, int who);                     /* invoked from run() whenever we need to close connection */
+  int (*free_buffers)(struct connection *c);                       /* invoked from close() to free all buffers */
+  int (*parse_execute)(struct connection *c);                      /* invoked from reader() for parsing and executing one query */
+  int (*init_outbound)(struct connection *c);                      /* initializes newly created outbound connection */
+  int (*connected)(struct connection *c);                          /* invoked from run() when outbound connection is established */
+  int (*wakeup)(struct connection *c);                             /* invoked from run() when pending_queries == 0 */
+  int (*alarm)(struct connection *c);                              /* invoked when timer is out */
   int (*ready_to_write)(struct connection *c); /* invoked from server_writer when Out.total_bytes crosses write_low_watermark ("greater or equal" -> "less") */
   int (*check_ready)(struct connection *c);    /* updates conn->ready if necessary and returns it */
   int (*wakeup_aio)(struct connection *c, int r);    /* invoked from net_aio.c::check_aio_completion when aio read operation is complete */
   int (*data_received)(struct connection *c, int r); /* invoked after r>0 bytes are read from socket */
   int (*data_sent)(struct connection *c, int w);     /* invoked after w>0 bytes are written into socket */
-  void (*ancillary_data_received)(struct connection *c, const struct cmsghdr* cmsg);
-  int (*flush)(struct connection *c);                /* generates necessary padding and writes as much bytes as possible */
+  void (*ancillary_data_received)(struct connection *c, const struct cmsghdr *cmsg);
+  int (*flush)(struct connection *c);                                         /* generates necessary padding and writes as much bytes as possible */
   int (*crypto_init)(struct connection *c, void *key_data, int key_data_len); /* < 0 = error */
   int (*crypto_free)(struct connection *c);
   int (*crypto_encrypt_output)(struct connection *c);      /* 0 = all ok, >0 = so much more bytes needed to encrypt last block */
@@ -256,9 +256,8 @@ static inline int init_listening_tcpv6_connection(int fd, conn_type_t *type, voi
   return init_listening_connection_mode(fd, type, extra, mode);
 }
 
-connection_t* lock_fake_connection();
+connection_t *lock_fake_connection();
 void unlock_fake_connection(connection_t *c);
-
 
 /* default methods */
 int accept_new_connections(struct connection *c);
@@ -333,7 +332,9 @@ int write_out_chk(struct connection *c, const void *data, int len);
 void cond_dump_connection_buffers_stats();
 void dump_connection_buffers_stats();
 
-static inline int is_ipv6_localhost(unsigned char ipv6[16]) { return !*(long long *)ipv6 && ((long long *)ipv6)[1] == 1LL << 56; }
+static inline int is_ipv6_localhost(unsigned char ipv6[16]) {
+  return !*(long long *)ipv6 && ((long long *)ipv6)[1] == 1LL << 56;
+}
 
 double get_recent_idle_percent();
 

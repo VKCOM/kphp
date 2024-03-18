@@ -12,9 +12,9 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/define-data.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/generics-mixins.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
-#include "compiler/data/generics-mixins.h"
 #include "compiler/lambda-utils.h"
 #include "compiler/lexer.h"
 #include "compiler/name-gen.h"
@@ -22,21 +22,24 @@
 #include "compiler/stage.h"
 #include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
-#include "compiler/vertex.h"
 #include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
-#define CE(x) if (!(x)) {return {};}
+#define CE(x)                                                                                                                                                  \
+  if (!(x)) {                                                                                                                                                  \
+    return {};                                                                                                                                                 \
+  }
 
-GenTree::GenTree(std::vector<Token> tokens, SrcFilePtr file, DataStream<FunctionPtr> &os) :
-  tokens(std::move(tokens)),
-  parsed_os(os),
-  cur(this->tokens.begin()),
-  end(this->tokens.end()),
-  processing_file(file) {                  // = stage::get_file()
+GenTree::GenTree(std::vector<Token> tokens, SrcFilePtr file, DataStream<FunctionPtr> &os)
+  : tokens(std::move(tokens))
+  , parsed_os(os)
+  , cur(this->tokens.begin())
+  , end(this->tokens.end())
+  , processing_file(file) { // = stage::get_file()
 
-  kphp_assert (cur != end);
+  kphp_assert(cur != end);
   end--;
-  kphp_assert (end->type() == tok_end);
+  kphp_assert(end->type() == tok_end);
 
   line_num = cur->line_num;
   stage::set_line(line_num);
@@ -52,26 +55,28 @@ void GenTree::next_cur() {
   }
 }
 
-#define expect_msg(msg) ({ \
-  fmt_format ("Expected {}, found '{}'", msg, cur == end ? "END OF FILE" : cur->to_str().c_str()); \
-})
+#define expect_msg(msg) ({ fmt_format("Expected {}, found '{}'", msg, cur == end ? "END OF FILE" : cur->to_str().c_str()); })
 
-#define expect(tp, msg) ({ \
-  bool res__;\
-  if (kphp_error (test_expect (tp), expect_msg(msg))) {\
-    res__ = false;\
-  } else {\
-    next_cur();\
-    res__ = true;\
-  }\
-  res__; \
-})
+#define expect(tp, msg)                                                                                                                                        \
+  ({                                                                                                                                                           \
+    bool res__;                                                                                                                                                \
+    if (kphp_error(test_expect(tp), expect_msg(msg))) {                                                                                                        \
+      res__ = false;                                                                                                                                           \
+    } else {                                                                                                                                                   \
+      next_cur();                                                                                                                                              \
+      res__ = true;                                                                                                                                            \
+    }                                                                                                                                                          \
+    res__;                                                                                                                                                     \
+  })
 
-#define expect2(tp1, tp2, msg) ({ \
-  kphp_error (test_expect (tp1) || test_expect (tp2), expect_msg(msg)); \
-  if (cur != end) {next_cur();} \
-  1;\
-})
+#define expect2(tp1, tp2, msg)                                                                                                                                 \
+  ({                                                                                                                                                           \
+    kphp_error(test_expect(tp1) || test_expect(tp2), expect_msg(msg));                                                                                         \
+    if (cur != end) {                                                                                                                                          \
+      next_cur();                                                                                                                                              \
+    }                                                                                                                                                          \
+    1;                                                                                                                                                         \
+  })
 
 VertexAdaptor<op_var> GenTree::get_var_name() {
   auto location = auto_location();
@@ -129,7 +134,7 @@ inline void GenTree::skip_phpdoc_tokens() {
   // consider the phpdocs in unexpected locations like array or return to be an ordinary comment
   // (usually such phpdocs contain @see or some text, they don't have @var annotations)
   while (cur->type() == tok_phpdoc) {
-    //kphp_error(cur->str_val.find("@var") == std::string::npos, "@var would not be analyzed");
+    // kphp_error(cur->str_val.find("@var") == std::string::npos, "@var would not be analyzed");
     next_cur();
   }
   // phpdoc comments that need to be analyzed don't come here: see op_phpdoc_var
@@ -137,7 +142,7 @@ inline void GenTree::skip_phpdoc_tokens() {
 
 template<Operation EmptyOp, class FuncT, class ResultType>
 bool GenTree::gen_list(std::vector<ResultType> *res, FuncT f, TokenType delim) {
-  //Do not clear res. Result must be appended to it.
+  // Do not clear res. Result must be appended to it.
   bool prev_delim = false;
   bool next_delim = true;
 
@@ -187,7 +192,7 @@ VertexAdaptor<Op> GenTree::get_conv() {
   auto location = auto_location();
   next_cur();
   VertexPtr converted_expression = get_expression();
-  CE (!kphp_error(converted_expression, "get_conv failed"));
+  CE(!kphp_error(converted_expression, "get_conv failed"));
   return VertexAdaptor<Op>::create(converted_expression).set_location(location);
 }
 
@@ -212,18 +217,18 @@ VertexAdaptor<Op> GenTree::get_func_call() {
 
   GenericsInstantiationPhpComment *commentTs{nullptr};
   if constexpr (Op == op_func_call) {
-    if (test_expect(tok_commentTs)) {   // f/*<...>*/(args)
+    if (test_expect(tok_commentTs)) { // f/*<...>*/(args)
       commentTs = parse_php_commentTs(cur->str_val);
       next_cur();
     }
   }
 
-  CE (expect(tok_oppar, "'('"));
+  CE(expect(tok_oppar, "'('"));
   skip_phpdoc_tokens();
   std::vector<VertexPtr> next;
   bool ok_next = gen_list<EmptyOp>(&next, &GenTree::get_expression, tok_comma);
-  CE (!kphp_error(ok_next, "get argument list failed"));
-  CE (expect(tok_clpar, "')'"));
+  CE(!kphp_error(ok_next, "get argument list failed"));
+  CE(expect(tok_clpar, "')'"));
 
   auto call = VertexAdaptor<Op>::create_vararg(next).set_location(location);
 
@@ -246,12 +251,11 @@ VertexAdaptor<op_array> GenTree::get_short_array() {
 
   std::vector<VertexPtr> arr_elements;
   bool ok_next = gen_list<op_lvalue_null>(&arr_elements, &GenTree::get_expression, tok_comma);
-  CE (!kphp_error(ok_next, "get short array failed"));
-  CE (expect(tok_clbrk, "']'"));
+  CE(!kphp_error(ok_next, "get short array failed"));
+  CE(expect(tok_clbrk, "']'"));
 
   return VertexAdaptor<op_array>::create(arr_elements).set_location(location);
 }
-
 
 VertexAdaptor<op_string> GenTree::get_string() {
   auto str = VertexAdaptor<op_string>::create().set_location(auto_location());
@@ -267,7 +271,7 @@ VertexAdaptor<op_string_build> GenTree::get_string_build() {
   std::vector<VertexPtr> strings;
   bool after_simple_expression = false;
   while (cur != end && cur->type() != tok_str_end) {
-    CE (vk::any_of_equal(cur->type(), tok_str, tok_expr_begin)); // make sure we handle all possible tokens
+    CE(vk::any_of_equal(cur->type(), tok_str, tok_expr_begin)); // make sure we handle all possible tokens
     if (cur->type() == tok_str) {
       strings.push_back(get_string());
       if (after_simple_expression) {
@@ -284,18 +288,18 @@ VertexAdaptor<op_string_build> GenTree::get_string_build() {
       next_cur();
 
       VertexPtr add = get_expression();
-      CE (!kphp_error(add, "Bad expression in string"));
+      CE(!kphp_error(add, "Bad expression in string"));
       strings.push_back(add);
 
-      CE (expect(tok_expr_end, "'}'"));
+      CE(expect(tok_expr_end, "'}'"));
     }
   }
-  CE (expect(tok_str_end, "'\"'"));
+  CE(expect(tok_str_end, "'\"'"));
   return VertexAdaptor<op_string_build>::create(strings).set_location(sb_location);
 }
 
 VertexPtr GenTree::get_postfix_expression(VertexPtr res, bool parenthesized) {
-  //postfix operators x++, x--, x[] and x{}, x->y, x()
+  // postfix operators x++, x--, x[] and x{}, x->y, x()
   bool need = true;
   while (need && cur != end) {
     auto op = cur;
@@ -307,23 +311,23 @@ VertexPtr GenTree::get_postfix_expression(VertexPtr res, bool parenthesized) {
       res = v;
       need = true;
       next_cur();
-      CE (!kphp_error(!parenthesized, "Expected variable, found parenthesized expression"));
+      CE(!kphp_error(!parenthesized, "Expected variable, found parenthesized expression"));
     } else if (tp == tok_dec) {
       auto v = VertexAdaptor<op_postfix_dec>::create(res).set_location(auto_location());
       res = v;
       need = true;
       next_cur();
-      CE (!kphp_error(!parenthesized, "Expected variable, found parenthesized expression"));
+      CE(!kphp_error(!parenthesized, "Expected variable, found parenthesized expression"));
     } else if (tp == tok_opbrk || tp == tok_opbrc) {
       auto location = auto_location();
       next_cur();
       VertexPtr i = get_expression();
       if (tp == tok_opbrk) {
-        CE (expect(tok_clbrk, "']'"));
+        CE(expect(tok_clbrk, "']'"));
       } else {
-        CE (expect(tok_clbrc, "'}'"));
+        CE(expect(tok_clbrc, "'}'"));
       }
-      //TODO: it should be to separate operations
+      // TODO: it should be to separate operations
       if (!i) {
         auto v = VertexAdaptor<op_index>::create(res);
         res = v;
@@ -337,7 +341,7 @@ VertexPtr GenTree::get_postfix_expression(VertexPtr res, bool parenthesized) {
       auto location = auto_location();
       next_cur();
       VertexPtr rhs = get_expr_top(true);
-      CE (!kphp_error(rhs, "Failed to parse right argument of '->'"));
+      CE(!kphp_error(rhs, "Failed to parse right argument of '->'"));
       res = process_arrow(res, rhs);
       CE(res);
       res.set_location(location);
@@ -349,14 +353,12 @@ VertexPtr GenTree::get_postfix_expression(VertexPtr res, bool parenthesized) {
       std::vector<VertexPtr> next;
       next.emplace_back(res);
       bool ok_next = gen_list<op_none>(&next, &GenTree::get_expression, tok_comma);
-      CE (!kphp_error(ok_next, "get argument list failed"));
-      CE (expect(tok_clpar, "')'"));
+      CE(!kphp_error(ok_next, "get argument list failed"));
+      CE(expect(tok_clpar, "')'"));
 
       res = VertexAdaptor<op_invoke_call>::create(next).set_location(location);
       need = true;
     }
-
-
   }
   return res;
 }
@@ -380,7 +382,7 @@ void GenTree::check_and_remove_num_separators(std::string &s) {
 }
 
 VertexPtr GenTree::get_op_num_const() {
-  auto get_vertex_with_str_val = [this] (auto vertex, std::string val) {
+  auto get_vertex_with_str_val = [this](auto vertex, std::string val) {
     auto res = decltype(vertex)::create();
     res.set_location(auto_location());
     res->str_val = std::move(val);
@@ -416,7 +418,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow, const PhpDocComment *phpdoc) {
   VertexPtr res, first_node;
   TokenType type = op->type();
 
-  auto get_vertex_with_str_val = [this] (auto vertex, std::string val) {
+  auto get_vertex_with_str_val = [this](auto vertex, std::string val) {
     auto res = decltype(vertex)::create();
     res.set_location(auto_location());
     res->str_val = std::move(val);
@@ -456,9 +458,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow, const PhpDocComment *phpdoc) {
       if (cur_function->is_lambda()) {
         fun_name = "{closure}";
       } else if (!cur_function->is_main_function()) {
-        fun_name = cur_class
-                   ? cur_class->name + "::" + cur_function->name.substr(cur_function->name.rfind('$') + 1)
-                   : cur_function->name;
+        fun_name = cur_class ? cur_class->name + "::" + cur_function->name.substr(cur_function->name.rfind('$') + 1) : cur_function->name;
       }
       res = get_vertex_with_str_val(VertexAdaptor<op_string>{}, fun_name);
       next_cur();
@@ -527,7 +527,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow, const PhpDocComment *phpdoc) {
     }
     case tok_var_name: {
       res = get_var_name();
-      if (cur->type() == tok_double_colon) {  // $class::method(), $class::$field, $class::CONST
+      if (cur->type() == tok_double_colon) { // $class::method(), $class::$field, $class::CONST
         res = get_member_by_name_after_var(res.as<op_var>());
       }
       return_flag = false;
@@ -535,7 +535,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow, const PhpDocComment *phpdoc) {
     }
     case tok_varg: {
       bool good_prefix = cur != tokens.begin() && vk::any_of_equal(std::prev(cur)->type(), tok_comma, tok_oppar, tok_opbrk);
-      CE (!kphp_error(good_prefix, "It's not allowed using `...` in this place"));
+      CE(!kphp_error(good_prefix, "It's not allowed using `...` in this place"));
 
       next_cur();
       res = get_expression();
@@ -568,7 +568,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow, const PhpDocComment *phpdoc) {
       auto location = auto_location();
       next_cur();
       first_node = get_expression();
-      CE (!kphp_error(first_node, "Failed to get print argument"));
+      CE(!kphp_error(first_node, "Failed to get print argument"));
       auto print = VertexAdaptor<op_func_call>::create(first_node).set_location(location);
       print->str_val = "print";
       res = print;
@@ -583,7 +583,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow, const PhpDocComment *phpdoc) {
 
     case tok_new: {
       next_cur();
-      if (test_expect(tok_func_name)) {   // 'new A()' / 'new \Some\Class($args)'
+      if (test_expect(tok_func_name)) { // 'new A()' / 'new \Some\Class($args)'
         auto func_call = get_func_call<op_func_call, op_none>();
         // Hack to be more compatible with php
         if (func_call->str_val == "Memcache") {
@@ -591,7 +591,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow, const PhpDocComment *phpdoc) {
         }
         res = gen_constructor_call_with_args(func_call->str_val, func_call->get_next(), func_call->location);
         CE(res);
-      } else if (test_expect(tok_var_name)) {   // 'new $class_name' / 'new $class_name(...$args)'
+      } else if (test_expect(tok_var_name)) { // 'new $class_name' / 'new $class_name(...$args)'
         res = get_by_name_construct();
         CE(res);
       } else {
@@ -633,14 +633,14 @@ VertexPtr GenTree::get_expr_top(bool was_arrow, const PhpDocComment *phpdoc) {
     case tok_fn:
       res = get_lambda_function(phpdoc, FunctionModifiers::nonmember());
       break;
-    case tok_phpdoc: {      // /** ... */ before expression (not before a statement)
+    case tok_phpdoc: { // /** ... */ before expression (not before a statement)
       vk::string_view phpdoc_str = cur->str_val;
       next_cur();
       return get_expr_top(was_arrow, new PhpDocComment(phpdoc_str));
     }
     case tok_isset: {
       auto temp = get_multi_call<op_isset, op_none>(&GenTree::get_expression, true);
-      CE (!kphp_error(temp->size(), "isset function requires at least one argument"));
+      CE(!kphp_error(temp->size(), "isset function requires at least one argument"));
       res = VertexPtr{};
       for (auto right : temp->args()) {
         res = res ? VertexPtr(VertexAdaptor<op_log_and>::create(res, right)) : right;
@@ -658,7 +658,7 @@ VertexPtr GenTree::get_expr_top(bool was_arrow, const PhpDocComment *phpdoc) {
       break;
     case tok_tuple:
       res = get_func_call<op_tuple, op_none>();
-      CE (!kphp_error(res.as<op_tuple>()->size(), "tuple() must have at least one argument"));
+      CE(!kphp_error(res.as<op_tuple>()->size(), "tuple() must have at least one argument"));
       break;
     case tok_shape:
       res = get_shape();
@@ -676,8 +676,8 @@ VertexPtr GenTree::get_expr_top(bool was_arrow, const PhpDocComment *phpdoc) {
     case tok_oppar:
       next_cur();
       res = get_expression();
-      CE (!kphp_error(res, "Failed to parse expression after '('"));
-      CE (expect(tok_clpar, "')'"));
+      CE(!kphp_error(res, "Failed to parse expression after '('"));
+      CE(expect(tok_clpar, "')'"));
       return_flag = false; // expression inside '()' is valid postfix expression operand
       parenthesized = true;
       break;
@@ -791,21 +791,18 @@ VertexPtr GenTree::get_binary_op(int op_priority_cur, bool till_ternary) {
     const bool left_to_right = OpInfo::fixity(binary_op_tp) == left_opp;
 
     next_cur();
-    VertexPtr right = ternary
-                      ? get_expression()
-                      : get_binary_op(op_priority_cur + left_to_right,
-                                      till_ternary && op_priority_cur >= OpInfo::ternaryP);
+    VertexPtr right = ternary ? get_expression() : get_binary_op(op_priority_cur + left_to_right, till_ternary && op_priority_cur >= OpInfo::ternaryP);
     if (!right && !ternary) {
-      kphp_error (0, fmt_format("Failed to parse second argument in [{}]", OpInfo::str(binary_op_tp)));
+      kphp_error(0, fmt_format("Failed to parse second argument in [{}]", OpInfo::str(binary_op_tp)));
       return {};
     }
 
     VertexPtr third;
     if (ternary) {
-      CE (expect(tok_colon, "':'"));
+      CE(expect(tok_colon, "':'"));
       third = get_expression_impl(true);
       if (!third) {
-        kphp_error (0, fmt_format("Failed to parse third argument in [{}]", OpInfo::str(binary_op_tp)));
+        kphp_error(0, fmt_format("Failed to parse third argument in [{}]", OpInfo::str(binary_op_tp)));
         return {};
       }
       if (right) {
@@ -862,7 +859,7 @@ VertexPtr GenTree::get_def_value() {
   if (cur->type() == tok_eq1) {
     next_cur();
     val = get_expression();
-    kphp_error (val, "Cannot parse function parameter");
+    kphp_error(val, "Cannot parse function parameter");
   }
 
   return val;
@@ -893,7 +890,7 @@ VertexAdaptor<op_func_param> GenTree::get_func_param() {
   }
 
   bool is_cast_param = false;
-  if (cur->type() == tok_triple_colon) {  // $x ::: string — a cast param
+  if (cur->type() == tok_triple_colon) { // $x ::: string — a cast param
     is_cast_param = true;
     next_cur();
     type_hint = get_typehint();
@@ -926,9 +923,9 @@ VertexAdaptor<op_func_param> GenTree::get_func_param() {
 std::pair<VertexAdaptor<op_foreach_param>, VertexPtr> GenTree::get_foreach_param() {
   auto location = auto_location();
   VertexPtr array_expression = get_expression();
-  CE (!kphp_error(array_expression, ""));
+  CE(!kphp_error(array_expression, ""));
 
-  CE (expect(tok_as, "'as'"));
+  CE(expect(tok_as, "'as'"));
   skip_phpdoc_tokens();
 
   VertexAdaptor<op_var> key;
@@ -940,7 +937,7 @@ std::pair<VertexAdaptor<op_foreach_param>, VertexPtr> GenTree::get_foreach_param
   // as we can't easily distinguish $k=>$v from just $v if
   // get_var_name_ref failed to parse a variable.
   auto tok = *cur;
-  CE (!kphp_error(value_expr, fmt_format("Expected a var name, ref or list, found {}", tok.str_val)));
+  CE(!kphp_error(value_expr, fmt_format("Expected a var name, ref or list, found {}", tok.str_val)));
 
   if (vk::any_of_equal(value_expr->type(), op_list_ce, op_array)) {
     value = VertexUtil::create_superlocal_var("list", cur_function);
@@ -954,7 +951,7 @@ std::pair<VertexAdaptor<op_foreach_param>, VertexPtr> GenTree::get_foreach_param
     key = value;
     tok = *cur;
     value = get_var_name_ref();
-    CE (!kphp_error(value, fmt_format("Expected a var name, ref or list as a foreach value, found {}", tok.str_val)));
+    CE(!kphp_error(value, fmt_format("Expected a var name, ref or list as a foreach value, found {}", tok.str_val)));
   }
 
   VertexPtr temp_var;
@@ -985,14 +982,14 @@ VertexAdaptor<op_seq> GenTree::get_multi_call(FuncT &&f, bool parenthesis) {
   next_cur();
 
   if (parenthesis) {
-    CE (expect(tok_oppar, "'('"));
+    CE(expect(tok_oppar, "'('"));
   }
 
   std::vector<ResultType> next;
   bool ok_next = gen_list<EmptyOp>(&next, f, tok_comma);
-  CE (!kphp_error(ok_next, "Failed get_multi_call"));
+  CE(!kphp_error(ok_next, "Failed get_multi_call"));
   if (parenthesis) {
-    CE (expect(tok_clpar, "')'"));
+    CE(expect(tok_clpar, "')'"));
   }
 
   std::vector<VertexAdaptor<Op>> new_next;
@@ -1003,7 +1000,6 @@ VertexAdaptor<op_seq> GenTree::get_multi_call(FuncT &&f, bool parenthesis) {
   }
   return VertexAdaptor<op_seq>::create(new_next).set_location(location);
 }
-
 
 VertexAdaptor<op_return> GenTree::get_return() {
   auto location = auto_location();
@@ -1019,15 +1015,13 @@ VertexAdaptor<op_return> GenTree::get_return() {
     ret = VertexAdaptor<op_return>::create();
   } else {
     if (cur_function->is_constructor()) {
-      kphp_error(return_val->type() == op_var && return_val->get_string() == "this",
-                 "Class constructor may return only $this or nothing.");
+      kphp_error(return_val->type() == op_var && return_val->get_string() == "this", "Class constructor may return only $this or nothing.");
     }
     ret = VertexAdaptor<op_return>::create(return_val);
   }
-  CE (expect(tok_semicolon, "';'"));
+  CE(expect(tok_semicolon, "';'"));
   return ret.set_location(location);
 }
-
 
 template<Operation Op>
 VertexAdaptor<Op> GenTree::get_break_or_continue() {
@@ -1035,7 +1029,7 @@ VertexAdaptor<Op> GenTree::get_break_or_continue() {
   next_cur();
   // https://www.php.net/manual/en/control-structures.continue.php
   auto level_of_enclosing_loops_to_skip = get_expression();
-  CE (expect(tok_semicolon, "';'"));
+  CE(expect(tok_semicolon, "';'"));
 
   if (!level_of_enclosing_loops_to_skip) {
     auto one = VertexUtil::create_int_const(1);
@@ -1049,16 +1043,16 @@ VertexAdaptor<op_foreach> GenTree::get_foreach() {
   auto foreach_location = auto_location();
   next_cur();
 
-  CE (expect(tok_oppar, "'('"));
+  CE(expect(tok_oppar, "'('"));
   skip_phpdoc_tokens();
 
   auto [foreach_param, foreach_list] = get_foreach_param();
 
-  CE (!kphp_error(foreach_param, "Failed to parse 'foreach' params"));
-  CE (expect(tok_clpar, "')'"));
+  CE(!kphp_error(foreach_param, "Failed to parse 'foreach' params"));
+  CE(expect(tok_clpar, "')'"));
 
   VertexPtr body = get_statement();
-  CE (!kphp_error(body, "Failed to parse 'foreach' body"));
+  CE(!kphp_error(body, "Failed to parse 'foreach' body"));
 
   // If foreach value is list expression, we rewrite the body
   // to include the list assignment as a first statement.
@@ -1073,15 +1067,15 @@ VertexAdaptor<op_foreach> GenTree::get_foreach() {
 VertexAdaptor<op_while> GenTree::get_while() {
   auto while_location = auto_location();
   next_cur();
-  CE (expect(tok_oppar, "'('"));
+  CE(expect(tok_oppar, "'('"));
   skip_phpdoc_tokens();
   VertexPtr condition = get_expression();
-  CE (!kphp_error(condition, "Failed to parse 'while' condition"));
+  CE(!kphp_error(condition, "Failed to parse 'while' condition"));
   condition = VertexUtil::create_conv_to(tp_bool, condition);
-  CE (expect(tok_clpar, "')'"));
+  CE(expect(tok_clpar, "')'"));
 
   VertexPtr body = get_statement();
-  CE (!kphp_error(body, "Failed to parse 'while' body"));
+  CE(!kphp_error(body, "Failed to parse 'while' body"));
 
   return VertexAdaptor<op_while>::create(condition, VertexUtil::embrace(body)).set_location(while_location);
 }
@@ -1089,20 +1083,20 @@ VertexAdaptor<op_while> GenTree::get_while() {
 VertexAdaptor<op_if> GenTree::get_if() {
   auto if_location = auto_location();
   next_cur();
-  CE (expect(tok_oppar, "'('"));
+  CE(expect(tok_oppar, "'('"));
   skip_phpdoc_tokens();
   VertexPtr condition = get_expression();
-  CE (!kphp_error(condition, "Failed to parse 'if' condition"));
+  CE(!kphp_error(condition, "Failed to parse 'if' condition"));
   condition = VertexUtil::create_conv_to(tp_bool, condition);
-  CE (expect(tok_clpar, "')'"));
+  CE(expect(tok_clpar, "')'"));
 
   VertexPtr true_cmd = get_statement();
-  CE (!kphp_error(true_cmd, "Failed to parse 'if' body"));
+  CE(!kphp_error(true_cmd, "Failed to parse 'if' body"));
 
   if (cur->type() == tok_else) {
     next_cur();
     auto false_cmd = get_statement();
-    CE (!kphp_error(false_cmd, "Failed to parse 'else' statement"));
+    CE(!kphp_error(false_cmd, "Failed to parse 'else' statement"));
     return VertexAdaptor<op_if>::create(condition, VertexUtil::embrace(true_cmd), VertexUtil::embrace(false_cmd)).set_location(if_location);
   }
 
@@ -1112,21 +1106,21 @@ VertexAdaptor<op_if> GenTree::get_if() {
 VertexAdaptor<op_for> GenTree::get_for() {
   auto for_location = auto_location();
   next_cur();
-  CE (expect(tok_oppar, "'('"));
+  CE(expect(tok_oppar, "'('"));
   skip_phpdoc_tokens();
 
   auto pre_cond_location = auto_location();
   std::vector<VertexPtr> init_statements;
   bool ok_first_next = gen_list<op_err>(&init_statements, &GenTree::get_expression, tok_comma);
-  CE (!kphp_error(ok_first_next, "Failed to parse 'for' precondition"));
+  CE(!kphp_error(ok_first_next, "Failed to parse 'for' precondition"));
   auto initialization = VertexAdaptor<op_seq>::create(init_statements).set_location(pre_cond_location);
 
-  CE (expect(tok_semicolon, "';'"));
+  CE(expect(tok_semicolon, "';'"));
 
   auto cond_location = auto_location();
   std::vector<VertexPtr> condition_expressions;
   bool ok_second_next = gen_list<op_err>(&condition_expressions, &GenTree::get_expression, tok_comma);
-  CE (!kphp_error(ok_second_next, "Failed to parse 'for' action"));
+  CE(!kphp_error(ok_second_next, "Failed to parse 'for' action"));
   if (condition_expressions.empty()) {
     condition_expressions.push_back(VertexAdaptor<op_true>::create());
   } else {
@@ -1134,18 +1128,18 @@ VertexAdaptor<op_for> GenTree::get_for() {
   }
   auto condition = VertexAdaptor<op_seq_comma>::create(condition_expressions).set_location(cond_location);
 
-  CE (expect(tok_semicolon, "';'"));
+  CE(expect(tok_semicolon, "';'"));
 
   auto iteration_location = auto_location();
   std::vector<VertexPtr> iteration_expressions;
   bool ok_third_next = gen_list<op_err>(&iteration_expressions, &GenTree::get_expression, tok_comma);
-  CE (!kphp_error(ok_third_next, "Failed to parse 'for' postcondition"));
+  CE(!kphp_error(ok_third_next, "Failed to parse 'for' postcondition"));
   auto iteration = VertexAdaptor<op_seq>::create(iteration_expressions).set_location(iteration_location);
 
-  CE (expect(tok_clpar, "')'"));
+  CE(expect(tok_clpar, "')'"));
 
   VertexPtr cmd = get_statement();
-  CE (!kphp_error(cmd, "Failed to parse 'for' statement"));
+  CE(!kphp_error(cmd, "Failed to parse 'for' statement"));
 
   return VertexAdaptor<op_for>::create(initialization, condition, iteration, VertexUtil::embrace(cmd)).set_location(for_location);
 }
@@ -1154,18 +1148,18 @@ VertexAdaptor<op_do> GenTree::get_do() {
   auto location = auto_location();
   next_cur();
   VertexPtr body = get_statement();
-  CE (!kphp_error(body, "Failed to parser 'do' statement"));
+  CE(!kphp_error(body, "Failed to parser 'do' statement"));
 
-  CE (expect(tok_while, "'while'"));
-  CE (expect(tok_oppar, "'('"));
+  CE(expect(tok_while, "'while'"));
+  CE(expect(tok_oppar, "'('"));
   skip_phpdoc_tokens();
 
   VertexPtr condition = get_expression();
 
-  CE (!kphp_error(condition, "Failed to parse 'do' condition"));
+  CE(!kphp_error(condition, "Failed to parse 'do' condition"));
   condition = VertexUtil::create_conv_to(tp_bool, condition);
-  CE (expect(tok_clpar, "')'"));
-  CE (expect(tok_semicolon, "';'"));
+  CE(expect(tok_clpar, "')'"));
+  CE(expect(tok_semicolon, "';'"));
 
   return VertexAdaptor<op_do>::create(VertexUtil::embrace(body), condition).set_location(location);
 }
@@ -1174,13 +1168,13 @@ VertexAdaptor<op_switch> GenTree::get_switch() {
   auto location = auto_location();
 
   next_cur();
-  CE (expect(tok_oppar, "'('"));
+  CE(expect(tok_oppar, "'('"));
   skip_phpdoc_tokens();
   auto switch_condition = get_expression();
-  CE (!kphp_error(switch_condition, "Failed to parse 'switch' expression"));
-  CE (expect(tok_clpar, "')'"));
+  CE(!kphp_error(switch_condition, "Failed to parse 'switch' expression"));
+  CE(expect(tok_clpar, "')'"));
 
-  CE (expect(tok_opbrc, "'{'"));
+  CE(expect(tok_opbrc, "'{'"));
 
   std::vector<VertexPtr> cases;
   while (cur->type() != tok_clbrc) {
@@ -1192,13 +1186,13 @@ VertexAdaptor<op_switch> GenTree::get_switch() {
     if (cur_type == tok_case) {
       next_cur();
       case_val = get_expression();
-      CE (!kphp_error(case_val, "Failed to parse 'case' value"));
+      CE(!kphp_error(case_val, "Failed to parse 'case' value"));
 
-      CE (expect2(tok_colon, tok_semicolon, "':'"));
+      CE(expect2(tok_colon, tok_semicolon, "':'"));
     } else {
       CE(test_expect(tok_default));
       next_cur();
-      CE (expect2(tok_colon, tok_semicolon, "':'"));
+      CE(expect2(tok_colon, tok_semicolon, "':'"));
     }
 
     auto seq_location = auto_location();
@@ -1217,7 +1211,7 @@ VertexAdaptor<op_switch> GenTree::get_switch() {
     }
     cases.back().set_location(case_location);
   }
-  CE (expect(tok_clbrc, "'}'"));
+  CE(expect(tok_clbrc, "'}'"));
 
   return VertexUtil::create_switch_vertex(cur_function, switch_condition.set_location(location), std::move(cases)).set_location(location);
 }
@@ -1226,20 +1220,20 @@ VertexAdaptor<op_shape> GenTree::get_shape() {
   auto location = auto_location();
 
   next_cur();
-  CE (expect(tok_oppar, "'('"));
+  CE(expect(tok_oppar, "'('"));
   VertexPtr inner_array = get_expression();
-  CE (expect(tok_clpar, "')'"));
-  CE (!kphp_error(inner_array && inner_array->type() == op_array && !inner_array->empty(), "shape() must have an array associative non-empty inside"));
+  CE(expect(tok_clpar, "')'"));
+  CE(!kphp_error(inner_array && inner_array->type() == op_array && !inner_array->empty(), "shape() must have an array associative non-empty inside"));
 
   std::set<int64_t> keys_hashes;
   for (VertexPtr arr_elem : inner_array.as<op_array>()->args()) {
     auto double_arrow = arr_elem.try_as<op_double_arrow>();
-    CE (!kphp_error(double_arrow, "shape() must have an array associative non-empty inside"));
+    CE(!kphp_error(double_arrow, "shape() must have an array associative non-empty inside"));
     auto key_v = double_arrow->lhs();
-    CE (!kphp_error(vk::any_of_equal(key_v->type(), op_int_const, op_string, op_func_name), "keys of shape() must be constant"));
+    CE(!kphp_error(vk::any_of_equal(key_v->type(), op_int_const, op_string, op_func_name), "keys of shape() must be constant"));
     const std::string &key_str = key_v->get_string();
     const std::int64_t hash = string_hash(key_str.data(), key_str.size());
-    CE (!kphp_error(keys_hashes.insert(hash).second, "keys of shape() are not unique"));
+    CE(!kphp_error(keys_hashes.insert(hash).second, "keys of shape() are not unique"));
   }
 
   // shape->args() is a sequence of op_double_arrow
@@ -1251,7 +1245,7 @@ VertexAdaptor<op_shape> GenTree::get_shape() {
 // later, if $c is constexpr (class-string<T> for example), this call will be replaced with `new T(...)`
 // see replace-extern-func-calls.cpp
 VertexPtr GenTree::get_by_name_construct() {
-  kphp_assert(cur->type() == tok_var_name);  // cur is $c
+  kphp_assert(cur->type() == tok_var_name); // cur is $c
   auto v_class_name = VertexAdaptor<op_var>::create().set_location(auto_location());
   v_class_name->str_val = static_cast<std::string>(cur->str_val); // 'c'
 
@@ -1262,7 +1256,7 @@ VertexPtr GenTree::get_by_name_construct() {
     if (dummy_call) {
       args.insert(args.end(), dummy_call->begin(), dummy_call->end());
     }
-  } else {  // `new $c`
+  } else { // `new $c`
     next_cur();
   }
 
@@ -1281,13 +1275,13 @@ VertexPtr GenTree::get_member_by_name_after_var(VertexAdaptor<op_var> v_before) 
   next_cur();
 
   // $c::method(...) -> _by_name_call_method($c, 'method', ...)
-  if (cur->type() == tok_func_name && (cur+1)->type() == tok_oppar) {
+  if (cur->type() == tok_func_name && (cur + 1)->type() == tok_oppar) {
     auto v_method_name = VertexAdaptor<op_string>::create().set_location(auto_location());
     v_method_name->str_val = static_cast<std::string>(cur->str_val);
 
     auto dummy_call = get_func_call<op_func_call, op_none>();
     std::vector<VertexPtr> args = {v_before, v_method_name};
-    if (dummy_call) {   // 'if' not to fail on unclosed '('
+    if (dummy_call) { // 'if' not to fail on unclosed '('
       args.insert(args.end(), dummy_call->begin(), dummy_call->end());
     }
 
@@ -1299,7 +1293,7 @@ VertexPtr GenTree::get_member_by_name_after_var(VertexAdaptor<op_var> v_before) 
 
   // $c::CONST -> _by_name_get_const($c, 'CONST')
   // $c::CONST[0] and similar also supported
-  if (cur->type() == tok_func_name && (cur+1)->type() != tok_oppar) {
+  if (cur->type() == tok_func_name && (cur + 1)->type() != tok_oppar) {
     auto v_const_name = VertexAdaptor<op_string>::create().set_location(auto_location());
     v_const_name->str_val = static_cast<std::string>(cur->str_val);
 
@@ -1316,7 +1310,10 @@ VertexPtr GenTree::get_member_by_name_after_var(VertexAdaptor<op_var> v_before) 
   // $c::$field[0] += and similar also supported
   // note, that for $c::$var(, we fire an error, because it's $c::$method(), an unsupported dynamic call by name
   if (cur->type() == tok_var_name) {
-    kphp_error_act((cur+1)->type() != tok_oppar, "Syntax '$class_name::$method_name()' is invalid in KPHP.\nProbably, you need switch-case or code generation instead of invocations via dynamic names.", return v_before);
+    kphp_error_act((cur + 1)->type() != tok_oppar,
+                   "Syntax '$class_name::$method_name()' is invalid in KPHP.\nProbably, you need switch-case or code generation instead of invocations via "
+                   "dynamic names.",
+                   return v_before);
 
     auto v_field_name = VertexAdaptor<op_string>::create().set_location(auto_location());
     v_field_name->str_val = static_cast<std::string>(cur->str_val);
@@ -1342,7 +1339,7 @@ VertexPtr GenTree::get_phpdoc_inside_function() {
   vk::string_view phpdoc_str = cur->str_val;
 
   // there can be several @var directives (for example, a block of @var comments above the list() assignment)
-  for (const PhpDocTag &tag: PhpDocComment(phpdoc_str).tags) {
+  for (const PhpDocTag &tag : PhpDocComment(phpdoc_str).tags) {
     if (tag.type == PhpDocType::var) {
       // we are able to parse @var in gentree: @kphp-generic was already parsed, and generic T won't mess with class T
       // classes resolving (and error for unknown classes) will happen later, in parse-and-apply-phpdoc.cpp
@@ -1367,7 +1364,7 @@ VertexPtr GenTree::get_phpdoc_inside_function() {
     }
   }
 
-  next_cur();   // only here, not at the beginning: in case of phpdoc errors to point to phpdoc
+  next_cur(); // only here, not at the beginning: in case of phpdoc errors to point to phpdoc
   return result ?: VertexPtr(VertexAdaptor<op_empty>::create());
 }
 
@@ -1380,7 +1377,7 @@ bool GenTree::parse_cur_function_uses() {
   gen_list<op_err>(&uses_as_vars, &GenTree::get_function_use_var_name_ref, tok_comma);
 
   for (auto &v : uses_as_vars) {
-    cur_function->uses_list.emplace_front(v);   // the order — use($v1, $v2) or use($v2, $v1) — doesn't matter
+    cur_function->uses_list.emplace_front(v); // the order — use($v1, $v2) or use($v2, $v1) — doesn't matter
   }
 
   return expect(tok_clpar, "`)`");
@@ -1388,15 +1385,13 @@ bool GenTree::parse_cur_function_uses() {
 
 bool GenTree::test_if_uses_and_arguments_intersect(const std::forward_list<VertexAdaptor<op_var>> &uses_list, const VertexRange &params) {
   return std::any_of(uses_list.begin(), uses_list.end(), [params](auto var_as_use) {
-    return std::any_of(params.begin(), params.end(), [var_as_use](auto p) {
-      return p.template as<op_func_param>()->var()->str_val == var_as_use->str_val;
-    });
+    return std::any_of(params.begin(), params.end(), [var_as_use](auto p) { return p.template as<op_func_param>()->var()->str_val == var_as_use->str_val; });
   });
 }
 
 VertexAdaptor<op_lambda> GenTree::get_lambda_function(const PhpDocComment *phpdoc, FunctionModifiers modifiers) {
   auto v_op_function_lambda = get_function(true, phpdoc, modifiers);
-  CE (v_op_function_lambda);
+  CE(v_op_function_lambda);
 
   cur_function->has_lambdas_inside = true;
 
@@ -1490,7 +1485,7 @@ VertexAdaptor<op_func_param_list> GenTree::parse_cur_function_param_list() {
 
   CE(expect(tok_oppar, "'('"));
 
-  if (cur_function->modifiers.is_instance()) {    // add implicit $this
+  if (cur_function->modifiers.is_instance()) { // add implicit $this
     params_next.emplace_back(ClassData::gen_param_this(auto_location()));
   }
 
@@ -1544,7 +1539,9 @@ VertexAdaptor<op_function> GenTree::get_function(bool is_lambda, const PhpDocCom
   }
 
   auto func_root = VertexAdaptor<op_function>::create(VertexAdaptor<op_func_param_list>::create(), VertexAdaptor<op_seq>::create()).set_location(func_location);
-  FunctionData::func_type_t func_type = is_lambda ? FunctionData::func_lambda : processing_file->is_builtin() ? FunctionData::func_extern : FunctionData::func_local;
+  FunctionData::func_type_t func_type = is_lambda                       ? FunctionData::func_lambda
+                                        : processing_file->is_builtin() ? FunctionData::func_extern
+                                                                        : FunctionData::func_local;
 
   StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(func_name, func_root, func_type));
   cur_function->phpdoc = phpdoc;
@@ -1572,7 +1569,7 @@ VertexAdaptor<op_function> GenTree::get_function(bool is_lambda, const PhpDocCom
                "arguments and captured variables (in `use` clause) must have different names");
   }
 
-  if (test_expect(tok_colon) || test_expect(tok_triple_colon)) {    // function.txt allows ::: besides :
+  if (test_expect(tok_colon) || test_expect(tok_triple_colon)) { // function.txt allows ::: besides :
     next_cur();
     cur_function->return_typehint = get_typehint();
     kphp_error(cur_function->return_typehint, "Expected return typehint after :");
@@ -1585,9 +1582,9 @@ VertexAdaptor<op_function> GenTree::get_function(bool is_lambda, const PhpDocCom
   }
 
   if (is_arrow) {
-    CE (expect(tok_double_arrow, "'=>'"));
+    CE(expect(tok_double_arrow, "'=>'"));
     auto body_expr = get_expression();
-    CE (!kphp_error(body_expr, "Bad expression in arrow function body"));
+    CE(!kphp_error(body_expr, "Bad expression in arrow function body"));
     auto return_stmt = VertexAdaptor<op_return>::create(body_expr).set_location(func_location);
     cur_function->root->cmd_ref() = VertexAdaptor<op_seq>::create(return_stmt).set_location(func_location);
     auto_capture_vars_from_body_in_arrow_lambda(cur_function);
@@ -1603,7 +1600,7 @@ VertexAdaptor<op_function> GenTree::get_function(bool is_lambda, const PhpDocCom
     }
   } else {
     CE(!kphp_error(cur_function->modifiers.is_abstract() || processing_file->is_builtin(), "function must have non-empty body"));
-    CE (expect(tok_semicolon, "';'"));
+    CE(expect(tok_semicolon, "';'"));
     cur_function->root->cmd_ref() = VertexAdaptor<op_seq>::create();
   }
 
@@ -1611,10 +1608,7 @@ VertexAdaptor<op_function> GenTree::get_function(bool is_lambda, const PhpDocCom
   // the constructor is registered later, after the entire class is parsed
   if (!cur_function->is_constructor()) {
     bool kphp_required_flag = phpdoc && phpdoc->has_tag(PhpDocType::kphp_required, PhpDocType::kphp_lib_export);
-    bool auto_require = cur_function->is_extern()
-                        || cur_function->modifiers.is_abstract()
-                        || cur_function->modifiers.is_instance()
-                        || cur_function->is_lambda()
+    bool auto_require = cur_function->is_extern() || cur_function->modifiers.is_abstract() || cur_function->modifiers.is_instance() || cur_function->is_lambda()
                         || kphp_required_flag;
     G->register_and_require_function(cur_function, parsed_os, auto_require);
   }
@@ -1624,32 +1618,32 @@ VertexAdaptor<op_function> GenTree::get_function(bool is_lambda, const PhpDocCom
 
 bool GenTree::check_seq_end() {
   if (!test_expect(tok_clbrc)) {
-    kphp_error (0, "Failed to parse sequence");
+    kphp_error(0, "Failed to parse sequence");
     while (cur != end && !test_expect(tok_clbrc)) {
       next_cur();
     }
   }
-  return expect (tok_clbrc, "'}'");
+  return expect(tok_clbrc, "'}'");
 }
 
 bool GenTree::check_statement_end() {
-  //if (test_expect (tok_clbrc)) {
-  //return true;
-  //}
+  // if (test_expect (tok_clbrc)) {
+  // return true;
+  // }
   if (!test_expect(tok_semicolon)) {
     stage::set_line(line_num);
-    kphp_error (0, "Failed to parse statement. Expected `;`");
+    kphp_error(0, "Failed to parse statement. Expected `;`");
     while (cur != end && !test_expect(tok_clbrc) && !test_expect(tok_semicolon)) {
       next_cur();
     }
   }
-  return expect (tok_semicolon, "';'");
+  return expect(tok_semicolon, "';'");
 }
 
 void GenTree::parse_extends_implements() {
-  if (test_expect(tok_extends)) {     // extends comes before 'implements', the order is fixed
+  if (test_expect(tok_extends)) { // extends comes before 'implements', the order is fixed
     do {
-      next_cur();                       // (same as in PHP)
+      next_cur(); // (same as in PHP)
       kphp_error_return(test_expect(tok_func_name), "Class name expected after 'extends'");
       kphp_error(!cur_class->is_trait(), "Traits may not extend each other");
       cur_class->add_str_dependent(cur_function, cur_class->class_type, cur->str_val);
@@ -1683,7 +1677,7 @@ VertexPtr GenTree::get_class(const PhpDocComment *phpdoc, ClassType class_type) 
   CE(vk::any_of_equal(cur->type(), tok_class, tok_interface, tok_trait));
   next_cur();
 
-  CE (!kphp_error(test_expect(tok_func_name), "Class name expected"));
+  CE(!kphp_error(test_expect(tok_func_name), "Class name expected"));
 
   auto name_str = cur->str_val;
   next_cur();
@@ -1718,7 +1712,7 @@ VertexPtr GenTree::get_class(const PhpDocComment *phpdoc, ClassType class_type) 
   name_vertex->str_val = static_cast<std::string>(name_str);
 
   cur_class->file_id = processing_file;
-  cur_class->set_name_and_src_name(full_class_name);    // with full namespaces and slashes
+  cur_class->set_name_and_src_name(full_class_name); // with full namespaces and slashes
   cur_class->phpdoc = phpdoc;
   cur_class->is_immutable = phpdoc && phpdoc->has_tag(PhpDocType::kphp_immutable_class);
   cur_class->location_line_num = line_num;
@@ -1728,8 +1722,8 @@ VertexPtr GenTree::get_class(const PhpDocComment *phpdoc, ClassType class_type) 
     ++G->stats.total_classes;
   }
 
-  VertexPtr body_vertex = get_statement();    // an empty op_seq
-  CE (!kphp_error(body_vertex, "Failed to parse class body"));
+  VertexPtr body_vertex = get_statement(); // an empty op_seq
+  CE(!kphp_error(body_vertex, "Failed to parse class body"));
 
   cur_class->add_class_constant(); // A::class
 
@@ -1739,14 +1733,14 @@ VertexPtr GenTree::get_class(const PhpDocComment *phpdoc, ClassType class_type) 
   }
 
   if (registered) {
-    G->register_and_require_function(cur_function, parsed_os, true);  // push the class down the pipeline
+    G->register_and_require_function(cur_function, parsed_os, true); // push the class down the pipeline
   }
 
   return {};
 }
 
-
-VertexAdaptor<op_func_call> GenTree::gen_constructor_call_with_args(const std::string &allocated_class_name, std::vector<VertexPtr> args, const Location &location) {
+VertexAdaptor<op_func_call> GenTree::gen_constructor_call_with_args(const std::string &allocated_class_name, std::vector<VertexPtr> args,
+                                                                    const Location &location) {
   auto alloc = VertexAdaptor<op_alloc>::create().set_location(location);
   alloc->allocated_class_name = allocated_class_name;
   auto constructor_call = VertexAdaptor<op_func_call>::create(alloc, std::move(args)).set_location(location);
@@ -1797,7 +1791,7 @@ VertexPtr GenTree::process_arrow(VertexPtr lhs, VertexPtr rhs) {
     return new_root;
 
   } else {
-    kphp_error (false, "Operator '->' expects property or function call as its right operand");
+    kphp_error(false, "Operator '->' expects property or function call as its right operand");
     return {};
   }
 }
@@ -1805,7 +1799,7 @@ VertexPtr GenTree::process_arrow(VertexPtr lhs, VertexPtr rhs) {
 void GenTree::get_traits_uses() {
   next_cur();
   auto name = cur->str_val;
-  if (!expect(tok_func_name, "trait name expected")|| !expect(tok_semicolon, "`;` expected")) {
+  if (!expect(tok_func_name, "trait name expected") || !expect(tok_semicolon, "`;` expected")) {
     return;
   }
 
@@ -1846,11 +1840,11 @@ void GenTree::get_use() {
 }
 
 void GenTree::parse_namespace_and_uses_at_top_of_file() {
-  kphp_assert (test_expect(tok_namespace));
-  kphp_assert (processing_file->namespace_name.empty());
+  kphp_assert(test_expect(tok_namespace));
+  kphp_assert(processing_file->namespace_name.empty());
 
   next_cur();
-  kphp_error (test_expect(tok_func_name), "Namespace name expected");
+  kphp_error(test_expect(tok_func_name), "Namespace name expected");
   processing_file->namespace_name = static_cast<std::string>(cur->str_val);
   std::string real_relative_dir = processing_file->relative_dir_name;
   if (processing_file->owner_lib) {
@@ -1860,11 +1854,11 @@ void GenTree::parse_namespace_and_uses_at_top_of_file() {
     real_relative_dir.erase(0, lib_unified_dir.size() + 1);
   }
   // to properly handle the vendor/ folder, assert from below is commented-out
-  //string expected_namespace_name = replace_characters(real_unified_dir, '/', '\\');
-  //kphp_error (processing_file->namespace_name == expected_namespace_name, fmt_format("Wrong namespace name, expected {}", expected_namespace_name));
+  // string expected_namespace_name = replace_characters(real_unified_dir, '/', '\\');
+  // kphp_error (processing_file->namespace_name == expected_namespace_name, fmt_format("Wrong namespace name, expected {}", expected_namespace_name));
 
   next_cur();
-  expect (tok_semicolon, "';'");
+  expect(tok_semicolon, "';'");
 
   if (stage::has_error()) {
     while (cur != end) {
@@ -1925,11 +1919,11 @@ void GenTree::parse_declare_at_top_of_file() {
 }
 
 VertexAdaptor<op_empty> GenTree::get_static_field_list(const PhpDocComment *phpdoc, FieldModifiers modifiers, const TypeHint *type_hint) {
-  cur--;      // it was a $field_name; we do it before the get_multi_call() as it does next_cur() by itself
+  cur--; // it was a $field_name; we do it before the get_multi_call() as it does next_cur() by itself
   VertexAdaptor<op_seq> v = get_multi_call<op_static, op_err>(&GenTree::get_expression);
-  CE (check_statement_end());
+  CE(check_statement_end());
 
-  for (auto seq: v->args()) {
+  for (auto seq : v->args()) {
     // node is a op_var $a (if there is no default value) or op_set(op_var $a, init_val)
     VertexPtr node = seq.as<op_static>()->args()[0];
     switch (node->type()) {
@@ -1991,17 +1985,17 @@ GenericsInstantiationPhpComment *GenTree::parse_php_commentTs(vk::string_view st
 }
 
 VertexAdaptor<op_catch> GenTree::get_catch() {
-  CE (expect(tok_catch, "'catch'"));
-  CE (expect(tok_oppar, "'('"));
+  CE(expect(tok_catch, "'catch'"));
+  CE(expect(tok_oppar, "'('"));
   auto exception_class = cur->str_val;
-  CE (expect(tok_func_name, "type that implements Throwable"));
+  CE(expect(tok_func_name, "type that implements Throwable"));
   auto exception_var_name = get_expression();
-  CE (!kphp_error(exception_var_name, "Cannot parse catch"));
-  CE (!kphp_error(exception_var_name->type() == op_var, "Expected variable name in 'catch'"));
+  CE(!kphp_error(exception_var_name, "Cannot parse catch"));
+  CE(!kphp_error(exception_var_name->type() == op_var, "Expected variable name in 'catch'"));
 
-  CE (expect(tok_clpar, "')'"));
+  CE(expect(tok_clpar, "')'"));
   auto catch_body = get_statement();
-  CE (!kphp_error(catch_body, "Cannot parse catch block"));
+  CE(!kphp_error(catch_body, "Cannot parse catch block"));
 
   auto catch_op = VertexAdaptor<op_catch>::create(exception_var_name.as<op_var>(), VertexUtil::embrace(catch_body));
   catch_op->type_declaration = resolve_uses(cur_function, static_cast<std::string>(exception_class));
@@ -2018,8 +2012,8 @@ VertexPtr GenTree::get_statement(const PhpDocComment *phpdoc) {
     case tok_opbrc: {
       next_cur();
       auto res = get_seq();
-      kphp_error (res, "Failed to parse sequence");
-      CE (check_seq_end());
+      kphp_error(res, "Failed to parse sequence");
+      CE(check_seq_end());
       return res;
     }
     case tok_return:
@@ -2030,7 +2024,7 @@ VertexPtr GenTree::get_statement(const PhpDocComment *phpdoc) {
       return get_break_or_continue<op_break>();
     case tok_unset: {
       auto res = get_multi_call<op_unset, op_none>(&GenTree::get_expression, true);
-      CE (check_statement_end());
+      CE(check_statement_end());
       if (res->size() == 1) {
         return res->args()[0];
       }
@@ -2038,7 +2032,7 @@ VertexPtr GenTree::get_statement(const PhpDocComment *phpdoc) {
     }
     case tok_var_dump: {
       auto res = get_multi_call<op_func_call, op_none>(&GenTree::get_expression, true);
-      CE (res && check_statement_end());
+      CE(res && check_statement_end());
       for (VertexPtr x : res->args()) {
         x.as<op_func_call>()->str_val = "var_dump";
       }
@@ -2049,7 +2043,7 @@ VertexPtr GenTree::get_statement(const PhpDocComment *phpdoc) {
     }
     case tok_define: {
       auto res = get_func_call<op_define, op_err>();
-      CE (check_statement_end());
+      CE(check_statement_end());
       return res;
     }
     case tok_global: {
@@ -2057,7 +2051,7 @@ VertexPtr GenTree::get_statement(const PhpDocComment *phpdoc) {
         kphp_warning("`global` keyword is allowed only at the top of the function");
       }
       auto res = get_multi_call<op_global, op_err>(&GenTree::get_var_name);
-      CE (check_statement_end());
+      CE(check_statement_end());
       return res;
     }
     case tok_protected:
@@ -2089,9 +2083,9 @@ VertexPtr GenTree::get_statement(const PhpDocComment *phpdoc) {
       if (cur_function->type == FunctionData::func_class_holder) {
         return get_class_member(phpdoc);
       }
-      if (cur + 1 != end && ((cur + 1)->type() == tok_var_name)) {   // a function-scoped static variable
+      if (cur + 1 != end && ((cur + 1)->type() == tok_var_name)) { // a function-scoped static variable
         auto res = get_multi_call<op_static, op_err>(&GenTree::get_expression);
-        CE (check_statement_end());
+        CE(check_statement_end());
         return res;
       }
       next_cur();
@@ -2103,7 +2097,7 @@ VertexPtr GenTree::get_statement(const PhpDocComment *phpdoc) {
       for (VertexPtr x : res->args()) {
         x.as<op_func_call>()->str_val = "echo";
       }
-      CE (check_statement_end());
+      CE(check_statement_end());
       return res;
     }
     case tok_dbg_echo: {
@@ -2111,16 +2105,16 @@ VertexPtr GenTree::get_statement(const PhpDocComment *phpdoc) {
       for (VertexPtr x : res->args()) {
         x.as<op_func_call>()->str_val = "dbg_echo";
       }
-      CE (check_statement_end());
+      CE(check_statement_end());
       return res;
     }
     case tok_throw: {
       auto location = auto_location();
       next_cur();
       auto throw_expr = get_expression();
-      CE (!kphp_error(throw_expr, "Empty expression in throw"));
+      CE(!kphp_error(throw_expr, "Empty expression in throw"));
       auto throw_vertex = VertexAdaptor<op_throw>::create(throw_expr).set_location(location);
-      CE (check_statement_end());
+      CE(check_statement_end());
       return throw_vertex;
     }
 
@@ -2136,10 +2130,11 @@ VertexPtr GenTree::get_statement(const PhpDocComment *phpdoc) {
       return get_foreach();
     case tok_switch:
       return get_switch();
-    case tok_phpdoc: {      // enter /** ... */
+    case tok_phpdoc: { // enter /** ... */
       // phpdoc above a function/class/field
-      auto next = (cur+1)->type();
-      if (vk::any_of_equal(next, tok_class, tok_interface, tok_trait, tok_function, tok_public, tok_private, tok_protected, tok_final, tok_abstract, tok_var, tok_const)
+      auto next = (cur + 1)->type();
+      if (vk::any_of_equal(next, tok_class, tok_interface, tok_trait, tok_function, tok_public, tok_private, tok_protected, tok_final, tok_abstract, tok_var,
+                           tok_const)
           || (next == tok_static && cur_function->type == FunctionData::func_class_holder)) {
         vk::string_view phpdoc_str = cur->str_val;
         next_cur();
@@ -2148,7 +2143,8 @@ VertexPtr GenTree::get_statement(const PhpDocComment *phpdoc) {
       // phpdoc above a lambda before assignment: /** ... */ $f = function() { ... };
       // we do not support complex expressions on the left-hand side (like $f[0] = fn)
       // todo reconsider this when I'll rewrite phpdoc parsing
-      if (cur+5 < tokens.end() && next == tok_var_name && (cur+2)->type() == tok_eq1 && vk::any_of_equal((cur+3)->type(), tok_function, tok_fn, tok_static)) {
+      if (cur + 5 < tokens.end() && next == tok_var_name && (cur + 2)->type() == tok_eq1
+          && vk::any_of_equal((cur + 3)->type(), tok_function, tok_fn, tok_static)) {
         vk::string_view phpdoc_str = cur->str_val;
         if (phpdoc_str.find("@var") == std::string::npos) { // if it's not @var for $f, but @param for lambda
           next_cur();
@@ -2162,7 +2158,7 @@ VertexPtr GenTree::get_statement(const PhpDocComment *phpdoc) {
       return get_phpdoc_inside_function();
     }
     case tok_function:
-      if (cur_class) {      // no access modifier implies 'public'
+      if (cur_class) { // no access modifier implies 'public'
         get_class_member(phpdoc);
       } else {
         get_function(false, phpdoc, FunctionModifiers::nonmember());
@@ -2173,16 +2169,16 @@ VertexPtr GenTree::get_statement(const PhpDocComment *phpdoc) {
       auto location = auto_location();
       next_cur();
       auto try_body = get_statement();
-      CE (!kphp_error(try_body, "Cannot parse try block"));
+      CE(!kphp_error(try_body, "Cannot parse try block"));
 
       std::vector<VertexPtr> catch_list;
       while (test_expect(tok_catch)) {
         auto catch_op = get_catch();
-        CE (!kphp_error(catch_op, "Cannot parse catch statement"));
+        CE(!kphp_error(catch_op, "Cannot parse catch statement"));
         catch_op.set_location(location);
         catch_list.emplace_back(catch_op);
       }
-      CE (!kphp_error(!catch_list.empty(), "Expected at least 1 'catch' statement"));
+      CE(!kphp_error(!catch_list.empty(), "Expected at least 1 'catch' statement"));
 
       return VertexAdaptor<op_try>::create(VertexUtil::embrace(try_body), std::move(catch_list)).set_location(location);
     }
@@ -2199,7 +2195,7 @@ VertexPtr GenTree::get_statement(const PhpDocComment *phpdoc) {
       auto location = auto_location();
       next_cur();
       auto expression = get_statement();
-      CE (expression);
+      CE(expression);
       return VertexAdaptor<op_noerr>::create(expression).set_location(location);
     }
     case tok_clbrc: {
@@ -2220,7 +2216,7 @@ VertexPtr GenTree::get_statement(const PhpDocComment *phpdoc) {
     case tok_var: {
       next_cur();
       get_instance_var_list(phpdoc, FieldModifiers{}.set_public(), get_typehint());
-      CE (check_statement_end());
+      CE(check_statement_end());
       auto empty = VertexAdaptor<op_empty>::create();
       return empty;
     }
@@ -2235,7 +2231,7 @@ VertexPtr GenTree::get_statement(const PhpDocComment *phpdoc) {
     }
     default: {
       auto res = get_expression();
-      CE (check_statement_end());
+      CE(check_statement_end());
       if (!res) {
         res = VertexAdaptor<op_empty>::create().set_location(auto_location());
       }
@@ -2261,14 +2257,14 @@ VertexPtr GenTree::get_const(AccessModifiers access) {
   bool const_in_global_scope = functions_stack.size() == 1 && !cur_class;
   bool const_in_class = !!cur_class;
 
-  CE (!kphp_error(const_in_global_scope || const_in_class, "const expressions supported only inside classes and namespaces or in global scope"));
+  CE(!kphp_error(const_in_global_scope || const_in_class, "const expressions supported only inside classes and namespaces or in global scope"));
   std::string const_name = get_identifier();
-  CE (!const_name.empty());
+  CE(!const_name.empty());
   kphp_error(const_name != "class", "A class constant must not be called 'class'; it is reserved for class name fetching");
 
-  CE (expect(tok_eq1, "'='"));
+  CE(expect(tok_eq1, "'='"));
   VertexPtr v = get_expression();
-  CE (check_statement_end());
+  CE(check_statement_end());
 
   if (const_in_class) {
     cur_class->members.add_constant(const_name, v, access);
@@ -2326,7 +2322,8 @@ void GenTree::run() {
   auto v_func_params = VertexAdaptor<op_func_param_list>::create();
   auto root = VertexAdaptor<op_function>::create(v_func_params, VertexAdaptor<op_seq>{}).set_location(auto_location());
 
-  StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, FunctionData::create_function(processing_file->main_func_name, root, FunctionData::func_main));
+  StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function,
+                                    FunctionData::create_function(processing_file->main_func_name, root, FunctionData::func_main));
   processing_file->main_function = cur_function;
 
   parse_declare_at_top_of_file();
@@ -2346,7 +2343,7 @@ void GenTree::run() {
   seq_next.push_back(VertexAdaptor<op_return>::create(VertexAdaptor<op_null>::create()));
   cur_function->root->cmd_ref() = VertexAdaptor<op_seq>::create(seq_next).set_location(location);
 
-  G->register_and_require_function(cur_function, parsed_os, true);  // global function — therefore required
+  G->register_and_require_function(cur_function, parsed_os, true); // global function — therefore required
 
   if (processing_file->file_name == G->settings().functions_file.get()) {
     G->set_functions_txt_parsed();
@@ -2354,16 +2351,13 @@ void GenTree::run() {
 
   if (cur != end) {
     fmt_fprintf(stderr, "line {}: something wrong\n", line_num);
-    kphp_error (0, "Cannot compile (probably problems with brace balance)");
+    kphp_error(0, "Cannot compile (probably problems with brace balance)");
   }
 }
 
 bool GenTree::is_magic_method_name_allowed(const std::string &name) {
   static std::set<std::string> names = {
-    ClassData::NAME_OF_CONSTRUCT,
-    ClassData::NAME_OF_CLONE,
-    ClassData::NAME_OF_TO_STRING,
-    ClassData::NAME_OF_WAKEUP,
+    ClassData::NAME_OF_CONSTRUCT, ClassData::NAME_OF_CLONE, ClassData::NAME_OF_TO_STRING, ClassData::NAME_OF_WAKEUP,
     // other __-staring methods like __invoke/_self$ are implicitly generated and aren't allowed to occur in php
   };
 

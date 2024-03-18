@@ -5,33 +5,23 @@
 #pragma once
 #include "runtime/kphp_core.h"
 #include "runtime/tl/rpc_function.h"
-#include "runtime/tl/rpc_tl_query.h"
 #include "runtime/tl/rpc_request.h"
 #include "runtime/tl/rpc_response.h"
+#include "runtime/tl/rpc_tl_query.h"
 
 struct C$RpcConnection;
 
-int64_t typed_rpc_tl_query_impl(const class_instance<C$RpcConnection> &connection,
-                                const RpcRequest &req,
-                                double timeout,
-                                bool ignore_answer,
-                                bool bytes_estimating,
-                                size_t &bytes_sent,
-                                bool flush);
+int64_t typed_rpc_tl_query_impl(const class_instance<C$RpcConnection> &connection, const RpcRequest &req, double timeout, bool ignore_answer,
+                                bool bytes_estimating, size_t &bytes_sent, bool flush);
 
-class_instance<C$VK$TL$RpcResponse> typed_rpc_tl_query_result_one_impl(int64_t query_id,
-                                                                       const RpcErrorFactory &error_factory);
+class_instance<C$VK$TL$RpcResponse> typed_rpc_tl_query_result_one_impl(int64_t query_id, const RpcErrorFactory &error_factory);
 
-array<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_impl(const array<int64_t> &query_ids,
-                                                                    const RpcErrorFactory &error_factory);
+array<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_impl(const array<int64_t> &query_ids, const RpcErrorFactory &error_factory);
 
-array<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_synchronously_impl(const array<int64_t> &query_ids,
-                                                                                  const RpcErrorFactory &error_factory);
+array<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_synchronously_impl(const array<int64_t> &query_ids, const RpcErrorFactory &error_factory);
 
 template<typename F, typename R = KphpRpcRequest>
-int64_t f$typed_rpc_tl_query_one(const class_instance<C$RpcConnection> &connection,
-                                 const class_instance<F> &query_function,
-                                 double timeout = -1.0) {
+int64_t f$typed_rpc_tl_query_one(const class_instance<C$RpcConnection> &connection, const class_instance<F> &query_function, double timeout = -1.0) {
   static_assert(std::is_base_of<C$VK$TL$RpcFunction, F>::value, "Unexpected type");
   static_assert(std::is_same<KphpRpcRequest, R>::value, "Unexpected type");
 
@@ -40,9 +30,7 @@ int64_t f$typed_rpc_tl_query_one(const class_instance<C$RpcConnection> &connecti
 }
 
 template<typename F, typename R = KphpRpcRequest>
-array<int64_t> f$typed_rpc_tl_query(const class_instance<C$RpcConnection> &connection,
-                                    const array<class_instance<F>> &query_functions,
-                                    double timeout = -1.0,
+array<int64_t> f$typed_rpc_tl_query(const class_instance<C$RpcConnection> &connection, const array<class_instance<F>> &query_functions, double timeout = -1.0,
                                     bool ignore_answer = false) {
   static_assert(std::is_base_of<C$VK$TL$RpcFunction, F>::value, "Unexpected type");
   static_assert(std::is_same<KphpRpcRequest, R>::value, "Unexpected type");

@@ -38,8 +38,8 @@ bool lang::has_symbol(char c) const noexcept {
   return strchr(flexible_symbols, c) != nullptr;
 }
 
-vk::string_view flex(vk::string_view name, vk::string_view case_name, bool is_female, vk::string_view type, int lang_id, char * const dst_buf,
-                     char * const err_buf, size_t err_buf_size) {
+vk::string_view flex(vk::string_view name, vk::string_view case_name, bool is_female, vk::string_view type, int lang_id, char *const dst_buf,
+                     char *const err_buf, size_t err_buf_size) {
   if (name.size() > (1 << 10)) {
     snprintf(err_buf, err_buf_size, "Name has length %zu and is too long in function vk_flex", name.size());
     return name;

@@ -168,9 +168,7 @@ ParsingDriver::Result ParsingDriver::parse() {
 }
 
 void ParsingDriver::add_type(FFIType *type) {
-  vk::finally([&] () {
-      lexer.reset_comment();
-  });
+  vk::finally([&]() { lexer.reset_comment(); });
 
   if (type->kind == FFITypeKind::Unknown) {
     return;
@@ -349,7 +347,8 @@ FFIType *ParsingDriver::combine(const DeclarationSpecifiers &decl_specs, const A
     return combine(decl_specs, Declarator{ptr_declarator});
   }
 
-  return combine(decl_specs, Declarator{declarator.type});;
+  return combine(decl_specs, Declarator{declarator.type});
+  ;
 }
 
 FFIType *ParsingDriver::combine_array_type(FFIType *dst, FFIType *elem_type, FFIType *current) {

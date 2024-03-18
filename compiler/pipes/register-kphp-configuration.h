@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "compiler/pipes/sync.h"
-#include "compiler/data/data_ptr.h"
 #include "compiler/data/class-members.h"
+#include "compiler/data/data_ptr.h"
 #include "compiler/function-colors.h"
+#include "compiler/pipes/sync.h"
 
 class RegisterKphpConfiguration final : public SyncPipeF<FunctionPtr> {
   using need_profiler = std::false_type;
@@ -30,7 +30,7 @@ class RegisterKphpConfiguration final : public SyncPipeF<FunctionPtr> {
   const vk::string_view configuration_class_name_{"KphpConfiguration"};
   const vk::string_view runtime_options_name_{"DEFAULT_RUNTIME_OPTIONS"};
   const vk::string_view function_color_palette_name_{"FUNCTION_PALETTE"};
-  
+
   const vk::string_view confdata_blacklist_key_{"--confdata-blacklist"};
   const vk::string_view confdata_predefined_wildcard_key_{"--confdata-predefined-wildcard"};
   const vk::string_view mysql_db_name_key_{"--mysql-db-name"};
@@ -46,6 +46,7 @@ class RegisterKphpConfiguration final : public SyncPipeF<FunctionPtr> {
 
   const vk::string_view thread_pool_ratio_key_{"--thread-pool-ratio"};
   const vk::string_view thread_pool_size_key_{"--thread-pool-size"};
+
 public:
   void execute(FunctionPtr function, DataStream<FunctionPtr> &unused_os) final;
   void on_finish(DataStream<FunctionPtr> &os) override;

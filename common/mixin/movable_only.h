@@ -17,4 +17,4 @@ protected:
   movable_only &operator=(movable_only &&) = default;
 };
 
-}
+} // namespace vk

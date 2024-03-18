@@ -4,9 +4,9 @@
 
 #include "runtime/string_functions.h"
 
+#include <cctype>
 #include <clocale>
 #include <sys/types.h>
-#include <cctype>
 
 #include "common/macos-ports.h"
 #include "common/unicode/unicode-utils.h"
@@ -140,41 +140,31 @@ string f$chr(int64_t v) {
   return {1, static_cast<char>(v)};
 }
 
-static const unsigned char win_to_koi[] = {
-  0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-  16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
-  32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
-  48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,
-  64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
-  80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95,
-  96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111,
-  112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127,
-  46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46,
-  46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46, 46,
-  154, 174, 190, 46, 159, 189, 46, 46, 179, 191, 180, 157, 46, 46, 156, 183,
-  46, 46, 182, 166, 173, 46, 46, 158, 163, 152, 164, 155, 46, 46, 46, 167,
-  225, 226, 247, 231, 228, 229, 246, 250, 233, 234, 235, 236, 237, 238, 239, 240,
-  242, 243, 244, 245, 230, 232, 227, 254, 251, 253, 255, 249, 248, 252, 224, 241,
-  193, 194, 215, 199, 196, 197, 214, 218, 201, 202, 203, 204, 205, 206, 207, 208,
-  210, 211, 212, 213, 198, 200, 195, 222, 219, 221, 223, 217, 216, 220, 192, 209};
+static const unsigned char win_to_koi[] = {0,   1,   2,   3,   4,   5,   6,   7,   8,   9,   10,  11,  12,  13,  14,  15,  16,  17,  18,  19,  20,  21,
+                                           22,  23,  24,  25,  26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  36,  37,  38,  39,  40,  41,  42,  43,
+                                           44,  45,  46,  47,  48,  49,  50,  51,  52,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,  64,  65,
+                                           66,  67,  68,  69,  70,  71,  72,  73,  74,  75,  76,  77,  78,  79,  80,  81,  82,  83,  84,  85,  86,  87,
+                                           88,  89,  90,  91,  92,  93,  94,  95,  96,  97,  98,  99,  100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
+                                           110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 46,  46,  46,  46,
+                                           46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,
+                                           46,  46,  46,  46,  46,  46,  154, 174, 190, 46,  159, 189, 46,  46,  179, 191, 180, 157, 46,  46,  156, 183,
+                                           46,  46,  182, 166, 173, 46,  46,  158, 163, 152, 164, 155, 46,  46,  46,  167, 225, 226, 247, 231, 228, 229,
+                                           246, 250, 233, 234, 235, 236, 237, 238, 239, 240, 242, 243, 244, 245, 230, 232, 227, 254, 251, 253, 255, 249,
+                                           248, 252, 224, 241, 193, 194, 215, 199, 196, 197, 214, 218, 201, 202, 203, 204, 205, 206, 207, 208, 210, 211,
+                                           212, 213, 198, 200, 195, 222, 219, 221, 223, 217, 216, 220, 192, 209};
 
-static const unsigned char koi_to_win[] = {
-  0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-  16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
-  32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
-  48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,
-  64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
-  80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95,
-  96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111,
-  112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127,
-  32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32,
-  32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32,
-  32, 32, 32, 184, 186, 32, 179, 191, 32, 32, 32, 32, 32, 180, 162, 32,
-  32, 32, 32, 168, 170, 32, 178, 175, 32, 32, 32, 32, 32, 165, 161, 169,
-  254, 224, 225, 246, 228, 229, 244, 227, 245, 232, 233, 234, 235, 236, 237, 238,
-  239, 255, 240, 241, 242, 243, 230, 226, 252, 251, 231, 248, 253, 249, 247, 250,
-  222, 192, 193, 214, 196, 197, 212, 195, 213, 200, 201, 202, 203, 204, 205, 206,
-  207, 223, 208, 209, 210, 211, 198, 194, 220, 219, 199, 216, 221, 217, 215, 218};
+static const unsigned char koi_to_win[] = {0,   1,   2,   3,   4,   5,   6,   7,   8,   9,   10,  11,  12,  13,  14,  15,  16,  17,  18,  19,  20,  21,
+                                           22,  23,  24,  25,  26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  36,  37,  38,  39,  40,  41,  42,  43,
+                                           44,  45,  46,  47,  48,  49,  50,  51,  52,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,  64,  65,
+                                           66,  67,  68,  69,  70,  71,  72,  73,  74,  75,  76,  77,  78,  79,  80,  81,  82,  83,  84,  85,  86,  87,
+                                           88,  89,  90,  91,  92,  93,  94,  95,  96,  97,  98,  99,  100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
+                                           110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 32,  32,  32,  32,
+                                           32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,
+                                           32,  32,  32,  32,  32,  32,  32,  32,  32,  184, 186, 32,  179, 191, 32,  32,  32,  32,  32,  180, 162, 32,
+                                           32,  32,  32,  168, 170, 32,  178, 175, 32,  32,  32,  32,  32,  165, 161, 169, 254, 224, 225, 246, 228, 229,
+                                           244, 227, 245, 232, 233, 234, 235, 236, 237, 238, 239, 255, 240, 241, 242, 243, 230, 226, 252, 251, 231, 248,
+                                           253, 249, 247, 250, 222, 192, 193, 214, 196, 197, 212, 195, 213, 200, 201, 202, 203, 204, 205, 206, 207, 223,
+                                           208, 209, 210, 211, 198, 194, 220, 219, 199, 216, 221, 217, 215, 218};
 
 string f$convert_cyr_string(const string &str, const string &from_s, const string &to_s) {
   char from = (char)toupper(from_s[0]);
@@ -188,7 +178,7 @@ string f$convert_cyr_string(const string &str, const string &from_s, const strin
     table = koi_to_win;
   }
   if (table == nullptr) {
-    php_critical_error ("unsupported conversion from '%c' to '%c' in function convert_cyr_string", from, to);
+    php_critical_error("unsupported conversion from '%c' to '%c' in function convert_cyr_string", from, to);
     return str;
   }
 
@@ -216,8 +206,7 @@ mixed f$count_chars(const string &str, int64_t mode) {
   if (mode <= 2) {
     array<mixed> result;
     for (int64_t i = 0; i < 256; i++) {
-      if ((mode != 2 && chars[i] != 0) ||
-          (mode != 1 && chars[i] == 0)) {
+      if ((mode != 2 && chars[i] != 0) || (mode != 1 && chars[i] == 0)) {
         result.set_value(i, chars[i]);
       }
     }
@@ -256,48 +245,39 @@ string f$hex2bin(const string &str) {
 
 static const int entities_size = 251;
 
-static const char *ent_to_num_s[entities_size] = {
-  "AElig", "Aacute", "Acirc", "Agrave", "Alpha", "Aring", "Atilde", "Auml", "Beta", "Ccedil",
-  "Chi", "Dagger", "Delta", "ETH", "Eacute", "Ecirc", "Egrave", "Epsilon", "Eta", "Euml",
-  "Gamma", "Iacute", "Icirc", "Igrave", "Iota", "Iuml", "Kappa", "Lambda", "Mu", "Ntilde",
-  "Nu", "OElig", "Oacute", "Ocirc", "Ograve", "Omega", "Omicron", "Oslash", "Otilde", "Ouml",
-  "Phi", "Pi", "Prime", "Psi", "Rho", "Scaron", "Sigma", "THORN", "Tau", "Theta",
-  "Uacute", "Ucirc", "Ugrave", "Upsilon", "Uuml", "Xi", "Yacute", "Yuml", "Zeta", "aacute",
-  "acirc", "acute", "aelig", "agrave", "alefsym", "alpha", "amp", "and", "ang", "aring",
-  "asymp", "atilde", "auml", "bdquo", "beta", "brvbar", "bull", "cap", "ccedil", "cedil",
-  "cent", "chi", "circ", "clubs", "cong", "copy", "crarr", "cup", "curren", "dArr",
-  "dagger", "darr", "deg", "delta", "diams", "divide", "eacute", "ecirc", "egrave", "empty",
-  "emsp", "ensp", "epsilon", "equiv", "eta", "eth", "euml", "euro", "exist", "fnof",
-  "forall", "frac12", "frac14", "frac34", "frasl", "gamma", "ge", "gt", "hArr", "harr",
-  "hearts", "hellip", "iacute", "icirc", "iexcl", "igrave", "image", "infin", "int", "iota",
-  "iquest", "isin", "iuml", "kappa", "lArr", "lambda", "lang", "laquo", "larr", "lceil",
-  "ldquo", "le", "lfloor", "lowast", "loz", "lrm", "lsaquo", "lsquo", "lt", "macr",
-  "mdash", "micro", "middot", "minus", "mu", "nabla", "nbsp", "ndash", "ne", "ni",
-  "not", "notin", "nsub", "ntilde", "nu", "oacute", "ocirc", "oelig", "ograve", "oline",
-  "omega", "omicron", "oplus", "or", "ordf", "ordm", "oslash", "otilde", "otimes", "ouml",
-  "para", "part", "permil", "perp", "phi", "pi", "piv", "plusmn", "pound", "prime",
-  "prod", "prop", "psi", "rArr", "radic", "rang", "raquo", "rarr", "rceil",
-  "rdquo", "real", "reg", "rfloor", "rho", "rlm", "rsaquo", "rsquo", "sbquo", "scaron",
-  "sdot", "sect", "shy", "sigma", "sigmaf", "sim", "spades", "sub", "sube", "sum",
-  "sup", "sup1", "sup2", "sup3", "supe", "szlig", "tau", "there4", "theta", "thetasym",
-  "thinsp", "thorn", "tilde", "times", "trade", "uArr", "uacute", "uarr", "ucirc", "ugrave",
-  "uml", "upsih", "upsilon", "uuml", "weierp", "xi", "yacute", "yen", "yuml", "zeta",
-  "zwj", "zwnj"};
+static const char *ent_to_num_s[entities_size] =
+  {"AElig",  "Aacute",  "Acirc",   "Agrave",   "Alpha",   "Aring",  "Atilde",  "Auml",   "Beta",    "Ccedil", "Chi",    "Dagger", "Delta",   "ETH",    "Eacute",
+   "Ecirc",  "Egrave",  "Epsilon", "Eta",      "Euml",    "Gamma",  "Iacute",  "Icirc",  "Igrave",  "Iota",   "Iuml",   "Kappa",  "Lambda",  "Mu",     "Ntilde",
+   "Nu",     "OElig",   "Oacute",  "Ocirc",    "Ograve",  "Omega",  "Omicron", "Oslash", "Otilde",  "Ouml",   "Phi",    "Pi",     "Prime",   "Psi",    "Rho",
+   "Scaron", "Sigma",   "THORN",   "Tau",      "Theta",   "Uacute", "Ucirc",   "Ugrave", "Upsilon", "Uuml",   "Xi",     "Yacute", "Yuml",    "Zeta",   "aacute",
+   "acirc",  "acute",   "aelig",   "agrave",   "alefsym", "alpha",  "amp",     "and",    "ang",     "aring",  "asymp",  "atilde", "auml",    "bdquo",  "beta",
+   "brvbar", "bull",    "cap",     "ccedil",   "cedil",   "cent",   "chi",     "circ",   "clubs",   "cong",   "copy",   "crarr",  "cup",     "curren", "dArr",
+   "dagger", "darr",    "deg",     "delta",    "diams",   "divide", "eacute",  "ecirc",  "egrave",  "empty",  "emsp",   "ensp",   "epsilon", "equiv",  "eta",
+   "eth",    "euml",    "euro",    "exist",    "fnof",    "forall", "frac12",  "frac14", "frac34",  "frasl",  "gamma",  "ge",     "gt",      "hArr",   "harr",
+   "hearts", "hellip",  "iacute",  "icirc",    "iexcl",   "igrave", "image",   "infin",  "int",     "iota",   "iquest", "isin",   "iuml",    "kappa",  "lArr",
+   "lambda", "lang",    "laquo",   "larr",     "lceil",   "ldquo",  "le",      "lfloor", "lowast",  "loz",    "lrm",    "lsaquo", "lsquo",   "lt",     "macr",
+   "mdash",  "micro",   "middot",  "minus",    "mu",      "nabla",  "nbsp",    "ndash",  "ne",      "ni",     "not",    "notin",  "nsub",    "ntilde", "nu",
+   "oacute", "ocirc",   "oelig",   "ograve",   "oline",   "omega",  "omicron", "oplus",  "or",      "ordf",   "ordm",   "oslash", "otilde",  "otimes", "ouml",
+   "para",   "part",    "permil",  "perp",     "phi",     "pi",     "piv",     "plusmn", "pound",   "prime",  "prod",   "prop",   "psi",     "rArr",   "radic",
+   "rang",   "raquo",   "rarr",    "rceil",    "rdquo",   "real",   "reg",     "rfloor", "rho",     "rlm",    "rsaquo", "rsquo",  "sbquo",   "scaron", "sdot",
+   "sect",   "shy",     "sigma",   "sigmaf",   "sim",     "spades", "sub",     "sube",   "sum",     "sup",    "sup1",   "sup2",   "sup3",    "supe",   "szlig",
+   "tau",    "there4",  "theta",   "thetasym", "thinsp",  "thorn",  "tilde",   "times",  "trade",   "uArr",   "uacute", "uarr",   "ucirc",   "ugrave", "uml",
+   "upsih",  "upsilon", "uuml",    "weierp",   "xi",      "yacute", "yen",     "yuml",   "zeta",    "zwj",    "zwnj"};
 
-static int ent_to_num_i[entities_size] = {
-  198, 193, 194, 192, 913, 197, 195, 196, 914, 199, 935, 8225, 916, 208, 201, 202, 200, 917, 919, 203,
-  915, 205, 206, 204, 921, 207, 922, 923, 924, 209, 925, 338, 211, 212, 210, 937, 927, 216, 213, 214,
-  934, 928, 8243, 936, 929, 352, 931, 222, 932, 920, 218, 219, 217, 933, 220, 926, 221, 376, 918, 225,
-  226, 180, 230, 224, 8501, 945, 38, 8743, 8736, 229, 8776, 227, 228, 8222, 946, 166, 8226, 8745, 231, 184,
-  162, 967, 710, 9827, 8773, 169, 8629, 8746, 164, 8659, 8224, 8595, 176, 948, 9830, 247, 233, 234, 232, 8709,
-  8195, 8194, 949, 8801, 951, 240, 235, 8364, 8707, 402, 8704, 189, 188, 190, 8260, 947, 8805, 62, 8660, 8596,
-  9829, 8230, 237, 238, 161, 236, 8465, 8734, 8747, 953, 191, 8712, 239, 954, 8656, 955, 9001, 171, 8592, 8968,
-  8220, 8804, 8970, 8727, 9674, 8206, 8249, 8216, 60, 175, 8212, 181, 183, 8722, 956, 8711, 160, 8211, 8800, 8715,
-  172, 8713, 8836, 241, 957, 243, 244, 339, 242, 8254, 969, 959, 8853, 8744, 170, 186, 248, 245, 8855, 246,
-  182, 8706, 8240, 8869, 966, 960, 982, 177, 163, 8242, 8719, 8733, 968, 8658, 8730, 9002, 187, 8594, 8969,
-  8221, 8476, 174, 8971, 961, 8207, 8250, 8217, 8218, 353, 8901, 167, 173, 963, 962, 8764, 9824, 8834, 8838, 8721,
-  8835, 185, 178, 179, 8839, 223, 964, 8756, 952, 977, 8201, 254, 732, 215, 8482, 8657, 250, 8593, 251, 249,
-  168, 978, 965, 252, 8472, 958, 253, 165, 255, 950, 8205, 8204};
+static int ent_to_num_i[entities_size] = {198,  193,  194,  192,  913,  197,  195,  196,  914,  199,  935,  8225, 916,  208,  201,  202,  200,  917,
+                                          919,  203,  915,  205,  206,  204,  921,  207,  922,  923,  924,  209,  925,  338,  211,  212,  210,  937,
+                                          927,  216,  213,  214,  934,  928,  8243, 936,  929,  352,  931,  222,  932,  920,  218,  219,  217,  933,
+                                          220,  926,  221,  376,  918,  225,  226,  180,  230,  224,  8501, 945,  38,   8743, 8736, 229,  8776, 227,
+                                          228,  8222, 946,  166,  8226, 8745, 231,  184,  162,  967,  710,  9827, 8773, 169,  8629, 8746, 164,  8659,
+                                          8224, 8595, 176,  948,  9830, 247,  233,  234,  232,  8709, 8195, 8194, 949,  8801, 951,  240,  235,  8364,
+                                          8707, 402,  8704, 189,  188,  190,  8260, 947,  8805, 62,   8660, 8596, 9829, 8230, 237,  238,  161,  236,
+                                          8465, 8734, 8747, 953,  191,  8712, 239,  954,  8656, 955,  9001, 171,  8592, 8968, 8220, 8804, 8970, 8727,
+                                          9674, 8206, 8249, 8216, 60,   175,  8212, 181,  183,  8722, 956,  8711, 160,  8211, 8800, 8715, 172,  8713,
+                                          8836, 241,  957,  243,  244,  339,  242,  8254, 969,  959,  8853, 8744, 170,  186,  248,  245,  8855, 246,
+                                          182,  8706, 8240, 8869, 966,  960,  982,  177,  163,  8242, 8719, 8733, 968,  8658, 8730, 9002, 187,  8594,
+                                          8969, 8221, 8476, 174,  8971, 961,  8207, 8250, 8217, 8218, 353,  8901, 167,  173,  963,  962,  8764, 9824,
+                                          8834, 8838, 8721, 8835, 185,  178,  179,  8839, 223,  964,  8756, 952,  977,  8201, 254,  732,  215,  8482,
+                                          8657, 250,  8593, 251,  249,  168,  978,  965,  252,  8472, 958,  253,  165,  255,  950,  8205, 8204};
 /*
 static int cp1251_to_utf8[128] = {
   0x402, 0x403,  0x201A, 0x453,  0x201E, 0x2026, 0x2020, 0x2021, 0x20AC, 0x2030, 0x409,  0x2039, 0x40A, 0x40C, 0x40B, 0x40F,
@@ -309,23 +289,19 @@ static int cp1251_to_utf8[128] = {
   0x430, 0x431,  0x432,  0x433,  0x434,  0x435,  0x436,  0x437,  0x438,  0x439,  0x43A,  0x43B,  0x43C, 0x43D, 0x43E, 0x43F,
   0x440, 0x441,  0x442,  0x443,  0x444,  0x445,  0x446,  0x447,  0x448,  0x449,  0x44A,  0x44B,  0x44C, 0x44D, 0x44E, 0x44F};
 */
-static const char *cp1251_to_utf8_str[128] = {
-  "&#1026;", "&#1027;", "&#8218;", "&#1107;", "&#8222;", "&hellip;", "&dagger;", "&Dagger;", "&euro;", "&permil;", "&#1033;", "&#8249;", "&#1034;", "&#1036;",
-  "&#1035;", "&#1039;",
-  "&#1106;", "&#8216;", "&#8217;", "&#8219;", "&#8220;", "&bull;", "&ndash;", "&mdash;", "", "&trade;", "&#1113;", "&#8250;", "&#1114;", "&#1116;", "&#1115;",
-  "&#1119;",
-  "&nbsp;", "&#1038;", "&#1118;", "&#1032;", "&curren;", "&#1168;", "&brvbar;", "&sect;", "&#1025;", "&copy;", "&#1028;", "&laquo;", "&not;", "&shy;", "&reg;",
-  "&#1031;",
-  "&deg;", "&plusmn;", "&#1030;", "&#1110;", "&#1169;", "&micro;", "&para;", "&middot;", "&#1105;", "&#8470;", "&#1108;", "&raquo;", "&#1112;", "&#1029;",
-  "&#1109;", "&#1111;",
-  "&#1040;", "&#1041;", "&#1042;", "&#1043;", "&#1044;", "&#1045;", "&#1046;", "&#1047;", "&#1048;", "&#1049;", "&#1050;", "&#1051;", "&#1052;", "&#1053;",
-  "&#1054;", "&#1055;",
-  "&#1056;", "&#1057;", "&#1058;", "&#1059;", "&#1060;", "&#1061;", "&#1062;", "&#1063;", "&#1064;", "&#1065;", "&#1066;", "&#1067;", "&#1068;", "&#1069;",
-  "&#1070;", "&#1071;",
-  "&#1072;", "&#1073;", "&#1074;", "&#1075;", "&#1076;", "&#1077;", "&#1078;", "&#1079;", "&#1080;", "&#1081;", "&#1082;", "&#1083;", "&#1084;", "&#1085;",
-  "&#1086;", "&#1087;",
-  "&#1088;", "&#1089;", "&#1090;", "&#1091;", "&#1092;", "&#1093;", "&#1094;", "&#1095;", "&#1096;", "&#1097;", "&#1098;", "&#1099;", "&#1100;", "&#1101;",
-  "&#1102;", "&#1103;"};
+static const char *cp1251_to_utf8_str[128] = {"&#1026;", "&#1027;", "&#8218;", "&#1107;", "&#8222;", "&hellip;", "&dagger;", "&Dagger;", "&euro;",   "&permil;",
+                                              "&#1033;", "&#8249;", "&#1034;", "&#1036;", "&#1035;", "&#1039;",  "&#1106;",  "&#8216;",  "&#8217;",  "&#8219;",
+                                              "&#8220;", "&bull;",  "&ndash;", "&mdash;", "",        "&trade;",  "&#1113;",  "&#8250;",  "&#1114;",  "&#1116;",
+                                              "&#1115;", "&#1119;", "&nbsp;",  "&#1038;", "&#1118;", "&#1032;",  "&curren;", "&#1168;",  "&brvbar;", "&sect;",
+                                              "&#1025;", "&copy;",  "&#1028;", "&laquo;", "&not;",   "&shy;",    "&reg;",    "&#1031;",  "&deg;",    "&plusmn;",
+                                              "&#1030;", "&#1110;", "&#1169;", "&micro;", "&para;",  "&middot;", "&#1105;",  "&#8470;",  "&#1108;",  "&raquo;",
+                                              "&#1112;", "&#1029;", "&#1109;", "&#1111;", "&#1040;", "&#1041;",  "&#1042;",  "&#1043;",  "&#1044;",  "&#1045;",
+                                              "&#1046;", "&#1047;", "&#1048;", "&#1049;", "&#1050;", "&#1051;",  "&#1052;",  "&#1053;",  "&#1054;",  "&#1055;",
+                                              "&#1056;", "&#1057;", "&#1058;", "&#1059;", "&#1060;", "&#1061;",  "&#1062;",  "&#1063;",  "&#1064;",  "&#1065;",
+                                              "&#1066;", "&#1067;", "&#1068;", "&#1069;", "&#1070;", "&#1071;",  "&#1072;",  "&#1073;",  "&#1074;",  "&#1075;",
+                                              "&#1076;", "&#1077;", "&#1078;", "&#1079;", "&#1080;", "&#1081;",  "&#1082;",  "&#1083;",  "&#1084;",  "&#1085;",
+                                              "&#1086;", "&#1087;", "&#1088;", "&#1089;", "&#1090;", "&#1091;",  "&#1092;",  "&#1093;",  "&#1094;",  "&#1095;",
+                                              "&#1096;", "&#1097;", "&#1098;", "&#1099;", "&#1100;", "&#1101;",  "&#1102;",  "&#1103;"};
 
 string f$htmlentities(const string &str) {
   int len = (int)str.size();
@@ -375,12 +351,12 @@ string f$htmlentities(const string &str) {
 
 string f$html_entity_decode(const string &str, int64_t flags, const string &encoding) {
   if (flags >= 3) {
-    php_critical_error ("unsupported parameter flags = %" PRIi64 " in function html_entity_decode", flags);
+    php_critical_error("unsupported parameter flags = %" PRIi64 " in function html_entity_decode", flags);
   }
 
   bool utf8 = memchr(encoding.c_str(), '8', encoding.size()) != nullptr;
   if (!utf8 && strstr(encoding.c_str(), "1251") == nullptr) {
-    php_critical_error ("unsupported encoding \"%s\" in function html_entity_decode", encoding.c_str());
+    php_critical_error("unsupported encoding \"%s\" in function html_entity_decode", encoding.c_str());
     return str;
   }
 
@@ -461,7 +437,7 @@ string f$html_entity_decode(const string &str, int64_t flags, const string &enco
 
 string f$htmlspecialchars(const string &str, int64_t flags) {
   if (flags >= 3) {
-    php_critical_error ("unsupported parameter flags = %" PRIi64 " in function htmlspecialchars", flags);
+    php_critical_error("unsupported parameter flags = %" PRIi64 " in function htmlspecialchars", flags);
   }
 
   const string::size_type len = str.size();
@@ -522,7 +498,7 @@ string f$htmlspecialchars(const string &str, int64_t flags) {
 
 string f$htmlspecialchars_decode(const string &str, int64_t flags) {
   if (flags >= 3) {
-    php_critical_error ("unsupported parameter flags = %" PRIi64 " in function htmlspecialchars_decode", flags);
+    php_critical_error("unsupported parameter flags = %" PRIi64 " in function htmlspecialchars_decode", flags);
   }
 
   int len = str.size();
@@ -736,7 +712,7 @@ string f$number_format(double number, int64_t decimals, const string &dec_point,
   }
 
   if (result_begin <= php_buf) {
-    php_critical_error ("maximum length of result (%d) exceeded", PHP_BUF_LEN);
+    php_critical_error("maximum length of result (%d) exceeded", PHP_BUF_LEN);
     return {};
   }
 
@@ -868,9 +844,7 @@ string f$pack(const string &pattern, const array<mixed> &a) {
             }
             case 'n': {
               unsigned short value = (short)arg.to_int();
-              static_SB
-                << (char)(value >> 8)
-                << (char)(value & 255);
+              static_SB << (char)(value >> 8) << (char)(value & 255);
               break;
             }
             case 'i':
@@ -884,11 +858,7 @@ string f$pack(const string &pattern, const array<mixed> &a) {
             }
             case 'N': {
               auto value = static_cast<uint32_t>(arg.to_int());
-              static_SB
-                << (char)(value >> 24)
-                << (char)((value >> 16) & 255)
-                << (char)((value >> 8) & 255)
-                << (char)(value & 255);
+              static_SB << (char)(value >> 24) << (char)((value >> 16) & 255) << (char)((value >> 8) & 255) << (char)(value & 255);
               break;
             }
             case 'f': {
@@ -953,7 +923,7 @@ string f$pack(const string &pattern, const array<mixed> &a) {
     }
   }
 
-  php_assert (cur_arg <= a.count());
+  php_assert(cur_arg <= a.count());
   if (cur_arg < a.count()) {
     php_warning("Too much arguments to call pack with format \"%s\"", pattern.c_str());
   }
@@ -1268,9 +1238,9 @@ string f$stripcslashes(const string &str) {
           break;
         case 'x': // \\xN or \\xNN
           // collect up to two hex digits and interpret them as char
-          if (i+1 < len && isxdigit(static_cast<int>(str[i+1]))) {
+          if (i + 1 < len && isxdigit(static_cast<int>(str[i + 1]))) {
             num_tmp[0] = str[++i];
-            if (i+1 < len && isxdigit(static_cast<int>(str[i+1]))) {
+            if (i + 1 < len && isxdigit(static_cast<int>(str[i + 1]))) {
               num_tmp[1] = str[++i];
               num_tmp[2] = '\0';
               new_len -= 3;
@@ -1292,7 +1262,7 @@ string f$stripcslashes(const string &str) {
             num_tmp[j++] = str[i++];
           }
           if (j) {
-            num_tmp[j] ='\0';
+            num_tmp[j] = '\0';
             *result_c_str++ = static_cast<char>(strtol(num_tmp, nullptr, 8));
             new_len -= j;
             i--;
@@ -1566,13 +1536,8 @@ string f$strip_tags(const string &str, const string &allow) {
       case 'E':
       case 'e':
         /* !DOCTYPE exception */
-        if (state == 3 && i > 6
-            && tolower(str[i - 1]) == 'p'
-            && tolower(str[i - 2]) == 'y'
-            && tolower(str[i - 3]) == 't'
-            && tolower(str[i - 4]) == 'c'
-            && tolower(str[i - 5]) == 'o'
-            && tolower(str[i - 6]) == 'd') {
+        if (state == 3 && i > 6 && tolower(str[i - 1]) == 'p' && tolower(str[i - 2]) == 'y' && tolower(str[i - 3]) == 't' && tolower(str[i - 4]) == 'c'
+            && tolower(str[i - 5]) == 'o' && tolower(str[i - 6]) == 'd') {
           state = 1;
           break;
         }
@@ -1602,7 +1567,7 @@ string f$strip_tags(const string &str, const string &allow) {
   return static_SB.str();
 }
 
-template <class T>
+template<class T>
 string strip_tags_string(const array<T> &list) {
   string allow_str;
   if (!list.empty()) {
@@ -1710,8 +1675,7 @@ static int64_t compare_right(char const **a, char const *aend, char const **b, c
      both numbers to know that they have the same magnitude, so we
      remember it in BIAS. */
   for (;; (*a)++, (*b)++) {
-    if ((*a == aend || !isdigit((int32_t)(unsigned char)**a)) &&
-        (*b == bend || !isdigit((int32_t)(unsigned char)**b))) {
+    if ((*a == aend || !isdigit((int32_t)(unsigned char)**a)) && (*b == bend || !isdigit((int32_t)(unsigned char)**b))) {
       return bias;
     } else if (*a == aend || !isdigit((int32_t)(unsigned char)**a)) {
       return -1;
@@ -1735,8 +1699,7 @@ static int64_t compare_left(char const **a, char const *aend, char const **b, ch
   /* Compare two left-aligned numbers: the first to have a
      different value wins. */
   for (;; (*a)++, (*b)++) {
-    if ((*a == aend || !isdigit((int32_t)(unsigned char)**a)) &&
-        (*b == bend || !isdigit((int32_t)(unsigned char)**b))) {
+    if ((*a == aend || !isdigit((int32_t)(unsigned char)**a)) && (*b == bend || !isdigit((int32_t)(unsigned char)**b))) {
       return 0;
     } else if (*a == aend || !isdigit((int32_t)(unsigned char)**a)) {
       return -1;
@@ -1755,8 +1718,7 @@ static int64_t compare_left(char const **a, char const *aend, char const **b, ch
 static int64_t strnatcmp_ex(char const *a, size_t a_len, char const *b, size_t b_len, int64_t fold_case) {
   unsigned char ca, cb;
   char const *ap, *bp;
-  char const *aend = a + a_len,
-    *bend = b + b_len;
+  char const *aend = a + a_len, *bend = b + b_len;
   bool fractional = false;
   int64_t result = 0;
   short leading = 1;
@@ -1840,7 +1802,6 @@ static int64_t strnatcmp_ex(char const *a, size_t a_len, char const *b, size_t b
   }
 }
 
-
 int64_t f$strnatcmp(const string &lhs, const string &rhs) {
   return strnatcmp_ex(lhs.c_str(), lhs.size(), rhs.c_str(), rhs.size(), 0);
 }
@@ -1876,14 +1837,14 @@ Optional<int64_t> f$strpos(const string &haystack, const string &needle, int64_t
       return false;
     }
 
-    const char *s = static_cast <const char *> (memchr(haystack.c_str() + offset, needle[0], haystack.size() - offset));
+    const char *s = static_cast<const char *>(memchr(haystack.c_str() + offset, needle[0], haystack.size() - offset));
     if (s == nullptr) {
       return false;
     }
     return s - haystack.c_str();
   }
 
-  const char *s = static_cast <const char *> (memmem(haystack.c_str() + offset, haystack.size() - offset, needle.c_str(), needle.size()));
+  const char *s = static_cast<const char *>(memmem(haystack.c_str() + offset, haystack.size() - offset, needle.c_str(), needle.size()));
   if (s == nullptr) {
     return false;
   }
@@ -1909,11 +1870,11 @@ Optional<int64_t> f$strrpos(const string &haystack, const string &needle, int64_
     return false;
   }
 
-  const char *s = static_cast <const char *> (memmem(haystack.c_str() + offset, haystack.size() - offset, needle.c_str(), needle.size())), *t;
+  const char *s = static_cast<const char *>(memmem(haystack.c_str() + offset, haystack.size() - offset, needle.c_str(), needle.size())), *t;
   if (s == nullptr || s >= end) {
     return false;
   }
-  while ((t = static_cast <const char *> (memmem(s + 1, haystack.c_str() + haystack.size() - s - 1, needle.c_str(), needle.size()))) != nullptr && t < end) {
+  while ((t = static_cast<const char *>(memmem(s + 1, haystack.c_str() + haystack.size() - s - 1, needle.c_str(), needle.size()))) != nullptr && t < end) {
     s = t;
   }
   return s - haystack.c_str();
@@ -1965,7 +1926,7 @@ Optional<string> f$strstr(const string &haystack, const string &needle, bool bef
     return false;
   }
 
-  const char *s = static_cast <const char *> (memmem(haystack.c_str(), haystack.size(), needle.c_str(), needle.size()));
+  const char *s = static_cast<const char *>(memmem(haystack.c_str(), haystack.size(), needle.c_str(), needle.size()));
   if (s == nullptr) {
     return false;
   }
@@ -1987,9 +1948,7 @@ string f$strtolower(const string &str) {
   // note: do not use islower() here, the compiler does not inline that function call;
   // it could be beneficial to use 256-byte LUT here, but SIMD approach could be even better
   const char *end = str.c_str() + n;
-  const char *uppercase_pos = std::find_if(str.c_str(), end, [](unsigned char ch) {
-    return ch >= 'A' && ch <= 'Z';
-  });
+  const char *uppercase_pos = std::find_if(str.c_str(), end, [](unsigned char ch) { return ch >= 'A' && ch <= 'Z'; });
   if (uppercase_pos == end) {
     return str;
   }
@@ -2011,9 +1970,7 @@ string f$strtoupper(const string &str) {
 
   // same optimization as in strtolower
   const char *end = str.c_str() + n;
-  const char *lowercase_pos = std::find_if(str.c_str(), end, [](unsigned char ch) {
-    return ch >= 'a' && ch <= 'z';
-  });
+  const char *lowercase_pos = std::find_if(str.c_str(), end, [](unsigned char ch) { return ch >= 'a' && ch <= 'z'; });
   if (lowercase_pos == end) {
     return str;
   }
@@ -2034,7 +1991,7 @@ string f$strtr(const string &subject, const string &from, const string &to) {
   int n = subject.size();
   string result(n, false);
   for (int i = 0; i < n; i++) {
-    const char *p = static_cast <const char *> (memchr(static_cast <const void *> (from.c_str()), (int)(unsigned char)subject[i], (size_t)from.size()));
+    const char *p = static_cast<const char *>(memchr(static_cast<const void *>(from.c_str()), (int)(unsigned char)subject[i], (size_t)from.size()));
     if (p == nullptr || static_cast<string::size_type>(p - from.c_str()) >= to.size()) {
       result[i] = subject[i];
     } else {
@@ -2050,7 +2007,7 @@ string f$str_pad(const string &input, int64_t len, const string &pad_str, int64_
     return input;
   }
   if (len > string::max_size()) {
-    php_critical_error ("tried to allocate too big string of size %" PRIi64, len);
+    php_critical_error("tried to allocate too big string of size %" PRIi64, len);
   }
 
   const auto strlen = static_cast<string::size_type>(len);
@@ -2095,7 +2052,7 @@ string f$str_repeat(const string &s, int64_t multiplier) {
 
   auto mult = static_cast<string::size_type>(multiplier);
   if (string::max_size() / len < mult) {
-    php_critical_error ("tried to allocate too big string of size %" PRIi64, multiplier * len);
+    php_critical_error("tried to allocate too big string of size %" PRIi64, multiplier * len);
   }
 
   if (len == 1) {
@@ -2152,7 +2109,7 @@ static string str_replace_char(char c, const string &replace, const string &subj
 
     piece = pos + 1;
   }
-  php_assert (0); // unreachable
+  php_assert(0); // unreachable
   return {};
 }
 
@@ -2207,7 +2164,7 @@ void str_replace_inplace(const string &search, const string &replace, string &su
 
     piece = pos + search.size();
   }
-  php_assert (0); // unreachable
+  php_assert(0); // unreachable
 }
 
 string str_replace(const string &search, const string &replace, const string &subject, int64_t &replace_count, bool with_case) {
@@ -2239,7 +2196,7 @@ string str_replace(const string &search, const string &replace, const string &su
 
     piece = pos + search.size();
   }
-  php_assert (0); // unreachable
+  php_assert(0); // unreachable
   return {};
 }
 
@@ -2265,7 +2222,7 @@ string str_replace_string(const mixed &search, const mixed &replace, const strin
   } else {
     if (replace.is_array()) {
       php_warning("Parameter mismatch, search is a string while replace is an array");
-      //return false;
+      // return false;
     }
 
     return str_replace_gen(f$strval(search), f$strval(replace), subject, replace_count, with_case);
@@ -2325,7 +2282,7 @@ mixed f$str_ireplace(const mixed &search, const mixed &replace, const mixed &sub
 
 array<string> f$str_split(const string &str, int64_t split_length) {
   if (split_length <= 0) {
-    php_warning ("Wrong parameter split_length = %" PRIi64 " in function str_split", split_length);
+    php_warning("Wrong parameter split_length = %" PRIi64 " in function str_split", split_length);
     array<string> result(array_size(1, true));
     result.set_value(0, str);
     return result;
@@ -2386,7 +2343,7 @@ int64_t f$substr_count(const string &haystack, const string &needle, int64_t off
     return end - s;
   }
   do {
-    s = static_cast <const char *> (memmem(static_cast <const void *> (s), (size_t)(end - s), static_cast <const void *> (needle.c_str()), (size_t)needle.size()));
+    s = static_cast<const char *>(memmem(static_cast<const void *>(s), (size_t)(end - s), static_cast<const void *>(needle.c_str()), (size_t)needle.size()));
     if (s == nullptr) {
       return ans;
     }
@@ -2632,7 +2589,7 @@ Optional<array<mixed>> f$unpack(const string &pattern, const string &data) {
             value[(j - data_pos) * 2 + 1] = num_low;
           }
         }
-        php_assert (cnt == 0 || cnt == -1);
+        php_assert(cnt == 0 || cnt == -1);
 
         if (key_prefix.empty()) {
           key_prefix = ONE;
@@ -2944,10 +2901,21 @@ string str_concat(str_concat_arg s1, str_concat_arg s2, str_concat_arg s3) {
 
 string str_concat(str_concat_arg s1, str_concat_arg s2, str_concat_arg s3, str_concat_arg s4) {
   auto new_size = s1.size + s2.size + s3.size + s4.size;
-  return string(new_size, true).append_unsafe(s1.as_tmp_string()).append_unsafe(s2.as_tmp_string()).append_unsafe(s3.as_tmp_string()).append_unsafe(s4.as_tmp_string()).finish_append();
+  return string(new_size, true)
+    .append_unsafe(s1.as_tmp_string())
+    .append_unsafe(s2.as_tmp_string())
+    .append_unsafe(s3.as_tmp_string())
+    .append_unsafe(s4.as_tmp_string())
+    .finish_append();
 }
 
 string str_concat(str_concat_arg s1, str_concat_arg s2, str_concat_arg s3, str_concat_arg s4, str_concat_arg s5) {
   auto new_size = s1.size + s2.size + s3.size + s4.size + s5.size;
-  return string(new_size, true).append_unsafe(s1.as_tmp_string()).append_unsafe(s2.as_tmp_string()).append_unsafe(s3.as_tmp_string()).append_unsafe(s4.as_tmp_string()).append_unsafe(s5.as_tmp_string()).finish_append();
+  return string(new_size, true)
+    .append_unsafe(s1.as_tmp_string())
+    .append_unsafe(s2.as_tmp_string())
+    .append_unsafe(s3.as_tmp_string())
+    .append_unsafe(s4.as_tmp_string())
+    .append_unsafe(s5.as_tmp_string())
+    .finish_append();
 }

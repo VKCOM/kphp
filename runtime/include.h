@@ -18,7 +18,6 @@
 
 #define COMMA ,
 
-
 template<class T>
 class convert_to {
 public:
@@ -30,10 +29,8 @@ public:
 
   static inline T convert(const Unknown &val);
 
-  template<class T1,
-    class = std::enable_if_t<!std::is_same<std::decay_t<T1>, Unknown>::value>,
-    class = std::enable_if_t<!std::is_same<std::decay_t<T1>, T>::value>
-  >
+  template<class T1, class = std::enable_if_t<!std::is_same<std::decay_t<T1>, Unknown>::value>,
+           class = std::enable_if_t<!std::is_same<std::decay_t<T1>, T>::value>>
   static inline T convert(T1 &&val);
 };
 
@@ -49,8 +46,10 @@ template<class T>
 struct CDataPtr;
 
 template<class T>
-bool f$is_null(CDataPtr<T> ptr) { return ptr.is_php_null(); }
+bool f$is_null(CDataPtr<T> ptr) {
+  return ptr.is_php_null();
+}
 
-using std::swap;
-using std::min;
 using std::max;
+using std::min;
+using std::swap;

@@ -10,8 +10,8 @@
 #include "common/mixin/not_copyable.h"
 #include "common/wrappers/likely.h"
 
-#include "runtime/memory_resource/memory_resource.h"
 #include "runtime/memory_resource/details/universal_reallocate.h"
+#include "runtime/memory_resource/memory_resource.h"
 #include "runtime/php_assert.h"
 
 namespace memory_resource {
@@ -20,10 +20,18 @@ class monotonic_buffer : vk::not_copyable {
 protected:
   void init(void *buffer, size_t buffer_size) noexcept;
 
-  size_t size() const noexcept { return static_cast<size_t>(memory_end_ - memory_current_); }
-  void *memory_begin() const noexcept { return memory_begin_; }
-  void *memory_current() const noexcept { return memory_current_; }
-  const MemoryStats &get_memory_stats() const noexcept { return stats_; }
+  size_t size() const noexcept {
+    return static_cast<size_t>(memory_end_ - memory_current_);
+  }
+  void *memory_begin() const noexcept {
+    return memory_begin_;
+  }
+  void *memory_current() const noexcept {
+    return memory_current_;
+  }
+  const MemoryStats &get_memory_stats() const noexcept {
+    return stats_;
+  }
 
   void register_allocation(void *mem, size_t size) noexcept {
     if (mem) {
@@ -42,8 +50,7 @@ protected:
   }
 
   bool check_memory_piece(void *mem, size_t size) const noexcept {
-    return memory_begin_ <= static_cast<char *>(mem) &&
-           static_cast<char *>(mem) + size <= memory_current_;
+    return memory_begin_ <= static_cast<char *>(mem) && static_cast<char *>(mem) + size <= memory_current_;
   }
 
   void critical_dump(void *mem, size_t size) const noexcept;
@@ -56,14 +63,13 @@ protected:
   char *memory_end_{nullptr};
 };
 
-
 class monotonic_buffer_resource : protected monotonic_buffer {
 public:
-  using monotonic_buffer::init;
   using monotonic_buffer::get_memory_stats;
-  using monotonic_buffer::size;
+  using monotonic_buffer::init;
   using monotonic_buffer::memory_begin;
   using monotonic_buffer::memory_current;
+  using monotonic_buffer::size;
 
   void *allocate(size_t size) noexcept {
     void *mem = get_from_pool(size);

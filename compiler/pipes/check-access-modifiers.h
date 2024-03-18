@@ -12,6 +12,7 @@ class CheckAccessModifiersPass final : public FunctionPassBase {
 private:
   ClassPtr class_id;
   ClassPtr lambda_class_id;
+
 public:
   std::string get_description() override {
     return "Check access modifiers";
@@ -45,11 +46,7 @@ void check_access(ClassPtr class_id, ClassPtr lambda_class_id, MemberModifier mo
     kphp_error(class_id == access_class || lambda_class_id == access_class,
                fmt_format("Can't access private {} {}", entity_type, impl_::get_field_name(field)));
   } else if (modifiers.is_protected()) {
-    auto is_ok = [&access_class](ClassPtr class_id) {
-      return class_id && (class_id->is_parent_of(access_class) || access_class->is_parent_of(class_id));
-    };
-    kphp_error(is_ok(class_id) || is_ok(lambda_class_id),
-               fmt_format("Can't access protected {} {}", entity_type, impl_::get_field_name(field)));
+    auto is_ok = [&access_class](ClassPtr class_id) { return class_id && (class_id->is_parent_of(access_class) || access_class->is_parent_of(class_id)); };
+    kphp_error(is_ok(class_id) || is_ok(lambda_class_id), fmt_format("Can't access protected {} {}", entity_type, impl_::get_field_name(field)));
   }
 }
-

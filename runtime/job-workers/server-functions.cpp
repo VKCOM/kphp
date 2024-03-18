@@ -61,8 +61,8 @@ int64_t f$kphp_job_worker_store_response(const class_instance<C$KphpJobWorkerRes
     php_warning("Can't store job response %s: not enough shared messages", response.get_class());
     return job_workers::store_response_not_enough_shared_messages_error;
   }
-  response_memory->instance = copy_instance_into_other_memory(response, response_memory->resource,
-                                                              ExtraRefCnt::for_job_worker_communication, job_workers::request_extra_shared_memory);
+  response_memory->instance =
+    copy_instance_into_other_memory(response, response_memory->resource, ExtraRefCnt::for_job_worker_communication, job_workers::request_extra_shared_memory);
   if (response_memory->instance.is_null()) {
     php_warning("Can't store job response %s: too big response", response.get_class());
     memory_manager.release_shared_message(response_memory);

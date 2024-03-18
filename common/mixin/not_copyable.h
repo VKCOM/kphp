@@ -17,4 +17,4 @@ protected:
   ~not_copyable() = default;
 };
 
-}
+} // namespace vk

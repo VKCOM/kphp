@@ -10,8 +10,8 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
-#include "compiler/vertex-util.h"
 #include "compiler/type-hint.h"
+#include "compiler/vertex-util.h"
 
 // a "virtual method" is an instance method overridden in child classes (all methods of interfaces are virtual also)
 // $obj->virtual_method() call actually dynamically handles the runtime type of $obj, proxying a call to a concrete class
@@ -67,7 +67,6 @@ enum class VarianceKind {
   ParamTypeHints,  // contravariance
 };
 
-
 // check that type hints are compatible following the PHP rules
 //
 // ReturnTypeHints: derived type can be more specific than the base type
@@ -103,8 +102,7 @@ bool php_type_hints_compatible(VarianceKind mode, const TypeHint *base, const Ty
         }
       }
       // covariance allows base `?T` type to be compared as `T`, but not the other way around
-      return base_optional->or_null && !base_optional->or_false &&
-             php_type_hints_compatible(mode, base_optional->inner, derived);
+      return base_optional->or_null && !base_optional->or_false && php_type_hints_compatible(mode, base_optional->inner, derived);
     }
     // or-false types are handled below
   }
@@ -131,7 +129,8 @@ bool php_type_hints_compatible(VarianceKind mode, const TypeHint *base, const Ty
       }
       // for typed callables inheritance, we allow when parent/child are totally equal
       // we don't allow co[ntra]variance in typed callables' params/return
-      if (base_callable->is_typed_callable() && derived_callable->is_typed_callable() && base_callable->arg_types.size() == derived_callable->arg_types.size()) {
+      if (base_callable->is_typed_callable() && derived_callable->is_typed_callable()
+          && base_callable->arg_types.size() == derived_callable->arg_types.size()) {
         for (int i = 0; i < base_callable->arg_types.size(); ++i) {
           if (base_callable->arg_types[i] != derived_callable->arg_types[i]) {
             return false;
@@ -161,14 +160,12 @@ bool php_type_hints_compatible(VarianceKind mode, const TypeHint *base, const Ty
 }
 
 bool check_php_signatures_variance(FunctionPtr base_function, FunctionPtr derived_method, std::string &error_info) {
-  const auto type_hint_string = [](const TypeHint *type_hint) {
-    return type_hint ? type_hint->as_human_readable() : "<none>";
-  };
+  const auto type_hint_string = [](const TypeHint *type_hint) { return type_hint ? type_hint->as_human_readable() : "<none>"; };
 
   if (!php_type_hints_compatible(VarianceKind::ReturnTypeHints, base_function->return_typehint, derived_method->return_typehint)) {
-    error_info = fmt_format("\t{} return type: {}\n", base_function->class_id->name, type_hint_string(base_function->return_typehint)) +
-                 fmt_format("\t{} return type: {}\n", derived_method->class_id->name, type_hint_string(derived_method->return_typehint)) +
-                 "\tNote: derived method return type can't be more generic, but it can be more specific (it should be covariant)";
+    error_info = fmt_format("\t{} return type: {}\n", base_function->class_id->name, type_hint_string(base_function->return_typehint))
+                 + fmt_format("\t{} return type: {}\n", derived_method->class_id->name, type_hint_string(derived_method->return_typehint))
+                 + "\tNote: derived method return type can't be more generic, but it can be more specific (it should be covariant)";
     return false;
   }
 
@@ -179,9 +176,11 @@ bool check_php_signatures_variance(FunctionPtr base_function, FunctionPtr derive
     auto base_param = base_params[i].as<op_func_param>();
     auto derived_param = derived_params[i].as<op_func_param>();
     if (!php_type_hints_compatible(VarianceKind::ParamTypeHints, base_param->type_hint, derived_param->type_hint)) {
-      error_info = fmt_format("\t{} parameter ${} type: {}\n", base_function->class_id->name, base_param->var()->get_string(), type_hint_string(base_param->type_hint)) +
-                   fmt_format("\t{} parameter ${} type: {}\n", derived_method->class_id->name, derived_param->var()->get_string(), type_hint_string(derived_param->type_hint)) +
-                   "\tNote: derived method param type can't be more specific, but it can be more generic (it should be contravariant)";
+      error_info =
+        fmt_format("\t{} parameter ${} type: {}\n", base_function->class_id->name, base_param->var()->get_string(), type_hint_string(base_param->type_hint))
+        + fmt_format("\t{} parameter ${} type: {}\n", derived_method->class_id->name, derived_param->var()->get_string(),
+                     type_hint_string(derived_param->type_hint))
+        + "\tNote: derived method param type can't be more specific, but it can be more generic (it should be contravariant)";
       return false;
     }
   }
@@ -228,8 +227,7 @@ bool check_that_signatures_are_same(FunctionPtr interface_function, ClassPtr con
 
   if (!(i_argn <= max_argn && (default_argn >= max_argn - i_argn))) {
     stage::set_location(derived_method->root->location);
-    kphp_error(false, fmt_format("Count of arguments differ in {} and {}",
-                                 interface_function->as_human_readable(), derived_method->as_human_readable()));
+    kphp_error(false, fmt_format("Count of arguments differ in {} and {}", interface_function->as_human_readable(), derived_method->as_human_readable()));
     return false;
   }
 
@@ -239,8 +237,8 @@ bool check_that_signatures_are_same(FunctionPtr interface_function, ClassPtr con
     std::string error_info;
     if (!check_php_signatures_variance(interface_function, derived_method, error_info)) {
       stage::set_location(derived_method->root->location);
-      kphp_error(false, fmt_format("Declaration of {}() must be compatible with {}()\n{}",
-                                   derived_method->as_human_readable(), interface_function->as_human_readable(), error_info));
+      kphp_error(false, fmt_format("Declaration of {}() must be compatible with {}()\n{}", derived_method->as_human_readable(),
+                                   interface_function->as_human_readable(), error_info));
     }
   }
 
@@ -282,8 +280,7 @@ VertexAdaptor<op_case> gen_case_calling_methods_on_derived_class(ClassPtr derive
 
     bool is_overridden_by_ancestors = concrete_method_of_derived && !concrete_method_of_derived->modifiers.is_abstract();
     if (virtual_function->modifiers.is_abstract() && !derived->modifiers.is_abstract() && !is_overridden_by_ancestors) {
-      kphp_error(false, fmt_format("You should override abstract method {} in class {}",
-                                   virtual_function->as_human_readable(), derived->as_human_readable()));
+      kphp_error(false, fmt_format("You should override abstract method {} in class {}", virtual_function->as_human_readable(), derived->as_human_readable()));
       return {};
     }
   }
@@ -363,10 +360,12 @@ VertexAdaptor<op_seq> generate_body_of_empty_virtual_method(ClassPtr klass, Func
 
   kphp_error_act(all_type_hints_set,
                  fmt_format("Error compiling {}, because {} has no inheritors.\nProvide types for all params (via type hints or phpdoc)",
-                            method->as_human_readable(), klass->as_human_readable()), return VertexAdaptor<op_seq>::create());
+                            method->as_human_readable(), klass->as_human_readable()),
+                 return VertexAdaptor<op_seq>::create());
   kphp_error_act(!any_type_hint_has_tp_any,
                  fmt_format("Error compiling {}, because {} has no inheritors.\nTypes must not contain 'any' or 'array', they should be definite",
-                            method->as_human_readable(), klass->as_human_readable()), return VertexAdaptor<op_seq>::create());
+                            method->as_human_readable(), klass->as_human_readable()),
+                 return VertexAdaptor<op_seq>::create());
 
   if (ret_type->try_as<TypeHintPrimitive>() && ret_type->try_as<TypeHintPrimitive>()->ptype == tp_void) {
     return VertexAdaptor<op_seq>::create(VertexAdaptor<op_return>::create());
@@ -374,8 +373,10 @@ VertexAdaptor<op_seq> generate_body_of_empty_virtual_method(ClassPtr klass, Func
 
   VertexPtr return_expr = generate_default_value_of_type(ret_type);
   kphp_error_act(return_expr,
-                 fmt_format("Error compiling {}, because {} has no inheritors.\nKPHP can't generate a default implementation, because the return type is too complex",
-                            method->as_human_readable(), klass->as_human_readable()), return VertexAdaptor<op_seq>::create());
+                 fmt_format("Error compiling {}, because {} has no inheritors.\nKPHP can't generate a default implementation, because the return type is too "
+                            "complex",
+                            method->as_human_readable(), klass->as_human_readable()),
+                 return VertexAdaptor<op_seq>::create());
 
   return VertexAdaptor<op_seq>::create(VertexAdaptor<op_return>::create(return_expr));
 }
@@ -415,7 +416,8 @@ void generate_body_of_virtual_method(FunctionPtr virtual_function) {
   ClassPtr prev_derived;
 
   for (ClassPtr derived : all_derived_classes) {
-    kphp_error (prev_derived != derived, fmt_format("Duplicated class {} in hierarchy from class {}.\nDiamond inheritance is not supported", derived->name, klass->name));
+    kphp_error(prev_derived != derived,
+               fmt_format("Duplicated class {} in hierarchy from class {}.\nDiamond inheritance is not supported", derived->name, klass->name));
     prev_derived = derived;
 
     if (auto v_case = gen_case_calling_methods_on_derived_class(derived, virtual_function)) {
@@ -439,12 +441,11 @@ void generate_body_of_virtual_method(FunctionPtr virtual_function) {
     virtual_function->root->cmd_ref() = VertexAdaptor<op_seq>::create(VertexUtil::create_switch_vertex(virtual_function, call_get_hash, std::move(cases)));
   }
 
-  virtual_function->type = FunctionData::func_local;    // could be func_extern before, but now it has a body
+  virtual_function->type = FunctionData::func_local; // could be func_extern before, but now it has a body
   virtual_function->update_location_in_body();
 }
 
 } // namespace
-
 
 void GenerateVirtualMethodsF::on_finish(DataStream<FunctionPtr> &os) {
   stage::set_name("Generate virtual method dispatching");
@@ -456,7 +457,7 @@ void GenerateVirtualMethodsF::on_finish(DataStream<FunctionPtr> &os) {
   for (FunctionPtr f : all_functions) {
     kphp_assert(!f->is_generic());
 
-    if (f->modifiers.is_static() && f->modifiers.is_abstract()) {  // is_abstract() to make vkcom compile, as it has invalid phpdoc inheritance
+    if (f->modifiers.is_static() && f->modifiers.is_abstract()) { // is_abstract() to make vkcom compile, as it has invalid phpdoc inheritance
       check_static_function_signatures_compatibility(f, f->class_id->derived_classes);
     }
     if (f->is_virtual_method) {

@@ -11,8 +11,7 @@
 
 void TlClasses::load_from(const std::string &tlo_schema, bool generate_tl_internals) {
   auto parsing_result = vk::tlo_parsing::parse_tlo(tlo_schema.c_str(), true);
-  kphp_error_return(parsing_result.parsed_schema,
-                    fmt_format("Error while reading tlo: {}", parsing_result.error));
+  kphp_error_return(parsing_result.parsed_schema, fmt_format("Error while reading tlo: {}", parsing_result.error));
 
   std::unique_ptr<vk::tlo_parsing::tl_scheme> scheme = std::move(parsing_result.parsed_schema);
   try {
@@ -26,4 +25,3 @@ void TlClasses::load_from(const std::string &tlo_schema, bool generate_tl_intern
   scheme_ = std::move(scheme);
   php_classes_.load_from(*scheme_, generate_tl_internals);
 }
-

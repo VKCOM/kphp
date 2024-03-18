@@ -80,9 +80,11 @@ static inline uint64_t parallel_limit_counter_read_approx(const parallel_limit_c
   extern __thread parallel_limit_counter_tls_t parallel_limit_counter_##name##_tls;                                                                            \
   extern parallel_limit_counter_t parallel_limit_counter_##name;
 
-#define PARALLEL_LIMIT_COUNTER_REGISTER_THREAD(name) parallel_limit_counter_register_thread(&parallel_limit_counter_##name, &parallel_limit_counter_##name##_tls)
+#define PARALLEL_LIMIT_COUNTER_REGISTER_THREAD(name)                                                                                                           \
+  parallel_limit_counter_register_thread(&parallel_limit_counter_##name, &parallel_limit_counter_##name##_tls)
 #define PARALLEL_LIMIT_COUNTER_INIT(name, global_limit, thread_max) parallel_limit_counter_init(&parallel_limit_counter_##name, global_limit, thread_max)
-#define PARALLEL_LIMIT_COUNTER_UNREGISTER_THREAD(name) parallel_limit_counter_unregister_thread(&parallel_limit_counter_##name, &parallel_limit_counter_##name##_tls)
+#define PARALLEL_LIMIT_COUNTER_UNREGISTER_THREAD(name)                                                                                                         \
+  parallel_limit_counter_unregister_thread(&parallel_limit_counter_##name, &parallel_limit_counter_##name##_tls)
 #define PARALLEL_LIMIT_COUNTER_ADD(name, value) parallel_limit_counter_add(&parallel_limit_counter_##name, &parallel_limit_counter_##name##_tls, value)
 #define PARALLEL_LIMIT_COUNTER_INC(name) parallel_limit_counter_inc(&parallel_limit_counter_##name, &parallel_limit_counter_##name##_tls)
 #define PARALLEL_LIMIT_COUNTER_SUB(name, value) parallel_limit_counter_sub(&parallel_limit_counter_##name, &parallel_limit_counter_##name##_tls, value)

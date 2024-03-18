@@ -15,17 +15,15 @@ namespace memory_resource {
 
 class alignas(8) extra_memory_pool : vk::not_copyable {
 public:
-  explicit extra_memory_pool(size_t buffer_size) :
-    buffer_size_(buffer_size) {
-  }
+  explicit extra_memory_pool(size_t buffer_size)
+    : buffer_size_(buffer_size) {}
 
   uint8_t *memory_begin() {
     return reinterpret_cast<uint8_t *>(this + 1);
   }
 
   bool is_memory_from_this_pool(const void *mem, size_t mem_size) noexcept {
-    return memory_begin() <= static_cast<const uint8_t *>(mem) &&
-           static_cast<const uint8_t *>(mem) + mem_size <= memory_begin() + get_pool_payload_size();
+    return memory_begin() <= static_cast<const uint8_t *>(mem) && static_cast<const uint8_t *>(mem) + mem_size <= memory_begin() + get_pool_payload_size();
   }
 
   static size_t get_pool_payload_size(size_t buffer_size) noexcept {

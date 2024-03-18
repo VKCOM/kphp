@@ -4,8 +4,8 @@
 
 #include "compiler/inferring/restriction-isset.h"
 
-#include "compiler/data/var-data.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/var-data.h"
 #include "compiler/inferring/edge.h"
 #include "compiler/inferring/expr-node.h"
 #include "compiler/inferring/ifi.h"
@@ -14,15 +14,14 @@
 #include "compiler/inferring/var-node.h"
 #include "compiler/vertex.h"
 
-RestrictionIsset::RestrictionIsset(tinf::Node *a) :
-  a_(a) {
-  //empty
+RestrictionIsset::RestrictionIsset(tinf::Node *a)
+  : a_(a) {
+  // empty
 }
 
 std::string RestrictionIsset::get_description() {
   return desc;
 }
-
 
 void RestrictionIsset::find_dangerous_isset_warning(std::vector<tinf::Node *> *bt, tinf::Node *node, const std::string &msg __attribute__((unused))) {
   desc = "isset, !==, ===, is_array or similar function result may differ from PHP\n";
@@ -78,27 +77,25 @@ bool RestrictionIsset::isset_is_dangerous(int isset_flags, const TypeData *tp) {
   return (isset_flags & check_mask) != 0;
 }
 
-bool RestrictionIsset::find_dangerous_isset_dfs(int isset_flags, tinf::Node *node,
-                                                std::vector<tinf::Node *> *bt) {
+bool RestrictionIsset::find_dangerous_isset_dfs(int isset_flags, tinf::Node *node, std::vector<tinf::Node *> *bt) {
   if ((node->isset_was & isset_flags) == isset_flags) {
     return false;
   }
   node->isset_was |= isset_flags;
 
-  tinf::TypeNode *type_node = dynamic_cast <tinf::TypeNode *> (node);
+  tinf::TypeNode *type_node = dynamic_cast<tinf::TypeNode *>(node);
   if (type_node != nullptr) {
     return false;
   }
 
-  tinf::ExprNode *expr_node = dynamic_cast <tinf::ExprNode *> (node);
+  tinf::ExprNode *expr_node = dynamic_cast<tinf::ExprNode *>(node);
   if (expr_node != nullptr) {
     VertexPtr v = expr_node->get_expr();
     if (v->type() == op_index) {
       const auto *type = tinf::get_type(v.as<op_index>()->array());
       // check all indexing operations except shapes and tuples,
       // unless the tuple is used in array context (so it may lead to the same side effects as array indexing)
-      bool should_check = type->ptype() != tp_shape &&
-                          (type->ptype() != tp_tuple || type->tuple_as_array_flag());
+      bool should_check = type->ptype() != tp_shape && (type->ptype() != tp_tuple || type->tuple_as_array_flag());
       if (should_check && isset_is_dangerous(isset_flags, node->get_type())) {
         node->isset_was = -1;
         find_dangerous_isset_warning(bt, node, "[index]");
@@ -135,7 +132,7 @@ bool RestrictionIsset::find_dangerous_isset_dfs(int isset_flags, tinf::Node *nod
     return false;
   }
 
-  tinf::VarNode *var_node = dynamic_cast <tinf::VarNode *> (node);
+  tinf::VarNode *var_node = dynamic_cast<tinf::VarNode *>(node);
   if (var_node != nullptr) {
     VarPtr from_var = var_node->get_var();
     for (const tinf::Edge *e : var_node->get_edges_from_this()) {
@@ -148,12 +145,11 @@ bool RestrictionIsset::find_dangerous_isset_dfs(int isset_flags, tinf::Node *nod
       /*** function f(&$a){}; f($b) fix ***/
       if (from_var) {
         VarPtr to_var;
-        tinf::VarNode *to_var_node = dynamic_cast <tinf::VarNode *> (to_node);
+        tinf::VarNode *to_var_node = dynamic_cast<tinf::VarNode *>(to_node);
         if (to_var_node != nullptr) {
           to_var = to_var_node->get_var();
         }
-        if (to_var && to_var->type() == VarData::var_param_t &&
-            !(to_var->holder_func == from_var->holder_func)) {
+        if (to_var && to_var->type() == VarData::var_param_t && !(to_var->holder_func == from_var->holder_func)) {
           continue;
         }
       }

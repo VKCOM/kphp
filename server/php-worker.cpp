@@ -3,8 +3,8 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include <cassert>
-#include <utility>
 #include <poll.h>
+#include <utility>
 
 #include "common/algorithms/find.h"
 #include "common/precise-time.h"
@@ -56,7 +56,8 @@ std::optional<double> PhpWorker::enter_lifecycle() noexcept {
 
       case phpq_free_script:
         get_utime_monotonic();
-        tvkprintf(php_runner, 1, "PHP-worker free PHP-script [query worked = %.5lf] [query waited for start = %.5lf] [req_id = %016llx]\n", precise_now - start_time, start_time - init_time, req_id);
+        tvkprintf(php_runner, 1, "PHP-worker free PHP-script [query worked = %.5lf] [query waited for start = %.5lf] [req_id = %016llx]\n",
+                  precise_now - start_time, start_time - init_time, req_id);
         state_free_script();
         break;
 
@@ -179,7 +180,8 @@ void php_worker_run_rpc_send_query(int32_t request_id, const net_queries_data::r
   } else {
     int new_conn_cnt = create_new_connections(target);
     if (new_conn_cnt <= 0 && get_target_connection(target, 1) == nullptr) {
-      on_net_event(create_rpc_error_event(slot_id, TL_ERROR_NO_CONNECTIONS_IN_RPC_CLIENT, "Failed to establish connection [probably reconnect timeout is not expired]", nullptr));
+      on_net_event(create_rpc_error_event(slot_id, TL_ERROR_NO_CONNECTIONS_IN_RPC_CLIENT,
+                                          "Failed to establish connection [probably reconnect timeout is not expired]", nullptr));
       return;
     }
 
@@ -193,19 +195,19 @@ void php_worker_run_net_queue(PhpWorker *worker __attribute__((unused))) {
   net_query_t *query;
   while ((query = pop_net_query()) != nullptr) {
     // no other types of query are currently supported
-    std::visit(overloaded{
-                 [&](const net_queries_data::rpc_send &data) {
-                   php_worker_run_rpc_send_query(query->slot_id, data);
-                   free_rpc_send_query(data);
-                 },
-                 [&](database_drivers::Request *data) {
-                   php_assert(query->slot_id == data->request_id);
-                   vk::singleton<database_drivers::Adaptor>::get().process_external_db_request_net_query(std::unique_ptr<database_drivers::Request>(data));
-                 },
-                 [&](const curl_async::CurlRequest &request) {
-                   php_assert(query->slot_id == request.request_id);
-                   vk::singleton<curl_async::CurlAdaptor>::get().process_request_net_query(request);
-                 }},
+    std::visit(overloaded{[&](const net_queries_data::rpc_send &data) {
+                            php_worker_run_rpc_send_query(query->slot_id, data);
+                            free_rpc_send_query(data);
+                          },
+                          [&](database_drivers::Request *data) {
+                            php_assert(query->slot_id == data->request_id);
+                            vk::singleton<database_drivers::Adaptor>::get().process_external_db_request_net_query(
+                              std::unique_ptr<database_drivers::Request>(data));
+                          },
+                          [&](const curl_async::CurlRequest &request) {
+                            php_assert(query->slot_id == request.request_id);
+                            vk::singleton<curl_async::CurlAdaptor>::get().process_request_net_query(request);
+                          }},
                query->data);
   }
 }
@@ -233,7 +235,8 @@ void PhpWorker::state_run() noexcept {
         }
         tvkprintf(php_runner, 3, "PHP-worker before swap context [req_id = %016llx]\n", req_id);
         php_script->iterate();
-        tvkprintf(php_runner, 3, "PHP-worker after swap context [req_id = %016llx]\n", req_id);;
+        tvkprintf(php_runner, 3, "PHP-worker after swap context [req_id = %016llx]\n", req_id);
+        ;
         if (!vk::any_of_equal(php_script->state, run_state_t::finished, run_state_t::error)) {
           // We don't need to check net events when the script is going to finish.
           // Otherwise we can fetch some net events related to this script that will be processed after the script termination.
@@ -443,8 +446,7 @@ double PhpWorker::get_timeout() const noexcept {
   return time_left;
 }
 
-PhpWorker::PhpWorker(php_worker_mode_t mode_, connection *c, php_query_data_t query_data,
-                       long long int req_id_, double timeout)
+PhpWorker::PhpWorker(php_worker_mode_t mode_, connection *c, php_query_data_t query_data, long long int req_id_, double timeout)
   : conn(c)
   , data(std::move(query_data))
   , paused(false)
@@ -459,8 +461,7 @@ PhpWorker::PhpWorker(php_worker_mode_t mode_, connection *c, php_query_data_t qu
   , finish_time(precise_now + timeout)
   , state(phpq_try_start)
   , mode(mode_)
-  , req_id(req_id_)
-{
+  , req_id(req_id_) {
   PhpScript::script_time_stats.worker_init_time = init_time;
   assert(c != nullptr);
   if (conn->target) {

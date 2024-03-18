@@ -71,11 +71,15 @@ struct const_expr_visitor {
 struct expr_base {
   int flags;
 
-  template <typename T>
-  T *as() { return dynamic_cast<T *>(this); }
+  template<typename T>
+  T *as() {
+    return dynamic_cast<T *>(this);
+  }
 
   template<typename T>
-  const T *as() const { return dynamic_cast<const T *>(this); }
+  const T *as() const {
+    return dynamic_cast<const T *>(this);
+  }
 
   bool is_bare() const;
   virtual std::string to_str() const = 0;
@@ -85,11 +89,9 @@ struct expr_base {
   virtual void visit(const_expr_visitor &visitor) const = 0;
 };
 
-struct nat_expr_base : expr_base {
-};
+struct nat_expr_base : expr_base {};
 
-struct type_expr_base : expr_base {
-};
+struct type_expr_base : expr_base {};
 
 struct tlo_parser;
 
@@ -103,8 +105,12 @@ struct type_expr final : type_expr_base {
 
   std::string to_str() const final;
 
-  void visit(expr_visitor &visitor) final { visitor.apply(*this); };
-  void visit(const_expr_visitor &visitor) const final { visitor.apply(*this); };
+  void visit(expr_visitor &visitor) final {
+    visitor.apply(*this);
+  };
+  void visit(const_expr_visitor &visitor) const final {
+    visitor.apply(*this);
+  };
 };
 
 struct type_var final : type_expr_base {
@@ -125,14 +131,18 @@ struct type_var final : type_expr_base {
 
   std::string to_str() const final;
 
-  void visit(expr_visitor &visitor) final { visitor.apply(*this); };
-  void visit(const_expr_visitor &visitor) const final { visitor.apply(*this); };
+  void visit(expr_visitor &visitor) final {
+    visitor.apply(*this);
+  };
+  void visit(const_expr_visitor &visitor) const final {
+    visitor.apply(*this);
+  };
 };
 
 struct arg {
   int flags = {};
   int idx = {};
-  int var_num = {}; // когда от этого аргумента, кто-то зависит
+  int var_num = {};       // когда от этого аргумента, кто-то зависит
   int exist_var_num = {}; // от какого var_num зависит этот агрумент (только в случае с филд масками)
   int exist_var_bit = {}; // от какого бита этого var_num зависит (только в случае с филд масками)
   std::unique_ptr<type_expr_base> type_expr = {};
@@ -151,7 +161,6 @@ struct arg {
   std::string to_str() const;
 };
 
-
 struct type_array final : type_expr_base {
   int cell_len = {};
   std::unique_ptr<nat_expr_base> multiplicity = {};
@@ -163,8 +172,12 @@ struct type_array final : type_expr_base {
 
   std::string to_str() const final;
 
-  void visit(expr_visitor &visitor) final { visitor.apply(*this); };
-  void visit(const_expr_visitor &visitor) const final { visitor.apply(*this); };
+  void visit(expr_visitor &visitor) final {
+    visitor.apply(*this);
+  };
+  void visit(const_expr_visitor &visitor) const final {
+    visitor.apply(*this);
+  };
 };
 
 struct nat_const final : nat_expr_base {
@@ -175,8 +188,12 @@ struct nat_const final : nat_expr_base {
 
   std::string to_str() const final;
 
-  void visit(expr_visitor &visitor) final { visitor.apply(*this); };
-  void visit(const_expr_visitor &visitor) const final { visitor.apply(*this); };
+  void visit(expr_visitor &visitor) final {
+    visitor.apply(*this);
+  };
+  void visit(const_expr_visitor &visitor) const final {
+    visitor.apply(*this);
+  };
 };
 
 struct nat_var final : nat_expr_base {
@@ -191,16 +208,16 @@ struct nat_var final : nat_expr_base {
   std::string get_name() const;
   std::string to_str() const final;
 
-  void visit(expr_visitor &visitor) final { visitor.apply(*this); };
-  void visit(const_expr_visitor &visitor) const final { visitor.apply(*this); };
+  void visit(expr_visitor &visitor) final {
+    visitor.apply(*this);
+  };
+  void visit(const_expr_visitor &visitor) const final {
+    visitor.apply(*this);
+  };
 };
 
-
 struct combinator {
-  enum class combinator_type {
-    CONSTRUCTOR,
-    FUNCTION
-  };
+  enum class combinator_type { CONSTRUCTOR, FUNCTION };
 
   combinator_type kind = {};
   int flags = {};
@@ -228,10 +245,10 @@ struct combinator {
   bool is_dependent() const;
   bool has_fields_mask() const;
   std::string to_str() const;
+
 private:
   std::vector<std::pair<int, int>> var_num_to_arg_idx = {};
 };
-
 
 struct type {
   int id = {};
@@ -254,13 +271,12 @@ struct type {
   std::string to_str() const;
 };
 
-
 struct tl_scheme {
   int scheme_version = {};
   std::unordered_map<int, std::unique_ptr<type>> types;
   std::unordered_map<int, std::unique_ptr<combinator>> functions;
-  std::unordered_map<std::string, int> magics;      // tl type or function name => magic
-  std::unordered_map<int, int> owner_type_magics;   // constructor magic        => magic of its owner type
+  std::unordered_map<std::string, int> magics;    // tl type or function name => magic
+  std::unordered_map<int, int> owner_type_magics; // constructor magic        => magic of its owner type
 
   vk::tlo_parsing::combinator *get_constructor_by_magic(int magic) const;
   vk::tlo_parsing::type *get_type_by_magic(int magic) const;

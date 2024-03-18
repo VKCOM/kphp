@@ -11,8 +11,8 @@
 #include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
 
-ExternInclude::ExternInclude(vk::string_view file_name) :
-  file_name(file_name) {
+ExternInclude::ExternInclude(vk::string_view file_name)
+  : file_name(file_name) {
   kphp_assert(!file_name.empty());
 }
 
@@ -78,7 +78,7 @@ void IncludesCollector::add_function_body_depends(const FunctionPtr &function) {
     add_var_signature_depends(global_var);
   }
 
-  if (function->tl_common_h_dep) {    // functions that use a typed TL RPC need to see t_ReqResult during the compilation
+  if (function->tl_common_h_dep) { // functions that use a typed TL RPC need to see t_ReqResult during the compilation
     kphp_error(!G->settings().tl_schema_file.get().empty(), "tl schema not given as -T option for compilation");
     internal_headers_.emplace("tl/common.h");
   }
@@ -106,7 +106,7 @@ void IncludesCollector::add_class_forward_declaration(const ClassPtr &klass) {
 void IncludesCollector::add_var_signature_forward_declarations(const VarPtr &var) {
   std::unordered_set<ClassPtr> all_classes;
   var->tinf_node.get_type()->get_all_class_types_inside(all_classes);
-  for (auto klass: all_classes) {
+  for (auto klass : all_classes) {
     add_class_forward_declaration(klass);
   }
 }
@@ -180,9 +180,7 @@ void IncludesCollector::compile(CodeGenerator &W) const {
 
   std::set<vk::string_view> class_forward_declarations;
   for (const auto &klass : forward_declarations_) {
-    if (!prev_classes_forward_declared_.count(klass) &&
-        !prev_classes_.count(klass) &&
-        !classes_.count(klass)) {
+    if (!prev_classes_forward_declared_.count(klass) && !prev_classes_.count(klass) && !classes_.count(klass)) {
       class_forward_declarations.emplace(klass->src_name);
     }
   }

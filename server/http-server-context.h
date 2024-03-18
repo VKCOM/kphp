@@ -12,19 +12,19 @@
 
 class HttpServerContext : vk::not_copyable {
 public:
- static constexpr int MAX_HTTP_PORTS = 64;
+  static constexpr int MAX_HTTP_PORTS = 64;
 
- bool init_from_option(const char *option);
- bool http_server_enabled() const noexcept;
- const std::vector<uint16_t> &http_ports() const noexcept;
- const std::vector<int> &http_socket_fds() const noexcept;
+  bool init_from_option(const char *option);
+  bool http_server_enabled() const noexcept;
+  const std::vector<uint16_t> &http_ports() const noexcept;
+  const std::vector<int> &http_socket_fds() const noexcept;
 
- bool master_create_http_sockets();
- void master_set_open_http_sockets(std::vector<int> &&http_sfds);
+  bool master_create_http_sockets();
+  void master_set_open_http_sockets(std::vector<int> &&http_sfds);
 
- void dedicate_http_socket_to_worker(uint16_t worker_unique_id);
- int worker_http_socket_fd() const noexcept;
- int worker_http_port() const noexcept;
+  void dedicate_http_socket_to_worker(uint16_t worker_unique_id);
+  int worker_http_socket_fd() const noexcept;
+  int worker_http_port() const noexcept;
 
 private:
   std::vector<uint16_t> http_ports_;

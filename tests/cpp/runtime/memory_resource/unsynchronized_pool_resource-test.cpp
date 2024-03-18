@@ -31,7 +31,7 @@ TEST(unsynchronized_pool_resource_test, uninited_state) {
 }
 
 TEST(unsynchronized_pool_resource_test, simple_allocation) {
-  std::array<char, 1024*128> some_memory{};
+  std::array<char, 1024 * 128> some_memory{};
   memory_resource::unsynchronized_pool_resource resource;
 
   resource.init(some_memory.data(), some_memory.size());
@@ -63,10 +63,10 @@ TEST(unsynchronized_pool_resource_test, simple_allocation) {
   ASSERT_TRUE(mem65530);
 
   mem_stats = resource.get_memory_stats();
-  ASSERT_EQ(mem_stats.real_memory_used, 8 + 1024*64);
-  ASSERT_EQ(mem_stats.memory_used, 8 + 1024*64);
-  ASSERT_EQ(mem_stats.max_real_memory_used, 8 + 1024*64);
-  ASSERT_EQ(mem_stats.max_memory_used, 8 + 1024*64);
+  ASSERT_EQ(mem_stats.real_memory_used, 8 + 1024 * 64);
+  ASSERT_EQ(mem_stats.memory_used, 8 + 1024 * 64);
+  ASSERT_EQ(mem_stats.max_real_memory_used, 8 + 1024 * 64);
+  ASSERT_EQ(mem_stats.max_memory_used, 8 + 1024 * 64);
   ASSERT_EQ(mem_stats.memory_limit, some_memory.size());
   ASSERT_EQ(mem_stats.defragmentation_calls, 0);
   ASSERT_EQ(mem_stats.huge_memory_pieces, 0);
@@ -78,8 +78,8 @@ TEST(unsynchronized_pool_resource_test, simple_allocation) {
   mem_stats = resource.get_memory_stats();
   ASSERT_EQ(mem_stats.real_memory_used, 0);
   ASSERT_EQ(mem_stats.memory_used, 0);
-  ASSERT_EQ(mem_stats.max_real_memory_used, 8 + 1024*64);
-  ASSERT_EQ(mem_stats.max_memory_used, 8 + 1024*64);
+  ASSERT_EQ(mem_stats.max_real_memory_used, 8 + 1024 * 64);
+  ASSERT_EQ(mem_stats.max_memory_used, 8 + 1024 * 64);
   ASSERT_EQ(mem_stats.memory_limit, some_memory.size());
   ASSERT_EQ(mem_stats.defragmentation_calls, 0);
   ASSERT_EQ(mem_stats.huge_memory_pieces, 0);
@@ -196,11 +196,9 @@ TEST(unsynchronized_pool_resource_test, fallback_pool_with_defragmentation) {
   ASSERT_EQ(mem_stats.huge_memory_pieces, 0);
   ASSERT_EQ(mem_stats.small_memory_pieces, 0);
 
-
   void *all_mem = resource.allocate(some_memory.size());
   ASSERT_TRUE(all_mem);
 }
-
 
 TEST(unsynchronized_pool_resource_test, test_auto_defragmentation_huge_piece) {
   std::array<char, 131072> some_memory{}; // 1024*128
@@ -252,20 +250,19 @@ TEST(unsynchronized_pool_resource_test, test_auto_defragmentation_huge_piece) {
   resource.deallocate(mem_all, some_memory.size());
 }
 
-
 TEST(unsynchronized_pool_resource_test, test_auto_defragmentation_small_piece) {
-  std::array<char, 1024*32> some_memory{};
+  std::array<char, 1024 * 32> some_memory{};
   memory_resource::unsynchronized_pool_resource resource;
 
   resource.init(some_memory.data(), some_memory.size());
 
   std::array<void *, 1024> pieces32{};
-  for (auto &mem: pieces32) {
+  for (auto &mem : pieces32) {
     mem = resource.allocate(32);
   }
 
-  for (auto &mem: pieces32) {
-     resource.deallocate(mem, 32);
+  for (auto &mem : pieces32) {
+    resource.deallocate(mem, 32);
   }
 
   // got fragmentation

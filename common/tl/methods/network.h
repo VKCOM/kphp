@@ -18,7 +18,7 @@ struct tl_out_methods_network : tl_out_methods {
   virtual void store_flush(const char *, int) noexcept = 0;
   virtual int compress(int) noexcept = 0;
   virtual const process_id_t *get_pid() noexcept = 0;
-  virtual void* get_connection() noexcept { return nullptr; }
+  virtual void *get_connection() noexcept {
+    return nullptr;
+  }
 };
-
-

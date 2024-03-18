@@ -18,6 +18,7 @@ class MakeRunner : private vk::not_copyable {
       return a->priority < b->priority;
     }
   };
+
 private:
   int targets_waiting = 0;
   int targets_left = 0;
@@ -31,8 +32,8 @@ private:
   static int signal_flag;
   static void sigint_handler(int sig);
 
-  bool start_job(Target *target) __attribute__ ((warn_unused_result));
-  bool finish_job(int pid, int return_code, int by_signal) __attribute__ ((warn_unused_result));
+  bool start_job(Target *target) __attribute__((warn_unused_result));
+  bool finish_job(int pid, int return_code, int by_signal) __attribute__((warn_unused_result));
   void on_fail();
 
   void run_target(Target *target);

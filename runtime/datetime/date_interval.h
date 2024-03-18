@@ -8,16 +8,16 @@
 #include "runtime/dummy-visitor-methods.h"
 #include "runtime/refcountable_php_classes.h"
 
-struct C$DateInterval: public refcountable_php_classes<C$DateInterval>, private DummyVisitorMethods  {
+struct C$DateInterval : public refcountable_php_classes<C$DateInterval>, private DummyVisitorMethods {
   using DummyVisitorMethods::accept;
 
   timelib_rel_time *rel_time{nullptr};
 
-  const char *get_class() const  noexcept {
+  const char *get_class() const noexcept {
     return R"(DateInterval)";
   }
 
-  int get_hash() const  noexcept {
+  int get_hash() const noexcept {
     return -393296726;
   }
 

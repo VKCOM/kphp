@@ -4,16 +4,15 @@
 
 #include "compiler/ffi/ffi_parser.h"
 
+#include "compiler/compiler-core.h"
 #include "compiler/ffi/c_parser/parsing_driver.h"
 #include "compiler/kphp_assert.h"
-#include "compiler/compiler-core.h"
 
 #include <cstring>
 
 static void log_ffi_parser_stats(const ffi::ParsingDriver::Result &result) {
   if (G->settings().verbosity.get() >= 1) {
-    fprintf(stderr, "FFI parser: allocated %ld objects (%ld collected as garbage)\n",
-            static_cast<long>(result.num_allocated),
+    fprintf(stderr, "FFI parser: allocated %ld objects (%ld collected as garbage)\n", static_cast<long>(result.num_allocated),
             static_cast<long>(result.num_deleted));
   }
 }
@@ -75,9 +74,7 @@ static void set_error(FFIParseError &dst, const std::string &src, ffi::ParsingDr
   dst.message = std::move(e.message);
   dst.line = 1;
   std::string chunk(src.begin(), src.begin() + e.location.begin);
-  dst.line += std::count_if(src.begin(), src.begin() + e.location.begin, [](char c){
-    return c == '\n';
-  });
+  dst.line += std::count_if(src.begin(), src.begin() + e.location.begin, [](char c) { return c == '\n'; });
 }
 
 FFIParseResult ffi_parse_file(const std::string &src, FFITypedefs &typedefs) {
@@ -103,7 +100,7 @@ FFIParseResult ffi_parse_file(const std::string &src, FFITypedefs &typedefs) {
   return result;
 }
 
-std::pair<const FFIType*, FFIParseError> ffi_parse_type(const std::string &type_expr, FFITypedefs &typedefs) {
+std::pair<const FFIType *, FFIParseError> ffi_parse_type(const std::string &type_expr, FFITypedefs &typedefs) {
   FFIType *result_type = nullptr;
   FFIParseError err;
 

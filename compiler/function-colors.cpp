@@ -34,7 +34,7 @@ color_t Palette::register_color_name(const std::string &color_name) {
     return found->second;
   }
 
-  int bit_shift = color_names_mapping.size() - 1;   // user-defined colors are 1<<1, 1<<2, and so on
+  int bit_shift = color_names_mapping.size() - 1; // user-defined colors are 1<<1, 1<<2, and so on
   color_t color = 1ULL << bit_shift;
 
   color_names_mapping[color_name] = color;

@@ -7,20 +7,18 @@
 // This file is intended to be used inside auto-generated rewrite rules.
 // Do not include it from somewhere else.
 
-#include <string>
-#include "compiler/vertex.h"
 #include "compiler/compiler-core.h"
+#include "compiler/vertex.h"
+#include <string>
 
 namespace rewrite_rules {
 
 template<Operation Op>
 class VertexCache {
 private:
-
   std::vector<VertexAdaptor<Op>> stack_;
 
 public:
-
   VertexAdaptor<Op> pop() {
     if (!stack_.empty()) {
       auto v = stack_.back();

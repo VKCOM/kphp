@@ -65,9 +65,8 @@ int64_t f$openssl_x509_verify(const string &certificate, const string &public_ke
 
 mixed f$openssl_x509_checkpurpose(const string &data, int64_t purpose);
 
-bool f$openssl_pkcs7_sign(const string &infile, const string &outfile,
-                          const string &sign_cert, const string &priv_key,
-                          const array<string> &headers, int64_t flags = PKCS7_DETACHED, const string &extra_certs = {}) noexcept;
+bool f$openssl_pkcs7_sign(const string &infile, const string &outfile, const string &sign_cert, const string &priv_key, const array<string> &headers,
+                          int64_t flags = PKCS7_DETACHED, const string &extra_certs = {}) noexcept;
 
 array<string> f$openssl_get_cipher_methods(bool aliases = false);
 
@@ -76,11 +75,9 @@ Optional<int64_t> f$openssl_cipher_iv_length(const string &method);
 namespace impl_ {
 extern string default_tag_stub;
 } // namespace impl_
-Optional<string> f$openssl_encrypt(const string &data, const string &method,
-                                   const string &key, int64_t options = 0, const string &iv = string{},
+Optional<string> f$openssl_encrypt(const string &data, const string &method, const string &key, int64_t options = 0, const string &iv = string{},
                                    string &tag = impl_::default_tag_stub, const string &aad = string{}, int64_t tag_length = 16);
-Optional<string> f$openssl_decrypt(string data, const string &method,
-                                   const string &key, int64_t options = 0, const string &iv = string{},
+Optional<string> f$openssl_decrypt(string data, const string &method, const string &key, int64_t options = 0, const string &iv = string{},
                                    string tag = string{}, const string &aad = string{});
 
 void global_init_openssl_lib();

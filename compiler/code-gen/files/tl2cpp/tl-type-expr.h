@@ -26,14 +26,13 @@ struct TypeExprStore {
   std::string var_num_access;
   bool typed_mode;
 
-  TypeExprStore(const std::unique_ptr<vk::tlo_parsing::arg> &arg, std::string var_num_access, bool typed_mode = false) :
-    arg(arg),
-    var_num_access(std::move(var_num_access)),
-    typed_mode(typed_mode) {}
+  TypeExprStore(const std::unique_ptr<vk::tlo_parsing::arg> &arg, std::string var_num_access, bool typed_mode = false)
+    : arg(arg)
+    , var_num_access(std::move(var_num_access))
+    , typed_mode(typed_mode) {}
 
   void compile(CodeGenerator &W) const;
 };
-
 
 // Structure for any type expression fetch generation
 struct TypeExprFetch {
@@ -41,11 +40,11 @@ struct TypeExprFetch {
   std::string var_num_access;
   bool typed_mode;
 
-  explicit inline TypeExprFetch(const std::unique_ptr<vk::tlo_parsing::arg> &arg, std::string var_num_access, bool typed_mode = false) :
-    arg(arg),
-    var_num_access(std::move(var_num_access)),
-    typed_mode(typed_mode) {}
+  explicit inline TypeExprFetch(const std::unique_ptr<vk::tlo_parsing::arg> &arg, std::string var_num_access, bool typed_mode = false)
+    : arg(arg)
+    , var_num_access(std::move(var_num_access))
+    , typed_mode(typed_mode) {}
 
   void compile(CodeGenerator &W) const;
 };
-}
+} // namespace tl2cpp

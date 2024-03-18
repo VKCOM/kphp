@@ -4,7 +4,6 @@
 
 #pragma once
 
-
 #include "common/type_traits/function_traits.h"
 
 #include "compiler/data/data_ptr.h"
@@ -19,8 +18,8 @@
 class FunctionPassBase {
 protected:
   FunctionPtr current_function;
-public:
 
+public:
   using ExecuteType = FunctionPtr;
 
   void setup(FunctionPtr function) {
@@ -37,9 +36,9 @@ public:
     return true;
   }
 
-  virtual void on_start() {  }
+  virtual void on_start() {}
 
-  virtual void on_finish() {  }
+  virtual void on_finish() {}
 
   virtual VertexPtr on_enter_vertex(VertexPtr vertex) {
     return vertex;
@@ -111,18 +110,17 @@ void run_function_pass(VertexAdaptor<Op> &vertex, FunctionPassT *pass) {
 template<typename FunctionPassT>
 class FunctionPassTraits {
   struct get_data_helper {
-    template<typename T> static decltype(std::declval<T>().get_data()) Test(std::nullptr_t);
-    template<typename T> static std::nullptr_t Test(...);
+    template<typename T>
+    static decltype(std::declval<T>().get_data()) Test(std::nullptr_t);
+    template<typename T>
+    static std::nullptr_t Test(...);
   };
+
 public:
   using GetDataReturnT = decltype(get_data_helper::template Test<FunctionPassT>(nullptr));
   using IsNullPtr = std::is_same<GetDataReturnT, std::nullptr_t>;
   using ExecuteType = typename FunctionPassT::ExecuteType;
-  using OutType = typename std::conditional<
-    IsNullPtr{},
-    ExecuteType,
-    std::pair<ExecuteType, GetDataReturnT>
-    >::type;
+  using OutType = typename std::conditional<IsNullPtr{}, ExecuteType, std::pair<ExecuteType, GetDataReturnT>>::type;
   static OutType create_out_type(ExecuteType &&function, GetDataReturnT &&ret) {
     return create_out_type(std::move(function), std::move(ret), IsNullPtr{});
   }
@@ -132,8 +130,8 @@ public:
   static auto get_data(FunctionPassT &f) {
     return get_data_impl(f, IsNullPtr{});
   }
-  static_assert(IsNullPtr::value || std::is_same<ExecuteType, FunctionPtr>::value,
-    "Can't have nontrivial both on_finish return type and execute type");
+  static_assert(IsNullPtr::value || std::is_same<ExecuteType, FunctionPtr>::value, "Can't have nontrivial both on_finish return type and execute type");
+
 private:
   static OutType create_out_type(ExecuteType &&function, GetDataReturnT &&, std::true_type) {
     return std::move(function);
@@ -149,10 +147,16 @@ private:
   }
 
   template<typename T>
-  static FunctionPtr get_function_impl(const T &f) { return f.function; }
+  static FunctionPtr get_function_impl(const T &f) {
+    return f.function;
+  }
   template<typename T>
-  static FunctionPtr get_function_impl(const std::pair<FunctionPtr, T> &f) { return f.first; }
-  static FunctionPtr get_function_impl(const FunctionPtr &f) { return f; }
+  static FunctionPtr get_function_impl(const std::pair<FunctionPtr, T> &f) {
+    return f.first;
+  }
+  static FunctionPtr get_function_impl(const FunctionPtr &f) {
+    return f;
+  }
 };
 
 template<class FunctionPassT>
@@ -172,7 +176,6 @@ typename FunctionPassTraits<FunctionPassT>::GetDataReturnT run_function_pass(Fun
   return FunctionPassTraits<FunctionPassT>::get_data(*pass);
 }
 
-
 template<class FunctionPassT>
 class FunctionPassF {
 public:
@@ -188,4 +191,3 @@ public:
     os << Traits::create_out_type(std::move(function), std::move(x));
   }
 };
-

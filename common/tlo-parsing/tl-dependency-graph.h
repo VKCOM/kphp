@@ -6,9 +6,9 @@
 
 #include <set>
 #include <string>
-#include <vector>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 namespace vk {
 namespace tlo_parsing {
@@ -25,13 +25,13 @@ struct TLNode {
     holds_type,
   } node_type;
 
-  explicit TLNode(const combinator *c) :
-    node_type(holds_combinator) {
+  explicit TLNode(const combinator *c)
+    : node_type(holds_combinator) {
     tl_object_ptr_.combinator_ptr = c;
   }
 
-  explicit TLNode(const type *t) :
-    node_type(holds_type) {
+  explicit TLNode(const type *t)
+    : node_type(holds_type) {
     tl_object_ptr_.type_ptr = t;
   }
 

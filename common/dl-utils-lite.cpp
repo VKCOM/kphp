@@ -7,6 +7,7 @@
 #include <array>
 #include <cassert>
 #include <cinttypes>
+#include <dirent.h>
 #include <errno.h>
 #include <execinfo.h>
 #include <fcntl.h>
@@ -16,27 +17,27 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/wait.h>
-#include <sys/time.h>
 #include <sys/resource.h>
+#include <sys/time.h>
+#include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
-#include <dirent.h>
 
 #include "common/server/crash-dump.h"
 #include "common/stats/provider.h"
 #include "common/wrappers/pathname.h"
 
 #if DL_DEBUG_MEM >= 1
-#  define MEM_POS  {\
-  void *buffer[64]; \
-  int nptrs = backtrace (buffer, 4); \
-  fprintf (stderr, "\n------- Stack Backtrace -------\n"); \
-  backtrace_symbols_fd (buffer + 1, nptrs - 1, 2); \
-  fprintf (stderr, "-------------------------------\n"); \
-}
+#define MEM_POS                                                                                                                                                \
+  {                                                                                                                                                            \
+    void *buffer[64];                                                                                                                                          \
+    int nptrs = backtrace(buffer, 4);                                                                                                                          \
+    fprintf(stderr, "\n------- Stack Backtrace -------\n");                                                                                                    \
+    backtrace_symbols_fd(buffer + 1, nptrs - 1, 2);                                                                                                            \
+    fprintf(stderr, "-------------------------------\n");                                                                                                      \
+  }
 #else
-#  define MEM_POS
+#define MEM_POS
 #endif
 
 static std::array<char, 1024> assert_message{{0}};
@@ -49,41 +50,41 @@ double dl_time() {
 }
 
 void dl_print_backtrace(void **trace, int trace_size) {
-  write (2, "\n------- Stack Backtrace -------\n", 33);
-  backtrace_symbols_fd (trace, trace_size, 2);
-  write (2, "-------------------------------\n", 32);
+  write(2, "\n------- Stack Backtrace -------\n", 33);
+  backtrace_symbols_fd(trace, trace_size, 2);
+  write(2, "-------------------------------\n", 32);
 }
 
 void dl_print_backtrace() {
   void *buffer[64];
-  int nptrs = backtrace (buffer, 64);
+  int nptrs = backtrace(buffer, 64);
   dl_print_backtrace(buffer, nptrs);
 }
 
 void dl_print_backtrace_gdb() {
-  char * const envp[] = {nullptr};
+  char *const envp[] = {nullptr};
   const size_t pid_buf_size = 30;
   char pid_buf[pid_buf_size];
   snprintf(pid_buf, pid_buf_size, "%d", getpid());
   char name_buf[512];
-  ssize_t res = readlink ("/proc/self/exe", name_buf, 511);
+  ssize_t res = readlink("/proc/self/exe", name_buf, 511);
   if (res >= 0) {
     name_buf[res] = 0;
     int child_pid = fork();
     if (child_pid < 0) {
-      write (2, "Can't fork() to run gdb\n", 24);
-      _exit (0);
+      write(2, "Can't fork() to run gdb\n", 24);
+      _exit(0);
     }
     if (!child_pid) {
-      dup2 (2, 1); //redirect output to stderr
-      //fprintf (stdout, "stack trace for %s pid = %s\n", name_buf, pid_buf);
-      execle ("gdb", "gdb", "--batch", "-n", "-ex", "thread", "-ex", "bt", name_buf, pid_buf, nullptr, envp);
-      _exit (0); /* If gdb failed to start */
+      dup2(2, 1); // redirect output to stderr
+      // fprintf (stdout, "stack trace for %s pid = %s\n", name_buf, pid_buf);
+      execle("gdb", "gdb", "--batch", "-n", "-ex", "thread", "-ex", "bt", name_buf, pid_buf, nullptr, envp);
+      _exit(0); /* If gdb failed to start */
     } else {
-      waitpid (child_pid, nullptr, 0);
+      waitpid(child_pid, nullptr, 0);
     }
   } else {
-    write (2, "can't get name of executable file to pass to gdb\n", 49);
+    write(2, "can't get name of executable file to pass to gdb\n", 49);
   }
 }
 
@@ -97,12 +98,10 @@ void __assert_fail(const char *assertion, const char *file, unsigned int line, c
   __builtin_unreachable();
 }
 
-void dl_assert__([[maybe_unused]] const char *expr, const char *file_name, const char *func_name,
-                 int line, const char *desc, int use_perror, [[maybe_unused]] int generate_coredump) {
-  snprintf(assert_message.data(), assert_message.size(),
-           "dl_assert failed [%s:%d: %s]: %s%s%s", kbasename(file_name), line, func_name, desc,
-           use_perror ? "; errno message = " : "",
-           use_perror ? strerror(errno) : "");
+void dl_assert__([[maybe_unused]] const char *expr, const char *file_name, const char *func_name, int line, const char *desc, int use_perror,
+                 [[maybe_unused]] int generate_coredump) {
+  snprintf(assert_message.data(), assert_message.size(), "dl_assert failed [%s:%d: %s]: %s%s%s", kbasename(file_name), line, func_name, desc,
+           use_perror ? "; errno message = " : "", use_perror ? strerror(errno) : "");
   fprintf(stderr, "%s\n", assert_message.data());
 #if _POSIX_C_SOURCE >= 199309L
   sigval value{0};
@@ -118,44 +117,44 @@ void dl_assert__([[maybe_unused]] const char *expr, const char *file_name, const
 static sigset_t old_mask;
 static int old_mask_inited = 0;
 
-sigset_t dl_get_empty_sigset () {
+sigset_t dl_get_empty_sigset() {
   sigset_t mask;
-  sigemptyset (&mask);
+  sigemptyset(&mask);
   return mask;
 }
 
-void dl_sigaction (int sig, void (*handler) (int), sigset_t mask, int flags, void (*action) (int, siginfo_t *, void *)) {
+void dl_sigaction(int sig, void (*handler)(int), sigset_t mask, int flags, void (*action)(int, siginfo_t *, void *)) {
   struct sigaction act;
-  memset (&act, 0, sizeof (act));
+  memset(&act, 0, sizeof(act));
   act.sa_mask = mask;
   act.sa_flags = flags;
 
   if (handler != NULL) {
     act.sa_handler = handler;
-    assert (action == NULL);
-    assert (!(flags & SA_SIGINFO));
+    assert(action == NULL);
+    assert(!(flags & SA_SIGINFO));
   } else if (action != NULL) {
     flags |= SA_SIGINFO;
     act.sa_sigaction = action;
   }
 
-  int err = sigaction (sig, &act, NULL);
-  dl_passert (err != -1, "failed sigaction");
+  int err = sigaction(sig, &act, NULL);
+  dl_passert(err != -1, "failed sigaction");
 }
 
-void dl_signal (int sig, void (*handler) (int)) {
-  dl_sigaction (sig, handler, dl_get_empty_sigset(), SA_ONSTACK | SA_RESTART, NULL);
+void dl_signal(int sig, void (*handler)(int)) {
+  dl_sigaction(sig, handler, dl_get_empty_sigset(), SA_ONSTACK | SA_RESTART, NULL);
 }
 
-void dl_restore_signal_mask () {
-  dl_assert (old_mask_inited != 0, "old_mask in not inited");
-  int err = sigprocmask (SIG_SETMASK, &old_mask, NULL);
-  dl_passert (err != -1, "failed to restore signal mask");
+void dl_restore_signal_mask() {
+  dl_assert(old_mask_inited != 0, "old_mask in not inited");
+  int err = sigprocmask(SIG_SETMASK, &old_mask, NULL);
+  dl_passert(err != -1, "failed to restore signal mask");
 }
 
-void dl_block_all_signals () {
+void dl_block_all_signals() {
   sigset_t mask;
-  sigfillset (&mask);
+  sigfillset(&mask);
   // According linux man sigprocmask page
   // if SIGBUS, SIGFPE, SIGILL, or SIGSEGV are generated while they are blocked, the result is undefined,
   // unless the signal was generated by kill(2), sigqueue(3), or raise(3).
@@ -165,29 +164,29 @@ void dl_block_all_signals () {
   sigdelset(&mask, SIGILL);
   // Allow SIGQUIT to generate coredump in signal handlers
   sigdelset(&mask, SIGQUIT);
-  int err = sigprocmask (SIG_SETMASK, &mask, &old_mask);
+  int err = sigprocmask(SIG_SETMASK, &mask, &old_mask);
   old_mask_inited = 1;
-  dl_passert (err != -1, "failed to block all signals");
+  dl_passert(err != -1, "failed to block all signals");
 }
 
-void dl_allow_all_signals () {
+void dl_allow_all_signals() {
   sigset_t mask;
-  sigemptyset (&mask);
-  int err = sigprocmask (SIG_SETMASK, &mask, &old_mask);
+  sigemptyset(&mask);
+  int err = sigprocmask(SIG_SETMASK, &mask, &old_mask);
   old_mask_inited = 1;
-  dl_passert (err != -1, "failed to allow all signals");
+  dl_passert(err != -1, "failed to allow all signals");
 }
 
-static void runtime_handler (const int sig, siginfo_t *info __attribute__((unused)), void *ucontext) {
-  fprintf (stderr, "%s caught, terminating program\n", strsignal(sig));
+static void runtime_handler(const int sig, siginfo_t *info __attribute__((unused)), void *ucontext) {
+  fprintf(stderr, "%s caught, terminating program\n", strsignal(sig));
   crash_dump_write(static_cast<ucontext_t *>(ucontext));
   dl_print_backtrace();
   dl_print_backtrace_gdb();
   raise(SIGQUIT);
-  _exit (EXIT_FAILURE);
+  _exit(EXIT_FAILURE);
 }
 
-void dl_set_default_handlers () {
+void dl_set_default_handlers() {
   dl_sigaction(SIGSEGV, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, runtime_handler);
   dl_sigaction(SIGBUS, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, runtime_handler);
   dl_sigaction(SIGFPE, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, runtime_handler);
@@ -195,20 +194,20 @@ void dl_set_default_handlers () {
   dl_sigaction(SIGABRT, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, runtime_handler);
 }
 
-char *dl_pstr (char const *msg, ...) {
+char *dl_pstr(char const *msg, ...) {
   static char s[5000];
   va_list args;
 
-  va_start (args, msg);
-  vsnprintf (s, 5000, msg, args);
-  va_end (args);
+  va_start(args, msg);
+  vsnprintf(s, 5000, msg, args);
+  va_end(args);
 
   return s;
 }
 
 /** Memory and cpu stats **/
 mem_info_t get_self_mem_stats() {
-  int fd = open ("/proc/self/status", O_RDONLY);
+  int fd = open("/proc/self/status", O_RDONLY);
   if (fd == -1) {
     return {};
   }
@@ -217,7 +216,7 @@ mem_info_t get_self_mem_stats() {
   static char mem[TMEM_SIZE];
   const auto size = read(fd, mem, TMEM_SIZE - 1);
   if (size <= 0) {
-    close (fd);
+    close(fd);
     return {};
   }
   mem[size] = 0;
@@ -230,22 +229,22 @@ mem_info_t get_self_mem_stats() {
       s++;
     }
     uint32_t *x = nullptr;
-    if (strncmp (st, "VmPeak", 6) == 0) {
+    if (strncmp(st, "VmPeak", 6) == 0) {
       x = &info.vm_peak;
     }
-    if (strncmp (st, "VmSize", 6) == 0) {
+    if (strncmp(st, "VmSize", 6) == 0) {
       x = &info.vm;
     }
-    if (strncmp (st, "VmHWM", 5) == 0) {
+    if (strncmp(st, "VmHWM", 5) == 0) {
       x = &info.rss_peak;
     }
-    if (strncmp (st, "VmRSS", 5) == 0) {
+    if (strncmp(st, "VmRSS", 5) == 0) {
       x = &info.rss;
     }
-    if (strncmp (st, "RssFile", 7) == 0) {
+    if (strncmp(st, "RssFile", 7) == 0) {
       x = &info.rss_file;
     }
-    if (strncmp (st, "RssShmem", 8) == 0) {
+    if (strncmp(st, "RssShmem", 8) == 0) {
       x = &info.rss_shmem;
     }
     if (x) {
@@ -255,7 +254,7 @@ mem_info_t get_self_mem_stats() {
       *x = std::numeric_limits<uint32_t>::max();
 
       if (st < s) {
-        sscanf (st, "%" PRIu32, x);
+        sscanf(st, "%" PRIu32, x);
       }
     }
     if (*s == 0) {
@@ -264,17 +263,17 @@ mem_info_t get_self_mem_stats() {
     s++;
   }
 
-  close (fd);
+  close(fd);
   return info;
 }
 
 int get_self_threads_count() {
-  DIR * tasks = opendir("/proc/self/task");
+  DIR *tasks = opendir("/proc/self/task");
   if (tasks == nullptr) {
     return -1;
   }
   int count = 0;
-  struct dirent * task = readdir(tasks);
+  struct dirent *task = readdir(tasks);
   while (task != nullptr && count < 1000) {
     count++;
     task = readdir(tasks);
@@ -286,19 +285,19 @@ int get_self_threads_count() {
   return count - 3;
 }
 
-int get_pid_info (pid_t pid, pid_info_t *info) {
+int get_pid_info(pid_t pid, pid_info_t *info) {
   constexpr size_t TMEM_SIZE = 10000;
   static char mem[TMEM_SIZE];
-  snprintf (mem, TMEM_SIZE, "/proc/%lu/stat", (unsigned long)pid);
-  int fd = open (mem, O_RDONLY);
+  snprintf(mem, TMEM_SIZE, "/proc/%lu/stat", (unsigned long)pid);
+  int fd = open(mem, O_RDONLY);
 
   if (fd == -1) {
     return 0;
   }
 
-  int size = (int)read (fd, mem, TMEM_SIZE - 1);
+  int size = (int)read(fd, mem, TMEM_SIZE - 1);
   if (size <= 0) {
-    close (fd);
+    close(fd);
     return 0;
   }
   mem[size] = 0;
@@ -308,19 +307,19 @@ int get_pid_info (pid_t pid, pid_info_t *info) {
 
   while (pass_cnt < 22) {
     if (pass_cnt == 13) {
-      sscanf (s, "%llu", &info->utime);
+      sscanf(s, "%llu", &info->utime);
     }
     if (pass_cnt == 14) {
-      sscanf (s, "%llu", &info->stime);
+      sscanf(s, "%llu", &info->stime);
     }
     if (pass_cnt == 15) {
-      sscanf (s, "%llu", &info->cutime);
+      sscanf(s, "%llu", &info->cutime);
     }
     if (pass_cnt == 16) {
-      sscanf (s, "%llu", &info->cstime);
+      sscanf(s, "%llu", &info->cstime);
     }
     if (pass_cnt == 21) {
-      sscanf (s, "%llu", &info->starttime);
+      sscanf(s, "%llu", &info->starttime);
     }
     while (*s && *s != ' ') {
       s++;
@@ -329,38 +328,38 @@ int get_pid_info (pid_t pid, pid_info_t *info) {
       s++;
       pass_cnt++;
     } else {
-      dl_assert (0, "unexpected end of proc file");
+      dl_assert(0, "unexpected end of proc file");
       break;
     }
   }
 
-  close (fd);
+  close(fd);
   return 1;
 }
 
-unsigned long long get_pid_start_time (pid_t pid) {
+unsigned long long get_pid_start_time(pid_t pid) {
   pid_info_t info;
   unsigned long long res = 0;
-  if (get_pid_info (pid, &info)) {
+  if (get_pid_info(pid, &info)) {
     res = info.starttime;
   }
 
   return res;
 }
 
-int get_cpu_total (unsigned long long *cpu_total) {
+int get_cpu_total(unsigned long long *cpu_total) {
   constexpr size_t TMEM_SIZE = 10000;
   static char mem[TMEM_SIZE];
-  snprintf (mem, TMEM_SIZE, "/proc/stat");
-  int fd = open (mem, O_RDONLY);
+  snprintf(mem, TMEM_SIZE, "/proc/stat");
+  int fd = open(mem, O_RDONLY);
 
   if (fd == -1) {
     return 0;
   }
 
-  int size = (int)read (fd, mem, TMEM_SIZE - 1);
+  int size = (int)read(fd, mem, TMEM_SIZE - 1);
   if (size <= 0) {
-    close (fd);
+    close(fd);
     return 0;
   }
 
@@ -381,7 +380,7 @@ int get_cpu_total (unsigned long long *cpu_total) {
 
   *cpu_total = sum;
 
-  close (fd);
+  close(fd);
   return 1;
 }
 

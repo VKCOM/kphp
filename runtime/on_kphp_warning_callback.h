@@ -16,6 +16,7 @@ public:
   bool set_callback(on_kphp_warning_callback_type &&new_callback);
   void invoke_callback(const string &warning_message);
   void reset();
+
 private:
   bool in_registered_callback{false};
   on_kphp_warning_callback_type callback;
@@ -24,7 +25,7 @@ private:
 
 void register_kphp_on_warning_callback_impl(on_kphp_warning_callback_type &&callback);
 
-template <typename F>
+template<typename F>
 void f$register_kphp_on_warning_callback(F &&callback) {
   // std::function sometimes uses heap, when constructed from captured lambda. So it must be constructed under critical section only.
   dl::CriticalSectionGuard heap_guard;

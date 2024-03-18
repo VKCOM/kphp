@@ -27,7 +27,7 @@ bool Node::try_start_recalc() {
   while (true) {
     int recalc_state_copy = recalc_state_;
     int once_finished_flag = recalc_state_copy & recalc_bit_at_least_once;
-    switch (recalc_state_copy & 15) {   // preserve bit 16 in transformations
+    switch (recalc_state_copy & 15) { // preserve bit 16 in transformations
       case recalc_st_waiting:
         if (__sync_bool_compare_and_swap(&recalc_state_, recalc_st_waiting | once_finished_flag, recalc_st_need_relaunch | once_finished_flag)) {
           return true;
@@ -41,14 +41,14 @@ bool Node::try_start_recalc() {
       case recalc_st_need_relaunch:
         return false;
       default:
-        assert (0);
+        assert(0);
     }
   }
   return false;
 }
 
 void Node::start_recalc() {
-  int once_finished_flag = recalc_state_ & recalc_bit_at_least_once;  // preserve bit 16 in transformation
+  int once_finished_flag = recalc_state_ & recalc_bit_at_least_once; // preserve bit 16 in transformation
   bool swapped = __sync_bool_compare_and_swap(&recalc_state_, recalc_st_need_relaunch | once_finished_flag, recalc_st_processing | once_finished_flag);
   kphp_assert(swapped);
 }
@@ -56,7 +56,7 @@ void Node::start_recalc() {
 bool Node::try_finish_recalc() {
   while (true) {
     int recalc_state_copy = recalc_state_;
-    switch (recalc_state_copy) {  // always set bit 16 in transformations
+    switch (recalc_state_copy) { // always set bit 16 in transformations
       case recalc_st_processing:
         if (__sync_bool_compare_and_swap(&recalc_state_, recalc_st_processing, recalc_st_waiting | recalc_bit_at_least_once)) {
           return true;
@@ -75,7 +75,7 @@ bool Node::try_finish_recalc() {
       case recalc_st_need_relaunch | recalc_bit_at_least_once:
         return false;
       default:
-        assert (0);
+        assert(0);
     }
   }
   return false;

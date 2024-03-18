@@ -56,9 +56,7 @@ void CheckTypeHintVariance::execute(FunctionPtr f, DataStream<FunctionPtr> &os) 
 
     // if a base method has a return type hint, derived method should have it too
     kphp_error(!f->return_typehint || derived_f->return_typehint,
-               fmt_format("{}() should provide a return type hint compatible with {}()",
-                          derived_f->as_human_readable(),
-                          f->as_human_readable()));
+               fmt_format("{}() should provide a return type hint compatible with {}()", derived_f->as_human_readable(), f->as_human_readable()));
 
     // if base methods doesn't have a param type hint, derived method can't have it too
     const auto &params = f->get_params();
@@ -71,11 +69,8 @@ void CheckTypeHintVariance::execute(FunctionPtr f, DataStream<FunctionPtr> &os) 
       auto p = params[i].as<op_func_param>();
       auto derived_p = derived_params[i].as<op_func_param>();
       if (!p->type_hint) {
-        kphp_error(!derived_p->type_hint,
-                   fmt_format("{}() should not have a ${} param type hint, it would be incompatible with {}()",
-                              derived_f->as_human_readable(),
-                              derived_p->var()->get_string(),
-                              f->as_human_readable()));
+        kphp_error(!derived_p->type_hint, fmt_format("{}() should not have a ${} param type hint, it would be incompatible with {}()",
+                                                     derived_f->as_human_readable(), derived_p->var()->get_string(), f->as_human_readable()));
       }
     }
   }

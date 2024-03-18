@@ -20,7 +20,7 @@
 #include "common/server/engine-settings.h"
 #include "common/version-string.h"
 
-//TODO: it's strange file for it
+// TODO: it's strange file for it
 int daemonize;
 
 OPTION_PARSER_SHORT(OPT_GENERIC, "daemonize", 'd', optional_argument, "changes between daemonize/not daemonize mode") {
@@ -87,50 +87,105 @@ static void dump_stats() {
 
 const char *signal_shortname(int sig) {
   switch (sig) {
-    case SIGHUP: return "SIGHUP";
-    case SIGINT: return "SIGINT";
-    case SIGQUIT: return "SIGQUIT";
-    case SIGILL: return "SIGILL";
-    case SIGTRAP: return "SIGTRAP";
-    case SIGABRT: return "SIGABRT";
-    case SIGBUS: return "SIGBUS";
-    case SIGFPE: return "SIGFPE";
-    case SIGKILL: return "SIGKILL";
-    case SIGUSR1: return "SIGUSR1";
-    case SIGSEGV: return "SIGSEGV";
-    case SIGUSR2: return "SIGUSR2";
-    case SIGPIPE: return "SIGPIPE";
-    case SIGALRM: return "SIGALRM";
-    case SIGTERM: return "SIGTERM";
-    case SIGCHLD: return "SIGCHLD";
-    case SIGCONT: return "SIGCONT";
-    case SIGSTOP: return "SIGSTOP";
-    case SIGTSTP: return "SIGTSTP";
-    case SIGTTIN: return "SIGTTIN";
-    case SIGTTOU: return "SIGTTOU";
-    case SIGURG: return "SIGURG";
-    case SIGXCPU: return "SIGXCPU";
-    case SIGXFSZ: return "SIGXFSZ";
-    case SIGVTALRM: return "SIGVTALRM";
-    case SIGPROF: return "SIGPROF";
-    case SIGWINCH: return "SIGWINCH";
-    case SIGIO: return "SIGIO";
-    case SIGSYS: return "SIGSYS";
+    case SIGHUP:
+      return "SIGHUP";
+    case SIGINT:
+      return "SIGINT";
+    case SIGQUIT:
+      return "SIGQUIT";
+    case SIGILL:
+      return "SIGILL";
+    case SIGTRAP:
+      return "SIGTRAP";
+    case SIGABRT:
+      return "SIGABRT";
+    case SIGBUS:
+      return "SIGBUS";
+    case SIGFPE:
+      return "SIGFPE";
+    case SIGKILL:
+      return "SIGKILL";
+    case SIGUSR1:
+      return "SIGUSR1";
+    case SIGSEGV:
+      return "SIGSEGV";
+    case SIGUSR2:
+      return "SIGUSR2";
+    case SIGPIPE:
+      return "SIGPIPE";
+    case SIGALRM:
+      return "SIGALRM";
+    case SIGTERM:
+      return "SIGTERM";
+    case SIGCHLD:
+      return "SIGCHLD";
+    case SIGCONT:
+      return "SIGCONT";
+    case SIGSTOP:
+      return "SIGSTOP";
+    case SIGTSTP:
+      return "SIGTSTP";
+    case SIGTTIN:
+      return "SIGTTIN";
+    case SIGTTOU:
+      return "SIGTTOU";
+    case SIGURG:
+      return "SIGURG";
+    case SIGXCPU:
+      return "SIGXCPU";
+    case SIGXFSZ:
+      return "SIGXFSZ";
+    case SIGVTALRM:
+      return "SIGVTALRM";
+    case SIGPROF:
+      return "SIGPROF";
+    case SIGWINCH:
+      return "SIGWINCH";
+    case SIGIO:
+      return "SIGIO";
+    case SIGSYS:
+      return "SIGSYS";
     default: {
 #if !defined(__APPLE__)
-      if (sig == SIGPWR) { return "SIGPWR"; }
-      if (sig == SIGSTKFLT) { return "SIGSTKFLT"; }
-      if (sig == SIGRTMAX - 0) { return "SIGRTMAX"; }
-      if (sig == SIGRTMAX - 1) { return "SIGRTMAX-1"; }
-      if (sig == SIGRTMAX - 2) { return "SIGRTMAX-2"; }
-      if (sig == SIGRTMAX - 3) { return "SIGRTMAX-3"; }
-      if (sig == SIGRTMAX - 4) { return "SIGRTMAX-4"; }
-      if (sig == SIGRTMAX - 5) { return "SIGRTMAX-5"; }
-      if (sig == SIGRTMAX - 5) { return "SIGRTMAX-5"; }
-      if (sig == SIGRTMAX - 6) { return "SIGRTMAX-6"; }
-      if (sig == SIGRTMAX - 7) { return "SIGRTMAX-7"; }
-      if (sig == SIGRTMAX - 8) { return "SIGRTMAX-8"; }
-      if (sig == SIGRTMAX - 9) { return "SIGRTMAX-9"; }
+      if (sig == SIGPWR) {
+        return "SIGPWR";
+      }
+      if (sig == SIGSTKFLT) {
+        return "SIGSTKFLT";
+      }
+      if (sig == SIGRTMAX - 0) {
+        return "SIGRTMAX";
+      }
+      if (sig == SIGRTMAX - 1) {
+        return "SIGRTMAX-1";
+      }
+      if (sig == SIGRTMAX - 2) {
+        return "SIGRTMAX-2";
+      }
+      if (sig == SIGRTMAX - 3) {
+        return "SIGRTMAX-3";
+      }
+      if (sig == SIGRTMAX - 4) {
+        return "SIGRTMAX-4";
+      }
+      if (sig == SIGRTMAX - 5) {
+        return "SIGRTMAX-5";
+      }
+      if (sig == SIGRTMAX - 5) {
+        return "SIGRTMAX-5";
+      }
+      if (sig == SIGRTMAX - 6) {
+        return "SIGRTMAX-6";
+      }
+      if (sig == SIGRTMAX - 7) {
+        return "SIGRTMAX-7";
+      }
+      if (sig == SIGRTMAX - 8) {
+        return "SIGRTMAX-8";
+      }
+      if (sig == SIGRTMAX - 9) {
+        return "SIGRTMAX-9";
+      }
 #endif
       break;
     }
@@ -206,7 +261,7 @@ static void ksignal_ext(int sig, void (*info)(int, siginfo_t *, void *), int sa_
   }
 }
 
-//can be called inside signal handler
+// can be called inside signal handler
 void ksignal(int sig, void (*handler)(int)) {
   ksignal_ext(sig, handler, SA_ONSTACK | SA_RESTART);
 }
@@ -222,7 +277,6 @@ void ksignal(int sig, void (*info)(int, siginfo_t *, void *)) {
 void ksignal_intr(int sig, void (*info)(int, siginfo_t *, void *)) {
   ksignal_ext(sig, info, SA_ONSTACK);
 }
-
 
 void set_debug_handlers() {
   stack_t stack;

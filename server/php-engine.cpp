@@ -93,10 +93,9 @@
 #include "server/statshouse/statshouse-manager.h"
 #include "server/workers-control.h"
 
-using job_workers::JobWorkersContext;
 using job_workers::JobWorkerClient;
+using job_workers::JobWorkersContext;
 using job_workers::JobWorkerServer;
-
 
 #define MAX_TIMEOUT 30
 
@@ -119,13 +118,13 @@ int rpcx_execute(connection *c, int op, raw_message *raw);
 // Receives engine responses
 tcp_rpc_client_functions tcp_rpc_client_outbound = [] {
   auto res = tcp_rpc_client_functions();
-  res.execute = rpcx_execute; //replaced
-  res.check_ready = rpcc_check_ready; //replaced
+  res.execute = rpcx_execute;         // replaced
+  res.check_ready = rpcc_check_ready; // replaced
   res.flush_packet = tcp_rpcc_flush_packet_later;
   res.rpc_check_perm = tcp_rpcc_default_check_perm;
   res.rpc_init_crypto = tcp_rpcc_init_crypto;
   res.rpc_start_crypto = tcp_rpcc_start_crypto;
-  res.rpc_ready = rpcc_send_query; //replaced
+  res.rpc_ready = rpcc_send_query; // replaced
 
   return res;
 }();
@@ -154,7 +153,6 @@ conn_target_t rpc_ct = [] {
 
   return res;
 }();
-
 
 connection *get_target_connection(conn_target_t *S, int force_flag) {
   connection *c, *d = nullptr;
@@ -186,7 +184,7 @@ connection *get_target_connection_force(conn_target_t *S) {
 }
 
 int get_target_impl(conn_target_t *ct) {
-  //TODO: fix ref_cnt overflow
+  // TODO: fix ref_cnt overflow
   conn_target_t *res = create_target(ct, nullptr);
   int res_id = (int)(res - Targets);
   return res_id;
@@ -200,13 +198,13 @@ int get_target_by_pid(int ip, int port, conn_target_t *ct) {
 
 int get_target(const char *host, int port, conn_target_t *ct) {
   if (!(0 <= port && port < 0x10000)) {
-    vkprintf (0, "bad port %d\n", port);
+    vkprintf(0, "bad port %d\n", port);
     return -1;
   }
 
   hostent *h;
   if (!(h = kdb_gethostbyname(host)) || h->h_addrtype != AF_INET || h->h_length != 4 || !h->h_addr_list || !h->h_addr) {
-    vkprintf (0, "can't resolve host\n");
+    vkprintf(0, "can't resolve host\n");
     return -1;
   }
 
@@ -230,7 +228,7 @@ double fix_timeout(double timeout) {
  ***/
 
 int delete_pending_query(conn_query *q) {
-  vkprintf (1, "delete_pending_query(%p,%p)\n", q, q->requester);
+  vkprintf(1, "delete_pending_query(%p,%p)\n", q, q->requester);
 
   delete_conn_query(q);
   free(q);
@@ -255,29 +253,25 @@ int php_worker_run_flag;
 /** dummy request queue **/
 connection dummy_request_queue;
 
-
 /** net write command **/
 /** do write delayed write to connection **/
 
-
-
 void command_net_write_run_rpc(command_t *base_command, void *data) {
   auto *command = (command_net_write_t *)base_command;
-//  fprintf (stderr, "command_net_write [ptr=%p] [len = %d] [data = %p]\n", base_command, command->len, data);
+  //  fprintf (stderr, "command_net_write [ptr=%p] [len = %d] [data = %p]\n", base_command, command->len, data);
 
   slot_id_t slot_id = static_cast<slot_id_t>(command->extra);
-  assert (command->data != nullptr);
-  if (data == nullptr) { //send to /dev/null
-    vkprintf (3, "failed to send rpc request %d\n", slot_id);
+  assert(command->data != nullptr);
+  if (data == nullptr) { // send to /dev/null
+    vkprintf(3, "failed to send rpc request %d\n", slot_id);
     on_net_event(create_rpc_error_event(slot_id, TL_ERROR_NO_CONNECTIONS_IN_RPC_CLIENT, "Failed to send query, timeout expired", nullptr));
   } else {
     auto *d = (connection *)data;
-    //assert (d->status == conn_ready);
+    // assert (d->status == conn_ready);
     send_rpc_query(d, TL_RPC_INVOKE_REQ, slot_id, (int *)command->data, command->len);
     d->last_query_sent_time = precise_now;
   }
 }
-
 
 void command_net_write_free(command_t *base_command) {
   auto *command = (command_net_write_t *)base_command;
@@ -290,11 +284,7 @@ void command_net_write_free(command_t *base_command) {
   free(command);
 }
 
-command_t command_net_write_rpc_base = {
-  .run = command_net_write_run_rpc,
-  .free = command_net_write_free
-};
-
+command_t command_net_write_rpc_base = {.run = command_net_write_run_rpc, .free = command_net_write_free};
 
 command_t *create_command_net_writer(const char *data, int data_len, command_t *base, long long extra) {
   auto *command = reinterpret_cast<command_net_write_t *>(malloc(sizeof(command_net_write_t)));
@@ -308,7 +298,6 @@ command_t *create_command_net_writer(const char *data, int data_len, command_t *
 
   return reinterpret_cast<command_t *>(command);
 }
-
 
 /** php-script **/
 
@@ -329,9 +318,9 @@ void net_error(net_ansgen_t *ansgen, php_query_base_t *query, const char *err) {
 void prepare_rpc_query_raw(int packet_id, int *q, int qsize, unsigned (*crc32_partial_custom)(const void *q, long len, unsigned crc32_complement)) {
   static_assert(sizeof(int) == 4, "");
   q[0] = qsize;
-  assert ((qsize & 3) == 0);
+  assert((qsize & 3) == 0);
   int qlen = qsize >> 2;
-  assert (qlen >= 5);
+  assert(qlen >= 5);
 
   q[1] = packet_id;
   q[qlen - 1] = (int)~crc32_partial_custom(q, q[0] - 4, 0xffffffff);
@@ -343,7 +332,7 @@ void send_rpc_query(connection *c, int op, long long id, int *q, int qsize) {
     *(long long *)(q + 3) = id;
   }
 
-  vkprintf (4, "send_rpc_query: [len = %d] [op = %08x] [rpc_id = <%lld>]\n", q[0], op, id);
+  vkprintf(4, "send_rpc_query: [len = %d] [op = %08x] [rpc_id = <%lld>]\n", q[0], op, id);
   tcp_rpc_conn_send_data(c, static_cast<int>(qsize - 3 * sizeof(int)), q + 2);
 
   TCP_RPCS_FUNC(c)->flush_packet(c);
@@ -353,7 +342,7 @@ void on_net_event(int event_status) {
   if (event_status == 0) {
     return;
   }
-  assert (php_worker.has_value());
+  assert(php_worker.has_value());
   if (event_status < 0) {
     php_worker->terminate(0, script_error_t::net_event_error, "memory limit on net event");
     php_worker->wakeup();
@@ -369,7 +358,7 @@ static void send_rpc_error_raw(connection *c, long long req_id, int code, const 
   q[2] = TL_RPC_REQ_ERROR;
   *(long long *)(q + 3) = req_id;
   q[5] = code;
-  //TODO: write str
+  // TODO: write str
 
   char *buf = (char *)(q + 6);
   int all_len = sizeof(q[2]) + sizeof(long long) + sizeof(q[5]);
@@ -389,7 +378,7 @@ static void send_rpc_error_raw(connection *c, long long req_id, int code, const 
     *buf++ = (char)((sn >> 16) & 255);
     all_len += 4;
   } else {
-    assert ("TODO: store too big string" && 0);
+    assert("TODO: store too big string" && 0);
   }
 
   memcpy(buf, str, (size_t)sn);
@@ -442,11 +431,10 @@ int hts_php_wakeup(connection *c) {
   if (c->Out.total_bytes > 0) {
     c->flags |= C_WANTWR;
   }
-  //c->generation = ++conn_generation;
-  //c->pending_queries = 0;
+  // c->generation = ++conn_generation;
+  // c->pending_queries = 0;
   return 0;
 }
-
 
 int hts_func_wakeup(connection *c);
 int hts_func_execute(connection *c, int op);
@@ -465,15 +453,14 @@ http_server_functions http_methods = [] {
 static char *qPost, *qGet, *qUri, *qHeaders;
 static int qPostLen, qGetLen, qUriLen, qHeadersLen;
 
-static char no_cache_headers[] =
-  "Pragma: no-cache\r\n"
-  "Cache-Control: no-store\r\n";
+static char no_cache_headers[] = "Pragma: no-cache\r\n"
+                                 "Cache-Control: no-store\r\n";
 
-#define HTTP_RESULT_SIZE  (4 << 20)
+#define HTTP_RESULT_SIZE (4 << 20)
 
-//static char http_body_buffer[HTTP_RESULT_SIZE], *http_w;
+// static char http_body_buffer[HTTP_RESULT_SIZE], *http_w;
 //#define http_w_end  (http_body_buffer + HTTP_RESULT_SIZE - 16384)
-//void http_return (connection *c, const char *str, int len);
+// void http_return (connection *c, const char *str, int len);
 
 void http_return(connection *c, const char *str, int len) {
   if (len < 0) {
@@ -499,7 +486,7 @@ void hts_stop() {
 }
 
 void hts_at_query_end(connection *c, bool check_keep_alive) {
-  hts_data *D = HTS_DATA (c);
+  hts_data *D = HTS_DATA(c);
 
   clear_connection_timeout(c);
   c->generation = ++conn_generation;
@@ -511,13 +498,13 @@ void hts_at_query_end(connection *c, bool check_keep_alive) {
   } else {
     c->flags |= C_REPARSE;
   }
-  assert (c->status != conn_wait_net);
+  assert(c->status != conn_wait_net);
 }
 
 int do_hts_func_wakeup(connection *c, bool flag) {
   hts_data *D = HTS_DATA(c);
 
-  assert (c->status == conn_expect_query || c->status == conn_wait_net);
+  assert(c->status == conn_expect_query || c->status == conn_wait_net);
   c->status = conn_expect_query;
 
   auto *worker = reinterpret_cast<PhpWorker *>(D->extra);
@@ -527,9 +514,9 @@ int do_hts_func_wakeup(connection *c, bool flag) {
     php_worker.reset();
     hts_at_query_end(c, flag);
   } else {
-    assert (*timeout > 0);
+    assert(*timeout > 0);
     set_connection_timeout(c, *timeout);
-    assert (c->pending_queries >= 0 && c->status == conn_wait_net);
+    assert(c->pending_queries >= 0 && c->status == conn_wait_net);
   }
   return 0;
 }
@@ -543,8 +530,8 @@ int hts_func_execute(connection *c, int op) {
     return -501;
   }
 
-  vkprintf (1, "start http server execute: connection #%d, op=%d, header_size=%d, data_size=%d, http_version=%d\n",
-            c->fd, op, D->header_size, D->data_size, D->http_ver);
+  vkprintf(1, "start http server execute: connection #%d, op=%d, header_size=%d, data_size=%d, http_version=%d\n", c->fd, op, D->header_size, D->data_size,
+           D->http_ver);
 
   if (!vk::any_of_equal(D->query_type, htqt_get, htqt_post, htqt_head)) {
     D->query_flags &= ~QF_KEEPALIVE;
@@ -554,24 +541,24 @@ int hts_func_execute(connection *c, int op) {
   if (D->data_size > 0) {
     int have_bytes = get_total_ready_bytes(&c->In);
     if (have_bytes < D->data_size + D->header_size && D->data_size < MAX_POST_SIZE) {
-      vkprintf (2, "-- need %d more bytes, waiting\n", D->data_size + D->header_size - have_bytes);
+      vkprintf(2, "-- need %d more bytes, waiting\n", D->data_size + D->header_size - have_bytes);
       return D->data_size + D->header_size - have_bytes;
     }
   }
 
-  assert (D->header_size <= MAX_HTTP_HEADER_SIZE);
-  assert (read_in(&c->In, &ReqHdr, D->header_size) == D->header_size);
+  assert(D->header_size <= MAX_HTTP_HEADER_SIZE);
+  assert(read_in(&c->In, &ReqHdr, D->header_size) == D->header_size);
 
   qHeaders = ReqHdr + D->first_line_size;
   qHeadersLen = D->header_size - D->first_line_size;
-  assert (D->first_line_size > 0 && D->first_line_size <= D->header_size);
+  assert(D->first_line_size > 0 && D->first_line_size <= D->header_size);
 
-//  D->query_flags &= ~QF_KEEPALIVE;
+  //  D->query_flags &= ~QF_KEEPALIVE;
 
   if (0 < D->data_size && D->data_size < MAX_POST_SIZE) {
-    assert (read_in(&c->In, Post, D->data_size) == D->data_size);
+    assert(read_in(&c->In, Post, D->data_size) == D->data_size);
     Post[D->data_size] = 0;
-    vkprintf (2, "have %d POST bytes: `%.80s`\n", D->data_size, Post);
+    vkprintf(2, "have %d POST bytes: `%.80s`\n", D->data_size, Post);
     qPost = Post;
     qPostLen = D->data_size;
   } else {
@@ -601,20 +588,37 @@ int hts_func_execute(connection *c, int op) {
     return -418;
   }
 
-  vkprintf (1, "start response processing on fd %d\n", c->fd);
+  vkprintf(1, "start response processing on fd %d\n", c->fd);
 
   const char *query_type_str = nullptr;
   switch (D->query_type) {
-    case htqt_get: query_type_str = "GET"; break;
-    case htqt_post: query_type_str = "POST"; break;
-    case htqt_head: query_type_str = "HEAD"; break;
-    default: assert(0);
+    case htqt_get:
+      query_type_str = "GET";
+      break;
+    case htqt_post:
+      query_type_str = "POST";
+      break;
+    case htqt_head:
+      query_type_str = "HEAD";
+      break;
+    default:
+      assert(0);
   }
 
   /** save query here **/
-  php_query_data_t http_data = http_query_data{qUri, qGet, qHeaders, qPost, query_type_str,
-                                   qUriLen, qGetLen, qHeadersLen, qPostLen, static_cast<int>(strlen(query_type_str)),
-                               D->query_flags & QF_KEEPALIVE, inet_sockaddr_address(&c->remote_endpoint),   inet_sockaddr_port(&c->remote_endpoint)};
+  php_query_data_t http_data = http_query_data{qUri,
+                                               qGet,
+                                               qHeaders,
+                                               qPost,
+                                               query_type_str,
+                                               qUriLen,
+                                               qGetLen,
+                                               qHeadersLen,
+                                               qPostLen,
+                                               static_cast<int>(strlen(query_type_str)),
+                                               D->query_flags & QF_KEEPALIVE,
+                                               inet_sockaddr_address(&c->remote_endpoint),
+                                               inet_sockaddr_port(&c->remote_endpoint)};
 
   static long long http_script_req_id = 0;
   php_worker.emplace(http_worker, c, std::move(http_data), ++http_script_req_id, script_timeout);
@@ -637,7 +641,7 @@ int hts_func_close(connection *c, int who __attribute__((unused))) {
     worker->terminate(1, script_error_t::http_connection_close, "http connection close");
     std::optional<double> timeout = worker->enter_lifecycle();
     D->extra = nullptr;
-    assert ("worker is unfinished after closing connection" && !timeout.has_value());
+    assert("worker is unfinished after closing connection" && !timeout.has_value());
     php_worker.reset();
   }
   return 0;
@@ -665,8 +669,8 @@ conn_type_t ct_php_engine_rpc_server = [] {
   res.free_buffers = tcp_free_connection_buffers;
   res.init_outbound = server_failed;
   res.connected = server_failed;
-  res.wakeup = rpcs_php_wakeup; //replaced
-  res.alarm = rpcs_php_wakeup; //replaced
+  res.wakeup = rpcs_php_wakeup; // replaced
+  res.alarm = rpcs_php_wakeup;  // replaced
   res.crypto_init = aes_crypto_init;
   res.crypto_free = aes_crypto_free;
   res.crypto_encrypt_output = tcp_aes_crypto_encrypt_output;
@@ -692,7 +696,7 @@ conn_type_t ct_php_rpc_client = [] {
   res.init_outbound = tcp_rpcc_init_outbound;
   res.connected = tcp_rpcc_connected;
   res.wakeup = rpcc_php_wakeup; // replaced
-  res.alarm = rpcc_php_wakeup; // replaced
+  res.alarm = rpcc_php_wakeup;  // replaced
   res.check_ready = tcp_rpc_client_check_ready;
   res.crypto_init = aes_crypto_init;
   res.crypto_free = aes_crypto_free;
@@ -711,8 +715,8 @@ int rpcs_php_wakeup(connection *c) {
   if (c->out_p.total_bytes > 0) {
     c->flags |= C_WANTWR;
   }
-  //c->generation = ++conn_generation;
-  //c->pending_queries = 0;
+  // c->generation = ++conn_generation;
+  // c->pending_queries = 0;
   return 0;
 }
 
@@ -724,8 +728,8 @@ int rpcc_php_wakeup(connection *c) {
   if (c->out.total_bytes > 0) {
     c->flags |= C_WANTWR;
   }
-  //c->generation = ++conn_generation;
-  //c->pending_queries = 0;
+  // c->generation = ++conn_generation;
+  // c->pending_queries = 0;
   return 0;
 }
 
@@ -736,14 +740,14 @@ int rpcc_func_ready(connection *c);
 
 tcp_rpc_server_functions rpc_methods = [] {
   auto res = tcp_rpc_server_functions();
-  res.execute = rpcx_execute; //replaced
+  res.execute = rpcx_execute; // replaced
   res.check_ready = server_check_ready;
   res.flush_packet = tcp_rpcs_flush_packet;
   res.rpc_check_perm = tcp_rpcs_default_check_perm;
   res.rpc_init_crypto = tcp_rpcs_init_crypto;
-  res.rpc_wakeup = rpcx_func_wakeup; //replaced
-  res.rpc_alarm = rpcx_func_wakeup; //replaced
-  res.rpc_close = rpcx_func_close; //replaced
+  res.rpc_wakeup = rpcx_func_wakeup; // replaced
+  res.rpc_alarm = rpcx_func_wakeup;  // replaced
+  res.rpc_close = rpcx_func_close;   // replaced
 
   return res;
 }();
@@ -751,16 +755,16 @@ tcp_rpc_server_functions rpc_methods = [] {
 // For tasks engine, rpc-proxy task-related communication and RPC microservice requests processing
 tcp_rpc_client_functions rpc_client_methods = [] {
   auto res = tcp_rpc_client_functions();
-  res.execute = rpcx_execute; //replaced
-  res.check_ready = default_tcp_rpc_client_check_ready; //replaced
+  res.execute = rpcx_execute;                           // replaced
+  res.check_ready = default_tcp_rpc_client_check_ready; // replaced
   res.flush_packet = tcp_rpcc_flush_packet;
   res.rpc_check_perm = tcp_rpcc_default_check_perm;
   res.rpc_init_crypto = tcp_rpcc_init_crypto;
   res.rpc_start_crypto = tcp_rpcc_start_crypto;
   res.rpc_ready = rpcc_func_ready;
-  res.rpc_wakeup = rpcx_func_wakeup; //replaced
-  res.rpc_alarm = rpcx_func_wakeup; //replaced
-  res.rpc_close = rpcx_func_close; //replaced
+  res.rpc_wakeup = rpcx_func_wakeup; // replaced
+  res.rpc_alarm = rpcx_func_wakeup;  // replaced
+  res.rpc_close = rpcx_func_close;   // replaced
 
   return res;
 }();
@@ -777,7 +781,6 @@ conn_target_t rpc_client_ct = [] {
   return res;
 }();
 
-
 int rpcc_func_ready(connection *c) {
   c->last_query_sent_time = precise_now;
   c->last_response_time = precise_now;
@@ -789,7 +792,6 @@ int rpcc_func_ready(connection *c) {
   }
   return 0;
 }
-
 
 void rpcc_stop() {
   lease_on_stop();
@@ -810,13 +812,13 @@ void rpcx_at_query_end(connection *c) {
     run_rpc_lease();
   }
   c->flags |= C_REPARSE;
-  assert (c->status != conn_wait_net);
+  assert(c->status != conn_wait_net);
 }
 
 int rpcx_func_wakeup(connection *c) {
   auto *D = TCP_RPC_DATA(c);
 
-  assert (c->status == conn_expect_query || c->status == conn_wait_net);
+  assert(c->status == conn_expect_query || c->status == conn_wait_net);
   c->status = conn_expect_query;
 
   auto *worker = reinterpret_cast<PhpWorker *>(D->extra);
@@ -826,8 +828,8 @@ int rpcx_func_wakeup(connection *c) {
     php_worker.reset();
     rpcx_at_query_end(c);
   } else {
-    assert (c->pending_queries >= 0 && c->status == conn_wait_net);
-    assert (*timeout > 0);
+    assert(c->pending_queries >= 0 && c->status == conn_wait_net);
+    assert(*timeout > 0);
     set_connection_timeout(c, *timeout);
   }
   return 0;
@@ -841,7 +843,7 @@ int rpcx_func_close(connection *c, int who __attribute__((unused))) {
     worker->terminate(1, script_error_t::rpc_connection_close, "rpc connection close");
     std::optional<double> timeout = worker->enter_lifecycle();
     D->extra = nullptr;
-    assert ("worker is unfinished after closing connection" && !timeout.has_value());
+    assert("worker is unfinished after closing connection" && !timeout.has_value());
     php_worker.reset();
 
     if (!has_pending_scripts()) {
@@ -1017,7 +1019,7 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       }
       assert(fetched_bytes == len);
       auto *D = TCP_RPC_DATA(c);
-      php_query_data_t rpc_data =  rpc_query_data{std::move(header), std::move(buffer), D->remote_pid};
+      php_query_data_t rpc_data = rpc_query_data{std::move(header), std::move(buffer), D->remote_pid};
       php_worker.emplace(run_once ? once_worker : rpc_worker, c, std::move(rpc_data), req_id, actual_script_timeout);
       D->extra = &php_worker.value();
 
@@ -1043,8 +1045,8 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
 
       auto id = tl_fetch_long();
       if (op == TL_RPC_REQ_ERROR) {
-        //FIXME: error code, error string
-        //almost never happens
+        // FIXME: error code, error string
+        // almost never happens
         event_status = create_rpc_error_event(static_cast<slot_id_t>(id), -1, "unknown error", nullptr);
         break;
       }
@@ -1059,7 +1061,7 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
           assert(false);
         }
         auto fetched_bytes = tl_fetch_data(result_buf, result_len);
-        assert (fetched_bytes == result_len);
+        assert(fetched_bytes == result_len);
       }
 
       break;
@@ -1072,7 +1074,6 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
   }
   return 0;
 }
-
 
 /***
   Common query function
@@ -1087,11 +1088,11 @@ void pnet_query_answer(conn_query *q) {
     } else if (req->type == &ct_php_rpc_client) {
       extra = TCP_RPC_DATA(req)->extra;
     } else if (req->type == &ct_php_engine_http_server) {
-      extra = HTS_DATA (req)->extra;
+      extra = HTS_DATA(req)->extra;
     } else if (req->type && !strcmp(req->type->title, "jobs_server")) {
       extra = req->custom_data;
     } else {
-      assert ("unexpected type of connection\n" && 0);
+      assert("unexpected type of connection\n" && 0);
     }
     assert(extra);
     auto *worker = static_cast<PhpWorker *>(extra);
@@ -1172,7 +1173,7 @@ conn_query_functions pnet_cq_func = [] {
   res.title = "pnet-cq-query";
   res.wakeup = pnet_query_timeout;
   res.close = pnet_query_term;
-//  res.complete = mc_query_done //???
+  //  res.complete = mc_query_done //???
   return res;
 }();
 
@@ -1182,7 +1183,7 @@ conn_query_functions pnet_delayed_cq_func = [] {
   res.title = "pnet-cq-query";
   res.wakeup = pnet_query_term;
   res.close = pnet_query_term;
-//  res.complete = mc_query_done //???
+  //  res.complete = mc_query_done //???
 
   return res;
 }();
@@ -1193,11 +1194,10 @@ conn_query_functions delayed_send_cq_func = [] {
   res.title = "delayed-send-cq-query";
   res.wakeup = delayed_send_term;
   res.close = delayed_send_term;
-//  res.complete = mc_query_done //???
+  //  res.complete = mc_query_done //???
 
   return res;
 }();
-
 
 void create_pnet_delayed_query(connection *http_conn, conn_target_t *t, net_ansgen_t *gen, double finish_time) {
   auto *q = reinterpret_cast<conn_query *>(malloc(sizeof(conn_query)));
@@ -1215,8 +1215,7 @@ void create_pnet_delayed_query(connection *http_conn, conn_target_t *t, net_ansg
   insert_conn_query_into_list(q, (conn_query *)t);
 }
 
-void create_delayed_send_query(conn_target_t *t, command_t *command,
-                               double finish_time) {
+void create_delayed_send_query(conn_target_t *t, command_t *command, double finish_time) {
   auto *q = reinterpret_cast<conn_query *>(malloc(sizeof(conn_query)));
 
   q->custom_type = 0;
@@ -1250,7 +1249,6 @@ conn_query *create_pnet_query(connection *http_conn, connection *conn, net_ansge
   return q;
 }
 
-
 /***
   RCP CLIENT
  ***/
@@ -1266,8 +1264,8 @@ int rpcc_check_ready(connection *c) {
 
   if ((c->flags & C_FAILED) || c->status == conn_error) {
     if (verbosity > 1 && c->ready != cr_failed) {
-      fprintf(stderr, "changing connection %d readiness from %d to %d [FAILED] lq=%.03f lr=%.03f now=%.03f\n", c->fd, c->ready, cr_failed, c->last_query_sent_time, c
-        ->last_response_time, precise_now);
+      fprintf(stderr, "changing connection %d readiness from %d to %d [FAILED] lq=%.03f lr=%.03f now=%.03f\n", c->fd, c->ready, cr_failed,
+              c->last_query_sent_time, c->last_response_time, precise_now);
     }
     return c->ready = cr_failed;
   }
@@ -1275,31 +1273,31 @@ int rpcc_check_ready(connection *c) {
   if (TCP_RPC_DATA(c)->in_packet_num < 0) {
     if (TCP_RPC_DATA(c)->in_packet_num == -1 && c->status == conn_running) {
       if (verbosity > 1 && c->ready != cr_ok) {
-        fprintf(stderr, "changing connection %d readiness from %d to %d [OK] lq=%.03f lr=%.03f now=%.03f\n", c->fd, c->ready, cr_ok, c->last_query_sent_time, c
-          ->last_response_time, precise_now);
+        fprintf(stderr, "changing connection %d readiness from %d to %d [OK] lq=%.03f lr=%.03f now=%.03f\n", c->fd, c->ready, cr_ok, c->last_query_sent_time,
+                c->last_response_time, precise_now);
       }
       return c->ready = cr_ok;
     }
 
-    assert (c->last_query_sent_time != 0);
+    assert(c->last_query_sent_time != 0);
     if (c->last_query_sent_time < precise_now - RPC_CONNECT_TIMEOUT) {
       fail_connection(c, -6);
       return c->ready = cr_failed;
     }
     return c->ready = cr_notyet;
   }
-  assert (c->status != conn_connecting);
+  assert(c->status != conn_connecting);
 
   if (c->last_query_sent_time < precise_now - rpc_ping_interval) {
     net_rpc_send_ping(c, lrand48());
     c->last_query_sent_time = precise_now;
   }
 
-  assert (c->last_response_time != 0);
+  assert(c->last_response_time != 0);
   if (c->last_response_time < precise_now - RPC_FAIL_INTERVAL) {
     if (verbosity > 1 && c->ready != cr_failed) {
-      fprintf(stderr, "changing connection %d readiness from %d to %d [FAILED] lq=%.03f lr=%.03f now=%.03f\n", c->fd, c->ready, cr_failed, c->last_query_sent_time, c
-        ->last_response_time, precise_now);
+      fprintf(stderr, "changing connection %d readiness from %d to %d [FAILED] lq=%.03f lr=%.03f now=%.03f\n", c->fd, c->ready, cr_failed,
+              c->last_query_sent_time, c->last_response_time, precise_now);
     }
     fail_connection(c, -5);
     return c->ready = cr_failed;
@@ -1307,45 +1305,47 @@ int rpcc_check_ready(connection *c) {
 
   if (c->last_response_time < precise_now - RPC_STOP_INTERVAL) {
     if (verbosity > 1 && c->ready != cr_stopped) {
-      fprintf(stderr, "changing connection %d readiness from %d to %d [STOPPED] lq=%.03f lr=%.03f now=%.03f\n", c->fd, c->ready, cr_stopped, c->last_query_sent_time, c
-        ->last_response_time, precise_now);
+      fprintf(stderr, "changing connection %d readiness from %d to %d [STOPPED] lq=%.03f lr=%.03f now=%.03f\n", c->fd, c->ready, cr_stopped,
+              c->last_query_sent_time, c->last_response_time, precise_now);
     }
     return c->ready = cr_stopped;
   }
 
   if (c->status == conn_wait_answer || c->status == conn_expect_query || c->status == conn_reading_answer) {
     if (verbosity > 1 && c->ready != cr_ok) {
-      fprintf(stderr, "changing connection %d readiness from %d to %d [OK] lq=%.03f lr=%.03f now=%.03f\n", c->fd, c->ready, cr_ok, c->last_query_sent_time, c->last_response_time, precise_now);
+      fprintf(stderr, "changing connection %d readiness from %d to %d [OK] lq=%.03f lr=%.03f now=%.03f\n", c->fd, c->ready, cr_ok, c->last_query_sent_time,
+              c->last_response_time, precise_now);
     }
     return c->ready = cr_ok;
   }
 
   if (c->status == conn_running) {
     if (verbosity > 1 && c->ready != cr_busy) {
-      fprintf(stderr, "changing connection %d readiness from %d to %d [BUSY] lq=%.03f lr=%.03f now=%.03f\n", c->fd, c->ready, cr_busy, c->last_query_sent_time, c
-        ->last_response_time, precise_now);
+      fprintf(stderr, "changing connection %d readiness from %d to %d [BUSY] lq=%.03f lr=%.03f now=%.03f\n", c->fd, c->ready, cr_busy, c->last_query_sent_time,
+              c->last_response_time, precise_now);
     }
     return c->ready = cr_busy;
   }
 
-  assert (0);
+  assert(0);
   return c->ready = cr_failed;
 }
 
 int rpcc_send_query(connection *c) {
-  //rpcc_ready
+  // rpcc_ready
   c->last_query_sent_time = precise_now;
   c->last_response_time = precise_now;
 
   conn_query *q;
-  dl_assert (c != nullptr, "...");
-  dl_assert (c->target != nullptr, "...");
+  dl_assert(c != nullptr, "...");
+  dl_assert(c->target != nullptr, "...");
 
   while (c->target->first_query != (conn_query *)(c->target)) {
     q = c->target->first_query;
-    dl_assert (q != nullptr, "...");
-//    dl_assert (q->requester != nullptr, "...");
-//    fprintf (stderr, "processing delayed query %p for target %p initiated by %p (%d:%d<=%d)\n", q, c->target, q->requester, q->requester->fd, q->req_generation, q->requester->generation);
+    dl_assert(q != nullptr, "...");
+    //    dl_assert (q->requester != nullptr, "...");
+    //    fprintf (stderr, "processing delayed query %p for target %p initiated by %p (%d:%d<=%d)\n", q, c->target, q->requester, q->requester->fd,
+    //    q->req_generation, q->requester->generation);
 
     auto *command = (command_t *)q->extra;
     command->run(command, c);
@@ -1394,7 +1394,7 @@ static void sigterm_handler(const int sig) {
   const char message[] = "SIGTERM handled.\n";
   kwrite(2, message, sizeof(message) - (size_t)1);
 
-  //pending_signals |= (1 << sig);
+  // pending_signals |= (1 << sig);
   turn_sigterm_on();
   ksignal(sig, sigterm_immediate_handler);
 }
@@ -1485,13 +1485,13 @@ void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port) n
           q[2] = TL_RPC_INVOKE_REQ;
           for (int i = 0; i < run_once_count; i++) {
             prepare_rpc_query_raw(i, q, qsize, crc32c_partial);
-            assert (write(write_fd, q, (size_t)qsize) == qsize);
+            assert(write(write_fd, q, (size_t)qsize) == qsize);
           }
         }
       }
 
       if (verbosity > 0 && http_sfd >= 0) {
-        vkprintf (-1, "created listening socket at %s:%d, fd=%d\n", ip_to_print(settings_addr.s_addr), http_port, http_sfd);
+        vkprintf(-1, "created listening socket at %s:%d, fd=%d\n", ip_to_print(settings_addr.s_addr), http_port, http_sfd);
       }
 
       if (http_sfd >= 0) {
@@ -1499,7 +1499,7 @@ void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port) n
       }
 
       auto &rpc_clients = RpcClients::get().rpc_clients;
-      std::for_each(rpc_clients.begin(), rpc_clients.end(),[](LeaseRpcClient &rpc_client) {
+      std::for_each(rpc_clients.begin(), rpc_clients.end(), [](LeaseRpcClient &rpc_client) {
         vkprintf(-1, "create rpc client target: %s:%d\n", rpc_client.host.c_str(), rpc_client.port);
         rpc_client.target_id = get_target(rpc_client.host.c_str(), rpc_client.port, &rpc_client_ct);
       });
@@ -1525,12 +1525,12 @@ void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port) n
   if (db_port != -1) {
     vkprintf(1, "mysql host: %s; port: %d\n", db_host, db_port);
     sql_target_id = get_target(db_host, db_port, &db_ct);
-    assert (sql_target_id != -1);
+    assert(sql_target_id != -1);
   }
 
   get_utime_monotonic();
   vk::singleton<SharedDataWorkerCache>::get().init_defaults();
-  //create_all_outbound_connections();
+  // create_all_outbound_connections();
 
   ksignal(SIGTERM, sigterm_handler);
   ksignal(SIGPIPE, SIG_IGN);
@@ -1540,11 +1540,11 @@ void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port) n
 
   dl_allow_all_signals();
 
-  vkprintf (1, "Server started\n");
+  vkprintf(1, "Server started\n");
   for (int i = 0; !(pending_signals & ~((1ll << SIGUSR1) | (1ll << SIGHUP))); i++) {
     if (verbosity > 0 && !(i & 255)) {
-      vkprintf (1, "epoll_work(): %d out of %d connections, network buffers: %d used, %d out of %d allocated\n",
-                active_connections, maxconn, NB_used, NB_alloc, NB_max);
+      vkprintf(1, "epoll_work(): %d out of %d connections, network buffers: %d used, %d out of %d allocated\n", active_connections, maxconn, NB_used, NB_alloc,
+               NB_max);
     }
 
     epoll_work(57);
@@ -1599,12 +1599,12 @@ void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port) n
   }
 
   if (verbosity > 0 && pending_signals) {
-    vkprintf (1, "Quitting because of pending signals = %llx\n", pending_signals);
+    vkprintf(1, "Quitting because of pending signals = %llx\n", pending_signals);
   }
 
   if (worker_type == WorkerType::general_worker && http_sfd >= 0 && !hts_stopped) {
     epoll_close(http_sfd);
-    assert (close(http_sfd) >= 0);
+    assert(close(http_sfd) >= 0);
   }
 }
 
@@ -1618,9 +1618,9 @@ void start_server() {
     reopen_json_log();
   }
   if (master_flag) {
-    vkprintf (-1, "master\n");
+    vkprintf(-1, "master\n");
     if (rpc_port != -1) {
-      vkprintf (-1, "rpc_port is ignored in master mode\n");
+      vkprintf(-1, "rpc_port is ignored in master mode\n");
       rpc_port = -1;
     }
   }
@@ -1641,13 +1641,12 @@ void set_instance_cache_memory_limit(size_t limit);
 const char *get_php_scripts_version() noexcept;
 char **get_runtime_options(int *count) noexcept;
 
-
 void init_all() {
   srand48((long)cycleclock_now());
 
   auto start_time = std::chrono::steady_clock::now();
 
-  //init pending_http_queue
+  // init pending_http_queue
   pending_http_queue.first_query = pending_http_queue.last_query = (conn_query *)&pending_http_queue;
   php_worker_run_flag = 0;
 
@@ -1703,7 +1702,7 @@ void init_logname(const char *src) {
 
   bool was_percent = false;
   while (*src) {
-    assert (pattern < pattern_buf + buf_len - 3);
+    assert(pattern < pattern_buf + buf_len - 3);
     if (*src == '%') {
       if (!was_percent) {
         *pattern++ = '%';
@@ -1987,16 +1986,15 @@ int main_args_handler(int i, const char *long_option) {
       return -1;
     }
     case 2012: {
-      if (add_dc_by_ipv4_config(optarg)) {    // can appear multiple times, each adding a new dc config
+      if (add_dc_by_ipv4_config(optarg)) { // can appear multiple times, each adding a new dc config
         return 0;
       }
       kprintf("--%s option: couldn't set mask '%s'\n", long_option, optarg);
       return -1;
     }
     case 2013: {
-      return parse_numeric_option(long_option, 0.0, 1.0, [](double warmup_workers_part) {
-        WarmUpContext::get().set_workers_part_for_warm_up(warmup_workers_part);
-      });
+      return parse_numeric_option(long_option, 0.0, 1.0,
+                                  [](double warmup_workers_part) { WarmUpContext::get().set_workers_part_for_warm_up(warmup_workers_part); });
     }
     case 2014: {
       return parse_numeric_option(long_option, 0.0, 1.0, [](double warmup_instance_cache_elements_part) {
@@ -2009,9 +2007,7 @@ int main_args_handler(int i, const char *long_option) {
       });
     }
     case 2016: {
-      return parse_numeric_option(long_option, 0.0, 0.99, [](double ratio) {
-        vk::singleton<WorkersControl>::get().set_ratio(WorkerType::job_worker, ratio);
-      });
+      return parse_numeric_option(long_option, 0.0, 0.99, [](double ratio) { vk::singleton<WorkersControl>::get().set_ratio(WorkerType::job_worker, ratio); });
     }
     case 2017: {
       const int64_t job_workers_shared_memory_size = parse_memory_limit(optarg);
@@ -2041,7 +2037,7 @@ int main_args_handler(int i, const char *long_option) {
             return -1;
           }
         }
-      } catch(const std::exception &e) {
+      } catch (const std::exception &e) {
         kprintf("--%s option: can't parse distribution - %s\n", long_option, e.what());
         return -1;
       }
@@ -2273,7 +2269,8 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("lock-memory", no_argument, 'k', "lock paged memory");
   parse_option("define", required_argument, 'D', "set data for ini_get (in form key=value)");
   parse_option("define-from-config", required_argument, 'i', "set data for ini_get from config file (in form key=value on each row)");
-  parse_option("http-port", required_argument, 'H', "Comma separated list of HTTP ports to listen. Master process will distribute each listening socket for each worker");
+  parse_option("http-port", required_argument, 'H',
+               "Comma separated list of HTTP ports to listen. Master process will distribute each listening socket for each worker");
   parse_option("rpc-port", required_argument, 'r', "rpc port");
   parse_option("rpc-client", required_argument, 'w', "host and port for client mode (host:port)");
   parse_option("hard-memory-limit", required_argument, 'm', "maximal size of memory used by script");
@@ -2305,13 +2302,15 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("mysql-db-name", required_argument, 2011, "database name of MySQL to connect");
   parse_option("net-dc-mask", required_argument, 2012, "a string formatted like '8=1.2.3.4/12' to detect a datacenter by ipv4");
   parse_option("warmup-workers-ratio", required_argument, 2013, "the ratio of the instance cache warming up workers during the graceful restart");
-  parse_option("warmup-instance-cache-elements-ratio", required_argument, 2014, "the ratio of the instance cache elements which makes the instance cache hot enough");
+  parse_option("warmup-instance-cache-elements-ratio", required_argument, 2014,
+               "the ratio of the instance cache elements which makes the instance cache hot enough");
   parse_option("warmup-timeout", required_argument, 2015, "the maximum time for the instance cache warm up in seconds");
   parse_option("job-workers-ratio", required_argument, 2016, "the jobs workers ratio of the overall workers number");
   parse_option("job-workers-shared-memory-size", required_argument, 2017, "the total size of shared memory used for job workers related communication");
-  parse_option("job-workers-shared-memory-distribution-weights", required_argument, 2018, "Weights for distributing shared memory between fixed size buffers.\n"
-                                                                                          "10 comma separated digits: '2, 2, 2, 2, 1, 1, 1, 1, 1, 1'\n"
-                                                                                          "For each of 10 groups: 128kb, 256kb, ... , 64mb buffers.");
+  parse_option("job-workers-shared-memory-distribution-weights", required_argument, 2018,
+               "Weights for distributing shared memory between fixed size buffers.\n"
+               "10 comma separated digits: '2, 2, 2, 2, 1, 1, 1, 1, 1, 1'\n"
+               "For each of 10 groups: 128kb, 256kb, ... , 64mb buffers.");
   parse_option("lease-stop-ready-timeout", required_argument, 2019, "timeout for RPC_STOP_READY acknowledgement waiting in seconds (default: 0)");
   parse_option("mysql-user", required_argument, 2020, "MySQL user");
   parse_option("mysql-password", required_argument, 2021, "MySQL password");
@@ -2320,29 +2319,36 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("use-utf8", no_argument, 2024, "Use UTF8");
   parse_option("xgboost-model-path-experimental", required_argument, 2025, "intended for tests, don't use it for now!");
   parse_option("statshouse-client", required_argument, 2026, "host and port for statshouse client (host:port or just :port to use localhost)");
-  parse_option("numa-node-to-bind", required_argument, 2027, "NUMA node description for binding workers to its cpu cores / memory "
-                                                             "in format '<numa_node_id>: <cpus>'.\n"
-                                                             "Where <numa_node_id> is a number, "
-                                                             "and <cpus> is a comma-separated list of node numbers or node ranges "
-                                                             "(see man for numa_parse_cpustring() for detailed format description)\n"
-                                                             "For example: '0: 0-27, 55-72'");
-  parse_option("numa-memory-policy", required_argument, 2028, "NUMA memory policy for workers. Takes effect only if `numa-node-to-bind` option is used. "
-                                                              "Supported polices:\n"
-                                                              "'local' - bind to local numa node, in case out of memory take memory from the other nearest node (default)\n"
-                                                              "'bind' - bind to the specified node, in case out of memory raise a fatal error");
+  parse_option("numa-node-to-bind", required_argument, 2027,
+               "NUMA node description for binding workers to its cpu cores / memory "
+               "in format '<numa_node_id>: <cpus>'.\n"
+               "Where <numa_node_id> is a number, "
+               "and <cpus> is a comma-separated list of node numbers or node ranges "
+               "(see man for numa_parse_cpustring() for detailed format description)\n"
+               "For example: '0: 0-27, 55-72'");
+  parse_option("numa-memory-policy", required_argument, 2028,
+               "NUMA memory policy for workers. Takes effect only if `numa-node-to-bind` option is used. "
+               "Supported polices:\n"
+               "'local' - bind to local numa node, in case out of memory take memory from the other nearest node (default)\n"
+               "'bind' - bind to the specified node, in case out of memory raise a fatal error");
   parse_option("sigterm-wait-time", required_argument, 2029, "Time to wait before termination on SIGTERM");
-  parse_option("job-workers-shared-memory-size-process-multiplier", required_argument, 2030, "Per process memory size used to calculate the total size of shared memory for job workers related communication:\n"
-                                                                                             "memory limit = per_process_memory * processes_count");
+  parse_option("job-workers-shared-memory-size-process-multiplier", required_argument, 2030,
+               "Per process memory size used to calculate the total size of shared memory for job workers related communication:\n"
+               "memory limit = per_process_memory * processes_count");
   parse_option("runtime-config", required_argument, 2032, "JSON file path that will be available at runtime as 'mixed' via 'kphp_runtime_config()");
   parse_option("oom-handling-memory-ratio", required_argument, 2033, "memory ratio of overall script memory to handle OOM errors (default: 0.00)");
-  parse_option("hard-time-limit", required_argument, 2034, "time limit for script termination after the main timeout has expired (default: 1 sec). Use 0 to disable");
+  parse_option("hard-time-limit", required_argument, 2034,
+               "time limit for script termination after the main timeout has expired (default: 1 sec). Use 0 to disable");
   parse_option("thread-pool-ratio", required_argument, 2035, "the thread pool size ratio of the overall cpu numbers");
   parse_option("thread-pool-size", required_argument, 2036, "the total threads num per worker");
-  parse_option("confdata-force-ignore-keys-prefix", required_argument, 2037, "an emergency option, e.g. 'highload.vid*', to forcibly drop keys from snapshot/binlog; may be used multiple times");
-  parse_option("confdata-update-timeout", required_argument, 2038, "cron confdata binlog replaying will be forcibly stopped after the specified timeout (default: 0.3 sec)"
-                                                                   "Initial binlog is readed with x10 times larger timeout");
-  parse_option("confdata-soft-oom-ratio", required_argument, 2039, "Memory limit ratio to start ignoring new keys related events (default: 0.85)."
-                                                                   "Can't be > hard oom ratio (0.95)");
+  parse_option("confdata-force-ignore-keys-prefix", required_argument, 2037,
+               "an emergency option, e.g. 'highload.vid*', to forcibly drop keys from snapshot/binlog; may be used multiple times");
+  parse_option("confdata-update-timeout", required_argument, 2038,
+               "cron confdata binlog replaying will be forcibly stopped after the specified timeout (default: 0.3 sec)"
+               "Initial binlog is readed with x10 times larger timeout");
+  parse_option("confdata-soft-oom-ratio", required_argument, 2039,
+               "Memory limit ratio to start ignoring new keys related events (default: 0.85)."
+               "Can't be > hard oom ratio (0.95)");
 
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
@@ -2353,10 +2359,9 @@ void parse_main_args(int argc, char *argv[]) {
   }
 }
 
-
 void init_default() {
   if (!vk::singleton<WorkersControl>::get().init()) {
-    kprintf ("fatal: not enough workers for general purposes\n");
+    kprintf("fatal: not enough workers for general purposes\n");
     exit(1);
   }
   now = (int)time(nullptr);
@@ -2367,11 +2372,11 @@ void init_default() {
   PID.port = (short)rpc_port;
 
   if (!username && maxconn == MAX_CONNECTIONS && geteuid()) {
-    maxconn = 1000; //not for root
+    maxconn = 1000; // not for root
   }
 
   if (raise_file_rlimit(maxconn + 16) < 0) {
-    vkprintf (-1, "fatal: cannot raise open file limit to %d\n", maxconn + 16);
+    vkprintf(-1, "fatal: cannot raise open file limit to %d\n", maxconn + 16);
     exit(1);
   }
 
@@ -2410,7 +2415,7 @@ int run_main(int argc, char **argv, php_mode mode) {
   vk::singleton<SharedData>::get().init();
 
   max_special_connections = 1;
-  set_on_active_special_connections_update_callback([] (bool on_accept) {
+  set_on_active_special_connections_update_callback([](bool on_accept) {
     if (on_accept) {
       PhpScript::script_time_stats.http_conn_accept_time = get_utime_monotonic();
     }
@@ -2456,7 +2461,7 @@ int run_main(int argc, char **argv, php_mode mode) {
 
   start_server();
 
-  vkprintf (1, "return 0;\n");
+  vkprintf(1, "return 0;\n");
   if (run_once) {
     return run_once_return_code;
   }

@@ -1,8 +1,8 @@
 #include <postgresql/libpq-fe.h>
 
-#include "runtime/pdo/pgsql/pgsql_pdo_emulated_statement.h"
 #include "runtime/kphp_core.h"
 #include "runtime/pdo/pdo_statement.h"
+#include "runtime/pdo/pgsql/pgsql_pdo_emulated_statement.h"
 #include "runtime/resumable.h"
 #include "server/database-drivers/adaptor.h"
 #include "server/database-drivers/pgsql/pgsql-request.h"
@@ -25,17 +25,17 @@ public:
     , timeout_sec(timeout_sec) {}
   bool run() noexcept final {
     RESUMABLE_BEGIN
-      resumable_id = vk::singleton<database_drivers::Adaptor>::get().launch_request_resumable(
-        std::make_unique<database_drivers::PgsqlRequest>(ctx->connector_id, ctx->statement));
-      response = vk::singleton<database_drivers::Adaptor>::get().wait_request_resumable(resumable_id, timeout_sec);
-      TRY_WAIT(PgsqlPdoEmulatedStatement_ExecuteResumable_label, response, std::unique_ptr<database_drivers::Response>);
-      if (auto *casted = dynamic_cast<database_drivers::PgsqlResponse *>(response.get())) {
-        ctx->response = std::unique_ptr<database_drivers::PgsqlResponse>{casted};
-        response.release();
-      } else {
-        php_critical_error("Unexpected error at pgSQL PDO::execute");
-      }
-      RETURN(!ctx->response->is_error);
+    resumable_id = vk::singleton<database_drivers::Adaptor>::get().launch_request_resumable(
+      std::make_unique<database_drivers::PgsqlRequest>(ctx->connector_id, ctx->statement));
+    response = vk::singleton<database_drivers::Adaptor>::get().wait_request_resumable(resumable_id, timeout_sec);
+    TRY_WAIT(PgsqlPdoEmulatedStatement_ExecuteResumable_label, response, std::unique_ptr<database_drivers::Response>);
+    if (auto *casted = dynamic_cast<database_drivers::PgsqlResponse *>(response.get())) {
+      ctx->response = std::unique_ptr<database_drivers::PgsqlResponse>{casted};
+      response.release();
+    } else {
+      php_critical_error("Unexpected error at pgSQL PDO::execute");
+    }
+    RETURN(!ctx->response->is_error);
     RESUMABLE_END
   }
 };

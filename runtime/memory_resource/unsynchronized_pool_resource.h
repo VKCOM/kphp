@@ -18,9 +18,9 @@ namespace memory_resource {
 
 class unsynchronized_pool_resource : private monotonic_buffer_resource {
 public:
-  using monotonic_buffer_resource::try_expand;
   using monotonic_buffer_resource::get_memory_stats;
   using monotonic_buffer_resource::memory_begin;
+  using monotonic_buffer_resource::try_expand;
 
   void init(void *buffer, size_t buffer_size, size_t oom_handling_buffer_size = 0) noexcept;
   void hard_reset() noexcept;

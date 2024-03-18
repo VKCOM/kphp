@@ -18,8 +18,8 @@
 #include "server/workers-control.h"
 
 #include "server/json-logger.h"
-#include "server/server-stats.h"
 #include "server/php-worker.h"
+#include "server/server-stats.h"
 #include "server/statshouse/statshouse-manager.h"
 
 namespace {
@@ -69,67 +69,31 @@ struct QueriesStat : WithStatType<uint64_t> {
 };
 
 struct JobSamples : WithStatType<uint64_t> {
-  enum class Key {
-    wait_time = 0,
-    request_memory_usage,
-    request_real_memory_usage,
-    response_memory_usage,
-    response_real_memory_usage,
-    types_count
-  };
+  enum class Key { wait_time = 0, request_memory_usage, request_real_memory_usage, response_memory_usage, response_real_memory_usage, types_count };
 };
 
 struct JobCommonMemorySamples : WithStatType<uint64_t> {
-  enum class Key {
-    common_request_memory_usage = 0,
-    common_request_real_memory_usage,
-    types_count
-  };
+  enum class Key { common_request_memory_usage = 0, common_request_real_memory_usage, types_count };
 };
 
 struct MallocStat : WithStatType<uint64_t> {
-  enum class Key {
-    non_mmaped_allocated_bytes = 0,
-    non_mmaped_free_bytes,
-    mmaped_bytes,
-    types_count
-  };
+  enum class Key { non_mmaped_allocated_bytes = 0, non_mmaped_free_bytes, mmaped_bytes, types_count };
 };
 
 struct HeapStat : WithStatType<uint64_t> {
-  enum class Key {
-    script_heap_memory_usage = 0,
-    curl_memory_currently_usage,
-    types_count
-  };
+  enum class Key { script_heap_memory_usage = 0, curl_memory_currently_usage, types_count };
 };
 
 struct VMStat : WithStatType<uint32_t> {
-  enum class Key {
-    vm_peak_kb,
-    vm_kb,
-    rss_peak_kb,
-    rss_kb,
-    shm_kb,
-    types_count
-  };
+  enum class Key { vm_peak_kb, vm_kb, rss_peak_kb, rss_kb, shm_kb, types_count };
 };
 
 struct IdleStat : WithStatType<double> {
-  enum class Key {
-    tot_idle_time,
-    tot_idle_percent,
-    recent_idle_percent,
-    types_count
-  };
+  enum class Key { tot_idle_time, tot_idle_percent, recent_idle_percent, types_count };
 };
 
 struct MiscStat : WithStatType<uint64_t> {
-  enum {
-    worker_idle = 0,
-    worker_running = 1,
-    worker_waiting_net = 2
-  };
+  enum { worker_idle = 0, worker_running = 1, worker_waiting_net = 2 };
   enum class Key {
     process_pid,
     max_special_connections,
@@ -230,9 +194,8 @@ EnumTable<IdleStat> get_idle_stat() noexcept {
   return result;
 }
 
-EnumTable<QueriesStat> make_queries_stat(uint64_t script_queries, uint64_t long_script_queries,
-                                         uint64_t script_time_ns, uint64_t net_time_ns, uint64_t script_init_time_ns, uint64_t connection_process_time_ns,
-                                         uint64_t user_time, uint64_t system_time,
+EnumTable<QueriesStat> make_queries_stat(uint64_t script_queries, uint64_t long_script_queries, uint64_t script_time_ns, uint64_t net_time_ns,
+                                         uint64_t script_init_time_ns, uint64_t connection_process_time_ns, uint64_t user_time, uint64_t system_time,
                                          uint64_t voluntary_context_switches, uint64_t involuntary_context_switches) noexcept {
   EnumTable<QueriesStat> result;
   result[QueriesStat::Key::incoming_queries] = 1;
@@ -299,12 +262,11 @@ public:
 };
 
 struct WorkerSharedStats : private vk::not_copyable {
-  explicit WorkerSharedStats(std::mt19937 *gen) noexcept:
-    script_samples(gen) {
-  }
+  explicit WorkerSharedStats(std::mt19937 *gen) noexcept
+    : script_samples(gen) {}
 
-  void add_request_stats(const EnumTable<QueriesStat> &queries, script_error_t error,
-                         const memory_resource::MemoryStats &script_memory_stats, uint64_t curl_total_allocated) noexcept {
+  void add_request_stats(const EnumTable<QueriesStat> &queries, script_error_t error, const memory_resource::MemoryStats &script_memory_stats,
+                         uint64_t curl_total_allocated) noexcept {
     errors[static_cast<size_t>(error)].fetch_add(1, std::memory_order_relaxed);
 
     for (size_t i = 0; i != queries.size(); ++i) {
@@ -338,13 +300,13 @@ struct WorkerSharedStats : private vk::not_copyable {
 };
 
 struct JobWorkerSharedStats : WorkerSharedStats {
-  explicit JobWorkerSharedStats(std::mt19937 *gen) noexcept:
-    WorkerSharedStats(gen),
-    job_samples(gen),
-    job_common_memory_samples(gen) {
-  }
+  explicit JobWorkerSharedStats(std::mt19937 *gen) noexcept
+    : WorkerSharedStats(gen)
+    , job_samples(gen)
+    , job_common_memory_samples(gen) {}
 
-  void add_job_stats(uint64_t job_wait_ns, uint64_t request_memory_used, uint64_t request_real_memory_used, uint64_t response_memory_used, uint64_t response_real_memory_used) noexcept {
+  void add_job_stats(uint64_t job_wait_ns, uint64_t request_memory_used, uint64_t request_real_memory_used, uint64_t response_memory_used,
+                     uint64_t response_real_memory_used) noexcept {
     EnumTable<JobSamples> sample;
     sample[JobSamples::Key::wait_time] = job_wait_ns;
     sample[JobSamples::Key::request_memory_usage] = request_memory_used;
@@ -370,18 +332,15 @@ struct AggregatedSamples : vk::not_copyable {
 public:
   using Sample = std::pair<T, std::chrono::steady_clock::time_point>;
 
-  AggregatedSamples() noexcept:
-    last_(samples_.begin()) {
-  }
+  AggregatedSamples() noexcept
+    : last_(samples_.begin()) {}
 
   void init(std::mt19937 *gen) noexcept {
     gen_ = gen;
   }
 
-  void recalc(SharedSamples<T> &samples, size_t samples_count,
-              std::chrono::steady_clock::time_point now_tp) noexcept {
-    last_ = std::remove_if(samples_.begin(), last_,
-                           [now_tp](const Sample &s) { return now_tp - s.second > std::chrono::minutes{1}; });
+  void recalc(SharedSamples<T> &samples, size_t samples_count, std::chrono::steady_clock::time_point now_tp) noexcept {
+    last_ = std::remove_if(samples_.begin(), last_, [now_tp](const Sample &s) { return now_tp - s.second > std::chrono::minutes{1}; });
     samples_count = std::min(samples_count, samples.samples_.size());
 
     while (last_ != samples_.end() && samples_count) {
@@ -558,12 +517,11 @@ struct WorkerPercentilesBundle : EnumTable<E, Percentiles<typename E::StatType>>
 };
 
 struct WorkerAggregatedStats {
-  explicit WorkerAggregatedStats(std::mt19937 *gen) noexcept:
-    script_samples(gen) {
-  }
+  explicit WorkerAggregatedStats(std::mt19937 *gen) noexcept
+    : script_samples(gen) {}
 
-  void recalc(SharedSamplesBundle<ScriptSamples> &script_shared_samples, std::chrono::steady_clock::time_point now_tp,
-              const WorkerProcessStats &stats, uint16_t first_id, uint16_t last_id) noexcept {
+  void recalc(SharedSamplesBundle<ScriptSamples> &script_shared_samples, std::chrono::steady_clock::time_point now_tp, const WorkerProcessStats &stats,
+              uint16_t first_id, uint16_t last_id) noexcept {
     script_samples.recalc(script_shared_samples, now_tp);
     heap_samples.recalc(stats.heap_stats, first_id, last_id);
     malloc_samples.recalc(stats.malloc_stats, first_id, last_id);
@@ -579,11 +537,10 @@ struct WorkerAggregatedStats {
 };
 
 struct JobWorkerAggregatedStats : WorkerAggregatedStats {
-  explicit JobWorkerAggregatedStats(std::mt19937 *gen) noexcept:
-    WorkerAggregatedStats(gen),
-    job_samples(gen),
-    job_common_memory_samples(gen) {
-  }
+  explicit JobWorkerAggregatedStats(std::mt19937 *gen) noexcept
+    : WorkerAggregatedStats(gen)
+    , job_samples(gen)
+    , job_common_memory_samples(gen) {}
 
   AggregatedSamplesBundle<JobSamples> job_samples;
   AggregatedSamplesBundle<JobCommonMemorySamples> job_common_memory_samples;
@@ -598,10 +555,9 @@ struct MasterProcessStats : private vk::not_copyable {
 } // namespace
 
 struct ServerStats::SharedStats {
-  explicit SharedStats(std::mt19937 *gen) noexcept:
-    general_workers(gen),
-    job_workers(gen) {
-  }
+  explicit SharedStats(std::mt19937 *gen) noexcept
+    : general_workers(gen)
+    , job_workers(gen) {}
 
   WorkerSharedStats general_workers;
   JobWorkerSharedStats job_workers;
@@ -609,12 +565,10 @@ struct ServerStats::SharedStats {
   WorkerProcessStats workers;
 };
 
-
 struct ServerStats::AggregatedStats {
-  explicit AggregatedStats(std::mt19937 *gen) noexcept:
-    general_workers(gen),
-    job_workers(gen) {
-  }
+  explicit AggregatedStats(std::mt19937 *gen) noexcept
+    : general_workers(gen)
+    , job_workers(gen) {}
 
   WorkerAggregatedStats general_workers;
   JobWorkerAggregatedStats job_workers;
@@ -625,11 +579,11 @@ struct ServerStats::AggregatedStats {
 void ServerStats::init() noexcept {
   gen_ = new std::mt19937{};
   aggregated_stats_ = new AggregatedStats{gen_};
-  shared_stats_ = new(mmap_shared(sizeof(SharedStats))) SharedStats{gen_};
+  shared_stats_ = new (mmap_shared(sizeof(SharedStats))) SharedStats{gen_};
 }
 
-void ServerStats::after_fork(pid_t worker_pid, uint64_t active_connections, uint64_t max_connections,
-                             uint16_t worker_process_id, WorkerType worker_type) noexcept {
+void ServerStats::after_fork(pid_t worker_pid, uint64_t active_connections, uint64_t max_connections, uint16_t worker_process_id,
+                             WorkerType worker_type) noexcept {
   assert(vk::any_of_equal(worker_type, WorkerType::general_worker, WorkerType::job_worker));
   worker_process_id_ = worker_process_id;
   worker_type_ = worker_type;
@@ -639,7 +593,8 @@ void ServerStats::after_fork(pid_t worker_pid, uint64_t active_connections, uint
 }
 
 void ServerStats::add_request_stats(double script_time_sec, double net_time_sec, double script_init_time_sec, double connection_process_time_sec,
-                                    int64_t script_queries, int64_t long_script_queries, const memory_resource::MemoryStats &script_memory_stats, int64_t curl_total_allocated, process_rusage_t script_rusage, script_error_t error) noexcept {
+                                    int64_t script_queries, int64_t long_script_queries, const memory_resource::MemoryStats &script_memory_stats,
+                                    int64_t curl_total_allocated, process_rusage_t script_rusage, script_error_t error) noexcept {
   auto &stats = worker_type_ == WorkerType::job_worker ? shared_stats_->job_workers : shared_stats_->general_workers;
   const auto script_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(script_time_sec));
   const auto net_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(net_time_sec));
@@ -647,25 +602,24 @@ void ServerStats::add_request_stats(double script_time_sec, double net_time_sec,
   const auto http_connection_process_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(connection_process_time_sec));
   const auto script_user_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(script_rusage.user_time));
   const auto script_system_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(script_rusage.system_time));
-  const auto queries_stat = make_queries_stat(script_queries, long_script_queries, script_time.count(),
-                                              net_time.count(), script_init_time.count(), http_connection_process_time.count(),
-                                              script_user_time.count(), script_system_time.count(),
+  const auto queries_stat = make_queries_stat(script_queries, long_script_queries, script_time.count(), net_time.count(), script_init_time.count(),
+                                              http_connection_process_time.count(), script_user_time.count(), script_system_time.count(),
                                               script_rusage.voluntary_context_switches, script_rusage.involuntary_context_switches);
-
 
   stats.add_request_stats(queries_stat, error, script_memory_stats, curl_total_allocated);
   shared_stats_->workers.add_worker_stats(queries_stat, worker_process_id_);
 
   StatsHouseManager::get().add_request_stats(script_time.count(), net_time.count(), error, script_memory_stats, script_queries, long_script_queries,
-                                             script_user_time.count(), script_system_time.count(),
-                                             script_init_time.count(), http_connection_process_time.count(),
-                                             script_rusage.voluntary_context_switches, script_rusage.involuntary_context_switches);
+                                             script_user_time.count(), script_system_time.count(), script_init_time.count(),
+                                             http_connection_process_time.count(), script_rusage.voluntary_context_switches,
+                                             script_rusage.involuntary_context_switches);
 }
 
 void ServerStats::add_job_stats(double job_wait_time_sec, int64_t request_memory_used, int64_t request_real_memory_used, int64_t response_memory_used,
                                 int64_t response_real_memory_used) noexcept {
   const auto job_wait_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(job_wait_time_sec));
-  shared_stats_->job_workers.add_job_stats(job_wait_time.count(), request_memory_used, request_real_memory_used, response_memory_used, response_real_memory_used);
+  shared_stats_->job_workers.add_job_stats(job_wait_time.count(), request_memory_used, request_real_memory_used, response_memory_used,
+                                           response_real_memory_used);
 
   StatsHouseManager::get().add_job_stats(job_wait_time.count(), request_memory_used, request_real_memory_used, response_memory_used, response_real_memory_used);
 }
@@ -712,13 +666,12 @@ void ServerStats::aggregate_stats() noexcept {
   const uint16_t general_workers = workers_control.get_count(WorkerType::general_worker);
   const uint16_t job_workers = workers_control.get_count(WorkerType::job_worker);
 
-  aggregated_stats_->general_workers.recalc(shared_stats_->general_workers.script_samples, now_tp,
-                                            shared_stats_->workers, 0, general_workers);
+  aggregated_stats_->general_workers.recalc(shared_stats_->general_workers.script_samples, now_tp, shared_stats_->workers, 0, general_workers);
 
   aggregated_stats_->job_workers.job_samples.recalc(shared_stats_->job_workers.job_samples, now_tp);
   aggregated_stats_->job_workers.job_common_memory_samples.recalc(shared_stats_->job_workers.job_common_memory_samples, now_tp);
-  aggregated_stats_->job_workers.recalc(shared_stats_->job_workers.script_samples, now_tp,
-                                        shared_stats_->workers, general_workers, job_workers + general_workers);
+  aggregated_stats_->job_workers.recalc(shared_stats_->job_workers.script_samples, now_tp, shared_stats_->workers, general_workers,
+                                        job_workers + general_workers);
 
   aggregated_stats_->master_process.vm_stats = get_virtual_memory_stat();
   aggregated_stats_->master_process.malloc_stats = get_malloc_stat();
@@ -770,14 +723,16 @@ void write_to(stats_t *stats, const char *prefix, const WorkerAggregatedStats &a
   stats->add_gauge_stat(ns2double(shared.total_queries_stat[QueriesStat::Key::script_time]), prefix, ".requests.script_time.total");
   stats->add_gauge_stat(ns2double(shared.total_queries_stat[QueriesStat::Key::net_time]), prefix, ".requests.net_time.total");
   stats->add_gauge_stat(ns2double(shared.total_queries_stat[QueriesStat::Key::script_init_time]), prefix, ".requests.script_init_time.total");
-  stats->add_gauge_stat(ns2double(shared.total_queries_stat[QueriesStat::Key::http_connection_process_time]), prefix, ".requests.http_connection_process_time.total");
+  stats->add_gauge_stat(ns2double(shared.total_queries_stat[QueriesStat::Key::http_connection_process_time]), prefix,
+                        ".requests.http_connection_process_time.total");
   stats->add_gauge_stat(shared.total_queries_stat[QueriesStat::Key::incoming_queries], prefix, ".requests.total_incoming_queries");
   stats->add_gauge_stat(shared.total_queries_stat[QueriesStat::Key::outgoing_queries], prefix, ".requests.total_outgoing_queries");
   stats->add_gauge_stat(shared.total_queries_stat[QueriesStat::Key::outgoing_long_queries], prefix, ".requests.total_outgoing_long_queries");
   stats->add_gauge_stat(ns2double(shared.total_queries_stat[QueriesStat::Key::user_time]), prefix, ".requests.script_user_time.total");
   stats->add_gauge_stat(ns2double(shared.total_queries_stat[QueriesStat::Key::system_time]), prefix, ".requests.script_system_time.total");
   stats->add_gauge_stat(shared.total_queries_stat[QueriesStat::Key::voluntary_context_switches], prefix, ".requests.script_voluntary_context_switches.total");
-  stats->add_gauge_stat(shared.total_queries_stat[QueriesStat::Key::involuntary_context_switches], prefix, ".requests.script_involuntary_context_switches.total");
+  stats->add_gauge_stat(shared.total_queries_stat[QueriesStat::Key::involuntary_context_switches], prefix,
+                        ".requests.script_involuntary_context_switches.total");
 
   write_to(stats, prefix, ".requests.outgoing_queries", agg.script_samples[ScriptSamples::Key::outgoing_queries]);
   write_to(stats, prefix, ".requests.outgoing_long_queries", agg.script_samples[ScriptSamples::Key::outgoing_long_queries]);
@@ -817,7 +772,8 @@ void write_to(stats_t *stats, const char *prefix, const JobWorkerAggregatedStats
   write_to(stats, prefix, ".memory.job_response_usage", job_agg.job_samples[JobSamples::Key::response_memory_usage]);
   write_to(stats, prefix, ".memory.job_response_real_usage", job_agg.job_samples[JobSamples::Key::response_real_memory_usage]);
   write_to(stats, prefix, ".memory.job_common_request_usage", job_agg.job_common_memory_samples[JobCommonMemorySamples::Key::common_request_memory_usage]);
-  write_to(stats, prefix, ".memory.job_common_request_real_usage", job_agg.job_common_memory_samples[JobCommonMemorySamples::Key::common_request_real_memory_usage]);
+  write_to(stats, prefix, ".memory.job_common_request_real_usage",
+           job_agg.job_common_memory_samples[JobCommonMemorySamples::Key::common_request_real_memory_usage]);
 }
 
 void write_to(stats_t *stats, const char *prefix, const MasterProcessStats &master_process) noexcept {
@@ -831,19 +787,19 @@ void write_to(stats_t *stats, const char *prefix, const MasterProcessStats &mast
 }
 
 template<class S>
-auto get_max(const WorkerSamplesBundle<S> &general_stats, const WorkerSamplesBundle<S> &job_stats,
-             const EnumTable<S> &master_stats, typename S::Key key) noexcept {
+auto get_max(const WorkerSamplesBundle<S> &general_stats, const WorkerSamplesBundle<S> &job_stats, const EnumTable<S> &master_stats,
+             typename S::Key key) noexcept {
   return std::max(master_stats[key], std::max(general_stats[key].percentiles.max, job_stats[key].percentiles.max));
 }
 
 template<class S>
-auto get_sum(const WorkerSamplesBundle<S> &general_stats, const WorkerSamplesBundle<S> &job_stats,
-             const EnumTable<S> &master_stats, typename S::Key key) noexcept {
+auto get_sum(const WorkerSamplesBundle<S> &general_stats, const WorkerSamplesBundle<S> &job_stats, const EnumTable<S> &master_stats,
+             typename S::Key key) noexcept {
   return master_stats[key] + general_stats[key].percentiles.sum + job_stats[key].percentiles.sum;
 }
 
-void write_server_vm_to(stats_t *stats, const char *prefix, const EnumTable<VMStat> &master_vm,
-                        const WorkerSamplesBundle<VMStat> &general_vm, const WorkerSamplesBundle<VMStat> &job_vm) noexcept {
+void write_server_vm_to(stats_t *stats, const char *prefix, const EnumTable<VMStat> &master_vm, const WorkerSamplesBundle<VMStat> &general_vm,
+                        const WorkerSamplesBundle<VMStat> &job_vm) noexcept {
   stats->add_gauge_stat(kb2bytes(get_max(general_vm, job_vm, master_vm, VMStat::Key::vm_peak_kb)), prefix, ".memory.vms_max_bytes");
   stats->add_gauge_stat(kb2bytes(get_max(general_vm, job_vm, master_vm, VMStat::Key::rss_peak_kb)), prefix, ".memory.rss_max_bytes");
   stats->add_gauge_stat(kb2bytes(get_max(general_vm, job_vm, master_vm, VMStat::Key::shm_kb)), prefix, ".memory.shm_max_bytes");
@@ -862,8 +818,8 @@ void ServerStats::write_stats_to(stats_t *stats) const noexcept {
 
   write_to(stats, "master", aggregated_stats_->master_process);
 
-  write_server_vm_to(stats, "server", aggregated_stats_->master_process.vm_stats,
-                     aggregated_stats_->general_workers.vm_samples, aggregated_stats_->job_workers.vm_samples);
+  write_server_vm_to(stats, "server", aggregated_stats_->master_process.vm_stats, aggregated_stats_->general_workers.vm_samples,
+                     aggregated_stats_->job_workers.vm_samples);
 }
 
 void ServerStats::write_stats_to(std::ostream &os, bool add_worker_pids) const noexcept {
@@ -882,8 +838,7 @@ void ServerStats::write_stats_to(std::ostream &os, bool add_worker_pids) const n
   const auto total_net_time = ns2double(total_queries[QueriesStat::Key::net_time]);
   const auto total_script_time = ns2double(total_queries[QueriesStat::Key::script_time]);
 
-  os << std::fixed << std::setprecision(3)
-     << "VM\t" << get_sum(general_vm, job_vm, master_vm, VMStat::Key::vm_kb) << "Kb\n"
+  os << std::fixed << std::setprecision(3) << "VM\t" << get_sum(general_vm, job_vm, master_vm, VMStat::Key::vm_kb) << "Kb\n"
      << "VM_max\t" << get_max(general_vm, job_vm, master_vm, VMStat::Key::vm_peak_kb) << "Kb\n"
      << "RSS\t" << get_sum(general_vm, job_vm, master_vm, VMStat::Key::rss_kb) << "Kb\n"
      << "RSS_max\t" << get_sum(general_vm, job_vm, master_vm, VMStat::Key::rss_peak_kb) << "Kb\n"

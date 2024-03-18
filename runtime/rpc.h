@@ -104,14 +104,14 @@ void f$fetch_raw_vector_double(array<double> &out, int64_t n_elems);
 void estimate_and_flush_overflow(size_t &bytes_sent);
 
 struct tl_func_base;
-using tl_storer_ptr = std::unique_ptr<tl_func_base>(*)(const mixed&);
+using tl_storer_ptr = std::unique_ptr<tl_func_base> (*)(const mixed &);
 extern array<tl_storer_ptr> tl_storers_ht;
-using tl_fetch_wrapper_ptr = array<mixed>(*)(std::unique_ptr<tl_func_base>);
+using tl_fetch_wrapper_ptr = array<mixed> (*)(std::unique_ptr<tl_func_base>);
 extern tl_fetch_wrapper_ptr tl_fetch_wrapper; // pointer to function below
-//array<mixed> gen$tl_fetch_wrapper(std::unique_ptr<tl_func_base> stored_fetcher) {
-//  tl_exclamation_fetch_wrapper X(std::move(stored_fetcher));
-//  return t_ReqResult<tl_exclamation_fetch_wrapper, 0>(std::move(X)).fetch();
-//}
+// array<mixed> gen$tl_fetch_wrapper(std::unique_ptr<tl_func_base> stored_fetcher) {
+//   tl_exclamation_fetch_wrapper X(std::move(stored_fetcher));
+//   return t_ReqResult<tl_exclamation_fetch_wrapper, 0>(std::move(X)).fetch();
+// }
 
 inline void register_tl_storers_table_and_fetcher(const array<tl_storer_ptr> &gen$ht, tl_fetch_wrapper_ptr gen$t_ReqResult_fetch) {
   tl_storers_ht = gen$ht;
@@ -128,7 +128,7 @@ struct C$RpcConnection final : public refcountable_php_classes<C$RpcConnection>,
 
   C$RpcConnection(int32_t host_num, int32_t port, int32_t tmeout_ms, int32_t actor_id, int32_t connect_timeout, int32_t reconnect_timeout);
 
-  const char *get_class() const  noexcept {
+  const char *get_class() const noexcept {
     return R"(RpcConnection)";
   }
 
@@ -148,7 +148,8 @@ struct C$RpcConnection final : public refcountable_php_classes<C$RpcConnection>,
   }
 };
 
-class_instance<C$RpcConnection> f$new_rpc_connection(const string &host_name, int64_t port, const mixed &actor_id = 0, double timeout = 0.3, double connect_timeout = 0.3, double reconnect_timeout = 17);
+class_instance<C$RpcConnection> f$new_rpc_connection(const string &host_name, int64_t port, const mixed &actor_id = 0, double timeout = 0.3,
+                                                     double connect_timeout = 0.3, double reconnect_timeout = 17);
 
 void f$store_gzip_pack_threshold(int64_t pack_threshold_bytes);
 
@@ -210,7 +211,6 @@ Optional<string> f$rpc_get_synchronously(int64_t request_id);
 bool rpc_get_and_parse(int64_t request_id, double timeout);
 bool f$rpc_get_and_parse(int64_t request_id, double timeout = -1.0);
 
-
 int64_t f$rpc_queue_create();
 
 int64_t f$rpc_queue_create(const mixed &request_ids);
@@ -264,7 +264,6 @@ array<array<mixed>> f$rpc_tl_query_result_synchronously(const array<T> &query_id
 
 int64_t f$query_x2(int64_t x);
 
-
 void global_init_rpc_lib();
 
 void init_rpc_lib();
@@ -276,7 +275,6 @@ void free_rpc_lib();
  *     IMPLEMENTATION
  *
  */
-
 
 template<class T>
 array<array<mixed>> f$rpc_tl_query_result(const array<T> &query_ids) {

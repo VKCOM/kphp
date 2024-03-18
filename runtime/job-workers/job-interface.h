@@ -8,9 +8,9 @@
 #include "common/wrappers/string_view.h"
 
 #include "runtime/instance-copy-processor.h"
-#include "runtime/to-array-processor.h"
 #include "runtime/kphp_core.h"
 #include "runtime/refcountable_php_classes.h"
+#include "runtime/to-array-processor.h"
 
 class InstanceReferencesCountingVisitor;
 
@@ -57,7 +57,7 @@ struct FinishedJob;
 
 struct JobSharedMessage;
 
-} // job_workers
+} // namespace job_workers
 
 struct C$KphpJobWorkerSharedMemoryPiece : job_workers::SendingInstanceBase {
   C$KphpJobWorkerSharedMemoryPiece *virtual_builtin_clone() const noexcept override = 0;
@@ -74,11 +74,11 @@ struct C$KphpJobWorkerResponse : job_workers::SendingInstanceBase {
   C$KphpJobWorkerResponse *virtual_builtin_clone() const noexcept override = 0;
 };
 
-struct C$KphpJobWorkerResponseError: public refcountable_polymorphic_php_classes<C$KphpJobWorkerResponse> {
+struct C$KphpJobWorkerResponseError : public refcountable_polymorphic_php_classes<C$KphpJobWorkerResponse> {
   string error;
   int64_t error_code;
 
-  const char *get_class() const  noexcept {
+  const char *get_class() const noexcept {
     return R"(KphpJobWorkerResponseError)";
   }
 
@@ -110,11 +110,11 @@ struct C$KphpJobWorkerResponseError: public refcountable_polymorphic_php_classes
 
   void accept(CommonMemoryEstimateVisitor &visitor) noexcept;
 
-  size_t virtual_builtin_sizeof() const  noexcept {
+  size_t virtual_builtin_sizeof() const noexcept {
     return sizeof(*this);
   }
 
-  C$KphpJobWorkerResponseError* virtual_builtin_clone() const  noexcept {
+  C$KphpJobWorkerResponseError *virtual_builtin_clone() const noexcept {
     return new C$KphpJobWorkerResponseError{*this};
   }
 };

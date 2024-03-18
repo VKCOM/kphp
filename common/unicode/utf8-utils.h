@@ -4,30 +4,32 @@
 
 #pragma once
 
-void string_to_utf8 (const char *s, int *v);
-void string_to_utf8_len (const char *s, int s_len, int *v);
-void html_string_to_utf8 (const char *s, int *v);
+void string_to_utf8(const char *s, int *v);
+void string_to_utf8_len(const char *s, int s_len, int *v);
+void html_string_to_utf8(const char *s, int *v);
 
-int put_string_utf8 (const int *v, char *s);//returns len of written string
+int put_string_utf8(const int *v, char *s); // returns len of written string
 
+int simplify_character(int c);
 
-int simplify_character (int c);
+int translit_string_utf8_from_en_to_ru(int *input, int *output);
+int translit_string_utf8_from_ru_to_en(int *input, int *output);
+int convert_language(int x);
+int has_bad_symbols(int *v_s);
 
-int translit_string_utf8_from_en_to_ru (int *input, int *output);
-int translit_string_utf8_from_ru_to_en (int *input, int *output);
-int convert_language (int x);
-int has_bad_symbols (int *v_s);
-
-
-static inline int get_char_utf8 (int *x, const char *s) {
-#define CHECK(condition) if (!(condition)) {*x = -1; return -1;}
+static inline int get_char_utf8(int *x, const char *s) {
+#define CHECK(condition)                                                                                                                                       \
+  if (!(condition)) {                                                                                                                                          \
+    *x = -1;                                                                                                                                                   \
+    return -1;                                                                                                                                                 \
+  }
   unsigned int a = (unsigned char)s[0];
   if ((a & 0x80) == 0) {
     *x = a;
     return (a != 0);
   }
 
-  CHECK ((a & 0x40) != 0);
+  CHECK((a & 0x40) != 0);
 
   unsigned int b = (unsigned char)s[1];
   CHECK((b & 0xc0) == 0x80);
@@ -52,7 +54,7 @@ static inline int get_char_utf8 (int *x, const char *s) {
     *x = (((a & 0x07) << 18) | ((b & 0x3f) << 12) | ((c & 0x3f) << 6) | (d & 0x3f));
     return 4;
   }
-  
+
   unsigned int e = (unsigned char)s[4];
   CHECK((e & 0xc0) == 0x80);
   if ((a & 0x04) == 0) {
@@ -60,7 +62,7 @@ static inline int get_char_utf8 (int *x, const char *s) {
     *x = (((a & 0x03) << 24) | ((b & 0x3f) << 18) | ((c & 0x3f) << 12) | ((d & 0x3f) << 6) | (e & 0x3f));
     return 5;
   }
-  
+
   unsigned int f = (unsigned char)s[5];
   CHECK((f & 0xc0) == 0x80);
   if ((a & 0x02) == 0) {
@@ -73,27 +75,27 @@ static inline int get_char_utf8 (int *x, const char *s) {
 #undef CHECK
 }
 
-static inline int put_char_utf8 (unsigned int x, char *s) {
+static inline int put_char_utf8(unsigned int x, char *s) {
   if (x <= 0x7f) {
     s[0] = (char)x;
     return 1;
   } else if (x <= 0x7ff) {
-    s[0] = (char)(((x >>  6) | 0xc0) & 0xdf);
-    s[1] = (char)(((x      ) | 0x80) & 0xbf);
+    s[0] = (char)(((x >> 6) | 0xc0) & 0xdf);
+    s[1] = (char)(((x) | 0x80) & 0xbf);
     return 2;
   } else if (x <= 0xffff) {
     s[0] = (char)(((x >> 12) | 0xe0) & 0xef);
-    s[1] = (char)(((x >>  6) | 0x80) & 0xbf);
-    s[2] = (char)(((x      ) | 0x80) & 0xbf);
+    s[1] = (char)(((x >> 6) | 0x80) & 0xbf);
+    s[2] = (char)(((x) | 0x80) & 0xbf);
     return 3;
   } else if (x <= 0x1fffff) {
     s[0] = (char)(((x >> 18) | 0xf0) & 0xf7);
     s[1] = (char)(((x >> 12) | 0x80) & 0xbf);
-    s[2] = (char)(((x >>  6) | 0x80) & 0xbf);
-    s[3] = (char)(((x      ) | 0x80) & 0xbf);
+    s[2] = (char)(((x >> 6) | 0x80) & 0xbf);
+    s[3] = (char)(((x) | 0x80) & 0xbf);
     return 4;
   } else {
-    //ASSERT(0, "bad output");
+    // ASSERT(0, "bad output");
   }
   return 0;
 }

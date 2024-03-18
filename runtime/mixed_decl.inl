@@ -5,16 +5,14 @@
 #pragma once
 
 #ifndef INCLUDED_FROM_KPHP_CORE
-  #error "this file must be included only from kphp_core.h"
+#error "this file must be included only from kphp_core.h"
 #endif
 
 template<typename T>
-struct is_type_acceptable_for_mixed : vk::is_type_in_list<T, long, long long, int, bool, double, string> {
-};
+struct is_type_acceptable_for_mixed : vk::is_type_in_list<T, long, long long, int, bool, double, string> {};
 
 template<typename T>
-struct is_type_acceptable_for_mixed<array<T>> : is_constructible_or_unknown<mixed, T> {
-};
+struct is_type_acceptable_for_mixed<array<T>> : is_constructible_or_unknown<mixed, T> {};
 
 class mixed {
 public:
@@ -82,7 +80,9 @@ public:
   inline mixed &append(tmp_string v);
 
   inline mixed &operator[](int64_t int_key);
-  inline mixed &operator[](int32_t key) { return (*this)[int64_t{key}]; }
+  inline mixed &operator[](int32_t key) {
+    return (*this)[int64_t{key}];
+  }
   inline mixed &operator[](const string &string_key);
   inline mixed &operator[](tmp_string string_key);
   inline mixed &operator[](const mixed &v);
@@ -91,7 +91,9 @@ public:
   inline mixed &operator[](const array<mixed>::iterator &it);
 
   inline void set_value(int64_t int_key, const mixed &v);
-  inline void set_value(int32_t key, const mixed &value) { set_value(int64_t{key}, value); }
+  inline void set_value(int32_t key, const mixed &value) {
+    set_value(int64_t{key}, value);
+  }
   inline void set_value(const string &string_key, const mixed &v);
   inline void set_value(const string &string_key, const mixed &v, int64_t precomuted_hash);
   inline void set_value(tmp_string string_key, const mixed &v);
@@ -101,7 +103,9 @@ public:
   inline void set_value(const array<mixed>::iterator &it);
 
   inline const mixed get_value(int64_t int_key) const;
-  inline const mixed get_value(int32_t key) const { return get_value(int64_t{key}); }
+  inline const mixed get_value(int32_t key) const {
+    return get_value(int64_t{key});
+  }
   inline const mixed get_value(const string &string_key) const;
   inline const mixed get_value(const string &string_key, int64_t precomuted_hash) const;
   inline const mixed get_value(tmp_string string_key) const;
@@ -114,16 +118,20 @@ public:
   inline const mixed push_back_return(const mixed &v);
 
   inline bool isset(int64_t int_key) const;
-  inline bool isset(int32_t key) const { return isset(int64_t{key}); }
-  template <class ...MaybeHash>
-  inline bool isset(const string &string_key, MaybeHash ...maybe_hash) const;
+  inline bool isset(int32_t key) const {
+    return isset(int64_t{key});
+  }
+  template<class... MaybeHash>
+  inline bool isset(const string &string_key, MaybeHash... maybe_hash) const;
   inline bool isset(const mixed &v) const;
   inline bool isset(double double_key) const;
 
   inline void unset(int64_t int_key);
-  inline void unset(int32_t key) { unset(int64_t{key}); }
-  template <class ...MaybeHash>
-  inline void unset(const string &string_key, MaybeHash ...maybe_hash);
+  inline void unset(int32_t key) {
+    unset(int64_t{key});
+  }
+  template<class... MaybeHash>
+  inline void unset(const string &string_key, MaybeHash... maybe_hash);
   inline void unset(const mixed &v);
   inline void unset(double double_key);
 
@@ -216,20 +224,38 @@ private:
 
   template<typename T>
   inline void init_from(T &&v);
-  inline void init_from(mixed v) { copy_from(std::move(v)); }
+  inline void init_from(mixed v) {
+    copy_from(std::move(v));
+  }
 
   template<typename T>
   inline mixed &assign_from(T &&v);
-  inline mixed &assign_from(mixed v) { return (*this = std::move(v)); }
+  inline mixed &assign_from(mixed v) {
+    return (*this = std::move(v));
+  }
 
   template<typename T>
-  auto get_type_and_value_ptr(const array<T>  &) { return std::make_pair(type::ARRAY  , &as_array());  }
-  auto get_type_and_value_ptr(const bool      &) { return std::make_pair(type::BOOLEAN, &as_bool());   }
-  auto get_type_and_value_ptr(const long      &) { return std::make_pair(type::INTEGER, &as_int());    }
-  auto get_type_and_value_ptr(const long long &) { return std::make_pair(type::INTEGER, &as_int());    }
-  auto get_type_and_value_ptr(const int       &) { return std::make_pair(type::INTEGER, &as_int()); }
-  auto get_type_and_value_ptr(const double    &) { return std::make_pair(type::FLOAT  , &as_double()); }
-  auto get_type_and_value_ptr(const string    &) { return std::make_pair(type::STRING , &as_string()); }
+  auto get_type_and_value_ptr(const array<T> &) {
+    return std::make_pair(type::ARRAY, &as_array());
+  }
+  auto get_type_and_value_ptr(const bool &) {
+    return std::make_pair(type::BOOLEAN, &as_bool());
+  }
+  auto get_type_and_value_ptr(const long &) {
+    return std::make_pair(type::INTEGER, &as_int());
+  }
+  auto get_type_and_value_ptr(const long long &) {
+    return std::make_pair(type::INTEGER, &as_int());
+  }
+  auto get_type_and_value_ptr(const int &) {
+    return std::make_pair(type::INTEGER, &as_int());
+  }
+  auto get_type_and_value_ptr(const double &) {
+    return std::make_pair(type::FLOAT, &as_double());
+  }
+  auto get_type_and_value_ptr(const string &) {
+    return std::make_pair(type::STRING, &as_string());
+  }
 
   template<typename T>
   static T &empty_value() noexcept;
@@ -237,4 +263,3 @@ private:
   type type_{type::NUL};
   uint64_t storage_{0};
 };
-

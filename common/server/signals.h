@@ -23,4 +23,4 @@ const char *signal_shortname(int sig);
 
 extern volatile long long pending_signals;
 
-static inline void empty_handler (int sig __attribute__((unused))) { }
+static inline void empty_handler(int sig __attribute__((unused))) {}

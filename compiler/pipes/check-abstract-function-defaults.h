@@ -9,5 +9,5 @@
 
 class CheckAbstractFunctionDefaults {
 public:
-    void execute(FunctionPtr interface_function, DataStream<FunctionPtr> &os);
+  void execute(FunctionPtr interface_function, DataStream<FunctionPtr> &os);
 };

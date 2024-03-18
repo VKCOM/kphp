@@ -13,18 +13,19 @@ static bool php_json_encode(zval *val, const char *key);
 
 static int json_determine_array_type(VK_ZVAL_API_P val) {
   int i;
-  HashTable *myht = HASH_OF (VK_ZVAL_API_TO_ZVALP(val));
+  HashTable *myht = HASH_OF(VK_ZVAL_API_TO_ZVALP(val));
 
-  i = myht ? zend_hash_num_elements (myht) : 0;
+  i = myht ? zend_hash_num_elements(myht) : 0;
   if (i > 0) {
     NEW_INIT_Z_STR_P(key);
     unsigned long int index, idx = 0;
-    VK_ZEND_HASH_FOREACH_KEY(myht, index, key){
+    VK_ZEND_HASH_FOREACH_KEY(myht, index, key) {
       if (VK_ZSTR_P_NON_EMPTY(key) || (index != idx)) {
         return 1;
       }
       idx++;
-    } VK_ZEND_HASH_FOREACH_END();
+    }
+    VK_ZEND_HASH_FOREACH_END();
   }
 
   return 0;
@@ -49,7 +50,7 @@ static bool json_encode_array(VK_ZVAL_API_P val) {
     write_buff_char('{');
   }
 
-  i = myht ? zend_hash_num_elements (myht) : 0;
+  i = myht ? zend_hash_num_elements(myht) : 0;
   if (i > 0) {
     NEW_INIT_Z_STR_P(key);
     VK_ZVAL_API_P data;
@@ -67,7 +68,7 @@ static bool json_encode_array(VK_ZVAL_API_P val) {
         encoded_successfully = encoded_successfully && php_json_encode(VK_ZVAL_API_TO_ZVALP(data), (key ? key->val : NULL));
       } else if (r == 1) {
         if (key) {
-          if (key->val[0] == '\0' && Z_TYPE_P (VK_ZVAL_API_TO_ZVALP(val)) == IS_OBJECT) {
+          if (key->val[0] == '\0' && Z_TYPE_P(VK_ZVAL_API_TO_ZVALP(val)) == IS_OBJECT) {
             /* Skip protected and private members. */
             continue;
           }
@@ -97,7 +98,8 @@ static bool json_encode_array(VK_ZVAL_API_P val) {
           encoded_successfully = encoded_successfully && php_json_encode(VK_ZVAL_API_TO_ZVALP(data), (key ? key->val : NULL));
         }
       }
-    } VK_ZEND_HASH_FOREACH_END();
+    }
+    VK_ZEND_HASH_FOREACH_END();
   }
 
   if (r == 0) {
@@ -107,7 +109,6 @@ static bool json_encode_array(VK_ZVAL_API_P val) {
   }
   return encoded_successfully;
 }
-
 
 static void json_escape_string(const char *s, size_t len) {
   if (!len) {
@@ -192,16 +193,14 @@ static bool php_json_encode(zval *val, const char *key) {
         zend_error(E_WARNING, "[json] (php_json_encode) double %.9g does not conform to the JSON spec, encoded as 0", dbl);
         return false;
       }
-    }
-      break;
+    } break;
     case IS_STRING:
       json_escape_string(Z_STRVAL_P(val), Z_STRLEN_P(val));
       break;
     case IS_ARRAY:
       myht = HASH_OF(val);
       if (myht && VK_ZEND_HASH_IS_RECURSIVE(myht)) {
-        php_error_docref(NULL, E_WARNING, "array recursion detected%s%s",
-          ((key) ? " - " : ""), ((key) ? key : ""));
+        php_error_docref(NULL, E_WARNING, "array recursion detected%s%s", ((key) ? " - " : ""), ((key) ? key : ""));
         write_buff("null", 4);
         break;
       }
@@ -220,8 +219,7 @@ static bool php_json_encode(zval *val, const char *key) {
     case IS_OBJECT:
       myht = Z_OBJPROP_P(val);
       if (myht && VK_ZEND_HASH_IS_RECURSIVE(myht)) {
-        php_error_docref(NULL, E_WARNING, "object recursion detected%s%s",
-          ((key) ? " - " : ""), ((key) ? key : ""));
+        php_error_docref(NULL, E_WARNING, "object recursion detected%s%s", ((key) ? " - " : ""), ((key) ? key : ""));
         write_buff("null", 4);
         break;
       }
@@ -246,7 +244,6 @@ static bool php_json_encode(zval *val, const char *key) {
   return encoded_successfully;
 }
 
-bool vk_json_encode(zval *val)
-{
+bool vk_json_encode(zval *val) {
   return php_json_encode(val, NULL);
 }

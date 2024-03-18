@@ -33,4 +33,3 @@ const char *ptype_name(PrimitiveType id);
 PrimitiveType type_lca(PrimitiveType a, PrimitiveType b);
 bool can_store_false(PrimitiveType tp);
 bool can_store_null(PrimitiveType tp);
-

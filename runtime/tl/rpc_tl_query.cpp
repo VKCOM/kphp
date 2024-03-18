@@ -64,7 +64,7 @@ void CurrentProcessingQuery::raise_storing_error(const char *format, ...) {
     constexpr size_t BUFF_SZ = 1024;
     char buff[BUFF_SZ] = {0};
     va_list args;
-    va_start (args, format);
+    va_start(args, format);
     int32_t sz = vsnprintf(buff, BUFF_SZ, format, args);
     php_assert(sz > 0);
     va_end(args);

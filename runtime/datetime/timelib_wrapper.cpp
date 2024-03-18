@@ -283,9 +283,7 @@ std::pair<timelib_time *, string> php_timelib_date_initialize(const string &tz_n
 
   const string &time_str_new = time_str.empty() ? NOW : time_str;
   timelib_error_container *err = nullptr;
-  timelib_time *t = format
-    ? timelib_parse_from_format_leak_safe(format, time_str, &err)
-    : timelib_strtotime_leak_safe(time_str_new, &err);
+  timelib_time *t = format ? timelib_parse_from_format_leak_safe(format, time_str, &err) : timelib_strtotime_leak_safe(time_str_new, &err);
 
   // update last errors and warnings
   update_errors_warnings(err, script_guard);

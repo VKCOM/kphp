@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <mutex>
-#include <thread>
 #include <sys/syscall.h>
+#include <thread>
 
 #include "runtime/inter-process-mutex.h"
 #include "server/php-engine-vars.h"
@@ -28,7 +28,7 @@ auto with_this_pid(F f) noexcept {
   return f();
 }
 
-}
+} // namespace
 
 TEST(inter_process_mutex_test, test_lock_unlock_with_thread) {
   inter_process_mutex mutex;
@@ -85,9 +85,7 @@ TEST(inter_process_mutex_test, test_try_lock_unlock_with_thread) {
   std::thread t{[&mutex] {
     ASSERT_TRUE(with_this_pid([&mutex] { return mutex.try_lock(); }));
 
-    std::thread{[&mutex] {
-      ASSERT_FALSE(with_this_pid([&mutex] { return mutex.try_lock(); }));
-    }}.join();
+    std::thread{[&mutex] { ASSERT_FALSE(with_this_pid([&mutex] { return mutex.try_lock(); })); }}.join();
 
     with_this_pid([&mutex] { mutex.unlock(); });
   }};

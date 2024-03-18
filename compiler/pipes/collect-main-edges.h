@@ -15,7 +15,6 @@ private:
 
   static RValue as_set_value(VertexPtr v);
 
-
   template<class R>
   static void create_set(const LValue &lhs, const R &rhs);
   static void create_type_assign(const LValue &lhs, const TypeData *initial_type);
@@ -46,7 +45,6 @@ private:
   void call_on_var(const CollectionT &collection);
 
 public:
-
   using ExecuteType = FunctionAndCFG;
 
   std::string get_description() override {

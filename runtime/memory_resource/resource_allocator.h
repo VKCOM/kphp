@@ -17,17 +17,14 @@ public:
   using value_type = T;
 
   template<class, class>
-  friend
-  class resource_allocator;
+  friend class resource_allocator;
 
-  explicit resource_allocator(MemoryResource &memory_resource) noexcept:
-    memory_resource_(memory_resource) {
-  }
+  explicit resource_allocator(MemoryResource &memory_resource) noexcept
+    : memory_resource_(memory_resource) {}
 
   template<class U>
-  explicit resource_allocator(const resource_allocator<U, MemoryResource> &other) noexcept:
-    memory_resource_(other.memory_resource_) {
-  }
+  explicit resource_allocator(const resource_allocator<U, MemoryResource> &other) noexcept
+    : memory_resource_(other.memory_resource_) {}
 
   value_type *allocate(size_t size, void const * = nullptr) {
     static_assert(sizeof(value_type) <= max_value_type_size(), "memory limit");

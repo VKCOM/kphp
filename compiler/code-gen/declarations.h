@@ -12,11 +12,11 @@
 #include "compiler/code-gen/code-gen-root-cmd.h"
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/gen-out-style.h"
+#include "compiler/code-gen/includes.h"
 #include "compiler/code-gen/naming.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/vertex-meta_op_base.h"
-#include "compiler/code-gen/includes.h"
 
 struct VarDeclaration {
   VarPtr var;
@@ -68,6 +68,7 @@ struct TlDependentTypesUsings {
 
   void compile(CodeGenerator &W) const;
   void compile_dependencies(CodeGenerator &W);
+
 private:
   struct InnerParamTypeAccess {
     bool drop_class_instance{false};
@@ -75,9 +76,9 @@ private:
 
     InnerParamTypeAccess() = default;
 
-    InnerParamTypeAccess(bool drop_class_instance, const std::string &inner_type_name) :
-        drop_class_instance(drop_class_instance),
-        inner_type_name(inner_type_name) {}
+    InnerParamTypeAccess(bool drop_class_instance, const std::string &inner_type_name)
+      : drop_class_instance(drop_class_instance)
+      , inner_type_name(inner_type_name) {}
   };
 
   struct DeducingInfo {
@@ -110,6 +111,7 @@ struct InterfaceDeclaration : CodeGenRootCmd {
   InterfacePtr interface;
   explicit InterfaceDeclaration(InterfacePtr interface);
   void compile(CodeGenerator &W) const final;
+
 private:
   std::unique_ptr<TlDependentTypesUsings> detect_if_needs_tl_usings() const;
 };

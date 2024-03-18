@@ -52,14 +52,11 @@ public:
   explicit PipeJobReader(int read_fd)
     : read_fd(read_fd) {}
 
-  enum ReadStatus {
-    READ_OK,
-    READ_FAIL,
-    READ_BLOCK
-  };
+  enum ReadStatus { READ_OK, READ_FAIL, READ_BLOCK };
 
   ReadStatus read_job(JobSharedMessage *&job);
   ReadStatus read_job_result(JobSharedMessage *&job_result);
+
 private:
   int read_fd{-1};
 

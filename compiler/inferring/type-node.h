@@ -13,13 +13,12 @@ class TypeNode : public Node {
   Location location_;
 
 public:
-  explicit TypeNode(const TypeData *type, Location location) :
-    location_(std::move(location)) {
+  explicit TypeNode(const TypeData *type, Location location)
+    : location_(std::move(location)) {
     set_type(type);
   }
 
-  void recalc(TypeInferer *inferer __attribute__((unused))) {
-  }
+  void recalc(TypeInferer *inferer __attribute__((unused))) {}
 
   std::string get_description() final;
   const Location &get_location() const final;

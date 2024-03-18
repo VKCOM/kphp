@@ -10,7 +10,7 @@
 void compile_vertex(VertexPtr root, CodeGenerator &W);
 
 template<Operation Op>
-CodeGenerator& operator<<(CodeGenerator &W, VertexAdaptor<Op> root) {
+CodeGenerator &operator<<(CodeGenerator &W, VertexAdaptor<Op> root) {
   compile_vertex(root, W);
   return W;
 }

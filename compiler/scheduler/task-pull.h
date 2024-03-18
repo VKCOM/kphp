@@ -12,6 +12,7 @@ class Task;
 class TaskPull : public Node {
 private:
   DataStream<Task *> stream;
+
 public:
   inline void add_task(Task *task) {
     stream << task;

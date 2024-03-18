@@ -11,10 +11,9 @@
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 
-VarsCollector::VarsCollector(size_t parts, std::function<bool(VarPtr)> vars_checker) :
-  collected_vars_(parts),
-  vars_checker_(std::move(vars_checker)) {
-}
+VarsCollector::VarsCollector(size_t parts, std::function<bool(VarPtr)> vars_checker)
+  : collected_vars_(parts)
+  , vars_checker_(std::move(vars_checker)) {}
 
 void VarsCollector::collect_global_and_static_vars_from(FunctionPtr function) {
   if (!visited_functions_.emplace(function).second) {
@@ -32,8 +31,7 @@ void VarsCollector::collect_global_and_static_vars_from(FunctionPtr function) {
 std::vector<std::set<VarPtr>> VarsCollector::flush() {
   visited_functions_.clear();
 
-  auto last_part = std::remove_if(collected_vars_.begin(), collected_vars_.end(),
-                                  [](const std::set<VarPtr> &p) { return p.empty(); });
+  auto last_part = std::remove_if(collected_vars_.begin(), collected_vars_.end(), [](const std::set<VarPtr> &p) { return p.empty(); });
   collected_vars_.erase(last_part, collected_vars_.end());
   return std::move(collected_vars_);
 }
@@ -45,9 +43,7 @@ void VarsCollector::add_vars(It begin, It end) {
     if (vars_checker_ && !vars_checker_(var_id)) {
       continue;
     }
-    const size_t var_hash = var_id->class_id ?
-                            vk::std_hash(var_id->class_id->file_id->main_func_name) :
-                            vk::std_hash(var_id->name);
+    const size_t var_hash = var_id->class_id ? vk::std_hash(var_id->class_id->file_id->main_func_name) : vk::std_hash(var_id->name);
 
     const size_t bucket = var_hash % collected_vars_.size();
     collected_vars_[bucket].emplace(var_id);

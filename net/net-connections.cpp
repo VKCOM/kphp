@@ -65,7 +65,7 @@ int outbound_connections, active_outbound_connections, ready_outbound_connection
 long long outbound_connections_created, inbound_connections_accepted;
 int ready_targets;
 int conn_generation;
-static void(*on_active_special_connections_update_callback)(bool on_accept) = [](bool){};
+static void (*on_active_special_connections_update_callback)(bool on_accept) = [](bool) {};
 
 const char *unix_socket_directory = "/var/run/engine";
 SAVE_STRING_OPTION_PARSER(OPT_NETWORK, "unix-socket-directory", unix_socket_directory, "path to directory with UNIX sockets");
@@ -75,7 +75,7 @@ long long netw_queries, netw_update_queries, total_failed_connections, total_con
 static void connections_constructor() __attribute__((constructor));
 static void connections_constructor() {
   // Second half is used for fake connections
-  Connections = static_cast<connection*>(calloc(2 * MAX_CONNECTIONS, sizeof(Connections[0])));
+  Connections = static_cast<connection *>(calloc(2 * MAX_CONNECTIONS, sizeof(Connections[0])));
   assert(Connections && "Cannot allocate memory for Connections");
   bucket_salt = lrand48();
 }
@@ -102,7 +102,9 @@ int free_connection_buffers(struct connection *c) {
 }
 
 int server_writer(struct connection *c);
-int client_init_outbound(struct connection *c __attribute__((unused))) { return 0; }
+int client_init_outbound(struct connection *c __attribute__((unused))) {
+  return 0;
+}
 
 /*
  * client
@@ -252,9 +254,8 @@ int server_writer(struct connection *c) {
         c->eagain_count = 0;
       }
 
-      tvkprintf(net_connections, 4, "send/writev() to %d: %d written out of %d in %d chunks at %p (%.*s)\n",
-                c->fd, r, s, iovcnt, to, ((unsigned)r < 64) ? r : 64, to);
-
+      tvkprintf(net_connections, 4, "send/writev() to %d: %d written out of %d in %d chunks at %p (%.*s)\n", c->fd, r, s, iovcnt, to,
+                ((unsigned)r < 64) ? r : 64, to);
 
       if (r > 0) {
         advance_skip_read_ptr(&c->Out, r);
@@ -319,9 +320,10 @@ int server_reader(struct connection *c) {
     /* check whether it makes sense to try to read from this socket */
     int try_read = (c->flags & C_WANTRD) && !(c->flags & (C_NORD | C_FAILED | C_STOPREAD)) && !c->error;
     /* check whether it makes sense to invoke parse_execute() even if no new bytes are read */
-    int try_reparse = (c->flags & C_REPARSE) && (c->status == conn_expect_query || c->status == conn_reading_query || c->status == conn_wait_answer ||
-                                                 c->status == conn_reading_answer) &&
-                      !c->skip_bytes;
+    int try_reparse =
+      (c->flags & C_REPARSE)
+      && (c->status == conn_expect_query || c->status == conn_reading_query || c->status == conn_wait_answer || c->status == conn_reading_answer)
+      && !c->skip_bytes;
     if (!try_read && !try_reparse) {
       break;
     }
@@ -338,9 +340,9 @@ int server_reader(struct connection *c) {
       s = get_write_space(&c->In);
 
       if (s <= 0) {
-        kprintf("error while reading from connection #%d (type %p(%s); in.bytes=%d, out.bytes=%d, tmp.bytes=%d; peer %s): cannot allocate read buffer\n",
-                 c->fd, c->type, c->type ? c->type->title : "", c->In.total_bytes + c->In.unprocessed_bytes, c->Out.total_bytes + c->Out.unprocessed_bytes,
-                 c->Tmp ? c->Tmp->total_bytes : 0, sockaddr_storage_to_string(&c->remote_endpoint));
+        kprintf("error while reading from connection #%d (type %p(%s); in.bytes=%d, out.bytes=%d, tmp.bytes=%d; peer %s): cannot allocate read buffer\n", c->fd,
+                c->type, c->type ? c->type->title : "", c->In.total_bytes + c->In.unprocessed_bytes, c->Out.total_bytes + c->Out.unprocessed_bytes,
+                c->Tmp ? c->Tmp->total_bytes : 0, sockaddr_storage_to_string(&c->remote_endpoint));
 
         cond_dump_connection_buffers_stats();
         free_all_buffers(&c->In);
@@ -435,8 +437,8 @@ int server_reader(struct connection *c) {
       assert(c->type->crypto_decrypt_input(c) >= 0);
     }
 
-    while (!c->skip_bytes &&
-           (c->status == conn_expect_query || c->status == conn_reading_query || c->status == conn_wait_answer || c->status == conn_reading_answer)) {
+    while (!c->skip_bytes
+           && (c->status == conn_expect_query || c->status == conn_reading_query || c->status == conn_wait_answer || c->status == conn_reading_answer)) {
       /* Parser */
       int conn_expect = (c->status - 1) | 1; // one of conn_expect_query and conn_wait_answer; using VALUES of these constants!
       c->flags &= ~C_REPARSE;
@@ -642,8 +644,8 @@ void close_special_connection(struct connection *c) {
   if (c->basic_type != ct_listen) {
     --active_special_connections;
     on_active_special_connections_update_callback(false);
-    if (active_special_connections < max_special_connections && Connections[c->listening].basic_type == ct_listen &&
-        Connections[c->listening].generation == c->listening_generation) {
+    if (active_special_connections < max_special_connections && Connections[c->listening].basic_type == ct_listen
+        && Connections[c->listening].generation == c->listening_generation) {
       epoll_insert(c->listening, EVT_READ | EVT_LEVEL);
     }
   }
@@ -672,10 +674,10 @@ int force_clear_connection(struct connection *c) {
 }
 
 void net_reset_after_fork() {
-  //Epoll_close should clear internal structures but shouldn't change epoll_fd.
-  //The same epoll_fd will be used by master
-  //Solution: close epoll_fd first
-  //Problems: "epoll_ctl(): Invalid argument" is printed to stderr
+  // Epoll_close should clear internal structures but shouldn't change epoll_fd.
+  // The same epoll_fd will be used by master
+  // Solution: close epoll_fd first
+  // Problems: "epoll_ctl(): Invalid argument" is printed to stderr
   close_epoll();
   init_epoll();
 
@@ -721,8 +723,8 @@ int server_read_write(struct connection *c) {
   int res, inconn_mask = c->flags | ~C_INCONN;
   event_t *ev = c->ev;
 
-  tvkprintf(net_connections, 3, "begin processing connection %d, status=%d, flags=%d, pending=%d; epoll_ready=%d, ev->ready=%d\n", c->fd, c->status, c->flags, c->pending_queries,
-           ev->epoll_ready, ev->ready);
+  tvkprintf(net_connections, 3, "begin processing connection %d, status=%d, flags=%d, pending=%d; epoll_ready=%d, ev->ready=%d\n", c->fd, c->status, c->flags,
+            c->pending_queries, ev->epoll_ready, ev->ready);
 
   c->flags |= C_INCONN;
 
@@ -731,7 +733,8 @@ int server_read_write(struct connection *c) {
       tvkprintf(net_connections, 4, "reading buffered data from socket %d, before closing\n", c->fd);
       c->type->reader(c);
     }
-    tvkprintf(net_connections, 3 + !(ev->epoll_ready & EPOLLPRI), "socket %d: disconnected (epoll_ready=%02x), closing ignored %d\n", c->fd, ev->epoll_ready, c->ignored);
+    tvkprintf(net_connections, 3 + !(ev->epoll_ready & EPOLLPRI), "socket %d: disconnected (epoll_ready=%02x), closing ignored %d\n", c->fd, ev->epoll_ready,
+              c->ignored);
     // When connection is closed on client side, we have two options to do:
     // (1) Close connection on server side immediately
     // (2) Delay closing connection on server side, until we leave the ignore_user_abort "critical section"
@@ -742,7 +745,7 @@ int server_read_write(struct connection *c) {
       // In edge-triggered mode event is reported only at the first time, so we will have only one wakeup on EPOLLRDHUP after readding fd to epoll.
       c->interrupted = true; // Remember that the connection was closed if script was inside the ignore_user_abort "critical section"
       c->flags &= ~C_WANTRW; // Remove flags for re-adding fd in edge-triggered mode by using compute_conn_events() in the next calls
-      return EVT_SPEC; // Use EVT_SPEC only without EVT_LEVEL to add fd in edge-triggered mode
+      return EVT_SPEC;       // Use EVT_SPEC only without EVT_LEVEL to add fd in edge-triggered mode
     } else {
       // This handles case (1)
       force_clear_connection(c);
@@ -806,9 +809,9 @@ int server_read_write(struct connection *c) {
      1) we want and can read;
      2) we want and can write;
      3) we want re-parse input */
-  while (((c->flags & C_WANTRD) && !(c->flags & (C_NORD | C_FAILED | C_STOPREAD))) || ((c->flags & C_WANTWR) && !(c->flags & (C_NOWR | C_FAILED))) ||
-         ((c->flags & C_REPARSE) &&
-          (c->status == conn_expect_query || c->status == conn_reading_query || c->status == conn_wait_answer || c->status == conn_reading_answer))) {
+  while (((c->flags & C_WANTRD) && !(c->flags & (C_NORD | C_FAILED | C_STOPREAD))) || ((c->flags & C_WANTWR) && !(c->flags & (C_NOWR | C_FAILED)))
+         || ((c->flags & C_REPARSE)
+             && (c->status == conn_expect_query || c->status == conn_reading_query || c->status == conn_wait_answer || c->status == conn_reading_answer))) {
 
     if (c->error) {
       break;
@@ -1092,8 +1095,8 @@ int accept_new_connections(struct connection *cc) {
     }
 
     char buffer_peer[SOCKADDR_STORAGE_BUFFER_SIZE], buffer_self[SOCKADDR_STORAGE_BUFFER_SIZE];
-    tvkprintf(net_connections, 3, "accepted incoming connection of type %s, flags=%x, at %s -> %s, fd=%d\n", cc->type->title, cc->flags, sockaddr_storage_to_buffer(&peer, buffer_peer),
-             sockaddr_storage_to_buffer(&self, buffer_self), cfd);
+    tvkprintf(net_connections, 3, "accepted incoming connection of type %s, flags=%x, at %s -> %s, fd=%d\n", cc->type->title, cc->flags,
+              sockaddr_storage_to_buffer(&peer, buffer_peer), sockaddr_storage_to_buffer(&self, buffer_self), cfd);
 
     int flags;
     if ((flags = fcntl(cfd, F_GETFL, 0) < 0) || fcntl(cfd, F_SETFL, flags | O_NONBLOCK) < 0) {
@@ -1165,8 +1168,8 @@ int accept_new_connections(struct connection *cc) {
         c->flags |= C_SPECIAL;
         if (active_special_connections >= max_special_connections) {
           tvkprintf(net_connections, active_special_connections >= max_special_connections + 16 ? 0 : 3,
-                   "ERROR: forced to accept connection when special connections limit was reached (%d of %d)\n", active_special_connections,
-                   max_special_connections);
+                    "ERROR: forced to accept connection when special connections limit was reached (%d of %d)\n", active_special_connections,
+                    max_special_connections);
         }
         ++active_special_connections;
         on_active_special_connections_update_callback(true);
@@ -1184,7 +1187,7 @@ int accept_new_connections(struct connection *cc) {
 }
 
 int accept_new_connections_gateway(int fd __attribute__((unused)), void *data, event_t *ev __attribute__((unused))) {
-  struct connection *cc = static_cast<connection*>(data);
+  struct connection *cc = static_cast<connection *>(data);
   assert(cc->basic_type == ct_listen);
   assert(cc->type);
   return cc->type->accept(cc);
@@ -1209,7 +1212,7 @@ void ancillary_data_received(struct connection *c, const struct cmsghdr *cmsg) {
 
     if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_CREDENTIALS) {
       assert(payload_size == sizeof(struct ucred));
-      const struct ucred *credentials = static_cast<const ucred*>(payload);
+      const struct ucred *credentials = static_cast<const ucred *>(payload);
       tvkprintf(net_connections, 4, "Credentials received: PID: %d, UID: %d, GID: %d\n", credentials->pid, credentials->uid, credentials->gid);
       c->credentials = *credentials;
       assert(socket_disable_unix_passcred(c->fd));
@@ -1220,9 +1223,13 @@ void ancillary_data_received(struct connection *c, const struct cmsghdr *cmsg) {
   kprintf("Unexpected ancillary data received: cmsg_level %d, cmsg_type %d\n", cmsg->cmsg_level, cmsg->cmsg_type);
 }
 
-int server_noop(struct connection *c __attribute__((unused))) { return 0; }
+int server_noop(struct connection *c __attribute__((unused))) {
+  return 0;
+}
 
-int server_noop(struct connection *c __attribute__((unused)), int who __attribute__((unused))) { return 0; }
+int server_noop(struct connection *c __attribute__((unused)), int who __attribute__((unused))) {
+  return 0;
+}
 
 int server_failed(struct connection *c) {
   kprintf("connection %d: call to pure virtual method\n", c->fd);
@@ -1372,7 +1379,9 @@ void unlock_fake_connection(connection_t *c) {
   fd_fake_connection = c - Connections;
 }
 
-int default_parse_execute(struct connection *c __attribute__((unused))) { return 0; }
+int default_parse_execute(struct connection *c __attribute__((unused))) {
+  return 0;
+}
 
 // Connection target handling functions
 
@@ -1440,7 +1449,8 @@ static conn_target_t *find_target_inet(const struct sockaddr_in *target, conn_ty
   return 0;
 }
 
-static conn_target_t *find_target_inet6(const struct sockaddr_in6 *target, conn_type_t *type, void *extra, lookup_type_t lookup_type, conn_target_t *new_target) {
+static conn_target_t *find_target_inet6(const struct sockaddr_in6 *target, conn_type_t *type, void *extra, lookup_type_t lookup_type,
+                                        conn_target_t *new_target) {
   unsigned h1 = ((unsigned long)type * 0xabacaba) % PRIME_TARGETS;
   int i;
   for (i = 0; i < 4; i++) {
@@ -1565,7 +1575,7 @@ conn_target_t *create_target(const conn_target_t *source, int *was_created) {
   convert_target(&source, &conn_target_converted);
 
   conn_target_t *t = find_target(source, lookup, NULL);
-  tvkprintf(net_connections, 4,  "%s: %s t->refcnt %d\n", __func__, sockaddr_storage_to_string(&source->endpoint), t ? t->refcnt : 0);
+  tvkprintf(net_connections, 4, "%s: %s t->refcnt %d\n", __func__, sockaddr_storage_to_string(&source->endpoint), t ? t->refcnt : 0);
   if (t) {
     assert(t->refcnt >= 0);
     t->min_connections = source->min_connections;
@@ -1705,7 +1715,7 @@ typedef struct conn_target_connection_stat conn_target_connection_stat_t;
 static conn_target_connection_stat_t conn_target_connection_stat(conn_target_t *target) {
   conn_target_connection_stat_t stat = {.good = 0, .bad = 0, .stopped = 0};
 
-  for (struct connection *c = target->first_conn; c != (struct connection *) target; c = c->next) {
+  for (struct connection *c = target->first_conn; c != (struct connection *)target; c = c->next) {
     const int cr = c->type->check_ready(c);
     switch (cr) {
       case cr_notyet:
@@ -1809,7 +1819,7 @@ int create_new_connections(conn_target_t *S) {
 
     char buffer_local[SOCKADDR_STORAGE_BUFFER_SIZE], buffer_remote[SOCKADDR_STORAGE_BUFFER_SIZE];
     tvkprintf(net_connections, 4, "created new outbound connection %s -> %s\n", sockaddr_storage_to_buffer(&c->local_endpoint, buffer_local),
-             sockaddr_storage_to_buffer(&c->remote_endpoint, buffer_remote));
+              sockaddr_storage_to_buffer(&c->remote_endpoint, buffer_remote));
 
     if (c->type->init_outbound(c) >= 0) {
       epoll_sethandler(cfd, 0, server_read_write_gateway, c);
@@ -1826,7 +1836,7 @@ int create_new_connections(conn_target_t *S) {
       return count;
     }
 
-    struct connection* h = (struct connection *)S;
+    struct connection *h = (struct connection *)S;
     c->next = h;
     c->prev = h->prev;
     h->prev->next = c;
@@ -1897,7 +1907,7 @@ int create_all_outbound_connections() {
 void install_client_connection(conn_target_t *S, int fd) {
   assert(S && fd > -1);
 
-  if(fd >= MAX_EVENTS  || fd >= MAX_CONNECTIONS) {
+  if (fd >= MAX_EVENTS || fd >= MAX_CONNECTIONS) {
     //  TODO(d.banschikov): handle error here
   }
 
@@ -1928,8 +1938,7 @@ void install_client_connection(conn_target_t *S, int fd) {
   c->remote_endpoint = S->endpoint;
 
   socklen_t socklen = sizeof(c->local_endpoint);
-  assert(!getsockname(fd, (struct sockaddr*) &c->local_endpoint, &socklen));
-
+  assert(!getsockname(fd, (struct sockaddr *)&c->local_endpoint, &socklen));
 
   assert(c->type->init_outbound(c) >= 0);
   epoll_sethandler(fd, 0, server_read_write_gateway, c);
@@ -1938,7 +1947,7 @@ void install_client_connection(conn_target_t *S, int fd) {
   S->outbound_connections++;
   outbound_connections_created++;
 
-  struct connection* h = (struct connection *)S;
+  struct connection *h = (struct connection *)S;
   c->next = h;
   c->prev = h->prev;
   h->prev->next = c;
@@ -2137,8 +2146,8 @@ int write_out_chk(struct connection *c, const void *data, int len) {
   int res = write_out(&c->Out, data, len);
   if (res < len && !(c->flags & C_FAILED)) {
     kprintf("error while writing to connection #%d (type %p(%s); in.bytes=%d, out.bytes=%d, tmp.bytes=%d; peer %s): %d bytes written out of %d\n", c->fd,
-             c->type, c->type ? c->type->title : "", c->In.total_bytes + c->In.unprocessed_bytes, c->Out.total_bytes + c->Out.unprocessed_bytes,
-             c->Tmp ? c->Tmp->total_bytes : 0, sockaddr_storage_to_string(&c->remote_endpoint), res, len);
+            c->type, c->type ? c->type->title : "", c->In.total_bytes + c->In.unprocessed_bytes, c->Out.total_bytes + c->Out.unprocessed_bytes,
+            c->Tmp ? c->Tmp->total_bytes : 0, sockaddr_storage_to_string(&c->remote_endpoint), res, len);
     fail_connection(c, -666);
     cond_dump_connection_buffers_stats();
     return 0;
@@ -2158,4 +2167,3 @@ void dump_connection_buffers(struct connection *c) {
   }
   fprintf(stderr, "--- END (dumping buffers of connection %d) ---\n", c->fd);
 }
-

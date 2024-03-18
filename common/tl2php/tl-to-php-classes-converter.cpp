@@ -16,8 +16,8 @@ namespace vk {
 namespace tl {
 
 struct PhpName {
-  PhpName(const std::string &name, const std::string &inner_namespace = {}, const std::string &postfix = {}) :
-    tl_name(name) {
+  PhpName(const std::string &name, const std::string &inner_namespace = {}, const std::string &postfix = {})
+    : tl_name(name) {
     assert(postfix.find('.') == std::string::npos);
     class_namespace = PhpClasses::tl_namespace();
 
@@ -54,9 +54,9 @@ struct PhpName {
   std::string class_namespace;
 };
 
-TlToPhpClassesConverter::TlToPhpClassesConverter(const tlo_parsing::tl_scheme &scheme, PhpClasses &load_into) :
-  php_classes_(load_into),
-  scheme_(scheme) {
+TlToPhpClassesConverter::TlToPhpClassesConverter(const tlo_parsing::tl_scheme &scheme, PhpClasses &load_into)
+  : php_classes_(load_into)
+  , scheme_(scheme) {
   php_classes_.functions.reserve(scheme_.functions.size());
   php_classes_.types.reserve(scheme_.types.size());
   php_classes_.all_classes.reserve(scheme_.functions.size() + scheme_.types.size());
@@ -70,26 +70,15 @@ void TlToPhpClassesConverter::register_function(const tlo_parsing::combinator &t
   auto &tl_function_php_repr = php_classes_.functions[function_name.class_full_name];
   assert(!tl_function_php_repr.function_args);
 
-  tl_function_php_repr.function_args = make_and_register_new_class(
-    function_name,
-    function_to_php_doc.args_to_php_class_fields(tl_function.args),
-    tl_function.id,
-    rpc_function_interface_
-  );
-  tl_function_php_repr.function_result = make_and_register_new_class(
-    function_name.append_name("_result"),
-    {function_to_php_doc.return_type_to_php_field()},
-    tl_function.id,
-    rpc_function_return_result_interface_
-  );
+  tl_function_php_repr.function_args =
+    make_and_register_new_class(function_name, function_to_php_doc.args_to_php_class_fields(tl_function.args), tl_function.id, rpc_function_interface_);
+  tl_function_php_repr.function_result = make_and_register_new_class(function_name.append_name("_result"), {function_to_php_doc.return_type_to_php_field()},
+                                                                     tl_function.id, rpc_function_return_result_interface_);
   tl_function_php_repr.is_kphp_rpc_server_function = tl_function.is_kphp_rpc_server_function();
 }
 
-void TlToPhpClassesConverter::register_type(const tlo_parsing::type &tl_type,
-                                            std::string type_postfix,
-                                            CombinatorToPhp &outer_converter,
-                                            const tlo_parsing::type_expr &outer_type_expr,
-                                            bool is_builtin) {
+void TlToPhpClassesConverter::register_type(const tlo_parsing::type &tl_type, std::string type_postfix, CombinatorToPhp &outer_converter,
+                                            const tlo_parsing::type_expr &outer_type_expr, bool is_builtin) {
   PhpName type_name{tl_type.name, is_builtin ? "" : PhpClasses::types_namespace(), type_postfix};
   auto types_it = php_classes_.types.find(type_name.class_full_name);
   auto known_type_it = known_type_.emplace(type_name.class_full_name, std::cref(tl_type));
@@ -104,25 +93,19 @@ void TlToPhpClassesConverter::register_type(const tlo_parsing::type &tl_type,
   if (tl_type.is_polymorphic()) {
     tl_type_php_repr.type_representation = make_and_register_new_interface(type_name, tl_type.id, is_builtin);
     tl_type_php_repr.constructors.reserve(tl_type.constructors.size());
-    for (const auto &tl_constructor: tl_type.constructors) {
+    for (const auto &tl_constructor : tl_type.constructors) {
       PhpName constructor_name{tl_constructor->name, PhpClasses::types_namespace(), type_postfix};
       ConstructorToPhp constructor_to_php_doc{*this, *tl_constructor, outer_converter, outer_type_expr};
-      tl_type_php_repr.constructors.emplace_back(make_and_register_new_class(
-        constructor_name,
-        constructor_to_php_doc.args_to_php_class_fields(tl_constructor->args),
-        tl_constructor->id,
-        tl_type_php_repr.type_representation.get()
-      ));
+      tl_type_php_repr.constructors.emplace_back(make_and_register_new_class(constructor_name,
+                                                                             constructor_to_php_doc.args_to_php_class_fields(tl_constructor->args),
+                                                                             tl_constructor->id, tl_type_php_repr.type_representation.get()));
     }
   } else {
     const auto &tl_constructor = tl_type.constructors.front();
     PhpName constructor_name{tl_constructor->name, PhpClasses::types_namespace(), type_postfix};
     ConstructorToPhp constructor_to_php_doc{*this, *tl_constructor, outer_converter, outer_type_expr};
-    tl_type_php_repr.type_representation = make_and_register_new_class(
-      constructor_name,
-      constructor_to_php_doc.args_to_php_class_fields(tl_constructor->args),
-      tl_constructor->id
-    );
+    tl_type_php_repr.type_representation =
+      make_and_register_new_class(constructor_name, constructor_to_php_doc.args_to_php_class_fields(tl_constructor->args), tl_constructor->id);
   }
 }
 
@@ -159,10 +142,8 @@ void TlToPhpClassesConverter::register_builtin_classes() {
   rpc_function_return_result_interface_ = function_repr.function_result.get();
 }
 
-std::unique_ptr<PhpClassRepresentation> TlToPhpClassesConverter::make_and_register_new_class(const PhpName &name,
-                                                                                             std::vector<PhpClassField> fields,
-                                                                                             int magic_id,
-                                                                                             const PhpClassRepresentation *parent) {
+std::unique_ptr<PhpClassRepresentation> TlToPhpClassesConverter::make_and_register_new_class(const PhpName &name, std::vector<PhpClassField> fields,
+                                                                                             int magic_id, const PhpClassRepresentation *parent) {
   auto php_repr = std::make_unique<PhpClassRepresentation>();
   php_repr->php_class_namespace = name.class_namespace;
   php_repr->php_class_name = name.class_short_name;
