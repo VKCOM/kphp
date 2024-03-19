@@ -327,7 +327,7 @@ array<array<double>> EvalCatboost::predict_input_multi(const array<array<double>
   assert(cat_features.size().size == size && cat_features.size().is_vector == is_vec);
 
   array<array<double>> resp;
-//  resp.reserve(size, true);
+  resp.reserve(size, true);
   assert(resp.is_vector());
 
   for (int row_id = 0; row_id < size; ++row_id) {
