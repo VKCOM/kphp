@@ -1,4 +1,4 @@
-#include "kphp_ml/kphp_ml.h"
+#include "runtime/kphp_ml/kphp_ml.h"
 
 bool kphp_ml::MLModel::is_catboost_multi_classification() const {
   if (!is_catboost()) {
@@ -17,7 +17,7 @@ unsigned int kphp_ml::MLModel::calculate_mutable_buffer_size() const {
     }
     case ModelKind::catboost_trees: {
       const auto &cbm = std::get<kphp_ml_catboost::CatboostModel>(impl);
-      return cbm.cat_feature_count * sizeof(std::string) +
+      return cbm.cat_feature_count * sizeof(string) +
              cbm.float_feature_count * sizeof(float) +
              (cbm.binary_feature_count + 4 - 1) / 4 * 4 + // round up to 4 bytes
              cbm.cat_feature_count * sizeof(int) +

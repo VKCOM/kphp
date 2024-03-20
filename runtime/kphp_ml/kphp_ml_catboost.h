@@ -4,8 +4,9 @@
 #include <vector>
 #include <unordered_map>
 
+#include "runtime/kphp_core.h"
+
 namespace kphp_ml { struct MLModel; }
-struct InputRow;
 
 namespace kphp_ml_catboost {
 
@@ -126,11 +127,11 @@ struct CatboostModel {
   static constexpr int REINDEX_MAP_CATEGORIAL_SHIFT = 1000000;
 };
 
-double kml_predict_catboost_by_vectors(const kphp_ml::MLModel &kml, const std::vector<float> &float_features, const std::vector<std::string> &cat_features, char *mutable_buffer);
-double kml_predict_catboost_by_ht_remap_str_keys(const kphp_ml::MLModel &kml, const std::unordered_map<std::string, double> &features_map, char *mutable_buffer);
+double kml_predict_catboost_by_vectors(const kphp_ml::MLModel &kml, const array<double> &float_features, const array<string> &cat_features, char *mutable_buffer);
+double kml_predict_catboost_by_ht_remap_str_keys(const kphp_ml::MLModel &kml, const array<double> &features_map, char *mutable_buffer);
 
-std::vector<double> kml_predict_catboost_by_vectors_multi(const kphp_ml::MLModel &kml, const std::vector<float> &float_features, const std::vector<std::string> &cat_features, char *mutable_buffer);
-std::vector<double> kml_predict_catboost_by_ht_remap_str_keys_multi(const kphp_ml::MLModel &kml, const std::unordered_map<std::string, double> &features_map, char *mutable_buffer);
+array<double> kml_predict_catboost_by_vectors_multi(const kphp_ml::MLModel &kml, const array<double> &float_features, const array<string> &cat_features, char *mutable_buffer);
+array<double> kml_predict_catboost_by_ht_remap_str_keys_multi(const kphp_ml::MLModel &kml, const array<double> &features_map, char *mutable_buffer);
 
 
 } // namespace kphp_ml_catboost

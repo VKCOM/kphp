@@ -3,8 +3,8 @@
 #include <string>
 #include <variant>
 
-#include "kphp_ml/kphp_ml_catboost.h"
-#include "kphp_ml/kphp_ml_xgboost.h"
+#include "runtime/kphp_ml/kphp_ml_catboost.h"
+#include "runtime/kphp_ml/kphp_ml_xgboost.h"
 
 namespace kphp_ml {
 

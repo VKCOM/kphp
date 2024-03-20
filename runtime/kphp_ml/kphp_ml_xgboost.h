@@ -3,8 +3,9 @@
 #include <unordered_map>
 #include <vector>
 
+#include "runtime/kphp_core.h"
+
 namespace kphp_ml { struct MLModel; }
-struct InputRow;
 
 namespace kphp_ml_xgboost {
 
@@ -75,6 +76,6 @@ struct XgboostModel {
   double transform_prediction(double score) const noexcept;
 };
 
-std::vector<double> kml_predict_xgboost(const kphp_ml::MLModel &kml, const std::vector<InputRow> &in, char *mutable_buffer);
+array<double> kml_predict_xgboost(const kphp_ml::MLModel &kml, const array<array<double>> &in, char *mutable_buffer);
 
 } // namespace kphp_ml_xgboost
