@@ -27,8 +27,8 @@ RUN apt update && \
 RUN update-alternatives --set php /usr/bin/php7.4
 
 # setup default linker to lld, this allows to reduce python tests' execution time on ~10 min
-# RUN update-alternatives --install /usr/bin/ld ld /usr/bin/x86_64-linux-gnu-ld 10 && \
-#    update-alternatives --install /usr/bin/ld ld /usr/bin/ld.lld 20
+RUN update-alternatives --install /usr/bin/ld ld /usr/bin/x86_64-linux-gnu-ld 10 && \
+    update-alternatives --install /usr/bin/ld ld /usr/bin/ld.lld 20
 
 # apt - based composer has version 2, but we need 1
 # next code install composer of version 1

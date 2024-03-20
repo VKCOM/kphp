@@ -160,7 +160,6 @@ public:
   }
 
   void release() noexcept {
-    printf("libcurl version = %s\n", curl_version());
     curl_easy_cleanup(easy_handle);
     cleanup_slists_and_posts();
     this->~EasyContext();
@@ -1145,22 +1144,7 @@ static int curl_epoll_cb(int fd, void *data, event_t *ev) {
     }
 
     string content = easy_context->received_data.concat_and_get_string();
-
-    if (easy_context->connection_only) {
-      // const CURLcode res = dl::critical_section_call([&] { return curl_easy_setopt(easy_handle, option, value); });
-      easy_context->set_option(CURLOPT_URL, easy_context->get_info(CURLINFO_EFFECTIVE_URL).to_string().c_str());
-      easy_context->error_num = dl::critical_section_call([&] { return curl_easy_perform(easy_context->easy_handle); });
-      if (easy_context->error_num != CURLE_OK && easy_context->error_num != CURLE_PARTIAL_FILE) {
-        printf("error = %ld\n", easy_context->error_num);
-        curl_request->finish_request(Optional<string>{false});
-      } else {
-        curl_request->finish_request(std::move(content));
-      }
-    } else if (!content.empty()) {
-      curl_request->finish_request(std::move(content));
-    } else {
-      curl_request->finish_request(Optional<string>{false});
-    }
+    curl_request->finish_request(std::move(content));
   }
   return 0;
 }

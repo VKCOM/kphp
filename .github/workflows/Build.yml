@@ -18,25 +18,25 @@ jobs:
     strategy:
       matrix:
         include:
-          # - os: buster
-          #   compiler: g++
-          #   cpp: 17
-          #   asan: off
-          #   ubsan: off
-          # - os: focal
-          #   compiler: clang++
-          #   cpp: 17
-          #   asan: off
-          #   ubsan: on
-          # - os: focal
-          #   compiler: g++-10
-          #   cpp: 20
-          #   asan: on
-          #   ubsan: off
+          - os: buster
+            compiler: g++
+            cpp: 17
+            asan: off
+            ubsan: off
+          - os: focal
+            compiler: clang++
+            cpp: 17
+            asan: off
+            ubsan: on
+          - os: focal
+            compiler: g++-10
+            cpp: 20
+            asan: on
+            ubsan: off
           - os: jammy
             compiler: g++
             cpp: 20
-            asan: off
+            asan: on
             ubsan: off
 
     name: "${{matrix.os}}/${{matrix.compiler}}/c++${{matrix.cpp}}/asan=${{matrix.asan}}/ubsan=${{matrix.ubsan}}"
@@ -96,7 +96,7 @@ jobs:
       id: python_tests
       continue-on-error: true
       run: docker exec kphp-build-container-${{matrix.os}} bash -c
-              "chown -R kitten /home && su kitten -c 'KPHP_TESTS_POLYFILLS_REPO=${{env.kphp_polyfills_dir}} KPHP_CXX=${{matrix.compiler}} python3.7 -m pytest --tb=native -s ${{env.kphp_root_dir}}/tests/python/tests/curl/test_curl_resumable.py'"
+              "chown -R kitten /home && su kitten -c 'GITHUB_ACTIONS=1 KPHP_TESTS_POLYFILLS_REPO=${{env.kphp_polyfills_dir}} KPHP_CXX=${{matrix.compiler}} python3.7 -m pytest --tb=native -n$(nproc) ${{env.kphp_root_dir}}/tests/python/'"
 
     - name: Prepare python tests artifacts
       if: steps.python_tests.outcome == 'failure'
