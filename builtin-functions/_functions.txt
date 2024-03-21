@@ -1654,3 +1654,11 @@ class DateTimeImmutable implements DateTimeInterface {
 }
 
 function getenv(string $varname = '', bool $local_only = false): mixed;
+
+function kml_xgboost_predict_matrix(string $model_name, float[][] $features_map_matrix): float[];
+
+function kml_catboost_predict_vectors(string $model_name, float[] $float_features, string[] $cat_features): float;
+function kml_catboost_predict_ht(string $model_name, float[] $features_map): float;
+
+function kml_catboost_predict_vectors_multi(string $model_name, float[] $float_features, string[] $cat_features): float[];
+function kml_catboost_predict_ht_multi(string $model_name, float[] $features_map): float[];
