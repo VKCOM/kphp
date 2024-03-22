@@ -284,7 +284,9 @@ double kml_predict_catboost_by_ht_remap_str_keys(const kphp_ml::MLModel &kml,
 
   auto *cat_features = reinterpret_cast<string *>(mutable_buffer);
   mutable_buffer += sizeof(string) * cbm.cat_feature_count;
-  std::fill_n(cat_features, cbm.cat_feature_count, string());
+  for (int i = 0; i < cbm.cat_feature_count; ++i) {
+    new (cat_features + i) string();
+  }
 
   for (const auto &kv: features_map) {
     // todo here and everywhere: what if key is not a string
@@ -334,7 +336,9 @@ array<double> kml_predict_catboost_by_ht_remap_str_keys_multi(const kphp_ml::MLM
 
   auto *cat_features = reinterpret_cast<string *>(mutable_buffer);
   mutable_buffer += sizeof(string) * cbm.cat_feature_count;
-  std::fill_n(cat_features, cbm.cat_feature_count, string());
+  for (int i = 0; i < cbm.cat_feature_count; ++i) {
+    new (cat_features + i) string();
+  }
 
   for (const auto &kv: features_map) {
     const string &feature_name = kv.get_string_key();

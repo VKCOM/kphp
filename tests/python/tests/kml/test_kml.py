@@ -24,3 +24,7 @@ class TestKML(KphpCompilerAutoTestCase):
     def test_catboost_tiny_1float_1hot_10trees(self):
         self.compile_and_check_success(php_script_path="catboost/php/catboost_tiny_1float_1hot_10trees.php",
                                        kml_dir="catboost/kml")
+
+    def test_catboost_multiclass_tutorial_ht_catnum(self):
+        self.compile_and_check_success(php_script_path="catboost/php/catboost_multiclass_tutorial_ht_catnum.php",
+                                       kml_dir="catboost/kml")
