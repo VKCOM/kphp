@@ -11,7 +11,7 @@ function test_writefunction_option() {
 
   $c = curl_init();
   var_dump(curl_setopt($c, CURLOPT_WRITEFUNCTION, $callback));
-  curl_close($c)
+  curl_close($c);
 }
 
 function test_headerfunction_option() {
@@ -49,7 +49,7 @@ function test_progressfunction_option() {
 function test_readfunction_option() {
   global $port, $text;
   $filename_in = "test_file.txt";
-  $fh_in = fopen("$filename_in", "w+");;
+  $fh_in = fopen("$filename_in", "w+");
 
   $callback = function($c, $fh, $length) {
     $result = fread($fh, $length);
