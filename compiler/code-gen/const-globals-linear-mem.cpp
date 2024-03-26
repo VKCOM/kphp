@@ -103,13 +103,8 @@ void ConstantsLinearMem::inc_count_by_type(const TypeData *type) {
   }
 }
 
-void ConstantsLinearMem::prepare_mem_and_assign_offsets(std::vector<VarPtr> &all_constants) {
+void ConstantsLinearMem::prepare_mem_and_assign_offsets(const std::vector<VarPtr> &all_constants) {
   ConstantsLinearMem &mem = constants_linear_mem;
-
-  // sort constants by name to make codegen stable
-  std::sort(all_constants.begin(), all_constants.end(), [](VarPtr c1, VarPtr c2) -> bool {
-    return c1->name.compare(c2->name) < 0;
-  });
 
   int offset = 0;
   for (VarPtr var : all_constants) {
@@ -139,27 +134,8 @@ void GlobalsLinearMem::inc_count_by_origin(VarPtr var) {
   } 
 }
 
-void GlobalsLinearMem::prepare_mem_and_assign_offsets(std::vector<VarPtr> &all_globals) {
+void GlobalsLinearMem::prepare_mem_and_assign_offsets(const std::vector<VarPtr> &all_globals) {
   GlobalsLinearMem &mem = globals_linear_mem;
-
-  // sort variables by name to make codegen stable
-  // note, that all_globals contains also function static vars (explicitly added),
-  // and their names can duplicate or be equal to global vars;
-  // hence, also sort by holder_func (though global vars don't have holder_func, since there's no point of declaration)
-  std::sort(all_globals.begin(), all_globals.end(), [](VarPtr c1, VarPtr c2) -> bool {
-    int cmp_name = c1->name.compare(c2->name);
-    if (cmp_name < 0) {
-      return true;
-    } else if (cmp_name > 0) {
-      return false;
-    } else if (c1 == c2) {
-      return false;
-    } else {
-      if (!c1->holder_func) return true;
-      if (!c2->holder_func) return false;
-      return c1->holder_func->name.compare(c2->holder_func->name) < 0;
-    }
-  });
 
   int offset = 0;
   for (VarPtr var : all_globals) {

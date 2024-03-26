@@ -8,22 +8,16 @@
 
 #include "compiler/code-gen/code-gen-root-cmd.h"
 #include "compiler/code-gen/code-generator.h"
-#include "compiler/code-gen/raw-data.h" // todo del
 
 struct ConstVarsInit : CodeGenRootCmd {
-  ConstVarsInit(std::vector<int> &&max_dep_levels, size_t n_batches_constants);
+  ConstVarsInit(std::vector<VarPtr> &&all_constants, int count_per_part);
+  
   void compile(CodeGenerator &W) const final;
 
-private:
-  std::vector<int> max_dep_levels_;
-  size_t parts_cnt_;
-};
-
-struct ConstVarsInitPart : CodeGenRootCmd {
-  ConstVarsInitPart(std::vector<VarPtr> &&vars_of_part, size_t part_id);
-  void compile(CodeGenerator &W) const final;
+  static void compile_const_init_part(CodeGenerator &W, int part_id, const std::vector<VarPtr> &all_constants, int offset, int count);
+  static void compile_const_init(CodeGenerator &W, int parts_cnt, const std::vector<int> &max_dep_levels);
 
 private:
-  mutable std::vector<VarPtr> vars_of_part_;
-  size_t part_id;
+  std::vector<VarPtr> all_constants;
+  const int count_per_part;
 };

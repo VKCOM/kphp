@@ -9,15 +9,15 @@
 #include "compiler/code-gen/const-globals-linear-mem.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/namespace.h"
+#include "compiler/code-gen/raw-data.h"
 #include "compiler/code-gen/vertex-compiler.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/inferring/public.h"
 
-// todo rename
-struct InitVar {
+struct InitConstVar {
   VarPtr var;
-  explicit InitVar(VarPtr var) : var(var) {}
+  explicit InitConstVar(VarPtr var) : var(var) {}
 
   void compile(CodeGenerator &W) const {
     Location save_location = stage::get_location();
@@ -38,21 +38,9 @@ struct InitVar {
 };
 
 
-static void add_dependent_declarations(VertexPtr vertex, std::set<VarPtr> &dependent_vars) {
-  if (!vertex) {
-    return;
-  }
-  for (auto child: *vertex) {
-    add_dependent_declarations(child, dependent_vars);
-  }
-  if (auto var = vertex.try_as<op_var>()) {
-    dependent_vars.emplace(var->var_id);
-  }
-}
-
 static void compile_raw_array(CodeGenerator &W, const VarPtr &var, int shift) {
   if (shift == -1) {
-    W << InitVar(var);
+    W << InitConstVar(var);
     W << ConstantVarInLinearMem(var) << ".set_reference_counter_to(ExtraRefCnt::for_global_const);" << NL << NL;
     return;
   }
@@ -60,18 +48,19 @@ static void compile_raw_array(CodeGenerator &W, const VarPtr &var, int shift) {
   W << ConstantVarInLinearMem(var) << ".assign_raw((char *) &raw_arrays[" << shift << "]);" << NL << NL;
 }
 
-static void compile_constants_part(CodeGenerator &W, const std::vector<VarPtr> &vars, size_t part_id) {
-  W << OpenFile("const_init." + std::to_string(part_id) + ".cpp", "o_const_init", false);
+ConstVarsInit::ConstVarsInit(std::vector<VarPtr> &&all_constants, int count_per_part)
+  : all_constants(std::move(all_constants))
+  , count_per_part(count_per_part) {
+}
 
-  W << ExternInclude(G->settings().runtime_headers.get());
-
+void ConstVarsInit::compile_const_init_part(CodeGenerator &W, int part_id, const std::vector<VarPtr> &all_constants, int offset, int count) {
   DepLevelContainer const_raw_array_vars;
   DepLevelContainer other_const_vars;
   DepLevelContainer const_raw_string_vars;
-  std::set<VarPtr> dependent_vars;
 
   IncludesCollector includes;
-  for (VarPtr var : vars) {
+  for (int i = 0; i < count; ++i) {
+    VarPtr var = all_constants[offset + i];
     if (!G->settings().is_static_lib_mode()) {
       includes.add_var_signature_depends(var);
       includes.add_vertex_depends(var->init_val);
@@ -82,31 +71,22 @@ static void compile_constants_part(CodeGenerator &W, const std::vector<VarPtr> &
   W << OpenNamespace();
   W << ConstantsLinearMemDeclaration(true) << NL;
 
-  for (VarPtr var : vars) {
+  for (int i = 0; i < count; ++i) {
+    VarPtr var = all_constants[offset + i];
     switch (var->init_val->type()) {
       case op_string:
         const_raw_string_vars.add(var);
         break;
       case op_array:
-        add_dependent_declarations(var->init_val, dependent_vars);
         const_raw_array_vars.add(var);
         break;
       case op_var:
-        add_dependent_declarations(var->init_val, dependent_vars);
         other_const_vars.add(var);
         break;
       default:
         other_const_vars.add(var);
         break;
     }
-  }
-
-  std::vector<VarPtr> extern_depends;
-  std::set_difference(dependent_vars.begin(), dependent_vars.end(),
-                      vars.begin(), vars.end(), std::back_inserter(extern_depends));
-  for (VarPtr var : extern_depends) {
-    kphp_assert(var->is_constant());
-    // todo del loop and extern_depends
   }
 
   std::vector<std::string> values(const_raw_string_vars.size());
@@ -127,17 +107,18 @@ static void compile_constants_part(CodeGenerator &W, const std::vector<VarPtr> &
     FunctionSignatureGenerator(W) << NL << "void const_vars_init_deplevel" << dep_level << "_file" << part_id << "()" << BEGIN;
 
     for (VarPtr var : const_raw_string_vars.vars_by_dep_level(dep_level)) {
-//      W << "// " << var->as_human_readable() << NL;
+      // W << "// " << var->as_human_readable() << NL;
       W << ConstantVarInLinearMem(var) << ".assign_raw (&raw[" << const_string_shifts[str_idx++] << "]);" << NL;
     }
 
     for (VarPtr var : const_raw_array_vars.vars_by_dep_level(dep_level)) {
-//      W << "// " << var->as_human_readable() << NL;
+      // W << "// " << var->as_human_readable() << NL;
       compile_raw_array(W, var, const_array_shifts[arr_idx++]);
     }
 
     for (VarPtr var: other_const_vars.vars_by_dep_level(dep_level)) {
-      W << InitVar(var);
+      // W << "// " << var->as_human_readable() << NL;
+      W << InitConstVar(var);
       const auto *type_data = var->tinf_node.get_type();
       PrimitiveType ptype = type_data->ptype();
       if (vk::any_of_equal(ptype, tp_array, tp_mixed, tp_string)) {
@@ -153,7 +134,6 @@ static void compile_constants_part(CodeGenerator &W, const std::vector<VarPtr> &
   }
 
   W << CloseNamespace();
-  W << CloseFile();
 }
 
 ConstVarsInit::ConstVarsInit(std::vector<int> &&max_dep_levels, size_t n_batches_constants)
@@ -165,9 +145,7 @@ ConstVarsInit::ConstVarsInit(std::vector<int> &&max_dep_levels, size_t n_batches
                         G->settings().globals_split_count.get()));
 }
 
-void ConstVarsInit::compile(CodeGenerator &W) const {
-  W << OpenFile("const_vars_init.cpp", "", false);
-  W << ExternInclude(G->settings().runtime_headers.get());    // todo delete after dropping static_assert
+void ConstVarsInit::compile_const_init(CodeGenerator &W, int parts_cnt, const std::vector<int> &max_dep_levels) {
   W << OpenNamespace();
 
   W << NL;
@@ -179,10 +157,10 @@ void ConstVarsInit::compile(CodeGenerator &W) const {
   W << ConstantsLinearMemAllocation() << NL;
   W << GlobalsLinearMemAllocation() << NL;
 
-  const int very_max_dep_level = *std::max_element(max_dep_levels_.begin(), max_dep_levels_.end());
+  const int very_max_dep_level = *std::max_element(max_dep_levels.begin(), max_dep_levels.end());
   for (int dep_level = 0; dep_level <= very_max_dep_level; ++dep_level) {
-    for (size_t part_id = 0; part_id < parts_cnt_; ++part_id) {
-      if (dep_level <= max_dep_levels_[part_id]) {
+    for (size_t part_id = 0; part_id < parts_cnt; ++part_id) {
+      if (dep_level <= max_dep_levels[part_id]) {
         auto func_name_i = fmt_format("const_vars_init_deplevel{}_file{}();", dep_level, part_id);
         // function declaration
         W << "void " << func_name_i << NL;
@@ -193,14 +171,36 @@ void ConstVarsInit::compile(CodeGenerator &W) const {
   }
   W << END;
   W << CloseNamespace();
-  W << CloseFile();
 }
 
-ConstVarsInitPart::ConstVarsInitPart(std::vector<VarPtr> &&vars_of_part, size_t part_id)
-  : vars_of_part_(std::move(vars_of_part))
-  , part_id(part_id) {}
+void ConstVarsInit::compile(CodeGenerator &W) const {
+  int parts_cnt = static_cast<int>(std::ceil(static_cast<double>(all_constants.size()) / count_per_part));
 
-void ConstVarsInitPart::compile(CodeGenerator &W) const {
-  std::sort(vars_of_part_.begin(), vars_of_part_.end());
-  compile_constants_part(W, vars_of_part_, part_id);
+  std::vector<int> max_dep_levels(parts_cnt);
+  for (int part_id = 0; part_id < parts_cnt; ++part_id) {
+    int offset = part_id * count_per_part;
+    int count = std::min(static_cast<int>(all_constants.size()) - offset, count_per_part);
+
+    for (int i = 0; i < count; ++i) {
+      VarPtr var = all_constants[offset + i];
+      if (var->dependency_level > max_dep_levels[part_id]) {
+        max_dep_levels[part_id] = var->dependency_level;
+      }
+    }
+  }
+
+  for (int part_id = 0; part_id < parts_cnt; ++part_id) {
+    int offset = part_id * count_per_part;
+    int count = std::min(static_cast<int>(all_constants.size()) - offset, count_per_part);
+
+    W << OpenFile("const_init." + std::to_string(part_id) + ".cpp", "o_const_init", false);
+    W << ExternInclude(G->settings().runtime_headers.get());
+    compile_const_init_part(W, part_id, all_constants, offset, count);
+    W << CloseFile();
+  }
+
+  W << OpenFile("const_vars_init.cpp", "", false);
+  W << ExternInclude(G->settings().runtime_headers.get());
+  compile_const_init(W, parts_cnt, max_dep_levels);
+  W << CloseFile();
 }

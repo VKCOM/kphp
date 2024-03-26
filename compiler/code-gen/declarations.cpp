@@ -25,6 +25,7 @@
 #include "compiler/inferring/type-data.h"
 #include "compiler/tl-classes.h"
 
+// todo del
 VarDeclaration VarExternDeclaration(VarPtr var) {
   return {var, true, false};
 }
@@ -43,6 +44,7 @@ void VarDeclaration::compile(CodeGenerator &W) const {
   const TypeData *type = tinf::get_type(var);
 
   if (var->is_builtin_global()) {
+    // todo wtf
     W << CloseNamespace();
   }
 

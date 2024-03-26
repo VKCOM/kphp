@@ -10,27 +10,21 @@
 #include "compiler/code-gen/includes.h"
 #include "compiler/code-gen/namespace.h"
 #include "compiler/code-gen/raw-data.h"
-#include "compiler/data/lib-data.h"
 #include "compiler/data/src-file.h"
-#include "compiler/data/vars-collector.h"
 #include "compiler/inferring/public.h"
 
-GlobalVarsMemoryStats::GlobalVarsMemoryStats(SrcFilePtr main_file) :
-  main_file_{main_file} {
+GlobalVarsMemoryStats::GlobalVarsMemoryStats(const std::vector<VarPtr> &all_globals) {
+  for (VarPtr global_var : all_globals) {
+    bool is_primitive = vk::any_of_equal(tinf::get_type(global_var)->get_real_ptype(), tp_bool, tp_int, tp_float, tp_regexp, tp_any);
+    if (!is_primitive) {
+      all_nonprimitive_globals.push_back(global_var);
+    }
+  }
 }
 
 void GlobalVarsMemoryStats::compile(CodeGenerator &W) const {
-  VarsCollector vars_collector{32, [](VarPtr global_var) {
-    return vk::none_of_equal(tinf::get_type(global_var)->get_real_ptype(), tp_bool, tp_int, tp_float, tp_any);
-  }};
-
-  vars_collector.collect_global_and_static_vars_from(main_file_->main_function);
-
-  auto global_var_parts = vars_collector.flush();
-  size_t global_vars_count = 0;
-  for (const auto &global_vars : global_var_parts) {
-    global_vars_count += global_vars.size();
-  }
+  int total_count = static_cast<int>(all_nonprimitive_globals.size());
+  int parts_cnt = static_cast<int>(std::ceil(static_cast<double>(total_count) / N_GLOBALS_PER_FILE));
 
   W << OpenFile("globals_memory_stats.cpp", "", false)
     << ExternInclude(G->settings().runtime_headers.get())
@@ -42,9 +36,9 @@ void GlobalVarsMemoryStats::compile(CodeGenerator &W) const {
 
   FunctionSignatureGenerator(W) << "array<int64_t> " << getter_name_ << "(int64_t lower_bound) " << BEGIN
                                 << "array<int64_t> result;" << NL
-                                << "result.reserve(" << global_vars_count << ", false);" << NL << NL;
+                                << "result.reserve(" << total_count << ", false);" << NL << NL;
 
-  for (size_t part_id = 0; part_id < global_var_parts.size(); ++part_id) {
+  for (int part_id = 0; part_id < parts_cnt; ++part_id) {
     const std::string func_name_i = getter_name_ + std::to_string(part_id);
     // function declaration
     FunctionSignatureGenerator(W) << "void " << func_name_i << "(int64_t lower_bound, array<int64_t> &result)" << SemicolonAndNL();
@@ -56,19 +50,23 @@ void GlobalVarsMemoryStats::compile(CodeGenerator &W) const {
     << CloseNamespace()
     << CloseFile();
 
-  for (size_t part_id = 0; part_id < global_var_parts.size(); ++part_id) {
-    compile_getter_part(W, global_var_parts[part_id], part_id);
+  for (int part_id = 0; part_id < parts_cnt; ++part_id) {
+    int offset = part_id * N_GLOBALS_PER_FILE;
+    int count = std::min(static_cast<int>(all_nonprimitive_globals.size()) - offset, N_GLOBALS_PER_FILE);
+
+    W << OpenFile("globals_memory_stats." + std::to_string(part_id) + ".cpp", "o_globals_memory_stats", false);
+    W << ExternInclude(G->settings().runtime_headers.get());
+    compile_getter_part(W, part_id, all_nonprimitive_globals, offset, count);
+    W << CloseFile();
   }
 }
 
-void GlobalVarsMemoryStats::compile_getter_part(CodeGenerator &W, const std::set<VarPtr> &global_vars, size_t part_id) const {
-  W << OpenFile("globals_memory_stats." + std::to_string(part_id) + ".cpp", "o_globals_memory_stats", false)
-    << ExternInclude(G->settings().runtime_headers.get());
-
+void GlobalVarsMemoryStats::compile_getter_part(CodeGenerator &W, int part_id, const std::vector<VarPtr> &global_vars, int offset, int count) {
   IncludesCollector includes;
   std::vector<std::string> var_names;
-  var_names.reserve(global_vars.size());
-  for (VarPtr global_var : global_vars) {
+  var_names.reserve(count);
+  for (int i = 0; i < count; ++i) {
+    VarPtr global_var = global_vars[offset + i];
     includes.add_var_signature_depends(global_var);
     std::string var_name;
     if (global_var->is_function_static_var()) {
@@ -93,21 +91,18 @@ void GlobalVarsMemoryStats::compile_getter_part(CodeGenerator &W, const std::set
 
   FunctionSignatureGenerator(W) << "void " << getter_name_ << part_id << "(int64_t lower_bound, array<int64_t> &result) " << BEGIN
                                 << "int64_t estimation = 0;" << NL;
-  size_t var_num = 0;
-  for (VarPtr global_var : global_vars) {
+  for (int i = 0; i < count; ++i) {
+    VarPtr global_var = global_vars[offset + i];
     if (global_var->is_builtin_global()) {
-      W << VarExternDeclaration(global_var);
+      continue;
     }
-    W << "// " << var_names[var_num] << NL
+    W << "// " << var_names[i] << NL
       << "estimation = f$estimate_memory_usage(" << GlobalVarInLinearMem(global_var) << ");" << NL
       << "if (estimation > lower_bound) " << BEGIN
-      << "result.set_value(get_raw_string(" << var_name_shifts[var_num] << "), estimation);" << NL
+      << "result.set_value(get_raw_string(" << var_name_shifts[i] << "), estimation);" << NL
       << END << NL;
-    var_num++;
   }
 
   W << END;
-
-  W << CloseNamespace()
-    << CloseFile();
+  W << CloseNamespace();
 }

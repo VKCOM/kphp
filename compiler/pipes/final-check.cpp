@@ -14,7 +14,6 @@
 #include "compiler/data/kphp-tracing-tags.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
-#include "compiler/data/vars-collector.h"
 #include "compiler/vertex-util.h"
 #include "compiler/type-hint.h"
 
@@ -324,23 +323,12 @@ void check_register_shutdown_functions(VertexAdaptor<op_func_call> call) {
                         vk::join(throws, ", "), callback->func_id->get_throws_call_chain()));
 }
 
-void mark_global_vars_for_memory_stats() {
-  if (!G->settings().enable_global_vars_memory_stats.get()) {
-    return;
-  }
-
-  static std::atomic<bool> vars_marked{false};
-  if (vars_marked.exchange(true)) {
-    return;
-  }
-
+void mark_global_vars_for_memory_stats(const std::vector<VarPtr> &vars_list) {
   std::unordered_set<ClassPtr> classes_inside;
-  VarsCollector vars_collector{0, [&classes_inside](VarPtr variable) {
-    tinf::get_type(variable)->get_all_class_types_inside(classes_inside);
-    return false;
-  }};
-  vars_collector.collect_global_and_static_vars_from(G->get_main_file()->main_function);
-  for (auto klass: classes_inside) {
+  for (VarPtr var : vars_list) {
+    tinf::get_type(var)->get_all_class_types_inside(classes_inside);
+  }
+  for (ClassPtr klass: classes_inside) {
     klass->deeply_require_instance_memory_estimate_visitor();
   }
 }
@@ -559,7 +547,15 @@ void check_php2c_conv(VertexAdaptor<op_ffi_php2c_conv> conv) {
 } // namespace
 
 void FinalCheckPass::on_start() {
-  mark_global_vars_for_memory_stats();
+  if (G->settings().enable_global_vars_memory_stats.get()) {
+    static std::atomic<bool> globals_marked{false};
+    if (!globals_marked.exchange(true)) {
+      mark_global_vars_for_memory_stats(G->get_global_vars());
+    }
+    if (!current_function->static_var_ids.empty()) {
+      mark_global_vars_for_memory_stats(current_function->static_var_ids);
+    }
+  }
 
   if (current_function->type == FunctionData::func_class_holder) {
     check_class_immutableness(current_function->class_id);

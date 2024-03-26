@@ -7,16 +7,16 @@
 #include "compiler/code-gen/code-gen-root-cmd.h"
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/data/data_ptr.h"
-#include "compiler/data/vertex-adaptor.h"
 
 struct GlobalVarsReset : CodeGenRootCmd {
-  explicit GlobalVarsReset(std::vector<VarPtr> &&all_globals);
+  explicit GlobalVarsReset(std::vector<VarPtr> &&all_globals, int count_per_part);
 
   void compile(CodeGenerator &W) const final;
 
-  static void compile_globals_reset_part(const std::vector<VarPtr> &used_vars, int part_id, CodeGenerator &W);
-  static void compile_globals_reset(int parts_n, CodeGenerator &W);
+  static void compile_globals_reset_part(CodeGenerator &W, int part_id, const std::vector<VarPtr> &all_globals, int offset, int count);
+  static void compile_globals_reset(CodeGenerator &W, int parts_cnt);
 
 private:
   std::vector<VarPtr> all_globals;
+  const int count_per_part;
 };

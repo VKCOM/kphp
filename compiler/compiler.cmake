@@ -46,8 +46,7 @@ prepend(KPHP_COMPILER_DATA_SOURCES data/
         src-dir.cpp
         src-file.cpp
         var-data.cpp
-        ffi-data.cpp
-        vars-collector.cpp)
+        ffi-data.cpp)
 
 prepend(KPHP_COMPILER_INFERRING_SOURCES inferring/
         expr-node.cpp
@@ -78,7 +77,6 @@ prepend(KPHP_COMPILER_CODEGEN_SOURCES code-gen/
         files/const-vars-init.cpp
         files/function-header.cpp
         files/function-source.cpp
-        files/global-vars-declarations.cpp
         files/global-vars-memory-stats.cpp
         files/global-vars-reset.cpp
         files/init-scripts.cpp

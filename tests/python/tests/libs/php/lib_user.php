@@ -12,7 +12,9 @@ echo "lib_user: global run\n";
 
 echo "lib_user: require_lib('lib_examples/example1');\n";
 require_lib('lib_examples/example1');
+example1_run();
 require_lib('lib_examples/example1');
+example1_run();
 
 /**
  * @return int

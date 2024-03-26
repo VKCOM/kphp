@@ -486,7 +486,6 @@ VarPtr CompilerCore::get_constant_var(const std::string &name, VertexPtr init_va
       new_var = create_var(name, VarData::var_const_t);
       new_var->init_val = init_val;
       node->data = new_var;
-      // but since we never output init_val->location for constants, codegen remains stable
     }
   }
 

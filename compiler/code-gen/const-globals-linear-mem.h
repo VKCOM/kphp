@@ -25,7 +25,7 @@ class ConstantsLinearMem {
   void inc_count_by_type(const TypeData *type);
 
 public:
-  static void prepare_mem_and_assign_offsets(std::vector<VarPtr> &all_constants);
+  static void prepare_mem_and_assign_offsets(const std::vector<VarPtr> &all_constants);
 
   int get_total_linear_mem_size() const { return total_mem_size; }
 };
@@ -47,7 +47,7 @@ class GlobalsLinearMem {
   void inc_count_by_origin(VarPtr var);
 
 public:
-  static void prepare_mem_and_assign_offsets(std::vector<VarPtr> &all_globals);
+  static void prepare_mem_and_assign_offsets(const std::vector<VarPtr> &all_globals);
 
   int get_total_linear_mem_size() const { return total_mem_size; }
 };

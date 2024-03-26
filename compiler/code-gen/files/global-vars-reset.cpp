@@ -10,17 +10,16 @@
 #include "compiler/code-gen/namespace.h"
 #include "compiler/code-gen/vertex-compiler.h"
 #include "compiler/data/src-file.h"
-#include "compiler/data/vars-collector.h"
 #include "compiler/inferring/public.h"
 
-GlobalVarsReset::GlobalVarsReset(std::vector<VarPtr> &&all_globals) :
-  all_globals(std::move(all_globals)) {
-}
+GlobalVarsReset::GlobalVarsReset(std::vector<VarPtr> &&all_globals, int count_per_part)
+  : all_globals(std::move(all_globals))
+  , count_per_part(count_per_part) {}
 
-void GlobalVarsReset::compile_globals_reset_part(const std::vector<VarPtr> &used_vars, int part_id, CodeGenerator &W) {
+void GlobalVarsReset::compile_globals_reset_part(CodeGenerator &W, int part_id, const std::vector<VarPtr> &all_globals, int offset, int count) {
   IncludesCollector includes;
-  for (VarPtr var : used_vars) {
-    includes.add_var_signature_depends(var);
+  for (int i = 0; i < count; ++i) {
+    includes.add_var_signature_depends(all_globals[offset + i]);
   }
   W << includes;
   W << OpenNamespace();
@@ -29,7 +28,8 @@ void GlobalVarsReset::compile_globals_reset_part(const std::vector<VarPtr> &used
   W << ConstantsLinearMemDeclaration(true) << GlobalsLinearMemDeclaration(true) << NL;
 
   FunctionSignatureGenerator(W) << "void global_vars_reset_file" << part_id << "()" << BEGIN;
-  for (VarPtr var : used_vars) {
+  for (int i = 0; i < count; ++i) {
+    VarPtr var = all_globals[offset + i];
     if (G->settings().is_static_lib_mode() && var->is_builtin_global()) {
       continue;
     }
@@ -48,11 +48,11 @@ void GlobalVarsReset::compile_globals_reset_part(const std::vector<VarPtr> &used
   W << CloseNamespace();
 }
 
-void GlobalVarsReset::compile_globals_reset(int parts_n, CodeGenerator &W) {
+void GlobalVarsReset::compile_globals_reset(CodeGenerator &W, int parts_cnt) {
   W << OpenNamespace();
   FunctionSignatureGenerator(W) << "void global_vars_reset()" << BEGIN;
 
-  for (int part_id = 0; part_id < parts_n; part_id++) {
+  for (int part_id = 0; part_id < parts_cnt; part_id++) {
     const std::string func_name_i = "global_vars_reset_file" + std::to_string(part_id);
     // function declaration
     W << "void " << func_name_i << "();" << NL;
@@ -66,21 +66,20 @@ void GlobalVarsReset::compile_globals_reset(int parts_n, CodeGenerator &W) {
 }
 
 void GlobalVarsReset::compile(CodeGenerator &W) const {
-  // todo check in vkcom, how many globals exist in all_globals, not not used (not found by VarsCollector)
-  // todo if a small amount, then get rid on VarsCollector (it's also used for globals_memory_stats)
-  VarsCollector vars_collector{32};
-  vars_collector.collect_global_and_static_vars_from(G->get_main_file()->main_function);
-  auto used_vars = vars_collector.flush();
+  int parts_cnt = static_cast<int>(std::ceil(static_cast<double>(all_globals.size()) / count_per_part));
 
-  for (int i = 0; i < 1; i++) {
-    W << OpenFile("globals_reset." + std::to_string(i) + ".cpp", "o_globals_reset", false);
+  for (int part_id = 0; part_id < parts_cnt; part_id++) {
+    int offset = part_id * count_per_part;
+    int count = std::min(static_cast<int>(all_globals.size()) - offset, count_per_part);
+
+    W << OpenFile("globals_reset." + std::to_string(part_id) + ".cpp", "o_globals_reset", false);
     W << ExternInclude(G->settings().runtime_headers.get());
-    compile_globals_reset_part(all_globals, i, W);
+    compile_globals_reset_part(W, part_id, all_globals, offset, count);
     W << CloseFile();
   }
 
   W << OpenFile("globals_reset.cpp", "", false);
   W << ExternInclude(G->settings().runtime_headers.get());
-  compile_globals_reset(1, W);
+  compile_globals_reset(W, parts_cnt);
   W << CloseFile();
 }
