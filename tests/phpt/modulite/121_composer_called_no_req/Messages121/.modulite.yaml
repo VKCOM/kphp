@@ -1,7 +1,0 @@
-name: "@msg"
-namespace: ""
-
-export:
-  - "messagesFunctionCallingVkStrings()"
-
-require:

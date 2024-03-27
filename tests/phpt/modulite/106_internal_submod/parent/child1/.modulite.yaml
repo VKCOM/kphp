@@ -1,9 +1,0 @@
-name: "@parent/child1"
-namespace: ""
-
-export:
-  - "@parent/child1/child2"
-
-force-internal:
-
-require:

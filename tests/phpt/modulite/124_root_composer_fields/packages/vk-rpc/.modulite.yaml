@@ -1,7 +1,0 @@
-name: "<composer_root>"
-namespace: "VK\\RPC\\"
-
-export:
-  - "Rpc124"
-
-require:

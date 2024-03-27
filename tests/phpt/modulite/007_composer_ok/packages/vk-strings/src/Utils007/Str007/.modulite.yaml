@@ -1,7 +1,0 @@
-name: "@utils/str"
-namespace: "VK\\Strings\\Utils007\\Str007\\"
-
-export:
-  - "StrSlice007"
-
-require:

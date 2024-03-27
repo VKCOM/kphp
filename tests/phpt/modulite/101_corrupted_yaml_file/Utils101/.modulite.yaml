@@ -1,8 +1,0 @@
-name: "@utils"
-namespace: "Utils101\\"
-
-export:
-  - ""
-
-require:
-
