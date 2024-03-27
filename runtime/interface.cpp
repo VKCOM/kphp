@@ -56,6 +56,7 @@
 #include "runtime/udp.h"
 #include "runtime/url.h"
 #include "runtime/zlib.h"
+// #include "runtime/sessions.h"
 #include "server/curl-adaptor.h"
 #include "server/database-drivers/adaptor.h"
 #include "server/database-drivers/mysql/mysql.h"
@@ -1471,6 +1472,7 @@ static void reset_superglobals() {
   hard_reset_var(v$_REQUEST, array<mixed>());
   hard_reset_var(v$_ENV, array<mixed>());
   hard_reset_var(v$_COOKIE, array<mixed>());
+  hard_reset_var(v$_SESSION, mixed(NULL)); // Is this correct?
 
   dl::leave_critical_section();
 }

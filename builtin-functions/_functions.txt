@@ -772,6 +772,14 @@ function mb_strtolower ($str ::: string, $encoding ::: string = "cp1251") ::: st
 function mb_strtoupper ($str ::: string, $encoding ::: string = "cp1251") ::: string;
 function mb_substr ($str ::: string, $start ::: int, $length ::: mixed = PHP_INT_MAX, $encoding ::: string = "cp1251") ::: string;
 
+function session_start(?mixed $options = null) ::: bool;
+function session_abort() ::: bool;
+function session_commit() ::: bool;
+function session_write_close() ::: bool;
+function session_gc() ::: bool;
+function session_status() ::: bool;
+function session_destroy() ::: bool;
+
 define('PHP_ROUND_HALF_UP', 123423141);
 define('PHP_ROUND_HALF_DOWN', 123423144);
 define('PHP_ROUND_HALF_EVEN', 123423145);
