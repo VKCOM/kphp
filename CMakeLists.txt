@@ -82,8 +82,8 @@ add_custom_target(force_clean_all
                   COMMAND rm -rf ${OBJS_DIR}
                   COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/*)
 
-add_library(runtimelight SHARED $<TARGET_OBJECTS:script_src> $<TARGET_OBJECTS:runtime_src> $<TARGET_OBJECTS:common_src>)
-set_target_properties(runtimelight PROPERTIES
+add_library(component SHARED $<TARGET_OBJECTS:script_src> $<TARGET_OBJECTS:runtimelight> $<TARGET_OBJECTS:common_src>)
+set_target_properties(component PROPERTIES
         LIBRARY_OUTPUT_DIRECTORY ${BASE_DIR}/objs)
 
 include(CPack)

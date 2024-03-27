@@ -22,8 +22,10 @@ set(RUNTIME_SRC ${RUNTIME_CORE_SRC}
                 ${RUNTIME_COMPONENT_SRC}
                 ${RUNTIME_STREAMS_SRC})
 
-add_library(runtime_src OBJECT ${RUNTIME_SRC})
-set_property(TARGET runtime_src PROPERTY POSITION_INDEPENDENT_CODE ON)
+add_library(runtimelight OBJECT ${RUNTIME_SRC})
+set_property(TARGET runtimelight PROPERTY POSITION_INDEPENDENT_CODE ON)
+set_target_properties(runtimelight PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY ${BASE_DIR}/objs)
 
 file(GLOB_RECURSE KPHP_RUNTIME_ALL_HEADERS
         RELATIVE ${BASE_DIR}
