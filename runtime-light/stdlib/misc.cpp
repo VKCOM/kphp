@@ -3,6 +3,7 @@
 #include "runtime-light/component/component.h"
 #include "runtime-light/utils/panic.h"
 #include "runtime-light/coroutine/awaitable.h"
+#include "runtime-light/streams/streams.h"
 
 static int ob_merge_buffers() {
   Response &response = get_component_context()->response;
@@ -18,34 +19,20 @@ static int ob_merge_buffers() {
 }
 
 task_t<void> finish(int64_t exit_code) {
-  int ob_total_buffer = ob_merge_buffers();
+  co_await f$testyield();
 
-  const PlatformCtx & pt_ctx = *get_platform_context();
+  int ob_total_buffer = ob_merge_buffers();
   ComponentState &ctx = *get_component_context();
   Response &response = ctx.response;
   auto &buffer = response.output_buffers[ob_total_buffer];
 
-
-  uint64_t stream_d = ctx.standard_stream;
-  StreamStatus status;
-  size_t processed = 0;
-  while (processed != buffer.size()) {
-    GetStatusResult res = pt_ctx.get_stream_status(stream_d, &status);
-    if (res != GetStatusResult::GetStatusOk) {
-      get_component_context()->poll_status = PollStatus::PollFinished;
-      co_return;
-    }
-    if (status.write_status == IOStatus::IOBlocked) {
-      ctx.awaited_stream = stream_d;
-      co_await platform_switch_t{};
-    } else if (status.write_status == IOStatus::IOClosed) {
-      get_component_context()->poll_status = PollStatus::PollFinished;
-      co_return;
-    }
-    size_t processed = pt_ctx.write(get_component_context()->standard_stream, buffer.size() - processed, buffer.c_str() + processed);
-  }
+  co_await write_all_to_stream(ctx.standard_stream, buffer.c_str(), buffer.size());
   get_component_context()->poll_status = PollStatus::PollFinished;
   co_return;
+}
+
+task_t<void> f$testyield() {
+  co_await test_yield_t{};
 }
 
 task_t<void> f$exit(const mixed &v) {

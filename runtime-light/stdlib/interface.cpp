@@ -85,58 +85,6 @@ task_t<void> f$dummy_echo() {
 }
 
 
-//task_t<void> stream_write(uint64_t sd, int len, const char * data) {
-//  ComponentState &rtx = *get_component_context();
-//  const PlatformCtx &ptx = *get_platform_context();
-//  int left = len;
-//  int processed = 0;
-//  while (left != 0) {
-//    auto res = ptx.write(sd, left, data + processed);
-//    processed += res.processed_bytes;
-//    left -= res.processed_bytes;
-//    if (left == 0) {
-//      break;
-//    }
-//
-//    if (res.new_status == OperationStatus::Available) {
-//      continue;
-//    } else if (res.new_status == OperationStatus::Blocked) {
-//      do {
-//        rtx.awaited_stream = Stream{sd, OperationStatus::Blocked, OperationStatus::Blocked};
-//        co_await platform_switch_t{};
-//      } while (rtx.awaited_stream.write_status != OperationStatus::Available);
-//    } else {
-//      assert(false);
-//    }
-//  }
-//}
-//
-//task_t<void> stream_read(uint64_t sd, int len, char * data) {
-//  ComponentState &rtx = *get_runtime_context();
-//  const PlatformCtx &ptx = *get_platform_context();
-//  int left = len;
-//  int processed = 0;
-//  while (left != 0) {
-//    auto res = ptx.read(sd, left, data + processed);
-//    processed += res.processed_bytes;
-//    left -= res.processed_bytes;
-//    if (left == 0) {
-//      break;
-//    }
-//
-//    if (res.new_status == OperationStatus::Available) {
-//      continue;
-//    } else if (res.new_status == OperationStatus::Blocked) {
-//      do {
-//        rtx.awaited_stream = Stream{sd, OperationStatus::Blocked, OperationStatus::Blocked};
-//        co_await platform_switch_t{};
-//      } while (rtx.awaited_stream.read_status != OperationStatus::Available);
-//    } else {
-//      assert(false);
-//    }
-//  }
-//}
-//
 //task_t<string> f$query_echo(const string &str) {
 //  ComponentState &rtx = *get_runtime_context();
 //  const PlatformCtx &ptx = *get_platform_context();

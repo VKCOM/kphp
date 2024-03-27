@@ -31,7 +31,8 @@ PollStatus vk_k2_poll(const ImageState *image_state, const PlatformCtx *pt_ctx, 
   if (sigsetjmp(componentState->panic_buffer, 0) == 0) {
     uint64_t stream_d = 0;
     while (platformCtx->take_update(&stream_d)) {
-      if (componentState->awaited_stream == stream_d) {
+      if (componentState->poll_status == PollBlocked && componentState->awaited_stream == stream_d
+        || componentState->poll_status == PollReschedule) {
         componentState->suspend_point();
       } else {
         componentState->standard_stream = stream_d;

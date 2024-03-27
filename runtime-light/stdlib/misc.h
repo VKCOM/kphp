@@ -3,6 +3,8 @@
 #include "runtime-light/core/kphp_core.h"
 #include "runtime-light/coroutine/task.h"
 
+task_t<void> f$testyield();
+
 task_t<void> f$exit(const mixed &v = 0);
 
 

@@ -19,7 +19,7 @@ struct ComponentState {
   task_t<void> k_main;
   Response response;
 
-  PollStatus poll_status = PollStatus::PollReschedule;
+  PollStatus poll_status = PollStatus::PollBlocked;
   uint64_t awaited_stream = -1; // in the future it will be map sd -> coroutine_handle
   std::coroutine_handle<> suspend_point;
   uint64_t standard_stream;
