@@ -556,33 +556,20 @@ VarPtr CompilerCore::create_local_var(FunctionPtr function, const std::string &n
 }
 
 std::vector<VarPtr> CompilerCore::get_global_vars() {
-  // todo wrong comment
-  // static class variables are registered as globals, but if they're unused,
-  // then their types were never calculated; we don't need to export them to vars.cpp
-  // todo what if no?
-//  return globals_ht.get_all();
   return globals_ht.get_all_if([](VarPtr v) {
-    // todo comment if vkcom compiles
+    // traits' static vars are added at the moment of parsing (class-members.cpp)
+    // but later never used, and tinf never executed for them
     if (v->is_class_static_var() && v->class_id->is_trait()) {
       return false;
     }
-    if (!v->tinf_node.was_recalc_finished_at_least_once()) {
-      printf("!was_recalc_finished_at_least_once g %s\n", v->name.c_str());
-      kphp_assert(0);
-    }
-    return v->tinf_node.was_recalc_finished_at_least_once();
+    // static vars for classes that are unused, are also present here
+    // probably, in the future, we'll detect unused globals and don't export them to C++ even as Unknown
+    return true;
   });
 }
 
 std::vector<VarPtr> CompilerCore::get_constants_vars() {
-  return constants_ht.get_all_if([](VarPtr v) {
-    if (!v->tinf_node.was_recalc_finished_at_least_once()) {
-      printf("!was_recalc_finished_at_least_once c %s\n", v->name.c_str());
-      kphp_assert(0);
-    }
-    return v->tinf_node.was_recalc_finished_at_least_once();
-  });
-//  return constants_ht.get_all();
+  return constants_ht.get_all();
 }
 
 std::vector<ClassPtr> CompilerCore::get_classes() {

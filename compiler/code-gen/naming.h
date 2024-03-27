@@ -6,8 +6,6 @@
 
 #include <string>
 
-#include "common/type_traits/list_of_types.h"
-
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/gen-out-style.h"
 #include "compiler/data/function-data.h"
@@ -220,18 +218,8 @@ struct VarName {
   void compile(CodeGenerator &W) const {
     if (!name.empty()) {
       W << name;
-      return;
+    } else {
+      W << "v$" << var->name;
     }
-
-    // todo delete this if vkcom compiles
-    if (var->is_function_static_var()) {
-      kphp_assert(0 && "unexpected is_function_static_var()");
-      W << FunctionName(var->holder_func) << "$";
-    }
-    if (var->is_in_global_scope() && !var->is_builtin_global() && !var->is_foreach_reference) {
-      kphp_assert(0 && "unexpected is_global_var()");
-    }
-
-    W << "v$" << var->name;
   }
 };

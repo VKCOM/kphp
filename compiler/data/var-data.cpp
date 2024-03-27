@@ -40,7 +40,6 @@ bool VarData::does_name_eq_any_builtin_global(const std::string &name) {
   return names.find(name) != names.end();
 }
 
-// todo del
 bool operator<(VarPtr a, VarPtr b) {
   int cmp_res = a->name.compare(b->name);
 

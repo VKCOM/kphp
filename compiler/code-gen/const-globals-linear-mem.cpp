@@ -145,11 +145,6 @@ void GlobalsLinearMem::prepare_mem_and_assign_offsets(const std::vector<VarPtr> 
     var->offset_in_linear_mem = offset;
     offset += cur_sizeof;
     mem.inc_count_by_origin(var);
-
-    // todo comment this after testing in vkcom
-    if (var_type->use_optional() || !vk::any_of_equal(var_type->get_real_ptype(), tp_mixed, tp_bool, tp_int, tp_float, tp_string, tp_array, tp_Class)) {
-      mem.debug_sizeof_static_asserts.push_back(var_type);
-    }
   }
 
   mem.total_mem_size = offset;
@@ -190,19 +185,6 @@ void GlobalsLinearMemDeclaration::compile(CodeGenerator &W) const {
   W << "// count(require_once) = " << mem.count_of_require_once << NL;
   W << "// count(php globals) = " << mem.count_of_php_globals << NL;
 
-  {
-    IncludesCollector includes;
-    for (const TypeData *type : mem.debug_sizeof_static_asserts) {
-      includes.add_all_class_types(*type);
-    }
-    W << includes;
-
-    for (const TypeData *type : mem.debug_sizeof_static_asserts) {
-      int mem = calc_sizeof_in_bytes_runtime(type);
-      W << "static_assert(" << mem << " == sizeof(" << type_out(type) << "));" << NL;
-    }
-  }
-
   W << "char *g_linear_mem;" << NL;
 }
 
@@ -216,11 +198,9 @@ void GlobalsLinearMemAllocation::compile(CodeGenerator &W) const {
 }
 
 void ConstantVarInLinearMem::compile(CodeGenerator &W) const {
-  kphp_assert(const_var->offset_in_linear_mem >= 0); // todo del
   W << "(*reinterpret_cast<" << type_out(tinf::get_type(const_var)) << "*>(c_linear_mem+" << const_var->offset_in_linear_mem << "))";
 }
 
 void GlobalVarInLinearMem::compile(CodeGenerator &W) const {
-  kphp_assert(global_var->offset_in_linear_mem >= 0); // todo del
   W << "(*reinterpret_cast<" << type_out(tinf::get_type(global_var)) << "*>(g_linear_mem+" << global_var->offset_in_linear_mem << "))";
 }
