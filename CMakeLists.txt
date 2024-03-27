@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
-project(kphp
-        VERSION 1.0.1
-        LANGUAGES CXX
-        DESCRIPTION "Compiler for PHP (aka KPHP)"
-        HOMEPAGE_URL https://github.com/VKCOM/kphp)
+set(CMAKE_CXX_STANDARD 20)
+project(kphplight)
 
 if ("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}")
     message(FATAL_ERROR [[
@@ -28,7 +25,6 @@ include(cmake/external-libraries.cmake)
 include(cmake/init-compilation-flags.cmake)
 include(cmake/popular-common.cmake)
 
-# TODO: use FetchContent_Declare instead of include_directories
 include_directories(.)
 
 
@@ -37,6 +33,8 @@ include(${COMMON_DIR}/common.cmake)
 include(${COMMON_DIR}/tl/tl.cmake)
 include(${COMMON_DIR}/unicode/unicode.cmake)
 
+include(${BASE_DIR}/script/script.cmake)
+include(${BASE_DIR}/runtime-light/runtime.cmake)
 include(${BASE_DIR}/compiler/compiler.cmake)
 
 if(KPHP_CUSTOM_CMAKE AND EXISTS ${OBJS_DIR}/custom_php_project.cmake)
@@ -76,14 +74,6 @@ install(FILES ${AUTO_DIR}/runtime/runtime-headers.h
 set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "vk-flex-data, curl-kphp-vk, libuber-h3, libpcre3-dev, libre2-dev, libyaml-cpp-dev, libssl-dev, zlib1g-dev, \
                                        libzstd-dev, g++, libnghttp2-dev, kphp-timelib, libnuma-dev")
 
-if (PDO_DRIVER_MYSQL)
-    set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "${CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS}, libmysqlclient-dev")
-endif()
-
-if (PDO_DRIVER_PGSQL)
-    set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "${CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS}, libpq-dev")
-endif()
-
 set(CPACK_DEBIAN_KPHP_PACKAGE_RECOMMENDS "vk-tl-tools")
 set(CPACK_DEBIAN_KPHP_DESCRIPTION "kphp2cpp compiler and runtime for it")
 set(CPACK_DEBIAN_KPHP_PACKAGE_NAME "kphp")
@@ -91,5 +81,9 @@ set(CPACK_DEBIAN_KPHP_PACKAGE_NAME "kphp")
 add_custom_target(force_clean_all
                   COMMAND rm -rf ${OBJS_DIR}
                   COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/*)
+
+add_library(runtimelight SHARED $<TARGET_OBJECTS:script_src> $<TARGET_OBJECTS:runtime_src> $<TARGET_OBJECTS:common_src>)
+set_target_properties(runtimelight PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY ${BASE_DIR}/objs)
 
 include(CPack)

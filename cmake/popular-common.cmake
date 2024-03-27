@@ -2,13 +2,6 @@ include_guard(GLOBAL)
 
 prepend(POPULAR_COMMON_SOURCES ${COMMON_DIR}/
         algorithms/simd-int-to-string.cpp
-        server/limits.cpp
-        server/signals.cpp
-        server/relogin.cpp
-        server/crash-dump.cpp
-        server/engine-settings.cpp
-        stats/buffer.cpp
-        stats/provider.cpp
         resolver.cpp
         kprintf.cpp
         precise-time.cpp

@@ -1,0 +1,50 @@
+function boolval ($v ::: any) ::: bool;
+function intval ($v ::: mixed) ::: int;
+function floatval ($v ::: mixed) ::: float;
+function strval ($v ::: mixed) ::: string;
+
+function exit($code = 0) ::: void;
+function die($code = 0) ::: void;
+
+function ob_clean() ::: void;
+function ob_end_clean() ::: bool;
+function ob_get_clean() ::: string | false;
+function ob_get_contents() ::: string;
+function ob_start ($x ::: string = "") ::: void;
+function ob_flush () ::: void;
+function ob_end_flush () ::: bool;
+function ob_get_flush () ::: string | false;
+function ob_get_length () ::: int | false;
+function ob_get_level () ::: int;
+
+function print_r ($v ::: any, $buffered ::: bool = false) ::: string;
+function var_export ($v ::: any, $buffered ::: bool = false) ::: string;
+function print ($v ::: string) ::: int;
+function echo ($v ::: string) ::: void;
+function dbg_echo ($v ::: string) ::: void;
+function var_dump ($v ::: any) ::: void;
+
+function empty ($val ::: any) ::: bool;
+function count ($val ::: any) ::: int;
+function sizeof ($val ::: any) ::: int;
+function gettype ($v ::: any) ::: string;
+function is_scalar ($v ::: any) ::: bool;
+function is_numeric ($v ::: mixed) ::: bool;
+function is_null ($v ::: any) ::: bool;
+function is_bool ($v ::: mixed) ::: bool;
+function is_int ($v ::: mixed) ::: bool;
+function is_integer ($v ::: mixed) ::: bool;
+function is_long ($v ::: mixed) ::: bool;
+function is_finite ($v ::: float) ::: bool;
+function is_infinite ($v ::: float) ::: bool;
+function is_nan ($v ::: float) ::: bool;
+function is_float ($v ::: mixed) ::: bool;
+function is_double ($v ::: mixed) ::: bool;
+function is_real ($v ::: mixed) ::: bool;
+function is_string ($v ::: mixed) ::: bool;
+function is_array ($v ::: any) ::: bool;
+function is_object ($v ::: any) ::: bool;
+function get_class ($v ::: any) ::: string;
+function get_hash_of_class (object $klass) ::: int;
+
+function query_x2 (v$ ::: int) ::: int;
