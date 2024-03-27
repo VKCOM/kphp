@@ -123,7 +123,8 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         vkext_stats.cpp
         ffi.cpp
         zlib.cpp
-        zstd.cpp)
+        zstd.cpp
+        sessions.cpp)
 
 set_source_files_properties(
         ${BASE_DIR}/server/php-engine.cpp
