@@ -33,7 +33,6 @@ include(${COMMON_DIR}/common.cmake)
 include(${COMMON_DIR}/tl/tl.cmake)
 include(${COMMON_DIR}/unicode/unicode.cmake)
 
-include(${BASE_DIR}/script/script.cmake)
 include(${BASE_DIR}/runtime-light/runtime.cmake)
 include(${BASE_DIR}/compiler/compiler.cmake)
 
@@ -82,8 +81,6 @@ add_custom_target(force_clean_all
                   COMMAND rm -rf ${OBJS_DIR}
                   COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/*)
 
-add_library(component SHARED $<TARGET_OBJECTS:script_src> $<TARGET_OBJECTS:runtimelight> $<TARGET_OBJECTS:common_src>)
-set_target_properties(component PROPERTIES
-        LIBRARY_OUTPUT_DIRECTORY ${BASE_DIR}/objs)
+include(${BASE_DIR}/script/script.cmake)
 
 include(CPack)

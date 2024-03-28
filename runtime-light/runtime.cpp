@@ -3,11 +3,6 @@
 
 extern task_t<void> (*k_main)(void);
 
-const ImageInfo *vk_k2_describe() {
-  static ImageInfo imageInfo {"echo", 1, 1, {1, 2, 3}};
-  return &imageInfo;
-}
-
 ImageState *vk_k2_create_image_state(const Allocator *alloc) {
   return nullptr;
 }
@@ -36,6 +31,7 @@ PollStatus vk_k2_poll(const ImageState *image_state, const PlatformCtx *pt_ctx, 
         componentState->standard_stream = stream_d;
         componentState->k_main();
       } else if (componentState->awaited_stream == stream_d) {
+        componentState->awaited_stream = -1;
         componentState->suspend_point();
       } else {
         // platform poll compomnent with unawaited stream_d
