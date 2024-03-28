@@ -7,9 +7,9 @@
 extern mixed v$_POST;
 
 void init_superglobals() {
-  ComponentState & ctx = *get_component_context();
-  auto [buffer, size] = read_all_from_stream(ctx.standard_stream);
-
-  v$_POST.assign(buffer, size);
+  // ComponentState & ctx = *get_component_context();
+  // string str = read_all_from_stream(ctx.standard_stream);
+  //
+  // v$_POST.assign(buffer, size);
 }
 

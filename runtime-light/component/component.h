@@ -2,13 +2,15 @@
 
 #include <csetjmp>
 
-
-#include "runtime-light/allocator/memory_resource/unsynchronized_pool_resource.h"
 #include "runtime-light/core/kphp_core.h"
 #include "runtime-light/stdlib/output_control.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/context.h"
 
+enum ComponentStatus {
+  ComponentInited,
+  ComponentRunning,
+};
 
 struct ComponentState {
   ComponentState() = default;
@@ -19,6 +21,7 @@ struct ComponentState {
   task_t<void> k_main;
   Response response;
 
+  ComponentStatus component_status = ComponentInited;
   PollStatus poll_status = PollStatus::PollBlocked;
   uint64_t awaited_stream = -1; // in the future it will be map sd -> coroutine_handle
   std::coroutine_handle<> suspend_point;
