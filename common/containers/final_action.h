@@ -9,33 +9,33 @@ namespace vk {
 
 template<class FuncT>
 struct final_action {
-    explicit final_action(FuncT func) :
-      final_function{std::move(func)} {
+  explicit final_action(FuncT func) :
+    final_function{std::move(func)} {
+  }
+
+  final_action(final_action &&other) noexcept :
+    final_function(std::move(other.final_function)),
+    disabled(other.disabled) {
+    other.disabled = true;
+  }
+
+  void disable() {
+    disabled = true;
+  }
+
+  final_action(const final_action &) = delete;
+  final_action &operator=(final_action &&other) = delete;
+  final_action &operator=(const final_action &) = delete;
+
+  ~final_action() {
+    if (!disabled) {
+      final_function();
     }
+  }
 
-    final_action(final_action &&other) noexcept :
-      final_function(std::move(other.final_function)),
-      disabled(other.disabled) {
-      other.disabled = true;
-    }
-
-    void disable() {
-      disabled = true;
-    }
-
-    final_action(const final_action &) = delete;
-    final_action &operator=(final_action &&other) = delete;
-    final_action &operator=(const final_action &) = delete;
-
-    ~final_action() {
-      if (!disabled) {
-        final_function();
-      }
-    }
-
-  private:
-    FuncT final_function;
-    bool disabled = false;
+private:
+  FuncT final_function;
+  bool disabled = false;
 };
 
 template<class FuncT>

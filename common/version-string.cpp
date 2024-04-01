@@ -9,7 +9,6 @@
 
 #ifndef VKEXT
 #include "common/options.h"
-#include "common/stats/provider.h"
 #endif
 
 #ifndef COMMIT
@@ -45,11 +44,6 @@ const char* get_version_string() {
 }
 
 #ifndef VKEXT
-
-STATS_PROVIDER(version_string, 10000) {
-  stats->add_general_stat("version", "%s", FullVersionStr);
-  stats->add_histogram_stat("build_timestamp", static_cast<long long>(BUILD_TIMESTAMP));
-}
 
 OPTION_PARSER(OPT_GENERIC, "version", no_argument, "prints version and exits") {
   printf("%s\n", get_version_string());

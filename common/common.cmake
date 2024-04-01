@@ -2,6 +2,7 @@ prepend(COMMON_MAIN_SOURCES ${COMMON_DIR}/
         pipe-utils.cpp
         pid.cpp
         dl-utils-lite.cpp
+
         sha1.cpp
         allocators/freelist.cpp
         md5.cpp
@@ -35,17 +36,15 @@ if (NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
 endif()
 
 set(COMMON_ALL_SOURCES
-        ${COMMON_MAIN_SOURCES}
-        ${COMMON_KFS_SOURCES}
-        ${COMMON_TL_METHODS_SOURCES}
-        ${COMMON_TL_SOURCES}
-        ${COMMON_UCONTEXT_SOURCES})
+    ${COMMON_MAIN_SOURCES}
+    ${COMMON_KFS_SOURCES}
+    ${COMMON_TL_METHODS_SOURCES}
+    ${COMMON_TL_SOURCES}
+    ${COMMON_UCONTEXT_SOURCES})
 
 if(COMPILER_CLANG)
     set_source_files_properties(${COMMON_DIR}/string-processing.cpp PROPERTIES COMPILE_FLAGS -Wno-invalid-source-encoding)
 endif()
 
-#vk_add_library(common_src OBJECT ${COMMON_ALL_SOURCES})
-
-add_library(common_src OBJECT ${COMMON_ALL_SOURCES})
-set_property(TARGET common_src PROPERTY POSITION_INDEPENDENT_CODE ON)
+vk_add_library(common OBJECT ${COMMON_ALL_SOURCES})
+set_property(TARGET common PROPERTY POSITION_INDEPENDENT_CODE ON)

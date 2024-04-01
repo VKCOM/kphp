@@ -14,109 +14,109 @@ namespace vk {
 
 template <class T>
 class intrusive_ptr {
-  public:
-    intrusive_ptr() noexcept = default;
+public:
+  intrusive_ptr() noexcept = default;
 
-    explicit intrusive_ptr(T *ptr, bool add_ref = true) : ptr{ptr} {
-      if (add_ref && ptr) {
-        ptr->add_ref();
-      }
+  explicit intrusive_ptr(T *ptr, bool add_ref = true) : ptr{ptr} {
+    if (add_ref && ptr) {
+      ptr->add_ref();
     }
+  }
 
-    intrusive_ptr(const intrusive_ptr &other) : intrusive_ptr{other.ptr, true} {}
+  intrusive_ptr(const intrusive_ptr &other) : intrusive_ptr{other.ptr, true} {}
 
-    intrusive_ptr(intrusive_ptr &&other) noexcept : ptr{other.ptr} { other.ptr = nullptr; }
+  intrusive_ptr(intrusive_ptr &&other) noexcept : ptr{other.ptr} { other.ptr = nullptr; }
 
-    template<class Derived, class = std::enable_if_t<std::is_base_of<T, Derived>{}>>
-    intrusive_ptr(const intrusive_ptr<Derived> &other) : intrusive_ptr{other.ptr, true} {}
+  template<class Derived, class = std::enable_if_t<std::is_base_of<T, Derived>{}>>
+  intrusive_ptr(const intrusive_ptr<Derived> &other) : intrusive_ptr{other.ptr, true} {}
 
-    template<class Derived, class = std::enable_if_t<std::is_base_of<T, Derived>{}>>
-    intrusive_ptr(intrusive_ptr<Derived> &&other) noexcept : ptr{other.ptr} { other.ptr = nullptr; }
+  template<class Derived, class = std::enable_if_t<std::is_base_of<T, Derived>{}>>
+  intrusive_ptr(intrusive_ptr<Derived> &&other) noexcept : ptr{other.ptr} { other.ptr = nullptr; }
 
-    template<class Derived, class = std::enable_if_t<std::is_base_of<T, Derived>{}>>
-    intrusive_ptr &operator=(const intrusive_ptr<Derived> &other) {
-      *this = intrusive_ptr<T>(other);
-      return *this;
+  template<class Derived, class = std::enable_if_t<std::is_base_of<T, Derived>{}>>
+  intrusive_ptr &operator=(const intrusive_ptr<Derived> &other) {
+    *this = intrusive_ptr<T>(other);
+    return *this;
+  }
+
+  template<class Derived, class = std::enable_if_t<std::is_base_of<T, Derived>{}>>
+  intrusive_ptr &operator=(intrusive_ptr<Derived> &&other) {
+    *this = intrusive_ptr<T>{std::move(other)};
+    return *this;
+  }
+
+  intrusive_ptr &operator=(intrusive_ptr other) noexcept {
+    std::swap(ptr, other.ptr);
+    return *this;
+  }
+
+  ~intrusive_ptr() noexcept {
+    if (ptr) {
+      ptr->release();
     }
+  }
 
-    template<class Derived, class = std::enable_if_t<std::is_base_of<T, Derived>{}>>
-    intrusive_ptr &operator=(intrusive_ptr<Derived> &&other) {
-      *this = intrusive_ptr<T>{std::move(other)};
-      return *this;
-    }
+  explicit operator bool() const {
+    return ptr != nullptr;
+  }
 
-    intrusive_ptr &operator=(intrusive_ptr other) noexcept {
-      std::swap(ptr, other.ptr);
-      return *this;
-    }
+  bool unique() const {
+    return !ptr || ptr->get_refcnt() == 1;
+  }
 
-    ~intrusive_ptr() noexcept {
-      if (ptr) {
-        ptr->release();
-      }
-    }
+  T *get() const {
+    return ptr;
+  }
 
-    explicit operator bool() const {
-      return ptr != nullptr;
-    }
+  template<class Derived>
+  vk::intrusive_ptr<Derived> try_as() const {
+    return vk::intrusive_ptr<Derived>{dynamic_cast<Derived *>(get())};
+  }
 
-    bool unique() const {
-      return !ptr || ptr->get_refcnt() == 1;
-    }
+  bool operator==(const intrusive_ptr<T> &other) const {
+    return ptr == other.ptr;
+  }
 
-    T *get() const {
-      return ptr;
-    }
+  bool operator!=(const intrusive_ptr<T> &other) const {
+    return !(*this == other);
+  }
 
-    template<class Derived>
-    vk::intrusive_ptr<Derived> try_as() const {
-      return vk::intrusive_ptr<Derived>{dynamic_cast<Derived *>(get())};
-    }
+  friend bool operator==(const intrusive_ptr<T> &lhs, const T *rhs) {
+    return lhs.ptr == rhs;
+  }
 
-    bool operator==(const intrusive_ptr<T> &other) const {
-      return ptr == other.ptr;
-    }
+  friend bool operator!=(const intrusive_ptr<T> &lhs, const T *rhs) {
+    return !(lhs == rhs);
+  }
 
-    bool operator!=(const intrusive_ptr<T> &other) const {
-      return !(*this == other);
-    }
+  friend bool operator==(const T *lhs, const intrusive_ptr<T> &rhs) {
+    return rhs == lhs;
+  }
 
-    friend bool operator==(const intrusive_ptr<T> &lhs, const T *rhs) {
-      return lhs.ptr == rhs;
-    }
+  friend bool operator!=(const T *lhs, const intrusive_ptr<T> &rhs) {
+    return rhs != lhs;
+  }
 
-    friend bool operator!=(const intrusive_ptr<T> &lhs, const T *rhs) {
-      return !(lhs == rhs);
-    }
+  void reset() {
+    *this = {};
+  }
 
-    friend bool operator==(const T *lhs, const intrusive_ptr<T> &rhs) {
-      return rhs == lhs;
-    }
+  T *operator->() const noexcept { return ptr; }
 
-    friend bool operator!=(const T *lhs, const intrusive_ptr<T> &rhs) {
-      return rhs != lhs;
-    }
+  T &operator*() const noexcept {
+    assert(ptr);
+    return *ptr;
+  }
 
-    void reset() {
-      *this = {};
-    }
+  void swap(intrusive_ptr &other) {
+    std::swap(ptr, other.ptr);
+  }
 
-    T *operator->() const noexcept { return ptr; }
+  template<class Derived>
+  friend class intrusive_ptr;
 
-    T &operator*() const noexcept {
-      assert(ptr);
-      return *ptr;
-    }
-
-    void swap(intrusive_ptr &other) {
-      std::swap(ptr, other.ptr);
-    }
-
-    template<class Derived>
-    friend class intrusive_ptr;
-
-  private:
-    T *ptr{nullptr};
+private:
+  T *ptr{nullptr};
 };
 
 template <class T, class... Args>
@@ -126,23 +126,23 @@ intrusive_ptr<T> make_intrusive(Args &&... args) {
 
 template <class Derived, class Refcnt>
 class refcountable {
-  public:
-    void add_ref() {
-      ++refcnt;
-    }
+public:
+  void add_ref() {
+    ++refcnt;
+  }
 
-    size_t get_refcnt() {
-      return refcnt;
-    }
+  size_t get_refcnt() {
+    return refcnt;
+  }
 
-    void release() {
-      if (--refcnt == 0) {
-        delete static_cast<Derived *>(this);
-      }
+  void release() {
+    if (--refcnt == 0) {
+      delete static_cast<Derived *>(this);
     }
+  }
 
-  protected:
-    Refcnt refcnt{};
+protected:
+  Refcnt refcnt{};
 };
 
 template <class T>
