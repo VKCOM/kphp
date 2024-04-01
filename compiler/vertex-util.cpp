@@ -126,6 +126,7 @@ bool VertexUtil::is_superglobal(const std::string &s) {
     "_REQUEST",
     "_ENV",
     "_SESSION"
+    "_KPHPSESSARR"
   };
   return vk::contains(names, s);
 }
