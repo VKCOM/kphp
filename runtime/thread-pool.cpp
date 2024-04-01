@@ -7,7 +7,6 @@
 #include "runtime/thread-pool.h"
 #include "server/php-engine-vars.h"
 
-
 void ThreadPool::init() noexcept {
   if (!is_thread_pool_available() && thread_pool_size > 0) {
     /**

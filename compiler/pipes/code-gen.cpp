@@ -4,7 +4,6 @@
 
 #include "compiler/pipes/code-gen.h"
 
-#include "compiler/cpp-dest-dir-initializer.h"
 #include "compiler/code-gen/code-gen-task.h"
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
@@ -12,18 +11,19 @@
 #include "compiler/code-gen/files/cmake-lists-txt.h"
 #include "compiler/code-gen/files/function-header.h"
 #include "compiler/code-gen/files/function-source.h"
-#include "compiler/code-gen/files/json-encoder-tags.h"
 #include "compiler/code-gen/files/global_vars_memory_stats.h"
 #include "compiler/code-gen/files/init-scripts.h"
+#include "compiler/code-gen/files/json-encoder-tags.h"
 #include "compiler/code-gen/files/lib-header.h"
-#include "compiler/code-gen/files/tl2cpp/tl2cpp.h"
 #include "compiler/code-gen/files/shape-keys.h"
+#include "compiler/code-gen/files/tl2cpp/tl2cpp.h"
 #include "compiler/code-gen/files/tracing-autogen.h"
 #include "compiler/code-gen/files/type-tagger.h"
 #include "compiler/code-gen/files/vars-cpp.h"
 #include "compiler/code-gen/files/vars-reset.h"
 #include "compiler/code-gen/raw-data.h"
 #include "compiler/compiler-core.h"
+#include "compiler/cpp-dest-dir-initializer.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/lib-data.h"
@@ -37,8 +37,7 @@ size_t CodeGenF::calc_count_of_parts(size_t cnt_global_vars) {
   return 1u + cnt_global_vars / G->settings().globals_split_count.get();
 }
 
-
-void CodeGenF::execute(FunctionPtr function, DataStream<std::unique_ptr<CodeGenRootCmd>> &unused_os __attribute__ ((unused))) {
+void CodeGenF::execute(FunctionPtr function, DataStream<std::unique_ptr<CodeGenRootCmd>> &unused_os __attribute__((unused))) {
   if (function->does_need_codegen() || function->is_imported_from_static_lib()) {
     prepare_generate_function(function);
     G->stats.on_function_processed(function);
@@ -56,7 +55,7 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
   stage::set_file(SrcFilePtr());
   stage::die_if_global_errors();
 
-  std::forward_list<FunctionPtr> all_functions = tmp_stream.flush();   // functions to codegen, order doesn't matter
+  std::forward_list<FunctionPtr> all_functions = tmp_stream.flush(); // functions to codegen, order doesn't matter
   const std::vector<ClassPtr> &all_classes = G->get_classes();
   std::set<ClassPtr> all_json_encoders;
 
@@ -134,7 +133,8 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
 
   // TODO: should be done in lib mode also, but in some other way
   if (!G->settings().is_static_lib_mode()) {
-    code_gen_start_root_task(os, std::make_unique<TypeTagger>(vk::singleton<ForkableTypeStorage>::get().flush_forkable_types(), vk::singleton<ForkableTypeStorage>::get().flush_waitable_types()));
+    code_gen_start_root_task(os, std::make_unique<TypeTagger>(vk::singleton<ForkableTypeStorage>::get().flush_forkable_types(),
+                                                              vk::singleton<ForkableTypeStorage>::get().flush_waitable_types()));
     code_gen_start_root_task(os, std::make_unique<ShapeKeys>(TypeHintShape::get_all_registered_keys()));
     code_gen_start_root_task(os, std::make_unique<JsonEncoderTags>(std::move(all_json_encoders)));
     code_gen_start_root_task(os, std::make_unique<CmakeListsTxt>());
@@ -163,9 +163,7 @@ void CodeGenF::prepare_generate_function(FunctionPtr func) {
   }
 
   func->header_full_name =
-    func->is_imported_from_static_lib()
-    ? func->file_id->owner_lib->headers_dir() + func->header_name
-    : func->subdir + "/" + func->header_name;
+    func->is_imported_from_static_lib() ? func->file_id->owner_lib->headers_dir() + func->header_name : func->subdir + "/" + func->header_name;
 
   std::sort(func->static_var_ids.begin(), func->static_var_ids.end());
   std::sort(func->global_var_ids.begin(), func->global_var_ids.end());
@@ -191,7 +189,6 @@ std::string CodeGenF::calc_subdir_for_function(FunctionPtr func) {
   int bucket = vk::std_hash(func->file_id->short_file_name) % 100;
   return "o_" + std::to_string(bucket);
 }
-
 
 void CodeGenForDiffF::execute(std::unique_ptr<CodeGenRootCmd> cmd, DataStream<WriterData *> &os) {
   stage::set_name("Code generation for diff");

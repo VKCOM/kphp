@@ -13,10 +13,10 @@ class Node {
 
 public:
   explicit Node(bool parallel = true);
-  Node(const Node&) = delete;
-  Node& operator=(const Node&) = delete;
-  Node(const Node&&) = delete;
-  Node& operator=(const Node&&) = delete;
+  Node(const Node &) = delete;
+  Node &operator=(const Node &) = delete;
+  Node(const Node &&) = delete;
+  Node &operator=(const Node &&) = delete;
 
   virtual ~Node() = default;
 

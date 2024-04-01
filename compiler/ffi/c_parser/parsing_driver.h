@@ -4,14 +4,14 @@
 
 #pragma once
 
-#include "compiler/ffi/ffi_types.h"
 #include "compiler/ffi/c_parser/lexer.h"
 #include "compiler/ffi/c_parser/parsing_types.h"
 #include "compiler/ffi/c_parser/types-allocator.h"
 #include "compiler/ffi/c_parser/yy_parser_generated.hpp"
+#include "compiler/ffi/ffi_types.h"
 
-#include <unordered_map>
 #include <map>
+#include <unordered_map>
 
 namespace ffi {
 
@@ -30,7 +30,7 @@ namespace ffi {
 class ParsingDriver {
 public:
   struct Result {
-    std::vector<FFIType*> types;
+    std::vector<FFIType *> types;
     std::map<std::string, int> enum_constants;
     uint64_t num_allocated;
     uint64_t num_deleted;
@@ -46,12 +46,11 @@ public:
     std::string message;
   };
 
-  explicit ParsingDriver(const std::string &src, FFITypedefs &typedefs, bool expr_mode = false):
-    typedefs(typedefs),
-    expr_mode(expr_mode),
-    lexer(typedefs, src),
-    yy_parser(lexer, *this) {
-  }
+  explicit ParsingDriver(const std::string &src, FFITypedefs &typedefs, bool expr_mode = false)
+    : typedefs(typedefs)
+    , expr_mode(expr_mode)
+    , lexer(typedefs, src)
+    , yy_parser(lexer, *this) {}
 
   Result parse();
 
@@ -79,7 +78,9 @@ public:
     return alloc.new_type(kind);
   }
 
-  FFIType *make_simple_type(FFITypeKind kind, FFIType::Flag flags) { return alloc.new_type(kind, flags); }
+  FFIType *make_simple_type(FFITypeKind kind, FFIType::Flag flags) {
+    return alloc.new_type(kind, flags);
+  }
 
   FFIType *make_enum_member(string_span name, int value);
   FFIType *make_abstract_array_declarator(string_span size_str);
@@ -97,7 +98,7 @@ private:
   Lexer lexer;
   YYParser yy_parser;
   TypesAllocator alloc;
-  std::vector<FFIType*> types;
+  std::vector<FFIType *> types;
   std::unordered_map<std::string, FFITypeKind> may_need_forward_decl;
   std::map<std::string, int> enum_constants;
 

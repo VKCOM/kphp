@@ -94,20 +94,20 @@ static int tl_fetch_query_flags(tl_query_header_t *header) {
 }
 
 bool tl_fetch_query_header(tl_query_header_t *header) {
-  assert (header);
+  assert(header);
   if (vk::tl::fetch_magic(TL_RPC_INVOKE_REQ)) {
     header->qid = tl_fetch_long();
     while (!tl_fetch_error() && tl_fetch_unread()) {
       uint32_t op = tl_fetch_lookup_int();
       if (op == TL_RPC_DEST_ACTOR) {
-        assert (tl_fetch_int() == (int)TL_RPC_DEST_ACTOR);
+        assert(tl_fetch_int() == (int)TL_RPC_DEST_ACTOR);
         header->actor_id = tl_fetch_long();
       } else if (op == TL_RPC_DEST_ACTOR_FLAGS) {
-        assert (tl_fetch_int() == (int)TL_RPC_DEST_ACTOR_FLAGS);
+        assert(tl_fetch_int() == (int)TL_RPC_DEST_ACTOR_FLAGS);
         header->actor_id = tl_fetch_long();
         tl_fetch_query_flags(header);
       } else if (op == TL_RPC_DEST_FLAGS) {
-        assert (tl_fetch_int() == (int)TL_RPC_DEST_FLAGS);
+        assert(tl_fetch_int() == (int)TL_RPC_DEST_FLAGS);
         tl_fetch_query_flags(header);
       } else {
         break;
@@ -217,7 +217,7 @@ static int tl_fetch_query_answer_flags(tl_query_answer_header_t *header) {
 }
 
 bool tl_fetch_query_answer_header(tl_query_answer_header_t *header) {
-  assert (header);
+  assert(header);
   int op = tl_fetch_int();
   if (op == TL_RPC_REQ_RESULT) {
     header->type = result_header_type::result;
@@ -231,14 +231,14 @@ bool tl_fetch_query_answer_header(tl_query_answer_header_t *header) {
   while (!tl_fetch_error() && tl_fetch_unread() && header->type != result_header_type::error) {
     uint32_t op = tl_fetch_lookup_int();
     if (op == TL_RPC_REQ_ERROR) {
-      assert (tl_fetch_int() == TL_RPC_REQ_ERROR);
+      assert(tl_fetch_int() == TL_RPC_REQ_ERROR);
       header->type = result_header_type::wrapped_error;
       tl_fetch_long();
     } else if (op == RPC_REQ_ERROR_WRAPPED) {
       header->type = result_header_type::wrapped_error;
-      assert (tl_fetch_int() == RPC_REQ_ERROR_WRAPPED);
+      assert(tl_fetch_int() == RPC_REQ_ERROR_WRAPPED);
     } else if (op == TL_REQ_RESULT_HEADER) {
-      assert (tl_fetch_int() == (int)TL_REQ_RESULT_HEADER);
+      assert(tl_fetch_int() == (int)TL_REQ_RESULT_HEADER);
       tl_fetch_query_answer_flags(header);
       if (header->flags & vk::tl::common::rpc_req_result_extra_flags::compression_version) {
         if (!tl_fetch_error()) {
@@ -278,7 +278,7 @@ static void tl_store_stats_result(const tl_stats_result_t *stats) {
 }
 
 void tl_store_header(const tl_query_header_t *header) {
-  assert (tl_store_check(0) >= 0);
+  assert(tl_store_check(0) >= 0);
   tl_store_int(TL_RPC_INVOKE_REQ);
   tl_store_long(header->qid);
   if (header->actor_id || header->flags) {
@@ -326,7 +326,7 @@ void tl_store_header(const tl_query_header_t *header) {
 }
 
 void tl_store_answer_header(const tl_query_answer_header_t *header) {
-  assert (tl_store_check(0) >= 0);
+  assert(tl_store_check(0) >= 0);
   switch (header->type) {
     case result_header_type::wrapped_error: {
       tl_store_int(TL_RPC_REQ_ERROR);
@@ -371,7 +371,6 @@ void tl_store_answer_header(const tl_query_answer_header_t *header) {
   }
 }
 
-
 void set_result_header_values(tl_query_answer_header_t *header, int flags) {
   namespace request_flag = vk::tl::common::rpc_invoke_req_extra_flags;
   namespace result_flag = vk::tl::common::rpc_req_result_extra_flags;
@@ -400,7 +399,7 @@ void set_result_header_values(tl_query_answer_header_t *header, int flags) {
   }
 
   // TODO: process request_flag::return_query_stats
-  //if (flags & request_flag::return_query_stats) {
+  // if (flags & request_flag::return_query_stats) {
   //  header->flags |= result_flag::stats;
   //  header->stats_result = ...???;
   //}

@@ -4,9 +4,9 @@
 
 #include "runtime/job-workers/processing-jobs.h"
 
-#include "runtime/net_events.h"
-#include "runtime/kphp_tracing.h"
 #include "runtime/instance-copy-processor.h"
+#include "runtime/kphp_tracing.h"
+#include "runtime/net_events.h"
 
 #include "server/job-workers/job-message.h"
 #include "server/job-workers/shared-memory-manager.h"
@@ -19,7 +19,7 @@ FinishedJob *copy_finished_job_to_script_memory(JobSharedMessage *job_message) n
   response = copy_instance_into_other_memory(response, dl::get_default_script_allocator());
   if (!response.is_null()) {
     if (void *mem = dl::allocate(sizeof(FinishedJob))) {
-      return new(mem) FinishedJob{std::move(response)};
+      return new (mem) FinishedJob{std::move(response)};
     }
   }
   return nullptr;

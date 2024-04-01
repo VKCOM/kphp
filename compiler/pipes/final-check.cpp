@@ -4,10 +4,9 @@
 
 #include "compiler/pipes/final-check.h"
 
-
-#include "common/termformat/termformat.h"
-#include "common/algorithms/string-algorithms.h"
 #include "common/algorithms/contains.h"
+#include "common/algorithms/string-algorithms.h"
+#include "common/termformat/termformat.h"
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/kphp-json-tags.h"
@@ -15,8 +14,8 @@
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/data/vars-collector.h"
-#include "compiler/vertex-util.h"
 #include "compiler/type-hint.h"
+#include "compiler/vertex-util.h"
 
 namespace {
 void check_class_immutableness(ClassPtr klass) {
@@ -31,14 +30,12 @@ void check_class_immutableness(ClassPtr klass) {
       kphp_error(sub_class->is_immutable || sub_class->is_interface(),
                  fmt_format("Field {} of immutable class {} should be immutable too, but class {} is mutable",
                             TermStringFormat::paint(std::string{field.local_name()}, TermStringFormat::red),
-                            TermStringFormat::paint(klass->name, TermStringFormat::red),
-                            TermStringFormat::paint(sub_class->name, TermStringFormat::red)));
+                            TermStringFormat::paint(klass->name, TermStringFormat::red), TermStringFormat::paint(sub_class->name, TermStringFormat::red)));
     }
   });
 
   kphp_error(!klass->parent_class || klass->parent_class->is_immutable,
-             fmt_format("Immutable class {} has mutable base {}",
-                        TermStringFormat::paint(klass->name, TermStringFormat::red),
+             fmt_format("Immutable class {} has mutable base {}", TermStringFormat::paint(klass->name, TermStringFormat::red),
                         TermStringFormat::paint(klass->parent_class->name, TermStringFormat::red)));
 }
 
@@ -57,11 +54,11 @@ void check_fields_ic_compatibility(ClassPtr klass) {
       // sub_class already checked for is_immutable || is_interface @see check_class_immutableness
       check_fields_ic_compatibility(sub_class);
       std::vector<ClassPtr> descendants = find_not_ic_compatibility_derivatives(sub_class);
-      for (auto & element : descendants) {
-        kphp_error(false, fmt_format("Field {} of immutable class {} has mutable derived {}",
-                                     TermStringFormat::paint(std::string{field.local_name()}, TermStringFormat::red),
-                                     TermStringFormat::paint(klass->name, TermStringFormat::red),
-                                     TermStringFormat::paint(element->name, TermStringFormat::red)));
+      for (auto &element : descendants) {
+        kphp_error(false,
+                   fmt_format("Field {} of immutable class {} has mutable derived {}",
+                              TermStringFormat::paint(std::string{field.local_name()}, TermStringFormat::red),
+                              TermStringFormat::paint(klass->name, TermStringFormat::red), TermStringFormat::paint(element->name, TermStringFormat::red)));
       }
     }
   });
@@ -82,7 +79,7 @@ std::vector<ClassPtr> find_not_ic_compatibility_derivatives(ClassPtr klass) {
   while (!stack.empty()) {
     ClassPtr current = stack.back();
     stack.pop_back();
-    for (const auto & derived : current->derived_classes) {
+    for (const auto &derived : current->derived_classes) {
       if (derived->is_subtree_immutable.load(std::memory_order_acquire) == SubtreeImmutableType::immutable) {
         // continue
       } else if (derived->is_subtree_immutable.load(std::memory_order_acquire) == SubtreeImmutableType::not_immutable) {
@@ -95,8 +92,7 @@ std::vector<ClassPtr> find_not_ic_compatibility_derivatives(ClassPtr klass) {
       }
     }
   }
-  klass->is_subtree_immutable.store(has_mutable_subtree || !mutable_children.empty()
-                                      ? SubtreeImmutableType::not_immutable : SubtreeImmutableType::immutable,
+  klass->is_subtree_immutable.store(has_mutable_subtree || !mutable_children.empty() ? SubtreeImmutableType::not_immutable : SubtreeImmutableType::immutable,
                                     std::memory_order_release);
   return mutable_children;
 }
@@ -105,7 +101,7 @@ void process_job_worker_class(ClassPtr klass) {
   auto request_interface = G->get_class("KphpJobWorkerRequest");
   auto response_interface = G->get_class("KphpJobWorkerResponse");
   auto shared_memory_piece_interface = G->get_class("KphpJobWorkerSharedMemoryPiece");
-  if (!shared_memory_piece_interface) {   // when functions.txt deleted while development
+  if (!shared_memory_piece_interface) { // when functions.txt deleted while development
     return;
   }
 
@@ -118,11 +114,14 @@ void process_job_worker_class(ClassPtr klass) {
     klass->deeply_require_virtual_builtin_functions();
   }
   if (implements_shared_memory_piece) {
-    kphp_error(klass->is_immutable, fmt_format("Class {} must be immutable (@kphp-immutable-class) as it implements KphpJobWorkerSharedMemoryPiece", klass->name));
+    kphp_error(klass->is_immutable,
+               fmt_format("Class {} must be immutable (@kphp-immutable-class) as it implements KphpJobWorkerSharedMemoryPiece", klass->name));
   }
   if (implements_request) {
     std::vector<const ClassMemberInstanceField *> shared_memory_pieces_fields = klass->get_job_shared_memory_pieces();
-    kphp_error(shared_memory_pieces_fields.size() <= 1, fmt_format("Class {} must have at most 1 member implementing KphpJobWorkerSharedMemoryPiece, but {} found", klass->name, shared_memory_pieces_fields.size()));
+    kphp_error(shared_memory_pieces_fields.size() <= 1,
+               fmt_format("Class {} must have at most 1 member implementing KphpJobWorkerSharedMemoryPiece, but {} found", klass->name,
+                          shared_memory_pieces_fields.size()));
     klass->has_job_shared_memory_piece = !shared_memory_pieces_fields.empty();
   }
 };
@@ -141,7 +140,7 @@ void check_instance_cache_store_call(VertexAdaptor<op_func_call> call) {
   auto klass = type->class_type();
   kphp_error(!klass->is_empty_class(), fmt_format("Can not store instance of empty class {} with instance_cache_store call", klass->name));
   kphp_error_return(klass->is_immutable || klass->is_interface(),
-             fmt_format("Can not store instance of mutable class {} with instance_cache_store call", klass->name));
+                    fmt_format("Can not store instance of mutable class {} with instance_cache_store call", klass->name));
   check_fields_ic_compatibility(klass);
   check_derivatives_ic_compatibility(klass);
   klass->deeply_require_instance_cache_visitor();
@@ -190,11 +189,14 @@ void check_field_of_a_jsonable_class(const ClassMemberInstanceField &field, cons
 
         if (!to_encode) {
           if (field_class->is_interface()) {
-            kphp_error(0, fmt_format("Json decoding for {} is unavailable, because {} is an interface", field.var->as_human_readable(), field_class->as_human_readable()));
+            kphp_error(0, fmt_format("Json decoding for {} is unavailable, because {} is an interface", field.var->as_human_readable(),
+                                     field_class->as_human_readable()));
           } else if (field_class->modifiers.is_abstract()) {
-            kphp_error(0, fmt_format("Json decoding for {} is unavailable, because {} is an abstract class", field.var->as_human_readable(), field_class->as_human_readable()));
+            kphp_error(0, fmt_format("Json decoding for {} is unavailable, because {} is an abstract class", field.var->as_human_readable(),
+                                     field_class->as_human_readable()));
           } else if (!field_class->derived_classes.empty()) {
-            kphp_error(0, fmt_format("Json decoding for {} is unavailable, because {} has derived classes", field.var->as_human_readable(), field_class->as_human_readable()));
+            kphp_error(0, fmt_format("Json decoding for {} is unavailable, because {} has derived classes", field.var->as_human_readable(),
+                                     field_class->as_human_readable()));
           }
         }
       }
@@ -252,14 +254,15 @@ void store_json_encoder(ClassPtr klass, ClassPtr json_encoder, bool to_encode) n
 
       check_field_of_a_jsonable_class(field, props, to_encode);
       kphp_error(props.json_key.empty() || used_json_keys.insert(props.json_key).second,
-                 fmt_format("Json key \"{}\" appears twice for class {} encoded with {}", props.json_key, klass->as_human_readable(), json_encoder->as_human_readable()));
+                 fmt_format("Json key \"{}\" appears twice for class {} encoded with {}", props.json_key, klass->as_human_readable(),
+                            json_encoder->as_human_readable()));
     });
   }
 }
 
 ClassPtr extract_json_encoder_from_call(VertexAdaptor<op_func_call> call) noexcept {
   auto v_encoder = VertexUtil::get_actual_value(call->args().front());
-  kphp_assert(v_encoder->type() == op_string);  // it's const string of a class name (JsonEncoder of inheritors)
+  kphp_assert(v_encoder->type() == op_string); // it's const string of a class name (JsonEncoder of inheritors)
   return G->get_class(v_encoder->get_string());
 }
 
@@ -280,20 +283,22 @@ void check_from_json_impl_call(VertexAdaptor<op_func_call> call) noexcept {
 void check_instance_serialize_call(VertexAdaptor<op_func_call> call) {
   const auto *type = tinf::get_type(call->args()[0]);
   kphp_error_return(type->ptype() == tp_Class, "Called instance_serialize() with a non-instance argument");
-  kphp_error(type->class_type()->is_serializable, fmt_format("Called instance_serialize() for class {}, but it's not marked with @kphp-serializable", type->class_type()->name));
+  kphp_error(type->class_type()->is_serializable,
+             fmt_format("Called instance_serialize() for class {}, but it's not marked with @kphp-serializable", type->class_type()->name));
 }
 
 void check_instance_deserialize_call(VertexAdaptor<op_func_call> call) {
   const auto *type = tinf::get_type(call);
   kphp_assert(type->ptype() == tp_Class);
-  kphp_error(type->class_type()->is_serializable, fmt_format("Called instance_deserialize() for class {}, but it's not marked with @kphp-serializable", type->class_type()->name));
+  kphp_error(type->class_type()->is_serializable,
+             fmt_format("Called instance_deserialize() for class {}, but it's not marked with @kphp-serializable", type->class_type()->name));
 }
 
 void check_estimate_memory_usage_call(VertexAdaptor<op_func_call> call) {
   const auto *type = tinf::get_type(call->args()[0]);
   std::unordered_set<ClassPtr> classes_inside;
   type->get_all_class_types_inside(classes_inside);
-  for (auto klass: classes_inside) {
+  for (auto klass : classes_inside) {
     klass->deeply_require_instance_memory_estimate_visitor();
   }
 }
@@ -317,11 +322,10 @@ void check_register_shutdown_functions(VertexAdaptor<op_func_call> call) {
   for (const auto &e : callback->func_id->exceptions_thrown) {
     throws.emplace_back(e->name);
   }
-  kphp_error(false,
-             fmt_format("register_shutdown_callback should not throw exceptions\n"
-                        "But it may throw {}\n"
-                        "Throw chain: {}",
-                        vk::join(throws, ", "), callback->func_id->get_throws_call_chain()));
+  kphp_error(false, fmt_format("register_shutdown_callback should not throw exceptions\n"
+                               "But it may throw {}\n"
+                               "Throw chain: {}",
+                               vk::join(throws, ", "), callback->func_id->get_throws_call_chain()));
 }
 
 void mark_global_vars_for_memory_stats() {
@@ -336,11 +340,11 @@ void mark_global_vars_for_memory_stats() {
 
   std::unordered_set<ClassPtr> classes_inside;
   VarsCollector vars_collector{0, [&classes_inside](VarPtr variable) {
-    tinf::get_type(variable)->get_all_class_types_inside(classes_inside);
-    return false;
-  }};
+                                 tinf::get_type(variable)->get_all_class_types_inside(classes_inside);
+                                 return false;
+                               }};
   vars_collector.collect_global_and_static_vars_from(G->get_main_file()->main_function);
-  for (auto klass: classes_inside) {
+  for (auto klass : classes_inside) {
     klass->deeply_require_instance_memory_estimate_visitor();
   }
 }
@@ -378,7 +382,8 @@ void check_func_call_params(VertexAdaptor<op_func_call> call) {
 
     kphp_error(!f_passed_to_builtin->is_resumable, fmt_format("Callbacks passed to builtin functions must not be resumable.\n"
                                                               "But '{}' became resumable because of the calls chain:\n"
-                                                              "{}", f_passed_to_builtin->as_human_readable(), f_passed_to_builtin->get_resumable_path()));
+                                                              "{}",
+                                                              f_passed_to_builtin->as_human_readable(), f_passed_to_builtin->get_resumable_path()));
 
     if (auto name = f_passed_to_builtin->local_name(); name == "to_array_debug" || name == "instance_to_array") {
       if (const auto *as_subkey = type_hint_callable->arg_types[0]->try_as<TypeHintArgSubkeyGet>()) {
@@ -403,8 +408,8 @@ void check_null_usage_in_binary_operations(VertexAdaptor<meta_op_binary> binary_
     case op_set_add:
       if (vk::any_of_equal(tp_array, lhs_type->get_real_ptype(), rhs_type->get_real_ptype())) {
         kphp_error(vk::none_of_equal(tp_any, lhs_type->ptype(), rhs_type->ptype()),
-                   fmt_format("Can't use '{}' operation between {} and {} types",
-                              OpInfo::str(binary_vertex->type()), lhs_type->as_human_readable(), rhs_type->as_human_readable()));
+                   fmt_format("Can't use '{}' operation between {} and {} types", OpInfo::str(binary_vertex->type()), lhs_type->as_human_readable(),
+                              rhs_type->as_human_readable()));
         return;
       }
 
@@ -430,10 +435,9 @@ void check_null_usage_in_binary_operations(VertexAdaptor<meta_op_binary> binary_
     case op_set_xor:
     case op_set_shl:
     case op_set_shr: {
-      kphp_error((lhs_type->ptype() != tp_any || lhs_type->or_false_flag()) &&
-                 (rhs_type->ptype() != tp_any || rhs_type->or_false_flag()),
-                 fmt_format("Got '{}' operation between {} and {} types",
-                            OpInfo::str(binary_vertex->type()), lhs_type->as_human_readable(), rhs_type->as_human_readable()));
+      kphp_error((lhs_type->ptype() != tp_any || lhs_type->or_false_flag()) && (rhs_type->ptype() != tp_any || rhs_type->or_false_flag()),
+                 fmt_format("Got '{}' operation between {} and {} types", OpInfo::str(binary_vertex->type()), lhs_type->as_human_readable(),
+                            rhs_type->as_human_readable()));
       return;
     }
 
@@ -449,9 +453,7 @@ void check_function_throws(FunctionPtr f) {
     throws_actual.insert(e->name);
   }
   kphp_error(throws_expected == throws_actual,
-             fmt_format("kphp-throws mismatch: have <{}>, want <{}>",
-                        vk::join(throws_actual, ", "),
-                        vk::join(throws_expected, ", ")));
+             fmt_format("kphp-throws mismatch: have <{}>, want <{}>", vk::join(throws_actual, ", "), vk::join(throws_expected, ", ")));
 }
 
 void check_ffi_call(VertexAdaptor<op_func_call> call) {
@@ -471,8 +473,7 @@ void check_ffi_call(VertexAdaptor<op_func_call> call) {
     }
     const auto *ffi_type = FFIRoot::get_ffi_type(type->class_type());
     kphp_error(indirection == 1 && ffi_type->kind == FFITypeKind::Char,
-               fmt_format("$ptr argument is {}, expected a C string compatible type",
-                          type->as_human_readable()));
+               fmt_format("$ptr argument is {}, expected a C string compatible type", type->as_human_readable()));
     return;
   }
 }
@@ -549,11 +550,8 @@ void check_php2c_conv(VertexAdaptor<op_ffi_php2c_conv> conv) {
   }
   const auto *php_type = tinf::get_type(conv->expr());
   const FFIType *ffi_type = FFIRoot::get_ffi_type(conv->c_type);
-  kphp_error(is_php2c_valid(conv, ffi_type, php_type),
-             fmt_format("Invalid php2c conversion{}: {} -> {}",
-                        conv->simple_dst ? "" : " in this context",
-                        php_type->as_human_readable(),
-                        ffi_decltype_string(ffi_type)));
+  kphp_error(is_php2c_valid(conv, ffi_type, php_type), fmt_format("Invalid php2c conversion{}: {} -> {}", conv->simple_dst ? "" : " in this context",
+                                                                  php_type->as_human_readable(), ffi_decltype_string(ffi_type)));
 }
 
 } // namespace
@@ -569,8 +567,8 @@ void FinalCheckPass::on_start() {
   check_magic_methods(current_function);
 
   if (current_function->should_not_throw && current_function->can_throw()) {
-    kphp_error(0, fmt_format("Function {} marked as @kphp-should-not-throw, but really can throw an exception:\n{}",
-                             current_function->as_human_readable(), current_function->get_throws_call_chain()));
+    kphp_error(0, fmt_format("Function {} marked as @kphp-should-not-throw, but really can throw an exception:\n{}", current_function->as_human_readable(),
+                             current_function->get_throws_call_chain()));
   }
 
   for (auto &static_var : current_function->static_var_ids) {
@@ -588,22 +586,21 @@ void FinalCheckPass::on_start() {
 
 VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
   if (vertex->type() == op_func_name) {
-    kphp_error (0, fmt_format("Unexpected {} (maybe, it should be a define?)", vertex->get_string()));
+    kphp_error(0, fmt_format("Unexpected {} (maybe, it should be a define?)", vertex->get_string()));
   }
   if (vertex->type() == op_addr) {
-    kphp_error (0, "Getting references is unsupported");
+    kphp_error(0, "Getting references is unsupported");
   }
   if (vertex->type() == op_ffi_php2c_conv) {
     check_php2c_conv(vertex.as<op_ffi_php2c_conv>());
   }
   if (auto array_get = vertex.try_as<op_ffi_array_get>()) {
     const auto *key_type = tinf::get_type(array_get->key());
-    kphp_error(key_type->ptype() == tp_int,
-               fmt_format("ffi_array_get index type must be int, {} used instead", key_type->as_human_readable()));
-  }if (auto array_set = vertex.try_as<op_ffi_array_set>()) {
+    kphp_error(key_type->ptype() == tp_int, fmt_format("ffi_array_get index type must be int, {} used instead", key_type->as_human_readable()));
+  }
+  if (auto array_set = vertex.try_as<op_ffi_array_set>()) {
     const auto *key_type = tinf::get_type(array_set->key());
-    kphp_error(key_type->ptype() == tp_int,
-               fmt_format("ffi_array_set index type must be int, {} used instead", key_type->as_human_readable()));
+    kphp_error(key_type->ptype() == tp_int, fmt_format("ffi_array_set index type must be int, {} used instead", key_type->as_human_readable()));
   }
 
   if (vertex->type() == op_eq3) {
@@ -617,7 +614,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     const TypeData *type_right = tinf::get_type(vertex.as<meta_op_binary>()->rhs());
     if ((type_left->ptype() == tp_array) ^ (type_right->ptype() == tp_array)) {
       if (type_left->ptype() != tp_mixed && type_right->ptype() != tp_mixed) {
-        kphp_warning (fmt_format("{} + {} is strange operation", type_out(type_left), type_out(type_right)));
+        kphp_warning(fmt_format("{} + {} is strange operation", type_out(type_left), type_out(type_right)));
       }
     }
   }
@@ -625,10 +622,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     const TypeData *type_left = tinf::get_type(vertex.as<meta_op_binary>()->lhs());
     const TypeData *type_right = tinf::get_type(vertex.as<meta_op_binary>()->rhs());
     if ((type_left->ptype() == tp_array) || (type_right->ptype() == tp_array)) {
-      kphp_warning(fmt_format("{} {} {} is strange operation",
-                              OpInfo::str(vertex->type()),
-                              type_out(type_left),
-                              type_out(type_right)));
+      kphp_warning(fmt_format("{} {} {} is strange operation", OpInfo::str(vertex->type()), type_out(type_left), type_out(type_right)));
     }
   }
 
@@ -638,7 +632,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     if (arrayType->ptype() == tp_array) {
       const TypeData *valueType = arrayType->lookup_at_any_key();
       if (valueType->get_real_ptype() == tp_any) {
-        kphp_error (0, "Can not compile foreach on array of Unknown type");
+        kphp_error(0, "Can not compile foreach on array of Unknown type");
       }
     }
   }
@@ -648,11 +642,11 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     const TypeData *arrayType = tinf::get_type(arr);
     if (arrayType->ptype() == tp_array) {
       const TypeData *valueType = arrayType->lookup_at_any_key();
-      kphp_error (valueType->get_real_ptype() != tp_any, "Can not compile list with array of Unknown type");
+      kphp_error(valueType->get_real_ptype() != tp_any, "Can not compile list with array of Unknown type");
     } else if (arrayType->ptype() == tp_tuple) {
       size_t list_size = vertex.as<op_list>()->list().size();
       size_t tuple_size = arrayType->get_tuple_max_index();
-      kphp_error (list_size <= tuple_size, fmt_format("Can't assign tuple of length {} to list of length {}", tuple_size, list_size));
+      kphp_error(list_size <= tuple_size, fmt_format("Can't assign tuple of length {} to list of length {}", tuple_size, list_size));
       for (auto cur : list->list()) {
         const auto kv = cur.as<op_list_keyval>();
         if (VertexUtil::get_actual_value(kv->key())->type() != op_int_const) {
@@ -669,7 +663,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
         }
       }
     } else {
-      kphp_error (arrayType->ptype() == tp_mixed, fmt_format("Can not compile list with '{}'", ptype_name(arrayType->ptype())));
+      kphp_error(arrayType->ptype() == tp_mixed, fmt_format("Can not compile list with '{}'", ptype_name(arrayType->ptype())));
     }
   }
   if (vertex->type() == op_index && vertex.as<op_index>()->has_key()) {
@@ -691,7 +685,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
   }
   if (auto xset = vertex.try_as<meta_op_xset>()) {
     auto v = xset->expr();
-    if (auto var_vertex = v.try_as<op_var>()) {    // isset($var), unset($var)
+    if (auto var_vertex = v.try_as<op_var>()) { // isset($var), unset($var)
       VarPtr var = var_vertex->var_id;
       if (vertex->type() == op_unset) {
         kphp_error(!var->is_reference, "Unset of reference variables is not supported");
@@ -702,10 +696,9 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
         }
       } else {
         const TypeData *type_info = tinf::get_type(var);
-        kphp_error(type_info->can_store_null(),
-                   fmt_format("isset({}) will be always true for {}", var->as_human_readable(), type_info->as_human_readable()));
+        kphp_error(type_info->can_store_null(), fmt_format("isset({}) will be always true for {}", var->as_human_readable(), type_info->as_human_readable()));
       }
-    } else if (v->type() == op_index) {   // isset($arr[index]), unset($arr[index])
+    } else if (v->type() == op_index) { // isset($arr[index]), unset($arr[index])
       const TypeData *arrayType = tinf::get_type(v.as<op_index>()->array());
       PrimitiveType ptype = arrayType->get_real_ptype();
       kphp_error(vk::any_of_equal(ptype, tp_tuple, tp_shape, tp_array, tp_mixed), "Can't use isset/unset by[idx] for not an array");
@@ -722,8 +715,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
   }
   if (vertex->type() == op_instance_prop) {
     const TypeData *lhs_type = tinf::get_type(vertex.as<op_instance_prop>()->instance());
-    kphp_error(lhs_type->ptype() == tp_Class,
-               fmt_format("Accessing ->property of non-instance {}", lhs_type->as_human_readable()));
+    kphp_error(lhs_type->ptype() == tp_Class, fmt_format("Accessing ->property of non-instance {}", lhs_type->as_human_readable()));
   }
 
   if (vertex->type() == op_throw) {
@@ -769,7 +761,7 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     check_array_literal(v_array);
   }
 
-  //TODO: may be this should be moved to tinf_check
+  // TODO: may be this should be moved to tinf_check
   return vertex;
 }
 
@@ -784,7 +776,8 @@ void FinalCheckPass::check_instanceof(VertexAdaptor<op_instanceof> instanceof_ve
     return;
   }
 
-  kphp_error(instanceof_var_type->class_type(), fmt_format("left operand of 'instanceof' should be an instance, but passed {}", instanceof_var_type->as_human_readable()));
+  kphp_error(instanceof_var_type->class_type(),
+             fmt_format("left operand of 'instanceof' should be an instance, but passed {}", instanceof_var_type->as_human_readable()));
 }
 
 static void check_indexing_violation(vk::string_view allowed_types_string, const std::vector<PrimitiveType> &allowed_types, vk::string_view what_indexing,
@@ -887,19 +880,16 @@ inline void FinalCheckPass::check_static_var_inited(VarPtr static_var) {
 
 void FinalCheckPass::check_lib_exported_function(FunctionPtr function) {
   const TypeData *ret_type = tinf::get_type(function, -1);
-  kphp_error(!ret_type->has_class_type_inside(),
-             "Can not use class instance in return of @kphp-lib-export function");
+  kphp_error(!ret_type->has_class_type_inside(), "Can not use class instance in return of @kphp-lib-export function");
 
-  for (auto p: function->get_params()) {
+  for (auto p : function->get_params()) {
     auto param = p.as<op_func_param>();
     if (param->has_default_value() && param->default_value()) {
       VertexPtr default_value = VertexUtil::get_actual_value(param->default_value());
       kphp_error_act(vk::any_of_equal(default_value->type(), op_int_const, op_float_const),
-                     "Only const int, const float are allowed as default param for @kphp-lib-export function",
-                     continue);
+                     "Only const int, const float are allowed as default param for @kphp-lib-export function", continue);
     }
-    kphp_error(!tinf::get_type(p)->has_class_type_inside(),
-               "Can not use class instance in param of @kphp-lib-export function");
+    kphp_error(!tinf::get_type(p)->has_class_type_inside(), "Can not use class instance in param of @kphp-lib-export function");
   }
 }
 
@@ -907,13 +897,12 @@ void FinalCheckPass::check_eq3(VertexPtr lhs, VertexPtr rhs) {
   const auto *lhs_type = tinf::get_type(lhs);
   const auto *rhs_type = tinf::get_type(rhs);
 
-  if ((lhs_type->ptype() == tp_float && !lhs_type->or_false_flag() && !lhs_type->or_null_flag()) ||
-      (rhs_type->ptype() == tp_float && !rhs_type->or_false_flag() && !rhs_type->or_null_flag())) {
-    kphp_warning(fmt_format("Identity operator between {} and {} types may give an unexpected result",
-                            lhs_type->as_human_readable(), rhs_type->as_human_readable()));
+  if ((lhs_type->ptype() == tp_float && !lhs_type->or_false_flag() && !lhs_type->or_null_flag())
+      || (rhs_type->ptype() == tp_float && !rhs_type->or_false_flag() && !rhs_type->or_null_flag())) {
+    kphp_warning(
+      fmt_format("Identity operator between {} and {} types may give an unexpected result", lhs_type->as_human_readable(), rhs_type->as_human_readable()));
   } else if (!can_be_same_type(lhs_type, rhs_type)) {
-    kphp_warning(fmt_format("Types {} and {} can't be identical",
-                            lhs_type->as_human_readable(), rhs_type->as_human_readable()));
+    kphp_warning(fmt_format("Types {} and {} can't be identical", lhs_type->as_human_readable(), rhs_type->as_human_readable()));
   }
 }
 
@@ -940,10 +929,8 @@ void FinalCheckPass::check_comparisons(VertexPtr lhs, VertexPtr rhs, Operation o
                fmt_format("You may not compare {} with {} used operator {}", lhs_t->as_human_readable(), rhs_t->as_human_readable(), OpInfo::desc(op)));
   } else if (lhs_t->ptype() == tp_shape) {
     // shape can't be compared with anything using ==, it's meaningless
-    kphp_error(0,
-               fmt_format("You may not compare {} with {} used operator {}", lhs_t->as_human_readable(), rhs_t->as_human_readable(), OpInfo::desc(op)));
+    kphp_error(0, fmt_format("You may not compare {} with {} used operator {}", lhs_t->as_human_readable(), rhs_t->as_human_readable(), OpInfo::desc(op)));
   }
-
 }
 
 bool FinalCheckPass::user_recursion(VertexPtr v) {
@@ -994,9 +981,9 @@ void FinalCheckPass::raise_error_using_Unknown_type(VertexPtr v) {
 
   if (auto var_vertex = v.try_as<op_var>()) {
     VarPtr var = var_vertex->var_id;
-    if (index_depth.empty()) {              // Unknown type single var access
+    if (index_depth.empty()) { // Unknown type single var access
       kphp_error(0, fmt_format("Variable ${} has Unknown type", var->name));
-    } else if (index_depth.size() == 3) {   // 1-depth array[*] access (most common case)
+    } else if (index_depth.size() == 3) { // 1-depth array[*] access (most common case)
 
       if (vk::any_of_equal(tinf::get_type(var)->get_real_ptype(), tp_array, tp_mixed)) {
         kphp_error(0, fmt_format("Array ${} is always empty, getting its element has Unknown type", var->name));
@@ -1006,7 +993,7 @@ void FinalCheckPass::raise_error_using_Unknown_type(VertexPtr v) {
         kphp_error(0, fmt_format("${} is {}, can not get element", var->name, tinf::get_type(var)->as_human_readable()));
       }
 
-    } else {                                // multidimentional array[*]...[*] access
+    } else { // multidimentional array[*]...[*] access
       kphp_error(0, fmt_format("${}{} has Unknown type", var->name, index_depth));
     }
   } else if (auto call = v.try_as<op_func_call>()) {
@@ -1043,8 +1030,7 @@ void FinalCheckPass::check_magic_tostring_method(FunctionPtr fun) {
     return;
   }
 
-  kphp_error(ret_type->ptype() == tp_string && ret_type->flags() == 0,
-             fmt_format("Magic method {} must have string return type", fun->as_human_readable()));
+  kphp_error(ret_type->ptype() == tp_string && ret_type->flags() == 0, fmt_format("Magic method {} must have string return type", fun->as_human_readable()));
 }
 
 void FinalCheckPass::check_magic_clone_method(FunctionPtr fun) {

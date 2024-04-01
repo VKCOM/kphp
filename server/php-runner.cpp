@@ -10,10 +10,10 @@
 #include <cstdlib>
 #include <cstring>
 #include <exception>
-#include <utility>
 #include <sys/mman.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <utility>
 
 #include "common/fast-backtrace.h"
 #include "common/kernel-version.h"
@@ -44,15 +44,15 @@ long long query_stats_id = 1;
 std::optional<PhpScript> php_script;
 
 namespace {
-//TODO: sometimes I need to call old handlers
-//TODO: recheck!
+// TODO: sometimes I need to call old handlers
+// TODO: recheck!
 
 [[maybe_unused]] const void *main_thread_stack = nullptr;
 [[maybe_unused]] size_t main_thread_stacksize = 0;
 } // namespace
 
 void PhpScript::error(const char *error_message, script_error_t error_type) noexcept {
-  assert (in_script_context == true);
+  assert(in_script_context == true);
   in_script_context = false;
   current_script->state = run_state_t::error;
   current_script->error_message = error_message;
@@ -159,7 +159,7 @@ PhpScript::~PhpScript() noexcept {
 }
 
 void PhpScript::init(script_t *script, php_query_data_t *data_to_set) noexcept {
-  assert (script != nullptr);
+  assert(script != nullptr);
   assert_state(run_state_t::empty);
 
   query = nullptr;
@@ -201,7 +201,7 @@ int PhpScript::swapcontext_helper(ucontext_t_portable *oucp, const ucontext_t_po
 
 void PhpScript::pause() noexcept {
   try_run_shutdown_functions_on_timeout();
-  //fprintf (stderr, "pause: \n");
+  // fprintf (stderr, "pause: \n");
   in_script_context = false;
 #if ASAN_ENABLED
   __sanitizer_start_switch_fiber(nullptr, main_thread_stack, main_thread_stacksize);
@@ -215,7 +215,7 @@ void PhpScript::pause() noexcept {
   if (kphp_tracing::is_turned_on()) {
     kphp_tracing::on_switch_context_to_script(last_net_time_delta);
   }
-  //fprintf (stderr, "pause: ended\n");
+  // fprintf (stderr, "pause: ended\n");
 }
 
 void PhpScript::resume() noexcept {
@@ -306,7 +306,7 @@ run_state_t PhpScript::iterate() noexcept {
 }
 
 void PhpScript::finish() noexcept {
-  assert (state == run_state_t::finished || state == run_state_t::error);
+  assert(state == run_state_t::finished || state == run_state_t::error);
   assert(dl::is_malloc_replaced() == false);
   auto save_state = state;
   const auto &script_mem_stats = dl::get_script_memory_stats();
@@ -319,19 +319,21 @@ void PhpScript::finish() noexcept {
   }
   process_rusage_t script_rusage = get_script_rusage();
 
-  vk::singleton<ServerStats>::get().add_request_stats(script_time, net_time, script_init_time_sec, connection_process_time_sec,
-                                                      queries_cnt, long_queries_cnt, script_mem_stats, vk::singleton<CurlMemoryUsage>::get().total_allocated, script_rusage, error_type);
+  vk::singleton<ServerStats>::get().add_request_stats(script_time, net_time, script_init_time_sec, connection_process_time_sec, queries_cnt, long_queries_cnt,
+                                                      script_mem_stats, vk::singleton<CurlMemoryUsage>::get().total_allocated, script_rusage, error_type);
   if (save_state == run_state_t::error) {
-    assert (error_message != nullptr);
+    assert(error_message != nullptr);
     kprintf("Critical error during script execution: %s\n", error_message);
     kphp_tracing::on_php_script_finish_terminated();
   }
 
   if (error_type == script_error_t::memory_limit || script_mem_stats.real_memory_used > max_memory / 2) {
-    kprintf("Detailed memory stats: total allocations = %zd, total memory allocated = %zd, huge memory pieces = %zd, small memory pieces = %zd, defragmentation calls = %zd,"
+    kprintf("Detailed memory stats: total allocations = %zd, total memory allocated = %zd, huge memory pieces = %zd, small memory pieces = %zd, "
+            "defragmentation calls = %zd,"
             "real memory used = %zd, max real memory used = %zd, memory used = %zd, max memory used = %zd, memory_limit = %zd\n",
-            script_mem_stats.total_allocations, script_mem_stats.total_memory_allocated, script_mem_stats.huge_memory_pieces, script_mem_stats.small_memory_pieces, script_mem_stats.defragmentation_calls,
-            script_mem_stats.real_memory_used, script_mem_stats.max_real_memory_used, script_mem_stats.memory_used, script_mem_stats.max_memory_used,  script_mem_stats.memory_limit);
+            script_mem_stats.total_allocations, script_mem_stats.total_memory_allocated, script_mem_stats.huge_memory_pieces,
+            script_mem_stats.small_memory_pieces, script_mem_stats.defragmentation_calls, script_mem_stats.real_memory_used,
+            script_mem_stats.max_real_memory_used, script_mem_stats.memory_used, script_mem_stats.max_memory_used, script_mem_stats.memory_limit);
   }
 
   const size_t buf_size = 5000;
@@ -344,16 +346,14 @@ void PhpScript::finish() noexcept {
         if (disable_access_log) {
           snprintf(buf, buf_size, "[uri = %.*s?<truncated>]", min(http_data->uri_len, 200), http_data->uri);
         } else {
-          snprintf(buf, buf_size, "[uri = %.*s?%.*s]", min(http_data->uri_len, 200), http_data->uri,
-                  min(http_data->get_len, 4000), http_data->get);
+          snprintf(buf, buf_size, "[uri = %.*s?%.*s]", min(http_data->uri_len, 200), http_data->uri, min(http_data->get_len, 4000), http_data->get);
         }
       }
     }
-    kprintf("[worked = %.3lf, net = %.3lf, script = %.3lf, queries_cnt = %5d, long_queries_cnt = %5d, heap_memory_used = %9d, peak_script_memory = %9d, total_script_memory = %9d] %s\n",
-            script_time + net_time, net_time, script_time, queries_cnt, long_queries_cnt,
-            (int)dl::get_heap_memory_used(),
-            (int)script_mem_stats.max_real_memory_used,
-            (int)script_mem_stats.real_memory_used, buf);
+    kprintf("[worked = %.3lf, net = %.3lf, script = %.3lf, queries_cnt = %5d, long_queries_cnt = %5d, heap_memory_used = %9d, peak_script_memory = %9d, "
+            "total_script_memory = %9d] %s\n",
+            script_time + net_time, net_time, script_time, queries_cnt, long_queries_cnt, (int)dl::get_heap_memory_used(),
+            (int)script_mem_stats.max_real_memory_used, (int)script_mem_stats.real_memory_used, buf);
   }
 }
 
@@ -382,9 +382,9 @@ void PhpScript::ask_query(php_query_base_t *q) noexcept {
   assert_state(run_state_t::running);
   query = q;
   state = run_state_t::query;
-  //fprintf (stderr, "ask_query: pause\n");
+  // fprintf (stderr, "ask_query: pause\n");
   pause();
-  //fprintf (stderr, "ask_query: after pause\n");
+  // fprintf (stderr, "ask_query: after pause\n");
 }
 
 void PhpScript::set_script_result(script_result *res_to_set) noexcept {
@@ -395,7 +395,7 @@ void PhpScript::set_script_result(script_result *res_to_set) noexcept {
 }
 
 void PhpScript::query_readed() noexcept {
-  assert (in_script_context == false);
+  assert(in_script_context == false);
   assert_state(run_state_t::query);
   state = run_state_t::query_running;
 }
@@ -403,11 +403,11 @@ void PhpScript::query_readed() noexcept {
 void PhpScript::query_answered() noexcept {
   assert_state(run_state_t::query_running);
   state = run_state_t::ready;
-  //fprintf (stderr, "ok\n");
+  // fprintf (stderr, "ok\n");
 }
 
 void PhpScript::run() noexcept {
-  assert (run_main->run != nullptr);
+  assert(run_main->run != nullptr);
 
   dl::enter_critical_section();
   in_script_context = true;
@@ -415,7 +415,7 @@ void PhpScript::run() noexcept {
   auto script_memory_size = mem_size - oom_handling_memory_size;
   init_runtime_environment(*data, run_mem, script_memory_size, oom_handling_memory_size);
   dl::leave_critical_section();
-  php_assert (dl::in_critical_section == 0); // To ensure that no critical section is left at the end of the initialization
+  php_assert(dl::in_critical_section == 0); // To ensure that no critical section is left at the end of the initialization
   check_net_context_errors();
 
   CurException = Optional<bool>{};
@@ -471,8 +471,7 @@ double PhpScript::get_script_time() noexcept {
 
 process_rusage_t PhpScript::get_script_rusage() noexcept {
   process_rusage_t current_rusage = get_rusage_info();
-  return {current_rusage.user_time - script_init_rusage.user_time,
-          current_rusage.system_time - script_init_rusage.system_time,
+  return {current_rusage.user_time - script_init_rusage.user_time, current_rusage.system_time - script_init_rusage.system_time,
           current_rusage.voluntary_context_switches - script_init_rusage.voluntary_context_switches,
           current_rusage.involuntary_context_switches - script_init_rusage.involuntary_context_switches};
 }
@@ -492,7 +491,7 @@ static __inline__ void *get_sp() {
   return __builtin_frame_address(0);
 }
 
-void check_stack_overflow() __attribute__ ((noinline));
+void check_stack_overflow() __attribute__((noinline));
 
 void check_stack_overflow() {
   if (PhpScript::in_script_context) {
@@ -537,7 +536,5 @@ void PhpScript::terminate(const char *error_message_, script_error_t error_type_
 }
 
 bool PhpScript::is_running() const noexcept {
-  return vk::any_of_equal(state, run_state_t::running, run_state_t::query,
-                          run_state_t::query_running, run_state_t::ready,
-                          run_state_t::error);
+  return vk::any_of_equal(state, run_state_t::running, run_state_t::query, run_state_t::query_running, run_state_t::ready, run_state_t::error);
 }

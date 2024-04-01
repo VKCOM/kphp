@@ -4,12 +4,11 @@
 
 #include "runtime/kphp_tracing_binlog.h"
 
-#include <unordered_map>
 #include <forward_list>
+#include <unordered_map>
 
 #include "runtime/critical_section.h"
 #include "server/json-logger.h"
-
 
 extern const char lhex_digits[17];
 
@@ -55,7 +54,6 @@ static std::unordered_map<int64_t, int> worker_process_strings_table;
 // before any trace flush, if that binlog is not empty, it's flushed in advance and cleared
 static std::vector<string> current_php_script_registered_strings;
 
-
 void tracing_binary_buffer::set_use_heap_memory() {
   use_heap_memory = true;
 }
@@ -80,11 +78,7 @@ void tracing_binary_buffer::finish_cur_chunk_start_next() {
   }
 
   void *mem = use_heap_memory ? dl::heap_allocate(BUF_CHUNK_SIZE) : dl::allocate(BUF_CHUNK_SIZE);
-  one_chunk *next_chunk = new (mem) one_chunk{
-    reinterpret_cast<int *>(reinterpret_cast<char *>(mem) + sizeof(one_chunk)),
-    0,
-    last_chunk
-  };
+  one_chunk *next_chunk = new (mem) one_chunk{reinterpret_cast<int *>(reinterpret_cast<char *>(mem) + sizeof(one_chunk)), 0, last_chunk};
 
   last_chunk = next_chunk;
   pos = last_chunk->buf;
@@ -181,7 +175,7 @@ void tracing_binary_buffer::write_string_inlined(const string &v) {
 
   char *pos8 = reinterpret_cast<char *>(pos);
   memcpy(pos8, v.c_str(), v.size());
-  pos += (v.size() + 3) / 4;  // a string is rounded up to 4 bytes (len 7 -> consumes 8)
+  pos += (v.size() + 3) / 4; // a string is rounded up to 4 bytes (len 7 -> consumes 8)
 }
 
 void tracing_binary_buffer::append_enum_values(int enumID, const string &enumName, const array<string> &enumKV) {

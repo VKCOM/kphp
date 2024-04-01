@@ -12,22 +12,20 @@
 #include "compiler/data/class-members.h"
 #include "compiler/data/class-modifiers.h"
 #include "compiler/debug.h"
+#include "compiler/ffi/ffi_types.h"
 #include "compiler/location.h"
 #include "compiler/threading/data-stream.h"
 #include "compiler/threading/locks.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
-#include "compiler/ffi/ffi_types.h"
 
 struct FFIClassDataMixin;
 struct FFIScopeDataMixin;
-namespace kphp_json { class KphpJsonTagList; }
+namespace kphp_json {
+class KphpJsonTagList;
+}
 
-enum class SubtreeImmutableType {
-  immutable,
-  not_immutable,
-  not_visited
-};
+enum class SubtreeImmutableType { immutable, not_immutable, not_visited };
 
 enum class ClassType {
   klass,
@@ -38,24 +36,26 @@ enum class ClassType {
 };
 
 class ClassData : public Lockable {
-  DEBUG_STRING_METHOD { return as_human_readable(); }
-  
+  DEBUG_STRING_METHOD {
+    return as_human_readable();
+  }
+
 public:
   // extends/implements/use trait description in a string form (class_name)
   struct StrDependence {
     ClassType type;
     std::string class_name;
 
-    StrDependence(ClassType type, std::string class_name) :
-      type(type),
-      class_name(std::move(class_name)) {}
+    StrDependence(ClassType type, std::string class_name)
+      : type(type)
+      , class_name(std::move(class_name)) {}
   };
 
   int id{0};
   ClassType class_type{ClassType::klass}; // class/interface/trait
   std::string name;                       // class name with a full namespace path and slashes: "VK\Feed\A"
 
-  ClassPtr parent_class;                       // extends
+  ClassPtr parent_class; // extends
   std::vector<InterfacePtr> implements;
   std::vector<ClassPtr> derived_classes;
   FunctionPtr construct_function;
@@ -122,7 +122,6 @@ public:
     return VertexAdaptor<op_func_param>::create(gen_vertex_this(location));
   }
 
-
   bool is_polymorphic_class() const {
     return !derived_classes.empty() || !implements.empty() || parent_class;
   }
@@ -131,13 +130,27 @@ public:
     return !members.has_any_instance_var() && !is_builtin() && !is_tl_class && !is_polymorphic_class();
   }
 
-  bool is_class() const { return class_type == ClassType::klass; }
-  bool is_interface() const { return class_type == ClassType::interface; }
-  bool is_trait() const { return class_type == ClassType::trait; }
-  bool is_ffi_scope() const { return class_type == ClassType::ffi_scope; }
-  bool is_ffi_cdata() const { return class_type == ClassType::ffi_cdata; }
-  bool is_lambda_class() const { return class_type == ClassType::klass && is_lambda; }
-  bool is_typed_callable_interface() const { return class_type == ClassType::interface && is_lambda; }
+  bool is_class() const {
+    return class_type == ClassType::klass;
+  }
+  bool is_interface() const {
+    return class_type == ClassType::interface;
+  }
+  bool is_trait() const {
+    return class_type == ClassType::trait;
+  }
+  bool is_ffi_scope() const {
+    return class_type == ClassType::ffi_scope;
+  }
+  bool is_ffi_cdata() const {
+    return class_type == ClassType::ffi_cdata;
+  }
+  bool is_lambda_class() const {
+    return class_type == ClassType::klass && is_lambda;
+  }
+  bool is_typed_callable_interface() const {
+    return class_type == ClassType::interface && is_lambda;
+  }
 
   bool is_parent_of(ClassPtr other) const;
   std::vector<ClassPtr> get_common_base_or_interface(ClassPtr other) const;
@@ -231,7 +244,7 @@ private:
     return {};
   }
 
-  template<std::atomic<bool> ClassData:: *field_ptr>
+  template<std::atomic<bool> ClassData::*field_ptr>
   void set_atomic_field_deeply();
 
   // extends/implements/use trait during the parsing (before ptr is assigned)

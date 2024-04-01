@@ -24,9 +24,9 @@ class GenTree {
     T &top_element;
 
   public:
-    StackPushPop(std::vector<T> &stack, T &top_element, T elem_to_push) :
-      stack(stack),
-      top_element(top_element) {
+    StackPushPop(std::vector<T> &stack, T &top_element, T elem_to_push)
+      : stack(stack)
+      , top_element(top_element) {
       stack.emplace_back(elem_to_push);
       top_element = elem_to_push;
     }
@@ -38,14 +38,17 @@ class GenTree {
   };
 
 public:
-  Location auto_location() const { return Location{this->line_num}; }
+  Location auto_location() const {
+    return Location{this->line_num};
+  }
 
   static bool is_magic_method_name_allowed(const std::string &name);
 
-
   GenTree(std::vector<Token> tokens, SrcFilePtr file, DataStream<FunctionPtr> &os);
 
-  bool test_expect(TokenType tp) { return cur->type() == tp; }
+  bool test_expect(TokenType tp) {
+    return cur->type() == tp;
+  }
 
   void next_cur();
   int open_parent();
@@ -114,7 +117,8 @@ public:
 
   std::string get_identifier();
 
-  static VertexAdaptor<op_func_call> gen_constructor_call_with_args(const std::string &allocated_class_name, std::vector<VertexPtr> args, const Location &location);
+  static VertexAdaptor<op_func_call> gen_constructor_call_with_args(const std::string &allocated_class_name, std::vector<VertexPtr> args,
+                                                                    const Location &location);
   static VertexAdaptor<op_func_call> gen_constructor_call_with_args(ClassPtr allocated_class, std::vector<VertexPtr> args, const Location &locaction);
   static VertexAdaptor<op_var> auto_capture_this_in_lambda(FunctionPtr f_lambda);
 
@@ -140,16 +144,14 @@ private:
   VertexPtr get_const_after_explicit_access_modifier(AccessModifiers access);
   VertexPtr get_const(AccessModifiers access);
 
-
   int line_num{0};
   const std::vector<Token> tokens;
   DataStream<FunctionPtr> &parsed_os;
   bool is_top_of_the_function_{false};
   decltype(tokens)::const_iterator cur, end;
   std::vector<ClassPtr> class_stack;
-  ClassPtr cur_class;               // = class_stack.back()
+  ClassPtr cur_class; // = class_stack.back()
   std::vector<FunctionPtr> functions_stack;
-  FunctionPtr cur_function;         // = functions_stack.back()
+  FunctionPtr cur_function; // = functions_stack.back()
   SrcFilePtr processing_file;
 };
-

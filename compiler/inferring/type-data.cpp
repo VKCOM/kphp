@@ -12,15 +12,14 @@
 #include "common/termformat/termformat.h"
 
 #include "common/php-functions.h"
-#include "compiler/compiler-core.h"
 #include "compiler/code-gen/common.h"
+#include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/ffi-data.h"
 #include "compiler/pipes/collect-main-edges.h"
 #include "compiler/stage.h"
 #include "compiler/threading/hash-table.h"
 #include "compiler/utils/string-utils.h"
-
 
 static std::vector<const TypeData *> primitive_types;
 static std::vector<const TypeData *> array_types;
@@ -52,8 +51,8 @@ const TypeData *TypeData::get_type(PrimitiveType array, PrimitiveType type) {
   return array_types[type];
 }
 
-TypeData::TypeData(PrimitiveType ptype) :
-  ptype_(ptype) {
+TypeData::TypeData(PrimitiveType ptype)
+  : ptype_(ptype) {
   if (ptype_ == tp_Null) {
     set_or_null_flag();
     ptype_ = tp_any;
@@ -64,12 +63,12 @@ TypeData::TypeData(PrimitiveType ptype) :
   }
 }
 
-TypeData::TypeData(const TypeData &from) :
-  ptype_(from.ptype_),
-  flags_(from.flags_),
-  indirection_(from.indirection_),
-  class_type_(from.class_type_),
-  subkeys(from.subkeys) {
+TypeData::TypeData(const TypeData &from)
+  : ptype_(from.ptype_)
+  , flags_(from.flags_)
+  , indirection_(from.indirection_)
+  , class_type_(from.class_type_)
+  , subkeys(from.subkeys) {
   for (auto &subkey : subkeys) {
     subkey.second = subkey.second->clone();
   }
@@ -167,7 +166,7 @@ std::string TypeData::as_human_readable(bool colored) const {
 }
 
 TypeData *TypeData::at_force(const Key &key) {
-  kphp_assert_msg (structured(), "bug in TypeData");
+  kphp_assert_msg(structured(), "bug in TypeData");
 
   for (const auto &subkey : subkeys) {
     if (subkey.first == key) {
@@ -274,7 +273,7 @@ bool TypeData::for_each_deep(const F &visitor) const {
   if (visitor(*this)) {
     return true;
   }
-  for (const auto &sub_key: subkeys) {
+  for (const auto &sub_key : subkeys) {
     if (sub_key.second->for_each_deep(visitor)) {
       return true;
     }
@@ -478,7 +477,7 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_nul
 
   if (new_ptype == tp_tuple && rhs->ptype() == tp_tuple) {
     if (!lhs->subkeys.empty() && !rhs->subkeys.empty() && lhs->get_tuple_max_index() != rhs->get_tuple_max_index()) {
-      lhs->set_ptype(tp_Error);   // mixing tuples of different sizes
+      lhs->set_ptype(tp_Error); // mixing tuples of different sizes
       return;
     }
   }
@@ -491,7 +490,7 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_nul
 
   bool needs_any_key = vk::any_of_equal(new_ptype, tp_array, tp_future, tp_future_queue);
   if (needs_any_key) {
-    lhs->at_force(Key::any_key());  // if didn't exist, became tp_any
+    lhs->at_force(Key::any_key()); // if didn't exist, became tp_any
   }
 
   if (!rhs->subkeys.empty()) {
@@ -511,7 +510,7 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_nul
 
 void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool save_or_false, bool save_or_null, FFIRvalueFlags ffi_flags) {
   TypeData *cur = this;
-  
+
   for (const Key &key : multi_key) {
     auto *prev = cur;
     cur = cur->write_at(key);
@@ -531,13 +530,13 @@ void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool s
   }
 
   cur->set_lca(rhs, save_or_false, save_or_null, ffi_flags);
-  if (cur->error_flag()) {  // proxy tp_Error from keys to the type itself
+  if (cur->error_flag()) { // proxy tp_Error from keys to the type itself
     this->set_ptype(tp_Error);
   }
 }
 
 void TypeData::fix_inf_array() {
-  //hack: used just to make current version stable
+  // hack: used just to make current version stable
   int depth = 0;
   const TypeData *cur = this;
   while (cur != nullptr) {
@@ -623,7 +622,7 @@ inline void get_cpp_style_type(const TypeData *type, std::string &res) {
       res += "Unknown";
       break;
     }
-    default : {
+    default: {
       res += ptype_name(tp);
       break;
     }
@@ -636,7 +635,7 @@ inline void get_txt_style_type(const TypeData *type, std::string &res) {
     case tp_Class:
       res += vk::join(type->class_types(), ", ", std::mem_fn(&ClassData::name));
       break;
-    default :
+    default:
       res += ptype_name(tp);
       break;
   }
@@ -697,8 +696,8 @@ static void type_out_impl(const TypeData *type, std::string &res, gen_out_style 
 
     if (tp == tp_tuple) {
       res += "<";
-      int size = type->get_tuple_max_index();             // order of keys is undetermined
-      for (int tuple_i = 0; tuple_i < size; ++tuple_i) {  // that's why use loop by indexes
+      int size = type->get_tuple_max_index();            // order of keys is undetermined
+      for (int tuple_i = 0; tuple_i < size; ++tuple_i) { // that's why use loop by indexes
         if (tuple_i > 0) {
           res += " , ";
         }
@@ -803,7 +802,7 @@ int type_strlen(const TypeData *type) {
       return STRLEN_ERROR;
     case tp_regexp:
     case ptype_size:
-    kphp_fail();
+      kphp_fail();
   }
   return STRLEN_ERROR;
 }
@@ -997,4 +996,3 @@ const TypeData *TypeData::create_array_of(const TypeData *element_type) {
   res->set_lca_at(MultiKey::any_key(1), element_type);
   return res;
 }
-

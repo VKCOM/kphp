@@ -17,8 +17,8 @@
 
 namespace vk {
 namespace tlo_parsing {
-tlo_parser::tlo_parser(const char *tlo_path) :
-  pos(0) {
+tlo_parser::tlo_parser(const char *tlo_path)
+  : pos(0) {
   FILE *f = std::fopen(tlo_path, "rb");
   if (f == nullptr) {
     error("%s", strerror(errno));
@@ -56,7 +56,7 @@ std::string tlo_parser::get_string() {
 }
 
 void tlo_parser::check_pos(size_t size) {
-  assert (pos + size <= len);
+  assert(pos + size <= len);
 }
 
 std::unique_ptr<type_expr_base> tlo_parser::read_type_expr() {
@@ -185,7 +185,7 @@ void tlo_parser::error(const char *format, ...) {
   constexpr size_t BUFF_SZ = 1024;
   char buff[BUFF_SZ];
   va_list args;
-  va_start (args, format);
+  va_start(args, format);
   int sz = vsnprintf(buff, BUFF_SZ, format, args);
   std::string error_msg = std::string(buff, static_cast<size_t>(sz));
   va_end(args);
@@ -224,12 +224,10 @@ TLOParsingResult parse_tlo(const char *tlo_path, bool rename_all_forbidden_names
 }
 
 void rename_tl_name_if_forbidden(std::string &tl_name) {
-  static const std::unordered_map<std::string, std::string> RENAMING_MAP = {
-    {"ReqResult",       "RpcResponse"},
-    {"_",               "rpcResponseOk"},
-    {"reqResultHeader", "rpcResponseHeader"},
-    {"reqError",        "rpcResponseError"}
-  };
+  static const std::unordered_map<std::string, std::string> RENAMING_MAP = {{"ReqResult", "RpcResponse"},
+                                                                            {"_", "rpcResponseOk"},
+                                                                            {"reqResultHeader", "rpcResponseHeader"},
+                                                                            {"reqError", "rpcResponseError"}};
   auto it = RENAMING_MAP.find(tl_name);
   if (it != RENAMING_MAP.end()) {
     tl_name = it->second;

@@ -24,7 +24,7 @@ string bc_zero(int scale) {
 // it would be nice to gradually rewrite it with some kind of OOP-style
 namespace legacy {
 
-//parse a number into parts, returns scale on success and -1 on error
+// parse a number into parts, returns scale on success and -1 on error
 int bc_parse_number_impl(const string &s, int &lsign, int &lint, int &ldot, int &lfrac, int &lscale) {
   int i = 0;
   lsign = 1;
@@ -65,7 +65,7 @@ int bc_parse_number_impl(const string &s, int &lsign, int &lint, int &ldot, int 
 
   if (lscale == 0 && lfrac > ldot) {
     lfrac--;
-    php_assert (lfrac == ldot);
+    php_assert(lfrac == ldot);
   }
 
   if (lsign < 0 && (lscale == 0 && s[lint] == '0')) {
@@ -105,7 +105,7 @@ string bc_round(char *lhs, int lint, int ldot, int lfrac, int lscale, int scale,
     lint++;
   }
 
-  php_assert (lint > 0 && lscale >= 0 && scale >= 0);
+  php_assert(lint > 0 && lscale >= 0 && scale >= 0);
 
   if (lscale > scale) {
     lscale = scale;
@@ -123,7 +123,7 @@ string bc_round(char *lhs, int lint, int ldot, int lfrac, int lscale, int scale,
 
   if (lscale == 0 && lfrac > ldot) {
     lfrac--;
-    php_assert (lfrac == ldot);
+    php_assert(lfrac == ldot);
   }
 
   if (sign < 0) {
@@ -142,7 +142,8 @@ string bc_round(char *lhs, int lint, int ldot, int lfrac, int lscale, int scale,
   }
 }
 
-string bc_add_positive(const char *lhs, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rint, int rdot, int rfrac, int rscale, int scale, int sign) {
+string bc_add_positive(const char *lhs, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rint, int rdot, int rfrac, int rscale, int scale,
+                       int sign) {
   int llen = ldot - lint;
   int rlen = rdot - rint;
 
@@ -189,12 +190,13 @@ string bc_add_positive(const char *lhs, int lint, int ldot, int lfrac, int lscal
     um /= 10;
   }
   resint = cur_pos;
-  php_assert (cur_pos > 0);
+  php_assert(cur_pos > 0);
 
   return bc_round(result.buffer(), resint, resdot, resfrac, resscale, scale, sign, 1);
 }
 
-string bc_sub_positive(const char *lhs, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rint, int rdot, int rfrac, int rscale, int scale, int sign) {
+string bc_sub_positive(const char *lhs, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rint, int rdot, int rfrac, int rscale, int scale,
+                       int sign) {
   int llen = ldot - lint;
   int rlen = rdot - rint;
 
@@ -251,12 +253,13 @@ string bc_sub_positive(const char *lhs, int lint, int ldot, int lfrac, int lscal
     result[--cur_pos] = (char)(um + '0');
   }
   resint = cur_pos;
-  php_assert (cur_pos > 0);
+  php_assert(cur_pos > 0);
 
   return bc_round(result.buffer(), resint, resdot, resfrac, resscale, scale, sign, 1);
 }
 
-string bc_mul_positive_impl(const char *lhs, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rint, int rdot, int rfrac, int rscale, int scale, int sign) {
+string bc_mul_positive_impl(const char *lhs, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rint, int rdot, int rfrac, int rscale, int scale,
+                            int sign) {
   int llen = ldot - lint;
   int rlen = rdot - rint;
 
@@ -295,14 +298,15 @@ string bc_mul_positive_impl(const char *lhs, int lint, int ldot, int lfrac, int 
     result[--cur_pos] = (char)(res[i] + '0');
   }
   resint = cur_pos;
-  php_assert (cur_pos > 0);
+  php_assert(cur_pos > 0);
 
   dl::deallocate(res, static_cast<size_t>(sizeof(int) * result_size));
 
   return bc_round(result.buffer(), resint, resdot, resfrac, resscale, scale, sign, 1);
 }
 
-string bc_div_positive_impl(const char *lhs, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rint, int rdot, int rfrac, int rscale, int scale, int sign) {
+string bc_div_positive_impl(const char *lhs, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rint, int rdot, int rfrac, int rscale, int scale,
+                            int sign) {
   int llen = ldot - lint;
   int rlen = rdot - rint;
 
@@ -338,7 +342,7 @@ string bc_div_positive_impl(const char *lhs, int lint, int ldot, int lfrac, int 
     divider_skip++;
     divider_len--;
   }
-  php_assert (divider_len > 0);
+  php_assert(divider_len > 0);
 
   int cur_pow = llen - rlen + divider_skip;
   int cur_pos = 2;
@@ -416,7 +420,8 @@ string bc_div_positive_impl(const char *lhs, int lint, int ldot, int lfrac, int 
   return bc_round(result.buffer(), resint, resdot, resfrac, resscale, scale, sign, 0);
 }
 
-string bc_add_impl(const char *lhs, int lsign, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rsign, int rint, int rdot, int rfrac, int rscale, int scale) {
+string bc_add_impl(const char *lhs, int lsign, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rsign, int rint, int rdot, int rfrac, int rscale,
+                   int scale) {
   if (lsign > 0 && rsign > 0) {
     return bc_add_positive(lhs, lint, ldot, lfrac, lscale, rhs, rint, rdot, rfrac, rscale, scale, 1);
   }
@@ -441,7 +446,7 @@ string bc_add_impl(const char *lhs, int lsign, int lint, int ldot, int lfrac, in
     return bc_add_positive(lhs, lint, ldot, lfrac, lscale, rhs, rint, rdot, rfrac, rscale, scale, -1);
   }
 
-  php_assert (0);
+  php_assert(0);
 }
 
 } // namespace legacy
@@ -466,28 +471,28 @@ const BcNum ZERO_BC_NUM = bc_parse_number(ZERO).first;
 const BcNum ONE_BC_NUM = bc_parse_number(ONE).first;
 
 int bc_comp(const BcNum &lhs, const BcNum &rhs, int scale) {
-  return legacy::bc_comp_impl(lhs.str.c_str(), lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale,
-                              rhs.str.c_str(), rhs.n_int, rhs.n_dot, rhs.n_frac, rhs.n_scale, scale);
+  return legacy::bc_comp_impl(lhs.str.c_str(), lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale, rhs.str.c_str(), rhs.n_int, rhs.n_dot, rhs.n_frac, rhs.n_scale,
+                              scale);
 }
 
 string bc_mul_positive(const BcNum &lhs, const BcNum &rhs, int scale, int sign) {
-  return legacy::bc_mul_positive_impl(lhs.str.c_str(), lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale,
-                                      rhs.str.c_str(), rhs.n_int, rhs.n_dot, rhs.n_frac, rhs.n_scale, scale, sign);
+  return legacy::bc_mul_positive_impl(lhs.str.c_str(), lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale, rhs.str.c_str(), rhs.n_int, rhs.n_dot, rhs.n_frac,
+                                      rhs.n_scale, scale, sign);
 }
 
 string bc_div_positive(const BcNum &lhs, const BcNum &rhs, int scale, int sign) {
-  return legacy::bc_div_positive_impl(lhs.str.c_str(), lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale,
-                                      rhs.str.c_str(), rhs.n_int, rhs.n_dot, rhs.n_frac, rhs.n_scale, scale, sign);
+  return legacy::bc_div_positive_impl(lhs.str.c_str(), lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale, rhs.str.c_str(), rhs.n_int, rhs.n_dot, rhs.n_frac,
+                                      rhs.n_scale, scale, sign);
 }
 
 string bc_add(const BcNum &lhs, const BcNum &rhs, int scale) {
-  return legacy::bc_add_impl(lhs.str.c_str(), lhs.n_sign, lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale,
-                             rhs.str.c_str(), rhs.n_sign, rhs.n_int, rhs.n_dot, rhs.n_frac, rhs.n_scale, scale);
+  return legacy::bc_add_impl(lhs.str.c_str(), lhs.n_sign, lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale, rhs.str.c_str(), rhs.n_sign, rhs.n_int, rhs.n_dot,
+                             rhs.n_frac, rhs.n_scale, scale);
 }
 
 string bc_sub(const BcNum &lhs, const BcNum &rhs, int scale) {
-  return legacy::bc_add_impl(lhs.str.c_str(),        lhs.n_sign, lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale,
-                             rhs.str.c_str(), (-1) * rhs.n_sign, rhs.n_int, rhs.n_dot, rhs.n_frac, rhs.n_scale, scale);
+  return legacy::bc_add_impl(lhs.str.c_str(), lhs.n_sign, lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale, rhs.str.c_str(), (-1) * rhs.n_sign, rhs.n_int,
+                             rhs.n_dot, rhs.n_frac, rhs.n_scale, scale);
 }
 
 } // namespace

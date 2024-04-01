@@ -154,7 +154,7 @@ int do_unserialize(const char *s, int s_len, mixed &out_var_value) noexcept {
           s_len -= j + 4;
 
           array_size size(len, false);
-          if (s[0] == 'i') {//try to cheat
+          if (s[0] == 'i') { // try to cheat
             size = array_size(len, s[1] == ':' && s[2] == '0' && s[3] == ';');
           }
           array<mixed> res(size);

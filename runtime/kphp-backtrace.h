@@ -16,10 +16,7 @@ public:
   KphpBacktrace(void *const *raw_backtrace, int32_t size) noexcept;
 
   auto make_demangled_backtrace_range(bool full_trace = false) noexcept {
-    return vk::make_transform_iterator_range(
-      [this, full_trace](const char *symbol) { return make_line(symbol, full_trace); },
-      symbols_begin_, symbols_end_
-    );
+    return vk::make_transform_iterator_range([this, full_trace](const char *symbol) { return make_line(symbol, full_trace); }, symbols_begin_, symbols_end_);
   }
 
   ~KphpBacktrace() noexcept {
@@ -44,6 +41,6 @@ private:
 
 array<string> f$kphp_backtrace(bool pretty = true) noexcept;
 
-void parse_kphp_backtrace(char * buffer, size_t buffer_len, void * const * raw_backtrace, int backtrace_len);
+void parse_kphp_backtrace(char *buffer, size_t buffer_len, void *const *raw_backtrace, int backtrace_len);
 
 void free_kphp_backtrace() noexcept;

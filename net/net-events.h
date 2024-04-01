@@ -13,8 +13,8 @@
 
 #include "net/net-reactor.h"
 
-#define        MAX_EVENTS                (1 << 19)
-#define        MAX_EVENT_TIMERS        (1 << 19)
+#define MAX_EVENTS (1 << 19)
+#define MAX_EVENT_TIMERS (1 << 19)
 
 DECLARE_VERBOSITY(net_events);
 
@@ -42,7 +42,7 @@ static inline int epoll_fd() {
   return main_thread_reactor.epoll_fd;
 }
 
-static inline event_t* epoll_fd_event(int fd) {
+static inline event_t *epoll_fd_event(int fd) {
   return net_reactor_fd_event(&main_thread_reactor, fd);
 }
 
@@ -113,7 +113,6 @@ static inline int epoll_work(int timeout) {
 
   net_reactor_run_timers(&main_thread_reactor);
   return net_reactor_runqueue(&main_thread_reactor);
-
 }
 
 static inline int epoll_insert(int fd, int flags) {

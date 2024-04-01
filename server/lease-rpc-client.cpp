@@ -26,9 +26,7 @@ bool LeaseRpcClient::is_alive() const {
 }
 
 const LeaseRpcClient &RpcClients::get_random_alive_client() {
-  auto alive_end = std::partition(rpc_clients.begin(), rpc_clients.end(), [](const LeaseRpcClient &rpc_client) {
-    return rpc_client.is_alive();
-  });
+  auto alive_end = std::partition(rpc_clients.begin(), rpc_clients.end(), [](const LeaseRpcClient &rpc_client) { return rpc_client.is_alive(); });
   size_t alive_cnt = alive_end - rpc_clients.begin();
   if (alive_cnt == 0) {
     static LeaseRpcClient default_client;

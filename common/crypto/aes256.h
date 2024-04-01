@@ -5,8 +5,8 @@
 #ifndef __NET_CRYPTO_AES256_H
 #define __NET_CRYPTO_AES256_H
 
-#include <sys/cdefs.h>
 #include <stdint.h>
+#include <sys/cdefs.h>
 
 #include <openssl/aes.h>
 
@@ -18,7 +18,7 @@ struct aes256_ctx {
 typedef struct aes256_ctx aes256_ctx_t;
 
 static inline void *align16(void *ptr) {
-  return (void *) (((uintptr_t) ptr + 15) & -16L);
+  return (void *)(((uintptr_t)ptr + 15) & -16L);
 }
 
 typedef struct vk_aes_ctx {

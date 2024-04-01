@@ -6,8 +6,8 @@
 
 #include "runtime/msgpack/adaptors.h"
 #include "runtime/msgpack/packer.h"
-#include "runtime/msgpack/unpacker.h"
 #include "runtime/msgpack/unpack_exception.h"
+#include "runtime/msgpack/unpacker.h"
 
 #include "common/containers/final_action.h"
 
@@ -48,7 +48,7 @@ inline string f$msgpack_serialize_safe(const T &value) noexcept {
   string err_msg;
   auto res = f$msgpack_serialize(value, &err_msg);
   if (!err_msg.empty()) {
-    THROW_EXCEPTION (new_Exception(string(__FILE__), __LINE__, err_msg));
+    THROW_EXCEPTION(new_Exception(string(__FILE__), __LINE__, err_msg));
     return {};
   }
   return res.val();
@@ -139,23 +139,23 @@ inline ResultType f$msgpack_deserialize_safe(const string &buffer) noexcept {
   string err_msg;
   auto res = f$msgpack_deserialize(buffer, &err_msg);
   if (!err_msg.empty()) {
-    THROW_EXCEPTION (new_Exception(string(__FILE__), __LINE__, err_msg));
+    THROW_EXCEPTION(new_Exception(string(__FILE__), __LINE__, err_msg));
     return {};
   }
   return res;
 }
 
 template<class ResultClass>
-inline ResultClass f$instance_deserialize(const string &buffer, const string&) noexcept {
+inline ResultClass f$instance_deserialize(const string &buffer, const string &) noexcept {
   return f$msgpack_deserialize<ResultClass>(buffer);
 }
 
 template<class ResultClass>
-inline ResultClass f$instance_deserialize_safe(const string &buffer, const string&) noexcept {
+inline ResultClass f$instance_deserialize_safe(const string &buffer, const string &) noexcept {
   string err_msg;
   auto res = f$msgpack_deserialize<ResultClass>(buffer, &err_msg);
   if (!err_msg.empty()) {
-    THROW_EXCEPTION (new_Exception(string(__FILE__), __LINE__, err_msg));
+    THROW_EXCEPTION(new_Exception(string(__FILE__), __LINE__, err_msg));
     return {};
   }
   return res;

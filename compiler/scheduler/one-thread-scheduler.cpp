@@ -22,7 +22,7 @@ void OneThreadScheduler::add_sync_node(Node *node) {
 }
 
 void OneThreadScheduler::add_task(Task *task) {
-  assert (task_pull != nullptr);
+  assert(task_pull != nullptr);
   task_pull->add_task(task);
 }
 

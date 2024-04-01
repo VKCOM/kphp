@@ -7,7 +7,7 @@
 
 #include <sys/cdefs.h>
 
-#pragma pack(push,4)
+#pragma pack(push, 4)
 
 struct process_id {
   unsigned ip;
@@ -21,14 +21,14 @@ typedef struct process_id process_id_t;
 
 extern process_id_t PID;
 
-void init_common_PID ();
-void init_client_PID (unsigned ip);
-void init_server_PID (unsigned ip, int port);
+void init_common_PID();
+void init_client_PID(unsigned ip);
+void init_server_PID(unsigned ip, int port);
 void reset_PID();
 
 enum pid_match { no_pid_match, partial_pid_match, full_pid_match };
 typedef enum pid_match pid_match_t;
 
-pid_match_t matches_pid (const struct process_id *X, const struct process_id *Y);
+pid_match_t matches_pid(const struct process_id *X, const struct process_id *Y);
 
 #endif

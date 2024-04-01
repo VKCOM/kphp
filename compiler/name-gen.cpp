@@ -7,13 +7,13 @@
 #include "common/algorithms/hashes.h"
 #include "common/wrappers/likely.h"
 
-#include "compiler/type-hint.h"
 #include "compiler/compiler-core.h"
 #include "compiler/const-manipulations.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/pipes/register-variables.h"
 #include "compiler/stage.h"
+#include "compiler/type-hint.h"
 
 std::string gen_anonymous_scope_name(FunctionPtr function) {
   return gen_unique_name("cdef", function);
@@ -51,7 +51,7 @@ std::string gen_const_array_name(const VertexAdaptor<op_array> &array) {
   return fmt_format("const_array$us{:x}", ArrayHash::calc_hash(array));
 }
 
-std::string gen_unique_name(const std::string& prefix, FunctionPtr function) {
+std::string gen_unique_name(const std::string &prefix, FunctionPtr function) {
   if (!function) {
     function = stage::get_function();
   }
@@ -73,8 +73,7 @@ std::string resolve_uses(FunctionPtr resolve_context, const std::string &class_n
     if (const auto *parent_name = resolve_context->get_this_or_topmost_if_lambda()->class_id->get_parent_class_name()) {
       return *parent_name;
     }
-    kphp_error(resolve_context->class_id && resolve_context->class_id->is_trait(),
-               "Using parent:: in class that extends nothing");
+    kphp_error(resolve_context->class_id && resolve_context->class_id->is_trait(), "Using parent:: in class that extends nothing");
     return {};
   }
 
@@ -129,45 +128,39 @@ ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr lhs, Vert
     // $var->...
     case op_var: {
       auto klass = assume_class_of_expr(function, lhs, v).try_as_class();
-      kphp_error(klass,
-                 _err_instance_access(v,
-                                      function->find_param_by_name(lhs->get_string())
-                                      ? fmt_format("${} is not an instance or it can't be detected.\n"
-                                                   "Add /** @param {} ${} */ to phpdoc above {}.",
-                                                   _safe_str(lhs), "{type}", _safe_str(lhs), function->as_human_readable())
-                                      : fmt_format("${} is not an instance or it can't be detected.\n"
-                                                   "Add /** @var {} ${} */ above the first assignment to ${}.",
-                                                   _safe_str(lhs), "{type}", _safe_str(lhs), _safe_str(lhs))
-                 ));
+      kphp_error(klass, _err_instance_access(v, function->find_param_by_name(lhs->get_string())
+                                                  ? fmt_format("${} is not an instance or it can't be detected.\n"
+                                                               "Add /** @param {} ${} */ to phpdoc above {}.",
+                                                               _safe_str(lhs), "{type}", _safe_str(lhs), function->as_human_readable())
+                                                  : fmt_format("${} is not an instance or it can't be detected.\n"
+                                                               "Add /** @var {} ${} */ above the first assignment to ${}.",
+                                                               _safe_str(lhs), "{type}", _safe_str(lhs), _safe_str(lhs))));
       return klass;
     }
 
     // getInstance()->...
     case op_func_call: {
       auto klass = assume_class_of_expr(function, lhs, v).try_as_class();
-      kphp_error(klass,
-                 _err_instance_access(v, fmt_format("{}() does not return an instance or it can't be detected.\n"
-                                                    "Add @return tag to function phpdoc.",
-                                                    _safe_str(lhs))));
+      kphp_error(klass, _err_instance_access(v, fmt_format("{}() does not return an instance or it can't be detected.\n"
+                                                           "Add @return tag to function phpdoc.",
+                                                           _safe_str(lhs))));
       return klass;
     }
 
     // $callback()->...
     case op_invoke_call: {
       auto klass = assume_class_of_expr(function, lhs, v).try_as_class();
-      kphp_error(klass,
-                 _err_instance_access(v, fmt_format("A callback does not return an instance or it can't be detected.\n"
-                                                    "Extract the result of a callback invocation to a separate variable, providing @var phpdoc.")));
+      kphp_error(klass, _err_instance_access(v, fmt_format("A callback does not return an instance or it can't be detected.\n"
+                                                           "Extract the result of a callback invocation to a separate variable, providing @var phpdoc.")));
       return klass;
     }
 
     // ...->anotherInstance->...
     case op_instance_prop: {
       auto klass = assume_class_of_expr(function, lhs, v).try_as_class();
-      kphp_error(klass,
-                 _err_instance_access(v, fmt_format("{}->{} is not an instance or it can't be detected.\n"
-                                                    "Provide /** @var {} */ above the field declaration or use a field type hint.",
-                                                    _safe_str(lhs.as<op_instance_prop>()->instance()), _safe_str(lhs), "{type}")));
+      kphp_error(klass, _err_instance_access(v, fmt_format("{}->{} is not an instance or it can't be detected.\n"
+                                                           "Provide /** @var {} */ above the field declaration or use a field type hint.",
+                                                           _safe_str(lhs.as<op_instance_prop>()->instance()), _safe_str(lhs), "{type}")));
       return klass;
     }
 
@@ -179,28 +172,25 @@ ClassPtr resolve_class_of_arrow_access(FunctionPtr function, VertexPtr lhs, Vert
         // $var[$idx]->...
         if (array->type() == op_var) {
           auto as_inner_klass = assume_class_of_expr(function, array, v).get_subkey_by_index(index->key()).try_as_class();
-          kphp_error(as_inner_klass,
-                     _err_instance_access(v, fmt_format("${} is not an array of instances or it can't be detected.\n"
-                                                        "Add /** @var {}[] ${} */ above the first assignment to ${}.",
-                                                        _safe_str(array), "{type}", _safe_str(array), _safe_str(array))));
+          kphp_error(as_inner_klass, _err_instance_access(v, fmt_format("${} is not an array of instances or it can't be detected.\n"
+                                                                        "Add /** @var {}[] ${} */ above the first assignment to ${}.",
+                                                                        _safe_str(array), "{type}", _safe_str(array), _safe_str(array))));
           return as_inner_klass;
         }
         // getArr()[$idx]->...
         if (array->type() == op_func_call) {
           auto as_inner_klass = assume_class_of_expr(function, array, v).get_subkey_by_index(index->key()).try_as_class();
-          kphp_error(as_inner_klass,
-                     _err_instance_access(v, fmt_format("{}() does not return an array of instances or it can't be detected.\n"
-                                                        "Add @return tag to function phpdoc.",
-                                                        _safe_str(array))));
+          kphp_error(as_inner_klass, _err_instance_access(v, fmt_format("{}() does not return an array of instances or it can't be detected.\n"
+                                                                        "Add @return tag to function phpdoc.",
+                                                                        _safe_str(array))));
           return as_inner_klass;
         }
         // ...->arrOfInstances[$idx]->...
         if (array->type() == op_instance_prop) {
           auto as_inner_klass = assume_class_of_expr(function, array, v).get_subkey_by_index(index->key()).try_as_class();
-          kphp_error(as_inner_klass,
-                     _err_instance_access(v, fmt_format("{}->{} is not array of instances or it can't be detected.\n"
-                                                        "Provide /** @var {}[] */ above the field declaration.",
-                                                        _safe_str(array.as<op_instance_prop>()->instance()), _safe_str(array), "{type}")));
+          kphp_error(as_inner_klass, _err_instance_access(v, fmt_format("{}->{} is not array of instances or it can't be detected.\n"
+                                                                        "Provide /** @var {}[] */ above the field declaration.",
+                                                                        _safe_str(array.as<op_instance_prop>()->instance()), _safe_str(array), "{type}")));
           return as_inner_klass;
         }
       }

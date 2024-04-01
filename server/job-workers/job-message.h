@@ -7,8 +7,8 @@
 #include "common/mixin/not_copyable.h"
 
 #include "runtime/job-workers/job-interface.h"
-#include "runtime/memory_resource/unsynchronized_pool_resource.h"
 #include "runtime/kphp_core.h"
+#include "runtime/memory_resource/unsynchronized_pool_resource.h"
 
 namespace job_workers {
 
@@ -46,7 +46,6 @@ struct alignas(8) JobMetadata : vk::not_copyable {
   ~JobMetadata() = default;
 };
 
-
 struct alignas(8) JobSharedMessageMetadata : JobMetadata {
 public:
   int32_t job_id{0};
@@ -72,7 +71,7 @@ protected:
   ~JobSharedMessageMetadata() = default;
 };
 
-template <typename Metadata>
+template<typename Metadata>
 struct alignas(8) GenericJobMessage : Metadata {
 private:
   static constexpr size_t MEMORY_POOL_BUFFER_SIZE = JOB_SHARED_MESSAGE_BYTES - sizeof(Metadata);
@@ -87,11 +86,11 @@ private:
 };
 
 struct alignas(8) JobSharedMessage : GenericJobMessage<JobSharedMessageMetadata> {
-// It's not a typedef because we need to forward declare this struct in several places
+  // It's not a typedef because we need to forward declare this struct in several places
 };
 
 struct alignas(8) JobSharedMemoryPiece : GenericJobMessage<JobMetadata> {
-// It's not a typedef because we need to forward declare this struct in several places
+  // It's not a typedef because we need to forward declare this struct in several places
 };
 
 static_assert(sizeof(JobSharedMemoryPiece) == JOB_SHARED_MESSAGE_BYTES, "check yourself");

@@ -147,29 +147,19 @@ FunctionStatsBase::Stats &FunctionStatsBase::Stats::operator-=(const Stats &othe
 
 void FunctionStatsBase::Stats::write_to(FILE *out, long double nanoseconds_to_tsc_rate) const noexcept {
   fprintf(out,
-          "%" PRIu64 " %" PRIu64
-          " %" PRIu64 " %" PRIu64
-          " %" PRIu64
-          " %" PRIu64 " %" PRIu64 " %" PRIu64
-          " %" PRIu64 " %" PRIu64 " %" PRIu64
-          " %" PRIu64 " %" PRIu64 " %" PRIu64
-          " %" PRIu64 " %" PRIu64 "\n",
-          total_allocations, total_memory_allocated,
-          memory_used, real_memory_used,
-          context_swaps_for_query_count,
-          rpc_requests_stat.queries_count(), rpc_requests_stat.outgoing_bytes(), rpc_requests_stat.incoming_bytes(),
-          sql_requests_stat.queries_count(), sql_requests_stat.outgoing_bytes(), sql_requests_stat.incoming_bytes(),
-          mc_requests_stat.queries_count(), mc_requests_stat.outgoing_bytes(), mc_requests_stat.incoming_bytes(),
-          tsc2ns(working_tsc, nanoseconds_to_tsc_rate),
-          tsc2ns(waiting_tsc, nanoseconds_to_tsc_rate));
+          "%" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64
+          " %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64 "\n",
+          total_allocations, total_memory_allocated, memory_used, real_memory_used, context_swaps_for_query_count, rpc_requests_stat.queries_count(),
+          rpc_requests_stat.outgoing_bytes(), rpc_requests_stat.incoming_bytes(), sql_requests_stat.queries_count(), sql_requests_stat.outgoing_bytes(),
+          sql_requests_stat.incoming_bytes(), mc_requests_stat.queries_count(), mc_requests_stat.outgoing_bytes(), mc_requests_stat.incoming_bytes(),
+          tsc2ns(working_tsc, nanoseconds_to_tsc_rate), tsc2ns(waiting_tsc, nanoseconds_to_tsc_rate));
 }
 
-FunctionStatsBase::FunctionStatsBase(const char *file, const char *function, size_t line, size_t level) noexcept:
-  file_name(file),
-  function_name(function),
-  function_line(line),
-  profiler_level(level) {
-}
+FunctionStatsBase::FunctionStatsBase(const char *file, const char *function, size_t line, size_t level) noexcept
+  : file_name(file)
+  , function_name(function)
+  , function_line(line)
+  , profiler_level(level) {}
 
 void FunctionStatsBase::on_call_finish(const Stats &profiled_stats) noexcept {
   self_stats_ += profiled_stats;
@@ -192,7 +182,7 @@ void FunctionStatsBase::flush(FILE *out, long double nanoseconds_to_tsc_rate) no
     fprintf(out, "\n%zu ", function_line);
     self_stats_.write_to(out, nanoseconds_to_tsc_rate);
 
-    for (const auto &callee: callees_) {
+    for (const auto &callee : callees_) {
       fprintf(out, "cfl=%s\ncfn=", callee.first->file_name);
       callee.first->write_function_name_with_label(out);
       fprintf(out, "\ncalls=%" PRIu64 "\n%zu ", callee.second.calls, function_line);
@@ -204,10 +194,9 @@ void FunctionStatsBase::flush(FILE *out, long double nanoseconds_to_tsc_rate) no
   callees_.clear();
 }
 
-FunctionStatsNoLabel::FunctionStatsNoLabel(const char *file, const char *function, size_t line, size_t level) noexcept:
-  FunctionStatsBase(file, function, line, level),
-  TracingProfilerListNode<FunctionStatsNoLabel>(ProfilerContext::get().function_list.update_top(this)) {
-}
+FunctionStatsNoLabel::FunctionStatsNoLabel(const char *file, const char *function, size_t line, size_t level) noexcept
+  : FunctionStatsBase(file, function, line, level)
+  , TracingProfilerListNode<FunctionStatsNoLabel>(ProfilerContext::get().function_list.update_top(this)) {}
 
 FunctionStatsWithLabel &FunctionStatsNoLabel::get_stats_with_label(vk::string_view label) noexcept {
   auto it = labels_.find(label);
@@ -221,9 +210,9 @@ FunctionStatsWithLabel &FunctionStatsNoLabel::get_stats_with_label(vk::string_vi
   return *labels_.emplace(label, std::move(label_ptr)).first->second;
 }
 
-FunctionStatsWithLabel::FunctionStatsWithLabel(FunctionStatsNoLabel &no_label, vk::string_view label) noexcept:
-  FunctionStatsBase(no_label.file_name, no_label.function_name, no_label.function_line, no_label.profiler_level),
-  parent_stats_no_label(no_label) {
+FunctionStatsWithLabel::FunctionStatsWithLabel(FunctionStatsNoLabel &no_label, vk::string_view label) noexcept
+  : FunctionStatsBase(no_label.file_name, no_label.function_name, no_label.function_line, no_label.profiler_level)
+  , parent_stats_no_label(no_label) {
   php_assert(label.size() < label_buffer_.size());
   std::memcpy(label_buffer_.data(), label.data(), label.size());
   label_buffer_[label.size()] = '\0';
@@ -295,8 +284,7 @@ void ProfilerBase::use_function_label(vk::string_view label) noexcept {
 }
 
 bool ProfilerBase::is_profiling_allowed(bool is_root) noexcept {
-  return profiler_config.log_path_mask &&
-         (is_root || ProfilerContext::get().call_stack.get_top());
+  return profiler_config.log_path_mask && (is_root || ProfilerContext::get().call_stack.get_top());
 }
 
 void ProfilerBase::forcibly_dump_log_on_finish(const char *function_name) noexcept {
@@ -310,8 +298,8 @@ void ProfilerBase::forcibly_dump_log_on_finish(const char *function_name) noexce
   if (function_name) {
     vk::string_view suffix{function_name};
     suffix_size = std::min(suffix.size(), suffix_buffer.size());
-    std::replace_copy_if(suffix.begin(), suffix.begin() + suffix_size, suffix_buffer.begin(),
-                         [](char c) { return !isalnum(c); }, '_');
+    std::replace_copy_if(
+      suffix.begin(), suffix.begin() + suffix_size, suffix_buffer.begin(), [](char c) { return !isalnum(c); }, '_');
   }
   context.update_log_suffix({suffix_buffer.data(), suffix_size});
 }
@@ -521,48 +509,45 @@ void forcibly_stop_and_flush_profiler() noexcept {
   }
 
   char profiler_log_path[PATH_MAX * 2]{'\0'};
-  const int len = snprintf(profiler_log_path, sizeof(profiler_log_path) - 1,
-                           "%s%s%" PRIX64 ".%d",
-                           profiler_config.log_path_mask, context.profiler_log_suffix,
+  const int len = snprintf(profiler_log_path, sizeof(profiler_log_path) - 1, "%s%s%" PRIX64 ".%d", profiler_config.log_path_mask, context.profiler_log_suffix,
                            static_cast<uint64_t>(std::chrono::system_clock::now().time_since_epoch().count()), getpid());
   php_assert(len > 0 && sizeof(profiler_log_path) >= static_cast<size_t>(len + 1));
   FILE *profiler_log = fopen(profiler_log_path, "w");
-  fprintf(profiler_log,
-          "# callgrind format\n"
-          "event: total_allocations : Memory: Total allocations count\n"
-          "event: total_memory_allocated : Memory: Total allocated bytes\n"
-          "event: memory_allocated : Memory: Extra allocated bytes\n"
-          "event: real_memory_allocated : Memory: Extra real allocated bytes\n"
+  fprintf(profiler_log, "# callgrind format\n"
+                        "event: total_allocations : Memory: Total allocations count\n"
+                        "event: total_memory_allocated : Memory: Total allocated bytes\n"
+                        "event: memory_allocated : Memory: Extra allocated bytes\n"
+                        "event: real_memory_allocated : Memory: Extra real allocated bytes\n"
 
-          "event: query_ctx_swaps : Queries: Context swaps for queries\n"
+                        "event: query_ctx_swaps : Queries: Context swaps for queries\n"
 
-          "event: rpc_outgoing_queries: Queries: RPC outgoing queries\n"
-          "event: rpc_outgoing_traffic: Traffic: RPC outgoing bytes\n"
-          "event: rpc_incoming_traffic: Traffic: RPC incoming bytes\n"
+                        "event: rpc_outgoing_queries: Queries: RPC outgoing queries\n"
+                        "event: rpc_outgoing_traffic: Traffic: RPC outgoing bytes\n"
+                        "event: rpc_incoming_traffic: Traffic: RPC incoming bytes\n"
 
-          "event: sql_outgoing_queries: Queries: SQL outgoing queries\n"
-          "event: sql_outgoing_traffic: Traffic: SQL outgoing bytes\n"
-          "event: sql_incoming_traffic: Traffic: SQL incoming bytes\n"
+                        "event: sql_outgoing_queries: Queries: SQL outgoing queries\n"
+                        "event: sql_outgoing_traffic: Traffic: SQL outgoing bytes\n"
+                        "event: sql_incoming_traffic: Traffic: SQL incoming bytes\n"
 
-          "event: mc_outgoing_queries: Queries: MC outgoing queries\n"
-          "event: mc_outgoing_traffic: Traffic: MC outgoing bytes\n"
-          "event: mc_incoming_traffic: Traffic: MC incoming bytes\n"
+                        "event: mc_outgoing_queries: Queries: MC outgoing queries\n"
+                        "event: mc_outgoing_traffic: Traffic: MC outgoing bytes\n"
+                        "event: mc_incoming_traffic: Traffic: MC incoming bytes\n"
 
-          "event: summary_queries = rpc_outgoing_queries + sql_outgoing_queries + mc_outgoing_queries: Queries: Summary outgoing queries\n"
-          "event: summary_outgoing_traffic = rpc_outgoing_traffic + sql_outgoing_traffic + mc_outgoing_traffic: Traffic: Summary outgoing bytes\n"
-          "event: summary_incoming_traffic = rpc_incoming_traffic + sql_incoming_traffic + mc_incoming_traffic: Traffic: Summary incoming bytes\n"
+                        "event: summary_queries = rpc_outgoing_queries + sql_outgoing_queries + mc_outgoing_queries: Queries: Summary outgoing queries\n"
+                        "event: summary_outgoing_traffic = rpc_outgoing_traffic + sql_outgoing_traffic + mc_outgoing_traffic: Traffic: Summary outgoing bytes\n"
+                        "event: summary_incoming_traffic = rpc_incoming_traffic + sql_incoming_traffic + mc_incoming_traffic: Traffic: Summary incoming bytes\n"
 
-          "event: cpu_ns : Nanoseconds: CPU\n"
-          "event: net_ns : Nanoseconds: Net\n"
-          "event: total_ns = cpu_ns + net_ns : Nanoseconds: Full\n"
+                        "event: cpu_ns : Nanoseconds: CPU\n"
+                        "event: net_ns : Nanoseconds: Net\n"
+                        "event: total_ns = cpu_ns + net_ns : Nanoseconds: Full\n"
 
-          "events: "
-          "total_allocations total_memory_allocated memory_allocated real_memory_allocated "
-          "query_ctx_swaps "
-          "rpc_outgoing_queries rpc_outgoing_traffic rpc_incoming_traffic "
-          "sql_outgoing_queries sql_outgoing_traffic sql_incoming_traffic "
-          "mc_outgoing_queries mc_outgoing_traffic mc_incoming_traffic "
-          "cpu_ns net_ns\n\n");
+                        "events: "
+                        "total_allocations total_memory_allocated memory_allocated real_memory_allocated "
+                        "query_ctx_swaps "
+                        "rpc_outgoing_queries rpc_outgoing_traffic rpc_incoming_traffic "
+                        "sql_outgoing_queries sql_outgoing_traffic sql_incoming_traffic "
+                        "mc_outgoing_queries mc_outgoing_traffic mc_incoming_traffic "
+                        "cpu_ns net_ns\n\n");
 
   const long double nanoseconds_to_tsc_rate = context.calc_nanoseconds_to_tsc_rate();
   next_function = context.function_list.get_top();
@@ -610,8 +595,8 @@ void f$profiler_set_function_label(const string &label) noexcept {
     }
 
     if (unlikely(label_view.size() > FunctionStatsWithLabel::label_max_len())) {
-      php_warning("Trying to set too long label '%s', it will be truncated to '%.*s'",
-                  label.c_str(), static_cast<int>(FunctionStatsWithLabel::label_max_len()), label.c_str());
+      php_warning("Trying to set too long label '%s', it will be truncated to '%.*s'", label.c_str(), static_cast<int>(FunctionStatsWithLabel::label_max_len()),
+                  label.c_str());
       label_view.remove_suffix(label.size() - FunctionStatsWithLabel::label_max_len());
     }
     top->use_function_label(label_view);

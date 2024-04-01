@@ -4,8 +4,8 @@
 
 #include "server/shared-data.h"
 
-#include <new>
 #include "common/wrappers/memory-utils.h"
+#include <new>
 
 WorkersStats::PackerRepr WorkersStats::pack() const noexcept {
   uint64_t stats = 0;

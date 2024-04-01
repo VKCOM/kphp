@@ -27,9 +27,8 @@ void NodeRecalc::on_new_type_became_tpError(const TypeData *because_of_type, con
   }
 
   if (mix_class && mix_class2 && mix_class != mix_class2 && !vk::any_of_equal(ptype_before_error, tp_tuple, tp_shape)) {
-    kphp_error(0, fmt_format("Type Error: mix classes {} and {}: {} and {}\n",
-                             TermStringFormat::paint_green(mix_class->name), TermStringFormat::paint_green(mix_class2->name),
-                             desc1, desc2));
+    kphp_error(0, fmt_format("Type Error: mix classes {} and {}: {} and {}\n", TermStringFormat::paint_green(mix_class->name),
+                             TermStringFormat::paint_green(mix_class2->name), desc1, desc2));
 
   } else if ((mix_class || mix_class2) && !vk::any_of_equal(ptype_before_error, tp_tuple, tp_shape)) {
     const auto class_name = TermStringFormat::paint_green(mix_class ? mix_class->name : mix_class2->name);
@@ -49,12 +48,11 @@ void NodeRecalc::on_new_type_became_tpError(const TypeData *because_of_type, con
 
   } else if (ptype_before_error == tp_void || because_of_type->ptype() == tp_void) {
     kphp_error(0, fmt_format("Type Error: mixing void and non-void expressions ({} and {})\n", desc1, desc2));
-    
+
   } else {
-    kphp_error (0, fmt_format("Type Error [{}] updated by [{}]\n", desc1, desc2));
+    kphp_error(0, fmt_format("Type Error [{}] updated by [{}]\n", desc1, desc2));
   }
 }
-
 
 const TypeData *NodeRecalc::new_type() {
   return new_type_;
@@ -147,14 +145,13 @@ void NodeRecalc::set_lca(ClassPtr klass) {
   set_lca(klass->type_data);
 }
 
-
-NodeRecalc::NodeRecalc(tinf::Node *node, tinf::TypeInferer *inferer) :
-  new_type_(nullptr),
-  node_(node),
-  inferer_(inferer) {}
+NodeRecalc::NodeRecalc(tinf::Node *node, tinf::TypeInferer *inferer)
+  : new_type_(nullptr)
+  , node_(node)
+  , inferer_(inferer) {}
 
 void NodeRecalc::on_changed() {
-  //fmt_fprintf(stderr, "{} : {} -> {}\n", node_->get_description(), type_out(node_->get_type()), type_out(new_type()));
+  // fmt_fprintf(stderr, "{} : {} -> {}\n", node_->get_description(), type_out(node_->get_type()), type_out(new_type()));
   new_type_->mark_classes_used();
   node_->set_type(new_type_);
   new_type_ = nullptr;
@@ -179,8 +176,7 @@ void NodeRecalc::run() {
   }
 
   // detect if new_type_ differs from before (the first line is a small optimization, not to invoke a function if obvious)
-  bool changed = new_type_->ptype() != before->ptype() || new_type_->flags() != before->flags() ||
-                 new_type_->did_type_data_change_after_tinf_step(before);
+  bool changed = new_type_->ptype() != before->ptype() || new_type_->flags() != before->flags() || new_type_->did_type_data_change_after_tinf_step(before);
   if (changed) {
     on_changed();
   }

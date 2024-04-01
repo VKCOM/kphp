@@ -13,14 +13,13 @@
 #include "compiler/data/vars-collector.h"
 #include "compiler/inferring/public.h"
 
-GlobalVarsMemoryStats::GlobalVarsMemoryStats(SrcFilePtr main_file) :
-  main_file_{main_file} {
-}
+GlobalVarsMemoryStats::GlobalVarsMemoryStats(SrcFilePtr main_file)
+  : main_file_{main_file} {}
 
 void GlobalVarsMemoryStats::compile(CodeGenerator &W) const {
   VarsCollector vars_collector{32, [](VarPtr global_var) {
-    return vk::none_of_equal(tinf::get_type(global_var)->get_real_ptype(), tp_bool, tp_int, tp_float, tp_any);
-  }};
+                                 return vk::none_of_equal(tinf::get_type(global_var)->get_real_ptype(), tp_bool, tp_int, tp_float, tp_any);
+                               }};
 
   vars_collector.collect_global_and_static_vars_from(main_file_->main_function);
 
@@ -30,22 +29,17 @@ void GlobalVarsMemoryStats::compile(CodeGenerator &W) const {
     global_vars_count += global_vars.size();
   }
 
-  W << OpenFile(getter_name_ + ".cpp", "", false)
-    << ExternInclude(G->settings().runtime_headers.get())
-    << OpenNamespace();
+  W << OpenFile(getter_name_ + ".cpp", "", false) << ExternInclude(G->settings().runtime_headers.get()) << OpenNamespace();
 
-  FunctionSignatureGenerator(W) << "array<int64_t> " << getter_name_ << "(int64_t lower_bound) " << BEGIN
-                                << "array<int64_t> result;" << NL
-                                << "result.reserve(" << global_vars_count << ", false);" << NL << NL;
+  FunctionSignatureGenerator(W) << "array<int64_t> " << getter_name_ << "(int64_t lower_bound) " << BEGIN << "array<int64_t> result;" << NL << "result.reserve("
+                                << global_vars_count << ", false);" << NL << NL;
 
   for (size_t part_id = 0; part_id < global_var_parts.size(); ++part_id) {
-    W << "void " << getter_name_ << "_" << part_id << "(int64_t lower_bound, array<int64_t> &result);" << NL
-      << getter_name_ << "_" << part_id << "(lower_bound, result);" << NL << NL;
+    W << "void " << getter_name_ << "_" << part_id << "(int64_t lower_bound, array<int64_t> &result);" << NL << getter_name_ << "_" << part_id
+      << "(lower_bound, result);" << NL << NL;
   }
 
-  W << "return result;" << NL << END
-    << CloseNamespace()
-    << CloseFile();
+  W << "return result;" << NL << END << CloseNamespace() << CloseFile();
 
   for (size_t part_id = 0; part_id < global_var_parts.size(); ++part_id) {
     compile_getter_part(W, global_var_parts[part_id], part_id);
@@ -53,8 +47,7 @@ void GlobalVarsMemoryStats::compile(CodeGenerator &W) const {
 }
 
 void GlobalVarsMemoryStats::compile_getter_part(CodeGenerator &W, const std::set<VarPtr> &global_vars, size_t part_id) const {
-  W << OpenFile(getter_name_ + "_" + std::to_string(part_id) + ".cpp", "o_" + getter_name_, false)
-    << ExternInclude(G->settings().runtime_headers.get());
+  W << OpenFile(getter_name_ + "_" + std::to_string(part_id) + ".cpp", "o_" + getter_name_, false) << ExternInclude(G->settings().runtime_headers.get());
 
   IncludesCollector includes;
   std::vector<std::string> var_names;
@@ -69,29 +62,21 @@ void GlobalVarsMemoryStats::compile_getter_part(CodeGenerator &W, const std::set
     var_names.emplace_back(std::move(var_name));
   }
 
-  W << includes << NL
-    << OpenNamespace();
+  W << includes << NL << OpenNamespace();
 
   FunctionSignatureGenerator(W) << "static string get_raw_string(int raw_offset) " << BEGIN;
   const auto var_name_shifts = compile_raw_data(W, var_names);
-  W << "string str;" << NL
-    << "str.assign_raw(&raw[raw_offset]);" << NL
-    << "return str;" << NL
-    << END << NL << NL;
+  W << "string str;" << NL << "str.assign_raw(&raw[raw_offset]);" << NL << "return str;" << NL << END << NL << NL;
 
   FunctionSignatureGenerator(W) << "void " << getter_name_ << "_" << part_id << "(int64_t lower_bound, array<int64_t> &result) " << BEGIN
                                 << "int64_t estimation = 0;" << NL;
   size_t var_num = 0;
   for (auto global_var : global_vars) {
-    W << VarDeclaration(global_var, true, false)
-      << "estimation = f$estimate_memory_usage(" << VarName(global_var) << ");" << NL
-      << "if (estimation > lower_bound) " << BEGIN
-      << "result.set_value(get_raw_string(" << var_name_shifts[var_num++] << "), estimation);" << NL
-      << END << NL;
+    W << VarDeclaration(global_var, true, false) << "estimation = f$estimate_memory_usage(" << VarName(global_var) << ");" << NL
+      << "if (estimation > lower_bound) " << BEGIN << "result.set_value(get_raw_string(" << var_name_shifts[var_num++] << "), estimation);" << NL << END << NL;
   }
 
   W << END;
 
-  W << CloseNamespace()
-    << CloseFile();
+  W << CloseNamespace() << CloseFile();
 }

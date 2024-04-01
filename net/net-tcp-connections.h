@@ -12,13 +12,13 @@
 
 #include "net/net-connections.h"
 
-int tcp_server_writer (struct connection *c);
-int tcp_free_connection_buffers (struct connection *c);
-int tcp_server_reader (struct connection *c);
+int tcp_server_writer(struct connection *c);
+int tcp_free_connection_buffers(struct connection *c);
+int tcp_server_reader(struct connection *c);
 int tcp_server_reader_till_end(struct connection *c);
-int tcp_aes_crypto_decrypt_input (struct connection *c);
-int tcp_aes_crypto_encrypt_output (struct connection *c);
-int tcp_aes_crypto_needed_output_bytes (struct connection *c);
+int tcp_aes_crypto_decrypt_input(struct connection *c);
+int tcp_aes_crypto_encrypt_output(struct connection *c);
+int tcp_aes_crypto_needed_output_bytes(struct connection *c);
 
 extern int tcp_buffers;
 

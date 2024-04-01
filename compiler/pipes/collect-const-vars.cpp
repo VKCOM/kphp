@@ -4,11 +4,11 @@
 
 #include "compiler/pipes/collect-const-vars.h"
 
-#include "compiler/data/src-file.h"
-#include "compiler/vertex-util.h"
-#include "compiler/data/var-data.h"
 #include "compiler/compiler-core.h"
+#include "compiler/data/src-file.h"
+#include "compiler/data/var-data.h"
 #include "compiler/name-gen.h"
+#include "compiler/vertex-util.h"
 
 namespace {
 
@@ -90,7 +90,7 @@ struct ShouldStoreOnTopDown : public VertexVisitor<ShouldStoreOnTopDown, bool> {
 
   static bool on_func_call(VertexAdaptor<op_func_call> v) {
     // const constructors are handled in on_define_val
-    auto res =  v->func_id && v->func_id->is_pure;
+    auto res = v->func_id && v->func_id->is_pure;
     return res;
   }
 
@@ -114,7 +114,7 @@ struct ShouldStoreOnBottomUp : public VertexVisitor<ShouldStoreOnBottomUp, bool>
 struct NameGenerator : public VertexVisitor<NameGenerator, std::string> {
   static constexpr auto prefix = "const_var";
 
-  static std::string fallback(VertexPtr v[[maybe_unused]]) {
+  static std::string fallback(VertexPtr v [[maybe_unused]]) {
     return gen_unique_name(prefix);
   }
 
@@ -145,36 +145,36 @@ struct NameGenerator : public VertexVisitor<NameGenerator, std::string> {
 };
 
 struct ProcessBeforeReplace : public VertexVisitor<ProcessBeforeReplace, VertexPtr> {
-    static VertexPtr fallback(VertexPtr v) {
-      return v;
-    }
+  static VertexPtr fallback(VertexPtr v) {
+    return v;
+  }
 
-    static VertexPtr on_func_call(VertexAdaptor<op_func_call> v) {
-      return remove_op_define_val(v);
-    }
+  static VertexPtr on_func_call(VertexAdaptor<op_func_call> v) {
+    return remove_op_define_val(v);
+  }
 
-    static VertexPtr on_conv_regexp(VertexAdaptor<op_conv_regexp> regexp) {
-      return remove_op_define_val(regexp);
-    }
+  static VertexPtr on_conv_regexp(VertexAdaptor<op_conv_regexp> regexp) {
+    return remove_op_define_val(regexp);
+  }
 
-    static VertexPtr on_concat(VertexAdaptor<op_concat> concat) {
-      return remove_op_define_val(concat);
-    }
+  static VertexPtr on_concat(VertexAdaptor<op_concat> concat) {
+    return remove_op_define_val(concat);
+  }
 
-    static VertexPtr on_string_build(VertexAdaptor<op_string_build> str_build) {
-      return remove_op_define_val(str_build);
-    }
+  static VertexPtr on_string_build(VertexAdaptor<op_string_build> str_build) {
+    return remove_op_define_val(str_build);
+  }
 
-  private:
-    static VertexPtr remove_op_define_val(VertexPtr v) {
-      for (VertexPtr& sub_vertex: *v) {
-        sub_vertex = remove_op_define_val(sub_vertex);
-      }
-      if (auto as_op_define_val = v.try_as<op_define_val>()) {
-        return as_op_define_val->value();
-      }
-      return v;
+private:
+  static VertexPtr remove_op_define_val(VertexPtr v) {
+    for (VertexPtr &sub_vertex : *v) {
+      sub_vertex = remove_op_define_val(sub_vertex);
     }
+    if (auto as_op_define_val = v.try_as<op_define_val>()) {
+      return as_op_define_val->value();
+    }
+    return v;
+  }
 };
 
 int get_expr_dep_level(VertexPtr vertex) {
@@ -182,7 +182,7 @@ int get_expr_dep_level(VertexPtr vertex) {
     return var->var_id->dependency_level;
   }
   int max_dependency_level = 0;
-  for (const auto &child: *vertex) {
+  for (const auto &child : *vertex) {
     max_dependency_level = std::max(max_dependency_level, get_expr_dep_level(child));
   }
   return max_dependency_level;
@@ -196,9 +196,7 @@ void set_var_dep_level(VarPtr var_id) {
   }
 }
 
-
 } // namespace
-
 
 VertexPtr CollectConstVarsPass::on_exit_vertex(VertexPtr root) {
   if (root->const_type == cnst_const_val) {
@@ -232,7 +230,6 @@ VertexPtr CollectConstVarsPass::on_enter_vertex(VertexPtr root) {
   }
   return root;
 }
-
 
 VertexPtr CollectConstVarsPass::create_const_variable(VertexPtr root, Location loc) {
   std::string name = NameGenerator::visit(root);

@@ -73,8 +73,7 @@ static inline const char *unix_sockaddr_address(const struct sockaddr_storage *s
   return unix_addr->sun_path;
 }
 
-static inline struct sockaddr_storage make_inet_sockaddr_storage(uint32_t address,
-                                                                 uint16_t port) {
+static inline struct sockaddr_storage make_inet_sockaddr_storage(uint32_t address, uint16_t port) {
   struct sockaddr_storage storage;
   storage.ss_family = AF_INET;
   struct sockaddr_in *sockaddr = cast_sockaddr_storage_to_inet(&storage);
@@ -85,8 +84,7 @@ static inline struct sockaddr_storage make_inet_sockaddr_storage(uint32_t addres
   return storage;
 }
 
-static inline struct sockaddr_storage make_inet6_sockaddr_storage(uint8_t address[16],
-                                                                  uint16_t port) {
+static inline struct sockaddr_storage make_inet6_sockaddr_storage(uint8_t address[16], uint16_t port) {
   struct sockaddr_storage storage;
   storage.ss_family = AF_INET6;
   struct sockaddr_in6 *sockaddr = cast_sockaddr_storage_to_inet6(&storage);
@@ -97,14 +95,14 @@ static inline struct sockaddr_storage make_inet6_sockaddr_storage(uint8_t addres
   return storage;
 }
 
-static inline struct sockaddr_storage make_unix_sockaddr_storage(const char* address, uint16_t port) {
+static inline struct sockaddr_storage make_unix_sockaddr_storage(const char *address, uint16_t port) {
   struct sockaddr_storage storage;
   storage.ss_family = AF_UNIX;
   struct sockaddr_un *sockaddr = cast_sockaddr_storage_to_unix(&storage);
 
   const size_t written = snprintf(sockaddr->sun_path, sizeof(sockaddr->sun_path), "%s", address);
   assert(written + 1 + sizeof(port) <= sizeof(sockaddr->sun_path));
-  *((uint16_t*) &sockaddr->sun_path[written + 1]) = port;
+  *((uint16_t *)&sockaddr->sun_path[written + 1]) = port;
 
   return storage;
 }

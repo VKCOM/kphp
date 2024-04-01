@@ -38,7 +38,6 @@
 const int UB_SIGSEGV = 3;
 TLS<VarPtr> last_ub_error;
 
-
 static inline bool in_set(const std::unordered_set<VarPtr> *a, VarPtr elem) {
   if (a != nullptr && a->find(elem) != a->end()) {
     *last_ub_error = elem;
@@ -64,8 +63,7 @@ bool is_same_var(const VarPtr &a, const VarPtr &b) {
     *last_ub_error = a;
     return true;
   }
-  return in_set(a->bad_vars, b) || in_set(b->bad_vars, a) ||
-         sets_intersect(a->bad_vars, b->bad_vars);
+  return in_set(a->bad_vars, b) || in_set(b->bad_vars, a) || sets_intersect(a->bad_vars, b->bad_vars);
 }
 
 bool is_var_written(const FunctionPtr &function, const VarPtr &var) {
@@ -78,7 +76,6 @@ bool is_var_written(const FunctionPtr &function, const VarPtr &var) {
   return sets_intersect(var->bad_vars, function->bad_vars);
 }
 
-
 class UBMergeData {
 private:
   std::vector<VarPtr> writes_;
@@ -87,11 +84,7 @@ private:
   std::vector<FunctionPtr> functions_;
 
   template<class A, class B, class F>
-  static void check(
-    const std::vector<A> &first,
-    const std::vector<B> &second,
-    F f,
-    int error_mask, int *res_error) {
+  static void check(const std::vector<A> &first, const std::vector<B> &second, F f, int error_mask, int *res_error) {
 
     if ((*res_error & error_mask) == error_mask) {
       return;
@@ -109,12 +102,12 @@ private:
 
   static int check(const UBMergeData &first, const UBMergeData &second) {
     int err = 0;
-    //sigsegv
+    // sigsegv
     check(first.functions_, second.index_refs_, is_var_written, UB_SIGSEGV, &err);
     check(second.functions_, first.index_refs_, is_var_written, UB_SIGSEGV, &err);
     check(first.writes_, second.writes_, is_same_var, UB_SIGSEGV, &err);
 
-    //just ub
+    // just ub
     check(first.reads_, second.writes_, is_same_var, UB_SIGSEGV, &err);
     check(first.writes_, second.reads_, is_same_var, UB_SIGSEGV, &err);
 
@@ -129,8 +122,7 @@ private:
   }
 
 public:
-  UBMergeData() {
-  };
+  UBMergeData(){};
 
   int merge_with(const UBMergeData &other, bool no_check_flag) {
     int err = 0;
@@ -206,12 +198,12 @@ void fix_ub_dfs(VertexPtr v, UBMergeData *data, VertexPtr parent = VertexPtr()) 
     stage::set_location(save_location);
 
     if (res > 0) {
-      bool supported = vk::any_of_equal(v->type(), op_set, op_set_value, op_push_back, op_push_back_return, op_array, op_index)
-                       || OpInfo::rl(v->type()) == rl_set;
+      bool supported =
+        vk::any_of_equal(v->type(), op_set, op_set_value, op_push_back, op_push_back_return, op_array, op_index) || OpInfo::rl(v->type()) == rl_set;
       if (supported) {
         v->extra_type = op_ex_safe_version;
       } else {
-        kphp_warning (fmt_format("Dangerous undefined behaviour {}, [var = {}]", OpInfo::str(v->type()), (*last_ub_error)->as_human_readable()));
+        kphp_warning(fmt_format("Dangerous undefined behaviour {}, [var = {}]", OpInfo::str(v->type()), (*last_ub_error)->as_human_readable()));
       }
     }
   }
@@ -221,8 +213,8 @@ void fix_ub(VertexPtr v, std::vector<VarPtr> *foreach_vars) {
   if (v->type() == op_global || v->type() == op_static) {
     return;
   }
-  if (OpInfo::type(v->type()) == cycle_op ||
-      vk::any_of_equal(v->type(), op_list, op_seq_comma, op_seq_rval, op_if, op_try, op_catch, op_seq, op_case, op_default, op_noerr)) {
+  if (OpInfo::type(v->type()) == cycle_op
+      || vk::any_of_equal(v->type(), op_list, op_seq_comma, op_seq_rval, op_if, op_try, op_catch, op_seq, op_case, op_default, op_noerr)) {
     if (auto foreach_v = v.try_as<op_foreach>()) {
       auto params = foreach_v->params();
       VertexPtr x = params->x();
@@ -248,7 +240,7 @@ void fix_ub(VertexPtr v, std::vector<VarPtr> *foreach_vars) {
   fix_ub_dfs(v, &data);
   int err = data.check_index_refs(*foreach_vars);
   if (err > 0) {
-    kphp_warning (fmt_format("Dangerous undefined behaviour {}, [foreach var = {}]", OpInfo::str(v->type()), (*last_ub_error)->as_human_readable()));
+    kphp_warning(fmt_format("Dangerous undefined behaviour {}, [foreach var = {}]", OpInfo::str(v->type()), (*last_ub_error)->as_human_readable()));
   }
 }
 

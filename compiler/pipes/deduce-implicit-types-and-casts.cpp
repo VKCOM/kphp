@@ -6,14 +6,14 @@
 #include "compiler/pipes/transform-to-smart-instanceof.h"
 
 #include "compiler/compiler-core.h"
-#include "compiler/data/src-file.h"
 #include "compiler/data/generics-mixins.h"
+#include "compiler/data/src-file.h"
 #include "compiler/generics-reification.h"
-#include "compiler/vertex-util.h"
 #include "compiler/lambda-utils.h"
 #include "compiler/name-gen.h"
 #include "compiler/phpdoc.h"
 #include "compiler/type-hint.h"
+#include "compiler/vertex-util.h"
 
 /*
  * Deducing implicit types is a very important step of the compilation pipeline.
@@ -137,7 +137,6 @@
  * - some other minors, read the code
  */
 
-
 // having a lambda with assumed types, construct TypeHintCallable from it
 // (to inherit from a typed callable interface, for example)
 static InterfacePtr get_typed_callable_interface_from_lambda(FunctionPtr f_lambda) {
@@ -161,7 +160,8 @@ static InterfacePtr get_typed_callable_interface_from_lambda(FunctionPtr f_lambd
 
 // having an array_map type_hint `callable(^2[*] $x)` and a call `array_map(fn($a) => ..., [new A]),
 // deduce that $a is A, based on ^arg refs and assumptions
-static const TypeHint *patch_type_hint_with_argref_in_context_of_call(const TypeHint *type_hint, FunctionPtr current_function, VertexAdaptor<op_func_call> call) {
+static const TypeHint *patch_type_hint_with_argref_in_context_of_call(const TypeHint *type_hint, FunctionPtr current_function,
+                                                                      VertexAdaptor<op_func_call> call) {
   const TypeHint *replaced = type_hint->replace_children_custom([current_function, call](const TypeHint *child) {
     if (const auto *as_arg_ref = child->try_as<TypeHintArgRef>()) {
       if (auto call_arg = VertexUtil::get_call_arg_ref(as_arg_ref->arg_num, call)) {
@@ -228,7 +228,7 @@ void patch_rhs_casting_to_callable(VertexPtr &rhs, const TypeHintCallable *as_ca
       f_lambda->return_typehint = patch_lambda_return_hint_replacing_genericT_in_call(as_callable->return_type, f_lambda, call);
       typed_interface = get_typed_callable_interface_from_lambda(f_lambda);
     }
-    rhs.as<op_lambda>()->lambda_class = typed_interface;  // save for the next pass
+    rhs.as<op_lambda>()->lambda_class = typed_interface; // save for the next pass
 
   } else if (VertexUtil::unwrap_inlined_define(rhs)->type() == op_string) {
     rhs = VertexUtil::unwrap_inlined_define(rhs);
@@ -367,7 +367,6 @@ static void patch_rhs_casting_to_lhs_type(VertexPtr &rhs, const TypeHint *lhs_ty
   }
 }
 
-
 // we have @kphp-infer cast and ::: syntax in functions.txt that means auto-casting of passed arguments,
 // but we don't auto-cast in files marked with @kphp-strict-types-enable
 static bool is_implicit_cast_allowed(bool strict_types, const TypeHint *type_hint_cast_to) {
@@ -402,7 +401,7 @@ static VertexPtr implicit_cast_call_arg_to_cast_param(VertexPtr rhs, const TypeH
       case tp_mixed:
         return rhs;
       default:
-        kphp_error (0, "Too hard rule for cast a param with ref_flag");
+        kphp_error(0, "Too hard rule for cast a param with ref_flag");
         return rhs;
     }
   }
@@ -426,7 +425,6 @@ static VertexPtr implicit_cast_call_arg_to_cast_param(VertexPtr rhs, const TypeH
   }
 }
 
-
 // this pass is very tricky, probably it's the most cognitively hard in KPHP
 // a function can reach it in 3 ways actually:
 // - normally, through compilation pipeline
@@ -439,7 +437,8 @@ bool DeduceImplicitTypesAndCastsPass::check_function(FunctionPtr f) const {
     f->assumption_processing_thread = std::this_thread::get_id();
     return true;
   } else if (expected == FunctionData::AssumptionStatus::processing_deduce_pass) {
-    while (f->assumption_pass_status == FunctionData::AssumptionStatus::processing_deduce_pass && f->assumption_processing_thread != std::this_thread::get_id()) {
+    while (f->assumption_pass_status == FunctionData::AssumptionStatus::processing_deduce_pass
+           && f->assumption_processing_thread != std::this_thread::get_id()) {
       std::this_thread::sleep_for(std::chrono::nanoseconds{100});
     }
   }
@@ -543,13 +542,16 @@ void DeduceImplicitTypesAndCastsPass::on_phpdoc_for_var(VertexAdaptor<op_phpdoc_
     if (prev_phpdoc_hint) {
       // we had @var already, so we expect this @var to be exactly the same
       kphp_error_return(prev_phpdoc_hint == v_phpdoc->type_hint,
-                        fmt_format("${} has inconsistent phpdocs.\nAt first it was declared as @var {}, and then @var {}",
-                                   var_name, TermStringFormat::paint_green(prev_phpdoc_hint->as_human_readable()), TermStringFormat::paint_green(v_phpdoc->type_hint->as_human_readable())));
+                        fmt_format("${} has inconsistent phpdocs.\nAt first it was declared as @var {}, and then @var {}", var_name,
+                                   TermStringFormat::paint_green(prev_phpdoc_hint->as_human_readable()),
+                                   TermStringFormat::paint_green(v_phpdoc->type_hint->as_human_readable())));
     } else {
       // we had an assumption for $v already ($v was used to bind arrow calls or instantiate a generic), check that phpdoc equals
       kphp_error_return(existing.assum_hint == v_phpdoc->type_hint,
-                        fmt_format("You want ${} to have the type {}, but ${} was already used above in this function.\n${} was already assumed to be {}.\nMove this phpdoc above all assignments to ${} to resolve this conflict.",
-                                   var_name, TermStringFormat::paint_green(v_phpdoc->type_hint->as_human_readable()), var_name, var_name, TermStringFormat::paint_green(existing.assum_hint->as_human_readable()), var_name));
+                        fmt_format("You want ${} to have the type {}, but ${} was already used above in this function.\n${} was already assumed to be "
+                                   "{}.\nMove this phpdoc above all assignments to ${} to resolve this conflict.",
+                                   var_name, TermStringFormat::paint_green(v_phpdoc->type_hint->as_human_readable()), var_name, var_name,
+                                   TermStringFormat::paint_green(existing.assum_hint->as_human_readable()), var_name));
     }
   } else {
     // it it's a primitive, it would be skipped; if not — saved as an assumption
@@ -582,13 +584,14 @@ void DeduceImplicitTypesAndCastsPass::on_func_call(VertexAdaptor<op_func_call> c
       auto lhs = call->args()[0];
 
       ClassPtr klass = resolve_class_of_arrow_access(current_function, lhs, call);
-      if (!klass) {   // if so, an error has already been printed
+      if (!klass) { // if so, an error has already been printed
         return;
       }
       const auto *method = klass->get_instance_method(call->str_val);
       if (!method) {
         kphp_error_return(!klass->members.get_static_method(call->str_val), fmt_format("Static method {} is called using $this", call->str_val));
-        kphp_error_return(0, fmt_format("Method {}() not found in {} {}", call->str_val, klass->is_interface() ? "interface" : "class", klass->as_human_readable()));
+        kphp_error_return(0, fmt_format("Method {}() not found in {} {}", call->str_val, klass->is_interface() ? "interface" : "class",
+                                        klass->as_human_readable()));
       }
 
       call->func_id = method->function;
@@ -617,9 +620,8 @@ void DeduceImplicitTypesAndCastsPass::on_func_call(VertexAdaptor<op_func_call> c
     // if `f` is a variadic generic `f<...TArg>` called with N=2 arguments, `f$n2<TArg1, TArg2>` is created and called instead
     // (same for manually provided variadic types: `f/*<int, string, ?A>*/` => `f$n3<int, string, ?A>`)
     if (f_called->has_variadic_param && f_called->genericTs->is_variadic()) {
-      int n_variadic = call->reifiedTs
-                       ? call->reifiedTs->commentTs->size()
-                       : call_args.size() - (f_called_params.size() - 1 + f_called->has_implicit_this_arg());
+      int n_variadic =
+        call->reifiedTs ? call->reifiedTs->commentTs->size() : call_args.size() - (f_called_params.size() - 1 + f_called->has_implicit_this_arg());
       if (n_variadic >= 0) {
         f_called = convert_variadic_generic_function_accepting_N_args(f_called, n_variadic);
         f_called_params = f_called->get_params();
@@ -644,8 +646,8 @@ void DeduceImplicitTypesAndCastsPass::on_func_call(VertexAdaptor<op_func_call> c
 
     if (param->type_hint) {
       patch_call_arg_on_func_call(param, call_args[i], call);
-      if (param->extra_type == op_ex_param_variadic) {    // all the rest arguments are meant to be passed to this param
-        for (++i; i < call_args.size(); ++i) {            // here, they are not replaced with an array: see CheckFuncCallsAndVarargPass
+      if (param->extra_type == op_ex_param_variadic) { // all the rest arguments are meant to be passed to this param
+        for (++i; i < call_args.size(); ++i) {         // here, they are not replaced with an array: see CheckFuncCallsAndVarargPass
           patch_call_arg_on_func_call(param, call_args[i], call);
         }
       }
@@ -718,9 +720,8 @@ void DeduceImplicitTypesAndCastsPass::on_return(VertexAdaptor<op_return> v_retur
   }
 
   // this allows mixing void and non-void, but probably, somewhen we'll get rid of this in vkcom
-  if (current_function->type == FunctionData::func_main ||
-      current_function->type == FunctionData::func_switch ||
-      current_function->disabled_warnings.count("return")) {
+  if (current_function->type == FunctionData::func_main || current_function->type == FunctionData::func_switch
+      || current_function->disabled_warnings.count("return")) {
     if (v_return->has_expr() && v_return->expr()->type() != op_null) {
       v_return->expr() = VertexAdaptor<op_force_mixed>::create(v_return->expr());
     }
@@ -824,7 +825,7 @@ void DeduceImplicitTypesAndCastsPass::on_lambda(VertexAdaptor<op_lambda> v_lambd
 void DeduceImplicitTypesAndCastsPass::on_instance_prop(VertexAdaptor<op_instance_prop> v_prop) {
   // lhs->field; we need to infer the class of lhs
   ClassPtr klass = resolve_class_of_arrow_access(current_function, v_prop->instance(), v_prop);
-  if (!klass) {   // if so, an error has already been printed
+  if (!klass) { // if so, an error has already been printed
     return;
   }
   v_prop->class_id = klass;

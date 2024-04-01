@@ -56,10 +56,9 @@ public:
   }
 
   void add_request_stats(uint64_t script_time_ns, uint64_t net_time_ns, script_error_t error, const memory_resource::MemoryStats &script_memory_stats,
-                         uint64_t script_queries, uint64_t long_script_queries,
-                         uint64_t script_user_time_ns, uint64_t script_system_time_ns,
-                         uint64_t script_init_time, uint64_t http_connection_process_time,
-                         uint64_t voluntary_context_switches, uint64_t involuntary_context_switches);
+                         uint64_t script_queries, uint64_t long_script_queries, uint64_t script_user_time_ns, uint64_t script_system_time_ns,
+                         uint64_t script_init_time, uint64_t http_connection_process_time, uint64_t voluntary_context_switches,
+                         uint64_t involuntary_context_switches);
 
   void add_job_stats(uint64_t job_wait_ns, uint64_t request_memory_used, uint64_t request_real_memory_used, uint64_t response_memory_used,
                      uint64_t response_real_memory_used);
@@ -71,10 +70,8 @@ public:
   /**
    * Must be called from master process only
    */
-  void add_common_master_stats(const workers_stats_t &workers_stats,
-                               const memory_resource::MemoryStats &instance_cache_memory_stats,
-                               double cpu_s_usage, double cpu_u_usage,
-                               long long int instance_cache_memory_swaps_ok, long long int instance_cache_memory_swaps_fail);
+  void add_common_master_stats(const workers_stats_t &workers_stats, const memory_resource::MemoryStats &instance_cache_memory_stats, double cpu_s_usage,
+                               double cpu_u_usage, long long int instance_cache_memory_swaps_ok, long long int instance_cache_memory_swaps_fail);
 
   /**
    * Must be called from master process only
@@ -106,9 +103,8 @@ private:
 
   void add_job_workers_shared_memory_stats(const job_workers::JobStats &job_stats);
 
-  size_t add_job_workers_shared_messages_stats(const job_workers::JobStats::MemoryBufferStats &memory_buffers_stats,
-                                               size_t buffer_size);
+  size_t add_job_workers_shared_messages_stats(const job_workers::JobStats::MemoryBufferStats &memory_buffers_stats, size_t buffer_size);
 
-  size_t add_job_workers_shared_memory_buffers_stats(const job_workers::JobStats::MemoryBufferStats &memory_buffers_stats,
-                                                     const char *size_tag, size_t buffer_size);
+  size_t add_job_workers_shared_memory_buffers_stats(const job_workers::JobStats::MemoryBufferStats &memory_buffers_stats, const char *size_tag,
+                                                     size_t buffer_size);
 };

@@ -10,8 +10,8 @@
 namespace memory_resource {
 namespace details {
 
-memory_ordered_chunk_list::memory_ordered_chunk_list(char *memory_resource_begin) noexcept:
-  memory_resource_begin_(memory_resource_begin) {
+memory_ordered_chunk_list::memory_ordered_chunk_list(char *memory_resource_begin) noexcept
+  : memory_resource_begin_(memory_resource_begin) {
   static_assert(sizeof(list_node) == 8, "8 bytes expected");
 }
 
@@ -87,4 +87,4 @@ void memory_ordered_chunk_list::add_from_array(list_node **first, list_node **la
 }
 
 } // namespace details
-} //namespace memory_resource
+} // namespace memory_resource

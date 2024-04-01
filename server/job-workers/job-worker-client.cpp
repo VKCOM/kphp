@@ -11,9 +11,9 @@
 #include "net/net-reactor.h"
 
 #include "server/job-workers/job-message.h"
+#include "server/job-workers/job-stats.h"
 #include "server/job-workers/job-worker-client.h"
 #include "server/job-workers/job-workers-context.h"
-#include "server/job-workers/job-stats.h"
 #include "server/job-workers/shared-memory-manager.h"
 #include "server/php-engine.h"
 #include "server/php-queries.h"
@@ -83,8 +83,8 @@ void JobWorkerClient::init(int job_result_slot) {
 }
 
 bool JobWorkerClient::send_job(JobSharedMessage *job_request) {
-  tvkprintf(job_workers, 2, "sending job: <job_result_fd_idx, job_id> = <%d, %d> , job_memory_ptr = %p, write_job_fd = %d\n",
-            job_result_fd_idx, job_request->job_id, job_request, write_job_fd);
+  tvkprintf(job_workers, 2, "sending job: <job_result_fd_idx, job_id> = <%d, %d> , job_memory_ptr = %p, write_job_fd = %d\n", job_result_fd_idx,
+            job_request->job_id, job_request, write_job_fd);
 
   job_request->job_result_fd_idx = job_result_fd_idx;
   bool success = job_writer.write_job(job_request, write_job_fd);

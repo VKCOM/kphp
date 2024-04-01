@@ -14,12 +14,12 @@
 #include "server/php-engine-vars.h"
 
 namespace {
-  template<uint8_t M>
-  uint64_t mult_and_add(uint64_t x, uint8_t y, bool &overflow) noexcept {
-    const uint64_t r = x * M + y;
-    overflow = overflow || r < x || r > static_cast<uint64_t>(std::numeric_limits<int64_t>::max());
-    return r;
-  }
+template<uint8_t M>
+uint64_t mult_and_add(uint64_t x, uint8_t y, bool &overflow) noexcept {
+  const uint64_t r = x * M + y;
+  overflow = overflow || r < x || r > static_cast<uint64_t>(std::numeric_limits<int64_t>::max());
+  return r;
+}
 } // namespace
 
 int64_t f$bindec(const string &number) noexcept {
@@ -40,7 +40,8 @@ int64_t f$bindec(const string &number) noexcept {
   }
   if (unlikely(overflow)) {
     php_warning("Integer overflow on converting '%s' in function bindec, "
-                "the result will be different from PHP", number.c_str());
+                "the result will be different from PHP",
+                number.c_str());
   }
   return static_cast<int64_t>(v);
 }
@@ -91,13 +92,14 @@ int64_t f$hexdec(const string &number) noexcept {
   }
   if (unlikely(overflow)) {
     php_warning("Integer overflow on converting '%s' in function hexdec, "
-                "the result will be different from PHP", number.c_str());
+                "the result will be different from PHP",
+                number.c_str());
   }
   return v;
 }
 
 double f$lcg_value() {
-  dl::enter_critical_section();//OK
+  dl::enter_critical_section(); // OK
 
   static long long lcg_value_last_query_num = -1;
   static int s1 = 0, s2 = 0;
@@ -120,7 +122,12 @@ double f$lcg_value() {
   }
 
   int q;
-#define MODMULT(a, b, c, m, s) q = s / a; s = b * (s - a * q) - c * q; if (s < 0) {s += m;}
+#define MODMULT(a, b, c, m, s)                                                                                                                                 \
+  q = s / a;                                                                                                                                                   \
+  s = b * (s - a * q) - c * q;                                                                                                                                 \
+  if (s < 0) {                                                                                                                                                 \
+    s += m;                                                                                                                                                    \
+  }
   MODMULT(53668, 40014, 12211, 2147483563, s1);
   MODMULT(52774, 40692, 3791, 2147483399, s2);
 #undef MODMULT
@@ -146,7 +153,7 @@ public:
   void lazy_init() noexcept {
     if (unlikely(!gen_)) {
       const uint64_t s = (static_cast<uint64_t>(pid) << 32) ^ cycleclock_now();
-      gen_ = new(&gen_storage_) std::mt19937_64{s};
+      gen_ = new (&gen_storage_) std::mt19937_64{s};
     }
   }
 
@@ -236,8 +243,6 @@ int64_t f$abs(const Optional<bool> &v) {
 double f$abs(const Optional<double> &v) {
   return f$abs(val(v));
 }
-
-
 
 string f$base_convert(const string &number, int64_t frombase, int64_t tobase) {
   if (frombase < 2 || frombase > 36) {

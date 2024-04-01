@@ -10,20 +10,17 @@
 struct LValue {
   tinf::Node *value;
   const MultiKey *key;
-  LValue() :
-    value(nullptr),
-    key(nullptr) {
-  }
+  LValue()
+    : value(nullptr)
+    , key(nullptr) {}
 
-  LValue(tinf::Node *value, const MultiKey *key) :
-    value(value),
-    key(key) {
-  }
+  LValue(tinf::Node *value, const MultiKey *key)
+    : value(value)
+    , key(key) {}
 
-  LValue(const LValue &from) :
-    value(from.value),
-    key(from.key) {
-  }
+  LValue(const LValue &from)
+    : value(from.value)
+    , key(from.key) {}
 
   LValue &operator=(const LValue &from) {
     value = from.value;
@@ -45,4 +42,3 @@ inline LValue as_lvalue(VarPtr var) {
 inline const LValue &as_lvalue(const LValue &lvalue) {
   return lvalue;
 }
-

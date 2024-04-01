@@ -14,8 +14,8 @@
 #include "net/net-sockaddr-storage.h"
 
 static bool force_net_encryption;
-FLAG_OPTION_PARSER(OPT_NETWORK, "force-net-encryption", force_net_encryption, "forces encryption for client network activity (even on localhost and same data-center)");
-
+FLAG_OPTION_PARSER(OPT_NETWORK, "force-net-encryption", force_net_encryption,
+                   "forces encryption for client network activity (even on localhost and same data-center)");
 
 struct dc_ip_and_mask {
   uint32_t ip;
@@ -24,14 +24,14 @@ struct dc_ip_and_mask {
 
   dc_ip_and_mask() = default;
 
-  int init_from_string(const char *index_ipv4_subnet) {   // "8=1.2.3.4/12"
+  int init_from_string(const char *index_ipv4_subnet) { // "8=1.2.3.4/12"
     char *p_end;
     dc_index = static_cast<int>(strtol(index_ipv4_subnet, &p_end, 10));
     if (p_end == nullptr || *p_end != '=') {
       kprintf("Failed to parse dc_ip_and_mask, expected format '8=1.2.3.4/12', got %s\n", index_ipv4_subnet);
       return -1;
     }
-    p_end++;  // move after '=', wait for "ipv4/subnet" now
+    p_end++; // move after '=', wait for "ipv4/subnet" now
     return parse_ipv4(p_end, &ip, &mask);
   }
 };
@@ -49,8 +49,7 @@ bool add_dc_by_ipv4_config(const char *index_ipv4_subnet) {
   return 0 == dc_config[dc_config_count++].init_from_string(index_ipv4_subnet);
 }
 
-__attribute__((constructor))
-static void add_dc_127001_no_aes() {
+__attribute__((constructor)) static void add_dc_127001_no_aes() {
   add_dc_by_ipv4_config("99=127.0.0.0/8");
 }
 

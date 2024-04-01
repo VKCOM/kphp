@@ -15,10 +15,10 @@
 #include "runtime/kphp_tracing.h"
 #include "runtime/string-list.h"
 
+#include "common/dl-utils-lite.h"
 #include "common/macos-ports.h"
 #include "common/smart_ptrs/singleton.h"
 #include "common/wrappers/to_array.h"
-#include "common/dl-utils-lite.h"
 #include "net/net-events.h"
 #include "net/net-reactor.h"
 #include "server/curl-adaptor.h"
@@ -76,14 +76,13 @@ protected:
 
 class EasyContext : public BaseContext {
 public:
-  explicit EasyContext(int64_t self_handler_id) noexcept:
-    self_id(self_handler_id) {
-  }
+  explicit EasyContext(int64_t self_handler_id) noexcept
+    : self_id(self_handler_id) {}
 
   template<class T>
   void set_option(CURLoption option, const T &value) noexcept {
     const CURLcode res = dl::critical_section_call([&] { return curl_easy_setopt(easy_handle, option, value); });
-    php_assert (res == CURLE_OK);
+    php_assert(res == CURLE_OK);
   }
 
   template<class T>
@@ -101,17 +100,17 @@ public:
     switch (type) {
       case CURLINFO_STRING: {
         char *value = nullptr;
-        const CURLcode res = dl::critical_section_call([&] { return curl_easy_getinfo (easy_handle, what, &value); });
+        const CURLcode res = dl::critical_section_call([&] { return curl_easy_getinfo(easy_handle, what, &value); });
         return (res == CURLE_OK && value) ? string{value} : mixed{false};
       }
       case CURLINFO_LONG: {
         long value = 0;
-        const CURLcode res = dl::critical_section_call([&] { return curl_easy_getinfo (easy_handle, what, &value); });
+        const CURLcode res = dl::critical_section_call([&] { return curl_easy_getinfo(easy_handle, what, &value); });
         return res == CURLE_OK ? mixed{int64_t{value}} : mixed{false};
       }
       case CURLINFO_DOUBLE: {
         double value = 0;
-        const CURLcode res = dl::critical_section_call([&] { return curl_easy_getinfo (easy_handle, what, &value); });
+        const CURLcode res = dl::critical_section_call([&] { return curl_easy_getinfo(easy_handle, what, &value); });
         return res == CURLE_OK ? mixed{value} : mixed{false};
       }
       default:
@@ -308,29 +307,21 @@ void set_enumerated_option(const std::array<T, N> &options, EasyContext *easy_co
 }
 
 void proxy_type_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
-  constexpr static auto options = vk::to_array(
-    {
-      CURLPROXY_HTTP,
-      CURLPROXY_HTTP_1_0,
-      CURLPROXY_SOCKS4,
-      CURLPROXY_SOCKS5,
-      CURLPROXY_SOCKS4A,
-      CURLPROXY_SOCKS5_HOSTNAME
-    });
+  constexpr static auto options =
+    vk::to_array({CURLPROXY_HTTP, CURLPROXY_HTTP_1_0, CURLPROXY_SOCKS4, CURLPROXY_SOCKS5, CURLPROXY_SOCKS4A, CURLPROXY_SOCKS5_HOSTNAME});
   set_enumerated_option<400000>(options, easy_context, option, value);
 }
 
 void ssl_version_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
-  constexpr static auto options = vk::to_array(
-    {
-      CURL_SSLVERSION_DEFAULT,
-      CURL_SSLVERSION_TLSv1,
-      CURL_SSLVERSION_SSLv2,
-      CURL_SSLVERSION_SSLv3,
-      CURL_SSLVERSION_TLSv1_0,
-      CURL_SSLVERSION_TLSv1_1,
-      CURL_SSLVERSION_TLSv1_2,
-    });
+  constexpr static auto options = vk::to_array({
+    CURL_SSLVERSION_DEFAULT,
+    CURL_SSLVERSION_TLSv1,
+    CURL_SSLVERSION_SSLv2,
+    CURL_SSLVERSION_SSLv3,
+    CURL_SSLVERSION_TLSv1_0,
+    CURL_SSLVERSION_TLSv1_1,
+    CURL_SSLVERSION_TLSv1_2,
+  });
   set_enumerated_option<0>(options, easy_context, option, value);
 }
 
@@ -339,8 +330,7 @@ void auth_option_setter(EasyContext *easy_context, CURLoption option, const mixe
   constexpr size_t OPTION_OFFSET = 600000;
   if (easy_context->check_option_value<OPTION_OFFSET, 1u << 4u>(val)) {
     val -= OPTION_OFFSET;
-    val = (val & 1) * CURLAUTH_BASIC +
-          ((val >> 1) & 1) * CURLAUTH_DIGEST +
+    val = (val & 1) * CURLAUTH_BASIC + ((val >> 1) & 1) * CURLAUTH_DIGEST +
           // curl-kphp-vk doesn't support this option
           // ((val >> 2) & 1) * CURLAUTH_GSSNEGOTIATE +
           ((val >> 3) & 1) * CURLAUTH_NTLM;
@@ -383,16 +373,12 @@ void post_fields_option_setter(EasyContext *easy_context, CURLoption, const mixe
     const string v = f$strval(p.get_value());
 
     if (unlikely(!v.empty() && v[0] == '@')) {
-      php_critical_error ("files posting is not supported in curl_setopt with CURLOPT_POSTFIELDS\n");
+      php_critical_error("files posting is not supported in curl_setopt with CURLOPT_POSTFIELDS\n");
     }
 
     dl::CriticalSectionGuard critical_section;
-    easy_context->error_num = curl_formadd(&first, &last,
-                                           CURLFORM_COPYNAME, key.c_str(),
-                                           CURLFORM_NAMELENGTH, static_cast<long>(key.size()),
-                                           CURLFORM_COPYCONTENTS, v.c_str(),
-                                           CURLFORM_CONTENTSLENGTH, static_cast<long>(v.size()),
-                                           CURLFORM_END);
+    easy_context->error_num = curl_formadd(&first, &last, CURLFORM_COPYNAME, key.c_str(), CURLFORM_NAMELENGTH, static_cast<long>(key.size()),
+                                           CURLFORM_COPYCONTENTS, v.c_str(), CURLFORM_CONTENTSLENGTH, static_cast<long>(v.size()), CURLFORM_END);
     if (easy_context->error_num != CURL_FORMADD_OK) {
       easy_context->error_num += CURL_LAST;
       break;
@@ -441,150 +427,149 @@ bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) 
     CURLoption option;
     void (*option_setter)(EasyContext *easy_context, CURLoption option, const mixed &value);
   };
-  constexpr static auto curlopt_options = vk::to_array<EasyOptionHandler>(
-    {
-      {CURLOPT_ADDRESS_SCOPE,        long_option_setter},
-      {CURLOPT_APPEND,               long_option_setter},
-      {CURLOPT_AUTOREFERER,          long_option_setter},
-      {CURLOPT_BUFFERSIZE,           long_option_setter},
-      {CURLOPT_CONNECT_ONLY,         long_option_setter},
-      {CURLOPT_CONNECTTIMEOUT,       long_option_setter},
-      {CURLOPT_CONNECTTIMEOUT_MS,    long_option_setter},
-      {CURLOPT_COOKIESESSION,        long_option_setter},
-      {CURLOPT_CRLF,                 long_option_setter},
-      {CURLOPT_DIRLISTONLY,          long_option_setter},
-      {CURLOPT_DNS_CACHE_TIMEOUT,    long_option_setter},
-      {CURLOPT_FAILONERROR,          long_option_setter},
-      {CURLOPT_FILETIME,             long_option_setter},
-      {CURLOPT_FOLLOWLOCATION,       long_option_setter},
-      {CURLOPT_FORBID_REUSE,         long_option_setter},
-      {CURLOPT_FRESH_CONNECT,        long_option_setter},
-      {CURLOPT_FTP_CREATE_MISSING_DIRS, long_option_setter},
-      {CURLOPT_FTP_RESPONSE_TIMEOUT,    long_option_setter},
-      {CURLOPT_FTP_SKIP_PASV_IP,        long_option_setter},
-      {CURLOPT_FTP_USE_EPRT,            long_option_setter},
-      {CURLOPT_FTP_USE_EPSV,            long_option_setter},
-      {CURLOPT_FTP_USE_PRET,            long_option_setter},
-      {CURLOPT_HEADER,                  long_option_setter},
-      {CURLOPT_HTTP_CONTENT_DECODING,   long_option_setter},
-      {CURLOPT_HTTP_TRANSFER_DECODING,  long_option_setter},
-      {CURLOPT_HTTPGET,                 long_option_setter},
-      {CURLOPT_HTTPPROXYTUNNEL,         long_option_setter},
-      {CURLOPT_IGNORE_CONTENT_LENGTH,   long_option_setter},
-      {CURLOPT_INFILESIZE,              long_option_setter},
-      {CURLOPT_LOW_SPEED_LIMIT,         long_option_setter},
-      {CURLOPT_LOW_SPEED_TIME,          long_option_setter},
-      {CURLOPT_MAXCONNECTS,             long_option_setter},
-      {CURLOPT_MAXFILESIZE,             long_option_setter},
-      {CURLOPT_MAXREDIRS,               long_option_setter},
-      {CURLOPT_NETRC,                   long_option_setter},
-      {CURLOPT_NEW_DIRECTORY_PERMS,     long_option_setter},
-      {CURLOPT_NEW_FILE_PERMS,          long_option_setter},
-      {CURLOPT_NOBODY,                  long_option_setter},
-      {CURLOPT_PORT,                    long_option_setter},
-      {CURLOPT_POST,                    long_option_setter},
-      {CURLOPT_PROXY_TRANSFER_MODE,     long_option_setter},
-      {CURLOPT_PROXYPORT,               long_option_setter},
-      {CURLOPT_RESUME_FROM,             long_option_setter},
-      {CURLOPT_SOCKS5_GSSAPI_NEC,       long_option_setter},
-      {CURLOPT_SSL_SESSIONID_CACHE,     long_option_setter},
-      {CURLOPT_SSL_VERIFYHOST,          long_option_setter},
-      {CURLOPT_SSL_VERIFYPEER,          long_option_setter},
-      {CURLOPT_TCP_NODELAY,             long_option_setter},
-      {CURLOPT_TFTP_BLKSIZE,            long_option_setter},
-      {CURLOPT_TIMEOUT,                 long_option_setter},
-      {CURLOPT_TIMEOUT_MS,              long_option_setter},
-      {CURLOPT_TRANSFERTEXT,            long_option_setter},
-      {CURLOPT_UNRESTRICTED_AUTH,       long_option_setter},
-      {CURLOPT_UPLOAD,                  long_option_setter},
-      {CURLOPT_VERBOSE,                 long_option_setter},
-      {CURLOPT_WILDCARDMATCH,           long_option_setter},
+  constexpr static auto curlopt_options = vk::to_array<EasyOptionHandler>({
+    {CURLOPT_ADDRESS_SCOPE, long_option_setter},
+    {CURLOPT_APPEND, long_option_setter},
+    {CURLOPT_AUTOREFERER, long_option_setter},
+    {CURLOPT_BUFFERSIZE, long_option_setter},
+    {CURLOPT_CONNECT_ONLY, long_option_setter},
+    {CURLOPT_CONNECTTIMEOUT, long_option_setter},
+    {CURLOPT_CONNECTTIMEOUT_MS, long_option_setter},
+    {CURLOPT_COOKIESESSION, long_option_setter},
+    {CURLOPT_CRLF, long_option_setter},
+    {CURLOPT_DIRLISTONLY, long_option_setter},
+    {CURLOPT_DNS_CACHE_TIMEOUT, long_option_setter},
+    {CURLOPT_FAILONERROR, long_option_setter},
+    {CURLOPT_FILETIME, long_option_setter},
+    {CURLOPT_FOLLOWLOCATION, long_option_setter},
+    {CURLOPT_FORBID_REUSE, long_option_setter},
+    {CURLOPT_FRESH_CONNECT, long_option_setter},
+    {CURLOPT_FTP_CREATE_MISSING_DIRS, long_option_setter},
+    {CURLOPT_FTP_RESPONSE_TIMEOUT, long_option_setter},
+    {CURLOPT_FTP_SKIP_PASV_IP, long_option_setter},
+    {CURLOPT_FTP_USE_EPRT, long_option_setter},
+    {CURLOPT_FTP_USE_EPSV, long_option_setter},
+    {CURLOPT_FTP_USE_PRET, long_option_setter},
+    {CURLOPT_HEADER, long_option_setter},
+    {CURLOPT_HTTP_CONTENT_DECODING, long_option_setter},
+    {CURLOPT_HTTP_TRANSFER_DECODING, long_option_setter},
+    {CURLOPT_HTTPGET, long_option_setter},
+    {CURLOPT_HTTPPROXYTUNNEL, long_option_setter},
+    {CURLOPT_IGNORE_CONTENT_LENGTH, long_option_setter},
+    {CURLOPT_INFILESIZE, long_option_setter},
+    {CURLOPT_LOW_SPEED_LIMIT, long_option_setter},
+    {CURLOPT_LOW_SPEED_TIME, long_option_setter},
+    {CURLOPT_MAXCONNECTS, long_option_setter},
+    {CURLOPT_MAXFILESIZE, long_option_setter},
+    {CURLOPT_MAXREDIRS, long_option_setter},
+    {CURLOPT_NETRC, long_option_setter},
+    {CURLOPT_NEW_DIRECTORY_PERMS, long_option_setter},
+    {CURLOPT_NEW_FILE_PERMS, long_option_setter},
+    {CURLOPT_NOBODY, long_option_setter},
+    {CURLOPT_PORT, long_option_setter},
+    {CURLOPT_POST, long_option_setter},
+    {CURLOPT_PROXY_TRANSFER_MODE, long_option_setter},
+    {CURLOPT_PROXYPORT, long_option_setter},
+    {CURLOPT_RESUME_FROM, long_option_setter},
+    {CURLOPT_SOCKS5_GSSAPI_NEC, long_option_setter},
+    {CURLOPT_SSL_SESSIONID_CACHE, long_option_setter},
+    {CURLOPT_SSL_VERIFYHOST, long_option_setter},
+    {CURLOPT_SSL_VERIFYPEER, long_option_setter},
+    {CURLOPT_TCP_NODELAY, long_option_setter},
+    {CURLOPT_TFTP_BLKSIZE, long_option_setter},
+    {CURLOPT_TIMEOUT, long_option_setter},
+    {CURLOPT_TIMEOUT_MS, long_option_setter},
+    {CURLOPT_TRANSFERTEXT, long_option_setter},
+    {CURLOPT_UNRESTRICTED_AUTH, long_option_setter},
+    {CURLOPT_UPLOAD, long_option_setter},
+    {CURLOPT_VERBOSE, long_option_setter},
+    {CURLOPT_WILDCARDMATCH, long_option_setter},
 
-      {CURLOPT_PROXYTYPE,               proxy_type_option_setter},
+    {CURLOPT_PROXYTYPE, proxy_type_option_setter},
 
-      {CURLOPT_SSLVERSION,              ssl_version_option_setter},
+    {CURLOPT_SSLVERSION, ssl_version_option_setter},
 
-      {CURLOPT_HTTPAUTH,                auth_option_setter},
-      {CURLOPT_PROXYAUTH,               auth_option_setter},
+    {CURLOPT_HTTPAUTH, auth_option_setter},
+    {CURLOPT_PROXYAUTH, auth_option_setter},
 
-      {CURLOPT_IPRESOLVE,               ip_resolve_option_setter},
+    {CURLOPT_IPRESOLVE, ip_resolve_option_setter},
 
-      {CURLOPT_FTPSSLAUTH,              ftp_auth_option_setter},
+    {CURLOPT_FTPSSLAUTH, ftp_auth_option_setter},
 
-      {CURLOPT_FTP_FILEMETHOD,          ftp_method_option_setter},
+    {CURLOPT_FTP_FILEMETHOD, ftp_method_option_setter},
 
-      {CURLOPT_CAINFO,                  string_option_setter},
-      {CURLOPT_CAPATH,                  string_option_setter},
-      {CURLOPT_COOKIE,                  string_option_setter},
-      {CURLOPT_COOKIEFILE,              string_option_setter},
-      {CURLOPT_COOKIEJAR,               string_option_setter},
-      {CURLOPT_COOKIELIST,              string_option_setter},
-      {CURLOPT_CRLFILE,                 string_option_setter},
-      {CURLOPT_CUSTOMREQUEST,           string_option_setter},
-      {CURLOPT_EGDSOCKET,               string_option_setter},
-      {CURLOPT_FTP_ACCOUNT,             string_option_setter},
-      {CURLOPT_FTP_ALTERNATIVE_TO_USER, string_option_setter},
-      {CURLOPT_FTPPORT,                 string_option_setter},
-      {CURLOPT_INTERFACE,               string_option_setter},
-      {CURLOPT_ISSUERCERT,              string_option_setter},
-      {CURLOPT_KRBLEVEL,                string_option_setter},
-      {CURLOPT_MAIL_FROM,               string_option_setter},
-      {CURLOPT_NETRC_FILE,              string_option_setter},
-      {CURLOPT_NOPROXY,                 string_option_setter},
-      {CURLOPT_PASSWORD,                string_option_setter},
-      {CURLOPT_PROXY,                   string_option_setter},
-      {CURLOPT_PROXYPASSWORD,           string_option_setter},
-      {CURLOPT_PROXYUSERNAME,           string_option_setter},
-      {CURLOPT_PROXYUSERPWD,            string_option_setter},
-      {CURLOPT_RANDOM_FILE,             string_option_setter},
-      {CURLOPT_RANGE,                   string_option_setter},
-      {CURLOPT_REFERER,                 string_option_setter},
-      {CURLOPT_RTSP_SESSION_ID,         string_option_setter},
-      {CURLOPT_RTSP_STREAM_URI,         string_option_setter},
-      {CURLOPT_RTSP_TRANSPORT,          string_option_setter},
-      {CURLOPT_SOCKS5_GSSAPI_SERVICE,   string_option_setter},
-      {CURLOPT_SSH_HOST_PUBLIC_KEY_MD5, string_option_setter},
-      {CURLOPT_SSH_KNOWNHOSTS,          string_option_setter},
-      {CURLOPT_SSH_PRIVATE_KEYFILE,     string_option_setter},
-      {CURLOPT_SSH_PUBLIC_KEYFILE,      string_option_setter},
-      {CURLOPT_SSLCERT,                 string_option_setter},
-      {CURLOPT_SSLCERTTYPE,             string_option_setter},
-      {CURLOPT_SSLENGINE,               string_option_setter},
-      {CURLOPT_SSLENGINE_DEFAULT,    string_option_setter},
-      {CURLOPT_SSLKEY,               string_option_setter},
-      {CURLOPT_SSLKEYPASSWD,         string_option_setter},
-      {CURLOPT_SSLKEYTYPE,           string_option_setter},
-      {CURLOPT_SSL_CIPHER_LIST,      string_option_setter},
-      {CURLOPT_URL,                  string_option_setter},
-      {CURLOPT_USERAGENT,            string_option_setter},
-      {CURLOPT_USERNAME,             string_option_setter},
-      {CURLOPT_USERPWD,              string_option_setter},
+    {CURLOPT_CAINFO, string_option_setter},
+    {CURLOPT_CAPATH, string_option_setter},
+    {CURLOPT_COOKIE, string_option_setter},
+    {CURLOPT_COOKIEFILE, string_option_setter},
+    {CURLOPT_COOKIEJAR, string_option_setter},
+    {CURLOPT_COOKIELIST, string_option_setter},
+    {CURLOPT_CRLFILE, string_option_setter},
+    {CURLOPT_CUSTOMREQUEST, string_option_setter},
+    {CURLOPT_EGDSOCKET, string_option_setter},
+    {CURLOPT_FTP_ACCOUNT, string_option_setter},
+    {CURLOPT_FTP_ALTERNATIVE_TO_USER, string_option_setter},
+    {CURLOPT_FTPPORT, string_option_setter},
+    {CURLOPT_INTERFACE, string_option_setter},
+    {CURLOPT_ISSUERCERT, string_option_setter},
+    {CURLOPT_KRBLEVEL, string_option_setter},
+    {CURLOPT_MAIL_FROM, string_option_setter},
+    {CURLOPT_NETRC_FILE, string_option_setter},
+    {CURLOPT_NOPROXY, string_option_setter},
+    {CURLOPT_PASSWORD, string_option_setter},
+    {CURLOPT_PROXY, string_option_setter},
+    {CURLOPT_PROXYPASSWORD, string_option_setter},
+    {CURLOPT_PROXYUSERNAME, string_option_setter},
+    {CURLOPT_PROXYUSERPWD, string_option_setter},
+    {CURLOPT_RANDOM_FILE, string_option_setter},
+    {CURLOPT_RANGE, string_option_setter},
+    {CURLOPT_REFERER, string_option_setter},
+    {CURLOPT_RTSP_SESSION_ID, string_option_setter},
+    {CURLOPT_RTSP_STREAM_URI, string_option_setter},
+    {CURLOPT_RTSP_TRANSPORT, string_option_setter},
+    {CURLOPT_SOCKS5_GSSAPI_SERVICE, string_option_setter},
+    {CURLOPT_SSH_HOST_PUBLIC_KEY_MD5, string_option_setter},
+    {CURLOPT_SSH_KNOWNHOSTS, string_option_setter},
+    {CURLOPT_SSH_PRIVATE_KEYFILE, string_option_setter},
+    {CURLOPT_SSH_PUBLIC_KEYFILE, string_option_setter},
+    {CURLOPT_SSLCERT, string_option_setter},
+    {CURLOPT_SSLCERTTYPE, string_option_setter},
+    {CURLOPT_SSLENGINE, string_option_setter},
+    {CURLOPT_SSLENGINE_DEFAULT, string_option_setter},
+    {CURLOPT_SSLKEY, string_option_setter},
+    {CURLOPT_SSLKEYPASSWD, string_option_setter},
+    {CURLOPT_SSLKEYTYPE, string_option_setter},
+    {CURLOPT_SSL_CIPHER_LIST, string_option_setter},
+    {CURLOPT_URL, string_option_setter},
+    {CURLOPT_USERAGENT, string_option_setter},
+    {CURLOPT_USERNAME, string_option_setter},
+    {CURLOPT_USERPWD, string_option_setter},
 
-      {CURLOPT_HTTP200ALIASES,       linked_list_option_setter},
-      {CURLOPT_HTTPHEADER,           linked_list_option_setter},
-      {CURLOPT_POSTQUOTE,            linked_list_option_setter},
-      {CURLOPT_PREQUOTE,             linked_list_option_setter},
-      {CURLOPT_QUOTE,                linked_list_option_setter},
-      {CURLOPT_MAIL_RCPT,            linked_list_option_setter},
+    {CURLOPT_HTTP200ALIASES, linked_list_option_setter},
+    {CURLOPT_HTTPHEADER, linked_list_option_setter},
+    {CURLOPT_POSTQUOTE, linked_list_option_setter},
+    {CURLOPT_PREQUOTE, linked_list_option_setter},
+    {CURLOPT_QUOTE, linked_list_option_setter},
+    {CURLOPT_MAIL_RCPT, linked_list_option_setter},
 
-      {CURLOPT_POSTFIELDS,           post_fields_option_setter},
+    {CURLOPT_POSTFIELDS, post_fields_option_setter},
 
-      {CURLOPT_MAX_RECV_SPEED_LARGE, off_option_setter},
-      {CURLOPT_MAX_SEND_SPEED_LARGE, off_option_setter},
+    {CURLOPT_MAX_RECV_SPEED_LARGE, off_option_setter},
+    {CURLOPT_MAX_SEND_SPEED_LARGE, off_option_setter},
 
-      {CURLOPT_PUT,                  long_option_setter},
+    {CURLOPT_PUT, long_option_setter},
 
-      {CURLOPT_RESOLVE,              linked_list_option_setter},
-      {CURLOPT_HTTP_VERSION,         long_option_setter},
+    {CURLOPT_RESOLVE, linked_list_option_setter},
+    {CURLOPT_HTTP_VERSION, long_option_setter},
 
-      {CURLOPT_SSL_ENABLE_ALPN,      long_option_setter},
-      {CURLOPT_SSL_ENABLE_NPN,       long_option_setter},
-      {CURLOPT_TCP_KEEPALIVE,        long_option_setter},
-      {CURLOPT_TCP_KEEPIDLE,         long_option_setter},
-      {CURLOPT_TCP_KEEPINTVL,        long_option_setter},
-      {CURLOPT_PRIVATE,              private_option_setter},
-      {CURLOPT_ACCEPT_ENCODING,      string_option_setter},
-    });
+    {CURLOPT_SSL_ENABLE_ALPN, long_option_setter},
+    {CURLOPT_SSL_ENABLE_NPN, long_option_setter},
+    {CURLOPT_TCP_KEEPALIVE, long_option_setter},
+    {CURLOPT_TCP_KEEPIDLE, long_option_setter},
+    {CURLOPT_TCP_KEEPINTVL, long_option_setter},
+    {CURLOPT_PRIVATE, private_option_setter},
+    {CURLOPT_ACCEPT_ENCODING, string_option_setter},
+  });
 
   constexpr size_t CURLOPT_OPTION_OFFSET = 200000;
   if (easy_context->check_option_value<CURLOPT_OPTION_OFFSET, curlopt_options.size()>(option)) {
@@ -608,7 +593,7 @@ void off_multi_option_setter(MultiContext *multi_context, CURLMoption option, in
 curl_easy f$curl_init(const string &url) noexcept {
   auto &easy_contexts = vk::singleton<CurlContexts>::get().easy_contexts;
   EasyContext *&easy_context = easy_contexts.emplace_back();
-  easy_context = new(dl::allocate(sizeof(EasyContext))) EasyContext(easy_contexts.count());
+  easy_context = new (dl::allocate(sizeof(EasyContext))) EasyContext(easy_contexts.count());
   easy_context->uniq_id = kphp_tracing::generate_uniq_id();
 
   dl::critical_section_call([&easy_context] { easy_context->easy_handle = curl_easy_init(); });
@@ -679,8 +664,8 @@ mixed f$curl_exec(curl_easy easy_id) noexcept {
   easy_context->error_num = dl::critical_section_call(curl_easy_perform, easy_context->easy_handle);
   double request_finish_time = dl_time();
   if (request_finish_time - request_start_time >= long_curl_query) {
-    kprintf("LONG curl query : %f. Curl id = %d, url = %.100s\n", request_finish_time - request_start_time,
-            easy_context->uniq_id, easy_context->get_info(CURLINFO_EFFECTIVE_URL).as_string().c_str());
+    kprintf("LONG curl query : %f. Curl id = %d, url = %.100s\n", request_finish_time - request_start_time, easy_context->uniq_id,
+            easy_context->get_info(CURLINFO_EFFECTIVE_URL).as_string().c_str());
   }
   if (easy_context->error_num != CURLE_OK && easy_context->error_num != CURLE_PARTIAL_FILE) {
     if (kphp_tracing::is_turned_on()) {
@@ -740,52 +725,51 @@ mixed f$curl_getinfo(curl_easy easy_id, int64_t option) noexcept {
     return easy_context->received_header.concat_and_get_string();
   }
 
-  constexpr static auto curlinfo_options = vk::to_array<CURLINFO>(
-    {
-      CURLINFO_EFFECTIVE_URL,
-      CURLINFO_RESPONSE_CODE,
-      CURLINFO_FILETIME,
-      CURLINFO_TOTAL_TIME,
-      CURLINFO_NAMELOOKUP_TIME,
-      CURLINFO_CONNECT_TIME,
-      CURLINFO_PRETRANSFER_TIME,
-      CURLINFO_STARTTRANSFER_TIME,
-      CURLINFO_REDIRECT_COUNT,
-      CURLINFO_REDIRECT_TIME,
-      CURLINFO_SIZE_UPLOAD,
-      CURLINFO_SIZE_DOWNLOAD,
-      CURLINFO_SPEED_UPLOAD,
-      CURLINFO_HEADER_SIZE,
-      CURLINFO_REQUEST_SIZE,
-      CURLINFO_SSL_VERIFYRESULT,
-      CURLINFO_CONTENT_LENGTH_DOWNLOAD,
-      CURLINFO_CONTENT_LENGTH_UPLOAD,
-      CURLINFO_CONTENT_TYPE,
-      CURLINFO_PRIVATE,
-      CURLINFO_SPEED_DOWNLOAD,
-      CURLINFO_REDIRECT_URL,
-      CURLINFO_PRIMARY_IP,
-      CURLINFO_PRIMARY_PORT,
-      CURLINFO_LOCAL_IP,
-      CURLINFO_LOCAL_PORT,
-      CURLINFO_HTTP_CONNECTCODE,
-      CURLINFO_HTTPAUTH_AVAIL,
-      CURLINFO_PROXYAUTH_AVAIL,
-      CURLINFO_OS_ERRNO,
-      CURLINFO_NUM_CONNECTS,
-      CURLINFO_FTP_ENTRY_PATH,
-      CURLINFO_APPCONNECT_TIME,
-      CURLINFO_CONDITION_UNMET,
-      CURLINFO_RTSP_CLIENT_CSEQ,
-      CURLINFO_RTSP_CSEQ_RECV,
-      CURLINFO_RTSP_SERVER_CSEQ,
-      CURLINFO_RTSP_SESSION_ID,
-    });
+  constexpr static auto curlinfo_options = vk::to_array<CURLINFO>({
+    CURLINFO_EFFECTIVE_URL,
+    CURLINFO_RESPONSE_CODE,
+    CURLINFO_FILETIME,
+    CURLINFO_TOTAL_TIME,
+    CURLINFO_NAMELOOKUP_TIME,
+    CURLINFO_CONNECT_TIME,
+    CURLINFO_PRETRANSFER_TIME,
+    CURLINFO_STARTTRANSFER_TIME,
+    CURLINFO_REDIRECT_COUNT,
+    CURLINFO_REDIRECT_TIME,
+    CURLINFO_SIZE_UPLOAD,
+    CURLINFO_SIZE_DOWNLOAD,
+    CURLINFO_SPEED_UPLOAD,
+    CURLINFO_HEADER_SIZE,
+    CURLINFO_REQUEST_SIZE,
+    CURLINFO_SSL_VERIFYRESULT,
+    CURLINFO_CONTENT_LENGTH_DOWNLOAD,
+    CURLINFO_CONTENT_LENGTH_UPLOAD,
+    CURLINFO_CONTENT_TYPE,
+    CURLINFO_PRIVATE,
+    CURLINFO_SPEED_DOWNLOAD,
+    CURLINFO_REDIRECT_URL,
+    CURLINFO_PRIMARY_IP,
+    CURLINFO_PRIMARY_PORT,
+    CURLINFO_LOCAL_IP,
+    CURLINFO_LOCAL_PORT,
+    CURLINFO_HTTP_CONNECTCODE,
+    CURLINFO_HTTPAUTH_AVAIL,
+    CURLINFO_PROXYAUTH_AVAIL,
+    CURLINFO_OS_ERRNO,
+    CURLINFO_NUM_CONNECTS,
+    CURLINFO_FTP_ENTRY_PATH,
+    CURLINFO_APPCONNECT_TIME,
+    CURLINFO_CONDITION_UNMET,
+    CURLINFO_RTSP_CLIENT_CSEQ,
+    CURLINFO_RTSP_CSEQ_RECV,
+    CURLINFO_RTSP_SERVER_CSEQ,
+    CURLINFO_RTSP_SESSION_ID,
+  });
 
   constexpr size_t CURLINFO_OPTION_OFFSET = 100000;
   return easy_context->check_option_value<CURLINFO_OPTION_OFFSET, curlinfo_options.size()>(option, false)
-         ? easy_context->get_info(curlinfo_options[option - CURLINFO_OPTION_OFFSET])
-         : false;
+           ? easy_context->get_info(curlinfo_options[option - CURLINFO_OPTION_OFFSET])
+           : false;
 }
 
 string f$curl_error(curl_easy easy_id) noexcept {
@@ -809,7 +793,7 @@ void f$curl_close(curl_easy easy_id) noexcept {
 curl_multi f$curl_multi_init() noexcept {
   auto &multi_contexts = vk::singleton<CurlContexts>::get().multi_contexts;
   MultiContext *&multi = multi_contexts.emplace_back();
-  multi = new(dl::allocate(sizeof(MultiContext))) MultiContext;
+  multi = new (dl::allocate(sizeof(MultiContext))) MultiContext;
   multi->uniq_id = kphp_tracing::generate_uniq_id();
 
   dl::critical_section_call([&multi] { multi->multi_handle = curl_multi_init(); });
@@ -858,18 +842,15 @@ bool f$curl_multi_setopt(curl_multi multi_id, int64_t option, int64_t value) noe
     CURLMoption option;
     void (*option_setter)(MultiContext *multi_context, CURLMoption option, int64_t value);
   };
-  constexpr static auto multi_options = vk::to_array<MultiOptionHandler>(
-    {
-      {CURLMOPT_PIPELINING,                  long_multi_option_setter},
-      {CURLMOPT_MAXCONNECTS,                 long_multi_option_setter},
+  constexpr static auto multi_options = vk::to_array<MultiOptionHandler>({{CURLMOPT_PIPELINING, long_multi_option_setter},
+                                                                          {CURLMOPT_MAXCONNECTS, long_multi_option_setter},
 
-      {CURLMOPT_CHUNK_LENGTH_PENALTY_SIZE,   off_multi_option_setter},
-      {CURLMOPT_CONTENT_LENGTH_PENALTY_SIZE, off_multi_option_setter},
+                                                                          {CURLMOPT_CHUNK_LENGTH_PENALTY_SIZE, off_multi_option_setter},
+                                                                          {CURLMOPT_CONTENT_LENGTH_PENALTY_SIZE, off_multi_option_setter},
 
-      {CURLMOPT_MAX_HOST_CONNECTIONS,        long_multi_option_setter},
-      {CURLMOPT_MAX_PIPELINE_LENGTH,         long_multi_option_setter},
-      {CURLMOPT_MAX_TOTAL_CONNECTIONS,       long_multi_option_setter}
-    });
+                                                                          {CURLMOPT_MAX_HOST_CONNECTIONS, long_multi_option_setter},
+                                                                          {CURLMOPT_MAX_PIPELINE_LENGTH, long_multi_option_setter},
+                                                                          {CURLMOPT_MAX_TOTAL_CONNECTIONS, long_multi_option_setter}});
 
   constexpr size_t CURLMULTI_OPTION_OFFSET = 1000;
   if (multi_context->check_option_value<CURLMULTI_OPTION_OFFSET, multi_options.size()>(option)) {
@@ -893,8 +874,7 @@ Optional<int64_t> f$curl_multi_exec(curl_multi multi_id, int64_t &still_running)
 Optional<int64_t> f$curl_multi_select(curl_multi multi_id, double timeout) noexcept {
   if (auto *multi_context = get_context<MultiContext>(multi_id)) {
     int numfds = 0;
-    multi_context->error_num = dl::critical_section_call(curl_multi_wait, multi_context->multi_handle, nullptr, 0,
-                                                         static_cast<int>(timeout * 1000.0), &numfds);
+    multi_context->error_num = dl::critical_section_call(curl_multi_wait, multi_context->multi_handle, nullptr, 0, static_cast<int>(timeout * 1000.0), &numfds);
     if (multi_context->error_num != CURLM_OK) {
       return -1;
     }
@@ -915,7 +895,7 @@ Optional<array<int64_t>> f$curl_multi_info_read(curl_multi multi_id, int64_t &ms
       result.set_value(string{"result"}, static_cast<int64_t>(msg->data.result));
 
       void *id_as_ptr = nullptr;
-      dl::critical_section_call([&] { curl_easy_getinfo (msg->easy_handle, CURLINFO_PRIVATE, &id_as_ptr); });
+      dl::critical_section_call([&] { curl_easy_getinfo(msg->easy_handle, CURLINFO_PRIVATE, &id_as_ptr); });
       const auto curl_handler_id = static_cast<int64_t>(reinterpret_cast<size_t>(id_as_ptr));
       const auto *easy_handle = vk::singleton<CurlContexts>::get().easy_contexts.find_value(curl_handler_id - 1);
       if (easy_handle && (*easy_handle)->easy_handle == msg->easy_handle) {
@@ -979,33 +959,28 @@ void register_curl_deallocation(size_t memory_used) noexcept {
 
 void global_init_curl_lib() noexcept {
   if (curl_global_init_mem(
-    CURL_GLOBAL_ALL,
-    [](size_t size) {
-      return register_curl_allocation(malloc(size));
-    },
-    [](void *ptr) {
-      const size_t memory_used = malloc_usable_size(ptr);
-      free(ptr);
-      register_curl_deallocation(memory_used);
-    },
-    [](void *ptr, size_t size) {
-      const size_t memory_used = malloc_usable_size(ptr);
-      void *new_mem = register_curl_allocation(realloc(ptr, size));
-      if (new_mem) {
-        register_curl_deallocation(memory_used);
-      }
-      return new_mem;
-    },
-    [](const char *str) {
-      const size_t size = std::strlen(str);
-      void *mem = register_curl_allocation(malloc(size + 1));
-      return mem ? static_cast<char *>(std::memcpy(mem, str, size + 1)) : nullptr;
-    },
-    [](size_t nmemb, size_t size) {
-      return register_curl_allocation(calloc(nmemb, size));
-    }
-  ) != CURLE_OK) {
-    php_critical_error ("can't initialize curl");
+        CURL_GLOBAL_ALL, [](size_t size) { return register_curl_allocation(malloc(size)); },
+        [](void *ptr) {
+          const size_t memory_used = malloc_usable_size(ptr);
+          free(ptr);
+          register_curl_deallocation(memory_used);
+        },
+        [](void *ptr, size_t size) {
+          const size_t memory_used = malloc_usable_size(ptr);
+          void *new_mem = register_curl_allocation(realloc(ptr, size));
+          if (new_mem) {
+            register_curl_deallocation(memory_used);
+          }
+          return new_mem;
+        },
+        [](const char *str) {
+          const size_t size = std::strlen(str);
+          void *mem = register_curl_allocation(malloc(size + 1));
+          return mem ? static_cast<char *>(std::memcpy(mem, str, size + 1)) : nullptr;
+        },
+        [](size_t nmemb, size_t size) { return register_curl_allocation(calloc(nmemb, size)); })
+      != CURLE_OK) {
+    php_critical_error("can't initialize curl");
   }
 
   vk::singleton<CurlMemoryUsage>::get().total_allocated = 0;
@@ -1013,12 +988,11 @@ void global_init_curl_lib() noexcept {
 
 template<class CTX>
 void clear_contexts(array<CTX *> &contexts) {
-  std::for_each(contexts.cbegin(), contexts.cend(),
-                [](const typename array<CTX *>::const_iterator &it) {
-                  if (auto *easy_context = it.get_value()) {
-                    easy_context->release();
-                  }
-                });
+  std::for_each(contexts.cbegin(), contexts.cend(), [](const typename array<CTX *>::const_iterator &it) {
+    if (auto *easy_context = it.get_value()) {
+      easy_context->release();
+    }
+  });
   hard_reset_var(contexts);
 }
 
@@ -1149,7 +1123,7 @@ static int curl_epoll_cb(int fd, void *data, event_t *ev) {
   return 0;
 }
 
-static int curl_socketfunction_cb(CURL */*easy*/, curl_socket_t fd, int action, void *userp, void */*socketp*/) {
+static int curl_socketfunction_cb(CURL * /*easy*/, curl_socket_t fd, int action, void *userp, void * /*socketp*/) {
   dl::CriticalSectionGuard guard;
   auto *curl_request = static_cast<CurlRequest *>(userp);
   php_assert(curl_request);

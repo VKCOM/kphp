@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include <vector>
-#include <unordered_map>
 #include <map>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
 #include "compiler/ffi/ffi_types.h"
 
@@ -25,10 +25,10 @@ struct FFIParseError {
 // while giving `const FFIType*` pointers to the users.
 struct FFIParseResult {
 private:
-  std::vector<FFIType*> types_;
+  std::vector<FFIType *> types_;
 
   struct Iter {
-    Iter(const std::vector<FFIType*> *vec, int64_t pos)
+    Iter(const std::vector<FFIType *> *vec, int64_t pos)
       : pos_{pos}
       , vec_{vec} {}
 
@@ -36,17 +36,17 @@ private:
       return pos_ != other.pos_;
     }
 
-    const FFIType* operator* () const {
+    const FFIType *operator*() const {
       return (*vec_)[pos_];
     }
 
-    const Iter& operator++() {
+    const Iter &operator++() {
       pos_++;
       return *this;
     }
 
     int64_t pos_;
-    const std::vector<FFIType*> *vec_;
+    const std::vector<FFIType *> *vec_;
   };
 
 public:
@@ -57,11 +57,19 @@ public:
 
   FFIParseError err;
 
-  void set_types(std::vector<FFIType*> &&types) { types_ = std::move(types); }
+  void set_types(std::vector<FFIType *> &&types) {
+    types_ = std::move(types);
+  }
 
-  size_t num_types() const noexcept { return types_.size(); }
-  Iter begin() const noexcept { return Iter{&types_, 0}; }
-  Iter end() const noexcept { return Iter{&types_, static_cast<int64_t>(types_.size())}; }
+  size_t num_types() const noexcept {
+    return types_.size();
+  }
+  Iter begin() const noexcept {
+    return Iter{&types_, 0};
+  }
+  Iter end() const noexcept {
+    return Iter{&types_, static_cast<int64_t>(types_.size())};
+  }
 };
 
 FFIParseResult ffi_parse_file(const std::string &src, FFITypedefs &typedefs);
@@ -69,4 +77,4 @@ FFIParseResult ffi_parse_file(const std::string &src, FFITypedefs &typedefs);
 // exposed for testing purposes
 std::string ffi_preprocess_file(const std::string &src, FFIParseResult &parse_result);
 
-std::pair<const FFIType*, FFIParseError> ffi_parse_type(const std::string &type_expr, FFITypedefs &typedefs);
+std::pair<const FFIType *, FFIParseError> ffi_parse_type(const std::string &type_expr, FFITypedefs &typedefs);

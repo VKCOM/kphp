@@ -22,7 +22,7 @@
 
 static char FullVersionStr[400];
 
-void init_version_string(const char* version) {
+void init_version_string(const char *version) {
   time_t build_time = BUILD_TIMESTAMP;
   static char date_str[100];
   if (build_time) {
@@ -33,14 +33,15 @@ void init_version_string(const char* version) {
   snprintf(FullVersionStr, sizeof(FullVersionStr) - 1,
            "%s compiled at %s by gcc " __VERSION__ " "
 #ifdef __LP64__
-      "64-bit"
+           "64-bit"
 #else
-      "32-bit"
+           "32-bit"
 #endif
-      " after commit " COMMIT, version, date_str);
+           " after commit " COMMIT,
+           version, date_str);
 }
 
-const char* get_version_string() {
+const char *get_version_string() {
   return FullVersionStr;
 }
 

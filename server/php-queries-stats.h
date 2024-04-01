@@ -38,9 +38,15 @@ struct QueriesStat {
     return res;
   }
 
-  uint64_t queries_count() const noexcept { return queries_count_; }
-  uint64_t incoming_bytes() const noexcept { return incoming_bytes_; }
-  uint64_t outgoing_bytes() const noexcept { return outgoing_bytes_; }
+  uint64_t queries_count() const noexcept {
+    return queries_count_;
+  }
+  uint64_t incoming_bytes() const noexcept {
+    return incoming_bytes_;
+  }
+  uint64_t outgoing_bytes() const noexcept {
+    return outgoing_bytes_;
+  }
 
 private:
   uint64_t queries_count_{0};

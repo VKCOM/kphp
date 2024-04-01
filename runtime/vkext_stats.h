@@ -6,7 +6,6 @@
 
 #include "runtime/kphp_core.h"
 
-
 Optional<string> f$vk_stats_hll_merge(const array<mixed> &a);
 Optional<double> f$vk_stats_hll_count(const string &hll);
 Optional<string> f$vk_stats_hll_create(const array<mixed> &a = array<mixed>(), int64_t size = (1 << 8));

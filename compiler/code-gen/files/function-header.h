@@ -13,4 +13,3 @@ struct FunctionH : CodeGenRootCmd {
   explicit FunctionH(FunctionPtr function);
   void compile(CodeGenerator &W) const final;
 };
-

@@ -10,9 +10,8 @@
 
 namespace vk {
 
-template<typename Container, typename Mapper = vk::identity,
-  typename = decltype(std::declval<Container>().begin()),
-  typename = decltype(std::declval<Container>().end())>
+template<typename Container, typename Mapper = vk::identity, typename = decltype(std::declval<Container>().begin()),
+         typename = decltype(std::declval<Container>().end())>
 std::string join(const Container &v, const std::string &delim, Mapper mapper = {}) {
   if (v.empty()) {
     return "";
@@ -60,7 +59,7 @@ inline std::string replace_all(const std::string &haystack, const std::string &f
   std::string res = haystack;
   size_t start_pos = 0;
 
-  while(std::string::npos != (start_pos = res.find(find, start_pos))) {
+  while (std::string::npos != (start_pos = res.find(find, start_pos))) {
     res.replace(start_pos, find.length(), replace);
     start_pos += replace.length();
   }

@@ -29,17 +29,17 @@ static int is_hll_unpacked(char const *s, VK_LEN_T s_len) {
 
 static int get_hll_size(char const *s, VK_LEN_T s_len) {
   if (is_hll_unpacked(s, s_len)) {
-    return (int) s_len;
+    return (int)s_len;
   }
   return s[0] == HLL_PACK_CHAR ? (1 << 8) : (1 << (s[1] - '0'));
 }
 
-PHP_FUNCTION (vk_stats_hll_merge) {
+PHP_FUNCTION(vk_stats_hll_merge) {
   zval *z;
   if (zend_parse_parameters(ZEND_NUM_ARGS(), "a", &z) == FAILURE) {
     return;
   }
-  if (Z_TYPE_P (z) != IS_ARRAY) {
+  if (Z_TYPE_P(z) != IS_ARRAY) {
     RETURN_FALSE;
     return;
   }
@@ -98,7 +98,8 @@ PHP_FUNCTION (vk_stats_hll_merge) {
         i += 3;
       }
     }
-  } VK_ZEND_HASH_FOREACH_END();
+  }
+  VK_ZEND_HASH_FOREACH_END();
   VK_RETURN_STRINGL_NOD(result, result_len);
 }
 
@@ -128,41 +129,41 @@ static int unpack_hll(char const *hll, VK_LEN_T hll_size, char *res) {
   return m;
 }
 
-void hll_pack (const unsigned char *s, VK_LEN_T len, unsigned char **res_s, VK_LEN_T *res_len) {
+void hll_pack(const unsigned char *s, VK_LEN_T len, unsigned char **res_s, VK_LEN_T *res_len) {
   if (len > MAX_HLL_SIZE || len == 0 || s[0] == HLL_PACK_CHAR || s[0] == HLL_PACK_CHAR_V2) {
     *res_len = len;
-    *res_s = static_cast<unsigned char *>(emalloc (sizeof (unsigned char *) * len));
-    memcpy (*res_s, s, (size_t) *res_len);
+    *res_s = static_cast<unsigned char *>(emalloc(sizeof(unsigned char *) * len));
+    memcpy(*res_s, s, (size_t)*res_len);
     return;
   }
 
-  unsigned char *buf = static_cast<unsigned char *>(emalloc (sizeof (unsigned char *) * HLL_BUF_SIZE));
+  unsigned char *buf = static_cast<unsigned char *>(emalloc(sizeof(unsigned char *) * HLL_BUF_SIZE));
 
   VK_LEN_T p = 0, i;
   buf[p++] = HLL_PACK_CHAR_V2;
-  buf[p++] = (unsigned  char) ('0' + (unsigned  char) (__builtin_ctz (len)));
-  assert (__builtin_popcount (len) == 1);
+  buf[p++] = (unsigned char)('0' + (unsigned char)(__builtin_ctz(len)));
+  assert(__builtin_popcount(len) == 1);
   for (i = 0; i < len; i++) {
     if (s[i] > HLL_FIRST_RANK_CHAR) {
       if (p + 2 >= len) {
         *res_len = len;
-        *res_s = static_cast<unsigned char *>(emalloc (sizeof (unsigned char *) * len));
-        memcpy (*res_s, s, (size_t) *res_len);
-        efree (buf);
+        *res_s = static_cast<unsigned char *>(emalloc(sizeof(unsigned char *) * len));
+        memcpy(*res_s, s, (size_t)*res_len);
+        efree(buf);
         return;
       }
-      buf[p++] = (unsigned char) ((i & 0x7f) + 1);
-      buf[p++] = (unsigned char) ((i >> 7) + 1);
+      buf[p++] = (unsigned char)((i & 0x7f) + 1);
+      buf[p++] = (unsigned char)((i >> 7) + 1);
       buf[p++] = s[i];
     }
-    assert (p < HLL_BUF_SIZE);
+    assert(p < HLL_BUF_SIZE);
   }
 
   *res_len = p;
-  *res_s = static_cast<unsigned char *>(emalloc (sizeof (unsigned char) * *res_len));
-  memcpy (*res_s, buf, (size_t) *res_len);
+  *res_s = static_cast<unsigned char *>(emalloc(sizeof(unsigned char) * *res_len));
+  memcpy(*res_s, buf, (size_t)*res_len);
 
-  efree (buf);
+  efree(buf);
 }
 
 double hll_count(char const *hll_table, int hll_table_size, int m) {
@@ -193,11 +194,7 @@ double hll_count(char const *hll_table, int hll_table_size, int m) {
       }
     } else if (m == (1 << 14)) {
       if (e < 72000) {
-        double bias = 5.9119 * 1.0e-18 * (e * e * e * e)
-                      - 1.4253 * 1.0e-12 * (e * e * e) +
-                      1.2940 * 1.0e-7 * (e * e)
-                      - 5.2921 * 1.0e-3 * e +
-                      83.3216;
+        double bias = 5.9119 * 1.0e-18 * (e * e * e * e) - 1.4253 * 1.0e-12 * (e * e * e) + 1.2940 * 1.0e-7 * (e * e) - 5.2921 * 1.0e-3 * e + 83.3216;
         e -= e * (bias / 100.0);
       }
     } else {
@@ -207,7 +204,7 @@ double hll_count(char const *hll_table, int hll_table_size, int m) {
   return e;
 }
 
-PHP_FUNCTION (vk_stats_hll_count) {
+PHP_FUNCTION(vk_stats_hll_count) {
   char *s;
   VK_LEN_T s_len;
   if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &s, &s_len) == FAILURE) {
@@ -227,7 +224,7 @@ PHP_FUNCTION (vk_stats_hll_count) {
  * A full copy of the same function exists in vkext_stats.cpp in KPHP.
  */
 long long dl_murmur64a_hash(const void *data, size_t len) {
-  assert ((len & 7) == 0);
+  assert((len & 7) == 0);
   unsigned long long m = 0xc6a4a7935bd1e995;
   int r = 47;
   unsigned long long h = 0xcafebabeull ^ (m * len);
@@ -247,20 +244,27 @@ long long dl_murmur64a_hash(const void *data, size_t len) {
 
   start = (const unsigned char *)data;
 
-  switch(len & 7) {
-    case 7: h ^= (unsigned long long)start[6] << 48;
+  switch (len & 7) {
+    case 7:
+      h ^= (unsigned long long)start[6] << 48;
     /* fallthrough */
-    case 6: h ^= (unsigned long long)start[5] << 40;
+    case 6:
+      h ^= (unsigned long long)start[5] << 40;
     /* fallthrough */
-    case 5: h ^= (unsigned long long)start[4] << 32;
+    case 5:
+      h ^= (unsigned long long)start[4] << 32;
     /* fallthrough */
-    case 4: h ^= (unsigned long long)start[3] << 24;
+    case 4:
+      h ^= (unsigned long long)start[3] << 24;
     /* fallthrough */
-    case 3: h ^= (unsigned long long)start[2] << 16;
+    case 3:
+      h ^= (unsigned long long)start[2] << 16;
     /* fallthrough */
-    case 2: h ^= (unsigned long long)start[1] << 8;
+    case 2:
+      h ^= (unsigned long long)start[1] << 8;
     /* fallthrough */
-    case 1: h ^= (unsigned long long)start[0];
+    case 1:
+      h ^= (unsigned long long)start[0];
       h *= m;
   };
 
@@ -286,17 +290,18 @@ static int hll_add(char *hll, int size, zval *z) {
     if (hll[idx] < rank) {
       hll[idx] = rank;
     }
-  } VK_ZEND_HASH_FOREACH_END();
+  }
+  VK_ZEND_HASH_FOREACH_END();
   return 1;
 }
 
-PHP_FUNCTION (vk_stats_hll_create) {
+PHP_FUNCTION(vk_stats_hll_create) {
   zval *z = NULL;
   long size = 256;
   if (zend_parse_parameters(ZEND_NUM_ARGS(), "|al", &z, &size) == FAILURE) {
     return;
   }
-  if (z != NULL && Z_TYPE_P (z) != IS_ARRAY) {
+  if (z != NULL && Z_TYPE_P(z) != IS_ARRAY) {
     RETURN_FALSE;
     return;
   }
@@ -317,14 +322,14 @@ PHP_FUNCTION (vk_stats_hll_create) {
   VK_RETURN_STRINGL_NOD(result, size);
 }
 
-PHP_FUNCTION (vk_stats_hll_add) {
+PHP_FUNCTION(vk_stats_hll_add) {
   char *hll;
   zval *z;
   VK_LEN_T hll_len;
   if (zend_parse_parameters(ZEND_NUM_ARGS(), "sa", &hll, &hll_len, &z) == FAILURE) {
     return;
   }
-  if (Z_TYPE_P (z) != IS_ARRAY || !is_hll_unpacked(hll, hll_len) || (hll_len != (1 << 8) && hll_len != (1 << 14))) {
+  if (Z_TYPE_P(z) != IS_ARRAY || !is_hll_unpacked(hll, hll_len) || (hll_len != (1 << 8) && hll_len != (1 << 14))) {
     RETURN_FALSE;
     return;
   }
@@ -340,7 +345,7 @@ PHP_FUNCTION (vk_stats_hll_add) {
   VK_RETURN_STRINGL_NOD(result, hll_len);
 }
 
-PHP_FUNCTION (vk_stats_hll_pack) {
+PHP_FUNCTION(vk_stats_hll_pack) {
   char *s;
   VK_LEN_T s_len;
   if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &s, &s_len) == FAILURE) {
@@ -349,13 +354,13 @@ PHP_FUNCTION (vk_stats_hll_pack) {
   if (!is_hll_unpacked(s, s_len)) {
     RETURN_FALSE;
   }
-  char* res;
+  char *res;
   VK_LEN_T res_len;
-  hll_pack((unsigned char *) s, s_len, (unsigned char **) &res, &res_len);
+  hll_pack((unsigned char *)s, s_len, (unsigned char **)&res, &res_len);
   VK_RETURN_STRINGL_NOD(res, res_len);
 }
 
-PHP_FUNCTION (vk_stats_hll_unpack) {
+PHP_FUNCTION(vk_stats_hll_unpack) {
   char *s;
   VK_LEN_T s_len;
   if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &s, &s_len) == FAILURE) {
@@ -364,17 +369,17 @@ PHP_FUNCTION (vk_stats_hll_unpack) {
   if (is_hll_unpacked(s, s_len)) {
     RETURN_FALSE;
   }
-  char* res = static_cast<char *>(emalloc(MAX_HLL_SIZE));
+  char *res = static_cast<char *>(emalloc(MAX_HLL_SIZE));
   int m = unpack_hll(s, s_len, res);
   if (m == -1) {
     RETURN_FALSE;
   }
   assert(m >= 0);
-  VK_LEN_T res_len = (VK_LEN_T) m;
+  VK_LEN_T res_len = (VK_LEN_T)m;
   VK_RETURN_STRINGL_NOD(res, res_len);
 }
 
-PHP_FUNCTION (vk_stats_hll_is_packed) {
+PHP_FUNCTION(vk_stats_hll_is_packed) {
   char *s;
   VK_LEN_T s_len;
   if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &s, &s_len) == FAILURE) {

@@ -4,13 +4,12 @@
 
 #pragma once
 
-#include <string>
 #include <forward_list>
+#include <string>
 #include <vector>
 
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
-
 
 enum class PhpDocType {
   unknown,
@@ -64,20 +63,25 @@ struct PhpDocTag {
   // it's represented as this structure
   struct TypeAndVarName {
     const TypeHint *type_hint{nullptr};
-    vk::string_view var_name;     // stored without leading "$"; could be empty if omitted in phpdoc
+    vk::string_view var_name; // stored without leading "$"; could be empty if omitted in phpdoc
 
-    operator bool() const noexcept { return static_cast<bool>(type_hint); }
+    operator bool() const noexcept {
+      return static_cast<bool>(type_hint);
+    }
   };
-
 
   PhpDocType type;
   vk::string_view value;
 
-  PhpDocTag(PhpDocType type, vk::string_view value) : type(type), value(value) {}
+  PhpDocTag(PhpDocType type, vk::string_view value)
+    : type(type)
+    , value(value) {}
 
   std::string get_tag_name() const noexcept;
 
-  std::string value_as_string() const noexcept { return std::string(value); }
+  std::string value_as_string() const noexcept {
+    return std::string(value);
+  }
   TypeAndVarName value_as_type_and_var_name(FunctionPtr current_function, const GenericsDeclarationMixin *genericTs) const;
 };
 
@@ -91,7 +95,7 @@ public:
   explicit PhpDocComment(vk::string_view phpdoc_str);
 
   bool has_tag(PhpDocType type) const noexcept {
-    for (const PhpDocTag &tag: tags) {
+    for (const PhpDocTag &tag : tags) {
       if (tag.type == type) {
         return true;
       }
@@ -100,7 +104,7 @@ public:
   }
 
   bool has_tag(PhpDocType type, PhpDocType or_type2) const noexcept {
-    for (const PhpDocTag &tag: tags) {
+    for (const PhpDocTag &tag : tags) {
       if (tag.type == type || tag.type == or_type2) {
         return true;
       }
@@ -109,7 +113,7 @@ public:
   }
 
   const PhpDocTag *find_tag(PhpDocType type) const noexcept {
-    for (const PhpDocTag &tag: tags) {
+    for (const PhpDocTag &tag : tags) {
       if (tag.type == type) {
         return &tag;
       }

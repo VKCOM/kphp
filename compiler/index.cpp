@@ -9,8 +9,8 @@
 #include <ftw.h>
 #include <sys/stat.h>
 
-#include "common/macos-ports.h"
 #include "common/containers/final_action.h"
+#include "common/macos-ports.h"
 #include "common/wrappers/mkdir_recursive.h"
 #include "compiler/kphp_assert.h"
 
@@ -22,21 +22,21 @@ bool is_dir(const std::string &path) {
   struct stat s;
   int err = stat(path.c_str(), &s);
   kphp_assert_msg(err == 0, fmt_format("Failed to stat [{}]", path));
-  return S_ISDIR (s.st_mode);
+  return S_ISDIR(s.st_mode);
 }
 
 int64_t get_mtime(const struct stat &sb) {
   return sb.st_mtime * 1000000000ll + sb.st_mtim.tv_nsec;
 }
 
-//Index:
-//  holds some information about all files in given directory (and all its subdirs)
-//  can be synchronized with file system
-//  can be saved to file
-//  can be loaded from file
+// Index:
+//   holds some information about all files in given directory (and all its subdirs)
+//   can be synchronized with file system
+//   can be saved to file
+//   can be loaded from file
 //
-//  for a start, files will be indexed by their names
-//               hashes will be used in future
+//   for a start, files will be indexed by their names
+//                hashes will be used in future
 
 void File::calc_name_ext_and_others(const std::string &basedir) {
   kphp_assert(vk::string_view{path}.starts_with(basedir));
@@ -78,10 +78,10 @@ long long File::read_stat() {
     return -1;
   }
   on_disk = true;
-  //TODO: check if it is file
+  // TODO: check if it is file
   mtime = get_mtime(buf);
   file_size = buf.st_size;
-  //fprintf (stderr, "%lld [%d %d] %s\n", mtime, (int)buf.st_mtime, (int)buf.st_mtim.tv_nsec, path.c_str());
+  // fprintf (stderr, "%lld [%d %d] %s\n", mtime, (int)buf.st_mtime, (int)buf.st_mtim.tv_nsec, path.c_str());
   return 1;
 }
 
@@ -100,9 +100,9 @@ void Index::set_dir(const std::string &new_dir) {
   kphp_assert_msg(res_mkdir, fmt_format("Failed to mkdir [{}] ({})", new_dir, strerror(errno)));
 
   dir = get_full_path(new_dir);
-  kphp_assert (!dir.empty());
+  kphp_assert(!dir.empty());
   if (!is_dir(dir)) {
-    kphp_error (0, fmt_format("[{}] is not a directory", dir));
+    kphp_error(0, fmt_format("[{}] is not a directory", dir));
     kphp_fail();
   }
   if (dir[dir.size() - 1] != '/') {
@@ -117,10 +117,9 @@ const std::string &Index::get_dir() const {
 
 Index *Index::current_index = nullptr;
 
-int Index::scan_dir_callback(const char *fpath, const struct stat *sb, int typeflag,
-                             struct FTW *ftwbuf __attribute__((unused))) {
+int Index::scan_dir_callback(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf __attribute__((unused))) {
   if (typeflag == FTW_D) {
-    //skip
+    // skip
   } else if (typeflag == FTW_F) {
     // ignore index file
     if (current_index->index_file == fpath) {
@@ -130,14 +129,14 @@ int Index::scan_dir_callback(const char *fpath, const struct stat *sb, int typef
     File *f = current_index->on_new_file_during_scan_dir(realpath(fpath, full_path));
     f->on_disk = true;
     long long new_mtime = get_mtime(*sb);
-    //fprintf (stderr, "%lld [%d %d] %s\n", new_mtime, (int)sb->st_mtime, (int)sb->st_mtim.tv_nsec, fpath);
+    // fprintf (stderr, "%lld [%d %d] %s\n", new_mtime, (int)sb->st_mtime, (int)sb->st_mtim.tv_nsec, fpath);
     if (f->mtime != new_mtime) {
       f->crc64 = -1;
       f->crc64_with_comments = -1;
     }
     f->mtime = new_mtime;
   } else {
-    kphp_error (0, fmt_format("Failed to scan directory [fpath={}]\n", fpath));
+    kphp_error(0, fmt_format("Failed to scan directory [fpath={}]\n", fpath));
     kphp_fail();
   }
   return 0;
@@ -147,7 +146,7 @@ void Index::sync_with_dir(const std::string &dir) {
   kphp_assert(files_prev_launch.empty() && files_only_cur_launch.empty() && this->dir.empty());
   set_dir(dir);
   current_index = this;
-  int err = nftw(dir.c_str(), scan_dir_callback, 10, FTW_PHYS/*ignore symbolic links*/);
+  int err = nftw(dir.c_str(), scan_dir_callback, 10, FTW_PHYS /*ignore symbolic links*/);
   kphp_assert_msg(err == 0, fmt_format("ftw [{}] failed", dir));
 }
 
@@ -163,7 +162,7 @@ void Index::del_extra_files() {
         }
         int err = unlink(file->path.c_str());
         if (err != 0) {
-          kphp_error (0, fmt_format("Failed to unlink file {}: {}", file->path, strerror(errno)));
+          kphp_error(0, fmt_format("Failed to unlink file {}: {}", file->path, strerror(errno)));
           kphp_fail();
         }
       }
@@ -184,7 +183,7 @@ void Index::create_subdir(vk::string_view subdir) {
   int ret = mkdir(full_path.c_str(), 0777);
   kphp_assert_msg(ret != -1 || errno == EEXIST, full_path);
   if (errno == EEXIST && !is_dir(full_path)) {
-    kphp_error (0, fmt_format("[{}] is not a directory", full_path.c_str()));
+    kphp_error(0, fmt_format("[{}] is not a directory", full_path.c_str()));
     kphp_fail();
   }
 }
@@ -194,7 +193,7 @@ void Index::fix_path(std::string &path) const {
   if (path[0] != '/') {
     path.insert(0, get_dir());
   }
-  kphp_assert (path[0] == '/');
+  kphp_assert(path[0] == '/');
 }
 
 File *Index::get_file(std::string path) const {
@@ -222,7 +221,7 @@ File *Index::insert_file(std::string path) {
   if (f != nullptr) {
     return f;
   }
-//  printf("%s not found in index, creating\n", file_name.c_str());
+  //  printf("%s not found in index, creating\n", file_name.c_str());
 
   std::lock_guard<std::mutex> guard{mutex_rw_cur_launch};
 
@@ -287,7 +286,7 @@ void Index::save_into_index_file() {
   for (const auto &file : get_files()) {
     const std::string path = file->path.substr(dir.length());
     if (fprintf(f.get(), "%s %llu %llu\n", path.c_str(), file->crc64, file->crc64_with_comments) <= 0) {
-      kphp_warning (fmt_format("Can't write crc32 into tmp index file '{}'", index_file_tmp_name));
+      kphp_warning(fmt_format("Can't write crc32 into tmp index file '{}'", index_file_tmp_name));
       return;
     }
   }
@@ -337,5 +336,3 @@ void Index::load_from_index_file() {
     }
   }
 }
-
-

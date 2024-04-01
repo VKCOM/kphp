@@ -22,8 +22,7 @@ void write_event_stats(stats_t *stats, const char *name, const ConfdataStats::Ev
 
 } // namespace
 
-void ConfdataStats::on_update(const confdata_sample_storage &new_confdata,
-                              size_t previous_garbage_size,
+void ConfdataStats::on_update(const confdata_sample_storage &new_confdata, size_t previous_garbage_size,
                               const ConfdataPredefinedWildcards &confdata_predefined_wildcards) noexcept {
   last_garbage_size = previous_garbage_size;
   garbage_statistic_[(total_updates++) % garbage_statistic_.size()] = last_garbage_size;
@@ -38,7 +37,7 @@ void ConfdataStats::on_update(const confdata_sample_storage &new_confdata,
   predefined_wildcard_elements = 0;
   heaviest_sections_by_count.clear();
 
-  for (const auto &section: new_confdata) {
+  for (const auto &section : new_confdata) {
     const vk::string_view first_key{section.first.c_str(), section.first.size()};
     switch (confdata_predefined_wildcards.detect_first_key_type(first_key)) {
       case ConfdataFirstKeyType::simple_key:
@@ -66,7 +65,7 @@ void ConfdataStats::on_update(const confdata_sample_storage &new_confdata,
         if (confdata_predefined_wildcards.is_most_common_predefined_wildcard(first_key)) {
           predefined_wildcard_elements += section.second.as_array().count();
           if (!vk::contains(first_key, ".")) {
-            total_elements += section.second.as_array().count();  
+            total_elements += section.second.as_array().count();
           }
         }
         break;

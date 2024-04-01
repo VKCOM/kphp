@@ -41,9 +41,7 @@ private:
 
   void visit_func_param_list(VertexAdaptor<op_func_param_list> list);
 
-
 public:
-
   std::string get_description() override {
     return "Register variables";
   }
@@ -58,5 +56,4 @@ public:
   VertexPtr on_exit_vertex(VertexPtr root) override;
 
   bool user_recursion(VertexPtr v) override;
-
 };

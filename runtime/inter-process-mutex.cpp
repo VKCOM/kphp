@@ -18,13 +18,13 @@ pid_t get_main_thread_id() noexcept {
   return pid;
 }
 
-void __attribute__ ((noinline)) check_that_tid_and_cached_pid_same() noexcept {
+void __attribute__((noinline)) check_that_tid_and_cached_pid_same() noexcept {
   // to avoid calling gettid syscall each time, trust pid global var, but check periodically
   // if this assert trigger, that means that runtime use several threads or pid is not updated
   php_assert(get_main_thread_id() == syscall(SYS_gettid));
 }
 
-long __attribute__ ((noinline)) futex(pid_t *lock, int command) noexcept {
+long __attribute__((noinline)) futex(pid_t *lock, int command) noexcept {
 #if defined(__APPLE__)
   static_cast<void>(lock);
   static_cast<void>(command);
@@ -82,8 +82,7 @@ bool inter_process_mutex::try_lock() noexcept {
   const pid_t tid = get_main_thread_id();
   // try to lock two times as the first attempt can fail if the previous owner is dead
   for (size_t attempts = 0; attempts != 2; ++attempts) {
-    if (__sync_bool_compare_and_swap(&lock_, 0, tid) ||
-        !futex(&lock_, FUTEX_TRYLOCK_PI)) {
+    if (__sync_bool_compare_and_swap(&lock_, 0, tid) || !futex(&lock_, FUTEX_TRYLOCK_PI)) {
       return true;
     }
     handle_lock_error(&lock_, "try lock");

@@ -13,14 +13,12 @@
 #include "compiler/debug.h"
 
 class DefineData : private vk::not_copyable {
-  DEBUG_STRING_METHOD { return name; }
-  
+  DEBUG_STRING_METHOD {
+    return name;
+  }
+
 public:
-  enum DefineType {
-    def_unknown,
-    def_const,
-    def_var
-  };
+  enum DefineType { def_unknown, def_const, def_var };
 
   int id;
   DefineType type_;
@@ -35,7 +33,9 @@ public:
   DefineData();
   DefineData(std::string name, VertexPtr val, DefineType type_);
 
-  inline DefineType &type() { return type_; }
+  inline DefineType &type() {
+    return type_;
+  }
   std::string as_human_readable() const;
 
   bool is_builtin() const;

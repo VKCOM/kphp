@@ -4,8 +4,8 @@
 
 #include <gtest/gtest.h>
 #include <iterator>
-#include <vector>
 #include <random>
+#include <vector>
 
 #include "common/algorithms/compare.h"
 

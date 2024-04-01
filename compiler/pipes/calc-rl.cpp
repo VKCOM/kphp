@@ -10,7 +10,7 @@
 
 void rl_calc(VertexPtr root, RLValueType expected_rl_type);
 
-template <RLValueType type, RLValueType except_type>
+template<RLValueType type, RLValueType except_type>
 void rl_calc_all(VertexPtr root, int except) {
   int ii = 0;
   for (auto v : *root) {
@@ -23,15 +23,15 @@ void rl_calc_all(VertexPtr root, int except) {
   }
 }
 
-template <RLValueType type>
+template<RLValueType type>
 void rl_calc_all(VertexPtr root) {
-  for (auto v: *root) {
+  for (auto v : *root) {
     rl_calc(v, type);
   }
 }
 
 void rl_func_call_calc(VertexPtr root, RLValueType expected_rl_type) {
-  kphp_error (expected_rl_type != val_l, "Function result cannot be used as lvalue");
+  kphp_error(expected_rl_type != val_l, "Function result cannot be used as lvalue");
   switch (root->type()) {
     case op_list:
       rl_calc_all<val_l, val_r>(root, root->size() - 1);
@@ -43,7 +43,7 @@ void rl_func_call_calc(VertexPtr root, RLValueType expected_rl_type) {
     case op_fork:
       rl_calc_all<val_none>(root);
       return;
-    case op_array: //TODO: in fact it is wrong
+    case op_array: // TODO: in fact it is wrong
     case op_tuple:
     case op_shape:
     case op_defined:
@@ -52,7 +52,7 @@ void rl_func_call_calc(VertexPtr root, RLValueType expected_rl_type) {
     case op_func_call:
       break;
     default:
-    kphp_fail();
+      kphp_fail();
       break;
   }
 
@@ -96,13 +96,13 @@ void rl_other_calc(VertexPtr root, RLValueType expected_rl_type) {
       break;
     }
     default:
-      assert ("Unknown operation in rl_other_calc" && 0);
+      assert("Unknown operation in rl_other_calc" && 0);
       break;
   }
 }
 
 void rl_common_calc(VertexPtr root, RLValueType expected_rl_type) {
-  kphp_error (expected_rl_type == val_none, "Invalid lvalue/rvalue operation");
+  kphp_error(expected_rl_type == val_none, "Invalid lvalue/rvalue operation");
   switch (root->type()) {
     case op_if:
     case op_while:
@@ -122,7 +122,7 @@ void rl_common_calc(VertexPtr root, RLValueType expected_rl_type) {
     case op_throw:
       rl_calc_all<val_r>(root);
       break;
-    case op_unset: //TODO: fix it (???)
+    case op_unset: // TODO: fix it (???)
       rl_calc_all<val_l>(root);
       break;
     case op_try: {
@@ -141,7 +141,7 @@ void rl_common_calc(VertexPtr root, RLValueType expected_rl_type) {
       rl_calc_all<val_none>(root);
       break;
     case op_for:
-      //TODO: it may be untrue
+      // TODO: it may be untrue
       rl_calc_all<val_none, val_r>(root, 1);
       break;
     case op_global:
@@ -160,7 +160,7 @@ void rl_common_calc(VertexPtr root, RLValueType expected_rl_type) {
       break;
 
     default:
-    kphp_fail();
+      kphp_fail();
       break;
   }
   return;
@@ -173,7 +173,7 @@ void rl_calc(VertexPtr root, RLValueType expected_rl_type) {
 
   Operation tp = root->type();
 
-  //fprintf (stderr, "rl_calc (%p = %s)\n", root, OpInfo::str (tp).c_str());
+  // fprintf (stderr, "rl_calc (%p = %s)\n", root, OpInfo::str (tp).c_str());
 
   switch (OpInfo::rl(tp)) {
     case rl_set:
@@ -188,10 +188,10 @@ void rl_calc(VertexPtr root, RLValueType expected_rl_type) {
           break;
         }
         case val_l:
-          kphp_error (0, fmt_format("trying to use result of [{}] as lvalue", OpInfo::str(tp)));
+          kphp_error(0, fmt_format("trying to use result of [{}] as lvalue", OpInfo::str(tp)));
           break;
         default:
-        kphp_fail();
+          kphp_fail();
           break;
       }
       break;
@@ -207,8 +207,7 @@ void rl_calc(VertexPtr root, RLValueType expected_rl_type) {
           break;
         case val_r:
         case val_none:
-          kphp_error (vk::any_of_equal(array->type(), op_var, op_index, op_func_call, op_instance_prop, op_array),
-                      "op_index has to be used on lvalue");
+          kphp_error(vk::any_of_equal(array->type(), op_var, op_index, op_func_call, op_instance_prop, op_array), "op_index has to be used on lvalue");
           rl_calc(array, val_r);
 
           if (index->has_key()) {
@@ -216,7 +215,7 @@ void rl_calc(VertexPtr root, RLValueType expected_rl_type) {
           }
           break;
         default:
-          assert (0);
+          assert(0);
           break;
       }
       break;
@@ -229,14 +228,15 @@ void rl_calc(VertexPtr root, RLValueType expected_rl_type) {
           break;
         case val_r:
         case val_none:
-          if (lhs->type() != op_var) {    // "$a->prop" is most common usage, but others like "f()->prop" are also possible
-            kphp_error(vk::any_of_equal(lhs->type(), op_index, op_func_call, op_instance_prop, op_clone, op_seq_rval, op_ffi_new, op_ffi_addr, op_ffi_array_get),
+          if (lhs->type() != op_var) { // "$a->prop" is most common usage, but others like "f()->prop" are also possible
+            kphp_error(vk::any_of_equal(lhs->type(), op_index, op_func_call, op_instance_prop, op_clone, op_seq_rval, op_ffi_new, op_ffi_addr,
+                                        op_ffi_array_get),
                        "op_instance_prop has to be used on lvalue");
           }
           rl_calc(lhs, val_r);
           break;
         default:
-          assert (0);
+          assert(0);
           break;
       }
       break;
@@ -244,14 +244,14 @@ void rl_calc(VertexPtr root, RLValueType expected_rl_type) {
     case rl_op:
       switch (expected_rl_type) {
         case val_l:
-          kphp_error (0, "Can't make result of operation to be lvalue");
+          kphp_error(0, "Can't make result of operation to be lvalue");
           break;
         case val_r:
         case val_none:
           rl_calc_all<val_r>(root);
           break;
         default:
-          assert (0);
+          assert(0);
           break;
       }
       break;
@@ -259,14 +259,14 @@ void rl_calc(VertexPtr root, RLValueType expected_rl_type) {
     case rl_op_l:
       switch (expected_rl_type) {
         case val_l:
-          kphp_error (0, "Can't make result of operation to be lvalue");
+          kphp_error(0, "Can't make result of operation to be lvalue");
           break;
         case val_r:
         case val_none:
           rl_calc(root.as<meta_op_unary>()->expr(), val_l);
           break;
         default:
-        kphp_fail();
+          kphp_fail();
           break;
       }
       break;
@@ -274,26 +274,26 @@ void rl_calc(VertexPtr root, RLValueType expected_rl_type) {
     case rl_const:
       switch (expected_rl_type) {
         case val_l:
-          kphp_error (0, "Can't make const to be lvalue");
+          kphp_error(0, "Can't make const to be lvalue");
           break;
         case val_r:
         case val_none:
           break;
         default:
-        kphp_fail();
+          kphp_fail();
           break;
       }
       break;
     case rl_var:
       switch (expected_rl_type) {
         case val_l:
-          kphp_error (root->extra_type != op_ex_var_const, "Can't make const to be lvalue");
+          kphp_error(root->extra_type != op_ex_var_const, "Can't make const to be lvalue");
           break;
         case val_r:
         case val_none:
           break;
         default:
-        kphp_fail();
+          kphp_fail();
           break;
       }
       break;
@@ -311,7 +311,7 @@ void rl_calc(VertexPtr root, RLValueType expected_rl_type) {
       break;
 
     default:
-    kphp_fail();
+      kphp_fail();
       break;
   }
 }

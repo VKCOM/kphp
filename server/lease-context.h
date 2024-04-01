@@ -6,10 +6,9 @@
 
 #include <optional>
 
+#include "common/kphp-tasks-lease/lease-worker-mode.h"
 #include "common/mixin/not_copyable.h"
 #include "common/smart_ptrs/singleton.h"
-#include "common/kphp-tasks-lease/lease-worker-mode.h"
-
 
 class LeaseContext : vk::not_copyable {
 public:

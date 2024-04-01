@@ -18,14 +18,14 @@ vertex_inner<Op> *raw_create_vertex_inner(int args_n);
 
 class TypeHint;
 
-enum class SwitchKind: uint8_t {
+enum class SwitchKind : uint8_t {
   EmptySwitch,  // switch with no expr cases
   IntSwitch,    // switch with int-only constexpr cases
   StringSwitch, // switch with string-only constexpr
   VarSwitch,    // switch with arbitrary (mixed) expr cases
 };
 
-enum class InstancePropAccessType: uint8_t {
+enum class InstancePropAccessType : uint8_t {
   Default,        // normal instance prop access
   CData,          // accessing a FFI field through php2c level
   CDataDirect,    // accessing a FFI field directly (using '.')
@@ -45,6 +45,7 @@ public:
 private:
   Operation type_;
   int n;
+
 public:
   tinf::ExprNode tinf_node;
   Location location;
@@ -64,8 +65,9 @@ private:
   }
 
 protected:
-
-  bool check_range(int i) const { return 0 <= i && i < size(); }
+  bool check_range(int i) const {
+    return 0 <= i && i < size();
+  }
 
   VertexPtr &ith(int i) {
     kphp_assert(check_range(i));
@@ -77,37 +79,34 @@ protected:
     return arr()[-i];
   }
 
-
 public:
-  vertex_inner() :
-    type_(op_none),
-    n(-1),
-    tinf_node(VertexPtr(this)),
-    location(),
-    extra_type(op_ex_none),
-    rl_type(val_error),
-    val_ref_flag(val_none),
-    const_type(cnst_error_),
-    ref_flag(false),
-    throw_flag(false),
-    used_flag(false),
-    auto_inserted(false) {
-  }
+  vertex_inner()
+    : type_(op_none)
+    , n(-1)
+    , tinf_node(VertexPtr(this))
+    , location()
+    , extra_type(op_ex_none)
+    , rl_type(val_error)
+    , val_ref_flag(val_none)
+    , const_type(cnst_error_)
+    , ref_flag(false)
+    , throw_flag(false)
+    , used_flag(false)
+    , auto_inserted(false) {}
 
-  vertex_inner(const vertex_inner<meta_op_base> &from) :
-    type_(from.type_),
-    n(-1),
-    tinf_node(VertexPtr(this)),
-    location(from.location),
-    extra_type(from.extra_type),
-    rl_type(from.rl_type),
-    val_ref_flag(from.val_ref_flag),
-    const_type(from.const_type),
-    ref_flag(from.ref_flag),
-    throw_flag(from.throw_flag),
-    used_flag(from.used_flag),
-    auto_inserted(from.auto_inserted) {
-  }
+  vertex_inner(const vertex_inner<meta_op_base> &from)
+    : type_(from.type_)
+    , n(-1)
+    , tinf_node(VertexPtr(this))
+    , location(from.location)
+    , extra_type(from.extra_type)
+    , rl_type(from.rl_type)
+    , val_ref_flag(from.val_ref_flag)
+    , const_type(from.const_type)
+    , ref_flag(from.ref_flag)
+    , throw_flag(from.throw_flag)
+    , used_flag(from.used_flag)
+    , auto_inserted(from.auto_inserted) {}
 
   virtual ~vertex_inner() {}
 
@@ -115,7 +114,7 @@ public:
     kphp_assert(n == -1);
     n = real_n;
     for (int i = 0; i < n; i++) {
-      new(&ith(i)) VertexPtr();
+      new (&ith(i)) VertexPtr();
     }
   }
 
@@ -123,37 +122,65 @@ public:
     kphp_assert(n == -1);
     n = from.size();
     for (int i = 0; i < n; i++) {
-      new(&ith(i)) VertexPtr(from.ith(i).clone());
+      new (&ith(i)) VertexPtr(from.ith(i).clone());
     }
   }
 
-  int size() const { return n; }
+  int size() const {
+    return n;
+  }
 
-  VertexPtr &front() { return ith(0); }
+  VertexPtr &front() {
+    return ith(0);
+  }
 
-  VertexPtr &back() { return ith(size() - 1); }
+  VertexPtr &back() {
+    return ith(size() - 1);
+  }
 
-  std::vector<VertexPtr> get_next() { return {begin(), end()}; }
+  std::vector<VertexPtr> get_next() {
+    return {begin(), end()};
+  }
 
-  bool empty() const { return size() == 0; }
+  bool empty() const {
+    return size() == 0;
+  }
 
-  iterator begin() { return iterator(arr() + 1); }
+  iterator begin() {
+    return iterator(arr() + 1);
+  }
 
-  iterator end() { return iterator(arr() - size() + 1); }
+  iterator end() {
+    return iterator(arr() - size() + 1);
+  }
 
-  xiterator rbegin() { return xiterator(arr() - size() + 1); }
+  xiterator rbegin() {
+    return xiterator(arr() - size() + 1);
+  }
 
-  xiterator rend() { return xiterator(arr() + 1); }
+  xiterator rend() {
+    return xiterator(arr() + 1);
+  }
 
-  const_iterator begin() const { return const_iterator(arr() + 1); }
+  const_iterator begin() const {
+    return const_iterator(arr() + 1);
+  }
 
-  const_iterator end() const { return const_iterator(arr() - size() + 1); }
+  const_iterator end() const {
+    return const_iterator(arr() - size() + 1);
+  }
 
-  const_xiterator rbegin() const { return const_xiterator(arr() -  size() + 1); }
+  const_xiterator rbegin() const {
+    return const_xiterator(arr() - size() + 1);
+  }
 
-  const_xiterator rend() const { return const_xiterator(arr() - 1); }
+  const_xiterator rend() const {
+    return const_xiterator(arr() - 1);
+  }
 
-  const Location &get_location() const { return location; }
+  const Location &get_location() const {
+    return location;
+  }
 
   void init() {}
 
@@ -161,88 +188,92 @@ public:
     p->op_str = "meta_op_base";
   }
 
-  const Operation &type() const { return type_; }
+  const Operation &type() const {
+    return type_;
+  }
 
-  virtual const std::string &get_string() const { kphp_fail_msg (fmt_format("not supported [{}:{}]", type_, OpInfo::str(type_))); }
+  virtual const std::string &get_string() const {
+    kphp_fail_msg(fmt_format("not supported [{}:{}]", type_, OpInfo::str(type_)));
+  }
 
-  virtual void set_string(std::string) { kphp_fail_msg (fmt_format("not supported [{}:{}]", type_, OpInfo::str(type_))); }
+  virtual void set_string(std::string) {
+    kphp_fail_msg(fmt_format("not supported [{}:{}]", type_, OpInfo::str(type_)));
+  }
 
-  virtual bool has_get_string() const { return false; }
+  virtual bool has_get_string() const {
+    return false;
+  }
 
   template<Operation Op>
   friend vertex_inner<Op> *raw_create_vertex_inner(int args_n);
 
   template<typename... Args>
-  static vertex_inner<meta_op_base> *create_vararg(Args &&... args) {
+  static vertex_inner<meta_op_base> *create_vararg(Args &&...args) {
     vertex_inner<meta_op_base> *v = raw_create_vertex_inner<meta_op_base>(get_children_size(std::forward<Args>(args)...));
     v->set_children(0, std::forward<Args>(args)...);
     return v;
   }
 
-    static bool deep_equal(VertexPtr lhs, VertexPtr rhs) {
-      if (lhs == rhs) {
-        return true;
-      }
-      if (!lhs || !rhs) {
-        return false;
-      }
-
-      auto get_string_def = [](VertexPtr v) {
-        return v->has_get_string() ? v->get_string() : "";
-      };
-
-      return lhs->type() == rhs->type() &&
-             get_string_def(lhs) == get_string_def(rhs) &&
-             std::equal(lhs->begin(), lhs->end(), rhs->begin(), rhs->end(), deep_equal);
+  static bool deep_equal(VertexPtr lhs, VertexPtr rhs) {
+    if (lhs == rhs) {
+      return true;
+    }
+    if (!lhs || !rhs) {
+      return false;
     }
 
-    template<class... Args>
-    static int get_children_size(const VertexPtr &, Args &&... args) {
-      return 1 + get_children_size(std::forward<Args>(args)...);
-    }
+    auto get_string_def = [](VertexPtr v) { return v->has_get_string() ? v->get_string() : ""; };
 
-    template<Operation op, class... Args>
-    static int get_children_size(const std::vector<VertexAdaptor<op>> &arg, Args &&... args) {
-      return (int)arg.size() + get_children_size(std::forward<Args>(args)...);
-    }
+    return lhs->type() == rhs->type() && get_string_def(lhs) == get_string_def(rhs)
+           && std::equal(lhs->begin(), lhs->end(), rhs->begin(), rhs->end(), deep_equal);
+  }
 
-    template<class... Args>
-    static int get_children_size(const vk::iterator_range<vertex_inner<meta_op_base>::iterator> &arg, Args &&... args) {
-      return (int)arg.size() + get_children_size(std::forward<Args>(args)...);
-    }
+  template<class... Args>
+  static int get_children_size(const VertexPtr &, Args &&...args) {
+    return 1 + get_children_size(std::forward<Args>(args)...);
+  }
 
-    static int get_children_size() {
-      return 0;
-    }
+  template<Operation op, class... Args>
+  static int get_children_size(const std::vector<VertexAdaptor<op>> &arg, Args &&...args) {
+    return (int)arg.size() + get_children_size(std::forward<Args>(args)...);
+  }
 
-    template<class... Args>
-    void set_children(int shift, VertexPtr arg, Args &&... args) {
-      ith(shift) = arg;
-      set_children(shift + 1, std::forward<Args>(args)...);
-    }
+  template<class... Args>
+  static int get_children_size(const vk::iterator_range<vertex_inner<meta_op_base>::iterator> &arg, Args &&...args) {
+    return (int)arg.size() + get_children_size(std::forward<Args>(args)...);
+  }
 
-    template<Operation op, class... Args>
-    void set_children(int shift, const std::vector<VertexAdaptor<op>> &arg, Args &&... args) {
-      for (int i = 0, ni = (int)arg.size(); i < ni; i++) {
-        ith(shift + i) = arg[i];
-      }
-      set_children(shift + (int)arg.size(), std::forward<Args>(args)...);
-    }
+  static int get_children_size() {
+    return 0;
+  }
 
-    template<class... Args>
-    void set_children(int shift, const vk::iterator_range<vertex_inner<meta_op_base>::iterator> &arg, Args &&... args) {
-      for (int i = 0, ni = (int)arg.size(); i < ni; i++) {
-        ith(shift + i) = arg[i];
-      }
-      set_children(shift + (int)arg.size(), std::forward<Args>(args)...);
-    }
+  template<class... Args>
+  void set_children(int shift, VertexPtr arg, Args &&...args) {
+    ith(shift) = arg;
+    set_children(shift + 1, std::forward<Args>(args)...);
+  }
 
-    void set_children(int shift) {
-      kphp_assert_msg(shift == n, "???");
+  template<Operation op, class... Args>
+  void set_children(int shift, const std::vector<VertexAdaptor<op>> &arg, Args &&...args) {
+    for (int i = 0, ni = (int)arg.size(); i < ni; i++) {
+      ith(shift + i) = arg[i];
     }
+    set_children(shift + (int)arg.size(), std::forward<Args>(args)...);
+  }
+
+  template<class... Args>
+  void set_children(int shift, const vk::iterator_range<vertex_inner<meta_op_base>::iterator> &arg, Args &&...args) {
+    for (int i = 0, ni = (int)arg.size(); i < ni; i++) {
+      ith(shift + i) = arg[i];
+    }
+    set_children(shift + (int)arg.size(), std::forward<Args>(args)...);
+  }
+
+  void set_children(int shift) {
+    kphp_assert_msg(shift == n, "???");
+  }
 };
 
 using Vertex = vertex_inner<meta_op_base>;
 using VertexRange = vk::iterator_range<Vertex::iterator>;
 using VertexConstRange = vk::iterator_range<Vertex::const_iterator>;
-

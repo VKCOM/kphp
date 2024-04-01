@@ -8,9 +8,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-void string_to_utf8 (const char *s, int *v) {
+void string_to_utf8(const char *s, int *v) {
   int *tv = v;
-#define CHECK(x) if (!(x)) {v = tv; break;}
+#define CHECK(x)                                                                                                                                               \
+  if (!(x)) {                                                                                                                                                  \
+    v = tv;                                                                                                                                                    \
+    break;                                                                                                                                                     \
+  }
 
   int a, b, c, d;
 
@@ -49,10 +53,14 @@ void string_to_utf8 (const char *s, int *v) {
 #undef CHECK
 }
 
-void string_to_utf8_len (const char *s, int s_len, int *v) {
+void string_to_utf8_len(const char *s, int s_len, int *v) {
   int *tv = v;
   const char *s_end = s + s_len;
-#define CHECK(x) if (!(x)) {v = tv; break;}
+#define CHECK(x)                                                                                                                                               \
+  if (!(x)) {                                                                                                                                                  \
+    v = tv;                                                                                                                                                    \
+    break;                                                                                                                                                     \
+  }
 
   int a, b, c, d;
 
@@ -97,8 +105,8 @@ void string_to_utf8_len (const char *s, int s_len, int *v) {
 #undef CHECK
 }
 
-void html_string_to_utf8 (const char *s, int *v) {
-  string_to_utf8 (s, v);
+void html_string_to_utf8(const char *s, int *v) {
+  string_to_utf8(s, v);
 
   int i, j;
   for (i = j = 0; v[i]; i++) {
@@ -149,18 +157,17 @@ void html_string_to_utf8 (const char *s, int *v) {
   v[j++] = 0;
 }
 
-int put_string_utf8 (const int *v, char *s) {
+int put_string_utf8(const int *v, char *s) {
   const char *s_begin = s;
   while (*v) {
-    s += put_char_utf8 ((unsigned int)(*v), s);
+    s += put_char_utf8((unsigned int)(*v), s);
     v++;
   }
   *s = 0;
   return s - s_begin;
 }
 
-
-int simplify_character (int c) {
+int simplify_character(int c) {
   switch (c) {
     case 193:
     case 258:
@@ -744,123 +751,240 @@ int simplify_character (int c) {
     case 65296 ... 65305:
       return c - 65296 + '0';
 
-    case 170:      return 'a';
-    case 178:      return '2';
-    case 179:      return '3';
-    case 185:      return '1';
-    case 186:      return 'o';
-    case 688:      return 'h';
-    case 690:      return 'j';
-    case 691:      return 'r';
-    case 695:      return 'w';
-    case 696:      return 'y';
-    case 737:      return 'l';
-    case 738:      return 's';
-    case 739:      return 'x';
-    case 7468:      return 'a';
-    case 7470:      return 'b';
-    case 7472:      return 'd';
-    case 7473:      return 'e';
-    case 7475:      return 'g';
-    case 7476:      return 'h';
-    case 7477:      return 'i';
-    case 7478:      return 'j';
-    case 7479:      return 'k';
-    case 7480:      return 'l';
-    case 7481:      return 'm';
-    case 7482:      return 'n';
-    case 7484:      return 'o';
-    case 7486:      return 'p';
-    case 7487:      return 'r';
-    case 7488:      return 't';
-    case 7489:      return 'u';
-    case 7490:      return 'w';
-    case 7491:      return 'a';
-    case 7495:      return 'b';
-    case 7496:      return 'd';
-    case 7497:      return 'e';
-    case 7501:      return 'g';
-    case 7503:      return 'k';
-    case 7504:      return 'm';
-    case 7506:      return 'o';
-    case 7510:      return 'p';
-    case 7511:      return 't';
-    case 7512:      return 'u';
-    case 7515:      return 'v';
-    case 7522:      return 'i';
-    case 7523:      return 'r';
-    case 7524:      return 'u';
-    case 7525:      return 'v';
-    case 8304:      return '0';
-    case 8305:      return 'i';
-    case 8308:      return '4';
-    case 8309:      return '5';
-    case 8310:      return '6';
-    case 8311:      return '7';
-    case 8312:      return '8';
-    case 8313:      return '9';
-    case 8319:      return 'n';
-    case 8320:      return '0';
-    case 8321:      return '1';
-    case 8322:      return '2';
-    case 8323:      return '3';
-    case 8324:      return '4';
-    case 8325:      return '5';
-    case 8326:      return '6';
-    case 8327:      return '7';
-    case 8328:      return '8';
-    case 8329:      return '9';
-    case 8336:      return 'a';
-    case 8337:      return 'e';
-    case 8338:      return 'o';
-    case 8339:      return 'x';
-    case 8450:      return 'c';
-    case 8458:      return 'g';
-    case 8459:      return 'h';
-    case 8460:      return 'h';
-    case 8461:      return 'h';
-    case 8462:      return 'h';
-    case 8464:      return 'i';
-    case 8465:      return 'i';
-    case 8466:      return 'l';
-    case 8467:      return 'l';
-    case 8469:      return 'n';
-    case 8473:      return 'p';
-    case 8474:      return 'q';
-    case 8475:      return 'r';
-    case 8476:      return 'r';
-    case 8477:      return 'r';
-    case 8484:      return 'z';
-    case 8488:      return 'z';
-    case 8490:      return 'k';
-    case 8492:      return 'b';
-    case 8493:      return 'c';
-    case 8495:      return 'e';
-    case 8496:      return 'e';
-    case 8497:      return 'f';
-    case 8499:      return 'm';
-    case 8500:      return 'o';
-    case 8505:      return 'i';
-    case 8517:      return 'd';
-    case 8518:      return 'd';
-    case 8519:      return 'e';
-    case 8520:      return 'i';
-    case 8521:      return 'j';
-    case 8544:      return 'i';
-    case 8548:      return 'v';
-    case 8553:      return 'x';
-    case 8556:      return 'l';
-    case 8557:      return 'c';
-    case 8558:      return 'd';
-    case 8559:      return 'm';
-    case 8560:      return 'i';
-    case 8564:      return 'v';
-    case 8569:      return 'x';
-    case 8572:      return 'l';
-    case 8573:      return 'c';
-    case 8574:      return 'd';
-    case 8575:      return 'm';
-    case 9450:      return '0';
+    case 170:
+      return 'a';
+    case 178:
+      return '2';
+    case 179:
+      return '3';
+    case 185:
+      return '1';
+    case 186:
+      return 'o';
+    case 688:
+      return 'h';
+    case 690:
+      return 'j';
+    case 691:
+      return 'r';
+    case 695:
+      return 'w';
+    case 696:
+      return 'y';
+    case 737:
+      return 'l';
+    case 738:
+      return 's';
+    case 739:
+      return 'x';
+    case 7468:
+      return 'a';
+    case 7470:
+      return 'b';
+    case 7472:
+      return 'd';
+    case 7473:
+      return 'e';
+    case 7475:
+      return 'g';
+    case 7476:
+      return 'h';
+    case 7477:
+      return 'i';
+    case 7478:
+      return 'j';
+    case 7479:
+      return 'k';
+    case 7480:
+      return 'l';
+    case 7481:
+      return 'm';
+    case 7482:
+      return 'n';
+    case 7484:
+      return 'o';
+    case 7486:
+      return 'p';
+    case 7487:
+      return 'r';
+    case 7488:
+      return 't';
+    case 7489:
+      return 'u';
+    case 7490:
+      return 'w';
+    case 7491:
+      return 'a';
+    case 7495:
+      return 'b';
+    case 7496:
+      return 'd';
+    case 7497:
+      return 'e';
+    case 7501:
+      return 'g';
+    case 7503:
+      return 'k';
+    case 7504:
+      return 'm';
+    case 7506:
+      return 'o';
+    case 7510:
+      return 'p';
+    case 7511:
+      return 't';
+    case 7512:
+      return 'u';
+    case 7515:
+      return 'v';
+    case 7522:
+      return 'i';
+    case 7523:
+      return 'r';
+    case 7524:
+      return 'u';
+    case 7525:
+      return 'v';
+    case 8304:
+      return '0';
+    case 8305:
+      return 'i';
+    case 8308:
+      return '4';
+    case 8309:
+      return '5';
+    case 8310:
+      return '6';
+    case 8311:
+      return '7';
+    case 8312:
+      return '8';
+    case 8313:
+      return '9';
+    case 8319:
+      return 'n';
+    case 8320:
+      return '0';
+    case 8321:
+      return '1';
+    case 8322:
+      return '2';
+    case 8323:
+      return '3';
+    case 8324:
+      return '4';
+    case 8325:
+      return '5';
+    case 8326:
+      return '6';
+    case 8327:
+      return '7';
+    case 8328:
+      return '8';
+    case 8329:
+      return '9';
+    case 8336:
+      return 'a';
+    case 8337:
+      return 'e';
+    case 8338:
+      return 'o';
+    case 8339:
+      return 'x';
+    case 8450:
+      return 'c';
+    case 8458:
+      return 'g';
+    case 8459:
+      return 'h';
+    case 8460:
+      return 'h';
+    case 8461:
+      return 'h';
+    case 8462:
+      return 'h';
+    case 8464:
+      return 'i';
+    case 8465:
+      return 'i';
+    case 8466:
+      return 'l';
+    case 8467:
+      return 'l';
+    case 8469:
+      return 'n';
+    case 8473:
+      return 'p';
+    case 8474:
+      return 'q';
+    case 8475:
+      return 'r';
+    case 8476:
+      return 'r';
+    case 8477:
+      return 'r';
+    case 8484:
+      return 'z';
+    case 8488:
+      return 'z';
+    case 8490:
+      return 'k';
+    case 8492:
+      return 'b';
+    case 8493:
+      return 'c';
+    case 8495:
+      return 'e';
+    case 8496:
+      return 'e';
+    case 8497:
+      return 'f';
+    case 8499:
+      return 'm';
+    case 8500:
+      return 'o';
+    case 8505:
+      return 'i';
+    case 8517:
+      return 'd';
+    case 8518:
+      return 'd';
+    case 8519:
+      return 'e';
+    case 8520:
+      return 'i';
+    case 8521:
+      return 'j';
+    case 8544:
+      return 'i';
+    case 8548:
+      return 'v';
+    case 8553:
+      return 'x';
+    case 8556:
+      return 'l';
+    case 8557:
+      return 'c';
+    case 8558:
+      return 'd';
+    case 8559:
+      return 'm';
+    case 8560:
+      return 'i';
+    case 8564:
+      return 'v';
+    case 8569:
+      return 'x';
+    case 8572:
+      return 'l';
+    case 8573:
+      return 'c';
+    case 8574:
+      return 'd';
+    case 8575:
+      return 'm';
+    case 9450:
+      return '0';
 
     default:
       return c;
@@ -1026,16 +1150,16 @@ const int _v_78__[] = {121, 117, 0};
 const int _s_79__[] = {1103, 0};
 const int _v_79__[] = {121, 97, 0};
 
-int translit_string_utf8_from_en_to_ru (int *input, int *output) {
+int translit_string_utf8_from_en_to_ru(int *input, int *output) {
 
-#define TEST(s, v)                                \
-  k = 0;                                          \
-  while (input[i + k] && input[i + k] == s[k]) {  \
-    k++;                                          \
-  }                                               \
-  if (!s[k]) {                                    \
-    match_v = v;                                  \
-    match_s = s;                                  \
+#define TEST(s, v)                                                                                                                                             \
+  k = 0;                                                                                                                                                       \
+  while (input[i + k] && input[i + k] == s[k]) {                                                                                                               \
+    k++;                                                                                                                                                       \
+  }                                                                                                                                                            \
+  if (!s[k]) {                                                                                                                                                 \
+    match_v = v;                                                                                                                                               \
+    match_s = s;                                                                                                                                               \
   }
 
   int i = 0, j = 0, k = 0;
@@ -1045,142 +1169,142 @@ int translit_string_utf8_from_en_to_ru (int *input, int *output) {
     match_s = NULL;
     match_v = NULL;
     switch (input[i]) {
-      case 97://a
-        //a --> а
+      case 97: // a
+        // a --> а
         TEST(_s_1__, _v_1__);
         break;
-      case 98://b
-        //b --> б
+      case 98: // b
+        // b --> б
         TEST(_s_2__, _v_2__);
         break;
-      case 99://c
-        //c --> к
+      case 99: // c
+        // c --> к
         TEST(_s_3__, _v_3__);
-        //ch --> ч
+        // ch --> ч
         TEST(_s_4__, _v_4__);
         break;
-      case 100://d
-        //d --> д
+      case 100: // d
+        // d --> д
         TEST(_s_5__, _v_5__);
         break;
-      case 101://e
-        //e --> е
+      case 101: // e
+        // e --> е
         TEST(_s_6__, _v_6__);
-        //ei --> ей
+        // ei --> ей
         TEST(_s_7__, _v_7__);
-        //ey --> ей
+        // ey --> ей
         TEST(_s_8__, _v_8__);
         break;
-      case 102://f
-        //f --> ф
+      case 102: // f
+        // f --> ф
         TEST(_s_9__, _v_9__);
         break;
-      case 103://g
-        //g --> г
+      case 103: // g
+        // g --> г
         TEST(_s_10__, _v_10__);
         break;
-      case 104://h
-        //h --> х
+      case 104: // h
+        // h --> х
         TEST(_s_11__, _v_11__);
         break;
-      case 105://i
-        //i --> и
+      case 105: // i
+        // i --> и
         TEST(_s_12__, _v_12__);
-        //ia --> ия
+        // ia --> ия
         TEST(_s_13__, _v_13__);
-        //iy --> ий
+        // iy --> ий
         TEST(_s_14__, _v_14__);
         break;
-      case 106://j
-        //j --> й
+      case 106: // j
+        // j --> й
         TEST(_s_15__, _v_15__);
-        //jo --> е
+        // jo --> е
         TEST(_s_16__, _v_16__);
-        //ju --> ю
+        // ju --> ю
         TEST(_s_17__, _v_17__);
-        //ja --> я
+        // ja --> я
         TEST(_s_18__, _v_18__);
         break;
-      case 107://k
-        //k --> к
+      case 107: // k
+        // k --> к
         TEST(_s_19__, _v_19__);
-        //kh --> х
+        // kh --> х
         TEST(_s_20__, _v_20__);
         break;
-      case 108://l
-        //l --> л
+      case 108: // l
+        // l --> л
         TEST(_s_21__, _v_21__);
         break;
-      case 109://m
-        //m --> м
+      case 109: // m
+        // m --> м
         TEST(_s_22__, _v_22__);
         break;
-      case 110://n
-        //n --> н
+      case 110: // n
+        // n --> н
         TEST(_s_23__, _v_23__);
         break;
-      case 111://o
-        //o --> о
+      case 111: // o
+        // o --> о
         TEST(_s_24__, _v_24__);
         break;
-      case 112://p
-        //p --> п
+      case 112: // p
+        // p --> п
         TEST(_s_25__, _v_25__);
         break;
-      case 113://q
-        //q --> к
+      case 113: // q
+        // q --> к
         TEST(_s_26__, _v_26__);
         break;
-      case 114://r
-        //r --> р
+      case 114: // r
+        // r --> р
         TEST(_s_27__, _v_27__);
         break;
-      case 115://s
-        //s --> с
+      case 115: // s
+        // s --> с
         TEST(_s_28__, _v_28__);
-        //sh --> ш
+        // sh --> ш
         TEST(_s_29__, _v_29__);
-        //shch --> щ
+        // shch --> щ
         TEST(_s_30__, _v_30__);
-        //sch --> щ
+        // sch --> щ
         TEST(_s_31__, _v_31__);
         break;
-      case 116://t
-        //t --> т
+      case 116: // t
+        // t --> т
         TEST(_s_32__, _v_32__);
-        //ts --> ц
+        // ts --> ц
         TEST(_s_33__, _v_33__);
         break;
-      case 117://u
-        //u --> у
+      case 117: // u
+        // u --> у
         TEST(_s_34__, _v_34__);
         break;
-      case 118://v
-        //v --> в
+      case 118: // v
+        // v --> в
         TEST(_s_35__, _v_35__);
         break;
-      case 119://w
-        //w --> в
+      case 119: // w
+        // w --> в
         TEST(_s_36__, _v_36__);
         break;
-      case 120://x
-        //x --> кс
+      case 120: // x
+        // x --> кс
         TEST(_s_37__, _v_37__);
         break;
-      case 121://y
-        //y --> и
+      case 121: // y
+        // y --> и
         TEST(_s_38__, _v_38__);
-        //yo --> е
+        // yo --> е
         TEST(_s_39__, _v_39__);
-        //yu --> ю
+        // yu --> ю
         TEST(_s_40__, _v_40__);
-        //ya --> я
+        // ya --> я
         TEST(_s_41__, _v_41__);
         break;
-      case 122://z
-        //z --> з
+      case 122: // z
+        // z --> з
         TEST(_s_42__, _v_42__);
-        //zh --> ж
+        // zh --> ж
         TEST(_s_43__, _v_43__);
         break;
       default:
@@ -1196,8 +1320,7 @@ int translit_string_utf8_from_en_to_ru (int *input, int *output) {
       while (match_s[k]) {
         i++, k++;
       }
-    }
-    else {
+    } else {
       output[j++] = input[i++];
     }
   }
@@ -1209,16 +1332,16 @@ int translit_string_utf8_from_en_to_ru (int *input, int *output) {
 #undef TEST
 }
 
-int translit_string_utf8_from_ru_to_en (int *input, int *output) {
+int translit_string_utf8_from_ru_to_en(int *input, int *output) {
 
-#define TEST(s, v)                                \
-  k = 0;                                          \
-  while (input[i + k] && input[i + k] == s[k]) {  \
-    k++;                                          \
-  }                                               \
-  if (!s[k]) {                                    \
-    match_v = v;                                  \
-    match_s = s;                                  \
+#define TEST(s, v)                                                                                                                                             \
+  k = 0;                                                                                                                                                       \
+  while (input[i + k] && input[i + k] == s[k]) {                                                                                                               \
+    k++;                                                                                                                                                       \
+  }                                                                                                                                                            \
+  if (!s[k]) {                                                                                                                                                 \
+    match_v = v;                                                                                                                                               \
+    match_s = s;                                                                                                                                               \
   }
 
   int i = 0, j = 0, k = 0;
@@ -1228,43 +1351,43 @@ int translit_string_utf8_from_ru_to_en (int *input, int *output) {
     match_s = NULL;
     match_v = NULL;
     switch (input[i]) {
-      case 1072://а
+      case 1072: //а
         //а --> a
         TEST(_s_44__, _v_44__);
         break;
-      case 1073://б
+      case 1073: //б
         //б --> b
         TEST(_s_45__, _v_45__);
         break;
-      case 1074://в
+      case 1074: //в
         //в --> v
         TEST(_s_46__, _v_46__);
         break;
-      case 1075://г
+      case 1075: //г
         //г --> g
         TEST(_s_47__, _v_47__);
         break;
-      case 1076://д
+      case 1076: //д
         //д --> d
         TEST(_s_48__, _v_48__);
         break;
-      case 1077://е
+      case 1077: //е
         //е --> e
         TEST(_s_49__, _v_49__);
         break;
-      case 1105://ё
+      case 1105: //ё
         //ё --> e
         TEST(_s_50__, _v_50__);
         break;
-      case 1078://ж
+      case 1078: //ж
         //ж --> zh
         TEST(_s_51__, _v_51__);
         break;
-      case 1079://з
+      case 1079: //з
         //з --> z
         TEST(_s_52__, _v_52__);
         break;
-      case 1080://и
+      case 1080: //и
         //и --> i
         TEST(_s_53__, _v_53__);
         //ий --> y
@@ -1272,97 +1395,97 @@ int translit_string_utf8_from_ru_to_en (int *input, int *output) {
         //ия --> ia
         TEST(_s_55__, _v_55__);
         break;
-      case 1081://й
+      case 1081: //й
         //й --> y
         TEST(_s_56__, _v_56__);
         break;
-      case 1082://к
+      case 1082: //к
         //к --> k
         TEST(_s_57__, _v_57__);
         //кс --> x
         TEST(_s_58__, _v_58__);
         break;
-      case 1083://л
+      case 1083: //л
         //л --> l
         TEST(_s_59__, _v_59__);
         break;
-      case 1084://м
+      case 1084: //м
         //м --> m
         TEST(_s_60__, _v_60__);
         break;
-      case 1085://н
+      case 1085: //н
         //н --> n
         TEST(_s_61__, _v_61__);
         break;
-      case 1086://о
+      case 1086: //о
         //о --> o
         TEST(_s_62__, _v_62__);
         break;
-      case 1087://п
+      case 1087: //п
         //п --> p
         TEST(_s_63__, _v_63__);
         break;
-      case 1088://р
+      case 1088: //р
         //р --> r
         TEST(_s_64__, _v_64__);
         break;
-      case 1089://с
+      case 1089: //с
         //с --> s
         TEST(_s_65__, _v_65__);
         break;
-      case 1090://т
+      case 1090: //т
         //т --> t
         TEST(_s_66__, _v_66__);
         break;
-      case 1091://у
+      case 1091: //у
         //у --> u
         TEST(_s_67__, _v_67__);
         break;
-      case 1092://ф
+      case 1092: //ф
         //ф --> f
         TEST(_s_68__, _v_68__);
         break;
-      case 1093://х
+      case 1093: //х
         //х --> kh
         TEST(_s_69__, _v_69__);
         break;
-      case 1094://ц
+      case 1094: //ц
         //ц --> ts
         TEST(_s_70__, _v_70__);
         break;
-      case 1095://ч
+      case 1095: //ч
         //ч --> ch
         TEST(_s_71__, _v_71__);
         break;
-      case 1096://ш
+      case 1096: //ш
         //ш --> sh
         TEST(_s_72__, _v_72__);
         break;
-      case 1097://щ
+      case 1097: //щ
         //щ --> shch
         TEST(_s_73__, _v_73__);
         break;
-      case 1098://ъ
+      case 1098: //ъ
         //ъ -->
         TEST(_s_74__, _v_74__);
         break;
-      case 1099://ы
+      case 1099: //ы
         //ы --> y
         TEST(_s_75__, _v_75__);
         break;
-      case 1100://ь
+      case 1100: //ь
         //ь -->
         TEST(_s_76__, _v_76__);
         break;
-      case 1101://э
+      case 1101: //э
         //э --> e
         TEST(_s_77__, _v_77__);
         break;
-      case 1102://ю
+      case 1102: //ю
         //ю --> yu
         TEST(_s_78__, _v_78__);
         break;
-      case 1103://я
+      case 1103: //я
         //я --> ya
         TEST(_s_79__, _v_79__);
         break;
@@ -1377,8 +1500,7 @@ int translit_string_utf8_from_ru_to_en (int *input, int *output) {
       while (match_s[k]) {
         i++, k++;
       }
-    }
-    else {
+    } else {
       output[j++] = input[i++];
     }
   }
@@ -1390,291 +1512,291 @@ int translit_string_utf8_from_ru_to_en (int *input, int *output) {
 #undef TEST
 }
 
-int convert_language (int x) {
+int convert_language(int x) {
   switch (x) {
-    case 113://q->й
+    case 113: // q->й
       return 1081;
-    case 119://w->ц
+    case 119: // w->ц
       return 1094;
-    case 101://e->у
+    case 101: // e->у
       return 1091;
-    case 114://r->к
+    case 114: // r->к
       return 1082;
-    case 116://t->е
+    case 116: // t->е
       return 1077;
-    case 121://y->н
+    case 121: // y->н
       return 1085;
-    case 117://u->г
+    case 117: // u->г
       return 1075;
-    case 105://i->ш
+    case 105: // i->ш
       return 1096;
-    case 111://o->щ
+    case 111: // o->щ
       return 1097;
-    case 112://p->з
+    case 112: // p->з
       return 1079;
-    case 91://[->х
+    case 91: //[->х
       return 1093;
-    case 93://]->ъ
+    case 93: //]->ъ
       return 1098;
-    case 97://a->ф
+    case 97: // a->ф
       return 1092;
-    case 115://s->ы
+    case 115: // s->ы
       return 1099;
-    case 100://d->в
+    case 100: // d->в
       return 1074;
-    case 102://f->а
+    case 102: // f->а
       return 1072;
-    case 103://g->п
+    case 103: // g->п
       return 1087;
-    case 104://h->р
+    case 104: // h->р
       return 1088;
-    case 106://j->о
+    case 106: // j->о
       return 1086;
-    case 107://k->л
+    case 107: // k->л
       return 1083;
-    case 108://l->д
+    case 108: // l->д
       return 1076;
-    case 59://;->ж
+    case 59: //;->ж
       return 1078;
-    case 39://'->э
+    case 39: //'->э
       return 1101;
-    case 122://z->я
+    case 122: // z->я
       return 1103;
-    case 120://x->ч
+    case 120: // x->ч
       return 1095;
-    case 99://c->с
+    case 99: // c->с
       return 1089;
-    case 118://v->м
+    case 118: // v->м
       return 1084;
-    case 98://b->и
+    case 98: // b->и
       return 1080;
-    case 110://n->т
+    case 110: // n->т
       return 1090;
-    case 109://m->ь
+    case 109: // m->ь
       return 1100;
-    case 44://,->б
+    case 44: //,->б
       return 1073;
-    case 46://.->ю
+    case 46: //.->ю
       return 1102;
-    case 96://`->е
+    case 96: //`->е
       return 1077;
-    case 81://Q->Й
+    case 81: // Q->Й
       return 1049;
-    case 87://W->Ц
+    case 87: // W->Ц
       return 1062;
-    case 69://E->У
+    case 69: // E->У
       return 1059;
-    case 82://R->К
+    case 82: // R->К
       return 1050;
-    case 84://T->Е
+    case 84: // T->Е
       return 1045;
-    case 89://Y->Н
+    case 89: // Y->Н
       return 1053;
-    case 85://U->Г
+    case 85: // U->Г
       return 1043;
-    case 73://I->Ш
+    case 73: // I->Ш
       return 1064;
-    case 79://O->Щ
+    case 79: // O->Щ
       return 1065;
-    case 80://P->З
+    case 80: // P->З
       return 1047;
-    case 123://{->Х
+    case 123: //{->Х
       return 1061;
-    case 125://}->Ъ
+    case 125: //}->Ъ
       return 1066;
-    case 65://A->Ф
+    case 65: // A->Ф
       return 1060;
-    case 83://S->Ы
+    case 83: // S->Ы
       return 1067;
-    case 68://D->В
+    case 68: // D->В
       return 1042;
-    case 70://F->А
+    case 70: // F->А
       return 1040;
-    case 71://G->П
+    case 71: // G->П
       return 1055;
-    case 72://H->Р
+    case 72: // H->Р
       return 1056;
-    case 74://J->О
+    case 74: // J->О
       return 1054;
-    case 75://K->Л
+    case 75: // K->Л
       return 1051;
-    case 76://L->Д
+    case 76: // L->Д
       return 1044;
-    case 58://:->Ж
+    case 58: //:->Ж
       return 1046;
-    case 34://"->Э
+    case 34: //"->Э
       return 1069;
-    case 90://Z->Я
+    case 90: // Z->Я
       return 1071;
-    case 88://X->Ч
+    case 88: // X->Ч
       return 1063;
-    case 67://C->С
+    case 67: // C->С
       return 1057;
-    case 86://V->М
+    case 86: // V->М
       return 1052;
-    case 66://B->И
+    case 66: // B->И
       return 1048;
-    case 78://N->Т
+    case 78: // N->Т
       return 1058;
-    case 77://M->Ь
+    case 77: // M->Ь
       return 1068;
-    case 60://<->Б
+    case 60: //<->Б
       return 1041;
-    case 62://>->Ю
+    case 62: //>->Ю
       return 1070;
-    case 126://~->Е
+    case 126: //~->Е
       return 1045;
-    case 1081://й->q
+    case 1081: //й->q
       return 113;
-    case 1094://ц->w
+    case 1094: //ц->w
       return 119;
-    case 1091://у->e
+    case 1091: //у->e
       return 101;
-    case 1082://к->r
+    case 1082: //к->r
       return 114;
-    case 1077://е->t
+    case 1077: //е->t
       return 116;
-    case 1085://н->y
+    case 1085: //н->y
       return 121;
-    case 1075://г->u
+    case 1075: //г->u
       return 117;
-    case 1096://ш->i
+    case 1096: //ш->i
       return 105;
-    case 1097://щ->o
+    case 1097: //щ->o
       return 111;
-    case 1079://з->p
+    case 1079: //з->p
       return 112;
-    case 1093://х->[
+    case 1093: //х->[
       return 91;
-    case 1098://ъ->]
+    case 1098: //ъ->]
       return 93;
-    case 1092://ф->a
+    case 1092: //ф->a
       return 97;
-    case 1099://ы->s
+    case 1099: //ы->s
       return 115;
-    case 1074://в->d
+    case 1074: //в->d
       return 100;
-    case 1072://а->f
+    case 1072: //а->f
       return 102;
-    case 1087://п->g
+    case 1087: //п->g
       return 103;
-    case 1088://р->h
+    case 1088: //р->h
       return 104;
-    case 1086://о->j
+    case 1086: //о->j
       return 106;
-    case 1083://л->k
+    case 1083: //л->k
       return 107;
-    case 1076://д->l
+    case 1076: //д->l
       return 108;
-    case 1078://ж->;
+    case 1078: //ж->;
       return 59;
-    case 1101://э->'
+    case 1101: //э->'
       return 39;
-    case 1103://я->z
+    case 1103: //я->z
       return 122;
-    case 1095://ч->x
+    case 1095: //ч->x
       return 120;
-    case 1089://с->c
+    case 1089: //с->c
       return 99;
-    case 1084://м->v
+    case 1084: //м->v
       return 118;
-    case 1080://и->b
+    case 1080: //и->b
       return 98;
-    case 1090://т->n
+    case 1090: //т->n
       return 110;
-    case 1100://ь->m
+    case 1100: //ь->m
       return 109;
-    case 1073://б->,
+    case 1073: //б->,
       return 44;
-    case 1102://ю->.
+    case 1102: //ю->.
       return 46;
-    case 1105://ё->`
+    case 1105: //ё->`
       return 96;
-    case 1049://Й->Q
+    case 1049: //Й->Q
       return 81;
-    case 1062://Ц->W
+    case 1062: //Ц->W
       return 87;
-    case 1059://У->E
+    case 1059: //У->E
       return 69;
-    case 1050://К->R
+    case 1050: //К->R
       return 82;
-    case 1045://Е->T
+    case 1045: //Е->T
       return 84;
-    case 1053://Н->Y
+    case 1053: //Н->Y
       return 89;
-    case 1043://Г->U
+    case 1043: //Г->U
       return 85;
-    case 1064://Ш->I
+    case 1064: //Ш->I
       return 73;
-    case 1065://Щ->O
+    case 1065: //Щ->O
       return 79;
-    case 1047://З->P
+    case 1047: //З->P
       return 80;
-    case 1061://Х->{
+    case 1061: //Х->{
       return 123;
-    case 1066://Ъ->}
+    case 1066: //Ъ->}
       return 125;
-    case 1060://Ф->A
+    case 1060: //Ф->A
       return 65;
-    case 1067://Ы->S
+    case 1067: //Ы->S
       return 83;
-    case 1042://В->D
+    case 1042: //В->D
       return 68;
-    case 1040://А->F
+    case 1040: //А->F
       return 70;
-    case 1055://П->G
+    case 1055: //П->G
       return 71;
-    case 1056://Р->H
+    case 1056: //Р->H
       return 72;
-    case 1054://О->J
+    case 1054: //О->J
       return 74;
-    case 1051://Л->K
+    case 1051: //Л->K
       return 75;
-    case 1044://Д->L
+    case 1044: //Д->L
       return 76;
-    case 1046://Ж->:
+    case 1046: //Ж->:
       return 58;
-    case 1069://Э->"
+    case 1069: //Э->"
       return 34;
-    case 1071://Я->Z
+    case 1071: //Я->Z
       return 90;
-    case 1063://Ч->X
+    case 1063: //Ч->X
       return 88;
-    case 1057://С->C
+    case 1057: //С->C
       return 67;
-    case 1052://М->V
+    case 1052: //М->V
       return 86;
-    case 1048://И->B
+    case 1048: //И->B
       return 66;
-    case 1058://Т->N
+    case 1058: //Т->N
       return 78;
-    case 1068://Ь->M
+    case 1068: //Ь->M
       return 77;
-    case 1041://Б-><
+    case 1041: //Б-><
       return 60;
-    case 1070://Ю->>
+    case 1070: //Ю->>
       return 62;
-    case 1025://Ё->~
+    case 1025: //Ё->~
       return 126;
-    case 48://0->0
+    case 48: // 0->0
       return 48;
-    case 49://1->1
+    case 49: // 1->1
       return 49;
-    case 50://2->2
+    case 50: // 2->2
       return 50;
-    case 51://3->3
+    case 51: // 3->3
       return 51;
-    case 52://4->4
+    case 52: // 4->4
       return 52;
-    case 53://5->5
+    case 53: // 5->5
       return 53;
-    case 54://6->6
+    case 54: // 6->6
       return 54;
-    case 55://7->7
+    case 55: // 7->7
       return 55;
-    case 56://8->8
+    case 56: // 8->8
       return 56;
-    case 57://9->9
+    case 57: // 9->9
       return 57;
     default:
       if (x >= 128) {
@@ -1684,7 +1806,7 @@ int convert_language (int x) {
   }
 }
 
-int has_bad_symbols (int *v_s) {
+int has_bad_symbols(int *v_s) {
   while (v_s && *v_s) {
     if ((*v_s >= 123 && *v_s <= 125) || (*v_s >= 91 && *v_s <= 93) || (*v_s >= 58 && *v_s <= 64) || (*v_s >= 34 && *v_s <= 47 && *v_s != 43 /*+*/)) {
       return 1;

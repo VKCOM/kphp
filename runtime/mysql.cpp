@@ -70,7 +70,7 @@ static string mysql_read_string(const unsigned char *&result, int &result_len, b
 }
 
 static void mysql_query_callback(const char *result_, int result_len) {
-//  fprintf (stderr, "%d %d\n", mysql_callback_state, result_len);
+  //  fprintf (stderr, "%d %d\n", mysql_callback_state, result_len);
   if (!*query_id_ptr || !strcmp(result_, "ERROR\r\n")) {
     *query_id_ptr = false;
     return;
@@ -145,18 +145,18 @@ static void mysql_query_callback(const char *result_, int result_len) {
         *query_id_ptr = false;
         return;
       }
-      mysql_read_string(result, result_len, is_null);//catalog
-      mysql_read_string(result, result_len, is_null);//db
-      mysql_read_string(result, result_len, is_null);//table
-      mysql_read_string(result, result_len, is_null);//org_table
-      field_names_ptr->push_back(mysql_read_string(result, result_len, is_null, true));//name
-      mysql_read_string(result, result_len, is_null);//org_name
+      mysql_read_string(result, result_len, is_null);                                   // catalog
+      mysql_read_string(result, result_len, is_null);                                   // db
+      mysql_read_string(result, result_len, is_null);                                   // table
+      mysql_read_string(result, result_len, is_null);                                   // org_table
+      field_names_ptr->push_back(mysql_read_string(result, result_len, is_null, true)); // name
+      mysql_read_string(result, result_len, is_null);                                   // org_name
 
       result_len -= 13;
       result += 13;
 
       if (result < result_end) {
-        mysql_read_string(result, result_len, is_null);//default
+        mysql_read_string(result, result_len, is_null); // default
       }
 
       if (result_len < 0 || result != result_end) {
@@ -183,7 +183,7 @@ static void mysql_query_callback(const char *result_, int result_len) {
         for (int i = 0; i < *field_cnt_ptr; i++) {
           is_null = false;
           mixed value = mysql_read_string(result, result_len, is_null, true);
-//          fprintf (stderr, "%p %p \"%s\" %d\n", result, result_end, value.to_string().c_str(), (int)is_null);
+          //          fprintf (stderr, "%p %p \"%s\" %d\n", result, result_end, value.to_string().c_str(), (int)is_null);
           if (is_null) {
             value = mixed();
           }
@@ -191,7 +191,7 @@ static void mysql_query_callback(const char *result_, int result_len) {
             *query_id_ptr = false;
             return;
           }
-//          row[i] = value;
+          //          row[i] = value;
           row[field_names_ptr->get_value(i)] = value;
         }
         if (result != result_end) {
@@ -219,7 +219,6 @@ static void mysql_query_callback(const char *result_, int result_len) {
       break;
   }
 }
-
 
 static class_instance<C$mysqli> DB_Proxy;
 
@@ -340,7 +339,9 @@ mixed f$mysqli_query(const class_instance<C$mysqli> &db, const string &query) {
   return db->last_query_id = db->biggest_query_id;
 }
 
-class_instance<C$mysqli> f$mysqli_connect(const string &host __attribute__((unused)), const string &username __attribute__((unused)), const string &password __attribute__((unused)), const string &db_name __attribute__((unused)), int64_t port __attribute__((unused))) {
+class_instance<C$mysqli> f$mysqli_connect(const string &host __attribute__((unused)), const string &username __attribute__((unused)),
+                                          const string &password __attribute__((unused)), const string &db_name __attribute__((unused)),
+                                          int64_t port __attribute__((unused))) {
   // though this function is named like PHP's mysqli_connect(), it doesn't use provided credentials for connection
   // instead, they are embedded to and managed by db proxy
   // even db name is skipped: it is set as an option on server start

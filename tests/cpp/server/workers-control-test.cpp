@@ -2,12 +2,13 @@
 
 #include "server/workers-control.h"
 
-#define ASSERT_WORKERS(t, running, dying, all_alive) {       \
-  ASSERT_EQ(control.get_all_alive(), all_alive);             \
-  ASSERT_EQ(control.get_running_count(t), running);          \
-  ASSERT_EQ(control.get_dying_count(t), dying);              \
-  ASSERT_EQ(control.get_alive_count(t), (running) + (dying));\
-}
+#define ASSERT_WORKERS(t, running, dying, all_alive)                                                                                                           \
+  {                                                                                                                                                            \
+    ASSERT_EQ(control.get_all_alive(), all_alive);                                                                                                             \
+    ASSERT_EQ(control.get_running_count(t), running);                                                                                                          \
+    ASSERT_EQ(control.get_dying_count(t), dying);                                                                                                              \
+    ASSERT_EQ(control.get_alive_count(t), (running) + (dying));                                                                                                \
+  }
 
 TEST(workers_control_test, test_small_workers_count) {
   auto &control = vk::singleton<WorkersControl>::get();

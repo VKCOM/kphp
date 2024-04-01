@@ -4,16 +4,14 @@
 
 #include "runtime/instance-copy-processor.h"
 
-InstanceDeepCopyVisitor::InstanceDeepCopyVisitor(memory_resource::unsynchronized_pool_resource &memory_pool,
-                                                 ExtraRefCnt memory_ref_cnt, ResourceCallbackOOM oom_callback) noexcept:
-  Basic(*this, memory_ref_cnt),
-  memory_pool_(memory_pool),
-  oom_callback_(oom_callback) {
-}
+InstanceDeepCopyVisitor::InstanceDeepCopyVisitor(memory_resource::unsynchronized_pool_resource &memory_pool, ExtraRefCnt memory_ref_cnt,
+                                                 ResourceCallbackOOM oom_callback) noexcept
+  : Basic(*this, memory_ref_cnt)
+  , memory_pool_(memory_pool)
+  , oom_callback_(oom_callback) {}
 
-InstanceDeepDestroyVisitor::InstanceDeepDestroyVisitor(ExtraRefCnt memory_ref_cnt) noexcept:
-  Basic(*this, memory_ref_cnt) {
-}
+InstanceDeepDestroyVisitor::InstanceDeepDestroyVisitor(ExtraRefCnt memory_ref_cnt) noexcept
+  : Basic(*this, memory_ref_cnt) {}
 
 bool InstanceDeepCopyVisitor::process(string &str) noexcept {
   if (str.is_reference_counter(ExtraRefCnt::for_global_const)) {

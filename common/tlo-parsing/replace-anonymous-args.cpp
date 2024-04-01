@@ -16,10 +16,9 @@ namespace {
 
 class SchemaManager {
 public:
-  explicit SchemaManager(tl_scheme &scheme) :
-    scheme_(scheme),
-    marked_ids_(scheme_.functions.size() + scheme_.types.size()) {
-  }
+  explicit SchemaManager(tl_scheme &scheme)
+    : scheme_(scheme)
+    , marked_ids_(scheme_.functions.size() + scheme_.types.size()) {}
 
   int get_unique_magic() {
     while (scheme_.functions.count(next_magic_) || scheme_.types.count(next_magic_)) {
@@ -45,9 +44,8 @@ private:
 
 class AnonymousReplacer : expr_visitor {
 public:
-  explicit AnonymousReplacer(SchemaManager &schema_manager) :
-    schema_manager_(schema_manager) {
-  }
+  explicit AnonymousReplacer(SchemaManager &schema_manager)
+    : schema_manager_(schema_manager) {}
 
   void perform_replacing(combinator &tl_combinator) {
     const combinator *processing_combinator = &tl_combinator;
@@ -90,7 +88,7 @@ private:
     if (schema_manager_.mark_magic(tl_type_expr.type_id)) {
       auto &tl_types = schema_manager_.get_scheme().types;
       auto type_it = tl_types.find(tl_type_expr.type_id);
-      assert (type_it != tl_types.end());
+      assert(type_it != tl_types.end());
       for (auto &tl_combinator : type_it->second->constructors) {
         perform_replacing(*tl_combinator);
       }
@@ -108,9 +106,8 @@ private:
 
     for (auto &tl_array_arg : tl_type_array.args) {
       if (tl_array_arg->exist_var_num != -1) {
-        throw std::runtime_error{
-          "error on processing '" + processing_combinator_->name + "." + processing_arg_->name + "': " +
-          "forbidden to use field masks for anonymous array args"};
+        throw std::runtime_error{"error on processing '" + processing_combinator_->name + "." + processing_arg_->name
+                                 + "': " + "forbidden to use field masks for anonymous array args"};
       }
       assert(!tl_array_arg->exist_var_bit);
       tl_array_arg->type_expr->visit(*this);
@@ -128,9 +125,8 @@ private:
     }
 
     if (!has_other && processing_combinator_->is_constructor()) {
-      throw std::runtime_error{
-        "error on processing '" + processing_combinator_->name + "." + processing_arg_->name + "': " +
-        "forbidden to use alone anonymous array with several fields in constructors"};
+      throw std::runtime_error{"error on processing '" + processing_combinator_->name + "." + processing_arg_->name
+                               + "': " + "forbidden to use alone anonymous array with several fields in constructors"};
     }
 
     for (const auto &tl_array_arg : tl_type_array.args) {
@@ -139,9 +135,8 @@ private:
           continue;
         }
       }
-      throw std::runtime_error{
-        "error on processing '" + processing_combinator_->name + "." + processing_arg_->name + "': " +
-        "forbidden to use complex structs in anonymous array args"};
+      throw std::runtime_error{"error on processing '" + processing_combinator_->name + "." + processing_arg_->name
+                               + "': " + "forbidden to use complex structs in anonymous array args"};
     }
 
     const int anonymous_type_id = schema_manager_.get_unique_magic();

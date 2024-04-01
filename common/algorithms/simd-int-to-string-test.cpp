@@ -33,7 +33,9 @@ std::string uint64_to_string(uint64_t x) {
 } // namespace
 
 TEST(simd_int_to_string, int32_type) {
-  for (int32_t x : {0, 1, 7,
+  for (int32_t x : {0,
+                    1,
+                    7,
                     32,
                     100,
                     1234,
@@ -44,7 +46,8 @@ TEST(simd_int_to_string, int32_type) {
                     908374261,
                     2071623429,
                     std::numeric_limits<int32_t>::max(),
-                    -1, -6,
+                    -1,
+                    -6,
                     -21,
                     -231,
                     -5421,
@@ -66,16 +69,7 @@ TEST(simd_int_to_string, int32_type_bruteforce) {
 }
 
 TEST(simd_int_to_string, uint32_type) {
-  for (uint32_t x : {0u, 1u, 7u,
-                     100u,
-                     1234u,
-                     48662u,
-                     987421u,
-                     2312421u,
-                     12349480u,
-                     908374261u,
-                     2071623429u,
-                     std::numeric_limits<uint32_t>::max()}) {
+  for (uint32_t x : {0u, 1u, 7u, 100u, 1234u, 48662u, 987421u, 2312421u, 12349480u, 908374261u, 2071623429u, std::numeric_limits<uint32_t>::max()}) {
     ASSERT_EQ(uint32_to_string(x), std::to_string(x));
   }
 }
@@ -87,7 +81,9 @@ TEST(simd_int_to_string, uint32_type_bruteforce) {
 }
 
 TEST(simd_int_to_string, int64_type) {
-  for (long long x : {0ll, 1ll, 7ll,
+  for (long long x : {0ll,
+                      1ll,
+                      7ll,
                       32ll,
                       100ll,
                       1234ll,
@@ -107,7 +103,8 @@ TEST(simd_int_to_string, int64_type) {
                       402927465129305827ll,
                       9130182950294756281ll,
                       std::numeric_limits<long long>::max(),
-                      -1ll, -6ll,
+                      -1ll,
+                      -6ll,
                       -21ll,
                       -231ll,
                       -5421ll,
@@ -132,7 +129,9 @@ TEST(simd_int_to_string, int64_type) {
 }
 
 TEST(simd_int_to_string, uint64_type) {
-  for (unsigned long long x : {0ull, 1ull, 7ull,
+  for (unsigned long long x : {0ull,
+                               1ull,
+                               7ull,
                                32ull,
                                100ull,
                                1234ull,

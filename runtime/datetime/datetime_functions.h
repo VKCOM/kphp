@@ -20,12 +20,9 @@ void f$set_use_updated_gmmktime(bool enable);
 
 string f$gmdate(const string &format, int64_t timestamp = std::numeric_limits<int64_t>::min());
 
-int64_t f$gmmktime(int64_t h = std::numeric_limits<int64_t>::min(),
-                   int64_t m = std::numeric_limits<int64_t>::min(),
-                   int64_t s = std::numeric_limits<int64_t>::min(),
-                   int64_t month = std::numeric_limits<int64_t>::min(),
-                   int64_t day = std::numeric_limits<int64_t>::min(),
-                   int64_t year = std::numeric_limits<int64_t>::min());
+int64_t f$gmmktime(int64_t h = std::numeric_limits<int64_t>::min(), int64_t m = std::numeric_limits<int64_t>::min(),
+                   int64_t s = std::numeric_limits<int64_t>::min(), int64_t month = std::numeric_limits<int64_t>::min(),
+                   int64_t day = std::numeric_limits<int64_t>::min(), int64_t year = std::numeric_limits<int64_t>::min());
 
 array<mixed> f$localtime(int64_t timestamp = std::numeric_limits<int64_t>::min(), bool is_associative = false);
 
@@ -39,12 +36,9 @@ mixed f$microtime(bool get_as_float = false);
 string f$_microtime_string();
 double f$_microtime_float();
 
-int64_t f$mktime(int64_t h = std::numeric_limits<int64_t>::min(),
-                 int64_t m = std::numeric_limits<int64_t>::min(),
-                 int64_t s = std::numeric_limits<int64_t>::min(),
-                 int64_t month = std::numeric_limits<int64_t>::min(),
-                 int64_t day = std::numeric_limits<int64_t>::min(),
-                 int64_t year = std::numeric_limits<int64_t>::min());
+int64_t f$mktime(int64_t h = std::numeric_limits<int64_t>::min(), int64_t m = std::numeric_limits<int64_t>::min(),
+                 int64_t s = std::numeric_limits<int64_t>::min(), int64_t month = std::numeric_limits<int64_t>::min(),
+                 int64_t day = std::numeric_limits<int64_t>::min(), int64_t year = std::numeric_limits<int64_t>::min());
 
 string f$strftime(const string &format, int64_t timestamp = std::numeric_limits<int64_t>::min());
 

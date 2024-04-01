@@ -19,24 +19,12 @@ VertexPtr PreprocessBreakPass::on_enter_vertex(VertexPtr root) {
 
   if (vk::any_of_equal(root->type(), op_break, op_continue)) {
     auto goto_op = root.as<meta_op_goto>();
-    kphp_error_act (
-      goto_op->level()->type() == op_int_const,
-      "Break/continue parameter expected to be constant integer",
-      return root
-    );
+    kphp_error_act(goto_op->level()->type() == op_int_const, "Break/continue parameter expected to be constant integer", return root);
     int val = atoi(goto_op->level()->get_string().c_str());
-    kphp_error_act (
-      1 <= val && val <= 10,
-      "Break/continue parameter expected to be in [1;10] interval",
-      return root
-    );
+    kphp_error_act(1 <= val && val <= 10, "Break/continue parameter expected to be in [1;10] interval", return root);
 
     int cycles_n = static_cast<int>(cycles.size());
-    kphp_error_act (
-      val <= cycles_n,
-      "Break/continue parameter is too big",
-      return root
-    );
+    kphp_error_act(val <= cycles_n, "Break/continue parameter is too big", return root);
 
     bool force_label = goto_op->type() == op_continue && val == 1 && !cycles.empty() && cycles.back()->type() == op_switch;
     if (val != 1 || force_label) {

@@ -24,7 +24,7 @@ std::byte opened_tcp_sockets_storage[sizeof(array<FILE *>)];
 array<FILE *> *opened_tcp_client_sockets = reinterpret_cast<array<FILE *> *>(opened_tcp_sockets_storage);
 
 namespace details {
-template <typename F>
+template<typename F>
 Optional<std::pair<string, int64_t>> parse_url(const string &url, F &&faulter) {
   string url_to_parse = url;
   if (!url_to_parse.starts_with(string("tcp://"))) {
@@ -53,7 +53,7 @@ Optional<std::pair<string, int64_t>> parse_url(const string &url, F &&faulter) {
   return std::pair<string, int64_t>(host, port);
 }
 
-template <typename F>
+template<typename F>
 Optional<int64_t> connect_to_address(const string &host, int64_t port, double end_time, F &&faulter) {
   assert(dl::in_critical_section > 0);
   addrinfo *result = nullptr;
@@ -66,7 +66,7 @@ Optional<int64_t> connect_to_address(const string &host, int64_t port, double en
    * addrinfo structures linked by the ai_next component.
    * There are several reasons for this. We will use the first element */
   addrinfo *rp = result;
-  auto finalizer = vk::finally([result](){freeaddrinfo(result);}); /*free allocation in destructor*/
+  auto finalizer = vk::finally([result]() { freeaddrinfo(result); }); /*free allocation in destructor*/
   int64_t socket_fd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
   if (socket_fd == -1) {
     faulter(-3, string("Can't create tcp socket. System call 'socket(...)' got error "), string(errno));
@@ -156,7 +156,7 @@ int tcp_get_fd(const Stream &stream) {
     return -1;
   }
 
-  FILE * src = opened_tcp_client_sockets->get_value(stream.to_string());
+  FILE *src = opened_tcp_client_sockets->get_value(stream.to_string());
   return fileno(src);
 }
 
@@ -331,7 +331,6 @@ void free_tcp_lib() {
       Stream key = p.get_key();
       ++p;
       tcp_fclose(key);
-
     }
     opened_tcp_client_sockets_last_query_num--;
   }

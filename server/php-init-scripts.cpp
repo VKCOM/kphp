@@ -4,7 +4,7 @@
 
 #include "server/php-init-scripts.h"
 
-static script_t* main_script;
+static script_t *main_script;
 
 script_t *get_script() {
   return main_script;

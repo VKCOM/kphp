@@ -15,30 +15,30 @@
 template<class IdData>
 class Id {
   IdData *ptr = nullptr;
+
 public:
   struct Hash {
     size_t operator()(const Id<IdData> &arg) const noexcept {
       return reinterpret_cast<size_t>(arg.ptr);
     }
   };
+
 public:
   Id() = default;
 
-  explicit Id(IdData *ptr):
-    ptr(ptr) {}
+  explicit Id(IdData *ptr)
+    : ptr(ptr) {}
 
   Id(const Id &id) = default;
 
   Id(Id &&id) noexcept
-    : ptr(id.ptr)
-  {
+    : ptr(id.ptr) {
     id.ptr = nullptr;
   }
 
   template<class DerivedIdData>
   Id(const Id<DerivedIdData> &derived)
-    : ptr(derived.ptr)
-  {}
+    : ptr(derived.ptr) {}
 
   Id &operator=(Id id) noexcept {
     std::swap(ptr, id.ptr);

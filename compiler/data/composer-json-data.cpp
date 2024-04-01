@@ -10,9 +10,8 @@
 #include "compiler/data/src-dir.h"
 #include "compiler/data/src-file.h"
 
-
 [[gnu::cold]] static void fire_json_error(ComposerJsonPtr inside_j, const std::string &reason, int line) {
-  inside_j->json_file->load();  // load a file from disk, so that error message in console outputs a line
+  inside_j->json_file->load(); // load a file from disk, so that error message in console outputs a line
 
   stage::set_file(inside_j->json_file);
   stage::set_line(line);
@@ -23,9 +22,8 @@
   fire_json_error(inside_p, reason, y_node.Mark().line + 1);
 }
 
-
 class ComposerJsonParser {
-  SrcDirPtr composer_json_dir;   // /path/to/folder/ (where composer.json is placed)
+  SrcDirPtr composer_json_dir; // /path/to/folder/ (where composer.json is placed)
   ComposerJsonPtr out;
 
   [[gnu::always_inline]] const std::string &as_string(const YAML::Node &y) {
@@ -50,7 +48,7 @@ class ComposerJsonParser {
     }
     std::replace(dir.begin(), dir.end(), '\\', '/');
     if (dir.back() != '/') {
-      dir.push_back('/');   // ensure that dir always ends with '/'
+      dir.push_back('/'); // ensure that dir always ends with '/'
     }
 
     return composer_json_dir->full_dir_name + dir;

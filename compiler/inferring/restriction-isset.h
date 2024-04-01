@@ -16,7 +16,6 @@ class RestrictionIsset : public tinf::RestrictionBase {
   bool find_dangerous_isset_dfs(int isset_flags, tinf::Node *node, std::vector<tinf::Node *> *bt);
 
 public:
-
   explicit RestrictionIsset(tinf::Node *a);
 
   bool is_restriction_broken() final;

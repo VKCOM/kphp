@@ -13,7 +13,7 @@ VertexPtr PropagateThrowFlagPass::on_enter_vertex(VertexPtr v) {
   } else if (v->type() == op_func_call) {
     v->throw_flag = v.as<op_func_call>()->func_id->can_throw();
   }
-  
+
   return v;
 }
 
@@ -24,6 +24,6 @@ VertexPtr PropagateThrowFlagPass::on_exit_vertex(VertexPtr v) {
       break;
     }
   }
-  
+
   return v;
 }

@@ -21,7 +21,8 @@ private:
     bool brk = false;
     std::set<int> line_ids;
     Line() = default;
-    explicit Line(int begin_pos) : begin_pos(begin_pos){}
+    explicit Line(int begin_pos)
+      : begin_pos(begin_pos) {}
   };
 
   File *file;
@@ -32,7 +33,6 @@ private:
   unsigned long long hash_of_comments;
 
   bool compile_with_crc_flag;
-
 
   void write_code(std::string &dest_str, const Line &line);
   void dump(std::string &dest_str, const std::vector<Line>::iterator &begin, const std::vector<Line>::iterator &end, SrcFilePtr file);
@@ -56,10 +56,18 @@ public:
   void add_location(SrcFilePtr file, int line);
 
   void set_calculated_hashes(unsigned long long hash_of_cpp, unsigned long long hash_of_comments);
-  unsigned long long get_hash_of_cpp() { return hash_of_cpp; }
-  unsigned long long get_hash_of_comments() { return hash_of_comments; }
+  unsigned long long get_hash_of_cpp() {
+    return hash_of_cpp;
+  }
+  unsigned long long get_hash_of_comments() {
+    return hash_of_comments;
+  }
   void dump(std::string &dest_str);
 
-  File *get_file() const { return file; }
-  bool compile_with_crc() const { return compile_with_crc_flag; }
+  File *get_file() const {
+    return file;
+  }
+  bool compile_with_crc() const {
+    return compile_with_crc_flag;
+  }
 };

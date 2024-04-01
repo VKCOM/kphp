@@ -16,11 +16,17 @@
 namespace vk {
 
 namespace details {
-inline auto to_pointer(std::nullptr_t x) { return x; }
+inline auto to_pointer(std::nullptr_t x) {
+  return x;
+}
 template<typename T>
-auto to_pointer(T *x) { return x; }
+auto to_pointer(T *x) {
+  return x;
+}
 template<typename T>
-auto to_pointer(T x) { return to_pointer(x.operator->()); }
+auto to_pointer(T x) {
+  return to_pointer(x.operator->());
+}
 } // namespace details
 
 template<class T>
@@ -35,37 +41,33 @@ struct span {
   using const_pointer = const value_type *;
 
   template<typename TT>
-  using enable_if_is_good_iterator = std::enable_if_t<
-    is_contiguous_iterator_of_type<value_type, TT>{}
-  >;
+  using enable_if_is_good_iterator = std::enable_if_t<is_contiguous_iterator_of_type<value_type, TT>{}>;
 
-  span() noexcept:
-    _data{nullptr},
-    _size{0} {}
+  span() noexcept
+    : _data{nullptr}
+    , _size{0} {}
 
   template<size_t N>
   span(T (&arr)[N])
-    :
-    _data{arr},
-    _size{N} {}
+    : _data{arr}
+    , _size{N} {}
 
   template<typename It, typename = enable_if_is_good_iterator<It>>
-  span(It data, size_t size):
-    _data{details::to_pointer(data)},
-    _size{size} {
-  }
+  span(It data, size_t size)
+    : _data{details::to_pointer(data)}
+    , _size{size} {}
 
   template<typename C, typename = enable_if_is_good_iterator<decltype(std::declval<C &>().begin())>>
-  span(C &v) :
-    span(v.begin(), v.end()) {}
+  span(C &v)
+    : span(v.begin(), v.end()) {}
 
   template<typename C, typename = enable_if_is_good_iterator<decltype(std::declval<const C &>().begin())>>
-  span(const C &v) :
-    span(v.begin(), v.end()) {}
+  span(const C &v)
+    : span(v.begin(), v.end()) {}
 
   template<typename It, typename = enable_if_is_good_iterator<It>>
-  span(It first, It last) :
-    span(first, std::distance(first, last)) {
+  span(It first, It last)
+    : span(first, std::distance(first, last)) {
     assert(last >= first);
   }
 

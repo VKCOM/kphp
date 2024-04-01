@@ -29,6 +29,7 @@ public:
   bool is_internal_resumable() const noexcept final {
     return true;
   }
+
 protected:
   bool run() final {
     ReturnT res = vk::singleton<CurlAdaptor>::get().withdraw_response(request_id);

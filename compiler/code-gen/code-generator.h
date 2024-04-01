@@ -45,9 +45,9 @@ private:
   unsigned long long hash_of_comments;
   File *cur_file{nullptr};
 
-  WriterData *data{nullptr};      // stored contents, is created only on step 2 (re-generating diff files)
-  DataStream<WriterData *> &os;   // output stream for stored contents, used only on step 2
-  
+  WriterData *data{nullptr};    // stored contents, is created only on step 2 (re-generating diff files)
+  DataStream<WriterData *> &os; // output stream for stored contents, used only on step 2
+
   CGContext context;
 
   int indent_level;
@@ -61,7 +61,6 @@ private:
   void feed_hash_of_comments(SrcFilePtr file, int line_num);
 
 public:
-
   explicit CodeGenerator(bool is_step_just_calc_hashes, DataStream<WriterData *> &os)
     : is_step_just_calc_hashes(is_step_just_calc_hashes)
     , os(os) {}
@@ -129,7 +128,6 @@ public:
       data->append(buf, static_cast<size_t>(simd_uint32_to_string(value, buf) - buf));
     }
   }
-
 
   void indent(int diff) {
     indent_level += diff;
@@ -229,8 +227,7 @@ inline CodeGenerator &operator<<(CodeGenerator &c, unsigned int value) {
   return c;
 }
 
-inline CodeGenerator& operator<<(CodeGenerator &c, char value) {
+inline CodeGenerator &operator<<(CodeGenerator &c, char value) {
   c.append(value);
   return c;
 }
-

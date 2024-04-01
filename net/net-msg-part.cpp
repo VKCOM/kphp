@@ -20,7 +20,7 @@ static void __attribute__((constructor)) msg_part_constructor() {
 
 static msg_part_t *alloc_msg_part() {
   PARALLEL_COUNTER_INC(rwm_total_msg_parts);
-  return static_cast<msg_part_t*>(lockfree_slab_cache_alloc(&msg_part_cache_tls));
+  return static_cast<msg_part_t *>(lockfree_slab_cache_alloc(&msg_part_cache_tls));
 }
 
 msg_part_t *new_msg_part(msg_buffer_t *X) {

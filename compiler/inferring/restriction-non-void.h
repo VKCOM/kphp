@@ -11,7 +11,6 @@ class RestrictionNonVoid : public tinf::RestrictionBase {
   tinf::Node *node;
 
 public:
-
   explicit RestrictionNonVoid(tinf::Node *node);
 
   bool is_restriction_broken() final;

@@ -28,7 +28,6 @@ int64_t f$curl_errno(curl_easy easy_id) noexcept;
 
 void f$curl_close(curl_easy easy_id) noexcept;
 
-
 using curl_multi = int64_t;
 
 curl_multi f$curl_multi_init() noexcept;

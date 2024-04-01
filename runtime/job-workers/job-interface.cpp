@@ -8,8 +8,8 @@
 #include "server/workers-control.h"
 
 #include "runtime/job-workers/processing-jobs.h"
-#include "runtime/resumable.h"
 #include "runtime/net_events.h"
+#include "runtime/resumable.h"
 
 #include "runtime/job-workers/job-interface.h"
 
@@ -34,7 +34,6 @@ bool f$is_kphp_job_workers_enabled() noexcept {
 int64_t f$get_job_workers_number() noexcept {
   return vk::singleton<WorkersControl>::get().get_count(WorkerType::job_worker);
 }
-
 
 void global_init_job_workers_lib() noexcept {
   if (f$is_kphp_job_workers_enabled()) {

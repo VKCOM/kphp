@@ -1,7 +1,7 @@
 #pragma once
 
 #ifndef INCLUDED_FROM_KPHP_CORE
-  #error "this file must be included only from kphp_core.h"
+#error "this file must be included only from kphp_core.h"
 #endif
 
 using string_size_type = uint32_t;
@@ -27,8 +27,12 @@ struct tmp_string {
     return data && string_to_bool(data, size);
   }
 
-  bool has_value() const noexcept { return data != nullptr; }
-  bool empty() const noexcept { return size == 0; }
+  bool has_value() const noexcept {
+    return data != nullptr;
+  }
+  bool empty() const noexcept {
+    return size == 0;
+  }
 };
 
 struct ArrayBucketDummyStrTag;
@@ -87,7 +91,7 @@ public:
   static size_type unsafe_cast_to_size_type(int64_t size) noexcept {
     php_assert(size >= 0);
     if (unlikely(size > max_size())) {
-      php_critical_error ("Trying to make too big string of size %" PRId64, size);
+      php_critical_error("Trying to make too big string of size %" PRId64, size);
     }
     return static_cast<size_type>(size);
   }
@@ -100,7 +104,8 @@ public:
   inline string(size_type n, char c);
   inline string(size_type n, bool b);
   inline explicit string(int64_t i);
-  inline explicit string(int32_t i): string(static_cast<int64_t>(i)) {}
+  inline explicit string(int32_t i)
+    : string(static_cast<int64_t>(i)) {}
   inline explicit string(double f);
 
   ~string() noexcept;
@@ -134,21 +139,25 @@ public:
   inline const char &operator[](size_type pos) const;
   inline char &operator[](size_type pos);
 
-  inline string &append(const string &str) __attribute__ ((always_inline));
-  inline string &append(const string &str, size_type pos2, size_type n2) __attribute__ ((always_inline));
-  inline string &append(const char *s) __attribute__ ((always_inline));
-  inline string &append(const char *s, size_type n) __attribute__ ((always_inline));
-  inline string &append(size_type n, char c) __attribute__ ((always_inline));
+  inline string &append(const string &str) __attribute__((always_inline));
+  inline string &append(const string &str, size_type pos2, size_type n2) __attribute__((always_inline));
+  inline string &append(const char *s) __attribute__((always_inline));
+  inline string &append(const char *s, size_type n) __attribute__((always_inline));
+  inline string &append(size_type n, char c) __attribute__((always_inline));
 
-  inline string &append(bool b) __attribute__ ((always_inline));
-  inline string &append(int64_t i) __attribute__ ((always_inline));
-  inline string &append(int32_t v) {return append(int64_t{v});}
-  inline string &append(double d) __attribute__ ((always_inline));
-  inline string &append(const mixed &v) __attribute__ ((always_inline));
+  inline string &append(bool b) __attribute__((always_inline));
+  inline string &append(int64_t i) __attribute__((always_inline));
+  inline string &append(int32_t v) {
+    return append(int64_t{v});
+  }
+  inline string &append(double d) __attribute__((always_inline));
+  inline string &append(const mixed &v) __attribute__((always_inline));
 
   inline string &append_unsafe(bool b) __attribute__((always_inline));
   inline string &append_unsafe(int64_t i) __attribute__((always_inline));
-  inline string &append_unsafe(int32_t v) {return append(int64_t{v});}
+  inline string &append_unsafe(int32_t v) {
+    return append(int64_t{v});
+  }
   inline string &append_unsafe(double d) __attribute__((always_inline));
   inline string &append_unsafe(const string &str) __attribute__((always_inline));
   inline string &append_unsafe(tmp_string str) __attribute__((always_inline));
@@ -162,7 +171,6 @@ public:
   template<class T>
   inline string &append_unsafe(const Optional<T> &v) __attribute__((always_inline));
 
-
   inline void push_back(char c);
 
   inline string &assign(const string &str);
@@ -170,10 +178,10 @@ public:
   inline string &assign(const char *s);
   inline string &assign(const char *s, size_type n);
   inline string &assign(size_type n, char c);
-  inline string &assign(size_type n, bool b);//do not initialize. if b == true - just reserve
+  inline string &assign(size_type n, bool b); // do not initialize. if b == true - just reserve
 
-  //assign binary string_inner representation
-  //can be used only on empty string to receive logically const string
+  // assign binary string_inner representation
+  // can be used only on empty string to receive logically const string
   inline void assign_raw(const char *s);
 
   inline void swap(string &s);
@@ -231,7 +239,9 @@ public:
   inline size_type estimate_memory_usage() const;
   inline static size_type estimate_memory_usage(size_t len) noexcept;
 
-  inline static constexpr size_t inner_sizeof() noexcept { return sizeof(string_inner); }
+  inline static constexpr size_t inner_sizeof() noexcept {
+    return sizeof(string_inner);
+  }
   inline static string make_const_string_on_memory(const char *str, size_type len, void *memory, size_t memory_size);
 
   inline void destroy() __attribute__((always_inline));
@@ -246,8 +256,8 @@ inline string materialize_tmp_string(tmp_string s) {
 
 inline bool operator==(const string &lhs, const string &rhs);
 
-#define CONST_STRING(const_str) string (const_str, sizeof (const_str) - 1)
-#define STRING_EQUALS(str, const_str) (str.size() + 1 == sizeof (const_str) && !strcmp (str.c_str(), const_str))
+#define CONST_STRING(const_str) string(const_str, sizeof(const_str) - 1)
+#define STRING_EQUALS(str, const_str) (str.size() + 1 == sizeof(const_str) && !strcmp(str.c_str(), const_str))
 
 inline bool operator!=(const string &lhs, const string &rhs);
 
@@ -256,7 +266,6 @@ inline bool is_ok_float(double v);
 inline int64_t compare_strings_php_order(const string &lhs, const string &rhs);
 
 inline void swap(string &lhs, string &rhs);
-
 
 inline string::size_type max_string_size(bool) __attribute__((always_inline));
 inline string::size_type max_string_size(int64_t) __attribute__((always_inline));

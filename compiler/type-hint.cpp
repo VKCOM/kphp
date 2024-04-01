@@ -9,11 +9,10 @@
 #include "common/php-functions.h"
 
 #include "compiler/data/class-data.h"
-#include "compiler/data/function-data.h"
 #include "compiler/data/ffi-data.h"
+#include "compiler/data/function-data.h"
 #include "compiler/lambda-utils.h"
 #include "compiler/name-gen.h"
-
 
 /**
  * This class stores a big hashtable [hash => TypeHint]
@@ -64,12 +63,9 @@ public:
   }
 };
 
-
 TSHashTable<const TypeHint *> HasherOfTypeHintForOptimization::all_type_hints_ht;
 
-
 // --------------------------------------------
-
 
 const TypeData *TypeHint::to_type_data() const {
   kphp_assert(is_typedata_constexpr());
@@ -161,59 +157,46 @@ const std::map<std::int64_t, std::string> &TypeHintShape::get_all_registered_key
 // all constructors of TypeHint classes are private, only TypeHint*::create() is allowed
 // each create() method calculates hash and creates an object only if it isn't found in a global hashtable
 
-
 const TypeHint *TypeHintArgRef::create(int arg_num) {
   HasherOfTypeHintForOptimization hash(5693590762732189562ULL);
   hash.feed_hash(arg_num);
 
-  return hash.get_existing() ?: hash.add_because_doesnt_exist(
-    new TypeHintArgRef(arg_num)
-  );
+  return hash.get_existing() ?: hash.add_because_doesnt_exist(new TypeHintArgRef(arg_num));
 }
 
 const TypeHint *TypeHintArgRefCallbackCall::create(int arg_num) {
   HasherOfTypeHintForOptimization hash(1296495626775553170ULL);
   hash.feed_hash(arg_num);
 
-  return hash.get_existing() ?: hash.add_because_doesnt_exist(
-    new TypeHintArgRefCallbackCall(arg_num)
-  );
+  return hash.get_existing() ?: hash.add_because_doesnt_exist(new TypeHintArgRefCallbackCall(arg_num));
 }
 
 const TypeHint *TypeHintArgRefInstance::create(int arg_num) {
   HasherOfTypeHintForOptimization hash(17043732264461707628ULL);
   hash.feed_hash(arg_num);
 
-  return hash.get_existing() ?: hash.add_because_doesnt_exist(
-    new TypeHintArgRefInstance(arg_num)
-  );
+  return hash.get_existing() ?: hash.add_because_doesnt_exist(new TypeHintArgRefInstance(arg_num));
 }
 
 const TypeHint *TypeHintArgSubkeyGet::create(const TypeHint *inner) {
   HasherOfTypeHintForOptimization hash(1151996677232147726ULL);
   hash.feed_inner(inner);
 
-  return hash.get_existing() ?: hash.add_because_doesnt_exist(
-    new TypeHintArgSubkeyGet(inner)
-  );
+  return hash.get_existing() ?: hash.add_because_doesnt_exist(new TypeHintArgSubkeyGet(inner));
 }
 
 const TypeHint *TypeHintArray::create(const TypeHint *inner) {
   HasherOfTypeHintForOptimization hash(7584642663608918592ULL);
   hash.feed_inner(inner);
 
-  return hash.get_existing() ?: hash.add_because_doesnt_exist(
-    new TypeHintArray(inner)
-  );
+  return hash.get_existing() ?: hash.add_because_doesnt_exist(new TypeHintArray(inner));
 }
 
 const TypeHint *TypeHintArray::create_array_of_any() {
   HasherOfTypeHintForOptimization hash(7584642663608918592ULL);
   hash.feed_inner(TypeHintPrimitive::create(tp_any));
 
-  return hash.get_existing() ?: hash.add_because_doesnt_exist(
-    new TypeHintArray(TypeHintPrimitive::create(tp_any))
-  );
+  return hash.get_existing() ?: hash.add_because_doesnt_exist(new TypeHintArray(TypeHintPrimitive::create(tp_any)));
 }
 
 const TypeHint *TypeHintCallable::create(std::vector<const TypeHint *> &&arg_types, const TypeHint *return_type) {
@@ -225,26 +208,20 @@ const TypeHint *TypeHintCallable::create(std::vector<const TypeHint *> &&arg_typ
   hash.feed_inner(return_type);
   hash.feed_hash(161122);
 
-  return hash.get_existing() ?: hash.add_because_doesnt_exist(
-    new TypeHintCallable(std::move(arg_types), return_type)
-  );
+  return hash.get_existing() ?: hash.add_because_doesnt_exist(new TypeHintCallable(std::move(arg_types), return_type));
 }
 
 const TypeHint *TypeHintCallable::create_untyped_callable() {
   HasherOfTypeHintForOptimization hash(16112178357011888472ULL);
 
-  return hash.get_existing() ?: hash.add_because_doesnt_exist(
-    new TypeHintCallable()
-  );
+  return hash.get_existing() ?: hash.add_because_doesnt_exist(new TypeHintCallable());
 }
 
 const TypeHint *TypeHintCallable::create_ptr_to_function(FunctionPtr f_bound_to) {
   HasherOfTypeHintForOptimization hash(16112178357011888472ULL);
   hash.feed_string(f_bound_to->name);
 
-  return hash.get_existing() ?: hash.add_because_doesnt_exist(
-    new TypeHintCallable(f_bound_to)
-  );
+  return hash.get_existing() ?: hash.add_because_doesnt_exist(new TypeHintCallable(f_bound_to));
 }
 
 static void calculate_ffi_type_hash(HasherOfTypeHintForOptimization &hash, const FFIType *type) {
@@ -277,18 +254,14 @@ const TypeHint *TypeHintFFIScopeArgRef::create(int arg_num) {
   HasherOfTypeHintForOptimization hash(9731618202711445786ULL);
   hash.feed_hash(arg_num);
 
-  return hash.get_existing() ?: hash.add_because_doesnt_exist(
-    new TypeHintFFIScopeArgRef{arg_num}
-  );
+  return hash.get_existing() ?: hash.add_because_doesnt_exist(new TypeHintFFIScopeArgRef{arg_num});
 }
 
 const TypeHint *TypeHintFFIScope::create(const std::string &scope_name) {
   HasherOfTypeHintForOptimization hash(8265450633645347407ULL);
   hash.feed_string(scope_name);
 
-  return hash.get_existing() ?: hash.add_because_doesnt_exist(
-    new TypeHintFFIScope{scope_name}
-  );
+  return hash.get_existing() ?: hash.add_because_doesnt_exist(new TypeHintFFIScope{scope_name});
 }
 
 const TypeHint *TypeHintFuture::create(PrimitiveType ptype, const TypeHint *inner) {
@@ -296,9 +269,7 @@ const TypeHint *TypeHintFuture::create(PrimitiveType ptype, const TypeHint *inne
   hash.feed_inner(inner);
   hash.feed_hash(static_cast<uint64_t>(ptype));
 
-  return hash.get_existing() ?: hash.add_because_doesnt_exist(
-    new TypeHintFuture(ptype, inner)
-  );
+  return hash.get_existing() ?: hash.add_because_doesnt_exist(new TypeHintFuture(ptype, inner));
 }
 
 const TypeHint *TypeHintNotNull::create(const TypeHint *inner, bool drop_not_null, bool drop_not_false) {
@@ -307,18 +278,14 @@ const TypeHint *TypeHintNotNull::create(const TypeHint *inner, bool drop_not_nul
   hash.feed_hash(static_cast<uint64_t>(drop_not_null));
   hash.feed_hash(static_cast<uint64_t>(drop_not_false));
 
-  return hash.get_existing() ?: hash.add_because_doesnt_exist(
-    new TypeHintNotNull(inner, drop_not_null, drop_not_false)
-  );
+  return hash.get_existing() ?: hash.add_because_doesnt_exist(new TypeHintNotNull(inner, drop_not_null, drop_not_false));
 }
 
 const TypeHint *TypeHintInstance::create(const std::string &full_class_name) {
   HasherOfTypeHintForOptimization hash(16370122391586404558ULL);
   hash.feed_string(full_class_name);
 
-  return hash.get_existing() ?: hash.add_because_doesnt_exist(
-    new TypeHintInstance(full_class_name, is_string_self_static_parent(full_class_name))
-  );
+  return hash.get_existing() ?: hash.add_because_doesnt_exist(new TypeHintInstance(full_class_name, is_string_self_static_parent(full_class_name)));
 }
 
 const TypeHint *TypeHintRefToField::create(const TypeHint *inner, const std::string &field_name) {
@@ -326,9 +293,7 @@ const TypeHint *TypeHintRefToField::create(const TypeHint *inner, const std::str
   hash.feed_inner(inner);
   hash.feed_string(field_name);
 
-  return hash.get_existing() ?: hash.add_because_doesnt_exist(
-    new TypeHintRefToField(inner, field_name)
-  );
+  return hash.get_existing() ?: hash.add_because_doesnt_exist(new TypeHintRefToField(inner, field_name));
 }
 
 const TypeHint *TypeHintRefToMethod::create(const TypeHint *inner, const std::string &method_name) {
@@ -336,9 +301,7 @@ const TypeHint *TypeHintRefToMethod::create(const TypeHint *inner, const std::st
   hash.feed_inner(inner);
   hash.feed_string(method_name);
 
-  return hash.get_existing() ?: hash.add_because_doesnt_exist(
-    new TypeHintRefToMethod(inner, method_name)
-  );
+  return hash.get_existing() ?: hash.add_because_doesnt_exist(new TypeHintRefToMethod(inner, method_name));
 }
 
 const TypeHint *TypeHintOptional::create(const TypeHint *inner, bool or_null, bool or_false) {
@@ -350,9 +313,7 @@ const TypeHint *TypeHintOptional::create(const TypeHint *inner, bool or_null, bo
   hash.feed_inner(inner);
   hash.feed_hash(static_cast<int>(or_null) * 2 + static_cast<int>(or_false));
 
-  return hash.get_existing() ?: hash.add_because_doesnt_exist(
-    new TypeHintOptional(inner, or_null, or_false)
-  );
+  return hash.get_existing() ?: hash.add_because_doesnt_exist(new TypeHintOptional(inner, or_null, or_false));
 }
 
 const TypeHint *TypeHintPipe::create(std::vector<const TypeHint *> &&items) {
@@ -362,26 +323,20 @@ const TypeHint *TypeHintPipe::create(std::vector<const TypeHint *> &&items) {
     hash.feed_hash(420035);
   }
 
-  return hash.get_existing() ?: hash.add_because_doesnt_exist(
-    new TypeHintPipe(std::move(items))
-  );
+  return hash.get_existing() ?: hash.add_because_doesnt_exist(new TypeHintPipe(std::move(items)));
 }
 
 const TypeHint *TypeHintPrimitive::create(PrimitiveType ptype) {
   HasherOfTypeHintForOptimization hash(18266006284047729844ULL);
   hash.feed_hash(static_cast<uint64_t>(ptype));
 
-  return hash.get_existing() ?: hash.add_because_doesnt_exist(
-    new TypeHintPrimitive(ptype)
-  );
+  return hash.get_existing() ?: hash.add_because_doesnt_exist(new TypeHintPrimitive(ptype));
 }
 
 const TypeHint *TypeHintObject::create() {
   HasherOfTypeHintForOptimization hash(13255191682146639421ULL);
 
-  return hash.get_existing() ?: hash.add_because_doesnt_exist(
-    new TypeHintObject()
-  );
+  return hash.get_existing() ?: hash.add_because_doesnt_exist(new TypeHintObject());
 }
 
 const TypeHint *TypeHintShape::create(std::vector<std::pair<std::string, const TypeHint *>> &&items, bool is_vararg) {
@@ -395,9 +350,7 @@ const TypeHint *TypeHintShape::create(std::vector<std::pair<std::string, const T
     hash.feed_hash(1);
   }
 
-  return hash.get_existing() ?: hash.add_because_doesnt_exist(
-    new TypeHintShape(std::move(items), is_vararg)
-  );
+  return hash.get_existing() ?: hash.add_because_doesnt_exist(new TypeHintShape(std::move(items), is_vararg));
 }
 
 const TypeHint *TypeHintTuple::create(std::vector<const TypeHint *> &&items) {
@@ -407,34 +360,26 @@ const TypeHint *TypeHintTuple::create(std::vector<const TypeHint *> &&items) {
     hash.feed_hash(819515);
   }
 
-  return hash.get_existing() ?: hash.add_because_doesnt_exist(
-    new TypeHintTuple(std::move(items))
-  );
+  return hash.get_existing() ?: hash.add_because_doesnt_exist(new TypeHintTuple(std::move(items)));
 }
 
 const TypeHint *TypeHintGenericT::create(const std::string &nameT) {
   HasherOfTypeHintForOptimization hash(4117413899192632779ULL);
   hash.feed_string(nameT);
 
-  return hash.get_existing() ?: hash.add_because_doesnt_exist(
-    new TypeHintGenericT(nameT)
-  );
+  return hash.get_existing() ?: hash.add_because_doesnt_exist(new TypeHintGenericT(nameT));
 }
 
 const TypeHint *TypeHintClassString::create(const TypeHint *inner) {
   HasherOfTypeHintForOptimization hash(2914531788341198112ULL);
   hash.feed_inner(inner);
 
-  return hash.get_existing() ?: hash.add_because_doesnt_exist(
-    new TypeHintClassString(inner)
-  );
+  return hash.get_existing() ?: hash.add_because_doesnt_exist(new TypeHintClassString(inner));
 }
-
 
 // --------------------------------------------
 //    as_human_readable()
 // returns a notation very similar to how it's expressed in phpdoc
-
 
 std::string TypeHintArgRef::as_human_readable() const {
   return std::string("^") + std::to_string(arg_num);
@@ -460,8 +405,8 @@ std::string TypeHintArray::as_human_readable() const {
 
 std::string TypeHintCallable::as_human_readable() const {
   return is_untyped_callable()
-         ? f_bound_to ? f_bound_to->name : "callable"
-         : "callable(" + vk::join(arg_types, ", ", [](const TypeHint *arg) { return arg->as_human_readable(); }) + "): " + return_type->as_human_readable();
+           ? f_bound_to ? f_bound_to->name : "callable"
+           : "callable(" + vk::join(arg_types, ", ", [](const TypeHint *arg) { return arg->as_human_readable(); }) + "): " + return_type->as_human_readable();
 }
 
 std::string TypeHintFFIType::as_human_readable() const {
@@ -529,11 +474,9 @@ std::string TypeHintClassString::as_human_readable() const {
   return "class_string<" + inner->as_human_readable() + ">";
 }
 
-
 // --------------------------------------------
 //    traverse()
 // invokes a callback for type hint itself and all its children
-
 
 void TypeHintArgRef::traverse(const TraverserCallbackT &callback) const {
   callback(this);
@@ -646,27 +589,25 @@ void TypeHintClassString::traverse(const TypeHint::TraverserCallbackT &callback)
   inner->traverse(callback);
 }
 
-
 // --------------------------------------------
 //    replace_self_static_parent()
 // returns a new type hint with resolved self/static/parent inside
 // for example, tuple(self[], int) becomes tuple(T[], int)
 // it's called externally only if a flag is set, so we don't need to do extra checks inside implementations
 
-
-const TypeHint *TypeHintArgRef::replace_self_static_parent(FunctionPtr resolve_context __attribute__ ((unused))) const {
+const TypeHint *TypeHintArgRef::replace_self_static_parent(FunctionPtr resolve_context __attribute__((unused))) const {
   return this;
 }
 
-const TypeHint *TypeHintArgRefCallbackCall::replace_self_static_parent(FunctionPtr resolve_context __attribute__ ((unused))) const {
+const TypeHint *TypeHintArgRefCallbackCall::replace_self_static_parent(FunctionPtr resolve_context __attribute__((unused))) const {
   return this;
 }
 
-const TypeHint *TypeHintArgRefInstance::replace_self_static_parent(FunctionPtr resolve_context __attribute__ ((unused))) const {
+const TypeHint *TypeHintArgRefInstance::replace_self_static_parent(FunctionPtr resolve_context __attribute__((unused))) const {
   return this;
 }
 
-const TypeHint *TypeHintArgSubkeyGet::replace_self_static_parent(FunctionPtr resolve_context __attribute__ ((unused))) const {
+const TypeHint *TypeHintArgSubkeyGet::replace_self_static_parent(FunctionPtr resolve_context __attribute__((unused))) const {
   return this;
 }
 
@@ -678,19 +619,20 @@ const TypeHint *TypeHintCallable::replace_self_static_parent(FunctionPtr resolve
   if (is_untyped_callable()) {
     return this;
   }
-  auto mapper = vk::make_transform_iterator_range([resolve_context](auto sub) { return sub->replace_self_static_parent(resolve_context); }, arg_types.begin(), arg_types.end());
+  auto mapper = vk::make_transform_iterator_range([resolve_context](auto sub) { return sub->replace_self_static_parent(resolve_context); }, arg_types.begin(),
+                                                  arg_types.end());
   return create({mapper.begin(), mapper.end()}, return_type->replace_self_static_parent(resolve_context));
 }
 
-const TypeHint *TypeHintFFIType::replace_self_static_parent(FunctionPtr resolve_context __attribute__ ((unused))) const {
+const TypeHint *TypeHintFFIType::replace_self_static_parent(FunctionPtr resolve_context __attribute__((unused))) const {
   return this;
 }
 
-const TypeHint *TypeHintFFIScopeArgRef::replace_self_static_parent(FunctionPtr resolve_context __attribute__ ((unused))) const {
+const TypeHint *TypeHintFFIScopeArgRef::replace_self_static_parent(FunctionPtr resolve_context __attribute__((unused))) const {
   return this;
 }
 
-const TypeHint *TypeHintFFIScope::replace_self_static_parent(FunctionPtr resolve_context __attribute__ ((unused))) const {
+const TypeHint *TypeHintFFIScope::replace_self_static_parent(FunctionPtr resolve_context __attribute__((unused))) const {
   return this;
 }
 
@@ -719,29 +661,34 @@ const TypeHint *TypeHintOptional::replace_self_static_parent(FunctionPtr resolve
 }
 
 const TypeHint *TypeHintPipe::replace_self_static_parent(FunctionPtr resolve_context) const {
-  auto mapper = vk::make_transform_iterator_range([resolve_context](auto sub) { return sub->replace_self_static_parent(resolve_context); }, items.begin(), items.end());
+  auto mapper =
+    vk::make_transform_iterator_range([resolve_context](auto sub) { return sub->replace_self_static_parent(resolve_context); }, items.begin(), items.end());
   return create({mapper.begin(), mapper.end()});
 }
 
-const TypeHint *TypeHintPrimitive::replace_self_static_parent(FunctionPtr resolve_context __attribute__ ((unused))) const {
+const TypeHint *TypeHintPrimitive::replace_self_static_parent(FunctionPtr resolve_context __attribute__((unused))) const {
   return this;
 }
 
-const TypeHint *TypeHintObject::replace_self_static_parent(FunctionPtr resolve_context __attribute__ ((unused))) const {
+const TypeHint *TypeHintObject::replace_self_static_parent(FunctionPtr resolve_context __attribute__((unused))) const {
   return this;
 }
 
 const TypeHint *TypeHintShape::replace_self_static_parent(FunctionPtr resolve_context) const {
-  auto mapper = vk::make_transform_iterator_range([resolve_context](const auto &sub) { return std::make_pair(sub.first, sub.second->replace_self_static_parent(resolve_context)); }, items.begin(), items.end());
+  auto mapper =
+    vk::make_transform_iterator_range([resolve_context](
+                                        const auto &sub) { return std::make_pair(sub.first, sub.second->replace_self_static_parent(resolve_context)); },
+                                      items.begin(), items.end());
   return create({mapper.begin(), mapper.end()}, is_vararg);
 }
 
 const TypeHint *TypeHintTuple::replace_self_static_parent(FunctionPtr resolve_context) const {
-  auto mapper = vk::make_transform_iterator_range([resolve_context](auto sub) { return sub->replace_self_static_parent(resolve_context); }, items.begin(), items.end());
+  auto mapper =
+    vk::make_transform_iterator_range([resolve_context](auto sub) { return sub->replace_self_static_parent(resolve_context); }, items.begin(), items.end());
   return create({mapper.begin(), mapper.end()});
 }
 
-const TypeHint *TypeHintGenericT::replace_self_static_parent(FunctionPtr resolve_context __attribute__ ((unused))) const {
+const TypeHint *TypeHintGenericT::replace_self_static_parent(FunctionPtr resolve_context __attribute__((unused))) const {
   return this;
 }
 
@@ -749,14 +696,12 @@ const TypeHint *TypeHintClassString::replace_self_static_parent(FunctionPtr reso
   return create(inner->replace_self_static_parent(resolve_context));
 }
 
-
 // --------------------------------------------
 //    replace_children_custom()
 // returns a new type hint with children replaced by a custom callback
 // used to replace ^1 and other argrefs with assumptions — for example, ^1[] could become A[]
 // also used to replace generic T with an exact type hint — to convert tuple(T) to tuple(B)
 // replace_self_static_parent() could be dropped off, but is left for performance
-
 
 const TypeHint *TypeHintArgRef::replace_children_custom(const ReplacerCallbackT &callback) const {
   return callback(this);
@@ -836,7 +781,9 @@ const TypeHint *TypeHintObject::replace_children_custom(const ReplacerCallbackT 
 }
 
 const TypeHint *TypeHintShape::replace_children_custom(const ReplacerCallbackT &callback) const {
-  auto mapper = vk::make_transform_iterator_range([callback](const auto &sub) { return std::make_pair(sub.first, sub.second->replace_children_custom(callback)); }, items.begin(), items.end());
+  auto mapper =
+    vk::make_transform_iterator_range([callback](const auto &sub) { return std::make_pair(sub.first, sub.second->replace_children_custom(callback)); },
+                                      items.begin(), items.end());
   return callback(create({mapper.begin(), mapper.end()}, is_vararg));
 }
 
@@ -852,7 +799,6 @@ const TypeHint *TypeHintGenericT::replace_children_custom(const ReplacerCallback
 const TypeHint *TypeHintClassString::replace_children_custom(const ReplacerCallbackT &callback) const {
   return callback(create(inner->replace_children_custom(callback)));
 }
-
 
 // --------------------------------------------
 //    recalc_type_data_in_context_of_call()

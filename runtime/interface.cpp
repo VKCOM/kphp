@@ -7,8 +7,8 @@
 #include <arpa/inet.h>
 #include <cassert>
 #include <clocale>
-#include <csignal>
 #include <csetjmp>
+#include <csignal>
 #include <fstream>
 #include <functional>
 #include <getopt.h>
@@ -73,13 +73,7 @@
 #include "server/signal-handlers.h"
 #include "server/workers-control.h"
 
-static enum {
-  QUERY_TYPE_NONE,
-  QUERY_TYPE_CONSOLE,
-  QUERY_TYPE_HTTP,
-  QUERY_TYPE_RPC,
-  QUERY_TYPE_JOB
-} query_type;
+static enum { QUERY_TYPE_NONE, QUERY_TYPE_CONSOLE, QUERY_TYPE_HTTP, QUERY_TYPE_RPC, QUERY_TYPE_JOB } query_type;
 static bool is_head_query;
 
 static const string HTTP_DATE("D, d M Y H:i:s \\G\\M\\T", 21);
@@ -148,7 +142,7 @@ void f$ob_start(const string &callback) {
     if (ob_cur_buffer == 0 && callback == string("ob_gzhandler")) {
       http_need_gzip |= 4;
     } else {
-      php_critical_error ("unsupported callback %s at buffering level %d", callback.c_str(), ob_cur_buffer + 1);
+      php_critical_error("unsupported callback %s at buffering level %d", callback.c_str(), ob_cur_buffer + 1);
     }
   }
 
@@ -198,11 +192,10 @@ int64_t f$ob_get_level() {
   return ob_cur_buffer;
 }
 
-
 static int http_return_code;
 static string http_status_line;
 static char headers_storage[sizeof(array<string>)];
-static array<string> *headers = reinterpret_cast <array<string> *> (headers_storage);
+static array<string> *headers = reinterpret_cast<array<string> *>(headers_storage);
 static long long header_last_query_num = -1;
 
 static bool check_status_line_int(const char *str, int str_len, int *pos) {
@@ -211,7 +204,7 @@ static bool check_status_line_int(const char *str, int str_len, int *pos) {
     return true;
   }
 
-  for (int i = 0; i <= 9; i++) {//allow up to 9 digits total
+  for (int i = 0; i <= 9; i++) { // allow up to 9 digits total
     if (*pos == str_len || str[*pos] < '0' || str[*pos] > '9') {
       return i > 0;
     }
@@ -221,7 +214,7 @@ static bool check_status_line_int(const char *str, int str_len, int *pos) {
 }
 
 static bool check_status_line(const char *str, int str_len) {
-  //skip check for beginning with "HTTP/"
+  // skip check for beginning with "HTTP/"
 
   int pos = 5;
   if (!check_status_line_int(str, str_len, &pos)) {
@@ -270,11 +263,11 @@ static bool check_status_line(const char *str, int str_len) {
 
 static void header(const char *str, int str_len, bool replace = true, int http_response_code = 0) {
   if (dl::query_num != header_last_query_num) {
-    new(headers_storage) array<string>();
+    new (headers_storage) array<string>();
     header_last_query_num = dl::query_num;
   }
 
-  //status line
+  // status line
   if (str_len >= 5 && !strncasecmp(str, "HTTP/", 5)) {
     if (check_status_line(str, str_len)) {
       http_status_line = string(str, str_len);
@@ -284,12 +277,12 @@ static void header(const char *str, int str_len, bool replace = true, int http_r
       }
       sscanf(str + pos, "%d", &http_return_code);
     } else {
-      php_critical_error ("wrong status line '%s' specified in function header", str);
+      php_critical_error("wrong status line '%s' specified in function header", str);
     }
     return;
   }
 
-  //regular header
+  // regular header
   const char *p = strchr(str, ':');
   if (p == nullptr) {
     php_warning("Wrong header line specified: \"%s\"", str);
@@ -344,7 +337,7 @@ void f$header(const string &str, bool replace, int64_t http_response_code) {
 array<string> f$headers_list() {
   array<string> result;
   if (dl::query_num != header_last_query_num) {
-    new(headers_storage) array<string>();
+    new (headers_storage) array<string>();
     header_last_query_num = dl::query_num;
   }
 
@@ -362,9 +355,9 @@ array<string> f$headers_list() {
   return result;
 }
 
-void f$send_http_103_early_hints(const array<string> & headers) {
+void f$send_http_103_early_hints(const array<string> &headers) {
   string header("HTTP/1.1 103 Early Hints\r\n");
-  for (const auto & h : headers) {
+  for (const auto &h : headers) {
     header.append(h.get_value().c_str()).append("\r\n");
   }
   http_send_immediate_response(header.c_str(), header.size(), "\r\n", 2);
@@ -489,12 +482,12 @@ static void set_content_length_header(int content_length) {
   header(static_SB_spare.c_str(), (int)static_SB_spare.size());
 }
 
-static const string_buffer *get_headers() {//can't use static_SB, returns pointer to static_SB_spare
+static const string_buffer *get_headers() { // can't use static_SB, returns pointer to static_SB_spare
   string date = f$gmdate(HTTP_DATE);
   static_SB_spare.clean() << "Date: " << date;
   header(static_SB_spare.c_str(), (int)static_SB_spare.size());
 
-  php_assert (dl::query_num == header_last_query_num);
+  php_assert(dl::query_num == header_last_query_num);
 
   static_SB_spare.clean();
   if (!http_status_line.empty()) {
@@ -526,7 +519,7 @@ bool finished = false;
 
 } // namespace
 
-static const string_buffer * compress_http_query_body(string_buffer * http_query_body) {
+static const string_buffer *compress_http_query_body(string_buffer *http_query_body) {
   php_assert(http_query_body != nullptr);
 
   if (is_head_query) {
@@ -545,9 +538,8 @@ static const string_buffer * compress_http_query_body(string_buffer * http_query
   }
 }
 
-
 static int ob_merge_buffers() {
-  php_assert (ob_cur_buffer >= 0);
+  php_assert(ob_cur_buffer >= 0);
   int ob_first_not_empty = 0;
   while (ob_first_not_empty < ob_cur_buffer && oub[ob_first_not_empty].size() == 0) {
     ob_first_not_empty++;
@@ -561,14 +553,14 @@ static int ob_merge_buffers() {
 void f$flush() {
   php_assert(ob_cur_buffer >= 0 && php_worker.has_value());
 
-  string_buffer const * http_body = compress_http_query_body(&oub[ob_system_level]);
-  string_buffer const * http_headers = nullptr;
+  string_buffer const *http_body = compress_http_query_body(&oub[ob_system_level]);
+  string_buffer const *http_headers = nullptr;
   if (!php_worker->flushed_http_connection) {
     http_headers = get_headers();
     php_worker->flushed_http_connection = true;
   }
-  http_send_immediate_response(http_headers ? http_headers->buffer() : nullptr, http_headers ? http_headers->size() : 0,
-                               http_body->buffer(), http_body->size());
+  http_send_immediate_response(http_headers ? http_headers->buffer() : nullptr, http_headers ? http_headers->size() : 0, http_body->buffer(),
+                               http_body->size());
   oub[ob_system_level].clean();
   static_SB_spare.clean();
 }
@@ -578,22 +570,21 @@ void f$fastcgi_finish_request(int64_t exit_code) {
   if (php_worker.has_value() && php_worker->flushed_http_connection) {
     string const raw_response = oub[ob_total_buffer].str();
     http_set_result(nullptr, 0, raw_response.c_str(), raw_response.size(), static_cast<int32_t>(exit_code));
-    php_assert (0);
+    php_assert(0);
   }
 
   if (!run_once) {
     exit_code = 0; // TODO: is it correct?
   }
 
-
   switch (query_type) {
     case QUERY_TYPE_CONSOLE: {
-      //TODO console_set_result
+      // TODO console_set_result
       fflush(stderr);
 
       write_safe(1, oub[ob_total_buffer].buffer(), oub[ob_total_buffer].size(), {});
 
-      //TODO move to finish_script
+      // TODO move to finish_script
       free_runtime_environment();
 
       break;
@@ -619,7 +610,7 @@ void f$fastcgi_finish_request(int64_t exit_code) {
       break;
     }
     default:
-      php_assert (0);
+      php_assert(0);
       exit(1);
   }
 
@@ -685,7 +676,7 @@ void register_shutdown_function_impl(shutdown_function_type &&f) {
   // it's matter because the destructor of 'shutdown_function_type' is called now
   dl::CriticalSectionGuard critical_section;
   // I really need this, because this memory can contain random trash, if previouse script failed
-  new(&shutdown_functions[shutdown_functions_count++]) shutdown_function_type{std::move(f)};
+  new (&shutdown_functions[shutdown_functions_count++]) shutdown_function_type{std::move(f)};
 }
 
 void finish(int64_t exit_code, bool from_exit) {
@@ -700,8 +691,8 @@ void finish(int64_t exit_code, bool from_exit) {
 
   finish_script(static_cast<int32_t>(exit_code));
 
-  //unreachable
-  php_assert (0);
+  // unreachable
+  php_assert(0);
 }
 
 void f$exit(const mixed &v) {
@@ -720,7 +711,6 @@ void f$exit(const mixed &v) {
 void f$die(const mixed &v) {
   f$exit(v);
 }
-
 
 Optional<int64_t> f$ip2long(const string &ip) {
   struct in_addr result;
@@ -750,7 +740,7 @@ double f$thread_pool_test_load(int64_t size, int64_t n, double a, double b) {
     }
     return res;
   };
-  auto & pool = vk::singleton<ThreadPool>::get().pool();
+  auto &pool = vk::singleton<ThreadPool>::get().pool();
   double result = 0;
   {
     dl::CriticalSectionGuard guard;
@@ -759,7 +749,7 @@ double f$thread_pool_test_load(int64_t size, int64_t n, double a, double b) {
       futures.push_back(pool.submit(job, n, a, b));
     }
     auto results = futures.get();
-    std::for_each(results.begin(), results.end(), [&](int64_t local){result += local;});
+    std::for_each(results.begin(), results.end(), [&](int64_t local) { result += local; });
   }
   return result;
 }
@@ -776,7 +766,7 @@ string f$long2ip(int64_t num) {
 }
 
 Optional<array<string>> f$gethostbynamel(const string &name) {
-  dl::enter_critical_section();//OK
+  dl::enter_critical_section(); // OK
   struct hostent *hp = gethostbyname(name.c_str());
   if (hp == nullptr || hp->h_addr_list == nullptr) {
     dl::leave_critical_section();
@@ -786,7 +776,7 @@ Optional<array<string>> f$gethostbynamel(const string &name) {
 
   array<string> result;
   for (int i = 0; hp->h_addr_list[i] != nullptr; i++) {
-    dl::enter_critical_section();//OK
+    dl::enter_critical_section(); // OK
     const char *ip = inet_ntoa(*(struct in_addr *)hp->h_addr_list[i]);
     dl::leave_critical_section();
     result.push_back(string(ip));
@@ -809,7 +799,7 @@ Optional<string> f$inet_pton(const string &address) {
   }
 
   char buffer[17] = {0};
-  dl::enter_critical_section();//OK
+  dl::enter_critical_section(); // OK
   if (inet_pton(af, address.c_str(), buffer) <= 0) {
     dl::leave_critical_section();
     php_warning("Unrecognized address \"%s\"", address.c_str());
@@ -860,13 +850,11 @@ void dbg_echo(const string_buffer &sb) {
   dbg_echo(sb.buffer(), sb.size());
 }
 
-
 bool f$get_magic_quotes_gpc() {
   return false;
 }
 
-string v$d$PHP_SAPI __attribute__ ((weak));
-
+string v$d$PHP_SAPI __attribute__((weak));
 
 static string php_sapi_name() {
   switch (query_type) {
@@ -883,7 +871,7 @@ static string php_sapi_name() {
     case QUERY_TYPE_JOB:
       return string("KPHP job");
     default:
-      php_assert (0);
+      php_assert(0);
       exit(1);
   }
 }
@@ -892,20 +880,19 @@ string f$php_sapi_name() {
   return v$d$PHP_SAPI;
 }
 
+mixed v$_SERVER __attribute__((weak));
+mixed v$_GET __attribute__((weak));
+mixed v$_POST __attribute__((weak));
+mixed v$_FILES __attribute__((weak));
+mixed v$_COOKIE __attribute__((weak));
+mixed v$_REQUEST __attribute__((weak));
+mixed v$_ENV __attribute__((weak));
 
-mixed v$_SERVER  __attribute__ ((weak));
-mixed v$_GET     __attribute__ ((weak));
-mixed v$_POST    __attribute__ ((weak));
-mixed v$_FILES   __attribute__ ((weak));
-mixed v$_COOKIE  __attribute__ ((weak));
-mixed v$_REQUEST __attribute__ ((weak));
-mixed v$_ENV     __attribute__ ((weak));
-
-mixed v$argc  __attribute__ ((weak));
-mixed v$argv  __attribute__ ((weak));
+mixed v$argc __attribute__((weak));
+mixed v$argv __attribute__((weak));
 
 static std::aligned_storage_t<sizeof(array<bool>), alignof(array<bool>)> uploaded_files_storage;
-static array<bool> *uploaded_files = reinterpret_cast<array<bool> *> (&uploaded_files_storage);
+static array<bool> *uploaded_files = reinterpret_cast<array<bool> *>(&uploaded_files_storage);
 static long long uploaded_files_last_query_num = -1;
 
 static const int MAX_FILES = 100;
@@ -921,7 +908,7 @@ bool f$move_uploaded_file(const string &oldname, const string &newname) {
     return false;
   }
 
-  dl::enter_critical_section();//NOT OK: uploaded_files
+  dl::enter_critical_section(); // NOT OK: uploaded_files
   if (f$rename(oldname, newname)) {
     uploaded_files->unset(oldname);
     dl::leave_critical_section();
@@ -932,7 +919,6 @@ bool f$move_uploaded_file(const string &oldname, const string &newname) {
   return false;
 }
 
-
 class post_reader {
   char *buf;
   int post_len;
@@ -941,14 +927,14 @@ class post_reader {
 
   const string boundary;
 
-  post_reader(const post_reader &);//DISABLE copy constructor
-  post_reader operator=(const post_reader &);//DISABLE copy assignment
+  post_reader(const post_reader &);           // DISABLE copy constructor
+  post_reader operator=(const post_reader &); // DISABLE copy assignment
 
 public:
-  post_reader(const char *post, int post_len, const string &boundary) :
-    post_len(post_len),
-    buf_pos(0),
-    boundary(boundary) {
+  post_reader(const char *post, int post_len, const string &boundary)
+    : post_len(post_len)
+    , buf_pos(0)
+    , boundary(boundary) {
     if (post == nullptr) {
       buf = php_buf;
       buf_len = 0;
@@ -959,8 +945,8 @@ public:
   }
 
   int operator[](int i) {
-    php_assert (i >= buf_pos);
-    php_assert (i <= post_len);
+    php_assert(i >= buf_pos);
+    php_assert(i <= post_len);
     if (i >= post_len) {
       return 0;
     }
@@ -969,13 +955,13 @@ public:
     while (i >= buf_len) {
       int left = post_len - buf_pos - buf_len;
       int chunk_size = (int)boundary.size() + 65536 + 10;
-//      fprintf (stderr, "Load at pos %d. i = %d, buf_len = %d, left = %d, chunk_size = %d\n", i + buf_pos, i, buf_len, left, chunk_size);
+      //      fprintf (stderr, "Load at pos %d. i = %d, buf_len = %d, left = %d, chunk_size = %d\n", i + buf_pos, i, buf_len, left, chunk_size);
       if (buf_len > 0) {
         int to_leave = chunk_size;
         int to_erase = buf_len - to_leave;
 
-        php_assert (left > 0);
-        php_assert (to_erase >= to_leave);
+        php_assert(left > 0);
+        php_assert(to_erase >= to_leave);
 
         memcpy(buf, buf + to_erase, to_leave);
         buf_pos += to_erase;
@@ -991,8 +977,8 @@ public:
   }
 
   bool is_boundary(int i) {
-    php_assert (i >= buf_pos);
-    php_assert (i <= post_len);
+    php_assert(i >= buf_pos);
+    php_assert(i <= post_len);
     if (i >= post_len) {
       return true;
     }
@@ -1030,7 +1016,7 @@ public:
   }
 
   int upload_file(const string &file_name, int &pos, int64_t max_file_size) {
-    php_assert (pos > 0 && buf_len > 0 && buf_pos <= pos && pos <= post_len);
+    php_assert(pos > 0 && buf_len > 0 && buf_pos <= pos && pos <= post_len);
 
     if (pos == post_len) {
       return -UPLOAD_ERR_PARTIAL;
@@ -1040,7 +1026,7 @@ public:
       return -UPLOAD_ERR_CANT_WRITE;
     }
 
-    dl::enter_critical_section();//OK
+    dl::enter_critical_section(); // OK
     int file_fd = open_safe(file_name.c_str(), O_WRONLY | O_TRUNC, 0644);
     if (file_fd < 0) {
       dl::leave_critical_section();
@@ -1055,7 +1041,7 @@ public:
     }
     dl::leave_critical_section();
 
-    php_assert (S_ISREG(stat_buf.st_mode));
+    php_assert(S_ISREG(stat_buf.st_mode));
 
     if (buf_len == post_len) {
       int i = pos;
@@ -1063,7 +1049,7 @@ public:
         i++;
       }
       if (i == post_len) {
-        dl::enter_critical_section();//OK
+        dl::enter_critical_section(); // OK
         close_safe(file_fd);
         dl::leave_critical_section();
         return -UPLOAD_ERR_PARTIAL;
@@ -1071,13 +1057,13 @@ public:
 
       int file_size = i - pos;
       if (file_size > max_file_size) {
-        dl::enter_critical_section();//OK
+        dl::enter_critical_section(); // OK
         close_safe(file_fd);
         dl::leave_critical_section();
         return -UPLOAD_ERR_FORM_SIZE;
       }
 
-      dl::enter_critical_section();//OK
+      dl::enter_critical_section(); // OK
       if (write_safe(file_fd, buf + pos, (size_t)file_size, file_name) < (ssize_t)file_size) {
         file_size = -UPLOAD_ERR_CANT_WRITE;
       }
@@ -1094,9 +1080,9 @@ public:
         int64_t i = pos - buf_pos;
 
         while (true) {
-          php_assert (0 <= i && i <= buf_len);
+          php_assert(0 <= i && i <= buf_len);
 
-          s = static_cast <const char *>(memmem(buf + i, buf_len - i, boundary.c_str(), boundary.size()));
+          s = static_cast<const char *>(memmem(buf + i, buf_len - i, boundary.c_str(), boundary.size()));
           if (s == nullptr) {
             break;
           }
@@ -1123,25 +1109,26 @@ public:
         int to_erase = buf_len - to_leave;
         int to_write = to_erase - (pos - buf_pos);
 
-//        fprintf (stderr, "Load at pos %d. buf_len = %d, left = %d, to_leave = %d, to_erase = %d, to_write = %d.\n", buf_len + buf_pos, buf_len, left, to_leave, to_erase, to_write);
+        //        fprintf (stderr, "Load at pos %d. buf_len = %d, left = %d, to_leave = %d, to_erase = %d, to_write = %d.\n", buf_len + buf_pos, buf_len, left,
+        //        to_leave, to_erase, to_write);
 
         if (left == 0) {
-          dl::enter_critical_section();//OK
+          dl::enter_critical_section(); // OK
           close_safe(file_fd);
           dl::leave_critical_section();
           return -UPLOAD_ERR_PARTIAL;
         }
         file_size += to_write;
         if (file_size > max_file_size) {
-          dl::enter_critical_section();//OK
+          dl::enter_critical_section(); // OK
           close_safe(file_fd);
           dl::leave_critical_section();
           return -UPLOAD_ERR_FORM_SIZE;
         }
 
-        php_assert (to_erase >= to_leave);
+        php_assert(to_erase >= to_leave);
 
-        dl::enter_critical_section();//OK
+        dl::enter_critical_section(); // OK
         if (write_safe(file_fd, buf + pos - buf_pos, (size_t)to_write, file_name) < (ssize_t)to_write) {
           close_safe(file_fd);
           dl::leave_critical_section();
@@ -1156,9 +1143,9 @@ public:
         buf_len = to_leave + http_load_long_query(buf + to_leave, min(PHP_BUF_LEN - to_leave, left), min(PHP_BUF_LEN - to_leave, left));
       }
 
-      php_assert (s != nullptr);
+      php_assert(s != nullptr);
 
-      dl::enter_critical_section();//OK
+      dl::enter_critical_section(); // OK
       int to_write = (int)(s - (buf + pos - buf_pos));
       if (write_safe(file_fd, buf + pos - buf_pos, (size_t)to_write, file_name) < (ssize_t)to_write) {
         close_safe(file_fd);
@@ -1249,7 +1236,7 @@ static int parse_multipart_one(post_reader &data, int i) {
         } else if (!strcmp(key.c_str(), "filename")) {
           filename = value;
         } else {
-//          fprintf (stderr, "Unknown key %s\n", key.c_str());
+          //          fprintf (stderr, "Unknown key %s\n", key.c_str());
         }
       }
     } else if (!strcmp(header_name.c_str(), "content-type")) {
@@ -1257,7 +1244,7 @@ static int parse_multipart_one(post_reader &data, int i) {
     } else if (!strcmp(header_name.c_str(), "max-file-size")) {
       max_file_size = header_value.to_int();
     } else {
-//      fprintf (stderr, "Unknown header %s\n", header_name.c_str());
+      //      fprintf (stderr, "Unknown header %s\n", header_name.c_str());
     }
   }
   if (data.is_boundary(i)) {
@@ -1282,7 +1269,7 @@ static int parse_multipart_one(post_reader &data, int i) {
         if (!strncmp(content_type.c_str(), "application/x-www-form-urlencoded", 33)) {
           f$parse_str(post_data, v$_POST[name]);
         } else {
-          //TODO
+          // TODO
           v$_POST.set_value(name, post_data);
         }
       }
@@ -1292,11 +1279,11 @@ static int parse_multipart_one(post_reader &data, int i) {
     Optional<string> tmp_name;
     if (v$_FILES.count() < MAX_FILES) {
       if (dl::query_num != uploaded_files_last_query_num) {
-        new(&uploaded_files_storage) array<bool>();
+        new (&uploaded_files_storage) array<bool>();
         uploaded_files_last_query_num = dl::query_num;
       }
 
-      dl::enter_critical_section();//NOT OK: uploaded_files
+      dl::enter_critical_section(); // NOT OK: uploaded_files
       tmp_name = f$tempnam(string(), string());
       uploaded_files->set_value(tmp_name.val(), true);
       dl::leave_critical_section();
@@ -1305,7 +1292,7 @@ static int parse_multipart_one(post_reader &data, int i) {
         file_size = data.upload_file(tmp_name.val(), i, max_file_size);
 
         if (file_size < 0) {
-          dl::enter_critical_section();//NOT OK: uploaded_files
+          dl::enter_critical_section(); // NOT OK: uploaded_files
           f$unlink(tmp_name.val());
           uploaded_files->unset(tmp_name.val());
           dl::leave_critical_section();
@@ -1357,15 +1344,15 @@ static bool parse_multipart(const char *post, int post_len, const string &bounda
   if (boundary.empty() || (int)boundary.size() > MAX_BOUNDARY_LENGTH) {
     return false;
   }
-  php_assert (post_len >= 0);
+  php_assert(post_len >= 0);
 
   post_reader data(post, post_len, boundary);
 
   for (int i = 0; i < post_len; i++) {
-//    fprintf (stderr, "!!!! %d\n", i);
+    //    fprintf (stderr, "!!!! %d\n", i);
     i = parse_multipart_one(data, i);
 
-//    fprintf (stderr, "???? %d\n", i);
+    //    fprintf (stderr, "???? %d\n", i);
     while (!data.is_boundary(i)) {
       i++;
     }
@@ -1450,11 +1437,11 @@ Optional<array<mixed>> f$getopt(const string &options, array<string> longopts, O
 }
 
 void arg_add(const char *value) {
-  php_assert (dl::query_num == 0);
+  php_assert(dl::query_num == 0);
 
   if (arg_vars == nullptr) {
-    new(arg_vars_storage) array<string>();
-    arg_vars = reinterpret_cast <array<string> *> (arg_vars_storage);
+    new (arg_vars_storage) array<string>();
+    arg_vars = reinterpret_cast<array<string> *>(arg_vars_storage);
   }
 
   arg_vars->push_back(string(value));
@@ -1636,7 +1623,7 @@ static void init_superglobals_impl(const http_query_data &http_data, const rpc_q
         content_type = header_value;
         content_type_lower = f$strtolower(header_value);
       } else if (!strcmp(header_name.c_str(), "content-length")) {
-        //must be equal to http_data.post_len, ignored
+        // must be equal to http_data.post_len, ignored
       } else {
         string key(header_name.size() + 5, false);
         bool good_name = true;
@@ -1660,7 +1647,7 @@ static void init_superglobals_impl(const http_query_data &http_data, const rpc_q
           key[4] = '_';
           v$_SERVER.set_value(key, header_value);
         } else {
-//          fprintf (stderr, "%s : %s\n", header_name.c_str(), header_value.c_str());
+          //          fprintf (stderr, "%s : %s\n", header_name.c_str(), header_value.c_str());
         }
       }
     }
@@ -1679,10 +1666,10 @@ static void init_superglobals_impl(const http_query_data &http_data, const rpc_q
 
   if (http_data.post_len > 0) {
     bool is_parsed = (http_data.post != nullptr);
-//    fprintf (stderr, "!!!%.*s!!!\n", http_data.post_len, http_data.post);
+    //    fprintf (stderr, "!!!%.*s!!!\n", http_data.post_len, http_data.post);
     if (strstr(content_type_lower.c_str(), "application/x-www-form-urlencoded")) {
       if (http_data.post != nullptr) {
-        dl::enter_critical_section();//OK
+        dl::enter_critical_section(); // OK
         raw_post_data.assign(http_data.post, http_data.post_len);
         dl::leave_critical_section();
 
@@ -1694,20 +1681,20 @@ static void init_superglobals_impl(const http_query_data &http_data, const rpc_q
         p += 8;
         p = strchr(content_type.c_str() + (p - content_type_lower.c_str()), '=');
         if (p) {
-//          fprintf (stderr, "!!%s!!\n", p);
+          //          fprintf (stderr, "!!%s!!\n", p);
           p++;
           const char *end_p = strchrnul(p, ';');
           if (*p == '"' && p + 1 < end_p && end_p[-1] == '"') {
             p++;
             end_p--;
           }
-//          fprintf (stderr, "!%s!\n", p);
+          //          fprintf (stderr, "!%s!\n", p);
           is_parsed |= parse_multipart(http_data.post, http_data.post_len, string(p, static_cast<string::size_type>(end_p - p)));
         }
       }
     } else {
       if (http_data.post != nullptr) {
-        dl::enter_critical_section();//OK
+        dl::enter_critical_section(); // OK
         raw_post_data.assign(http_data.post, http_data.post_len);
         dl::leave_critical_section();
       }
@@ -1753,13 +1740,14 @@ static void init_superglobals_impl(const http_query_data &http_data, const rpc_q
   v$_SERVER.set_value(string("SERVER_PORT"), string("80"));
   v$_SERVER.set_value(string("SERVER_PROTOCOL"), string("HTTP/1.1"));
   v$_SERVER.set_value(string("SERVER_SIGNATURE"), (static_SB.clean() << "Apache/2.2.9 (Debian) PHP/5.2.6-1<<lenny10 with Suhosin-Patch Server at "
-                                                                         << v$_SERVER[string("SERVER_NAME")] << " Port 80").str());
+                                                                     << v$_SERVER[string("SERVER_NAME")] << " Port 80")
+                                                    .str());
   v$_SERVER.set_value(string("SERVER_SOFTWARE"), string("Apache/2.2.9 (Debian) PHP/5.2.6-1+lenny10 with Suhosin-Patch"));
 
   if (environ != nullptr) {
     for (int i = 0; environ[i] != nullptr; i++) {
       const char *s = strchr(environ[i], '=');
-      php_assert (s != nullptr);
+      php_assert(s != nullptr);
       v$_ENV.set_value(string(environ[i], static_cast<string::size_type>(s - environ[i])), string(s + 1));
     }
   }
@@ -1804,24 +1792,23 @@ static job_query_data empty_job_data;
 
 void init_superglobals(const php_query_data_t &data) {
   // init superglobals depending on the request type
-  std::visit(overloaded{
-    [](const rpc_query_data &rpc_data) {
-      query_type = QUERY_TYPE_RPC;
-      init_superglobals_impl(empty_http_data, rpc_data, empty_job_data);
-    },
-    [](const http_query_data &http_data) {
-      query_type = QUERY_TYPE_HTTP;
-      init_superglobals_impl(http_data, empty_rpc_data, empty_job_data);
-    },
-    [](const job_query_data &job_data) {
-      query_type = QUERY_TYPE_JOB;
-      init_superglobals_impl(empty_http_data, empty_rpc_data, job_data);
-    },
-    [](const null_query_data &) {
-      query_type = QUERY_TYPE_CONSOLE;
-      init_superglobals_impl(empty_http_data, empty_rpc_data, empty_job_data);
-    }
-  }, data);
+  std::visit(overloaded{[](const rpc_query_data &rpc_data) {
+                          query_type = QUERY_TYPE_RPC;
+                          init_superglobals_impl(empty_http_data, rpc_data, empty_job_data);
+                        },
+                        [](const http_query_data &http_data) {
+                          query_type = QUERY_TYPE_HTTP;
+                          init_superglobals_impl(http_data, empty_rpc_data, empty_job_data);
+                        },
+                        [](const job_query_data &job_data) {
+                          query_type = QUERY_TYPE_JOB;
+                          init_superglobals_impl(empty_http_data, empty_rpc_data, job_data);
+                        },
+                        [](const null_query_data &) {
+                          query_type = QUERY_TYPE_CONSOLE;
+                          init_superglobals_impl(empty_http_data, empty_rpc_data, empty_job_data);
+                        }},
+             data);
 }
 
 double f$get_net_time() {
@@ -1835,7 +1822,6 @@ double f$get_script_time() {
 int64_t f$get_net_queries_count() {
   return get_net_queries_count();
 }
-
 
 int64_t f$get_engine_uptime() {
   return get_engine_uptime();
@@ -1855,22 +1841,21 @@ string f$get_kphp_cluster_name() {
 
 std::tuple<int64_t, int64_t, int64_t, int64_t> f$get_webserver_stats() {
   const auto &stats = vk::singleton<SharedDataWorkerCache>::get().get_cached_worker_stats();
-  return {stats.running_workers,  stats.waiting_workers, stats.ready_for_accept_workers, stats.total_workers};
+  return {stats.running_workers, stats.waiting_workers, stats.ready_for_accept_workers, stats.total_workers};
 };
 
 static char ini_vars_storage[sizeof(array<string>)];
 static array<string> *ini_vars = nullptr;
 
 void ini_set(vk::string_view key, vk::string_view value) {
-  php_assert (dl::query_num == 0);
+  php_assert(dl::query_num == 0);
 
   if (ini_vars == nullptr) {
-    new(ini_vars_storage) array<string>();
-    ini_vars = reinterpret_cast <array<string> *> (ini_vars_storage);
+    new (ini_vars_storage) array<string>();
+    ini_vars = reinterpret_cast<array<string> *>(ini_vars_storage);
   }
 
-  ini_vars->set_value(string(key.data(), static_cast<string::size_type>(key.size())),
-                      string(value.data(), static_cast<string::size_type>(value.size())));
+  ini_vars->set_value(string(key.data(), static_cast<string::size_type>(key.size())), string(value.data(), static_cast<string::size_type>(value.size())));
 }
 
 int32_t ini_set_from_config(const char *config_file_name) {
@@ -1908,15 +1893,15 @@ Optional<string> f$ini_get(const string &s) {
   } else if (!strcmp(s.c_str(), "max_execution_time")) {
     return string(script_timeout);
   } else if (!strcmp(s.c_str(), "memory_limit")) {
-    return f$strval((int64_t)dl::get_script_memory_stats().memory_limit);//TODO
+    return f$strval((int64_t)dl::get_script_memory_stats().memory_limit); // TODO
   } else if (!strcmp(s.c_str(), "include_path")) {
-    return string();//TODO
+    return string(); // TODO
   } else if (!strcmp(s.c_str(), "static-buffers-size")) {
     return f$strval(static_cast<int64_t>(static_buffer_length_limit));
   }
 
   php_warning("Unrecognized option %s in ini_get", s.c_str());
-  //php_assert (0);
+  // php_assert (0);
   return false;
 }
 
@@ -1926,16 +1911,15 @@ bool f$ini_set(const string &s, const string &value) {
     return true;
   }
   if (!strcmp(s.c_str(), "default_socket_timeout")) {
-    return false;//TODO
+    return false; // TODO
   }
   if (!strcmp(s.c_str(), "error_reporting")) {
     return f$error_reporting(f$intval(value));
   }
 
-  php_critical_error ("unrecognized option %s in ini_set", s.c_str());
-  return false; //unreachable
+  php_critical_error("unrecognized option %s in ini_set", s.c_str());
+  return false; // unreachable
 }
-
 
 const Stream INPUT("php://input", 11);
 const Stream STDIN("php://stdin", 11);
@@ -1990,7 +1974,7 @@ static int64_t php_fseek(const Stream &stream, int64_t offset __attribute__((unu
   }
 
   if (eq2(stream, INPUT)) {
-    //TODO implement this
+    // TODO implement this
     php_warning("Can't use fseek with stream %s", stream.to_string().c_str());
     return -1;
   }
@@ -2011,7 +1995,7 @@ static Optional<int64_t> php_ftell(const Stream &stream) {
   }
 
   if (eq2(stream, INPUT)) {
-    //TODO implement this
+    // TODO implement this
     php_warning("Can't use ftell with stream %s", stream.to_string().c_str());
     return false;
   }
@@ -2041,17 +2025,17 @@ static Optional<string> php_fread(const Stream &stream, int64_t length) {
   }
 
   if (eq2(stream, INPUT)) {
-    //TODO implement this
+    // TODO implement this
     php_warning("Can't use fread with stream %s", stream.to_string().c_str());
     return false;
   }
 
   if (eq2(stream, STDIN)) {
     string res(static_cast<string::size_type>(length), false);
-    dl::enter_critical_section();//OK
+    dl::enter_critical_section(); // OK
     size_t res_size = fread(&res[0], static_cast<size_t>(length), 1, stdin);
     dl::leave_critical_section();
-    php_assert (res_size <= static_cast<size_t>(length));
+    php_assert(res_size <= static_cast<size_t>(length));
     res.shrink(static_cast<string::size_type>(res_size));
     return res;
   }
@@ -2067,13 +2051,13 @@ static Optional<string> php_fgetc(const Stream &stream) {
   }
 
   if (eq2(stream, INPUT)) {
-    //TODO implement this
+    // TODO implement this
     php_warning("Can't use fgetc with stream %s", stream.to_string().c_str());
     return false;
   }
 
   if (eq2(stream, STDIN)) {
-    dl::enter_critical_section();//OK
+    dl::enter_critical_section(); // OK
     clearerr(stdin);
     int result = fgetc(stdin);
     if (ferror(stdin)) {
@@ -2100,7 +2084,7 @@ static Optional<string> php_fgets(const Stream &stream, int64_t length) {
   }
 
   if (eq2(stream, INPUT)) {
-    //TODO implement this
+    // TODO implement this
     php_warning("Can't use fgetc with stream %s", stream.to_string().c_str());
     return false;
   }
@@ -2114,7 +2098,7 @@ static Optional<string> php_fgets(const Stream &stream, int64_t length) {
       return false;
     }
     string res(static_cast<string::size_type>(length), false);
-    dl::enter_critical_section();//OK
+    dl::enter_critical_section(); // OK
     clearerr(stdin);
     char *result = fgets(&res[0], static_cast<int32_t>(length), stdin);
     if (ferror(stdin)) {
@@ -2142,7 +2126,7 @@ static Optional<int64_t> php_fpassthru(const Stream &stream) {
   }
 
   if (eq2(stream, INPUT) || eq2(stream, STDIN)) {
-    //TODO implement this
+    // TODO implement this
     php_warning("Can't use fpassthru with stream %s", stream.to_string().c_str());
     return false;
   }
@@ -2153,7 +2137,7 @@ static Optional<int64_t> php_fpassthru(const Stream &stream) {
 
 static bool php_fflush(const Stream &stream) {
   if (eq2(stream, STDOUT)) {
-    //TODO implement this
+    // TODO implement this
     php_warning("fflush of %s is not implemented yet", stream.to_string().c_str());
     return false;
   }
@@ -2178,13 +2162,13 @@ static bool php_feof(const Stream &stream) {
   }
 
   if (eq2(stream, INPUT)) {
-    //TODO implement this
+    // TODO implement this
     php_warning("Can't use feof with stream %s", stream.to_string().c_str());
     return true;
   }
 
   if (eq2(stream, STDIN)) {
-    dl::enter_critical_section();//OK
+    dl::enter_critical_section(); // OK
     bool eof = (feof(stdin) != 0);
     dl::leave_critical_section();
     return eof;
@@ -2300,7 +2284,7 @@ static void init_interface_lib() {
 
   const size_t engine_pid_buf_size = 20;
   static char engine_pid_buf[engine_pid_buf_size];
-  dl::enter_critical_section();//OK
+  dl::enter_critical_section(); // OK
   snprintf(engine_pid_buf, engine_pid_buf_size, "] [%d] ", (int)getpid());
   dl::leave_critical_section();
   engine_pid = engine_pid_buf;
@@ -2314,9 +2298,9 @@ static void init_interface_lib() {
     setlocale(LC_CTYPE, "ru_RU.CP1251");
   }
 
-  //TODO
+  // TODO
   header("HTTP/1.0 200 OK", 15);
-  php_assert (http_return_code == 200);
+  php_assert(http_return_code == 200);
   header("Server: nginx/0.3.33", 20);
   string date = f$gmdate(HTTP_DATE);
   static_SB_spare.clean() << "Date: " << date;
@@ -2358,7 +2342,7 @@ static void free_shutdown_functions() {
 }
 
 static void free_interface_lib() {
-  dl::enter_critical_section();//OK
+  dl::enter_critical_section(); // OK
   free_shutdown_functions();
   if (dl::query_num == uploaded_files_last_query_num) {
     const array<bool> *const_uploaded_files = uploaded_files;
@@ -2371,7 +2355,7 @@ static void free_interface_lib() {
 }
 
 static void free_runtime_libs() {
-  php_assert (dl::in_critical_section == 0);
+  php_assert(dl::in_critical_section == 0);
 
   forcibly_stop_and_flush_profiler();
   free_bcmath_lib();
@@ -2458,15 +2442,15 @@ void worker_global_init(WorkerType worker_type) noexcept {
 }
 
 void read_engine_tag(const char *file_name) {
-  assert (dl::query_num == 0);
+  assert(dl::query_num == 0);
 
   struct stat stat_buf;
   int file_fd = open(file_name, O_RDONLY);
   if (file_fd < 0) {
-    assert ("Can't open file with engine tag" && 0);
+    assert("Can't open file with engine tag" && 0);
   }
   if (fstat(file_fd, &stat_buf) < 0) {
-    assert ("Can't do fstat on file with engine tag" && 0);
+    assert("Can't do fstat on file with engine tag" && 0);
   }
 
   const size_t MAX_SIZE = 40;
@@ -2477,7 +2461,7 @@ void read_engine_tag(const char *file_name) {
     size = MAX_SIZE;
   }
   if (read_safe(file_fd, buf, size, {}) < (ssize_t)size) {
-    assert ("Can't read file with engine tag" && 0);
+    assert("Can't read file with engine tag" && 0);
   }
   close(file_fd);
 
@@ -2526,6 +2510,6 @@ int64_t f$numa_get_bound_node() {
   return numa.get_worker_numa_node(logname_id);
 }
 
-bool f$extension_loaded(const string &/*extension*/) {
+bool f$extension_loaded(const string & /*extension*/) {
   return true;
 }

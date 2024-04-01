@@ -13,10 +13,9 @@ class lock_accessible {
 private:
   class lock_accessible_wrapper : std::unique_lock<mutex_type> {
   public:
-    explicit lock_accessible_wrapper(lock_accessible &this_) noexcept :
-      std::unique_lock<mutex_type>(this_.lock_),
-      obj_(this_.obj_) {
-    }
+    explicit lock_accessible_wrapper(lock_accessible &this_) noexcept
+      : std::unique_lock<mutex_type>(this_.lock_)
+      , obj_(this_.obj_) {}
 
     T *operator->() noexcept {
       return &obj_;

@@ -14,10 +14,7 @@ struct conn_query;
 struct connection;
 typedef struct conn_target conn_target_t;
 
-enum class php_mode {
-  cli,
-  server
-};
+enum class php_mode { cli, server };
 
 int run_main(int argc, char **argv, php_mode mode);
 
@@ -71,4 +68,3 @@ int pnet_query_timeout(conn_query *q);
 void reopen_json_log();
 
 int delete_pending_query(conn_query *q);
-

@@ -35,11 +35,11 @@
 #include "common/kprintf.h"
 #include "common/macos-ports.h"
 #include "common/precise-time.h"
-#include "common/server/tl-stats-t.h"
 #include "common/server/limits.h"
 #include "common/server/signals.h"
 #include "common/server/stats.h"
 #include "common/server/statsd-client.h"
+#include "common/server/tl-stats-t.h"
 #include "common/timer.h"
 #include "common/tl/methods/rwm.h"
 #include "common/tl/parse.h"
@@ -83,7 +83,7 @@ using job_workers::JobWorkersContext;
 
 extern const char *engine_tag;
 
-//do not kill more then MAX_KILL at the same time
+// do not kill more then MAX_KILL at the same time
 #define MAX_KILL 5
 
 #define PHP_MASTER_VERSION "0.1"
@@ -222,7 +222,6 @@ struct MiscStatSegment {
     return {running_workers_max, running_workers_avg, ready_for_accept_workers_max, ready_for_accept_workers_avg, incoming_qps_avg};
   }
 };
-
 
 template<class StatSegment, class StatTimestamp>
 struct StatImpl {
@@ -497,8 +496,8 @@ void kill_hanging_workers() {
 
   for (int i = 0; i < vk::singleton<WorkersControl>::get().get_all_alive(); i++) {
     if (workers[i]->is_dying && workers[i]->kill_time <= my_now && workers[i]->kill_flag == 0) {
-      kprintf("master kill hanging %s : send SIGKILL to [pid = %d]\n",
-                workers[i]->type == WorkerType::general_worker ? "general worker" : "job worker", static_cast<int>(workers[i]->pid));
+      kprintf("master kill hanging %s : send SIGKILL to [pid = %d]\n", workers[i]->type == WorkerType::general_worker ? "general worker" : "job worker",
+              static_cast<int>(workers[i]->pid));
       kill(workers[i]->pid, SIGKILL);
       workers_stats.workers_killed++;
 
@@ -530,15 +529,15 @@ bool all_job_workers_killed() {
 WorkerType start_master() {
   initial_verbosity = verbosity;
 
-  kprintf("[master_name=%s] [cluster_name=%s] [shmem_name=%s] [socket_name=%s]\n",
-          vk::singleton<MasterName>::get().get_master_name(), vk::singleton<ServerConfig>::get().get_cluster_name(),
-          vk::singleton<MasterName>::get().get_shmem_name(), vk::singleton<MasterName>::get().get_socket_name());
+  kprintf("[master_name=%s] [cluster_name=%s] [shmem_name=%s] [socket_name=%s]\n", vk::singleton<MasterName>::get().get_master_name(),
+          vk::singleton<ServerConfig>::get().get_cluster_name(), vk::singleton<MasterName>::get().get_shmem_name(),
+          vk::singleton<MasterName>::get().get_socket_name());
 
   tvkprintf(master_process, 1, "start master initilaizing\n");
 
   sigemptyset(&empty_mask);
 
-  //currently all signals are blocked
+  // currently all signals are blocked
 
   sigemptyset(&mask);
   sigaddset(&mask, SIGCHLD);
@@ -546,18 +545,17 @@ WorkerType start_master() {
   sigaddset(&mask, SIGTERM);
 
   signal_fd = signalfd(-1, &mask, SFD_NONBLOCK);
-  dl_passert (signal_fd >= 0, "failed to create signalfd");
+  dl_passert(signal_fd >= 0, "failed to create signalfd");
 
   ksignal(SIGUSR1, sigusr1_handler);
 
-  //allow all signals except SIGPOLL, SIGCHLD and SIGTERM
+  // allow all signals except SIGPOLL, SIGCHLD and SIGTERM
   if (sigprocmask(SIG_SETMASK, &mask, &orig_mask) < 0) {
     perror("sigprocmask");
     _exit(1);
   }
 
-
-  //TODO: other signals, daemonize, change user...
+  // TODO: other signals, daemonize, change user...
   if (shared_data == nullptr) {
     shared_data = get_shared_data(vk::singleton<MasterName>::get().get_shmem_name());
   }
@@ -599,7 +597,7 @@ WorkerType start_master() {
 int run_worker(WorkerType worker_type) {
   dl_block_all_signals();
 
-  assert (vk::singleton<WorkersControl>::get().get_all_alive() < WorkersControl::max_workers_count);
+  assert(vk::singleton<WorkersControl>::get().get_all_alive() < WorkersControl::max_workers_count);
 
   workers_stats.tot_workers_started++;
   const uint16_t worker_unique_id = vk::singleton<WorkersControl>::get().on_worker_creating(worker_type);
@@ -626,14 +624,14 @@ int run_worker(WorkerType worker_type) {
 
     // TODO should we just use net_reset_after_fork()?
 
-    //Epoll_close should clear internal structures but shouldn't change epoll_fd.
-    //The same epoll_fd will be used by master
-    //Solution: close epoll_fd first
-    //Problems: "epoll_ctl(): Invalid argument" is printed to stderr
+    // Epoll_close should clear internal structures but shouldn't change epoll_fd.
+    // The same epoll_fd will be used by master
+    // Solution: close epoll_fd first
+    // Problems: "epoll_ctl(): Invalid argument" is printed to stderr
     close_epoll();
     init_epoll();
 
-    //verbosity = 0;
+    // verbosity = 0;
     verbosity = initial_verbosity;
     pid = getpid();
 
@@ -719,13 +717,12 @@ void remove_worker(pid_t pid) {
 
       workers[i] = workers[workers_control.get_all_alive()];
       tvkprintf(master_process, 1, "worker removed: [general running = %d] [general dying = %d]\n",
-               int{workers_control.get_running_count(WorkerType::general_worker)},
-               int{workers_control.get_dying_count(WorkerType::general_worker)});
+                int{workers_control.get_running_count(WorkerType::general_worker)}, int{workers_control.get_dying_count(WorkerType::general_worker)});
       return;
     }
   }
 
-  assert (0 && "trying to remove unexisted worker");
+  assert(0 && "trying to remove unexisted worker");
 }
 
 void update_workers() {
@@ -733,7 +730,7 @@ void update_workers() {
     int status;
     pid_t pid = waitpid(-1, &status, WNOHANG);
     if (pid > 0) {
-      if (!WIFEXITED (status)) {
+      if (!WIFEXITED(status)) {
         workers_stats.tot_workers_strange_dead++;
       }
       workers_stats.tot_workers_dead++;
@@ -745,12 +742,11 @@ void update_workers() {
   }
 }
 
-
 /*** send fd via unix socket ***/
 void init_sockaddr_un(sockaddr_un *unix_socket_addr, const char *name) {
   memset(unix_socket_addr, 0, sizeof(*unix_socket_addr));
   unix_socket_addr->sun_family = AF_LOCAL;
-  dl_assert (strlen(name) < sizeof(unix_socket_addr->sun_path), "too long socket name");
+  dl_assert(strlen(name) < sizeof(unix_socket_addr->sun_path), "too long socket name");
   strcpy(unix_socket_addr->sun_path, name);
 }
 
@@ -774,7 +770,7 @@ static void send_fds_via_socket(const std::vector<int> &fds) {
 
   const sockaddr_un *dest_addr = get_socket_addr();
 
-  int iov[1] = { static_cast<int>(fds.size()) }; // must send/receive at least one byte, send fds number here
+  int iov[1] = {static_cast<int>(fds.size())}; // must send/receive at least one byte, send fds number here
   iovec vec = {
     .iov_base = static_cast<void *>(iov),
     .iov_len = sizeof(int),
@@ -812,13 +808,13 @@ static void send_fds_via_socket(const std::vector<int> &fds) {
 
 static int sock_dgram(const char *path) {
   int err = unlink(path);
-  dl_passert (err >= 0 || errno == ENOENT, dl_pstr("failed to unlink %s", path));
+  dl_passert(err >= 0 || errno == ENOENT, dl_pstr("failed to unlink %s", path));
 
   int fd = socket(PF_UNIX, SOCK_DGRAM, 0);
   fcntl(fd, F_SETFL, O_NONBLOCK);
-  dl_passert (fd != -1, "failed to create a socket");
+  dl_passert(fd != -1, "failed to create a socket");
   err = bind(fd, (sockaddr *)get_socket_addr(), sizeof(*get_socket_addr()));
-  dl_passert (err >= 0, "failed to bind socket");
+  dl_passert(err >= 0, "failed to bind socket");
   return fd;
 }
 
@@ -854,7 +850,7 @@ static std::vector<int> receive_fds(int unix_socket_fd) {
 
   tvkprintf(graceful_restart, 1, "Graceful restart: http fds received successfully, got %d fds from old master\n", http_fds_count);
 
-  cmsghdr *cmsg = CMSG_FIRSTHDR (&msg);
+  cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
   if (cmsg->cmsg_type != SCM_RIGHTS) {
     kprintf("Got control message of unknown type %d\n", cmsg->cmsg_type);
     return {};
@@ -868,7 +864,6 @@ static std::vector<int> receive_fds(int unix_socket_fd) {
   }
   return fds;
 }
-
 
 /*** Memcached interface for stats ***/
 int php_master_get(connection *c, const char *key, int key_len);
@@ -901,8 +896,8 @@ int php_master_http_execute(struct connection *c, int op);
 http_server_functions php_http_master_methods = [] {
   auto res = http_server_functions();
   res.execute = php_master_http_execute;
-  res.ht_wakeup = hts_do_wakeup; //todo: assert false here!!!
-  res.ht_alarm = hts_do_wakeup; //todo: assert false here!!!
+  res.ht_wakeup = hts_do_wakeup; // todo: assert false here!!!
+  res.ht_alarm = hts_do_wakeup;  // todo: assert false here!!!
   res.ht_close = nullptr;
 
   return res;
@@ -934,7 +929,7 @@ int return_one_key_val(connection *c, const char *val, int vlen) {
   const size_t tmp_size = 300;
   char tmp[tmp_size];
   int l = snprintf(tmp, tmp_size, " 0 %d\r\n", vlen);
-  assert (l < 300);
+  assert(l < 300);
   write_out(&c->Out, tmp, l);
   write_out(&c->Out, val, vlen);
   write_out(&c->Out, "\r\n", 2);
@@ -943,9 +938,7 @@ int return_one_key_val(connection *c, const char *val, int vlen) {
 
 std::string php_master_prepare_stats(bool add_worker_pids) {
   auto *last_worker = workers + vk::singleton<WorkersControl>::get().get_all_alive();
-  auto start = std::minmax_element(workers, last_worker, [](const worker_info_t *l, const worker_info_t *r) {
-    return l->start_time < r->start_time;
-  });
+  auto start = std::minmax_element(workers, last_worker, [](const worker_info_t *l, const worker_info_t *r) { return l->start_time < r->start_time; });
   auto min_uptime = start.second == last_worker ? 0 : static_cast<int64_t>(my_now - (*start.second)->start_time);
   auto max_uptime = start.first == last_worker ? 0 : static_cast<int64_t>(my_now - (*start.first)->start_time);
 
@@ -982,7 +975,6 @@ std::string php_master_prepare_stats(bool add_worker_pids) {
   });
   return oss.str();
 }
-
 
 int php_master_wakeup(connection *c) {
   if (c->status == conn_wait_net) {
@@ -1063,7 +1055,7 @@ int php_master_get_end(connection *c, int key_cnt __attribute__((unused))) {
 }
 
 int php_master_version(connection *c) {
-  write_out(&c->Out, "VERSION " PHP_MASTER_VERSION"\r\n", 9 + sizeof(PHP_MASTER_VERSION));
+  write_out(&c->Out, "VERSION " PHP_MASTER_VERSION "\r\n", 9 + sizeof(PHP_MASTER_VERSION));
   return 0;
 }
 
@@ -1083,12 +1075,12 @@ std::string get_master_stats_http() {
   const auto worker_stats = vk::singleton<ServerStats>::get().collect_workers_stat(WorkerType::general_worker);
   std::ostringstream ss;
   ss << "cluster_name\t" << vk::singleton<ServerConfig>::get().get_cluster_name() << "\n"
-       << "master_name\t" << vk::singleton<MasterName>::get().get_master_name() << "\n"
-       << "total_workers\t" << worker_stats.total_workers << "\n"
-       << "free_workers\t" << worker_stats.total_workers - worker_stats.running_workers << "\n"
-       << "working_workers\t" << worker_stats.running_workers << "\n"
-       << "working_but_waiting_workers\t" << worker_stats.waiting_workers << "\n"
-       << std::fixed << std::setprecision(3);
+     << "master_name\t" << vk::singleton<MasterName>::get().get_master_name() << "\n"
+     << "total_workers\t" << worker_stats.total_workers << "\n"
+     << "free_workers\t" << worker_stats.total_workers - worker_stats.running_workers << "\n"
+     << "working_workers\t" << worker_stats.running_workers << "\n"
+     << "working_but_waiting_workers\t" << worker_stats.waiting_workers << "\n"
+     << std::fixed << std::setprecision(3);
   for (int i = 1; i < periods_n; ++i) {
     ss << "running_workers_avg_" << periods_desc[i] << "\t" << server_stats.misc_stat_for_general_workers[i].get_stat().running_workers_avg << "\n";
   }
@@ -1178,18 +1170,18 @@ int php_master_http_execute(struct connection *c, int op) {
   struct hts_data *D = HTS_DATA(c);
   char ReqHdr[MAX_HTTP_HEADER_SIZE];
 
-  tvkprintf(master_process, 1, "master http execute connection #%d, op=%d, header_size=%d, data_size=%d, http_version=%d\n",
-           c->fd, op, D->header_size, D->data_size, D->http_ver);
+  tvkprintf(master_process, 1, "master http execute connection #%d, op=%d, header_size=%d, data_size=%d, http_version=%d\n", c->fd, op, D->header_size,
+            D->data_size, D->http_ver);
 
   if (D->query_type != htqt_get) {
     D->query_flags &= ~QF_KEEPALIVE;
     return -501;
   }
 
-  assert (D->header_size <= MAX_HTTP_HEADER_SIZE);
-  assert (read_in(&c->In, &ReqHdr, D->header_size) == D->header_size);
+  assert(D->header_size <= MAX_HTTP_HEADER_SIZE);
+  assert(read_in(&c->In, &ReqHdr, D->header_size) == D->header_size);
 
-  assert (D->first_line_size > 0 && D->first_line_size <= D->header_size);
+  assert(D->first_line_size > 0 && D->first_line_size <= D->header_size);
 
   const char *allowed_query = "/server-status";
   if (D->uri_size == strlen(allowed_query) && strncmp(ReqHdr + D->uri_offset, allowed_query, static_cast<size_t>(D->uri_size)) == 0) {
@@ -1202,7 +1194,6 @@ int php_master_http_execute(struct connection *c, int op) {
   D->query_flags |= QF_ERROR;
   return -404;
 }
-
 
 /*** Main loop functions ***/
 void run_master_off_in_graceful_shutdown() {
@@ -1221,12 +1212,12 @@ void run_master_off_in_graceful_shutdown() {
 
 void run_master_off_in_graceful_restart() {
   kprintf("master off in graceful restart\n");
-  assert (other->is_alive);
+  assert(other->is_alive);
   tvkprintf(graceful_restart, 2, "other->to_kill_generation > me->generation --- %lld > %lld\n", other->to_kill_generation, me->generation);
 
   if (other->is_alive && other->ask_http_fds_generation > me->generation) {
     send_fds_via_socket(vk::singleton<HttpServerContext>::get().http_socket_fds());
-    //TODO: process errors
+    // TODO: process errors
     me->sent_http_fds_generation = static_cast<int>(generation);
     changed = 1;
   }
@@ -1256,8 +1247,8 @@ bool init_http_sockets_if_needed() {
     return true;
   }
 
-  bool can_ask_http_fds = other->is_alive && other->own_http_fds &&
-                          other->http_ports_count == me->http_ports_count && std::equal(me->http_ports, me->http_ports + me->http_ports_count, other->http_ports);
+  bool can_ask_http_fds = other->is_alive && other->own_http_fds && other->http_ports_count == me->http_ports_count
+                          && std::equal(me->http_ports, me->http_ports + me->http_ports_count, other->http_ports);
   if (!can_ask_http_fds) {
     tvkprintf(master_process, 1, "master create http sockets\n");
 
@@ -1332,7 +1323,8 @@ void run_master_on() {
 
   if (done) {
     const auto &control = vk::singleton<WorkersControl>::get();
-    const int total_workers = control.get_alive_count(WorkerType::general_worker) + (other->is_alive ? other->running_http_workers_n + other->dying_http_workers_n : 0);
+    const int total_workers =
+      control.get_alive_count(WorkerType::general_worker) + (other->is_alive ? other->running_http_workers_n + other->dying_http_workers_n : 0);
     general_workers_to_run = std::max(0, int{control.get_count(WorkerType::general_worker)} - total_workers);
     job_workers_to_run = control.get_count(WorkerType::job_worker) - control.get_alive_count(WorkerType::job_worker);
 
@@ -1346,10 +1338,11 @@ void run_master_on() {
       bool warmup_timeout_expired = warm_up_ctx.warmup_timeout_expired();
       if (set_to_kill > 0 && (need_more_workers_for_warmup || is_instance_cache_hot_enough || warmup_timeout_expired)) {
         // new master tells to old master how many workers it must kill
-        tvkprintf(graceful_restart, 1, "[set_to_kill = %d] [need_more_workers_for_warmup = %d] [is_instance_cache_hot_enough = %d] [new_instance_cache_size / old_instance_cache_size = %u / %u] [warmup_timeout_expired = %d]\n",
-                        set_to_kill, need_more_workers_for_warmup,
-                        is_instance_cache_hot_enough, me->instance_cache_elements_cached, other->instance_cache_elements_cached,
-                        warmup_timeout_expired);
+        tvkprintf(graceful_restart, 1,
+                  "[set_to_kill = %d] [need_more_workers_for_warmup = %d] [is_instance_cache_hot_enough = %d] [new_instance_cache_size / "
+                  "old_instance_cache_size = %u / %u] [warmup_timeout_expired = %d]\n",
+                  set_to_kill, need_more_workers_for_warmup, is_instance_cache_hot_enough, me->instance_cache_elements_cached,
+                  other->instance_cache_elements_cached, warmup_timeout_expired);
         if (!need_more_workers_for_warmup && (is_instance_cache_hot_enough || warmup_timeout_expired)) {
           warm_up_ctx.update_final_instance_cache_sizes();
         }
@@ -1369,7 +1362,7 @@ int signal_epoll_handler(int fd, void *data __attribute__((unused)), event_t *ev
     log_server_error("Master process can't read signal from signalfd: fd = %d, signal_fd = %d, error = %s", fd, signal_fd, strerror(errno));
     return 0;
   }
-  dl_assert (s == sizeof(signalfd_siginfo), dl_pstr("got %d bytes of %d expected", s, (int)sizeof(signalfd_siginfo)));
+  dl_assert(s == sizeof(signalfd_siginfo), dl_pstr("got %d bytes of %d expected", s, (int)sizeof(signalfd_siginfo)));
   tvkprintf(master_process, 2, "signal %u received\n", fdsi.ssi_signo);
   if (fdsi.ssi_signo == SIGTERM && !in_sigterm) {
     const char *message = "master got SIGTERM, starting graceful shutdown.\n";
@@ -1380,7 +1373,7 @@ int signal_epoll_handler(int fd, void *data __attribute__((unused)), event_t *ev
 }
 
 void check_and_instance_cache_try_swap_memory() {
-  switch(instance_cache_try_swap_memory()) {
+  switch (instance_cache_try_swap_memory()) {
     case InstanceCacheSwapStatus::no_need:
       return;
     case InstanceCacheSwapStatus::swap_is_finished:
@@ -1431,8 +1424,8 @@ static void master_cron() {
   }
   auto total_general_workers_qps = vk::singleton<ServerStats>::get().get_total_general_workers_incoming_qps();
   const auto general_workers_stat = vk::singleton<ServerStats>::get().collect_workers_stat(WorkerType::general_worker);
-  server_stats.update_misc_stat_for_general_workers(MiscStatTimestamp{my_now, general_workers_stat.running_workers,
-                                                                      general_workers_stat.ready_for_accept_workers, total_general_workers_qps});
+  server_stats.update_misc_stat_for_general_workers(
+    MiscStatTimestamp{my_now, general_workers_stat.running_workers, general_workers_stat.ready_for_accept_workers, total_general_workers_qps});
   const auto job_workers_stat = vk::singleton<ServerStats>::get().collect_workers_stat(WorkerType::job_worker);
   server_stats.update_misc_stat_for_job_workers(MiscStatTimestamp{my_now, job_workers_stat.running_workers});
 
@@ -1442,16 +1435,17 @@ static void master_cron() {
   server_stats.update(cpu_timestamp);
 
   vk::singleton<SharedData>::get().store_worker_stats({general_workers_stat.running_workers, general_workers_stat.waiting_workers,
-                                                        general_workers_stat.ready_for_accept_workers, general_workers_stat.total_workers});
+                                                       general_workers_stat.ready_for_accept_workers, general_workers_stat.total_workers});
   instance_cache_purge_expired_elements();
   check_and_instance_cache_try_swap_memory();
   confdata_binlog_update_cron();
-  tvkprintf(master_process, 3, "master process cron work [utime = %llu, stime = %llu, alive_workers_count = %d]. "
-                                 "General workers details [running general workers = %d, waiting general workers = %d, ready for accept general workers = %d]. "
-                                 "Job workers details [running job workers = %d, waiting job workers = %d, ready for accept job workers = %d].\n",
-            utime, stime, alive_workers_count,
-            general_workers_stat.running_workers, general_workers_stat.waiting_workers, general_workers_stat.ready_for_accept_workers,
-            job_workers_stat.running_workers, job_workers_stat.waiting_workers, job_workers_stat.ready_for_accept_workers);
+  tvkprintf(master_process, 3,
+            "master process cron work [utime = %llu, stime = %llu, alive_workers_count = %d]. "
+            "General workers details [running general workers = %d, waiting general workers = %d, ready for accept general workers = %d]. "
+            "Job workers details [running job workers = %d, waiting job workers = %d, ready for accept job workers = %d].\n",
+            utime, stime, alive_workers_count, general_workers_stat.running_workers, general_workers_stat.waiting_workers,
+            general_workers_stat.ready_for_accept_workers, job_workers_stat.running_workers, job_workers_stat.waiting_workers,
+            job_workers_stat.ready_for_accept_workers);
 }
 
 auto get_steady_tp_ms_now() noexcept {
@@ -1504,7 +1498,7 @@ WorkerType run_master() {
 
   epoll_sethandler(signal_fd, 0, signal_epoll_handler, nullptr);
   const int err = epoll_insert(signal_fd, EVT_READ);
-  dl_assert (err >= 0, "epoll_insert failed");
+  dl_assert(err >= 0, "epoll_insert failed");
 
   preallocate_msg_buffers();
 
@@ -1526,16 +1520,15 @@ WorkerType run_master() {
     shared_data_lock(shared_data);
     shared_data_update(shared_data);
 
-    //calc state
-    dl_assert (me->is_alive && me->pid == getpid(), dl_pstr("[me->is_alive = %d] [me->pid = %d] [getpid() = %d]",
-                                                              me->is_alive, me->pid, getpid()));
+    // calc state
+    dl_assert(me->is_alive && me->pid == getpid(), dl_pstr("[me->is_alive = %d] [me->pid = %d] [getpid() = %d]", me->is_alive, me->pid, getpid()));
     master_state prev_state = master_change_state();
 
     if (state != prev_state && state == master_state::on) {
       WarmUpContext::get().reset();
     }
 
-    //calc generation
+    // calc generation
     generation = me->generation;
     if (other->is_alive && other->generation > generation) {
       generation = other->generation;
@@ -1553,7 +1546,7 @@ WorkerType run_master() {
         run_master_off_in_graceful_shutdown();
         break;
       default:
-        dl_unreachable ("unknown master state\n");
+        dl_unreachable("unknown master state\n");
     }
 
     me->generation = generation;
@@ -1585,7 +1578,8 @@ WorkerType run_master() {
     kill_hanging_workers();
 
     me->running_http_workers_n = vk::singleton<WorkersControl>::get().get_running_count(WorkerType::general_worker);
-    me->dying_http_workers_n = vk::singleton<WorkersControl>::get().get_dying_count(WorkerType::general_worker);;
+    me->dying_http_workers_n = vk::singleton<WorkersControl>::get().get_dying_count(WorkerType::general_worker);
+    ;
     me->instance_cache_elements_cached = static_cast<uint32_t>(instance_cache_get_stats().elements_cached.load(std::memory_order_relaxed));
 
     if (state != master_state::off_in_graceful_shutdown) {

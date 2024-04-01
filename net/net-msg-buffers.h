@@ -49,4 +49,3 @@ static inline void msg_buffer_dec_ref(msg_buffer_t *buffer) {
     assert(buffer->refcnt > 0);
   }
 }
-

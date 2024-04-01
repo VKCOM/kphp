@@ -35,12 +35,11 @@ struct C$PDO : public refcountable_polymorphic_php_classes<abstract_refcountable
 };
 
 class_instance<C$PDO> f$PDO$$__construct(class_instance<C$PDO> const &v$this, const string &dsn, const Optional<string> &username = {},
-                                                                const Optional<string> &password = {}, const Optional<array<mixed>> &options= {}) noexcept;
+                                         const Optional<string> &password = {}, const Optional<array<mixed>> &options = {}) noexcept;
 
 struct C$PDOStatement;
 
 class_instance<C$PDOStatement> f$PDO$$prepare(const class_instance<C$PDO> &v$this, const string &query, const array<mixed> &options = {}) noexcept;
-
 
 class_instance<C$PDOStatement> f$PDO$$query(const class_instance<C$PDO> &v$this, const string &query, Optional<int64_t> fetchMode = {});
 

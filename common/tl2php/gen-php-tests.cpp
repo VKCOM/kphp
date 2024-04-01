@@ -25,12 +25,9 @@ struct TypesAndFunctions {
 
 struct PhpPolyfills {
   friend std::ostream &operator<<(std::ostream &os, const PhpPolyfills &) {
-    return os <<
-              "#ifndef KPHP" << std::endl
-              << "require_once '"
-              << PhpClasses::tl_parent_namespace() << '/'
-              << PhpClasses::tl_namespace() << '/'
-              << PhpClasses::rpc_function() << ".php';" << R"php(
+    return os << "#ifndef KPHP" << std::endl
+              << "require_once '" << PhpClasses::tl_parent_namespace() << '/' << PhpClasses::tl_namespace() << '/' << PhpClasses::rpc_function() << ".php';"
+              << R"php(
 
 spl_autoload_register(function ($class) {
   $filename = trim(str_replace('\\','/', $class), '/') . '.php';
@@ -130,8 +127,8 @@ function _rpc_server_store_response($response) {
   rpc_server_store_response($response);
 }
 
-)php" <<
-              "$CONSTRUCTORS = [" << std::endl
+)php"
+              << "$CONSTRUCTORS = [" << std::endl
               << "  " << PhpClasses::rpc_response_ok_with_tl_namespace() << "::class," << std::endl
               << "  " << PhpClasses::rpc_response_header_with_tl_namespace() << "::class," << std::endl
               << "  " << PhpClasses::rpc_response_error_with_tl_namespace() << "::class" << std::endl
@@ -164,53 +161,43 @@ struct TestRpcTlQueryResult {
   const char *function_name;
 
   friend std::ostream &operator<<(std::ostream &os, const TestRpcTlQueryResult &self) {
-    return os
-      << "/**" << std::endl
-      << " * @kphp-inline" << std::endl
-      << " * @param RpcConnection $stub_connection" << std::endl
-      << " */" << std::endl
-      << "function test" << self.function_name << "($stub_connection, array $functions) {" << std::endl
-      << "  $queries = _typed_rpc_tl_query($stub_connection, $functions);" << std::endl
-      << "  $results = " << self.function_name << "($queries);" << std::endl
-      << "  foreach($results as $result) {" << std::endl
-      << "    var_dump(get_class($result));" << std::endl
-      << "  }" << std::endl
-      << "}" << SkipLine{};
+    return os << "/**" << std::endl
+              << " * @kphp-inline" << std::endl
+              << " * @param RpcConnection $stub_connection" << std::endl
+              << " */" << std::endl
+              << "function test" << self.function_name << "($stub_connection, array $functions) {" << std::endl
+              << "  $queries = _typed_rpc_tl_query($stub_connection, $functions);" << std::endl
+              << "  $results = " << self.function_name << "($queries);" << std::endl
+              << "  foreach($results as $result) {" << std::endl
+              << "    var_dump(get_class($result));" << std::endl
+              << "  }" << std::endl
+              << "}" << SkipLine{};
   }
 };
 
-void gen_tests_for_classes(const std::string &test_file_path,
-                           const TypesAndFunctions &classes) {
+void gen_tests_for_classes(const std::string &test_file_path, const TypesAndFunctions &classes) {
   std::ofstream os{test_file_path};
-  os << "@ok" << std::endl
-     << PhpTag{}
-     << "use \\" << PhpClasses::tl_full_namespace() << ";" << SkipLine{}
-     << PhpPolyfills{};
+  os << "@ok" << std::endl << PhpTag{} << "use \\" << PhpClasses::tl_full_namespace() << ";" << SkipLine{} << PhpPolyfills{};
 
   if (!classes.types.empty()) {
     os << "function test_types() {";
     for (const auto &klass : classes.types) {
       os << CreateInstanceAndDump{klass.get()};
     }
-    os << "}" << SkipLine{}
-       << "test_types();" << SkipLine{};
+    os << "}" << SkipLine{} << "test_types();" << SkipLine{};
   }
 
   if (!classes.functions.empty()) {
-    os << TestRpcTlQueryResult{"_typed_rpc_tl_query_result"}
-       << TestRpcTlQueryResult{"_typed_rpc_tl_query_result_synchronously"}
+    os << TestRpcTlQueryResult{"_typed_rpc_tl_query_result"} << TestRpcTlQueryResult{"_typed_rpc_tl_query_result_synchronously"}
        << "function test_functions() {" << std::endl
        << "  $stub_connection = _new_rpc_connection('0.0.0.0', 0);" << std::endl
        << "  $functions = [];" << std::endl;
     for (const auto &klass : classes.functions) {
       os << CreateInstanceAndDump{klass.get()};
     }
-    os << SkipLine{}
-       << "  test_typed_rpc_tl_query_result($stub_connection, $functions);" << std::endl
+    os << SkipLine{} << "  test_typed_rpc_tl_query_result($stub_connection, $functions);" << std::endl
        << "  test_typed_rpc_tl_query_result_synchronously($stub_connection, $functions);" << std::endl
-       << "}"
-       << SkipLine{}
-       << "test_functions();" << SkipLine{};
+       << "}" << SkipLine{} << "test_functions();" << SkipLine{};
   }
 
   if (!classes.kphp_server_functions.empty()) {
@@ -223,22 +210,17 @@ void gen_tests_for_classes(const std::string &test_file_path,
        << "  }" << SkipLine{};
     for (const auto &function : classes.kphp_server_functions) {
       assert(function.get().function_result->class_fields.size() == 1);
-      os << "  $response = " << ClassNameWithNamespace{*function.get().function_args}
-         << "::createRpcServerResponse(" << DefaultValue{function.get().function_result->class_fields.back()} << ");" << std::endl
+      os << "  $response = " << ClassNameWithNamespace{*function.get().function_args} << "::createRpcServerResponse("
+         << DefaultValue{function.get().function_result->class_fields.back()} << ");" << std::endl
          << "  _rpc_server_store_response($response);" << SkipLine{};
     }
-    os << "}" << SkipLine{}
-       << "test_kphp_server_functions();" << SkipLine{};
+    os << "}" << SkipLine{} << "test_kphp_server_functions();" << SkipLine{};
   }
 }
 
 std::string make_test_file_name(const std::string &dir, const vk::string_view &ns) {
   std::string test_file_name{"test_"};
-  std::transform(ns.begin(), ns.end(),
-                 std::back_inserter(test_file_name),
-                 [](char c) {
-                   return c == '\\' ? '_' : std::tolower(c);
-                 });
+  std::transform(ns.begin(), ns.end(), std::back_inserter(test_file_name), [](char c) { return c == '\\' ? '_' : std::tolower(c); });
   if (test_file_name.back() == '_') {
     test_file_name.append(PhpClasses::common_engine_namespace());
   }

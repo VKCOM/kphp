@@ -1,7 +1,7 @@
 #pragma once
 
 #ifndef INCLUDED_FROM_KPHP_CORE
-  #error "this file must be included only from kphp_core.h"
+#error "this file must be included only from kphp_core.h"
 #endif
 
 template<class T>
@@ -33,7 +33,7 @@ class_instance<T> class_instance<T>::clone() const {
 
 template<class T>
 template<class... Args>
-class_instance<T> class_instance<T>::alloc(Args &&... args) {
+class_instance<T> class_instance<T>::alloc(Args &&...args) {
   static_assert(!std::is_empty<T>{}, "class T may not be empty");
   php_assert(!o);
   new (&o) vk::intrusive_ptr<T>(new T{std::forward<Args>(args)...});
@@ -45,7 +45,7 @@ inline class_instance<T> class_instance<T>::empty_alloc() {
   static_assert(std::is_empty<T>{}, "class T must be empty");
   static uint32_t obj;
   obj++;
-  new (&o) vk::intrusive_ptr<T>(reinterpret_cast<T*>(obj));
+  new (&o) vk::intrusive_ptr<T>(reinterpret_cast<T *>(obj));
   return *this;
 }
 

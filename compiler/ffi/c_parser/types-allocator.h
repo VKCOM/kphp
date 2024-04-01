@@ -27,9 +27,8 @@ namespace ffi {
 // TypesAllocator should not be shared between several C parsers.
 class TypesAllocator {
 public:
-
   template<class... Args>
-  FFIType *new_type(Args&&... args) {
+  FFIType *new_type(Args &&...args) {
     auto *type = new FFIType{std::forward<Args>(args)...};
     allocated_.push_back(type);
     return type;
@@ -60,7 +59,7 @@ public:
   }
 
 private:
-  std::vector<FFIType*> allocated_;
+  std::vector<FFIType *> allocated_;
 };
 
 } // namespace ffi

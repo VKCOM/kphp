@@ -8,11 +8,11 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/generics-mixins.h"
-#include "compiler/vertex-util.h"
 #include "compiler/lambda-utils.h"
 #include "compiler/phpdoc.h"
-#include "compiler/type-hint.h"
 #include "compiler/pipes/clone-nested-lambdas.h"
+#include "compiler/type-hint.h"
+#include "compiler/vertex-util.h"
 
 /*
  * This pass creates new functions and passes them backwards to be handled again:
@@ -30,8 +30,7 @@ class InstantiateGenericFunctionPass final : public FunctionPassBase {
 public:
   InstantiateGenericFunctionPass(FunctionPtr generic_function, const GenericsInstantiationMixin *instantiationTs)
     : generic_function(generic_function)
-    , instantiationTs(instantiationTs) {
-  }
+    , instantiationTs(instantiationTs) {}
 
   std::string get_description() override {
     return "Instantiate generic function";
@@ -105,8 +104,9 @@ public:
   VertexAdaptor<op_func_param> find_param_by_name(const std::string &var_name) {
     FunctionPtr outer_function = current_function;
     while (outer_function->is_lambda()) {
-      bool is_used = std::find_if(outer_function->uses_list.begin(), outer_function->uses_list.end(),
-                                  [var_name](auto v_use) { return v_use->str_val == var_name; }) != outer_function->uses_list.end();
+      bool is_used =
+        std::find_if(outer_function->uses_list.begin(), outer_function->uses_list.end(), [var_name](auto v_use) { return v_use->str_val == var_name; })
+        != outer_function->uses_list.end();
       if (!is_used) {
         return {};
       }
@@ -116,11 +116,9 @@ public:
   }
 };
 
-
 // when we have a call `f<T1, T2>(...)`, we generate a new function `f$_$T1$_$T2`,
 // which is not a generic one, but an instantiated one
-static FunctionPtr instantiate_generic_function(FunctionPtr generic_function,
-                                                GenericsInstantiationMixin *instantiationTs,
+static FunctionPtr instantiate_generic_function(FunctionPtr generic_function, GenericsInstantiationMixin *instantiationTs,
                                                 const std::string &name_of_instantiated_function) {
 
   auto new_function = FunctionData::clone_from(generic_function, name_of_instantiated_function);
@@ -151,10 +149,8 @@ static FunctionPtr instantiate_generic_function(FunctionPtr generic_function,
   return new_function;
 }
 
-static FunctionPtr instantiate_generic_function_concurrent(FunctionPtr generic_function,
-                                                           GenericsInstantiationMixin *instantiationTs,
-                                                           const std::string &name_of_instantiated_function,
-                                                           DataStream<FunctionPtr> &function_stream) {
+static FunctionPtr instantiate_generic_function_concurrent(FunctionPtr generic_function, GenericsInstantiationMixin *instantiationTs,
+                                                           const std::string &name_of_instantiated_function, DataStream<FunctionPtr> &function_stream) {
   FunctionPtr generated_function;
 
   G->operate_on_function_locking(name_of_instantiated_function, [&](FunctionPtr &f) {
@@ -175,7 +171,6 @@ static FunctionPtr instantiate_generic_function_concurrent(FunctionPtr generic_f
   return generated_function;
 }
 
-
 // the pass which is called from the F pipe
 // (the F pipe is needed to have several outputs, which is impossible with Pass structure)
 class InstantiateGenericsAndLambdasPass final : public FunctionPassBase {
@@ -183,7 +178,6 @@ class InstantiateGenericsAndLambdasPass final : public FunctionPassBase {
   DataStream<FunctionPtr> &forward_next_stream;
 
 public:
-
   explicit InstantiateGenericsAndLambdasPass(DataStream<FunctionPtr> &function_stream, DataStream<FunctionPtr> &forward_next_stream)
     : function_stream(function_stream)
     , forward_next_stream(forward_next_stream) {}
@@ -218,7 +212,7 @@ public:
     // if f<T> is a member of an interface, instantiate f<T> in all derived classes
     // note, that we don't allow `class A { foo<T>() { ... } } class B : A { foo<T>() { ... } }` (moving a generic to self method)
     if (generic_function->modifiers.is_instance() && generic_function->is_virtual_method) {
-      kphp_assert(generic_function->modifiers.is_abstract());  // should have been checked in advance
+      kphp_assert(generic_function->modifiers.is_abstract()); // should have been checked in advance
       for (ClassPtr derived : generic_function->class_id->get_all_derived_classes()) {
         if (derived != generic_function->class_id) {
           if (const auto *method = derived->members.get_instance_method(generic_function->local_name())) {
@@ -245,7 +239,7 @@ public:
     ClassPtr c_lambda = generate_lambda_class_wrapping_lambda_function(f_lambda);
     kphp_assert(f_lambda->class_id == c_lambda);
 
-    if (v_lambda->lambda_class) {   // while deducing types, we used this field to express inheritance from a typed callable
+    if (v_lambda->lambda_class) { // while deducing types, we used this field to express inheritance from a typed callable
       kphp_assert(v_lambda->lambda_class->is_typed_callable_interface());
       inherit_lambda_class_from_typed_callable(c_lambda, v_lambda->lambda_class);
       G->require_function(v_lambda->lambda_class->get_instance_method("__invoke")->function, function_stream);
@@ -254,7 +248,7 @@ public:
 
     InstantiateGenericsAndLambdasPass pass_lambda(function_stream, forward_next_stream);
     run_function_pass(f_lambda, &pass_lambda);
-    forward_next_stream << f_lambda;  // nested lambdas were already processed by DeduceImplicitTypesAndCastsPass
+    forward_next_stream << f_lambda; // nested lambdas were already processed by DeduceImplicitTypesAndCastsPass
 
     G->require_function(c_lambda->construct_function, function_stream);
     G->require_function(c_lambda->get_instance_method("__invoke")->function, function_stream);
@@ -280,7 +274,6 @@ public:
     return v_callback;
   }
 };
-
 
 void InstantiateGenericsAndLambdasF::execute(FunctionPtr function, OStreamT &os) {
   auto &forward_next_stream = *os.project_to_nth_data_stream<0>();

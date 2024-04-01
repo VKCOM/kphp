@@ -10,8 +10,8 @@ namespace tl2cpp {
 struct TlConstructorDecl {
   const vk::tlo_parsing::combinator *constructor;
 
-  explicit TlConstructorDecl(const vk::tlo_parsing::combinator *constructor) :
-    constructor(constructor) {};
+  explicit TlConstructorDecl(const vk::tlo_parsing::combinator *constructor)
+    : constructor(constructor){};
 
   static bool does_tl_constructor_need_typed_fetch_store(const vk::tlo_parsing::combinator *c) {
     return !get_all_php_classes_of_tl_constructor(c).empty();
@@ -25,9 +25,9 @@ struct TlConstructorDecl {
 struct TlConstructorDef {
   const vk::tlo_parsing::combinator *constructor;
 
-  explicit TlConstructorDef(const vk::tlo_parsing::combinator *constructor) :
-    constructor(constructor) {};
+  explicit TlConstructorDef(const vk::tlo_parsing::combinator *constructor)
+    : constructor(constructor){};
 
   void compile(CodeGenerator &W) const;
 };
-}
+} // namespace tl2cpp

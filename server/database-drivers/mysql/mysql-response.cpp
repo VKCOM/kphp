@@ -5,9 +5,9 @@
 #include "server/database-drivers/mysql/mysql-response.h"
 
 #include "server/database-drivers/adaptor.h"
-#include "server/database-drivers/mysql/mysql.h"
 #include "server/database-drivers/mysql/mysql-connector.h"
 #include "server/database-drivers/mysql/mysql-resources.h"
+#include "server/database-drivers/mysql/mysql.h"
 
 namespace database_drivers {
 

@@ -115,7 +115,8 @@ static int mmc_postprocess_value(zval **return_value, char *value, int value_len
 void php_rpc_fetch_memcache_value(INTERNAL_FUNCTION_PARAMETERS) {
   struct memcache_value value = do_fetch_memcache_value();
   switch (value.type) {
-    case MEMCACHE_VALUE_LONG: RETURN_LONG (value.val.lval);
+    case MEMCACHE_VALUE_LONG:
+      RETURN_LONG(value.val.lval);
       break;
     case MEMCACHE_VALUE_STRING:
       if (value.flags & 2) {
@@ -127,23 +128,24 @@ void php_rpc_fetch_memcache_value(INTERNAL_FUNCTION_PARAMETERS) {
 
         if (value.flags & 1) {
           mmc_postprocess_value(&return_value, res, res_len);
-          efree (res);
+          efree(res);
         } else {
-          VK_RETURN_STRINGL_NOD (res, res_len);
+          VK_RETURN_STRINGL_NOD(res, res_len);
         }
         break;
       } else {
         if (value.flags & 1) {
           mmc_postprocess_value(&return_value, value.val.strval.data, value.val.strval.len);
         } else {
-          ADD_RMALLOC (value.val.strval.len + 1);
-          VK_RETURN_STRINGL_DUP (value.val.strval.data, value.val.strval.len);
+          ADD_RMALLOC(value.val.strval.len + 1);
+          VK_RETURN_STRINGL_DUP(value.val.strval.data, value.val.strval.len);
         }
         break;
       }
     case MEMCACHE_ERROR:
     case MEMCACHE_FALSE:
     case MEMCACHE_VALUE_NOT_FOUND:
-    default: RETURN_FALSE;
+    default:
+      RETURN_FALSE;
   }
 }

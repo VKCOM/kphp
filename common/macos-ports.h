@@ -46,7 +46,7 @@ struct ucred {
 };
 
 inline const char *strchrnul(const char *s, char c) noexcept {
-  while(*s && *s != c) {
+  while (*s && *s != c) {
     ++s;
   }
   return s;

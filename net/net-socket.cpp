@@ -256,7 +256,7 @@ int server_socket(int port, struct in_addr in_addr, int backlog, int mode) {
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
     addr.sin_addr = in_addr;
-    if (bind(sfd, (struct sockaddr *) &addr, sizeof(addr)) == -1) {
+    if (bind(sfd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
       kprintf("bind(%s:%d): %s\n", inet_ntoa(in_addr), port, strerror(errno));
       close(sfd);
       return -1;
@@ -269,7 +269,7 @@ int server_socket(int port, struct in_addr in_addr, int backlog, int mode) {
     addr.sin6_port = htons(port);
     addr.sin6_addr = in6addr_any;
 
-    if (bind(sfd, (struct sockaddr *) &addr, sizeof(addr)) == -1) {
+    if (bind(sfd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
       kprintf("bind(%s:%d): %s\n", inet_ntoa(in_addr), port, strerror(errno));
       close(sfd);
       return -1;
@@ -306,7 +306,7 @@ int server_socket_unix(const struct sockaddr_un *addr, int backlog, int mode) {
     vkprintf(4, "Unlinking UNIX socket path: \"%s\"\n", addr->sun_path);
     unlink(addr->sun_path);
 
-    if (bind(fd, (struct sockaddr *) addr, sizeof(*addr)) == -1) {
+    if (bind(fd, (struct sockaddr *)addr, sizeof(*addr)) == -1) {
       kprintf("bind(%s): %s\n", addr->sun_path, strerror(errno));
       close(fd);
       return -1;
@@ -358,7 +358,7 @@ int client_socket(const struct sockaddr_in *addr, int mode) {
     }
   }
 
-  if (connect(sfd, (struct sockaddr *) addr, sizeof(*addr)) == -1 && errno != EINPROGRESS) {
+  if (connect(sfd, (struct sockaddr *)addr, sizeof(*addr)) == -1 && errno != EINPROGRESS) {
     perror("connect()");
     close(sfd);
     return -1;
@@ -389,7 +389,7 @@ int client_socket_ipv6(const struct sockaddr_in6 *addr, int mode) {
     socket_enable_tcp_nodelay(sfd);
   }
 
-  if (connect(sfd, (struct sockaddr *) addr, sizeof(*addr)) == -1 && errno != EINPROGRESS) {
+  if (connect(sfd, (struct sockaddr *)addr, sizeof(*addr)) == -1 && errno != EINPROGRESS) {
     perror("connect()");
     close(sfd);
     return -1;
@@ -406,7 +406,7 @@ int client_socket_unix(const struct sockaddr_un *addr, int mode) {
   if (fd != -1) {
     socket_maximize_sndbuf(fd, 0);
     socket_maximize_rcvbuf(fd, 0);
-    if (connect(fd, (struct sockaddr *) addr, sizeof(*addr)) == -1 && errno != EINPROGRESS) {
+    if (connect(fd, (struct sockaddr *)addr, sizeof(*addr)) == -1 && errno != EINPROGRESS) {
       kprintf("Cannot connect() to \"%s\": %s\n", addr->sun_path, strerror(errno));
       close(fd);
       return -1;

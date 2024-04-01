@@ -12,8 +12,7 @@ FFIEnv::FFIEnv(int num_libs, int num_symbols)
   : num_libs{num_libs}
   , libs{new SharedLib[num_libs]}
   , num_symbols{num_symbols}
-  , symbols{new Symbol[num_symbols]} {
-}
+  , symbols{new Symbol[num_symbols]} {}
 
 bool FFIEnv::is_shared_lib_opened(int id) {
   return libs[id].handle != nullptr;
@@ -53,11 +52,11 @@ void FFIEnv::load_symbol(int lib_id, int dst_sym_id) {
   symbols[dst_sym_id].ptr = symbol;
 }
 
-class_instance<C$FFI$Scope> f$FFI$$load(const string &filename __attribute__ ((unused))) {
+class_instance<C$FFI$Scope> f$FFI$$load(const string &filename __attribute__((unused))) {
   return class_instance<C$FFI$Scope>().empty_alloc();
 }
 
-class_instance<C$FFI$Scope> f$FFI$$scope(const string &scope_name __attribute__ ((unused))) {
+class_instance<C$FFI$Scope> f$FFI$$scope(const string &scope_name __attribute__((unused))) {
   return class_instance<C$FFI$Scope>().empty_alloc();
 }
 

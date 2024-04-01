@@ -3,7 +3,7 @@
 #include "common/algorithms/simd-int-to-string.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
-  #error "this file must be included only from kphp_core.h"
+#error "this file must be included only from kphp_core.h"
 #endif
 
 inline void string_buffer::resize(string::size_type new_buffer_len) noexcept {
@@ -19,13 +19,13 @@ inline void string_buffer::resize(string::size_type new_buffer_len) noexcept {
         string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_FAILED;
         return;
       } else {
-        php_critical_error ("maximum buffer size exceeded. buffer_len = %u, new_buffer_len = %u", buffer_len, new_buffer_len);
+        php_critical_error("maximum buffer size exceeded. buffer_len = %u, new_buffer_len = %u", buffer_len, new_buffer_len);
       }
     }
   }
 
   string::size_type current_len = size();
-  if(void *new_mem = dl::heap_reallocate(buffer_begin, new_buffer_len, buffer_len)) {
+  if (void *new_mem = dl::heap_reallocate(buffer_begin, new_buffer_len, buffer_len)) {
     buffer_begin = static_cast<char *>(new_mem);
     buffer_len = new_buffer_len;
     buffer_end = buffer_begin + current_len;
@@ -34,7 +34,7 @@ inline void string_buffer::resize(string::size_type new_buffer_len) noexcept {
 
 inline void string_buffer::reserve_at_least(string::size_type need) noexcept {
   string::size_type new_buffer_len = need + size();
-  while (unlikely (buffer_len < new_buffer_len && string_buffer_error_flag != STRING_BUFFER_ERROR_FLAG_FAILED)) {
+  while (unlikely(buffer_len < new_buffer_len && string_buffer_error_flag != STRING_BUFFER_ERROR_FLAG_FAILED)) {
     resize(((new_buffer_len * 2 + 1 + 64) | 4095) - 64);
   }
 }
@@ -51,7 +51,6 @@ string_buffer &operator<<(string_buffer &sb, char c) {
 
   return sb;
 }
-
 
 string_buffer &operator<<(string_buffer &sb, const char *s) {
   while (*s != 0) {
@@ -71,7 +70,7 @@ string_buffer &operator<<(string_buffer &sb, const string &s) {
   string::size_type l = s.size();
   sb.reserve_at_least(l);
 
-  if (unlikely (sb.string_buffer_error_flag == STRING_BUFFER_ERROR_FLAG_FAILED)) {
+  if (unlikely(sb.string_buffer_error_flag == STRING_BUFFER_ERROR_FLAG_FAILED)) {
     return sb;
   }
 
@@ -128,12 +127,12 @@ const char *string_buffer::c_str() {
 }
 
 string string_buffer::str() const {
-  php_assert (size() <= buffer_len);
+  php_assert(size() <= buffer_len);
   return string(buffer_begin, size());
 }
 
 bool string_buffer::set_pos(int64_t pos) {
-  php_assert (static_cast<string::size_type>(pos) <= buffer_len);
+  php_assert(static_cast<string::size_type>(pos) <= buffer_len);
   buffer_end = buffer_begin + pos;
   return true;
 }
@@ -141,7 +140,7 @@ bool string_buffer::set_pos(int64_t pos) {
 string_buffer &string_buffer::append(const char *str, size_t len) noexcept {
   reserve_at_least(static_cast<string::size_type>(len));
 
-  if (unlikely (string_buffer_error_flag == STRING_BUFFER_ERROR_FLAG_FAILED)) {
+  if (unlikely(string_buffer_error_flag == STRING_BUFFER_ERROR_FLAG_FAILED)) {
     return *this;
   }
   memcpy(buffer_end, str, len);
@@ -162,7 +161,6 @@ void string_buffer::append_unsafe(const char *str, int len) {
 void string_buffer::append_char(char c) {
   *buffer_end++ = c;
 }
-
 
 void string_buffer::reserve(int len) {
   reserve_at_least(len + 1);
@@ -195,8 +193,6 @@ bool operator!=(string_buffer const &lhs, string_buffer const &rhs) {
 }
 
 void string_buffer::debug_print() const {
-  std::for_each(buffer_begin, buffer_end, [](char c) {
-    fprintf(stderr, "%02x ", (int)c);
-  });
+  std::for_each(buffer_begin, buffer_end, [](char c) { fprintf(stderr, "%02x ", (int)c); });
   fprintf(stderr, "\n");
 }

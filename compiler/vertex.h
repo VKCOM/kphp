@@ -35,7 +35,7 @@ vertex_inner<Op> *raw_create_vertex_inner(int args_n) {
   size_t shift = vertex_inner_shift<Op>(args_n);
 
   auto ptr = reinterpret_cast<vertex_inner<Op> *>((char *)malloc(size) + shift);
-  new(ptr) vertex_inner<Op>();
+  new (ptr) vertex_inner<Op>();
   ptr->raw_init(args_n);
   ptr->type_ = Op;
   return ptr;
@@ -47,20 +47,22 @@ vertex_inner<Op> *raw_clone_vertex_inner(const vertex_inner<Op> &from) {
   size_t shift = vertex_inner_shift<Op>((int)from.size());
 
   auto ptr = reinterpret_cast<vertex_inner<Op> *>((char *)malloc(size) + shift);
-  new(ptr) vertex_inner<Op>(from);
+  new (ptr) vertex_inner<Op>(from);
   ptr->raw_copy(from);
   return ptr;
 }
 
-template <typename... Args>
-VertexPtr create_vertex(Operation op, Args&& ...args) {
+template<typename... Args>
+VertexPtr create_vertex(Operation op, Args &&...args) {
   switch (op) {
-#define FOREACH_OP(x) case x: return VertexAdaptor<x>::create_vararg(std::forward<Args>(args)...);
+#define FOREACH_OP(x)                                                                                                                                          \
+  case x:                                                                                                                                                      \
+    return VertexAdaptor<x>::create_vararg(std::forward<Args>(args)...);
 
 #include "auto/compiler/vertex/foreach-op.h"
 
     default:
-    kphp_fail();
+      kphp_fail();
   }
   return {};
 }

@@ -12,7 +12,7 @@
 
 enum class WorkerType {
   general_worker = 0, // for http, task, rpc stuff
-  job_worker = 1, // for parallel job stuff
+  job_worker = 1,     // for parallel job stuff
   types_count
 };
 

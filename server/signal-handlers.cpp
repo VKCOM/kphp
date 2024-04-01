@@ -129,17 +129,17 @@ void print_http_data() {
   if (!PhpScript::current_script) {
     write_str(2, "\nPHPScriptBase::current_script is nullptr\n");
   } else if (PhpScript::current_script->data != nullptr && std::holds_alternative<http_query_data>(*PhpScript::current_script->data)) {
-      http_query_data *data = &std::get<http_query_data>(*PhpScript::current_script->data);
-      write_str(2, "\nuri\n");
-      write(2, data->uri, data->uri_len);
-      write_str(2, "\nget\n");
-      write(2, data->get, data->get_len);
-      write_str(2, "\nheaders\n");
-      write(2, data->headers, data->headers_len);
-      write_str(2, "\npost\n");
-      if (data->post && data->post_len > 0) {
-        write(2, data->post, data->post_len);
-      }
+    http_query_data *data = &std::get<http_query_data>(*PhpScript::current_script->data);
+    write_str(2, "\nuri\n");
+    write(2, data->uri, data->uri_len);
+    write_str(2, "\nget\n");
+    write(2, data->get, data->get_len);
+    write_str(2, "\nheaders\n");
+    write(2, data->headers, data->headers_len);
+    write_str(2, "\npost\n");
+    if (data->post && data->post_len > 0) {
+      write(2, data->post, data->post_len);
+    }
   }
 }
 
@@ -224,17 +224,16 @@ void sigabrt_handler(int, siginfo_t *info, void *) {
 }
 } // namespace
 
-
-//mark no return
+// mark no return
 void perform_error_if_running(const char *msg, script_error_t error_type) {
   if (PhpScript::in_script_context) {
     kwrite_str(2, msg);
     PhpScript::error(msg, error_type);
-    assert ("unreachable point" && 0);
+    assert("unreachable point" && 0);
   }
 }
 
-//C interface
+// C interface
 void init_handlers() {
   constexpr size_t SEGV_STACK_SIZE = 65536;
   static std::array<char, SEGV_STACK_SIZE> buffer;
@@ -252,7 +251,7 @@ void init_handlers() {
 
   dl_sigaction(SIGSEGV, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, sigsegv_handler);
   dl_sigaction(SIGBUS, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, sigsegv_handler);
-  dl_sigaction(SIGABRT, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK| SA_RESTART, sigabrt_handler);
+  dl_sigaction(SIGABRT, nullptr, dl_get_empty_sigset(), SA_SIGINFO | SA_ONSTACK | SA_RESTART, sigabrt_handler);
 }
 
 void worker_global_init_handlers(WorkerType worker_type) {

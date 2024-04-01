@@ -6,12 +6,12 @@
 
 #include <stddef.h>
 
+#include "common/allocators/lockfree-slab.h"
 #include "common/options.h"
 #include "common/parallel/counter.h"
 #include "common/parallel/limit-counter.h"
 #include "common/parallel/maximum.h"
 #include "common/stats/provider.h"
-#include "common/allocators/lockfree-slab.h"
 #include "net-msg.h"
 
 #define MSG_MAX_ALLOCATED_BYTES (1L << 40)

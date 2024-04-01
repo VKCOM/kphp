@@ -2,7 +2,7 @@
 
 #include "runtime/kphp_core.h"
 
-template <typename T>
+template<typename T>
 struct TestCaseComparison {
   T number;
   const char *str;
@@ -21,20 +21,16 @@ void run_test_cases(const std::vector<TestCaseComparison<T>> &cases);
 TEST(number_string_comparison_test, test_comp_int) {
   const auto cases = std::vector<TestCaseComparison<int64_t>>{
     //               less   equal  greater  php7 same
-    { 0,   "0",      false, true,  false,        false, true, false },
+    {0, "0", false, true, false, false, true, false},
 
-    { 0,   "0",      false, true,  false,        false, true, false },
-    { 0,   "0.0",    false, true,  false,        false, true, false },
-    { 42,  "  42",   false, true,  false,        false, true, false },
-    { 100, "1e2",    false, true,  false,        false, true, false },
+    {0, "0", false, true, false, false, true, false},        {0, "0.0", false, true, false, false, true, false},
+    {42, "  42", false, true, false, false, true, false},    {100, "1e2", false, true, false, false, true, false},
 
-    { 0,   "foo",    true,  false, false,        false, true, false },
-    { 0,   "",       false, false, true,         false, true, false },
-    { 42,  "42foo",  true,  false, false,        false, true, false },
+    {0, "foo", true, false, false, false, true, false},      {0, "", false, false, true, false, true, false},
+    {42, "42foo", true, false, false, false, true, false},
 
-    { 100, "1e2foo", true,  false, false,        false, true, false },
-    { 10,  "10..",   true,  false, false,        false, true, false },
-    { 10,  "10e",    true,  false, false,        false, true, false },
+    {100, "1e2foo", true, false, false, false, true, false}, {10, "10..", true, false, false, false, true, false},
+    {10, "10e", true, false, false, false, true, false},
   };
 
   run_test_cases<int64_t>(cases);
@@ -43,18 +39,13 @@ TEST(number_string_comparison_test, test_comp_int) {
 TEST(number_string_comparison_test, test_comp_double) {
   const auto cases = std::vector<TestCaseComparison<double>>{
     //                   less   equal  greater  php7 same
-    { 0.0,   "0",        false, true,  false,        false, true, false },
-    { 0.0,   "0.0",      false, true,  false,        false, true, false },
-    { 0.0,   "foo",      true,  false, false,        false, true, false },
-    { 0.0,   "",         false, false, true,         false, true, false },
-    { 42.56, "  42.56",  false, true,  false,        false, true, false },
-    { 42.56, "42.56foo", true,  false, false,        false, true, false },
+    {0.0, "0", false, true, false, false, true, false},         {0.0, "0.0", false, true, false, false, true, false},
+    {0.0, "foo", true, false, false, false, true, false},       {0.0, "", false, false, true, false, true, false},
+    {42.56, "  42.56", false, true, false, false, true, false}, {42.56, "42.56foo", true, false, false, false, true, false},
 
-    { 1e2,   "1e2",      false, true,  false,        false, true, false },
-    { 1e2,   "1e2foo",   true,  false, false,        false, true, false },
+    {1e2, "1e2", false, true, false, false, true, false},       {1e2, "1e2foo", true, false, false, false, true, false},
 
-    { 10,    "10.56.",   true,  false, false,        true,  false, false },
-    { 10,    "10.e10",   true,  false, false,        true,  false, false },
+    {10, "10.56.", true, false, false, true, false, false},     {10, "10.e10", true, false, false, true, false, false},
   };
 
   run_test_cases<double>(cases);

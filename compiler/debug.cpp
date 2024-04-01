@@ -6,13 +6,13 @@
 
 #include <string>
 
+#include "common/wrappers/to_array.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/type-hint.h"
 #include "compiler/vertex.h"
-#include "common/wrappers/to_array.h"
 
 static std::map<Operation, std::string> OPERATION_NAMES;
 
@@ -198,7 +198,7 @@ std::string debugTokenName(TokenType t) {
   // this assert will fail whether TokenType entry is added (or removed);
   // how to fix: add {$newtok, "$newtok"} to the name_pairs
   // hint: insert that entry into the right position
-  static_assert(name_pairs.size() - 1 == tok_end,"name_pairs needs to be updated");
+  static_assert(name_pairs.size() - 1 == tok_end, "name_pairs needs to be updated");
 
 #if __cplusplus > 201703
   static_assert(std::is_sorted(name_pairs.begin(), name_pairs.end()), "name_pairs should be sorted");
@@ -222,14 +222,13 @@ static std::string debugOperationName(Operation o) {
   return OPERATION_NAMES[o];
 }
 
-
 static std::string debugVertexMore(VertexPtr v) {
   switch (v->type()) {
     case op_alloc:
       return "new " + v.as<op_alloc>()->allocated_class_name;
     case op_func_call:
-      return std::string(v->extra_type == op_ex_func_call_arrow ? "->" : "") +
-             (v.as<op_func_call>()->func_id ? v.as<op_func_call>()->func_id->as_human_readable(false) : v->get_string()) + "()";
+      return std::string(v->extra_type == op_ex_func_call_arrow ? "->" : "")
+             + (v.as<op_func_call>()->func_id ? v.as<op_func_call>()->func_id->as_human_readable(false) : v->get_string()) + "()";
     case op_func_name:
       return v->get_string();
     case op_function:

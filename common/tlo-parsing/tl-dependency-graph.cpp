@@ -13,7 +13,8 @@
 
 vk::tlo_parsing::DependencyGraph::DependencyGraph() = default;
 
-vk::tlo_parsing::DependencyGraph::DependencyGraph(vk::tlo_parsing::tl_scheme *scheme) : scheme(scheme) {
+vk::tlo_parsing::DependencyGraph::DependencyGraph(vk::tlo_parsing::tl_scheme *scheme)
+  : scheme(scheme) {
   const size_t approximate_nodes_cnt = 2 * scheme->types.size() + scheme->functions.size();
   nodes.reserve(approximate_nodes_cnt);
   edges.reserve(approximate_nodes_cnt);
@@ -85,13 +86,14 @@ struct vk::tlo_parsing::DependencyGraphBuilder : private vk::tlo_parsing::expr_v
   std::set<const type *> weak_self_cyclic_types;
   bool treat_dep_as_weak{false}; // it means that pointer is used => forward declaration is enough
 
-  DependencyGraphBuilder(DependencyGraph &graph, combinator *expr_owner) :
-    graph(graph),
-    expr_owner_combinator(expr_owner) {}
+  DependencyGraphBuilder(DependencyGraph &graph, combinator *expr_owner)
+    : graph(graph)
+    , expr_owner_combinator(expr_owner) {}
 
   void collect_edges(vk::tlo_parsing::expr_base *expr) {
     expr->visit(*this);
   };
+
 private:
   void apply(vk::tlo_parsing::type_expr &expr) final {
     type *t = get_type_of(&expr, graph.scheme);
@@ -133,7 +135,8 @@ void vk::tlo_parsing::DependencyGraph::collect_combinator_edges(vk::tlo_parsing:
     builder.collect_edges(arg->type_expr.get());
   }
   if (c->is_function()) {
-    builder.collect_edges(c->result.get());;
+    builder.collect_edges(c->result.get());
+    ;
   }
   weak_self_cyclic_types.insert(builder.weak_self_cyclic_types.begin(), builder.weak_self_cyclic_types.end());
 }
@@ -186,16 +189,12 @@ std::vector<int> vk::tlo_parsing::DependencyGraph::find_excl_nodes() const {
     auto node = get_node_info(node_id);
     if (node.is_combinator()) {
       const combinator *c = node.get_combinator();
-      return std::any_of(c->args.begin(), c->args.end(), [](const std::unique_ptr<arg> &arg) {
-        return arg->is_forwarded_function();
-      });
+      return std::any_of(c->args.begin(), c->args.end(), [](const std::unique_ptr<arg> &arg) { return arg->is_forwarded_function(); });
     } else {
       assert(node.is_type());
       const type *t = node.get_type();
       return std::any_of(t->constructors.begin(), t->constructors.end(), [](const std::unique_ptr<combinator> &c) {
-        return std::any_of(c->args.begin(), c->args.end(), [](const std::unique_ptr<arg> &arg) {
-          return arg->is_forwarded_function();
-        });
+        return std::any_of(c->args.begin(), c->args.end(), [](const std::unique_ptr<arg> &arg) { return arg->is_forwarded_function(); });
       });
     }
   };
@@ -268,7 +267,7 @@ std::vector<const vk::tlo_parsing::type *> vk::tlo_parsing::DependencyGraph::get
   if (it == tl_name_to_id.end()) {
     return {};
   }
-  std::vector<const vk::tlo_parsing::type *>  deps;
+  std::vector<const vk::tlo_parsing::type *> deps;
   int node_id = it->second;
   const auto &node_deps = edges[node_id];
   deps.resize(node_deps.size());

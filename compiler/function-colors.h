@@ -15,8 +15,8 @@ namespace function_palette {
 using color_t = uint64_t;
 using colors_mask_t = uint64_t;
 
-constexpr color_t special_color_transparent = 0;        // all functions without any colors are transparent: C + transparent = C
-constexpr color_t special_color_remover = 1ULL << 63;   // @kphp-color remover works so: C + remover = transparent
+constexpr color_t special_color_transparent = 0;      // all functions without any colors are transparent: C + transparent = C
+constexpr color_t special_color_remover = 1ULL << 63; // @kphp-color remover works so: C + remover = transparent
 
 class Palette;
 
@@ -79,10 +79,16 @@ class ColorContainer {
 public:
   ColorContainer() = default;
 
-  bool empty() const { return sep_colors.empty(); }
+  bool empty() const {
+    return sep_colors.empty();
+  }
 
-  auto begin() const { return sep_colors.begin(); }
-  auto end() const { return sep_colors.end(); }
+  auto begin() const {
+    return sep_colors.begin();
+  }
+  auto end() const {
+    return sep_colors.end();
+  }
 
   void add(color_t color);
   bool contains(color_t color) const;

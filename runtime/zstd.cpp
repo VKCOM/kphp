@@ -17,15 +17,14 @@ namespace {
 static_assert(2 * ZSTD_BLOCKSIZE_MAX < PHP_BUF_LEN, "double block size is expected to be less then buffer size");
 
 ZSTD_customMem make_custom_alloc() noexcept {
-  return ZSTD_customMem{
-    [](void *, size_t size) { return dl::script_allocator_malloc(size); },
-    [](void *, void *address) { dl::script_allocator_free(address); },
-    nullptr
-  };
+  return ZSTD_customMem{[](void *, size_t size) { return dl::script_allocator_malloc(size); },
+                        [](void *, void *address) { dl::script_allocator_free(address); }, nullptr};
 }
 
 template<class T, size_t (*Deleter)(T *)>
-void free_ctx_wrapper(T *ptr) { Deleter(ptr); }
+void free_ctx_wrapper(T *ptr) {
+  Deleter(ptr);
+}
 
 using ZSTD_CCtxPtr = vk::unique_ptr_with_delete_function<ZSTD_CStream, free_ctx_wrapper<ZSTD_CCtx, ZSTD_freeCCtx>>;
 using ZSTD_DCtxPtr = vk::unique_ptr_with_delete_function<ZSTD_DCtx, free_ctx_wrapper<ZSTD_DCtx, ZSTD_freeDCtx>>;

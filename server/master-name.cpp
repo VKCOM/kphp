@@ -24,7 +24,6 @@ const char *MasterName::set_master_name(const char *name, bool deprecated) noexc
   static const char *statsd_prefix = "kphp_stats.";
   static const auto reserved = std::max({std::strlen(socket_suffix), std::strlen(shm_prefix) + std::strlen(shm_suffix), std::strlen(statsd_prefix)});
 
-
   const auto name_len = std::strlen(name);
   if (!name_len) {
     return "empty master name";
@@ -37,9 +36,7 @@ const char *MasterName::set_master_name(const char *name, bool deprecated) noexc
   }
 
   std::copy(name, name + name_len + 1, master_name_.begin());
-  bool has_wrong_symbols = std::any_of(master_name_.begin(), master_name_.begin() + name_len, [](char c) {
-    return !std::isalnum(c) && c != '-' && c != '_';
-  });
+  bool has_wrong_symbols = std::any_of(master_name_.begin(), master_name_.begin() + name_len, [](char c) { return !std::isalnum(c) && c != '-' && c != '_'; });
   if (has_wrong_symbols) {
     return "Incorrect symbol in master name. Allowed symbols are: alpha-numerics, '-', '_'";
   }

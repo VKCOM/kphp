@@ -49,7 +49,7 @@ static std::string format_help_arg_name(int val) {
   result << "\t";
   result << "--" << options[val].name;
   if (options[val].short_name) {
-    result <<  "/-" << options[val].short_name;
+    result << "/-" << options[val].short_name;
   }
   if (options[val].has_arg == required_argument) {
     result << " <arg>";
@@ -115,9 +115,9 @@ static void vparse_common_option(option_section_t section, options_parser parser
   }
   if (is_valid_option(val) || get_option_alias(val)) {
     if (33 <= val && val <= 127) {
-      kprintf ("Duplicate option `%c`\n", (char)val);
+      kprintf("Duplicate option `%c`\n", (char)val);
     } else {
-      kprintf ("Duplicate option %d\n", val);
+      kprintf("Duplicate option %d\n", val);
     }
     exit(5);
   }
@@ -138,9 +138,9 @@ static void vparse_common_option(option_section_t section, options_parser parser
 
 void parse_option(const char *name, int has_arg, int val, const char *help, ...) {
   va_list ap;
-  va_start (ap, help);
+  va_start(ap, help);
   vparse_common_option(OPT_ENGINE_CUSTOM, nullptr, name, has_arg, val, help, ap);
-  va_end (ap);
+  va_end(ap);
 }
 
 void parse_common_option(option_section_t section, options_parser parser, const char *name, int has_arg, int val, const char *help, ...) {
@@ -149,11 +149,10 @@ void parse_common_option(option_section_t section, options_parser parser, const 
     val = useless_option_id++;
   }
   va_list ap;
-  va_start (ap, help);
+  va_start(ap, help);
   vparse_common_option(section, parser, name, has_arg, val, help, ap);
-  va_end (ap);
+  va_end(ap);
 }
-
 
 static int find_parse_option_by_name(const char *name) {
   int i;
@@ -227,12 +226,12 @@ long long parse_memory_limit_default(const char *s, char def_size) {
   long long x;
   char c = 0;
   if (sscanf(s, "%lld%c", &x, &c) < 1) {
-    kprintf ("Parsing memory limit for option fail: %s\n", s);
+    kprintf("Parsing memory limit for option fail: %s\n", s);
     exit(1);
   }
   if (c == 0) {
     if (def_size) {
-      kprintf ("No size modifier given in parse_memory_limit, using default (%c)\n", def_size);
+      kprintf("No size modifier given in parse_memory_limit, using default (%c)\n", def_size);
     }
     c = def_size;
   }
@@ -254,7 +253,7 @@ long long parse_memory_limit_default(const char *s, char def_size) {
       x <<= 40;
       break;
     default:
-      kprintf ("Parsing memory limit fail. Unknown suffix '%c'.\n", c);
+      kprintf("Parsing memory limit fail. Unknown suffix '%c'.\n", c);
       exit(1);
   }
   return x;
@@ -277,7 +276,7 @@ int parse_time_limit(const char *s) {
   int x = 0;
   char c = 0;
   if (sscanf(s, "%d%c", &x, &c) < 1) {
-    kprintf ("Parsing time limit for option fail: %s\n", s);
+    kprintf("Parsing time limit for option fail: %s\n", s);
     exit(1);
   }
   switch (c | 0x20) {
@@ -295,7 +294,7 @@ int parse_time_limit(const char *s) {
       x *= 86400;
       break;
     default:
-      kprintf ("Parsing time limit fail. Unknown suffix '%c'.\n", c);
+      kprintf("Parsing time limit fail. Unknown suffix '%c'.\n", c);
       exit(1);
   }
   return x;
@@ -337,7 +336,7 @@ int parse_engine_options_long(int argc, char **argv, options_parser execute) {
   auto rebuild_options = [&]() {
     long_opts.clear();
     opt_string.clear();
-    auto add_option = [&](int has_arg, const char* name, int val) {
+    auto add_option = [&](int has_arg, const char *name, int val) {
       long_opts.emplace_back();
       long_opts.back().has_arg = has_arg;
       long_opts.back().name = name;
@@ -376,7 +375,6 @@ int parse_engine_options_long(int argc, char **argv, options_parser execute) {
     }
     exit(56);
   };
-
 
   while (true) {
     if (need_rebuild) {

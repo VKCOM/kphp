@@ -7,24 +7,16 @@
 #include <string>
 #include <vector>
 
-#include "compiler/data/data_ptr.h"
 #include "common/wrappers/string_view.h"
+#include "compiler/data/data_ptr.h"
 
 struct ClassMemberInstanceField;
 
-
 namespace kphp_json {
 
-enum class RenamePolicy {
-  none,
-  snake_case,
-  camel_case
-};
+enum class RenamePolicy { none, snake_case, camel_case };
 
-enum class VisibilityPolicy {
-  all,
-  public_only
-};
+enum class VisibilityPolicy { all, public_only };
 
 enum class SkipFieldType {
   dont_skip,
@@ -48,15 +40,14 @@ enum JsonAttrType {
   json_attr_fields = 1 << 11,
 };
 
-
 // one `@kphp-json attr=value` is represented as this class
 // depending on attr_type, one of union fields is set
 // there could be for statement: `@kphp-json for MyEncoder attr=value`
 struct KphpJsonTag {
   JsonAttrType attr_type{json_attr_unknown};
   ClassPtr for_encoder;
-  
-  union { 
+
+  union {
     vk::string_view rename;
     SkipFieldType skip;
     bool array_as_hashmap;
@@ -77,9 +68,15 @@ class KphpJsonTagList {
   std::vector<KphpJsonTag> tags;
 
 public:
-  bool empty() const noexcept { return tags.empty(); }
-  auto begin() const noexcept { return tags.begin(); }
-  auto end() const noexcept { return tags.end(); }
+  bool empty() const noexcept {
+    return tags.empty();
+  }
+  auto begin() const noexcept {
+    return tags.begin();
+  }
+  auto end() const noexcept {
+    return tags.end();
+  }
 
   template<class CallbackT>
   const KphpJsonTag *find_tag(const CallbackT &callback) const noexcept {

@@ -6,9 +6,9 @@
 
 #include <string_view>
 
-#include "runtime/kphp_core.h"
 #include "runtime/json-functions.h"
 #include "runtime/json-processor-utils.h"
+#include "runtime/kphp_core.h"
 
 template<class Tag>
 class FromJsonVisitor {
@@ -16,7 +16,7 @@ public:
   explicit FromJsonVisitor(const mixed &json, bool flatten_class, JsonPath &json_path) noexcept
     : json_(json)
     , flatten_class_(flatten_class)
-    , json_path_ (json_path) {}
+    , json_path_(json_path) {}
 
   template<class T>
   void operator()(const char *key, T &value, bool required = false) noexcept {
@@ -39,8 +39,12 @@ public:
     json_path_.leave();
   }
 
-  bool has_error() const noexcept { return !error_.empty(); }
-  const string &get_error() const noexcept { return error_; }
+  bool has_error() const noexcept {
+    return !error_.empty();
+  }
+  const string &get_error() const noexcept {
+    return error_;
+  }
 
   static const char *get_json_obj_magic_key() noexcept {
     return "__json_obj_magic";
@@ -48,14 +52,14 @@ public:
 
 private:
   [[gnu::noinline]] void on_input_type_mismatch(const mixed &json) noexcept {
-     error_.assign("unexpected type ");
-     if (json.is_array()) {
-       error_.append(json.as_array().is_vector() ? "array" : "object");
-     } else {
-       error_.append(json.get_type_str());
-     }
-     error_.append(" for key ");
-     error_.append(json_path_.to_string());
+    error_.assign("unexpected type ");
+    if (json.is_array()) {
+      error_.append(json.as_array().is_vector() ? "array" : "object");
+    } else {
+      error_.append(json.get_type_str());
+    }
+    error_.append(" for key ");
+    error_.append(json_path_.to_string());
   }
 
   void do_set(bool &value, const mixed &json) noexcept {
@@ -113,7 +117,7 @@ private:
   void do_set(class_instance<I> &klass, const mixed &json) noexcept;
 
   // just don't fail compilation with empty untyped arrays
-  void do_set(array<Unknown> &/*array*/, const mixed &/*json*/) noexcept {}
+  void do_set(array<Unknown> & /*array*/, const mixed & /*json*/) noexcept {}
 
   template<class T>
   void do_set_array(array<T> &array, const mixed &json) noexcept {
@@ -156,7 +160,7 @@ private:
   string error_;
   const mixed &json_;
   bool flatten_class_{false};
-  JsonPath& json_path_;
+  JsonPath &json_path_;
 };
 
 template<class I, class Tag>
@@ -195,7 +199,7 @@ void FromJsonVisitor<Tag>::do_set(class_instance<I> &klass, const mixed &json) n
 }
 
 template<class ClassName, class Tag>
-ClassName f$JsonEncoder$$from_json_impl(Tag /*tag*/, const string &json_string, const string &/*class_mame*/) noexcept {
+ClassName f$JsonEncoder$$from_json_impl(Tag /*tag*/, const string &json_string, const string & /*class_mame*/) noexcept {
   JsonEncoderError::msg = {};
 
   auto [json, success] = json_decode(json_string, FromJsonVisitor<Tag>::get_json_obj_magic_key());

@@ -33,13 +33,13 @@ struct kfs_replica {
 };
 
 enum {
-  KFS_FILE_SNAPSHOT      = 1 << 0,
-  KFS_FILE_TEMP          = 1 << 1,
-  KFS_FILE_NOT_FIRST     = 1 << 2,
-  KFS_FILE_SYMLINK       = 1 << 3,
-  KFS_FILE_ZIPPED        = 1 << 4,
-  KFS_FILE_ENCRYPTED     = 1 << 5,
-  KFS_FILE_REPLICATOR    = 1 << 6,
+  KFS_FILE_SNAPSHOT = 1 << 0,
+  KFS_FILE_TEMP = 1 << 1,
+  KFS_FILE_NOT_FIRST = 1 << 2,
+  KFS_FILE_SYMLINK = 1 << 3,
+  KFS_FILE_ZIPPED = 1 << 4,
+  KFS_FILE_ENCRYPTED = 1 << 5,
+  KFS_FILE_REPLICATOR = 1 << 6,
   KFS_FILE_SNAPSHOT_DIFF = 1 << 7
 };
 
@@ -49,16 +49,16 @@ struct kfs_file_info {
   int kfs_file_type;
   char *filename;
   int filename_len;
-  int flags;                        // +8 = symlink, +1 = snapshot, +2 = temp, +4 = not_first, +16 = zipped
-  const char *suffix;               // points to ".123456.bin" in "data3/messages006.123456.bin"
+  int flags;          // +8 = symlink, +1 = snapshot, +2 = temp, +4 = not_first, +16 = zipped
+  const char *suffix; // points to ".123456.bin" in "data3/messages006.123456.bin"
   kfs_hash_t file_hash;
-  long long file_size;              // -1 = unknown; may change afterwards
-  long long log_pos;                // -1 = unknown (read from LEV_ROTATE_FROM)
-  long long min_log_pos;            // calculated by suffix (see kfs_classify_suffix)
-  long long max_log_pos;            // calculated by suffix
-  long long snapshot_log_pos;       // -1 = unknown  // NOTE can't store its value in log_pos. There are some usages of log_pos for Snapshot in replicator.
+  long long file_size;        // -1 = unknown; may change afterwards
+  long long log_pos;          // -1 = unknown (read from LEV_ROTATE_FROM)
+  long long min_log_pos;      // calculated by suffix (see kfs_classify_suffix)
+  long long max_log_pos;      // calculated by suffix
+  long long snapshot_log_pos; // -1 = unknown  // NOTE can't store its value in log_pos. There are some usages of log_pos for Snapshot in replicator.
   struct kfs_file_header *khdr;
-  char *start;                      // pointer to first preloaded_bytes of this file
+  char *start; // pointer to first preloaded_bytes of this file
   unsigned char *iv;
   int preloaded_bytes;
   int kfs_headers;
@@ -73,8 +73,8 @@ static inline int kfs_file_info_add_ref(kfs_file_info_t *FI) {
 
 struct kfs_file {
   struct kfs_file_info *info;
-  int fd;                          // -1 = not open
-  int lock;                        // 0 = unlocked, >=1 = read lock(s), -1 = write lock
+  int fd;   // -1 = not open
+  int lock; // 0 = unlocked, >=1 = read lock(s), -1 = write lock
   long long offset;
 };
 
@@ -82,4 +82,3 @@ int preload_file_info_ex(struct kfs_file_info *FI) __attribute__((warn_unused_re
 bool preload_file_info(struct kfs_file_info *FI);
 
 #endif // ENGINE_KFS_COMMON_H
-

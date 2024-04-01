@@ -9,10 +9,9 @@
 namespace vk {
 namespace tl {
 
-FunctionToPhp::FunctionToPhp(TlToPhpClassesConverter &tl_to_php, const tlo_parsing::combinator &tl_function) :
-  CombinatorToPhp(tl_to_php, tl_function),
-  exclamation_interface_(std::cref(tl_to_php.get_rpc_function_interface())) {
-}
+FunctionToPhp::FunctionToPhp(TlToPhpClassesConverter &tl_to_php, const tlo_parsing::combinator &tl_function)
+  : CombinatorToPhp(tl_to_php, tl_function)
+  , exclamation_interface_(std::cref(tl_to_php.get_rpc_function_interface())) {}
 
 PhpClassField FunctionToPhp::return_type_to_php_field() {
   assert(tl_combinator_.result);
@@ -44,7 +43,7 @@ const PhpClassRepresentation &FunctionToPhp::update_exclamation_interface(const 
 }
 
 void FunctionToPhp::apply(const tlo_parsing::type_var &tl_type_var) {
-  for (const auto &combinator_arg: tl_combinator_.args) {
+  for (const auto &combinator_arg : tl_combinator_.args) {
     if (combinator_arg->is_forwarded_function()) {
       auto *excl_type_var = combinator_arg->type_expr->as<tlo_parsing::type_var>();
       assert(excl_type_var);

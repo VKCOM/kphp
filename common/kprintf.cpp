@@ -41,32 +41,32 @@ long long log_not_too_much_total = 0;
 static int kprintf_multiprocessing_mode = 0;
 static __thread char mp_kprintf_buf[PIPE_BUF];
 
-void reopen_logs_ext (int slave_mode) {
+void reopen_logs_ext(int slave_mode) {
   int fd;
-  fflush (stdout);
-  fflush (stderr);
-  if ((fd = open ("/dev/null", O_RDWR, 0)) != -1) {
-    dup2 (fd, 0);
-    dup2 (fd, 1);
-    dup2 (fd, 2);
+  fflush(stdout);
+  fflush(stderr);
+  if ((fd = open("/dev/null", O_RDWR, 0)) != -1) {
+    dup2(fd, 0);
+    dup2(fd, 1);
+    dup2(fd, 2);
     if (fd > 2) {
-      close (fd);
+      close(fd);
     }
   }
-  if (logname && (fd = open (logname, O_WRONLY|O_APPEND|O_CREAT, 0640)) != -1) {
-    dup2 (fd, 1);
-    dup2 (fd, 2);
+  if (logname && (fd = open(logname, O_WRONLY | O_APPEND | O_CREAT, 0640)) != -1) {
+    dup2(fd, 1);
+    dup2(fd, 2);
     if (fd > 2) {
-      close (fd);
+      close(fd);
     }
   }
   if (!slave_mode) {
-    vkprintf (1, "logs reopened.\n");
+    vkprintf(1, "logs reopened.\n");
   }
 }
 
-void reopen_logs () {
-  reopen_logs_ext (0);
+void reopen_logs() {
+  reopen_logs_ext(0);
 }
 
 int hexdump(FILE *file, const void *start, const void *end) {
@@ -100,7 +100,7 @@ int hexdump(FILE *file, const void *start, const void *end) {
   return reinterpret_cast<const char *>(end) - reinterpret_cast<const char *>(start);
 }
 
-static inline void kwrite_print_int (char **s, const char *name, int name_len, int i) {
+static inline void kwrite_print_int(char **s, const char *name, int name_len, int i) {
   if (i < 0) {
     i = INT_MAX;
   }
@@ -122,22 +122,22 @@ static inline void kwrite_print_int (char **s, const char *name, int name_len, i
   *--*s = '[';
 }
 
-int kwrite (int fd, const void *buf, int count) {
+int kwrite(int fd, const void *buf, int count) {
   int old_errno = errno;
 
   constexpr int S_BUF_SIZE = 100;
   char s[S_BUF_SIZE], *s_begin = s + S_BUF_SIZE;
 
-  kwrite_print_int (&s_begin, "time", 4, time (NULL));
-  kwrite_print_int (&s_begin, "pid" , 3, getpid ());
+  kwrite_print_int(&s_begin, "time", 4, time(NULL));
+  kwrite_print_int(&s_begin, "pid", 3, getpid());
 
-  assert (s_begin >= s);
+  assert(s_begin >= s);
 
   int s_count = s + S_BUF_SIZE - s_begin;
   int result = s_count + count;
   while (s_count > 0) {
     errno = 0;
-    int res = (int)write (fd, s_begin, (size_t)s_count);
+    int res = (int)write(fd, s_begin, (size_t)s_count);
     if (errno && errno != EINTR) {
       errno = old_errno;
       return res;
@@ -153,7 +153,7 @@ int kwrite (int fd, const void *buf, int count) {
 
   while (count > 0) {
     errno = 0;
-    int res = (int)write (fd, buf, (size_t)count);
+    int res = (int)write(fd, buf, (size_t)count);
     if (errno && errno != EINTR) {
       errno = old_errno;
       return res;
@@ -172,23 +172,23 @@ int kwrite (int fd, const void *buf, int count) {
 #undef S_BUF_SIZE
 }
 
-void kprintf_multiprocessing_mode_enable () {
+void kprintf_multiprocessing_mode_enable() {
   kprintf_multiprocessing_mode = 1;
 }
 
-void kprintf_ (const char *file, int line, const char *format, ...) {
+void kprintf_(const char *file, int line, const char *format, ...) {
   const int old_errno = errno;
   struct tm t;
   struct timeval tv;
 
   file = kbasename(file);
-  if (gettimeofday (&tv, NULL) || !localtime_r (&tv.tv_sec, &t)) {
-    memset (&t, 0, sizeof (t));
+  if (gettimeofday(&tv, NULL) || !localtime_r(&tv.tv_sec, &t)) {
+    memset(&t, 0, sizeof(t));
   }
 
   if (kprintf_multiprocessing_mode) {
     while (1) {
-      if (flock (2, LOCK_EX) < 0) {
+      if (flock(2, LOCK_EX) < 0) {
         if (errno == EINTR) {
           continue;
         }
@@ -197,44 +197,48 @@ void kprintf_ (const char *file, int line, const char *format, ...) {
       }
       break;
     }
-    int n = snprintf (mp_kprintf_buf, sizeof (mp_kprintf_buf), "[%d][%4d-%02d-%02d %02d:%02d:%02d.%06d %s %4d] ", getpid(), t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, (int) tv.tv_usec, file, line);
-    if (n < sizeof (mp_kprintf_buf) - 1) {
+    int n = snprintf(mp_kprintf_buf, sizeof(mp_kprintf_buf), "[%d][%4d-%02d-%02d %02d:%02d:%02d.%06d %s %4d] ", getpid(), t.tm_year + 1900, t.tm_mon + 1,
+                     t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, (int)tv.tv_usec, file, line);
+    if (n < sizeof(mp_kprintf_buf) - 1) {
       errno = old_errno;
       va_list ap;
-      va_start (ap, format);
-      n += vsnprintf (mp_kprintf_buf + n, sizeof (mp_kprintf_buf) - n, format, ap);
-      va_end (ap);
+      va_start(ap, format);
+      n += vsnprintf(mp_kprintf_buf + n, sizeof(mp_kprintf_buf) - n, format, ap);
+      va_end(ap);
     }
-    if (n >= sizeof (mp_kprintf_buf)) {
-      n = sizeof (mp_kprintf_buf) - 1;
-      if (mp_kprintf_buf[n-1] != '\n') {
+    if (n >= sizeof(mp_kprintf_buf)) {
+      n = sizeof(mp_kprintf_buf) - 1;
+      if (mp_kprintf_buf[n - 1] != '\n') {
         mp_kprintf_buf[n++] = '\n';
       }
     }
-    while (write (2, mp_kprintf_buf, n) < 0 && errno == EINTR);
-    while (flock (2, LOCK_UN) < 0 && errno == EINTR);
+    while (write(2, mp_kprintf_buf, n) < 0 && errno == EINTR)
+      ;
+    while (flock(2, LOCK_UN) < 0 && errno == EINTR)
+      ;
     errno = old_errno;
   } else {
-    fprintf (stderr, "[%d][%4d-%02d-%02d %02d:%02d:%02d.%06d %s %4d] ", getpid(), t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, (int) tv.tv_usec, file, line);
+    fprintf(stderr, "[%d][%4d-%02d-%02d %02d:%02d:%02d.%06d %s %4d] ", getpid(), t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec,
+            (int)tv.tv_usec, file, line);
     errno = old_errno;
     va_list ap;
-    va_start (ap, format);
-    vfprintf (stderr, format, ap);
-    va_end (ap);
+    va_start(ap, format);
+    vfprintf(stderr, format, ap);
+    va_end(ap);
   }
 }
 
 void send_message_to_assertion_chat_va_list(const char *message, va_list arg_ptr) {
   fprintf(stderr, " Assertion (just warning): ");
   vfprintf(stderr, message, arg_ptr);
-  fprintf(stderr, "[time %d]\n", (int) time(NULL));
+  fprintf(stderr, "[time %d]\n", (int)time(NULL));
 }
 
 void send_message_to_assertion_chat(const char *message, ...) {
   va_list ap;
-  va_start (ap, message);
+  va_start(ap, message);
   send_message_to_assertion_chat_va_list(message, ap);
-  va_end (ap);
+  va_end(ap);
 }
 
 STATS_PROVIDER(logs, 2000) {
@@ -247,7 +251,7 @@ STATS_PROVIDER(logs, 2000) {
 }
 
 #define VERBOSITY_OPTION_SHIFT 4000
-#define VERBOSITY_OPTIONS_MAX  1000
+#define VERBOSITY_OPTIONS_MAX 1000
 
 static void verbosity_option_set(int *v) {
   if (!optarg) {
@@ -261,7 +265,7 @@ static void verbosity_option_set(int *v) {
 }
 
 int verbosity_options_parser(int c, const char *) {
-  if (VERBOSITY_OPTION_SHIFT <= c && c < VERBOSITY_OPTION_SHIFT + verbosity_types_num){
+  if (VERBOSITY_OPTION_SHIFT <= c && c < VERBOSITY_OPTION_SHIFT + verbosity_types_num) {
     verbosity_option_set(verbosity_types[c - VERBOSITY_OPTION_SHIFT].value);
     return 0;
   }
@@ -291,7 +295,6 @@ OPTION_PARSER_SHORT(OPT_VERBOSITY, "verbosity", 'v', optional_argument, "sets or
   verbosity_option_set(&verbosity);
   return 0;
 }
-
 
 int set_verbosity_by_type(const char *name, int value) {
   int i;
@@ -368,8 +371,8 @@ const char *pid_to_print(const struct process_id *pid) {
     ptr = abuf;
   }
   res = ptr;
-  ptr += snprintf(ptr, abuf_size - (ptr - abuf), "[%d.%d.%d.%d:%hu:%hu:%u]",
-                  pid->ip >> 24, (pid->ip >> 16) & 0xff, (pid->ip >> 8) & 0xff, pid->ip & 0xff,
-                  pid->port, pid->pid, pid->utime) + 1;
+  ptr += snprintf(ptr, abuf_size - (ptr - abuf), "[%d.%d.%d.%d:%hu:%hu:%u]", pid->ip >> 24, (pid->ip >> 16) & 0xff, (pid->ip >> 8) & 0xff, pid->ip & 0xff,
+                  pid->port, pid->pid, pid->utime)
+         + 1;
   return res;
 }

@@ -38,7 +38,6 @@ const char *engine_default_char_stats() {
   return engine_default_prepare_stats(tl_stats_t{}, NULL);
 }
 
-__attribute__((constructor))
-static void register_char_stats() {
+__attribute__((constructor)) static void register_char_stats() {
   engine_settings_handlers.char_stats = engine_default_char_stats;
 }

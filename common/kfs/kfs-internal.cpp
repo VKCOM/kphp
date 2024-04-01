@@ -17,11 +17,11 @@
  */
 
 void _buffer_crypt(kfs_replica_handle_t R, unsigned char *buff, long long size, unsigned char iv[16], long long off) {
-  assert (R);
-  assert (R->ctx_crypto);
+  assert(R);
+  assert(R->ctx_crypto);
   if (unlikely(size < 0)) {
     kprintf("size = %lld\n", size);
-    assert (size >= 0);
+    assert(size >= 0);
   }
   if (!size) {
     return;
@@ -37,4 +37,3 @@ void _buffer_crypt(kfs_replica_handle_t R, unsigned char *buff, long long size, 
     off += w;
   }
 }
-

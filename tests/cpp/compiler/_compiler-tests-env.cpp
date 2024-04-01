@@ -22,4 +22,4 @@ public:
   }
 };
 
-const testing::Environment* compiler_tests_env = testing::AddGlobalTestEnvironment(new CompilerTestsEnvironment);
+const testing::Environment *compiler_tests_env = testing::AddGlobalTestEnvironment(new CompilerTestsEnvironment);

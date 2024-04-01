@@ -23,10 +23,10 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "common/rpc-headers.h"
-#include "common/crc32.h"
 #include "common/c-tree.h"
+#include "common/crc32.h"
 #include "common/macos-ports.h"
+#include "common/rpc-headers.h"
 
 #include "vkext/vkext-errors.h"
 #include "vkext/vkext-rpc-include.h"
@@ -34,9 +34,9 @@
 #include "vkext/vkext.h"
 
 struct process_id PID;
-//int le_rpc;
-//static zend_class_entry *rpc_class_entry_ptr;
-//int fetch_extra;
+// int le_rpc;
+// static zend_class_entry *rpc_class_entry_ptr;
+// int fetch_extra;
 int last_server_fd = 0;
 int servers_size;
 struct rpc_server **servers = 0;
@@ -76,22 +76,22 @@ static int use_unix;
 #define IP_PRINT_STR "%u.%u.%u.%u"
 #define IP_TO_PRINT(a) ((unsigned)(a)) >> 24, (((unsigned)(a)) >> 16) & 0xff, (((unsigned)(a)) >> 8) & 0xff, (((unsigned)(a))) & 0xff
 
-#define rpc_server_cmp(a, b) (memcmp (&((a)->host), &((b)->host), 6))
-DEFINE_TREE_STDNOZ_ALLOC (server_collection, struct rpc_server_collection *, rpc_server_cmp, int, std_int_compare)
+#define rpc_server_cmp(a, b) (memcmp(&((a)->host), &((b)->host), 6))
+DEFINE_TREE_STDNOZ_ALLOC(server_collection, struct rpc_server_collection *, rpc_server_cmp, int, std_int_compare)
 tree_server_collection_t *server_collection_tree;
 
-DEFINE_TREE_STDNOZ_ALLOC (queue, struct rpc_queue *, std_ll_ptr_compare, int, std_int_compare)
+DEFINE_TREE_STDNOZ_ALLOC(queue, struct rpc_queue *, std_ll_ptr_compare, int, std_int_compare)
 tree_queue_t *queue_tree;
 
 #define rpc_connection_cmp(a, b) ((a)->fd - (b)->fd)
-DEFINE_TREE_STDNOZ_ALLOC (connection, struct rpc_connection *, rpc_connection_cmp, int, std_int_compare)
+DEFINE_TREE_STDNOZ_ALLOC(connection, struct rpc_connection *, rpc_connection_cmp, int, std_int_compare)
 tree_connection_t *rpc_connection_tree;
 
 //#define rpc_query_cmp(a,b) ((a)->qid - (b)->qid)
-//DEFINE_TREE_STDNOZ_ALLOC (query,struct rpc_query *,rpc_query_cmp,int,std_int_compare)
-//tree_query_t *query_tree;
+// DEFINE_TREE_STDNOZ_ALLOC (query,struct rpc_query *,rpc_query_cmp,int,std_int_compare)
+// tree_query_t *query_tree;
 
-DEFINE_TREE_STDNOZ_ALLOC (qid, long long, std_int_compare, int, std_int_compare)
+DEFINE_TREE_STDNOZ_ALLOC(qid, long long, std_int_compare, int, std_int_compare)
 
 struct rpc_query queries[RPC_MAX_QUERIES];
 /*
@@ -104,10 +104,10 @@ static void rpc_server_deactivate (struct rpc_server *server);
 static int rpc_server_failure (struct rpc_server *server);
 */
 int rpc_make_handshake(struct rpc_server *server, double timeout);
-//static int rpc_sock_write (int sfd, const char *data, int min_len, int max_len, double timeout);
-static double get_double_time_since_epoch() __attribute__ ((unused));
-inline static double get_utime_monotonic() __attribute__ ((unused));
-static struct timeval _convert_timeout_to_ts(double t) __attribute__ ((unused));
+// static int rpc_sock_write (int sfd, const char *data, int min_len, int max_len, double timeout);
+static double get_double_time_since_epoch() __attribute__((unused));
+inline static double get_utime_monotonic() __attribute__((unused));
+static struct timeval _convert_timeout_to_ts(double t) __attribute__((unused));
 static void rpc_server_seterror(struct rpc_server *server, const char *error, int errnum);
 static int rpc_server_failure(struct rpc_server *server);
 static void rpc_server_clean(struct rpc_server *server);
@@ -145,7 +145,7 @@ inline static int get_ms_timeout(double timeout) {
 void update_precise_now() {
   long long x = cycleclock_now();
   if (x - precise_now_ticks > 1000000) {
-    ADD_CNT (precise_now_updates);
+    ADD_CNT(precise_now_updates);
     precise_now_ticks = x;
     precise_now = get_utime_monotonic();
   } else {
@@ -160,7 +160,7 @@ rpc_connection *rpc_connection_get(int fd) {
 
 static int rpc_sock_connect_unix(int port) {
   assert(use_unix);
-  const char* unix_socket_directory = VK_INI_STR("vkext.unix_socket_directory");
+  const char *unix_socket_directory = VK_INI_STR("vkext.unix_socket_directory");
   assert(unix_socket_directory && unix_socket_directory[0] && "Incorrect unix_socket_directory is set");
 
   const int fd = socket(AF_FILE, SOCK_STREAM, 0);
@@ -175,8 +175,7 @@ static int rpc_sock_connect_unix(int port) {
     }
 
     struct sockaddr_un sockaddr = {.sun_family = AF_UNIX};
-    snprintf(sockaddr.sun_path, sizeof(sockaddr.sun_path), "%s/%s/%d", unix_socket_directory,
-             entry->pw_name, port);
+    snprintf(sockaddr.sun_path, sizeof(sockaddr.sun_path), "%s/%s/%d", unix_socket_directory, entry->pw_name, port);
 
     if (connect(fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) == -1) {
       close(fd);
@@ -251,7 +250,7 @@ static int rpc_sock_connect(unsigned host, int port, double timeout) { /* {{{ */
 }
 /* }}} */
 
-/* static int rpc_sock_write (int sfd, const char *data, int min_len, int max_len, double timeout) { {{{ 
+/* static int rpc_sock_write (int sfd, const char *data, int min_len, int max_len, double timeout) { {{{
   ADD_CNT (write);
   START_TIMER (write);
   assert (sfd >= 0);
@@ -269,7 +268,7 @@ static int rpc_sock_connect(unsigned host, int port, double timeout) { /* {{{ */
       }
       END_TIMER (write);
       return r;
-    }    
+    }
     first = 0;
     ADD_CNT (send);
     int x = send (sfd, data, max_len - r, MSG_DONTWAIT);
@@ -287,16 +286,16 @@ static int rpc_sock_connect(unsigned host, int port, double timeout) { /* {{{ */
 }
  }}} */
 
-/* {{{ static int rpc_sock_write_try (int sfd, const char *data, int len) { 
+/* {{{ static int rpc_sock_write_try (int sfd, const char *data, int len) {
   ADD_CNT (write);
   START_TIMER (write);
   assert (sfd >= 0);
   int r = write (sfd, data, len);
   END_TIMER (write);
-  return r;  
+  return r;
 } }}} */
 
-/* static int rpc_sock_read (int sfd, char *data, int min_len, int max_len, double timeout) {  {{{ 
+/* static int rpc_sock_read (int sfd, char *data, int min_len, int max_len, double timeout) {  {{{
   ADD_CNT(read);
   START_TIMER (read);
   assert (sfd >= 0);
@@ -333,10 +332,10 @@ static int rpc_sock_connect(unsigned host, int port, double timeout) { /* {{{ */
  }}} */
 
 static int rpc_sock_write(struct rpc_server *server, double timeout, char *buf, int buf_len, int min_bytes) { /* {{{ */
-  ADD_CNT (write);
-  START_TIMER (write);
+  ADD_CNT(write);
+  START_TIMER(write);
   if (server->sfd < 0) {
-    END_TIMER (write);
+    END_TIMER(write);
     return -1;
   }
   int r = 0;
@@ -370,7 +369,7 @@ static int rpc_sock_write(struct rpc_server *server, double timeout, char *buf, 
     sf = 2;
   }
   if (!(sf - ss)) {
-    END_TIMER (write);
+    END_TIMER(write);
     return 0;
   }
   int tt = 0;
@@ -380,16 +379,16 @@ static int rpc_sock_write(struct rpc_server *server, double timeout, char *buf, 
         first = 0;
         continue;
       }
-      END_TIMER (write);
+      END_TIMER(write);
       return r;
     }
     first = 0;
-    ADD_CNT (send);
+    ADD_CNT(send);
     int x = writev(server->sfd, t + ss, sf - ss);
     if (x < 0) {
       rpc_server_seterror(server, strerror(errno), errno);
       rpc_server_failure(server);
-      END_TIMER (write);
+      END_TIMER(write);
       return -1;
     }
     r += x;
@@ -423,7 +422,7 @@ static int rpc_sock_write(struct rpc_server *server, double timeout, char *buf, 
     }
     if (x && ss == 2) {
       if (static_cast<size_t>(x) >= t[2].iov_len) {
-        assert (static_cast<size_t>(x) == t[2].iov_len);
+        assert(static_cast<size_t>(x) == t[2].iov_len);
         // buf += t[2].iov_len;
         // ss ++;
         break;
@@ -435,14 +434,12 @@ static int rpc_sock_write(struct rpc_server *server, double timeout, char *buf, 
       }
     }
   } while (r < min_bytes && ss < sf && (tt = get_ms_timeout(timeout)));
-  END_TIMER (write);
+  END_TIMER(write);
   return r;
 }
 /* }}} */
 
 /* buffered write {{{ */
-
-
 
 static int rpc_flush_out(struct rpc_server *server, double timeout) {
   if (server->out_bytes) {
@@ -471,16 +468,16 @@ static int rpc_flush_all (double timeout) {
   for (i = 0; i < last_server_fd; i++) if (servers[i] && servers[i]->out_bytes) {
     int r = rpc_sock_write_try (servers[i]->sfd, servers[i]->out_buf + servers[i]->out_pos, servers[i]->out_bytes);
     if (r < 0) {
-      rpc_server_failure (servers[i]);      
+      rpc_server_failure (servers[i]);
     } else {
       servers[i]->out_pos += r;
       servers[i]->out_bytes -= r;
       if (servers[i]->out_bytes) { x ++; }
     }
   }
-  if (!x) { 
+  if (!x) {
     END_TIMER (rpc_flush_all);
-    return 0; 
+    return 0;
   }
   for (i = 0; i < last_server_fd; i++) if (servers[i] && servers[i]->status == rpc_status_connected && servers[i]->out_bytes) {
     server_fds[cc].fd = servers[i]->sfd;
@@ -498,7 +495,7 @@ static int rpc_flush_all (double timeout) {
     for (i = 0; i < cc; i++) if (server_fds[i].revents & POLLOUT) {
       int r = rpc_sock_write_try (servers[server_fds_tmp[i]]->sfd, servers[i]->out_buf + servers[i]->out_pos, servers[i]->out_bytes);
       if (r < 0) {
-        rpc_server_failure (servers[server_fds_tmp[i]]);      
+        rpc_server_failure (servers[server_fds_tmp[i]]);
         server_fds[i].events = 0;
         x --;
       } else {
@@ -518,7 +515,7 @@ static int rpc_flush_all (double timeout) {
   int _len = len;
   if (server->out_wptr >= server->out_rptr && server->out_bytes < RPC_OUT_BUF_SIZE) {
     int q = server->out_buf + RPC_OUT_BUF_SIZE - server->out_wptr;
-    if (q < 
+    if (q <
 
     memcpy (server->out_wptr, server->out_buf + RPC_OUT_BUF_SIZE
   }
@@ -547,7 +544,7 @@ static int rpc_flush_all (double timeout) {
   } else {
     assert (len + server->out_bytes + server->out_pos < RPC_OUT_BUF_SIZE);
     memcpy (server->out_buf + server->out_bytes + server->out_pos, data, len);
-    server->out_bytes += len;    
+    server->out_bytes += len;
   }
   END_TIMER(write_out);
   return _len;
@@ -561,13 +558,13 @@ static int rpc_write_out(struct rpc_server *server, char *data, int len, double 
     return 0;
   }
   int _len = len;
-  ADD_CNT (write_out);
-  START_TIMER (write_out);
+  ADD_CNT(write_out);
+  START_TIMER(write_out);
   int x = server->out_bytes;
   if (x + len >= RPC_OUT_BUF_SIZE) {
     int r = rpc_sock_write(server, timeout, data, len, x + len - RPC_OUT_BUF_SIZE + 1024);
     if (r < 0) {
-      END_TIMER (write_out);
+      END_TIMER(write_out);
       return -1;
     }
     if (r > x) {
@@ -578,7 +575,7 @@ static int rpc_write_out(struct rpc_server *server, char *data, int len, double 
     if (x + len >= RPC_OUT_BUF_SIZE) {
       rpc_server_seterror(server, "Write timeout", 0);
       rpc_server_failure(server);
-      END_TIMER (write_out);
+      END_TIMER(write_out);
       return -1;
     }
   }
@@ -587,20 +584,20 @@ static int rpc_write_out(struct rpc_server *server, char *data, int len, double 
     if (server->out_wptr + len <= server->out_buf + RPC_OUT_BUF_SIZE) {
       memcpy(server->out_wptr, data, len);
       server->out_wptr += len;
-      END_TIMER (write_out);
+      END_TIMER(write_out);
       return _len;
     } else {
       int q = server->out_buf + RPC_OUT_BUF_SIZE - server->out_wptr;
       memcpy(server->out_wptr, data, q);
       memcpy(server->out_buf, data + q, len - q);
       server->out_wptr = server->out_buf + (len - q);
-      END_TIMER (write_out);
+      END_TIMER(write_out);
       return _len;
     }
   } else {
     memcpy(server->out_wptr, data, len);
     server->out_wptr += len;
-    END_TIMER (write_out);
+    END_TIMER(write_out);
     return _len;
   }
 }
@@ -653,20 +650,20 @@ static int rpc_write_out(struct rpc_server *server, char *data, int len, double 
 }*/
 
 static int rpc_read_in(struct rpc_server *server, char *data, int len, double timeout) {
-  ADD_CNT (read_in);
-  START_TIMER (read_in);
+  ADD_CNT(read_in);
+  START_TIMER(read_in);
   if (len <= server->in_bytes) {
     memcpy(data, server->in_buf + server->in_pos, len);
     server->in_pos += len;
     server->in_bytes -= len;
-    END_TIMER (read_in);
+    END_TIMER(read_in);
     return len;
   } else {
     memcpy(data, server->in_buf + server->in_pos, server->in_bytes);
     int t = server->in_bytes;
     server->in_pos = 0;
     server->in_bytes = 0;
-    END_TIMER (read_in);
+    END_TIMER(read_in);
     return t;
   }
 }
@@ -674,16 +671,16 @@ static int rpc_read_in(struct rpc_server *server, char *data, int len, double ti
 /* }}} */
 
 static int get_ready_bytes(struct rpc_server *server, int n) { /* {{{ */
-  if ((server->parse_status == parse_status_expecting_query && server->in_bytes >= n) ||
-      (server->parse_status == parse_status_reading_query && server->parse_pos == server->parse_len + 4)) {
+  if ((server->parse_status == parse_status_expecting_query && server->in_bytes >= n)
+      || (server->parse_status == parse_status_reading_query && server->parse_pos == server->parse_len + 4)) {
     return 0;
   }
   ADD_CNT(read);
-  START_TIMER (read);
-  assert (server->sfd >= 0);
+  START_TIMER(read);
+  assert(server->sfd >= 0);
   static struct iovec t[3];
   int pos;
-  if (RPC_IN_BUF_SIZE - server->in_pos - server->in_bytes<RPC_IN_BUF_FREE_SPACE && server->in_pos>RPC_IN_BUF_FREE_SPACE) {
+  if (RPC_IN_BUF_SIZE - server->in_pos - server->in_bytes < RPC_IN_BUF_FREE_SPACE && server->in_pos > RPC_IN_BUF_FREE_SPACE) {
     memcpy(server->in_buf, server->in_buf + server->in_pos, server->in_bytes);
     server->in_pos = 0;
   }
@@ -692,7 +689,7 @@ static int get_ready_bytes(struct rpc_server *server, int n) { /* {{{ */
   if (server->parse_status == parse_status_expecting_query || server->parse_pos == server->parse_len + 4) {
     pos = 2;
   } else {
-    assert (server->parse_buf);
+    assert(server->parse_buf);
     if (server->parse_pos < server->parse_len) {
       t[0].iov_len = server->parse_len - server->parse_pos;
       t[0].iov_base = server->parse_buf + server->parse_pos;
@@ -705,12 +702,12 @@ static int get_ready_bytes(struct rpc_server *server, int n) { /* {{{ */
       pos = 1;
     }
   }
-  ADD_CNT (recv);
-  START_TIMER (recv);
+  ADD_CNT(recv);
+  START_TIMER(recv);
   int x = readv(server->sfd, t + pos, 3 - pos);
   if (x < 0 && (errno != EAGAIN && errno != EINPROGRESS)) {
     rpc_server_seterror(server, errno ? strerror(errno) : "Unknown error", errno);
-    END_TIMER (read);
+    END_TIMER(read);
     return x;
   } else {
     if (x < 0) {
@@ -721,7 +718,7 @@ static int get_ready_bytes(struct rpc_server *server, int n) { /* {{{ */
       server->last_received_time = precise_now;
     }
   }
-  END_TIMER (recv);
+  END_TIMER(recv);
   if (pos <= 1) {
     if (x <= server->parse_len + 4 - server->parse_pos) {
       server->parse_pos += x;
@@ -733,7 +730,7 @@ static int get_ready_bytes(struct rpc_server *server, int n) { /* {{{ */
   }
   server->in_bytes += x;
 
-  END_TIMER (read);
+  END_TIMER(read);
   return x;
 }
 
@@ -745,17 +742,16 @@ static int rpc_force_ready_bytes(struct rpc_server *server, int n, double timeou
     return server->in_bytes;
   }
   ADD_CNT(force_read);
-  START_TIMER (force_read);
+  START_TIMER(force_read);
   n -= server->in_bytes;
 
-
   int sfd = server->sfd;
-  assert (sfd >= 0);
+  assert(sfd >= 0);
 
   struct pollfd s;
   s.fd = sfd;
   s.events = POLLIN | POLLERR | POLLNVAL | POLLHUP;
-  int t = 0; //get_ms_timeout (timeout);
+  int t = 0; // get_ms_timeout (timeout);
   int first = 1;
   do {
     errno = 0;
@@ -765,7 +761,7 @@ static int rpc_force_ready_bytes(struct rpc_server *server, int n, double timeou
         continue;
       }
       rpc_server_seterror(server, errno ? strerror(errno) : "Timeout", errno);
-      END_TIMER (force_read);
+      END_TIMER(force_read);
       return __n - n;
     }
     first = 0;
@@ -775,14 +771,14 @@ static int rpc_force_ready_bytes(struct rpc_server *server, int n, double timeou
     }
     n -= t;
     if (n <= 0) {
-      END_TIMER (force_read);
+      END_TIMER(force_read);
       return __n - n;
     }
     if (s.revents & (POLLERR | POLLNVAL | POLLHUP)) {
       return -1;
     }
   } while ((t = get_ms_timeout(timeout)));
-  END_TIMER (force_read);
+  END_TIMER(force_read);
   return __n - n;
 }
 /* }}} */
@@ -829,12 +825,12 @@ void delete_query_from_queue_ex(struct rpc_query *q) {
 }
 
 static struct rpc_query *rpc_query_alloc(double timeout) {
-  ADD_CNT (tree_insert);
-  START_TIMER (tree_insert);
+  ADD_CNT(tree_insert);
+  START_TIMER(tree_insert);
   if (total_working_qid > RPC_MAX_QUERIES / 2) {
     vkext_reset_error();
     vkext_error_format(VKEXT_ERROR_TO_MANY_QUERIES, "vkext: Too many working queries (%d of %d)\n", (int)total_working_qid, (int)RPC_MAX_QUERIES);
-    END_TIMER (tree_insert);
+    END_TIMER(tree_insert);
     return 0;
   }
   last_qid++;
@@ -845,7 +841,7 @@ static struct rpc_query *rpc_query_alloc(double timeout) {
   if (fd >= max_query_id) {
     max_query_id = fd + 1;
   }
-  //long long qid = last_qid + 1;
+  // long long qid = last_qid + 1;
   long long qid = last_qid;
   update_precise_now();
   struct rpc_query *q = &queries[(qid - first_qid) & RPC_QUERIES_MASK];
@@ -856,13 +852,13 @@ static struct rpc_query *rpc_query_alloc(double timeout) {
   if (tl_current_function_name) {
     q->fun_name = tl_current_function_name;
   }
-/*  ADD_CNT(tree_insert);
-  START_TICKS(tree_insert);
-  query_tree = tree_insert_query (query_tree, q, lrand48 ());
-  END_TICKS(tree_insert);*/
+  /*  ADD_CNT(tree_insert);
+    START_TICKS(tree_insert);
+    query_tree = tree_insert_query (query_tree, q, lrand48 ());
+    END_TICKS(tree_insert);*/
   total_working_qid++;
   total_queries++;
-  END_TIMER (tree_insert);
+  END_TIMER(tree_insert);
   return q;
 }
 
@@ -878,16 +874,16 @@ struct rpc_query *rpc_query_get(long long qid) {
 static void rpc_query_free (struct rpc_query *q) {
   if (q->answer) {
     zzefree (q->answer, q->answer_len);
-  }  
+  }
   delete_query_from_queue (q);
   if (q->extra_free) {
-    q->extra_free (q);    
+    q->extra_free (q);
   }
   //zzfree (q, sizeof (*q));
 }*/
 
 static void rpc_query_delete(struct rpc_query *q) {
-  //query_tree = tree_delete_query (query_tree, q);
+  // query_tree = tree_delete_query (query_tree, q);
   if (q->answer) {
     zzefree(q->answer, q->answer_len);
   }
@@ -897,12 +893,12 @@ static void rpc_query_delete(struct rpc_query *q) {
   }
   q->qid = 0;
   total_working_qid--;
-  //zzfree (q, sizeof (*q));
+  // zzfree (q, sizeof (*q));
 }
 
 static void rpc_query_delete_nobuf(struct rpc_query *q) {
-  //query_tree = tree_delete_query (query_tree, q);
-  //zzfree (q, sizeof (*q));
+  // query_tree = tree_delete_query (query_tree, q);
+  // zzfree (q, sizeof (*q));
   delete_query_from_queue(q);
   if (q->extra_free) {
     q->extra_free(q);
@@ -928,7 +924,7 @@ static void update_pid(unsigned ip) { /* {{{ */
 
 static rpc_server *rpc_server_new(unsigned host, unsigned short port, double timeout, double retry_interval) { /* {{{ */
   rpc_server *server = reinterpret_cast<rpc_server *>(zzmalloc(sizeof(*server)));
-  ADD_PMALLOC (sizeof(*server));
+  ADD_PMALLOC(sizeof(*server));
   memset(server, 0, sizeof(*server));
 
   server->host = host;
@@ -948,11 +944,11 @@ static rpc_server *rpc_server_new(unsigned host, unsigned short port, double tim
   if (server->fd >= servers_size) {
     int new_servers_size = servers_size * 2 + 100;
     servers = reinterpret_cast<rpc_server **>(zzrealloc(servers, sizeof(void *) * servers_size, sizeof(void *) * new_servers_size));
-    ADD_PREALLOC (sizeof(void *) * servers_size, sizeof(void *) * new_servers_size);
+    ADD_PREALLOC(sizeof(void *) * servers_size, sizeof(void *) * new_servers_size);
     server_fds = reinterpret_cast<pollfd *>(zzrealloc(server_fds, sizeof(struct pollfd) * servers_size, sizeof(struct pollfd) * new_servers_size));
-    ADD_PREALLOC (sizeof(struct pollfd) * servers_size, sizeof(struct pollfd) * new_servers_size);
+    ADD_PREALLOC(sizeof(struct pollfd) * servers_size, sizeof(struct pollfd) * new_servers_size);
     server_fds_tmp = static_cast<int *>(zzrealloc(server_fds_tmp, sizeof(int) * servers_size, sizeof(int) * new_servers_size));
-    ADD_PREALLOC (sizeof(int) * servers_size, sizeof(int) * new_servers_size);
+    ADD_PREALLOC(sizeof(int) * servers_size, sizeof(int) * new_servers_size);
     servers_size = new_servers_size;
   }
   servers[server->fd] = server;
@@ -972,13 +968,13 @@ static void rpc_server_sleep(struct rpc_server *server) { /* {{{ */
 /* }}} */
 
 static int rpc_write_handshake(struct rpc_server *server, int op, double timeout);
-static void rpc_server_free(struct rpc_server *server) __attribute__ ((unused));
+static void rpc_server_free(struct rpc_server *server) __attribute__((unused));
 static void rpc_server_free(struct rpc_server *server) /* {{{ */ {
   rpc_server_sleep(server);
 
   server->magic = 0;
   zzfree(server, sizeof(*server));
-  ADD_PFREE (sizeof(*server));
+  ADD_PFREE(sizeof(*server));
 }
 /* }}} */
 
@@ -992,12 +988,12 @@ struct rpc_server *rpc_server_get(int fd) { /* {{{ */
 
 static void rpc_global_seterror(const char *error, int errnum) { /* {{{ */
   if (error) {
-    //fprintf (stderr, "error %s #%d\n", error, errnum);
+    // fprintf (stderr, "error %s #%d\n", error, errnum);
     if (global_error) {
       zzfree(global_error, strlen(global_error) + 1);
     }
     global_error = strdup(error);
-    ADD_MALLOC (strlen(error) + 1);
+    ADD_MALLOC(strlen(error) + 1);
     global_errnum = errnum;
     if (error && error_verbosity >= 1) {
       printf("Error %s (error_code %d)\n", error, errnum);
@@ -1017,7 +1013,7 @@ static void rpc_server_seterror(struct rpc_server *server, const char *error, in
 
     server->error = strdup(error);
     server->errnum = errnum;
-    ADD_MALLOC (strlen(error) + 1);
+    ADD_MALLOC(strlen(error) + 1);
 
     rpc_global_seterror(error, errnum);
   }
@@ -1050,7 +1046,8 @@ static void rpc_server_deactivate(struct rpc_server *server) { /* {{{ */
   server->status = rpc_status_disconnected;
   update_precise_now();
   server->failed = precise_now;
-//  php_error_docref (NULL, E_NOTICE, "Server " IP_PRINT_STR " (tcp %d) [fd = %d] failed with: %s (%d)", IP_TO_PRINT (server->host), server->port, server->fd, server->error, server->errnum);
+  //  php_error_docref (NULL, E_NOTICE, "Server " IP_PRINT_STR " (tcp %d) [fd = %d] failed with: %s (%d)", IP_TO_PRINT (server->host), server->port, server->fd,
+  //  server->error, server->errnum);
 }
 /* }}} */
 
@@ -1089,7 +1086,7 @@ static int _rpc_connect_open(struct rpc_server *server, char **error_string, int
     rpc_server_seterror(server, errno ? strerror(errno) : "Connect timed out", errno);
     rpc_server_deactivate(server);
     if (error_string) {
-      *error_string = estrdup (errno ? strerror(errno) : "Connect timed out");
+      *error_string = estrdup(errno ? strerror(errno) : "Connect timed out");
     }
     if (errnum) {
       *errnum = errno;
@@ -1108,7 +1105,7 @@ static int _rpc_connect_open(struct rpc_server *server, char **error_string, int
     snprintf(buffer, sizeof(buffer), "Rpc handshake failed: %s\n", server->error ? server->error : "(none)");
     rpc_server_seterror(server, buffer, 0);
     if (error_string) {
-      *error_string = estrdup (server->error);
+      *error_string = estrdup(server->error);
     }
     if (errnum) {
       *errnum = server->errnum;
@@ -1121,9 +1118,8 @@ static int _rpc_connect_open(struct rpc_server *server, char **error_string, int
 }
 /* }}} */
 
-
 static int rpc_ping_send(struct rpc_server *server, double timeout, long long value) { /* {{{ */
-  assert (outbuf);
+  assert(outbuf);
   buffer_clear(outbuf);
   buffer_write_reserve(outbuf, 12);
   buffer_write_long(outbuf, value);
@@ -1136,7 +1132,7 @@ static int rpc_ping_send(struct rpc_server *server, double timeout, long long va
 
 static int rpc_work(struct rpc_server *server, int force_block_read, double timeout);
 static int rpc_ping(struct rpc_server *server) { /* {{{ */
-//  double timeout = 0.1;
+                                                 //  double timeout = 0.1;
   if (server->status != rpc_status_connected || server->sfd < 0) {
     return -1;
   }
@@ -1177,7 +1173,6 @@ static int rpc_open(struct rpc_server *server, char **error_string, int *errnum)
         return 1;
       }
 
-
     case rpc_status_failed:
       update_precise_now();
       if (server->retry_interval >= 0 && precise_now >= server->failed + server->retry_interval) {
@@ -1186,7 +1181,7 @@ static int rpc_open(struct rpc_server *server, char **error_string, int *errnum)
         }
       } else {
         if (error_string) {
-          *error_string = estrdup ("server failed some time ago. Fail timeout not exceeded.");
+          *error_string = estrdup("server failed some time ago. Fail timeout not exceeded.");
           *errnum = 0;
         }
         break;
@@ -1198,52 +1193,51 @@ static int rpc_open(struct rpc_server *server, char **error_string, int *errnum)
 /* }}} */
 
 static int rpc_write_handshake(struct rpc_server *server, int op, double timeout) { /* {{{ */
-  ADD_CNT (rpc_write_handshake);
-  START_TIMER (rpc_write_handshake);
-  assert (op == RPC_NONCE || op == RPC_HANDSHAKE || op == TL_RPC_PING);
+  ADD_CNT(rpc_write_handshake);
+  START_TIMER(rpc_write_handshake);
+  assert(op == RPC_NONCE || op == RPC_HANDSHAKE || op == TL_RPC_PING);
   if (op == RPC_NONCE && server->packet_num != -2) {
-    assert (0);
+    assert(0);
   }
   if (op == RPC_HANDSHAKE && server->packet_num != -1) {
-    assert (0);
+    assert(0);
   }
   if (op == TL_RPC_PING && server->packet_num < 0) {
-    assert (0);
+    assert(0);
   }
   if (server->sfd < 0) {
-    END_TIMER (rpc_write_handshake);
+    END_TIMER(rpc_write_handshake);
     return -1;
   }
   if (!outbuf) {
-    END_TIMER (rpc_write_handshake);
+    END_TIMER(rpc_write_handshake);
     return -1;
   }
   int len = 16 + (outbuf->wptr - outbuf->rptr);
   unsigned crc32 = 0;
 
   outbuf->rptr -= 12;
-  assert (outbuf->rptr >= outbuf->sptr);
+  assert(outbuf->rptr >= outbuf->sptr);
   int *tmp = reinterpret_cast<int *>(outbuf->rptr);
   tmp[0] = len;
   tmp[1] = server->packet_num++;
   tmp[2] = op;
 #ifdef SEND_CRC32
-  ADD_CNT (crc32);
-  START_TICKS (crc32);
+  ADD_CNT(crc32);
+  START_TICKS(crc32);
   crc32 = compute_crc32(outbuf->rptr, outbuf->wptr - outbuf->rptr);
-  END_TICKS (crc32);
+  END_TICKS(crc32);
 #endif
   buffer_write_int(outbuf, crc32);
-  assert (outbuf->wptr - outbuf->rptr == len);
+  assert(outbuf->wptr - outbuf->rptr == len);
 
   if (rpc_write_out(server, outbuf->rptr, len, timeout) < 0) {
-    END_TIMER (rpc_write_handshake);
+    END_TIMER(rpc_write_handshake);
     return -1;
   }
   buffer_clear(outbuf);
-  END_TIMER (rpc_write_handshake);
+  END_TIMER(rpc_write_handshake);
   return 0;
-
 }
 /* }}} */
 
@@ -1279,14 +1273,14 @@ static struct rpc_server *choose_writable_server(struct rpc_server_collection *s
       int len = outbuf->wptr - outbuf->rptr;
       const char *data = NULL;
       buffer_read_data(outbuf, len, &data);
-      if(!data) {
+      if (!data) {
         return NULL;
       }
-      char *tmp = (char*)zzmalloc(len);
+      char *tmp = (char *)zzmalloc(len);
       memcpy(tmp, data, len);
       if (!(cc = rpc_reinit_connection(servers))) {
         zzfree(tmp, len);
-        return  NULL;
+        return NULL;
       }
       do_rpc_clean();
       buffer_write_data(outbuf, tmp, len);
@@ -1295,10 +1289,10 @@ static struct rpc_server *choose_writable_server(struct rpc_server_collection *s
     t = get_ms_timeout(timeout);
     first = 0;
 
-    ADD_CNT (poll);
-    START_TIMER (poll);
+    ADD_CNT(poll);
+    START_TIMER(poll);
     int r = poll(server_fds, cc, t);
-    END_TIMER (poll);
+    END_TIMER(poll);
     if (r < 0) {
       rpc_global_seterror(strerror(errno), errno);
       return 0;
@@ -1333,23 +1327,23 @@ static struct rpc_server *choose_writable_server(struct rpc_server_collection *s
 /* }}} */
 
 static int rpc_write(struct rpc_connection *c, long long qid, double timeout, bool ignore_answer) { /* {{{ */
-  ADD_CNT (rpc_write);
-  START_TIMER (rpc_write);
-//  struct rpc_server *server = c->server;
+  ADD_CNT(rpc_write);
+  START_TIMER(rpc_write);
+  //  struct rpc_server *server = c->server;
   struct rpc_server *server = choose_writable_server(c->servers, timeout);
   if (!server) {
-    END_TIMER (rpc_write);
+    END_TIMER(rpc_write);
     return -1;
   }
-  assert (qid && server->packet_num >= 0);
+  assert(qid && server->packet_num >= 0);
 
   if (server->sfd < 0) {
-    END_TIMER (rpc_write);
+    END_TIMER(rpc_write);
     return -1;
   }
 
   if (!outbuf) {
-    END_TIMER (rpc_write);
+    END_TIMER(rpc_write);
     return -1;
   }
 
@@ -1363,7 +1357,7 @@ static int rpc_write(struct rpc_connection *c, long long qid, double timeout, bo
   int len = sizeof(RpcHeaders) + sizeof(crc32) + (outbuf->wptr - outbuf->rptr);
 
   outbuf->rptr -= sizeof(RpcHeaders);
-  assert (outbuf->rptr >= outbuf->sptr);
+  assert(outbuf->rptr >= outbuf->sptr);
   auto *headers = reinterpret_cast<RpcHeaders *>(outbuf->rptr);
   headers->length = len;
   headers->num = server->packet_num++;
@@ -1371,21 +1365,21 @@ static int rpc_write(struct rpc_connection *c, long long qid, double timeout, bo
   headers->req_id = qid;
 
 #ifdef SEND_CRC32
-  ADD_CNT (crc32);
-  START_TICKS (crc32);
+  ADD_CNT(crc32);
+  START_TICKS(crc32);
   crc32 = compute_crc32(outbuf->rptr, outbuf->wptr - outbuf->rptr);
-  END_TICKS (crc32);
+  END_TICKS(crc32);
 #endif
   buffer_write_int(outbuf, crc32);
-  assert (outbuf->wptr - outbuf->rptr == len);
+  assert(outbuf->wptr - outbuf->rptr == len);
 
   if (rpc_write_out(server, outbuf->rptr, len, timeout) < 0) {
     rpc_server_failure(server);
-    END_TIMER (rpc_write);
+    END_TIMER(rpc_write);
     return -1;
   }
   buffer_clear(outbuf);
-  END_TIMER (rpc_write);
+  END_TIMER(rpc_write);
   return 0;
 }
 /* }}} */
@@ -1404,7 +1398,8 @@ static int rpc_handshake_execute(struct rpc_server *server, char *answer, int an
     return -1;
   }
   auto *S = reinterpret_cast<rpc_handshake *>(answer);
-  if ((S->peer_pid.port != PID.port) || (S->peer_pid.ip != PID.ip && S->peer_pid.ip && PID.ip) || S->sender_pid.port != server->port || (S->sender_pid.ip != server->host && S->sender_pid.ip && server->host && server->host != 0x7f000001)) {
+  if ((S->peer_pid.port != PID.port) || (S->peer_pid.ip != PID.ip && S->peer_pid.ip && PID.ip) || S->sender_pid.port != server->port
+      || (S->sender_pid.ip != server->host && S->sender_pid.ip && server->host && server->host != 0x7f000001)) {
     rpc_server_seterror(server, "Bad pid in handshake packet", 0);
     return -1;
   }
@@ -1419,7 +1414,7 @@ static int rpc_handshake_error_execute(struct rpc_server *server, char *answer, 
 /* }}} */
 
 static int rpc_handshake_send(struct rpc_server *server, double timeout) { /* {{{ */
-  assert (server->sfd >= 0);
+  assert(server->sfd >= 0);
 
   if (!PID.pid || !PID.ip) {
     sockaddr_storage S;
@@ -1433,12 +1428,8 @@ static int rpc_handshake_send(struct rpc_server *server, double timeout) { /* {{
       update_pid(ntohl(*(int *)&sockaddr->sin_addr));
     }
   }
-  struct rpc_handshake S = {
-    .flags = 0,
-    .sender_pid = PID,
-    .peer_pid = {.ip = (server->host != 0x7f000001 ? server->host : 0), .port = server->port}
-  };
-  //server->outbuf = buffer_create (sizeof (S));
+  struct rpc_handshake S = {.flags = 0, .sender_pid = PID, .peer_pid = {.ip = (server->host != 0x7f000001 ? server->host : 0), .port = server->port}};
+  // server->outbuf = buffer_create (sizeof (S));
   buffer_clear(outbuf);
   buffer_write_reserve(outbuf, 12);
   buffer_write_data(outbuf, &S, sizeof(S));
@@ -1450,13 +1441,10 @@ static int rpc_handshake_send(struct rpc_server *server, double timeout) { /* {{
 /* }}} */
 
 static int rpc_nonce_send(struct rpc_server *server, double timeout) { /* {{{ */
-  struct rpc_nonce S = {
-    .key_select = 0,
-    .crypto_schema = 0
-  };
+  struct rpc_nonce S = {.key_select = 0, .crypto_schema = 0};
 
-  //server->outbuf = buffer_create (sizeof (S));
-  assert (outbuf);
+  // server->outbuf = buffer_create (sizeof (S));
+  assert(outbuf);
   buffer_clear(outbuf);
   buffer_write_reserve(outbuf, 12);
   buffer_write_data(outbuf, &S, sizeof(S));
@@ -1486,15 +1474,15 @@ static int rpc_nonce_send(struct rpc_server *server, double timeout) { /* {{{ */
  }}} */
 
 static int rpc_read(struct rpc_server *server, int force_block_read, double timeout) { /* {{{ */
-  ADD_CNT (rpc_read);
-  START_TIMER (rpc_read);
+  ADD_CNT(rpc_read);
+  START_TIMER(rpc_read);
   if (server->sfd < 0) {
     rpc_server_seterror(server, "Socket is closed", 0);
-    END_TIMER (rpc_read);
+    END_TIMER(rpc_read);
     return -1;
   }
   if (server->parse_status == parse_status_expecting_query) {
-    assert (!server->parse_buf);
+    assert(!server->parse_buf);
     int t;
     if (force_block_read) {
       t = rpc_force_ready_bytes(server, 20, timeout);
@@ -1506,54 +1494,53 @@ static int rpc_read(struct rpc_server *server, int force_block_read, double time
       }
     }
     if (t < server->in_bytes) {
-      END_TIMER (rpc_read);
+      END_TIMER(rpc_read);
       return -1;
     }
     if (t < 20) {
       if (force_block_read) {
         rpc_server_seterror(server, "Timeout", 0);
       }
-      END_TIMER (rpc_read);
+      END_TIMER(rpc_read);
       return force_block_read ? -1 : 0;
     }
 
-    //fprintf (stderr, "t = %d\n", t);
+    // fprintf (stderr, "t = %d\n", t);
     static int tmp[5];
-    assert (rpc_read_in(server, (char *)tmp, 12, timeout) == 12);
+    assert(rpc_read_in(server, (char *)tmp, 12, timeout) == 12);
     int len = tmp[0];
 
     if (len < 20 || (len & 3) || len > RPC_MAX_QUERY_LEN) {
       rpc_server_seterror(server, "Invalid length of answer", 0);
-      END_TIMER (rpc_read);
+      END_TIMER(rpc_read);
       return -1;
     }
 
-    assert (!server->parse_buf);
+    assert(!server->parse_buf);
     server->parse_status = parse_status_reading_query;
     server->parse_op = tmp[2];
 
     if (tmp[1] != server->inbound_packet_num++) {
       rpc_server_seterror(server, "Invalid packet num", 0);
-      END_TIMER (rpc_read);
+      END_TIMER(rpc_read);
       return -1;
     }
-
 
     if (tmp[2] != RPC_HANDSHAKE && tmp[2] != RPC_NONCE && tmp[2] != RPC_HANDSHAKE_ERROR) {
       if (tmp[1] < 0) {
         rpc_server_seterror(server, "Invalid packet num (negative for non-handshake)", 0);
-        END_TIMER (rpc_read);
+        END_TIMER(rpc_read);
         return -1;
       }
       if (tmp[2] == TL_RPC_REQ_ERROR || tmp[2] == TL_RPC_REQ_RESULT) {
-        assert (rpc_read_in(server, (char *)&tmp[3], 8, timeout) == 8);
+        assert(rpc_read_in(server, (char *)&tmp[3], 8, timeout) == 8);
         server->parse_qid = *(long long *)(tmp + 3);
-        #ifdef CHECK_CRC32
-        ADD_CNT (crc32);
-        START_TIMER (crc32);
+#ifdef CHECK_CRC32
+        ADD_CNT(crc32);
+        START_TIMER(crc32);
         server->parse_crc32 = compute_crc32(tmp, 20);
-        END_TIMER (crc32);
-        #endif
+        END_TIMER(crc32);
+#endif
         server->parse_len = len - 24;
         server->parse_pos = 0;
         struct rpc_query *q = rpc_query_get(server->parse_qid);
@@ -1564,27 +1551,27 @@ static int rpc_read(struct rpc_server *server, int force_block_read, double time
         }
       } else {
         server->parse_qid = -1;
-        #ifdef CHECK_CRC32
-        ADD_CNT (crc32);
-        START_TIMER (crc32);
+#ifdef CHECK_CRC32
+        ADD_CNT(crc32);
+        START_TIMER(crc32);
         server->parse_crc32 = compute_crc32(tmp, 12);
-        END_TIMER (crc32);
-        #endif
+        END_TIMER(crc32);
+#endif
         server->parse_len = len - 16;
         server->parse_pos = 0;
       }
     } else {
       if (tmp[1] >= 0) {
         rpc_server_seterror(server, "Invalid packet num (non-negative for nonce/handshake)", 0);
-        END_TIMER (rpc_read);
+        END_TIMER(rpc_read);
         return -1;
       }
-      #ifdef CHECK_CRC32
-      ADD_CNT (crc32);
-      START_TIMER (crc32);
+#ifdef CHECK_CRC32
+      ADD_CNT(crc32);
+      START_TIMER(crc32);
       server->parse_crc32 = compute_crc32(tmp, 12);
-      END_TIMER (crc32);
-      #endif
+      END_TIMER(crc32);
+#endif
       server->parse_len = len - 16;
       server->parse_pos = 0;
     }
@@ -1592,7 +1579,7 @@ static int rpc_read(struct rpc_server *server, int force_block_read, double time
   }
 
   if (server->parse_status == parse_status_reading_query) {
-    assert (server->parse_buf);
+    assert(server->parse_buf);
     if (server->in_bytes) {
       if (server->parse_len - server->parse_pos >= server->in_bytes) {
         memcpy(server->parse_buf + server->parse_pos, server->in_buf + server->in_pos, server->in_bytes);
@@ -1627,50 +1614,50 @@ static int rpc_read(struct rpc_server *server, int force_block_read, double time
     }
     if (server->parse_pos == server->parse_len + 4) {
       server->parse_status = parse_status_expecting_query;
-      #ifdef CHECK_CRC32
-      ADD_CNT (crc32);
-      START_TIMER (crc32);
+#ifdef CHECK_CRC32
+      ADD_CNT(crc32);
+      START_TIMER(crc32);
       server->parse_crc32 = ~crc32_partial(server->parse_buf, server->parse_len, ~server->parse_crc32);
-      END_TIMER (crc32);
+      END_TIMER(crc32);
       if (server->parse_real_crc32 != server->parse_crc32) {
         rpc_server_seterror(server, "Crc32 mistmatch", 0);
-        END_TIMER (rpc_read);
+        END_TIMER(rpc_read);
         return -1;
       }
-      #endif
+#endif
       struct rpc_query *q;
-//      fprintf (stderr, "qid = %lld\n", server->parse_qid);
-//      fprintf (stderr, "parse_op = 0x%08x\n", server->parse_op);
+      //      fprintf (stderr, "qid = %lld\n", server->parse_qid);
+      //      fprintf (stderr, "parse_op = 0x%08x\n", server->parse_op);
       switch (server->parse_op) {
         case RPC_SKIP:
           zzefree(server->parse_buf, server->parse_len);
           server->parse_buf = 0;
-          END_TIMER (rpc_read);
+          END_TIMER(rpc_read);
           return 1;
         case RPC_NONCE:
           if (rpc_nonce_execute(server, server->parse_buf, server->parse_len) >= 0) {
             zzefree(server->parse_buf, server->parse_len);
             server->parse_buf = 0;
-            END_TIMER (rpc_read);
+            END_TIMER(rpc_read);
             return rpc_handshake_send(server, timeout);
           } else {
             rpc_server_seterror(server, "Nonce failed", 0);
             zzefree(server->parse_buf, server->parse_len);
             server->parse_buf = 0;
-            END_TIMER (rpc_read);
+            END_TIMER(rpc_read);
             return -1;
           }
         case RPC_HANDSHAKE:
           if (rpc_handshake_execute(server, server->parse_buf, server->parse_len) >= 0) {
             zzefree(server->parse_buf, server->parse_len);
             server->parse_buf = 0;
-            END_TIMER (rpc_read);
+            END_TIMER(rpc_read);
             return 1;
           } else {
             rpc_server_seterror(server, "handshake failed", 0);
             zzefree(server->parse_buf, server->parse_len);
             server->parse_buf = 0;
-            END_TIMER (rpc_read);
+            END_TIMER(rpc_read);
             return -1;
           }
         case RPC_HANDSHAKE_ERROR:
@@ -1678,14 +1665,14 @@ static int rpc_read(struct rpc_server *server, int force_block_read, double time
           zzefree(server->parse_buf, server->parse_len);
           server->parse_buf = 0;
           rpc_server_seterror(server, "handshake_error received", 0);
-          END_TIMER (rpc_read);
+          END_TIMER(rpc_read);
           return -1;
         case TL_RPC_REQ_ERROR:
           q = rpc_query_get(server->parse_qid);
           if (!q) {
             zzefree(server->parse_buf, server->parse_len);
             server->parse_buf = 0;
-            END_TIMER (rpc_read);
+            END_TIMER(rpc_read);
             return 1;
           }
           q->status = query_status_error;
@@ -1699,14 +1686,14 @@ static int rpc_read(struct rpc_server *server, int force_block_read, double time
             }
           }
           errored_queries++;
-          END_TIMER (rpc_read);
+          END_TIMER(rpc_read);
           return 1;
         case TL_RPC_REQ_RESULT:
           q = rpc_query_get(server->parse_qid);
           if (!q) {
             zzefree(server->parse_buf, server->parse_len);
             server->parse_buf = 0;
-            END_TIMER (rpc_read);
+            END_TIMER(rpc_read);
             return 1;
           }
           q->status = query_status_ok;
@@ -1720,17 +1707,17 @@ static int rpc_read(struct rpc_server *server, int force_block_read, double time
             }
           }
           finished_queries++;
-          END_TIMER (rpc_read);
+          END_TIMER(rpc_read);
           return 1;
         case TL_RPC_PONG:
           zzefree(server->parse_buf, server->parse_len);
           server->parse_buf = 0;
-          END_TIMER (rpc_read);
+          END_TIMER(rpc_read);
           return 1;
         default:
           zzefree(server->parse_buf, server->parse_len);
           server->parse_buf = 0;
-          END_TIMER (rpc_read);
+          END_TIMER(rpc_read);
           return 0;
       }
     } else {
@@ -1740,13 +1727,13 @@ static int rpc_read(struct rpc_server *server, int force_block_read, double time
         server->parse_buf = 0;
         server->parse_op = RPC_SKIP;
       }
-      END_TIMER (rpc_read);
+      END_TIMER(rpc_read);
       return force_block_read ? -1 : 0;
     }
   }
 
-  END_TIMER (rpc_read);
-  assert (0);
+  END_TIMER(rpc_read);
+  assert(0);
   return 0;
 }
 
@@ -1768,8 +1755,8 @@ static int rpc_work(struct rpc_server *server, int force_block_read, double time
 /* }}} */
 
 static int rpc_poll(double timeout) { /* {{{ */
-  ADD_CNT (rpc_poll);
-  START_TIMER (rpc_poll);
+  ADD_CNT(rpc_poll);
+  START_TIMER(rpc_poll);
   int i;
   int cc = 0;
   int x = 0;
@@ -1777,7 +1764,7 @@ static int rpc_poll(double timeout) { /* {{{ */
     if (servers[i] && servers[i]->in_bytes) {
       x += rpc_work(servers[i], 0, timeout);
       if (x) {
-        END_TIMER (rpc_poll);
+        END_TIMER(rpc_poll);
         return 1;
       }
     }
@@ -1798,26 +1785,26 @@ static int rpc_poll(double timeout) { /* {{{ */
     return -1;
   }
   int t = get_ms_timeout(timeout);
-  ADD_CNT (poll);
-  START_TIMER (poll);
+  ADD_CNT(poll);
+  START_TIMER(poll);
   int r = poll(server_fds, cc, t);
-  END_TIMER (poll);
+  END_TIMER(poll);
   if (r < 0) {
     rpc_global_seterror(strerror(errno), errno);
-    END_TIMER (rpc_poll);
+    END_TIMER(rpc_poll);
     return -1;
   }
   for (i = 0; i < cc; i++) {
     if (server_fds[i].revents & POLLIN) {
       x += rpc_work(servers[server_fds_tmp[i]], 0, timeout);
       if (x) {
-        END_TIMER (rpc_poll);
+        END_TIMER(rpc_poll);
         return 1;
       }
     }
   }
-  //rpc_work (servers[0]);
-  END_TIMER (rpc_poll);
+  // rpc_work (servers[0]);
+  END_TIMER(rpc_poll);
   return x;
 }
 
@@ -1832,11 +1819,11 @@ static double get_double_time_since_epoch() { /* {{{ */
 /* }}} */
 
 static double get_utime_monotonic() { /* {{{ */
-  ADD_CNT (utime);
-  START_TICKS (utime);
+  ADD_CNT(utime);
+  START_TICKS(utime);
   struct timespec T;
-  assert (clock_gettime(CLOCK_MONOTONIC, &T) >= 0);
-  END_TICKS (utime);
+  assert(clock_gettime(CLOCK_MONOTONIC, &T) >= 0);
+  END_TICKS(utime);
   return T.tv_sec + (double)T.tv_nsec * 1e-9;
 }
 
@@ -1844,10 +1831,10 @@ static double get_utime_monotonic() { /* {{{ */
 
 static int rpc_get_answer(struct rpc_query *q, double timeout) { /* {{{ */
   if (!q) {
-    //fprintf (stderr, "Can not find query with id %lld\n", q->qid);
+    // fprintf (stderr, "Can not find query with id %lld\n", q->qid);
     return -1;
   }
-  START_TIMER (rpc_get_answer);
+  START_TIMER(rpc_get_answer);
   update_precise_now();
   while (rpc_poll(precise_now) > 0) {
     if (!(q->status == query_status_sent || q->status == query_status_running || q->status == query_status_receiving)) {
@@ -1864,17 +1851,17 @@ static int rpc_get_answer(struct rpc_query *q, double timeout) { /* {{{ */
     case query_status_receiving:
       rpc_query_delete(q);
       timedout_queries++;
-      END_TIMER (rpc_get_answer);
+      END_TIMER(rpc_get_answer);
       return -1;
     case query_status_ok:
-    END_TIMER (rpc_get_answer);
+      END_TIMER(rpc_get_answer);
       return 1;
     case query_status_error:
       rpc_query_delete(q);
-      END_TIMER (rpc_get_answer);
+      END_TIMER(rpc_get_answer);
       return -1;
   }
-  END_TIMER (rpc_get_answer);
+  END_TIMER(rpc_get_answer);
   return 0;
 }
 
@@ -1900,8 +1887,8 @@ int rpc_make_handshake(struct rpc_server *server, double timeout) { /* {{{ */
     rpc_server_disconnect(server);
     return -1;
   }
-  assert (server->packet_num == 0);
-  assert (server->inbound_packet_num == 0);
+  assert(server->packet_num == 0);
+  assert(server->inbound_packet_num == 0);
   return 0;
 }
 
@@ -1927,24 +1914,24 @@ struct rpc_server_collection *rpc_find_persistent(unsigned host, int port, doubl
     servers = T->x;
   } else {
     servers = reinterpret_cast<rpc_server_collection *>(zzmalloc0(sizeof(*servers)));
-    ADD_PMALLOC (sizeof(*servers));
-    assert (servers);
+    ADD_PMALLOC(sizeof(*servers));
+    assert(servers);
     servers->host = host;
     servers->port = port;
     servers->num = 0;
-//  servers->ti
-//  servers = rpc_server_new (host, port, timeout, retry_interval);
+    //  servers->ti
+    //  servers = rpc_server_new (host, port, timeout, retry_interval);
     server_collection_tree = tree_insert_server_collection(server_collection_tree, servers, lrand48());
   }
-//  server->timeout = timeout;
-//  server->retry_interval = retry_interval;
+  //  server->timeout = timeout;
+  //  server->retry_interval = retry_interval;
   return servers;
 }
 
 /* }}} */
 
 long long my_atoll(const char *s) {
-  assert (s);
+  assert(s);
   int sign = 0;
   if (*s == '-') {
     s++;
@@ -1958,9 +1945,9 @@ long long my_atoll(const char *s) {
 }
 
 long long parse_zend_fd(VK_ZVAL_API_P z) { /* {{{ */
-  switch (Z_TYPE_P (VK_ZVAL_API_TO_ZVALP(z))) {
+  switch (Z_TYPE_P(VK_ZVAL_API_TO_ZVALP(z))) {
     case IS_LONG:
-      return Z_LVAL_P (VK_ZVAL_API_TO_ZVALP(z));
+      return Z_LVAL_P(VK_ZVAL_API_TO_ZVALP(z));
     default: {
       return VK_INCORRECT_FD;
     }
@@ -1968,22 +1955,22 @@ long long parse_zend_fd(VK_ZVAL_API_P z) { /* {{{ */
 }
 
 long long parse_zend_long(VK_ZVAL_API_P z) { /* {{{ */
-  switch (Z_TYPE_P (VK_ZVAL_API_TO_ZVALP(z))) {
+  switch (Z_TYPE_P(VK_ZVAL_API_TO_ZVALP(z))) {
     case IS_LONG:
-      return Z_LVAL_P (VK_ZVAL_API_TO_ZVALP(z));
+      return Z_LVAL_P(VK_ZVAL_API_TO_ZVALP(z));
     case IS_DOUBLE:
-      return (long long)Z_DVAL_P (VK_ZVAL_API_TO_ZVALP(z));
+      return (long long)Z_DVAL_P(VK_ZVAL_API_TO_ZVALP(z));
     case IS_STRING:
-      return my_atoll(Z_STRVAL_P (VK_ZVAL_API_TO_ZVALP(z)));
+      return my_atoll(Z_STRVAL_P(VK_ZVAL_API_TO_ZVALP(z)));
     case VK_IS_BOOL_T_CASE:
-      return VK_Z_BVAL_P (VK_ZVAL_API_TO_ZVALP(z));
+      return VK_Z_BVAL_P(VK_ZVAL_API_TO_ZVALP(z));
     default: {
       zval value_copy;
       value_copy = VK_ZVAL_API_TO_ZVAL(z);
       zval_copy_ctor(&value_copy);
 
       convert_to_long(&value_copy);
-      long long res = Z_LVAL_P (&value_copy);
+      long long res = Z_LVAL_P(&value_copy);
       zval_dtor(&value_copy);
 
       return res;
@@ -1994,22 +1981,22 @@ long long parse_zend_long(VK_ZVAL_API_P z) { /* {{{ */
 /* }}} */
 
 double parse_zend_double(VK_ZVAL_API_P z) { /* {{{ */
-  switch (Z_TYPE_P (VK_ZVAL_API_TO_ZVALP(z))) {
+  switch (Z_TYPE_P(VK_ZVAL_API_TO_ZVALP(z))) {
     case IS_LONG:
-      return Z_LVAL_P (VK_ZVAL_API_TO_ZVALP(z));
+      return Z_LVAL_P(VK_ZVAL_API_TO_ZVALP(z));
     case IS_DOUBLE:
-      return Z_DVAL_P (VK_ZVAL_API_TO_ZVALP(z));
+      return Z_DVAL_P(VK_ZVAL_API_TO_ZVALP(z));
     case IS_STRING:
-      return atof(Z_STRVAL_P (VK_ZVAL_API_TO_ZVALP(z)));
+      return atof(Z_STRVAL_P(VK_ZVAL_API_TO_ZVALP(z)));
     case VK_IS_BOOL_T_CASE:
-      return VK_Z_BVAL_P (VK_ZVAL_API_TO_ZVALP(z));
+      return VK_Z_BVAL_P(VK_ZVAL_API_TO_ZVALP(z));
     default: {
       zval value_copy;
       value_copy = VK_ZVAL_API_TO_ZVAL(z);
       zval_copy_ctor(&value_copy);
 
       convert_to_double(&value_copy);
-      double res = Z_DVAL_P (&value_copy);
+      double res = Z_DVAL_P(&value_copy);
       zval_dtor(&value_copy);
 
       return res;
@@ -2020,18 +2007,18 @@ double parse_zend_double(VK_ZVAL_API_P z) { /* {{{ */
 /* }}} */
 
 int parse_zend_bool(VK_ZVAL_API_P z) { /* {{{ */
-  switch (Z_TYPE_P (VK_ZVAL_API_TO_ZVALP(z))) {
+  switch (Z_TYPE_P(VK_ZVAL_API_TO_ZVALP(z))) {
     case IS_LONG:
       return Z_LVAL_P(VK_ZVAL_API_TO_ZVALP(z)) != 0;
     case VK_IS_BOOL_T_CASE:
-      return VK_Z_BVAL_P (VK_ZVAL_API_TO_ZVALP(z));
+      return VK_Z_BVAL_P(VK_ZVAL_API_TO_ZVALP(z));
     default: {
       zval value_copy;
       value_copy = VK_ZVAL_API_TO_ZVAL(z);
       zval_copy_ctor(&value_copy);
 
       convert_to_long(&value_copy);
-      int res = Z_LVAL_P (&value_copy) != 0;
+      int res = Z_LVAL_P(&value_copy) != 0;
       zval_dtor(&value_copy);
 
       return res;
@@ -2045,24 +2032,24 @@ char *parse_zend_string(VK_ZVAL_API_P z, int *l) { /* {{{ */
   const size_t s_size = 100;
   static char s[s_size];
   zval value_copy;
-  switch (Z_TYPE_P (VK_ZVAL_API_TO_ZVALP(z))) {
+  switch (Z_TYPE_P(VK_ZVAL_API_TO_ZVALP(z))) {
     case IS_LONG:
-      snprintf(s, s_size, "%" PRIi64, static_cast<int64_t>(Z_LVAL_P (VK_ZVAL_API_TO_ZVALP(z))));
+      snprintf(s, s_size, "%" PRIi64, static_cast<int64_t>(Z_LVAL_P(VK_ZVAL_API_TO_ZVALP(z))));
       if (l) {
         *l = strlen(s);
       }
       return s;
     case IS_DOUBLE:
-      snprintf(s, s_size, "%f", Z_DVAL_P (VK_ZVAL_API_TO_ZVALP(z)));
+      snprintf(s, s_size, "%f", Z_DVAL_P(VK_ZVAL_API_TO_ZVALP(z)));
       if (l) {
         *l = strlen(s);
       }
       return s;
     case IS_STRING:
       if (l) {
-        *l = Z_STRLEN_P (VK_ZVAL_API_TO_ZVALP(z));
+        *l = Z_STRLEN_P(VK_ZVAL_API_TO_ZVALP(z));
       }
-      return Z_STRVAL_P (VK_ZVAL_API_TO_ZVALP(z));
+      return Z_STRVAL_P(VK_ZVAL_API_TO_ZVALP(z));
     case VK_IS_BOOL_T_CASE:
       if (VK_ZVAL_IS_TRUE(VK_ZVAL_API_TO_ZVALP(z))) {
         snprintf(s, s_size, "%s", "1");
@@ -2077,12 +2064,12 @@ char *parse_zend_string(VK_ZVAL_API_P z, int *l) { /* {{{ */
       value_copy = VK_ZVAL_API_TO_ZVAL(z);
       zval_copy_ctor(&value_copy);
 
-      convert_to_string (&value_copy);
-      assert (Z_STRLEN_P(&value_copy) < 100);
-      memcpy(s, Z_STRVAL_P (&value_copy), Z_STRLEN_P (&value_copy));
-      s[Z_STRLEN_P (&value_copy)] = 0;
+      convert_to_string(&value_copy);
+      assert(Z_STRLEN_P(&value_copy) < 100);
+      memcpy(s, Z_STRVAL_P(&value_copy), Z_STRLEN_P(&value_copy));
+      s[Z_STRLEN_P(&value_copy)] = 0;
       if (l) {
-        *l = Z_STRLEN_P (&value_copy);
+        *l = Z_STRLEN_P(&value_copy);
       }
       zval_dtor(&value_copy);
 
@@ -2169,42 +2156,23 @@ int rpc_prepare_stats(char *buf, int max_len) { /* {{{ */
                 "total_tree_nodes_existed\t%d\n"
                 "total_tl_working\t%d\n"
                 "ping_timeout\t%0.3f\n",
-                active_net_connections,
-                net_connections_fails,
-                last_server_fd,
-                total_working_qid,
-                finished_queries,
-                errored_queries,
-                timedout_queries,
-                total_queries,
-                global_error,
-                global_errnum,
-                tl_config_name,
-                config_crc64,
-                tl_functions,
-                tl_constructors,
-                tl_types,
-                persistent_tree_nodes,
-                dynamic_tree_nodes,
-                total_ref_cnt,
-                total_tree_nodes_existed,
-                total_tl_working,
-                ping_timeout
-  );
+                active_net_connections, net_connections_fails, last_server_fd, total_working_qid, finished_queries, errored_queries, timedout_queries,
+                total_queries, global_error, global_errnum, tl_config_name, config_crc64, tl_functions, tl_constructors, tl_types, persistent_tree_nodes,
+                dynamic_tree_nodes, total_ref_cnt, total_tree_nodes_existed, total_tl_working, ping_timeout);
   return x;
 }
 
 /* }}} */
 
 int do_rpc_fetch_get_pos(char **error) { /* {{{ */
-  ADD_CNT (fetch);
-  START_TIMER (fetch);
+  ADD_CNT(fetch);
+  START_TIMER(fetch);
   if (!inbuf) {
     *error = strdup("Trying to fetch from empty buffer\n");
     return 0;
   }
-  assert (inbuf->magic == RPC_BUFFER_MAGIC);
-  END_TIMER (fetch);
+  assert(inbuf->magic == RPC_BUFFER_MAGIC);
+  END_TIMER(fetch);
   *error = 0;
   return inbuf->rptr - inbuf->sptr;
 }
@@ -2212,45 +2180,45 @@ int do_rpc_fetch_get_pos(char **error) { /* {{{ */
 /* }}} */
 
 int do_rpc_fetch_set_pos(int pos, char **error) { /* {{{ */
-  ADD_CNT (fetch);
-  START_TIMER (fetch);
+  ADD_CNT(fetch);
+  START_TIMER(fetch);
   if (!inbuf) {
     *error = strdup("Trying to fetch from empty buffer\n");
-    END_TIMER (fetch);
+    END_TIMER(fetch);
     return 0;
   }
   if (pos < 0 || inbuf->sptr + pos > inbuf->wptr) {
     *error = strdup("Trying to set bad position\n");
-    END_TIMER (fetch);
+    END_TIMER(fetch);
     return 0;
   }
-  assert (inbuf->magic == RPC_BUFFER_MAGIC);
+  assert(inbuf->magic == RPC_BUFFER_MAGIC);
   *error = 0;
   inbuf->rptr = inbuf->sptr + pos;
-  END_TIMER (fetch);
+  END_TIMER(fetch);
   return 1;
 }
 
 /* }}} */
 
 int do_rpc_fetch_int(char **error) { /* {{{ */
-  ADD_CNT (fetch);
-  START_TIMER (fetch);
+  ADD_CNT(fetch);
+  START_TIMER(fetch);
   if (!inbuf) {
     *error = strdup("Trying to fetch from empty buffer\n");
-    END_TIMER (fetch);
+    END_TIMER(fetch);
     return 0;
   }
-  assert (inbuf->magic == RPC_BUFFER_MAGIC);
+  assert(inbuf->magic == RPC_BUFFER_MAGIC);
 
   int value;
   if (buffer_read_int(inbuf, &value) < 0) {
     *error = strdup("Can not fetch int from inbuf\n");
-    END_TIMER (fetch);
+    END_TIMER(fetch);
     return 0;
   } else {
     *error = 0;
-    END_TIMER (fetch);
+    END_TIMER(fetch);
     return value;
   }
 }
@@ -2258,69 +2226,69 @@ int do_rpc_fetch_int(char **error) { /* {{{ */
 /* }}} */
 
 int do_rpc_lookup_int(char **error) { /* {{{ */
-  ADD_CNT (fetch);
-  START_TIMER (fetch);
+  ADD_CNT(fetch);
+  START_TIMER(fetch);
   if (!inbuf) {
     if (error) {
       *error = strdup("Trying to fetch lookup int from empty buffer\n");
     }
-    END_TIMER (fetch);
+    END_TIMER(fetch);
     return 0;
   }
-  assert (inbuf->magic == RPC_BUFFER_MAGIC);
+  assert(inbuf->magic == RPC_BUFFER_MAGIC);
   if (!buffer_check_len_rptr(inbuf, 4)) {
     if (error) {
       *error = strdup("Can not fetch lookup int from inbuf\n");
     }
-    END_TIMER (fetch);
+    END_TIMER(fetch);
     return 0;
   }
   if (error) {
     *error = 0;
   }
-  END_TIMER (fetch);
+  END_TIMER(fetch);
   return *(int *)inbuf->rptr;
 }
 
 /* }}} */
 
 const char *do_rpc_lookup_data(int x4_bytes_len, char **error) { /* {{{ */
-  ADD_CNT (fetch);
-  START_TIMER (fetch);
+  ADD_CNT(fetch);
+  START_TIMER(fetch);
   if (!inbuf) {
     *error = strdup("Trying to fetch lookup data from empty buffer\n");
-    END_TIMER (fetch);
+    END_TIMER(fetch);
     return 0;
   }
-  assert (inbuf->magic == RPC_BUFFER_MAGIC);
+  assert(inbuf->magic == RPC_BUFFER_MAGIC);
   if (!buffer_check_len_rptr(inbuf, x4_bytes_len * 4)) {
     *error = strdup("Can not fetch lookup data from inbuf\n");
-    END_TIMER (fetch);
+    END_TIMER(fetch);
     return 0;
   }
   *error = 0;
-  END_TIMER (fetch);
+  END_TIMER(fetch);
   return inbuf->rptr;
 }
 
 /* }}} */
 
 long long do_rpc_fetch_long(char **error) { /* {{{ */
-  ADD_CNT (fetch);
-  START_TIMER (fetch);
+  ADD_CNT(fetch);
+  START_TIMER(fetch);
   if (!inbuf) {
     *error = strdup("Trying to fetch from empty buffer\n");
     return 0;
   }
-  assert (inbuf->magic == RPC_BUFFER_MAGIC);
+  assert(inbuf->magic == RPC_BUFFER_MAGIC);
 
   long long value;
   if (buffer_read_long(inbuf, &value) < 0) {
     *error = strdup("Can not fetch long from inbuf\n");
-    END_TIMER (fetch);
+    END_TIMER(fetch);
     return 0;
   } else {
-    END_TIMER (fetch);
+    END_TIMER(fetch);
     *error = 0;
     return value;
   }
@@ -2329,42 +2297,42 @@ long long do_rpc_fetch_long(char **error) { /* {{{ */
 /* }}} */
 
 double do_rpc_fetch_double(char **error) { /* {{{ */
-  ADD_CNT (fetch);
-  START_TIMER (fetch);
+  ADD_CNT(fetch);
+  START_TIMER(fetch);
   if (!inbuf) {
     *error = strdup("Trying to fetch from empty buffer\n");
     return 0;
   }
-  assert (inbuf->magic == RPC_BUFFER_MAGIC);
+  assert(inbuf->magic == RPC_BUFFER_MAGIC);
 
   double value;
   if (buffer_read_double(inbuf, &value) < 0) {
     *error = strdup("Can not fetch double from inbuf\n");
-    END_TIMER (fetch);
+    END_TIMER(fetch);
     return 0;
   } else {
-    END_TIMER (fetch);
+    END_TIMER(fetch);
     *error = 0;
     return value;
   }
 }
 
 float do_rpc_fetch_float(char **error) { /* {{{ */
-  ADD_CNT (fetch);
-  START_TIMER (fetch);
+  ADD_CNT(fetch);
+  START_TIMER(fetch);
   if (!inbuf) {
     *error = strdup("Trying to fetch from empty buffer\n");
     return 0;
   }
-  assert (inbuf->magic == RPC_BUFFER_MAGIC);
+  assert(inbuf->magic == RPC_BUFFER_MAGIC);
 
   float value;
   if (buffer_read_float(inbuf, &value) < 0) {
     *error = strdup("Can not fetch float from inbuf\n");
-    END_TIMER (fetch);
+    END_TIMER(fetch);
     return 0;
   } else {
-    END_TIMER (fetch);
+    END_TIMER(fetch);
     *error = 0;
     return value;
   }
@@ -2373,21 +2341,21 @@ float do_rpc_fetch_float(char **error) { /* {{{ */
 /* }}} */
 
 int do_rpc_fetch_string(char **value) { /* {{{ */
-  ADD_CNT (fetch);
-  START_TIMER (fetch);
+  ADD_CNT(fetch);
+  START_TIMER(fetch);
   if (!inbuf) {
     *value = strdup("Trying fetch from empty buffer\n");
-    END_TIMER (fetch);
+    END_TIMER(fetch);
     return -1;
   }
-  assert (inbuf->magic == RPC_BUFFER_MAGIC);
+  assert(inbuf->magic == RPC_BUFFER_MAGIC);
   int value_len;
   if (buffer_read_string(inbuf, &value_len, const_cast<const char **>(value)) < 0) {
     *value = strdup("Can not fetch string from inbuf\n");
-    END_TIMER (fetch);
+    END_TIMER(fetch);
     return -1;
   } else {
-    END_TIMER (fetch);
+    END_TIMER(fetch);
     return value_len;
   }
 }
@@ -2395,74 +2363,74 @@ int do_rpc_fetch_string(char **value) { /* {{{ */
 /* }}} */
 
 int do_rpc_fetch_eof(const char **error) { /* {{{ */
-  ADD_CNT (fetch);
-  START_TIMER (fetch);
+  ADD_CNT(fetch);
+  START_TIMER(fetch);
   if (!inbuf) {
     *error = "Trying fetch from empty buffer\n";
-    END_TIMER (fetch);
+    END_TIMER(fetch);
     return 0;
   }
-  assert (inbuf->magic == RPC_BUFFER_MAGIC);
+  assert(inbuf->magic == RPC_BUFFER_MAGIC);
   if (inbuf->rptr < inbuf->wptr) {
     *error = 0;
-    END_TIMER (fetch);
+    END_TIMER(fetch);
     return 0;
   } else {
     *error = 0;
-    END_TIMER (fetch);
+    END_TIMER(fetch);
     return 1;
   }
 } /* }}} */
 
 struct rpc_query *do_rpc_send_noflush(struct rpc_connection *c, double timeout, int ignore_answer) { /* {{{ */
-  ADD_CNT (rpc_send);
-  START_TIMER (rpc_send);
+  ADD_CNT(rpc_send);
+  START_TIMER(rpc_send);
   if (!c || !c->servers) {
     vkext_reset_error();
     vkext_error(VKEXT_ERROR_NETWORK, "No connections found");
-    END_TIMER (rpc_send);
+    END_TIMER(rpc_send);
     return 0;
   }
 
   struct rpc_query *q = rpc_query_alloc(timeout);
   if (!q) {
-    END_TIMER (rpc_send);
+    END_TIMER(rpc_send);
     return 0;
   }
   if (rpc_write(c, q->qid, timeout, ignore_answer) < 0) {
     vkext_reset_error();
     vkext_error(VKEXT_ERROR_NETWORK, "Fail, while writing query");
-//    rpc_server_failure (c->server);
+    //    rpc_server_failure (c->server);
     rpc_query_delete(q);
-    END_TIMER (rpc_send);
+    END_TIMER(rpc_send);
     return 0;
   }
 
   if (ignore_answer) {
     rpc_query_delete(q);
-    END_TIMER (rpc_send);
+    END_TIMER(rpc_send);
     return (struct rpc_query *)1; // ignoring answer
   }
 
-  END_TIMER (rpc_send);
+  END_TIMER(rpc_send);
   return q;
 }
 
 /* }}} */
 
 int do_rpc_flush_server(struct rpc_server *server, double timeout) { /* {{{ */
-  ADD_CNT (rpc_flush);
-  START_TIMER (rpc_flush);
+  ADD_CNT(rpc_flush);
+  START_TIMER(rpc_flush);
   if (!server || server->status != rpc_status_connected) {
-    END_TIMER (rpc_flush);
+    END_TIMER(rpc_flush);
     return 0;
   }
   if (rpc_flush_out_force(server, timeout) < 0) {
     rpc_server_failure(server);
-    END_TIMER (rpc_flush);
+    END_TIMER(rpc_flush);
     return -1;
   } else {
-    END_TIMER (rpc_flush);
+    END_TIMER(rpc_flush);
     return 1;
   }
 }
@@ -2483,11 +2451,11 @@ int do_rpc_flush(double timeout) { /* {{{ */
 /* }}} */
 
 int do_rpc_get_and_parse(long long qid, double timeout) { /* {{{ */
-  ADD_CNT (rpc_get_and_parse);
-  START_TIMER (rpc_get_and_parse);
+  ADD_CNT(rpc_get_and_parse);
+  START_TIMER(rpc_get_and_parse);
   struct rpc_query *q = rpc_query_get(qid);
   if (!q) {
-    END_TIMER (rpc_get_and_parse);
+    END_TIMER(rpc_get_and_parse);
     return -1;
   }
   if (timeout >= 0) {
@@ -2496,19 +2464,19 @@ int do_rpc_get_and_parse(long long qid, double timeout) { /* {{{ */
     timeout = q->timeout;
   }
   int r = rpc_get_answer(q, timeout);
-  //fetch_extra = q->extra;
+  // fetch_extra = q->extra;
   if (r < 0) {
-    END_TIMER (rpc_get_and_parse);
+    END_TIMER(rpc_get_and_parse);
     return -1;
   } else {
     if (inbuf) {
       inbuf = buffer_delete(inbuf);
     }
-    //struct rpc_query *q = rpc_query_get (qid);
-    assert (q);
+    // struct rpc_query *q = rpc_query_get (qid);
+    assert(q);
     inbuf = buffer_create_data(q->answer, q->answer_len);
     rpc_query_delete_nobuf(q);
-    END_TIMER (rpc_get_and_parse);
+    END_TIMER(rpc_get_and_parse);
     return 1;
   }
 }
@@ -2516,11 +2484,11 @@ int do_rpc_get_and_parse(long long qid, double timeout) { /* {{{ */
 /* }}} */
 
 int do_rpc_get(long long qid, double timeout, char **value) { /* {{{ */
-  ADD_CNT (rpc_get);
-  START_TIMER (rpc_get);
+  ADD_CNT(rpc_get);
+  START_TIMER(rpc_get);
   struct rpc_query *q = rpc_query_get(qid);
   if (!q) {
-    END_TIMER (rpc_get);
+    END_TIMER(rpc_get);
     return -1;
   }
   if (timeout >= 0) {
@@ -2530,21 +2498,20 @@ int do_rpc_get(long long qid, double timeout, char **value) { /* {{{ */
   }
   int r = rpc_get_answer(q, timeout);
   if (r < 0) {
-    END_TIMER (rpc_get);
+    END_TIMER(rpc_get);
     return -1;
   } else {
-    //struct rpc_query *q = rpc_query_get (qid);
-    assert (q);
+    // struct rpc_query *q = rpc_query_get (qid);
+    assert(q);
     *value = q->answer;
     int r = q->answer_len;
     rpc_query_delete_nobuf(q);
-    END_TIMER (rpc_get_and_parse);
+    END_TIMER(rpc_get_and_parse);
     return r;
   }
 }
 
 /* }}} */
-
 
 void do_rpc_parse(const char *s, int len) { /* {{{ */
   char *ans = static_cast<char *>(zzemalloc(len));
@@ -2557,16 +2524,17 @@ void do_rpc_parse(const char *s, int len) { /* {{{ */
 
 /* }}} */
 
-struct rpc_connection *do_new_rpc_connection(unsigned host, int port, int num, long long default_actor_id, double default_query_timeout, double connect_timeout, double retry_timeout, char **error, int *errnum) { /* {{{ */
-  ADD_CNT (connect);
-  START_TIMER (connect);
+struct rpc_connection *do_new_rpc_connection(unsigned host, int port, int num, long long default_actor_id, double default_query_timeout, double connect_timeout,
+                                             double retry_timeout, char **error, int *errnum) { /* {{{ */
+  ADD_CNT(connect);
+  START_TIMER(connect);
   struct rpc_server_collection *servers = rpc_find_persistent(host, port, connect_timeout, retry_timeout);
-  assert (servers);
+  assert(servers);
   if (servers->num < num) {
-    //fprintf (stderr, "( servers->num = %d, servers=%p, servers->servers = %p\n", servers->num, servers, servers->servers);
+    // fprintf (stderr, "( servers->num = %d, servers=%p, servers->servers = %p\n", servers->num, servers, servers->servers);
     servers->servers = reinterpret_cast<rpc_server **>(zzrealloc(servers->servers, servers->num * sizeof(void *), num * sizeof(void *)));
-    //fprintf (stderr, ")");
-    ADD_PREALLOC (servers->num * sizeof(void *), num * sizeof(void *));
+    // fprintf (stderr, ")");
+    ADD_PREALLOC(servers->num * sizeof(void *), num * sizeof(void *));
     int i;
     for (i = servers->num; i < num; i++) {
       servers->servers[i] = rpc_server_new(host, port, default_query_timeout, retry_timeout);
@@ -2582,7 +2550,7 @@ struct rpc_connection *do_new_rpc_connection(unsigned host, int port, int num, l
     }
   }
   if (!cc) {
-    END_TIMER (connect);
+    END_TIMER(connect);
     return 0;
   }
 
@@ -2592,7 +2560,7 @@ struct rpc_connection *do_new_rpc_connection(unsigned host, int port, int num, l
   c->default_actor_id = default_actor_id;
   c->default_query_timeout = default_query_timeout;
   rpc_connection_tree = tree_insert_connection(rpc_connection_tree, c, lrand48());
-  END_TIMER (connect);
+  END_TIMER(connect);
   return c;
 }
 
@@ -2610,8 +2578,8 @@ long long do_rpc_queue_create(int size, long long *arr) { /* {{{ */
     if (!q) {
       Q->remaining--;
     } else {
-      assert (q);
-      assert (!q->queue_id);
+      assert(q);
+      assert(!q->queue_id);
       q->queue_id = Q->qid;
       if (q->status == query_status_ok || q->status == query_status_error) {
         Q->completed = tree_insert_qid(Q->completed, q->qid, lrand48());
@@ -2639,7 +2607,7 @@ void do_rpc_queue_free(long long QN) {
 /* }}} */
 
 void do_rpc_queue_insert_query(struct rpc_queue *Q, struct rpc_query *q) { /* {{{ */
-  assert (!q->queue_id);
+  assert(!q->queue_id);
   q->queue_id = Q->qid;
   Q->remaining++;
   if (q->status == query_status_ok || q->status == query_status_error) {
@@ -2660,9 +2628,9 @@ int do_rpc_queue_empty(struct rpc_queue *Q) { /* {{{ */
 /* }}} */
 
 long long do_rpc_queue_next(struct rpc_queue *Q, double timeout) { /* {{{ */
-  assert (Q);
+  assert(Q);
   if (Q->completed) {
-    //fprintf (stderr, "!");
+    // fprintf (stderr, "!");
     return Q->completed->x;
   }
   while (rpc_poll(precise_now) > 0) {
@@ -2702,14 +2670,14 @@ void disable_internal_rpc_queries(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
 /* }}} */
 
 void php_rpc_store_int(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
-  ADD_CNT (parse);
-  START_TIMER (parse);
+  ADD_CNT(parse);
+  START_TIMER(parse);
   VK_ZVAL_API_ARRAY z;
-  if (zend_get_parameters_array_ex (1, &z) == FAILURE) {
-    END_TIMER (parse);
+  if (zend_get_parameters_array_ex(1, &z) == FAILURE) {
+    END_TIMER(parse);
     RETURN_FALSE;
   }
-  END_TIMER (parse);
+  END_TIMER(parse);
   do_rpc_store_int(parse_zend_long(VK_ZVAL_ARRAY_TO_API_P(z)));
   RETURN_TRUE;
 }
@@ -2717,14 +2685,14 @@ void php_rpc_store_int(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
 /* }}} */
 
 void php_rpc_store_long(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
-  ADD_CNT (parse);
-  START_TIMER (parse);
+  ADD_CNT(parse);
+  START_TIMER(parse);
   VK_ZVAL_API_ARRAY z;
-  if (zend_get_parameters_array_ex (1, &z) == FAILURE) {
-    END_TIMER (parse);
+  if (zend_get_parameters_array_ex(1, &z) == FAILURE) {
+    END_TIMER(parse);
     RETURN_FALSE;
   }
-  END_TIMER (parse);
+  END_TIMER(parse);
   do_rpc_store_long(parse_zend_long(VK_ZVAL_ARRAY_TO_API_P(z)));
   RETURN_TRUE;
 }
@@ -2732,17 +2700,17 @@ void php_rpc_store_long(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
 /* }}} */
 
 void php_rpc_store_string(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
-  ADD_CNT (parse);
-  START_TIMER (parse);
+  ADD_CNT(parse);
+  START_TIMER(parse);
   VK_ZVAL_API_ARRAY z;
-  if (zend_get_parameters_array_ex (1, &z) == FAILURE) {
-    END_TIMER (parse);
+  if (zend_get_parameters_array_ex(1, &z) == FAILURE) {
+    END_TIMER(parse);
     RETURN_FALSE;
   }
 
   int l;
   char *s = parse_zend_string(VK_ZVAL_ARRAY_TO_API_P(z), &l);
-  END_TIMER (parse);
+  END_TIMER(parse);
   do_rpc_store_string(s, l);
   RETURN_TRUE;
 }
@@ -2750,14 +2718,14 @@ void php_rpc_store_string(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
 /* }}} */
 
 void php_rpc_store_double(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
-  ADD_CNT (parse);
-  START_TIMER (parse);
+  ADD_CNT(parse);
+  START_TIMER(parse);
   VK_ZVAL_API_ARRAY z;
-  if (zend_get_parameters_array_ex (1, &z) == FAILURE) {
-    END_TIMER (parse);
+  if (zend_get_parameters_array_ex(1, &z) == FAILURE) {
+    END_TIMER(parse);
     RETURN_FALSE;
   }
-  END_TIMER (parse);
+  END_TIMER(parse);
   do_rpc_store_double(parse_zend_double(VK_ZVAL_ARRAY_TO_API_P(z)));
   RETURN_TRUE;
 }
@@ -2765,27 +2733,27 @@ void php_rpc_store_double(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
 /* }}} */
 
 void php_rpc_store_float(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
-  ADD_CNT (parse);
-  START_TIMER (parse);
+  ADD_CNT(parse);
+  START_TIMER(parse);
   VK_ZVAL_API_ARRAY z;
-  if (zend_get_parameters_array_ex (1, &z) == FAILURE) {
-    END_TIMER (parse);
+  if (zend_get_parameters_array_ex(1, &z) == FAILURE) {
+    END_TIMER(parse);
     RETURN_FALSE;
   }
-  END_TIMER (parse);
-  do_rpc_store_float((float) parse_zend_double(VK_ZVAL_ARRAY_TO_API_P(z)));
+  END_TIMER(parse);
+  do_rpc_store_float((float)parse_zend_double(VK_ZVAL_ARRAY_TO_API_P(z)));
   RETURN_TRUE;
 }
 
 /* }}} */
 
 void php_rpc_store_header(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
-  ADD_CNT (parse);
-  START_TIMER (parse);
-  int argc = ZEND_NUM_ARGS ();
+  ADD_CNT(parse);
+  START_TIMER(parse);
+  int argc = ZEND_NUM_ARGS();
   VK_ZVAL_API_ARRAY z[2];
-  if (zend_get_parameters_array_ex (argc > 1 ? 2 : 1, z) == FAILURE) {
-    END_TIMER (parse);
+  if (zend_get_parameters_array_ex(argc > 1 ? 2 : 1, z) == FAILURE) {
+    END_TIMER(parse);
     RETURN_FALSE;
   }
 
@@ -2794,7 +2762,7 @@ void php_rpc_store_header(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
   if (argc > 1) {
     flags = parse_zend_long(VK_ZVAL_ARRAY_TO_API_P(z[1]));
   }
-  END_TIMER (parse);
+  END_TIMER(parse);
   do_rpc_store_header(cluster_id, flags);
   RETURN_TRUE;
 }
@@ -2802,30 +2770,29 @@ void php_rpc_store_header(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
 /* }}} */
 
 void php_rpc_store_many(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
-  ADD_CNT (parse);
-  START_TIMER (parse);
-  int argc = ZEND_NUM_ARGS ();
+  ADD_CNT(parse);
+  START_TIMER(parse);
+  int argc = ZEND_NUM_ARGS();
   VK_ZVAL_API_P args = reinterpret_cast<zval *>(zzemalloc(argc * sizeof(zval **)));
-  if (zend_get_parameters_array_ex (argc, VK_ZVAL_API_REF(args)) == FAILURE) {
+  if (zend_get_parameters_array_ex(argc, VK_ZVAL_API_REF(args)) == FAILURE) {
     zzefree(args, argc * sizeof(zval **));
-    END_TIMER (parse);
+    END_TIMER(parse);
     RETURN_FALSE;
   }
-  if (Z_TYPE_P (VK_ZVAL_ARRAY_TO_API_P(args[0])) != IS_STRING) {
+  if (Z_TYPE_P(VK_ZVAL_ARRAY_TO_API_P(args[0])) != IS_STRING) {
     RETURN_FALSE;
   }
-  const char *format = Z_STRVAL_P (VK_ZVAL_ARRAY_TO_API_P(args[0]));
-  VK_LEN_T format_len = Z_STRLEN_P (VK_ZVAL_ARRAY_TO_API_P(args[0]));
+  const char *format = Z_STRVAL_P(VK_ZVAL_ARRAY_TO_API_P(args[0]));
+  VK_LEN_T format_len = Z_STRLEN_P(VK_ZVAL_ARRAY_TO_API_P(args[0]));
 
   if (format_len != static_cast<VK_LEN_T>(argc - 1)) {
     zzefree(args, argc * sizeof(zval **));
-    END_TIMER (parse);
+    END_TIMER(parse);
     RETURN_FALSE;
   }
 
-
-  END_TIMER (parse);
-  assert (outbuf && outbuf->magic == RPC_BUFFER_MAGIC);
+  END_TIMER(parse);
+  assert(outbuf && outbuf->magic == RPC_BUFFER_MAGIC);
   int i;
   for (i = 1; i < argc; i++) {
     switch (format[i - 1]) {
@@ -2833,8 +2800,7 @@ void php_rpc_store_many(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
         int l;
         char *s = parse_zend_string(&args[i], &l);
         do_rpc_store_string(s, l);
-      }
-        break;
+      } break;
       case 'l':
         do_rpc_store_long(parse_zend_long(&args[i]));
         break;
@@ -2859,7 +2825,7 @@ void php_rpc_fetch_int(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
   char *t;
   int value = do_rpc_fetch_int(&t);
   if (!t) {
-    RETURN_LONG (value);
+    RETURN_LONG(value);
   } else {
     php_error_docref(NULL, E_WARNING, t);
     free(t);
@@ -2873,7 +2839,7 @@ void php_rpc_fetch_lookup_int(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
   char *t;
   int value = do_rpc_lookup_int(&t);
   if (!t) {
-    RETURN_LONG (value);
+    RETURN_LONG(value);
   } else {
     php_error_docref(NULL, E_WARNING, t);
     free(t);
@@ -2889,7 +2855,7 @@ void php_rpc_fetch_lookup_data(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
     return;
   }
   char *error_str;
-  const char *data = do_rpc_lookup_data((int) x4_bytes_length, &error_str);
+  const char *data = do_rpc_lookup_data((int)x4_bytes_length, &error_str);
   if (!error_str) {
     VK_RETURN_STRINGL_DUP(data, x4_bytes_length * 4);
   } else {
@@ -2923,7 +2889,7 @@ void php_rpc_fetch_long(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
   char *t;
   long long value = do_rpc_fetch_long(&t);
   if (!t) {
-    VV_RETURN_LONG (value);
+    VV_RETURN_LONG(value);
   } else {
     php_error_docref(NULL, E_WARNING, t);
     free(t);
@@ -2937,7 +2903,7 @@ void php_rpc_fetch_double(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
   char *t;
   double value = do_rpc_fetch_double(&t);
   if (!t) {
-    RETURN_DOUBLE (value);
+    RETURN_DOUBLE(value);
   } else {
     php_error_docref(NULL, E_WARNING, t);
     free(t);
@@ -2951,7 +2917,7 @@ void php_rpc_fetch_float(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
   char *t;
   float value = do_rpc_fetch_float(&t);
   if (!t) {
-    RETURN_DOUBLE (value);
+    RETURN_DOUBLE(value);
   } else {
     php_error_docref(NULL, E_WARNING, t);
     free(t);
@@ -2969,8 +2935,8 @@ void php_rpc_fetch_string(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
     free(value);
     RETURN_FALSE;
   } else {
-    ADD_RMALLOC (value_len + 1);
-    VK_RETURN_STRINGL_DUP (value, value_len);
+    ADD_RMALLOC(value_len + 1);
+    VK_RETURN_STRINGL_DUP(value, value_len);
   }
 }
 
@@ -2994,19 +2960,19 @@ void php_rpc_fetch_end(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
 /* }}} */
 
 void php_rpc_queue_create(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
-  ADD_CNT (parse);
-  START_TIMER (parse);
-  int argc = ZEND_NUM_ARGS ();
+  ADD_CNT(parse);
+  START_TIMER(parse);
+  int argc = ZEND_NUM_ARGS();
   VK_ZVAL_API_ARRAY z[1];
-  if (argc != 0 && zend_get_parameters_array_ex (1, z) == FAILURE) {
-    END_TIMER (parse);
+  if (argc != 0 && zend_get_parameters_array_ex(1, z) == FAILURE) {
+    END_TIMER(parse);
     RETURN_FALSE;
   }
   VK_ZVAL_API_ARRAY *arr = z;
-  if (argc == 0 || VK_Z_API_TYPE (VK_ZVAL_API_TO_ZVALP(arr)) != IS_ARRAY) {
-    END_TIMER (parse);
+  if (argc == 0 || VK_Z_API_TYPE(VK_ZVAL_API_TO_ZVALP(arr)) != IS_ARRAY) {
+    END_TIMER(parse);
     long long queue_id = do_rpc_queue_create(0, 0);
-    VV_RETURN_LONG (queue_id);
+    VV_RETURN_LONG(queue_id);
     return;
   }
 
@@ -3019,30 +2985,31 @@ void php_rpc_queue_create(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
     if (q && !q->queue_id) {
       qids[cc++] = qid;
     }
-  } VK_ZEND_HASH_FOREACH_END();
+  }
+  VK_ZEND_HASH_FOREACH_END();
 
-  END_TIMER (parse);
+  END_TIMER(parse);
   long long queue_id = do_rpc_queue_create(cc, qids);
-  VV_RETURN_LONG (queue_id);
+  VV_RETURN_LONG(queue_id);
 }
 
 /* }}} */
 
 void php_rpc_queue_empty(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
-  ADD_CNT (parse);
-  START_TIMER (parse);
+  ADD_CNT(parse);
+  START_TIMER(parse);
   VK_ZVAL_API_ARRAY z[1];
-  if (zend_get_parameters_array_ex (1, z) == FAILURE) {
-    END_TIMER (parse);
+  if (zend_get_parameters_array_ex(1, z) == FAILURE) {
+    END_TIMER(parse);
     RETURN_FALSE;
   }
   long long qid = parse_zend_long(VK_ZVAL_ARRAY_TO_API_P(z[0]));
   struct rpc_queue *Q = rpc_queue_get(qid);
   if (!Q) {
-    END_TIMER (parse);
+    END_TIMER(parse);
     RETURN_TRUE;
   }
-  END_TIMER (parse);
+  END_TIMER(parse);
   if (do_rpc_queue_empty(Q)) {
     RETURN_TRUE;
   } else {
@@ -3053,18 +3020,18 @@ void php_rpc_queue_empty(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
 /* }}} */
 
 void php_rpc_queue_next(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
-  ADD_CNT (parse);
-  START_TIMER (parse);
+  ADD_CNT(parse);
+  START_TIMER(parse);
   VK_ZVAL_API_ARRAY z[2];
-  int argc = ZEND_NUM_ARGS ();
-  if (zend_get_parameters_array_ex (argc > 1 ? 2 : 1, z) == FAILURE) {
-    END_TIMER (parse);
+  int argc = ZEND_NUM_ARGS();
+  if (zend_get_parameters_array_ex(argc > 1 ? 2 : 1, z) == FAILURE) {
+    END_TIMER(parse);
     RETURN_FALSE;
   }
   long long qid = parse_zend_long(VK_ZVAL_ARRAY_TO_API_P(z[0]));
   struct rpc_queue *Q = rpc_queue_get(qid);
   if (!Q) {
-    END_TIMER (parse);
+    END_TIMER(parse);
     RETURN_TRUE;
   }
   double timeout;
@@ -3074,10 +3041,10 @@ void php_rpc_queue_next(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
   } else {
     timeout = Q->timeout;
   }
-  END_TIMER (parse);
+  END_TIMER(parse);
   long long query_id = do_rpc_queue_next(Q, timeout);
   if (query_id > 0) {
-    VV_RETURN_LONG (query_id);
+    VV_RETURN_LONG(query_id);
   } else {
     RETURN_FALSE;
   }
@@ -3087,8 +3054,8 @@ void php_rpc_queue_next(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
 
 void php_rpc_queue_push(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
   VK_ZVAL_API_ARRAY z[2];
-  if (zend_get_parameters_array_ex (2, z) == FAILURE) {
-    END_TIMER (parse);
+  if (zend_get_parameters_array_ex(2, z) == FAILURE) {
+    END_TIMER(parse);
     RETURN_FALSE;
   }
 
@@ -3099,7 +3066,7 @@ void php_rpc_queue_push(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
     return;
   }
 
-  if (VK_ZVAL_API_ARRAY_EL_TYPE (z[1]) != IS_ARRAY) {
+  if (VK_ZVAL_API_ARRAY_EL_TYPE(z[1]) != IS_ARRAY) {
     long long qid = parse_zend_long(VK_ZVAL_ARRAY_TO_API_P(z[1]));
     struct rpc_query *q = rpc_query_get(qid);
     if (!q || q->queue_id) {
@@ -3117,7 +3084,8 @@ void php_rpc_queue_push(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
     if (q && !q->queue_id) {
       do_rpc_queue_insert_query(Q, q);
     }
-  } VK_ZEND_HASH_FOREACH_END();
+  }
+  VK_ZEND_HASH_FOREACH_END();
 
   RETURN_TRUE;
 }
@@ -3125,64 +3093,64 @@ void php_rpc_queue_push(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
 /* }}} */
 
 void php_rpc_send(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
-  ADD_CNT (parse);
-  START_TIMER (parse);
+  ADD_CNT(parse);
+  START_TIMER(parse);
   VK_ZVAL_API_ARRAY z[2];
-  int argc = ZEND_NUM_ARGS ();
-  if (zend_get_parameters_array_ex (argc > 1 ? 2 : 1, z) == FAILURE) {
-    END_TIMER (parse);
+  int argc = ZEND_NUM_ARGS();
+  if (zend_get_parameters_array_ex(argc > 1 ? 2 : 1, z) == FAILURE) {
+    END_TIMER(parse);
     RETURN_FALSE;
   }
   int fd = parse_zend_long(VK_ZVAL_ARRAY_TO_API_P(z[0]));
 
-/*  if (fd < 0 || fd >= last_server_fd) {
-    END_TIMER (parse);
-    RETURN_FALSE;
-  }
+  /*  if (fd < 0 || fd >= last_server_fd) {
+      END_TIMER (parse);
+      RETURN_FALSE;
+    }
 
-  struct rpc_server *server = servers[fd];*/
+    struct rpc_server *server = servers[fd];*/
   struct rpc_connection *c = rpc_connection_get(fd);
   if (!c) {
-    END_TIMER (parse);
+    END_TIMER(parse);
     RETURN_FALSE;
   }
 
   double timeout = argc > 1 ? parse_zend_double(VK_ZVAL_ARRAY_TO_API_P(z[1])) : c->default_query_timeout;
-  END_TIMER (parse);
+  END_TIMER(parse);
   update_precise_now();
   timeout += precise_now;
   struct rpc_query *q = do_rpc_send_noflush(c, timeout, 0);
   if (!q) {
     RETURN_FALSE;
   }
-//  if (do_rpc_flush_server (c->server, timeout) < 0) {
+  //  if (do_rpc_flush_server (c->server, timeout) < 0) {
   if (do_rpc_flush(timeout) < 0) {
     RETURN_FALSE;
   } else {
-    VV_RETURN_LONG (q->qid);
+    VV_RETURN_LONG(q->qid);
   }
 }
 
 /* }}} */
 
 void php_rpc_send_noflush(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
-  ADD_CNT (parse);
-  START_TIMER (parse);
+  ADD_CNT(parse);
+  START_TIMER(parse);
   VK_ZVAL_API_ARRAY z[2];
-  int argc = ZEND_NUM_ARGS ();
-  if (zend_get_parameters_array_ex (argc > 1 ? 2 : 1, z) == FAILURE) {
-    END_TIMER (parse);
+  int argc = ZEND_NUM_ARGS();
+  if (zend_get_parameters_array_ex(argc > 1 ? 2 : 1, z) == FAILURE) {
+    END_TIMER(parse);
     RETURN_FALSE;
   }
   int fd = parse_zend_long(VK_ZVAL_ARRAY_TO_API_P(z[0]));
   struct rpc_connection *c = rpc_connection_get(fd);
   if (!c) {
-    END_TIMER (parse);
+    END_TIMER(parse);
     RETURN_FALSE;
   }
 
   double timeout = argc > 1 ? parse_zend_double(VK_ZVAL_ARRAY_TO_API_P(z[1])) : c->default_query_timeout;
-  END_TIMER (parse);
+  END_TIMER(parse);
   update_precise_now();
   timeout += precise_now;
   struct rpc_query *q = do_rpc_send_noflush(c, timeout, 0);
@@ -3190,26 +3158,26 @@ void php_rpc_send_noflush(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
   if (!q) {
     RETURN_FALSE;
   } else {
-    VV_RETURN_LONG (q->qid);
+    VV_RETURN_LONG(q->qid);
   }
 }
 
 /* }}} */
 
 void php_rpc_flush(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
-  ADD_CNT (parse);
-  START_TIMER (parse);
-  int argc = ZEND_NUM_ARGS ();
+  ADD_CNT(parse);
+  START_TIMER(parse);
+  int argc = ZEND_NUM_ARGS();
   VK_ZVAL_API_ARRAY z[1];
   if (argc > 0) {
-    if (zend_get_parameters_array_ex (1, z) == FAILURE) {
-      END_TIMER (parse);
+    if (zend_get_parameters_array_ex(1, z) == FAILURE) {
+      END_TIMER(parse);
       RETURN_FALSE;
     }
   }
 
   double timeout = argc > 0 ? parse_zend_double(VK_ZVAL_ARRAY_TO_API_P(z[0])) : 0.3;
-  END_TIMER (parse);
+  END_TIMER(parse);
   update_precise_now();
   timeout += precise_now;
 
@@ -3224,7 +3192,7 @@ void php_rpc_flush(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
 
 void set_fail_rpc_on_int32_overflow(INTERNAL_FUNCTION_PARAMETERS) {
   zval args[1];
-  if (zend_get_parameters_array_ex (1, args) == FAILURE) {
+  if (zend_get_parameters_array_ex(1, args) == FAILURE) {
     RETURN_FALSE;
   }
   if (Z_TYPE(args[0]) != IS_FALSE && Z_TYPE(args[0]) != IS_TRUE) {
@@ -3234,21 +3202,20 @@ void set_fail_rpc_on_int32_overflow(INTERNAL_FUNCTION_PARAMETERS) {
   RETURN_TRUE;
 }
 
-
-void php_new_rpc_connection(INTERNAL_FUNCTION_PARAMETERS) {  /* {{{ */
-  ADD_CNT (parse);
-  START_TIMER (parse);
+void php_new_rpc_connection(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
+  ADD_CNT(parse);
+  START_TIMER(parse);
   VK_ZVAL_API_ARRAY z[6];
-  int argc = ZEND_NUM_ARGS ();
-  if (zend_get_parameters_array_ex (argc > 6 ? 6 : argc < 2 ? 2 : argc, z) == FAILURE) {
-    END_TIMER (parse);
+  int argc = ZEND_NUM_ARGS();
+  if (zend_get_parameters_array_ex(argc > 6 ? 6 : argc < 2 ? 2 : argc, z) == FAILURE) {
+    END_TIMER(parse);
     RETURN_NULL();
   }
   if (VK_Z_API_TYPE(VK_ZVAL_ARRAY_TO_API_P(z[0])) != IS_STRING) {
     RETURN_NULL();
   }
-  const char *host_name = VK_Z_STRVAL_P (VK_ZVAL_ARRAY_TO_API_P(z[0]));
-//  int host_len = Z_STRLEN_PP (z[0]);
+  const char *host_name = VK_Z_STRVAL_P(VK_ZVAL_ARRAY_TO_API_P(z[0]));
+  //  int host_len = Z_STRLEN_PP (z[0]);
   int port = parse_zend_long(VK_ZVAL_ARRAY_TO_API_P(z[1]));
   long long default_actor_id = 0;
   if (argc >= 3) {
@@ -3271,36 +3238,37 @@ void php_new_rpc_connection(INTERNAL_FUNCTION_PARAMETERS) {  /* {{{ */
 
   if (!host) {
     php_error_docref(NULL, E_WARNING, "Can't resolve hostname %s", host_name);
-    END_TIMER (parse);
+    END_TIMER(parse);
     RETURN_NULL();
   }
 
-  END_TIMER (parse);
+  END_TIMER(parse);
 
   char *error_string = 0;
   int errnum;
 
   struct rpc_connection *c;
   if (!(c = do_new_rpc_connection(host, port, 3, default_actor_id, default_query_timeout, connect_timeout, retry_timeout, &error_string, &errnum))) {
-    php_error_docref(NULL, E_WARNING, "Can't connect to %s:%d (ip %08x), %s (%d)", host_name, port, host, error_string ? error_string : "Unknown error", errnum);
+    php_error_docref(NULL, E_WARNING, "Can't connect to %s:%d (ip %08x), %s (%d)", host_name, port, host, error_string ? error_string : "Unknown error",
+                     errnum);
     if (error_string) {
-      efree (error_string);
+      efree(error_string);
     }
     RETURN_NULL();
   }
 
-  RETURN_LONG (c->fd);
+  RETURN_LONG(c->fd);
 }
 
 /* }}} */
 
 void php_rpc_get_and_parse(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
-  ADD_CNT (parse);
-  START_TIMER (parse);
-  int argc = ZEND_NUM_ARGS ();
+  ADD_CNT(parse);
+  START_TIMER(parse);
+  int argc = ZEND_NUM_ARGS();
   VK_ZVAL_API_ARRAY z[2];
-  if (zend_get_parameters_array_ex (argc > 1 ? 2 : 1, z) == FAILURE) {
-    END_TIMER (parse);
+  if (zend_get_parameters_array_ex(argc > 1 ? 2 : 1, z) == FAILURE) {
+    END_TIMER(parse);
     RETURN_FALSE;
   }
   long long qid = parse_zend_long(VK_ZVAL_ARRAY_TO_API_P(z[0]));
@@ -3308,7 +3276,7 @@ void php_rpc_get_and_parse(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
   if (argc > 1) {
     timeout = parse_zend_double(VK_ZVAL_ARRAY_TO_API_P(z[1]));
   }
-  END_TIMER (parse);
+  END_TIMER(parse);
   if (do_rpc_get_and_parse(qid, timeout) < 0) {
     RETURN_FALSE;
   } else {
@@ -3319,12 +3287,12 @@ void php_rpc_get_and_parse(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
 /* }}} */
 
 void php_rpc_get(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
-  ADD_CNT (parse);
-  START_TIMER (parse);
-  int argc = ZEND_NUM_ARGS ();
+  ADD_CNT(parse);
+  START_TIMER(parse);
+  int argc = ZEND_NUM_ARGS();
   VK_ZVAL_API_ARRAY z[2];
-  if (zend_get_parameters_array_ex (argc > 1 ? 2 : 1, z) == FAILURE) {
-    END_TIMER (parse);
+  if (zend_get_parameters_array_ex(argc > 1 ? 2 : 1, z) == FAILURE) {
+    END_TIMER(parse);
     RETURN_FALSE;
   }
   long long qid = parse_zend_long(VK_ZVAL_ARRAY_TO_API_P(z[0]));
@@ -3332,13 +3300,13 @@ void php_rpc_get(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
   if (argc > 1) {
     timeout = parse_zend_double(VK_ZVAL_ARRAY_TO_API_P(z[1]));
   }
-  END_TIMER (parse);
+  END_TIMER(parse);
   int len;
   char *value;
   if ((len = do_rpc_get(qid, timeout, &value)) < 0) {
     RETURN_FALSE;
   } else {
-    ADD_RMALLOC (VK_STR_API_LEN(len));
+    ADD_RMALLOC(VK_STR_API_LEN(len));
     VK_RETURN_STRINGL_NOD(value, len);
   }
 }
@@ -3346,16 +3314,16 @@ void php_rpc_get(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
 /* }}} */
 
 void php_rpc_parse(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
-  ADD_CNT (parse);
-  START_TIMER (parse);
+  ADD_CNT(parse);
+  START_TIMER(parse);
   VK_ZVAL_API_ARRAY z;
-  if (zend_get_parameters_array_ex (1, &z) == FAILURE) {
-    END_TIMER (parse);
+  if (zend_get_parameters_array_ex(1, &z) == FAILURE) {
+    END_TIMER(parse);
     RETURN_FALSE;
   }
   int l;
   char *s = parse_zend_string(VK_ZVAL_ARRAY_TO_API_P(z), &l);
-  END_TIMER (parse);
+  END_TIMER(parse);
   do_rpc_parse(s, l);
   RETURN_TRUE;
 }
@@ -3365,21 +3333,21 @@ void php_rpc_parse(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
 void php_vk_prepare_stats(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
   static char buf[1000000];
   rpc_prepare_stats(buf, 1000000);
-  VK_RETURN_STRING_DUP (buf);
+  VK_RETURN_STRING_DUP(buf);
 }
 
 /* }}} */
 
 void php_tl_config_load_file(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
   VK_ZVAL_API_ARRAY z;
-  if (zend_get_parameters_array_ex (1, &z) == FAILURE) {
-    END_TIMER (parse);
+  if (zend_get_parameters_array_ex(1, &z) == FAILURE) {
+    END_TIMER(parse);
     RETURN_FALSE;
   }
-  if (VK_Z_API_TYPE (VK_ZVAL_ARRAY_TO_API_P(z)) != IS_STRING) {
+  if (VK_Z_API_TYPE(VK_ZVAL_ARRAY_TO_API_P(z)) != IS_STRING) {
     RETURN_FALSE;
   }
-  int x = read_tl_config(VK_Z_STRVAL_P (VK_ZVAL_ARRAY_TO_API_P(z)));
+  int x = read_tl_config(VK_Z_STRVAL_P(VK_ZVAL_ARRAY_TO_API_P(z)));
   if (x < 0) {
     RETURN_FALSE;
   } else {
@@ -3390,12 +3358,12 @@ void php_tl_config_load_file(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
 /* }}} */
 
 void rpc_on_minit(int module_number) { /* {{{ */
-  ADD_CNT (minit);
-  START_TIMER (minit);
+  ADD_CNT(minit);
+  START_TIMER(minit);
   last_qid = lrand48() * (1ll << 32) + lrand48() + 1000000;
   last_queue_id = (1 << 30) * 1ll + lrand48();
   if (VK_INI_STR("tl.conffile")) {
-    assert (read_tl_config(VK_INI_STR("tl.conffile")) >= 0);
+    assert(read_tl_config(VK_INI_STR("tl.conffile")) >= 0);
     if (inbuf) {
       inbuf = buffer_delete(inbuf);
     }
@@ -3411,7 +3379,7 @@ void rpc_on_minit(int module_number) { /* {{{ */
     use_unix = atoi(VK_INI_STR("vkext.use_unix"));
   }
 
-  END_TIMER (minit);
+  END_TIMER(minit);
 }
 
 /* }}} */
@@ -3451,7 +3419,7 @@ void free_connection(struct rpc_connection *s) {
 
 void free_queries() {
   int i;
-//  fprintf (stderr, "max_query_id = %d\n", max_query_id);
+  //  fprintf (stderr, "max_query_id = %d\n", max_query_id);
   for (i = 0; i < max_query_id; i++) {
     if (queries[i].qid) {
       rpc_query_delete(&queries[i]);
@@ -3473,11 +3441,11 @@ void rpc_on_rshutdown(int module_number) { /* {{{ */
   if (outbuf) {
     outbuf = buffer_delete(outbuf);
   }
-  //tree_act_query (query_tree, rpc_query_free);
-  //query_tree = tree_clear_query (query_tree);
-  //tree_act_qid (query_completed, try_free_query);
-  //total_working_qid = 0;
-  //query_completed = tree_clear_qid (query_completed);
+  // tree_act_query (query_tree, rpc_query_free);
+  // query_tree = tree_clear_query (query_tree);
+  // tree_act_qid (query_completed, try_free_query);
+  // total_working_qid = 0;
+  // query_completed = tree_clear_qid (query_completed);
   free_queries();
 
   int i;
@@ -3510,7 +3478,7 @@ void rpc_on_rshutdown(int module_number) { /* {{{ */
     printf("%s", buf);
   }
 
-  //fprintf (stderr, "send_noflush %lf clean %lf\n", stats.send_noflush_time, stats.clean_time);
+  // fprintf (stderr, "send_noflush %lf clean %lf\n", stats.send_noflush_time, stats.clean_time);
 }
 /* }}} */
 

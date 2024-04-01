@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <string>
 #include <optional>
+#include <string>
 #include <vector>
 
 #include "common/stats/provider.h"

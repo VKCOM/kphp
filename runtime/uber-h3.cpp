@@ -13,10 +13,7 @@ inline std::tuple<double, double> coord2deg(GeoCoord geo_coord) noexcept {
 }
 
 inline GeoCoord deg2coord(std::tuple<double, double> geo_deg) noexcept {
-  return GeoCoord{
-    .lat = degsToRads(std::get<0>(geo_deg)),
-    .lon = degsToRads(std::get<1>(geo_deg))
-  };
+  return GeoCoord{.lat = degsToRads(std::get<0>(geo_deg)), .lon = degsToRads(std::get<1>(geo_deg))};
 }
 
 inline int32_t check_k_param(int64_t k) noexcept {
@@ -60,10 +57,9 @@ inline array<int64_t> indexes2vector(const array<int64_t> &h3_indexes, bool alwa
 
 class GeoPolygonOwner {
 public:
-  GeoPolygonOwner(const array<std::tuple<double, double>> &polygon_boundary,
-                  const array<array<std::tuple<double, double>>> &holes) noexcept:
-    polygon_boundary_(array_size{polygon_boundary.count(), true}),
-    holes_(array_size{holes.count(), true}) {
+  GeoPolygonOwner(const array<std::tuple<double, double>> &polygon_boundary, const array<array<std::tuple<double, double>>> &holes) noexcept
+    : polygon_boundary_(array_size{polygon_boundary.count(), true})
+    , holes_(array_size{holes.count(), true}) {
     for (const auto &boundary_vertex : polygon_boundary) {
       polygon_boundary_.emplace_back(deg2coord(boundary_vertex.get_value()));
     }
@@ -72,10 +68,7 @@ public:
 
     for (const auto &hole_vertexes : holes) {
       const auto &vertexes = hole_vertexes.get_value();
-      holes_.emplace_back(Geofence{
-        .numVerts = static_cast<int32_t>(vertexes.count()),
-        .verts = nullptr
-      });
+      holes_.emplace_back(Geofence{.numVerts = static_cast<int32_t>(vertexes.count()), .verts = nullptr});
       holes_vertexes_.reserve(holes_vertexes_.count() + vertexes.count(), true);
       for (const auto &hole_vertex : vertexes) {
         holes_vertexes_.emplace_back(deg2coord(hole_vertex.get_value()));
@@ -130,7 +123,6 @@ array<std::tuple<double, double>> f$UberH3$$h3ToGeoBoundary(int64_t h3_index) no
   return result;
 }
 
-
 int64_t f$UberH3$$h3GetResolution(int64_t h3_index) noexcept {
   return h3GetResolution(static_cast<H3Index>(h3_index));
 }
@@ -173,7 +165,6 @@ array<int64_t> f$UberH3$$h3GetFaces(int64_t h3_index) noexcept {
 int64_t f$UberH3$$maxFaceCount(int64_t h3_index) noexcept {
   return maxFaceCount(static_cast<H3Index>(h3_index));
 }
-
 
 Optional<array<int64_t>> f$UberH3$$kRing(int64_t h3_index_origin, int64_t k) noexcept {
   const int32_t checked_k = check_k_param(k);
@@ -260,8 +251,8 @@ Optional<array<int64_t>> f$UberH3$$hexRanges(const array<int64_t> &h3_indexes, i
   auto h3_indexes_set = indexes2vector(h3_indexes, true);
   auto h3_indexes_result = make_zeros_vector<int64_t>(maxKringSize(checked_k) * h3_indexes.count());
   if (!h3_indexes_result.empty()) {
-    if (unlikely(hexRanges(reinterpret_cast<H3Index *>(&h3_indexes_set[0]), static_cast<int32_t>(h3_indexes.count()),
-                           checked_k, reinterpret_cast<H3Index *>(&h3_indexes_result[0])))) {
+    if (unlikely(hexRanges(reinterpret_cast<H3Index *>(&h3_indexes_set[0]), static_cast<int32_t>(h3_indexes.count()), checked_k,
+                           reinterpret_cast<H3Index *>(&h3_indexes_result[0])))) {
       return false;
     }
   }
@@ -289,9 +280,7 @@ Optional<array<int64_t>> f$UberH3$$h3Line(int64_t h3_index_start, int64_t h3_ind
 
   auto line = make_zeros_vector<int64_t>(size);
   if (size) {
-    if (unlikely(h3Line(static_cast<H3Index>(h3_index_start),
-                        static_cast<H3Index>(h3_index_end),
-                        reinterpret_cast<H3Index *>(&line[0])))) {
+    if (unlikely(h3Line(static_cast<H3Index>(h3_index_start), static_cast<H3Index>(h3_index_end), reinterpret_cast<H3Index *>(&line[0])))) {
       return false;
     }
   }
@@ -305,7 +294,6 @@ int64_t f$UberH3$$h3LineSize(int64_t h3_index_start, int64_t h3_index_end) noexc
 int64_t f$UberH3$$h3Distance(int64_t h3_index_start, int64_t h3_index_end) noexcept {
   return h3Distance(static_cast<H3Index>(h3_index_start), static_cast<H3Index>(h3_index_end));
 }
-
 
 int64_t f$UberH3$$h3ToParent(int64_t h3_index, int64_t parent_resolution) noexcept {
   const int32_t checked_parent_resolution = check_resolution_param(parent_resolution);
@@ -341,8 +329,7 @@ Optional<array<int64_t>> f$UberH3$$compact(const array<int64_t> &h3_indexes) noe
   if (!compacted_h3_set.empty()) {
     // compact() uses malloc
     auto malloc_replacer = make_malloc_replacement_with_script_allocator();
-    if (unlikely(compact(reinterpret_cast<const H3Index *>(h3_set.get_const_vector_pointer()),
-                         reinterpret_cast<H3Index *>(&compacted_h3_set[0]),
+    if (unlikely(compact(reinterpret_cast<const H3Index *>(h3_set.get_const_vector_pointer()), reinterpret_cast<H3Index *>(&compacted_h3_set[0]),
                          static_cast<int32_t>(h3_indexes.count())))) {
       return false;
     }
@@ -362,8 +349,7 @@ Optional<array<int64_t>> f$UberH3$$uncompact(const array<int64_t> &h3_indexes, i
 
   const auto h3_set_size = static_cast<int32_t>(h3_indexes.count());
   const array<int64_t> h3_set = indexes2vector(h3_indexes);
-  const int32_t uncompact_size = maxUncompactSize(reinterpret_cast<const H3Index *>(h3_set.get_const_vector_pointer()),
-                                                  h3_set_size, checked_resolution);
+  const int32_t uncompact_size = maxUncompactSize(reinterpret_cast<const H3Index *>(h3_set.get_const_vector_pointer()), h3_set_size, checked_resolution);
   if (unlikely(uncompact_size < 0)) {
     return false;
   }
@@ -384,12 +370,10 @@ int64_t f$UberH3$$maxUncompactSize(const array<int64_t> &h3_indexes, int64_t res
     return 0;
   }
   const array<int64_t> h3_set = indexes2vector(h3_indexes);
-  return maxUncompactSize(reinterpret_cast<const H3Index *>(h3_set.get_const_vector_pointer()),
-                          static_cast<int32_t>(h3_set.count()), checked_resolution);
+  return maxUncompactSize(reinterpret_cast<const H3Index *>(h3_set.get_const_vector_pointer()), static_cast<int32_t>(h3_set.count()), checked_resolution);
 }
 
-int64_t f$UberH3$$maxPolyfillSize(const array<std::tuple<double, double>> &polygon_boundary,
-                                  const array<array<std::tuple<double, double>>> &holes,
+int64_t f$UberH3$$maxPolyfillSize(const array<std::tuple<double, double>> &polygon_boundary, const array<array<std::tuple<double, double>>> &holes,
                                   int64_t resolution) noexcept {
   const int32_t checked_resolution = check_resolution_param(resolution);
   if (unlikely(checked_resolution != resolution)) {
@@ -399,8 +383,7 @@ int64_t f$UberH3$$maxPolyfillSize(const array<std::tuple<double, double>> &polyg
   return maxPolyfillSize(&polygon_owner.getPolygon(), checked_resolution);
 }
 
-Optional<array<int64_t>> f$UberH3$$polyfill(const array<std::tuple<double, double>> &polygon_boundary,
-                                            const array<array<std::tuple<double, double>>> &holes,
+Optional<array<int64_t>> f$UberH3$$polyfill(const array<std::tuple<double, double>> &polygon_boundary, const array<array<std::tuple<double, double>>> &holes,
                                             int64_t resolution) noexcept {
   const int32_t checked_resolution = check_resolution_param(resolution);
   if (unlikely(checked_resolution != resolution)) {

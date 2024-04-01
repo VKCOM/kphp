@@ -5,8 +5,8 @@
 #include <poll.h>
 
 #include "common/kprintf.h"
-#include "server/database-drivers/connector.h"
 #include "server/database-drivers/adaptor.h"
+#include "server/database-drivers/connector.h"
 #include "server/database-drivers/response.h"
 #include "server/php-engine.h"
 #include "server/php-mc-connections.h"
@@ -63,7 +63,7 @@ void php_query_connect_t::run([[maybe_unused]] PhpWorker *worker) noexcept {
       res.connection_id = get_target(host, port, &rpc_ct);
       break;
     default:
-      assert ("unknown protocol" && 0);
+      assert("unknown protocol" && 0);
   }
 
   ans = &res;
@@ -71,7 +71,8 @@ void php_query_connect_t::run([[maybe_unused]] PhpWorker *worker) noexcept {
   php_script->query_answered();
 }
 
-external_driver_connect::external_driver_connect(std::unique_ptr<database_drivers::Connector> &&connector) : connector(std::move(connector)) {};
+external_driver_connect::external_driver_connect(std::unique_ptr<database_drivers::Connector> &&connector)
+  : connector(std::move(connector)){};
 
 void external_driver_connect::run(PhpWorker *worker __attribute__((unused))) noexcept {
   query_stats.desc = "CONNECT_EXTERNAL_DRIVER";
@@ -97,7 +98,6 @@ void php_query_wait_t::run(PhpWorker *worker) noexcept {
   worker->wait(timeout_ms);
 }
 
-
 int php_worker_http_load_post_impl(PhpWorker *worker, char *buf, int min_len, int max_len) {
   connection *c = worker->conn;
   double precise_now = get_utime_monotonic();
@@ -112,9 +112,9 @@ int php_worker_http_load_post_impl(PhpWorker *worker, char *buf, int min_len, in
     return -1;
   }
 
-  assert (!c->crypto);
-  assert (c->basic_type != ct_pipe);
-  assert (min_len <= max_len);
+  assert(!c->crypto);
+  assert(c->basic_type != ct_pipe);
+  assert(min_len <= max_len);
 
   int read = 0;
   int have_bytes = get_total_ready_bytes(&c->In);
@@ -122,7 +122,7 @@ int php_worker_http_load_post_impl(PhpWorker *worker, char *buf, int min_len, in
     if (have_bytes > max_len) {
       have_bytes = max_len;
     }
-    assert (read_in(&c->In, buf, have_bytes) == have_bytes);
+    assert(read_in(&c->In, buf, have_bytes) == have_bytes);
     read += have_bytes;
   }
 
@@ -134,7 +134,7 @@ int php_worker_http_load_post_impl(PhpWorker *worker, char *buf, int min_len, in
     precise_now = get_utime_monotonic();
 
     double left_time = worker->finish_time - precise_now;
-    assert (left_time < 2000000.0);
+    assert(left_time < 2000000.0);
 
     if (left_time < 0.01) {
       return -1;
@@ -143,7 +143,7 @@ int php_worker_http_load_post_impl(PhpWorker *worker, char *buf, int min_len, in
     int r = poll(&poll_fds, 1, (int)(left_time * 1000 + 1));
     int err = errno;
     if (r > 0) {
-      assert (r == 1);
+      assert(r == 1);
 
       r = static_cast<int>(recv(c->fd, buf + read, max_len - read, 0));
       err = errno;
@@ -181,7 +181,6 @@ int php_worker_http_load_post_impl(PhpWorker *worker, char *buf, int min_len, in
   return read;
 }
 
-
 void php_query_http_load_post_t::run(PhpWorker *worker) noexcept {
   query_stats.desc = "HTTP_LOAD_POST";
 
@@ -210,6 +209,6 @@ void php_net_query_packet_t::run(PhpWorker *worker) noexcept {
       php_worker_run_sql_query_packet(worker, this);
       break;
     default:
-      assert (0);
+      assert(0);
   }
 }

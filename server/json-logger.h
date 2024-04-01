@@ -12,7 +12,6 @@
 #include "common/smart_ptrs/singleton.h"
 #include "common/wrappers/string_view.h"
 
-
 class JsonLogger : vk::not_copyable {
 public:
   friend class vk::singleton<JsonLogger>;
@@ -111,6 +110,5 @@ private:
   };
   std::array<JsonBuffer, 8> buffers_;
 
-  void write_general_info(JsonBuffer * json_out_it, int type, int64_t created_at, bool uncaught);
+  void write_general_info(JsonBuffer *json_out_it, int type, int64_t created_at, bool uncaught);
 };
-

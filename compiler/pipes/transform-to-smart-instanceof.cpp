@@ -9,7 +9,6 @@
 #include "compiler/name-gen.h"
 #include "compiler/vertex-util.h"
 
-
 bool TransformToSmartInstanceofPass::user_recursion(VertexPtr v) {
   if (v->type() == op_if) {
     return on_if_user_recursion(v.as<op_if>());
@@ -18,7 +17,7 @@ bool TransformToSmartInstanceofPass::user_recursion(VertexPtr v) {
   } else if (v->type() == op_lambda) {
     return on_lambda_user_recursion(v.as<op_lambda>());
   }
-  
+
   return false;
 }
 
@@ -76,13 +75,14 @@ bool TransformToSmartInstanceofPass::on_lambda_user_recursion(VertexAdaptor<op_l
 
 // having `if (!($x instanceof A)) return;`, replace $x with $tmp_A till the end of function
 // we support this only if this `if` is the top-level statement of function, as we don't have cfg at this point
-bool TransformToSmartInstanceofPass::try_replace_if_not_instanceof_return(VertexAdaptor<op_if> v_if_not, VertexAdaptor<op_var> instance_var, VertexPtr name_of_derived) {
+bool TransformToSmartInstanceofPass::try_replace_if_not_instanceof_return(VertexAdaptor<op_if> v_if_not, VertexAdaptor<op_var> instance_var,
+                                                                          VertexPtr name_of_derived) {
   bool is_if_not_instanceof_return = !v_if_not->has_false_cmd() && v_if_not->true_cmd()->size() == 1 && v_if_not->true_cmd()->front()->type() == op_return;
   if (!is_if_not_instanceof_return) {
     return false;
   }
 
-  for (auto &child: *current_function->root->cmd()) {
+  for (auto &child : *current_function->root->cmd()) {
     if (child == v_if_not) {
       run_function_pass(v_if_not->cond(), this);
       run_function_pass(v_if_not->true_cmd_ref(), this);
@@ -106,9 +106,7 @@ void TransformToSmartInstanceofPass::add_tmp_var_with_instance_cast(VertexAdapto
   cmd = VertexAdaptor<op_seq>::create(set_instance_cast_to_tmp, cmd.as<op_seq>()->args()).set_location(cmd);
   auto commands = cmd.as<op_seq>()->args();
 
-  std::for_each(std::next(commands.begin()), commands.end(), [&](VertexPtr &v) {
-    return run_function_pass(v, this);
-  });
+  std::for_each(std::next(commands.begin()), commands.end(), [&](VertexPtr &v) { return run_function_pass(v, this); });
 }
 
 VertexPtr TransformToSmartInstanceofPass::on_enter_vertex(VertexPtr v) {
@@ -181,22 +179,23 @@ VertexPtr TransformToSmartInstanceofPass::try_replace_switch_when_constexpr(Vert
   // 1) all cases are const strings
   // 2) every case ends with `break`/`return`/`throw` or is empty (just fallthrough)
   VertexRange cases = v_switch->cases();
-  bool is_valid_const_string_switch = cases.size() > 1 && vk::all_of(cases, [](VertexPtr v) {
-    auto as_case = v.try_as<op_case>();
-    if (!as_case) {   // default
-      return true;
-    }
-    VertexPtr last_stmt = as_case->cmd()->empty() ? (VertexPtr)VertexAdaptor<op_empty>::create() : as_case->cmd()->args()[as_case->cmd()->size() - 1];
-    return VertexUtil::get_actual_value(as_case->expr())->type() == op_string &&
-           vk::any_of_equal(last_stmt->type(), op_break, op_return, op_throw);
-  });
+  bool is_valid_const_string_switch =
+    cases.size() > 1 && vk::all_of(cases, [](VertexPtr v) {
+      auto as_case = v.try_as<op_case>();
+      if (!as_case) { // default
+        return true;
+      }
+      VertexPtr last_stmt = as_case->cmd()->empty() ? (VertexPtr)VertexAdaptor<op_empty>::create() : as_case->cmd()->args()[as_case->cmd()->size() - 1];
+      return VertexUtil::get_actual_value(as_case->expr())->type() == op_string && vk::any_of_equal(last_stmt->type(), op_break, op_return, op_throw);
+    });
   if (!is_valid_const_string_switch) {
     return v_switch;
   }
 
   // find case x where x == switch condition (true case)
-  auto it_true_case = std::find_if(cases.begin(), cases.end(),
-                                   [v_cond](VertexPtr v_case) { return v_case->type() == op_case && VertexUtil::get_actual_value(v_case.as<op_case>()->expr())->get_string() == v_cond->get_string(); });
+  auto it_true_case = std::find_if(cases.begin(), cases.end(), [v_cond](VertexPtr v_case) {
+    return v_case->type() == op_case && VertexUtil::get_actual_value(v_case.as<op_case>()->expr())->get_string() == v_cond->get_string();
+  });
   // for 'case x: case y: ...', fall through empty cases
   while (it_true_case != cases.end() && (*it_true_case)->type() == op_case && it_true_case->as<op_case>()->cmd()->empty()) {
     ++it_true_case;
@@ -207,8 +206,7 @@ VertexPtr TransformToSmartInstanceofPass::try_replace_switch_when_constexpr(Vert
   if (it_true_case != cases.end() && (*it_true_case)->type() == op_case) {
     v_true_cmd = it_true_case->as<op_case>()->cmd();
   } else {
-    auto it_default = std::find_if(cases.begin(), cases.end(),
-                                   [](VertexPtr v_case) { return v_case->type() == op_default; });
+    auto it_default = std::find_if(cases.begin(), cases.end(), [](VertexPtr v_case) { return v_case->type() == op_default; });
     if (it_default != cases.end()) {
       v_true_cmd = it_default->as<op_default>()->cmd();
     }
@@ -223,4 +221,3 @@ VertexPtr TransformToSmartInstanceofPass::try_replace_switch_when_constexpr(Vert
   auto ins_default = VertexAdaptor<op_default>::create(v_true_cmd).set_location(v_true_cmd);
   return VertexUtil::create_switch_vertex(current_function, v_switch->condition(), {ins_default});
 }
-

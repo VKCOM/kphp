@@ -20,11 +20,10 @@ public:
   using std::atomic<T>::compare_exchange_strong;
   using std::atomic<T>::compare_exchange_weak;
 
-  copyable_atomic(const copyable_atomic &other) :
-    std::atomic<T>(other.load()) {
-  }
+  copyable_atomic(const copyable_atomic &other)
+    : std::atomic<T>(other.load()) {}
 
-  copyable_atomic& operator=(copyable_atomic other) {
+  copyable_atomic &operator=(copyable_atomic other) {
     *this = other.load();
     return *this;
   }

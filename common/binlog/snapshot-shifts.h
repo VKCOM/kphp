@@ -9,7 +9,7 @@ inline static int get_snapshot_position_shift(const struct kfs_file_info *info) 
     return 0xffff;
   }
   int magic = *(int *)(info->start);
-  if (magic == 0x53407fa0) {    // PMEMCACHED_RAM_INDEX_MAGIC
+  if (magic == 0x53407fa0) { // PMEMCACHED_RAM_INDEX_MAGIC
     return 16;
   }
   fprintf(stderr, "Unknown snapshot magic for file %s: %08x\n", info->filename, magic);
@@ -22,10 +22,10 @@ inline static long long get_snapshot_log_pos(const struct kfs_file_info *info) {
   if (info->preloaded_bytes >= shift + 8) {
     log_pos = *(long long *)(info->start + shift);
     if (!(info->min_log_pos <= log_pos && log_pos <= info->max_log_pos)) {
-      fprintf(stderr, "filename %s info->min_log_pos %lld info->max_log_pos %lld log_pos %lld shift %d\n", info->filename, info->min_log_pos, info->max_log_pos, log_pos, shift);
+      fprintf(stderr, "filename %s info->min_log_pos %lld info->max_log_pos %lld log_pos %lld shift %d\n", info->filename, info->min_log_pos, info->max_log_pos,
+              log_pos, shift);
       assert(info->min_log_pos <= log_pos && log_pos <= info->max_log_pos);
     }
   }
   return log_pos;
 }
-

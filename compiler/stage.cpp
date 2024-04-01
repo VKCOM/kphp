@@ -27,7 +27,7 @@ const char *get_assert_level_desc(AssertLevelT assert_level) {
     case FATAL_ASSERT_LEVEL:
       return "Fatal error";
     default:
-      assert (0);
+      assert(0);
   }
 }
 
@@ -41,8 +41,8 @@ void stage::set_warning_file(FILE *file) noexcept {
   warning_file = file;
 }
 
-void on_compilation_error(const char *description __attribute__((unused)), const char *file_name, int line_number,
-                          const char *full_description, AssertLevelT assert_level) {
+void on_compilation_error(const char *description __attribute__((unused)), const char *file_name, int line_number, const char *full_description,
+                          AssertLevelT assert_level) {
 
   AutoLocker<volatile int *> locker(&ce_locker);
   FILE *file = stdout;
@@ -60,7 +60,7 @@ void on_compilation_error(const char *description __attribute__((unused)), const
                       "It is probably happened due to incorrect or unsupported PHP input.\n"
                       "But it is still bug in compiler.\n");
 #ifdef __arm64__
-    __builtin_debugtrap();  // for easier debugging kphp_assert / kphp_fail
+    __builtin_debugtrap(); // for easier debugging kphp_assert / kphp_fail
 #endif
     abort();
   }
@@ -72,7 +72,6 @@ void on_compilation_error(const char *description __attribute__((unused)), const
   }
   fflush(file);
 }
-
 
 void Location::set_file(SrcFilePtr new_file) {
   file = new_file;
@@ -92,10 +91,10 @@ void Location::set_line(int new_line) {
   line = new_line;
 }
 
-Location::Location(const SrcFilePtr &file, const FunctionPtr &function, int line) :
-  file(file),
-  function(function),
-  line(line) {}
+Location::Location(const SrcFilePtr &file, const FunctionPtr &function, int line)
+  : file(file)
+  , function(function)
+  , line(line) {}
 
 // return a location in the format: "{file}:{line}  in {function}"
 std::string Location::as_human_readable() const {
@@ -249,8 +248,9 @@ const std::string &stage::get_function_name() {
   return function->name;
 }
 
-bool stage::should_be_colored(FILE *f)  {
-  if (!G) return TermStringFormat::is_terminal(f);
+bool stage::should_be_colored(FILE *f) {
+  if (!G)
+    return TermStringFormat::is_terminal(f);
   switch (G->settings().get_color_settings()) {
     case CompilerSettings::colored:
       return true;

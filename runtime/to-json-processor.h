@@ -4,18 +4,17 @@
 
 #pragma once
 
-#include "runtime/kphp_core.h"
-#include "runtime/json-writer.h"
 #include "runtime/json-processor-utils.h"
+#include "runtime/json-writer.h"
+#include "runtime/kphp_core.h"
 
-template <class Tag>
+template<class Tag>
 class ToJsonVisitor {
 public:
   explicit ToJsonVisitor(impl_::JsonWriter &writer, bool flatten_class, std::size_t depth) noexcept
     : writer_(writer)
     , flatten_class_(flatten_class)
-    , depth_(flatten_class ? depth : ++depth)
-  {}
+    , depth_(flatten_class ? depth : ++depth) {}
 
   template<class T>
   void operator()(const char *key, const T &value, bool array_as_hashmap = false) noexcept {
@@ -71,13 +70,13 @@ private:
 
   template<class T>
   void process_impl(const array<T> &array) noexcept {
-    //use array_as_hashmap_ only for top level of current array field, don't propagate it further
+    // use array_as_hashmap_ only for top level of current array field, don't propagate it further
     bool as_hashmap = std::exchange(array_as_hashmap_, false);
     (array.is_vector() || array.is_pseudo_vector()) && !as_hashmap ? process_vector(array) : process_map(array);
   }
 
   // support of array<Unknown> compilation
-  void process_impl(const Unknown &/*elem*/) noexcept {}
+  void process_impl(const Unknown & /*elem*/) noexcept {}
 
   void process_impl(const mixed &value) noexcept {
     switch (value.get_type()) {

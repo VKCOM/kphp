@@ -14,8 +14,7 @@ class class_instance;
 
 class mixed;
 
-class Unknown {
-};
+class Unknown {};
 
 class string;
 

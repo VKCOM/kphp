@@ -35,13 +35,15 @@
 
 class TypeData;
 class ClassMembersContainer;
-namespace kphp_json { class KphpJsonTagList; }
+namespace kphp_json {
+class KphpJsonTagList;
+}
 
 struct ClassMemberStaticMethod {
   FunctionPtr function;
 
-  explicit ClassMemberStaticMethod(FunctionPtr function) :
-    function(std::move(function)) {}
+  explicit ClassMemberStaticMethod(FunctionPtr function)
+    : function(std::move(function)) {}
 
   vk::string_view global_name() const &;
   vk::string_view global_name() const && = delete;
@@ -57,8 +59,8 @@ struct ClassMemberStaticMethod {
 struct ClassMemberInstanceMethod {
   FunctionPtr function;
 
-  explicit ClassMemberInstanceMethod(FunctionPtr function) :
-    function(std::move(function)) {}
+  explicit ClassMemberInstanceMethod(FunctionPtr function)
+    : function(std::move(function)) {}
 
   const std::string &global_name() const;
   vk::string_view local_name() const &;
@@ -71,9 +73,10 @@ struct ClassMemberStaticField {
   VertexAdaptor<op_var> root;
   VarPtr var;
   const PhpDocComment *phpdoc{nullptr};
-  const TypeHint *type_hint{nullptr};  // from @var / php 7.4 type hint / default value
+  const TypeHint *type_hint{nullptr}; // from @var / php 7.4 type hint / default value
 
-  ClassMemberStaticField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, const PhpDocComment *phpdoc, const TypeHint *type_hint);
+  ClassMemberStaticField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, const PhpDocComment *phpdoc,
+                         const TypeHint *type_hint);
 
   vk::string_view local_name() const &;
   static std::string hash_name(vk::string_view name);
@@ -87,11 +90,12 @@ struct ClassMemberInstanceField {
   VarPtr var;
   const PhpDocComment *phpdoc{nullptr};
   const kphp_json::KphpJsonTagList *kphp_json_tags{nullptr};
-  const TypeHint *type_hint{nullptr};  // from @var / php 7.4 type hint / default value
+  const TypeHint *type_hint{nullptr}; // from @var / php 7.4 type hint / default value
   int8_t serialization_tag = -1;
   bool serialize_as_float32{false};
 
-  ClassMemberInstanceField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, const PhpDocComment *phpdoc, const TypeHint *type_hint);
+  ClassMemberInstanceField(ClassPtr klass, VertexAdaptor<op_var> root, VertexPtr def_val, FieldModifiers modifiers, const PhpDocComment *phpdoc,
+                           const TypeHint *type_hint);
 
   vk::string_view local_name() const &;
   vk::string_view local_name() const && = delete;
@@ -116,7 +120,6 @@ struct ClassMemberConstant {
   static vk::string_view hash_name(vk::string_view name);
   std::string get_hash_name() const;
 };
-
 
 /*
    —————————————————————————————————————
@@ -151,11 +154,13 @@ class ClassMembersContainer {
   }
 
   template<class MemberT>
-  const std::list<MemberT> &get_all_of() const { return const_cast<ClassMembersContainer *>(this)->get_all_of<MemberT>(); }
+  const std::list<MemberT> &get_all_of() const {
+    return const_cast<ClassMembersContainer *>(this)->get_all_of<MemberT>();
+  }
 
 public:
-  explicit ClassMembersContainer(ClassData *klass) :
-    klass(ClassPtr(klass)) {}
+  explicit ClassMembersContainer(ClassData *klass)
+    : klass(ClassPtr(klass)) {}
 
   template<class CallbackT>
   inline void for_each(CallbackT callback) const {
@@ -198,10 +203,18 @@ public:
   bool has_instance_method(vk::string_view local_name) const;
   bool has_static_method(vk::string_view local_name) const;
 
-  bool has_any_instance_var() const { return !instance_fields.empty(); }
-  bool has_any_instance_method() const { return !instance_methods.empty(); }
-  bool has_any_static_var() const { return !static_fields.empty(); }
-  bool has_any_static_method() const { return !static_methods.empty(); }
+  bool has_any_instance_var() const {
+    return !instance_fields.empty();
+  }
+  bool has_any_instance_method() const {
+    return !instance_methods.empty();
+  }
+  bool has_any_static_var() const {
+    return !static_fields.empty();
+  }
+  bool has_any_static_method() const {
+    return !static_methods.empty();
+  }
 
   const ClassMemberStaticMethod *get_static_method(vk::string_view local_name) const;
   const ClassMemberInstanceMethod *get_instance_method(vk::string_view local_name) const;
@@ -231,12 +244,22 @@ inline vk::string_view get_local_name_from_global_$$(T &&global_name) {
 }
 
 template<>
-inline std::list<ClassMemberStaticMethod> &ClassMembersContainer::get_all_of<ClassMemberStaticMethod>() { return static_methods; }
+inline std::list<ClassMemberStaticMethod> &ClassMembersContainer::get_all_of<ClassMemberStaticMethod>() {
+  return static_methods;
+}
 template<>
-inline std::list<ClassMemberInstanceMethod> &ClassMembersContainer::get_all_of<ClassMemberInstanceMethod>() { return instance_methods; }
+inline std::list<ClassMemberInstanceMethod> &ClassMembersContainer::get_all_of<ClassMemberInstanceMethod>() {
+  return instance_methods;
+}
 template<>
-inline std::list<ClassMemberStaticField> &ClassMembersContainer::get_all_of<ClassMemberStaticField>() { return static_fields; }
+inline std::list<ClassMemberStaticField> &ClassMembersContainer::get_all_of<ClassMemberStaticField>() {
+  return static_fields;
+}
 template<>
-inline std::list<ClassMemberInstanceField> &ClassMembersContainer::get_all_of<ClassMemberInstanceField>() { return instance_fields; }
+inline std::list<ClassMemberInstanceField> &ClassMembersContainer::get_all_of<ClassMemberInstanceField>() {
+  return instance_fields;
+}
 template<>
-inline std::list<ClassMemberConstant> &ClassMembersContainer::get_all_of<ClassMemberConstant>() { return constants; }
+inline std::list<ClassMemberConstant> &ClassMembersContainer::get_all_of<ClassMemberConstant>() {
+  return constants;
+}

@@ -12,11 +12,7 @@
 VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root) {
   // defined('NAME') is replaced by true or false
   if (auto defined = root.try_as<op_defined>()) {
-    kphp_error_act (
-      (int)root->size() == 1 && defined->expr()->type() == op_string,
-      "wrong arguments in 'defined'",
-      return VertexPtr()
-    );
+    kphp_error_act((int)root->size() == 1 && defined->expr()->type() == op_string, "wrong arguments in 'defined'", return VertexPtr());
 
     DefinePtr def = G->get_define(defined->expr()->get_string());
 

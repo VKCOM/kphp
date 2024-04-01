@@ -146,17 +146,23 @@ void append_apple_options(std::string &cxx_flags, std::string &ld_flags) noexcep
 #else
   std::string common_path = "/usr/local";
 #endif
-  cxx_flags += " -I" + common_path + "/include"
-               " -I" + common_path + "/opt/openssl/include";
+  cxx_flags += " -I" + common_path
+               + "/include"
+                 " -I"
+               + common_path + "/opt/openssl/include";
   ld_flags += " -liconv"
               " -lepoll-shim"
-              " -L" EPOLL_SHIM_LIB_DIR
-              " -L" + common_path + "/lib"
-              " -undefined dynamic_lookup"
+              " -L" EPOLL_SHIM_LIB_DIR " -L"
+              + common_path
+              + "/lib"
+                " -undefined dynamic_lookup"
 #ifdef PDO_DRIVER_PGSQL
-              " -L" + common_path + "/opt/libpq/lib"
+                " -L"
+              + common_path
+              + "/opt/libpq/lib"
 #endif
-              " -L" + common_path + "/opt/openssl/lib";
+                " -L"
+              + common_path + "/opt/openssl/lib";
 
 #else
   static_cast<void>(cxx_flags);
@@ -189,8 +195,8 @@ std::string calc_cxx_flags_sha256(vk::string_view cxx, vk::string_view cxx_flags
 
 } // namespace
 
-void CxxFlags::init(const std::string &runtime_sha256, const std::string &cxx,
-                    std::string cxx_flags_line, const std::string &dest_cpp_dir, bool enable_pch) noexcept {
+void CxxFlags::init(const std::string &runtime_sha256, const std::string &cxx, std::string cxx_flags_line, const std::string &dest_cpp_dir,
+                    bool enable_pch) noexcept {
   remove_extra_spaces(cxx_flags_line);
   flags.value_ = std::move(cxx_flags_line);
   flags_sha256.value_ = calc_cxx_flags_sha256(cxx, flags.get());
@@ -284,11 +290,7 @@ void CompilerSettings::init() {
 
   remove_extra_spaces(extra_cxx_flags.value_);
   std::stringstream ss;
-  ss << "-Wall "
-     << extra_cxx_flags.get()
-     << " -iquote" << kphp_src_path.get()
-     << " -iquote " << kphp_src_path.get()
-     << "objs/generated/auto/runtime"
+  ss << "-Wall " << extra_cxx_flags.get() << " -iquote" << kphp_src_path.get() << " -iquote " << kphp_src_path.get() << "objs/generated/auto/runtime"
      << " -fwrapv -Wno-parentheses -Wno-trigraphs"
      << " -fno-strict-aliasing -fno-omit-frame-pointer";
 #ifdef __x86_64__
@@ -305,13 +307,13 @@ void CompilerSettings::init() {
   if (vk::contains(cxx.get(), "clang")) {
     ss << " -Wno-invalid-source-encoding";
   }
-  #if __cplusplus <= 201703L
-    ss << " -std=c++17";
-  #elif __cplusplus <= 202002L
-    ss << " -std=c++20";
-  #else
-    #error unsupported __cplusplus value
-  #endif
+#if __cplusplus <= 201703L
+  ss << " -std=c++17";
+#elif __cplusplus <= 202002L
+  ss << " -std=c++20";
+#else
+#error unsupported __cplusplus value
+#endif
 
   std::string cxx_default_flags = ss.str();
 
@@ -395,7 +397,7 @@ void CompilerSettings::init() {
   main_file.value_.assign(full_path);
 
   const size_t dir_pos = main_file.get().rfind('/');
-  kphp_assert (dir_pos != std::string::npos);
+  kphp_assert(dir_pos != std::string::npos);
   base_dir.value_ = main_file.get().substr(0, dir_pos + 1);
 
   mkdir_recursive(dest_dir.get().c_str(), 0777);
@@ -418,14 +420,12 @@ void CompilerSettings::init() {
 
 std::string CompilerSettings::read_runtime_sha256_file(const std::string &filename) {
   std::ifstream runtime_sha256_file(filename.c_str());
-  kphp_error(runtime_sha256_file,
-             fmt_format("Can't open runtime sha256 file '{}'", filename));
+  kphp_error(runtime_sha256_file, fmt_format("Can't open runtime sha256 file '{}'", filename));
 
   constexpr std::streamsize SHA256_LEN = 64;
   char runtime_sha256[SHA256_LEN] = {0};
   runtime_sha256_file.read(runtime_sha256, SHA256_LEN);
-  kphp_error(runtime_sha256_file.gcount() == SHA256_LEN,
-             fmt_format("Can't read runtime sha256 from file '{}'", filename));
+  kphp_error(runtime_sha256_file.gcount() == SHA256_LEN, fmt_format("Can't read runtime sha256 from file '{}'", filename));
   return {runtime_sha256, runtime_sha256 + SHA256_LEN};
 }
 

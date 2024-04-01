@@ -26,5 +26,4 @@ std::string demangle() {
   return demangle(typeid(T).name());
 }
 
-}  // namespace vk
-
+} // namespace vk

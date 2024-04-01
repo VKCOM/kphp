@@ -4,11 +4,11 @@
 
 #pragma once
 
-#include <vector>
 #include <string>
+#include <vector>
 
-#include "compiler/ffi/ffi_types.h"
 #include "compiler/data/class-data.h"
+#include "compiler/ffi/ffi_types.h"
 
 // FFI symbol is an extern variable or function information carrier
 struct FFISymbol {
@@ -18,11 +18,16 @@ struct FFISymbol {
 
   const FFIType *type = nullptr;
 
-  FFISymbol(const FFIType *type): type{type} {}
+  FFISymbol(const FFIType *type)
+    : type{type} {}
 
-  std::string name() const { return type->str; }
+  std::string name() const {
+    return type->str;
+  }
 
-  bool operator <(const FFISymbol& other) const { return name() < other.name(); }
+  bool operator<(const FFISymbol &other) const {
+    return name() < other.name();
+  }
 };
 
 struct FFIClassDataMixin {
@@ -31,7 +36,9 @@ struct FFIClassDataMixin {
     , ffi_type{ffi_type}
     , scope_name{std::move(scope_name)} {}
 
-  bool is_ref() const noexcept { return static_cast<bool>(non_ref); }
+  bool is_ref() const noexcept {
+    return static_cast<bool>(non_ref);
+  }
 
   ClassPtr non_ref; // for reference types this field will contain the original (non-referential) type
   const FFIType *ffi_type;
@@ -50,13 +57,15 @@ struct FFIScopeDataMixin {
 
   std::vector<FFISymbol> variables;
   std::vector<FFISymbol> functions;
-  std::vector<const FFIType*> types; // not sorted!
+  std::vector<const FFIType *> types; // not sorted!
 
   std::map<std::string, int> enum_constants;
 
   FFITypedefs typedefs;
 
-  bool is_shared_lib() const noexcept { return shared_lib_id != -1; }
+  bool is_shared_lib() const noexcept {
+    return shared_lib_id != -1;
+  }
 
   int get_env_offset() const noexcept {
     // variables are placed before functions, so if there
@@ -68,15 +77,17 @@ struct FFIScopeDataMixin {
     return functions[0].env_index;
   }
 
-  const FFISymbol *find_variable(const vk::string_view name) { return find_symbol(variables, name); }
-  const FFISymbol *find_function(const vk::string_view name) { return find_symbol(functions, name); }
+  const FFISymbol *find_variable(const vk::string_view name) {
+    return find_symbol(variables, name);
+  }
+  const FFISymbol *find_function(const vk::string_view name) {
+    return find_symbol(functions, name);
+  }
 
 private:
-
   static const FFISymbol *find_symbol(const std::vector<FFISymbol> &sorted_vector, vk::string_view name) {
-    const auto &it = std::lower_bound(sorted_vector.begin(), sorted_vector.end(), name, [](const FFISymbol &lhs, vk::string_view name) {
-      return lhs.name() < name;
-    });
+    const auto &it =
+      std::lower_bound(sorted_vector.begin(), sorted_vector.end(), name, [](const FFISymbol &lhs, vk::string_view name) { return lhs.name() < name; });
     if (it != sorted_vector.end() && it->name() == name) {
       return &sorted_vector[std::distance(sorted_vector.begin(), it)];
     }
@@ -93,12 +104,11 @@ class FFIRoot {
   std::mutex mutex;
 
   std::vector<FFISharedLib> shared_libs;
-  std::unordered_map<std::string, FFIScopeDataMixin*> scopes;
+  std::unordered_map<std::string, FFIScopeDataMixin *> scopes;
 
   int num_dynamic_symbols = 0;
 
 public:
-
   const TypeHint *c2php_field_type_hint(const TypeHint *c_hint);
   const TypeHint *c2php_return_type_hint(const TypeHint *c_hint);
   const TypeHint *c2php_scalar_type_hint(ClassPtr cdata_class);
@@ -108,8 +118,8 @@ public:
   const std::vector<FFISharedLib> &get_shared_libs() const;
   int get_shared_lib_id(const std::string &path);
 
-  std::vector<FFIScopeDataMixin*> get_scopes() const;
-  FFIScopeDataMixin* find_scope(const std::string &scope_name);
+  std::vector<FFIScopeDataMixin *> get_scopes() const;
+  FFIScopeDataMixin *find_scope(const std::string &scope_name);
 
   static const FFIType *get_ffi_type(ClassPtr klass);
   static const FFIType *get_ffi_type(const TypeHint *type_hint);
@@ -123,7 +133,9 @@ public:
 
   void bind_symbols();
 
-  int get_dynamic_symbols_num() const noexcept { return num_dynamic_symbols; }
+  int get_dynamic_symbols_num() const noexcept {
+    return num_dynamic_symbols;
+  }
 
   // produces a name suitable for a C code declaration;
   // uses a scope_name as a prefix part
@@ -142,7 +154,6 @@ public:
   }
 
 private:
-
   enum class Php2cMode {
     FuncReturn,
     FieldRead,

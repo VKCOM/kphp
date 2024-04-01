@@ -8,7 +8,6 @@
 void init_confdata_functions_lib();
 void free_confdata_functions_lib();
 
-
 bool f$is_confdata_loaded() noexcept;
 
 mixed f$confdata_get_value(const string &key) noexcept;

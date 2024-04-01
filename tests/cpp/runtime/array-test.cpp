@@ -43,12 +43,8 @@ TEST(array_test, find_no_mutate_in_array_vector) {
 }
 
 TEST(array_test, find_no_mutate_in_array_map) {
-  array<int> arr{
-    std::make_pair(mixed{string{"key_1"}}, 1),
-    std::make_pair(mixed{string{"key_2"}}, 2),
-    std::make_pair(mixed{3}, 3),
-    std::make_pair(mixed{string{"4"}}, 4)
-  };
+  array<int> arr{std::make_pair(mixed{string{"key_1"}}, 1), std::make_pair(mixed{string{"key_2"}}, 2), std::make_pair(mixed{3}, 3),
+                 std::make_pair(mixed{string{"4"}}, 4)};
   const auto arr_copy = arr;
 
   ASSERT_FALSE(arr.is_vector());

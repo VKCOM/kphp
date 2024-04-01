@@ -20,7 +20,7 @@ public:
     }
 
     len_ = new_len;
-    auto *node = new(mem) list_node{nullptr, len};
+    auto *node = new (mem) list_node{nullptr, len};
     std::memcpy(node + 1, s, len);
     if (tail_) {
       tail_->next = node;
@@ -69,7 +69,6 @@ private:
     tail_ = nullptr;
     len_ = 0;
   }
-
 
   struct alignas(8) list_node {
     list_node *next;

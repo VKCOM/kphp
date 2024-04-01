@@ -9,35 +9,35 @@
 using std::string;
 
 const string TermStringFormat::COLORS[] = {
-  "\033[30m",   // [grey]
-  "\033[31m",   // [red]
-  "\033[32m",   // [green]
-  "\033[33m",   // [yellow]
-  "\033[34m",   // [blue]
-  "\033[35m",   // [magenta]
-  "\033[36m",   // [cyan]
-  "\033[37m"    // [white]
+  "\033[30m", // [grey]
+  "\033[31m", // [red]
+  "\033[32m", // [green]
+  "\033[33m", // [yellow]
+  "\033[34m", // [blue]
+  "\033[35m", // [magenta]
+  "\033[36m", // [cyan]
+  "\033[37m"  // [white]
 };
 
 const string TermStringFormat::BACKGROUND_COLORS[] = {
-  "\033[40m",   // [grey]
-  "\033[41m",   // [red]
-  "\033[42m",   // [green]
-  "\033[43m",   // [yellow]
-  "\033[44m",   // [blue]
-  "\033[45m",   // [magenta]
-  "\033[46m",   // [cyan]
-  "\033[47m"    // [white]
+  "\033[40m", // [grey]
+  "\033[41m", // [red]
+  "\033[42m", // [green]
+  "\033[43m", // [yellow]
+  "\033[44m", // [blue]
+  "\033[45m", // [magenta]
+  "\033[46m", // [cyan]
+  "\033[47m"  // [white]
 };
 
 const string TermStringFormat::TEXT_ATTRIBUTES[] = {
-  "\033[1m",    // [bold]
-  "\033[2m",    // [dark]
-  "\033[3m",    // [italic]
-  "\033[4m",    // [underline]
-  "\033[5m",    // [blink]
-  "\033[7m",    // [inverse]
-  "\033[9m"     // [strikethrough]
+  "\033[1m", // [bold]
+  "\033[2m", // [dark]
+  "\033[3m", // [italic]
+  "\033[4m", // [underline]
+  "\033[5m", // [blink]
+  "\033[7m", // [inverse]
+  "\033[9m"  // [strikethrough]
 };
 
 const string TermStringFormat::RESET_SETTINGS = "\033[00m";
@@ -71,13 +71,13 @@ string TermStringFormat::reset_settings(const string &s) {
 }
 
 string TermStringFormat::remove_special_symbols(string s) {
-  for (const auto& code: COLORS) {
+  for (const auto &code : COLORS) {
     remove_all_occurrences(s, code);
   }
-  for (const auto &code: TEXT_ATTRIBUTES) {
+  for (const auto &code : TEXT_ATTRIBUTES) {
     remove_all_occurrences(s, code);
   }
-  for (const auto &code: BACKGROUND_COLORS) {
+  for (const auto &code : BACKGROUND_COLORS) {
     remove_all_occurrences(s, code);
   }
   remove_all_occurrences(s, RESET_SETTINGS);
@@ -102,11 +102,11 @@ void TermStringFormat::remove_all_occurrences(string &s, const string &t) {
   }
 }
 
-string TermStringFormat::paint_green(const string & s, bool reset_at_the_end/* = true*/) {
+string TermStringFormat::paint_green(const string &s, bool reset_at_the_end /* = true*/) {
   return paint(s, green, reset_at_the_end);
 }
 
-string TermStringFormat::paint_red(const string & s, bool reset_at_the_end/* = true*/) {
+string TermStringFormat::paint_red(const string &s, bool reset_at_the_end /* = true*/) {
   return paint(s, red, reset_at_the_end);
 }
 

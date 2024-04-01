@@ -11,7 +11,6 @@
 #include "compiler/data/composer-json-data.h"
 #include "compiler/kphp_assert.h"
 
-
 static bool file_exists(const std::string &filename) {
   return access(filename.c_str(), F_OK) == 0;
 };
@@ -176,7 +175,7 @@ void ComposerAutoloader::load_file(const std::string &pkg_root, bool is_root_fil
   if (!composer_json->package_name.empty()) {
     G->register_composer_json(composer_json);
   }
-//  printf("composer package %s in %s\n", composer_json->package_name.c_str(), pkg_root.c_str());
+  //  printf("composer package %s in %s\n", composer_json->package_name.c_str(), pkg_root.c_str());
 
   // we handle "require/autoload/files" only in direct root deps, see https://github.com/VKCOM/kphp/pull/465
   bool require_autoload_files = is_root_file || vk::contains(deps_, composer_json->package_name);

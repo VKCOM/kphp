@@ -5,16 +5,16 @@
 #include <csignal>
 #include <unistd.h>
 
+#include "common/server/stats.h"
 #include "common/tl/constants/common.h"
 #include "common/tl/constants/engine.h"
 #include "common/tl/constants/net.h"
 #include "common/tl/fetch.h"
 #include "common/tl/methods/network.h"
-#include "common/tl/query-header.h"
 #include "common/tl/methods/rwm.h"
 #include "common/tl/methods/tcp-rwm.h"
+#include "common/tl/query-header.h"
 #include "common/version-string.h"
-#include "common/server/stats.h"
 
 #include "net/net-msg.h"
 #include "server/php-master-tl-handlers.h"

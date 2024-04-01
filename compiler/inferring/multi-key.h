@@ -12,7 +12,9 @@
 #include "compiler/kphp_assert.h"
 
 class MultiKey {
-  DEBUG_STRING_METHOD { return to_string(); }
+  DEBUG_STRING_METHOD {
+    return to_string();
+  }
 
 private:
   std::vector<Key> keys_;
@@ -26,9 +28,8 @@ public:
   MultiKey(const MultiKey &multi_key) = default;
   MultiKey &operator=(const MultiKey &multi_key) = default;
 
-  explicit MultiKey(std::vector<Key> keys) :
-    keys_(std::move(keys)) {
-  }
+  explicit MultiKey(std::vector<Key> keys)
+    : keys_(std::move(keys)) {}
 
   void push_back(const Key &key) {
     keys_.push_back(key);

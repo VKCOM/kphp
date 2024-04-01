@@ -6,10 +6,6 @@
 
 namespace database_drivers {
 
-enum class AsyncOperationStatus {
-  IN_PROGRESS,
-  COMPLETED,
-  ERROR
-};
+enum class AsyncOperationStatus { IN_PROGRESS, COMPLETED, ERROR };
 
 } // namespace database_drivers

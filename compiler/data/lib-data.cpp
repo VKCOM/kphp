@@ -18,9 +18,7 @@ std::string get_lib_dir(const std::string &main_file_path) {
 std::string get_lib_name(const std::string &lib_require_name) {
   // expected: .../?${name}
   const std::size_t start_pos = lib_require_name.rfind('/');
-  std::string lib_name = start_pos == std::string::npos
-                         ? lib_require_name
-                         : lib_require_name.substr(start_pos + 1);
+  std::string lib_name = start_pos == std::string::npos ? lib_require_name : lib_require_name.substr(start_pos + 1);
   kphp_assert_msg(!lib_name.empty(), "bad lib require name");
   return lib_name;
 }
@@ -30,14 +28,12 @@ bool is_raw_php_dir(vk::string_view lib_dir) {
 }
 } // namespace
 
-LibData::LibData(const std::string &lib_name, const std::string &lib_dir) :
-  lib_dir_(lib_dir),
-  lib_name_(lib_name) {
-}
+LibData::LibData(const std::string &lib_name, const std::string &lib_dir)
+  : lib_dir_(lib_dir)
+  , lib_name_(lib_name) {}
 
-LibData::LibData(const std::string &lib_require_name) :
-  lib_name_(get_lib_name(lib_require_name)) {
-}
+LibData::LibData(const std::string &lib_require_name)
+  : lib_name_(get_lib_name(lib_require_name)) {}
 
 void LibData::update_lib_main_file(const std::string &main_file_path, const std::string &unified_lib_dir) {
   kphp_assert_msg(lib_dir_.empty(), "lib directory is known");

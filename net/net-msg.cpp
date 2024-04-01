@@ -41,7 +41,7 @@ void rwm_free(raw_message_t *raw) {
   msg_part_chain_dec_ref(mp);
 }
 
-static inline void fixup_msg_part_to_rwm(const raw_message_t *rwm, msg_part_t* msg_part) {
+static inline void fixup_msg_part_to_rwm(const raw_message_t *rwm, msg_part_t *msg_part) {
   const int delta = rwm->first_offset - msg_part->offset;
   assert(delta >= 0 && msg_part->len >= delta && msg_part->len <= msg_buffer_size(msg_part->buffer));
   msg_part->offset += delta;
@@ -170,7 +170,7 @@ int rwm_push_data_ext(raw_message_t *raw, const void *data, int alloc_bytes, int
     raw->last_offset = to_copy + prepend;
     if (data) {
       memcpy(buffer->data + prepend, data, to_copy);
-      data = static_cast<const char*>(data) + to_copy;
+      data = static_cast<const char *>(data) + to_copy;
     }
     alloc_bytes -= to_copy;
     res = to_copy;
@@ -193,7 +193,7 @@ int rwm_push_data_ext(raw_message_t *raw, const void *data, int alloc_bytes, int
       if (to_copy) {
         if (data) {
           memcpy(buffer->data + raw->last_offset, data, to_copy);
-          data = static_cast<const char*>(data) + to_copy;
+          data = static_cast<const char *>(data) + to_copy;
         }
         raw->total_bytes += to_copy;
         raw->last_offset += to_copy;
@@ -268,7 +268,7 @@ int rwm_push_data_front(raw_message_t *raw, const void *data, int alloc_bytes) {
     }
     if (msg_part_use_count(mp) == 1 && msg_buffer_use_count(buffer) == 1) {
       const int to_copy = std::min(alloc_bytes, raw->first_offset);
-      memcpy(buffer->data + raw->first_offset - to_copy, static_cast<const char*>(data) + (alloc_bytes - to_copy), to_copy);
+      memcpy(buffer->data + raw->first_offset - to_copy, static_cast<const char *>(data) + (alloc_bytes - to_copy), to_copy);
       raw->first->len += to_copy;
       raw->first->offset -= to_copy;
       raw->first_offset = raw->first->offset;
@@ -370,7 +370,8 @@ void *rwm_prepend_alloc(raw_message_t *raw, int alloc_bytes) {
   return raw->first->buffer->data + mp->offset;
 }
 
-void *rwm_postpone_alloc_ext(raw_message_t *raw, int min_alloc_bytes, int max_alloc_bytes, int prepend_reserve, int continue_buffer, int small_buffer, int std_buffer, int *allocated) {
+void *rwm_postpone_alloc_ext(raw_message_t *raw, int min_alloc_bytes, int max_alloc_bytes, int prepend_reserve, int continue_buffer, int small_buffer,
+                             int std_buffer, int *allocated) {
   assert(raw->magic == RM_INIT_MAGIC);
   assert(max_alloc_bytes >= 0);
   if (!max_alloc_bytes || max_alloc_bytes > std_buffer) {
@@ -501,7 +502,7 @@ int rwm_fetch_data_back(raw_message_t *raw, void *data, int bytes) {
         while (bytes) {
           assert(m);
           int t = (m->len > bytes) ? bytes : m->len;
-          memcpy(static_cast<char*>(data) + res, m->buffer->data + m->offset, t);
+          memcpy(static_cast<char *>(data) + res, m->buffer->data + m->offset, t);
           bytes -= t;
           res += t;
           m = m->next;
@@ -728,7 +729,7 @@ void rwm_dump(raw_message_t *raw) {
 }
 
 template<class Func>
-static inline int rwm_process_and_advance_internal(raw_message_t *raw, int bytes, const Func & callback) {
+static inline int rwm_process_and_advance_internal(raw_message_t *raw, int bytes, const Func &callback) {
   assert(raw->magic == RM_INIT_MAGIC);
   if (bytes > raw->total_bytes) {
     bytes = raw->total_bytes;
@@ -787,13 +788,11 @@ int rwm_process_and_advance(raw_message_t *raw, int bytes, const std::function<v
 }
 
 int rwm_process_and_advance(raw_message_t *raw, int bytes, rwm_process_callback_t cb, void *extra) {
-  return rwm_process_and_advance_internal(raw, bytes, [cb, extra](const void *buf, int len) {
-    return cb(extra, buf, len);
-  });
+  return rwm_process_and_advance_internal(raw, bytes, [cb, extra](const void *buf, int len) { return cb(extra, buf, len); });
 }
 
 template<class Func>
-int rwm_process_from_offset_internal(const raw_message_t *raw, int bytes, int offset, const Func & callback) {
+int rwm_process_from_offset_internal(const raw_message_t *raw, int bytes, int offset, const Func &callback) {
   assert(bytes >= 0);
   assert(offset >= 0);
   if (bytes + offset > raw->total_bytes) {
@@ -835,9 +834,7 @@ int rwm_process_from_offset_internal(const raw_message_t *raw, int bytes, int of
 }
 
 int rwm_process_from_offset(const raw_message_t *raw, int bytes, int offset, rwm_process_callback_t cb, void *extra) {
-  return rwm_process_from_offset_internal(raw, bytes, offset, [&](const void *data, int len) {
-    return cb(extra, data, len);
-  });
+  return rwm_process_from_offset_internal(raw, bytes, offset, [&](const void *data, int len) { return cb(extra, data, len); });
 }
 
 int rwm_process(const raw_message_t *raw, int bytes, rwm_process_callback_t cb, void *extra) {
@@ -890,8 +887,8 @@ int rwm_transform_from_offset(raw_message_t *raw, int bytes, int offset, rwm_tra
 }
 
 static int crc32c_process(void *extra, const void *data, int len) {
-  uint32_t crc32c = *(uint32_t*) extra;
-  *(uint32_t *) extra = crc32c_partial(data, len, crc32c);
+  uint32_t crc32c = *(uint32_t *)extra;
+  *(uint32_t *)extra = crc32c_partial(data, len, crc32c);
   return 0;
 }
 
@@ -906,7 +903,7 @@ uint32_t rwm_crc32c(const raw_message_t *raw, int bytes) {
 
 static int crc32_process(void *extra, const void *data, int len) {
   uint32_t crc32 = *(uint32_t *)extra;
-  *(uint32_t *) extra = crc32_partial(data, len, crc32);
+  *(uint32_t *)extra = crc32_partial(data, len, crc32);
   return 0;
 }
 
@@ -925,7 +922,7 @@ struct custom_crc32_data {
 };
 
 static int custom_crc32_process(void *extra, const void *data, int len) {
-  struct custom_crc32_data *DP = static_cast<custom_crc32_data*>(extra);
+  struct custom_crc32_data *DP = static_cast<custom_crc32_data *>(extra);
   DP->crc32 = DP->partial(data, len, DP->crc32);
   return 0;
 }
@@ -942,7 +939,7 @@ uint32_t rwm_custom_crc32(const raw_message_t *raw, int bytes, crc32_partial_fun
 }
 
 static int rwm_process_memcpy(void *extra, const void *data, int len) {
-  char **d = static_cast<char**>(extra);
+  char **d = static_cast<char **>(extra);
   memcpy(*d, data, len);
   *d += len;
   return 0;
@@ -975,7 +972,6 @@ static int rwm_process_fork(void *extra, const void *data, int len) {
   return 0;
 }
 
-
 void rwm_fork_deep(raw_message_t *raw) {
   for (msg_part_t *mp = raw->first; mp; mp = mp->next) {
     if (msg_part_use_count(mp) != 1 || msg_buffer_use_count(mp->buffer) != 1) {
@@ -1001,7 +997,7 @@ struct rwm_encrypt_decrypt_tmp {
 };
 
 static int rwm_process_encrypt_decrypt(void *extra, const void *data, int len) {
-  rwm_encrypt_decrypt_tmp *x = static_cast<rwm_encrypt_decrypt_tmp*>(extra);
+  rwm_encrypt_decrypt_tmp *x = static_cast<rwm_encrypt_decrypt_tmp *>(extra);
   raw_message_t *res = x->raw;
   if (!x->buf_left) {
     msg_buffer_t *X = alloc_msg_buffer(x->left >= MSG_STD_BUFFER ? MSG_STD_BUFFER : x->left);
@@ -1017,7 +1013,7 @@ static int rwm_process_encrypt_decrypt(void *extra, const void *data, int len) {
     if (len >= 16 - x->bp) {
       memcpy(x->buf + x->bp, data, 16 - x->bp);
       len -= 16 - x->bp;
-      data = static_cast<const char*>(data) + 16 - x->bp;
+      data = static_cast<const char *>(data) + 16 - x->bp;
       x->bp = 0;
       x->callback(x->ctx, x->buf, res->last->buffer->data + res->last_offset, 16, x->iv);
       res->last->len += 16;
@@ -1032,7 +1028,7 @@ static int rwm_process_encrypt_decrypt(void *extra, const void *data, int len) {
   }
   if (len & 15) {
     int l = len & ~15;
-    memcpy(x->buf, static_cast<const char*>(data) + l, len - l);
+    memcpy(x->buf, static_cast<const char *>(data) + l, len - l);
     x->bp = len - l;
     len = l;
   }
@@ -1059,7 +1055,7 @@ static int rwm_process_encrypt_decrypt(void *extra, const void *data, int len) {
       res->last->len += t;
       res->last_offset += t;
       res->total_bytes += t;
-      data = static_cast<const char*>(data) + t;
+      data = static_cast<const char *>(data) + t;
       len -= t;
       x->buf_left -= t;
     }
@@ -1068,7 +1064,8 @@ static int rwm_process_encrypt_decrypt(void *extra, const void *data, int len) {
   return 0;
 }
 
-int rwm_encrypt_decrypt_to(raw_message_t *raw, raw_message_t *res, int bytes, struct vk_aes_ctx *ctx, rwm_encrypt_decrypt_to_callback_t crypt_cb, unsigned char *iv) {
+int rwm_encrypt_decrypt_to(raw_message_t *raw, raw_message_t *res, int bytes, struct vk_aes_ctx *ctx, rwm_encrypt_decrypt_to_callback_t crypt_cb,
+                           unsigned char *iv) {
   assert(bytes >= 0);
   if (bytes > raw->total_bytes) {
     bytes = raw->total_bytes;
@@ -1131,9 +1128,9 @@ static int _rwm_encrypt_decrypt(raw_message_t *raw, int bytes, struct vk_aes_ctx
     while (len >= 16) {
       int l = len < bytes ? (len & ~15) : bytes;
       if (!mode) {
-        ctx->ige_crypt(ctx, reinterpret_cast<const uint8_t*>(mp->buffer->data + start), reinterpret_cast<uint8_t*>(mp->buffer->data + start), l, iv);
+        ctx->ige_crypt(ctx, reinterpret_cast<const uint8_t *>(mp->buffer->data + start), reinterpret_cast<uint8_t *>(mp->buffer->data + start), l, iv);
       } else {
-        ctx->cbc_crypt(ctx, reinterpret_cast<const uint8_t*>(mp->buffer->data + start), reinterpret_cast<uint8_t*>(mp->buffer->data + start), l, iv);
+        ctx->cbc_crypt(ctx, reinterpret_cast<const uint8_t *>(mp->buffer->data + start), reinterpret_cast<uint8_t *>(mp->buffer->data + start), l, iv);
       }
       start += l;
       bytes -= l;

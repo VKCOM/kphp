@@ -100,20 +100,21 @@ void register_stats_provider(stats_provider_t provider);
 void prepare_common_stats_with_tag_mask(stats_t *stats, unsigned int tag_mask);
 void prepare_common_stats(stats_t *stats);
 
-static inline double safe_div(double x, double y) { return y > 0 ? x / y : 0; }
+static inline double safe_div(double x, double y) {
+  return y > 0 ? x / y : 0;
+}
 
-#define STATS_PROVIDER_TAGGED(nm, prio, tag_val)                          \
-static void prepare_ ## nm ## _stats(stats_t *stats);                     \
-static void register_ ## nm ## _stats() __attribute__((constructor));     \
-static void register_ ## nm ## _stats() {                                 \
-  stats_provider_t provider;                                              \
-  provider.name =  #nm ;                                                  \
-  provider.priority = (prio);                                             \
-  provider.tag = (tag_val);                                               \
-  provider.prepare = prepare_ ## nm ## _stats;                            \
-  register_stats_provider(provider);                                      \
-}                                                                         \
-static void prepare_ ## nm ## _stats(stats_t *stats)
+#define STATS_PROVIDER_TAGGED(nm, prio, tag_val)                                                                                                               \
+  static void prepare_##nm##_stats(stats_t *stats);                                                                                                            \
+  static void register_##nm##_stats() __attribute__((constructor));                                                                                            \
+  static void register_##nm##_stats() {                                                                                                                        \
+    stats_provider_t provider;                                                                                                                                 \
+    provider.name = #nm;                                                                                                                                       \
+    provider.priority = (prio);                                                                                                                                \
+    provider.tag = (tag_val);                                                                                                                                  \
+    provider.prepare = prepare_##nm##_stats;                                                                                                                   \
+    register_stats_provider(provider);                                                                                                                         \
+  }                                                                                                                                                            \
+  static void prepare_##nm##_stats(stats_t *stats)
 
 #define STATS_PROVIDER(nm, prio) STATS_PROVIDER_TAGGED(nm, prio, stats_tag_default)
-

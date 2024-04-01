@@ -28,12 +28,8 @@ static void remove_node_types(vk::tlo_parsing::tl_scheme &scheme, const vk::tlo_
     }
   }
 
-  std::for_each(types_to_delete.begin(), types_to_delete.end(), [&](const vk::tlo_parsing::type *t) {
-    scheme.remove_type(t);
-  });
-  std::for_each(functions_to_delete.begin(), functions_to_delete.end(), [&](const vk::tlo_parsing::combinator *f) {
-    scheme.remove_function(f);
-  });
+  std::for_each(types_to_delete.begin(), types_to_delete.end(), [&](const vk::tlo_parsing::type *t) { scheme.remove_type(t); });
+  std::for_each(functions_to_delete.begin(), functions_to_delete.end(), [&](const vk::tlo_parsing::combinator *f) { scheme.remove_function(f); });
 }
 
 void vk::tlo_parsing::remove_cyclic_types(tl_scheme &scheme) {

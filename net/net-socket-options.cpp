@@ -13,8 +13,8 @@
 
 #include "common/kprintf.h"
 
-#define MAX_UDP_SENDBUF_SIZE	(16 * 1024 * 1024)
-#define MAX_UDP_RECVBUF_SIZE	(16 * 1024 * 1024)
+#define MAX_UDP_SENDBUF_SIZE (16 * 1024 * 1024)
+#define MAX_UDP_RECVBUF_SIZE (16 * 1024 * 1024)
 
 bool socket_error(int socket, int *error) {
   socklen_t error_length = sizeof(*error);

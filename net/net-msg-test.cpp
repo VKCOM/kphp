@@ -383,10 +383,10 @@ TEST(net_msg, fork_message_chain) {
     EXPECT_EQ(x.first->refcnt, 2);
 
     fork_message_chain(&x);
-    for(auto *mp = x.first; mp != x.last; mp = mp->next) {
+    for (auto *mp = x.first; mp != x.last; mp = mp->next) {
       EXPECT_EQ(mp->refcnt, 1);
     }
-    for(auto *mp = y.first; mp != y.last; mp = mp->next) {
+    for (auto *mp = y.first; mp != y.last; mp = mp->next) {
       EXPECT_EQ(mp->refcnt, 1);
     }
     EXPECT_EQ(x.total_bytes, payload.size() * 3);
@@ -476,10 +476,10 @@ TEST(DISABLED_net_msg, rwm_fork_deep) {
 
     constexpr std::size_t rwm_count = 4;
     raw_message_t rwm_x[rwm_count], rwm_y[rwm_count];
-    for(auto& rwm : rwm_x) {
+    for (auto &rwm : rwm_x) {
       rwm_create(&rwm, payload.data(), payload.size());
     }
-    for(std::size_t i = 0; i < rwm_count; ++i) {
+    for (std::size_t i = 0; i < rwm_count; ++i) {
       rwm_clone(&rwm_y[i], &rwm_x[i]);
     }
     for (const auto &rwm : rwm_x) {
@@ -490,13 +490,13 @@ TEST(DISABLED_net_msg, rwm_fork_deep) {
 
     raw_message_t rwm_united;
     rwm_init(&rwm_united, 0);
-    for(auto& rwm : rwm_x) {
+    for (auto &rwm : rwm_x) {
       raw_message_t rwm_cloned;
       rwm_clone(&rwm_cloned, &rwm);
       rwm_union(&rwm_united, &rwm_cloned);
     }
-    msg_part_t* mp = rwm_united.first;
-    for(;;) {
+    msg_part_t *mp = rwm_united.first;
+    for (;;) {
       if (!mp) {
         break;
       }
@@ -510,7 +510,7 @@ TEST(DISABLED_net_msg, rwm_fork_deep) {
     rwm_fork_deep(&rwm_united);
 
     mp = rwm_united.first;
-    for(;;) {
+    for (;;) {
       if (!mp) {
         break;
       }
@@ -523,12 +523,11 @@ TEST(DISABLED_net_msg, rwm_fork_deep) {
 
     rwm_free(&rwm_united);
 
-    for(const auto& rwm : rwm_x) {
+    for (const auto &rwm : rwm_x) {
       EXPECT_EQ(msg_part_use_count(rwm.first), 2);
     }
   }
 }
-
 
 TEST(net_msg, rwm_fork_deep2) {
   {
@@ -618,7 +617,7 @@ TEST(net_msg, rwm_union_large) {
 
   std::vector<raw_message_t> rwms(msg_size / payload_size);
 
-  for(int i = 0; i < rwms.size(); ++i) {
+  for (int i = 0; i < rwms.size(); ++i) {
     rwm_create(&rwms[i], nullptr, 0);
 
     rwms[i].total_bytes = payload_size;
@@ -647,7 +646,7 @@ TEST(net_msg, rwm_union_large) {
   }
 
   fork_message_chain(&rwms[0]);
-  for(int i = 1; i < rwms.size(); ++i) {
+  for (int i = 1; i < rwms.size(); ++i) {
     fork_message_chain(&rwms[i]);
     rwm_union_unique(&rwms[0], &rwms[i]);
   }

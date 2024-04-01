@@ -16,7 +16,7 @@ PHP_FUNCTION(vk_sp_simplify) {
   sp_init();
   char *t = sp_simplify(s);
   if (!t) {
-    RETURN_EMPTY_STRING ();
+    RETURN_EMPTY_STRING();
   } else {
     VK_RETURN_STRING_DUP(t);
   }
@@ -31,7 +31,7 @@ PHP_FUNCTION(vk_sp_full_simplify) {
   sp_init();
   char *t = sp_full_simplify(s);
   if (!t) {
-    RETURN_EMPTY_STRING ();
+    RETURN_EMPTY_STRING();
   } else {
     VK_RETURN_STRING_DUP(t);
   }
@@ -46,7 +46,7 @@ PHP_FUNCTION(vk_sp_deunicode) {
   sp_init();
   char *t = sp_deunicode(s);
   if (!t) {
-    RETURN_EMPTY_STRING ();
+    RETURN_EMPTY_STRING();
   } else {
     VK_RETURN_STRING_DUP(t);
   }
@@ -61,7 +61,7 @@ PHP_FUNCTION(vk_sp_to_upper) {
   sp_init();
   char *t = sp_to_upper(s);
   if (!t) {
-    RETURN_EMPTY_STRING ();
+    RETURN_EMPTY_STRING();
   } else {
     VK_RETURN_STRING_DUP(t);
   }
@@ -76,7 +76,7 @@ PHP_FUNCTION(vk_sp_to_lower) {
   sp_init();
   char *t = sp_to_lower(s);
   if (!t) {
-    RETURN_EMPTY_STRING ();
+    RETURN_EMPTY_STRING();
   } else {
     VK_RETURN_STRING_DUP(t);
   }
@@ -91,7 +91,7 @@ PHP_FUNCTION(vk_sp_sort) {
   sp_init();
   char *t = sp_sort(s);
   if (!t) {
-    RETURN_EMPTY_STRING ();
+    RETURN_EMPTY_STRING();
   } else {
     VK_RETURN_STRING_DUP(t);
   }
@@ -106,7 +106,7 @@ PHP_FUNCTION(vk_sp_remove_repeats) {
   sp_init();
   char *t = sp_remove_repeats(s);
   if (!t) {
-    RETURN_EMPTY_STRING ();
+    RETURN_EMPTY_STRING();
   } else {
     VK_RETURN_STRING_DUP(t);
   }
@@ -121,7 +121,7 @@ PHP_FUNCTION(vk_sp_to_cyrillic) {
   sp_init();
   char *t = sp_to_cyrillic(s);
   if (!t) {
-    RETURN_EMPTY_STRING ();
+    RETURN_EMPTY_STRING();
   } else {
     VK_RETURN_STRING_DUP(t);
   }
@@ -136,7 +136,7 @@ PHP_FUNCTION(vk_sp_words_only) {
   sp_init();
   char *t = sp_words_only(s);
   if (!t) {
-    RETURN_EMPTY_STRING ();
+    RETURN_EMPTY_STRING();
   } else {
     VK_RETURN_STRING_DUP(t);
   }

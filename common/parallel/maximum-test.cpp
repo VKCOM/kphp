@@ -21,7 +21,7 @@
 #if !defined(__APPLE__)
 
 TEST(parallel_maximum, basic) {
-  for(int i = 0; i < 1000; ++i) {
+  for (int i = 0; i < 1000; ++i) {
     constexpr std::size_t thread_max = 1 * 1024 * 1024;
 
     PARALLEL_MAXIMUM(maximum);

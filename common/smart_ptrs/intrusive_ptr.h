@@ -12,26 +12,35 @@
 
 namespace vk {
 
-template <class T>
+template<class T>
 class intrusive_ptr {
 public:
   intrusive_ptr() noexcept = default;
 
-  explicit intrusive_ptr(T *ptr, bool add_ref = true) : ptr{ptr} {
+  explicit intrusive_ptr(T *ptr, bool add_ref = true)
+    : ptr{ptr} {
     if (add_ref && ptr) {
       ptr->add_ref();
     }
   }
 
-  intrusive_ptr(const intrusive_ptr &other) : intrusive_ptr{other.ptr, true} {}
+  intrusive_ptr(const intrusive_ptr &other)
+    : intrusive_ptr{other.ptr, true} {}
 
-  intrusive_ptr(intrusive_ptr &&other) noexcept : ptr{other.ptr} { other.ptr = nullptr; }
+  intrusive_ptr(intrusive_ptr &&other) noexcept
+    : ptr{other.ptr} {
+    other.ptr = nullptr;
+  }
 
   template<class Derived, class = std::enable_if_t<std::is_base_of<T, Derived>{}>>
-  intrusive_ptr(const intrusive_ptr<Derived> &other) : intrusive_ptr{other.ptr, true} {}
+  intrusive_ptr(const intrusive_ptr<Derived> &other)
+    : intrusive_ptr{other.ptr, true} {}
 
   template<class Derived, class = std::enable_if_t<std::is_base_of<T, Derived>{}>>
-  intrusive_ptr(intrusive_ptr<Derived> &&other) noexcept : ptr{other.ptr} { other.ptr = nullptr; }
+  intrusive_ptr(intrusive_ptr<Derived> &&other) noexcept
+    : ptr{other.ptr} {
+    other.ptr = nullptr;
+  }
 
   template<class Derived, class = std::enable_if_t<std::is_base_of<T, Derived>{}>>
   intrusive_ptr &operator=(const intrusive_ptr<Derived> &other) {
@@ -101,7 +110,9 @@ public:
     *this = {};
   }
 
-  T *operator->() const noexcept { return ptr; }
+  T *operator->() const noexcept {
+    return ptr;
+  }
 
   T &operator*() const noexcept {
     assert(ptr);
@@ -119,12 +130,12 @@ private:
   T *ptr{nullptr};
 };
 
-template <class T, class... Args>
-intrusive_ptr<T> make_intrusive(Args &&... args) {
+template<class T, class... Args>
+intrusive_ptr<T> make_intrusive(Args &&...args) {
   return intrusive_ptr<T>(new T(std::forward<Args>(args)...));
 }
 
-template <class Derived, class Refcnt>
+template<class Derived, class Refcnt>
 class refcountable {
 public:
   void add_ref() {
@@ -145,9 +156,9 @@ protected:
   Refcnt refcnt{};
 };
 
-template <class T>
+template<class T>
 using thread_safe_refcnt = refcountable<T, std::atomic<size_t>>;
-template <class T>
+template<class T>
 using thread_unsafe_refcnt = refcountable<T, size_t>;
 
 template<class Derived, class Base>

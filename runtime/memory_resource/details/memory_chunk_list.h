@@ -24,13 +24,12 @@ public:
   }
 
   void put_mem(void *block) noexcept {
-    next_ = new(block) memory_chunk_list{next_};
+    next_ = new (block) memory_chunk_list{next_};
   }
 
 private:
-  explicit memory_chunk_list(memory_chunk_list *next) noexcept :
-    next_(next) {
-  }
+  explicit memory_chunk_list(memory_chunk_list *next) noexcept
+    : next_(next) {}
 
   memory_chunk_list *next_{nullptr};
 };

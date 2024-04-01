@@ -27,8 +27,8 @@ public:
 
   Module() = default;
 
-  explicit Module(std::string name) :
-    name(std::move(name)) {}
+  explicit Module(std::string name)
+    : name(std::move(name)) {}
 
   void compile(CodeGenerator &W) const {
     compile_tl_h_file(W);
@@ -75,4 +75,4 @@ private:
   void collect_deps_from_type_tree(vk::tlo_parsing::expr_base *expr);
 };
 
-}
+} // namespace tl2cpp

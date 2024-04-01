@@ -19,6 +19,7 @@ public:
   void set_callback(on_oom_callback_t &&callback) noexcept;
   void invoke() noexcept;
   bool is_running() const noexcept;
+
 private:
   on_oom_callback_t callback_;
   bool callback_running_ = false;
@@ -30,7 +31,7 @@ private:
 
 bool register_kphp_on_oom_callback_impl(on_oom_callback_t &&callback);
 
-template <typename F>
+template<typename F>
 bool f$register_kphp_on_oom_callback(F &&callback) {
   // std::function sometimes uses heap, when constructed from captured lambda. So it must be constructed under critical section only.
   dl::CriticalSectionGuard heap_guard;

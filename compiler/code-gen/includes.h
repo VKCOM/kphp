@@ -36,7 +36,6 @@ public:
   void add_var_signature_depends(const VarPtr &var);
   void add_vertex_depends(VertexPtr v);
 
-
   void add_class_forward_declaration(const ClassPtr &klass);
   void add_var_signature_forward_declarations(const VarPtr &var);
 

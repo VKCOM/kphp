@@ -24,15 +24,15 @@
 
 DEFINE_VERBOSITY(net_crypto_aes)
 
-static_assert(AES_KEY_MIN_LEN >= sizeof(((aes_key_t *) NULL)->id), "key_size");
+static_assert(AES_KEY_MIN_LEN >= sizeof(((aes_key_t *)NULL)->id), "key_size");
 
 static aes_key_t **aes_loaded_keys;
 static size_t aes_loaded_keys_size;
 aes_key_t *default_aes_key;
 
 aes_key_t *create_aes_key() {
-  aes_key_t *key = static_cast<aes_key_t*>(calloc(sizeof(*key), 1));
-  assert(!posix_memalign((void **) &key->key, 4096, AES_KEY_MAX_LEN));
+  aes_key_t *key = static_cast<aes_key_t *>(calloc(sizeof(*key), 1));
+  assert(!posix_memalign((void **)&key->key, 4096, AES_KEY_MAX_LEN));
 
   our_madvise(key->key, AES_KEY_MAX_LEN, MADV_DONTDUMP);
   return key;
@@ -49,12 +49,13 @@ bool aes_key_add(aes_key_t *aes_key) {
     aes_key_t *added_key = aes_loaded_keys[i];
 
     if (aes_key->id == added_key->id || !strcmp(aes_key->filename, added_key->filename)) {
-      tvkprintf(net_crypto_aes, 1, "Cannot add AES key %d(\"%s\"): already added %d(\"%s\")\n", aes_key->id, aes_key->filename, added_key->id, added_key->filename);
+      tvkprintf(net_crypto_aes, 1, "Cannot add AES key %d(\"%s\"): already added %d(\"%s\")\n", aes_key->id, aes_key->filename, added_key->id,
+                added_key->filename);
       return false;
     }
   }
 
-  aes_loaded_keys = static_cast<aes_key_t**>(realloc(aes_loaded_keys, sizeof(aes_key) * (aes_loaded_keys_size + 1)));
+  aes_loaded_keys = static_cast<aes_key_t **>(realloc(aes_loaded_keys, sizeof(aes_key) * (aes_loaded_keys_size + 1)));
   aes_loaded_keys[aes_loaded_keys_size++] = aes_key;
 
   tvkprintf(net_crypto_aes, 1, "Add AES key %u(\"%s\")\n", aes_key->id, aes_key->filename);
@@ -77,7 +78,7 @@ static bool aes_key_set_default(const char *filename) {
   return false;
 }
 
-aes_key_t *aes_key_load_memory(const char* filename, uint8_t *key, int32_t key_len) {
+aes_key_t *aes_key_load_memory(const char *filename, uint8_t *key, int32_t key_len) {
   assert(key_len <= AES_KEY_MAX_LEN);
 
   aes_key_t *aes_key = create_aes_key();
@@ -85,7 +86,7 @@ aes_key_t *aes_key_load_memory(const char* filename, uint8_t *key, int32_t key_l
   aes_key->filename = filename;
   aes_key->len = key_len;
   memcpy(aes_key->key, key, aes_key->len);
-  aes_key->id = (*(int32_t *) aes_key->key);
+  aes_key->id = (*(int32_t *)aes_key->key);
 
   return aes_key;
 }
@@ -113,7 +114,7 @@ static aes_key_t *aes_key_load_fd(int fd, const char *filename) {
     return NULL;
   }
 
-  return aes_key_load_memory(strdup(filename), reinterpret_cast<uint8_t*>(buffer), st.st_size);
+  return aes_key_load_memory(strdup(filename), reinterpret_cast<uint8_t *>(buffer), st.st_size);
 }
 
 static bool aes_key_load_file(int fd, const char *path) {
@@ -146,7 +147,7 @@ static bool aes_key_load_dir(int fd) {
 
     const int fd = openat(dir_fd, entry->d_name, O_NOFOLLOW);
     if (fd == -1) {
-      if(errno != ELOOP) {
+      if (errno != ELOOP) {
         tvkprintf(net_crypto_aes, 1, "Cannot openat() AES key dir entry: \"%s\": %m\n", entry->d_name);
       }
       continue;

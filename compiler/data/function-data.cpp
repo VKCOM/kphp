@@ -6,6 +6,7 @@
 
 #include "common/termformat/termformat.h"
 
+#include "common/algorithms/contains.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/generics-mixins.h"
@@ -15,7 +16,6 @@
 #include "compiler/inferring/public.h"
 #include "compiler/type-hint.h"
 #include "compiler/vertex.h"
-#include "common/algorithms/contains.h"
 
 FunctionPtr FunctionData::create_function(std::string name, VertexAdaptor<op_function> root, func_type_t type) {
   static CachedProfiler cache("Create Function");
@@ -51,7 +51,8 @@ bool FunctionData::is_constructor() const {
 }
 
 void FunctionData::update_location_in_body() {
-  if (!root) return;
+  if (!root)
+    return;
 
   SrcFilePtr file = root->location.file;
 
@@ -69,8 +70,7 @@ std::vector<VertexAdaptor<op_var>> FunctionData::get_params_as_vector_of_vars(in
 
   std::vector<VertexAdaptor<op_var>> res_params(static_cast<size_t>(func_params.size() - shift));
   std::transform(std::next(func_params.begin(), shift), func_params.end(), res_params.begin(),
-                 [](VertexPtr param) { return param.as<op_func_param>()->var().clone(); }
-  );
+                 [](VertexPtr param) { return param.as<op_func_param>()->var().clone(); });
 
   return res_params;
 }
@@ -80,7 +80,7 @@ void FunctionData::move_virtual_to_self_method(DataStream<FunctionPtr> &os) {
   auto self_function = clone_from(get_self(), replace_backslashes(class_id->name) + "$$" + get_name_of_self_method(), v_op_function);
   self_function->is_virtual_method = false;
 
-  class_id->members.add_instance_method(self_function);   // don't need a lock here, it's invoked from a sync pipe
+  class_id->members.add_instance_method(self_function); // don't need a lock here, it's invoked from a sync pipe
 
   root->cmd_ref() = VertexAdaptor<op_seq>::create();
   G->register_and_require_function(self_function, os, true);
@@ -147,18 +147,19 @@ std::string FunctionData::get_throws_call_chain() const {
   return vk::join(names, " -> ") + (last.get_line() != -1 ? fmt_format(" (line {})", last.get_line()) : "");
 }
 
-std::string FunctionData::get_performance_inspections_warning_chain(PerformanceInspections::Inspections inspection, bool search_disabled_inspection) const noexcept {
+std::string FunctionData::get_performance_inspections_warning_chain(PerformanceInspections::Inspections inspection,
+                                                                    bool search_disabled_inspection) const noexcept {
   const auto check_inspection = [search_disabled_inspection, inspection](FunctionPtr f) {
-    return search_disabled_inspection
-           ? (f->performance_inspections_for_warning.disabled_inspections() & inspection)
-           : (f->performance_inspections_for_warning.inspections() & inspection);
+    return search_disabled_inspection ? (f->performance_inspections_for_warning.disabled_inspections() & inspection)
+                                      : (f->performance_inspections_for_warning.inspections() & inspection);
   };
 
   std::forward_list<std::string> chain;
   FunctionPtr fun = get_self();
   chain.emplace_front(fun->as_human_readable());
   while (!fun->performance_inspections_for_warning.has_their_own_inspections()) {
-    auto caller_it = std::find_if(fun->performance_inspections_for_warning_parents.begin(), fun->performance_inspections_for_warning_parents.end(), check_inspection);
+    auto caller_it =
+      std::find_if(fun->performance_inspections_for_warning_parents.begin(), fun->performance_inspections_for_warning_parents.end(), check_inspection);
     kphp_assert(caller_it != fun->performance_inspections_for_warning_parents.end());
     fun = *caller_it;
     chain.emplace_front(fun->as_human_readable());
@@ -171,12 +172,8 @@ std::string FunctionData::get_performance_inspections_warning_chain(PerformanceI
 // we don't want to print something like _explode_nth() instead of expode()
 // that would be unhelpful for the user
 static const std::unordered_map<vk::string_view, std::string> internal_function_pretty_names = {
-  {"_explode_nth", "explode"},
-  {"_explode_1", "explode"},
-  {"_microtime_float", "microtime"},
-  {"_microtime_string", "microtime"},
-  {"_hrtime_int", "hrtime"},
-  {"_hrtime_array", "hrtime"},
+  {"_explode_nth", "explode"},        {"_explode_1", "explode"}, {"_microtime_float", "microtime"},
+  {"_microtime_string", "microtime"}, {"_hrtime_int", "hrtime"}, {"_hrtime_array", "hrtime"},
 };
 
 std::string FunctionData::as_human_readable(bool add_details) const {
@@ -199,10 +196,13 @@ std::string FunctionData::as_human_readable(bool add_details) const {
   } else if (instantiationTs && outer_function) {
     result_name = outer_function->as_human_readable(add_details);
     result_name.erase(result_name.rfind('<'));
-    result_name += "<" + vk::join(*outer_function->genericTs, ", ", [this](const GenericsDeclarationMixin::GenericsItem &item) {
-      const TypeHint *itemT = instantiationTs->find(item.nameT);
-      return itemT == nullptr ? "nullptr" : itemT->as_human_readable();
-    }) + ">";
+    result_name += "<"
+                   + vk::join(*outer_function->genericTs, ", ",
+                              [this](const GenericsDeclarationMixin::GenericsItem &item) {
+                                const TypeHint *itemT = instantiationTs->find(item.nameT);
+                                return itemT == nullptr ? "nullptr" : itemT->as_human_readable();
+                              })
+                   + ">";
     if (add_details) {
       SrcFilePtr file = instantiationTs->location.get_file();
       std::string line = std::to_string(instantiationTs->location.line);
@@ -222,13 +222,13 @@ std::string FunctionData::as_human_readable(bool add_details) const {
         result_name = name;
       }
     }
-      // if name is "class$$method"
+    // if name is "class$$method"
     else if (pos2 == pos1) {
       std::string base_class = replace_characters(name.substr(0, pos1), '$', '\\');
       std::string method_name = name.substr(pos1 + 2);
       result_name = base_class + "::" + method_name;
     }
-      // if name is "class$$method$$context"
+    // if name is "class$$method$$context"
     else {
       std::string base_class = replace_characters(name.substr(0, pos1), '$', '\\');
       std::string method_name = name.substr(pos1 + 2, pos2 - pos1 - 2);
@@ -254,8 +254,7 @@ bool FunctionData::is_invoke_method() const {
 
 vk::string_view FunctionData::get_tmp_string_specialization() const {
   static std::unordered_map<vk::string_view, vk::string_view> funcs = {
-    {"substr", "_tmp_substr"},
-    {"trim", "_tmp_trim"},
+    {"substr", "_tmp_substr"}, {"trim", "_tmp_trim"},
     // TODO: ltrim, rtrim, strstr
   };
   auto it = funcs.find(name);
@@ -282,22 +281,23 @@ VertexAdaptor<op_var> FunctionData::find_use_by_name(const std::string &var_name
 
 VarPtr FunctionData::find_var_by_name(const std::string &var_name) {
   auto search_in_vector = [&var_name](const std::vector<VarPtr> &lookup_vars_list) -> VarPtr {
-    auto var_it = std::find_if(lookup_vars_list.begin(), lookup_vars_list.end(),
-                               [&var_name](VarPtr var) { return var->name == var_name; });
+    auto var_it = std::find_if(lookup_vars_list.begin(), lookup_vars_list.end(), [&var_name](VarPtr var) { return var->name == var_name; });
     return var_it == lookup_vars_list.end() ? VarPtr{} : *var_it;
   };
 
-  VarPtr      found = search_in_vector(local_var_ids);
-  if (!found) found = search_in_vector(global_var_ids);
-  if (!found) found = search_in_vector(static_var_ids);
-  if (!found) found = search_in_vector(param_ids);
+  VarPtr found = search_in_vector(local_var_ids);
+  if (!found)
+    found = search_in_vector(global_var_ids);
+  if (!found)
+    found = search_in_vector(static_var_ids);
+  if (!found)
+    found = search_in_vector(param_ids);
   return found ?: VarPtr{};
 }
 
 bool FunctionData::does_need_codegen() const {
-  return type != FunctionData::func_class_holder &&
-         type != FunctionData::func_extern &&
-         (body_seq != body_value::empty || G->get_main_file()->main_function == get_self() || is_lambda());
+  return type != FunctionData::func_class_holder && type != FunctionData::func_extern
+         && (body_seq != body_value::empty || G->get_main_file()->main_function == get_self() || is_lambda());
 }
 
 bool operator<(FunctionPtr a, FunctionPtr b) {

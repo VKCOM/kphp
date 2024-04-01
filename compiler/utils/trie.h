@@ -44,4 +44,3 @@ struct Trie : private vk::not_copyable {
     return best->val;
   }
 };
-

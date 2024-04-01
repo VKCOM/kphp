@@ -18,16 +18,12 @@ public:
   tree_node *left{nullptr};
   tree_node *right{nullptr};
   tree_node *parent{nullptr};
-  enum {
-    RED,
-    BLACK
-  } color{RED};
+  enum { RED, BLACK } color{RED};
   size_t chunk_size;
   tree_node *same_size_chunk_list{nullptr};
 
-  explicit tree_node(size_t size) noexcept :
-    chunk_size(size) {
-  }
+  explicit tree_node(size_t size) noexcept
+    : chunk_size(size) {}
 
   tree_node *uncle() const noexcept {
     if (!parent || !parent->parent) {
@@ -71,7 +67,7 @@ public:
 
 void memory_chunk_tree::insert(void *mem, size_t size) noexcept {
   php_assert(sizeof(tree_node) <= size);
-  tree_node *newNode = new(mem) tree_node{size};
+  tree_node *newNode = new (mem) tree_node{size};
   if (!root_) {
     newNode->color = tree_node::BLACK;
     root_ = newNode;
@@ -141,7 +137,7 @@ void memory_chunk_tree::flush_node_to(tree_node *node, memory_ordered_chunk_list
     return;
   }
 
-  while(node->same_size_chunk_list) {
+  while (node->same_size_chunk_list) {
     tree_node *next = node->same_size_chunk_list;
     node->same_size_chunk_list = next->same_size_chunk_list;
     mem_list.add_memory(next, next->chunk_size);

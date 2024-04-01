@@ -25,11 +25,8 @@ VertexPtr InlineSimpleFunctions::on_enter_vertex(VertexPtr root) {
   }
 
   if (auto var_vertex = root.try_as<op_var>()) {
-    if (in_param_list_ && var_vertex->var_id &&
-        !var_vertex->var_id->marked_as_const &&
-        !var_vertex->var_id->is_read_only &&
-        !var_vertex->var_id->is_reference &&
-        !tinf::get_type(var_vertex->var_id)->is_primitive_type()) {
+    if (in_param_list_ && var_vertex->var_id && !var_vertex->var_id->marked_as_const && !var_vertex->var_id->is_read_only && !var_vertex->var_id->is_reference
+        && !tinf::get_type(var_vertex->var_id)->is_primitive_type()) {
       inline_is_possible_ = false;
     }
     return root;
@@ -97,14 +94,9 @@ bool InlineSimpleFunctions::user_recursion(VertexPtr) {
 }
 
 bool InlineSimpleFunctions::check_function(FunctionPtr function) const {
-  return !function->is_resumable &&
-         !function->is_inline &&
-         !function->can_throw() &&
-         !function->has_variadic_param &&
-         !function->is_main_function() &&
-         function->type != FunctionData::func_class_holder &&
-         (!function->modifiers.is_instance() || function->local_name() != "__wakeup") &&
-         !function->kphp_lib_export;
+  return !function->is_resumable && !function->is_inline && !function->can_throw() && !function->has_variadic_param && !function->is_main_function()
+         && function->type != FunctionData::func_class_holder && (!function->modifiers.is_instance() || function->local_name() != "__wakeup")
+         && !function->kphp_lib_export;
 }
 
 void InlineSimpleFunctions::on_finish() {

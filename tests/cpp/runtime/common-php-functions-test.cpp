@@ -58,7 +58,6 @@ TEST(test_php_is_integer, long_strings) {
   ASSERT_FALSE(php_is_int_wrapper("-9223372036854775809"));
 }
 
-
 TEST(test_php_try_to_integer, non_integer_strings) {
   int64_t x = 0;
   ASSERT_FALSE(php_try_to_int_wrapper("", x));
@@ -102,7 +101,7 @@ TEST(test_php_try_to_integer, integer_strings) {
 
   ASSERT_TRUE(php_try_to_int_wrapper("56398164621042224", x));
   ASSERT_EQ(x, 56398164621042224L);
-  
+
   ASSERT_TRUE(php_try_to_int_wrapper("3333333333", x));
   ASSERT_EQ(x, 3333333333L);
 

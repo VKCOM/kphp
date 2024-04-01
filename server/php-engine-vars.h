@@ -13,7 +13,6 @@
 #define VERSION "0.01"
 #define NAME_VERSION "php-engine-" VERSION
 
-
 /***
  DEFAULT GLOBAL VARIABLES
  ***/
@@ -86,4 +85,3 @@ constexpr double SIGTERM_MAX_TIMEOUT = 10.0;
  ***/
 extern int kstdout;
 extern int kstderr;
-

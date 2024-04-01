@@ -8,10 +8,10 @@
 #undef YY_DECL
 #define YY_DECL ffi::YYParser::symbol_type ffi::Lexer::get_next_token()
 
+#include "common/algorithms/contains.h"
 #include "compiler/ffi/c_parser/location.h"
 #include "compiler/ffi/c_parser/string-span.h"
 #include "compiler/ffi/c_parser/yy_parser_generated.hpp"
-#include "common/algorithms/contains.h"
 
 #include <unordered_map>
 
@@ -19,7 +19,7 @@ namespace ffi {
 
 class Lexer {
 public:
-  explicit Lexer(const FFITypedefs &typedefs, const std::string& input)
+  explicit Lexer(const FFITypedefs &typedefs, const std::string &input)
     : p_{input.c_str()}
     , input_start_{input.c_str()}
     , input_end_{input.c_str() + input.length()}
@@ -33,7 +33,9 @@ public:
     return tok;
   }
 
-  string_span get_comment() const noexcept { return comment_; }
+  string_span get_comment() const noexcept {
+    return comment_;
+  }
 
   void reset_comment() noexcept {
     comment_.data_ = nullptr;

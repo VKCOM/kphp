@@ -40,10 +40,10 @@ void net_reactor_alloc(net_reactor_ctx_t *ctx, int max_events, int max_timers) {
   ctx->timer_heap_size = 0;
   ctx->now = 0;
   ctx->prev_now = 0;
-  ctx->events = static_cast<event_t*>(calloc(max_events, sizeof(ctx->events[0])));
-  ctx->event_heap = static_cast<event_t**>(calloc(max_events + 1, sizeof(ctx->event_heap[0])));
-  ctx->timer_heap = static_cast<event_timer_t**>(calloc(max_timers + 1, sizeof(ctx->timer_heap[0])));
-  ctx->epoll_events = static_cast<epoll_event*>(calloc(max_events, sizeof(ctx->epoll_events[0])));
+  ctx->events = static_cast<event_t *>(calloc(max_events, sizeof(ctx->events[0])));
+  ctx->event_heap = static_cast<event_t **>(calloc(max_events + 1, sizeof(ctx->event_heap[0])));
+  ctx->timer_heap = static_cast<event_timer_t **>(calloc(max_timers + 1, sizeof(ctx->timer_heap[0])));
+  ctx->epoll_events = static_cast<epoll_event *>(calloc(max_events, sizeof(ctx->epoll_events[0])));
   ctx->pre_runqueue = ctx->post_runqueue = ctx->pre_event = NULL;
   ctx->wait_start = 0;
   ctx->last_wait = 0;
@@ -348,7 +348,7 @@ int net_reactor_insert(net_reactor_ctx_t *ctx, int fd, int flags) {
       // TODO understand why
       if (errno != ENOENT)
 #endif
-      tvkprintf(net_events, 0, "epoll_ctl(): %m\n");
+        tvkprintf(net_events, 0, "epoll_ctl(): %m\n");
     }
     ev->state |= EVT_IN_EPOLL;
   }
@@ -419,8 +419,8 @@ static inline int basic_et_adjust(net_reactor_ctx_t *ctx, event_timer_t *et, int
 }
 
 static int event_timer_cmp(const void *l, const void *r) {
-  event_timer_t *left = *(event_timer_t **) l;
-  event_timer_t *right = *(event_timer_t **) r;
+  event_timer_t *left = *(event_timer_t **)l;
+  event_timer_t *right = *(event_timer_t **)r;
   if (left->operation == NULL || right->operation == NULL) {
     if (left->operation == NULL && right->operation == NULL) {
       return 0;
@@ -432,7 +432,7 @@ static int event_timer_cmp(const void *l, const void *r) {
 
 static void dump_too_many_event_timers(net_reactor_ctx_t *ctx) {
   tvkprintf(net_events, 0, "Too many event timers: %d\n", ctx->timer_heap_size);
-  qsort(&ctx->timer_heap[1], (size_t) ctx->timer_heap_size, sizeof(ctx->timer_heap[0]), event_timer_cmp);
+  qsort(&ctx->timer_heap[1], (size_t)ctx->timer_heap_size, sizeof(ctx->timer_heap[0]), event_timer_cmp);
   for (int i = 1; i <= ctx->timer_heap_size;) {
     int j = i;
     while (j != ctx->timer_heap_size + 1 && event_timer_cmp(&ctx->timer_heap[i], &ctx->timer_heap[j]) == 0) {

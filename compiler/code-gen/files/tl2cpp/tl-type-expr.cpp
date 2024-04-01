@@ -38,9 +38,7 @@ std::pair<std::string, std::string> get_full_type_expr_str(vk::tlo_parsing::expr
     }
     std::string array_item_type_name = cpp_tl_struct_name("t_", type_of(as_type_array->args[0]->type_expr)->name);
     std::string type = fmt_format("tl_array<{}, {}>", array_item_type_name, inner_magic);
-    return {type, type + fmt_format("({}, {}())",
-                                    get_full_value(as_type_array->multiplicity.get(), var_num_access),
-                                    array_item_type_name)};
+    return {type, type + fmt_format("({}, {}())", get_full_value(as_type_array->multiplicity.get(), var_num_access), array_item_type_name)};
   }
   auto *as_type_expr = type_expr->as<vk::tlo_parsing::type_expr>();
   kphp_assert(as_type_expr);
@@ -95,17 +93,16 @@ void TypeExprStore::compile(CodeGenerator &W) const {
 }
 
 void TypeExprFetch::compile(CodeGenerator &W) const {
-  const auto magic_fetching = get_magic_fetching(arg->type_expr.get(),
-                                                 fmt_format("Incorrect magic of arg: {}\\nin constructor: {}", arg->name, cur_combinator->name));
+  const auto magic_fetching =
+    get_magic_fetching(arg->type_expr.get(), fmt_format("Incorrect magic of arg: {}\\nin constructor: {}", arg->name, cur_combinator->name));
   if (!magic_fetching.empty()) {
     W << magic_fetching << NL;
   }
   if (!typed_mode) {
-    W << "result.set_value(" << register_tl_const_str(arg->name) << ", "
-      << get_full_value(arg->type_expr.get(), var_num_access) << ".fetch(), "
+    W << "result.set_value(" << register_tl_const_str(arg->name) << ", " << get_full_value(arg->type_expr.get(), var_num_access) << ".fetch(), "
       << hash_tl_const_str(arg->name) << "L);" << NL;
   } else {
     W << get_full_value(arg->type_expr.get(), var_num_access) + ".typed_fetch_to(" << get_tl_object_field_access(arg, field_rw_type::WRITE) << ");" << NL;
   }
 }
-}
+} // namespace tl2cpp

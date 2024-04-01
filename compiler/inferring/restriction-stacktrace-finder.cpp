@@ -8,15 +8,15 @@
 #include "common/algorithms/string-algorithms.h"
 #include "common/termformat/termformat.h"
 
-#include "compiler/data/src-file.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/src-file.h"
 #include "compiler/inferring/edge.h"
 #include "compiler/inferring/public.h"
 #include "compiler/inferring/type-node.h"
 #include "compiler/inferring/var-node.h"
 #include "compiler/type-hint.h"
-#include "compiler/vertex.h"
 #include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 /*
     This module finds a stacktrace to describe, why a type mismatch occurred.
@@ -97,10 +97,10 @@ int RestrictionStacktraceFinder::get_priority(const tinf::Edge *edge, const Type
 
   int importance = get_importance_of_reason(edge->from, edge->to);
 
-  return are_equal_types(to_type, from_type) ? 300 + importance :
-         !is_less_or_equal_type(to_type, expected_type, edge->from_at) ? 200 + importance :
-         is_less_or_equal_type(to_type, from_type, edge->from_at) ? 100 + importance :
-         importance;
+  return are_equal_types(to_type, from_type)                             ? 300 + importance
+         : !is_less_or_equal_type(to_type, expected_type, edge->from_at) ? 200 + importance
+         : is_less_or_equal_type(to_type, from_type, edge->from_at)      ? 100 + importance
+                                                                         : importance;
 }
 
 // this is the main function to fill the stacktrace field, it's done recursively
@@ -116,9 +116,8 @@ bool RestrictionStacktraceFinder::find_call_trace_with_error(tinf::Node *cur_nod
   for (const tinf::Edge *e : cur_node->get_edges_from_this()) {
     ordered_edges.emplace_back(e);
   }
-  std::sort(ordered_edges.begin(), ordered_edges.end(), [&](const tinf::Edge *a, const tinf::Edge *b) {
-    return get_priority(a, expected_type) > get_priority(b, expected_type);
-  });
+  std::sort(ordered_edges.begin(), ordered_edges.end(),
+            [&](const tinf::Edge *a, const tinf::Edge *b) { return get_priority(a, expected_type) > get_priority(b, expected_type); });
 
   if (ordered_edges.empty()) {
     return true;
@@ -137,12 +136,11 @@ bool RestrictionStacktraceFinder::find_call_trace_with_error(tinf::Node *cur_nod
 
     node_path.push_back(e->to);
 
-
     const TypeData *next_expected_type{nullptr};
     if (e->from_at) { // inside arrays/tuples
       next_expected_type = expected_type->const_read_at(*e->from_at);
     } else if (auto *as_expr_node = dynamic_cast<tinf::ExprNode *>(e->from)) {
-      if (as_expr_node->get_expr()->type() == op_index) { // outside arrays
+      if (as_expr_node->get_expr()->type() == op_index) {              // outside arrays
         next_expected_type = TypeData::create_array_of(expected_type); // hard to explain, comment to see a failing test
       }
     }
@@ -164,9 +162,9 @@ std::string RestrictionStacktraceFinder::get_stacktrace_text() {
   std::string desc;
 
   // to see full development stacktrace, uncomment these lines
-//  for (tinf::Node *node : stacktrace)
-//    desc += node->get_description() + "\n";
-//  return desc;
+  //  for (tinf::Node *node : stacktrace)
+  //    desc += node->get_description() + "\n";
+  //  return desc;
 
   // here we make stacktrace pretty and human-readable:
   // don't use internal get_description(), join some combinations of ExprNode+VarNode, skip some technical nodes, etc
@@ -217,10 +215,9 @@ std::string RestrictionStacktraceFinder::get_stacktrace_text() {
 
     } else if (const auto *expr_node = dynamic_cast<const tinf::ExprNode *>(node)) {
       VertexPtr expr = expr_node->get_expr();
-      bool skip =
-        (expr->type() == op_func_call && expr.as<op_func_call>()->func_id->name == "make_clone") ||
-        (expr->type() == op_return && expr.as<op_return>()->has_expr()) ||
-        (expr->type() == op_var && expr.as<op_var>()->extra_type == OperationExtra::op_ex_var_const);
+      bool skip = (expr->type() == op_func_call && expr.as<op_func_call>()->func_id->name == "make_clone")
+                  || (expr->type() == op_return && expr.as<op_return>()->has_expr())
+                  || (expr->type() == op_var && expr.as<op_var>()->extra_type == OperationExtra::op_ex_var_const);
       if (skip) {
         continue;
       }
@@ -231,8 +228,7 @@ std::string RestrictionStacktraceFinder::get_stacktrace_text() {
       desc += expr_node->get_type()->as_human_readable();
       desc += "\n";
 
-      bool stop =
-        (expr->type() == op_func_call && expr.as<op_func_call>()->func_id->is_constructor());
+      bool stop = (expr->type() == op_func_call && expr.as<op_func_call>()->func_id->is_constructor());
       if (stop) {
         break;
       }

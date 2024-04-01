@@ -3,24 +3,24 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #ifndef __VK_NET_CRYPTO_AES_H__
-#define	__VK_NET_CRYPTO_AES_H__
+#define __VK_NET_CRYPTO_AES_H__
 
 #include <stdlib.h>
 
 #include <openssl/aes.h>
 
-#include "common/pid.h"
 #include "common/crypto/aes256.h"
+#include "common/pid.h"
 
 #include "net/net-aes-keys.h"
 #include "net/net-connections.h"
 #include "net/net-sockaddr-storage.h"
 
-int aes_crypto_init (struct connection *c, void *key_data, int key_data_len);  /* < 0 = error */
-int aes_crypto_free (struct connection *c);
-int aes_crypto_encrypt_output (struct connection *c);  /* 0 = all ok, >0 = so much more bytes needed to encrypt last block */
-int aes_crypto_decrypt_input (struct connection *c);   /* 0 = all ok, >0 = so much more bytes needed to decrypt last block */
-int aes_crypto_needed_output_bytes (struct connection *c);	/* returns # of bytes needed to complete last output block */
+int aes_crypto_init(struct connection *c, void *key_data, int key_data_len); /* < 0 = error */
+int aes_crypto_free(struct connection *c);
+int aes_crypto_encrypt_output(struct connection *c);      /* 0 = all ok, >0 = so much more bytes needed to encrypt last block */
+int aes_crypto_decrypt_input(struct connection *c);       /* 0 = all ok, >0 = so much more bytes needed to decrypt last block */
+int aes_crypto_needed_output_bytes(struct connection *c); /* returns # of bytes needed to complete last output block */
 
 /* for aes_crypto_init */
 struct aes_session_key {
@@ -52,12 +52,12 @@ extern int allocated_aes_crypto;
 extern int aes_initialized;
 
 int aes_load_keys();
-int aes_generate_nonce (char res[16]);
+int aes_generate_nonce(char res[16]);
 
 int aes_create_keys(aes_key_t *key, struct aes_session_key *R, int am_client, const char nonce_server[16], const char nonce_client[16], int client_timestamp,
                     unsigned server_ip, unsigned short server_port, const unsigned char server_ipv6[16], unsigned client_ip, unsigned short client_port,
                     const unsigned char client_ipv6[16]);
-int aes_create_udp_keys (const aes_key_t* key, aes_udp_session_key_t *R, const process_id_t *local_pid, const process_id_t *remote_pid, int generation);
+int aes_create_udp_keys(const aes_key_t *key, aes_udp_session_key_t *R, const process_id_t *local_pid, const process_id_t *remote_pid, int generation);
 
 static inline int aes_create_connection_keys(aes_key_t *key, struct aes_session_key *R, int am_client, char nonce_server[16], char nonce_client[16],
                                              int client_timestamp, struct connection *c) {

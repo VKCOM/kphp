@@ -11,15 +11,13 @@
 struct RValue {
   RValue() = default;
 
-  explicit RValue(const TypeData *type, const MultiKey *key = nullptr) :
-    type(type),
-    key(key) {
-  }
+  explicit RValue(const TypeData *type, const MultiKey *key = nullptr)
+    : type(type)
+    , key(key) {}
 
-  explicit RValue(tinf::Node *node, const MultiKey *key = nullptr) :
-    node(node),
-    key(key) {
-  }
+  explicit RValue(tinf::Node *node, const MultiKey *key = nullptr)
+    : node(node)
+    , key(key) {}
 
   const TypeData *type{nullptr};
   tinf::Node *node{nullptr};
@@ -58,7 +56,6 @@ inline RValue drop_or_false(RValue rvalue) {
   rvalue.drop_or_false = true;
   return rvalue;
 }
-
 
 inline RValue as_rvalue(VertexPtr v, const MultiKey *key = nullptr) {
   return RValue(tinf::get_tinf_node(v), key);

@@ -12,7 +12,7 @@ std::string MultiKey::to_string() const {
   if (keys_.empty()) {
     return "(empty)";
   }
-  return "[" + vk::join(*this, ",", std::mem_fn(&Key::to_string))+ "]";
+  return "[" + vk::join(*this, ",", std::mem_fn(&Key::to_string)) + "]";
 }
 
 std::vector<MultiKey> MultiKey::any_key_vec;

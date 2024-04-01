@@ -10,7 +10,8 @@
 #include "compiler/kphp_assert.h"
 #include "compiler/location.h"
 
-inline void on_compilation_error(const char *description, const char *file_name, int line_number, const std::string &full_description, AssertLevelT assert_level) {
+inline void on_compilation_error(const char *description, const char *file_name, int line_number, const std::string &full_description,
+                                 AssertLevelT assert_level) {
   on_compilation_error(description, file_name, line_number, full_description.c_str(), assert_level);
 }
 
@@ -53,5 +54,3 @@ bool should_be_colored(FILE *f);
 
 extern int warnings_count;
 } // namespace stage
-
-

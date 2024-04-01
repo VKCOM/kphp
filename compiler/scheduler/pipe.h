@@ -28,16 +28,15 @@ private:
   using InputType = typename PipeType::InputType;
   InputType input;
   PipeType *pipe_ptr;
-  static ProfilerRaw& get_task_profiler() {
+  static ProfilerRaw &get_task_profiler() {
     static CachedProfiler cache{demangle(typeid(typename PipeType::PipeFunctionType).name())};
     return *cache;
   }
 
 public:
-  PipeTask(InputType &&input, PipeType *pipe_ptr) :
-    input(std::move(input)),
-    pipe_ptr(pipe_ptr) {
-  }
+  PipeTask(InputType &&input, PipeType *pipe_ptr)
+    : input(std::move(input))
+    , pipe_ptr(pipe_ptr) {}
 
   void execute() override {
     if (NeedProfiler<typename PipeType::PipeFunctionType>::value) {
@@ -52,10 +51,14 @@ public:
 template<class PipeF, class InputStreamT, class OutputStreamT>
 class Pipe : public Node {
   struct have_on_finish_helper {
-    template<typename T, void (T::*)(OutputStreamT &)> struct SFINAE;
-    template<typename T> static std::true_type Test(SFINAE<T, &T::on_finish> *);
-    template<typename T> static std::false_type Test(...);
+    template<typename T, void (T::*)(OutputStreamT &)>
+    struct SFINAE;
+    template<typename T>
+    static std::true_type Test(SFINAE<T, &T::on_finish> *);
+    template<typename T>
+    static std::false_type Test(...);
   };
+
 public:
   using PipeFunctionType = PipeF;
   using InputStreamType = InputStreamT;
@@ -84,12 +87,16 @@ private:
   void on_finish(std::false_type) {}
 
 public:
-  explicit Pipe(bool parallel = true) :
-    Node(parallel) {}
+  explicit Pipe(bool parallel = true)
+    : Node(parallel) {}
 
-  InputStreamType *&get_input_stream() { return input_stream; }
+  InputStreamType *&get_input_stream() {
+    return input_stream;
+  }
 
-  OutputStreamType *&get_output_stream() { return output_stream; }
+  OutputStreamType *&get_output_stream() {
+    return output_stream;
+  }
 
   void init_output_stream_if_not_inited() {
     if (!output_stream) {
@@ -97,7 +104,9 @@ public:
     }
   }
 
-  void set_input_stream(InputStreamType *is) { input_stream = is; }
+  void set_input_stream(InputStreamType *is) {
+    input_stream = is;
+  }
 
   Task *get_task() override {
     InputType x{};

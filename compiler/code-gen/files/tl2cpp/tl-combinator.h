@@ -7,10 +7,7 @@
 #include "compiler/code-gen/files/tl2cpp/tl2cpp-utils.h"
 
 namespace tl2cpp {
-enum class CombinatorPart {
-  LEFT,
-  RIGHT
-};
+enum class CombinatorPart { LEFT, RIGHT };
 
 std::vector<std::string> get_not_optional_fields_masks(const vk::tlo_parsing::combinator *constructor);
 
@@ -28,9 +25,9 @@ struct CombinatorGen {
 
   void compile_right(CodeGenerator &W) const;
 
-  virtual void gen_before_args_processing(CodeGenerator &W __attribute__ ((unused))) const {};
+  virtual void gen_before_args_processing(CodeGenerator &W __attribute__((unused))) const {};
   virtual void gen_arg_processing(CodeGenerator &W, const std::unique_ptr<vk::tlo_parsing::arg> &arg) const = 0;
-  virtual void gen_after_args_processing(CodeGenerator &W __attribute__ ((unused))) const {};
+  virtual void gen_after_args_processing(CodeGenerator &W __attribute__((unused))) const {};
 
   virtual void gen_result_expr_processing(CodeGenerator &W) const = 0;
 };
@@ -69,8 +66,8 @@ struct CombinatorGen {
  * 3) Handling of the main part of the type expression in TypeExprStore/Fetch
 */
 struct CombinatorStore : CombinatorGen {
-  CombinatorStore(const vk::tlo_parsing::combinator *combinator, CombinatorPart part, bool typed_mode) :
-    CombinatorGen(combinator, part, typed_mode) {};
+  CombinatorStore(const vk::tlo_parsing::combinator *combinator, CombinatorPart part, bool typed_mode)
+    : CombinatorGen(combinator, part, typed_mode){};
 
   void gen_before_args_processing(CodeGenerator &W) const final;
 
@@ -99,13 +96,14 @@ private:
  * 2) Exclamation mark handling (! modifier):
     var f_rpcProxy_diagonalTargets::fetch() {
       fetch_magic_if_not_bare(0x1cb5c415, "Incorrect magic in result of function: rpcProxy.diagonalTargets");
-      return t_Vector<t_Vector<t_Maybe<tl_exclamation_fetch_wrapper, 0>, 0>, 0>(t_Vector<t_Maybe<tl_exclamation_fetch_wrapper, 0>, 0>(t_Maybe<tl_exclamation_fetch_wrapper, 0>(std::move(X)))).fetch();
+      return t_Vector<t_Vector<t_Maybe<tl_exclamation_fetch_wrapper, 0>, 0>, 0>(t_Vector<t_Maybe<tl_exclamation_fetch_wrapper, 0>,
+ 0>(t_Maybe<tl_exclamation_fetch_wrapper, 0>(std::move(X)))).fetch();
     }
  * 3) Handling of the main part of the type expression in TypeExprStore/Fetch
 */
 struct CombinatorFetch : CombinatorGen {
-  CombinatorFetch(const vk::tlo_parsing::combinator *combinator, CombinatorPart part, bool typed_mode) :
-    CombinatorGen(combinator, part, typed_mode) {};
+  CombinatorFetch(const vk::tlo_parsing::combinator *combinator, CombinatorPart part, bool typed_mode)
+    : CombinatorGen(combinator, part, typed_mode){};
 
   void gen_before_args_processing(CodeGenerator &W) const final;
 
@@ -115,4 +113,4 @@ struct CombinatorFetch : CombinatorGen {
 
   void gen_result_expr_processing(CodeGenerator &W) const final;
 };
-}
+} // namespace tl2cpp

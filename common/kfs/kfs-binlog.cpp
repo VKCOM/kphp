@@ -5,8 +5,8 @@
 #include "common/kfs/kfs-binlog.h"
 
 #include <cassert>
-#include <cstring>
 #include <cstdlib>
+#include <cstring>
 #include <fcntl.h>
 #include <openssl/rand.h>
 #include <sys/stat.h>
@@ -24,7 +24,7 @@ static inline long long kfs_get_binlog_file_size(const struct kfs_file_info *FI)
     return FI->file_size - sizeof(struct kfs_file_header) * FI->kfs_headers;
   }
   const kfs_binlog_zip_header_t *H = kfs_get_binlog_zip_header(FI);
-  assert (H);
+  assert(H);
   return H->orig_file_size;
 }
 
@@ -49,7 +49,7 @@ kfs_file_handle_t open_binlog(const kfs_replica_t *R, long long log_pos) {
 
   int p = l;
 
-  //while (p >= 0 && log_pos <= R->binlogs[p]->max_log_pos + R->binlogs[p]->file_size) {
+  // while (p >= 0 && log_pos <= R->binlogs[p]->max_log_pos + R->binlogs[p]->file_size) {
   while (p >= 0) {
     struct kfs_file_info *FI = R->binlogs[p];
     /* This cutoff works only for not zipped binlogs.
@@ -65,13 +65,13 @@ kfs_file_handle_t open_binlog(const kfs_replica_t *R, long long log_pos) {
       continue;
     }
 
-    assert (FI->log_pos >= 0 && FI->file_size > 0);
+    assert(FI->log_pos >= 0 && FI->file_size > 0);
 
     long long log_pos_end = FI->log_pos + kfs_get_binlog_file_size(FI);
 
     if (log_pos > log_pos_end) {
       if (fd >= 0) {
-        assert (close(fd) >= 0);
+        assert(close(fd) >= 0);
       }
       vkprintf(2, "%s: log_pos (%lld) > log_pos_end (%lld)\n", FI->filename, log_pos, log_pos_end);
       break;
@@ -89,11 +89,12 @@ kfs_file_handle_t open_binlog(const kfs_replica_t *R, long long log_pos) {
       }
 
       long long file_pos = log_pos - FI->log_pos + sizeof(struct kfs_file_header) * FI->kfs_headers;
-      //kprintf ("FI->file_size:%lld, FI->flags: %d, FI->kfs_headers:%d, file:%s, file_pos: %lld, log_pos: %lld\n", FI->file_size, FI->flags, FI->kfs_headers, FI->filename, file_pos, log_pos);
-      assert (lseek(fd, file_pos, SEEK_SET) == file_pos);
+      // kprintf ("FI->file_size:%lld, FI->flags: %d, FI->kfs_headers:%d, file:%s, file_pos: %lld, log_pos: %lld\n", FI->file_size, FI->flags, FI->kfs_headers,
+      // FI->filename, file_pos, log_pos);
+      assert(lseek(fd, file_pos, SEEK_SET) == file_pos);
 
       auto *F = static_cast<kfs_file *>(calloc(1, sizeof(struct kfs_file)));
-      assert (F);
+      assert(F);
       F->info = FI;
       F->fd = fd;
       F->offset = FI->kfs_headers * sizeof(struct kfs_file_header);
@@ -103,7 +104,7 @@ kfs_file_handle_t open_binlog(const kfs_replica_t *R, long long log_pos) {
     }
 
     if (fd >= 0) {
-      assert (close(fd) >= 0);
+      assert(close(fd) >= 0);
     }
 
     --p;
@@ -116,8 +117,8 @@ kfs_file_handle_t next_binlog(kfs_file_handle_t F) {
   struct kfs_file_info *FI = F->info, *FI2;
   struct kfs_replica *R = FI->replica;
 
-  assert (F->fd >= 0);
-  assert (R);
+  assert(F->fd >= 0);
+  assert(R);
 
   int l = -1, r = R->binlog_num;
   while (r - l > 1) { // Z[l].min_log_pos <= log_pos < Z[r].min_log_pos
@@ -133,7 +134,7 @@ kfs_file_handle_t next_binlog(kfs_file_handle_t F) {
     l--;
   }
 
-  assert (l >= 0);
+  assert(l >= 0);
 
   long long log_pos = FI->log_pos + kfs_get_binlog_file_size(FI);
 
@@ -166,7 +167,7 @@ kfs_file_handle_t next_binlog(kfs_file_handle_t F) {
     }
   }
   F = static_cast<kfs_file_handle_t>(malloc(sizeof(struct kfs_file)));
-  assert (F);
+  assert(F);
   memset(F, 0, sizeof(*F));
   F->info = FI2;
   F->fd = fd;

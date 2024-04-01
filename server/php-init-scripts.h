@@ -7,7 +7,7 @@
 #include <cstddef>
 
 struct script_t {
-  void (*run)();   // this is entrypoint to generated code
+  void (*run)(); // this is entrypoint to generated code
   void (*clear)();
 };
 
@@ -27,4 +27,3 @@ struct script_result {
   int body_len;
   int exit_code;
 };
-

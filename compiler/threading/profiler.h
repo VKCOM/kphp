@@ -95,15 +95,13 @@ void profiler_print_all(const std::unordered_map<std::string, ProfilerRaw> &coll
 
 std::string demangle(const char *name);
 
-
 class CachedProfiler : vk::not_copyable {
   TLS<ProfilerRaw *> raws_;
   std::string name_;
 
 public:
-  explicit CachedProfiler(std::string name) :
-    name_(std::move(name)) {
-  }
+  explicit CachedProfiler(std::string name)
+    : name_(std::move(name)) {}
 
   ProfilerRaw &operator*() {
     return *operator->();
@@ -124,8 +122,8 @@ private:
   ProfilerRaw &prof_;
 
 public:
-  explicit AutoProfiler(ProfilerRaw &prof) :
-    prof_(prof) {
+  explicit AutoProfiler(ProfilerRaw &prof)
+    : prof_(prof) {
     prof_.start();
   }
 
@@ -133,4 +131,3 @@ public:
     prof_.finish();
   }
 };
-

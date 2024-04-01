@@ -14,9 +14,9 @@ struct Vector2f {
   float y;
 };
 
-typedef void (*Vector2WalkFunc) (int i, struct Vector2 *v);
-typedef struct Vector2 (*Vector2MapFunc) (struct Vector2 v);
-typedef double (*Vector2ReduceFunc) (struct Vector2 *v);
+typedef void (*Vector2WalkFunc)(int i, struct Vector2 *v);
+typedef struct Vector2 (*Vector2MapFunc)(struct Vector2 v);
+typedef double (*Vector2ReduceFunc)(struct Vector2 *v);
 
 struct Vector2Array {
   struct Vector2 *data;
@@ -43,14 +43,14 @@ void vector2_array_init_ptr(struct Vector2Array *array, int size, ...);
 void vector2_array_alloc(struct Vector2Array *array, int size);
 void vector2_array_free(struct Vector2Array *array);
 
-void vector2_array_walk_ud(void *ud, struct Vector2Array *array, void (*f) (void *ud, int i, struct Vector2 *vec));
+void vector2_array_walk_ud(void *ud, struct Vector2Array *array, void (*f)(void *ud, int i, struct Vector2 *vec));
 void vector2_array_walk(struct Vector2Array *array, Vector2WalkFunc f);
 struct Vector2Array vector2_array_map(struct Vector2Array *array, Vector2MapFunc f);
 double vector2_array_reduce(struct Vector2Array *array, Vector2ReduceFunc f);
 
 void vector2f_array_free(struct Vector2fArray *array);
-struct Vector2fArray vector2f_array_create(int size, void (*f) (struct Vector2f *v));
-struct Vector2fArray vector2f_array_create_index(int size, void (*f) (int, struct Vector2f*));
+struct Vector2fArray vector2f_array_create(int size, void (*f)(struct Vector2f *v));
+struct Vector2fArray vector2f_array_create_index(int size, void (*f)(int, struct Vector2f *));
 struct Vector2f vector2f_array_get(struct Vector2fArray *array, int index);
 
-int string_c_arg(int (*f) (const char *s));
+int string_c_arg(int (*f)(const char *s));

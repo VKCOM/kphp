@@ -32,8 +32,8 @@ void MakeRunner::run_target(Target *target) {
 }
 
 void MakeRunner::ready_target(Target *target) {
-  //fprintf (stderr, "ready target %s\n", target->get_name().c_str());
-  assert (!target->is_ready);
+  // fprintf (stderr, "ready target %s\n", target->get_name().c_str());
+  assert(!target->is_ready);
 
   targets_left--;
   target->is_ready = true;
@@ -43,9 +43,9 @@ void MakeRunner::ready_target(Target *target) {
 }
 
 void MakeRunner::one_dep_ready_target(Target *target) {
-  //fprintf (stderr, "one_dep_ready target %s\n", target->get_name().c_str());
+  // fprintf (stderr, "one_dep_ready target %s\n", target->get_name().c_str());
   target->pending_deps--;
-  assert (target->pending_deps >= 0);
+  assert(target->pending_deps >= 0);
   if (target->pending_deps == 0) {
     if (target->is_waiting) {
       target->is_waiting = false;
@@ -56,7 +56,7 @@ void MakeRunner::one_dep_ready_target(Target *target) {
 }
 
 void MakeRunner::wait_target(Target *target) {
-  assert (!target->is_waiting);
+  assert(!target->is_waiting);
   target->is_waiting = true;
   targets_waiting++;
 }
@@ -98,11 +98,11 @@ static int run_cmd(const std::string &cmd) {
   }
   argv.back() = nullptr;
 
-  #ifdef __APPLE__
+#ifdef __APPLE__
   int pid = fork();
-  #else
+#else
   int pid = vfork();
-  #endif
+#endif
 
   if (pid < 0) {
     perror("vfork failed: ");
@@ -110,7 +110,7 @@ static int run_cmd(const std::string &cmd) {
   }
 
   if (pid == 0) {
-    //prctl (PR_SET_PDEATHSIG, SIGKILL);
+    // prctl (PR_SET_PDEATHSIG, SIGKILL);
     execvp(argv[0], &argv[0]);
     perror("execvp failed: ");
     _exit(1);
@@ -133,7 +133,7 @@ bool MakeRunner::start_job(Target *target) {
 
 bool MakeRunner::finish_job(int pid, int return_code, int by_signal) {
   auto it = jobs.find(pid);
-  assert (it != jobs.end());
+  assert(it != jobs.end());
   Target *target = it->second;
   if (stats_file_) {
     double passed = dl_time() - target->start_time;
@@ -192,7 +192,7 @@ bool MakeRunner::make_targets(const std::vector<Target *> &targets, const std::s
   ksignal(SIGINT, MakeRunner::sigint_handler);
   ksignal(SIGTERM, MakeRunner::sigint_handler);
 
-  //TODO: check timeouts
+  // TODO: check timeouts
   for (auto *target : targets) {
     // fprintf (stderr, "make target: %s\n", target->get_name().c_str());
     require_target(target);
@@ -207,8 +207,8 @@ bool MakeRunner::make_targets(const std::vector<Target *> &targets, const std::s
     int perc = (total_jobs - targets_left) * 100 / std::max(1, total_jobs);
     // don't show progress when there is only one job to do
     if (old_perc != perc && total_jobs > 1) {
-      fmt_fprintf(stderr, "{:3}% [total jobs {}] [left jobs {}] [running jobs {}] [waiting jobs {}]\n",
-                  perc, total_jobs, targets_left, (int)jobs.size(), targets_waiting);
+      fmt_fprintf(stderr, "{:3}% [total jobs {}] [left jobs {}] [running jobs {}] [waiting jobs {}]\n", perc, total_jobs, targets_left, (int)jobs.size(),
+                  targets_waiting);
       old_perc = perc;
     }
     if (jobs.empty() && (fail_flag || pending_jobs.empty())) {
@@ -249,10 +249,10 @@ bool MakeRunner::make_targets(const std::vector<Target *> &targets, const std::s
         } else {
           int return_code = -1;
           int by_signal = -1;
-          if (WIFEXITED (status)) {
-            return_code = WEXITSTATUS (status);
-          } else if (WIFSIGNALED (status)) {
-            by_signal = WTERMSIG (status);
+          if (WIFEXITED(status)) {
+            return_code = WEXITSTATUS(status);
+          } else if (WIFSIGNALED(status)) {
+            by_signal = WTERMSIG(status);
           } else {
             fmt_print("Something strange happened with pid [{}]\n", pid);
           }
@@ -268,7 +268,7 @@ bool MakeRunner::make_targets(const std::vector<Target *> &targets, const std::s
     }
   }
 
-  //TODO: use old handlers instead SIG_DFL
+  // TODO: use old handlers instead SIG_DFL
   ksignal(SIGINT, SIG_DFL);
   ksignal(SIGTERM, SIG_DFL);
   bool is_ready = true;
@@ -278,12 +278,11 @@ bool MakeRunner::make_targets(const std::vector<Target *> &targets, const std::s
   return !fail_flag && is_ready;
 }
 
-MakeRunner::MakeRunner(FILE *stats_file) noexcept:
-  stats_file_(stats_file) {
-}
+MakeRunner::MakeRunner(FILE *stats_file) noexcept
+  : stats_file_(stats_file) {}
 
 MakeRunner::~MakeRunner() {
-  //TODO: delete targets
+  // TODO: delete targets
   for (auto *target : all_targets) {
     delete target;
   }

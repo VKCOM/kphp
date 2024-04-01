@@ -89,7 +89,8 @@ void Stats::write_to(std::ostream &out, bool with_indent) const {
   out << std::fixed;
   for (const auto &prof : profiler_stats) {
     std::string name = prof.first;
-    std::replace_if(name.begin(), name.end(), [](char c) { return !std::isalnum(c); }, '_');
+    std::replace_if(
+      name.begin(), name.end(), [](char c) { return !std::isalnum(c); }, '_');
     out << "pipes." << name << ".working_time: " << std::chrono::duration<double>(prof.second.get_working_time()).count() << std::endl;
     out << "pipes." << name << ".duration: " << std::chrono::duration<double>(prof.second.get_duration()).count() << std::endl;
     out << "pipes." << name << ".memory_usage: " << prof.second.get_memory_usage() << std::endl;

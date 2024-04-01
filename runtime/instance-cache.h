@@ -60,20 +60,12 @@ struct InstanceCacheStats : private vk::not_copyable {
 };
 
 enum class InstanceCacheSwapStatus {
-  no_need, // no need to do a swap
+  no_need,          // no need to do a swap
   swap_is_finished, // swap succeeded
   swap_is_forbidden // swap is not possible - the memory is still being used
 };
 
-enum class InstanceCacheOpStatus {
-  success,
-  skipped,
-  memory_limit_exceeded,
-  memory_swap_required,
-  delayed,
-  not_found,
-  failed
-};
+enum class InstanceCacheOpStatus { success, skipped, memory_limit_exceeded, memory_swap_required, delayed, not_found, failed };
 
 // these function should be called from master
 InstanceCacheSwapStatus instance_cache_try_swap_memory();
@@ -122,8 +114,7 @@ ClassInstanceType f$instance_cache_fetch(const string &class_name, const string 
       if constexpr (std::is_polymorphic_v<ClassInstanceType>) {
         php_warning("Trying to fetch polymorphic instance class '%s' that was stored by base type", base_wrapper->get_class());
       } else {
-        php_warning("Trying to fetch incompatible instance class: expect '%s', got '%s'",
-                    class_name.c_str(), base_wrapper->get_class());
+        php_warning("Trying to fetch incompatible instance class: expect '%s', got '%s'", class_name.c_str(), base_wrapper->get_class());
       }
     }
   } else {

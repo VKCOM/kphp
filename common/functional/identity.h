@@ -14,4 +14,4 @@ struct identity {
   }
   using is_transparent = std::true_type;
 };
-}
+} // namespace vk

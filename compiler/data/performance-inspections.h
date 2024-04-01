@@ -3,9 +3,8 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
-#include "compiler/data/data_ptr.h"
 #include "common/wrappers/string_view.h"
-
+#include "compiler/data/data_ptr.h"
 
 class PerformanceInspections {
 public:
@@ -34,11 +33,7 @@ public:
     return disabled_inspections_;
   }
 
-  enum class InheritStatus {
-    ok,
-    no_need,
-    conflict
-  };
+  enum class InheritStatus { ok, no_need, conflict };
   std::pair<InheritStatus, Inspections> merge_with_caller(PerformanceInspections caller_inspections) noexcept;
 
   static vk::string_view inspection2string(Inspections inspection) noexcept;

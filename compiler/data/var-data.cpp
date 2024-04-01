@@ -7,8 +7,8 @@
 #include "compiler/data/class-data.h"
 #include "compiler/stage.h"
 
-VarData::VarData(VarData::Type type_) :
-  type_(type_) {}
+VarData::VarData(VarData::Type type_)
+  : type_(type_) {}
 
 void VarData::set_uninited_flag(bool f) {
   uninited_flag = f;
@@ -34,10 +34,10 @@ const ClassMemberInstanceField *VarData::as_class_instance_field() const {
 
 // TODO Dirty HACK, should be removed
 bool VarData::does_name_eq_any_builtin_global(const std::string &name) {
-  static const std::unordered_set<std::string> names = {
-    "_SERVER", "_GET", "_POST", "_FILES", "_COOKIE", "_REQUEST", "_ENV", "argc", "argv",
-    "MC", "MC_True", "config", "Durov", "FullMCTime", "KPHP_MC_WRITE_STAT_PROBABILITY",
-    "d$PHP_SAPI"};
+  static const std::unordered_set<std::string> names = {"_SERVER",   "_GET",   "_POST", "_FILES",     "_COOKIE",
+                                                        "_REQUEST",  "_ENV",   "argc",  "argv",       "MC",
+                                                        "MC_True",   "config", "Durov", "FullMCTime", "KPHP_MC_WRITE_STAT_PROBABILITY",
+                                                        "d$PHP_SAPI"};
   return names.find(name) != names.end();
 }
 

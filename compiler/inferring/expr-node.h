@@ -17,9 +17,8 @@ private:
   static std::string convert_expr_to_human_readable(VertexPtr expr);
 
 public:
-  explicit ExprNode(VertexPtr expr) :
-    expr_(expr) {
-  }
+  explicit ExprNode(VertexPtr expr)
+    : expr_(expr) {}
 
   void recalc(TypeInferer *inferer);
 

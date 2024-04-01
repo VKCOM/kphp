@@ -14,9 +14,8 @@
 #include "compiler/data/vars-collector.h"
 #include "compiler/vertex.h"
 
-GlobalVarsReset::GlobalVarsReset(SrcFilePtr main_file) :
-  main_file_(main_file) {
-}
+GlobalVarsReset::GlobalVarsReset(SrcFilePtr main_file)
+  : main_file_(main_file) {}
 
 void GlobalVarsReset::declare_extern_for_init_val(VertexPtr v, std::set<VarPtr> &externed_vars, CodeGenerator &W) {
   if (auto var_vertex = v.try_as<op_var>()) {
@@ -54,7 +53,7 @@ void GlobalVarsReset::compile_part(FunctionPtr func, const std::set<VarPtr> &use
     }
 
     W << "hard_reset_var(" << VarName(var);
-    //FIXME: brk and comments
+    // FIXME: brk and comments
     if (var->init_val) {
       W << ", " << var->init_val;
     }

@@ -2,8 +2,8 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include <queue>
 #include "compiler/pipes/calc-bad-vars.h"
+#include <queue>
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
@@ -39,8 +39,8 @@ private:
     topsorted->push_back(vertex);
   }
 
-  void dfs_component(VertexT vertex, const GraphT &graph, int color, IdMap<int> *was,
-                     std::vector<int> *was_color, std::vector<VertexT> *component, std::vector<VertexT> *edges) {
+  void dfs_component(VertexT vertex, const GraphT &graph, int color, IdMap<int> *was, std::vector<int> *was_color, std::vector<VertexT> *component,
+                     std::vector<VertexT> *edges) {
     int other_color = (*was)[vertex];
     if (other_color == color) {
       return;
@@ -60,8 +60,7 @@ private:
   }
 
 public:
-  void run(const GraphT &graph, const GraphT &rev_graph, const std::vector<VertexT> &vertices,
-           MergeReachalbeCallback<VertexT> *callback) {
+  void run(const GraphT &graph, const GraphT &rev_graph, const std::vector<VertexT> &vertices, MergeReachalbeCallback<VertexT> *callback) {
     int vertex_n = (int)vertices.size();
     IdMap<int> was(vertex_n);
     std::vector<VertexT> topsorted;
@@ -80,8 +79,7 @@ public:
       }
       std::vector<VertexT> component;
       std::vector<VertexT> edges;
-      dfs_component(vertex, graph, ++current_color, &was,
-                    &was_color, &component, &edges);
+      dfs_component(vertex, graph, ++current_color, &was, &was_color, &component, &edges);
 
       callback->for_component(component, edges);
     }
@@ -95,11 +93,11 @@ struct FuncCallGraph {
   IdMap<std::vector<FunctionPtr>> rev_graph;
   std::vector<std::pair<FunctionPtr, std::vector<FunctionPtr>>> temporarily_removed;
 
-  FuncCallGraph(std::vector<FunctionPtr> other_functions, std::vector<DepData> &dep_datas) :
-    n((int)other_functions.size()),
-    functions(std::move(other_functions)),
-    graph(n),
-    rev_graph(n) {
+  FuncCallGraph(std::vector<FunctionPtr> other_functions, std::vector<DepData> &dep_datas)
+    : n((int)other_functions.size())
+    , functions(std::move(other_functions))
+    , graph(n)
+    , rev_graph(n) {
 
     for (int cur_id = 0, i = 0; i < n; i++, cur_id++) {
       set_index(functions[i], cur_id);
@@ -135,10 +133,10 @@ struct FuncCallGraph {
 };
 
 class CallstackOfColoredFunctions {
-  std::vector<FunctionPtr> stack;                       // functions placed in order, only colored functions
-  std::vector<function_palette::color_t> colors_chain;  // blended colors of stacked functions, one-by-one
-  std::unordered_set<FunctionPtr> index_set;            // a quick index for contains(), has the same elements as stack
-  function_palette::colors_mask_t colors_mask{0};       // mask of all colors_chain
+  std::vector<FunctionPtr> stack;                      // functions placed in order, only colored functions
+  std::vector<function_palette::color_t> colors_chain; // blended colors of stacked functions, one-by-one
+  std::unordered_set<FunctionPtr> index_set;           // a quick index for contains(), has the same elements as stack
+  function_palette::colors_mask_t colors_mask{0};      // mask of all colors_chain
 
   void recalc_mask() {
     colors_mask = 0;
@@ -201,7 +199,7 @@ class CheckFunctionsColors {
 
   const FuncCallGraph &call_graph;
   const function_palette::Palette &palette;
-  std::unordered_set<std::string> shown_errors;   // the easiest way to avoid duplicated errors
+  std::unordered_set<std::string> shown_errors; // the easiest way to avoid duplicated errors
 
 public:
   explicit CheckFunctionsColors(const FuncCallGraph &call_graph)
@@ -213,7 +211,7 @@ public:
     bool was_any_error = false;
 
     for (const auto &ruleset : palette.get_rulesets()) {
-      for (auto it = ruleset.rbegin(); it != ruleset.rend(); ++it) {  // reverse is important
+      for (auto it = ruleset.rbegin(); it != ruleset.rend(); ++it) { // reverse is important
         const function_palette::PaletteRule &rule = *it;
         if (!match_rule(callstack, rule)) {
           continue;
@@ -274,7 +272,8 @@ public:
   // on error (colored chain breaks some rule), we want to find an actual chain of calling
   // this is launched only on error, that's why we don't care about performance and just use bfs
   // todo think about using such approach for fork chains, throws chains, etc (and drop fork_prev, wait_prev, throws_reason from FunctionData)
-  std::vector<FunctionPtr> find_callstack_between_two_functions_bfs(FunctionPtr from, FunctionPtr target, const std::unordered_set<FunctionPtr> &shouldnt_appear) {
+  std::vector<FunctionPtr> find_callstack_between_two_functions_bfs(FunctionPtr from, FunctionPtr target,
+                                                                    const std::unordered_set<FunctionPtr> &shouldnt_appear) {
     std::unordered_map<FunctionPtr, int> visited_level;
     std::queue<FunctionPtr> bfs_queue;
 
@@ -297,7 +296,7 @@ public:
       }
     }
 
-    if (visited_level.find(target) == visited_level.end()) {    // couldn't find, just return [from, target]
+    if (visited_level.find(target) == visited_level.end()) { // couldn't find, just return [from, target]
       return {from, target};
     }
 
@@ -326,10 +325,10 @@ public:
       return;
     }
 
-    auto vector = color_callstack.as_vector();    // f1, f2, f3 — all of them are colored, and their chain breaks the rule
-    std::vector<FunctionPtr> full_callstack;      // will be: src_main -> ... -> f1 -> ... -> f2 -> ... -> f3
+    auto vector = color_callstack.as_vector(); // f1, f2, f3 — all of them are colored, and their chain breaks the rule
+    std::vector<FunctionPtr> full_callstack;   // will be: src_main -> ... -> f1 -> ... -> f2 -> ... -> f3
     for (int i = 0; i < vector.size() - 1; ++i) {
-      FunctionPtr cur = vector[i], next = vector[i+1];
+      FunctionPtr cur = vector[i], next = vector[i + 1];
       std::unordered_set<FunctionPtr> shouldnt_appear;
       kphp_assert(cur->next_with_colors);
       for (FunctionPtr exclude : *cur->next_with_colors) {
@@ -362,20 +361,19 @@ public:
     });
 
     stage::set_location((*first_item_to_show)->root->location);
-    kphp_error(!shown_errors.insert(callstack_str).second,
-               fmt_format("{} => {}\n  This color rule is broken, call chain:\n{}",
-                          TermStringFormat::paint(rule.as_human_readable(palette), TermStringFormat::cyan),
-                          TermStringFormat::paint_red(rule.error),
-                          callstack_str));
+    kphp_error(!shown_errors.insert(callstack_str).second, fmt_format("{} => {}\n  This color rule is broken, call chain:\n{}",
+                                                                      TermStringFormat::paint(rule.as_human_readable(palette), TermStringFormat::cyan),
+                                                                      TermStringFormat::paint_red(rule.error), callstack_str));
   }
 };
 
 class CalcBadVars {
   class MergeBadVarsCallback : public MergeReachalbeCallback<FunctionPtr> {
     IdMap<std::vector<VarPtr>> modified_global_vars;
+
   public:
-    explicit MergeBadVarsCallback(IdMap<std::vector<VarPtr>> &&modified_global_vars) :
-      modified_global_vars(std::move(modified_global_vars)) {}
+    explicit MergeBadVarsCallback(IdMap<std::vector<VarPtr>> &&modified_global_vars)
+      : modified_global_vars(std::move(modified_global_vars)) {}
 
     // here we calculate "bad vars" for a function — they will be used in check-ub.cpp
     // "bad vars" are modified non-primitive globals, that can lead to a potential ub when modified and accessed in subcalls
@@ -386,7 +384,7 @@ class CalcBadVars {
       // optimization 1: lots of functions don't modify globals at all
       // then we leave f->bad_vars nullptr
       bool empty = vk::all_of(component, [&](FunctionPtr f) { return modified_global_vars[f].empty(); })
-                && vk::all_of(edges, [&](FunctionPtr e) { return e->bad_vars == nullptr; });
+                   && vk::all_of(edges, [&](FunctionPtr e) { return e->bad_vars == nullptr; });
       if (empty) {
         return;
       }
@@ -401,14 +399,11 @@ class CalcBadVars {
       }
       if (largest_e) {
         bool all_in_largest_e = vk::all_of(component, [&](FunctionPtr f) {
-          return vk::all_of(modified_global_vars[f], [&](VarPtr v_in_self) {
-            return largest_e->find(v_in_self) != largest_e->end();
-          });
+          return vk::all_of(modified_global_vars[f], [&](VarPtr v_in_self) { return largest_e->find(v_in_self) != largest_e->end(); });
         });
         all_in_largest_e &= vk::all_of(edges, [&](FunctionPtr e) {
-          return e->bad_vars == nullptr || e->bad_vars == largest_e || vk::all_of(*e->bad_vars, [&](VarPtr v_in_e) {
-            return largest_e->find(v_in_e) != largest_e->end();
-          });
+          return e->bad_vars == nullptr || e->bad_vars == largest_e
+                 || vk::all_of(*e->bad_vars, [&](VarPtr v_in_e) { return largest_e->find(v_in_e) != largest_e->end(); });
         });
         if (all_in_largest_e) {
           for (FunctionPtr f : component) {
@@ -449,7 +444,7 @@ class CalcBadVars {
 
       // if an edge is colored, append this edge
       // if not, append next_with_colors from this edge
-      for (FunctionPtr f: edges) {
+      for (FunctionPtr f : edges) {
         if (!f->colors.empty()) {
           next_colored_uniq.insert(f);
         } else if (f->next_with_colors != nullptr) {
@@ -531,7 +526,6 @@ class CalcBadVars {
     }
   }
 
-
   static void calc_resumable(const FuncCallGraph &call_graph, const std::vector<DepData> &dep_data) {
     for (int i = 0; i < call_graph.n; i++) {
       for (const auto &fork : dep_data[i].forks) {
@@ -559,8 +553,9 @@ class CalcBadVars {
     for (const auto &func : call_graph.functions) {
       if (func->is_resumable) {
         if (func->should_be_sync) {
-          kphp_error (0, fmt_format("Function [{}] marked with @kphp-sync, but turn up to be resumable\n"
-                                    "Function is resumable because of calls chain:\n{}\n", func->name, func->get_resumable_path()));
+          kphp_error(0, fmt_format("Function [{}] marked with @kphp-sync, but turn up to be resumable\n"
+                                   "Function is resumable because of calls chain:\n{}\n",
+                                   func->name, func->get_resumable_path()));
         }
         if (func->is_inline) {
           func->is_inline = false;
@@ -605,10 +600,10 @@ class CalcBadVars {
   class MergeRefVarsCallback : public MergeReachalbeCallback<VarPtr> {
   private:
     const IdMap<std::vector<VarPtr>> &to_merge_;
+
   public:
-    explicit MergeRefVarsCallback(const IdMap<std::vector<VarPtr>> &to_merge) :
-      to_merge_(to_merge) {
-    }
+    explicit MergeRefVarsCallback(const IdMap<std::vector<VarPtr>> &to_merge)
+      : to_merge_(to_merge) {}
 
     void for_component(const std::vector<VarPtr> &component, const std::vector<VarPtr> &edges) {
       auto *res = new std::unordered_set<VarPtr>();

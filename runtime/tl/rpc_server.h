@@ -16,6 +16,7 @@ public:
   void save(std::unique_ptr<tl_func_base> tl_func_state) noexcept;
   std::unique_ptr<tl_func_base> extract() noexcept;
   void reset() noexcept;
+
 private:
   std::unique_ptr<tl_func_base> query;
   CurrentRpcServerQuery() = default;

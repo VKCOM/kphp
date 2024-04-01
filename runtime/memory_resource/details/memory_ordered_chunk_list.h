@@ -22,12 +22,15 @@ public:
   public:
     friend class memory_ordered_chunk_list;
 
-    explicit list_node(uint32_t size = 0) noexcept :
-      chunk_size_(size) {
-    }
+    explicit list_node(uint32_t size = 0) noexcept
+      : chunk_size_(size) {}
 
-    uint32_t size() const noexcept { return chunk_size_; }
-    bool has_next() const noexcept { return next_chunk_offset_ != std::numeric_limits<uint32_t>::max(); }
+    uint32_t size() const noexcept {
+      return chunk_size_;
+    }
+    bool has_next() const noexcept {
+      return next_chunk_offset_ != std::numeric_limits<uint32_t>::max();
+    }
 
   private:
     uint32_t next_chunk_offset_{std::numeric_limits<uint32_t>::max()};
@@ -42,7 +45,7 @@ public:
 
   void add_memory(void *mem, size_t size) noexcept {
     php_assert(size >= sizeof(list_node) && size <= std::numeric_limits<uint32_t>::max());
-    tmp_buffer_[tmp_buffer_size_++] = new(mem) list_node{static_cast<uint32_t>(size)};
+    tmp_buffer_[tmp_buffer_size_++] = new (mem) list_node{static_cast<uint32_t>(size)};
     if (tmp_buffer_size_ == tmp_buffer_.size()) {
       add_from_array(tmp_buffer_.data(), tmp_buffer_.data() + tmp_buffer_size_);
       tmp_buffer_size_ = 0;

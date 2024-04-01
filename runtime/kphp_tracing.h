@@ -7,9 +7,9 @@
 #include <functional>
 
 #include "runtime/critical_section.h"
+#include "runtime/dummy-visitor-methods.h"
 #include "runtime/kphp_core.h"
 #include "runtime/refcountable_php_classes.h"
-#include "runtime/dummy-visitor-methods.h"
 
 // for detailed comments about tracing in general, see kphp_tracing.cpp
 
@@ -22,8 +22,8 @@ namespace kphp_tracing {
 
 // see comments about `@kphp-tracing aggregate`
 enum class BuiltinFuncID : int {
-  _max_user_defined_functions = 64000,  // and 1.5k for built-in functions (16 bits total)
-  _max_user_defined_aggregate = 24,     // and 7 for built-in aggregates (5 bits total)
+  _max_user_defined_functions = 64000, // and 1.5k for built-in functions (16 bits total)
+  _max_user_defined_aggregate = 24,    // and 7 for built-in aggregates (5 bits total)
   _shift_for_branch = 16,
   _shift_for_aggregate = 18,
   _shift_for_reserved = 23,
@@ -113,8 +113,8 @@ void on_php_script_finish_terminated();
 struct C$KphpDiv : public refcountable_php_classes<C$KphpDiv>, private DummyVisitorMethods {
   using DummyVisitorMethods::accept;
 
-  double start_timestamp{0.0};  // all fields are inaccessible from PHP code
-  double end_timestamp{0.0};    // (PHP code can only call f$KphpDiv$$ functions)
+  double start_timestamp{0.0}; // all fields are inaccessible from PHP code
+  double end_timestamp{0.0};   // (PHP code can only call f$KphpDiv$$ functions)
   int64_t trace_id{0};
   int64_t trace_ctx_int2{0};
   string root_span_title;
@@ -129,7 +129,6 @@ double f$KphpDiv$$getEndTimestamp(const class_instance<C$KphpDiv> &v$this);
 std::tuple<int64_t, int64_t> f$KphpDiv$$generateTraceCtxForChild(const class_instance<C$KphpDiv> &v$this, int64_t div_id, int64_t trace_flags);
 int64_t f$KphpDiv$$assignTraceCtx(class_instance<C$KphpDiv> v$this, int64_t int1, int64_t int2, const Optional<int64_t> &override_div_id);
 
-
 // class KphpSpan
 
 struct C$KphpSpan : public refcountable_php_classes<C$KphpSpan>, private DummyVisitorMethods {
@@ -138,7 +137,8 @@ struct C$KphpSpan : public refcountable_php_classes<C$KphpSpan>, private DummyVi
   int span_id{0};
 
   C$KphpSpan() = default;
-  explicit C$KphpSpan(int span_id) : span_id(span_id) {}
+  explicit C$KphpSpan(int span_id)
+    : span_id(span_id) {}
 
   void addAttributeString(const string &key, const string &value) const;
   void addAttributeInt(const string &key, int64_t value) const;
@@ -180,7 +180,8 @@ inline void f$KphpSpan$$addAttributeEnum(const class_instance<C$KphpSpan> &v$thi
     v$this->addAttributeEnum(key, enum_id, value);
   }
 }
-inline class_instance<C$KphpSpanEvent> f$KphpSpan$$addEvent(const class_instance<C$KphpSpan> &v$this, const string &name, const Optional<double> &manual_timestamp = {}) {
+inline class_instance<C$KphpSpanEvent> f$KphpSpan$$addEvent(const class_instance<C$KphpSpan> &v$this, const string &name,
+                                                            const Optional<double> &manual_timestamp = {}) {
   if (kphp_tracing::cur_trace_level >= 1) {
     return v$this->addEvent(name, manual_timestamp);
   }
@@ -201,7 +202,8 @@ inline void f$KphpSpan$$finish(const class_instance<C$KphpSpan> &v$this, const O
     v$this->finish(manual_timestamp);
   }
 }
-inline void f$KphpSpan$$finishWithError(const class_instance<C$KphpSpan> &v$this, int64_t error_code, const string &error_msg, const Optional<float> &manual_timestamp = {}) {
+inline void f$KphpSpan$$finishWithError(const class_instance<C$KphpSpan> &v$this, int64_t error_code, const string &error_msg,
+                                        const Optional<float> &manual_timestamp = {}) {
   if (kphp_tracing::cur_trace_level >= 1) {
     v$this->finishWithError(error_code, error_msg, manual_timestamp);
   }
@@ -212,14 +214,14 @@ inline void f$KphpSpan$$exclude(const class_instance<C$KphpSpan> &v$this) {
   }
 }
 
-
 // class KphpSpanEvent
 
 struct C$KphpSpanEvent : public refcountable_php_classes<C$KphpSpanEvent> {
   int span_id{0};
 
   C$KphpSpanEvent() = default;
-  explicit C$KphpSpanEvent(int span_id) : span_id(span_id) {}
+  explicit C$KphpSpanEvent(int span_id)
+    : span_id(span_id) {}
 
   void addAttributeString(const string &key, const string &value) const;
   void addAttributeInt(const string &key, int64_t value) const;
@@ -248,7 +250,6 @@ inline void f$KphpSpanEvent$$addAttributeBool(const class_instance<C$KphpSpanEve
   }
 }
 
-
 // global tracing functions
 
 class_instance<C$KphpDiv> f$kphp_tracing_init(const string &root_span_title);
@@ -257,22 +258,23 @@ int64_t f$kphp_tracing_get_level();
 
 void kphp_tracing_register_on_finish_impl(kphp_tracing::on_trace_finish_callback_t &&cb_should_be_flushed);
 void kphp_tracing_register_enums_provider_impl(kphp_tracing::on_trace_enums_callback_t &&cb_custom_enums);
-void kphp_tracing_register_rpc_details_provider_impl(kphp_tracing::on_rpc_provide_details_typed_t &&cb_for_typed, kphp_tracing::on_rpc_provide_details_untyped_t &&cb_for_untyped);
+void kphp_tracing_register_rpc_details_provider_impl(kphp_tracing::on_rpc_provide_details_typed_t &&cb_for_typed,
+                                                     kphp_tracing::on_rpc_provide_details_untyped_t &&cb_for_untyped);
 
-template <typename F>
+template<typename F>
 void f$kphp_tracing_register_on_finish(F &&cb_should_be_flushed) {
   // std::function sometimes uses heap, when constructed from captured lambda. So it must be constructed under critical section only.
   dl::CriticalSectionGuard heap_guard;
   kphp_tracing_register_on_finish_impl(kphp_tracing::on_trace_finish_callback_t{std::forward<F>(cb_should_be_flushed)});
 }
 
-template <typename F>
+template<typename F>
 void f$kphp_tracing_register_enums_provider(F &&cb_custom_enums) {
   dl::CriticalSectionGuard heap_guard;
   kphp_tracing_register_enums_provider_impl(kphp_tracing::on_trace_enums_callback_t{std::forward<F>(cb_custom_enums)});
 }
 
-template <typename F1, typename F2>
+template<typename F1, typename F2>
 void f$kphp_tracing_register_rpc_details_provider(F1 &&cb_for_typed, F2 &&cb_for_untyped) {
   dl::CriticalSectionGuard heap_guard;
   kphp_tracing_register_rpc_details_provider_impl(kphp_tracing::on_rpc_provide_details_typed_t{std::forward<F1>(cb_for_typed)},
@@ -282,7 +284,6 @@ void f$kphp_tracing_register_rpc_details_provider(F1 &&cb_for_typed, F2 &&cb_for
 class_instance<C$KphpSpan> f$kphp_tracing_start_span(const string &title, const string &short_desc, double start_timestamp);
 class_instance<C$KphpSpan> f$kphp_tracing_get_root_span();
 class_instance<C$KphpSpan> f$kphp_tracing_get_current_active_span();
-
 
 // function calls: autogen from `@kphp-tracing`
 
@@ -296,14 +297,13 @@ public:
   KphpTracingFuncCallGuard(const KphpTracingFuncCallGuard &) = delete;
   KphpTracingFuncCallGuard &operator=(const KphpTracingFuncCallGuard &) = delete;
 
-  KphpTracingFuncCallGuard() {
-  }
+  KphpTracingFuncCallGuard() {}
   inline void start(const char *f_name, int len, int trace_level) {
-    if (kphp_tracing::cur_trace_level >= trace_level) {   // 1 or 2
+    if (kphp_tracing::cur_trace_level >= trace_level) { // 1 or 2
       on_started(f_name, len);
     }
   }
-  
+
   ~KphpTracingFuncCallGuard() {
     if (kphp_tracing::cur_trace_level >= 1 && span_id) {
       on_finished();
@@ -338,7 +338,7 @@ public:
       on_started(static_cast<int>(func_id) | static_cast<int>(aggregate_bits));
     }
   }
-  
+
   void enter_branch(int branch_num) {
     // codegenerated instead of kphp_tracing_func_enter_branch(N)
     if (unlikely(kphp_tracing::cur_trace_level >= 2)) {
@@ -357,4 +357,3 @@ public:
     }
   }
 };
-

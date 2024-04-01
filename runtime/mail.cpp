@@ -2,7 +2,6 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-
 #include "runtime/mail.h"
 
 #include <cstdio>
@@ -71,7 +70,7 @@ bool f$mail(const string &to, const string &subject, const string &message, stri
     if (result > 0) {
       php_warning("sendmail process terminated unsuccessfully");
     } else {
-      php_assert (result == -1);
+      php_assert(result == -1);
       php_warning("Error on waiting for sendmail process to terminate");
     }
     return false;

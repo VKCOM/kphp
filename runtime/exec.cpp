@@ -12,7 +12,8 @@
 namespace {
 size_t strip_trailing_whitespace(char *buffer, int bytes_read) {
   size_t l = bytes_read;
-  while (l-- > 0 && isspace((reinterpret_cast<unsigned char *>(buffer))[l])){};
+  while (l-- > 0 && isspace((reinterpret_cast<unsigned char *>(buffer))[l])) {
+  };
   if (l != (bytes_read - 1)) {
     bytes_read = l + 1;
     buffer[bytes_read] = '\0';
@@ -30,7 +31,7 @@ struct ExecStatus {
   string last_line;
 };
 
-template <typename ExecHandler>
+template<typename ExecHandler>
 ExecStatus exec_impl(const string &cmd, ExecHandler &&handler) {
   dl::CriticalSectionGuard heap_guard;
 
@@ -110,7 +111,7 @@ Optional<string> f$exec(const string &command) {
   if (kphp_tracing::is_turned_on()) {
     kphp_tracing::on_external_program_start(exec_id, kphp_tracing::BuiltinFuncID::exec, command);
   }
-  auto [success, exit_code, last_line] = exec_impl(command, [](char */*buff*/, std::size_t size) { return size; });
+  auto [success, exit_code, last_line] = exec_impl(command, [](char * /*buff*/, std::size_t size) { return size; });
   if (kphp_tracing::is_turned_on()) {
     kphp_tracing::on_external_program_finish(exec_id, success, exit_code);
   }

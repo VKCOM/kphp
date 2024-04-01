@@ -7,9 +7,8 @@
 #include <algorithm>
 #include <cassert>
 
-#include "common/kprintf.h"
 #include "common/dl-utils-lite.h"
-
+#include "common/kprintf.h"
 
 bool NumaConfiguration::add_numa_node([[maybe_unused]] int numa_node_id, [[maybe_unused]] const bitmask *cpu_mask) {
 #if defined(__APPLE__)
@@ -41,7 +40,7 @@ bool NumaConfiguration::add_numa_node([[maybe_unused]] int numa_node_id, [[maybe
   numa_nodes.emplace_back(numa_node_id);
   // remove duplicates:
   std::sort(numa_nodes.begin(), numa_nodes.end());
-  numa_nodes.erase(std::unique( numa_nodes.begin(), numa_nodes.end() ), numa_nodes.end());
+  numa_nodes.erase(std::unique(numa_nodes.begin(), numa_nodes.end()), numa_nodes.end());
   return true;
 #endif
 }

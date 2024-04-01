@@ -12,11 +12,10 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/name-gen.h"
+#include "compiler/pipes/clone-nested-lambdas.h"
 #include "compiler/stage.h"
 #include "compiler/threading/profiler.h"
-#include "compiler/pipes/clone-nested-lambdas.h"
 #include "compiler/utils/string-utils.h"
-
 
 TSHashTable<SortAndInheritClassesF::wait_list> SortAndInheritClassesF::ht;
 
@@ -86,10 +85,9 @@ bool clone_method(FunctionPtr from, ClassPtr to_class, DataStream<FunctionPtr> &
 
 } // namespace
 
-
 // Returns nullptr if all class dependents are already processed.
 // Otherwise it returns a pointer to a dependent class/interface that needs to be processed.
-auto SortAndInheritClassesF::get_not_ready_dependency(ClassPtr klass) -> decltype(ht)::HTNode* {
+auto SortAndInheritClassesF::get_not_ready_dependency(ClassPtr klass) -> decltype(ht)::HTNode * {
   for (const auto &dep : klass->get_str_dependents()) {
     auto *node = ht.at(vk::std_hash(dep.class_name));
     kphp_assert(node);
@@ -133,20 +131,20 @@ VertexAdaptor<op_function> SortAndInheritClassesF::generate_function_with_parent
 
 // PHP has late static binding, that's why inheriting a static method is not trivial
 // a new function is created with context_class (to resolve 'static')
-void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_class, const ClassMemberStaticMethod &parent_method, DataStream<FunctionPtr> &function_stream) {
+void SortAndInheritClassesF::inherit_static_method_from_parent(ClassPtr child_class, const ClassMemberStaticMethod &parent_method,
+                                                               DataStream<FunctionPtr> &function_stream) {
   auto local_name = parent_method.local_name();
   auto parent_f = parent_method.function;
   auto parent_class = parent_f->class_id;
-   // A::f() -> B -> C; with A->B becomes A::f$$B
-   // but with B->C it should be A::f$$C and not B::f$$C
-   // so we don't assume B::f$$C as required
+  // A::f() -> B -> C; with A->B becomes A::f$$B
+  // but with B->C it should be A::f$$C and not B::f$$C
+  // so we don't assume B::f$$C as required
   if (parent_f->is_auto_inherited || parent_f->context_class != parent_class) {
     return;
   }
 
   if (const auto *child_method = child_class->members.get_static_method(local_name)) {
-    kphp_error(!parent_f->modifiers.is_final(),
-               fmt_format("Can not override method marked as 'final': {}", parent_f->as_human_readable()));
+    kphp_error(!parent_f->modifiers.is_final(), fmt_format("Can not override method marked as 'final': {}", parent_f->as_human_readable()));
     kphp_error(!(parent_method.function->modifiers.is_static() && parent_method.function->modifiers.is_private()),
                fmt_format("Can not override private method: {}", parent_f->as_human_readable()));
     kphp_error(parent_method.function->modifiers.access_modifier() == child_method->function->modifiers.access_modifier(),
@@ -195,54 +193,41 @@ void SortAndInheritClassesF::inherit_instance_method_from_parent(ClassPtr child_
   kphp_error(!(parent_f->is_generic() && child_f->is_generic() && !parent_f->modifiers.is_abstract()),
              fmt_format("Overriding non-abstract generic methods is forbidden: {}", child_f->as_human_readable()));
   kphp_error(!(parent_f->is_generic() && !child_f->is_generic()),
-             fmt_format("{} is a generic method, but child {} is not.\n@kphp-generic is not inherited, add it manually to child methods", parent_f->as_human_readable(), child_f->as_human_readable()));
+             fmt_format("{} is a generic method, but child {} is not.\n@kphp-generic is not inherited, add it manually to child methods",
+                        parent_f->as_human_readable(), child_f->as_human_readable()));
   kphp_error(!(child_f->is_generic() && !parent_f->is_generic()),
              fmt_format("{} is a generic method, but parent {} is not", child_f->as_human_readable(), parent_f->as_human_readable()));
 }
-
 
 void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_class, ClassPtr parent_class, DataStream<FunctionPtr> &function_stream) {
   stage::set_file(child_class->file_id);
   stage::set_function(FunctionPtr{});
 
   if (parent_class->is_ffi_cdata() || parent_class->name == "FFI\\Scope") {
-    kphp_error_return(child_class->is_builtin() || child_class->is_ffi_scope(),
-                      "FFI classes should not be extended");
+    kphp_error_return(child_class->is_builtin() || child_class->is_ffi_scope(), "FFI classes should not be extended");
   } else {
-    kphp_error_return(parent_class->is_class() && child_class->is_class(),
-                      fmt_format("Error extends {} and {}", child_class->name, parent_class->name));
-
+    kphp_error_return(parent_class->is_class() && child_class->is_class(), fmt_format("Error extends {} and {}", child_class->name, parent_class->name));
   }
 
-  kphp_error_return(!parent_class->modifiers.is_final(),
-                    fmt_format("You cannot extends final class: {}", child_class->name));
+  kphp_error_return(!parent_class->modifiers.is_final(), fmt_format("You cannot extends final class: {}", child_class->name));
 
   child_class->parent_class = parent_class;
 
   // A::f -> B -> C -> D; for D we require C::f$$D, B::f$$D, A::f$$D
   for (; parent_class; parent_class = parent_class->parent_class) {
-    parent_class->members.for_each([&](const ClassMemberStaticMethod &m) {
-      inherit_static_method_from_parent(child_class, m, function_stream);
-    });
-    parent_class->members.for_each([&](const ClassMemberInstanceMethod &m) {
-      inherit_instance_method_from_parent(child_class, m);
-    });
+    parent_class->members.for_each([&](const ClassMemberStaticMethod &m) { inherit_static_method_from_parent(child_class, m, function_stream); });
+    parent_class->members.for_each([&](const ClassMemberInstanceMethod &m) { inherit_instance_method_from_parent(child_class, m); });
     parent_class->members.for_each([&](const ClassMemberStaticField &f) {
       if (const auto *field = child_class->members.get_static_field(f.local_name())) {
-        kphp_error(!f.modifiers.is_private(),
-                   fmt_format("Can't redeclare private static field {} in class {}\n", f.local_name(), child_class->name));
+        kphp_error(!f.modifiers.is_private(), fmt_format("Can't redeclare private static field {} in class {}\n", f.local_name(), child_class->name));
 
-        kphp_error(f.modifiers == field->modifiers,
-                   fmt_format("Can't change access type for static field {} ({}) in class {} ({})\n",
-                              f.local_name(), f.modifiers.to_string(),
-                              child_class->name, field->modifiers.to_string())
-        );
+        kphp_error(f.modifiers == field->modifiers, fmt_format("Can't change access type for static field {} ({}) in class {} ({})\n", f.local_name(),
+                                                               f.modifiers.to_string(), child_class->name, field->modifiers.to_string()));
       }
     });
     parent_class->members.for_each([&](const ClassMemberConstant &c) {
       if (const auto *child_const = child_class->get_constant(c.local_name())) {
-        kphp_error(child_const->access == c.access,
-                   fmt_format("Can't change access type for constant {} in class {}", c.local_name(), child_class->name));
+        kphp_error(child_const->access == c.access, fmt_format("Can't change access type for constant {} in class {}", c.local_name(), child_class->name));
       }
     });
   }
@@ -254,14 +239,11 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
 }
 
 void SortAndInheritClassesF::inherit_class_from_interface(ClassPtr child_class, InterfacePtr interface_class) {
-  kphp_error(interface_class->is_interface(),
-             fmt_format("{} `implements` a non-interface {}", child_class->name, interface_class->name));
+  kphp_error(interface_class->is_interface(), fmt_format("{} `implements` a non-interface {}", child_class->name, interface_class->name));
 
   child_class->implements.emplace_back(interface_class);
 
-  interface_class->members.for_each([&](const ClassMemberInstanceMethod &m) {
-    inherit_instance_method_from_parent(child_class, m);
-  });
+  interface_class->members.for_each([&](const ClassMemberInstanceMethod &m) { inherit_instance_method_from_parent(child_class, m); });
 
   AutoLocker<Lockable *> locker(&(*interface_class));
   interface_class->derived_classes.emplace_back(child_class);
@@ -282,7 +264,7 @@ void SortAndInheritClassesF::clone_members_from_traits(std::vector<TraitPtr> &&t
     };
 
     traits[i]->members.for_each([&](ClassMemberInstanceMethod &m) { check_other_traits_doesnt_contain_method_and_clone(m.function); });
-    traits[i]->members.for_each([&](ClassMemberStaticMethod   &m) { check_other_traits_doesnt_contain_method_and_clone(m.function); });
+    traits[i]->members.for_each([&](ClassMemberStaticMethod &m) { check_other_traits_doesnt_contain_method_and_clone(m.function); });
 
     traits[i]->members.for_each([&](const ClassMemberInstanceField &f) {
       ready_class->members.add_instance_field(f.root.clone(), f.var->init_val.clone(), f.modifiers, f.phpdoc, f.type_hint);
@@ -344,7 +326,7 @@ void SortAndInheritClassesF::execute(ClassPtr klass, MultipleDataStreams<Functio
   auto &restart_class_stream = *os.template project_to_nth_data_stream<1>();
 
   if (auto *dependency = get_not_ready_dependency(klass)) {
-    AutoLocker<Lockable*> locker(dependency);
+    AutoLocker<Lockable *> locker(dependency);
     // check whether done is changed at this point
     if (dependency->data.done) {
       restart_class_stream << klass;
@@ -362,7 +344,7 @@ void SortAndInheritClassesF::execute(ClassPtr klass, MultipleDataStreams<Functio
   AutoLocker<Lockable *> locker(node);
   // for every class that was waiting for the current class
   // we run SortAndInheritClassesF again
-  for (ClassPtr restart_klass: node->data.waiting) {
+  for (ClassPtr restart_klass : node->data.waiting) {
     restart_class_stream << restart_klass;
   }
 
@@ -380,8 +362,7 @@ void SortAndInheritClassesF::check_on_finish(DataStream<FunctionPtr> &os) {
       auto is_not_done = [](const ClassData::StrDependence &dep) { return !ht.at(vk::std_hash(dep.class_name))->data.done; };
       auto str_dep_to_string = [](const ClassData::StrDependence &dep) { return dep.class_name; };
       kphp_error(false, fmt_format("class `{}` has unresolved dependencies [{}]", c->name,
-        vk::join(vk::filter(is_not_done, c->get_str_dependents()), ", ", str_dep_to_string))
-      );
+                                   vk::join(vk::filter(is_not_done, c->get_str_dependents()), ", ", str_dep_to_string)));
     }
 
     if (!c->is_builtin() && c->is_polymorphic_class()) {
@@ -408,8 +389,7 @@ void SortAndInheritClassesF::check_on_finish(DataStream<FunctionPtr> &os) {
       });
       c->members.for_each([c](const ClassMemberStaticField &f) {
         auto field_name = f.local_name();
-        kphp_error(!c->parent_class->get_instance_field(field_name),
-                   fmt_format("You may not override field ${} in class {}", field_name, c->name));
+        kphp_error(!c->parent_class->get_instance_field(field_name), fmt_format("You may not override field ${} in class {}", field_name, c->name));
       });
       c->members.for_each([c](const ClassMemberStaticMethod &m) {
         kphp_error(!c->parent_class->get_instance_method(m.local_name()),

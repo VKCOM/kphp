@@ -4,15 +4,14 @@
 
 #include "compiler/pipes/collect-required-and-classes.h"
 
-#include "compiler/const-manipulations.h"
 #include "compiler/compiler-core.h"
+#include "compiler/const-manipulations.h"
 #include "compiler/data/modulite-data.h"
-#include "compiler/data/src-file.h"
 #include "compiler/data/src-dir.h"
+#include "compiler/data/src-file.h"
 #include "compiler/function-pass.h"
 #include "compiler/phpdoc.h"
 #include "compiler/type-hint.h"
-
 
 class CollectRequiredPass final : public FunctionPassBase {
 private:
@@ -77,9 +76,7 @@ private:
       require_class(dep.class_name);
     }
     // class constant values may contain other class constants that may need require_class()
-    cur_class->members.for_each([&](ClassMemberConstant &c) {
-      run_function_pass(c.value, this);
-    });
+    cur_class->members.for_each([&](ClassMemberConstant &c) { run_function_pass(c.value, this); });
     cur_class->members.for_each([&](ClassMemberStaticField &f) {
       if (f.var->init_val) {
         run_function_pass(f.var->init_val, this);
@@ -129,7 +126,7 @@ private:
   // Collect classes only from type hints in PHP code, as phpdocs @param/@return haven't been parsed up to this execution point.
   // TODO: shall we fix this?
   inline void require_all_classes_from_func_declaration(FunctionPtr f) {
-    for (const auto &p: f->get_params()) {
+    for (const auto &p : f->get_params()) {
       if (p.as<op_func_param>()->type_hint) {
         require_all_classes_in_phpdoc_type(p.as<op_func_param>()->type_hint);
       }
@@ -141,7 +138,7 @@ private:
 
   VertexPtr make_require_call(VertexPtr root, const std::string &name, bool once, bool builtin = false) {
     auto file = require_file(name, true, builtin);
-    kphp_error_act (file, fmt_format("Cannot require [{}]\n", name), return root);
+    kphp_error_act(file, fmt_format("Cannot require [{}]\n", name), return root);
     VertexPtr call = VertexAdaptor<op_func_call>::create();
     call->set_string(file->main_func_name);
     call->location = root->location;
@@ -218,7 +215,7 @@ private:
       ModulitePtr modulite = ModuliteData::create_from_composer_json(composer_json, dir->has_modulite_yaml);
 
       bool is_root = dir->full_dir_name == G->settings().composer_root.get();
-      if (is_root || !modulite) {  // composer.json at project root is loaded, but not stored as a modulite
+      if (is_root || !modulite) { // composer.json at project root is loaded, but not stored as a modulite
         return {};
       }
       dir->nested_files_modulite = modulite;
@@ -235,7 +232,7 @@ private:
       ModulitePtr parent = with_parent ? with_parent->nested_files_modulite : ModulitePtr{};
 
       ModulitePtr modulite = ModuliteData::create_from_modulite_yaml(dir->get_modulite_yaml_filename(), parent);
-      if (!modulite || modulite->modulite_name.empty()) {   // an error while parsing yaml, was already printed
+      if (!modulite || modulite->modulite_name.empty()) { // an error while parsing yaml, was already printed
         return {};
       }
       dir->nested_files_modulite = modulite;
@@ -259,7 +256,7 @@ private:
   void require_all_deps_of_modulite(ModulitePtr modulite) {
     for (const ModuliteSymbol &s : modulite->exports) {
       if (s.kind == ModuliteSymbol::kind_ref_stringname) {
-        vk::string_view e = s.ref_stringname;   // exported symbol: class / define / method / etc.
+        vk::string_view e = s.ref_stringname; // exported symbol: class / define / method / etc.
         bool seems_like_classname = !e.ends_with(")") && e[0] != '$' && e[0] != '@' && e[0] != '#';
         if (seems_like_classname) {
           require_class(modulite->modulite_namespace + e);
@@ -271,8 +268,7 @@ private:
 public:
   CollectRequiredPass(DataStream<SrcFilePtr> &file_stream, DataStream<FunctionPtr> &function_stream)
     : file_stream(file_stream)
-    , function_stream(function_stream) {
-  }
+    , function_stream(function_stream) {}
 
   std::string get_description() override {
     return "Collect required";
@@ -332,7 +328,7 @@ public:
 
     if (auto require = root.try_as<op_require>()) {
       std::string name = collect_string_concatenation(require->expr(), true);
-      kphp_error_act (!name.empty(), "Not a string in 'require' arguments", return root);
+      kphp_error_act(!name.empty(), "Not a string in 'require' arguments", return root);
       if (is_composer_autoload(name)) {
         return require_composer_autoload(root);
       }
@@ -345,9 +341,7 @@ public:
 
     return root;
   }
-
 };
-
 
 void CollectRequiredAndClassesF::execute(FunctionPtr function, CollectRequiredAndClassesF::OStreamT &os) {
   auto &ready_function_stream = *os.template project_to_nth_data_stream<0>();

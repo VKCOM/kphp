@@ -52,19 +52,15 @@ bool is_stop_ready_timeout_expired() {
 }
 
 enum class lease_state_t {
-  off,               // connect to rpc-proxy, wait kphp.startLease from it, connect to target
-  start,             // if !has_pending_scripts -> change state to lease_state_t::on, wait for connection to target ready, do lease_set_ready() && run_rpc_lease();
-  on,                // connecting to target, send RPC_READY, doing work, if too much time doing work -> change state to lease_state_t::initiating_finish
+  off,   // connect to rpc-proxy, wait kphp.startLease from it, connect to target
+  start, // if !has_pending_scripts -> change state to lease_state_t::on, wait for connection to target ready, do lease_set_ready() && run_rpc_lease();
+  on,    // connecting to target, send RPC_READY, doing work, if too much time doing work -> change state to lease_state_t::initiating_finish
   initiating_finish, // wait finishing current task, send RPC_STOP to target, send TL_KPHP_LEASE_STATS to rpc-proxy, change state to lease_state_t::finish
   finish,            // wait TL_KPHP_STOP_READY_ACKNOWLEDGMENT from target with 1 sec timeout, then change state to lease_state_t::off
 };
 
 const char *lease_state_to_str[] = {
-  "off",
-  "start",
-  "on",
-  "initiating_finish",
-  "finish",
+  "off", "start", "on", "initiating_finish", "finish",
 };
 
 lease_state_t lease_state = lease_state_t::off;
@@ -139,10 +135,10 @@ static void rpc_send_stopped(connection *c) {
 
   q[qn++] = (int)inet_sockaddr_address(&c->local_endpoint);
   q[qn++] = (int)inet_sockaddr_port(&c->local_endpoint);
-  q[qn++] = pid; // pid
+  q[qn++] = pid;                // pid
   q[qn++] = now - get_uptime(); // start_time
-  q[qn++] = worker_id; // id
-  q[qn++] = ready_cnt++; // ready_cnt
+  q[qn++] = worker_id;          // id
+  q[qn++] = ready_cnt++;        // ready_cnt
   qn++;
   send_rpc_query(c, magic, -1, q, qn * 4);
 }
@@ -188,8 +184,7 @@ static void rpc_send_ready(connection *c) {
   const auto &lease_mode_v2 = vk::singleton<LeaseContext>::get().cur_lease_mode_v2;
   bool use_ready_v3 = lease_mode_v2.has_value();
   bool use_ready_v2 = !use_ready_v3 && (is_staging != 0 || lease_mode.has_value());
-  int magic = use_ready_v3 ? TL_KPHP_READY_V3 :
-              (use_ready_v2 ? TL_KPHP_READY_V2 : TL_KPHP_READY);
+  int magic = use_ready_v3 ? TL_KPHP_READY_V3 : (use_ready_v2 ? TL_KPHP_READY_V2 : TL_KPHP_READY);
 
   q[qn++] = -1; // will be replaced by op
   int actor_id = get_current_actor_id();
@@ -234,10 +229,10 @@ static void rpc_send_ready(connection *c) {
 
   q[qn++] = static_cast<int>(inet_sockaddr_address(&c->local_endpoint));
   q[qn++] = static_cast<int>(inet_sockaddr_port(&c->local_endpoint));
-  q[qn++] = pid; // pid
+  q[qn++] = pid;                // pid
   q[qn++] = now - get_uptime(); // start_time
-  q[qn++] = worker_id; // id
-  q[qn++] = ready_cnt++; // ready_cnt
+  q[qn++] = worker_id;          // id
+  q[qn++] = ready_cnt++;        // ready_cnt
   qn++;
   send_rpc_query(c, magic, -1, q, qn * 4);
 }
@@ -364,7 +359,7 @@ static int lease_finish() {
     return 1;
   } else {
     lease_ready_flag = false; // waiting TL_KPHP_STOP_READY_ACKNOWLEDGMENT,
-                          // then lease_ready_flag set to 1 in rpcx_execute on ACK receiving or run run_rpc_lease directly in lease_cron on timeout expiring
+                              // then lease_ready_flag set to 1 in rpcx_execute on ACK receiving or run run_rpc_lease directly in lease_cron on timeout expiring
     return 0;
   }
 }
@@ -415,7 +410,6 @@ void lease_cron() {
     run_rpc_lease();
   }
 }
-
 
 void do_rpc_stop_lease() {
   if (lease_state != lease_state_t::on) {
@@ -469,7 +463,6 @@ void do_rpc_finish_lease() {
   tvkprintf(lease, 1, "Got STOP_READY_ACKNOWLEDGMENT, finish lease\n");
   run_rpc_lease();
 }
-
 
 void lease_set_ready() {
   lease_ready_flag = true;

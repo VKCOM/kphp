@@ -6,8 +6,8 @@
 
 #include <sstream>
 #include <string>
-#include <vector>
 #include <unistd.h>
+#include <vector>
 
 #include "common/algorithms/string-algorithms.h"
 #include "common/dl-utils-lite.h"
@@ -30,7 +30,7 @@ bool HttpServerContext::init_from_option(const char *option) {
   std::stringstream ss(option);
   std::string segment;
 
-  while(std::getline(ss, segment, ',')) {
+  while (std::getline(ss, segment, ',')) {
     auto trimmed = vk::trim(segment);
     int val = std::atoi(trimmed.data());
     auto port = static_cast<uint16_t>(val);
@@ -43,7 +43,7 @@ bool HttpServerContext::init_from_option(const char *option) {
 
   // sort and remove duplicates:
   std::sort(http_ports_.begin(), http_ports_.end());
-  http_ports_.erase(std::unique(http_ports_.begin(), http_ports_.end() ), http_ports_.end());
+  http_ports_.erase(std::unique(http_ports_.begin(), http_ports_.end()), http_ports_.end());
 
   if (http_ports_.size() > MAX_HTTP_PORTS) {
     kprintf("Can't listen more than %d HTTP ports\n", MAX_HTTP_PORTS);

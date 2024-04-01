@@ -6,8 +6,8 @@
 
 #include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
-#include "compiler/vertex.h"
 #include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 is_func_id_t get_ifi_id(VertexPtr v) {
   if (v->type() == op_unset) {
@@ -22,19 +22,19 @@ is_func_id_t get_ifi_id(VertexPtr v) {
       b = VertexUtil::get_actual_value(v.as<meta_op_binary>()->lhs());
     }
 
-    if (b->type() == op_false) {                                // $var === false
+    if (b->type() == op_false) { // $var === false
       return ifi_is_false;
     }
-    if (b->type() == op_string && b->get_string().empty()) {    // $var === ''
+    if (b->type() == op_string && b->get_string().empty()) { // $var === ''
       return ifi_is_string;
     }
-    if (b->type() == op_int_const && b->get_string() == "0") {  // $var === 0
+    if (b->type() == op_int_const && b->get_string() == "0") { // $var === 0
       return ifi_is_integer;
     }
-    if (b->type() == op_float_const) {                          // $var === 3.52
+    if (b->type() == op_float_const) { // $var === 3.52
       return ifi_is_float;
     }
-    if (b->type() == op_array && b->empty()) {                  // $var === []
+    if (b->type() == op_array && b->empty()) { // $var === []
       return ifi_is_array;
     }
   }

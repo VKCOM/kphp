@@ -20,17 +20,15 @@ public:
   void on_new_type_became_tpError(const TypeData *because_of_type, const RValue &because_of_rvalue) final;
 };
 
-
-VarNodeRecalc::VarNodeRecalc(tinf::VarNode *node, tinf::TypeInferer *inferer) :
-  NodeRecalc(node, inferer) {
-}
+VarNodeRecalc::VarNodeRecalc(tinf::VarNode *node, tinf::TypeInferer *inferer)
+  : NodeRecalc(node, inferer) {}
 
 void VarNodeRecalc::do_recalc() {
   tinf::VarNode *node = dynamic_cast<tinf::VarNode *>(this->node_);
 
   if (inferer_->is_finished()) {
     // the main reason of this error is that you have forgotten add_node() in collect-main-edges
-    kphp_error (0, fmt_format("called do_recalc on finished inferer, {}", node->get_description()));
+    kphp_error(0, fmt_format("called do_recalc on finished inferer, {}", node->get_description()));
     kphp_fail();
   }
   // at first, we just calculate new_type_ without any checks
@@ -58,7 +56,8 @@ void VarNodeRecalc::do_recalc() {
 
       satisfied = !new_type_->error_flag() && is_less_or_equal_type(new_type_, node->type_restriction);
       if (!satisfied) {
-//          fmt_print("rollback {} from {} to {} due to restriction {}\n", node->get_description(), colored_type_out(new_type_), colored_type_out(before_type), colored_type_out(node->type_restriction));
+        //          fmt_print("rollback {} from {} to {} due to restriction {}\n", node->get_description(), colored_type_out(new_type_),
+        //          colored_type_out(before_type), colored_type_out(node->type_restriction));
         on_restricted_type_mismatch(e, node->type_restriction);
         new_type_ = before_type->clone();
       }
@@ -106,7 +105,8 @@ std::string tinf::VarNode::get_description() {
   } else if (is_return_value_from_function()) {
     return fmt_format("VarNode (return of {}) : {}", function_->as_human_readable(), tinf::get_type(function_, -1)->as_human_readable());
   } else if (is_argument_of_function()) {
-    return fmt_format("VarNode (arg{} {} of {}) : {}", var_->param_i, var_->as_human_readable(), var_->holder_func->as_human_readable(), tinf::get_type(var_)->as_human_readable());
+    return fmt_format("VarNode (arg{} {} of {}) : {}", var_->param_i, var_->as_human_readable(), var_->holder_func->as_human_readable(),
+                      tinf::get_type(var_)->as_human_readable());
   } else {
     return "VarNode (strange)";
   }

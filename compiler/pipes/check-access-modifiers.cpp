@@ -30,7 +30,7 @@ VertexPtr CheckAccessModifiersPass::on_enter_vertex(VertexPtr root) {
   } else if (auto call = root.try_as<op_func_call>()) {
     FunctionPtr func_id = call->func_id;
     if (func_id->modifiers.is_instance() || func_id->modifiers.is_static()) {
-      //TODO: this is hack, which should be fixed after functions with context are added to static methods list
+      // TODO: this is hack, which should be fixed after functions with context are added to static methods list
       auto real_name = func_id->local_name().substr(0, func_id->local_name().find("$$"));
       if (func_id->context_class->members.has_static_method(real_name)) {
         check_access(class_id, lambda_class_id, func_id->modifiers, func_id->class_id, "static method", func_id);

@@ -25,9 +25,9 @@ namespace impl_ {
 //#define DEBUG_INSTANCE_CACHE
 
 #ifdef DEBUG_INSTANCE_CACHE
-  #define ic_debug kprintf
+#define ic_debug kprintf
 #else
-inline void ic_debug(const char *format, ...) __attribute__ ((format (printf, 1, 2)));
+inline void ic_debug(const char *format, ...) __attribute__((format(printf, 1, 2)));
 inline void ic_debug(const char *, ...) {}
 #endif
 
@@ -58,7 +58,9 @@ struct CacheContext : private vk::not_copyable {
   std::atomic<bool> memory_swap_required{false};
 
   void move_to_garbage(ElementHolder *element) noexcept;
-  bool has_garbage() const noexcept { return cache_garbage_ != nullptr; }
+  bool has_garbage() const noexcept {
+    return cache_garbage_ != nullptr;
+  }
   void clear_garbage() noexcept;
 
 private:
@@ -84,12 +86,10 @@ public:
     mem_resource.deallocate(this, sizeof(ElementHolder));
   }
 
-  ElementHolder(std::chrono::nanoseconds now, int64_t ttl,
-                std::unique_ptr<InstanceCopyistBase> &&instance,
-                CacheContext &context) noexcept:
-    inserted_by_process(getpid()),
-    instance_wrapper(std::move(instance)),
-    cache_context(context) {
+  ElementHolder(std::chrono::nanoseconds now, int64_t ttl, std::unique_ptr<InstanceCopyistBase> &&instance, CacheContext &context) noexcept
+    : inserted_by_process(getpid())
+    , instance_wrapper(std::move(instance))
+    , cache_context(context) {
     update_time_points(now, ttl);
     cache_context.stats.elements_created.fetch_add(1, std::memory_order_relaxed);
   }
@@ -129,9 +129,8 @@ public:
 using ElementStorage_ = memory_resource::stl::map<string, vk::intrusive_ptr<ElementHolder>, memory_resource::unsynchronized_pool_resource, stl_string_less>;
 
 struct SharedDataStorages : private vk::not_copyable {
-  explicit SharedDataStorages(memory_resource::unsynchronized_pool_resource &resource) :
-    storage(ElementStorage_::allocator_type{resource}) {
-  }
+  explicit SharedDataStorages(memory_resource::unsynchronized_pool_resource &resource)
+    : storage(ElementStorage_::allocator_type{resource}) {}
 
   inter_process_mutex storage_mutex;
   ElementStorage_ storage;
@@ -211,12 +210,12 @@ private:
   }
 
   void construct_data_inplace() noexcept {
-    cache_context_ = new(shared_memory_) CacheContext();
+    cache_context_ = new (shared_memory_) CacheContext();
     uint8_t *data_storage_mem = static_cast<uint8_t *>(shared_memory_) + get_context_size();
     cache_context_->memory_resource.init(data_storage_mem + get_data_size(), shared_memory_pool_size_);
     data_shards_ = reinterpret_cast<SharedDataStorages *>(data_storage_mem);
     for (size_t i = 0; i != DATA_SHARDS_COUNT; ++i) {
-      new(&data_shards_[i]) SharedDataStorages{cache_context_->memory_resource};
+      new (&data_shards_[i]) SharedDataStorages{cache_context_->memory_resource};
     }
   }
 
@@ -241,9 +240,8 @@ struct {
 
 class InstanceCache {
 private:
-  InstanceCache() :
-    now_(std::chrono::system_clock::now().time_since_epoch()) {
-  }
+  InstanceCache()
+    : now_(std::chrono::system_clock::now().time_since_epoch()) {}
 
 public:
   static InstanceCache &get() {
@@ -305,8 +303,7 @@ public:
     }
 
     InstanceDeepCopyVisitor detach_processor{context_->memory_resource, ExtraRefCnt::for_instance_cache};
-    const ElementHolder *inserted_element = try_insert_element_into_cache(
-      data, key, ttl, instance_wrapper, detach_processor);
+    const ElementHolder *inserted_element = try_insert_element_into_cache(data, key, ttl, instance_wrapper, detach_processor);
 
     if (!inserted_element) {
       // failed to insert the element due to some problems (e.g. memory, depth limit)
@@ -362,12 +359,10 @@ public:
       update_now();
       // if more than EARLY_EXPIRATION_ELEMENT_RATIO time is passed out of the expected element lifetime,
       // return null to the next worker process so it knows that the value needs to be updated in advance
-      if (!it->second->early_fetch_performed &&
-          it->second->freshness_ratio(now_) >= EARLY_EXPIRATION_ELEMENT_RATIO) {
+      if (!it->second->early_fetch_performed && it->second->freshness_ratio(now_) >= EARLY_EXPIRATION_ELEMENT_RATIO) {
         it->second->early_fetch_performed = true;
         context_->stats.elements_missed_earlier.fetch_add(1, std::memory_order_relaxed);
-        ic_debug("can't fetch '%s' because less than %f of total time is left\n",
-                 key.c_str(), EARLY_EXPIRATION_ELEMENT_RATIO);
+        ic_debug("can't fetch '%s' because less than %f of total time is left\n", key.c_str(), EARLY_EXPIRATION_ELEMENT_RATIO);
         return nullptr;
       }
       element_logically_expired = it->second->expiring_at <= now_;
@@ -476,9 +471,7 @@ public:
       {
         std::lock_guard<inter_process_mutex> shared_data_lock{data_shard.storage_mutex};
         if (std::none_of(data_shard.storage.begin(), data_shard.storage.end(),
-                         [now_with_delay](const auto &stored_element) {
-                           return stored_element.second->expiring_at <= now_with_delay;
-                         })) {
+                         [now_with_delay](const auto &stored_element) { return stored_element.second->expiring_at <= now_with_delay; })) {
           continue;
         }
       }
@@ -512,13 +505,10 @@ public:
   InstanceCacheSwapStatus try_swap_memory_resource() {
     const auto &memory_stats = get_last_memory_stats();
     const auto threshold = REAL_MEMORY_USED_THRESHOLD * static_cast<double>(memory_stats.memory_limit);
-    if (static_cast<double>(memory_stats.real_memory_used) < threshold &&
-        !data_manager_.get_current_resource().get_context().memory_swap_required) {
+    if (static_cast<double>(memory_stats.real_memory_used) < threshold && !data_manager_.get_current_resource().get_context().memory_swap_required) {
       return InstanceCacheSwapStatus::no_need;
     }
-    return data_manager_.try_switch_to_next_unused_resource()
-           ? InstanceCacheSwapStatus::swap_is_finished
-           : InstanceCacheSwapStatus::swap_is_forbidden;
+    return data_manager_.try_switch_to_next_unused_resource() ? InstanceCacheSwapStatus::swap_is_finished : InstanceCacheSwapStatus::swap_is_forbidden;
   }
 
   // this function should be called only from master
@@ -536,9 +526,7 @@ private:
     std::lock_guard<inter_process_mutex> shared_data_lock{data.storage_mutex};
     auto it = data.storage.find(key);
     // allow to skip the insertion of the element if it was inserted by another process recently enough
-    if (it != data.storage.end() &&
-        it->second->freshness_ratio(now_) < FRESHNESS_ELEMENT_RATIO &&
-        it->second->inserted_by_process != getpid()) {
+    if (it != data.storage.end() && it->second->freshness_ratio(now_) < FRESHNESS_ELEMENT_RATIO && it->second->inserted_by_process != getpid()) {
       ic_debug("skip '%s' because it was recently updated\n", key.c_str());
       context_->stats.elements_storing_skipped_due_recent_update.fetch_add(1, std::memory_order_relaxed);
       return true;
@@ -562,9 +550,8 @@ private:
         storing_delayed_.unset(key);
         continue;
       }
-      const ElementHolder *inserted_element = try_insert_element_into_cache(
-        data, key, delayed_instance.ttl,
-        *delayed_instance.instance_wrapper, detach_processor);
+      const ElementHolder *inserted_element =
+        try_insert_element_into_cache(data, key, delayed_instance.ttl, *delayed_instance.instance_wrapper, detach_processor);
       if (!inserted_element) {
         if (likely(detach_processor.is_ok())) {
           // failed to acquire an allocator lock; try later
@@ -584,10 +571,8 @@ private:
     }
   }
 
-  ElementHolder *try_insert_element_into_cache(SharedDataStorages &data,
-                                               const string &key_in_script_memory, int64_t ttl,
-                                               const InstanceCopyistBase &instance_wrapper,
-                                               InstanceDeepCopyVisitor &detach_processor) noexcept {
+  ElementHolder *try_insert_element_into_cache(SharedDataStorages &data, const string &key_in_script_memory, int64_t ttl,
+                                               const InstanceCopyistBase &instance_wrapper, InstanceDeepCopyVisitor &detach_processor) noexcept {
     // swap the allocator
     dl::MemoryReplacementGuard shared_memory_guard{context_->memory_resource};
 
@@ -603,7 +588,7 @@ private:
     // moving an instance into a shared memory
     if (auto cached_instance_wrapper = instance_wrapper.deep_copy_and_set_ref_cnt(detach_processor)) {
       if (void *mem = detach_processor.prepare_raw_memory(sizeof(ElementHolder))) {
-        vk::intrusive_ptr<ElementHolder> element{new(mem) ElementHolder{now_, ttl, std::move(cached_instance_wrapper), *context_}};
+        vk::intrusive_ptr<ElementHolder> element{new (mem) ElementHolder{now_, ttl, std::move(cached_instance_wrapper), *context_}};
         std::lock_guard<inter_process_mutex> shared_data_lock{data.storage_mutex};
         auto it = data.storage.find(key_in_script_memory);
         if (it == data.storage.end()) {
@@ -647,7 +632,6 @@ private:
   CacheContext *context_{nullptr};
   InterProcessResourceManager<SharedMemoryData, 2> data_manager_;
 
-
   struct IntrusivePtrHash {
     size_t operator()(const vk::intrusive_ptr<ElementHolder> &el) const {
       return reinterpret_cast<size_t>(el.get());
@@ -680,13 +664,20 @@ private:
 
 std::string_view instance_cache_store_status_to_str(InstanceCacheOpStatus status) {
   switch (status) {
-    case InstanceCacheOpStatus::success:                 return "success";
-    case InstanceCacheOpStatus::skipped:                 return "skipped";
-    case InstanceCacheOpStatus::memory_limit_exceeded:   return "memory_limit_exceeded";
-    case InstanceCacheOpStatus::delayed:                 return "delayed";
-    case InstanceCacheOpStatus::not_found:               return "not_found";
-    case InstanceCacheOpStatus::failed:                  return "failed";
-    default:                                             return "unknown";
+    case InstanceCacheOpStatus::success:
+      return "success";
+    case InstanceCacheOpStatus::skipped:
+      return "skipped";
+    case InstanceCacheOpStatus::memory_limit_exceeded:
+      return "memory_limit_exceeded";
+    case InstanceCacheOpStatus::delayed:
+      return "delayed";
+    case InstanceCacheOpStatus::not_found:
+      return "not_found";
+    case InstanceCacheOpStatus::failed:
+      return "failed";
+    default:
+      return "unknown";
   }
 }
 

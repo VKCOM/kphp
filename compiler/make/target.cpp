@@ -79,7 +79,7 @@ void Target::after_run_fail() {
 }
 
 void Target::set_file(File *new_file) {
-  assert (file == nullptr);
+  assert(file == nullptr);
   file = new_file;
   set_mtime(file->mtime);
 }
@@ -89,6 +89,6 @@ File *Target::get_file() const {
 }
 
 void Target::set_settings(const CompilerSettings *new_settings) {
-  assert (settings == nullptr);
+  assert(settings == nullptr);
   settings = new_settings;
 }

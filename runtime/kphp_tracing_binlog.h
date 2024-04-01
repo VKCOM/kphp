@@ -92,27 +92,36 @@ class tracing_binary_buffer {
   };
 
   one_chunk *last_chunk{nullptr};
-  int *pos{nullptr};  // points inside cur_chunk->buf
+  int *pos{nullptr}; // points inside cur_chunk->buf
   bool use_heap_memory{false};
 
 public:
-
   void set_use_heap_memory();
   void init_and_alloc();
   void alloc_next_chunk_if_not_enough(int reserve_bytes);
   void finish_cur_chunk_start_next();
   void clear(bool real_deallocate);
 
-  int get_cur_chunk_size() const { return (pos - last_chunk->buf) * 4; }
+  int get_cur_chunk_size() const {
+    return (pos - last_chunk->buf) * 4;
+  }
   int calc_total_size() const;
-  bool empty() const { return last_chunk == nullptr || pos == last_chunk->buf; }
+  bool empty() const {
+    return last_chunk == nullptr || pos == last_chunk->buf;
+  }
 
   void write_event_type(EventTypeEnum eventType, int custom24bits);
-  void write_int32(int v) { *pos++ = v; }
-  void write_uint32(unsigned int v) { *pos++ = v; }
+  void write_int32(int v) {
+    *pos++ = v;
+  }
+  void write_uint32(unsigned int v) {
+    *pos++ = v;
+  }
   void write_int64(int64_t v);
   void write_uint64(uint64_t v);
-  void write_float32(float v) { *pos++ = *reinterpret_cast<int *>(&v); }
+  void write_float32(float v) {
+    *pos++ = *reinterpret_cast<int *>(&v);
+  }
   void write_float64(double v);
 
   int register_string_if_const(const string &v) {
@@ -342,7 +351,7 @@ struct BinlogWriter {
     cur_binlog.write_int32(jobID);
     cur_binlog.write_float32(timeOffset);
   }
-  
+
   static void onJobWorkerFailed(int jobID, int errorCodePositive, float timeOffset) {
     cur_binlog.write_event_type(EventTypeEnum::etJobWorkerFailed, errorCodePositive);
     cur_binlog.write_int32(jobID);
@@ -351,7 +360,7 @@ struct BinlogWriter {
 
   static void onWaitNet(int microseconds) {
     static constexpr int32_t UPPER_BOUND_MICRO_TIME_MASK = 0x00f00000; // 15'728'640
-    static constexpr int32_t MAX_MILLI_TIME_MASK         = 0x000fffff; //  1'048'575
+    static constexpr int32_t MAX_MILLI_TIME_MASK = 0x000fffff;         //  1'048'575
     // Here is dynamic precision hack to store wait times > 16 sec in 24 bits:
     //    - if time < UPPER_BOUND_MICRO_TIME_MASK (~15.73 sec) it's stored as microseconds
     //    - else it's stored as milliseconds in lowest 20 bits (e.g. max value is ~ 1048.58 sec)
@@ -415,7 +424,7 @@ struct BinlogWriter {
 
   static void onCurlAddedAttributeString(int curlHandleID, const string &key, const string &value) {
     int idx1 = cur_binlog.register_string_if_const(key);
-    cur_binlog.write_event_type(EventTypeEnum::etCurlAddAttributeString, 0);  // curlHandleID may not fit 24 bits
+    cur_binlog.write_event_type(EventTypeEnum::etCurlAddAttributeString, 0); // curlHandleID may not fit 24 bits
     cur_binlog.write_int32(curlHandleID);
     cur_binlog.write_string(key, idx1);
     cur_binlog.write_string_inlined(value);

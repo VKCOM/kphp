@@ -98,7 +98,7 @@ struct lev_pmemcached_touch {
 
 // snapshot structures
 typedef struct {
-/* strange numbers */
+  /* strange numbers */
   int magic;
   int created_at;
   long long log_pos0;
@@ -112,10 +112,7 @@ typedef struct {
 } index_header;
 
 struct index_entry {
-  enum {
-    PMEMCACHED_FLAG_COMPRESSED = 1 << 1,
-    PMEMCACHED_FLAG_ERASED = 1 << 2
-  };
+  enum { PMEMCACHED_FLAG_COMPRESSED = 1 << 1, PMEMCACHED_FLAG_ERASED = 1 << 2 };
 
   short key_len;
   short flags;

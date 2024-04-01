@@ -23,12 +23,11 @@ struct CaseInsensitiveLess {
 
 class TlSchemaChecker final : const_expr_visitor {
 public:
-  explicit TlSchemaChecker(const tl_scheme &scheme) noexcept:
-    scheme_(scheme),
-    ignoring_types_({"Dictionary", "IntKeyDictionary", "LongKeyDictionary", "Tuple", "Vector",
-                     "String", "Int", "Long", "Double", "Float", "Bool", "False", "True"}),
-    checked_types_(scheme.types.bucket_count()) {
-  }
+  explicit TlSchemaChecker(const tl_scheme &scheme) noexcept
+    : scheme_(scheme)
+    , ignoring_types_(
+        {"Dictionary", "IntKeyDictionary", "LongKeyDictionary", "Tuple", "Vector", "String", "Int", "Long", "Double", "Float", "Bool", "False", "True"})
+    , checked_types_(scheme.types.bucket_count()) {}
 
   void check_combinator(combinator &tl_combinator) {
     vk::string_view processing_combinator_name = tl_combinator.name;

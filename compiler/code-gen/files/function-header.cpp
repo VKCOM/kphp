@@ -12,9 +12,8 @@
 #include "compiler/code-gen/vertex-compiler.h"
 #include "compiler/data/function-data.h"
 
-FunctionH::FunctionH(FunctionPtr function) :
-  function(function) {
-}
+FunctionH::FunctionH(FunctionPtr function)
+  : function(function) {}
 
 void FunctionH::compile(CodeGenerator &W) const {
   W << OpenFile(function->header_name, function->subdir);
@@ -45,7 +44,7 @@ void FunctionH::compile(CodeGenerator &W) const {
   }
   if (function->is_inline) {
     stage::set_function(function);
-    function->name_gen_map = {};  // make codegeneration of this function idempotent
+    function->name_gen_map = {}; // make codegeneration of this function idempotent
 
     W << CloseNamespace();
     includes.start_next_block();

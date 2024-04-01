@@ -9,22 +9,19 @@
 #include "common/algorithms/hashes.h"
 
 #include "compiler/data/class-data.h"
-#include "compiler/vertex-util.h"
 #include "compiler/inferring/public.h"
+#include "compiler/vertex-util.h"
 
 namespace {
 
 bool can_init_value_be_removed(VertexPtr init_value, const VarPtr &variable) {
   const auto *variable_type = tinf::get_type(variable);
-  if (variable_type->use_optional() ||
-      vk::any_of_equal(variable_type->ptype(), tp_Class, tp_mixed)) {
+  if (variable_type->use_optional() || vk::any_of_equal(variable_type->ptype(), tp_Class, tp_mixed)) {
     return init_value->type() == op_null;
   }
 
   const auto *init_type = tinf::get_type(init_value);
-  if (init_value->extra_type != op_ex_var_const ||
-      init_type->use_optional() ||
-      init_type->ptype() != variable_type->ptype()) {
+  if (init_value->extra_type != op_ex_var_const || init_type->use_optional() || init_type->ptype() != variable_type->ptype()) {
     return false;
   }
 
@@ -46,7 +43,7 @@ VarPtr cast_const_array_type(VertexPtr &type_acceptor, const TypeData *required_
   std::string name = ss.str();
   bool is_new = true;
   VarPtr var_id = G->get_global_var(name, VarData::var_const_t, type_acceptor, &is_new);
-  var_id->tinf_node.copy_type_from(required_type);  // not inside if(is_new) to avoid race conditions when one thread creates and another uses faster
+  var_id->tinf_node.copy_type_from(required_type); // not inside if(is_new) to avoid race conditions when one thread creates and another uses faster
   if (is_new) {
     var_id->dependency_level = type_acceptor.as<op_var>()->var_id->dependency_level + 1;
   }
@@ -72,8 +69,7 @@ void cast_array_creation_type(VertexAdaptor<op_array> op_array_vertex, const Typ
 
 void explicit_cast_array_type(VertexPtr &type_acceptor, const TypeData *required_type, std::set<VarPtr> *new_var_out = nullptr) noexcept {
   const auto *existed_type = tinf::get_type(type_acceptor);
-  if (existed_type->get_real_ptype() != tp_array ||
-      !is_implicit_array_conversion(existed_type, required_type)) {
+  if (existed_type->get_real_ptype() != tp_array || !is_implicit_array_conversion(existed_type, required_type)) {
     return;
   }
   if (!vk::any_of_equal(required_type->get_real_ptype(), tp_array, tp_mixed)) {
@@ -114,8 +110,7 @@ VertexPtr OptimizationPass::optimize_set_push_back(VertexAdaptor<op_set> set_op)
     // '$s[] = ...' is forbidden for non-array types;
     // for arrays it's converted to push_back
     PrimitiveType a_ptype = tinf::get_type(a)->get_real_ptype();
-    kphp_error (a_ptype == tp_array || a_ptype == tp_mixed,
-                fmt_format("Can not use [] for {}", type_out(tinf::get_type(a))));
+    kphp_error(a_ptype == tp_array || a_ptype == tp_mixed, fmt_format("Can not use [] for {}", type_out(tinf::get_type(a))));
 
     if (set_op->rl_type == val_none) {
       result = VertexAdaptor<op_push_back>::create(a, c);
@@ -172,9 +167,9 @@ VertexPtr OptimizationPass::optimize_postfix_dec(VertexPtr root) {
 VertexPtr OptimizationPass::optimize_index(VertexAdaptor<op_index> index) {
   if (!index->has_key()) {
     if (index->rl_type == val_l) {
-      kphp_error (0, "Unsupported []");
+      kphp_error(0, "Unsupported []");
     } else {
-      kphp_error (0, "Cannot use [] for reading");
+      kphp_error(0, "Cannot use [] for reading");
     }
   }
   return index;
@@ -202,19 +197,19 @@ VertexPtr OptimizationPass::remove_extra_conversions(VertexPtr root) {
       } else if (vk::any_of_equal(root->type(), op_conv_array, op_conv_array_l) && tp->get_real_ptype() == tp_array) {
         res = expr;
       } else if (root->type() == op_force_mixed && tp->ptype() == tp_void) {
-          expr->rl_type = val_none;
-          res = VertexAdaptor<op_seq_rval>::create(expr, VertexAdaptor<op_null>::create());
+        expr->rl_type = val_none;
+        res = VertexAdaptor<op_seq_rval>::create(expr, VertexAdaptor<op_null>::create());
       }
     }
     if (root->type() == op_conv_mixed) {
       res = expr;
     }
-    if (root->type() == op_conv_drop_null){
+    if (root->type() == op_conv_drop_null) {
       if (!tp->can_store_null()) {
         res = expr;
       }
     }
-    if (root->type() == op_conv_drop_false){
+    if (root->type() == op_conv_drop_false) {
       if (!tp->can_store_false()) {
         res = expr;
       }
@@ -245,8 +240,7 @@ VertexPtr OptimizationPass::try_convert_expr_to_call_to_string_method(VertexPtr 
   }
 
   const auto *to_string_method = klass->get_instance_method(ClassData::NAME_OF_TO_STRING);
-  kphp_error_act(to_string_method,
-                 fmt_format("Converting to a string of a class {} that does not contain a __toString() method", klass->as_human_readable()),
+  kphp_error_act(to_string_method, fmt_format("Converting to a string of a class {} that does not contain a __toString() method", klass->as_human_readable()),
                  return {});
 
   auto call_function = VertexAdaptor<op_func_call>::create(expr);
@@ -283,7 +277,7 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
   } else if (auto param = root.try_as<op_foreach_param>()) {
     if (!param->x()->ref_flag) {
       auto temp_var = root.as<op_foreach_param>()->temp_var().as<op_var>();
-      if (temp_var && temp_var->extra_type == op_ex_var_superlocal) {     // see CreateSwitchForeachVarsPass
+      if (temp_var && temp_var->extra_type == op_ex_var_superlocal) { // see CreateSwitchForeachVarsPass
         temp_var->var_id->needs_const_iterator_flag = true;
       }
     }
@@ -320,7 +314,7 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
     root = convert_strval_to_magic_tostring_method_call(op_conv_string_vertex);
   }
 
-  if (root->rl_type != val_none/* && root->rl_type != val_error*/) {
+  if (root->rl_type != val_none /* && root->rl_type != val_error*/) {
     tinf::get_type(root);
   }
   return root;
@@ -329,7 +323,7 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
 bool OptimizationPass::user_recursion(VertexPtr root) {
   if (auto var_vertex = root.try_as<op_var>()) {
     VarPtr var = var_vertex->var_id;
-    kphp_assert (var);
+    kphp_assert(var);
     if (var->init_val) {
       if (__sync_bool_compare_and_swap(&var->optimize_flag, false, true)) {
         ++var_init_expression_optimization_depth_;

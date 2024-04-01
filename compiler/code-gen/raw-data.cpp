@@ -119,7 +119,6 @@ std::vector<int> compile_arrays_raw_representation(const DepLevelContainer &cons
 
     const TypeData *vertex_inner_type = vertex->tinf_node.get_type()->lookup_at_any_key();
 
-
     int array_size = vertex->size();
     int array_len_in_doubles = -1;
 
@@ -137,12 +136,9 @@ std::vector<int> compile_arrays_raw_representation(const DepLevelContainer &cons
     if (shift != 0) {
       W << ",";
     } else {
-      W << "static_assert(sizeof(array<Unknown>::iterator::inner_type) == " << array_len() * sizeof(double) << ", \"size of array_len should be compatible with runtime array_inner\");" << NL;
-      W << "static const union " << BEGIN
-        << "struct { uint32_t a; uint32_t b; } is;" << NL
-        << "double d;" << NL
-        << "int64_t i64;" << NL
-        << END
+      W << "static_assert(sizeof(array<Unknown>::iterator::inner_type) == " << array_len() * sizeof(double)
+        << ", \"size of array_len should be compatible with runtime array_inner\");" << NL;
+      W << "static const union " << BEGIN << "struct { uint32_t a; uint32_t b; } is;" << NL << "double d;" << NL << "int64_t i64;" << NL << END
         << " raw_arrays[] = { ";
     }
 
@@ -181,4 +177,3 @@ std::vector<int> compile_arrays_raw_representation(const DepLevelContainer &cons
 
   return shifts;
 }
-

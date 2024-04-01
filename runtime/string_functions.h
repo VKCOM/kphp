@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <type_traits>
 #include "runtime/kphp_core.h"
+#include <type_traits>
 
 extern const string COLON;
 extern const string CP1251;
@@ -14,7 +14,7 @@ extern const string NEW_LINE;
 extern const string SPACE;
 extern const string WHAT;
 
-constexpr int32_t PHP_BUF_LEN = (1 << 23);//TODO remove usages of static buffer
+constexpr int32_t PHP_BUF_LEN = (1 << 23); // TODO remove usages of static buffer
 extern char php_buf[PHP_BUF_LEN + 1];
 
 extern const char lhex_digits[17];
@@ -23,7 +23,6 @@ extern const char uhex_digits[17];
 extern int64_t str_replace_count_dummy;
 
 inline uint8_t hex_to_int(char c) noexcept;
-
 
 string f$addcslashes(const string &str, const string &what);
 
@@ -240,7 +239,8 @@ int64_t f$substr_count(const string &haystack, const string &needle, int64_t off
 
 string f$substr_replace(const string &str, const string &replacement, int64_t start, int64_t length = std::numeric_limits<int64_t>::max());
 
-Optional<int64_t> f$substr_compare(const string &main_str, const string &str, int64_t offset, int64_t length = std::numeric_limits<int64_t>::max(), bool case_insensitivity = false);
+Optional<int64_t> f$substr_compare(const string &main_str, const string &str, int64_t offset, int64_t length = std::numeric_limits<int64_t>::max(),
+                                   bool case_insensitivity = false);
 
 bool f$str_starts_with(const string &haystack, const string &needle);
 
@@ -274,22 +274,22 @@ namespace impl_ {
 struct Hex2CharMapMaker {
 private:
   static constexpr uint8_t hex2int_char(size_t c) noexcept {
-    return ('0' <= c && c <= '9') ? static_cast<uint8_t>(c - '0') :
-           ('a' <= c && c <= 'f') ? static_cast<uint8_t>(c - 'a' + 10) :
-           ('A' <= c && c <= 'F') ? static_cast<uint8_t>(c - 'A' + 10) : 16;
+    return ('0' <= c && c <= '9')   ? static_cast<uint8_t>(c - '0')
+           : ('a' <= c && c <= 'f') ? static_cast<uint8_t>(c - 'a' + 10)
+           : ('A' <= c && c <= 'F') ? static_cast<uint8_t>(c - 'A' + 10)
+                                    : 16;
   }
 
 public:
   template<size_t... Ints>
   static constexpr auto make(std::index_sequence<Ints...>) noexcept {
-    return std::array<uint8_t, sizeof...(Ints)>{
-      {
-        hex2int_char(Ints)...,
-      }};
+    return std::array<uint8_t, sizeof...(Ints)>{{
+      hex2int_char(Ints)...,
+    }};
   }
 };
 
-} // namepsace impl_
+} // namespace impl_
 
 uint8_t hex_to_int(char c) noexcept {
   static constexpr auto hex_int_map = impl_::Hex2CharMapMaker::make(std::make_index_sequence<256>());
@@ -391,7 +391,8 @@ string f$strtr(const string &subject, const array<T> &replace_pairs) {
       if (search_len == 0) {
         return subject;
       }
-      const char *pos = static_cast <const char *> (memmem(static_cast <const void *> (piece), (size_t)(piece_end - piece), static_cast <const void *> (search.c_str()), (size_t)search_len));
+      const char *pos = static_cast<const char *>(
+        memmem(static_cast<const void *>(piece), (size_t)(piece_end - piece), static_cast<const void *>(search.c_str()), (size_t)search_len));
       if (pos != nullptr && (best_pos == nullptr || best_pos > pos || (best_pos == pos && search_len > best_len))) {
         best_pos = pos;
         best_len = search_len;
@@ -438,8 +439,12 @@ struct str_concat_arg {
   const char *data;
   string::size_type size;
 
-  str_concat_arg(const string &s) : data{s.c_str()}, size{s.size()} {}
-  str_concat_arg(tmp_string s) : data{s.data}, size{s.size} {}
+  str_concat_arg(const string &s)
+    : data{s.c_str()}
+    , size{s.size()} {}
+  str_concat_arg(tmp_string s)
+    : data{s.data}
+    , size{s.size} {}
 
   tmp_string as_tmp_string() const noexcept {
     return {data, size};

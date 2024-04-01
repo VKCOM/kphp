@@ -38,9 +38,10 @@ inline void unlock(volatile int *locker) {
 class Lockable {
 private:
   volatile int x;
+
 public:
-  Lockable() :
-    x(0) {}
+  Lockable()
+    : x(0) {}
 
   virtual ~Lockable() = default;
 
@@ -57,9 +58,10 @@ template<class DataT>
 class AutoLocker {
 private:
   DataT ptr;
+
 public:
-  explicit AutoLocker(DataT ptr) :
-    ptr(ptr) {
+  explicit AutoLocker(DataT ptr)
+    : ptr(ptr) {
     lock(ptr);
   }
 

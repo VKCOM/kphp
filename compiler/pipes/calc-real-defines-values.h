@@ -26,7 +26,6 @@ private:
   void print_error_infinite_define(DefinePtr cur_def);
 
 public:
-
   CalcRealDefinesAndAssignModulitesF();
 
   void execute(FunctionPtr f, DataStream<FunctionPtr> &unused_os) override;

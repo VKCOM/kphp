@@ -26,6 +26,6 @@ bool Node::is_parallel() {
   return parallel;
 }
 
-Node::Node(bool parallel) :
-  in_scheduler(nullptr),
-  parallel(parallel) {}
+Node::Node(bool parallel)
+  : in_scheduler(nullptr)
+  , parallel(parallel) {}

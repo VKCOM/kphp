@@ -12,7 +12,7 @@ namespace vk {
 template<typename T>
 class singleton {
 public:
-  static T& get() {
+  static T &get() {
     static T data;
     return data;
   }

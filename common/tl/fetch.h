@@ -82,9 +82,9 @@ template<typename T, typename = std::enable_if_t<detail::good_for_raw_fetch<T>::
 struct in_range_fetcher {
   static constexpr T eps = (std::is_floating_point<T>::value) ? (1e-9) : (0);
 
-  explicit in_range_fetcher(T min_val = std::numeric_limits<T>::min(), T max_val = std::numeric_limits<T>::max()) :
-    min_val{min_val},
-    max_val{max_val} {}
+  explicit in_range_fetcher(T min_val = std::numeric_limits<T>::min(), T max_val = std::numeric_limits<T>::max())
+    : min_val{min_val}
+    , max_val{max_val} {}
 
   void operator()(T &value) const {
     if (tl_fetch_check(sizeof(T)) < 0) {
@@ -93,10 +93,8 @@ struct in_range_fetcher {
     }
     tl_fetch_raw_data(&value, sizeof(T));
     if (!(value + eps >= min_val && value - eps <= max_val)) {
-      tl_fetch_set_error_format(TL_ERROR_VALUE_NOT_IN_RANGE,
-                                "Expected value (typeid: '%s') in range [%s,%s], %s presented",
-                                typeid(T).name(), detail::value_to_string<T>::get(min_val).c_str(),
-                                detail::value_to_string<T>::get(max_val).c_str(),
+      tl_fetch_set_error_format(TL_ERROR_VALUE_NOT_IN_RANGE, "Expected value (typeid: '%s') in range [%s,%s], %s presented", typeid(T).name(),
+                                detail::value_to_string<T>::get(min_val).c_str(), detail::value_to_string<T>::get(max_val).c_str(),
                                 detail::value_to_string<T>::get(value).c_str());
     }
   }
@@ -107,8 +105,8 @@ struct in_range_fetcher {
 
 template<typename Allocator>
 struct fetcher<std::basic_string<char, std::char_traits<char>, Allocator>, false> {
-  explicit fetcher(int max_len = max_string_len) :
-    max_len{max_len} {}
+  explicit fetcher(int max_len = max_string_len)
+    : max_len{max_len} {}
 
   void operator()(std::basic_string<char, std::char_traits<char>, Allocator> &s) const {
     fetch_string(s, max_len);
@@ -158,11 +156,8 @@ bool fetch_tuple(std::vector<T, Allocator> &vec, size_t len, Fetcher &&fetcher_f
   if (len > MAX_ARRAY_LEN_WITHOUT_TL_FETCH_CHECK && tl_fetch_check(static_cast<int>(len) * 4) < 0) {
     return false;
   }
-  return fetch_tuple_impl(vec, len, std::forward<Fetcher>(fetcher_func),
-                          std::integral_constant<bool,
-                            std::is_same<std::decay_t<Fetcher>, fetcher<T>>{} &&
-                            detail::good_for_raw_fetch<T>{}
-                          >{});
+  return fetch_tuple_impl(vec, len, std::forward<Fetcher>(fetcher_func), std::integral_constant < bool,
+                          std::is_same<std::decay_t<Fetcher>, fetcher<T>>{} && detail::good_for_raw_fetch<T>{} > {});
 }
 
 } // namespace detail
@@ -181,8 +176,7 @@ bool fetch_tuple(std::vector<T, Allocator> &vec, size_t len, Fetcher &&fetcher_f
   return detail::fetch_tuple(vec, len, std::forward<Fetcher>(fetcher_func));
 }
 
-
-static inline bool fetch_magic (int expected_magic) {
+static inline bool fetch_magic(int expected_magic) {
   int real_magic = tl_fetch_int();
   if (real_magic != expected_magic) {
     tl_fetch_set_error_format(TL_ERROR_SYNTAX, "unexpected magic %08x instead of %08x", real_magic, expected_magic);

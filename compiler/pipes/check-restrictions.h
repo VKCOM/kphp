@@ -13,6 +13,7 @@
 
 class CheckRestrictionsF final : public SyncPipeF<FunctionAndCFG> {
   using Base = SyncPipeF<FunctionAndCFG>;
+
 public:
   CheckRestrictionsF() = default;
 

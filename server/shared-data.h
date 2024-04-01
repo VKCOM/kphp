@@ -56,6 +56,7 @@ public:
     auto t = storage->start_use_host_in_statshouse_metrics_timestamp.load(std::memory_order_acquire);
     return time_point{clock::duration{t}};
   }
+
 private:
   Storage *storage;
 

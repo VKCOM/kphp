@@ -181,7 +181,8 @@ TEST(json_writer, floating_precision) {
 
   ASSERT_TRUE(writer.end_object());
   ASSERT_TRUE(writer.is_complete());
-  ASSERT_STREQ(writer.get_final_json().c_str(), R"({"default":1.1234567,"1":1.1,"2":1.12,"3":1.123,"4":1.1235,"5":1.12346,"6":1.123457,"7":1.1234567,"8":1.1234567,"9":1.1234567})");
+  ASSERT_STREQ(writer.get_final_json().c_str(),
+               R"({"default":1.1234567,"1":1.1,"2":1.12,"3":1.123,"4":1.1235,"5":1.12346,"6":1.123457,"7":1.1234567,"8":1.1234567,"9":1.1234567})");
 }
 
 TEST(json_writer, floating_preserve_zero_fraction) {

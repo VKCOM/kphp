@@ -12,9 +12,8 @@
 #include "runtime/dummy-visitor-methods.h"
 #include "runtime/kphp_core.h"
 #include "runtime/memory_usage.h"
-#include "runtime/refcountable_php_classes.h"
 #include "runtime/pdo/abstract_pdo_statement.h"
-
+#include "runtime/refcountable_php_classes.h"
 
 struct C$PDOStatement : public refcountable_polymorphic_php_classes<abstract_refcountable_php_interface>, private DummyVisitorMethods {
   std::unique_ptr<pdo::AbstractPdoStatement> statement;

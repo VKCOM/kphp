@@ -14,16 +14,16 @@
 #include "compiler/code-gen/naming.h"
 #include "compiler/code-gen/vertex-compiler.h"
 #include "compiler/data/class-data.h"
-#include "compiler/data/function-data.h"
 #include "compiler/data/ffi-data.h"
+#include "compiler/data/function-data.h"
 #include "compiler/data/kphp-json-tags.h"
-#include "compiler/data/src-file.h"
 #include "compiler/data/lib-data.h"
+#include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
-#include "compiler/vertex-util.h"
 #include "compiler/inferring/public.h"
 #include "compiler/inferring/type-data.h"
 #include "compiler/tl-classes.h"
+#include "compiler/vertex-util.h"
 
 VarDeclaration VarExternDeclaration(VarPtr var) {
   return {var, true, false};
@@ -33,11 +33,10 @@ VarDeclaration VarPlainDeclaration(VarPtr var) {
   return {var, false, false};
 }
 
-VarDeclaration::VarDeclaration(VarPtr var, bool extern_flag, bool defval_flag) :
-  var(var),
-  extern_flag(extern_flag),
-  defval_flag(defval_flag) {
-}
+VarDeclaration::VarDeclaration(VarPtr var, bool extern_flag, bool defval_flag)
+  : var(var)
+  , extern_flag(extern_flag)
+  , defval_flag(defval_flag) {}
 
 void VarDeclaration::compile(CodeGenerator &W) const {
   const TypeData *type = tinf::get_type(var);
@@ -60,8 +59,8 @@ void VarDeclaration::compile(CodeGenerator &W) const {
   W << ";" << NL;
   if (var->needs_const_iterator_flag) {
     for (const auto &name : {"$it", "$it$end"}) {
-      W << (extern_flag ? "extern " : "") <<
-        "decltype(const_begin(" << VarName(var) << "))" << " " << VarName(var) << name << ";" << NL;
+      W << (extern_flag ? "extern " : "") << "decltype(const_begin(" << VarName(var) << "))"
+        << " " << VarName(var) << name << ";" << NL;
     }
   }
 
@@ -70,11 +69,10 @@ void VarDeclaration::compile(CodeGenerator &W) const {
   }
 }
 
-FunctionDeclaration::FunctionDeclaration(FunctionPtr function, bool in_header, gen_out_style style) :
-  function(function),
-  in_header(in_header),
-  style(style) {
-}
+FunctionDeclaration::FunctionDeclaration(FunctionPtr function, bool in_header, gen_out_style style)
+  : function(function)
+  , in_header(in_header)
+  , style(style) {}
 
 void FunctionDeclaration::compile(CodeGenerator &W) const {
   TypeName ret_type_gen(tinf::get_type(function, -1), style);
@@ -93,25 +91,22 @@ void FunctionDeclaration::compile(CodeGenerator &W) const {
   }
 }
 
-FunctionForkDeclaration::FunctionForkDeclaration(FunctionPtr function, bool in_header) :
-  function(function),
-  in_header(in_header) {
-}
+FunctionForkDeclaration::FunctionForkDeclaration(FunctionPtr function, bool in_header)
+  : function(function)
+  , in_header(in_header) {}
 
 void FunctionForkDeclaration::compile(CodeGenerator &W) const {
-  FunctionSignatureGenerator(W) << "int64_t " << FunctionForkName(function) <<
-                                "(" << FunctionParams(function, in_header) << ")";
+  FunctionSignatureGenerator(W) << "int64_t " << FunctionForkName(function) << "(" << FunctionParams(function, in_header) << ")";
 }
 
-FunctionParams::FunctionParams(FunctionPtr function, bool in_header, gen_out_style style) :
-  FunctionParams(function, 0, in_header, style) {
-}
-FunctionParams::FunctionParams(FunctionPtr function, size_t shift, bool in_header, gen_out_style style) :
-  function(function),
-  params(function->get_params()),
-  in_header(in_header),
-  style(style),
-  shift(shift) {
+FunctionParams::FunctionParams(FunctionPtr function, bool in_header, gen_out_style style)
+  : FunctionParams(function, 0, in_header, style) {}
+FunctionParams::FunctionParams(FunctionPtr function, size_t shift, bool in_header, gen_out_style style)
+  : function(function)
+  , params(function->get_params())
+  , in_header(in_header)
+  , style(style)
+  , shift(shift) {
   if (shift > 0) {
     params = {std::next(params.begin(), shift), params.end()};
   }
@@ -168,13 +163,14 @@ void FunctionParams::compile(CodeGenerator &W) const {
   }
 }
 
-FFIDeclaration::FFIDeclaration(ClassPtr ffi_scope): ffi_scope{ffi_scope} {}
+FFIDeclaration::FFIDeclaration(ClassPtr ffi_scope)
+  : ffi_scope{ffi_scope} {}
 
-InterfaceDeclaration::InterfaceDeclaration(InterfacePtr interface) :
-  interface(interface) {
-}
+InterfaceDeclaration::InterfaceDeclaration(InterfacePtr interface)
+  : interface(interface) {}
 
-TlDependentTypesUsings::TlDependentTypesUsings(vk::tlo_parsing::type *tl_type, const std::string &php_tl_class_name) : tl_type(tl_type) {
+TlDependentTypesUsings::TlDependentTypesUsings(vk::tlo_parsing::type *tl_type, const std::string &php_tl_class_name)
+  : tl_type(tl_type) {
   int template_suf_start = php_tl_class_name.find("__");
   kphp_assert(template_suf_start != std::string::npos);
   specialization_suffix = php_tl_class_name.substr(template_suf_start);
@@ -207,16 +203,16 @@ TlDependentTypesUsings::TlDependentTypesUsings(vk::tlo_parsing::type *tl_type, c
     }
   }
   if (!check_deduction_result()) {
-    kphp_error(false,
-               fmt_format("Couldn't deduce generic type-parameters for TL type '{}'.\n"
-                             "Each type variable in this type must be used at least once "
-                             "NOT like '... Maybe t ... ' and '<arg> :fields_mask.<n>? t'", tl_type->name));
+    kphp_error(false, fmt_format("Couldn't deduce generic type-parameters for TL type '{}'.\n"
+                                 "Each type variable in this type must be used at least once "
+                                 "NOT like '... Maybe t ... ' and '<arg> :fields_mask.<n>? t'",
+                                 tl_type->name));
   }
 }
 
-TlDependentTypesUsings::DeducingInfo::DeducingInfo(std::string deduced_type, std::vector<TlDependentTypesUsings::InnerParamTypeAccess> path) :
-  deduced_type(std::move(deduced_type)),
-  path_to_inner_param(std::move(path)) {}
+TlDependentTypesUsings::DeducingInfo::DeducingInfo(std::string deduced_type, std::vector<TlDependentTypesUsings::InnerParamTypeAccess> path)
+  : deduced_type(std::move(deduced_type))
+  , path_to_inner_param(std::move(path)) {}
 
 // Traverse a tree while ignoring all vertices except vk::tlo_parsing::type_var and vk::tlo_parsing::type_expr.
 // Collect a path to a type_var to get the type.
@@ -226,7 +222,7 @@ TlDependentTypesUsings::DeducingInfo::DeducingInfo(std::string deduced_type, std
 //  x : (Either (Maybe (%Vector t1)) (Maybe (%VectorTotal t2)))
 // = Test t1 t2;
 // ********************** cl/C@VK@TL@Types@Test__int__graph_Vertex.h **********************
-//struct C$VK$TL$Types$Test__int__graph_Vertex : public abstract_refcountable_php_interface {
+// struct C$VK$TL$Types$Test__int__graph_Vertex : public abstract_refcountable_php_interface {
 //  using t1 = class_instance<C$VK$TL$Types$Either__maybe_array_int__VectorTotal__graph_Vertex>::ClassType::X::InnerType::ValueType;
 //  using t2 = class_instance<C$VK$TL$Types$Either__maybe_array_int__VectorTotal__graph_Vertex>::ClassType::Y::ClassType::t;
 //  virtual const char *get_class() const {
@@ -284,7 +280,7 @@ void TlDependentTypesUsings::deduce_params_from_type_tree(vk::tlo_parsing::type_
           // correctness of this is verified inside tl_scheme_final_check()
           inner_access.inner_type_name = parent_tl_type->constructors[0]->args[i]->name;
           auto php_classes = tl2cpp::get_all_php_classes_of_tl_type(parent_tl_type);
-          std::for_each(php_classes.begin(), php_classes.end(), [&](ClassPtr klass){ dependencies.add_class_include(klass); });
+          std::for_each(php_classes.begin(), php_classes.end(), [&](ClassPtr klass) { dependencies.add_class_include(klass); });
         }
         if (!skip_maybe) {
           recursion_stack.emplace_back(inner_access);
@@ -320,9 +316,7 @@ void TlDependentTypesUsings::compile_dependencies(CodeGenerator &W) {
 
 bool TlDependentTypesUsings::check_deduction_result() const {
   const auto &args = tl_type->constructors.front()->args;
-  return std::all_of(args.begin(), args.end(), [&](const auto &arg) {
-      return !arg->is_type() || deduced_params.count(arg->name);
-  });
+  return std::all_of(args.begin(), args.end(), [&](const auto &arg) { return !arg->is_type() || deduced_params.count(arg->name); });
 }
 
 std::unique_ptr<TlDependentTypesUsings> InterfaceDeclaration::detect_if_needs_tl_usings() const {
@@ -429,7 +423,6 @@ void InterfaceDeclaration::compile(CodeGenerator &W) const {
   W << interface->src_name << "() __attribute__((always_inline)) = default;" << NL;
   W << "~" << interface->src_name << "() __attribute__((always_inline)) = default;" << NL;
 
-
   W << END << ";" << NL;
 
   W << CloseNamespace();
@@ -437,15 +430,14 @@ void InterfaceDeclaration::compile(CodeGenerator &W) const {
   W << CloseFile();
 }
 
-ClassDeclaration::ClassDeclaration(ClassPtr klass) :
-  klass(klass) {
-}
+ClassDeclaration::ClassDeclaration(ClassPtr klass)
+  : klass(klass) {}
 
 void ClassDeclaration::declare_all_variables(VertexPtr vertex, CodeGenerator &W) const {
   if (!vertex) {
     return;
   }
-  for (auto child: *vertex) {
+  for (auto child : *vertex) {
     declare_all_variables(child, W);
   }
   if (auto var = vertex.try_as<op_var>()) {
@@ -493,9 +485,7 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
   W << NL << "struct " << klass->src_name;
   // builtin classes that should not be extended must be marked with "final";
   // classes without "final" are expected to be a proper KPHP classes that can be extended
-  bool parent_class_is_builtin = klass->parent_class &&
-                                 klass->parent_class->is_builtin() &&
-                                 klass->parent_class->is_class();
+  bool parent_class_is_builtin = klass->parent_class && klass->parent_class->is_builtin() && klass->parent_class->is_class();
   if (parent_class_is_builtin || (klass->parent_class && klass->parent_class->does_need_codegen())) {
     W << (klass->derived_classes.empty() ? " final" : "") << " : public ";
     if (!klass->implements.empty()) {
@@ -554,19 +544,17 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
 }
 
 template<class ReturnValueT>
-void ClassDeclaration::compile_class_method(FunctionSignatureGenerator &&W, ClassPtr klass, vk::string_view method_signature, const ReturnValueT &return_value) {
-  const bool has_parent = (klass->parent_class && klass->parent_class->does_need_codegen()) ||
-    vk::any_of(klass->implements, [](InterfacePtr i) { return i->does_need_codegen() || i->is_builtin(); });
+void ClassDeclaration::compile_class_method(FunctionSignatureGenerator &&W, ClassPtr klass, vk::string_view method_signature,
+                                            const ReturnValueT &return_value) {
+  const bool has_parent = (klass->parent_class && klass->parent_class->does_need_codegen())
+                          || vk::any_of(klass->implements, [](InterfacePtr i) { return i->does_need_codegen() || i->is_builtin(); });
   const bool has_derived = !klass->derived_classes.empty();
   const bool is_overridden = has_parent && has_derived;
   const bool is_final = has_parent && !has_derived;
   const bool is_pure_virtual = klass->class_type == ClassType::interface;
 
-  FunctionSignatureGenerator &&signature = std::move(W)
-    .set_is_virtual(is_pure_virtual || has_derived)
-    .set_final(is_final)
-    .set_overridden(is_overridden)
-    .set_pure_virtual(is_pure_virtual)
+  FunctionSignatureGenerator &&signature =
+    std::move(W).set_is_virtual(is_pure_virtual || has_derived).set_final(is_final).set_overridden(is_overridden).set_pure_virtual(is_pure_virtual)
     << method_signature;
 
   if (is_pure_virtual) {
@@ -590,9 +578,7 @@ void ClassDeclaration::compile_inner_methods(CodeGenerator &W, ClassPtr klass) {
 // type_size_approx tries to calculate the TypeData value size when interpreted as C++ type
 // it's used for field sorting, so it's not expected to give the byte-precise results
 static int64_t type_size_approx(const TypeData *type_data) {
-  auto round_up = [](int64_t x, int64_t multiplier) {
-    return (x + (multiplier - 1)) & (-multiplier);
-  };
+  auto round_up = [](int64_t x, int64_t multiplier) { return (x + (multiplier - 1)) & (-multiplier); };
   auto calc_rounded_size = [round_up](int64_t size) -> std::pair<int64_t, int64_t> {
     if (size == 1) {
       // byte-sized objects should not require any alignment
@@ -672,9 +658,7 @@ void ClassDeclaration::compile_fields(CodeGenerator &W, ClassPtr klass) {
     int64_t size = type_size_approx(tinf::get_type(f.var));
     fields.push_back({size, &f});
   });
-  sort(fields.begin(), fields.end(), [](const FieldWithSize &a, const FieldWithSize &b) {
-    return a.size > b.size;
-  });
+  sort(fields.begin(), fields.end(), [](const FieldWithSize &a, const FieldWithSize &b) { return a.size > b.size; });
 
   // most classes have a 4-byte prefix that may create an unwanted gap if we're not careful
   //
@@ -731,9 +715,10 @@ void ClassDeclaration::compile_fields(CodeGenerator &W, ClassPtr klass) {
 }
 
 void ClassDeclaration::compile_json_flatten_flag(CodeGenerator &W, ClassPtr klass) {
-  const auto *tag_flatten = klass->kphp_json_tags
-                            ? klass->kphp_json_tags->find_tag([](const kphp_json::KphpJsonTag &tag) { return tag.attr_type == kphp_json::json_attr_flatten && tag.flatten; })
-                            : nullptr;
+  const auto *tag_flatten =
+    klass->kphp_json_tags
+      ? klass->kphp_json_tags->find_tag([](const kphp_json::KphpJsonTag &tag) { return tag.attr_type == kphp_json::json_attr_flatten && tag.flatten; })
+      : nullptr;
   if (tag_flatten) {
     W << "constexpr static bool json_flatten_class{true};" << NL << NL;
   }
@@ -761,8 +746,7 @@ void ClassDeclaration::compile_accept_visitor(CodeGenerator &W, ClassPtr klass, 
 
 static void do_compile_generic_accept(CodeGenerator &W, ClassPtr klass, bool compile_declaration_only) {
   const std::string class_name = compile_declaration_only ? "" : klass->src_name + "::";
-  FunctionSignatureGenerator(W) << "template<class Visitor>" << NL
-                                << "void " << class_name << "generic_accept(Visitor &&visitor) ";
+  FunctionSignatureGenerator(W) << "template<class Visitor>" << NL << "void " << class_name << "generic_accept(Visitor &&visitor) ";
   if (compile_declaration_only) {
     W << SemicolonAndNL{};
     return;
@@ -822,10 +806,12 @@ static void compile_json_visitor_call(CodeGenerator &W, ClassPtr json_encoder, C
 static void do_compile_accept_json_visitor(CodeGenerator &W, ClassPtr klass, bool to_encode, ClassPtr json_encoder, bool compile_declaration_only) {
   bool parent_has_method = false;
   if (ClassPtr parent = klass->parent_class) {
-    parent_has_method |= parent->json_encoders.end() != std::find(parent->json_encoders.begin(), parent->json_encoders.end(), std::pair{json_encoder, to_encode});
+    parent_has_method |=
+      parent->json_encoders.end() != std::find(parent->json_encoders.begin(), parent->json_encoders.end(), std::pair{json_encoder, to_encode});
   }
   for (InterfacePtr parent : klass->implements) {
-    parent_has_method |= parent->json_encoders.end() != std::find(parent->json_encoders.begin(), parent->json_encoders.end(), std::pair{json_encoder, to_encode});
+    parent_has_method |=
+      parent->json_encoders.end() != std::find(parent->json_encoders.begin(), parent->json_encoders.end(), std::pair{json_encoder, to_encode});
   }
 
   const bool has_derived = !klass->derived_classes.empty();
@@ -840,22 +826,22 @@ static void do_compile_accept_json_visitor(CodeGenerator &W, ClassPtr klass, boo
       return;
     }
     FunctionSignatureGenerator(W)
-      .set_is_virtual(is_pure_virtual || has_derived)
-      .set_final(parent_has_method && !has_derived)
-      .set_overridden(parent_has_method && has_derived)
-      .set_pure_virtual(is_pure_virtual)
-      .set_definition(!compile_declaration_only)
+        .set_is_virtual(is_pure_virtual || has_derived)
+        .set_final(parent_has_method && !has_derived)
+        .set_overridden(parent_has_method && has_derived)
+        .set_pure_virtual(is_pure_virtual)
+        .set_definition(!compile_declaration_only)
       << fmt_format("void accept({}<{}> &visitor)", to_encode ? "ToJsonVisitor" : "FromJsonVisitor", JsonEncoderTags::get_cppStructTag_name(json_encoder->name))
       << SemicolonAndNL{};
     return;
   } else {
     const std::string class_name = compile_declaration_only ? "" : klass->src_name + "::";
     FunctionSignatureGenerator(W)
-      .set_is_virtual(is_pure_virtual || has_derived)
-      .set_final(parent_has_method && !has_derived)
-      .set_overridden(parent_has_method && has_derived)
-      .set_pure_virtual(is_pure_virtual)
-      .set_definition(!compile_declaration_only)
+        .set_is_virtual(is_pure_virtual || has_derived)
+        .set_final(parent_has_method && !has_derived)
+        .set_overridden(parent_has_method && has_derived)
+        .set_pure_virtual(is_pure_virtual)
+        .set_definition(!compile_declaration_only)
       << fmt_format("void {}accept({}<{}> &visitor)", class_name, to_encode ? "ToJsonVisitor" : "FromJsonVisitor",
                     JsonEncoderTags::get_cppStructTag_name(json_encoder->name));
     if (compile_declaration_only) {
@@ -880,9 +866,8 @@ static void do_compile_accept_json_visitor(CodeGenerator &W, ClassPtr klass, boo
       }
     }
     // otherwise, we output fields in an order they are declared
-    klass->members.for_each([&W, json_encoder, klass, to_encode](const ClassMemberInstanceField &field) {
-      compile_json_visitor_call(W, json_encoder, klass, field, to_encode);
-    });
+    klass->members.for_each(
+      [&W, json_encoder, klass, to_encode](const ClassMemberInstanceField &field) { compile_json_visitor_call(W, json_encoder, klass, field, to_encode); });
   };
 
   if (!klass->parent_class) {
@@ -909,10 +894,7 @@ void ClassDeclaration::compile_accept_json_visitor(CodeGenerator &W, ClassPtr kl
 }
 
 void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr klass) {
-  bool need_generic_accept =
-    klass->need_to_array_debug_visitor ||
-    klass->need_instance_cache_visitors ||
-    klass->need_instance_memory_estimate_visitor;
+  bool need_generic_accept = klass->need_to_array_debug_visitor || klass->need_instance_cache_visitors || klass->need_instance_memory_estimate_visitor;
 
   if (!need_generic_accept && klass->json_encoders.empty()) {
     return;
@@ -962,11 +944,10 @@ void ClassDeclaration::compile_virtual_builtin_functions(CodeGenerator &W, Class
     return;
   }
 
-  compile_class_method(FunctionSignatureGenerator(W).set_const_this(), klass,
-                       "size_t virtual_builtin_sizeof()", "sizeof(*this)");
+  compile_class_method(FunctionSignatureGenerator(W).set_const_this(), klass, "size_t virtual_builtin_sizeof()", "sizeof(*this)");
 
-  compile_class_method(FunctionSignatureGenerator(W).set_const_this(), klass,
-                       klass->src_name + "* virtual_builtin_clone()", "new " + klass->src_name + "{*this}");
+  compile_class_method(FunctionSignatureGenerator(W).set_const_this(), klass, klass->src_name + "* virtual_builtin_clone()",
+                       "new " + klass->src_name + "{*this}");
 }
 
 void ClassDeclaration::compile_wakeup(CodeGenerator &W, ClassPtr klass) {
@@ -991,9 +972,7 @@ void ClassDeclaration::compile_wakeup(CodeGenerator &W, ClassPtr klass) {
 
 IncludesCollector ClassDeclaration::compile_front_includes(CodeGenerator &W) const {
   IncludesCollector includes;
-  klass->members.for_each([&includes](const ClassMemberInstanceField &f) {
-    includes.add_var_signature_forward_declarations(f.var);
-  });
+  klass->members.for_each([&includes](const ClassMemberInstanceField &f) { includes.add_var_signature_forward_declarations(f.var); });
 
   includes.add_base_classes_include(klass);
   if (!klass->json_encoders.empty()) {
@@ -1003,7 +982,7 @@ IncludesCollector ClassDeclaration::compile_front_includes(CodeGenerator &W) con
   W << includes;
 
   if (tl2cpp::is_php_class_a_tl_function(klass)) {
-    std::string tl_src_name = tl2cpp::get_tl_function_name_of_php_class(klass);  // 'net.pid', 'rpcPing'
+    std::string tl_src_name = tl2cpp::get_tl_function_name_of_php_class(klass); // 'net.pid', 'rpcPing'
     unsigned long pos = tl_src_name.find('.');
     W << Include("tl/" + (pos == std::string::npos ? "common" : tl_src_name.substr(0, pos)) + ".h");
   }
@@ -1015,16 +994,14 @@ void ClassDeclaration::compile_back_includes(CodeGenerator &W, IncludesCollector
   IncludesCollector includes{std::move(front_includes)};
   includes.start_next_block();
 
-  klass->members.for_each([&includes](const ClassMemberInstanceField &f) {
-    includes.add_var_signature_depends(f.var);
-  });
+  klass->members.for_each([&includes](const ClassMemberInstanceField &f) { includes.add_var_signature_depends(f.var); });
 
   W << includes;
 }
 
 void ClassDeclaration::compile_job_worker_shared_memory_piece_methods(CodeGenerator &W, bool compile_declaration_only) const {
   auto request_interface = G->get_class("KphpJobWorkerRequest");
-  if (!request_interface) {   // when functions.txt deleted while development
+  if (!request_interface) { // when functions.txt deleted while development
     return;
   }
 
@@ -1033,8 +1010,10 @@ void ClassDeclaration::compile_job_worker_shared_memory_piece_methods(CodeGenera
     return;
   }
   if (compile_declaration_only) {
-    FunctionSignatureGenerator(W).set_overridden().set_const_this() << "class_instance<C$KphpJobWorkerSharedMemoryPiece> get_shared_memory_piece()" << SemicolonAndNL{};
-    FunctionSignatureGenerator(W).set_overridden() << "void set_shared_memory_piece(const class_instance<C$KphpJobWorkerSharedMemoryPiece> &instance)" << SemicolonAndNL{};
+    FunctionSignatureGenerator(W).set_overridden().set_const_this()
+      << "class_instance<C$KphpJobWorkerSharedMemoryPiece> get_shared_memory_piece()" << SemicolonAndNL{};
+    FunctionSignatureGenerator(W).set_overridden() << "void set_shared_memory_piece(const class_instance<C$KphpJobWorkerSharedMemoryPiece> &instance)"
+                                                   << SemicolonAndNL{};
     return;
   }
   const ClassMemberInstanceField *field = nullptr;
@@ -1048,7 +1027,7 @@ void ClassDeclaration::compile_job_worker_shared_memory_piece_methods(CodeGenera
   W << END << NL << NL;
 
   FunctionSignatureGenerator(W).set_inline() << "void " << klass->src_name
-                                                     << "::set_shared_memory_piece(const class_instance<C$KphpJobWorkerSharedMemoryPiece> &instance) " << BEGIN;
+                                             << "::set_shared_memory_piece(const class_instance<C$KphpJobWorkerSharedMemoryPiece> &instance) " << BEGIN;
   if (field) {
     W << "auto casted = instance.cast_to<" << field->get_inferred_type()->class_type()->src_name << ">();" << NL;
     W << "php_assert(instance.is_null() || !casted.is_null());" << NL;
@@ -1060,10 +1039,7 @@ void ClassDeclaration::compile_job_worker_shared_memory_piece_methods(CodeGenera
 }
 
 void ClassMembersDefinition::compile(CodeGenerator &W) const {
-  bool need_generic_accept =
-    klass->need_to_array_debug_visitor ||
-    klass->need_instance_cache_visitors ||
-    klass->need_instance_memory_estimate_visitor;
+  bool need_generic_accept = klass->need_to_array_debug_visitor || klass->need_instance_cache_visitors || klass->need_instance_memory_estimate_visitor;
 
   if (!need_generic_accept && !klass->is_serializable && klass->json_encoders.empty()) {
     return;
@@ -1125,7 +1101,7 @@ void ClassMembersDefinition::compile_generic_accept_instantiations(CodeGenerator
 }
 
 void ClassMembersDefinition::compile_accept_json_visitor(CodeGenerator &W, ClassPtr klass) {
-  for (auto[encoder, to_encode] : klass->json_encoders) {
+  for (auto [encoder, to_encode] : klass->json_encoders) {
     W << NL;
     do_compile_accept_json_visitor(W, klass, to_encode, encoder, false);
   }
@@ -1136,12 +1112,12 @@ void ClassMembersDefinition::compile_msgpack_serialize(CodeGenerator &W, ClassPt
     return;
   }
 
-  //template<typename Packer>
-  //void msgpack_pack(Packer &packer) const {
-  //   packer.pack(tag_1);
-  //   packer.pack(field_1);
-  //   ...
-  //}
+  // template<typename Packer>
+  // void msgpack_pack(Packer &packer) const {
+  //    packer.pack(tag_1);
+  //    packer.pack(field_1);
+  //    ...
+  // }
   std::vector<std::string> body;
   uint16_t cnt_fields = 0;
 
@@ -1153,11 +1129,9 @@ void ClassMembersDefinition::compile_msgpack_serialize(CodeGenerator &W, ClassPt
     }
   });
 
-  FunctionSignatureGenerator(W).set_const_this()
-    << "void " << klass->src_name << "::msgpack_pack(vk::msgpack::packer<string_buffer> &packer)" << BEGIN
-    << "packer.pack_array(" << cnt_fields << ");" << NL
-    << JoinValues(body, "", join_mode::multiple_lines) << NL
-    << END << NL;
+  FunctionSignatureGenerator(W).set_const_this() << "void " << klass->src_name << "::msgpack_pack(vk::msgpack::packer<string_buffer> &packer)" << BEGIN
+                                                 << "packer.pack_array(" << cnt_fields << ");" << NL << JoinValues(body, "", join_mode::multiple_lines) << NL
+                                                 << END << NL;
 }
 
 void ClassMembersDefinition::compile_msgpack_deserialize(CodeGenerator &W, ClassPtr klass) {
@@ -1165,17 +1139,17 @@ void ClassMembersDefinition::compile_msgpack_deserialize(CodeGenerator &W, Class
     return;
   }
 
-  //if (msgpack_o.type != vk::msgpack::stored_type::ARRAY) { throw vk::msgpack::type_error{}; }
-  //auto arr = msgpack_o.via.array;
-  //for (size_t i = 0; i < arr.size; i += 2) {
-  //  auto tag = arr.ptr[i].as<uint8_t>();
-  //  [[maybe_unused]] auto elem = arr.ptr[i + 1];
-  //  switch (tag) {
-  //    case tag_x: elem.convert(x); break;
-  //    case tag_s: elem.convert(s); break;
-  //    default   : break;
-  //  }
-  //}
+  // if (msgpack_o.type != vk::msgpack::stored_type::ARRAY) { throw vk::msgpack::type_error{}; }
+  // auto arr = msgpack_o.via.array;
+  // for (size_t i = 0; i < arr.size; i += 2) {
+  //   auto tag = arr.ptr[i].as<uint8_t>();
+  //   [[maybe_unused]] auto elem = arr.ptr[i + 1];
+  //   switch (tag) {
+  //     case tag_x: elem.convert(x); break;
+  //     case tag_s: elem.convert(s); break;
+  //     default   : break;
+  //   }
+  // }
   //
 
   std::vector<std::string> cases;
@@ -1188,21 +1162,13 @@ void ClassMembersDefinition::compile_msgpack_deserialize(CodeGenerator &W, Class
   cases.emplace_back("default: break;");
 
   W << "void " << klass->src_name << "::msgpack_unpack(const vk::msgpack::object &msgpack_o) " << BEGIN
-    << "if (msgpack_o.type != vk::msgpack::stored_type::ARRAY) { throw vk::msgpack::type_error{}; }" << NL
-    << "auto arr = msgpack_o.via.array;" << NL
-    << "for (size_t i = 0; i < arr.size; i += 2)" << BEGIN
-    << "auto tag = arr.ptr[i].as<uint8_t>();" << NL
-    << "[[maybe_unused]] auto elem = arr.ptr[i + 1];" << NL
-    << "switch (tag) " << BEGIN
-    << JoinValues(cases, "", join_mode::multiple_lines) << NL
-    << END << NL
-    << END << NL
-    << END << NL;
+    << "if (msgpack_o.type != vk::msgpack::stored_type::ARRAY) { throw vk::msgpack::type_error{}; }" << NL << "auto arr = msgpack_o.via.array;" << NL
+    << "for (size_t i = 0; i < arr.size; i += 2)" << BEGIN << "auto tag = arr.ptr[i].as<uint8_t>();" << NL << "[[maybe_unused]] auto elem = arr.ptr[i + 1];"
+    << NL << "switch (tag) " << BEGIN << JoinValues(cases, "", join_mode::multiple_lines) << NL << END << NL << END << NL << END << NL;
 }
 
-StaticLibraryRunGlobal::StaticLibraryRunGlobal(gen_out_style style) :
-  style(style) {
-}
+StaticLibraryRunGlobal::StaticLibraryRunGlobal(gen_out_style style)
+  : style(style) {}
 
 void StaticLibraryRunGlobal::compile(CodeGenerator &W) const {
   switch (style) {
@@ -1215,4 +1181,3 @@ void StaticLibraryRunGlobal::compile(CodeGenerator &W) const {
       break;
   }
 }
-

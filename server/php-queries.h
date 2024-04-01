@@ -9,10 +9,10 @@
 #include <memory>
 #include <variant>
 
-#include "common/sanitizer.h"
 #include "common/kprintf.h"
-#include "server/slot-ids-factory.h"
+#include "common/sanitizer.h"
 #include "server/php-queries-types.h"
+#include "server/slot-ids-factory.h"
 
 DECLARE_VERBOSITY(php_connections);
 
@@ -28,7 +28,7 @@ namespace net_events_data {
 
 struct rpc_answer {
   int result_len{};
-  //allocated via dl_malloc
+  // allocated via dl_malloc
   char *result{};
 };
 
@@ -47,7 +47,7 @@ namespace database_drivers {
 class Response;
 class Request;
 class Connector;
-}
+} // namespace database_drivers
 
 namespace curl_async {
 class CurlRequest;
@@ -56,7 +56,9 @@ class CurlResponse;
 
 struct net_event_t {
   slot_id_t slot_id;
-  std::variant<net_events_data::rpc_answer, net_events_data::rpc_error, net_events_data::job_worker_answer, database_drivers::Response *, curl_async::CurlResponse *> data;
+  std::variant<net_events_data::rpc_answer, net_events_data::rpc_error, net_events_data::job_worker_answer, database_drivers::Response *,
+               curl_async::CurlResponse *>
+    data;
 
   const char *get_description() const noexcept;
 };
@@ -90,7 +92,7 @@ void qmem_clear();
 
 extern long long qmem_generation;
 
-const char *qmem_pstr(char const *msg, ...) __attribute__ ((format (printf, 1, 2)));
+const char *qmem_pstr(char const *msg, ...) __attribute__((format(printf, 1, 2)));
 
 struct str_buf_t {
   int len, buf_len;
@@ -115,7 +117,6 @@ php_query_x2_answer_t *php_query_x2(int x);
 
 /** rpc answer query **/
 
-
 /** create connection query **/
 struct php_query_connect_answer_t {
   int connection_id;
@@ -128,9 +129,6 @@ struct php_query_http_load_post_answer_t {
   int loaded_bytes;
 };
 
-
-
-
 /** net query **/
 struct data_reader_t {
   int len, readed;
@@ -138,10 +136,7 @@ struct data_reader_t {
   void *extra;
 };
 
-enum nq_state_t {
-  nq_error,
-  nq_ok
-};
+enum nq_state_t { nq_error, nq_ok };
 
 struct php_net_query_packet_answer_t {
   nq_state_t state;
@@ -154,20 +149,12 @@ struct php_net_query_packet_answer_t {
   long long result_id;
 };
 
-
-
 /** wait query **/
 
-
-
-//php_net_query_packet_answer_t *php_net_query_packet (int connection_id, const char *data, int data_len, int timeout_ms);
+// php_net_query_packet_answer_t *php_net_query_packet (int connection_id, const char *data, int data_len, int timeout_ms);
 
 /*** net answer generator base ***/
-enum ansgen_state_t {
-  st_ansgen_done,
-  st_ansgen_error,
-  st_ansgen_wait
-};
+enum ansgen_state_t { st_ansgen_done, st_ansgen_error, st_ansgen_wait };
 
 struct net_ansgen_t;
 
@@ -202,14 +189,7 @@ struct mc_ansgen_t {
   mc_ansgen_func_t *func;
 };
 
-enum mc_ansgen_packet_state_t {
-  ap_any,
-  ap_get,
-  ap_store,
-  ap_other,
-  ap_err,
-  ap_version
-};//TODO ans?
+enum mc_ansgen_packet_state_t { ap_any, ap_get, ap_store, ap_other, ap_err, ap_version }; // TODO ans?
 
 struct mc_ansgen_packet_t {
   net_ansgen_t base;
@@ -228,7 +208,6 @@ struct command_t {
   void (*free)(command_t *command);
 };
 
-
 /*** sql answer generator ***/
 struct sql_ansgen_t;
 
@@ -244,12 +223,7 @@ struct sql_ansgen_t {
   sql_ansgen_func_t *func;
 };
 
-
-enum sql_ansgen_packet_state_t {
-  sql_ap_init,
-  sql_ap_wait_conn,
-  sql_ap_wait_ans
-};//TODO ans?
+enum sql_ansgen_packet_state_t { sql_ap_init, sql_ap_wait_conn, sql_ap_wait_ans }; // TODO ans?
 
 struct sql_ansgen_packet_t {
   net_ansgen_t base;
@@ -276,17 +250,14 @@ struct net_send_ansgen_t {
   net_ansgen_t base;
   net_send_ansgen_func_t *func;
 
-//  net_send_ansgen_state_t state;
+  //  net_send_ansgen_state_t state;
   command_t *writer;
   long long qres_id;
 };
 
-
 /*** rpc interface ***/
-// Simple structure with union is used. 
+// Simple structure with union is used.
 // Mostly because it makes Events easily reusable.
-
-
 
 int alloc_net_event(slot_id_t slot_id, net_event_t **res);
 void unalloc_net_event(net_event_t *event);
@@ -310,7 +281,8 @@ slot_id_t create_slot();
 void init_drivers();
 
 int mc_connect_to(const char *host_name, int port);
-void mc_run_query(int host_num, const char *request, int request_len, int timeout_ms, int query_type, void (*callback)(const char *result, int result_len)) ubsan_supp("alignment");
+void mc_run_query(int host_num, const char *request, int request_len, int timeout_ms, int query_type, void (*callback)(const char *result, int result_len))
+  ubsan_supp("alignment");
 int db_proxy_connect();
 void db_run_query(int host_num, const char *request, int request_len, int timeout_ms, void (*callback)(const char *result, int result_len));
 void check_script_timeout();
@@ -335,6 +307,5 @@ void wait_net_events(int timeout_ms);
 net_event_t *pop_net_event();
 const net_event_t *get_last_net_event();
 int query_x2(int x);
-
 
 #pragma pack(pop)

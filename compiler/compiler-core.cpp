@@ -7,13 +7,13 @@
 #include <dirent.h>
 
 #include "common/algorithms/contains.h"
-#include "common/wrappers/mkdir_recursive.h"
 #include "common/smart_ptrs/unique_ptr_with_delete_function.h"
+#include "common/wrappers/mkdir_recursive.h"
 
 #include "compiler/const-manipulations.h"
 #include "compiler/data/composer-json-data.h"
-#include "compiler/data/ffi-data.h"
 #include "compiler/data/define-data.h"
+#include "compiler/data/ffi-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/modulite-data.h"
@@ -93,13 +93,12 @@ std::vector<std::string> find_composer_folders(const std::string &dir) {
   return result;
 }
 
-}
+} // namespace
 
 static FunctionPtr UNPARSED_BUT_REQUIRED_FUNC_PTR = FunctionPtr(reinterpret_cast<FunctionData *>(0x0001));
 
-CompilerCore::CompilerCore() :
-  settings_(nullptr) {
-}
+CompilerCore::CompilerCore()
+  : settings_(nullptr) {}
 
 void CompilerCore::start() {
   stage::die_if_global_errors();
@@ -119,12 +118,12 @@ void CompilerCore::finish() {
 }
 
 void CompilerCore::register_settings(CompilerSettings *settings) {
-  kphp_assert (settings_ == nullptr);
+  kphp_assert(settings_ == nullptr);
   settings_ = settings;
 }
 
 const CompilerSettings &CompilerCore::settings() const {
-  kphp_assert (settings_ != nullptr);
+  kphp_assert(settings_ != nullptr);
   return *settings_;
 }
 
@@ -174,7 +173,7 @@ std::string CompilerCore::search_required_file(const std::string &file_name) con
     if (from_file) {
       std::string from_file_name = from_file->file_name;
       size_t en = from_file_name.find_last_of('/');
-      assert (en != std::string::npos);
+      assert(en != std::string::npos);
       std::string cur_dir = from_file_name.substr(0, en + 1);
       cur_include_dirs.push_back(cur_dir);
       if (from_file->owner_lib) {
@@ -237,7 +236,7 @@ SrcFilePtr CompilerCore::register_file(const std::string &file_name, LibPtr owne
     short_file_name += extension;
   }
 
-  //register file if needed
+  // register file if needed
   TSHashTable<SrcFilePtr>::HTNode *node = file_ht.at(vk::std_hash(full_file_name));
   if (!node->data) {
     AutoLocker<Lockable *> locker(node);
@@ -287,7 +286,7 @@ SrcDirPtr CompilerCore::register_dir(vk::string_view full_dir_name) {
       }
     }
     dir->parent_dir = node_parent_dir->data;
-//    printf("%s -> %s\n", dir->full_dir_name.c_str(), dir->parent_dir->full_dir_name.c_str());
+    //    printf("%s -> %s\n", dir->full_dir_name.c_str(), dir->parent_dir->full_dir_name.c_str());
   }
 
   return dir;
@@ -340,8 +339,8 @@ ClassPtr CompilerCore::try_register_class(ClassPtr cur_class) {
 
 bool CompilerCore::register_class(ClassPtr cur_class) {
   auto registered_class = try_register_class(cur_class);
-  kphp_error (registered_class == cur_class,
-              fmt_format("Redeclaration of class {}, the previous declaration was in {}", cur_class->name, registered_class->file_id->file_name));
+  kphp_error(registered_class == cur_class,
+             fmt_format("Redeclaration of class {}, the previous declaration was in {}", cur_class->name, registered_class->file_id->file_name));
   return registered_class == cur_class;
 }
 
@@ -357,7 +356,8 @@ LibPtr CompilerCore::register_lib(LibPtr lib) {
 ModulitePtr CompilerCore::register_modulite(ModulitePtr modulite) {
   TSHashTable<ModulitePtr, 1000>::HTNode *node = modulites_ht.at(vk::std_hash(modulite->modulite_name));
   AutoLocker<Lockable *> locker(node);
-  kphp_error(!node->data, fmt_format("Redeclaration of modulite {}, declared in:\n- {}\n- {}", modulite->modulite_name, modulite->yaml_file->relative_file_name, node->data->yaml_file->relative_file_name));
+  kphp_error(!node->data, fmt_format("Redeclaration of modulite {}, declared in:\n- {}\n- {}", modulite->modulite_name, modulite->yaml_file->relative_file_name,
+                                     node->data->yaml_file->relative_file_name));
   node->data = modulite;
   return node->data;
 }
@@ -370,7 +370,8 @@ ModulitePtr CompilerCore::get_modulite(vk::string_view name) {
 ComposerJsonPtr CompilerCore::register_composer_json(ComposerJsonPtr composer_json) {
   TSHashTable<ComposerJsonPtr, 1000>::HTNode *node = composer_json_ht.at(vk::std_hash(composer_json->package_name));
   AutoLocker<Lockable *> locker(node);
-  kphp_error(!node->data, fmt_format("Redeclaration of composer package {}, declared in:\n- {}\n- {}", composer_json->package_name, composer_json->json_file->relative_file_name, node->data->json_file->relative_file_name));
+  kphp_error(!node->data, fmt_format("Redeclaration of composer package {}, declared in:\n- {}\n- {}", composer_json->package_name,
+                                     composer_json->json_file->relative_file_name, node->data->json_file->relative_file_name));
   node->data = composer_json;
   kphp_assert(composer_json->json_file->dir);
   composer_json->json_file->dir->has_composer_json = true;
@@ -383,9 +384,7 @@ ComposerJsonPtr CompilerCore::get_composer_json(vk::string_view name) {
 }
 
 ComposerJsonPtr CompilerCore::get_composer_json_at_dir(SrcDirPtr dir) {
-  std::vector<ComposerJsonPtr> at_dir = composer_json_ht.get_all_if([dir](ComposerJsonPtr j) {
-    return j->json_file->dir == dir;
-  });
+  std::vector<ComposerJsonPtr> at_dir = composer_json_ht.get_all_if([dir](ComposerJsonPtr j) { return j->json_file->dir == dir; });
   kphp_assert(at_dir.size() < 2);
   return at_dir.empty() ? ComposerJsonPtr{} : at_dir.front();
 }
@@ -394,7 +393,7 @@ void CompilerCore::register_main_file(const std::string &file_name, DataStream<S
   kphp_assert(!main_file);
 
   SrcFilePtr res = register_file(file_name, LibPtr{});
-  kphp_error (file_name.empty() || res, fmt_format("Cannot load main file [{}]", file_name));
+  kphp_error(file_name.empty() || res, fmt_format("Cannot load main file [{}]", file_name));
 
   if (res && try_require_file(res)) {
     main_file = res;
@@ -402,15 +401,15 @@ void CompilerCore::register_main_file(const std::string &file_name, DataStream<S
   }
 }
 
-SrcFilePtr CompilerCore::require_file(const std::string &file_name, LibPtr owner_lib, DataStream<SrcFilePtr> &os, bool error_if_not_exists /* = true */, bool builtin) {
+SrcFilePtr CompilerCore::require_file(const std::string &file_name, LibPtr owner_lib, DataStream<SrcFilePtr> &os, bool error_if_not_exists /* = true */,
+                                      bool builtin) {
   SrcFilePtr file = register_file(file_name, owner_lib, builtin);
-  kphp_error (file || !error_if_not_exists, fmt_format("Cannot load file [{}]", file_name));
+  kphp_error(file || !error_if_not_exists, fmt_format("Cannot load file [{}]", file_name));
   if (file && try_require_file(file)) {
     os << file;
   }
   return file;
 }
-
 
 ClassPtr CompilerCore::get_class(vk::string_view name) {
   const auto *result = classes_ht.find(vk::std_hash(name));
@@ -418,15 +417,14 @@ ClassPtr CompilerCore::get_class(vk::string_view name) {
 }
 
 ClassPtr CompilerCore::get_memcache_class() {
-  if (!memcache_class) {            // if specific memcache implementation is not set
-    return get_class("Memcache");   // take it from the functions.txt
+  if (!memcache_class) {          // if specific memcache implementation is not set
+    return get_class("Memcache"); // take it from the functions.txt
   }
   return memcache_class;
 }
 
 void CompilerCore::set_memcache_class(ClassPtr klass) {
-  kphp_error(!memcache_class || memcache_class == klass,
-             fmt_format("Duplicate Memcache realization {} and {}", memcache_class->name, klass->name));
+  kphp_error(!memcache_class || memcache_class == klass, fmt_format("Duplicate Memcache realization {} and {}", memcache_class->name, klass->name));
   memcache_class = klass;
 }
 
@@ -434,12 +432,8 @@ bool CompilerCore::register_define(DefinePtr def_id) {
   TSHashTable<DefinePtr>::HTNode *node = defines_ht.at(vk::std_hash(def_id->name));
   AutoLocker<Lockable *> locker(node);
 
-  kphp_error_act (
-    !node->data,
-    fmt_format("Redeclaration of define [{}], the previous declaration was in [{}]",
-               def_id->name, node->data->file_id->file_name),
-    return false
-  );
+  kphp_error_act(!node->data, fmt_format("Redeclaration of define [{}], the previous declaration was in [{}]", def_id->name, node->data->file_id->file_name),
+                 return false);
 
   node->data = def_id;
   return true;
@@ -463,8 +457,7 @@ VarPtr CompilerCore::create_var(const std::string &name, VarData::Type type) {
   return var;
 }
 
-VarPtr CompilerCore::get_global_var(const std::string &name, VarData::Type type,
-                                    VertexPtr init_val, bool *is_new_inserted) {
+VarPtr CompilerCore::get_global_var(const std::string &name, VarData::Type type, VertexPtr init_val, bool *is_new_inserted) {
   auto *node = global_vars_ht.at(vk::std_hash(name));
   VarPtr new_var;
   if (!node->data) {
@@ -538,7 +531,7 @@ VarPtr CompilerCore::create_local_var(FunctionPtr function, const std::string &n
       function->param_ids.push_back(var);
       break;
     default:
-    kphp_fail();
+      kphp_fail();
   }
   return var;
 }
@@ -546,9 +539,7 @@ VarPtr CompilerCore::create_local_var(FunctionPtr function, const std::string &n
 std::vector<VarPtr> CompilerCore::get_global_vars() {
   // static class variables are registered as globals, but if they're unused,
   // then their types were never calculated; we don't need to export them to vars.cpp
-  return global_vars_ht.get_all_if([](VarPtr v) {
-    return v->tinf_node.was_recalc_finished_at_least_once();
-  });
+  return global_vars_ht.get_all_if([](VarPtr v) { return v->tinf_node.was_recalc_finished_at_least_once(); });
 }
 
 std::vector<ClassPtr> CompilerCore::get_classes() {
@@ -556,9 +547,7 @@ std::vector<ClassPtr> CompilerCore::get_classes() {
 }
 
 std::vector<InterfacePtr> CompilerCore::get_interfaces() {
-  return classes_ht.get_all_if([](ClassPtr klass) {
-    return klass->is_interface();
-  });
+  return classes_ht.get_all_if([](ClassPtr klass) { return klass->is_interface(); });
 }
 
 std::vector<DefinePtr> CompilerCore::get_defines() {
@@ -645,6 +634,5 @@ void CompilerCore::init_composer_class_loader() {
     }
   }
 }
-
 
 CompilerCore *G;

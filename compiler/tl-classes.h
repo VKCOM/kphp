@@ -13,8 +13,12 @@ class TlClasses {
 public:
   void load_from(const std::string &tlo_schema, bool generate_tl_internals);
 
-  const std::unique_ptr<const vk::tlo_parsing::tl_scheme> &get_scheme() const { return scheme_; }
-  const vk::tl::PhpClasses &get_php_classes() const { return php_classes_; }
+  const std::unique_ptr<const vk::tlo_parsing::tl_scheme> &get_scheme() const {
+    return scheme_;
+  }
+  const vk::tl::PhpClasses &get_php_classes() const {
+    return php_classes_;
+  }
 
 private:
   std::unique_ptr<const vk::tlo_parsing::tl_scheme> scheme_;

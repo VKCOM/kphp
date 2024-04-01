@@ -11,8 +11,7 @@
 namespace impl_ {
 
 template<class ReturnType, class FallbackType>
-auto perform_fallback_impl(FallbackType &&lambda_fallback,
-                           std::enable_if_t<bool(sizeof((std::declval<FallbackType>()(), 0)))> *) noexcept {
+auto perform_fallback_impl(FallbackType &&lambda_fallback, std::enable_if_t<bool(sizeof((std::declval<FallbackType>()(), 0)))> *) noexcept {
   return ReturnType(lambda_fallback());
 }
 
@@ -85,13 +84,13 @@ public:
 
 private:
   template<class ValueType>
-  using IsOptionalValueAndNonOptionalReturn = std::integral_constant<bool,
-    (is_optional<std::decay_t<ValueType>>{} && !is_optional<std::decay_t<ResultType>>{})>;
+  using IsOptionalValueAndNonOptionalReturn =
+    std::integral_constant<bool, (is_optional<std::decay_t<ValueType>>{} && !is_optional<std::decay_t<ResultType>>{})>;
 
   template<class ValueType>
   std::enable_if_t<!IsOptionalValueAndNonOptionalReturn<ValueType>{}> set_result(ValueType &&value) noexcept {
     if (!f$is_null(value)) {
-      result_ = new(&result_storage_) ResultType(std::forward<ValueType>(value));
+      result_ = new (&result_storage_) ResultType(std::forward<ValueType>(value));
     }
   }
 
@@ -110,7 +109,7 @@ private:
   void set_result(const string &str, const KeyType &key) noexcept {
     string value = str.get_value(key);
     if (!value.empty()) {
-      result_ = new(&result_storage_) ResultType(std::move(value));
+      result_ = new (&result_storage_) ResultType(std::move(value));
     }
   }
 
@@ -122,14 +121,14 @@ private:
   template<class ValueType>
   void set_result_resolve_or_false(std::false_type, const Optional<ValueType> &value) noexcept {
     if (!f$is_null(value)) {
-      result_ = new(&result_storage_) ResultType(value.val());
+      result_ = new (&result_storage_) ResultType(value.val());
     }
   }
 
   template<class ValueType>
   void set_result_resolve_or_false(std::false_type, Optional<ValueType> &&value) noexcept {
     if (!f$is_null(value)) {
-      result_ = new(&result_storage_) ResultType(std::move(value.val()));
+      result_ = new (&result_storage_) ResultType(std::move(value.val()));
       value = {};
     }
   }
