@@ -19,11 +19,12 @@ ComponentState *vk_k2_create_component_state(const ImageState *image_state, cons
 }
 
 PollStatus vk_k2_poll(const ImageState *image_state, const PlatformCtx *pt_ctx, ComponentState *component_ctx) {
+  printf("vk_k2_poll call\n");
   platformCtx = pt_ctx;
   platformAllocator = &pt_ctx->allocator;
   componentState = component_ctx;
 
-  if (sigsetjmp(componentState->panic_buffer, 0) == 0) {
+  if (sigsetjmp(componentState->exit_tag, 0) == 0) {
     uint64_t stream_d = 0;
     while (platformCtx->take_update(&stream_d)) {
       if (componentState->component_status == ComponentInited) {
@@ -34,7 +35,7 @@ PollStatus vk_k2_poll(const ImageState *image_state, const PlatformCtx *pt_ctx, 
         componentState->awaited_stream = -1;
         componentState->suspend_point();
       } else {
-        // platform poll compomnent with unawaited stream_d
+//        assert(false);
       }
     }
   } else {

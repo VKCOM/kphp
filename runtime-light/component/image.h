@@ -1,5 +1,5 @@
 #pragma once
 
-#include "runtime-light/scheme.h"
+#include "runtime-light/header.h"
 
 struct ImageState {};

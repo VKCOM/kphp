@@ -11,6 +11,7 @@ struct platform_switch_t {
 
   void await_suspend(std::coroutine_handle<> h) const noexcept {
     get_component_context()->poll_status = PollStatus::PollBlocked;
+    printf("suspend %d\n", get_component_context()->awaited_stream);
     get_component_context()->suspend_point = h;
   }
 
@@ -24,6 +25,7 @@ struct test_yield_t {
 
   void await_suspend(std::coroutine_handle<> h) const noexcept {
     get_component_context()->poll_status = PollStatus::PollReschedule;
+    printf("suspend yield\n");
     get_component_context()->suspend_point = h;
   }
 

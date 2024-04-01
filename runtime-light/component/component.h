@@ -16,7 +16,7 @@ struct ComponentState {
   ComponentState() = default;
   ~ComponentState();
 
-  sigjmp_buf panic_buffer;
+  sigjmp_buf exit_tag;
   dl::ScriptAllocator script_allocator;
   task_t<void> k_main;
   Response response;

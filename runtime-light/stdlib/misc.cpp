@@ -19,7 +19,7 @@ static int ob_merge_buffers() {
 }
 
 task_t<void> finish(int64_t exit_code) {
-  co_await f$testyield();
+  co_await test_yield_t{};
 
   int ob_total_buffer = ob_merge_buffers();
   ComponentState &ctx = *get_component_context();
@@ -31,8 +31,14 @@ task_t<void> finish(int64_t exit_code) {
   co_return;
 }
 
-task_t<void> f$testyield() {
+task_t<void> f$yield() {
   co_await test_yield_t{};
+}
+
+void f$check_shutdown() {
+  if (get_platform_context()->please_graceful_shutdown.load()) {
+    siglongjmp(get_component_context()->exit_tag, 1);
+  }
 }
 
 task_t<void> f$exit(const mixed &v) {

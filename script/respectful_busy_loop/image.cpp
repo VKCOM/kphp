@@ -3,6 +3,6 @@
 #include "runtime-light/header.h"
 
 const ImageInfo *vk_k2_describe() {
-  static ImageInfo imageInfo {"echo", 1, 2, {1, 2, 3}};
+  static ImageInfo imageInfo {"respectful_busy_loop", 0, 2, {}};
   return &imageInfo;
 }

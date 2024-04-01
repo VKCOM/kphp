@@ -1,6 +1,6 @@
 #pragma once
 
-#include "runtime-light/scheme.h"
+#include "runtime-light/header.h"
 
 inline const thread_local PlatformCtx * platformCtx;
 inline const thread_local Allocator * platformAllocator;

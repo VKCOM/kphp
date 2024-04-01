@@ -5,5 +5,5 @@
 #include "runtime-light/context.h"
 
 inline void panic() {
-  siglongjmp(get_component_context()->panic_buffer, 1);
+  siglongjmp(get_component_context()->exit_tag, 1);
 }
