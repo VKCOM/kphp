@@ -4,14 +4,16 @@ mixed f$start_transaction() noexcept {
   mixed a;
   a.set_value(1, string("kek"));
   a.set_value(2, string("lol"));
-  f$check_shutdown();
   return  a;
 }
 
 task_t<void> f$hard_work() noexcept {
+  printf("start f$hard_work\n");
   while (true) {
     co_await f$yield();
-    f$echo(f$start_transaction().as_string());
+    mixed res = f$start_transaction();
+    f$check_shutdown();
+    f$var_dump(res);
   }
 }
 

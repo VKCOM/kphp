@@ -22,7 +22,7 @@ set(RUNTIME_SRC ${RUNTIME_CORE_SRC}
                 ${RUNTIME_COMPONENT_SRC}
                 ${RUNTIME_STREAMS_SRC})
 
-add_library(runtimelight OBJECT ${RUNTIME_SRC})
+vk_add_library(runtimelight OBJECT ${RUNTIME_SRC})
 set_property(TARGET runtimelight PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_target_properties(runtimelight PROPERTIES
         LIBRARY_OUTPUT_DIRECTORY ${BASE_DIR}/objs)

@@ -50,6 +50,7 @@ void php_warning(char const *message, ...) {
 }
 
 void php_error(char const *message, ...) {
+  printf("%s\n", message);
 
 }
 
@@ -63,5 +64,5 @@ void php_assert__(const char *msg, const char *file, int line) {
 }
 
 void raise_php_assert_signal__() {
-
+  abort();
 }

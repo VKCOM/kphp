@@ -19,25 +19,33 @@ ComponentState *vk_k2_create_component_state(const ImageState *image_state, cons
 }
 
 PollStatus vk_k2_poll(const ImageState *image_state, const PlatformCtx *pt_ctx, ComponentState *component_ctx) {
-  printf("vk_k2_poll call\n");
   platformCtx = pt_ctx;
   platformAllocator = &pt_ctx->allocator;
   componentState = component_ctx;
 
   if (sigsetjmp(componentState->exit_tag, 0) == 0) {
-    uint64_t stream_d = 0;
-    while (platformCtx->take_update(&stream_d)) {
-      if (componentState->component_status == ComponentInited) {
-        componentState->component_status = ComponentRunning;
-        componentState->standard_stream = stream_d;
-        componentState->k_main();
-      } else if (componentState->awaited_stream == stream_d) {
-        componentState->awaited_stream = -1;
-        componentState->suspend_point();
-      } else {
-//        assert(false);
+    if (componentState->poll_status == PollStatus::PollReschedule) {
+      // If component was suspended by please yield and there is no awaitable streams
+      componentState->suspend_point();
+    } else {
+      uint64_t stream_d = 0;
+      while (platformCtx->take_update(&stream_d)) {
+        if (componentState->component_status == ComponentInited) {
+          // Component get incoming query
+          componentState->component_status = ComponentRunning;
+          componentState->standard_stream = stream_d;
+          componentState->k_main();
+        } else if (componentState->awaited_stream == stream_d) {
+          // Component resume on awaited stream
+          componentState->awaited_stream = -1;
+          componentState->suspend_point();
+        } else {
+          // Component resume on an-awaited stream
+          // assert(false);
+        }
       }
     }
+
   } else {
     componentState->poll_status = PollStatus::PollFinished;
   }
