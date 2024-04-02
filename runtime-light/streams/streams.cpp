@@ -6,6 +6,8 @@
 #include "runtime-light/coroutine/awaitable.h"
 
 task_t<std::pair<char *, int>> read_all_from_stream(uint64_t stream_d) {
+  co_await test_yield_t{};
+
   constexpr int batch_size = 32;
   const PlatformCtx & ptx = *get_platform_context();
   int buffer_capacity = batch_size;
@@ -38,6 +40,8 @@ task_t<std::pair<char *, int>> read_all_from_stream(uint64_t stream_d) {
 }
 
 task_t<bool> write_all_to_stream(uint64_t stream_d, const char * buffer, int len) {
+  co_await test_yield_t{};
+
   StreamStatus status;
   const PlatformCtx & ptx = *get_platform_context();
   int writed = 0;

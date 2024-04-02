@@ -19,7 +19,6 @@ static int ob_merge_buffers() {
 }
 
 task_t<void> finish(int64_t exit_code) {
-  co_await test_yield_t{};
 
   int ob_total_buffer = ob_merge_buffers();
   ComponentState &ctx = *get_component_context();

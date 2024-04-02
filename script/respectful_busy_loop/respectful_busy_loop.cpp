@@ -8,7 +8,6 @@ mixed f$start_transaction() noexcept {
 }
 
 task_t<void> f$hard_work() noexcept {
-  printf("start f$hard_work\n");
   while (true) {
     co_await f$yield();
     mixed res = f$start_transaction();
@@ -18,6 +17,7 @@ task_t<void> f$hard_work() noexcept {
 }
 
 task_t<void> f$src() noexcept  {
+  co_await init_superglobals();
   co_await f$hard_work();
   co_await finish(0);
   co_return ;
