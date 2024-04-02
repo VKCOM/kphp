@@ -2,7 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "php_assert.h"
+#include "runtime-light/utils/php_assert.h"
 
 #include <algorithm>
 #include <cstdarg>
@@ -16,53 +16,39 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
-
-//const char *engine_tag = "[";
-//const char *engine_pid = "] ";
-//
-//int php_disable_warnings = 0;
-//int php_warning_level = 2;
-//int php_warning_minimum_level = 0;
-
-// linker magic: run_scheduler function is declared in separate section.
-// their addresses could be used to check if address is inside run_scheduler
-struct nothing {};
-extern nothing __start_run_scheduler_section;
-extern nothing __stop_run_scheduler_section;
-static bool is_address_inside_run_scheduler(void *address) {
-  return true;
-};
-
-static void print_demangled_adresses(void **buffer, int nptrs, int num_shift, bool allow_gdb) {
-
-}
+#include "runtime-light/utils/panic.h"
 
 static void php_warning_impl(bool out_of_memory, int error_type, char const *message, va_list args) {
+  const int BUF_SIZE = 1000;
+  char buf[BUF_SIZE];
 
+  int size = vsnprintf(buf, BUF_SIZE, message, args);
+  get_platform_context()->log(error_type, size, buf);
 }
 
 void php_notice(char const *message, ...) {
-
+  va_list args;
+  va_start(args, message);
+  php_warning_impl(false, Warn, message, args);
+  va_end(args);
 }
 
 void php_warning(char const *message, ...) {
-
+  va_list args;
+  va_start(args, message);
+  php_warning_impl(false, Info, message, args);
+  va_end(args);
 }
 
 void php_error(char const *message, ...) {
-  printf("%s\n", message);
-
+  va_list args;
+  va_start(args, message);
+  php_warning_impl(false, Error, message, args);
+  va_end(args);
 }
-
-void php_out_of_memory_warning(char const *message, ...) {
-
-}
-
 
 void php_assert__(const char *msg, const char *file, int line) {
-
-}
-
-void raise_php_assert_signal__() {
-  abort();
+  php_error("Assertion \"%s\" failed in file %s on line %d", msg, file, line);
+  panic();
+  _exit(1);
 }

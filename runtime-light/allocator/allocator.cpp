@@ -24,7 +24,7 @@ static void request_extra_memory() {
   size_t extra_mem_size = 16 * 1024u + 100; // extra mem size should be greater than max chunk block size
   void * extra_mem = get_platform_allocator()->alloc(extra_mem_size);
   if (extra_mem == nullptr) {
-    panic();
+    php_error("script OOM");
   }
   rt_ctx.script_allocator.memory_resource.add_extra_memory(new (extra_mem) memory_resource::extra_memory_pool{extra_mem_size});
 }

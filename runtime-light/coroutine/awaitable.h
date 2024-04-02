@@ -3,6 +3,7 @@
 #include <coroutine>
 
 #include "runtime-light/component/component.h"
+#include "runtime-light/utils/logs.h"
 
 struct platform_switch_t {
   constexpr bool await_ready() const noexcept {
@@ -11,7 +12,7 @@ struct platform_switch_t {
 
   void await_suspend(std::coroutine_handle<> h) const noexcept {
     get_component_context()->poll_status = PollStatus::PollBlocked;
-    printf("suspend %d\n", get_component_context()->awaited_stream);
+    php_notice("suspend on stream %lu\n", get_component_context()->awaited_stream);
     get_component_context()->suspend_point = h;
   }
 
@@ -25,7 +26,7 @@ struct test_yield_t {
 
   void await_suspend(std::coroutine_handle<> h) const noexcept {
     get_component_context()->poll_status = PollStatus::PollReschedule;
-    printf("suspend yield\n");
+    php_notice("suspend on yield\n");
     get_component_context()->suspend_point = h;
   }
 
