@@ -24,6 +24,9 @@ static void php_warning_impl(bool out_of_memory, int error_type, char const *mes
 
   int size = vsnprintf(buf, BUF_SIZE, message, args);
   get_platform_context()->log(error_type, size, buf);
+  if (error_type == Error) {
+    panic();
+  }
 }
 
 void php_notice(char const *message, ...) {
@@ -36,7 +39,7 @@ void php_notice(char const *message, ...) {
 void php_warning(char const *message, ...) {
   va_list args;
   va_start(args, message);
-  php_warning_impl(false, Info, message, args);
+  php_warning_impl(false, Warn, message, args);
   va_end(args);
 }
 

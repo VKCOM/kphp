@@ -10,7 +10,6 @@ int64_t f$open(const string & name) {
   OpenStreamResult res = get_platform_context()->open(name.size(), name.c_str(), &stream_d);
   if (res != OpenStreamOk) {
     php_error("cannot open stream");
-    panic();
   }
   return stream_d;
 }
@@ -25,8 +24,4 @@ task_t<string> f$read(int64_t id) {
   str.assign(buffer, size);
   get_platform_allocator()->free(buffer);
   co_return str;
-}
-
-void f$close(int64_t id) {
-  get_platform_context()->shutdown_write(id);
 }

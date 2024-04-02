@@ -18,6 +18,7 @@ task_t<std::pair<char *, int>> read_all_from_stream(uint64_t stream_d) {
   do {
     GetStatusResult res = ptx.get_stream_status(stream_d, &status);
     if (res != GetStatusOk) {
+      php_warning("get stream status return status %d", res);
       co_return std::make_pair(nullptr, 0);
     }
 
@@ -48,6 +49,7 @@ task_t<bool> write_all_to_stream(uint64_t stream_d, const char * buffer, int len
   do {
     GetStatusResult res = ptx.get_stream_status(stream_d, &status);
     if (res != GetStatusOk) {
+      php_warning("get stream status return status %d", res);
       co_return false;
     }
 
@@ -57,6 +59,7 @@ task_t<bool> write_all_to_stream(uint64_t stream_d, const char * buffer, int len
       get_component_context()->awaited_stream = stream_d;
       co_await platform_switch_t{};
     } else {
+      php_warning("stream closed while reading");
       co_return false;
     }
   } while (writed != len);
