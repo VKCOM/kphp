@@ -10,9 +10,6 @@
 #include "common/wrappers/likely.h"
 #include "common/mixin/not_copyable.h"
 
-//#include "runtime-light/component/component.h"
-//#include "runtime-light/utils/panic.h"
-
 void panic();
 void php_notice(char const *message, ...) __attribute__ ((format (printf, 1, 2)));
 void php_warning(char const *message, ...) __attribute__ ((format (printf, 1, 2)));
