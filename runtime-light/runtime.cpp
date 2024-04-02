@@ -10,10 +10,12 @@ ImageState *vk_k2_create_image_state(const Allocator *alloc) {
 ComponentState *vk_k2_create_component_state(const ImageState *image_state, const Allocator *alloc) {
   (void)image_state;
   platformAllocator = alloc;
-  // todo sjljmp
-  char *buffer = static_cast<char *>(platformAllocator->alloc(sizeof(ComponentState)));
-  componentState = new (buffer) ComponentState();
-  // todo initial suspend
+  sigjmp_buf exit_tag;
+  if (sigsetjmp(exit_tag, 0) == 0) {
+    char *buffer = static_cast<char *>(platformAllocator->alloc(sizeof(ComponentState)));
+    componentState = new (buffer) ComponentState();
+  }
+  // coroutine is initial suspend
   componentState->k_main = k_main();
   return componentState;
 }
