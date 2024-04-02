@@ -4,7 +4,7 @@
 task_t<void> f$src() noexcept {
   co_await init_superglobals();
   int64_t id = f$open(string("out"));
-  co_await f$send(id, v$_POST);
+  co_await f$send(id, get_component_context()->superglobals.v$POST);
   string str = co_await f$read(id);
   f$echo(str);
   co_await finish(0);

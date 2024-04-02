@@ -6,6 +6,7 @@
 #include "runtime-light/stdlib/output_control.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/context.h"
+#include "runtime-light/stdlib/superglobals.h"
 
 enum ComponentStatus {
   ComponentInited,
@@ -20,6 +21,7 @@ struct ComponentState {
   dl::ScriptAllocator script_allocator;
   task_t<void> k_main;
   Response response;
+  Superglobals superglobals;
 
   ComponentStatus component_status = ComponentInited;
   PollStatus poll_status = PollStatus::PollBlocked;
