@@ -4,8 +4,24 @@
 #include "runtime-light/coroutine/task.h"
 
 struct Superglobals {
-  string v$POST;
+  mixed v$_SERVER;
+  mixed v$_GET;
+  mixed v$_POST;
+  mixed v$_FILES;
+  mixed v$_COOKIE;
+  mixed v$_REQUEST;
+  mixed v$_ENV;
+
+  mixed v$argc;
+  mixed v$argv;
 };
 
+struct http_query_data {
+  char const *uri, *get, *headers, *post, *request_method;
+  int uri_len, get_len, headers_len, post_len, request_method_len;
+  int keep_alive;
+  unsigned int ip;
+  unsigned int port;
+};
 
-task_t<void> init_superglobals();
+task_t<void> init_superglobals(const http_query_data &http_data);

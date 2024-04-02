@@ -6,20 +6,19 @@ include(${BASE_DIR}/runtime-light/stdlib/stdlib.cmake)
 
 include(${BASE_DIR}/runtime-light/streams/streams.cmake)
 
+include(${BASE_DIR}/runtime-light/utils/utils.cmake)
+
 prepend(RUNTIME_COMPONENT_SRC ${BASE_DIR}/runtime-light/
         component/component.cpp)
 
-prepend(RUNTIME_COMMON_SRC ${BASE_DIR}/runtime-light/
-        utils/php_assert.cpp
-        runtime.cpp)
-
 set(RUNTIME_SRC ${RUNTIME_CORE_SRC}
-                ${RUNTIME_COMMON_SRC}
                 ${RUNTIME_STDLIB_SRC}
                 ${RUNTIME_ALLOCATOR_SRC}
                 ${RUNTIME_COROUTINE_SRC}
                 ${RUNTIME_COMPONENT_SRC}
-                ${RUNTIME_STREAMS_SRC})
+                ${RUNTIME_STREAMS_SRC}
+                ${RUNTIME_UTILS_SRC}
+                ${BASE_DIR}/runtime-light/runtime.cpp)
 
 vk_add_library(runtimelight OBJECT ${RUNTIME_SRC})
 set_property(TARGET runtimelight PROPERTY POSITION_INDEPENDENT_CODE ON)

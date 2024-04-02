@@ -1,7 +1,8 @@
 #include "runtime-light/component/component.h"
 #include "runtime-light/component/image.h"
+#include "runtime-light/utils/initialization.h"
 
-extern task_t<void> (*k_main)(void);
+task_t<void> k_main(void) noexcept;
 
 ImageState *vk_k2_create_image_state(const Allocator *alloc) {
   return nullptr;

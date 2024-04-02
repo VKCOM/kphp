@@ -1,11 +1,9 @@
 #include "runtime-headers.h"
 
 
-task_t<void> f$src() noexcept  {
-   co_await init_superglobals();
-   f$echo(get_component_context()->superglobals.v$POST);
+task_t<void> k_main() noexcept  {
+  co_await script_init();
+   f$echo(get_component_context()->superglobals.v$_POST.as_string());
   co_await finish(0);
   co_return ;
 }
-
-task_t<void>(*k_main)(void) = f$src;
