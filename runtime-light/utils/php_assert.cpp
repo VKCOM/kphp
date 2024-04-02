@@ -29,7 +29,7 @@ static void php_warning_impl(bool out_of_memory, int error_type, char const *mes
 void php_notice(char const *message, ...) {
   va_list args;
   va_start(args, message);
-  php_warning_impl(false, Warn, message, args);
+  php_warning_impl(false, Info, message, args);
   va_end(args);
 }
 

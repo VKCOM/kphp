@@ -4,11 +4,10 @@ include(${BASE_DIR}/runtime-light/core/core.cmake)
 
 include(${BASE_DIR}/runtime-light/stdlib/stdlib.cmake)
 
+include(${BASE_DIR}/runtime-light/streams/streams.cmake)
+
 prepend(RUNTIME_COMPONENT_SRC ${BASE_DIR}/runtime-light/
         component/component.cpp)
-
-prepend(RUNTIME_STREAMS_SRC ${BASE_DIR}/runtime-light/
-        streams/streams.cpp)
 
 prepend(RUNTIME_COMMON_SRC ${BASE_DIR}/runtime-light/
         utils/php_assert.cpp
