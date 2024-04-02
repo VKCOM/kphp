@@ -1,7 +1,8 @@
 #pragma once
 
 #include "runtime-light/core/kphp_core.h"
+#include "runtime-light/coroutine/task.h"
 
-mixed v$_POST    __attribute__ ((weak));
+string v$_POST    __attribute__ ((weak));
 
-void init_superglobals();
+task_t<void> init_superglobals();

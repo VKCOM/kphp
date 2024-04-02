@@ -18,6 +18,17 @@
 #include "runtime-light/utils/php_assert.h"
 
 namespace dl {
+
+static void request_extra_memory() {
+  ComponentState &rt_ctx = *get_component_context();
+  size_t extra_mem_size = 16 * 1024u + 100; // extra mem size should be greater than max chunk block size
+  void * extra_mem = get_platform_allocator()->alloc(extra_mem_size);
+  if (extra_mem == nullptr) {
+    panic();
+  }
+  rt_ctx.script_allocator.memory_resource.add_extra_memory(new (extra_mem) memory_resource::extra_memory_pool{extra_mem_size});
+}
+
 const memory_resource::MemoryStats &get_script_memory_stats() noexcept {
   return get_component_context()->script_allocator.memory_resource.get_memory_stats();
 }
@@ -49,14 +60,8 @@ void *allocate(size_t size) noexcept {
 
   void * ptr = rt_ctx.script_allocator.memory_resource.allocate(size);
   if (ptr == nullptr) {
-    size_t extra_mem_size = 16 * 1024u + 100; // extra mem size should be greater than max chunk block size
-    void * extra_mem = get_platform_allocator()->alloc(extra_mem_size);
-    if (extra_mem == nullptr) {
-      panic();
-    }
-    rt_ctx.script_allocator.memory_resource.add_extra_memory(new (extra_mem) memory_resource::extra_memory_pool{extra_mem_size});
+    request_extra_memory();
     ptr = rt_ctx.script_allocator.memory_resource.allocate(size);
-    php_assert(ptr != nullptr);
   }
   return ptr;
 }
@@ -65,14 +70,24 @@ void *allocate0(size_t size) noexcept {
   php_assert(size);
 
   ComponentState &rt_ctx = *get_component_context();
-  return rt_ctx.script_allocator.memory_resource.allocate0(size);
+  void * ptr = rt_ctx.script_allocator.memory_resource.allocate0(size);
+  if (ptr == nullptr) {
+    request_extra_memory();
+    ptr = rt_ctx.script_allocator.memory_resource.allocate0(size);
+  }
+  return ptr;
 }
 
 void *reallocate(void *mem, size_t new_size, size_t old_size) noexcept {
   php_assert(new_size > old_size);
 
   ComponentState &rt_ctx = *get_component_context();
-  return rt_ctx.script_allocator.memory_resource.reallocate(mem, new_size, old_size);
+  void * ptr = rt_ctx.script_allocator.memory_resource.reallocate(mem, new_size, old_size);
+  if (ptr == nullptr) {
+    request_extra_memory();
+    ptr = rt_ctx.script_allocator.memory_resource.reallocate(mem, new_size, old_size);
+  }
+  return ptr;
 }
 
 void deallocate(void *mem, size_t size) noexcept {

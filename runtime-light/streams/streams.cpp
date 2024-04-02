@@ -5,24 +5,27 @@
 #include "runtime-light/context.h"
 #include "runtime-light/coroutine/awaitable.h"
 
-task_t<string> read_all_from_stream(uint64_t stream_d) {
-  constexpr int batch_size = 16;
+task_t<std::pair<char *, int>> read_all_from_stream(uint64_t stream_d) {
+  constexpr int batch_size = 32;
   const PlatformCtx & ptx = *get_platform_context();
   int buffer_capacity = batch_size;
-  char * buffer = static_cast<char *>(dl::allocate(buffer_capacity));
+  char * buffer = static_cast<char *>(ptx.allocator.alloc(buffer_capacity));
   int buffer_size = 0;
   StreamStatus status;
 
   do {
     GetStatusResult res = ptx.get_stream_status(stream_d, &status);
     if (res != GetStatusOk) {
-      co_return string();
+      co_return std::make_pair(nullptr, 0);
     }
 
     if (status.read_status == IOAvailable) {
       if (buffer_capacity - buffer_size < batch_size) {
-        buffer = static_cast<char *>(dl::reallocate(buffer, buffer_capacity * 1.5, buffer_capacity));
-        buffer_capacity = buffer_capacity * 1.5;
+        char * new_buffer = static_cast<char *>(ptx.allocator.alloc(buffer_capacity * 2));
+        memcpy(new_buffer, buffer, buffer_size);
+        ptx.allocator.free(buffer);
+        buffer_capacity = buffer_capacity * 2;
+        buffer = new_buffer;
       }
       buffer_size += ptx.read(stream_d, batch_size, buffer + buffer_size);
     } else if (status.read_status == IOBlocked) {
@@ -30,9 +33,8 @@ task_t<string> read_all_from_stream(uint64_t stream_d) {
       co_await platform_switch_t{};
     }
   } while (status.read_status != IOClosed);
-  string result(buffer, buffer_size);
-  dl::deallocate(buffer, buffer_capacity);
-  co_return result;
+
+  co_return std::make_pair(buffer, buffer_size);
 }
 
 task_t<bool> write_all_to_stream(uint64_t stream_d, const char * buffer, int len) {
@@ -46,7 +48,7 @@ task_t<bool> write_all_to_stream(uint64_t stream_d, const char * buffer, int len
     }
 
     if (status.write_status == IOAvailable) {
-      writed += ptx.write(stream_d, len - writed, buffer);
+      writed += ptx.write(stream_d, len - writed, buffer + writed);
     } else if (status.write_status == IOBlocked) {
       get_component_context()->awaited_stream = stream_d;
       co_await platform_switch_t{};
