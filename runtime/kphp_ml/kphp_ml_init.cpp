@@ -1,14 +1,12 @@
 #include "runtime/kphp_ml/kphp_ml_init.h"
 
+#include <dirent.h>
 #include <exception>
-#include <filesystem>
 #include <string>
 #include <unordered_map>
 
-#include "runtime/kphp_ml/kphp_ml.h"
-#include "runtime/kphp_ml/kml-files-reader.h"
 #include "common/kprintf.h"
-
+#include "runtime/kphp_ml/kml-files-reader.h"
 
 const char *KmlDirectory = nullptr;
 std::unordered_map<uint64_t, kphp_ml::MLModel> LoadedModels;
@@ -16,21 +14,31 @@ unsigned int MaxMutableBufferSize = 0;
 
 char *MutableBufferInWorker = nullptr;
 
+static bool ends_with(const char *str, const char *suffix) {
+  size_t len_str = strlen(str);
+  size_t len_suffix = strlen(suffix);
+
+  return len_suffix <= len_str && strncmp(str + len_str - len_suffix, suffix, len_suffix) == 0;
+}
+
 void init_kphp_ml_runtime_in_master() {
   if (KmlDirectory == nullptr || KmlDirectory[0] == '\0') {
     return;
   }
 
-  for (auto iter = std::filesystem::recursive_directory_iterator(KmlDirectory), end = std::filesystem::recursive_directory_iterator(); iter != end; ++iter) {
-    if (iter->path().extension() != ".kml") {
+  DIR *dir = opendir(KmlDirectory);
+  struct dirent *iter;
+
+  while ((iter = readdir(dir))) {
+    if (!ends_with(iter->d_name, ".kml")) {
       continue;
     }
 
     kphp_ml::MLModel kml;
     try {
-      kml = kml_file_read(iter->path().c_str());
+      kml = kml_file_read(std::string(KmlDirectory) + "/" + iter->d_name);
     } catch (const std::exception &ex) {
-      kprintf("error reading %s: %s\n", iter->path().c_str(), ex.what());
+      kprintf("error reading %s: %s\n", iter->d_name, ex.what());
       continue;
     }
 
@@ -45,6 +53,7 @@ void init_kphp_ml_runtime_in_master() {
     LoadedModels[key_hash] = std::move(kml);
   }
 
+  closedir(dir);
   kprintf("loaded %d kml models from %s\n", static_cast<int>(LoadedModels.size()), KmlDirectory);
 }
 

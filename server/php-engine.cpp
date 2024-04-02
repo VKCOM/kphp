@@ -9,7 +9,6 @@
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
-#include <filesystem>
 #include <fstream>
 #include <limits>
 #include <netdb.h>
@@ -19,6 +18,7 @@
 #include <string>
 #include <sys/mman.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "common/algorithms/find.h"
@@ -2234,7 +2234,12 @@ int main_args_handler(int i, const char *long_option) {
       return res;
     }
     case 2040: {
-      if (!*optarg || !std::filesystem::is_directory(optarg)) {
+      static auto is_directory = [](const char*) {
+        struct stat st;
+        return stat(optarg, &st) == 0 && S_ISDIR(st.st_mode);
+      };
+
+      if (!*optarg || !is_directory(optarg)) {
         kprintf("--%s option: is not a directory\n", long_option);
         return -1;
       }
