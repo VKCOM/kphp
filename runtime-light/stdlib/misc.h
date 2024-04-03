@@ -3,7 +3,7 @@
 #include "runtime-light/core/kphp_core.h"
 #include "runtime-light/coroutine/task.h"
 
-task_t<void> f$yield();
+task_t<void> f$testyield();
 
 void f$check_shutdown();
 

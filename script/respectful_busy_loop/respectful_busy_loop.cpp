@@ -9,7 +9,7 @@ mixed f$start_transaction() noexcept {
 
 task_t<void> f$hard_work() noexcept {
   while (true) {
-    co_await f$yield();
+    co_await f$testyield();
     mixed res = f$start_transaction();
     f$check_shutdown();
     f$var_dump(res);

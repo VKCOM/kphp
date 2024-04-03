@@ -38,7 +38,7 @@ task_t<void> finish(int64_t exit_code) {
   co_return;
 }
 
-task_t<void> f$yield() {
+task_t<void> f$testyield() {
   co_await test_yield_t{};
 }
 
