@@ -14,9 +14,9 @@ ComponentState *vk_k2_create_component_state(const ImageState *image_state, cons
   if (sigsetjmp(exit_tag, 0) == 0) {
     char *buffer = static_cast<char *>(platformAllocator->alloc(sizeof(ComponentState)));
     componentState = new (buffer) ComponentState();
+    // coroutine is initial suspend
+    componentState->k_main = k_main();
   }
-  // coroutine is initial suspend
-  componentState->k_main = k_main();
   return componentState;
 }
 

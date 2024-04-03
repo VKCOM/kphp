@@ -7,6 +7,11 @@
 
 #include "common/containers/final_action.h"
 #include "runtime-light/context.h"
+#include "runtime-light/utils/php_assert.h"
+#include "runtime-light/coroutine/stack.h"
+
+void * push(std::size_t n);
+void pop(void * ptr, std::size_t n);
 
 #if __clang_major__ > 7
 #define CPPCORO_COMPILER_SUPPORTS_SYMMETRIC_TRANSFER
@@ -104,17 +109,17 @@ struct [[nodiscard]] task_t : public task_base_t {
     std::exception_ptr exception;
 
     static task_t get_return_object_on_allocation_failure() {
-      throw std::bad_alloc();
+      php_assert(false);
     }
 
     template<typename... Args>
     void *operator new(std::size_t n, Args &&...args) noexcept {
-      void *buffer = get_platform_allocator()->alloc(n);
-      return buffer;
+      return push(n);
     }
 
     void operator delete(void *ptr, size_t n) noexcept {
-      get_platform_allocator()->free(ptr);
+      printf("here\n");
+      pop(ptr, n);
     }
   };
 

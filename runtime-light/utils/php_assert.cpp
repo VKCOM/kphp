@@ -23,7 +23,10 @@ static void php_warning_impl(bool out_of_memory, int error_type, char const *mes
   char buf[BUF_SIZE];
 
   int size = vsnprintf(buf, BUF_SIZE, message, args);
-  get_platform_context()->log(error_type, size, buf);
+  if (get_platform_context() != nullptr) {
+    get_platform_context()->log(error_type, size, buf);
+  }
+
   if (error_type == Error) {
     panic();
   }
