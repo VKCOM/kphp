@@ -11,6 +11,7 @@
 #include "common/mixin/not_copyable.h"
 
 void panic();
+void php_debug(char const *message, ...) __attribute__ ((format (printf, 1, 2)));
 void php_notice(char const *message, ...) __attribute__ ((format (printf, 1, 2)));
 void php_warning(char const *message, ...) __attribute__ ((format (printf, 1, 2)));
 void php_error(char const *message, ...) __attribute__ ((format (printf, 1, 2)));

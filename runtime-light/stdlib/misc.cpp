@@ -18,6 +18,14 @@ static int ob_merge_buffers() {
   return ob_first_not_empty;
 }
 
+task_t<void> init() {
+  ComponentState & ctx = *get_component_context();
+  auto [buffer, size] = co_await read_all_from_stream(ctx.standard_stream);
+  init_superglobals(buffer, size);
+  get_platform_allocator()->free(buffer);
+  co_return ;
+}
+
 task_t<void> finish(int64_t exit_code) {
 
   int ob_total_buffer = ob_merge_buffers();

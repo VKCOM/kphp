@@ -12,6 +12,6 @@ task_t<void> f$exit(const mixed &v = 0);
 
 task_t<void> f$die(const mixed &v = 0);
 
-
+task_t<void> init();
 task_t<void> finish(int64_t exit_code);
 

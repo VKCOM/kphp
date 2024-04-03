@@ -24,4 +24,4 @@ struct http_query_data {
   unsigned int port;
 };
 
-task_t<void> init_superglobals(const http_query_data &http_data);
+void init_superglobals(const char * buffer, int size);

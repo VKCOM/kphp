@@ -1,6 +1,5 @@
 #include "runtime-light/component/component.h"
 #include "runtime-light/component/image.h"
-#include "runtime-light/utils/initialization.h"
 
 task_t<void> k_main(void) noexcept;
 

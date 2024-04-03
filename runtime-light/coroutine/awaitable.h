@@ -12,7 +12,7 @@ struct platform_switch_t {
 
   void await_suspend(std::coroutine_handle<> h) const noexcept {
     get_component_context()->poll_status = PollStatus::PollBlocked;
-    php_notice("suspend on stream %lu\n", get_component_context()->awaited_stream);
+    php_debug("suspend on stream %lu", get_component_context()->awaited_stream);
     get_component_context()->suspend_point = h;
   }
 
@@ -26,7 +26,7 @@ struct test_yield_t {
 
   void await_suspend(std::coroutine_handle<> h) const noexcept {
     get_component_context()->poll_status = PollStatus::PollReschedule;
-    php_notice("suspend on yield\n");
+    php_debug("suspend on yield");
     get_component_context()->suspend_point = h;
   }
 
