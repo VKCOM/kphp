@@ -27,13 +27,12 @@ RUN apt-get update && \
       postgresql postgresql-server-dev-all libnuma-dev composer perl && \
     rm -rf /var/lib/apt/lists/* && \
     update-alternatives --set php /usr/bin/php7.4 && \
-    apt remove openssl && \
     wget --no-check-certificate https://www.openssl.org/source/openssl-3.0.2.tar.gz && \
     tar -xvzf openssl-3.0.2.tar.gz && \
     cd openssl-3.0.2 && \
     chmod +x ./config && \
     ./Configure && \
-    make && make test && make install && \
+    make -j$(nproc) && make -j$(nproc) install && \
     ldconfig /usr/local/lib64/
 
 RUN useradd -ms /bin/bash kitten
