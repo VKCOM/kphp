@@ -31,8 +31,7 @@ RUN apt-get update && \
     tar -xvzf openssl-3.0.2.tar.gz && \
     cd openssl-3.0.2 && \
     chmod +x ./config && \
-    ./Configure && \
-    make -j$(nproc) && make -j$(nproc) install && \
-    ldconfig /usr/local/lib64/
+    ./config --prefix="/usr/local/" && \
+    make -j$(nproc) && make install
 
 RUN useradd -ms /bin/bash kitten
