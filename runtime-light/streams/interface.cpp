@@ -17,9 +17,8 @@ task_t<int64_t> f$component_client_send_query(const string &name, const string &
   if (!ok) {
     php_warning("cannot send component client query");
     co_return v$COMPONENT_ERROR;
-  } else {
-    php_notice("send \"%s\" to \"%s\"", message.c_str(), name.c_str());
   }
+  php_debug("send \"%s\" to \"%s\"", message.c_str(), name.c_str());
   co_return stream_d;
 }
 
@@ -39,12 +38,12 @@ task_t<void> f$component_server_send_result(const string &message) {
   if (!ok) {
     php_warning("cannot send component result");
     co_return;
-  } else {
-    php_notice("send result \"%s\"", message.c_str());
   }
+  php_debug("send result \"%s\"", message.c_str());
   get_platform_context()->shutdown_write(get_component_context()->standard_stream);
 }
 
+// move read query here. What about init and reading there
 string f$component_server_get_query() {
   string query = get_component_context()->superglobals.v$_RAW_QUERY;
   get_component_context()->superglobals.v$_RAW_QUERY = string();

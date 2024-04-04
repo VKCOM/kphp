@@ -14,15 +14,12 @@ task_t<mixed> get_data() {
   mixed data;
 
   string profile = co_await ask_server(string("profile"));
-  php_notice("return to user");
   data.set_value(string("profile"), profile);
 
   string feed = co_await ask_server(string("feed"));
-  php_notice("return to user");
   data.set_value(string("feed"), feed);
 
   string music = co_await ask_server(string("music"));
-  php_notice("return to user");
   data.set_value(string("music"), music);
 
   co_await ask_server(string("exit"));
@@ -30,7 +27,6 @@ task_t<mixed> get_data() {
 }
 
 string data_check(const mixed & data) {
-  php_notice("data check");
   string profile = data.get_value(string("profile")).as_string();
   if (profile != string("db send profile server process profile")) {
     php_notice("got %s", profile.c_str());
@@ -53,7 +49,6 @@ string data_check(const mixed & data) {
 }
 
 task_t<void> k_main() noexcept  {
-  php_notice("start user");
   co_await init();
   mixed data = co_await get_data();
   string res = data_check(data);

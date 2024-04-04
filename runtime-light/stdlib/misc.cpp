@@ -20,14 +20,22 @@ static int ob_merge_buffers() {
 
 task_t<void> init() {
   ComponentState & ctx = *get_component_context();
+  while (ctx.pending_queries.empty()) {
+    php_notice("component suspend in init");
+    ctx.awaited_stream = 0;
+    ctx.standard_stream = 0;
+    co_await platform_switch_t{};
+  }
+  ctx.standard_stream = ctx.pending_queries.front();
+  ctx.pending_queries.pop();
   auto [buffer, size] = co_await read_all_from_stream(ctx.standard_stream);
   init_superglobals(buffer, size);
   get_platform_allocator()->free(buffer);
   co_return ;
 }
 
-task_t<void> finish(int64_t exit_code) {
 
+task_t<void> finish(int64_t exit_code) {
   int ob_total_buffer = ob_merge_buffers();
   ComponentState &ctx = *get_component_context();
   Response &response = ctx.response;
