@@ -344,9 +344,7 @@ void CompilerSettings::init() {
 #endif
 
   std::vector<vk::string_view> external_libs{"pthread", "m", "dl"};
-#if !defined(__APPLE__)
-  external_libs.emplace_back("stdc++fs");
-#endif
+
 #ifdef PDO_DRIVER_MYSQL
 #ifdef PDO_LIBS_STATIC_LINKING
   external_static_libs.emplace_back("mysqlclient");
