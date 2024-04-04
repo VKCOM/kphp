@@ -451,6 +451,10 @@ function getrandmax() ::: int;
 function mt_srand ($seed ::: int = PHP_INT_MIN) ::: void;
 function mt_rand ($l ::: int = TODO_OVERLOAD, $r ::: int = TODO_OVERLOAD) ::: int;
 function mt_getrandmax() ::: int;
+/** @kphp-extern-func-info can_throw */
+function random_int($l ::: int, $r ::: int) ::: int;
+/** @kphp-extern-func-info can_throw */
+function random_bytes($length ::: int) ::: string;
 
 function hash_algos () ::: string[];
 function hash_hmac_algos () ::: string[];

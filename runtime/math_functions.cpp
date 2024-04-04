@@ -9,6 +9,7 @@
 #include <sys/time.h>
 
 #include "common/cycleclock.h"
+#include "exception.h"
 #include "runtime/critical_section.h"
 #include "runtime/string_functions.h"
 #include "server/php-engine-vars.h"
@@ -19,6 +20,15 @@ namespace {
     const uint64_t r = x * M + y;
     overflow = overflow || r < x || r > static_cast<uint64_t>(std::numeric_limits<int64_t>::max());
     return r;
+  }
+
+  int64_t secure_rand_buf(char * const buf, int64_t length) noexcept {
+#if defined(__APPLE__)
+    arc4random_buf(static_cast<void*>(buf), static_cast<size_t>(length));
+    return 0;
+#else
+    return getrandom(buf, static_cast<size_t>(length), 0x0);
+#endif
   }
 } // namespace
 
@@ -207,6 +217,49 @@ int64_t f$rand(int64_t l, int64_t r) noexcept {
 
 int64_t f$getrandmax() noexcept {
   return f$mt_getrandmax();
+}
+
+int64_t f$random_int(int64_t l, int64_t r) noexcept {
+  if (unlikely(l > r)) {
+    string errMsg{"Argument #1 ($min) must be less than or equal to argument #2 ($max)"};
+    THROW_EXCEPTION(make_throwable<C$ValueError>(string(__FILE__), __LINE__, 0, errMsg));
+    return {};
+  }
+
+  if (unlikely(l == r)) {
+    return l;
+  }
+
+  try {
+    std::random_device rd{"/dev/urandom"};
+    std::uniform_int_distribution dist{l, r};
+
+    return dist(rd);
+  } catch (const std::exception &e) {
+    string errMsg{"Source of randomness cannot be found"};
+    THROW_EXCEPTION(make_throwable<C$Random$RandomException>(string(__FILE__), __LINE__, 0, errMsg));
+    return -1;
+  } catch (...) {
+    php_critical_error("Unhandled exception");
+  }
+}
+
+string f$random_bytes(int64_t length) noexcept {
+  if (unlikely(length < 1)) {
+    string errMsg{"Argument #1 ($length) must be greater than 0"};
+    THROW_EXCEPTION(make_throwable<C$ValueError>(string(__FILE__), __LINE__, 0, errMsg));
+    return {};
+  }
+
+  string str{static_cast<string::size_type>(length), true};
+
+  if (secure_rand_buf(str.buffer(), static_cast<size_t>(length)) == -1) {
+    string errMsg{"Source of randomness cannot be found"};
+    THROW_EXCEPTION(make_throwable<C$Random$RandomException>(string(__FILE__), __LINE__, 0, errMsg));
+    return {};
+  }
+
+  return str;
 }
 
 mixed f$abs(const mixed &v) {
