@@ -107,5 +107,10 @@ def search_php_bin(php8_require=False):
     if sys.platform == "darwin":
         return shutil.which("php")
     if php8_require:
-        return shutil.which("php8.1") or shutil.which("php8")
+        supported_php8_versions = ["php8", "php8.1", "php8.2", "php8.3"]
+        # checking from newest to oldest versions
+        for spv in sorted(supported_php8_versions, reverse=True):
+            exe_path = shutil.which(spv)
+            if exe_path is not None:
+                return exe_path
     return shutil.which("php7.4")
