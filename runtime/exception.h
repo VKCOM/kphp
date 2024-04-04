@@ -157,6 +157,22 @@ Exception new_Exception(const string &file, int64_t line, const string &message 
 
 Exception f$err(const string &file, int64_t line, const string &code, const string &desc = string());
 
+template <typename T>
+inline class_instance<T> make_throwable(const string &file, int64_t line, int64_t code, const string &desc) noexcept {
+  static_assert(
+    std::is_base_of_v<C$Throwable, T>,
+    "Template argument must be a subtype of C$Throwable");
+
+  auto ci = make_instance<T>();
+
+  auto *ins_ptr = ci.get();
+  ins_ptr->$file = file;
+  ins_ptr->$line = line;
+  ins_ptr->$code = code;
+  ins_ptr->$message = desc;
+
+  return ci;
+}
 
 string f$Exception$$getMessage(const Exception &e);
 string f$Error$$getMessage(const Error &e);
