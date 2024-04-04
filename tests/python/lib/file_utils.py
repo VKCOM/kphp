@@ -113,4 +113,5 @@ def search_php_bin(php8_require=False):
             exe_path = shutil.which(spv)
             if exe_path is not None:
                 return exe_path
+        return None
     return shutil.which("php7.4")
