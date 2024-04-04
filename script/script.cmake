@@ -4,6 +4,8 @@ include(${BASE_DIR}/script/forward/script.cmake)
 include(${BASE_DIR}/script/dev_null/script.cmake)
 include(${BASE_DIR}/script/dev_random/script.cmake)
 
+include(${BASE_DIR}/script/network/network.cmake)
+
 add_custom_target(all_components
         COMMENT "Build all test component"
 )
@@ -13,4 +15,6 @@ add_dependencies(all_components
         echo-component
         forward-component
         dev-null-component
-        dev-random-component)
+        dev-random-component
+
+        network-components)

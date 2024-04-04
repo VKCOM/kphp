@@ -59,11 +59,10 @@ task_t<bool> write_all_to_stream(uint64_t stream_d, const char * buffer, int len
       get_component_context()->awaited_stream = stream_d;
       co_await platform_switch_t{};
     } else {
-      php_warning("stream closed while reading");
+      php_warning("stream closed while writing. Writed %d. Size %d. Stream %lu", writed, len, stream_d);
       co_return false;
     }
   } while (writed != len);
 
-  ptx.shutdown_write(stream_d);
   co_return true;
 }

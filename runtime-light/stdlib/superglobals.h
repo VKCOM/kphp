@@ -4,6 +4,8 @@
 #include "runtime-light/coroutine/task.h"
 
 struct Superglobals {
+  string v$_RAW_QUERY;
+
   mixed v$_SERVER;
   mixed v$_GET;
   mixed v$_POST;

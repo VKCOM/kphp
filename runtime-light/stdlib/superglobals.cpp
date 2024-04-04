@@ -6,6 +6,6 @@
 
 void init_superglobals(const char * buffer, int size) {
    ComponentState & ctx = *get_component_context();
-   get_component_context()->superglobals.v$_POST.assign(buffer, size);
+   ctx.superglobals.v$_RAW_QUERY.assign(buffer, size);
 }
 
