@@ -297,10 +297,10 @@ void compile_throw(VertexAdaptor<op_throw> root, CodeGenerator &W) {
 }
 
 void compile_try(VertexAdaptor<op_try> root, CodeGenerator &W) {
-  bool isExistFinally = root->finally_cmd_ref()->type() != Operation::op_empty;
-  if (isExistFinally) {
+  bool is_exist_finally = root->finally_cmd_ref()->type() != Operation::op_empty;
+  if (is_exist_finally) {
     stage::set_location(root->finally_cmd()->location);
-    kphp_error(0, "  construct not implemented");
+    kphp_error(0, "`finally` construct is not implemented");
   }
 
   auto move_exception = [&](ClassPtr caught_class, VertexAdaptor<op_var> dst) {

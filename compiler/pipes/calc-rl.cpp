@@ -115,12 +115,6 @@ void rl_common_calc(VertexPtr root, RLValueType expected_rl_type) {
       break;
     case op_ffi_new:
       break;
-    case op_yield:
-      kphp_error(false, "yield isn't supported");
-      break;
-    case op_yield_from:
-      kphp_error(false, "yield from isn't supported");
-      break;
     case op_ffi_array_set:
     case op_return:
     case op_break:

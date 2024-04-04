@@ -1058,7 +1058,6 @@ VertexAdaptor<op_return> GenTree::get_return() {
 VertexAdaptor<op_yield> GenTree::get_yield() {
   auto location = auto_location();
   next_cur();
-  skip_phpdoc_tokens();
 
   bool is_yield_from = test_expect(tok_from); // processing the construction "yield from ..."
   if (is_yield_from) {
@@ -1719,7 +1718,6 @@ void GenTree::parse_extends_implements() {
 
 VertexPtr GenTree::get_class(const PhpDocComment *phpdoc, ClassType class_type) {
   ClassModifiers modifiers;
-  bool is_readonly{false};
 
   while (vk::any_of_equal(cur->type(), tok_final, tok_abstract, tok_readonly)) {
     if (test_expect(tok_abstract)) {
@@ -1727,12 +1725,13 @@ VertexPtr GenTree::get_class(const PhpDocComment *phpdoc, ClassType class_type) 
     } else if (test_expect(tok_final)) {
       modifiers.set_final();
     } else if (test_expect(tok_readonly)) {
-      is_readonly = true;
+      cur_class->is_immutable = true;
+      kphp_error(0, "`readonly` classes is not supported");
     }
     next_cur();
   }
 
-  if (modifiers.is_abstract() || modifiers.is_final() || is_readonly) {
+  if (modifiers.is_abstract() || modifiers.is_final() || cur_class->is_immutable) {
     CE(!kphp_error(cur->type() == tok_class, "`class` epxtected after abstract/final/readonly keyword"));
   }
 
@@ -1760,10 +1759,6 @@ VertexPtr GenTree::get_class(const PhpDocComment *phpdoc, ClassType class_type) 
   StackPushPop<FunctionPtr> f_alive(functions_stack, cur_function, cur_class->gen_holder_function(full_class_name));
 
   cur_class->modifiers = modifiers;
-  if (is_readonly) {
-    cur_class->is_readonly = is_readonly;
-    kphp_error(0, "  `readonly` classes is not supported");
-  }
   if (cur_class->is_interface()) {
     cur_class->modifiers.set_abstract();
   }
@@ -1780,7 +1775,7 @@ VertexPtr GenTree::get_class(const PhpDocComment *phpdoc, ClassType class_type) 
   cur_class->file_id = processing_file;
   cur_class->set_name_and_src_name(full_class_name);    // with full namespaces and slashes
   cur_class->phpdoc = phpdoc;
-  cur_class->is_immutable = phpdoc && phpdoc->has_tag(PhpDocType::kphp_immutable_class);
+  cur_class->is_immutable = cur_class->is_immutable  || (phpdoc && phpdoc->has_tag(PhpDocType::kphp_immutable_class));
   cur_class->location_line_num = line_num;
 
   bool registered = G->register_class(cur_class);
@@ -2151,7 +2146,7 @@ VertexPtr GenTree::get_statement(const PhpDocComment *phpdoc) {
     case tok_private:
       if (std::next(cur, 1)->type() == tok_const) {
         if (cur_class->class_type == ClassType::trait) {
-          kphp_error(0, "\"const\" member is not supported in trait");
+          kphp_error(0, "`const` member is not supported in trait");
         }
         next_cur();
 

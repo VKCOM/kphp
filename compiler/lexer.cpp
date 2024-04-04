@@ -427,9 +427,9 @@ bool TokenLexerNum::parse(LexerData *lexer_data) const {
   } else if (s[0] == '0' && s[1] == 'b') {
     t += 2;
     state = binary;
-  } else if (s[0] == '0' && (s[1] == 'o' || is_digit(s[1]))) { // 0o123 or 0123
+  } else if (s[0] == '0' && (s[1] == 'o' || s[1] == 'O' || is_digit(s[1]))) { // 0123 or 0o123 or 0O123
     t++;
-    if (s[1] == 'o') {
+    if (s[1] == 'o' || s[1] == 'O') {
       t++;
     }
     state = octal;
@@ -577,16 +577,6 @@ bool TokenLexerNum::parse(LexerData *lexer_data) const {
       }
     }
   }
-
-//  if (!is_float) {
-//    if (s[0] == '0' && s[1] != 'x' && s[1] != 'b') {
-//      for (int i = 0; i < t - s; i++) {
-//        if (s[i] < '0' || s[i] > '7') {
-//          return TokenLexerError("Bad octal number").parse(lexer_data);
-//        }
-//      }
-//    }
-//  }
 
   assert (t != s);
 

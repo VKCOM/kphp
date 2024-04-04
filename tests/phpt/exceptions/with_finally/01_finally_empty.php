@@ -1,5 +1,5 @@
 @kphp_should_fail
-/construct not implemented/
+/`finally` construct is not implemented/
 <?php
 
 try {

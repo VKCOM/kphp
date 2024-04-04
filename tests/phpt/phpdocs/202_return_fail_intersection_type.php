@@ -1,5 +1,5 @@
 @kphp_should_fail
-\Intersection types is not supported\
+\Intersection types are not supported\
 <?php
 class A {}
 class B {}
