@@ -281,3 +281,7 @@ struct C$UnderflowException : public C$RuntimeException {
 struct C$UnexpectedValueException : public C$RuntimeException {
   const char *get_class() const noexcept override { return "UnexpectedValueException"; }
 };
+
+struct C$Random$RandomException : public C$Exception {
+  const char *get_class() const noexcept override { return "Random\\RandomException"; }
+};

@@ -25,6 +25,8 @@ class RangeException extends RuntimeException {}
 class UnderflowException extends RuntimeException {}
 class UnexpectedValueException extends RuntimeException {}
 
+class Random\RandomException extends Exception {}
+
 // https://www.php.net/manual/en/class.arrayiterator.php
 // TODO: make it work with T[] arrays when generic classes are available.
 // For now, it only supports mixed[].
