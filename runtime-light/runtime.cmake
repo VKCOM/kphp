@@ -8,8 +8,6 @@ include(${BASE_DIR}/runtime-light/streams/streams.cmake)
 
 include(${BASE_DIR}/runtime-light/utils/utils.cmake)
 
-include(${BASE_DIR}/runtime-light/coroutine/coroutine.cmake)
-
 prepend(RUNTIME_COMPONENT_SRC ${BASE_DIR}/runtime-light/
         component/component.cpp)
 
@@ -20,7 +18,6 @@ set(RUNTIME_SRC ${RUNTIME_CORE_SRC}
                 ${RUNTIME_COMPONENT_SRC}
                 ${RUNTIME_STREAMS_SRC}
                 ${RUNTIME_UTILS_SRC}
-                ${RUNTIME_COROUTINE_SRC}
                 ${BASE_DIR}/runtime-light/runtime.cpp)
 
 vk_add_library(runtimelight OBJECT ${RUNTIME_SRC})

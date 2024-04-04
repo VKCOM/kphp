@@ -5,7 +5,6 @@
 #include "runtime-light/core/kphp_core.h"
 #include "runtime-light/stdlib/output_control.h"
 #include "runtime-light/coroutine/task.h"
-#include "runtime-light/coroutine/stack.h"
 #include "runtime-light/context.h"
 #include "runtime-light/stdlib/superglobals.h"
 
@@ -16,11 +15,10 @@ enum ComponentStatus {
 
 struct ComponentState {
   ComponentState() = default;
-  ~ComponentState() = default;
+  ~ComponentState();
 
   sigjmp_buf exit_tag;
   dl::ScriptAllocator script_allocator;
-  CoroutineStack coroutine_stack;
   task_t<void> k_main;
   Response response;
   Superglobals superglobals;
