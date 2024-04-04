@@ -61,7 +61,7 @@ void ConstVarsInit::compile_const_init_part(CodeGenerator &W, int part_id, const
   IncludesCollector includes;
   for (int i = 0; i < count; ++i) {
     VarPtr var = all_constants[offset + i];
-    if (!G->settings().is_static_lib_mode()) {
+    if (!G->is_output_mode_lib()) {
       includes.add_var_signature_depends(var);
       includes.add_vertex_depends(var->init_val);
     }
@@ -80,25 +80,19 @@ void ConstVarsInit::compile_const_init_part(CodeGenerator &W, int part_id, const
       case op_array:
         const_raw_array_vars.add(var);
         break;
-      case op_var:
-        other_const_vars.add(var);
-        break;
       default:
         other_const_vars.add(var);
         break;
     }
   }
 
-  std::vector<std::string> values(const_raw_string_vars.size());
+  std::vector<std::string> str_values(const_raw_string_vars.size());
   std::transform(const_raw_string_vars.begin(), const_raw_string_vars.end(),
-                 values.begin(),
-                 [](const VarPtr &var){ return var->init_val.as<op_string>()->get_string(); });
-  auto const_string_shifts = compile_raw_data(W, values);
+                 str_values.begin(),
+                 [](VarPtr var) { return var->init_val.as<op_string>()->str_val; });
 
+  const std::vector<int> const_string_shifts = compile_raw_data(W, str_values);
   const std::vector<int> const_array_shifts = compile_arrays_raw_representation(const_raw_array_vars, W);
-  kphp_assert(const_array_shifts.size() == const_raw_array_vars.size());
-
-
   const size_t max_dep_level = std::max({const_raw_string_vars.max_dep_level(), const_raw_array_vars.max_dep_level(), other_const_vars.max_dep_level(), 1ul});
 
   size_t str_idx = 0;
@@ -119,9 +113,8 @@ void ConstVarsInit::compile_const_init_part(CodeGenerator &W, int part_id, const
     for (VarPtr var: other_const_vars.vars_by_dep_level(dep_level)) {
       // W << "// " << var->as_human_readable() << NL;
       W << InitConstVar(var);
-      const auto *type_data = var->tinf_node.get_type();
-      PrimitiveType ptype = type_data->ptype();
-      if (vk::any_of_equal(ptype, tp_array, tp_mixed, tp_string)) {
+      const TypeData *type_data = var->tinf_node.get_type();
+      if (vk::any_of_equal(type_data->ptype(), tp_array, tp_mixed, tp_string)) {
         W << ConstantVarInLinearMem(var);
         if (type_data->use_optional()) {
           W << ".val()";
@@ -150,12 +143,9 @@ void ConstVarsInit::compile_const_init(CodeGenerator &W, int parts_cnt, const st
 
   W << NL;
   W << ConstantsLinearMemDeclaration(false) << NL;
-  // todo this is in const-vars-init, not the best place, but it will be extracted to a "context" anyway
-  W << GlobalsLinearMemDeclaration(false) << NL;
 
   FunctionSignatureGenerator(W) << "void const_vars_init() " << BEGIN;
   W << ConstantsLinearMemAllocation() << NL;
-  W << GlobalsLinearMemAllocation() << NL;
 
   const int very_max_dep_level = *std::max_element(max_dep_levels.begin(), max_dep_levels.end());
   for (int dep_level = 0; dep_level <= very_max_dep_level; ++dep_level) {

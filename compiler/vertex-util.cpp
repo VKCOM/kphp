@@ -116,19 +116,6 @@ void VertexUtil::func_force_return(VertexAdaptor<op_function> func, VertexPtr va
   func->cmd_ref() = VertexAdaptor<op_seq>::create(next);
 }
 
-bool VertexUtil::is_superglobal(const std::string &s) {
-  static std::set<std::string> names = {
-    "_SERVER",
-    "_GET",
-    "_POST",
-    "_FILES",
-    "_COOKIE",
-    "_REQUEST",
-    "_ENV"
-  };
-  return vk::contains(names, s);
-}
-
 bool VertexUtil::is_positive_constexpr_int(VertexPtr v) {
   auto actual_value = get_actual_value(v).try_as<op_int_const>();
   return actual_value && parse_int_from_string(actual_value) >= 0;

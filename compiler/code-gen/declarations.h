@@ -26,7 +26,6 @@ struct VarDeclaration {
   void compile(CodeGenerator &W) const;
 };
 
-VarDeclaration VarExternDeclaration(VarPtr var);
 VarDeclaration VarPlainDeclaration(VarPtr var);
 
 struct FunctionDeclaration {

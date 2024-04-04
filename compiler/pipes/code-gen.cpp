@@ -33,7 +33,6 @@
 #include "compiler/inferring/public.h"
 #include "compiler/pipes/collect-forkable-types.h"
 #include "compiler/type-hint.h"
-#include "compiler/vertex-util.h"
 
 void CodeGenF::execute(FunctionPtr function, DataStream<std::unique_ptr<CodeGenRootCmd>> &unused_os __attribute__ ((unused))) {
   if (function->does_need_codegen() || function->is_imported_from_static_lib()) {
@@ -96,7 +95,7 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
     }
   }
 
-  if (G->settings().enable_global_vars_memory_stats.get() && !G->settings().is_static_lib_mode()) {
+  if (G->settings().enable_global_vars_memory_stats.get() && !G->is_output_mode_lib()) {
     code_gen_start_root_task(os, std::make_unique<GlobalVarsMemoryStats>(all_globals));
   }
   code_gen_start_root_task(os, std::make_unique<InitScriptsCpp>(G->get_main_file()));
@@ -105,7 +104,7 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
   code_gen_start_root_task(os, std::make_unique<ConstVarsInit>(std::move(all_constants), G->settings().globals_split_count.get()));
   code_gen_start_root_task(os, std::make_unique<GlobalVarsReset>(std::move(all_globals), G->settings().globals_split_count.get()));
 
-  if (G->settings().is_static_lib_mode()) {
+  if (G->is_output_mode_lib()) {
     std::vector<FunctionPtr> exported_functions;
     for (FunctionPtr f : all_functions) {
       if (f->kphp_lib_export) {
@@ -119,7 +118,7 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
   }
 
   // TODO: should be done in lib mode also, but in some other way
-  if (!G->settings().is_static_lib_mode()) {
+  if (!G->is_output_mode_lib()) {
     code_gen_start_root_task(os, std::make_unique<TypeTagger>(vk::singleton<ForkableTypeStorage>::get().flush_forkable_types(), vk::singleton<ForkableTypeStorage>::get().flush_waitable_types()));
     code_gen_start_root_task(os, std::make_unique<ShapeKeys>(TypeHintShape::get_all_registered_keys()));
     code_gen_start_root_task(os, std::make_unique<JsonEncoderTags>(std::move(all_json_encoders)));
@@ -132,7 +131,7 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
 
   code_gen_start_root_task(os, std::make_unique<TlSchemaToCpp>());
   code_gen_start_root_task(os, std::make_unique<LibVersionHFile>());
-  if (!G->settings().is_static_lib_mode()) {
+  if (!G->is_output_mode_lib()) {
     code_gen_start_root_task(os, std::make_unique<CppMainFile>());
   }
 }

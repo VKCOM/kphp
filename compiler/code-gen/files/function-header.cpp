@@ -5,6 +5,7 @@
 #include "compiler/code-gen/files/function-header.h"
 
 #include "compiler/code-gen/common.h"
+#include "compiler/code-gen/const-globals-linear-mem.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/files/function-source.h"
 #include "compiler/code-gen/includes.h"
@@ -53,7 +54,6 @@ void FunctionH::compile(CodeGenerator &W) const {
     W << includes;
     W << OpenNamespace();
 
-    declare_global_vars(function, W);
     declare_const_vars(function, W);
     W << UnlockComments();
     W << function->root << NL;

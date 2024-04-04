@@ -204,18 +204,6 @@ void CompilerSettings::option_as_dir(KphpOption<std::string> &path_option) noexc
   path_option.value_ = as_dir(path_option.value_);
 }
 
-bool CompilerSettings::is_static_lib_mode() const {
-  return mode.get() == "lib";
-}
-
-bool CompilerSettings::is_server_mode() const {
-  return mode.get() == "server";
-}
-
-bool CompilerSettings::is_cli_mode() const {
-  return mode.get() == "cli";
-}
-
 bool CompilerSettings::is_composer_enabled() const {
   return !composer_root.get().empty();
 }
@@ -230,7 +218,7 @@ void CompilerSettings::init() {
   runtime_sha256_file.value_ = get_full_path(runtime_sha256_file.get());
   link_file.value_ = get_full_path(link_file.get());
 
-  if (is_static_lib_mode()) {
+  if (mode.get() == "lib") {
     if (!tl_schema_file.get().empty()) {
       throw std::runtime_error{"Option " + tl_schema_file.get_env_var() + " is forbidden for static lib mode"};
     }

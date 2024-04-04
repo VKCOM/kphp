@@ -36,7 +36,6 @@ public:
 
   static void func_force_return(VertexAdaptor<op_function> func, VertexPtr val = {});
 
-  static bool is_superglobal(const std::string &s);
   static bool is_positive_constexpr_int(VertexPtr v);
   static bool is_const_int(VertexPtr root);
 };

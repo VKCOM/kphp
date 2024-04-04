@@ -1348,12 +1348,15 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
 
 
   //MEMBER VARIABLES
-  for (auto var : func->param_ids) {
+  for (VarPtr var : func->param_ids) {
     kphp_error(!var->is_reference, "reference function parametrs are forbidden in resumable mode");
     W << VarPlainDeclaration(var);
   }
-  for (auto var : func->local_var_ids) {
+  for (VarPtr var : func->local_var_ids) {
     W << VarPlainDeclaration(var);         // inplace variables are stored as Resumable class fields as well
+  }
+  if (func->has_global_vars_inside) {
+    W << PhpMutableGlobalsDeclareInResumableClass();
   }
   if (func->kphp_tracing) { // append KphpTracingFuncCallGuard as a member variable also ('start()' is called below)
     TracingAutogen::codegen_runtime_func_guard_declaration(W, func);
@@ -1366,19 +1369,34 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
 
   //CONSTRUCTOR
   FunctionSignatureGenerator(W) << FunctionClassName(func) << "(" << FunctionParams(func) << ")";
-  if (!func->param_ids.empty()) {
+  bool has_members_in_constructor = !func->param_ids.empty() || !func->local_var_ids.empty() || func->has_global_vars_inside;
+  if (has_members_in_constructor) {
+    bool any_inited = false;
     W << " :" << NL << Indent(+2);
-    W << JoinValues(func->param_ids, ",", join_mode::multiple_lines,
-                    [](CodeGenerator &W, VarPtr var) {
-                      W << VarName(var) << "(" << VarName(var) << ")";
-                    });
-    if (!func->local_var_ids.empty()) {
-      W << "," << NL;
+    if (!func->param_ids.empty()) {
+      W << JoinValues(func->param_ids, ",", join_mode::multiple_lines,
+                      [](CodeGenerator &W, VarPtr var) {
+                        W << VarName(var) << "(" << VarName(var) << ")";
+                      });
+      any_inited = true;
     }
-    W << JoinValues(func->local_var_ids, ",", join_mode::multiple_lines,
-                    [](CodeGenerator &W, VarPtr var) {
-                      W << VarName(var) << "()";
-                    });
+    if (!func->local_var_ids.empty()) {
+      if (any_inited) {
+        W << "," << NL;
+      }
+      W << JoinValues(func->local_var_ids, ",", join_mode::multiple_lines,
+                      [](CodeGenerator &W, VarPtr var) {
+                        W << VarName(var) << "()";
+                      });
+      any_inited = true;
+    }
+    if (func->has_global_vars_inside) {
+      if (any_inited) {
+        W << "," << NL;
+      }
+      W << PhpMutableGlobalsAssignInResumableConstructor();
+      any_inited = true;
+    }
     W << Indent(-2);
   }
   W << " " << BEGIN << END << NL;
@@ -1437,6 +1455,9 @@ void compile_function(VertexAdaptor<op_function> func_root, CodeGenerator &W) {
   }
 
   W << FunctionDeclaration(func, false) << " " << BEGIN;
+  if (func->has_global_vars_inside) {
+    W << PhpMutableGlobalsAssignCurrent() << NL;
+  }
 
   if (func->kphp_tracing) {
     TracingAutogen::codegen_runtime_func_guard_declaration(W, func);
@@ -2140,10 +2161,10 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
         // auto-extracted constant variables (const strings, arrays, etc.) in codegen are not C++ variables:
         // instead, they all are places in linear memory chunks, accessed by reinterpret_cast
         W << ConstantVarInLinearMem(var_id);
-      } else if (var_id->is_in_global_scope() && !var_id->is_builtin_global() && !var_id->is_foreach_reference) {
+      } else if (var_id->is_in_global_scope() && !var_id->is_foreach_reference) {
         // mutable globals are also placed in linear memory (separately from constants)
         // with the only exception of `foreach (... as &$ref)` in global scope, see compile_foreach_ref_header()
-        W << GlobalVarInLinearMem(var_id);
+        W << GlobalVarInPhpGlobals(var_id);
       } else {
         W << VarName(var_id);
       }

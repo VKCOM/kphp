@@ -31,13 +31,13 @@ public:
 };
 
 class GlobalsLinearMem {
-  friend struct GlobalsLinearMemDeclaration;
+  friend struct GlobalsLinearMemAllocation;
 
   int count_of_static_fields = 0;
   int count_of_function_statics = 0;
   int count_of_nonconst_defines = 0;
   int count_of_require_once = 0;
-  int count_of_php_globals = 0;
+  int count_of_php_global_scope = 0;
 
   int total_count = 0;
   int total_mem_size = 0;
@@ -60,14 +60,12 @@ private:
   bool is_extern;
 };
 
-struct GlobalsLinearMemDeclaration {
-  explicit GlobalsLinearMemDeclaration(bool is_extern)
-    : is_extern(is_extern) {}
-
+struct PhpMutableGlobalsAssignCurrent {
   void compile(CodeGenerator &W) const;
+};
 
-private:
-  bool is_extern;
+struct PhpMutableGlobalsDeclareInResumableClass {
+  void compile(CodeGenerator &W) const;
 };
 
 struct ConstantsLinearMemAllocation {
@@ -87,10 +85,22 @@ struct ConstantVarInLinearMem {
   void compile(CodeGenerator &W) const;
 };
 
-struct GlobalVarInLinearMem {
+struct PhpMutableGlobalsAssignInResumableConstructor {
+  void compile(CodeGenerator &W) const;
+};
+
+struct PhpMutableGlobalsRefArgument {
+  void compile(CodeGenerator &W) const;
+};
+
+struct PhpMutableGlobalsConstRefArgument {
+  void compile(CodeGenerator &W) const;
+};
+
+struct GlobalVarInPhpGlobals {
   VarPtr global_var;
 
-  explicit GlobalVarInLinearMem(VarPtr global_var)
+  explicit GlobalVarInPhpGlobals(VarPtr global_var)
     : global_var(global_var) {}
 
   void compile(CodeGenerator &W) const;

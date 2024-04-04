@@ -13,6 +13,7 @@
 #include "net/net-connections.h"
 #include "runtime/curl.h"
 #include "runtime/job-workers/job-interface.h"
+#include "runtime/php-script-globals.h"
 #include "runtime/rpc.h"
 #include "server/curl-adaptor.h"
 #include "server/database-drivers/adaptor.h"

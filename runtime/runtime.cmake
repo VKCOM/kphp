@@ -96,6 +96,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         math_functions.cpp
         mbstring.cpp
         memcache.cpp
+        memory_usage.cpp
         migration_php8.cpp
         misc.cpp
         mixed.cpp
@@ -105,6 +106,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         oom_handler.cpp
         openssl.cpp
         php_assert.cpp
+        php-script-globals.cpp
         profiler.cpp
         regexp.cpp
         resumable.cpp

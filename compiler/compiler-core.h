@@ -8,7 +8,6 @@
 /*** Core ***/
 //Consists mostly of functions that require synchronization
 
-#include <map>
 #include <string>
 #include <vector>
 
@@ -24,6 +23,12 @@
 #include "compiler/threading/data-stream.h"
 #include "compiler/threading/hash-table.h"
 #include "compiler/tl-classes.h"
+
+enum class OutputMode {
+  server,   // -M server
+  cli,      // -M cli
+  lib,      // -M lib
+};
 
 class CompilerCore {
 private:
@@ -41,6 +46,7 @@ private:
   SrcFilePtr main_file;
   CompilerSettings *settings_;
   ComposerAutoloader composer_class_loader;
+  OutputMode output_mode;
   FFIRoot ffi;
   ClassPtr memcache_class;
   TlClasses tl_classes;
@@ -68,6 +74,7 @@ public:
   SrcDirPtr register_dir(vk::string_view full_dir_name);
 
   FFIRoot &get_ffi_root();
+  OutputMode get_output_mode() const;
 
   void register_main_file(const std::string &file_name, DataStream<SrcFilePtr> &os);
   SrcFilePtr require_file(const std::string &file_name, LibPtr owner_lib, DataStream<SrcFilePtr> &os, bool error_if_not_exists = true, bool builtin = false);
@@ -155,6 +162,18 @@ public:
 
   bool get_functions_txt_parsed() const {
     return is_functions_txt_parsed;
+  }
+
+  bool is_output_mode_server() const {
+    return output_mode == OutputMode::server;
+  }
+
+  bool is_output_mode_cli() const {
+    return output_mode == OutputMode::cli;
+  }
+
+  bool is_output_mode_lib() const {
+    return output_mode == OutputMode::lib;
   }
 
   Stats stats;

@@ -9,6 +9,7 @@
 
 #include "common/php-functions.h"
 
+#include "compiler/compiler-core.h"
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/includes.h"
 #include "compiler/data/var-data.h"
@@ -129,8 +130,8 @@ void GlobalsLinearMem::inc_count_by_origin(VarPtr var) {
     count_of_nonconst_defines++;
   } else if (vk::string_view{var->name}.ends_with("$called")) {
     count_of_require_once++;
-  } else if (!var->is_builtin_global()) {
-    count_of_php_globals++;
+  } else if (!var->is_builtin_runtime) {
+    count_of_php_global_scope++;
   } 
 }
 
@@ -170,22 +171,24 @@ void ConstantsLinearMemDeclaration::compile(CodeGenerator &W) const {
   W << "char *c_linear_mem;" << NL;
 }
 
-void GlobalsLinearMemDeclaration::compile(CodeGenerator &W) const {
-  if (is_extern) {
-    W << "extern char *g_linear_mem;" << NL;
-    return;
-  }
+void PhpMutableGlobalsAssignCurrent::compile(CodeGenerator &W) const {
+  W << "PhpScriptMutableGlobals &php_globals = PhpScriptMutableGlobals::current();" << NL;
+}
 
-  const GlobalsLinearMem &mem = globals_linear_mem;
-  W << "// total_mem_size = " << mem.total_mem_size << NL;
-  W << "// total_count = " << mem.total_count << NL;
-  W << "// count(static fields) = " << mem.count_of_static_fields << NL;
-  W << "// count(function statics) = " << mem.count_of_function_statics << NL;
-  W << "// count(nonconst defines) = " << mem.count_of_nonconst_defines << NL;
-  W << "// count(require_once) = " << mem.count_of_require_once << NL;
-  W << "// count(php globals) = " << mem.count_of_php_globals << NL;
+void PhpMutableGlobalsDeclareInResumableClass::compile(CodeGenerator &W) const {
+  W << "PhpScriptMutableGlobals &php_globals;" << NL;
+}
 
-  W << "char *g_linear_mem;" << NL;
+void PhpMutableGlobalsAssignInResumableConstructor::compile(CodeGenerator &W) const {
+  W << "php_globals(PhpScriptMutableGlobals::current())";
+}
+
+void PhpMutableGlobalsRefArgument::compile(CodeGenerator &W) const {
+  W << "PhpScriptMutableGlobals &php_globals";
+}
+
+void PhpMutableGlobalsConstRefArgument::compile(CodeGenerator &W) const {
+  W << "const PhpScriptMutableGlobals &php_globals";
 }
 
 void ConstantsLinearMemAllocation::compile(CodeGenerator &W) const {
@@ -194,13 +197,32 @@ void ConstantsLinearMemAllocation::compile(CodeGenerator &W) const {
 }
 
 void GlobalsLinearMemAllocation::compile(CodeGenerator &W) const {
-  W << "g_linear_mem = new char[" << globals_linear_mem.get_total_linear_mem_size() << "];" << NL;
+  const GlobalsLinearMem &mem = globals_linear_mem;
+  W << "// total_mem_size = " << mem.total_mem_size << NL;
+  W << "// total_count = " << mem.total_count << NL;
+  W << "// count(static fields) = " << mem.count_of_static_fields << NL;
+  W << "// count(function statics) = " << mem.count_of_function_statics << NL;
+  W << "// count(nonconst defines) = " << mem.count_of_nonconst_defines << NL;
+  W << "// count(require_once) = " << mem.count_of_require_once << NL;
+  W << "// count(php global scope) = " << mem.count_of_php_global_scope << NL;
+
+  if (!G->is_output_mode_lib()) {
+    W << "php_globals.once_alloc_linear_mem(" << globals_linear_mem.get_total_linear_mem_size() << ");" << NL;
+  } else {
+    W << "php_globals.once_alloc_linear_mem(\"" << G->settings().static_lib_name.get() << "\", " << globals_linear_mem.get_total_linear_mem_size() << ");" << NL;
+  }
 }
 
 void ConstantVarInLinearMem::compile(CodeGenerator &W) const {
   W << "(*reinterpret_cast<" << type_out(tinf::get_type(const_var)) << "*>(c_linear_mem+" << const_var->offset_in_linear_mem << "))";
 }
 
-void GlobalVarInLinearMem::compile(CodeGenerator &W) const {
-  W << "(*reinterpret_cast<" << type_out(tinf::get_type(global_var)) << "*>(g_linear_mem+" << global_var->offset_in_linear_mem << "))";
+void GlobalVarInPhpGlobals::compile(CodeGenerator &W) const {
+  if (global_var->is_builtin_runtime) {
+    W << "php_globals.get_superglobals().v$" << global_var->name;
+  } else if (!G->is_output_mode_lib()) {
+    W << "(*reinterpret_cast<" << type_out(tinf::get_type(global_var)) << "*>(php_globals.get_linear_mem()+" << global_var->offset_in_linear_mem << "))";
+  } else {
+    W << "(*reinterpret_cast<" << type_out(tinf::get_type(global_var)) << "*>(php_globals.get_linear_mem(\"" << G->settings().static_lib_name.get() << "\")+" << global_var->offset_in_linear_mem << "))";
+  }
 }

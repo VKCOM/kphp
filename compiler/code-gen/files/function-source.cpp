@@ -17,18 +17,6 @@ FunctionCpp::FunctionCpp(FunctionPtr function) :
   function(function) {
 }
 
-void declare_global_vars(FunctionPtr function, CodeGenerator &W) {
-  if (!function->global_var_ids.empty() || !function->static_var_ids.empty()) {
-    W << GlobalsLinearMemDeclaration(true) << NL;
-  }
-  // todo do something about builtin globals (declarations also)
-  for (VarPtr var : function->global_var_ids) {
-    if (var->is_builtin_global()) {
-      W << VarExternDeclaration(var);
-    }
-  }
-}
-
 void declare_const_vars(FunctionPtr function, CodeGenerator &W) {
   if (!function->explicit_const_var_ids.empty()) {
     W << ConstantsLinearMemDeclaration(true) << NL;
@@ -51,7 +39,6 @@ void FunctionCpp::compile(CodeGenerator &W) const {
   W << includes;
 
   W << OpenNamespace();
-  declare_global_vars(function, W);
   declare_const_vars(function, W);
 
   W << UnlockComments();

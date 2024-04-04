@@ -7,6 +7,7 @@
 #include "common/algorithms/compare.h"
 
 #include "compiler/code-gen/common.h"
+#include "compiler/code-gen/const-globals-linear-mem.h"
 #include "compiler/code-gen/files/json-encoder-tags.h"
 #include "compiler/code-gen/files/tl2cpp/tl2cpp-utils.h"
 #include "compiler/code-gen/includes.h"
@@ -25,11 +26,6 @@
 #include "compiler/inferring/type-data.h"
 #include "compiler/tl-classes.h"
 
-// todo del
-VarDeclaration VarExternDeclaration(VarPtr var) {
-  return {var, true, false};
-}
-
 VarDeclaration VarPlainDeclaration(VarPtr var) {
   return {var, false, false};
 }
@@ -42,11 +38,6 @@ VarDeclaration::VarDeclaration(VarPtr var, bool extern_flag, bool defval_flag) :
 
 void VarDeclaration::compile(CodeGenerator &W) const {
   const TypeData *type = tinf::get_type(var);
-
-  if (var->is_builtin_global()) {
-    // todo wtf
-    W << CloseNamespace();
-  }
 
   kphp_assert(type->ptype() != tp_void);
 
@@ -65,10 +56,6 @@ void VarDeclaration::compile(CodeGenerator &W) const {
       W << (extern_flag ? "extern " : "") <<
         "decltype(const_begin(" << VarName(var) << "))" << " " << VarName(var) << name << ";" << NL;
     }
-  }
-
-  if (var->is_builtin_global()) {
-    W << OpenNamespace();
   }
 }
 

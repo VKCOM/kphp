@@ -5,6 +5,7 @@
 #include "compiler/code-gen/files/init-scripts.h"
 
 #include "compiler/code-gen/common.h"
+#include "compiler/code-gen/const-globals-linear-mem.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/files/shape-keys.h"
 #include "compiler/code-gen/includes.h"
@@ -19,7 +20,7 @@ struct StaticInit {
 };
 
 void StaticInit::compile(CodeGenerator &W) const {
-  if (G->settings().is_static_lib_mode()) {
+  if (G->is_output_mode_lib()) {
     return;
   }
 
@@ -59,7 +60,7 @@ void StaticInit::compile(CodeGenerator &W) const {
   }
   W << END << NL << NL;
 
-  FunctionSignatureGenerator(W) << ("void global_init_php_scripts() ") << BEGIN;
+  FunctionSignatureGenerator(W) << ("void init_php_scripts_once_in_master() ") << BEGIN;
 
   if (!G->settings().tl_schema_file.get().empty()) {
     W << "tl_str_const_init();" << NL;
@@ -74,6 +75,9 @@ void StaticInit::compile(CodeGenerator &W) const {
       W << lib->lib_namespace() << "::const_vars_init();" << NL;
     }
   }
+  W << NL;
+  FunctionSignatureGenerator(W) << "void " << ShapeKeys::get_function_name() << "()" << SemicolonAndNL();
+  W << ShapeKeys::get_function_name() << "();" << NL;
 
   const auto &ffi = G->get_ffi_root();
   const auto &ffi_shared_libs = ffi.get_shared_libs();
@@ -112,33 +116,35 @@ struct RunFunction {
 };
 
 
-struct GlobalResetFunction {
-  FunctionPtr function;
-  GlobalResetFunction(FunctionPtr function);
+struct GlobalsResetFunction {
+  FunctionPtr main_function;
+  explicit GlobalsResetFunction(FunctionPtr main_function);
   void compile(CodeGenerator &W) const;
 };
 
-GlobalResetFunction::GlobalResetFunction(FunctionPtr function) :
-  function(function) {
-}
+GlobalsResetFunction::GlobalsResetFunction(FunctionPtr main_function)
+  : main_function(main_function) {}
 
-void GlobalResetFunction::compile(CodeGenerator &W) const {
+void GlobalsResetFunction::compile(CodeGenerator &W) const {
   // "global vars reset" declarations
-  W << "void global_vars_reset();" << NL;
+  FunctionSignatureGenerator(W) << "void global_vars_allocate(" << PhpMutableGlobalsRefArgument() << ")" << SemicolonAndNL();
+  FunctionSignatureGenerator(W) << "void global_vars_reset(" << PhpMutableGlobalsRefArgument() << ")" << SemicolonAndNL();
+  W << NL;
   for (LibPtr lib: G->get_libs()) {
     if (lib && !lib->is_raw_php()) {
       W << OpenNamespace(lib->lib_namespace());
-      FunctionSignatureGenerator(W) << "void global_vars_reset()" << SemicolonAndNL();
+      FunctionSignatureGenerator(W) << "void global_vars_allocate(" << PhpMutableGlobalsRefArgument() << ")" << SemicolonAndNL();
+      FunctionSignatureGenerator(W) << "void global_vars_reset(" << PhpMutableGlobalsRefArgument() << ")" << SemicolonAndNL();
       W << CloseNamespace();
     }
   }
 
   // "global vars reset" calls
-  FunctionSignatureGenerator(W) << "void " << FunctionName(function) << "$global_reset() " << BEGIN;
-  W << "global_vars_reset();" << NL;
+  FunctionSignatureGenerator(W) << "void " << FunctionName(main_function) << "$globals_reset(" << PhpMutableGlobalsRefArgument() << ")" << BEGIN;
+  W << "global_vars_reset(php_globals);" << NL;
   for (LibPtr lib: G->get_libs()) {
     if (lib && !lib->is_raw_php()) {
-      W << lib->lib_namespace() << "::global_vars_reset();" << NL;
+      W << lib->lib_namespace() << "::global_vars_reset(php_globals);" << NL;
     }
   }
   W << END << NL;
@@ -184,25 +190,30 @@ void InitScriptsCpp::compile(CodeGenerator &W) const {
 
   W << NL << StaticInit() << NL;
 
-  if (G->settings().is_static_lib_mode()) {
+  if (G->is_output_mode_lib()) {
     W << LibRunFunction(main_file_id->main_function);
     W << CloseFile();
     return;
   }
 
   W << RunFunction(main_file_id->main_function) << NL;
-  W << GlobalResetFunction(main_file_id->main_function) << NL;
+  W << GlobalsResetFunction(main_file_id->main_function) << NL;
 
-  FunctionSignatureGenerator(W) << "void init_php_scripts() " << BEGIN;
+  FunctionSignatureGenerator(W) << "void init_php_scripts_in_each_worker(" << PhpMutableGlobalsRefArgument() << ")" << BEGIN;
 
-  W << ShapeKeys::get_function_declaration() << ";" << NL;
-  W << ShapeKeys::get_function_name() << "();" << NL << NL;
+  W << "global_vars_allocate(php_globals);" << NL;
+  for (LibPtr lib: G->get_libs()) {
+    if (lib && !lib->is_raw_php()) {
+      W << lib->lib_namespace() << "::global_vars_allocate(php_globals);" << NL;
+    }
+  }
 
-  W << FunctionName(main_file_id->main_function) << "$global_reset();" << NL;
+
+  W << FunctionName(main_file_id->main_function) << "$globals_reset(php_globals);" << NL;
 
   W << "set_script ("
     << FunctionName(main_file_id->main_function) << "$run, "
-    << FunctionName(main_file_id->main_function) << "$global_reset);" << NL;
+    << FunctionName(main_file_id->main_function) << "$globals_reset);" << NL;
 
   W << END;
 
@@ -219,7 +230,7 @@ void LibVersionHFile::compile(CodeGenerator &W) const {
 }
 
 void CppMainFile::compile(CodeGenerator &W) const {
-  kphp_assert(G->settings().is_server_mode() || G->settings().is_cli_mode());
+  kphp_assert(G->is_output_mode_server() || G->is_output_mode_cli());
   W << OpenFile("main.cpp");
   W << ExternInclude("server/php-engine.h") << NL;
 

@@ -121,6 +121,14 @@ void CompilerCore::finish() {
 void CompilerCore::register_settings(CompilerSettings *settings) {
   kphp_assert (settings_ == nullptr);
   settings_ = settings;
+
+  if (settings->mode.get() == "cli") {
+    output_mode = OutputMode::cli;
+  } else if (settings->mode.get() == "lib") {
+    output_mode = OutputMode::lib;
+  } else {
+    output_mode = OutputMode::server;
+  }
 }
 
 const CompilerSettings &CompilerCore::settings() const {
@@ -196,6 +204,11 @@ std::string CompilerCore::search_required_file(const std::string &file_name) con
 FFIRoot &CompilerCore::get_ffi_root() {
   return ffi;
 }
+
+OutputMode CompilerCore::get_output_mode() const {
+  return output_mode;
+}
+
 
 vk::string_view CompilerCore::calc_relative_name(SrcFilePtr file, bool builtin) const {
   vk::string_view full_file_name = file->file_name;
@@ -471,6 +484,7 @@ VarPtr CompilerCore::get_global_var(const std::string &name, VertexPtr init_val)
     if (!node->data) {
       node->data = create_var(name, VarData::var_global_t);
       node->data->init_val = init_val;
+      node->data->is_builtin_runtime = VarData::does_name_eq_any_builtin_runtime(name);
     }
   }
 

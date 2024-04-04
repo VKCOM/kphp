@@ -10,7 +10,6 @@
 #include "common/php-functions.h"
 #include "common/wrappers/fmt_format.h"
 
-#include "compiler/code-gen/const-globals-linear-mem.h"
 #include "compiler/code-gen/writer-data.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/threading/data-stream.h"

@@ -11,6 +11,7 @@
 #include "runtime/critical_section.h"
 #include "runtime/kphp_core.h"
 #include "runtime/optional.h"
+#include "runtime/php-script-globals.h"
 #include "server/php-query-data.h"
 #include "server/statshouse/statshouse-manager.h"
 #include "server/workers-control.h"
@@ -144,14 +145,6 @@ extern mixed runtime_config;
 
 mixed f$kphp_get_runtime_config();
 
-extern mixed v$_SERVER;
-extern mixed v$_GET;
-extern mixed v$_POST;
-extern mixed v$_FILES;
-extern mixed v$_COOKIE;
-extern mixed v$_REQUEST;
-extern mixed v$_ENV;
-
 const int32_t UPLOAD_ERR_OK = 0;
 const int32_t UPLOAD_ERR_INI_SIZE = 1;
 const int32_t UPLOAD_ERR_FORM_SIZE = 2;
@@ -204,9 +197,9 @@ Optional<array<mixed>> f$getopt(const string &options, array<string> longopts = 
 void global_init_runtime_libs();
 void global_init_script_allocator();
 
-void init_runtime_environment(const php_query_data_t &data, void *mem, size_t script_mem_size, size_t oom_handling_mem_size = 0);
+void init_runtime_environment(const php_query_data_t &data, PhpScriptBuiltInSuperGlobals &superglobals, void *mem, size_t script_mem_size, size_t oom_handling_mem_size = 0);
 
-void free_runtime_environment();
+void free_runtime_environment(PhpScriptBuiltInSuperGlobals &superglobals);
 
 // called only once at the beginning of each worker
 void worker_global_init(WorkerType worker_type) noexcept;
