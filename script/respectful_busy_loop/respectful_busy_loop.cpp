@@ -17,7 +17,7 @@ task_t<void> f$hard_work() noexcept {
 }
 
 task_t<void> k_main() noexcept  {
-  co_await init();
+  co_await parse_input_query();
   co_await f$hard_work();
   co_await finish(0);
   co_return ;

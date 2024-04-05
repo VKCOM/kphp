@@ -49,10 +49,10 @@ string data_check(const mixed & data) {
 }
 
 task_t<void> k_main() noexcept  {
-  co_await init();
+  co_await parse_input_query();
   mixed data = co_await get_data();
   string res = data_check(data);
-  co_await f$component_server_send_result(res);
+  f$echo(res);
   co_await finish(0);
   co_return;
 }

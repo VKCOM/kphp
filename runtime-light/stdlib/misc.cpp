@@ -18,14 +18,9 @@ static int ob_merge_buffers() {
   return ob_first_not_empty;
 }
 
-task_t<void> init() {
+task_t<void> parse_input_query() {
   ComponentState & ctx = *get_component_context();
-  while (ctx.pending_queries.empty()) {
-    php_notice("component suspend in init");
-    ctx.awaited_stream = 0;
-    ctx.standard_stream = 0;
-    co_await platform_switch_t{};
-  }
+  co_await wait_input_query_t{};
   ctx.standard_stream = ctx.pending_queries.front();
   ctx.pending_queries.pop();
   auto [buffer, size] = co_await read_all_from_stream(ctx.standard_stream);

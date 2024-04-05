@@ -32,3 +32,17 @@ struct test_yield_t {
 
   constexpr void await_resume() const noexcept {}
 };
+
+struct wait_input_query_t {
+  bool await_ready() const noexcept {
+    return !get_component_context()->pending_queries.empty();
+  }
+
+  void await_suspend(std::coroutine_handle<> h) const noexcept {
+    php_assert(get_component_context()->standard_stream == 0);
+    get_component_context()->suspend_point = h;
+  }
+
+  constexpr void await_resume() const noexcept {}
+
+};

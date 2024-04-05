@@ -2,7 +2,9 @@
 
 
 #include "runtime-light/component/component.h"
+#include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/streams/streams.h"
+#include "runtime-light/stdlib/misc.h"
 
 // in KPHP runtime we have only int64_t. What if value uint64_t > int64_t?
 task_t<int64_t> f$component_client_send_query(const string &name, const string & message) {
@@ -43,10 +45,12 @@ task_t<void> f$component_server_send_result(const string &message) {
   get_platform_context()->shutdown_write(get_component_context()->standard_stream);
 }
 
-// move read query here. What about init and reading there
-string f$component_server_get_query() {
+task_t<string> f$component_server_get_query() {
+  ComponentState & ctx = *get_component_context();
+  ctx.standard_stream = 0;
+  co_await parse_input_query();
   string query = get_component_context()->superglobals.v$_RAW_QUERY;
   get_component_context()->superglobals.v$_RAW_QUERY = string();
-  return query;
+  co_return query;
 
 }

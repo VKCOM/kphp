@@ -11,9 +11,7 @@ task_t<string> ask_db(const string & ask) {
 
 task_t<void> k_main() noexcept  {
   while (true) {
-    co_await init();
-
-    string query = f$component_server_get_query();
+    string query = co_await f$component_server_get_query();
     string result;
     if (query == string("profile")) {
       result = co_await ask_db(string("profile"));

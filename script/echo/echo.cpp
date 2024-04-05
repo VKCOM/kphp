@@ -8,8 +8,8 @@ void work(const string & str) {
 
 
 task_t<void> k_main() noexcept  {
-  co_await init();
-  string str = f$component_server_get_query();
+  co_await parse_input_query();
+  string str = get_component_context()->superglobals.v$_RAW_QUERY;
   work(str);
   f$echo(str);
   co_await finish(0);

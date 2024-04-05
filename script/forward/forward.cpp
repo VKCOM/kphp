@@ -2,8 +2,8 @@
 
 
 task_t<void> k_main() noexcept {
-  co_await init();
-  string query = f$component_server_get_query();
+  co_await parse_input_query();
+  string query = get_component_context()->superglobals.v$_RAW_QUERY;
   int64_t id = co_await f$component_client_send_query(string("out"), query);
   if (id == v$COMPONENT_ERROR) {
     co_return;

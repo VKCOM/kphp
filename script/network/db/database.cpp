@@ -3,8 +3,7 @@
 
 task_t<void> k_main() noexcept  {
   while (true) {
-    co_await init();
-    string query = f$component_server_get_query();
+    string query = co_await f$component_server_get_query();
     if (query == string("profile")) {
       co_await f$component_server_send_result(string("db send profile"));
     } else if (query == string("feed")) {

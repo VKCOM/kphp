@@ -14,6 +14,6 @@ task_t<void> f$die(const mixed &v = 0);
 
 void reset();
 
-task_t<void> init();
+task_t<void> parse_input_query();
 task_t<void> finish(int64_t exit_code);
 
