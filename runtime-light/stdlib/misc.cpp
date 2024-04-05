@@ -20,6 +20,7 @@ static int ob_merge_buffers() {
 
 task_t<void> parse_input_query() {
   ComponentState & ctx = *get_component_context();
+  php_assert(ctx.standard_stream == 0);
   co_await wait_input_query_t{};
   ctx.standard_stream = ctx.pending_queries.front();
   ctx.pending_queries.pop();
@@ -31,8 +32,11 @@ task_t<void> parse_input_query() {
 
 
 task_t<void> finish(int64_t exit_code) {
-  int ob_total_buffer = ob_merge_buffers();
   ComponentState &ctx = *get_component_context();
+  if (ctx.standard_stream == 0) {
+    co_return;
+  }
+  int ob_total_buffer = ob_merge_buffers();
   Response &response = ctx.response;
   auto &buffer = response.output_buffers[ob_total_buffer];
 

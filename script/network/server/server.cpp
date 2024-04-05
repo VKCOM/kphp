@@ -23,9 +23,11 @@ task_t<void> k_main() noexcept  {
       result = co_await ask_db(string("music"));
       co_await f$component_server_send_result(result.append(" server process music"));
     } else if (query == string("exit")) {
-      result = co_await ask_db(query);
-      co_await f$component_server_send_result(result.append(string(" strange query")));
+      co_await ask_db(query);
       break;
+    } else {
+      php_notice("strange query");
+      co_await f$component_server_send_result(result.append(string(" strange query")));
     }
   }
   co_await finish(0);

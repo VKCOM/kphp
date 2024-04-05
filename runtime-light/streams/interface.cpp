@@ -36,21 +36,23 @@ task_t<string> f$component_client_get_result(int64_t qid) {
 }
 
 task_t<void> f$component_server_send_result(const string &message) {
-  bool ok = co_await write_all_to_stream(get_component_context()->standard_stream, message.c_str(), message.size());
+  ComponentState & ctx = *get_component_context();
+  bool ok = co_await write_all_to_stream(ctx.standard_stream, message.c_str(), message.size());
   if (!ok) {
     php_warning("cannot send component result");
-    co_return;
+  } else {
+    php_debug("send result \"%s\"", message.c_str());
   }
-  php_debug("send result \"%s\"", message.c_str());
-  get_platform_context()->shutdown_write(get_component_context()->standard_stream);
+  get_platform_context()->shutdown_write(ctx.standard_stream);
+  ctx.standard_stream = 0;
 }
 
 task_t<string> f$component_server_get_query() {
+  php_notice("f$component_server_get_query");
   ComponentState & ctx = *get_component_context();
-  ctx.standard_stream = 0;
   co_await parse_input_query();
-  string query = get_component_context()->superglobals.v$_RAW_QUERY;
-  get_component_context()->superglobals.v$_RAW_QUERY = string();
+  string query = std::move(ctx.superglobals.v$_RAW_QUERY);
+  ctx.superglobals.v$_RAW_QUERY = string();
   co_return query;
 
 }
