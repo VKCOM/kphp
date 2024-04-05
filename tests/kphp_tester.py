@@ -52,7 +52,7 @@ class TestFile:
             php_script_path=self.file_path,
             working_dir=os.path.abspath(os.path.join(self.test_tmp_dir, "working_dir")),
             artifacts_dir=os.path.abspath(os.path.join(self.test_tmp_dir, "artifacts")),
-            php_bin=search_php_bin(self.php_version),
+            php_bin=search_php_bin(php_version=self.php_version),
             extra_include_dirs=[os.path.join(tester_dir, "php_include")],
             vkext_dir=os.path.abspath(os.path.join(tester_dir, os.path.pardir, "objs", "vkext")),
             use_nocc=use_nocc,
