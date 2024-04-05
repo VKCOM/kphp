@@ -27,12 +27,13 @@ PollStatus vk_k2_poll(const ImageState *image_state, const PlatformCtx *pt_ctx, 
   componentState = component_ctx;
 
   if (sigsetjmp(componentState->exit_tag, 0) == 0) {
+    if (componentState->poll_status == PollStatus::PollReschedule) {
+      // If component was suspended by please yield and there is no awaitable streams
+      componentState->suspend_point();
+    }
     uint64_t stream_d = 0;
-    do {
-      if (componentState->poll_status == PollStatus::PollReschedule) {
-        // If component was suspended by please yield and there is no awaitable streams
-        componentState->suspend_point();
-      } else if (componentState->awaited_stream == stream_d) {
+    while (platformCtx->take_update(&stream_d)) {
+      if (componentState->awaited_stream == stream_d) {
         // Component resume on awaited stream
         componentState->awaited_stream = 0;
         componentState->suspend_point();
@@ -43,7 +44,7 @@ PollStatus vk_k2_poll(const ImageState *image_state, const PlatformCtx *pt_ctx, 
           componentState->suspend_point();
         }
       }
-    } while (platformCtx->take_update(&stream_d));
+    }
   } else {
     componentState->poll_status = PollStatus::PollFinished;
   }
