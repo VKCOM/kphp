@@ -16,7 +16,6 @@ KPHP_REQUIRE_FUNCTIONS_TYPING=1
         RangeException
         UnderflowException
         UnexpectedValueException
-    Random\RandomException (extends Exception)
 */
 
 function fmt_throwable(Throwable $e): string {
