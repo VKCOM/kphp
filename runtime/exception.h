@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <type_traits>
+
 #include "common/algorithms/hashes.h"
 #include "common/wrappers/string_view.h"
 #include "runtime/dummy-visitor-methods.h"
