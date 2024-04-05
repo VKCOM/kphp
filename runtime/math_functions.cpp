@@ -219,11 +219,10 @@ int64_t f$getrandmax() noexcept {
   return f$mt_getrandmax();
 }
 
-int64_t f$random_int(int64_t l, int64_t r) noexcept {
+Optional<int64_t> f$random_int(int64_t l, int64_t r) noexcept {
   if (unlikely(l > r)) {
-    string errMsg{"Argument #1 ($min) must be less than or equal to argument #2 ($max)"};
-    THROW_EXCEPTION(make_throwable<C$ValueError>(string(__FILE__), __LINE__, 0, errMsg));
-    return {};
+    php_warning("Argument #1 ($min) must be less than or equal to argument #2 ($max)");
+    return false;
   }
 
   if (unlikely(l == r)) {
@@ -236,27 +235,24 @@ int64_t f$random_int(int64_t l, int64_t r) noexcept {
 
     return dist(rd);
   } catch (const std::exception &e) {
-    string errMsg{"Source of randomness cannot be found"};
-    THROW_EXCEPTION(make_throwable<C$Random$RandomException>(string(__FILE__), __LINE__, 0, errMsg));
-    return -1;
+    php_warning("Source of randomness cannot be found");
+    return false;
   } catch (...) {
     php_critical_error("Unhandled exception");
   }
 }
 
-string f$random_bytes(int64_t length) noexcept {
+Optional<string> f$random_bytes(int64_t length) noexcept {
   if (unlikely(length < 1)) {
-    string errMsg{"Argument #1 ($length) must be greater than 0"};
-    THROW_EXCEPTION(make_throwable<C$ValueError>(string(__FILE__), __LINE__, 0, errMsg));
-    return {};
+    php_warning("Argument #1 ($length) must be greater than 0");
+    return false;
   }
 
-  string str{static_cast<string::size_type>(length), true};
+  string str{static_cast<string::size_type>(length), false};
 
   if (secure_rand_buf(str.buffer(), static_cast<size_t>(length)) == -1) {
-    string errMsg{"Source of randomness cannot be found"};
-    THROW_EXCEPTION(make_throwable<C$Random$RandomException>(string(__FILE__), __LINE__, 0, errMsg));
-    return {};
+    php_warning("Source of randomness cannot be found");
+    return false;
   }
 
   return str;

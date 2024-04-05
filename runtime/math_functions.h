@@ -40,9 +40,9 @@ int64_t f$rand() noexcept;
 
 int64_t f$getrandmax() noexcept;
 
-int64_t f$random_int(int64_t l, int64_t r) noexcept;
+Optional<int64_t> f$random_int(int64_t l, int64_t r) noexcept;
 
-string f$random_bytes(int64_t length) noexcept;
+Optional<string> f$random_bytes(int64_t length) noexcept;
 
 
 template<class T>
