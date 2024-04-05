@@ -2,10 +2,10 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime/math_functions.h"
-
 #include <chrono>
 #include <random>
+#include <cstring>
+#include <cerrno>
 #include <sys/time.h>
 
 #if defined(__APPLE__)
@@ -15,6 +15,7 @@
 #endif
 
 #include "common/cycleclock.h"
+#include "runtime/math_functions.h"
 #include "runtime/exception.h"
 #include "runtime/critical_section.h"
 #include "runtime/string_functions.h"
@@ -241,7 +242,7 @@ Optional<int64_t> f$random_int(int64_t l, int64_t r) noexcept {
 
     return dist(rd);
   } catch (const std::exception &e) {
-    php_warning("Source of randomness cannot be found");
+    php_warning("Source of randomness cannot be found: %s", e.what());
     return false;
   } catch (...) {
     php_critical_error("Unhandled exception");
@@ -257,7 +258,7 @@ Optional<string> f$random_bytes(int64_t length) noexcept {
   string str{static_cast<string::size_type>(length), false};
 
   if (secure_rand_buf(str.buffer(), static_cast<size_t>(length)) == -1) {
-    php_warning("Source of randomness cannot be found");
+    php_warning("Source of randomness cannot be found: %s", std::strerror(errno));
     return false;
   }
 
