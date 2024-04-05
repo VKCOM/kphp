@@ -4,12 +4,6 @@
 
 #pragma once
 
-#if defined(__APPLE__)
-#include "stdlib.h"
-#else
-#include <sys/random.h>
-#endif
-
 #include "runtime/kphp_core.h"
 
 int64_t f$bindec(const string &number) noexcept;

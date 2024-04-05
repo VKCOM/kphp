@@ -8,8 +8,14 @@
 #include <random>
 #include <sys/time.h>
 
+#if defined(__APPLE__)
+#include <stdlib.h>
+#else
+#include <sys/random.h>
+#endif
+
 #include "common/cycleclock.h"
-#include "exception.h"
+#include "runtime/exception.h"
 #include "runtime/critical_section.h"
 #include "runtime/string_functions.h"
 #include "server/php-engine-vars.h"
