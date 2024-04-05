@@ -109,10 +109,10 @@ def search_php_bin(php_version: str):
     if sys.platform == "darwin":
         return shutil.which("php")
 
-    # checking from newest to oldest versions
-    for spv in sorted(_SUPPORTED_PHP_VERSIONS, reverse=True):
+    # checking from oldest to newest versions
+    for spv in sorted(_SUPPORTED_PHP_VERSIONS):
         if spv < php_version:
-            break
+            continue
 
         exe_path = shutil.which(spv)
         if exe_path is not None:
