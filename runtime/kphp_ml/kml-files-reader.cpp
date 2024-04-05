@@ -85,12 +85,32 @@ public:
     }
   }
 
+  void read_php_array_as_vector_of_string(array<string>& arr) {
+    int sz = read_int();
+    arr.reserve(sz, true);
+
+    std::string tmp;
+    for (int i = 0; i < sz; ++i) {
+      read_string(tmp);
+      arr.push_back(string(tmp.data(), tmp.size()));
+    }
+  }
+
   void check_not_eof() const {
     if (fi.is_open() && fi.eof()) {
       throw std::invalid_argument("unexpected eof");
     }
   }
 };
+
+template<>
+[[maybe_unused]] void KmlFileReader::read_vec<std::string>(std::vector<std::string> &v) {
+  int sz = read_int();
+  v.resize(sz);
+  for (auto& str : v) {
+    read_string(str);
+  }
+}
 
 void kml_read_catboost_field(KmlFileReader &f, kphp_ml_catboost::CatboostProjection &v) {
   f.read_vec(v.transposed_cat_feature_indexes);
@@ -274,6 +294,34 @@ kphp_ml::MLModel kml_file_read(const std::string &kml_filename) {
   f.read_enum(kml.model_kind);
   f.read_enum(kml.input_kind);
   f.read_string(kml.model_name);
+
+  // For now kml-files-reader.cpp is not consistent with reference implementation
+  // as we need to store 'feature_names' and 'custom_properties' in php-aware arrays.
+  // There were 2 possible solution:
+  //   * copy-paste kml-files-reader.cpp and after reading make some transformation,
+  //     say, transform_kml :: MLModel -> MLModelKphpWrapper, in which we could
+  //     convert std::vector and std::unordered_map into array. The main
+  //     disadvantage is that reading .kml semantically is not just "read", also
+  //     it would require some logic that hidden in 'transform_kml'.
+  //   * make kml-files-reader.cpp read right into php-aware structures.
+  //     It corrects the flaw of previous solution, but kml-files-reader becomes
+  //     inconsistent, which is obviously a disadvantage.
+
+  f.read_php_array_as_vector_of_string(kml.feature_names);
+
+  int custom_properties_sz = f.read_int();
+  kml.custom_properties.reserve(custom_properties_sz, false);
+  std::string tmp_key;
+  std::string tmp_val;
+  for (int i = 0; i < custom_properties_sz; ++i) {
+    // TODO may be more optimal to use ctor string(n, k) and then write right in buffer?
+    f.read_string(tmp_key);
+    f.read_string(tmp_val);
+    string key(tmp_key.data(), tmp_key.size());
+    string val(tmp_val.data(), tmp_val.size());
+    kml.custom_properties[key] = val;
+  }
+
   f.check_not_eof();
 
   switch (kml.model_kind) {

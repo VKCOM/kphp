@@ -1668,6 +1668,9 @@ void init_all() {
   }
   StatsHouseManager::get().set_common_tags();
 
+  // TODO: In the future, we want to parallelize it
+  init_kphp_ml_runtime_in_master(); // previously was right before confdata loading
+
   global_init_runtime_libs();
   global_init_php_scripts();
   global_init_script_allocator();
@@ -1681,8 +1684,6 @@ void init_all() {
 
   worker_id = (int)lrand48();
 
-  // TODO: In the future, we want to parallelize it
-  init_kphp_ml_runtime_in_master();
   init_confdata_binlog_reader();
 
   auto end_time = std::chrono::steady_clock::now();

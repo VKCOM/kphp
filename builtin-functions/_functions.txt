@@ -1662,3 +1662,7 @@ function kml_catboost_predict_ht(string $model_name, float[] $features_map): flo
 
 function kml_catboost_predict_vectors_multi(string $model_name, float[] $float_features, string[] $cat_features): float[];
 function kml_catboost_predict_ht_multi(string $model_name, float[] $features_map): float[];
+
+function kml_model_exist(string $model_name): bool;
+function kml_feature_names(string $model_name): string[];
+function kml_custom_property(string $model_name, string $property_name): ?string

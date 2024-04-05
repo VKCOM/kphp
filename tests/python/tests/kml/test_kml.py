@@ -28,3 +28,7 @@ class TestKML(KphpCompilerAutoTestCase):
     def test_catboost_multiclass_tutorial_ht_catnum(self):
         self.compile_and_check_success(php_script_path="catboost/php/catboost_multiclass_tutorial_ht_catnum.php",
                                        kml_dir="catboost/kml")
+
+    def test_unrelated_to_inference(self):
+        self.compile_and_check_success(php_script_path="catboost/php/unrelated_to_inference.php",
+                                       kml_dir="catboost/kml")

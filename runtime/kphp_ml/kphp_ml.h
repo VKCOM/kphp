@@ -2,6 +2,7 @@
 
 #include <string>
 #include <variant>
+#include <optional>
 
 #include "runtime/kphp_ml/kphp_ml_catboost.h"
 #include "runtime/kphp_ml/kphp_ml_xgboost.h"
@@ -39,12 +40,18 @@ struct MLModel {
   ModelKind model_kind;
   InputKind input_kind;
   std::string model_name;
+  array<string> feature_names; // just a vector of strings
+
+  // mutable because operator[] is non-const even if it is semantically const
+  mutable array<string> custom_properties; // a mapping from property name to (possibly encoded) property value
 
   std::variant<kphp_ml_xgboost::XgboostModel, kphp_ml_catboost::CatboostModel> impl;
 
   bool is_xgboost() const { return model_kind == ModelKind::xgboost_trees_no_cat; }
   bool is_catboost() const { return model_kind == ModelKind::catboost_trees; }
   bool is_catboost_multi_classification() const;
+  array<string> get_feature_names() const;
+  Optional<string> get_custom_property(const string &property_name) const;
 
   unsigned int calculate_mutable_buffer_size() const;
 };

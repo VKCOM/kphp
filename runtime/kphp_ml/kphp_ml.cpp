@@ -27,3 +27,14 @@ unsigned int kphp_ml::MLModel::calculate_mutable_buffer_size() const {
       return 0;
   }
 }
+
+array<string> kphp_ml::MLModel::get_feature_names() const {
+  return feature_names;
+}
+
+Optional<string> kphp_ml::MLModel::get_custom_property(const string &property_name) const {
+  if (!custom_properties.has_key(property_name)) {
+    return {};
+  }
+  return {custom_properties[property_name]};
+}
