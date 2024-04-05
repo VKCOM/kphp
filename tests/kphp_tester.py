@@ -23,6 +23,7 @@ class TestFile:
         self.env_vars = env_vars
         self.out_regexps = out_regexps
         self.forbidden_regexps = forbidden_regexps
+        self.php_version = next((tag for tag in tags if tag.startswith("php")), "php7.4")
 
     def is_ok(self):
         return "ok" in self.tags
@@ -43,7 +44,7 @@ class TestFile:
         return "kphp_runtime_should_not_warn" in self.tags
 
     def is_php8(self):
-        return "php8" in self.tags
+        return self.php_version.startswith("php8")
 
     def make_kphp_once_runner(self, use_nocc, cxx_name):
         tester_dir = os.path.abspath(os.path.dirname(__file__))
@@ -51,7 +52,7 @@ class TestFile:
             php_script_path=self.file_path,
             working_dir=os.path.abspath(os.path.join(self.test_tmp_dir, "working_dir")),
             artifacts_dir=os.path.abspath(os.path.join(self.test_tmp_dir, "artifacts")),
-            php_bin=search_php_bin(php8_require=self.is_php8()),
+            php_bin=search_php_bin(self.php_version),
             extra_include_dirs=[os.path.join(tester_dir, "php_include")],
             vkext_dir=os.path.abspath(os.path.join(tester_dir, os.path.pardir, "objs", "vkext")),
             use_nocc=use_nocc,
