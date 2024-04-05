@@ -110,7 +110,7 @@ def search_php_bin(php_version: str):
         return shutil.which("php")
 
     # checking from newest to oldest versions
-    for spv in sorted(SUPPORTED_PHP_VERSIONS, reverse=True):
+    for spv in sorted(_SUPPORTED_PHP_VERSIONS, reverse=True):
         if spv < php_version:
             break
 
