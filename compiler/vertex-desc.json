@@ -2000,7 +2000,7 @@
       "exception": 0
     },
     "props": {
-      "rl": "rl_common",
+      "rl": "rl_op",
       "cnst": "cnst_not_func",
       "type": "common_op",
       "str": "throw"

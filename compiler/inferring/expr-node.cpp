@@ -88,8 +88,13 @@ void ExprNodeRecalc::recalc_c2php(VertexAdaptor<op_ffi_c2php_conv> conv) {
 }
 
 void ExprNodeRecalc::recalc_ternary(VertexAdaptor<op_ternary> ternary) {
-  set_lca(ternary->true_expr());
-  set_lca(ternary->false_expr());
+  auto true_expr = ternary->true_expr();
+  auto false_expr = ternary->false_expr();
+  if (true_expr->type() == op_throw || false_expr->type() == op_throw) { // while throw expression isn't implemented
+    kphp_error(false, TermStringFormat::paint("throw expression ", TermStringFormat::blue) + "isn't supported");
+  }
+  set_lca(true_expr);
+  set_lca(false_expr);
 }
 
 void ExprNodeRecalc::recalc_func_call(VertexAdaptor<op_func_call> call) {
@@ -490,6 +495,10 @@ void ExprNodeRecalc::recalc_expr(VertexPtr expr) {
 
     case op_instanceof:
       recalc_ptype<tp_bool>();
+      break;
+
+    case op_throw:
+      recalc_ptype<tp_void>();
       break;
 
     default:

@@ -706,6 +706,14 @@ VertexPtr GenTree::get_expr_top(bool was_arrow, const PhpDocComment *phpdoc) {
       res = VertexAdaptor<op_clone>::create(get_expr_top(false)).set_location(auto_location());
       break;
     }
+    case tok_throw: {
+      auto location = auto_location();
+      next_cur();
+      auto throw_expr = get_expression();
+      CE (!kphp_error(throw_expr, "Empty expression in throw"));
+      res = VertexAdaptor<op_throw>::create(throw_expr).set_location(location);
+      break;
+    }
     default:
       return {};
   }
