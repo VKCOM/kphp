@@ -6,7 +6,6 @@
 
 #include <array>
 #include <climits>
-#include <yaml-cpp/yaml.h>
 
 #include "common/mixin/not_copyable.h"
 #include "common/smart_ptrs/singleton.h"
@@ -15,6 +14,10 @@ class ServerConfig : vk::not_copyable {
 public:
   const char *get_cluster_name() const noexcept {
     return cluster_name_.data();
+  }
+
+  const char *get_server_name() const noexcept {
+    return server_name_.data();
   }
 
   const char *get_statsd_prefix() const noexcept {
@@ -33,5 +36,6 @@ private:
   friend class vk::singleton<ServerConfig>;
 
   std::array<char, NAME_MAX> cluster_name_;
+  std::array<char, NAME_MAX> server_name_;
   std::array<char, NAME_MAX> statsd_prefix_;
 };

@@ -10,12 +10,13 @@
 
 #include "common/algorithms/find.h"
 #include "common/fast-backtrace.h"
+#include "common/smart_ptrs/singleton.h"
 #include "common/wrappers/likely.h"
 #include "runtime/kphp-backtrace.h"
-#include "server/server-config.h"
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
 #include "server/php-runner.h"
+#include "server/server-config.h"
 
 namespace {
 
@@ -359,6 +360,7 @@ void JsonLogger::write_general_info(JsonBuffer *json_out_it, int type, int64_t c
   }
   json_out_it->append_key("pid").append_integer(pid);
   json_out_it->append_key("cluster").append_string(vk::singleton<ServerConfig>::get().get_cluster_name());
+  json_out_it->append_key("server").append_string(vk::singleton<ServerConfig>::get().get_server_name());
   json_out_it->append_raw(uncaught ? R"json("uncaught":true)json" : R"json("uncaught":false)json");
   json_out_it->finish<'}'>();
 

@@ -4,13 +4,14 @@
 
 #include "server/statshouse/statshouse-manager.h"
 
+#include <atomic>
 #include <chrono>
 
 #include "common/precise-time.h"
-#include "common/resolver.h"
+#include "common/smart_ptrs/singleton.h"
 #include "runtime/instance-cache.h"
-#include "server/job-workers/shared-memory-manager.h"
 #include "server/confdata-stats.h"
+#include "server/job-workers/shared-memory-manager.h"
 #include "server/json-logger.h"
 #include "server/php-runner.h"
 #include "server/server-config.h"
@@ -58,7 +59,7 @@ StatsHouseManager::StatsHouseManager(const std::string &ip, int port)
 
 void StatsHouseManager::set_common_tags() {
   client.set_tag_cluster(vk::singleton<ServerConfig>::get().get_cluster_name());
-  client.set_tag_host(kdb_gethostname());
+  client.set_tag_host(vk::singleton<ServerConfig>::get().get_server_name());
 }
 
 void StatsHouseManager::generic_cron_check_if_tag_host_needed() {

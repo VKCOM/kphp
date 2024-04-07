@@ -530,9 +530,10 @@ bool all_job_workers_killed() {
 WorkerType start_master() {
   initial_verbosity = verbosity;
 
-  kprintf("[master_name=%s] [cluster_name=%s] [shmem_name=%s] [socket_name=%s]\n",
+  kprintf("[master_name=%s] [cluster_name=%s] [server_name=%s] [shmem_name=%s] [socket_name=%s]\n",
           vk::singleton<MasterName>::get().get_master_name(), vk::singleton<ServerConfig>::get().get_cluster_name(),
-          vk::singleton<MasterName>::get().get_shmem_name(), vk::singleton<MasterName>::get().get_socket_name());
+          vk::singleton<ServerConfig>::get().get_server_name(), vk::singleton<MasterName>::get().get_shmem_name(),
+          vk::singleton<MasterName>::get().get_socket_name());
 
   tvkprintf(master_process, 1, "start master initilaizing\n");
 
@@ -961,6 +962,7 @@ std::string php_master_prepare_stats(bool add_worker_pids) {
     oss << "kphp_version\t" << atoll(engine_tag) << "\n";
   }
   oss << "cluster_name\t" << vk::singleton<ServerConfig>::get().get_cluster_name() << "\n"
+      << "server_name\t" << vk::singleton<ServerConfig>::get().get_server_name() << "\n"
       << "master_name\t" << vk::singleton<MasterName>::get().get_master_name() << "\n"
       << "min_worker_uptime\t" << min_uptime << "\n"
       << "max_worker_uptime\t" << max_uptime << "\n"
@@ -1083,6 +1085,7 @@ std::string get_master_stats_http() {
   const auto worker_stats = vk::singleton<ServerStats>::get().collect_workers_stat(WorkerType::general_worker);
   std::ostringstream ss;
   ss << "cluster_name\t" << vk::singleton<ServerConfig>::get().get_cluster_name() << "\n"
+       << "server_name\t" << vk::singleton<ServerConfig>::get().get_server_name() << "\n"
        << "master_name\t" << vk::singleton<MasterName>::get().get_master_name() << "\n"
        << "total_workers\t" << worker_stats.total_workers << "\n"
        << "free_workers\t" << worker_stats.total_workers - worker_stats.running_workers << "\n"
