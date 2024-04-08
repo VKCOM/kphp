@@ -2235,9 +2235,9 @@ int main_args_handler(int i, const char *long_option) {
       return res;
     }
     case 2040: {
-      static auto is_directory = [](const char*) {
+      static auto is_directory = [](const char* s) {
         struct stat st;
-        return stat(optarg, &st) == 0 && S_ISDIR(st.st_mode);
+        return stat(s, &st) == 0 && S_ISDIR(st.st_mode);
       };
 
       if (!*optarg || !is_directory(optarg)) {

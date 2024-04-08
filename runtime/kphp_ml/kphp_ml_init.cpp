@@ -3,6 +3,7 @@
 #include <dirent.h>
 #include <exception>
 #include <string>
+#include <sys/stat.h>
 #include <unordered_map>
 
 #include "common/kprintf.h"
@@ -21,39 +22,55 @@ static bool ends_with(const char *str, const char *suffix) {
   return len_suffix <= len_str && strncmp(str + len_str - len_suffix, suffix, len_suffix) == 0;
 }
 
+static void load_kml_file(const std::string &path) {
+  kphp_ml::MLModel kml;
+  try {
+    kml = kml_file_read(path);
+  } catch (const std::exception &ex) {
+    kprintf("error reading %s: %s\n", path.c_str(), ex.what());
+    return;
+  }
+
+  unsigned int buffer_size = kml.calculate_mutable_buffer_size();
+  MaxMutableBufferSize = std::max(MaxMutableBufferSize, (buffer_size + 3) & -4);
+
+  uint64_t key_hash = string_hash(kml.model_name.c_str(), kml.model_name.size());
+  if (auto dup_it = LoadedModels.find(key_hash); dup_it != LoadedModels.end()) {
+    kprintf("warning: model_name '%s' is duplicated\n", kml.model_name.c_str());
+  }
+
+  LoadedModels[key_hash] = std::move(kml);
+}
+
+static void traverse_kml_dir(const std::string &path) {
+  if (ends_with(path.c_str(), ".kml")) {
+    load_kml_file(path);
+    return;
+  }
+
+  static auto is_directory = [](const char *s) {
+    struct stat st;
+    return stat(s, &st) == 0 && S_ISDIR(st.st_mode);
+  };
+
+  if (is_directory(path.c_str())) {
+    DIR *dir = opendir(path.c_str());
+    struct dirent *iter;
+    while ((iter = readdir(dir))) {
+      if (strcmp(iter->d_name, ".") == 0 || strcmp(iter->d_name, "..") == 0) continue;
+      traverse_kml_dir(path + "/" + iter->d_name);
+    }
+    closedir(dir);
+  }
+}
+
 void init_kphp_ml_runtime_in_master() {
   if (KmlDirectory == nullptr || KmlDirectory[0] == '\0') {
     return;
   }
 
-  DIR *dir = opendir(KmlDirectory);
-  struct dirent *iter;
+  traverse_kml_dir(KmlDirectory);
 
-  while ((iter = readdir(dir))) {
-    if (!ends_with(iter->d_name, ".kml")) {
-      continue;
-    }
-
-    kphp_ml::MLModel kml;
-    try {
-      kml = kml_file_read(std::string(KmlDirectory) + "/" + iter->d_name);
-    } catch (const std::exception &ex) {
-      kprintf("error reading %s: %s\n", iter->d_name, ex.what());
-      continue;
-    }
-
-    unsigned int buffer_size = kml.calculate_mutable_buffer_size();
-    MaxMutableBufferSize = std::max(MaxMutableBufferSize, (buffer_size + 3) & -4);
-
-    uint64_t key_hash = string_hash(kml.model_name.c_str(), kml.model_name.size());
-    if (auto dup_it = LoadedModels.find(key_hash); dup_it != LoadedModels.end()) {
-      kprintf("warning: model_name '%s' is duplicated\n", kml.model_name.c_str());
-    }
-
-    LoadedModels[key_hash] = std::move(kml);
-  }
-
-  closedir(dir);
   kprintf("loaded %d kml models from %s\n", static_cast<int>(LoadedModels.size()), KmlDirectory);
 }
 

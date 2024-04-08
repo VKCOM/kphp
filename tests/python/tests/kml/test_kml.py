@@ -16,6 +16,8 @@ class TestKML(KphpCompilerAutoTestCase):
     def test_xgboost_tiny_ht_direct_int_keys_to_fvalue(self):
         self.compile_and_check_success(php_script_path="xgboost/php/xgb_tiny_ht_direct_int_keys_to_fvalue.php",
                                        kml_dir="xgboost/kml")
+        self.compile_and_check_success(php_script_path="xgboost/php/xgb_tiny_ht_direct_int_keys_to_fvalue.php",
+                                       kml_dir="xgboost")  # Traverse directories recursively
 
     def test_xgb_tiny_ht_remap_str_keys_to_fvalue(self):
         self.compile_and_check_success(php_script_path="xgboost/php/xgb_tiny_ht_remap_str_keys_to_fvalue.php",
