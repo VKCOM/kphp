@@ -3,7 +3,6 @@
 #include "runtime-light/component/component.h"
 #include "runtime-light/utils/panic.h"
 #include "runtime-light/coroutine/awaitable.h"
-#include "runtime-light/streams/streams.h"
 
 static int ob_merge_buffers() {
   Response &response = get_component_context()->response;
@@ -24,12 +23,12 @@ task_t<void> parse_input_query() {
   co_await wait_input_query_t{};
   ctx.standard_stream = ctx.pending_queries.front();
   ctx.pending_queries.pop();
+  ctx.processed_queries[ctx.standard_stream] = NotBlocked;
   auto [buffer, size] = co_await read_all_from_stream(ctx.standard_stream);
   init_superglobals(buffer, size);
   get_platform_allocator()->free(buffer);
   co_return ;
 }
-
 
 task_t<void> finish(int64_t exit_code) {
   ComponentState &ctx = *get_component_context();
@@ -41,7 +40,8 @@ task_t<void> finish(int64_t exit_code) {
   auto &buffer = response.output_buffers[ob_total_buffer];
 
   co_await write_all_to_stream(ctx.standard_stream, buffer.c_str(), buffer.size());
-  get_component_context()->poll_status = PollStatus::PollFinished;
+  free_all_descriptors();
+  ctx.poll_status = PollStatus::PollFinished;
   co_return;
 }
 

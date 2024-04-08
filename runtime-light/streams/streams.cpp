@@ -32,8 +32,7 @@ task_t<std::pair<char *, int>> read_all_from_stream(uint64_t stream_d) {
       }
       buffer_size += ptx.read(stream_d, batch_size, buffer + buffer_size);
     } else if (status.read_status == IOBlocked) {
-      get_component_context()->awaited_stream = stream_d;
-      co_await platform_switch_t{};
+      co_await read_blocked_t{stream_d};
     }
   } while (status.read_status != IOClosed);
 
@@ -56,8 +55,7 @@ task_t<bool> write_all_to_stream(uint64_t stream_d, const char * buffer, int len
     if (status.write_status == IOAvailable) {
       writed += ptx.write(stream_d, len - writed, buffer + writed);
     } else if (status.write_status == IOBlocked) {
-      get_component_context()->awaited_stream = stream_d;
-      co_await platform_switch_t{};
+      co_await write_blocked_t{stream_d};
     } else {
       php_warning("stream closed while writing. Writed %d. Size %d. Stream %lu", writed, len, stream_d);
       co_return false;
@@ -65,4 +63,23 @@ task_t<bool> write_all_to_stream(uint64_t stream_d, const char * buffer, int len
   } while (writed != len);
 
   co_return true;
+}
+
+void free_all_descriptors() {
+  ComponentState & ctx = *get_component_context();
+  const PlatformCtx & ptx = *get_platform_context();
+  for (auto & processed_query : ctx.processed_queries) {
+    ptx.free_descriptor(processed_query.first);
+  }
+  ctx.processed_queries.clear();
+  ctx.queries_handlers.clear();
+  ptx.free_descriptor(ctx.standard_stream);
+  ctx.standard_stream = 0;
+}
+
+void free_descriptor(uint64_t stream_d) {
+  ComponentState & ctx = *get_component_context();
+  get_platform_context()->free_descriptor(stream_d);
+  ctx.processed_queries.erase(stream_d);
+  ctx.queries_handlers.erase(stream_d);
 }

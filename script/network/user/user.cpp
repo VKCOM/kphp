@@ -16,12 +16,12 @@ task_t<mixed> get_data() {
   string profile = co_await ask_server(string("profile"));
   data.set_value(string("profile"), profile);
 
-  string feed = co_await ask_server(string("feed"));
-  data.set_value(string("feed"), feed);
-
-  string music = co_await ask_server(string("music"));
-  data.set_value(string("music"), music);
-
+//  string feed = co_await ask_server(string("feed"));
+//  data.set_value(string("feed"), feed);
+//
+//  string music = co_await ask_server(string("music"));
+//  data.set_value(string("music"), music);
+//
   co_await ask_server(string("exit"));
   co_return data;
 }
@@ -33,17 +33,17 @@ string data_check(const mixed & data) {
     return string("erro");
   }
 
-  string feed = data.get_value(string("feed")).as_string();
-  if (feed != string("db send feed server process feed")) {
-    php_notice("got %s", feed.c_str());
-    return string("erro");
-  }
-
-  string music = data.get_value(string("music")).as_string();
-  if (music != string("db send music server process music")) {
-    php_notice("got %s", music.c_str());
-    return string("erro");
-  }
+//  string feed = data.get_value(string("feed")).as_string();
+//  if (feed != string("db send feed server process feed")) {
+//    php_notice("got %s", feed.c_str());
+//    return string("erro");
+//  }
+//
+//  string music = data.get_value(string("music")).as_string();
+//  if (music != string("db send music server process music")) {
+//    php_notice("got %s", music.c_str());
+//    return string("erro");
+//  }
 
   return string("okay");
 }

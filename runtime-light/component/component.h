@@ -8,13 +8,16 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/context.h"
 #include "runtime-light/stdlib/superglobals.h"
+#include "runtime-light/streams/streams.h"
 
 struct ComponentState {
   ComponentState() = default;
   ~ComponentState() = default;
 
-  //todo queue use heap
+  //todo do not use heap
   std::queue<uint64_t> pending_queries;
+  std::unordered_map<uint64_t, StreamSuspendReason> processed_queries;
+  std::unordered_map<uint64_t, std::coroutine_handle<>> queries_handlers;
 
   sigjmp_buf exit_tag;
   dl::ScriptAllocator script_allocator;
@@ -23,7 +26,6 @@ struct ComponentState {
   Superglobals superglobals;
 
   PollStatus poll_status = PollStatus::PollBlocked;
-  uint64_t awaited_stream = 0; // in the future it will be map sd -> coroutine_handle
   uint64_t standard_stream = 0;
-  std::coroutine_handle<> suspend_point;
+  std::coroutine_handle<> standard_handle;
 };

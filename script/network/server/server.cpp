@@ -26,7 +26,7 @@ task_t<void> k_main() noexcept  {
       co_await ask_db(query);
       break;
     } else {
-      php_notice("strange query");
+      php_notice("strange query \"%s\"", query.c_str());
       co_await f$component_server_send_result(result.append(string(" strange query")));
     }
   }
