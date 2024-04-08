@@ -1565,18 +1565,18 @@ void array<T>::merge_with_recursive(const mixed &other) noexcept {
 
 template<class T>
 const array<T> array<T>::operator+(const array<T> &other) const {
-  bool thisEmpty{this->empty()};
-  bool otherEmpty{other.empty()};
+  bool this_empty{this->empty()};
+  bool other_empty{other.empty()};
 
   // short path in case at least one array is empty
-  if (thisEmpty || otherEmpty) {
+  if (this_empty || other_empty) {
     array<T> result;
 
-    if (thisEmpty && otherEmpty) {
+    if (this_empty && other_empty) {
       return result;
     }
 
-    if (otherEmpty) {
+    if (other_empty) {
       result.p = this->p->ref_copy();
     } else {
       result.p = other.p->ref_copy();
