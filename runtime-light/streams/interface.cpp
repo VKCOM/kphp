@@ -6,36 +6,40 @@
 #include "runtime-light/streams/streams.h"
 #include "runtime-light/stdlib/misc.h"
 
-// in KPHP runtime we have only int64_t. What if value uint64_t > int64_t?
-task_t<int64_t> f$component_client_send_query(const string &name, const string & message) {
+task_t<class_instance<C$ComponentQuery>> f$component_client_send_query(const string &name, const string & message) {
+  class_instance<C$ComponentQuery> query;
   const PlatformCtx & ptx = *get_platform_context();
   uint64_t stream_d;
   OpenStreamResult res = ptx.open(name.size(), name.c_str(), &stream_d);
   if (res != OpenStreamOk) {
     php_warning("cannot open stream");
-    co_return v$COMPONENT_ERROR;
+    co_return query;
   }
   bool ok = co_await write_all_to_stream(stream_d, message.c_str(), message.size());
   ptx.shutdown_write(stream_d);
   get_component_context()->processed_queries[stream_d] = NotBlocked;
   if (!ok) {
     php_warning("cannot send component client query");
-    co_return v$COMPONENT_ERROR;
+    co_return query;
   }
   php_debug("send \"%s\" to \"%s\" on stream %lu", message.c_str(), name.c_str(), stream_d);
-  co_return stream_d;
+  query.alloc();
+  query.get()->stream_d = stream_d;
+  co_return query;
 }
 
-task_t<string> f$component_client_get_result(int64_t qid) {
+task_t<string> f$component_client_get_result(class_instance<C$ComponentQuery> query) {
   php_debug("f$component_client_get_result");
-  if (qid < 0) {
+  uint64_t stream_d = query.get()->stream_d;
+  if (stream_d < 0) {
     php_warning("cannot get component client result");
-    co_return v$COMPONENT_ERROR;
+    co_return string();
   }
-  auto [buffer, size] = co_await read_all_from_stream(qid);
+  auto [buffer, size] = co_await read_all_from_stream(stream_d);
   string result;
   result.assign(buffer, size);
-  free_descriptor(qid);
+  free_descriptor(stream_d);
+  query.get()->stream_d = 0;
   co_return result;
 }
 

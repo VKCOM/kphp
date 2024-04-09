@@ -1,8 +1,8 @@
 #include "runtime-headers.h"
 
 task_t<string> ask_db(const string & ask) {
-  int64_t id = co_await f$component_client_send_query(string("db"), ask);
-  if (id == v$COMPONENT_ERROR) {
+  class_instance<C$ComponentQuery> id = co_await f$component_client_send_query(string("db"), ask);
+  if (f$is_null(id)) {
     co_return string();
   }
   string result = co_await f$component_client_get_result(id);

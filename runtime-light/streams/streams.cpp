@@ -78,6 +78,7 @@ void free_all_descriptors() {
 }
 
 void free_descriptor(uint64_t stream_d) {
+  php_debug("free descriptor %lu", stream_d);
   ComponentState & ctx = *get_component_context();
   get_platform_context()->free_descriptor(stream_d);
   ctx.processed_queries.erase(stream_d);

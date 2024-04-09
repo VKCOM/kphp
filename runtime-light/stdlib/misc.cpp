@@ -27,6 +27,7 @@ task_t<void> parse_input_query() {
   auto [buffer, size] = co_await read_all_from_stream(ctx.standard_stream);
   init_superglobals(buffer, size);
   get_platform_allocator()->free(buffer);
+  get_component_context()->processed_queries[ctx.standard_stream] = NotBlocked;
   co_return ;
 }
 

@@ -1,23 +1,19 @@
 #include "runtime-headers.h"
 
-task_t<int64_t> send_request(const string & message) {
-  int64_t id = co_await f$component_client_send_query(string("server"), message);
-  if (id == v$COMPONENT_ERROR) {
-    php_notice("component error");
-    co_return 0;
-  }
+task_t<class_instance<C$ComponentQuery>> send_request(const string & message) {
+  class_instance<C$ComponentQuery> id = co_await f$component_client_send_query(string("server"), message);
   co_return id;
 }
 
-task_t<string> wait_request(int64_t id) {
+task_t<string> wait_request(class_instance<C$ComponentQuery> id) {
   string result = co_await f$component_client_get_result(id);
   co_return result;
 }
 
 
 task_t<string> ask_server(const string & ask) {
-  int64_t id = co_await f$component_client_send_query(string("server"), ask);
-  if (id == v$COMPONENT_ERROR) {
+  class_instance<C$ComponentQuery> id = co_await f$component_client_send_query(string("server"), ask);
+  if (f$is_null(id)) {
     php_notice("component error");
     co_return string();
   }
@@ -27,9 +23,9 @@ task_t<string> ask_server(const string & ask) {
 
 task_t<mixed> get_data() {
   mixed data;
-  int64_t pid = co_await send_request(string("profile"));
-  int64_t fid = co_await send_request(string("feed"));
-  int64_t mid = co_await send_request(string("music"));
+  class_instance<C$ComponentQuery> pid = co_await send_request(string("profile"));
+  class_instance<C$ComponentQuery> fid = co_await send_request(string("feed"));
+  class_instance<C$ComponentQuery> mid = co_await send_request(string("music"));
 
 
 
