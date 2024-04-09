@@ -1,5 +1,20 @@
 #include "runtime-headers.h"
 
+task_t<int64_t> send_request(const string & message) {
+  int64_t id = co_await f$component_client_send_query(string("server"), message);
+  if (id == v$COMPONENT_ERROR) {
+    php_notice("component error");
+    co_return 0;
+  }
+  co_return id;
+}
+
+task_t<string> wait_request(int64_t id) {
+  string result = co_await f$component_client_get_result(id);
+  co_return result;
+}
+
+
 task_t<string> ask_server(const string & ask) {
   int64_t id = co_await f$component_client_send_query(string("server"), ask);
   if (id == v$COMPONENT_ERROR) {
@@ -12,16 +27,22 @@ task_t<string> ask_server(const string & ask) {
 
 task_t<mixed> get_data() {
   mixed data;
+  int64_t pid = co_await send_request(string("profile"));
+  int64_t fid = co_await send_request(string("feed"));
+  int64_t mid = co_await send_request(string("music"));
 
-  string profile = co_await ask_server(string("profile"));
+
+
+  string profile = co_await wait_request(pid);
   data.set_value(string("profile"), profile);
+  php_debug("user get profile");
+  string feed = co_await wait_request(fid);
+  data.set_value(string("feed"), feed);
+  php_debug("user get feed");
+  string music = co_await wait_request(mid);
+  data.set_value(string("music"), music);
+  php_debug("user get music");
 
-//  string feed = co_await ask_server(string("feed"));
-//  data.set_value(string("feed"), feed);
-//
-//  string music = co_await ask_server(string("music"));
-//  data.set_value(string("music"), music);
-//
   co_await ask_server(string("exit"));
   co_return data;
 }
@@ -33,17 +54,17 @@ string data_check(const mixed & data) {
     return string("erro");
   }
 
-//  string feed = data.get_value(string("feed")).as_string();
-//  if (feed != string("db send feed server process feed")) {
-//    php_notice("got %s", feed.c_str());
-//    return string("erro");
-//  }
-//
-//  string music = data.get_value(string("music")).as_string();
-//  if (music != string("db send music server process music")) {
-//    php_notice("got %s", music.c_str());
-//    return string("erro");
-//  }
+  string feed = data.get_value(string("feed")).as_string();
+  if (feed != string("db send feed server process feed")) {
+    php_notice("got %s", feed.c_str());
+    return string("erro");
+  }
+
+  string music = data.get_value(string("music")).as_string();
+  if (music != string("db send music server process music")) {
+    php_notice("got %s", music.c_str());
+    return string("erro");
+  }
 
   return string("okay");
 }

@@ -52,8 +52,12 @@ PollStatus vk_k2_poll(const ImageState *image_state, const PlatformCtx *pt_ctx, 
           suspend_point();
         }
       } else {
-        php_debug("got new pending query %lu", stream_d);
-        componentState->pending_queries.push(stream_d);
+        bool already_pending = std::find(componentState->pending_queries.begin(), componentState->pending_queries.end(), stream_d)
+                               != componentState->pending_queries.end();
+        if (!already_pending) {
+          php_debug("got new pending query %lu", stream_d);
+          componentState->pending_queries.push_back(stream_d);
+        }
         if (componentState->standard_stream == 0) {
           php_debug("start process pending query %lu", stream_d);
           componentState->standard_handle();

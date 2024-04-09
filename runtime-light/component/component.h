@@ -15,12 +15,12 @@ struct ComponentState {
   template<typename Key, typename Value>
   using unordered_map = memory_resource::stl::unordered_map<Key, Value, memory_resource::unsynchronized_pool_resource>;
   template<typename T>
-  using queue = memory_resource::stl::queue<T, memory_resource::unsynchronized_pool_resource>;
+  using deque = memory_resource::stl::deque<T, memory_resource::unsynchronized_pool_resource>;
 
   ComponentState() :
     processed_queries(unordered_map<uint64_t, StreamSuspendReason>::allocator_type{script_allocator.memory_resource}),
     queries_handlers(unordered_map<uint64_t, std::coroutine_handle<>>::allocator_type{script_allocator.memory_resource}),
-    pending_queries(queue<uint64_t>::container_type::allocator_type{script_allocator.memory_resource}){}
+    pending_queries(deque<uint64_t>::allocator_type{script_allocator.memory_resource}){}
 
   ~ComponentState() = default;
 
@@ -36,5 +36,5 @@ struct ComponentState {
 
   unordered_map<uint64_t, StreamSuspendReason> processed_queries;
   unordered_map<uint64_t, std::coroutine_handle<>> queries_handlers;
-  queue<uint64_t> pending_queries;
+  deque<uint64_t> pending_queries;
 };

@@ -71,6 +71,9 @@ template<class Key, class Value, class Resource, class Cmp = std::less<Key>>
 using multimap = std::multimap<Key, Value, Cmp, resource_allocator<std::pair<const Key, Value>, Resource>>;
 
 template<class T, class Resource>
+using deque = std::deque<T, resource_allocator<T, Resource>>;
+
+template<class T, class Resource>
 using queue = std::queue<T, std::deque<T, resource_allocator<T, Resource>>>;
 } // namespace stl
 

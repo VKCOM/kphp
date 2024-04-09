@@ -22,7 +22,7 @@ task_t<void> parse_input_query() {
   php_assert(ctx.standard_stream == 0);
   co_await wait_input_query_t{};
   ctx.standard_stream = ctx.pending_queries.front();
-  ctx.pending_queries.pop();
+  ctx.pending_queries.pop_front();
   ctx.processed_queries[ctx.standard_stream] = NotBlocked;
   auto [buffer, size] = co_await read_all_from_stream(ctx.standard_stream);
   init_superglobals(buffer, size);
