@@ -10,10 +10,17 @@ namespace kphp_ml_xgboost {
 static_assert(sizeof(XgbTreeNode) == 8, "unexpected sizeof(XgbTreeNode)");
 
 struct XgbDensePredictor {
-  struct MissingFloatPair {
-    float at_vec_offset_0 = +1e+10;
-    float at_vec_offset_1 = -1e+10;
-  };
+  [[gnu::always_inline]] static inline uint64_t default_missing_value(const XgboostModel &model) {
+    std::pair<float, float> default_missing_value_layout;
+    if (std::isnan(model.default_missing_value)) {
+      // Should be +/- infinity, but it would be much slower, just +/- "big" value
+      default_missing_value_layout = {+1e10, -1e10};
+    } else {
+      default_missing_value_layout = {model.default_missing_value, model.default_missing_value};
+    }
+
+    return *reinterpret_cast<uint64_t *>(&default_missing_value_layout);
+  }
 
   float *vector_x{nullptr}; // assigned outside as a chunk in linear memory, 2 equal values per existing feature
 
@@ -219,8 +226,7 @@ array<double> kml_predict_xgboost(const kphp_ml::MLModel &kml,
     const int batch_offset = block_id * BATCH_SIZE_XGB;
     const int block_size = std::min(n_rows - batch_offset, BATCH_SIZE_XGB);
 
-    XgbDensePredictor::MissingFloatPair missing;
-    std::fill_n(reinterpret_cast<uint64_t *>(mutable_buffer), block_size * xgb.num_features_present, *reinterpret_cast<uint64_t *>(&missing));
+    std::fill_n(reinterpret_cast<uint64_t *>(mutable_buffer), block_size * xgb.num_features_present, XgbDensePredictor::default_missing_value(xgb));
     if (filler_int_keys != nullptr) {
       for (int i = 0; i < block_size; ++i) {
         (feat_vecs[i].*filler_int_keys)(xgb, iter_done.get_value());

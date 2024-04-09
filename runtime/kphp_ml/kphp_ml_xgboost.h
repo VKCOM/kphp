@@ -71,6 +71,7 @@ struct XgboostModel {
 
   // for ModelKind::xgboost_ht_remap
   bool skip_zeroes;
+  float default_missing_value;
 
   float transform_base_score() const noexcept;
   double transform_prediction(double score) const noexcept;

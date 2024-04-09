@@ -229,6 +229,7 @@ void kml_file_read_xgboost_trees_no_cat(KmlFileReader &f, [[maybe_unused]] int v
   f.check_not_eof();
 
   f.read_bool(xgb.skip_zeroes);
+  f.read_float(xgb.default_missing_value);
 }
 
 void kml_file_read_catboost_trees(KmlFileReader &f, [[maybe_unused]] int version, kphp_ml_catboost::CatboostModel &cbm) {
