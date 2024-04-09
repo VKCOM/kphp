@@ -9,15 +9,20 @@
 #include "runtime-light/context.h"
 #include "runtime-light/stdlib/superglobals.h"
 #include "runtime-light/streams/streams.h"
+#include "runtime-light/allocator/memory_resource/resource_allocator.h"
 
 struct ComponentState {
-  ComponentState() = default;
-  ~ComponentState() = default;
+  template<typename Key, typename Value>
+  using unordered_map = memory_resource::stl::unordered_map<Key, Value, memory_resource::unsynchronized_pool_resource>;
+  template<typename T>
+  using queue = memory_resource::stl::queue<T, memory_resource::unsynchronized_pool_resource>;
 
-  //todo do not use heap
-  std::queue<uint64_t> pending_queries;
-  std::unordered_map<uint64_t, StreamSuspendReason> processed_queries;
-  std::unordered_map<uint64_t, std::coroutine_handle<>> queries_handlers;
+  ComponentState() :
+    processed_queries(unordered_map<uint64_t, StreamSuspendReason>::allocator_type{script_allocator.memory_resource}),
+    queries_handlers(unordered_map<uint64_t, std::coroutine_handle<>>::allocator_type{script_allocator.memory_resource}),
+    pending_queries(queue<uint64_t>::container_type::allocator_type{script_allocator.memory_resource}){}
+
+  ~ComponentState() = default;
 
   sigjmp_buf exit_tag;
   dl::ScriptAllocator script_allocator;
@@ -28,4 +33,8 @@ struct ComponentState {
   PollStatus poll_status = PollStatus::PollBlocked;
   uint64_t standard_stream = 0;
   std::coroutine_handle<> standard_handle;
+
+  unordered_map<uint64_t, StreamSuspendReason> processed_queries;
+  unordered_map<uint64_t, std::coroutine_handle<>> queries_handlers;
+  queue<uint64_t> pending_queries;
 };

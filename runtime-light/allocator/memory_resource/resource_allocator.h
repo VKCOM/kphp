@@ -4,6 +4,7 @@
 
 #pragma once
 #include <map>
+#include <queue>
 
 #include "common/wrappers/likely.h"
 
@@ -31,8 +32,7 @@ public:
 
   value_type *allocate(size_t size, void const * = nullptr) {
     static_assert(sizeof(value_type) <= max_value_type_size(), "memory limit");
-    php_assert(size == 1);
-    auto result = static_cast<value_type *>(memory_resource_.allocate(sizeof(value_type)));
+    auto result = static_cast<value_type *>(memory_resource_.allocate(sizeof(value_type) * size));
     if (unlikely(!result)) {
       php_critical_error("not enough memory to continue");
     }
@@ -41,8 +41,7 @@ public:
 
   void deallocate(value_type *mem, size_t size) {
     static_assert(sizeof(value_type) <= max_value_type_size(), "memory limit");
-    php_assert(size == 1);
-    memory_resource_.deallocate(mem, sizeof(value_type));
+    memory_resource_.deallocate(mem, sizeof(value_type) * size);
   }
 
   static constexpr size_t max_value_type_size() {
@@ -62,11 +61,17 @@ private:
 };
 
 namespace stl {
+template<class Key, class T, class Resource, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>>
+using unordered_map = std::unordered_map<Key, T, Hash, KeyEqual, resource_allocator<std::pair<const Key, T>, Resource>>;
+
 template<class Key, class Value, class Resource, class Cmp = std::less<Key>>
 using map = std::map<Key, Value, Cmp, resource_allocator<std::pair<const Key, Value>, Resource>>;
 
 template<class Key, class Value, class Resource, class Cmp = std::less<Key>>
 using multimap = std::multimap<Key, Value, Cmp, resource_allocator<std::pair<const Key, Value>, Resource>>;
+
+template<class T, class Resource>
+using queue = std::queue<T, std::deque<T, resource_allocator<T, Resource>>>;
 } // namespace stl
 
 } // namespace memory_resource
