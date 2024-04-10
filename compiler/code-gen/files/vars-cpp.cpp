@@ -165,7 +165,7 @@ static void compile_vars_part(CodeGenerator &W, const std::vector<VarPtr> &vars,
 VarsCpp::VarsCpp(std::vector<int> &&max_dep_levels, size_t parts_cnt)
   : max_dep_levels_(std::move(max_dep_levels))
   , parts_cnt_(parts_cnt) {
-  kphp_assert (1 <= parts_cnt_ && parts_cnt_ <= 1024);
+  kphp_assert (1 <= parts_cnt_ && parts_cnt_ <= G->settings().globals_split_count.get());
 }
 
 void VarsCpp::compile(CodeGenerator &W) const {
