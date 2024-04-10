@@ -17,10 +17,7 @@ struct ComponentState {
   template<typename T>
   using deque = memory_resource::stl::deque<T, memory_resource::unsynchronized_pool_resource>;
 
-  ComponentState() :
-    processed_queries(unordered_map<uint64_t, StreamSuspendReason>::allocator_type{script_allocator.memory_resource}),
-    queries_handlers(unordered_map<uint64_t, std::coroutine_handle<>>::allocator_type{script_allocator.memory_resource}),
-    pending_queries(deque<uint64_t>::allocator_type{script_allocator.memory_resource}){}
+  ComponentState() : opened_streams(unordered_map<uint64_t, StreamRuntimeStatus>::allocator_type{script_allocator.memory_resource}), awaiting_coroutines(unordered_map<uint64_t, std::coroutine_handle<>>::allocator_type{script_allocator.memory_resource}), incoming_pending_queries(deque<uint64_t>::allocator_type{script_allocator.memory_resource}){}
 
   ~ComponentState() = default;
 
@@ -34,7 +31,7 @@ struct ComponentState {
   uint64_t standard_stream = 0;
   std::coroutine_handle<> standard_handle;
 
-  unordered_map<uint64_t, StreamSuspendReason> processed_queries;
-  unordered_map<uint64_t, std::coroutine_handle<>> queries_handlers;
-  deque<uint64_t> pending_queries;
+  unordered_map<uint64_t, StreamRuntimeStatus> opened_streams; // подумать про необходимость opened_streams. Объединить с awaiting_coroutines
+  unordered_map<uint64_t, std::coroutine_handle<>> awaiting_coroutines;
+  deque<uint64_t> incoming_pending_queries;
 };

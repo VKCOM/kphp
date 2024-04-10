@@ -21,13 +21,12 @@ task_t<void> parse_input_query() {
   ComponentState & ctx = *get_component_context();
   php_assert(ctx.standard_stream == 0);
   co_await wait_input_query_t{};
-  ctx.standard_stream = ctx.pending_queries.front();
-  ctx.pending_queries.pop_front();
-  ctx.processed_queries[ctx.standard_stream] = NotBlocked;
+  ctx.standard_stream = ctx.incoming_pending_queries.front();
+  ctx.incoming_pending_queries.pop_front();
+  ctx.opened_streams[ctx.standard_stream] = NotBlocked;
   auto [buffer, size] = co_await read_all_from_stream(ctx.standard_stream);
   init_superglobals(buffer, size);
   get_platform_allocator()->free(buffer);
-  get_component_context()->processed_queries[ctx.standard_stream] = NotBlocked;
   co_return ;
 }
 

@@ -7,7 +7,7 @@
 
 #include "runtime-light/core/kphp_core.h"
 
-enum StreamSuspendReason {
+enum StreamRuntimeStatus {
   WBlocked,
   RBlocked,
   NotBlocked

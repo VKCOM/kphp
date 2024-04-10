@@ -17,7 +17,6 @@ task_t<class_instance<C$ComponentQuery>> f$component_client_send_query(const str
   }
   bool ok = co_await write_all_to_stream(stream_d, message.c_str(), message.size());
   ptx.shutdown_write(stream_d);
-  get_component_context()->processed_queries[stream_d] = NotBlocked;
   if (!ok) {
     php_warning("cannot send component client query");
     co_return query;

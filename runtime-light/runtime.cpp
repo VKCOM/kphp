@@ -38,25 +38,24 @@ PollStatus vk_k2_poll(const ImageState *image_state, const PlatformCtx *pt_ctx, 
       if (res != GetStatusOk) {
         break;
       }
-      php_debug("processed_queries size %d", componentState->processed_queries.size());
-      if (componentState->processed_queries.contains(stream_d)) {
+      php_debug("opened_streams size %d", componentState->opened_streams.size());
+      if (componentState->opened_streams.contains(stream_d)) {
         php_debug("update on processed stream %lu", stream_d);
-        auto expected_status = componentState->processed_queries[stream_d];
-        if (expected_status == WBlocked && status.write_status != IOBlocked) {
-          php_debug("resume on waited write query %lu", stream_d);
-          auto suspend_point = componentState->queries_handlers[stream_d];
-          suspend_point();
-        } else if (expected_status == RBlocked && status.read_status != IOBlocked) {
-          php_debug("resume on waited read query %lu", stream_d);
-          auto suspend_point = componentState->queries_handlers[stream_d];
+        auto expected_status = componentState->opened_streams[stream_d];
+        if ((expected_status == WBlocked && status.write_status != IOBlocked) ||
+            (expected_status == RBlocked && status.read_status != IOBlocked)) {
+          php_debug("resume on waited query %lu", stream_d);
+          auto suspend_point = componentState->awaiting_coroutines[stream_d];
+          componentState->awaiting_coroutines.erase(stream_d);
+          php_assert(componentState->awaiting_coroutines.empty());
           suspend_point();
         }
       } else {
-        bool already_pending = std::find(componentState->pending_queries.begin(), componentState->pending_queries.end(), stream_d)
-                               != componentState->pending_queries.end();
+        bool already_pending = std::find(componentState->incoming_pending_queries.begin(), componentState->incoming_pending_queries.end(), stream_d)
+                               != componentState->incoming_pending_queries.end();
         if (!already_pending) {
           php_debug("got new pending query %lu", stream_d);
-          componentState->pending_queries.push_back(stream_d);
+          componentState->incoming_pending_queries.push_back(stream_d);
         }
         if (componentState->standard_stream == 0) {
           php_debug("start process pending query %lu", stream_d);

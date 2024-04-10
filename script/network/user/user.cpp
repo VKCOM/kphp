@@ -27,8 +27,6 @@ task_t<mixed> get_data() {
   class_instance<C$ComponentQuery> fid = co_await send_request(string("feed"));
   class_instance<C$ComponentQuery> mid = co_await send_request(string("music"));
 
-
-
   string profile = co_await wait_request(pid);
   data.set_value(string("profile"), profile);
   php_debug("user get profile");
