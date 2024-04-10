@@ -1570,18 +1570,9 @@ const array<T> array<T>::operator+(const array<T> &other) const {
 
   // short path in case at least one array is empty
   if (this_empty || other_empty) {
-    array<T> result;
-
-    if (this_empty && other_empty) {
-      return result;
-    }
-
-    if (other_empty) {
-      result.p = this->p->ref_copy();
-    } else {
-      result.p = other.p->ref_copy();
-    }
-    return result;
+    if (this_empty && other_empty) { return {}; }
+    else if (other_empty) { return *this; }
+    else { return other; }
   }
 
   array<T> result(size() + other.size());
