@@ -33,7 +33,7 @@ include(${COMMON_DIR}/common.cmake)
 include(${COMMON_DIR}/tl/tl.cmake)
 include(${COMMON_DIR}/unicode/unicode.cmake)
 
-include(${BASE_DIR}/runtime-light/runtime.cmake)
+include(${BASE_DIR}/runtime-light/runtime-light.cmake)
 include(${BASE_DIR}/compiler/compiler.cmake)
 
 if(KPHP_CUSTOM_CMAKE AND EXISTS ${OBJS_DIR}/custom_php_project.cmake)

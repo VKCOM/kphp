@@ -11,16 +11,16 @@ include(${BASE_DIR}/runtime-light/utils/utils.cmake)
 prepend(RUNTIME_COMPONENT_SRC ${BASE_DIR}/runtime-light/
         component/component.cpp)
 
-set(RUNTIME_SRC ${RUNTIME_CORE_SRC}
+set(RUNTIME_LIGHT_SRC ${RUNTIME_CORE_SRC}
                 ${RUNTIME_STDLIB_SRC}
                 ${RUNTIME_ALLOCATOR_SRC}
                 ${RUNTIME_COROUTINE_SRC}
                 ${RUNTIME_COMPONENT_SRC}
                 ${RUNTIME_STREAMS_SRC}
                 ${RUNTIME_UTILS_SRC}
-                ${BASE_DIR}/runtime-light/runtime.cpp)
+                ${BASE_DIR}/runtime-light/runtime-light.cpp)
 
-vk_add_library(runtimelight OBJECT ${RUNTIME_SRC})
+vk_add_library(runtimelight OBJECT ${RUNTIME_LIGHT_SRC})
 set_property(TARGET runtimelight PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_target_properties(runtimelight PROPERTIES
         LIBRARY_OUTPUT_DIRECTORY ${BASE_DIR}/objs)

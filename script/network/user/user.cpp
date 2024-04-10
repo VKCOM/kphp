@@ -64,7 +64,8 @@ string data_check(const mixed & data) {
 }
 
 task_t<void> k_main() noexcept  {
-  co_await parse_input_query();
+  co_await parse_input_query(); // parse input and choose http or component
+  co_await f$component_server_get_query(); // <- component query get_
   mixed data = co_await get_data();
   string res = data_check(data);
   f$echo(res);
