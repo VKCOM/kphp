@@ -1,7 +1,7 @@
 #include "runtime-headers.h"
 
 bool is_component_query() {
-  string type = PhpScriptMutableGlobals::current().get_superglobals().v$_SERVER.get_value(string("QUERY")).to_string();
+  string type = PhpScriptMutableGlobals::current().get_superglobals().v$_SERVER.get_value(string("QUERY_TYPE")).to_string();
   return type == string("component");
 }
 

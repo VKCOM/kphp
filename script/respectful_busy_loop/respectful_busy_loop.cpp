@@ -17,7 +17,7 @@ task_t<void> f$hard_work() noexcept {
 }
 
 bool is_component_query() {
-  string type = PhpScriptMutableGlobals::current().get_superglobals().v$_SERVER.get_value(string("QUERY")).to_string();
+  string type = PhpScriptMutableGlobals::current().get_superglobals().v$_SERVER.get_value(string("QUERY_TYPE")).to_string();
   return type == string("component");
 }
 

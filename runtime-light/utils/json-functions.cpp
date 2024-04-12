@@ -234,6 +234,7 @@ bool JsonEncoder::encode(double d, string_buffer & sb) noexcept {
       return false;
     }
   } else {
+    //todo:k2 implement f$number_format
     sb << /*(simple_encode_ ? f$number_format(d, 6, string{"."}, string{}) : */ string{d}/*)*/;
   }
   return true;

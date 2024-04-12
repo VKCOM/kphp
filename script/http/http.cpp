@@ -7,7 +7,7 @@ void work(const string & str) {
 }
 
 bool is_http_query() {
-  string type = PhpScriptMutableGlobals::current().get_superglobals().v$_SERVER.get_value(string("QUERY")).to_string();
+  string type = PhpScriptMutableGlobals::current().get_superglobals().v$_SERVER.get_value(string("QUERY_TYPE")).to_string();
   return type == string("http");
 }
 
@@ -26,7 +26,6 @@ task_t<void> src() {
     php_error("echo component give wrong answer \"%s\"", res.c_str());
     co_return;
   }
-  php_notice("echo return \"%s\"", res.c_str());
   mixed result;
   result.set_value(string("header"), string("world"));
   result.set_value(string("body"), string("empty"));

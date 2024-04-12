@@ -46,6 +46,7 @@ class JsonEncoder : vk::not_copyable {
 public:
   JsonEncoder(int64_t options, bool simple_encode, const char *json_obj_magic_key = nullptr) noexcept;
 
+  //todo:k2 change static_SB everywhere to string_buffer arg
   bool encode(bool b, string_buffer & sb) noexcept;
   bool encode(int64_t i, string_buffer & sb) noexcept;
   bool encode(const string &s, string_buffer & sb) noexcept;
@@ -166,6 +167,8 @@ Optional<string> f$json_encode(const T &v, int64_t options = 0, bool simple_enco
   }
   return sb.c_str();
 }
+
+//todo:k2 implement string f$vk_json_encode_safe(const T &v, bool simple_encode = true) noexcept
 
 template<class T>
 inline Optional<string> f$vk_json_encode(const T &v) noexcept {

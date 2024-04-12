@@ -6,12 +6,12 @@
 void init_http_superglobals(const char * buffer, int size) {
   ComponentState & ctx = * get_component_context();
   string query = string(buffer, size);
-  mixed globals = f$json_decode(query, true);
-  ctx.php_script_mutable_globals_singleton.get_superglobals().v$_SERVER.set_value(string("QUERY"), string("http"));
-  ctx.php_script_mutable_globals_singleton.get_superglobals().v$_POST = globals;
+  mixed http = f$json_decode(query, true);
+  ctx.php_script_mutable_globals_singleton.get_superglobals().v$_SERVER.set_value(string("QUERY_TYPE"), string("http"));
+  ctx.php_script_mutable_globals_singleton.get_superglobals().v$_POST = http;
 }
 
 void init_component_superglobals() {
   ComponentState & ctx = * get_component_context();
-  ctx.php_script_mutable_globals_singleton.get_superglobals().v$_SERVER.set_value(string("QUERY"), string("component"));
+  ctx.php_script_mutable_globals_singleton.get_superglobals().v$_SERVER.set_value(string("QUERY_TYPE"), string("component"));
 }
