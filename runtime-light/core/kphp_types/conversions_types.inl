@@ -41,6 +41,7 @@ inline bool f$boolval(const mixed &val) {
   return val.to_bool();
 }
 
+// todo:k2 remove sanitizer info
 template<class T, class = enable_for_bool_int_double<T>>
 inline int64_t f$intval(T val) /*ubsan_supp("float-cast-overflow")*/;
 

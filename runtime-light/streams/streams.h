@@ -20,5 +20,4 @@ task_t<bool> write_query_with_magic_to_stream(uint64_t stream_d, int8_t magic, c
 task_t<bool> write_all_to_stream(uint64_t stream_d, const char * buffer, int len);
 
 void free_all_descriptors();
-
 void free_descriptor(uint64_t stream_d);

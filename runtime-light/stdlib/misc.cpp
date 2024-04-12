@@ -39,6 +39,8 @@ task_t<void> parse_input_query() {
 }
 
 task_t<void> finish(int64_t exit_code) {
+  (void) exit_code;
+  //todo:k2 use exit_code
   ComponentState &ctx = *get_component_context();
   if (ctx.standard_stream == 0) {
     co_return;
@@ -46,7 +48,10 @@ task_t<void> finish(int64_t exit_code) {
   int ob_total_buffer = ob_merge_buffers();
   Response &response = ctx.response;
   auto &buffer = response.output_buffers[ob_total_buffer];
-  co_await write_query_with_magic_to_stream(ctx.standard_stream, HTTP_MAGIC, buffer.c_str(), buffer.size());
+  bool ok = co_await write_query_with_magic_to_stream(ctx.standard_stream, HTTP_MAGIC, buffer.c_str(), buffer.size());
+  if (!ok) {
+    php_warning("cannot write component result to input stream %lu", ctx.standard_stream);
+  }
   free_all_descriptors();
   ctx.poll_status = PollStatus::PollFinished;
   co_return;

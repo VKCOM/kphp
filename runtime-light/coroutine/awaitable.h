@@ -22,7 +22,7 @@ struct blocked_operation_t {
 
 struct read_blocked_t : blocked_operation_t {
   void await_suspend(std::coroutine_handle<> h) const noexcept {
-    php_debug("blocked read on stream %d", awaited_stream);
+    php_debug("blocked read on stream %lu", awaited_stream);
     ComponentState & ctx = *get_component_context();
     ctx.poll_status = PollStatus::PollBlocked;
     ctx.opened_streams[awaited_stream] = RBlocked;
@@ -32,7 +32,7 @@ struct read_blocked_t : blocked_operation_t {
 
 struct write_blocked_t : blocked_operation_t {
   void await_suspend(std::coroutine_handle<> h) const noexcept {
-    php_debug("blocked write on stream %d", awaited_stream);
+    php_debug("blocked write on stream %lu", awaited_stream);
     ComponentState & ctx = *get_component_context();
     ctx.poll_status = PollStatus::PollBlocked;
     ctx.opened_streams[awaited_stream] = WBlocked;

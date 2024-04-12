@@ -4,6 +4,7 @@
 task_t<void> k_main(void) noexcept;
 
 ImageState *vk_k2_create_image_state(const Allocator *alloc) {
+  (void) alloc;
   // todo:k2 allocate memory for const value
   return nullptr;
 }
@@ -40,7 +41,7 @@ PollStatus vk_k2_poll(const ImageState *image_state, const PlatformCtx *pt_ctx, 
       if (res != GetStatusOk) {
         break;
       }
-      php_debug("opened_streams size %d", componentState->opened_streams.size());
+      php_debug("opened_streams size %zu", componentState->opened_streams.size());
       if (componentState->opened_streams.contains(stream_d)) {
         php_debug("update on processed stream %lu", stream_d);
         auto expected_status = componentState->opened_streams[stream_d];

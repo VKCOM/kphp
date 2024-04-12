@@ -23,7 +23,6 @@ bool string::string_inner::is_shared() const {
 }
 
 void string::string_inner::set_length_and_sharable(size_type n) {
-//  fprintf (stderr, "inc ref cnt %d %s\n", 0, ref_data());
   ref_count = 0;
   size = n;
   ref_data()[n] = '\0';
@@ -89,7 +88,6 @@ inline string::size_type string::string_inner::get_memory_usage() const {
 }
 
 char *string::string_inner::ref_copy() {
-//  fprintf (stderr, "inc ref cnt %d, %s\n", ref_count + 1, ref_data());
   if (ref_count < ExtraRefCnt::for_global_const) {
     ref_count++;
   }
@@ -741,6 +739,8 @@ bool string::try_to_float_as_php7(double *val) const {
 
 bool string::try_to_float(double *val, bool php8_warning) const {
   const bool is_float_php7 = try_to_float_as_php7(val);
+  // todo:k2 implement try_to_float_as_php8
+  (void) php8_warning;
 
 //  if ((show_migration_php8_warning & MIGRATION_PHP8_STRING_TO_FLOAT_FLAG) && php8_warning) {
 //    const bool is_float_php8 = try_to_float_as_php8(val);
@@ -901,7 +901,7 @@ bool string::is_numeric_as_php7() const {
 
 bool string::is_numeric() const {
   const auto php7_result = is_numeric_as_php7();
-
+  // todo:k2  implement is_numeric_as_php8
 //  if (show_migration_php8_warning & MIGRATION_PHP8_STRING_TO_FLOAT_FLAG) {
 //    const bool php8_result = is_numeric_as_php8();
 //

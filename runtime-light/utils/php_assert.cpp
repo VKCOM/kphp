@@ -19,6 +19,7 @@
 #include "runtime-light/utils/panic.h"
 
 static void php_warning_impl(bool out_of_memory, int error_type, char const *message, va_list args) {
+  (void) out_of_memory;
   const int BUF_SIZE = 1000;
   char buf[BUF_SIZE];
 

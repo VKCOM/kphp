@@ -4,5 +4,3 @@
 #include "runtime-light/coroutine/task.h"
 
 int64_t f$rand();
-
-task_t<string> f$query_echo(const string & str);

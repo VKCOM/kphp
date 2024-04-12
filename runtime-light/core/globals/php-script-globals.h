@@ -30,6 +30,7 @@ class PhpScriptMutableGlobals {
   using unordered_map = memory_resource::stl::unordered_map<Key, Value, memory_resource::unsynchronized_pool_resource>;
   char *g_linear_mem{nullptr};
   PhpScriptBuiltInSuperGlobals superglobals;
+  // todo:k2 implement mem for libs globals
 
 public:
   static PhpScriptMutableGlobals &current();

@@ -64,6 +64,7 @@ private:
 
   JsonPath json_path_;
   const int64_t options_{0};
+  //todo:k2 use simple_encode
   const bool simple_encode_{false};
   const char *json_obj_magic_key_{nullptr};
 };

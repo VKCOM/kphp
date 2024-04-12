@@ -12,5 +12,5 @@ string_buffer::string_buffer(string::size_type buffer_len) noexcept:
 }
 
 string_buffer::~string_buffer() noexcept {
-  get_platform_allocator()->free(buffer_begin/*, buffer_len*/);
+  get_platform_allocator()->free(buffer_begin);
 }

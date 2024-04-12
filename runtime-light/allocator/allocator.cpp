@@ -21,6 +21,7 @@ namespace dl {
 
 static void request_extra_memory() {
   ComponentState &rt_ctx = *get_component_context();
+  // todo:k2 make extra mem size dynamic
   size_t extra_mem_size = 16 * 1024u + 100; // extra mem size should be greater than max chunk block size
   void * extra_mem = get_platform_allocator()->alloc(extra_mem_size);
   if (extra_mem == nullptr) {

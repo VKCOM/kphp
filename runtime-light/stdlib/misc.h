@@ -9,7 +9,6 @@ void f$check_shutdown();
 
 task_t<void> f$exit(const mixed &v = 0);
 
-
 task_t<void> f$die(const mixed &v = 0);
 
 void reset();

@@ -6,6 +6,7 @@
 
 
 class string_buffer {
+  // todo:k2 set limits in init
   constexpr static string::size_type MIN_BUFFER_LEN = 1024;
   constexpr static string::size_type MAX_BUFFER_LEN = (1 << 24);
   char *buffer_end;
