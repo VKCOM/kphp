@@ -5,12 +5,12 @@
 #include "runtime-light/context.h"
 #include "runtime-light/coroutine/awaitable.h"
 
-task_t<int32_t> read_magic_from_stream(uint64_t stream_d) {
+task_t<int8_t> read_magic_from_stream(uint64_t stream_d) {
   co_await test_yield_t{};
 
   const PlatformCtx & ptx = *get_platform_context();
-  int count = sizeof(int32_t);
-  char * buffer = static_cast<char *>(ptx.allocator.alloc(count));
+  int count = sizeof(int8_t);
+  int8_t magic;
   StreamStatus status;
   int buffer_size = 0;
 
@@ -22,7 +22,7 @@ task_t<int32_t> read_magic_from_stream(uint64_t stream_d) {
     }
 
     if (status.read_status == IOAvailable) {
-      buffer_size += ptx.read(stream_d, count - buffer_size, buffer + buffer_size);
+      buffer_size += ptx.read(stream_d, count - buffer_size, reinterpret_cast<char *>(&magic) + buffer_size);
     } else if (status.read_status == IOBlocked) {
       co_await read_blocked_t{stream_d};
     } else if (status.read_status == IOClosed) {
@@ -30,8 +30,7 @@ task_t<int32_t> read_magic_from_stream(uint64_t stream_d) {
       co_return -1;
     }
   } while (buffer_size != count);
-  int32_t magic = *reinterpret_cast<int32_t *>(buffer);
-  ptx.allocator.free(buffer);
+
   co_return magic;
 }
 
@@ -69,13 +68,13 @@ task_t<std::pair<char *, int>> read_all_from_stream(uint64_t stream_d) {
   co_return std::make_pair(buffer, buffer_size);
 }
 
-task_t<bool> write_magic_to_stream(uint64_t stream_d, int32_t magic) {
+task_t<bool> write_magic_to_stream(uint64_t stream_d, int8_t magic) {
   co_await test_yield_t{};
 
   StreamStatus status;
   const PlatformCtx & ptx = *get_platform_context();
   int writed = 0;
-  int len = sizeof(int32_t);
+  int len = sizeof(int8_t);
 
   do {
     GetStatusResult res = ptx.get_stream_status(stream_d, &status);
@@ -97,7 +96,7 @@ task_t<bool> write_magic_to_stream(uint64_t stream_d, int32_t magic) {
   co_return true;
 }
 
-task_t<bool> write_query_with_magic_to_stream(uint64_t stream_d, int32_t magic, const char * buffer, int len) {
+task_t<bool> write_query_with_magic_to_stream(uint64_t stream_d, int8_t magic, const char * buffer, int len) {
   bool ok = co_await write_magic_to_stream(stream_d, magic);
   if (!ok) {
     co_return false;
