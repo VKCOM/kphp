@@ -3,6 +3,9 @@ prepend(RUNTIME_KPHP_TYPES_SRC ${BASE_DIR}/runtime-light/core/kphp_types/definit
         string_buffer.cpp
         mixed.cpp)
 
+prepend(RUNTIME_LANGUAGE_SRC ${BASE_DIR}/runtime-light/core/globals/
+        php-script-globals.cpp)
+
 prepend(RUNTIME_TYPES_SRC ${BASE_DIR}/runtime-light/core/runtime_types/
         string_cache.cpp)
 

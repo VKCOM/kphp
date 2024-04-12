@@ -6,12 +6,21 @@ void work(const string & str) {
   arr.push_back(str.to_numeric());
 }
 
+bool is_component_query() {
+  string type = PhpScriptMutableGlobals::current().get_superglobals().v$_SERVER.get_value(string("QUERY")).to_string();
+  return type == string("component");
+}
+
 
 task_t<void> k_main() noexcept  {
   co_await parse_input_query();
-  string str = get_component_context()->superglobals.v$_RAW_QUERY;
+  if (!is_component_query()) {
+    php_error("echo component can process only component query");
+    co_return;
+  }
+  string str = co_await f$component_server_get_query();
   work(str);
-  f$echo(str);
+  co_await f$component_server_send_result(str);
   co_await finish(0);
   co_return;
 }

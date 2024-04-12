@@ -16,8 +16,17 @@ task_t<void> f$hard_work() noexcept {
   }
 }
 
+bool is_component_query() {
+  string type = PhpScriptMutableGlobals::current().get_superglobals().v$_SERVER.get_value(string("QUERY")).to_string();
+  return type == string("component");
+}
+
 task_t<void> k_main() noexcept  {
   co_await parse_input_query();
+  if (!is_component_query()) {
+    php_error("respectful component can process only component query");
+    co_return;
+  }
   co_await f$hard_work();
   co_await finish(0);
   co_return ;

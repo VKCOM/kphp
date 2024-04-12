@@ -3,27 +3,9 @@
 #include "runtime-light/core/kphp_core.h"
 #include "runtime-light/coroutine/task.h"
 
-struct Superglobals {
-  string v$_RAW_QUERY;
+constexpr int32_t HTTP_MAGIC = 0;
+constexpr int32_t COMPONENT_QUERY_MAGIC = 1;
 
-  mixed v$_SERVER;
-  mixed v$_GET;
-  mixed v$_POST;
-  mixed v$_FILES;
-  mixed v$_COOKIE;
-  mixed v$_REQUEST;
-  mixed v$_ENV;
+void init_http_superglobals(const char * buffer, int size);
 
-  mixed v$argc;
-  mixed v$argv;
-};
-
-struct http_query_data {
-  char const *uri, *get, *headers, *post, *request_method;
-  int uri_len, get_len, headers_len, post_len, request_method_len;
-  int keep_alive;
-  unsigned int ip;
-  unsigned int port;
-};
-
-void init_superglobals(const char * buffer, int size);
+void init_component_superglobals();

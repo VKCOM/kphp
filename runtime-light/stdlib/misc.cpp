@@ -2,6 +2,7 @@
 
 #include "runtime-light/component/component.h"
 #include "runtime-light/utils/panic.h"
+#include "runtime-light/utils/json-functions.h"
 #include "runtime-light/coroutine/awaitable.h"
 
 static int ob_merge_buffers() {
@@ -24,9 +25,16 @@ task_t<void> parse_input_query() {
   ctx.standard_stream = ctx.incoming_pending_queries.front();
   ctx.incoming_pending_queries.pop_front();
   ctx.opened_streams[ctx.standard_stream] = NotBlocked;
-  auto [buffer, size] = co_await read_all_from_stream(ctx.standard_stream);
-  init_superglobals(buffer, size);
-  get_platform_allocator()->free(buffer);
+  int32_t magic = co_await read_magic_from_stream(ctx.standard_stream);
+  if (magic == HTTP_MAGIC) {
+    auto [buffer, size] = co_await read_all_from_stream(ctx.standard_stream);
+    init_http_superglobals(buffer, size);
+    get_platform_allocator()->free(buffer);
+  } else if (magic == COMPONENT_QUERY_MAGIC) {
+    init_component_superglobals();
+  } else {
+    php_critical_error("unexpected magic %d in incoming query", magic);
+  }
   co_return ;
 }
 
@@ -38,8 +46,7 @@ task_t<void> finish(int64_t exit_code) {
   int ob_total_buffer = ob_merge_buffers();
   Response &response = ctx.response;
   auto &buffer = response.output_buffers[ob_total_buffer];
-
-  co_await write_all_to_stream(ctx.standard_stream, buffer.c_str(), buffer.size());
+  co_await write_query_with_magic_to_stream(ctx.standard_stream, HTTP_MAGIC, buffer.c_str(), buffer.size());
   free_all_descriptors();
   ctx.poll_status = PollStatus::PollFinished;
   co_return;

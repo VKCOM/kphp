@@ -5,6 +5,36 @@
 #include "runtime-light/context.h"
 #include "runtime-light/coroutine/awaitable.h"
 
+task_t<int32_t> read_magic_from_stream(uint64_t stream_d) {
+  co_await test_yield_t{};
+
+  const PlatformCtx & ptx = *get_platform_context();
+  int count = sizeof(int32_t);
+  char * buffer = static_cast<char *>(ptx.allocator.alloc(count));
+  StreamStatus status;
+  int buffer_size = 0;
+
+  do {
+    GetStatusResult res = ptx.get_stream_status(stream_d, &status);
+    if (res != GetStatusOk) {
+      php_warning("get stream status return status %d", res);
+      co_return -1;
+    }
+
+    if (status.read_status == IOAvailable) {
+      buffer_size += ptx.read(stream_d, count - buffer_size, buffer + buffer_size);
+    } else if (status.read_status == IOBlocked) {
+      co_await read_blocked_t{stream_d};
+    } else if (status.read_status == IOClosed) {
+      php_warning("cannot read magic from stream %lu because IOClosed", stream_d);
+      co_return -1;
+    }
+  } while (buffer_size != count);
+  int32_t magic = *reinterpret_cast<int32_t *>(buffer);
+  ptx.allocator.free(buffer);
+  co_return magic;
+}
+
 task_t<std::pair<char *, int>> read_all_from_stream(uint64_t stream_d) {
   co_await test_yield_t{};
 
@@ -39,6 +69,46 @@ task_t<std::pair<char *, int>> read_all_from_stream(uint64_t stream_d) {
   co_return std::make_pair(buffer, buffer_size);
 }
 
+task_t<bool> write_magic_to_stream(uint64_t stream_d, int32_t magic) {
+  co_await test_yield_t{};
+
+  StreamStatus status;
+  const PlatformCtx & ptx = *get_platform_context();
+  int writed = 0;
+  int len = sizeof(int32_t);
+
+  do {
+    GetStatusResult res = ptx.get_stream_status(stream_d, &status);
+    if (res != GetStatusOk) {
+      php_warning("get stream status return status %d", res);
+      co_return false;
+    }
+
+    if (status.write_status == IOAvailable) {
+      writed += ptx.write(stream_d, len - writed, reinterpret_cast<char *>(&magic) + writed);
+    } else if (status.write_status == IOBlocked) {
+      co_await write_blocked_t{stream_d};
+    } else {
+      php_warning("stream closed while writing. Writed %d. Size %d. Stream %lu", writed, len, stream_d);
+      co_return false;
+    }
+  } while (writed != len);
+
+  co_return true;
+}
+
+task_t<bool> write_query_with_magic_to_stream(uint64_t stream_d, int32_t magic, const char * buffer, int len) {
+  bool ok = co_await write_magic_to_stream(stream_d, magic);
+  if (!ok) {
+    co_return false;
+  }
+  ok = co_await write_all_to_stream(stream_d, buffer, len);
+  if (!ok) {
+    co_return false;
+  }
+  co_return true;
+}
+
 task_t<bool> write_all_to_stream(uint64_t stream_d, const char * buffer, int len) {
   co_await test_yield_t{};
 
@@ -62,6 +132,7 @@ task_t<bool> write_all_to_stream(uint64_t stream_d, const char * buffer, int len
     }
   } while (writed != len);
 
+  php_debug("write %d bytes to stream %lu", len, stream_d);
   co_return true;
 }
 

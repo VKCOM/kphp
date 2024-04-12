@@ -15,7 +15,7 @@ task_t<class_instance<C$ComponentQuery>> f$component_client_send_query(const str
     php_warning("cannot open stream");
     co_return query;
   }
-  bool ok = co_await write_all_to_stream(stream_d, message.c_str(), message.size());
+  bool ok = co_await write_query_with_magic_to_stream(stream_d, COMPONENT_QUERY_MAGIC, message.c_str(), message.size());
   ptx.shutdown_write(stream_d);
   if (!ok) {
     php_warning("cannot send component client query");
@@ -28,12 +28,20 @@ task_t<class_instance<C$ComponentQuery>> f$component_client_send_query(const str
 }
 
 task_t<string> f$component_client_get_result(class_instance<C$ComponentQuery> query) {
+  php_assert(!query.is_null());
   php_debug("f$component_client_get_result");
   uint64_t stream_d = query.get()->stream_d;
-  if (stream_d < 0) {
+  if (stream_d == 0) {
     php_warning("cannot get component client result");
     co_return string();
   }
+
+  int32_t magic = co_await read_magic_from_stream(stream_d);
+  if (magic != COMPONENT_QUERY_MAGIC) {
+    php_warning("component client unexpected magic %d", magic);
+    co_return string();
+  }
+
   auto [buffer, size] = co_await read_all_from_stream(stream_d);
   string result;
   result.assign(buffer, size);
@@ -44,7 +52,7 @@ task_t<string> f$component_client_get_result(class_instance<C$ComponentQuery> qu
 
 task_t<void> f$component_server_send_result(const string &message) {
   ComponentState & ctx = *get_component_context();
-  bool ok = co_await write_all_to_stream(ctx.standard_stream, message.c_str(), message.size());
+  bool ok = co_await write_query_with_magic_to_stream(ctx.standard_stream, COMPONENT_QUERY_MAGIC, message.c_str(), message.size());
   if (!ok) {
     php_warning("cannot send component result");
   } else {
@@ -56,8 +64,11 @@ task_t<void> f$component_server_send_result(const string &message) {
 
 task_t<string> f$component_server_get_query() {
   ComponentState & ctx = *get_component_context();
-  co_await parse_input_query();
-  string query = std::move(ctx.superglobals.v$_RAW_QUERY);
-  ctx.superglobals.v$_RAW_QUERY = string();
+  if (ctx.standard_stream == 0) {
+    co_await parse_input_query();
+  }
+  auto [buffer, size] = co_await read_all_from_stream(ctx.standard_stream);
+  string query = string(buffer, size);
+  get_platform_context()->allocator.free(buffer);
   co_return query;
 }

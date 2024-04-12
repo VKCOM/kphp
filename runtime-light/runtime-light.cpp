@@ -4,6 +4,7 @@
 task_t<void> k_main(void) noexcept;
 
 ImageState *vk_k2_create_image_state(const Allocator *alloc) {
+  // todo allocate memory for const value
   return nullptr;
 }
 
@@ -15,6 +16,7 @@ ComponentState *vk_k2_create_component_state(const ImageState *image_state, cons
     char *buffer = static_cast<char *>(platformAllocator->alloc(sizeof(ComponentState)));
     componentState = new (buffer) ComponentState();
   }
+  // todo allocate memory for mutable globals
   // coroutine is initial suspend
   componentState->k_main = k_main();
   componentState->standard_handle = componentState->k_main.get_handle();

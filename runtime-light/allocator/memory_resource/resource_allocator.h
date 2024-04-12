@@ -5,6 +5,7 @@
 #pragma once
 #include <map>
 #include <queue>
+#include <unordered_map>
 
 #include "common/wrappers/likely.h"
 

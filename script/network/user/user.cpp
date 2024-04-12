@@ -37,7 +37,7 @@ task_t<mixed> get_data() {
   data.set_value(string("music"), music);
   php_debug("user get music");
 
-  co_await ask_server(string("exit"));
+  co_await send_request(string("exit"));
   co_return data;
 }
 
@@ -63,12 +63,20 @@ string data_check(const mixed & data) {
   return string("okay");
 }
 
+bool is_component_query() {
+  string type = PhpScriptMutableGlobals::current().get_superglobals().v$_SERVER.get_value(string("QUERY")).to_string();
+  return type == string("component");
+}
+
 task_t<void> k_main() noexcept  {
-  co_await parse_input_query(); // parse input and choose http or component
-  co_await f$component_server_get_query(); // <- component query get_
+  co_await parse_input_query();
+  if (!is_component_query()) {
+    php_error("component can process only component query");
+    co_return;
+  }
   mixed data = co_await get_data();
   string res = data_check(data);
-  f$echo(res);
+  co_await f$component_server_send_result(res);
   co_await finish(0);
   co_return;
 }
