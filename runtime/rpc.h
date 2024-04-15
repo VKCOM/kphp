@@ -5,6 +5,7 @@
 #pragma once
 
 #include <memory>
+#include <tuple>
 
 #include "common/algorithms/hashes.h"
 #include "common/kprintf.h"
@@ -117,6 +118,30 @@ inline void register_tl_storers_table_and_fetcher(const array<tl_storer_ptr> &ge
   tl_storers_ht = gen$ht;
   tl_fetch_wrapper = gen$t_ReqResult_fetch;
 };
+
+using rpc_request_stat_t = std::tuple<int64_t>; // tuple(request_size)
+using rpc_response_stat_t = std::tuple<int64_t, double>; // tuple(response_size, response_time)
+
+struct C$RpcRequestsStatistics final
+        : public refcountable_php_classes<C$RpcRequestsStatistics>, private DummyVisitorMethods {
+  using DummyVisitorMethods::accept;
+
+  array<rpc_request_stat_t> stats_;
+
+  C$RpcRequestsStatistics() = default;
+
+  const char *get_class() const noexcept {
+    return R"(RpcRequestsStatistics)";
+  }
+
+  int get_hash() const noexcept {
+    return static_cast<int32_t>(vk::std_hash(vk::string_view(C$RpcRequestsStatistics::get_class())));
+  }
+};
+
+inline array<rpc_request_stat_t> f$RpcRequestsStatistics$$get(const class_instance<C$RpcRequestsStatistics> &v$this) {
+  return v$this->stats_;
+}
 
 struct C$RpcConnection final : public refcountable_php_classes<C$RpcConnection>, private DummyVisitorMethods {
   int32_t host_num{-1};
