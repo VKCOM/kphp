@@ -32,8 +32,8 @@ template<typename F, typename R = KphpRpcRequest>
 int64_t f$typed_rpc_tl_query_one(const class_instance<C$RpcConnection> &connection,
                                  const class_instance<F> &query_function,
                                  double timeout = -1.0) {
-  static_assert(std::is_base_of<C$VK$TL$RpcFunction, F>::value, "Unexpected type");
-  static_assert(std::is_same<KphpRpcRequest, R>::value, "Unexpected type");
+  static_assert(std::is_base_of_v<C$VK$TL$RpcFunction, F>, "Unexpected type");
+  static_assert(std::is_same_v<KphpRpcRequest, R>, "Unexpected type");
 
   size_t bytes_sent = 0;
   return typed_rpc_tl_query_impl(connection, R{query_function}, timeout, false, false, bytes_sent, true);
@@ -44,8 +44,8 @@ array<int64_t> f$typed_rpc_tl_query(const class_instance<C$RpcConnection> &conne
                                     const array<class_instance<F>> &query_functions,
                                     double timeout = -1.0,
                                     bool ignore_answer = false) {
-  static_assert(std::is_base_of<C$VK$TL$RpcFunction, F>::value, "Unexpected type");
-  static_assert(std::is_same<KphpRpcRequest, R>::value, "Unexpected type");
+  static_assert(std::is_base_of_v<C$VK$TL$RpcFunction, F>, "Unexpected type");
+  static_assert(std::is_same_v<KphpRpcRequest, R>, "Unexpected type");
 
   array<int64_t> queries(query_functions.size());
   size_t bytes_sent = 0;
@@ -62,22 +62,22 @@ array<int64_t> f$typed_rpc_tl_query(const class_instance<C$RpcConnection> &conne
 
 template<typename I, typename F = rpcResponseErrorFactory>
 class_instance<C$VK$TL$RpcResponse> f$typed_rpc_tl_query_result_one(I query_id) {
-  static_assert(std::is_same<int64_t, I>::value, "Unexpected type");
-  static_assert(std::is_same<rpcResponseErrorFactory, F>::value, "Unexpected type");
+  static_assert(std::is_same_v<int64_t, I>, "Unexpected type");
+  static_assert(std::is_same_v<rpcResponseErrorFactory, F>, "Unexpected type");
   return typed_rpc_tl_query_result_one_impl(query_id, F::get());
 }
 
 template<typename I, typename F = rpcResponseErrorFactory>
 array<class_instance<C$VK$TL$RpcResponse>> f$typed_rpc_tl_query_result(const array<I> &query_ids) {
-  static_assert(std::is_same<int64_t, I>::value, "Unexpected type");
-  static_assert(std::is_same<rpcResponseErrorFactory, F>::value, "Unexpected type");
+  static_assert(std::is_same_v<int64_t, I>, "Unexpected type");
+  static_assert(std::is_same_v<rpcResponseErrorFactory, F>, "Unexpected type");
   return typed_rpc_tl_query_result_impl(query_ids, F::get());
 }
 
 template<typename I, typename F = rpcResponseErrorFactory>
 array<class_instance<C$VK$TL$RpcResponse>> f$typed_rpc_tl_query_result_synchronously(const array<I> &query_ids) {
-  static_assert(std::is_same<int64_t, I>::value, "Unexpected type");
-  static_assert(std::is_same<rpcResponseErrorFactory, F>::value, "Unexpected type");
+  static_assert(std::is_same_v<int64_t, I>, "Unexpected type");
+  static_assert(std::is_same_v<rpcResponseErrorFactory, F>, "Unexpected type");
   return typed_rpc_tl_query_result_synchronously_impl(query_ids, F::get());
 }
 
