@@ -916,12 +916,14 @@ final class RpcConnection {
     private function __construct();
 }
 
-final class RpcRequestsStatistics {
+final class RpcRequestsMetrics {
     /**
     * @return tuple(int)[]
     */
     public function get ();
 }
+
+function extract_rpc_response_metrics ($resumable_id ::: int) ::: tuple(int, float) | false;
 
 /** rpc store **/
 function new_rpc_connection ($str ::: string, $port ::: int, $actor_id ::: mixed = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: \RpcConnection; // TODO: make actor_id int
@@ -991,7 +993,7 @@ interface RpcResponse {
 /** @kphp-extern-func-info tl_common_h_dep */
 function typed_rpc_tl_query_one (\RpcConnection $connection, @tl\RpcFunction $query_function, $timeout ::: float = -1.0) ::: int;
 /** @kphp-extern-func-info tl_common_h_dep */
-function typed_rpc_tl_query (\RpcConnection $connection, @tl\RpcFunction[] $query_functions, $timeout ::: float = -1.0, $ignore_answer ::: bool = false) ::: int[];
+function typed_rpc_tl_query (\RpcConnection $connection, @tl\RpcFunction[] $query_functions, $timeout ::: float = -1.0, $ignore_answer ::: bool = false, \RpcRequestsMetrics $rpc_requests_metrics = null, $need_responses_metrics ::: bool = false) ::: int[];
 /** @kphp-extern-func-info tl_common_h_dep resumable */
 function typed_rpc_tl_query_result_one (int $query_id) ::: @tl\RpcResponse;
 /** @kphp-extern-func-info tl_common_h_dep resumable */

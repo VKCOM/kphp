@@ -140,6 +140,8 @@ private:
 int64_t typed_rpc_tl_query_impl(const class_instance<C$RpcConnection> &connection,
                                 const RpcRequest &req,
                                 double timeout,
+                                rpc_request_metrics_t &request_metrics,
+                                bool collect_responses_metrics,
                                 bool ignore_answer,
                                 bool bytes_estimating,
                                 size_t &bytes_sent,
@@ -158,7 +160,10 @@ int64_t typed_rpc_tl_query_impl(const class_instance<C$RpcConnection> &connectio
   if (bytes_estimating) {
     estimate_and_flush_overflow(bytes_sent);
   }
-  const int64_t query_id = rpc_send(connection, timeout, ignore_answer);
+
+  const int64_t query_id = rpc_send_impl(connection, timeout, request_metrics, collect_responses_metrics,
+                                         ignore_answer);
+
   if (query_id <= 0) {
     return 0;
   }

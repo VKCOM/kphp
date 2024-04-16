@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <tuple>
+#include <utility>
 
 #include "common/algorithms/hashes.h"
 #include "common/kprintf.h"
@@ -119,29 +120,35 @@ inline void register_tl_storers_table_and_fetcher(const array<tl_storer_ptr> &ge
   tl_fetch_wrapper = gen$t_ReqResult_fetch;
 };
 
-using rpc_request_stat_t = std::tuple<int64_t>; // tuple(request_size)
-using rpc_response_stat_t = std::tuple<int64_t, double>; // tuple(response_size, response_time)
+using rpc_request_metrics_t = std::tuple<int64_t>; // tuple(request_size)
+using rpc_response_metrics_t = std::tuple<int64_t, double>; // tuple(response_size, response_time)
+enum class rpc_response_metrics_status_t : std::uint8_t { NOT_READY, READY };
 
-struct C$RpcRequestsStatistics final
-        : public refcountable_php_classes<C$RpcRequestsStatistics>, private DummyVisitorMethods {
+extern array<std::pair<rpc_response_metrics_status_t, rpc_response_metrics_t>> rpc_responses_metrics;
+
+struct C$RpcRequestsMetrics final
+        : public refcountable_php_classes<C$RpcRequestsMetrics>, private DummyVisitorMethods {
   using DummyVisitorMethods::accept;
 
-  array<rpc_request_stat_t> stats_;
+  array<rpc_request_metrics_t> metrics_arr_;
 
-  C$RpcRequestsStatistics() = default;
+  C$RpcRequestsMetrics() = default;
 
   const char *get_class() const noexcept {
-    return R"(RpcRequestsStatistics)";
+    return R"(RpcRequestsMetrics)";
   }
 
   int get_hash() const noexcept {
-    return static_cast<int32_t>(vk::std_hash(vk::string_view(C$RpcRequestsStatistics::get_class())));
+    return static_cast<int32_t>(vk::std_hash(vk::string_view(C$RpcRequestsMetrics::get_class())));
   }
 };
 
-inline array<rpc_request_stat_t> f$RpcRequestsStatistics$$get(const class_instance<C$RpcRequestsStatistics> &v$this) {
-  return v$this->stats_;
+[[maybe_unused]] inline array<rpc_request_metrics_t>
+f$RpcRequestsMetrics$$get(const class_instance<C$RpcRequestsMetrics> &v$this) {
+  return v$this->metrics_arr_;
 }
+
+[[maybe_unused]] Optional<rpc_response_metrics_t> f$extract_rpc_response_metrics(int64_t resumable_id);
 
 struct C$RpcConnection final : public refcountable_php_classes<C$RpcConnection>, private DummyVisitorMethods {
   int32_t host_num{-1};
@@ -222,7 +229,7 @@ bool f$rpc_clean(bool is_error = false);
 bool rpc_store(bool is_error = false);
 
 int64_t f$rpc_send(const class_instance<C$RpcConnection> &conn, double timeout = -1.0);
-int64_t rpc_send(const class_instance<C$RpcConnection> &conn, double timeout, bool ignore_answer = false);
+int64_t rpc_send_impl(const class_instance<C$RpcConnection> &conn, double timeout, rpc_request_metrics_t &request_metrics, bool collect_response_metrics, bool ignore_answer = false);
 
 int64_t f$rpc_send_noflush(const class_instance<C$RpcConnection> &conn, double timeout = -1.0);
 

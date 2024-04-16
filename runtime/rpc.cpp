@@ -63,6 +63,7 @@ static string rpc_data_copy_backup;
 
 tl_fetch_wrapper_ptr tl_fetch_wrapper;
 array<tl_storer_ptr> tl_storers_ht;
+array<std::pair<rpc_response_metrics_status_t, rpc_response_metrics_t>> rpc_responses_metrics;
 
 template<class T>
 static inline T store_parse_number(const string &v) {
@@ -665,7 +666,9 @@ static void process_rpc_timeout(kphp_event_timer *timer) {
   return process_rpc_timeout(timer->wakeup_extra, false);
 }
 
-int64_t rpc_send(const class_instance<C$RpcConnection> &conn, double timeout, bool ignore_answer) {
+int64_t
+rpc_send_impl(const class_instance<C$RpcConnection> &conn, double timeout, rpc_request_metrics_t &request_metrics,
+              bool collect_response_metrics, bool ignore_answer) {
   if (unlikely (conn.is_null() || conn.get()->host_num < 0)) {
     php_warning("Wrong RpcConnection specified");
     return -1;
@@ -682,7 +685,8 @@ int64_t rpc_send(const class_instance<C$RpcConnection> &conn, double timeout, bo
   size_t rpc_payload_size = data_buf.size() - sizeof(RpcHeaders);
   uint32_t function_magic = CurrentProcessingQuery::get().get_last_stored_tl_function_magic();
   RpcExtraHeaders extra_headers{};
-  size_t extra_headers_size = fill_extra_headers_if_needed(extra_headers, function_magic, conn.get()->actor_id, ignore_answer);
+  size_t extra_headers_size = fill_extra_headers_if_needed(extra_headers, function_magic, conn.get()->actor_id,
+                                                           ignore_answer);
 
   const auto request_size = static_cast<size_t>(data_buf.size() + extra_headers_size);
   char *p = static_cast<char *>(dl::allocate(request_size));
@@ -693,7 +697,12 @@ int64_t rpc_send(const class_instance<C$RpcConnection> &conn, double timeout, bo
   memcpy(p + sizeof(RpcHeaders), &extra_headers, extra_headers_size);
   memcpy(p + sizeof(RpcHeaders) + extra_headers_size, rpc_payload_start, rpc_payload_size);
 
-  slot_id_t q_id = rpc_send_query(conn.get()->host_num, p, static_cast<int>(request_size), timeout_convert_to_ms(timeout));
+  slot_id_t q_id = rpc_send_query(conn.get()->host_num, p, static_cast<int>(request_size),
+                                  timeout_convert_to_ms(timeout));
+
+  // request's statistics
+  request_metrics = rpc_request_metrics_t{request_size};
+
   if (q_id <= 0) {
     return -1;
   }
@@ -719,10 +728,13 @@ int64_t rpc_send(const class_instance<C$RpcConnection> &conn, double timeout, bo
     if (rpc_first_unfinished_request_id > rpc_first_array_request_id + rpc_requests_size / 2) {
       memcpy(rpc_requests,
              rpc_requests + rpc_first_unfinished_request_id - rpc_first_array_request_id,
-             sizeof(rpc_request) * (rpc_requests_size - (rpc_first_unfinished_request_id - rpc_first_array_request_id)));
+             sizeof(rpc_request) *
+             (rpc_requests_size - (rpc_first_unfinished_request_id - rpc_first_array_request_id)));
       rpc_first_array_request_id = rpc_first_unfinished_request_id;
     } else {
-      rpc_requests = static_cast <rpc_request *> (dl::reallocate(rpc_requests, sizeof(rpc_request) * 2 * rpc_requests_size, sizeof(rpc_request) * rpc_requests_size));
+      rpc_requests = static_cast <rpc_request *> (dl::reallocate(rpc_requests,
+                                                                 sizeof(rpc_request) * 2 * rpc_requests_size,
+                                                                 sizeof(rpc_request) * rpc_requests_size));
       rpc_requests_size *= 2;
     }
   }
@@ -736,7 +748,14 @@ int64_t rpc_send(const class_instance<C$RpcConnection> &conn, double timeout, bo
   cur->timer = nullptr;
 
   if (kphp_tracing::is_turned_on()) {
-    kphp_tracing::on_rpc_query_send(q_id, cur->actor_or_port, cur->function_magic, static_cast<int>(request_size), send_timestamp, ignore_answer);
+    kphp_tracing::on_rpc_query_send(q_id, cur->actor_or_port, cur->function_magic, static_cast<int>(request_size),
+                                    send_timestamp, ignore_answer);
+  }
+
+  // response's metrics
+  if (collect_response_metrics) {
+    rpc_responses_metrics.emplace_value(cur->resumable_id, rpc_response_metrics_status_t::NOT_READY,
+                                        rpc_response_metrics_t{0, send_timestamp});
   }
 
   if (ignore_answer) {
@@ -766,7 +785,8 @@ void f$rpc_flush() {
 }
 
 int64_t f$rpc_send(const class_instance<C$RpcConnection> &conn, double timeout) {
-  int64_t request_id = rpc_send(conn, timeout);
+  rpc_request_metrics_t _{};
+  int64_t request_id = rpc_send_impl(conn, timeout, _, false);
   if (request_id <= 0) {
     return 0;
   }
@@ -776,12 +796,25 @@ int64_t f$rpc_send(const class_instance<C$RpcConnection> &conn, double timeout) 
 }
 
 int64_t f$rpc_send_noflush(const class_instance<C$RpcConnection> &conn, double timeout) {
-  int64_t request_id = rpc_send(conn, timeout);
+  rpc_request_metrics_t _{};
+  int64_t request_id = rpc_send_impl(conn, timeout, _, false);
   if (request_id <= 0) {
     return 0;
   }
 
   return request_id;
+}
+
+[[maybe_unused]] Optional<rpc_response_metrics_t> f$extract_rpc_response_metrics(int64_t resumable_id) {
+  const auto *response_metrics_ptr = rpc_responses_metrics.find_value(resumable_id);
+
+  if (response_metrics_ptr == nullptr || response_metrics_ptr->first == rpc_response_metrics_status_t::NOT_READY) {
+    return false;
+  }
+
+  const auto res = response_metrics_ptr->second;
+  rpc_responses_metrics.unset(resumable_id);
+  return res;
 }
 
 void process_rpc_answer(int32_t request_id, char *result, int32_t result_len) {
@@ -800,6 +833,16 @@ void process_rpc_answer(int32_t request_id, char *result, int32_t result_len) {
 
   int64_t resumable_id = request->resumable_id;
   request->resumable_id = -1;
+
+  { // response's metrics
+    const auto response_timestamp = std::chrono::duration<double>{
+            std::chrono::system_clock::now().time_since_epoch()}.count();
+    if (rpc_responses_metrics.isset(resumable_id)) {
+      auto &response_metrics = rpc_responses_metrics[resumable_id];
+      response_metrics.second = {result_len, response_timestamp - std::get<1>(response_metrics.second)};
+      response_metrics.first = rpc_response_metrics_status_t::READY;
+    }
+  }
 
   if (request->timer) {
     remove_event_timer(request->timer);
@@ -1138,7 +1181,9 @@ int64_t rpc_tl_query_impl(const class_instance<C$RpcConnection> &c, const mixed 
   if (bytes_estimating) {
     estimate_and_flush_overflow(bytes_sent);
   }
-  int64_t query_id = rpc_send(c, timeout, ignore_answer);
+
+  rpc_request_metrics_t _{};
+  int64_t query_id = rpc_send_impl(c, timeout, _, false, ignore_answer);
   if (query_id <= 0) {
     return 0;
   }
@@ -1402,6 +1447,7 @@ static void reset_rpc_global_vars() {
   hard_reset_var(rpc_data_copy_backup);
   hard_reset_var(rpc_request_need_timer);
   fail_rpc_on_int32_overflow = false;
+  rpc_responses_metrics.clear();
 }
 
 void init_rpc_lib() {
