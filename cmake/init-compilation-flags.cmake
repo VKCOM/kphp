@@ -87,7 +87,7 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
 endif()
 
 add_compile_options(-Wall -Wextra -Wunused-function -Wfloat-conversion -Wno-sign-compare
-                    -Wuninitialized -Wno-redundant-move -Wno-missing-field-initializers)
+                    -Wuninitialized -Wno-redundant-move -Wno-missing-field-initializers -Wno-vla-cxx-extension)
 
 if(NOT APPLE)
     check_cxx_compiler_flag(-gz=zlib DEBUG_COMPRESSION_IS_FOUND)

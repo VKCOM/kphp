@@ -31,6 +31,7 @@ IncludesCollector TypeTagger::collect_includes() const noexcept {
 std::map<int, std::string> TypeTagger::collect_hash_of_types() const noexcept {
   // Be care, do not remove spaces from these types
   // TODO fix it?
+  // implement C$KphpJobWorkerResponse, C$VK$TL$RpcResponse, C$VK$TL$RpcResponse, C$PDOStatement, thrown_exception
   std::set<std::string> sorted_types{
     "bool",
     "int64_t",

@@ -182,7 +182,7 @@ void InitScriptsCpp::compile(CodeGenerator &W) const {
   W << OpenFile("init_php_scripts.cpp", "", false);
 
   W << ExternInclude(G->settings().runtime_headers.get()) <<
-    ExternInclude("server/php-init-scripts.h");
+    ExternInclude("server/php-init-scripts.h"); // change include
 
   W << Include(main_file_id->main_function->header_full_name);
 

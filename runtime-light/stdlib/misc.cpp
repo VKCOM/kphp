@@ -38,7 +38,8 @@ task_t<void> parse_input_query() {
   co_return ;
 }
 
-task_t<void> finish(int64_t exit_code) {
+task_t<void> finish(int64_t exit_code, bool from_exit) {
+  (void) from_exit;
   (void) exit_code;
   //todo:k2 use exit_code
   ComponentState &ctx = *get_component_context();
@@ -72,9 +73,9 @@ task_t<void> f$exit(const mixed &v) {
   if (v.is_string()) {
     Response &response = get_component_context()->response;
     response.output_buffers[response.current_buffer] << v;
-    co_await finish(0);
+    co_await finish(0, true);
   } else {
-    co_await finish(v.to_int());
+    co_await finish(v.to_int(), true);
   }
   panic();
 }
