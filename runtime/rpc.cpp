@@ -805,7 +805,7 @@ int64_t f$rpc_send_noflush(const class_instance<C$RpcConnection> &conn, double t
   return request_id;
 }
 
-[[maybe_unused]] Optional<rpc_response_metrics_t> f$extract_rpc_response_metrics(int64_t resumable_id) {
+Optional<rpc_response_metrics_t> f$extract_rpc_response_metrics(int64_t resumable_id) {
   const auto *response_metrics_ptr = rpc_responses_metrics.find_value(resumable_id);
 
   if (response_metrics_ptr == nullptr || response_metrics_ptr->first == rpc_response_metrics_status_t::NOT_READY) {

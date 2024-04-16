@@ -143,12 +143,12 @@ struct C$RpcRequestsMetrics final
   }
 };
 
-[[maybe_unused]] inline array<rpc_request_metrics_t>
+inline array<rpc_request_metrics_t>
 f$RpcRequestsMetrics$$get(const class_instance<C$RpcRequestsMetrics> &v$this) {
   return v$this->metrics_arr_;
 }
 
-[[maybe_unused]] Optional<rpc_response_metrics_t> f$extract_rpc_response_metrics(int64_t resumable_id);
+Optional<rpc_response_metrics_t> f$extract_rpc_response_metrics(int64_t resumable_id);
 
 struct C$RpcConnection final : public refcountable_php_classes<C$RpcConnection>, private DummyVisitorMethods {
   int32_t host_num{-1};
