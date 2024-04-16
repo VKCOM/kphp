@@ -58,6 +58,13 @@ public:
     fi.read(v.data(), len);
   }
 
+  void read_kphp_string(string &v) {
+    int len;
+    fi.read((char *)&len, sizeof(int));
+    v = string(len, false);
+    fi.read(v.buffer(), len);
+  }
+
   void read_bool(bool &v) noexcept {
     v = static_cast<bool>(read_int());
   }
@@ -89,10 +96,10 @@ public:
     int sz = read_int();
     arr.reserve(sz, true);
 
-    std::string tmp;
+    string tmp;
     for (int i = 0; i < sz; ++i) {
-      read_string(tmp);
-      arr.push_back(string(tmp.data(), tmp.size()));
+      read_kphp_string(tmp);
+      arr.push_back(std::move(tmp));
     }
   }
 
@@ -107,7 +114,7 @@ template<>
 [[maybe_unused]] void KmlFileReader::read_vec<std::string>(std::vector<std::string> &v) {
   int sz = read_int();
   v.resize(sz);
-  for (auto& str : v) {
+  for (auto &str : v) {
     read_string(str);
   }
 }
@@ -312,14 +319,10 @@ kphp_ml::MLModel kml_file_read(const std::string &kml_filename) {
 
   int custom_properties_sz = f.read_int();
   kml.custom_properties.reserve(custom_properties_sz, false);
-  std::string tmp_key;
-  std::string tmp_val;
+  string key, val;
   for (int i = 0; i < custom_properties_sz; ++i) {
-    // TODO may be more optimal to use ctor string(n, k) and then write right in buffer?
-    f.read_string(tmp_key);
-    f.read_string(tmp_val);
-    string key(tmp_key.data(), tmp_key.size());
-    string val(tmp_val.data(), tmp_val.size());
+    f.read_kphp_string(key);
+    f.read_kphp_string(val);
     kml.custom_properties[key] = val;
   }
 

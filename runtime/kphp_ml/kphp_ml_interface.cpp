@@ -117,11 +117,11 @@ array<double> f$kml_catboost_predict_ht_multi(const string &model_name, const ar
   return kphp_ml_catboost::kml_predict_catboost_by_ht_remap_str_keys_multi(*p_kml, features_map, mutable_buffer);
 }
 
-bool f$kml_model_exist(const string &model_name) {
+bool f$kml_model_exists(const string &model_name) {
   return kphp_ml_find_loaded_model_by_name(model_name) != nullptr;
 }
 
-array<string> f$kml_feature_names(const string &model_name) {
+array<string> f$kml_get_feature_names(const string &model_name) {
   const kphp_ml::MLModel *p_kml = kphp_ml_find_loaded_model_by_name(model_name);
   if (p_kml == nullptr) {
     php_warning("kml model %s not found", model_name.c_str());
@@ -130,7 +130,7 @@ array<string> f$kml_feature_names(const string &model_name) {
   return p_kml->get_feature_names();
 }
 
-Optional<string> f$kml_custom_property(const string &model_name, const string& property_name) {
+Optional<string> f$kml_get_custom_property(const string &model_name, const string& property_name) {
   const kphp_ml::MLModel *p_kml = kphp_ml_find_loaded_model_by_name(model_name);
   if (p_kml == nullptr) {
     php_warning("kml model %s not found", model_name.c_str());
