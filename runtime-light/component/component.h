@@ -19,6 +19,7 @@ struct ComponentState {
   using deque = memory_resource::stl::deque<T, memory_resource::unsynchronized_pool_resource>;
 
   ComponentState() :
+    php_script_mutable_globals_singleton(script_allocator.memory_resource),
     opened_streams(unordered_map<uint64_t, StreamRuntimeStatus>::allocator_type{script_allocator.memory_resource}),
     awaiting_coroutines(unordered_map<uint64_t, std::coroutine_handle<>>::allocator_type{script_allocator.memory_resource}),
     incoming_pending_queries(deque<uint64_t>::allocator_type{script_allocator.memory_resource}){}

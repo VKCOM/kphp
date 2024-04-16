@@ -26,7 +26,6 @@ struct VarDeclaration {
   void compile(CodeGenerator &W) const;
 };
 
-VarDeclaration VarExternDeclaration(VarPtr var);
 VarDeclaration VarPlainDeclaration(VarPtr var);
 
 struct FunctionDeclaration {
@@ -140,7 +139,7 @@ private:
   IncludesCollector compile_front_includes(CodeGenerator &W) const;
   void compile_back_includes(CodeGenerator &W, IncludesCollector &&front_includes) const;
   void compile_job_worker_shared_memory_piece_methods(CodeGenerator &W, bool compile_declaration_only = false) const;
-  void declare_all_variables(VertexPtr v, CodeGenerator &W) const;
+  bool has_constant_usage_in_init_val(VertexPtr v) const;
   std::unique_ptr<TlDependentTypesUsings> detect_if_needs_tl_usings() const;
 };
 

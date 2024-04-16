@@ -21,6 +21,6 @@ task_t<void> k_main() noexcept  {
   string str = co_await f$component_server_get_query();
   work(str);
   co_await f$component_server_send_result(str);
-  co_await finish(0);
+  co_await finish(0, false);
   co_return;
 }

@@ -423,7 +423,7 @@ void generate_body_of_virtual_method(FunctionPtr virtual_function) {
     }
   }
   if (!cases.empty()) {
-    auto case_default_warn = generate_critical_error_call(fmt_format("call method({}) on null object", virtual_function->as_human_readable()));
+    auto case_default_warn = generate_critical_error_call(fmt_format("call method({}) on null object", virtual_function->as_human_readable(false)));
     cases.emplace_back(VertexAdaptor<op_default>::create(VertexAdaptor<op_seq>::create(case_default_warn)));
   }
 

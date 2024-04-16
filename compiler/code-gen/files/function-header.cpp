@@ -5,6 +5,7 @@
 #include "compiler/code-gen/files/function-header.h"
 
 #include "compiler/code-gen/common.h"
+#include "compiler/code-gen/const-globals-linear-mem.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/files/function-source.h"
 #include "compiler/code-gen/includes.h"
@@ -25,8 +26,8 @@ void FunctionH::compile(CodeGenerator &W) const {
   W << includes;
 
   W << OpenNamespace();
-  for (auto const_var : function->explicit_header_const_var_ids) {
-    W << VarExternDeclaration(const_var) << NL;
+  if (!function->explicit_header_const_var_ids.empty()) {   // default value of function argument is const var
+    W << ConstantsLinearMemDeclaration(true) << NL;
   }
 
   if (function->is_inline) {
@@ -53,9 +54,7 @@ void FunctionH::compile(CodeGenerator &W) const {
     W << includes;
     W << OpenNamespace();
 
-    declare_global_vars(function, W);
     declare_const_vars(function, W);
-    declare_static_vars(function, W);
     W << UnlockComments();
     W << function->root << NL;
     W << LockComments();

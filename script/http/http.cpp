@@ -36,6 +36,6 @@ task_t<void> src() {
 task_t<void> k_main() noexcept  {
   co_await parse_input_query();
   co_await src();
-  co_await finish(0);
+  co_await finish(0, false);
   co_return;
 }

@@ -77,6 +77,6 @@ task_t<void> k_main() noexcept  {
   mixed data = co_await get_data();
   string res = data_check(data);
   co_await f$component_server_send_result(res);
-  co_await finish(0);
+  co_await finish(0, false);
   co_return;
 }

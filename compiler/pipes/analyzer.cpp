@@ -92,6 +92,11 @@ VertexPtr CommonAnalyzerPass::on_enter_vertex(VertexPtr vertex) {
     if (var->is_constant()) {
       run_function_pass(var->init_val, this);
     }
+    if (var->is_in_global_scope()) {
+      // even if current_function->global_var_ids is not empty, has_global_vars_inside may still be unset,
+      // for example if a function declares `global $v` but not uses it, or its uses are dropped off after cfg pass
+      current_function->has_global_vars_inside = true;
+    }
     return vertex;
   }
   if (vertex->rl_type == val_none) {

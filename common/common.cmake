@@ -51,4 +51,4 @@ if(COMPILER_CLANG)
     set_source_files_properties(${COMMON_DIR}/string-processing.cpp PROPERTIES COMPILE_FLAGS -Wno-invalid-source-encoding)
 endif()
 
-vk_add_library(common_src OBJECT ${COMMON_ALL_SOURCES})
+#vk_add_library(common_src OBJECT ${COMMON_ALL_SOURCES})

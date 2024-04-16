@@ -18,6 +18,6 @@ task_t<void> k_main() noexcept {
   }
   string result = co_await f$component_client_get_result(id);
   co_await f$component_server_send_result(result);
-  co_await finish(0);
+  co_await finish(0, false);
   co_return ;
 }

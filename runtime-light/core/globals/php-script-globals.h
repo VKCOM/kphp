@@ -29,15 +29,20 @@ class PhpScriptMutableGlobals {
   template<typename Key, typename Value>
   using unordered_map = memory_resource::stl::unordered_map<Key, Value, memory_resource::unsynchronized_pool_resource>;
   char *g_linear_mem{nullptr};
+  unordered_map<int64_t, char *> libs_linear_mem;
   PhpScriptBuiltInSuperGlobals superglobals;
-  // todo:k2 implement mem for libs globals
 
 public:
+  PhpScriptMutableGlobals(memory_resource::unsynchronized_pool_resource & resource)
+    : libs_linear_mem(unordered_map<int64_t, char *>::allocator_type{resource}) {}
+
   static PhpScriptMutableGlobals &current();
 
   void once_alloc_linear_mem(unsigned int n_bytes);
+  void once_alloc_linear_mem(const char *lib_name, unsigned int n_bytes);
 
   char *get_linear_mem() const { return g_linear_mem; }
+  char *get_linear_mem(const char *lib_name) const;
 
   PhpScriptBuiltInSuperGlobals &get_superglobals() { return superglobals; }
   const PhpScriptBuiltInSuperGlobals &get_superglobals() const { return superglobals; }

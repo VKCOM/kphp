@@ -7,6 +7,7 @@
 #include "compiler/data/src-file.h"
 #include "compiler/vertex-util.h"
 #include "compiler/data/var-data.h"
+#include "compiler/const-manipulations.h"
 #include "compiler/compiler-core.h"
 #include "compiler/name-gen.h"
 
@@ -142,6 +143,35 @@ struct NameGenerator : public VertexVisitor<NameGenerator, std::string> {
     }
     return fallback(v);
   }
+
+private:
+  // checks that inlined as define' value constructor is suitable to be stored as constant var
+  static bool is_object_suitable_for_hashing(VertexPtr vertex) {
+    return vertex->type() == op_define_val && vertex.as<op_define_val>()->value()->type() == op_func_call
+           && vertex.as<op_define_val>()->value()->extra_type == op_ex_constructor_call && vertex->const_type == cnst_const_val;
+  }
+
+  static bool is_array_suitable_for_hashing(VertexPtr vertex) {
+    return vertex->type() == op_array && CheckConst::is_const(vertex);
+  }
+
+  static std::string gen_const_string_name(const std::string &str) {
+    return fmt_format("const_string$us{:x}", vk::std_hash(str));
+  }
+
+  static std::string gen_const_regexp_name(const std::string &str) {
+    return fmt_format("const_regexp$us{:x}", vk::std_hash(str));
+  }
+
+  static std::string gen_const_object_name(const VertexAdaptor<op_define_val> &def) {
+    kphp_assert_msg(def->value()->type() == op_func_call, "Internal error: expected op_define_val <op_func_call>");
+    auto obj_hash = ObjectHash::calc_hash(def);
+    return fmt_format("const_obj$us{:x}", obj_hash);
+  }
+
+  static std::string gen_const_array_name(const VertexAdaptor<op_array> &array) {
+    return fmt_format("const_array$us{:x}", ArrayHash::calc_hash(array));
+  }
 };
 
 struct ProcessBeforeReplace : public VertexVisitor<ProcessBeforeReplace, VertexPtr> {
@@ -203,7 +233,8 @@ void set_var_dep_level(VarPtr var_id) {
 VertexPtr CollectConstVarsPass::on_exit_vertex(VertexPtr root) {
   if (root->const_type == cnst_const_val) {
     composite_const_depth_ -= static_cast<int>(IsComposite::visit(root));
-    if (ShouldStoreOnBottomUp::visit(root)) {
+    if (ShouldStoreOnBottomUp::visit(root)
+        && !current_function->is_extern()) { // don't extract constants from extern func default arguments, they are in C++ runtime
       root = ProcessBeforeReplace::visit(root);
       root = create_const_variable(root, root->location);
     }
@@ -242,7 +273,7 @@ VertexPtr CollectConstVarsPass::create_const_variable(VertexPtr root, Location l
   var->extra_type = op_ex_var_const;
   var->location = loc;
 
-  VarPtr var_id = G->get_global_var(name, VarData::var_const_t, VertexUtil::unwrap_inlined_define(root));
+  VarPtr var_id = G->get_constant_var(name, VertexUtil::unwrap_inlined_define(root));
   set_var_dep_level(var_id);
 
   if (composite_const_depth_ > 0) {

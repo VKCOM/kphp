@@ -14,15 +14,11 @@ std::string ShapeKeys::get_function_name() noexcept {
   return "init_shape_demangler";
 }
 
-std::string ShapeKeys::get_function_declaration() noexcept {
-  return "void " + get_function_name() + "()";
-}
-
 void ShapeKeys::compile(CodeGenerator &W) const {
   W << OpenFile{"_shape_keys.cpp"};
   W << ExternInclude{G->settings().runtime_headers.get()};
 
-  FunctionSignatureGenerator{W} << NL << get_function_declaration() << BEGIN;
+  FunctionSignatureGenerator{W} << "void " << get_function_name() << "()" << BEGIN;
   W << "std::unordered_map<std::int64_t, std::string_view> shape_keys_storage{" << NL;
 
   for (const auto &[hash, key] : shape_keys_storage_) {

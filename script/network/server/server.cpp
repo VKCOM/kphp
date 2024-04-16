@@ -53,6 +53,6 @@ task_t<void> k_main() noexcept  {
       co_await f$component_server_send_result(result.append(string(" strange query")));
     }
   }
-  co_await finish(0);
+  co_await finish(0, false);
   co_return;
 }

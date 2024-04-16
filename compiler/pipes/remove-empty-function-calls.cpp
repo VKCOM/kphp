@@ -46,7 +46,7 @@ VertexPtr RemoveEmptyFunctionCallsPass::on_exit_vertex(VertexPtr v) {
     // get rid of $called - global variables for empty source files;
     // namely, detect 'v$src_fooxxx$called = true' assign in such files and remove it,
     // this allows to avoid further call of register_var() with such global variable
-    if (!G->settings().is_static_lib_mode() && current_function->is_main_function() && current_function->body_seq == FunctionData::body_value::empty) {
+    if (!G->is_output_mode_lib() && current_function->is_main_function() && current_function->body_seq == FunctionData::body_value::empty) {
       auto set = v.as<op_set>();
       auto lhs = set->lhs();
       auto rhs = set->rhs();

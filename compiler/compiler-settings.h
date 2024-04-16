@@ -185,9 +185,6 @@ public:
   KphpImplicitOption tl_classname_prefix;
 
   std::string get_version() const;
-  bool is_static_lib_mode() const;
-  bool is_server_mode() const;
-  bool is_cli_mode() const;
   bool is_composer_enabled() const; // reports whether composer compatibility mode is on
   color_settings get_color_settings() const;
 

@@ -216,7 +216,7 @@ int main(int argc, char *argv[]) {
   parser.add("File with kphp runtime sha256 hash", settings->runtime_sha256_file,
              "runtime-sha256", "KPHP_RUNTIME_SHA256", "${KPHP_PATH}/objs/php_lib_version.sha256");
   parser.add("The output binary type: server, cli or lib", settings->mode,
-             'M', "mode", "KPHP_MODE", "server", {"server", "cli", "lib"});
+             'M', "mode", "KPHP_MODE", "server", {"server", "cli", "lib", "k2-component"});
   parser.add("A runtime library for building the output binary", settings->link_file,
              'l', "link-with", "KPHP_LINK_FILE", "${KPHP_PATH}/objs/libkphp-full-runtime.a");
   parser.add("Directory where php files will be searched", settings->includes,

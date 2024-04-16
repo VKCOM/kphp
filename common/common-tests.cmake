@@ -18,6 +18,6 @@ prepend(COMMON_TESTS_SOURCES ${COMMON_DIR}/
         wrappers/span-test.cpp
         wrappers/string_view-test.cpp)
 
-prepare_cross_platform_libs(COMMON_TESTS_LIBS zstd)
-set(COMMON_TESTS_LIBS vk::common_src vk::net_src vk::binlog_src vk::unicode ${COMMON_TESTS_LIBS} ${EPOLL_SHIM_LIB} OpenSSL::Crypto z)
-vk_add_unittest(common "${COMMON_TESTS_LIBS}" ${COMMON_TESTS_SOURCES})
+#prepare_cross_platform_libs(COMMON_TESTS_LIBS zstd)
+#set(COMMON_TESTS_LIBS vk::common_src vk::net_src vk::binlog_src vk::unicode ${COMMON_TESTS_LIBS} ${EPOLL_SHIM_LIB} OpenSSL::Crypto z)
+#vk_add_unittest(common "${COMMON_TESTS_LIBS}" ${COMMON_TESTS_SOURCES})

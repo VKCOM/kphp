@@ -7,6 +7,7 @@
 #include "common/algorithms/compare.h"
 
 #include "compiler/code-gen/common.h"
+#include "compiler/code-gen/const-globals-linear-mem.h"
 #include "compiler/code-gen/files/json-encoder-tags.h"
 #include "compiler/code-gen/files/tl2cpp/tl2cpp-utils.h"
 #include "compiler/code-gen/includes.h"
@@ -25,10 +26,6 @@
 #include "compiler/inferring/type-data.h"
 #include "compiler/tl-classes.h"
 
-VarDeclaration VarExternDeclaration(VarPtr var) {
-  return {var, true, false};
-}
-
 VarDeclaration VarPlainDeclaration(VarPtr var) {
   return {var, false, false};
 }
@@ -41,10 +38,6 @@ VarDeclaration::VarDeclaration(VarPtr var, bool extern_flag, bool defval_flag) :
 
 void VarDeclaration::compile(CodeGenerator &W) const {
   const TypeData *type = tinf::get_type(var);
-
-  if (var->is_builtin_global()) {
-    W << CloseNamespace();
-  }
 
   kphp_assert(type->ptype() != tp_void);
 
@@ -63,10 +56,6 @@ void VarDeclaration::compile(CodeGenerator &W) const {
       W << (extern_flag ? "extern " : "") <<
         "decltype(const_begin(" << VarName(var) << "))" << " " << VarName(var) << name << ";" << NL;
     }
-  }
-
-  if (var->is_builtin_global()) {
-    W << OpenNamespace();
   }
 }
 
@@ -441,16 +430,17 @@ ClassDeclaration::ClassDeclaration(ClassPtr klass) :
   klass(klass) {
 }
 
-void ClassDeclaration::declare_all_variables(VertexPtr vertex, CodeGenerator &W) const {
-  if (!vertex) {
-    return;
-  }
-  for (auto child: *vertex) {
-    declare_all_variables(child, W);
-  }
+bool ClassDeclaration::has_constant_usage_in_init_val(VertexPtr vertex) const {
   if (auto var = vertex.try_as<op_var>()) {
-    W << VarExternDeclaration(var->var_id);
+    kphp_assert(var->var_id->is_constant());
+    return true;
   }
+  for (VertexPtr child: *vertex) {
+    if (has_constant_usage_in_init_val(child)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 std::unique_ptr<TlDependentTypesUsings> ClassDeclaration::detect_if_needs_tl_usings() const {
@@ -480,11 +470,15 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
     tl_dep_usings->compile_dependencies(W);
   }
 
+  bool any_const_in_init_val = false;
   klass->members.for_each([&](const ClassMemberInstanceField &f) {
-    if (f.var->init_val) {
-      declare_all_variables(f.var->init_val, W);
+    if (!any_const_in_init_val && f.var->init_val) {
+      any_const_in_init_val |= has_constant_usage_in_init_val(f.var->init_val);
     }
   });
+  if (any_const_in_init_val) {
+    W << ConstantsLinearMemDeclaration(true);
+  }
 
   auto get_all_interfaces = [klass = this->klass] {
     auto transform_to_src_name = [](CodeGenerator &W, InterfacePtr i) { W << i->src_name.c_str(); };

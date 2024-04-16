@@ -33,6 +33,14 @@ constexpr int STRLEN_VOID = STRLEN_ERROR;
 constexpr int STRLEN_FUTURE = STRLEN_ERROR;
 constexpr int STRLEN_FUTURE_QUEUE = STRLEN_ERROR;
 
+constexpr int SIZEOF_STRING = 8;
+constexpr int SIZEOF_ARRAY_ANY = 8;
+constexpr int SIZEOF_MIXED = 16;
+constexpr int SIZEOF_INSTANCE_ANY = 8;
+constexpr int SIZEOF_OPTIONAL = 8;
+constexpr int SIZEOF_REGEXP = 48;
+constexpr int SIZEOF_UNKNOWN = 1;
+
 class ExtraRefCnt {
 public:
   enum extra_ref_cnt_value {
@@ -230,31 +238,6 @@ bool php_try_to_int(const char *s, size_t l, int64_t *val) {
 
   *val *= mul;
   return true;
-}
-
-//returns len of raw string representation or -1 on error
-inline int string_raw_len(int src_len) {
-  if (src_len < 0 || src_len >= (1 << 30) - 13) {
-    return -1;
-  }
-
-  return src_len + 13;
-}
-
-//returns len of raw string representation and writes it to dest or returns -1 on error
-inline int string_raw(char *dest, int dest_len, const char *src, int src_len) {
-  int raw_len = string_raw_len(src_len);
-  if (raw_len == -1 || raw_len > dest_len) {
-    return -1;
-  }
-  int *dest_int = reinterpret_cast <int *> (dest);
-  dest_int[0] = src_len;
-  dest_int[1] = src_len;
-  dest_int[2] = ExtraRefCnt::for_global_const;
-  memcpy(dest + 3 * sizeof(int), src, src_len);
-  dest[3 * sizeof(int) + src_len] = '\0';
-
-  return raw_len;
 }
 
 template<class T>

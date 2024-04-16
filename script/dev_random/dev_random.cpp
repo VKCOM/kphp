@@ -17,6 +17,6 @@ task_t<void> k_main() noexcept  {
     co_return;
   }
   co_await call();
-  co_await finish(0);
+  co_await finish(0, false);
   co_return ;
 }
