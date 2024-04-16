@@ -23,6 +23,7 @@
 
 #include "common/options.h"
 #include "common/precise-time.h"
+#include "common/stats/provider.h"
 #include "common/wrappers/pathname.h"
 
 typedef struct {
@@ -234,6 +235,15 @@ void send_message_to_assertion_chat(const char *message, ...) {
   va_start (ap, message);
   send_message_to_assertion_chat_va_list(message, ap);
   va_end (ap);
+}
+
+STATS_PROVIDER(logs, 2000) {
+  int i;
+  stats->add_general_stat("verbosity", "%d", verbosity);
+  for (i = 0; i < verbosity_types_num; i++) {
+    stats->add_general_stat(stat_temp_format("verbosity %s", verbosity_types[i].name), "%d", *verbosity_types[i].value);
+  }
+  stats->add_histogram_stat("total logged errors", log_not_too_much_total);
 }
 
 #define VERBOSITY_OPTION_SHIFT 4000

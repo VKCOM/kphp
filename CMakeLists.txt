@@ -40,6 +40,8 @@ if(KPHP_CUSTOM_CMAKE AND EXISTS ${OBJS_DIR}/custom_php_project.cmake)
     include(${OBJS_DIR}/custom_php_project.cmake)
 endif()
 
+add_custom_target(kphp_light ALL DEPENDS ${OBJS_DIR}/php_lib_version.sha256)
+add_dependencies(kphp_light kphp2cpp full_runtime_light)
 
 install(TARGETS kphp2cpp
         COMPONENT KPHP

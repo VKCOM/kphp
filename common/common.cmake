@@ -2,11 +2,16 @@ prepend(COMMON_MAIN_SOURCES ${COMMON_DIR}/
         pipe-utils.cpp
         pid.cpp
         dl-utils-lite.cpp
+        server/stats.cpp
+        server/statsd-client.cpp
+        server/init-binlog.cpp
+        server/init-snapshot.cpp
 
         sha1.cpp
         allocators/freelist.cpp
         md5.cpp
         allocators/lockfree-slab.cpp
+        server/main-binlog.cpp
         crypto/aes256.cpp
         crypto/aes256-generic.cpp
         crypto/aes256-${CMAKE_SYSTEM_PROCESSOR}.cpp
@@ -46,5 +51,4 @@ if(COMPILER_CLANG)
     set_source_files_properties(${COMMON_DIR}/string-processing.cpp PROPERTIES COMPILE_FLAGS -Wno-invalid-source-encoding)
 endif()
 
-vk_add_library(common OBJECT ${COMMON_ALL_SOURCES})
-set_property(TARGET common PROPERTY POSITION_INDEPENDENT_CODE ON)
+vk_add_library(common_src OBJECT ${COMMON_ALL_SOURCES})

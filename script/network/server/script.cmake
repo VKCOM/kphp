@@ -4,7 +4,7 @@ prepend(SERVER_SRC ${BASE_DIR}/script/network/server/
 
 add_library(network-server-component SHARED ${SERVER_SRC})
 target_include_directories(network-server-component PRIVATE ${BIN_DIR}/runtime)
-target_link_libraries(network-server-component PRIVATE vk::popular_common vk::runtimelight)
+target_link_libraries(network-server-component PRIVATE vk::light_common vk::runtime_light)
 set_target_properties(network-server-component PROPERTIES
         LIBRARY_OUTPUT_DIRECTORY ${BASE_DIR}/objs
         POSITION_INDEPENDENT_CODE ON)
