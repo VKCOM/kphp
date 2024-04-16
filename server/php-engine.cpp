@@ -1669,7 +1669,11 @@ void init_all() {
   StatsHouseManager::get().set_common_tags();
 
   // TODO: In the future, we want to parallelize it
-  init_kphp_ml_runtime_in_master(); // previously was right before confdata loading
+  // Previously, we decided that we wanted to parallelize the loading of kml models
+  // along with the loading of confdata. But at the time of loading the confdata,
+  // the script allocator has already been initialized, this creates problems with initializing
+  // kphp-primitives(strings, arrays) while reading the kml file.
+  init_kphp_ml_runtime_in_master();
 
   global_init_runtime_libs();
   global_init_php_scripts();
