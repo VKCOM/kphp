@@ -1166,7 +1166,9 @@ array<mixed> fetch_function(const class_instance<RpcTlQuery> &rpc_query) {
   return new_tl_object;
 }
 
-int64_t rpc_tl_query_impl(const class_instance<C$RpcConnection> &c, const mixed &tl_object, double timeout, bool ignore_answer, bool bytes_estimating, size_t &bytes_sent, bool flush) {
+int64_t rpc_tl_query_impl(const class_instance<C$RpcConnection> &c, const mixed &tl_object, double timeout,
+                          rpc_request_metrics_t &request_metrics, bool collect_response_metrics, bool ignore_answer,
+                          bool bytes_estimating, size_t &bytes_sent, bool flush) {
   f$rpc_clean();
 
   class_instance<RpcTlQuery> rpc_query = store_function(tl_object);
@@ -1174,6 +1176,7 @@ int64_t rpc_tl_query_impl(const class_instance<C$RpcConnection> &c, const mixed 
     rpc_query.destroy();
     CurException = Optional<bool>{};
   }
+
   if (rpc_query.is_null()) {
     return 0;
   }
@@ -1182,32 +1185,37 @@ int64_t rpc_tl_query_impl(const class_instance<C$RpcConnection> &c, const mixed 
     estimate_and_flush_overflow(bytes_sent);
   }
 
-  rpc_request_metrics_t _{};
-  int64_t query_id = rpc_send_impl(c, timeout, _, false, ignore_answer);
+  int64_t query_id = rpc_send_impl(c, timeout, request_metrics, collect_response_metrics, ignore_answer);
   if (query_id <= 0) {
     return 0;
   }
+
   if (unlikely(kphp_tracing::cur_trace_level >= 2)) {
     kphp_tracing::on_rpc_query_provide_details_after_send({}, tl_object);
   }
+
   if (flush) {
     f$rpc_flush();
   }
+
   if (ignore_answer) {
     return -1;
   }
+
   if (dl::query_num != rpc_tl_results_last_query_num) {
     rpc_tl_results_last_query_num = dl::query_num;
   }
+  
   rpc_query.get()->query_id = query_id;
   RpcPendingQueries::get().save(rpc_query);
-  
+
   return query_id;
 }
 
 int64_t f$rpc_tl_query_one(const class_instance<C$RpcConnection> &c, const mixed &tl_object, double timeout) {
   size_t bytes_sent = 0;
-  return rpc_tl_query_impl(c, tl_object, timeout, false, false, bytes_sent, true);
+  rpc_request_metrics_t _{};
+  return rpc_tl_query_impl(c, tl_object, timeout, _, false, false, false, bytes_sent, true);
 }
 
 int64_t f$rpc_tl_pending_queries_count() {
@@ -1253,18 +1261,39 @@ bool f$rpc_mc_parse_raw_wildcard_with_flags_to_array(const string &raw_result, a
   return true;
 }
 
-array<int64_t> f$rpc_tl_query(const class_instance<C$RpcConnection> &c, const array<mixed> &tl_objects, double timeout, bool ignore_answer) {
-  array<int64_t> result(tl_objects.size());
-  size_t bytes_sent = 0;
-  for (auto it = tl_objects.begin(); it != tl_objects.end(); ++it) {
-    int64_t query_id = rpc_tl_query_impl(c, it.get_value(), timeout, ignore_answer, true, bytes_sent, false);
-    result.set_value(it.get_key(), query_id);
+array<int64_t> f$rpc_tl_query(const class_instance<C$RpcConnection> &c, const array<mixed> &tl_objects, double timeout,
+                              bool ignore_answer, class_instance<C$RpcRequestsMetrics> requests_metrics,
+                              bool need_responses_metrics) {
+  if (ignore_answer && need_responses_metrics) {
+    php_warning(
+            "Both $ignore_answer and $need_responses_metrics are 'true'. Can't collect metrics for ignored answers");
   }
+
+  size_t bytes_sent = 0;
+  bool collect_responses_metrics = !ignore_answer && need_responses_metrics;
+  array<int64_t> queries{tl_objects.size()};
+  array<rpc_request_metrics_t> requests_metrics_tmp{tl_objects.size()};
+
+  for (auto it = tl_objects.begin(); it != tl_objects.end(); ++it) {
+    rpc_request_metrics_t req_metrics{};
+
+    int64_t query_id = rpc_tl_query_impl(c, it.get_value(), timeout, req_metrics,
+                                         collect_responses_metrics, ignore_answer, true, bytes_sent,
+                                         false);
+
+    queries.set_value(it.get_key(), query_id);
+    requests_metrics_tmp.set_value(it.get_key(), std::move(req_metrics));
+  }
+
   if (bytes_sent > 0) {
     f$rpc_flush();
   }
 
-  return result;
+  if (!requests_metrics.is_null()) {
+    requests_metrics->metrics_arr_ = std::move(requests_metrics_tmp);
+  }
+
+  return queries;
 }
 
 

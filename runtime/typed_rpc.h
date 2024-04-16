@@ -59,6 +59,7 @@ array<int64_t> f$typed_rpc_tl_query(const class_instance<C$RpcConnection> &conne
   }
 
   size_t bytes_sent = 0;
+  bool collect_responses_metrics = !ignore_answer && need_responses_metrics;
   array<int64_t> queries{query_functions.size()};
   array<rpc_request_metrics_t> requests_metrics_tmp{query_functions.size()};
 
@@ -66,7 +67,7 @@ array<int64_t> f$typed_rpc_tl_query(const class_instance<C$RpcConnection> &conne
     rpc_request_metrics_t req_metrics{};
 
     int64_t rpc_query = typed_rpc_tl_query_impl(connection, R{it.get_value()}, timeout, req_metrics,
-                                                !ignore_answer && need_responses_metrics, ignore_answer, true,
+                                                collect_responses_metrics, ignore_answer, true,
                                                 bytes_sent,
                                                 false);
 

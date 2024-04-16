@@ -280,7 +280,10 @@ int64_t f$rpc_tl_query_one(const class_instance<C$RpcConnection> &c, const mixed
 int64_t f$rpc_tl_pending_queries_count();
 bool f$rpc_mc_parse_raw_wildcard_with_flags_to_array(const string &raw_result, array<mixed> &result);
 
-array<int64_t> f$rpc_tl_query(const class_instance<C$RpcConnection> &c, const array<mixed> &tl_objects, double timeout = -1.0, bool ignore_answer = false);
+array<int64_t>
+f$rpc_tl_query(const class_instance<C$RpcConnection> &c, const array<mixed> &tl_objects, double timeout = -1.0,
+               bool ignore_answer = false, class_instance<C$RpcRequestsMetrics> requests_metrics = {},
+               bool need_responses_metrics = false);
 
 array<mixed> f$rpc_tl_query_result_one(int64_t query_id);
 
