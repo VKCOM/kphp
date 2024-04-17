@@ -34,12 +34,22 @@ enum class XGTrainParamObjective {
 struct CalibrationMethod {
   enum {
     no_calibration,
-    platt_scaling,
+    platt_scaling, // https://en.wikipedia.org/wiki/Platt_scaling
+    update_prior, // https://www.mpia.de/3432751/probcomb_TN.pdf, formulae 12, 18
   } calibration_method{no_calibration};
 
-  // for calibration_method = platt_scaling
-  double platt_slope{1.0};
-  double platt_intercept{0.0};
+  union {
+    struct {
+      // for calibration_method = platt_scaling
+      double platt_slope;
+      double platt_intercept;
+    };
+    struct {
+      // for calibration_method = update_prior
+      double old_prior;
+      double new_prior;
+    };
+  };
 };
 
 struct XgbTreeNode {

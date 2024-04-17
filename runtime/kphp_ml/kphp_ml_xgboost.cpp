@@ -194,6 +194,9 @@ double XgboostModel::transform_prediction(double score) const noexcept {
         score = -log(1. / score - 1);
       }
       return 1 / (1. + exp(-(calibration.platt_slope * score + calibration.platt_intercept)));
+    case CalibrationMethod::update_prior:
+      return score * calibration.new_prior * (1 - calibration.old_prior) /
+             (calibration.old_prior * (1 - score - calibration.new_prior) + score * calibration.new_prior);
     default:
       return score;
   }
