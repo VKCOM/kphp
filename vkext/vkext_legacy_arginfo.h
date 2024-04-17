@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 483315f5e4ee09b477d536fe066baf385afd6afb */
+ * Stub hash: e6f9437f0343c15324ac916446bc499f7535ad89 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_vk_hello_world, 0, 0, 0)
 ZEND_END_ARG_INFO()
@@ -147,6 +147,8 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_rpc_tl_query, 0, 0, 2)
 	ZEND_ARG_INFO(0, tl_queries)
 	ZEND_ARG_INFO(0, timeout)
 	ZEND_ARG_INFO(0, ignore_answer)
+	ZEND_ARG_INFO(0, requests_metrics)
+	ZEND_ARG_INFO(0, need_responses_metrics)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_rpc_tl_query_one, 0, 0, 2)
