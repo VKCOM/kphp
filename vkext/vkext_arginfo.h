@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: e6f9437f0343c15324ac916446bc499f7535ad89 */
+ * Stub hash: f4071c62e1d7182568496ff05daba48416356127 */
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_vk_hello_world, 0, 0, IS_STRING, 0)
 ZEND_END_ARG_INFO()
@@ -155,8 +155,8 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_rpc_tl_query, 0, 2, IS_ARRAY, 0)
 	ZEND_ARG_TYPE_INFO(0, tl_queries, IS_ARRAY, 0)
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, timeout, IS_DOUBLE, 0, "-1.0")
 	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, ignore_answer, _IS_BOOL, 0, "false")
-	ZEND_ARG_OBJ_INFO_WITH_DEFAULT_VALUE(0, requests_metrics, RpcRequestsMetrics, 0, "null")
-	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, need_responses_metrics, _IS_BOOL, 0, "false")
+	ZEND_ARG_OBJ_INFO_WITH_DEFAULT_VALUE(0, requests_extra_info, KphpRpcRequestsExtraInfo, 0, "null")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, need_responses_extra_info, _IS_BOOL, 0, "false")
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_rpc_tl_query_one, 0, 0, 2)

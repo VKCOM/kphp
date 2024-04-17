@@ -222,8 +222,8 @@ function rpc_tl_pending_queries_count() : int {
 }
 
 function rpc_tl_query(int $rpc_connection, array $tl_queries, float $timeout = -1.0,
-                      bool $ignore_answer = false, \RpcRequestsMetrics $requests_metrics = null,
-                      bool $need_responses_metrics = false) : array {
+                      bool $ignore_answer = false, \KphpRpcRequestsExtraInfo $requests_extra_info = null,
+                      bool $need_responses_extra_info = false) : array {
   return [];
 }
 
@@ -249,8 +249,8 @@ function rpc_tl_query_result_one(int $request_id, float $timeout = -1.0) {
 }
 
 function typed_rpc_tl_query(int $rpc_connection, array $tl_queries, float $timeout = -1.0,
-                            bool $ignore_answer = false, \RpcRequestsMetrics $requests_metrics = null,
-                            bool $need_responses_metrics = false) : array {
+                            bool $ignore_answer = false, \KphpRpcRequestsExtraInfo $requests_extra_info = null,
+                            bool $need_responses_extra_info = false) : array {
   return [];
 }
 
