@@ -1,10 +1,14 @@
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2024 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
 #include "runtime/kphp_ml/kphp_ml_interface.h"
 
 #include "runtime/kphp_core.h"
 #include "runtime/kphp_ml/kphp_ml.h"
+#include "runtime/kphp_ml/kphp_ml_catboost.h"
 #include "runtime/kphp_ml/kphp_ml_init.h"
 #include "runtime/kphp_ml/kphp_ml_xgboost.h"
-#include "runtime/kphp_ml/kphp_ml_catboost.h"
 
 array<double> f$kml_xgboost_predict_matrix(const string &model_name, const array<array<double>> &features_map_matrix) {
   const kphp_ml::MLModel *p_kml = kphp_ml_find_loaded_model_by_name(model_name);

@@ -1,9 +1,24 @@
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2024 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
+// ATTENTION!
+// This file exists both in KPHP and in a private vkcom repo "ml_experiments".
+// They are almost identical, besides include paths and input types (`array` vs `unordered_map`).
+
 #pragma once
 
 #include <unordered_map>
 #include <vector>
 
 #include "runtime/kphp_core.h"
+
+/*
+ * For detailed comments about KML, see kphp_ml.h.
+ *
+ * This module contains a custom xgboost predictor implementation.
+ * It's much faster than native xgboost due to compressed layout and avoiding ifs in code.
+ */
 
 namespace kphp_ml { struct MLModel; }
 

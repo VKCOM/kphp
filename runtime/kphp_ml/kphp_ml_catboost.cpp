@@ -1,10 +1,29 @@
-#include "runtime/kphp_ml/kphp_ml.h"
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2024 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
+// ATTENTION!
+// This file exists both in KPHP and in a private vkcom repo "ml_experiments".
+// They are almost identical, besides include paths and input types (`array` vs `unordered_map`).
+
 #include "runtime/kphp_ml/kphp_ml_catboost.h"
 
 #include "runtime/kphp_core.h"
+#include "runtime/kphp_ml/kphp_ml.h"
 
-// https://github.com/catboost/catboost/blob/master/catboost/libs/model/model_export/resources/ctr_calcer.cpp
-// https://github.com/catboost/catboost/blob/master/catboost/libs/model/model_export/resources/apply_catboost_model.cpp
+/*
+ * For detailed comments about KML, see kphp_ml.h.
+ *
+ * This module contains a custom catboost predictor implementation.
+ *
+ * Note, that catboost models support not only float features, but categorial features also (ctrs).
+ * There are many structs related to ctrs, which are almost copied as-is from catboost sources,
+ * without any changes or renamings for better mapping onto original sources.
+ * https://github.com/catboost/catboost/blob/master/catboost/libs/model/model_export/resources/
+ *
+ * Text features and embedded features are not supported by kml yet, we had no need of.
+ */
+
 
 namespace kphp_ml_catboost {
 
