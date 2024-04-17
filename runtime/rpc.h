@@ -120,35 +120,35 @@ inline void register_tl_storers_table_and_fetcher(const array<tl_storer_ptr> &ge
   tl_fetch_wrapper = gen$t_ReqResult_fetch;
 };
 
-using rpc_request_metrics_t = std::tuple<int64_t>; // tuple(request_size)
-using rpc_response_metrics_t = std::tuple<int64_t, double>; // tuple(response_size, response_time)
-enum class rpc_response_metrics_status_t : std::uint8_t { NOT_READY, READY };
+using rpc_request_extra_info_t = std::tuple<int64_t>; // tuple(request_size)
+using rpc_response_extra_info_t = std::tuple<int64_t, double>; // tuple(response_size, response_time)
+enum class rpc_response_extra_info_status_t : std::uint8_t { NOT_READY, READY };
 
-extern array<std::pair<rpc_response_metrics_status_t, rpc_response_metrics_t>> rpc_responses_metrics;
+extern array<std::pair<rpc_response_extra_info_status_t, rpc_response_extra_info_t>> rpc_responses_extra_info_map;
 
-struct C$RpcRequestsMetrics final
-        : public refcountable_php_classes<C$RpcRequestsMetrics>, private DummyVisitorMethods {
+struct C$KphpRpcRequestsExtraInfo final
+        : public refcountable_php_classes<C$KphpRpcRequestsExtraInfo>, private DummyVisitorMethods {
   using DummyVisitorMethods::accept;
 
-  array<rpc_request_metrics_t> metrics_arr_;
+  array<rpc_request_extra_info_t> extra_info_arr_;
 
-  C$RpcRequestsMetrics() = default;
+  C$KphpRpcRequestsExtraInfo() = default;
 
   const char *get_class() const noexcept {
-    return R"(RpcRequestsMetrics)";
+    return R"(KphpRpcRequestsExtraInfo)";
   }
 
   int get_hash() const noexcept {
-    return static_cast<int32_t>(vk::std_hash(vk::string_view(C$RpcRequestsMetrics::get_class())));
+    return static_cast<int32_t>(vk::std_hash(vk::string_view(C$KphpRpcRequestsExtraInfo::get_class())));
   }
 };
 
-inline array<rpc_request_metrics_t>
-f$RpcRequestsMetrics$$get(const class_instance<C$RpcRequestsMetrics> &v$this) {
-  return v$this->metrics_arr_;
+inline array<rpc_request_extra_info_t>
+f$KphpRpcRequestsExtraInfo$$get(const class_instance<C$KphpRpcRequestsExtraInfo> &v$this) {
+  return v$this->extra_info_arr_;
 }
 
-Optional<rpc_response_metrics_t> f$extract_rpc_response_metrics(int64_t resumable_id);
+Optional<rpc_response_extra_info_t> f$extract_kphp_rpc_response_extra_info(int64_t resumable_id);
 
 struct C$RpcConnection final : public refcountable_php_classes<C$RpcConnection>, private DummyVisitorMethods {
   int32_t host_num{-1};
@@ -229,7 +229,7 @@ bool f$rpc_clean(bool is_error = false);
 bool rpc_store(bool is_error = false);
 
 int64_t f$rpc_send(const class_instance<C$RpcConnection> &conn, double timeout = -1.0);
-int64_t rpc_send_impl(const class_instance<C$RpcConnection> &conn, double timeout, rpc_request_metrics_t &request_metrics, bool collect_response_metrics, bool ignore_answer = false);
+int64_t rpc_send_impl(const class_instance<C$RpcConnection> &conn, double timeout, rpc_request_extra_info_t &req_extra_info, bool collect_resp_extra_info, bool ignore_answer = false);
 
 int64_t f$rpc_send_noflush(const class_instance<C$RpcConnection> &conn, double timeout = -1.0);
 
@@ -282,8 +282,8 @@ bool f$rpc_mc_parse_raw_wildcard_with_flags_to_array(const string &raw_result, a
 
 array<int64_t>
 f$rpc_tl_query(const class_instance<C$RpcConnection> &c, const array<mixed> &tl_objects, double timeout = -1.0,
-               bool ignore_answer = false, class_instance<C$RpcRequestsMetrics> requests_metrics = {},
-               bool need_responses_metrics = false);
+               bool ignore_answer = false, class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info = {},
+               bool need_responses_extra_info = false);
 
 array<mixed> f$rpc_tl_query_result_one(int64_t query_id);
 
