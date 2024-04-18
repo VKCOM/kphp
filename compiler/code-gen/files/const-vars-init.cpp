@@ -48,31 +48,30 @@ static void compile_raw_array(CodeGenerator &W, const VarPtr &var, int shift) {
   W << ConstantVarInLinearMem(var) << ".assign_raw((char *) &raw_arrays[" << shift << "]);" << NL << NL;
 }
 
-ConstVarsInit::ConstVarsInit(std::vector<VarPtr> &&all_constants, int count_per_part)
-  : all_constants(std::move(all_constants))
-  , count_per_part(count_per_part) {
-}
+ConstVarsInit::ConstVarsInit(std::vector<std::vector<VarPtr>> &&all_constants_batched)
+  : all_constants_batched(std::move(all_constants_batched)) {}
 
-void ConstVarsInit::compile_const_init_part(CodeGenerator &W, int part_id, const std::vector<VarPtr> &all_constants, int offset, int count) {
+void ConstVarsInit::compile_const_init_part(CodeGenerator &W, int batch_num, const std::vector<VarPtr> &cur_batch) {
   DepLevelContainer const_raw_array_vars;
   DepLevelContainer other_const_vars;
   DepLevelContainer const_raw_string_vars;
 
   IncludesCollector includes;
-  for (int i = 0; i < count; ++i) {
-    VarPtr var = all_constants[offset + i];
+  ConstantsLinearMemExternCollector c_mem_extern;
+  for (VarPtr var : cur_batch) {
     if (!G->is_output_mode_lib()) {
       includes.add_var_signature_depends(var);
       includes.add_vertex_depends(var->init_val);
     }
+    c_mem_extern.add_batch_num_from_var(var);
+    c_mem_extern.add_batch_num_from_init_val(var->init_val);
   }
   W << includes;
 
   W << OpenNamespace();
-  W << ConstantsLinearMemDeclaration(true) << NL;
+  W << c_mem_extern << NL;
 
-  for (int i = 0; i < count; ++i) {
-    VarPtr var = all_constants[offset + i];
+  for (VarPtr var : cur_batch) {
     switch (var->init_val->type()) {
       case op_string:
         const_raw_string_vars.add(var);
@@ -98,7 +97,8 @@ void ConstVarsInit::compile_const_init_part(CodeGenerator &W, int part_id, const
   size_t str_idx = 0;
   size_t arr_idx = 0;
   for (size_t dep_level = 0; dep_level < max_dep_level; ++dep_level) {
-    FunctionSignatureGenerator(W) << NL << "void const_vars_init_deplevel" << dep_level << "_file" << part_id << "()" << BEGIN;
+    const std::string func_name_i = fmt_format("const_vars_init_deplevel{}_file{}", dep_level, batch_num);
+    FunctionSignatureGenerator(W) << NL << "void " << func_name_i << "()" << BEGIN;
 
     for (VarPtr var : const_raw_string_vars.vars_by_dep_level(dep_level)) {
       // W << "// " << var->as_human_readable() << NL;
@@ -129,33 +129,28 @@ void ConstVarsInit::compile_const_init_part(CodeGenerator &W, int part_id, const
   W << CloseNamespace();
 }
 
-ConstVarsInit::ConstVarsInit(std::vector<int> &&max_dep_levels, size_t n_batches_constants)
-  : max_dep_levels_(std::move(max_dep_levels))
-  , parts_cnt_(n_batches_constants) {
-  kphp_assert(1 <= parts_cnt_);
-  kphp_error(parts_cnt_ <= G->settings().globals_split_count.get(),
-             fmt_format("Too many globals initialization .cpp files({}) for the specified globals_split_count({})", parts_cnt_,
-                        G->settings().globals_split_count.get()));
-}
-
-void ConstVarsInit::compile_const_init(CodeGenerator &W, int parts_cnt, const std::vector<int> &max_dep_levels) {
+void ConstVarsInit::compile_const_init(CodeGenerator &W, int n_batches, const std::vector<int> &max_dep_levels) {
   W << OpenNamespace();
 
   W << NL;
-  W << ConstantsLinearMemDeclaration(false) << NL;
+  W << ConstantsLinearMemDeclaration() << NL;
 
   FunctionSignatureGenerator(W) << "void const_vars_init() " << BEGIN;
   W << ConstantsLinearMemAllocation() << NL;
 
-  const int very_max_dep_level = *std::max_element(max_dep_levels.begin(), max_dep_levels.end());
+  int very_max_dep_level = 0;
+  for (int max_dep_level : max_dep_levels) {
+    very_max_dep_level = std::max(very_max_dep_level, max_dep_level);
+  }
+
   for (int dep_level = 0; dep_level <= very_max_dep_level; ++dep_level) {
-    for (size_t part_id = 0; part_id < parts_cnt; ++part_id) {
-      if (dep_level <= max_dep_levels[part_id]) {
-        auto func_name_i = fmt_format("const_vars_init_deplevel{}_file{}();", dep_level, part_id);
+    for (size_t batch_num = 0; batch_num < n_batches; ++batch_num) {
+      if (dep_level <= max_dep_levels[batch_num]) {
+        const std::string func_name_i = fmt_format("const_vars_init_deplevel{}_file{}", dep_level, batch_num);
         // function declaration
-        W << "void " << func_name_i << NL;
+        W << "void " << func_name_i << "();" << NL;
         // function call
-        W << func_name_i << NL;
+        W << func_name_i << "();" << NL;
       }
     }
   }
@@ -164,33 +159,26 @@ void ConstVarsInit::compile_const_init(CodeGenerator &W, int parts_cnt, const st
 }
 
 void ConstVarsInit::compile(CodeGenerator &W) const {
-  int parts_cnt = static_cast<int>(std::ceil(static_cast<double>(all_constants.size()) / count_per_part));
+  int n_batches = static_cast<int>(all_constants_batched.size());
 
-  std::vector<int> max_dep_levels(parts_cnt);
-  for (int part_id = 0; part_id < parts_cnt; ++part_id) {
-    int offset = part_id * count_per_part;
-    int count = std::min(static_cast<int>(all_constants.size()) - offset, count_per_part);
-
-    for (int i = 0; i < count; ++i) {
-      VarPtr var = all_constants[offset + i];
-      if (var->dependency_level > max_dep_levels[part_id]) {
-        max_dep_levels[part_id] = var->dependency_level;
+  std::vector<int> max_dep_levels(n_batches);
+  for (int batch_num = 0; batch_num < n_batches; ++batch_num) {
+    for (VarPtr var : all_constants_batched[batch_num]) {
+      if (var->dependency_level > max_dep_levels[batch_num]) {
+        max_dep_levels[batch_num] = var->dependency_level;
       }
     }
   }
 
-  for (int part_id = 0; part_id < parts_cnt; ++part_id) {
-    int offset = part_id * count_per_part;
-    int count = std::min(static_cast<int>(all_constants.size()) - offset, count_per_part);
-
-    W << OpenFile("const_init." + std::to_string(part_id) + ".cpp", "o_const_init", false);
+  for (int batch_num = 0; batch_num < n_batches; ++batch_num) {
+    W << OpenFile("const_init." + std::to_string(batch_num) + ".cpp", "o_const_init", false);
     W << ExternInclude(G->settings().runtime_headers.get());
-    compile_const_init_part(W, part_id, all_constants, offset, count);
+    compile_const_init_part(W, batch_num, all_constants_batched[batch_num]);
     W << CloseFile();
   }
 
   W << OpenFile("const_vars_init.cpp", "", false);
   W << ExternInclude(G->settings().runtime_headers.get());
-  compile_const_init(W, parts_cnt, max_dep_levels);
+  compile_const_init(W, n_batches, max_dep_levels);
   W << CloseFile();
 }

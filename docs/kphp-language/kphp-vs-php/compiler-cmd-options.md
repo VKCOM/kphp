@@ -75,9 +75,13 @@ Threads number for PHP → C++ codegeneration, default **CPU cores * 2**.
 
 Processes number to C++ parallel compilation/linkage, default **CPU cores**.
 
-<aside>--globals-split-count {n} / KPHP_GLOBALS_SPLIT_COUNT = {n}</aside>
+<aside>--constants-batch-count {n} / KPHP_CONSTANTS_BATCH_COUNT = {n}</aside>
 
-All global variables (const arrays also) are split into chunks of this size, default **1024**. If you have a few but very heavy global vars, lowering this number can decrease compilation time.
+Count of batches all const strings/arrays will be split into, default **0** (auto). Lowering it speeds up compilation, but increase amount of re-compiled files on incremental changes.
+
+<aside>--globals-batch-count {n} / KPHP_GLOBALS_BATCH_COUNT = {n}</aside>
+
+Count of batches all mutable global/static vars will be split into, default **0** (auto). See the comment above.
 
 <aside>--tl-schema {file} / -T {file} / KPHP_TL_SCHEMA = {file}</aside>
 

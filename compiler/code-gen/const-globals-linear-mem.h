@@ -4,7 +4,10 @@
 
 #pragma once
 
+#include <set>
+
 #include "compiler/data/data_ptr.h"
+#include "compiler/data/vertex-adaptor.h"
 
 class TypeData;
 class CodeGenerator;
@@ -19,15 +22,21 @@ class ConstantsLinearMem {
   int count_of_type_instance = 0;
   int count_of_type_other = 0;
 
+  int n_batches = 0;
+  std::vector<int> batches_mem_sizes;
+  
   int total_count = 0;
   int total_mem_size = 0;
 
   void inc_count_by_type(const TypeData *type);
 
 public:
-  static void prepare_mem_and_assign_offsets(const std::vector<VarPtr> &all_constants);
+  static int detect_constants_batch_count(int n_constants);
+  static std::vector<std::vector<VarPtr>> prepare_mem_and_assign_offsets(const std::vector<VarPtr> &all_constants);
 
+  int get_n_batches() const { return n_batches; }
   int get_total_linear_mem_size() const { return total_mem_size; }
+  int get_batch_linear_mem_size(int batch_num) const { return batches_mem_sizes[batch_num]; }
 };
 
 class GlobalsLinearMem {
@@ -39,25 +48,35 @@ class GlobalsLinearMem {
   int count_of_require_once = 0;
   int count_of_php_global_scope = 0;
 
+  int n_batches = 0;
+  std::vector<int> batches_mem_sizes;
+
   int total_count = 0;
   int total_mem_size = 0;
 
   void inc_count_by_origin(VarPtr var);
 
 public:
-  static void prepare_mem_and_assign_offsets(const std::vector<VarPtr> &all_globals);
+  static int detect_globals_batch_count(int n_globals);
+  static std::vector<std::vector<VarPtr>> prepare_mem_and_assign_offsets(const std::vector<VarPtr> &all_globals);
 
+  int get_n_batches() const { return n_batches; }
   int get_total_linear_mem_size() const { return total_mem_size; }
+  int get_batch_linear_mem_size(int batch_num) const { return batches_mem_sizes[batch_num]; }
 };
 
 struct ConstantsLinearMemDeclaration {
-  explicit ConstantsLinearMemDeclaration(bool is_extern)
-    : is_extern(is_extern) {}
+  void compile(CodeGenerator &W) const;
+};
+
+struct ConstantsLinearMemExternCollector {
+  void add_batch_num_from_var(VarPtr var);
+  void add_batch_num_from_init_val(VertexPtr init_val);
 
   void compile(CodeGenerator &W) const;
 
 private:
-  bool is_extern;
+  std::set<int> required_batch_nums;
 };
 
 struct PhpMutableGlobalsAssignCurrent {

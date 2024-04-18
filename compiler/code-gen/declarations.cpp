@@ -430,19 +430,6 @@ ClassDeclaration::ClassDeclaration(ClassPtr klass) :
   klass(klass) {
 }
 
-bool ClassDeclaration::has_constant_usage_in_init_val(VertexPtr vertex) const {
-  if (auto var = vertex.try_as<op_var>()) {
-    kphp_assert(var->var_id->is_constant());
-    return true;
-  }
-  for (VertexPtr child: *vertex) {
-    if (has_constant_usage_in_init_val(child)) {
-      return true;
-    }
-  }
-  return false;
-}
-
 std::unique_ptr<TlDependentTypesUsings> ClassDeclaration::detect_if_needs_tl_usings() const {
   if (tl2cpp::is_php_class_a_tl_constructor(klass) && !tl2cpp::is_php_class_a_tl_array_item(klass)) {
     const auto &scheme = G->get_tl_classes().get_scheme();
@@ -470,15 +457,13 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
     tl_dep_usings->compile_dependencies(W);
   }
 
-  bool any_const_in_init_val = false;
-  klass->members.for_each([&](const ClassMemberInstanceField &f) {
-    if (!any_const_in_init_val && f.var->init_val) {
-      any_const_in_init_val |= has_constant_usage_in_init_val(f.var->init_val);
+  ConstantsLinearMemExternCollector c_mem_extern;
+  klass->members.for_each([&c_mem_extern](const ClassMemberInstanceField &f) {
+    if (f.var->init_val) {
+      c_mem_extern.add_batch_num_from_init_val(f.var->init_val);
     }
   });
-  if (any_const_in_init_val) {
-    W << ConstantsLinearMemDeclaration(true);
-  }
+  W << c_mem_extern << NL;
 
   auto get_all_interfaces = [klass = this->klass] {
     auto transform_to_src_name = [](CodeGenerator &W, InterfacePtr i) { W << i->src_name.c_str(); };

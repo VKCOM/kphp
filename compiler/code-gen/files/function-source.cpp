@@ -18,9 +18,11 @@ FunctionCpp::FunctionCpp(FunctionPtr function) :
 }
 
 void declare_const_vars(FunctionPtr function, CodeGenerator &W) {
-  if (!function->explicit_const_var_ids.empty()) {
-    W << ConstantsLinearMemDeclaration(true) << NL;
+  ConstantsLinearMemExternCollector c_mem_extern;
+  for (VarPtr var : function->explicit_const_var_ids) {
+    c_mem_extern.add_batch_num_from_var(var);
   }
+  W << c_mem_extern << NL;
 }
 
 void FunctionCpp::compile(CodeGenerator &W) const {

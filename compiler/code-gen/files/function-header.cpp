@@ -26,9 +26,12 @@ void FunctionH::compile(CodeGenerator &W) const {
   W << includes;
 
   W << OpenNamespace();
-  if (!function->explicit_header_const_var_ids.empty()) {   // default value of function argument is const var
-    W << ConstantsLinearMemDeclaration(true) << NL;
+
+  ConstantsLinearMemExternCollector c_mem_extern;
+  for (VarPtr var : function->explicit_header_const_var_ids) {
+    c_mem_extern.add_batch_num_from_var(var);
   }
+  W << c_mem_extern << NL;
 
   if (function->is_inline) {
     W << "inline ";

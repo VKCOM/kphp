@@ -252,10 +252,6 @@ void CompilerSettings::init() {
     throw std::runtime_error{"Option " + threads_count.get_env_var() + " is expected to be <= " + std::to_string(MAX_THREADS_COUNT)};
   }
 
-  if (globals_split_count.get() == 0) {
-    throw std::runtime_error{"globals-split-count may not be equal to zero"};
-  }
-
   for (std::string &include : includes.value_) {
     include = as_dir(include);
   }

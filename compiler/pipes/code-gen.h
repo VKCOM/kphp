@@ -17,8 +17,6 @@ class CodeGenF final : public SyncPipeF<FunctionPtr, std::unique_ptr<CodeGenRoot
   using Base = SyncPipeF<FunctionPtr, WriterData>;
 
   void prepare_generate_function(FunctionPtr func);
-  void prepare_generate_globals(std::vector<VarPtr> &all_globals);
-  void prepare_generate_constants(std::vector<VarPtr> &all_constants);
   std::string calc_subdir_for_function(FunctionPtr func);
   std::string shorten_occurence_of_class_in_file_name(ClassPtr occuring_class, const std::string &file_name);
 

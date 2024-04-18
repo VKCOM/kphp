@@ -60,10 +60,10 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
   for (FunctionPtr f : all_functions) {
     all_globals.insert(all_globals.end(), f->static_var_ids.begin(), f->static_var_ids.end());
   }
-  prepare_generate_globals(all_globals);
+  std::vector<std::vector<VarPtr>> all_globals_batched = GlobalsLinearMem::prepare_mem_and_assign_offsets(all_globals);
 
   std::vector<VarPtr> all_constants = G->get_constants_vars();
-  prepare_generate_constants(all_constants);
+  std::vector<std::vector<VarPtr>> all_constants_batched = ConstantsLinearMem::prepare_mem_and_assign_offsets(all_constants);
 
   for (FunctionPtr f : all_functions) {
     code_gen_start_root_task(os, std::make_unique<FunctionH>(f));
@@ -99,10 +99,8 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
     code_gen_start_root_task(os, std::make_unique<GlobalVarsMemoryStats>(all_globals));
   }
   code_gen_start_root_task(os, std::make_unique<InitScriptsCpp>(G->get_main_file()));
-
-  // todo rethink globals_split_count after chunks in memory
-  code_gen_start_root_task(os, std::make_unique<ConstVarsInit>(std::move(all_constants), G->settings().globals_split_count.get()));
-  code_gen_start_root_task(os, std::make_unique<GlobalVarsReset>(std::move(all_globals), G->settings().globals_split_count.get()));
+  code_gen_start_root_task(os, std::make_unique<ConstVarsInit>(std::move(all_constants_batched)));
+  code_gen_start_root_task(os, std::make_unique<GlobalVarsReset>(std::move(all_globals_batched)));
 
   if (G->is_output_mode_lib()) {
     std::vector<FunctionPtr> exported_functions;
@@ -196,38 +194,6 @@ std::string CodeGenF::shorten_occurence_of_class_in_file_name(ClassPtr occuring_
   shortened = vk::replace_all(shortened, occurence2, short_occur);
   // printf("shortened file_name:\n    %s\n -> %s\n", file_name.c_str(), shortened.c_str());
   return shortened;
-}
-
-void CodeGenF::prepare_generate_globals(std::vector<VarPtr> &all_globals) {
-  // sort variables by name to make codegen stable
-  // note, that all_globals contains also function static vars (explicitly added),
-  // and their names can duplicate or be equal to global vars;
-  // hence, also sort by holder_func (though global vars don't have holder_func, since there's no point of declaration)
-  std::sort(all_globals.begin(), all_globals.end(), [](VarPtr c1, VarPtr c2) -> bool {
-    int cmp_name = c1->name.compare(c2->name);
-    if (cmp_name < 0) {
-      return true;
-    } else if (cmp_name > 0) {
-      return false;
-    } else if (c1 == c2) {
-      return false;
-    } else {
-      if (!c1->holder_func) return true;
-      if (!c2->holder_func) return false;
-      return c1->holder_func->name.compare(c2->holder_func->name) < 0;
-    }
-  });
-
-  GlobalsLinearMem::prepare_mem_and_assign_offsets(all_globals);
-}
-
-void CodeGenF::prepare_generate_constants(std::vector<VarPtr> &all_constants) {
-  // sort constants by name to make codegen stable
-  std::sort(all_constants.begin(), all_constants.end(), [](VarPtr c1, VarPtr c2) -> bool {
-    return c1->name.compare(c2->name) < 0;
-  });
-
-  ConstantsLinearMem::prepare_mem_and_assign_offsets(all_constants);
 }
 
 std::string CodeGenF::calc_subdir_for_function(FunctionPtr func) {

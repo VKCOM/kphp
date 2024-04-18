@@ -20,6 +20,8 @@ GlobalVarsMemoryStats::GlobalVarsMemoryStats(const std::vector<VarPtr> &all_glob
       all_nonprimitive_globals.push_back(global_var);
     }
   }
+  // to make codegen stable (here we use operator < of VarPtr, see var-data.cpp)
+  std::sort(all_nonprimitive_globals.begin(), all_nonprimitive_globals.end());
 }
 
 void GlobalVarsMemoryStats::compile(CodeGenerator &W) const {
