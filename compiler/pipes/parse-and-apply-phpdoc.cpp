@@ -281,6 +281,8 @@ private:
             f_->cpp_variadic_call = true;
           } else if (token == "tl_common_h_dep") {
             f_->tl_common_h_dep = true;
+          } else if (token == "interruptible") {
+            f_->is_interruptible = true;
           } else {
             kphp_error(0, fmt_format("Unknown @kphp-extern-func-info {}", token));
           }
