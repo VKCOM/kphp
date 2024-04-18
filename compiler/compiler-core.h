@@ -28,7 +28,6 @@ enum class OutputMode {
   server,   // -M server
   cli,      // -M cli
   lib,      // -M lib
-  k2_component, // -M k2-component
 };
 
 class CompilerCore {
@@ -176,10 +175,6 @@ public:
   bool is_output_mode_lib() const {
     return output_mode == OutputMode::lib;
   }
-
-  bool is_output_mode_k2_component() const {
-    return output_mode == OutputMode::k2_component;
-  };
 
   Stats stats;
 };

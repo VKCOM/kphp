@@ -4,8 +4,6 @@
 
 #include "php-script-globals.h"
 
-#include "compiler/inferring/key.h"
-
 #include "runtime-light/component/component.h"
 
 PhpScriptMutableGlobals &PhpScriptMutableGlobals::current() {
