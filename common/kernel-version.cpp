@@ -45,13 +45,6 @@ static inline void parse_kernel_version() {
   }
 }
 
-STATS_PROVIDER(kernel, 1000) {
-  struct utsname *uname_val = cached_uname();
-  if (uname_val != NULL) {
-    stats->add_general_stat("kernel_version", "%s", uname_val->release);
-  }
-}
-
 int epoll_exclusive_supported() {
   parse_kernel_version();
   return !is_macos && (kernel_x > 4 || (kernel_x == 4 && kernel_y >= 5));
