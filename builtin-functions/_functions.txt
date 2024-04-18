@@ -1,5 +1,8 @@
 <?php
 
+/** @kphp-extern-func-info interruptible */
+function exit ($v ::: string) ::: void;
+
 // placeholder constants
 define('TODO', -1);
 define('TODO_OVERLOAD', -1);
@@ -175,8 +178,6 @@ function warning ($message ::: string) ::: void;
 /** @kphp-no-return */
 function critical_error($message ::: string) ::: void;
 /** @kphp-no-return */
-function exit($code = 0) ::: void;
-/** @kphp-no-return */
 function die($code = 0) ::: void;
 function register_kphp_on_warning_callback(callable(string $warning_message, string[] $stacktrace):void $stacktrace) ::: void;
 function kphp_set_context_on_error(mixed[] $tags, mixed $extra_info, string $env = "") ::: void;
@@ -344,7 +345,7 @@ function get_hash_of_class (object $klass) ::: int;
 function print_r ($v ::: any, $buffered ::: bool = false) ::: string;
 function var_export ($v ::: any, $buffered ::: bool = false) ::: string;
 function print ($v ::: string) ::: int;
-function echo ($v ::: string) ::: void;
+
 function dbg_echo ($v ::: string) ::: void;
 function var_dump ($v ::: any) ::: void;
 

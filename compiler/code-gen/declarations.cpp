@@ -72,7 +72,11 @@ void FunctionDeclaration::compile(CodeGenerator &W) const {
   switch (style) {
     case gen_out_style::tagger:
     case gen_out_style::cpp: {
-      FunctionSignatureGenerator(W) << ret_type_gen << " " << FunctionName(function) << "(" << params_gen << ")";
+      if (function->is_interruptible) {
+        FunctionSignatureGenerator(W) << "task_t<" << ret_type_gen << ">" << " " << FunctionName(function) << "(" << params_gen << ")";
+      } else {
+        FunctionSignatureGenerator(W) << ret_type_gen << " " << FunctionName(function) << "(" << params_gen << ")";
+      }
       break;
     }
     case gen_out_style::txt: {

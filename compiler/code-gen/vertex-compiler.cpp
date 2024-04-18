@@ -631,6 +631,7 @@ void compile_do(VertexAdaptor<op_do> root, CodeGenerator &W) {
 
 void compile_return(VertexAdaptor<op_return> root, CodeGenerator &W) {
   bool resumable_flag = W.get_context().resumable_flag;
+  bool interruptible_flag = W.get_context().interruptible_flag;
   if (resumable_flag) {
     if (root->has_expr()) {
       W << "RETURN " << MacroBegin{};
@@ -638,7 +639,11 @@ void compile_return(VertexAdaptor<op_return> root, CodeGenerator &W) {
       W << "RETURN_VOID " << MacroBegin{};
     }
   } else {
-    W << "return ";
+    if (interruptible_flag) {
+      W << "co_return ";
+    } else {
+      W << "return ";
+    }
   }
 
   if (root->has_expr()) {
@@ -841,6 +846,9 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
     if (mode == func_call_mode::fork_call) {
       W << FunctionForkName(func);
     } else {
+      if (func->is_interruptible) {
+        W << "co_await ";
+      }
       W << FunctionName(func);
     }
   }
@@ -1448,6 +1456,7 @@ void compile_function(VertexAdaptor<op_function> func_root, CodeGenerator &W) {
 
   W.get_context().parent_func = func;
   W.get_context().resumable_flag = func->is_resumable;
+  W.get_context().interruptible_flag = func->is_interruptible;
 
   if (func->is_resumable) {
     compile_function_resumable(func_root, W);
