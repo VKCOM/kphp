@@ -308,7 +308,9 @@ double kml_predict_catboost_by_ht_remap_str_keys(const kphp_ml::MLModel &kml,
   }
 
   for (const auto &kv: features_map) {
-    // todo here and everywhere: what if key is not a string
+    if (__builtin_expect(!kv.is_string_key(), false)) {
+      continue;
+    }
     const string &feature_name = kv.get_string_key();
     const uint64_t key_hash = string_hash(feature_name.c_str(), feature_name.size());
     double f_or_cat = kv.get_value();
@@ -360,6 +362,9 @@ array<double> kml_predict_catboost_by_ht_remap_str_keys_multi(const kphp_ml::MLM
   }
 
   for (const auto &kv: features_map) {
+    if (__builtin_expect(!kv.is_string_key(), false)) {
+      continue;
+    }
     const string &feature_name = kv.get_string_key();
     const uint64_t key_hash = string_hash(feature_name.c_str(), feature_name.size());
     double f_or_cat = kv.get_value();

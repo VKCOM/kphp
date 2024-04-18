@@ -82,6 +82,9 @@ struct XgbDensePredictor {
 
   void fill_vector_x_ht_remap_str_key(const XgboostModel &xgb, const array<double> &features_map) const noexcept {
     for (const auto &kv : features_map) {
+      if (__builtin_expect(!kv.is_string_key(), false)) {
+        continue;
+      }
       const string &feature_name = kv.get_string_key();
       const double fvalue = kv.get_value();
 
@@ -96,6 +99,9 @@ struct XgbDensePredictor {
 
   void fill_vector_x_ht_remap_str_key_sz(const XgboostModel &xgb, const array<double> &features_map) const noexcept {
     for (const auto &kv : features_map) {
+      if (__builtin_expect(!kv.is_string_key(), false)) {
+        continue;
+      }
       const string &feature_name = kv.get_string_key();
       const double fvalue = kv.get_value();
 
