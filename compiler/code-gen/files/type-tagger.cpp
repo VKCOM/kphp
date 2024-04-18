@@ -31,21 +31,17 @@ IncludesCollector TypeTagger::collect_includes() const noexcept {
 std::map<int, std::string> TypeTagger::collect_hash_of_types() const noexcept {
   // Be care, do not remove spaces from these types
   // TODO fix it?
+  // todo:k2 add thrown_exception, C$KphpJobWorkerResponse, C$VK$TL$RpcResponse, C$VK$TL$RpcResponse, C$PDOStatement
   std::set<std::string> sorted_types{
     "bool",
     "int64_t",
     "Optional < int64_t >",
     "void",
-    "thrown_exception",
     "mixed",
     "array< mixed >",
     "Optional < string >",
     "Optional < array< mixed > >",
     "array< array< mixed > >",
-    "class_instance<C$KphpJobWorkerResponse>",
-    "class_instance<C$VK$TL$RpcResponse>",
-    "array< class_instance<C$VK$TL$RpcResponse> >",
-    "class_instance<C$PDOStatement>",
   };
 
   for (const auto *type : forkable_types_) {
