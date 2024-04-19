@@ -23,3 +23,7 @@ struct LibVersionHFile : CodeGenRootCmd {
 struct CppMainFile : CodeGenRootCmd {
   void compile(CodeGenerator &W) const final;
 };
+
+struct ComponentInfoFile : CodeGenRootCmd {
+  void compile(CodeGenerator &W) const final;
+};

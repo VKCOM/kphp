@@ -147,6 +147,7 @@ public:
   KphpOption<std::string> compilation_metrics_file;
   KphpOption<std::string> override_kphp_version;
   KphpOption<std::string> php_code_version;
+  KphpOption<std::string> k2_component_name;
 
   KphpOption<std::string> cxx;
   KphpOption<std::string> cxx_toolchain_dir;
