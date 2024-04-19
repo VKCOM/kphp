@@ -2,10 +2,9 @@
 
 #include <csetjmp>
 
-
-#include "runtime-light/context.h"
-#include "runtime-light/utils/logs.h"
+#include "context.h"
 #include "runtime-light/component/component.h"
+#include "runtime-light/utils/logs.h"
 
 inline void panic() {
   constexpr const char * message = "script panic";

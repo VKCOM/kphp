@@ -6,7 +6,7 @@
 #include <utility>
 
 #include "common/containers/final_action.h"
-#include "runtime-light/context.h"
+#include "runtime-light/utils/context.h"
 
 #if __clang_major__ > 7
 #define CPPCORO_COMPILER_SUPPORTS_SYMMETRIC_TRANSFER

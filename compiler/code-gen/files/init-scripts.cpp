@@ -25,11 +25,12 @@ void StaticInit::compile(CodeGenerator &W) const {
   }
 
   // "const vars init" declarations
-  FunctionSignatureGenerator(W) << "void const_vars_init()" << SemicolonAndNL() << NL;
+  std::string allocator_argument = G->is_output_mode_k2_component() ? "(const Allocator * allocator)" : "()";
+  FunctionSignatureGenerator(W) << "void const_vars_init" << allocator_argument << SemicolonAndNL() << NL;
   for (LibPtr lib : G->get_libs()) {
     if (lib && !lib->is_raw_php()) {
       W << OpenNamespace(lib->lib_namespace());
-      FunctionSignatureGenerator(W) << "void const_vars_init()" << SemicolonAndNL();
+      FunctionSignatureGenerator(W) << "void const_vars_init" << allocator_argument << SemicolonAndNL();
       W << CloseNamespace();
     }
   }
@@ -40,27 +41,32 @@ void StaticInit::compile(CodeGenerator &W) const {
     W << "extern array<tl_storer_ptr> gen$tl_storers_ht;" << NL;
     FunctionSignatureGenerator(W) << "void fill_tl_storers_ht()" << SemicolonAndNL() << NL;
   }
-  FunctionSignatureGenerator(W) << ("const char *get_php_scripts_version()") << BEGIN << "return " << RawString(G->settings().php_code_version.get()) << ";"
-                                << NL << END << NL << NL;
-
-  FunctionSignatureGenerator(W) << ("char **get_runtime_options([[maybe_unused]] int *count)") << BEGIN;
-  const auto &runtime_opts = G->get_kphp_runtime_opts();
-  if (runtime_opts.empty()) {
-    W << "return nullptr;" << NL;
-  } else {
-    W << "*count = " << runtime_opts.size() << ";" << NL;
-    for (size_t i = 0; i != runtime_opts.size(); ++i) {
-      W << "static char arg" << i << "[] = " << RawString{runtime_opts[i]} << ";" << NL;
-    }
-    W << "static char *argv[] = " << BEGIN;
-    for (size_t i = 0; i != runtime_opts.size(); ++i) {
-      W << "arg" << i << "," << NL;
-    }
-    W << END << ";" << NL << "return argv;" << NL;
+  if (!G->is_output_mode_k2_component()) {
+    FunctionSignatureGenerator(W) << ("const char *get_php_scripts_version()") << BEGIN << "return " << RawString(G->settings().php_code_version.get()) << ";"
+                                  << NL << END << NL << NL;
   }
-  W << END << NL << NL;
 
-  FunctionSignatureGenerator(W) << ("void init_php_scripts_once_in_master() ") << BEGIN;
+  if (!G->is_output_mode_k2_component()) {
+    FunctionSignatureGenerator(W) << ("char **get_runtime_options([[maybe_unused]] int *count)") << BEGIN;
+
+    const auto &runtime_opts = G->get_kphp_runtime_opts();
+    if (runtime_opts.empty()) {
+      W << "return nullptr;" << NL;
+    } else {
+      W << "*count = " << runtime_opts.size() << ";" << NL;
+      for (size_t i = 0; i != runtime_opts.size(); ++i) {
+        W << "static char arg" << i << "[] = " << RawString{runtime_opts[i]} << ";" << NL;
+      }
+      W << "static char *argv[] = " << BEGIN;
+      for (size_t i = 0; i != runtime_opts.size(); ++i) {
+        W << "arg" << i << "," << NL;
+      }
+      W << END << ";" << NL << "return argv;" << NL;
+    }
+    W << END << NL << NL;
+  }
+
+  FunctionSignatureGenerator(W) << "void init_php_scripts_once_in_master" << allocator_argument << BEGIN;
 
   if (!G->settings().tl_schema_file.get().empty()) {
     W << "tl_str_const_init();" << NL;
@@ -69,10 +75,11 @@ void StaticInit::compile(CodeGenerator &W) const {
       W << "register_tl_storers_table_and_fetcher(gen$tl_storers_ht, &gen$tl_fetch_wrapper);" << NL;
     }
   }
-  W << "const_vars_init();" << NL;
+  std::string pass_allocator = G->is_output_mode_k2_component() ? "(allocator)" : "()";
+  W << "const_vars_init" << pass_allocator << ";" << NL;
   for (LibPtr lib : G->get_libs()) {
     if (lib && !lib->is_raw_php()) {
-      W << lib->lib_namespace() << "::const_vars_init();" << NL;
+      W << lib->lib_namespace() << "::const_vars_init" << pass_allocator << ";" << NL;
     }
   }
   W << NL;
@@ -101,6 +108,21 @@ void StaticInit::compile(CodeGenerator &W) const {
 
   W << END << NL;
 }
+
+struct RunInterruptedFunction {
+  FunctionPtr function;
+  RunInterruptedFunction(FunctionPtr function) : function(function) {}
+
+  void compile(CodeGenerator &W) const {
+    std::string await_prefix = function->is_interruptible ? "co_await " : "";
+    FunctionSignatureGenerator(W) << "task_t<void> " << FunctionName(function) << "$run() " << BEGIN
+                                  << "co_await parse_input_query();" << NL
+                                  << await_prefix << FunctionName(function) << "();" << NL
+                                  << "co_await finish (0, false);" << NL
+                                  << END;
+    W << NL;
+  }
+};
 
 struct RunFunction {
   FunctionPtr function;
@@ -178,8 +200,14 @@ InitScriptsCpp::InitScriptsCpp(SrcFilePtr main_file_id) :
 void InitScriptsCpp::compile(CodeGenerator &W) const {
   W << OpenFile("init_php_scripts.cpp", "", false);
 
-  W << ExternInclude(G->settings().runtime_headers.get()) <<
-    ExternInclude("server/php-init-scripts.h");
+  if (G->is_output_mode_k2_component()) {
+    W << ExternInclude(G->settings().runtime_headers.get()) <<
+      ExternInclude("runtime-light/core/globals/php-init-scripts.h");
+  } else {
+    W << ExternInclude(G->settings().runtime_headers.get()) <<
+      ExternInclude("server/php-init-scripts.h");
+  }
+
 
   W << Include(main_file_id->main_function->header_full_name);
 
@@ -196,10 +224,18 @@ void InitScriptsCpp::compile(CodeGenerator &W) const {
     return;
   }
 
-  W << RunFunction(main_file_id->main_function) << NL;
+  if (G->is_output_mode_k2_component()) {
+    W << RunInterruptedFunction(main_file_id->main_function) << NL;
+  } else {
+    W << RunFunction(main_file_id->main_function) << NL;
+  }
   W << GlobalsResetFunction(main_file_id->main_function) << NL;
 
-  FunctionSignatureGenerator(W) << "void init_php_scripts_in_each_worker(" << PhpMutableGlobalsRefArgument() << ")" << BEGIN;
+  if (G->is_output_mode_k2_component()) {
+    FunctionSignatureGenerator(W) << "void init_php_scripts_in_each_worker(" << PhpMutableGlobalsRefArgument() << ", task_t<void>&run" ")" << BEGIN;
+  } else {
+    FunctionSignatureGenerator(W) << "void init_php_scripts_in_each_worker(" << PhpMutableGlobalsRefArgument() << ")" << BEGIN;
+  }
 
   W << "global_vars_allocate(php_globals);" << NL;
   for (LibPtr lib: G->get_libs()) {
@@ -211,9 +247,13 @@ void InitScriptsCpp::compile(CodeGenerator &W) const {
 
   W << FunctionName(main_file_id->main_function) << "$globals_reset(php_globals);" << NL;
 
-  W << "set_script ("
-    << FunctionName(main_file_id->main_function) << "$run, "
-    << FunctionName(main_file_id->main_function) << "$globals_reset);" << NL;
+  if (G->is_output_mode_k2_component()) {
+    W << "run = " << FunctionName(main_file_id->main_function) << "$run();" << NL;
+  } else {
+    W << "set_script ("
+      << FunctionName(main_file_id->main_function) << "$run, "
+      << FunctionName(main_file_id->main_function) << "$globals_reset);" << NL;
+  }
 
   W << END;
 

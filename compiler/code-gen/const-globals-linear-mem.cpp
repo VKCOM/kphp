@@ -153,6 +153,11 @@ void GlobalsLinearMem::prepare_mem_and_assign_offsets(const std::vector<VarPtr> 
 }
 
 void ConstantsLinearMemDeclaration::compile(CodeGenerator &W) const {
+  if (G->is_output_mode_k2_component()) {
+    // in k2_component mode definition of c_linear_mem stored in ImageState
+    return;
+  }
+
   if (is_extern) {
     W << "extern char *c_linear_mem;" << NL;
     return;
@@ -192,8 +197,13 @@ void PhpMutableGlobalsConstRefArgument::compile(CodeGenerator &W) const {
 }
 
 void ConstantsLinearMemAllocation::compile(CodeGenerator &W) const {
-  W << "c_linear_mem = new char[" << constants_linear_mem.get_total_linear_mem_size() << "];" << NL;
-  W << "memset(c_linear_mem, 0, " << constants_linear_mem.get_total_linear_mem_size() << ");" << NL;
+  std::string c_linear_mem_use = G->is_output_mode_k2_component() ? "get_mutable_image_state()->c_linear_mem" : "c_linear_mem";
+  if (G->is_output_mode_k2_component()) {
+    W << c_linear_mem_use << " = static_cast<char *>(allocator->alloc(" << constants_linear_mem.get_total_linear_mem_size() << "));" << NL;
+  } else {
+    W << c_linear_mem_use << " = new char[" << constants_linear_mem.get_total_linear_mem_size() << "];" << NL;
+  }
+  W << "memset(" << c_linear_mem_use << ", 0, " << constants_linear_mem.get_total_linear_mem_size() << ");" << NL;
 }
 
 void GlobalsLinearMemAllocation::compile(CodeGenerator &W) const {
@@ -214,7 +224,8 @@ void GlobalsLinearMemAllocation::compile(CodeGenerator &W) const {
 }
 
 void ConstantVarInLinearMem::compile(CodeGenerator &W) const {
-  W << "(*reinterpret_cast<" << type_out(tinf::get_type(const_var)) << "*>(c_linear_mem+" << const_var->offset_in_linear_mem << "))";
+  std::string c_linear_mem_use = G->is_output_mode_k2_component() ? "get_image_state()->c_linear_mem" : "c_linear_mem";
+  W << "(*reinterpret_cast<" << type_out(tinf::get_type(const_var)) << "*>(" << c_linear_mem_use << "+" << const_var->offset_in_linear_mem << "))";
 }
 
 void GlobalVarInPhpGlobals::compile(CodeGenerator &W) const {

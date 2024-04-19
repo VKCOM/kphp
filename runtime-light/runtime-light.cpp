@@ -1,30 +1,44 @@
 #include "runtime-light/component/component.h"
 #include "runtime-light/component/image.h"
-
-task_t<void> k_main(void) noexcept;
+#include "runtime-light/core/globals/php-init-scripts.h"
 
 ImageState *vk_k2_create_image_state(const Allocator *alloc) {
-  (void) alloc;
-  // todo:k2 allocate memory for const value
-  return nullptr;
+  platformAllocator = alloc;
+  char *buffer = static_cast<char *>(platformAllocator->alloc(sizeof(ImageState)));
+  if (buffer == nullptr) {
+    return nullptr;
+  }
+  mutableImageState = new (buffer) ImageState();
+  imageState = mutableImageState;
+  init_php_scripts_once_in_master(alloc);
+  ImageState * mutable_image_state = mutableImageState;
+  reset_thread_locals();
+  return mutable_image_state;
 }
 
 ComponentState *vk_k2_create_component_state(const ImageState *image_state, const Allocator *alloc) {
-  (void)image_state;
+  imageState = image_state;
   platformAllocator = alloc;
   sigjmp_buf exit_tag;
   if (sigsetjmp(exit_tag, 0) == 0) {
     char *buffer = static_cast<char *>(platformAllocator->alloc(sizeof(ComponentState)));
+    if (buffer == nullptr) {
+      return nullptr;
+    }
     componentState = new (buffer) ComponentState();
+  } else {
+    return nullptr;
   }
-  // todo:k2 allocate memory for mutable globals
   // coroutine is initial suspend
-  componentState->k_main = k_main();
+  init_php_scripts_in_each_worker(componentState->php_script_mutable_globals_singleton, componentState->k_main);
   componentState->standard_handle = componentState->k_main.get_handle();
-  return componentState;
+  ComponentState * component_state = componentState;
+  reset_thread_locals();
+  return component_state;
 }
 
 PollStatus vk_k2_poll(const ImageState *image_state, const PlatformCtx *pt_ctx, ComponentState *component_ctx) {
+  imageState = image_state;
   platformCtx = pt_ctx;
   platformAllocator = &pt_ctx->allocator;
   componentState = component_ctx;
@@ -69,6 +83,7 @@ PollStatus vk_k2_poll(const ImageState *image_state, const PlatformCtx *pt_ctx, 
   } else {
     componentState->poll_status = PollStatus::PollFinished;
   }
-
-  return componentState->poll_status;
+  PollStatus poll_status = componentState->poll_status;
+  reset_thread_locals();
+  return poll_status;
 }

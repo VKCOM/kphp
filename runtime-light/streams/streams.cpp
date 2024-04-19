@@ -2,8 +2,8 @@
 
 #include "runtime-light/allocator/allocator.h"
 #include "runtime-light/component/component.h"
-#include "runtime-light/context.h"
 #include "runtime-light/coroutine/awaitable.h"
+#include "runtime-light/utils/context.h"
 
 task_t<int8_t> read_magic_from_stream(uint64_t stream_d) {
   co_await test_yield_t{};

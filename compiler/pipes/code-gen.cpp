@@ -130,7 +130,7 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
 
   code_gen_start_root_task(os, std::make_unique<TlSchemaToCpp>());
   code_gen_start_root_task(os, std::make_unique<LibVersionHFile>());
-  if (!G->is_output_mode_lib()) {
+  if (!G->is_output_mode_lib() && !G->is_output_mode_k2_component()) {
     code_gen_start_root_task(os, std::make_unique<CppMainFile>());
   }
 }

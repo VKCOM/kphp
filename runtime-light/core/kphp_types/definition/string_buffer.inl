@@ -2,7 +2,7 @@
 
 #include "common/algorithms/simd-int-to-string.h"
 
-#include "runtime-light/context.h"
+#include "runtime-light/utils/context.h"
 
 #if !defined(INCLUDED_FROM_KPHP_CORE) && !defined(INCLUDED_FROM_KPHP_CONTEXT)
   #error "this file must be included only from kphp_core.h"

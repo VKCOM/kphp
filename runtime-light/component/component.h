@@ -4,13 +4,13 @@
 #include <queue>
 
 #include "runtime-light/allocator/memory_resource/resource_allocator.h"
-#include "runtime-light/context.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/core/kphp_core.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/output_control.h"
 #include "runtime-light/stdlib/superglobals.h"
 #include "runtime-light/streams/streams.h"
+#include "runtime-light/utils/context.h"
 
 struct ComponentState {
   template<typename Key, typename Value>

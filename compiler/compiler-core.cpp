@@ -126,6 +126,8 @@ void CompilerCore::register_settings(CompilerSettings *settings) {
     output_mode = OutputMode::cli;
   } else if (settings->mode.get() == "lib") {
     output_mode = OutputMode::lib;
+  } else if (settings->mode.get() == "k2-component") {
+    output_mode = OutputMode::k2_component;
   } else {
     output_mode = OutputMode::server;
   }
