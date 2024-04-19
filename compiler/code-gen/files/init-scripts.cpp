@@ -279,3 +279,19 @@ void CppMainFile::compile(CodeGenerator &W) const {
     << END;
   W << CloseFile();
 }
+
+void ComponentInfoFile::compile(CodeGenerator &W) const {
+  kphp_assert(G->is_output_mode_k2_component());
+  G->settings().get_version();
+  auto now = std::chrono::system_clock::now();
+  W << OpenFile("image_info.cpp");
+  W << ExternInclude(G->settings().runtime_headers.get());
+  W << "const ImageInfo *vk_k2_describe() " << BEGIN
+    << "static ImageInfo imageInfo {\"" << G->settings().k2_component_name.get() << "\"" << ","
+                                        << std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count() << ","
+                                        << "K2_PLATFORM_HEADER_H_VERSION, "
+                                        << "{" << "}};" << NL //todo:k2 add commit hash
+    << "return &imageInfo;" << NL
+    << END;
+  W << CloseFile();
+}

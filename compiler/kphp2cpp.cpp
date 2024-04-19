@@ -295,6 +295,8 @@ int main(int argc, char *argv[]) {
              "require-functions-typing", "KPHP_REQUIRE_FUNCTIONS_TYPING");
   parser.add("Require class typing (1 - @var / default value is mandatory, 0 - auto infer or check if exists)", settings->require_class_typing,
              "require-class-typing", "KPHP_REQUIRE_CLASS_TYPING");
+  parser.add("Define k2 component name. Default is \"KPHP\"", settings->k2_component_name,
+             "k2-component-name", "KPHP_K2_COMPONENT_NAME", "KPHP");
 
   parser.add_implicit_option("Linker flags", settings->ld_flags);
   parser.add_implicit_option("Incremental linker flags", settings->incremental_linker_flags);

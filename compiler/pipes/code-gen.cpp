@@ -133,6 +133,9 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
   if (!G->is_output_mode_lib() && !G->is_output_mode_k2_component()) {
     code_gen_start_root_task(os, std::make_unique<CppMainFile>());
   }
+  if (G->is_output_mode_k2_component()) {
+    code_gen_start_root_task(os, std::make_unique<ComponentInfoFile>());
+  }
 }
 
 void CodeGenF::prepare_generate_function(FunctionPtr func) {
