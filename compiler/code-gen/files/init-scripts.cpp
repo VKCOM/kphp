@@ -25,12 +25,11 @@ void StaticInit::compile(CodeGenerator &W) const {
   }
 
   // "const vars init" declarations
-  std::string allocator_argument = G->is_output_mode_k2_component() ? "(const Allocator * allocator)" : "()";
-  FunctionSignatureGenerator(W) << "void const_vars_init" << allocator_argument << SemicolonAndNL() << NL;
+  FunctionSignatureGenerator(W) << "void const_vars_init()" << SemicolonAndNL() << NL;
   for (LibPtr lib : G->get_libs()) {
     if (lib && !lib->is_raw_php()) {
       W << OpenNamespace(lib->lib_namespace());
-      FunctionSignatureGenerator(W) << "void const_vars_init" << allocator_argument << SemicolonAndNL();
+      FunctionSignatureGenerator(W) << "void const_vars_init()" << SemicolonAndNL();
       W << CloseNamespace();
     }
   }
@@ -66,7 +65,7 @@ void StaticInit::compile(CodeGenerator &W) const {
     W << END << NL << NL;
   }
 
-  FunctionSignatureGenerator(W) << "void init_php_scripts_once_in_master" << allocator_argument << BEGIN;
+  FunctionSignatureGenerator(W) << "void init_php_scripts_once_in_master()" << BEGIN;
 
   if (!G->settings().tl_schema_file.get().empty()) {
     W << "tl_str_const_init();" << NL;
@@ -75,11 +74,11 @@ void StaticInit::compile(CodeGenerator &W) const {
       W << "register_tl_storers_table_and_fetcher(gen$tl_storers_ht, &gen$tl_fetch_wrapper);" << NL;
     }
   }
-  std::string pass_allocator = G->is_output_mode_k2_component() ? "(allocator)" : "()";
-  W << "const_vars_init" << pass_allocator << ";" << NL;
+
+  W << "const_vars_init();" << NL;
   for (LibPtr lib : G->get_libs()) {
     if (lib && !lib->is_raw_php()) {
-      W << lib->lib_namespace() << "::const_vars_init" << pass_allocator << ";" << NL;
+      W << lib->lib_namespace() << "::const_vars_init();" << NL;
     }
   }
   W << NL;

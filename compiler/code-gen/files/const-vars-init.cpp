@@ -135,8 +135,7 @@ void ConstVarsInit::compile_const_init(CodeGenerator &W, int parts_cnt, const st
   W << NL;
   W << ConstantsLinearMemDeclaration(false) << NL;
 
-  std::string arg = G->is_output_mode_k2_component() ? "(const Allocator * allocator)" : "()";
-  FunctionSignatureGenerator(W) << "void const_vars_init" << arg << BEGIN;
+  FunctionSignatureGenerator(W) << "void const_vars_init()" << BEGIN;
   W << ConstantsLinearMemAllocation() << NL;
 
   const int very_max_dep_level = *std::max_element(max_dep_levels.begin(), max_dep_levels.end());

@@ -199,7 +199,8 @@ void PhpMutableGlobalsConstRefArgument::compile(CodeGenerator &W) const {
 void ConstantsLinearMemAllocation::compile(CodeGenerator &W) const {
   std::string c_linear_mem_use = G->is_output_mode_k2_component() ? "get_mutable_image_state()->c_linear_mem" : "c_linear_mem";
   if (G->is_output_mode_k2_component()) {
-    W << c_linear_mem_use << " = static_cast<char *>(allocator->alloc(" << constants_linear_mem.get_total_linear_mem_size() << "));" << NL;
+    W << c_linear_mem_use <<
+      " = static_cast<char *>(get_platform_context()->allocator.alloc(" << constants_linear_mem.get_total_linear_mem_size() << "));" << NL;
   } else {
     W << c_linear_mem_use << " = new char[" << constants_linear_mem.get_total_linear_mem_size() << "];" << NL;
   }

@@ -23,7 +23,7 @@ static void request_extra_memory() {
   ComponentState &rt_ctx = *get_component_context();
   // todo:k2 make extra mem size dynamic
   size_t extra_mem_size = 16 * 1024u + 100; // extra mem size should be greater than max chunk block size
-  void * extra_mem = get_platform_allocator()->alloc(extra_mem_size);
+  void * extra_mem = get_platform_context()->allocator.alloc(extra_mem_size);
   if (extra_mem == nullptr) {
     php_error("script OOM");
   }
@@ -35,15 +35,13 @@ const memory_resource::MemoryStats &get_script_memory_stats() noexcept {
 }
 
 void init_script_allocator(ScriptAllocator * script_allocator, size_t script_mem_size, size_t oom_handling_mem_size) noexcept {
-  const Allocator &pt_ctx = *get_platform_allocator();
-
-  void * buffer = pt_ctx.alloc(script_mem_size);
+  void * buffer = get_platform_context()->allocator.alloc(script_mem_size);
   assert(buffer != nullptr);
   script_allocator->memory_resource.init(buffer, script_mem_size, oom_handling_mem_size);
 }
 
 void free_script_allocator(ScriptAllocator * script_allocator) noexcept {
-  const Allocator &pt_ctx = *get_platform_allocator();
+  const Allocator &pt_ctx = get_platform_context()->allocator;
 
   auto * extra_memory = script_allocator->memory_resource.get_extra_memory_head();
   while (extra_memory->get_pool_payload_size() != 0) {

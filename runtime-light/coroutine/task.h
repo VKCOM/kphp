@@ -111,13 +111,13 @@ struct [[nodiscard]] task_t : public task_base_t {
     void *operator new(std::size_t n, Args &&...args) noexcept {
       //todo:k2 think about args in new
       //todo:k2 make coroutine allocator
-      void *buffer = get_platform_allocator()->alloc(n);
+      void *buffer = get_platform_context()->allocator.alloc(n);
       return buffer;
     }
 
     void operator delete(void *ptr, size_t n) noexcept {
       (void) n;
-      get_platform_allocator()->free(ptr);
+      get_platform_context()->allocator.free(ptr);
     }
   };
 

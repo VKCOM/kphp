@@ -29,7 +29,7 @@ task_t<void> parse_input_query() {
   if (magic == HTTP_MAGIC) {
     auto [buffer, size] = co_await read_all_from_stream(ctx.standard_stream);
     init_http_superglobals(buffer, size);
-    get_platform_allocator()->free(buffer);
+    get_platform_context()->allocator.free(buffer);
   } else if (magic == COMPONENT_QUERY_MAGIC) {
     init_component_superglobals();
   } else {
@@ -54,7 +54,7 @@ task_t<void> finish(int64_t exit_code, bool from_exit) {
     php_warning("cannot write component result to input stream %lu", ctx.standard_stream);
   }
   free_all_descriptors();
-  ctx.poll_status = PollStatus::PollFinished;
+  ctx.poll_status = PollStatus::PollFinishedOk;
   co_return;
 }
 

@@ -1,12 +1,19 @@
 #ifndef K2_PLATFORM_HEADER_H
 #define K2_PLATFORM_HEADER_H
+
 #pragma once
 
-#include <atomic>
-#include <stdint.h>
 #include <string.h>
 
-#define K2_PLATFORM_HEADER_H_VERSION 2
+#ifdef __cplusplus
+#include <atomic>
+#include <cstdint>
+#else
+#include <stdatomic.h>
+#include <stdint.h>
+#endif
+
+#define K2_PLATFORM_HEADER_H_VERSION 5
 
 // Always check that enum value is a valid value!
 
@@ -41,8 +48,8 @@ enum GetStatusResult {
 };
 
 enum SetTimerResult {
-  SetTimerSuccess = 0,
-  SetTimerLimitExceeded = 1,
+  SetTimerOk = 0,
+  SetTimerErrorLimitExceeded = 1,
 };
 
 enum TimerStatus {
@@ -71,13 +78,27 @@ struct SystemTime {
   uint64_t since_epoch_ns;
 };
 
+#ifdef __cplusplus
+typedef std::atomic_uint32_t atomic_uint32_t;
+#else
+typedef _Atomic(uint32_t) atomic_uint32_t;
+#endif
+
 struct PlatformCtx {
-  std::atomic<uint32_t> please_yield;
-  std::atomic<uint32_t> please_graceful_shutdown;
+  atomic_uint32_t please_yield;
+  atomic_uint32_t please_graceful_shutdown;
+
+  /*
+   * Immediately abort component execution.
+   * Function is [[noreturn]]
+   */
+  void (*abort)();
 
   struct Allocator allocator;
 
   /*
+   * In case of `result == Ok` stream_d will be NonZero
+   *
    * In case of `result != Ok`:
    * `stream_d` will be assigned `0`.
    * however `stream_d=0` itself is not an error marker
@@ -151,6 +172,9 @@ struct PlatformCtx {
   // Coordinated with timers. Monotonical, for timeouts, measurements, etc..
   void (*get_time)(struct TimePoint *time_point);
   /*
+   * In case of `result == Ok` timer_d will be NonZero
+   * In case of `result != Ok` timer_d will be `0`
+   *
    * One-shot timer
    * Use `free_descriptor` to cancel
    */
@@ -214,7 +238,9 @@ enum PollStatus {
   // there is some cpu work to do; platform will reschedule component
   PollReschedule = 1,
   // component decide to shutdown
-  PollFinished = 2,
+  PollFinishedOk = 2,
+  // component decide to shutdown
+  PollFinishedError = 3,
 };
 
 struct ImageInfo {
@@ -231,10 +257,16 @@ struct ImageInfo {
 enum PollStatus vk_k2_poll(const struct ImageState *image_state,
                            const struct PlatformCtx *pt_ctx,
                            struct ComponentState *component_ctx);
+
+// platform_ctx without IO stuff (nullptr instead io-functions)
+// for now, returning nullptr will indicate error
 struct ComponentState *
 vk_k2_create_component_state(const struct ImageState *image_state,
-                             const struct Allocator *alloc);
-struct ImageState *vk_k2_create_image_state(const struct Allocator *alloc);
+                             const struct PlatformCtx *pt_ctx);
+
+// platform_ctx without IO stuff (nullptr instead io-functions)
+// for now, returning nullptr will indicate error
+struct ImageState *vk_k2_create_image_state(const struct PlatformCtx *pt_ctx);
 
 const struct ImageInfo *vk_k2_describe();
 #ifdef __cplusplus

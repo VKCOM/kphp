@@ -6,11 +6,11 @@
 #include "runtime-light/core/kphp_core.h"
 
 string_buffer::string_buffer(string::size_type buffer_len) noexcept:
-  buffer_end(static_cast<char *>(get_platform_allocator()->alloc(buffer_len))),
+  buffer_end(static_cast<char *>(get_platform_context()->allocator.alloc(buffer_len))),
   buffer_begin(buffer_end),
   buffer_len(buffer_len) {
 }
 
 string_buffer::~string_buffer() noexcept {
-  get_platform_allocator()->free(buffer_begin);
+  get_platform_context()->allocator.free(buffer_begin);
 }

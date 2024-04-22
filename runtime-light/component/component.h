@@ -26,6 +26,10 @@ struct ComponentState {
 
   ~ComponentState() = default;
 
+  inline bool not_finished() const noexcept {
+    return poll_status != PollStatus::PollFinishedOk && poll_status != PollStatus::PollFinishedError;
+  }
+
   sigjmp_buf exit_tag;
   dl::ScriptAllocator script_allocator;
   task_t<void> k_main;
