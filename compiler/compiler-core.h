@@ -69,6 +69,9 @@ private:
 public:
   std::string cpp_dir;
 
+  std::mutex bu_mutex;
+  std::unordered_map<std::string, int> builtin_usages;
+
   // Don't like that, handle in another way
   std::string runtime_common_sources_dir;
   std::string runtime_sources_dir;

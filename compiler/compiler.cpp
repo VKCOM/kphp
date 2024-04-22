@@ -51,6 +51,7 @@
 #include "compiler/pipes/check-ub.h"
 #include "compiler/pipes/clone-strange-const-params.h"
 #include "compiler/pipes/code-gen.h"
+#include "compiler/pipes/collect-builtins-pass.h"
 #include "compiler/pipes/collect-const-vars.h"
 #include "compiler/pipes/collect-forkable-types.h"
 #include "compiler/pipes/collect-main-edges.h"
@@ -286,6 +287,7 @@ bool compiler_execute(CompilerSettings *settings) {
     >> SyncC<CheckRestrictionsF>{}
     >> PipeC<CFGEndF>{}
     >> PassC<CheckClassesPass>{}
+    >> PassC<CollectBuiltinsPass>{}
     >> PassC<CheckConversionsPass>{}
     >> PassC<OptimizationPass>{}
     >> PassC<ArrayAccessTransformPass>{}
@@ -368,6 +370,19 @@ bool compiler_execute(CompilerSettings *settings) {
     }
   }
 
+  std::vector<std::pair<std::string, int>> sorted(G->builtin_usages.begin(), G->builtin_usages.end());
+  std::sort(sorted.begin(), sorted.end(), [](const std::pair<std::string, int> &a, const std::pair<std::string, int> &b){
+    return a.second > b.second;
+  });
+
+  std::cerr << "\nBultin functions usage statistics:\n";
+  for (auto &[fun, cnt]: sorted) {
+    std::cerr << fun << " " << cnt << "\n";
+  }
+
+  std::cerr << "---------------------------" << std::endl;
+
+
   if (!G->settings().no_make.get()) {
     std::cerr << "\nStarting make...\n";
     run_make();
@@ -379,6 +394,7 @@ bool compiler_execute(CompilerSettings *settings) {
   G->stats.update_memory_stats();
   G->update_hash_tables_stats();
   G->stats.total_time = dl_time() - st;
+
   if (verbosity >= 1) {
     profiler_print_all(profiler_stats);
     std::cerr << std::endl;
