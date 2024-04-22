@@ -61,6 +61,9 @@ private:
 public:
   std::string cpp_dir;
 
+  std::mutex bu_mutex;
+  std::unordered_map<std::string, int> builtin_usages;
+
   CompilerCore();
   void start();
   void finish();
