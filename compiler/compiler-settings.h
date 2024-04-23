@@ -164,6 +164,7 @@ public:
   KphpOption<bool> no_pch;
   KphpOption<bool> no_index_file;
   KphpOption<bool> show_progress;
+  KphpOption<bool> disable_http_support;
 
   CxxFlags cxx_flags_default;
   CxxFlags cxx_flags_with_debug;

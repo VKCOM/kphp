@@ -18,22 +18,22 @@ static int ob_merge_buffers() {
   return ob_first_not_empty;
 }
 
-task_t<void> parse_input_query() {
+task_t<void> parse_input_query(QueryType query_type) {
   ComponentState & ctx = *get_component_context();
   php_assert(ctx.standard_stream == 0);
   co_await wait_input_query_t{};
   ctx.standard_stream = ctx.incoming_pending_queries.front();
   ctx.incoming_pending_queries.pop_front();
   ctx.opened_streams[ctx.standard_stream] = NotBlocked;
-  int32_t magic = co_await read_magic_from_stream(ctx.standard_stream);
-  if (magic == HTTP_MAGIC) {
+
+  if (query_type == HTTP) {
     auto [buffer, size] = co_await read_all_from_stream(ctx.standard_stream);
     init_http_superglobals(buffer, size);
     get_platform_context()->allocator.free(buffer);
-  } else if (magic == COMPONENT_QUERY_MAGIC) {
-    init_component_superglobals();
+  } else if (query_type == COMPONENT) {
+    // Processing takes place in the calling function
   } else {
-    php_critical_error("unexpected magic %d in incoming query", magic);
+    php_critical_error("unexpected query type %d in parse_input_query", query_type);
   }
   co_return ;
 }
@@ -49,7 +49,7 @@ task_t<void> finish(int64_t exit_code, bool from_exit) {
   int ob_total_buffer = ob_merge_buffers();
   Response &response = ctx.response;
   auto &buffer = response.output_buffers[ob_total_buffer];
-  bool ok = co_await write_query_with_magic_to_stream(ctx.standard_stream, HTTP_MAGIC, buffer.c_str(), buffer.size());
+  bool ok = co_await write_all_to_stream(ctx.standard_stream, buffer.c_str(), buffer.size());
   if (!ok) {
     php_warning("cannot write component result to input stream %lu", ctx.standard_stream);
   }

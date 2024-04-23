@@ -10,8 +10,3 @@ void init_http_superglobals(const char * buffer, int size) {
   ctx.php_script_mutable_globals_singleton.get_superglobals().v$_SERVER.set_value(string("QUERY_TYPE"), string("http"));
   ctx.php_script_mutable_globals_singleton.get_superglobals().v$_POST = http;
 }
-
-void init_component_superglobals() {
-  ComponentState & ctx = * get_component_context();
-  ctx.php_script_mutable_globals_singleton.get_superglobals().v$_SERVER.set_value(string("QUERY_TYPE"), string("component"));
-}

@@ -25,6 +25,8 @@ struct C$ComponentQuery final : public refcountable_php_classes<C$ComponentQuery
   }
 };
 
+task_t<void> f$parse_http_query();
+
 task_t<class_instance<C$ComponentQuery>> f$component_client_send_query(const string &name, const string & message);
 task_t<string> f$component_client_get_result(class_instance<C$ComponentQuery> query);
 

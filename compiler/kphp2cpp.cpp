@@ -297,6 +297,8 @@ int main(int argc, char *argv[]) {
              "require-class-typing", "KPHP_REQUIRE_CLASS_TYPING");
   parser.add("Define k2 component name. Default is \"KPHP\"", settings->k2_component_name,
              "k2-component-name", "KPHP_K2_COMPONENT_NAME", "KPHP");
+  parser.add("Disable http support on script initialization and finish", settings->disable_http_support,
+             "disable-http-support", "KPHP_DISABLE_HTTP_SUPPORT");
 
   parser.add_implicit_option("Linker flags", settings->ld_flags);
   parser.add_implicit_option("Incremental linker flags", settings->incremental_linker_flags);
