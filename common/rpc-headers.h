@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <cstddef>
 #include <cstdint>
+#include <utility>
 
 #pragma pack(push, 1)
 
@@ -44,4 +44,10 @@ struct RpcHeaders {
 
 #pragma pack(pop)
 
-size_t fill_extra_headers_if_needed(RpcExtraHeaders &extra_headers, uint32_t function_magic, int actor_id, bool ignore_answer);
+// Returns a pair where:
+// 1. first element is the size of a new combinator (0 if we don't need it);
+// 2. second element is the size of a current combinator (0 if there is no one).
+// It is guaranteed that the size of a new combinator is greater or equal to the size of current one.
+std::pair<std::size_t, std::size_t>
+fill_extra_headers_if_needed(RpcExtraHeaders &extra_headers, const char *rpc_payload, std::int32_t actor_id,
+                             bool ignore_result);

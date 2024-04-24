@@ -5,6 +5,7 @@
 #include "runtime/rpc.h"
 
 #include <cstdarg>
+#include <cstring>
 #include <chrono>
 
 #include "common/rpc-error-codes.h"
@@ -679,22 +680,21 @@ int64_t rpc_send_impl(const class_instance<C$RpcConnection> &conn, double timeou
   store_int(-1); // reserve for crc32
   php_assert (data_buf.size() % sizeof(int) == 0);
 
-  const char *rpc_payload_start = data_buf.c_str() + sizeof(RpcHeaders);
-  size_t rpc_payload_size = data_buf.size() - sizeof(RpcHeaders);
-  uint32_t function_magic = CurrentProcessingQuery::get().get_last_stored_tl_function_magic();
+  const auto *rpc_payload{data_buf.c_str() + sizeof(RpcHeaders)};
   RpcExtraHeaders extra_headers{};
-  size_t extra_headers_size = fill_extra_headers_if_needed(extra_headers, function_magic, conn.get()->actor_id, ignore_answer);
+  const auto [new_combinator_size, cur_combinator_size]{fill_extra_headers_if_needed(extra_headers, rpc_payload, conn.get()->actor_id, ignore_answer)};
 
-  const auto request_size = static_cast<size_t>(data_buf.size() + extra_headers_size);
-  char *p = static_cast<char *>(dl::allocate(request_size));
+  const auto request_size{static_cast<size_t>(data_buf.size() + new_combinator_size - cur_combinator_size)};
+  auto *request_buf{static_cast<char *>(dl::allocate(request_size))};
 
   // Memory will look like this:
   //    [ RpcHeaders (reserved in f$rpc_clean) ] [ RpcExtraHeaders (optional) ] [ payload ]
-  memcpy(p, data_buf.c_str(), sizeof(RpcHeaders));
-  memcpy(p + sizeof(RpcHeaders), &extra_headers, extra_headers_size);
-  memcpy(p + sizeof(RpcHeaders) + extra_headers_size, rpc_payload_start, rpc_payload_size);
+  std::memcpy(request_buf, data_buf.c_str(), sizeof(RpcHeaders));
+  std::memcpy(request_buf + sizeof(RpcHeaders), &extra_headers, new_combinator_size);
+  std::memcpy(request_buf + sizeof(RpcHeaders) + new_combinator_size, rpc_payload + cur_combinator_size,
+              data_buf.size() - sizeof(RpcHeaders) - cur_combinator_size);
 
-  slot_id_t q_id = rpc_send_query(conn.get()->host_num, p, static_cast<int>(request_size), timeout_convert_to_ms(timeout));
+  slot_id_t q_id = rpc_send_query(conn.get()->host_num, request_buf, static_cast<int>(request_size), timeout_convert_to_ms(timeout));
 
   // request's statistics
   req_extra_info = rpc_request_extra_info_t{request_size};
@@ -739,7 +739,7 @@ int64_t rpc_send_impl(const class_instance<C$RpcConnection> &conn, double timeou
   double send_timestamp = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
 
   cur->resumable_id = register_forked_resumable(new rpc_resumable(q_id));
-  cur->function_magic = function_magic;
+  cur->function_magic = CurrentProcessingQuery::get().get_last_stored_tl_function_magic();
   cur->actor_or_port = conn.get()->actor_id > 0 ? conn.get()->actor_id : -conn.get()->port;
   cur->timer = nullptr;
 
