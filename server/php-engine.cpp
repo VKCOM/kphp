@@ -1460,6 +1460,13 @@ void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port) n
     case WorkerType::general_worker: {
       const auto &http_server_ctx = vk::singleton<HttpServerContext>::get();
 
+#if defined(__APPLE__)
+      /*
+         * this is a hack, for more information, see https://github.com/VKCOM/kphp/issues/986
+       */
+      socket(AF_LOCAL, SOCK_DGRAM, 0);
+#endif
+
       if (http_server_ctx.http_server_enabled()) {
         http_port = http_server_ctx.worker_http_port();
         http_sfd = http_server_ctx.worker_http_socket_fd();
