@@ -46,7 +46,7 @@ struct RpcHeaders {
 #pragma pack(pop)
 
 // Returns a pair where:
-// 1. first element optionally contains a new combinator and its size;
-// 2. second element is the size of a current combinator (0 if there is no one).
+// 1. first element optionally contains a new wrapper and its size;
+// 2. second element is the size of a current wrapper (0 if there is no one).
 std::pair<std::optional<std::pair<RpcExtraHeaders, std::size_t>>, std::size_t>
-regularize_combinators(const char *rpc_buf, std::int32_t actor_id, bool ignore_result);
+regularize_wrappers(const char *rpc_payload, std::int32_t actor_id, bool ignore_result);

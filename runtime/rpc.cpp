@@ -680,23 +680,22 @@ int64_t rpc_send_impl(const class_instance<C$RpcConnection> &conn, double timeou
   store_int(-1); // reserve for crc32
   php_assert (data_buf.size() % sizeof(int) == 0);
 
-  const auto [new_combinator_opt, cur_combinator_size]{regularize_combinators(data_buf.c_str(), conn.get()->actor_id, ignore_answer)};
-
+  const auto [opt_new_wrapper, cur_wrapper_size]{regularize_wrappers(data_buf.c_str() + sizeof(RpcHeaders), conn.get()->actor_id, ignore_answer)};
   char *request_buf{nullptr};
   std::size_t request_size{0};
 
   // 'request_buf' will look like this:
   //    [ RpcHeaders (reserved in f$rpc_clean) ] [ RpcExtraHeaders (optional) ] [ payload ]
-  if (new_combinator_opt.has_value()) {
-    const auto [new_combinator, new_combinator_size]{new_combinator_opt.value()};
-    request_size = data_buf.size() - cur_combinator_size + new_combinator_size;
+  if (opt_new_wrapper.has_value()) {
+    const auto [new_wrapper, new_wrapper_size]{opt_new_wrapper.value()};
+    request_size = data_buf.size() - cur_wrapper_size + new_wrapper_size;
     request_buf = static_cast<char *>(dl::allocate(request_size));
 
     std::memcpy(request_buf, data_buf.c_str(), sizeof(RpcHeaders));
-    std::memcpy(request_buf + sizeof(RpcHeaders), &new_combinator, new_combinator_size);
-    std::memcpy(request_buf + sizeof(RpcHeaders) + new_combinator_size,
-                data_buf.c_str() + sizeof(RpcHeaders) + cur_combinator_size,
-                data_buf.size() - sizeof(RpcHeaders) - cur_combinator_size);
+    std::memcpy(request_buf + sizeof(RpcHeaders), &new_wrapper, new_wrapper_size);
+    std::memcpy(request_buf + sizeof(RpcHeaders) + new_wrapper_size,
+                data_buf.c_str() + sizeof(RpcHeaders) + cur_wrapper_size,
+                data_buf.size() - sizeof(RpcHeaders) - cur_wrapper_size);
   } else {
     request_size = data_buf.size();
     request_buf = static_cast<char *>(dl::allocate(request_size));

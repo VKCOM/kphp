@@ -7,59 +7,49 @@
 #include "common/tl/constants/common.h"
 
 std::pair<std::optional<std::pair<RpcExtraHeaders, std::size_t>>, std::size_t>
-regularize_combinators(const char *rpc_buf, std::int32_t actor_id, bool ignore_result) {
+regularize_wrappers(const char *rpc_payload, std::int32_t actor_id, bool ignore_result) {
   static_assert(sizeof(RpcDestActorFlagsHeaders) >= sizeof(RpcDestActorHeaders));
   static_assert(sizeof(RpcDestActorFlagsHeaders) >= sizeof(RpcDestFlagsHeaders));
 
-  std::size_t new_combinator_size{0};
-  std::size_t cur_combinator_size{0};
+  const auto cur_wrapper{*reinterpret_cast<const RpcExtraHeaders *>(rpc_payload)};
+  const auto function_magic{*reinterpret_cast<const uint32_t *>(rpc_payload)};
 
-  const auto *cur_combinator{reinterpret_cast<const RpcExtraHeaders *>(rpc_buf + sizeof(RpcHeaders))};
-  const auto function_magic{*(reinterpret_cast<const uint32_t *>(cur_combinator))};
-
-  if (actor_id == 0 && !ignore_result &&
-      vk::none_of_equal(function_magic, TL_RPC_DEST_ACTOR, TL_RPC_DEST_FLAGS, TL_RPC_DEST_ACTOR_FLAGS)) {
-    return {std::nullopt, cur_combinator_size};
+  if (actor_id == 0 && !ignore_result && vk::none_of_equal(function_magic, TL_RPC_DEST_ACTOR, TL_RPC_DEST_FLAGS, TL_RPC_DEST_ACTOR_FLAGS)) {
+    return {std::nullopt, 0};
   }
 
   RpcExtraHeaders extra_headers{};
-  new_combinator_size = sizeof(RpcDestActorFlagsHeaders);
+  const std::size_t new_wrapper_size{sizeof(RpcDestActorFlagsHeaders)};
+  std::size_t cur_wrapper_size{0};
 
   switch (function_magic) {
     case TL_RPC_DEST_ACTOR_FLAGS:
-      cur_combinator_size = sizeof(RpcDestActorFlagsHeaders);
+      cur_wrapper_size = sizeof(RpcDestActorFlagsHeaders);
       extra_headers.rpc_dest_actor_flags.op = TL_RPC_DEST_ACTOR_FLAGS;
-      extra_headers.rpc_dest_actor_flags.actor_id =
-              actor_id != 0 ? actor_id : cur_combinator->rpc_dest_actor_flags.actor_id;
-      extra_headers.rpc_dest_actor_flags.flags =
-              cur_combinator->rpc_dest_actor_flags.flags |
-              (ignore_result ? vk::tl::common::rpc_invoke_req_extra_flags::no_result : 0x0);
+      extra_headers.rpc_dest_actor_flags.actor_id = actor_id != 0 ? actor_id : cur_wrapper.rpc_dest_actor_flags.actor_id;
+      extra_headers.rpc_dest_actor_flags.flags = cur_wrapper.rpc_dest_actor_flags.flags |
+                                                 (ignore_result ? vk::tl::common::rpc_invoke_req_extra_flags::no_result : 0x0);
       break;
     case TL_RPC_DEST_ACTOR:
-      cur_combinator_size = sizeof(RpcDestActorHeaders);
+      cur_wrapper_size = sizeof(RpcDestActorHeaders);
       extra_headers.rpc_dest_actor_flags.op = TL_RPC_DEST_ACTOR_FLAGS;
-      extra_headers.rpc_dest_actor_flags.actor_id = actor_id != 0 ? actor_id : cur_combinator->rpc_dest_actor.actor_id;
-      extra_headers.rpc_dest_actor_flags.flags =
-              0x0 |
-              (ignore_result ? vk::tl::common::rpc_invoke_req_extra_flags::no_result : 0x0);
+      extra_headers.rpc_dest_actor_flags.actor_id = actor_id != 0 ? actor_id : cur_wrapper.rpc_dest_actor.actor_id;
+      extra_headers.rpc_dest_actor_flags.flags = ignore_result ? vk::tl::common::rpc_invoke_req_extra_flags::no_result : 0x0;
       break;
     case TL_RPC_DEST_FLAGS:
-      cur_combinator_size = sizeof(RpcDestFlagsHeaders);
+      cur_wrapper_size = sizeof(RpcDestFlagsHeaders);
       extra_headers.rpc_dest_actor_flags.op = TL_RPC_DEST_ACTOR_FLAGS;
       extra_headers.rpc_dest_actor_flags.actor_id = actor_id;
-      extra_headers.rpc_dest_actor_flags.flags =
-              cur_combinator->rpc_dest_flags.flags |
-              (ignore_result ? vk::tl::common::rpc_invoke_req_extra_flags::no_result : 0x0);
+      extra_headers.rpc_dest_actor_flags.flags = cur_wrapper.rpc_dest_flags.flags |
+                                                 (ignore_result ? vk::tl::common::rpc_invoke_req_extra_flags::no_result : 0x0);
       break;
     default:
-      // we don't have a cur_combinator, but we do have 'actor_id' or 'ignore_result' set
+      // we don't have a cur_wrapper, but we do have 'actor_id' or 'ignore_result' set
       extra_headers.rpc_dest_actor_flags.op = TL_RPC_DEST_ACTOR_FLAGS;
       extra_headers.rpc_dest_actor_flags.actor_id = actor_id;
-      extra_headers.rpc_dest_actor_flags.flags =
-              0x0 |
-              (ignore_result ? vk::tl::common::rpc_invoke_req_extra_flags::no_result : 0x0);
+      extra_headers.rpc_dest_actor_flags.flags = ignore_result ? vk::tl::common::rpc_invoke_req_extra_flags::no_result : 0x0;
       break;
   }
 
-  return {std::pair<RpcExtraHeaders, std::size_t>{extra_headers, new_combinator_size}, cur_combinator_size};
+  return {std::pair<RpcExtraHeaders, std::size_t>{extra_headers, new_wrapper_size}, cur_wrapper_size};
 }
