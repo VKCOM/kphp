@@ -680,19 +680,29 @@ int64_t rpc_send_impl(const class_instance<C$RpcConnection> &conn, double timeou
   store_int(-1); // reserve for crc32
   php_assert (data_buf.size() % sizeof(int) == 0);
 
-  const auto *rpc_payload{data_buf.c_str() + sizeof(RpcHeaders)};
-  RpcExtraHeaders extra_headers{};
-  const auto [new_combinator_size, cur_combinator_size]{fill_extra_headers_if_needed(extra_headers, rpc_payload, conn.get()->actor_id, ignore_answer)};
+  const auto [new_combinator_opt, cur_combinator_size]{regularize_combinators(data_buf.c_str(), conn.get()->actor_id, ignore_answer)};
 
-  const auto request_size{static_cast<size_t>(data_buf.size() + new_combinator_size - cur_combinator_size)};
-  auto *request_buf{static_cast<char *>(dl::allocate(request_size))};
+  char *request_buf{nullptr};
+  std::size_t request_size{0};
 
-  // Memory will look like this:
+  // 'request_buf' will look like this:
   //    [ RpcHeaders (reserved in f$rpc_clean) ] [ RpcExtraHeaders (optional) ] [ payload ]
-  std::memcpy(request_buf, data_buf.c_str(), sizeof(RpcHeaders));
-  std::memcpy(request_buf + sizeof(RpcHeaders), &extra_headers, new_combinator_size);
-  std::memcpy(request_buf + sizeof(RpcHeaders) + new_combinator_size, rpc_payload + cur_combinator_size,
-              data_buf.size() - sizeof(RpcHeaders) - cur_combinator_size);
+  if (new_combinator_opt.has_value()) {
+    const auto [new_combinator, new_combinator_size]{new_combinator_opt.value()};
+    request_size = data_buf.size() - cur_combinator_size + new_combinator_size;
+    request_buf = static_cast<char *>(dl::allocate(request_size));
+
+    std::memcpy(request_buf, data_buf.c_str(), sizeof(RpcHeaders));
+    std::memcpy(request_buf + sizeof(RpcHeaders), &new_combinator, new_combinator_size);
+    std::memcpy(request_buf + sizeof(RpcHeaders) + new_combinator_size,
+                data_buf.c_str() + sizeof(RpcHeaders) + cur_combinator_size,
+                data_buf.size() - sizeof(RpcHeaders) - cur_combinator_size);
+  } else {
+    request_size = data_buf.size();
+    request_buf = static_cast<char *>(dl::allocate(request_size));
+
+    std::memcpy(request_buf, data_buf.c_str(), request_size);
+  }
 
   slot_id_t q_id = rpc_send_query(conn.get()->host_num, request_buf, static_cast<int>(request_size), timeout_convert_to_ms(timeout));
 

@@ -1354,18 +1354,23 @@ static int rpc_write(struct rpc_connection *c, long long qid, double timeout, bo
     return -1;
   }
 
-  RpcExtraHeaders extra_headers{};
-  const auto [new_combinator_size, cur_combinator_size]{fill_extra_headers_if_needed(extra_headers, outbuf->rptr,
-                                                                                     c->default_actor_id,
-                                                                                     ignore_answer)};
+  const auto [new_combinator_opt, cur_combinator_size]{
+          regularize_combinators(outbuf->sptr, c->default_actor_id, ignore_answer)};
 
-  if (new_combinator_size > cur_combinator_size) {
-    buffer_check_len_wptr(outbuf, new_combinator_size - cur_combinator_size);
-    std::memmove(outbuf->rptr + new_combinator_size - cur_combinator_size, outbuf->rptr, outbuf->eptr - outbuf->rptr);
+  if (new_combinator_opt.has_value()) {
+    const auto [new_combinator, new_combinator_size]{new_combinator_opt.value()};
+    if (new_combinator_size > cur_combinator_size) {
+      buffer_check_len_wptr(outbuf, new_combinator_size - cur_combinator_size);
+    }
+
+    std::memmove(outbuf->sptr + sizeof(RpcHeaders) + new_combinator_size,
+                 outbuf->sptr + sizeof(RpcHeaders) + cur_combinator_size,
+                 outbuf->eptr - outbuf->sptr - sizeof(RpcHeaders) - cur_combinator_size);
+    std::memcpy(outbuf->sptr + sizeof(RpcHeaders), &new_combinator, new_combinator_size);
+
+    outbuf->rptr = outbuf->sptr + sizeof(RpcHeaders);
+    outbuf->wptr = outbuf->eptr - cur_combinator_size + new_combinator_size;
   }
-
-  outbuf->rptr -= new_combinator_size;
-  memcpy(outbuf->rptr, &extra_headers, new_combinator_size);
 
   unsigned crc32 = 0;
   int len = sizeof(RpcHeaders) + sizeof(crc32) + (outbuf->wptr - outbuf->rptr);

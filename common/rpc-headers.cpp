@@ -6,21 +6,23 @@
 #include "common/rpc-headers.h"
 #include "common/tl/constants/common.h"
 
-std::pair<std::size_t, std::size_t>
-fill_extra_headers_if_needed(RpcExtraHeaders &extra_headers, const char *rpc_payload,
-                             std::int32_t actor_id, bool ignore_result) {
+std::pair<std::optional<std::pair<RpcExtraHeaders, std::size_t>>, std::size_t>
+regularize_combinators(const char *rpc_buf, std::int32_t actor_id, bool ignore_result) {
   static_assert(sizeof(RpcDestActorFlagsHeaders) >= sizeof(RpcDestActorHeaders));
   static_assert(sizeof(RpcDestActorFlagsHeaders) >= sizeof(RpcDestFlagsHeaders));
 
   std::size_t new_combinator_size{0};
   std::size_t cur_combinator_size{0};
-  const auto *cur_combinator{reinterpret_cast<const RpcExtraHeaders *>(rpc_payload)};
-  const auto function_magic{*(reinterpret_cast<const uint32_t *>(rpc_payload))};
 
-  if (actor_id == 0 && !ignore_result && vk::none_of_equal(function_magic, TL_RPC_DEST_ACTOR, TL_RPC_DEST_FLAGS)) {
-    return {new_combinator_size, cur_combinator_size};
+  const auto *cur_combinator{reinterpret_cast<const RpcExtraHeaders *>(rpc_buf + sizeof(RpcHeaders))};
+  const auto function_magic{*(reinterpret_cast<const uint32_t *>(cur_combinator))};
+
+  if (actor_id == 0 && !ignore_result &&
+      vk::none_of_equal(function_magic, TL_RPC_DEST_ACTOR, TL_RPC_DEST_FLAGS, TL_RPC_DEST_ACTOR_FLAGS)) {
+    return {std::nullopt, cur_combinator_size};
   }
 
+  RpcExtraHeaders extra_headers{};
   new_combinator_size = sizeof(RpcDestActorFlagsHeaders);
 
   switch (function_magic) {
@@ -59,5 +61,5 @@ fill_extra_headers_if_needed(RpcExtraHeaders &extra_headers, const char *rpc_pay
       break;
   }
 
-  return {new_combinator_size, cur_combinator_size};
+  return {std::pair<RpcExtraHeaders, std::size_t>{extra_headers, new_combinator_size}, cur_combinator_size};
 }
