@@ -14,7 +14,7 @@ regularize_wrappers(const char *rpc_payload, std::int32_t actor_id, bool ignore_
   static_assert(sizeof(RpcDestActorFlagsHeaders) >= sizeof(RpcDestFlagsHeaders));
 
   const auto cur_wrapper{*reinterpret_cast<const RpcExtraHeaders *>(rpc_payload)};
-  const auto function_magic{*reinterpret_cast<const uint32_t *>(rpc_payload)};
+  const auto function_magic{*reinterpret_cast<const std::uint32_t *>(rpc_payload)};
 
   if (actor_id == 0 && !ignore_result && vk::none_of_equal(function_magic, TL_RPC_DEST_ACTOR, TL_RPC_DEST_FLAGS, TL_RPC_DEST_ACTOR_FLAGS)) {
     return {std::nullopt, 0};
