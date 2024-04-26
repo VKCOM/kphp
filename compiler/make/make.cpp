@@ -22,6 +22,7 @@
 #include "compiler/make/make-runner.h"
 #include "compiler/make/objs-to-bin-target.h"
 #include "compiler/make/objs-to-obj-target.h"
+#include "compiler/make/objs-to-k2-component-target.h"
 #include "compiler/make/objs-to-static-lib-target.h"
 #include "compiler/stage.h"
 #include "compiler/threading/profiler.h"
@@ -96,6 +97,10 @@ public:
 
   Target *create_objs2static_lib_target(std::vector<File *> objs, File *lib) {
     return create_target(new Objs2StaticLibTarget, to_targets(std::move(objs)), lib);
+  }
+
+  Target *create_objs2k2_component_target(std::vector<File *> objs, File *lib) {
+    return create_target(new Objs2K2ComponentTarget, to_targets(std::move(objs)), lib);
   }
 
   bool make_target(File *bin, const std::string &build_message, int jobs_count) {
@@ -176,6 +181,9 @@ static long long get_imported_header_mtime(const std::string &header_path, const
   kphp_error(false, fmt_format("Can't file lib header file '{}'", header_path));
   return 0;
 }
+
+// todo:k2 review pch-related things for
+// k2-component mode
 
 // prepare dir kphp_out/objs/pch_{flags} and make a target runtime-headers.h.gch inside it
 // in production, there will be two pch_ folders: with debug symbols and without them
@@ -431,6 +439,8 @@ void run_make() {
 
   if (output_mode == OutputMode::lib) {
     make.create_objs2static_lib_target(objs, &bin_file);
+  } else if (output_mode == OutputMode::k2_component) {
+    make.create_objs2k2_component_target(objs, &bin_file);
   } else {
     const std::string build_stage{"Compiling"};
     AutoProfiler profiler{get_profiler(build_stage)};
