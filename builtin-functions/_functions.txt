@@ -916,13 +916,25 @@ final class RpcConnection {
     private function __construct();
 }
 
+/**
+ * 'KphpRpcRequestsExtraInfo' is a builtin KPHP class. It may accumulate extra information
+ * about RPC requests sent in both typed and untyped versions of rpc_tl_query builtins.
+ */
 final class KphpRpcRequestsExtraInfo {
     /**
+    * 'get' returns an array of extra information (request size) about sent RPC requests.
+    *
     * @return tuple(int)[]
     */
     public function get ();
 }
 
+/**
+ * 'extract_kphp_rpc_response_extra_info' function takes request ID and returns:
+ * 1. 'null' in case there is no extra information about the request;
+ * 2. 'tuple(response size, response time)' in case we got a response associated with
+ *    the request ID.
+ */
 function extract_kphp_rpc_response_extra_info ($resumable_id ::: int) ::: ?tuple(int, float);
 
 /** rpc store **/

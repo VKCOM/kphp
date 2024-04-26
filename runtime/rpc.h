@@ -5,8 +5,6 @@
 #pragma once
 
 #include <memory>
-#include <tuple>
-#include <utility>
 
 #include "common/algorithms/hashes.h"
 #include "common/kprintf.h"
@@ -15,6 +13,7 @@
 #include "runtime/net_events.h"
 #include "runtime/resumable.h"
 #include "runtime/to-array-processor.h"
+#include "runtime/rpc_extra_info.h"
 
 DECLARE_VERBOSITY(rpc);
 
@@ -120,36 +119,6 @@ inline void register_tl_storers_table_and_fetcher(const array<tl_storer_ptr> &ge
   tl_fetch_wrapper = gen$t_ReqResult_fetch;
 };
 
-using rpc_request_extra_info_t = std::tuple<int64_t>; // tuple(request_size)
-using rpc_response_extra_info_t = std::tuple<int64_t, double>; // tuple(response_size, response_time)
-enum class rpc_response_extra_info_status_t : std::uint8_t { NOT_READY, READY };
-
-extern array<std::pair<rpc_response_extra_info_status_t, rpc_response_extra_info_t>> rpc_responses_extra_info_map;
-
-struct C$KphpRpcRequestsExtraInfo final
-        : public refcountable_php_classes<C$KphpRpcRequestsExtraInfo>, private DummyVisitorMethods {
-  using DummyVisitorMethods::accept;
-
-  array<rpc_request_extra_info_t> extra_info_arr_;
-
-  C$KphpRpcRequestsExtraInfo() = default;
-
-  const char *get_class() const noexcept {
-    return R"(KphpRpcRequestsExtraInfo)";
-  }
-
-  int get_hash() const noexcept {
-    return static_cast<int32_t>(vk::std_hash(vk::string_view(C$KphpRpcRequestsExtraInfo::get_class())));
-  }
-};
-
-inline array<rpc_request_extra_info_t>
-f$KphpRpcRequestsExtraInfo$$get(const class_instance<C$KphpRpcRequestsExtraInfo> &v$this) {
-  return v$this->extra_info_arr_;
-}
-
-Optional<rpc_response_extra_info_t> f$extract_kphp_rpc_response_extra_info(int64_t resumable_id);
-
 struct C$RpcConnection final : public refcountable_php_classes<C$RpcConnection>, private DummyVisitorMethods {
   int32_t host_num{-1};
   int32_t port{-1};
@@ -229,7 +198,9 @@ bool f$rpc_clean(bool is_error = false);
 bool rpc_store(bool is_error = false);
 
 int64_t f$rpc_send(const class_instance<C$RpcConnection> &conn, double timeout = -1.0);
-int64_t rpc_send_impl(const class_instance<C$RpcConnection> &conn, double timeout, rpc_request_extra_info_t &req_extra_info, bool collect_resp_extra_info, bool ignore_answer = false);
+
+int64_t rpc_send_impl(const class_instance<C$RpcConnection> &conn, double timeout, rpc_request_extra_info_t &req_extra_info, bool collect_resp_extra_info,
+                      bool ignore_answer = false);
 
 int64_t f$rpc_send_noflush(const class_instance<C$RpcConnection> &conn, double timeout = -1.0);
 

@@ -6,6 +6,7 @@ use VK\TL\_common\Types\rpcResponseOk;
 use VK\TL\engine\Functions\engine_version;
 use VK\TL\engine\Functions\engine_pid;
 use VK\TL\engine\Functions\engine_stat;
+use VK\TL\engine\Functions\engine_sleep;
 use VK\TL\RpcFunction;
 
 if (false) {
@@ -15,7 +16,7 @@ if (false) {
 }
 
 function get_kphp_untyped_rpc_extra_info() {
-  $queries = [['_' => "engine.stat"], ['_' => "engine.pid"], ['_' => "engine.version"]];
+  $queries = [['_' => "engine.stat"], ['_' => "engine.pid"], ['_' => "engine.version"], ["_" => "engine.sleep", "time_ms" => (int)(200)]];
   $conn = new_rpc_connection("localhost", (int)$_GET["master-port"]);
   $requests_extra_info = new \KphpRpcRequestsExtraInfo;
 
@@ -40,7 +41,7 @@ function get_kphp_untyped_rpc_extra_info() {
 }
 
 function get_kphp_typed_rpc_extra_info() {
-  $queries = [new engine_stat(), new engine_pid(), new engine_version()];
+  $queries = [new engine_stat(), new engine_pid(), new engine_version(), new engine_sleep(200)];
   $conn = new_rpc_connection("localhost", (int)$_GET["master-port"]);
   $requests_extra_info = new \KphpRpcRequestsExtraInfo;
 

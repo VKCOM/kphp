@@ -63,7 +63,6 @@ static string rpc_data_copy_backup;
 
 tl_fetch_wrapper_ptr tl_fetch_wrapper;
 array<tl_storer_ptr> tl_storers_ht;
-array<std::pair<rpc_response_extra_info_status_t, rpc_response_extra_info_t>> rpc_responses_extra_info_map;
 
 template<class T>
 static inline T store_parse_number(const string &v) {
@@ -805,17 +804,7 @@ int64_t f$rpc_send_noflush(const class_instance<C$RpcConnection> &conn, double t
   return request_id;
 }
 
-Optional<rpc_response_extra_info_t> f$extract_kphp_rpc_response_extra_info(int64_t resumable_id) {
-  const auto *resp_extra_info_ptr = rpc_responses_extra_info_map.find_value(resumable_id);
 
-  if (resp_extra_info_ptr == nullptr || resp_extra_info_ptr->first == rpc_response_extra_info_status_t::NOT_READY) {
-    return {};
-  }
-
-  const auto res = resp_extra_info_ptr->second;
-  rpc_responses_extra_info_map.unset(resumable_id);
-  return res;
-}
 
 void process_rpc_answer(int32_t request_id, char *result, int32_t result_len) {
   rpc_request *request = get_rpc_request(request_id);
@@ -1476,7 +1465,7 @@ static void reset_rpc_global_vars() {
   hard_reset_var(rpc_data_copy_backup);
   hard_reset_var(rpc_request_need_timer);
   fail_rpc_on_int32_overflow = false;
-  rpc_responses_extra_info_map.clear();
+  hard_reset_var(rpc_responses_extra_info_map);
 }
 
 void init_rpc_lib() {
