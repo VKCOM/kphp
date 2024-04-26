@@ -6,7 +6,7 @@ from python.lib.testcase import KphpServerAutoTestCase
 class TestRpcExtraInfo(KphpServerAutoTestCase):
     def test_untyped_rpc_extra_info(self):
         rpc_extra_info = self.kphp_server.http_get(
-            "/get_kphp_untyped_rpc_extra_info?master-port={}".format(self.kphp_server.master_port))
+            "/test_kphp_untyped_rpc_extra_info?master-port={}".format(self.kphp_server.master_port))
 
         self.assertEqual(rpc_extra_info.status_code, 200)
         self.assertNotEqual(rpc_extra_info.text, "")
@@ -33,7 +33,7 @@ class TestRpcExtraInfo(KphpServerAutoTestCase):
 
     def test_typed_rpc_extra_info(self):
         rpc_extra_info = self.kphp_server.http_get(
-            "/get_kphp_typed_rpc_extra_info?master-port={}".format(self.kphp_server.master_port))
+            "/test_kphp_typed_rpc_extra_info?master-port={}".format(self.kphp_server.master_port))
 
         self.assertEqual(rpc_extra_info.status_code, 200)
         self.assertNotEqual(rpc_extra_info.text, "")
