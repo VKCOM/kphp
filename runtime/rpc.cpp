@@ -665,9 +665,8 @@ static void process_rpc_timeout(kphp_event_timer *timer) {
   return process_rpc_timeout(timer->wakeup_extra, false);
 }
 
-int64_t
-rpc_send_impl(const class_instance<C$RpcConnection> &conn, double timeout, rpc_request_extra_info_t &req_extra_info,
-              bool collect_resp_extra_info, bool ignore_answer) {
+int64_t rpc_send_impl(const class_instance<C$RpcConnection> &conn, double timeout, rpc_request_extra_info_t &req_extra_info, bool collect_resp_extra_info,
+                      bool ignore_answer) {
   if (unlikely (conn.is_null() || conn.get()->host_num < 0)) {
     php_warning("Wrong RpcConnection specified");
     return -1;
@@ -684,8 +683,7 @@ rpc_send_impl(const class_instance<C$RpcConnection> &conn, double timeout, rpc_r
   size_t rpc_payload_size = data_buf.size() - sizeof(RpcHeaders);
   uint32_t function_magic = CurrentProcessingQuery::get().get_last_stored_tl_function_magic();
   RpcExtraHeaders extra_headers{};
-  size_t extra_headers_size = fill_extra_headers_if_needed(extra_headers, function_magic, conn.get()->actor_id,
-                                                           ignore_answer);
+  size_t extra_headers_size = fill_extra_headers_if_needed(extra_headers, function_magic, conn.get()->actor_id, ignore_answer);
 
   const auto request_size = static_cast<size_t>(data_buf.size() + extra_headers_size);
   char *p = static_cast<char *>(dl::allocate(request_size));
@@ -696,8 +694,7 @@ rpc_send_impl(const class_instance<C$RpcConnection> &conn, double timeout, rpc_r
   memcpy(p + sizeof(RpcHeaders), &extra_headers, extra_headers_size);
   memcpy(p + sizeof(RpcHeaders) + extra_headers_size, rpc_payload_start, rpc_payload_size);
 
-  slot_id_t q_id = rpc_send_query(conn.get()->host_num, p, static_cast<int>(request_size),
-                                  timeout_convert_to_ms(timeout));
+  slot_id_t q_id = rpc_send_query(conn.get()->host_num, p, static_cast<int>(request_size), timeout_convert_to_ms(timeout));
 
   // request's statistics
   req_extra_info = rpc_request_extra_info_t{request_size};
@@ -727,13 +724,13 @@ rpc_send_impl(const class_instance<C$RpcConnection> &conn, double timeout, rpc_r
     if (rpc_first_unfinished_request_id > rpc_first_array_request_id + rpc_requests_size / 2) {
       memcpy(rpc_requests,
              rpc_requests + rpc_first_unfinished_request_id - rpc_first_array_request_id,
-             sizeof(rpc_request) *
-             (rpc_requests_size - (rpc_first_unfinished_request_id - rpc_first_array_request_id)));
+             sizeof(rpc_request) * (rpc_requests_size - (rpc_first_unfinished_request_id - rpc_first_array_request_id)));
       rpc_first_array_request_id = rpc_first_unfinished_request_id;
     } else {
-      rpc_requests = static_cast <rpc_request *> (dl::reallocate(rpc_requests,
-                                                                 sizeof(rpc_request) * 2 * rpc_requests_size,
-                                                                 sizeof(rpc_request) * rpc_requests_size));
+      rpc_requests = static_cast<rpc_request *>(dl::reallocate(
+              rpc_requests,
+              sizeof(rpc_request) * 2 * rpc_requests_size,
+              sizeof(rpc_request) * rpc_requests_size));
       rpc_requests_size *= 2;
     }
   }
@@ -747,14 +744,12 @@ rpc_send_impl(const class_instance<C$RpcConnection> &conn, double timeout, rpc_r
   cur->timer = nullptr;
 
   if (kphp_tracing::is_turned_on()) {
-    kphp_tracing::on_rpc_query_send(q_id, cur->actor_or_port, cur->function_magic, static_cast<int>(request_size),
-                                    send_timestamp, ignore_answer);
+    kphp_tracing::on_rpc_query_send(q_id, cur->actor_or_port, cur->function_magic, static_cast<int>(request_size), send_timestamp, ignore_answer);
   }
 
   // response's metrics
   if (collect_resp_extra_info) {
-    rpc_responses_extra_info_map.emplace_value(cur->resumable_id, rpc_response_extra_info_status_t::NOT_READY,
-                                               rpc_response_extra_info_t{0, send_timestamp});
+    rpc_responses_extra_info_map.emplace_value(cur->resumable_id, rpc_response_extra_info_status_t::NOT_READY, rpc_response_extra_info_t{0, send_timestamp});
   }
 
   if (ignore_answer) {
@@ -824,8 +819,7 @@ void process_rpc_answer(int32_t request_id, char *result, int32_t result_len) {
   request->resumable_id = -1;
 
   { // response's metrics
-    const auto resp_timestamp = std::chrono::duration<double>{
-            std::chrono::system_clock::now().time_since_epoch()}.count();
+    const auto resp_timestamp = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
     if (rpc_responses_extra_info_map.isset(resumable_id)) {
       auto &resp_extra_info = rpc_responses_extra_info_map[resumable_id];
       resp_extra_info.second = {result_len, resp_timestamp - std::get<1>(resp_extra_info.second)};
@@ -1155,9 +1149,8 @@ array<mixed> fetch_function(const class_instance<RpcTlQuery> &rpc_query) {
   return new_tl_object;
 }
 
-int64_t rpc_tl_query_impl(const class_instance<C$RpcConnection> &c, const mixed &tl_object, double timeout,
-                          rpc_request_extra_info_t &req_extra_info, bool collect_resp_extra_info, bool ignore_answer,
-                          bool bytes_estimating, size_t &bytes_sent, bool flush) {
+int64_t rpc_tl_query_impl(const class_instance<C$RpcConnection> &c, const mixed &tl_object, double timeout, rpc_request_extra_info_t &req_extra_info,
+                          bool collect_resp_extra_info, bool ignore_answer, bool bytes_estimating, size_t &bytes_sent, bool flush) {
   f$rpc_clean();
 
   class_instance<RpcTlQuery> rpc_query = store_function(tl_object);
@@ -1250,12 +1243,10 @@ bool f$rpc_mc_parse_raw_wildcard_with_flags_to_array(const string &raw_result, a
   return true;
 }
 
-array<int64_t> f$rpc_tl_query(const class_instance<C$RpcConnection> &c, const array<mixed> &tl_objects, double timeout,
-                              bool ignore_answer, class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info,
-                              bool need_responses_extra_info) {
+array<int64_t> f$rpc_tl_query(const class_instance<C$RpcConnection> &c, const array<mixed> &tl_objects, double timeout, bool ignore_answer,
+                              class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info, bool need_responses_extra_info) {
   if (ignore_answer && need_responses_extra_info) {
-    php_warning(
-            "Both $ignore_answer and $need_responses_extra_info are 'true'. Can't collect metrics for ignored answers");
+    php_warning("Both $ignore_answer and $need_responses_extra_info are 'true'. Can't collect metrics for ignored answers");
   }
 
   size_t bytes_sent = 0;
@@ -1266,9 +1257,7 @@ array<int64_t> f$rpc_tl_query(const class_instance<C$RpcConnection> &c, const ar
   for (auto it = tl_objects.begin(); it != tl_objects.end(); ++it) {
     rpc_request_extra_info_t req_ei{};
 
-    int64_t query_id = rpc_tl_query_impl(c, it.get_value(), timeout, req_ei,
-                                         collect_resp_extra_info, ignore_answer, true, bytes_sent,
-                                         false);
+    int64_t query_id = rpc_tl_query_impl(c, it.get_value(), timeout, req_ei, collect_resp_extra_info, ignore_answer, true, bytes_sent, false);
 
     queries.set_value(it.get_key(), query_id);
     req_extra_info_arr.set_value(it.get_key(), std::move(req_ei));

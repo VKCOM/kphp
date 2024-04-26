@@ -82,6 +82,7 @@ int32_t rpc_fetch_int();
 int64_t f$fetch_int();
 
 int64_t f$fetch_lookup_int();
+
 string f$fetch_lookup_data(int64_t x4_bytes_length);
 
 int64_t f$fetch_long();
@@ -211,8 +212,8 @@ Optional<string> f$rpc_get(int64_t request_id, double timeout = -1.0);
 Optional<string> f$rpc_get_synchronously(int64_t request_id);
 
 bool rpc_get_and_parse(int64_t request_id, double timeout);
-bool f$rpc_get_and_parse(int64_t request_id, double timeout = -1.0);
 
+bool f$rpc_get_and_parse(int64_t request_id, double timeout = -1.0);
 
 int64_t f$rpc_queue_create();
 
@@ -251,10 +252,8 @@ int64_t f$rpc_tl_query_one(const class_instance<C$RpcConnection> &c, const mixed
 int64_t f$rpc_tl_pending_queries_count();
 bool f$rpc_mc_parse_raw_wildcard_with_flags_to_array(const string &raw_result, array<mixed> &result);
 
-array<int64_t>
-f$rpc_tl_query(const class_instance<C$RpcConnection> &c, const array<mixed> &tl_objects, double timeout = -1.0,
-               bool ignore_answer = false, class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info = {},
-               bool need_responses_extra_info = false);
+array<int64_t> f$rpc_tl_query(const class_instance<C$RpcConnection> &c, const array<mixed> &tl_objects, double timeout = -1.0, bool ignore_answer = false,
+                              class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info = {}, bool need_responses_extra_info = false);
 
 array<mixed> f$rpc_tl_query_result_one(int64_t query_id);
 

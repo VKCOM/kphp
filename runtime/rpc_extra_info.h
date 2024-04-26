@@ -20,8 +20,7 @@ enum class rpc_response_extra_info_status_t : std::uint8_t { NOT_READY, READY };
 
 extern array<std::pair<rpc_response_extra_info_status_t, rpc_response_extra_info_t>> rpc_responses_extra_info_map;
 
-struct C$KphpRpcRequestsExtraInfo final
-        : public refcountable_php_classes<C$KphpRpcRequestsExtraInfo>, private DummyVisitorMethods {
+struct C$KphpRpcRequestsExtraInfo final : public refcountable_php_classes<C$KphpRpcRequestsExtraInfo>, private DummyVisitorMethods {
     using DummyVisitorMethods::accept;
 
     array<rpc_request_extra_info_t> extra_info_arr_;

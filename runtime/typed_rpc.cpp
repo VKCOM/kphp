@@ -137,15 +137,9 @@ private:
 };
 } // namespace
 
-int64_t typed_rpc_tl_query_impl(const class_instance<C$RpcConnection> &connection,
-                                const RpcRequest &req,
-                                double timeout,
-                                rpc_request_extra_info_t &req_extra_info,
-                                bool collect_resp_extra_info,
-                                bool ignore_answer,
-                                bool bytes_estimating,
-                                size_t &bytes_sent,
-                                bool flush) {
+int64_t
+typed_rpc_tl_query_impl(const class_instance<C$RpcConnection> &connection, const RpcRequest &req, double timeout, rpc_request_extra_info_t &req_extra_info,
+                        bool collect_resp_extra_info, bool ignore_answer, bool bytes_estimating, size_t &bytes_sent, bool flush) {
   f$rpc_clean();
   if (req.empty()) {
     php_warning("Writing rpc query error: query function is null");
@@ -161,8 +155,7 @@ int64_t typed_rpc_tl_query_impl(const class_instance<C$RpcConnection> &connectio
     estimate_and_flush_overflow(bytes_sent);
   }
 
-  const int64_t query_id = rpc_send_impl(connection, timeout, req_extra_info, collect_resp_extra_info,
-                                         ignore_answer);
+  const int64_t query_id = rpc_send_impl(connection, timeout, req_extra_info, collect_resp_extra_info, ignore_answer);
 
   if (query_id <= 0) {
     return 0;

@@ -32,9 +32,7 @@ array<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_synchronous
                                                                                         const RpcErrorFactory &error_factory);
 
 template<typename F, typename R = KphpRpcRequest>
-int64_t f$typed_rpc_tl_query_one(const class_instance<C$RpcConnection> &connection,
-                                 const class_instance<F> &query_function,
-                                 double timeout = -1.0) {
+int64_t f$typed_rpc_tl_query_one(const class_instance<C$RpcConnection> &connection, const class_instance<F> &query_function, double timeout = -1.0) {
   static_assert(std::is_base_of_v<C$VK$TL$RpcFunction, F>, "Unexpected type");
   static_assert(std::is_same_v<KphpRpcRequest, R>, "Unexpected type");
 
@@ -44,11 +42,8 @@ int64_t f$typed_rpc_tl_query_one(const class_instance<C$RpcConnection> &connecti
 }
 
 template<typename F, typename R = KphpRpcRequest>
-array<int64_t> f$typed_rpc_tl_query(const class_instance<C$RpcConnection> &connection,
-                                    const array<class_instance<F>> &query_functions,
-                                    double timeout = -1.0,
-                                    bool ignore_answer = false,
-                                    class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info = {},
+array<int64_t> f$typed_rpc_tl_query(const class_instance<C$RpcConnection> &connection, const array<class_instance<F>> &query_functions, double timeout = -1.0,
+                                    bool ignore_answer = false, class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info = {},
                                     bool need_responses_extra_info = false) {
   static_assert(std::is_base_of_v<C$VK$TL$RpcFunction, F>, "Unexpected type");
   static_assert(std::is_same_v<KphpRpcRequest, R>, "Unexpected type");
@@ -66,9 +61,7 @@ array<int64_t> f$typed_rpc_tl_query(const class_instance<C$RpcConnection> &conne
   for (auto it = query_functions.begin(); it != query_functions.end(); ++it) {
     rpc_request_extra_info_t req_ei{};
 
-    int64_t rpc_query = typed_rpc_tl_query_impl(connection, R{it.get_value()}, timeout, req_ei,
-                                                collect_resp_extra_info, ignore_answer, true,
-                                                bytes_sent,
+    int64_t rpc_query = typed_rpc_tl_query_impl(connection, R{it.get_value()}, timeout, req_ei, collect_resp_extra_info, ignore_answer, true, bytes_sent,
                                                 false);
 
     queries.set_value(it.get_key(), rpc_query);
