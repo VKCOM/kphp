@@ -20,7 +20,7 @@ public:
     }
 
     // the last dep is runtime lib
-    // TODO think about kphp-libraries
+    // todo:k2 think about kphp-libraries
     assert(deps.size() >= 1 && "There are should be at least one dependency. It's the runtime lib");
     ss << "-Wl,--whole-archive " << deps.back()->get_name() << " -Wl,--no-whole-archive ";
     return ss.str();
