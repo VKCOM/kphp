@@ -2844,7 +2844,7 @@ string f$wordwrap(const string &str, int64_t width, const string &brk, bool cut)
 
 string f$xor_strings(const string &s, const string &t) {
   string::size_type length = min(s.size(), t.size());
-  string result(length, ' ');
+  string result{length, false};
   const char *s_str = s.c_str();
   const char *t_str = t.c_str();
   char *res_str = result.buffer();
