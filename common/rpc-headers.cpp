@@ -2,8 +2,8 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "common/algorithms/find.h"
 #include "common/rpc-headers.h"
+#include "common/algorithms/find.h"
 #include "common/tl/constants/common.h"
 #include "common/kprintf.h"
 
@@ -73,10 +73,10 @@ regularize_wrappers(const char *rpc_payload, std::int32_t actor_id, bool ignore_
   }
 
   if (actor_id != 0 && cur_wrapper_actor_id != 0) {
-    kprintf("inaccurate use of 'actor_id': overwriting '%d' with '%d'", cur_wrapper_actor_id, actor_id);
+    kprintf("inaccurate use of 'actor_id': overwriting '%d' to '%d'\n", cur_wrapper_actor_id, actor_id);
   }
-  if (ignore_result != cur_wrapper_ignore_result) {
-    kprintf("inaccurate use of 'ignore_answer': overwriting '%s' to '%s'", cur_wrapper_ignore_result ? "true" : "false", ignore_result ? "true" : "false");
+  if (!ignore_result && cur_wrapper_ignore_result) {
+    kprintf("inaccurate use of 'ignore_answer': overwriting 'true' to 'false'\n");
   }
 
   return {std::pair<RpcExtraHeaders, std::size_t>{extra_headers, new_wrapper_size}, cur_wrapper_size};
