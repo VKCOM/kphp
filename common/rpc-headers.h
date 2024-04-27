@@ -46,10 +46,6 @@ struct RpcHeaders {
 
 #pragma pack(pop)
 
-// Returns a pair where:
-// 1. first element optionally contains a new wrapper and its size;
-// 2. second element is the size of a current wrapper (0 if there is no one).
-
 struct RegularizeWrappersReturnT {
   /// Optionally contains a new wrapper ans its size
   std::optional<std::pair<RpcExtraHeaders, std::size_t>> opt_new_wrapper;
