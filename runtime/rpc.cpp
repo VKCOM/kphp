@@ -680,7 +680,17 @@ int64_t rpc_send_impl(const class_instance<C$RpcConnection> &conn, double timeou
   store_int(-1); // reserve for crc32
   php_assert (data_buf.size() % sizeof(int) == 0);
 
-  const auto [opt_new_wrapper, cur_wrapper_size]{regularize_wrappers(data_buf.c_str() + sizeof(RpcHeaders), conn.get()->actor_id, ignore_answer)};
+  const auto [opt_new_wrapper, cur_wrapper_size, opt_actor_id_warning_info, opt_ignore_result_warning_msg]{
+          regularize_wrappers(data_buf.c_str() + sizeof(RpcHeaders), conn.get()->actor_id, ignore_answer)};
+
+  if (opt_actor_id_warning_info.has_value()) {
+    const auto [msg, cur_wrapper_actor_id, new_wrapper_actor_id]{opt_actor_id_warning_info.value()};
+    php_warning(msg, cur_wrapper_actor_id, new_wrapper_actor_id);
+  }
+  if (opt_ignore_result_warning_msg != nullptr) {
+    php_warning("%s", opt_ignore_result_warning_msg);
+  }
+
   char *request_buf{nullptr};
   std::size_t request_size{0};
 

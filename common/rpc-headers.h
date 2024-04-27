@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <tuple>
 #include <utility>
 
 #pragma pack(push, 1)
@@ -48,5 +49,18 @@ struct RpcHeaders {
 // Returns a pair where:
 // 1. first element optionally contains a new wrapper and its size;
 // 2. second element is the size of a current wrapper (0 if there is no one).
-std::pair<std::optional<std::pair<RpcExtraHeaders, std::size_t>>, std::size_t>
-regularize_wrappers(const char *rpc_payload, std::int32_t actor_id, bool ignore_result);
+
+struct RegularizeWrappersReturnT {
+  /// Optionally contains a new wrapper ans its size
+  std::optional<std::pair<RpcExtraHeaders, std::size_t>> opt_new_wrapper;
+  /// The size of a wrapper found in rpc payload (0 if there is no one)
+  std::size_t cur_wrapper_size;
+  /// Optionally contains a tuple of <format string, current wrapper's actor_id, new actor_id>.
+  /// If not std::nullopt, can be used to warn about actor_id redefinition, for example,
+  /// 'php_warning(format_str, current_wrapper_actor_id, new_actor_id)'
+  std::optional<std::tuple<const char *, std::int32_t, std::int32_t>> opt_actor_id_warning_info;
+  /// Optionally contains a string. If not nullptr, can be used to warn about inaccurate usage of 'ignore_result'.
+  const char *opt_ignore_result_warning_msg;
+};
+
+RegularizeWrappersReturnT regularize_wrappers(const char *rpc_payload, std::int32_t actor_id, bool ignore_result);

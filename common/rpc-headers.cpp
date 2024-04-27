@@ -8,8 +8,7 @@
 #include "common/kprintf.h"
 
 
-std::pair<std::optional<std::pair<RpcExtraHeaders, std::size_t>>, std::size_t>
-regularize_wrappers(const char *rpc_payload, std::int32_t actor_id, bool ignore_result) {
+RegularizeWrappersReturnT regularize_wrappers(const char *rpc_payload, std::int32_t actor_id, bool ignore_result) {
   static_assert(sizeof(RpcDestActorFlagsHeaders) >= sizeof(RpcDestActorHeaders));
   static_assert(sizeof(RpcDestActorFlagsHeaders) >= sizeof(RpcDestFlagsHeaders));
 
@@ -17,7 +16,7 @@ regularize_wrappers(const char *rpc_payload, std::int32_t actor_id, bool ignore_
   const auto function_magic{*reinterpret_cast<const std::uint32_t *>(rpc_payload)};
 
   if (actor_id == 0 && !ignore_result && vk::none_of_equal(function_magic, TL_RPC_DEST_ACTOR, TL_RPC_DEST_FLAGS, TL_RPC_DEST_ACTOR_FLAGS)) {
-    return {std::nullopt, 0};
+    return {std::nullopt, 0, std::nullopt, nullptr};
   }
 
   RpcExtraHeaders extra_headers{};
@@ -72,12 +71,20 @@ regularize_wrappers(const char *rpc_payload, std::int32_t actor_id, bool ignore_
       break;
   }
 
+  decltype(RegularizeWrappersReturnT{}.opt_actor_id_warning_info) opt_actor_id_warning{};
   if (actor_id != 0 && cur_wrapper_actor_id != 0) {
-    kprintf("inaccurate use of 'actor_id': overwriting '%d' to '%d'\n", cur_wrapper_actor_id, actor_id);
-  }
-  if (!ignore_result && cur_wrapper_ignore_result) {
-    kprintf("inaccurate use of 'ignore_answer': overwriting 'true' to 'false'\n");
+    opt_actor_id_warning.emplace("inaccurate use of 'actor_id': overwriting '%d' to '%d'\n", cur_wrapper_actor_id, actor_id);
   }
 
-  return {std::pair<RpcExtraHeaders, std::size_t>{extra_headers, new_wrapper_size}, cur_wrapper_size};
+  const char *opt_ignore_result_warning_msg{nullptr};
+  if (!ignore_result && cur_wrapper_ignore_result) {
+    opt_ignore_result_warning_msg = "inaccurate use of 'ignore_answer': overwriting 'true' to 'false'\n";
+  }
+
+  return {
+    std::pair<RpcExtraHeaders, std::size_t>{extra_headers, new_wrapper_size},
+    cur_wrapper_size,
+    std::move(opt_actor_id_warning),
+    opt_ignore_result_warning_msg,
+  };
 }
