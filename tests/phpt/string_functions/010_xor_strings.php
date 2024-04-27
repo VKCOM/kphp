@@ -9,7 +9,7 @@ function is_kphp() {
 }
 
 function test_xor_strings() {
-  $strings = ["handling and manipulating", "ings, take a look", "ctory Access Protocol", "0000000dwxasd", "1111sadsd11"];
+  $strings = ["handling and manipulating", "ings, take a look", "ctory Access Protocol", "0000000dwxasd", "1111sadsd11", "a", "-"];
 
   foreach ($strings as $str1) {
     foreach($strings as $str2) {
