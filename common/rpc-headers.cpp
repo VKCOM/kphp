@@ -5,7 +5,6 @@
 #include "common/rpc-headers.h"
 #include "common/algorithms/find.h"
 #include "common/tl/constants/common.h"
-#include "common/kprintf.h"
 
 
 RegularizeWrappersReturnT regularize_wrappers(const char *rpc_payload, std::int32_t actor_id, bool ignore_result) {
