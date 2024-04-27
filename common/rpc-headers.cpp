@@ -73,12 +73,15 @@ RegularizeWrappersReturnT regularize_wrappers(const char *rpc_payload, std::int3
 
   decltype(RegularizeWrappersReturnT{}.opt_actor_id_warning_info) opt_actor_id_warning{};
   if (actor_id != 0 && cur_wrapper_actor_id != 0) {
-    opt_actor_id_warning.emplace("inaccurate use of 'actor_id': overwriting '%d' to '%d'\n", cur_wrapper_actor_id, actor_id);
+    opt_actor_id_warning.emplace("inaccurate use of 'actor_id': '%d' was passed into RPC connection constructor, "
+                                 "but '%d' was already set in RpcDestActor or RpcDestActorFlags\n",
+                                 actor_id, cur_wrapper_actor_id);
   }
 
   const char *opt_ignore_result_warning_msg{nullptr};
   if (!ignore_result && cur_wrapper_ignore_result) {
-    opt_ignore_result_warning_msg = "inaccurate use of 'ignore_answer': overwriting 'true' to 'false'\n";
+    opt_ignore_result_warning_msg = "inaccurate use of 'ignore_answer': 'false' was passed into TL query function (e.g., rpc_tl_query), "
+                                    "but 'true' was already set in RpcDestFlags or RpcDestActorFlags\n";
   }
 
   return {
