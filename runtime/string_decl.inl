@@ -74,6 +74,8 @@ private:
   inline void set_size(size_type new_size);
 
   inline static char *create(const char *beg, const char *end);
+  // IMPORTANT: this function may return read-only strings for n == 0 and n == 1.
+  // Use it unless you have to manually write something into the buffer.
   inline static char *create(size_type req, char c);
   inline static char *create(size_type req, bool b);
 
@@ -97,6 +99,8 @@ public:
   inline string(string &&str) noexcept;
   inline string(const char *s, size_type n);
   inline explicit string(const char *s);
+  // IMPORTANT: this constructor may return read-only strings for n == 0 and n == 1.
+  // Use it unless you have to manually operate with string's internal buffer.
   inline string(size_type n, char c);
   inline string(size_type n, bool b);
   inline explicit string(int64_t i);
