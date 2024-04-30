@@ -1,34 +1,32 @@
 #pragma once
 
-#include "runtime-light/core/kphp_core.h"
 #include "runtime-light/coroutine/task.h"
-#include "common/algorithms/hashes.h"
-#include "common/wrappers/string_view.h"
-#include "runtime-light/core/class_instance/refcountable_php_classes.h"
-#include "runtime-light/streams/streams.h"
+#include "runtime-light/streams/component_stream.h"
 
 constexpr int64_t v$COMPONENT_ERROR = -1;
 
-struct C$ComponentQuery final : public refcountable_php_classes<C$ComponentQuery> {
-  uint64_t stream_d {};
+task_t<void> parse_http_query();
 
-  const char *get_class() const noexcept {
-    return "ComponentQuery";
-  }
-
-  int32_t get_hash() const noexcept {
-    return static_cast<int32_t>(vk::std_hash(vk::string_view(C$ComponentQuery::get_class())));
-  }
-
-  ~C$ComponentQuery() {
-    free_descriptor(stream_d);
-  }
-};
-
-task_t<void> f$parse_http_query();
-
+/**
+ * component query client blocked interface
+ * */
 task_t<class_instance<C$ComponentQuery>> f$component_client_send_query(const string &name, const string & message);
 task_t<string> f$component_client_get_result(class_instance<C$ComponentQuery> query);
 
+/**
+ * component query server blocked interface
+ * */
 task_t<string> f$component_server_get_query();
 task_t<void> f$component_server_send_result(const string &message);
+
+/**
+ * component query non blocked interface
+ * */
+class_instance<C$ComponentStream> f$component_open_stream(const string &name);
+task_t<class_instance<C$ComponentStream>> f$component_accept_stream();
+
+int64_t f$component_stream_write_nonblock(const class_instance<C$ComponentStream> & stream, const string & message);
+string f$component_stream_read_nonblock(const class_instance<C$ComponentStream> & stream);
+
+void f$component_close_stream(const class_instance<C$ComponentStream> & stream);
+void f$component_finish_stream_process(const class_instance<C$ComponentStream> & stream);

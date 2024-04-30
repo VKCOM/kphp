@@ -83,6 +83,4 @@ add_custom_target(force_clean_all
                   COMMAND rm -rf ${OBJS_DIR}
                   COMMAND rm -rf ${CMAKE_CURRENT_BINARY_DIR}/*)
 
-include(${BASE_DIR}/script/script.cmake)
-
 include(CPack)

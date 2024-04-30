@@ -127,7 +127,8 @@ protected:
   // since all allocators have their own mem stats;
   // when signaling OOM, we want to see the root mem stats, not the
   // fallback buffer mem stats, for instance
-  void raise_oom(size_t size) const noexcept;
+  // todo:k2 do we still need raise_oom?
+//  void raise_oom(size_t size) const noexcept;
 };
 
 } // namespace memory_resource

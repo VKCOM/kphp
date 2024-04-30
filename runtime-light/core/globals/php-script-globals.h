@@ -36,7 +36,7 @@ public:
   PhpScriptMutableGlobals(memory_resource::unsynchronized_pool_resource & resource)
     : libs_linear_mem(unordered_map<int64_t, char *>::allocator_type{resource}) {}
 
-  static PhpScriptMutableGlobals &current();
+  static PhpScriptMutableGlobals &current() noexcept;
 
   void once_alloc_linear_mem(unsigned int n_bytes);
   void once_alloc_linear_mem(const char *lib_name, unsigned int n_bytes);

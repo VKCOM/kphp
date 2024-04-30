@@ -70,3 +70,57 @@ task_t<string> f$component_server_get_query() {
   get_platform_context()->allocator.free(buffer);
   co_return query;
 }
+
+task_t<class_instance<C$ComponentStream>> f$component_accept_stream() {
+  ComponentState & ctx = *get_component_context();
+  if (ctx.standard_stream != 0) {
+    php_warning("previous stream does not closed");
+    free_descriptor(ctx.standard_stream);
+    ctx.standard_stream = 0;
+  }
+  co_await parse_input_query(COMPONENT);
+  class_instance<C$ComponentStream> stream;
+  stream.alloc();
+  stream.get()->stream_d = ctx.standard_stream;
+  co_return stream;
+}
+
+class_instance<C$ComponentStream> f$component_open_stream(const string &name) {
+  class_instance<C$ComponentStream> query;
+  const PlatformCtx & ptx = *get_platform_context();
+  uint64_t stream_d;
+  OpenStreamResult res = ptx.open(name.size(), name.c_str(), &stream_d);
+  if (res != OpenStreamOk) {
+    php_warning("cannot open stream");
+    return query;
+  }
+
+  query.alloc();
+  query.get()->stream_d = stream_d;
+  return query;
+}
+
+int64_t f$component_stream_write_nonblock(const class_instance<C$ComponentStream> & stream, const string & message) {
+  return write_nonblock_to_stream(stream.get()->stream_d, message.c_str(), message.size());
+}
+
+string f$component_stream_read_nonblock(const class_instance<C$ComponentStream> & stream) {
+  auto [ptr, size] = read_nonblock_from_stream(stream.get()->stream_d);
+  string result(ptr, size);
+  get_platform_context()->allocator.free(ptr);
+  return result;
+}
+
+void f$component_close_stream(const class_instance<C$ComponentStream> & stream) {
+  free_descriptor(stream->stream_d);
+}
+
+void f$component_finish_stream_process(const class_instance<C$ComponentStream> & stream) {
+  ComponentState & ctx = *get_component_context();
+  if (stream->stream_d != ctx.standard_stream) {
+    php_warning("call server finish query on non server stream %lu", stream->stream_d);
+    return;
+  }
+  free_descriptor(ctx.standard_stream);
+  ctx.standard_stream = 0;
+}

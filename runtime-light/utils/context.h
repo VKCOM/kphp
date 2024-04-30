@@ -2,10 +2,10 @@
 
 #include "runtime-light/header.h"
 
-inline thread_local ImageState * mutableImageState;
-inline const thread_local ImageState * imageState;
-inline const thread_local PlatformCtx * platformCtx;
-inline thread_local ComponentState * componentState;
+extern thread_local ImageState * mutableImageState;
+extern const thread_local ImageState * imageState;
+extern const thread_local PlatformCtx * platformCtx;
+extern thread_local ComponentState * componentState;
 
 inline const PlatformCtx * get_platform_context() {
   return platformCtx;
