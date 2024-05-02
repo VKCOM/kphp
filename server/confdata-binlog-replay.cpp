@@ -851,6 +851,10 @@ void set_confdata_soft_oom_ratio(double soft_oom_ratio) noexcept {
   confdata_settings.soft_oom_threshold_ratio = soft_oom_ratio;
 }
 
+void set_confdata_hard_oom_ratio(double hard_oom_ratio) noexcept {
+  confdata_settings.hard_oom_threshold_ratio = hard_oom_ratio;
+}
+
 void set_confdata_binlog_mask(const char *mask) noexcept {
   confdata_settings.binlog_mask = mask;
 }

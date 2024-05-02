@@ -4,6 +4,8 @@ import re
 import sys
 import shutil
 
+_SUPPORTED_PHP_VERSIONS = ["php7.4", "php8", "php8.1", "php8.2", "php8.3"]
+
 
 def _check_file(file_name, file_dir, file_checker):
     file_path = os.path.join(file_dir, file_name)
@@ -103,9 +105,17 @@ def can_ignore_sanitizer_log(sanitizer_log_file):
     return ignore_sanitizer
 
 
-def search_php_bin(php8_require=False):
+def search_php_bin(php_version: str):
     if sys.platform == "darwin":
         return shutil.which("php")
-    if php8_require:
-        return shutil.which("php8.1") or shutil.which("php8")
-    return shutil.which("php7.4")
+
+    # checking from oldest to newest versions
+    for spv in sorted(_SUPPORTED_PHP_VERSIONS):
+        if spv < php_version:
+            continue
+
+        exe_path = shutil.which(spv)
+        if exe_path is not None:
+            return exe_path
+
+    return None
