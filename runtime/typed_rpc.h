@@ -49,8 +49,7 @@ array<int64_t> f$typed_rpc_tl_query(const class_instance<C$RpcConnection> &conne
   static_assert(std::is_same_v<KphpRpcRequest, R>, "Unexpected type");
 
   if (ignore_answer && need_responses_extra_info) {
-    php_warning(
-            "Both $ignore_answer and $need_responses_extra_info are 'true'. Can't collect metrics for ignored answers");
+    php_warning("Both $ignore_answer and $need_responses_extra_info are 'true'. Can't collect metrics for ignored answers");
   }
 
   size_t bytes_sent = 0;
