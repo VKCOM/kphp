@@ -33,7 +33,7 @@ apt-get update
 # utils for adding repositories
 apt-get install -y --no-install-recommends apt-utils ca-certificates gnupg wget lsb-release
 # for newest cmake package
-echo "deb https://deb.debian.org/debian buster-backports main" >> /etc/apt/sources.list
+echo "deb https://archive.debian.org/debian buster-backports main" >> /etc/apt/sources.list
 # for curl-kphp-vk, libuber-h3-dev packages and kphp-timelib
 wget -qO /etc/apt/trusted.gpg.d/vkpartner.asc https://artifactory-external.vkpartner.ru/artifactory/api/gpg/key/public
 echo "deb https://artifactory-external.vkpartner.ru/artifactory/kphp buster main" >> /etc/apt/sources.list 

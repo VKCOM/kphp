@@ -26,7 +26,7 @@ public:
 
   using DummyVisitorMethods::accept;
 
-  void accept(InstanceMemoryEstimateVisitor &visitor) {
+  void accept(CommonMemoryEstimateVisitor &visitor) {
     visitor("", error);
     visitor("", query_results);
     visitor("", last_query_id);

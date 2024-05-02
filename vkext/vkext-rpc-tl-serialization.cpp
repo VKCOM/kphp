@@ -1176,14 +1176,14 @@ void vk_rpc_tl_query(INTERNAL_FUNCTION_PARAMETERS) {
   ADD_CNT (parse);
   START_TIMER (parse);
   int argc = ZEND_NUM_ARGS ();
-  VK_ZVAL_API_ARRAY z[5];
+  VK_ZVAL_API_ARRAY z[6];
   if (argc < 2) {
     vkext_reset_error();
     vkext_error(VKEXT_ERROR_INVALID_CALL, "Not enough parameters for rpc_tl_query");
     END_TIMER (parse);
     RETURN_EMPTY_ARRAY();
   }
-  if (zend_get_parameters_array_ex (argc > 4 ? 4 : argc, z) == FAILURE) {
+  if (zend_get_parameters_array_ex (argc > 6 ? 6 : argc, z) == FAILURE) {
     vkext_reset_error();
     vkext_error(VKEXT_ERROR_INVALID_CALL, "Can't parse parameters for rpc_tl_query");
     END_TIMER (parse);

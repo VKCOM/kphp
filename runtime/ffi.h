@@ -43,7 +43,7 @@ struct CDataArray: public refcountable_php_classes<CDataArray<T>> {
     }
   }
 
-  void accept(InstanceMemoryEstimateVisitor&) {}
+  void accept(CommonMemoryEstimateVisitor&) {}
 };
 
 // Maybe CDataRef is enough for both field/array references,
@@ -94,14 +94,14 @@ struct CDataPtr {
     c_value = reinterpret_cast<T*>(1);
   }
 
-  void accept(InstanceMemoryEstimateVisitor&) {}
+  void accept(CommonMemoryEstimateVisitor&) {}
 };
 
 template<class T>
 struct CDataRef {
   T *c_value;
 
-  void accept(InstanceMemoryEstimateVisitor &visitor __attribute__((unused))) {}
+  void accept(CommonMemoryEstimateVisitor &visitor __attribute__((unused))) {}
   const char *get_class() const noexcept { return "FFI\\CDataRef"; }
   int get_hash() const noexcept { return -1965114283; }
 };
@@ -112,7 +112,7 @@ struct CDataArrayRef {
   T *data;
   int64_t len;
 
-  void accept(InstanceMemoryEstimateVisitor&) {}
+  void accept(CommonMemoryEstimateVisitor&) {}
 };
 
 template<class T>
