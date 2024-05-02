@@ -11,7 +11,7 @@
 struct tl_func_base;
 
 class ToArrayVisitor;
-class InstanceMemoryEstimateVisitor;
+class CommonMemoryEstimateVisitor;
 class InstanceReferencesCountingVisitor;
 class InstanceDeepCopyVisitor;
 class InstanceDeepDestroyVisitor;
@@ -26,7 +26,7 @@ struct C$VK$TL$RpcFunction : abstract_refcountable_php_interface {
   virtual int32_t get_hash() const { return static_cast<int32_t>(vk::std_hash(vk::string_view(C$VK$TL$RpcFunction::get_class()))); }
 
   virtual void accept(ToArrayVisitor &) noexcept {}
-  virtual void accept(InstanceMemoryEstimateVisitor &) noexcept {}
+  virtual void accept(CommonMemoryEstimateVisitor &) noexcept {}
   virtual void accept(InstanceReferencesCountingVisitor &) noexcept {}
   virtual void accept(InstanceDeepCopyVisitor &) noexcept {}
   virtual void accept(InstanceDeepDestroyVisitor &) noexcept {}
@@ -45,7 +45,7 @@ struct C$VK$TL$RpcFunctionReturnResult : abstract_refcountable_php_interface {
   virtual int32_t get_hash() const { return static_cast<int32_t>(vk::std_hash(vk::string_view(C$VK$TL$RpcFunctionReturnResult::get_class()))); }
 
   virtual void accept(ToArrayVisitor &) noexcept {}
-  virtual void accept(InstanceMemoryEstimateVisitor &) noexcept {}
+  virtual void accept(CommonMemoryEstimateVisitor &) noexcept {}
   virtual void accept(InstanceReferencesCountingVisitor &) noexcept {}
   virtual void accept(InstanceDeepCopyVisitor &) noexcept {}
   virtual void accept(InstanceDeepDestroyVisitor &) noexcept {}
@@ -62,7 +62,7 @@ struct C$VK$TL$RpcResponse : abstract_refcountable_php_interface {
   using X = class_instance<C$VK$TL$RpcFunctionReturnResult>;
 
   virtual void accept(ToArrayVisitor &) noexcept {}
-  virtual void accept(InstanceMemoryEstimateVisitor &) noexcept {}
+  virtual void accept(CommonMemoryEstimateVisitor &) noexcept {}
   virtual void accept(InstanceReferencesCountingVisitor &) noexcept {}
   virtual void accept(InstanceDeepCopyVisitor &) noexcept {}
   virtual void accept(InstanceDeepDestroyVisitor &) noexcept {}

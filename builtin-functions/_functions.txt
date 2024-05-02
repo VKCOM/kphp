@@ -451,6 +451,8 @@ function getrandmax() ::: int;
 function mt_srand ($seed ::: int = PHP_INT_MIN) ::: void;
 function mt_rand ($l ::: int = TODO_OVERLOAD, $r ::: int = TODO_OVERLOAD) ::: int;
 function mt_getrandmax() ::: int;
+function random_int($l ::: int, $r ::: int) ::: int | false;
+function random_bytes($length ::: int) ::: string | false;
 
 function hash_algos () ::: string[];
 function hash_hmac_algos () ::: string[];
@@ -914,6 +916,27 @@ final class RpcConnection {
     private function __construct();
 }
 
+/**
+ * 'KphpRpcRequestsExtraInfo' is a builtin KPHP class. It may accumulate extra information
+ * about RPC requests sent in both typed and untyped versions of rpc_tl_query builtins.
+ */
+final class KphpRpcRequestsExtraInfo {
+    /**
+    * 'get' returns an array of extra information (request size) about sent RPC requests.
+    *
+    * @return tuple(int)[]
+    */
+    public function get ();
+}
+
+/**
+ * 'extract_kphp_rpc_response_extra_info' function takes request ID and returns:
+ * 1. 'null' in case there is no extra information about the request;
+ * 2. 'tuple(response size, response time)' in case we got a response associated with
+ *    the request ID.
+ */
+function extract_kphp_rpc_response_extra_info ($resumable_id ::: int) ::: ?tuple(int, float);
+
 /** rpc store **/
 function new_rpc_connection ($str ::: string, $port ::: int, $actor_id ::: mixed = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: \RpcConnection; // TODO: make actor_id int
 function store_gzip_pack_threshold ($pack_threshold_bytes ::: int) ::: void;
@@ -954,7 +977,7 @@ function rpc_wait_concurrently ($request_id ::: int) ::: bool;
 function rpc_mc_parse_raw_wildcard_with_flags_to_array ($raw_result ::: string, &$result ::: array) ::: bool;
 
 function rpc_tl_query_one (\RpcConnection $rpc_conn, $arr ::: mixed, $timeout ::: float = -1.0) ::: int;
-function rpc_tl_query (\RpcConnection $rpc_conn, $arr ::: array, $timeout ::: float = -1.0, $ignore_answer ::: bool = false) ::: int[];
+function rpc_tl_query (\RpcConnection $rpc_conn, $arr ::: array, $timeout ::: float = -1.0, $ignore_answer ::: bool = false, \KphpRpcRequestsExtraInfo $requests_extra_info = null, $need_responses_extra_info ::: bool = false) ::: int[];
 /** @kphp-extern-func-info resumable */
 function rpc_tl_query_result_one ($query_id ::: int) ::: mixed[];
 /** @kphp-extern-func-info resumable */
@@ -982,7 +1005,7 @@ interface RpcResponse {
 /** @kphp-extern-func-info tl_common_h_dep */
 function typed_rpc_tl_query_one (\RpcConnection $connection, @tl\RpcFunction $query_function, $timeout ::: float = -1.0) ::: int;
 /** @kphp-extern-func-info tl_common_h_dep */
-function typed_rpc_tl_query (\RpcConnection $connection, @tl\RpcFunction[] $query_functions, $timeout ::: float = -1.0, $ignore_answer ::: bool = false) ::: int[];
+function typed_rpc_tl_query (\RpcConnection $connection, @tl\RpcFunction[] $query_functions, $timeout ::: float = -1.0, $ignore_answer ::: bool = false, \KphpRpcRequestsExtraInfo $requests_extra_info = null, $need_responses_extra_info ::: bool = false) ::: int[];
 /** @kphp-extern-func-info tl_common_h_dep resumable */
 function typed_rpc_tl_query_result_one (int $query_id) ::: @tl\RpcResponse;
 /** @kphp-extern-func-info tl_common_h_dep resumable */

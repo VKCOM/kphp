@@ -2,13 +2,21 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime/math_functions.h"
-
 #include <chrono>
 #include <random>
+#include <cstring>
+#include <cerrno>
 #include <sys/time.h>
 
+#if defined(__APPLE__)
+#include <stdlib.h>
+#else
+#include <sys/random.h>
+#endif
+
 #include "common/cycleclock.h"
+#include "runtime/math_functions.h"
+#include "runtime/exception.h"
 #include "runtime/critical_section.h"
 #include "runtime/string_functions.h"
 #include "server/php-engine-vars.h"
@@ -19,6 +27,15 @@ namespace {
     const uint64_t r = x * M + y;
     overflow = overflow || r < x || r > static_cast<uint64_t>(std::numeric_limits<int64_t>::max());
     return r;
+  }
+
+  int64_t secure_rand_buf(char * const buf, int64_t length) noexcept {
+#if defined(__APPLE__)
+    arc4random_buf(static_cast<void*>(buf), static_cast<size_t>(length));
+    return 0;
+#else
+    return getrandom(buf, static_cast<size_t>(length), 0x0);
+#endif
   }
 } // namespace
 
@@ -207,6 +224,45 @@ int64_t f$rand(int64_t l, int64_t r) noexcept {
 
 int64_t f$getrandmax() noexcept {
   return f$mt_getrandmax();
+}
+
+Optional<int64_t> f$random_int(int64_t l, int64_t r) noexcept {
+  if (unlikely(l > r)) {
+    php_warning("Argument #1 ($min) must be less than or equal to argument #2 ($max)");
+    return false;
+  }
+
+  if (unlikely(l == r)) {
+    return l;
+  }
+
+  try {
+    std::random_device rd{"/dev/urandom"};
+    std::uniform_int_distribution dist{l, r};
+
+    return dist(rd);
+  } catch (const std::exception &e) {
+    php_warning("Source of randomness cannot be found: %s", e.what());
+    return false;
+  } catch (...) {
+    php_critical_error("Unhandled exception");
+  }
+}
+
+Optional<string> f$random_bytes(int64_t length) noexcept {
+  if (unlikely(length < 1)) {
+    php_warning("Argument #1 ($length) must be greater than 0");
+    return false;
+  }
+
+  string str{static_cast<string::size_type>(length), false};
+
+  if (secure_rand_buf(str.buffer(), static_cast<size_t>(length)) == -1) {
+    php_warning("Source of randomness cannot be found: %s", std::strerror(errno));
+    return false;
+  }
+
+  return str;
 }
 
 mixed f$abs(const mixed &v) {

@@ -85,7 +85,6 @@ Exception new_Exception(const string &file, int64_t line, const string &message,
   return f$_exception_set_location(f$Exception$$__construct(Exception().alloc(), message, code), file, line);
 }
 
-
 Exception f$err(const string &file, int64_t line, const string &code, const string &desc) {
   return new_Exception(file, line, (static_SB.clean() << "ERR_" << code << ": " << desc).str(), 0);
 }
