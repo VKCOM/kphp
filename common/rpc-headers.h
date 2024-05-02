@@ -47,7 +47,7 @@ struct RpcHeaders {
 #pragma pack(pop)
 
 struct RegularizeWrappersReturnT {
-  /// Optionally contains a new wrapper ans its size
+  /// Optionally contains a new wrapper and its size
   std::optional<std::pair<RpcExtraHeaders, std::size_t>> opt_new_wrapper;
   /// The size of a wrapper found in rpc payload (0 if there is no one)
   std::size_t cur_wrapper_size;
