@@ -52,7 +52,7 @@ private:
 
   array<NestedLevel> stack_;
   string error_;
-  std::size_t double_precision_{0};
+  std::size_t double_precision_{0}; // unused
   const bool pretty_print_{false};
   const bool preserve_zero_fraction_{false};
   bool has_root_{false};
