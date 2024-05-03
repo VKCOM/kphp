@@ -5,6 +5,7 @@
 #include "runtime/rpc.h"
 
 #include <cstdarg>
+#include <cstring>
 #include <chrono>
 
 #include "common/rpc-error-codes.h"
@@ -679,22 +680,40 @@ int64_t rpc_send_impl(const class_instance<C$RpcConnection> &conn, double timeou
   store_int(-1); // reserve for crc32
   php_assert (data_buf.size() % sizeof(int) == 0);
 
-  const char *rpc_payload_start = data_buf.c_str() + sizeof(RpcHeaders);
-  size_t rpc_payload_size = data_buf.size() - sizeof(RpcHeaders);
-  uint32_t function_magic = CurrentProcessingQuery::get().get_last_stored_tl_function_magic();
-  RpcExtraHeaders extra_headers{};
-  size_t extra_headers_size = fill_extra_headers_if_needed(extra_headers, function_magic, conn.get()->actor_id, ignore_answer);
+  const auto [opt_new_wrapper, cur_wrapper_size, opt_actor_id_warning_info, opt_ignore_result_warning_msg]{
+          regularize_wrappers(data_buf.c_str() + sizeof(RpcHeaders), conn.get()->actor_id, ignore_answer)};
 
-  const auto request_size = static_cast<size_t>(data_buf.size() + extra_headers_size);
-  char *p = static_cast<char *>(dl::allocate(request_size));
+  if (opt_actor_id_warning_info.has_value()) {
+    const auto [msg, cur_wrapper_actor_id, new_wrapper_actor_id]{opt_actor_id_warning_info.value()};
+    php_warning(msg, cur_wrapper_actor_id, new_wrapper_actor_id);
+  }
+  if (opt_ignore_result_warning_msg != nullptr) {
+    php_warning("%s", opt_ignore_result_warning_msg);
+  }
 
-  // Memory will look like this:
+  char *request_buf{nullptr};
+  std::size_t request_size{0};
+
+  // 'request_buf' will look like this:
   //    [ RpcHeaders (reserved in f$rpc_clean) ] [ RpcExtraHeaders (optional) ] [ payload ]
-  memcpy(p, data_buf.c_str(), sizeof(RpcHeaders));
-  memcpy(p + sizeof(RpcHeaders), &extra_headers, extra_headers_size);
-  memcpy(p + sizeof(RpcHeaders) + extra_headers_size, rpc_payload_start, rpc_payload_size);
+  if (opt_new_wrapper.has_value()) {
+    const auto [new_wrapper, new_wrapper_size]{opt_new_wrapper.value()};
+    request_size = data_buf.size() - cur_wrapper_size + new_wrapper_size;
+    request_buf = static_cast<char *>(dl::allocate(request_size));
 
-  slot_id_t q_id = rpc_send_query(conn.get()->host_num, p, static_cast<int>(request_size), timeout_convert_to_ms(timeout));
+    std::memcpy(request_buf, data_buf.c_str(), sizeof(RpcHeaders));
+    std::memcpy(request_buf + sizeof(RpcHeaders), &new_wrapper, new_wrapper_size);
+    std::memcpy(request_buf + sizeof(RpcHeaders) + new_wrapper_size,
+                data_buf.c_str() + sizeof(RpcHeaders) + cur_wrapper_size,
+                data_buf.size() - sizeof(RpcHeaders) - cur_wrapper_size);
+  } else {
+    request_size = data_buf.size();
+    request_buf = static_cast<char *>(dl::allocate(request_size));
+
+    std::memcpy(request_buf, data_buf.c_str(), request_size);
+  }
+
+  slot_id_t q_id = rpc_send_query(conn.get()->host_num, request_buf, static_cast<int>(request_size), timeout_convert_to_ms(timeout));
 
   // request's statistics
   req_extra_info = rpc_request_extra_info_t{request_size};
@@ -739,7 +758,7 @@ int64_t rpc_send_impl(const class_instance<C$RpcConnection> &conn, double timeou
   double send_timestamp = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
 
   cur->resumable_id = register_forked_resumable(new rpc_resumable(q_id));
-  cur->function_magic = function_magic;
+  cur->function_magic = CurrentProcessingQuery::get().get_last_stored_tl_function_magic();
   cur->actor_or_port = conn.get()->actor_id > 0 ? conn.get()->actor_id : -conn.get()->port;
   cur->timer = nullptr;
 
