@@ -29,10 +29,14 @@ private:
     char dummy[4096];
   };
 
-  TLSRaw arr[MAX_THREADS_COUNT + 1];
+  // The thread with thread_id = 0 is the main thread in which the scheduler's master code is executed.
+  // Threads with thread_id values in the range [1, MAX_THREADS_CNT] can be used as worker threads.
+  // An additional thread with thread_id = MAX_THREADS_CNT + 1 can be used to work with the CppDestDirInitializer.
+  // Therefore, the system requires a total of MAX_THREADS_CNT + 2 threads to be available.
+  TLSRaw arr[MAX_THREADS_COUNT + 2];
 
   TLSRaw *get_raw(int id) {
-    assert(0 <= id && id <= MAX_THREADS_COUNT);
+    assert(0 <= id && id <= 1 + MAX_THREADS_COUNT);
     return &arr[id];
   }
 
