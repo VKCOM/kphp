@@ -20,6 +20,14 @@ inline int64_t f$print(const string& s) {
   return 1;
 }
 
+inline int64_t f$strlen(const string &s) {
+  return s.size();
+}
+
+void f$debug_print_string(const string &s);
+
+string f$increment_byte(const string &s);
+
 // str_concat_arg generalizes both tmp_string and string arguments;
 // it can be constructed from both of them, so concat functions can operate
 // on both tmp_string and string types

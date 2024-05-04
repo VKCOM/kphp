@@ -19,6 +19,24 @@ void print(const string &s) {
   print(s.c_str(), s.size());
 }
 
+void f$debug_print_string(const string &s) {
+  printf("debug_print_string [");
+  for (int i = 0; i < s.size(); ++i) {
+    printf("%d, ", s.c_str()[i]);
+  }
+  printf("]\n");
+}
+
+string f$increment_byte(const string &s) {
+  if (s.size() != 1) {
+    php_error("For increment string should be one byte");
+    return s;
+  }
+  char c = *s.c_str() + 1;
+  string result(&c, 1);
+  return result;
+}
+
 string str_concat(const string &s1, const string &s2) {
   // for 2 argument concatenation it's not so uncommon to have at least one empty string argument;
   // it happens in cases like `$prefix . $s` where $prefix could be empty depending on some condition

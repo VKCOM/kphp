@@ -39,36 +39,6 @@ task_t<std::pair<char *, int>> read_all_from_stream(uint64_t stream_d) {
   co_return std::make_pair(buffer, buffer_size);
 }
 
-task_t<int> write_all_to_stream(uint64_t stream_d, const char * buffer, int len) {
-  co_await test_yield_t{};
-
-  StreamStatus status;
-  const PlatformCtx & ptx = *get_platform_context();
-  int writed = 0;
-  do {
-    GetStatusResult res = ptx.get_stream_status(stream_d, &status);
-    if (res != GetStatusOk) {
-      php_warning("get stream status return status %d", res);
-      co_return writed;
-    }
-
-    if (status.please_shutdown_write) {
-      php_notice("stream %d set please_shutdown_write. Stop writing", stream_d);
-      co_return writed;
-    } else if (status.write_status == IOAvailable) {
-      writed += ptx.write(stream_d, len - writed, buffer + writed);
-    } else if (status.write_status == IOBlocked) {
-      co_await write_blocked_t{stream_d};
-    } else {
-      php_warning("stream closed while writing. Writed %d. Size %d. Stream %lu", writed, len, stream_d);
-      co_return writed;
-    }
-  } while (writed != len);
-
-  php_debug("write %d bytes to stream %lu", len, stream_d);
-  co_return writed;
-}
-
 std::pair<char *, int> read_nonblock_from_stream(uint64_t stream_d) {
   constexpr int batch_size = 32;
   const PlatformCtx & ptx = *get_platform_context();
@@ -100,6 +70,65 @@ std::pair<char *, int> read_nonblock_from_stream(uint64_t stream_d) {
   return std::make_pair(buffer, buffer_size);
 }
 
+task_t<int> read_exact_from_stream(uint64_t stream_d, char * buffer, int len) {
+  co_await test_yield_t{};
+
+  const PlatformCtx & ptx = *get_platform_context();
+  int read = 0;
+  StreamStatus status{IOAvailable, IOAvailable, 0};
+  while (read != len && status.read_status != IOClosed) {
+    GetStatusResult res = ptx.get_stream_status(stream_d, &status);
+    if (res != GetStatusOk) {
+      php_warning("get stream status return status %d", res);
+      co_return 0;
+    }
+
+    if (status.read_status == IOAvailable) {
+      read += ptx.read(stream_d, len - read, buffer + read);
+    } else {
+      co_await read_blocked_t{stream_d};
+    }
+  }
+
+  printf("read exact bytes [");
+  for (int i = 0; i < read; ++i) {
+    printf("%d, ", buffer[i]);
+  }
+  printf("]\n");
+
+  co_return read;
+}
+
+task_t<int> write_all_to_stream(uint64_t stream_d, const char * buffer, int len) {
+  co_await test_yield_t{};
+
+  StreamStatus status;
+  const PlatformCtx & ptx = *get_platform_context();
+  int writed = 0;
+  do {
+    GetStatusResult res = ptx.get_stream_status(stream_d, &status);
+    if (res != GetStatusOk) {
+      php_warning("get stream status return status %d", res);
+      co_return writed;
+    }
+
+    if (status.please_shutdown_write) {
+      php_notice("stream %d set please_shutdown_write. Stop writing", stream_d);
+      co_return writed;
+    } else if (status.write_status == IOAvailable) {
+      writed += ptx.write(stream_d, len - writed, buffer + writed);
+    } else if (status.write_status == IOBlocked) {
+      co_await write_blocked_t{stream_d};
+    } else {
+      php_warning("stream closed while writing. Writed %d. Size %d. Stream %lu", writed, len, stream_d);
+      co_return writed;
+    }
+  } while (writed != len);
+
+  php_debug("write %d bytes to stream %lu", len, stream_d);
+  co_return writed;
+}
+
 int write_nonblock_to_stream(uint64_t stream_d, const char * buffer, int len) {
   StreamStatus status;
   const PlatformCtx & ptx = *get_platform_context();
@@ -120,6 +149,37 @@ int write_nonblock_to_stream(uint64_t stream_d, const char * buffer, int len) {
 
   php_debug("write %d bytes from %d to stream %lu", writed, len, stream_d);
   return writed;
+}
+
+task_t<int> write_exact_to_stream(uint64_t stream_d, const char * buffer, int len) {
+  co_await test_yield_t{};
+  printf("write exact bytes [");
+  for (int i = 0; i < len; ++i) {
+    printf("%d, ", buffer[i]);
+  }
+  printf("]\n");
+
+  StreamStatus status{IOAvailable, IOAvailable, 0};
+  const PlatformCtx & ptx = *get_platform_context();
+  int writed = 0;
+  while (writed != len && status.write_status != IOClosed) {
+    GetStatusResult res = ptx.get_stream_status(stream_d, &status);
+    if (res != GetStatusOk) {
+      php_warning("get stream status return status %d", res);
+      co_return writed;
+    }
+
+    if (status.please_shutdown_write) {
+      php_notice("stream %d set please_shutdown_write. Stop writing", stream_d);
+      co_return writed;
+    } else if (status.write_status == IOAvailable) {
+      writed += ptx.write(stream_d, len - writed, buffer + writed);
+    } else if (status.write_status == IOBlocked) {
+      co_await write_blocked_t{stream_d};
+    }
+  }
+
+  co_return writed;
 }
 
 void free_all_descriptors() {

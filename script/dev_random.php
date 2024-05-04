@@ -9,6 +9,7 @@ if (is_null($stream_to_out)) {
 
 while(!$stream_to_out->is_write_closed() && !$stream_to_out->is_please_shutdown_write()) {
     component_stream_write_nonblock($stream_to_out, "random_batch");
+    component_stream_wait_write($stream_to_out);
 }
 
 // while (true) {
