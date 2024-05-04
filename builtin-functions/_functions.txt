@@ -88,7 +88,7 @@ class ComponentQuery {
 }
 
 /** @kphp-extern-func-info interruptible */
-function component_client_send_query($name ::: string, $message ::: string = 'fix_sigsegv') ::: ComponentQuery;
+function component_client_send_query($name ::: string, $message ::: string) ::: ComponentQuery;
 /** @kphp-extern-func-info interruptible */
 function component_client_get_result($query ::: ComponentQuery) ::: string;
 
@@ -97,4 +97,31 @@ function component_server_get_query() ::: string;
 /** @kphp-extern-func-info interruptible */
 function component_server_send_result($message ::: string) ::: void;
 
+class ComponentStream {
+    private function __construct() ::: \ComponentStream;
+
+    public function is_read_closed() ::: bool;
+    public function is_write_closed() ::: bool;
+    public function is_please_shutdown_write() ::: bool;
+
+    public function shutdown_write() ::: void;
+    public function please_shutdown_write() ::: void;
+}
+
+function component_open_stream($name ::: string) ::: ComponentStream;
+/** @kphp-extern-func-info interruptible */
+function component_accept_stream() ::: ComponentStream;
+
+function component_stream_write_nonblock($stream ::: ComponentStream, $message ::: string) ::: int;
+function component_stream_read_nonblock($stream ::: ComponentStream) ::: string;
+
+function component_close_stream($stream ::: ComponentStream) ::: void;
+function component_finish_stream_processing($stream ::: ComponentStream) ::: void;
+
 function make_clone ($x ::: any) ::: ^1;
+
+/** @kphp-extern-func-info interruptible */
+function testyield() ::: void;
+function check_shutdown() ::: void;
+
+function warning($message ::: string) ::: void;

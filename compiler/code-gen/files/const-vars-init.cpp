@@ -138,7 +138,10 @@ void ConstVarsInit::compile_const_init(CodeGenerator &W, int parts_cnt, const st
   FunctionSignatureGenerator(W) << "void const_vars_init()" << BEGIN;
   W << ConstantsLinearMemAllocation() << NL;
 
-  const int very_max_dep_level = *std::max_element(max_dep_levels.begin(), max_dep_levels.end());
+  int very_max_dep_level = 0;
+  for (int max_dep_level : max_dep_levels) {
+    very_max_dep_level = std::max(very_max_dep_level, max_dep_level);
+  }
   for (int dep_level = 0; dep_level <= very_max_dep_level; ++dep_level) {
     for (size_t part_id = 0; part_id < parts_cnt; ++part_id) {
       if (dep_level <= max_dep_levels[part_id]) {
