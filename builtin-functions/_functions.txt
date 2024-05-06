@@ -19,6 +19,7 @@ require_once __DIR__ . '/kphp_tracing.txt';
 require_once __DIR__ . '/uberh3.txt';
 require_once __DIR__ . '/spl.txt';
 require_once __DIR__ . '/ffi.txt';
+require_once __DIR__ . '/kml.txt';
 require_once __DIR__ . '/pdo/PDO.php';
 require_once __DIR__ . '/pdo/PDOStatement.php';
 
