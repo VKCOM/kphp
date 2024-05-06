@@ -35,6 +35,7 @@
 #include "runtime/job-workers/server-functions.h"
 #include "runtime/json-processor-utils.h"
 #include "runtime/kphp-backtrace.h"
+#include "runtime/kphp_ml/kphp_ml_init.h"
 #include "runtime/kphp_tracing.h"
 #include "runtime/math_functions.h"
 #include "runtime/memcache.h"
@@ -2455,6 +2456,7 @@ void worker_global_init(WorkerType worker_type) noexcept {
   vk::singleton<JsonLogger>::get().reset_json_logs_count();
   worker_global_init_handlers(worker_type);
   vk::singleton<ThreadPool>::get().init();
+  init_kphp_ml_runtime_in_worker();
 }
 
 void read_engine_tag(const char *file_name) {
