@@ -6,7 +6,7 @@
 // This file exists both in KPHP and in a private vkcom repo "ml_experiments".
 // They are almost identical, besides include paths and input types (`array` vs `unordered_map`).
 
-#include "kml-files-reader.h"
+#include "runtime/kphp_ml/kml-files-reader.h"
 
 #include <fstream>
 

@@ -6,7 +6,8 @@
 // This file exists both in KPHP and in a private vkcom repo "ml_experiments".
 // They are almost identical, besides include paths and input types (`array` vs `unordered_map`).
 
-#include "kphp_ml/kphp_ml.h"
+#include "runtime/kphp_core.h"
+#include "runtime/kphp_ml/kphp_ml.h"
 
 // for detailed comments about KML, see kphp_ml.h
 
@@ -27,7 +28,7 @@ unsigned int kphp_ml::MLModel::calculate_mutable_buffer_size() const {
     }
     case ModelKind::catboost_trees: {
       const auto &cbm = std::get<kphp_ml_catboost::CatboostModel>(impl);
-      return cbm.cat_feature_count * sizeof(std::string) +
+      return cbm.cat_feature_count * sizeof(string) +
              cbm.float_feature_count * sizeof(float) +
              (cbm.binary_feature_count + 4 - 1) / 4 * 4 + // round up to 4 bytes
              cbm.cat_feature_count * sizeof(int) +
@@ -49,4 +50,3 @@ std::optional<std::string> kphp_ml::MLModel::get_custom_property(const std::stri
   }
   return it->second;
 }
-

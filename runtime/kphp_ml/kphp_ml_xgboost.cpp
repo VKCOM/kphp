@@ -6,13 +6,12 @@
 // This file exists both in KPHP and in a private vkcom repo "ml_experiments".
 // They are almost identical, besides include paths and input types (`array` vs `unordered_map`).
 
-#include "kphp_ml/kphp_ml.h"
-#include "kphp_ml/kphp_ml_xgboost.h"
+#include "runtime/kphp_ml/kphp_ml_xgboost.h"
 
 #include <cmath>
 
-#include "utils/string_hash.h"
-#include "testing_infra/infra_cpp.h"
+#include "runtime/kphp_core.h"
+#include "runtime/kphp_ml/kphp_ml.h"
 
 /*
  * For detailed comments about KML, see kphp_ml.h.
@@ -40,13 +39,16 @@ struct XgbDensePredictor {
 
   float *vector_x{nullptr}; // assigned outside as a chunk in linear memory, 2 equal values per existing feature
 
-  typedef void (XgbDensePredictor::*filler_int_keys)(const XgboostModel &xgb, const std::unordered_map<int, double> &features_map) const noexcept;
-  typedef void (XgbDensePredictor::*filler_str_keys)(const XgboostModel &xgb, const std::unordered_map<std::string, double> &features_map) const noexcept;
+  typedef void (XgbDensePredictor::*filler_int_keys)(const XgboostModel &xgb, const array<double> &features_map) const noexcept;
+  typedef void (XgbDensePredictor::*filler_str_keys)(const XgboostModel &xgb, const array<double> &features_map) const noexcept;
 
-  void fill_vector_x_ht_direct(const XgboostModel &xgb, const std::unordered_map<int, double> &features_map) const noexcept {
-    for (const auto &kv: features_map) {
-      const int feature_id = kv.first;
-      const double fvalue = kv.second;
+  void fill_vector_x_ht_direct(const XgboostModel &xgb, const array<double> &features_map) const noexcept {
+    for (const auto &kv : features_map) {
+      if (__builtin_expect(kv.is_string_key(), false)) {
+        continue;
+      }
+      const int feature_id = kv.get_int_key();
+      const double fvalue = kv.get_value();
 
       if (feature_id < 0 || feature_id >= xgb.max_required_features) {  // unexisting index [ 100000 => 0.123 ], it's ok
         continue;
@@ -60,10 +62,13 @@ struct XgbDensePredictor {
     }
   }
 
-  void fill_vector_x_ht_direct_sz(const XgboostModel &xgb, const std::unordered_map<int, double> &features_map) const noexcept {
-    for (const auto &kv: features_map) {
-      const int feature_id = kv.first;
-      const double fvalue = kv.second;
+  void fill_vector_x_ht_direct_sz(const XgboostModel &xgb, const array<double> &features_map) const noexcept {
+    for (const auto &kv : features_map) {
+      if (__builtin_expect(kv.is_string_key(), false)) {
+        continue;
+      }
+      const int feature_id = kv.get_int_key();
+      const double fvalue = kv.get_value();
 
       if (feature_id < 0 || feature_id >= xgb.max_required_features) {  // unexisting index [ 100000 => 0.123 ], it's ok
         continue;
@@ -80,10 +85,13 @@ struct XgbDensePredictor {
     }
   }
 
-  void fill_vector_x_ht_remap_str_key(const XgboostModel &xgb, const std::unordered_map<std::string, double> &features_map) const noexcept {
-    for (const auto &kv: features_map) {
-      const std::string &feature_name = kv.first;
-      const double fvalue = kv.second;
+  void fill_vector_x_ht_remap_str_key(const XgboostModel &xgb, const array<double> &features_map) const noexcept {
+    for (const auto &kv : features_map) {
+      if (__builtin_expect(!kv.is_string_key(), false)) {
+        continue;
+      }
+      const string &feature_name = kv.get_string_key();
+      const double fvalue = kv.get_value();
 
       auto found_it = xgb.reindex_map_str2int.find(string_hash(feature_name.c_str(), feature_name.size()));
       if (found_it != xgb.reindex_map_str2int.end()) {  // input contains [ "unexisting_feature" => 0.123 ], it's ok
@@ -94,10 +102,13 @@ struct XgbDensePredictor {
     }
   }
 
-  void fill_vector_x_ht_remap_str_key_sz(const XgboostModel &xgb, const std::unordered_map<std::string, double> &features_map) const noexcept {
-    for (const auto &kv: features_map) {
-      const std::string &feature_name = kv.first;
-      const double fvalue = kv.second;
+  void fill_vector_x_ht_remap_str_key_sz(const XgboostModel &xgb, const array<double> &features_map) const noexcept {
+    for (const auto &kv : features_map) {
+      if (__builtin_expect(!kv.is_string_key(), false)) {
+        continue;
+      }
+      const string &feature_name = kv.get_string_key();
+      const double fvalue = kv.get_value();
 
       if (std::fabs(fvalue) < 1e-9) {
         continue;
@@ -112,10 +123,13 @@ struct XgbDensePredictor {
     }
   }
 
-  void fill_vector_x_ht_remap_int_key(const XgboostModel &xgb, const std::unordered_map<int, double> &features_map) const noexcept {
-    for (const auto &kv: features_map) {
-      const int feature_id = kv.first;
-      const double fvalue = kv.second;
+  void fill_vector_x_ht_remap_int_key(const XgboostModel &xgb, const array<double> &features_map) const noexcept {
+    for (const auto &kv : features_map) {
+      if (__builtin_expect(kv.is_string_key(), false)) {
+        continue;
+      }
+      const int feature_id = kv.get_int_key();
+      const double fvalue = kv.get_value();
 
       if (feature_id < 0 || feature_id >= xgb.max_required_features) {  // unexisting index [ 100000 => 0.123 ], it's ok
         continue;
@@ -129,10 +143,13 @@ struct XgbDensePredictor {
     }
   }
 
-  void fill_vector_x_ht_remap_int_key_sz(const XgboostModel &xgb, const std::unordered_map<int, double> &features_map) const noexcept {
-    for (const auto &kv: features_map) {
-      const int feature_id = kv.first;
-      const double fvalue = kv.second;
+  void fill_vector_x_ht_remap_int_key_sz(const XgboostModel &xgb, const array<double> &features_map) const noexcept {
+    for (const auto &kv : features_map) {
+      if (__builtin_expect(kv.is_string_key(), false)) {
+        continue;
+      }
+      const int feature_id = kv.get_int_key();
+      const double fvalue = kv.get_value();
 
       if (feature_id < 0 || feature_id >= xgb.max_required_features) {  // unexisting index [ 100000 => 0.123 ], it's ok
         continue;
@@ -202,11 +219,11 @@ double XgboostModel::transform_prediction(double score) const noexcept {
   }
 }
 
-std::vector<double> kml_predict_xgboost(const kphp_ml::MLModel &kml,
-                         const std::vector<InputRow> &in,
-                         char *mutable_buffer) {
+array<double> kml_predict_xgboost(const kphp_ml::MLModel &kml,
+                                  const array<array<double>> &in,
+                                  char *mutable_buffer) {
   const auto &xgb = std::get<XgboostModel>(kml.impl);
-  int n_rows = static_cast<int>(in.size());
+  int n_rows = static_cast<int>(in.size().size);
 
   XgbDensePredictor::filler_int_keys filler_int_keys{nullptr};
   XgbDensePredictor::filler_str_keys filler_str_keys{nullptr};
@@ -232,8 +249,8 @@ std::vector<double> kml_predict_xgboost(const kphp_ml::MLModel &kml,
   auto iter_done = in.begin();
 
   const float base_score = xgb.transform_base_score();
-  std::vector<double> out_predictions;
-  out_predictions.reserve(n_rows);
+  array<double> out_predictions;
+  out_predictions.reserve(n_rows, true);
   for (int i = 0; i < n_rows; ++i) {
     out_predictions.push_back(base_score);
   }
@@ -247,17 +264,17 @@ std::vector<double> kml_predict_xgboost(const kphp_ml::MLModel &kml,
     std::fill_n(reinterpret_cast<uint64_t *>(mutable_buffer), block_size * xgb.num_features_present, XgbDensePredictor::default_missing_value(xgb));
     if (filler_int_keys != nullptr) {
       for (int i = 0; i < block_size; ++i) {
-        (feat_vecs[i].*filler_int_keys)(xgb, iter_done->ht_int_keys_to_fvalue);
+        (feat_vecs[i].*filler_int_keys)(xgb, iter_done.get_value());
         ++iter_done;
       }
     } else {
       for (int i = 0; i < block_size; ++i) {
-        (feat_vecs[i].*filler_str_keys)(xgb, iter_done->ht_str_keys_to_fvalue);
+        (feat_vecs[i].*filler_str_keys)(xgb, iter_done.get_value());
         ++iter_done;
       }
     }
 
-    for (const XgbTree &tree: xgb.trees) {
+    for (const XgbTree &tree : xgb.trees) {
       for (int i = 0; i < block_size; ++i) {
         out_predictions[batch_offset + i] += feat_vecs[i].predict_one_tree(tree);
       }

@@ -6,14 +6,10 @@
 // This file exists both in KPHP and in a private vkcom repo "ml_experiments".
 // They are almost identical, besides include paths and input types (`array` vs `unordered_map`).
 
-#include "kphp_ml/kphp_ml_catboost.h"
-#include "kphp_ml/kphp_ml.h"
+#include "runtime/kphp_ml/kphp_ml_catboost.h"
 
-#include "utils/string_hash.h"
-#include "testing_infra/infra_cpp.h"
-
-#include <cmath>
-
+#include "runtime/kphp_core.h"
+#include "runtime/kphp_ml/kphp_ml.h"
 
 /*
  * For detailed comments about KML, see kphp_ml.h.
@@ -111,7 +107,7 @@ static void calc_ctrs(const CatboostModelCtrsContainer &model_ctrs,
   }
 }
 
-static int get_hash(const std::string &cat_feature, const std::unordered_map<uint64_t, int> &cat_feature_hashes) {
+static int get_hash(const string &cat_feature, const std::unordered_map<uint64_t, int> &cat_feature_hashes) {
   auto found_it = cat_feature_hashes.find(string_hash(cat_feature.c_str(), cat_feature.size()));
   return found_it == cat_feature_hashes.end() ? 0x7fffffff : found_it->second;
 }
@@ -119,7 +115,7 @@ static int get_hash(const std::string &cat_feature, const std::unordered_map<uin
 template<class FloatOrDouble>
 static double predict_one(const CatboostModel &cbm,
                           const FloatOrDouble *float_features,
-                          const std::string *cat_features,
+                          const string *cat_features,
                           char *mutable_buffer) {
   char *p_buffer = mutable_buffer;
 
@@ -193,10 +189,10 @@ static double predict_one(const CatboostModel &cbm,
 }
 
 template<class FloatOrDouble>
-static std::vector<double> predict_one_multi(const CatboostModel &cbm,
-                                             const FloatOrDouble *float_features,
-                                             const std::string *cat_features,
-                                             char *mutable_buffer) {
+static array<double> predict_one_multi(const CatboostModel &cbm,
+                                       const FloatOrDouble *float_features,
+                                       const string *cat_features,
+                                       char *mutable_buffer) {
   char *p_buffer = mutable_buffer;
 
   // Binarise features
@@ -249,7 +245,11 @@ static std::vector<double> predict_one_multi(const CatboostModel &cbm,
 
   // Extract and sum values from trees
 
-  std::vector<double> results(cbm.dimension, 0.0);
+  array<double> results(array_size(cbm.dimension, true));
+  for (int i = 0; i < cbm.dimension; ++i) {
+    results[i] = 0.0;
+  }
+
   const std::vector<float> *leaf_values_ptr = cbm.leaf_values_vec.data();
   int tree_ptr = 0;
 
@@ -274,25 +274,25 @@ static std::vector<double> predict_one_multi(const CatboostModel &cbm,
 }
 
 double kml_predict_catboost_by_vectors(const kphp_ml::MLModel &kml,
-                                       const std::vector<float> &float_features,
-                                       const std::vector<std::string> &cat_features,
+                                       const array<double> &float_features,
+                                       const array<string> &cat_features,
                                        char *mutable_buffer) {
   const auto &cbm = std::get<CatboostModel>(kml.impl);
 
-  if (float_features.size() < cbm.float_feature_count) {
-    php_warning("incorrect input size of float_features, model %s", kml.model_name.c_str());
+  if (!float_features.is_vector() || float_features.count() < cbm.float_feature_count) {
+    php_warning("incorrect input size for float_features, model %s", kml.model_name.c_str());
     return 0.0;
   }
-  if (cat_features.size() < cbm.cat_feature_count) {
-    php_warning("incorrect input size of cat_features, model %s", kml.model_name.c_str());
+  if (!cat_features.is_vector() || cat_features.count() < cbm.cat_feature_count) {
+    php_warning("incorrect input size for cat_features, model %s", kml.model_name.c_str());
     return 0.0;
   }
 
-  return predict_one<float>(cbm, float_features.data(), cat_features.data(), mutable_buffer);
+  return predict_one<double>(cbm, float_features.get_const_vector_pointer(), cat_features.get_const_vector_pointer(), mutable_buffer);
 }
 
 double kml_predict_catboost_by_ht_remap_str_keys(const kphp_ml::MLModel &kml,
-                                                 const std::unordered_map<std::string, double> &features_map,
+                                                 const array<double> &features_map,
                                                  char *mutable_buffer) {
   const auto &cbm = std::get<CatboostModel>(kml.impl);
 
@@ -300,21 +300,24 @@ double kml_predict_catboost_by_ht_remap_str_keys(const kphp_ml::MLModel &kml,
   mutable_buffer += sizeof(float) * cbm.float_feature_count;
   std::fill_n(float_features, cbm.float_feature_count, 0.0);
 
-  auto *cat_features = reinterpret_cast<std::string *>(mutable_buffer);
-  mutable_buffer += sizeof(std::string) * cbm.cat_feature_count;
-  for (int i = 0; i < cbm.cat_feature_count; ++i) {   // std::fill_n for string is unsafe
-    new (cat_features + i) std::string();
+  auto *cat_features = reinterpret_cast<string *>(mutable_buffer);
+  mutable_buffer += sizeof(string) * cbm.cat_feature_count;
+  for (int i = 0; i < cbm.cat_feature_count; ++i) {
+    new (cat_features + i) string();
   }
 
   for (const auto &kv: features_map) {
-    const std::string &feature_name = kv.first;
+    if (__builtin_expect(!kv.is_string_key(), false)) {
+      continue;
+    }
+    const string &feature_name = kv.get_string_key();
     const uint64_t key_hash = string_hash(feature_name.c_str(), feature_name.size());
-    double f_or_cat = kv.second;
+    double f_or_cat = kv.get_value();
 
     if (auto found_it = cbm.reindex_map_floats_and_cat.find(key_hash); found_it != cbm.reindex_map_floats_and_cat.end()) {
       int feature_id = found_it->second;
       if (feature_id >= CatboostModel::REINDEX_MAP_CATEGORIAL_SHIFT) {
-        cat_features[feature_id - CatboostModel::REINDEX_MAP_CATEGORIAL_SHIFT] = std::to_string(static_cast<int64_t>(std::round(f_or_cat)));
+        cat_features[feature_id - CatboostModel::REINDEX_MAP_CATEGORIAL_SHIFT] = f$strval(static_cast<int64_t>(std::round(f_or_cat)));
       } else {
         float_features[feature_id] = static_cast<float>(f_or_cat);
       }
@@ -324,48 +327,51 @@ double kml_predict_catboost_by_ht_remap_str_keys(const kphp_ml::MLModel &kml,
   return predict_one<float>(cbm, float_features, cat_features, mutable_buffer);
 }
 
-std::vector<double> kml_predict_catboost_by_vectors_multi(const kphp_ml::MLModel &kml,
-                                                          const std::vector<float> &float_features,
-                                                          const std::vector<std::string> &cat_features,
-                                                          char *mutable_buffer) {
+array<double> kml_predict_catboost_by_vectors_multi(const kphp_ml::MLModel &kml,
+                                                    const array<double> &float_features,
+                                                    const array<string> &cat_features,
+                                                    char *mutable_buffer) {
   const auto &cbm = std::get<CatboostModel>(kml.impl);
 
-  if (float_features.size() < cbm.float_feature_count) {
+  if (!float_features.is_vector() || float_features.count() < cbm.float_feature_count) {
     php_warning("incorrect input size of float_features, model %s", kml.model_name.c_str());
     return {};
   }
-  if (cat_features.size() < cbm.cat_feature_count) {
+  if (!cat_features.is_vector() || cat_features.count() < cbm.cat_feature_count) {
     php_warning("incorrect input size of cat_features, model %s", kml.model_name.c_str());
     return {};
   }
 
-  return predict_one_multi<float>(cbm, float_features.data(), cat_features.data(), mutable_buffer);
+  return predict_one_multi<double>(cbm, float_features.get_const_vector_pointer(), cat_features.get_const_vector_pointer(), mutable_buffer);
 }
 
-std::vector<double> kml_predict_catboost_by_ht_remap_str_keys_multi(const kphp_ml::MLModel &kml,
-                                                                    const std::unordered_map<std::string, double> &features_map,
-                                                                    char *mutable_buffer) {
+array<double> kml_predict_catboost_by_ht_remap_str_keys_multi(const kphp_ml::MLModel &kml,
+                                                              const array<double> &features_map,
+                                                              char *mutable_buffer) {
   const auto &cbm = std::get<CatboostModel>(kml.impl);
 
   auto *float_features = reinterpret_cast<float *>(mutable_buffer);
   mutable_buffer += sizeof(float) * cbm.float_feature_count;
   std::fill_n(float_features, cbm.float_feature_count, 0.0);
 
-  auto *cat_features = reinterpret_cast<std::string *>(mutable_buffer);
-  mutable_buffer += sizeof(std::string) * cbm.cat_feature_count;
-  for (int i = 0; i < cbm.cat_feature_count; ++i) {   // std::fill_n for string is unsafe
-    new (cat_features + i) std::string();
+  auto *cat_features = reinterpret_cast<string *>(mutable_buffer);
+  mutable_buffer += sizeof(string) * cbm.cat_feature_count;
+  for (int i = 0; i < cbm.cat_feature_count; ++i) {
+    new (cat_features + i) string();
   }
 
   for (const auto &kv: features_map) {
-    const std::string &feature_name = kv.first;
+    if (__builtin_expect(!kv.is_string_key(), false)) {
+      continue;
+    }
+    const string &feature_name = kv.get_string_key();
     const uint64_t key_hash = string_hash(feature_name.c_str(), feature_name.size());
-    double f_or_cat = kv.second;
+    double f_or_cat = kv.get_value();
 
     if (auto found_it = cbm.reindex_map_floats_and_cat.find(key_hash); found_it != cbm.reindex_map_floats_and_cat.end()) {
       int feature_id = found_it->second;
       if (feature_id >= CatboostModel::REINDEX_MAP_CATEGORIAL_SHIFT) {
-        cat_features[feature_id - CatboostModel::REINDEX_MAP_CATEGORIAL_SHIFT] = std::to_string(static_cast<int64_t>(std::round(f_or_cat)));
+        cat_features[feature_id - CatboostModel::REINDEX_MAP_CATEGORIAL_SHIFT] = f$strval(static_cast<int64_t>(std::round(f_or_cat)));
       } else {
         float_features[feature_id] = static_cast<float>(f_or_cat);
       }

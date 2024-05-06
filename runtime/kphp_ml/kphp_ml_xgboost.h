@@ -11,8 +11,16 @@
 #include <unordered_map>
 #include <vector>
 
+#include "runtime/kphp_core.h"
+
+/*
+ * For detailed comments about KML, see kphp_ml.h.
+ *
+ * This module contains a custom xgboost predictor implementation.
+ * It's much faster than native xgboost due to compressed layout and avoiding ifs in code.
+ */
+
 namespace kphp_ml { struct MLModel; }
-struct InputRow;
 
 namespace kphp_ml_xgboost {
 
@@ -86,6 +94,7 @@ struct XgboostModel {
   // * otherwise, it's used to access vector_x, see XgbDensePredictor
   int *offset_in_vec;
 
+  // for ModelKind::xgboost_ht_remap
   bool skip_zeroes;
   float default_missing_value;
 
@@ -93,6 +102,6 @@ struct XgboostModel {
   double transform_prediction(double score) const noexcept;
 };
 
-std::vector<double> kml_predict_xgboost(const kphp_ml::MLModel &kml, const std::vector<InputRow> &in, char *mutable_buffer);
+array<double> kml_predict_xgboost(const kphp_ml::MLModel &kml, const array<array<double>> &in, char *mutable_buffer);
 
 } // namespace kphp_ml_xgboost
