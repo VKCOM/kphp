@@ -216,6 +216,13 @@ void CompilerSettings::init() {
   option_as_dir(kphp_src_path);
   functions_file.value_ = get_full_path(functions_file.get());
   runtime_sha256_file.value_ = get_full_path(runtime_sha256_file.get());
+  if (link_file.value_.empty()) {
+    if (mode.get() == "k2-component") {
+      link_file.value_ = kphp_src_path.get() + "/objs/libfull_runtime_light.a";
+    } else {
+      link_file.value_ = kphp_src_path.get() + "/objs/libkphp-full-runtime.a";
+    }
+  }
   link_file.value_ = get_full_path(link_file.get());
 
   if (mode.get() == "lib") {
