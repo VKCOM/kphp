@@ -218,7 +218,7 @@ int main(int argc, char *argv[]) {
   parser.add("The output binary type: server, k2-component, cli or lib", settings->mode,
              'M', "mode", "KPHP_MODE", "server", {"server", "k2-component", "cli", "lib"});
   parser.add("A runtime library for building the output binary", settings->link_file,
-             'l', "link-with", "KPHP_LINK_FILE", "${KPHP_PATH}/objs/libkphp-full-runtime.a");
+             'l', "link-with", "KPHP_LINK_FILE");
   parser.add("Directory where php files will be searched", settings->includes,
              'I', "include-dir", "KPHP_INCLUDE_DIR");
   parser.add("Destination directory", settings->dest_dir,
