@@ -296,9 +296,7 @@ void CompilerSettings::init() {
   if (vk::contains(cxx.get(), "clang")) {
     ss << " -Wno-invalid-source-encoding";
   }
-  #if __cplusplus <= 201703L
-    ss << " -std=c++17";
-  #elif __cplusplus <= 202002L
+  #if __cplusplus <= 202002L
     ss << " -std=c++20";
   #else
     #error unsupported __cplusplus value
