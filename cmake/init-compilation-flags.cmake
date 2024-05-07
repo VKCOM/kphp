@@ -8,10 +8,10 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES GNU)
     set(COMPILER_GCC True)
 endif()
 
-set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
+set(CMAKE_CXX_STANDARD 20 CACHE STRING "C++ standard to conform to")
 set(CMAKE_CXX_EXTENSIONS OFF)
-if (CMAKE_CXX_STANDARD LESS 17)
-    message(FATAL_ERROR "c++17 expected at least!")
+if (CMAKE_CXX_STANDARD LESS 20)
+    message(FATAL_ERROR "c++20 expected at least!")
 endif()
 cmake_print_variables(CMAKE_CXX_STANDARD)
 
@@ -87,7 +87,7 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
 endif()
 
 add_compile_options(-Wall -Wextra -Wunused-function -Wfloat-conversion -Wno-sign-compare
-                    -Wuninitialized -Wno-redundant-move -Wno-missing-field-initializers -Wno-vla-cxx-extension)
+                    -Wuninitialized -Wno-redundant-move -Wno-missing-field-initializers)
 
 if(NOT APPLE)
     check_cxx_compiler_flag(-gz=zlib DEBUG_COMPRESSION_IS_FOUND)
