@@ -39,7 +39,7 @@ function strval ($v ::: mixed) ::: string;
 
 /** @kphp-extern-func-info interruptible */
 function exit($code = 0) ::: void;
-/** @kphp-extern-func-info interruptible */
+
 function die($code = 0) ::: void;
 
 function ob_clean() ::: void;
@@ -141,4 +141,8 @@ function json_encode ($v ::: mixed, $options ::: int = 0) ::: string | false;
 function json_decode ($v ::: string, $assoc ::: bool = false) ::: mixed;
 
 function debug_print_string($str ::: string) ::: void;
-function increment_byte($str ::: string) ::: string;
+
+function byte_to_int($str ::: string) ::: int;
+function int_to_byte($v ::: int) ::: string;
+
+function set_timer(int $timeout, callable():void $callback) ::: void;

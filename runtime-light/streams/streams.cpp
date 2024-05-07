@@ -76,6 +76,7 @@ task_t<int> read_exact_from_stream(uint64_t stream_d, char * buffer, int len) {
   const PlatformCtx & ptx = *get_platform_context();
   int read = 0;
   StreamStatus status{IOAvailable, IOAvailable, 0};
+
   while (read != len && status.read_status != IOClosed) {
     GetStatusResult res = ptx.get_stream_status(stream_d, &status);
     if (res != GetStatusOk) {
@@ -85,16 +86,12 @@ task_t<int> read_exact_from_stream(uint64_t stream_d, char * buffer, int len) {
 
     if (status.read_status == IOAvailable) {
       read += ptx.read(stream_d, len - read, buffer + read);
-    } else {
+    } else if (status.read_status == IOBlocked) {
       co_await read_blocked_t{stream_d};
+    } else {
+      co_return read;
     }
   }
-
-  printf("read exact bytes [");
-  for (int i = 0; i < read; ++i) {
-    printf("%d, ", buffer[i]);
-  }
-  printf("]\n");
 
   co_return read;
 }
@@ -153,11 +150,6 @@ int write_nonblock_to_stream(uint64_t stream_d, const char * buffer, int len) {
 
 task_t<int> write_exact_to_stream(uint64_t stream_d, const char * buffer, int len) {
   co_await test_yield_t{};
-  printf("write exact bytes [");
-  for (int i = 0; i < len; ++i) {
-    printf("%d, ", buffer[i]);
-  }
-  printf("]\n");
 
   StreamStatus status{IOAvailable, IOAvailable, 0};
   const PlatformCtx & ptx = *get_platform_context();
@@ -176,6 +168,8 @@ task_t<int> write_exact_to_stream(uint64_t stream_d, const char * buffer, int le
       writed += ptx.write(stream_d, len - writed, buffer + writed);
     } else if (status.write_status == IOBlocked) {
       co_await write_blocked_t{stream_d};
+    } else {
+      co_return writed;
     }
   }
 

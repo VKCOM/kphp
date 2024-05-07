@@ -81,6 +81,7 @@ task_t<void> f$exit(const mixed &v) {
 }
 
 
-task_t<void> f$die(const mixed &v) {
-  co_await f$exit(v);
+void f$die(const mixed &v) {
+  get_component_context()->poll_status = PollStatus::PollFinishedOk;
+  panic();
 }

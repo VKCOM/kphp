@@ -48,7 +48,7 @@ struct test_yield_t {
   void await_suspend(std::coroutine_handle<> h) const noexcept {
     ComponentState & ctx = *get_component_context();
     ctx.poll_status = PollStatus::PollReschedule;
-    ctx.standard_handle = h;
+    ctx.main_thread = h;
   }
 
   constexpr void await_resume() const noexcept {}
@@ -62,7 +62,7 @@ struct wait_input_query_t {
   void await_suspend(std::coroutine_handle<> h) const noexcept {
     ComponentState & ctx = *get_component_context();
     php_assert(ctx.standard_stream == 0);
-    ctx.standard_handle = h;
+    ctx.main_thread = h;
   }
 
   constexpr void await_resume() const noexcept {}

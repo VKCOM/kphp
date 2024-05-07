@@ -39,7 +39,7 @@ ComponentState *vk_k2_create_component_state(const struct ImageState *image_stat
   }
   // coroutine is initial suspend
   init_php_scripts_in_each_worker(componentState->php_script_mutable_globals_singleton, componentState->k_main);
-  componentState->standard_handle = componentState->k_main.get_handle();
+  componentState->main_thread = componentState->k_main.get_handle();
   ComponentState * component_state = componentState;
   php_debug("finish component state creation on \"%s\"", vk_k2_describe()->image_name);
   reset_thread_locals();
@@ -52,40 +52,21 @@ PollStatus vk_k2_poll(const ImageState *image_state, const PlatformCtx *pt_ctx, 
   componentState = component_ctx;
 
   if (sigsetjmp(componentState->exit_tag, 0) == 0) {
-    if (componentState->poll_status == PollStatus::PollReschedule) {
-      // If component was suspended by please yield and there is no awaitable streams
-      componentState->standard_handle();
-    }
+    componentState->resume_if_was_rescheduled();
     uint64_t stream_d = 0;
     while (platformCtx->take_update(&stream_d) && componentState->not_finished()) {
+      php_debug("take update on stream %lu", stream_d);
       StreamStatus status;
       GetStatusResult res = platformCtx->get_stream_status(stream_d, &status);
       if (res != GetStatusOk) {
-        break;
+        php_warning("get stream status %d", res);
       }
       php_debug("opened_streams size %zu", componentState->opened_streams.size());
-      if (componentState->opened_streams.contains(stream_d)) {
+      if (componentState->is_stream_already_being_processed(stream_d)) {
         php_debug("update on processed stream %lu", stream_d);
-        auto expected_status = componentState->opened_streams[stream_d];
-        if ((expected_status == WBlocked && status.write_status != IOBlocked) ||
-            (expected_status == RBlocked && status.read_status != IOBlocked)) {
-          php_debug("resume on waited query %lu", stream_d);
-          auto suspend_point = componentState->awaiting_coroutines[stream_d];
-          componentState->awaiting_coroutines.erase(stream_d);
-          php_assert(componentState->awaiting_coroutines.empty());
-          suspend_point();
-        }
+        componentState->resume_if_wait_stream(stream_d, status);
       } else {
-        bool already_pending = std::find(componentState->incoming_pending_queries.begin(), componentState->incoming_pending_queries.end(), stream_d)
-                               != componentState->incoming_pending_queries.end();
-        if (!already_pending) {
-          php_debug("got new pending query %lu", stream_d);
-          componentState->incoming_pending_queries.push_back(stream_d);
-        }
-        if (componentState->standard_stream == 0) {
-          php_debug("start process pending query %lu", stream_d);
-          componentState->standard_handle();
-        }
+        componentState->process_new_stream(stream_d);
       }
     }
   } else {

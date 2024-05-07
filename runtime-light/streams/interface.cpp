@@ -84,15 +84,17 @@ task_t<class_instance<C$ComponentStream>> f$component_accept_stream() {
 class_instance<C$ComponentStream> f$component_open_stream(const string &name) {
   class_instance<C$ComponentStream> query;
   const PlatformCtx & ptx = *get_platform_context();
+  ComponentState & ctx = *get_component_context();
   uint64_t stream_d;
   OpenStreamResult res = ptx.open(name.size(), name.c_str(), &stream_d);
   if (res != OpenStreamOk) {
     php_warning("cannot open stream");
     return query;
   }
-
+  ctx.opened_streams[stream_d] = NotBlocked;
   query.alloc();
   query.get()->stream_d = stream_d;
+  php_warning("open stream %lu to %s", stream_d, name.c_str());
   return query;
 }
 
@@ -109,7 +111,7 @@ string f$component_stream_read_nonblock(const class_instance<C$ComponentStream> 
 
 task_t<int64_t> f$component_stream_write_exact(const class_instance<C$ComponentStream> & stream, const string & message) {
   int write = co_await write_exact_to_stream(stream->stream_d, message.c_str(), message.size());
-  php_debug("write exact %d bytes from stream %lu", write, stream->stream_d);
+  php_debug("write exact %d bytes to stream %lu", write, stream->stream_d);
   co_return write;
 }
 

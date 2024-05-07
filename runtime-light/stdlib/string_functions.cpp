@@ -27,12 +27,20 @@ void f$debug_print_string(const string &s) {
   printf("]\n");
 }
 
-string f$increment_byte(const string &s) {
+int64_t f$byte_to_int(const string &s) {
   if (s.size() != 1) {
-    php_error("For increment string should be one byte");
-    return s;
+    php_warning("Cannot convert non-byte string to int");
+    return 0;
   }
-  char c = *s.c_str() + 1;
+  return *s.c_str();
+}
+
+string f$int_to_byte(int64_t v) {
+  if (v > 128 || v < -127) {
+    php_warning("Cannot convert too big int to byte %ld", v);
+    return {};
+  }
+  char c = v;
   string result(&c, 1);
   return result;
 }
