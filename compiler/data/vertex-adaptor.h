@@ -39,15 +39,13 @@ public:
   explicit VertexAdaptor(vertex_inner<Op> *impl) noexcept
     : impl_(impl) {}
 
-  template<Operation FromOp>
+  template<Operation FromOp, typename = std::enable_if_t<op_type_is_base_of(Op, FromOp)>>
   VertexAdaptor(const VertexAdaptor<FromOp> &from) noexcept
     : impl_(static_cast<vertex_inner<Op> *>(from.impl_)) {
-    static_assert(op_type_is_base_of(Op, FromOp), "Strange cast to not base vertex");
   }
 
-  template<Operation FromOp>
+  template<Operation FromOp, typename = std::enable_if_t<op_type_is_base_of(Op, FromOp)>>
   VertexAdaptor<Op> &operator=(const VertexAdaptor<FromOp> &from) noexcept {
-    static_assert(op_type_is_base_of(Op, FromOp), "Strange assignment to not base vertex");
     impl_ = static_cast<vertex_inner<Op> *>(from.impl_);
     return *this;
   }
