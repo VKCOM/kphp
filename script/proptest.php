@@ -86,8 +86,6 @@ class BiDirectStream {
     }
 
     public function read_header() {
-        warning("read header call");
-
         $forward_id = byte_to_int($this->reader->read_byte());
         $seed = byte_to_int($this->reader->read_byte());
         $header = ["forward_id" => $forward_id, "seed" => $seed];
@@ -107,7 +105,7 @@ class BiDirectStream {
         $str .= MARKER;
         $str .= int_to_byte($header["forward_id"] + 1);
         $str .= int_to_byte($header["seed"]);
-        debug_print_string($str);
+//         debug_print_string($str);
         $this->writer->write_exact($str);
 
 //         if ($this->writer->write_exact($str) != 3) {
@@ -119,7 +117,7 @@ class BiDirectStream {
         $this->close_stream();
         $stream = component_open_stream($this->name);
         if (is_null($stream)) {
-            warning("cannot open stream to " . $this->$name);
+
             return false;
         }
         $this->reader->reset($stream);
@@ -149,9 +147,6 @@ class BiDirectStream {
 function print_stat($prev, $next) {
     $a = $prev->get_stat();
     $b = $next->get_stat();
-    warning("read from prev " . $a[0] .". write to prev ". $a[1]);
-    warning("write to next " . $b[1] .". read from next ". $b[0]);
-
 }
 
 function setup_die_timer() {
@@ -161,7 +156,9 @@ function setup_die_timer() {
         return;
     }
     $timeout = intval($scenario["die"]["time_ms"]);
-    set_timer($timeout, function() {die();});
+    set_timer($timeout, function() {
+    warning("die");
+    die();});
 }
 
 
@@ -170,6 +167,11 @@ function get_destination($forward_id)
     global $scenario;
     $len = count($scenario["forward"]["num"]);
     return $scenario["forward"]["names"][0];
+}
+
+function check_forward_id($forward_id) {
+    global $scenario;
+    return intval($scenario["forward"]["num"][0]) === $forward_id;
 }
 
 /**
@@ -207,9 +209,9 @@ function forward_byte($src, $dst) {
         if (!$successful) {
             return false;
         }
-        warning("successful reopen to forward");
+
         if ($str !== MARKER) {
-            warning("send last header");
+
             // If there is no new message still need send last header
             $last_header = $dst->get_last_header();
             $dst->write_full_header($last_header);
@@ -242,15 +244,31 @@ function backward_byte($src, $dst) {
  * @param BiDirectStream $next
   */
 function stream_bytes($prev, $next) {
-    warning("backward header from next to prev");
+
+    //todo make header optional
+
     print_stat($prev, $next);
     $header = $next->read_full_header();
+    if ($next->reader->is_read_closed()) {
+        $successful = $next->reopen();
+         if (!$successful) {
+            return;
+         }
+        $last_header = $next->get_last_header();
+        $next->write_full_header($last_header);
+        $header = $next->read_full_header();
+    }
+
+    if ($next->reader->is_read_closed()) {
+        return;
+    }
+
+
     $prev->write_full_header($header);
     $prev->save_header($header);
     print_stat($prev, $next);
 
 
-    warning("start stream");
     while(true) {
         if (!$prev->is_open()) {
             break;
@@ -263,16 +281,21 @@ function stream_bytes($prev, $next) {
     }
 }
 
-
+/**
+ * @param ComponentStream $incoming_stream
+  */
 function process_query($incoming_stream) {
     $incoming = new BiDirectStream($incoming_stream, "Unknown");
     $header = $incoming->read_full_header();
     $destination = get_destination($header["forward_id"]);
+    if ($incoming_stream->is_read_closed() || $incoming_stream->is_write_closed()) {
+        return;
+    }
 
-    warning("destination is " . $destination);
+
 
     if ($destination === "echo") {
-        warning("reach last component");
+
         $incoming->write_full_header($header);
         echo_bytes($incoming);
         return;
@@ -280,7 +303,7 @@ function process_query($incoming_stream) {
 
     $out = component_open_stream($destination);
     if (is_null($out)) {
-        warning("cannot open stream to " . $destination);
+
         return;
     }
 
@@ -292,14 +315,19 @@ function process_query($incoming_stream) {
 
 function main() {
     while(true) {
+//         warning("main iter");
         /** @var ComponentStream $incoming_stream */
         $incoming_stream = component_accept_stream();
+//         warning("accept stream");
         if (is_null($incoming_stream)) {
-
+            continue;
         }
-        process_query($incoming_stream);
+
+        if(!$incoming_stream->is_read_closed() && !$incoming_stream->is_write_closed()) {
+            process_query($incoming_stream);
+        }
+
         component_finish_stream_processing($incoming_stream);
-        warning("finish query process");
     }
 }
 

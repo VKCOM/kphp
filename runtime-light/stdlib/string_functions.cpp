@@ -1,6 +1,7 @@
 #include "runtime-light/stdlib/string_functions.h"
 
 #include "runtime-light/component/component.h"
+#include "runtime-light/core/runtime_types/optional.h"
 
 void print(const char *s, size_t s_len) {
   Response &response = get_component_context()->response;

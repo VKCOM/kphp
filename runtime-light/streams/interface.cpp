@@ -94,7 +94,7 @@ class_instance<C$ComponentStream> f$component_open_stream(const string &name) {
   ctx.opened_streams[stream_d] = NotBlocked;
   query.alloc();
   query.get()->stream_d = stream_d;
-  php_warning("open stream %lu to %s", stream_d, name.c_str());
+  php_debug("open stream %lu to %s", stream_d, name.c_str());
   return query;
 }
 
