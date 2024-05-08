@@ -12,17 +12,17 @@
 class Objs2K2ComponentTarget : public Target {
   static std::string load_all_symbols_pre() {
 #if defined(__APPLE__)
-    return "-Wl,--whole-archive ";
-#else
     return "-Wl,-force_load ";
+#else
+    return "-Wl,--whole-archive ";
 #endif
   }
 
   static std::string load_all_symbols_post() {
 #if defined(__APPLE__)
-    return " -Wl,--no-whole-archive ";
-#else
     return " ";
+#else
+    return " -Wl,--no-whole-archive ";
 #endif
   }
 
