@@ -36,7 +36,7 @@ int64_t f$byte_to_int(const string &s) {
 }
 
 string f$int_to_byte(int64_t v) {
-  if (v > 128 || v < -127) {
+  if (v > 127 || v < -128) {
     php_warning("Cannot convert too big int to byte %ld", v);
     return {};
   }
