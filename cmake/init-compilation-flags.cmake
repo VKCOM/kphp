@@ -1,10 +1,15 @@
 include_guard(GLOBAL)
 
+# TODO move all runtime stuff in runtime-light.cmake
+# Because we do not need coroutines for compiler
+# Or we do not need it?
+
 if(CMAKE_CXX_COMPILER_ID MATCHES Clang)
-    check_compiler_version(clang 10.0.0)
+    check_compiler_version(clang 14.0.0)
     set(COMPILER_CLANG True)
 elseif(CMAKE_CXX_COMPILER_ID MATCHES GNU)
-    check_compiler_version(gcc 8.3.0)
+    add_compile_options(-fcoroutines)
+    check_compiler_version(gcc 10.1.0)
     set(COMPILER_GCC True)
 endif()
 
@@ -101,3 +106,20 @@ add_link_options(-rdynamic -L/usr/local/lib -ggdb)
 add_definitions(-D_GNU_SOURCE)
 # prevents the `build` directory to be appeared in symbols, it's necessary for remote debugging with path mappings
 add_compile_options(-fdebug-prefix-map="${CMAKE_BINARY_DIR}=${CMAKE_SOURCE_DIR}")
+
+# Light runtime uses C++20 coroutines heavily, so they are required
+get_directory_property(TRY_COMPILE_COMPILE_OPTIONS COMPILE_OPTIONS)
+string (REPLACE ";" " " TRY_COMPILE_COMPILE_OPTIONS "${TRY_COMPILE_COMPILE_OPTIONS}")
+file(WRITE "${PROJECT_BINARY_DIR}/check_coroutine_include.cpp"
+        "#include<coroutine>\n"
+        "int main() {}\n")
+try_compile(
+        HAS_COROUTINE
+        "${PROJECT_BINARY_DIR}/tmp"
+        "${PROJECT_BINARY_DIR}/check_coroutine_include.cpp"
+        COMPILE_DEFINITIONS "${TRY_COMPILE_COMPILE_OPTIONS}"
+)
+if(NOT HAS_COROUTINE)
+    message(FATAL_ERROR "Compiler or libstdc++ does not support coroutines")
+endif()
+file(REMOVE "${PROJECT_BINARY_DIR}/check_coroutine_include.cpp")
