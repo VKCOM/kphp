@@ -1,4 +1,5 @@
 #include "runtime-light/component/component.h"
+#include "runtime-light/core/globals/php-init-scripts.h"
 
 void ComponentState::resume_if_was_rescheduled() {
   if (poll_status == PollStatus::PollReschedule) {
@@ -19,7 +20,7 @@ void ComponentState::resume_if_wait_stream(uint64_t stream_d, StreamStatus statu
   }
 }
 
-void ComponentState::process_new_stream(uint64_t stream_d) {
+void ComponentState::process_new_input_stream(uint64_t stream_d) {
   bool already_pending = std::find(incoming_pending_queries.begin(), incoming_pending_queries.end(), stream_d)
                          != incoming_pending_queries.end();
   if (!already_pending) {
@@ -30,6 +31,11 @@ void ComponentState::process_new_stream(uint64_t stream_d) {
     php_debug("start process pending query %lu", stream_d);
     main_thread();
   }
+}
+
+void ComponentState::init_script_execution() {
+  init_php_scripts_in_each_worker(php_script_mutable_globals_singleton, k_main);
+  main_thread = k_main.get_handle();
 }
 
 bool ComponentState::is_stream_timer(uint64_t stream_d) {

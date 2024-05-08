@@ -40,7 +40,9 @@ struct ComponentState {
 
   void resume_if_wait_stream(uint64_t stream_d, StreamStatus status);
 
-  void process_new_stream(uint64_t stream_d);
+  void process_new_input_stream(uint64_t stream_d);
+
+  void init_script_execution();
 
 
   sigjmp_buf exit_tag;

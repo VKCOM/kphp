@@ -37,9 +37,7 @@ ComponentState *vk_k2_create_component_state(const struct ImageState *image_stat
     php_warning("force jump while ComponentState initialization");
     return nullptr;
   }
-  // coroutine is initial suspend
-  init_php_scripts_in_each_worker(componentState->php_script_mutable_globals_singleton, componentState->k_main);
-  componentState->main_thread = componentState->k_main.get_handle();
+  componentState->init_script_execution();
   ComponentState * component_state = componentState;
   php_debug("finish component state creation on \"%s\"", vk_k2_describe()->image_name);
   reset_thread_locals();
@@ -61,12 +59,13 @@ PollStatus vk_k2_poll(const ImageState *image_state, const PlatformCtx *pt_ctx, 
       if (res != GetStatusOk) {
         php_warning("get stream status %d", res);
       }
+      php_debug("stream status %d, %d, %d", status.read_status, status.write_status, status.please_shutdown_write);
       php_debug("opened_streams size %zu", componentState->opened_streams.size());
       if (componentState->is_stream_already_being_processed(stream_d)) {
         php_debug("update on processed stream %lu", stream_d);
         componentState->resume_if_wait_stream(stream_d, status);
       } else {
-        componentState->process_new_stream(stream_d);
+        componentState->process_new_input_stream(stream_d);
       }
     }
   } else {
