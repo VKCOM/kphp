@@ -19,6 +19,7 @@ include(CMakePrintHelpers)
 include(CheckCXXCompilerFlag)
 include(AddFileDependencies)
 include(FetchContent)
+include(GNUInstallDirs)
 
 # Global includes must be before all other includes/add_subdirectories
 include(cmake/utils.cmake)
