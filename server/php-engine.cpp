@@ -18,6 +18,7 @@
 #include <string>
 #include <sys/mman.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "common/algorithms/find.h"
@@ -59,6 +60,7 @@
 
 #include "runtime/interface.h"
 #include "runtime/json-functions.h"
+#include "runtime/kphp_ml/kphp_ml_init.h"
 #include "runtime/profiler.h"
 #include "runtime/rpc.h"
 #include "runtime/thread-pool.h"
@@ -1679,6 +1681,9 @@ void init_all() {
 
   worker_id = (int)lrand48();
 
+  // TODO: In the future, we want to parallelize it
+  init_kphp_ml_runtime_in_master();
+
   init_confdata_binlog_reader();
 
   auto end_time = std::chrono::steady_clock::now();
@@ -2229,6 +2234,19 @@ int main_args_handler(int i, const char *long_option) {
       }
       return res;
     }
+    case 2040: {
+      static auto is_directory = [](const char* s) {
+        struct stat st;
+        return stat(s, &st) == 0 && S_ISDIR(st.st_mode);
+      };
+
+      if (!*optarg || !is_directory(optarg)) {
+        kprintf("--%s option: is not a directory\n", long_option);
+        return -1;
+      }
+      kml_directory = optarg;
+      return 0;
+    }
     default:
       return -1;
   }
@@ -2343,6 +2361,7 @@ void parse_main_args(int argc, char *argv[]) {
                                                                    "Initial binlog is readed with x10 times larger timeout");
   parse_option("confdata-soft-oom-ratio", required_argument, 2039, "Memory limit ratio to start ignoring new keys related events (default: 0.85)."
                                                                    "Can't be > hard oom ratio (0.95)");
+  parse_option("kml-dir", required_argument, 2040, "Directory that contains .kml files");
 
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
