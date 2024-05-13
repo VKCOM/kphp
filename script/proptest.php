@@ -88,6 +88,9 @@ class BiDirectStream {
     public function read_header() {
         $forward_id = byte_to_int($this->reader->read_byte());
         $seed = byte_to_int($this->reader->read_byte());
+        if ($forward_id === null || $seed === null) {
+            return null;
+        }
         $header = ["forward_id" => $forward_id, "seed" => $seed];
         return $header;
     }
@@ -193,8 +196,12 @@ function stream_header($src, $dst) {
     $dst->save_header($forward_header);
 
     $backward_header = $dst->read_full_header();
+    if ($backward_header === null) {
+        return false;
+    }
     $src->write_full_header($backward_header);
     $src->save_header($backward_header);
+    return true;
 }
 
 /**
@@ -215,12 +222,18 @@ function forward_byte($src, $dst) {
             // If there is no new message still need send last header
             $last_header = $dst->get_last_header();
             $dst->write_full_header($last_header);
-            $dst->read_full_header();
+            $header = $dst->read_full_header();
+            if ($header === null) {
+                return false;
+            }
         }
     }
 
     if ($str === MARKER) {
-        stream_header($src, $dst);
+        $f = stream_header($src, $dst);
+        if (!$f) {
+            return false;
+        }
         $str = $src->reader->read_byte();
     }
 
@@ -234,6 +247,9 @@ function forward_byte($src, $dst) {
   */
 function backward_byte($src, $dst) {
     $str = $src->reader->read_byte();
+    if ($str === "") {
+        return false;
+    }
     $dst->writer->write_exact($str);
     return true;
 }
@@ -277,7 +293,10 @@ function stream_bytes($prev, $next) {
         if (!$prev->is_open() || !$ok) {
             break;
         }
-        backward_byte($next, $prev);
+        $ok = backward_byte($next, $prev);
+        if (!$ok) {
+            break;
+        }
     }
 }
 
@@ -306,19 +325,19 @@ function process_query($incoming_stream) {
 
         return;
     }
-
     $outgoing = new BiDirectStream($out, $destination);
     $outgoing->write_full_header($header);
     $outgoing->save_header($header);
+
     stream_bytes($incoming, $outgoing);
 }
 
 function main() {
     while(true) {
-//         warning("main iter");
+
         /** @var ComponentStream $incoming_stream */
         $incoming_stream = component_accept_stream();
-//         warning("accept stream");
+
         if (is_null($incoming_stream)) {
             continue;
         }
@@ -331,12 +350,15 @@ function main() {
     }
 }
 
-// warning("Start component");
+
 
 $scenario_query = component_client_send_query("proptest-generator", "");
+if (is_null($scenario_query)) {
+    critical_error("proptest-generator cannot be null");
+}
 $str = component_client_get_result($scenario_query);
 $scenario = json_decode($str);
-warning(var_export($scenario, true));
+// warning(var_export($scenario, true));
 setup_die_timer();
 
 main();

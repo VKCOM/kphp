@@ -21,7 +21,7 @@ static int ob_merge_buffers() {
 task_t<void> parse_input_query(QueryType query_type) {
   ComponentState & ctx = *get_component_context();
   php_assert(ctx.standard_stream == 0);
-  co_await wait_input_query_t{};
+  co_await wait_incoming_query_t{};
   ctx.standard_stream = ctx.incoming_pending_queries.front();
   ctx.incoming_pending_queries.pop_front();
   ctx.opened_streams[ctx.standard_stream] = NotBlocked;

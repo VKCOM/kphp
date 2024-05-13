@@ -52,9 +52,10 @@ struct ComponentState {
   string_buffer static_sb;
   PhpScriptMutableGlobals php_script_mutable_globals_singleton;
 
-  PollStatus poll_status = PollStatus::PollBlocked;
+  PollStatus poll_status = PollStatus::PollReschedule;
   uint64_t standard_stream = 0;
   std::coroutine_handle<> main_thread;
+  bool wait_incoming_stream = false;
 
   unordered_map<uint64_t, StreamRuntimeStatus> opened_streams; // подумать про необходимость opened_streams. Объединить с awaiting_coroutines
   unordered_map<uint64_t, std::coroutine_handle<>> awaiting_coroutines;

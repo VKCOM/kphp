@@ -27,7 +27,7 @@ void ComponentState::process_new_input_stream(uint64_t stream_d) {
     php_debug("got new pending query %lu", stream_d);
     incoming_pending_queries.push_back(stream_d);
   }
-  if (standard_stream == 0) {
+  if (wait_incoming_stream) {
     php_debug("start process pending query %lu", stream_d);
     main_thread();
   }
@@ -45,6 +45,8 @@ bool ComponentState::is_stream_timer(uint64_t stream_d) {
 void ComponentState::process_timer(uint64_t stream_d) {
   get_platform_context()->free_descriptor(stream_d);
   timer_callbacks[stream_d]();
+  timer_callbacks.erase(stream_d);
+  opened_streams.erase(stream_d);
 }
 
 void ComponentState::process_stream(uint64_t stream_d, StreamStatus status) {

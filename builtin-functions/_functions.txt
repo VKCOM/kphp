@@ -142,7 +142,7 @@ function json_decode ($v ::: string, $assoc ::: bool = false) ::: mixed;
 
 function debug_print_string($str ::: string) ::: void;
 
-function byte_to_int($str ::: string) ::: int;
-function int_to_byte($v ::: int) ::: string;
+function byte_to_int($str ::: string) ::: ?int;
+function int_to_byte($v ::: int) ::: ?string;
 
 function set_timer(int $timeout, callable():void $callback) ::: void;
