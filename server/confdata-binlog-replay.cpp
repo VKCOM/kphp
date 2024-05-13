@@ -116,8 +116,6 @@ public:
   }
 
   int process_confdata_snapshot_entries(index_header &header) noexcept {
-    fprintf(stderr, "\n%d : %lld : %ud : %d\n", jump_log_ts, jump_log_pos, jump_log_crc32, header.num_records);
-
     const auto index_offset = std::make_unique<int64_t[]>(header.num_records + 1);
     assert (index_offset);
 
@@ -172,7 +170,7 @@ public:
     kfs_read_file_assert(Snapshot, &header, sizeof(index_header));
 
     if (header.magic != PMEMCACHED_OLD_INDEX_MAGIC) {
-      fprintf(stderr, "expected '%x' magic, got '%x'\n", PMEMCACHED_OLD_INDEX_MAGIC, header.magic);
+      fprintf(stderr, "expected 0x%X magic, got 0x%X\n", PMEMCACHED_OLD_INDEX_MAGIC, header.magic);
       return -1;
     }
 
@@ -188,13 +186,13 @@ public:
     std::array<std::byte, header_meta_size> header_meta{};
     kfs_read_file_assert(Snapshot, header_meta.data(), header_meta_size);
     if (const auto magic = *reinterpret_cast<std::int32_t *>(header_meta.data()); magic != BARSIC_SNAPSHOT_HEADER_MAGIC) {
-      fprintf(stderr, "expected '%x' magic, got '%x'\n", BARSIC_SNAPSHOT_HEADER_MAGIC, magic);
+      fprintf(stderr, "expected 0x%X magic, got 0x%X\n", BARSIC_SNAPSHOT_HEADER_MAGIC, magic);
       return -1;
     }
 
     const auto tl_body_len{*reinterpret_cast<std::int64_t *>(header_meta.data() + sizeof(std::int32_t))};
     if (tl_body_len < 0) {
-      fprintf(stderr, "negative length of TL body: '%ld'\n", tl_body_len);
+      fprintf(stderr, "negative length of TL body: %" PRId64 "\n", tl_body_len);
       return -1;
     }
 
@@ -239,13 +237,13 @@ public:
     std::array<std::byte, header_meta_size> header_meta{};
     kfs_read_file_assert(Snapshot, header_meta.data(), header_meta_size);
     if (const auto magic = *reinterpret_cast<std::int32_t *>(header_meta.data()); magic != TL_ENGINE_SNAPSHOT_HEADER_MAGIC) {
-      fprintf(stderr, "expected '%x' magic, got '%x'\n", TL_ENGINE_SNAPSHOT_HEADER_MAGIC, magic);
+      fprintf(stderr, "expected 0x%X magic, got 0x%X\n", TL_ENGINE_SNAPSHOT_HEADER_MAGIC, magic);
       return -1;
     }
 
     const auto tl_body_len{*reinterpret_cast<std::int64_t *>(header_meta.data() + sizeof(std::int32_t))};
     if (tl_body_len < 0) {
-      fprintf(stderr, "negative length of TL body: '%ld'\n", tl_body_len);
+      fprintf(stderr, "negative length of TL body: %" PRId64 "\n", tl_body_len);
       return -1;
     }
 
@@ -287,13 +285,13 @@ public:
       index_header header{};
       kfs_read_file_assert(Snapshot, &header, sizeof(header));
       if (header.magic != PMEMCACHED_INDEX_RAM_MAGIC_G3) {
-        fprintf(stderr, "expected '%x' magic, got '%x'\n", PMEMCACHED_INDEX_RAM_MAGIC_G3, header.magic);
+        fprintf(stderr, "expected 0x%X magic, got 0x%X\n", PMEMCACHED_INDEX_RAM_MAGIC_G3, header.magic);
         return -1;
       }
       return process_confdata_snapshot_entries(header);
     }
 
-    fprintf(stderr, "unexpected header magic: '%x'\n", header_magic);
+    fprintf(stderr, "unexpected header magic: 0x%X\n", header_magic);
     return -1;
   }
 
