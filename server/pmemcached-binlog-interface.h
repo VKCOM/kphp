@@ -94,7 +94,10 @@ struct lev_pmemcached_touch {
 
 #pragma pack(pop)
 
-#define PMEMCACHED_INDEX_MAGIC 0x53407fa0
+constexpr auto PMEMCACHED_OLD_INDEX_MAGIC = 0x53407fa0;
+constexpr auto PMEMCACHED_INDEX_RAM_MAGIC_G3 = 0x65049e9e;
+constexpr auto BARSIC_SNAPSHOT_HEADER_MAGIC = 0x1d0d1b74;
+constexpr auto TL_ENGINE_SNAPSHOT_HEADER_MAGIC = 0x4bf8b614;
 
 // snapshot structures
 typedef struct {
@@ -107,8 +110,7 @@ typedef struct {
   int log_timestamp;
   unsigned int log_pos0_crc32;
   unsigned int log_pos1_crc32;
-
-  int nrecords;
+  int num_records;
 } index_header;
 
 struct index_entry {

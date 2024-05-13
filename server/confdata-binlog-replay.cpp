@@ -4,6 +4,7 @@
 
 #include "server/confdata-binlog-replay.h"
 
+#include <array>
 #include <bitset>
 #include <chrono>
 #include <cinttypes>
@@ -11,19 +12,17 @@
 #include <forward_list>
 #include <map>
 #include <optional>
+#include <unistd.h>
 
 #include "common/binlog/binlog-replayer.h"
 #include "common/dl-utils-lite.h"
-#include "common/precise-time.h"
 #include "common/server/engine-settings.h"
 #include "common/server/init-binlog.h"
 #include "common/server/init-snapshot.h"
 #include "common/wrappers/string_view.h"
 #include "common/kfs/kfs.h"
 
-#include "runtime/allocator.h"
 #include "runtime/confdata-global-manager.h"
-#include "runtime/kphp_core.h"
 #include "server/confdata-binlog-events.h"
 #include "server/confdata-stats.h"
 #include "server/server-log.h"
@@ -116,34 +115,18 @@ public:
     return dot_pos;
   }
 
-  int load_index() noexcept {
-    if (!Snapshot) {
-      jump_log_ts = 0;
-      jump_log_pos = 0;
-      jump_log_crc32 = 0;
-      return 0;
-    }
-    index_header header;
-    kfs_read_file_assert (Snapshot, &header, sizeof(index_header));
-    if (header.magic != PMEMCACHED_INDEX_MAGIC) {
-      fprintf(stderr, "index file is not for confdata\n");
-      return -1;
-    }
-    jump_log_ts = header.log_timestamp;
-    jump_log_pos = header.log_pos1;
-    jump_log_crc32 = header.log_pos1_crc32;
+  int process_confdata_snapshot_entries(index_header &header) noexcept {
+    fprintf(stderr, "\n%d : %lld : %ud : %d\n", jump_log_ts, jump_log_pos, jump_log_crc32, header.num_records);
 
-    const int nrecords = header.nrecords;
-    vkprintf(2, "%d records readed\n", nrecords);
-    auto index_offset = std::make_unique<int64_t[]>(nrecords + 1);
+    const auto index_offset = std::make_unique<int64_t[]>(header.num_records + 1);
     assert (index_offset);
 
-    kfs_read_file_assert (Snapshot, index_offset.get(), sizeof(index_offset[0]) * (nrecords + 1));
-    vkprintf(1, "index_offset[%d]=%" PRId64 "\n", nrecords, index_offset[nrecords]);
+    kfs_read_file_assert(Snapshot, index_offset.get(), sizeof(index_offset[0]) * (header.num_records + 1));
+    vkprintf(1, "index_offset[%d]=%" PRId64 "\n", header.num_records, index_offset[header.num_records]);
 
-    auto index_binary_data = std::make_unique<char[]>(index_offset[nrecords]);
+    const auto index_binary_data = std::make_unique<char[]>(index_offset[header.num_records]);
     assert (index_binary_data);
-    kfs_read_file_assert (Snapshot, index_binary_data.get(), index_offset[nrecords]);
+    kfs_read_file_assert(Snapshot, index_binary_data.get(), index_offset[header.num_records]);
 
     using entry_type = lev_confdata_store_wrapper<index_entry, pmct_set>;
 
@@ -151,7 +134,7 @@ public:
     vk::string_view last_two_dots_key;
     array_size one_dot_elements_counter;
     array_size two_dots_elements_counter;
-    for (int i = 0; i < nrecords; i++) {
+    for (auto i = 0; i < header.num_records; i++) {
       const auto &element = reinterpret_cast<const entry_type &>(index_binary_data[index_offset[i]]);
       const vk::string_view key{element.data, static_cast<size_t>(std::max(element.key_len, short{0}))};
       if (key.empty() || key_blacklist_.is_blacklisted(key)) {
@@ -168,7 +151,7 @@ public:
 
     // disable the blacklist because we checked the keys during the previous step
     blacklist_enabled_ = false;
-    for (int i = 0; i < nrecords; i++) {
+    for (auto i = 0; i < header.num_records; i++) {
       if (index_offset[i] >= 0) {
         store_element(reinterpret_cast<const entry_type &>(index_binary_data[index_offset[i]]));
       }
@@ -182,6 +165,136 @@ public:
     }
 
     return 0;
+  }
+
+  int process_old_confdata_snapshot() noexcept {
+    index_header header;
+    kfs_read_file_assert(Snapshot, &header, sizeof(index_header));
+
+    if (header.magic != PMEMCACHED_OLD_INDEX_MAGIC) {
+      fprintf(stderr, "expected '%x' magic, got '%x'\n", PMEMCACHED_OLD_INDEX_MAGIC, header.magic);
+      return -1;
+    }
+
+    jump_log_ts = header.log_timestamp;
+    jump_log_pos = header.log_pos1;
+    jump_log_crc32 = header.log_pos1_crc32;
+
+    return process_confdata_snapshot_entries(header);
+  }
+
+  int process_barsic_common_header() noexcept {
+    constexpr auto header_meta_size{sizeof(std::int32_t) + sizeof(std::int64_t)};
+    std::array<std::byte, header_meta_size> header_meta{};
+    kfs_read_file_assert(Snapshot, header_meta.data(), header_meta_size);
+    if (const auto magic = *reinterpret_cast<std::int32_t *>(header_meta.data()); magic != BARSIC_SNAPSHOT_HEADER_MAGIC) {
+      fprintf(stderr, "expected '%x' magic, got '%x'\n", BARSIC_SNAPSHOT_HEADER_MAGIC, magic);
+      return -1;
+    }
+
+    const auto tl_body_len{*reinterpret_cast<std::int64_t *>(header_meta.data() + sizeof(std::int32_t))};
+    if (tl_body_len < 0) {
+      fprintf(stderr, "negative length of TL body: '%ld'\n", tl_body_len);
+      return -1;
+    }
+
+    constexpr auto HEADER_CHECKSUM_SIZE = 16;
+    std::vector<std::byte> buffer{static_cast<std::size_t>(tl_body_len + HEADER_CHECKSUM_SIZE)};
+    kfs_read_file_assert(Snapshot, buffer.data(), tl_body_len);
+
+    std::int32_t offset{};
+    // skip fields_mask
+    offset += sizeof(std::int32_t);
+    // skip cluster_id
+    offset += sizeof(std::int32_t) + *reinterpret_cast<std::int32_t *>(buffer.data() + offset);
+    // skip shard_id
+    offset += sizeof(std::int32_t) + *reinterpret_cast<std::int32_t *>(buffer.data() + offset);
+    // skip snapshot_meta
+    offset += sizeof(std::int32_t) + *reinterpret_cast<std::int32_t *>(buffer.data() + offset);
+
+    // skip dependencies
+    std::int32_t dependencies_len{*reinterpret_cast<std::int32_t *>(buffer.data() + offset)};
+    offset += sizeof(std::int32_t);
+    for (int i = 0; i < dependencies_len; ++i) {
+      // skip fields_mask
+      offset += sizeof(std::int32_t);
+      // skip cluster_id
+      offset += sizeof(std::int32_t) + *reinterpret_cast<std::int32_t *>(buffer.data() + offset);
+      // skip shard_id
+      offset += sizeof(std::int32_t) + *reinterpret_cast<std::int32_t *>(buffer.data() + offset);
+      // skip payload_offset
+      offset += sizeof(std::int64_t);
+    }
+
+    // payload_offset
+    jump_log_pos = *reinterpret_cast<std::int64_t *>(buffer.data() + offset);
+
+    // TODO: compute xxhash
+
+    return 0;
+  }
+
+  int process_confdata_engine_header() noexcept {
+    constexpr auto header_meta_size{sizeof(std::int32_t) + sizeof(std::int64_t)};
+    std::array<std::byte, header_meta_size> header_meta{};
+    kfs_read_file_assert(Snapshot, header_meta.data(), header_meta_size);
+    if (const auto magic = *reinterpret_cast<std::int32_t *>(header_meta.data()); magic != TL_ENGINE_SNAPSHOT_HEADER_MAGIC) {
+      fprintf(stderr, "expected '%x' magic, got '%x'\n", TL_ENGINE_SNAPSHOT_HEADER_MAGIC, magic);
+      return -1;
+    }
+
+    const auto tl_body_len{*reinterpret_cast<std::int64_t *>(header_meta.data() + sizeof(std::int32_t))};
+    if (tl_body_len < 0) {
+      fprintf(stderr, "negative length of TL body: '%ld'\n", tl_body_len);
+      return -1;
+    }
+
+    constexpr auto HEADER_CHECKSUM_SIZE = 16;
+    std::vector<std::byte> buffer{static_cast<std::size_t>(tl_body_len + HEADER_CHECKSUM_SIZE)};
+    kfs_read_file_assert(Snapshot, buffer.data(), tl_body_len);
+
+    jump_log_ts = *reinterpret_cast<std::int64_t *>(buffer.data() + sizeof(std::int32_t));
+
+    constexpr auto RESULT_TRUE_MAGIC{0x3f9c8ef8};
+    jump_log_crc32 = *reinterpret_cast<std::int32_t *>(buffer.data() + sizeof(std::int32_t) + sizeof(std::int64_t)) == RESULT_TRUE_MAGIC
+                       ? *reinterpret_cast<std::uint32_t *>(buffer.data() + sizeof(std::int32_t) + sizeof(std::int64_t) + sizeof(std::int32_t))
+                       : 0;
+
+    // TODO: compute xxhash
+
+    return 0;
+  }
+
+  int process_snapshot() noexcept {
+    if (!Snapshot) {
+      jump_log_ts = 0;
+      jump_log_pos = 0;
+      jump_log_crc32 = 0;
+      return 0;
+    }
+
+    std::int32_t header_magic{};
+    kfs_read_file_assert(Snapshot, &header_magic, sizeof(header_magic));
+    // move cursor back so old index reader can safely read a header it expects
+    ::lseek(Snapshot->fd, -sizeof(header_magic), SEEK_CUR);
+
+    if (header_magic == PMEMCACHED_OLD_INDEX_MAGIC) {
+      return process_old_confdata_snapshot();
+    } else if (header_magic == BARSIC_SNAPSHOT_HEADER_MAGIC) {
+      if (process_barsic_common_header() != 0) { return -1; }
+      if (process_confdata_engine_header() != 0) { return -1; }
+
+      index_header header{};
+      kfs_read_file_assert(Snapshot, &header, sizeof(header));
+      if (header.magic != PMEMCACHED_INDEX_RAM_MAGIC_G3) {
+        fprintf(stderr, "expected '%x' magic, got '%x'\n", PMEMCACHED_INDEX_RAM_MAGIC_G3, header.magic);
+        return -1;
+      }
+      return process_confdata_snapshot_entries(header);
+    }
+
+    fprintf(stderr, "unexpected header magic: '%x'\n", header_magic);
+    return -1;
   }
 
   OperationStatus delete_element(const char *key, short key_len) noexcept {
@@ -899,7 +1012,7 @@ void init_confdata_binlog_reader() noexcept {
   static engine_settings_t settings = {};
   settings.name = NAME_VERSION;
   settings.load_index = []() {
-    return ConfdataBinlogReplayer::get().load_index();
+    return ConfdataBinlogReplayer::get().process_snapshot();
   };
   settings.replay_logevent = [](const lev_generic *E, int size) {
     return ConfdataBinlogReplayer::get().replay(E, size);
