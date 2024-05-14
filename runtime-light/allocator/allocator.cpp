@@ -30,6 +30,10 @@ static void request_extra_memory() {
   rt_ctx.script_allocator.memory_resource.add_extra_memory(new (extra_mem) memory_resource::extra_memory_pool{extra_mem_size});
 }
 
+static bool is_script_allocator_available() {
+  return get_component_context() != nullptr;
+}
+
 const memory_resource::MemoryStats &get_script_memory_stats() noexcept {
   return get_component_context()->script_allocator.memory_resource.get_memory_stats();
 }
@@ -39,7 +43,6 @@ void init_script_allocator(ScriptAllocator * script_allocator, size_t script_mem
   assert(buffer != nullptr);
   script_allocator->memory_resource.init(buffer, script_mem_size, oom_handling_mem_size);
 }
-
 void free_script_allocator(ScriptAllocator * script_allocator) noexcept {
   const Allocator &pt_ctx = get_platform_context()->allocator;
 
@@ -54,6 +57,9 @@ void free_script_allocator(ScriptAllocator * script_allocator) noexcept {
 
 void *allocate(size_t size) noexcept {
   php_assert(size);
+  if (unlikely(!is_script_allocator_available())) {
+    return get_platform_context()->allocator.alloc(size);
+  }
 
   ComponentState &rt_ctx = *get_component_context();
 
@@ -67,6 +73,9 @@ void *allocate(size_t size) noexcept {
 
 void *allocate0(size_t size) noexcept {
   php_assert(size);
+  if (unlikely(!is_script_allocator_available())) {
+    return get_platform_context()->allocator.alloc(size);
+  }
 
   ComponentState &rt_ctx = *get_component_context();
   void * ptr = rt_ctx.script_allocator.memory_resource.allocate0(size);
@@ -79,6 +88,9 @@ void *allocate0(size_t size) noexcept {
 
 void *reallocate(void *mem, size_t new_size, size_t old_size) noexcept {
   php_assert(new_size > old_size);
+  if (unlikely(!is_script_allocator_available())) {
+    return get_platform_context()->allocator.realloc(mem, new_size);
+  }
 
   ComponentState &rt_ctx = *get_component_context();
   void * ptr = rt_ctx.script_allocator.memory_resource.reallocate(mem, new_size, old_size);
