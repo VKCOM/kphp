@@ -64,6 +64,7 @@ struct wait_incoming_query_t {
     php_assert(ctx.standard_stream == 0);
     ctx.main_thread = h;
     ctx.wait_incoming_stream = true;
+    ctx.poll_status = PollBlocked;
   }
 
   void await_resume() const noexcept {

@@ -58,9 +58,10 @@ task_t<void> f$component_server_send_result(const string &message) {
 
 task_t<string> f$component_server_get_query() {
   ComponentState & ctx = *get_component_context();
-  if (ctx.standard_stream == 0) {
-    co_await parse_input_query(COMPONENT);
+  if (ctx.standard_stream != 0) {
+    ctx.standard_stream = 0;
   }
+  co_await parse_input_query(COMPONENT);
   auto [buffer, size] = co_await read_all_from_stream(ctx.standard_stream);
   string query = string(buffer, size);
   get_platform_context()->allocator.free(buffer);
