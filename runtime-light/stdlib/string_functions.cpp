@@ -1,6 +1,7 @@
 #include "runtime-light/stdlib/string_functions.h"
 
 #include "runtime-light/component/component.h"
+#include "runtime-light/core/runtime_types/optional.h"
 
 void print(const char *s, size_t s_len) {
   Response &response = get_component_context()->response;
@@ -17,6 +18,32 @@ void print(const string_buffer &sb) {
 
 void print(const string &s) {
   print(s.c_str(), s.size());
+}
+
+void f$debug_print_string(const string &s) {
+  printf("debug_print_string [");
+  for (int i = 0; i < s.size(); ++i) {
+    printf("%d, ", s.c_str()[i]);
+  }
+  printf("]\n");
+}
+
+Optional<int64_t> f$byte_to_int(const string &s) {
+  if (s.size() != 1) {
+    php_warning("Cannot convert non-byte string to int");
+    return false;
+  }
+  return *s.c_str();
+}
+
+Optional<string> f$int_to_byte(int64_t v) {
+  if (v > 127 || v < -128) {
+    php_warning("Cannot convert too big int to byte %ld", v);
+    return false;
+  }
+  char c = v;
+  string result(&c, 1);
+  return result;
 }
 
 string str_concat(const string &s1, const string &s2) {

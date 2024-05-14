@@ -48,13 +48,13 @@ struct test_yield_t {
   void await_suspend(std::coroutine_handle<> h) const noexcept {
     ComponentState & ctx = *get_component_context();
     ctx.poll_status = PollStatus::PollReschedule;
-    ctx.standard_handle = h;
+    ctx.main_thread = h;
   }
 
   constexpr void await_resume() const noexcept {}
 };
 
-struct wait_input_query_t {
+struct wait_incoming_query_t {
   bool await_ready() const noexcept {
     return !get_component_context()->incoming_pending_queries.empty();
   }
@@ -62,8 +62,11 @@ struct wait_input_query_t {
   void await_suspend(std::coroutine_handle<> h) const noexcept {
     ComponentState & ctx = *get_component_context();
     php_assert(ctx.standard_stream == 0);
-    ctx.standard_handle = h;
+    ctx.main_thread = h;
+    ctx.wait_incoming_stream = true;
   }
 
-  constexpr void await_resume() const noexcept {}
+  void await_resume() const noexcept {
+    get_component_context()->wait_incoming_stream = false;
+  }
 };

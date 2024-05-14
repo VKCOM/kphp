@@ -19,13 +19,9 @@ task_t<class_instance<C$ComponentQuery>> f$component_client_send_query(const str
     php_warning("cannot open stream");
     co_return query;
   }
-  bool ok = co_await write_all_to_stream(stream_d, message.c_str(), message.size());
+  int writed = co_await write_all_to_stream(stream_d, message.c_str(), message.size());
   ptx.shutdown_write(stream_d);
-  if (!ok) {
-    php_warning("cannot send component client query");
-    co_return query;
-  }
-  php_debug("send \"%s\" to \"%s\" on stream %lu", message.c_str(), name.c_str(), stream_d);
+  php_debug("send %d bytes from %d to \"%s\" on stream %lu", writed, message.size(), name.c_str(), stream_d);
   query.alloc();
   query.get()->stream_d = stream_d;
   co_return query;
@@ -33,7 +29,6 @@ task_t<class_instance<C$ComponentQuery>> f$component_client_send_query(const str
 
 task_t<string> f$component_client_get_result(class_instance<C$ComponentQuery> query) {
   php_assert(!query.is_null());
-  php_debug("f$component_client_get_result");
   uint64_t stream_d = query.get()->stream_d;
   if (stream_d == 0) {
     php_warning("cannot get component client result");
@@ -45,6 +40,7 @@ task_t<string> f$component_client_get_result(class_instance<C$ComponentQuery> qu
   result.assign(buffer, size);
   free_descriptor(stream_d);
   query.get()->stream_d = 0;
+  php_debug("read %d bytes from stream %lu", size, stream_d);
   co_return result;
 }
 
@@ -88,15 +84,17 @@ task_t<class_instance<C$ComponentStream>> f$component_accept_stream() {
 class_instance<C$ComponentStream> f$component_open_stream(const string &name) {
   class_instance<C$ComponentStream> query;
   const PlatformCtx & ptx = *get_platform_context();
+  ComponentState & ctx = *get_component_context();
   uint64_t stream_d;
   OpenStreamResult res = ptx.open(name.size(), name.c_str(), &stream_d);
   if (res != OpenStreamOk) {
     php_warning("cannot open stream");
     return query;
   }
-
+  ctx.opened_streams[stream_d] = NotBlocked;
   query.alloc();
   query.get()->stream_d = stream_d;
+  php_debug("open stream %lu to %s", stream_d, name.c_str());
   return query;
 }
 
@@ -111,11 +109,26 @@ string f$component_stream_read_nonblock(const class_instance<C$ComponentStream> 
   return result;
 }
 
+task_t<int64_t> f$component_stream_write_exact(const class_instance<C$ComponentStream> & stream, const string & message) {
+  int write = co_await write_exact_to_stream(stream->stream_d, message.c_str(), message.size());
+  php_debug("write exact %d bytes to stream %lu", write, stream->stream_d);
+  co_return write;
+}
+
+task_t<string> f$component_stream_read_exact(const class_instance<C$ComponentStream> & stream, int64_t len) {
+  char * buffer = static_cast<char *>(dl::allocate(len));
+  int read = co_await read_exact_from_stream(stream->stream_d, buffer, len);
+  string result(buffer, read);
+  dl::deallocate(buffer, len);
+  php_debug("read exact %d bytes from stream %lu", read, stream->stream_d);
+  co_return result;
+}
+
 void f$component_close_stream(const class_instance<C$ComponentStream> & stream) {
   free_descriptor(stream->stream_d);
 }
 
-void f$component_finish_stream_process(const class_instance<C$ComponentStream> & stream) {
+void f$component_finish_stream_processing(const class_instance<C$ComponentStream> & stream) {
   ComponentState & ctx = *get_component_context();
   if (stream->stream_d != ctx.standard_stream) {
     php_warning("call server finish query on non server stream %lu", stream->stream_d);

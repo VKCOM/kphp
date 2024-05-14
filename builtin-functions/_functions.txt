@@ -39,7 +39,7 @@ function strval ($v ::: mixed) ::: string;
 
 /** @kphp-extern-func-info interruptible */
 function exit($code = 0) ::: void;
-/** @kphp-extern-func-info interruptible */
+
 function die($code = 0) ::: void;
 
 function ob_clean() ::: void;
@@ -83,6 +83,8 @@ function is_object ($v ::: any) ::: bool;
 function get_class ($v ::: any) ::: string;
 function get_hash_of_class (object $klass) ::: int;
 
+function strlen ($str ::: string) ::: int;
+
 class ComponentQuery {
     private function __construct() ::: \ComponentQuery;
 }
@@ -114,9 +116,16 @@ function component_accept_stream() ::: ComponentStream;
 
 function component_stream_write_nonblock($stream ::: ComponentStream, $message ::: string) ::: int;
 function component_stream_read_nonblock($stream ::: ComponentStream) ::: string;
+/** @kphp-extern-func-info interruptible */
+function component_stream_write_exact($stream ::: ComponentStream, $message ::: string) ::: int;
+/** @kphp-extern-func-info interruptible */
+function component_stream_read_exact($stream ::: ComponentStream, $len ::: int) ::: string;
 
 function component_close_stream($stream ::: ComponentStream) ::: void;
 function component_finish_stream_processing($stream ::: ComponentStream) ::: void;
+
+/** @kphp-extern-func-info cpp_template_call */
+function instance_cast(object $instance, $to_type ::: string) ::: instance<^2>;
 
 function make_clone ($x ::: any) ::: ^1;
 
@@ -125,3 +134,15 @@ function testyield() ::: void;
 function check_shutdown() ::: void;
 
 function warning($message ::: string) ::: void;
+/** @kphp-no-return */
+function critical_error($message ::: string) ::: void;
+
+function json_encode ($v ::: mixed, $options ::: int = 0) ::: string | false;
+function json_decode ($v ::: string, $assoc ::: bool = false) ::: mixed;
+
+function debug_print_string($str ::: string) ::: void;
+
+function byte_to_int($str ::: string) ::: ?int;
+function int_to_byte($v ::: int) ::: ?string;
+
+function set_timer(int $timeout, callable():void $callback) ::: void;

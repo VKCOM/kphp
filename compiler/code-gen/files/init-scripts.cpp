@@ -117,7 +117,9 @@ struct RunInterruptedFunction {
     FunctionSignatureGenerator(W) << "task_t<void> " << FunctionName(function) << "$run() " << BEGIN
                                   << (G->settings().disable_http_support.get() ? "" : "co_await parse_http_query();") << NL
                                   << await_prefix << FunctionName(function) << "();" << NL
-                                  << (G->settings().disable_http_support.get() ? "" : "co_await finish (0, false);") << NL
+                                  << (G->settings().disable_http_support.get() ? "get_component_context()->poll_status = PollStatus::PollFinishedOk;"
+                                                                               : "co_await finish (0, false);") << NL
+                                  << ""
                                   << "co_return;" << NL
                                   << END;
     W << NL;
