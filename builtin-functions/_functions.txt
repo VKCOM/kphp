@@ -90,6 +90,9 @@ class ComponentQuery {
 }
 
 /** @kphp-extern-func-info interruptible */
+function component_get_http_query() ::: void;
+
+/** @kphp-extern-func-info interruptible */
 function component_client_send_query($name ::: string, $message ::: string) ::: ComponentQuery;
 /** @kphp-extern-func-info interruptible */
 function component_client_get_result($query ::: ComponentQuery) ::: string;

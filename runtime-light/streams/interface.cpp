@@ -6,7 +6,12 @@
 #include "runtime-light/streams/streams.h"
 #include "runtime-light/stdlib/misc.h"
 
-task_t<void> f$parse_http_query() {
+task_t<void> f$component_get_http_query() {
+  ComponentState & ctx = *get_component_context();
+  if (ctx.standard_stream != 0) {
+    php_warning("previous incoming stream does not closed");
+    ctx.standard_stream = 0;
+  }
   co_await parse_input_query(HTTP);
 }
 

@@ -5,7 +5,7 @@
 
 constexpr int64_t v$COMPONENT_ERROR = -1;
 
-task_t<void> parse_http_query();
+task_t<void> f$component_get_http_query();
 
 /**
  * component query client blocked interface
