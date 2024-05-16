@@ -8,6 +8,12 @@
 
 inline void panic() {
   constexpr const char * message = "script panic";
-  get_platform_context()->log(Info, strlen(message), message);
-  siglongjmp(get_component_context()->exit_tag, 1);
+  const PlatformCtx & ptx = *get_platform_context();
+  ComponentState & ctx = *get_component_context();
+  ptx.log(Debug, strlen(message), message);
+
+  if (ctx.not_finished()) {
+    ctx.poll_status = PollStatus::PollFinishedError;
+  }
+  ptx.abort();
 }
