@@ -4,7 +4,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES Clang)
     check_compiler_version(clang 10.0.0)
     set(COMPILER_CLANG True)
 elseif(CMAKE_CXX_COMPILER_ID MATCHES GNU)
-    check_compiler_version(gcc 8.3.0)
+#    check_compiler_version(gcc 8.3.0)
     set(COMPILER_GCC True)
 endif()
 
