@@ -63,9 +63,10 @@ task_t<void> f$testyield() {
 }
 
 void f$check_shutdown() {
+  const PlatformCtx & ptx = *get_platform_context();
   if (get_platform_context()->please_graceful_shutdown.load()) {
     php_notice("script was graceful shutdown");
-    siglongjmp(get_component_context()->exit_tag, 1);
+    ptx.abort();
   }
 }
 

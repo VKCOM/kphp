@@ -45,11 +45,9 @@ struct ComponentState {
   void init_script_execution();
 
 
-  sigjmp_buf exit_tag;
   dl::ScriptAllocator script_allocator;
   task_t<void> k_main;
   Response response;
-  string_buffer static_sb;
   PhpScriptMutableGlobals php_script_mutable_globals_singleton;
 
   PollStatus poll_status = PollStatus::PollReschedule;
