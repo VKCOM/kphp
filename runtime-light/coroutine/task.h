@@ -46,7 +46,7 @@ protected:
 };
 
 template<typename T>
-struct [[nodiscard]] task_t : public task_base_t {
+struct task_t : public task_base_t {
   template<std::same_as<T> F>
   struct promise_non_void_t;
   struct promise_void_t;
@@ -67,11 +67,11 @@ struct [[nodiscard]] task_t : public task_base_t {
     struct final_suspend_t {
       final_suspend_t() = default;
 
-      [[nodiscard]] bool await_ready() const noexcept {
+      bool await_ready() const noexcept {
         return false;
       }
 
-      [[nodiscard]] std::coroutine_handle<> await_suspend(std::coroutine_handle<promise_type> h) const noexcept {
+      std::coroutine_handle<> await_suspend(std::coroutine_handle<promise_type> h) const noexcept {
 #ifdef CPPCORO_COMPILER_SUPPORTS_SYMMETRIC_TRANSFER
         if (h.promise().next) {
           return std::coroutine_handle<>::from_address(h.promise().next);
@@ -193,7 +193,7 @@ struct [[nodiscard]] task_t : public task_base_t {
 #endif
     }
 
-    [[nodiscard]] T await_resume() {
+    T await_resume() {
       return task->get_result();
     }
 

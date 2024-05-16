@@ -69,7 +69,9 @@ PollStatus vk_k2_poll(const ImageState *image_state, const PlatformCtx *pt_ctx, 
       }
     }
   } else {
-    componentState->poll_status = PollStatus::PollFinishedError;
+    if (componentState->not_finished()) {
+      componentState->poll_status = PollStatus::PollFinishedError;
+    }
   }
   PollStatus poll_status = componentState->poll_status;
   reset_thread_locals();
