@@ -3,6 +3,7 @@
 #include <coroutine>
 #include <csetjmp>
 #include <queue>
+#include <functional>
 #include <setjmp.h>
 
 #include "runtime-light/allocator/memory_resource/resource_allocator.h"
