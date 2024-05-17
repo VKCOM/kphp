@@ -275,12 +275,25 @@ bool JsonEncoder::encode(double d) noexcept {
   if (vk::any_of_equal(std::fpclassify(d), FP_INFINITE, FP_NAN)) {
     php_warning("%s: strange double %lf in function json_encode", json_path_.to_string().c_str(), d);
     if (options_ & JSON_PARTIAL_OUTPUT_ON_ERROR) {
-      static_SB.append("0", 1);
+      if (options_ & JSON_PRESERVE_ZERO_FRACTION) {
+        static_SB.append("0.0", 3);
+      } else {
+        static_SB.append("0", 1);
+      }
     } else {
       return false;
     }
   } else {
-    static_SB << (simple_encode_ ? f$number_format(d, 6, string{"."}, string{}) : string{d});
+    if (simple_encode_) {
+      static_SB << f$number_format(d, 6, string{"."}, string{});
+    } else {
+      static_SB << string{d};
+      if (options_ & JSON_PRESERVE_ZERO_FRACTION) {
+        if (double dummy = 0.0; std::modf(d, &dummy) == 0.0) {
+          static_SB.append(".0", 2);
+        }
+      }
+    }
   }
   return true;
 }
