@@ -205,6 +205,8 @@ void SortAndInheritClassesF::inherit_child_class_from_parent(ClassPtr child_clas
   stage::set_file(child_class->file_id);
   stage::set_function(FunctionPtr{});
 
+  kphp_error_return(!parent_class->is_enum(), fmt_format("Inheritance from enum is not allowed ({} extends {})", child_class->name, parent_class->name));
+
   if (parent_class->is_ffi_cdata() || parent_class->name == "FFI\\Scope") {
     kphp_error_return(child_class->is_builtin() || child_class->is_ffi_scope(),
                       "FFI classes should not be extended");
@@ -284,6 +286,11 @@ void SortAndInheritClassesF::clone_members_from_traits(std::vector<TraitPtr> &&t
     traits[i]->members.for_each([&](ClassMemberInstanceMethod &m) { check_other_traits_doesnt_contain_method_and_clone(m.function); });
     traits[i]->members.for_each([&](ClassMemberStaticMethod   &m) { check_other_traits_doesnt_contain_method_and_clone(m.function); });
 
+    if (ready_class->is_enum()) {
+      kphp_error_return(!traits[i]->members.has_any_instance_var() && !traits[i]->members.has_any_static_var(),
+                        fmt_format("Traits used in an enum must not contain properties (enum {} uses trait {})", ready_class->name, traits[i]->name));
+    }
+
     traits[i]->members.for_each([&](const ClassMemberInstanceField &f) {
       ready_class->members.add_instance_field(f.root.clone(), f.var->init_val.clone(), f.modifiers, f.phpdoc, f.type_hint);
     });
@@ -320,6 +327,7 @@ void SortAndInheritClassesF::on_class_ready(ClassPtr klass, DataStream<FunctionP
     ClassPtr dep_class = G->get_class(dep.class_name);
 
     switch (dep.type) {
+      case ClassType::enumeration:
       case ClassType::klass:
         inherit_child_class_from_parent(klass, dep_class, function_stream);
         break;

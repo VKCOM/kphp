@@ -70,6 +70,15 @@ class Error implements Throwable {
     final private function __clone() ::: void;
 }
 
+interface UnitEnum {
+    public static function cases();
+}
+
+interface BackedEnum implements UnitEnum {
+    public static function from(int | string $value);
+    public static function tryFrom(int | string $value);
+}
+
 interface Memcache {
     public function get (string|string[] $key) ::: mixed;
     public function delete (string $key) ::: bool;

@@ -26,6 +26,13 @@ public:
   static VertexAdaptor<op_var> create_superlocal_var(const std::string& name_prefix, FunctionPtr cur_function);
   static VertexAdaptor<op_switch> create_switch_vertex(FunctionPtr cur_function, VertexPtr switch_condition, std::vector<VertexPtr> &&cases);
 
+  template<Operation Op, typename... Args>
+  static VertexAdaptor<Op> create_with_str_val(const std::string& str_val, Args&&... args) {
+    auto resp = VertexAdaptor<Op>::create(std::forward<Args>(args)...);
+    resp->str_val = str_val;
+    return resp;
+  }
+
   static VertexPtr unwrap_array_value(VertexPtr v);
   static VertexPtr unwrap_string_value(VertexPtr v);
   static VertexPtr unwrap_int_value(VertexPtr v);

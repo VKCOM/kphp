@@ -18,6 +18,13 @@
 
 class GenTree {
 
+  enum class EnumType {
+    Empty,
+    Pure,
+    BackedString,
+    BackedInt,
+  };
+
   template<class T>
   class StackPushPop {
     std::vector<T> &stack;
@@ -119,7 +126,19 @@ public:
   static VertexAdaptor<op_var> auto_capture_this_in_lambda(FunctionPtr f_lambda);
 
   VertexPtr get_class(const PhpDocComment *phpdoc, ClassType class_type);
+  void parse_extends();
+  void parse_implements();
   void parse_extends_implements();
+
+  VertexPtr get_enum(const PhpDocComment *phpdoc);
+  VertexAdaptor<op_case> get_enum_case();
+  EnumType get_enum_type();
+  std::vector<std::string> get_enum_body_and_cases(EnumType enum_type);
+  void generate_enum_fields(EnumType enum_type);
+  void generate_enum_construct(EnumType enum_type);
+  void generate_pure_enum_methods(const std::vector<std::string> &cases);
+  void generate_backed_enum_methods();
+
 
   static VertexPtr process_arrow(VertexPtr lhs, VertexPtr rhs);
 
