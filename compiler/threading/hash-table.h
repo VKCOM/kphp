@@ -43,7 +43,7 @@ public:
       }
       unsigned long long expected = 0;
       if (nodes[i].hash.load(std::memory_order_acquire) == 0 
-        && nodes[i].hash.compare_exchange_weak(expected, hash, std::memory_order_acq_rel)) {
+        && !nodes[i].hash.compare_exchange_strong(expected, hash, std::memory_order_acq_rel)) {
         int id = used_size.fetch_add(1, std::memory_order_release);
         assert(id * 2 < N);
         continue;

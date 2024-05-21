@@ -48,6 +48,19 @@ public:
   Lockable() :
     x(0) {}
 
+  Lockable(const Lockable& other) noexcept : 
+    x{other.x.load(std::memory_order_relaxed)} {}
+  Lockable(Lockable&& other) noexcept : 
+    x{other.x.load(std::memory_order_relaxed)} {}
+  Lockable& operator=(const Lockable& other) noexcept {
+    x = other.x.load(std::memory_order_relaxed);
+    return *this;
+  }
+  Lockable& operator=(Lockable&& other) noexcept {
+    x = other.x.load(std::memory_order_relaxed);
+    return *this;
+  }
+
   virtual ~Lockable() = default;
 
   void lock() {
