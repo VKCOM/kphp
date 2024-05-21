@@ -8,8 +8,8 @@
 
 #include "common/algorithms/simd-int-to-string.h"
 
+#include "kphp-core/functions/migration_php8.h"
 #include "kphp-core/runtime-types/string_cache.h"
-#include "runtime/migration_php8.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
   #error "this file must be included only from kphp_core.h"
@@ -744,7 +744,7 @@ bool string::try_to_float_as_php7(double *val) const {
 bool string::try_to_float(double *val, bool php8_warning) const {
   const bool is_float_php7 = try_to_float_as_php7(val);
 
-  if ((show_migration_php8_warning & MIGRATION_PHP8_STRING_TO_FLOAT_FLAG) && php8_warning) {
+  if ((KphpCoreContext::current().show_migration_php8_warning & MIGRATION_PHP8_STRING_TO_FLOAT_FLAG) && php8_warning) {
     const bool is_float_php8 = try_to_float_as_php8(val);
 
     if (is_float_php7 != is_float_php8) {
@@ -904,7 +904,7 @@ bool string::is_numeric_as_php7() const {
 bool string::is_numeric() const {
   const auto php7_result = is_numeric_as_php7();
 
-  if (show_migration_php8_warning & MIGRATION_PHP8_STRING_TO_FLOAT_FLAG) {
+  if (KphpCoreContext::current().show_migration_php8_warning & MIGRATION_PHP8_STRING_TO_FLOAT_FLAG) {
     const bool php8_result = is_numeric_as_php8();
 
     if (php7_result != php8_result) {

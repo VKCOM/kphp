@@ -35,6 +35,7 @@
 #include "runtime/job-workers/server-functions.h"
 #include "runtime/json-processor-utils.h"
 #include "runtime/kphp-backtrace.h"
+#include "runtime/kphp-runtime-context.h"
 #include "runtime/kphp_ml/kphp_ml_init.h"
 #include "runtime/kphp_tracing.h"
 #include "runtime/math_functions.h"
@@ -2330,6 +2331,7 @@ static void init_interface_lib() {
 }
 
 static void init_runtime_libs() {
+  vk::singleton<KphpRuntimeContext>::get().init();
   // init_curl_lib() lazy called in runtime
   init_instance_cache_lib();
   init_confdata_functions_lib();
@@ -2415,6 +2417,7 @@ static void free_runtime_libs() {
   vk::singleton<OomHandler>::get().reset();
   free_interface_lib();
   hard_reset_var(JsonEncoderError::msg);
+  vk::singleton<KphpRuntimeContext>::get().free();
 }
 
 void global_init_runtime_libs() {

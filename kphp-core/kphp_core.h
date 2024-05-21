@@ -27,6 +27,8 @@
 #include "kphp-core/kphp-types/decl/mixed_decl.inl"
 #include "kphp-core/kphp-types/decl/string_buffer_decl.inl"
 
+#include "kphp-core/kphp-core-context.h"
+
 #include "kphp-core/kphp-types/definition/string.inl"
 #include "kphp-core/kphp-types/definition/array.inl"
 #include "kphp-core/class-instance/class_instance.inl"
@@ -460,10 +462,6 @@ constexpr int32_t E_USER_DEPRECATED = 16384;
 constexpr int32_t E_ALL = 32767;
 
 inline mixed f$error_get_last();
-
-inline int64_t f$error_reporting(int64_t level);
-
-inline int64_t f$error_reporting();
 
 inline void f$warning(const string &message);
 
@@ -1311,21 +1309,6 @@ bool f$function_exists(const T &) {
 
 mixed f$error_get_last() {
   return {};
-}
-
-int64_t f$error_reporting(int64_t level) {
-  int32_t prev = php_warning_level;
-  if ((level & E_ALL) == E_ALL) {
-    php_warning_level = 3;
-  }
-  if (0 <= level && level <= 3) {
-    php_warning_level = std::max(php_warning_minimum_level, static_cast<int32_t>(level));
-  }
-  return prev;
-}
-
-int64_t f$error_reporting() {
-  return php_warning_level;
 }
 
 void f$warning(const string &message) {

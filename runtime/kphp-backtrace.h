@@ -8,7 +8,7 @@
 #include <forward_list>
 
 #include "common/wrappers/iterator_range.h"
-
+#include "common/mixin/not_copyable.h"
 #include "kphp-core/kphp_core.h"
 
 class KphpBacktrace : vk::not_copyable {
