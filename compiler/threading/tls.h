@@ -8,6 +8,8 @@
 #include <cassert>
 #include <thread>
 
+#include "common/cacheline.h"
+
 #include "compiler/threading/locks.h"
 #include "compiler/threading/thread-id.h"
 
@@ -23,10 +25,10 @@ inline uint32_t get_default_threads_count() noexcept {
 template<class T>
 struct TLS {
 private:
-  struct TLSRaw {
+  struct KDB_CACHELINE_ALIGNED TLSRaw {
     T data{};
-    volatile int locker = 0;
-    char dummy[4096];
+    std::atomic<int> locker = UNLOCKED;
+    char dummy[KDB_CACHELINE_SIZE];
   };
 
   // The thread with thread_id = 0 is the main thread in which the scheduler's master code is executed.

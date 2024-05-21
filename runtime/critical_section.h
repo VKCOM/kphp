@@ -4,13 +4,14 @@
 
 #pragma once
 
+#include <atomic>
 #include <utility>
 
 #include "common/mixin/not_copyable.h"
 
 namespace dl {
 
-extern volatile int in_critical_section;
+extern std::atomic<int> in_critical_section;
 extern volatile long long pending_signals;
 
 void enter_critical_section() noexcept;

@@ -4,8 +4,13 @@
 
 #pragma once
 
+#include <atomic>
 #include <cassert>
 #include <unistd.h>
+
+#include "common/cacheline.h"
+
+enum { LOCKED = 1, UNLOCKED = 0 };
 
 template<class T>
 bool try_lock(T);
@@ -20,24 +25,25 @@ void unlock(T locker) {
   locker->unlock();
 }
 
-inline bool try_lock(volatile int *locker) {
-  return __sync_lock_test_and_set(locker, 1) == 0;
+inline bool try_lock(std::atomic<int> *locker) {
+  int expected = 0;
+  return locker->compare_exchange_weak(expected, LOCKED, std::memory_order_acq_rel);
 }
 
-inline void lock(volatile int *locker) {
+inline void lock(std::atomic<int> *locker) {
   while (!try_lock(locker)) {
     usleep(250);
   }
 }
 
-inline void unlock(volatile int *locker) {
-  assert(*locker == 1);
-  __sync_lock_release(locker);
+inline void unlock(std::atomic<int> *locker) {
+  assert(locker->load(std::memory_order_relaxed) == LOCKED);
+  locker->store(UNLOCKED, std::memory_order_release);
 }
 
-class Lockable {
+class KDB_CACHELINE_ALIGNED Lockable {
 private:
-  volatile int x;
+  std::atomic<int> x;
 public:
   Lockable() :
     x(0) {}
