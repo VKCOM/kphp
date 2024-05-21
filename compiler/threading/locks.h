@@ -44,19 +44,20 @@ inline void unlock(std::atomic<int> *locker) {
 class KDB_CACHELINE_ALIGNED Lockable {
 private:
   std::atomic<int> x;
-public:
-  Lockable() :
-    x(0) {}
 
-  Lockable(const Lockable& other) noexcept : 
-    x{other.x.load(std::memory_order_relaxed)} {}
-  Lockable(Lockable&& other) noexcept : 
-    x{other.x.load(std::memory_order_relaxed)} {}
-  Lockable& operator=(const Lockable& other) noexcept {
+public:
+  Lockable()
+    : x(0) {}
+
+  Lockable(const Lockable &other) noexcept
+    : x{other.x.load(std::memory_order_relaxed)} {}
+  Lockable(Lockable &&other) noexcept
+    : x{other.x.load(std::memory_order_relaxed)} {}
+  Lockable &operator=(const Lockable &other) noexcept {
     x = other.x.load(std::memory_order_relaxed);
     return *this;
   }
-  Lockable& operator=(Lockable&& other) noexcept {
+  Lockable &operator=(Lockable &&other) noexcept {
     x = other.x.load(std::memory_order_relaxed);
     return *this;
   }
@@ -76,9 +77,10 @@ template<class DataT>
 class AutoLocker {
 private:
   DataT ptr;
+
 public:
-  explicit AutoLocker(DataT ptr) :
-    ptr(ptr) {
+  explicit AutoLocker(DataT ptr)
+    : ptr(ptr) {
     lock(ptr);
   }
 

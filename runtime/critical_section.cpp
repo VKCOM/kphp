@@ -9,10 +9,10 @@
 
 #include "runtime/php_assert.h"
 
-void check_stack_overflow() __attribute__ ((weak));
+void check_stack_overflow() __attribute__((weak));
 
 void check_stack_overflow() {
-  //pass;
+  // pass;
 }
 
 namespace dl {
@@ -22,13 +22,13 @@ volatile long long pending_signals;
 
 void enter_critical_section() noexcept {
   check_stack_overflow();
-  php_assert (in_critical_section.load(std::memory_order_relaxed) >= 0);
+  php_assert(in_critical_section.load(std::memory_order_relaxed) >= 0);
   in_critical_section.fetch_add(1, std::memory_order_release);
 }
 
 void leave_critical_section() noexcept {
   in_critical_section.fetch_sub(1, std::memory_order_release);
-  php_assert (in_critical_section.load(std::memory_order_relaxed) >= 0);
+  php_assert(in_critical_section.load(std::memory_order_relaxed) >= 0);
   if (pending_signals && in_critical_section.load(std::memory_order_acquire) <= 0) {
     for (int i = 0; i < sizeof(pending_signals) * 8; i++) {
       if ((pending_signals >> i) & 1) {
