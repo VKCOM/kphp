@@ -9,6 +9,7 @@
 #include <sys/select.h>
 
 #include "runtime/array_functions.h"
+#include "runtime/allocator.h"
 #include "runtime/critical_section.h"
 
 constexpr int PHP_CSV_NO_ESCAPE = EOF;

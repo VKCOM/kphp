@@ -29,6 +29,7 @@
 #include "common/wrappers/to_array.h"
 
 #include "runtime/array_functions.h"
+#include "runtime/allocator.h"
 #include "runtime/critical_section.h"
 #include "runtime/datetime/datetime_functions.h"
 #include "runtime/files.h"

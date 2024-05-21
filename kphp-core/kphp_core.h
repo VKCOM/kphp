@@ -6,15 +6,16 @@
 
 #include <tuple>
 #include <utility>
+#include <cinttypes>
 
 #include "common/algorithms/find.h"
 #include "common/sanitizer.h"
 #include "common/type_traits/list_of_types.h"
 
 #include "kphp-core/include.h"
-#include "kphp-core/kphp-types/decl/shape.h"
+#include "kphp-core/kphp-core-allocator.h"
 #include "kphp-core/kphp-types/kphp_type_traits.h"
-#include "runtime/allocator.h"
+#include "kphp-core/kphp-types/decl/shape.h"
 
 // order of includes below matters, be careful
 
@@ -468,18 +469,6 @@ inline void f$warning(const string &message);
 
 #define f$critical_error(message) \
   php_critical_error("%s", message.c_str());
-
-inline int64_t f$memory_get_static_usage();
-
-inline int64_t f$memory_get_peak_usage(bool real_usage = false);
-
-inline int64_t f$memory_get_usage(bool real_usage = false);
-
-inline int64_t f$memory_get_total_usage();
-
-inline array<int64_t> f$memory_get_detailed_stats();
-
-inline std::tuple<int64_t, int64_t> f$memory_get_allocations();
 
 template<class T>
 inline int64_t f$get_reference_counter(const array<T> &v);
@@ -1342,48 +1331,6 @@ int64_t f$error_reporting() {
 void f$warning(const string &message) {
   php_warning("%s", message.c_str());
 }
-
-int64_t f$memory_get_static_usage() {
-  return static_cast<int64_t>(dl::get_heap_memory_used());
-}
-
-int64_t f$memory_get_peak_usage(bool real_usage) {
-  if (real_usage) {
-    return static_cast<int64_t>(dl::get_script_memory_stats().max_real_memory_used);
-  } else {
-    return static_cast<int64_t>(dl::get_script_memory_stats().max_memory_used);
-  }
-}
-
-int64_t f$memory_get_usage(bool real_usage __attribute__((unused))) {
-  return static_cast<int64_t>(dl::get_script_memory_stats().memory_used);
-}
-
-int64_t f$memory_get_total_usage() {
-  return static_cast<int64_t>(dl::get_script_memory_stats().real_memory_used);
-}
-
-array<int64_t> f$memory_get_detailed_stats() {
-  const auto &stats = dl::get_script_memory_stats();
-  return array<int64_t>(
-    {
-      std::make_pair(string{"memory_limit"}, static_cast<int64_t>(stats.memory_limit)),
-      std::make_pair(string{"real_memory_used"}, static_cast<int64_t>(stats.real_memory_used)),
-      std::make_pair(string{"memory_used"}, static_cast<int64_t>(stats.memory_used)),
-      std::make_pair(string{"max_real_memory_used"}, static_cast<int64_t>(stats.max_real_memory_used)),
-      std::make_pair(string{"max_memory_used"}, static_cast<int64_t>(stats.max_memory_used)),
-      std::make_pair(string{"defragmentation_calls"}, static_cast<int64_t>(stats.defragmentation_calls)),
-      std::make_pair(string{"huge_memory_pieces"}, static_cast<int64_t>(stats.huge_memory_pieces)),
-      std::make_pair(string{"small_memory_pieces"}, static_cast<int64_t>(stats.small_memory_pieces)),
-      std::make_pair(string{"heap_memory_used"}, static_cast<int64_t>(dl::get_heap_memory_used()))
-    });
-}
-
-std::tuple<int64_t, int64_t> f$memory_get_allocations() {
-  const auto &stats = dl::get_script_memory_stats();
-  return {stats.total_allocations, stats.total_memory_allocated};
-}
-
 
 template<class T>
 int64_t f$get_reference_counter(const array<T> &v) {

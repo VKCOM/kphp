@@ -5,6 +5,7 @@
 #pragma once
 #include "kphp-core/kphp_core.h"
 #include "runtime/tl/rpc_function.h"
+#include "runtime/allocator.h"
 
 struct tl_func_base : ManagedThroughDlAllocator {
   virtual mixed fetch() = 0;

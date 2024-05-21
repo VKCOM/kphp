@@ -3,6 +3,9 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
+
+#include <memory>
+
 #include "kphp-core/class-instance/refcountable_php_classes.h"
 #include "kphp-core/kphp_core.h"
 

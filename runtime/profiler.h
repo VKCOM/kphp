@@ -13,6 +13,7 @@
 #include "common/wrappers/string_view.h"
 
 #include "kphp-core/kphp_core.h"
+#include "runtime/allocator.h"
 #include "server/php-queries-stats.h"
 
 template<class T>

@@ -10,6 +10,7 @@
 
 #include "common/resolver.h"
 
+#include "runtime/allocator.h"
 #include "runtime/critical_section.h"
 #include "runtime/datetime/datetime_functions.h"
 #include "runtime/net_events.h"

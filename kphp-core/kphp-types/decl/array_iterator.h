@@ -1,62 +1,187 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2022 LLC «V Kontakte»
+// Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
 
-#include "common/algorithms/hashes.h"
-#include "common/wrappers/string_view.h"
+#include "common/type_traits/list_of_types.h"
+#include "common/sanitizer.h"
 
-#include "kphp-core/class-instance/refcountable_php_classes.h"
-#include "kphp-core/kphp_core.h"
-#include "runtime/dummy-visitor-methods.h"
+#include "kphp-core/kphp-types/decl/declarations.h"
 
-// C$ArrayIterator implements SPL ArrayIterator class.
-struct C$ArrayIterator : public refcountable_php_classes<C$ArrayIterator>, private DummyVisitorMethods {
-  // we store an array to keep a living reference to it while iterator is valid;
-  // also we may implement rewind() method later if we feel like it
-  array<mixed> arr;
-  array<mixed>::const_iterator it;
-  array<mixed>::const_iterator end;
+template<class T>
+class array_iterator {
+private:
+  template<typename T1>
+  friend class array;
 
-  const char *get_class() const noexcept {
-    return "ArrayIterator";
+  friend class array_iterator<const T>;
+
+  template<typename S>
+  using const_conditional_t = std::conditional_t<std::is_const<T>::value, const S, S>;
+
+public:
+  using value_type = T;
+  using array_type = const_conditional_t<array<std::remove_const_t<T>>>;
+  using key_type = typename array_type::key_type;
+  using inner_type = const_conditional_t<typename array_type::array_inner>;
+  using list_hash_type = const_conditional_t<typename array_type::list_hash_entry>;
+  using bucket_type = const_conditional_t<typename array_type::array_bucket>;
+
+  inline constexpr array_iterator() noexcept __attribute__ ((always_inline)) = default;
+
+  inline array_iterator(inner_type *self, list_hash_type *entry) noexcept __attribute__ ((always_inline)):
+    self_(self),
+    entry_(entry) {
   }
 
-  int32_t get_hash() const noexcept {
-    return static_cast<int32_t>(vk::std_hash(vk::string_view(get_class())));
+  inline operator array_iterator<const value_type>() noexcept __attribute__ ((always_inline)) {
+   return  array_iterator<const value_type>(self_, entry_);
   }
 
-  using DummyVisitorMethods::accept;
+  inline value_type &get_value() noexcept __attribute__ ((always_inline)) {
+    return self_->is_vector() ? *reinterpret_cast<value_type *>(entry_) : static_cast<bucket_type *>(entry_)->value;
+  }
+
+  inline const value_type &get_value() const noexcept __attribute__ ((always_inline)) {
+    return self_->is_vector() ? *reinterpret_cast<value_type *>(entry_) : static_cast<bucket_type *>(entry_)->value;
+  }
+
+  inline key_type get_key() const noexcept __attribute__ ((always_inline)) {
+    if (self_->is_vector()) {
+      return key_type{static_cast<int64_t>(reinterpret_cast<value_type *>(entry_) - reinterpret_cast<value_type *>(self_->entries))};
+    }
+
+    if (is_string_key()) {
+      return get_string_key();
+    } else {
+      return get_int_key();
+    }
+  }
+
+  inline int64_t get_int_key() noexcept __attribute__ ((always_inline)) {
+    return static_cast<bucket_type *>(entry_)->int_key;
+  }
+
+  inline int64_t get_int_key() const noexcept __attribute__ ((always_inline)) {
+    return static_cast<const bucket_type *>(entry_)->int_key;
+  }
+
+  inline bool is_string_key() const noexcept __attribute__ ((always_inline)) ubsan_supp("alignment") {
+    return !self_->is_vector() && self_->is_string_hash_entry(static_cast<const bucket_type *>(entry_));
+  }
+
+  inline const_conditional_t<string> &get_string_key() noexcept __attribute__ ((always_inline)) {
+    return static_cast<bucket_type *>(entry_)->string_key;
+  }
+
+  inline const string &get_string_key() const noexcept __attribute__ ((always_inline)) {
+    return static_cast<const bucket_type *>(entry_)->string_key;
+  }
+
+  inline array_iterator &operator++() noexcept __attribute__ ((always_inline)) ubsan_supp("alignment") {
+    entry_ = self_->is_vector()
+             ? reinterpret_cast<list_hash_type *>(reinterpret_cast<value_type *>(entry_) + 1)
+             : self_->next(static_cast<bucket_type *>(entry_));
+    return *this;
+  }
+
+  inline array_iterator &operator--() noexcept __attribute__ ((always_inline)) ubsan_supp("alignment") {
+    entry_ = self_->is_vector()
+             ? reinterpret_cast<list_hash_type *>(reinterpret_cast<value_type *>(entry_) - 1)
+             : self_->prev(static_cast<bucket_type *>(entry_));
+    return *this;
+  }
+
+  inline bool operator==(const array_iterator &other) const noexcept __attribute__ ((always_inline)) {
+    return entry_ == other.entry_;
+  }
+
+  inline bool operator!=(const array_iterator &other) const noexcept __attribute__ ((always_inline)) {
+    return entry_ != other.entry_;
+  }
+
+  inline array_iterator &operator*() noexcept __attribute__ ((always_inline)) {
+    return *this;
+  }
+
+  inline const array_iterator &operator*() const noexcept __attribute__ ((always_inline)) {
+    return *this;
+  }
+
+  static inline array_iterator make_begin(std::add_const_t<array_type> &arr) noexcept __attribute__ ((always_inline)) {
+    static_assert(std::is_const<T>{}, "expected to be const");
+    return arr.is_vector()
+           ? array_iterator{arr.p, arr.p->entries}
+           : array_iterator{arr.p, arr.p->begin()};
+  }
+
+  static inline array_iterator make_begin(std::remove_const_t<array_type> &arr) noexcept __attribute__ ((always_inline)) {
+    static_assert(!std::is_const<T>{}, "expected to be mutable");
+    if (arr.is_vector()) {
+      arr.mutate_if_vector_shared();
+      return array_iterator{arr.p, arr.p->entries};
+    }
+
+    arr.mutate_if_map_shared();
+    return array_iterator{arr.p, arr.p->begin()};
+  }
+
+  static inline array_iterator make_end(array_type &arr) noexcept __attribute__ ((always_inline)) {
+    return arr.is_vector()
+           ? array_iterator{arr.p, reinterpret_cast<list_hash_type *>(reinterpret_cast<value_type *>(arr.p->entries) + arr.p->size)}
+           : array_iterator{arr.p, arr.p->end()};
+  }
+
+  static inline array_iterator make_middle(array_type &arr, int64_t n) noexcept {
+    int64_t l = arr.count();
+
+    if (arr.is_vector()) {
+      if (n < 0) {
+        n += l;
+        if (n < 0) {
+          return make_end(arr);
+        }
+      }
+      if (n >= l) {
+        return make_end(arr);
+      }
+
+      return array_iterator{arr.p, reinterpret_cast<list_hash_type *>(reinterpret_cast<value_type *>(arr.p->entries) + n)};
+    }
+
+    if (n < -l / 2) {
+      n += l;
+      if (n < 0) {
+        return make_end(arr);
+      }
+    }
+
+    if (n > l / 2) {
+      n -= l;
+      if (n >= 0) {
+        return make_end(arr);
+      }
+    }
+
+    bucket_type *result = nullptr;
+    if (n < 0) {
+      result = arr.p->end();
+      while (n < 0) {
+        n++;
+        result = arr.p->prev(result);
+      }
+    } else {
+      result = arr.p->begin();
+      while (n > 0) {
+        n--;
+        result = arr.p->next(result);
+      }
+    }
+    return array_iterator{arr.p, result};
+  }
+
+private:
+  inner_type *self_{nullptr};
+  list_hash_type *entry_{nullptr};
 };
-
-void array_iterator_reset(class_instance<C$ArrayIterator> const &v$this, const array<mixed> &arr) noexcept;
-
-class_instance<C$ArrayIterator> f$ArrayIterator$$__construct(class_instance<C$ArrayIterator> const &v$this, const array<mixed> &arr) noexcept;
-
-inline bool f$ArrayIterator$$valid(class_instance<C$ArrayIterator> const &v$this) noexcept {
-  return v$this->it != v$this->end;
-}
-
-inline int64_t f$ArrayIterator$$count(class_instance<C$ArrayIterator> const &v$this) noexcept {
-  return v$this->arr.count();
-}
-
-inline mixed f$ArrayIterator$$current(class_instance<C$ArrayIterator> const &v$this) noexcept {
-  return v$this->it != v$this->end ? v$this->it.get_value() : Optional<bool>{};
-}
-
-inline mixed f$ArrayIterator$$key(class_instance<C$ArrayIterator> const &v$this) noexcept {
-  return v$this->it != v$this->end ? v$this->it.get_key() : Optional<bool>{};
-}
-
-inline void f$ArrayIterator$$next(class_instance<C$ArrayIterator> const &v$this) noexcept {
-  if (v$this->it != v$this->end) {
-    ++v$this->it;
-  }
-}
-
-inline class_instance<C$ArrayIterator> f$reset_array_iterator(const class_instance<C$ArrayIterator> &iter, const array<mixed> &arr) {
-  array_iterator_reset(iter, arr);
-  return iter;
-}

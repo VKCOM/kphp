@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <memory>
 
 #include "common/mixin/not_copyable.h"
 #include "common/wrappers/iterator_range.h"

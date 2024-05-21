@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include "common/algorithms/hashes.h"
 #include "common/wrappers/string_view.h"
 #include "kphp-core/class-instance/refcountable_php_classes.h"

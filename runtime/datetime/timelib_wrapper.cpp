@@ -8,6 +8,7 @@
 
 #include "common/containers/final_action.h"
 #include "common/smart_ptrs/singleton.h"
+#include "runtime/allocator.h"
 #include "server/php-engine-vars.h"
 #include "server/php-runner.h"
 
