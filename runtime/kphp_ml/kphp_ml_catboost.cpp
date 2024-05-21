@@ -8,7 +8,7 @@
 
 #include "runtime/kphp_ml/kphp_ml_catboost.h"
 
-#include "runtime/kphp_core.h"
+#include "kphp-core/kphp_core.h"
 #include "runtime/kphp_ml/kphp_ml.h"
 
 /*

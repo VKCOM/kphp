@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime/kphp_core.h"
+#include "kphp-core/kphp_core.h"
 
 bool f$ctype_alnum(const mixed &text) noexcept;
 bool f$ctype_alpha(const mixed &text) noexcept;

@@ -14,7 +14,7 @@
 #include "common/wrappers/iterator_range.h"
 #include "common/wrappers/string_view.h"
 
-#include "runtime/kphp_core.h"
+#include "kphp-core/kphp_core.h"
 
 enum class ConfdataFirstKeyType {
   simple_key,

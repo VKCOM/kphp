@@ -6,7 +6,7 @@
 
 #include "common/smart_ptrs/singleton.h"
 
-#include "runtime/kphp_core.h"
+#include "kphp-core/kphp_core.h"
 
 using curl_easy = int64_t;
 

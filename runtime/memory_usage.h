@@ -13,9 +13,9 @@
 
 #include "common/mixin/not_copyable.h"
 #include "common/type_traits/list_of_types.h"
-#include "runtime/declarations.h"
-#include "runtime/kphp_core.h"
-#include "runtime/shape.h"
+#include "kphp-core/kphp-types/decl/declarations.h"
+#include "kphp-core/kphp-types/decl/shape.h"
+#include "kphp-core/kphp_core.h"
 
 template<class T>
 struct CDataPtr;

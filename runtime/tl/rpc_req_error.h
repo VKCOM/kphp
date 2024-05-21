@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime/kphp_core.h"
+#include "kphp-core/kphp_core.h"
 
 struct RpcError {
   int error_code = 0;

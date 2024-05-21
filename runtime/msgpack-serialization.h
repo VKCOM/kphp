@@ -11,10 +11,10 @@
 
 #include "common/containers/final_action.h"
 
+#include "kphp-core/kphp_core.h"
 #include "runtime/critical_section.h"
 #include "runtime/exception.h"
 #include "runtime/interface.h"
-#include "runtime/kphp_core.h"
 #include "runtime/string_functions.h"
 
 template<class T>

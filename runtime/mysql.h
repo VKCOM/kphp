@@ -4,10 +4,10 @@
 
 #pragma once
 
+#include "kphp-core/class-instance/refcountable_php_classes.h"
+#include "kphp-core/kphp_core.h"
 #include "runtime/dummy-visitor-methods.h"
-#include "runtime/kphp_core.h"
 #include "runtime/memory_usage.h"
-#include "runtime/refcountable_php_classes.h"
 
 class C$mysqli : public refcountable_php_classes<C$mysqli>, private DummyVisitorMethods {
 public:

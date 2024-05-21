@@ -7,7 +7,7 @@
 
 #include <stdexcept>
 
-#include "runtime/kphp_core.h"
+#include "kphp-core/kphp_core.h"
 #include "runtime/msgpack/adaptor_base.h"
 #include "runtime/msgpack/check_instance_depth.h"
 #include "runtime/msgpack/object.h"

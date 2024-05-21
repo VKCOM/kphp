@@ -2,7 +2,7 @@
 // Copyright (c) 2022 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime/spl/array_iterator.h"
+#include "kphp-core/kphp-types/decl/array_iterator.h"
 
 void array_iterator_reset(const class_instance<C$ArrayIterator> &iter, const array<mixed> &arr) noexcept {
   iter->arr = arr;

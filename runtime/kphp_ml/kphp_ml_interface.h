@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime/kphp_core.h"
+#include "kphp-core/kphp_core.h"
 
 Optional<array<double>> f$kml_xgboost_predict_matrix(const string &model_name, const array<array<double>> &features_map_matrix);
 

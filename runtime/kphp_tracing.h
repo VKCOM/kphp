@@ -6,9 +6,9 @@
 
 #include <functional>
 
+#include "kphp-core/class-instance/refcountable_php_classes.h"
+#include "kphp-core/kphp_core.h"
 #include "runtime/critical_section.h"
-#include "runtime/kphp_core.h"
-#include "runtime/refcountable_php_classes.h"
 #include "runtime/dummy-visitor-methods.h"
 
 // for detailed comments about tracing in general, see kphp_tracing.cpp

@@ -8,9 +8,9 @@
 
 #include "common/mixin/not_copyable.h"
 
-#include "runtime/kphp_core.h"
-#include "runtime/mbstring.h"
+#include "kphp-core/kphp_core.h"
 #include "runtime/kphp_tracing.h"
+#include "runtime/mbstring.h"
 
 namespace re2 {
 class RE2;

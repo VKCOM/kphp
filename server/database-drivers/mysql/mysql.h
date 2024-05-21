@@ -5,9 +5,9 @@
 #pragma once
 
 #include "common/kprintf.h"
+#include "kphp-core/kphp_core.h"
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
-#include "runtime/kphp_core.h"
 
 DECLARE_VERBOSITY(mysql);
 

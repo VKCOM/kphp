@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "runtime/kphp_core.h"
+#include "kphp-core/kphp_core.h"
 
 template <typename T>
 struct TestCaseComparison {

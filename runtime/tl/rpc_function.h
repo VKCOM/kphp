@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "runtime/refcountable_php_classes.h"
 #include "common/algorithms/hashes.h"
 #include "common/wrappers/string_view.h"
+#include "kphp-core/class-instance/refcountable_php_classes.h"
 
 struct tl_func_base;
 

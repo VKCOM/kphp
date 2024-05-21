@@ -8,7 +8,7 @@
 
 #include "common/mixin/not_copyable.h"
 #include "common/smart_ptrs/singleton.h"
-#include "runtime/kphp_core.h"
+#include "kphp-core/kphp_core.h"
 
 class ShapeKeyDemangle : vk::not_copyable {
 public:

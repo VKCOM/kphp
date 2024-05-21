@@ -8,7 +8,7 @@
 
 #include "common/tl/constants/common.h"
 
-#include "runtime/include.h"
+#include "kphp-core/include.h"
 #include "runtime/interface.h"
 #include "runtime/rpc.h"
 #include "runtime/tl/rpc_function.h"

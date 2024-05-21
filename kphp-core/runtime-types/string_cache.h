@@ -9,7 +9,7 @@
 
 #include "common/php-functions.h"
 
-#include "runtime/kphp_core.h"
+#include "kphp-core/kphp_core.h"
 
 class string_cache {
 private:

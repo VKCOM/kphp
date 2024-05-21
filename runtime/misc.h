@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime/kphp_core.h"
+#include "kphp-core/kphp_core.h"
 
 string f$uniqid(const string &prefix = string(), bool more_entropy = false);
 

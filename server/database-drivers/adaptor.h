@@ -7,12 +7,12 @@
 #include <memory>
 #include <unordered_map>
 
-#include "common/smart_ptrs/singleton.h"
 #include "common/mixin/not_copyable.h"
+#include "common/smart_ptrs/singleton.h"
+#include "kphp-core/kphp_core.h"
 #include "net/net-events.h"
 #include "runtime/critical_section.h"
 #include "runtime/signal_safe_hashtable.h"
-#include "runtime/kphp_core.h"
 
 #include "server/database-drivers/connector.h"
 #include "server/database-drivers/request.h"

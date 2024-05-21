@@ -2,7 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime/kphp_core.h"
+#include "kphp-core/kphp_core.h"
 
 constexpr auto string_cache::constexpr_make_large_ints() noexcept {
   return constexpr_make_ints(std::make_index_sequence<cached_int_max() / 10>{});

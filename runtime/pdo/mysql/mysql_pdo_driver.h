@@ -4,8 +4,8 @@
 
 #pragma once
 
+#include "kphp-core/kphp_core.h"
 #include "runtime/allocator.h"
-#include "runtime/kphp_core.h"
 #include "runtime/pdo/abstract_pdo_driver.h"
 
 namespace pdo::mysql {

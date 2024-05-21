@@ -8,7 +8,7 @@
 
 #include "common/algorithms/simd-int-to-string.h"
 
-#include "runtime/string_cache.h"
+#include "kphp-core/runtime-types/string_cache.h"
 #include "runtime/migration_php8.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE

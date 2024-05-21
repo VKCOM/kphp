@@ -2,7 +2,7 @@
 // Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime/kphp_core.h"
+#include "kphp-core/kphp_core.h"
 
 void mixed::destroy() noexcept {
   switch (get_type()) {

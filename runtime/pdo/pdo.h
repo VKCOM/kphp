@@ -9,11 +9,11 @@
 #include "common/algorithms/hashes.h"
 #include "common/wrappers/string_view.h"
 
+#include "kphp-core/class-instance/refcountable_php_classes.h"
+#include "kphp-core/kphp_core.h"
 #include "runtime/dummy-visitor-methods.h"
-#include "runtime/kphp_core.h"
 #include "runtime/memory_usage.h"
 #include "runtime/pdo/abstract_pdo_driver.h"
-#include "runtime/refcountable_php_classes.h"
 
 struct C$PDO : public refcountable_polymorphic_php_classes<abstract_refcountable_php_interface>, private DummyVisitorMethods {
   static constexpr int ATTR_TIMEOUT = 2;

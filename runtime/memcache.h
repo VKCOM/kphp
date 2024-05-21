@@ -6,15 +6,15 @@
 
 #include <utility>
 
+#include "common/algorithms/hashes.h"
+#include "common/wrappers/string_view.h"
+#include "kphp-core/kphp_core.h"
 #include "runtime/dummy-visitor-methods.h"
 #include "runtime/exception.h"
-#include "runtime/kphp_core.h"
 #include "runtime/memory_usage.h"
 #include "runtime/net_events.h"
 #include "runtime/resumable.h"
 #include "runtime/rpc.h"
-#include "common/algorithms/hashes.h"
-#include "common/wrappers/string_view.h"
 
 void init_memcache_lib();
 void free_memcache_lib();
