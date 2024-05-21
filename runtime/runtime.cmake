@@ -37,6 +37,9 @@ prepend(KPHP_RUNTIME_ML_SOURCES kphp_ml/
         kphp_ml_interface.cpp
         kml-files-reader.cpp)
 
+prepend(KPHP_RUNTIME_SPL_SOURCES spl/
+        array_iterator.cpp)
+
 prepend(KPHP_RUNTIME_PDO_SOURCES pdo/
         pdo.cpp
         pdo_statement.cpp

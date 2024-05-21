@@ -3,6 +3,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "runtime/bcmath.h"
+#include "runtime/allocator.h"
 
 namespace {
 

@@ -9,7 +9,7 @@
 #include "common/smart_ptrs/unique_ptr_with_delete_function.h"
 
 #include "runtime/string_functions.h"
-
+#include "runtime/allocator.h"
 #include "runtime/zstd.h"
 
 namespace {
