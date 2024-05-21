@@ -212,7 +212,7 @@ int main(int argc, char *argv[]) {
   parser.add("Path to kphp source", settings->kphp_src_path,
              's', "source-path", "KPHP_PATH", get_default_kphp_path());
   parser.add("Internal file with the list of supported PHP functions", settings->functions_file,
-             'f', "functions-file", "KPHP_FUNCTIONS", "${KPHP_PATH}/builtin-functions/_functions.txt");
+             'f', "functions-file", "KPHP_FUNCTIONS", "${KPHP_PATH}/builtin-functions/kphp-full/_functions.txt");
   parser.add("File with kphp runtime sha256 hash", settings->runtime_sha256_file,
              "runtime-sha256", "KPHP_RUNTIME_SHA256", "${KPHP_PATH}/objs/php_lib_version.sha256");
   parser.add("The output binary type: server, cli or lib", settings->mode,

@@ -14,6 +14,9 @@
 struct RuntimeAllocator {
   static RuntimeAllocator& current() noexcept;
 
+  RuntimeAllocator() = default;
+  RuntimeAllocator(size_t script_mem_size, size_t oom_handling_mem_size);
+
   void init(void * buffer, size_t script_mem_size, size_t oom_handling_mem_size);
   void free();
 
@@ -32,6 +35,7 @@ struct RuntimeAllocator {
 struct KphpCoreContext {
 
   static KphpCoreContext& current() noexcept;
+
   void init();
   void free();
 
