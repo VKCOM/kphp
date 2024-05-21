@@ -20,19 +20,19 @@
 
 #define INCLUDED_FROM_KPHP_CORE
 
-#include "kphp-core/class-instance/class_instance_decl.inl"
+#include "kphp-core/kphp-types/decl/string_decl.inl"
 #include "kphp-core/kphp-types/decl/array_decl.inl"
+#include "kphp-core/class-instance/class_instance_decl.inl"
 #include "kphp-core/kphp-types/decl/mixed_decl.inl"
 #include "kphp-core/kphp-types/decl/string_buffer_decl.inl"
-#include "kphp-core/kphp-types/decl/string_decl.inl"
 
-#include "kphp-core/class-instance/class_instance.inl"
-#include "kphp-core/kphp-types/comparison_operators.inl"
-#include "kphp-core/kphp-types/conversions_types.inl"
-#include "kphp-core/kphp-types/definition/array.inl"
-#include "kphp-core/kphp-types/definition/mixed.inl"
 #include "kphp-core/kphp-types/definition/string.inl"
+#include "kphp-core/kphp-types/definition/array.inl"
+#include "kphp-core/class-instance/class_instance.inl"
+#include "kphp-core/kphp-types/definition/mixed.inl"
 #include "kphp-core/kphp-types/definition/string_buffer.inl"
+#include "kphp-core/kphp-types/conversions_types.inl"
+#include "kphp-core/kphp-types/comparison_operators.inl"
 
 #undef INCLUDED_FROM_KPHP_CORE
 
