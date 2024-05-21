@@ -68,6 +68,9 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         ${KPHP_RUNTIME_PDO_MYSQL_SOURCES}
         ${KPHP_RUNTIME_PDO_PGSQL_SOURCES}
         allocator.cpp
+        kphp-core-allocator.cpp
+        kphp-core-context.cpp
+        kphp-runtime-context.cpp
         array_functions.cpp
         bcmath.cpp
         common_template_instantiations.cpp
@@ -97,7 +100,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         mbstring.cpp
         memcache.cpp
         memory_usage.cpp
-        migration_php8.cpp
+        ../kphp-core/functions/migration_php8.cpp
         misc.cpp
         mysql.cpp
         net_events.cpp

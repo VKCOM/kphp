@@ -11,7 +11,7 @@
 #include "common/type_traits/list_of_types.h"
 
 #include "kphp-core/kphp-types/decl/declarations.h"
-#include "runtime/php_assert.h"
+#include "kphp-core/functions/kphp-assert-core.h"
 
 template<class T>
 class Optional;
