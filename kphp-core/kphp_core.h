@@ -11,28 +11,28 @@
 #include "common/sanitizer.h"
 #include "common/type_traits/list_of_types.h"
 
+#include "kphp-core/include.h"
+#include "kphp-core/kphp-types/decl/shape.h"
+#include "kphp-core/kphp-types/kphp_type_traits.h"
 #include "runtime/allocator.h"
-#include "runtime/include.h"
-#include "runtime/kphp_type_traits.h"
-#include "runtime/shape.h"
 
 // order of includes below matters, be careful
 
 #define INCLUDED_FROM_KPHP_CORE
 
-#include "string_decl.inl"
-#include "array_decl.inl"
-#include "class_instance_decl.inl"
-#include "mixed_decl.inl"
-#include "string_buffer_decl.inl"
+#include "kphp-core/class-instance/class_instance_decl.inl"
+#include "kphp-core/kphp-types/decl/array_decl.inl"
+#include "kphp-core/kphp-types/decl/mixed_decl.inl"
+#include "kphp-core/kphp-types/decl/string_buffer_decl.inl"
+#include "kphp-core/kphp-types/decl/string_decl.inl"
 
-#include "string.inl"
-#include "array.inl"
-#include "class_instance.inl"
-#include "mixed.inl"
-#include "string_buffer.inl"
-#include "conversions_types.inl"
-#include "comparison_operators.inl"
+#include "kphp-core/class-instance/class_instance.inl"
+#include "kphp-core/kphp-types/comparison_operators.inl"
+#include "kphp-core/kphp-types/conversions_types.inl"
+#include "kphp-core/kphp-types/definition/array.inl"
+#include "kphp-core/kphp-types/definition/mixed.inl"
+#include "kphp-core/kphp-types/definition/string.inl"
+#include "kphp-core/kphp-types/definition/string_buffer.inl"
 
 #undef INCLUDED_FROM_KPHP_CORE
 

@@ -37,9 +37,6 @@ prepend(KPHP_RUNTIME_ML_SOURCES kphp_ml/
         kphp_ml_interface.cpp
         kml-files-reader.cpp)
 
-prepend(KPHP_RUNTIME_SPL_SOURCES spl/
-        array_iterator.cpp)
-
 prepend(KPHP_RUNTIME_PDO_SOURCES pdo/
         pdo.cpp
         pdo_statement.cpp
@@ -99,7 +96,6 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         memory_usage.cpp
         migration_php8.cpp
         misc.cpp
-        mixed.cpp
         mysql.cpp
         net_events.cpp
         on_kphp_warning_callback.cpp
@@ -115,9 +111,6 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         serialize-functions.cpp
         storage.cpp
         streams.cpp
-        string.cpp
-        string_buffer.cpp
-        string_cache.cpp
         string_functions.cpp
         tl/rpc_req_error.cpp
         tl/rpc_tl_query.cpp
@@ -150,6 +143,8 @@ set(KPHP_RUNTIME_ALL_SOURCES
     ${KPHP_RUNTIME_SOURCES}
     ${KPHP_SERVER_SOURCES})
 
+include(kphp-core/kphp-core.cmake)
+
 allow_deprecated_declarations(${BASE_DIR}/runtime/allocator.cpp ${BASE_DIR}/runtime/openssl.cpp)
 allow_deprecated_declarations_for_apple(${BASE_DIR}/runtime/inter-process-mutex.cpp)
 
@@ -159,7 +154,7 @@ target_include_directories(kphp_runtime PUBLIC ${BASE_DIR} /opt/curl7600/include
 add_dependencies(kphp_runtime kphp-timelib)
 
 prepare_cross_platform_libs(RUNTIME_LIBS yaml-cpp re2 zstd h3) # todo: linking between static libs is no-op, is this redundant? do we need to add mysqlclient here?
-set(RUNTIME_LIBS vk::kphp_runtime vk::kphp_server vk::popular_common vk::unicode vk::common_src vk::binlog_src vk::net_src ${RUNTIME_LIBS} OpenSSL::Crypto m z pthread)
+set(RUNTIME_LIBS vk::kphp_runtime vk::kphp_server vk::kphp_core vk::popular_common vk::unicode vk::common_src vk::binlog_src vk::net_src ${RUNTIME_LIBS} OpenSSL::Crypto m z pthread)
 vk_add_library(kphp-full-runtime STATIC)
 target_link_libraries(kphp-full-runtime PUBLIC ${RUNTIME_LIBS})
 set_target_properties(kphp-full-runtime PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${OBJS_DIR})

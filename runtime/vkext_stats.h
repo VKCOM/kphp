@@ -4,8 +4,7 @@
 
 #pragma once
 
-#include "runtime/kphp_core.h"
-
+#include "kphp-core/kphp_core.h"
 
 Optional<string> f$vk_stats_hll_merge(const array<mixed> &a);
 Optional<double> f$vk_stats_hll_count(const string &hll);

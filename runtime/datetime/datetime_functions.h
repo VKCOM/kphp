@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime/kphp_core.h"
+#include "kphp-core/kphp_core.h"
 
 bool f$checkdate(int64_t month, int64_t day, int64_t year);
 

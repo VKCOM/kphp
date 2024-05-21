@@ -2,8 +2,8 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include "kphp-core/kphp_core.h"
 #include "runtime/allocator.h"
-#include "runtime/kphp_core.h"
 
 string_buffer static_SB;
 string_buffer static_SB_spare;

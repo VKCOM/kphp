@@ -7,12 +7,11 @@
 #include <tuple>
 #include <cstdint>
 
-#include "runtime/kphp_core.h"
-#include "runtime/dummy-visitor-methods.h"
-#include "runtime/refcountable_php_classes.h"
 #include "common/algorithms/hashes.h"
 #include "common/wrappers/string_view.h"
-
+#include "kphp-core/class-instance/refcountable_php_classes.h"
+#include "kphp-core/kphp_core.h"
+#include "runtime/dummy-visitor-methods.h"
 
 using rpc_request_extra_info_t = std::tuple<std::int64_t>; // tuple(request_size)
 using rpc_response_extra_info_t = std::tuple<std::int64_t, double>; // tuple(response_size, response_time)

@@ -4,8 +4,8 @@
 
 #pragma once
 
+#include "kphp-core/kphp_core.h"
 #include "runtime/exception.h"
-#include "runtime/kphp_core.h"
 
 #include <array>
 

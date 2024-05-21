@@ -3,7 +3,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
-#include "runtime/kphp_core.h"
+#include "kphp-core/kphp_core.h"
 
 void init_confdata_functions_lib();
 void free_confdata_functions_lib();

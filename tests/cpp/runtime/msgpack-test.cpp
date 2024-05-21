@@ -1,4 +1,4 @@
-#include "runtime/kphp_core.h"
+#include "kphp-core/kphp_core.h"
 #include "runtime/msgpack-serialization.h"
 #include <array>
 #include <gtest/gtest.h>

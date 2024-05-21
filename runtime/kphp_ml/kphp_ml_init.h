@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime/kphp_core.h"
+#include "kphp-core/kphp_core.h"
 
 namespace kphp_ml { struct MLModel; }
 

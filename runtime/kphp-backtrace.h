@@ -9,7 +9,7 @@
 
 #include "common/wrappers/iterator_range.h"
 
-#include "runtime/kphp_core.h"
+#include "kphp-core/kphp_core.h"
 
 class KphpBacktrace : vk::not_copyable {
 public:

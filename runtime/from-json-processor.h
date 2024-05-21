@@ -6,7 +6,7 @@
 
 #include <string_view>
 
-#include "runtime/kphp_core.h"
+#include "kphp-core/kphp_core.h"
 #include "runtime/json-functions.h"
 #include "runtime/json-processor-utils.h"
 

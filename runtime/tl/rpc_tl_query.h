@@ -3,8 +3,8 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
-#include "runtime/kphp_core.h"
-#include "runtime/refcountable_php_classes.h"
+#include "kphp-core/class-instance/refcountable_php_classes.h"
+#include "kphp-core/kphp_core.h"
 
 class RpcRequestResult;
 

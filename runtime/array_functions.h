@@ -10,7 +10,7 @@
 #include "common/type_traits/function_traits.h"
 #include "common/vector-product.h"
 
-#include "runtime/kphp_core.h"
+#include "kphp-core/kphp_core.h"
 #include "runtime/math_functions.h"
 #include "runtime/string_functions.h"
 

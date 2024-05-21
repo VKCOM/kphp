@@ -11,9 +11,9 @@
 #include "common/wrappers/likely.h"
 
 #include "common/php-functions.h"
-#include "runtime/declarations.h"
-#include "runtime/kphp_type_traits.h"
-#include "runtime/optional.h"
+#include "kphp-core/kphp-types/decl/declarations.h"
+#include "kphp-core/kphp-types/decl/optional.h"
+#include "kphp-core/kphp-types/kphp_type_traits.h"
 #include "runtime/php_assert.h"
 
 #define COMMA ,

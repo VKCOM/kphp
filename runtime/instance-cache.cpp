@@ -13,12 +13,12 @@
 #include "common/kprintf.h"
 #include "common/wrappers/memory-utils.h"
 
+#include "kphp-core/class-instance/refcountable_php_classes.h"
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
 #include "runtime/inter-process-mutex.h"
 #include "runtime/inter-process-resource.h"
 #include "runtime/memory_resource/resource_allocator.h"
-#include "runtime/refcountable_php_classes.h"
 
 namespace impl_ {
 

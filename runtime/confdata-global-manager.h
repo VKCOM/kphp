@@ -9,9 +9,9 @@
 #include "common/mixin/not_copyable.h"
 #include "common/wrappers/string_view.h"
 
+#include "kphp-core/kphp_core.h"
 #include "runtime/confdata-keys.h"
 #include "runtime/inter-process-resource.h"
-#include "runtime/kphp_core.h"
 #include "runtime/memory_resource/resource_allocator.h"
 #include "runtime/memory_resource/unsynchronized_pool_resource.h"
 

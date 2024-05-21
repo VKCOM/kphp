@@ -12,7 +12,7 @@
 #include "common/mixin/not_copyable.h"
 #include "common/wrappers/string_view.h"
 
-#include "runtime/kphp_core.h"
+#include "kphp-core/kphp_core.h"
 #include "server/php-queries-stats.h"
 
 template<class T>

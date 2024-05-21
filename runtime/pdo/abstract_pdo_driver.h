@@ -6,8 +6,8 @@
 
 #include <utility>
 
+#include "kphp-core/kphp_core.h"
 #include "runtime/allocator.h"
-#include "runtime/kphp_core.h"
 
 struct C$PDO;
 struct C$PDOStatement;
