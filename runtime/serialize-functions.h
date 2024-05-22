@@ -6,6 +6,7 @@
 
 #include "common/mixin/not_copyable.h"
 #include "kphp-core/kphp_core.h"
+#include "runtime/kphp-runtime-context.h"
 
 namespace impl_ {
 
@@ -29,9 +30,10 @@ private:
 
 template<class T>
 void PhpSerializer::serialize(const array<T> &arr) noexcept {
-  static_SB.append("a:", 2);
-  static_SB << arr.count();
-  static_SB.append(":{", 2);
+  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
+  kphpRuntimeContext.static_SB.append("a:", 2);
+  kphpRuntimeContext.static_SB << arr.count();
+  kphpRuntimeContext.static_SB.append(":{", 2);
   for (auto p : arr) {
     auto key = p.get_key();
     if (array<T>::is_int_key(key)) {
@@ -41,7 +43,7 @@ void PhpSerializer::serialize(const array<T> &arr) noexcept {
     }
     serialize(p.get_value());
   }
-  static_SB << '}';
+  kphpRuntimeContext.static_SB << '}';
 }
 
 template<class T>
@@ -60,9 +62,10 @@ void PhpSerializer::serialize(const Optional<T> &opt) noexcept {
 
 template<class T>
 string f$serialize(const T &v) noexcept {
-  static_SB.clean();
+  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
+  kphpRuntimeContext.static_SB.clean();
   impl_::PhpSerializer::serialize(v);
-  return static_SB.str();
+  return kphpRuntimeContext.static_SB.str();
 }
 
 mixed f$unserialize(const string &v) noexcept;

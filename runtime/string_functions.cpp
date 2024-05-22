@@ -12,6 +12,7 @@
 #include "common/unicode/unicode-utils.h"
 
 #include "runtime/interface.h"
+#include "runtime/kphp-runtime-context.h"
 
 const string COLON(",", 1);
 const string CP1251("cp1251");
@@ -54,70 +55,72 @@ string f$addcslashes(const string &str, const string &what) {
   const char *mask = get_mask(what);
 
   int len = str.size();
-  static_SB.clean().reserve(4 * len);
+  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
+  kphpRuntimeContext.static_SB.clean().reserve(4 * len);
 
   for (int i = 0; i < len; i++) {
     unsigned char c = str[i];
     if (mask[c]) {
-      static_SB.append_char('\\');
+      kphpRuntimeContext.static_SB.append_char('\\');
       if (c < 32 || c > 126) {
         switch (c) {
           case '\n':
-            static_SB.append_char('n');
+            kphpRuntimeContext.static_SB.append_char('n');
             break;
           case '\t':
-            static_SB.append_char('t');
+            kphpRuntimeContext.static_SB.append_char('t');
             break;
           case '\r':
-            static_SB.append_char('r');
+            kphpRuntimeContext.static_SB.append_char('r');
             break;
           case '\a':
-            static_SB.append_char('a');
+            kphpRuntimeContext.static_SB.append_char('a');
             break;
           case '\v':
-            static_SB.append_char('v');
+            kphpRuntimeContext.static_SB.append_char('v');
             break;
           case '\b':
-            static_SB.append_char('b');
+            kphpRuntimeContext.static_SB.append_char('b');
             break;
           case '\f':
-            static_SB.append_char('f');
+            kphpRuntimeContext.static_SB.append_char('f');
             break;
           default:
-            static_SB.append_char(static_cast<char>((c >> 6) + '0'));
-            static_SB.append_char(static_cast<char>(((c >> 3) & 7) + '0'));
-            static_SB.append_char(static_cast<char>((c & 7) + '0'));
+            kphpRuntimeContext.static_SB.append_char(static_cast<char>((c >> 6) + '0'));
+            kphpRuntimeContext.static_SB.append_char(static_cast<char>(((c >> 3) & 7) + '0'));
+            kphpRuntimeContext.static_SB.append_char(static_cast<char>((c & 7) + '0'));
         }
       } else {
-        static_SB.append_char(c);
+        kphpRuntimeContext.static_SB.append_char(c);
       }
     } else {
-      static_SB.append_char(c);
+      kphpRuntimeContext.static_SB.append_char(c);
     }
   }
-  return static_SB.str();
+  return kphpRuntimeContext.static_SB.str();
 }
 
 string f$addslashes(const string &str) {
   int len = str.size();
 
-  static_SB.clean().reserve(2 * len);
+  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
+  kphpRuntimeContext.static_SB.clean().reserve(2 * len);
   for (int i = 0; i < len; i++) {
     switch (str[i]) {
       case '\0':
-        static_SB.append_char('\\');
-        static_SB.append_char('0');
+        kphpRuntimeContext.static_SB.append_char('\\');
+        kphpRuntimeContext.static_SB.append_char('0');
         break;
       case '\'':
       case '\"':
       case '\\':
-        static_SB.append_char('\\');
+        kphpRuntimeContext.static_SB.append_char('\\');
         /* fallthrough */
       default:
-        static_SB.append_char(str[i]);
+        kphpRuntimeContext.static_SB.append_char(str[i]);
     }
   }
-  return static_SB.str();
+  return kphpRuntimeContext.static_SB.str();
 }
 
 string f$bin2hex(const string &str) {
@@ -329,48 +332,49 @@ static const char *cp1251_to_utf8_str[128] = {
 
 string f$htmlentities(const string &str) {
   int len = (int)str.size();
-  static_SB.clean().reserve(8 * len);
+  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
+  kphpRuntimeContext.static_SB.clean().reserve(8 * len);
 
   for (int i = 0; i < len; i++) {
     switch (str[i]) {
       case '&':
-        static_SB.append_char('&');
-        static_SB.append_char('a');
-        static_SB.append_char('m');
-        static_SB.append_char('p');
-        static_SB.append_char(';');
+        kphpRuntimeContext.static_SB.append_char('&');
+        kphpRuntimeContext.static_SB.append_char('a');
+        kphpRuntimeContext.static_SB.append_char('m');
+        kphpRuntimeContext.static_SB.append_char('p');
+        kphpRuntimeContext.static_SB.append_char(';');
         break;
       case '"':
-        static_SB.append_char('&');
-        static_SB.append_char('q');
-        static_SB.append_char('u');
-        static_SB.append_char('o');
-        static_SB.append_char('t');
-        static_SB.append_char(';');
+        kphpRuntimeContext.static_SB.append_char('&');
+        kphpRuntimeContext.static_SB.append_char('q');
+        kphpRuntimeContext.static_SB.append_char('u');
+        kphpRuntimeContext.static_SB.append_char('o');
+        kphpRuntimeContext.static_SB.append_char('t');
+        kphpRuntimeContext.static_SB.append_char(';');
         break;
       case '<':
-        static_SB.append_char('&');
-        static_SB.append_char('l');
-        static_SB.append_char('t');
-        static_SB.append_char(';');
+        kphpRuntimeContext.static_SB.append_char('&');
+        kphpRuntimeContext.static_SB.append_char('l');
+        kphpRuntimeContext.static_SB.append_char('t');
+        kphpRuntimeContext.static_SB.append_char(';');
         break;
       case '>':
-        static_SB.append_char('&');
-        static_SB.append_char('g');
-        static_SB.append_char('t');
-        static_SB.append_char(';');
+        kphpRuntimeContext.static_SB.append_char('&');
+        kphpRuntimeContext.static_SB.append_char('g');
+        kphpRuntimeContext.static_SB.append_char('t');
+        kphpRuntimeContext.static_SB.append_char(';');
         break;
       default:
         if (str[i] < 0) {
           const char *utf8_str = cp1251_to_utf8_str[128 + str[i]];
-          static_SB.append_unsafe(utf8_str, static_cast<int>(strlen(utf8_str)));
+          kphpRuntimeContext.static_SB.append_unsafe(utf8_str, static_cast<int>(strlen(utf8_str)));
         } else {
-          static_SB.append_char(str[i]);
+          kphpRuntimeContext.static_SB.append_char(str[i]);
         }
     }
   }
 
-  return static_SB.str();
+  return kphpRuntimeContext.static_SB.str();
 }
 
 string f$html_entity_decode(const string &str, int64_t flags, const string &encoding) {
@@ -465,59 +469,60 @@ string f$htmlspecialchars(const string &str, int64_t flags) {
   }
 
   const string::size_type len = str.size();
-  static_SB.clean().reserve(6 * len);
+  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
+  kphpRuntimeContext.static_SB.clean().reserve(6 * len);
 
   for (string::size_type i = 0; i < len; i++) {
     switch (str[i]) {
       case '&':
-        static_SB.append_char('&');
-        static_SB.append_char('a');
-        static_SB.append_char('m');
-        static_SB.append_char('p');
-        static_SB.append_char(';');
+        kphpRuntimeContext.static_SB.append_char('&');
+        kphpRuntimeContext.static_SB.append_char('a');
+        kphpRuntimeContext.static_SB.append_char('m');
+        kphpRuntimeContext.static_SB.append_char('p');
+        kphpRuntimeContext.static_SB.append_char(';');
         break;
       case '"':
         if (!(flags & ENT_NOQUOTES)) {
-          static_SB.append_char('&');
-          static_SB.append_char('q');
-          static_SB.append_char('u');
-          static_SB.append_char('o');
-          static_SB.append_char('t');
-          static_SB.append_char(';');
+          kphpRuntimeContext.static_SB.append_char('&');
+          kphpRuntimeContext.static_SB.append_char('q');
+          kphpRuntimeContext.static_SB.append_char('u');
+          kphpRuntimeContext.static_SB.append_char('o');
+          kphpRuntimeContext.static_SB.append_char('t');
+          kphpRuntimeContext.static_SB.append_char(';');
         } else {
-          static_SB.append_char('"');
+          kphpRuntimeContext.static_SB.append_char('"');
         }
         break;
       case '\'':
         if (flags & ENT_QUOTES) {
-          static_SB.append_char('&');
-          static_SB.append_char('#');
-          static_SB.append_char('0');
-          static_SB.append_char('3');
-          static_SB.append_char('9');
-          static_SB.append_char(';');
+          kphpRuntimeContext.static_SB.append_char('&');
+          kphpRuntimeContext.static_SB.append_char('#');
+          kphpRuntimeContext.static_SB.append_char('0');
+          kphpRuntimeContext.static_SB.append_char('3');
+          kphpRuntimeContext.static_SB.append_char('9');
+          kphpRuntimeContext.static_SB.append_char(';');
         } else {
-          static_SB.append_char('\'');
+          kphpRuntimeContext.static_SB.append_char('\'');
         }
         break;
       case '<':
-        static_SB.append_char('&');
-        static_SB.append_char('l');
-        static_SB.append_char('t');
-        static_SB.append_char(';');
+        kphpRuntimeContext.static_SB.append_char('&');
+        kphpRuntimeContext.static_SB.append_char('l');
+        kphpRuntimeContext.static_SB.append_char('t');
+        kphpRuntimeContext.static_SB.append_char(';');
         break;
       case '>':
-        static_SB.append_char('&');
-        static_SB.append_char('g');
-        static_SB.append_char('t');
-        static_SB.append_char(';');
+        kphpRuntimeContext.static_SB.append_char('&');
+        kphpRuntimeContext.static_SB.append_char('g');
+        kphpRuntimeContext.static_SB.append_char('t');
+        kphpRuntimeContext.static_SB.append_char(';');
         break;
       default:
-        static_SB.append_char(str[i]);
+        kphpRuntimeContext.static_SB.append_char(str[i]);
     }
   }
 
-  return static_SB.str();
+  return kphpRuntimeContext.static_SB.str();
 }
 
 string f$htmlspecialchars_decode(const string &str, int64_t flags) {
@@ -630,7 +635,8 @@ string f$ltrim(const string &s, const string &what) {
 
 string f$mysql_escape_string(const string &str) {
   int len = str.size();
-  static_SB.clean().reserve(2 * len);
+  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
+  kphpRuntimeContext.static_SB.clean().reserve(2 * len);
   for (int i = 0; i < len; i++) {
     switch (str[i]) {
       case '\0':
@@ -640,13 +646,13 @@ string f$mysql_escape_string(const string &str) {
       case '\'':
       case '\"':
       case '\\':
-        static_SB.append_char('\\');
+        kphpRuntimeContext.static_SB.append_char('\\');
         /* fallthrough */
       default:
-        static_SB.append_char(str[i]);
+        kphpRuntimeContext.static_SB.append_char(str[i]);
     }
   }
-  return static_SB.str();
+  return kphpRuntimeContext.static_SB.str();
 }
 
 string f$nl2br(const string &str, bool is_xhtml) {
@@ -655,19 +661,20 @@ string f$nl2br(const string &str, bool is_xhtml) {
 
   int len = str.size();
 
-  static_SB.clean().reserve((br_len + 1) * len);
+  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
+  kphpRuntimeContext.static_SB.clean().reserve((br_len + 1) * len);
 
   for (int i = 0; i < len;) {
     if (str[i] == '\n' || str[i] == '\r') {
-      static_SB.append_unsafe(br, br_len);
+      kphpRuntimeContext.static_SB.append_unsafe(br, br_len);
       if (str[i] + str[i + 1] == '\n' + '\r') {
-        static_SB.append_char(str[i++]);
+        kphpRuntimeContext.static_SB.append_char(str[i++]);
       }
     }
-    static_SB.append_char(str[i++]);
+    kphpRuntimeContext.static_SB.append_char(str[i++]);
   }
 
-  return static_SB.str();
+  return kphpRuntimeContext.static_SB.str();
 }
 
 string f$number_format(double number, int64_t decimals, const string &dec_point, const string &thousands_sep) {
@@ -760,7 +767,8 @@ static double float64_from_bits(uint64_t bits) {
 }
 
 string f$pack(const string &pattern, const array<mixed> &a) {
-  static_SB.clean();
+  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
+  kphpRuntimeContext.static_SB.clean();
   int cur_arg = 0;
   for (int i = 0; i < (int)pattern.size();) {
     if (pattern[i] == '*') {
@@ -817,9 +825,9 @@ string f$pack(const string &pattern, const array<mixed> &a) {
           cnt = len;
           i++;
         }
-        static_SB.append(arg_str.c_str(), static_cast<size_t>(min(cnt, len)));
+        kphpRuntimeContext.static_SB.append(arg_str.c_str(), static_cast<size_t>(min(cnt, len)));
         while (cnt > len) {
-          static_SB << filler;
+          kphpRuntimeContext.static_SB << filler;
           cnt--;
         }
         break;
@@ -841,9 +849,9 @@ string f$pack(const string &pattern, const array<mixed> &a) {
             return {};
           }
           if (format == 'H') {
-            static_SB << (char)((num_high << 4) + num_low);
+            kphpRuntimeContext.static_SB << (char)((num_high << 4) + num_low);
           } else {
-            static_SB << (char)((num_low << 4) + num_high);
+            kphpRuntimeContext.static_SB << (char)((num_low << 4) + num_high);
           }
         }
         if (cnt > 0) {
@@ -857,18 +865,18 @@ string f$pack(const string &pattern, const array<mixed> &a) {
           switch (format) {
             case 'c':
             case 'C':
-              static_SB << (char)(arg.to_int());
+              kphpRuntimeContext.static_SB << (char)(arg.to_int());
               break;
             case 's':
             case 'S':
             case 'v': {
               unsigned short value = (short)arg.to_int();
-              static_SB.append((const char *)&value, 2);
+              kphpRuntimeContext.static_SB.append((const char *)&value, 2);
               break;
             }
             case 'n': {
               unsigned short value = (short)arg.to_int();
-              static_SB
+              kphpRuntimeContext.static_SB
                 << (char)(value >> 8)
                 << (char)(value & 255);
               break;
@@ -879,12 +887,12 @@ string f$pack(const string &pattern, const array<mixed> &a) {
             case 'L':
             case 'V': {
               auto value = static_cast<int32_t>(arg.to_int());
-              static_SB.append((const char *)&value, 4);
+              kphpRuntimeContext.static_SB.append((const char *)&value, 4);
               break;
             }
             case 'N': {
               auto value = static_cast<uint32_t>(arg.to_int());
-              static_SB
+              kphpRuntimeContext.static_SB
                 << (char)(value >> 24)
                 << (char)((value >> 16) & 255)
                 << (char)((value >> 8) & 255)
@@ -893,7 +901,7 @@ string f$pack(const string &pattern, const array<mixed> &a) {
             }
             case 'f': {
               float value = (float)arg.to_float();
-              static_SB.append((const char *)&value, sizeof(float));
+              kphpRuntimeContext.static_SB.append((const char *)&value, sizeof(float));
               break;
             }
             case 'e':
@@ -906,7 +914,7 @@ string f$pack(const string &pattern, const array<mixed> &a) {
               } else if (format == 'E') {
                 value_byteordered = htobe64(value_byteordered);
               }
-              static_SB.append((const char *)&value_byteordered, sizeof(uint64_t));
+              kphpRuntimeContext.static_SB.append((const char *)&value_byteordered, sizeof(uint64_t));
               break;
             }
             case 'J':
@@ -922,12 +930,12 @@ string f$pack(const string &pattern, const array<mixed> &a) {
                 value_byteordered = htobe64(value_byteordered);
               }
 
-              static_SB.append((const char *)&value_byteordered, sizeof(unsigned long long));
+              kphpRuntimeContext.static_SB.append((const char *)&value_byteordered, sizeof(unsigned long long));
               break;
             }
             case 'q': {
               int64_t value = arg.to_string().to_int();
-              static_SB.append((const char *)&value, sizeof(long long));
+              kphpRuntimeContext.static_SB.append((const char *)&value, sizeof(long long));
               break;
             }
             default:
@@ -958,7 +966,7 @@ string f$pack(const string &pattern, const array<mixed> &a) {
     php_warning("Too much arguments to call pack with format \"%s\"", pattern.c_str());
   }
 
-  return static_SB.str();
+  return kphpRuntimeContext.static_SB.str();
 }
 
 string f$prepare_search_query(const string &query) {
@@ -1003,6 +1011,7 @@ Optional<string> f$setlocale(int64_t category, const string &locale) {
 }
 
 string f$sprintf(const string &format, const array<mixed> &a) {
+  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
   string result;
   result.reserve_at_least(format.size());
   int cur_arg = 0;
@@ -1114,7 +1123,7 @@ string f$sprintf(const string &format, const array<mixed> &a) {
         case 'd': {
           int64_t arg_int = arg.to_int();
           if (sign == '+' && arg_int >= 0) {
-            piece = (static_SB.clean() << "+" << arg_int).str();
+            piece = (kphpRuntimeContext.static_SB.clean() << "+" << arg_int).str();
           } else {
             piece = string(arg_int);
           }
@@ -1138,16 +1147,16 @@ string f$sprintf(const string &format, const array<mixed> &a) {
         case 'G': {
           double arg_float = arg.to_float();
 
-          static_SB.clean() << '%';
+          kphpRuntimeContext.static_SB.clean() << '%';
           if (sign) {
-            static_SB << sign;
+            kphpRuntimeContext.static_SB << sign;
           }
           if (precision >= 0) {
-            static_SB << '.' << precision;
+            kphpRuntimeContext.static_SB << '.' << precision;
           }
-          static_SB << format[i];
+          kphpRuntimeContext.static_SB << format[i];
 
-          int len = snprintf(php_buf, PHP_BUF_LEN, static_SB.c_str(), arg_float);
+          int len = snprintf(php_buf, PHP_BUF_LEN, kphpRuntimeContext.static_SB.c_str(), arg_float);
           if (len >= PHP_BUF_LEN) {
             error_too_big = true;
             break;
@@ -1169,13 +1178,13 @@ string f$sprintf(const string &format, const array<mixed> &a) {
         case 's': {
           string arg_string = arg.to_string();
 
-          static_SB.clean() << '%';
+          kphpRuntimeContext.static_SB.clean() << '%';
           if (precision >= 0) {
-            static_SB << '.' << precision;
+            kphpRuntimeContext.static_SB << '.' << precision;
           }
-          static_SB << 's';
+          kphpRuntimeContext.static_SB << 's';
 
-          int len = snprintf(php_buf, PHP_BUF_LEN, static_SB.c_str(), arg_string.c_str());
+          int len = snprintf(php_buf, PHP_BUF_LEN, kphpRuntimeContext.static_SB.c_str(), arg_string.c_str());
           if (len >= PHP_BUF_LEN) {
             error_too_big = true;
             break;
@@ -1415,9 +1424,9 @@ string f$strip_tags(const string &str, const string &allow) {
   int state = 0;
 
   const string allow_low = f$strtolower(allow);
-
-  static_SB.clean();
-  static_SB_spare.clean();
+  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
+  kphpRuntimeContext.static_SB.clean();
+  kphpRuntimeContext.static_SB_spare.clean();
   char lc = 0;
   int len = str.size();
   for (int i = 0; i < len; i++) {
@@ -1429,14 +1438,14 @@ string f$strip_tags(const string &str, const string &allow) {
         if (!in_q) {
           if (isspace(str[i + 1])) {
             if (state == 0) {
-              static_SB << c;
+              kphpRuntimeContext.static_SB << c;
             } else if (state == 1) {
-              static_SB_spare << c;
+              kphpRuntimeContext.static_SB_spare << c;
             }
           } else if (state == 0) {
             lc = '<';
             state = 1;
-            static_SB_spare << '<';
+            kphpRuntimeContext.static_SB_spare << '<';
           } else if (state == 1) {
             depth++;
           }
@@ -1449,9 +1458,9 @@ string f$strip_tags(const string &str, const string &allow) {
             br++;
           }
         } else if (state == 1) {
-          static_SB_spare << c;
+          kphpRuntimeContext.static_SB_spare << c;
         } else if (state == 0) {
-          static_SB << c;
+          kphpRuntimeContext.static_SB << c;
         }
         break;
       case ')':
@@ -1461,9 +1470,9 @@ string f$strip_tags(const string &str, const string &allow) {
             br--;
           }
         } else if (state == 1) {
-          static_SB_spare << c;
+          kphpRuntimeContext.static_SB_spare << c;
         } else if (state == 0) {
-          static_SB << c;
+          kphpRuntimeContext.static_SB << c;
         }
         break;
       case '>':
@@ -1480,30 +1489,30 @@ string f$strip_tags(const string &str, const string &allow) {
           case 1: /* HTML/XML */
             lc = '>';
             in_q = state = 0;
-            static_SB_spare << '>';
-            if (php_tag_find(static_SB_spare.str(), allow_low)) {
-              static_SB << static_SB_spare.c_str();
+            kphpRuntimeContext.static_SB_spare << '>';
+            if (php_tag_find(kphpRuntimeContext.static_SB_spare.str(), allow_low)) {
+              kphpRuntimeContext.static_SB << kphpRuntimeContext.static_SB_spare.c_str();
             }
-            static_SB_spare.clean();
+            kphpRuntimeContext.static_SB_spare.clean();
             break;
           case 2: /* PHP */
             if (!br && lc != '\"' && str[i - 1] == '?') {
               in_q = state = 0;
-              static_SB_spare.clean();
+              kphpRuntimeContext.static_SB_spare.clean();
             }
             break;
           case 3:
             in_q = state = 0;
-            static_SB_spare.clean();
+            kphpRuntimeContext.static_SB_spare.clean();
             break;
           case 4: /* JavaScript/CSS/etc... */
             if (i >= 2 && str[i - 1] == '-' && str[i - 2] == '-') {
               in_q = state = 0;
-              static_SB_spare.clean();
+              kphpRuntimeContext.static_SB_spare.clean();
             }
             break;
           default:
-            static_SB << c;
+            kphpRuntimeContext.static_SB << c;
             break;
         }
         break;
@@ -1520,9 +1529,9 @@ string f$strip_tags(const string &str, const string &allow) {
             lc = c;
           }
         } else if (state == 0) {
-          static_SB << c;
+          kphpRuntimeContext.static_SB << c;
         } else if (state == 1) {
-          static_SB_spare << c;
+          kphpRuntimeContext.static_SB_spare << c;
         }
         if (state && i > 0 && (state == 1 || str[i - 1] != '\\') && (!in_q || c == in_q)) {
           if (in_q) {
@@ -1539,9 +1548,9 @@ string f$strip_tags(const string &str, const string &allow) {
           lc = c;
         } else {
           if (state == 0) {
-            static_SB << c;
+            kphpRuntimeContext.static_SB << c;
           } else if (state == 1) {
-            static_SB_spare << c;
+            kphpRuntimeContext.static_SB_spare << c;
           }
         }
         break;
@@ -1550,9 +1559,9 @@ string f$strip_tags(const string &str, const string &allow) {
           state = 4;
         } else {
           if (state == 0) {
-            static_SB << c;
+            kphpRuntimeContext.static_SB << c;
           } else if (state == 1) {
-            static_SB_spare << c;
+            kphpRuntimeContext.static_SB_spare << c;
           }
         }
         break;
@@ -1591,15 +1600,15 @@ string f$strip_tags(const string &str, const string &allow) {
         /* fall-through */
       default:
         if (state == 0) {
-          static_SB << c;
+          kphpRuntimeContext.static_SB << c;
         } else if (state == 1) {
-          static_SB_spare << c;
+          kphpRuntimeContext.static_SB_spare << c;
         }
         break;
     }
   }
 
-  return static_SB.str();
+  return kphpRuntimeContext.static_SB.str();
 }
 
 template <class T>

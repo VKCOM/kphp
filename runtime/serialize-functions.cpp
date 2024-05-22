@@ -4,44 +4,46 @@
 
 #include "runtime/serialize-functions.h"
 
+#include "runtime/kphp-runtime-context.h"
+
 void impl_::PhpSerializer::serialize(bool b) noexcept {
-  static_SB.reserve(4);
-  static_SB.append_char('b');
-  static_SB.append_char(':');
-  static_SB.append_char(static_cast<char>(b + '0'));
-  static_SB.append_char(';');
+  vk::singleton<KphpRuntimeContext>::get().static_SB.reserve(4);
+  vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('b');
+  vk::singleton<KphpRuntimeContext>::get().static_SB.append_char(':');
+  vk::singleton<KphpRuntimeContext>::get().static_SB.append_char(static_cast<char>(b + '0'));
+  vk::singleton<KphpRuntimeContext>::get().static_SB.append_char(';');
 }
 
 void impl_::PhpSerializer::serialize(int64_t i) noexcept {
-  static_SB.reserve(24);
-  static_SB.append_char('i');
-  static_SB.append_char(':');
-  static_SB << i;
-  static_SB.append_char(';');
+  vk::singleton<KphpRuntimeContext>::get().static_SB.reserve(24);
+  vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('i');
+  vk::singleton<KphpRuntimeContext>::get().static_SB.append_char(':');
+  vk::singleton<KphpRuntimeContext>::get().static_SB << i;
+  vk::singleton<KphpRuntimeContext>::get().static_SB.append_char(';');
 }
 
 void impl_::PhpSerializer::serialize(double f) noexcept {
-  static_SB.append("d:", 2);
-  static_SB << f << ';';
+  vk::singleton<KphpRuntimeContext>::get().static_SB.append("d:", 2);
+  vk::singleton<KphpRuntimeContext>::get().static_SB << f << ';';
 }
 
 void impl_::PhpSerializer::serialize(const string &s) noexcept {
   string::size_type len = s.size();
-  static_SB.reserve(25 + len);
-  static_SB.append_char('s');
-  static_SB.append_char(':');
-  static_SB << len;
-  static_SB.append_char(':');
-  static_SB.append_char('"');
-  static_SB.append_unsafe(s.c_str(), len);
-  static_SB.append_char('"');
-  static_SB.append_char(';');
+  vk::singleton<KphpRuntimeContext>::get().static_SB.reserve(25 + len);
+  vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('s');
+  vk::singleton<KphpRuntimeContext>::get().static_SB.append_char(':');
+  vk::singleton<KphpRuntimeContext>::get().static_SB << len;
+  vk::singleton<KphpRuntimeContext>::get().static_SB.append_char(':');
+  vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('"');
+  vk::singleton<KphpRuntimeContext>::get().static_SB.append_unsafe(s.c_str(), len);
+  vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('"');
+  vk::singleton<KphpRuntimeContext>::get().static_SB.append_char(';');
 }
 
 void impl_::PhpSerializer::serialize_null() noexcept {
-  static_SB.reserve(2);
-  static_SB.append_char('N');
-  static_SB.append_char(';');
+  vk::singleton<KphpRuntimeContext>::get().static_SB.reserve(2);
+  vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('N');
+  vk::singleton<KphpRuntimeContext>::get().static_SB.append_char(';');
 }
 
 void impl_::PhpSerializer::serialize(const mixed &v) noexcept {

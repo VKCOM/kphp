@@ -6,6 +6,8 @@
 
 #include "kphp-core/kphp_core.h"
 
+#include "runtime/kphp-runtime-context.h"
+
 Optional<string> f$base64_decode(const string &s, bool strict = false);
 
 string f$base64_encode(const string &s);
@@ -44,7 +46,7 @@ string http_build_query_get_param_array(const string &key, const array<T> &a,
   string result;
   bool first = true;
   for (typename array<T>::const_iterator p = a.begin(); p != a.end(); ++p) {
-    const string &key_value_param = http_build_query_get_param((static_SB.clean() << key << '[' << p.get_key() << ']').str(), p.get_value(), arg_separator, enc_type);
+    const string &key_value_param = http_build_query_get_param((vk::singleton<KphpRuntimeContext>::get().static_SB.clean() << key << '[' << p.get_key() << ']').str(), p.get_value(), arg_separator, enc_type);
     if (!key_value_param.empty()) {
       if (!first) {
         result.append(arg_separator);
@@ -75,7 +77,7 @@ string http_build_query_get_param(const string &key, const T &a,
     };
     string key_encoded = encode(key);
     string value_encoded = encode(f$strval(a));
-    return (static_SB.clean() << key_encoded << '=' << value_encoded).str();
+    return (vk::singleton<KphpRuntimeContext>::get().static_SB.clean() << key_encoded << '=' << value_encoded).str();
   }
 }
 

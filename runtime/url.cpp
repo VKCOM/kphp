@@ -454,22 +454,23 @@ mixed f$parse_url(const string &s, int64_t component) {
 }
 
 string f$rawurldecode(const string &s) {
-  static_SB.clean().reserve(s.size());
+  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
+  kphpRuntimeContext.static_SB.clean().reserve(s.size());
   for (int i = 0; i < (int)s.size(); i++) {
     if (s[i] == '%') {
       int num_high = hex_to_int(s[i + 1]);
       if (num_high < 16) {
         int num_low = hex_to_int(s[i + 2]);
         if (num_low < 16) {
-          static_SB.append_char(static_cast<char>((num_high << 4) + num_low));
+          kphpRuntimeContext.static_SB.append_char(static_cast<char>((num_high << 4) + num_low));
           i += 2;
           continue;
         }
       }
     }
-    static_SB.append_char(s[i]);
+    kphpRuntimeContext.static_SB.append_char(s[i]);
   }
-  return static_SB.str();
+  return kphpRuntimeContext.static_SB.str();
 }
 
 
@@ -484,53 +485,56 @@ static const char *good_url_symbols =
   "00000000000000000000000000000000";//[0-9a-zA-Z-_.]
 
 string f$rawurlencode(const string &s) {
-  static_SB.clean().reserve(3 * s.size());
+  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
+  kphpRuntimeContext.static_SB.clean().reserve(3 * s.size());
   for (int i = 0; i < (int)s.size(); i++) {
     if (good_url_symbols[(unsigned char)s[i]] == '1') {
-      static_SB.append_char(s[i]);
+      kphpRuntimeContext.static_SB.append_char(s[i]);
     } else {
-      static_SB.append_char('%');
-      static_SB.append_char(uhex_digits[(s[i] >> 4) & 15]);
-      static_SB.append_char(uhex_digits[s[i] & 15]);
+      kphpRuntimeContext.static_SB.append_char('%');
+      kphpRuntimeContext.static_SB.append_char(uhex_digits[(s[i] >> 4) & 15]);
+      kphpRuntimeContext.static_SB.append_char(uhex_digits[s[i] & 15]);
     }
   }
-  return static_SB.str();
+  return kphpRuntimeContext.static_SB.str();
 }
 
 string f$urldecode(const string &s) {
-  static_SB.clean().reserve(s.size());
+  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
+  kphpRuntimeContext.static_SB.clean().reserve(s.size());
   for (int i = 0; i < (int)s.size(); i++) {
     if (s[i] == '%') {
       int num_high = hex_to_int(s[i + 1]);
       if (num_high < 16) {
         int num_low = hex_to_int(s[i + 2]);
         if (num_low < 16) {
-          static_SB.append_char(static_cast<char>((num_high << 4) + num_low));
+          kphpRuntimeContext.static_SB.append_char(static_cast<char>((num_high << 4) + num_low));
           i += 2;
           continue;
         }
       }
     } else if (s[i] == '+') {
-      static_SB.append_char(' ');
+      kphpRuntimeContext.static_SB.append_char(' ');
       continue;
     }
-    static_SB.append_char(s[i]);
+    kphpRuntimeContext.static_SB.append_char(s[i]);
   }
-  return static_SB.str();
+  return kphpRuntimeContext.static_SB.str();
 }
 
 string f$urlencode(const string &s) {
-  static_SB.clean().reserve(3 * s.size());
+  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
+  kphpRuntimeContext.static_SB.clean().reserve(3 * s.size());
   for (int i = 0; i < (int)s.size(); i++) {
     if (good_url_symbols[(unsigned char)s[i]] == '1') {
-      static_SB.append_char(s[i]);
+      kphpRuntimeContext.static_SB.append_char(s[i]);
     } else if (s[i] == ' ') {
-      static_SB.append_char('+');
+      kphpRuntimeContext.static_SB.append_char('+');
     } else {
-      static_SB.append_char('%');
-      static_SB.append_char(uhex_digits[(s[i] >> 4) & 15]);
-      static_SB.append_char(uhex_digits[s[i] & 15]);
+      kphpRuntimeContext.static_SB.append_char('%');
+      kphpRuntimeContext.static_SB.append_char(uhex_digits[(s[i] >> 4) & 15]);
+      kphpRuntimeContext.static_SB.append_char(uhex_digits[s[i] & 15]);
     }
   }
-  return static_SB.str();
+  return kphpRuntimeContext.static_SB.str();
 }
