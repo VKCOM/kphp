@@ -12,6 +12,21 @@
 (op_func_call {"hrtime"} (op_false)) => (op_func_call {"_hrtime_array"})
 (op_func_call {"hrtime"} (op_true))  => (op_func_call {"_hrtime_int"})
 
+(op_func_call {"curl_setopt"} curl_handle option:(op_int_const {"210000"}) cb)
+  => (op_func_call {"_curl_setopt_fn_header_write"} curl_handle option cb)
+
+(op_func_call {"curl_setopt"} curl_handle option:(op_int_const {"210001"}) cb)
+  => (op_func_call {"_curl_setopt_fn_header_write"} curl_handle option cb)
+
+(op_func_call {"curl_setopt"} curl_handle option:(op_int_const {"210002"}) cb)
+  => (op_func_call {"_curl_setopt_fn_progress"} curl_handle option cb)
+
+(op_func_call {"curl_setopt"} curl_handle option:(op_int_const {"210003"}) cb)
+  => (op_func_call {"_curl_setopt_fn_read"} curl_handle option cb)
+
+(op_func_call {"curl_setopt"} curl_handle option:(op_int_const {"210004"}) cb)
+  => (op_func_call {"_curl_setopt_fn_xferinfo"} curl_handle option cb)
+
 ;;; String conversion optimization rules
 
 ;; this produces a simpler code, so "$x" is compiled as (string)$x

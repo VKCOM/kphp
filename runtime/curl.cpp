@@ -23,6 +23,7 @@
 #include "net/net-reactor.h"
 #include "server/curl-adaptor.h"
 #include "server/slot-ids-factory.h"
+#include "runtime/files.h"
 
 static_assert(LIBCURL_VERSION_NUM >= 0x071c00, "Outdated libcurl");
 static_assert(CURL_MAX_WRITE_SIZE <= (1 << 30), "CURL_MAX_WRITE_SIZE expected to be less than (1 << 30)");
@@ -42,9 +43,18 @@ static_assert(CURLM_ADDED_ALREADY == 7, "check value");
 namespace {
 
 constexpr int64_t BAD_CURL_OPTION = static_cast<int>(CURL_LAST) + static_cast<int>(CURL_FORMADD_LAST);
+constexpr int64_t KPHP_CURL_STDOUT = 0;
+constexpr int64_t KPHP_CURL_RETURN = 1;
+constexpr int64_t KPHP_CURL_USER = 2;
+constexpr int64_t KPHP_CURL_IGNORE = 3;
+constexpr int64_t KPHP_CURL_DIRECT = 4;
+constexpr int64_t KPHP_CURL_FILE = 5;
 
+size_t curl_write_header(char *data, size_t size, size_t nmemb, void *userdata);
 size_t curl_write(char *data, size_t size, size_t nmemb, void *userdata);
-
+size_t curl_progress(void *userdata, double dltotal, double dlnow, double ultotal, double ulnow);
+size_t curl_read(char *data, size_t size, size_t nmemb, void *userdata);
+size_t curl_xferinfo(void *userdata, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow);
 class BaseContext : vk::not_copyable {
 public:
   int uniq_id{0};
@@ -93,6 +103,20 @@ public:
     return error_num;
   }
 
+  // function for creation a dictionary from curl_slist
+  std::pair<string, string> split_certinfo_elems(const string &elem) {
+    string::size_type p = elem.find_first_of(string(":"), 0);
+
+    if (p == string::npos) {
+      return std::pair<string, string>(string(""), elem);
+    }
+
+    string key = elem.substr(0, p);
+    string value = elem.substr(p+1, elem.size() - p);
+
+    return std::pair<string, string>(key, value);
+  }
+
   mixed get_info(CURLINFO what) noexcept {
     if (what == CURLINFO_PRIVATE) {
       return private_data;
@@ -114,6 +138,25 @@ public:
         const CURLcode res = dl::critical_section_call([&] { return curl_easy_getinfo (easy_handle, what, &value); });
         return res == CURLE_OK ? mixed{value} : mixed{false};
       }
+      case CURLINFO_SLIST: {
+        curl_certinfo *value = nullptr;
+        const CURLcode res = dl::critical_section_call([&] { return curl_easy_getinfo (easy_handle, what, &value); });
+        array<array<string>> certs;
+
+        for (size_t i = 0; i < value->num_of_certs; ++i) {
+          curl_slist *sl = value->certinfo[i];
+          array<string> cert;
+          while (sl) {
+            std::pair<string, string> kv = split_certinfo_elems(string(sl->data));
+            cert.set_value(kv.first, kv.second);
+            sl = sl->next;
+          }
+          certs.emplace_back(cert);
+        }
+
+        return res == CURLE_OK ? mixed(certs) : mixed{false};
+      }
+
       default:
         php_critical_error("Got unknown curl info type '%d'", type);
         __builtin_unreachable();
@@ -133,6 +176,11 @@ public:
     set_option(CURLOPT_ERRORBUFFER, error_msg);
     set_option(CURLOPT_WRITEFUNCTION, curl_write);
     set_option(CURLOPT_WRITEDATA, static_cast<void *>(this));
+    set_option(CURLOPT_HEADERFUNCTION, curl_write_header);
+    set_option(CURLOPT_WRITEHEADER, static_cast<void *>(this));
+    set_option(CURLOPT_READFUNCTION, curl_read);
+    set_option(CURLOPT_INFILE, static_cast<void *>(this));
+
     set_option(CURLOPT_DNS_USE_GLOBAL_CACHE, 1L);
     set_option(CURLOPT_DNS_CACHE_TIMEOUT, 120L);
     set_option(CURLOPT_MAXREDIRS, 20L);
@@ -172,11 +220,30 @@ public:
   string_list received_header;
   string_list received_data;
 
+  struct {
+    curl::on_write_callable callable{NULL};
+    int64_t method{KPHP_CURL_STDOUT};
+    const Stream *stream{nullptr};
+  } write_handler, write_header_handler;
+
+  struct {
+    curl::on_read_callable callable{NULL};
+    int64_t method{KPHP_CURL_DIRECT};
+    const Stream *stream{nullptr};
+  } read_handler;
+
+  struct {
+    curl::on_progress_callable callable{NULL};
+  } progress_handler;
+  
+  struct {
+    curl::on_xferinfo_callable callable{NULL};
+  } xferinfo_handler;
+
   array<curl_slist *> slists_to_free;
   array<curl_httppost *> httpposts_to_free;
   Optional<string> private_data{false};
 
-  bool return_transfer{false};
   bool connection_only{false};
 };
 
@@ -232,14 +299,147 @@ T *get_context(int64_t id) noexcept {
 // this is a callback called from curl_easy_perform
 size_t curl_write(char *data, size_t size, size_t nmemb, void *userdata) {
   auto *easy_context = static_cast<EasyContext *>(userdata);
-  const size_t length = size * nmemb;
+  size_t length = size * nmemb;
 
-  if (easy_context->return_transfer) {
-    return easy_context->received_data.push_string(data, length) ? length : 0;
+  switch(easy_context->write_handler.method) {
+    case KPHP_CURL_STDOUT:
+      print(data, length);
+      break;
+    case KPHP_CURL_FILE:
+      {
+        f$rewind(*easy_context->write_handler.stream);
+        Optional<int64_t> temp = f$fwrite(*easy_context->write_handler.stream, string(data));
+        if (temp.is_null()) {
+          length = 0;
+        } else {
+          length = temp.val();
+        }
+      }
+      return length;
+    case KPHP_CURL_USER:
+      try {
+        return easy_context->write_handler.callable(easy_context->self_id, string(data));
+      } catch (std::exception &ex) {
+        php_warning("Cannot call the CURLOPT_WRITEFUNCTION");
+        //fprintf(stderr, "Error: %s\n", ex.what());
+        easy_context->write_handler.callable = NULL;
+        easy_context->write_handler.method = KPHP_CURL_STDOUT;
+        length = -1;
+        return length;
+      }
+    case KPHP_CURL_RETURN:
+      return easy_context->received_data.push_string(data, length) ? length : 0;
+  }
+
+  string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_ON;
+  return std::exchange(string_buffer::string_buffer_error_flag, STRING_BUFFER_ERROR_FLAG_OFF) == STRING_BUFFER_ERROR_FLAG_FAILED ? 0 : length;
+}
+
+size_t curl_write_header(char *data, size_t size, size_t nmemb, void *userdata) {
+  auto *easy_context = static_cast<EasyContext *>(userdata);
+  size_t length = size * nmemb;
+
+  switch (easy_context->write_header_handler.method) {
+    case KPHP_CURL_STDOUT:
+      if (easy_context->write_handler.method == KPHP_CURL_RETURN && length > 0) {
+        return easy_context->received_data.push_string(data, length) ? length : 0;
+      } else {
+        print(data, length);
+      }
+      break;
+    case KPHP_CURL_FILE:
+      {
+        Optional<int64_t> temp = f$fwrite(*easy_context->write_header_handler.stream, string(data));
+        if (temp.is_null()) {
+          length = 0;
+        } else {
+          length = temp.val();
+        }
+      }
+      return length;
+    case KPHP_CURL_USER:
+      try {
+        return easy_context->write_header_handler.callable(easy_context->self_id, string(data));
+      } catch (std::exception &ex) {
+        php_warning("Cannot call the CURLOPT_HEADERFUNCTION");
+        //fprintf(stderr, "Error: %s\n", ex.what());
+        easy_context->write_header_handler.callable = NULL;
+        easy_context->write_header_handler.method = KPHP_CURL_STDOUT;
+        length = 0;
+      }
+      break;
+    case KPHP_CURL_IGNORE:
+      return length;
+
+    default:
+      return -1;
   }
   string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_ON;
-  print(data, length);
   return std::exchange(string_buffer::string_buffer_error_flag, STRING_BUFFER_ERROR_FLAG_OFF) == STRING_BUFFER_ERROR_FLAG_FAILED ? 0 : length;
+}
+
+size_t curl_progress(void *userdata, double dltotal, double dlnow, double ultotal, double ulnow) {
+  auto *easy_context = static_cast<EasyContext *>(userdata);
+  size_t rval = 0;
+  try {
+    rval = easy_context->progress_handler.callable(easy_context->self_id, dltotal, dlnow, ultotal, ulnow);
+  } catch (std::exception &ex) {
+    php_warning("Cannot call the CURLOPT_PROGRESSFUNCTION");
+    //fprintf(stderr, "Error: %s\n", ex.what());
+    easy_context->progress_handler.callable = NULL;
+    easy_context->set_option(CURLOPT_NOPROGRESS, true);
+    if (rval)
+      rval = 1;
+  }
+  return rval;
+}
+
+size_t curl_read(char *data, size_t size, size_t nmemb, void *userdata) {
+  auto *easy_context = static_cast<EasyContext *>(userdata);
+  int length = 0;
+
+  switch (easy_context->read_handler.method) {
+    case KPHP_CURL_DIRECT:
+      if (easy_context->read_handler.stream) {
+        Optional<string> temp = f$fgets(*easy_context->read_handler.stream, static_cast<int64_t>(size * nmemb));
+        if (temp.is_null())
+          break;
+        memcpy(data, temp.val().buffer(), size * nmemb);
+        length = static_cast<int>(strlen(data));
+        break;
+      }
+      break;
+    case KPHP_CURL_USER:
+      try {
+        string result = string(easy_context->read_handler.callable(easy_context->self_id, *easy_context->read_handler.stream, size * nmemb));
+        int rlength = static_cast<int>(result.size());
+        length = std::min(static_cast<int>(size * nmemb), rlength);
+        memcpy(data, result.buffer(), length);
+      } catch (std::exception &ex) {
+        php_warning("Cannot call the CURLOPT_READFUNCTION");
+        //fprintf(stderr, "Error: %s\n", ex.what());
+        easy_context->read_handler.callable = NULL;
+        easy_context->read_handler.stream = nullptr;
+      }
+      break;
+  }
+  return length;
+}
+
+size_t curl_xferinfo(void *userdata, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal, curl_off_t ulnow) {
+  auto *easy_context = static_cast<EasyContext *>(userdata);
+  size_t rval = 0;
+  try {
+    rval = easy_context->xferinfo_handler.callable(easy_context->self_id, dltotal, dlnow, ultotal, ulnow);
+  } catch (std::exception &ex) {
+    php_warning("Cannot call the CURLOPT_XFERINFOFUNCTION");
+    //fprintf(stderr, "Error: %s\n", ex.what());
+    easy_context->xferinfo_handler.callable = NULL;
+    easy_context->set_option(CURLOPT_NOPROGRESS, true);
+    if (rval)
+      rval = 1;
+  }
+  return rval;
 }
 
 // this is a callback called from curl_easy_perform
@@ -307,6 +507,16 @@ void set_enumerated_option(const std::array<T, N> &options, EasyContext *easy_co
   }
 }
 
+void timecond_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
+  constexpr static auto options = vk::to_array(
+    {
+      CURL_TIMECOND_NONE,
+      CURL_TIMECOND_IFMODSINCE,
+      CURL_TIMECOND_IFUNMODSINCE
+    });
+  set_enumerated_option<0>(options, easy_context, option, value);
+}
+
 void proxy_type_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
   constexpr static auto options = vk::to_array(
     {
@@ -325,27 +535,29 @@ void ssl_version_option_setter(EasyContext *easy_context, CURLoption option, con
     {
       CURL_SSLVERSION_DEFAULT,
       CURL_SSLVERSION_TLSv1,
-      CURL_SSLVERSION_SSLv2,
-      CURL_SSLVERSION_SSLv3,
       CURL_SSLVERSION_TLSv1_0,
       CURL_SSLVERSION_TLSv1_1,
       CURL_SSLVERSION_TLSv1_2,
+      CURL_SSLVERSION_SSLv2,
+      CURL_SSLVERSION_SSLv3
+    });
+  set_enumerated_option<0>(options, easy_context, option, value);
+}
+
+void proxy_ssl_version_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
+  constexpr static auto options = vk::to_array(
+    {
+      CURL_SSLVERSION_DEFAULT,
+      CURL_SSLVERSION_TLSv1,
+      CURL_SSLVERSION_TLSv1_0,
+      CURL_SSLVERSION_TLSv1_1,
+      CURL_SSLVERSION_TLSv1_2
     });
   set_enumerated_option<0>(options, easy_context, option, value);
 }
 
 void auth_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
-  long val = static_cast<long>(value.to_int());
-  constexpr size_t OPTION_OFFSET = 600000;
-  if (easy_context->check_option_value<OPTION_OFFSET, 1u << 4u>(val)) {
-    val -= OPTION_OFFSET;
-    val = (val & 1) * CURLAUTH_BASIC +
-          ((val >> 1) & 1) * CURLAUTH_DIGEST +
-          // curl-kphp-vk doesn't support this option
-          // ((val >> 2) & 1) * CURLAUTH_GSSNEGOTIATE +
-          ((val >> 3) & 1) * CURLAUTH_NTLM;
-    easy_context->set_option_safe(option, val);
-  }
+  easy_context->set_option_safe(option, (unsigned long)value.as_int());
 }
 
 void ip_resolve_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
@@ -357,6 +569,65 @@ void ftp_auth_option_setter(EasyContext *easy_context, CURLoption option, const 
   constexpr static auto options = vk::to_array({CURLFTPAUTH_DEFAULT, CURLFTPAUTH_SSL, CURLFTPAUTH_TLS});
   set_enumerated_option<800000>(options, easy_context, option, value);
 }
+
+void header_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
+  constexpr static auto options = vk::to_array({CURLHEADER_UNIFIED, CURLHEADER_SEPARATE});
+  set_enumerated_option<810000>(options, easy_context, option, value);
+}
+
+void stream_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
+  easy_context->set_option_safe(option, static_cast<void *>(easy_context));
+  switch (option) {
+    case CURLOPT_INFILE:
+      if (value.is_null()) {
+        easy_context->read_handler.stream = nullptr;
+        easy_context->read_handler.method = KPHP_CURL_STDOUT;
+        return;
+      }
+      // store Stream value in read_handler
+      easy_context->read_handler.stream = &value;
+      break;
+    case CURLOPT_FILE:
+      if (value.is_null()) {
+        easy_context->write_handler.stream = nullptr;
+        easy_context->write_handler.method = KPHP_CURL_STDOUT;
+        return;
+      }
+
+      if (get_stream_mode(value) <= O_RDONLY) {      
+        php_warning ("%s(): The provided file handle must be writable", value.as_string().c_str());
+        easy_context->write_handler.stream = nullptr;
+        easy_context->write_handler.method = KPHP_CURL_STDOUT;
+        easy_context->error_num = -1;
+        return;
+      }
+      // store Stream value in write_handler
+      easy_context->write_handler.stream = &value;
+      easy_context->write_handler.method = KPHP_CURL_FILE;
+      break;
+    case CURLOPT_WRITEHEADER:
+      if (value.is_null()) {
+        easy_context->write_header_handler.stream = nullptr;
+        easy_context->write_header_handler.method = KPHP_CURL_IGNORE;
+        return;
+      }
+
+      if (get_stream_mode(value) <= O_RDONLY) {      
+        php_warning ("%s(): The provided file handle must be writable", value.as_string().c_str());
+        easy_context->write_header_handler.stream = nullptr;
+        easy_context->write_header_handler.method = KPHP_CURL_IGNORE;;
+        easy_context->error_num = -1;
+        return;
+      }
+      // store Stream value in write_header_handler
+      easy_context->write_header_handler.stream = &value;
+      easy_context->write_header_handler.method = KPHP_CURL_FILE;
+      break;
+    default:
+      // do nothing
+      return;
+  }
+} 
 
 void ftp_method_option_setter(EasyContext *easy_context, CURLoption option, const mixed &value) {
   constexpr static auto options = vk::to_array({CURLFTPMETHOD_MULTICWD, CURLFTPMETHOD_NOCWD, CURLFTPMETHOD_SINGLECWD});
@@ -428,8 +699,12 @@ bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) 
     return true;
   }
 
+  if (option == CURLOPT_POSTREDIR) {
+    easy_context->set_option(CURLOPT_FOLLOWLOCATION, 1);
+  }
+
   if (option == CURLOPT_RETURNTRANSFER) {
-    easy_context->return_transfer = (value.to_int() == 1ll);
+    easy_context->write_handler.method = (value.to_int() == 1ll) ? KPHP_CURL_RETURN : KPHP_CURL_STDOUT;
     return true;
   }
 
@@ -583,7 +858,92 @@ bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) 
       {CURLOPT_TCP_KEEPIDLE,         long_option_setter},
       {CURLOPT_TCP_KEEPINTVL,        long_option_setter},
       {CURLOPT_PRIVATE,              private_option_setter},
-      {CURLOPT_ACCEPT_ENCODING,      string_option_setter},
+
+      // new options
+      {CURLOPT_SSL_VERIFYSTATUS,          long_option_setter},
+      {CURLOPT_DISALLOW_USERNAME_IN_URL,  long_option_setter},
+      {CURLOPT_CERTINFO,                  long_option_setter},
+      {CURLOPT_NOPROGRESS,                long_option_setter},
+      {CURLOPT_NOSIGNAL,                  long_option_setter},
+      {CURLOPT_PATH_AS_IS,                long_option_setter},
+      {CURLOPT_PIPEWAIT,                  long_option_setter},
+      {CURLOPT_SASL_IR,                   long_option_setter},
+      {CURLOPT_EXPECT_100_TIMEOUT_MS,     long_option_setter},
+      {CURLOPT_HAPPY_EYEBALLS_TIMEOUT_MS, long_option_setter},
+      {CURLOPT_HEADEROPT,                 header_option_setter},
+      {CURLOPT_POSTREDIR,                 long_option_setter},
+      {CURLOPT_PROTOCOLS,                 long_option_setter},
+      {CURLOPT_REDIR_PROTOCOLS,           long_option_setter},
+      {CURLOPT_DNS_SHUFFLE_ADDRESSES,     long_option_setter},
+      {CURLOPT_HAPROXYPROTOCOL,           long_option_setter},
+      {CURLOPT_DNS_USE_GLOBAL_CACHE,      long_option_setter},
+      {CURLOPT_FTPAPPEND,                 long_option_setter},
+      {CURLOPT_FTPLISTONLY,               long_option_setter},
+      {CURLOPT_KEEP_SENDING_ON_ERROR,     long_option_setter},
+      {CURLOPT_PROXY_SSL_VERIFYPEER,      long_option_setter},
+      {CURLOPT_SUPPRESS_CONNECT_HEADERS,  long_option_setter},
+      {CURLOPT_TCP_FASTOPEN,              long_option_setter},
+      {CURLOPT_TFTP_NO_OPTIONS,           long_option_setter},
+      {CURLOPT_SSH_COMPRESSION,           long_option_setter},
+      {CURLOPT_SSL_FALSESTART,            long_option_setter},
+      {CURLOPT_HTTP09_ALLOWED,            long_option_setter},
+      {CURLOPT_MAIL_RCPT_ALLLOWFAILS,     long_option_setter},
+      {CURLOPT_MAXAGE_CONN,               long_option_setter},
+      {CURLOPT_MAXFILESIZE_LARGE,         off_option_setter},
+      {CURLOPT_MAXLIFETIME_CONN,          long_option_setter},
+      {CURLOPT_SOCKS5_AUTH,               auth_option_setter},
+      {CURLOPT_SSL_OPTIONS,               long_option_setter},
+      {CURLOPT_PROXY_SSL_OPTIONS,         long_option_setter},
+      {CURLOPT_PROXY_SSL_VERIFYHOST,      long_option_setter},
+      {CURLOPT_PROXY_SSLVERSION,          proxy_ssl_version_option_setter},
+      {CURLOPT_STREAM_WEIGHT,             long_option_setter},
+      {CURLOPT_TIMEVALUE,                 long_option_setter},
+      {CURLOPT_TIMECONDITION,             timecond_option_setter},
+      {CURLOPT_TIMEVALUE_LARGE,           off_option_setter},
+      {CURLOPT_UPKEEP_INTERVAL_MS,        long_option_setter},
+      {CURLOPT_UPLOAD_BUFFERSIZE,         long_option_setter},
+      {CURLOPT_SSH_AUTH_TYPES,            long_option_setter},
+
+      {CURLOPT_CONNECT_TO,    linked_list_option_setter},
+      {CURLOPT_PROXYHEADER,   linked_list_option_setter},
+
+      {CURLOPT_ENCODING,                   string_option_setter},
+      {CURLOPT_ABSTRACT_UNIX_SOCKET,       string_option_setter},
+      {CURLOPT_DEFAULT_PROTOCOL,           string_option_setter},
+      {CURLOPT_DNS_INTERFACE,              string_option_setter},
+      {CURLOPT_DNS_LOCAL_IP4,              string_option_setter},
+      {CURLOPT_DNS_LOCAL_IP6,              string_option_setter},
+      {CURLOPT_KEYPASSWD,                  string_option_setter},
+      {CURLOPT_LOGIN_OPTIONS,              string_option_setter},
+      {CURLOPT_PINNEDPUBLICKEY,            string_option_setter},
+      {CURLOPT_PRE_PROXY,                  string_option_setter},
+      {CURLOPT_PROXY_SERVICE_NAME,         string_option_setter},
+      {CURLOPT_PROXY_CAINFO,               string_option_setter},
+      {CURLOPT_PROXY_CAPATH,               string_option_setter},
+      {CURLOPT_PROXY_CRLFILE,              string_option_setter},
+      {CURLOPT_PROXY_KEYPASSWD,            string_option_setter},
+      {CURLOPT_PROXY_PINNEDPUBLICKEY,      string_option_setter},
+      {CURLOPT_PROXY_SSLCERT,              string_option_setter},
+      {CURLOPT_PROXY_SSLCERTTYPE,          string_option_setter},
+      {CURLOPT_PROXY_SSL_CIPHER_LIST,      string_option_setter},
+      {CURLOPT_PROXY_TLS13_CIPHERS,        string_option_setter},
+      {CURLOPT_PROXY_SSLKEY,               string_option_setter},
+      {CURLOPT_PROXY_SSLKEYTYPE,           string_option_setter},
+      {CURLOPT_PROXY_TLSAUTH_PASSWORD,     string_option_setter},
+      {CURLOPT_PROXY_TLSAUTH_TYPE,         string_option_setter},
+      {CURLOPT_PROXY_TLSAUTH_USERNAME,     string_option_setter},
+      {CURLOPT_SASL_AUTHZID,               string_option_setter},
+      {CURLOPT_SERVICE_NAME,               string_option_setter},
+      {CURLOPT_SSH_HOST_PUBLIC_KEY_SHA256, string_option_setter},
+      {CURLOPT_SSL_EC_CURVES,              string_option_setter},
+      {CURLOPT_TLS13_CIPHERS,              string_option_setter},
+      {CURLOPT_UNIX_SOCKET_PATH,           string_option_setter},
+      {CURLOPT_XOAUTH2_BEARER,             string_option_setter},
+
+      {CURLOPT_INFILE,      stream_option_setter},
+      {CURLOPT_FILE,        stream_option_setter},
+      {CURLOPT_WRITEHEADER, stream_option_setter},
+      {CURLOPT_WRITEDATA,   stream_option_setter}
     });
 
   constexpr size_t CURLOPT_OPTION_OFFSET = 200000;
@@ -592,6 +952,7 @@ bool curl_setopt(EasyContext *easy_context, int64_t option, const mixed &value) 
     easy_context->error_num = CURLE_OK;
     curl_option.option_setter(easy_context, curl_option.option, value);
   }
+  fprintf(stderr, "error num for option %d is %d\n", (int)option, (int)easy_context->error_num);
   return easy_context->error_num == CURLE_OK;
 }
 
@@ -618,6 +979,7 @@ curl_easy f$curl_init(const string &url) noexcept {
     return 0;
   }
 
+  easy_context->write_header_handler.method = KPHP_CURL_IGNORE;
   easy_context->set_default_options();
   if (unlikely(!url.empty() && easy_context->set_option_safe(CURLOPT_URL, url.c_str()) != CURLE_OK)) {
     dl::critical_section_call([&easy_contexts] { easy_contexts.pop()->release(); });
@@ -631,7 +993,6 @@ void f$curl_reset(curl_easy easy_id) noexcept {
   if (auto *easy_context = get_context<EasyContext>(easy_id)) {
     dl::CriticalSectionGuard critical_section;
     curl_easy_reset(easy_context->easy_handle);
-    easy_context->return_transfer = false;
     easy_context->private_data = false;
     easy_context->cleanup_slists_and_posts();
     easy_context->cleanup_for_next_request();
@@ -646,6 +1007,66 @@ bool f$curl_setopt(curl_easy easy_id, int64_t option, const mixed &value) noexce
     }
     php_warning("Can't set curl option %" PRIi64, option);
   }
+  return false;
+}
+
+constexpr int64_t CURLSETOPT_HEADERFUNCTION = 210000;
+constexpr int64_t CURLSETOPT_WRITEFUNCTION = 210001;
+
+bool curl_setopt_fn_header_write(curl_easy easy_id, int64_t option, curl::on_write_callable callable) noexcept {
+  if (auto *easy_context = get_context<EasyContext>(easy_id)) {
+    switch (option) {
+      case CURLSETOPT_HEADERFUNCTION:
+        easy_context->write_header_handler.callable = callable;
+        easy_context->write_header_handler.method = KPHP_CURL_USER;
+        break;
+      case CURLSETOPT_WRITEFUNCTION:
+        easy_context->write_handler.callable = callable;
+        easy_context->write_handler.method = KPHP_CURL_USER;
+        break;
+      default:
+        php_warning("Can't set curl option %" PRIi64, option);
+        return false;
+    }
+    return true;
+  }
+  php_warning("Can't set curl option %" PRIi64, option);
+  return false;
+}
+
+bool curl_setopt_fn_xferinfo(curl_easy easy_id, int64_t option, curl::on_xferinfo_callable callable) noexcept {
+  if (auto *easy_context = get_context<EasyContext>(easy_id)) {
+    easy_context->xferinfo_handler.callable = callable;
+    easy_context->error_num = CURLE_OK;
+    easy_context->set_option_safe(CURLOPT_XFERINFOFUNCTION, curl_xferinfo);
+    easy_context->set_option_safe(CURLOPT_XFERINFODATA, static_cast<void *>(easy_context));
+    if (easy_context->error_num != CURLE_OK)
+      php_warning("Can't set curl option %" PRIi64, option);
+    return easy_context->error_num == CURLE_OK;
+  }
+  return false;
+}
+
+bool curl_setopt_fn_progress(curl_easy easy_id, int64_t option, curl::on_progress_callable callable) noexcept {
+  if (auto *easy_context = get_context<EasyContext>(easy_id)) {
+    easy_context->progress_handler.callable = callable;
+    easy_context->error_num = CURLE_OK;
+    easy_context->set_option_safe(CURLOPT_PROGRESSFUNCTION, curl_progress);
+    easy_context->set_option_safe(CURLOPT_PROGRESSDATA, static_cast<void *>(easy_context));
+    if (easy_context->error_num != CURLE_OK)
+      php_warning("Can't set curl option %" PRIi64, option);
+    return easy_context->error_num == CURLE_OK;
+  }
+  return false;
+}
+
+bool curl_setopt_fn_read(curl_easy easy_id, int64_t option, curl::on_read_callable callable) noexcept {
+  if (auto *easy_context = get_context<EasyContext>(easy_id)) {
+    easy_context->read_handler.callable = callable;
+    easy_context->read_handler.method = KPHP_CURL_USER;
+    return true;
+  }
+  php_warning("Can't set curl option %" PRIi64, option);
   return false;
 }
 
@@ -692,8 +1113,20 @@ mixed f$curl_exec(curl_easy easy_id) noexcept {
   if (kphp_tracing::is_turned_on()) {
     kphp_tracing::on_curl_exec_finish(easy_context->uniq_id, easy_context->get_info(CURLINFO_SIZE_DOWNLOAD).to_int());
   }
-  if (easy_context->return_transfer) {
+  if (easy_context->write_handler.method == KPHP_CURL_RETURN) {
     return easy_context->received_data.concat_and_get_string();
+  }
+
+  if (easy_context->write_handler.method == KPHP_CURL_FILE && easy_context->write_handler.stream) {
+    f$fflush(*easy_context->write_handler.stream);
+  }
+
+  if (easy_context->write_header_handler.method == KPHP_CURL_FILE && easy_context->write_header_handler.stream) {
+    f$fflush(*easy_context->write_header_handler.stream);
+  }
+
+  if (easy_context->write_header_handler.method == KPHP_CURL_RETURN) {
+    return string();
   }
 
   return true;
@@ -729,6 +1162,7 @@ mixed f$curl_getinfo(curl_easy easy_id, int64_t option) noexcept {
     easy_context->add_info_into_array(result, "redirect_time", CURLINFO_REDIRECT_TIME);
     easy_context->add_info_into_array(result, "redirect_url", CURLINFO_REDIRECT_URL);
     easy_context->add_info_into_array(result, "primary_ip", CURLINFO_PRIMARY_IP);
+    // easy_context->add_info_into_array(result, "certinfo", CURLINFO_CERTINFO);
     easy_context->add_info_into_array(result, "primary_port", CURLINFO_PRIMARY_PORT);
     easy_context->add_info_into_array(result, "local_ip", CURLINFO_LOCAL_IP);
     easy_context->add_info_into_array(result, "local_port", CURLINFO_LOCAL_PORT);
@@ -780,6 +1214,7 @@ mixed f$curl_getinfo(curl_easy easy_id, int64_t option) noexcept {
       CURLINFO_RTSP_CSEQ_RECV,
       CURLINFO_RTSP_SERVER_CSEQ,
       CURLINFO_RTSP_SESSION_ID,
+      CURLINFO_CERTINFO
     });
 
   constexpr size_t CURLINFO_OPTION_OFFSET = 100000;
@@ -804,6 +1239,54 @@ void f$curl_close(curl_easy easy_id) noexcept {
     vk::singleton<CurlContexts>::get().easy_contexts.set_value(easy_id - 1, nullptr);
     easy_context->release();
   }
+}
+
+mixed f$curl_version() noexcept {
+  curl_version_info_data *curl_info = curl_version_info(CURLVERSION_NOW);
+
+  if (!curl_info) {
+    return false;
+  }
+
+  array<mixed> info;
+  info.set_value(string("version_number"), mixed(static_cast<int>(curl_info->version_num)));
+  info.set_value(string("age"),            mixed(static_cast<int>(curl_info->age)));
+  info.set_value(string("features"),       mixed(curl_info->features));
+  info.set_value(string("ssl_version_number"), mixed(static_cast<int>(curl_info->ssl_version_num)));
+  info.set_value(string("version"),        mixed(string((curl_info->version) ? curl_info->version : "")));
+  info.set_value(string("host"),           mixed(string((curl_info->host)    ? curl_info->host    : "")));
+  info.set_value(string("ssl_version"),    mixed(string((curl_info->ssl_version)  ? curl_info->ssl_version  : "")));
+  info.set_value(string("libz_version"),   mixed(string((curl_info->libz_version) ? curl_info->libz_version : "")));
+
+  array<string> protocols;
+
+  char **p = (char **) curl_info->protocols;
+  while (*p) {
+    protocols.emplace_back(string(*p));
+    ++p;
+  }
+  info.set_value(string("protocols"), mixed(protocols));
+  
+  if (curl_info->age >= 1) {
+    info.set_value(string("ares"), mixed(string((curl_info->ares) ? curl_info->ares : "")));
+    info.set_value(string("ares_num"), mixed(curl_info->ares_num));
+  }
+
+  if (curl_info->age >= 2) {
+    info.set_value(string("libidn"), mixed(string((curl_info->libidn) ? curl_info->libidn : "")));
+  }
+
+  if (curl_info->age >= 3) {
+    info.set_value(string("iconv_ver_num"),  mixed(curl_info->iconv_ver_num));
+    info.set_value(string("libssh_version"), mixed(string((curl_info->libssh_version) ? curl_info->libssh_version : "")));
+  }
+
+  if (curl_info->age >= 4) {
+    info.set_value(string("brotli_ver_num"), mixed(static_cast<int>(curl_info->brotli_ver_num)));
+    info.set_value(string("brotli_version"), mixed(string((curl_info->brotli_version) ? curl_info->brotli_version : "")));
+  }
+
+  return mixed(info);
 }
 
 curl_multi f$curl_multi_init() noexcept {
@@ -843,7 +1326,7 @@ Optional<int64_t> f$curl_multi_add_handle(curl_multi multi_id, curl_easy easy_id
 
 Optional<string> f$curl_multi_getcontent(curl_easy easy_id) noexcept {
   if (auto *easy_context = get_context<EasyContext>(easy_id)) {
-    return easy_context->return_transfer ? easy_context->received_data.concat_and_get_string() : Optional<string>{};
+    return (easy_context->write_handler.method == KPHP_CURL_RETURN) ? easy_context->received_data.concat_and_get_string() : Optional<string>{};
   }
   return false;
 }

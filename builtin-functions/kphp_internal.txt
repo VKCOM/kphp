@@ -50,3 +50,8 @@ function _tmp_substr($str ::: string, $start ::: int, $length ::: int = PHP_INT_
 
 /** @kphp-internal-param-readonly $str */
 function _tmp_trim($str ::: string, $what ::: string = " \n\r\t\v\0"): _tmp_string;
+
+function _curl_setopt_fn_header_write(int $easy_id, int $option, callable(int, string):int $callable): bool;
+function _curl_setopt_fn_progress(int $easy_id, int $option, callable(int, float, float, float, float):int $callable): bool;
+function _curl_setopt_fn_xferinfo(int $easy_id, int $option, callable(int, int, int, int, int):int $callable): bool;
+function _curl_setopt_fn_read(int $easy_id, int $option, callable(int, mixed, int):string $callable): bool;

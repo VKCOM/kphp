@@ -4,17 +4,60 @@
 
 #pragma once
 
-#include "common/smart_ptrs/singleton.h"
+#include <functional>
 
+#include "common/smart_ptrs/singleton.h"
+ 
 #include "runtime/kphp_core.h"
+#include "runtime/critical_section.h"
+#include "runtime/streams.h"
 
 using curl_easy = int64_t;
+
+namespace curl {
+  using on_read_callable = std::function<string(curl_easy ch, Stream stream, size_t length)>;
+  using on_write_callable = std::function<size_t(curl_easy ch, string data)>;
+  using on_progress_callable = std::function<size_t(curl_easy ch, double dltotal, double dlnow, double ultotal, double ulnow)>;
+  using on_xferinfo_callable = std::function<size_t(curl_easy ch, int64_t dltotal, int64_t dlnow, int64_t ultotal, int64_t ulnow)>;
+}
 
 curl_easy f$curl_init(const string &url = string{}) noexcept;
 
 void f$curl_reset(curl_easy easy_id) noexcept;
 
 bool f$curl_setopt(curl_easy easy_id, int64_t option, const mixed &value) noexcept;
+
+bool curl_setopt_fn_read(curl_easy easy_id, int64_t option, curl::on_read_callable callable) noexcept;
+
+bool curl_setopt_fn_progress(curl_easy easy_id, int64_t option, curl::on_progress_callable callable) noexcept;
+
+bool curl_setopt_fn_xferinfo(curl_easy easy_id, int64_t option, curl::on_xferinfo_callable callable) noexcept;
+
+bool curl_setopt_fn_header_write(curl_easy easy_id, int64_t option, curl::on_write_callable callable) noexcept;
+
+template <typename F>
+bool f$_curl_setopt_fn_header_write(curl_easy easy_id, int64_t option, F &&callable) {
+  dl::CriticalSectionGuard heap_guard;
+  return curl_setopt_fn_header_write(easy_id, option, std::forward<F>(callable));
+}
+
+template <typename F>
+bool f$_curl_setopt_fn_progress(curl_easy easy_id, int64_t option, F &&callable) {
+  dl::CriticalSectionGuard heap_guard;
+  return curl_setopt_fn_progress(easy_id, option, std::forward<F>(callable));
+}
+
+template <typename F>
+bool f$_curl_setopt_fn_xferinfo(curl_easy easy_id, int64_t option, F &&callable) {
+  dl::CriticalSectionGuard heap_guard;
+  return curl_setopt_fn_xferinfo(easy_id, option, std::forward<F>(callable));
+}
+
+template <typename F>
+bool f$_curl_setopt_fn_read(curl_easy easy_id, int64_t option, F &&callable) {
+  dl::CriticalSectionGuard heap_guard;
+  return curl_setopt_fn_read(easy_id, option, std::forward<F>(callable));
+}
 
 bool f$curl_setopt_array(curl_easy easy_id, const array<mixed> &options) noexcept;
 
@@ -27,6 +70,8 @@ string f$curl_error(curl_easy easy_id) noexcept;
 int64_t f$curl_errno(curl_easy easy_id) noexcept;
 
 void f$curl_close(curl_easy easy_id) noexcept;
+
+mixed f$curl_version() noexcept;
 
 
 using curl_multi = int64_t;
