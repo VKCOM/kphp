@@ -65,6 +65,3 @@ public:
   friend inline bool operator==(const string_buffer &lhs, const string_buffer &rhs);
   friend inline bool operator!=(const string_buffer &lhs, const string_buffer &rhs);
 };
-
-extern string_buffer static_SB;
-extern string_buffer static_SB_spare;

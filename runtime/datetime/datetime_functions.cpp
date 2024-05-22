@@ -12,6 +12,7 @@
 #include "runtime/critical_section.h"
 #include "runtime/datetime/timelib_wrapper.h"
 #include "runtime/string_functions.h"
+#include "runtime/kphp-runtime-context.h"
 #include "server/server-log.h"
 
 extern long timezone;
@@ -116,7 +117,7 @@ void iso_week_number(int y, int doy, int weekday, int &iw, int &iy) {
 
 
 static string date(const string &format, const tm &t, int64_t timestamp, bool local) {
-  string_buffer &SB = static_SB_spare;
+  string_buffer &SB = vk::singleton<KphpRuntimeContext>::get().static_SB_spare;
 
   int year = t.tm_year + 1900;
   int month = t.tm_mon + 1;

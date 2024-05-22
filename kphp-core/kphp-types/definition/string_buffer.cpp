@@ -4,9 +4,6 @@
 
 #include "kphp-core/kphp_core.h"
 
-string_buffer static_SB;
-string_buffer static_SB_spare;
-
 string::size_type string_buffer::MIN_BUFFER_LEN = 266175;
 string::size_type string_buffer::MAX_BUFFER_LEN = (1 << 24);
 

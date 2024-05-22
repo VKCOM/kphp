@@ -516,11 +516,12 @@ static const EVP_MD *openssl_algo_to_evp_md(openssl_algo algo) {
 }
 
 static const char *ssl_get_error_string() {
-  static_SB.clean();
+  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
+  kphpRuntimeContext.static_SB.clean();
   while (unsigned long error_code = ERR_get_error()) {
-    static_SB << "Error " << (int)error_code << ": [" << ERR_error_string(error_code, nullptr) << "]\n";
+    kphpRuntimeContext.static_SB << "Error " << (int)error_code << ": [" << ERR_error_string(error_code, nullptr) << "]\n";
   }
-  return static_SB.c_str();
+  return kphpRuntimeContext.static_SB.c_str();
 }
 
 bool f$openssl_sign(const string &data, string &signature, const string &priv_key_id, int64_t algo) {

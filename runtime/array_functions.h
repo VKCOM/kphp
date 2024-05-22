@@ -11,6 +11,7 @@
 #include "common/vector-product.h"
 
 #include "kphp-core/kphp_core.h"
+#include "runtime/kphp-runtime-context.h"
 #include "runtime/math_functions.h"
 #include "runtime/string_functions.h"
 
@@ -323,7 +324,7 @@ string f$implode(const string &s, const array<T> &a) {
 
   // fallback to the generic iterator + string_buffer solution
 
-  string_buffer &SB = static_SB;
+  string_buffer &SB = vk::singleton<KphpRuntimeContext>::get().static_SB;
   SB.clean();
 
   auto it = a.begin(), it_end = a.end();
