@@ -110,7 +110,7 @@ task_t<int> write_all_to_stream(uint64_t stream_d, const char * buffer, int len)
     }
 
     if (status.please_shutdown_write) {
-      php_debug("stream %d set please_shutdown_write. Stop writing", stream_d);
+      php_debug("stream %" PRIu64 " set please_shutdown_write. Stop writing", stream_d);
       co_return writed;
     } else if (status.write_status == IOAvailable) {
       writed += ptx.write(stream_d, len - writed, buffer + writed);
@@ -162,7 +162,7 @@ task_t<int> write_exact_to_stream(uint64_t stream_d, const char * buffer, int le
     }
 
     if (status.please_shutdown_write) {
-      php_debug("stream %d set please_shutdown_write. Stop writing", stream_d);
+      php_debug("stream %" PRIu64 " set please_shutdown_write. Stop writing", stream_d);
       co_return writed;
     } else if (status.write_status == IOAvailable) {
       writed += ptx.write(stream_d, len - writed, buffer + writed);
