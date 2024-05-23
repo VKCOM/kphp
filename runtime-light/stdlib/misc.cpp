@@ -82,7 +82,7 @@ task_t<void> f$exit(const mixed &v) {
 }
 
 
-void f$die(const mixed &v) {
+void f$die([[maybe_unused]] const mixed &v) {
   get_component_context()->poll_status = PollStatus::PollFinishedOk;
   panic();
 }
