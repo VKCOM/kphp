@@ -613,6 +613,7 @@ Optional<string> f$openssl_random_pseudo_bytes(int64_t length) {
   return buffer;
 }
 
+namespace {
 
 struct ssl_connection {
   int sock;
@@ -623,13 +624,15 @@ struct ssl_connection {
 };
 
 static char ssl_connections_storage[sizeof(array<ssl_connection>)];
-static array<ssl_connection> *ssl_connections = reinterpret_cast <array<ssl_connection> *> (ssl_connections_storage);
+static array<ssl_connection> *ssl_connections = reinterpret_cast<array<ssl_connection> *>(ssl_connections_storage);
 static long long ssl_connections_last_query_num = -1;
-
 
 const int DEFAULT_SOCKET_TIMEOUT = 60;
 
-static Stream ssl_stream_socket_client(const string &url, int64_t &error_number, string &error_description, double timeout, int64_t flags __attribute__((unused)), const mixed &options) {
+} // namespace
+
+Stream ssl_stream_functions::stream_socket_client(const string &url, int64_t &error_number, string &error_description, double timeout,
+                                                  int64_t flags __attribute__((unused)), const mixed &options) const {
 #define RETURN(dump_error_stack)                        \
   if (dump_error_stack) {                               \
     php_warning ("%s: %s", error_description.c_str(),   \
@@ -880,7 +883,7 @@ static Stream ssl_stream_socket_client(const string &url, int64_t &error_number,
 #undef RETURN_ERROR_FORMAT
 }
 
-static bool ssl_context_set_option(mixed &context_ssl, const string &option, const mixed &value) {
+bool ssl_stream_functions::context_set_option(mixed &context_ssl, const string &option, const mixed &value) const {
   if (STRING_EQUALS(option, "verify_peer") ||
       STRING_EQUALS(option, "verify_depth") ||
       STRING_EQUALS(option, "cafile") ||
@@ -895,7 +898,7 @@ static bool ssl_context_set_option(mixed &context_ssl, const string &option, con
   return false;
 }
 
-ssl_connection *get_connection(const Stream &stream) {
+static ssl_connection *get_connection(const Stream &stream) {
   if (dl::query_num != ssl_connections_last_query_num || !ssl_connections->has_key(stream.to_string())) {
     php_warning("Connection to \"%s\" not found", stream.to_string().c_str());
     return nullptr;
@@ -974,7 +977,7 @@ static bool process_ssl_error(ssl_connection *c, int result) {
   }
 }
 
-static Optional<int64_t> ssl_fwrite(const Stream &stream, const string &data) {
+Optional<int64_t> ssl_stream_functions::fwrite(const Stream &stream, const string &data) const {
   ssl_connection *c = get_connection(stream);
   if (c == nullptr || c->sock == -1) {
     return false;
@@ -1009,7 +1012,7 @@ static Optional<int64_t> ssl_fwrite(const Stream &stream, const string &data) {
   }
 }
 
-static Optional<string> ssl_fread(const Stream &stream, int64_t length) {
+Optional<string> ssl_stream_functions::fread(const Stream &stream, int64_t length) const {
   if (length <= 0) {
     php_warning("Parameter length in function fread must be positive");
     return false;
@@ -1044,7 +1047,7 @@ static Optional<string> ssl_fread(const Stream &stream, int64_t length) {
   }
 }
 
-static bool ssl_feof(const Stream &stream) {
+bool ssl_stream_functions::feof(const Stream &stream) const {
   ssl_connection *c = get_connection(stream);
   if (c == nullptr || c->sock == -1) {
     return true;
@@ -1069,7 +1072,7 @@ static bool ssl_feof(const Stream &stream) {
   }
 }
 
-static bool ssl_fclose(const Stream &stream) {
+bool ssl_stream_functions::fclose(const Stream &stream) const {
   const string &stream_key = stream.to_string();
   if (dl::query_num != ssl_connections_last_query_num || !ssl_connections->has_key(stream_key)) {
     return false;
@@ -1081,7 +1084,7 @@ static bool ssl_fclose(const Stream &stream) {
   return true;
 }
 
-bool ssl_stream_set_option(const Stream &stream, int64_t option, int64_t value) {
+bool ssl_stream_functions::stream_set_option(const Stream &stream, int64_t option, int64_t value) const {
   ssl_connection *c = get_connection(stream);
   if (c == nullptr) {
     return false;
@@ -1114,7 +1117,7 @@ bool ssl_stream_set_option(const Stream &stream, int64_t option, int64_t value) 
   return false;
 }
 
-static int ssl_get_fd(const Stream &stream) {
+int ssl_stream_functions::get_fd(const Stream &stream) const {
   ssl_connection *c = get_connection(stream);
   if (c == nullptr) {
     return -1;
@@ -1127,30 +1130,8 @@ static int ssl_get_fd(const Stream &stream) {
 }
 
 void global_init_openssl_lib() {
-  static stream_functions ssl_stream_functions;
-
-  ssl_stream_functions.name = string("ssl", 3);
-  ssl_stream_functions.fopen = nullptr;
-  ssl_stream_functions.fwrite = ssl_fwrite;
-  ssl_stream_functions.fseek = nullptr;
-  ssl_stream_functions.ftell = nullptr;
-  ssl_stream_functions.fread = ssl_fread;
-  ssl_stream_functions.fgetc = nullptr;
-  ssl_stream_functions.fgets = nullptr;
-  ssl_stream_functions.fpassthru = nullptr;
-  ssl_stream_functions.fflush = nullptr;
-  ssl_stream_functions.feof = ssl_feof;
-  ssl_stream_functions.fclose = ssl_fclose;
-
-  ssl_stream_functions.file_get_contents = nullptr;
-  ssl_stream_functions.file_put_contents = nullptr;
-
-  ssl_stream_functions.stream_socket_client = ssl_stream_socket_client;
-  ssl_stream_functions.context_set_option = ssl_context_set_option;
-  ssl_stream_functions.stream_set_option = ssl_stream_set_option;
-  ssl_stream_functions.get_fd = ssl_get_fd;
-
-  register_stream_functions(&ssl_stream_functions, false);
+  static ssl_stream_functions ssl_stream_functions_v;
+  register_stream_functions(&ssl_stream_functions_v, false);
 
   OPENSSL_config(nullptr);
   SSL_library_init();
@@ -1183,7 +1164,7 @@ void x509_stack_info_free(STACK_OF(X509_INFO) *stack) {
   }
 }
 
-}
+} // namespace
 
 using BIO_ptr = vk::unique_ptr_with_delete_function<BIO, BIO_vfree>;
 using PKCS7_ptr = vk::unique_ptr_with_delete_function<PKCS7, PKCS7_free>;

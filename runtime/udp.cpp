@@ -17,14 +17,18 @@
 #include "runtime/string_functions.h"
 #include "runtime/url.h"
 
-int DEFAULT_SOCKET_TIMEOUT = 60;
+namespace {
+
+constexpr int DEFAULT_SOCKET_TIMEOUT = 60;
 
 static char opened_udp_sockets_storage[sizeof(array<int>)];
-static array<int> *opened_udp_sockets = reinterpret_cast <array<int> *> (opened_udp_sockets_storage);
+static array<int> *opened_udp_sockets = reinterpret_cast<array<int> *>(opened_udp_sockets_storage);
 static long long opened_udp_sockets_last_query_num = -1;
 
-static Stream udp_stream_socket_client(const string &url, int64_t &error_number, string &error_description, double timeout,
-                                       int64_t flags __attribute__((unused)), const mixed &options __attribute__((unused))) {
+} // namespace
+
+Stream udp_stream_functions::stream_socket_client(const string &url, int64_t &error_number, string &error_description, double timeout,
+                                       int64_t flags __attribute__((unused)), const mixed &options __attribute__((unused))) const {
   auto quit = [&](int socket_fd, const Optional<string> & extra_info = {}) {
     if (extra_info.has_value()) {
       php_warning("%s. %s", error_description.c_str(), extra_info.val().c_str());
@@ -162,7 +166,7 @@ static Stream udp_stream_socket_client(const string &url, int64_t &error_number,
   return stream_key;
 }
 
-static int udp_get_fd(const Stream &stream) {
+int udp_stream_functions::get_fd(const Stream &stream) const {
   string stream_key = stream.to_string();
   if (dl::query_num != opened_udp_sockets_last_query_num || !opened_udp_sockets->has_key(stream_key)) {
     php_warning("UDP socket \"%s\" is not opened", stream_key.c_str());
@@ -171,8 +175,8 @@ static int udp_get_fd(const Stream &stream) {
   return opened_udp_sockets->get_value(stream_key);
 }
 
-static Optional<int64_t> udp_fwrite(const Stream &stream, const string &data) {
-  int sock_fd = udp_get_fd(stream);
+Optional<int64_t> udp_stream_functions::fwrite(const Stream &stream, const string &data) const {
+  int sock_fd = get_fd(stream);
   if (sock_fd == -1) {
     return false;
   }
@@ -191,7 +195,7 @@ static Optional<int64_t> udp_fwrite(const Stream &stream, const string &data) {
   return res;
 }
 
-static bool udp_fclose(const Stream &stream) {
+bool udp_stream_functions::fclose(const Stream &stream) const {
   string stream_key = stream.to_string();
 
   if (dl::query_num != opened_udp_sockets_last_query_num || !opened_udp_sockets->has_key(stream_key)) {
@@ -206,30 +210,8 @@ static bool udp_fclose(const Stream &stream) {
 }
 
 void global_init_udp_lib() {
-  static stream_functions udp_stream_functions;
-
-  udp_stream_functions.name = string("udp", 3);
-  udp_stream_functions.fopen = nullptr;
-  udp_stream_functions.fwrite = udp_fwrite;
-  udp_stream_functions.fseek = nullptr;
-  udp_stream_functions.ftell = nullptr;
-  udp_stream_functions.fread = nullptr;
-  udp_stream_functions.fgetc = nullptr;
-  udp_stream_functions.fgets = nullptr;
-  udp_stream_functions.fpassthru = nullptr;
-  udp_stream_functions.fflush = nullptr;
-  udp_stream_functions.feof = nullptr;
-  udp_stream_functions.fclose = udp_fclose;
-
-  udp_stream_functions.file_get_contents = nullptr;
-  udp_stream_functions.file_put_contents = nullptr;
-
-  udp_stream_functions.stream_socket_client = udp_stream_socket_client;
-  udp_stream_functions.context_set_option = nullptr;
-  udp_stream_functions.stream_set_option = nullptr;
-  udp_stream_functions.get_fd = udp_get_fd;
-
-  register_stream_functions(&udp_stream_functions, false);
+  static udp_stream_functions udp_stream_functions_v;
+  register_stream_functions(&udp_stream_functions_v, false);
 }
 
 void free_udp_lib() {
