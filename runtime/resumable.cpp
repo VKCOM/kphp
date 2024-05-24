@@ -1335,6 +1335,7 @@ int32_t get_resumable_stack(void **buffer, int32_t limit) {
 }
 
 void forcibly_stop_all_running_resumables() {
+  tvkprintf(resumable, 1, "forcibly stop all running resumables\n");
   resumable_finished = true;
   runned_resumable_id = 0;
   first_free_started_resumable_id = 0;

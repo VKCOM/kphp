@@ -78,7 +78,7 @@ void sigalrm_handler(int signum) {
       if (is_json_log_on_timeout_enabled) {
         vk::singleton<JsonLogger>::get().write_log_with_backtrace("Maximum execution time exceeded", E_ERROR);
       }
-      if (get_shutdown_functions_count() > 0) {
+      if (get_shutdown_functions_count() > 0 && get_shutdown_functions_status() == shutdown_functions_status::not_executed) {
         // setup hard timeout which is deadline of shutdown functions call @see try_run_shutdown_functions_on_timeout
         static itimerval timer;
         memset(&timer, 0, sizeof(itimerval));
@@ -225,9 +225,9 @@ void sigabrt_handler(int, siginfo_t *info, void *) {
 } // namespace
 
 
-//mark no return
 void perform_error_if_running(const char *msg, script_error_t error_type) {
   if (PhpScript::in_script_context) {
+    tvkprintf(php_runner, 2, "perform error in PhpScript running '%s'", msg);
     kwrite_str(2, msg);
     PhpScript::error(msg, error_type);
     assert ("unreachable point" && 0);
