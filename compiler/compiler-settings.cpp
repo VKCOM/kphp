@@ -284,6 +284,9 @@ void CompilerSettings::init() {
 
   remove_extra_spaces(extra_cxx_flags.value_);
   std::stringstream ss;
+  #ifdef MBFL
+  ss << " -DMBFL ";
+  #endif
   ss << "-Wall "
      << extra_cxx_flags.get()
      << " -iquote" << kphp_src_path.get()
@@ -332,6 +335,11 @@ void CompilerSettings::init() {
   // LDD may not find a library in /usr/local/lib if we don't add it here
   // TODO: can we avoid this hardcoded library path?
   ld_flags.value_ += " -L /usr/local/lib";
+#endif
+
+#ifdef LIBMBFL_LIB_DIR
+  external_static_libs.emplace_back("libmbfl");
+  ld_flags.value_ += " -L" LIBMBFL_LIB_DIR;
 #endif
 
 #ifdef KPHP_H3_LIB_DIR

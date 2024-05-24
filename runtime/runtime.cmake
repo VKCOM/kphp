@@ -57,7 +57,11 @@ prepend(KPHP_RUNTIME_PDO_PGSQL_SOURCES pdo/pgsql/
         pgsql_pdo_emulated_statement.cpp)
 endif()
 
+prepend(KPHP_RUNTIME_MBSTRING_SOURCES mbstring/
+        mbstring.cpp)
+
 prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
+        ${KPHP_RUNTIME_MBSTRING_SOURCES}
         ${KPHP_RUNTIME_DATETIME_SOURCES}
         ${KPHP_RUNTIME_MEMORY_RESOURCE_SOURCES}
         ${KPHP_RUNTIME_MSGPACK_SOURCES}
@@ -94,7 +98,6 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         kphp_tracing_binlog.cpp
         mail.cpp
         math_functions.cpp
-        mbstring.cpp
         memcache.cpp
         migration_php8.cpp
         misc.cpp
@@ -155,6 +158,10 @@ vk_add_library(kphp_runtime OBJECT ${KPHP_RUNTIME_ALL_SOURCES})
 target_include_directories(kphp_runtime PUBLIC ${BASE_DIR} /opt/curl7600/include)
 
 add_dependencies(kphp_runtime kphp-timelib)
+if (MBFL)
+    add_dependencies(kphp_runtime libmbfl)
+endif()
+
 
 prepare_cross_platform_libs(RUNTIME_LIBS yaml-cpp re2 zstd h3) # todo: linking between static libs is no-op, is this redundant? do we need to add mysqlclient here?
 set(RUNTIME_LIBS vk::kphp_runtime vk::kphp_server vk::popular_common vk::unicode vk::common_src vk::binlog_src vk::net_src ${RUNTIME_LIBS} OpenSSL::Crypto m z pthread)
@@ -171,6 +178,10 @@ endif()
 
 if (PDO_DRIVER_PGSQL)
     list(APPEND RUNTIME_LINK_TEST_LIBS PostgreSQL::PostgreSQL)
+endif()
+
+if (MBFL)
+    list(APPEND RUNTIME_LINK_TEST_LIBS libmbfl)
 endif()
 
 file(GLOB_RECURSE KPHP_RUNTIME_ALL_HEADERS

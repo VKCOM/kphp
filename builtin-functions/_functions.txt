@@ -765,14 +765,6 @@ function setlocale ($category ::: int, $locale ::: string) ::: string | false;
 
 function iconv ($input_encoding ::: string, $output_encoding ::: string, $input_str ::: string) ::: string | false;
 
-function mb_check_encoding ($str ::: string, $encoding ::: string = "cp1251") ::: bool;
-function mb_strlen ($str ::: string, $encoding ::: string = "cp1251") ::: int;
-function mb_strpos ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $encoding ::: string = "cp1251") ::: int | false;
-function mb_stripos ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $encoding ::: string = "cp1251") ::: int | false;
-function mb_strtolower ($str ::: string, $encoding ::: string = "cp1251") ::: string;
-function mb_strtoupper ($str ::: string, $encoding ::: string = "cp1251") ::: string;
-function mb_substr ($str ::: string, $start ::: int, $length ::: mixed = PHP_INT_MAX, $encoding ::: string = "cp1251") ::: string;
-
 define('PHP_ROUND_HALF_UP', 123423141);
 define('PHP_ROUND_HALF_DOWN', 123423144);
 define('PHP_ROUND_HALF_EVEN', 123423145);
@@ -1678,3 +1670,25 @@ class DateTimeImmutable implements DateTimeInterface {
 }
 
 function getenv(string $varname = '', bool $local_only = false): mixed;
+
+function mb_check_encoding(array|string $value, ?string $encoding = null): bool;
+function mb_convert_encoding(array|string $string, string $to_encoding, array|string|null $from_encoding = null): array|string|false;
+function mb_encoding_aliases(string $encoding): array;
+function mb_list_encodings(): array;
+function mb_preferred_mime_name(string $encoding): string|false;
+function mb_str_split(string $string, int $length = 1, ?string $encoding = null): array;
+function mb_strcut(string $string, int $start, ?int $length = null, ?string $encoding = null): string;
+function mb_substr(string $string, int $start, ?int $length = null, ?string $encoding = null): string;
+function mb_strlen(string $string, ?string $encoding = null): int;
+function mb_substr_count(string $haystack, string $needle, ?string $encoding = null): int;
+function mb_strtolower(string $string, ?string $encoding = null): string;
+function mb_strtoupper(string $string, ?string $encoding = null): string;
+function mb_strwidth(string $string, ?string $encoding = null): int;
+function mb_strpos(string $haystack, string $needle, int $offset = 0, ?string $encoding = null): int|false;
+function mb_stripos(string $haystack, string $needle, int $offset = 0, ?string $encoding = null): int|false;
+function mb_strripos(string $haystack, string $needle, int $offset = 0, ?string $encoding = null): int|false;
+function mb_strrpos(string $haystack, string $needle, int $offset = 0, string $encoding = null): int|false;
+function mb_stristr(string $haystack, string $needle, bool $before_needle = false, ?string $encoding = null): string|false;
+function mb_strrchr(string $haystack, string $needle, bool $before_needle = false, ?string $encoding = null): string|false;
+function mb_strrichr(string $haystack, string $needle, bool $before_needle = false, ?string $encoding = null): string|false;
+function mb_strstr(string $haystack, string $needle, bool $before_needle = false, ?string $encoding = null): string|false;
