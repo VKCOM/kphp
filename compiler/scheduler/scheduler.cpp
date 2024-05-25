@@ -21,14 +21,15 @@ public:
   bool run_flag;
 };
 
+
 void *scheduler_thread_execute(void *arg) {
   auto *tls = (ThreadContext *)arg;
   tls->scheduler->thread_execute(tls);
   return nullptr;
 }
 
-Scheduler::Scheduler()
-  : threads_count(-1) {
+Scheduler::Scheduler() :
+  threads_count(-1) {
   task_pull = new TaskPull();
 }
 
@@ -45,7 +46,7 @@ void Scheduler::add_sync_node(Node *node) {
 }
 
 void Scheduler::add_task(Task *task) {
-  assert(task_pull != nullptr);
+  assert (task_pull != nullptr);
   task_pull->add_task(task);
 }
 
@@ -54,7 +55,7 @@ void Scheduler::execute() {
   set_thread_id(0);
   std::vector<ThreadContext> threads(threads_count + 1);
 
-  assert((int)one_thread_nodes.size() < threads_count);
+  assert ((int)one_thread_nodes.size() < threads_count);
   for (int i = 1; i <= threads_count; i++) {
     threads[i].thread_id = i;
     threads[i].scheduler = this;
@@ -89,7 +90,7 @@ void Scheduler::execute() {
 }
 
 void Scheduler::set_threads_count(int new_threads_count) {
-  assert(1 <= new_threads_count && new_threads_count <= MAX_THREADS_COUNT);
+  assert (1 <= new_threads_count && new_threads_count <= MAX_THREADS_COUNT);
   threads_count = new_threads_count;
 }
 

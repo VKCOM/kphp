@@ -27,8 +27,6 @@ struct TLS {
 private:
   struct KDB_CACHELINE_ALIGNED TLSRaw {
     T data{};
-    std::atomic<int> locker = UNLOCKED;
-    char dummy[KDB_CACHELINE_SIZE];
   };
 
   // The thread with thread_id = 0 is the main thread in which the scheduler's master code is executed.
@@ -47,8 +45,9 @@ private:
   }
 
 public:
-  TLS()
-    : arr() {}
+  TLS() :
+    arr() {
+  }
 
   T &get() {
     return get_raw()->data;
@@ -68,19 +67,6 @@ public:
 
   int size() {
     return MAX_THREADS_COUNT + 1;
-  }
-
-  T *lock_get() {
-    TLSRaw *raw = get_raw();
-    bool ok = try_lock(&raw->locker);
-    assert(ok);
-    return &raw->data;
-  }
-
-  void unlock_get(T *ptr) {
-    TLSRaw *raw = get_raw();
-    assert(&raw->data == ptr);
-    unlock(&raw->locker);
   }
 };
 

@@ -21,8 +21,10 @@ public:
   template<size_t data_id>
   using NthDataType = DataType;
 
-  explicit DataStream(bool is_sink = false)
-    : is_sink_mode_(is_sink) {}
+  explicit DataStream(bool is_sink = false) :
+    is_sink_mode_(is_sink)
+  {
+  }
 
   bool get(DataType &result) {
     std::lock_guard<std::mutex> lock{mutex_};
@@ -63,7 +65,7 @@ struct EmptyStream {
   using NthDataType = EmptyStream;
 };
 
-template<class... DataTypes>
+template<class ...DataTypes>
 class MultipleDataStreams {
 private:
   std::tuple<DataStream<DataTypes> *...> streams_;

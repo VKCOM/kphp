@@ -11,7 +11,7 @@
 
 namespace dl {
 
-extern std::atomic<int> in_critical_section;
+extern volatile int in_critical_section;
 extern volatile long long pending_signals;
 
 void enter_critical_section() noexcept;
@@ -20,21 +20,13 @@ void leave_critical_section() noexcept;
 // leaves the critical section until the destructor is executed;
 // it is implied that this object is constructed somewhere inside the critical section
 struct NonCriticalSectionGuard : private vk::not_copyable {
-  NonCriticalSectionGuard() noexcept {
-    leave_critical_section();
-  }
-  ~NonCriticalSectionGuard() noexcept {
-    enter_critical_section();
-  }
+  NonCriticalSectionGuard() noexcept { leave_critical_section(); }
+  ~NonCriticalSectionGuard() noexcept { enter_critical_section(); }
 };
 
 struct CriticalSectionGuard : private vk::not_copyable {
-  CriticalSectionGuard() noexcept {
-    enter_critical_section();
-  }
-  ~CriticalSectionGuard() noexcept {
-    leave_critical_section();
-  }
+  CriticalSectionGuard() noexcept { enter_critical_section(); }
+  ~CriticalSectionGuard() noexcept { leave_critical_section(); }
 };
 
 class CriticalSectionSmartGuard : private vk::not_copyable {
@@ -65,8 +57,8 @@ private:
   bool in_critical_section_{false};
 };
 
-template<class F, class... Args>
-auto critical_section_call(F &&f, Args &&... args) noexcept {
+template<class F, class ...Args>
+auto critical_section_call(F &&f, Args &&...args) noexcept {
   CriticalSectionGuard critical_section;
   return f(std::forward<Args>(args)...);
 }
