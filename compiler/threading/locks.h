@@ -26,7 +26,7 @@ void unlock(T locker) {
 }
 
 inline bool try_lock(std::atomic<int> *locker) {
-  int expected = 0;
+  int expected = UNLOCKED;
   return locker->compare_exchange_weak(expected, LOCKED, std::memory_order_acq_rel);
 }
 

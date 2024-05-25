@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include <atomic>
 #include <utility>
 
 #include "common/mixin/not_copyable.h"
