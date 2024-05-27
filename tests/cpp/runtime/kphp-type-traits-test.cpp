@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
-#include "kphp-core/class-instance/refcountable_php_classes.h"
-#include "kphp-core/kphp-types/kphp_type_traits.h"
 #include "kphp-core/kphp_core.h"
+#include "kphp-core/kphp-types/kphp_type_traits.h"
+#include "kphp-core/class-instance/refcountable_php_classes.h"
 
 struct Stub : refcountable_php_classes<Stub> {
 };
