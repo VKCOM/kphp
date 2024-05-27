@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdlib.h>
+
 #include "common/wrappers/likely.h"
 
 void php_notice(char const *message, ...) __attribute__ ((format (printf, 1, 2)));
@@ -7,7 +9,7 @@ void php_warning(char const *message, ...) __attribute__ ((format (printf, 1, 2)
 void php_error(char const *message, ...) __attribute__ ((format (printf, 1, 2)));
 
 void php_assert__(const char *msg, const char *file, int line) __attribute__((noreturn));
-void raise_php_assert_signal__();
+void raise_php_assert_signal__() __attribute__((noreturn));
 
 #define php_assert(EX) do {                          \
   if (unlikely(!(EX))) {                             \
