@@ -2,7 +2,7 @@ include_guard(GLOBAL)
 
 # TODO move all runtime stuff in runtime-light.cmake
 # Because we do not need coroutines for compiler
-# Or we do not need it?
+# Or do we need it?
 
 if(CMAKE_CXX_COMPILER_ID MATCHES Clang)
     check_compiler_version(clang 14.0.0)

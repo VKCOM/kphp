@@ -1,0 +1,3 @@
+#pragma once
+
+#define COMMON_SOURCES "${COMMON_SOURCES_FOR_COMP}"

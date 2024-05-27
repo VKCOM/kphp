@@ -1,6 +1,6 @@
 include_guard(GLOBAL)
 
-prepend(LIGHT_COMMON_SOURCES ${COMMON_DIR}/
+set(LIGHT_COMMON_SOURCES
         algorithms/simd-int-to-string.cpp
         resolver.cpp
         kprintf.cpp
@@ -20,6 +20,11 @@ prepend(LIGHT_COMMON_SOURCES ${COMMON_DIR}/
         version-string.cpp
         rpc-headers.cpp
 )
+
+set(COMMON_SOURCES_FOR_COMP "${LIGHT_COMMON_SOURCES}")
+configure_file(${BASE_DIR}/compiler/common_sources.h.in ${BASE_DIR}/compiler/common_sources.h)
+
+prepend(LIGHT_COMMON_SOURCES ${COMMON_DIR}/ ${LIGHT_COMMON_SOURCES})
 
 prepend(POPULAR_COMMON_SOURCES ${COMMON_DIR}/
         server/limits.cpp

@@ -1,21 +1,23 @@
-include(${BASE_DIR}/runtime-light/allocator/allocator.cmake)
-include(${BASE_DIR}/runtime-light/core/core.cmake)
-include(${BASE_DIR}/runtime-light/stdlib/stdlib.cmake)
-include(${BASE_DIR}/runtime-light/streams/streams.cmake)
-include(${BASE_DIR}/runtime-light/utils/utils.cmake)
-
-prepend(RUNTIME_COMPONENT_SRC ${BASE_DIR}/runtime-light/
-        component/component.cpp)
+include(${RUNTIME_LIGHT_DIR}/allocator/allocator.cmake)
+include(${RUNTIME_LIGHT_DIR}/core/core.cmake)
+include(${RUNTIME_LIGHT_DIR}/stdlib/stdlib.cmake)
+include(${RUNTIME_LIGHT_DIR}/streams/streams.cmake)
+include(${RUNTIME_LIGHT_DIR}/utils/utils.cmake)
+include(${RUNTIME_LIGHT_DIR}/component/component.cmake)
 
 set(RUNTIME_LIGHT_SRC ${RUNTIME_CORE_SRC}
                 ${RUNTIME_STDLIB_SRC}
                 ${RUNTIME_ALLOCATOR_SRC}
-                ${RUNTIME_COROUTINE_SRC}
                 ${RUNTIME_COMPONENT_SRC}
                 ${RUNTIME_STREAMS_SRC}
                 ${RUNTIME_UTILS_SRC}
                 ${RUNTIME_LANGUAGE_SRC}
-                ${BASE_DIR}/runtime-light/runtime-light.cpp)
+                runtime-light.cpp)
+
+set(RUNTIME_SOURCES_FOR_COMP "${RUNTIME_LIGHT_SRC}")
+configure_file(${BASE_DIR}/compiler/runtime_sources.h.in ${BASE_DIR}/compiler/runtime_sources.h)
+
+prepend(RUNTIME_LIGHT_SRC ${RUNTIME_LIGHT_DIR}/ "${RUNTIME_LIGHT_SRC}")
 
 vk_add_library(runtime_light OBJECT ${RUNTIME_LIGHT_SRC})
 set_property(TARGET runtime_light PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -29,7 +31,7 @@ set_target_properties(full_runtime_light PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${O
 file(GLOB_RECURSE KPHP_RUNTIME_ALL_HEADERS
         RELATIVE ${BASE_DIR}
         CONFIGURE_DEPENDS
-        "${BASE_DIR}/runtime-light/*.h")
+        "${RUNTIME_LIGHT_DIR}/*.h")
 list(TRANSFORM KPHP_RUNTIME_ALL_HEADERS REPLACE "^(.+)$" [[#include "\1"]])
 list(JOIN KPHP_RUNTIME_ALL_HEADERS "\n" MERGED_RUNTIME_HEADERS)
 file(WRITE ${AUTO_DIR}/runtime/runtime-headers.h "\
