@@ -236,6 +236,7 @@ void php_assert__(const char *msg, const char *file, int line) {
 void raise_php_assert_signal__() {
   raise(SIGPHPASSERT);
   vk::singleton<JsonLogger>::get().fsync_log_file();
+  _exit(1);
 }
 
 int64_t f$error_reporting(int64_t level) {

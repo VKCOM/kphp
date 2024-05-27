@@ -1,11 +1,10 @@
 #include "kphp-core/kphp-core-allocator.h"
 
 #include "runtime/allocator.h"
-
-CoreAllocator RuntimeCoreAllocator;
+#include "runtime/kphp-runtime-context.h"
 
 CoreAllocator &CoreAllocator::current() noexcept {
-  return RuntimeCoreAllocator;
+  return vk::singleton<KphpRuntimeContext>::get().allocator;
 }
 
 void *CoreAllocator::alloc_script_memory(size_t size) {

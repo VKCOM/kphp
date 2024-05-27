@@ -8,11 +8,13 @@
 struct KphpRuntimeContext : KphpCoreContext {
   friend class vk::singleton<KphpRuntimeContext>;
 
-  void init();
+  void init(void *mem, size_t script_mem_size, size_t oom_handling_mem_size);
   void free();
 
   string_buffer static_SB;
   string_buffer static_SB_spare;
+
+  CoreAllocator allocator;
 
 private:
   KphpRuntimeContext() = default;

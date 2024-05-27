@@ -2319,7 +2319,6 @@ static void init_interface_lib() {
 }
 
 static void init_runtime_libs() {
-  vk::singleton<KphpRuntimeContext>::get().init();
   // init_curl_lib() lazy called in runtime
   init_instance_cache_lib();
   init_confdata_functions_lib();
@@ -2429,7 +2428,7 @@ void global_init_script_allocator() {
 }
 
 void init_runtime_environment(const php_query_data_t &data, PhpScriptBuiltInSuperGlobals &superglobals, void *mem, size_t script_mem_size, size_t oom_handling_mem_size) {
-  dl::init_script_allocator(mem, script_mem_size, oom_handling_mem_size);
+  vk::singleton<KphpRuntimeContext>::get().init(mem, script_mem_size, oom_handling_mem_size);
   reset_global_interface_vars(superglobals);
   init_runtime_libs();
   init_superglobals(data, superglobals);
@@ -2439,7 +2438,7 @@ void free_runtime_environment(PhpScriptBuiltInSuperGlobals &superglobals) {
   reset_superglobals(superglobals);
   free_runtime_libs();
   reset_global_interface_vars(superglobals);
-  dl::free_script_allocator();
+  vk::singleton<KphpRuntimeContext>::get().free();
 }
 
 void worker_global_init(WorkerType worker_type) noexcept {

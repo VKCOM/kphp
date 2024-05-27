@@ -7,6 +7,8 @@
 #include <tuple>
 #include <utility>
 #include <cinttypes>
+#include <initializer_list>
+#include <cstdio>
 
 #include "common/algorithms/find.h"
 #include "common/sanitizer.h"

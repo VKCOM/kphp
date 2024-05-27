@@ -6,6 +6,7 @@
 
 #include <unordered_map>
 #include <forward_list>
+#include <unistd.h>
 
 #include "runtime/critical_section.h"
 #include "runtime/allocator.h"
