@@ -1,6 +1,8 @@
 #pragma once
 #include <postgresql/libpq-fe.h>
 
+#include "server/database-drivers/pgsql/pgsql.h"
+
 // Helper structure for storing the error message and error code
 struct PGSQL {
   PGSQL() = default;
