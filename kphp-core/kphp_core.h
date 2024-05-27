@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <memory>
 #include <initializer_list>
+#include <unistd.h>
 
 #include "common/algorithms/find.h"
 #include "common/sanitizer.h"
