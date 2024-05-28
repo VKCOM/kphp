@@ -81,14 +81,14 @@ bool JsonEncoder::encode(const array<T> &arr) noexcept {
   }
   is_vector &= !force_object;
 
-  vk::singleton<KphpRuntimeContext>::get().static_SB << "{["[is_vector];
+  kphpRuntimeContext.static_SB << "{["[is_vector];
 
   if (is_vector) {
     int i = 0;
     json_path_.enter(nullptr); // similar key for all entries
     for (auto p : arr) {
       if (i != 0) {
-        vk::singleton<KphpRuntimeContext>::get().static_SB << ',';
+        kphpRuntimeContext.static_SB << ',';
       }
       if (!encode(p.get_value())) {
         if (!(options_ & JSON_PARTIAL_OUTPUT_ON_ERROR)) {
@@ -102,7 +102,7 @@ bool JsonEncoder::encode(const array<T> &arr) noexcept {
     bool is_first = true;
     for (auto p : arr) {
       if (!is_first) {
-        vk::singleton<KphpRuntimeContext>::get().static_SB << ',';
+        kphpRuntimeContext.static_SB << ',';
       }
       is_first = false;
       const char *next_key = nullptr;
@@ -110,7 +110,7 @@ bool JsonEncoder::encode(const array<T> &arr) noexcept {
       if (array<T>::is_int_key(key)) {
         auto int_key = key.to_int();
         next_key = nullptr;
-        vk::singleton<KphpRuntimeContext>::get().static_SB << '"' << int_key << '"';
+        kphpRuntimeContext.static_SB << '"' << int_key << '"';
       } else {
         const string &str_key = key.as_string();
         // skip service key intended only for distinguish empty json object with empty json array
@@ -124,7 +124,7 @@ bool JsonEncoder::encode(const array<T> &arr) noexcept {
           }
         }
       }
-      vk::singleton<KphpRuntimeContext>::get().static_SB << ':';
+      kphpRuntimeContext.static_SB << ':';
       json_path_.enter(next_key);
       if (!encode(p.get_value())) {
         if (!(options_ & JSON_PARTIAL_OUTPUT_ON_ERROR)) {
@@ -135,7 +135,7 @@ bool JsonEncoder::encode(const array<T> &arr) noexcept {
     }
   }
 
-  vk::singleton<KphpRuntimeContext>::get().static_SB << "}]"[is_vector];
+  kphpRuntimeContext.static_SB << "}]"[is_vector];
   return true;
 }
 
@@ -162,26 +162,26 @@ Optional<string> f$json_encode(const T &v, int64_t options = 0, bool simple_enco
     return false;
   }
 
-  vk::singleton<KphpRuntimeContext>::get().static_SB.clean();
+  kphpRuntimeContext.static_SB.clean();
   if (unlikely(!impl_::JsonEncoder(options, simple_encode).encode(v))) {
     return false;
   }
-  return vk::singleton<KphpRuntimeContext>::get().static_SB.str();
+  return kphpRuntimeContext.static_SB.str();
 }
 
 template<class T>
 string f$vk_json_encode_safe(const T &v, bool simple_encode = true) noexcept {
-  vk::singleton<KphpRuntimeContext>::get().static_SB.clean();
+  kphpRuntimeContext.static_SB.clean();
   string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_ON;
   impl_::JsonEncoder(0, simple_encode).encode(v);
   if (unlikely(string_buffer::string_buffer_error_flag == STRING_BUFFER_ERROR_FLAG_FAILED)) {
-    vk::singleton<KphpRuntimeContext>::get().static_SB.clean();
+    kphpRuntimeContext.static_SB.clean();
     string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_OFF;
     THROW_EXCEPTION (new_Exception(string(__FILE__), __LINE__, string("json_encode buffer overflow", 27)));
     return {};
   }
   string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_OFF;
-  return vk::singleton<KphpRuntimeContext>::get().static_SB.str();
+  return kphpRuntimeContext.static_SB.str();
 }
 
 template<class T>

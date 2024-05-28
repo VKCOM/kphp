@@ -211,7 +211,6 @@ inline int64_t f$preg_last_error();
 template<>
 inline string regexp::get_replacement(const string &replace_val, const string &subject, int64_t count) const {
   const string::size_type len = replace_val.size();
-  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
   kphpRuntimeContext.static_SB.clean();
   for (string::size_type i = 0; i < len; i++) {
     int64_t backref = -1;

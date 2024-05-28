@@ -412,7 +412,6 @@ void regexp::init(const char *regexp_string, int64_t regexp_len, const char *fun
     return;
   }
 
-  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
   kphpRuntimeContext.static_SB.clean().append(regexp_string + 1, static_cast<size_t>(regexp_end - 1));
 
   use_heap_memory = !(php_script.has_value() && php_script->is_running());
@@ -1079,7 +1078,6 @@ int64_t regexp::last_error() {
 string f$preg_quote(const string &str, const string &delimiter) {
   const string::size_type len = str.size();
 
-  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
   kphpRuntimeContext.static_SB.clean().reserve(4 * len);
 
   for (string::size_type i = 0; i < len; i++) {

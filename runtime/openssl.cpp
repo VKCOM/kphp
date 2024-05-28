@@ -516,7 +516,6 @@ static const EVP_MD *openssl_algo_to_evp_md(openssl_algo algo) {
 }
 
 static const char *ssl_get_error_string() {
-  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
   kphpRuntimeContext.static_SB.clean();
   while (unsigned long error_code = ERR_get_error()) {
     kphpRuntimeContext.static_SB << "Error " << (int)error_code << ": [" << ERR_error_string(error_code, nullptr) << "]\n";

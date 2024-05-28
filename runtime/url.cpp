@@ -454,7 +454,6 @@ mixed f$parse_url(const string &s, int64_t component) {
 }
 
 string f$rawurldecode(const string &s) {
-  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
   kphpRuntimeContext.static_SB.clean().reserve(s.size());
   for (int i = 0; i < (int)s.size(); i++) {
     if (s[i] == '%') {
@@ -485,7 +484,6 @@ static const char *good_url_symbols =
   "00000000000000000000000000000000";//[0-9a-zA-Z-_.]
 
 string f$rawurlencode(const string &s) {
-  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
   kphpRuntimeContext.static_SB.clean().reserve(3 * s.size());
   for (int i = 0; i < (int)s.size(); i++) {
     if (good_url_symbols[(unsigned char)s[i]] == '1') {
@@ -500,7 +498,6 @@ string f$rawurlencode(const string &s) {
 }
 
 string f$urldecode(const string &s) {
-  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
   kphpRuntimeContext.static_SB.clean().reserve(s.size());
   for (int i = 0; i < (int)s.size(); i++) {
     if (s[i] == '%') {
@@ -523,7 +520,6 @@ string f$urldecode(const string &s) {
 }
 
 string f$urlencode(const string &s) {
-  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
   kphpRuntimeContext.static_SB.clean().reserve(3 * s.size());
   for (int i = 0; i < (int)s.size(); i++) {
     if (good_url_symbols[(unsigned char)s[i]] == '1') {

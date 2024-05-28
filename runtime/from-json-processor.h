@@ -91,7 +91,6 @@ private:
   }
 
   void do_set(JsonRawString &value, const mixed &json) noexcept {
-    KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
     kphpRuntimeContext.static_SB.clean();
     if (!impl_::JsonEncoder{0, false, get_json_obj_magic_key()}.encode(json)) {
       error_.append("failed to decode @kphp-json raw_string field ");

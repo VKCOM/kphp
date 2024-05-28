@@ -30,7 +30,6 @@ private:
 
 template<class T>
 void PhpSerializer::serialize(const array<T> &arr) noexcept {
-  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
   kphpRuntimeContext.static_SB.append("a:", 2);
   kphpRuntimeContext.static_SB << arr.count();
   kphpRuntimeContext.static_SB.append(":{", 2);
@@ -62,7 +61,6 @@ void PhpSerializer::serialize(const Optional<T> &opt) noexcept {
 
 template<class T>
 string f$serialize(const T &v) noexcept {
-  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
   kphpRuntimeContext.static_SB.clean();
   impl_::PhpSerializer::serialize(v);
   return kphpRuntimeContext.static_SB.str();

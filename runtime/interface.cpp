@@ -375,29 +375,29 @@ void f$send_http_103_early_hints(const array<string> & headers) {
 void f$setrawcookie(const string &name, const string &value, int64_t expire, const string &path, const string &domain, bool secure, bool http_only) {
   string date = f$gmdate(HTTP_DATE, expire);
 
-  vk::singleton<KphpRuntimeContext>::get().static_SB_spare.clean() << "Set-Cookie: " << name << '=';
+  kphpRuntimeContext.static_SB_spare.clean() << "Set-Cookie: " << name << '=';
   if (value.empty()) {
-    vk::singleton<KphpRuntimeContext>::get().static_SB_spare << "DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT";
+    kphpRuntimeContext.static_SB_spare << "DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT";
   } else {
-    vk::singleton<KphpRuntimeContext>::get().static_SB_spare << value;
+    kphpRuntimeContext.static_SB_spare << value;
 
     if (expire != 0) {
-      vk::singleton<KphpRuntimeContext>::get().static_SB_spare << "; expires=" << date;
+      kphpRuntimeContext.static_SB_spare << "; expires=" << date;
     }
   }
   if (!path.empty()) {
-    vk::singleton<KphpRuntimeContext>::get().static_SB_spare << "; path=" << path;
+    kphpRuntimeContext.static_SB_spare << "; path=" << path;
   }
   if (!domain.empty()) {
-    vk::singleton<KphpRuntimeContext>::get().static_SB_spare << "; domain=" << domain;
+    kphpRuntimeContext.static_SB_spare << "; domain=" << domain;
   }
   if (secure) {
-    vk::singleton<KphpRuntimeContext>::get().static_SB_spare << "; secure";
+    kphpRuntimeContext.static_SB_spare << "; secure";
   }
   if (http_only) {
-    vk::singleton<KphpRuntimeContext>::get().static_SB_spare << "; HttpOnly";
+    kphpRuntimeContext.static_SB_spare << "; HttpOnly";
   }
-  header(vk::singleton<KphpRuntimeContext>::get().static_SB_spare.c_str(), (int)vk::singleton<KphpRuntimeContext>::get().static_SB_spare.size(), false);
+  header(kphpRuntimeContext.static_SB_spare.c_str(), (int)kphpRuntimeContext.static_SB_spare.size(), false);
 }
 
 void f$setcookie(const string &name, const string &value, int64_t expire, const string &path, const string &domain, bool secure, bool http_only) {
@@ -487,32 +487,32 @@ static inline const char *http_get_error_msg_text(int *code) {
 }
 
 static void set_content_length_header(int content_length) {
-  vk::singleton<KphpRuntimeContext>::get().static_SB_spare.clean() << "Content-Length: " << content_length;
-  header(vk::singleton<KphpRuntimeContext>::get().static_SB_spare.c_str(), (int)vk::singleton<KphpRuntimeContext>::get().static_SB_spare.size());
+  kphpRuntimeContext.static_SB_spare.clean() << "Content-Length: " << content_length;
+  header(kphpRuntimeContext.static_SB_spare.c_str(), (int)kphpRuntimeContext.static_SB_spare.size());
 }
 
-static const string_buffer *get_headers() {//can't use static_SB, returns pointer to vk::singleton<KphpRuntimeContext>::get().static_SB_spare
+static const string_buffer *get_headers() {//can't use static_SB, returns pointer to kphpRuntimeContext.static_SB_spare
   string date = f$gmdate(HTTP_DATE);
-  vk::singleton<KphpRuntimeContext>::get().static_SB_spare.clean() << "Date: " << date;
-  header(vk::singleton<KphpRuntimeContext>::get().static_SB_spare.c_str(), (int)vk::singleton<KphpRuntimeContext>::get().static_SB_spare.size());
+  kphpRuntimeContext.static_SB_spare.clean() << "Date: " << date;
+  header(kphpRuntimeContext.static_SB_spare.c_str(), (int)kphpRuntimeContext.static_SB_spare.size());
 
   php_assert (dl::query_num == header_last_query_num);
 
-  vk::singleton<KphpRuntimeContext>::get().static_SB_spare.clean();
+  kphpRuntimeContext.static_SB_spare.clean();
   if (!http_status_line.empty()) {
-    vk::singleton<KphpRuntimeContext>::get().static_SB_spare << http_status_line << "\r\n";
+    kphpRuntimeContext.static_SB_spare << http_status_line << "\r\n";
   } else {
     const char *message = http_get_error_msg_text(&http_return_code);
-    vk::singleton<KphpRuntimeContext>::get().static_SB_spare << "HTTP/1.1 " << http_return_code << " " << message << "\r\n";
+    kphpRuntimeContext.static_SB_spare << "HTTP/1.1 " << http_return_code << " " << message << "\r\n";
   }
 
   const array<string> *arr = headers;
   for (array<string>::const_iterator p = arr->begin(); p != arr->end(); ++p) {
-    vk::singleton<KphpRuntimeContext>::get().static_SB_spare << p.get_value();
+    kphpRuntimeContext.static_SB_spare << p.get_value();
   }
-  vk::singleton<KphpRuntimeContext>::get().static_SB_spare << "\r\n";
+  kphpRuntimeContext.static_SB_spare << "\r\n";
 
-  return &vk::singleton<KphpRuntimeContext>::get().static_SB_spare;
+  return &kphpRuntimeContext.static_SB_spare;
 }
 
 constexpr uint32_t MAX_SHUTDOWN_FUNCTIONS = 256;
@@ -572,7 +572,7 @@ void f$flush() {
   http_send_immediate_response(http_headers ? http_headers->buffer() : nullptr, http_headers ? http_headers->size() : 0,
                                http_body->buffer(), http_body->size());
   oub[ob_system_level].clean();
-  vk::singleton<KphpRuntimeContext>::get().static_SB_spare.clean();
+  kphpRuntimeContext.static_SB_spare.clean();
 }
 
 void f$fastcgi_finish_request(int64_t exit_code) {
@@ -767,7 +767,6 @@ double f$thread_pool_test_load(int64_t size, int64_t n, double a, double b) {
 }
 
 string f$long2ip(int64_t num) {
-  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
   kphpRuntimeContext.static_SB.clean().reserve(100);
   for (int i = 3; i >= 0; i--) {
     kphpRuntimeContext.static_SB << ((num >> (i * 8)) & 255);
@@ -1563,7 +1562,7 @@ static void init_superglobals_impl(const http_query_data &http_data, const rpc_q
 
   if (http_data.uri) {
     if (http_data.get_len) {
-      superglobals.v$_SERVER.set_value(string("REQUEST_URI"), (vk::singleton<KphpRuntimeContext>::get().static_SB.clean() << uri_str << '?' << get_str).str());
+      superglobals.v$_SERVER.set_value(string("REQUEST_URI"), (kphpRuntimeContext.static_SB.clean() << uri_str << '?' << get_str).str());
     } else {
       superglobals.v$_SERVER.set_value(string("REQUEST_URI"), uri_str);
     }
@@ -1742,7 +1741,7 @@ static void init_superglobals_impl(const http_query_data &http_data, const rpc_q
   v$_SERVER.set_value(string("REQUEST_TIME_FLOAT"), cur_time);
   v$_SERVER.set_value(string("SERVER_PORT"), string("80"));
   v$_SERVER.set_value(string("SERVER_PROTOCOL"), string("HTTP/1.1"));
-  v$_SERVER.set_value(string("SERVER_SIGNATURE"), (static_SB.clean() << "Apache/2.2.9 (Debian) PHP/5.2.6-1<<lenny10 with Suhosin-Patch Server at "
+  v$_SERVER.set_value(string("SERVER_SIGNATURE"), (kphpRuntimeContext.static_SB.clean() << "Apache/2.2.9 (Debian) PHP/5.2.6-1<<lenny10 with Suhosin-Patch Server at "
                                                                          << v$_SERVER[string("SERVER_NAME")] << " Port 80").str());
   v$_SERVER.set_value(string("SERVER_SOFTWARE"), string("Apache/2.2.9 (Debian) PHP/5.2.6-1+lenny10 with Suhosin-Patch"));
 
@@ -2309,8 +2308,8 @@ static void init_interface_lib() {
   php_assert (http_return_code == 200);
   header("Server: nginx/0.3.33", 20);
   string date = f$gmdate(HTTP_DATE);
-  vk::singleton<KphpRuntimeContext>::get().static_SB_spare.clean() << "Date: " << date;
-  header(vk::singleton<KphpRuntimeContext>::get().static_SB_spare.c_str(), (int)vk::singleton<KphpRuntimeContext>::get().static_SB_spare.size());
+  kphpRuntimeContext.static_SB_spare.clean() << "Date: " << date;
+  header(kphpRuntimeContext.static_SB_spare.c_str(), (int)kphpRuntimeContext.static_SB_spare.size());
   if (is_utf8_enabled) {
     header("Content-Type: text/html; charset=utf-8", 38);
   } else {
@@ -2404,7 +2403,7 @@ static void free_runtime_libs() {
   vk::singleton<OomHandler>::get().reset();
   free_interface_lib();
   hard_reset_var(JsonEncoderError::msg);
-  vk::singleton<KphpRuntimeContext>::get().free();
+  kphpRuntimeContext.free();
 }
 
 void global_init_runtime_libs() {
@@ -2428,7 +2427,7 @@ void global_init_script_allocator() {
 }
 
 void init_runtime_environment(const php_query_data_t &data, PhpScriptBuiltInSuperGlobals &superglobals, void *mem, size_t script_mem_size, size_t oom_handling_mem_size) {
-  vk::singleton<KphpRuntimeContext>::get().init(mem, script_mem_size, oom_handling_mem_size);
+  kphpRuntimeContext.init(mem, script_mem_size, oom_handling_mem_size);
   reset_global_interface_vars(superglobals);
   init_runtime_libs();
   init_superglobals(data, superglobals);
@@ -2438,7 +2437,7 @@ void free_runtime_environment(PhpScriptBuiltInSuperGlobals &superglobals) {
   reset_superglobals(superglobals);
   free_runtime_libs();
   reset_global_interface_vars(superglobals);
-  vk::singleton<KphpRuntimeContext>::get().free();
+  kphpRuntimeContext.free();
 }
 
 void worker_global_init(WorkerType worker_type) noexcept {
