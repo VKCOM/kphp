@@ -55,7 +55,6 @@ string f$addcslashes(const string &str, const string &what) {
   const char *mask = get_mask(what);
 
   int len = str.size();
-  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
   kphpRuntimeContext.static_SB.clean().reserve(4 * len);
 
   for (int i = 0; i < len; i++) {
@@ -103,7 +102,6 @@ string f$addcslashes(const string &str, const string &what) {
 string f$addslashes(const string &str) {
   int len = str.size();
 
-  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
   kphpRuntimeContext.static_SB.clean().reserve(2 * len);
   for (int i = 0; i < len; i++) {
     switch (str[i]) {
@@ -332,7 +330,6 @@ static const char *cp1251_to_utf8_str[128] = {
 
 string f$htmlentities(const string &str) {
   int len = (int)str.size();
-  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
   kphpRuntimeContext.static_SB.clean().reserve(8 * len);
 
   for (int i = 0; i < len; i++) {
@@ -469,7 +466,6 @@ string f$htmlspecialchars(const string &str, int64_t flags) {
   }
 
   const string::size_type len = str.size();
-  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
   kphpRuntimeContext.static_SB.clean().reserve(6 * len);
 
   for (string::size_type i = 0; i < len; i++) {
@@ -635,7 +631,6 @@ string f$ltrim(const string &s, const string &what) {
 
 string f$mysql_escape_string(const string &str) {
   int len = str.size();
-  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
   kphpRuntimeContext.static_SB.clean().reserve(2 * len);
   for (int i = 0; i < len; i++) {
     switch (str[i]) {
@@ -660,8 +655,6 @@ string f$nl2br(const string &str, bool is_xhtml) {
   int br_len = (int)strlen(br);
 
   int len = str.size();
-
-  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
   kphpRuntimeContext.static_SB.clean().reserve((br_len + 1) * len);
 
   for (int i = 0; i < len;) {
@@ -767,7 +760,6 @@ static double float64_from_bits(uint64_t bits) {
 }
 
 string f$pack(const string &pattern, const array<mixed> &a) {
-  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
   kphpRuntimeContext.static_SB.clean();
   int cur_arg = 0;
   for (int i = 0; i < (int)pattern.size();) {
@@ -1011,7 +1003,6 @@ Optional<string> f$setlocale(int64_t category, const string &locale) {
 }
 
 string f$sprintf(const string &format, const array<mixed> &a) {
-  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
   string result;
   result.reserve_at_least(format.size());
   int cur_arg = 0;
@@ -1424,7 +1415,6 @@ string f$strip_tags(const string &str, const string &allow) {
   int state = 0;
 
   const string allow_low = f$strtolower(allow);
-  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
   kphpRuntimeContext.static_SB.clean();
   kphpRuntimeContext.static_SB_spare.clean();
   char lc = 0;

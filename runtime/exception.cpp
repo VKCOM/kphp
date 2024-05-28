@@ -87,11 +87,10 @@ Exception new_Exception(const string &file, int64_t line, const string &message,
 }
 
 Exception f$err(const string &file, int64_t line, const string &code, const string &desc) {
-  return new_Exception(file, line, (vk::singleton<KphpRuntimeContext>::get().static_SB.clean() << "ERR_" << code << ": " << desc).str(), 0);
+  return new_Exception(file, line, (kphpRuntimeContext.static_SB.clean() << "ERR_" << code << ": " << desc).str(), 0);
 }
 
 string exception_trace_as_string(const Throwable &e) {
-  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
   kphpRuntimeContext.static_SB.clean();
   for (int64_t i = 0; i < e->trace.count(); i++) {
     array<string> current = e->trace.get_value(i);

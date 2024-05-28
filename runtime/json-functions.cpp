@@ -14,12 +14,12 @@
 namespace {
 
 void json_append_one_char(unsigned int c) noexcept {
-  vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('\\');
-  vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('u');
-  vk::singleton<KphpRuntimeContext>::get().static_SB.append_char("0123456789abcdef"[c >> 12]);
-  vk::singleton<KphpRuntimeContext>::get().static_SB.append_char("0123456789abcdef"[(c >> 8) & 15]);
-  vk::singleton<KphpRuntimeContext>::get().static_SB.append_char("0123456789abcdef"[(c >> 4) & 15]);
-  vk::singleton<KphpRuntimeContext>::get().static_SB.append_char("0123456789abcdef"[c & 15]);
+  kphpRuntimeContext.static_SB.append_char('\\');
+  kphpRuntimeContext.static_SB.append_char('u');
+  kphpRuntimeContext.static_SB.append_char("0123456789abcdef"[c >> 12]);
+  kphpRuntimeContext.static_SB.append_char("0123456789abcdef"[(c >> 8) & 15]);
+  kphpRuntimeContext.static_SB.append_char("0123456789abcdef"[(c >> 4) & 15]);
+  kphpRuntimeContext.static_SB.append_char("0123456789abcdef"[c & 15]);
 }
 
 bool json_append_char(unsigned int c) noexcept {
@@ -41,54 +41,54 @@ bool json_append_char(unsigned int c) noexcept {
 
 
 bool do_json_encode_string_php(const JsonPath &json_path, const char *s, int len, int64_t options) noexcept {
-  int begin_pos = vk::singleton<KphpRuntimeContext>::get().static_SB.size();
+  int begin_pos = kphpRuntimeContext.static_SB.size();
   if (options & JSON_UNESCAPED_UNICODE) {
-    vk::singleton<KphpRuntimeContext>::get().static_SB.reserve(2 * len + 2);
+    kphpRuntimeContext.static_SB.reserve(2 * len + 2);
   } else {
-    vk::singleton<KphpRuntimeContext>::get().static_SB.reserve(6 * len + 2);
+    kphpRuntimeContext.static_SB.reserve(6 * len + 2);
   }
-  vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('"');
+  kphpRuntimeContext.static_SB.append_char('"');
 
   auto fire_error = [json_path, begin_pos](int pos) {
     php_warning("%s: Not a valid utf-8 character at pos %d in function json_encode", json_path.to_string().c_str(), pos);
-    vk::singleton<KphpRuntimeContext>::get().static_SB.set_pos(begin_pos);
-    vk::singleton<KphpRuntimeContext>::get().static_SB.append("null", 4);
+    kphpRuntimeContext.static_SB.set_pos(begin_pos);
+    kphpRuntimeContext.static_SB.append("null", 4);
     return false;
   };
 
   for (int pos = 0; pos < len; pos++) {
     switch (s[pos]) {
       case '"':
-        vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('\\');
-        vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('"');
+        kphpRuntimeContext.static_SB.append_char('\\');
+        kphpRuntimeContext.static_SB.append_char('"');
         break;
       case '\\':
-        vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('\\');
-        vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('\\');
+        kphpRuntimeContext.static_SB.append_char('\\');
+        kphpRuntimeContext.static_SB.append_char('\\');
         break;
       case '/':
-        vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('\\');
-        vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('/');
+        kphpRuntimeContext.static_SB.append_char('\\');
+        kphpRuntimeContext.static_SB.append_char('/');
         break;
       case '\b':
-        vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('\\');
-        vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('b');
+        kphpRuntimeContext.static_SB.append_char('\\');
+        kphpRuntimeContext.static_SB.append_char('b');
         break;
       case '\f':
-        vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('\\');
-        vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('f');
+        kphpRuntimeContext.static_SB.append_char('\\');
+        kphpRuntimeContext.static_SB.append_char('f');
         break;
       case '\n':
-        vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('\\');
-        vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('n');
+        kphpRuntimeContext.static_SB.append_char('\\');
+        kphpRuntimeContext.static_SB.append_char('n');
         break;
       case '\r':
-        vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('\\');
-        vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('r');
+        kphpRuntimeContext.static_SB.append_char('\\');
+        kphpRuntimeContext.static_SB.append_char('r');
         break;
       case '\t':
-        vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('\\');
-        vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('t');
+        kphpRuntimeContext.static_SB.append_char('\\');
+        kphpRuntimeContext.static_SB.append_char('t');
         break;
       case 0 ... 7:
       case 11:
@@ -110,8 +110,8 @@ bool do_json_encode_string_php(const JsonPath &json_path, const char *s, int len
             return fire_error(pos);
           }
           if (options & JSON_UNESCAPED_UNICODE) {
-            vk::singleton<KphpRuntimeContext>::get().static_SB.append_char(static_cast<char>(a));
-            vk::singleton<KphpRuntimeContext>::get().static_SB.append_char(static_cast<char>(b));
+            kphpRuntimeContext.static_SB.append_char(static_cast<char>(a));
+            kphpRuntimeContext.static_SB.append_char(static_cast<char>(b));
           } else if (!json_append_char(((a & 0x1f) << 6) | (b & 0x3f))) {
             return fire_error(pos);
           }
@@ -127,9 +127,9 @@ bool do_json_encode_string_php(const JsonPath &json_path, const char *s, int len
             return fire_error(pos);
           }
           if (options & JSON_UNESCAPED_UNICODE) {
-            vk::singleton<KphpRuntimeContext>::get().static_SB.append_char(static_cast<char>(a));
-            vk::singleton<KphpRuntimeContext>::get().static_SB.append_char(static_cast<char>(b));
-            vk::singleton<KphpRuntimeContext>::get().static_SB.append_char(static_cast<char>(c));
+            kphpRuntimeContext.static_SB.append_char(static_cast<char>(a));
+            kphpRuntimeContext.static_SB.append_char(static_cast<char>(b));
+            kphpRuntimeContext.static_SB.append_char(static_cast<char>(c));
           } else if (!json_append_char(((a & 0x0f) << 12) | ((b & 0x3f) << 6) | (c & 0x3f))) {
             return fire_error(pos);
           }
@@ -145,10 +145,10 @@ bool do_json_encode_string_php(const JsonPath &json_path, const char *s, int len
             return fire_error(pos);
           }
           if (options & JSON_UNESCAPED_UNICODE) {
-            vk::singleton<KphpRuntimeContext>::get().static_SB.append_char(static_cast<char>(a));
-            vk::singleton<KphpRuntimeContext>::get().static_SB.append_char(static_cast<char>(b));
-            vk::singleton<KphpRuntimeContext>::get().static_SB.append_char(static_cast<char>(c));
-            vk::singleton<KphpRuntimeContext>::get().static_SB.append_char(static_cast<char>(d));
+            kphpRuntimeContext.static_SB.append_char(static_cast<char>(a));
+            kphpRuntimeContext.static_SB.append_char(static_cast<char>(b));
+            kphpRuntimeContext.static_SB.append_char(static_cast<char>(c));
+            kphpRuntimeContext.static_SB.append_char(static_cast<char>(d));
           } else if (!json_append_char(((a & 0x07) << 18) | ((b & 0x3f) << 12) | ((c & 0x3f) << 6) | (d & 0x3f))) {
             return fire_error(pos);
           }
@@ -158,57 +158,57 @@ bool do_json_encode_string_php(const JsonPath &json_path, const char *s, int len
         return fire_error(pos);
       }
       default:
-        vk::singleton<KphpRuntimeContext>::get().static_SB.append_char(s[pos]);
+        kphpRuntimeContext.static_SB.append_char(s[pos]);
         break;
     }
   }
 
-  vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('"');
+  kphpRuntimeContext.static_SB.append_char('"');
   return true;
 }
 
 bool do_json_encode_string_vkext(const char *s, int len) noexcept {
-  vk::singleton<KphpRuntimeContext>::get().static_SB.reserve(2 * len + 2);
-  if (vk::singleton<KphpRuntimeContext>::get().static_SB.string_buffer_error_flag == STRING_BUFFER_ERROR_FLAG_FAILED) {
+  kphpRuntimeContext.static_SB.reserve(2 * len + 2);
+  if (kphpRuntimeContext.static_SB.string_buffer_error_flag == STRING_BUFFER_ERROR_FLAG_FAILED) {
     return false;
   }
 
-  vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('"');
+  kphpRuntimeContext.static_SB.append_char('"');
 
   for (int pos = 0; pos < len; pos++) {
     char c = s[pos];
     if (unlikely (static_cast<unsigned int>(c) < 32u)) {
       switch (c) {
         case '\b':
-          vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('\\');
-          vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('b');
+          kphpRuntimeContext.static_SB.append_char('\\');
+          kphpRuntimeContext.static_SB.append_char('b');
           break;
         case '\f':
-          vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('\\');
-          vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('f');
+          kphpRuntimeContext.static_SB.append_char('\\');
+          kphpRuntimeContext.static_SB.append_char('f');
           break;
         case '\n':
-          vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('\\');
-          vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('n');
+          kphpRuntimeContext.static_SB.append_char('\\');
+          kphpRuntimeContext.static_SB.append_char('n');
           break;
         case '\r':
-          vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('\\');
-          vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('r');
+          kphpRuntimeContext.static_SB.append_char('\\');
+          kphpRuntimeContext.static_SB.append_char('r');
           break;
         case '\t':
-          vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('\\');
-          vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('t');
+          kphpRuntimeContext.static_SB.append_char('\\');
+          kphpRuntimeContext.static_SB.append_char('t');
           break;
       }
     } else {
       if (c == '"' || c == '\\' || c == '/') {
-        vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('\\');
+        kphpRuntimeContext.static_SB.append_char('\\');
       }
-      vk::singleton<KphpRuntimeContext>::get().static_SB.append_char(c);
+      kphpRuntimeContext.static_SB.append_char(c);
     }
   }
 
-  vk::singleton<KphpRuntimeContext>::get().static_SB.append_char('"');
+  kphpRuntimeContext.static_SB.append_char('"');
 
   return true;
 }
@@ -254,20 +254,20 @@ JsonEncoder::JsonEncoder(int64_t options, bool simple_encode, const char *json_o
 
 bool JsonEncoder::encode(bool b) noexcept {
   if (b) {
-    vk::singleton<KphpRuntimeContext>::get().static_SB.append("true", 4);
+    kphpRuntimeContext.static_SB.append("true", 4);
   } else {
-    vk::singleton<KphpRuntimeContext>::get().static_SB.append("false", 5);
+    kphpRuntimeContext.static_SB.append("false", 5);
   }
   return true;
 }
 
 bool JsonEncoder::encode_null() const noexcept {
-  vk::singleton<KphpRuntimeContext>::get().static_SB.append("null", 4);
+  kphpRuntimeContext.static_SB.append("null", 4);
   return true;
 }
 
 bool JsonEncoder::encode(int64_t i) noexcept {
-  vk::singleton<KphpRuntimeContext>::get().static_SB << i;
+  kphpRuntimeContext.static_SB << i;
   return true;
 }
 
@@ -275,12 +275,12 @@ bool JsonEncoder::encode(double d) noexcept {
   if (vk::any_of_equal(std::fpclassify(d), FP_INFINITE, FP_NAN)) {
     php_warning("%s: strange double %lf in function json_encode", json_path_.to_string().c_str(), d);
     if (options_ & JSON_PARTIAL_OUTPUT_ON_ERROR) {
-      vk::singleton<KphpRuntimeContext>::get().static_SB.append("0", 1);
+      kphpRuntimeContext.static_SB.append("0", 1);
     } else {
       return false;
     }
   } else {
-    vk::singleton<KphpRuntimeContext>::get().static_SB << (simple_encode_ ? f$number_format(d, 6, string{"."}, string{}) : string{d});
+    kphpRuntimeContext.static_SB << (simple_encode_ ? f$number_format(d, 6, string{"."}, string{}) : string{d});
   }
   return true;
 }

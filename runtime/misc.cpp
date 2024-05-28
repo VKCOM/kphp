@@ -35,7 +35,6 @@ string f$uniqid(const string &prefix, bool more_entropy) {
   int sec = (int)tv.tv_sec;
   int usec = (int)(tv.tv_usec & 0xFFFFF);
 
-  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
   size_t buf_size = 30;
   char buf[buf_size];
   kphpRuntimeContext.static_SB.clean() << prefix;
@@ -711,7 +710,6 @@ string f$cp1251(const string &utf8_string) {
 
 void f$kphp_set_context_on_error(const array<mixed> &tags, const array<mixed> &extra_info, const string& env) {
   auto &json_logger = vk::singleton<JsonLogger>::get();
-  KphpRuntimeContext & kphpRuntimeContext = vk::singleton<KphpRuntimeContext>::get();
   kphpRuntimeContext.static_SB.clean();
 
   const auto get_json_string_from_SB_without_brackets = [&] {
