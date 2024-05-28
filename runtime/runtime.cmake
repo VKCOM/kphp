@@ -143,7 +143,7 @@ set(KPHP_RUNTIME_ALL_SOURCES
     ${KPHP_RUNTIME_SOURCES}
     ${KPHP_SERVER_SOURCES})
 
-include(kphp-runtime-core/kphp-runtime-core.cmake)
+include(kphp-core/kphp-core.cmake)
 
 allow_deprecated_declarations(${BASE_DIR}/runtime/allocator.cpp ${BASE_DIR}/runtime/openssl.cpp)
 allow_deprecated_declarations_for_apple(${BASE_DIR}/runtime/inter-process-mutex.cpp)
