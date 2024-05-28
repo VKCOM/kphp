@@ -2,8 +2,8 @@
 #include <gtest/gtest.h>
 #include <random>
 
-#include "runtime/memory_resource/details/memory_chunk_tree.h"
-#include "runtime/memory_resource/details/memory_ordered_chunk_list.h"
+#include "kphp-core/memory_resource/details/memory_chunk_tree.h"
+#include "kphp-core/memory_resource/details/memory_ordered_chunk_list.h"
 #include "tests/cpp/runtime/memory_resource/details/test-helpers.h"
 
 TEST(memory_chunk_tree_test, empty) {

@@ -2,7 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime/memory_resource/heap_resource.h"
+#include "runtime/memory_resource_impl//heap_resource.h"
 
 #include <csignal>
 #include <cstdlib>

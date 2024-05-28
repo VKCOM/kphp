@@ -3,8 +3,8 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
-#include "runtime/memory_resource/heap_resource.h"
-#include "runtime/memory_resource/unsynchronized_pool_resource.h"
+#include "kphp-core/memory_resource/unsynchronized_pool_resource.h"
+#include "runtime/memory_resource_impl/heap_resource.h"
 
 namespace memory_resource {
 

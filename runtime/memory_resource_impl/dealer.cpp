@@ -2,7 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime/memory_resource/dealer.h"
+#include "runtime/memory_resource_impl//dealer.h"
 
 namespace memory_resource {
 

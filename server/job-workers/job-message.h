@@ -7,8 +7,8 @@
 #include "common/mixin/not_copyable.h"
 
 #include "kphp-core/kphp_core.h"
+#include "kphp-core/memory_resource/unsynchronized_pool_resource.h"
 #include "runtime/job-workers/job-interface.h"
-#include "runtime/memory_resource/unsynchronized_pool_resource.h"
 
 namespace job_workers {
 

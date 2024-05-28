@@ -6,13 +6,13 @@
 
 #include <array>
 
-#include "runtime/memory_resource/details/memory_chunk_list.h"
-#include "runtime/memory_resource/details/memory_chunk_tree.h"
-#include "runtime/memory_resource/details/universal_reallocate.h"
-#include "runtime/memory_resource/extra-memory-pool.h"
-#include "runtime/memory_resource/monotonic_buffer_resource.h"
-#include "runtime/memory_resource/resource_allocator.h"
-#include "runtime/php_assert.h"
+#include "kphp-core/memory_resource/extra-memory-pool.h"
+#include "kphp-core/memory_resource/details/memory_chunk_list.h"
+#include "kphp-core/memory_resource/details/memory_chunk_tree.h"
+#include "kphp-core/memory_resource/details/universal_reallocate.h"
+#include "kphp-core/memory_resource/monotonic_buffer_resource.h"
+#include "kphp-core/memory_resource/resource_allocator.h"
+#include "kphp-core/functions/kphp-assert-core.h"
 
 namespace memory_resource {
 

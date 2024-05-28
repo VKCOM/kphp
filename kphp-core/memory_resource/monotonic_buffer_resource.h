@@ -10,8 +10,8 @@
 #include "common/mixin/not_copyable.h"
 #include "common/wrappers/likely.h"
 
-#include "runtime/memory_resource/memory_resource.h"
-#include "runtime/memory_resource/details/universal_reallocate.h"
+#include "kphp-core/memory_resource/details/universal_reallocate.h"
+#include "kphp-core/memory_resource/memory_resource.h"
 #include "runtime/php_assert.h"
 
 namespace memory_resource {
@@ -45,8 +45,6 @@ protected:
     return memory_begin_ <= static_cast<char *>(mem) &&
            static_cast<char *>(mem) + size <= memory_current_;
   }
-
-  void critical_dump(void *mem, size_t size) const noexcept;
 
   MemoryStats stats_;
 
@@ -125,6 +123,7 @@ public:
   }
 
 protected:
+  void critical_dump(void *mem, size_t size) const noexcept;
   // this function should never be called from the nested/base context,
   // since all allocators have their own mem stats;
   // when signaling OOM, we want to see the root mem stats, not the

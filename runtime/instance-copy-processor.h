@@ -11,9 +11,9 @@
 #include "common/mixin/not_copyable.h"
 
 #include "kphp-core/kphp_core.h"
+#include "kphp-core/memory_resource/unsynchronized_pool_resource.h"
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
-#include "runtime/memory_resource/unsynchronized_pool_resource.h"
 
 namespace impl_ {
 

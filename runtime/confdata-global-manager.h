@@ -10,10 +10,10 @@
 #include "common/wrappers/string_view.h"
 
 #include "kphp-core/kphp_core.h"
+#include "kphp-core/memory_resource/resource_allocator.h"
+#include "kphp-core/memory_resource/unsynchronized_pool_resource.h"
 #include "runtime/confdata-keys.h"
 #include "runtime/inter-process-resource.h"
-#include "runtime/memory_resource/resource_allocator.h"
-#include "runtime/memory_resource/unsynchronized_pool_resource.h"
 
 using confdata_sample_storage = memory_resource::stl::map<string, mixed, memory_resource::unsynchronized_pool_resource, stl_string_less>;
 

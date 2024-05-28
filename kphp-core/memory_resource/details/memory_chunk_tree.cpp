@@ -2,13 +2,13 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime/memory_resource/details/memory_chunk_tree.h"
+#include "memory_chunk_tree.h"
 
 #include <new>
 #include <utility>
 
-#include "runtime/memory_resource/details/memory_ordered_chunk_list.h"
-#include "runtime/php_assert.h"
+#include "memory_ordered_chunk_list.h"
+#include "kphp-core/functions/kphp-assert-core.h"
 
 namespace memory_resource {
 namespace details {

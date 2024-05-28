@@ -12,9 +12,17 @@ prepend(KPHP_CORE_KPHP_TYPES ${BASE_DIR}/kphp-core/kphp-types/definition/
         string_buffer.cpp
 )
 
+prepend(KPHP_CORE_MEMORY_RECOURCE ${BASE_DIR}/kphp-core/memory_resource/
+        details/memory_chunk_tree.cpp
+        details/memory_ordered_chunk_list.cpp
+        monotonic_buffer_resource.cpp
+        unsynchronized_pool_resource.cpp
+)
+
 set(KPHP_CORE_SRC
         ${KPHP_CORE_RUNTIME_TYPES}
         ${KPHP_CORE_KPHP_TYPES}
+        ${KPHP_CORE_MEMORY_RECOURCE}
 )
 
 vk_add_library(kphp_core OBJECT ${KPHP_CORE_SRC})
