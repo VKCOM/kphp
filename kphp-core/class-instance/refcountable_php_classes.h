@@ -7,7 +7,7 @@
 
 #include "common/php-functions.h"
 
-#include "kphp-core/kphp-core-allocator.h"
+#include "kphp-core/class-instance/managed_through_allocator.h"
 
 class abstract_refcountable_php_interface : public ManagedThroughAllocator {
 public:

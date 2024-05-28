@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "kphp-core/include.h"
 #include "kphp-core/kphp-types/decl/array_iterator.h"
+#include "kphp-core/include.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
   #error "this file must be included only from kphp_core.h"

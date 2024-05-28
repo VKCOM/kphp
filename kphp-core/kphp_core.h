@@ -19,7 +19,6 @@
 #include "common/type_traits/list_of_types.h"
 
 #include "kphp-core/include.h"
-#include "kphp-core/kphp-core-allocator.h"
 #include "kphp-core/kphp-types/kphp_type_traits.h"
 #include "kphp-core/kphp-types/decl/shape.h"
 

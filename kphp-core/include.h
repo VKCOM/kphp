@@ -12,8 +12,8 @@
 
 #include "common/php-functions.h"
 #include "kphp-core/kphp-types/decl/declarations.h"
-#include "kphp-core/kphp-types/decl/optional.h"
 #include "kphp-core/kphp-types/kphp_type_traits.h"
+#include "kphp-core/kphp-types/decl/optional.h"
 #include "kphp-core/functions/kphp-assert-core.h"
 
 #define COMMA ,

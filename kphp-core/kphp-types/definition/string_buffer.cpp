@@ -10,11 +10,11 @@ string::size_type string_buffer::MAX_BUFFER_LEN = (1 << 24);
 int string_buffer::string_buffer_error_flag = 0;
 
 string_buffer::string_buffer(string::size_type buffer_len) noexcept:
-  buffer_end(static_cast<char *>(CoreAllocator::current().alloc_global_memory(buffer_len))),
+  buffer_end(static_cast<char *>(KphpCoreContext::current().allocator.alloc_global_memory(buffer_len))),
   buffer_begin(buffer_end),
   buffer_len(buffer_len) {
 }
 
 string_buffer::~string_buffer() noexcept {
-  CoreAllocator::current().free_global_memory(buffer_begin, buffer_len);
+  KphpCoreContext::current().allocator.free_global_memory(buffer_begin, buffer_len);
 }
