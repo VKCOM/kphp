@@ -96,7 +96,6 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         math_functions.cpp
         mbstring.cpp
         memcache.cpp
-        ../kphp-core/functions/migration_php8.cpp
         misc.cpp
         mysql.cpp
         net_events.cpp
@@ -144,7 +143,7 @@ set(KPHP_RUNTIME_ALL_SOURCES
     ${KPHP_RUNTIME_SOURCES}
     ${KPHP_SERVER_SOURCES})
 
-include(kphp-core/kphp-core.cmake)
+include(kphp-runtime-core/kphp-runtime-core.cmake)
 
 allow_deprecated_declarations(${BASE_DIR}/runtime/allocator.cpp ${BASE_DIR}/runtime/openssl.cpp)
 allow_deprecated_declarations_for_apple(${BASE_DIR}/runtime/inter-process-mutex.cpp)
