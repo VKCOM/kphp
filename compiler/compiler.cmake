@@ -275,3 +275,4 @@ target_link_options(kphp2cpp PRIVATE ${NO_PIE})
 set_target_properties(kphp2cpp PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${BIN_DIR})
 
 add_dependencies(kphp2cpp_src auto_vertices_generation_target)
+add_dependencies(kphp2cpp php_lib_version_sha_256)

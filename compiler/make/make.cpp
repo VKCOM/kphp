@@ -4,8 +4,10 @@
 
 #include "compiler/make/make.h"
 
+#include <ftw.h>
 #include <forward_list>
 #include <queue>
+#include <unistd.h>
 #include <unordered_map>
 #include <dirent.h>
 
@@ -190,6 +192,19 @@ static long long get_imported_header_mtime(const std::string &header_path, const
   return 0;
 }
 
+static int unlink_cb(const char *fpath, [[maybe_unused]] const struct stat *sb, [[maybe_unused]] int typeflag, [[maybe_unused]] struct FTW *ftwbuf) {
+  int rv = remove(fpath);
+
+  if (rv)
+    perror(fpath);
+
+  return rv;
+}
+
+static int rm_rf(const char *path) {
+  return nftw(path, unlink_cb, 64, FTW_DEPTH | FTW_PHYS);
+}
+
 // todo:k2 review pch-related things for
 // k2-component mode
 
@@ -201,9 +216,28 @@ File *prepare_precompiled_header(Index *obj_dir, MakeSetup &make, File &runtime_
   if (with_debug && flags == settings.cxx_flags_default) {
     return nullptr;
   }
-  if (access(flags.pch_dir.get().c_str(), F_OK) != -1) {  // if a folder in /tmp exists, this pch was already made
+//  fprintf(stderr, "[PCH_DIR] = %s\n", flags.pch_dir.get().c_str());
+//  if (access(flags.pch_dir.get().c_str(), F_OK) != -1) {  // if a folder in /tmp exists, this pch was already made
+//    return nullptr;
+//  }
+
+  struct stat sb_pch_dir;
+  int stat_res = stat(flags.pch_dir.get().c_str(), &sb_pch_dir);
+  long long pch_dir_mtime = sb_pch_dir.st_mtime * 1000000000LL + sb_pch_dir.st_mtim.tv_nsec;
+  fprintf(stderr, "STAT RES = %d\n", stat_res);
+  fprintf(stderr, "HEADER MTIME = %lld\n", runtime_headers_h.mtime);
+  fprintf(stderr, "PCH MTIME = %lld\n", pch_dir_mtime);
+  if (stat_res != -1 && runtime_headers_h.mtime > pch_dir_mtime) { // check for mtime because compiler fails when .h file has bigger mtime than .gch
+    fprintf(stderr, "!!!! REMOVING DIR %s\n", flags.pch_dir.get().c_str());
+    int r = rm_rf(flags.pch_dir.get().c_str());
+    fprintf(stderr, "removing = %d\n", r);
+  }
+
+  if (access(flags.pch_dir.get().c_str(), F_OK) != -1) {
+    // if a folder in /tmp exists, this pch was already made
     return nullptr;
   }
+  fprintf(stderr, "!!! CREATING TARGET\n");
 
   std::string objs_pch_dir = settings.dest_objs_dir.get() + "pch_" + flags.flags_sha256.get() + "/";
   std::string pch_basename = std::string{kbasename(runtime_headers_h.path.c_str())} + ".gch";
@@ -246,6 +280,7 @@ bool finalize_precompiled_header(File &runtime_headers_h, File &runtime_headers_
 static bool kphp_make_precompiled_headers(Index *obj_dir, const CompilerSettings &settings, FILE *stats_file) {
   MakeSetup make{stats_file, settings};
   File sha256_version_file(settings.runtime_sha256_file.get());
+  fprintf(stderr, "[SHA256FILE PATH] %s\n", settings.runtime_sha256_file.get().c_str());
   kphp_assert(sha256_version_file.read_stat() > 0);
 
   File runtime_headers_h{settings.generated_runtime_path.get() + settings.runtime_headers.get()};
@@ -255,6 +290,9 @@ static bool kphp_make_precompiled_headers(Index *obj_dir, const CompilerSettings
 
   std::vector<File *> runtime_header_pch_files;
   std::vector<std::string> pch_dirs;
+
+  fprintf(stderr, "[COLLECTING PCH FILES]\n");
+
   for (auto with_debug : {false, true}) {
     if (File *runtime_header_gch_file = prepare_precompiled_header(obj_dir, make, runtime_headers_h, settings, with_debug)) {
       pch_dirs.emplace_back(with_debug ? settings.cxx_flags_with_debug.pch_dir.get() : settings.cxx_flags_default.pch_dir.get());
@@ -262,9 +300,14 @@ static bool kphp_make_precompiled_headers(Index *obj_dir, const CompilerSettings
     }
   }
   if (runtime_header_pch_files.empty()) {
+    fprintf(stderr, "[PCH_FILES_EMPTY]\n");
     return true;
   }
+
+
   if (!make.make_targets(runtime_header_pch_files, "Compiling pch", settings.jobs_count.get())) {
+    fprintf(stderr, "[CANNOT BUILD PCH]\n");
+
     return false;
   }
 

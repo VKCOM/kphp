@@ -215,6 +215,9 @@ std::string CompilerSettings::get_version() const {
 void CompilerSettings::init() {
   option_as_dir(kphp_src_path);
   functions_file.value_ = get_full_path(functions_file.get());
+
+  fprintf(stderr, "RUNTIME_SHA256_FILE BEFORE CompSetInit: %s\n", runtime_sha256_file.get().c_str());
+
   runtime_sha256_file.value_ = get_full_path(runtime_sha256_file.get());
   if (link_file.value_.empty()) {
     if (mode.get() == "k2-component") {
@@ -380,9 +383,9 @@ void CompilerSettings::init() {
   ld_flags.value_ += " -rdynamic";
 
   runtime_headers.value_ = "runtime-headers.h";
-  if (!rt_from_sources.get()) {
-    runtime_sha256.value_ = read_runtime_sha256_file(runtime_sha256_file.get());
-  }
+  fprintf(stderr, "[SHA256FILE PATH COMP_SET] %s\n", runtime_sha256_file.get().c_str());
+
+  runtime_sha256.value_ = read_runtime_sha256_file(runtime_sha256_file.get());
 
   auto full_path = get_full_path(main_file.get());
   if (full_path.empty()) {

@@ -56,3 +56,4 @@ add_custom_command(OUTPUT ${OBJS_DIR}/php_lib_version.sha256
         COMMAND tail -n +3 $<TARGET_OBJECTS:php_lib_version_j> | sha256sum | awk '{print $$1}' > ${OBJS_DIR}/php_lib_version.sha256
         DEPENDS php_lib_version_j $<TARGET_OBJECTS:php_lib_version_j>
         COMMENT "php_lib_version.sha256 generation")
+add_custom_target(php_lib_version_sha_256 DEPENDS ${OBJS_DIR}/php_lib_version.sha256)
