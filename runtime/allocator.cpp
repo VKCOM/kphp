@@ -17,7 +17,7 @@
 
 #include "runtime/critical_section.h"
 #include "runtime/kphp-backtrace.h"
-#include "runtime/memory_resource/dealer.h"
+#include "runtime/memory_resource_impl//dealer.h"
 #include "runtime/php_assert.h"
 #include "server/server-log.h"
 

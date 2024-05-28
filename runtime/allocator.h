@@ -9,7 +9,7 @@
 #include <memory>
 
 #include "common/containers/final_action.h"
-#include "runtime/memory_resource/memory_resource.h"
+#include "kphp-core/memory_resource/memory_resource.h"
 
 namespace memory_resource {
 class unsynchronized_pool_resource;

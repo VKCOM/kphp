@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime/memory_resource/memory_resource.h"
+#include "kphp-core/memory_resource/memory_resource.h"
 
 namespace memory_resource {
 

@@ -6,14 +6,11 @@ prepend(KPHP_RUNTIME_DATETIME_SOURCES datetime/
         datetime_zone.cpp
         timelib_wrapper.cpp)
 
-prepend(KPHP_RUNTIME_MEMORY_RESOURCE_SOURCES memory_resource/
+prepend(KPHP_RUNTIME_MEMORY_IMPL_RESOURCE_SOURCES memory_resource_impl/
         dealer.cpp
-        details/memory_chunk_tree.cpp
-        details/memory_ordered_chunk_list.cpp
         heap_resource.cpp
-        memory_resource.cpp
-        monotonic_buffer_resource.cpp
-        unsynchronized_pool_resource.cpp)
+        memory_runtime_resource.cpp
+        monotonic_runtime_buffer_resource.cpp)
 
 prepend(KPHP_RUNTIME_MSGPACK_SOURCES msgpack/
         check_instance_depth.cpp
@@ -59,7 +56,7 @@ endif()
 
 prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         ${KPHP_RUNTIME_DATETIME_SOURCES}
-        ${KPHP_RUNTIME_MEMORY_RESOURCE_SOURCES}
+        ${KPHP_RUNTIME_MEMORY_IMPL_RESOURCE_SOURCES}
         ${KPHP_RUNTIME_MSGPACK_SOURCES}
         ${KPHP_RUNTIME_JOB_WORKERS_SOURCES}
         ${KPHP_RUNTIME_SPL_SOURCES}

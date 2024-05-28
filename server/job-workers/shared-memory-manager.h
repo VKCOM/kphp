@@ -8,8 +8,8 @@
 #include "common/mixin/not_copyable.h"
 #include "common/smart_ptrs/singleton.h"
 
+#include "kphp-core/memory_resource/extra-memory-pool.h"
 #include "runtime/critical_section.h"
-#include "runtime/memory_resource/extra-memory-pool.h"
 #include "server/job-workers/job-stats.h"
 #include "server/job-workers/job-workers-context.h"
 #include "server/php-engine-vars.h"

@@ -2,8 +2,8 @@
 
 #include "common/wrappers/to_array.h"
 
-#include "runtime/memory_resource/memory_resource.h"
-#include "runtime/memory_resource/details/memory_chunk_list.h"
+#include "kphp-core/memory_resource/details/memory_chunk_list.h"
+#include "kphp-core/memory_resource/memory_resource.h"
 
 template<size_t N>
 inline auto make_offsets(const std::array<size_t, N> &sizes) {

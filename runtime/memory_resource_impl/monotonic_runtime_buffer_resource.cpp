@@ -1,26 +1,11 @@
-// Compiler for PHP (aka KPHP)
-// Copyright (c) 2020 LLC «V Kontakte»
-// Distributed under the GPL v3 License, see LICENSE.notice.txt
-
-#include "runtime/memory_resource/monotonic_buffer_resource.h"
+#include "kphp-core/memory_resource/monotonic_buffer_resource.h"
 
 #include <array>
 #include "runtime/allocator.h"
 #include "runtime/oom_handler.h"
 
 namespace memory_resource {
-
-void monotonic_buffer::init(void *buffer, size_t buffer_size) noexcept {
-  php_assert(buffer_size <= memory_buffer_limit());
-  memory_begin_ = static_cast<char *>(buffer);
-  memory_current_ = memory_begin_;
-  memory_end_ = memory_begin_ + buffer_size;
-
-  stats_ = MemoryStats{};
-  stats_.memory_limit = buffer_size;
-}
-
-void monotonic_buffer::critical_dump(void *mem, size_t size) const noexcept {
+void monotonic_buffer_resource::critical_dump(void *mem, size_t size) const noexcept {
   std::array<char, 1000> malloc_replacement_stacktrace_buf = {'\0'};
   if (dl::is_malloc_replaced()) {
     const char *descr = "last_malloc_replacement_stacktrace:\n";
@@ -28,25 +13,21 @@ void monotonic_buffer::critical_dump(void *mem, size_t size) const noexcept {
     dl::write_last_malloc_replacement_stacktrace(malloc_replacement_stacktrace_buf.data() + strlen(descr),
                                                  malloc_replacement_stacktrace_buf.size() - strlen(descr));
   }
-  php_critical_error(
-    "Found unexpected memory piece:\n"
-    "ptr:                  %p\n"
-    "size:                 %zu\n"
-    "memory_begin:         %p\n"
-    "memory_current:       %p\n"
-    "memory_end:           %p\n"
-    "memory_limit:         %zu\n"
-    "memory_used:          %zu\n"
-    "max_memory_used:      %zu\n"
-    "real_memory_used:     %zu\n"
-    "max_real_memory_used: %zu\n"
-    "is_malloc_replaced:   %d\n"
-    "%s",
-    mem, size, memory_begin_, memory_current_, memory_end_,
-    stats_.memory_limit,
-    stats_.memory_used, stats_.max_memory_used,
-    stats_.real_memory_used, stats_.max_real_memory_used,
-    dl::is_malloc_replaced(), malloc_replacement_stacktrace_buf.data());
+  php_critical_error("Found unexpected memory piece:\n"
+                     "ptr:                  %p\n"
+                     "size:                 %zu\n"
+                     "memory_begin:         %p\n"
+                     "memory_current:       %p\n"
+                     "memory_end:           %p\n"
+                     "memory_limit:         %zu\n"
+                     "memory_used:          %zu\n"
+                     "max_memory_used:      %zu\n"
+                     "real_memory_used:     %zu\n"
+                     "max_real_memory_used: %zu\n"
+                     "is_malloc_replaced:   %d\n"
+                     "%s",
+                     mem, size, memory_begin_, memory_current_, memory_end_, stats_.memory_limit, stats_.memory_used, stats_.max_memory_used,
+                     stats_.real_memory_used, stats_.max_real_memory_used, dl::is_malloc_replaced(), malloc_replacement_stacktrace_buf.data());
 }
 
 void monotonic_buffer_resource::raise_oom(size_t size) const noexcept {
@@ -78,5 +59,4 @@ void monotonic_buffer_resource::raise_oom(size_t size) const noexcept {
 
   raise(SIGUSR2);
 }
-
-} // namespace memory_resource
+}

@@ -5,7 +5,7 @@
 #include <gtest/gtest.h>
 #include <memory>
 
-#include "runtime/memory_resource/extra-memory-pool.h"
+#include "kphp-core/memory_resource/extra-memory-pool.h"
 
 namespace mr = memory_resource;
 

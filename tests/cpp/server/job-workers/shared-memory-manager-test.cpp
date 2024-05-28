@@ -6,7 +6,7 @@
 
 #include "common/macos-ports.h"
 
-#include "runtime/memory_resource/extra-memory-pool.h"
+#include "kphp-core/memory_resource/extra-memory-pool.h"
 #include "server/job-workers/job-message.h"
 #include "server/job-workers/job-stats.h"
 #include "server/job-workers/job-workers-context.h"

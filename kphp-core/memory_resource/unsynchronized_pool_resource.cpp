@@ -2,11 +2,11 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime/memory_resource/unsynchronized_pool_resource.h"
+#include "kphp-core/memory_resource/unsynchronized_pool_resource.h"
 
 #include "common/wrappers/likely.h"
 
-#include "runtime/memory_resource/details/memory_ordered_chunk_list.h"
+#include "kphp-core/memory_resource/details/memory_ordered_chunk_list.h"
 
 namespace memory_resource {
 
