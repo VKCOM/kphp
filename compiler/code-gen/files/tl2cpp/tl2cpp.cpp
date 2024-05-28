@@ -89,7 +89,7 @@ void write_rpc_server_functions(CodeGenerator &W) {
   W << deps << NL;
   W << ExternInclude{G->settings().runtime_headers.get()} << NL;
   FunctionSignatureGenerator(W) << "class_instance<C$VK$TL$RpcFunction> f$rpc_server_fetch_request() " << BEGIN;
-  W << "auto function_magic = static_cast<unsigned int>(rpc_fetch_int());" << NL;
+  W << "auto function_magic = static_cast<unsigned int>(f$fetch_int());" << NL;
   W << "switch(function_magic) " << BEGIN;
   for (const auto &f : kphp_functions) {
     W << fmt_format("case {:#010x}: ", static_cast<unsigned int>(f->id)) << BEGIN;

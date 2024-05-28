@@ -22,7 +22,7 @@ void t_Either<T0, inner_magic0, T1, inner_magic1>::store(const mixed &tl_object)
     f$store_int(0xdf3ecb3b);
     c_right<T0, inner_magic0, T1, inner_magic1>::store(tl_object, std::move(X), std::move(Y));
   } else {
-    CurrentProcessingQuery::get().raise_storing_error("Invalid constructor %s of type %s", c_name.c_str(), "Either");
+    get_component_context()->rpc_component_context.current_query.raise_storing_error("Invalid constructor %s of type %s", c_name.c_str(), "Either");
   }
 }
  * Typed TL:
@@ -37,7 +37,7 @@ void t_Either<T0, inner_magic0, T1, inner_magic1>::typed_store(const PhpType &tl
     const typename right__<typename T0::PhpType, typename T1::PhpType>::type *conv_obj = tl_object.template cast_to<typename right__<typename T0::PhpType, typename T1::PhpType>::type>().get();
     c_right<T0, inner_magic0, T1, inner_magic1>::typed_store(conv_obj, std::move(X), std::move(Y));
   } else {
-    CurrentProcessingQuery::get().raise_storing_error("Invalid constructor %s of type %s", tl_object.get_class(), "Either");
+    get_component_context()->rpc_component_context.current_query.raise_storing_error("Invalid constructor %s of type %s", tl_object.get_class(), "Either");
   }
 }
 */
@@ -75,7 +75,7 @@ array<mixed> t_Either<T0, inner_magic0, T1, inner_magic1>::fetch() {
       break;
     }
     default: {
-      CurrentProcessingQuery::get().raise_fetching_error("Incorrect magic of type Either: 0x%08x", magic);
+      get_component_context()->rpc_component_context.current_query.raise_fetching_error("Incorrect magic of type Either: 0x%08x", magic);
     }
   }
   return result;
@@ -101,7 +101,7 @@ void t_Either<T0, inner_magic0, T1, inner_magic1>::typed_fetch_to(PhpType &tl_ob
       break;
     }
     default: {
-      CurrentProcessingQuery::get().raise_fetching_error("Incorrect magic of type Either: 0x%08x", magic);
+      get_component_context()->rpc_component_context.current_query.raise_fetching_error("Incorrect magic of type Either: 0x%08x", magic);
     }
   }
 }

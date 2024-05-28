@@ -85,6 +85,25 @@ function get_hash_of_class (object $klass) ::: int;
 
 function strlen ($str ::: string) ::: int;
 
+/**
+ * 'KphpRpcRequestsExtraInfo' is a builtin KPHP class. It may accumulate extra information
+ * about RPC requests sent in both typed and untyped versions of rpc_tl_query builtins.
+ */
+final class KphpRpcRequestsExtraInfo {
+    /**
+    * 'get' returns an array of extra information (request size) about sent RPC requests.
+    *
+    * @return tuple(int)[]
+    */
+    public function get ();
+}
+
+/** @kphp-extern-func-info interruptible */
+function rpc_tl_query($actor ::: string, $arr ::: array, $timeout ::: float = -1.0, $ignore_answer ::: bool = false, \KphpRpcRequestsExtraInfo $requests_extra_info = null, $need_responses_extra_info ::: bool = false) ::: int[];
+
+/** @kphp-extern-func-info interruptible */
+function rpc_tl_query_result($query_ids ::: array) ::: mixed[][];
+
 class ComponentQuery {
     private function __construct() ::: \ComponentQuery;
 }

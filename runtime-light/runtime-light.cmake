@@ -2,6 +2,7 @@ include(${BASE_DIR}/runtime-light/allocator/allocator.cmake)
 include(${BASE_DIR}/runtime-light/core/core.cmake)
 include(${BASE_DIR}/runtime-light/stdlib/stdlib.cmake)
 include(${BASE_DIR}/runtime-light/streams/streams.cmake)
+include(${BASE_DIR}/runtime-light/tl/tl.cmake)
 include(${BASE_DIR}/runtime-light/utils/utils.cmake)
 
 prepend(RUNTIME_COMPONENT_SRC ${BASE_DIR}/runtime-light/
@@ -13,6 +14,7 @@ set(RUNTIME_LIGHT_SRC ${RUNTIME_CORE_SRC}
                 ${RUNTIME_COROUTINE_SRC}
                 ${RUNTIME_COMPONENT_SRC}
                 ${RUNTIME_STREAMS_SRC}
+                ${RUNTIME_TL_SRC}
                 ${RUNTIME_UTILS_SRC}
                 ${RUNTIME_LANGUAGE_SRC}
                 ${BASE_DIR}/runtime-light/runtime-light.cpp)

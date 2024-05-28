@@ -5,4 +5,6 @@ prepend(RUNTIME_STDLIB_SRC ${BASE_DIR}/runtime-light/stdlib/
         string_functions.cpp
         variable_handling.cpp
         superglobals.cpp
+        rpc/rpc.cpp
+        rpc/rpc_extra_info.cpp
 )

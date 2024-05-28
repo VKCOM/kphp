@@ -1,0 +1,23 @@
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2024 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
+#include "runtime-light/stdlib/rpc/rpc_extra_info.h"
+
+#include "runtime-light/component/component.h"
+#include "runtime-light/utils/context.h"
+#include "runtime-light/stdlib/rpc/rpc_context.h"
+
+array<rpc_request_extra_info_t> f$KphpRpcRequestsExtraInfo$$get(class_instance<C$KphpRpcRequestsExtraInfo> v$this) noexcept {
+  return v$this.get()->extra_info_arr;
+}
+
+Optional<rpc_response_extra_info_t> f$extract_kphp_rpc_response_extra_info(int64_t query_id) noexcept {
+  auto &extra_info_map{get_component_context()->rpc_component_context.rpc_responses_extra_info};
+  if (const auto it{extra_info_map.find(query_id)}; it != extra_info_map.end() && it->second.first == rpc_response_extra_info_status_t::READY) {
+    const auto extra_info{it->second.second};
+    extra_info_map.erase(it);
+    return extra_info;
+  } // TODO: decide when to mark extra_info_status as READY
+  return {};
+}

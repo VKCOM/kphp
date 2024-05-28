@@ -783,8 +783,8 @@ enum class func_call_mode {
   fork_call // call using fork
 };
 
-// to_json_impl() and from_json_impl() are represented in AST as `impl($json_encoder, ...args)`
-// but we want them to be codegenerated as `f$impl(JsonEncoderTag{}, ...args)`
+// to_json_impl() and from_json_impl() are represented in AST as `rpc_impl($json_encoder, ...args)`
+// but we want them to be codegenerated as `f$rpc_impl(JsonEncoderTag{}, ...args)`
 // here we shift call args by one and manually output cpp struct tag{} as the first argument
 VertexAdaptor<op_func_call> patch_compiling_json_impl_call(CodeGenerator &W, VertexAdaptor<op_func_call> call) noexcept {
   auto args = call->args();

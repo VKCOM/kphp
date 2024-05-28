@@ -2,9 +2,8 @@
 
 #include <coroutine>
 #include <csetjmp>
-#include <queue>
 #include <functional>
-#include <setjmp.h>
+#include <queue>
 
 #include "runtime-light/allocator/memory_resource/resource_allocator.h"
 #include "runtime-light/allocator/memory_resource/unsynchronized_pool_resource.h"
@@ -12,6 +11,7 @@
 #include "runtime-light/core/kphp_core.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/output_control.h"
+#include "runtime-light/stdlib/rpc/rpc_context.h"
 #include "runtime-light/stdlib/superglobals.h"
 #include "runtime-light/streams/streams.h"
 #include "runtime-light/utils/context.h"
@@ -22,12 +22,13 @@ struct ComponentState {
   template<typename T>
   using deque = memory_resource::stl::deque<T, memory_resource::unsynchronized_pool_resource>;
 
-  ComponentState() :
-    php_script_mutable_globals_singleton(script_allocator.memory_resource),
-    opened_streams(unordered_map<uint64_t, StreamRuntimeStatus>::allocator_type{script_allocator.memory_resource}),
-    awaiting_coroutines(unordered_map<uint64_t, std::coroutine_handle<>>::allocator_type{script_allocator.memory_resource}),
-    timer_callbacks(unordered_map<uint64_t, std::function<void()>>::allocator_type{script_allocator.memory_resource}),
-    incoming_pending_queries(deque<uint64_t>::allocator_type{script_allocator.memory_resource}){}
+  ComponentState()
+    : php_script_mutable_globals_singleton(script_allocator.memory_resource)
+    , opened_streams(unordered_map<uint64_t, StreamRuntimeStatus>::allocator_type{script_allocator.memory_resource})
+    , awaiting_coroutines(unordered_map<uint64_t, std::coroutine_handle<>>::allocator_type{script_allocator.memory_resource})
+    , timer_callbacks(unordered_map<uint64_t, std::function<void()>>::allocator_type{script_allocator.memory_resource})
+    , incoming_pending_queries(deque<uint64_t>::allocator_type{script_allocator.memory_resource})
+    , rpc_component_context(script_allocator.memory_resource) {}
 
   ~ComponentState() = default;
 
@@ -45,7 +46,6 @@ struct ComponentState {
 
   void init_script_execution();
 
-
   dl::ScriptAllocator script_allocator;
   task_t<void> k_main;
   Response response;
@@ -60,6 +60,8 @@ struct ComponentState {
   unordered_map<uint64_t, std::coroutine_handle<>> awaiting_coroutines;
   unordered_map<uint64_t, std::function<void()>> timer_callbacks;
   deque<uint64_t> incoming_pending_queries;
+
+  RpcComponentContext rpc_component_context;
 
 private:
   bool is_stream_timer(uint64_t stream_d);

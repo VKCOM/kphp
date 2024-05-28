@@ -34,6 +34,7 @@ void ComponentState::process_new_input_stream(uint64_t stream_d) {
 }
 
 void ComponentState::init_script_execution() {
+  //todo: вынести в image state??
   init_php_scripts_in_each_worker(php_script_mutable_globals_singleton, k_main);
   main_thread = k_main.get_handle();
 }

@@ -47,7 +47,7 @@ void TlFunctionDef::compile(CodeGenerator &W) const {
 
   if (G->get_untyped_rpc_tl_used()) {
     FunctionSignatureGenerator(W) << "std::unique_ptr<tl_func_base> " << struct_name << "::store(const mixed& tl_object) " << BEGIN;
-    W << "auto tl_func_state = make_unique_on_script_memory<" << struct_name << ">();" << NL;
+    W << "auto tl_func_state = dl::make_unique_on_script_memory<" << struct_name << ">();" << NL;
     W << CombinatorStore(f, CombinatorPart::LEFT, false);
     W << "return std::move(tl_func_state);" << NL;
     W << END << NL << NL;
@@ -58,7 +58,7 @@ void TlFunctionDef::compile(CodeGenerator &W) const {
   }
   if (needs_typed_fetch_store) {
     FunctionSignatureGenerator(W) << "std::unique_ptr<tl_func_base> " << struct_name << "::typed_store(const " << get_php_runtime_type(f) << " *tl_object) " << BEGIN;
-    W << "auto tl_func_state = make_unique_on_script_memory<" << struct_name << ">();" << NL;
+    W << "auto tl_func_state = dl::make_unique_on_script_memory<" << struct_name << ">();" << NL;
     W << CombinatorStore(f, CombinatorPart::LEFT, true);
     W << "return std::move(tl_func_state);" << NL;
     W << END << NL << NL;
@@ -69,18 +69,18 @@ void TlFunctionDef::compile(CodeGenerator &W) const {
   }
   if (f->is_kphp_rpc_server_function() && needs_typed_fetch_store) {
     FunctionSignatureGenerator(W) << "std::unique_ptr<tl_func_base> " << struct_name << "::rpc_server_typed_fetch(" << get_php_runtime_type(f) << " *tl_object) " << BEGIN;
-    W << "CurrentProcessingQuery::get().set_current_tl_function(" << register_tl_const_str(f->name) << ");" << NL;
-    W << "auto tl_func_state = make_unique_on_script_memory<" << struct_name << ">();" << NL;
+    W << "get_component_context()->rpc_component_context.current_query.set_current_tl_function(" << register_tl_const_str(f->name) << ");" << NL;
+    W << "auto tl_func_state = dl::make_unique_on_script_memory<" << struct_name << ">();" << NL;
     W << CombinatorFetch(f, CombinatorPart::LEFT, true);
-    W << "CurrentProcessingQuery::get().reset();" << NL;
+    W << "get_component_context()->rpc_component_context.current_query.reset();" << NL;
     W << "return std::move(tl_func_state);" << NL;
     W << END << NL << NL;
     FunctionSignatureGenerator(W) << "void " << struct_name << "::rpc_server_typed_store(const class_instance<" << G->settings().tl_classname_prefix.get()
                                   << "RpcFunctionReturnResult> &tl_object_) " << BEGIN;
-    W << "CurrentProcessingQuery::get().set_current_tl_function(" << register_tl_const_str(f->name) << ");" << NL;
+    W << "get_component_context()->rpc_component_context.current_query.set_current_tl_function(" << register_tl_const_str(f->name) << ");" << NL;
     W << "auto tl_object = tl_object_.template cast_to<" << get_php_runtime_type(f, false) << "_result>().get();" << NL;
     W << CombinatorStore(f, CombinatorPart::RIGHT, true);
-    W << "CurrentProcessingQuery::get().reset();" << NL;
+    W << "get_component_context()->rpc_component_context.current_query.reset();" << NL;
     W << END << NL << NL;
   }
 }

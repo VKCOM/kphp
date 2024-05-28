@@ -202,7 +202,7 @@ bool ClassData::is_parent_of(ClassPtr other) const {
 /**
  * If we have more than one lca in different hierarchy branches we will return all of them
  * interface A{}    ; interface B{}    ;
- * class C impl A, B; class D impl A, B;
+ * class C rpc_impl A, B; class D rpc_impl A, B;
  * $cd = true ? new C() : new D();
  */
 std::vector<ClassPtr> ClassData::get_common_base_or_interface(ClassPtr other) const {
