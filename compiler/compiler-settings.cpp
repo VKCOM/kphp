@@ -380,7 +380,9 @@ void CompilerSettings::init() {
   ld_flags.value_ += " -rdynamic";
 
   runtime_headers.value_ = "runtime-headers.h";
-  runtime_sha256.value_ = read_runtime_sha256_file(runtime_sha256_file.get());
+  if (!rt_from_sources.get()) {
+    runtime_sha256.value_ = read_runtime_sha256_file(runtime_sha256_file.get());
+  }
 
   auto full_path = get_full_path(main_file.get());
   if (full_path.empty()) {

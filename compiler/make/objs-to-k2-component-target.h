@@ -38,7 +38,11 @@ public:
     // the last dep is runtime lib
     // todo:k2 think about kphp-libraries
     assert(deps.size() >= 1 && "There are should be at least one dependency. It's the runtime lib");
-    ss << load_all_symbols_pre() << deps.back()->get_name() << load_all_symbols_post();
+    if (!G->settings().rt_from_sources.get()) {
+      ss << load_all_symbols_pre() << deps.back()->get_name() << load_all_symbols_post();
+    } else {
+      ss << deps.back()->get_name() << " ";
+    }
     return ss.str();
   }
 };

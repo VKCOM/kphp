@@ -34,6 +34,8 @@ enum class OutputMode {
 class CompilerCore {
 private:
   Index cpp_index;
+  Index runtime_sources_index;
+  Index common_sources_index;
   TSHashTable<SrcFilePtr> file_ht;
   TSHashTable<SrcDirPtr> dirs_ht;
   TSHashTable<FunctionPtr> functions_ht;
@@ -60,6 +62,10 @@ private:
 
 public:
   std::string cpp_dir;
+
+  // Don't like that, handle in another way
+  std::string runtime_sources_dir;
+  std::string common_sources_dir;
 
   CompilerCore();
   void start();
@@ -130,9 +136,12 @@ public:
   void load_index();
   void save_index();
   const Index &get_index();
+  const Index &get_runtime_index();
+  const Index &get_common_index();
   File *get_file_info(std::string &&file_name);
   void del_extra_files();
   void init_dest_dir();
+  void init_runtime_and_common_srcs_dir();
 
   void try_load_tl_classes();
   void init_composer_class_loader();

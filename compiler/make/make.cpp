@@ -16,6 +16,7 @@
 #include "compiler/data/lib-data.h"
 #include "compiler/data/ffi-data.h"
 #include "compiler/make/cpp-to-obj-target.h"
+#include "compiler/make/runtime-src-to-obj-target.h"
 #include "compiler/make/file-target.h"
 #include "compiler/make/h-to-pch-target.h"
 #include "compiler/make/hardlink-or-copy.h"
@@ -24,6 +25,7 @@
 #include "compiler/make/objs-to-obj-target.h"
 #include "compiler/make/objs-to-k2-component-target.h"
 #include "compiler/make/objs-to-static-lib-target.h"
+#include "compiler/runtime_and_common_sources.h"
 #include "compiler/stage.h"
 #include "compiler/threading/profiler.h"
 
@@ -72,6 +74,10 @@ public:
   MakeSetup(FILE *stats_file, const CompilerSettings &compiler_settings) noexcept:
     make(stats_file),
     settings(compiler_settings) {
+  }
+
+  Target *create_runtime_src2obj_target(File *cpp, File *obj, const std::string &options) {
+    return create_target(new RuntimeSrc2ObjTarget(options), to_targets(cpp), obj);
   }
 
   Target *create_cpp_target(File *cpp) {
@@ -148,7 +154,9 @@ static std::forward_list<File *> collect_imported_libs() {
   stage::die_if_global_errors();
 
   std::forward_list<File *> imported_libs;
-  imported_libs.emplace_front(new File{G->settings().link_file.get()});
+  if (!G->settings().rt_from_sources.get()) {
+    imported_libs.emplace_front(new File{G->settings().link_file.get()});
+  }
   for (const auto &lib: G->get_libs()) {
     if (lib && !lib->is_raw_php()) {
       std::string lib_runtime_sha256 = CompilerSettings::read_runtime_sha256_file(lib->runtime_lib_sha256_file());
@@ -396,7 +404,76 @@ static std::forward_list<Index> collect_imported_headers() {
   return imported_headers;
 }
 
-static std::vector<File *> run_pre_make(OutputMode output_mode, const CompilerSettings &settings, FILE *make_stats_file, MakeSetup &make, Index &obj_index, File &bin_file) {
+static std::string get_runtime_compiler_options(const std::string &runtime_src_dir) {
+  std::stringstream s;
+  if (!vk::contains(G->settings().cxx.get(), "clang")) {
+    s << "-fcoroutines ";
+  }
+  s << "-std=c++20 ";
+
+  // for now there are now OpenSSL in runtime light.
+  // if you're adding third-party dependencies then pay attention on this line
+  // originally, static archive of runtime does not links into itself any dependency
+  // in CMake file it just requires for final linking, when building and executable
+
+
+  // TODO what to do with address sanitizer in case of building runtime from sources
+
+  // It should be additional option
+#if NDEBUG
+  s << "-O3 ";
+#else
+  s << "";
+#endif
+
+  // TODO debug_compression, fdebug-prefix-map, grprof -- using passing definitions from CMake to here
+
+  s << "-fwrapv -fno-strict-aliasing -fno-stack-protector -ggdb -fno-omit-frame-pointer -fno-common -fsigned-char ";
+  s << "-Wall -Wextra -Wunused-function -Wfloat-conversion -Wno-sign-compare -Wuninitialized -Wno-redundant-move -Wno-missing-field-initializers ";
+  s << "-iquote " << runtime_src_dir << " ";
+  s << "-march=sandybridge ";
+  s << "-fpic ";
+
+  return s.str();
+}
+
+static std::vector<File *> build_runtime_and_common_from_sources(const std::string &compiler_flags, MakeSetup &make, Index &obj_dir) {
+  const Index & runtime_dir = G->get_runtime_index();
+  const Index & common_dir = G->get_common_index();
+
+  std::vector<File*> objs;
+  objs.reserve(runtime_dir.get_files_count() + common_dir.get_files_count());
+
+  for (const auto *dir : std::vector<const Index*>{&runtime_dir, &common_dir}) {
+    for (File *cpp_file : dir->get_files()) {
+      File *obj_file = obj_dir.insert_file(static_cast<std::string>(cpp_file->name_without_ext) + ".o");
+      make.create_cpp_target(cpp_file);
+      make.create_runtime_src2obj_target(cpp_file, obj_file, compiler_flags);
+      objs.push_back(obj_file);
+    }
+  }
+
+  return objs;
+}
+
+static std::string get_parent_dir(const std::string &s) {
+  size_t end_i = s.size();
+  if (end_i == 0) {
+    return "";
+  }
+  end_i--;
+  while (end_i > 0 && s[end_i] == '/') {
+    end_i--;
+  }
+  if (end_i == 0) {
+    return "";
+  }
+
+  size_t last_slash_i = s.rfind('/', end_i);
+  return s.substr(0, last_slash_i);
+}
+
+static std::vector<File *> run_pre_make(OutputMode output_mode, const CompilerSettings &settings, FILE *make_stats_file, MakeSetup &make, Index &obj_index, File &bin_file, Index &obj_rt_index) {
   AutoProfiler profiler{get_profiler("Prepare Targets For Build")};
 
   G->del_extra_files();
@@ -407,14 +484,27 @@ static std::vector<File *> run_pre_make(OutputMode output_mode, const CompilerSe
     bin_file.unlink();
   }
 
+  std::vector<File *> response;
+
+  if (settings.rt_from_sources.get()) {
+    std::string obj_dir = get_parent_dir(obj_index.get_dir()) + "/runtime_and_common_objs/";
+    obj_rt_index.sync_with_dir(obj_dir);
+    response = build_runtime_and_common_from_sources(get_runtime_compiler_options(G->settings().runtime_and_common_src.get()), make, obj_rt_index);
+  }
+
   const bool pch_allowed = !settings.no_pch.get();
   if (pch_allowed) {
     kphp_error(kphp_make_precompiled_headers(&obj_index, settings, make_stats_file), "Make precompiled header failed");
   }
 
   auto lib_header_dirs = collect_imported_headers();
-  return output_mode == OutputMode::lib ? kphp_make_static_lib_target(obj_index, G->get_index(), lib_header_dirs, make)
+  auto targets = output_mode == OutputMode::lib ? kphp_make_static_lib_target(obj_index, G->get_index(), lib_header_dirs, make)
                                         : kphp_make_target(obj_index, G->get_index(), lib_header_dirs, make);
+  for (File * file : targets) {
+    response.push_back(file);
+  }
+
+  return response;
 }
 
 void run_make() {
@@ -429,15 +519,17 @@ void run_make() {
   stage::set_name("Make");
 
   Index obj_index;
+  Index obj_rt_index;
 
   File bin_file(settings.binary_path.get());
   kphp_assert(bin_file.read_stat() >= 0);
 
   MakeSetup make{make_stats_file, settings};
-  auto objs = run_pre_make(output_mode, settings, make_stats_file, make, obj_index, bin_file);
+  auto objs = run_pre_make(output_mode, settings, make_stats_file, make, obj_index, bin_file, obj_rt_index);
   stage::die_if_global_errors();
 
   if (output_mode == OutputMode::lib) {
+    // TODO is usable now?
     make.create_objs2static_lib_target(objs, &bin_file);
   } else if (output_mode == OutputMode::k2_component) {
     make.create_objs2k2_component_target(objs, &bin_file);
@@ -462,6 +554,12 @@ void run_make() {
   }
   stage::die_if_global_errors();
   obj_index.del_extra_files();
+
+  if (G->settings().rt_from_sources.get()) {
+    // It's hard to track dependencies for all .h/.cpp/.inl files of common and runtime
+    // To optimize time of compilation, you may use ccache/nocc
+    obj_rt_index.del_all_files();
+  }
 
   if (bin_file.read_stat() > 0) {
     G->stats.object_out_size = bin_file.file_size;
