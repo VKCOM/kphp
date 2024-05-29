@@ -7,16 +7,17 @@
 #endif
 
 inline void string_buffer::resize(string::size_type new_buffer_len) noexcept {
-  if (new_buffer_len < MIN_BUFFER_LEN) {
-    new_buffer_len = MIN_BUFFER_LEN;
+  string_buffer_lib_context &sb_context = KphpCoreContext::current().sb_lib_context;
+  if (new_buffer_len < sb_context.MIN_BUFFER_LEN) {
+    new_buffer_len = sb_context.MIN_BUFFER_LEN;
   }
-  if (new_buffer_len >= MAX_BUFFER_LEN) {
-    if (buffer_len + 1 < MAX_BUFFER_LEN) {
-      new_buffer_len = MAX_BUFFER_LEN - 1;
+  if (new_buffer_len >= sb_context.MAX_BUFFER_LEN) {
+    if (buffer_len + 1 < sb_context.MAX_BUFFER_LEN) {
+      new_buffer_len = sb_context.MAX_BUFFER_LEN - 1;
     } else {
-      if (string_buffer_error_flag != STRING_BUFFER_ERROR_FLAG_OFF) {
+      if (sb_context.error_flag != STRING_BUFFER_ERROR_FLAG_OFF) {
         clean();
-        string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_FAILED;
+        sb_context.error_flag = STRING_BUFFER_ERROR_FLAG_FAILED;
         return;
       } else {
         php_critical_error ("maximum buffer size exceeded. buffer_len = %u, new_buffer_len = %u", buffer_len, new_buffer_len);
@@ -34,7 +35,7 @@ inline void string_buffer::resize(string::size_type new_buffer_len) noexcept {
 
 inline void string_buffer::reserve_at_least(string::size_type need) noexcept {
   string::size_type new_buffer_len = need + size();
-  while (unlikely (buffer_len < new_buffer_len && string_buffer_error_flag != STRING_BUFFER_ERROR_FLAG_FAILED)) {
+  while (unlikely (buffer_len < new_buffer_len && KphpCoreContext::current().sb_lib_context.error_flag != STRING_BUFFER_ERROR_FLAG_FAILED)) {
     resize(((new_buffer_len * 2 + 1 + 64) | 4095) - 64);
   }
 }
@@ -71,7 +72,7 @@ string_buffer &operator<<(string_buffer &sb, const string &s) {
   string::size_type l = s.size();
   sb.reserve_at_least(l);
 
-  if (unlikely (sb.string_buffer_error_flag == STRING_BUFFER_ERROR_FLAG_FAILED)) {
+  if (unlikely (KphpCoreContext::current().sb_lib_context.error_flag == STRING_BUFFER_ERROR_FLAG_FAILED)) {
     return sb;
   }
 
@@ -141,7 +142,7 @@ bool string_buffer::set_pos(int64_t pos) {
 string_buffer &string_buffer::append(const char *str, size_t len) noexcept {
   reserve_at_least(static_cast<string::size_type>(len));
 
-  if (unlikely (string_buffer_error_flag == STRING_BUFFER_ERROR_FLAG_FAILED)) {
+  if (unlikely (KphpCoreContext::current().sb_lib_context.error_flag == STRING_BUFFER_ERROR_FLAG_FAILED)) {
     return *this;
   }
   memcpy(buffer_end, str, len);
@@ -168,12 +169,11 @@ void string_buffer::reserve(int len) {
   reserve_at_least(len + 1);
 }
 
-inline void init_string_buffer_lib(int max_length) {
-  string_buffer::MIN_BUFFER_LEN = 266175;
-  string_buffer::MAX_BUFFER_LEN = (1 << 24);
-  if (max_length > 0) {
-    string_buffer::MAX_BUFFER_LEN = max_length;
-  }
+inline void init_string_buffer_lib(string::size_type min_length, string::size_type max_length) {
+  string_buffer_lib_context &sb_context = KphpCoreContext::current().sb_lib_context;
+  assert(min_length > 0 && max_length > 0);
+  sb_context.MIN_BUFFER_LEN = min_length;
+  sb_context.MAX_BUFFER_LEN = max_length;
 }
 
 void string_buffer::copy_raw_data(const string_buffer &other) {

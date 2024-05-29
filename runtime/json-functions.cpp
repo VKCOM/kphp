@@ -169,7 +169,7 @@ bool do_json_encode_string_php(const JsonPath &json_path, const char *s, int len
 
 bool do_json_encode_string_vkext(const char *s, int len) noexcept {
   kphpRuntimeContext.static_SB.reserve(2 * len + 2);
-  if (kphpRuntimeContext.static_SB.string_buffer_error_flag == STRING_BUFFER_ERROR_FLAG_FAILED) {
+  if (kphpRuntimeContext.sb_lib_context.error_flag == STRING_BUFFER_ERROR_FLAG_FAILED) {
     return false;
   }
 

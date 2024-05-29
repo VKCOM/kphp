@@ -9,8 +9,6 @@
 #define STRING_BUFFER_ERROR_FLAG_FAILED 1
 
 class string_buffer {
-  static string::size_type MIN_BUFFER_LEN;
-  static string::size_type MAX_BUFFER_LEN;
   char *buffer_end;
   char *buffer_begin;
   string::size_type buffer_len;
@@ -21,7 +19,6 @@ class string_buffer {
   string_buffer &operator=(const string_buffer &other) = delete;
 
 public:
-  static int string_buffer_error_flag;
   explicit string_buffer(string::size_type buffer_len = 4000) noexcept;
 
   inline string_buffer &clean() noexcept;
@@ -56,7 +53,7 @@ public:
 
   ~string_buffer() noexcept;
 
-  friend void init_string_buffer_lib(int max_length);
+  friend void init_string_buffer_lib(string::size_type min_length, string::size_type max_length);
 
   inline void debug_print() const;
 
@@ -64,4 +61,10 @@ public:
 
   friend inline bool operator==(const string_buffer &lhs, const string_buffer &rhs);
   friend inline bool operator!=(const string_buffer &lhs, const string_buffer &rhs);
+};
+
+struct string_buffer_lib_context {
+  string::size_type MIN_BUFFER_LEN;
+  string::size_type MAX_BUFFER_LEN;
+  int error_flag = 0;
 };

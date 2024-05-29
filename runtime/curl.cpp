@@ -13,6 +13,7 @@
 #include "runtime/critical_section.h"
 #include "runtime/interface.h"
 #include "runtime/kphp_tracing.h"
+#include "runtime/kphp-runtime-context.h"
 #include "runtime/string-list.h"
 
 #include "common/macos-ports.h"
@@ -237,9 +238,9 @@ size_t curl_write(char *data, size_t size, size_t nmemb, void *userdata) {
   if (easy_context->return_transfer) {
     return easy_context->received_data.push_string(data, length) ? length : 0;
   }
-  string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_ON;
+  kphpRuntimeContext.sb_lib_context.error_flag = STRING_BUFFER_ERROR_FLAG_ON;
   print(data, length);
-  return std::exchange(string_buffer::string_buffer_error_flag, STRING_BUFFER_ERROR_FLAG_OFF) == STRING_BUFFER_ERROR_FLAG_FAILED ? 0 : length;
+  return std::exchange(kphpRuntimeContext.sb_lib_context.error_flag, STRING_BUFFER_ERROR_FLAG_OFF) == STRING_BUFFER_ERROR_FLAG_FAILED ? 0 : length;
 }
 
 // this is a callback called from curl_easy_perform

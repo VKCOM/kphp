@@ -1,4 +1,4 @@
-#include "kphp-core/kphp-core-context.h"
+#include "kphp-core/kphp_core.h"
 
 #include "runtime/allocator.h"
 

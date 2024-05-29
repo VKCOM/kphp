@@ -172,15 +172,15 @@ Optional<string> f$json_encode(const T &v, int64_t options = 0, bool simple_enco
 template<class T>
 string f$vk_json_encode_safe(const T &v, bool simple_encode = true) noexcept {
   kphpRuntimeContext.static_SB.clean();
-  string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_ON;
+  kphpRuntimeContext.sb_lib_context.error_flag = STRING_BUFFER_ERROR_FLAG_ON;
   impl_::JsonEncoder(0, simple_encode).encode(v);
-  if (unlikely(string_buffer::string_buffer_error_flag == STRING_BUFFER_ERROR_FLAG_FAILED)) {
+  if (unlikely(kphpRuntimeContext.sb_lib_context.error_flag  == STRING_BUFFER_ERROR_FLAG_FAILED)) {
     kphpRuntimeContext.static_SB.clean();
-    string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_OFF;
+    kphpRuntimeContext.sb_lib_context.error_flag  = STRING_BUFFER_ERROR_FLAG_OFF;
     THROW_EXCEPTION (new_Exception(string(__FILE__), __LINE__, string("json_encode buffer overflow", 27)));
     return {};
   }
-  string_buffer::string_buffer_error_flag = STRING_BUFFER_ERROR_FLAG_OFF;
+  kphpRuntimeContext.sb_lib_context.error_flag  = STRING_BUFFER_ERROR_FLAG_OFF;
   return kphpRuntimeContext.static_SB.str();
 }
 
