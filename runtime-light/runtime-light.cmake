@@ -63,7 +63,4 @@ get_property(RUNTIME_INCLUDE_DIRS TARGET runtime_light PROPERTY INCLUDE_DIRECTOR
 
 list (JOIN RUNTIME_COMPILE_FLAGS "\;" RUNTIME_COMPILE_FLAGS)
 string(REPLACE "\"" "\\\"" RUNTIME_COMPILE_FLAGS ${RUNTIME_COMPILE_FLAGS})
-
-message("RUNTIME COMPILE FLAGS: ${RUNTIME_COMPILE_FLAGS}")
-message("RUNTIME INCLUDE DIRS : ${RUNTIME_INCLUDE_DIRS}")
 configure_file(${BASE_DIR}/compiler/runtime_compile_flags.h.in ${BASE_DIR}/compiler/runtime_compile_flags.h)
