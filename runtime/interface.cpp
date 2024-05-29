@@ -2334,8 +2334,6 @@ static void init_runtime_libs() {
   kphp_tracing::init_tracing_lib();
   init_slot_factories();
 
-  init_string_buffer_lib(static_cast<int>(static_buffer_length_limit));
-
   init_interface_lib();
 }
 
@@ -2387,7 +2385,6 @@ static void free_runtime_libs() {
   free_instance_cache_lib();
   free_kphp_backtrace();
 
-  free_migration_php8();
   free_use_updated_gmmktime();
   free_detect_incorrect_encoding_names();
 

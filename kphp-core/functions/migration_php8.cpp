@@ -3,7 +3,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "migration_php8.h"
-#include "kphp-core/kphp-core-context.h"
+#include "kphp-core/kphp_core.h"
 
 void f$set_migration_php8_warning(int mask) {
   KphpCoreContext::current().show_migration_php8_warning = mask;

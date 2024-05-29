@@ -1,6 +1,5 @@
 #pragma once
 
-#include "kphp-core/kphp-core-context.h"
 #include "kphp-core/kphp_core.h"
 
 #include "common/smart_ptrs/singleton.h"

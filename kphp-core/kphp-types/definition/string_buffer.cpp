@@ -4,11 +4,6 @@
 
 #include "kphp-core/kphp_core.h"
 
-string::size_type string_buffer::MIN_BUFFER_LEN = 266175;
-string::size_type string_buffer::MAX_BUFFER_LEN = (1 << 24);
-
-int string_buffer::string_buffer_error_flag = 0;
-
 string_buffer::string_buffer(string::size_type buffer_len) noexcept:
   buffer_end(static_cast<char *>(KphpCoreContext::current().allocator.alloc_global_memory(buffer_len))),
   buffer_begin(buffer_end),
