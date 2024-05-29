@@ -2,7 +2,7 @@
 // Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "migration_php8.h"
+#include "migration-php8.h"
 #include "kphp-core/kphp_core.h"
 
 void f$set_migration_php8_warning(int mask) {
