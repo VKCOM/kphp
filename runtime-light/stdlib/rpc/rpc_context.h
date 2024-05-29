@@ -5,7 +5,6 @@
 #pragma once
 
 #include <cstdint>
-#include <memory>
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-light/allocator/memory_resource/resource_allocator.h"
@@ -54,19 +53,15 @@ struct RpcComponentContext final : private vk::not_copyable {
   unordered_map<int64_t, class_instance<RpcTlQuery>> pending_rpc_queries;
   unordered_map<int64_t, std::pair<rpc_response_extra_info_status_t, rpc_response_extra_info_t>> rpc_responses_extra_info;
 
-  array<tl_storer_ptr> tl_storers_ht;             // TODO: move to image state
-  tl_fetch_wrapper_ptr tl_fetch_wrapper{nullptr}; // TODO: move to image state
-
-  explicit RpcComponentContext(memory_resource::unsynchronized_pool_resource &script_allocator) // TODO: think about allocator
-    : vk::not_copyable()
-    , current_query()
-    , pending_component_queries(unordered_map<int64_t, class_instance<C$ComponentQuery>>::allocator_type{script_allocator})
-    , pending_rpc_queries(unordered_map<int64_t, class_instance<RpcTlQuery>>::allocator_type{script_allocator})
+  explicit RpcComponentContext(memory_resource::unsynchronized_pool_resource &memory_resource) // TODO: think about allocator
+    : current_query()
+    , pending_component_queries(unordered_map<int64_t, class_instance<C$ComponentQuery>>::allocator_type{memory_resource})
+    , pending_rpc_queries(unordered_map<int64_t, class_instance<RpcTlQuery>>::allocator_type{memory_resource})
     , rpc_responses_extra_info(
-        unordered_map<int64_t, std::pair<rpc_response_extra_info_status_t, rpc_response_extra_info_t>>::allocator_type{script_allocator}) {}
+        unordered_map<int64_t, std::pair<rpc_response_extra_info_status_t, rpc_response_extra_info_t>>::allocator_type{memory_resource}) {}
 };
 
 struct RpcImageState final : private vk::not_copyable {
   array<tl_storer_ptr> tl_storers_ht;
-  tl_fetch_wrapper_ptr tl_fetch_wrapper;
+  tl_fetch_wrapper_ptr tl_fetch_wrapper{nullptr};
 };

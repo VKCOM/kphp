@@ -14,6 +14,7 @@
 #include "common/rpc-headers.h"
 #include "common/tl/constants/common.h"
 #include "runtime-light/component/component.h"
+#include "runtime-light/component/image.h"
 #include "runtime-light/streams/interface.h"
 #include "runtime-light/utils/concepts.h"
 
@@ -93,12 +94,13 @@ string fetch_string() noexcept {
 array<mixed> fetch_function(class_instance<RpcTlQuery> rpc_query) noexcept {
   php_assert(!rpc_query.is_null());
   auto &rpc_ctx{get_component_context()->rpc_component_context};
+  const auto &rpc_image_state{get_image_state()->rpc_image_state};
 
   rpc_ctx.current_query.set_current_tl_function(rpc_query);
   auto fetcher{rpc_query.get()->result_fetcher->extract_untyped_fetcher()};
   php_assert(fetcher);
 
-  auto res{rpc_ctx.tl_fetch_wrapper(std::move(fetcher))};
+  auto res{rpc_image_state.tl_fetch_wrapper(std::move(fetcher))};
   // TODO: exception handling
   // TODO: EOF handling
   return res;
@@ -135,9 +137,10 @@ bool store_string(const char *v, int32_t v_len) noexcept {
 
 class_instance<RpcTlQuery> store_function(const mixed &tl_object) noexcept {
   auto &rpc_ctx{get_component_context()->rpc_component_context};
+  const auto &rpc_image_state{get_image_state()->rpc_image_state};
 
   const auto fun_name{mixed_array_get_value(tl_object, string{"_"}, 0).to_string()}; // TODO: constexpr ctor for string{"_"}
-  if (!rpc_ctx.tl_storers_ht.has_key(fun_name)) {
+  if (!rpc_image_state.tl_storers_ht.has_key(fun_name)) {
     rpc_ctx.current_query.raise_storing_error("Function \"%s\" not found in tl-scheme", fun_name.c_str());
     return {};
   }
@@ -146,7 +149,7 @@ class_instance<RpcTlQuery> store_function(const mixed &tl_object) noexcept {
   rpc_tl_query.get()->tl_function_name = fun_name;
 
   rpc_ctx.current_query.set_current_tl_function(fun_name);
-  const auto &untyped_storer = rpc_ctx.tl_storers_ht.get_value(fun_name);
+  const auto &untyped_storer = rpc_image_state.tl_storers_ht.get_value(fun_name);
   rpc_tl_query.get()->result_fetcher = make_unique_on_script_memory<RpcRequestResultUntyped>(untyped_storer(tl_object));
   rpc_ctx.current_query.reset();
   return rpc_tl_query;

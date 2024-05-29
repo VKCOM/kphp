@@ -4,10 +4,12 @@
 
 #include "runtime-light/tl/tl_builtins.h"
 
+#include "runtime-light/component/image.h"
+
 void register_tl_storers_table_and_fetcher(const array<tl_storer_ptr> &gen$ht, tl_fetch_wrapper_ptr gen$t_ReqResult_fetch) {
-  auto &rpc_ctx{get_component_context()->rpc_component_context};
-  rpc_ctx.tl_storers_ht = gen$ht;
-  rpc_ctx.tl_fetch_wrapper = gen$t_ReqResult_fetch;
+  auto &rpc_mutable_image_state{get_mutable_image_state()->rpc_image_state};
+  rpc_mutable_image_state.tl_storers_ht = gen$ht;
+  rpc_mutable_image_state.tl_fetch_wrapper = gen$t_ReqResult_fetch;
 }
 
 int32_t tl_parse_save_pos() {
