@@ -106,11 +106,11 @@ void CombinatorStore::gen_arg_processing(CodeGenerator &W, const std::unique_ptr
       W << "string target_f_name = "
         << fmt_format("tl_arr_get(_cur_arg, {}, 0, {}L).as_string()", tl2cpp::register_tl_const_str("_"), tl2cpp::hash_tl_const_str("_"))
         << ";" << NL;
-      W << "if (!get_component_context()->rpc_component_context.tl_storers_ht.has_key(target_f_name)) " << BEGIN
+      W << "if (!get_image_state()->rpc_image_state.tl_storers_ht.has_key(target_f_name)) " << BEGIN
         << "get_component_context()->rpc_component_context.current_query.raise_storing_error(\"Function %s not found in tl-scheme\", target_f_name.c_str());" << NL
         << "return {};" << NL
         << END << NL;
-      W << "const auto &storer_kv = get_component_context()->rpc_component_context.tl_storers_ht.get_value(target_f_name);" << NL;
+      W << "const auto &storer_kv = get_image_state()->rpc_image_state.tl_storers_ht.get_value(target_f_name);" << NL;
       W << "tl_func_state->" << combinator->get_var_num_arg(as_type_var->var_num)->name << ".fetcher = storer_kv(_cur_arg);" << NL;
     } else {
       W << "if (tl_object->$" << arg->name << ".is_null()) " << BEGIN

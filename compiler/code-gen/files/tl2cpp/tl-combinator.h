@@ -58,11 +58,11 @@ struct CombinatorGen {
       t_Int().store(tl_arr_get(tl_object, tl_str$limit, 3, 492966325));
       auto _cur_arg = tl_arr_get(tl_object, tl_str$query, 4, 1563700686);
       string target_f_name = tl_arr_get(_cur_arg, tl_str$_, 0, -2147483553).as_string();
-      if (!get_component_context()->rpc_component_context.tl_storers_ht.has_key(target_f_name)) {
+      if (!get_image_state()->rpc_image_state.tl_storers_ht.has_key(target_f_name)) {
         get_component_context()->rpc_component_context.current_query.raise_storing_error("Function %s not found in tl-scheme", target_f_name.c_str());
         return {};
       }
-      const auto &storer_kv = get_component_context()->rpc_component_context.tl_storers_ht.get_value(target_f_name);
+      const auto &storer_kv = get_image_state()->rpc_image_state.tl_storers_ht.get_value(target_f_name);
       tl_func_state->X.fetcher = storer_kv(_cur_arg);
       return std::move(tl_func_state);
     }

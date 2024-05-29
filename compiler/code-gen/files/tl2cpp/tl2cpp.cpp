@@ -4,8 +4,11 @@
 
 #include "compiler/code-gen/files/tl2cpp/tl2cpp.h"
 
-#include "common/tlo-parsing/tlo-parsing.h"
+#include <algorithm>
+#include <execution>
+#include <numeric>
 
+#include "common/tlo-parsing/tlo-parsing.h"
 #include "compiler/code-gen/files/tl2cpp/tl-module.h"
 #include "compiler/code-gen/files/tl2cpp/tl2cpp-utils.h"
 #include "compiler/code-gen/naming.h"
@@ -147,7 +150,12 @@ void write_tl_query_handlers(CodeGenerator &W) {
     // a hash table that contains all TL functions;
     // it's passed to the runtime just like the fetch wrapper
     W << "array<tl_storer_ptr> gen$tl_storers_ht;" << NL;
+
+    // count the number of TL storers
+    int32_t tl_storers_num{std::transform_reduce(std::execution::unseq, modules_with_functions.cbegin(), modules_with_functions.cend(), 0, std::plus{},
+                                                 [](auto &&module_name) { return modules[module_name].target_functions.size(); })};
     FunctionSignatureGenerator(W) << "void fill_tl_storers_ht() " << BEGIN;
+    W << fmt_format("gen$tl_storers_ht.reserve({}, false);", tl_storers_num) << NL;
     for (const auto &module_name : modules_with_functions) {
       for (const auto &f : modules[module_name].target_functions) {
         W << "gen$tl_storers_ht.set_value(" << register_tl_const_str(f->name) << ", " << "&" << cpp_tl_struct_name("f_", f->name) << "::store, "

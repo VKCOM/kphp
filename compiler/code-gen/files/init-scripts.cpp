@@ -69,10 +69,10 @@ void StaticInit::compile(CodeGenerator &W) const {
 
   if (!G->settings().tl_schema_file.get().empty()) {
     W << "tl_str_const_init();" << NL;
-//    if (G->get_untyped_rpc_tl_used()) {
-//      W << "fill_tl_storers_ht();" << NL;
-//      W << "register_tl_storers_table_and_fetcher(gen$tl_storers_ht, &gen$tl_fetch_wrapper);" << NL;
-//    }
+    if (G->get_untyped_rpc_tl_used()) {
+      W << "fill_tl_storers_ht();" << NL;
+      W << "register_tl_storers_table_and_fetcher(gen$tl_storers_ht, &gen$tl_fetch_wrapper);" << NL;
+    }
   }
 
   W << "const_vars_init();" << NL;
@@ -242,12 +242,6 @@ void InitScriptsCpp::compile(CodeGenerator &W) const {
       W << lib->lib_namespace() << "::global_vars_allocate(php_globals);" << NL;
     }
   }
-
-  if (G->get_untyped_rpc_tl_used()) {
-    W << "fill_tl_storers_ht();" << NL;
-    W << "register_tl_storers_table_and_fetcher(gen$tl_storers_ht, &gen$tl_fetch_wrapper);" << NL;
-  }
-
 
   W << FunctionName(main_file_id->main_function) << "$globals_reset(php_globals);" << NL;
 
