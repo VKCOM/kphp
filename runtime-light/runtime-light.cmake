@@ -15,7 +15,7 @@ set(RUNTIME_LIGHT_SRC ${RUNTIME_CORE_SRC}
                 runtime-light.cpp)
 
 set(RUNTIME_SOURCES_FOR_COMP "${RUNTIME_LIGHT_SRC}")
-configure_file(${BASE_DIR}/compiler/runtime_sources.h.in ${BASE_DIR}/compiler/runtime_sources.h)
+configure_file(${BASE_DIR}/compiler/runtime_sources.h.in ${AUTO_DIR}/compiler/runtime_sources.h)
 
 prepend(RUNTIME_LIGHT_SRC ${RUNTIME_LIGHT_DIR}/ "${RUNTIME_LIGHT_SRC}")
 
@@ -63,4 +63,4 @@ get_property(RUNTIME_INCLUDE_DIRS TARGET runtime_light PROPERTY INCLUDE_DIRECTOR
 
 list (JOIN RUNTIME_COMPILE_FLAGS "\;" RUNTIME_COMPILE_FLAGS)
 string(REPLACE "\"" "\\\"" RUNTIME_COMPILE_FLAGS ${RUNTIME_COMPILE_FLAGS})
-configure_file(${BASE_DIR}/compiler/runtime_compile_flags.h.in ${BASE_DIR}/compiler/runtime_compile_flags.h)
+configure_file(${BASE_DIR}/compiler/runtime_compile_flags.h.in ${AUTO_DIR}/compiler/runtime_compile_flags.h)

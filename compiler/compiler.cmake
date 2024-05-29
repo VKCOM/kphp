@@ -3,6 +3,10 @@ set(KPHP_COMPILER_DIR ${BASE_DIR}/compiler)
 set(KPHP_COMPILER_AUTO_DIR ${AUTO_DIR}/compiler)
 set(KEYWORDS_SET ${KPHP_COMPILER_AUTO_DIR}/keywords_set.hpp)
 set(KEYWORDS_GPERF ${KPHP_COMPILER_DIR}/keywords.gperf)
+prepend(RUNTIME_BUILD_INFO ${KPHP_COMPILER_AUTO_DIR}/
+        common_sources.h
+        runtime_sources.h
+        runtime_compile_flags.h)
 
 prepend(KPHP_COMPILER_COMMON ${COMMON_DIR}/
         dl-utils-lite.cpp
@@ -224,6 +228,7 @@ endif()
 list(APPEND KPHP_COMPILER_SOURCES
      ${KPHP_COMPILER_COMMON}
      ${KEYWORDS_SET}
+     ${RUNTIME_BUILD_INFO}
      ${AUTO_DIR}/compiler/rewrite-rules/early_opt.cpp)
 
 vk_add_library(kphp2cpp_src OBJECT ${KPHP_COMPILER_SOURCES})

@@ -27,7 +27,7 @@
 #include "compiler/make/objs-to-obj-target.h"
 #include "compiler/make/objs-to-k2-component-target.h"
 #include "compiler/make/objs-to-static-lib-target.h"
-#include "compiler/runtime_compile_flags.h"
+#include "compiler/runtime_build_info.h"
 #include "compiler/stage.h"
 #include "compiler/threading/profiler.h"
 

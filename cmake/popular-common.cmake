@@ -22,7 +22,7 @@ set(LIGHT_COMMON_SOURCES
 )
 
 set(COMMON_SOURCES_FOR_COMP "${LIGHT_COMMON_SOURCES}")
-configure_file(${BASE_DIR}/compiler/common_sources.h.in ${BASE_DIR}/compiler/common_sources.h)
+configure_file(${BASE_DIR}/compiler/common_sources.h.in ${AUTO_DIR}/compiler/common_sources.h)
 
 prepend(LIGHT_COMMON_SOURCES ${COMMON_DIR}/ ${LIGHT_COMMON_SOURCES})
 

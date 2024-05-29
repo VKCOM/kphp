@@ -12,15 +12,15 @@
 
 #include "compiler/const-manipulations.h"
 #include "compiler/data/composer-json-data.h"
-#include "compiler/data/ffi-data.h"
 #include "compiler/data/define-data.h"
+#include "compiler/data/ffi-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/modulite-data.h"
 #include "compiler/data/src-dir.h"
 #include "compiler/data/src-file.h"
 #include "compiler/name-gen.h"
-#include "compiler/runtime_and_common_sources.h"
+#include "compiler/runtime_build_info.h"
 
 namespace {
 
