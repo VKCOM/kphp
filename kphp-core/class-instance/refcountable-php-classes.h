@@ -7,9 +7,9 @@
 
 #include "common/php-functions.h"
 
-#include "kphp-core/class-instance/managed_through_allocator.h"
+#include "kphp-core/class-instance/script-allocator-managed.h"
 
-class abstract_refcountable_php_interface : public ManagedThroughAllocator {
+class abstract_refcountable_php_interface : public ScriptAllocatorManaged {
 public:
   abstract_refcountable_php_interface() __attribute__((always_inline)) = default;
   virtual ~abstract_refcountable_php_interface() noexcept __attribute__((always_inline)) = default;
@@ -98,7 +98,7 @@ private:
 };
 
 template<class Derived>
-class refcountable_php_classes  : public ManagedThroughAllocator {
+class refcountable_php_classes  : public ScriptAllocatorManaged {
 public:
   void add_ref() noexcept {
     if (refcnt < ExtraRefCnt::for_global_const) {
@@ -118,7 +118,7 @@ public:
     if (refcnt == 0) {
       static_assert(!std::is_polymorphic<Derived>{}, "Derived may not be polymorphic");
       /**
-       * because of inheritance from ManagedThroughAllocator, which override operators new/delete
+       * because of inheritance from ScriptAllocatorManaged, which override operators new/delete
        * we should have vptr for passing proper sizeof of Derived class, but we don't want to increase size of every class
        * therefore we use static_cast here
        */

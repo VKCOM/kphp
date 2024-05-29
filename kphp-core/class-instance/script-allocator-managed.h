@@ -4,7 +4,7 @@
 
 #include "kphp-core/kphp_core.h"
 
-class ManagedThroughAllocator {
+class ScriptAllocatorManaged {
 public:
   static void *operator new(size_t size) noexcept {
     return KphpCoreContext::current().allocator.alloc_script_memory(size);
@@ -23,5 +23,5 @@ public:
   static void operator delete[](void *ptr) = delete;
 
 protected:
-  ~ManagedThroughAllocator() = default;
+  ~ScriptAllocatorManaged() = default;
 };

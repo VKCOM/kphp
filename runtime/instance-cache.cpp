@@ -13,7 +13,7 @@
 #include "common/kprintf.h"
 #include "common/wrappers/memory-utils.h"
 
-#include "kphp-core/class-instance/refcountable_php_classes.h"
+#include "kphp-core/class-instance/refcountable-php-classes.h"
 #include "kphp-core/memory_resource/resource_allocator.h"
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
