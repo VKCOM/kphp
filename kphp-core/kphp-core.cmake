@@ -3,7 +3,7 @@ prepend(KPHP_CORE_RUNTIME_TYPES ${BASE_DIR}/kphp-core/runtime-types/
 )
 
 prepend(KPHP_CORE_RUNTIME_FUNTCIONS ${BASE_DIR}/kphp-core/functions/
-        migration_php8.cpp
+        migration-php8.cpp
 )
 
 prepend(KPHP_CORE_KPHP_TYPES ${BASE_DIR}/kphp-core/kphp-types/definition/
