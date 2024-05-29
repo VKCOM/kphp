@@ -74,7 +74,9 @@ void *allocate(size_t size) noexcept {
 void *allocate0(size_t size) noexcept {
   php_assert(size);
   if (unlikely(!is_script_allocator_available())) {
-    return get_platform_context()->allocator.alloc(size);
+    auto *ptr{get_platform_context()->allocator.alloc(size)};
+    std::memset(ptr, 0x0, size);
+    return ptr;
   }
 
   ComponentState &rt_ctx = *get_component_context();
@@ -105,6 +107,6 @@ void deallocate(void *mem, size_t size) noexcept {
   php_assert(size);
 
   ComponentState &rt_ctx = *get_component_context();
-  return rt_ctx.script_allocator.memory_resource.deallocate(mem, size);
+  rt_ctx.script_allocator.memory_resource.deallocate(mem, size);
 }
 } // namespace dl
