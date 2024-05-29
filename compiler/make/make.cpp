@@ -27,7 +27,7 @@
 #include "compiler/make/objs-to-obj-target.h"
 #include "compiler/make/objs-to-k2-component-target.h"
 #include "compiler/make/objs-to-static-lib-target.h"
-#include "compiler/runtime_and_common_sources.h"
+#include "compiler/runtime_compile_flags.h"
 #include "compiler/stage.h"
 #include "compiler/threading/profiler.h"
 
@@ -447,34 +447,20 @@ static std::forward_list<Index> collect_imported_headers() {
   return imported_headers;
 }
 
-static std::string get_runtime_compiler_options(const std::string &runtime_src_dir) {
+static std::string get_light_runtime_compiler_options() {
   std::stringstream s;
-  if (!vk::contains(G->settings().cxx.get(), "clang")) {
-    s << "-fcoroutines ";
+
+  std::vector<std::string> black_list_substrings = {"debug-prefix-map"};
+  std::vector<std::string> options = split(RUNTIME_COMPILER_FLAGS, ';');
+
+  for (vk::string_view option : options) {
+    for (vk::string_view prohibit_substr : black_list_substrings) {
+      if (vk::contains(option, prohibit_substr)) continue;
+      s << option << " ";
+    }
   }
   s << "-std=c++20 ";
-
-  // for now there are now OpenSSL in runtime light.
-  // if you're adding third-party dependencies then pay attention on this line
-  // originally, static archive of runtime does not links into itself any dependency
-  // in CMake file it just requires for final linking, when building and executable
-
-
-  // TODO what to do with address sanitizer in case of building runtime from sources
-
-  // It should be additional option
-#if NDEBUG
-  s << "-O3 ";
-#else
-  s << "";
-#endif
-
-  // TODO debug_compression, fdebug-prefix-map, grprof -- using passing definitions from CMake to here
-
-  s << "-fwrapv -fno-strict-aliasing -fno-stack-protector -ggdb -fno-omit-frame-pointer -fno-common -fsigned-char ";
-  s << "-Wall -Wextra -Wunused-function -Wfloat-conversion -Wno-sign-compare -Wuninitialized -Wno-redundant-move -Wno-missing-field-initializers ";
-  s << "-iquote " << runtime_src_dir << " ";
-  s << "-march=sandybridge ";
+  s << "-iquote " << G->settings().runtime_and_common_src.get() << " ";
   s << "-fpic ";
 
   return s.str();
@@ -532,7 +518,7 @@ static std::vector<File *> run_pre_make(OutputMode output_mode, const CompilerSe
   if (settings.rt_from_sources.get()) {
     std::string obj_dir = get_parent_dir(obj_index.get_dir()) + "/runtime_and_common_objs/";
     obj_rt_index.sync_with_dir(obj_dir);
-    response = build_runtime_and_common_from_sources(get_runtime_compiler_options(G->settings().runtime_and_common_src.get()), make, obj_rt_index);
+    response = build_runtime_and_common_from_sources(get_light_runtime_compiler_options(), make, obj_rt_index);
   }
 
   const bool pch_allowed = !settings.no_pch.get();

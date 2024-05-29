@@ -57,3 +57,13 @@ add_custom_command(OUTPUT ${OBJS_DIR}/php_lib_version.sha256
         DEPENDS php_lib_version_j $<TARGET_OBJECTS:php_lib_version_j>
         COMMENT "php_lib_version.sha256 generation")
 add_custom_target(php_lib_version_sha_256 DEPENDS ${OBJS_DIR}/php_lib_version.sha256)
+
+get_property(RUNTIME_COMPILE_FLAGS TARGET runtime_light PROPERTY COMPILE_OPTIONS)
+get_property(RUNTIME_INCLUDE_DIRS TARGET runtime_light PROPERTY INCLUDE_DIRECTORIES)
+
+list (JOIN RUNTIME_COMPILE_FLAGS "\;" RUNTIME_COMPILE_FLAGS)
+string(REPLACE "\"" "\\\"" RUNTIME_COMPILE_FLAGS ${RUNTIME_COMPILE_FLAGS})
+
+message("RUNTIME COMPILE FLAGS: ${RUNTIME_COMPILE_FLAGS}")
+message("RUNTIME INCLUDE DIRS : ${RUNTIME_INCLUDE_DIRS}")
+configure_file(${BASE_DIR}/compiler/runtime_compile_flags.h.in ${BASE_DIR}/compiler/runtime_compile_flags.h)
