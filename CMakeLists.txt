@@ -42,6 +42,7 @@ include(${COMMON_DIR}/common.cmake)
 include(${COMMON_DIR}/tl/tl.cmake)
 include(${COMMON_DIR}/unicode/unicode.cmake)
 
+include(${BASE_DIR}/kphp-core/kphp-core.cmake)
 include(${BASE_DIR}/runtime/runtime.cmake)
 include(${BASE_DIR}/server/server.cmake)
 include(${BASE_DIR}/compiler/compiler.cmake)

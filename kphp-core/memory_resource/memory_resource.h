@@ -9,8 +9,6 @@
 #include <cstring>
 #include <limits>
 
-#include "common/stats/provider.h"
-
 // #define DEBUG_MEMORY
 
 inline void memory_debug(const char *format, ...) __attribute__ ((format (printf, 1, 2)));
@@ -48,8 +46,6 @@ public:
 
   size_t total_allocations{0}; // the total number of allocations
   size_t total_memory_allocated{0}; // the total amount of the memory allocated (doesn't take the freed memory into the account)
-
-  void write_stats_to(stats_t *stats, const char *prefix) const noexcept;
 };
 
 } // namespace memory_resource

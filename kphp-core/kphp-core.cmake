@@ -26,4 +26,4 @@ set(KPHP_CORE_SRC
         ${KPHP_CORE_MEMORY_RECOURCE}
 )
 
-vk_add_library(kphp_core OBJECT ${KPHP_CORE_SRC})
+vk_add_library(kphp-core OBJECT ${KPHP_CORE_SRC})
