@@ -187,18 +187,18 @@ public:
     std::array<std::byte, kphp::tl::COMMON_HEADER_META_SIZE> header_meta{};
     kfs_read_file_assert(Snapshot, header_meta.data(), header_meta.size());
 
-    std::int32_t magic{};
+    int32_t magic{};
     vk::tl::fetch_from_buffer(reinterpret_cast<const char *>(header_meta.data()), header_meta.size(), magic);
     if (magic != kphp::tl::BARSIC_SNAPSHOT_HEADER_MAGIC) {
       fprintf(stderr, kphp::tl::UNEXPECTED_TL_MAGIC_ERROR_FORMAT, magic, kphp::tl::BARSIC_SNAPSHOT_HEADER_MAGIC);
       return -1;
     }
 
-    std::int64_t tl_body_len{};
-    vk::tl::fetch_from_buffer(reinterpret_cast<const char *>(header_meta.data() + sizeof(std::int32_t)), header_meta.size() - sizeof(std::int32_t),
+    int64_t tl_body_len{};
+    vk::tl::fetch_from_buffer(reinterpret_cast<const char *>(header_meta.data() + sizeof(int32_t)), header_meta.size() - sizeof(int32_t),
                               tl_body_len);
 
-    std::vector<std::byte> buffer{static_cast<std::size_t>(tl_body_len + kphp::tl::COMMON_HEADER_HASH_SIZE)};
+    std::vector<std::byte> buffer{static_cast<size_t>(tl_body_len + kphp::tl::COMMON_HEADER_HASH_SIZE)};
     kfs_read_file_assert(Snapshot, buffer.data(), buffer.size());
 
     kphp::tl::BarsicSnapshotHeader bsh{};
@@ -213,18 +213,18 @@ public:
     std::array<std::byte, kphp::tl::COMMON_HEADER_META_SIZE> header_meta{};
     kfs_read_file_assert(Snapshot, header_meta.data(), header_meta.size());
 
-    std::int32_t magic{};
+    int32_t magic{};
     vk::tl::fetch_from_buffer(reinterpret_cast<const char *>(header_meta.data()), header_meta.size(), magic);
     if (magic != kphp::tl::TL_ENGINE_SNAPSHOT_HEADER_MAGIC) {
       fprintf(stderr, kphp::tl::UNEXPECTED_TL_MAGIC_ERROR_FORMAT, magic, kphp::tl::TL_ENGINE_SNAPSHOT_HEADER_MAGIC);
       return -1;
     }
 
-    std::int64_t tl_body_len{};
-    vk::tl::fetch_from_buffer(reinterpret_cast<const char *>(header_meta.data() + sizeof(std::int32_t)), header_meta.size() - sizeof(std::int32_t),
+    int64_t tl_body_len{};
+    vk::tl::fetch_from_buffer(reinterpret_cast<const char *>(header_meta.data() + sizeof(int32_t)), header_meta.size() - sizeof(int32_t),
                               tl_body_len);
 
-    std::vector<std::byte> buffer{static_cast<std::size_t>(tl_body_len + kphp::tl::COMMON_HEADER_HASH_SIZE)};
+    std::vector<std::byte> buffer{static_cast<size_t>(tl_body_len + kphp::tl::COMMON_HEADER_HASH_SIZE)};
     kfs_read_file_assert(Snapshot, buffer.data(), buffer.size());
 
     kphp::tl::TlEngineSnapshotHeader esh{};
@@ -237,27 +237,27 @@ public:
   }
 
   int skip_persistent_config() noexcept {
-    std::int32_t magic{};
-    kfs_read_file_assert(Snapshot, &magic, sizeof(std::int32_t));
+    int32_t magic{};
+    kfs_read_file_assert(Snapshot, &magic, sizeof(int32_t));
     if (magic != kphp::tl::PERSISTENT_CONFIG_V2_SNAPSHOT_BLOCK) {
       fprintf(stderr, kphp::tl::UNEXPECTED_TL_MAGIC_ERROR_FORMAT, magic, kphp::tl::PERSISTENT_CONFIG_V2_SNAPSHOT_BLOCK);
       return -1;
     }
 
-    std::int32_t num_sizes{};
-    kfs_read_file_assert(Snapshot, &num_sizes, sizeof(std::int32_t));
+    int32_t num_sizes{};
+    kfs_read_file_assert(Snapshot, &num_sizes, sizeof(int32_t));
 
-    std::vector<std::int64_t> sizes(num_sizes);
-    kfs_read_file_assert(Snapshot, reinterpret_cast<std::byte *>(sizes.data()), sizes.size() * sizeof(std::int64_t));
+    std::vector<int64_t> sizes(num_sizes);
+    kfs_read_file_assert(Snapshot, reinterpret_cast<std::byte *>(sizes.data()), sizes.size() * sizeof(int64_t));
 
-    // use sizeof(std::int32_t) as initial value for accumulate since persistent config ends with crc32
-    ::lseek(Snapshot->fd, std::accumulate(sizes.cbegin(), sizes.cend(), static_cast<std::int64_t>(sizeof(std::int32_t))), SEEK_CUR);
+    // use sizeof(int32_t) as initial value for accumulate since persistent config ends with crc32
+    ::lseek(Snapshot->fd, std::accumulate(sizes.cbegin(), sizes.cend(), static_cast<int64_t>(sizeof(int32_t))), SEEK_CUR);
     return 0;
   }
 
   int skip_persistent_queries() noexcept {
-    std::int32_t size{};
-    kfs_read_file_assert(Snapshot, &size, sizeof(std::int32_t));
+    int32_t size{};
+    kfs_read_file_assert(Snapshot, &size, sizeof(int32_t));
     if (size != 0) {
       fprintf(stderr, "unexpected non-zero size of persistent queries: %d\n", size);
       return -1;
@@ -275,10 +275,10 @@ public:
       return 0;
     }
 
-    std::int32_t header_magic{};
-    kfs_read_file_assert(Snapshot, &header_magic, sizeof(std::int32_t));
+    int32_t header_magic{};
+    kfs_read_file_assert(Snapshot, &header_magic, sizeof(int32_t));
     // move cursor back so old index reader can safely read a header it expects
-    ::lseek(Snapshot->fd, -sizeof(std::int32_t), SEEK_CUR);
+    ::lseek(Snapshot->fd, -sizeof(int32_t), SEEK_CUR);
 
     if (header_magic == kphp::tl::PMEMCACHED_OLD_INDEX_MAGIC) {
       return process_old_confdata_snapshot();
@@ -287,7 +287,7 @@ public:
       if (process_confdata_engine_header() != 0) { return -1; }
       if (skip_persistent_config() != 0) { return -1; }
 
-      kfs_read_file_assert(Snapshot, &header_magic, sizeof(std::int32_t));
+      kfs_read_file_assert(Snapshot, &header_magic, sizeof(int32_t));
       if (header_magic == kphp::tl::RPC_QUERIES_SNAPSHOT_QUERY_COMMON) {
         // PMC code may write persistent query, but confdata should not have any
         fprintf(stderr, "active persistent query (magic 0x%x) are not supported in confdata snapshots", kphp::tl::RPC_QUERIES_SNAPSHOT_QUERY_COMMON);
@@ -300,10 +300,10 @@ public:
         if (skip_persistent_queries() != 0) { return -1; }
       } else {
         // move cursor back to let the next read take the whole index_header.
-        ::lseek(Snapshot->fd, -sizeof(std::int32_t), SEEK_CUR);
+        ::lseek(Snapshot->fd, -sizeof(int32_t), SEEK_CUR);
       }
 
-      kfs_read_file_assert(Snapshot, &header_magic, sizeof(std::int32_t));
+      kfs_read_file_assert(Snapshot, &header_magic, sizeof(int32_t));
       if (header_magic != kphp::tl::COMMON_INFO_END) {
         fprintf(stderr, kphp::tl::UNEXPECTED_TL_MAGIC_ERROR_FORMAT, header_magic, kphp::tl::COMMON_INFO_END);
         return -1;

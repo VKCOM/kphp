@@ -12,7 +12,9 @@ namespace kphp {
 namespace tl {
 
 namespace {
-constexpr auto RESULT_TRUE_MAGIC{0x3f9c8ef8};
+
+constexpr int32_t RESULT_TRUE_MAGIC{0x3f9c8ef8};
+
 } // namespace
 
 BarsicSnapshotHeader::BarsicSnapshotHeader()
