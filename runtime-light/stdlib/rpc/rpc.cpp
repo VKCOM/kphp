@@ -38,8 +38,8 @@ mixed mixed_array_get_value(const mixed &arr, const string &str_key, int64_t num
   return {};
 }
 
-bool rpc_fetch_len_enough(size_t len) noexcept {
-  return get_component_context()->rpc_component_context.fetch_state.len() >= len;
+bool rpc_fetch_remaining_enough(size_t len) noexcept {
+  return get_component_context()->rpc_component_context.fetch_state.remaining() >= len;
 }
 
 array<mixed> fetch_error(string &&error_msg, int32_t error_code) {
@@ -65,7 +65,7 @@ string fetch_string() noexcept {
   if (len < 254) {
     // adjust since string's length takes 4 bytes
     rpc_ctx.fetch_state.adjust(sizeof(int32_t) - sizeof(uint8_t));
-    if (!rpc_fetch_len_enough(len)) {
+    if (!rpc_fetch_remaining_enough(len)) {
       return {}; // TODO: error handling
     }
     res.append(rpc_ctx.buffer.c_str() + rpc_ctx.fetch_state.pos(), len);
@@ -75,7 +75,7 @@ string fetch_string() noexcept {
     const auto snd{fetch_trivial<uint8_t>()};
     const auto thd{fetch_trivial<uint8_t>()};
     len = static_cast<string::size_type>(fst + (snd << 8) + (thd << 16));
-    if (!rpc_fetch_len_enough(len)) {
+    if (!rpc_fetch_remaining_enough(len)) {
       return {}; // TODO: error handling
     }
     res.append(rpc_ctx.buffer.c_str() + rpc_ctx.fetch_state.pos(), len);
@@ -86,7 +86,7 @@ string fetch_string() noexcept {
 
   // adjust to skip padding zeros
   const auto skip{4 - len % 4};
-  php_assert(rpc_fetch_len_enough(skip));
+  php_assert(rpc_fetch_remaining_enough(skip));
   rpc_ctx.fetch_state.adjust(skip);
   return res;
 }
@@ -354,28 +354,28 @@ bool f$store_string(const string &v) noexcept {
 // === Rpc Fetch ==================================================================================
 
 int64_t f$fetch_int() noexcept {
-  if (!details::rpc_fetch_len_enough(sizeof(int32_t))) {
+  if (!details::rpc_fetch_remaining_enough(sizeof(int32_t))) {
     return 0; // TODO: error handling
   }
   return details::fetch_trivial<int32_t>();
 }
 
 int64_t f$fetch_long() noexcept {
-  if (!details::rpc_fetch_len_enough(sizeof(int64_t))) {
+  if (!details::rpc_fetch_remaining_enough(sizeof(int64_t))) {
     return 0; // TODO: error handling
   }
   return details::fetch_trivial<int64_t>();
 }
 
 double f$fetch_double() noexcept {
-  if (!details::rpc_fetch_len_enough(sizeof(double))) {
+  if (!details::rpc_fetch_remaining_enough(sizeof(double))) {
     return 0.0; // TODO: error handling
   }
   return details::fetch_trivial<double>();
 }
 
 double f$fetch_float() noexcept {
-  if (!details::rpc_fetch_len_enough(sizeof(float))) {
+  if (!details::rpc_fetch_remaining_enough(sizeof(float))) {
     return 0.0; // TODO: error handling
   }
   return details::fetch_trivial<float>();
@@ -439,7 +439,7 @@ void store_raw_vector_double(const array<double> &vector) noexcept { // TODO: di
 
 void fetch_raw_vector_double(array<double> &vector, int64_t num_elems) noexcept {
   const auto len_bytes{sizeof(double) * num_elems};
-  if (!details::rpc_fetch_len_enough(len_bytes)) {
+  if (!details::rpc_fetch_remaining_enough(len_bytes)) {
     return; // TODO: error handling
   }
   auto &rpc_ctx{get_component_context()->rpc_component_context};

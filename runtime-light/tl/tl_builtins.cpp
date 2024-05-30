@@ -21,7 +21,7 @@ bool tl_parse_restore_pos(int32_t pos) {
   if (pos < 0 || pos > rpc_ctx.fetch_state.pos()) {
     return false;
   }
-  rpc_ctx.fetch_state.reset(static_cast<size_t>(pos), rpc_ctx.fetch_state.len() + rpc_ctx.fetch_state.pos() - pos);
+  rpc_ctx.fetch_state.reset(static_cast<size_t>(pos), rpc_ctx.fetch_state.remaining() + rpc_ctx.fetch_state.pos() - pos);
   return true;
 }
 

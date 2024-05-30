@@ -17,24 +17,24 @@
 struct RpcComponentContext final : private vk::not_copyable {
   class FetchState {
     size_t m_pos{0};
-    size_t m_len{0};
+    size_t m_remaining{0};
 
   public:
     constexpr FetchState() = default;
 
-    constexpr size_t len() const noexcept {
-      return m_len;
+    constexpr size_t remaining() const noexcept {
+      return m_remaining;
     }
     constexpr size_t pos() const noexcept {
       return m_pos;
     }
     constexpr void reset(size_t pos, size_t len) noexcept {
       m_pos = pos;
-      m_len = len;
+      m_remaining = len;
     }
     constexpr void adjust(size_t len) noexcept {
       m_pos += len;
-      m_len -= len;
+      m_remaining -= len;
     }
   };
 
