@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstdint>
+#include <utility>
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-light/allocator/memory_resource/resource_allocator.h"
