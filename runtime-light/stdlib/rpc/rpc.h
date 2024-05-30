@@ -62,10 +62,10 @@ string f$fetch_string() noexcept;
 task_t<array<int64_t>> f$rpc_tl_query(string actor, array<mixed> tl_objects, double timeout = -1.0, bool ignore_answer = false,
                                       class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info = {}, bool need_responses_extra_info = false) noexcept;
 
-template<typename F, typename R = KphpRpcRequest>
-requires(std::derived_from<F, C$VK$TL$RpcFunction> &&std::same_as<R, KphpRpcRequest>) task_t<array<int64_t>> f$typed_rpc_tl_query(
-  string actor, array<class_instance<F>> query_functions, double timeout = -1.0, bool ignore_answer = false,
-  class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info = {}, bool need_responses_extra_info = false) noexcept {
+template<std::derived_from<C$VK$TL$RpcFunction> F, std::same_as<KphpRpcRequest> R = KphpRpcRequest>
+task_t<array<int64_t>> f$typed_rpc_tl_query(string actor, array<class_instance<F>> query_functions, double timeout = -1.0, bool ignore_answer = false,
+                                            class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info = {},
+                                            bool need_responses_extra_info = false) noexcept {
   if (ignore_answer && need_responses_extra_info) {
     php_warning("Both $ignore_answer and $need_responses_extra_info are 'true'. Can't collect metrics for ignored answers");
   }
