@@ -19,6 +19,7 @@ public:
 
   explicit intrusive_ptr(T *ptr, bool add_ref = true) : ptr{ptr} {
     if (add_ref && ptr) {
+      fputs("+++add_ref\n", stderr);
       ptr->add_ref();
     }
   }
@@ -52,7 +53,10 @@ public:
 
   ~intrusive_ptr() noexcept {
     if (ptr) {
+      fputs("---release\n", stderr);
       ptr->release();
+    } else {
+      fputs("try to release on nullptr\n", stderr);
     }
   }
 
@@ -95,6 +99,13 @@ public:
 
   friend bool operator!=(const T *lhs, const intrusive_ptr<T> &rhs) {
     return rhs != lhs;
+  }
+
+  void release() {
+    fprintf(stderr, "RELEASE FOR INTRUSIVE_PTR!\n");
+    if (ptr) {
+      ptr->release();
+    }
   }
 
   void reset() {

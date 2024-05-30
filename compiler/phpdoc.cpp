@@ -42,7 +42,7 @@ struct KnownPhpDocTag {
 };
 
 class AllDocTags {
-  static constexpr int N_TAGS = 41;
+  static constexpr int N_TAGS = 42;
   static const KnownPhpDocTag ALL_TAGS[N_TAGS];
 
 public:
@@ -109,6 +109,7 @@ const KnownPhpDocTag AllDocTags::ALL_TAGS[] = {
   KnownPhpDocTag("@kphp-internal-result-indexing", PhpDocType::kphp_internal_result_indexing),
   KnownPhpDocTag("@kphp-internal-result-array2tuple", PhpDocType::kphp_internal_result_array2tuple),
   KnownPhpDocTag("@kphp-internal-param-readonly", PhpDocType::kphp_internal_param_readonly),
+  KnownPhpDocTag("@kphp-may-be-mixed", PhpDocType::kphp_may_be_mixed),
 };
 
 

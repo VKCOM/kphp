@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "runtime/refcountable_php_classes.h"
+
 #ifndef INCLUDED_FROM_KPHP_CORE
   #error "this file must be included only from kphp_core.h"
 #endif
@@ -16,6 +18,10 @@ template<typename T>
 struct is_type_acceptable_for_mixed<array<T>> : is_constructible_or_unknown<mixed, T> {
 };
 
+template<typename T>
+struct is_type_acceptable_for_mixed<class_instance<T>> : std::is_base_of<may_be_mixed_base, T> {
+};
+
 class mixed {
 public:
   enum class type {
@@ -25,6 +31,7 @@ public:
     FLOAT,
     STRING,
     ARRAY,
+    OBJECT,
   };
 
   mixed(const void *) = delete; // deprecate conversion from pointer to boolean
@@ -154,6 +161,30 @@ public:
   inline array<mixed> &as_array() __attribute__((always_inline));
   inline const array<mixed> &as_array() const __attribute__((always_inline));
 
+  template <typename InstanceClass>
+  inline InstanceClass *as_object_ptr() {
+    // TODO add using dynamic cast?
+    auto *ptr_to_object = reinterpret_cast<InstanceClass*>(&storage_);
+    return ptr_to_object;
+  }
+  template <typename InstanceClass>
+  inline const InstanceClass *as_object_ptr() const  {
+    // TODO add using dynamic cast?
+    auto *ptr_to_object = reinterpret_cast<const InstanceClass*>(&storage_);
+    return ptr_to_object;
+  }
+
+  template <typename ObjType>
+  inline bool is_a() const {
+    if (type_ != type::OBJECT) {
+      return false;
+    }
+
+    auto *outter_ptr = reinterpret_cast<const class_instance<may_be_mixed_base>*>(&storage_);
+    auto *refcnt_ptr = outter_ptr->get();
+    return dynamic_cast<ObjType*>(refcnt_ptr) != nullptr;
+  }
+
   inline int64_t safe_to_int() const;
 
   inline void convert_to_numeric();
@@ -167,6 +198,17 @@ public:
   inline const double &as_float(const char *function) const;
   inline const string &as_string(const char *function) const;
   inline const array<mixed> &as_array(const char *function) const;
+  template <typename S>
+  inline const class_instance<S> &as_object([[maybe_unused]] const char *function) const {
+    switch (get_type()) {
+      case type::OBJECT: {
+        return *as_object_ptr<class_instance<S>>();
+      }
+      default:
+        php_warning("%s() expects parameter to be array, %s is given", function, get_type_c_str());
+        return empty_value<class_instance<S>>();
+    }
+  }
 
   inline bool &as_bool(const char *function);
   inline int64_t &as_int(const char *function);
@@ -230,6 +272,8 @@ private:
   auto get_type_and_value_ptr(const int       &) { return std::make_pair(type::INTEGER, &as_int()); }
   auto get_type_and_value_ptr(const double    &) { return std::make_pair(type::FLOAT  , &as_double()); }
   auto get_type_and_value_ptr(const string    &) { return std::make_pair(type::STRING , &as_string()); }
+  template<typename InstanceClass>
+  auto get_type_and_value_ptr(const InstanceClass   &) {return std::make_pair(type::OBJECT, as_object_ptr<InstanceClass>()); }
 
   template<typename T>
   static T &empty_value() noexcept;
@@ -238,3 +282,18 @@ private:
   uint64_t storage_{0};
 };
 
+// TODO think about by-ref/by-const-ref/by-rvalue-ref/by-value
+
+template<class InputClass>
+inline mixed f$to_mixed(const class_instance<InputClass> &instance) noexcept {
+  mixed m;
+  m = instance;
+  return m;
+}
+
+template<class ResultClass>
+inline ResultClass f$from_mixed(const mixed& m, const string&) noexcept {
+  return *m.as_object_ptr<ResultClass>();
+}
+
+// TODO create a function that check descriptor and do a dynamic_cast

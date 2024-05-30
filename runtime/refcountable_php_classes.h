@@ -142,3 +142,13 @@ public:
   static void add_ref() noexcept {}
   static void release() noexcept {}
 };
+
+// TODO rename later, awful
+struct may_be_mixed_base : public abstract_refcountable_php_interface {
+  virtual ~may_be_mixed_base() = default;
+};
+
+
+/**
+ * `m instanceof A` -> dynamic_cast<A*>(reinterpret_cast<may_be_mixed_base*>(m)) != nullptr
+ **/

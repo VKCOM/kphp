@@ -22,6 +22,15 @@ void mixed::copy_from(const mixed &other) {
     case type::ARRAY:
       new(&as_array()) array<mixed>(other.as_array());
       break;
+    case type::OBJECT: {
+      storage_ = other.storage_;
+      auto *outter_ptr = reinterpret_cast<const class_instance<may_be_mixed_base> *>(&storage_);
+      auto *refcnt_ptr = outter_ptr->get();
+      if (refcnt_ptr) {
+        refcnt_ptr->add_ref(); // TODO Destructor is not called for class_instance. This code do it manually. Is it OK?
+      }
+      break;
+    }
     default:
       storage_ = other.storage_;
   }
@@ -36,6 +45,12 @@ void mixed::copy_from(mixed &&other) {
     case type::ARRAY:
       new(&as_array()) array<mixed>(std::move(other.as_array()));
       break;
+    case type::OBJECT: {
+      storage_ = other.storage_;
+      fprintf(stderr, "AHA, MAKING STORAGE = 0!!\n");
+      other.storage_ = 0; // TODO should I change other.type?
+      break;
+    }
     default:
       storage_ = other.storage_;
   }
@@ -48,16 +63,24 @@ void mixed::init_from(T &&v) {
   type_ = type_and_value_ref.first;
   auto *value_ptr = type_and_value_ref.second;
   using ValueType = std::decay_t<decltype(*value_ptr)>;
+  if (type_ == type::OBJECT) {
+    fprintf(stderr, "INITING OBJECT!!!\n");
+  }
   new(value_ptr) ValueType(std::forward<T>(v));
+  if (type_ == type::OBJECT) {
+    fprintf(stderr, "PTR = %p\n", value_ptr);
+  }
 }
 
 template<typename T>
 mixed &mixed::assign_from(T &&v) {
   auto type_and_value_ref = get_type_and_value_ptr(v);
   if (get_type() == type_and_value_ref.first) {
+    fputs("[ASSIGNING]\n", stderr);
     *type_and_value_ref.second = std::forward<T>(v);
   } else {
     destroy();
+    fputs("[INITING FROM]\n", stderr);
     init_from(std::forward<T>(v));
   }
   return *this;
@@ -89,10 +112,12 @@ mixed::mixed(Optional<T> &&v) noexcept {
 }
 
 mixed::mixed(const mixed &v) noexcept {
+  fprintf(stderr, "[MIXED COPY CTOR]\n");
   copy_from(v);
 }
 
 mixed::mixed(mixed &&v) noexcept {
+  fprintf(stderr, "[MIXED MOVE CTOR]\n");
   copy_from(std::move(v));
 }
 
@@ -1624,7 +1649,8 @@ void mixed::reset_empty_values() noexcept {
 
 template<typename T>
 T &mixed::empty_value() noexcept {
-  static_assert(vk::is_type_in_list<T, bool, int64_t, double, string, mixed, array<mixed>>{}, "unsupported type");
+  static_assert(vk::is_type_in_list<T, bool, int64_t, double, string, mixed, array<mixed>>{} || is_type_acceptable_for_mixed<T>::value, "unsupported type");
+
   static T value;
   value = T{};
   return value;

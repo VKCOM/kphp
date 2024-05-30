@@ -367,9 +367,28 @@ inline bool f$is_a(const class_instance<Base> &base) {
   return base.template is_a<Derived>();
 }
 
+template<class T>
+struct RetrieveObjType {
+};
+
+template<class T>
+struct RetrieveObjType<class_instance<T>> {
+  using value_type = T;
+};
+
+template<class Derived>
+inline bool f$is_a(const mixed &base) {
+  return base.is_a<Derived>();
+}
+
 template<class ClassInstanceDerived, class Base>
 inline ClassInstanceDerived f$instance_cast(const class_instance<Base> &base, const string &) {
   return base.template cast_to<typename ClassInstanceDerived::ClassType>();
+}
+
+template<class ClassInstanceDerived>
+inline ClassInstanceDerived f$instance_cast(const mixed &base, const string &s) {
+    return f$from_mixed<ClassInstanceDerived>(base, s);
 }
 
 inline const char *get_type_c_str(bool);

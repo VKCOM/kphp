@@ -492,6 +492,8 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
     } else {
       W << ": public refcountable_polymorphic_php_classes<abstract_refcountable_php_interface>";
     }
+  } else if(klass->may_be_mixed) {
+    W << ": public refcountable_polymorphic_php_classes<may_be_mixed_base>";
   } else { // not polymorphic
     W << ": public refcountable_php_classes<" << klass->src_name << ">";
   }
@@ -503,7 +505,7 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
 
   compile_fields(W, klass);
 
-  if (!klass->derived_classes.empty()) {
+  if (klass->may_be_mixed || !klass->derived_classes.empty()) {
     W << "virtual ~" << klass->src_name << "() = default;" << NL;
   }
 
