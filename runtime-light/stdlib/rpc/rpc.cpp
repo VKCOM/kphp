@@ -59,21 +59,21 @@ T fetch_trivial() noexcept {
 
 string fetch_string() noexcept {
   auto &rpc_ctx{get_component_context()->rpc_component_context};
-  auto len{static_cast<string::size_type>(fetch_trivial<unsigned char>())};
+  auto len{static_cast<string::size_type>(fetch_trivial<uint8_t>())};
   string res{};
 
   if (len < 254) {
     // adjust since string's length takes 4 bytes
-    rpc_ctx.fetch_state.adjust(sizeof(int32_t) - sizeof(unsigned char));
+    rpc_ctx.fetch_state.adjust(sizeof(int32_t) - sizeof(uint8_t));
     if (!rpc_fetch_len_enough(len)) {
       return {}; // TODO: error handling
     }
     res.append(rpc_ctx.buffer.c_str() + rpc_ctx.fetch_state.pos(), len);
     rpc_ctx.fetch_state.adjust(len);
   } else if (len == 254) {
-    const auto fst{fetch_trivial<unsigned char>()};
-    const auto snd{fetch_trivial<unsigned char>()};
-    const auto thd{fetch_trivial<unsigned char>()};
+    const auto fst{fetch_trivial<uint8_t>()};
+    const auto snd{fetch_trivial<uint8_t>()};
+    const auto thd{fetch_trivial<uint8_t>()};
     len = static_cast<string::size_type>(fst + (snd << 8) + (thd << 16));
     if (!rpc_fetch_len_enough(len)) {
       return {}; // TODO: error handling

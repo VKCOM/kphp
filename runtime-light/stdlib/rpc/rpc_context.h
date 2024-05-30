@@ -16,28 +16,25 @@
 
 struct RpcComponentContext final : private vk::not_copyable {
   class FetchState {
-    size_t pos_{0};
-    size_t len_{0};
+    size_t m_pos{0};
+    size_t m_len{0};
 
   public:
     constexpr FetchState() = default;
 
     constexpr size_t len() const noexcept {
-      return len_;
+      return m_len;
     }
-
     constexpr size_t pos() const noexcept {
-      return pos_;
+      return m_pos;
     }
-
     constexpr void reset(size_t pos, size_t len) noexcept {
-      pos_ = pos;
-      len_ = len;
+      m_pos = pos;
+      m_len = len;
     }
-
     constexpr void adjust(size_t len) noexcept {
-      pos_ += len;
-      len_ -= len;
+      m_pos += len;
+      m_len -= len;
     }
   };
 
@@ -53,7 +50,7 @@ struct RpcComponentContext final : private vk::not_copyable {
   unordered_map<int64_t, class_instance<RpcTlQuery>> pending_rpc_queries;
   unordered_map<int64_t, std::pair<rpc_response_extra_info_status_t, rpc_response_extra_info_t>> rpc_responses_extra_info;
 
-  explicit RpcComponentContext(memory_resource::unsynchronized_pool_resource &memory_resource) // TODO: think about allocator
+  explicit RpcComponentContext(memory_resource::unsynchronized_pool_resource &memory_resource)
     : current_query()
     , pending_component_queries(unordered_map<int64_t, class_instance<C$ComponentQuery>>::allocator_type{memory_resource})
     , pending_rpc_queries(unordered_map<int64_t, class_instance<RpcTlQuery>>::allocator_type{memory_resource})
