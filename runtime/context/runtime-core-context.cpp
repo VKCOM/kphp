@@ -3,8 +3,9 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "common/smart_ptrs/singleton.h"
-#include "runtime-context.h"
+#include "runtime/context/runtime-context.h"
 #include "server/php-engine-vars.h"
+#include "runtime/allocator.h"
 
 KphpCoreContext &KphpCoreContext::current() noexcept {
   return kphp_runtime_context;
