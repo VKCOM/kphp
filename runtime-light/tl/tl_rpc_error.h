@@ -34,10 +34,10 @@ namespace tl_rpc_error_impl_ {
 
 // use template, because _common\Types\rpcResponseError is unknown on runtime compilation
 template<typename C$VK$TL$_common$Types$rpcResponseError_>
-class RpcResponseErrorFactory : public RpcErrorFactory {
-private:
+struct RpcResponseErrorFactory : public RpcErrorFactory {
   RpcResponseErrorFactory() = default;
 
+private:
   class_instance<C$VK$TL$RpcResponse> make_error(const string &error, int32_t error_code) const noexcept final {
     auto err{make_instance<C$VK$TL$_common$Types$rpcResponseError_>()};
     err.get()->$error = error;
