@@ -8,7 +8,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "kphp-core/kphp_core.h"
+#include "runtime-core/runtime-core.h"
 
 extern const string LETTER_a;
 

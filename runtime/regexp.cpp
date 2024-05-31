@@ -411,7 +411,7 @@ void regexp::init(const char *regexp_string, int64_t regexp_len, const char *fun
     return;
   }
 
-  kphpRuntimeContext.static_SB.clean().append(regexp_string + 1, static_cast<size_t>(regexp_end - 1));
+  kphp_runtime_context.static_SB.clean().append(regexp_string + 1, static_cast<size_t>(regexp_end - 1));
 
   use_heap_memory = !(php_script.has_value() && php_script->is_running());
 
@@ -477,23 +477,22 @@ void regexp::init(const char *regexp_string, int64_t regexp_len, const char *fun
     }
   }
 
-  can_use_RE2 = can_use_RE2 && is_valid_RE2_regexp(kphpRuntimeContext.static_SB.c_str(), kphpRuntimeContext.static_SB.size(), is_utf8, function, file);
+  can_use_RE2 = can_use_RE2 && is_valid_RE2_regexp(kphp_runtime_context.static_SB.c_str(), kphp_runtime_context.static_SB.size(), is_utf8, function, file);
 
-  if (is_utf8 && !mb_UTF8_check(kphpRuntimeContext.static_SB.c_str())) {
-    pattern_compilation_warning(function, file, "Regexp \"%s\" contains not UTF-8 symbols", kphpRuntimeContext.static_SB.c_str());
+  if (is_utf8 && !mb_UTF8_check(kphp_runtime_context.static_SB.c_str())) {
+    pattern_compilation_warning(function, file, "Regexp \"%s\" contains not UTF-8 symbols", kphp_runtime_context.static_SB.c_str());
     clean();
     return;
   }
 
   bool need_pcre = false;
   if (can_use_RE2) {
-    RE2_regexp = new RE2(re2::StringPiece(kphpRuntimeContext.static_SB.c_str(), kphpRuntimeContext.static_SB.size()), RE2_options);
+    RE2_regexp = new RE2(re2::StringPiece(kphp_runtime_context.static_SB.c_str(), kphp_runtime_context.static_SB.size()), RE2_options);
 #if ASAN_ENABLED
     __lsan_ignore_object(RE2_regexp);
 #endif
     if (!RE2_regexp->ok()) {
-      pattern_compilation_warning(function, file, "RE2 compilation of regexp \"%s\" failed. Error %d at %s",
-        kphpRuntimeContext.static_SB.c_str(), RE2_regexp->error_code(), RE2_regexp->error().c_str());
+      pattern_compilation_warning(function, file, "RE2 compilation of regexp \"%s\" failed. Error %d at %s", kphp_runtime_context.static_SB.c_str(), RE2_regexp->error_code(), RE2_regexp->error().c_str());
 
       delete RE2_regexp;
       RE2_regexp = nullptr;
@@ -513,7 +512,7 @@ void regexp::init(const char *regexp_string, int64_t regexp_len, const char *fun
   if (RE2_regexp == nullptr || need_pcre) {
     const char *error;
     int32_t erroffset = 0;
-    pcre_regexp = pcre_compile(kphpRuntimeContext.static_SB.c_str(), pcre_options, &error, &erroffset, nullptr);
+    pcre_regexp = pcre_compile(kphp_runtime_context.static_SB.c_str(), pcre_options, &error, &erroffset, nullptr);
 #if ASAN_ENABLED
     __lsan_ignore_object(pcre_regexp);
 #endif
@@ -1077,7 +1076,7 @@ int64_t regexp::last_error() {
 string f$preg_quote(const string &str, const string &delimiter) {
   const string::size_type len = str.size();
 
-  kphpRuntimeContext.static_SB.clean().reserve(4 * len);
+  kphp_runtime_context.static_SB.clean().reserve(4 * len);
 
   for (string::size_type i = 0; i < len; i++) {
     switch (str[i]) {
@@ -1102,25 +1101,25 @@ string f$preg_quote(const string &str, const string &delimiter) {
       case ':':
       case '-':
       case '#':
-        kphpRuntimeContext.static_SB.append_char('\\');
-        kphpRuntimeContext.static_SB.append_char(str[i]);
+        kphp_runtime_context.static_SB.append_char('\\');
+        kphp_runtime_context.static_SB.append_char(str[i]);
         break;
       case '\0':
-        kphpRuntimeContext.static_SB.append_char('\\');
-        kphpRuntimeContext.static_SB.append_char('0');
-        kphpRuntimeContext.static_SB.append_char('0');
-        kphpRuntimeContext.static_SB.append_char('0');
+        kphp_runtime_context.static_SB.append_char('\\');
+        kphp_runtime_context.static_SB.append_char('0');
+        kphp_runtime_context.static_SB.append_char('0');
+        kphp_runtime_context.static_SB.append_char('0');
         break;
       default:
         if (!delimiter.empty() && str[i] == delimiter[0]) {
-          kphpRuntimeContext.static_SB.append_char('\\');
+          kphp_runtime_context.static_SB.append_char('\\');
         }
-        kphpRuntimeContext.static_SB.append_char(str[i]);
+        kphp_runtime_context.static_SB.append_char(str[i]);
         break;
     }
   }
 
-  return kphpRuntimeContext.static_SB.str();
+  return kphp_runtime_context.static_SB.str();
 }
 
 void regexp::global_init() {

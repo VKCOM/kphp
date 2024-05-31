@@ -8,7 +8,7 @@
 
 #include "common/algorithms/hashes.h"
 #include "common/wrappers/string_view.h"
-#include "kphp-core/class-instance/refcountable-php-classes.h"
+#include "runtime-core/class-instance/refcountable-php-classes.h"
 
 struct tl_func_base;
 

@@ -5,7 +5,7 @@
 
 #include "runtime/msgpack/packer.h"
 
-#include "kphp-core/kphp_core.h"
+#include "runtime-core/runtime-core.h"
 #include "runtime/msgpack/sysdep.h"
 
 namespace vk::msgpack {

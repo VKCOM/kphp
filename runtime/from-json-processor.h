@@ -6,7 +6,7 @@
 
 #include <string_view>
 
-#include "kphp-core/kphp_core.h"
+#include "runtime-core/runtime-core.h"
 #include "runtime/json-functions.h"
 #include "runtime/json-processor-utils.h"
 
@@ -91,13 +91,13 @@ private:
   }
 
   void do_set(JsonRawString &value, const mixed &json) noexcept {
-    kphpRuntimeContext.static_SB.clean();
+    kphp_runtime_context.static_SB.clean();
     if (!impl_::JsonEncoder{0, false, get_json_obj_magic_key()}.encode(json)) {
       error_.append("failed to decode @kphp-json raw_string field ");
       error_.append(json_path_.to_string());
       return;
     }
-    value.str = kphpRuntimeContext.static_SB.str();
+    value.str = kphp_runtime_context.static_SB.str();
   }
 
   template<class T>

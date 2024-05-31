@@ -7,7 +7,7 @@
 #include <memory>
 #include <mysql/mysql.h>
 
-#include "kphp-core/kphp_core.h"
+#include "runtime-core/runtime-core.h"
 #include "server/database-drivers/connector.h"
 
 namespace database_drivers {

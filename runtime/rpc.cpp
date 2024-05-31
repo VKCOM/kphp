@@ -12,10 +12,10 @@
 #include "common/rpc-headers.h"
 #include "common/tl/constants/common.h"
 
+#include "runtime/context/runtime-context.h"
 #include "runtime/critical_section.h"
 #include "runtime/exception.h"
 #include "runtime/kphp_tracing.h"
-#include "runtime/kphp-runtime-context.h"
 #include "runtime/memcache.h"
 #include "runtime/misc.h"
 #include "runtime/net_events.h"
@@ -1396,9 +1396,9 @@ protected:
         int64_t query_id = it.get_value();
         if (!tl_objects_unsorted.isset(query_id)) {
           if (query_id <= 0) {
-            tl_objects[it.get_key()] = tl_fetch_error((kphpRuntimeContext.static_SB.clean() << "Very wrong query_id " << query_id).str(), TL_ERROR_WRONG_QUERY_ID);
+            tl_objects[it.get_key()] = tl_fetch_error((kphp_runtime_context.static_SB.clean() << "Very wrong query_id " << query_id).str(), TL_ERROR_WRONG_QUERY_ID);
           } else {
-            tl_objects[it.get_key()] = tl_fetch_error((kphpRuntimeContext.static_SB.clean() << "No answer received or duplicate/wrong query_id "
+            tl_objects[it.get_key()] = tl_fetch_error((kphp_runtime_context.static_SB.clean() << "No answer received or duplicate/wrong query_id "
                                                                          << query_id).str(), TL_ERROR_WRONG_QUERY_ID);
           }
         } else {
@@ -1449,9 +1449,9 @@ array<array<mixed>> f$rpc_tl_query_result_synchronously(const array<int64_t> &qu
     int64_t query_id = it.get_value();
     if (!tl_objects_unsorted.isset(query_id)) {
       if (query_id <= 0) {
-        tl_objects[it.get_key()] = tl_fetch_error((kphpRuntimeContext.static_SB.clean() << "Very wrong query_id " << query_id).str(), TL_ERROR_WRONG_QUERY_ID);
+        tl_objects[it.get_key()] = tl_fetch_error((kphp_runtime_context.static_SB.clean() << "Very wrong query_id " << query_id).str(), TL_ERROR_WRONG_QUERY_ID);
       } else {
-        tl_objects[it.get_key()] = tl_fetch_error((kphpRuntimeContext.static_SB.clean() << "No answer received or duplicate/wrong query_id "
+        tl_objects[it.get_key()] = tl_fetch_error((kphp_runtime_context.static_SB.clean() << "No answer received or duplicate/wrong query_id "
                                                                      << query_id).str(), TL_ERROR_WRONG_QUERY_ID);
       }
     } else {

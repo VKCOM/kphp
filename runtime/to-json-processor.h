@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "kphp-core/kphp_core.h"
+#include "runtime-core/runtime-core.h"
 #include "runtime/json-processor-utils.h"
 #include "runtime/json-writer.h"
 

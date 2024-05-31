@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "kphp-core/kphp_core.h"
+#include "runtime-core/runtime-core.h"
 #include "runtime/allocator.h"
 #include "runtime/exception.h"
 #include "runtime/storage.h"

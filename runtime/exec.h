@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "kphp-core/kphp_core.h"
+#include "runtime-core/runtime-core.h"
 
 int64_t &get_dummy_result_code() noexcept;
 

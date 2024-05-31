@@ -4,8 +4,8 @@
 
 #include "runtime/zlib.h"
 
+#include "runtime/context/runtime-context.h"
 #include "runtime/critical_section.h"
-#include "runtime/kphp-runtime-context.h"
 #include "runtime/string_functions.h"
 
 namespace {
@@ -38,7 +38,7 @@ const string_buffer *zlib_encode(const char *s, int32_t s_len, int32_t level, in
   strm.opaque = &buf_pos;
 
   unsigned int res_len = (unsigned int)compressBound(s_len) + 30;
-  kphpRuntimeContext.static_SB.clean().reserve(res_len);
+  kphp_runtime_context.static_SB.clean().reserve(res_len);
 
   dl::enter_critical_section();//OK
   int ret = deflateInit2 (&strm, level, Z_DEFLATED, encoding, MAX_MEM_LEVEL, Z_DEFAULT_STRATEGY);
@@ -46,7 +46,7 @@ const string_buffer *zlib_encode(const char *s, int32_t s_len, int32_t level, in
     strm.avail_in = (unsigned int)s_len;
     strm.next_in = reinterpret_cast <Bytef *> (const_cast <char *> (s));
     strm.avail_out = res_len;
-    strm.next_out = reinterpret_cast <Bytef *> (kphpRuntimeContext.static_SB.buffer());
+    strm.next_out = reinterpret_cast <Bytef *> (kphp_runtime_context.static_SB.buffer());
 
     ret = deflate(&strm, Z_FINISH);
     deflateEnd(&strm);
@@ -54,16 +54,16 @@ const string_buffer *zlib_encode(const char *s, int32_t s_len, int32_t level, in
     if (ret == Z_STREAM_END) {
       dl::leave_critical_section();
 
-      kphpRuntimeContext.static_SB.set_pos(static_cast<int64_t>(strm.total_out));
-      return &kphpRuntimeContext.static_SB;
+      kphp_runtime_context.static_SB.set_pos(static_cast<int64_t>(strm.total_out));
+      return &kphp_runtime_context.static_SB;
     }
   }
   dl::leave_critical_section();
 
   php_warning("Error during pack of string with length %d", s_len);
 
-  kphpRuntimeContext.static_SB.clean();
-  return &kphpRuntimeContext.static_SB;
+  kphp_runtime_context.static_SB.clean();
+  return &kphp_runtime_context.static_SB;
 }
 
 class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mixed> &options) {

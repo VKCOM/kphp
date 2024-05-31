@@ -4,46 +4,46 @@
 
 #include "runtime/serialize-functions.h"
 
-#include "runtime/kphp-runtime-context.h"
+#include "runtime/context/runtime-context.h"
 
 void impl_::PhpSerializer::serialize(bool b) noexcept {
-  kphpRuntimeContext.static_SB.reserve(4);
-  kphpRuntimeContext.static_SB.append_char('b');
-  kphpRuntimeContext.static_SB.append_char(':');
-  kphpRuntimeContext.static_SB.append_char(static_cast<char>(b + '0'));
-  kphpRuntimeContext.static_SB.append_char(';');
+  kphp_runtime_context.static_SB.reserve(4);
+  kphp_runtime_context.static_SB.append_char('b');
+  kphp_runtime_context.static_SB.append_char(':');
+  kphp_runtime_context.static_SB.append_char(static_cast<char>(b + '0'));
+  kphp_runtime_context.static_SB.append_char(';');
 }
 
 void impl_::PhpSerializer::serialize(int64_t i) noexcept {
-  kphpRuntimeContext.static_SB.reserve(24);
-  kphpRuntimeContext.static_SB.append_char('i');
-  kphpRuntimeContext.static_SB.append_char(':');
-  kphpRuntimeContext.static_SB << i;
-  kphpRuntimeContext.static_SB.append_char(';');
+  kphp_runtime_context.static_SB.reserve(24);
+  kphp_runtime_context.static_SB.append_char('i');
+  kphp_runtime_context.static_SB.append_char(':');
+  kphp_runtime_context.static_SB << i;
+  kphp_runtime_context.static_SB.append_char(';');
 }
 
 void impl_::PhpSerializer::serialize(double f) noexcept {
-  kphpRuntimeContext.static_SB.append("d:", 2);
-  kphpRuntimeContext.static_SB << f << ';';
+  kphp_runtime_context.static_SB.append("d:", 2);
+  kphp_runtime_context.static_SB << f << ';';
 }
 
 void impl_::PhpSerializer::serialize(const string &s) noexcept {
   string::size_type len = s.size();
-  kphpRuntimeContext.static_SB.reserve(25 + len);
-  kphpRuntimeContext.static_SB.append_char('s');
-  kphpRuntimeContext.static_SB.append_char(':');
-  kphpRuntimeContext.static_SB << len;
-  kphpRuntimeContext.static_SB.append_char(':');
-  kphpRuntimeContext.static_SB.append_char('"');
-  kphpRuntimeContext.static_SB.append_unsafe(s.c_str(), len);
-  kphpRuntimeContext.static_SB.append_char('"');
-  kphpRuntimeContext.static_SB.append_char(';');
+  kphp_runtime_context.static_SB.reserve(25 + len);
+  kphp_runtime_context.static_SB.append_char('s');
+  kphp_runtime_context.static_SB.append_char(':');
+  kphp_runtime_context.static_SB << len;
+  kphp_runtime_context.static_SB.append_char(':');
+  kphp_runtime_context.static_SB.append_char('"');
+  kphp_runtime_context.static_SB.append_unsafe(s.c_str(), len);
+  kphp_runtime_context.static_SB.append_char('"');
+  kphp_runtime_context.static_SB.append_char(';');
 }
 
 void impl_::PhpSerializer::serialize_null() noexcept {
-  kphpRuntimeContext.static_SB.reserve(2);
-  kphpRuntimeContext.static_SB.append_char('N');
-  kphpRuntimeContext.static_SB.append_char(';');
+  kphp_runtime_context.static_SB.reserve(2);
+  kphp_runtime_context.static_SB.append_char('N');
+  kphp_runtime_context.static_SB.append_char(';');
 }
 
 void impl_::PhpSerializer::serialize(const mixed &v) noexcept {

@@ -1,7 +1,13 @@
-#include "kphp-core/memory_resource/monotonic_buffer_resource.h"
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2024 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
+#include "runtime-core/memory_resource/monotonic_buffer_resource.h"
 
 #include <array>
+
 #include "runtime/allocator.h"
+#include "runtime/php_assert.h"
 #include "runtime/oom_handler.h"
 
 namespace memory_resource {

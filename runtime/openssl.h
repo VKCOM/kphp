@@ -6,7 +6,7 @@
 
 #include <openssl/pkcs7.h>
 
-#include "kphp-core/kphp_core.h"
+#include "runtime-core/runtime-core.h"
 
 enum openssl_algo {
   OPENSSL_ALGO_SHA1 = 1,

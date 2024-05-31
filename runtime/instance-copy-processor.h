@@ -10,8 +10,8 @@
 
 #include "common/mixin/not_copyable.h"
 
-#include "kphp-core/kphp_core.h"
-#include "kphp-core/memory_resource/unsynchronized_pool_resource.h"
+#include "runtime-core/runtime-core.h"
+#include "runtime-core/memory_resource/unsynchronized_pool_resource.h"
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
 

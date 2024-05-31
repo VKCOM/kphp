@@ -29,6 +29,7 @@
 #include "runtime/kphp_tracing.h"
 #include "runtime/oom_handler.h"
 #include "runtime/profiler.h"
+#include "runtime/php_assert.h"
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
 #include "server/php-queries.h"
