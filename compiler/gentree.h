@@ -64,6 +64,7 @@ public:
   VertexPtr get_binary_op(int op_priority_cur, bool till_ternary);
   VertexPtr get_expression_impl(bool till_ternary);
   VertexPtr get_expression();
+  VertexPtr get_func_call_arg();
   VertexPtr get_statement(const PhpDocComment *phpdoc = nullptr);
   VertexAdaptor<op_catch> get_catch();
   void get_instance_var_list(const PhpDocComment *phpdoc, FieldModifiers modifiers, const TypeHint *type_hint);
