@@ -12,7 +12,7 @@
 #include "runtime-light/tl/tl_rpc_request.h"
 #include "runtime-light/utils/context.h"
 
-namespace details {
+namespace tl_rpc_request_impl_ {
 // use template, because t_ReqResult_ is unknown on runtime compilation
 template<template<typename, uint32_t> class t_ReqResult_>
 class KphpRpcRequestResult final : public RpcRequestResult {
@@ -24,7 +24,7 @@ public:
 
   class_instance<C$VK$TL$RpcResponse> fetch_typed_response() final {
     class_instance<C$VK$TL$RpcResponse> $response;
-    t_ReqResult_<tl_exclamation_fetch_wrapper, 0>(tl_exclamation_fetch_wrapper(std::move(result_fetcher_))).typed_fetch_to($response);
+    t_ReqResult_<tl_exclamation_fetch_wrapper, 0>(tl_exclamation_fetch_wrapper(std::move(result_fetcher))).typed_fetch_to($response);
     return $response;
   }
 
@@ -44,7 +44,7 @@ public:
     //    php_assert(CurException.is_null());
     auto &rcs{get_component_context()->rpc_component_context};
     rcs.current_query.set_current_tl_function(tl_function_name());
-    std::unique_ptr<tl_func_base> stored_fetcher = storing_function_.get()->store();
+    std::unique_ptr<tl_func_base> stored_fetcher = storing_function.get()->store();
     rcs.current_query.reset();
     //    if (!CurException.is_null()) {
     //      CurException = Optional<bool>{};
@@ -53,9 +53,9 @@ public:
     return make_unique_on_script_memory<KphpRpcRequestResult<t_ReqResult_>>(std::move(stored_fetcher));
   }
 };
-} // namespace details
+} // namespace tl_rpc_request_impl_
 
 template<class T0, uint32_t inner_magic0>
 struct t_ReqResult; // the definition appears after the TL scheme codegen, during the site build
 
-using KphpRpcRequest = details::KphpRpcRequest<t_ReqResult>;
+using KphpRpcRequest = tl_rpc_request_impl_::KphpRpcRequest<t_ReqResult>;

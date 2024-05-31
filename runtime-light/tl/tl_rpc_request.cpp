@@ -8,17 +8,17 @@
 
 RpcRequestResult::RpcRequestResult(bool is_typed, std::unique_ptr<tl_func_base> &&result_fetcher)
   : is_typed(is_typed)
-  , result_fetcher_(std::move(result_fetcher)) {}
+  , result_fetcher(std::move(result_fetcher)) {}
 
 bool RpcRequestResult::empty() const {
-  return !result_fetcher_;
+  return !result_fetcher;
 }
 
 RpcRequest::RpcRequest(class_instance<C$VK$TL$RpcFunction> function)
-  : storing_function_(std::move(function)) {}
+  : storing_function(std::move(function)) {}
 
 string RpcRequest::tl_function_name() const {
-  string class_name{storing_function_.get()->get_class()};
+  string class_name{storing_function.get()->get_class()};
   const string tl_class_prefix{"\\Functions\\"};
   const auto pos = class_name.find(tl_class_prefix);
   if (pos != string::npos) {
@@ -28,11 +28,11 @@ string RpcRequest::tl_function_name() const {
 }
 
 bool RpcRequest::empty() const {
-  return storing_function_.is_null();
+  return storing_function.is_null();
 }
 
 const class_instance<C$VK$TL$RpcFunction> &RpcRequest::get_tl_function() const {
-  return storing_function_;
+  return storing_function;
 }
 
 RpcRequestResultUntyped::RpcRequestResultUntyped(std::unique_ptr<tl_func_base> &&result_fetcher)
@@ -44,5 +44,5 @@ class_instance<C$VK$TL$RpcResponse> RpcRequestResultUntyped::fetch_typed_respons
 }
 
 std::unique_ptr<tl_func_base> RpcRequestResultUntyped::extract_untyped_fetcher() {
-  return std::move(result_fetcher_);
+  return std::move(result_fetcher);
 }

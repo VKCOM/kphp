@@ -24,7 +24,7 @@ public:
   virtual ~RpcRequestResult() = default;
 
 protected:
-  std::unique_ptr<tl_func_base> result_fetcher_; // the store() result
+  std::unique_ptr<tl_func_base> result_fetcher; // the store() result
 };
 
 class RpcRequest {
@@ -41,7 +41,7 @@ public:
   virtual ~RpcRequest() = default;
 
 protected:
-  class_instance<C$VK$TL$RpcFunction> storing_function_;
+  class_instance<C$VK$TL$RpcFunction> storing_function;
 };
 
 class RpcRequestResultUntyped final : public RpcRequestResult {

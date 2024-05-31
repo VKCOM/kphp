@@ -12,13 +12,14 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/rpc/rpc_extra_info.h"
 #include "runtime-light/tl/tl_kphp_rpc_request.h"
+#include "runtime-light/tl/tl_rpc_error.h"
 #include "runtime-light/tl/tl_rpc_function.h"
 
 constexpr int64_t RPC_VALID_QUERY_ID_RANGE_START = 0;
 constexpr int64_t RPC_INVALID_QUERY_ID = -1;
 constexpr int64_t RPC_IGNORED_ANSWER_QUERY_ID = -2;
 
-namespace details {
+namespace rpc_impl_ {
 
 struct RpcQueryInfo {
   int64_t id{RPC_INVALID_QUERY_ID};
@@ -26,10 +27,12 @@ struct RpcQueryInfo {
   double timestamp{0.0};
 };
 
-task_t<RpcQueryInfo> typed_rpc_tl_query_one_impl(string actor, const RpcRequest &rpc_request, double timeout, bool collect_responses_extra_info,
+task_t<RpcQueryInfo> typed_rpc_tl_query_one_impl(const string &actor, const RpcRequest &rpc_request, double timeout, bool collect_responses_extra_info,
                                                  bool ignore_answer) noexcept;
 
-} // namespace details
+task_t<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_one_impl(int64_t query_id, const RpcErrorFactory &error_factory) noexcept;
+
+} // namespace rpc_impl_
 
 // === Rpc Store ==================================================================================
 
@@ -62,9 +65,9 @@ string f$fetch_string() noexcept;
 task_t<array<int64_t>> f$rpc_tl_query(string actor, array<mixed> tl_objects, double timeout = -1.0, bool ignore_answer = false,
                                       class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info = {}, bool need_responses_extra_info = false) noexcept;
 
-template<std::derived_from<C$VK$TL$RpcFunction> F, std::same_as<KphpRpcRequest> R = KphpRpcRequest>
-task_t<array<int64_t>> f$typed_rpc_tl_query(string actor, array<class_instance<F>> query_functions, double timeout = -1.0, bool ignore_answer = false,
-                                            class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info = {},
+template<std::derived_from<C$VK$TL$RpcFunction> rpc_function_t, std::same_as<KphpRpcRequest> rpc_request_t = KphpRpcRequest>
+task_t<array<int64_t>> f$typed_rpc_tl_query(string actor, array<class_instance<rpc_function_t>> query_functions, double timeout = -1.0,
+                                            bool ignore_answer = false, class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info = {},
                                             bool need_responses_extra_info = false) noexcept {
   if (ignore_answer && need_responses_extra_info) {
     php_warning("Both $ignore_answer and $need_responses_extra_info are 'true'. Can't collect metrics for ignored answers");
@@ -75,7 +78,8 @@ task_t<array<int64_t>> f$typed_rpc_tl_query(string actor, array<class_instance<F
   array<rpc_request_extra_info_t> req_extra_info_arr{query_functions.size()};
 
   for (auto it = query_functions.cbegin(); it != query_functions.cend(); ++it) {
-    const auto query_info{co_await details::typed_rpc_tl_query_one_impl(actor, R{it.get_value()}, timeout, collect_resp_extra_info, ignore_answer)};
+    const auto query_info{
+      co_await rpc_impl_::typed_rpc_tl_query_one_impl(actor, rpc_request_t{it.get_value()}, timeout, collect_resp_extra_info, ignore_answer)};
 
     query_ids.set_value(it.get_key(), query_info.id);
     req_extra_info_arr.set_value(it.get_key(), rpc_request_extra_info_t{query_info.request_size});
@@ -89,6 +93,16 @@ task_t<array<int64_t>> f$typed_rpc_tl_query(string actor, array<class_instance<F
 }
 
 task_t<array<array<mixed>>> f$rpc_tl_query_result(array<int64_t> query_ids) noexcept;
+
+template<std::same_as<int64_t> query_id_t = int64_t, std::same_as<RpcResponseErrorFactory> error_factory_t = RpcResponseErrorFactory>
+requires std::default_initializable<error_factory_t> task_t<array<class_instance<C$VK$TL$RpcResponse>>>
+f$typed_rpc_tl_query_result(array<query_id_t> query_ids) noexcept {
+  decltype(auto) res{query_ids.size()};
+  for (auto it = query_ids.cbegin(); it != query_ids.cend(); ++it) {
+    res.set_value(it.get_key(), co_await rpc_impl_::typed_rpc_tl_query_result_one_impl(it.get_value(), error_factory_t{}));
+  }
+  co_return res;
+}
 
 // === Rpc Misc ===================================================================================
 
