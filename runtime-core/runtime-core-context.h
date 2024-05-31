@@ -7,7 +7,7 @@
 #include <cstddef>
 
 #ifndef INCLUDED_FROM_KPHP_CORE
-  #error "this file must be included only from kphp_core.h"
+  #error "this file must be included only from runtime-core.h"
 #endif
 
 struct RuntimeAllocator {

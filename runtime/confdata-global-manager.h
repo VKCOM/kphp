@@ -10,8 +10,8 @@
 #include "common/wrappers/string_view.h"
 
 #include "runtime-core/runtime-core.h"
-#include "runtime-core/memory_resource/resource_allocator.h"
-#include "runtime-core/memory_resource/unsynchronized_pool_resource.h"
+#include "runtime-core/memory-resource/resource_allocator.h"
+#include "runtime-core/memory-resource/unsynchronized_pool_resource.h"
 #include "runtime/confdata-keys.h"
 #include "runtime/inter-process-resource.h"
 

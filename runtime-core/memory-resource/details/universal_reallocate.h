@@ -6,7 +6,7 @@
 
 #include <cstring>
 
-#include "runtime-core/memory_resource/memory_resource.h"
+#include "runtime-core/memory-resource/memory_resource.h"
 
 namespace memory_resource {
 namespace details {

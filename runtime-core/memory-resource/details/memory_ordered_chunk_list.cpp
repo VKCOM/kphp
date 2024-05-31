@@ -2,7 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-core/memory_resource/details/memory_ordered_chunk_list.h"
+#include "runtime-core/memory-resource/details/memory_ordered_chunk_list.h"
 
 #include <algorithm>
 #include <functional>

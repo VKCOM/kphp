@@ -7,7 +7,7 @@
 #include <new>
 #include <utility>
 
-#include "runtime-core/memory_resource/details/memory_ordered_chunk_list.h"
+#include "runtime-core/memory-resource/details/memory_ordered_chunk_list.h"
 #include "runtime-core/functions/kphp-assert-core.h"
 
 namespace memory_resource {

@@ -880,7 +880,7 @@ function vk_stats_hll_is_packed($hll ::: string) ::: bool;
 /** @kphp-extern-func-info cpp_template_call */
 function vk_dot_product ($a ::: array, $b ::: array) ::: ^1[*] | ^2[*];
 
-/** defined in kphp_core.h **/
+/** defined in runtime-core.h **/
 function likely ($x ::: bool) ::: bool;
 function unlikely ($x ::: bool) ::: bool;
 
