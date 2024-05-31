@@ -58,6 +58,10 @@ T fetch_trivial() noexcept {
 }
 
 string fetch_string() noexcept {
+  if (!rpc_fetch_remaining_enough(sizeof(int32_t))) { // check that we have enough data to fetch string length
+    return {}; // TODO: error handling
+  }
+
   auto &rpc_ctx{get_component_context()->rpc_component_context};
   auto len{static_cast<string::size_type>(fetch_trivial<uint8_t>())};
   string res{};
