@@ -10,7 +10,7 @@
 
 #include "common/mixin/not_copyable.h"
 
-#include "runtime-core/memory_resource/memory_resource.h"
+#include "runtime-core/memory-resource/memory_resource.h"
 #include "runtime-core/functions/kphp-assert-core.h"
 
 namespace memory_resource {

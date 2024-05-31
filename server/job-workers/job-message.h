@@ -7,7 +7,7 @@
 #include "common/mixin/not_copyable.h"
 
 #include "runtime-core/runtime-core.h"
-#include "runtime-core/memory_resource/unsynchronized_pool_resource.h"
+#include "runtime-core/memory-resource/unsynchronized_pool_resource.h"
 #include "runtime/job-workers/job-interface.h"
 
 namespace job_workers {

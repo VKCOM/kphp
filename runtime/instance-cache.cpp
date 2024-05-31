@@ -14,7 +14,7 @@
 #include "common/wrappers/memory-utils.h"
 
 #include "runtime-core/class-instance/refcountable-php-classes.h"
-#include "runtime-core/memory_resource/resource_allocator.h"
+#include "runtime-core/memory-resource/resource_allocator.h"
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
 #include "runtime/inter-process-mutex.h"

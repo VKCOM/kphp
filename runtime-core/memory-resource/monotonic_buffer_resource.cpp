@@ -2,7 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-core/memory_resource/monotonic_buffer_resource.h"
+#include "runtime-core/memory-resource/monotonic_buffer_resource.h"
 
 namespace memory_resource {
 

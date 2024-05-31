@@ -12,7 +12,7 @@ prepend(KPHP_CORE_KPHP_TYPES ${BASE_DIR}/runtime-core/kphp-types/definition/
         string_buffer.cpp
 )
 
-prepend(KPHP_CORE_MEMORY_RECOURCE ${BASE_DIR}/runtime-core/memory_resource/
+prepend(KPHP_CORE_MEMORY_RECOURCE ${BASE_DIR}/runtime-core/memory-resource/
         details/memory_chunk_tree.cpp
         details/memory_ordered_chunk_list.cpp
         monotonic_buffer_resource.cpp
