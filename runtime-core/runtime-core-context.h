@@ -10,7 +10,7 @@
   #error "this file must be included only from kphp_core.h"
 #endif
 
-struct CoreAllocator {
+struct RuntimeAllocator {
   void * alloc_script_memory(size_t size);
   void * alloc0_script_memory(size_t size);
   void * realloc_script_memory(void *mem, size_t new_size, size_t old_size);
@@ -22,7 +22,7 @@ struct CoreAllocator {
 };
 
 struct KphpCoreContext {
-  CoreAllocator allocator;
+  RuntimeAllocator allocator;
 
   static KphpCoreContext& current() noexcept;
   void init();
