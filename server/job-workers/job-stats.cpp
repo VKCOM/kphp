@@ -5,7 +5,7 @@
 #include <new>
 #include <sys/mman.h>
 
-#include "kphp-core/memory_resource/extra-memory-pool.h"
+#include "runtime-core/memory_resource/extra-memory-pool.h"
 
 #include "server/job-workers/job-stats.h"
 

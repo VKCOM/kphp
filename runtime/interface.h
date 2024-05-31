@@ -8,8 +8,8 @@
 
 #include "common/wrappers/string_view.h"
 
-#include "kphp-core/kphp-types/decl/optional.h"
-#include "kphp-core/kphp_core.h"
+#include "runtime-core/kphp-types/decl/optional.h"
+#include "runtime-core/runtime-core.h"
 #include "runtime/critical_section.h"
 #include "runtime/php-script-globals.h"
 #include "server/php-query-data.h"

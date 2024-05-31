@@ -8,8 +8,8 @@
 
 #include "common/algorithms/hashes.h"
 #include "common/wrappers/string_view.h"
-#include "kphp-core/class-instance/refcountable-php-classes.h"
-#include "kphp-core/kphp_core.h"
+#include "runtime-core/class-instance/refcountable-php-classes.h"
+#include "runtime-core/runtime-core.h"
 #include "runtime/dummy-visitor-methods.h"
 #include "runtime/instance-copy-processor.h"
 #include "runtime/memory_usage.h"

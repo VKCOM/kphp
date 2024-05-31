@@ -1,6 +1,6 @@
 #include <postgresql/libpq-fe.h>
 
-#include "kphp-core/kphp_core.h"
+#include "runtime-core/runtime-core.h"
 #include "runtime/pdo/pdo_statement.h"
 #include "runtime/pdo/pgsql/pgsql_pdo_emulated_statement.h"
 #include "runtime/resumable.h"

@@ -11,27 +11,27 @@
 
 #include "common/containers/final_action.h"
 
-#include "kphp-core/kphp_core.h"
+#include "runtime-core/runtime-core.h"
+#include "runtime/context/runtime-context.h"
 #include "runtime/critical_section.h"
 #include "runtime/exception.h"
 #include "runtime/interface.h"
 #include "runtime/string_functions.h"
-#include "runtime/kphp-runtime-context.h"
 
 template<class T>
 inline Optional<string> f$msgpack_serialize(const T &value, string *out_err_msg = nullptr) noexcept {
   f$ob_start();
   php_assert(f$ob_get_length().has_value() && f$ob_get_length().val() == 0);
 
-  kphpRuntimeContext.sb_lib_context.error_flag = STRING_BUFFER_ERROR_FLAG_ON;
+  kphp_runtime_context.sb_lib_context.error_flag = STRING_BUFFER_ERROR_FLAG_ON;
   auto clean_buffer = vk::finally([] {
     f$ob_end_clean();
-    kphpRuntimeContext.sb_lib_context.error_flag = STRING_BUFFER_ERROR_FLAG_OFF;
+    kphp_runtime_context.sb_lib_context.error_flag = STRING_BUFFER_ERROR_FLAG_OFF;
   });
 
   vk::msgpack::packer{*coub}.pack(value);
 
-  if (kphpRuntimeContext.sb_lib_context.error_flag == STRING_BUFFER_ERROR_FLAG_FAILED) {
+  if (kphp_runtime_context.sb_lib_context.error_flag == STRING_BUFFER_ERROR_FLAG_FAILED) {
     string err_msg{"msgpacke_serialize buffer overflow"};
     if (out_err_msg) {
       *out_err_msg = std::move(err_msg);

@@ -8,10 +8,10 @@
 
 #include "common/mixin/not_copyable.h"
 
-#include "kphp-core/kphp_core.h"
+#include "runtime-core/runtime-core.h"
+#include "runtime/context/runtime-context.h"
 #include "runtime/kphp_tracing.h"
 #include "runtime/mbstring.h"
-#include "runtime/kphp-runtime-context.h"
 
 namespace re2 {
 class RE2;
@@ -211,7 +211,7 @@ inline int64_t f$preg_last_error();
 template<>
 inline string regexp::get_replacement(const string &replace_val, const string &subject, int64_t count) const {
   const string::size_type len = replace_val.size();
-  kphpRuntimeContext.static_SB.clean();
+  kphp_runtime_context.static_SB.clean();
   for (string::size_type i = 0; i < len; i++) {
     int64_t backref = -1;
     if (replace_val[i] == '\\' && (replace_val[i + 1] == '\\' || replace_val[i + 1] == '$')) {
@@ -239,16 +239,16 @@ inline string regexp::get_replacement(const string &replace_val, const string &s
     }
 
     if (backref == -1) {
-      kphpRuntimeContext.static_SB << replace_val[i];
+      kphp_runtime_context.static_SB << replace_val[i];
     } else {
       if (backref < count) {
         int64_t index = backref + backref;
-        kphpRuntimeContext.static_SB.append(subject.c_str() + submatch[index],
+        kphp_runtime_context.static_SB.append(subject.c_str() + submatch[index],
                          static_cast<size_t>(submatch[index + 1] - submatch[index]));
       }
     }
   }
-  return kphpRuntimeContext.static_SB.str();//TODO optimize
+  return kphp_runtime_context.static_SB.str();//TODO optimize
 }
 
 template<class T>

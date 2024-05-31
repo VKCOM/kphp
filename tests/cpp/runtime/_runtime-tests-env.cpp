@@ -7,6 +7,7 @@
 #include "runtime/interface.h"
 #include "runtime/job-workers/job-interface.h"
 #include "runtime/pdo/pdo_statement.h"
+#include "runtime/php_assert.h"
 #include "runtime/tl/rpc_response.h"
 #include "server/php-engine-vars.h"
 #include "server/workers-control.h"

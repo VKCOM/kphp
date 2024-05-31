@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common/kprintf.h"
-#include "kphp-core/kphp_core.h"
+#include "runtime-core/runtime-core.h"
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
 

@@ -11,7 +11,7 @@
 #include "common/wrappers/likely.h"
 #include "common/mixin/not_copyable.h"
 
-#include "kphp-core/functions/kphp-assert-core.h"
+#include "runtime-core/functions/kphp-assert-core.h"
 
 extern int die_on_fail;
 
