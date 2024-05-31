@@ -134,7 +134,7 @@ bool store_string(const char *v, int32_t v_len) noexcept {
 
   while (all_len % 4 != 0) {
     buffer << '\0';
-    all_len++;
+    ++all_len;
   }
   return true;
 }
