@@ -5,8 +5,8 @@
 #include "runtime-light/stdlib/rpc/rpc_extra_info.h"
 
 #include "runtime-light/component/component.h"
-#include "runtime-light/utils/context.h"
 #include "runtime-light/stdlib/rpc/rpc_context.h"
+#include "runtime-light/utils/context.h"
 
 array<rpc_request_extra_info_t> f$KphpRpcRequestsExtraInfo$$get(class_instance<C$KphpRpcRequestsExtraInfo> v$this) noexcept {
   return v$this.get()->extra_info_arr;
@@ -18,6 +18,6 @@ Optional<rpc_response_extra_info_t> f$extract_kphp_rpc_response_extra_info(int64
     const auto extra_info{it->second.second};
     extra_info_map.erase(it);
     return extra_info;
-  } // TODO: decide when to mark extra_info_status as READY
+  }
   return {};
 }

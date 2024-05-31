@@ -226,8 +226,7 @@ task_t<RpcQueryInfo> rpc_send_impl(const string &actor, double timeout, bool ign
   co_return RpcQueryInfo{.id = query_id, .request_size = request_size, .timestamp = timestamp};
 }
 
-task_t<RpcQueryInfo> rpc_tl_query_one_impl(const string &actor, const mixed &tl_object, double timeout, bool collect_resp_extra_info,
-                                           bool ignore_answer) noexcept {
+task_t<RpcQueryInfo> rpc_tl_query_one_impl(const string &actor, mixed tl_object, double timeout, bool collect_resp_extra_info, bool ignore_answer) noexcept {
   auto &rpc_ctx{get_component_context()->rpc_component_context};
 
   if (!tl_object.is_array()) {
