@@ -358,15 +358,6 @@ task_t<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_one_impl(i
 
 // === Rpc Store ==================================================================================
 
-bool f$store_raw(const string &data) noexcept {
-  const auto data_len = data.size();
-  if (data_len & 3) {
-    return false;
-  }
-  get_component_context()->rpc_component_context.buffer.append(data.c_str(), data_len);
-  return true;
-}
-
 bool f$store_int(int64_t v) noexcept {
   if (unlikely(is_int32_overflow(v))) {
     php_warning("Got int32 overflow on storing '%" PRIi64 "', the value will be casted to '%d'", v, static_cast<int32_t>(v));

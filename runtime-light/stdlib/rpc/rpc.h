@@ -36,8 +36,6 @@ task_t<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_one_impl(i
 
 // === Rpc Store ==================================================================================
 
-bool f$store_raw(const string &data) noexcept;
-
 bool f$store_int(int64_t v) noexcept;
 
 bool f$store_long(int64_t v) noexcept;
