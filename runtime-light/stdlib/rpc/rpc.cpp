@@ -7,6 +7,7 @@
 #include <chrono>
 #include <coroutine>
 #include <cstddef>
+#include <optional>
 #include <utility>
 
 #include "common/algorithms/find.h"
@@ -42,7 +43,7 @@ bool rpc_fetch_remaining_enough(size_t len) noexcept {
   return get_component_context()->rpc_component_context.fetch_state.remaining() >= len;
 }
 
-array<mixed> fetch_error(string &&error_msg, int32_t error_code) {
+array<mixed> make_fetch_error(string &&error_msg, int32_t error_code) {
   array<mixed> res;
   res.set_value(string{"__error", 7}, std::move(error_msg));
   res.set_value(string{"__error_code", 12}, error_code);
@@ -50,8 +51,11 @@ array<mixed> fetch_error(string &&error_msg, int32_t error_code) {
 }
 
 template<standard_layout T>
-T fetch_trivial() noexcept {
+std::optional<T> fetch_trivial() noexcept {
   auto &rpc_ctx{get_component_context()->rpc_component_context};
+  if (!rpc_fetch_remaining_enough(sizeof(T))) {
+    return {}; // TODO: error handling
+  }
   const auto v{*reinterpret_cast<const T *>(rpc_ctx.buffer.c_str() + rpc_ctx.fetch_state.pos())};
   rpc_ctx.fetch_state.adjust(sizeof(T));
   return v;
@@ -248,7 +252,7 @@ task_t<RpcQueryInfo> typed_rpc_tl_query_one_impl(const string &actor, const RpcR
 
 task_t<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) noexcept {
   if (query_id < RPC_VALID_QUERY_ID_RANGE_START) {
-    co_return fetch_error(string{"wrong query_id"}, TL_ERROR_WRONG_QUERY_ID);
+    co_return make_fetch_error(string{"wrong query_id"}, TL_ERROR_WRONG_QUERY_ID);
   }
 
   auto &rpc_ctx{get_component_context()->rpc_component_context};
@@ -265,20 +269,20 @@ task_t<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) noexcept {
     }};
 
     if (it_rpc_query == rpc_ctx.pending_rpc_queries.end() || it_component_query == rpc_ctx.pending_component_queries.end()) {
-      co_return fetch_error(string{"unexpectedly could not find query in pending queries"}, TL_ERROR_INTERNAL);
+      co_return make_fetch_error(string{"unexpectedly could not find query in pending queries"}, TL_ERROR_INTERNAL);
     }
     rpc_query = std::move(it_rpc_query->second);
     component_query = std::move(it_component_query->second);
   }
 
   if (rpc_query.is_null()) {
-    co_return fetch_error(string{"can't use rpc_tl_query_result for non-TL query"}, TL_ERROR_INTERNAL);
+    co_return make_fetch_error(string{"can't use rpc_tl_query_result for non-TL query"}, TL_ERROR_INTERNAL);
   }
   if (!rpc_query.get()->result_fetcher || rpc_query.get()->result_fetcher->empty()) {
-    co_return fetch_error(string{"rpc query has empty result fetcher"}, TL_ERROR_INTERNAL);
+    co_return make_fetch_error(string{"rpc query has empty result fetcher"}, TL_ERROR_INTERNAL);
   }
   if (rpc_query.get()->result_fetcher->is_typed) {
-    co_return fetch_error(string{"can't get untyped result from typed TL query. Use consistent API for that"}, TL_ERROR_INTERNAL);
+    co_return make_fetch_error(string{"can't get untyped result from typed TL query. Use consistent API for that"}, TL_ERROR_INTERNAL);
   }
 
   const auto data{co_await f$component_client_get_result(component_query)};
@@ -389,56 +393,52 @@ bool f$store_string(const string &v) noexcept {
 // === Rpc Fetch ==================================================================================
 
 int64_t f$fetch_int() noexcept {
-  if (!rpc_impl_::rpc_fetch_remaining_enough(sizeof(int32_t))) {
-    return 0; // TODO: error handling
-  }
-  return rpc_impl_::fetch_trivial<int32_t>();
+  const auto opt{rpc_impl_::fetch_trivial<int32_t>()};
+  return opt.value_or(0);
 }
 
 int64_t f$fetch_long() noexcept {
-  if (!rpc_impl_::rpc_fetch_remaining_enough(sizeof(int64_t))) {
-    return 0; // TODO: error handling
-  }
-  return rpc_impl_::fetch_trivial<int64_t>();
+  const auto opt{rpc_impl_::fetch_trivial<int64_t>()};
+  return opt.value_or(0);
 }
 
 double f$fetch_double() noexcept {
-  if (!rpc_impl_::rpc_fetch_remaining_enough(sizeof(double))) {
-    return 0.0; // TODO: error handling
-  }
-  return rpc_impl_::fetch_trivial<double>();
+  const auto opt{rpc_impl_::fetch_trivial<double>()};
+  return opt.value_or(0.0);
 }
 
 double f$fetch_float() noexcept {
-  if (!rpc_impl_::rpc_fetch_remaining_enough(sizeof(float))) {
-    return 0.0; // TODO: error handling
-  }
-  return rpc_impl_::fetch_trivial<float>();
+  const auto opt{rpc_impl_::fetch_trivial<float>()};
+  return static_cast<double>(opt.value_or(0.0));
 }
 
 string f$fetch_string() noexcept {
-  if (!rpc_impl_::rpc_fetch_remaining_enough(sizeof(int32_t))) { // check that we have enough data to fetch string length
-    return {};                                        // TODO: error handling
+  string::size_type len{};
+  {
+    const auto opt_len{rpc_impl_::fetch_trivial<uint8_t>()};
+    if (!opt_len) {
+      return {}; // TODO: error handling
+    }
+    len = static_cast<string::size_type>(opt_len.value());
   }
 
   auto &rpc_ctx{get_component_context()->rpc_component_context};
-  auto len{static_cast<string::size_type>(rpc_impl_::fetch_trivial<uint8_t>())};
-  string res{};
 
+  string res{};
   if (len < 254) {
+    if (!rpc_impl_::rpc_fetch_remaining_enough(sizeof(int32_t) - sizeof(uint8_t) + len)) { // len + remaining 3 bytes from string's length
+      return {};                                                                           // TODO: error handling
+    }
     // adjust since string's length takes 4 bytes
     rpc_ctx.fetch_state.adjust(sizeof(int32_t) - sizeof(uint8_t));
-    if (!rpc_impl_::rpc_fetch_remaining_enough(len)) {
-      return {}; // TODO: error handling
-    }
     res.append(rpc_ctx.buffer.c_str() + rpc_ctx.fetch_state.pos(), len);
     rpc_ctx.fetch_state.adjust(len);
   } else if (len == 254) {
-    const auto fst{rpc_impl_::fetch_trivial<uint8_t>()};
-    const auto snd{rpc_impl_::fetch_trivial<uint8_t>()};
-    const auto thd{rpc_impl_::fetch_trivial<uint8_t>()};
-    len = static_cast<string::size_type>(fst + (snd << 8) + (thd << 16));
-    if (!rpc_impl_::rpc_fetch_remaining_enough(len)) {
+    const auto opt_fst{rpc_impl_::fetch_trivial<uint8_t>()};
+    const auto opt_snd{rpc_impl_::fetch_trivial<uint8_t>()};
+    const auto opt_thd{rpc_impl_::fetch_trivial<uint8_t>()};
+    len = static_cast<string::size_type>(opt_fst.value_or(0) + (opt_snd.value_or(0) << 8) + (opt_thd.value_or(0) << 16));
+    if (!(opt_fst && opt_snd && opt_thd && rpc_impl_::rpc_fetch_remaining_enough(len))) {
       return {}; // TODO: error handling
     }
     res.append(rpc_ctx.buffer.c_str() + rpc_ctx.fetch_state.pos(), len);
@@ -512,6 +512,6 @@ void fetch_raw_vector_double(array<double> &vector, int64_t num_elems) noexcept 
     return; // TODO: error handling
   }
   auto &rpc_ctx{get_component_context()->rpc_component_context};
+  vector.memcpy_vector(num_elems, rpc_ctx.buffer.c_str() + rpc_ctx.fetch_state.pos());
   rpc_ctx.fetch_state.adjust(len_bytes);
-  vector.memcpy_vector(num_elems, rpc_ctx.buffer.c_str());
 }
