@@ -140,7 +140,7 @@ VertexPtr ConvertSprintfCallsPass::convert_sprintf_call(VertexAdaptor<op_func_ca
   size_t index_spec = 0;
 
   for (const auto &part : parts) {
-    const auto vertex = convert_format_part_to_vertex(part, index_spec, info);
+    const auto vertex = convert_format_part_to_vertex(part, index_spec, info, call->location);
     vertex_parts.push_back(vertex);
 
     if (part.is_specifier()) {
@@ -148,10 +148,10 @@ VertexPtr ConvertSprintfCallsPass::convert_sprintf_call(VertexAdaptor<op_func_ca
     }
   }
 
-  return VertexAdaptor<op_string_build>::create(vertex_parts);
+  return VertexAdaptor<op_string_build>::create(vertex_parts).set_location(call->location);
 }
 
-VertexPtr ConvertSprintfCallsPass::convert_format_part_to_vertex(const FormatPart &part, size_t arg_index, const FormatCallInfo &info) {
+VertexPtr ConvertSprintfCallsPass::convert_format_part_to_vertex(const FormatPart &part, size_t arg_index, const FormatCallInfo &info, const Location &call_location) {
   if (part.is_specifier()) {
     VertexPtr element;
 
@@ -180,7 +180,7 @@ VertexPtr ConvertSprintfCallsPass::convert_format_part_to_vertex(const FormatPar
     return VertexAdaptor<op_conv_string>::create(convert);
   }
 
-  VertexAdaptor<op_string> vertex = VertexAdaptor<op_string>::create();
+  VertexAdaptor<op_string> vertex = VertexAdaptor<op_string>::create().set_location(call_location);
   vertex->set_string(part.value);
   return vertex;
 }

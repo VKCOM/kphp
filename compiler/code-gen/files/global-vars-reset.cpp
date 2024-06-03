@@ -12,12 +12,12 @@
 #include "compiler/data/src-file.h"
 #include "compiler/inferring/public.h"
 
-GlobalVarsReset::GlobalVarsReset(std::vector<std::vector<VarPtr>> &&all_globals_batched)
-  : all_globals_batched(std::move(all_globals_batched)) {}
+GlobalVarsReset::GlobalVarsReset(const GlobalsLinearMem &all_globals_in_mem)
+  : all_globals_in_mem(all_globals_in_mem) {}
 
-void GlobalVarsReset::compile_globals_reset_part(CodeGenerator &W, int batch_num, const std::vector<VarPtr> &cur_batch) {
+void GlobalVarsReset::compile_globals_reset_part(CodeGenerator &W, const GlobalsLinearMem::OneBatchInfo &batch) {
   IncludesCollector includes;
-  for (VarPtr var : cur_batch) {
+  for (VarPtr var : batch.globals) {
     includes.add_var_signature_depends(var);
   }
   W << includes;
@@ -25,15 +25,15 @@ void GlobalVarsReset::compile_globals_reset_part(CodeGenerator &W, int batch_num
 
   W << NL;
   ConstantsLinearMemExternCollector c_mem_extern;
-  for (VarPtr var : cur_batch) {
+  for (VarPtr var : batch.globals) {
     if (var->init_val) {
       c_mem_extern.add_batch_num_from_init_val(var->init_val);
     }
   }
   W << c_mem_extern << NL;
 
-  FunctionSignatureGenerator(W) << "void global_vars_reset_file" << batch_num << "(" << PhpMutableGlobalsRefArgument() << ")" << BEGIN;
-  for (VarPtr var : cur_batch) {
+  FunctionSignatureGenerator(W) << "void global_vars_reset_file" << batch.batch_idx << "(" << PhpMutableGlobalsRefArgument() << ")" << BEGIN;
+  for (VarPtr var : batch.globals) {
     if (var->is_builtin_runtime) {  // they are manually reset in runtime sources
       continue;
     }
@@ -52,12 +52,12 @@ void GlobalVarsReset::compile_globals_reset_part(CodeGenerator &W, int batch_num
   W << CloseNamespace();
 }
 
-void GlobalVarsReset::compile_globals_reset(CodeGenerator &W, int n_batches) {
+void GlobalVarsReset::compile_globals_reset(CodeGenerator &W, const GlobalsLinearMem &all_globals_in_mem) {
   W << OpenNamespace();
   FunctionSignatureGenerator(W) << "void global_vars_reset(" << PhpMutableGlobalsRefArgument() << ")" << BEGIN;
 
-  for (int batch_num = 0; batch_num < n_batches; batch_num++) {
-    const std::string func_name_i = "global_vars_reset_file" + std::to_string(batch_num);
+  for (const auto &batch : all_globals_in_mem.get_batches()) {
+    const std::string func_name_i = "global_vars_reset_file" + std::to_string(batch.batch_idx);
     // function declaration
     W << "void " << func_name_i << "(" << PhpMutableGlobalsRefArgument() << ");" << NL;
     // function call
@@ -80,18 +80,16 @@ void GlobalVarsReset::compile_globals_allocate(CodeGenerator &W) {
 }
 
 void GlobalVarsReset::compile(CodeGenerator &W) const {
-  int n_batches = static_cast<int>(all_globals_batched.size());
-
-  for (int batch_num = 0; batch_num < n_batches; batch_num++) {
-    W << OpenFile("globals_reset." + std::to_string(batch_num) + ".cpp", "o_globals_reset", false);
+  for (const auto &batch : all_globals_in_mem.get_batches()) {
+    W << OpenFile("globals_reset." + std::to_string(batch.batch_idx) + ".cpp", "o_globals_reset", false);
     W << ExternInclude(G->settings().runtime_headers.get());
-    compile_globals_reset_part(W, batch_num, all_globals_batched[batch_num]);
+    compile_globals_reset_part(W, batch);
     W << CloseFile();
   }
 
   W << OpenFile("globals_reset.cpp", "", false);
   W << ExternInclude(G->settings().runtime_headers.get());
-  compile_globals_reset(W, n_batches);
+  compile_globals_reset(W, all_globals_in_mem);
   W << CloseFile();
 
   W << OpenFile("globals_allocate.cpp", "", false);

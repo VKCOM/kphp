@@ -60,10 +60,10 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
   for (FunctionPtr f : all_functions) {
     all_globals.insert(all_globals.end(), f->static_var_ids.begin(), f->static_var_ids.end());
   }
-  std::vector<std::vector<VarPtr>> all_globals_batched = GlobalsLinearMem::prepare_mem_and_assign_offsets(all_globals);
+  const GlobalsLinearMem &all_globals_in_mem = GlobalsLinearMem::prepare_mem_and_assign_offsets(all_globals);
 
   std::vector<VarPtr> all_constants = G->get_constants_vars();
-  std::vector<std::vector<VarPtr>> all_constants_batched = ConstantsLinearMem::prepare_mem_and_assign_offsets(all_constants);
+  const ConstantsLinearMem &all_constants_in_mem = ConstantsLinearMem::prepare_mem_and_assign_offsets(all_constants);
 
   for (FunctionPtr f : all_functions) {
     code_gen_start_root_task(os, std::make_unique<FunctionH>(f));
@@ -99,8 +99,8 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
     code_gen_start_root_task(os, std::make_unique<GlobalVarsMemoryStats>(all_globals));
   }
   code_gen_start_root_task(os, std::make_unique<InitScriptsCpp>(G->get_main_file()));
-  code_gen_start_root_task(os, std::make_unique<ConstVarsInit>(std::move(all_constants_batched)));
-  code_gen_start_root_task(os, std::make_unique<GlobalVarsReset>(std::move(all_globals_batched)));
+  code_gen_start_root_task(os, std::make_unique<ConstVarsInit>(all_constants_in_mem));
+  code_gen_start_root_task(os, std::make_unique<GlobalVarsReset>(all_globals_in_mem));
 
   if (G->is_output_mode_lib()) {
     std::vector<FunctionPtr> exported_functions;

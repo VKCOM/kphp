@@ -1886,6 +1886,10 @@ void compile_array(VertexAdaptor<op_array> root, CodeGenerator &W) {
     W << TypeName(type) << "::create(" << JoinValues(*root, ", ") << ")";
     return;
   }
+  if (!has_double_arrow && type->ptype() == tp_array && root->extra_type != op_ex_safe_version) {
+    W << TypeName(type) << "::initialize_vector(std::initializer_list<" << TypeName(type->lookup_at_any_key()) << ">{" << JoinValues(*root, ",") << "})";
+    return;
+  }
 
   W << "(" << BEGIN;
 

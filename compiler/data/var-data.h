@@ -46,8 +46,8 @@ public:
   bool is_foreach_reference = false;
   bool is_builtin_runtime = false;        // $_SERVER, $argv, etc., see PhpScriptBuiltInSuperGlobals in runtime
   int dependency_level = 0;               // for constants only (const$string, const$array, etc)
-  int batch_in_linear_mem = -1;           // for constants and mutable globals, see const-globals-linear-mem.cpp
   int offset_in_linear_mem = -1;          // for constants: offset from batch start; for globals: offset from 0
+  uint64_t batch_in_linear_mem = -1;      // for constants: batch_hash; for globals: number (index) [0;N)
 
   void set_uninited_flag(bool f);
   bool get_uninited_flag();

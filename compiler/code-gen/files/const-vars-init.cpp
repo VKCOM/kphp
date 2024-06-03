@@ -48,30 +48,27 @@ static void compile_raw_array(CodeGenerator &W, const VarPtr &var, int shift) {
   W << ConstantVarInLinearMem(var) << ".assign_raw((char *) &raw_arrays[" << shift << "]);" << NL << NL;
 }
 
-ConstVarsInit::ConstVarsInit(std::vector<std::vector<VarPtr>> &&all_constants_batched)
-  : all_constants_batched(std::move(all_constants_batched)) {}
+ConstVarsInit::ConstVarsInit(const ConstantsLinearMem &all_constants_in_mem)
+  : all_constants_in_mem(all_constants_in_mem) {}
 
-void ConstVarsInit::compile_const_init_part(CodeGenerator &W, int batch_num, const std::vector<VarPtr> &cur_batch) {
+void ConstVarsInit::compile_const_init_part(CodeGenerator &W, const ConstantsLinearMem::OneBatchInfo &dir_batch) {
   DepLevelContainer const_raw_array_vars;
   DepLevelContainer other_const_vars;
   DepLevelContainer const_raw_string_vars;
 
   IncludesCollector includes;
-  ConstantsLinearMemExternCollector c_mem_extern;
-  for (VarPtr var : cur_batch) {
+  for (VarPtr var : dir_batch.constants) {
     if (!G->is_output_mode_lib()) {
       includes.add_var_signature_depends(var);
       includes.add_vertex_depends(var->init_val);
     }
-    c_mem_extern.add_batch_num_from_var(var);
-    c_mem_extern.add_batch_num_from_init_val(var->init_val);
   }
   W << includes;
 
   W << OpenNamespace();
-  W << c_mem_extern << NL;
+  W << "char c_" << dir_batch.batch_hex << "[" << dir_batch.mem_size << "]; // " << dir_batch.batch_path << NL;
 
-  for (VarPtr var : cur_batch) {
+  for (VarPtr var : dir_batch.constants) {
     switch (var->init_val->type()) {
       case op_string:
         const_raw_string_vars.add(var);
@@ -94,11 +91,13 @@ void ConstVarsInit::compile_const_init_part(CodeGenerator &W, int batch_num, con
   const std::vector<int> const_array_shifts = compile_arrays_raw_representation(const_raw_array_vars, W);
   const size_t max_dep_level = std::max({const_raw_string_vars.max_dep_level(), const_raw_array_vars.max_dep_level(), other_const_vars.max_dep_level(), 1ul});
 
+  const std::string func_name_i = fmt_format("c_init_{}", dir_batch.batch_hex);
+  FunctionSignatureGenerator(W) << NL << "void " << func_name_i << "()" << BEGIN;
+
   size_t str_idx = 0;
   size_t arr_idx = 0;
   for (size_t dep_level = 0; dep_level < max_dep_level; ++dep_level) {
-    const std::string func_name_i = fmt_format("const_vars_init_deplevel{}_file{}", dep_level, batch_num);
-    FunctionSignatureGenerator(W) << NL << "void " << func_name_i << "()" << BEGIN;
+    W << NL << "// level " << dep_level << NL;
 
     for (VarPtr var : const_raw_string_vars.vars_by_dep_level(dep_level)) {
       // W << "// " << var->as_human_readable() << NL;
@@ -122,63 +121,41 @@ void ConstVarsInit::compile_const_init_part(CodeGenerator &W, int batch_num, con
         W << ".set_reference_counter_to(ExtraRefCnt::for_global_const);" << NL;
       }
     }
-
-    W << END << NL;
   }
 
+  W << END;
   W << CloseNamespace();
 }
 
-void ConstVarsInit::compile_const_init(CodeGenerator &W, int n_batches, const std::vector<int> &max_dep_levels) {
+void ConstVarsInit::compile_const_init(CodeGenerator &W, const ConstantsLinearMem &all_constants_in_mem) {
   W << OpenNamespace();
 
   W << NL;
-  W << ConstantsLinearMemDeclaration() << NL;
 
   FunctionSignatureGenerator(W) << "void const_vars_init() " << BEGIN;
   W << ConstantsLinearMemAllocation() << NL;
 
-  int very_max_dep_level = 0;
-  for (int max_dep_level : max_dep_levels) {
-    very_max_dep_level = std::max(very_max_dep_level, max_dep_level);
-  }
-
-  for (int dep_level = 0; dep_level <= very_max_dep_level; ++dep_level) {
-    for (size_t batch_num = 0; batch_num < n_batches; ++batch_num) {
-      if (dep_level <= max_dep_levels[batch_num]) {
-        const std::string func_name_i = fmt_format("const_vars_init_deplevel{}_file{}", dep_level, batch_num);
-        // function declaration
-        W << "void " << func_name_i << "();" << NL;
-        // function call
-        W << func_name_i << "();" << NL;
-      }
-    }
+  for (const auto &[_, dir_batch] : all_constants_in_mem.get_batches()) {
+    const std::string func_name_i = fmt_format("c_init_{}", dir_batch.batch_hex);
+    // function declaration
+    W << "void " << func_name_i << "();" << NL;
+    // function call
+    W << func_name_i << "();" << NL;
   }
   W << END;
   W << CloseNamespace();
 }
 
 void ConstVarsInit::compile(CodeGenerator &W) const {
-  int n_batches = static_cast<int>(all_constants_batched.size());
-
-  std::vector<int> max_dep_levels(n_batches);
-  for (int batch_num = 0; batch_num < n_batches; ++batch_num) {
-    for (VarPtr var : all_constants_batched[batch_num]) {
-      if (var->dependency_level > max_dep_levels[batch_num]) {
-        max_dep_levels[batch_num] = var->dependency_level;
-      }
-    }
-  }
-
-  for (int batch_num = 0; batch_num < n_batches; ++batch_num) {
-    W << OpenFile("const_init." + std::to_string(batch_num) + ".cpp", "o_const_init", false);
+  for (const auto &[_, dir_batch] : all_constants_in_mem.get_batches()) {
+    W << OpenFile("c." + dir_batch.batch_hex + ".cpp", "o_const_init", false);
     W << ExternInclude(G->settings().runtime_headers.get());
-    compile_const_init_part(W, batch_num, all_constants_batched[batch_num]);
+    compile_const_init_part(W, dir_batch);
     W << CloseFile();
   }
 
   W << OpenFile("const_vars_init.cpp", "", false);
   W << ExternInclude(G->settings().runtime_headers.get());
-  compile_const_init(W, n_batches, max_dep_levels);
+  compile_const_init(W, all_constants_in_mem);
   W << CloseFile();
 }

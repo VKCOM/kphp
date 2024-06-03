@@ -4,19 +4,18 @@
 
 #pragma once
 
-#include <vector>
-
 #include "compiler/code-gen/code-gen-root-cmd.h"
 #include "compiler/code-gen/code-generator.h"
+#include "compiler/code-gen/const-globals-linear-mem.h"
 
 struct ConstVarsInit : CodeGenRootCmd {
-  explicit ConstVarsInit(std::vector<std::vector<VarPtr>> &&all_constants_batched);
+  explicit ConstVarsInit(const ConstantsLinearMem &all_constants_in_mem);
   
   void compile(CodeGenerator &W) const final;
 
-  static void compile_const_init_part(CodeGenerator &W, int batch_num, const std::vector<VarPtr> &cur_batch);
-  static void compile_const_init(CodeGenerator &W, int n_batches, const std::vector<int> &max_dep_levels);
+  static void compile_const_init_part(CodeGenerator& W, const ConstantsLinearMem::OneBatchInfo& dir_batch);
+  static void compile_const_init(CodeGenerator &W, const ConstantsLinearMem &all_constants_in_mem);
 
 private:
-  std::vector<std::vector<VarPtr>> all_constants_batched;
+  const ConstantsLinearMem &all_constants_in_mem;
 };

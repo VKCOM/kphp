@@ -990,6 +990,16 @@ inline array<T> array<T>::create(Args &&... args) {
   return res;
 }
 
+template <class T>
+array<T> array<T>::initialize_vector(const std::initializer_list<T> &v) {
+  array<T> res{array_size(v.size(), true)};
+  for (const T &elem : v) {
+    res.p->emplace_back_vector_value(elem);
+  }
+  return res;
+}
+
+
 template<class T>
 array<T> &array<T>::operator=(const array &other) noexcept {
   auto other_copy = other.p->ref_copy();

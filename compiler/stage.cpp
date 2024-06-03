@@ -121,6 +121,16 @@ std::string Location::as_human_readable() const {
   return out;
 }
 
+const std::string &Location::calculate_batch_path_for_constant() const {
+  if (!file) {
+    return G->get_main_file()->relative_file_name;
+  }
+  if (file->relative_dir_name.empty()) {
+    return file->relative_file_name;
+  }
+  return file->relative_dir_name;
+}
+
 bool operator<(const Location &lhs, const Location &rhs) {
   if (lhs.file && rhs.file) {
     if (const int cmp = lhs.file->file_name.compare(rhs.file->file_name)) {

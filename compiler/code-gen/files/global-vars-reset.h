@@ -6,17 +6,17 @@
 
 #include "compiler/code-gen/code-gen-root-cmd.h"
 #include "compiler/code-gen/code-generator.h"
-#include "compiler/data/data_ptr.h"
+#include "compiler/code-gen/const-globals-linear-mem.h"
 
 struct GlobalVarsReset : CodeGenRootCmd {
-  explicit GlobalVarsReset(std::vector<std::vector<VarPtr>> &&all_globals_batched);
+  explicit GlobalVarsReset(const GlobalsLinearMem &all_globals_in_mem);
 
   void compile(CodeGenerator &W) const final;
 
-  static void compile_globals_reset_part(CodeGenerator &W, int batch_num, const std::vector<VarPtr> &cur_batch);
-  static void compile_globals_reset(CodeGenerator &W, int parts_cnt);
+  static void compile_globals_reset_part(CodeGenerator &W, const GlobalsLinearMem::OneBatchInfo &batch);
+  static void compile_globals_reset(CodeGenerator &W, const GlobalsLinearMem &all_globals_in_mem);
   static void compile_globals_allocate(CodeGenerator &W);
 
 private:
-  std::vector<std::vector<VarPtr>> all_globals_batched;
+  const GlobalsLinearMem &all_globals_in_mem;
 };

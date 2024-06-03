@@ -235,10 +235,6 @@ int main(int argc, char *argv[]) {
              'j', "jobs-num", "KPHP_JOBS_COUNT", std::to_string(get_default_threads_count()));
   parser.add("Threads number for the transpilation", settings->threads_count,
              't', "threads-count", "KPHP_THREADS_COUNT", std::to_string(get_default_threads_count()));
-  parser.add("Count of batches all const strings/arrays will be split into, default 0 (auto). Lowering it speeds up compilation, but increase amount of re-compiled files on incremental changes", settings->constants_batch_count,
-             "constants-batch-count", "KPHP_CONSTANTS_BATCH_COUNT", "0");
-  parser.add("Count of batches all mutable global/static vars will be split into, default 0 (auto). See the comment above", settings->globals_batch_count,
-             "globals-batch-count", "KPHP_GLOBALS_BATCH_COUNT", "0");
   parser.add("Builtin tl schema. Incompatible with lib mode", settings->tl_schema_file,
              'T', "tl-schema", "KPHP_TL_SCHEMA");
   parser.add("Generate storers and fetchers for internal tl functions", settings->gen_tl_internals,
