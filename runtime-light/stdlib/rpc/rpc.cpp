@@ -57,44 +57,6 @@ T fetch_trivial() noexcept {
   return v;
 }
 
-string fetch_string() noexcept {
-  if (!rpc_fetch_remaining_enough(sizeof(int32_t))) { // check that we have enough data to fetch string length
-    return {};                                        // TODO: error handling
-  }
-
-  auto &rpc_ctx{get_component_context()->rpc_component_context};
-  auto len{static_cast<string::size_type>(fetch_trivial<uint8_t>())};
-  string res{};
-
-  if (len < 254) {
-    // adjust since string's length takes 4 bytes
-    rpc_ctx.fetch_state.adjust(sizeof(int32_t) - sizeof(uint8_t));
-    if (!rpc_fetch_remaining_enough(len)) {
-      return {}; // TODO: error handling
-    }
-    res.append(rpc_ctx.buffer.c_str() + rpc_ctx.fetch_state.pos(), len);
-    rpc_ctx.fetch_state.adjust(len);
-  } else if (len == 254) {
-    const auto fst{fetch_trivial<uint8_t>()};
-    const auto snd{fetch_trivial<uint8_t>()};
-    const auto thd{fetch_trivial<uint8_t>()};
-    len = static_cast<string::size_type>(fst + (snd << 8) + (thd << 16));
-    if (!rpc_fetch_remaining_enough(len)) {
-      return {}; // TODO: error handling
-    }
-    res.append(rpc_ctx.buffer.c_str() + rpc_ctx.fetch_state.pos(), len);
-    rpc_ctx.fetch_state.adjust(len);
-  } else {
-    // TODO: error handling
-  }
-
-  // adjust to skip padding zeros
-  const auto skip{4 - len % 4};
-  php_assert(rpc_fetch_remaining_enough(skip));
-  rpc_ctx.fetch_state.adjust(skip);
-  return res;
-}
-
 array<mixed> fetch_function_untyped(const class_instance<RpcTlQuery> &rpc_query) noexcept {
   php_assert(!rpc_query.is_null());
   auto &rpc_ctx{get_component_context()->rpc_component_context};
@@ -455,7 +417,41 @@ double f$fetch_float() noexcept {
 }
 
 string f$fetch_string() noexcept {
-  return rpc_impl_::fetch_string();
+  if (!rpc_impl_::rpc_fetch_remaining_enough(sizeof(int32_t))) { // check that we have enough data to fetch string length
+    return {};                                        // TODO: error handling
+  }
+
+  auto &rpc_ctx{get_component_context()->rpc_component_context};
+  auto len{static_cast<string::size_type>(rpc_impl_::fetch_trivial<uint8_t>())};
+  string res{};
+
+  if (len < 254) {
+    // adjust since string's length takes 4 bytes
+    rpc_ctx.fetch_state.adjust(sizeof(int32_t) - sizeof(uint8_t));
+    if (!rpc_impl_::rpc_fetch_remaining_enough(len)) {
+      return {}; // TODO: error handling
+    }
+    res.append(rpc_ctx.buffer.c_str() + rpc_ctx.fetch_state.pos(), len);
+    rpc_ctx.fetch_state.adjust(len);
+  } else if (len == 254) {
+    const auto fst{rpc_impl_::fetch_trivial<uint8_t>()};
+    const auto snd{rpc_impl_::fetch_trivial<uint8_t>()};
+    const auto thd{rpc_impl_::fetch_trivial<uint8_t>()};
+    len = static_cast<string::size_type>(fst + (snd << 8) + (thd << 16));
+    if (!rpc_impl_::rpc_fetch_remaining_enough(len)) {
+      return {}; // TODO: error handling
+    }
+    res.append(rpc_ctx.buffer.c_str() + rpc_ctx.fetch_state.pos(), len);
+    rpc_ctx.fetch_state.adjust(len);
+  } else {
+    // TODO: error handling
+  }
+
+  // adjust to skip padding zeros
+  const auto skip{4 - len % 4};
+  php_assert(rpc_impl_::rpc_fetch_remaining_enough(skip));
+  rpc_ctx.fetch_state.adjust(skip);
+  return res;
 }
 
 // === Rpc Query ==================================================================================
