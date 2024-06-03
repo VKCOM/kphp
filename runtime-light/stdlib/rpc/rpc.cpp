@@ -281,7 +281,7 @@ task_t<RpcQueryInfo> typed_rpc_tl_query_one_impl(const string &actor, const RpcR
                                              std::make_pair(rpc_response_extra_info_status_t::NOT_READY, rpc_response_extra_info_t{0, query_info.timestamp}));
   }
 
-  co_return RpcQueryInfo{};
+  co_return query_info;
 }
 
 task_t<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) noexcept {
