@@ -15,6 +15,8 @@
 #include "compiler/data/var-data.h"
 #include "compiler/inferring/public.h"
 
+// see const-globals-batched-mem.h for detailed comments of what's going on
+
 namespace {
 
 ConstantsBatchedMem constants_batched_mem;

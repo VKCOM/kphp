@@ -25,6 +25,10 @@ struct PhpScriptBuiltInSuperGlobals {
   string v$d$PHP_SAPI;  // define('PHP_SAPI')
 };
 
+// storage of linear memory used for mutable globals in each script
+// on worker start, once_alloc_linear_mem() is called from codegen
+// it initializes g_linear_mem, and every mutable global access is codegenerated
+// as smth line `(*reinterpret_cast<T*>(&php_globals.mem()+offset))`
 class PhpScriptMutableGlobals {
   char *g_linear_mem{nullptr};
   std::unordered_map<int64_t, char *> libs_linear_mem;
