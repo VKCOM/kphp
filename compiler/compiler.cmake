@@ -71,7 +71,7 @@ prepend(KPHP_COMPILER_INFERRING_SOURCES inferring/
 prepend(KPHP_COMPILER_CODEGEN_SOURCES code-gen/
         code-gen-task.cpp
         code-generator.cpp
-        const-globals-linear-mem.cpp
+        const-globals-batched-mem.cpp
         declarations.cpp
         files/cmake-lists-txt.cpp
         files/const-vars-init.cpp

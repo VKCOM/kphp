@@ -23,7 +23,7 @@ void PhpScriptMutableGlobals::once_alloc_linear_mem(const char *lib_name, unsign
   memset(libs_linear_mem[key_lib_name], 0, n_bytes);
 }
 
-char *PhpScriptMutableGlobals::get_linear_mem(const char *lib_name) const {
+char *PhpScriptMutableGlobals::mem_for_lib(const char *lib_name) const {
   int64_t key_lib_name = string_hash(lib_name, strlen(lib_name));
   auto found = libs_linear_mem.find(key_lib_name);
   php_assert(found != libs_linear_mem.end());

@@ -25,8 +25,6 @@ public:
   SrcFilePtr get_file() const { return file; }
   FunctionPtr get_function() const { return function; }
   int get_line() const { return line; }
-  
-  const std::string &calculate_batch_path_for_constant() const;
 
   std::string as_human_readable() const;
 

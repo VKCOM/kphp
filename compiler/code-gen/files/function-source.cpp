@@ -5,7 +5,7 @@
 #include "compiler/code-gen/files/function-source.h"
 
 #include "compiler/code-gen/common.h"
-#include "compiler/code-gen/const-globals-linear-mem.h"
+#include "compiler/code-gen/const-globals-batched-mem.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/includes.h"
 #include "compiler/code-gen/namespace.h"
@@ -18,9 +18,9 @@ FunctionCpp::FunctionCpp(FunctionPtr function) :
 }
 
 void declare_const_vars(FunctionPtr function, CodeGenerator &W) {
-  ConstantsLinearMemExternCollector c_mem_extern;
+  ConstantsExternCollector c_mem_extern;
   for (VarPtr var : function->explicit_const_var_ids) {
-    c_mem_extern.add_batch_num_from_var(var);
+    c_mem_extern.add_extern_from_var(var);
   }
   W << c_mem_extern << NL;
 }

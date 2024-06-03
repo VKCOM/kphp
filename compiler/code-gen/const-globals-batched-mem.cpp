@@ -2,7 +2,7 @@
 // Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "compiler/code-gen/const-globals-linear-mem.h"
+#include "compiler/code-gen/const-globals-batched-mem.h"
 
 #include <common/algorithms/string-algorithms.h>
 #include <compiler/data/function-data.h>
@@ -17,8 +17,8 @@
 
 namespace {
 
-ConstantsLinearMem constants_linear_mem;
-GlobalsLinearMem globals_linear_mem;
+ConstantsBatchedMem constants_batched_mem;
+GlobalsBatchedMem globals_batched_mem;
 
 int calc_sizeof_tuple_shape(const TypeData *type);
 
@@ -78,7 +78,7 @@ int calc_sizeof_tuple_shape(const TypeData *type);
 } // namespace
 
 
-void ConstantsLinearMem::inc_count_by_type(const TypeData *type) {
+void ConstantsBatchedMem::inc_count_by_type(const TypeData *type) {
   if (type->use_optional()) {
     count_of_type_other++;
     return;
@@ -104,59 +104,61 @@ void ConstantsLinearMem::inc_count_by_type(const TypeData *type) {
   }
 }
 
-const ConstantsLinearMem &ConstantsLinearMem::prepare_mem_and_assign_offsets(const std::vector<VarPtr> &all_constants) {
-  ConstantsLinearMem &mem = constants_linear_mem;
+int ConstantsBatchedMem::detect_constants_batch_count(int n_constants) {
+  if (n_constants > 1200000) return 2048;
+  if (n_constants > 800000) return 1536;
+  if (n_constants > 500000) return 1024;
+  if (n_constants > 100000) return 512;
+  if (n_constants > 10000) return 256;
+  if (n_constants > 5000) return 128;
+  if (n_constants > 1000) return 32;
+  if (n_constants > 500) return 16;
+  if (n_constants > 100) return 4;
+  return 1;
+}
+
+const ConstantsBatchedMem &ConstantsBatchedMem::prepare_mem_and_assign_offsets(const std::vector<VarPtr> &all_constants) {
+  ConstantsBatchedMem &mem = constants_batched_mem;
+
+  const int N_BATCHES = detect_constants_batch_count(all_constants.size());
+  mem.batches.resize(N_BATCHES);
 
   for (VarPtr var : all_constants) {
-    kphp_assert(var->init_val);
-    const std::string &batch_path = var->init_val->location.calculate_batch_path_for_constant();
-    uint64_t batch_hash = vk::std_hash(batch_path);
-    var->batch_in_linear_mem = batch_hash;
-
-    auto found_it = mem.batches.find(batch_hash);
-    if (found_it == mem.batches.end()) {
-      mem.batches[batch_hash] = OneBatchInfo{
-        .batch_hash = batch_hash,
-        .batch_hex = fmt_format("{:x}", batch_hash),
-        .batch_path = batch_path,
-        .constants = {var},
-        .mem_size = 0,  // to be calculated below
-        .max_dep_level = var->dependency_level,
-      };
-    } else {
-      found_it->second.constants.emplace_back(var);
-      if (var->dependency_level > found_it->second.max_dep_level) {
-        found_it->second.max_dep_level = var->dependency_level;
-      }
+    int batch_idx = static_cast<int>(vk::std_hash(var->name) % N_BATCHES);
+    var->batch_idx = batch_idx;
+    mem.batches[batch_idx].n_constants++;
+    if (var->dependency_level > mem.batches[batch_idx].max_dep_level) {
+      mem.batches[batch_idx].max_dep_level = var->dependency_level;
     }
   }
 
-  for (auto &[_, dir_batch] : mem.batches) {
+  for (int batch_idx = 0; batch_idx < N_BATCHES; ++batch_idx) {
+    mem.batches[batch_idx].batch_idx = batch_idx;
+    mem.batches[batch_idx].constants.reserve(mem.batches[batch_idx].n_constants);
+  }
+
+  for (VarPtr var : all_constants) {
+    mem.batches[var->batch_idx].constants.emplace_back(var);
+  }
+
+  for (OneBatchInfo &batch : mem.batches) {
     // sort constants by name to make codegen stable
-    std::sort(dir_batch.constants.begin(), dir_batch.constants.end(), [](VarPtr c1, VarPtr c2) -> bool {
+    std::sort(batch.constants.begin(), batch.constants.end(), [](VarPtr c1, VarPtr c2) -> bool {
       return c1->name.compare(c2->name) < 0;
     });
 
-    int offset = 0;
-
-    for (VarPtr var : dir_batch.constants) {
+    for (VarPtr var : batch.constants) {
       const TypeData *var_type = tinf::get_type(var);
-      int cur_sizeof = (calc_sizeof_in_bytes_runtime(var_type) + 7) & -8; // min 8 bytes per variable
-
-      var->offset_in_linear_mem = offset;   // for constants, it starts from 0 in every batch
-      offset += cur_sizeof;
-      mem.inc_count_by_type(var_type);
+      mem.inc_count_by_type(var_type);  // count stat to output it
     }
 
-    dir_batch.mem_size = offset;
-    mem.total_mem_size += offset;
-    mem.total_count += dir_batch.constants.size();
+    mem.total_count += batch.constants.size();
   }
 
   return mem;
 }
 
-void GlobalsLinearMem::inc_count_by_origin(VarPtr var) {
+void GlobalsBatchedMem::inc_count_by_origin(VarPtr var) {
   if (var->is_class_static_var()) {
     count_of_static_fields++;
   } else if (var->is_function_static_var()) {
@@ -170,7 +172,7 @@ void GlobalsLinearMem::inc_count_by_origin(VarPtr var) {
   } 
 }
 
-int GlobalsLinearMem::detect_globals_batch_count(int n_globals) {
+int GlobalsBatchedMem::detect_globals_batch_count(int n_globals) {
   if (n_globals > 10000) return 256;
   if (n_globals > 5000) return 128;
   if (n_globals > 1000) return 32;
@@ -180,25 +182,25 @@ int GlobalsLinearMem::detect_globals_batch_count(int n_globals) {
   return 1;
 }
 
-const GlobalsLinearMem &GlobalsLinearMem::prepare_mem_and_assign_offsets(const std::vector<VarPtr> &all_globals) {
-  GlobalsLinearMem &mem = globals_linear_mem;
+const GlobalsBatchedMem &GlobalsBatchedMem::prepare_mem_and_assign_offsets(const std::vector<VarPtr> &all_globals) {
+  GlobalsBatchedMem &mem = globals_batched_mem;
 
   const int N_BATCHES = detect_globals_batch_count(all_globals.size());
   mem.batches.resize(N_BATCHES);
 
-  std::vector<int> batches_counts(N_BATCHES, 0);
   for (VarPtr var : all_globals) {
-    int batch_num = static_cast<int>(vk::std_hash(var->name) % N_BATCHES);
-    var->batch_in_linear_mem = batch_num;
-    batches_counts[batch_num]++;
+    int batch_idx = static_cast<int>(vk::std_hash(var->name) % N_BATCHES);
+    var->batch_idx = batch_idx;
+    mem.batches[batch_idx].n_globals++;
   }
 
-  for (int batch_num = 0; batch_num < N_BATCHES; ++batch_num) {
-    mem.batches[batch_num].globals.reserve(batches_counts[batch_num]);
+  for (int batch_idx = 0; batch_idx < N_BATCHES; ++batch_idx) {
+    mem.batches[batch_idx].batch_idx = batch_idx;
+    mem.batches[batch_idx].globals.reserve(mem.batches[batch_idx].n_globals);
   }
 
   for (VarPtr var : all_globals) {
-    mem.batches[var->batch_in_linear_mem].globals.emplace_back(var);
+    mem.batches[var->batch_idx].globals.emplace_back(var);
   }
 
   for (OneBatchInfo &batch : mem.batches) {
@@ -227,7 +229,7 @@ const GlobalsLinearMem &GlobalsLinearMem::prepare_mem_and_assign_offsets(const s
       const TypeData *var_type = tinf::get_type(var);
       int cur_sizeof = (calc_sizeof_in_bytes_runtime(var_type) + 7) & -8; // min 8 bytes per variable
 
-      var->offset_in_linear_mem = mem.total_mem_size + offset; // for globals, it is continuous
+      var->offset_in_linear_mem = mem.total_mem_size + offset; // it's continuous
       offset += cur_sizeof;
       mem.inc_count_by_origin(var);
     }
@@ -237,10 +239,9 @@ const GlobalsLinearMem &GlobalsLinearMem::prepare_mem_and_assign_offsets(const s
     // only inside one batch, but not throughout the whole project
     // (with the exception, when a rounded batch size exceeds next 1KB)
     // note, that we don't do this for constants: while globals memory is a single continuous piece,
-    // constant batches, on the contrary, are physically independent C++ variables
+    // constants, on the contrary, are physically independent C++ variables
     offset = (offset + 1023) & -1024;
-    
-    batch.mem_size = offset;
+
     mem.total_mem_size += offset;
     mem.total_count += batch.globals.size();
   }
@@ -248,24 +249,55 @@ const GlobalsLinearMem &GlobalsLinearMem::prepare_mem_and_assign_offsets(const s
   return mem;
 }
 
-void ConstantsLinearMemExternCollector::add_batch_num_from_var(VarPtr var) {
+void ConstantsExternCollector::add_extern_from_var(VarPtr var) {
   kphp_assert(var->is_constant());
-  required_batch_hashes.insert(var->batch_in_linear_mem);
+  extern_constants.insert(var);
 }
 
-void ConstantsLinearMemExternCollector::add_batch_num_from_init_val(VertexPtr init_val) {
+void ConstantsExternCollector::add_extern_from_init_val(VertexPtr init_val) {
   if (auto var = init_val.try_as<op_var>()) {
-    add_batch_num_from_var(var->var_id);
+    add_extern_from_var(var->var_id);
   }
   for (VertexPtr child : *init_val) {
-    add_batch_num_from_init_val(child);
+    add_extern_from_init_val(child);
   }
 }
 
-void ConstantsLinearMemExternCollector::compile(CodeGenerator &W) const {
-  for (uint64_t batch_hash : required_batch_hashes) {
-    const ConstantsLinearMem::OneBatchInfo &dir_batch = constants_linear_mem.get_batch(batch_hash);
-    W << "extern char c_" << dir_batch.batch_hex << "[" << dir_batch.mem_size << "]; // " << dir_batch.batch_path << NL;
+void ConstantsExternCollector::compile(CodeGenerator &W) const {
+  for (VarPtr c : extern_constants) {
+    W << "extern " << type_out(tinf::get_type(c)) << " " << c->name << ";" << NL;
+  }
+}
+
+void ConstantsMemAllocation::compile(CodeGenerator &W) const {
+  const ConstantsBatchedMem &mem = constants_batched_mem;
+
+  W << "// total_count = " << mem.total_count << NL;
+  W << "// count(string) = " << mem.count_of_type_string << NL;
+  W << "// count(regexp) = " << mem.count_of_type_regexp << NL;
+  W << "// count(array) = " << mem.count_of_type_array << NL;
+  W << "// count(mixed) = " << mem.count_of_type_mixed << NL;
+  W << "// count(instance) = " << mem.count_of_type_instance << NL;
+  W << "// count(other) = " << mem.count_of_type_other << NL;
+  W << "// n_batches = " << mem.batches.size() << NL;
+}
+
+void GlobalsMemAllocation::compile(CodeGenerator &W) const {
+  const GlobalsBatchedMem &mem = globals_batched_mem;
+
+  W << "// total_mem_size = " << mem.total_mem_size << NL;
+  W << "// total_count = " << mem.total_count << NL;
+  W << "// count(static fields) = " << mem.count_of_static_fields << NL;
+  W << "// count(function statics) = " << mem.count_of_function_statics << NL;
+  W << "// count(nonconst defines) = " << mem.count_of_nonconst_defines << NL;
+  W << "// count(require_once) = " << mem.count_of_require_once << NL;
+  W << "// count(php global scope) = " << mem.count_of_php_global_scope << NL;
+  W << "// n_batches = " << mem.batches.size() << NL;
+
+  if (!G->is_output_mode_lib()) {
+    W << "php_globals.once_alloc_linear_mem(" << mem.total_mem_size << ");" << NL;
+  } else {
+    W << "php_globals.once_alloc_linear_mem(\"" << G->settings().static_lib_name.get() << "\", " << mem.total_mem_size << ");" << NL;
   }
 }
 
@@ -289,48 +321,12 @@ void PhpMutableGlobalsConstRefArgument::compile(CodeGenerator &W) const {
   W << "const PhpScriptMutableGlobals &php_globals";
 }
 
-void ConstantsLinearMemAllocation::compile(CodeGenerator &W) const {
-  const ConstantsLinearMem &mem = constants_linear_mem;
-  W << "// total_mem_size = " << mem.total_mem_size << NL;
-  W << "// total_count = " << mem.total_count << NL;
-  W << "// count(string) = " << mem.count_of_type_string << NL;
-  W << "// count(regexp) = " << mem.count_of_type_regexp << NL;
-  W << "// count(array) = " << mem.count_of_type_array << NL;
-  W << "// count(mixed) = " << mem.count_of_type_mixed << NL;
-  W << "// count(instance) = " << mem.count_of_type_instance << NL;
-  W << "// count(other) = " << mem.count_of_type_other << NL;
-  W << "// n_batches = " << mem.batches.size() << NL;
-}
-
-void GlobalsLinearMemAllocation::compile(CodeGenerator &W) const {
-  const GlobalsLinearMem &mem = globals_linear_mem;
-  W << "// total_mem_size = " << mem.total_mem_size << NL;
-  W << "// total_count = " << mem.total_count << NL;
-  W << "// count(static fields) = " << mem.count_of_static_fields << NL;
-  W << "// count(function statics) = " << mem.count_of_function_statics << NL;
-  W << "// count(nonconst defines) = " << mem.count_of_nonconst_defines << NL;
-  W << "// count(require_once) = " << mem.count_of_require_once << NL;
-  W << "// count(php global scope) = " << mem.count_of_php_global_scope << NL;
-  W << "// n_batches = " << mem.batches.size() << NL;
-
-  if (!G->is_output_mode_lib()) {
-    W << "php_globals.once_alloc_linear_mem(" << globals_linear_mem.get_total_linear_mem_size() << ");" << NL;
-  } else {
-    W << "php_globals.once_alloc_linear_mem(\"" << G->settings().static_lib_name.get() << "\", " << globals_linear_mem.get_total_linear_mem_size() << ");" << NL;
-  }
-}
-
-void ConstantVarInLinearMem::compile(CodeGenerator &W) const {
-  const ConstantsLinearMem::OneBatchInfo &dir_batch = constants_linear_mem.get_batch(const_var->batch_in_linear_mem);
-  W << "(*reinterpret_cast<" << type_out(tinf::get_type(const_var)) << "*>(c_" << dir_batch.batch_hex << "+" << const_var->offset_in_linear_mem << "))";
-}
-
 void GlobalVarInPhpGlobals::compile(CodeGenerator &W) const {
   if (global_var->is_builtin_runtime) {
     W << "php_globals.get_superglobals().v$" << global_var->name;
   } else if (!G->is_output_mode_lib()) {
-    W << "(*reinterpret_cast<" << type_out(tinf::get_type(global_var)) << "*>(php_globals.get_linear_mem()+" << global_var->offset_in_linear_mem << "))";
+    W << "(*reinterpret_cast<" << type_out(tinf::get_type(global_var)) << "*>(php_globals.mem()+" << global_var->offset_in_linear_mem << "))";
   } else {
-    W << "(*reinterpret_cast<" << type_out(tinf::get_type(global_var)) << "*>(php_globals.get_linear_mem(\"" << G->settings().static_lib_name.get() << "\")+" << global_var->offset_in_linear_mem << "))";
+    W << "(*reinterpret_cast<" << type_out(tinf::get_type(global_var)) << "*>(php_globals.mem_for_lib(\"" << G->settings().static_lib_name.get() << "\")+" << global_var->offset_in_linear_mem << "))";
   }
 }

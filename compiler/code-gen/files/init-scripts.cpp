@@ -5,7 +5,7 @@
 #include "compiler/code-gen/files/init-scripts.h"
 
 #include "compiler/code-gen/common.h"
-#include "compiler/code-gen/const-globals-linear-mem.h"
+#include "compiler/code-gen/const-globals-batched-mem.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/files/shape-keys.h"
 #include "compiler/code-gen/includes.h"

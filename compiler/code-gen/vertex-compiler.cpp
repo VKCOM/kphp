@@ -11,7 +11,7 @@
 
 #include "common/wrappers/likely.h"
 #include "compiler/code-gen/common.h"
-#include "compiler/code-gen/const-globals-linear-mem.h"
+#include "compiler/code-gen/const-globals-batched-mem.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/files/json-encoder-tags.h"
 #include "compiler/code-gen/files/tracing-autogen.h"
@@ -1886,10 +1886,6 @@ void compile_array(VertexAdaptor<op_array> root, CodeGenerator &W) {
     W << TypeName(type) << "::create(" << JoinValues(*root, ", ") << ")";
     return;
   }
-  if (!has_double_arrow && type->ptype() == tp_array && root->extra_type != op_ex_safe_version) {
-    W << TypeName(type) << "::initialize_vector(std::initializer_list<" << TypeName(type->lookup_at_any_key()) << ">{" << JoinValues(*root, ",") << "})";
-    return;
-  }
 
   W << "(" << BEGIN;
 
@@ -2162,11 +2158,11 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
     case op_var: {
       VarPtr var_id = root.as<op_var>()->var_id;
       if (var_id->is_constant()) {
-        // auto-extracted constant variables (const strings, arrays, etc.) in codegen are not C++ variables:
-        // instead, they all are places in linear memory chunks, accessed by reinterpret_cast
-        W << ConstantVarInLinearMem(var_id);
+        // auto-extracted constant variables (const strings, arrays, etc.) in codegen are C++ variables
+        W << var_id->name;
       } else if (var_id->is_in_global_scope() && !var_id->is_foreach_reference) {
-        // mutable globals are also placed in linear memory (separately from constants)
+        // mutable globals, as opposed, are not C++ variables: instead,
+        // they all are placed in linear memory chunks, see php-script-globals.h
         // with the only exception of `foreach (... as &$ref)` in global scope, see compile_foreach_ref_header()
         W << GlobalVarInPhpGlobals(var_id);
       } else {

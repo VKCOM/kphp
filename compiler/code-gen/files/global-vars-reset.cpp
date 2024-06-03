@@ -5,17 +5,16 @@
 #include "compiler/code-gen/files/global-vars-reset.h"
 
 #include "compiler/code-gen/common.h"
-#include "compiler/code-gen/const-globals-linear-mem.h"
+#include "compiler/code-gen/const-globals-batched-mem.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/namespace.h"
 #include "compiler/code-gen/vertex-compiler.h"
 #include "compiler/data/src-file.h"
-#include "compiler/inferring/public.h"
 
-GlobalVarsReset::GlobalVarsReset(const GlobalsLinearMem &all_globals_in_mem)
+GlobalVarsReset::GlobalVarsReset(const GlobalsBatchedMem &all_globals_in_mem)
   : all_globals_in_mem(all_globals_in_mem) {}
 
-void GlobalVarsReset::compile_globals_reset_part(CodeGenerator &W, const GlobalsLinearMem::OneBatchInfo &batch) {
+void GlobalVarsReset::compile_globals_reset_part(CodeGenerator &W, const GlobalsBatchedMem::OneBatchInfo &batch) {
   IncludesCollector includes;
   for (VarPtr var : batch.globals) {
     includes.add_var_signature_depends(var);
@@ -24,10 +23,10 @@ void GlobalVarsReset::compile_globals_reset_part(CodeGenerator &W, const Globals
   W << OpenNamespace();
 
   W << NL;
-  ConstantsLinearMemExternCollector c_mem_extern;
+  ConstantsExternCollector c_mem_extern;
   for (VarPtr var : batch.globals) {
     if (var->init_val) {
-      c_mem_extern.add_batch_num_from_init_val(var->init_val);
+      c_mem_extern.add_extern_from_init_val(var->init_val);
     }
   }
   W << c_mem_extern << NL;
@@ -52,7 +51,7 @@ void GlobalVarsReset::compile_globals_reset_part(CodeGenerator &W, const Globals
   W << CloseNamespace();
 }
 
-void GlobalVarsReset::compile_globals_reset(CodeGenerator &W, const GlobalsLinearMem &all_globals_in_mem) {
+void GlobalVarsReset::compile_globals_reset(CodeGenerator &W, const GlobalsBatchedMem &all_globals_in_mem) {
   W << OpenNamespace();
   FunctionSignatureGenerator(W) << "void global_vars_reset(" << PhpMutableGlobalsRefArgument() << ")" << BEGIN;
 
@@ -73,7 +72,7 @@ void GlobalVarsReset::compile_globals_allocate(CodeGenerator &W) {
   W << OpenNamespace();
   FunctionSignatureGenerator(W) << "void global_vars_allocate(" << PhpMutableGlobalsRefArgument() << ")" << BEGIN;
 
-  W << GlobalsLinearMemAllocation();
+  W << GlobalsMemAllocation();
 
   W << END << NL;
   W << CloseNamespace();

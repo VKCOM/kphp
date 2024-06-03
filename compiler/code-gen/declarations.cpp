@@ -7,7 +7,7 @@
 #include "common/algorithms/compare.h"
 
 #include "compiler/code-gen/common.h"
-#include "compiler/code-gen/const-globals-linear-mem.h"
+#include "compiler/code-gen/const-globals-batched-mem.h"
 #include "compiler/code-gen/files/json-encoder-tags.h"
 #include "compiler/code-gen/files/tl2cpp/tl2cpp-utils.h"
 #include "compiler/code-gen/includes.h"
@@ -457,10 +457,10 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
     tl_dep_usings->compile_dependencies(W);
   }
 
-  ConstantsLinearMemExternCollector c_mem_extern;
+  ConstantsExternCollector c_mem_extern;
   klass->members.for_each([&c_mem_extern](const ClassMemberInstanceField &f) {
     if (f.var->init_val) {
-      c_mem_extern.add_batch_num_from_init_val(f.var->init_val);
+      c_mem_extern.add_extern_from_init_val(f.var->init_val);
     }
   });
   W << c_mem_extern << NL;

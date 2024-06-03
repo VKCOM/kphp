@@ -7,7 +7,7 @@
 #include "compiler/code-gen/code-gen-task.h"
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
-#include "compiler/code-gen/const-globals-linear-mem.h"
+#include "compiler/code-gen/const-globals-batched-mem.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/files/cmake-lists-txt.h"
 #include "compiler/code-gen/files/const-vars-init.h"
@@ -60,10 +60,10 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
   for (FunctionPtr f : all_functions) {
     all_globals.insert(all_globals.end(), f->static_var_ids.begin(), f->static_var_ids.end());
   }
-  const GlobalsLinearMem &all_globals_in_mem = GlobalsLinearMem::prepare_mem_and_assign_offsets(all_globals);
+  const GlobalsBatchedMem &all_globals_in_mem = GlobalsBatchedMem::prepare_mem_and_assign_offsets(all_globals);
 
   std::vector<VarPtr> all_constants = G->get_constants_vars();
-  const ConstantsLinearMem &all_constants_in_mem = ConstantsLinearMem::prepare_mem_and_assign_offsets(all_constants);
+  const ConstantsBatchedMem &all_constants_in_mem = ConstantsBatchedMem::prepare_mem_and_assign_offsets(all_constants);
 
   for (FunctionPtr f : all_functions) {
     code_gen_start_root_task(os, std::make_unique<FunctionH>(f));

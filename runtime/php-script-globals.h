@@ -36,8 +36,8 @@ public:
   void once_alloc_linear_mem(unsigned int n_bytes);
   void once_alloc_linear_mem(const char *lib_name, unsigned int n_bytes);
 
-  char *get_linear_mem() const { return g_linear_mem; }
-  char *get_linear_mem(const char *lib_name) const;
+  char *mem() const { return g_linear_mem; }
+  char *mem_for_lib(const char *lib_name) const;
 
   PhpScriptBuiltInSuperGlobals &get_superglobals() { return superglobals; }
   const PhpScriptBuiltInSuperGlobals &get_superglobals() const { return superglobals; }

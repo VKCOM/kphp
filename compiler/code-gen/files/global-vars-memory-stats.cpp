@@ -5,7 +5,7 @@
 #include "compiler/code-gen/files/global-vars-memory-stats.h"
 
 #include "compiler/code-gen/common.h"
-#include "compiler/code-gen/const-globals-linear-mem.h"
+#include "compiler/code-gen/const-globals-batched-mem.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/includes.h"
 #include "compiler/code-gen/namespace.h"

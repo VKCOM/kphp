@@ -5,7 +5,7 @@
 #include "compiler/code-gen/files/function-header.h"
 
 #include "compiler/code-gen/common.h"
-#include "compiler/code-gen/const-globals-linear-mem.h"
+#include "compiler/code-gen/const-globals-batched-mem.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/files/function-source.h"
 #include "compiler/code-gen/includes.h"
@@ -27,9 +27,9 @@ void FunctionH::compile(CodeGenerator &W) const {
 
   W << OpenNamespace();
 
-  ConstantsLinearMemExternCollector c_mem_extern;
+  ConstantsExternCollector c_mem_extern;
   for (VarPtr var : function->explicit_header_const_var_ids) {
-    c_mem_extern.add_batch_num_from_var(var);
+    c_mem_extern.add_extern_from_var(var);
   }
   W << c_mem_extern << NL;
 

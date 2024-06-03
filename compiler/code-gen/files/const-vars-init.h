@@ -6,16 +6,16 @@
 
 #include "compiler/code-gen/code-gen-root-cmd.h"
 #include "compiler/code-gen/code-generator.h"
-#include "compiler/code-gen/const-globals-linear-mem.h"
+#include "compiler/code-gen/const-globals-batched-mem.h"
 
 struct ConstVarsInit : CodeGenRootCmd {
-  explicit ConstVarsInit(const ConstantsLinearMem &all_constants_in_mem);
+  explicit ConstVarsInit(const ConstantsBatchedMem &all_constants_in_mem);
   
   void compile(CodeGenerator &W) const final;
 
-  static void compile_const_init_part(CodeGenerator& W, const ConstantsLinearMem::OneBatchInfo& dir_batch);
-  static void compile_const_init(CodeGenerator &W, const ConstantsLinearMem &all_constants_in_mem);
+  static void compile_const_init_part(CodeGenerator& W, const ConstantsBatchedMem::OneBatchInfo& batch);
+  static void compile_const_init(CodeGenerator &W, const ConstantsBatchedMem &all_constants_in_mem);
 
 private:
-  const ConstantsLinearMem &all_constants_in_mem;
+  const ConstantsBatchedMem &all_constants_in_mem;
 };

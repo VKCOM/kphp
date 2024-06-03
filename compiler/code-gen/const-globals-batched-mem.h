@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include <map>
 #include <set>
 
 #include "compiler/data/data_ptr.h"
@@ -13,19 +12,17 @@
 class TypeData;
 class CodeGenerator;
 
-class ConstantsLinearMem {
+class ConstantsBatchedMem {
 public:
   struct OneBatchInfo {
-    uint64_t batch_hash;
-    std::string batch_hex;
-    std::string batch_path;
+    int batch_idx;
+    int n_constants{0};
     std::vector<VarPtr> constants;
-    int mem_size;
-    int max_dep_level;
+    int max_dep_level{0};
   };
 
 private:
-  friend struct ConstantsLinearMemAllocation;
+  friend struct ConstantsMemAllocation;
 
   int count_of_type_string = 0;
   int count_of_type_regexp = 0;
@@ -34,32 +31,30 @@ private:
   int count_of_type_instance = 0;
   int count_of_type_other = 0;
 
-  std::map<uint64_t, OneBatchInfo> batches;
-
   int total_count = 0;
-  int total_mem_size = 0;
+  
+  std::vector<OneBatchInfo> batches;
 
   void inc_count_by_type(const TypeData *type);
 
 public:
-  static const ConstantsLinearMem &prepare_mem_and_assign_offsets(const std::vector<VarPtr> &all_constants);
+  static int detect_constants_batch_count(int n_constants);
+  static const ConstantsBatchedMem &prepare_mem_and_assign_offsets(const std::vector<VarPtr> &all_constants);
 
-  int get_total_linear_mem_size() const { return total_mem_size; }
-
-  const std::map<uint64_t, OneBatchInfo> &get_batches() const { return batches; }
+  const std::vector<OneBatchInfo> &get_batches() const { return batches; }
   const OneBatchInfo &get_batch(uint64_t batch_hash) const { return batches.at(batch_hash); }
 };
 
-class GlobalsLinearMem {
+class GlobalsBatchedMem {
 public:
   struct OneBatchInfo {
     int batch_idx;
+    int n_globals{0};
     std::vector<VarPtr> globals;
-    int mem_size;
   };
 
 private:
-  friend struct GlobalsLinearMemAllocation;
+  friend struct GlobalsMemAllocation;
 
   int count_of_static_fields = 0;
   int count_of_function_statics = 0;
@@ -67,31 +62,37 @@ private:
   int count_of_require_once = 0;
   int count_of_php_global_scope = 0;
 
-  std::vector<OneBatchInfo> batches;
-
   int total_count = 0;
   int total_mem_size = 0;
+
+  std::vector<OneBatchInfo> batches;
 
   void inc_count_by_origin(VarPtr var);
 
 public:
   static int detect_globals_batch_count(int n_globals);
-  static const GlobalsLinearMem &prepare_mem_and_assign_offsets(const std::vector<VarPtr> &all_globals);
-
-  int get_total_linear_mem_size() const { return total_mem_size; }
+  static const GlobalsBatchedMem &prepare_mem_and_assign_offsets(const std::vector<VarPtr> &all_globals);
 
   const std::vector<OneBatchInfo> &get_batches() const { return batches; }
   const OneBatchInfo &get_batch(int batch_idx) const { return batches.at(batch_idx); }
 };
 
-struct ConstantsLinearMemExternCollector {
-  void add_batch_num_from_var(VarPtr var);
-  void add_batch_num_from_init_val(VertexPtr init_val);
+struct ConstantsExternCollector {
+  void add_extern_from_var(VarPtr var);
+  void add_extern_from_init_val(VertexPtr init_val);
 
   void compile(CodeGenerator &W) const;
 
 private:
-  std::set<uint64_t> required_batch_hashes;
+  std::set<VarPtr> extern_constants;
+};
+
+struct ConstantsMemAllocation {
+  void compile(CodeGenerator &W) const;
+};
+
+struct GlobalsMemAllocation {
+  void compile(CodeGenerator &W) const;
 };
 
 struct PhpMutableGlobalsAssignCurrent {
@@ -99,23 +100,6 @@ struct PhpMutableGlobalsAssignCurrent {
 };
 
 struct PhpMutableGlobalsDeclareInResumableClass {
-  void compile(CodeGenerator &W) const;
-};
-
-struct ConstantsLinearMemAllocation {
-  void compile(CodeGenerator &W) const;
-};
-
-struct GlobalsLinearMemAllocation {
-  void compile(CodeGenerator &W) const;
-};
-
-struct ConstantVarInLinearMem {
-  VarPtr const_var;
-
-  explicit ConstantVarInLinearMem(VarPtr const_var)
-    : const_var(const_var) {}
-
   void compile(CodeGenerator &W) const;
 };
 

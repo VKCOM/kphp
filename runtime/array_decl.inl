@@ -228,8 +228,6 @@ public:
   template<class... Args>
   inline static array create(Args &&... args) __attribute__ ((always_inline));
 
-  inline static array initialize_vector(const std::initializer_list<T> &v) __attribute__ ((noinline));
-
   inline array &operator=(const array &other) noexcept __attribute__ ((always_inline));
 
   inline array &operator=(array &&other) noexcept __attribute__ ((always_inline));

@@ -121,25 +121,25 @@ struct NameGenerator : public VertexVisitor<NameGenerator, std::string> {
 
   static std::string on_define_val(VertexAdaptor<op_define_val> v) {
     if (is_object_suitable_for_hashing(v)) {
-      return gen_const_object_name(v, vk::std_hash(v->location.calculate_batch_path_for_constant()));
+      return gen_const_object_name(v);
     }
     return fallback(v);
   }
 
   static std::string on_string(VertexAdaptor<op_string> v) {
-    return gen_const_string_name(v->str_val, vk::std_hash(v->location.calculate_batch_path_for_constant()));
+    return gen_const_string_name(v->str_val);
   }
 
   static std::string on_array(VertexAdaptor<op_array> v) {
     if (is_array_suitable_for_hashing(v)) {
-      return gen_const_array_name(v, vk::std_hash(v->location.calculate_batch_path_for_constant()));
+      return gen_const_array_name(v);
     }
     return fallback(v);
   }
 
   static std::string on_conv_regexp(VertexAdaptor<op_conv_regexp> v) {
     if (v->expr()->type() == op_string) {
-      return gen_const_regexp_name(v->expr().as<op_string>()->str_val, vk::std_hash(v->location.calculate_batch_path_for_constant()));
+      return gen_const_regexp_name(v->expr().as<op_string>()->str_val);
     }
     return fallback(v);
   }
@@ -155,26 +155,21 @@ private:
     return vertex->type() == op_array && CheckConst::is_const(vertex);
   }
 
-  static std::string gen_const_string_name(const std::string &str, uint64_t batch_hash) {
-    // return fmt_format("const_string$us{:x}", vk::std_hash(str));
-    return fmt_format("const_string$us{:x}${:x}", vk::std_hash(str), batch_hash);
+  static std::string gen_const_string_name(const std::string &str) {
+    return fmt_format("c_str${:x}", vk::std_hash(str));
   }
 
-  static std::string gen_const_regexp_name(const std::string &str, uint64_t batch_hash) {
-    // return fmt_format("const_regexp$us{:x}", vk::std_hash(str));
-    return fmt_format("const_regexp$us{:x}${:x}", vk::std_hash(str), batch_hash);
+  static std::string gen_const_regexp_name(const std::string &str) {
+    return fmt_format("c_reg${:x}", vk::std_hash(str));
   }
 
-  static std::string gen_const_object_name(const VertexAdaptor<op_define_val> &def, uint64_t batch_hash) {
+  static std::string gen_const_object_name(const VertexAdaptor<op_define_val> &def) {
     kphp_assert_msg(def->value()->type() == op_func_call, "Internal error: expected op_define_val <op_func_call>");
-    auto obj_hash = ObjectHash::calc_hash(def);
-    // return fmt_format("const_obj$us{:x}", obj_hash);
-    return fmt_format("const_obj$us{:x}${:x}", obj_hash, batch_hash);
+    return fmt_format("c_obj${:x}", ObjectHash::calc_hash(def));
   }
 
-  static std::string gen_const_array_name(const VertexAdaptor<op_array> &array, uint64_t batch_hash) {
-    // return fmt_format("const_array$us{:x}", ArrayHash::calc_hash(array));
-    return fmt_format("const_array$us{:x}${:x}", ArrayHash::calc_hash(array), batch_hash);
+  static std::string gen_const_array_name(const VertexAdaptor<op_array> &array) {
+    return fmt_format("c_arr${:x}", ArrayHash::calc_hash(array));
   }
 };
 

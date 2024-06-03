@@ -45,9 +45,9 @@ public:
   bool is_read_only = true;
   bool is_foreach_reference = false;
   bool is_builtin_runtime = false;        // $_SERVER, $argv, etc., see PhpScriptBuiltInSuperGlobals in runtime
-  int dependency_level = 0;               // for constants only (const$string, const$array, etc)
-  int offset_in_linear_mem = -1;          // for constants: offset from batch start; for globals: offset from 0
-  uint64_t batch_in_linear_mem = -1;      // for constants: batch_hash; for globals: number (index) [0;N)
+  int dependency_level = 0;               // for constants only (c_str$, c_arr$, etc)
+  int offset_in_linear_mem = -1;          // for globals only (offset in g_linear_mem)
+  int batch_idx = -1;                     // for constants and globals, a number [0;N), see const-globals-batched-mem.h
 
   void set_uninited_flag(bool f);
   bool get_uninited_flag();
