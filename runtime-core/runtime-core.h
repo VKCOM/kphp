@@ -4,6 +4,10 @@
 
 #pragma once
 
+#ifndef INCLUDED_FROM_RUNTIME_TYPES
+#error "runtime-core.h should be included only in runtime types inplementation"
+#endif
+
 #include <cinttypes>
 #include <cstddef>
 #include <cstdio>
@@ -19,8 +23,8 @@
 #include "common/type_traits/list_of_types.h"
 
 #include "runtime-core/include.h"
-#include "runtime-core/kphp-types/kphp_type_traits.h"
 #include "runtime-core/kphp-types/decl/shape.h"
+#include "runtime-core/kphp-types/kphp-type-traits.h"
 
 // order of includes below matters, be careful
 
@@ -59,6 +63,7 @@
 #define f$likely likely
 #define f$unlikely unlikely
 
+
 template<typename T, typename ...Args>
 void hard_reset_var(T &var, Args &&... args) noexcept {
   new(&var) T(std::forward<Args>(args)...);
@@ -72,36 +77,48 @@ inline double divide(int64_t lhs, int64_t rhs);
 
 inline double divide(double lhs, int64_t rhs);
 
-inline double divide(const string &lhs, int64_t rhs);
+template<typename Allocator>
+inline double divide(const __string<Allocator> &lhs, int64_t rhs);
 
-inline double divide(const mixed &lhs, int64_t rhs);
+template<typename Allocator>
+inline double divide(const __mixed<Allocator> &lhs, int64_t rhs);
 
 
 inline double divide(int64_t lhs, double rhs);
 
 inline double divide(double lhs, double rhs) ubsan_supp("float-divide-by-zero");
 
-inline double divide(const string &lhs, double rhs);
+template<typename Allocator>
+inline double divide(const __string<Allocator> &lhs, double rhs);
 
-inline double divide(const mixed &lhs, double rhs);
-
-
-inline double divide(int64_t lhs, const string &rhs);
-
-inline double divide(double lhs, const string &rhs);
-
-inline double divide(const string &lhs, const string &rhs);
-
-inline double divide(const mixed &lhs, const string &rhs);
+template<typename Allocator>
+inline double divide(const __mixed<Allocator> &lhs, double rhs);
 
 
-inline double divide(int64_t lhs, const mixed &rhs);
+template<typename Allocator>
+inline double divide(int64_t lhs, const __string<Allocator> &rhs);
 
-inline double divide(double lhs, const mixed &rhs);
+template<typename Allocator>
+inline double divide(double lhs, const __string<Allocator> &rhs);
 
-inline double divide(const string &lhs, const mixed &rhs);
 
-inline double divide(const mixed &lhs, const mixed &rhs);
+template<typename Allocator>
+inline double divide(const __string<Allocator> &lhs, const __string<Allocator> &rhs);
+
+template<typename Allocator>
+inline double divide(const __mixed<Allocator> &lhs, const __string<Allocator> &rhs);
+
+template<typename Allocator>
+inline double divide(int64_t lhs, const __mixed<Allocator> &rhs);
+
+template<typename Allocator>
+inline double divide(double lhs, const __mixed<Allocator> &rhs);
+
+template<typename Allocator>
+inline double divide(const __string<Allocator> &lhs, const __mixed<Allocator> &rhs);
+
+template<typename Allocator>
+inline double divide(const __mixed<Allocator> &lhs, const __mixed<Allocator> &rhs);
 
 
 inline double divide(bool lhs, bool rhs);
@@ -112,50 +129,50 @@ inline double divide(bool lhs, const T &rhs);
 template<class T>
 inline double divide(const T &lhs, bool rhs);
 
-template<class T>
-inline double divide(bool lhs, const array<T> &rhs);
+template<class T, typename Allocator>
+inline double divide(bool lhs, const __array<T, Allocator> &rhs);
 
-template<class T>
-inline double divide(const array<T> &lhs, bool rhs);
+template<class T, typename Allocator>
+inline double divide(const __array<T, Allocator> &lhs, bool rhs);
 
-template<class T>
-inline double divide(bool lhs, const class_instance<T> &rhs);
+template<class T, typename Allocator>
+inline double divide(bool lhs, const __class_instance<T, Allocator> &rhs);
 
-template<class T>
-inline double divide(const class_instance<T> &lhs, bool rhs);
-
-
-template<class T, class T1>
-inline double divide(const array<T> &lhs, const T1 &rhs);
-
-template<class T, class T1>
-inline double divide(const T1 &lhs, const array<T> &rhs);
+template<class T, typename Allocator>
+inline double divide(const __class_instance<T, Allocator> &lhs, bool rhs);
 
 
-template<class T, class T1>
-inline double divide(const class_instance<T> &lhs, const T1 &rhs);
+template<class T, class T1, typename Allocator>
+inline double divide(const __array<T, Allocator> &lhs, const T1 &rhs);
 
-template<class T, class T1>
-inline double divide(const T1 &lhs, const class_instance<T> &rhs);
+template<class T, class T1, typename Allocator>
+inline double divide(const T1 &lhs, const __array<T, Allocator> &rhs);
 
 
-template<class T>
-inline double divide(const array<T> &lhs, const array<T> &rhs);
+template<class T, class T1, typename Allocator>
+inline double divide(const __class_instance<T, Allocator> &lhs, const T1 &rhs);
 
-template<class T>
-inline double divide(const class_instance<T> &lhs, const class_instance<T> &rhs);
+template<class T, class T1, typename Allocator>
+inline double divide(const T1 &lhs, const __class_instance<T, Allocator> &rhs);
 
-template<class T, class T1>
-inline double divide(const array<T> &lhs, const array<T1> &rhs);
 
-template<class T, class T1>
-inline double divide(const class_instance<T> &lhs, const class_instance<T1> &rhs);
+template<class T, typename Allocator>
+inline double divide(const __array<T, Allocator> &lhs, const __array<T, Allocator> &rhs);
 
-template<class T, class T1>
-inline double divide(const array<T> &lhs, const class_instance<T1> &rhs);
+template<class T, typename Allocator>
+inline double divide(const __class_instance<T, Allocator> &lhs, const __class_instance<T, Allocator> &rhs);
 
-template<class T, class T1>
-inline double divide(const class_instance<T1> &lhs, const array<T> &rhs);
+template<class T, class T1, typename Allocator>
+inline double divide(const __array<T, Allocator> &lhs, const __array<T1, Allocator> &rhs);
+
+template<class T, typename Allocator>
+inline double divide(const __class_instance<T, Allocator> &lhs, const __class_instance<T, Allocator> &rhs);
+
+template<class T, class T1, typename Allocator>
+inline double divide(const __array<T, Allocator> &lhs, const __class_instance<T, Allocator> &rhs);
+
+template<class T, typename Allocator>
+inline double divide(const __class_instance<T, Allocator> &lhs, const __array<T, Allocator> &rhs);
 
 
 template<class T1, class T2>
@@ -193,7 +210,8 @@ inline double float_power(double base, int64_t exp) {
   return std::pow(base, exp);
 }
 
-inline mixed var_power(const mixed &base, const mixed &exp) {
+template<typename Allocator>
+inline __mixed<Allocator> var_power(const __mixed<Allocator> &base, const __mixed<Allocator> &exp) {
   if (base.is_int() && exp.is_int() && exp.to_int() >= 0) {
     return int_power(base.to_int(), exp.to_int());
   }
@@ -223,7 +241,8 @@ inline double &power_self(double &base, int64_t exp) {
   return base = float_power(base, exp);
 }
 
-inline mixed &power_self(mixed &base, const mixed &exp) {
+template<typename Allocator>
+inline __mixed<Allocator> &power_self(__mixed<Allocator> &base, const __mixed<Allocator> &exp) {
   return base = var_power(base, exp);
 }
 
@@ -243,64 +262,78 @@ inline void assign(T0 &dest, const T &from);
 
 inline bool &boolval_ref(bool &val);
 
-inline bool &boolval_ref(mixed &val);
+template<typename Allocator>
+inline bool &boolval_ref(__mixed<Allocator> &val);
 
 inline const bool &boolval_ref(const bool &val);
 
-inline const bool &boolval_ref(const mixed &val);
+template<typename Allocator>
+inline const bool &boolval_ref(const __mixed<Allocator> &val);
 
 
 inline int64_t &intval_ref(int64_t &val, const char *function);
 
-inline int64_t &intval_ref(mixed &val, const char *function);
+template<typename Allocator>
+inline int64_t &intval_ref(__mixed<Allocator> &val, const char *function);
 
 inline const int64_t &intval_ref(const int64_t &val, const char *function);
 
-inline const int64_t &intval_ref(const mixed &val, const char *function);
+template<typename Allocator>
+inline const int64_t &intval_ref(const __mixed<Allocator> &val, const char *function);
 
 
 inline double &floatval_ref(double &val);
 
-inline double &floatval_ref(mixed &val);
+template<typename Allocator>
+inline double &floatval_ref(__mixed<Allocator> &val);
 
 inline const double &floatval_ref(const double &val);
 
-inline const double &floatval_ref(const mixed &val);
+template<typename Allocator>
+inline const double &floatval_ref(const __mixed<Allocator> &val);
 
 
-inline string &strval_ref(string &val, const char *function);
+template<typename Allocator>
+inline __string<Allocator> &strval_ref(__string<Allocator> &val, const char *function);
 
-inline string &strval_ref(mixed &val, const char *function);
+template<typename Allocator>
+inline __string<Allocator> &strval_ref(__mixed<Allocator> &val, const char *function);
 
-inline const string &strval_ref(const string &val, const char *function);
+template<typename Allocator>
+inline const __string<Allocator> &strval_ref(const __string<Allocator> &val, const char *function);
 
-inline const string &strval_ref(const mixed &val, const char *function);
+template<typename Allocator>
+inline const __string<Allocator> &strval_ref(const __mixed<Allocator> &val, const char *function);
 
 
-template<class T>
-inline array<T> &arrayval_ref(array<T> &val, const char *function);
+template<class T, typename Allocator>
+inline __array<T, Allocator> &arrayval_ref(__array<T, Allocator> &val, const char *function);
 
-inline array<mixed> &arrayval_ref(mixed &val, const char *function);
+template<typename Allocator>
+inline __array<__mixed<Allocator>, Allocator> &arrayval_ref(__mixed<Allocator> &val, const char *function);
 
-template<class T>
-inline array<T> &arrayval_ref(Optional<array<T>> &val, const char *function);
+template<class T, typename Allocator>
+inline __array<T, Allocator> &arrayval_ref(Optional<__array<T, Allocator>> &val, const char *function);
 
-template<class T>
-inline const array<T> &arrayval_ref(const array<T> &val, const char *function);
+template<class T, typename Allocator>
+inline const __array<T, Allocator> &arrayval_ref(const __array<T, Allocator> &val, const char *function);
 
-inline const array<mixed> &arrayval_ref(const mixed &val, const char *function);
+template<typename Allocator>
+inline const __array<__mixed<Allocator>, Allocator> &arrayval_ref(const __mixed<Allocator> &val, const char *function);
 
-template<class T>
-inline const array<T> &arrayval_ref(const Optional<array<T>> &val, const char *function);
+template<class T, typename Allocator>
+inline const __array<T, Allocator> &arrayval_ref(const Optional<__array<T, Allocator>> &val, const char *function);
 
 template<class T, class = enable_for_bool_int_double<T>>
 inline bool f$empty(const T &v);
-inline bool f$empty(const string &v);
-inline bool f$empty(const mixed &v);
-template<class T>
-inline bool f$empty(const array<T> &);
-template<class T>
-inline bool f$empty(const class_instance<T> &);
+template<typename Allocator>
+inline bool f$empty(const __string<Allocator> &v);
+template<typename Allocator>
+inline bool f$empty(const __mixed<Allocator> &v);
+template<class T, typename Allocator>
+inline bool f$empty(const __array<T, Allocator> &);
+template<class T, typename Allocator>
+inline bool f$empty(const __class_instance<T, Allocator> &);
 template<class T>
 inline bool f$empty(const Optional<T> &);
 
@@ -309,53 +342,61 @@ template<class T>
 bool f$is_numeric(const T &);
 template<class T>
 inline bool f$is_numeric(const Optional<T> &v);
-inline bool f$is_numeric(const string &v);
-inline bool f$is_numeric(const mixed &v);
+template<typename Allocator>
+inline bool f$is_numeric(const __string<Allocator> &v);
+template<typename Allocator>
+inline bool f$is_numeric(const __mixed<Allocator> &v);
 
 template<class T>
 inline bool f$is_bool(const T &v);
 template<class T>
 inline bool f$is_bool(const Optional<T> &v);
-inline bool f$is_bool(const mixed &v);
+template<typename Allocator>
+inline bool f$is_bool(const __mixed<Allocator> &v);
 
 template<class T>
 inline bool f$is_int(const T &);
 template<class T>
 inline bool f$is_int(const Optional<T> &v);
-inline bool f$is_int(const mixed &v);
+template<typename Allocator>
+inline bool f$is_int(const __mixed<Allocator> &v);
 
 template<class T>
 inline bool f$is_float(const T &v);
 template<class T>
 inline bool f$is_float(const Optional<T> &v);
-inline bool f$is_float(const mixed &v);
+template<typename Allocator>
+inline bool f$is_float(const __mixed<Allocator> &v);
 
 
 template<class T>
 inline bool f$is_scalar(const T &v);
 template<class T>
 inline bool f$is_scalar(const Optional<T> &v);
-inline bool f$is_scalar(const mixed &v);
+template<typename Allocator>
+inline bool f$is_scalar(const __mixed<Allocator> &v);
 
 
 template<class T>
 inline bool f$is_string(const T &v);
 template<class T>
 inline bool f$is_string(const Optional<T> &v);
-inline bool f$is_string(const mixed &v);
+template<typename Allocator>
+inline bool f$is_string(const __mixed<Allocator> &v);
 
 
 template<class T>
 inline bool f$is_array(const T &v);
 template<class T>
 inline bool f$is_array(const Optional<T> &v);
-inline bool f$is_array(const mixed &v);
+template<typename Allocator>
+inline bool f$is_array(const __mixed<Allocator> &v);
 
 
 template<class T>
 bool f$is_object(const T &);
-template<class T>
-inline bool f$is_object(const class_instance<T> &v);
+template<class T, typename Allocator>
+inline bool f$is_object(const __class_instance<T, Allocator> &v);
 
 
 template<class T>
@@ -370,50 +411,57 @@ inline bool f$is_double(const T &v);
 template<class T>
 inline bool f$is_real(const T &v);
 
-template<class Derived, class Base>
-inline bool f$is_a(const class_instance<Base> &base) {
+template<class Derived, class Base, typename Allocator>
+inline bool f$is_a(const __class_instance<Base, Allocator> &base) {
   return base.template is_a<Derived>();
 }
 
-template<class ClassInstanceDerived, class Base>
-inline ClassInstanceDerived f$instance_cast(const class_instance<Base> &base, const string &) {
+template<class ClassInstanceDerived, class Base, typename Allocator>
+inline ClassInstanceDerived f$instance_cast(const __class_instance<Base, Allocator> &base, const __string<Allocator> &) {
   return base.template cast_to<typename ClassInstanceDerived::ClassType>();
 }
 
 inline const char *get_type_c_str(bool);
 inline const char *get_type_c_str(int64_t);
 inline const char *get_type_c_str(double);
-inline const char *get_type_c_str(const string &v);
-inline const char *get_type_c_str(const mixed &v);
-template<class T>
-inline const char *get_type_c_str(const array<T> &v);
-template<class T>
-inline const char *get_type_c_str(const class_instance<T> &v);
+template<typename Allocator>
+inline const char *get_type_c_str(const __string<Allocator> &v);
+template<typename Allocator>
+inline const char *get_type_c_str(const __mixed<Allocator> &v);
+template<class T, typename Allocator>
+inline const char *get_type_c_str(const __array<T, Allocator> &v);
+template<class T, typename Allocator>
+inline const char *get_type_c_str(const __class_instance<T, Allocator> &v);
 
-template<class T>
-inline string f$get_type(const T &v);
+template<class T, typename Allocator>
+inline __string<Allocator> f$get_type(const T &v);
 
-inline string f$get_class(bool);
-inline string f$get_class(int64_t);
-inline string f$get_class(double);
-inline string f$get_class(const string &v);
-inline string f$get_class(const mixed &v);
-template<class T>
-inline string f$get_class(const array<T> &v);
-template<class T>
-inline string f$get_class(const class_instance<T> &v);
+template<typename Allocator>
+inline __string<Allocator> f$get_class(bool);
+template<typename Allocator>
+inline __string<Allocator> f$get_class(int64_t);
+template<typename Allocator>
+inline __string<Allocator> f$get_class(double);
+template<typename Allocator>
+inline __string<Allocator> f$get_class(const __string<Allocator> &v);
+template<typename Allocator>
+inline __string<Allocator> f$get_class(const __mixed<Allocator> &v);
+template<class T, typename Allocator>
+inline __string<Allocator> f$get_class(const __array<T, Allocator> &v);
+template<class T, typename Allocator>
+inline __string<Allocator> f$get_class(const __class_instance<T, Allocator> &v);
 
-template<class T>
-inline int64_t f$get_hash_of_class(const class_instance<T> &klass);
+template<class T, typename Allocator>
+inline int64_t f$get_hash_of_class(const __class_instance<T, Allocator> &klass);
 
-
-inline int64_t f$count(const mixed &v);
+template<typename Allocator>
+inline int64_t f$count(const __mixed<Allocator> &v);
 
 template<class T>
 inline int64_t f$count(const Optional<T> &a);
 
-template<class T>
-inline int64_t f$count(const array<T> &a);
+template<class T, typename Allocator>
+inline int64_t f$count(const __array<T, Allocator> &a);
 
 template<class ...Args>
 inline int64_t f$count(const std::tuple<Args...> &a);
@@ -425,25 +473,27 @@ inline int64_t f$count(const T &v);
 template<class T>
 int64_t f$sizeof(const T &v);
 
+template<typename Allocator>
+inline __string<Allocator> &append(__string<Allocator> &dest, __runtime_core::tmp_string<Allocator> from);
+template<typename Allocator>
+inline __string<Allocator> &append(__string<Allocator> &dest, const __string<Allocator> &from);
+template<typename Allocator>
+inline __string<Allocator> &append(__string<Allocator> &dest, int64_t from);
 
-inline string &append(string &dest, tmp_string from);
-inline string &append(string &dest, const string &from);
-inline string &append(string &dest, int64_t from);
+template<class T, typename Allocator>
+inline __string<Allocator> &append(Optional<__string<Allocator>> &dest, const T &from);
 
-template<class T>
-inline string &append(Optional<string> &dest, const T &from);
+template<class T, typename Allocator>
+inline __string<Allocator> &append(__string<Allocator> &dest, const T &from);
 
-template<class T>
-inline string &append(string &dest, const T &from);
-
-template<class T>
-inline mixed &append(mixed &dest, const T &from);
+template<class T, typename Allocator>
+inline __mixed<Allocator> &append(__mixed<Allocator> &dest, const T &from);
 
 template<class T0, class T>
 inline T0 &append(T0 &dest, const T &from);
 
-
-inline string f$gettype(const mixed &v);
+template<typename Allocator>
+inline __string<Allocator> f$gettype(const __mixed<Allocator> &v);
 
 template<class T>
 inline bool f$function_exists(const T &a1);
@@ -466,22 +516,26 @@ constexpr int32_t E_DEPRECATED = 8192;
 constexpr int32_t E_USER_DEPRECATED = 16384;
 constexpr int32_t E_ALL = 32767;
 
-inline mixed f$error_get_last();
+template<typename Allocator>
+inline __mixed<Allocator> f$error_get_last();
 
-inline void f$warning(const string &message);
+template<typename Allocator>
+inline void f$warning(const __string<Allocator> &message);
 
 #define f$critical_error(message) \
   php_critical_error("%s", message.c_str());
 
-template<class T>
-inline int64_t f$get_reference_counter(const array<T> &v);
+template<class T, typename Allocator>
+inline int64_t f$get_reference_counter(const __array<T, Allocator> &v);
 
-template<class T>
-inline int64_t f$get_reference_counter(const class_instance<T> &v);
+template<class T, typename Allocator>
+inline int64_t f$get_reference_counter(const __class_instance<T, Allocator> &v);
 
-inline int64_t f$get_reference_counter(const string &v);
+template<typename Allocator>
+inline int64_t f$get_reference_counter(const __string<Allocator> &v);
 
-inline int64_t f$get_reference_counter(const mixed &v);
+template<typename Allocator>
+inline int64_t f$get_reference_counter(const __mixed<Allocator> &v);
 
 
 template<class T>
@@ -503,70 +557,78 @@ template<class T>
 inline T &ref(Optional<T> &x);
 
 
-template<class T>
-inline typename array<T>::iterator begin(array<T> &x);
+template<class T, typename Allocator>
+inline typename __array<T, Allocator>::iterator begin(__array<T, Allocator> &x);
 
-template<class T>
-inline typename array<T>::const_iterator begin(const array<T> &x);
+template<class T, typename Allocator>
+inline typename __array<T, Allocator>::const_iterator begin(const __array<T, Allocator> &x);
 
-template<class T>
-inline typename array<T>::const_iterator const_begin(const array<T> &x);
+template<class T, typename Allocator>
+inline typename __array<T, Allocator>::const_iterator const_begin(const __array<T, Allocator> &x);
 
-inline array<mixed>::iterator begin(mixed &x);
+template<typename Allocator>
+inline __array<__mixed<Allocator>, Allocator>::iterator begin(__mixed<Allocator> &x);
 
-inline array<mixed>::const_iterator begin(const mixed &x);
+template<typename Allocator>
+inline __array<__mixed<Allocator>, Allocator>::const_iterator begin(const __mixed<Allocator> &x);
 
-inline array<mixed>::const_iterator const_begin(const mixed &x);
+template<typename Allocator>
+inline __array<__mixed<Allocator>, Allocator>::const_iterator const_begin(const __mixed<Allocator> &x);
 
-template<class T>
-inline typename array<T>::iterator begin(Optional<array<T>> &x);
+template<class T, typename Allocator>
+inline typename __array<T, Allocator>::iterator begin(Optional<__array<T, Allocator>> &x);
 
-template<class T>
-inline typename array<T>::const_iterator begin(const Optional<array<T>> &x);
+template<class T, typename Allocator>
+inline typename __array<T, Allocator>::const_iterator begin(const Optional<__array<T, Allocator>> &x);
 
-template<class T>
-inline typename array<T>::const_iterator const_begin(const Optional<array<T>> &x);
+template<class T, typename Allocator>
+inline typename __array<T, Allocator>::const_iterator const_begin(const Optional<__array<T, Allocator>> &x);
 
-template<class T>
-inline typename array<T>::iterator end(array<T> &x);
+template<class T, typename Allocator>
+inline typename __array<T, Allocator>::iterator end(__array<T, Allocator> &x);
 
-template<class T>
-inline typename array<T>::const_iterator end(const array<T> &x);
+template<class T, typename Allocator>
+inline typename __array<T, Allocator>::const_iterator end(const __array<T, Allocator> &x);
 
-template<class T>
-inline typename array<T>::const_iterator const_end(const array<T> &x);
+template<class T, typename Allocator>
+inline typename __array<T, Allocator>::const_iterator const_end(const __array<T, Allocator> &x);
 
-inline array<mixed>::iterator end(mixed &x);
+template<typename Allocator>
+inline __array<__mixed<Allocator>, Allocator>::iterator end(__mixed<Allocator> &x);
 
-inline array<mixed>::const_iterator end(const mixed &x);
+template<typename Allocator>
+inline __array<__mixed<Allocator>, Allocator>::const_iterator end(const __mixed<Allocator> &x);
 
-inline array<mixed>::const_iterator const_end(const mixed &x);
+template<typename Allocator>
+inline __array<__mixed<Allocator>, Allocator>::const_iterator const_end(const __mixed<Allocator> &x);
 
-template<class T>
-inline typename array<T>::iterator end(Optional<array<T>> &x);
+template<class T, typename Allocator>
+inline typename __array<T, Allocator>::iterator end(Optional<__array<T, Allocator>> &x);
 
-template<class T>
-inline typename array<T>::const_iterator end(const Optional<array<T>> &x);
+template<class T, typename Allocator>
+inline typename __array<T, Allocator>::const_iterator end(const Optional<__array<T, Allocator>> &x);
 
-template<class T>
-inline typename array<T>::const_iterator const_end(const Optional<array<T>> &x);
+template<class T, typename Allocator>
+inline typename __array<T, Allocator>::const_iterator const_end(const Optional<__array<T, Allocator>> &x);
 
 
-inline void clear_array(mixed &v);
+template<typename Allocator>
+inline void clear_array(__mixed<Allocator> &v);
 
-template<class T>
-inline void clear_array(array<T> &a);
+template<class T, typename Allocator>
+inline void clear_array(__array<T, Allocator> &a);
 
-template<class T>
-inline void clear_array(Optional<array<T>> &a);
+template<class T, typename Allocator>
+inline void clear_array(Optional<__array<T, Allocator>> &a);
 
-template<class T>
-inline void unset(array<T> &x);
+template<class T, typename Allocator>
+inline void unset(__array<T, Allocator> &x);
 
-template<class T>
-inline void unset(class_instance<T> &x);
+template<class T, typename Allocator>
+inline void unset(__class_instance<T, Allocator> &x);
 
-inline void unset(mixed &x);
+template<typename Allocator>
+inline void unset(__mixed<Allocator> &x);
 
 
 /*
@@ -583,11 +645,13 @@ double divide(double lhs, int64_t rhs) {
   return divide(lhs, static_cast<double>(rhs));
 }
 
-double divide(const string &lhs, int64_t rhs) {
+template<typename Allocator>
+double divide(const __string<Allocator> &lhs, int64_t rhs) {
   return divide(f$floatval(lhs), rhs);
 }
 
-double divide(const mixed &lhs, int64_t rhs) {
+template<typename Allocator>
+double divide(const __mixed<Allocator> &lhs, int64_t rhs) {
   return divide(f$floatval(lhs), rhs);
 }
 
@@ -604,45 +668,55 @@ double divide(double lhs, double rhs) {
   return lhs / rhs;
 }
 
-double divide(const string &lhs, double rhs) {
+template<typename Allocator>
+double divide(const __string<Allocator> &lhs, double rhs) {
   return divide(f$floatval(lhs), rhs);
 }
 
-double divide(const mixed &lhs, double rhs) {
+template<typename Allocator>
+double divide(const __mixed<Allocator> &lhs, double rhs) {
   return divide(f$floatval(lhs), rhs);
 }
 
 
-double divide(int64_t lhs, const string &rhs) {
+template<typename Allocator>
+double divide(int64_t lhs, const __string<Allocator> &rhs) {
   return divide(lhs, f$floatval(rhs));
 }
 
-double divide(double lhs, const string &rhs) {
+template<typename Allocator>
+double divide(double lhs, const __string<Allocator> &rhs) {
   return divide(lhs, f$floatval(rhs));
 }
 
-double divide(const string &lhs, const string &rhs) {
+template<typename Allocator>
+double divide(const __string<Allocator> &lhs, const __string<Allocator> &rhs) {
   return divide(f$floatval(lhs), f$floatval(rhs));
 }
 
-double divide(const mixed &lhs, const string &rhs) {
+template<typename Allocator>
+double divide(const __mixed<Allocator> &lhs, const __string<Allocator> &rhs) {
   return divide(lhs, f$floatval(rhs));
 }
 
 
-double divide(int64_t lhs, const mixed &rhs) {
+template<typename Allocator>
+double divide(int64_t lhs, const __mixed<Allocator> &rhs) {
   return divide(lhs, f$floatval(rhs));
 }
 
-double divide(double lhs, const mixed &rhs) {
+template<typename Allocator>
+double divide(double lhs, const __mixed<Allocator> &rhs) {
   return divide(lhs, f$floatval(rhs));
 }
 
-double divide(const string &lhs, const mixed &rhs) {
+template<typename Allocator>
+double divide(const __string<Allocator> &lhs, const __mixed<Allocator> &rhs) {
   return divide(f$floatval(lhs), rhs);
 }
 
-double divide(const mixed &lhs, const mixed &rhs) {
+template<typename Allocator>
+double divide(const __mixed<Allocator> &lhs, const __mixed<Allocator> &rhs) {
   return divide(f$floatval(lhs), f$floatval(rhs));
 }
 
@@ -664,89 +738,89 @@ double divide(const T &lhs, bool rhs) {
   return divide(f$floatval(lhs), static_cast<int64_t>(rhs));
 }
 
-template<class T>
-double divide(bool, const array<T> &) {
+template<class T, typename Allocator>
+double divide(bool, const __array<T, Allocator> &) {
   php_warning("Unsupported operand types for operator '/' bool and array");
   return 0.0;
 }
 
-template<class T>
-double divide(const array<T> &, bool) {
+template<class T, typename Allocator>
+double divide(const __array<T, Allocator> &, bool) {
   php_warning("Unsupported operand types for operator '/' array and bool");
   return 0.0;
 }
 
-template<class T>
-double divide(bool, const class_instance<T> &) {
+template<class T, typename Allocator>
+double divide(bool, const __class_instance<T, Allocator> &) {
   php_warning("Unsupported operand types for operator '/' bool and object");
   return 0.0;
 }
 
-template<class T>
-double divide(const class_instance<T> &, bool) {
+template<class T, typename Allocator>
+double divide(const __class_instance<T, Allocator> &, bool) {
   php_warning("Unsupported operand types for operator '/' object and bool");
   return 0.0;
 }
 
 
-template<class T, class T1>
-double divide(const array<T> &lhs, const T1 &rhs) {
+template<class T, class T1, typename Allocator>
+double divide(const __array<T, Allocator> &lhs, const T1 &rhs) {
   php_warning("First argument of operator '/' is array");
   return divide(f$count(lhs), rhs);
 }
 
-template<class T, class T1>
-double divide(const T1 &lhs, const array<T> &rhs) {
+template<class T, class T1, typename Allocator>
+double divide(const T1 &lhs, const __array<T, Allocator> &rhs) {
   php_warning("Second argument of operator '/' is array");
   return divide(lhs, f$count(rhs));
 }
 
 
-template<class T, class T1>
-double divide(const class_instance<T> &, const T1 &rhs) {
+template<class T, class T1, typename Allocator>
+double divide(const __class_instance<T, Allocator> &, const T1 &rhs) {
   php_warning("First argument of operator '/' is object");
   return divide(1.0, rhs);
 }
 
-template<class T, class T1>
-double divide(const T1 &lhs, const class_instance<T> &) {
+template<class T, class T1, typename Allocator>
+double divide(const T1 &lhs, const __class_instance<T, Allocator> &) {
   php_warning("Second argument of operator '/' is object");
   return lhs;
 }
 
 
-template<class T>
-double divide(const array<T> &, const array<T> &) {
+template<class T, typename Allocator>
+double divide(const __array<T, Allocator> &, const __array<T, Allocator> &) {
   php_warning("Unsupported operand types for operator '/' array and array");
   return 0.0;
 }
 
-template<class T>
-double divide(const class_instance<T> &, const class_instance<T> &) {
+template<class T, typename Allocator>
+double divide(const __class_instance<T, Allocator> &, const __class_instance<T, Allocator> &) {
   php_warning("Unsupported operand types for operator '/' object and object");
   return 0.0;
 }
 
-template<class T, class T1>
-double divide(const array<T> &, const array<T1> &) {
+template<class T, class T1, typename Allocator>
+double divide(const __array<T, Allocator> &, const __array<T, Allocator> &) {
   php_warning("Unsupported operand types for operator '/' array and array");
   return 0.0;
 }
 
-template<class T, class T1>
-double divide(const class_instance<T> &, const class_instance<T1> &) {
+template<class T, class T1, typename Allocator>
+double divide(const __class_instance<T, Allocator> &, const __class_instance<T1, Allocator> &) {
   php_warning("Unsupported operand types for operator '/' object and object");
   return 0.0;
 }
 
-template<class T, class T1>
-double divide(const array<T> &, const class_instance<T1> &) {
+template<class T, class T1, typename Allocator>
+double divide(const __array<T, Allocator> &, const __class_instance<T1, Allocator> &) {
   php_warning("Unsupported operand types for operator '/' array and object");
   return 0.0;
 }
 
-template<class T, class T1>
-double divide(const class_instance<T1> &, const array<T> &) {
+template<class T, class T1, typename Allocator>
+double divide(const __class_instance<T1, Allocator> &, const __array<T, Allocator> &) {
   php_warning("Unsupported operand types for operator '/' object and array");
   return 0.0;
 }
@@ -805,7 +879,8 @@ bool &boolval_ref(bool &val) {
   return val;
 }
 
-bool &boolval_ref(mixed &val) {
+template<typename Allocator>
+bool &boolval_ref(__mixed<Allocator> &val) {
   return val.as_bool("unknown");
 }
 
@@ -813,7 +888,8 @@ const bool &boolval_ref(const bool &val) {
   return val;
 }
 
-const bool &boolval_ref(const mixed &val) {
+template<typename Allocator>
+const bool &boolval_ref(const __mixed<Allocator> &val) {
   return val.as_bool("unknown");
 }
 
@@ -822,7 +898,8 @@ int64_t &intval_ref(int64_t &val, const char *) {
   return val;
 }
 
-int64_t &intval_ref(mixed &val, const char *function) {
+template<typename Allocator>
+int64_t &intval_ref(__mixed<Allocator> &val, const char *function) {
   return val.as_int(function);
 }
 
@@ -830,7 +907,8 @@ const int64_t &intval_ref(const int64_t &val, const char *) {
   return val;
 }
 
-const int64_t &intval_ref(const mixed &val, const char *function) {
+template<typename Allocator>
+const int64_t &intval_ref(const __mixed<Allocator> &val, const char *function) {
   return val.as_int(function);
 }
 
@@ -839,7 +917,8 @@ double &floatval_ref(double &val) {
   return val;
 }
 
-double &floatval_ref(mixed &val) {
+template<typename Allocator>
+double &floatval_ref(__mixed<Allocator> &val) {
   return val.as_float("unknown");
 }
 
@@ -847,56 +926,63 @@ const double &floatval_ref(const double &val) {
   return val;
 }
 
-const double &floatval_ref(const mixed &val) {
+template<typename Allocator>
+const double &floatval_ref(const __mixed<Allocator> &val) {
   return val.as_float("unknown");
 }
 
 
-string &strval_ref(string &val, const char *) {
+template<typename Allocator>
+__string<Allocator> &strval_ref(__string<Allocator> &val, const char *) {
   return val;
 }
 
-string &strval_ref(mixed &val, const char *function) {
+template<typename Allocator>
+__string<Allocator> &strval_ref(__mixed<Allocator> &val, const char *function) {
   return val.as_string(function);
 }
 
-const string &strval_ref(const string &val, const char *) {
+template<typename Allocator>
+const __string<Allocator> &strval_ref(const __string<Allocator> &val, const char *) {
   return val;
 }
 
-const string &strval_ref(const mixed &val, const char *function) {
+template<typename Allocator>
+const __string<Allocator> &strval_ref(const __mixed<Allocator> &val, const char *function) {
   return val.as_string(function);
 }
 
 
-template<class T>
-array<T> &arrayval_ref(array<T> &val, const char *) {
+template<class T, typename Allocator>
+__array<T, Allocator> &arrayval_ref(__array<T, Allocator> &val, const char *) {
   return val;
 }
 
-array<mixed> &arrayval_ref(mixed &val, const char *function) {
+template<typename Allocator>
+__array<__mixed<Allocator>, Allocator> &arrayval_ref(__mixed<Allocator> &val, const char *function) {
   return val.as_array(function);
 }
 
-template<class T>
-array<T> &arrayval_ref(Optional<array<T>> &val, const char *function) {
+template<class T, typename Allocator>
+__array<T, Allocator> &arrayval_ref(Optional<__array<T, Allocator>> &val, const char *function) {
   if (unlikely(!val.has_value())) {
     php_warning("%s() expects parameter to be array, null or false is given", function);
   }
   return val.ref();
 }
 
-template<class T>
-const array<T> &arrayval_ref(const array<T> &val, const char *) {
+template<class T, typename Allocator>
+const __array<T, Allocator> &arrayval_ref(const __array<T, Allocator> &val, const char *) {
   return val;
 }
 
-const array<mixed> &arrayval_ref(const mixed &val, const char *function) {
+template<typename Allocator>
+const __array<__mixed<Allocator>, Allocator> &arrayval_ref(const __mixed<Allocator> &val, const char *function) {
   return val.as_array(function);
 }
 
-template<class T>
-const array<T> &arrayval_ref(const Optional<array<T>> &val, const char *function) {
+template<class T, typename Allocator>
+const __array<T, Allocator> &arrayval_ref(const Optional<__array<T, Allocator>> &val, const char *function) {
   if (unlikely(!val.has_value())) {
     php_warning("%s() expects parameter to be array, null or false is given", function);
   }
@@ -942,46 +1028,29 @@ double convert_to<double>::convert(T1 &&val) {
   return f$floatval(std::forward<T1>(val));
 }
 
-template<>
-template<class T1, class, class>
-string convert_to<string>::convert(T1 &&val) {
-  return f$strval(std::forward<T1>(val));
-}
-
-template<>
-template<class T1, class, class>
-array<mixed> convert_to<array<mixed>>::convert(T1 &&val) {
-  return f$arrayval(std::forward<T1>(val));
-}
-
-template<>
-template<class T1, class, class>
-mixed convert_to<mixed>::convert(T1 &&val) {
-  return mixed{std::forward<T1>(val)};
-}
-
-
 template<class T, class>
 inline bool f$empty(const T &v) {
   return v == 0;
 }
 
-bool f$empty(const string &v) {
-  string::size_type l = v.size();
+template<typename Allocator>
+bool f$empty(const __string<Allocator> &v) {
+  typename __string<Allocator>::size_type l = v.size();
   return l == 0 || (l == 1 && v[0] == '0');
 }
 
-template<class T>
-bool f$empty(const array<T> &a) {
+template<class T, typename Allocator>
+bool f$empty(const __array<T, Allocator> &a) {
   return a.empty();
 }
 
-template<class T>
-bool f$empty(const class_instance<T> &o) {
+template<class T, typename Allocator>
+bool f$empty(const __class_instance<T, Allocator> &o) {
   return o.is_null();   // false/null inside instance (in PHP, empty(false)=true behaves identically)
 }
 
-bool f$empty(const mixed &v) {
+template<typename Allocator>
+bool f$empty(const __mixed<Allocator> &v) {
   return v.empty();
 }
 
@@ -990,7 +1059,8 @@ bool f$empty(const Optional<T> &a) {
   return a.has_value() ? f$empty(a.val()) : true;
 }
 
-int64_t f$count(const mixed &v) {
+template<typename Allocator>
+int64_t f$count(const __mixed<Allocator> &v) {
   return v.count();
 }
 
@@ -1000,8 +1070,8 @@ int64_t f$count(const Optional<T> &a) {
   return call_fun_on_optional_value(count_lambda, a);
 }
 
-template<class T>
-int64_t f$count(const array<T> &a) {
+template<class T, typename Allocator>
+int64_t f$count(const __array<T, Allocator> &a) {
   return a.count();
 }
 
@@ -1029,11 +1099,13 @@ bool f$is_numeric(const T &) {
   return std::is_same<T, int64_t>{} || std::is_same<T, double>{};
 }
 
-bool f$is_numeric(const string &v) {
+template<typename Allocator>
+bool f$is_numeric(const __string<Allocator> &v) {
   return v.is_numeric();
 }
 
-bool f$is_numeric(const mixed &v) {
+template<typename Allocator>
+bool f$is_numeric(const __mixed<Allocator> &v) {
   return v.is_numeric();
 }
 
@@ -1048,8 +1120,8 @@ bool f$is_null(const T &) {
   return false;
 }
 
-template<class T>
-bool f$is_null(const class_instance<T> &v) {
+template<class T, typename Allocator>
+bool f$is_null(const __class_instance<T, Allocator> &v) {
   return v.is_null();
 }
 
@@ -1058,7 +1130,8 @@ inline bool f$is_null(const Optional<T> &v) {
   return v.has_value() ? f$is_null(v.val()) : v.value_state() == OptionalState::null_value;
 }
 
-bool f$is_null(const mixed &v) {
+template<typename Allocator>
+bool f$is_null(const __mixed<Allocator> &v) {
   return v.is_null();
 }
 
@@ -1073,7 +1146,8 @@ inline bool f$is_bool(const Optional<T> &v) {
   return v.has_value() ? f$is_bool(v.val()) : v.is_false();
 }
 
-bool f$is_bool(const mixed &v) {
+template<typename Allocator>
+bool f$is_bool(const __mixed<Allocator> &v) {
   return v.is_bool();
 }
 
@@ -1089,7 +1163,8 @@ inline bool f$is_int(const Optional<T> &v) {
   return v.has_value() ? f$is_int(v.val()) : false;
 }
 
-bool f$is_int(const mixed &v) {
+template<typename Allocator>
+bool f$is_int(const __mixed<Allocator> &v) {
   return v.is_int();
 }
 
@@ -1104,14 +1179,15 @@ inline bool f$is_float(const Optional<T> &v) {
   return v.has_value() ? f$is_float(v.val()) : false;
 }
 
-bool f$is_float(const mixed &v) {
+template<typename Allocator>
+bool f$is_float(const __mixed<Allocator> &v) {
   return v.is_float();
 }
 
 
 template<class T>
 bool f$is_scalar(const T &) {
-  return std::is_arithmetic<T>::value || std::is_same<T, string>::value;
+  return std::is_arithmetic<T>::value || is_instance_of<T, __string>::value;
 }
 
 template<class T>
@@ -1120,14 +1196,15 @@ inline bool f$is_scalar(const Optional<T> &v) {
   return call_fun_on_optional_value(is_scalar_lambda, v);
 }
 
-bool f$is_scalar(const mixed &v) {
+template<typename Allocator>
+bool f$is_scalar(const __mixed<Allocator> &v) {
   return v.is_scalar();
 }
 
 
 template<class T>
 bool f$is_string(const T &) {
-  return std::is_same<T, string>::value;
+  return is_instance_of<T, __string>::value;
 }
 
 template<class T>
@@ -1135,7 +1212,8 @@ inline bool f$is_string(const Optional<T> &v) {
   return v.has_value() ? f$is_string(v.val()) : false;
 }
 
-bool f$is_string(const mixed &v) {
+template<typename Allocator>
+bool f$is_string(const __mixed<Allocator> &v) {
   return v.is_string();
 }
 
@@ -1145,7 +1223,8 @@ inline bool f$is_array(const T &) {
   return is_array<T>::value;
 }
 
-bool f$is_array(const mixed &v) {
+template<typename Allocator>
+bool f$is_array(const __mixed<Allocator> &v) {
   return v.is_array();
 }
 
@@ -1159,8 +1238,8 @@ bool f$is_object(const T &) {
   return false;
 }
 
-template<class T>
-bool f$is_object(const class_instance<T> &v) {
+template<class T, typename Allocator>
+bool f$is_object(const __class_instance<T, Allocator> &v) {
   return !v.is_null();
 }
 
@@ -1197,101 +1276,110 @@ const char *get_type_c_str(double) {
   return "double";
 }
 
-const char *get_type_c_str(const string &) {
-  return "string";
+template<typename Allocator>
+const char *get_type_c_str(const __string<Allocator> &) {
+  return "__string<Allocator>";
 }
 
-const char *get_type_c_str(const mixed &v) {
+template<typename Allocator>
+const char *get_type_c_str(const __mixed<Allocator> &v) {
   return v.get_type_c_str();
 }
 
-template<class T>
-const char *get_type_c_str(const array<T> &) {
+template<class T, typename Allocator>
+const char *get_type_c_str(const __array<T, Allocator> &) {
   return "array";
 }
 
-template<class T>
-const char *get_type_c_str(const class_instance<T> &) {
+template<class T, typename Allocator>
+const char *get_type_c_str(const __class_instance<T, Allocator> &) {
   return "object";
 }
 
 
-template<class T>
-string f$get_type(const T &v) {
+template<typename Allocator, class T>
+__string<Allocator> f$get_type(const T &v) {
   const char *res = get_type_c_str(v);
-  return {res, static_cast<string::size_type>(strlen(res))};
+  return {res, static_cast<__string<Allocator>::size_type>(strlen(res))};
 }
 
-
-string f$get_class(bool) {
+template<typename Allocator>
+__string<Allocator> f$get_class(bool) {
   php_warning("Called get_class() on boolean");
   return {};
 }
 
-string f$get_class(int64_t) {
+template<typename Allocator>
+__string<Allocator> f$get_class(int64_t) {
   php_warning("Called get_class() on integer");
   return {};
 }
 
-string f$get_class(double) {
+template<typename Allocator>
+__string<Allocator> f$get_class(double) {
   php_warning("Called get_class() on double");
   return {};
 }
 
-string f$get_class(const string &) {
-  php_warning("Called get_class() on string");
+template<typename Allocator>
+__string<Allocator> f$get_class(const __string<Allocator> &) {
+  php_warning("Called get_class() on __string<Allocator>");
   return {};
 }
 
-string f$get_class(const mixed &v) {
+template<typename Allocator>
+__string<Allocator> f$get_class(const __mixed<Allocator> &v) {
   php_warning("Called get_class() on %s", v.get_type_c_str());
   return {};
 }
 
-template<class T>
-string f$get_class(const array<T> &) {
+template<class T, typename Allocator>
+__string<Allocator> f$get_class(const __array<T, Allocator> &) {
   php_warning("Called get_class() on array");
   return {};
 }
 
-template<class T>
-string f$get_class(const class_instance<T> &v) {
-  return string(v.get_class());
+template<class T, typename Allocator>
+__string<Allocator> f$get_class(const __class_instance<T, Allocator> &v) {
+  return __string<Allocator>(v.get_class());
 }
 
-template<class T>
-inline int64_t f$get_hash_of_class(const class_instance<T> &klass) {
+template<class T, typename Allocator>
+inline int64_t f$get_hash_of_class(const __class_instance<T, Allocator> &klass) {
   return klass.get_hash();
 }
 
-inline string &append(string &dest, tmp_string from) {
+template<typename Allocator>
+inline __string<Allocator> &append(__string<Allocator> &dest, __runtime_core::tmp_string<Allocator> from) {
   return dest.append(from.data, from.size);
 }
 
-string &append(string &dest, const string &from) {
+template<typename Allocator>
+__string<Allocator> &append(__string<Allocator> &dest, const __string<Allocator> &from) {
   return dest.append(from);
 }
 
-inline string &append(string &dest, int64_t from) {
+template<typename Allocator>
+inline __string<Allocator> &append(__string<Allocator> &dest, int64_t from) {
   return dest.append(from);
 }
 
-template<class T>
-string &append(Optional<string> &dest, const T &from) {
+template<class T, typename Allocator>
+__string<Allocator> &append(Optional<__string<Allocator>> &dest, const T &from) {
   return append(dest.ref(), from);
 }
 
-template<class T>
-string &append(string &dest, const T &from) {
+template<class T, typename Allocator>
+__string<Allocator> &append(__string<Allocator> &dest, const T &from) {
   return dest.append(f$strval(from));
 }
 
-template<class T>
-mixed &append(mixed &dest, const T &from) {
+template<class T, typename Allocator>
+__mixed<Allocator> &append(__mixed<Allocator> &dest, const T &from) {
   return dest.append(f$strval(from));
 }
-
-inline mixed &append(mixed &dest, tmp_string from) {
+template<typename Allocator>
+inline __mixed<Allocator> &append(__mixed<Allocator> &dest, __runtime_core::tmp_string<Allocator> from) {
   return dest.append(from);
 }
 
@@ -1301,8 +1389,8 @@ T0 &append(T0 &dest, const T &from) {
   return dest;
 }
 
-
-string f$gettype(const mixed &v) {
+template<typename Allocator>
+__string<Allocator> f$gettype(const __mixed<Allocator> &v) {
   return v.get_type_str();
 }
 
@@ -1311,30 +1399,33 @@ bool f$function_exists(const T &) {
   return true;
 }
 
-
-mixed f$error_get_last() {
+template<typename Allocator>
+__mixed<Allocator> f$error_get_last() {
   return {};
 }
 
-void f$warning(const string &message) {
+template<typename Allocator>
+void f$warning(const __string<Allocator> &message) {
   php_warning("%s", message.c_str());
 }
 
-template<class T>
-int64_t f$get_reference_counter(const array<T> &v) {
+template<class T, typename Allocator>
+int64_t f$get_reference_counter(const __array<T, Allocator> &v) {
   return v.get_reference_counter();
 }
 
-template<class T>
-int64_t f$get_reference_counter(const class_instance<T> &v) {
+template<class T, typename Allocator>
+int64_t f$get_reference_counter(const __class_instance<T, Allocator> &v) {
   return v.get_reference_counter();
 }
 
-int64_t f$get_reference_counter(const string &v) {
+template<typename Allocator>
+int64_t f$get_reference_counter(const __string<Allocator> &v) {
   return v.get_reference_counter();
 }
 
-int64_t f$get_reference_counter(const mixed &v) {
+template<typename Allocator>
+int64_t f$get_reference_counter(const __mixed<Allocator> &v) {
   return v.get_reference_counter();
 }
 
@@ -1370,53 +1461,56 @@ T &ref(Optional<T> &x) {
 }
 
 
-template<class T>
-typename array<T>::iterator begin(array<T> &x) {
+template<class T, typename Allocator>
+typename __array<T, Allocator>::iterator begin(__array<T, Allocator> &x) {
   return x.begin();
 }
 
-template<class T>
-typename array<T>::const_iterator begin(const array<T> &x) {
+template<class T, typename Allocator>
+typename __array<T, Allocator>::const_iterator begin(const __array<T, Allocator> &x) {
   return x.begin();
 }
 
-template<class T>
-typename array<T>::const_iterator const_begin(const array<T> &x) {
-  return x.begin();
-}
-
-
-array<mixed>::iterator begin(mixed &x) {
-  return x.begin();
-}
-
-array<mixed>::const_iterator begin(const mixed &x) {
-  return x.begin();
-}
-
-array<mixed>::const_iterator const_begin(const mixed &x) {
+template<class T, typename Allocator>
+typename __array<T, Allocator>::const_iterator const_begin(const __array<T, Allocator> &x) {
   return x.begin();
 }
 
 
-template<class T>
-typename array<T>::iterator begin(Optional<array<T>> &x) {
+template<typename Allocator>
+__array<__mixed<Allocator>, Allocator>::iterator begin(__mixed<Allocator> &x) {
+  return x.begin();
+}
+
+template<typename Allocator>
+__array<__mixed<Allocator>, Allocator>::const_iterator begin(const __mixed<Allocator> &x) {
+  return x.begin();
+}
+
+template<typename Allocator>
+__array<__mixed<Allocator>, Allocator>::const_iterator const_begin(const __mixed<Allocator> &x) {
+  return x.begin();
+}
+
+
+template<class T, typename Allocator>
+typename __array<T, Allocator>::iterator begin(Optional<__array<T, Allocator>> &x) {
   if (unlikely(!x.has_value())) {
     php_warning("Invalid argument supplied for foreach(), false or null is given");
   }
   return x.val().begin();
 }
 
-template<class T>
-typename array<T>::const_iterator begin(const Optional<array<T>> &x) {
+template<class T, typename Allocator>
+typename __array<T, Allocator>::const_iterator begin(const Optional<__array<T, Allocator>> &x) {
   if (unlikely(!x.has_value())) {
     php_warning("Invalid argument supplied for foreach(), false or null is given");
   }
   return x.val().begin();
 }
 
-template<class T>
-typename array<T>::const_iterator const_begin(const Optional<array<T>> &x) {
+template<class T, typename Allocator>
+typename __array<T, Allocator>::const_iterator const_begin(const Optional<__array<T, Allocator>> &x) {
   if (unlikely(!x.has_value())) {
     php_warning("Invalid argument supplied for foreach(), false or null is given");
   }
@@ -1424,75 +1518,80 @@ typename array<T>::const_iterator const_begin(const Optional<array<T>> &x) {
 }
 
 
-template<class T>
-typename array<T>::iterator end(array<T> &x) {
+template<class T, typename Allocator>
+typename __array<T, Allocator>::iterator end(__array<T, Allocator> &x) {
   return x.end();
 }
 
-template<class T>
-typename array<T>::const_iterator end(const array<T> &x) {
+template<class T, typename Allocator>
+typename __array<T, Allocator>::const_iterator end(const __array<T, Allocator> &x) {
   return x.end();
 }
 
-template<class T>
-typename array<T>::const_iterator const_end(const array<T> &x) {
+template<class T, typename Allocator>
+typename __array<T, Allocator>::const_iterator const_end(const __array<T, Allocator> &x) {
   return x.end();
 }
 
-array<mixed>::iterator end(mixed &x) {
+template<typename Allocator>
+__array<__mixed<Allocator>, Allocator>::iterator end(__mixed<Allocator> &x) {
   return x.end();
 }
 
-array<mixed>::const_iterator end(const mixed &x) {
+template<typename Allocator>
+__array<__mixed<Allocator>, Allocator>::const_iterator end(const __mixed<Allocator> &x) {
   return x.end();
 }
 
-array<mixed>::const_iterator const_end(const mixed &x) {
+template<typename Allocator>
+__array<__mixed<Allocator>, Allocator>::const_iterator const_end(const __mixed<Allocator> &x) {
   return x.end();
 }
 
 
-template<class T>
-typename array<T>::iterator end(Optional<array<T>> &x) {
+template<class T, typename Allocator>
+typename __array<T, Allocator>::iterator end(Optional<__array<T, Allocator>> &x) {
   return x.val().end();
 }
 
-template<class T>
-typename array<T>::const_iterator end(const Optional<array<T>> &x) {
+template<class T, typename Allocator>
+typename __array<T, Allocator>::const_iterator end(const Optional<__array<T, Allocator>> &x) {
   return x.val().end();
 }
 
-template<class T>
-typename array<T>::const_iterator const_end(const Optional<array<T>> &x) {
+template<class T, typename Allocator>
+typename __array<T, Allocator>::const_iterator const_end(const Optional<__array<T, Allocator>> &x) {
   return x.val().end();
 }
 
 
-void clear_array(mixed &v) {
+template<typename Allocator>
+void clear_array(__mixed<Allocator> &v) {
   v.clear();
 }
 
-template<class T>
-void clear_array(array<T> &a) {
+template<class T, typename Allocator>
+void clear_array(__array<T, Allocator> &a) {
   a.clear();
 }
 
-template<class T>
-void clear_array(Optional<array<T>> &a) {
+template<class T, typename Allocator>
+void clear_array(Optional<__array<T, Allocator>> &a) {
   a = false;
 }
 
-template<class T>
-void unset(array<T> &x) {
+template<class T, typename Allocator>
+void unset(__array<T, Allocator> &x) {
   x = {};
 }
 
-template<class T>
-void unset(class_instance<T> &x) {
+template<class T, typename Allocator>
+void unset(__class_instance<T, Allocator> &x) {
   x = {};
 }
 
-void unset(mixed &x) {
+template<typename Allocator>
+void unset(__mixed<Allocator> &x) {
   x = {};
 }
 

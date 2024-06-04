@@ -1,6 +1,6 @@
 #pragma once
 
-#include "runtime-core/functions/migration-php8.h"
+#include "runtime-core/utils/migration-php8.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
   #error "this file must be included only from runtime-core.h"
@@ -41,11 +41,14 @@ inline bool eq2(int64_t lhs, int64_t rhs) {
 inline bool eq2(double lhs, double rhs) {
   return lhs == rhs;
 }
-inline bool eq2(const string &lhs, const string &rhs) {
+
+template<typename Allocator>
+inline bool eq2(const __string<Allocator> &lhs, const __string<Allocator> &rhs) {
   return compare_strings_php_order(lhs, rhs) == 0;
 }
 
-inline bool eq2(const mixed &lhs, const mixed &rhs) {
+template<typename Allocator>
+inline bool eq2(const __mixed<Allocator> &lhs, const __mixed<Allocator> &rhs) {
   return lhs.compare(rhs) == 0;
 }
 
@@ -70,16 +73,19 @@ inline bool eq2(double lhs, int64_t rhs) {
   return eq2(rhs, lhs);
 }
 
-inline bool eq2(bool lhs, const string &rhs) {
+template<typename Allocator>
+inline bool eq2(bool lhs, const __string<Allocator> &rhs) {
   return lhs == rhs.to_bool();
 }
-inline bool eq2(const string &lhs, bool rhs) {
+
+template<typename Allocator>
+inline bool eq2(const __string<Allocator> &lhs, bool rhs) {
   return eq2(rhs, lhs);
 }
 
 // see https://www.php.net/manual/en/migration80.incompatible.php#migration80.incompatible.core.string-number-comparision
-template <typename T>
-inline bool eq2_number_string_as_php8(T lhs, const string &rhs) {
+template <typename T, typename Allocator>
+inline bool eq2_number_string_as_php8(T lhs, const __string<Allocator> &rhs) {
   auto rhs_float = 0.0;
   const auto rhs_is_string_number = rhs.try_to_float(&rhs_float);
 
@@ -90,7 +96,8 @@ inline bool eq2_number_string_as_php8(T lhs, const string &rhs) {
   }
 }
 
-inline bool eq2(int64_t lhs, const string &rhs) {
+template<typename Allocator>
+inline bool eq2(int64_t lhs, const __string<Allocator> &rhs) {
   const auto php7_result = eq2(lhs, rhs.to_float());
   if (KphpCoreContext::current().show_migration_php8_warning & MIGRATION_PHP8_STRING_COMPARISON_FLAG) {
     const auto php8_result = eq2_number_string_as_php8(lhs, rhs);
@@ -107,11 +114,14 @@ inline bool eq2(int64_t lhs, const string &rhs) {
 
   return php7_result;
 }
-inline bool eq2(const string &lhs, int64_t rhs) {
+
+template<typename Allocator>
+inline bool eq2(const __string<Allocator> &lhs, int64_t rhs) {
   return eq2(rhs, lhs);
 }
 
-inline bool eq2(double lhs, const string &rhs) {
+template<typename Allocator>
+inline bool eq2(double lhs, const __string<Allocator> &rhs) {
   const auto php7_result = lhs == rhs.to_float();
   if (KphpCoreContext::current().show_migration_php8_warning & MIGRATION_PHP8_STRING_COMPARISON_FLAG) {
     const auto php8_result = eq2_number_string_as_php8(lhs, rhs);
@@ -128,46 +138,48 @@ inline bool eq2(double lhs, const string &rhs) {
 
   return php7_result;
 }
-inline bool eq2(const string &lhs, double rhs) {
+
+template<typename Allocator>
+inline bool eq2(const __string<Allocator> &lhs, double rhs) {
   return eq2(rhs, lhs);
 }
 
-template<class T>
-inline bool eq2(bool lhs, const array<T> &rhs) {
+template<class T, typename Allocator>
+inline bool eq2(bool lhs, const __array<T, Allocator> &rhs) {
   return lhs == !rhs.empty();
 }
-template<class T>
-inline bool eq2(const array<T> &lhs, bool rhs) {
+template<class T, typename Allocator>
+inline bool eq2(const __array<T, Allocator> &lhs, bool rhs) {
   return eq2(rhs, lhs);
 }
 
-template<class T>
-inline bool eq2(int64_t, const array<T> &) {
+template<class T, typename Allocator>
+inline bool eq2(int64_t, const __array<T, Allocator> &) {
   php_warning("Unsupported operand types for operator == (int and array)");
   return false;
 }
-template<class T>
-inline bool eq2(const array<T> &lhs, int64_t rhs) {
+template<class T, typename Allocator>
+inline bool eq2(const __array<T, Allocator> &lhs, int64_t rhs) {
   return eq2(rhs, lhs);
 }
 
-template<class T>
-inline bool eq2(double, const array<T> &) {
+template<class T, typename Allocator>
+inline bool eq2(double, const __array<T, Allocator> &) {
   php_warning("Unsupported operand types for operator == (float and array)");
   return false;
 }
-template<class T>
-inline bool eq2(const array<T> &lhs, double rhs) {
+template<class T, typename Allocator>
+inline bool eq2(const __array<T, Allocator> &lhs, double rhs) {
   return eq2(rhs, lhs);
 }
 
-template<class T>
-inline bool eq2(const string &, const array<T> &) {
-  php_warning("Unsupported operand types for operator == (string and array)");
+template<class T, typename Allocator>
+inline bool eq2(const __string<Allocator> &, const __array<T, Allocator> &) {
+  php_warning("Unsupported operand types for operator == (__runtime_core::string<Allocator> and array)");
   return false;
 }
-template<class T>
-inline bool eq2(const array<T> &lhs, const string &rhs) {
+template<class T, typename Allocator>
+inline bool eq2(const __array<T, Allocator> &lhs, const __string<Allocator> &rhs) {
   return eq2(rhs, lhs);
 }
 
@@ -191,20 +203,20 @@ inline std::enable_if_t<sizeof...(Args) != sizeof...(Args2), bool> eq2(const std
   return false;
 }
 
-template<class TupleT, class Arg, size_t ...Indices>
-inline bool eq2(const TupleT &lhs, const array<Arg> &rhs, std::index_sequence<Indices...>) {
+template<typename Allocator, class TupleT, class Arg, size_t ...Indices>
+inline bool eq2(const TupleT &lhs, const __array<Arg, Allocator>  &rhs, std::index_sequence<Indices...>) {
   return vk::all_of_equal(true, eq2(std::get<Indices>(lhs), rhs.get_value(Indices))...);
 }
 
-template<class Arg, class ...Args>
-inline bool eq2(const std::tuple<Args...> &lhs, const array<Arg> &rhs) {
+template<typename Allocator, class Arg, class ...Args>
+inline bool eq2(const std::tuple<Args...> &lhs, const __array<Arg, Allocator>  &rhs) {
   if (!rhs.is_vector() || sizeof...(Args) != rhs.size().size) {
     return false;
   }
   return eq2(lhs, rhs, std::make_index_sequence<sizeof...(Args)>{});
 }
-template<class Arg, class ...Args>
-inline bool eq2(const array<Arg> &lhs, const std::tuple<Args...> &rhs) {
+template<typename Allocator, class Arg, class ...Args>
+inline bool eq2(const __array<Arg, Allocator>  &lhs, const std::tuple<Args...> &rhs) {
   return eq2(rhs, lhs);
 }
 
@@ -226,55 +238,62 @@ inline bool eq2(const std::tuple<Args...> &lhs, const T &rhs) {
   return eq2(rhs, lhs);
 }
 
-template<class T>
-inline bool eq2(const class_instance<T> &lhs, const class_instance<T> &rhs) {
+template<class T, typename Allocator>
+inline bool eq2(const __class_instance<T, Allocator> &lhs, const __class_instance<T, Allocator> &rhs) {
   // can be called implicitly from in_array, for example
   return lhs == rhs;
 }
 
-inline bool eq2(bool lhs, const mixed &rhs) {
+template<typename Allocator>
+inline bool eq2(bool lhs, const __mixed<Allocator>  &rhs) {
   return lhs == rhs.to_bool();
 }
-inline bool eq2(const mixed &lhs, bool rhs) {
+
+template<typename Allocator>
+inline bool eq2(const __mixed<Allocator>  &lhs, bool rhs) {
   return eq2(rhs, lhs);
 }
 
-inline bool eq2(double lhs, const mixed &rhs) {
+template<typename Allocator>
+inline bool eq2(double lhs, const __mixed<Allocator>  &rhs) {
   switch (rhs.get_type()) {
-    case mixed::type::NUL:
+    case __runtime_core::mixed<Allocator> ::type::NUL:
       return eq2(lhs, 0.0);
-    case mixed::type::BOOLEAN:
+    case __runtime_core::mixed<Allocator> ::type::BOOLEAN:
       return eq2(lhs, rhs.as_bool());
-    case mixed::type::INTEGER:
+    case __runtime_core::mixed<Allocator> ::type::INTEGER:
       return eq2(lhs, rhs.as_int());
-    case mixed::type::FLOAT:
+    case __runtime_core::mixed<Allocator> ::type::FLOAT:
       return eq2(lhs, rhs.as_double());
-    case mixed::type::STRING:
+    case __runtime_core::mixed<Allocator> ::type::STRING:
       return eq2(lhs, rhs.as_string());
-    case mixed::type::ARRAY:
+    case __runtime_core::mixed<Allocator> ::type::ARRAY:
       php_warning("Unsupported operand types for operator == (float and array)");
       return false;
     default:
       __builtin_unreachable();
   }
 }
-inline bool eq2(const mixed &lhs, double rhs) {
+
+template<typename Allocator>
+inline bool eq2(const __mixed<Allocator>  &lhs, double rhs) {
   return eq2(rhs, lhs);
 }
 
-inline bool eq2(int64_t lhs, const mixed &rhs) {
+template<typename Allocator>
+inline bool eq2(int64_t lhs, const __mixed<Allocator>  &rhs) {
   switch (rhs.get_type()) {
-    case mixed::type::NUL:
+    case __runtime_core::mixed<Allocator> ::type::NUL:
       return eq2(lhs, int64_t{0});
-    case mixed::type::BOOLEAN:
+    case __runtime_core::mixed<Allocator> ::type::BOOLEAN:
       return eq2(lhs, rhs.as_bool());
-    case mixed::type::INTEGER:
+    case __runtime_core::mixed<Allocator> ::type::INTEGER:
       return eq2(lhs, rhs.as_int());
-    case mixed::type::FLOAT:
+    case __runtime_core::mixed<Allocator> ::type::FLOAT:
       return eq2(lhs, rhs.as_double());
-    case mixed::type::STRING:
+    case __runtime_core::mixed<Allocator> ::type::STRING:
       return eq2(lhs, rhs.as_string());
-    case mixed::type::ARRAY:
+    case __runtime_core::mixed<Allocator> ::type::ARRAY:
       php_warning("Unsupported operand types for operator == (int and array)");
       return false;
     default:
@@ -282,19 +301,23 @@ inline bool eq2(int64_t lhs, const mixed &rhs) {
   }
 }
 
-inline bool eq2(const mixed &lhs, int64_t rhs) {
+template<typename Allocator>
+inline bool eq2(const __mixed<Allocator>  &lhs, int64_t rhs) {
   return eq2(rhs, lhs);
 }
 
-inline bool eq2(const string &lhs, const mixed &rhs) {
-  return eq2(mixed(lhs), rhs);
+template<typename Allocator>
+inline bool eq2(const __string<Allocator> &lhs, const __runtime_core::mixed<Allocator>  &rhs) {
+  return eq2(__runtime_core::mixed<Allocator> (lhs), rhs);
 }
-inline bool eq2(const mixed &lhs, const string &rhs) {
+
+template<typename Allocator>
+inline bool eq2(const __mixed<Allocator>  &lhs, const __runtime_core::string<Allocator> &rhs) {
   return eq2(rhs, lhs);
 }
 
-template<class T>
-inline bool eq2(const array<T> &lhs, const mixed &rhs) {
+template<class T, typename Allocator>
+inline bool eq2(const __array<T, Allocator> &lhs, const __mixed<Allocator>  &rhs) {
   if (likely (rhs.is_array())) {
     return eq2(lhs, rhs.as_array());
   }
@@ -309,8 +332,8 @@ inline bool eq2(const array<T> &lhs, const mixed &rhs) {
   php_warning("Unsupported operand types for operator == (array and %s)", rhs.get_type_c_str());
   return false;
 }
-template<class T>
-inline bool eq2(const mixed &lhs, const array<T> &rhs) {
+template<class T, typename Allocator>
+inline bool eq2(const __mixed<Allocator>  &lhs, const __array<T, Allocator> &rhs) {
   return eq2(rhs, lhs);
 }
 
@@ -333,8 +356,8 @@ inline bool eq2(const Optional<T> &lhs, const Optional<T> &rhs) {
   return impl_::optional_eq2_impl(lhs, rhs);
 }
 
-template<class T1, class T2>
-inline bool eq2(const array<T1> &lhs, const array<T2> &rhs) {
+template<class T1, class T2, typename Allocator>
+inline bool eq2(const __array<T1, Allocator> &lhs, const __array<T2, Allocator> &rhs) {
   if (rhs.count() != lhs.count()) {
     return false;
   }
@@ -379,8 +402,8 @@ inline disable_if_one_of_types_is_unknown<T, T> equals(const T &lhs, const T &rh
 }
 
 
-template<class T>
-inline bool equals(const array<T> &lhs, const array<T> &rhs) {
+template<class T, typename Allocator>
+inline bool equals(const __array<T, Allocator> &lhs, const __array<T, Allocator> &rhs) {
   if (lhs.count() != rhs.count()) {
     return false;
   }
@@ -393,8 +416,8 @@ inline bool equals(const array<T> &lhs, const array<T> &rhs) {
 
   return true;
 }
-template<class T1, class T2>
-inline bool equals(const array<T1> &lhs, const array<T2> &rhs) {
+template<class T1, class T2, typename Allocator>
+inline bool equals(const __array<T1, Allocator> &lhs, const __array<T2, Allocator> &rhs) {
   if (lhs.count() != rhs.count()) {
     return false;
   }
@@ -409,68 +432,76 @@ inline bool equals(const array<T1> &lhs, const array<T2> &rhs) {
   return true;
 }
 
-inline bool equals(bool lhs, const mixed &rhs) {
+template<typename Allocator>
+inline bool equals(bool lhs, const __mixed<Allocator>  &rhs) {
   return rhs.is_bool() && equals(lhs, rhs.as_bool());
 }
-inline bool equals(const mixed &lhs, bool rhs) {
+template<typename Allocator>
+inline bool equals(const __mixed<Allocator>  &lhs, bool rhs) {
   return equals(rhs, lhs);
 }
 
-inline bool equals(int64_t lhs, const mixed &rhs) {
+template<typename Allocator>
+inline bool equals(int64_t lhs, const __mixed<Allocator>  &rhs) {
   return rhs.is_int() && equals(lhs, rhs.as_int());
 }
-inline bool equals(const mixed &lhs, int64_t rhs) {
+template<typename Allocator>
+inline bool equals(const __mixed<Allocator>  &lhs, int64_t rhs) {
   return equals(rhs, lhs);
 }
 
-inline bool equals(double lhs, const mixed &rhs) {
+template<typename Allocator>
+inline bool equals(double lhs, const __mixed<Allocator>  &rhs) {
   return rhs.is_float() && equals(lhs, rhs.as_double());
 }
-inline bool equals(const mixed &lhs, double rhs) {
+template<typename Allocator>
+inline bool equals(const __mixed<Allocator>  &lhs, double rhs) {
   return equals(rhs, lhs);
 }
 
-inline bool equals(const string &lhs, const mixed &rhs) {
+template<typename Allocator>
+inline bool equals(const __string<Allocator> &lhs, const __mixed<Allocator>  &rhs) {
   return rhs.is_string() && equals(lhs, rhs.as_string());
 }
-inline bool equals(const mixed &lhs, const string &rhs) {
+template<typename Allocator>
+inline bool equals(const __mixed<Allocator>  &lhs, const __string<Allocator> &rhs) {
   return equals(rhs, lhs);
 }
 
-template<class T>
-inline bool equals(const array<T> &lhs, const mixed &rhs) {
+template<class T, typename Allocator>
+inline bool equals(const __array<T, Allocator> &lhs, const __mixed<Allocator>  &rhs) {
   return rhs.is_array() && equals(lhs, rhs.as_array());
 }
-template<class T>
-inline bool equals(const mixed &lhs, const array<T> &rhs) {
+template<class T, typename Allocator>
+inline bool equals(const __mixed<Allocator>  &lhs, const __array<T, Allocator> &rhs) {
   return equals(rhs, lhs);
 }
-
-inline bool equals(const mixed &lhs, const mixed &rhs) {
+template<typename Allocator>
+inline bool equals(const __mixed<Allocator>  &lhs, const __mixed<Allocator>  &rhs) {
   if (lhs.get_type() != rhs.get_type()) {
     return false;
   }
 
   switch (lhs.get_type()) {
-    case mixed::type::NUL:
+    case __mixed<Allocator> ::type::NUL:
       return true;
-    case mixed::type::BOOLEAN:
+    case __mixed<Allocator> ::type::BOOLEAN:
       return equals(lhs.as_bool(), rhs.as_bool());
-    case mixed::type::INTEGER:
+    case __mixed<Allocator> ::type::INTEGER:
       return equals(lhs.as_int(), rhs.as_int());
-    case mixed::type::FLOAT:
+    case __mixed<Allocator> ::type::FLOAT:
       return equals(lhs.as_double(), rhs.as_double());
-    case mixed::type::STRING:
+    case __mixed<Allocator> ::type::STRING:
       return equals(lhs.as_string(), rhs.as_string());
-    case mixed::type::ARRAY:
+    case __mixed<Allocator> ::type::ARRAY:
       return equals(lhs.as_array(), rhs.as_array());
     default:
       __builtin_unreachable();
   }
 }
 
-template<class T>
-inline bool equals(const class_instance<T> &lhs, const class_instance<T> &rhs) {
+template<class T, typename Allocator>
+inline bool equals(const __class_instance<T, Allocator> &lhs, const __class_instance<T, Allocator> &rhs) {
   return lhs == rhs;
 }
 
@@ -490,29 +521,31 @@ inline bool equals(const std::tuple<Args...> &lhs, const std::tuple<Args2...> &r
          equals(lhs, rhs, std::make_index_sequence<sizeof...(Args)>{});
 }
 
-template<class TupleT, class Arg, size_t ...Indices>
-inline bool equals(const TupleT &lhs, const array<Arg> &rhs, std::index_sequence<Indices...>) {
+template<typename Allocator, class TupleT, class Arg, size_t ...Indices>
+inline bool equals(const TupleT &lhs, const __array<Arg, Allocator>  &rhs, std::index_sequence<Indices...>) {
   return vk::all_of_equal(true, equals(std::get<Indices>(lhs), rhs.get_value(Indices))...);
 }
 
-template<class Arg, class ...Args>
-inline bool equals(const std::tuple<Args...> &lhs, const array<Arg> &rhs) {
+template<typename Allocator, class Arg, class ...Args>
+inline bool equals(const std::tuple<Args...> &lhs, const __array<Arg, Allocator>  &rhs) {
   if (!rhs.is_vector() || sizeof...(Args) != rhs.size().size) {
     return false;
   }
   return equals(lhs, rhs, std::make_index_sequence<sizeof...(Args)>{});
 }
-template<class Arg, class ...Args>
-inline bool equals(const array<Arg> &lhs, const std::tuple<Args...> &rhs) {
+template<typename Allocator, class Arg, class ...Args>
+inline bool equals(const __array<Arg, Allocator>  &lhs, const std::tuple<Args...> &rhs) {
   return equals(rhs, lhs);
 }
 
-template<class T1, class T2>
-inline std::enable_if_t<std::is_base_of<T1, T2>{} || std::is_base_of<T2, T1>{}, bool> equals(const class_instance<T1> &lhs, const class_instance<T2> &rhs) {
+template<class T1, class T2, typename Allocator>
+inline std::enable_if_t<std::is_base_of<T1, T2>{} || std::is_base_of<T2, T1>{}, bool>
+equals(const __class_instance<T1, Allocator> &lhs, const __class_instance<T2, Allocator> &rhs) {
   return dynamic_cast<void *>(lhs.get()) == dynamic_cast<void *>(rhs.get());
 }
-template<class T1, class T2>
-inline std::enable_if_t<!std::is_base_of<T1, T2>{} && !std::is_base_of<T2, T1>{}, bool>  equals(const class_instance<T1> &, const class_instance<T2> &) {
+template<class T1, class T2, typename Allocator>
+inline std::enable_if_t<!std::is_base_of<T1, T2>{} && !std::is_base_of<T2, T1>{}, bool>
+equals(const __class_instance<T1, Allocator> &, const __class_instance<T2, Allocator> &) {
   return false;
 }
 
@@ -596,8 +629,8 @@ inline bool lt(const Optional<T> &lhs, const bool &rhs) {
   return lt(f$boolval(lhs), rhs);
 }
 
-template<class T1, class T2>
-inline bool lt(const array<T1> &lhs, const array<T2> &rhs) {
+template<class T1, class T2, typename Allocator>
+inline bool lt(const __array<T1, Allocator> &lhs, const __array<T2, Allocator> &rhs) {
   if (lhs.count() != rhs.count()) {
     return lhs.count() < rhs.count();
   }
@@ -638,9 +671,7 @@ bool optional_equals_impl(const Optional<T1> &lhs, const T2 &rhs) {
   auto equals_lambda = [](const auto &l, const auto &r) {
     // if (is_null(lhs)) { return is_null(r); }
     // else return equals(r, l); - parameters are swapped to cope with Optional on right side
-    return std::is_same<decltype(l), const mixed &>{} ?
-           f$is_null(r) :
-           equals(r, l);
+    return is_instance_of_const_ref<decltype(l), __mixed>::value ? f$is_null(r) : equals(r, l);
   };
   return call_fun_on_optional_value(equals_lambda, lhs, rhs);
 }
@@ -659,7 +690,8 @@ inline enable_if_t_is_not_optional<T1, bool>  optional_lt_impl(const T1 &lhs, co
 
 } // namespace impl_
 
-template<class FunT, class T, class ...Args>
+//todo:check is DummyAllocator safe here
+template<typename Allocator, class FunT, class T, class ...Args>
 decltype(auto) call_fun_on_optional_value(FunT && fun, const Optional<T> &opt, Args &&... args) {
   switch (opt.value_state()) {
     case OptionalState::has_value:
@@ -667,13 +699,13 @@ decltype(auto) call_fun_on_optional_value(FunT && fun, const Optional<T> &opt, A
     case OptionalState::false_value:
       return fun(false, std::forward<Args>(args)...);
     case OptionalState::null_value:
-      return fun(mixed{}, std::forward<Args>(args)...);
+      return fun(__mixed<__runtime_core::DummyAllocator> {}, std::forward<Args>(args)...);
     default:
       __builtin_unreachable();
   }
 }
 
-template<class FunT, class T, class ...Args>
+template<typename Allocator, class FunT, class T, class ...Args>
 decltype(auto) call_fun_on_optional_value(FunT && fun, Optional<T> &&opt, Args &&... args) {
   switch (opt.value_state()) {
     case OptionalState::has_value:
@@ -681,7 +713,7 @@ decltype(auto) call_fun_on_optional_value(FunT && fun, Optional<T> &&opt, Args &
     case OptionalState::false_value:
       return fun(false, std::forward<Args>(args)...);
     case OptionalState::null_value:
-      return fun(mixed{}, std::forward<Args>(args)...);
+      return fun(__mixed<__runtime_core::DummyAllocator> {}, std::forward<Args>(args)...);
     default:
       __builtin_unreachable();
   }

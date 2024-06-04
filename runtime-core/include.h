@@ -12,9 +12,9 @@
 
 #include "common/php-functions.h"
 #include "runtime-core/kphp-types/decl/declarations.h"
-#include "runtime-core/kphp-types/kphp_type_traits.h"
 #include "runtime-core/kphp-types/decl/optional.h"
-#include "runtime-core/functions/kphp-assert-core.h"
+#include "runtime-core/kphp-types/kphp-type-traits.h"
+#include "runtime-core/utils/kphp-assert-core.h"
 
 #define COMMA ,
 
@@ -39,11 +39,12 @@ public:
 
 template<class T>
 inline bool f$is_null(const T &v);
-template<class T>
-inline bool f$is_null(const class_instance<T> &v);
+template<class T, typename Allocator>
+inline bool f$is_null(const __class_instance<T, Allocator> &v);
 template<class T>
 inline bool f$is_null(const Optional<T> &v);
-inline bool f$is_null(const mixed &v);
+template<typename Allocator>
+inline bool f$is_null(const __runtime_core::mixed<Allocator> &v);
 
 template<class T>
 struct CDataPtr;

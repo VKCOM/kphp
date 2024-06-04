@@ -16,8 +16,8 @@ template<typename>
 struct is_array : std::false_type {
 };
 
-template<typename S>
-struct is_array<array<S>> : std::true_type {
+template<typename S, typename Allocator>
+struct is_array<__runtime_core::array<S, Allocator>> : std::true_type {
 };
 
 template<typename T, typename T1>
@@ -50,8 +50,8 @@ template<typename T>
 struct is_class_instance_inside<Optional<T>> : is_class_instance_inside<T> {
 };
 
-template<typename T>
-struct is_class_instance_inside<array<T>> : is_class_instance_inside<T> {
+template<typename T, typename Allocator>
+struct is_class_instance_inside<__runtime_core::array<T, Allocator>> : is_class_instance_inside<T> {
 };
 
 template<typename U>
@@ -79,3 +79,15 @@ using enable_if_one_of_types_is_unknown = std::enable_if_t<one_of_is_unknown<T, 
 
 template<class T, class U>
 using disable_if_one_of_types_is_unknown = std::enable_if_t<!one_of_is_unknown<T, U>{} && !(is_class_instance<T>{} && is_class_instance<U>{}), bool>;
+
+template <typename, template <typename...> class>
+struct is_instance_of : std::false_type {};
+
+template <template <typename...> class U, typename... Args>
+struct is_instance_of<U<Args...>, U> : std::true_type {};
+
+template <typename, template <typename...> class>
+struct is_instance_of_const_ref : std::false_type {};
+
+template <template <typename...> class U, typename... Args>
+struct is_instance_of_const_ref<const U<Args...> &, U> : std::true_type {};

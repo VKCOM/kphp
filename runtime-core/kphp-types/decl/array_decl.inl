@@ -61,13 +61,14 @@ struct array_inner_control {
   uint32_t buf_size;
 };
 
-template<class T>
+namespace __runtime_core {
+template<class T, typename Allocator>
 class array {
 public:
   // TODO why we need 2 value types?
   using ValueType = T;
   using value_type = T;
-  using key_type = mixed;
+  using key_type = mixed<Allocator>;
 
   inline static bool is_int_key(const key_type &key);
 
@@ -82,7 +83,7 @@ private:
     T value;
 
     int64_t int_key;
-    string string_key;
+    string<Allocator> string_key;
 
     inline key_type get_key() const;
   };
@@ -151,7 +152,7 @@ private:
 
     template<class STRING, class ...Args>
     inline std::pair<T &, bool> emplace_string_key_map_value(overwrite_element policy, int64_t int_key, STRING &&string_key, Args &&... args) noexcept;
-    inline T &set_map_value(overwrite_element policy, int64_t int_key, const string &string_key, const T &v);
+    inline T &set_map_value(overwrite_element policy, int64_t int_key, const string<Allocator> &string_key, const T &v);
 
     inline T unset_vector_value();
     inline T unset_map_value(int64_t int_key);
@@ -160,18 +161,18 @@ private:
     template<class S>
     static auto &find_map_entry(S &self, int64_t int_key) noexcept;
     template<class S>
-    static auto &find_map_entry(S &self, const string &string_key, int64_t precomputed_hash) noexcept;
+    static auto &find_map_entry(S &self, const string<Allocator> &string_key, int64_t precomputed_hash) noexcept;
     template<class S>
-    static auto &find_map_entry(S &self, const char *key, string::size_type key_size, int64_t precomputed_hash) noexcept;
+    static auto &find_map_entry(S &self, const char *key, string<Allocator>::size_type key_size, int64_t precomputed_hash) noexcept;
 
-    template<class ...Key>
-    inline const T *find_map_value(Key &&... key) const noexcept;
+    template<class... Key>
+    inline const T *find_map_value(Key &&...key) const noexcept;
     inline const T *find_vector_value(int64_t int_key) const noexcept;
     inline T *find_vector_value(int64_t int_key) noexcept;
 
-    inline const T &get_vector_value(int64_t int_key) const;//unsafe
-    inline T &get_vector_value(int64_t int_key);//unsafe
-    inline T unset_map_value(const string &string_key, int64_t precomputed_hash);
+    inline const T &get_vector_value(int64_t int_key) const; // unsafe
+    inline T &get_vector_value(int64_t int_key);             // unsafe
+    inline T unset_map_value(const string<Allocator> &string_key, int64_t precomputed_hash);
 
     bool is_vector_internal_or_last_index(int64_t key) const noexcept;
     bool has_no_string_keys() const noexcept;
@@ -194,58 +195,58 @@ private:
   inline void convert_to_map();
 
   template<class T1>
-  inline void copy_from(const array<T1> &other);
+  inline void copy_from(const array<T1, Allocator> &other);
 
   template<class T1>
-  inline void move_from(array<T1> &&other) noexcept;
+  inline void move_from(array<T1, Allocator> &&other) noexcept;
 
   inline void destroy();
 
 public:
-  friend class array_iterator<T>;
-  friend class array_iterator<const T>;
+  friend class array_iterator<T, Allocator>;
+  friend class array_iterator<const T, Allocator>;
 
-  using iterator = array_iterator<T>;
-  using const_iterator = array_iterator<const T>;
+  using iterator = array_iterator<T, Allocator>;
+  using const_iterator = array_iterator<const T, Allocator>;
 
-  inline array() __attribute__ ((always_inline));
+  inline array() __attribute__((always_inline));
 
-  inline explicit array(const array_size &s) __attribute__ ((always_inline));
+  inline explicit array(const array_size &s) __attribute__((always_inline));
 
   template<class KeyT>
-  inline array(const std::initializer_list<std::pair<KeyT, T>> &list) __attribute__ ((always_inline));
+  inline array(const std::initializer_list<std::pair<KeyT, T>> &list) __attribute__((always_inline));
 
-  inline array(const array &other) noexcept __attribute__ ((always_inline));
+  inline array(const array &other) noexcept __attribute__((always_inline));
 
-  inline array(array &&other) noexcept __attribute__ ((always_inline));
-
-  template<class T1, class = enable_if_constructible_or_unknown<T, T1>>
-  inline array(const array<T1> &other) noexcept __attribute__ ((always_inline));
+  inline array(array &&other) noexcept __attribute__((always_inline));
 
   template<class T1, class = enable_if_constructible_or_unknown<T, T1>>
-  inline array(array<T1> &&other) noexcept __attribute__ ((always_inline));
+  inline array(const array<T1, Allocator> &other) noexcept __attribute__((always_inline));
+
+  template<class T1, class = enable_if_constructible_or_unknown<T, T1>>
+  inline array(array<T1, Allocator> &&other) noexcept __attribute__((always_inline));
 
   template<class... Args>
-  inline static array create(Args &&... args) __attribute__ ((always_inline));
+  inline static array create(Args &&...args) __attribute__((always_inline));
 
-  inline array &operator=(const array &other) noexcept __attribute__ ((always_inline));
+  inline array &operator=(const array &other) noexcept __attribute__((always_inline));
 
-  inline array &operator=(array &&other) noexcept __attribute__ ((always_inline));
-
-  template<class T1, class = enable_if_constructible_or_unknown<T, T1>>
-  inline array &operator=(const array<T1> &other) noexcept;
+  inline array &operator=(array &&other) noexcept __attribute__((always_inline));
 
   template<class T1, class = enable_if_constructible_or_unknown<T, T1>>
-  inline array &operator=(array<T1> &&other) noexcept;
+  inline array &operator=(const array<T1, Allocator> &other) noexcept;
+
+  template<class T1, class = enable_if_constructible_or_unknown<T, T1>>
+  inline array &operator=(array<T1, Allocator> &&other) noexcept;
 
   inline ~array();
 
-  inline void clear() __attribute__ ((always_inline));
+  inline void clear() __attribute__((always_inline));
 
   // shows if internal storage is vector
-  inline bool is_vector() const __attribute__ ((always_inline));
+  inline bool is_vector() const __attribute__((always_inline));
   // internal storage may be map, but it still behaves exactly like vector
-  inline bool is_pseudo_vector() const __attribute__ ((always_inline));
+  inline bool is_pseudo_vector() const __attribute__((always_inline));
   // and one more level deep: shows if there are no string keys in storage;
   // it is useful in some specific cases like in shift() function,
   // there we drop all int indexes, and if there will be also no string indexes
@@ -257,41 +258,46 @@ public:
   }
 
   T &operator[](int64_t int_key);
-  T &operator[](int32_t key) { return (*this)[int64_t{key}]; }
-  T &operator[](const string &s);
-  T &operator[](tmp_string s);
-  T &operator[](const mixed &v);
+  T &operator[](int32_t key) {
+    return (*this)[int64_t{key}];
+  }
+  T &operator[](const string<Allocator> &s);
+  T &operator[](tmp_string<Allocator> s);
+  T &operator[](const mixed<Allocator> &v);
   T &operator[](double double_key);
   T &operator[](const const_iterator &it) noexcept;
   T &operator[](const iterator &it) noexcept;
 
-  template<class ...Args>
-  void emplace_value(int64_t int_key, Args &&... args) noexcept;
+  template<class... Args>
+  void emplace_value(int64_t int_key, Args &&...args) noexcept;
   void set_value(int64_t int_key, T &&v) noexcept;
   void set_value(int64_t int_key, const T &v) noexcept;
-  void set_value(int32_t key, T &&v) noexcept { set_value(int64_t{key}, std::move(v)); }
-  void set_value(int32_t key, const T &v) noexcept { set_value(int64_t{key}, v); }
+  void set_value(int32_t key, T &&v) noexcept {
+    set_value(int64_t{key}, std::move(v));
+  }
+  void set_value(int32_t key, const T &v) noexcept {
+    set_value(int64_t{key}, v);
+  }
   void set_value(double double_key, T &&v) noexcept;
   void set_value(double double_key, const T &v) noexcept;
 
-  template<class ...Args>
-  void emplace_value(const string &string_key, Args &&... args) noexcept;
-  void set_value(const string &string_key, T &&v) noexcept;
-  void set_value(const string &string_key, const T &v) noexcept;
-  void set_value(tmp_string string_key, T &&v) noexcept;
-  void set_value(tmp_string string_key, const T &v) noexcept;
+  template<class... Args>
+  void emplace_value(const string<Allocator> &string_key, Args &&...args) noexcept;
+  void set_value(const string<Allocator> &string_key, T &&v) noexcept;
+  void set_value(const string<Allocator> &string_key, const T &v) noexcept;
+  void set_value(tmp_string<Allocator> string_key, T &&v) noexcept;
+  void set_value(tmp_string<Allocator> string_key, const T &v) noexcept;
 
-  void set_value(const string &string_key, T &&v, int64_t precomputed_hash) noexcept;
-  void set_value(const string &string_key, const T &v, int64_t precomputed_hash) noexcept;
+  void set_value(const string<Allocator> &string_key, T &&v, int64_t precomputed_hash) noexcept;
+  void set_value(const string<Allocator> &string_key, const T &v, int64_t precomputed_hash) noexcept;
 
-  template<class ...Args>
-  void emplace_value(const mixed &var_key, Args &&... args) noexcept;
-  void set_value(const mixed &v, T &&value) noexcept;
-  void set_value(const mixed &v, const T &value) noexcept;
+  template<class... Args>
+  void emplace_value(const mixed<Allocator> &var_key, Args &&...args) noexcept;
+  void set_value(const mixed<Allocator> &v, T &&value) noexcept;
+  void set_value(const mixed<Allocator> &v, const T &value) noexcept;
 
-
-  template<class OptionalT, class ...Args>
-  void emplace_value(const Optional<OptionalT> &key, Args &&... args) noexcept;
+  template<class OptionalT, class... Args>
+  void emplace_value(const Optional<OptionalT> &key, Args &&...args) noexcept;
   template<class OptionalT>
   void set_value(const Optional<OptionalT> &key, T &&value) noexcept;
   template<class OptionalT>
@@ -305,30 +311,36 @@ public:
   void assign_raw(const char *s);
 
   const T *find_value(int64_t int_key) const noexcept;
-  const T *find_value(int32_t key) const noexcept { return find_value(int64_t{key}); }
-  const T *find_value(const char *s, string::size_type l) const noexcept;
-  const T *find_value(tmp_string s) const noexcept { return find_value(s.data, s.size); }
-  const T *find_value(const string &s) const noexcept { return find_value(s.c_str(), s.size()); }
-  const T *find_value(const string &s, int64_t precomputed_hash) const noexcept;
-  const T *find_value(const mixed &v) const noexcept;
+  const T *find_value(int32_t key) const noexcept {
+    return find_value(int64_t{key});
+  }
+  const T *find_value(const char *s, string<Allocator>::size_type l) const noexcept;
+  const T *find_value(tmp_string<Allocator> s) const noexcept {
+    return find_value(s.data, s.size);
+  }
+  const T *find_value(const string<Allocator> &s) const noexcept {
+    return find_value(s.c_str(), s.size());
+  }
+  const T *find_value(const string<Allocator> &s, int64_t precomputed_hash) const noexcept;
+  const T *find_value(const mixed<Allocator> &v) const noexcept;
   const T *find_value(double double_key) const noexcept;
   const T *find_value(const const_iterator &it) const noexcept;
   const T *find_value(const iterator &it) const noexcept;
 
   // All non-const methods find_no_mutate() do not lead to a copy
   iterator find_no_mutate(int64_t int_key) noexcept;
-  iterator find_no_mutate(const string &string_key) noexcept;
-  iterator find_no_mutate(const mixed &v) noexcept;
+  iterator find_no_mutate(const string<Allocator> &string_key) noexcept;
+  iterator find_no_mutate(const mixed<Allocator> &v) noexcept;
 
   template<class K>
-  const mixed get_var(const K &key) const;
+  const mixed<Allocator> get_var(const K &key) const;
 
   template<class K>
   const T get_value(const K &key) const;
-  const T get_value(const string &string_key, int64_t precomputed_hash) const;
+  const T get_value(const string<Allocator> &string_key, int64_t precomputed_hash) const;
 
-  template<class ...Args>
-  T &emplace_back(Args &&... args) noexcept;
+  template<class... Args>
+  T &emplace_back(Args &&...args) noexcept;
   void push_back(T &&v) noexcept;
   void push_back(const T &v) noexcept;
 
@@ -343,45 +355,49 @@ public:
   inline void fill_vector(int64_t num, const T &value);
   inline void memcpy_vector(int64_t num, const void *src_buf);
 
-  inline int64_t get_next_key() const __attribute__ ((always_inline));
+  inline int64_t get_next_key() const __attribute__((always_inline));
 
   template<class K>
   bool has_key(const K &key) const;
 
   template<class K>
   bool isset(const K &key) const noexcept;
-  bool isset(const string &key, int64_t precomputed_hash) const noexcept;
+  bool isset(const string<Allocator> &key, int64_t precomputed_hash) const noexcept;
 
   T unset(int64_t int_key);
-  T unset(int32_t key) { return unset(int64_t{key}); }
-  T unset(double double_key) { return unset(static_cast<int64_t>(double_key)); }
-  T unset(const string &string_key);
-  T unset(const string &string_key, int64_t precomputed_hash);
-  T unset(const mixed &var_key);
+  T unset(int32_t key) {
+    return unset(int64_t{key});
+  }
+  T unset(double double_key) {
+    return unset(static_cast<int64_t>(double_key));
+  }
+  T unset(const string<Allocator> &string_key);
+  T unset(const string<Allocator> &string_key, int64_t precomputed_hash);
+  T unset(const mixed<Allocator> &var_key);
 
-  inline bool empty() const __attribute__ ((always_inline));
-  inline int64_t count() const __attribute__ ((always_inline));
+  inline bool empty() const __attribute__((always_inline));
+  inline int64_t count() const __attribute__((always_inline));
 
-  inline array_size size() const __attribute__ ((always_inline));
+  inline array_size size() const __attribute__((always_inline));
 
   template<class T1, class = enable_if_constructible_or_unknown<T, T1>>
-  void merge_with(const array<T1> &other) noexcept;
+  void merge_with(const array<T1, Allocator> &other) noexcept;
   template<class T1, class = enable_if_constructible_or_unknown<T, T1>>
-  void merge_with_recursive(const array<T1> &other) noexcept;
-  void merge_with_recursive(const mixed &other) noexcept;
+  void merge_with_recursive(const array<T1, Allocator> &other) noexcept;
+  void merge_with_recursive(const mixed<Allocator> &other) noexcept;
 
   const array operator+(const array &other) const;
   array &operator+=(const array &other);
 
-  inline const_iterator begin() const __attribute__ ((always_inline));
-  inline const_iterator cbegin() const __attribute__ ((always_inline));
-  inline const_iterator middle(int64_t n) const __attribute__ ((always_inline));
-  inline const_iterator end() const __attribute__ ((always_inline));
-  inline const_iterator cend() const __attribute__ ((always_inline));
+  inline const_iterator begin() const __attribute__((always_inline));
+  inline const_iterator cbegin() const __attribute__((always_inline));
+  inline const_iterator middle(int64_t n) const __attribute__((always_inline));
+  inline const_iterator end() const __attribute__((always_inline));
+  inline const_iterator cend() const __attribute__((always_inline));
 
-  inline iterator begin() __attribute__ ((always_inline));
-  inline iterator middle(int64_t n) __attribute__ ((always_inline));
-  inline iterator end() __attribute__ ((always_inline));
+  inline iterator begin() __attribute__((always_inline));
+  inline iterator middle(int64_t n) __attribute__((always_inline));
+  inline iterator end() __attribute__((always_inline));
 
   template<class T1>
   void sort(const T1 &compare, bool renumber);
@@ -389,8 +405,7 @@ public:
   template<class T1>
   void ksort(const T1 &compare);
 
-  inline void swap(array &other) __attribute__ ((always_inline));
-
+  inline void swap(array &other) __attribute__((always_inline));
 
   T pop();
   T &back();
@@ -399,11 +414,9 @@ public:
 
   int64_t unshift(const T &val);
 
-
-  inline bool to_bool() const __attribute__ ((always_inline));
-  inline int64_t to_int() const __attribute__ ((always_inline));
-  inline double to_float() const __attribute__ ((always_inline));
-
+  inline bool to_bool() const __attribute__((always_inline));
+  inline int64_t to_int() const __attribute__((always_inline));
+  inline double to_float() const __attribute__((always_inline));
 
   int64_t get_reference_counter() const;
   bool is_reference_counter(ExtraRefCnt ref_cnt_value) const noexcept;
@@ -416,7 +429,7 @@ public:
   void mutate_if_shared() noexcept;
 
   const T *get_const_vector_pointer() const; // unsafe
-  T *get_vector_pointer(); // unsafe
+  T *get_vector_pointer();                   // unsafe
 
   bool is_equal_inner_pointer(const array &other) const noexcept;
 
@@ -426,11 +439,11 @@ public:
   size_t calculate_memory_for_copying() const noexcept;
 
   template<typename U>
-  static array<T> convert_from(const array<U> &);
+  static array<T, Allocator> convert_from(const array<U, Allocator> &);
 
 private:
-  template<class ...Key>
-  iterator find_iterator_in_map_no_mutate(const Key &... key) noexcept;
+  template<class... Key>
+  iterator find_iterator_in_map_no_mutate(const Key &...key) noexcept;
 
   template<merge_recursive recursive>
   std::enable_if_t<recursive == merge_recursive::YES> start_merge_recursive(T &value, bool was_inserted, const T &other_value) noexcept;
@@ -438,17 +451,18 @@ private:
   std::enable_if_t<recursive == merge_recursive::NO> start_merge_recursive(T & /*value*/, bool /*was_inserted*/, const T & /*other_value*/) noexcept {}
 
   template<merge_recursive recursive = merge_recursive::NO, class T1>
-  void push_back_iterator(const array_iterator<T1> &it) noexcept;
+  void push_back_iterator(const array_iterator<T1, Allocator> &it) noexcept;
 
   array_inner *p;
 
-  template<class T1>
+  template<class T1, typename ArrayAllocator>
   friend class array;
 };
+}
 
-template<class T>
-inline void swap(array<T> &lhs, array<T> &rhs);
+template<class T, typename Allocator>
+inline void swap(__array<T, Allocator> &lhs, __array<T, Allocator> &rhs);
 
-template<class T>
-inline const array<T> array_add(array<T> a1, const array<T> &a2);
+template<class T, typename Allocator>
+inline const __array<T, Allocator> array_add(__array<T, Allocator> a1, const __array<T, Allocator> &a2);
 

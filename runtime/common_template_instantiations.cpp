@@ -4,22 +4,28 @@
 
 #include "runtime/common_template_instantiations.h"
 
-template class array<int64_t>;
-template class array<string>;
-template class array<mixed>;
-//template class array<double>; // see the header for comments
-template class array<bool>;
+template class __runtime_core::array<int64_t, ScriptAllocator>;
+template class __runtime_core::array<string, ScriptAllocator>;
+/*
+ * Commented out, because it breaks @kphp-flatten optimization.
+ * When array<double> is explicitly instantiated here it's compiled with -O3 instead of -Os.
+ * It spoils inlining of array<>::get_value functions called from @kphp-flatten annotated ML related functions:
+ * some strange `call` asm instructions are generated instead of normal inlining.
+ */
+// template class array<double>;
+template class __runtime_core::array<bool, ScriptAllocator>;
+template class __runtime_core::array<mixed, ScriptAllocator>;
 
-template class array<Optional<int64_t>>;
-template class array<Optional<string>>;
-template class array<Optional<double>>;
-template class array<Optional<bool>>;
+template class __runtime_core::array<Optional<int64_t>, ScriptAllocator>;
+template class __runtime_core::array<Optional<string>, ScriptAllocator>;
+template class __runtime_core::array<Optional<double>, ScriptAllocator>;
+template class __runtime_core::array<Optional<bool>, ScriptAllocator>;
 
-template class array<array<int64_t>>;
-template class array<array<string>>;
-template class array<array<double>>;
-template class array<array<bool>>;
-template class array<array<mixed>>;
+template class __runtime_core::array<__runtime_core::array<int64_t, ScriptAllocator>, ScriptAllocator>;
+template class __runtime_core::array<__runtime_core::array<string, ScriptAllocator>, ScriptAllocator>;
+template class __runtime_core::array<__runtime_core::array<double, ScriptAllocator>, ScriptAllocator>;
+template class __runtime_core::array<__runtime_core::array<bool, ScriptAllocator>, ScriptAllocator>;
+template class __runtime_core::array<__runtime_core::array<mixed, ScriptAllocator>, ScriptAllocator>;
 
 template class Optional<int64_t>;
 template class Optional<string>;

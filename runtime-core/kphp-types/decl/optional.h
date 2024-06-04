@@ -10,7 +10,7 @@
 #include "common/type_traits/is_constructible.h"
 #include "common/type_traits/list_of_types.h"
 
-#include "runtime-core/functions/kphp-assert-core.h"
+#include "runtime-core/utils/kphp-assert-core.h"
 #include "runtime-core/kphp-types/decl/declarations.h"
 
 template<class T>
@@ -97,7 +97,7 @@ private:
   template<class T1>
   using enable_if_allowed = std::enable_if_t<is_conversion_in_optional_allowed<T, T1>{}>;
 
-  static_assert(!std::is_same<T, mixed>{}, "Usage Optional<mixed> is forbidden");
+  static_assert(!std::is_same<T, __runtime_core::mixed<__runtime_core::DummyAllocator>>{}, "Usage Optional<mixed> is forbidden");
   static_assert(!is_optional<T>{}, "Usage Optional<Optional> is forbidden");
 
   using Base = OptionalBase<T>;
@@ -201,5 +201,5 @@ using enable_if_t_is_not_optional = std::enable_if_t<!is_optional<std::decay_t<T
 template<class T, class T2>
 using enable_if_t_is_optional_t2 = std::enable_if_t<std::is_same<T, Optional<T2>>::value>;
 
-template<class T>
-using enable_if_t_is_optional_string = enable_if_t_is_optional_t2<T, string>;
+template<class T, typename Allocator>
+using enable_if_t_is_optional_string = enable_if_t_is_optional_t2<T, __runtime_core::string<Allocator>>;

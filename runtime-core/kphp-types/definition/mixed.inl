@@ -6,21 +6,28 @@
 
 #include "common/algorithms/find.h"
 
-#include "runtime-core/functions/migration-php8.h"
+#include "runtime-core/utils/migration-php8.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
   #error "this file must be included only from runtime-core.h"
 #endif
 
-static_assert(vk::all_of_equal(sizeof(string), sizeof(double), sizeof(array<mixed>)), "sizeof of array<mixed>, string and double must be equal");
+static_assert(vk::all_of_equal(sizeof(__runtime_core::string<__runtime_core::DummyAllocator>), sizeof(double),
+                               sizeof(__runtime_core::array<__runtime_core::mixed<__runtime_core::DummyAllocator>, __runtime_core::DummyAllocator>)),
+              "sizeof of array<mixed>, string and double must be equal");
 
-void mixed::copy_from(const mixed &other) {
+template<class T1, class T2>
+inline int64_t spaceship(const T1 &lhs, const T2 &rhs);
+
+namespace __runtime_core {
+template<typename Allocator>
+void mixed<Allocator>::copy_from(const mixed<Allocator> &other) {
   switch (other.get_type()) {
     case type::STRING:
-      new(&as_string()) string(other.as_string());
+      new (&as_string()) string(other.as_string());
       break;
     case type::ARRAY:
-      new(&as_array()) array<mixed>(other.as_array());
+      new (&as_array()) array<mixed, Allocator>(other.as_array());
       break;
     default:
       storage_ = other.storage_;
@@ -28,13 +35,14 @@ void mixed::copy_from(const mixed &other) {
   type_ = other.get_type();
 }
 
-void mixed::copy_from(mixed &&other) {
+template<typename Allocator>
+void mixed<Allocator>::copy_from(mixed<Allocator> &&other) {
   switch (other.get_type()) {
     case type::STRING:
-      new(&as_string()) string(std::move(other.as_string()));
+      new (&as_string()) string(std::move(other.as_string()));
       break;
     case type::ARRAY:
-      new(&as_array()) array<mixed>(std::move(other.as_array()));
+      new (&as_array()) array<mixed, Allocator>(std::move(other.as_array()));
       break;
     default:
       storage_ = other.storage_;
@@ -42,17 +50,19 @@ void mixed::copy_from(mixed &&other) {
   type_ = other.get_type();
 }
 
+template<typename Allocator>
 template<typename T>
-void mixed::init_from(T &&v) {
+void mixed<Allocator>::init_from(T &&v) {
   auto type_and_value_ref = get_type_and_value_ptr(v);
   type_ = type_and_value_ref.first;
   auto *value_ptr = type_and_value_ref.second;
   using ValueType = std::decay_t<decltype(*value_ptr)>;
-  new(value_ptr) ValueType(std::forward<T>(v));
+  new (value_ptr) ValueType(std::forward<T>(v));
 }
 
+template<typename Allocator>
 template<typename T>
-mixed &mixed::assign_from(T &&v) {
+mixed<Allocator> &mixed<Allocator>::assign_from(T &&v) {
   auto type_and_value_ref = get_type_and_value_ptr(v);
   if (get_type() == type_and_value_ref.first) {
     *type_and_value_ref.second = std::forward<T>(v);
@@ -63,40 +73,47 @@ mixed &mixed::assign_from(T &&v) {
   return *this;
 }
 
+template<typename Allocator>
 template<typename T, typename>
-mixed::mixed(T &&v) noexcept {
+mixed<Allocator>::mixed(T &&v) noexcept {
   init_from(std::forward<T>(v));
 }
 
-mixed::mixed(const Unknown &u __attribute__((unused))) noexcept {
-  php_assert ("Unknown used!!!" && 0);
+template<typename Allocator>
+mixed<Allocator>::mixed(const Unknown &u __attribute__((unused))) noexcept {
+  php_assert("Unknown used!!!" && 0);
 }
 
-mixed::mixed(const char *s, string::size_type len) noexcept :
-  mixed(string{s, len}){
-}
+template<typename Allocator>
+mixed<Allocator>::mixed(const char *s, string<Allocator>::size_type len) noexcept
+  : mixed(string{s, len}) {}
 
+template<typename Allocator>
 template<typename T, typename>
-mixed::mixed(const Optional<T> &v) noexcept {
+mixed<Allocator>::mixed(const Optional<T> &v) noexcept {
   auto init_from_lambda = [this](const auto &v) { this->init_from(v); };
   call_fun_on_optional_value(init_from_lambda, v);
 }
 
+template<typename Allocator>
 template<typename T, typename>
-mixed::mixed(Optional<T> &&v) noexcept {
-   auto init_from_lambda = [this](auto &&v) { this->init_from(std::move(v)); };
-   call_fun_on_optional_value(init_from_lambda, std::move(v));
+mixed<Allocator>::mixed(Optional<T> &&v) noexcept {
+  auto init_from_lambda = [this](auto &&v) { this->init_from(std::move(v)); };
+  call_fun_on_optional_value(init_from_lambda, std::move(v));
 }
 
-mixed::mixed(const mixed &v) noexcept {
+template<typename Allocator>
+mixed<Allocator>::mixed(const mixed &v) noexcept {
   copy_from(v);
 }
 
-mixed::mixed(mixed &&v) noexcept {
+template<typename Allocator>
+mixed<Allocator>::mixed(mixed &&v) noexcept {
   copy_from(std::move(v));
 }
 
-mixed &mixed::operator=(const mixed &other) noexcept {
+template<typename Allocator>
+mixed<Allocator> &mixed<Allocator>::operator=(const mixed &other) noexcept {
   if (this != &other) {
     destroy();
     copy_from(other);
@@ -104,7 +121,8 @@ mixed &mixed::operator=(const mixed &other) noexcept {
   return *this;
 }
 
-mixed &mixed::operator=(mixed &&other) noexcept {
+template<typename Allocator>
+mixed<Allocator> &mixed<Allocator>::operator=(mixed &&other) noexcept {
   if (this != &other) {
     destroy();
     copy_from(std::move(other));
@@ -112,35 +130,40 @@ mixed &mixed::operator=(mixed &&other) noexcept {
   return *this;
 }
 
+template<typename Allocator>
 template<typename T, typename>
-mixed &mixed::operator=(T &&v) noexcept {
+mixed<Allocator> &mixed<Allocator>::operator=(T &&v) noexcept {
   return assign_from(std::forward<T>(v));
 }
 
+template<typename Allocator>
 template<typename T, typename>
-mixed &mixed::operator=(const Optional<T> &v) noexcept {
-  auto assign_from_lambda = [this](const auto &v) -> mixed& { return this->assign_from(v); };
+mixed<Allocator> &mixed<Allocator>::operator=(const Optional<T> &v) noexcept {
+  auto assign_from_lambda = [this](const auto &v) -> mixed & { return this->assign_from(v); };
   return call_fun_on_optional_value(assign_from_lambda, v);
 }
 
+template<typename Allocator>
 template<typename T, typename>
-mixed &mixed::operator=(Optional<T> &&v) noexcept {
-  auto assign_from_lambda = [this](auto &&v) -> mixed& { return this->assign_from(std::move(v)); };
+mixed<Allocator> &mixed<Allocator>::operator=(Optional<T> &&v) noexcept {
+  auto assign_from_lambda = [this](auto &&v) -> mixed & { return this->assign_from(std::move(v)); };
   return call_fun_on_optional_value(assign_from_lambda, std::move(v));
 }
 
-mixed &mixed::assign(const char *other, string::size_type len) {
+template<typename Allocator>
+mixed<Allocator> &mixed<Allocator>::assign(const char *other, string<Allocator>::size_type len) {
   if (get_type() == type::STRING) {
     as_string().assign(other, len);
   } else {
     destroy();
     type_ = type::STRING;
-    new(&as_string()) string(other, len);
+    new (&as_string()) string(other, len);
   }
   return *this;
 }
 
-const mixed mixed::operator-() const {
+template<typename Allocator>
+const mixed<Allocator> mixed<Allocator>::operator-() const {
   mixed arg1 = to_numeric();
 
   if (arg1.get_type() == type::INTEGER) {
@@ -151,23 +174,24 @@ const mixed mixed::operator-() const {
   return arg1;
 }
 
-const mixed mixed::operator+() const {
+template<typename Allocator>
+const mixed<Allocator> mixed<Allocator>::operator+() const {
   return to_numeric();
 }
 
-
-int64_t mixed::operator~() const {
+template<typename Allocator>
+int64_t mixed<Allocator>::operator~() const {
   return ~to_int();
 }
 
-
-mixed &mixed::operator+=(const mixed &other) {
-  if (likely (get_type() == type::INTEGER && other.get_type() == type::INTEGER)) {
+template<typename Allocator>
+mixed<Allocator> &mixed<Allocator>::operator+=(const mixed &other) {
+  if (likely(get_type() == type::INTEGER && other.get_type() == type::INTEGER)) {
     as_int() += other.as_int();
     return *this;
   }
 
-  if (unlikely (get_type() == type::ARRAY || other.get_type() == type::ARRAY)) {
+  if (unlikely(get_type() == type::ARRAY || other.get_type() == type::ARRAY)) {
     if (get_type() == type::ARRAY && other.get_type() == type::ARRAY) {
       as_array() += other.as_array();
     } else {
@@ -197,8 +221,9 @@ mixed &mixed::operator+=(const mixed &other) {
   return *this;
 }
 
-mixed &mixed::operator-=(const mixed &other) {
-  if (likely (get_type() == type::INTEGER && other.get_type() == type::INTEGER)) {
+template<typename Allocator>
+mixed<Allocator> &mixed<Allocator>::operator-=(const mixed &other) {
+  if (likely(get_type() == type::INTEGER && other.get_type() == type::INTEGER)) {
     as_int() -= other.as_int();
     return *this;
   }
@@ -224,8 +249,9 @@ mixed &mixed::operator-=(const mixed &other) {
   return *this;
 }
 
-mixed &mixed::operator*=(const mixed &other) {
-  if (likely (get_type() == type::INTEGER && other.get_type() == type::INTEGER)) {
+template<typename Allocator>
+mixed<Allocator> &mixed<Allocator>::operator*=(const mixed &other) {
+  if (likely(get_type() == type::INTEGER && other.get_type() == type::INTEGER)) {
     as_int() *= other.as_int();
     return *this;
   }
@@ -251,8 +277,9 @@ mixed &mixed::operator*=(const mixed &other) {
   return *this;
 }
 
-mixed &mixed::operator/=(const mixed &other) {
-  if (likely (get_type() == type::INTEGER && other.get_type() == type::INTEGER)) {
+template<typename Allocator>
+mixed<Allocator> &mixed<Allocator>::operator/=(const mixed &other) {
+  if (likely(get_type() == type::INTEGER && other.get_type() == type::INTEGER)) {
     if (as_int() % other.as_int() == 0) {
       as_int() /= other.as_int();
     } else {
@@ -302,7 +329,8 @@ mixed &mixed::operator/=(const mixed &other) {
   return *this;
 }
 
-mixed &mixed::operator%=(const mixed &other) {
+template<typename Allocator>
+mixed<Allocator> &mixed<Allocator>::operator%=(const mixed &other) {
   int64_t div = other.to_int();
   if (div == 0) {
     php_warning("Modulo by zero");
@@ -315,39 +343,43 @@ mixed &mixed::operator%=(const mixed &other) {
   return *this;
 }
 
-
-mixed &mixed::operator&=(const mixed &other) {
+template<typename Allocator>
+mixed<Allocator> &mixed<Allocator>::operator&=(const mixed &other) {
   convert_to_int();
   as_int() &= other.to_int();
   return *this;
 }
 
-mixed &mixed::operator|=(const mixed &other) {
+template<typename Allocator>
+mixed<Allocator> &mixed<Allocator>::operator|=(const mixed &other) {
   convert_to_int();
   as_int() |= other.to_int();
   return *this;
 }
 
-mixed &mixed::operator^=(const mixed &other) {
+template<typename Allocator>
+mixed<Allocator> &mixed<Allocator>::operator^=(const mixed &other) {
   convert_to_int();
   as_int() ^= other.to_int();
   return *this;
 }
 
-mixed &mixed::operator<<=(const mixed &other) {
+template<typename Allocator>
+mixed<Allocator> &mixed<Allocator>::operator<<=(const mixed &other) {
   convert_to_int();
   as_int() <<= other.to_int();
   return *this;
 }
 
-mixed &mixed::operator>>=(const mixed &other) {
+template<typename Allocator>
+mixed<Allocator> &mixed<Allocator>::operator>>=(const mixed &other) {
   convert_to_int();
   as_int() >>= other.to_int();
   return *this;
 }
 
-
-mixed &mixed::operator++() {
+template<typename Allocator>
+mixed<Allocator> &mixed<Allocator>::operator++() {
   switch (get_type()) {
     case type::NUL:
       type_ = type::INTEGER;
@@ -373,7 +405,8 @@ mixed &mixed::operator++() {
   }
 }
 
-const mixed mixed::operator++(int) {
+template<typename Allocator>
+const mixed<Allocator> mixed<Allocator>::operator++(int) {
   switch (get_type()) {
     case type::NUL:
       type_ = type::INTEGER;
@@ -406,8 +439,9 @@ const mixed mixed::operator++(int) {
   }
 }
 
-mixed &mixed::operator--() {
-  if (likely (get_type() == type::INTEGER)) {
+template<typename Allocator>
+mixed<Allocator> &mixed<Allocator>::operator--() {
+  if (likely(get_type() == type::INTEGER)) {
     --as_int();
     return *this;
   }
@@ -436,8 +470,9 @@ mixed &mixed::operator--() {
   }
 }
 
-const mixed mixed::operator--(int) {
-  if (likely (get_type() == type::INTEGER)) {
+template<typename Allocator>
+const mixed<Allocator> mixed<Allocator>::operator--(int) {
+  if (likely(get_type() == type::INTEGER)) {
     mixed res(as_int());
     --as_int();
     return res;
@@ -474,29 +509,31 @@ const mixed mixed::operator--(int) {
   }
 }
 
-
-bool mixed::operator!() const {
+template<typename Allocator>
+bool mixed<Allocator>::operator!() const {
   return !to_bool();
 }
 
-
-mixed &mixed::append(const string &v) {
-  if (unlikely (get_type() != type::STRING)) {
+template<typename Allocator>
+mixed<Allocator> &mixed<Allocator>::append(const string<Allocator> &v) {
+  if (unlikely(get_type() != type::STRING)) {
     convert_to_string();
   }
   as_string().append(v);
   return *this;
 }
 
-mixed &mixed::append(tmp_string v) {
-  if (unlikely (get_type() != type::STRING)) {
+template<typename Allocator>
+mixed<Allocator> &mixed<Allocator>::append(tmp_string<Allocator> v) {
+  if (unlikely(get_type() != type::STRING)) {
     convert_to_string();
   }
   as_string().append(v.data, v.size);
   return *this;
 }
 
-const mixed mixed::to_numeric() const {
+template<typename Allocator>
+const mixed<Allocator> mixed<Allocator>::to_numeric() const {
   switch (get_type()) {
     case type::NUL:
       return 0;
@@ -516,8 +553,8 @@ const mixed mixed::to_numeric() const {
   }
 }
 
-
-bool mixed::to_bool() const {
+template<typename Allocator>
+bool mixed<Allocator>::to_bool() const {
   switch (get_type()) {
     case type::NUL:
       return false;
@@ -536,7 +573,8 @@ bool mixed::to_bool() const {
   }
 }
 
-int64_t mixed::to_int() const {
+template<typename Allocator>
+int64_t mixed<Allocator>::to_int() const {
   switch (get_type()) {
     case type::NUL:
       return 0;
@@ -556,7 +594,8 @@ int64_t mixed::to_int() const {
   }
 }
 
-double mixed::to_float() const {
+template<typename Allocator>
+double mixed<Allocator>::to_float() const {
   switch (get_type()) {
     case type::NUL:
       return 0.0;
@@ -576,12 +615,13 @@ double mixed::to_float() const {
   }
 }
 
-const string mixed::to_string() const {
+template<typename Allocator>
+const string<Allocator> mixed<Allocator>::to_string() const {
   switch (get_type()) {
     case type::NUL:
-      return string();
+      return string<Allocator>();
     case type::BOOLEAN:
-      return (as_bool() ? string("1", 1) : string());
+      return (as_bool() ? string<Allocator>("1", 1) : string<Allocator>());
     case type::INTEGER:
       return string(as_int());
     case type::FLOAT:
@@ -590,21 +630,22 @@ const string mixed::to_string() const {
       return as_string();
     case type::ARRAY:
       php_warning("Conversion from array to string");
-      return string("Array", 5);
+      return string<Allocator>("Array", 5);
     default:
       __builtin_unreachable();
   }
 }
 
-const array<mixed> mixed::to_array() const {
+template<typename Allocator>
+const array<mixed<Allocator>, Allocator> mixed<Allocator>::to_array() const {
   switch (get_type()) {
     case type::NUL:
-      return array<mixed>();
+      return array<mixed, Allocator>();
     case type::BOOLEAN:
     case type::INTEGER:
     case type::FLOAT:
     case type::STRING: {
-      array<mixed> res(array_size(1, true));
+      array<mixed, Allocator> res(array_size(1, true));
       res.push_back(*this);
       return res;
     }
@@ -615,23 +656,58 @@ const array<mixed> mixed::to_array() const {
   }
 }
 
-bool &mixed::as_bool() { return *reinterpret_cast<bool *>(&storage_); }
-const bool &mixed::as_bool() const { return *reinterpret_cast<const bool *>(&storage_); }
+template<typename Allocator>
+bool &mixed<Allocator>::as_bool() {
+  return *reinterpret_cast<bool *>(&storage_);
+}
 
-int64_t &mixed::as_int() { return *reinterpret_cast<int64_t *>(&storage_); }
-const int64_t &mixed::as_int() const { return *reinterpret_cast<const int64_t *>(&storage_); }
+template<typename Allocator>
+const bool &mixed<Allocator>::as_bool() const {
+  return *reinterpret_cast<const bool *>(&storage_);
+}
 
-double &mixed::as_double() { return *reinterpret_cast<double *>(&storage_); }
-const double &mixed::as_double() const { return *reinterpret_cast<const double *>(&storage_); }
+template<typename Allocator>
+int64_t &mixed<Allocator>::as_int() {
+  return *reinterpret_cast<int64_t *>(&storage_);
+}
 
-string &mixed::as_string() { return *reinterpret_cast<string *>(&storage_); }
-const string &mixed::as_string() const { return *reinterpret_cast<const string *>(&storage_); }
+template<typename Allocator>
+const int64_t &mixed<Allocator>::as_int() const {
+  return *reinterpret_cast<const int64_t *>(&storage_);
+}
 
-array<mixed> &mixed::as_array() { return *reinterpret_cast<array<mixed> *>(&storage_); }
-const array<mixed> &mixed::as_array() const { return *reinterpret_cast<const array<mixed> *>(&storage_); }
+template<typename Allocator>
+double &mixed<Allocator>::as_double() {
+  return *reinterpret_cast<double *>(&storage_);
+}
 
+template<typename Allocator>
+const double &mixed<Allocator>::as_double() const {
+  return *reinterpret_cast<const double *>(&storage_);
+}
 
-int64_t mixed::safe_to_int() const {
+template<typename Allocator>
+string<Allocator> &mixed<Allocator>::as_string() {
+  return *reinterpret_cast<string<Allocator> *>(&storage_);
+}
+
+template<typename Allocator>
+const string<Allocator> &mixed<Allocator>::as_string() const {
+  return *reinterpret_cast<const string<Allocator> *>(&storage_);
+}
+
+template<typename Allocator>
+array<mixed<Allocator>, Allocator> &mixed<Allocator>::as_array() {
+  return *reinterpret_cast<array<mixed, Allocator> *>(&storage_);
+}
+
+template<typename Allocator>
+const array<mixed<Allocator>, Allocator> &mixed<Allocator>::as_array() const {
+  return *reinterpret_cast<const array<mixed, Allocator> *>(&storage_);
+}
+
+template<typename Allocator>
+int64_t mixed<Allocator>::safe_to_int() const {
   switch (get_type()) {
     case type::NUL:
       return 0;
@@ -656,8 +732,8 @@ int64_t mixed::safe_to_int() const {
   }
 }
 
-
-void mixed::convert_to_numeric() {
+template<typename Allocator>
+void mixed<Allocator>::convert_to_numeric() {
   switch (get_type()) {
     case type::NUL:
       type_ = type::INTEGER;
@@ -676,7 +752,7 @@ void mixed::convert_to_numeric() {
     case type::ARRAY: {
       php_warning("Wrong conversion from array to number");
       const int64_t int_val = as_array().to_int();
-      as_array().~array<mixed>();
+      as_array().~array<mixed, Allocator>();
       type_ = type::INTEGER;
       as_int() = int_val;
       return;
@@ -686,7 +762,8 @@ void mixed::convert_to_numeric() {
   }
 }
 
-void mixed::convert_to_bool() {
+template<typename Allocator>
+void mixed<Allocator>::convert_to_bool() {
   switch (get_type()) {
     case type::NUL:
       type_ = type::BOOLEAN;
@@ -711,7 +788,7 @@ void mixed::convert_to_bool() {
     }
     case type::ARRAY: {
       const bool bool_val = as_array().to_bool();
-      as_array().~array<mixed>();
+      as_array().~array<mixed, Allocator>();
       type_ = type::BOOLEAN;
       as_bool() = bool_val;
       return;
@@ -721,7 +798,8 @@ void mixed::convert_to_bool() {
   }
 }
 
-void mixed::convert_to_int() {
+template<typename Allocator>
+void mixed<Allocator>::convert_to_int() {
   switch (get_type()) {
     case type::NUL:
       type_ = type::INTEGER;
@@ -747,7 +825,7 @@ void mixed::convert_to_int() {
     case type::ARRAY: {
       php_warning("Wrong conversion from array to int");
       const int64_t int_val = as_array().to_int();
-      as_array().~array<mixed>();
+      as_array().~array<mixed, Allocator>();
       type_ = type::INTEGER;
       as_int() = int_val;
       return;
@@ -757,7 +835,8 @@ void mixed::convert_to_int() {
   }
 }
 
-void mixed::convert_to_float() {
+template<typename Allocator>
+void mixed<Allocator>::convert_to_float() {
   switch (get_type()) {
     case type::NUL:
       type_ = type::FLOAT;
@@ -783,7 +862,7 @@ void mixed::convert_to_float() {
     case type::ARRAY: {
       php_warning("Wrong conversion from array to float");
       const double float_val = as_array().to_float();
-      as_array().~array<mixed>();
+      as_array().~array<mixed, Allocator>();
       type_ = type::FLOAT;
       as_double() = float_val;
       return;
@@ -793,42 +872,44 @@ void mixed::convert_to_float() {
   }
 }
 
-void mixed::convert_to_string() {
+template<typename Allocator>
+void mixed<Allocator>::convert_to_string() {
   switch (get_type()) {
     case type::NUL:
       type_ = type::STRING;
-      new(&as_string()) string();
+      new (&as_string()) string<Allocator>();
       return;
     case type::BOOLEAN:
       type_ = type::STRING;
       if (as_bool()) {
-        new(&as_string()) string("1", 1);
+        new (&as_string()) string<Allocator>("1", 1);
       } else {
-        new(&as_string()) string();
+        new (&as_string()) string<Allocator>();
       }
       return;
     case type::INTEGER:
       type_ = type::STRING;
-      new(&as_string()) string(as_int());
+      new (&as_string()) string(as_int());
       return;
     case type::FLOAT:
       type_ = type::STRING;
-      new(&as_string()) string(as_double());
+      new (&as_string()) string(as_double());
       return;
     case type::STRING:
       return;
     case type::ARRAY:
       php_warning("Converting from array to string");
-      as_array().~array<mixed>();
+      as_array().~array<mixed, Allocator>();
       type_ = type::STRING;
-      new(&as_string()) string("Array", 5);
+      new (&as_string()) string<Allocator>("Array", 5);
       return;
     default:
       __builtin_unreachable();
   }
 }
 
-const bool &mixed::as_bool(const char *function) const {
+template<typename Allocator>
+const bool &mixed<Allocator>::as_bool(const char *function) const {
   switch (get_type()) {
     case type::BOOLEAN:
       return as_bool();
@@ -838,7 +919,8 @@ const bool &mixed::as_bool(const char *function) const {
   }
 }
 
-const int64_t &mixed::as_int(const char *function) const {
+template<typename Allocator>
+const int64_t &mixed<Allocator>::as_int(const char *function) const {
   switch (get_type()) {
     case type::INTEGER:
       return as_int();
@@ -848,7 +930,8 @@ const int64_t &mixed::as_int(const char *function) const {
   }
 }
 
-const double &mixed::as_float(const char *function) const {
+template<typename Allocator>
+const double &mixed<Allocator>::as_float(const char *function) const {
   switch (get_type()) {
     case type::FLOAT:
       return as_double();
@@ -858,7 +941,8 @@ const double &mixed::as_float(const char *function) const {
   }
 }
 
-const string &mixed::as_string(const char *function) const {
+template<typename Allocator>
+const string<Allocator> &mixed<Allocator>::as_string(const char *function) const {
   switch (get_type()) {
     case type::STRING:
       return as_string();
@@ -868,18 +952,19 @@ const string &mixed::as_string(const char *function) const {
   }
 }
 
-const array<mixed> &mixed::as_array(const char *function) const {
+template<typename Allocator>
+const array<mixed<Allocator>, Allocator> &mixed<Allocator>::as_array(const char *function) const {
   switch (get_type()) {
     case type::ARRAY:
       return as_array();
     default:
       php_warning("%s() expects parameter to be array, %s is given", function, get_type_c_str());
-      return empty_value<array<mixed>>();
+      return empty_value<array<mixed, Allocator>>();
   }
 }
 
-
-bool &mixed::as_bool(const char *function) {
+template<typename Allocator>
+bool &mixed<Allocator>::as_bool(const char *function) {
   switch (get_type()) {
     case type::NUL:
       convert_to_bool();
@@ -891,7 +976,8 @@ bool &mixed::as_bool(const char *function) {
   }
 }
 
-int64_t &mixed::as_int(const char *function) {
+template<typename Allocator>
+int64_t &mixed<Allocator>::as_int(const char *function) {
   switch (get_type()) {
     case type::NUL:
     case type::BOOLEAN:
@@ -906,7 +992,8 @@ int64_t &mixed::as_int(const char *function) {
   }
 }
 
-double &mixed::as_float(const char *function) {
+template<typename Allocator>
+double &mixed<Allocator>::as_float(const char *function) {
   switch (get_type()) {
     case type::NUL:
     case type::BOOLEAN:
@@ -921,7 +1008,8 @@ double &mixed::as_float(const char *function) {
   }
 }
 
-string &mixed::as_string(const char *function) {
+template<typename Allocator>
+string<Allocator> &mixed<Allocator>::as_string(const char *function) {
   switch (get_type()) {
     case type::NUL:
     case type::BOOLEAN:
@@ -936,18 +1024,19 @@ string &mixed::as_string(const char *function) {
   }
 }
 
-array<mixed> &mixed::as_array(const char *function) {
+template<typename Allocator>
+array<mixed<Allocator>, Allocator> &mixed<Allocator>::as_array(const char *function) {
   switch (get_type()) {
     case type::ARRAY:
       return as_array();
     default:
       php_warning("%s() expects parameter to be array, %s is given", function, get_type_c_str());
-      return empty_value<array<mixed>>();
+      return empty_value<array<mixed, Allocator>>();
   }
 }
 
-
-bool mixed::is_numeric() const {
+template<typename Allocator>
+bool mixed<Allocator>::is_numeric() const {
   switch (get_type()) {
     case type::INTEGER:
     case type::FLOAT:
@@ -959,41 +1048,48 @@ bool mixed::is_numeric() const {
   }
 }
 
-bool mixed::is_scalar() const {
+template<typename Allocator>
+bool mixed<Allocator>::is_scalar() const {
   return get_type() != type::NUL && get_type() != type::ARRAY;
 }
 
-
-mixed::type mixed::get_type() const {
+template<typename Allocator>
+mixed<Allocator>::type mixed<Allocator>::get_type() const {
   return type_;
 }
 
-bool mixed::is_null() const {
+template<typename Allocator>
+bool mixed<Allocator>::is_null() const {
   return get_type() == type::NUL;
 }
 
-bool mixed::is_bool() const {
+template<typename Allocator>
+bool mixed<Allocator>::is_bool() const {
   return get_type() == type::BOOLEAN;
 }
 
-bool mixed::is_int() const {
+template<typename Allocator>
+bool mixed<Allocator>::is_int() const {
   return get_type() == type::INTEGER;
 }
 
-bool mixed::is_float() const {
+template<typename Allocator>
+bool mixed<Allocator>::is_float() const {
   return get_type() == type::FLOAT;
 }
 
-bool mixed::is_string() const {
+template<typename Allocator>
+bool mixed<Allocator>::is_string() const {
   return get_type() == type::STRING;
 }
 
-bool mixed::is_array() const {
+template<typename Allocator>
+bool mixed<Allocator>::is_array() const {
   return get_type() == type::ARRAY;
 }
 
-
-inline const char *mixed::get_type_c_str() const {
+template<typename Allocator>
+inline const char *mixed<Allocator>::get_type_c_str() const {
   switch (get_type()) {
     case type::NUL:
       return "NULL";
@@ -1012,16 +1108,18 @@ inline const char *mixed::get_type_c_str() const {
   }
 }
 
-inline const string mixed::get_type_str() const {
-  return string(get_type_c_str());
+template<typename Allocator>
+inline const string<Allocator> mixed<Allocator>::get_type_str() const {
+  return string<Allocator>(get_type_c_str());
 }
 
-
-bool mixed::empty() const {
+template<typename Allocator>
+bool mixed<Allocator>::empty() const {
   return !to_bool();
 }
 
-int64_t mixed::count() const {
+template<typename Allocator>
+int64_t mixed<Allocator>::count() const {
   switch (get_type()) {
     case type::NUL:
       php_warning("count(): Parameter is null, but an array expected");
@@ -1039,10 +1137,8 @@ int64_t mixed::count() const {
   }
 }
 
-template<class T1, class T2>
-inline int64_t spaceship(const T1 &lhs, const T2 &rhs);
-
-int64_t mixed::compare(const mixed &rhs) const {
+template<typename Allocator>
+int64_t mixed<Allocator>::compare(const mixed<Allocator> &rhs) const {
   if (unlikely(is_string())) {
     if (likely(rhs.is_string())) {
       return compare_strings_php_order(as_string(), rhs.as_string());
@@ -1070,14 +1166,15 @@ int64_t mixed::compare(const mixed &rhs) const {
   return three_way_comparison(to_float(), rhs.to_float());
 }
 
-void mixed::swap(mixed &other) {
+template<typename Allocator>
+void mixed<Allocator>::swap(mixed<Allocator> &other) {
   ::swap(type_, other.type_);
   ::swap(as_double(), other.as_double());
 }
 
-
-mixed &mixed::operator[](int64_t int_key) {
-  if (unlikely (get_type() != type::ARRAY)) {
+template<typename Allocator>
+mixed<Allocator> &mixed<Allocator>::operator[](int64_t int_key) {
+  if (unlikely(get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
       php_warning("Writing to string by offset is't supported");
       return empty_value<mixed>();
@@ -1085,7 +1182,7 @@ mixed &mixed::operator[](int64_t int_key) {
 
     if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
       type_ = type::ARRAY;
-      new(&as_array()) array<mixed>();
+      new (&as_array()) array<mixed, Allocator>();
     } else {
       php_warning("Cannot use a value \"%s\" of type %s as an array, index = %" PRIi64, to_string().c_str(), get_type_c_str(), int_key);
       return empty_value<mixed>();
@@ -1094,8 +1191,9 @@ mixed &mixed::operator[](int64_t int_key) {
   return as_array()[int_key];
 }
 
-mixed &mixed::operator[](const string &string_key) {
-  if (unlikely (get_type() != type::ARRAY)) {
+template<typename Allocator>
+mixed<Allocator> &mixed<Allocator>::operator[](const string<Allocator> &string_key) {
+  if (unlikely(get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
       php_warning("Writing to string by offset is't supported");
       return empty_value<mixed>();
@@ -1103,7 +1201,7 @@ mixed &mixed::operator[](const string &string_key) {
 
     if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
       type_ = type::ARRAY;
-      new(&as_array()) array<mixed>();
+      new (&as_array()) array<mixed, Allocator>();
     } else {
       php_warning("Cannot use a value \"%s\" of type %s as an array, index = %s", to_string().c_str(), get_type_c_str(), string_key.c_str());
       return empty_value<mixed>();
@@ -1113,17 +1211,19 @@ mixed &mixed::operator[](const string &string_key) {
   return as_array()[string_key];
 }
 
-mixed &mixed::operator[](tmp_string string_key) {
+template<typename Allocator>
+mixed<Allocator> &mixed<Allocator>::operator[](tmp_string<Allocator> string_key) {
   if (get_type() == type::ARRAY) {
     return as_array()[string_key];
   }
   return (*this)[materialize_tmp_string(string_key)];
 }
 
-mixed &mixed::operator[](const mixed &v) {
+template<typename Allocator>
+mixed<Allocator> &mixed<Allocator>::operator[](const mixed<Allocator> &v) {
   switch (v.get_type()) {
     case type::NUL:
-      return (*this)[string()];
+      return (*this)[string<Allocator>()];
     case type::BOOLEAN:
       return (*this)[v.as_bool()];
     case type::INTEGER:
@@ -1140,21 +1240,24 @@ mixed &mixed::operator[](const mixed &v) {
   }
 }
 
-mixed &mixed::operator[](double double_key) {
+template<typename Allocator>
+mixed<Allocator> &mixed<Allocator>::operator[](double double_key) {
   return (*this)[static_cast<int64_t>(double_key)];
 }
 
-mixed &mixed::operator[](const array<mixed>::const_iterator &it) {
+template<typename Allocator>
+mixed<Allocator> &mixed<Allocator>::operator[](const array<mixed, Allocator>::const_iterator &it) {
   return as_array()[it];
 }
 
-mixed &mixed::operator[](const array<mixed>::iterator &it) {
+template<typename Allocator>
+mixed<Allocator> &mixed<Allocator>::operator[](const array<mixed, Allocator>::iterator &it) {
   return as_array()[it];
 }
 
-
-void mixed::set_value(int64_t int_key, const mixed &v) {
-  if (unlikely (get_type() != type::ARRAY)) {
+template<typename Allocator>
+void mixed<Allocator>::set_value(int64_t int_key, const mixed &v) {
+  if (unlikely(get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
       auto rhs_string = v.to_string();
       if (rhs_string.empty()) {
@@ -1165,14 +1268,14 @@ void mixed::set_value(int64_t int_key, const mixed &v) {
       const char c = rhs_string[0];
 
       if (int_key >= 0) {
-        const string::size_type l = as_string().size();
+        const typename string<Allocator>::size_type l = as_string().size();
         if (int_key >= l) {
-          as_string().append(string::unsafe_cast_to_size_type(int_key + 1 - l), ' ');
+          as_string().append(string<Allocator>::unsafe_cast_to_size_type(int_key + 1 - l), ' ');
         } else {
           as_string().make_not_shared();
         }
 
-        as_string()[static_cast<string::size_type>(int_key)] = c;
+        as_string()[static_cast<string<Allocator>::size_type>(int_key)] = c;
       } else {
         php_warning("%" PRIi64 " is illegal offset for string", int_key);
       }
@@ -1181,7 +1284,7 @@ void mixed::set_value(int64_t int_key, const mixed &v) {
 
     if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
       type_ = type::ARRAY;
-      new(&as_array()) array<mixed>();
+      new (&as_array()) array<mixed, Allocator>();
     } else {
       php_warning("Cannot use a value \"%s\" of type %s as an array, index = %" PRIi64, to_string().c_str(), get_type_c_str(), int_key);
       return;
@@ -1190,8 +1293,9 @@ void mixed::set_value(int64_t int_key, const mixed &v) {
   return as_array().set_value(int_key, v);
 }
 
-void mixed::set_value(const string &string_key, const mixed &v) {
-  if (unlikely (get_type() != type::ARRAY)) {
+template<typename Allocator>
+void mixed<Allocator>::set_value(const string<Allocator> &string_key, const mixed &v) {
+  if (unlikely(get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
       int64_t int_val = 0;
       if (!string_key.try_to_int(&int_val)) {
@@ -1204,20 +1308,20 @@ void mixed::set_value(const string &string_key, const mixed &v) {
 
       char c = (v.to_string())[0];
 
-      const string::size_type l = as_string().size();
+      const typename string<Allocator>::size_type l = as_string().size();
       if (int_val >= l) {
-        as_string().append(string::unsafe_cast_to_size_type(int_val + 1 - l), ' ');
+        as_string().append(string<Allocator>::unsafe_cast_to_size_type(int_val + 1 - l), ' ');
       } else {
         as_string().make_not_shared();
       }
 
-      as_string()[static_cast<string::size_type>(int_val)] = c;
+      as_string()[static_cast<string<Allocator>::size_type>(int_val)] = c;
       return;
     }
 
     if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
       type_ = type::ARRAY;
-      new(&as_array()) array<mixed>();
+      new (&as_array()) array<mixed, Allocator>();
     } else {
       php_warning("Cannot use a value \"%s\" of type %s as an array, index = %s", to_string().c_str(), get_type_c_str(), string_key.c_str());
       return;
@@ -1227,19 +1331,22 @@ void mixed::set_value(const string &string_key, const mixed &v) {
   return as_array().set_value(string_key, v);
 }
 
-void mixed::set_value(const string &string_key, const mixed &v, int64_t precomuted_hash) {
+template<typename Allocator>
+void mixed<Allocator>::set_value(const string<Allocator> &string_key, const mixed &v, int64_t precomuted_hash) {
   return get_type() == type::ARRAY ? as_array().set_value(string_key, v, precomuted_hash) : set_value(string_key, v);
 }
 
-void mixed::set_value(tmp_string string_key, const mixed &v) {
+template<typename Allocator>
+void mixed<Allocator>::set_value(tmp_string<Allocator> string_key, const mixed &v) {
   // TODO: as with arrays, avoid eager tmp_string->string conversion
   set_value(materialize_tmp_string(string_key), v);
 }
 
-void mixed::set_value(const mixed &v, const mixed &value) {
+template<typename Allocator>
+void mixed<Allocator>::set_value(const mixed &v, const mixed &value) {
   switch (v.get_type()) {
     case type::NUL:
-      return set_value(string(), value);
+      return set_value(string<Allocator>(), value);
     case type::BOOLEAN:
       return set_value(static_cast<int64_t>(v.as_bool()), value);
     case type::INTEGER:
@@ -1256,26 +1363,29 @@ void mixed::set_value(const mixed &v, const mixed &value) {
   }
 }
 
-void mixed::set_value(double double_key, const mixed &value) {
+template<typename Allocator>
+void mixed<Allocator>::set_value(double double_key, const mixed &value) {
   set_value(static_cast<int64_t>(double_key), value);
 }
 
-void mixed::set_value(const array<mixed>::const_iterator &it) {
+template<typename Allocator>
+void mixed<Allocator>::set_value(const array<mixed, Allocator>::const_iterator &it) {
   return as_array().set_value(it);
 }
 
-void mixed::set_value(const array<mixed>::iterator &it) {
+template<typename Allocator>
+void mixed<Allocator>::set_value(const array<mixed, Allocator>::iterator &it) {
   return as_array().set_value(it);
 }
 
-
-const mixed mixed::get_value(int64_t int_key) const {
-  if (unlikely (get_type() != type::ARRAY)) {
+template<typename Allocator>
+const mixed<Allocator> mixed<Allocator>::get_value(int64_t int_key) const {
+  if (unlikely(get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
       if (int_key < 0 || int_key >= as_string().size()) {
-        return string();
+        return string<Allocator>();
       }
-      return string(1, as_string()[static_cast<string::size_type>(int_key)]);
+      return string(1, as_string()[static_cast<string<Allocator>::size_type>(int_key)]);
     }
 
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
@@ -1287,8 +1397,9 @@ const mixed mixed::get_value(int64_t int_key) const {
   return as_array().get_value(int_key);
 }
 
-const mixed mixed::get_value(const string &string_key) const {
-  if (unlikely (get_type() != type::ARRAY)) {
+template<typename Allocator>
+const mixed<Allocator> mixed<Allocator>::get_value(const string<Allocator> &string_key) const {
+  if (unlikely(get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
       int64_t int_val = 0;
       if (!string_key.try_to_int(&int_val)) {
@@ -1296,9 +1407,9 @@ const mixed mixed::get_value(const string &string_key) const {
         int_val = string_key.to_int();
       }
       if (int_val < 0 || int_val >= as_string().size()) {
-        return string();
+        return string<Allocator>();
       }
-      return string(1, as_string()[static_cast<string::size_type>(int_val)]);
+      return string(1, as_string()[static_cast<string<Allocator>::size_type>(int_val)]);
     }
 
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
@@ -1310,11 +1421,13 @@ const mixed mixed::get_value(const string &string_key) const {
   return as_array().get_value(string_key);
 }
 
-const mixed mixed::get_value(const string &string_key, int64_t precomuted_hash) const {
+template<typename Allocator>
+const mixed<Allocator> mixed<Allocator>::get_value(const string<Allocator> &string_key, int64_t precomuted_hash) const {
   return get_type() == type::ARRAY ? as_array().get_value(string_key, precomuted_hash) : get_value(string_key);
 }
 
-const mixed mixed::get_value(tmp_string string_key) const {
+template<typename Allocator>
+const mixed<Allocator> mixed<Allocator>::get_value(tmp_string<Allocator> string_key) const {
   if (get_type() == type::ARRAY) {
     // fast path: arrays can handle a tmp_string lookup efficiently
     return as_array().get_value(string_key);
@@ -1323,10 +1436,11 @@ const mixed mixed::get_value(tmp_string string_key) const {
   return get_value(materialize_tmp_string(string_key));
 }
 
-const mixed mixed::get_value(const mixed &v) const {
+template<typename Allocator>
+const mixed<Allocator> mixed<Allocator>::get_value(const mixed &v) const {
   switch (v.get_type()) {
     case type::NUL:
-      return get_value(string());
+      return get_value(string<Allocator>());
     case type::BOOLEAN:
       return get_value(static_cast<int64_t>(v.as_bool()));
     case type::INTEGER:
@@ -1343,24 +1457,27 @@ const mixed mixed::get_value(const mixed &v) const {
   }
 }
 
-const mixed mixed::get_value(double double_key) const {
+template<typename Allocator>
+const mixed<Allocator> mixed<Allocator>::get_value(double double_key) const {
   return get_value(static_cast<int64_t>(double_key));
 }
 
-const mixed mixed::get_value(const array<mixed>::const_iterator &it) const {
+template<typename Allocator>
+const mixed<Allocator> mixed<Allocator>::get_value(const array<mixed, Allocator>::const_iterator &it) const {
   return as_array().get_value(it);
 }
 
-const mixed mixed::get_value(const array<mixed>::iterator &it) const {
+template<typename Allocator>
+const mixed<Allocator> mixed<Allocator>::get_value(const array<mixed, Allocator>::iterator &it) const {
   return as_array().get_value(it);
 }
 
-
-void mixed::push_back(const mixed &v) {
-  if (unlikely (get_type() != type::ARRAY)) {
+template<typename Allocator>
+void mixed<Allocator>::push_back(const mixed &v) {
+  if (unlikely(get_type() != type::ARRAY)) {
     if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
       type_ = type::ARRAY;
-      new(&as_array()) array<mixed>();
+      new (&as_array()) array<mixed, Allocator>();
     } else {
       php_warning("[] operator not supported for type %s", get_type_c_str());
       return;
@@ -1370,11 +1487,12 @@ void mixed::push_back(const mixed &v) {
   return as_array().push_back(v);
 }
 
-const mixed mixed::push_back_return(const mixed &v) {
-  if (unlikely (get_type() != type::ARRAY)) {
+template<typename Allocator>
+const mixed<Allocator> mixed<Allocator>::push_back_return(const mixed &v) {
+  if (unlikely(get_type() != type::ARRAY)) {
     if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
       type_ = type::ARRAY;
-      new(&as_array()) array<mixed>();
+      new (&as_array()) array<mixed, Allocator>();
     } else {
       php_warning("[] operator not supported for type %s", get_type_c_str());
       return empty_value<mixed>();
@@ -1384,9 +1502,9 @@ const mixed mixed::push_back_return(const mixed &v) {
   return as_array().push_back_return(v);
 }
 
-
-bool mixed::isset(int64_t int_key) const {
-  if (unlikely (get_type() != type::ARRAY)) {
+template<typename Allocator>
+bool mixed<Allocator>::isset(int64_t int_key) const {
+  if (unlikely(get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
       int_key = as_string().get_correct_index(int_key);
       return as_string().isset(int_key);
@@ -1401,9 +1519,10 @@ bool mixed::isset(int64_t int_key) const {
   return as_array().isset(int_key);
 }
 
-template <class ...MaybeHash>
-bool mixed::isset(const string &string_key, MaybeHash ...maybe_hash) const {
-  if (unlikely (get_type() != type::ARRAY)) {
+template<typename Allocator>
+template<class... MaybeHash>
+bool mixed<Allocator>::isset(const string<Allocator> &string_key, MaybeHash... maybe_hash) const {
+  if (unlikely(get_type() != type::ARRAY)) {
     int64_t int_key{std::numeric_limits<int64_t>::max()};
     if (get_type() == type::STRING) {
       if (!string_key.try_to_int(&int_key)) {
@@ -1418,10 +1537,11 @@ bool mixed::isset(const string &string_key, MaybeHash ...maybe_hash) const {
   return as_array().isset(string_key, maybe_hash...);
 }
 
-bool mixed::isset(const mixed &v) const {
+template<typename Allocator>
+bool mixed<Allocator>::isset(const mixed<Allocator> &v) const {
   switch (v.get_type()) {
     case type::NUL:
-      return isset(string());
+      return isset(string<Allocator>());
     case type::BOOLEAN:
       return isset(static_cast<int64_t>(v.as_bool()));
     case type::INTEGER:
@@ -1438,12 +1558,14 @@ bool mixed::isset(const mixed &v) const {
   }
 }
 
-bool mixed::isset(double double_key) const {
+template<typename Allocator>
+bool mixed<Allocator>::isset(double double_key) const {
   return isset(static_cast<int64_t>(double_key));
 }
 
-void mixed::unset(int64_t int_key) {
-  if (unlikely (get_type() != type::ARRAY)) {
+template<typename Allocator>
+void mixed<Allocator>::unset(int64_t int_key) {
+  if (unlikely(get_type() != type::ARRAY)) {
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
       php_warning("Cannot use variable of type %s as array in unset", get_type_c_str());
     }
@@ -1453,9 +1575,10 @@ void mixed::unset(int64_t int_key) {
   as_array().unset(int_key);
 }
 
-template <class ...MaybeHash>
-void mixed::unset(const string &string_key, MaybeHash ...maybe_hash) {
-  if (unlikely (get_type() != type::ARRAY)) {
+template<typename Allocator>
+template<class... MaybeHash>
+void mixed<Allocator>::unset(const string<Allocator> &string_key, MaybeHash... maybe_hash) {
+  if (unlikely(get_type() != type::ARRAY)) {
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
       php_warning("Cannot use variable of type %s as array in unset", get_type_c_str());
     }
@@ -1465,8 +1588,9 @@ void mixed::unset(const string &string_key, MaybeHash ...maybe_hash) {
   as_array().unset(string_key, maybe_hash...);
 }
 
-void mixed::unset(const mixed &v) {
-  if (unlikely (get_type() != type::ARRAY)) {
+template<typename Allocator>
+void mixed<Allocator>::unset(const mixed &v) {
+  if (unlikely(get_type() != type::ARRAY)) {
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
       php_warning("Cannot use variable of type %s as array in unset", get_type_c_str());
     }
@@ -1475,7 +1599,7 @@ void mixed::unset(const mixed &v) {
 
   switch (v.get_type()) {
     case type::NUL:
-      as_array().unset(string());
+      as_array().unset(string<Allocator>());
       break;
     case type::BOOLEAN:
       as_array().unset(static_cast<int64_t>(v.as_bool()));
@@ -1497,43 +1621,47 @@ void mixed::unset(const mixed &v) {
   }
 }
 
-void mixed::unset(double double_key) {
+template<typename Allocator>
+void mixed<Allocator>::unset(double double_key) {
   unset(static_cast<int64_t>(double_key));
 }
 
-array<mixed>::const_iterator mixed::begin() const {
-  if (likely (get_type() == type::ARRAY)) {
+template<typename Allocator>
+array<mixed<Allocator>, Allocator>::const_iterator mixed<Allocator>::begin() const {
+  if (likely(get_type() == type::ARRAY)) {
     return as_array().begin();
   }
   php_warning("Invalid argument supplied for foreach(), %s (string representation - \"%s\") is given", get_type_c_str(), to_string().c_str());
-  return array<mixed>::const_iterator();
+  return array<mixed, Allocator>::const_iterator();
 }
 
-array<mixed>::const_iterator mixed::end() const {
-  if (likely (get_type() == type::ARRAY)) {
+template<typename Allocator>
+array<mixed<Allocator>, Allocator>::const_iterator mixed<Allocator>::end() const {
+  if (likely(get_type() == type::ARRAY)) {
     return as_array().end();
   }
-  return array<mixed>::const_iterator();
+  return array<mixed, Allocator>::const_iterator();
 }
 
-
-array<mixed>::iterator mixed::begin() {
-  if (likely (get_type() == type::ARRAY)) {
+template<typename Allocator>
+array<mixed<Allocator>, Allocator>::iterator mixed<Allocator>::begin() {
+  if (likely(get_type() == type::ARRAY)) {
     return as_array().begin();
   }
   php_warning("Invalid argument supplied for foreach(), %s (string representation - \"%s\") is given", get_type_c_str(), to_string().c_str());
-  return array<mixed>::iterator();
+  return array<mixed, Allocator>::iterator();
 }
 
-array<mixed>::iterator mixed::end() {
-  if (likely (get_type() == type::ARRAY)) {
+template<typename Allocator>
+array<mixed<Allocator>, Allocator>::iterator mixed<Allocator>::end() {
+  if (likely(get_type() == type::ARRAY)) {
     return as_array().end();
   }
-  return array<mixed>::iterator();
+  return array<mixed, Allocator>::iterator();
 }
 
-
-int64_t mixed::get_reference_counter() const {
+template<typename Allocator>
+int64_t mixed<Allocator>::get_reference_counter() const {
   switch (get_type()) {
     case type::NUL:
       return -1;
@@ -1552,7 +1680,8 @@ int64_t mixed::get_reference_counter() const {
   }
 }
 
-void mixed::set_reference_counter_to(ExtraRefCnt ref_cnt_value) noexcept {
+template<typename Allocator>
+void mixed<Allocator>::set_reference_counter_to(ExtraRefCnt ref_cnt_value) noexcept {
   switch (get_type()) {
     case type::NUL:
     case type::BOOLEAN:
@@ -1568,7 +1697,8 @@ void mixed::set_reference_counter_to(ExtraRefCnt ref_cnt_value) noexcept {
   }
 }
 
-inline bool mixed::is_reference_counter(ExtraRefCnt ref_cnt_value) const noexcept {
+template<typename Allocator>
+inline bool mixed<Allocator>::is_reference_counter(ExtraRefCnt ref_cnt_value) const noexcept {
   switch (get_type()) {
     case type::NUL:
     case type::BOOLEAN:
@@ -1584,7 +1714,8 @@ inline bool mixed::is_reference_counter(ExtraRefCnt ref_cnt_value) const noexcep
   }
 }
 
-inline void mixed::force_destroy(ExtraRefCnt expected_ref_cnt) noexcept {
+template<typename Allocator>
+inline void mixed<Allocator>::force_destroy(ExtraRefCnt expected_ref_cnt) noexcept {
   switch (get_type()) {
     case type::STRING:
       as_string().force_destroy(expected_ref_cnt);
@@ -1597,7 +1728,8 @@ inline void mixed::force_destroy(ExtraRefCnt expected_ref_cnt) noexcept {
   }
 }
 
-size_t mixed::estimate_memory_usage() const {
+template<typename Allocator>
+size_t mixed<Allocator>::estimate_memory_usage() const {
   switch (get_type()) {
     case type::NUL:
     case type::BOOLEAN:
@@ -1613,33 +1745,61 @@ size_t mixed::estimate_memory_usage() const {
   }
 }
 
-void mixed::reset_empty_values() noexcept {
+template<typename Allocator>
+void mixed<Allocator>::reset_empty_values() noexcept {
   empty_value<bool>();
   empty_value<int64_t>();
   empty_value<double>();
   empty_value<string>();
   empty_value<mixed>();
-  empty_value<array<mixed>>();
+  empty_value<array<mixed, Allocator>>();
 }
 
+template<typename Allocator>
 template<typename T>
-T &mixed::empty_value() noexcept {
-  static_assert(vk::is_type_in_list<T, bool, int64_t, double, string, mixed, array<mixed>>{}, "unsupported type");
+T &mixed<Allocator>::empty_value() noexcept {
+  static_assert(vk::is_type_in_list<T, bool, int64_t, double, string<Allocator>, mixed, array<mixed, Allocator>>{}, "unsupported type");
   static T value;
   value = T{};
   return value;
 }
 
+template<typename Allocator>
+void mixed<Allocator>::destroy() noexcept {
+  switch (get_type()) {
+    case type::STRING:
+      as_string().~string();
+      break;
+    case type::ARRAY:
+      as_array().~array<mixed, Allocator>();
+      break;
+    default: {
+    }
+  }
+}
+
+template<typename Allocator>
+void mixed<Allocator>::clear() noexcept {
+  destroy();
+  type_ = type::NUL;
+}
+
+template<typename Allocator>
+mixed<Allocator>::~mixed() noexcept {
+  clear();
+}
+}
+
 namespace impl_ {
 
-template<class MathOperation>
-inline mixed do_math_op_on_vars(const mixed &lhs, const mixed &rhs, MathOperation &&math_op) {
+template<class MathOperation, typename Allocator>
+inline __mixed<Allocator> do_math_op_on_vars(const __mixed<Allocator> &lhs, const __mixed<Allocator> &rhs, MathOperation &&math_op) {
   if (likely(lhs.is_int() && rhs.is_int())) {
     return math_op(lhs.as_int(), rhs.as_int());
   }
 
-  const mixed arg1 = lhs.to_numeric();
-  const mixed arg2 = rhs.to_numeric();
+  const __mixed<Allocator> arg1 = lhs.to_numeric();
+  const __mixed<Allocator> arg2 = rhs.to_numeric();
 
   if (arg1.is_int()) {
     if (arg2.is_int()) {
@@ -1658,7 +1818,8 @@ inline mixed do_math_op_on_vars(const mixed &lhs, const mixed &rhs, MathOperatio
 
 } // namespace impl_
 
-inline mixed operator+(const mixed &lhs, const mixed &rhs) {
+template<typename Allocator>
+inline __mixed<Allocator> operator+(const __mixed<Allocator> &lhs, const __mixed<Allocator> &rhs) {
   if (lhs.is_array() && rhs.is_array()) {
     return lhs.as_array() + rhs.as_array();
   }
@@ -1666,16 +1827,19 @@ inline mixed operator+(const mixed &lhs, const mixed &rhs) {
   return impl_::do_math_op_on_vars(lhs, rhs, [](const auto &arg1, const auto &arg2) { return arg1 + arg2; });
 }
 
-inline mixed operator-(const mixed &lhs, const mixed &rhs) {
+template<typename Allocator>
+inline __mixed<Allocator> operator-(const __mixed<Allocator> &lhs, const __mixed<Allocator> &rhs) {
   return impl_::do_math_op_on_vars(lhs, rhs, [](const auto &arg1, const auto &arg2) { return arg1 - arg2; });
 }
 
-inline mixed operator*(const mixed &lhs, const mixed &rhs) {
+template<typename Allocator>
+inline __mixed<Allocator> operator*(const __mixed<Allocator> &lhs, const __mixed<Allocator> &rhs) {
   return impl_::do_math_op_on_vars(lhs, rhs, [](const auto &arg1, const auto &arg2) { return arg1 * arg2; });
 }
 
-inline mixed operator-(const string &lhs) {
-  mixed arg1 = lhs.to_numeric();
+template<typename Allocator>
+inline __mixed<Allocator> operator-(const __string<Allocator> &lhs) {
+  __mixed<Allocator> arg1 = lhs.to_numeric();
 
   if (arg1.is_int()) {
     arg1.as_int() = -arg1.as_int();
@@ -1685,81 +1849,77 @@ inline mixed operator-(const string &lhs) {
   return arg1;
 }
 
-inline mixed operator+(const string &lhs) {
+template<typename Allocator>
+inline __mixed<Allocator> operator+(const __string<Allocator> &lhs) {
   return lhs.to_numeric();
 }
 
-inline int64_t operator&(const mixed &lhs, const mixed &rhs) {
+template<typename Allocator>
+inline int64_t operator&(const __mixed<Allocator> &lhs, const __mixed<Allocator> &rhs) {
   return lhs.to_int() & rhs.to_int();
 }
 
-inline int64_t operator|(const mixed &lhs, const mixed &rhs) {
+template<typename Allocator>
+inline int64_t operator|(const __mixed<Allocator> &lhs, const __mixed<Allocator> &rhs) {
   return lhs.to_int() | rhs.to_int();
 }
 
-inline int64_t operator^(const mixed &lhs, const mixed &rhs) {
+template<typename Allocator>
+inline int64_t operator^(const __mixed<Allocator> &lhs, const __mixed<Allocator> &rhs) {
   return lhs.to_int() ^ rhs.to_int();
 }
 
-inline int64_t operator<<(const mixed &lhs, const mixed &rhs) {
+template<typename Allocator>
+inline int64_t operator<<(const __mixed<Allocator> &lhs, const __mixed<Allocator> &rhs) {
   return lhs.to_int() << rhs.to_int();
 }
 
-inline int64_t operator>>(const mixed &lhs, const mixed &rhs) {
+template<typename Allocator>
+inline int64_t operator>>(const __mixed<Allocator> &lhs, const __mixed<Allocator> &rhs) {
   return lhs.to_int() >> rhs.to_int();
 }
 
-template <typename Arg1, typename Arg2>
+template<typename Lhs, typename Rhs>
 inline const char *conversion_php_warning_string() {
-  return "";
+  if constexpr (std::is_same_v<Lhs, int64_t>) {
+    return "Comparison (operator <) results in PHP 7 and PHP 8 are different for %" PRIi64 " and \"%s\" (PHP7: %s, PHP8: %s)";
+  } else if constexpr (std::is_same_v<Lhs, double>) {
+    return "Comparison (operator <) results in PHP 7 and PHP 8 are different for %lf and \"%s\" (PHP7: %s, PHP8: %s)";
+  } else if constexpr (std::is_same_v<Rhs, int64_t>) {
+    return "Comparison (operator <) results in PHP 7 and PHP 8 are different for \"%s\" and %" PRIi64 " (PHP7: %s, PHP8: %s)";
+  } else if constexpr (std::is_same_v<Rhs, double>) {
+    return "Comparison (operator <) results in PHP 7 and PHP 8 are different for \"%s\" and %lf (PHP7: %s, PHP8: %s)";
+  } else {
+    return "";
+  }
 }
 
-template<>
-inline const char *conversion_php_warning_string<int64_t, string>() {
-  return "Comparison (operator <) results in PHP 7 and PHP 8 are different for %" PRIi64 " and \"%s\" (PHP7: %s, PHP8: %s)";
-}
-
-template<>
-inline const char *conversion_php_warning_string<double, string>() {
-  return "Comparison (operator <) results in PHP 7 and PHP 8 are different for %lf and \"%s\" (PHP7: %s, PHP8: %s)";
-}
-
-template<>
-inline const char *conversion_php_warning_string<string, int64_t>() {
-  return "Comparison (operator <) results in PHP 7 and PHP 8 are different for \"%s\" and %" PRIi64 " (PHP7: %s, PHP8: %s)";
-}
-
-template<>
-inline const char *conversion_php_warning_string<string, double>() {
-  return "Comparison (operator <) results in PHP 7 and PHP 8 are different for \"%s\" and %lf (PHP7: %s, PHP8: %s)";
-}
-
-template <typename T>
-inline bool less_number_string_as_php8_impl(T lhs, const string &rhs) {
+template <typename T, typename Allocator>
+inline bool less_number_string_as_php8_impl(T lhs, const __string<Allocator> &rhs) {
   auto rhs_float = 0.0;
   const auto rhs_is_string_number = rhs.try_to_float(&rhs_float);
 
   if (rhs_is_string_number) {
     return lhs < rhs_float;
   } else {
-    return compare_strings_php_order(string(lhs), rhs) < 0;
+    return compare_strings_php_order(__string<Allocator>(lhs), rhs) < 0;
   }
 }
 
-template <typename T>
-inline bool less_string_number_as_php8_impl(const string &lhs, T rhs) {
+template <typename T, typename Allocator>
+inline bool less_string_number_as_php8_impl(const __string<Allocator> &lhs, T rhs) {
   auto lhs_float = 0.0;
   const auto lhs_is_string_number = lhs.try_to_float(&lhs_float);
 
   if (lhs_is_string_number) {
     return lhs_float < rhs;
   } else {
-    return compare_strings_php_order(lhs, string(rhs)) < 0;
+    return compare_strings_php_order(lhs, __string<Allocator>(rhs)) < 0;
   }
 }
 
-template <typename T>
-inline bool less_number_string_as_php8(bool php7_result, T lhs, const string &rhs) {
+template <typename T, typename Allocator>
+inline bool less_number_string_as_php8(bool php7_result, T lhs, const __string<Allocator> &rhs) {
   if (KphpCoreContext::current().show_migration_php8_warning & MIGRATION_PHP8_STRING_COMPARISON_FLAG) {
     const auto php8_result = less_number_string_as_php8_impl(lhs, rhs);
     if (php7_result == php8_result) {
@@ -1776,8 +1936,8 @@ inline bool less_number_string_as_php8(bool php7_result, T lhs, const string &rh
   return php7_result;
 }
 
-template <typename T>
-inline bool less_string_number_as_php8(bool php7_result, const string &lhs, T rhs) {
+template <typename T, typename Allocator>
+inline bool less_string_number_as_php8(bool php7_result, const __string<Allocator> &lhs, T rhs) {
   if (KphpCoreContext::current().show_migration_php8_warning & MIGRATION_PHP8_STRING_COMPARISON_FLAG) {
     const auto php8_result = less_string_number_as_php8_impl(lhs, rhs);
     if (php7_result == php8_result) {
@@ -1794,7 +1954,8 @@ inline bool less_string_number_as_php8(bool php7_result, const string &lhs, T rh
   return php7_result;
 }
 
-inline bool operator<(const mixed &lhs, const mixed &rhs) {
+template <typename Allocator>
+inline bool operator<(const __mixed<Allocator> &lhs, const __mixed<Allocator> &rhs) {
   const auto res = lhs.compare(rhs) < 0;
 
   if (rhs.is_string()) {
@@ -1814,36 +1975,12 @@ inline bool operator<(const mixed &lhs, const mixed &rhs) {
   return res;
 }
 
-inline bool operator<=(const mixed &lhs, const mixed &rhs) {
+template <typename Allocator>
+inline bool operator<=(const __mixed<Allocator> &lhs, const __mixed<Allocator> &rhs) {
   return !(rhs < lhs);
 }
 
-inline void swap(mixed &lhs, mixed &rhs) {
+template <typename Allocator>
+inline void swap(__mixed<Allocator> &lhs, __mixed<Allocator> &rhs) {
   lhs.swap(rhs);
-}
-
-template<class T>
-inline string_buffer &operator<<(string_buffer &sb, const Optional<T> &v) {
-  auto write_lambda = [&sb](const auto &v) -> string_buffer& { return sb << v; };
-  return call_fun_on_optional_value(write_lambda, v);
-}
-
-inline string_buffer &operator<<(string_buffer &sb, const mixed &v) {
-  switch (v.get_type()) {
-    case mixed::type::NUL:
-      return sb;
-    case mixed::type::BOOLEAN:
-      return sb << v.as_bool();
-    case mixed::type::INTEGER:
-      return sb << v.as_int();
-    case mixed::type::FLOAT:
-      return sb << string(v.as_double());
-    case mixed::type::STRING:
-      return sb << v.as_string();
-    case mixed::type::ARRAY:
-      php_warning("Conversion from array to string");
-      return sb.append("Array", 5);
-    default:
-      __builtin_unreachable();
-  }
 }

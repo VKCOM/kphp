@@ -4,13 +4,13 @@
 
 #pragma once
 
-#include "runtime-core/runtime-core.h"
+#include "runtime/runtime-types.h"
 
 // Use explicit template instantiation to make result binary smaller and force common instantiations to be compiled with -O3
 // see https://en.cppreference.com/w/cpp/language/class_template
 
-extern template class array<int64_t>;
-extern template class array<string>;
+extern template class __runtime_core::array<int64_t, ScriptAllocator>;
+extern template class __runtime_core::array<string, ScriptAllocator>;
 /*
  * Commented out, because it breaks @kphp-flatten optimization.
  * When array<double> is explicitly instantiated here it's compiled with -O3 instead of -Os.
@@ -18,19 +18,19 @@ extern template class array<string>;
  * some strange `call` asm instructions are generated instead of normal inlining.
  */
 // extern template class array<double>;
-extern template class array<bool>;
-extern template class array<mixed>;
+extern template class __runtime_core::array<bool, ScriptAllocator>;
+extern template class __runtime_core::array<mixed, ScriptAllocator>;
 
-extern template class array<Optional<int64_t>>;
-extern template class array<Optional<string>>;
-extern template class array<Optional<double>>;
-extern template class array<Optional<bool>>;
+extern template class __runtime_core::array<Optional<int64_t>, ScriptAllocator>;
+extern template class __runtime_core::array<Optional<string>, ScriptAllocator>;
+extern template class __runtime_core::array<Optional<double>, ScriptAllocator>;
+extern template class __runtime_core::array<Optional<bool>, ScriptAllocator>;
 
-extern template class array<array<int64_t>>;
-extern template class array<array<string>>;
-extern template class array<array<double>>;
-extern template class array<array<bool>>;
-extern template class array<array<mixed>>;
+extern template class __runtime_core::array<__runtime_core::array<int64_t, ScriptAllocator>, ScriptAllocator>;
+extern template class __runtime_core::array<__runtime_core::array<string, ScriptAllocator>, ScriptAllocator>;
+extern template class __runtime_core::array<__runtime_core::array<double, ScriptAllocator>, ScriptAllocator>;
+extern template class __runtime_core::array<__runtime_core::array<bool, ScriptAllocator>, ScriptAllocator>;
+extern template class __runtime_core::array<__runtime_core::array<mixed, ScriptAllocator>, ScriptAllocator>;
 
 extern template class Optional<int64_t>;
 extern template class Optional<string>;

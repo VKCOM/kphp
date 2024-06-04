@@ -5,6 +5,6 @@
 #include "runtime-core/runtime-core.h"
 
 // Don't move this destructor to the headers, it spoils addr2line traces
-string::~string() noexcept {
-  destroy();
-}
+//string::~string() noexcept {
+//  destroy();
+//}

@@ -1,8 +1,4 @@
-prepend(KPHP_CORE_RUNTIME_TYPES ${BASE_DIR}/runtime-core/runtime-types/
-        string_cache.cpp
-)
-
-prepend(KPHP_CORE_RUNTIME_FUNTCIONS ${BASE_DIR}/runtime-core/functions/
+prepend(KPHP_CORE_RUNTIME_UTILS ${BASE_DIR}/runtime-core/utils/
         migration-php8.cpp
 )
 
@@ -20,8 +16,7 @@ prepend(KPHP_CORE_MEMORY_RECOURCE ${BASE_DIR}/runtime-core/memory-resource/
 )
 
 set(KPHP_CORE_SRC
-        ${KPHP_CORE_RUNTIME_FUNTCIONS}
-        ${KPHP_CORE_RUNTIME_TYPES}
+        ${KPHP_CORE_RUNTIME_UTILS}
         ${KPHP_CORE_KPHP_TYPES}
         ${KPHP_CORE_MEMORY_RECOURCE}
 )

@@ -9,7 +9,8 @@
 
 #include "runtime-core/class-instance/script-allocator-managed.h"
 
-class abstract_refcountable_php_interface : public ScriptAllocatorManaged {
+template<typename Allocator>
+class abstract_refcountable_php_interface : public ScriptAllocatorManaged<Allocator> {
 public:
   abstract_refcountable_php_interface() __attribute__((always_inline)) = default;
   virtual ~abstract_refcountable_php_interface() noexcept __attribute__((always_inline)) = default;
@@ -55,14 +56,14 @@ private:
   uint32_t refcnt{0};
 };
 
-template<class ...Interfaces>
-class refcountable_polymorphic_php_classes_virt : public virtual abstract_refcountable_php_interface, public Interfaces... {
+template<typename Allocator, class ...Interfaces>
+class refcountable_polymorphic_php_classes_virt : public virtual abstract_refcountable_php_interface<Allocator>, public Interfaces... {
 public:
   refcountable_polymorphic_php_classes_virt() __attribute__((always_inline)) = default;
 };
 
-template<>
-class refcountable_polymorphic_php_classes_virt<> : public virtual abstract_refcountable_php_interface {
+template<typename Allocator>
+class refcountable_polymorphic_php_classes_virt<Allocator> : public virtual abstract_refcountable_php_interface<Allocator> {
 public:
   refcountable_polymorphic_php_classes_virt() __attribute__((always_inline)) = default;
 
@@ -97,8 +98,8 @@ private:
   uint32_t refcnt{0};
 };
 
-template<class Derived>
-class refcountable_php_classes  : public ScriptAllocatorManaged {
+template<class Derived, typename Allocator>
+class refcountable_php_classes  : public ScriptAllocatorManaged<Allocator> {
 public:
   void add_ref() noexcept {
     if (refcnt < ExtraRefCnt::for_global_const) {

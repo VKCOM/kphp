@@ -15,24 +15,37 @@ inline bool string_to_bool(const char *s, string_size_type size) {
 // runtime functions overloading
 //
 // in a sense, it's like a string view, but only valid for a single expression evaluation
+
+namespace __runtime_core {
+
+template<typename Allocator>
 struct tmp_string {
   const char *data = nullptr;
   string_size_type size = 0;
 
   tmp_string() = default;
   inline tmp_string(const char *data, string_size_type size);
-  explicit inline tmp_string(const string &s);
+  explicit inline tmp_string(const string<Allocator> &s);
 
   bool to_bool() const noexcept {
     return data && string_to_bool(data, size);
   }
 
-  bool has_value() const noexcept { return data != nullptr; }
-  bool empty() const noexcept { return size == 0; }
+  bool has_value() const noexcept {
+    return data != nullptr;
+  }
+  bool empty() const noexcept {
+    return size == 0;
+  }
 };
+
+}
 
 struct ArrayBucketDummyStrTag;
 
+namespace __runtime_core {
+
+template<typename Allocator>
 class string {
 public:
   using size_type = string_size_type;
@@ -79,6 +92,7 @@ private:
   inline static char *create(size_type req, char c);
   inline static char *create(size_type req, bool b);
 
+  template<typename SC_Allocator>
   friend class string_cache;
 
 public:
@@ -89,7 +103,7 @@ public:
   static size_type unsafe_cast_to_size_type(int64_t size) noexcept {
     php_assert(size >= 0);
     if (unlikely(size > max_size())) {
-      php_critical_error ("Trying to make too big string of size %" PRId64, size);
+      php_critical_error("Trying to make too big string of size %" PRId64, size);
     }
     return static_cast<size_type>(size);
   }
@@ -104,7 +118,8 @@ public:
   inline string(size_type n, char c);
   inline string(size_type n, bool b);
   inline explicit string(int64_t i);
-  inline explicit string(int32_t i): string(static_cast<int64_t>(i)) {}
+  inline explicit string(int32_t i)
+    : string(static_cast<int64_t>(i)) {}
   inline explicit string(double f);
 
   ~string() noexcept;
@@ -138,34 +153,37 @@ public:
   inline const char &operator[](size_type pos) const;
   inline char &operator[](size_type pos);
 
-  inline string &append(const string &str) __attribute__ ((always_inline));
-  inline string &append(const string &str, size_type pos2, size_type n2) __attribute__ ((always_inline));
-  inline string &append(const char *s) __attribute__ ((always_inline));
-  inline string &append(const char *s, size_type n) __attribute__ ((always_inline));
-  inline string &append(size_type n, char c) __attribute__ ((always_inline));
+  inline string &append(const string &str) __attribute__((always_inline));
+  inline string &append(const string &str, size_type pos2, size_type n2) __attribute__((always_inline));
+  inline string &append(const char *s) __attribute__((always_inline));
+  inline string &append(const char *s, size_type n) __attribute__((always_inline));
+  inline string &append(size_type n, char c) __attribute__((always_inline));
 
-  inline string &append(bool b) __attribute__ ((always_inline));
-  inline string &append(int64_t i) __attribute__ ((always_inline));
-  inline string &append(int32_t v) {return append(int64_t{v});}
-  inline string &append(double d) __attribute__ ((always_inline));
-  inline string &append(const mixed &v) __attribute__ ((always_inline));
+  inline string &append(bool b) __attribute__((always_inline));
+  inline string &append(int64_t i) __attribute__((always_inline));
+  inline string &append(int32_t v) {
+    return append(int64_t{v});
+  }
+  inline string &append(double d) __attribute__((always_inline));
+  inline string &append(const mixed<Allocator> &v) __attribute__((always_inline));
 
   inline string &append_unsafe(bool b) __attribute__((always_inline));
   inline string &append_unsafe(int64_t i) __attribute__((always_inline));
-  inline string &append_unsafe(int32_t v) {return append(int64_t{v});}
+  inline string &append_unsafe(int32_t v) {
+    return append(int64_t{v});
+  }
   inline string &append_unsafe(double d) __attribute__((always_inline));
   inline string &append_unsafe(const string &str) __attribute__((always_inline));
-  inline string &append_unsafe(tmp_string str) __attribute__((always_inline));
+  inline string &append_unsafe(tmp_string<Allocator> str) __attribute__((always_inline));
   inline string &append_unsafe(const char *s, size_type n) __attribute__((always_inline));
-  inline string &append_unsafe(const mixed &v) __attribute__((always_inline));
+  inline string &append_unsafe(const mixed<Allocator> &v) __attribute__((always_inline));
   inline string &finish_append() __attribute__((always_inline));
 
   template<class T>
-  inline string &append_unsafe(const array<T> &a) __attribute__((always_inline));
+  inline string &append_unsafe(const array<T, Allocator> &a) __attribute__((always_inline));
 
   template<class T>
   inline string &append_unsafe(const Optional<T> &v) __attribute__((always_inline));
-
 
   inline void push_back(char c);
 
@@ -174,10 +192,10 @@ public:
   inline string &assign(const char *s);
   inline string &assign(const char *s, size_type n);
   inline string &assign(size_type n, char c);
-  inline string &assign(size_type n, bool b);//do not initialize. if b == true - just reserve
+  inline string &assign(size_type n, bool b); // do not initialize. if b == true - just reserve
 
-  //assign binary string_inner representation
-  //can be used only on empty string to receive logically const string
+  // assign binary string_inner representation
+  // can be used only on empty string to receive logically const string
   inline void assign_raw(const char *s);
 
   inline void swap(string &s);
@@ -197,7 +215,7 @@ public:
   inline bool try_to_float_as_php7(double *val) const;
   inline bool try_to_float_as_php8(double *val) const;
 
-  inline mixed to_numeric() const;
+  inline mixed<Allocator> to_numeric() const;
   inline bool to_bool() const;
   inline static int64_t to_int(const char *s, size_type l);
   inline int64_t to_int(int64_t start, int64_t l) const;
@@ -224,7 +242,7 @@ public:
   inline int64_t get_correct_offset_clamped(int64_t offset) const;
   inline const string get_value(int64_t int_key) const;
   inline const string get_value(const string &string_key) const;
-  inline const string get_value(const mixed &v) const;
+  inline const string get_value(const mixed<Allocator> &v) const;
 
   inline int64_t get_reference_counter() const;
 
@@ -235,48 +253,58 @@ public:
   inline size_type estimate_memory_usage() const;
   inline static size_type estimate_memory_usage(size_t len) noexcept;
 
-  inline static constexpr size_t inner_sizeof() noexcept { return sizeof(string_inner); }
+  inline static constexpr size_t inner_sizeof() noexcept {
+    return sizeof(string_inner);
+  }
   inline static string make_const_string_on_memory(const char *str, size_type len, void *memory, size_t memory_size);
 
   inline void destroy() __attribute__((always_inline));
 };
-
-inline string materialize_tmp_string(tmp_string s) {
-  if (!s.data) {
-    return string{}; // an empty string
-  }
-  return string{s.data, s.size};
 }
 
-inline bool operator==(const string &lhs, const string &rhs);
+template<typename Allocator>
+inline __string<Allocator> materialize_tmp_string(__runtime_core::tmp_string<Allocator> s) {
+  if (!s.data) {
+    return __string<Allocator> {}; // an empty string
+  }
+  return __string<Allocator> {s.data, s.size};
+}
+
+
+template<typename Allocator>
+inline bool operator==(const __string<Allocator> &lhs, const __string<Allocator> &rhs);
 
 #define CONST_STRING(const_str) string (const_str, sizeof (const_str) - 1)
 #define STRING_EQUALS(str, const_str) (str.size() + 1 == sizeof (const_str) && !strcmp (str.c_str(), const_str))
 
-inline bool operator!=(const string &lhs, const string &rhs);
+template<typename Allocator>
+inline bool operator!=(const __string<Allocator> &lhs, const __string<Allocator> &rhs);
 
 inline bool is_ok_float(double v);
 
-inline int64_t compare_strings_php_order(const string &lhs, const string &rhs);
+template<typename Allocator>
+inline int64_t compare_strings_php_order(const __string<Allocator> &lhs, const __string<Allocator> &rhs);
 
-inline void swap(string &lhs, string &rhs);
+template<typename Allocator>
+inline void swap(__string<Allocator> &lhs, __string<Allocator> &rhs);
 
-
-inline string::size_type max_string_size(bool) __attribute__((always_inline));
-inline string::size_type max_string_size(int64_t) __attribute__((always_inline));
-inline string::size_type max_string_size(int32_t) __attribute__((always_inline));
-inline string::size_type max_string_size(double) __attribute__((always_inline));
-inline string::size_type max_string_size(const string &s) __attribute__((always_inline));
-inline string::size_type max_string_size(tmp_string s) __attribute__((always_inline));
-inline string::size_type max_string_size(const mixed &v) __attribute__((always_inline));
-
+inline string_size_type max_string_size(bool) __attribute__((always_inline));
+inline string_size_type max_string_size(int64_t) __attribute__((always_inline));
+inline string_size_type max_string_size(int32_t) __attribute__((always_inline));
+inline string_size_type max_string_size(double) __attribute__((always_inline));
+template<typename Allocator>
+inline __string<Allocator>::size_type max_string_size(const __string<Allocator> &s) __attribute__((always_inline));
+template<typename Allocator>
+inline __string<Allocator>::size_type max_string_size(__runtime_core::tmp_string<Allocator> s) __attribute__((always_inline));
+template<typename Allocator>
+inline __string<Allocator>::size_type max_string_size(const __mixed<Allocator> &v) __attribute__((always_inline));
+template<class T, typename Allocator>
+inline __string<Allocator>::size_type max_string_size(const __array<T, Allocator> &) __attribute__((always_inline));
 template<class T>
-inline string::size_type max_string_size(const array<T> &) __attribute__((always_inline));
+inline string_size_type max_string_size(const Optional<T> &v) __attribute__((always_inline));
 
-template<class T>
-inline string::size_type max_string_size(const Optional<T> &v) __attribute__((always_inline));
-
-inline bool wrap_substr_args(string::size_type str_len, int64_t &start, int64_t &length) {
+template<typename Allocator>
+inline bool wrap_substr_args(typename __string<Allocator>::size_type str_len, int64_t &start, int64_t &length) {
   if (length < 0 && -length > str_len) {
     return false;
   }
@@ -292,7 +320,7 @@ inline bool wrap_substr_args(string::size_type str_len, int64_t &start, int64_t 
   if (length < 0 && length < start - str_len) {
     return false;
   }
-  start = string::get_correct_offset(str_len, start);
+  start = __string<Allocator>::get_correct_offset(str_len, start);
   if (length < 0) {
     length = (str_len - start) + length;
     if (length < 0) {
