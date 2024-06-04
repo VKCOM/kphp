@@ -404,44 +404,58 @@ double f$fetch_float() noexcept {
 }
 
 string f$fetch_string() noexcept {
-  string::size_type len{};
-  {
-    const auto opt_len{rpc_impl_::fetch_trivial<uint8_t>()};
-    if (!opt_len) {
+  uint8_t first_byte{};
+  if (const auto opt_first_byte{rpc_impl_::fetch_trivial<uint8_t>()}; opt_first_byte) {
+    first_byte = static_cast<string::size_type>(opt_first_byte.value());
+  } else {
+    return {}; // TODO: error handling
+  }
+
+  string::size_type string_len{};
+  string::size_type size_len{};
+  if (/*first_byte == 0xff*/ false) { // next 7 bytes are string's length // TODO: support large strings
+//    static_assert(sizeof(string::size_type) >= 8, "string's length doesn't fit platform size");
+//    if (!rpc_impl_::rpc_fetch_remaining_enough(7)) {
+//      return {}; // TODO: error handling
+//    }
+//    const auto first{static_cast<string::size_type>(rpc_impl_::fetch_trivial<uint8_t>().value())};
+//    const auto second{static_cast<string::size_type>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 8};
+//    const auto third{static_cast<string::size_type>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 16};
+//    const auto fourth{static_cast<string::size_type>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 24};
+//    const auto fifth{static_cast<string::size_type>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 32};
+//    const auto sixth{static_cast<string::size_type>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 40};
+//    const auto seventh{static_cast<string::size_type>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 48};
+//    string_len = first + second + third + fourth + fifth + sixth + seventh;
+//    if (string_len < (1 << 24)) {
+//      php_warning("long string's length is less than 1 << 24");
+//    }
+//    size_len = 8;
+  } else if (first_byte == 0xfe) { // next 3 bytes are string's length
+    if (!rpc_impl_::rpc_fetch_remaining_enough(3)) {
       return {}; // TODO: error handling
     }
-    len = static_cast<string::size_type>(opt_len.value());
+    const auto first{static_cast<string::size_type>(rpc_impl_::fetch_trivial<uint8_t>().value())};
+    const auto second{static_cast<string::size_type>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 8};
+    const auto third{static_cast<string::size_type>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 16};
+    string_len = first + second + third;
+    if (string_len <= 253) {
+      php_warning("long string's length is less than 254");
+    }
+    size_len = 4;
+  } else {
+    string_len = static_cast<string::size_type>(first_byte);
+    size_len = 1;
+  }
+
+  string::size_type len_with_padding{(size_len + string_len + 3) & ~static_cast<string::size_type>(3)};
+  string::size_type skip{len_with_padding - size_len - string_len};
+  if (!rpc_impl_::rpc_fetch_remaining_enough(string_len + skip)) {
+    return {}; // TODO: error handling
   }
 
   auto &rpc_ctx{get_component_context()->rpc_component_context};
-
-  string res{};
-  if (len < 254) {
-    if (!rpc_impl_::rpc_fetch_remaining_enough(sizeof(int32_t) - sizeof(uint8_t) + len)) { // len + remaining 3 bytes from string's length
-      return {};                                                                           // TODO: error handling
-    }
-    // adjust since string's length takes 4 bytes
-    rpc_ctx.fetch_state.adjust(sizeof(int32_t) - sizeof(uint8_t));
-    res.append(rpc_ctx.buffer.c_str() + rpc_ctx.fetch_state.pos(), len);
-    rpc_ctx.fetch_state.adjust(len);
-  } else if (len == 254) {
-    const auto opt_fst{rpc_impl_::fetch_trivial<uint8_t>()};
-    const auto opt_snd{rpc_impl_::fetch_trivial<uint8_t>()};
-    const auto opt_thd{rpc_impl_::fetch_trivial<uint8_t>()};
-    len = static_cast<string::size_type>(opt_fst.value_or(0) + (opt_snd.value_or(0) << 8) + (opt_thd.value_or(0) << 16));
-    if (!(opt_fst && opt_snd && opt_thd && rpc_impl_::rpc_fetch_remaining_enough(len))) {
-      return {}; // TODO: error handling
-    }
-    res.append(rpc_ctx.buffer.c_str() + rpc_ctx.fetch_state.pos(), len);
-    rpc_ctx.fetch_state.adjust(len);
-  } else {
-    // TODO: error handling
-  }
-
-  // adjust to skip padding zeros
-  const auto skip{4 - len % 4};
-  php_assert(rpc_impl_::rpc_fetch_remaining_enough(skip));
-  rpc_ctx.fetch_state.adjust(skip);
+  string res{rpc_ctx.buffer.c_str() + rpc_ctx.fetch_state.pos(), string_len};
+  rpc_ctx.fetch_state.adjust(string_len + skip);
   return res;
 }
 
