@@ -367,7 +367,7 @@ bool f$store_double(double v) noexcept {
   return rpc_impl_::store_trivial(v);
 }
 
-bool f$store_string(const string &v) noexcept {
+bool f$store_string(const string &v) noexcept { // TODO: remove rpc_impl_::store_string
   return rpc_impl_::store_string(v.c_str(), static_cast<int32_t>(v.size()));
 }
 
