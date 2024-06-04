@@ -22,7 +22,7 @@ namespace dl {
 static void request_extra_memory() {
   ComponentState &rt_ctx = *get_component_context();
   // todo:k2 make extra mem size dynamic
-  size_t extra_mem_size = 16 * 1024u + 100; // extra mem size should be greater than max chunk block size
+  size_t extra_mem_size = 16 * 50000u + 100; // extra mem size should be greater than max chunk block size
   void * extra_mem = get_platform_context()->allocator.alloc(extra_mem_size);
   if (extra_mem == nullptr) {
     php_error("script OOM");
@@ -107,6 +107,6 @@ void deallocate(void *mem, size_t size) noexcept {
   php_assert(size);
 
   ComponentState &rt_ctx = *get_component_context();
-  rt_ctx.script_allocator.memory_resource.deallocate(mem, size);
+//  rt_ctx.script_allocator.memory_resource.deallocate(mem, size);
 }
 } // namespace dl
