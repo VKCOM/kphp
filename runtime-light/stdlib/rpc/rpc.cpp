@@ -12,10 +12,10 @@
 
 #include "common/algorithms/find.h"
 #include "common/rpc-error-codes.h"
-#include "common/rpc-headers.h"
 #include "common/tl/constants/common.h"
 #include "runtime-light/component/component.h"
 #include "runtime-light/component/image.h"
+#include "runtime-light/stdlib/rpc/rpc_extra_headers.h"
 #include "runtime-light/streams/interface.h"
 #include "runtime-light/utils/concepts.h"
 
@@ -149,28 +149,18 @@ task_t<RpcQueryInfo> rpc_send_impl(const string &actor, double timeout, bool ign
     //    timeout = conn.get()->timeout_ms * 0.001;
   }
 
-  const auto [opt_new_wrapper, cur_wrapper_size, opt_actor_id_warning_info,
-              opt_ignore_result_warning_msg]{regularize_wrappers(rpc_ctx.buffer.c_str(), 0, ignore_answer)};
-
-  if (opt_actor_id_warning_info.has_value()) {
-    const auto [msg, cur_wrapper_actor_id, new_wrapper_actor_id]{opt_actor_id_warning_info.value()};
-    php_warning(msg, cur_wrapper_actor_id, new_wrapper_actor_id);
-  }
-  if (opt_ignore_result_warning_msg != nullptr) {
-    php_warning("%s", opt_ignore_result_warning_msg);
-  }
-
   string request_buf{};
   size_t request_size{rpc_ctx.buffer.size()};
 
   // 'request_buf' will look like this:
   //    [ RpcExtraHeaders (optional) ] [ payload ]
-  if (opt_new_wrapper.has_value()) {
-    const auto [new_wrapper, new_wrapper_size]{opt_new_wrapper.value()};
-    request_size = request_size - cur_wrapper_size + new_wrapper_size;
+  if (const auto [opt_new_extra_header, cur_extra_header_size]{regularize_extra_headers(rpc_ctx.buffer.c_str(), ignore_answer)}; opt_new_extra_header) {
+    const auto new_extra_header{opt_new_extra_header.value()};
+    const auto new_extra_header_size{sizeof(std::decay_t<decltype(new_extra_header)>)};
+    request_size = request_size - cur_extra_header_size + new_extra_header_size;
 
-    request_buf.append(reinterpret_cast<const char *>(&new_wrapper), new_wrapper_size);
-    request_buf.append(rpc_ctx.buffer.c_str() + cur_wrapper_size, rpc_ctx.buffer.size() - cur_wrapper_size);
+    request_buf.append(reinterpret_cast<const char *>(&new_extra_header), new_extra_header_size);
+    request_buf.append(rpc_ctx.buffer.c_str() + cur_extra_header_size, rpc_ctx.buffer.size() - cur_extra_header_size);
   } else {
     request_buf.append(rpc_ctx.buffer.c_str(), request_size);
   }
@@ -184,7 +174,7 @@ task_t<RpcQueryInfo> rpc_send_impl(const string &actor, double timeout, bool ign
     co_return RpcQueryInfo{.id = RPC_INVALID_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
   }
 
-  if (ignore_answer) {
+  if (ignore_answer) { // TODO: wait for answer in a separate coroutine and keep returning RPC_IGNORED_ANSWER_QUERY_ID
     co_return RpcQueryInfo{.id = RPC_IGNORED_ANSWER_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
   }
   const auto query_id{rpc_ctx.current_query_id++};

@@ -7,4 +7,5 @@ prepend(RUNTIME_STDLIB_SRC ${BASE_DIR}/runtime-light/stdlib/
         superglobals.cpp
         rpc/rpc.cpp
         rpc/rpc_extra_info.cpp
+        rpc/rpc_extra_headers.cpp
 )
