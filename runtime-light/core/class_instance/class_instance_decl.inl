@@ -28,6 +28,7 @@ class class_instance {
   void warn_on_access_null() const;
 
 public:
+  using ClassType = T;
 
   class_instance() = default;
   class_instance(const class_instance &) = default;
