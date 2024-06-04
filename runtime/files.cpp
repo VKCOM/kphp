@@ -479,7 +479,7 @@ static Optional<string> full_realpath(const string &path) { // realpath resolvin
     const char *basename_c_str = __xpg_basename(basename_path_copy.buffer());
     dl::leave_critical_section();
 
-    return result_cache = (kphp_runtime_context.static_SB.clean() << file_wrapper_name << real_path << '/' << basename_c_str).str();
+    return result_cache = (kphp_runtime_context.static_SB.clean() << file_wrapper_name << real_path << '/' << basename_c_str).str<ScriptAllocator>();
   }
   result_cache = LETTER_a;
   return false;

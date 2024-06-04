@@ -6,7 +6,7 @@
 
 #include <cstdint>
 
-#include "runtime-core/runtime-core.h"
+#include "runtime/runtime-types.h"
 
 const char *tl_magic_convert_to_name(uint32_t magic) noexcept;
 array<string> tl_magic_get_all_functions() noexcept;

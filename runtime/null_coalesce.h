@@ -6,7 +6,7 @@
 #include <type_traits>
 
 #include "runtime-core/include.h"
-#include "runtime-core/runtime-core.h"
+#include "runtime/runtime-types.h"
 
 namespace impl_ {
 

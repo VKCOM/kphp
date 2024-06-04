@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime-core/runtime-core.h"
+#include "runtime/runtime-types.h"
 
 #include "runtime/curl.h"
 

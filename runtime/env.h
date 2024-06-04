@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime-core/runtime-core.h"
+#include "runtime/runtime-types.h"
 
 array<string> f$getenv() noexcept;
 Optional<string> f$getenv(const string &varname, bool local_only = false) noexcept;

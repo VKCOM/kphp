@@ -11,7 +11,7 @@
 
 #include "common/containers/final_action.h"
 
-#include "runtime-core/runtime-core.h"
+#include "runtime/runtime-types.h"
 #include "runtime/context/runtime-context.h"
 #include "runtime/critical_section.h"
 #include "runtime/exception.h"

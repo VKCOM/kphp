@@ -34,10 +34,10 @@ class string_buffer;
  * This allocator used for compile time checks
  * */
 class DummyAllocator {
-  void * allocate(int size) {return nullptr;}
-  void * allocate0(int size) {return nullptr;}
-  void deallocate(void * p, int size) {}
-  void * reallocate(void * p, int old_size, int new_size){return nullptr;}
+  void * allocate(int) {return nullptr;}
+  void * allocate0(int) {return nullptr;}
+  void deallocate(void *, int) {}
+  void * reallocate(void *, int, int){return nullptr;}
 };
 }
 

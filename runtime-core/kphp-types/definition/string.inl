@@ -79,7 +79,7 @@ char *string<Allocator>::string_inner::reserve(size_type requested_capacity) {
   size_type old_size = (size_type)(sizeof(string_inner) + (capacity + 1));
   size_type new_size = (size_type)(sizeof(string_inner) + (new_cap + 1));
 
-  string_inner *p = Allocator::reallocate((void *)this, new_size, old_size);
+  string_inner *p = (string_inner *)Allocator::reallocate((void *)this, new_size, old_size);
   p->capacity = new_cap;
   return p->ref_data();
 }

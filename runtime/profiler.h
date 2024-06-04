@@ -12,7 +12,7 @@
 #include "common/mixin/not_copyable.h"
 #include "common/wrappers/string_view.h"
 
-#include "runtime-core/runtime-core.h"
+#include "runtime/runtime-types.h"
 #include "runtime/allocator.h"
 #include "server/php-queries-stats.h"
 

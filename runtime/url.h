@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime-core/runtime-core.h"
+#include "runtime/runtime-types.h"
 
 #include "runtime/context/runtime-context.h"
 
@@ -77,7 +77,7 @@ string http_build_query_get_param(const string &key, const T &a,
     };
     string key_encoded = encode(key);
     string value_encoded = encode(f$strval(a));
-    return (kphp_runtime_context.static_SB.clean() << key_encoded << '=' << value_encoded).str();
+    return (kphp_runtime_context.static_SB.clean() << key_encoded << '=' << value_encoded).str<ScriptAllocator>();
   }
 }
 

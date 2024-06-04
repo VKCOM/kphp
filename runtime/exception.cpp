@@ -87,7 +87,7 @@ Exception new_Exception(const string &file, int64_t line, const string &message,
 }
 
 Exception f$err(const string &file, int64_t line, const string &code, const string &desc) {
-  return new_Exception(file, line, (kphp_runtime_context.static_SB.clean() << "ERR_" << code << ": " << desc).str(), 0);
+  return new_Exception(file, line, (kphp_runtime_context.static_SB.clean() << "ERR_" << code << ": " << desc).str<ScriptAllocator>(), 0);
 }
 
 string exception_trace_as_string(const Throwable &e) {
@@ -96,7 +96,7 @@ string exception_trace_as_string(const Throwable &e) {
     array<string> current = e->trace.get_value(i);
     kphp_runtime_context.static_SB << '#' << i << ' ' << current.get_value(string("file", 4)) << ": " << current.get_value(string("function", 8)) << "\n";
   }
-  return kphp_runtime_context.static_SB.str();
+  return kphp_runtime_context.static_SB.str<ScriptAllocator>();
 }
 
 void exception_initialize(const Throwable &e, const string &message, int64_t code) {

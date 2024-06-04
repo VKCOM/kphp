@@ -632,7 +632,7 @@ string php_timelib_date_format(const string &format, timelib_time *t, bool local
     SB.append(buffer.data(), length);
   }
 
-  return SB.str();
+  return SB.str<ScriptAllocator>();
 }
 
 string php_timelib_date_format_localtime(const string &format, timelib_time *t) {
@@ -956,5 +956,5 @@ string php_timelib_date_interval_format(const string &format, timelib_rel_time *
     }
   }
 
-  return SB.str();
+  return SB.str<ScriptAllocator>();
 }

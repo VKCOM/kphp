@@ -7,7 +7,7 @@
 #include <memory>
 #include <mysql/mysql.h>
 
-#include "runtime-core/runtime-core.h"
+#include "runtime/runtime-types.h"
 #include "server/database-drivers/connector.h"
 
 namespace database_drivers {

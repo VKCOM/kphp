@@ -1870,7 +1870,7 @@ void array<T, Allocator>::sort(const T1 &compare, bool renumber) {
     mutate_if_map_shared();
   }
 
-  array_bucket **arTmp = Allocator::allocate(n * sizeof(array_bucket *));
+  array_bucket **arTmp = (array_bucket **)Allocator::allocate(n * sizeof(array_bucket *));
   uint32_t i = 0;
   for (array_bucket *it = p->begin(); it != p->end(); it = p->next(it)) {
     arTmp[i++] = it;

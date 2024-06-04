@@ -6,7 +6,7 @@
 
 #include <string_view>
 
-#include "runtime-core/runtime-core.h"
+#include "runtime/runtime-types.h"
 #include "runtime/json-functions.h"
 #include "runtime/json-processor-utils.h"
 
@@ -97,7 +97,7 @@ private:
       error_.append(json_path_.to_string());
       return;
     }
-    value.str = kphp_runtime_context.static_SB.str();
+    value.str = kphp_runtime_context.static_SB.str<ScriptAllocator>();
   }
 
   template<class T>

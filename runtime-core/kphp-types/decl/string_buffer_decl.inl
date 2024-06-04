@@ -25,15 +25,22 @@ public:
 
   inline string_buffer &clean() noexcept;
 
-  friend inline string_buffer &operator<<(string_buffer &sb, char c);
-  friend inline string_buffer &operator<<(string_buffer &sb, const char *s);
-  friend inline string_buffer &operator<<(string_buffer &sb, double f);
-  template<typename StringAllocator>
-  friend inline string_buffer &operator<<(string_buffer &sb, const string<StringAllocator> &s);
-  friend inline string_buffer &operator<<(string_buffer &sb, bool x);
-  friend inline string_buffer &operator<<(string_buffer &sb, int32_t x);
-  friend inline string_buffer &operator<<(string_buffer &sb, uint32_t x);
-  friend inline string_buffer &operator<<(string_buffer &sb, int64_t x);
+  template<typename SB_Allocator>
+  friend string_buffer<SB_Allocator> &operator<<(string_buffer<SB_Allocator> &sb, char c);
+  template<typename SB_Allocator>
+  friend inline string_buffer<SB_Allocator> &operator<<(string_buffer<SB_Allocator> &sb, const char *s);
+  template<typename SB_Allocator>
+  friend inline string_buffer<SB_Allocator> &operator<<(string_buffer<SB_Allocator> &sb, double f);
+  template<typename SB_Allocator, typename StringAllocator>
+  friend inline string_buffer<SB_Allocator> &operator<<(string_buffer<SB_Allocator> &sb, const string<StringAllocator> &s);
+  template<typename SB_Allocator>
+  friend inline string_buffer<SB_Allocator> &operator<<(string_buffer<SB_Allocator> &sb, bool x);
+  template<typename SB_Allocator>
+  friend inline string_buffer<SB_Allocator> &operator<<(string_buffer<SB_Allocator> &sb, int32_t x);
+  template<typename SB_Allocator>
+  friend inline string_buffer<SB_Allocator> &operator<<(string_buffer<SB_Allocator> &sb, uint32_t x);
+  template<typename SB_Allocator>
+  friend inline string_buffer<SB_Allocator> &operator<<(string_buffer<SB_Allocator> &sb, int64_t x);
 
   inline string_buffer &append(const char *str, size_t len) noexcept;
   inline void write(const char *str, int len) noexcept;
@@ -63,8 +70,10 @@ public:
 
   inline void copy_raw_data(const string_buffer &other);
 
-  friend inline bool operator==(const string_buffer &lhs, const string_buffer &rhs);
-  friend inline bool operator!=(const string_buffer &lhs, const string_buffer &rhs);
+  template<typename SB_Allocator>
+  friend inline bool operator==(const string_buffer<SB_Allocator> &lhs, const string_buffer<SB_Allocator> &rhs);
+  template<typename SB_Allocator>
+  friend inline bool operator!=(const string_buffer<SB_Allocator> &lhs, const string_buffer<SB_Allocator> &rhs);
 };
 }
 

@@ -1119,7 +1119,7 @@ string f$preg_quote(const string &str, const string &delimiter) {
     }
   }
 
-  return kphp_runtime_context.static_SB.str();
+  return kphp_runtime_context.static_SB.str<ScriptAllocator>();
 }
 
 void regexp::global_init() {

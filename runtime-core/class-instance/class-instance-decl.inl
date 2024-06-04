@@ -18,11 +18,9 @@
 //};
 //
 // Their instances are wrapped into the class_instance<T>.
-
+namespace __runtime_core {
 template<typename Allocator>
 class abstract_refcountable_php_interface;
-
-namespace __runtime_core {
 
 template<class T, typename Allocator>
 class class_instance {
@@ -187,7 +185,7 @@ public:
     return o == rhs.o;
   }
 
-  template<class Derived>
+  template<class Derived, typename CI_Allocator>
   friend class class_instance;
 
 private:

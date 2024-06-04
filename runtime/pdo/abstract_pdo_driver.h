@@ -6,7 +6,7 @@
 
 #include <utility>
 
-#include "runtime-core/runtime-core.h"
+#include "runtime/runtime-types.h"
 #include "runtime/allocator.h"
 
 struct C$PDO;

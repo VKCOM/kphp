@@ -9,7 +9,7 @@
 #include "common/wrappers/string_view.h"
 
 #include "runtime-core/kphp-types/decl/optional.h"
-#include "runtime-core/runtime-core.h"
+#include "runtime/runtime-types.h"
 #include "runtime/critical_section.h"
 #include "server/php-query-data.h"
 #include "server/statshouse/statshouse-manager.h"

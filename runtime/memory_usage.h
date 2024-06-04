@@ -15,7 +15,7 @@
 #include "common/type_traits/list_of_types.h"
 #include "runtime-core/kphp-types/decl/declarations.h"
 #include "runtime-core/kphp-types/decl/shape.h"
-#include "runtime-core/runtime-core.h"
+#include "runtime/runtime-types.h"
 
 template<class T>
 struct CDataPtr;

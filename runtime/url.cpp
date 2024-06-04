@@ -469,7 +469,7 @@ string f$rawurldecode(const string &s) {
     }
     kphp_runtime_context.static_SB.append_char(s[i]);
   }
-  return kphp_runtime_context.static_SB.str();
+  return kphp_runtime_context.static_SB.str<ScriptAllocator>();
 }
 
 
@@ -494,7 +494,7 @@ string f$rawurlencode(const string &s) {
       kphp_runtime_context.static_SB.append_char(uhex_digits[s[i] & 15]);
     }
   }
-  return kphp_runtime_context.static_SB.str();
+  return kphp_runtime_context.static_SB.str<ScriptAllocator>();
 }
 
 string f$urldecode(const string &s) {
@@ -516,7 +516,7 @@ string f$urldecode(const string &s) {
     }
     kphp_runtime_context.static_SB.append_char(s[i]);
   }
-  return kphp_runtime_context.static_SB.str();
+  return kphp_runtime_context.static_SB.str<ScriptAllocator>();
 }
 
 string f$urlencode(const string &s) {
@@ -532,5 +532,5 @@ string f$urlencode(const string &s) {
       kphp_runtime_context.static_SB.append_char(uhex_digits[s[i] & 15]);
     }
   }
-  return kphp_runtime_context.static_SB.str();
+  return kphp_runtime_context.static_SB.str<ScriptAllocator>();
 }

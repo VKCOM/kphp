@@ -8,7 +8,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "runtime-core/runtime-core.h"
+#include "runtime/runtime-types.h"
 
 extern const string LETTER_a;
 

@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime-core/runtime-core.h"
+#include "runtime/runtime-types.h"
 #include "runtime/context/runtime-context.h"
 #include "runtime/exception.h"
 
@@ -166,7 +166,7 @@ Optional<string> f$json_encode(const T &v, int64_t options = 0, bool simple_enco
   if (unlikely(!impl_::JsonEncoder(options, simple_encode).encode(v))) {
     return false;
   }
-  return kphp_runtime_context.static_SB.str();
+  return kphp_runtime_context.static_SB.str<ScriptAllocator>();
 }
 
 template<class T>
@@ -181,7 +181,7 @@ string f$vk_json_encode_safe(const T &v, bool simple_encode = true) noexcept {
     return {};
   }
   kphp_runtime_context.sb_lib_context.error_flag  = STRING_BUFFER_ERROR_FLAG_OFF;
-  return kphp_runtime_context.static_SB.str();
+  return kphp_runtime_context.static_SB.str<ScriptAllocator>();
 }
 
 template<class T>

@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime-core/runtime-core.h"
+#include "runtime/runtime-types.h"
 
 Optional<string> f$vk_stats_hll_merge(const array<mixed> &a);
 Optional<double> f$vk_stats_hll_count(const string &hll);

@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime-core/runtime-core.h"
+#include "runtime/runtime-types.h"
 #include <type_traits>
 
 extern const string COLON;
@@ -216,11 +216,11 @@ string f$str_ireplace(const array<T1> &search, const array<T2> &replace, const s
 string f$str_replace(const mixed &search, const mixed &replace, const string &subject, int64_t &replace_count = str_replace_count_dummy);
 string f$str_ireplace(const mixed &search, const mixed &replace, const string &subject, int64_t &replace_count = str_replace_count_dummy);
 
-template<class T1, class T2, class SubjectT, class = enable_if_t_is_optional_string<SubjectT>>
+template<class T1, class T2, class SubjectT, class = enable_if_t_is_optional_string<SubjectT, ScriptAllocator>>
 SubjectT f$str_replace(const T1 &search, const T2 &replace, const SubjectT &subject, int64_t &replace_count = str_replace_count_dummy) {
   return f$str_replace(search, replace, subject.val(), replace_count);
 }
-template<class T1, class T2, class SubjectT, class = enable_if_t_is_optional_string<SubjectT>>
+template<class T1, class T2, class SubjectT, class = enable_if_t_is_optional_string<SubjectT, ScriptAllocator>>
 SubjectT f$str_ireplace(const T1 &search, const T2 &replace, const SubjectT &subject, int64_t &replace_count = str_replace_count_dummy) {
   return f$str_ireplace(search, replace, subject.val(), replace_count);
 }

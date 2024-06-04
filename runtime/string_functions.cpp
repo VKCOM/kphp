@@ -96,7 +96,7 @@ string f$addcslashes(const string &str, const string &what) {
       kphp_runtime_context.static_SB.append_char(c);
     }
   }
-  return kphp_runtime_context.static_SB.str();
+  return kphp_runtime_context.static_SB.str<ScriptAllocator>();
 }
 
 string f$addslashes(const string &str) {
@@ -118,7 +118,7 @@ string f$addslashes(const string &str) {
         kphp_runtime_context.static_SB.append_char(str[i]);
     }
   }
-  return kphp_runtime_context.static_SB.str();
+  return kphp_runtime_context.static_SB.str<ScriptAllocator>();
 }
 
 string f$bin2hex(const string &str) {
@@ -371,7 +371,7 @@ string f$htmlentities(const string &str) {
     }
   }
 
-  return kphp_runtime_context.static_SB.str();
+  return kphp_runtime_context.static_SB.str<ScriptAllocator>();
 }
 
 string f$html_entity_decode(const string &str, int64_t flags, const string &encoding) {
@@ -518,7 +518,7 @@ string f$htmlspecialchars(const string &str, int64_t flags) {
     }
   }
 
-  return kphp_runtime_context.static_SB.str();
+  return kphp_runtime_context.static_SB.str<ScriptAllocator>();
 }
 
 string f$htmlspecialchars_decode(const string &str, int64_t flags) {
@@ -647,7 +647,7 @@ string f$mysql_escape_string(const string &str) {
         kphp_runtime_context.static_SB.append_char(str[i]);
     }
   }
-  return kphp_runtime_context.static_SB.str();
+  return kphp_runtime_context.static_SB.str<ScriptAllocator>();
 }
 
 string f$nl2br(const string &str, bool is_xhtml) {
@@ -667,7 +667,7 @@ string f$nl2br(const string &str, bool is_xhtml) {
     kphp_runtime_context.static_SB.append_char(str[i++]);
   }
 
-  return kphp_runtime_context.static_SB.str();
+  return kphp_runtime_context.static_SB.str<ScriptAllocator>();
 }
 
 string f$number_format(double number, int64_t decimals, const string &dec_point, const string &thousands_sep) {
@@ -958,7 +958,7 @@ string f$pack(const string &pattern, const array<mixed> &a) {
     php_warning("Too much arguments to call pack with format \"%s\"", pattern.c_str());
   }
 
-  return kphp_runtime_context.static_SB.str();
+  return kphp_runtime_context.static_SB.str<ScriptAllocator>();
 }
 
 string f$prepare_search_query(const string &query) {
@@ -1598,7 +1598,7 @@ string f$strip_tags(const string &str, const string &allow) {
     }
   }
 
-  return kphp_runtime_context.static_SB.str();
+  return kphp_runtime_context.static_SB.str<ScriptAllocator>();
 }
 
 template <class T>

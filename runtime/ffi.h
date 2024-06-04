@@ -5,7 +5,7 @@
 #pragma once
 
 #include "runtime-core/class-instance/refcountable-php-classes.h"
-#include "runtime-core/runtime-core.h"
+#include "runtime/runtime-types.h"
 #include "runtime/dummy-visitor-methods.h"
 #include "runtime/memory_usage.h"
 

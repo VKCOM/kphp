@@ -131,14 +131,14 @@ Optional<string> f$ob_get_clean() {
     return false;
   }
 
-  string result = coub->str();
+  string result = coub->str<ScriptAllocator>();
   coub = &oub[--ob_cur_buffer];
   reset_gzip_header();
   return result;
 }
 
 string f$ob_get_contents() {
-  return coub->str();
+  return coub->str<ScriptAllocator>();
 }
 
 void f$ob_start(const string &callback) {
@@ -183,7 +183,7 @@ Optional<string> f$ob_get_flush() {
   if (ob_cur_buffer == 0) {
     return false;
   }
-  string result = coub->str();
+  string result = coub->str<ScriptAllocator>();
   f$ob_flush();
   f$ob_end_clean();
   return result;
@@ -578,7 +578,7 @@ void f$flush() {
 void f$fastcgi_finish_request(int64_t exit_code) {
   int const ob_total_buffer = ob_merge_buffers();
   if (php_worker.has_value() && php_worker->flushed_http_connection) {
-    string const raw_response = oub[ob_total_buffer].str();
+    string const raw_response = oub[ob_total_buffer].str<ScriptAllocator>();
     http_set_result(nullptr, 0, raw_response.c_str(), raw_response.size(), static_cast<int32_t>(exit_code));
     php_assert (0);
   }
@@ -774,7 +774,7 @@ string f$long2ip(int64_t num) {
       kphp_runtime_context.static_SB.append_char('.');
     }
   }
-  return kphp_runtime_context.static_SB.str();
+  return kphp_runtime_context.static_SB.str<ScriptAllocator>();
 }
 
 Optional<array<string>> f$gethostbynamel(const string &name) {
@@ -1575,7 +1575,7 @@ static void init_superglobals_impl(const http_query_data &http_data, const rpc_q
 
   if (http_data.uri) {
     if (http_data.get_len) {
-      v$_SERVER.set_value(string("REQUEST_URI"), (kphp_runtime_context.static_SB.clean() << uri_str << '?' << get_str).str());
+      v$_SERVER.set_value(string("REQUEST_URI"), (kphp_runtime_context.static_SB.clean() << uri_str << '?' << get_str).str<ScriptAllocator>());
     } else {
       v$_SERVER.set_value(string("REQUEST_URI"), uri_str);
     }
@@ -1755,7 +1755,7 @@ static void init_superglobals_impl(const http_query_data &http_data, const rpc_q
   v$_SERVER.set_value(string("SERVER_PORT"), string("80"));
   v$_SERVER.set_value(string("SERVER_PROTOCOL"), string("HTTP/1.1"));
   v$_SERVER.set_value(string("SERVER_SIGNATURE"), (kphp_runtime_context.static_SB.clean() << "Apache/2.2.9 (Debian) PHP/5.2.6-1<<lenny10 with Suhosin-Patch Server at "
-                                                                         << v$_SERVER[string("SERVER_NAME")] << " Port 80").str());
+                                                                         << v$_SERVER[string("SERVER_NAME")] << " Port 80").str<ScriptAllocator>());
   v$_SERVER.set_value(string("SERVER_SOFTWARE"), string("Apache/2.2.9 (Debian) PHP/5.2.6-1+lenny10 with Suhosin-Patch"));
 
   if (environ != nullptr) {

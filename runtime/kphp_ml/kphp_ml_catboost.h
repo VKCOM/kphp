@@ -12,7 +12,7 @@
 #include <vector>
 #include <unordered_map>
 
-#include "runtime-core/runtime-core.h"
+#include "runtime/runtime-types.h"
 
 namespace kphp_ml { struct MLModel; }
 

@@ -86,7 +86,7 @@ mixed<Allocator>::mixed(const Unknown &u __attribute__((unused))) noexcept {
 
 template<typename Allocator>
 mixed<Allocator>::mixed(const char *s, string<Allocator>::size_type len) noexcept
-  : mixed(string{s, len}) {}
+  : mixed(string<Allocator>{s, len}) {}
 
 template<typename Allocator>
 template<typename T, typename>
@@ -623,9 +623,9 @@ const string<Allocator> mixed<Allocator>::to_string() const {
     case type::BOOLEAN:
       return (as_bool() ? string<Allocator>("1", 1) : string<Allocator>());
     case type::INTEGER:
-      return string(as_int());
+      return string<Allocator>(as_int());
     case type::FLOAT:
-      return string(as_double());
+      return string<Allocator>(as_double());
     case type::STRING:
       return as_string();
     case type::ARRAY:
@@ -948,7 +948,7 @@ const string<Allocator> &mixed<Allocator>::as_string(const char *function) const
       return as_string();
     default:
       php_warning("%s() expects parameter to be string, %s is given", function, get_type_c_str());
-      return empty_value<string>();
+      return empty_value<string<Allocator>>();
   }
 }
 
@@ -1020,7 +1020,7 @@ string<Allocator> &mixed<Allocator>::as_string(const char *function) {
       return as_string();
     default:
       php_warning("%s() expects parameter to be string, %s is given", function, get_type_c_str());
-      return empty_value<string>();
+      return empty_value<string<Allocator>>();
   }
 }
 
@@ -1385,7 +1385,7 @@ const mixed<Allocator> mixed<Allocator>::get_value(int64_t int_key) const {
       if (int_key < 0 || int_key >= as_string().size()) {
         return string<Allocator>();
       }
-      return string(1, as_string()[static_cast<string<Allocator>::size_type>(int_key)]);
+      return string<Allocator>(1, as_string()[static_cast<string<Allocator>::size_type>(int_key)]);
     }
 
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
@@ -1409,7 +1409,7 @@ const mixed<Allocator> mixed<Allocator>::get_value(const string<Allocator> &stri
       if (int_val < 0 || int_val >= as_string().size()) {
         return string<Allocator>();
       }
-      return string(1, as_string()[static_cast<string<Allocator>::size_type>(int_val)]);
+      return string<Allocator>(1, as_string()[static_cast<string<Allocator>::size_type>(int_val)]);
     }
 
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
@@ -1632,7 +1632,7 @@ array<mixed<Allocator>, Allocator>::const_iterator mixed<Allocator>::begin() con
     return as_array().begin();
   }
   php_warning("Invalid argument supplied for foreach(), %s (string representation - \"%s\") is given", get_type_c_str(), to_string().c_str());
-  return array<mixed, Allocator>::const_iterator();
+  return typename array<mixed, Allocator>::const_iterator();
 }
 
 template<typename Allocator>
@@ -1640,7 +1640,7 @@ array<mixed<Allocator>, Allocator>::const_iterator mixed<Allocator>::end() const
   if (likely(get_type() == type::ARRAY)) {
     return as_array().end();
   }
-  return array<mixed, Allocator>::const_iterator();
+  return typename array<mixed, Allocator>::const_iterator();
 }
 
 template<typename Allocator>
@@ -1750,9 +1750,9 @@ void mixed<Allocator>::reset_empty_values() noexcept {
   empty_value<bool>();
   empty_value<int64_t>();
   empty_value<double>();
-  empty_value<string>();
-  empty_value<mixed>();
-  empty_value<array<mixed, Allocator>>();
+  empty_value<string<Allocator>>();
+  empty_value<mixed<Allocator>>();
+  empty_value<array<mixed<Allocator>, Allocator>>();
 }
 
 template<typename Allocator>

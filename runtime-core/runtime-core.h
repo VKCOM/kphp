@@ -4,10 +4,6 @@
 
 #pragma once
 
-#ifndef INCLUDED_FROM_RUNTIME_TYPES
-#error "runtime-core.h should be included only in runtime types inplementation"
-#endif
-
 #include <cinttypes>
 #include <cstddef>
 #include <cstdio>
@@ -25,6 +21,7 @@
 #include "runtime-core/include.h"
 #include "runtime-core/kphp-types/decl/shape.h"
 #include "runtime-core/kphp-types/kphp-type-traits.h"
+#include "runtime-core/class-instance/refcountable-php-classes.h"
 
 // order of includes below matters, be careful
 

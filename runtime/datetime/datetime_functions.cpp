@@ -347,7 +347,7 @@ static string date(const string &format, const tm &t, int64_t timestamp, bool lo
         SB << format[i];
     }
   }
-  return SB.str();
+  return SB.str<ScriptAllocator>();
 }
 
 string f$date(const string &format, int64_t timestamp) {

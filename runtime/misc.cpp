@@ -48,7 +48,7 @@ string f$uniqid(const string &prefix, bool more_entropy) {
   }
 
   dl::leave_critical_section();
-  return kphp_runtime_context.static_SB.str();
+  return kphp_runtime_context.static_SB.str<ScriptAllocator>();
 }
 
 

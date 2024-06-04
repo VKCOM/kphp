@@ -5,7 +5,7 @@
 #pragma once
 
 #include "common/mixin/not_copyable.h"
-#include "runtime-core/runtime-core.h"
+#include "runtime/runtime-types.h"
 #include "runtime/context/runtime-context.h"
 
 namespace impl_ {
@@ -63,7 +63,7 @@ template<class T>
 string f$serialize(const T &v) noexcept {
   kphp_runtime_context.static_SB.clean();
   impl_::PhpSerializer::serialize(v);
-  return kphp_runtime_context.static_SB.str();
+  return kphp_runtime_context.static_SB.str<ScriptAllocator>();
 }
 
 mixed f$unserialize(const string &v) noexcept;

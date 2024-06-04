@@ -1,8 +1,6 @@
 #pragma once
 
-#define INCLUDED_FROM_RUNTIME_IMPL
 #include "runtime-core/runtime-core.h"
-#undef INCLUDED_FROM_RUNTIME_IMPL
 
 #include "runtime/allocator.h"
 
@@ -26,12 +24,23 @@ public:
 };
 
 using string = __string<ScriptAllocator>;
+using tmp_string = __runtime_core::tmp_string<ScriptAllocator>;
 using mixed = __mixed<ScriptAllocator>;
 using string_buffer = __string_buffer<HeapAllocator>;
 template<typename T>
 using array = __array<T, ScriptAllocator>;
+template<typename T>
+using class_instance = __class_instance<T, ScriptAllocator>;
+using abstract_refcountable_php_interface = __runtime_core::abstract_refcountable_php_interface<ScriptAllocator>;
+template<typename ...Bases>
+using refcountable_polymorphic_php_classes = __runtime_core::refcountable_polymorphic_php_classes<Bases...>;
+template<typename ...Interfaces>
+using refcountable_polymorphic_php_classes_virt = __runtime_core::refcountable_polymorphic_php_classes_virt<ScriptAllocator, Interfaces...>;
+template<class Derived>
+using refcountable_php_classes = __runtime_core::refcountable_php_classes<Derived, ScriptAllocator>;
+using refcountable_empty_php_classes = __runtime_core::refcountable_empty_php_classes;
 
-template<>
+  template<>
 template<class T1, class, class>
 string convert_to<string>::convert(T1 &&val) {
   return f$strval(std::forward<T1>(val));
@@ -106,3 +115,11 @@ inline array<T> f$arrayval(Optional<T> &&val) {
   }
 }
 
+template<class FunT, class T, class... Args>
+inline decltype(auto) call_fun_on_optional_value(FunT &&fun, const Optional<T> &opt, Args &&...args) {
+  return __runtime_core::call_fun_on_optional_value<ScriptAllocator>(std::forward<FunT>(fun), opt, std::forward<Args>(args)...);
+}
+template<class FunT, class T, class... Args>
+inline decltype(auto) call_fun_on_optional_value(FunT &&fun, Optional<T> &&opt, Args &&...args) {
+  return __runtime_core::call_fun_on_optional_value<ScriptAllocator>(std::forward<FunT>(fun), opt, std::forward<Args>(args)...);
+}

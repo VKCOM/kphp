@@ -191,15 +191,3 @@ public:
     return *this;
   }
 };
-
-template<class T, class ResT = void>
-using enable_if_t_is_optional = std::enable_if_t<is_optional<std::decay_t<T>>::value, ResT>;
-
-template<class T, class ResT = void>
-using enable_if_t_is_not_optional = std::enable_if_t<!is_optional<std::decay_t<T>>{}, ResT>;
-
-template<class T, class T2>
-using enable_if_t_is_optional_t2 = std::enable_if_t<std::is_same<T, Optional<T2>>::value>;
-
-template<class T, typename Allocator>
-using enable_if_t_is_optional_string = enable_if_t_is_optional_t2<T, __runtime_core::string<Allocator>>;

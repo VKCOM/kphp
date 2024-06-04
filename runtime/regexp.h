@@ -8,7 +8,7 @@
 
 #include "common/mixin/not_copyable.h"
 
-#include "runtime-core/runtime-core.h"
+#include "runtime/runtime-types.h"
 #include "runtime/context/runtime-context.h"
 #include "runtime/kphp_tracing.h"
 #include "runtime/mbstring.h"
@@ -248,7 +248,7 @@ inline string regexp::get_replacement(const string &replace_val, const string &s
       }
     }
   }
-  return kphp_runtime_context.static_SB.str();//TODO optimize
+  return kphp_runtime_context.static_SB.str<ScriptAllocator>();//TODO optimize
 }
 
 template<class T>

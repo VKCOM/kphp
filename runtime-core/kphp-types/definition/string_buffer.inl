@@ -76,7 +76,7 @@ template<typename SBAllocator>
 template<typename StringAllocator>
 string<StringAllocator> string_buffer<SBAllocator>::str() const {
   php_assert(size() <= buffer_len);
-  return string(buffer_begin, size());
+  return string<StringAllocator>(buffer_begin, size());
 }
 
 template<typename Allocator>
@@ -133,27 +133,18 @@ void string_buffer<Allocator>::debug_print() const {
 }
 
 template<typename Allocator>
-string_buffer<Allocator>::string_buffer(string<Allocator>::size_type buffer_len) noexcept:
-  buffer_end(static_cast<char *>(Allocator::allocate(buffer_len))),
-  buffer_begin(buffer_end),
-  buffer_len(buffer_len) {
-}
+string_buffer<Allocator>::string_buffer(string<Allocator>::size_type buffer_len) noexcept
+  : buffer_end(static_cast<char *>(Allocator::allocate(buffer_len)))
+  , buffer_begin(buffer_end)
+  , buffer_len(buffer_len) {}
 
 template<typename Allocator>
 string_buffer<Allocator>::~string_buffer() noexcept {
   Allocator::deallocate(buffer_begin, buffer_len);
 }
-}
 
-inline void init_string_buffer_lib(string_size_type min_length, string_size_type max_length) {
-  string_buffer_lib_context &sb_context = KphpCoreContext::current().sb_lib_context;
-  assert(min_length > 0 && max_length > 0);
-  sb_context.MIN_BUFFER_LEN = min_length;
-  sb_context.MAX_BUFFER_LEN = max_length;
-}
-
-template<typename Allocator>
-bool operator==(const__string_buffer<Allocator> &lhs, const__string_buffer<Allocator> &rhs) {
+template<typename SB_Allocator>
+inline bool operator==(const __string_buffer<SB_Allocator> &lhs, const __string_buffer<SB_Allocator> &rhs) {
   size_t len_l = lhs.buffer_end - lhs.buffer_begin;
   size_t len_r = rhs.buffer_end - rhs.buffer_begin;
   if (len_l != len_r) {
@@ -162,14 +153,13 @@ bool operator==(const__string_buffer<Allocator> &lhs, const__string_buffer<Alloc
   return std::equal(lhs.buffer_begin, lhs.buffer_end, rhs.buffer_begin);
 }
 
-template<typename Allocator>
-bool operator!=(__string_buffer<Allocator> const &lhs,__string_buffer<Allocator> const &rhs) {
+template<typename SB_Allocator>
+inline bool operator!=(__string_buffer<SB_Allocator> const &lhs, __string_buffer<SB_Allocator> const &rhs) {
   return !(lhs == rhs);
 }
 
-
-template<typename Allocator>
-__string_buffer<Allocator> &operator<<(__string_buffer<Allocator> &sb, char c) {
+template<typename SB_Allocator>
+__runtime_core::string_buffer<SB_Allocator> &operator<<(__runtime_core::string_buffer<SB_Allocator> &sb, char c) {
   sb.reserve_at_least(1);
 
   *sb.buffer_end++ = c;
@@ -177,8 +167,8 @@ __string_buffer<Allocator> &operator<<(__string_buffer<Allocator> &sb, char c) {
   return sb;
 }
 
-template<typename Allocator>
-__string_buffer<Allocator> &operator<<(__string_buffer<Allocator> &sb, const char *s) {
+template<typename SB_Allocator>
+inline __string_buffer<SB_Allocator> &operator<<(__string_buffer<SB_Allocator> &sb, const char *s) {
   while (*s != 0) {
     sb.reserve_at_least(1);
 
@@ -188,13 +178,13 @@ __string_buffer<Allocator> &operator<<(__string_buffer<Allocator> &sb, const cha
   return sb;
 }
 
-template<typename Allocator>
-__string_buffer<Allocator> &operator<<(__string_buffer<Allocator> &sb, double f) {
-  return sb << string<Allocator>(f);
+template<typename SB_Allocator>
+inline __string_buffer<SB_Allocator> &operator<<(__string_buffer<SB_Allocator> &sb, double f) {
+  return sb << string<SB_Allocator>(f);
 }
 
 template<typename SBAllocator, typename StringAllocator>
-__string_buffer<SBAllocator> &operator<<(__string_buffer<SBAllocator> &sb, const __string<StringAllocator> &s) {
+inline __string_buffer<SBAllocator> &operator<<(__string_buffer<SBAllocator> &sb, const __string<StringAllocator> &s) {
   typename __runtime_core::string<SBAllocator>::size_type l = s.size();
   sb.reserve_at_least(l);
 
@@ -208,8 +198,8 @@ __string_buffer<SBAllocator> &operator<<(__string_buffer<SBAllocator> &sb, const
   return sb;
 }
 
-template<typename Allocator>
-__string_buffer<Allocator> &operator<<(__string_buffer<Allocator> &sb, bool x) {
+template<typename SB_Allocator>
+inline __string_buffer<SB_Allocator> &operator<<(__string_buffer<SB_Allocator> &sb, bool x) {
   if (x) {
     sb.reserve_at_least(1);
     *sb.buffer_end++ = '1';
@@ -218,52 +208,60 @@ __string_buffer<Allocator> &operator<<(__string_buffer<Allocator> &sb, bool x) {
   return sb;
 }
 
-template<typename Allocator>
-__string_buffer<Allocator> &operator<<(__string_buffer<Allocator> &sb, int32_t x) {
+template<typename SB_Allocator>
+inline __string_buffer<SB_Allocator> &operator<<(__string_buffer<SB_Allocator> &sb, int32_t x) {
   sb.reserve_at_least(11);
   sb.buffer_end = simd_int32_to_string(x, sb.buffer_end);
   return sb;
 }
 
-template<typename Allocator>
-__string_buffer<Allocator> &operator<<(__string_buffer<Allocator> &sb, uint32_t x) {
+template<typename SB_Allocator>
+inline __string_buffer<SB_Allocator> &operator<<(__string_buffer<SB_Allocator> &sb, uint32_t x) {
   sb.reserve_at_least(10);
   sb.buffer_end = simd_uint32_to_string(x, sb.buffer_end);
   return sb;
 }
 
-template<typename Allocator>
-__string_buffer<Allocator> &operator<<(__string_buffer<Allocator> &sb, int64_t x) {
+template<typename SB_Allocator>
+inline __string_buffer<SB_Allocator> &operator<<(__string_buffer<SB_Allocator> &sb, int64_t x) {
   sb.reserve_at_least(20);
   sb.buffer_end = simd_int64_to_string(x, sb.buffer_end);
   return sb;
 }
+}
 
-template<class T, typename Allocator>
-inline __string_buffer<Allocator> &operator<<(__string_buffer<Allocator> &sb, const Optional<T> &v) {
-  auto write_lambda = [&sb](const auto &v) -> __string_buffer<Allocator>& { return sb << v; };
+template<class T, typename SB_Allocator>
+inline __string_buffer<SB_Allocator> &operator<<(__string_buffer<SB_Allocator> &sb, const Optional<T> &v) {
+  auto write_lambda = [&sb](const auto &v) -> __string_buffer<SB_Allocator>& { return sb << v; };
   return call_fun_on_optional_value(write_lambda, v);
 }
 
-template<typename Allocator>
-inline __string_buffer<Allocator> &operator<<(__string_buffer<Allocator> &sb, const __mixed<Allocator> &v) {
+template<typename SB_Allocator, typename MixedAllocator>
+inline __string_buffer<SB_Allocator> &operator<<(__string_buffer<SB_Allocator> &sb, const __mixed<MixedAllocator> &v) {
   switch (v.get_type()) {
-    case __mixed<Allocator>::type::NUL:
+    case __mixed<MixedAllocator>::type::NUL:
       return sb;
-    case __mixed<Allocator>::type::BOOLEAN:
+    case __mixed<MixedAllocator>::type::BOOLEAN:
       return sb << v.as_bool();
-    case __mixed<Allocator>::type::INTEGER:
+    case __mixed<MixedAllocator>::type::INTEGER:
       return sb << v.as_int();
-    case __mixed<Allocator>::type::FLOAT:
-      return sb << string(v.as_double());
-    case __mixed<Allocator>::type::STRING:
+    case __mixed<MixedAllocator>::type::FLOAT:
+      return sb << string<MixedAllocator>(v.as_double());
+    case __mixed<MixedAllocator>::type::STRING:
       return sb << v.as_string();
-    case __mixed<Allocator>::type::ARRAY:
+    case __mixed<MixedAllocator>::type::ARRAY:
       php_warning("Conversion from array to string");
       return sb.append("Array", 5);
     default:
       __builtin_unreachable();
   }
+}
+
+inline void init_string_buffer_lib(string_size_type min_length, string_size_type max_length) {
+  string_buffer_lib_context &sb_context = KphpCoreContext::current().sb_lib_context;
+  assert(min_length > 0 && max_length > 0);
+  sb_context.MIN_BUFFER_LEN = min_length;
+  sb_context.MAX_BUFFER_LEN = max_length;
 }
 
 

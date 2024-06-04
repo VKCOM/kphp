@@ -20,10 +20,10 @@ inline enable_if_t_is_not_optional<T1, bool>  optional_lt_impl(const T1 &lhs, co
 
 } // namespace impl_
 
-template<class FunT, class T, class ...Args>
-inline decltype(auto) call_fun_on_optional_value(FunT && fun, const Optional<T> &opt, Args &&... args);
-template<class FunT, class T, class ...Args>
-inline decltype(auto) call_fun_on_optional_value(FunT && fun, Optional<T> &&opt, Args &&... args);
+template<class FunT, class T, class... Args>
+inline decltype(auto) call_fun_on_optional_value(FunT &&fun, const Optional<T> &opt, Args &&...args);
+template<class FunT, class T, class... Args>
+inline decltype(auto) call_fun_on_optional_value(FunT &&fun, Optional<T> &&opt, Args &&...args);
 
 
 template<class T, class U>
@@ -690,31 +690,32 @@ inline enable_if_t_is_not_optional<T1, bool>  optional_lt_impl(const T1 &lhs, co
 
 } // namespace impl_
 
-//todo:check is DummyAllocator safe here
-template<typename Allocator, class FunT, class T, class ...Args>
-decltype(auto) call_fun_on_optional_value(FunT && fun, const Optional<T> &opt, Args &&... args) {
+namespace __runtime_core {
+template<typename Allocator, class FunT, class T, class... Args>
+decltype(auto) call_fun_on_optional_value(FunT &&fun, const Optional<T> &opt, Args &&...args) {
   switch (opt.value_state()) {
     case OptionalState::has_value:
       return fun(opt.val(), std::forward<Args>(args)...);
     case OptionalState::false_value:
       return fun(false, std::forward<Args>(args)...);
     case OptionalState::null_value:
-      return fun(__mixed<__runtime_core::DummyAllocator> {}, std::forward<Args>(args)...);
+      return fun(__mixed<Allocator>{}, std::forward<Args>(args)...);
     default:
       __builtin_unreachable();
   }
 }
 
-template<typename Allocator, class FunT, class T, class ...Args>
-decltype(auto) call_fun_on_optional_value(FunT && fun, Optional<T> &&opt, Args &&... args) {
+template<typename Allocator, class FunT, class T, class... Args>
+decltype(auto) call_fun_on_optional_value(FunT &&fun, Optional<T> &&opt, Args &&...args) {
   switch (opt.value_state()) {
     case OptionalState::has_value:
       return fun(std::move(opt.val()), std::forward<Args>(args)...);
     case OptionalState::false_value:
       return fun(false, std::forward<Args>(args)...);
     case OptionalState::null_value:
-      return fun(__mixed<__runtime_core::DummyAllocator> {}, std::forward<Args>(args)...);
+      return fun(__mixed<Allocator>{}, std::forward<Args>(args)...);
     default:
       __builtin_unreachable();
   }
+}
 }

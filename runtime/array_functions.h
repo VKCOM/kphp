@@ -10,7 +10,7 @@
 #include "common/type_traits/function_traits.h"
 #include "common/vector-product.h"
 
-#include "runtime-core/runtime-core.h"
+#include "runtime/runtime-types.h"
 #include "runtime/context/runtime-context.h"
 #include "runtime/math_functions.h"
 #include "runtime/string_functions.h"
@@ -337,7 +337,7 @@ string f$implode(const string &s, const array<T> &a) {
     ++it;
   }
 
-  return SB.str();
+  return SB.str<ScriptAllocator>();
 }
 
 

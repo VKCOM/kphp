@@ -2,8 +2,6 @@
 
 #include <cstddef>
 
-#include "runtime-core/runtime-core.h"
-
 template<typename Allocator>
 class ScriptAllocatorManaged {
 public:

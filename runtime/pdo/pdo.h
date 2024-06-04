@@ -10,7 +10,7 @@
 #include "common/wrappers/string_view.h"
 
 #include "runtime-core/class-instance/refcountable-php-classes.h"
-#include "runtime-core/runtime-core.h"
+#include "runtime/runtime-types.h"
 #include "runtime/dummy-visitor-methods.h"
 #include "runtime/memory_usage.h"
 #include "runtime/pdo/abstract_pdo_driver.h"

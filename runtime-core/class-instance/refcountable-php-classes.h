@@ -9,6 +9,8 @@
 
 #include "runtime-core/class-instance/script-allocator-managed.h"
 
+namespace __runtime_core {
+
 template<typename Allocator>
 class abstract_refcountable_php_interface : public ScriptAllocatorManaged<Allocator> {
 public:
@@ -22,7 +24,7 @@ public:
   virtual void *get_instance_data_raw_ptr() noexcept = 0;
 };
 
-template<class ...Bases>
+template<class... Bases>
 class refcountable_polymorphic_php_classes : public Bases... {
 public:
   void add_ref() noexcept final {
@@ -56,7 +58,7 @@ private:
   uint32_t refcnt{0};
 };
 
-template<typename Allocator, class ...Interfaces>
+template<typename Allocator, class... Interfaces>
 class refcountable_polymorphic_php_classes_virt : public virtual abstract_refcountable_php_interface<Allocator>, public Interfaces... {
 public:
   refcountable_polymorphic_php_classes_virt() __attribute__((always_inline)) = default;
@@ -99,7 +101,7 @@ private:
 };
 
 template<class Derived, typename Allocator>
-class refcountable_php_classes  : public ScriptAllocatorManaged<Allocator> {
+class refcountable_php_classes : public ScriptAllocatorManaged<Allocator> {
 public:
   void add_ref() noexcept {
     if (refcnt < ExtraRefCnt::for_global_const) {
@@ -134,6 +136,7 @@ public:
   void *get_instance_data_raw_ptr() noexcept {
     return this;
   }
+
 private:
   uint32_t refcnt{0};
 };
@@ -143,3 +146,4 @@ public:
   static void add_ref() noexcept {}
   static void release() noexcept {}
 };
+}

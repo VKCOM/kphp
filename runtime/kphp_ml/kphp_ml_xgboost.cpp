@@ -10,7 +10,7 @@
 
 #include <cmath>
 
-#include "runtime-core/runtime-core.h"
+#include "runtime/runtime-types.h"
 #include "runtime/kphp_ml/kphp_ml.h"
 
 /*

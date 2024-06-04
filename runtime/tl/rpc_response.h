@@ -5,7 +5,7 @@
 #pragma once
 
 #include "runtime-core/class-instance/refcountable-php-classes.h"
-#include "runtime-core/runtime-core.h"
+#include "runtime/runtime-types.h"
 #include "runtime/tl/rpc_function.h"
 
 class RpcErrorFactory {

@@ -178,7 +178,7 @@ string JsonWriter::get_error() const noexcept {
 }
 
 string JsonWriter::get_final_json() const noexcept {
-  return kphp_runtime_context.static_SB.str();
+  return kphp_runtime_context.static_SB.str<ScriptAllocator>();
 }
 
 bool JsonWriter::new_level(bool is_array) noexcept {

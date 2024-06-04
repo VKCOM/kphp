@@ -19,7 +19,7 @@
 #include "common/mixin/not_copyable.h"
 
 #include "runtime-core/kphp-types/decl/shape.h"
-#include "runtime-core/runtime-core.h"
+#include "runtime/runtime-types.h"
 #include "runtime/instance-copy-processor.h"
 #include "runtime/memory_usage.h"
 #include "server/statshouse/statshouse-manager.h"

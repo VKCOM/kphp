@@ -8,7 +8,7 @@
 
 #include "common/mixin/not_copyable.h"
 #include "common/smart_ptrs/singleton.h"
-#include "runtime-core/runtime-core.h"
+#include "runtime/runtime-types.h"
 
 class ShapeKeyDemangle : vk::not_copyable {
 public:

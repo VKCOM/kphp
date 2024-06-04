@@ -11,7 +11,8 @@
 #include "common/wrappers/likely.h"
 #include "common/mixin/not_copyable.h"
 
-#include "runtime-core/functions/kphp-assert-core.h"
+#include "runtime-core/utils/kphp-assert-core.h"
+#include "runtime/runtime-types.h"
 
 extern int die_on_fail;
 
@@ -24,8 +25,6 @@ extern int php_warning_minimum_level;
 
 void php_out_of_memory_warning(char const *message, ...) __attribute__ ((format (printf, 1, 2)));
 
-template<class T>
-class class_instance;
 struct C$Throwable;
 const char *php_uncaught_exception_error(const class_instance<C$Throwable> &ex) noexcept;
 
