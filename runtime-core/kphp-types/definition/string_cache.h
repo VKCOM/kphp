@@ -29,7 +29,7 @@ private:
 
     constexpr string_8bytes() = default;
 
-    string<Allocator>::string_inner inner{0, 0, ExtraRefCnt::for_global_const};
+    __string<Allocator>::string_inner inner{0, 0, ExtraRefCnt::for_global_const};
     char data[TAIL_SIZE]{'\0'};
   };
 
@@ -77,32 +77,30 @@ private:
     return constexpr_make_ints(std::make_index_sequence<small_int_max() / 10>{});
   }
 
-
   static constexpr auto constexpr_make_large_ints() noexcept {
     return constexpr_make_ints(std::make_index_sequence<cached_int_max() / 10>{});
   }
 
-  static const string<Allocator>::string_inner &cached_large_int(int64_t i) noexcept {
-    static_assert(sizeof(string_8bytes) == sizeof(string<Allocator>::string_inner) + string_8bytes::TAIL_SIZE, "unexpected padding");
+  static const __string<Allocator>::string_inner &cached_large_int(int64_t i) noexcept {
+    static_assert(sizeof(string_8bytes) == sizeof(typename __string<Allocator>::string_inner) + string_8bytes::TAIL_SIZE, "unexpected padding");
     // to avoid a big compilation time impact, we implement numbers generation from 100 (small_int_max) to 9999 (cached_int_max - 1) here
     static constexpr auto large_int_cache = constexpr_make_large_ints();
     php_assert(i < large_int_cache.size());
     return large_int_cache[i].inner;
   }
 
-
 public:
-  static const string<Allocator>::string_inner &empty_string() noexcept {
+  static const __string<Allocator>::string_inner &empty_string() noexcept {
     static constexpr string_8bytes empty_string;
     return empty_string.inner;
   }
 
-  static const string<Allocator>::string_inner &cached_char(char c) noexcept {
+  static const __string<Allocator>::string_inner &cached_char(char c) noexcept {
     static constexpr single_char_storage_hack constexpr_char_cache;
     return constexpr_char_cache[static_cast<uint8_t>(c)].inner;
   }
 
-  static const string<Allocator>::string_inner &cached_int(int64_t i) noexcept {
+  static const __string<Allocator>::string_inner &cached_int(int64_t i) noexcept {
     // constexpr_make_small_ints generates numbers from 0 to 99 (small_int_max - 1),
     // it makes the compilation faster
     // numbers from 100 (small_int_max) to 9999 (cached_int_max - 1) live inside the cached_large_int
