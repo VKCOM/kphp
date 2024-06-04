@@ -8,6 +8,7 @@
 #include <chrono>
 
 #include "runtime/critical_section.h"
+#include "runtime/runtime-types.h"
 #include "runtime/job-workers/job-interface.h"
 #include "runtime/interface.h"
 #include "runtime/math_functions.h"
@@ -496,7 +497,7 @@ int64_t f$KphpDiv$$assignTraceCtx(class_instance<C$KphpDiv> v$this, int64_t int1
       if (override_div_id.val() < -(1_i64 << 31) || override_div_id.val() >= 1_i64 << 31) {
         php_warning("overflow of int32 in divID: %" PRIi64, override_div_id.val());
       }
-      v$this->trace_ctx_int2 = (int2 & 0xFFFFFFFF) + (override_div_id << 32);
+      v$this->trace_ctx_int2 = (int2 & 0xFFFFFFFF) + (mixed(override_div_id) << mixed(32));
     }
     BinlogWriter::provideTraceContext(v$this->trace_id, v$this->trace_ctx_int2);
   }

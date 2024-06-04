@@ -246,7 +246,7 @@ inline __string_buffer<SB_Allocator> &operator<<(__string_buffer<SB_Allocator> &
     case __mixed<MixedAllocator>::type::INTEGER:
       return sb << v.as_int();
     case __mixed<MixedAllocator>::type::FLOAT:
-      return sb << string<MixedAllocator>(v.as_double());
+      return sb << __string<MixedAllocator>(v.as_double());
     case __mixed<MixedAllocator>::type::STRING:
       return sb << v.as_string();
     case __mixed<MixedAllocator>::type::ARRAY:

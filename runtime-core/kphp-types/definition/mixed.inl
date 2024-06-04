@@ -157,7 +157,7 @@ mixed<Allocator> &mixed<Allocator>::assign(const char *other, string<Allocator>:
   } else {
     destroy();
     type_ = type::STRING;
-    new (&as_string()) string(other, len);
+    new (&as_string()) string<Allocator>(other, len);
   }
   return *this;
 }
@@ -1869,6 +1869,7 @@ inline int64_t operator^(const __mixed<Allocator> &lhs, const __mixed<Allocator>
   return lhs.to_int() ^ rhs.to_int();
 }
 
+//todo:core make it for mixed??
 template<typename Allocator>
 inline int64_t operator<<(const __mixed<Allocator> &lhs, const __mixed<Allocator> &rhs) {
   return lhs.to_int() << rhs.to_int();
