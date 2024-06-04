@@ -486,6 +486,12 @@ task_t<array<array<mixed>>> f$rpc_tl_query_result(array<int64_t> query_ids) noex
 
 // === Rpc Misc ==================================================================================
 
+void f$rpc_clean() noexcept {
+  auto &rpc_ctx{get_component_context()->rpc_component_context};
+  rpc_ctx.buffer.clean();
+  rpc_ctx.fetch_state.reset(0, 0);
+}
+
 // === Misc =======================================================================================
 
 bool is_int32_overflow(int64_t v) noexcept {

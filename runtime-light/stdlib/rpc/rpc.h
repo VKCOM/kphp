@@ -104,6 +104,8 @@ f$typed_rpc_tl_query_result(array<query_id_t> query_ids) noexcept {
 
 // === Rpc Misc ===================================================================================
 
+void f$rpc_clean() noexcept;
+
 // === Misc =======================================================================================
 
 bool is_int32_overflow(int64_t v) noexcept;
