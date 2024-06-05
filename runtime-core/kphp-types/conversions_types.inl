@@ -156,12 +156,12 @@ inline __string<Allocator> strval(double val) {
 
 template<class T, typename Allocator>
 inline __string<Allocator> strval(const Optional<T> &val) {
-  return val.has_value() ? f$strval(val.val()) : f$strval<Allocator>(false);
+  return val.has_value() ? f$strval(val.val()) : strval<Allocator>(false);
 }
 
 template<class T, typename Allocator>
 inline __string<Allocator> strval(Optional<T> &&val) {
-  return val.has_value() ? f$strval(std::move(val.val())) : f$strval<Allocator>(false);
+  return val.has_value() ? f$strval(std::move(val.val())) : strval<Allocator>(false);
 }
 
 template<class T, typename Allocator>
