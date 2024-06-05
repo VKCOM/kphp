@@ -27,7 +27,7 @@ inline void string_buffer<Allocator>::resize(string_size_type new_buffer_len) no
     }
   }
 
-  typename string_size_type current_len = size();
+  string_size_type current_len = size();
   if (void *new_mem = Allocator::reallocate(buffer_begin, new_buffer_len, buffer_len)) {
     buffer_begin = static_cast<char *>(new_mem);
     buffer_len = new_buffer_len;
@@ -37,7 +37,7 @@ inline void string_buffer<Allocator>::resize(string_size_type new_buffer_len) no
 
 template<typename Allocator>
 inline void string_buffer<Allocator>::reserve_at_least(string_size_type need) noexcept {
-  typename string_size_type new_buffer_len = need + size();
+  string_size_type new_buffer_len = need + size();
   while (unlikely(buffer_len < new_buffer_len && KphpCoreContext::current().sb_lib_context.error_flag != STRING_BUFFER_ERROR_FLAG_FAILED)) {
     resize(((new_buffer_len * 2 + 1 + 64) | 4095) - 64);
   }
