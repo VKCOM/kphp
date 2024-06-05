@@ -64,8 +64,6 @@ public:
 
   ~string_buffer() noexcept;
 
-  friend void init_string_buffer_lib(string_size_type min_length, string_size_type max_length);
-
   inline void debug_print() const;
 
   inline void copy_raw_data(const string_buffer &other);

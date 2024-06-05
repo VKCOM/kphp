@@ -41,7 +41,7 @@ inline Optional<string> f$msgpack_serialize(const T &value, string *out_err_msg 
     return {};
   }
 
-  return coub->str();
+  return coub->str<ScriptAllocator>();
 }
 
 template<class T>

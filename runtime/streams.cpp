@@ -465,7 +465,7 @@ Optional<int64_t> f$fputcsv(const Stream &stream, const array<mixed> &fields, st
     }
   }
   csvline.append_char('\n');
-  return f$fwrite(stream, csvline.str());
+  return f$fwrite(stream, csvline.str<ScriptAllocator>());
 }
 
 // this function is imported from https://github.com/php/php-src/blob/master/ext/standard/file.c,
@@ -746,7 +746,7 @@ Optional<array<mixed>> f$fgetcsv(const Stream &stream, int64_t length, string de
     }
 
     /* 3. Now pass our field back to php */
-    answer.set_value(current_id++, tmp_buffer.str());
+    answer.set_value(current_id++, tmp_buffer.str<ScriptAllocator>());
     tmp_buffer.clean();
   } while (inc_len > 0);
 

@@ -889,11 +889,11 @@ void mixed<Allocator>::convert_to_string() {
       return;
     case type::INTEGER:
       type_ = type::STRING;
-      new (&as_string()) string(as_int());
+      new (&as_string()) string<Allocator>(as_int());
       return;
     case type::FLOAT:
       type_ = type::STRING;
-      new (&as_string()) string(as_double());
+      new (&as_string()) string<Allocator>(as_double());
       return;
     case type::STRING:
       return;
@@ -1818,68 +1818,6 @@ inline __mixed<Allocator> do_math_op_on_vars(const __mixed<Allocator> &lhs, cons
 
 } // namespace impl_
 
-template<typename Allocator>
-inline __mixed<Allocator> operator+(const __mixed<Allocator> &lhs, const __mixed<Allocator> &rhs) {
-  if (lhs.is_array() && rhs.is_array()) {
-    return lhs.as_array() + rhs.as_array();
-  }
-
-  return impl_::do_math_op_on_vars(lhs, rhs, [](const auto &arg1, const auto &arg2) { return arg1 + arg2; });
-}
-
-template<typename Allocator>
-inline __mixed<Allocator> operator-(const __mixed<Allocator> &lhs, const __mixed<Allocator> &rhs) {
-  return impl_::do_math_op_on_vars(lhs, rhs, [](const auto &arg1, const auto &arg2) { return arg1 - arg2; });
-}
-
-template<typename Allocator>
-inline __mixed<Allocator> operator*(const __mixed<Allocator> &lhs, const __mixed<Allocator> &rhs) {
-  return impl_::do_math_op_on_vars(lhs, rhs, [](const auto &arg1, const auto &arg2) { return arg1 * arg2; });
-}
-
-template<typename Allocator>
-inline __mixed<Allocator> operator-(const __string<Allocator> &lhs) {
-  __mixed<Allocator> arg1 = lhs.to_numeric();
-
-  if (arg1.is_int()) {
-    arg1.as_int() = -arg1.as_int();
-  } else {
-    arg1.as_double() = -arg1.as_double();
-  }
-  return arg1;
-}
-
-template<typename Allocator>
-inline __mixed<Allocator> operator+(const __string<Allocator> &lhs) {
-  return lhs.to_numeric();
-}
-
-template<typename Allocator>
-inline int64_t operator&(const __mixed<Allocator> &lhs, const __mixed<Allocator> &rhs) {
-  return lhs.to_int() & rhs.to_int();
-}
-
-template<typename Allocator>
-inline int64_t operator|(const __mixed<Allocator> &lhs, const __mixed<Allocator> &rhs) {
-  return lhs.to_int() | rhs.to_int();
-}
-
-template<typename Allocator>
-inline int64_t operator^(const __mixed<Allocator> &lhs, const __mixed<Allocator> &rhs) {
-  return lhs.to_int() ^ rhs.to_int();
-}
-
-//todo:core make it for mixed??
-template<typename Allocator>
-inline int64_t operator<<(const __mixed<Allocator> &lhs, const __mixed<Allocator> &rhs) {
-  return lhs.to_int() << rhs.to_int();
-}
-
-template<typename Allocator>
-inline int64_t operator>>(const __mixed<Allocator> &lhs, const __mixed<Allocator> &rhs) {
-  return lhs.to_int() >> rhs.to_int();
-}
-
 template<typename Lhs, typename Rhs>
 inline const char *conversion_php_warning_string() {
   if constexpr (std::is_same_v<Lhs, int64_t>) {
@@ -1955,31 +1893,6 @@ inline bool less_string_number_as_php8(bool php7_result, const __string<Allocato
   return php7_result;
 }
 
-template <typename Allocator>
-inline bool operator<(const __mixed<Allocator> &lhs, const __mixed<Allocator> &rhs) {
-  const auto res = lhs.compare(rhs) < 0;
-
-  if (rhs.is_string()) {
-    if (lhs.is_int()) {
-      return less_number_string_as_php8(res, lhs.to_int(), rhs.to_string());
-    } else if (lhs.is_float()) {
-      return less_number_string_as_php8(res, lhs.to_float(), rhs.to_string());
-    }
-  } else if (lhs.is_string()) {
-    if (rhs.is_int()) {
-      return less_string_number_as_php8(res, lhs.to_string(), rhs.to_int());
-    } else if (rhs.is_float()) {
-      return less_string_number_as_php8(res, lhs.to_string(), rhs.to_float());
-    }
-  }
-
-  return res;
-}
-
-template <typename Allocator>
-inline bool operator<=(const __mixed<Allocator> &lhs, const __mixed<Allocator> &rhs) {
-  return !(rhs < lhs);
-}
 
 template <typename Allocator>
 inline void swap(__mixed<Allocator> &lhs, __mixed<Allocator> &rhs) {

@@ -236,7 +236,6 @@ public:
   inline int64_t compare(const string &str) const;
 
   inline bool isset(int64_t index) const;
-  static inline int64_t get_correct_offset(size_type size, int64_t offset);
   inline int64_t get_correct_index(int64_t index) const;
   inline int64_t get_correct_offset(int64_t offset) const;
   inline int64_t get_correct_offset_clamped(int64_t offset) const;
@@ -261,6 +260,8 @@ public:
   inline void destroy() __attribute__((always_inline));
 };
 }
+
+inline int64_t get_correct_offset(string_size_type size, int64_t offset);
 
 template<typename Allocator>
 inline __string<Allocator> materialize_tmp_string(__runtime_core::tmp_string<Allocator> s) {
@@ -303,8 +304,7 @@ inline __string<Allocator>::size_type max_string_size(const __array<T, Allocator
 template<class T>
 inline string_size_type max_string_size(const Optional<T> &v) __attribute__((always_inline));
 
-template<typename Allocator>
-inline bool wrap_substr_args(typename __string<Allocator>::size_type str_len, int64_t &start, int64_t &length) {
+inline bool wrap_substr_args(string_size_type str_len, int64_t &start, int64_t &length) {
   if (length < 0 && -length > str_len) {
     return false;
   }
@@ -320,7 +320,7 @@ inline bool wrap_substr_args(typename __string<Allocator>::size_type str_len, in
   if (length < 0 && length < start - str_len) {
     return false;
   }
-  start = __string<Allocator>::get_correct_offset(str_len, start);
+  start = get_correct_offset(str_len, start);
   if (length < 0) {
     length = (str_len - start) + length;
     if (length < 0) {

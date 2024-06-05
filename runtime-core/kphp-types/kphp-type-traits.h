@@ -40,7 +40,7 @@ template<typename T, typename T1>
 using enable_if_constructible_or_unknown = std::enable_if_t<is_constructible_or_unknown<T, T1>::value>;
 
 template<class T>
-using enable_for_bool_int_double = vk::enable_if_in_list<T, vk::list_of_types<bool, int64_t, double>>;
+using enable_for_bool_int_double = vk::enable_if_in_list<T, vk::list_of_types<bool, int, int64_t, double>>;
 
 template<typename>
 struct is_class_instance : std::false_type {

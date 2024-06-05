@@ -92,7 +92,7 @@ inline bool eq2_number_string_as_php8(T lhs, const __string<Allocator> &rhs) {
   if (rhs_is_string_number) {
     return eq2(lhs, rhs_float);
   } else {
-    return eq2(string(lhs), rhs);
+    return eq2(__string<Allocator>(lhs), rhs);
   }
 }
 

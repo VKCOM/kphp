@@ -188,16 +188,15 @@ public:
   template<class Derived, typename CI_Allocator>
   friend class class_instance;
 
+  template<typename ...Args>
+  static class_instance make_instance(Args && ...args) {
+    class_instance instance;
+    instance.alloc(std::forward<Args>(args)...);
+    return instance;
+  }
+
 private:
   class_instance<T, Allocator> clone_impl(std::true_type /*is empty*/) const;
   class_instance<T, Allocator> clone_impl(std::false_type /*is empty*/) const;
 };
-}
-
-// todo:core
-template<class T, typename Allocator, class ...Args>
-__class_instance<T, Allocator> make_instance(Args &&...args) noexcept {
-  __class_instance<T, Allocator> instance;
-  instance.alloc(std::forward<Args>(args)...);
-  return instance;
 }

@@ -164,7 +164,7 @@ inline class_instance<T> make_throwable(const string &file, int64_t line, int64_
     std::is_base_of_v<C$Throwable, T>,
     "Template argument must be a subtype of C$Throwable");
 
-  auto ci = make_instance<T>();
+  auto ci = class_instance<T>::make_instance();
 
   auto *ins_ptr = ci.get();
   ins_ptr->$file = file;

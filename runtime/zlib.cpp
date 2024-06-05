@@ -219,7 +219,7 @@ string f$gzcompress(const string &s, int64_t level) {
     level = 6;
   }
 
-  return zlib_encode(s.c_str(), s.size(), static_cast<int32_t>(level), ZLIB_ENCODING_DEFLATE)->str();
+  return zlib_encode(s.c_str(), s.size(), static_cast<int32_t>(level), ZLIB_ENCODING_DEFLATE)->str<ScriptAllocator>();
 }
 
 string f$gzdeflate(const string &s, int64_t level) {
@@ -228,7 +228,7 @@ string f$gzdeflate(const string &s, int64_t level) {
     level = 6;
   }
 
-  return zlib_encode(s.c_str(), s.size(), static_cast<int32_t>(level), ZLIB_ENCODING_RAW)->str();
+  return zlib_encode(s.c_str(), s.size(), static_cast<int32_t>(level), ZLIB_ENCODING_RAW)->str<ScriptAllocator>();
 }
 
 string f$gzencode(const string &s, int64_t level) {
@@ -236,7 +236,7 @@ string f$gzencode(const string &s, int64_t level) {
     php_warning("Wrong parameter level = %" PRIi64 " in function gzencode", level);
   }
 
-  return zlib_encode(s.c_str(), s.size(), static_cast<int32_t>(level), ZLIB_ENCODING_GZIP)->str();
+  return zlib_encode(s.c_str(), s.size(), static_cast<int32_t>(level), ZLIB_ENCODING_GZIP)->str<ScriptAllocator>();
 }
 
 static string::size_type zlib_decode_raw(vk::string_view s, int encoding) {

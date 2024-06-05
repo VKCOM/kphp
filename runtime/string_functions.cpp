@@ -1114,7 +1114,7 @@ string f$sprintf(const string &format, const array<mixed> &a) {
         case 'd': {
           int64_t arg_int = arg.to_int();
           if (sign == '+' && arg_int >= 0) {
-            piece = (kphp_runtime_context.static_SB.clean() << "+" << arg_int).str();
+            piece = (kphp_runtime_context.static_SB.clean() << "+" << arg_int).str<ScriptAllocator>();
           } else {
             piece = string(arg_int);
           }
@@ -1480,7 +1480,7 @@ string f$strip_tags(const string &str, const string &allow) {
             lc = '>';
             in_q = state = 0;
             kphp_runtime_context.static_SB_spare << '>';
-            if (php_tag_find(kphp_runtime_context.static_SB_spare.str(), allow_low)) {
+            if (php_tag_find(kphp_runtime_context.static_SB_spare.str<ScriptAllocator>(), allow_low)) {
               kphp_runtime_context.static_SB << kphp_runtime_context.static_SB_spare.c_str();
             }
             kphp_runtime_context.static_SB_spare.clean();

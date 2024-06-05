@@ -1058,19 +1058,8 @@ int64_t string<Allocator>::get_correct_index(int64_t index) const {
 }
 
 template<typename Allocator>
-int64_t string<Allocator>::get_correct_offset(size_type size, int64_t offset) {
-  if (offset < 0) {
-    offset = offset + size;
-    if (offset < 0) {
-      offset = 0;
-    }
-  }
-  return offset;
-}
-
-template<typename Allocator>
 int64_t string<Allocator>::get_correct_offset(int64_t offset) const {
-  return get_correct_offset(size(), offset);
+  return ::get_correct_offset(size(), offset);
 }
 
 template<typename Allocator>
@@ -1187,6 +1176,16 @@ template<typename Allocator>
 string<Allocator>::~string() noexcept {
   destroy();
 }
+}
+
+int64_t get_correct_offset(string_size_type size, int64_t offset) {
+  if (offset < 0) {
+    offset = offset + size;
+    if (offset < 0) {
+      offset = 0;
+    }
+  }
+  return offset;
 }
 
 template<typename Allocator>

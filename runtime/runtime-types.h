@@ -30,6 +30,8 @@ using string_buffer = __string_buffer<HeapAllocator>;
 template<typename T>
 using array = __array<T, ScriptAllocator>;
 template<typename T>
+using array_iterator = __runtime_core::array_iterator<T, ScriptAllocator>;
+template<typename T>
 using class_instance = __class_instance<T, ScriptAllocator>;
 using abstract_refcountable_php_interface = __runtime_core::abstract_refcountable_php_interface<ScriptAllocator>;
 template<typename ...Bases>
@@ -122,4 +124,79 @@ inline decltype(auto) call_fun_on_optional_value(FunT &&fun, const Optional<T> &
 template<class FunT, class T, class... Args>
 inline decltype(auto) call_fun_on_optional_value(FunT &&fun, Optional<T> &&opt, Args &&...args) {
   return __runtime_core::call_fun_on_optional_value<ScriptAllocator>(std::forward<FunT>(fun), opt, std::forward<Args>(args)...);
+}
+
+inline mixed operator+(const mixed &lhs, const mixed &rhs) {
+  if (lhs.is_array() && rhs.is_array()) {
+    return lhs.as_array() + rhs.as_array();
+  }
+
+  return impl_::do_math_op_on_vars(lhs, rhs, [](const auto &arg1, const auto &arg2) { return arg1 + arg2; });
+}
+
+inline mixed operator-(const mixed &lhs, const mixed &rhs) {
+  return impl_::do_math_op_on_vars(lhs, rhs, [](const auto &arg1, const auto &arg2) { return arg1 - arg2; });
+}
+
+inline mixed operator*(const mixed &lhs, const mixed &rhs) {
+  return impl_::do_math_op_on_vars(lhs, rhs, [](const auto &arg1, const auto &arg2) { return arg1 * arg2; });
+}
+
+inline mixed operator-(const string &lhs) {
+  mixed arg1 = lhs.to_numeric();
+
+  if (arg1.is_int()) {
+    arg1.as_int() = -arg1.as_int();
+  } else {
+    arg1.as_double() = -arg1.as_double();
+  }
+  return arg1;
+}
+
+inline mixed operator+(const string &lhs) {
+  return lhs.to_numeric();
+}
+
+inline int64_t operator&(const mixed &lhs, const mixed &rhs) {
+  return lhs.to_int() & rhs.to_int();
+}
+
+inline int64_t operator|(const mixed &lhs, const mixed &rhs) {
+  return lhs.to_int() | rhs.to_int();
+}
+
+inline int64_t operator^(const mixed &lhs, const mixed &rhs) {
+  return lhs.to_int() ^ rhs.to_int();
+}
+
+inline int64_t operator<<(const mixed &lhs, const mixed &rhs) {
+  return lhs.to_int() << rhs.to_int();
+}
+
+inline int64_t operator>>(const mixed &lhs, const mixed &rhs) {
+  return lhs.to_int() >> rhs.to_int();
+}
+
+inline bool operator<(const mixed &lhs, const mixed &rhs) {
+  const auto res = lhs.compare(rhs) < 0;
+
+  if (rhs.is_string()) {
+    if (lhs.is_int()) {
+      return less_number_string_as_php8(res, lhs.to_int(), rhs.to_string());
+    } else if (lhs.is_float()) {
+      return less_number_string_as_php8(res, lhs.to_float(), rhs.to_string());
+    }
+  } else if (lhs.is_string()) {
+    if (rhs.is_int()) {
+      return less_string_number_as_php8(res, lhs.to_string(), rhs.to_int());
+    } else if (rhs.is_float()) {
+      return less_string_number_as_php8(res, lhs.to_string(), rhs.to_float());
+    }
+  }
+
+  return res;
+}
+
+inline bool operator<=(const mixed &lhs, const mixed &rhs) {
+  return !(rhs < lhs);
 }

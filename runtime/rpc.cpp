@@ -349,7 +349,7 @@ class_instance<C$RpcConnection> f$new_rpc_connection(const string &host_name, in
     return {};
   }
 
-  return make_instance<C$RpcConnection>(host_num, static_cast<int32_t>(port), timeout_convert_to_ms(timeout),
+  return class_instance<C$RpcConnection>::make_instance(host_num, static_cast<int32_t>(port), timeout_convert_to_ms(timeout),
                                         store_parse_number<int32_t>(actor_id),
                                         timeout_convert_to_ms(connect_timeout), timeout_convert_to_ms(reconnect_timeout));
 }
@@ -1396,10 +1396,10 @@ protected:
         int64_t query_id = it.get_value();
         if (!tl_objects_unsorted.isset(query_id)) {
           if (query_id <= 0) {
-            tl_objects[it.get_key()] = tl_fetch_error((kphp_runtime_context.static_SB.clean() << "Very wrong query_id " << query_id).str(), TL_ERROR_WRONG_QUERY_ID);
+            tl_objects[it.get_key()] = tl_fetch_error((kphp_runtime_context.static_SB.clean() << "Very wrong query_id " << query_id).str<ScriptAllocator>(), TL_ERROR_WRONG_QUERY_ID);
           } else {
             tl_objects[it.get_key()] = tl_fetch_error((kphp_runtime_context.static_SB.clean() << "No answer received or duplicate/wrong query_id "
-                                                                         << query_id).str(), TL_ERROR_WRONG_QUERY_ID);
+                                                                         << query_id).str<ScriptAllocator>(), TL_ERROR_WRONG_QUERY_ID);
           }
         } else {
           tl_objects[it.get_key()] = tl_objects_unsorted[query_id];
@@ -1449,10 +1449,10 @@ array<array<mixed>> f$rpc_tl_query_result_synchronously(const array<int64_t> &qu
     int64_t query_id = it.get_value();
     if (!tl_objects_unsorted.isset(query_id)) {
       if (query_id <= 0) {
-        tl_objects[it.get_key()] = tl_fetch_error((kphp_runtime_context.static_SB.clean() << "Very wrong query_id " << query_id).str(), TL_ERROR_WRONG_QUERY_ID);
+        tl_objects[it.get_key()] = tl_fetch_error((kphp_runtime_context.static_SB.clean() << "Very wrong query_id " << query_id).str<ScriptAllocator>(), TL_ERROR_WRONG_QUERY_ID);
       } else {
         tl_objects[it.get_key()] = tl_fetch_error((kphp_runtime_context.static_SB.clean() << "No answer received or duplicate/wrong query_id "
-                                                                     << query_id).str(), TL_ERROR_WRONG_QUERY_ID);
+                                                                     << query_id).str<ScriptAllocator>(), TL_ERROR_WRONG_QUERY_ID);
       }
     } else {
       tl_objects[it.get_key()] = tl_objects_unsorted[query_id];
