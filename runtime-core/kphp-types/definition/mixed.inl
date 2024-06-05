@@ -85,7 +85,7 @@ mixed<Allocator>::mixed(const Unknown &u __attribute__((unused))) noexcept {
 }
 
 template<typename Allocator>
-mixed<Allocator>::mixed(const char *s, string<Allocator>::size_type len) noexcept
+mixed<Allocator>::mixed(const char *s, typename string<Allocator>::size_type len) noexcept
   : mixed(string<Allocator>{s, len}) {}
 
 template<typename Allocator>
@@ -151,7 +151,7 @@ mixed<Allocator> &mixed<Allocator>::operator=(Optional<T> &&v) noexcept {
 }
 
 template<typename Allocator>
-mixed<Allocator> &mixed<Allocator>::assign(const char *other, string<Allocator>::size_type len) {
+mixed<Allocator> &mixed<Allocator>::assign(const char *other, typename string<Allocator>::size_type len) {
   if (get_type() == type::STRING) {
     as_string().assign(other, len);
   } else {
@@ -1054,7 +1054,7 @@ bool mixed<Allocator>::is_scalar() const {
 }
 
 template<typename Allocator>
-mixed<Allocator>::type mixed<Allocator>::get_type() const {
+typename mixed<Allocator>::type mixed<Allocator>::get_type() const {
   return type_;
 }
 
@@ -1246,12 +1246,12 @@ mixed<Allocator> &mixed<Allocator>::operator[](double double_key) {
 }
 
 template<typename Allocator>
-mixed<Allocator> &mixed<Allocator>::operator[](const array<mixed, Allocator>::const_iterator &it) {
+mixed<Allocator> &mixed<Allocator>::operator[](const typename array<mixed, Allocator>::const_iterator &it) {
   return as_array()[it];
 }
 
 template<typename Allocator>
-mixed<Allocator> &mixed<Allocator>::operator[](const array<mixed, Allocator>::iterator &it) {
+mixed<Allocator> &mixed<Allocator>::operator[](const typename array<mixed, Allocator>::iterator &it) {
   return as_array()[it];
 }
 
@@ -1275,7 +1275,7 @@ void mixed<Allocator>::set_value(int64_t int_key, const mixed &v) {
           as_string().make_not_shared();
         }
 
-        as_string()[static_cast<string<Allocator>::size_type>(int_key)] = c;
+        as_string()[static_cast<typename string<Allocator>::size_type>(int_key)] = c;
       } else {
         php_warning("%" PRIi64 " is illegal offset for string", int_key);
       }
@@ -1315,7 +1315,7 @@ void mixed<Allocator>::set_value(const string<Allocator> &string_key, const mixe
         as_string().make_not_shared();
       }
 
-      as_string()[static_cast<string<Allocator>::size_type>(int_val)] = c;
+      as_string()[static_cast<typename string<Allocator>::size_type>(int_val)] = c;
       return;
     }
 
@@ -1369,12 +1369,12 @@ void mixed<Allocator>::set_value(double double_key, const mixed &value) {
 }
 
 template<typename Allocator>
-void mixed<Allocator>::set_value(const array<mixed, Allocator>::const_iterator &it) {
+void mixed<Allocator>::set_value(const typename array<mixed, Allocator>::const_iterator &it) {
   return as_array().set_value(it);
 }
 
 template<typename Allocator>
-void mixed<Allocator>::set_value(const array<mixed, Allocator>::iterator &it) {
+void mixed<Allocator>::set_value(const typename array<mixed, Allocator>::iterator &it) {
   return as_array().set_value(it);
 }
 
@@ -1385,7 +1385,7 @@ const mixed<Allocator> mixed<Allocator>::get_value(int64_t int_key) const {
       if (int_key < 0 || int_key >= as_string().size()) {
         return string<Allocator>();
       }
-      return string<Allocator>(1, as_string()[static_cast<string<Allocator>::size_type>(int_key)]);
+      return string<Allocator>(1, as_string()[static_cast<typename string<Allocator>::size_type>(int_key)]);
     }
 
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
@@ -1409,7 +1409,7 @@ const mixed<Allocator> mixed<Allocator>::get_value(const string<Allocator> &stri
       if (int_val < 0 || int_val >= as_string().size()) {
         return string<Allocator>();
       }
-      return string<Allocator>(1, as_string()[static_cast<string<Allocator>::size_type>(int_val)]);
+      return string<Allocator>(1, as_string()[static_cast<typename string<Allocator>::size_type>(int_val)]);
     }
 
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
@@ -1463,12 +1463,12 @@ const mixed<Allocator> mixed<Allocator>::get_value(double double_key) const {
 }
 
 template<typename Allocator>
-const mixed<Allocator> mixed<Allocator>::get_value(const array<mixed, Allocator>::const_iterator &it) const {
+const mixed<Allocator> mixed<Allocator>::get_value(const typename array<mixed, Allocator>::const_iterator &it) const {
   return as_array().get_value(it);
 }
 
 template<typename Allocator>
-const mixed<Allocator> mixed<Allocator>::get_value(const array<mixed, Allocator>::iterator &it) const {
+const mixed<Allocator> mixed<Allocator>::get_value(const typename array<mixed, Allocator>::iterator &it) const {
   return as_array().get_value(it);
 }
 
@@ -1627,7 +1627,7 @@ void mixed<Allocator>::unset(double double_key) {
 }
 
 template<typename Allocator>
-array<mixed<Allocator>, Allocator>::const_iterator mixed<Allocator>::begin() const {
+typename array<mixed<Allocator>, Allocator>::const_iterator mixed<Allocator>::begin() const {
   if (likely(get_type() == type::ARRAY)) {
     return as_array().begin();
   }
@@ -1636,7 +1636,7 @@ array<mixed<Allocator>, Allocator>::const_iterator mixed<Allocator>::begin() con
 }
 
 template<typename Allocator>
-array<mixed<Allocator>, Allocator>::const_iterator mixed<Allocator>::end() const {
+typename array<mixed<Allocator>, Allocator>::const_iterator mixed<Allocator>::end() const {
   if (likely(get_type() == type::ARRAY)) {
     return as_array().end();
   }
@@ -1644,7 +1644,7 @@ array<mixed<Allocator>, Allocator>::const_iterator mixed<Allocator>::end() const
 }
 
 template<typename Allocator>
-array<mixed<Allocator>, Allocator>::iterator mixed<Allocator>::begin() {
+typename array<mixed<Allocator>, Allocator>::iterator mixed<Allocator>::begin() {
   if (likely(get_type() == type::ARRAY)) {
     return as_array().begin();
   }
@@ -1653,7 +1653,7 @@ array<mixed<Allocator>, Allocator>::iterator mixed<Allocator>::begin() {
 }
 
 template<typename Allocator>
-array<mixed<Allocator>, Allocator>::iterator mixed<Allocator>::end() {
+typename array<mixed<Allocator>, Allocator>::iterator mixed<Allocator>::end() {
   if (likely(get_type() == type::ARRAY)) {
     return as_array().end();
   }

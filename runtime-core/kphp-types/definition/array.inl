@@ -457,7 +457,7 @@ auto &array<T, Allocator>::array_inner::find_map_entry(S &self, const string<All
 template<class T, typename Allocator>
 template<class S>
 auto &array<T, Allocator>::array_inner::find_map_entry(S &self, const char *key, typename string<Allocator>::size_type key_size, int64_t precomputed_hash) noexcept {
-  static const auto str_not_eq = [](const string<Allocator> &lhs, const char *rhs, string<Allocator>::size_type rhs_size) {
+  static const auto str_not_eq = [](const string<Allocator> &lhs, const char *rhs, typename string<Allocator>::size_type rhs_size) {
     return lhs.size() != rhs_size || string<Allocator>::compare(lhs, rhs, rhs_size) != 0;
   };
   auto *string_entries = self.entries;
@@ -1286,7 +1286,7 @@ const T *array<T, Allocator>::find_value(int64_t int_key) const noexcept {
 }
 
 template<class T, typename Allocator>
-const T *array<T, Allocator>::find_value(const char *s, string<Allocator>::size_type l) const noexcept {
+const T *array<T, Allocator>::find_value(const char *s, typename string<Allocator>::size_type l) const noexcept {
   int64_t int_val = 0;
   const bool is_key_int = php_try_to_int(s, l, &int_val);
   if (p->is_vector()) {

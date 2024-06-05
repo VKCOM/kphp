@@ -345,7 +345,7 @@ void string<Allocator>::shrink(size_type n) {
 }
 
 template<typename Allocator>
-string<Allocator>::size_type string<Allocator>::capacity() const {
+typename string<Allocator>::size_type string<Allocator>::capacity() const {
   return inner()->capacity;
 }
 
@@ -1295,8 +1295,8 @@ typename __string<Allocator>::size_type max_string_size(const __mixed<Allocator>
 }
 
 template<class T, typename Allocator>
-__string<Allocator>::size_type max_string_size(const __array<T, Allocator> &) {
-  return static_cast<__runtime_core::string<Allocator>::size_type>(STRLEN_ARRAY);
+typename __string<Allocator>::size_type max_string_size(const __array<T, Allocator> &) {
+  return static_cast<typename __runtime_core::string<Allocator>::size_type>(STRLEN_ARRAY);
 }
 
 template<class T>

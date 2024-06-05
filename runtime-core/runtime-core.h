@@ -564,13 +564,13 @@ template<class T, typename Allocator>
 inline typename __array<T, Allocator>::const_iterator const_begin(const __array<T, Allocator> &x);
 
 template<typename Allocator>
-inline __array<__mixed<Allocator>, Allocator>::iterator begin(__mixed<Allocator> &x);
+inline typename __array<__mixed<Allocator>, Allocator>::iterator begin(__mixed<Allocator> &x);
 
 template<typename Allocator>
-inline __array<__mixed<Allocator>, Allocator>::const_iterator begin(const __mixed<Allocator> &x);
+inline typename __array<__mixed<Allocator>, Allocator>::const_iterator begin(const __mixed<Allocator> &x);
 
 template<typename Allocator>
-inline __array<__mixed<Allocator>, Allocator>::const_iterator const_begin(const __mixed<Allocator> &x);
+inline typename __array<__mixed<Allocator>, Allocator>::const_iterator const_begin(const __mixed<Allocator> &x);
 
 template<class T, typename Allocator>
 inline typename __array<T, Allocator>::iterator begin(Optional<__array<T, Allocator>> &x);
@@ -591,13 +591,13 @@ template<class T, typename Allocator>
 inline typename __array<T, Allocator>::const_iterator const_end(const __array<T, Allocator> &x);
 
 template<typename Allocator>
-inline __array<__mixed<Allocator>, Allocator>::iterator end(__mixed<Allocator> &x);
+inline typename __array<__mixed<Allocator>, Allocator>::iterator end(__mixed<Allocator> &x);
 
 template<typename Allocator>
-inline __array<__mixed<Allocator>, Allocator>::const_iterator end(const __mixed<Allocator> &x);
+inline typename __array<__mixed<Allocator>, Allocator>::const_iterator end(const __mixed<Allocator> &x);
 
 template<typename Allocator>
-inline __array<__mixed<Allocator>, Allocator>::const_iterator const_end(const __mixed<Allocator> &x);
+inline typename __array<__mixed<Allocator>, Allocator>::const_iterator const_end(const __mixed<Allocator> &x);
 
 template<class T, typename Allocator>
 inline typename __array<T, Allocator>::iterator end(Optional<__array<T, Allocator>> &x);
@@ -1297,7 +1297,7 @@ const char *get_type_c_str(const __class_instance<T, Allocator> &) {
 template<typename Allocator, class T>
 __string<Allocator> f$get_type(const T &v) {
   const char *res = get_type_c_str(v);
-  return {res, static_cast<__string<Allocator>::size_type>(strlen(res))};
+  return {res, static_cast<typename __string<Allocator>::size_type>(strlen(res))};
 }
 
 template<typename Allocator>
@@ -1475,17 +1475,17 @@ typename __array<T, Allocator>::const_iterator const_begin(const __array<T, Allo
 
 
 template<typename Allocator>
-__array<__mixed<Allocator>, Allocator>::iterator begin(__mixed<Allocator> &x) {
+typename __array<__mixed<Allocator>, Allocator>::iterator begin(__mixed<Allocator> &x) {
   return x.begin();
 }
 
 template<typename Allocator>
-__array<__mixed<Allocator>, Allocator>::const_iterator begin(const __mixed<Allocator> &x) {
+typename __array<__mixed<Allocator>, Allocator>::const_iterator begin(const __mixed<Allocator> &x) {
   return x.begin();
 }
 
 template<typename Allocator>
-__array<__mixed<Allocator>, Allocator>::const_iterator const_begin(const __mixed<Allocator> &x) {
+typename __array<__mixed<Allocator>, Allocator>::const_iterator const_begin(const __mixed<Allocator> &x) {
   return x.begin();
 }
 
@@ -1531,17 +1531,17 @@ typename __array<T, Allocator>::const_iterator const_end(const __array<T, Alloca
 }
 
 template<typename Allocator>
-__array<__mixed<Allocator>, Allocator>::iterator end(__mixed<Allocator> &x) {
+typename __array<__mixed<Allocator>, Allocator>::iterator end(__mixed<Allocator> &x) {
   return x.end();
 }
 
 template<typename Allocator>
-__array<__mixed<Allocator>, Allocator>::const_iterator end(const __mixed<Allocator> &x) {
+typename __array<__mixed<Allocator>, Allocator>::const_iterator end(const __mixed<Allocator> &x) {
   return x.end();
 }
 
 template<typename Allocator>
-__array<__mixed<Allocator>, Allocator>::const_iterator const_end(const __mixed<Allocator> &x) {
+typename __array<__mixed<Allocator>, Allocator>::const_iterator const_end(const __mixed<Allocator> &x) {
   return x.end();
 }
 

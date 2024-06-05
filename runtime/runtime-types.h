@@ -42,7 +42,7 @@ template<class Derived>
 using refcountable_php_classes = __runtime_core::refcountable_php_classes<Derived, ScriptAllocator>;
 using refcountable_empty_php_classes = __runtime_core::refcountable_empty_php_classes;
 
-  template<>
+template<>
 template<class T1, class, class>
 string convert_to<string>::convert(T1 &&val) {
   return f$strval(std::forward<T1>(val));
