@@ -13,15 +13,15 @@ template<typename Allocator>
 class string_buffer {
   char *buffer_end;
   char *buffer_begin;
-  string<Allocator>::size_type buffer_len;
+  string_size_type buffer_len;
 
-  inline void resize(string<Allocator>::size_type new_buffer_len) noexcept;
-  inline void reserve_at_least(string<Allocator>::size_type new_buffer_len) noexcept;
+  inline void resize(string_size_type new_buffer_len) noexcept;
+  inline void reserve_at_least(string_size_type new_buffer_len) noexcept;
   string_buffer(const string_buffer &other) = delete;
   string_buffer &operator=(const string_buffer &other) = delete;
 
 public:
-  explicit string_buffer(string<Allocator>::size_type buffer_len = 4000) noexcept;
+  explicit string_buffer(string_size_type buffer_len = 4000) noexcept;
 
   inline string_buffer &clean() noexcept;
 
@@ -51,7 +51,7 @@ public:
 
   inline void reserve(int len);
 
-  inline string<Allocator>::size_type size() const noexcept;
+  inline string_size_type size() const noexcept;
 
   inline char *buffer();
   inline const char *buffer() const;

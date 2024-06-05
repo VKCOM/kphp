@@ -314,7 +314,7 @@ public:
   const T *find_value(int32_t key) const noexcept {
     return find_value(int64_t{key});
   }
-  const T *find_value(const char *s, string<Allocator>::size_type l) const noexcept;
+  const T *find_value(const char *s, typename string<Allocator>::size_type l) const noexcept;
   const T *find_value(tmp_string<Allocator> s) const noexcept {
     return find_value(s.data, s.size);
   }

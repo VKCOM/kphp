@@ -32,7 +32,7 @@ public:
   mixed(const void *) = delete; // deprecate conversion from pointer to boolean
   inline mixed() = default;
   inline mixed(const Unknown &u) noexcept;
-  inline mixed(const char *s, string<Allocator>::size_type len) noexcept;
+  inline mixed(const char *s, typename string<Allocator>::size_type len) noexcept;
   inline mixed(const mixed &v) noexcept;
   inline mixed(mixed &&v) noexcept;
 
@@ -53,7 +53,7 @@ public:
   template<typename T, typename = std::enable_if_t<is_type_acceptable_for_mixed<T, Allocator>::value>>
   inline mixed &operator=(Optional<T> &&v) noexcept;
 
-  inline mixed &assign(const char *other, string<Allocator>::size_type len);
+  inline mixed &assign(const char *other, typename string<Allocator>::size_type len);
 
   inline const mixed operator-() const;
   inline const mixed operator+() const;
@@ -89,8 +89,8 @@ public:
   inline mixed &operator[](tmp_string<Allocator> string_key);
   inline mixed &operator[](const mixed &v);
   inline mixed &operator[](double double_key);
-  inline mixed &operator[](const array<mixed, Allocator>::const_iterator &it);
-  inline mixed &operator[](const array<mixed, Allocator>::iterator &it);
+  inline mixed &operator[](const typename array<mixed, Allocator>::const_iterator &it);
+  inline mixed &operator[](const typename array<mixed, Allocator>::iterator &it);
 
   inline void set_value(int64_t int_key, const mixed &v);
   inline void set_value(int32_t key, const mixed &value) { set_value(int64_t{key}, value); }
@@ -99,8 +99,8 @@ public:
   inline void set_value(tmp_string<Allocator> string_key, const mixed &v);
   inline void set_value(const mixed &v, const mixed &value);
   inline void set_value(double double_key, const mixed &value);
-  inline void set_value(const array<mixed, Allocator>::const_iterator &it);
-  inline void set_value(const array<mixed, Allocator>::iterator &it);
+  inline void set_value(const typename array<mixed, Allocator>::const_iterator &it);
+  inline void set_value(const typename array<mixed, Allocator>::iterator &it);
 
   inline const mixed get_value(int64_t int_key) const;
   inline const mixed get_value(int32_t key) const { return get_value(int64_t{key}); }
@@ -109,8 +109,8 @@ public:
   inline const mixed get_value(tmp_string<Allocator> string_key) const;
   inline const mixed get_value(const mixed &v) const;
   inline const mixed get_value(double double_key) const;
-  inline const mixed get_value(const array<mixed, Allocator>::const_iterator &it) const;
-  inline const mixed get_value(const array<mixed, Allocator>::iterator &it) const;
+  inline const mixed get_value(const typename array<mixed, Allocator>::const_iterator &it) const;
+  inline const mixed get_value(const typename array<mixed, Allocator>::iterator &it) const;
 
   inline void push_back(const mixed &v);
   inline const mixed push_back_return(const mixed &v);
@@ -194,11 +194,11 @@ public:
   inline int64_t count() const;
   inline int64_t compare(const mixed &rhs) const;
 
-  inline array<mixed, Allocator>::const_iterator begin() const;
-  inline array<mixed, Allocator>::const_iterator end() const;
+  inline typename array<mixed, Allocator>::const_iterator begin() const;
+  inline typename array<mixed, Allocator>::const_iterator end() const;
 
-  inline array<mixed, Allocator>::iterator begin();
-  inline array<mixed, Allocator>::iterator end();
+  inline typename array<mixed, Allocator>::iterator begin();
+  inline typename array<mixed, Allocator>::iterator end();
 
   inline void swap(mixed &other);
 

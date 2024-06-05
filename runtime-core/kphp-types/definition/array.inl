@@ -456,7 +456,7 @@ auto &array<T, Allocator>::array_inner::find_map_entry(S &self, const string<All
 
 template<class T, typename Allocator>
 template<class S>
-auto &array<T, Allocator>::array_inner::find_map_entry(S &self, const char *key, string<Allocator>::size_type key_size, int64_t precomputed_hash) noexcept {
+auto &array<T, Allocator>::array_inner::find_map_entry(S &self, const char *key, typename string<Allocator>::size_type key_size, int64_t precomputed_hash) noexcept {
   static const auto str_not_eq = [](const string<Allocator> &lhs, const char *rhs, string<Allocator>::size_type rhs_size) {
     return lhs.size() != rhs_size || string<Allocator>::compare(lhs, rhs, rhs_size) != 0;
   };

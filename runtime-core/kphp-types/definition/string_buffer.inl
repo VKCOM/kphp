@@ -8,7 +8,7 @@
 
 namespace __runtime_core {
 template<typename Allocator>
-inline void string_buffer<Allocator>::resize(string<Allocator>::size_type new_buffer_len) noexcept {
+inline void string_buffer<Allocator>::resize(string_size_type new_buffer_len) noexcept {
   string_buffer_lib_context &sb_context = KphpCoreContext::current().sb_lib_context;
   if (new_buffer_len < sb_context.MIN_BUFFER_LEN) {
     new_buffer_len = sb_context.MIN_BUFFER_LEN;
@@ -27,7 +27,7 @@ inline void string_buffer<Allocator>::resize(string<Allocator>::size_type new_bu
     }
   }
 
-  typename string<Allocator>::size_type current_len = size();
+  typename string_size_type current_len = size();
   if (void *new_mem = Allocator::reallocate(buffer_begin, new_buffer_len, buffer_len)) {
     buffer_begin = static_cast<char *>(new_mem);
     buffer_len = new_buffer_len;
@@ -36,8 +36,8 @@ inline void string_buffer<Allocator>::resize(string<Allocator>::size_type new_bu
 }
 
 template<typename Allocator>
-inline void string_buffer<Allocator>::reserve_at_least(string<Allocator>::size_type need) noexcept {
-  typename string<Allocator>::size_type new_buffer_len = need + size();
+inline void string_buffer<Allocator>::reserve_at_least(string_size_type need) noexcept {
+  typename string_size_type new_buffer_len = need + size();
   while (unlikely(buffer_len < new_buffer_len && KphpCoreContext::current().sb_lib_context.error_flag != STRING_BUFFER_ERROR_FLAG_FAILED)) {
     resize(((new_buffer_len * 2 + 1 + 64) | 4095) - 64);
   }
@@ -50,8 +50,8 @@ string_buffer<Allocator> &string_buffer<Allocator>::clean() noexcept {
 }
 
 template<typename Allocator>
-string<Allocator>::size_type string_buffer<Allocator>::size() const noexcept {
-  return static_cast<string<Allocator>::size_type>(buffer_end - buffer_begin);
+string_size_type string_buffer<Allocator>::size() const noexcept {
+  return static_cast<string_size_type>(buffer_end - buffer_begin);
 }
 
 template<typename Allocator>
@@ -81,14 +81,14 @@ string<StringAllocator> string_buffer<SBAllocator>::str() const {
 
 template<typename Allocator>
 bool string_buffer<Allocator>::set_pos(int64_t pos) {
-  php_assert(static_cast<string<Allocator>::size_type>(pos) <= buffer_len);
+  php_assert(static_cast<string_size_type>(pos) <= buffer_len);
   buffer_end = buffer_begin + pos;
   return true;
 }
 
 template<typename Allocator>
 string_buffer<Allocator> &string_buffer<Allocator>::append(const char *str, size_t len) noexcept {
-  reserve_at_least(static_cast<string<Allocator>::size_type>(len));
+  reserve_at_least(static_cast<string_size_type>(len));
 
   if (unlikely(KphpCoreContext::current().sb_lib_context.error_flag == STRING_BUFFER_ERROR_FLAG_FAILED)) {
     return *this;
@@ -133,7 +133,7 @@ void string_buffer<Allocator>::debug_print() const {
 }
 
 template<typename Allocator>
-string_buffer<Allocator>::string_buffer(string<Allocator>::size_type buffer_len) noexcept
+string_buffer<Allocator>::string_buffer(string_size_type buffer_len) noexcept
   : buffer_end(static_cast<char *>(Allocator::allocate(buffer_len)))
   , buffer_begin(buffer_end)
   , buffer_len(buffer_len) {}

@@ -294,13 +294,13 @@ inline string_size_type max_string_size(int64_t) __attribute__((always_inline));
 inline string_size_type max_string_size(int32_t) __attribute__((always_inline));
 inline string_size_type max_string_size(double) __attribute__((always_inline));
 template<typename Allocator>
-inline __string<Allocator>::size_type max_string_size(const __string<Allocator> &s) __attribute__((always_inline));
+inline typename __string<Allocator>::size_type max_string_size(const __string<Allocator> &s) __attribute__((always_inline));
 template<typename Allocator>
-inline __string<Allocator>::size_type max_string_size(__runtime_core::tmp_string<Allocator> s) __attribute__((always_inline));
+inline typename __string<Allocator>::size_type max_string_size(__runtime_core::tmp_string<Allocator> s) __attribute__((always_inline));
 template<typename Allocator>
-inline __string<Allocator>::size_type max_string_size(const __mixed<Allocator> &v) __attribute__((always_inline));
+inline typename __string<Allocator>::size_type max_string_size(const __mixed<Allocator> &v) __attribute__((always_inline));
 template<class T, typename Allocator>
-inline __string<Allocator>::size_type max_string_size(const __array<T, Allocator> &) __attribute__((always_inline));
+inline typename __string<Allocator>::size_type max_string_size(const __array<T, Allocator> &) __attribute__((always_inline));
 template<class T>
 inline string_size_type max_string_size(const Optional<T> &v) __attribute__((always_inline));
 
