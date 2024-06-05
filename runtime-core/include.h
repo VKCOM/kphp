@@ -37,6 +37,70 @@ public:
   static inline T convert(T1 &&val);
 };
 
+template<typename Allocator>
+class convert_to<__string<Allocator>> {
+public:
+static const __string<Allocator> convert(const __string<Allocator> &val) {
+    return val;
+  }
+
+  static __string<Allocator> &&convert(__string<Allocator> &&val) {
+    return std::move(val);
+  }
+
+  static __string<Allocator> convert(const Unknown &) {
+    return __string<Allocator>();
+  }
+
+  template<class T1, class, class>
+  static __string<Allocator> convert(T1 &&val) {
+    return f$strval(std::forward<T1>(val));
+  }
+};
+
+template<typename Allocator>
+class convert_to<__mixed<Allocator>> {
+public:
+  static const __mixed<Allocator> convert(const __mixed<Allocator> &val) {
+    return val;
+  }
+
+  static __mixed<Allocator> &&convert(__mixed<Allocator> &&val) {
+    return std::move(val);
+  }
+
+  static __mixed<Allocator> convert(const Unknown &) {
+    return __mixed<Allocator>();
+  }
+
+  template<class T1, class, class>
+  static __mixed<Allocator> convert(T1 &&val) {
+    return __mixed<Allocator>{std::forward<T1>(val)};
+  }
+};
+
+template<typename Allocator>
+class convert_to<__array<__mixed<Allocator>, Allocator>> {
+public:
+  static const __array<__mixed<Allocator>, Allocator> convert(const __array<__mixed<Allocator>, Allocator> &val) {
+    return val;
+  }
+
+  static __array<__mixed<Allocator>, Allocator> &&convert(__array<__mixed<Allocator>, Allocator> &&val) {
+    return std::move(val);
+  }
+
+  static __array<__mixed<Allocator>, Allocator> convert(const Unknown &) {
+    return __array<__mixed<Allocator>, Allocator>();
+  }
+
+  template<class T1, class, class>
+  static __array<__mixed<Allocator>, Allocator> convert(T1 &&val) {
+    return f$arrayval(std::forward<T1>(val));
+  }
+};
+
+
 template<class T>
 inline bool f$is_null(const T &v);
 template<class T, typename Allocator>

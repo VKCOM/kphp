@@ -177,7 +177,7 @@ inline __array<T, Allocator> arrayval(const Optional<T> &val) {
     case OptionalState::has_value:
       return f$arrayval(val.val());
     case OptionalState::false_value:
-      return impl_::false_cast_to_array<T, Allocator>();
+      return ::impl_::false_cast_to_array<T, Allocator>();
     case OptionalState::null_value:
       return __array<T, Allocator>{};
     default:
@@ -191,7 +191,7 @@ inline __array<T, Allocator> arrayval(Optional<T> &&val) {
     case OptionalState::has_value:
       return f$arrayval(std::move(val.val()));
     case OptionalState::false_value:
-      return impl_::false_cast_to_array<T, Allocator>();
+      return ::impl_::false_cast_to_array<T, Allocator>();
     case OptionalState::null_value:
       return __array<T, Allocator>{};
     default:

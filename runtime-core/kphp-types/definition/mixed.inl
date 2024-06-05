@@ -1788,7 +1788,6 @@ template<typename Allocator>
 mixed<Allocator>::~mixed() noexcept {
   clear();
 }
-}
 
 namespace impl_ {
 
@@ -1833,7 +1832,7 @@ inline const char *conversion_php_warning_string() {
   }
 }
 
-template <typename T, typename Allocator>
+template<typename T, typename Allocator>
 inline bool less_number_string_as_php8_impl(T lhs, const __string<Allocator> &rhs) {
   auto rhs_float = 0.0;
   const auto rhs_is_string_number = rhs.try_to_float(&rhs_float);
@@ -1845,7 +1844,7 @@ inline bool less_number_string_as_php8_impl(T lhs, const __string<Allocator> &rh
   }
 }
 
-template <typename T, typename Allocator>
+template<typename T, typename Allocator>
 inline bool less_string_number_as_php8_impl(const __string<Allocator> &lhs, T rhs) {
   auto lhs_float = 0.0;
   const auto lhs_is_string_number = lhs.try_to_float(&lhs_float);
@@ -1857,7 +1856,7 @@ inline bool less_string_number_as_php8_impl(const __string<Allocator> &lhs, T rh
   }
 }
 
-template <typename T, typename Allocator>
+template<typename T, typename Allocator>
 inline bool less_number_string_as_php8(bool php7_result, T lhs, const __string<Allocator> &rhs) {
   if (KphpCoreContext::current().show_migration_php8_warning & MIGRATION_PHP8_STRING_COMPARISON_FLAG) {
     const auto php8_result = less_number_string_as_php8_impl(lhs, rhs);
@@ -1865,17 +1864,14 @@ inline bool less_number_string_as_php8(bool php7_result, T lhs, const __string<A
       return php7_result;
     }
 
-    php_warning(conversion_php_warning_string<typename std::decay<decltype(lhs)>::type, typename std::decay<decltype(rhs)>::type>(),
-                lhs,
-                rhs.c_str(),
-                php7_result ? "true" : "false",
-                php8_result ? "true" : "false");
+    php_warning(conversion_php_warning_string<typename std::decay<decltype(lhs)>::type, typename std::decay<decltype(rhs)>::type>(), lhs, rhs.c_str(),
+                php7_result ? "true" : "false", php8_result ? "true" : "false");
   }
 
   return php7_result;
 }
 
-template <typename T, typename Allocator>
+template<typename T, typename Allocator>
 inline bool less_string_number_as_php8(bool php7_result, const __string<Allocator> &lhs, T rhs) {
   if (KphpCoreContext::current().show_migration_php8_warning & MIGRATION_PHP8_STRING_COMPARISON_FLAG) {
     const auto php8_result = less_string_number_as_php8_impl(lhs, rhs);
@@ -1883,16 +1879,100 @@ inline bool less_string_number_as_php8(bool php7_result, const __string<Allocato
       return php7_result;
     }
 
-    php_warning(conversion_php_warning_string<typename std::decay<decltype(lhs)>::type, typename std::decay<decltype(rhs)>::type>(),
-                lhs.c_str(),
-                rhs,
-                php7_result ? "true" : "false",
-                php8_result ? "true" : "false");
+    php_warning(conversion_php_warning_string<typename std::decay<decltype(lhs)>::type, typename std::decay<decltype(rhs)>::type>(), lhs.c_str(), rhs,
+                php7_result ? "true" : "false", php8_result ? "true" : "false");
   }
 
   return php7_result;
 }
 
+template<typename Allocator>
+inline mixed<Allocator> operator+(const mixed<Allocator> &lhs, const mixed<Allocator> &rhs) {
+  if (lhs.is_array() && rhs.is_array()) {
+    return lhs.as_array() + rhs.as_array();
+  }
+
+  return impl_::do_math_op_on_vars(lhs, rhs, [](const auto &arg1, const auto &arg2) { return arg1 + arg2; });
+}
+
+template<typename Allocator>
+inline mixed<Allocator> operator-(const mixed<Allocator> &lhs, const mixed<Allocator> &rhs) {
+  return impl_::do_math_op_on_vars(lhs, rhs, [](const auto &arg1, const auto &arg2) { return arg1 - arg2; });
+}
+
+template<typename Allocator>
+inline mixed<Allocator> operator*(const mixed<Allocator> &lhs, const mixed<Allocator> &rhs) {
+  return impl_::do_math_op_on_vars(lhs, rhs, [](const auto &arg1, const auto &arg2) { return arg1 * arg2; });
+}
+
+template<typename Allocator>
+inline mixed<Allocator> operator-(const string<Allocator> &lhs) {
+  mixed arg1 = lhs.to_numeric();
+
+  if (arg1.is_int()) {
+    arg1.as_int() = -arg1.as_int();
+  } else {
+    arg1.as_double() = -arg1.as_double();
+  }
+  return arg1;
+}
+
+template<typename Allocator>
+inline mixed<Allocator> operator+(const string<Allocator> &lhs) {
+  return lhs.to_numeric();
+}
+
+template<typename Allocator>
+inline int64_t operator&(const mixed<Allocator> &lhs, const mixed<Allocator> &rhs) {
+  return lhs.to_int() & rhs.to_int();
+}
+
+template<typename Allocator>
+inline int64_t operator|(const mixed<Allocator> &lhs, const mixed<Allocator> &rhs) {
+  return lhs.to_int() | rhs.to_int();
+}
+
+template<typename Allocator>
+inline int64_t operator^(const mixed<Allocator> &lhs, const mixed<Allocator> &rhs) {
+  return lhs.to_int() ^ rhs.to_int();
+}
+
+template<typename Allocator>
+inline int64_t operator<<(const mixed<Allocator> &lhs, const mixed<Allocator> &rhs) {
+  return lhs.to_int() << rhs.to_int();
+}
+
+template<typename Allocator>
+inline int64_t operator>>(const mixed<Allocator> &lhs, const mixed<Allocator> &rhs) {
+  return lhs.to_int() >> rhs.to_int();
+}
+
+template<typename Allocator>
+inline bool operator<(const mixed<Allocator> &lhs, const mixed<Allocator> &rhs) {
+  const auto res = lhs.compare(rhs) < 0;
+
+  if (rhs.is_string()) {
+    if (lhs.is_int()) {
+      return less_number_string_as_php8(res, lhs.to_int(), rhs.to_string());
+    } else if (lhs.is_float()) {
+      return less_number_string_as_php8(res, lhs.to_float(), rhs.to_string());
+    }
+  } else if (lhs.is_string()) {
+    if (rhs.is_int()) {
+      return less_string_number_as_php8(res, lhs.to_string(), rhs.to_int());
+    } else if (rhs.is_float()) {
+      return less_string_number_as_php8(res, lhs.to_string(), rhs.to_float());
+    }
+  }
+
+  return res;
+}
+
+template<typename Allocator>
+inline bool operator<=(const mixed<Allocator> &lhs, const mixed<Allocator> &rhs) {
+  return !(rhs < lhs);
+}
+}
 
 template <typename Allocator>
 inline void swap(__mixed<Allocator> &lhs, __mixed<Allocator> &rhs) {

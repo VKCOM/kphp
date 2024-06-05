@@ -42,79 +42,41 @@ template<class Derived>
 using refcountable_php_classes = __runtime_core::refcountable_php_classes<Derived, ScriptAllocator>;
 using refcountable_empty_php_classes = __runtime_core::refcountable_empty_php_classes;
 
-template<>
-template<class T1, class, class>
-string convert_to<string>::convert(T1 &&val) {
-  return f$strval(std::forward<T1>(val));
-}
-
-template<>
-template<class T1, class, class>
-array<mixed> convert_to<array<mixed>>::convert(T1 &&val) {
-  return f$arrayval(std::forward<T1>(val));
-}
-
-template<>
-template<class T1, class, class>
-mixed convert_to<mixed>::convert(T1 &&val) {
-  return mixed{std::forward<T1>(val)};
-}
-
 inline string f$strval(bool val) {
-  return (val ? string("1", 1) : string());
+  return __runtime_core::strval<ScriptAllocator>(val);
 }
 
 inline string f$strval(int64_t val) {
-  return string(val);
+  return __runtime_core::strval<ScriptAllocator>(val);
 }
 
 inline string f$strval(double val) {
-  return string(val);
+  return __runtime_core::strval<ScriptAllocator>(val);
 }
 
 template<class T>
 inline string f$strval(const Optional<T> &val) {
-  return val.has_value() ? f$strval(val.val()) : f$strval(false);
+  return __runtime_core::strval<ScriptAllocator>(val);
 }
 
 template<class T>
 inline string f$strval(Optional<T> &&val) {
-  return val.has_value() ? f$strval(std::move(val.val())) : f$strval(false);
+  return __runtime_core::strval<ScriptAllocator>(val);
 }
 
 template<class T>
 inline array<T> f$arrayval(const T &val) {
-  array<T> res(array_size(1, true));
-  res.push_back(val);
-  return res;
+  return __runtime_core::arrayval<T, ScriptAllocator>(val);
 }
 
 template<class T>
 inline array<T> f$arrayval(const Optional<T> &val) {
-  switch (val.value_state()) {
-    case OptionalState::has_value:
-      return f$arrayval(val.val());
-    case OptionalState::false_value:
-      return impl_::false_cast_to_array<T, ScriptAllocator>();
-    case OptionalState::null_value:
-      return array<T>{};
-    default:
-      __builtin_unreachable();
-  }
+  return __runtime_core::arrayval<T, ScriptAllocator>(val);
 }
 
 template<class T>
 inline array<T> f$arrayval(Optional<T> &&val) {
-  switch (val.value_state()) {
-    case OptionalState::has_value:
-      return f$arrayval(std::move(val.val()));
-    case OptionalState::false_value:
-      return impl_::false_cast_to_array<T, ScriptAllocator>();
-    case OptionalState::null_value:
-      return array<T>{};
-    default:
-      __builtin_unreachable();
-  }
+  return __runtime_core::arrayval<T, ScriptAllocator>(val);
 }
 
 template<class FunT, class T, class... Args>
@@ -127,76 +89,49 @@ inline decltype(auto) call_fun_on_optional_value(FunT &&fun, Optional<T> &&opt, 
 }
 
 inline mixed operator+(const mixed &lhs, const mixed &rhs) {
-  if (lhs.is_array() && rhs.is_array()) {
-    return lhs.as_array() + rhs.as_array();
-  }
-
-  return impl_::do_math_op_on_vars(lhs, rhs, [](const auto &arg1, const auto &arg2) { return arg1 + arg2; });
+  return __runtime_core::operator+(lhs, rhs);
 }
 
 inline mixed operator-(const mixed &lhs, const mixed &rhs) {
-  return impl_::do_math_op_on_vars(lhs, rhs, [](const auto &arg1, const auto &arg2) { return arg1 - arg2; });
+  return __runtime_core::operator-(lhs, rhs);
 }
 
 inline mixed operator*(const mixed &lhs, const mixed &rhs) {
-  return impl_::do_math_op_on_vars(lhs, rhs, [](const auto &arg1, const auto &arg2) { return arg1 * arg2; });
+  return __runtime_core::operator*(lhs, rhs);
 }
 
 inline mixed operator-(const string &lhs) {
-  mixed arg1 = lhs.to_numeric();
-
-  if (arg1.is_int()) {
-    arg1.as_int() = -arg1.as_int();
-  } else {
-    arg1.as_double() = -arg1.as_double();
-  }
-  return arg1;
+  return __runtime_core::operator-(lhs);
 }
 
 inline mixed operator+(const string &lhs) {
-  return lhs.to_numeric();
+  return __runtime_core::operator+(lhs);
 }
 
 inline int64_t operator&(const mixed &lhs, const mixed &rhs) {
-  return lhs.to_int() & rhs.to_int();
+  return __runtime_core::operator&(lhs, rhs);
 }
 
 inline int64_t operator|(const mixed &lhs, const mixed &rhs) {
-  return lhs.to_int() | rhs.to_int();
+  return __runtime_core::operator|(lhs, rhs);
 }
 
 inline int64_t operator^(const mixed &lhs, const mixed &rhs) {
-  return lhs.to_int() ^ rhs.to_int();
+  return __runtime_core::operator^(lhs, rhs);
 }
 
 inline int64_t operator<<(const mixed &lhs, const mixed &rhs) {
-  return lhs.to_int() << rhs.to_int();
+  return __runtime_core::operator<<(lhs, rhs);
 }
 
 inline int64_t operator>>(const mixed &lhs, const mixed &rhs) {
-  return lhs.to_int() >> rhs.to_int();
+  return __runtime_core::operator>>(lhs, rhs);
 }
 
 inline bool operator<(const mixed &lhs, const mixed &rhs) {
-  const auto res = lhs.compare(rhs) < 0;
-
-  if (rhs.is_string()) {
-    if (lhs.is_int()) {
-      return less_number_string_as_php8(res, lhs.to_int(), rhs.to_string());
-    } else if (lhs.is_float()) {
-      return less_number_string_as_php8(res, lhs.to_float(), rhs.to_string());
-    }
-  } else if (lhs.is_string()) {
-    if (rhs.is_int()) {
-      return less_string_number_as_php8(res, lhs.to_string(), rhs.to_int());
-    } else if (rhs.is_float()) {
-      return less_string_number_as_php8(res, lhs.to_string(), rhs.to_float());
-    }
-  }
-
-  return res;
+  return __runtime_core::operator<(lhs, rhs);
 }
 
 inline bool operator<=(const mixed &lhs, const mixed &rhs) {
-  return !(rhs < lhs);
+  return __runtime_core::operator<=(lhs, rhs);
 }
