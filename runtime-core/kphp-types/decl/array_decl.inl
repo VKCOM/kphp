@@ -163,7 +163,7 @@ private:
     template<class S>
     static auto &find_map_entry(S &self, const string<Allocator> &string_key, int64_t precomputed_hash) noexcept;
     template<class S>
-    static auto &find_map_entry(S &self, const char *key, string<Allocator>::size_type key_size, int64_t precomputed_hash) noexcept;
+    static auto &find_map_entry(S &self, const char *key, typename string<Allocator>::size_type key_size, int64_t precomputed_hash) noexcept;
 
     template<class... Key>
     inline const T *find_map_value(Key &&...key) const noexcept;

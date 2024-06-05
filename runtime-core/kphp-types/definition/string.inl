@@ -45,7 +45,7 @@ char *string<Allocator>::string_inner::ref_data() const {
 }
 
 template<typename Allocator>
-string<Allocator>::size_type string<Allocator>::string_inner::new_capacity(size_type requested_capacity, size_type old_capacity) {
+typename string<Allocator>::size_type string<Allocator>::string_inner::new_capacity(size_type requested_capacity, size_type old_capacity) {
   if (requested_capacity > max_size()) {
     php_critical_error("tried to allocate too big string of size %lld", (long long)requested_capacity);
   }
@@ -65,7 +65,7 @@ string<Allocator>::size_type string<Allocator>::string_inner::new_capacity(size_
 }
 
 template<typename Allocator>
-string<Allocator>::string_inner *string<Allocator>::string_inner::create(size_type requested_capacity, size_type old_capacity) {
+typename string<Allocator>::string_inner *string<Allocator>::string_inner::create(size_type requested_capacity, size_type old_capacity) {
   size_type capacity = new_capacity(requested_capacity, old_capacity);
   size_type new_size = (size_type)(sizeof(string_inner) + (capacity + 1));
   string_inner *p = (string_inner *)Allocator::allocate(new_size);
@@ -101,7 +101,7 @@ void string<Allocator>::string_inner::destroy() {
 }
 
 template<typename Allocator>
-inline string<Allocator>::size_type string<Allocator>::string_inner::get_memory_usage() const {
+inline typename string<Allocator>::size_type string<Allocator>::string_inner::get_memory_usage() const {
   return static_cast<size_type>(sizeof(string_inner) + (capacity + 1));
 }
 
@@ -126,7 +126,7 @@ char *string<Allocator>::string_inner::clone(size_type requested_cap) {
 }
 
 template<typename Allocator>
-string<Allocator>::string_inner *string<Allocator>::inner() const {
+typename string<Allocator>::string_inner *string<Allocator>::inner() const {
   return (string<Allocator>::string_inner *)p - 1;
 }
 
@@ -321,7 +321,7 @@ string<Allocator> &string<Allocator>::operator=(string &&str) noexcept {
 }
 
 template<typename Allocator>
-string<Allocator>::size_type string<Allocator>::size() const {
+typename string<Allocator>::size_type string<Allocator>::size() const {
   return inner()->size;
 }
 
@@ -1007,7 +1007,7 @@ string<Allocator> string<Allocator>::substr(size_type pos, size_type n) const {
 }
 
 template<typename Allocator>
-string<Allocator>::size_type string<Allocator>::find(const string<Allocator> &s, size_type pos) const {
+typename string<Allocator>::size_type string<Allocator>::find(const string<Allocator> &s, size_type pos) const {
   for (size_type i = pos; i + s.size() <= size(); i++) {
     bool equal = true;
     for (size_type j = 0; j < s.size(); j++) {
@@ -1024,7 +1024,7 @@ string<Allocator>::size_type string<Allocator>::find(const string<Allocator> &s,
 }
 
 template<typename Allocator>
-string<Allocator>::size_type string<Allocator>::find_first_of(const string<Allocator> &s, size_type pos) const {
+typename string<Allocator>::size_type string<Allocator>::find_first_of(const string<Allocator> &s, size_type pos) const {
   for (size_type i = pos; i < size(); i++) {
     for (size_type j = 0; j < s.size(); j++) {
       if (p[i] == s.p[j]) {
@@ -1145,12 +1145,12 @@ void string<Allocator>::force_destroy(ExtraRefCnt expected_ref_cnt) noexcept {
 }
 
 template<typename Allocator>
-inline string<Allocator>::size_type string<Allocator>::estimate_memory_usage() const {
+inline typename string<Allocator>::size_type string<Allocator>::estimate_memory_usage() const {
   return inner()->get_memory_usage();
 }
 
 template<typename Allocator>
-inline string<Allocator>::size_type string<Allocator>::estimate_memory_usage(size_t len) noexcept {
+inline typename string<Allocator>::size_type string<Allocator>::estimate_memory_usage(size_t len) noexcept {
   return static_cast<size_type>(sizeof(string_inner)) + string_inner::new_capacity(len, 0);
 }
 
@@ -1265,17 +1265,17 @@ string_size_type max_string_size(double) {
 }
 
 template<typename Allocator>
-__string<Allocator>::size_type max_string_size(const __string<Allocator> &s) {
+typename __string<Allocator>::size_type max_string_size(const __string<Allocator> &s) {
   return s.size();
 }
 
 template<typename Allocator>
-__string<Allocator>::size_type max_string_size(__runtime_core::tmp_string<Allocator> s) {
+typename __string<Allocator>::size_type max_string_size(__runtime_core::tmp_string<Allocator> s) {
   return s.size;
 }
 
 template<typename Allocator>
-__string<Allocator>::size_type max_string_size(const __mixed<Allocator> &v) {
+typename __string<Allocator>::size_type max_string_size(const __mixed<Allocator> &v) {
   switch (v.get_type()) {
     case __runtime_core::mixed<Allocator>::type::NUL:
       return 0;
