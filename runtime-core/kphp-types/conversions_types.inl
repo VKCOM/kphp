@@ -154,24 +154,24 @@ inline __string<Allocator> strval(double val) {
   return __string<Allocator>(val);
 }
 
-template<class T, typename Allocator>
+template<typename Allocator, class T>
 inline __string<Allocator> strval(const Optional<T> &val) {
   return val.has_value() ? f$strval(val.val()) : strval<Allocator>(false);
 }
 
-template<class T, typename Allocator>
+template<typename Allocator, class T>
 inline __string<Allocator> strval(Optional<T> &&val) {
   return val.has_value() ? f$strval(std::move(val.val())) : strval<Allocator>(false);
 }
 
-template<class T, typename Allocator>
+template<typename Allocator, class T>
 inline __array<T, Allocator> arrayval(const T &val) {
   __array<T, Allocator> res(array_size(1, true));
   res.push_back(val);
   return res;
 }
 
-template<class T, typename Allocator>
+template<typename Allocator, class T>
 inline __array<T, Allocator> arrayval(const Optional<T> &val) {
   switch (val.value_state()) {
     case OptionalState::has_value:
@@ -185,7 +185,7 @@ inline __array<T, Allocator> arrayval(const Optional<T> &val) {
   }
 }
 
-template<class T, typename Allocator>
+template<typename Allocator, class T>
 inline __array<T, Allocator> arrayval(Optional<T> &&val) {
   switch (val.value_state()) {
     case OptionalState::has_value:

@@ -430,15 +430,6 @@ inline const char *get_type_c_str(const __array<T, Allocator> &v);
 template<class T, typename Allocator>
 inline const char *get_type_c_str(const __class_instance<T, Allocator> &v);
 
-template<class T, typename Allocator>
-inline __string<Allocator> f$get_type(const T &v);
-
-template<typename Allocator>
-inline __string<Allocator> f$get_class(bool);
-template<typename Allocator>
-inline __string<Allocator> f$get_class(int64_t);
-template<typename Allocator>
-inline __string<Allocator> f$get_class(double);
 template<typename Allocator>
 inline __string<Allocator> f$get_class(const __string<Allocator> &v);
 template<typename Allocator>
@@ -488,9 +479,6 @@ inline __mixed<Allocator> &append(__mixed<Allocator> &dest, const T &from);
 
 template<class T0, class T>
 inline T0 &append(T0 &dest, const T &from);
-
-template<typename Allocator>
-inline __string<Allocator> f$gettype(const __mixed<Allocator> &v);
 
 template<class T>
 inline bool f$function_exists(const T &a1);
@@ -1293,29 +1281,30 @@ const char *get_type_c_str(const __class_instance<T, Allocator> &) {
   return "object";
 }
 
-
+namespace __runtime_core {
 template<typename Allocator, class T>
-__string<Allocator> f$get_type(const T &v) {
+__string<Allocator> get_type(const T &v) {
   const char *res = get_type_c_str(v);
   return {res, static_cast<typename __string<Allocator>::size_type>(strlen(res))};
 }
 
 template<typename Allocator>
-__string<Allocator> f$get_class(bool) {
+__string<Allocator> get_class(bool) {
   php_warning("Called get_class() on boolean");
   return {};
 }
 
 template<typename Allocator>
-__string<Allocator> f$get_class(int64_t) {
+__string<Allocator> get_class(int64_t) {
   php_warning("Called get_class() on integer");
   return {};
 }
 
 template<typename Allocator>
-__string<Allocator> f$get_class(double) {
+__string<Allocator> get_class(double) {
   php_warning("Called get_class() on double");
   return {};
+}
 }
 
 template<typename Allocator>
@@ -1386,9 +1375,11 @@ T0 &append(T0 &dest, const T &from) {
   return dest;
 }
 
+namespace __runtime_core {
 template<typename Allocator>
-__string<Allocator> f$gettype(const __mixed<Allocator> &v) {
+__string<Allocator> gettype(const __mixed<Allocator> &v) {
   return v.get_type_str();
+}
 }
 
 template<class T>

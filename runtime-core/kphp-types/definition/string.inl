@@ -1280,15 +1280,15 @@ typename __string<Allocator>::size_type max_string_size(const __mixed<Allocator>
     case __runtime_core::mixed<Allocator>::type::NUL:
       return 0;
     case __runtime_core::mixed<Allocator>::type::BOOLEAN:
-      return max_string_size<Allocator>(v.as_bool());
+      return max_string_size(v.as_bool());
     case __runtime_core::mixed<Allocator>::type::INTEGER:
-      return max_string_size<Allocator>(v.as_int());
+      return max_string_size(v.as_int());
     case __runtime_core::mixed<Allocator>::type::FLOAT:
-      return max_string_size<Allocator>(v.as_double());
+      return max_string_size(v.as_double());
     case __runtime_core::mixed<Allocator>::type::STRING:
-      return max_string_size<Allocator>(v.as_string());
+      return max_string_size(v.as_string());
     case __runtime_core::mixed<Allocator>::type::ARRAY:
-      return max_string_size<Allocator>(v.as_array());
+      return max_string_size(v.as_array());
     default:
       __builtin_unreachable();
   }
