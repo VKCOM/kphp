@@ -41,13 +41,15 @@ class DummyAllocator {
 };
 }
 
+struct DefaultAllocator;
+
 template<typename T, typename Allocator>
 using __class_instance = __runtime_core::class_instance<T, Allocator>;
 
 template<typename Allocator>
 using __string = __runtime_core::string<Allocator>;
 
-template<typename Allocator>
+template<typename Allocator = DefaultAllocator>
 using __mixed = __runtime_core::mixed<Allocator>;
 
 template<typename T, typename Allocator>

@@ -480,6 +480,10 @@ inline __mixed<Allocator> &append(__mixed<Allocator> &dest, const T &from);
 template<class T0, class T>
 inline T0 &append(T0 &dest, const T &from);
 
+template<typename Allocator>
+inline __string<Allocator> f$gettype(const __mixed<Allocator> &v);
+
+
 template<class T>
 inline bool f$function_exists(const T &a1);
 
@@ -521,6 +525,12 @@ inline int64_t f$get_reference_counter(const __string<Allocator> &v);
 
 template<typename Allocator>
 inline int64_t f$get_reference_counter(const __mixed<Allocator> &v);
+
+template<typename Arg, typename Allocator = DefaultAllocator,
+         typename = std::enable_if_t<std::is_constructible_v<__mixed<Allocator>, Arg> && (!std::is_same_v<Arg, __mixed<>>)>>
+inline int64_t f$get_reference_counter(Arg &&m) {
+  return f$get_reference_counter(__mixed<>{std::forward<Arg>(m)});
+}
 
 
 template<class T>
@@ -1375,11 +1385,15 @@ T0 &append(T0 &dest, const T &from) {
   return dest;
 }
 
-namespace __runtime_core {
 template<typename Allocator>
-__string<Allocator> gettype(const __mixed<Allocator> &v) {
+__string<Allocator> f$gettype(const __mixed<Allocator> &v) {
   return v.get_type_str();
 }
+
+template<typename Arg, typename Allocator = DefaultAllocator,
+         typename = std::enable_if_t<std::is_constructible_v<__mixed<Allocator>, Arg> && (!std::is_same_v<Arg, __mixed<>>)>>
+inline __string<Allocator> f$gettype(Arg &&m) {
+  return f$gettype(__mixed<>{std::forward<Arg>(m)});
 }
 
 template<class T>

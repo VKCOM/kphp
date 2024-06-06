@@ -4,13 +4,15 @@
 
 #include "runtime/allocator.h"
 
-class ScriptAllocator {
+struct DefaultAllocator {
 public:
   static void * allocate(int size) {return dl::allocate(size);}
   static void * allocate0(int size) {return dl::allocate0(size);}
   static void deallocate(void * p, int size) {dl::deallocate(p, size);}
   static void * reallocate(void * p, int new_size, int old_size){return dl::reallocate(p, new_size, old_size);}
 };
+
+using ScriptAllocator = DefaultAllocator;
 
 class HeapAllocator {
 public:
@@ -151,8 +153,4 @@ inline string f$get_class(int64_t v) {
 template<typename Allocator>
 inline string f$get_class(double v) {
   return __runtime_core::get_class<ScriptAllocator>(v);
-}
-
-inline string f$gettype(const mixed &v) {
-  return __runtime_core::gettype(v);
 }
