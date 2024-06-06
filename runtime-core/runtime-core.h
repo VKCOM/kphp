@@ -797,7 +797,7 @@ double divide(const __class_instance<T, Allocator> &, const __class_instance<T, 
 }
 
 template<class T, class T1, typename Allocator>
-double divide(const __array<T, Allocator> &, const __array<T, Allocator> &) {
+double divide(const __array<T, Allocator> &, const __array<T1, Allocator> &) {
   php_warning("Unsupported operand types for operator '/' array and array");
   return 0.0;
 }

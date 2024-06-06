@@ -62,6 +62,11 @@ inline int64_t f$intval(const __mixed<Allocator> &val) {
   return val.to_int();
 }
 
+template<typename T, typename Allocator>
+inline int64_t f$intval(const __array<T, Allocator> &val) {
+  return val.to_int();
+}
+
 template<class T>
 inline int64_t f$intval(const Optional<T> &val) {
   return val.has_value() ? f$intval(val.val()) : 0;

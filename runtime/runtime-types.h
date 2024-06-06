@@ -116,5 +116,6 @@ inline string f$get_class(int64_t v) {
 }
 template<typename Allocator>
 inline string f$get_class(double v) {
+  __mixed<ScriptAllocator> a = f$intval(__runtime_core::array<int64_t, ScriptAllocator>());
   return __runtime_core::get_class<ScriptAllocator>(v);
 }
