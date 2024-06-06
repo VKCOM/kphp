@@ -28,9 +28,11 @@ struct RpcDestFlagsHeaders {
 
 #pragma pack(pop)
 
-/// Check RPC payload whether it contains some extra header. If so:
-/// 1) check if actor_id is set in the header; warn if it's set and not equal to 0;
-/// 2) check if ignore_result is set in the header; warn if it's set in the header and not set in [typed_]rpc_tl_query call;
-/// 3) return <RpcDestActorFlagsHeaders instance, current extra header's size> pair.
-/// Otherwise, return <std::nullopt, current extra header's size>.
+/**
+ * Check RPC payload whether it contains some extra header. If so:
+ * 1) check if actor_id is set in the header; warn if it's set and not equal to 0;
+ * 2) check if ignore_result is set in the header; warn if it's set in the header and not set in [typed_]rpc_tl_query call;
+ * 3) return \<RpcDestActorFlagsHeaders instance, current extra header's size\> pair.
+ * Otherwise, return \<std::nullopt, current extra header's size\>.
+ * */
 std::pair<std::optional<RpcDestActorFlagsHeaders>, uint32_t> regularize_extra_headers(const char *rpc_payload, bool ignore_result) noexcept;
