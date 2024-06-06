@@ -135,3 +135,24 @@ inline bool operator<(const mixed &lhs, const mixed &rhs) {
 inline bool operator<=(const mixed &lhs, const mixed &rhs) {
   return __runtime_core::operator<=(lhs, rhs);
 }
+
+template<class T>
+inline string f$get_type(const T &v) {
+  return __runtime_core::get_type<ScriptAllocator>(v);
+}
+
+inline string f$get_class(bool v) {
+  return __runtime_core::get_class<ScriptAllocator>(v);
+}
+
+inline string f$get_class(int64_t v) {
+  return __runtime_core::get_class<ScriptAllocator>(v);
+}
+template<typename Allocator>
+inline string f$get_class(double v) {
+  return __runtime_core::get_class<ScriptAllocator>(v);
+}
+
+inline string f$gettype(const mixed &v) {
+  return __runtime_core::gettype(v);
+}
