@@ -51,17 +51,7 @@ task_t<string> f$component_client_get_result(class_instance<C$ComponentQuery> qu
 
 task_t<void> f$component_server_send_result(const string &message) {
   ComponentState & ctx = *get_component_context();
-
-  const int32_t x = 0xb5286e24;
-  string z{};
-  z.append(reinterpret_cast<const char *>(&x), 4);
-  const char q = 5;
-  z.append(&q, 1);
-  z.append(&q, 1);
-  z.append(&q, 1);
-  z.append(&q, 1);
-  z.append("hello\0\0\0");
-  bool ok = co_await write_all_to_stream(ctx.standard_stream, z.c_str(), z.size() + 3);
+  bool ok = co_await write_all_to_stream(ctx.standard_stream, message.c_str(), message.size());
   if (!ok) {
     php_warning("cannot send component result");
   } else {
