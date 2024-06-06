@@ -126,9 +126,23 @@ private:
     }
   }
 
-  // Collect classes only from type hints in PHP code, as phpdocs @param/@return haven't been parsed up to this execution point.
-  // TODO: shall we fix this?
+  // Collect classes from @param and type hints
   inline void require_all_classes_from_func_declaration(FunctionPtr f) {
+    // note, that @param has't been parsed up to this execution point, so parsing is done twice
+    // (here and later in ParseAndApplyPhpdocF), it's very ugly, since parsing is quite a heavy operation
+    // ideally, types in phpdoc should be parsed once in gentree, but actually,
+    // vkcom has so much syntax-invalid phpdocs, that it's unavailable
+    // (that "invalid" functions aren't reachable in fact, they just exist in a dead codebase,
+    //  so their phpdocs aren't analyzed later, but trying to parse them in gentree leads to 10k errors)
+    if (f->phpdoc && !f->is_lambda()) {
+      for (const PhpDocTag &tag : f->phpdoc->tags) {
+        if (tag.type == PhpDocType::param) {
+          if (auto tag_parsed = tag.value_as_type_and_var_name(current_function, current_function->genericTs)) {
+            require_all_classes_in_phpdoc_type(tag_parsed.type_hint);
+          }
+        }
+      }
+    }
     for (const auto &p: f->get_params()) {
       if (p.as<op_func_param>()->type_hint) {
         require_all_classes_in_phpdoc_type(p.as<op_func_param>()->type_hint);
