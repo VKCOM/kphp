@@ -137,69 +137,6 @@ inline std::enable_if_t<!vk::is_type_in_list<T, bool, __mixed<Allocator>>{}, __a
 
 } // namespace impl_
 
-namespace __runtime_core {
-// todo:core
-template<typename Allocator>
-inline __string<Allocator> strval(bool val) {
-  return (val ? __string<Allocator>("1", 1) : __string<Allocator>());
-}
-
-template<typename Allocator>
-inline __string<Allocator> strval(int64_t val) {
-  return __string<Allocator>(val);
-}
-
-template<typename Allocator>
-inline __string<Allocator> strval(double val) {
-  return __string<Allocator>(val);
-}
-
-template<typename Allocator, class T>
-inline __string<Allocator> strval(const Optional<T> &val) {
-  return val.has_value() ? f$strval(val.val()) : strval<Allocator>(false);
-}
-
-template<typename Allocator, class T>
-inline __string<Allocator> strval(Optional<T> &&val) {
-  return val.has_value() ? f$strval(std::move(val.val())) : strval<Allocator>(false);
-}
-
-template<typename Allocator, class T>
-inline __array<T, Allocator> arrayval(const T &val) {
-  __array<T, Allocator> res(array_size(1, true));
-  res.push_back(val);
-  return res;
-}
-
-template<typename Allocator, class T>
-inline __array<T, Allocator> arrayval(const Optional<T> &val) {
-  switch (val.value_state()) {
-    case OptionalState::has_value:
-      return f$arrayval(val.val());
-    case OptionalState::false_value:
-      return ::impl_::false_cast_to_array<T, Allocator>();
-    case OptionalState::null_value:
-      return __array<T, Allocator>{};
-    default:
-      __builtin_unreachable();
-  }
-}
-
-template<typename Allocator, class T>
-inline __array<T, Allocator> arrayval(Optional<T> &&val) {
-  switch (val.value_state()) {
-    case OptionalState::has_value:
-      return f$arrayval(std::move(val.val()));
-    case OptionalState::false_value:
-      return ::impl_::false_cast_to_array<T, Allocator>();
-    case OptionalState::null_value:
-      return __array<T, Allocator>{};
-    default:
-      __builtin_unreachable();
-  }
-}
-}
-
 template<typename Allocator>
 inline __string<Allocator> f$strval(const __string<Allocator> &val) {
   return val;
@@ -220,6 +157,66 @@ inline __string<Allocator> f$strval(__mixed<Allocator> &&val) {
   return val.is_string() ? std::move(val.as_string()) : val.to_string();
 }
 
+template<typename Allocator = DefaultAllocator>
+inline __string<Allocator> f$strval(bool val) {
+  return __string<Allocator>(val);
+}
+
+template<typename Allocator = DefaultAllocator>
+inline __string<Allocator> f$strval(int64_t val) {
+  return __string<Allocator>(val);
+}
+
+template<typename Allocator = DefaultAllocator>
+inline __string<Allocator> f$strval(double val) {
+  return __string<Allocator>(val);
+}
+
+template<typename T, typename Allocator = DefaultAllocator>
+inline __string<Allocator> f$strval(const Optional<T> &val) {
+  return val.has_value() ? f$strval(val.val()) : f$strval<Allocator>(false);
+}
+
+
+template<typename T, typename Allocator = DefaultAllocator>
+inline __string<Allocator> f$strval(Optional<T> &&val) {
+  return val.has_value() ? f$strval(std::move(val.val())) : f$strval<Allocator>(false);
+}
+
+template<typename T, typename Allocator = DefaultAllocator>
+inline __array<T, Allocator> f$arrayval(const T &val) {
+  __array<T, Allocator> res(array_size(1, true));
+  res.push_back(val);
+  return res;
+}
+
+template<typename T, typename Allocator = DefaultAllocator>
+inline __array<T, Allocator> f$arrayval(const Optional<T> &val) {
+  switch (val.value_state()) {
+    case OptionalState::has_value:
+      return f$arrayval(val.val());
+    case OptionalState::false_value:
+      return ::impl_::false_cast_to_array<T, Allocator>();
+    case OptionalState::null_value:
+      return __array<T, Allocator>{};
+    default:
+      __builtin_unreachable();
+  }
+}
+
+template<typename T, typename Allocator = DefaultAllocator>
+inline __array<T, Allocator> f$arrayval(Optional<T> &&val) {
+  switch (val.value_state()) {
+    case OptionalState::has_value:
+      return f$arrayval(std::move(val.val()));
+    case OptionalState::false_value:
+      return ::impl_::false_cast_to_array<T, Allocator>();
+    case OptionalState::null_value:
+      return __array<T, Allocator>{};
+    default:
+      __builtin_unreachable();
+  }
+}
 
 template<class T, typename Allocator>
 inline const __array<T, Allocator> &f$arrayval(const __array<T, Allocator> &val) {

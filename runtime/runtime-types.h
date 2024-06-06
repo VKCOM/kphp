@@ -44,42 +44,6 @@ template<class Derived>
 using refcountable_php_classes = __runtime_core::refcountable_php_classes<Derived, ScriptAllocator>;
 using refcountable_empty_php_classes = __runtime_core::refcountable_empty_php_classes;
 
-inline string f$strval(bool val) {
-  return __runtime_core::strval<ScriptAllocator>(val);
-}
-
-inline string f$strval(int64_t val) {
-  return __runtime_core::strval<ScriptAllocator>(val);
-}
-
-inline string f$strval(double val) {
-  return __runtime_core::strval<ScriptAllocator>(val);
-}
-
-template<class T>
-inline string f$strval(const Optional<T> &val) {
-  return __runtime_core::strval<ScriptAllocator>(val);
-}
-
-template<class T>
-inline string f$strval(Optional<T> &&val) {
-  return __runtime_core::strval<ScriptAllocator>(val);
-}
-
-template<class T>
-inline array<T> f$arrayval(const T &val) {
-  return __runtime_core::arrayval<T, ScriptAllocator>(val);
-}
-
-template<class T>
-inline array<T> f$arrayval(const Optional<T> &val) {
-  return __runtime_core::arrayval<T, ScriptAllocator>(val);
-}
-
-template<class T>
-inline array<T> f$arrayval(Optional<T> &&val) {
-  return __runtime_core::arrayval<T, ScriptAllocator>(val);
-}
 
 template<class FunT, class T, class... Args>
 inline decltype(auto) call_fun_on_optional_value(FunT &&fun, const Optional<T> &opt, Args &&...args) {
