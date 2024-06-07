@@ -43,8 +43,7 @@ class_instance<T> class_instance<T>::alloc(Args &&... args) {
 template<class T>
 inline class_instance<T> class_instance<T>::empty_alloc() {
   static_assert(std::is_empty<T>{}, "class T must be empty");
-  static uint32_t obj;
-  obj++;
+  uint32_t obj = KphpCoreContext::current().empty_obj_count++;
   new (&o) vk::intrusive_ptr<T>(reinterpret_cast<T*>(obj));
   return *this;
 }

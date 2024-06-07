@@ -12,7 +12,7 @@
 #include <ostream>
 #include <string>
 
-#if __cplusplus > 202002L
+#if __cplusplus > 201703
 #include <string_view>
 namespace vk { using std::string_view; }
 
