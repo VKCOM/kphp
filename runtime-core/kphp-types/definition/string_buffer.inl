@@ -171,9 +171,12 @@ void string_buffer::reserve(int len) {
 
 inline void init_string_buffer_lib(string::size_type min_length, string::size_type max_length) {
   string_buffer_lib_context &sb_context = KphpCoreContext::current().sb_lib_context;
-  assert(min_length > 0 && max_length > 0);
-  sb_context.MIN_BUFFER_LEN = min_length;
-  sb_context.MAX_BUFFER_LEN = max_length;
+  if (min_length > 0) {
+    sb_context.MIN_BUFFER_LEN = min_length;
+  }
+  if (max_length > 0) {
+    sb_context.MAX_BUFFER_LEN = max_length;
+  }
 }
 
 void string_buffer::copy_raw_data(const string_buffer &other) {
