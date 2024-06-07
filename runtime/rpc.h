@@ -207,7 +207,7 @@ int64_t f$rpc_send_noflush(const class_instance<C$RpcConnection> &conn, double t
 
 void f$rpc_flush();
 
-Optional<string> f$rpc_get(int64_t request_id, double timeout = -1.0);
+Optional<string> f$rpc_get(int64_t request_id, double timeout = -1.0, bool is_sync = false);
 
 Optional<string> f$rpc_get_synchronously(int64_t request_id);
 

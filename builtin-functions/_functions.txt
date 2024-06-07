@@ -959,7 +959,7 @@ function rpc_send (\RpcConnection $rpc_conn, $timeout ::: float = -1.0) ::: int;
 function rpc_send_noflush (\RpcConnection $rpc_conn, $timeout ::: float = -1.0) ::: int;
 function rpc_flush () ::: void;
 /** @kphp-extern-func-info resumable */
-function rpc_get ($request_id ::: int) ::: string | false;
+function rpc_get ($request_id ::: int, $is_sync ::: bool = false) ::: string | false;
 function rpc_get_synchronously ($request_id ::: int) ::: string | false;
 /** @kphp-extern-func-info resumable */
 function rpc_get_and_parse ($request_id ::: int) ::: bool;
