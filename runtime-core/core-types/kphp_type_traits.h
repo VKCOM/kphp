@@ -8,9 +8,9 @@
 
 #include "common/type_traits/list_of_types.h"
 
-#include "runtime-core/kphp-types/decl/declarations.h"
-#include "runtime-core/kphp-types/decl/optional.h"
-#include "runtime-core/kphp-types/decl/shape.h"
+#include "runtime-core/core-types/decl/declarations.h"
+#include "runtime-core/core-types/decl/optional.h"
+#include "runtime-core/core-types/decl/shape.h"
 
 template<typename>
 struct is_array : std::false_type {

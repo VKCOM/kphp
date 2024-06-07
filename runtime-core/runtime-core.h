@@ -19,28 +19,28 @@
 #include "common/type_traits/list_of_types.h"
 
 #include "runtime-core/include.h"
-#include "runtime-core/kphp-types/kphp_type_traits.h"
-#include "runtime-core/kphp-types/decl/shape.h"
+#include "runtime-core/core-types/kphp_type_traits.h"
+#include "runtime-core/core-types/decl/shape.h"
 
 // order of includes below matters, be careful
 
 #define INCLUDED_FROM_KPHP_CORE
 
-#include "runtime-core/kphp-types/decl/string_decl.inl"
-#include "runtime-core/kphp-types/decl/array_decl.inl"
+#include "runtime-core/core-types/decl/string_decl.inl"
+#include "runtime-core/core-types/decl/array_decl.inl"
 #include "runtime-core/class-instance/class-instance-decl.inl"
-#include "runtime-core/kphp-types/decl/mixed_decl.inl"
-#include "runtime-core/kphp-types/decl/string_buffer_decl.inl"
+#include "runtime-core/core-types/decl/mixed_decl.inl"
+#include "runtime-core/core-types/decl/string_buffer_decl.inl"
 
 #include "runtime-core/runtime-core-context.h"
 
-#include "runtime-core/kphp-types/definition/string.inl"
-#include "runtime-core/kphp-types/definition/array.inl"
+#include "runtime-core/core-types/definition/string.inl"
+#include "runtime-core/core-types/definition/array.inl"
 #include "runtime-core/class-instance/class-instance.inl"
-#include "runtime-core/kphp-types/definition/mixed.inl"
-#include "runtime-core/kphp-types/definition/string_buffer.inl"
-#include "runtime-core/kphp-types/conversions_types.inl"
-#include "runtime-core/kphp-types/comparison_operators.inl"
+#include "runtime-core/core-types/definition/mixed.inl"
+#include "runtime-core/core-types/definition/string_buffer.inl"
+#include "runtime-core/core-types/conversions_types.inl"
+#include "runtime-core/core-types/comparison_operators.inl"
 
 #undef INCLUDED_FROM_KPHP_CORE
 

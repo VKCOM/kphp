@@ -10,8 +10,8 @@
 #include "common/type_traits/is_constructible.h"
 #include "common/type_traits/list_of_types.h"
 
-#include "runtime-core/functions/kphp-assert-core.h"
-#include "runtime-core/kphp-types/decl/declarations.h"
+#include "runtime-core/utils/kphp-assert-core.h"
+#include "runtime-core/core-types/decl/declarations.h"
 
 template<class T>
 class Optional;

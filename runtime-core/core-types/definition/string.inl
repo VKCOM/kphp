@@ -8,8 +8,8 @@
 
 #include "common/algorithms/simd-int-to-string.h"
 
-#include "runtime-core/functions/migration-php8.h"
-#include "runtime-core/runtime-types/string_cache.h"
+#include "runtime-core/utils/migration-php8.h"
+#include "runtime-core/core-types/definition/string_cache.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
   #error "this file must be included only from runtime-core.h"

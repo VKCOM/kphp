@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime-core/kphp-types/decl/array_iterator.h"
+#include "runtime-core/core-types/decl/array_iterator.h"
 #include "runtime-core/include.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE

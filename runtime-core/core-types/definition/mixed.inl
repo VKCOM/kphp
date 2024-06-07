@@ -6,7 +6,7 @@
 
 #include "common/algorithms/find.h"
 
-#include "runtime-core/functions/migration-php8.h"
+#include "runtime-core/utils/migration-php8.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
   #error "this file must be included only from runtime-core.h"

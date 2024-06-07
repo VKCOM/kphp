@@ -7,7 +7,7 @@
 
 #include "common/wrappers/likely.h"
 
-#include "runtime-core/functions/kphp-assert-core.h"
+#include "runtime-core/utils/kphp-assert-core.h"
 
 namespace memory_resource {
 

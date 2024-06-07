@@ -13,8 +13,6 @@
 
 #include "common/mixin/not_copyable.h"
 #include "common/type_traits/list_of_types.h"
-#include "runtime-core/kphp-types/decl/declarations.h"
-#include "runtime-core/kphp-types/decl/shape.h"
 #include "runtime-core/runtime-core.h"
 
 template<class T>

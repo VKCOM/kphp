@@ -7,7 +7,7 @@
 #include "common/type_traits/list_of_types.h"
 #include "common/sanitizer.h"
 
-#include "runtime-core/kphp-types/decl/declarations.h"
+#include "runtime-core/core-types/decl/declarations.h"
 
 template<class T>
 class array_iterator {

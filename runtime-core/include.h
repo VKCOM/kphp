@@ -11,10 +11,10 @@
 #include "common/wrappers/likely.h"
 
 #include "common/php-functions.h"
-#include "runtime-core/kphp-types/decl/declarations.h"
-#include "runtime-core/kphp-types/kphp_type_traits.h"
-#include "runtime-core/kphp-types/decl/optional.h"
-#include "runtime-core/functions/kphp-assert-core.h"
+#include "runtime-core/core-types/decl/declarations.h"
+#include "runtime-core/core-types/kphp_type_traits.h"
+#include "runtime-core/core-types/decl/optional.h"
+#include "runtime-core/utils/kphp-assert-core.h"
 
 #define COMMA ,
 

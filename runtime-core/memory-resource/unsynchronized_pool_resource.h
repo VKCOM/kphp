@@ -12,7 +12,7 @@
 #include "runtime-core/memory-resource/details/universal_reallocate.h"
 #include "runtime-core/memory-resource/monotonic_buffer_resource.h"
 #include "runtime-core/memory-resource/resource_allocator.h"
-#include "runtime-core/functions/kphp-assert-core.h"
+#include "runtime-core/utils/kphp-assert-core.h"
 
 namespace memory_resource {
 
