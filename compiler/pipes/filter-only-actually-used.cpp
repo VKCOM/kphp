@@ -9,6 +9,75 @@
 #include "compiler/data/src-file.h"
 #include "compiler/compiler-core.h"
 #include "compiler/threading/profiler.h"
+#include "compiler/vertex-util.h"
+
+// having a typed callable __invoke(), which is a virtual function with switch-case dispatching,
+// replace body of `case {lambda_class_to_remove.hash()}:` (which is a lambda invoke call)
+// to just `break`; see below, why this is important
+class RemoveLambdaCallFromTypedCallablePass final : public FunctionPassBase {
+  std::string case_hash;
+
+public:
+  std::string get_description() override {
+    return "Remove lambda call from typed callable";
+  }
+
+  explicit RemoveLambdaCallFromTypedCallablePass(ClassPtr lambda_class_to_remove)
+    : case_hash(std::to_string(lambda_class_to_remove->get_hash())) {}
+
+  VertexPtr on_enter_vertex(VertexPtr root) override {
+    if (auto as_case = root.try_as<op_case>()) {
+      if (auto as_int_const = as_case->expr().try_as<op_int_const>()) {
+        if (as_int_const->str_val == case_hash) {
+          auto level1 = VertexUtil::create_int_const(1);
+          return VertexAdaptor<op_case>::create(as_int_const, VertexAdaptor<op_seq>::create(VertexAdaptor<op_break>::create(level1)));
+        }
+      }
+    }
+
+    return root;
+  }
+};
+
+// when a lambda with `use` statement (=> with an instance field) occurs inside unused function,
+// it still can be reachable from a typed callable __invoke(),
+// but its field types can't be inferred, they'll be left 'any' and trigger an error after
+// to prevent this, manually remove this lambda from that __invoke() body
+// as well as remove all lambda's mentions from used_functions
+class AnalyzeLambdasInUnusedFunctionPass final : public FunctionPassBase {
+  IdMap<FunctionPtr> &used_functions;
+
+public:
+  std::string get_description() override {
+    return "Analyze lambdas in unused function";
+  }
+
+  explicit AnalyzeLambdasInUnusedFunctionPass(IdMap<FunctionPtr> &used_functions)
+    : used_functions(used_functions) {}
+
+  VertexPtr on_enter_vertex(VertexPtr root) override {
+    if (auto as_call = root.try_as<op_func_call>();
+      as_call && as_call->func_id->class_id && as_call->func_id->class_id->is_lambda_class() && as_call->func_id->is_constructor()) {
+      ClassPtr lambda_class = as_call->func_id->class_id;
+      const ClassMemberInstanceMethod *m_invoke = lambda_class->members.get_instance_method("__invoke");
+      if (m_invoke && used_functions[m_invoke->function->outer_function]) {
+        // f_lambda occurs inside unused function, but is used; the only reason is it's used from a typed callable
+        FunctionPtr f_lambda = m_invoke->function->outer_function;
+        kphp_assert(lambda_class->implements.size() == 1 && lambda_class->implements[0]->is_typed_callable_interface());
+        FunctionPtr f_typed_invoke = lambda_class->implements[0]->members.get_instance_method("__invoke")->function;
+
+        RemoveLambdaCallFromTypedCallablePass pass(lambda_class);
+        run_function_pass(f_typed_invoke->root, &pass);
+
+        used_functions[f_lambda] = {};
+        used_functions[m_invoke->function] = {};
+        used_functions[lambda_class->construct_function] = {};
+      }
+    }
+
+    return root;
+  }
+};
 
 namespace {
 
@@ -259,6 +328,16 @@ void FilterOnlyActuallyUsedFunctionsF::on_finish(DataStream<FunctionPtr> &os) {
 
   // remove the unused class methods
   remove_unused_class_methods(all, used_functions);
+  stage::die_if_global_errors();
+
+  // remove lambdas from unused functions, see comments above
+  for (const auto &f_and_e : all) {
+    FunctionPtr fun = f_and_e.first;
+    if (fun->has_lambdas_inside && !used_functions[fun]) {
+      AnalyzeLambdasInUnusedFunctionPass pass(used_functions);
+      run_function_pass(fun, &pass);
+    }
+  }
   stage::die_if_global_errors();
 
   // forward the reachable functions into the data stream;

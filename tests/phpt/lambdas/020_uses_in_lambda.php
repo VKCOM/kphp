@@ -110,3 +110,43 @@ class WithFCapturingDeep {
 }
 (new WithFCapturingDeep)->l2();
 (new WithFCapturingDeep)->l2_modif();
+
+class Example020 {
+  static private function takeInt(int $i) { echo $i; }
+
+  public function unused_function(): void {
+    $tmp_var = "";
+    $this->call_function(function() use ($tmp_var): void {});
+    $int = 10;
+    $this->call_function(function() use ($int): void { self::takeInt($int); });
+  }
+
+  /** @param callable():void $fn */
+  public function call_function(callable $fn): void {
+    $fn();
+  }
+}
+
+(new Example020())->call_function(function(): void {});
+
+class Bxample020 {
+  /**
+   * @param callable(int):int $fn
+   */
+  public function unused_function(callable $fn): int {
+    return $this->test2(function () use ($fn) {
+      return $fn(1);
+    });
+  }
+
+  /**
+   * @param callable():int $fn
+   */
+  public function test2(callable $fn): int {
+    return $fn();
+  }
+}
+
+$bxample = new Bxample020();
+$bxample->test2(function() { return 0; });
+

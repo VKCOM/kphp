@@ -422,10 +422,6 @@ void generate_body_of_virtual_method(FunctionPtr virtual_function) {
       cases.emplace_back(v_case);
     }
   }
-  if (!cases.empty()) {
-    auto case_default_warn = generate_critical_error_call(fmt_format("call method({}) on null object", virtual_function->as_human_readable(false)));
-    cases.emplace_back(VertexAdaptor<op_default>::create(VertexAdaptor<op_seq>::create(case_default_warn)));
-  }
 
   if (cases.empty() && !stage::has_error()) {
     // when there are no inheritors of an interface, generate an empty body if possible —
@@ -436,7 +432,7 @@ void generate_body_of_virtual_method(FunctionPtr virtual_function) {
     auto call_get_hash = VertexAdaptor<op_func_call>::create(ClassData::gen_vertex_this({}));
     call_get_hash->str_val = "get_hash_of_class";
     call_get_hash->func_id = G->get_function(call_get_hash->str_val);
-    virtual_function->root->cmd_ref() = VertexAdaptor<op_seq>::create(VertexUtil::create_switch_vertex(virtual_function, call_get_hash, std::move(cases)));
+    virtual_function->root->cmd_ref() = VertexAdaptor<op_seq>::create(VertexUtil::create_switch_vertex(virtual_function, call_get_hash, std::move(cases)), generate_critical_error_call(fmt_format("call method({}) on null object", virtual_function->as_human_readable(false))));
   }
 
   virtual_function->type = FunctionData::func_local;    // could be func_extern before, but now it has a body
