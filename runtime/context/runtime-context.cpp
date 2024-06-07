@@ -11,11 +11,11 @@ KphpRuntimeContext kphp_runtime_context;
 RuntimeAllocator runtime_allocator;
 
 void KphpRuntimeContext::init(void *mem, size_t script_mem_size, size_t oom_handling_mem_size) {
-  KphpCoreContext::init();
   runtime_allocator.init(mem, script_mem_size, oom_handling_mem_size);
+  KphpCoreContext::init();
 }
 
 void KphpRuntimeContext::free() {
-  runtime_allocator.free();
   KphpCoreContext::free();
+  runtime_allocator.free();
 }
