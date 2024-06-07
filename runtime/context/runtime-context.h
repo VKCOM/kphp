@@ -18,3 +18,4 @@ struct KphpRuntimeContext : KphpCoreContext {
 };
 
 extern KphpRuntimeContext kphp_runtime_context;
+extern RuntimeAllocator runtime_allocator;
