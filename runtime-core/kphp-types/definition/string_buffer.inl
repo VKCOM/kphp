@@ -26,7 +26,7 @@ inline void string_buffer::resize(string::size_type new_buffer_len) noexcept {
   }
 
   string::size_type current_len = size();
-  if(void *new_mem = KphpCoreContext::current().allocator.realloc_global_memory(buffer_begin, new_buffer_len, buffer_len)) {
+  if(void *new_mem = RuntimeAllocator::current().realloc_global_memory(buffer_begin, new_buffer_len, buffer_len)) {
     buffer_begin = static_cast<char *>(new_mem);
     buffer_len = new_buffer_len;
     buffer_end = buffer_begin + current_len;

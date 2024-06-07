@@ -237,7 +237,7 @@ template<class T>
 typename array<T>::array_inner *array<T>::array_inner::create(int64_t new_int_size, bool is_vector) {
   const size_t mem_size = estimate_size(new_int_size, is_vector);
   if (is_vector) {
-    auto p = reinterpret_cast<array_inner *>(KphpCoreContext::current().allocator.alloc_script_memory(mem_size));
+    auto p = reinterpret_cast<array_inner *>(RuntimeAllocator::current().alloc_script_memory(mem_size));
     p->is_vector_internal = true;
     p->ref_cnt = 0;
     p->max_key = -1;
@@ -250,7 +250,7 @@ typename array<T>::array_inner *array<T>::array_inner::create(int64_t new_int_si
     return reinterpret_cast<array_inner *>(static_cast<char *>(mem) + sizeof(array_inner_fields_for_map));
   };
 
-  array_inner *p = shift_pointer_to_array_inner(KphpCoreContext::current().allocator.alloc0_script_memory(mem_size));
+  array_inner *p = shift_pointer_to_array_inner(RuntimeAllocator::current().alloc0_script_memory(mem_size));
   p->is_vector_internal = false;
   p->ref_cnt = 0;
   p->max_key = -1;
@@ -275,7 +275,7 @@ void array<T>::array_inner::dispose() {
           ((T *)entries)[i].~T();
         }
 
-        KphpCoreContext::current().allocator.free_script_memory((void *)this, sizeof_vector(buf_size));
+        RuntimeAllocator::current().free_script_memory((void *)this, sizeof_vector(buf_size));
         return;
       }
 
@@ -288,7 +288,7 @@ void array<T>::array_inner::dispose() {
 
       php_assert(this != empty_array());
       auto shifted_this = reinterpret_cast<char *>(this) - sizeof(array_inner_fields_for_map);
-      KphpCoreContext::current().allocator.free_script_memory(shifted_this, sizeof_map(buf_size));
+      RuntimeAllocator::current().free_script_memory(shifted_this, sizeof_map(buf_size));
     }
   }
 }
@@ -716,7 +716,7 @@ void array<T>::mutate_to_size(int64_t int_size) {
     php_critical_error ("max array size exceeded: int_size = %" PRIi64, int_size);
   }
   const auto new_int_buff_size = static_cast<uint32_t>(int_size);
-  p = static_cast<array_inner *>(KphpCoreContext::current().allocator.realloc_script_memory(p, p->sizeof_vector(new_int_buff_size), p->sizeof_vector(p->buf_size)));
+  p = static_cast<array_inner *>(RuntimeAllocator::current().realloc_script_memory(p, p->sizeof_vector(new_int_buff_size), p->sizeof_vector(p->buf_size)));
   p->buf_size = new_int_buff_size;
 }
 
@@ -1650,7 +1650,7 @@ array<T> &array<T>::operator+=(const array<T> &other) {
         p = new_array;
       } else if (p->buf_size < size + 2) {
         uint32_t new_size = max(size + 2, p->buf_size * 2);
-        p = (array_inner *)KphpCoreContext::current().allocator.realloc_script_memory((void *)p, p->sizeof_vector(new_size), p->sizeof_vector(p->buf_size));
+        p = (array_inner *)RuntimeAllocator::current().realloc_script_memory((void *)p, p->sizeof_vector(new_size), p->sizeof_vector(p->buf_size));
         p->buf_size = new_size;
       }
 
@@ -1894,7 +1894,7 @@ void array<T>::sort(const T1 &compare, bool renumber) {
     mutate_if_map_shared();
   }
 
-  array_bucket **arTmp = (array_bucket **)KphpCoreContext::current().allocator.alloc_script_memory(n * sizeof(array_bucket * ));
+  array_bucket **arTmp = (array_bucket **)RuntimeAllocator::current().alloc_script_memory(n * sizeof(array_bucket * ));
   uint32_t i = 0;
   for (array_bucket *it = p->begin(); it != p->end(); it = p->next(it)) {
     arTmp[i++] = it;
@@ -1916,7 +1916,7 @@ void array<T>::sort(const T1 &compare, bool renumber) {
   arTmp[n - 1]->next = p->get_pointer(p->end());
   p->end()->prev = p->get_pointer(arTmp[n - 1]);
 
-  KphpCoreContext::current().allocator.free_script_memory(arTmp, n * sizeof(array_bucket * ));
+  RuntimeAllocator::current().free_script_memory(arTmp, n * sizeof(array_bucket * ));
 }
 
 
