@@ -4,6 +4,7 @@
 
 #include "runtime-light/stdlib/rpc/rpc.h"
 
+#include <array>
 #include <chrono>
 #include <coroutine>
 #include <cstddef>
@@ -22,6 +23,14 @@
 namespace rpc_impl_ {
 
 constexpr int32_t MAX_TIMEOUT_S = 86400;
+
+// TODO: change uint64_t to string::size_type after moving it from uint32_t to uint64_t
+constexpr uint64_t SMALL_STRING_MAX_LEN = 253;
+constexpr uint64_t MEDIUM_STRING_MAX_LEN = (static_cast<uint64_t>(1) << 24) - 1;
+constexpr uint64_t LARGE_STRING_MAX_LEN = (static_cast<uint64_t>(1) << 56) - 1;
+
+constexpr uint8_t LARGE_STRING_MAGIC = 0xff;
+constexpr uint8_t MEDIUM_STRING_MAGIC = 0xfe;
 
 mixed mixed_array_get_value(const mixed &arr, const string &str_key, int64_t num_key) noexcept {
   if (!arr.is_array()) {
@@ -96,29 +105,6 @@ class_instance<C$VK$TL$RpcResponse> fetch_function_typed(const class_instance<Rp
 template<standard_layout T>
 bool store_trivial(T v) noexcept {
   get_component_context()->rpc_component_context.buffer.append(reinterpret_cast<const char *>(&v), sizeof(T));
-  return true;
-}
-
-bool store_string(const char *v, int32_t v_len) noexcept {
-  auto &buffer{get_component_context()->rpc_component_context.buffer};
-  int32_t all_len = v_len;
-
-  if (v_len < 254) {
-    buffer << static_cast<char>(v_len);
-    all_len += 1;
-  } else if (v_len < (1 << 24)) {
-    buffer << static_cast<char>(254) << static_cast<char>(v_len & 255) << static_cast<char>((v_len >> 8) & 255) << static_cast<char>((v_len >> 16) & 255);
-    all_len += 4;
-  } else {
-    php_critical_error("trying to store too big string of length %d", v_len);
-  }
-
-  buffer.append(v, static_cast<size_t>(v_len));
-
-  while (all_len % 4 != 0) {
-    buffer << '\0';
-    ++all_len;
-  }
   return true;
 }
 
@@ -367,8 +353,34 @@ bool f$store_double(double v) noexcept {
   return rpc_impl_::store_trivial(v);
 }
 
-bool f$store_string(const string &v) noexcept { // TODO: remove rpc_impl_::store_string
-  return rpc_impl_::store_string(v.c_str(), static_cast<int32_t>(v.size()));
+bool f$store_string(const string &v) noexcept { // TODO: support large strings
+  auto &buffer{get_component_context()->rpc_component_context.buffer};
+
+  string::size_type string_len{v.size()};
+  string::size_type size_len{};
+  if (string_len <= rpc_impl_::SMALL_STRING_MAX_LEN) {
+    buffer << static_cast<uint8_t>(string_len);
+    size_len = 1;
+  } else if (string_len <= rpc_impl_::MEDIUM_STRING_MAX_LEN) {
+    buffer << static_cast<uint8_t>(rpc_impl_::MEDIUM_STRING_MAGIC) << static_cast<uint8_t>(string_len & 0xff) << static_cast<uint8_t>((string_len >> 8) & 0xff)
+           << static_cast<uint8_t>((string_len >> 16) & 0xff);
+    size_len = 4;
+  } else {
+    buffer << static_cast<uint8_t>(rpc_impl_::LARGE_STRING_MAGIC) << static_cast<uint8_t>(string_len & 0xff) << static_cast<uint8_t>((string_len >> 8) & 0xff)
+           << static_cast<uint8_t>((string_len >> 16) & 0xff) << static_cast<uint8_t>((string_len >> 24) & 0xff)
+           << static_cast<uint8_t>((string_len >> 32) & 0xff) << static_cast<uint8_t>((string_len >> 40) & 0xff)
+           << static_cast<uint8_t>((string_len >> 48) & 0xff);
+    size_len = 8;
+  }
+  buffer.append(v.c_str(), static_cast<size_t>(string_len));
+
+  const auto total_len{size_len + string_len};
+  const auto total_len_with_padding{(total_len + 3) & ~static_cast<string::size_type>(3)};
+  const auto padding{total_len_with_padding - total_len};
+
+  std::array padding_array{'\0', '\0', '\0', '\0'};
+  buffer.append(padding_array.data(), padding);
+  return true;
 }
 
 // === Rpc Fetch ==================================================================================
@@ -396,56 +408,58 @@ double f$fetch_float() noexcept {
 string f$fetch_string() noexcept {
   uint8_t first_byte{};
   if (const auto opt_first_byte{rpc_impl_::fetch_trivial<uint8_t>()}; opt_first_byte) {
-    first_byte = static_cast<string::size_type>(opt_first_byte.value());
+    first_byte = opt_first_byte.value();
   } else {
     return {}; // TODO: error handling
   }
 
   string::size_type string_len{};
   string::size_type size_len{};
-  if (/*first_byte == 0xff*/ false) { // next 7 bytes are string's length // TODO: support large strings
-//    static_assert(sizeof(string::size_type) >= 8, "string's length doesn't fit platform size");
-//    if (!rpc_impl_::rpc_fetch_remaining_enough(7)) {
-//      return {}; // TODO: error handling
-//    }
-//    const auto first{static_cast<string::size_type>(rpc_impl_::fetch_trivial<uint8_t>().value())};
-//    const auto second{static_cast<string::size_type>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 8};
-//    const auto third{static_cast<string::size_type>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 16};
-//    const auto fourth{static_cast<string::size_type>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 24};
-//    const auto fifth{static_cast<string::size_type>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 32};
-//    const auto sixth{static_cast<string::size_type>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 40};
-//    const auto seventh{static_cast<string::size_type>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 48};
-//    string_len = first + second + third + fourth + fifth + sixth + seventh;
-//    if (string_len < (1 << 24)) {
-//      php_warning("long string's length is less than 1 << 24");
-//    }
-//    size_len = 8;
-  } else if (first_byte == 0xfe) { // next 3 bytes are string's length
-    if (!rpc_impl_::rpc_fetch_remaining_enough(3)) {
-      return {}; // TODO: error handling
+  switch (first_byte) {
+    case rpc_impl_::LARGE_STRING_MAGIC: { // next 7 bytes are string's length // TODO: support large strings
+      // static_assert(sizeof(string::size_type) >= 8, "string's length doesn't fit platform size");
+      if (!rpc_impl_::rpc_fetch_remaining_enough(7)) {
+        return {}; // TODO: error handling
+      }
+      const auto first{static_cast<uint64_t>(rpc_impl_::fetch_trivial<uint8_t>().value())};
+      const auto second{static_cast<uint64_t>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 8};
+      const auto third{static_cast<uint64_t>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 16};
+      const auto fourth{static_cast<uint64_t>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 24};
+      const auto fifth{static_cast<uint64_t>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 32};
+      const auto sixth{static_cast<uint64_t>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 40};
+      const auto seventh{static_cast<uint64_t>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 48};
+      string_len = first | second | third | fourth | fifth | sixth | seventh;
+      if (string_len < (1 << 24)) {
+        php_warning("long string's length is less than 1 << 24");
+      }
+      size_len = 8;
     }
-    const auto first{static_cast<string::size_type>(rpc_impl_::fetch_trivial<uint8_t>().value())};
-    const auto second{static_cast<string::size_type>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 8};
-    const auto third{static_cast<string::size_type>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 16};
-    string_len = first + second + third;
-    if (string_len <= 253) {
-      php_warning("long string's length is less than 254");
+    case rpc_impl_::MEDIUM_STRING_MAGIC: { // next 3 bytes are string's length
+      if (!rpc_impl_::rpc_fetch_remaining_enough(3)) {
+        return {}; // TODO: error handling
+      }
+      const auto first{static_cast<uint64_t>(rpc_impl_::fetch_trivial<uint8_t>().value())};
+      const auto second{static_cast<uint64_t>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 8};
+      const auto third{static_cast<uint64_t>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 16};
+      string_len = first | second | third;
+      if (string_len <= 253) {
+        php_warning("long string's length is less than 254");
+      }
+      size_len = 4;
     }
-    size_len = 4;
-  } else {
-    string_len = static_cast<string::size_type>(first_byte);
-    size_len = 1;
+    default:
+      string_len = static_cast<string::size_type>(first_byte);
+      size_len = 1;
   }
 
-  string::size_type len_with_padding{(size_len + string_len + 3) & ~static_cast<string::size_type>(3)};
-  string::size_type skip{len_with_padding - size_len - string_len};
-  if (!rpc_impl_::rpc_fetch_remaining_enough(string_len + skip)) {
+  const auto total_len_with_padding{(size_len + string_len + 3) & ~static_cast<string::size_type>(3)};
+  if (!rpc_impl_::rpc_fetch_remaining_enough(total_len_with_padding - size_len)) {
     return {}; // TODO: error handling
   }
 
   auto &rpc_ctx{get_component_context()->rpc_component_context};
   string res{rpc_ctx.buffer.c_str() + rpc_ctx.fetch_state.pos(), string_len};
-  rpc_ctx.fetch_state.adjust(string_len + skip);
+  rpc_ctx.fetch_state.adjust(total_len_with_padding - size_len);
   return res;
 }
 
