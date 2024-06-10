@@ -445,6 +445,7 @@ static std::string get_light_runtime_compiler_options() {
   s << "-std=c++20 ";
   s << "-iquote " << G->settings().runtime_and_common_src.get() << " ";
   s << "-fpic ";
+  s << "-stdlib=libc++ ";
 
   return s.str();
 }

@@ -308,6 +308,11 @@ void CompilerSettings::init() {
     #error unsupported __cplusplus value
   #endif
 
+  if (mode.get() == "k2-component") {
+    // for now k2-component must be compiled with clang and statically linked libc++
+    ss << " -stdlib=libc++";
+  }
+
   std::string cxx_default_flags = ss.str();
 
   cxx_toolchain_option.value_ = !cxx_toolchain_dir.value_.empty() ? ("-B" + cxx_toolchain_dir.value_) : "";

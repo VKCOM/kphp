@@ -23,6 +23,8 @@ vk_add_library(runtime_light OBJECT ${RUNTIME_LIGHT_SRC})
 set_property(TARGET runtime_light PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_target_properties(runtime_light PROPERTIES
         LIBRARY_OUTPUT_DIRECTORY ${BASE_DIR}/objs)
+target_compile_options(runtime_light PUBLIC -stdlib=libc++)
+target_link_options(runtime_light PUBLIC -stdlib=libc++ -static-libstdc++)
 
 vk_add_library(full_runtime_light STATIC)
 target_link_libraries(full_runtime_light PUBLIC vk::light_common vk::runtime_light)
