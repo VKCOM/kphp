@@ -6,6 +6,19 @@
 
 static PhpScriptMutableGlobals php_script_mutable_globals_singleton;
 
+// actually, g_linear_mem is allocated and never freed (since workers live forever),
+// but to prevent leak sanitizer errors, free memory manually (descructor is called of worker's stop)
+PhpScriptMutableGlobals::~PhpScriptMutableGlobals() {
+  if (g_linear_mem != nullptr) {
+    delete g_linear_mem;
+    g_linear_mem = nullptr;
+  }
+  for (const auto &[k, _] : libs_linear_mem) {
+    delete libs_linear_mem[k];
+  }
+  libs_linear_mem.clear();
+}
+
 PhpScriptMutableGlobals &PhpScriptMutableGlobals::current() {
   return php_script_mutable_globals_singleton;
 }

@@ -36,6 +36,7 @@ class PhpScriptMutableGlobals {
 
 public:
   static PhpScriptMutableGlobals &current();
+  ~PhpScriptMutableGlobals();
 
   void once_alloc_linear_mem(unsigned int n_bytes);
   void once_alloc_linear_mem(const char *lib_name, unsigned int n_bytes);
