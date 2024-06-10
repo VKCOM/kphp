@@ -29,7 +29,7 @@ class Objs2K2ComponentTarget : public Target {
 public:
   std::string get_cmd() final {
     std::stringstream ss;
-    ss << settings->cxx.get() << " -stdlib=libc++ -static-libstdc++ -shared -o " << target() << " ";
+    ss << settings->cxx.get() << " -static-libgcc -stdlib=libc++ -static-libstdc++ -shared -o " << target() << " ";
 
     for (size_t i = 0; i + 1 < deps.size(); ++i) {
       ss << deps[i]->get_name() << " ";
