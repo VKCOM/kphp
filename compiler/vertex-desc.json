@@ -1921,6 +1921,23 @@
     }
   },
   {
+    "comment": "artificial op for a force_sync call; func_call() contains a force_sync argument",
+    "sons": {
+      "func_call": {
+        "id": 0,
+        "type": "op_func_call"
+      }
+    },
+    "name": "op_force_sync",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_func",
+      "cnst": "cnst_nonconst_func",
+      "type": "common_op",
+      "str": "force_sync"
+    }
+  },
+  {
     "comment": "artificial op that wraps async function call, optionally with save_var() for LHS",
     "sons": {
       "func_call": {

@@ -42,6 +42,7 @@
 #include "compiler/pipes/check-classes.h"
 #include "compiler/pipes/check-conversions.h"
 #include "compiler/pipes/check-func-calls-and-vararg.h"
+#include "compiler/pipes/force-sync.h"
 #include "compiler/pipes/check-modifications-of-const-vars.h"
 #include "compiler/pipes/check-nested-foreach.h"
 #include "compiler/pipes/wait-for-all-classes.h"
@@ -259,6 +260,7 @@ bool compiler_execute(CompilerSettings *settings) {
     >> SyncC<GenerateVirtualMethodsF>{}
     >> PipeC<ConvertInvokeToFuncCallF>{}
     >> PassC<CheckFuncCallsAndVarargPass>{}
+    >> PassC<ForceSyncPass>{}
     >> PassC<InstantiateFFIOperationsPass>{}
     >> PipeC<CheckAbstractFunctionDefaults>{}
     >> PipeC<CalcEmptyFunctions>{}

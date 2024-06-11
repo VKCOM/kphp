@@ -645,6 +645,10 @@ void CFG::create_cfg(VertexPtr tree_node, Node *res_start, Node *res_finish, boo
       create_cfg(tree_node.as<op_fork>()->func_call(), res_start, res_finish);
       break;
     }
+    case op_force_sync: {
+      create_cfg(tree_node.as<op_force_sync>()->func_call(), res_start, res_finish);
+      break;
+    }
     case op_return: {
       auto return_op = tree_node.as<op_return>();
       if (return_op->has_expr()) {

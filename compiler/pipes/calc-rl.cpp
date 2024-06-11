@@ -43,6 +43,9 @@ void rl_func_call_calc(VertexPtr root, RLValueType expected_rl_type) {
     case op_fork:
       rl_calc_all<val_none>(root);
       return;
+    case op_force_sync:
+      rl_calc_all<val_none>(root);
+      return;
     case op_array: //TODO: in fact it is wrong
     case op_tuple:
     case op_shape:
