@@ -9,9 +9,32 @@
 #include "runtime/exception.h"
 #include "runtime/string_functions.h"
 
+#ifndef _GNU_SOURCE 
+#define _GNU_SOURCE // needed to unlock the strtod_l 
+#endif
+#include <locale.h>
+#include <stdlib.h>
+
 // note: json-functions.cpp is used for non-typed json implementation: for json_encode() and json_decode()
 // for classes, e.g. `JsonEncoder::encode(new A)`, see json-writer.cpp and from/to visitors
 namespace {
+
+//from https://github.com/kgabis/parson/issues/98
+// Cache locale object
+static int c_locale_initialized = 0;
+static locale_t c_locale;
+
+locale_t get_c_locale()
+{
+  if(!c_locale_initialized)
+  {
+    c_locale_initialized = 1;
+    c_locale = newlocale(LC_ALL_MASK, "C", NULL);
+  }
+  return c_locale;
+}
+
+
 
 void json_append_one_char(unsigned int c) noexcept {
   static_SB.append_char('\\');
@@ -215,6 +238,10 @@ bool do_json_encode_string_vkext(const char *s, int len) noexcept {
 
 } // namespace
 
+namespace impl_ {
+string JsonEncoder::pretty = string((const char*)"   ");
+}
+
 string JsonPath::to_string() const {
   // this function is called only when error is occurred, so it's not
   // very performance-sensitive
@@ -252,7 +279,7 @@ JsonEncoder::JsonEncoder(int64_t options, bool simple_encode, const char *json_o
   json_obj_magic_key_(json_obj_magic_key) {
 }
 
-bool JsonEncoder::encode(bool b) noexcept {
+bool JsonEncoder::encode(bool b, const string prefix __attribute__((unused))) noexcept {
   if (b) {
     static_SB.append("true", 4);
   } else {
@@ -266,12 +293,12 @@ bool JsonEncoder::encode_null() const noexcept {
   return true;
 }
 
-bool JsonEncoder::encode(int64_t i) noexcept {
+bool JsonEncoder::encode(int64_t i, const string prefix  __attribute__((unused))) noexcept {
   static_SB << i;
   return true;
 }
 
-bool JsonEncoder::encode(double d) noexcept {
+bool JsonEncoder::encode(double d, const string prefix  __attribute__((unused))) noexcept {
   if (vk::any_of_equal(std::fpclassify(d), FP_INFINITE, FP_NAN)) {
     php_warning("%s: strange double %lf in function json_encode", json_path_.to_string().c_str(), d);
     if (options_ & JSON_PARTIAL_OUTPUT_ON_ERROR) {
@@ -280,29 +307,29 @@ bool JsonEncoder::encode(double d) noexcept {
       return false;
     }
   } else {
-    static_SB << (simple_encode_ ? f$number_format(d, 6, string{"."}, string{}) : string{d});
+      static_SB << f$number_format(d, 6, string{"."}, string{}); //always format with dot
   }
   return true;
 }
 
-bool JsonEncoder::encode(const string &s) noexcept {
+bool JsonEncoder::encode(const string &s, const string prefix  __attribute__((unused))) noexcept {
   return simple_encode_ ? do_json_encode_string_vkext(s.c_str(), s.size()) : do_json_encode_string_php(json_path_, s.c_str(), s.size(), options_);
 }
 
-bool JsonEncoder::encode(const mixed &v) noexcept {
+bool JsonEncoder::encode(const mixed &v, const string prefix) noexcept {
   switch (v.get_type()) {
     case mixed::type::NUL:
       return encode_null();
     case mixed::type::BOOLEAN:
-      return encode(v.as_bool());
+      return encode(v.as_bool(), prefix);
     case mixed::type::INTEGER:
-      return encode(v.as_int());
+      return encode(v.as_int(), prefix);
     case mixed::type::FLOAT:
-      return encode(v.as_double());
+      return encode(v.as_double(), prefix);
     case mixed::type::STRING:
-      return encode(v.as_string());
+      return encode(v.as_string(), prefix);
     case mixed::type::ARRAY:
-      return encode(v.as_array());
+      return encode(v.as_array(), prefix);
     default:
       __builtin_unreachable();
   }
@@ -545,7 +572,7 @@ bool do_json_decode(const char *s, int s_len, int &i, mixed &v, const char *json
         }
 
         char *end_ptr;
-        double floatval = strtod(s + i, &end_ptr);
+        double floatval = strtod_l(s + i, &end_ptr, get_c_locale());
         if (end_ptr == s + j) {
           i = j;
           new(&v) mixed(floatval);
