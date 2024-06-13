@@ -209,6 +209,9 @@ function component_stream_write_exact($stream ::: ComponentStream, $message ::: 
 /** @kphp-extern-func-info interruptible */
 function component_stream_read_exact($stream ::: ComponentStream, $len ::: int) ::: string;
 
+/** @kphp-extern-func-info interruptible */
+function component_stream_read_all($stream ::: ComponentStream) ::: string;
+
 function component_close_stream($stream ::: ComponentStream) ::: void;
 function component_finish_stream_processing($stream ::: ComponentStream) ::: void;
 

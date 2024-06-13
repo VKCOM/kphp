@@ -30,6 +30,7 @@ string f$component_stream_read_nonblock(const class_instance<C$ComponentStream> 
 
 task_t<int64_t> f$component_stream_write_exact(const class_instance<C$ComponentStream> & stream, const string & message);
 task_t<string> f$component_stream_read_exact(const class_instance<C$ComponentStream> & stream, int64_t len);
+task_t<string> f$component_stream_read_all(class_instance<C$ComponentStream> stream);
 
 void f$component_close_stream(const class_instance<C$ComponentStream> & stream);
 void f$component_finish_stream_processing(const class_instance<C$ComponentStream> & stream);

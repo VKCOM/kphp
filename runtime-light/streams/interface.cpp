@@ -130,6 +130,14 @@ task_t<string> f$component_stream_read_exact(const class_instance<C$ComponentStr
   co_return result;
 }
 
+task_t<string> f$component_stream_read_all(class_instance<C$ComponentStream> stream) {
+  const auto [buffer, size] = co_await read_all_from_stream(stream->stream_d);
+  string query(buffer, size);
+  get_platform_context()->allocator.free(buffer);
+  php_debug("read %d bytes from stream %lu", size, stream->stream_d);
+  co_return query;
+}
+
 void f$component_close_stream(const class_instance<C$ComponentStream> & stream) {
   free_descriptor(stream->stream_d);
 }
