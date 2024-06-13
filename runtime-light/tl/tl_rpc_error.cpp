@@ -7,7 +7,7 @@
 #include <tuple>
 
 #include "common/tl/constants/common.h"
-#include "runtime-light/stdlib/rpc/rpc.h"
+#include "runtime-light/stdlib/rpc/rpc_api.h"
 #include "runtime-light/tl/tl_builtins.h"
 
 bool TlRpcError::try_fetch() noexcept {

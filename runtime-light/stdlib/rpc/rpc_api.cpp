@@ -2,7 +2,7 @@
 // Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-light/stdlib/rpc/rpc.h"
+#include "runtime-light/stdlib/rpc/rpc_api.h"
 
 #include <array>
 #include <chrono>

@@ -11,7 +11,7 @@
 #include "common/tl/constants/common.h"
 #include "runtime-light/component/component.h"
 #include "runtime-light/core/kphp_core.h"
-#include "runtime-light/stdlib/rpc/rpc.h"
+#include "runtime-light/stdlib/rpc/rpc_api.h"
 #include "runtime-light/stdlib/rpc/rpc_context.h"
 #include "runtime-light/tl/tl_defs.h"
 #include "runtime-light/tl/tl_kphp_rpc_request.h"
