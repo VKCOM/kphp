@@ -19,6 +19,8 @@ task_t<Optional<int64_t>> f$kphp_job_worker_start(string request, double timeout
 
 task_t<bool> f$kphp_job_worker_start_no_reply(string request, double timeout) noexcept;
 
+task_t<array<Optional<int64_t>>> f$kphp_job_worker_start_multi(array<string> requests, double timeout) noexcept;
+
 task_t<string> f$kphp_job_worker_fetch_response(int64_t job_id) noexcept;
 
 // === Server =====================================================================================

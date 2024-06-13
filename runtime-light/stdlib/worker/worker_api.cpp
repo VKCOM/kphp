@@ -42,11 +42,21 @@ task_t<int64_t> kphp_job_worker_start_impl(const string &request, double timeout
 // === Client =====================================================================================
 
 task_t<Optional<int64_t>> f$kphp_job_worker_start(string request, double timeout) noexcept {
-  co_return co_await kphp_job_worker_start_impl(request, timeout, false);
+  const auto job_id{co_await kphp_job_worker_start_impl(request, timeout, false)};
+  co_return job_id >= JOB_WORKER_VALID_JOB_ID_RANGE_START ? Optional<int64_t>{job_id} : Optional<int64_t>{false};
 }
 
 task_t<bool> f$kphp_job_worker_start_no_reply(string request, double timeout) noexcept {
   co_return(co_await kphp_job_worker_start_impl(request, timeout, true) == JOB_WORKER_IGNORED_JOB_ID);
+}
+
+task_t<array<Optional<int64_t>>> f$kphp_job_worker_start_multi(array<string> requests, double timeout) noexcept {
+  array<Optional<int64_t>> worker_ids{requests.size()};
+  for (auto it = requests.cbegin(); it != requests.cend(); ++it) {
+    const auto job_id{co_await kphp_job_worker_start_impl(it.get_value(), timeout, false)};
+    worker_ids.set_value(it.get_key(), job_id >= JOB_WORKER_VALID_JOB_ID_RANGE_START ? Optional<int64_t>{job_id} : Optional<int64_t>{false});
+  }
+  co_return worker_ids;
 }
 
 task_t<string> f$kphp_job_worker_fetch_response(int64_t job_id) noexcept {

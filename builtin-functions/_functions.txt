@@ -131,11 +131,38 @@ function typed_rpc_tl_query_result(int[] $query_ids) ::: @tl\RpcResponse[];
 
 // === Job Workers ================================================================================
 
+interface KphpJobWorkerRequest {}
+
+interface KphpJobWorkerResponse {}
+
+class KphpJobWorkerResponseError implements KphpJobWorkerResponse {
+  // Job script execution errors:
+  const JOB_MEMORY_LIMIT_ERROR = -101;
+  const JOB_TIMEOUT_ERROR = -102;
+  const JOB_EXCEPTION_ERROR = -103;
+  const JOB_STACK_OVERFLOW_ERROR = -104;
+  const JOB_PHP_ASSERT_ERROR = -105;
+
+  const JOB_CLIENT_MEMORY_LIMIT_ERROR = -1001; // client doesn't have enough memory to accept job response
+  const JOB_NOTHING_REPLIED_ERROR = -2001;     // kphp_job_worker_store_response() was not succeeded
+
+  const JOB_STORE_RESPONSE_INCORRECT_CALL_ERROR = -3000;
+  const JOB_STORE_RESPONSE_NOT_ENOUGH_SHARED_MESSAGES_ERROR = -3001;
+  const JOB_STORE_RESPONSE_TOO_BIG_ERROR = -3002;
+  const JOB_STORE_RESPONSE_CANT_SEND_ERROR = -3003;
+
+  public function getError() ::: string;
+  public function getErrorCode() ::: int; // returns one of listed above error codes
+}
+
 /** @kphp-extern-func-info interruptible */
-function kphp_job_worker_start($request ::: string, $timeout ::: float) ::: ?int;
+function kphp_job_worker_start($request ::: string, $timeout ::: float) ::: future<KphpJobWorkerResponse> | false;
 
 /** @kphp-extern-func-info interruptible */
 function kphp_job_worker_start_no_reply($request ::: string, $timeout ::: float) ::: bool;
+
+/** @kphp-extern-func-info interruptible */
+function kphp_job_worker_start_multi($requests ::: string[], $timeout ::: float) ::: (future<KphpJobWorkerResponse> | false)[];
 
 /** @kphp-extern-func-info interruptible */
 function kphp_job_worker_fetch_response($job_id ::: int) ::: string;
