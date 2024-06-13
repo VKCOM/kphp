@@ -204,11 +204,18 @@ void LexerData::hack_last_tokens() {
   }
 
   /**
-   * For a case when we encounter a keyword after the '->' it should be a tok_func_name,
+   * For a case when we encounter a keyword after the '->' and '?->' it should be a tok_func_name,
    * not tok_array, tok_try, etc.
-   * For example: $c->array, $c->try
+   * For example: $c->array, $c?->try
    */
   if (are_last_tokens(tok_arrow, any_token_tag{})) {
+    if (!tokens.back().str_val.empty() && is_alpha(tokens.back().str_val[0])) {
+      tokens.back().type_ = tok_func_name;
+      return;
+    }
+  }
+
+  if (are_last_tokens(tok_nullsafe_arrow, any_token_tag{})) {
     if (!tokens.back().str_val.empty() && is_alpha(tokens.back().str_val[0])) {
       tokens.back().type_ = tok_func_name;
       return;
@@ -1112,6 +1119,7 @@ void TokenLexerCommon::init() {
   add_rule(h, "=>", tok_double_arrow);
   add_rule(h, "::", tok_double_colon);
   add_rule(h, "->", tok_arrow);
+  add_rule(h, "?->", tok_nullsafe_arrow);
   add_rule(h, "...", tok_varg);
 }
 
@@ -1180,6 +1188,7 @@ void TokenLexerPHPDoc::init() {
   add_rule(h, "::", tok_double_colon);
   add_rule(h, "=>", tok_double_arrow);
   add_rule(h, "->", tok_arrow);
+  add_rule(h, "?->", tok_nullsafe_arrow);
   add_rule(h, "...", tok_varg);
   add_rule(h, "=", tok_eq1);
 }
