@@ -13,6 +13,7 @@
 #include "runtime-light/stdlib/output_control.h"
 #include "runtime-light/stdlib/rpc/rpc_context.h"
 #include "runtime-light/stdlib/superglobals.h"
+#include "runtime-light/stdlib/worker/worker_context.h"
 #include "runtime-light/streams/streams.h"
 #include "runtime-light/utils/context.h"
 
@@ -28,7 +29,8 @@ struct ComponentState {
     , awaiting_coroutines(unordered_map<uint64_t, std::coroutine_handle<>>::allocator_type{script_allocator.memory_resource})
     , timer_callbacks(unordered_map<uint64_t, std::function<void()>>::allocator_type{script_allocator.memory_resource})
     , incoming_pending_queries(deque<uint64_t>::allocator_type{script_allocator.memory_resource})
-    , rpc_component_context(script_allocator.memory_resource) {}
+    , rpc_component_context(script_allocator.memory_resource)
+    , job_worker_client_context(script_allocator.memory_resource) {}
 
   ~ComponentState() = default;
 
@@ -61,7 +63,10 @@ struct ComponentState {
   unordered_map<uint64_t, std::function<void()>> timer_callbacks;
   deque<uint64_t> incoming_pending_queries;
 
+  // contexts
   RpcComponentContext rpc_component_context;
+  JobWorkerServerContext job_worker_server_context;
+  JobWorkerClientContext job_worker_client_context;
 
 private:
   bool is_stream_timer(uint64_t stream_d);
