@@ -85,6 +85,8 @@ function get_hash_of_class (object $klass) ::: int;
 
 function strlen ($str ::: string) ::: int;
 
+// === Rpc ========================================================================================
+
 /** @kphp-tl-class */
 interface RpcFunction {
   public function getTLFunctionName() : string;
@@ -126,6 +128,47 @@ function rpc_tl_query_result($query_ids ::: array) ::: mixed[][];
 
 /** @kphp-extern-func-info interruptible */
 function typed_rpc_tl_query_result(int[] $query_ids) ::: @tl\RpcResponse[];
+
+// === Job Workers ================================================================================
+
+/** @kphp-extern-func-info interruptible */
+function kphp_job_worker_start($request ::: string, $timeout ::: float) ::: ?int;
+
+/** @kphp-extern-func-info interruptible */
+function kphp_job_worker_start_no_reply($request ::: string, $timeout ::: float) ::: bool;
+
+/** @kphp-extern-func-info interruptible */
+function kphp_job_worker_fetch_response($job_id ::: int) ::: string;
+
+/** @kphp-extern-func-info interruptible */
+function kphp_job_worker_fetch_request() ::: string;
+
+/** @kphp-extern-func-info interruptible */
+function kphp_job_worker_store_response($response ::: string) ::: int;
+
+// === Json =======================================================================================
+
+class JsonEncoder {
+  const rename_policy = 'none';
+  const visibility_policy = 'all';
+  const skip_if_default = false;
+  const float_precision = 0;
+
+  private function __construct();
+
+  public static function encode(object $instance, int $flags = 0, array $more = []) : string;
+  public static function decode(string $json, string $class_name) : instance<^2>;
+  public static function getLastError() : string;
+
+  // JsonEncoderOrChild::encode(...) is actually replaced by JsonEncoder::to_json_impl('JsonEncoderOrChild', ...)
+  static function to_json_impl(string $encoder_tag, object $instance, int $flags = 0, array $more = []) ::: string;
+
+  // JsonEncoderOrChild::decode(...) is actually replaced by JsonEncoder::from_json_impl('JsonEncoderOrChild', ...)
+  /** @kphp-extern-func-info cpp_template_call */
+  static function from_json_impl(string $encoder_tag, string $json, string $class_name) ::: instance<^3>;
+}
+
+// === Component ==================================================================================
 
 class ComponentQuery {
     private function __construct() ::: \ComponentQuery;
