@@ -17,39 +17,62 @@
 #include "compiler/stage.h"
 #include "compiler/threading/tls.h"
 
-
 class TypeData {
   DEBUG_STRING_METHOD { return as_human_readable(false); }
 
 private:
-  enum flag_id_t : uint8_t {
-    write_flag_e          = 0b00000001,
-    or_null_flag_e        = 0b00000010,
-    or_false_flag_e       = 0b00000100,
-    shape_has_varg_flag_e = 0b00001000,
-    ffi_const_flag_e      = 0b00010000,
-    tuple_as_array_flag_e = 0b00100000,
+  enum flag_id_t : uint16_t {
+    write_flag_e          = 1 << 0,
+    or_null_flag_e        = 1 << 1,
+    or_false_flag_e       = 1 << 2,
+    shape_has_varg_flag_e = 1 << 3,
+    ffi_const_flag_e      = 1 << 4,
+    tuple_as_array_flag_e = 1 << 5,
+
+    // the flags in the following group encode a restricted union type variants;
+    // int|string would have restricted_mixed_int_flag_e and restricted_mixed_string_flag_e
+    // flags set to 1 as well as restricted_mixed_flag_e
+    // too complex types like (?int)|string may still decay to mixed, but we can
+    // express ?(int|string) instead by using the two variant flags along with or_null_flag_e
+    restricted_mixed_flag_e        = 1 << 6,  // whether tp_mixed type should be considered to be a ptype union (default is false)
+    restricted_mixed_int_flag_e    = 1 << 7,  // if restricted_mixed_flag_e is 1, this flag tells if mixed ptype union contains an int type
+    restricted_mixed_float_flag_e  = 1 << 8,  // if restricted_mixed_flag_e is 1, this flag tells if mixed ptype union contains a float type
+    restricted_mixed_string_flag_e = 1 << 9,  // if restricted_mixed_flag_e is 1, this flag tells if mixed ptype union contains a string type
+    restricted_mixed_array_flag_e  = 1 << 10, // if restricted_mixed_flag_e is 1, this flag tells if mixed ptype union contains an array type
+    restricted_mixed_bool_flag_e   = 1 << 11, // if restricted_mixed_flag_e is 1, this flag tells if mixed ptype union contains an bool type
+
+    // 4 bits are unused
   };
 
 public:
   using SubkeyItem = std::pair<Key, TypeData *>;
   using lookup_iterator = std::forward_list<SubkeyItem>::const_iterator;
 
-  // TODO: move all flags (drop_false, drop_null) here and rename this struct?
-  // passing several booleans as set_lca args is clumsy
-  struct FFIRvalueFlags {
-    bool drop_ref: 1;
-    bool take_addr: 1;
+  struct LCAFlags {
+    bool save_or_false: 1;
+    bool save_or_null: 1;
+    bool ffi_drop_ref: 1;
+    bool ffi_take_addr: 1;
+    bool phpdoc: 1;
 
-    FFIRvalueFlags()
-      : drop_ref{false}
-      , take_addr{false} {}
+    LCAFlags()
+      : save_or_false{true}
+      , save_or_null{true}
+      , ffi_drop_ref{false}
+      , ffi_take_addr{false}
+      , phpdoc {false} {}
+
+    static LCAFlags for_phpdoc() {
+      LCAFlags flags;
+      flags.phpdoc = true;
+      return flags;
+    }
   };
 
 private:
 
   PrimitiveType ptype_ : 8;     // current type (int/array/etc); tp_any for uninited, tp_Error if error
-  uint8_t flags_{0};            // a binary mask of flag_id_t
+  uint16_t flags_{0};           // a binary mask of flag_id_t
   uint8_t indirection_{0};      // ptr levels for FFI pointers
 
   // current class for tp_Class (but during inferring it could contain many classes due to multiple implements)
@@ -97,13 +120,20 @@ public:
   ClassPtr get_first_class_type_inside() const;
   bool is_primitive_type() const;
 
-  uint8_t flags() const { return flags_; }
-  void set_flags(uint8_t new_flags);
+  uint16_t flags() const { return flags_; }
+  void set_flags(uint16_t new_flags);
 
   bool is_ffi_ref() const;
 
   bool ffi_const_flag() const { return get_flag<ffi_const_flag_e>(); }
   void set_ffi_const_flag() { set_flag<ffi_const_flag_e>(); }
+
+  bool is_restricted_mixed() const { return get_flag<restricted_mixed_flag_e>(); }
+  bool restricted_mixed_contains(PrimitiveType ptype) const { return (flags_ & ptype_mixed_flag(ptype)) != 0; }
+  bool restricted_mixed_contains(const TypeData *other) const;
+  uint16_t restricted_mixed_types_mask() const;
+  static uint16_t restricted_mixed_flags_mask();
+  static uint16_t ptype_mixed_flag(PrimitiveType ptype);
 
   bool or_false_flag() const { return get_flag<or_false_flag_e>(); }
   void set_or_false_flag() { set_flag<or_false_flag_e>(); }
@@ -151,8 +181,8 @@ public:
   }
 
   const TypeData *const_read_at(const MultiKey &multi_key) const;
-  void set_lca(const TypeData *rhs, bool save_or_false = true, bool save_or_null = true, FFIRvalueFlags ffi_flags = {});
-  void set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool save_or_false = true, bool save_or_null = true, FFIRvalueFlags ffi_flags = {});
+  void set_lca(const TypeData *rhs, LCAFlags flags = {});
+  void set_lca_at(const MultiKey &multi_key, const TypeData *rhs, LCAFlags flags = {});
   void set_lca(PrimitiveType ptype);
   void fix_inf_array();
 
@@ -164,6 +194,7 @@ public:
   static void init_static();
   static const TypeData *get_type(PrimitiveType type);
   static const TypeData *get_type(PrimitiveType array, PrimitiveType type);
+  static const TypeData *get_foreach_key_type();
   static const TypeData *create_for_class(ClassPtr klass);
   static const TypeData *create_array_of(const TypeData *element_type);
 };
