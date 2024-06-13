@@ -168,6 +168,10 @@ class JsonEncoder {
   static function from_json_impl(string $encoder_tag, string $json, string $class_name) ::: instance<^3>;
 }
 
+function json_encode ($v ::: mixed, $options ::: int = 0) ::: string | false;
+
+function json_decode ($v ::: string, $assoc ::: bool = false) ::: mixed;
+
 // === Component ==================================================================================
 
 class ComponentQuery {
@@ -227,9 +231,6 @@ function check_shutdown() ::: void;
 function warning($message ::: string) ::: void;
 /** @kphp-no-return */
 function critical_error($message ::: string) ::: void;
-
-function json_encode ($v ::: mixed, $options ::: int = 0) ::: string | false;
-function json_decode ($v ::: string, $assoc ::: bool = false) ::: mixed;
 
 function debug_print_string($str ::: string) ::: void;
 
