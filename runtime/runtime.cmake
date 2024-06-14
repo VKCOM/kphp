@@ -104,6 +104,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         on_kphp_warning_callback.cpp
         oom_handler.cpp
         openssl.cpp
+        ini.cpp
         php_assert.cpp
         profiler.cpp
         regexp.cpp

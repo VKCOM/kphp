@@ -188,6 +188,13 @@ function register_kphp_on_oom_callback(callable():void $callback) ::: bool;
 function ini_get ($s ::: string) ::: string | false;
 function ini_set ($s ::: string, $v ::: string) ::: bool;
 
+define('INI_SCANNER_NORMAL', 0);
+define('INI_SCANNER_RAW', 1);
+define('INI_SCANNER_TYPED', 2);
+
+function parse_ini_string($ini_string ::: string, $process_sections ::: bool = false, $scanner_mode ::: int = INI_SCANNER_NORMAL) ::: mixed[];
+function parse_ini_file($filename ::: string, $process_sections ::: bool = false, $scanner_mode ::: int = INI_SCANNER_NORMAL) ::: mixed[];
+
 function memory_get_usage ($real_usage ::: bool = false) ::: int;
 function memory_get_peak_usage ($real_usage ::: bool = false) ::: int;
 function memory_get_total_usage() ::: int;
