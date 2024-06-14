@@ -24,10 +24,9 @@ void mixed::copy_from(const mixed &other) {
       break;
     case type::OBJECT: {
       storage_ = other.storage_;
-      auto *outter_ptr = reinterpret_cast<const class_instance<may_be_mixed_base> *>(&storage_);
-      auto *refcnt_ptr = outter_ptr->get();
-      if (refcnt_ptr) {
-        refcnt_ptr->add_ref(); // TODO Destructor is not called for class_instance. This code do it manually. Is it OK?
+      auto *ptr = reinterpret_cast<may_be_mixed_base*>(storage_);
+      if (ptr) {
+        ptr->add_ref();
       }
       break;
     }
@@ -47,7 +46,7 @@ void mixed::copy_from(mixed &&other) {
       break;
     case type::OBJECT: {
       storage_ = other.storage_;
-      other.storage_ = 0; // TODO should I change other.type?
+      other.storage_ = 0;
       break;
     }
     default:
@@ -60,9 +59,8 @@ template<typename T>
 void mixed::init_from(T &&v) {
   if constexpr (inner_type_of_class_instance<std::decay_t<T>>::has) {
     may_be_mixed_base * ptr = dynamic_cast<may_be_mixed_base*>(v.get());
-    if (!ptr) {
-      fprintf(stderr, "AHTUNG!\n");
-      exit(1);
+    if (unlikely(!ptr)) {
+      php_error("Internal compiler error. Trying to set invalid object to mixed");
     }
     storage_ = reinterpret_cast<uint64_t>(ptr);
     type_ = type::OBJECT;

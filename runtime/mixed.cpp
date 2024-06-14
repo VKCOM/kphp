@@ -13,11 +13,11 @@ void mixed::destroy() noexcept {
       as_array().~array<mixed>();
       break;
     case type::OBJECT: {
-      // TODO rewrite  because storage is pointer to may_be_mixed_base
       auto *ptr = reinterpret_cast<may_be_mixed_base*>(storage_);
       if (ptr) {
-        ptr->release(); // Call release for class that inside intrusive pointer inside class_instance
+        ptr->release();
       }
+      storage_ = 0;
       break;
     }
     default: {

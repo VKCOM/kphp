@@ -367,15 +367,6 @@ inline bool f$is_a(const class_instance<Base> &base) {
   return base.template is_a<Derived>();
 }
 
-template<class T>
-struct RetrieveObjType {
-};
-
-template<class T>
-struct RetrieveObjType<class_instance<T>> {
-  using value_type = T;
-};
-
 template<class Derived>
 inline bool f$is_a(const mixed &base) {
   return base.is_a<Derived>();

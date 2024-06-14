@@ -1681,8 +1681,6 @@ function getenv(string $varname = '', bool $local_only = false): mixed;
 
 // builtins that allow to store objects inside a mixed
 
-// Class of object must be annotated using @kphp-may-be-mixed
-// Otherwise, CE is expected
 function to_mixed(object $instance) ::: mixed;
 /** @kphp-extern-func-info cpp_template_call */
 function from_mixed($m ::: mixed, $to_type ::: string) ::: instance<^2>;

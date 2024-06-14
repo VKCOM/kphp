@@ -97,12 +97,6 @@ public:
     return rhs != lhs;
   }
 
-  void release() {
-    if (ptr) {
-      ptr->release();
-    }
-  }
-
   void reset() {
     *this = {};
   }

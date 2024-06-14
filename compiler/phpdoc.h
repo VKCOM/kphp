@@ -53,7 +53,6 @@ enum class PhpDocType {
   kphp_internal_result_indexing,
   kphp_internal_result_array2tuple,
   kphp_internal_param_readonly,
-  kphp_may_be_mixed
 };
 
 class GenericsDeclarationMixin;

@@ -297,8 +297,6 @@ void check_to_mixed_call(VertexAdaptor<op_func_call> call) {
   kphp_assert(type->ptype() == tp_Class);
 
   to_mixed_on_class(type->class_type());
-//  kphp_error(type->class_type()->may_be_mixed, fmt_format("Called to_mixed() for class {}, but it's not marked with @kphp-may-be-mixed", type->class_type()->name));
-
 }
 
 void check_estimate_memory_usage_call(VertexAdaptor<op_func_call> call) {
@@ -793,7 +791,7 @@ void FinalCheckPass::check_instanceof(VertexAdaptor<op_instanceof> instanceof_ve
     return;
   }
 
-  kphp_error(instanceof_var_type->class_type() || instanceof_var_type->ptype() == tp_mixed, fmt_format("left operand of 'instanceof' should be an instance or mixed [TODO], but passed {}", instanceof_var_type->as_human_readable()));
+  kphp_error(instanceof_var_type->class_type() || instanceof_var_type->ptype() == tp_mixed, fmt_format("left operand of 'instanceof' should be an instance or mixed, but passed {}", instanceof_var_type->as_human_readable()));
 }
 
 static void check_indexing_violation(vk::string_view allowed_types_string, const std::vector<PrimitiveType> &allowed_types, vk::string_view what_indexing,

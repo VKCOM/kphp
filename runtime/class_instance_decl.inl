@@ -31,12 +31,9 @@ public:
   using ClassType = T;
 
   class_instance() = default;
-  class_instance(const class_instance & d) = default;
-  class_instance(class_instance && d) noexcept = default;
-
-  // unsafe
-  class_instance(T *ptr) : o(ptr, true) {
-  }
+  class_instance(const class_instance &) = default;
+  class_instance(class_instance &&) noexcept = default;
+  class_instance(T *ptr) noexcept : o(ptr, true) {}
 
   class_instance(const Optional<bool> &null) noexcept {
     php_assert(null.value_state() == OptionalState::null_value);
@@ -182,8 +179,6 @@ public:
 
   template<class Derived>
   friend class class_instance;
-
-  ~class_instance() = default;
 
 private:
   class_instance<T> clone_impl(std::true_type /*is empty*/) const;

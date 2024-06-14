@@ -171,29 +171,12 @@ public:
     using value_type = T;
   };
 
-
-//  template <typename InstanceClass, typename T = typename inner_type_of_class_instance<InstanceClass>::value_type>
-//  inline T *as_object_ptr() {
-//    // TODO add using dynamic cast?
-//    auto *ptr_to_object = dynamic_cast<T*>(reinterpret_cast<may_be_mixed_base*>(storage_));
-//    if (!ptr_to_object) {
-//      fprintf(stderr, "Cannot do dynamic_cast in as_object_ptr [mutable]");
-//      exit(1);
-//    }
-//    return ptr_to_object;
-//  }
-
   // TODO is it ok to return pointer to mutable from const method?
   // I need it just to pass such a pointer into class_instance. Mutability is needed because
   // class_instance do ref-counting
   template <typename InstanceClass, typename T = typename inner_type_of_class_instance<InstanceClass>::value_type>
   inline T *as_object_ptr() const  {
-    // TODO add using dynamic cast?
     auto *ptr_to_object = dynamic_cast<T*>(reinterpret_cast<may_be_mixed_base*>(storage_));
-    if (!ptr_to_object) {
-      fprintf(stderr, "Cannot do dynamic_cast in as_object_ptr [const]");
-      exit(1);
-    }
     return ptr_to_object;
   }
 
@@ -203,9 +186,8 @@ public:
       return false;
     }
 
-    auto *outter_ptr = reinterpret_cast<const class_instance<may_be_mixed_base>*>(&storage_);
-    auto *refcnt_ptr = outter_ptr->get();
-    return dynamic_cast<ObjType*>(refcnt_ptr) != nullptr;
+    auto *ptr = reinterpret_cast<may_be_mixed_base*>(storage_);
+    return dynamic_cast<ObjType*>(ptr) != nullptr;
   }
 
   inline int64_t safe_to_int() const;
@@ -221,17 +203,6 @@ public:
   inline const double &as_float(const char *function) const;
   inline const string &as_string(const char *function) const;
   inline const array<mixed> &as_array(const char *function) const;
-//  template <typename S>
-//  inline const class_instance<S> &as_object([[maybe_unused]] const char *function) const {
-//    switch (get_type()) {
-//      case type::OBJECT: {
-//        return *as_object_ptr<class_instance<S>>();
-//      }
-//      default:
-//        php_warning("%s() expects parameter to be array, %s is given", function, get_type_c_str());
-//        return empty_value<class_instance<S>>();
-//    }
-//  }
 
   inline bool &as_bool(const char *function);
   inline int64_t &as_int(const char *function);
@@ -305,8 +276,6 @@ private:
   uint64_t storage_{0};
 };
 
-// TODO think about by-ref/by-const-ref/by-rvalue-ref/by-value
-
 template<class InputClass>
 inline mixed f$to_mixed(const class_instance<InputClass> &instance) noexcept {
   mixed m;
@@ -318,5 +287,3 @@ template<class ResultClass>
 inline ResultClass f$from_mixed(const mixed& m, const string&) noexcept {
   return ResultClass(m.as_object_ptr<ResultClass>());
 }
-
-// TODO create a function that check descriptor and do a dynamic_cast
