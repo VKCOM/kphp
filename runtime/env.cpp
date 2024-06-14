@@ -33,3 +33,5 @@ Optional<string> f$getenv(const string &varname, bool /*local_only*/) noexcept {
   const char *env = std::getenv(varname.c_str());
   return env ? Optional<string>{env} : false;
 }
+
+#include "env_putenv.cpp"

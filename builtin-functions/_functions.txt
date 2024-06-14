@@ -1678,3 +1678,4 @@ class DateTimeImmutable implements DateTimeInterface {
 }
 
 function getenv(string $varname = '', bool $local_only = false): mixed;
+function putenv($env ::: string):int; ////2022-04-21 by comm644
