@@ -1678,3 +1678,6 @@ class DateTimeImmutable implements DateTimeInterface {
 }
 
 function getenv(string $varname = '', bool $local_only = false): mixed;
+
+//2022-05-01 comm644
+function touch($filename ::: string, int $mtime  = 0, int $atime = 0): bool;
