@@ -42,12 +42,16 @@ int64_t f$crc32_file(const string &file_name);
 bool f$hash_equals(const string &known_string, const string &user_string) noexcept;
 
 bool f$openssl_public_encrypt(const string &data, string &result, const string &key);
+bool f$openssl_public_decrypt(const string &data, string &result, const string &key);
 
 bool f$openssl_public_encrypt(const string &data, mixed &result, const string &key);
+bool f$openssl_public_decrypt(const string &data, mixed &result, const string &key);
 
 bool f$openssl_private_decrypt(const string &data, string &result, const string &key);
+bool f$openssl_private_encrypt(const string &data, string &result, const string &key);
 
 bool f$openssl_private_decrypt(const string &data, mixed &result, const string &key);
+bool f$openssl_private_encrypt(const string &data, mixed &result, const string &key);
 
 Optional<string> f$openssl_pkey_get_private(const string &key, const string &passphrase = string());
 

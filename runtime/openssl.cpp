@@ -350,6 +350,49 @@ static EVP_PKEY *openssl_get_public_evp(const string &key, bool &from_cache) {
 
 using RSA_ptr = vk::unique_ptr_with_delete_function<rsa_st, RSA_free>;
 
+bool f$openssl_private_encrypt(const string &data, string &result, const string &key) {
+  bool from_cache = false;
+  dl::CriticalSectionSmartGuard critical_section;
+  EVP_PKEY *pkey = openssl_get_private_evp(key, string(""), from_cache);
+  if (pkey == nullptr) {
+    critical_section.leave_critical_section();
+    php_warning("Parameter key is not a valid public key");
+    result = string();
+    return false;
+  }
+
+  if (EVP_PKEY_id(pkey) != EVP_PKEY_RSA && EVP_PKEY_id(pkey) != EVP_PKEY_RSA2) {
+    if (!from_cache) {
+      EVP_PKEY_free(pkey);
+    }
+    critical_section.leave_critical_section();
+    php_warning("Key type is neither RSA nor RSA2");
+    result = string();
+    return false;
+  }
+
+  int key_size = EVP_PKEY_size(pkey);
+  php_assert (PHP_BUF_LEN >= key_size);
+
+  if (RSA_private_encrypt((int)data.size(), reinterpret_cast <const unsigned char *> (data.c_str()),
+                         reinterpret_cast <unsigned char *> (php_buf), EVP_PKEY_get0_RSA(pkey), RSA_PKCS1_PADDING) != key_size) {
+    if (!from_cache) {
+      EVP_PKEY_free(pkey);
+    }
+    critical_section.leave_critical_section();
+    php_warning("RSA public encrypt failed");
+    result = string();
+    return false;
+  }
+
+  if (!from_cache) {
+    EVP_PKEY_free(pkey);
+  }
+  critical_section.leave_critical_section();
+  result = string(php_buf, key_size);
+  return true;
+}
+
 bool f$openssl_public_encrypt(const string &data, string &result, const string &key) {
   bool from_cache = false;
   dl::CriticalSectionSmartGuard critical_section;
@@ -402,6 +445,57 @@ bool f$openssl_public_encrypt(const string &data, mixed &result, const string &k
   return false;
 }
 
+bool f$openssl_public_decrypt(const string &data, mixed &result, const string &key) {
+  string result_string;
+  if (f$openssl_public_decrypt(data, result_string, key)) {
+    result = result_string;
+    return true;
+  }
+  result = mixed();
+  return false;
+}
+
+
+
+bool f$openssl_public_decrypt(const string &data, string &result, const string &key) {
+  bool from_cache = false;
+  dl::CriticalSectionSmartGuard critical_section;
+  EVP_PKEY *pkey = openssl_get_public_evp(key, from_cache);
+  if (pkey == nullptr) {
+    critical_section.leave_critical_section();
+    php_warning("Parameter key is not a valid private key");
+    return false;
+  }
+
+  if (EVP_PKEY_id(pkey) != EVP_PKEY_RSA && EVP_PKEY_id(pkey) != EVP_PKEY_RSA2) {
+    if (!from_cache) {
+      EVP_PKEY_free(pkey);
+    }
+    critical_section.leave_critical_section();
+    php_warning("Key type is not an RSA nor RSA2");
+    return false;
+  }
+
+  int key_size = EVP_PKEY_size(pkey);
+  php_assert (PHP_BUF_LEN >= key_size);
+
+  int len = RSA_public_decrypt((int)data.size(), reinterpret_cast <const unsigned char *> (data.c_str()),
+                                reinterpret_cast <unsigned char *> (php_buf), EVP_PKEY_get0_RSA(pkey), RSA_PKCS1_PADDING);
+  if (!from_cache) {
+    EVP_PKEY_free(pkey);
+  }
+  critical_section.leave_critical_section();
+  if (len == -1) {
+    //php_warning ("RSA private decrypt failed");
+    result = string();
+    return false;
+  }
+
+  result.assign(php_buf, len);
+  return true;
+}
+
+
 bool f$openssl_private_decrypt(const string &data, string &result, const string &key) {
   bool from_cache = false;
   dl::CriticalSectionSmartGuard critical_section;
@@ -443,6 +537,15 @@ bool f$openssl_private_decrypt(const string &data, string &result, const string 
 bool f$openssl_private_decrypt(const string &data, mixed &result, const string &key) {
   string result_string;
   if (f$openssl_private_decrypt(data, result_string, key)) {
+    result = result_string;
+    return true;
+  }
+  result = mixed();
+  return false;
+}
+bool f$openssl_private_encrypt(const string &data, mixed &result, const string &key) {
+  string result_string;
+  if (f$openssl_private_encrypt(data, result_string, key)) {
     result = result_string;
     return true;
   }
