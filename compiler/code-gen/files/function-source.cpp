@@ -12,25 +12,33 @@
 #include "compiler/code-gen/vertex-compiler.h"
 #include "compiler/stage.h"
 
+#include "common/algorithms/contains.h"
+
 FunctionCpp::FunctionCpp(FunctionPtr function) :
   function(function) {
 }
 
-void declare_global_vars(FunctionPtr function, CodeGenerator &W) {
-  for (auto global_var : function->global_var_ids) {
-    W << VarExternDeclaration(global_var) << NL;
+void declare_vars_vector(const std::vector<VarPtr> &vars, std::unordered_set<VarPtr> *already_declared, CodeGenerator &W) {
+  for (auto v : vars) {
+    if (already_declared != nullptr) {
+      if (vk::contains(*already_declared, v)) {
+        continue;
+      }
+      already_declared->insert(v);
+    }
+    W << VarExternDeclaration(v) << NL;
   }
 }
 
-void declare_const_vars(FunctionPtr function, CodeGenerator &W) {
-  for (auto const_var : function->explicit_const_var_ids) {
-    W << VarExternDeclaration(const_var) << NL;
-  }
-}
-
-void declare_static_vars(FunctionPtr function, CodeGenerator &W) {
-  for (auto static_var : function->static_var_ids) {
-    W << VarExternDeclaration(static_var) << NL;
+void declare_vars_set(const std::set<VarPtr> &vars, std::unordered_set<VarPtr> *already_declared, CodeGenerator &W) {
+  for (auto v : vars) {
+    if (already_declared != nullptr) {
+      if (vk::contains(*already_declared, v)) {
+        continue;
+      }
+      already_declared->insert(v);
+    }
+    W << VarExternDeclaration(v) << NL;
   }
 }
 
@@ -50,13 +58,67 @@ void FunctionCpp::compile(CodeGenerator &W) const {
   W << includes;
 
   W << OpenNamespace();
-  declare_global_vars(function, W);
-  declare_const_vars(function, W);
-  declare_static_vars(function, W);
+  declare_vars_vector(function->global_var_ids, nullptr, W);
+  declare_vars_set(function->explicit_const_var_ids, nullptr, W);
+  declare_vars_vector(function->static_var_ids, nullptr, W);
 
   W << UnlockComments();
   W << function->root << NL;
   W << LockComments();
+
+  W << CloseNamespace();
+  W << CloseFile();
+}
+
+void FunctionListCpp::compile(CodeGenerator &W) const {
+  FunctionPtr cpp_func;
+  for (const auto &f : functions) {
+    if (!f->is_inline) {
+      cpp_func = f;
+      break;
+    }
+  }
+  if (!cpp_func) {
+    return;
+  }
+
+  W << OpenFile(cpp_func->src_name, cpp_func->subdir);
+  W << ExternInclude(G->settings().runtime_headers.get());
+  W << Include(cpp_func->header_full_name);
+
+  IncludesCollector includes;
+  for (const auto &function : functions) {
+    if (function->is_inline) {
+      continue;
+    }
+    includes.add_function_body_depends(function);
+  }
+  W << includes;
+
+  W << OpenNamespace();
+
+  std::unordered_set<VarPtr> already_declared_vars;
+  for (const auto &function : functions) {
+    if (function->is_inline) {
+      continue;
+    }
+    declare_vars_vector(function->global_var_ids, &already_declared_vars, W);
+    declare_vars_set(function->explicit_const_var_ids, &already_declared_vars, W);
+    declare_vars_vector(function->static_var_ids, &already_declared_vars, W);
+  }
+
+  for (const auto &function : functions) {
+    if (function->is_inline) {
+      continue;
+    }
+
+    stage::set_function(function);
+    function->name_gen_map = {}; // make codegeneration of this function idempotent
+
+    W << UnlockComments();
+    W << function->root << NL;
+    W << LockComments();
+  }
 
   W << CloseNamespace();
   W << CloseFile();

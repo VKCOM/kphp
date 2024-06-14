@@ -56,8 +56,8 @@ public:
   std::vector<VarPtr> local_var_ids, global_var_ids, static_var_ids, param_ids;
   std::unordered_set<VarPtr> *bad_vars = nullptr;     // for check ub and safe operations wrapper, see comments in check-ub.cpp
   std::set<VarPtr> implicit_const_var_ids, explicit_const_var_ids, explicit_header_const_var_ids;
-  std::vector<FunctionPtr> dep;
-  std::set<ClassPtr> class_dep;
+  std::vector<FunctionPtr> dep; // functions called from the function body
+  std::set<ClassPtr> class_dep; // classes referenced from the function body
   std::set<ClassPtr> exceptions_thrown; // exceptions that can be thrown by this function
   bool tl_common_h_dep = false;
 

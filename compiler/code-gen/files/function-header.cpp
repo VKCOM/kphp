@@ -12,23 +12,7 @@
 #include "compiler/code-gen/vertex-compiler.h"
 #include "compiler/data/function-data.h"
 
-FunctionH::FunctionH(FunctionPtr function) :
-  function(function) {
-}
-
-void FunctionH::compile(CodeGenerator &W) const {
-  W << OpenFile(function->header_name, function->subdir);
-  W << "#pragma once" << NL << ExternInclude(G->settings().runtime_headers.get());
-
-  IncludesCollector includes;
-  includes.add_function_signature_depends(function);
-  W << includes;
-
-  W << OpenNamespace();
-  for (auto const_var : function->explicit_header_const_var_ids) {
-    W << VarExternDeclaration(const_var) << NL;
-  }
-
+static void write_function_decl(FunctionPtr function, CodeGenerator &W) {
   if (function->is_inline) {
     W << "inline ";
   }
@@ -43,22 +27,89 @@ void FunctionH::compile(CodeGenerator &W) const {
   if (function->is_resumable) {
     W << FunctionForkDeclaration(function, true) << ";" << NL;
   }
-  if (function->is_inline) {
-    stage::set_function(function);
-    function->name_gen_map = {};  // make codegeneration of this function idempotent
+}
 
+static void write_function_definition(FunctionPtr function, std::unordered_set<VarPtr> *already_declared_vars, CodeGenerator &W) {
+  stage::set_function(function);
+  function->name_gen_map = {};  // make codegeneration of this function idempotent
+
+  declare_vars_vector(function->global_var_ids, already_declared_vars, W);
+  declare_vars_set(function->explicit_const_var_ids, already_declared_vars, W);
+  declare_vars_vector(function->static_var_ids, already_declared_vars, W);
+  W << UnlockComments();
+  W << function->root << NL;
+  W << LockComments();
+}
+
+FunctionH::FunctionH(FunctionPtr function) :
+  function(function) {
+}
+
+void FunctionH::compile(CodeGenerator &W) const {
+  W << OpenFile(function->header_name, function->subdir);
+  W << "#pragma once" << NL << ExternInclude(G->settings().runtime_headers.get());
+
+  IncludesCollector includes;
+  includes.add_function_signature_depends(function);
+  W << includes;
+  W << OpenNamespace();
+  declare_vars_set(function->explicit_header_const_var_ids, nullptr, W);
+  write_function_decl(function, W);
+  if (function->is_inline) {
     W << CloseNamespace();
     includes.start_next_block();
     includes.add_function_body_depends(function);
     W << includes;
     W << OpenNamespace();
+  }
 
-    declare_global_vars(function, W);
-    declare_const_vars(function, W);
-    declare_static_vars(function, W);
-    W << UnlockComments();
-    W << function->root << NL;
-    W << LockComments();
+  if (function->is_inline) {
+    write_function_definition(function, nullptr, W);
+  }
+
+  W << CloseNamespace();
+  W << CloseFile();
+}
+
+void FunctionListH::compile(CodeGenerator &W) const {
+  W << OpenFile(functions[0]->header_name, functions[0]->subdir);
+  W << "#pragma once" << NL << ExternInclude(G->settings().runtime_headers.get());
+
+  IncludesCollector includes;
+  bool has_inline = false;
+  for (const auto &f : functions) {
+    includes.add_function_signature_depends(f);
+    has_inline = has_inline || f->is_inline;
+  }
+  W << includes;
+
+  W << OpenNamespace();
+
+  std::unordered_set<VarPtr> already_declared_vars;
+  for (const auto &f : functions) {
+    declare_vars_set(f->explicit_header_const_var_ids, &already_declared_vars, W);
+  }
+
+  for (const auto &f : functions) {
+    write_function_decl(f, W);
+  }
+
+  if (has_inline) {
+    W << CloseNamespace();
+    includes.start_next_block();
+    for (const auto &f : functions) {
+      if (f->is_inline) {
+        includes.add_function_body_depends(f);
+      }
+    }
+    W << includes;
+    W << OpenNamespace();
+  }
+
+  for (const auto &f : functions) {
+    if (f->is_inline) {
+      write_function_definition(f, &already_declared_vars, W);
+    }
   }
 
   W << CloseNamespace();
