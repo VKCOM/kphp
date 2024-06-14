@@ -15,8 +15,8 @@
 #include "common/kprintf.h"
 #include "common/options.h"
 #include "common/precise-time.h"
-#include "common/sha1.h"
 
+#include "common/crypto/openssl-evp-digest.h"
 #include "net/net-buffers.h"
 #include "net/net-connections.h"
 #include "net/net-crypto-aes.h"
@@ -277,11 +277,11 @@ static int sqlc_inner_authorise (struct connection *c) {
 
   vkprintf(4, "mysql db: %s; user: %s; password: *\n", sql_database, sql_user);
 
-  sha1 ((unsigned char *)sql_password, strlen (sql_password), (unsigned char *)stage1_hash);
+  vk::sha1({(unsigned char *)sql_password, strlen(sql_password)}, {reinterpret_cast<unsigned char *>(stage1_hash), 5});
   memcpy (password_sha1, T->scramble1, 8);
   memcpy (password_sha1 + 8, T->scramble2, 12);
-  sha1 ((unsigned char *)stage1_hash, 20, (unsigned char *)(password_sha1 + 20));
-  sha1 ((unsigned char *)password_sha1, 40, (unsigned char *)user_scramble);
+  vk::sha1({reinterpret_cast<unsigned char *>(stage1_hash), 20}, {reinterpret_cast<unsigned char *>(password_sha1 + 20), 5});
+  vk::sha1({reinterpret_cast<unsigned char *>(password_sha1), 40}, {reinterpret_cast<unsigned char *>(user_scramble), 5});
   for (i = 0; i < 20; i++) {
     user_scramble[i] ^= stage1_hash[i];
   }
@@ -469,8 +469,8 @@ int sqlc_password (struct connection *c __attribute__((unused)), const char *use
 
   if (!strcmp (user, "kitten")) {
     unsigned char buffer2[20];
-    sha1 ((unsigned char *)"test", 4, buffer2);
-    sha1 (buffer2, 20, (unsigned char *)buffer);
+    vk::sha1({(unsigned char *)"test", 4}, buffer2);
+    vk::sha1({buffer2, 20}, {(unsigned char *)buffer, 20});
     return 2;
   }
   

@@ -13,6 +13,7 @@
 #include <openssl/hmac.h>
 #include <openssl/md5.h>
 #include <openssl/pem.h>
+#include <openssl/rand.h>
 #include <openssl/rsa.h>
 #include <openssl/sha.h>
 #include <openssl/ssl.h>

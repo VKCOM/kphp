@@ -17,7 +17,6 @@
 #include "common/crc32c.h"
 #include "common/kprintf.h"
 #include "common/parallel/counter.h"
-#include "common/sha1.h"
 
 #include "net/net-msg-buffers.h"
 
@@ -519,7 +518,7 @@ int rwm_fetch_data_back(raw_message_t *raw, void *data, int bytes) {
   raw->total_bytes -= res;
   if (!raw->total_bytes) {
     msg_part_chain_dec_ref(raw->first);
-    raw->first = raw->last = NULL;
+    raw->first = raw->last = nullptr;
     raw->first_offset = raw->last_offset = 0;
   }
   return res;
@@ -529,7 +528,7 @@ int rwm_trunc(raw_message_t *raw, int len) {
   if (len >= raw->total_bytes) {
     return raw->total_bytes;
   }
-  rwm_fetch_data_back(raw, NULL, raw->total_bytes - len);
+  rwm_fetch_data_back(raw, nullptr, raw->total_bytes - len);
   return len;
 }
 

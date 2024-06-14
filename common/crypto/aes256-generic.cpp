@@ -8,9 +8,6 @@
 
 #include <openssl/aes.h>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
 void crypto_generic_aes256_set_encrypt_key(vk_aes_ctx_t *vk_ctx, const uint8_t key[32]) {
   AES_set_encrypt_key(key, AES256_KEY_BITS, &vk_ctx->u.key);
 }
@@ -77,6 +74,3 @@ void crypto_generic_aes256_ctr_encrypt(vk_aes_ctx_t *vk_ctx, const uint8_t *in, 
     } while (i < l);
   }
 }
-
-#pragma GCC diagnostic pop
-
