@@ -2421,6 +2421,7 @@ void global_init_runtime_libs() {
   global_init_profiler();
   global_init_instance_cache_lib();
   global_init_files_lib();
+  global_init_popen_lib();
   global_init_interface_lib();
   global_init_openssl_lib();
   global_init_regexp_lib();
