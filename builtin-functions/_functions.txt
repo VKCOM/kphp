@@ -604,6 +604,8 @@ function asinh ($v ::: float) ::: float;
 /** @kphp-pure-function */
 function atan ($v ::: float) ::: float;
 /** @kphp-pure-function */
+function atanh ($v ::: float) ::: float;
+/** @kphp-pure-function */
 function atan2 ($y ::: float, $x ::: float) ::: float;
 /** @kphp-pure-function */
 function base_convert ($number ::: string, $frombase ::: int, $tobase ::: int) ::: string;
@@ -614,15 +616,27 @@ function cos ($v ::: float) ::: float;
 /** @kphp-pure-function */
 function cosh ($v ::: float) ::: float;
 /** @kphp-pure-function */
+function decoct ($number ::: int) ::: string;
+/** @kphp-pure-function */
 function deg2rad ($v ::: float) ::: float;
 /** @kphp-pure-function */
 function exp ($v ::: float) ::: float;
 /** @kphp-pure-function */
+function expm1 ($v ::: float) ::: float;
+/** @kphp-pure-function */
 function floor ($v ::: float) ::: float;
+/** @kphp-pure-function */
+function hypot ($x ::: float, $y ::: float) ::: float;
+/** @kphp-pure-function */
+function log10 ($v ::: float) ::: float;
+/** @kphp-pure-function */
+function log1p ($v ::: float) ::: float;
 /** @kphp-pure-function */
 function log ($v ::: float, $base ::: float = 2.7182818284590452353602874713527) ::: float;
 /** @kphp-pure-function */
 function fmod ($x ::: float, $y ::: float) ::: float;
+/** @kphp-pure-function */
+function octdec ($number ::: string) ::: int;
 /** @kphp-pure-function */
 function pi() ::: float;
 /** @kphp-pure-function */
@@ -635,6 +649,8 @@ function sinh ($v ::: float) ::: float;
 function sqrt ($v ::: float) ::: float;
 /** @kphp-pure-function */
 function tan ($v ::: float) ::: float;
+/** @kphp-pure-function */
+function tanh ($v ::: float) ::: float;
 /** @kphp-pure-function */
 function rad2deg ($v ::: float) ::: float;
 

@@ -76,6 +76,20 @@ string f$decbin(int64_t number) noexcept {
   return {s + i, static_cast<string::size_type>(65 - i)};
 }
 
+string f$decoct(int64_t number) noexcept {
+  auto v = static_cast<uint64_t>(number);
+
+  char s[23];
+  int i = 22;
+
+  do {
+    s[--i] = static_cast<char>((v & 7) + '0');
+    v >>= 3;
+  } while (v > 0);
+
+  return string(s + i, static_cast<string::size_type>(22 - i));
+}
+
 string f$dechex(int64_t number) noexcept {
   auto v = static_cast<uint64_t>(number);
 
@@ -110,6 +124,30 @@ int64_t f$hexdec(const string &number) noexcept {
     php_warning("Integer overflow on converting '%s' in function hexdec, "
                 "the result will be different from PHP", number.c_str());
   }
+  return v;
+}
+
+int64_t f$octdec(const string &number) noexcept {
+  uint64_t v = 0;
+  bool bad_str_param = number.empty();
+  bool overflow = false;
+  for (string::size_type i = 0; i < number.size(); i++) {
+    const uint8_t d = number[i] - '0';
+    if (unlikely(d >= 8)) {
+      bad_str_param = true;
+    } else {
+      v = mult_and_add<8>(v, d, overflow);
+    }
+  }
+
+  if (unlikely(bad_str_param)) {
+    php_warning("Wrong parameter \"%s\" in function octdec", number.c_str());
+  }
+  if (unlikely(overflow)) {
+    php_warning("Integer overflow on converting '%s' in function octdec, "
+                "the result will be different from PHP", number.c_str());
+  }
+
   return v;
 }
 
