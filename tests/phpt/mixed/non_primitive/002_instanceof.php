@@ -2,10 +2,7 @@
 <?php
 require_once 'kphp_tester_include.php';
 
-// TODO get rid of this phpdoc
-/**
- *  @kphp-may-be-mixed
-*/
+
 class A {
     public int $data;
     public function __construct(int $x) {
@@ -16,15 +13,8 @@ class A {
     }
 }
 
-/**
- *  @kphp-may-be-mixed
-*/
-class B {
-
-}
-
 class C {
-    
+
 }
 
 /**
@@ -35,12 +25,6 @@ function check_instance_of($x) {
         echo "instanceof A\n";
     } else {
         echo "not instanceof A\n";
-    }
-
-    if ($x instanceof B) {
-        echo "instanceof B\n";
-    } else {
-        echo "not instanceof B\n";
     }
 
     if ($x instanceof C) {

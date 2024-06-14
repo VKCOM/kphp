@@ -47,7 +47,6 @@ void mixed::copy_from(mixed &&other) {
       break;
     case type::OBJECT: {
       storage_ = other.storage_;
-      fprintf(stderr, "AHA, MAKING STORAGE = 0!!\n");
       other.storage_ = 0; // TODO should I change other.type?
       break;
     }
@@ -59,30 +58,40 @@ void mixed::copy_from(mixed &&other) {
 
 template<typename T>
 void mixed::init_from(T &&v) {
-  auto type_and_value_ref = get_type_and_value_ptr(v);
-  type_ = type_and_value_ref.first;
-  auto *value_ptr = type_and_value_ref.second;
-  using ValueType = std::decay_t<decltype(*value_ptr)>;
-  if (type_ == type::OBJECT) {
-    fprintf(stderr, "INITING OBJECT!!!\n");
-  }
-  new(value_ptr) ValueType(std::forward<T>(v));
-  if (type_ == type::OBJECT) {
-    fprintf(stderr, "PTR = %p\n", value_ptr);
+  if constexpr (inner_type_of_class_instance<std::decay_t<T>>::has) {
+    may_be_mixed_base * ptr = dynamic_cast<may_be_mixed_base*>(v.get());
+    if (!ptr) {
+      fprintf(stderr, "AHTUNG!\n");
+      exit(1);
+    }
+    storage_ = reinterpret_cast<uint64_t>(ptr);
+    type_ = type::OBJECT;
+    ptr->add_ref();
+  } else {
+    auto type_and_value_ref = get_type_and_value_ptr(v);
+    type_ = type_and_value_ref.first;
+    auto *value_ptr = type_and_value_ref.second;
+    using ValueType = std::decay_t<decltype(*value_ptr)>;
+    new(value_ptr) ValueType(std::forward<T>(v));
   }
 }
 
 template<typename T>
 mixed &mixed::assign_from(T &&v) {
-  auto type_and_value_ref = get_type_and_value_ptr(v);
-  if (get_type() == type_and_value_ref.first) {
-    fputs("[ASSIGNING]\n", stderr);
-    *type_and_value_ref.second = std::forward<T>(v);
-  } else {
+  if constexpr(inner_type_of_class_instance<std::decay_t<T>>::has) {
+    static_assert(std::is_base_of_v<may_be_mixed_base, typename inner_type_of_class_instance<std::decay_t<T>>::value_type>);
     destroy();
-    fputs("[INITING FROM]\n", stderr);
     init_from(std::forward<T>(v));
+  } else {
+    auto type_and_value_ref = get_type_and_value_ptr(v);
+    if (get_type() == type_and_value_ref.first) {
+      *type_and_value_ref.second = std::forward<T>(v);
+    } else {
+      destroy();
+      init_from(std::forward<T>(v));
+    }
   }
+
   return *this;
 }
 
@@ -112,12 +121,10 @@ mixed::mixed(Optional<T> &&v) noexcept {
 }
 
 mixed::mixed(const mixed &v) noexcept {
-  fprintf(stderr, "[MIXED COPY CTOR]\n");
   copy_from(v);
 }
 
 mixed::mixed(mixed &&v) noexcept {
-  fprintf(stderr, "[MIXED MOVE CTOR]\n");
   copy_from(std::move(v));
 }
 

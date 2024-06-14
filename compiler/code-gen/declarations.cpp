@@ -405,7 +405,7 @@ void InterfaceDeclaration::compile(CodeGenerator &W) const {
     auto transform_to_src_name = [](CodeGenerator &W, const InterfacePtr &i) { W << i->src_name; };
     W << JoinValues(interface->implements, ", public ", join_mode::one_line, transform_to_src_name);
   } else {
-    W << (interface->need_virtual_modifier() ? "virtual " : "") << "abstract_refcountable_php_interface";
+    W << (interface->need_virtual_modifier() ? "virtual " : "") << (interface->may_be_mixed ? "may_be_mixed_base" : "abstract_refcountable_php_interface");
   }
   W << " " << BEGIN;
 
@@ -488,9 +488,10 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
     W << ": public refcountable_polymorphic_php_classes<" << get_all_interfaces() << ">";
   } else if (!klass->derived_classes.empty()) {
     if (klass->need_virtual_modifier()) {
-      W << ": public refcountable_polymorphic_php_classes_virt<>";
+      W << ": public refcountable_polymorphic_php_classes_virt<>" << (klass->may_be_mixed ? ", virtual may_be_mixed_base" : "");
     } else {
-      W << ": public refcountable_polymorphic_php_classes<abstract_refcountable_php_interface>";
+      W << ": public refcountable_polymorphic_php_classes<" <<
+        (klass->may_be_mixed ? "may_be_mixed_base" : "abstract_refcountable_php_interface") << ">";
     }
   } else if(klass->may_be_mixed) {
     W << ": public refcountable_polymorphic_php_classes<may_be_mixed_base>";

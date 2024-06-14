@@ -774,8 +774,8 @@ private:
         break;
 
       case PhpDocType::kphp_may_be_mixed:
-        klass->may_be_mixed = true;
-        kphp_error(klass->is_class(), "@kphp-serialize is allowed only for classes");
+//        klass->may_be_mixed = true;
+//        kphp_error(klass->is_class(), "@kphp-serialize is allowed only for classes");
         break;
       default:
         break;

@@ -288,10 +288,17 @@ void check_instance_deserialize_call(VertexAdaptor<op_func_call> call) {
   kphp_error(type->class_type()->is_serializable, fmt_format("Called instance_deserialize() for class {}, but it's not marked with @kphp-serializable", type->class_type()->name));
 }
 
+void to_mixed_on_class(ClassPtr klass) {
+  klass->deeply_require_may_be_mixed_base();
+}
+
 void check_to_mixed_call(VertexAdaptor<op_func_call> call) {
   const auto *type = tinf::get_type(call->args().front());
   kphp_assert(type->ptype() == tp_Class);
-  kphp_error(type->class_type()->may_be_mixed, fmt_format("Called to_mixed() for class {}, but it's not marked with @kphp-may-be-mixed", type->class_type()->name));
+
+  to_mixed_on_class(type->class_type());
+//  kphp_error(type->class_type()->may_be_mixed, fmt_format("Called to_mixed() for class {}, but it's not marked with @kphp-may-be-mixed", type->class_type()->name));
+
 }
 
 void check_estimate_memory_usage_call(VertexAdaptor<op_func_call> call) {

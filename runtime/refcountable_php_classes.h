@@ -144,7 +144,7 @@ public:
 };
 
 // TODO rename later, awful
-struct may_be_mixed_base : public abstract_refcountable_php_interface {
+struct may_be_mixed_base : public virtual abstract_refcountable_php_interface {
   virtual ~may_be_mixed_base() = default;
 };
 

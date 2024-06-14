@@ -13,17 +13,10 @@ void mixed::destroy() noexcept {
       as_array().~array<mixed>();
       break;
     case type::OBJECT: {
-      fputs("[DESTROYING OBJ IN MIXED]\n", stderr);
-      auto *outter_ptr = reinterpret_cast<const class_instance<may_be_mixed_base> *>(&storage_);
-      auto *refcnt_ptr = outter_ptr->get();
-      fprintf(stderr, "outter_ptr: %p\n", outter_ptr);
-      fprintf(stderr, "refcnt_ptr: %p\n", refcnt_ptr);
-//      fprintf(stderr, "deref outter: %p\n", )
-      if (refcnt_ptr) {
-        fputs("[... DO DECREF]\n---release\n", stderr);
-        refcnt_ptr->release(); // Call release for class that inside intrusive pointer inside class_instance
-      } else {
-        fputs("[...NOT DECREF!]\n", stderr);  
+      // TODO rewrite  because storage is pointer to may_be_mixed_base
+      auto *ptr = reinterpret_cast<may_be_mixed_base*>(storage_);
+      if (ptr) {
+        ptr->release(); // Call release for class that inside intrusive pointer inside class_instance
       }
       break;
     }

@@ -2,10 +2,6 @@
 <?php
 require_once 'kphp_tester_include.php';
 
-// TODO get rid of this phpdoc
-/**
- *  @kphp-may-be-mixed
-*/
 class A {
     public int $data;
     public function __construct(int $x) {
