@@ -733,12 +733,21 @@ bool string::try_to_float_as_php8(double *val) const {
 }
 
 bool string::try_to_float_as_php7(double *val) const {
-  if (empty() || (size() >= 2 && p[0] == '0' && vk::any_of_equal(p[1], 'x', 'X'))) {
+  const char *cur = c_str();
+  const char *end = cur + size();
+
+  while (isspace(*cur)) {
+    cur++;
+  }
+
+  const auto len = end - cur;
+  if (len == 0 || (len >= 2 && cur[0] == '0' && vk::any_of_equal(cur[1], 'x', 'X'))) {
     return false;
   }
-  char *end_ptr{nullptr};
-  *val = strtod(p, &end_ptr);
-  return (end_ptr == p + size());
+
+  char *end_ptr = nullptr;
+  *val = strtod(cur, &end_ptr);
+  return (end_ptr == end);
 }
 
 bool string::try_to_float(double *val, bool php8_warning) const {
