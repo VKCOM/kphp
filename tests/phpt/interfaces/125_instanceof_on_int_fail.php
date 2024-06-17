@@ -1,5 +1,5 @@
 @kphp_should_fail
-/pass int to argument \$instance of instance_cast/
+/left operand of 'instanceof' should be an instance or mixed, but passed int/
 <?php
 
 class A { public $x = 10; }
