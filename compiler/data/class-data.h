@@ -126,7 +126,7 @@ public:
 
 
   bool is_polymorphic_class() const {
-    return !derived_classes.empty() || !implements.empty() || parent_class;
+    return !derived_classes.empty() || !implements.empty() || parent_class || may_be_mixed;
   }
 
   bool is_empty_class() const {
