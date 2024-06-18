@@ -4,6 +4,7 @@ include(${BASE_DIR}/runtime-light/stdlib/stdlib.cmake)
 include(${BASE_DIR}/runtime-light/streams/streams.cmake)
 include(${BASE_DIR}/runtime-light/tl/tl.cmake)
 include(${BASE_DIR}/runtime-light/utils/utils.cmake)
+include(${BASE_DIR}/runtime-light/coroutine/coroutine.cmake)
 
 prepend(MONOTOINC_LIGHT_BUFFER_RESOURCE_SRC ${BASE_DIR}/runtime-light/memory-resource-impl/
         monotonic-light-buffer-resource.cpp)
@@ -12,16 +13,17 @@ prepend(RUNTIME_COMPONENT_SRC ${BASE_DIR}/runtime-light/
         component/component.cpp)
 
 set(RUNTIME_LIGHT_SRC ${RUNTIME_CORE_SRC}
-        ${RUNTIME_STDLIB_SRC}
-        ${RUNTIME_ALLOCATOR_SRC}
-        ${RUNTIME_COROUTINE_SRC}
-        ${RUNTIME_COMPONENT_SRC}
-        ${RUNTIME_STREAMS_SRC}
-        ${RUNTIME_TL_SRC}
-        ${RUNTIME_UTILS_SRC}
-        ${RUNTIME_LANGUAGE_SRC}
-        ${MONOTOINC_LIGHT_BUFFER_RESOURCE_SRC}
-        ${BASE_DIR}/runtime-light/runtime-light.cpp)
+                ${RUNTIME_STDLIB_SRC}
+                ${RUNTIME_ALLOCATOR_SRC}
+                ${RUNTIME_COROUTINE_SRC}
+                ${RUNTIME_COMPONENT_SRC}
+                ${RUNTIME_STREAMS_SRC}
+                ${RUNTIME_TL_SRC}
+                ${RUNTIME_UTILS_SRC}
+                ${RUNTIME_LANGUAGE_SRC}
+                ${MONOTOINC_LIGHT_BUFFER_RESOURCE_SRC}
+                ${RUNTIME_COROUTINE_SRC}
+                ${BASE_DIR}/runtime-light/runtime-light.cpp)
 
 vk_add_library(runtime-light OBJECT ${RUNTIME_LIGHT_SRC})
 set_property(TARGET runtime-light PROPERTY POSITION_INDEPENDENT_CODE ON)

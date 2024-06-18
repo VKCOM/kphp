@@ -44,7 +44,7 @@ void FunctionH::compile(CodeGenerator &W) const {
     W << " __attribute__((flatten))";
   }
   W << ";" << NL;
-  if (function->is_resumable) {
+  if (function->is_resumable || function->is_light_fork) {
     W << FunctionForkDeclaration(function, true) << ";" << NL;
   }
   if (function->is_inline) {

@@ -3,9 +3,12 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
+
+#include <deque>
 #include <map>
 #include <queue>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "common/wrappers/likely.h"
 
@@ -64,6 +67,9 @@ private:
 namespace stl {
 template<class Key, class T, class Resource, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>>
 using unordered_map = std::unordered_map<Key, T, Hash, KeyEqual, resource_allocator<std::pair<const Key, T>, Resource>>;
+
+template<class Key, class Resource, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>>
+using unordered_set = std::unordered_set<Key, Hash, KeyEqual, resource_allocator<Key, Resource>>;
 
 template<class Key, class Value, class Resource, class Cmp = std::less<Key>>
 using map = std::map<Key, Value, Cmp, resource_allocator<std::pair<const Key, Value>, Resource>>;

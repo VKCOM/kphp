@@ -44,6 +44,8 @@
 
 #undef INCLUDED_FROM_KPHP_CORE
 
+#include "runtime-core/utils/small-object-storage.h"
+
 #define FFI_CALL(call) ({ dl::CriticalSectionGuard critical_section___; (call); })
 #define FFI_INVOKE_CALLBACK(call) ({ dl::NonCriticalSectionGuard non_critical_section___; (call); })
 

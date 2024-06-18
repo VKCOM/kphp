@@ -6,7 +6,7 @@
 
 Storage::Storage() noexcept :
   tag(0) {
-  memset(storage_.storage_, 0, sizeof(mixed));
+  memset(storage_.storage_.data(), 0, sizeof(mixed));
 }
 
 void Storage::save_void() noexcept {

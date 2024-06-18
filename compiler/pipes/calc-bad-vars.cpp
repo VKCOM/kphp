@@ -548,6 +548,15 @@ class CalcBadVars {
     }
   }
 
+  static void calc_resumable_in_light_mode(const FuncCallGraph &call_graph, const std::vector<DepData> &dep_data) {
+    for (int i = 0; i < call_graph.n; i++) {
+      for (const auto &fork : dep_data[i].forks) {
+        fork->is_light_fork = true;
+        fork->is_interruptible = true;
+      }
+    }
+  }
+
   static void calc_resumable(const FuncCallGraph &call_graph, const std::vector<DepData> &dep_data) {
     for (int i = 0; i < call_graph.n; i++) {
       for (const auto &fork : dep_data[i].forks) {
@@ -684,8 +693,12 @@ public:
 
     {
       FuncCallGraph call_graph(std::move(functions), dep_datas);
-      calc_interruptible(call_graph);
-      calc_resumable(call_graph, dep_datas);
+      if (G->is_output_mode_k2_component()) {
+        calc_interruptible(call_graph);
+        calc_resumable_in_light_mode(call_graph, dep_datas);
+      } else {
+        calc_resumable(call_graph, dep_datas);
+      }
       generate_bad_vars(call_graph, dep_datas);
       check_func_colors(call_graph);
       save_func_dep(call_graph);

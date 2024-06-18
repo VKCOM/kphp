@@ -72,7 +72,7 @@ VertexPtr CheckNestedForeachPass::on_enter_vertex(VertexPtr vertex) {
   }
   if (!foreach_iterable_non_local_vars_.empty()) {
     if (auto call = vertex.try_as<op_func_call>()) {
-      if (call->func_id->is_resumable || call->func_id->can_be_implicitly_interrupted_by_other_resumable) {
+      if (call->func_id->is_resumable || call->func_id->can_be_implicitly_interrupted_by_other_resumable || call->func_id->is_light_fork) {
         kphp_error(foreach_ref_vars_.empty(),
                    fmt_format("It is forbidden to call resumable functions inside foreach with reference by var {} with non local scope visibility",
                               foreach_iterable_non_local_vars_.back()->as_human_readable()));

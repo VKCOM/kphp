@@ -17,44 +17,9 @@ struct thrown_exception {
   explicit thrown_exception(Throwable exception) noexcept : exception(std::move(exception)) {}
 };
 
-template<size_t limit>
-union small_obect_ptr {
-  char storage_[limit];
-  void *storage_ptr;
-
-  template <typename T, typename ...Args>
-  std::enable_if_t<sizeof(T) <= limit, T*> emplace(Args&& ...args) noexcept {
-    return new (storage_) T(std::forward<Args>(args)...);
-  }
-  template <typename T>
-  std::enable_if_t<sizeof(T) <= limit, T*> get() noexcept {
-    return reinterpret_cast<T*>(storage_);
-  }
-  template <typename T>
-  std::enable_if_t<sizeof(T) <= limit> destroy() noexcept {
-    get<T>()->~T();
-  }
-
-  template <typename T, typename ...Args>
-  std::enable_if_t<limit < sizeof(T), T*> emplace(Args&& ...args) noexcept {
-    storage_ptr = dl::allocate(sizeof(T));
-    return new (storage_ptr) T(std::forward<Args>(args)...);
-  }
-  template <typename T>
-  std::enable_if_t<limit < sizeof(T), T*> get() noexcept {
-    return static_cast<T*>(storage_ptr);
-  }
-  template <typename T>
-  std::enable_if_t<limit < sizeof(T)> destroy() noexcept {
-    T *mem = get<T>();
-    mem->~T();
-    dl::deallocate(mem, sizeof(T));
-  }
-};
-
 class Storage {
 private:
-  using storage_ptr = small_obect_ptr<sizeof(mixed)>;
+  using storage_ptr = small_object_storage<sizeof(mixed)>;
   storage_ptr storage_;
 
   template<class X, class Y, class Tag = typename std::is_convertible<X, Y>::type>

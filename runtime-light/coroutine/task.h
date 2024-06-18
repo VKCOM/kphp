@@ -11,6 +11,7 @@
 
 #include "common/containers/final_action.h"
 #include "runtime-light/utils/context.h"
+#include "runtime-core/runtime-core.h"
 
 #if __clang_major__ > 7
 #define CPPCORO_COMPILER_SUPPORTS_SYMMETRIC_TRANSFER
@@ -105,10 +106,11 @@ struct task_t : public task_base_t {
     }
 
     void *next = nullptr;
+    // todo:k2 change from c++ to kphp exception here
     std::exception_ptr exception;
 
     static task_t get_return_object_on_allocation_failure() {
-      throw std::bad_alloc();
+      php_critical_error("cannot allocate memory for task_t");
     }
 
     template<typename... Args>
@@ -143,14 +145,14 @@ struct task_t : public task_base_t {
     get_handle().resume();
   }
 
-  T get_result() {
+  T get_result() noexcept {
     if (get_handle().promise().exception) {
       std::rethrow_exception(std::move(get_handle().promise().exception));
     }
     if constexpr (!std::is_void<T>{}) {
       T *t = std::launder(reinterpret_cast<T *>(get_handle().promise().bytes));
       const vk::final_action final_action([t] { t->~T(); });
-      return *t;
+      return std::move(*t);
     }
   }
 

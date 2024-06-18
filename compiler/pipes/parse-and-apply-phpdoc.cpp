@@ -274,6 +274,9 @@ private:
             // since we don't know which exceptions it can throw, mark is as \Exception
             f_->exceptions_thrown.insert(G->get_class("Exception"));
           } else if (token == "resumable") {
+            if (G->is_output_mode_k2_component()) {
+              kphp_error(0, "@kphp-extern-func-info resumable tag not supported for k2 components");
+            }
             f_->is_resumable = true;
           } else if (token == "cpp_template_call") {
             f_->cpp_template_call = true;
@@ -282,6 +285,9 @@ private:
           } else if (token == "tl_common_h_dep") {
             f_->tl_common_h_dep = true;
           } else if (token == "interruptible") {
+            if (!G->is_output_mode_k2_component()) {
+              kphp_error(0, "@kphp-extern-func-info interruptible supported only for in k2 components");
+            }
             f_->is_interruptible = true;
           } else {
             kphp_error(0, fmt_format("Unknown @kphp-extern-func-info {}", token));

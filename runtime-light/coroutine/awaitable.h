@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "runtime-core/runtime-core.h"
 #include <coroutine>
 
 #include "runtime-light/component/component.h"
@@ -19,29 +20,22 @@ struct blocked_operation_t {
     return false;
   }
 
-  void await_resume() const noexcept {
-    ComponentState &ctx = *get_component_context();
-    ctx.opened_streams[awaited_stream] = StreamRuntimeStatus::NotBlocked;
-  }
+  void await_resume() const noexcept {}
 };
 
 struct read_blocked_t : blocked_operation_t {
   void await_suspend(std::coroutine_handle<> h) const noexcept {
     php_debug("blocked read on stream %lu", awaited_stream);
-    ComponentState &ctx = *get_component_context();
-    ctx.poll_status = PollStatus::PollBlocked;
-    ctx.opened_streams[awaited_stream] = StreamRuntimeStatus::RBlocked;
-    ctx.awaiting_coroutines[awaited_stream] = h;
+    KphpForkContext &context = KphpForkContext::get();
+    context.scheduler.block_fork_on_future(context.current_fork_id, h, stream_future{awaited_stream}, -1);
   }
 };
 
 struct write_blocked_t : blocked_operation_t {
   void await_suspend(std::coroutine_handle<> h) const noexcept {
     php_debug("blocked write on stream %lu", awaited_stream);
-    ComponentState &ctx = *get_component_context();
-    ctx.poll_status = PollStatus::PollBlocked;
-    ctx.opened_streams[awaited_stream] = StreamRuntimeStatus::WBlocked;
-    ctx.awaiting_coroutines[awaited_stream] = h;
+    KphpForkContext &context = KphpForkContext::get();
+    context.scheduler.block_fork_on_future(context.current_fork_id, h, stream_future{awaited_stream}, -1);
   }
 };
 
@@ -51,9 +45,9 @@ struct test_yield_t {
   }
 
   void await_suspend(std::coroutine_handle<> h) const noexcept {
-    ComponentState &ctx = *get_component_context();
-    ctx.poll_status = PollStatus::PollReschedule;
-    ctx.main_thread = h;
+    KphpForkContext &context = KphpForkContext::get();
+    php_debug("platform yield fork %ld", context.current_fork_id);
+    context.scheduler.yield_fork(context.current_fork_id, h, -1);
   }
 
   constexpr void await_resume() const noexcept {}
@@ -67,12 +61,71 @@ struct wait_incoming_query_t {
   void await_suspend(std::coroutine_handle<> h) const noexcept {
     ComponentState &ctx = *get_component_context();
     php_assert(ctx.standard_stream == 0);
-    ctx.main_thread = h;
-    ctx.wait_incoming_stream = true;
-    ctx.poll_status = PollBlocked;
+    php_debug("fork %ld blocked on incoming query", ctx.kphp_fork_context.current_fork_id);
+    ctx.kphp_fork_context.scheduler.block_fork_on_incoming_query(ctx.kphp_fork_context.current_fork_id, h);
   }
 
-  void await_resume() const noexcept {
-    get_component_context()->wait_incoming_stream = false;
+  void await_resume() const noexcept {}
+};
+
+template<typename T>
+struct wait_fork_t {
+  int64_t expected_fork_id;
+  double timeout;
+
+  wait_fork_t(int64_t id, double timeout)
+    : expected_fork_id(id)
+    , timeout(timeout) {}
+
+  bool await_ready() const noexcept {
+    return KphpForkContext::get().scheduler.is_fork_ready(expected_fork_id);
   }
+
+  void await_suspend(std::coroutine_handle<> h) const noexcept {
+    KphpForkContext &context = KphpForkContext::get();
+    php_debug("fork %ld wait for fork %ld", context.current_fork_id, expected_fork_id);
+    context.scheduler.block_fork_on_future(context.current_fork_id, h, fork_future{expected_fork_id}, timeout);
+  }
+
+  Optional<T> await_resume() const noexcept {
+    const vk::final_action final_action([this] { KphpForkContext::get().scheduler.unregister_fork(expected_fork_id); });
+    auto &fork = KphpForkContext::get().scheduler.get_fork_by_id(expected_fork_id);
+    if (fork.task.done()) {
+      php_debug("resume fork %ld on done fork %ld", KphpForkContext::get().current_fork_id, expected_fork_id);
+      return Optional<T>(fork.get_fork_result<T>());
+    } else {
+      php_debug("resume fork %ld on undone fork %ld by timeout", KphpForkContext::get().current_fork_id, expected_fork_id);
+      return Optional<T>();
+    }
+  }
+};
+
+struct sched_yield_t {
+  bool await_ready() const noexcept {
+    return false;
+  }
+
+  void await_suspend(std::coroutine_handle<> h) const noexcept {
+    KphpForkContext &context = KphpForkContext::get();
+    php_debug("fork %ld sched yield", context.current_fork_id);
+    context.scheduler.yield_fork(context.current_fork_id, h, -1);
+  }
+
+  void await_resume() const noexcept {}
+};
+
+struct sched_yield_sleep_t {
+  int64_t timeout_ns;
+
+  bool await_ready() const noexcept {
+    return false;
+  }
+
+  void await_suspend(std::coroutine_handle<> h) const noexcept {
+    KphpForkContext &context = KphpForkContext::get();
+    php_debug("fork %ld sched yield", context.current_fork_id);
+    context.scheduler.yield_fork(context.current_fork_id, h, timeout_ns);
+  }
+
+  void await_resume() const noexcept {}
 };

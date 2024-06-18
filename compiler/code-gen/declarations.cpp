@@ -72,7 +72,9 @@ void FunctionDeclaration::compile(CodeGenerator &W) const {
   switch (style) {
     case gen_out_style::tagger:
     case gen_out_style::cpp: {
-      if (function->is_interruptible) {
+      if (function->is_light_fork) {
+        FunctionSignatureGenerator(W) << "task_t<fork_result> " << FunctionName(function) << "(" << params_gen << ")";
+      } else if (function->is_interruptible) {
         FunctionSignatureGenerator(W) << "task_t<" << ret_type_gen << ">" << " " << FunctionName(function) << "(" << params_gen << ")";
       } else {
         FunctionSignatureGenerator(W) << ret_type_gen << " " << FunctionName(function) << "(" << params_gen << ")";
@@ -115,7 +117,9 @@ void FunctionParams::declare_cpp_param(CodeGenerator &W, VertexAdaptor<op_var> v
   auto var_ptr = var->var_id;
   if (var->ref_flag) {
     W << "&";
-  } else if (var_ptr->marked_as_const || (!function->has_variadic_param && var_ptr->is_read_only)) {
+  } else if ((var_ptr->marked_as_const || (!function->has_variadic_param && var_ptr->is_read_only))
+             /* the top of resumable chain function should take arguments by value */
+             && !function->is_light_fork) {
     W << (!type.type->is_primitive_type() ? "const &" : "");
   }
   W << VarName(var_ptr);

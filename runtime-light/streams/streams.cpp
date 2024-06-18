@@ -8,6 +8,15 @@
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/utils/context.h"
 
+void register_stream(int64_t stream_d) {
+  ComponentState& ctx{*get_component_context()};
+  ctx.opened_descriptors[stream_d] = DescriptorRuntimeStatus::Stream;
+}
+void register_timer(int64_t timer_d) {
+  ComponentState& ctx{*get_component_context()};
+  ctx.opened_descriptors[timer_d] = DescriptorRuntimeStatus::Timer;
+}
+
 task_t<std::pair<char *, int>> read_all_from_stream(uint64_t stream_d) {
   co_await test_yield_t{};
 
@@ -125,7 +134,7 @@ task_t<int> write_all_to_stream(uint64_t stream_d, const char *buffer, int len) 
     }
   } while (writed != len);
 
-  php_debug("write %d bytes to stream %lu", len, stream_d);
+  php_debug("write %d bytes to stream %lu", writed, stream_d);
   co_return writed;
 }
 
@@ -181,13 +190,12 @@ task_t<int> write_exact_to_stream(uint64_t stream_d, const char *buffer, int len
 
 void free_all_descriptors() {
   php_debug("free all descriptors");
-  ComponentState &ctx = *get_component_context();
-  const PlatformCtx &ptx = *get_platform_context();
-  for (auto &processed_query : ctx.opened_streams) {
+  ComponentState & ctx = *get_component_context();
+  const PlatformCtx & ptx = *get_platform_context();
+  for (auto & processed_query : ctx.opened_descriptors) {
     ptx.free_descriptor(processed_query.first);
   }
-  ctx.opened_streams.clear();
-  ctx.awaiting_coroutines.clear();
+  ctx.opened_descriptors.clear();
   ptx.free_descriptor(ctx.standard_stream);
   ctx.standard_stream = 0;
 }
@@ -196,6 +204,5 @@ void free_descriptor(uint64_t stream_d) {
   php_debug("free descriptor %lu", stream_d);
   ComponentState &ctx = *get_component_context();
   get_platform_context()->free_descriptor(stream_d);
-  ctx.opened_streams.erase(stream_d);
-  ctx.awaiting_coroutines.erase(stream_d);
+  ctx.opened_descriptors.erase(stream_d);
 }
