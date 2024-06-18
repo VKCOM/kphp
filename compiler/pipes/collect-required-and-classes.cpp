@@ -264,6 +264,10 @@ private:
         if (seems_like_classname) {
           require_class(modulite->modulite_namespace + e);
         }
+        size_t pos_classmember = e.find("::");
+        if (pos_classmember != std::string::npos) {
+          require_class(modulite->modulite_namespace + e.substr(0, pos_classmember));
+        }
       }
     }
   }

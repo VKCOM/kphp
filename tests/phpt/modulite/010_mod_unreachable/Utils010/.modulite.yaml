@@ -5,6 +5,7 @@ export:
   - "Strings010"
   - "UnreachableClass010"
   - "UnreachableNs\\AnotherUn010"
+  - "UnreachableNs\\BnotherUn010::nothing()"
 
 require:
   
