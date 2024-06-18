@@ -960,7 +960,11 @@ std::string php_master_prepare_stats(bool add_worker_pids) {
     // engine_tag may be ended with "["
     oss << "kphp_version\t" << atoll(engine_tag) << "\n";
   }
-  oss << "cluster_name\t" << vk::singleton<ServerConfig>::get().get_cluster_name() << "\n"
+  const auto &config = vk::singleton<ServerConfig>::get();
+  if (!config.get_environment().empty()) {
+    oss << "environment\t" << config.get_environment() << "\n";
+  }
+  oss << "cluster_name\t" << config.get_cluster_name() << "\n"
       << "master_name\t" << vk::singleton<MasterName>::get().get_master_name() << "\n"
       << "min_worker_uptime\t" << min_uptime << "\n"
       << "max_worker_uptime\t" << max_uptime << "\n"

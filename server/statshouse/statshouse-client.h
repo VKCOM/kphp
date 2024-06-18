@@ -15,6 +15,10 @@ public:
 
   statshouse::TransportUDPBase::MetricBuilder metric(std::string_view name, bool force_tag_host = false);
 
+  void set_environment(const std::string &env) {
+    transport.set_default_env(env);
+  }
+
   void set_tag_cluster(std::string_view cluster) {
     tag_cluster = cluster;
   }
