@@ -27,8 +27,9 @@ int calc_sizeof_tuple_shape(const TypeData *type);
 [[gnu::always_inline]] inline int calc_sizeof_in_bytes_runtime(const TypeData *type) {
   switch (type->get_real_ptype()) {
     case tp_int:
+      return type->use_optional() ? SIZEOF_OPTIONAL + sizeof(int64_t) : sizeof(int64_t);
     case tp_float:
-      return type->use_optional() ? SIZEOF_OPTIONAL + 8 : 8;
+      return type->use_optional() ? SIZEOF_OPTIONAL + sizeof(double) : sizeof(double);
     case tp_string:
       return type->use_optional() ? SIZEOF_OPTIONAL + SIZEOF_STRING : SIZEOF_STRING;
     case tp_array:
@@ -48,8 +49,9 @@ int calc_sizeof_tuple_shape(const TypeData *type);
     case tp_shape:
       return calc_sizeof_tuple_shape(type);
     case tp_future:
+      return type->use_optional() ? SIZEOF_OPTIONAL + SIZEOF_FUTURE : SIZEOF_FUTURE;
     case tp_future_queue:
-      return type->use_optional() ? SIZEOF_OPTIONAL + 8 : 8;
+      return type->use_optional() ? SIZEOF_OPTIONAL + SIZEOF_FUTURE_QUEUE : SIZEOF_FUTURE_QUEUE;
     case tp_any:
       return SIZEOF_UNKNOWN;
     default:
@@ -74,7 +76,9 @@ int calc_sizeof_tuple_shape(const TypeData *type);
   if (has_align_8bytes) {
     result = (result + 7) & -8;
   }
-  return type->use_optional() ? has_align_8bytes ? SIZEOF_OPTIONAL + result : 1 + result : result;
+  return type->use_optional()
+         ? has_align_8bytes ? SIZEOF_OPTIONAL + result : 1 + result
+         : result;
 }
 
 } // namespace
@@ -107,6 +111,7 @@ void ConstantsBatchedMem::inc_count_by_type(const TypeData *type) {
 }
 
 int ConstantsBatchedMem::detect_constants_batch_count(int n_constants) {
+  // these values are heuristics (don't use integer division, to avoid changing buckets count frequently)
   if (n_constants > 1200000) return 2048;
   if (n_constants > 800000) return 1536;
   if (n_constants > 500000) return 1024;

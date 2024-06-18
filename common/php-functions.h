@@ -38,6 +38,8 @@ constexpr int SIZEOF_ARRAY_ANY = 8;
 constexpr int SIZEOF_MIXED = 16;
 constexpr int SIZEOF_INSTANCE_ANY = 8;
 constexpr int SIZEOF_OPTIONAL = 8;
+constexpr int SIZEOF_FUTURE = 8;
+constexpr int SIZEOF_FUTURE_QUEUE = 8;
 constexpr int SIZEOF_REGEXP = 48;
 constexpr int SIZEOF_UNKNOWN = 1;
 

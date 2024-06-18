@@ -93,7 +93,8 @@ VertexPtr CommonAnalyzerPass::on_enter_vertex(VertexPtr vertex) {
       run_function_pass(var->init_val, this);
     }
     if (var->is_in_global_scope()) {
-      // even if current_function->global_var_ids is not empty, has_global_vars_inside may still be unset,
+      // save a flag, that a function's body accesses mutable global / static vars (to codegen `php_globals` variable)
+      // note, that assigning `has_global_vars_inside = !global_var_ids.empty()` is incorrect:
       // for example if a function declares `global $v` but not uses it, or its uses are dropped off after cfg pass
       current_function->has_global_vars_inside = true;
     }

@@ -145,8 +145,8 @@ class WithGlobals {
         ]);
         self::$tup3 = tuple(true,true,true,null,true,true,false,true);
         self::$tup4 = tuple(true,true,true,true,true,true,true,false,true);
-//         self::$ex1 = new Exception;
-//         self::$ex2 = new LogicException;
+        self::$ex1 = new Exception;
+        self::$ex2 = new LogicException;
 
         echo self::$used_and_untyped, "\n";
         echo self::$c1_int, "\n";
