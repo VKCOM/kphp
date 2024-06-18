@@ -13,6 +13,7 @@
 
 #undef basename
 
+#include "common/kernel-version.h"
 #include "common/macos-ports.h"
 #include "common/wrappers/mkdir_recursive.h"
 
@@ -361,13 +362,11 @@ bool f$mkdir(const string &name, int64_t mode, bool recursive) {
 }
 
 string f$php_uname(const string &name) {
-  utsname res;
-  dl::enter_critical_section();//OK
-  if (uname(&res)) {
-    dl::leave_critical_section();
+  const auto *uname = cached_uname();
+  if (uname == nullptr) {
     return {};
   }
-  dl::leave_critical_section();
+  const auto &res = *uname;
 
   char mode = name[0];
   switch (mode) {
