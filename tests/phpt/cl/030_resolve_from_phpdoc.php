@@ -26,6 +26,14 @@ function f2() {
     else echo "a null\n";
 }
 
+/**
+ * @param ?\Classes\Z3Infer $b
+ */
+function f3($b) {
+  if ($b) $b->thisHasInfer(1,2);
+}
+
 f1(null);
 f2();
+f3(null);
 (new BB)->f();
