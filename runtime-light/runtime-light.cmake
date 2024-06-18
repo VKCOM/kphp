@@ -10,6 +10,9 @@ prepend(MONOTOINC_LIGHT_BUFFER_RESOURCE_SRC ${BASE_DIR}/runtime-light/memory-res
 prepend(RUNTIME_COMPONENT_SRC ${BASE_DIR}/runtime-light/
         component/component.cpp)
 
+prepend(RUNTIME_COROUTINE_SRC ${BASE_DIR}/runtime-light/
+        coroutine/fork.cpp)
+
 set(RUNTIME_LIGHT_SRC ${RUNTIME_CORE_SRC}
                 ${RUNTIME_STDLIB_SRC}
                 ${RUNTIME_ALLOCATOR_SRC}
@@ -19,6 +22,7 @@ set(RUNTIME_LIGHT_SRC ${RUNTIME_CORE_SRC}
                 ${RUNTIME_UTILS_SRC}
                 ${RUNTIME_LANGUAGE_SRC}
                 ${MONOTOINC_LIGHT_BUFFER_RESOURCE_SRC}
+                ${RUNTIME_COROUTINE_SRC}
                 ${BASE_DIR}/runtime-light/runtime-light.cpp)
 
 vk_add_library(runtime-light OBJECT ${RUNTIME_LIGHT_SRC})

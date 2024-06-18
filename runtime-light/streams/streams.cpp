@@ -181,13 +181,11 @@ task_t<int> write_exact_to_stream(uint64_t stream_d, const char *buffer, int len
 
 void free_all_descriptors() {
   php_debug("free all descriptors");
-  ComponentState &ctx = *get_component_context();
-  const PlatformCtx &ptx = *get_platform_context();
-  for (auto &processed_query : ctx.opened_streams) {
-    ptx.free_descriptor(processed_query.first);
-  }
+  ComponentState & ctx = *get_component_context();
+  const PlatformCtx & ptx = *get_platform_context();
+  for (auto & processed_query : ctx.opened_streams) {
+    ptx.free_descriptor(processed_query);
   ctx.opened_streams.clear();
-  ctx.awaiting_coroutines.clear();
   ptx.free_descriptor(ctx.standard_stream);
   ctx.standard_stream = 0;
 }
@@ -197,5 +195,4 @@ void free_descriptor(uint64_t stream_d) {
   ComponentState &ctx = *get_component_context();
   get_platform_context()->free_descriptor(stream_d);
   ctx.opened_streams.erase(stream_d);
-  ctx.awaiting_coroutines.erase(stream_d);
 }
