@@ -128,7 +128,6 @@ public:
   KphpOption<bool> no_make;
   KphpOption<uint64_t> jobs_count;
   KphpOption<uint64_t> threads_count;
-  KphpOption<uint64_t> globals_split_count;
 
   KphpOption<bool> require_functions_typing;
   KphpOption<bool> require_class_typing;
@@ -185,9 +184,6 @@ public:
   KphpImplicitOption tl_classname_prefix;
 
   std::string get_version() const;
-  bool is_static_lib_mode() const;
-  bool is_server_mode() const;
-  bool is_cli_mode() const;
   bool is_composer_enabled() const; // reports whether composer compatibility mode is on
   color_settings get_color_settings() const;
 

@@ -11,6 +11,7 @@
 
 #include "common/wrappers/likely.h"
 #include "compiler/code-gen/common.h"
+#include "compiler/code-gen/const-globals-batched-mem.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/files/json-encoder-tags.h"
 #include "compiler/code-gen/files/tracing-autogen.h"
@@ -1017,7 +1018,9 @@ void compile_foreach_ref_header(VertexAdaptor<op_foreach> root, CodeGenerator &W
     BEGIN;
 
 
-  //save value
+  // save value: codegen `T &v$name = it.get_value()`
+  // note, that in global scope `v$name` remains a C++ variable (though other mutable globals are placed in linear mem)
+  // (there are also compile-time checks that foreach-ref global vars aren't used outside a loop)
   W << TypeName(tinf::get_type(x)) << " &";
   W << x << " = " << it << ".get_value();" << NL;
 
@@ -1345,12 +1348,15 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
 
 
   //MEMBER VARIABLES
-  for (auto var : func->param_ids) {
+  for (VarPtr var : func->param_ids) {
     kphp_error(!var->is_reference, "reference function parametrs are forbidden in resumable mode");
     W << VarPlainDeclaration(var);
   }
-  for (auto var : func->local_var_ids) {
+  for (VarPtr var : func->local_var_ids) {
     W << VarPlainDeclaration(var);         // inplace variables are stored as Resumable class fields as well
+  }
+  if (func->has_global_vars_inside) {
+    W << PhpMutableGlobalsDeclareInResumableClass();
   }
   if (func->kphp_tracing) { // append KphpTracingFuncCallGuard as a member variable also ('start()' is called below)
     TracingAutogen::codegen_runtime_func_guard_declaration(W, func);
@@ -1363,19 +1369,34 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
 
   //CONSTRUCTOR
   FunctionSignatureGenerator(W) << FunctionClassName(func) << "(" << FunctionParams(func) << ")";
-  if (!func->param_ids.empty()) {
+  bool has_members_in_constructor = !func->param_ids.empty() || !func->local_var_ids.empty() || func->has_global_vars_inside;
+  if (has_members_in_constructor) {
+    bool any_inited = false;
     W << " :" << NL << Indent(+2);
-    W << JoinValues(func->param_ids, ",", join_mode::multiple_lines,
-                    [](CodeGenerator &W, VarPtr var) {
-                      W << VarName(var) << "(" << VarName(var) << ")";
-                    });
-    if (!func->local_var_ids.empty()) {
-      W << "," << NL;
+    if (!func->param_ids.empty()) {
+      W << JoinValues(func->param_ids, ",", join_mode::multiple_lines,
+                      [](CodeGenerator &W, VarPtr var) {
+                        W << VarName(var) << "(" << VarName(var) << ")";
+                      });
+      any_inited = true;
     }
-    W << JoinValues(func->local_var_ids, ",", join_mode::multiple_lines,
-                    [](CodeGenerator &W, VarPtr var) {
-                      W << VarName(var) << "()";
-                    });
+    if (!func->local_var_ids.empty()) {
+      if (any_inited) {
+        W << "," << NL;
+      }
+      W << JoinValues(func->local_var_ids, ",", join_mode::multiple_lines,
+                      [](CodeGenerator &W, VarPtr var) {
+                        W << VarName(var) << "()";
+                      });
+      any_inited = true;
+    }
+    if (func->has_global_vars_inside) {
+      if (any_inited) {
+        W << "," << NL;
+      }
+      W << PhpMutableGlobalsAssignInResumableConstructor();
+      any_inited = true;
+    }
     W << Indent(-2);
   }
   W << " " << BEGIN << END << NL;
@@ -1434,6 +1455,9 @@ void compile_function(VertexAdaptor<op_function> func_root, CodeGenerator &W) {
   }
 
   W << FunctionDeclaration(func, false) << " " << BEGIN;
+  if (func->has_global_vars_inside) {
+    W << PhpMutableGlobalsAssignCurrent() << NL;
+  }
 
   if (func->kphp_tracing) {
     TracingAutogen::codegen_runtime_func_guard_declaration(W, func);
@@ -1680,9 +1704,9 @@ bool try_compile_append_inplace(VertexAdaptor<op_set_dot> root, CodeGenerator &W
     // append all strings directly to the $lhs without creating a temporary
     // string for the $rhs result; also, grow $lhs accordingly, so it
     // can fit all the string parts
-    if (root->lhs()->type() == op_var) {
-      kphp_assert(tinf::get_type(root->lhs().as<op_var>())->ptype() == tp_string);
-      compile_string_build_impl(root->rhs().as<op_string_build>(), VarName{root->lhs().as<op_var>()->var_id}, lhs_type, W);
+    if (auto as_var = root->lhs().try_as<op_var>(); as_var && !as_var->var_id->is_in_global_scope()) {
+      kphp_assert(tinf::get_type(as_var)->ptype() == tp_string);
+      compile_string_build_impl(root->rhs().as<op_string_build>(), VarName{as_var->var_id}, lhs_type, W);
       return true;
     }
     W << "(" << BEGIN;
@@ -2131,9 +2155,21 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
     case op_null:
       W << "Optional<bool>{}";
       break;
-    case op_var:
-      W << VarName(root.as<op_var>()->var_id);
+    case op_var: {
+      VarPtr var_id = root.as<op_var>()->var_id;
+      if (var_id->is_constant()) {
+        // auto-extracted constant variables (const strings, arrays, etc.) in codegen are C++ variables
+        W << var_id->name;
+      } else if (var_id->is_in_global_scope() && !var_id->is_foreach_reference) {
+        // mutable globals, as opposed, are not C++ variables: instead,
+        // they all are placed in linear memory chunks, see php-script-globals.h
+        // with the only exception of `foreach (... as &$ref)` in global scope, see compile_foreach_ref_header()
+        W << GlobalVarInPhpGlobals(var_id);
+      } else {
+        W << VarName(var_id);
+      }
       break;
+    }
     case op_string:
       compile_string(root.as<op_string>(), W);
       break;

@@ -235,8 +235,6 @@ int main(int argc, char *argv[]) {
              'j', "jobs-num", "KPHP_JOBS_COUNT", std::to_string(get_default_threads_count()));
   parser.add("Threads number for the transpilation", settings->threads_count,
              't', "threads-count", "KPHP_THREADS_COUNT", std::to_string(get_default_threads_count()));
-  parser.add("Count of global variables per dedicated .cpp file. Lowering it could decrease compilation time", settings->globals_split_count,
-             "globals-split-count", "KPHP_GLOBALS_SPLIT_COUNT", "1536");
   parser.add("Builtin tl schema. Incompatible with lib mode", settings->tl_schema_file,
              'T', "tl-schema", "KPHP_TL_SCHEMA");
   parser.add("Generate storers and fetchers for internal tl functions", settings->gen_tl_internals,

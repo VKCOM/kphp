@@ -75,10 +75,6 @@ Threads number for PHP → C++ codegeneration, default **CPU cores * 2**.
 
 Processes number to C++ parallel compilation/linkage, default **CPU cores**.
 
-<aside>--globals-split-count {n} / KPHP_GLOBALS_SPLIT_COUNT = {n}</aside>
-
-All global variables (const arrays also) are split into chunks of this size, default **1024**. If you have a few but very heavy global vars, lowering this number can decrease compilation time.
-
 <aside>--tl-schema {file} / -T {file} / KPHP_TL_SCHEMA = {file}</aside>
 
 A *.tl* file with [TL schema](../../kphp-client/tl-schema-and-rpc/tl-schema-basics.md), default empty.

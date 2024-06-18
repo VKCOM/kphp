@@ -30,7 +30,7 @@ public:
     global_init_runtime_libs();
     global_init_script_allocator();
 
-    init_runtime_environment(null_query_data{}, script_memory, script_memory_size);
+    init_runtime_environment(null_query_data{}, PhpScriptMutableGlobals::current().get_superglobals(), script_memory, script_memory_size);
     php_disable_warnings = true;
     php_warning_level = 0;
   }
@@ -38,7 +38,7 @@ public:
   void TearDown() final {
     reset_global_vars();
 
-    free_runtime_environment();
+    free_runtime_environment(PhpScriptMutableGlobals::current().get_superglobals());
 
     testing::Environment::TearDown();
   }
@@ -66,10 +66,11 @@ template<> int Storage::tagger<array<class_instance<C$VK$TL$RpcResponse>>>::get_
 template<> int Storage::tagger<class_instance<C$PDOStatement>>::get_tag() noexcept { return 0; }
 template<> Storage::loader<mixed>::loader_fun Storage::loader<mixed>::get_function(int) noexcept { return nullptr; }
 
-void init_php_scripts() noexcept {
+void init_php_scripts_once_in_master() noexcept {
   assert(0 && "this code shouldn't be executed and only for linkage test");
 }
-void global_init_php_scripts() noexcept {
+void init_php_scripts_in_each_worker(PhpScriptMutableGlobals &php_globals) noexcept {
+  static_cast<void>(php_globals);
   assert(0 && "this code shouldn't be executed and only for linkage test");
 }
 const char *get_php_scripts_version() noexcept {

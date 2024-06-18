@@ -4,10 +4,9 @@
 
 #include "compiler/pipes/calc-empty-functions.h"
 
+#include "compiler/compiler-core.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
-#include "compiler/function-pass.h"
-#include "compiler/vertex.h"
 
 namespace {
 
@@ -49,6 +48,7 @@ FunctionData::body_value get_vertex_body_type(VertexPtr vertex) {
     case op_seq:
       return calc_seq_body_type(vertex.as<op_seq>());
     case op_empty:
+    case op_global:
       return FunctionData::body_value::empty;
     default:
       return FunctionData::body_value::non_empty;
@@ -89,5 +89,10 @@ FunctionData::body_value calc_function_body_type(FunctionPtr f) {
 void CalcEmptyFunctions::execute(FunctionPtr f, DataStream<FunctionPtr> &os) {
   stage::set_function(f);
   f->body_seq = calc_function_body_type(f);
+
+  if (f->is_main_function() && G->is_output_mode_lib() && G->get_main_file()->main_function == f) {
+    kphp_error(f->body_seq == FunctionData::body_value::empty, "main php file of a lib mustn't contain code, only declarations");
+  }
+
   os << f;
 }

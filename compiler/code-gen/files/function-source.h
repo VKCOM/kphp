@@ -16,4 +16,3 @@ struct FunctionCpp : CodeGenRootCmd {
 
 void declare_global_vars(FunctionPtr function, CodeGenerator &W);
 void declare_const_vars(FunctionPtr function, CodeGenerator &W);
-void declare_static_vars(FunctionPtr function, CodeGenerator &W);

@@ -46,8 +46,7 @@ prepend(KPHP_COMPILER_DATA_SOURCES data/
         src-dir.cpp
         src-file.cpp
         var-data.cpp
-        ffi-data.cpp
-        vars-collector.cpp)
+        ffi-data.cpp)
 
 prepend(KPHP_COMPILER_INFERRING_SOURCES inferring/
         expr-node.cpp
@@ -72,11 +71,14 @@ prepend(KPHP_COMPILER_INFERRING_SOURCES inferring/
 prepend(KPHP_COMPILER_CODEGEN_SOURCES code-gen/
         code-gen-task.cpp
         code-generator.cpp
+        const-globals-batched-mem.cpp
         declarations.cpp
         files/cmake-lists-txt.cpp
+        files/const-vars-init.cpp
         files/function-header.cpp
         files/function-source.cpp
-        files/global_vars_memory_stats.cpp
+        files/global-vars-memory-stats.cpp
+        files/global-vars-reset.cpp
         files/init-scripts.cpp
         files/json-encoder-tags.cpp
         files/lib-header.cpp
@@ -91,8 +93,6 @@ prepend(KPHP_COMPILER_CODEGEN_SOURCES code-gen/
         files/shape-keys.cpp
         files/tracing-autogen.cpp
         files/type-tagger.cpp
-        files/vars-cpp.cpp
-        files/vars-reset.cpp
         includes.cpp
         raw-data.cpp
         vertex-compiler.cpp

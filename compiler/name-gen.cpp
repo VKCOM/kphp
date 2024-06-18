@@ -23,34 +23,6 @@ std::string gen_anonymous_function_name(FunctionPtr function) {
   return gen_unique_name("lambda", function);
 }
 
-std::string gen_const_string_name(const std::string &str) {
-  return fmt_format("const_string$us{:x}", vk::std_hash(str));
-}
-
-std::string gen_const_regexp_name(const std::string &str) {
-  return fmt_format("const_regexp$us{:x}", vk::std_hash(str));
-}
-
-bool is_array_suitable_for_hashing(VertexPtr vertex) {
-  return vertex->type() == op_array && CheckConst::is_const(vertex);
-}
-
-// checks that inlined as define' value constructor is suitable to be stored as constant var
-bool is_object_suitable_for_hashing(VertexPtr vertex) {
-  return vertex->type() == op_define_val && vertex.as<op_define_val>()->value()->type() == op_func_call
-         && vertex.as<op_define_val>()->value()->extra_type == op_ex_constructor_call && vertex->const_type == cnst_const_val;
-}
-
-std::string gen_const_object_name(const VertexAdaptor<op_define_val> &def) {
-  kphp_assert_msg(def->value()->type() == op_func_call, "Internal error: expected op_define_val <op_func_call>");
-  auto obj_hash = ObjectHash::calc_hash(def);
-  return fmt_format("const_obj$us{:x}", obj_hash);
-}
-
-std::string gen_const_array_name(const VertexAdaptor<op_array> &array) {
-  return fmt_format("const_array$us{:x}", ArrayHash::calc_hash(array));
-}
-
 std::string gen_unique_name(const std::string& prefix, FunctionPtr function) {
   if (!function) {
     function = stage::get_function();

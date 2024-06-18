@@ -18,7 +18,6 @@ struct ShapeKeys : CodeGenRootCmd {
   void compile(CodeGenerator &W) const final;
 
   static std::string get_function_name() noexcept;
-  static std::string get_function_declaration() noexcept;
 
 private:
   const std::map<std::int64_t, std::string> shape_keys_storage_;

@@ -359,8 +359,8 @@ void PhpScript::finish() noexcept {
 
 void PhpScript::clear() noexcept {
   assert_state(run_state_t::uncleared);
-  run_main->clear();
-  free_runtime_environment();
+  run_main->clear(PhpScriptMutableGlobals::current());
+  free_runtime_environment(PhpScriptMutableGlobals::current().get_superglobals());
   state = run_state_t::empty;
   if (use_madvise_dontneed) {
     if (dl::get_script_memory_stats().real_memory_used > memory_used_to_recreate_script) {
@@ -413,7 +413,7 @@ void PhpScript::run() noexcept {
   in_script_context = true;
   auto oom_handling_memory_size = static_cast<size_t>(std::ceil(mem_size * oom_handling_memory_ratio));
   auto script_memory_size = mem_size - oom_handling_memory_size;
-  init_runtime_environment(*data, run_mem, script_memory_size, oom_handling_memory_size);
+  init_runtime_environment(*data, PhpScriptMutableGlobals::current().get_superglobals(), run_mem, script_memory_size, oom_handling_memory_size);
   dl::leave_critical_section();
   php_assert (dl::in_critical_section == 0); // To ensure that no critical section is left at the end of the initialization
   check_net_context_errors();

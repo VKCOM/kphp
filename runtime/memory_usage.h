@@ -160,7 +160,6 @@ private:
 
   int64_t estimated_elements_memory_{0};
 
-  dl::CriticalSectionGuard guard;
   std::unordered_set<void *> processed_instances;
   std::stack<instance_element> last_instance_element;
 };
@@ -172,11 +171,4 @@ int64_t f$estimate_memory_usage(const T &value) {
   return visitor.get_estimated_memory();
 }
 
-template<typename Int = int64_t, typename = std::enable_if_t<std::is_same<int64_t, Int>{}>>
-array<int64_t> f$get_global_vars_memory_stats(Int limit = 0);
-
-template<typename Int, typename>
-array<int64_t> f$get_global_vars_memory_stats(Int limit) {
-  array<int64_t> get_global_vars_memory_stats_impl(int64_t) noexcept;
-  return get_global_vars_memory_stats_impl(limit);
-}
+array<int64_t> f$get_global_vars_memory_stats(int64_t lower_bound = 0);

@@ -439,7 +439,7 @@ void auto_capture_vars_from_body_in_arrow_lambda(FunctionPtr f_lambda) {
     return var_name != "this" &&      // $this is captured by another approach, in non-arrow lambdas also
            var_name.find("::") == std::string::npos &&
            var_name.find("$u") == std::string::npos &&   // not a superlocal var created in gentree
-           !VertexUtil::is_superglobal(var_name) &&
+           !VarData::does_name_eq_any_language_superglobal(var_name) &&
            !f_lambda->find_param_by_name(var_name) &&
            !f_lambda->find_use_by_name(var_name);
   };

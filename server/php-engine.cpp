@@ -1669,14 +1669,13 @@ void init_all() {
   StatsHouseManager::get().set_common_tags();
 
   global_init_runtime_libs();
-  global_init_php_scripts();
+  init_php_scripts_once_in_master();
   global_init_script_allocator();
 
   init_handlers();
 
   init_drivers();
 
-  init_php_scripts();
   vk::singleton<ServerStats>::get().set_idle_worker_status();
 
   worker_id = (int)lrand48();
