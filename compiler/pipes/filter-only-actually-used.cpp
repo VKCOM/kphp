@@ -69,6 +69,9 @@ public:
         RemoveLambdaCallFromTypedCallablePass pass(lambda_class);
         run_function_pass(f_typed_invoke->root, &pass);
 
+        AnalyzeLambdasInUnusedFunctionPass self_pass(used_functions);
+        run_function_pass(f_lambda, &self_pass);
+
         used_functions[f_lambda] = {};
         used_functions[m_invoke->function] = {};
         used_functions[lambda_class->construct_function] = {};
@@ -333,7 +336,7 @@ void FilterOnlyActuallyUsedFunctionsF::on_finish(DataStream<FunctionPtr> &os) {
   // remove lambdas from unused functions, see comments above
   for (const auto &f_and_e : all) {
     FunctionPtr fun = f_and_e.first;
-    if (fun->has_lambdas_inside && !used_functions[fun]) {
+    if (fun->has_lambdas_inside && !fun->is_lambda() && !used_functions[fun]) {
       AnalyzeLambdasInUnusedFunctionPass pass(used_functions);
       run_function_pass(fun, &pass);
     }

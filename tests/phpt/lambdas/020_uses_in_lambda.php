@@ -150,3 +150,24 @@ class Bxample020 {
 $bxample = new Bxample020();
 $bxample->test2(function() { return 0; });
 
+
+class Cxample {
+  public function unused_function(): void {
+    $tmp_var = "";
+    $this->call_function_first(function() use ($tmp_var): void {
+      $this->call_function_second(function() use ($tmp_var) {});
+    });
+  }
+
+  /** @param callable():void $fn */
+  public function call_function_first(callable $fn): void {
+    $fn();
+  }
+
+  /** @param callable():void $fn */
+  public function call_function_second(callable $fn): void {
+    $fn();
+  }
+}
+
+(new Cxample)->call_function_first(function():void{} );
