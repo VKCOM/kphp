@@ -14,29 +14,22 @@ struct blocked_operation_t {
     return false;
   }
 
-  void await_resume() const noexcept {
-    ComponentState & ctx = *get_component_context();
-    ctx.opened_streams[awaited_stream] = NotBlocked;
-  }
+  void await_resume() const noexcept {}
 };
 
 struct read_blocked_t : blocked_operation_t {
   void await_suspend(std::coroutine_handle<> h) const noexcept {
-    php_debug("blocked read on stream %lu", awaited_stream);
-    ComponentState & ctx = *get_component_context();
-    ctx.poll_status = PollStatus::PollBlocked;
-    ctx.opened_streams[awaited_stream] = RBlocked;
-    ctx.awaiting_coroutines[awaited_stream] = h;
+    php_notice("blocked read on stream %lu", awaited_stream);
+    KphpForkContext & context = KphpForkContext::current();
+    context.scheduler.block_fork_on_stream(context.current_fork_id, h, awaited_stream, RBlocked);
   }
 };
 
 struct write_blocked_t : blocked_operation_t {
   void await_suspend(std::coroutine_handle<> h) const noexcept {
-    php_debug("blocked write on stream %lu", awaited_stream);
-    ComponentState & ctx = *get_component_context();
-    ctx.poll_status = PollStatus::PollBlocked;
-    ctx.opened_streams[awaited_stream] = WBlocked;
-    ctx.awaiting_coroutines[awaited_stream] = h;
+    php_notice("blocked write on stream %lu", awaited_stream);
+    KphpForkContext & context = KphpForkContext::current();
+    context.scheduler.block_fork_on_stream(context.current_fork_id, h, awaited_stream, WBlocked);
   }
 };
 
@@ -46,9 +39,8 @@ struct test_yield_t {
   }
 
   void await_suspend(std::coroutine_handle<> h) const noexcept {
-    ComponentState & ctx = *get_component_context();
-    ctx.poll_status = PollStatus::PollReschedule;
-    ctx.main_thread = h;
+    KphpForkContext & context = KphpForkContext::current();
+    context.scheduler.yield_fork(context.current_fork_id, h);
   }
 
   constexpr void await_resume() const noexcept {}
@@ -62,12 +54,35 @@ struct wait_incoming_query_t {
   void await_suspend(std::coroutine_handle<> h) const noexcept {
     ComponentState & ctx = *get_component_context();
     php_assert(ctx.standard_stream == 0);
-    ctx.main_thread = h;
+    php_assert(ctx.kphp_fork_context.current_fork_id == 0);
     ctx.wait_incoming_stream = true;
-    ctx.poll_status = PollBlocked;
+    ctx.kphp_fork_context.scheduler.block_main_fork_on_incoming_query(h);
   }
 
   void await_resume() const noexcept {
     get_component_context()->wait_incoming_stream = false;
+  }
+};
+
+template<typename T>
+struct wait_fork_t {
+  int64_t expected_fork_id;
+
+  wait_fork_t(int64_t id) : expected_fork_id(id) {}
+
+  bool await_ready() const noexcept {
+    return KphpForkContext::current().scheduler.is_fork_ready(expected_fork_id);
+  }
+
+  void await_suspend(std::coroutine_handle<> h) const noexcept {
+    KphpForkContext & context = KphpForkContext::current();
+    context.scheduler.block_fork_on_another_fork(context.current_fork_id, h, expected_fork_id);
+  }
+
+  T await_resume() const noexcept {
+    auto & fork = KphpForkContext::current().scheduler.get_fork_by_id(expected_fork_id);
+    php_assert(fork.task.done());
+    const vk::final_action final_action([this]{ KphpForkContext::current().scheduler.unregister_fork(expected_fork_id);});
+    return fork.get_fork_result<T>();
   }
 };

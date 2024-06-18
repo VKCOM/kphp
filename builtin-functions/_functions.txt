@@ -149,3 +149,6 @@ function byte_to_int($str ::: string) ::: ?int;
 function int_to_byte($v ::: int) ::: ?string;
 
 function set_timer(int $timeout, callable():void $callback) ::: void;
+
+/** @kphp-extern-func-info resumable cpp_template_call */
+function wait(future<any> | false $id) ::: ^1[*] | null;

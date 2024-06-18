@@ -114,10 +114,9 @@ struct RunInterruptedFunction {
 
   void compile(CodeGenerator &W) const {
     std::string await_prefix = function->is_interruptible ? "co_await " : "";
-    FunctionSignatureGenerator(W) << "task_t<void> " << FunctionName(function) << "$run() " << BEGIN
+    FunctionSignatureGenerator(W) << "task_t<fork_result> " << FunctionName(function) << "$run() " << BEGIN
                                   << await_prefix << FunctionName(function) << "();" << NL
-                                  << "get_component_context()->poll_status = PollStatus::PollFinishedOk;" << NL
-                                  << "co_return;" << NL
+                                  << "co_return 0;" << NL
                                   << END;
     W << NL;
   }
@@ -231,7 +230,7 @@ void InitScriptsCpp::compile(CodeGenerator &W) const {
   W << GlobalsResetFunction(main_file_id->main_function) << NL;
 
   if (G->is_output_mode_k2_component()) {
-    FunctionSignatureGenerator(W) << "void init_php_scripts_in_each_worker(" << PhpMutableGlobalsRefArgument() << ", task_t<void>&run" ")" << BEGIN;
+    FunctionSignatureGenerator(W) << "void init_php_scripts_in_each_worker(" << PhpMutableGlobalsRefArgument() << ", task_t<fork_result>&run" ")" << BEGIN;
   } else {
     FunctionSignatureGenerator(W) << "void init_php_scripts_in_each_worker(" << PhpMutableGlobalsRefArgument() << ")" << BEGIN;
   }

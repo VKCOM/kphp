@@ -536,6 +536,12 @@ class CalcBadVars {
     IdMap<FunctionPtr> to_parents(call_graph.n);
 
     for (const auto &func : call_graph.functions) {
+      if (func->is_resumable) {
+        func->is_interruptible = true;
+      }
+    }
+
+    for (const auto &func : call_graph.functions) {
       if (func->is_interruptible) {
         mark(call_graph.rev_graph, into_interruptible, func, to_parents);
       }
@@ -552,6 +558,7 @@ class CalcBadVars {
     for (int i = 0; i < call_graph.n; i++) {
       for (const auto &fork : dep_data[i].forks) {
         fork->is_resumable = true;
+        fork->is_start_resumable_chain = true;
       }
     }
     IdMap<char> from_resumable(call_graph.n); // char to prevent std::vector<bool> inside
@@ -684,8 +691,8 @@ public:
 
     {
       FuncCallGraph call_graph(std::move(functions), dep_datas);
-      calc_interruptible(call_graph);
       calc_resumable(call_graph, dep_datas);
+      calc_interruptible(call_graph);
       generate_bad_vars(call_graph, dep_datas);
       check_func_colors(call_graph);
       save_func_dep(call_graph);

@@ -632,26 +632,14 @@ void compile_do(VertexAdaptor<op_do> root, CodeGenerator &W) {
 void compile_return(VertexAdaptor<op_return> root, CodeGenerator &W) {
   bool resumable_flag = W.get_context().resumable_flag;
   bool interruptible_flag = W.get_context().interruptible_flag;
-  if (resumable_flag) {
-    if (root->has_expr()) {
-      W << "RETURN " << MacroBegin{};
-    } else {
-      W << "RETURN_VOID " << MacroBegin{};
-    }
+  if (resumable_flag || interruptible_flag) {
+    W << "co_return ";
   } else {
-    if (interruptible_flag) {
-      W << "co_return ";
-    } else {
-      W << "return ";
-    }
+    W << "return ";
   }
 
   if (root->has_expr()) {
     W << root->expr();
-  }
-
-  if (resumable_flag) {
-    W << MacroEnd{};
   }
 }
 
@@ -986,13 +974,15 @@ void compile_async(VertexAdaptor<op_async> root, CodeGenerator &W) {
   }
   compile_func_call(func_call, W, func_call_mode::async_call);
   FunctionPtr func = func_call->func_id;
-  W << ";" << NL;
-  W << (root->has_save_var() ? "TRY_WAIT" : "TRY_WAIT_DROP_RESULT");
-  W << MacroBegin{} << gen_unique_name("resumable_label") << ", ";
-  if (root->has_save_var()) {
-    W << root->save_var() << ", ";
+  if (!G->is_output_mode_k2_component()) {
+    W << ";" << NL;
+    W << (root->has_save_var() ? "TRY_WAIT" : "TRY_WAIT_DROP_RESULT");
+    W << MacroBegin{} << gen_unique_name("resumable_label") << ", ";
+    if (root->has_save_var()) {
+      W << root->save_var() << ", ";
+    }
+    W << TypeName(tinf::get_type(func_call)) << MacroEnd{} << ";";
   }
-  W << TypeName(tinf::get_type(func_call)) << MacroEnd{} << ";";
   if (func->can_throw()) {
     W << NL;
     W << "CHECK_EXCEPTION" << MacroBegin{} << ThrowAction{} << MacroEnd{};
@@ -1451,6 +1441,49 @@ void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenera
 
 }
 
+void compile_function_resumable_in_light_mode(VertexAdaptor<op_function> func_root, CodeGenerator &W) {
+
+  FunctionPtr func = func_root->func_id;
+
+  const auto var_name_gen = [](CodeGenerator &W, VarPtr var) { W << VarName(var); };
+  //CALL FUNCTION
+  W << FunctionDeclaration(func, false) << " " << BEGIN;
+  if (func->has_global_vars_inside) {
+    W << PhpMutableGlobalsAssignCurrent() << NL;
+  }
+  W << "vk::final_action action([]{KphpForkContext::current().scheduler.mark_current_fork_as_ready();});" << NL;
+
+  if (func->kphp_tracing) {
+    TracingAutogen::codegen_runtime_func_guard_declaration(W, func);
+    TracingAutogen::codegen_runtime_func_guard_start(W, func);
+  }
+  compile_tracing_profiler(func, W);
+
+  for (auto var : func->local_var_ids) {
+    if (var->type() != VarData::var_local_inplace_t && !var->is_foreach_reference) {
+      W << VarDeclaration(var);
+    }
+  }
+
+  if (func->has_variadic_param) {
+    auto params = func->get_params();
+    kphp_assert(!params.empty());
+    auto variadic_arg = std::prev(params.end());
+    auto name_of_variadic_param = VarName(variadic_arg->as<op_func_param>()->var()->var_id);
+    W << "if (!" << name_of_variadic_param << ".is_vector())" << BEGIN;
+    W << "php_warning(\"pass associative array(" << name_of_variadic_param << ") to variadic function: " << FunctionName(func) << "\");" << NL;
+    W << name_of_variadic_param << " = f$array_values(" << name_of_variadic_param << ");" << NL;
+    W << END << NL;
+  }
+  W << AsSeq{func_root->cmd()} << END << NL;
+
+  //FORK FUNCTION
+  W << FunctionForkDeclaration(func, false) << " " << BEGIN;
+  W << "return KphpForkContext::current().scheduler.start_fork("
+    << FunctionName(func) << "(" << JoinValues(func->param_ids, ", ", join_mode::one_line, var_name_gen) << "));" << NL;
+  W << END << NL;
+}
+
 void compile_function(VertexAdaptor<op_function> func_root, CodeGenerator &W) {
   FunctionPtr func = func_root->func_id;
 
@@ -1459,7 +1492,11 @@ void compile_function(VertexAdaptor<op_function> func_root, CodeGenerator &W) {
   W.get_context().interruptible_flag = func->is_interruptible;
 
   if (func->is_resumable) {
-    compile_function_resumable(func_root, W);
+    if (G->is_output_mode_k2_component()) {
+      compile_function_resumable_in_light_mode(func_root, W);
+    } else {
+      compile_function_resumable(func_root, W);
+    }
     return;
   }
 
