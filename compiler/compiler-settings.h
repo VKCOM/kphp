@@ -3,6 +3,8 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
+
+#include <cstdint>
 #include <string>
 #include <tuple>
 #include <vector>
