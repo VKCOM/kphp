@@ -26,6 +26,7 @@
 #include "common/crc32c.h"
 #include "common/cycleclock.h"
 #include "common/dl-utils-lite.h"
+#include "common/kernel-version.h"
 #include "common/kprintf.h"
 #include "common/macos-ports.h"
 #include "common/options.h"
@@ -1667,6 +1668,7 @@ void init_all() {
     log_server_warning(deprecation_warning);
   }
   StatsHouseManager::get().set_common_tags();
+  cached_uname(); // invoke uname syscall only once on master start
 
   global_init_runtime_libs();
   init_php_scripts_once_in_master();
