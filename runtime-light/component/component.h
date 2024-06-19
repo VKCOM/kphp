@@ -44,12 +44,15 @@ struct ComponentState {
     return poll_status != PollStatus::PollFinishedOk && poll_status != PollStatus::PollFinishedError;
   }
   bool is_stream_already_being_processed(uint64_t stream_d);
+  bool is_stream_timer(uint64_t update_d);
   void process_new_input_stream(uint64_t stream_d);
+  void process_timer(uint64_t stream_d);
   void init_script_execution();
 
   RuntimeAllocator runtime_allocator;
 
   KphpForkContext kphp_fork_context;
+  KphpCoreContext kphp_core_context;
   Response response;
   PhpScriptMutableGlobals php_script_mutable_globals_singleton;
 
@@ -61,11 +64,4 @@ struct ComponentState {
   unordered_set<uint64_t> opened_streams; // подумать про необходимость opened_streams. Объединить с awaiting_coroutines
   unordered_map<uint64_t, std::function<void()>> timer_callbacks;
   deque<uint64_t> incoming_pending_queries;
-
-  KphpCoreContext kphp_core_context;
-
-private:
-  bool is_stream_timer(uint64_t stream_d);
-
-  void process_timer(uint64_t stream_d);
 };
