@@ -46,8 +46,8 @@ void fork_scheduler::resume_fork_by_stream(uint64_t stream_d, const StreamStatus
 
 void fork_scheduler::resume_fork(int64_t fork_id) noexcept {
   php_assert(yielded_forks.contains(fork_id));
+  php_debug("resume fork that was yield %ld", fork_id);
   forks_ready_to_resume.insert(fork_id);
-  yielded_forks.erase(fork_id);
 }
 
 void fork_scheduler::resume_fork_by_incoming_query() noexcept {
@@ -66,6 +66,7 @@ void fork_scheduler::mark_current_fork_as_ready() noexcept {
 }
 
 void fork_scheduler::block_fork_on_another_fork(int64_t blocked_fork, std::coroutine_handle<> handle, int64_t expected_fork) noexcept {
+  php_assert(blocked_fork != expected_fork);
   php_debug("block fork %ld on another fork %ld", blocked_fork, expected_fork);
   wait_another_fork_forks[expected_fork] = blocked_fork;
   running_forks[blocked_fork].handle = handle;
@@ -109,10 +110,15 @@ void fork_scheduler::register_main_fork(light_fork &&fork) noexcept {
 void fork_scheduler::schedule() noexcept {
   php_debug("start fork schedule");
   while (true) {
+    php_debug("schedule [yielded forks %zu, ready_forks %zu, forks_ready_to_resume %zu, running forks %zu]",
+              yielded_forks.size(), ready_forks.size(), forks_ready_to_resume.size(), running_forks.size());
+    php_debug("awaiting forks [wait_incoming_query_forks %zu, wait_another_fork_forks %zu, wait_stream_forks %zu]",
+              wait_incoming_query_forks.size(), wait_another_fork_forks.size(), wait_stream_forks.size());
     // Resume all yielded forks
     for (int64_t fork_id : yielded_forks) {
       resume_fork(fork_id);
     }
+    yielded_forks.clear();
 
     // Resume blocked forks that wait for another fork
     for (int64_t fork_id : ready_forks) {
@@ -121,20 +127,23 @@ void fork_scheduler::schedule() noexcept {
 
     if (forks_ready_to_resume.empty()) {
       // No ready forks to resume. That means that component is blocked
-      php_debug("all forks blocked. Set blocked status");
+      php_debug("all forks blocked. Set blocked status [wait_incoming_query_forks %zu, wait_another_fork_forks %zu, wait_stream_forks %zu, running_forks %zu]"
+                , wait_incoming_query_forks.size(), wait_another_fork_forks.size(), wait_stream_forks.size(), running_forks.size());
       componentState->poll_status = PollStatus::PollBlocked;
       return;
     }
 
+    php_debug("resume forks [forks_ready_to_resume %zu, running forks %zu]", forks_ready_to_resume.size(), running_forks.size());
     for (auto it = forks_ready_to_resume.cbegin(); it != forks_ready_to_resume.cend();) {
       if (get_platform_context()->please_yield.load()) {
         // Stop running if platform ask
-        php_debug("stop forks schedule because of yield");
+        php_debug("stop forks schedule because of platform ask");
         componentState->poll_status = PollStatus::PollReschedule;
         return;
       }
-      scheduler_iteration(*it);
-      php_assert(forks_ready_to_resume.contains(*it));
+      int64_t fork_id = *it;
+      scheduler_iteration(fork_id);
+      php_assert(forks_ready_to_resume.contains(fork_id));
       it = forks_ready_to_resume.erase(it);
     }
 
@@ -158,5 +167,4 @@ void fork_scheduler::scheduler_iteration(int64_t fork_id) noexcept {
     php_debug("fork %ld is done", fork_id);
     ready_forks.insert(fork_id);
   }
-  php_debug("end of scheduler iteration");
 }
