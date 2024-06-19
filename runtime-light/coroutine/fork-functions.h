@@ -4,13 +4,13 @@
 #include "runtime-light/coroutine/awaitable.h"
 
 template<typename T, bool is_php_runtime_type = true>
-task_t<T> f$wait(int64_t fork_id) {
-  co_return co_await wait_fork_t<internal_optional_type<T>>{fork_id};
+task_t<T> f$wait(int64_t fork_id, double timeout = -1.0) {
+  co_return co_await wait_fork_t<internal_optional_type<T>>{fork_id, timeout};
 }
 
 template<typename T>
-task_t<T> f$wait(Optional<int64_t> resumable_id) {
-  co_return co_await f$wait<internal_optional_type<T>>(resumable_id.val());
+task_t<T> f$wait(Optional<int64_t> resumable_id, double timeout = -1.0) {
+  co_return co_await f$wait<internal_optional_type<T>>(resumable_id.val(), timeout);
 }
 
 inline task_t<void> f$sched_yield() {
