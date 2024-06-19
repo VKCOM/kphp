@@ -630,28 +630,48 @@ double mixed::to_float() const {
   }
 }
 
-const string mixed::to_string() const {
-  switch (get_type()) {
-    case type::NUL:
+static string to_string_without_warning(const mixed &m) {
+  switch (m.get_type()) {
+    case mixed::type::NUL:
       return string();
-    case type::BOOLEAN:
-      return (as_bool() ? string("1", 1) : string());
-    case type::INTEGER:
-      return string(as_int());
-    case type::FLOAT:
-      return string(as_double());
-    case type::STRING:
-      return as_string();
-    case type::ARRAY:
-      php_warning("Conversion from array to string");
+    case mixed::type::BOOLEAN:
+      return (m.as_bool() ? string("1", 1) : string());
+    case mixed::type::INTEGER:
+      return string(m.as_int());
+    case mixed::type::FLOAT:
+      return string(m.as_double());
+    case mixed::type::STRING:
+      return m.as_string();
+    case mixed::type::ARRAY:
       return string("Array", 5);
-    case type::OBJECT: {
-      php_warning("Wrong conversion from %s to string", get_type_or_class_name());
-      return string(get_type_or_class_name(), strlen(get_type_or_class_name()));
+    case mixed::type::OBJECT: {
+      const char *s = m.get_type_or_class_name();
+      return string(s, strlen(s));
     }
     default:
       __builtin_unreachable();
   }
+}
+
+const string mixed::to_string() const {
+  switch (get_type()) {
+    case mixed::type::NUL:
+    case mixed::type::BOOLEAN:
+    case mixed::type::INTEGER:
+    case mixed::type::FLOAT:
+    case mixed::type::STRING:
+      break;
+    case type::ARRAY:
+      php_warning("Conversion from array to string");
+      break;
+    case type::OBJECT: {
+      php_warning("Wrong conversion from %s to string", get_type_or_class_name());
+      break;
+    }
+    default:
+      __builtin_unreachable();
+  }
+  return to_string_without_warning(*this);
 }
 
 const array<mixed> mixed::to_array() const {
@@ -1212,7 +1232,7 @@ mixed &mixed::operator[](int64_t int_key) {
       type_ = type::ARRAY;
       new(&as_array()) array<mixed>();
     } else {
-      php_warning("Cannot use a value \"%s\" of type %s as an array, index = %" PRIi64, to_string().c_str(), get_type_c_str(), int_key);
+      php_warning("Cannot use a value \"%s\" of type %s as an array, index = %" PRIi64, to_string_without_warning(*this).c_str(), get_type_or_class_name(), int_key);
       return empty_value<mixed>();
     }
   }
@@ -1230,7 +1250,7 @@ mixed &mixed::operator[](const string &string_key) {
       type_ = type::ARRAY;
       new(&as_array()) array<mixed>();
     } else {
-      php_warning("Cannot use a value \"%s\" of type %s as an array, index = %s", to_string().c_str(), get_type_c_str(), string_key.c_str());
+      php_warning("Cannot use a value \"%s\" of type %s as an array, index = %s", to_string_without_warning(*this).c_str(), get_type_or_class_name(), string_key.c_str());
       return empty_value<mixed>();
     }
   }
@@ -1311,7 +1331,7 @@ void mixed::set_value(int64_t int_key, const mixed &v) {
       type_ = type::ARRAY;
       new(&as_array()) array<mixed>();
     } else {
-      php_warning("Cannot use a value \"%s\" of type %s as an array, index = %" PRIi64, to_string().c_str(), get_type_c_str(), int_key);
+      php_warning("Cannot use a value \"%s\" of type %s as an array, index = %" PRIi64, to_string_without_warning(*this).c_str(), get_type_or_class_name(), int_key);
       return;
     }
   }
@@ -1347,7 +1367,7 @@ void mixed::set_value(const string &string_key, const mixed &v) {
       type_ = type::ARRAY;
       new(&as_array()) array<mixed>();
     } else {
-      php_warning("Cannot use a value \"%s\" of type %s as an array, index = %s", to_string().c_str(), get_type_c_str(), string_key.c_str());
+      php_warning("Cannot use a value \"%s\" of type %s as an array, index = %s", to_string_without_warning(*this).c_str(), get_type_or_class_name(), string_key.c_str());
       return;
     }
   }
@@ -1410,7 +1430,7 @@ const mixed mixed::get_value(int64_t int_key) const {
     }
 
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
-      php_warning("Cannot use a value \"%s\" of type %s as an array, index = %" PRIi64, to_string().c_str(), get_type_c_str(), int_key);
+      php_warning("Cannot use a value \"%s\" of type %s as an array, index = %" PRIi64, to_string_without_warning(*this).c_str(), get_type_or_class_name(), int_key);
     }
     return mixed();
   }
@@ -1433,7 +1453,7 @@ const mixed mixed::get_value(const string &string_key) const {
     }
 
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
-      php_warning("Cannot use a value \"%s\" of type %s as an array, index = %s", to_string().c_str(), get_type_c_str(), string_key.c_str());
+      php_warning("Cannot use a value \"%s\" of type %s as an array, index = %s", to_string_without_warning(*this).c_str(), get_type_or_class_name(), string_key.c_str());
     }
     return mixed();
   }
@@ -1645,7 +1665,7 @@ array<mixed>::const_iterator mixed::begin() const {
   if (likely (get_type() == type::ARRAY)) {
     return as_array().begin();
   }
-  php_warning("Invalid argument supplied for foreach(), %s (string representation - \"%s\") is given", get_type_c_str(), to_string().c_str());
+  php_warning("Invalid argument supplied for foreach(), %s (string representation - \"%s\") is given", get_type_or_class_name(), to_string_without_warning(*this).c_str());
   return array<mixed>::const_iterator();
 }
 
@@ -1661,7 +1681,7 @@ array<mixed>::iterator mixed::begin() {
   if (likely (get_type() == type::ARRAY)) {
     return as_array().begin();
   }
-  php_warning("Invalid argument supplied for foreach(), %s (string representation - \"%s\") is given", get_type_c_str(), to_string().c_str());
+  php_warning("Invalid argument supplied for foreach(), %s (string representation - \"%s\") is given", get_type_or_class_name(), to_string_without_warning(*this).c_str());
   return array<mixed>::iterator();
 }
 
