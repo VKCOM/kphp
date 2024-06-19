@@ -109,13 +109,13 @@ void fork_scheduler::register_main_fork(light_fork &&fork) noexcept {
 void fork_scheduler::schedule() noexcept {
   php_debug("start fork schedule");
   while (true) {
-    // Update all yielded forks
-    for (int fork_id : yielded_forks) {
+    // Resume all yielded forks
+    for (int64_t fork_id : yielded_forks) {
       resume_fork(fork_id);
     }
 
-    // Update blocked forks that wait for another fork
-    for (int fork_id : ready_forks) {
+    // Resume blocked forks that wait for another fork
+    for (int64_t fork_id : ready_forks) {
       resume_fork_by_another_fork(fork_id);
     }
 
