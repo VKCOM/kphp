@@ -1,6 +1,7 @@
 #pragma once
 
 #include <coroutine>
+#include "runtime-light/core/runtime_types/optional.h"
 
 #include "runtime-light/component/component.h"
 #include "runtime-light/utils/logs.h"
@@ -68,8 +69,9 @@ struct wait_incoming_query_t {
 template<typename T>
 struct wait_fork_t {
   int64_t expected_fork_id;
+  double timeout;
 
-  wait_fork_t(int64_t id) : expected_fork_id(id) {}
+  wait_fork_t(int64_t id, double timeout) : expected_fork_id(id), timeout(timeout) {}
 
   bool await_ready() const noexcept {
     return KphpForkContext::current().scheduler.is_fork_ready(expected_fork_id);
@@ -78,14 +80,17 @@ struct wait_fork_t {
   void await_suspend(std::coroutine_handle<> h) const noexcept {
     KphpForkContext & context = KphpForkContext::current();
     php_debug("fork %ld wait for fork %ld", context.current_fork_id, expected_fork_id);
-    context.scheduler.block_fork_on_another_fork(context.current_fork_id, h, expected_fork_id);
+    context.scheduler.block_fork_on_another_fork(context.current_fork_id, h, expected_fork_id, timeout);
   }
 
-  T await_resume() const noexcept {
+  Optional<T> await_resume() const noexcept {
     auto & fork = KphpForkContext::current().scheduler.get_fork_by_id(expected_fork_id);
-    php_assert(fork.task.done());
-    const vk::final_action final_action([this]{ KphpForkContext::current().scheduler.unregister_fork(expected_fork_id);});
-    return fork.get_fork_result<T>();
+    if (fork.task.done()) {
+      const vk::final_action final_action([this]{ KphpForkContext::current().scheduler.unregister_fork(expected_fork_id);});
+      return Optional<T>(fork.get_fork_result<T>());
+    } else {
+      return Optional<T>();
+    }
   }
 };
 

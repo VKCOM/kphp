@@ -14,3 +14,5 @@ template<typename CallBack>
 void f$set_timer(int64_t timeout, CallBack && callback) {
   set_timer_impl(timeout, on_timer_callback_t(std::forward<CallBack>(callback)));
 }
+
+uint64_t set_timer_without_callback(double timeout_s);
