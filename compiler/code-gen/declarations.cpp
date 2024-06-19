@@ -535,6 +535,10 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
   W << CloseFile();
 }
 
+static bool is_may_be_mixed_virtual_method(vk::string_view method_signature) {
+  return method_signature == "const char *get_class()";
+}
+
 template<class ReturnValueT>
 void ClassDeclaration::compile_class_method(FunctionSignatureGenerator &&W, ClassPtr klass, vk::string_view method_signature, const ReturnValueT &return_value) {
   const bool has_parent = (klass->parent_class && klass->parent_class->does_need_codegen()) ||
@@ -543,6 +547,12 @@ void ClassDeclaration::compile_class_method(FunctionSignatureGenerator &&W, Clas
   const bool is_overridden = has_parent && has_derived;
   const bool is_final = has_parent && !has_derived;
   const bool is_pure_virtual = klass->class_type == ClassType::interface;
+  const bool may_be_mixed = klass->may_be_mixed;
+
+  if (klass->is_interface() && may_be_mixed && is_may_be_mixed_virtual_method(method_signature)) {
+    std::move(W).clear_all();
+    return;
+  }
 
   FunctionSignatureGenerator &&signature = std::move(W)
     .set_is_virtual(is_pure_virtual || has_derived)

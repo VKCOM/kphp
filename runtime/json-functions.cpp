@@ -303,6 +303,9 @@ bool JsonEncoder::encode(const mixed &v) noexcept {
       return encode(v.as_string());
     case mixed::type::ARRAY:
       return encode(v.as_array());
+    case mixed::type::OBJECT:
+      php_warning("Objects (%s) are not supported in JsonEncoder", v.get_type_or_class_name());
+      return false;
     default:
       __builtin_unreachable();
   }
