@@ -86,7 +86,7 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
     add_compile_options(-march=armv8.2-a+crypto)
 endif()
 
-add_compile_options(-Werror -Wall -Wextra -Wunused-function -Wfloat-conversion -Wno-sign-compare
+add_compile_options(-std=c++2b -fexperimental-library -stdlib=libc++ -Werror -Wall -Wextra -Wunused-function -Wfloat-conversion -Wno-sign-compare
                     -Wuninitialized -Wno-redundant-move -Wno-missing-field-initializers)
 
 if(NOT APPLE)
