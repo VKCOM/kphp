@@ -9,10 +9,12 @@
 #include <chrono>
 #include <cinttypes>
 #include <cmath>
+#include <cstdint>
 #include <forward_list>
 #include <map>
 #include <optional>
 #include <unistd.h>
+#include <vector>
 
 #include "common/binlog/binlog-replayer.h"
 #include "common/binlog/binlog-snapshot.h"
@@ -23,7 +25,6 @@
 #include "common/server/init-snapshot.h"
 #include "common/tl/methods/string.h"
 #include "common/wrappers/string_view.h"
-
 #include "runtime/confdata-global-manager.h"
 #include "server/confdata-binlog-events.h"
 #include "server/confdata-stats.h"
