@@ -498,6 +498,9 @@ struct pack<mixed> {
       case mixed::type::ARRAY:
         packer.pack(v.as_array());
         break;
+      case mixed::type::OBJECT:
+        php_warning("Objects (%s) are not supported in msgpack", v.get_type_or_class_name());
+        break;
       default:
         __builtin_unreachable();
     }

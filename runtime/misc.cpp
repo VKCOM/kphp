@@ -533,6 +533,11 @@ void do_print_r(const mixed &v, int depth) {
       *coub << shift << ")\n";
       break;
     }
+    case mixed::type::OBJECT: {
+      php_warning("print_r used on object");
+      *coub << v.as_object()->get_class();
+      break;
+    }
     default:
       __builtin_unreachable();
   }
@@ -577,6 +582,12 @@ void do_var_dump(const mixed &v, int depth) {
       }
 
       *coub << shift << "}";
+      break;
+    }
+    case mixed::type::OBJECT: {
+      php_warning("var_dump used on object");
+      auto s = string(v.as_object()->get_class(), (string::size_type)strlen(v.as_object()->get_class()));
+      *coub << shift << "string(" << (int)s.size() << ") \"" << s << '"';
       break;
     }
     default:
@@ -652,6 +663,10 @@ void do_var_export(const mixed &v, int depth, char endc = 0) {
       }
 
       *coub << shift << ")";
+      break;
+    }
+    case mixed::type::OBJECT: {
+      *coub << shift << v.get_type_or_class_name();
       break;
     }
     default:

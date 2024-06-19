@@ -161,6 +161,9 @@ public:
   inline array<mixed> &as_array() __attribute__((always_inline));
   inline const array<mixed> &as_array() const __attribute__((always_inline));
 
+  inline may_be_mixed_base *as_object() __attribute__((always_inline));
+  inline const may_be_mixed_base *as_object() const __attribute__((always_inline));
+
   template <typename T>
   struct inner_type_of_class_instance {
     static constexpr bool has = false;
@@ -220,9 +223,11 @@ public:
   inline bool is_float() const;
   inline bool is_string() const;
   inline bool is_array() const;
+  inline bool is_object() const;
 
   inline const string get_type_str() const;
   inline const char *get_type_c_str() const;
+  inline const char *get_type_or_class_name() const;
 
   inline bool empty() const;
   inline int64_t count() const;

@@ -482,6 +482,9 @@ string &string::append(const mixed &v) {
     case mixed::type::ARRAY:
       php_warning("Conversion from array to string");
       return append("Array", 5);
+    case mixed::type::OBJECT:
+      php_warning("Conversion from %s to string", v.get_type_or_class_name());
+      return append(v.get_type_or_class_name(), strlen(v.get_type_or_class_name()));
     default:
       __builtin_unreachable();
   }
@@ -544,6 +547,8 @@ string &string::append_unsafe(const char *s, size_type n) {
   return *this;
 }
 
+// TODO start from here
+
 template<class T>
 string &string::append_unsafe(const array<T> &a __attribute__((unused))) {
   php_warning("Conversion from array to string");
@@ -564,6 +569,9 @@ string &string::append_unsafe(const mixed &v) {
       return append_unsafe(v.as_string());
     case mixed::type::ARRAY:
       return append_unsafe(v.as_array());
+    case mixed::type::OBJECT:
+      php_warning("Conversion from %s to string", v.get_type_or_class_name());
+      return append(v.get_type_or_class_name(), strlen(v.get_type_or_class_name()));
     default:
       __builtin_unreachable();
   }
@@ -1031,6 +1039,9 @@ const string string::get_value(const mixed &v) const {
     case mixed::type::ARRAY:
       php_warning("Illegal offset type %s", v.get_type_c_str());
       return string();
+    case mixed::type::OBJECT:
+      php_warning("Illegal offset type %s", v.get_type_or_class_name());
+      return string();
     default:
       __builtin_unreachable();
   }
@@ -1181,6 +1192,8 @@ string::size_type max_string_size(const mixed &v) {
       return max_string_size(v.as_string());
     case mixed::type::ARRAY:
       return max_string_size(v.as_array());
+    case mixed::type::OBJECT:
+      php_warning("Cannot use objects (%s) in string builder", v.get_type_or_class_name());
     default:
       __builtin_unreachable();
   }
