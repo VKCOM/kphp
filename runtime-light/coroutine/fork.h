@@ -52,21 +52,23 @@ struct fork_scheduler {
     , ready_forks(unordered_set<int64_t>::allocator_type{memory_pool})
     , yielded_forks(unordered_set<int64_t>::allocator_type{memory_pool})
     , wait_incoming_query_forks(unordered_set<int64_t>::allocator_type{memory_pool})
-    , stream_d_to_blocked_fork(unordered_map<int64_t, std::pair<int64_t, StreamRuntimeStatus>>::allocator_type{memory_pool})
-    , fork_id_to_blocked_fork(unordered_map<int64_t, int64_t>::allocator_type{memory_pool}) {}
+    , wait_stream_forks(unordered_map<int64_t, std::pair<int64_t, StreamRuntimeStatus>>::allocator_type{memory_pool})
+    , wait_another_fork_forks(unordered_map<int64_t, int64_t>::allocator_type{memory_pool}) {}
 
+  void register_main_fork(light_fork && fork) noexcept;
   void unregister_fork(int64_t fork_id) noexcept;
   bool is_fork_ready(int64_t fork_id) noexcept;
   light_fork &get_fork_by_id(int64_t fork_id) noexcept;
-  void update_fork_status_on_stream_d(uint64_t stream_d, const StreamStatus &status) noexcept;
 
   void block_fork_on_another_fork(int64_t blocked_fork, std::coroutine_handle<> handle, int64_t expected_fork) noexcept;
   void block_fork_on_stream(int64_t blocked_fork, std::coroutine_handle<> handle, uint64_t stream_d, StreamRuntimeStatus status) noexcept;
   void yield_fork(int64_t fork_id, std::coroutine_handle<> handle) noexcept;
+  void block_fork_on_incoming_query(int64_t fork_id, std::coroutine_handle<> handle) noexcept;
 
-  void block_main_fork_on_incoming_query(std::coroutine_handle<> handle) noexcept;
-  void resume_main_fork_on_incoming_query() noexcept;
-  void register_main_fork(light_fork && fork) noexcept;
+  void resume_fork_by_another_fork(int64_t expected_fork) noexcept;
+  void resume_fork_by_stream(uint64_t stream_d, const StreamStatus &status) noexcept;
+  void resume_fork(int64_t fork_id) noexcept;
+  void resume_fork_by_incoming_query() noexcept;
 
   void schedule() noexcept;
   /*functions for using in codegen */
@@ -83,8 +85,8 @@ private:
 
   unordered_set<int64_t> yielded_forks;
   unordered_set<int64_t> wait_incoming_query_forks;
-  unordered_map<int64_t, std::pair<int64_t, StreamRuntimeStatus>> stream_d_to_blocked_fork;
-  unordered_map<int64_t, int64_t> fork_id_to_blocked_fork;
+  unordered_map<int64_t, std::pair<int64_t, StreamRuntimeStatus>> wait_stream_forks;
+  unordered_map<int64_t, int64_t> wait_another_fork_forks;
 };
 
 struct KphpForkContext {
@@ -96,7 +98,7 @@ struct KphpForkContext {
   KphpForkContext(memory_resource::unsynchronized_pool_resource &memory_pool)
     : scheduler(memory_pool) {}
 
-  int current_fork_id = main_fork_id;
+  int64_t current_fork_id = main_fork_id;
   int last_registered_fork_id = main_fork_id;
 
   fork_scheduler scheduler;

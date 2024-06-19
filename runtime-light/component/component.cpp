@@ -12,10 +12,7 @@ void ComponentState::process_new_input_stream(uint64_t stream_d) {
     php_debug("got new pending query %lu", stream_d);
     incoming_pending_queries.push_back(stream_d);
   }
-  if (wait_incoming_stream) {
-    php_debug("start process pending query %lu", stream_d);
-    kphp_fork_context.scheduler.resume_main_fork_on_incoming_query();
-  }
+  kphp_fork_context.scheduler.resume_fork_by_incoming_query();
 }
 
 void ComponentState::init_script_execution() {
