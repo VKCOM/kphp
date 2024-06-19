@@ -152,3 +152,6 @@ function set_timer(int $timeout, callable():void $callback) ::: void;
 
 /** @kphp-extern-func-info resumable cpp_template_call */
 function wait(future<any> | false $id) ::: ^1[*] | null;
+
+/** @kphp-extern-func-info resumable */
+function sched_yield() ::: void;

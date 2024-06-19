@@ -41,7 +41,6 @@ struct light_fork {
 struct fork_scheduler {
   template<typename Key, typename Value>
   using unordered_map = memory_resource::stl::unordered_map<Key, Value, memory_resource::unsynchronized_pool_resource>;
-
   template<class T>
   using unordered_set = memory_resource::stl::unordered_set<T, memory_resource::unsynchronized_pool_resource>;
 

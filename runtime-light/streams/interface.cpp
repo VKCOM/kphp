@@ -44,9 +44,9 @@ task_t<string> f$component_client_get_result(class_instance<C$ComponentQuery> qu
   auto [buffer, size] = co_await read_all_from_stream(stream_d);
   string result;
   result.assign(buffer, size);
+  php_debug("read %d bytes from stream %lu", size, stream_d);
   free_descriptor(stream_d);
   query.get()->stream_d = 0;
-  php_debug("read %d bytes from stream %lu", size, stream_d);
   co_return result;
 }
 
