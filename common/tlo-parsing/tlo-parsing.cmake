@@ -26,7 +26,7 @@ set_target_properties(tlo_parsing_static PROPERTIES
 install(TARGETS tlo_parsing_static
         COMPONENT TLO_PARSING_DEV
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        PUBLIC_HEADER DESTINATION /usr/${CMAKE_INSTALL_INCLUDEDIR}/tlo-parsing)
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/tlo-parsing)
 
 vk_add_library(tlo_parsing_shared SHARED $<TARGET_OBJECTS:tlo_parsing_src>)
 set_target_properties(tlo_parsing_shared PROPERTIES OUTPUT_NAME tlo_parsing)
