@@ -117,7 +117,9 @@ void FunctionParams::declare_cpp_param(CodeGenerator &W, VertexAdaptor<op_var> v
   auto var_ptr = var->var_id;
   if (var->ref_flag) {
     W << "&";
-  } else if (var_ptr->marked_as_const || (!function->has_variadic_param && var_ptr->is_read_only)) {
+  } else if ((var_ptr->marked_as_const || (!function->has_variadic_param && var_ptr->is_read_only))
+             /* the top of resumable chain function should take arguments by value */
+             && !function->is_start_resumable_chain) {
     W << (!type.type->is_primitive_type() ? "const &" : "");
   }
   W << VarName(var_ptr);
