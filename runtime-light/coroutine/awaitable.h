@@ -84,11 +84,13 @@ struct wait_fork_t {
   }
 
   Optional<T> await_resume() const noexcept {
+    const vk::final_action final_action([this]{ KphpForkContext::current().scheduler.unregister_fork(expected_fork_id);});
     auto & fork = KphpForkContext::current().scheduler.get_fork_by_id(expected_fork_id);
     if (fork.task.done()) {
-      const vk::final_action final_action([this]{ KphpForkContext::current().scheduler.unregister_fork(expected_fork_id);});
+      php_debug("resume fork %ld on done fork %ld", KphpForkContext::current().current_fork_id, expected_fork_id);
       return Optional<T>(fork.get_fork_result<T>());
     } else {
+      php_debug("resume fork %ld on undone fork %ld by timeout", KphpForkContext::current().current_fork_id, expected_fork_id);
       return Optional<T>();
     }
   }

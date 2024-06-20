@@ -122,7 +122,7 @@ task_t<int> write_all_to_stream(uint64_t stream_d, const char * buffer, int len)
     }
   } while (writed != len);
 
-  php_debug("write %d bytes to stream %lu", len, stream_d);
+  php_debug("write %d bytes to stream %lu", writed, stream_d);
   co_return writed;
 }
 

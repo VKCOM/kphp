@@ -44,7 +44,6 @@ struct fork_scheduler {
   template<class T>
   using unordered_set = memory_resource::stl::unordered_set<T, memory_resource::unsynchronized_pool_resource>;
 
-
   fork_scheduler(memory_resource::unsynchronized_pool_resource &memory_pool)
     : running_forks(unordered_map<int64_t, light_fork>::allocator_type{memory_pool})
     , forks_ready_to_resume(unordered_set<int64_t>::allocator_type{memory_pool})
@@ -55,7 +54,7 @@ struct fork_scheduler {
     , timer_to_expected_fork(unordered_map<uint64_t, int64_t>::allocator_type{memory_pool})
     , wait_another_fork_forks(unordered_map<int64_t, std::pair<int64_t, uint64_t>>::allocator_type{memory_pool}) {}
 
-  void register_main_fork(light_fork && fork) noexcept;
+  void register_main_fork(light_fork &&fork) noexcept;
   void unregister_fork(int64_t fork_id) noexcept;
   bool is_fork_ready(int64_t fork_id) noexcept;
   light_fork &get_fork_by_id(int64_t fork_id) noexcept;
@@ -73,7 +72,7 @@ struct fork_scheduler {
 
   void schedule() noexcept;
   /*functions for using in codegen */
-  int64_t start_fork(task_t<fork_result> && task) noexcept;
+  int64_t start_fork(task_t<fork_result> &&task) noexcept;
   void mark_current_fork_as_ready() noexcept;
 
 private:
@@ -84,6 +83,7 @@ private:
   unordered_set<int64_t> forks_ready_to_resume;
   unordered_set<int64_t> ready_forks;
 
+  /* set of forks that was yielded */
   unordered_set<int64_t> yielded_forks;
   /* set of forks that wait to accept incoming stream */
   unordered_set<int64_t> wait_incoming_query_forks;
@@ -105,7 +105,7 @@ struct KphpForkContext {
     : scheduler(memory_pool) {}
 
   int64_t current_fork_id = main_fork_id;
-  int last_registered_fork_id = main_fork_id;
+  int64_t last_registered_fork_id = main_fork_id;
 
   fork_scheduler scheduler;
 };
