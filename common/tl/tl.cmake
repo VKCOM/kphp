@@ -1,8 +1,7 @@
 include(${COMMON_DIR}/tlo-parsing/tlo-parsing.cmake)
-include(${COMMON_DIR}/tl/compiler/tl-compiler.cmake)
 include(${COMMON_DIR}/tl2php/tl2php.cmake)
 
-install(TARGETS tl-compiler tl2php
+install(TARGETS tl2php
         COMPONENT TL_TOOLS
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
