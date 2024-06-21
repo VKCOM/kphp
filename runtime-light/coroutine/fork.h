@@ -43,16 +43,18 @@ struct fork_scheduler {
   using unordered_map = memory_resource::stl::unordered_map<Key, Value, memory_resource::unsynchronized_pool_resource>;
   template<class T>
   using unordered_set = memory_resource::stl::unordered_set<T, memory_resource::unsynchronized_pool_resource>;
+  template<typename T>
+  using deque = memory_resource::stl::deque<T, memory_resource::unsynchronized_pool_resource>;
 
   fork_scheduler(memory_resource::unsynchronized_pool_resource &memory_pool)
     : running_forks(unordered_map<int64_t, light_fork>::allocator_type{memory_pool})
-    , forks_ready_to_resume(unordered_set<int64_t>::allocator_type{memory_pool})
     , ready_forks(unordered_set<int64_t>::allocator_type{memory_pool})
     , yielded_forks(unordered_set<int64_t>::allocator_type{memory_pool})
     , wait_incoming_query_forks(unordered_set<int64_t>::allocator_type{memory_pool})
     , wait_stream_forks(unordered_map<int64_t, std::pair<int64_t, StreamRuntimeStatus>>::allocator_type{memory_pool})
     , timer_to_expected_fork(unordered_map<uint64_t, int64_t>::allocator_type{memory_pool})
-    , wait_another_fork_forks(unordered_map<int64_t, std::pair<int64_t, uint64_t>>::allocator_type{memory_pool}) {}
+    , wait_another_fork_forks(unordered_map<int64_t, std::pair<int64_t, uint64_t>>::allocator_type{memory_pool})
+    , forks_ready_to_resume(deque<int64_t>::allocator_type{memory_pool}) {}
 
   void register_main_fork(light_fork &&fork) noexcept;
   void unregister_fork(int64_t fork_id) noexcept;
@@ -82,7 +84,6 @@ private:
   void scheduler_iteration(int64_t fork_id) noexcept;
 
   unordered_map<int64_t, light_fork> running_forks;
-  unordered_set<int64_t> forks_ready_to_resume;
   unordered_set<int64_t> ready_forks;
 
   /* set of forks that was yielded */
@@ -95,6 +96,8 @@ private:
   unordered_map<uint64_t, int64_t> timer_to_expected_fork;
   /* set of forks that wait for another fork */
   unordered_map<int64_t, std::pair<int64_t, uint64_t>> wait_another_fork_forks;
+
+  deque<int64_t> forks_ready_to_resume;
 };
 
 struct KphpForkContext {

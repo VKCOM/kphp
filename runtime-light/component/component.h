@@ -26,6 +26,7 @@ struct ComponentState {
   using deque = memory_resource::stl::deque<T, memory_resource::unsynchronized_pool_resource>;
 
   ComponentState() :
+    script_allocator(),
     kphp_fork_context(script_allocator.memory_resource),
     php_script_mutable_globals_singleton(script_allocator.memory_resource),
     opened_streams(unordered_set<uint64_t>::allocator_type{script_allocator.memory_resource}),
@@ -43,9 +44,8 @@ struct ComponentState {
   void process_timer(uint64_t stream_d);
   void init_script_execution();
 
-  KphpForkContext kphp_fork_context;
-
   dl::ScriptAllocator script_allocator;
+  KphpForkContext kphp_fork_context;
   Response response;
   PhpScriptMutableGlobals php_script_mutable_globals_singleton;
 

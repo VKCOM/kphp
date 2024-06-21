@@ -9,7 +9,6 @@ KphpForkContext &KphpForkContext::current() {
 void fork_scheduler::unregister_fork(int64_t fork_id) noexcept {
   php_debug("unregister fork %ld", fork_id);
   running_forks.erase(fork_id);
-  forks_ready_to_resume.erase(fork_id);
   ready_forks.erase(fork_id);
 }
 
@@ -19,7 +18,7 @@ bool fork_scheduler::is_fork_ready(int64_t fork_id) noexcept {
 
 void fork_scheduler::mark_fork_ready_to_resume(int64_t fork_id) noexcept {
   if (is_fork_not_canceled(fork_id)) {
-    forks_ready_to_resume.insert(fork_id);
+    forks_ready_to_resume.push_back(fork_id);
   }
 }
 
@@ -173,18 +172,19 @@ void fork_scheduler::schedule() noexcept {
     }
 
     php_debug("resume forks [forks_ready_to_resume %zu, running forks %zu]", forks_ready_to_resume.size(), running_forks.size());
-    for (auto it = forks_ready_to_resume.cbegin(); it != forks_ready_to_resume.cend();) {
+    while (!forks_ready_to_resume.empty()) {
       if (get_platform_context()->please_yield.load()) {
         // Stop running if platform ask
         php_debug("stop forks schedule because of platform ask");
         componentState->poll_status = PollStatus::PollReschedule;
         return;
       }
-      int64_t fork_id = *it;
+      int64_t fork_id = forks_ready_to_resume.front();
+      forks_ready_to_resume.pop_front();
+      if (!is_fork_not_canceled(fork_id)) {
+        continue;
+      }
       scheduler_iteration(fork_id);
-      php_assert(forks_ready_to_resume.contains(fork_id));
-      it = forks_ready_to_resume.erase(it);
-
       if (is_main_fork_finish()) {
         break;
       }

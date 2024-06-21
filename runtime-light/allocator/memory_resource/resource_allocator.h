@@ -3,6 +3,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
+#include <deque>
 #include <map>
 #include <queue>
 #include <unordered_map>
