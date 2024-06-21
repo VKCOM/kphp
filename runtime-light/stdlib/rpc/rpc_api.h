@@ -75,7 +75,7 @@ task_t<array<int64_t>> f$typed_rpc_tl_query(string actor, array<class_instance<r
   array<int64_t> query_ids{query_functions.size()};
   array<rpc_request_extra_info_t> req_extra_info_arr{query_functions.size()};
 
-  for (auto it = query_functions.cbegin(); it != query_functions.cend(); ++it) {
+  for (const auto &it : query_functions) {
     const auto query_info{
       co_await rpc_impl_::typed_rpc_tl_query_one_impl(actor, rpc_request_t{it.get_value()}, timeout, collect_resp_extra_info, ignore_answer)};
 
@@ -96,7 +96,7 @@ template<std::same_as<int64_t> query_id_t = int64_t, std::same_as<RpcResponseErr
 requires std::default_initializable<error_factory_t> task_t<array<class_instance<C$VK$TL$RpcResponse>>>
 f$typed_rpc_tl_query_result(array<query_id_t> query_ids) noexcept {
   array<class_instance<C$VK$TL$RpcResponse>> res{query_ids.size()};
-  for (auto it = query_ids.cbegin(); it != query_ids.cend(); ++it) {
+  for (const auto &it : query_ids) {
     res.set_value(it.get_key(), co_await rpc_impl_::typed_rpc_tl_query_result_one_impl(it.get_value(), error_factory_t{}));
   }
   co_return res;

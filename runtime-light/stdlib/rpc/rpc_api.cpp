@@ -475,7 +475,7 @@ task_t<array<int64_t>> f$rpc_tl_query(string actor, array<mixed> tl_objects, dou
   array<int64_t> query_ids{tl_objects.size()};
   array<rpc_request_extra_info_t> req_extra_info_arr{tl_objects.size()};
 
-  for (auto it = tl_objects.cbegin(); it != tl_objects.cend(); ++it) {
+  for (const auto &it : tl_objects) {
     const auto query_info{co_await rpc_impl_::rpc_tl_query_one_impl(actor, it.get_value(), timeout, collect_resp_extra_info, ignore_answer)};
 
     query_ids.set_value(it.get_key(), query_info.id);
@@ -491,7 +491,7 @@ task_t<array<int64_t>> f$rpc_tl_query(string actor, array<mixed> tl_objects, dou
 
 task_t<array<array<mixed>>> f$rpc_tl_query_result(array<int64_t> query_ids) noexcept {
   array<array<mixed>> res{query_ids.size()};
-  for (auto it = query_ids.cbegin(); it != query_ids.cend(); ++it) {
+  for (const auto &it : query_ids) {
     res.set_value(it.get_key(), co_await rpc_impl_::rpc_tl_query_result_one_impl(it.get_value()));
   }
 
