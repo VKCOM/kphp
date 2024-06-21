@@ -17,6 +17,16 @@ bool fork_scheduler::is_fork_ready(int64_t fork_id) noexcept {
   return ready_forks.contains(fork_id);
 }
 
+void fork_scheduler::mark_fork_ready_to_resume(int64_t fork_id) noexcept {
+  if (is_fork_not_canceled(fork_id)) {
+    forks_ready_to_resume.insert(fork_id);
+  }
+}
+
+bool fork_scheduler::is_fork_not_canceled(int64_t fork_id) noexcept {
+  return running_forks.contains(fork_id);
+}
+
 bool fork_scheduler::is_main_fork_finish() noexcept {
   return running_forks[KphpForkContext::main_fork_id].task.done();
 }
@@ -29,12 +39,12 @@ void fork_scheduler::resume_fork_by_another_fork(int64_t expected_fork) noexcept
   php_assert(ready_forks.contains(expected_fork));
   if (wait_another_fork_forks.contains(expected_fork)) {
     auto [fork_id, timer_d] = wait_another_fork_forks[expected_fork];
-    forks_ready_to_resume.insert(fork_id);
     wait_another_fork_forks.erase(expected_fork);
     if (timer_d > 0) {
       timer_to_expected_fork.erase(timer_d);
       free_descriptor(timer_d);
     }
+    mark_fork_ready_to_resume(fork_id);
   }
 }
 
@@ -43,8 +53,8 @@ void fork_scheduler::resume_fork_by_stream(uint64_t stream_d, const StreamStatus
     auto [fork_id, blocked_status] = wait_stream_forks[stream_d];
     if ((blocked_status == WBlocked && status.write_status != IOBlocked) || (blocked_status == RBlocked && status.read_status != IOBlocked)) {
       php_debug("update fork %ld status on stream %lu", fork_id, stream_d);
-      forks_ready_to_resume.insert(fork_id);
       wait_stream_forks.erase(stream_d);
+      mark_fork_ready_to_resume(fork_id);
     }
   }
 }
@@ -52,15 +62,15 @@ void fork_scheduler::resume_fork_by_stream(uint64_t stream_d, const StreamStatus
 void fork_scheduler::resume_fork(int64_t fork_id) noexcept {
   php_assert(yielded_forks.contains(fork_id));
   php_debug("resume fork that was yield %ld", fork_id);
-  forks_ready_to_resume.insert(fork_id);
+  mark_fork_ready_to_resume(fork_id);
 }
 
 void fork_scheduler::resume_fork_by_incoming_query() noexcept {
   if (!wait_incoming_query_forks.empty()) {
     php_debug("resume fork to process incoming query");
     int fork_id = *wait_incoming_query_forks.begin();
-    forks_ready_to_resume.insert(fork_id);
     wait_incoming_query_forks.erase(fork_id);
+    mark_fork_ready_to_resume(fork_id);
   }
 }
 
@@ -69,9 +79,9 @@ void fork_scheduler::resume_fork_by_timeout(int64_t timer_d) noexcept {
     int64_t expected_fork = timer_to_expected_fork[timer_d];
     auto [blocked_fork, _] = wait_another_fork_forks[expected_fork];
     php_debug("resume fork %ld by timeout %ld", blocked_fork, timer_d);
-    forks_ready_to_resume.insert(blocked_fork);
     timer_to_expected_fork.erase(timer_d);
     wait_another_fork_forks.erase(blocked_fork);
+    mark_fork_ready_to_resume(blocked_fork);
   }
 }
 
@@ -133,7 +143,7 @@ int64_t fork_scheduler::start_fork(task_t<fork_result> &&task) noexcept {
 
 void fork_scheduler::register_main_fork(light_fork &&fork) noexcept {
   running_forks[KphpForkContext::main_fork_id] = std::move(fork);
-  forks_ready_to_resume.insert(KphpForkContext::main_fork_id);
+  mark_fork_ready_to_resume(KphpForkContext::main_fork_id);
 }
 
 void fork_scheduler::schedule() noexcept {

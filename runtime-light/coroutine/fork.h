@@ -76,6 +76,8 @@ struct fork_scheduler {
   void mark_current_fork_as_ready() noexcept;
 
 private:
+  void mark_fork_ready_to_resume(int64_t fork_id) noexcept;
+  bool is_fork_not_canceled(int64_t fork_id) noexcept;
   bool is_main_fork_finish() noexcept;
   void scheduler_iteration(int64_t fork_id) noexcept;
 
