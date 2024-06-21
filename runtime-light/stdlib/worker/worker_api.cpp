@@ -52,7 +52,7 @@ task_t<bool> f$kphp_job_worker_start_no_reply(string request, double timeout) no
 
 task_t<array<Optional<int64_t>>> f$kphp_job_worker_start_multi(array<string> requests, double timeout) noexcept {
   array<Optional<int64_t>> worker_ids{requests.size()};
-  for (auto it = requests.cbegin(); it != requests.cend(); ++it) {
+  for (const auto &it : requests) {
     const auto job_id{co_await kphp_job_worker_start_impl(it.get_value(), timeout, false)};
     worker_ids.set_value(it.get_key(), job_id >= JOB_WORKER_VALID_JOB_ID_RANGE_START ? Optional<int64_t>{job_id} : Optional<int64_t>{false});
   }
