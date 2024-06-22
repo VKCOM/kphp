@@ -110,6 +110,10 @@ final class DeflateContext {
     private function __construct() ::: DeflateContext;
 }
 
+final class InflateContext {
+    private function __construct() ::: InflateContext;
+}
+
 /** @var mixed $_SERVER */
 global $_SERVER;
 /** @var mixed $_GET */
@@ -546,14 +550,29 @@ define('ZLIB_DEFAULT_STRATEGY', 0);
 define('PHP_QUERY_RFC1738', 1);
 define('PHP_QUERY_RFC3986', 2);
 
-function deflate_init(int $encoding, array $options = []) ::: ?DeflateContext;
-function deflate_add(DeflateContext $context, string $data, int $flush_mode = ZLIB_SYNC_FLUSH) ::: string | false;
-function gzencode ($str ::: string, $level ::: int = -1) ::: string;
-function gzdecode ($str ::: string) ::: string;
-function gzcompress ($str ::: string, $level ::: int = -1) ::: string;
-function gzuncompress ($str ::: string) ::: string;
-function gzdeflate ($str ::: string, $level ::: int = -1) ::: string;
-function gzinflate ($str ::: string) ::: string;
+function deflate_init(int $encoding, array $options = []): ?DeflateContext;
+function deflate_add(DeflateContext $context, string | false $data, int $flush_mode = ZLIB_SYNC_FLUSH): string | false;
+function inflate_init(int $encoding, array $options = []): ?InflateContext;
+function inflate_add(InflateContext $context, string | false $data, int $flush_mode = ZLIB_SYNC_FLUSH): string | false;
+function gzencode (string $str, int $level = -1): string;
+function gzdecode (string $str): string;
+function gzcompress (string $str, int $level = -1): string;
+function gzuncompress (string $str): string;
+function gzdeflate (string $str, int $level = -1): string;
+function gzinflate (string $str): string;
+function gzopen (string $filename, string $mode): mixed;
+function gzwrite ($stream, string $text): int | false;
+function gzseek ($stream, int $offset, int $whence = SEEK_SET): int;
+function gzrewind ($stream): bool;
+function gztell ($stream): int | false;
+function gzread ($stream, int $length): string | false;
+function gzgetc ($stream): string | false;
+function gzgets ($stream, int $length = -1): string | false;
+function gzpassthru ($stream): int | false;
+function gzeof ($stream): bool;
+function gzclose ($stream): bool;
+function readgzfile(string $str, int $use_include_path = 0): int;
+
 function base64_decode ($str ::: string, $strict ::: bool = false) ::: string | false;
 function base64_encode ($str ::: string) ::: string;
 function http_build_query ($str ::: array, $numeric_prefix ::: string = '', $arg_separator ::: string = '&', $enc_type ::: int = PHP_QUERY_RFC1738) ::: string;
