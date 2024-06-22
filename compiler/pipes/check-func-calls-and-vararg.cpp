@@ -21,6 +21,8 @@ VertexPtr CheckFuncCallsAndVarargPass::on_enter_vertex(VertexPtr root) {
     return on_func_call(root.as<op_func_call>());
   } else if (root->type() == op_fork) {
     return on_fork(root.as<op_fork>());
+  } else if (root->type() == op_force_sync) {
+    return on_force_sync(root.as<op_force_sync>());
   }
 
   return root;
@@ -316,4 +318,12 @@ VertexPtr CheckFuncCallsAndVarargPass::on_fork(VertexAdaptor<op_fork> v_fork) {
   kphp_error(v_fork->size() == 1 && (*v_fork->begin())->type() == op_func_call,
              "Invalid fork() usage: it must be called with exactly one func call inside, e.g. fork(f(...))");
   return v_fork;
+}
+
+// check that force_sync(...) is called correctly, as force_sync(f())
+// note, that we do this after replacing op_invoke_call with op_func_call, not earlier
+VertexPtr CheckFuncCallsAndVarargPass::on_force_sync(VertexAdaptor<op_force_sync> v_force_sync) {
+  kphp_error(v_force_sync->size() == 1 && (*v_force_sync->begin())->type() == op_func_call,
+             "Invalid force_sync() usage: it must be called with exactly one func call inside, e.g. force_sync(f(...))");
+  return v_force_sync;
 }

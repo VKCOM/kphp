@@ -143,6 +143,7 @@ prepend(KPHP_COMPILER_PIPES_SOURCES pipes/
         filter-only-actually-used.cpp
         final-check.cpp
         fix-returns.cpp
+        force-sync.cpp
         gen-tree-postprocess.cpp
         generate-virtual-methods.cpp
         inline-defines-usages.cpp

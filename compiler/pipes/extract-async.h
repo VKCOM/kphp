@@ -17,7 +17,7 @@ public:
   VertexPtr on_exit_vertex(VertexPtr vertex) override;
 
   bool user_recursion(VertexPtr vertex) override {
-    return vertex->type() == op_fork;
+    return vertex->type() == op_fork || vertex->type() == op_force_sync;
   }
 
 private:

@@ -26,4 +26,5 @@ public:
 
   VertexPtr on_func_call(VertexAdaptor<op_func_call> call);
   VertexPtr on_fork(VertexAdaptor<op_fork> v_fork);
+  VertexPtr on_force_sync(VertexAdaptor<op_force_sync> v_force_sync);
 };

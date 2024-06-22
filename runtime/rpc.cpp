@@ -950,7 +950,8 @@ bool drop_tl_query_info(int64_t query_id) {
   return true;
 }
 
-Optional<string> f$rpc_get(int64_t request_id, double timeout) {
+Optional<string> f$rpc_get(int64_t request_id, double timeout, bool is_sync) {
+  (void)is_sync;
   if (!drop_tl_query_info(request_id)) {
     return false;
   }

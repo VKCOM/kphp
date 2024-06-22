@@ -142,6 +142,7 @@ GenTreePostprocessPass::builtin_fun GenTreePostprocessPass::get_builtin_function
     {"not_false",     {op_conv_drop_false,     1}},
     {"not_null",      {op_conv_drop_null,      1}},
     {"fork",          {op_fork,                1}},
+    {"force_sync",    {op_force_sync,          1}},
     {"pow",           {op_pow,                 2}}
   };
   auto it = functions.find(name);

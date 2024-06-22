@@ -971,6 +971,10 @@ void compile_fork(VertexAdaptor<op_fork> root, CodeGenerator &W) {
   compile_func_call(root->func_call(), W, func_call_mode::fork_call);
 }
 
+void compile_force_sync(VertexAdaptor<op_force_sync> root, CodeGenerator &W) {
+  compile_func_call(root->func_call(), W, func_call_mode::async_call);
+}
+
 void compile_async(VertexAdaptor<op_async> root, CodeGenerator &W) {
   auto func_call = root->func_call();
   if (root->has_save_var()) {
@@ -2196,6 +2200,9 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       break;
     case op_fork:
       compile_fork(root.as<op_fork>(), W);
+      break;
+    case op_force_sync:
+      compile_force_sync(root.as<op_force_sync>(), W);
       break;
     case op_async:
       compile_async(root.as<op_async>(), W);
