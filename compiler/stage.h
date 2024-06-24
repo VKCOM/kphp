@@ -7,6 +7,8 @@
 #include <cstdint>
 #include <unistd.h>
 
+#include "common/exit-codes.h"
+
 #include "compiler/data/data_ptr.h"
 #include "compiler/kphp_assert.h"
 #include "compiler/location.h"
@@ -19,17 +21,12 @@ namespace stage {
 
 void set_warning_file(FILE *file) noexcept;
 
-// TODO think about values
-constexpr size_t KPHP_STAGE_ERROR = 101;
-constexpr size_t CXX_STAGE_ERROR = 102;
-constexpr size_t LINKING_STAGE_ERROR = 103;
-
 struct StageInfo {
   std::string name;
   Location location;
   bool global_error_flag{false};
   uint32_t cnt_errors{0};
-  int exit_code = KPHP_STAGE_ERROR;
+  ExitCode exit_code = ExitCode::KPHP_TO_CPP_STAGE;
 };
 
 StageInfo *get_stage_info_ptr();
@@ -48,8 +45,8 @@ void print_current_location_on_error(FILE *f);
 void set_name(std::string &&name);
 const std::string &get_name();
 
-void set_exit_code(int code);
-int get_exit_code();
+void set_exit_code(ExitCode code);
+ExitCode get_exit_code();
 
 void set_file(SrcFilePtr file);
 void set_function(FunctionPtr function);

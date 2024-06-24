@@ -419,7 +419,7 @@ void run_make() {
     stage::die_if_global_errors();
   }
   stage::set_name("Make");
-  stage::set_exit_code(stage::CXX_STAGE_ERROR);
+  stage::set_exit_code(ExitCode::CPP_TO_OBJS_STAGE);
 
   Index obj_index;
 
@@ -443,7 +443,7 @@ void run_make() {
   stage::die_if_global_errors();
 
   const std::string build_stage{output_mode == OutputMode::lib ? "Compiling" : "Linking"};
-  stage::set_exit_code(output_mode == OutputMode::lib ? stage::CXX_STAGE_ERROR : stage::LINKING_STAGE_ERROR);
+  stage::set_exit_code(output_mode == OutputMode::lib ? ExitCode::CPP_TO_OBJS_STAGE : ExitCode::OBJS_TO_BINARY_STAGE);
   AutoProfiler profiler{get_profiler(build_stage)};
 
   bool ok = make.make_target(&bin_file, build_stage, settings.jobs_count.get());
