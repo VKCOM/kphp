@@ -1562,7 +1562,7 @@ static void init_superglobals_impl(const http_query_data &http_data, const rpc_q
 
   if (http_data.uri) {
     if (http_data.get_len) {
-      superglobals.v$_SERVER.set_value(string("REQUEST_URI"), (kphpRuntimeContext.static_SB.clean() << uri_str << '?' << get_str).str());
+      superglobals.v$_SERVER.set_value(string("REQUEST_URI"), (kphp_runtime_context.static_SB.clean() << uri_str << '?' << get_str).str());
     } else {
       superglobals.v$_SERVER.set_value(string("REQUEST_URI"), uri_str);
     }
@@ -1737,13 +1737,13 @@ static void init_superglobals_impl(const http_query_data &http_data, const rpc_q
       is_head_query = true;
     }
   }
-  v$_SERVER.set_value(string("REQUEST_TIME"), int(cur_time));
-  v$_SERVER.set_value(string("REQUEST_TIME_FLOAT"), cur_time);
-  v$_SERVER.set_value(string("SERVER_PORT"), string("80"));
-  v$_SERVER.set_value(string("SERVER_PROTOCOL"), string("HTTP/1.1"));
-  v$_SERVER.set_value(string("SERVER_SIGNATURE"), (kphp_runtime_context.static_SB.clean() << "Apache/2.2.9 (Debian) PHP/5.2.6-1<<lenny10 with Suhosin-Patch Server at "
-                                                                         << v$_SERVER[string("SERVER_NAME")] << " Port 80").str());
-  v$_SERVER.set_value(string("SERVER_SOFTWARE"), string("Apache/2.2.9 (Debian) PHP/5.2.6-1+lenny10 with Suhosin-Patch"));
+  superglobals.v$_SERVER.set_value(string("REQUEST_TIME"), int(cur_time));
+  superglobals.v$_SERVER.set_value(string("REQUEST_TIME_FLOAT"), cur_time);
+  superglobals.v$_SERVER.set_value(string("SERVER_PORT"), string("80"));
+  superglobals.v$_SERVER.set_value(string("SERVER_PROTOCOL"), string("HTTP/1.1"));
+  superglobals.v$_SERVER.set_value(string("SERVER_SIGNATURE"), (kphp_runtime_context.static_SB.clean() << "Apache/2.2.9 (Debian) PHP/5.2.6-1<<lenny10 with Suhosin-Patch Server at "
+                                                                         << superglobals.v$_SERVER[string("SERVER_NAME")] << " Port 80").str());
+  superglobals.v$_SERVER.set_value(string("SERVER_SOFTWARE"), string("Apache/2.2.9 (Debian) PHP/5.2.6-1+lenny10 with Suhosin-Patch"));
 
   if (environ != nullptr) {
     for (int i = 0; environ[i] != nullptr; i++) {
@@ -2423,7 +2423,7 @@ void global_init_script_allocator() {
 }
 
 void init_runtime_environment(const php_query_data_t &data, PhpScriptBuiltInSuperGlobals &superglobals, void *mem, size_t script_mem_size, size_t oom_handling_mem_size) {
-  kphpRuntimeContext.init(mem, script_mem_size, oom_handling_mem_size);
+  kphp_runtime_context.init(mem, script_mem_size, oom_handling_mem_size);
   reset_global_interface_vars(superglobals);
   init_runtime_libs();
   init_superglobals(data, superglobals);
@@ -2433,7 +2433,7 @@ void free_runtime_environment(PhpScriptBuiltInSuperGlobals &superglobals) {
   reset_superglobals(superglobals);
   free_runtime_libs();
   reset_global_interface_vars(superglobals);
-  kphpRuntimeContext.free();
+  kphp_runtime_context.free();
 }
 
 void worker_global_init(WorkerType worker_type) noexcept {

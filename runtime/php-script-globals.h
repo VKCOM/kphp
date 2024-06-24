@@ -6,7 +6,7 @@
 
 #include <unordered_map>
 
-#include "runtime/kphp_core.h"
+#include "runtime-core/runtime-core.h"
 
 struct PhpScriptBuiltInSuperGlobals {
   // variables below are PHP language superglobals

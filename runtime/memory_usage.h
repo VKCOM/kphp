@@ -14,6 +14,7 @@
 #include "common/mixin/not_copyable.h"
 #include "common/type_traits/list_of_types.h"
 #include "runtime-core/runtime-core.h"
+#include "runtime/allocator.h"
 
 template<class T>
 struct CDataPtr;
