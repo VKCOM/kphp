@@ -198,12 +198,9 @@ InitScriptsCpp::InitScriptsCpp(SrcFilePtr main_file_id) :
 void InitScriptsCpp::compile(CodeGenerator &W) const {
   W << OpenFile("init_php_scripts.cpp", "", false);
 
-  if (G->is_output_mode_k2_component()) {
-    W << ExternInclude(G->settings().runtime_headers.get()) <<
-      ExternInclude("runtime-light/core/globals/php-init-scripts.h");
-  } else {
-    W << ExternInclude(G->settings().runtime_headers.get()) <<
-      ExternInclude("server/php-init-scripts.h");
+  W << ExternInclude(G->settings().runtime_headers.get());
+  if (!G->is_output_mode_k2_component()) {
+     W << ExternInclude("server/php-init-scripts.h");
   }
 
 
