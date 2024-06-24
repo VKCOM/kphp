@@ -44,6 +44,9 @@ public:
   char *get_linear_mem() const { return g_linear_mem; }
   char *get_linear_mem(const char *lib_name) const;
 
+  char *mem() const { return g_linear_mem; }
+  char *mem_for_lib(const char *lib_name) const;
+
   PhpScriptBuiltInSuperGlobals &get_superglobals() { return superglobals; }
   const PhpScriptBuiltInSuperGlobals &get_superglobals() const { return superglobals; }
 };
