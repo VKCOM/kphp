@@ -30,7 +30,7 @@
 #include "runtime-core/runtime-core.h"
 #include "runtime/allocator.h"
 #include "runtime/confdata-global-manager.h"
-#include "runtime/kphp_core.h"
+#include "runtime-core/runtime-core.h"
 #include "server/confdata-binlog-events.h"
 #include "server/confdata-stats.h"
 #include "server/server-log.h"
