@@ -19,11 +19,17 @@ namespace stage {
 
 void set_warning_file(FILE *file) noexcept;
 
+// TODO think about values
+constexpr size_t KPHP_STAGE_ERROR = 101;
+constexpr size_t CXX_STAGE_ERROR = 102;
+constexpr size_t LINKING_STAGE_ERROR = 103;
+
 struct StageInfo {
   std::string name;
   Location location;
   bool global_error_flag{false};
   uint32_t cnt_errors{0};
+  int exit_code = KPHP_STAGE_ERROR;
 };
 
 StageInfo *get_stage_info_ptr();
@@ -41,6 +47,9 @@ void print_current_location_on_error(FILE *f);
 
 void set_name(std::string &&name);
 const std::string &get_name();
+
+void set_exit_code(int code);
+int get_exit_code();
 
 void set_file(SrcFilePtr file);
 void set_function(FunctionPtr function);
