@@ -115,6 +115,7 @@ struct RunInterruptedFunction {
     std::string await_prefix = function->is_interruptible ? "co_await " : "";
     FunctionSignatureGenerator(W) << "task_t<void> " << FunctionName(function) << "$run() " << BEGIN
                                   << await_prefix << FunctionName(function) << "();" << NL
+                                  << "co_return;"
                                   << END;
     W << NL;
   }
