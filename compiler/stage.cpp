@@ -59,7 +59,6 @@ void on_compilation_error(const char *description __attribute__((unused)), const
     fmt_fprintf(file, "Compilation failed.\n"
                       "It is probably happened due to incorrect or unsupported PHP input.\n"
                       "But it is still bug in compiler.\n");
-  // TODO should we just call exit() with specific return code ot leave it as is?
 #ifdef __arm64__
     __builtin_debugtrap();  // for easier debugging kphp_assert / kphp_fail
 #endif
@@ -168,7 +167,7 @@ stage::StageInfo *stage::get_stage_info_ptr() {
   return &*stage_info;
 }
 
-void stage::set_exit_code(int code) {
+void stage::set_exit_code(ExitCode code) {
   get_stage_info_ptr()->exit_code = code;
 }
 
@@ -198,7 +197,7 @@ bool stage::has_global_error() {
 void stage::die_if_global_errors() {
   if (stage::has_global_error()) {
     fmt_print("Compilation terminated due to errors\n");
-    exit(stage::get_exit_code());
+    exit(static_cast<int>(stage::get_exit_code()));
   }
 }
 
@@ -206,7 +205,7 @@ const std::string &stage::get_name() {
   return get_stage_info_ptr()->name;
 }
 
-int stage::get_exit_code() {
+ExitCode stage::get_exit_code() {
   return get_stage_info_ptr()->exit_code;
 }
 
