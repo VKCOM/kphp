@@ -296,10 +296,14 @@ void CompilerSettings::init() {
   if (vk::contains(cxx.get(), "clang")) {
     ss << " -Wno-invalid-source-encoding";
   } else {
-    ss << " -fcoroutines";
+    if (mode.get() == "k2-component") {
+      ss << " -fcoroutines";
+    }
   }
   #if __cplusplus <= 202002L
-    ss << " -std=c++20";
+    if (mode.get() == "k2-component") {
+      ss << " -std=c++20";
+    }
   #else
     #error unsupported __cplusplus value
   #endif
