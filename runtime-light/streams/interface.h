@@ -29,6 +29,10 @@ task_t<void> f$component_server_send_result(const string &message);
 class_instance<C$ComponentStream> f$component_open_stream(const string &name);
 task_t<class_instance<C$ComponentStream>> f$component_accept_stream();
 
+
+/**
+ * component query blocked interface
+ * */
 int64_t f$component_stream_write_nonblock(const class_instance<C$ComponentStream> &stream, const string &message);
 string f$component_stream_read_nonblock(const class_instance<C$ComponentStream> &stream);
 
