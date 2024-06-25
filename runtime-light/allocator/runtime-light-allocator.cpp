@@ -54,7 +54,7 @@ void RuntimeAllocator::free() {
 void *RuntimeAllocator::alloc_script_memory(size_t size) noexcept {
   php_assert(size);
   if (unlikely(!is_script_allocator_available())) {
-    return get_platform_context()->allocator.alloc(size);
+    return alloc_global_memory(size);
   }
 
   ComponentState &rt_ctx = *get_component_context();
@@ -72,9 +72,7 @@ void *RuntimeAllocator::alloc_script_memory(size_t size) noexcept {
 void *RuntimeAllocator::alloc0_script_memory(size_t size) noexcept {
   php_assert(size);
   if (unlikely(!is_script_allocator_available())) {
-    void *ptr = get_platform_context()->allocator.alloc(size);
-    memset(ptr, 0, size);
-    return ptr;
+    return alloc0_global_memory(size);
   }
 
   ComponentState &rt_ctx = *get_component_context();
@@ -91,7 +89,7 @@ void *RuntimeAllocator::alloc0_script_memory(size_t size) noexcept {
 void *RuntimeAllocator::realloc_script_memory(void *mem, size_t new_size, size_t old_size) noexcept {
   php_assert(new_size > old_size);
   if (unlikely(!is_script_allocator_available())) {
-    return get_platform_context()->allocator.realloc(mem, new_size);
+    return realloc_global_memory(mem, new_size, old_size);
   }
 
   ComponentState &rt_ctx = *get_component_context();
@@ -117,6 +115,15 @@ void *RuntimeAllocator::alloc_global_memory(size_t size) noexcept {
   if (unlikely(ptr == nullptr)) {
     critical_error_handler();
   }
+  return ptr;
+}
+
+void *RuntimeAllocator::alloc0_global_memory(size_t size) noexcept {
+  void *ptr = get_platform_context()->allocator.alloc(size);
+  if (unlikely(ptr == nullptr)) {
+    critical_error_handler();
+  }
+  memset(ptr, 0, size);
   return ptr;
 }
 
