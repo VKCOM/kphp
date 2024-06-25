@@ -22,7 +22,7 @@ struct read_blocked_t : blocked_operation_t {
   void await_suspend(std::coroutine_handle<> h) const noexcept {
     php_debug("blocked read on stream %lu", awaited_stream);
     KphpForkContext & context = KphpForkContext::current();
-    context.scheduler.block_fork_on_stream(context.current_fork_id, h, awaited_stream, RBlocked);
+    context.scheduler.block_fork_on_future(context.current_fork_id, h, stream_future{awaited_stream}, -1);
   }
 };
 
@@ -30,7 +30,7 @@ struct write_blocked_t : blocked_operation_t {
   void await_suspend(std::coroutine_handle<> h) const noexcept {
     php_debug("blocked write on stream %lu", awaited_stream);
     KphpForkContext & context = KphpForkContext::current();
-    context.scheduler.block_fork_on_stream(context.current_fork_id, h, awaited_stream, WBlocked);
+    context.scheduler.block_fork_on_future(context.current_fork_id, h, stream_future{awaited_stream}, -1);
   }
 };
 
@@ -57,12 +57,10 @@ struct wait_incoming_query_t {
     ComponentState & ctx = *get_component_context();
     php_assert(ctx.standard_stream == 0);
     php_debug("fork %ld blocked on incoming query", ctx.kphp_fork_context.current_fork_id);
-    ctx.wait_incoming_stream = true;
     ctx.kphp_fork_context.scheduler.block_fork_on_incoming_query(ctx.kphp_fork_context.current_fork_id, h);
   }
 
   void await_resume() const noexcept {
-    get_component_context()->wait_incoming_stream = false;
   }
 };
 
@@ -80,7 +78,7 @@ struct wait_fork_t {
   void await_suspend(std::coroutine_handle<> h) const noexcept {
     KphpForkContext & context = KphpForkContext::current();
     php_debug("fork %ld wait for fork %ld", context.current_fork_id, expected_fork_id);
-    context.scheduler.block_fork_on_another_fork(context.current_fork_id, h, expected_fork_id, timeout);
+    context.scheduler.block_fork_on_future(context.current_fork_id, h, fork_future{expected_fork_id}, timeout);
   }
 
   Optional<T> await_resume() const noexcept {

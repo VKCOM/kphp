@@ -4,6 +4,7 @@
 #include "runtime-light/core/small-object-storage.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/streams/streams.h"
+#include "runtime-light/coroutine/runtime-future.h"
 
 // Type erasure of stored object
 struct fork_result {
@@ -22,7 +23,9 @@ struct fork_result {
 
 // Universal task type for any type of fork
 struct light_fork {
+  // storage for result and coro-frame pointer
   task_t<fork_result> task;
+  // last nested suspend point to resume
   std::coroutine_handle<> handle;
 
   light_fork() = default;
@@ -49,11 +52,11 @@ struct fork_scheduler {
   fork_scheduler(memory_resource::unsynchronized_pool_resource &memory_pool)
     : running_forks(unordered_map<int64_t, light_fork>::allocator_type{memory_pool})
     , ready_forks(unordered_set<int64_t>::allocator_type{memory_pool})
+    , future_to_blocked_fork(unordered_map<runtime_future, int64_t>::allocator_type{memory_pool})
+    , fork_to_awaited_future(unordered_map<int64_t, runtime_future>::allocator_type{memory_pool})
+    , timer_to_blocked_fork(unordered_map<uint64_t, int64_t>::allocator_type{memory_pool})
     , yielded_forks(unordered_set<int64_t>::allocator_type{memory_pool})
     , wait_incoming_query_forks(unordered_set<int64_t>::allocator_type{memory_pool})
-    , wait_stream_forks(unordered_map<int64_t, std::pair<int64_t, StreamRuntimeStatus>>::allocator_type{memory_pool})
-    , timer_to_expected_fork(unordered_map<uint64_t, int64_t>::allocator_type{memory_pool})
-    , wait_another_fork_forks(unordered_map<int64_t, std::pair<int64_t, uint64_t>>::allocator_type{memory_pool})
     , forks_ready_to_resume(deque<int64_t>::allocator_type{memory_pool}) {}
 
   void register_main_fork(light_fork &&fork) noexcept;
@@ -61,16 +64,14 @@ struct fork_scheduler {
   bool is_fork_ready(int64_t fork_id) noexcept;
   light_fork &get_fork_by_id(int64_t fork_id) noexcept;
 
-  void block_fork_on_another_fork(int64_t blocked_fork, std::coroutine_handle<> handle, int64_t expected_fork, double timeout) noexcept;
-  void block_fork_on_stream(int64_t blocked_fork, std::coroutine_handle<> handle, uint64_t stream_d, StreamRuntimeStatus status) noexcept;
+  void block_fork_on_future(int64_t blocked_fork, std::coroutine_handle<> handle, runtime_future awaited_future, double timeout);
   void yield_fork(int64_t fork_id, std::coroutine_handle<> handle) noexcept;
   void block_fork_on_incoming_query(int64_t fork_id, std::coroutine_handle<> handle) noexcept;
 
-  void resume_fork_by_another_fork(int64_t expected_fork) noexcept;
-  void resume_fork_by_stream(uint64_t stream_d, const StreamStatus &status) noexcept;
+  void resume_fork_by_future(runtime_future awaited_future) noexcept;
+  void resume_fork_by_timeout(int64_t timer_d) noexcept;
   void resume_fork(int64_t fork_id) noexcept;
   void resume_fork_by_incoming_query() noexcept;
-  void resume_fork_by_timeout(int64_t timer_d) noexcept;
 
   void schedule() noexcept;
   /*functions for using in codegen */
@@ -83,19 +84,20 @@ private:
   bool is_main_fork_finish() noexcept;
   void scheduler_iteration(int64_t fork_id) noexcept;
 
+  /* map of running forks. fork_id to task_t structure */
   unordered_map<int64_t, light_fork> running_forks;
+  /* set of ready forks */
   unordered_set<int64_t> ready_forks;
-
+  /* map from runtime_future {stream_future, fork_future} to waiting fork*/
+  unordered_map<runtime_future, int64_t> future_to_blocked_fork;
+  /* reverse of future_to_blocked_fork */
+  unordered_map<int64_t, runtime_future> fork_to_awaited_future;
+  /* timeout timer_d to waiting fork */
+  unordered_map<uint64_t, int64_t> timer_to_blocked_fork;
   /* set of forks that was yielded */
   unordered_set<int64_t> yielded_forks;
   /* set of forks that wait to accept incoming stream */
   unordered_set<int64_t> wait_incoming_query_forks;
-  /* set of forks that wait update on stream */
-  unordered_map<int64_t, std::pair<int64_t, StreamRuntimeStatus>> wait_stream_forks;
-  /* map from timer_d to action {fork_id} that awaited by fork */
-  unordered_map<uint64_t, int64_t> timer_to_expected_fork;
-  /* set of forks that wait for another fork */
-  unordered_map<int64_t, std::pair<int64_t, uint64_t>> wait_another_fork_forks;
 
   deque<int64_t> forks_ready_to_resume;
 };

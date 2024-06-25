@@ -55,7 +55,7 @@ PollStatus vk_k2_poll(const ImageState *image_state, const PlatformCtx *pt_ctx, 
     php_debug("opened_streams size %zu", componentState->opened_streams.size());
     if (componentState->is_stream_already_being_processed(stream_d)) {
       php_debug("update on processed stream %lu", stream_d);
-      componentState->kphp_fork_context.scheduler.resume_fork_by_stream(stream_d, status);
+      componentState->kphp_fork_context.scheduler.resume_fork_by_future(stream_future{stream_d});
     } else if (componentState->is_stream_timer(stream_d)) {
       php_debug("process timer %ld", stream_d);
       componentState->kphp_fork_context.scheduler.resume_fork_by_timeout(stream_d);
