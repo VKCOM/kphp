@@ -182,8 +182,6 @@ static long long get_imported_header_mtime(const std::string &header_path, const
   return 0;
 }
 
-// todo:k2 review pch-related things for
-// k2-component mode
 
 // prepare dir kphp_out/objs/pch_{flags} and make a target runtime-headers.h.gch inside it
 // in production, there will be two pch_ folders: with debug symbols and without them

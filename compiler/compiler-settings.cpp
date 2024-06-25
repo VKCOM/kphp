@@ -295,18 +295,14 @@ void CompilerSettings::init() {
   }
   if (vk::contains(cxx.get(), "clang")) {
     ss << " -Wno-invalid-source-encoding";
-  } else {
-    if (mode.get() == "k2-component") {
-      ss << " -fcoroutines";
-    }
   }
-#if __cplusplus <= 201703L
-  ss << " -std=c++17";
-#elif __cplusplus <= 202002L
-  ss << " -std=c++20";
-#else
-#error unsupported __cplusplus value
-#endif
+  #if __cplusplus <= 201703L
+    ss << " -std=c++17";
+  #elif __cplusplus <= 202002L
+    ss << " -std=c++20";
+  #else
+    #error unsupported __cplusplus value
+  #endif
 
   std::string cxx_default_flags = ss.str();
 
