@@ -7,7 +7,7 @@
 
 #include "common/php-functions.h"
 
-#include "runtime-core/class-instance/script-allocator-managed.h"
+#include "runtime-core/allocator/script-allocator-managed.h"
 
 class abstract_refcountable_php_interface : public ScriptAllocatorManaged {
 public:
