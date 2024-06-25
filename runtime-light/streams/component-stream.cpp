@@ -1,3 +1,7 @@
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2024 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
 #include "runtime-light/streams/component-stream.h"
 
 bool f$ComponentStream$$is_read_closed(const class_instance<C$ComponentStream> & stream) {

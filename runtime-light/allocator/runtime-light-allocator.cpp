@@ -69,8 +69,9 @@ void *RuntimeAllocator::alloc_script_memory(size_t size) noexcept {
 void *RuntimeAllocator::alloc0_script_memory(size_t size) noexcept {
   php_assert(size);
   if (unlikely(!is_script_allocator_available())) {
-    php_assert(false && "need to add zeroing mem here");
-    return get_platform_context()->allocator.alloc(size);
+    void * ptr = get_platform_context()->allocator.alloc(size);
+    memset(ptr, 0, size);
+    return ptr;
   }
 
   ComponentState &rt_ctx = *get_component_context();

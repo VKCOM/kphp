@@ -1,10 +1,13 @@
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2024 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
 #pragma once
 
 #include <coroutine>
 #include <csetjmp>
 #include <queue>
 #include <functional>
-#include <setjmp.h>
 
 #include "runtime-core/memory-resource/resource_allocator.h"
 #include "runtime-core/memory-resource/unsynchronized_pool_resource.h"
