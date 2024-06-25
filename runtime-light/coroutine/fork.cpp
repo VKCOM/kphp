@@ -34,28 +34,31 @@ light_fork &fork_scheduler::get_fork_by_id(int64_t fork_id) noexcept {
   return running_forks[fork_id];
 }
 
-void fork_scheduler::resume_fork_by_another_fork(int64_t expected_fork) noexcept {
-  php_assert(ready_forks.contains(expected_fork));
-  if (wait_another_fork_forks.contains(expected_fork)) {
-    auto [fork_id, timer_d] = wait_another_fork_forks[expected_fork];
-    wait_another_fork_forks.erase(expected_fork);
-    if (timer_d > 0) {
-      timer_to_expected_fork.erase(timer_d);
+void fork_scheduler::resume_fork_by_future(runtime_future awaited_future) noexcept {
+  if (!future_to_blocked_fork.contains(awaited_future)) {
+    return;
+  }
+  int64_t blocked_fork = future_to_blocked_fork[awaited_future];
+  // delete info of future waiting
+  future_to_blocked_fork.erase(awaited_future);
+  fork_to_awaited_future.erase(blocked_fork);
+
+  // free associated timer
+  std::visit([this](auto &&arg) {
+    using T = std::decay_t<decltype(arg)>;
+    int64_t timer_d = 0;
+    if constexpr (std::is_same_v<T, fork_future>) {
+      timer_d = arg.timeout_d;
+    } else if constexpr (std::is_same_v<T, stream_future>) {
+      timer_d = arg.timeout_d;
+    } else {}
+    if (timer_d != 0) {
+      timer_to_blocked_fork.erase(timer_d);
       free_descriptor(timer_d);
     }
-    mark_fork_ready_to_resume(fork_id);
-  }
-}
+  }, awaited_future);
 
-void fork_scheduler::resume_fork_by_stream(uint64_t stream_d, const StreamStatus &status) noexcept {
-  if (wait_stream_forks.contains(stream_d)) {
-    auto [fork_id, blocked_status] = wait_stream_forks[stream_d];
-    if ((blocked_status == WBlocked && status.write_status != IOBlocked) || (blocked_status == RBlocked && status.read_status != IOBlocked)) {
-      php_debug("update fork %ld status on stream %lu", fork_id, stream_d);
-      wait_stream_forks.erase(stream_d);
-      mark_fork_ready_to_resume(fork_id);
-    }
-  }
+  mark_fork_ready_to_resume(blocked_fork);
 }
 
 void fork_scheduler::resume_fork(int64_t fork_id) noexcept {
@@ -74,12 +77,15 @@ void fork_scheduler::resume_fork_by_incoming_query() noexcept {
 }
 
 void fork_scheduler::resume_fork_by_timeout(int64_t timer_d) noexcept {
-  if (timer_to_expected_fork.contains(timer_d)) {
-    int64_t expected_fork = timer_to_expected_fork[timer_d];
-    auto [blocked_fork, _] = wait_another_fork_forks[expected_fork];
+  if (timer_to_blocked_fork.contains(timer_d)) {
+    int64_t blocked_fork = timer_to_blocked_fork[timer_d];
     php_debug("resume fork %ld by timeout %ld", blocked_fork, timer_d);
-    timer_to_expected_fork.erase(timer_d);
-    wait_another_fork_forks.erase(blocked_fork);
+    runtime_future awaited_future = fork_to_awaited_future.at(blocked_fork);
+    // delete info of future waiting
+    future_to_blocked_fork.erase(awaited_future);
+    fork_to_awaited_future.erase(blocked_fork);
+    timer_to_blocked_fork.erase(timer_d);
+
     mark_fork_ready_to_resume(blocked_fork);
   }
 }
@@ -90,29 +96,23 @@ void fork_scheduler::mark_current_fork_as_ready() noexcept {
   ready_forks.insert(fork_id);
 }
 
-void fork_scheduler::block_fork_on_another_fork(int64_t blocked_fork, std::coroutine_handle<> handle, int64_t expected_fork, double timeout) noexcept {
-  php_assert(blocked_fork != expected_fork);
-  php_debug("block fork %ld on another fork %ld", blocked_fork, expected_fork);
-  if (wait_another_fork_forks.contains(expected_fork)) {
-    php_warning("fork %ld is already waited", expected_fork);
+void fork_scheduler::block_fork_on_future(int64_t blocked_fork, std::coroutine_handle<> handle, runtime_future awaited_future, double timeout) {
+  php_debug("block fork %ld on future type %zu", blocked_fork, awaited_future.index());
+  if (future_to_blocked_fork.contains(awaited_future)) {
+    php_warning("future is already waited");
     return;
   }
   uint64_t timer_d = 0;
   if (timeout >= 0) {
     timer_d = set_timer_without_callback(timeout);
     if (timer_d > 0) {
-      timer_to_expected_fork[timer_d] = expected_fork;
+      timer_to_blocked_fork[timer_d] = blocked_fork;
     } else {
       php_warning("cannot set up timer for another fork waiting");
     }
   }
-  wait_another_fork_forks[expected_fork] = {blocked_fork, timer_d};
-  running_forks[blocked_fork].handle = handle;
-}
-
-void fork_scheduler::block_fork_on_stream(int64_t blocked_fork, std::coroutine_handle<> handle, uint64_t stream_d, StreamRuntimeStatus status) noexcept {
-  php_debug("block fork %ld on stream %lu", blocked_fork, stream_d);
-  wait_stream_forks[stream_d] = {blocked_fork, status};
+  future_to_blocked_fork[awaited_future] = blocked_fork;
+  fork_to_awaited_future[blocked_fork] = awaited_future;
   running_forks[blocked_fork].handle = handle;
 }
 
@@ -150,8 +150,8 @@ void fork_scheduler::schedule() noexcept {
   while (true) {
     php_debug("schedule [yielded forks %zu, ready_forks %zu, forks_ready_to_resume %zu, running forks %zu]", yielded_forks.size(), ready_forks.size(),
               forks_ready_to_resume.size(), running_forks.size());
-    php_debug("awaiting forks [wait_incoming_query_forks %zu, wait_another_fork_forks %zu, wait_stream_forks %zu]", wait_incoming_query_forks.size(),
-              wait_another_fork_forks.size(), wait_stream_forks.size());
+    php_debug("awaiting forks [wait_incoming_query_forks %zu, future_to_blocked_fork %zu]", wait_incoming_query_forks.size(),
+              future_to_blocked_fork.size());
     // Resume all yielded forks
     for (int64_t fork_id : yielded_forks) {
       resume_fork(fork_id);
@@ -160,13 +160,13 @@ void fork_scheduler::schedule() noexcept {
 
     // Resume blocked forks that wait for another fork
     for (int64_t fork_id : ready_forks) {
-      resume_fork_by_another_fork(fork_id);
+      resume_fork_by_future(fork_future{fork_id});
     }
 
     if (forks_ready_to_resume.empty()) {
       // No ready forks to resume. That means that component is blocked
-      php_debug("all forks blocked. Set blocked status [wait_incoming_query_forks %zu, wait_another_fork_forks %zu, wait_stream_forks %zu, running_forks %zu]",
-                wait_incoming_query_forks.size(), wait_another_fork_forks.size(), wait_stream_forks.size(), running_forks.size());
+      php_debug("all forks blocked. Set blocked status [wait_incoming_query_forks %zu, future_to_blocked_fork %zu, running_forks %zu]",
+                wait_incoming_query_forks.size(), future_to_blocked_fork.size(), running_forks.size());
       componentState->poll_status = PollStatus::PollBlocked;
       return;
     }
@@ -192,6 +192,7 @@ void fork_scheduler::schedule() noexcept {
 
     if (is_main_fork_finish()) {
       php_debug("finish main fork");
+      php_assert(running_forks.size() == 1);
       componentState->poll_status = PollStatus::PollFinishedOk;
       return;
     }
@@ -200,7 +201,8 @@ void fork_scheduler::schedule() noexcept {
 
 void fork_scheduler::scheduler_iteration(int64_t fork_id) noexcept {
   php_debug("scheduler iteration on fork %ld", fork_id);
-  if (!running_forks.contains(fork_id)) {
+  if (!is_fork_not_canceled(fork_id)) {
+    // fork may be canceled here by parent
     return;
   }
   auto &task = running_forks[fork_id];
