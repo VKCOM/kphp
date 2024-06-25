@@ -20,7 +20,7 @@ struct blocked_operation_t {
 
   void await_resume() const noexcept {
     ComponentState & ctx = *get_component_context();
-    ctx.opened_streams[awaited_stream] = NotBlocked;
+    ctx.opened_streams[awaited_stream] = StreamRuntimeStatus::NotBlocked;
   }
 };
 
@@ -29,7 +29,7 @@ struct read_blocked_t : blocked_operation_t {
     php_debug("blocked read on stream %lu", awaited_stream);
     ComponentState & ctx = *get_component_context();
     ctx.poll_status = PollStatus::PollBlocked;
-    ctx.opened_streams[awaited_stream] = RBlocked;
+    ctx.opened_streams[awaited_stream] = StreamRuntimeStatus::RBlocked;
     ctx.awaiting_coroutines[awaited_stream] = h;
   }
 };
@@ -39,7 +39,7 @@ struct write_blocked_t : blocked_operation_t {
     php_debug("blocked write on stream %lu", awaited_stream);
     ComponentState & ctx = *get_component_context();
     ctx.poll_status = PollStatus::PollBlocked;
-    ctx.opened_streams[awaited_stream] = WBlocked;
+    ctx.opened_streams[awaited_stream] = StreamRuntimeStatus::WBlocked;
     ctx.awaiting_coroutines[awaited_stream] = h;
   }
 };

@@ -25,9 +25,10 @@ struct ComponentState {
   using unordered_map = memory_resource::stl::unordered_map<Key, Value, memory_resource::unsynchronized_pool_resource>;
   template<typename T>
   using deque = memory_resource::stl::deque<T, memory_resource::unsynchronized_pool_resource>;
+  static constexpr int initial_runtime_allocator_size = 16 * 1024u;
 
   ComponentState() :
-    runtime_allocator(16 * 1024u, 0),
+    runtime_allocator(initial_runtime_allocator_size, 0),
     php_script_mutable_globals_singleton(runtime_allocator.memory_resource),
     opened_streams(unordered_map<uint64_t, StreamRuntimeStatus>::allocator_type{runtime_allocator.memory_resource}),
     awaiting_coroutines(unordered_map<uint64_t, std::coroutine_handle<>>::allocator_type{runtime_allocator.memory_resource}),

@@ -56,8 +56,8 @@ void ComponentState::process_timer(uint64_t stream_d) {
 
 void ComponentState::process_stream(uint64_t stream_d, StreamStatus status) {
   auto expected_status = opened_streams[stream_d];
-  if ((expected_status == WBlocked && status.write_status != IOBlocked) ||
-      (expected_status == RBlocked && status.read_status != IOBlocked)) {
+  if ((expected_status == StreamRuntimeStatus::WBlocked && status.write_status != IOBlocked) ||
+      (expected_status == StreamRuntimeStatus::RBlocked && status.read_status != IOBlocked)) {
     php_debug("resume on waited query %lu", stream_d);
     auto suspend_point = awaiting_coroutines[stream_d];
     awaiting_coroutines.erase(stream_d);

@@ -28,16 +28,16 @@ task_t<void> parse_input_query(QueryType query_type) {
   co_await wait_incoming_query_t{};
   ctx.standard_stream = ctx.incoming_pending_queries.front();
   ctx.incoming_pending_queries.pop_front();
-  ctx.opened_streams[ctx.standard_stream] = NotBlocked;
+  ctx.opened_streams[ctx.standard_stream] = StreamRuntimeStatus::NotBlocked;
 
-  if (query_type == HTTP) {
+  if (query_type == QueryType::HTTP) {
     auto [buffer, size] = co_await read_all_from_stream(ctx.standard_stream);
     init_http_superglobals(buffer, size);
     get_platform_context()->allocator.free(buffer);
-  } else if (query_type == COMPONENT) {
+  } else if (query_type == QueryType::COMPONENT) {
     // Processing takes place in the calling function
   } else {
-    php_critical_error("unexpected query type %d in parse_input_query", query_type);
+    php_critical_error("unexpected query type %d in parse_input_query", static_cast<int>(query_type));
   }
   co_return ;
 }

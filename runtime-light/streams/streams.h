@@ -11,7 +11,7 @@
 
 #include "runtime-light/coroutine/task.h"
 
-enum StreamRuntimeStatus {
+enum class StreamRuntimeStatus {
   WBlocked,
   RBlocked,
   NotBlocked,

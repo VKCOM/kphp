@@ -20,7 +20,7 @@ bool f$ob_end_clean() {
     return false;
   }
 
-  httpResponse.current_buffer--;
+  --httpResponse.current_buffer;
   return true;
 }
 
@@ -50,7 +50,7 @@ void f$ob_start(const string&callback) {
     php_critical_error ("unsupported callback %s at buffering level %d", callback.c_str(), httpResponse.current_buffer + 1);
   }
 
-  httpResponse.current_buffer++;
+  ++httpResponse.current_buffer;
 }
 
 void f$ob_flush() {

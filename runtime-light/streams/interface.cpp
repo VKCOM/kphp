@@ -16,7 +16,7 @@ task_t<void> f$component_get_http_query() {
     php_warning("previous incoming stream does not closed");
     ctx.standard_stream = 0;
   }
-  co_await parse_input_query(HTTP);
+  co_await parse_input_query(QueryType::HTTP);
 }
 
 task_t<class_instance<C$ComponentQuery>> f$component_client_send_query(const string &name, const string & message) {
@@ -70,7 +70,7 @@ task_t<string> f$component_server_get_query() {
   if (ctx.standard_stream != 0) {
     ctx.standard_stream = 0;
   }
-  co_await parse_input_query(COMPONENT);
+  co_await parse_input_query(QueryType::COMPONENT);
   auto [buffer, size] = co_await read_all_from_stream(ctx.standard_stream);
   string query = string(buffer, size);
   get_platform_context()->allocator.free(buffer);
@@ -84,7 +84,7 @@ task_t<class_instance<C$ComponentStream>> f$component_accept_stream() {
     free_descriptor(ctx.standard_stream);
     ctx.standard_stream = 0;
   }
-  co_await parse_input_query(COMPONENT);
+  co_await parse_input_query(QueryType::COMPONENT);
   class_instance<C$ComponentStream> stream;
   stream.alloc();
   stream.get()->stream_d = ctx.standard_stream;
@@ -101,7 +101,7 @@ class_instance<C$ComponentStream> f$component_open_stream(const string &name) {
     php_warning("cannot open stream");
     return query;
   }
-  ctx.opened_streams[stream_d] = NotBlocked;
+  ctx.opened_streams[stream_d] = StreamRuntimeStatus::NotBlocked;
   query.alloc();
   query.get()->stream_d = stream_d;
   php_debug("open stream %lu to %s", stream_d, name.c_str());

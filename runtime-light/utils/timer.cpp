@@ -16,6 +16,6 @@ void set_timer_impl(int64_t timeout_ms, on_timer_callback_t && callback) {
   }
   php_debug("set up timer %lu for %lu ms", timer_d, timeout_ms);
 
-  ctx.opened_streams[timer_d] = Timer;
+  ctx.opened_streams[timer_d] = StreamRuntimeStatus::Timer;
   ctx.timer_callbacks[timer_d] = callback;
 }
