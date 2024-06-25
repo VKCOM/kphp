@@ -6,15 +6,16 @@
 #include "runtime-light/component/component.h"
 #include "runtime-light/utils/panic.h"
 
+static constexpr size_t minimum_request_extra_memory_size = 16 * 1024u;
+
 namespace {
 bool is_script_allocator_available() {
   return get_component_context() != nullptr;
 }
 
-void request_extra_memory() {
+void request_extra_memory(size_t requested_size) {
   ComponentState &rt_ctx = *get_component_context();
-  // todo:k2 make extra mem size dynamic
-  size_t extra_mem_size = 16 * 1024u + 100; // extra mem size should be greater than max chunk block size
+  size_t extra_mem_size = std::max(minimum_request_extra_memory_size, requested_size * 4); // extra mem size should be greater than max chunk block size
   void *extra_mem = get_platform_context()->allocator.alloc(extra_mem_size);
   if (extra_mem == nullptr) {
     php_error("script OOM");
@@ -60,8 +61,9 @@ void *RuntimeAllocator::alloc_script_memory(size_t size) noexcept {
 
   void *ptr = rt_ctx.runtime_allocator.memory_resource.allocate(size);
   if (ptr == nullptr) {
-    request_extra_memory();
+    request_extra_memory(size);
     ptr = rt_ctx.runtime_allocator.memory_resource.allocate(size);
+    php_assert(ptr != nullptr);
   }
   return ptr;
 }
@@ -77,8 +79,9 @@ void *RuntimeAllocator::alloc0_script_memory(size_t size) noexcept {
   ComponentState &rt_ctx = *get_component_context();
   void *ptr = rt_ctx.runtime_allocator.memory_resource.allocate0(size);
   if (ptr == nullptr) {
-    request_extra_memory();
+    request_extra_memory(size);
     ptr = rt_ctx.runtime_allocator.memory_resource.allocate0(size);
+    php_assert(ptr != nullptr);
   }
   return ptr;
 }
@@ -92,8 +95,9 @@ void *RuntimeAllocator::realloc_script_memory(void *mem, size_t new_size, size_t
   ComponentState &rt_ctx = *get_component_context();
   void *ptr = rt_ctx.runtime_allocator.memory_resource.reallocate(mem, new_size, old_size);
   if (ptr == nullptr) {
-    request_extra_memory();
+    request_extra_memory(new_size);
     ptr = rt_ctx.runtime_allocator.memory_resource.reallocate(mem, new_size, old_size);
+    php_assert(ptr != nullptr);
   }
   return ptr;
 }
