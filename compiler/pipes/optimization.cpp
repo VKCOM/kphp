@@ -28,16 +28,7 @@ bool can_init_value_be_removed(VertexPtr init_value, const VarPtr &variable) {
     return false;
   }
 
-  switch (init_type->ptype()) {
-    case tp_string: {
-      const auto *init_string = VertexUtil::get_constexpr_string(init_value);
-      return init_string && init_string->empty();
-    }
-    case tp_array:
-      return init_type->lookup_at_any_key()->get_real_ptype() == tp_any;
-    default:
-      return false;
-  }
+  return false;
 }
 
 VarPtr cast_const_array_type(VertexPtr &type_acceptor, const TypeData *required_type) noexcept {
