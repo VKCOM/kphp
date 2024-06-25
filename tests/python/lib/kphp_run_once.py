@@ -40,7 +40,8 @@ class KphpRunOnce(KphpBuilder):
                 ("extension", "tokenizer.so"),
                 ("extension", "h3.so"),
                 ("extension", "zstd.so"),
-                ("extension", "ctype.so")
+                ("extension", "ctype.so"),
+                ("extension", "yaml.so"),
             ]
 
         if self._vkext_dir:

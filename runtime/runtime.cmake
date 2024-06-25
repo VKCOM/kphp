@@ -57,6 +57,11 @@ prepend(KPHP_RUNTIME_PDO_PGSQL_SOURCES pdo/pgsql/
         pgsql_pdo_emulated_statement.cpp)
 endif()
 
+if (YAML)
+prepend(KPHP_RUNTIME_YAML_SOURCES /
+	yaml.cpp)
+endif()
+
 prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         ${KPHP_RUNTIME_DATETIME_SOURCES}
         ${KPHP_RUNTIME_MEMORY_RESOURCE_SOURCES}
@@ -67,6 +72,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         ${KPHP_RUNTIME_PDO_SOURCES}
         ${KPHP_RUNTIME_PDO_MYSQL_SOURCES}
         ${KPHP_RUNTIME_PDO_PGSQL_SOURCES}
+        ${KPHP_RUNTIME_YAML_SOURCES}
         allocator.cpp
         array_functions.cpp
         bcmath.cpp
