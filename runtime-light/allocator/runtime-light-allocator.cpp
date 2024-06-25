@@ -6,7 +6,7 @@
 #include "runtime-light/component/component.h"
 #include "runtime-light/utils/panic.h"
 
-static constexpr size_t minimum_request_extra_memory_size = 16 * 1024u;
+static constexpr size_t MIN_REQ_EXTRA_MEM_SIZE = 16 * 1024u;
 
 namespace {
 bool is_script_allocator_available() {
@@ -15,7 +15,7 @@ bool is_script_allocator_available() {
 
 void request_extra_memory(size_t requested_size) {
   ComponentState &rt_ctx = *get_component_context();
-  size_t extra_mem_size = std::max(minimum_request_extra_memory_size, requested_size); // extra mem size should be greater than max chunk block size
+  size_t extra_mem_size = std::max(MIN_REQ_EXTRA_MEM_SIZE, requested_size); // extra mem size should be greater than max chunk block size
   void *extra_mem = get_platform_context()->allocator.alloc(extra_mem_size);
   if (extra_mem == nullptr) {
     php_error("script OOM");
