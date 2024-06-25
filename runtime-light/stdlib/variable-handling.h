@@ -30,4 +30,3 @@ void f$var_dump(const class_instance<T> &v) {
   php_warning("print_r used on object");
   return f$var_dump(string(v.get_class(), (string::size_type)strlen(v.get_class())));
 }
-

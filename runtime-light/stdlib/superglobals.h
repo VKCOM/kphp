@@ -7,8 +7,6 @@
 #include "runtime-core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
 
-enum class QueryType {
-  HTTP, COMPONENT
-};
+enum class QueryType { HTTP, COMPONENT };
 
-void init_http_superglobals(const char * buffer, int size);
+void init_http_superglobals(const char *buffer, int size);

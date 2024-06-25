@@ -11,11 +11,11 @@ void print(const string &s);
 
 void print(const string_buffer &sb);
 
-inline void f$echo(const string& s) {
+inline void f$echo(const string &s) {
   print(s);
 }
 
-inline int64_t f$print(const string& s) {
+inline int64_t f$print(const string &s) {
   print(s);
   return 1;
 }
@@ -41,8 +41,12 @@ struct str_concat_arg {
   const char *data;
   string::size_type size;
 
-  str_concat_arg(const string &s) : data{s.c_str()}, size{s.size()} {}
-  str_concat_arg(tmp_string s) : data{s.data}, size{s.size} {}
+  str_concat_arg(const string &s)
+    : data{s.c_str()}
+    , size{s.size()} {}
+  str_concat_arg(tmp_string s)
+    : data{s.data}
+    , size{s.size} {}
 
   tmp_string as_tmp_string() const noexcept {
     return {data, size};

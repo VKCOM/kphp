@@ -12,14 +12,15 @@
 struct blocked_operation_t {
   uint64_t awaited_stream;
 
-  blocked_operation_t(uint64_t stream_d) : awaited_stream(stream_d) {}
+  blocked_operation_t(uint64_t stream_d)
+    : awaited_stream(stream_d) {}
 
   constexpr bool await_ready() const noexcept {
     return false;
   }
 
   void await_resume() const noexcept {
-    ComponentState & ctx = *get_component_context();
+    ComponentState &ctx = *get_component_context();
     ctx.opened_streams[awaited_stream] = StreamRuntimeStatus::NotBlocked;
   }
 };
@@ -27,7 +28,7 @@ struct blocked_operation_t {
 struct read_blocked_t : blocked_operation_t {
   void await_suspend(std::coroutine_handle<> h) const noexcept {
     php_debug("blocked read on stream %lu", awaited_stream);
-    ComponentState & ctx = *get_component_context();
+    ComponentState &ctx = *get_component_context();
     ctx.poll_status = PollStatus::PollBlocked;
     ctx.opened_streams[awaited_stream] = StreamRuntimeStatus::RBlocked;
     ctx.awaiting_coroutines[awaited_stream] = h;
@@ -37,7 +38,7 @@ struct read_blocked_t : blocked_operation_t {
 struct write_blocked_t : blocked_operation_t {
   void await_suspend(std::coroutine_handle<> h) const noexcept {
     php_debug("blocked write on stream %lu", awaited_stream);
-    ComponentState & ctx = *get_component_context();
+    ComponentState &ctx = *get_component_context();
     ctx.poll_status = PollStatus::PollBlocked;
     ctx.opened_streams[awaited_stream] = StreamRuntimeStatus::WBlocked;
     ctx.awaiting_coroutines[awaited_stream] = h;
@@ -50,7 +51,7 @@ struct test_yield_t {
   }
 
   void await_suspend(std::coroutine_handle<> h) const noexcept {
-    ComponentState & ctx = *get_component_context();
+    ComponentState &ctx = *get_component_context();
     ctx.poll_status = PollStatus::PollReschedule;
     ctx.main_thread = h;
   }
@@ -64,7 +65,7 @@ struct wait_incoming_query_t {
   }
 
   void await_suspend(std::coroutine_handle<> h) const noexcept {
-    ComponentState & ctx = *get_component_context();
+    ComponentState &ctx = *get_component_context();
     php_assert(ctx.standard_stream == 0);
     ctx.main_thread = h;
     ctx.wait_incoming_stream = true;

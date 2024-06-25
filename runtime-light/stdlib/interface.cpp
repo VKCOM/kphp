@@ -8,7 +8,6 @@
 #include <cstdint>
 #include <random>
 
-
 #include "runtime-core/runtime-core.h"
 #include "runtime-light/component/component.h"
 #include "runtime-light/coroutine/awaitable.h"

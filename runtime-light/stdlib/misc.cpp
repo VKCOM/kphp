@@ -5,13 +5,13 @@
 #include "runtime-light/stdlib/misc.h"
 
 #include "runtime-light/component/component.h"
-#include "runtime-light/utils/panic.h"
-#include "runtime-light/utils/json-functions.h"
 #include "runtime-light/coroutine/awaitable.h"
+#include "runtime-light/utils/json-functions.h"
+#include "runtime-light/utils/panic.h"
 
 static int ob_merge_buffers() {
   Response &response = get_component_context()->response;
-  php_assert (response.current_buffer >= 0);
+  php_assert(response.current_buffer >= 0);
   int ob_first_not_empty = 0;
   while (ob_first_not_empty < response.current_buffer && response.output_buffers[ob_first_not_empty].size() == 0) {
     ob_first_not_empty++;
@@ -23,7 +23,7 @@ static int ob_merge_buffers() {
 }
 
 task_t<void> parse_input_query(QueryType query_type) {
-  ComponentState & ctx = *get_component_context();
+  ComponentState &ctx = *get_component_context();
   php_assert(ctx.standard_stream == 0);
   co_await wait_incoming_query_t{};
   ctx.standard_stream = ctx.incoming_pending_queries.front();
@@ -39,13 +39,13 @@ task_t<void> parse_input_query(QueryType query_type) {
   } else {
     php_critical_error("unexpected query type %d in parse_input_query", static_cast<int>(query_type));
   }
-  co_return ;
+  co_return;
 }
 
 task_t<void> finish(int64_t exit_code, bool from_exit) {
-  (void) from_exit;
-  (void) exit_code;
-  //todo:k2 use exit_code
+  (void)from_exit;
+  (void)exit_code;
+  // todo:k2 use exit_code
   ComponentState &ctx = *get_component_context();
   if (ctx.standard_stream == 0) {
     co_return;
@@ -67,7 +67,7 @@ task_t<void> f$testyield() {
 }
 
 void f$check_shutdown() {
-  const PlatformCtx & ptx = *get_platform_context();
+  const PlatformCtx &ptx = *get_platform_context();
   if (get_platform_context()->please_graceful_shutdown.load()) {
     php_notice("script was graceful shutdown");
     ptx.abort();
@@ -84,7 +84,6 @@ task_t<void> f$exit(const mixed &v) {
   }
   critical_error_handler();
 }
-
 
 void f$die([[maybe_unused]] const mixed &v) {
   get_component_context()->poll_status = PollStatus::PollFinishedOk;

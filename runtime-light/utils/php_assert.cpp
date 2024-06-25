@@ -5,21 +5,21 @@
 #include "runtime-light/utils/php_assert.h"
 
 #include <algorithm>
+#include <csignal>
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <csignal>
 #include <ctime>
 #include <cxxabi.h>
 #include <execinfo.h>
-#include <unistd.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
 #include "runtime-light/utils/panic.h"
 
 static void php_warning_impl(bool out_of_memory, int error_type, char const *message, va_list args) {
-  (void) out_of_memory;
+  (void)out_of_memory;
   const int BUF_SIZE = 1000;
   char buf[BUF_SIZE];
 

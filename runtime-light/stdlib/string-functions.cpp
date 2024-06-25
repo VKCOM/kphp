@@ -6,7 +6,6 @@
 
 #include "runtime-light/component/component.h"
 
-
 void print(const char *s, size_t s_len) {
   Response &response = get_component_context()->response;
   response.output_buffers[response.current_buffer].append(s, s_len);
@@ -82,11 +81,21 @@ string str_concat(str_concat_arg s1, str_concat_arg s2, str_concat_arg s3) {
 
 string str_concat(str_concat_arg s1, str_concat_arg s2, str_concat_arg s3, str_concat_arg s4) {
   auto new_size = s1.size + s2.size + s3.size + s4.size;
-  return string(new_size, true).append_unsafe(s1.as_tmp_string()).append_unsafe(s2.as_tmp_string()).append_unsafe(s3.as_tmp_string()).append_unsafe(s4.as_tmp_string()).finish_append();
+  return string(new_size, true)
+    .append_unsafe(s1.as_tmp_string())
+    .append_unsafe(s2.as_tmp_string())
+    .append_unsafe(s3.as_tmp_string())
+    .append_unsafe(s4.as_tmp_string())
+    .finish_append();
 }
 
 string str_concat(str_concat_arg s1, str_concat_arg s2, str_concat_arg s3, str_concat_arg s4, str_concat_arg s5) {
   auto new_size = s1.size + s2.size + s3.size + s4.size + s5.size;
-  return string(new_size, true).append_unsafe(s1.as_tmp_string()).append_unsafe(s2.as_tmp_string()).append_unsafe(s3.as_tmp_string()).append_unsafe(s4.as_tmp_string()).append_unsafe(s5.as_tmp_string()).finish_append();
+  return string(new_size, true)
+    .append_unsafe(s1.as_tmp_string())
+    .append_unsafe(s2.as_tmp_string())
+    .append_unsafe(s3.as_tmp_string())
+    .append_unsafe(s4.as_tmp_string())
+    .append_unsafe(s5.as_tmp_string())
+    .finish_append();
 }
-

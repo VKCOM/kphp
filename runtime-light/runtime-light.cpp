@@ -18,7 +18,7 @@ ImageState *vk_k2_create_image_state(const struct PlatformCtx *pt_ctx) {
   mutableImageState = new (buffer) ImageState();
   imageState = mutableImageState;
   init_php_scripts_once_in_master();
-  ImageState * mutable_image_state = mutableImageState;
+  ImageState *mutable_image_state = mutableImageState;
   php_debug("finish image state creation on \"%s\"", vk_k2_describe()->image_name);
   reset_thread_locals();
   return mutable_image_state;
@@ -36,7 +36,7 @@ ComponentState *vk_k2_create_component_state(const struct ImageState *image_stat
   }
   componentState = new (buffer) ComponentState();
   componentState->init_script_execution();
-  ComponentState * component_state = componentState;
+  ComponentState *component_state = componentState;
   php_debug("finish component state creation on \"%s\"", vk_k2_describe()->image_name);
   reset_thread_locals();
   return component_state;

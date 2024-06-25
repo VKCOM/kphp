@@ -4,13 +4,13 @@
 
 #pragma once
 
-#include "runtime-core/class-instance/refcountable-php-classes.h"
 #include "common/algorithms/hashes.h"
 #include "common/wrappers/string_view.h"
+#include "runtime-core/class-instance/refcountable-php-classes.h"
 #include "runtime-light/streams/streams.h"
 
 struct C$ComponentStream final : public refcountable_php_classes<C$ComponentStream> {
-  uint64_t stream_d {};
+  uint64_t stream_d{};
 
   const char *get_class() const noexcept {
     return "ComponentStream";
@@ -26,7 +26,7 @@ struct C$ComponentStream final : public refcountable_php_classes<C$ComponentStre
 };
 
 struct C$ComponentQuery final : public refcountable_php_classes<C$ComponentQuery> {
-  uint64_t stream_d {};
+  uint64_t stream_d{};
 
   const char *get_class() const noexcept {
     return "ComponentQuery";
@@ -41,10 +41,10 @@ struct C$ComponentQuery final : public refcountable_php_classes<C$ComponentQuery
   }
 };
 
-bool f$ComponentStream$$is_read_closed(const class_instance<C$ComponentStream> & stream);
-bool f$ComponentStream$$is_write_closed(const class_instance<C$ComponentStream> & stream);
-bool f$ComponentStream$$is_please_shutdown_write(const class_instance<C$ComponentStream> & stream);
+bool f$ComponentStream$$is_read_closed(const class_instance<C$ComponentStream> &stream);
+bool f$ComponentStream$$is_write_closed(const class_instance<C$ComponentStream> &stream);
+bool f$ComponentStream$$is_please_shutdown_write(const class_instance<C$ComponentStream> &stream);
 
-void f$ComponentStream$$close(const class_instance<C$ComponentStream> & stream);
-void f$ComponentStream$$shutdown_write(const class_instance<C$ComponentStream> & stream);
-void f$ComponentStream$$please_shutdown_write(const class_instance<C$ComponentStream> & stream);
+void f$ComponentStream$$close(const class_instance<C$ComponentStream> &stream);
+void f$ComponentStream$$shutdown_write(const class_instance<C$ComponentStream> &stream);
+void f$ComponentStream$$please_shutdown_write(const class_instance<C$ComponentStream> &stream);

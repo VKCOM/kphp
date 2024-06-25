@@ -39,7 +39,7 @@ string f$ob_get_content() {
   return httpResponse.output_buffers[httpResponse.current_buffer].str();
 }
 
-void f$ob_start(const string&callback) {
+void f$ob_start(const string &callback) {
   Response &httpResponse = get_component_context()->response;
   if (httpResponse.current_buffer + 1 == httpResponse.ob_max_buffers) {
     php_warning("Maximum nested level of output buffering reached. Can't do ob_start(%s)", callback.c_str());
@@ -47,7 +47,7 @@ void f$ob_start(const string&callback) {
   }
 
   if (!callback.empty()) {
-    php_critical_error ("unsupported callback %s at buffering level %d", callback.c_str(), httpResponse.current_buffer + 1);
+    php_critical_error("unsupported callback %s at buffering level %d", callback.c_str(), httpResponse.current_buffer + 1);
   }
 
   ++httpResponse.current_buffer;

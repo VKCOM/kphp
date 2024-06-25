@@ -31,5 +31,3 @@ Optional<string> f$ob_get_flush();
 Optional<int64_t> f$ob_get_length();
 
 int64_t f$ob_get_level();
-
-

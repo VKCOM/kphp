@@ -15,7 +15,7 @@ void do_print_r(const mixed &v, int depth) {
     return;
   }
   Response &httpResponse = get_component_context()->response;
-  string_buffer * coub = &httpResponse.output_buffers[httpResponse.current_buffer];
+  string_buffer *coub = &httpResponse.output_buffers[httpResponse.current_buffer];
 
   switch (v.get_type()) {
     case mixed::type::NUL:
@@ -62,7 +62,7 @@ static void do_var_dump(const mixed &v, int depth) {
 
   string shift(depth * 2, ' ');
   Response &httpResponse = get_component_context()->response;
-  string_buffer * coub = &httpResponse.output_buffers[httpResponse.current_buffer];
+  string_buffer *coub = &httpResponse.output_buffers[httpResponse.current_buffer];
 
   switch (v.get_type()) {
     case mixed::type::NUL:
@@ -105,7 +105,7 @@ static void do_var_dump(const mixed &v, int depth) {
 
 static void var_export_escaped_string(const string &s) {
   Response &httpResponse = get_component_context()->response;
-  string_buffer * coub = &httpResponse.output_buffers[httpResponse.current_buffer];
+  string_buffer *coub = &httpResponse.output_buffers[httpResponse.current_buffer];
   for (string::size_type i = 0; i < s.size(); i++) {
     switch (s[i]) {
       case '\'':
@@ -129,7 +129,7 @@ static void do_var_export(const mixed &v, int depth, char endc = 0) {
 
   string shift(depth * 2, ' ');
   Response &httpResponse = get_component_context()->response;
-  string_buffer * coub = &httpResponse.output_buffers[httpResponse.current_buffer];
+  string_buffer *coub = &httpResponse.output_buffers[httpResponse.current_buffer];
 
   switch (v.get_type()) {
     case mixed::type::NUL:
@@ -194,7 +194,6 @@ string f$var_export(const mixed &v, bool buffered) {
   do_var_export(v, 0);
   return {};
 }
-
 
 string f$print_r(const mixed &v, bool buffered) {
   if (buffered) {

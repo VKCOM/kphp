@@ -20,4 +20,3 @@ void reset();
 
 task_t<void> parse_input_query(QueryType query_type);
 task_t<void> finish(int64_t exit_code, bool from_exit);
-

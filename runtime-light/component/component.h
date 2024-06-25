@@ -6,8 +6,8 @@
 
 #include <coroutine>
 #include <csetjmp>
-#include <queue>
 #include <functional>
+#include <queue>
 
 #include "runtime-core/memory-resource/resource_allocator.h"
 #include "runtime-core/memory-resource/unsynchronized_pool_resource.h"
@@ -27,13 +27,13 @@ struct ComponentState {
   using deque = memory_resource::stl::deque<T, memory_resource::unsynchronized_pool_resource>;
   static constexpr int initial_runtime_allocator_size = 16 * 1024u;
 
-  ComponentState() :
-    runtime_allocator(initial_runtime_allocator_size, 0),
-    php_script_mutable_globals_singleton(runtime_allocator.memory_resource),
-    opened_streams(unordered_map<uint64_t, StreamRuntimeStatus>::allocator_type{runtime_allocator.memory_resource}),
-    awaiting_coroutines(unordered_map<uint64_t, std::coroutine_handle<>>::allocator_type{runtime_allocator.memory_resource}),
-    timer_callbacks(unordered_map<uint64_t, std::function<void()>>::allocator_type{runtime_allocator.memory_resource}),
-    incoming_pending_queries(deque<uint64_t>::allocator_type{runtime_allocator.memory_resource}) {}
+  ComponentState()
+    : runtime_allocator(initial_runtime_allocator_size, 0)
+    , php_script_mutable_globals_singleton(runtime_allocator.memory_resource)
+    , opened_streams(unordered_map<uint64_t, StreamRuntimeStatus>::allocator_type{runtime_allocator.memory_resource})
+    , awaiting_coroutines(unordered_map<uint64_t, std::coroutine_handle<>>::allocator_type{runtime_allocator.memory_resource})
+    , timer_callbacks(unordered_map<uint64_t, std::function<void()>>::allocator_type{runtime_allocator.memory_resource})
+    , incoming_pending_queries(deque<uint64_t>::allocator_type{runtime_allocator.memory_resource}) {}
 
   ~ComponentState() = default;
 
