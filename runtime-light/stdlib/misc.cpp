@@ -24,7 +24,7 @@ task_t<void> parse_input_query(QueryType query_type) {
   co_await wait_incoming_query_t{};
   ctx.standard_stream = ctx.incoming_pending_queries.front();
   ctx.incoming_pending_queries.pop_front();
-  ctx.opened_streams.insert(ctx.standard_stream);
+  ctx.opened_descriptors[ctx.standard_stream] = DescriptorRuntimeStatus::Stream;
 
   if (query_type == HTTP) {
     auto [buffer, size] = co_await read_all_from_stream(ctx.standard_stream);

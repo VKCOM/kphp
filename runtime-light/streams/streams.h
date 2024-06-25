@@ -7,10 +7,8 @@
 
 #include "runtime-light/core/kphp_core.h"
 
-enum StreamRuntimeStatus {
-  WBlocked,
-  RBlocked,
-  NotBlocked,
+enum DescriptorRuntimeStatus {
+  Stream,
   Timer
 };
 

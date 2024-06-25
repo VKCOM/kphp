@@ -43,25 +43,24 @@ PollStatus vk_k2_poll(const ImageState *image_state, const PlatformCtx *pt_ctx, 
   platformCtx = pt_ctx;
   componentState = component_ctx;
 
-  uint64_t stream_d = 0;
-  while (platformCtx->take_update(&stream_d) && componentState->not_finished()) {
-    php_debug("take update on stream %lu", stream_d);
+  uint64_t update_d = 0;
+  while (platformCtx->take_update(&update_d) && componentState->not_finished()) {
+    php_debug("take update on descriptor %lu", update_d);
     StreamStatus status;
-    GetStatusResult res = platformCtx->get_stream_status(stream_d, &status);
+    GetStatusResult res = platformCtx->get_stream_status(update_d, &status);
     if (res != GetStatusOk) {
-      php_warning("get stream status %d", res);
+      php_debug("get stream status %d", res);
     }
     php_debug("stream status %d, %d, %d", status.read_status, status.write_status, status.please_shutdown_write);
-    php_debug("opened_streams size %zu", componentState->opened_streams.size());
-    if (componentState->is_stream_already_being_processed(stream_d)) {
-      php_debug("update on processed stream %lu", stream_d);
-      componentState->kphp_fork_context.scheduler.resume_fork_by_future(stream_future{stream_d});
-    } else if (componentState->is_stream_timer(stream_d)) {
-      php_debug("process timer %ld", stream_d);
-      componentState->kphp_fork_context.scheduler.resume_fork_by_timeout(stream_d);
-      componentState->process_timer(stream_d);
+    php_debug("opened descriptors %zu", componentState->opened_descriptors.size());
+    if (componentState->is_descriptor_already_being_processed(update_d)) {
+      php_debug("update on processed stream %lu", update_d);
+      componentState->kphp_fork_context.scheduler.resume_fork_by_future(stream_future{update_d});
+    } else if (componentState->is_descriptor_timer(update_d)) {
+      php_debug("process timer %ld", update_d);
+      componentState->kphp_fork_context.scheduler.resume_fork_by_timeout(update_d);
     } else {
-      componentState->process_new_input_stream(stream_d);
+      componentState->process_new_input_stream(update_d);
     }
   }
 

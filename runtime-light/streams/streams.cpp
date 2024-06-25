@@ -180,10 +180,10 @@ void free_all_descriptors() {
   php_debug("free all descriptors");
   ComponentState & ctx = *get_component_context();
   const PlatformCtx & ptx = *get_platform_context();
-  for (auto & processed_query : ctx.opened_streams) {
-    ptx.free_descriptor(processed_query);
+  for (auto & processed_query : ctx.opened_descriptors) {
+    ptx.free_descriptor(processed_query.first);
   }
-  ctx.opened_streams.clear();
+  ctx.opened_descriptors.clear();
   ptx.free_descriptor(ctx.standard_stream);
   ctx.standard_stream = 0;
 }
@@ -192,5 +192,5 @@ void free_descriptor(uint64_t stream_d) {
   php_debug("free descriptor %lu", stream_d);
   ComponentState & ctx = *get_component_context();
   get_platform_context()->free_descriptor(stream_d);
-  ctx.opened_streams.erase(stream_d);
+  ctx.opened_descriptors.erase(stream_d);
 }

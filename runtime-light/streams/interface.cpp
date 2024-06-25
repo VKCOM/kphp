@@ -24,7 +24,8 @@ task_t<class_instance<C$ComponentQuery>> f$component_client_send_query(const str
     php_warning("cannot open stream");
     co_return query;
   }
-  get_component_context()->opened_streams.insert(stream_d);
+
+  get_component_context()->opened_descriptors[stream_d] = DescriptorRuntimeStatus::Stream;
   int writed = co_await write_all_to_stream(stream_d, message.c_str(), message.size());
   ptx.shutdown_write(stream_d);
   php_debug("send %d bytes from %d to \"%s\" on stream %lu", writed, message.size(), name.c_str(), stream_d);
@@ -98,7 +99,7 @@ class_instance<C$ComponentStream> f$component_open_stream(const string &name) {
     php_warning("cannot open stream");
     return query;
   }
-  ctx.opened_streams.insert(stream_d);
+  ctx.opened_descriptors[stream_d] = DescriptorRuntimeStatus::Stream;
   query.alloc();
   query.get()->stream_d = stream_d;
   php_debug("open stream %lu to %s", stream_d, name.c_str());
