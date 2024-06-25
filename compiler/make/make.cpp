@@ -205,9 +205,6 @@ static int rm_rf(const char *path) {
   return nftw(path, unlink_cb, 64, FTW_DEPTH | FTW_PHYS);
 }
 
-// todo:k2 review pch-related things for
-// k2-component mode
-
 // prepare dir kphp_out/objs/pch_{flags} and make a target runtime-headers.h.gch inside it
 // in production, there will be two pch_ folders: with debug symbols and without them
 // later on, we'll copy this folder inside /tmp/kphp_pch — that's why if it exists, don't do anything
