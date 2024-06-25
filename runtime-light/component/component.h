@@ -43,10 +43,9 @@ struct ComponentState {
   inline bool not_finished() const noexcept {
     return poll_status != PollStatus::PollFinishedOk && poll_status != PollStatus::PollFinishedError;
   }
-  bool is_stream_already_being_processed(uint64_t stream_d);
-  bool is_stream_timer(uint64_t update_d);
+  bool is_descriptor_already_being_processed(uint64_t stream_d);
+  bool is_descriptor_timer(uint64_t update_d);
   void process_new_input_stream(uint64_t stream_d);
-  void process_timer(uint64_t stream_d);
   void init_script_execution();
 
   RuntimeAllocator runtime_allocator;
@@ -57,11 +56,9 @@ struct ComponentState {
   PhpScriptMutableGlobals php_script_mutable_globals_singleton;
 
   PollStatus poll_status = PollStatus::PollReschedule;
+
+  unordered_map<uint64_t, DescriptorRuntimeStatus> opened_descriptors;
+
   uint64_t standard_stream = 0;
-  bool wait_incoming_stream = false;
-
-
-  unordered_set<uint64_t> opened_streams; // подумать про необходимость opened_streams. Объединить с awaiting_coroutines
-  unordered_map<uint64_t, std::function<void()>> timer_callbacks;
   deque<uint64_t> incoming_pending_queries;
 };
