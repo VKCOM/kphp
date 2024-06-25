@@ -37,7 +37,7 @@ struct ComponentState {
   inline bool not_finished() const noexcept {
     return poll_status != PollStatus::PollFinishedOk && poll_status != PollStatus::PollFinishedError;
   }
-  bool is_descriptor_already_being_processed(uint64_t stream_d);
+  bool is_descriptor_stream(uint64_t update_d);
   bool is_descriptor_timer(uint64_t update_d);
   void process_new_input_stream(uint64_t stream_d);
   void init_script_execution();

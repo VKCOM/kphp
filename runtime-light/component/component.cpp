@@ -1,12 +1,15 @@
 #include "runtime-light/component/component.h"
 #include "runtime-light/core/globals/php-init-scripts.h"
 
-bool ComponentState::is_descriptor_already_being_processed(uint64_t stream_d) {
-  return opened_descriptors.contains(stream_d);
+bool ComponentState::is_descriptor_stream(uint64_t update_d) {
+  if (opened_descriptors.contains(update_d)) {
+    return opened_descriptors[update_d] == DescriptorRuntimeStatus::Stream;
+  }
+  return false;
 }
 
 bool ComponentState::is_descriptor_timer(uint64_t update_d) {
-  if (is_descriptor_already_being_processed(update_d)) {
+  if (opened_descriptors.contains(update_d)) {
     return opened_descriptors[update_d] == DescriptorRuntimeStatus::Timer;
   }
   return false;

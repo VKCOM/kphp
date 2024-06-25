@@ -148,10 +148,11 @@ function debug_print_string($str ::: string) ::: void;
 function byte_to_int($str ::: string) ::: ?int;
 function int_to_byte($v ::: int) ::: ?string;
 
-function set_timer(int $timeout, callable():void $callback) ::: void;
-
 /** @kphp-extern-func-info resumable cpp_template_call */
 function wait(future<any> | false $id, float $timeout = -1.0) ::: ^1[*] | null;
 
 /** @kphp-extern-func-info resumable */
 function sched_yield() ::: void;
+
+/** @kphp-extern-func-info resumable */
+function sched_yield_sleep($timeout_ns ::: int) ::: void;

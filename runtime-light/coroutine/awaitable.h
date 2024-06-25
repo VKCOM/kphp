@@ -42,7 +42,7 @@ struct test_yield_t {
   void await_suspend(std::coroutine_handle<> h) const noexcept {
     KphpForkContext & context = KphpForkContext::current();
     php_debug("platform yield fork %ld", context.current_fork_id);
-    context.scheduler.yield_fork(context.current_fork_id, h);
+    context.scheduler.yield_fork(context.current_fork_id, h, -1);
   }
 
   constexpr void await_resume() const noexcept {}
@@ -102,8 +102,25 @@ struct sched_yield_t {
   void await_suspend(std::coroutine_handle<> h) const noexcept {
     KphpForkContext & context = KphpForkContext::current();
     php_debug("fork %ld sched yield", context.current_fork_id);
-    context.scheduler.yield_fork(context.current_fork_id, h);
+    context.scheduler.yield_fork(context.current_fork_id, h, -1);
   }
 
   void await_resume() const noexcept {}
+};
+
+struct sched_yield_sleep_t {
+  int64_t timeout_ns;
+
+  bool await_ready() const noexcept {
+    return false;
+  }
+
+  void await_suspend(std::coroutine_handle<> h) const noexcept {
+    KphpForkContext & context = KphpForkContext::current();
+    php_debug("fork %ld sched yield", context.current_fork_id);
+    context.scheduler.yield_fork(context.current_fork_id, h, timeout_ns);
+  }
+
+  void await_resume() const noexcept {}
+
 };

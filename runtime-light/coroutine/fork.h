@@ -65,7 +65,7 @@ struct fork_scheduler {
   light_fork &get_fork_by_id(int64_t fork_id) noexcept;
 
   void block_fork_on_future(int64_t blocked_fork, std::coroutine_handle<> handle, runtime_future awaited_future, double timeout);
-  void yield_fork(int64_t fork_id, std::coroutine_handle<> handle) noexcept;
+  void yield_fork(int64_t fork_id, std::coroutine_handle<> handle, int64_t timeout_ns) noexcept;
   void block_fork_on_incoming_query(int64_t fork_id, std::coroutine_handle<> handle) noexcept;
 
   void resume_fork_by_future(runtime_future awaited_future) noexcept;
@@ -82,6 +82,7 @@ private:
   void mark_fork_ready_to_resume(int64_t fork_id) noexcept;
   bool is_fork_not_canceled(int64_t fork_id) noexcept;
   bool is_main_fork_finish() noexcept;
+  void set_up_timeout_for_waiting(int64_t fork_id, int64_t timeout_ns) noexcept;
   void scheduler_iteration(int64_t fork_id) noexcept;
 
   /* map of running forks. fork_id to task_t structure */

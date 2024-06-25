@@ -53,7 +53,7 @@ PollStatus vk_k2_poll(const ImageState *image_state, const PlatformCtx *pt_ctx, 
     }
     php_debug("stream status %d, %d, %d", status.read_status, status.write_status, status.please_shutdown_write);
     php_debug("opened descriptors %zu", componentState->opened_descriptors.size());
-    if (componentState->is_descriptor_already_being_processed(update_d)) {
+    if (componentState->is_descriptor_stream(update_d)) {
       php_debug("update on processed stream %lu", update_d);
       componentState->kphp_fork_context.scheduler.resume_fork_by_future(stream_future{update_d});
     } else if (componentState->is_descriptor_timer(update_d)) {

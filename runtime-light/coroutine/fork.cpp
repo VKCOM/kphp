@@ -30,6 +30,15 @@ bool fork_scheduler::is_main_fork_finish() noexcept {
   return running_forks[KphpForkContext::main_fork_id].task.done();
 }
 
+void fork_scheduler::set_up_timeout_for_waiting(int64_t fork_id, int64_t timeout_ns) noexcept {
+  uint64_t timer_d = set_timer_without_callback(timeout_ns);
+  if (timer_d > 0) {
+    timer_to_blocked_fork[timer_d] = fork_id;
+  } else {
+    php_warning("cannot set up timer for another fork waiting");
+  }
+}
+
 light_fork &fork_scheduler::get_fork_by_id(int64_t fork_id) noexcept {
   return running_forks[fork_id];
 }
@@ -80,10 +89,12 @@ void fork_scheduler::resume_fork_by_timeout(int64_t timer_d) noexcept {
   if (timer_to_blocked_fork.contains(timer_d)) {
     int64_t blocked_fork = timer_to_blocked_fork[timer_d];
     php_debug("resume fork %ld by timeout %ld", blocked_fork, timer_d);
-    runtime_future awaited_future = fork_to_awaited_future.at(blocked_fork);
     // delete info of future waiting
-    future_to_blocked_fork.erase(awaited_future);
-    fork_to_awaited_future.erase(blocked_fork);
+    if (fork_to_awaited_future.contains(blocked_fork)) {
+      runtime_future awaited_future = fork_to_awaited_future[blocked_fork];
+      future_to_blocked_fork.erase(awaited_future);
+      fork_to_awaited_future.erase(blocked_fork);
+    }
     timer_to_blocked_fork.erase(timer_d);
 
     mark_fork_ready_to_resume(blocked_fork);
@@ -102,23 +113,21 @@ void fork_scheduler::block_fork_on_future(int64_t blocked_fork, std::coroutine_h
     php_warning("future is already waited");
     return;
   }
-  uint64_t timer_d = 0;
   if (timeout >= 0) {
-    timer_d = set_timer_without_callback(timeout);
-    if (timer_d > 0) {
-      timer_to_blocked_fork[timer_d] = blocked_fork;
-    } else {
-      php_warning("cannot set up timer for another fork waiting");
-    }
+    set_up_timeout_for_waiting(blocked_fork, static_cast<int64_t>(timeout * 1e9));
   }
   future_to_blocked_fork[awaited_future] = blocked_fork;
   fork_to_awaited_future[blocked_fork] = awaited_future;
   running_forks[blocked_fork].handle = handle;
 }
 
-void fork_scheduler::yield_fork(int64_t fork_id, std::coroutine_handle<> handle) noexcept {
+void fork_scheduler::yield_fork(int64_t fork_id, std::coroutine_handle<> handle, int64_t timeout_ns) noexcept {
   php_debug("yield fork %ld", fork_id);
-  yielded_forks.insert(fork_id);
+  if (timeout_ns >= 0) {
+    set_up_timeout_for_waiting(fork_id, timeout_ns);
+  } else {
+    yielded_forks.insert(fork_id);
+  }
   running_forks[fork_id].handle = handle;
 }
 
