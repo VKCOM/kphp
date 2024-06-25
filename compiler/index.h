@@ -80,7 +80,9 @@ public:
   void set_dir(const std::string &dir);
   const std::string &get_dir() const;
   void sync_with_dir(const std::string &dir);
+  void filter_with_whitelist(const std::vector<std::string> &white_list);
   void del_extra_files();
+  void del_all_files();
   File *insert_file(std::string path);
   File *get_file(std::string path) const;
 

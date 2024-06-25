@@ -1,0 +1,3 @@
+#pragma once
+
+#define RUNTIME_COMPILER_FLAGS "${RUNTIME_COMPILE_FLAGS}"
