@@ -15,7 +15,7 @@ bool is_script_allocator_available() {
 
 void request_extra_memory(size_t requested_size) {
   ComponentState &rt_ctx = *get_component_context();
-  size_t extra_mem_size = std::max(minimum_request_extra_memory_size, requested_size * 4); // extra mem size should be greater than max chunk block size
+  size_t extra_mem_size = std::max(minimum_request_extra_memory_size, requested_size); // extra mem size should be greater than max chunk block size
   void *extra_mem = get_platform_context()->allocator.alloc(extra_mem_size);
   if (extra_mem == nullptr) {
     php_error("script OOM");
@@ -60,10 +60,11 @@ void *RuntimeAllocator::alloc_script_memory(size_t size) noexcept {
   ComponentState &rt_ctx = *get_component_context();
 
   void *ptr = rt_ctx.runtime_allocator.memory_resource.allocate(size);
-  if (ptr == nullptr) {
-    request_extra_memory(size);
+  size_t previous_multiplier = 1;
+  while (ptr != nullptr) {
+    request_extra_memory(size * previous_multiplier);
     ptr = rt_ctx.runtime_allocator.memory_resource.allocate(size);
-    php_assert(ptr != nullptr);
+    previous_multiplier += 1;
   }
   return ptr;
 }
@@ -78,10 +79,11 @@ void *RuntimeAllocator::alloc0_script_memory(size_t size) noexcept {
 
   ComponentState &rt_ctx = *get_component_context();
   void *ptr = rt_ctx.runtime_allocator.memory_resource.allocate0(size);
-  if (ptr == nullptr) {
-    request_extra_memory(size);
-    ptr = rt_ctx.runtime_allocator.memory_resource.allocate0(size);
-    php_assert(ptr != nullptr);
+  size_t previous_multiplier = 1;
+  while (ptr != nullptr) {
+    request_extra_memory(size * previous_multiplier);
+    ptr = rt_ctx.runtime_allocator.memory_resource.allocate(size);
+    previous_multiplier += 1;
   }
   return ptr;
 }
@@ -94,10 +96,11 @@ void *RuntimeAllocator::realloc_script_memory(void *mem, size_t new_size, size_t
 
   ComponentState &rt_ctx = *get_component_context();
   void *ptr = rt_ctx.runtime_allocator.memory_resource.reallocate(mem, new_size, old_size);
-  if (ptr == nullptr) {
-    request_extra_memory(new_size);
-    ptr = rt_ctx.runtime_allocator.memory_resource.reallocate(mem, new_size, old_size);
-    php_assert(ptr != nullptr);
+  size_t previous_multiplier = 1;
+  while (ptr != nullptr) {
+    request_extra_memory(new_size * previous_multiplier);
+    ptr = rt_ctx.runtime_allocator.memory_resource.allocate(new_size);
+    previous_multiplier += 1;
   }
   return ptr;
 }
