@@ -55,7 +55,6 @@ struct fork_scheduler {
     , future_to_blocked_fork(unordered_map<runtime_future, int64_t>::allocator_type{memory_pool})
     , fork_to_awaited_future(unordered_map<int64_t, runtime_future>::allocator_type{memory_pool})
     , timer_to_blocked_fork(unordered_map<uint64_t, int64_t>::allocator_type{memory_pool})
-    , yielded_forks(unordered_set<int64_t>::allocator_type{memory_pool})
     , wait_incoming_query_forks(unordered_set<int64_t>::allocator_type{memory_pool})
     , forks_ready_to_resume(deque<int64_t>::allocator_type{memory_pool}) {}
 
@@ -70,7 +69,6 @@ struct fork_scheduler {
 
   void resume_fork_by_future(runtime_future awaited_future) noexcept;
   void resume_fork_by_timeout(int64_t timer_d) noexcept;
-  void resume_fork(int64_t fork_id) noexcept;
   void resume_fork_by_incoming_query() noexcept;
 
   void schedule() noexcept;
@@ -95,8 +93,6 @@ private:
   unordered_map<int64_t, runtime_future> fork_to_awaited_future;
   /* timeout timer_d to waiting fork */
   unordered_map<uint64_t, int64_t> timer_to_blocked_fork;
-  /* set of forks that was yielded */
-  unordered_set<int64_t> yielded_forks;
   /* set of forks that wait to accept incoming stream */
   unordered_set<int64_t> wait_incoming_query_forks;
 
