@@ -52,7 +52,7 @@ void fork_scheduler::resume_fork_by_future(runtime_future awaited_future) noexce
   future_to_blocked_fork.erase(awaited_future);
   fork_to_awaited_future.erase(blocked_fork);
 
-  // free associated timer
+  // free-associated timer
   std::visit([this](auto &&arg) {
     using T = std::decay_t<decltype(arg)>;
     int64_t timer_d = 0;
@@ -68,12 +68,6 @@ void fork_scheduler::resume_fork_by_future(runtime_future awaited_future) noexce
   }, awaited_future);
 
   mark_fork_ready_to_resume(blocked_fork);
-}
-
-void fork_scheduler::resume_fork(int64_t fork_id) noexcept {
-  php_assert(yielded_forks.contains(fork_id));
-  php_debug("resume fork that was yield %ld", fork_id);
-  mark_fork_ready_to_resume(fork_id);
 }
 
 void fork_scheduler::resume_fork_by_incoming_query() noexcept {
@@ -122,11 +116,12 @@ void fork_scheduler::block_fork_on_future(int64_t blocked_fork, std::coroutine_h
 }
 
 void fork_scheduler::yield_fork(int64_t fork_id, std::coroutine_handle<> handle, int64_t timeout_ns) noexcept {
-  php_debug("yield fork %ld", fork_id);
   if (timeout_ns >= 0) {
+    php_debug("yield fork %ld for timeout_ns %ld", fork_id, timeout_ns);
     set_up_timeout_for_waiting(fork_id, timeout_ns);
   } else {
-    yielded_forks.insert(fork_id);
+    php_debug("yield fork %ld", fork_id);
+    forks_ready_to_resume.push_back(fork_id);
   }
   running_forks[fork_id].handle = handle;
 }
@@ -157,15 +152,10 @@ void fork_scheduler::register_main_fork(light_fork &&fork) noexcept {
 void fork_scheduler::schedule() noexcept {
   php_debug("start fork schedule");
   while (true) {
-    php_debug("schedule [yielded forks %zu, ready_forks %zu, forks_ready_to_resume %zu, running forks %zu]", yielded_forks.size(), ready_forks.size(),
+    php_debug("schedule [ready_forks %zu, forks_ready_to_resume %zu, running forks %zu]", ready_forks.size(),
               forks_ready_to_resume.size(), running_forks.size());
     php_debug("awaiting forks [wait_incoming_query_forks %zu, future_to_blocked_fork %zu]", wait_incoming_query_forks.size(),
               future_to_blocked_fork.size());
-    // Resume all yielded forks
-    for (int64_t fork_id : yielded_forks) {
-      resume_fork(fork_id);
-    }
-    yielded_forks.clear();
 
     // Resume blocked forks that wait for another fork
     for (int64_t fork_id : ready_forks) {
@@ -190,9 +180,6 @@ void fork_scheduler::schedule() noexcept {
       }
       int64_t fork_id = forks_ready_to_resume.front();
       forks_ready_to_resume.pop_front();
-      if (!is_fork_not_canceled(fork_id)) {
-        continue;
-      }
       scheduler_iteration(fork_id);
       if (is_main_fork_finish()) {
         break;
@@ -214,13 +201,13 @@ void fork_scheduler::scheduler_iteration(int64_t fork_id) noexcept {
     // fork may be canceled here by parent
     return;
   }
-  auto &task = running_forks[fork_id];
+  auto &fork = running_forks[fork_id];
   // Set global current fork id
   int64_t parent_fork_id = KphpForkContext::current().current_fork_id;
   KphpForkContext::current().current_fork_id = fork_id;
-  task.handle();
+  fork.handle();
   KphpForkContext::current().current_fork_id = parent_fork_id;
-  if (task.task.done()) {
+  if (fork.task.done()) {
     php_debug("fork %ld is done", fork_id);
     ready_forks.insert(fork_id);
   }
