@@ -4,9 +4,9 @@
 
 #pragma once
 
+#include "runtime-core/runtime-core.h"
 #include "runtime/allocator.h"
 #include "runtime/exception.h"
-#include "runtime/kphp_core.h"
 #include "runtime/storage.h"
 
 extern bool resumable_finished;

@@ -24,6 +24,7 @@
 #include "runtime/array_functions.h"
 #include "runtime/bcmath.h"
 #include "runtime/confdata-functions.h"
+#include "runtime/context/runtime-context.h"
 #include "runtime/critical_section.h"
 #include "runtime/curl.h"
 #include "runtime/datetime/datetime_functions.h"
@@ -374,29 +375,29 @@ void f$send_http_103_early_hints(const array<string> & headers) {
 void f$setrawcookie(const string &name, const string &value, int64_t expire, const string &path, const string &domain, bool secure, bool http_only) {
   string date = f$gmdate(HTTP_DATE, expire);
 
-  static_SB_spare.clean() << "Set-Cookie: " << name << '=';
+  kphp_runtime_context.static_SB_spare.clean() << "Set-Cookie: " << name << '=';
   if (value.empty()) {
-    static_SB_spare << "DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT";
+    kphp_runtime_context.static_SB_spare << "DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT";
   } else {
-    static_SB_spare << value;
+    kphp_runtime_context.static_SB_spare << value;
 
     if (expire != 0) {
-      static_SB_spare << "; expires=" << date;
+      kphp_runtime_context.static_SB_spare << "; expires=" << date;
     }
   }
   if (!path.empty()) {
-    static_SB_spare << "; path=" << path;
+    kphp_runtime_context.static_SB_spare << "; path=" << path;
   }
   if (!domain.empty()) {
-    static_SB_spare << "; domain=" << domain;
+    kphp_runtime_context.static_SB_spare << "; domain=" << domain;
   }
   if (secure) {
-    static_SB_spare << "; secure";
+    kphp_runtime_context.static_SB_spare << "; secure";
   }
   if (http_only) {
-    static_SB_spare << "; HttpOnly";
+    kphp_runtime_context.static_SB_spare << "; HttpOnly";
   }
-  header(static_SB_spare.c_str(), (int)static_SB_spare.size(), false);
+  header(kphp_runtime_context.static_SB_spare.c_str(), (int)kphp_runtime_context.static_SB_spare.size(), false);
 }
 
 void f$setcookie(const string &name, const string &value, int64_t expire, const string &path, const string &domain, bool secure, bool http_only) {
@@ -486,32 +487,32 @@ static inline const char *http_get_error_msg_text(int *code) {
 }
 
 static void set_content_length_header(int content_length) {
-  static_SB_spare.clean() << "Content-Length: " << content_length;
-  header(static_SB_spare.c_str(), (int)static_SB_spare.size());
+  kphp_runtime_context.static_SB_spare.clean() << "Content-Length: " << content_length;
+  header(kphp_runtime_context.static_SB_spare.c_str(), (int)kphp_runtime_context.static_SB_spare.size());
 }
 
-static const string_buffer *get_headers() {//can't use static_SB, returns pointer to static_SB_spare
+static const string_buffer *get_headers() {//can't use static_SB, returns pointer to kphp_runtime_context.static_SB_spare
   string date = f$gmdate(HTTP_DATE);
-  static_SB_spare.clean() << "Date: " << date;
-  header(static_SB_spare.c_str(), (int)static_SB_spare.size());
+  kphp_runtime_context.static_SB_spare.clean() << "Date: " << date;
+  header(kphp_runtime_context.static_SB_spare.c_str(), (int)kphp_runtime_context.static_SB_spare.size());
 
   php_assert (dl::query_num == header_last_query_num);
 
-  static_SB_spare.clean();
+  kphp_runtime_context.static_SB_spare.clean();
   if (!http_status_line.empty()) {
-    static_SB_spare << http_status_line << "\r\n";
+    kphp_runtime_context.static_SB_spare << http_status_line << "\r\n";
   } else {
     const char *message = http_get_error_msg_text(&http_return_code);
-    static_SB_spare << "HTTP/1.1 " << http_return_code << " " << message << "\r\n";
+    kphp_runtime_context.static_SB_spare << "HTTP/1.1 " << http_return_code << " " << message << "\r\n";
   }
 
   const array<string> *arr = headers;
   for (array<string>::const_iterator p = arr->begin(); p != arr->end(); ++p) {
-    static_SB_spare << p.get_value();
+    kphp_runtime_context.static_SB_spare << p.get_value();
   }
-  static_SB_spare << "\r\n";
+  kphp_runtime_context.static_SB_spare << "\r\n";
 
-  return &static_SB_spare;
+  return &kphp_runtime_context.static_SB_spare;
 }
 
 constexpr uint32_t MAX_SHUTDOWN_FUNCTIONS = 256;
@@ -571,7 +572,7 @@ void f$flush() {
   http_send_immediate_response(http_headers ? http_headers->buffer() : nullptr, http_headers ? http_headers->size() : 0,
                                http_body->buffer(), http_body->size());
   oub[ob_system_level].clean();
-  static_SB_spare.clean();
+  kphp_runtime_context.static_SB_spare.clean();
 }
 
 void f$fastcgi_finish_request(int64_t exit_code) {
@@ -766,14 +767,14 @@ double f$thread_pool_test_load(int64_t size, int64_t n, double a, double b) {
 }
 
 string f$long2ip(int64_t num) {
-  static_SB.clean().reserve(100);
+  kphp_runtime_context.static_SB.clean().reserve(100);
   for (int i = 3; i >= 0; i--) {
-    static_SB << ((num >> (i * 8)) & 255);
+    kphp_runtime_context.static_SB << ((num >> (i * 8)) & 255);
     if (i) {
-      static_SB.append_char('.');
+      kphp_runtime_context.static_SB.append_char('.');
     }
   }
-  return static_SB.str();
+  return kphp_runtime_context.static_SB.str();
 }
 
 Optional<array<string>> f$gethostbynamel(const string &name) {
@@ -1561,7 +1562,7 @@ static void init_superglobals_impl(const http_query_data &http_data, const rpc_q
 
   if (http_data.uri) {
     if (http_data.get_len) {
-      superglobals.v$_SERVER.set_value(string("REQUEST_URI"), (static_SB.clean() << uri_str << '?' << get_str).str());
+      superglobals.v$_SERVER.set_value(string("REQUEST_URI"), (kphp_runtime_context.static_SB.clean() << uri_str << '?' << get_str).str());
     } else {
       superglobals.v$_SERVER.set_value(string("REQUEST_URI"), uri_str);
     }
@@ -1740,7 +1741,7 @@ static void init_superglobals_impl(const http_query_data &http_data, const rpc_q
   superglobals.v$_SERVER.set_value(string("REQUEST_TIME_FLOAT"), cur_time);
   superglobals.v$_SERVER.set_value(string("SERVER_PORT"), string("80"));
   superglobals.v$_SERVER.set_value(string("SERVER_PROTOCOL"), string("HTTP/1.1"));
-  superglobals.v$_SERVER.set_value(string("SERVER_SIGNATURE"), (static_SB.clean() << "Apache/2.2.9 (Debian) PHP/5.2.6-1<<lenny10 with Suhosin-Patch Server at "
+  superglobals.v$_SERVER.set_value(string("SERVER_SIGNATURE"), (kphp_runtime_context.static_SB.clean() << "Apache/2.2.9 (Debian) PHP/5.2.6-1<<lenny10 with Suhosin-Patch Server at "
                                                                          << superglobals.v$_SERVER[string("SERVER_NAME")] << " Port 80").str());
   superglobals.v$_SERVER.set_value(string("SERVER_SOFTWARE"), string("Apache/2.2.9 (Debian) PHP/5.2.6-1+lenny10 with Suhosin-Patch"));
 
@@ -2307,8 +2308,8 @@ static void init_interface_lib() {
   php_assert (http_return_code == 200);
   header("Server: nginx/0.3.33", 20);
   string date = f$gmdate(HTTP_DATE);
-  static_SB_spare.clean() << "Date: " << date;
-  header(static_SB_spare.c_str(), (int)static_SB_spare.size());
+  kphp_runtime_context.static_SB_spare.clean() << "Date: " << date;
+  header(kphp_runtime_context.static_SB_spare.c_str(), (int)kphp_runtime_context.static_SB_spare.size());
   if (is_utf8_enabled) {
     header("Content-Type: text/html; charset=utf-8", 38);
   } else {
@@ -2332,8 +2333,6 @@ static void init_runtime_libs() {
   init_math_functions();
   kphp_tracing::init_tracing_lib();
   init_slot_factories();
-
-  init_string_buffer_lib(static_cast<int>(static_buffer_length_limit));
 
   init_interface_lib();
 }
@@ -2386,7 +2385,6 @@ static void free_runtime_libs() {
   free_instance_cache_lib();
   free_kphp_backtrace();
 
-  free_migration_php8();
   free_use_updated_gmmktime();
   free_detect_incorrect_encoding_names();
 
@@ -2425,7 +2423,7 @@ void global_init_script_allocator() {
 }
 
 void init_runtime_environment(const php_query_data_t &data, PhpScriptBuiltInSuperGlobals &superglobals, void *mem, size_t script_mem_size, size_t oom_handling_mem_size) {
-  dl::init_script_allocator(mem, script_mem_size, oom_handling_mem_size);
+  kphp_runtime_context.init(mem, script_mem_size, oom_handling_mem_size);
   reset_global_interface_vars(superglobals);
   init_runtime_libs();
   init_superglobals(data, superglobals);
@@ -2435,7 +2433,7 @@ void free_runtime_environment(PhpScriptBuiltInSuperGlobals &superglobals) {
   reset_superglobals(superglobals);
   free_runtime_libs();
   reset_global_interface_vars(superglobals);
-  dl::free_script_allocator();
+  kphp_runtime_context.free();
 }
 
 void worker_global_init(WorkerType worker_type) noexcept {

@@ -11,7 +11,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "runtime/kphp_core.h"
+#include "runtime-core/runtime-core.h"
 
 /*
  * For detailed comments about KML, see kphp_ml.h.

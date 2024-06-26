@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "common/stats/buffer.h"
+#include "common/mixin/not_copyable.h"
 
 constexpr int am_get_memory_usage_self = 1;
 constexpr int am_get_memory_usage_overall = 2;

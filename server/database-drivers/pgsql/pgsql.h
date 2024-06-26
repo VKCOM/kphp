@@ -1,9 +1,9 @@
 #pragma once
 
 #include "common/kprintf.h"
+#include "runtime-core/runtime-core.h"
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
-#include "runtime/kphp_core.h"
 
 DECLARE_VERBOSITY(pgsql);
 

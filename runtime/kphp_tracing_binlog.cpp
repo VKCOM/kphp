@@ -6,8 +6,11 @@
 
 #include <unordered_map>
 #include <forward_list>
+#include <unistd.h>
+#include <vector>
 
 #include "runtime/critical_section.h"
+#include "runtime/allocator.h"
 #include "server/json-logger.h"
 
 

@@ -5,8 +5,8 @@
 #pragma once
 #include <functional>
 
+#include "runtime-core/runtime-core.h"
 #include "runtime/critical_section.h"
-#include "runtime/kphp_core.h"
 
 using on_kphp_warning_callback_type = std::function<void(const string &, const array<string> &)>;
 

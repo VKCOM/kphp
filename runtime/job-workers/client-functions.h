@@ -4,8 +4,8 @@
 
 #pragma once
 
+#include "runtime-core/runtime-core.h"
 #include "runtime/job-workers/job-interface.h"
-#include "runtime/kphp_core.h"
 
 void free_job_client_interface_lib() noexcept;
 

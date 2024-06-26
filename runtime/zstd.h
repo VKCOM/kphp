@@ -4,8 +4,7 @@
 
 #pragma once
 
-#include "runtime/kphp_core.h"
-#include "runtime/optional.h"
+#include "runtime-core/runtime-core.h"
 
 constexpr int DEFAULT_COMPRESS_LEVEL = 3;
 

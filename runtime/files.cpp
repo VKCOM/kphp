@@ -17,11 +17,12 @@
 #include "common/macos-ports.h"
 #include "common/wrappers/mkdir_recursive.h"
 
+#include "runtime/context/runtime-context.h"
 #include "runtime/critical_section.h"
 #include "runtime/interface.h"
 #include "runtime/kphp_tracing.h"
 #include "runtime/streams.h"
-#include "runtime/string_functions.h"//php_buf, TODO
+#include "runtime/string_functions.h" //php_buf, TODO
 
 static int32_t opened_fd{-1};
 
@@ -477,7 +478,7 @@ static Optional<string> full_realpath(const string &path) { // realpath resolvin
     const char *basename_c_str = __xpg_basename(basename_path_copy.buffer());
     dl::leave_critical_section();
 
-    return result_cache = (static_SB.clean() << file_wrapper_name << real_path << '/' << basename_c_str).str();
+    return result_cache = (kphp_runtime_context.static_SB.clean() << file_wrapper_name << real_path << '/' << basename_c_str).str();
   }
   result_cache = LETTER_a;
   return false;

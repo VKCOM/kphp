@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "runtime/kphp_core.h"
+#include "runtime-core/runtime-core.h"
 #include "runtime/string_functions.h"
 
 TEST(string_test, test_empty) {

@@ -18,10 +18,9 @@
 
 #include "common/mixin/not_copyable.h"
 
+#include "runtime-core/runtime-core.h"
 #include "runtime/instance-copy-processor.h"
-#include "runtime/kphp_core.h"
 #include "runtime/memory_usage.h"
-#include "runtime/shape.h"
 #include "server/statshouse/statshouse-manager.h"
 
 enum class InstanceCacheOpStatus;

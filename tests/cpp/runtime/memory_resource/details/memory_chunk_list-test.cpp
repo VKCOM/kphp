@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "runtime/memory_resource/details/memory_chunk_list.h"
+#include "runtime-core/memory-resource/details/memory_chunk_list.h"
 
 TEST(unsynchronized_memory_chunk_list_test, empty) {
   memory_resource::details::memory_chunk_list mem_chunk_list;

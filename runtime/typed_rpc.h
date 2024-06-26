@@ -3,12 +3,12 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
-#include "runtime/kphp_core.h"
+#include "runtime-core/runtime-core.h"
 #include "runtime/rpc_extra_info.h"
 #include "runtime/tl/rpc_function.h"
-#include "runtime/tl/rpc_tl_query.h"
 #include "runtime/tl/rpc_request.h"
 #include "runtime/tl/rpc_response.h"
+#include "runtime/tl/rpc_tl_query.h"
 
 struct C$RpcConnection;
 

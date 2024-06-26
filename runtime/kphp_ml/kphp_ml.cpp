@@ -6,8 +6,8 @@
 // This file exists both in KPHP and in a private vkcom repo "ml_experiments".
 // They are almost identical, besides include paths and input types (`array` vs `unordered_map`).
 
-#include "runtime/kphp_core.h"
 #include "runtime/kphp_ml/kphp_ml.h"
+#include "runtime-core/runtime-core.h"
 
 // for detailed comments about KML, see kphp_ml.h
 

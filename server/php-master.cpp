@@ -50,6 +50,7 @@
 #include "net/net-tcp-rpc-client.h"
 #include "net/net-tcp-rpc-server.h"
 
+#include "runtime/memory_resource_impl/memory_resource_stats.h"
 #include "runtime/confdata-global-manager.h"
 #include "runtime/instance-cache.h"
 #include "runtime/thread-pool.h"
@@ -1148,7 +1149,7 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, stats_tag_kphp_server) {
   stats->add_gauge_stat("server.total_json_logs_count", std::get<0>(total_workers_json_count) + master_json_logs_count);
   stats->add_gauge_stat("server.total_json_traces_count", std::get<1>(total_workers_json_count));
 
-  instance_cache_get_memory_stats().write_stats_to(stats, "instance_cache");
+  write_memory_stats_to(instance_cache_get_memory_stats(), stats, "instance_cache");
   stats->add_gauge_stat("instance_cache.memory.buffer_swaps_ok", instance_cache_memory_swaps_ok);
   stats->add_gauge_stat("instance_cache.memory.buffer_swaps_fail", instance_cache_memory_swaps_fail);
 

@@ -4,10 +4,10 @@
 
 #pragma once
 
+#include "runtime-core/class-instance/refcountable-php-classes.h"
+#include "runtime-core/runtime-core.h"
 #include "runtime/dummy-visitor-methods.h"
-#include "runtime/kphp_core.h"
 #include "runtime/memory_usage.h"
-#include "runtime/refcountable_php_classes.h"
 
 template<class T>
 struct C$FFI$CData: public refcountable_php_classes<C$FFI$CData<T>>, private DummyVisitorMethods {

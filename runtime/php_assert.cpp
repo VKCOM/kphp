@@ -236,4 +236,20 @@ void php_assert__(const char *msg, const char *file, int line) {
 void raise_php_assert_signal__() {
   raise(SIGPHPASSERT);
   vk::singleton<JsonLogger>::get().fsync_log_file();
+  _exit(1);
+}
+
+int64_t f$error_reporting(int64_t level) {
+  int32_t prev = php_warning_level;
+  if ((level & E_ALL) == E_ALL) {
+    php_warning_level = 3;
+  }
+  if (0 <= level && level <= 3) {
+    php_warning_level = std::max(php_warning_minimum_level, static_cast<int32_t>(level));
+  }
+  return prev;
+}
+
+int64_t f$error_reporting() {
+  return php_warning_level;
 }

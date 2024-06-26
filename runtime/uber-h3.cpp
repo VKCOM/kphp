@@ -6,6 +6,8 @@
 
 #include <h3/h3api.h>
 
+#include "runtime/allocator.h"
+
 namespace {
 
 inline std::tuple<double, double> coord2deg(GeoCoord geo_coord) noexcept {

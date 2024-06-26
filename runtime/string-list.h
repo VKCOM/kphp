@@ -4,8 +4,9 @@
 
 #pragma once
 
+#include "common/mixin/not_copyable.h"
+#include "runtime-core/runtime-core.h"
 #include "runtime/allocator.h"
-#include "runtime/kphp_core.h"
 
 class string_list : vk::not_copyable {
 public:

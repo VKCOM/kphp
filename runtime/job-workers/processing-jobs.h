@@ -7,7 +7,7 @@
 #include "common/mixin/not_copyable.h"
 #include "common/smart_ptrs/singleton.h"
 
-#include "runtime/kphp_core.h"
+#include "runtime-core/runtime-core.h"
 #include "runtime/net_events.h"
 
 #include "runtime/job-workers/job-interface.h"

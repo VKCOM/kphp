@@ -129,7 +129,7 @@ Then you think about type inferring. What type should using power operator lead 
 On type inferring step, you introduce *recalc_power()*, call it as necessary, and implement given logic.
   
 Next, you need to tie codegeneration and C++ implementation together.   
-As you resulted in having 3 different inferrings, you need at least 3 C++ functions: say, you name them *int_power()*, *float_power()*, and *mixed_power()* and implement them somewhere in runtime — in *kphp_core.h* for example; the last one not only returns *mixed* but accepts *mixed* also, even though arguments could be inferred as clean types, they would be implicitly converted to *mixed* — it's easier to create a single function without lots overloads in this case.  
+As you resulted in having 3 different inferrings, you need at least 3 C++ functions: say, you name them *int_power()*, *float_power()*, and *mixed_power()* and implement them somewhere in runtime — in *runtime-core.h* for example; the last one not only returns *mixed* but accepts *mixed* also, even though arguments could be inferred as clean types, they would be implicitly converted to *mixed* — it's easier to create a single function without lots overloads in this case.  
 On codegeneration of *op_pow*, you take the inferred result and output calling one of these functions.
 
 To support `**=`, you consider how `+=` and similar are made: "set operator" depends on "base operator".
