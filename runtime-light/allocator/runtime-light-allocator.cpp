@@ -60,7 +60,7 @@ void *RuntimeAllocator::alloc_script_memory(size_t size) noexcept {
   ComponentState &rt_ctx = *get_component_context();
 
   void *ptr = rt_ctx.runtime_allocator.memory_resource.allocate(size);
-  if (ptr != nullptr) {
+  if (ptr == nullptr) {
     request_extra_memory(size * 2);
     ptr = rt_ctx.runtime_allocator.memory_resource.allocate(size);
     php_assert(ptr != nullptr);
@@ -76,7 +76,7 @@ void *RuntimeAllocator::alloc0_script_memory(size_t size) noexcept {
 
   ComponentState &rt_ctx = *get_component_context();
   void *ptr = rt_ctx.runtime_allocator.memory_resource.allocate0(size);
-  if (ptr != nullptr) {
+  if (ptr == nullptr) {
     request_extra_memory(size * 2);
     ptr = rt_ctx.runtime_allocator.memory_resource.allocate0(size);
     php_assert(ptr != nullptr);
@@ -92,9 +92,9 @@ void *RuntimeAllocator::realloc_script_memory(void *mem, size_t new_size, size_t
 
   ComponentState &rt_ctx = *get_component_context();
   void *ptr = rt_ctx.runtime_allocator.memory_resource.reallocate(mem, new_size, old_size);
-  if (ptr != nullptr) {
+  if (ptr == nullptr) {
     request_extra_memory(new_size * 2);
-    ptr = rt_ctx.runtime_allocator.memory_resource.allocate(new_size);
+    ptr = rt_ctx.runtime_allocator.memory_resource.reallocate(mem, new_size, old_size);
     php_assert(ptr != nullptr);
   }
   return ptr;
