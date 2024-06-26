@@ -40,25 +40,30 @@ void StaticInit::compile(CodeGenerator &W) const {
     W << "extern array<tl_storer_ptr> gen$tl_storers_ht;" << NL;
     FunctionSignatureGenerator(W) << "void fill_tl_storers_ht()" << SemicolonAndNL() << NL;
   }
-  FunctionSignatureGenerator(W) << ("const char *get_php_scripts_version()") << BEGIN << "return " << RawString(G->settings().php_code_version.get()) << ";"
-                                << NL << END << NL << NL;
-
-  FunctionSignatureGenerator(W) << ("char **get_runtime_options([[maybe_unused]] int *count)") << BEGIN;
-  const auto &runtime_opts = G->get_kphp_runtime_opts();
-  if (runtime_opts.empty()) {
-    W << "return nullptr;" << NL;
-  } else {
-    W << "*count = " << runtime_opts.size() << ";" << NL;
-    for (size_t i = 0; i != runtime_opts.size(); ++i) {
-      W << "static char arg" << i << "[] = " << RawString{runtime_opts[i]} << ";" << NL;
-    }
-    W << "static char *argv[] = " << BEGIN;
-    for (size_t i = 0; i != runtime_opts.size(); ++i) {
-      W << "arg" << i << "," << NL;
-    }
-    W << END << ";" << NL << "return argv;" << NL;
+  if (!G->is_output_mode_k2_component()) {
+    FunctionSignatureGenerator(W) << ("const char *get_php_scripts_version()") << BEGIN << "return " << RawString(G->settings().php_code_version.get()) << ";"
+                                  << NL << END << NL << NL;
   }
-  W << END << NL << NL;
+
+  if (!G->is_output_mode_k2_component()) {
+    FunctionSignatureGenerator(W) << ("char **get_runtime_options([[maybe_unused]] int *count)") << BEGIN;
+
+    const auto &runtime_opts = G->get_kphp_runtime_opts();
+    if (runtime_opts.empty()) {
+      W << "return nullptr;" << NL;
+    } else {
+      W << "*count = " << runtime_opts.size() << ";" << NL;
+      for (size_t i = 0; i != runtime_opts.size(); ++i) {
+        W << "static char arg" << i << "[] = " << RawString{runtime_opts[i]} << ";" << NL;
+      }
+      W << "static char *argv[] = " << BEGIN;
+      for (size_t i = 0; i != runtime_opts.size(); ++i) {
+        W << "arg" << i << "," << NL;
+      }
+      W << END << ";" << NL << "return argv;" << NL;
+    }
+    W << END << NL << NL;
+  }
 
   FunctionSignatureGenerator(W) << ("void init_php_scripts_once_in_master() ") << BEGIN;
 
@@ -101,6 +106,20 @@ void StaticInit::compile(CodeGenerator &W) const {
 
   W << END << NL;
 }
+
+struct RunInterruptedFunction {
+  FunctionPtr function;
+  RunInterruptedFunction(FunctionPtr function) : function(function) {}
+
+  void compile(CodeGenerator &W) const {
+    std::string await_prefix = function->is_interruptible ? "co_await " : "";
+    FunctionSignatureGenerator(W) << "task_t<void> " << FunctionName(function) << "$run() " << BEGIN
+                                  << await_prefix << FunctionName(function) << "();" << NL
+                                  << "co_return;"
+                                  << END;
+    W << NL;
+  }
+};
 
 struct RunFunction {
   FunctionPtr function;
@@ -178,8 +197,11 @@ InitScriptsCpp::InitScriptsCpp(SrcFilePtr main_file_id) :
 void InitScriptsCpp::compile(CodeGenerator &W) const {
   W << OpenFile("init_php_scripts.cpp", "", false);
 
-  W << ExternInclude(G->settings().runtime_headers.get()) <<
-    ExternInclude("server/php-init-scripts.h");
+  W << ExternInclude(G->settings().runtime_headers.get());
+  if (!G->is_output_mode_k2_component()) {
+     W << ExternInclude("server/php-init-scripts.h");
+  }
+
 
   W << Include(main_file_id->main_function->header_full_name);
 
@@ -196,10 +218,18 @@ void InitScriptsCpp::compile(CodeGenerator &W) const {
     return;
   }
 
-  W << RunFunction(main_file_id->main_function) << NL;
+  if (G->is_output_mode_k2_component()) {
+    W << RunInterruptedFunction(main_file_id->main_function) << NL;
+  } else {
+    W << RunFunction(main_file_id->main_function) << NL;
+  }
   W << GlobalsResetFunction(main_file_id->main_function) << NL;
 
-  FunctionSignatureGenerator(W) << "void init_php_scripts_in_each_worker(" << PhpMutableGlobalsRefArgument() << ")" << BEGIN;
+  if (G->is_output_mode_k2_component()) {
+    FunctionSignatureGenerator(W) << "void init_php_scripts_in_each_worker(" << PhpMutableGlobalsRefArgument() << ", task_t<void>&run" ")" << BEGIN;
+  } else {
+    FunctionSignatureGenerator(W) << "void init_php_scripts_in_each_worker(" << PhpMutableGlobalsRefArgument() << ")" << BEGIN;
+  }
 
   W << "global_vars_allocate(php_globals);" << NL;
   for (LibPtr lib: G->get_libs()) {
@@ -211,9 +241,13 @@ void InitScriptsCpp::compile(CodeGenerator &W) const {
 
   W << FunctionName(main_file_id->main_function) << "$globals_reset(php_globals);" << NL;
 
-  W << "set_script ("
-    << FunctionName(main_file_id->main_function) << "$run, "
-    << FunctionName(main_file_id->main_function) << "$globals_reset);" << NL;
+  if (G->is_output_mode_k2_component()) {
+    W << "run = " << FunctionName(main_file_id->main_function) << "$run();" << NL;
+  } else {
+    W << "set_script ("
+      << FunctionName(main_file_id->main_function) << "$run, "
+      << FunctionName(main_file_id->main_function) << "$globals_reset);" << NL;
+  }
 
   W << END;
 
@@ -236,6 +270,22 @@ void CppMainFile::compile(CodeGenerator &W) const {
 
   W << "int main(int argc, char *argv[]) " << BEGIN
     << "return run_main(argc, argv, php_mode::" << G->settings().mode.get() << ")" << SemicolonAndNL{}
+    << END;
+  W << CloseFile();
+}
+
+void ComponentInfoFile::compile(CodeGenerator &W) const {
+  kphp_assert(G->is_output_mode_k2_component());
+  G->settings().get_version();
+  auto now = std::chrono::system_clock::now();
+  W << OpenFile("image_info.cpp");
+  W << ExternInclude(G->settings().runtime_headers.get());
+  W << "const ImageInfo *vk_k2_describe() " << BEGIN
+    << "static ImageInfo imageInfo {\"" << G->settings().k2_component_name.get() << "\"" << ","
+                                        << std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count() << ","
+                                        << "K2_PLATFORM_HEADER_H_VERSION, "
+                                        << "{" << "}};" << NL //todo:k2 add commit hash
+    << "return &imageInfo;" << NL
     << END;
   W << CloseFile();
 }

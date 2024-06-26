@@ -117,7 +117,10 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
 
   // TODO: should be done in lib mode also, but in some other way
   if (!G->is_output_mode_lib()) {
-    code_gen_start_root_task(os, std::make_unique<TypeTagger>(vk::singleton<ForkableTypeStorage>::get().flush_forkable_types(), vk::singleton<ForkableTypeStorage>::get().flush_waitable_types()));
+    if (!G->is_output_mode_k2_component()) {
+      code_gen_start_root_task(os, std::make_unique<TypeTagger>(vk::singleton<ForkableTypeStorage>::get().flush_forkable_types(),
+                                                                vk::singleton<ForkableTypeStorage>::get().flush_waitable_types()));
+    }
     code_gen_start_root_task(os, std::make_unique<ShapeKeys>(TypeHintShape::get_all_registered_keys()));
     code_gen_start_root_task(os, std::make_unique<JsonEncoderTags>(std::move(all_json_encoders)));
     code_gen_start_root_task(os, std::make_unique<CmakeListsTxt>());
@@ -129,8 +132,11 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
 
   code_gen_start_root_task(os, std::make_unique<TlSchemaToCpp>());
   code_gen_start_root_task(os, std::make_unique<LibVersionHFile>());
-  if (!G->is_output_mode_lib()) {
+  if (!G->is_output_mode_lib() && !G->is_output_mode_k2_component()) {
     code_gen_start_root_task(os, std::make_unique<CppMainFile>());
+  }
+  if (G->is_output_mode_k2_component()) {
+    code_gen_start_root_task(os, std::make_unique<ComponentInfoFile>());
   }
 }
 

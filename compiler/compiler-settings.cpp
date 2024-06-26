@@ -216,6 +216,13 @@ void CompilerSettings::init() {
   option_as_dir(kphp_src_path);
   functions_file.value_ = get_full_path(functions_file.get());
   runtime_sha256_file.value_ = get_full_path(runtime_sha256_file.get());
+  if (link_file.value_.empty()) {
+    if (mode.get() == "k2-component") {
+      link_file.value_ = kphp_src_path.get() + "/objs/libkphp-light-runtime.a";
+    } else {
+      link_file.value_ = kphp_src_path.get() + "/objs/libkphp-full-runtime.a";
+    }
+  }
   link_file.value_ = get_full_path(link_file.get());
 
   if (mode.get() == "lib") {
@@ -283,7 +290,7 @@ void CompilerSettings::init() {
   if (!no_pch.get()) {
     ss << " -Winvalid-pch -fpch-preprocess";
   }
-  if (dynamic_incremental_linkage.get()) {
+  if (mode.get() == "k2-component" ||  dynamic_incremental_linkage.get()) {
     ss << " -fPIC";
   }
   if (vk::contains(cxx.get(), "clang")) {
@@ -386,7 +393,11 @@ void CompilerSettings::init() {
   option_as_dir(dest_dir);
   dest_cpp_dir.value_ = dest_dir.get() + "kphp/";
   dest_objs_dir.value_ = dest_dir.get() + "objs/";
-  binary_path.value_ = dest_dir.get() + mode.get();
+  if (mode.get() == "k2-component") {
+    binary_path.value_ = dest_dir.get() + k2_component_name.get() + ".so";
+  } else {
+    binary_path.value_ = dest_dir.get() + mode.get();
+  }
   performance_analyze_report_path.value_ = dest_dir.get() + "performance_issues.json";
   generated_runtime_path.value_ = kphp_src_path.get() + "objs/generated/auto/runtime/";
 
