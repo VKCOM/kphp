@@ -169,7 +169,7 @@ static void php_warning_impl(bool out_of_memory, int error_type, char const *mes
   }
 
   if (die_on_fail) {
-    raise_php_assert_signal__();
+    critical_error_handler();
     fprintf(stderr, "_exiting in php_warning, since such option is enabled\n");
     _exit(1);
   }
@@ -228,12 +228,12 @@ const char *php_uncaught_exception_error(const class_instance<C$Throwable> &ex) 
 
 void php_assert__(const char *msg, const char *file, int line) {
   php_error("Assertion \"%s\" failed in file %s on line %d", msg, file, line);
-  raise_php_assert_signal__();
+  critical_error_handler();
   fprintf(stderr, "_exiting in php_assert\n");
   _exit(1);
 }
 
-void raise_php_assert_signal__() {
+void critical_error_handler() {
   raise(SIGPHPASSERT);
   vk::singleton<JsonLogger>::get().fsync_log_file();
   _exit(1);

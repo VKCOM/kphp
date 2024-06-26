@@ -1,0 +1,142 @@
+<?php
+
+define('PHP_INT_MIN', -9223372036854775808);
+define('PHP_INT_SIZE', 8);
+define('PHP_EOL', "\n");
+
+/** @var mixed $_SERVER */
+global $_SERVER;
+/** @var mixed $_GET */
+global $_GET;
+/** @var mixed $_POST */
+global $_POST;
+/** @var mixed $_FILES */
+global $_FILES;
+/** @var mixed $_COOKIE */
+global $_COOKIE;
+/** @var mixed $_REQUEST */
+global $_REQUEST;
+/** @var mixed $_ENV */
+global $_ENV;
+/** @var mixed $argc */
+global $argc;
+/** @var mixed $argv */
+global $argv;
+
+function boolval ($v ::: any) ::: bool;
+function intval ($v ::: mixed) ::: int;
+function floatval ($v ::: mixed) ::: float;
+function strval ($v ::: mixed) ::: string;
+
+/** @kphp-extern-func-info interruptible */
+function exit($code = 0) ::: void;
+
+function die($code = 0) ::: void;
+
+function ob_clean() ::: void;
+function ob_end_clean() ::: bool;
+function ob_get_clean() ::: string | false;
+function ob_get_contents() ::: string;
+function ob_start ($x ::: string = "") ::: void;
+function ob_flush () ::: void;
+function ob_end_flush () ::: bool;
+function ob_get_flush () ::: string | false;
+function ob_get_length () ::: int | false;
+function ob_get_level () ::: int;
+
+function print_r ($v ::: any, $buffered ::: bool = false) ::: string;
+function var_export ($v ::: any, $buffered ::: bool = false) ::: string;
+function print ($v ::: string) ::: int;
+function echo ($v ::: string) ::: void;
+function dbg_echo ($v ::: string) ::: void;
+function var_dump ($v ::: any) ::: void;
+
+function empty ($val ::: any) ::: bool;
+function count ($val ::: any) ::: int;
+function sizeof ($val ::: any) ::: int;
+function gettype ($v ::: any) ::: string;
+function is_scalar ($v ::: any) ::: bool;
+function is_numeric ($v ::: mixed) ::: bool;
+function is_null ($v ::: any) ::: bool;
+function is_bool ($v ::: mixed) ::: bool;
+function is_int ($v ::: mixed) ::: bool;
+function is_integer ($v ::: mixed) ::: bool;
+function is_long ($v ::: mixed) ::: bool;
+function is_finite ($v ::: float) ::: bool;
+function is_infinite ($v ::: float) ::: bool;
+function is_nan ($v ::: float) ::: bool;
+function is_float ($v ::: mixed) ::: bool;
+function is_double ($v ::: mixed) ::: bool;
+function is_real ($v ::: mixed) ::: bool;
+function is_string ($v ::: mixed) ::: bool;
+function is_array ($v ::: any) ::: bool;
+function is_object ($v ::: any) ::: bool;
+function get_class ($v ::: any) ::: string;
+function get_hash_of_class (object $klass) ::: int;
+
+function strlen ($str ::: string) ::: int;
+
+class ComponentQuery {
+    private function __construct() ::: \ComponentQuery;
+}
+
+/** @kphp-extern-func-info interruptible */
+function component_get_http_query() ::: void;
+
+/** @kphp-extern-func-info interruptible */
+function component_client_send_query($name ::: string, $message ::: string) ::: ComponentQuery;
+/** @kphp-extern-func-info interruptible */
+function component_client_get_result($query ::: ComponentQuery) ::: string;
+
+/** @kphp-extern-func-info interruptible */
+function component_server_get_query() ::: string;
+/** @kphp-extern-func-info interruptible */
+function component_server_send_result($message ::: string) ::: void;
+
+class ComponentStream {
+    private function __construct() ::: \ComponentStream;
+
+    public function is_read_closed() ::: bool;
+    public function is_write_closed() ::: bool;
+    public function is_please_shutdown_write() ::: bool;
+
+    public function shutdown_write() ::: void;
+    public function please_shutdown_write() ::: void;
+}
+
+function component_open_stream($name ::: string) ::: ComponentStream;
+/** @kphp-extern-func-info interruptible */
+function component_accept_stream() ::: ComponentStream;
+
+function component_stream_write_nonblock($stream ::: ComponentStream, $message ::: string) ::: int;
+function component_stream_read_nonblock($stream ::: ComponentStream) ::: string;
+/** @kphp-extern-func-info interruptible */
+function component_stream_write_exact($stream ::: ComponentStream, $message ::: string) ::: int;
+/** @kphp-extern-func-info interruptible */
+function component_stream_read_exact($stream ::: ComponentStream, $len ::: int) ::: string;
+
+function component_close_stream($stream ::: ComponentStream) ::: void;
+function component_finish_stream_processing($stream ::: ComponentStream) ::: void;
+
+/** @kphp-extern-func-info cpp_template_call */
+function instance_cast(object $instance, $to_type ::: string) ::: instance<^2>;
+
+function make_clone ($x ::: any) ::: ^1;
+
+/** @kphp-extern-func-info interruptible */
+function testyield() ::: void;
+function check_shutdown() ::: void;
+
+function warning($message ::: string) ::: void;
+/** @kphp-no-return */
+function critical_error($message ::: string) ::: void;
+
+function json_encode ($v ::: mixed, $options ::: int = 0) ::: string | false;
+function json_decode ($v ::: string, $assoc ::: bool = false) ::: mixed;
+
+function debug_print_string($str ::: string) ::: void;
+
+function byte_to_int($str ::: string) ::: ?int;
+function int_to_byte($v ::: int) ::: ?string;
+
+function set_timer(int $timeout, callable():void $callback) ::: void;

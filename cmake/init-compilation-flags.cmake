@@ -1,19 +1,36 @@
 include_guard(GLOBAL)
 
+# Light runtime require c++20
 if(CMAKE_CXX_COMPILER_ID MATCHES Clang)
-    check_compiler_version(clang 10.0.0)
+    if (COMPILE_RUNTIME_LIGHT)
+        check_compiler_version(clang 14.0.0)
+    else()
+        check_compiler_version(clang 10.0.0)
+    endif()
     set(COMPILER_CLANG True)
 elseif(CMAKE_CXX_COMPILER_ID MATCHES GNU)
-    check_compiler_version(gcc 8.3.0)
+    if (COMPILE_RUNTIME_LIGHT)
+        check_compiler_version(gcc 10.1.0)
+    else()
+        check_compiler_version(gcc 8.3.0)
+    endif()
     set(COMPILER_GCC True)
 endif()
 
-set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
-set(CMAKE_CXX_EXTENSIONS OFF)
-if (CMAKE_CXX_STANDARD LESS 17)
-    message(FATAL_ERROR "c++17 expected at least!")
+if(COMPILE_RUNTIME_LIGHT)
+    set(REQUIRED_CMAKE_CXX_STANDARD 20)
+else()
+    set(REQUIRED_CMAKE_CXX_STANDARD 17)
 endif()
+
+set(CMAKE_CXX_STANDARD ${REQUIRED_CMAKE_CXX_STANDARD} CACHE STRING "C++ standard to conform to")
+set(CMAKE_CXX_EXTENSIONS OFF)
+if (CMAKE_CXX_STANDARD LESS ${REQUIRED_CMAKE_CXX_STANDARD})
+    message(FATAL_ERROR "c++${REQUIRED_CMAKE_CXX_STANDARD} expected at least!")
+endif()
+
 cmake_print_variables(CMAKE_CXX_STANDARD)
+
 
 if(APPLE)
     add_definitions(-D_XOPEN_SOURCE)
@@ -101,3 +118,22 @@ add_link_options(-rdynamic -L/usr/local/lib -ggdb)
 add_definitions(-D_GNU_SOURCE)
 # prevents the `build` directory to be appeared in symbols, it's necessary for remote debugging with path mappings
 add_compile_options(-fdebug-prefix-map="${CMAKE_BINARY_DIR}=${CMAKE_SOURCE_DIR}")
+
+# Light runtime uses C++20 coroutines heavily, so they are required
+if(COMPILE_RUNTIME_LIGHT)
+    get_directory_property(TRY_COMPILE_COMPILE_OPTIONS COMPILE_OPTIONS)
+    string (REPLACE ";" " " TRY_COMPILE_COMPILE_OPTIONS "${TRY_COMPILE_COMPILE_OPTIONS}")
+    file(WRITE "${PROJECT_BINARY_DIR}/check_coroutine_include.cpp"
+            "#include<coroutine>\n"
+            "int main() {}\n")
+    try_compile(
+            HAS_COROUTINE
+            "${PROJECT_BINARY_DIR}/tmp"
+            "${PROJECT_BINARY_DIR}/check_coroutine_include.cpp"
+            COMPILE_DEFINITIONS "${TRY_COMPILE_COMPILE_OPTIONS}"
+    )
+    if(NOT HAS_COROUTINE)
+        message(FATAL_ERROR "Compiler or libstdc++ does not support coroutines")
+    endif()
+    file(REMOVE "${PROJECT_BINARY_DIR}/check_coroutine_include.cpp")
+endif()
