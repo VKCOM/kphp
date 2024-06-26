@@ -28,6 +28,9 @@ class TestFile:
     def is_ok(self):
         return "ok" in self.tags
 
+    def is_binary(self):
+        return "binary" in self.tags
+
     def is_idempotent(self):
         return "non-idempotent" not in self.tags
 
@@ -261,6 +264,7 @@ def run_warn_test(test: TestFile, runner):
     runner.kphp_build_stderr_artifact.error_priority = -1
     return TestResult.passed(test, runner.artifacts)
 
+
 def run_runtime_not_warn_test(test: TestFile, runner):
     if not runner.compile_with_kphp(test.env_vars):
         return TestResult.failed(test, runner.artifacts, "got kphp build error")
@@ -275,6 +279,7 @@ def run_runtime_not_warn_test(test: TestFile, runner):
         return TestResult.failed(test, runner.artifacts, "got sanitizer log")
 
     return TestResult.passed(test, runner.artifacts)
+
 
 def run_runtime_warn_test(test: TestFile, runner):
     if not runner.compile_with_kphp(test.env_vars):
@@ -301,7 +306,7 @@ def run_runtime_warn_test(test: TestFile, runner):
     return TestResult.passed(test, runner.artifacts)
 
 
-def run_ok_test(test: TestFile, runner):
+def run_ok_test(test: TestFile, runner, binary):
     # Run kphp test twice to check correctness in web-server alike environment with per request runtime reinitialization
     runs_cnt = 2 if test.is_idempotent() else 1
     if not runner.run_with_php(runs_cnt=runs_cnt):
@@ -310,7 +315,7 @@ def run_ok_test(test: TestFile, runner):
         return TestResult.failed(test, runner.artifacts, "got kphp build error")
     if not runner.run_with_kphp(runs_cnt=runs_cnt):
         return TestResult.failed(test, runner.artifacts, "got kphp runtime error")
-    if not runner.compare_php_and_kphp_stdout():
+    if not runner.compare_php_and_kphp_stdout(binary=binary):
         return TestResult.failed(test, runner.artifacts, "got php and kphp diff")
 
     return TestResult.passed(test, runner.artifacts)
@@ -323,7 +328,7 @@ def run_test(use_nocc, cxx_name, test: TestFile):
     runner = test.make_kphp_once_runner(use_nocc, cxx_name)
     runner.remove_artifacts_dir()
 
-    if test.is_php8() and runner._php_bin is None:      # if php8 doesn't exist on a machine
+    if test.is_php8() and runner._php_bin is None:  # if php8 doesn't exist on a machine
         test_result = TestResult.skipped(test)
     elif test.is_kphp_should_fail():
         test_result = run_fail_test(test, runner)
@@ -334,7 +339,7 @@ def run_test(use_nocc, cxx_name, test: TestFile):
     elif test.is_kphp_runtime_should_not_warn():
         test_result = run_runtime_not_warn_test(test, runner)
     elif test.is_ok():
-        test_result = run_ok_test(test, runner)
+        test_result = run_ok_test(test, runner, binary=test.is_binary())
     else:
         test_result = TestResult.skipped(test)
 
