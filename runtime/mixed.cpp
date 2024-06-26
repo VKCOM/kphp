@@ -12,6 +12,14 @@ void mixed::destroy() noexcept {
     case type::ARRAY:
       as_array().~array<mixed>();
       break;
+    case type::OBJECT: {
+      auto *ptr = reinterpret_cast<may_be_mixed_base*>(storage_);
+      if (ptr) {
+        ptr->release();
+      }
+      storage_ = 0;
+      break;
+    }
     default: {
     }
   }

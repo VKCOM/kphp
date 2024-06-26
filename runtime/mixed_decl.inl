@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "runtime/refcountable_php_classes.h"
+
 #ifndef INCLUDED_FROM_KPHP_CORE
   #error "this file must be included only from kphp_core.h"
 #endif
@@ -16,6 +18,10 @@ template<typename T>
 struct is_type_acceptable_for_mixed<array<T>> : is_constructible_or_unknown<mixed, T> {
 };
 
+template<typename T>
+struct is_type_acceptable_for_mixed<class_instance<T>> : std::is_base_of<may_be_mixed_base, T> {
+};
+
 class mixed {
 public:
   enum class type {
@@ -25,6 +31,7 @@ public:
     FLOAT,
     STRING,
     ARRAY,
+    OBJECT,
   };
 
   mixed(const void *) = delete; // deprecate conversion from pointer to boolean
@@ -154,6 +161,38 @@ public:
   inline array<mixed> &as_array() __attribute__((always_inline));
   inline const array<mixed> &as_array() const __attribute__((always_inline));
 
+  inline may_be_mixed_base *as_object() __attribute__((always_inline));
+  inline const may_be_mixed_base *as_object() const __attribute__((always_inline));
+
+  template <typename T>
+  struct inner_type_of_class_instance {
+    static constexpr bool has = false;
+  };
+  template <typename T>
+  struct inner_type_of_class_instance<class_instance<T>> {
+    static constexpr bool has = true;
+    using value_type = T;
+  };
+
+  // TODO is it ok to return pointer to mutable from const method?
+  // I need it just to pass such a pointer into class_instance. Mutability is needed because
+  // class_instance do ref-counting
+  template <typename InstanceClass, typename T = typename inner_type_of_class_instance<InstanceClass>::value_type>
+  inline T *as_object_ptr() const  {
+    auto *ptr_to_object = dynamic_cast<T*>(reinterpret_cast<may_be_mixed_base*>(storage_));
+    return ptr_to_object;
+  }
+
+  template <typename ObjType>
+  inline bool is_a() const {
+    if (type_ != type::OBJECT) {
+      return false;
+    }
+
+    auto *ptr = reinterpret_cast<may_be_mixed_base*>(storage_);
+    return dynamic_cast<ObjType*>(ptr) != nullptr;
+  }
+
   inline int64_t safe_to_int() const;
 
   inline void convert_to_numeric();
@@ -184,9 +223,11 @@ public:
   inline bool is_float() const;
   inline bool is_string() const;
   inline bool is_array() const;
+  inline bool is_object() const;
 
   inline const string get_type_str() const;
   inline const char *get_type_c_str() const;
+  inline const char *get_type_or_class_name() const;
 
   inline bool empty() const;
   inline int64_t count() const;
@@ -230,6 +271,8 @@ private:
   auto get_type_and_value_ptr(const int       &) { return std::make_pair(type::INTEGER, &as_int()); }
   auto get_type_and_value_ptr(const double    &) { return std::make_pair(type::FLOAT  , &as_double()); }
   auto get_type_and_value_ptr(const string    &) { return std::make_pair(type::STRING , &as_string()); }
+  template<typename InstanceClass>
+  auto get_type_and_value_ptr(const InstanceClass   &) {return std::make_pair(type::OBJECT, as_object_ptr<InstanceClass>()); }
 
   template<typename T>
   static T &empty_value() noexcept;
@@ -238,3 +281,14 @@ private:
   uint64_t storage_{0};
 };
 
+template<class InputClass>
+inline mixed f$to_mixed(const class_instance<InputClass> &instance) noexcept {
+  mixed m;
+  m = instance;
+  return m;
+}
+
+template<class ResultClass>
+inline ResultClass f$from_mixed(const mixed& m, const string&) noexcept {
+  return ResultClass(m.as_object_ptr<ResultClass>());
+}

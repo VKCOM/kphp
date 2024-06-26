@@ -33,6 +33,7 @@ public:
   class_instance() = default;
   class_instance(const class_instance &) = default;
   class_instance(class_instance &&) noexcept = default;
+  class_instance(T *ptr) noexcept : o(ptr, true) {}
 
   class_instance(const Optional<bool> &null) noexcept {
     php_assert(null.value_state() == OptionalState::null_value);

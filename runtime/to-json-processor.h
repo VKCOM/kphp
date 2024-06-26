@@ -99,6 +99,9 @@ private:
       case mixed::type::ARRAY:
         process_impl(value.as_array());
         break;
+      case mixed::type::OBJECT:
+        php_warning("Objects (%s) in mixed cannot be written in JSON", value.get_type_or_class_name());
+        break;
     }
   }
 

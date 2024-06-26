@@ -288,6 +288,17 @@ void check_instance_deserialize_call(VertexAdaptor<op_func_call> call) {
   kphp_error(type->class_type()->is_serializable, fmt_format("Called instance_deserialize() for class {}, but it's not marked with @kphp-serializable", type->class_type()->name));
 }
 
+void to_mixed_on_class(ClassPtr klass) {
+  klass->deeply_require_may_be_mixed_base();
+}
+
+void check_to_mixed_call(VertexAdaptor<op_func_call> call) {
+  const auto *type = tinf::get_type(call->args().front());
+  kphp_assert(type->ptype() == tp_Class);
+
+  to_mixed_on_class(type->class_type());
+}
+
 void check_estimate_memory_usage_call(VertexAdaptor<op_func_call> call) {
   const auto *type = tinf::get_type(call->args()[0]);
   std::unordered_set<ClassPtr> classes_inside;
@@ -780,7 +791,7 @@ void FinalCheckPass::check_instanceof(VertexAdaptor<op_instanceof> instanceof_ve
     return;
   }
 
-  kphp_error(instanceof_var_type->class_type(), fmt_format("left operand of 'instanceof' should be an instance, but passed {}", instanceof_var_type->as_human_readable()));
+  kphp_error(instanceof_var_type->class_type() || instanceof_var_type->ptype() == tp_mixed, fmt_format("left operand of 'instanceof' should be an instance or mixed, but passed {}", instanceof_var_type->as_human_readable()));
 }
 
 static void check_indexing_violation(vk::string_view allowed_types_string, const std::vector<PrimitiveType> &allowed_types, vk::string_view what_indexing,
@@ -855,6 +866,8 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
       kphp_error(arg_type->can_store_null(), fmt_format("is_null() will be always false for {}", arg_type->as_human_readable()));
     } else if (function_name == "register_shutdown_function") {
       check_register_shutdown_functions(call);
+    } else if (function_name == "to_mixed") {
+      check_to_mixed_call(call);
     } else if (vk::string_view{function_name}.starts_with("rpc_tl_query")) {
       G->set_untyped_rpc_tl_used();
     } else if (vk::string_view{function_name}.starts_with("FFI$$")) {

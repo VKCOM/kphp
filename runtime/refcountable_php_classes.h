@@ -142,3 +142,8 @@ public:
   static void add_ref() noexcept {}
   static void release() noexcept {}
 };
+
+struct may_be_mixed_base : public virtual abstract_refcountable_php_interface {
+  virtual ~may_be_mixed_base() = default;
+  virtual const char *get_class() const noexcept = 0;
+};

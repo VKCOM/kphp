@@ -46,6 +46,10 @@ inline bool eq2(const string &lhs, const string &rhs) {
 }
 
 inline bool eq2(const mixed &lhs, const mixed &rhs) {
+  if (lhs.is_object() || rhs.is_object()) {
+    php_warning("operators ==, != are not supported for %s and %s", lhs.get_type_or_class_name(), rhs.get_type_or_class_name());
+    return false;
+  }
   return lhs.compare(rhs) == 0;
 }
 
@@ -254,6 +258,9 @@ inline bool eq2(double lhs, const mixed &rhs) {
     case mixed::type::ARRAY:
       php_warning("Unsupported operand types for operator == (float and array)");
       return false;
+    case mixed::type::OBJECT:
+      php_warning("Unsupported operand types for operator == (float and %s)", rhs.as_object()->get_class());
+      return false;
     default:
       __builtin_unreachable();
   }
@@ -276,6 +283,9 @@ inline bool eq2(int64_t lhs, const mixed &rhs) {
       return eq2(lhs, rhs.as_string());
     case mixed::type::ARRAY:
       php_warning("Unsupported operand types for operator == (int and array)");
+      return false;
+    case mixed::type::OBJECT:
+      php_warning("Unsupported operand types for operator == (int and %s)", rhs.as_object()->get_class());
       return false;
     default:
       __builtin_unreachable();
@@ -409,6 +419,10 @@ inline bool equals(const array<T1> &lhs, const array<T2> &rhs) {
   return true;
 }
 
+inline bool equals(const may_be_mixed_base *lhs, const may_be_mixed_base* rhs) {
+  return lhs == rhs;
+}
+
 inline bool equals(bool lhs, const mixed &rhs) {
   return rhs.is_bool() && equals(lhs, rhs.as_bool());
 }
@@ -464,6 +478,8 @@ inline bool equals(const mixed &lhs, const mixed &rhs) {
       return equals(lhs.as_string(), rhs.as_string());
     case mixed::type::ARRAY:
       return equals(lhs.as_array(), rhs.as_array());
+    case mixed::type::OBJECT:
+      return equals(lhs.as_object(), rhs.as_object());
     default:
       __builtin_unreachable();
   }

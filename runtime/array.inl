@@ -1098,6 +1098,9 @@ T &array<T>::operator[](const mixed &v) {
     case mixed::type::ARRAY:
       php_warning("Illegal offset type array");
       return (*this)[v.as_array().to_int()];
+    case mixed::type::OBJECT:
+      php_warning("Illegal offset type %s", v.get_type_or_class_name());
+      return (*this)[string()];
     default:
       __builtin_unreachable();
   }
@@ -1238,6 +1241,9 @@ void array<T>::emplace_value(const mixed &var_key, Args &&... args) noexcept {
     case mixed::type::ARRAY:
       php_warning("Illegal offset type array");
       return emplace_value(var_key.as_array().to_int(), std::forward<Args>(args)...);
+    case mixed::type::OBJECT:
+      php_warning("Illegal offset type %s", var_key.get_type_or_class_name());
+      return emplace_value(string(), std::forward<Args>(args)...);
     default:
       __builtin_unreachable();
   }
@@ -1336,6 +1342,9 @@ const T *array<T>::find_value(const mixed &v) const noexcept {
     case mixed::type::ARRAY:
       php_warning("Illegal offset type array");
       return find_value(v.as_array().to_int());
+    case mixed::type::OBJECT:
+      php_warning("Illegal offset type %s", v.get_type_or_class_name());
+      return find_value(string());
     default:
       __builtin_unreachable();
   }
@@ -1413,6 +1422,9 @@ typename array<T>::iterator array<T>::find_no_mutate(const mixed &v) noexcept {
     case mixed::type::ARRAY:
       php_warning("Illegal offset type array");
       return find_no_mutate(v.as_array().to_int());
+    case mixed::type::OBJECT:
+      php_warning("Illegal offset type %s", v.get_type_or_class_name());
+      return find_no_mutate(string());
     default:
       __builtin_unreachable();
   }
@@ -1515,6 +1527,9 @@ T array<T>::unset(const mixed &v) {
     case mixed::type::ARRAY:
       php_warning("Illegal offset type array");
       return unset(v.as_array().to_int());
+    case mixed::type::OBJECT:
+      php_warning("Illegal offset type %s", v.get_type_or_class_name());
+      return unset(string());
     default:
       __builtin_unreachable();
   }

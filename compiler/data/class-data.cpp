@@ -376,31 +376,33 @@ void ClassData::mark_as_used() {
 }
 
 template<std::atomic<bool> ClassData::*field_ptr>
-void ClassData::set_atomic_field_deeply() {
+void ClassData::set_atomic_field_deeply(bool on_fields) {
   if (this->*field_ptr) {
     return;
   }
 
   this->*field_ptr = true;
-  members.for_each([](ClassMemberInstanceField &field) {
-    std::unordered_set<ClassPtr> sub_classes;
-    field.var->tinf_node.get_type()->get_all_class_types_inside(sub_classes);
-    for (auto klass : sub_classes) {
-      klass->set_atomic_field_deeply<field_ptr>();
-    }
-  });
+  if (on_fields) {
+    members.for_each([](ClassMemberInstanceField &field) {
+      std::unordered_set<ClassPtr> sub_classes;
+      field.var->tinf_node.get_type()->get_all_class_types_inside(sub_classes);
+      for (auto klass : sub_classes) {
+        klass->set_atomic_field_deeply<field_ptr>();
+      }
+    });
+  }
 
   for (auto child : derived_classes) {
-    child->set_atomic_field_deeply<field_ptr>();
+    child->set_atomic_field_deeply<field_ptr>(on_fields);
   }
 
   // todo why we are setting it to parents, not only to child classes?
   for (auto parent_interface : implements) {
-    parent_interface->set_atomic_field_deeply<field_ptr>();
+    parent_interface->set_atomic_field_deeply<field_ptr>(on_fields);
   }
 
   if (parent_class) {
-    parent_class->set_atomic_field_deeply<field_ptr>();
+    parent_class->set_atomic_field_deeply<field_ptr>(on_fields);
   }
 }
 
@@ -418,6 +420,10 @@ void ClassData::deeply_require_instance_memory_estimate_visitor() {
 
 void ClassData::deeply_require_virtual_builtin_functions() {
   set_atomic_field_deeply<&ClassData::need_virtual_builtin_functions>();
+}
+
+void ClassData::deeply_require_may_be_mixed_base() {
+  set_atomic_field_deeply<&ClassData::may_be_mixed>(false);
 }
 
 void ClassData::add_str_dependent(FunctionPtr cur_function, ClassType type, vk::string_view class_name) {
