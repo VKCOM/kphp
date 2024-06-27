@@ -81,5 +81,5 @@ const string &CurrentTlQuery::get_current_tl_function_name() const noexcept {
 }
 
 CurrentTlQuery &CurrentTlQuery::get() noexcept {
-  return RpcComponentContext::current().current_query;
+  return RpcComponentContext::get().current_query;
 }

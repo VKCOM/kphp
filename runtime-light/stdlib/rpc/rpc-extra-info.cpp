@@ -19,7 +19,7 @@ array<rpc_request_extra_info_t> f$KphpRpcRequestsExtraInfo$$get(class_instance<C
 }
 
 Optional<rpc_response_extra_info_t> f$extract_kphp_rpc_response_extra_info(int64_t query_id) noexcept {
-  auto &extra_info_map{RpcComponentContext::current().rpc_responses_extra_info};
+  auto &extra_info_map{RpcComponentContext::get().rpc_responses_extra_info};
   if (const auto it{extra_info_map.find(query_id)}; it != extra_info_map.end() && it->second.first == rpc_response_extra_info_status_t::READY) {
     const auto extra_info{it->second.second};
     extra_info_map.erase(it);

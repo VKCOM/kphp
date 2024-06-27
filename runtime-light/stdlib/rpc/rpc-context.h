@@ -55,13 +55,13 @@ struct RpcComponentContext final : private vk::not_copyable {
 
   explicit RpcComponentContext(memory_resource::unsynchronized_pool_resource &memory_resource);
 
-  static RpcComponentContext &current() noexcept;
+  static RpcComponentContext &get() noexcept;
 };
 
 struct RpcImageState final : private vk::not_copyable {
   array<tl_storer_ptr> tl_storers_ht;
   tl_fetch_wrapper_ptr tl_fetch_wrapper{nullptr};
 
-  static const RpcImageState &current() noexcept;
-  static RpcImageState &current_mutable() noexcept;
+  static const RpcImageState &get() noexcept;
+  static RpcImageState &get_mutable() noexcept;
 };

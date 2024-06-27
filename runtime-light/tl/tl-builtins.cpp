@@ -5,17 +5,17 @@
 #include "runtime-light/tl/tl-builtins.h"
 
 void register_tl_storers_table_and_fetcher(const array<tl_storer_ptr> &gen$ht, tl_fetch_wrapper_ptr gen$t_ReqResult_fetch) {
-  auto &rpc_mutable_image_state{RpcImageState::current_mutable()};
+  auto &rpc_mutable_image_state{RpcImageState::get_mutable()};
   rpc_mutable_image_state.tl_storers_ht = gen$ht;
   rpc_mutable_image_state.tl_fetch_wrapper = gen$t_ReqResult_fetch;
 }
 
 int32_t tl_parse_save_pos() {
-  return static_cast<int32_t>(RpcComponentContext::current().fetch_state.pos());
+  return static_cast<int32_t>(RpcComponentContext::get().fetch_state.pos());
 }
 
 bool tl_parse_restore_pos(int32_t pos) {
-  auto &rpc_ctx{RpcComponentContext::current()};
+  auto &rpc_ctx{RpcComponentContext::get()};
   if (pos < 0 || pos > rpc_ctx.fetch_state.pos()) {
     return false;
   }

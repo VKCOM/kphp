@@ -13,14 +13,14 @@ RpcComponentContext::RpcComponentContext(memory_resource::unsynchronized_pool_re
   , pending_rpc_queries(unordered_map<int64_t, class_instance<RpcTlQuery>>::allocator_type{memory_resource})
   , rpc_responses_extra_info(unordered_map<int64_t, std::pair<rpc_response_extra_info_status_t, rpc_response_extra_info_t>>::allocator_type{memory_resource}) {}
 
-RpcComponentContext &RpcComponentContext::current() noexcept {
+RpcComponentContext &RpcComponentContext::get() noexcept {
   return get_component_context()->rpc_component_context;
 }
 
-const RpcImageState &RpcImageState::current() noexcept {
+const RpcImageState &RpcImageState::get() noexcept {
   return get_image_state()->rpc_image_state;
 }
 
-RpcImageState &RpcImageState::current_mutable() noexcept {
+RpcImageState &RpcImageState::get_mutable() noexcept {
   return get_mutable_image_state()->rpc_image_state;
 }

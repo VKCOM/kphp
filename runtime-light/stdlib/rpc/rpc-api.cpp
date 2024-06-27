@@ -48,7 +48,7 @@ mixed mixed_array_get_value(const mixed &arr, const string &str_key, int64_t num
 }
 
 bool rpc_fetch_remaining_enough(size_t len) noexcept {
-  return RpcComponentContext::current().fetch_state.remaining() >= len;
+  return RpcComponentContext::get().fetch_state.remaining() >= len;
 }
 
 array<mixed> make_fetch_error(string &&error_msg, int32_t error_code) {
@@ -64,7 +64,7 @@ std::optional<T> fetch_trivial() noexcept {
     return {}; // TODO: error handling
   }
 
-  auto &rpc_ctx{RpcComponentContext::current()};
+  auto &rpc_ctx{RpcComponentContext::get()};
   const auto v{*reinterpret_cast<const T *>(rpc_ctx.buffer.c_str() + rpc_ctx.fetch_state.pos())};
   rpc_ctx.fetch_state.adjust(sizeof(T));
   return v;
@@ -76,7 +76,7 @@ array<mixed> fetch_function_untyped(const class_instance<RpcTlQuery> &rpc_query)
   auto fetcher{rpc_query.get()->result_fetcher->extract_untyped_fetcher()};
   php_assert(fetcher);
 
-  const auto res{RpcImageState::current().tl_fetch_wrapper(std::move(fetcher))};
+  const auto res{RpcImageState::get().tl_fetch_wrapper(std::move(fetcher))};
   // TODO: exception handling
   // TODO: EOF handling
   return res;
@@ -97,7 +97,7 @@ class_instance<C$VK$TL$RpcResponse> fetch_function_typed(const class_instance<Rp
 
 template<standard_layout T>
 bool store_trivial(T v) noexcept {
-  RpcComponentContext::current().buffer.append(reinterpret_cast<const char *>(&v), sizeof(T));
+  RpcComponentContext::get().buffer.append(reinterpret_cast<const char *>(&v), sizeof(T));
   return true;
 }
 
@@ -106,7 +106,7 @@ class_instance<RpcTlQuery> store_function(const mixed &tl_object) noexcept {
   static_assert(std::is_base_of_v<ScriptAllocatorManaged, rpc_request_result_untyped_t>);
 
   auto &cur_query{CurrentTlQuery::get()};
-  const auto &rpc_image_state{RpcImageState::current()};
+  const auto &rpc_image_state{RpcImageState::get()};
 
   const auto fun_name{mixed_array_get_value(tl_object, string{"_"}, 0).to_string()}; // TODO: constexpr ctor for string{"_"}
   if (!rpc_image_state.tl_storers_ht.has_key(fun_name)) {
@@ -125,7 +125,7 @@ class_instance<RpcTlQuery> store_function(const mixed &tl_object) noexcept {
 }
 
 task_t<RpcQueryInfo> rpc_send_impl(const string &actor, double timeout, bool ignore_answer) noexcept {
-  auto &rpc_ctx = RpcComponentContext::current();
+  auto &rpc_ctx = RpcComponentContext::get();
 
   if (timeout <= 0 || timeout > MAX_TIMEOUT_S) { // TODO: handle timeouts
     //    timeout = conn.get()->timeout_ms * 0.001;
@@ -165,7 +165,7 @@ task_t<RpcQueryInfo> rpc_send_impl(const string &actor, double timeout, bool ign
 }
 
 task_t<RpcQueryInfo> rpc_tl_query_one_impl(const string &actor, mixed tl_object, double timeout, bool collect_resp_extra_info, bool ignore_answer) noexcept {
-  auto &rpc_ctx{RpcComponentContext::current()};
+  auto &rpc_ctx{RpcComponentContext::get()};
 
   if (!tl_object.is_array()) {
     rpc_ctx.current_query.raise_storing_error("not an array passed to function rpc_tl_query");
@@ -192,7 +192,7 @@ task_t<RpcQueryInfo> rpc_tl_query_one_impl(const string &actor, mixed tl_object,
 
 task_t<RpcQueryInfo> typed_rpc_tl_query_one_impl(const string &actor, const RpcRequest &rpc_request, double timeout, bool collect_responses_extra_info,
                                                  bool ignore_answer) noexcept {
-  auto &rpc_ctx{RpcComponentContext::current()};
+  auto &rpc_ctx{RpcComponentContext::get()};
 
   if (rpc_request.empty()) {
     rpc_ctx.current_query.raise_storing_error("query function is null");
@@ -227,7 +227,7 @@ task_t<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) noexcept {
     co_return make_fetch_error(string{"wrong query_id"}, TL_ERROR_WRONG_QUERY_ID);
   }
 
-  auto &rpc_ctx{RpcComponentContext::current()};
+  auto &rpc_ctx{RpcComponentContext::get()};
   class_instance<RpcTlQuery> rpc_query{};
   class_instance<C$ComponentQuery> component_query{};
 
@@ -279,7 +279,7 @@ task_t<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_one_impl(i
     co_return error_factory.make_error(string{"wrong query_id"}, TL_ERROR_WRONG_QUERY_ID);
   }
 
-  auto &rpc_ctx{RpcComponentContext::current()};
+  auto &rpc_ctx{RpcComponentContext::get()};
   class_instance<RpcTlQuery> rpc_query{};
   class_instance<C$ComponentQuery> component_query{};
 
@@ -350,7 +350,7 @@ bool f$store_double(double v) noexcept {
 }
 
 bool f$store_string(const string &v) noexcept { // TODO: support large strings
-  auto &buffer{RpcComponentContext::current().buffer};
+  auto &buffer{RpcComponentContext::get().buffer};
 
   string::size_type string_len{v.size()};
   string::size_type size_len{};
@@ -455,7 +455,7 @@ string f$fetch_string() noexcept {
     return {}; // TODO: error handling
   }
 
-  auto &rpc_ctx{RpcComponentContext::current()};
+  auto &rpc_ctx{RpcComponentContext::get()};
   string res{rpc_ctx.buffer.c_str() + rpc_ctx.fetch_state.pos(), string_len};
   rpc_ctx.fetch_state.adjust(total_len_with_padding - size_len);
   return res;
@@ -496,7 +496,7 @@ task_t<array<array<mixed>>> f$rpc_tl_query_result(array<int64_t> query_ids) noex
 // === Rpc Misc ==================================================================================
 
 void f$rpc_clean() noexcept {
-  auto &rpc_ctx{RpcComponentContext::current()};
+  auto &rpc_ctx{RpcComponentContext::get()};
   rpc_ctx.buffer.clean();
   rpc_ctx.fetch_state.reset(0, 0);
 }
@@ -512,7 +512,7 @@ bool is_int32_overflow(int64_t v) noexcept {
 }
 
 void store_raw_vector_double(const array<double> &vector) noexcept { // TODO: didn't we forget vector's length?
-  RpcComponentContext::current().buffer.append(reinterpret_cast<const char *>(vector.get_const_vector_pointer()), sizeof(double) * vector.count());
+  RpcComponentContext::get().buffer.append(reinterpret_cast<const char *>(vector.get_const_vector_pointer()), sizeof(double) * vector.count());
 }
 
 void fetch_raw_vector_double(array<double> &vector, int64_t num_elems) noexcept {
@@ -520,7 +520,7 @@ void fetch_raw_vector_double(array<double> &vector, int64_t num_elems) noexcept 
   if (!rpc_impl_::rpc_fetch_remaining_enough(len_bytes)) {
     return; // TODO: error handling
   }
-  auto &rpc_ctx{RpcComponentContext::current()};
+  auto &rpc_ctx{RpcComponentContext::get()};
   vector.memcpy_vector(num_elems, rpc_ctx.buffer.c_str() + rpc_ctx.fetch_state.pos());
   rpc_ctx.fetch_state.adjust(len_bytes);
 }

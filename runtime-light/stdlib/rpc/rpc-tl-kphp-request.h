@@ -41,7 +41,7 @@ public:
 
   std::unique_ptr<RpcRequestResult> store_request() const final {
     //    php_assert(CurException.is_null());
-    auto &rpc_ctx{RpcComponentContext::current()};
+    auto &rpc_ctx{RpcComponentContext::get()};
     rpc_ctx.current_query.set_current_tl_function(tl_function_name());
     std::unique_ptr<tl_func_base> stored_fetcher = storing_function.get()->store();
     rpc_ctx.current_query.reset();
