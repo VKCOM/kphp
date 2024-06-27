@@ -5,9 +5,8 @@
 #pragma once
 
 #include <cstdint>
-#include <memory>
 
-#include "runtime-core/allocator/script-allocator-managed.h"
+#include "runtime-light/allocator/allocator.h"
 #include "runtime-light/stdlib/rpc/rpc-context.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-defs.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-request.h"
@@ -50,9 +49,7 @@ public:
     //      return {};
     //    }
 
-    using kphp_rpc_request_result_t = KphpRpcRequestResult<t_ReqResult_>;
-    static_assert(std::is_base_of_v<ScriptAllocatorManaged, kphp_rpc_request_result_t>);
-    return std::make_unique<kphp_rpc_request_result_t>(std::move(stored_fetcher));
+    return make_unique_on_script_memory<KphpRpcRequestResult<t_ReqResult_>>(std::move(stored_fetcher));
   }
 };
 } // namespace tl_rpc_request_impl_

@@ -8,14 +8,13 @@
 #include <chrono>
 #include <coroutine>
 #include <cstddef>
-#include <memory>
 #include <optional>
 #include <utility>
 
 #include "common/algorithms/find.h"
 #include "common/rpc-error-codes.h"
 #include "common/tl/constants/common.h"
-#include "runtime-core/allocator/script-allocator-managed.h"
+#include "runtime-light/allocator/allocator.h"
 #include "runtime-light/stdlib/rpc/rpc-context.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-headers.h"
 #include "runtime-light/streams/interface.h"
@@ -102,9 +101,6 @@ bool store_trivial(T v) noexcept {
 }
 
 class_instance<RpcTlQuery> store_function(const mixed &tl_object) noexcept {
-  using rpc_request_result_untyped_t = RpcRequestResultUntyped;
-  static_assert(std::is_base_of_v<ScriptAllocatorManaged, rpc_request_result_untyped_t>);
-
   auto &cur_query{CurrentTlQuery::get()};
   const auto &rpc_image_state{RpcImageState::get()};
 
@@ -119,7 +115,7 @@ class_instance<RpcTlQuery> store_function(const mixed &tl_object) noexcept {
 
   cur_query.set_current_tl_function(fun_name);
   const auto &untyped_storer = rpc_image_state.tl_storers_ht.get_value(fun_name);
-  rpc_tl_query.get()->result_fetcher = std::make_unique<rpc_request_result_untyped_t>(untyped_storer(tl_object));
+  rpc_tl_query.get()->result_fetcher = make_unique_on_script_memory<RpcRequestResultUntyped>(untyped_storer(tl_object));
   cur_query.reset();
   return rpc_tl_query;
 }
