@@ -79,7 +79,7 @@ private:
       on_input_type_mismatch(json);
       return;
     }
-    value = json.as_double();
+    value = json.is_int() ? json.as_int() : json.as_double();
   }
 
   void do_set(string &value, const mixed &json) noexcept {
