@@ -632,14 +632,22 @@ void compile_do(VertexAdaptor<op_do> root, CodeGenerator &W) {
 void compile_return(VertexAdaptor<op_return> root, CodeGenerator &W) {
   bool resumable_flag = W.get_context().resumable_flag;
   bool interruptible_flag = W.get_context().interruptible_flag;
-  if (resumable_flag || interruptible_flag) {
+  if (G->is_output_mode_k2_component() && (resumable_flag || interruptible_flag)) {
     W << "co_return ";
+  } else if (resumable_flag && root->has_expr()) {
+    W << "RETURN " << MacroBegin{};
+  } else if (resumable_flag) {
+    W << "RETURN_VOID " << MacroBegin{};
   } else {
     W << "return ";
   }
 
   if (root->has_expr()) {
     W << root->expr();
+  }
+
+  if (!G->is_output_mode_k2_component() && resumable_flag) {
+    W << MacroEnd{};
   }
 }
 
@@ -835,7 +843,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
       W << FunctionForkName(func);
     } else {
       if (func->is_interruptible) {
-        W << "(" << "co_await ";
+        W << "co_await ";
       }
       W << FunctionName(func);
     }
@@ -861,9 +869,6 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
 
   W << JoinValues(args, ", ");
   W << ")";
-  if (func->is_interruptible) {
-    W << ")";
-  }
 }
 
 void compile_func_call_fast(VertexAdaptor<op_func_call> root, CodeGenerator &W) {
