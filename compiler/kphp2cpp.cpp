@@ -200,7 +200,7 @@ int main(int argc, char *argv[]) {
 #endif
 
   init_version_string("kphp2cpp");
-  set_debug_handlers();
+  set_debug_handlers(true);
 
   auto settings = std::make_unique<CompilerSettings>();
 

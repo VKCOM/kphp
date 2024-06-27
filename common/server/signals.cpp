@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <unordered_set>
 
+#include "common/exit-codes.h"
 #include "common/kprintf.h"
 #include "common/macos-ports.h"
 #include "common/options.h"
@@ -156,6 +157,15 @@ static void print_killing_process_description(int pid) {
   }
 }
 
+static bool save_signal_in_exit_code = false;
+
+static int get_exit_code_from_signal(int sig) {
+  if (save_signal_in_exit_code) {
+    return static_cast<int>(ExitCode::SIGNAL_OFFSET) + sig;
+  }
+  return EXIT_FAILURE;
+}
+
 static void generic_debug_handler(int sig, siginfo_t *info, void *ucontext) {
   ksignal(sig, SIG_DFL);
   if (sig == SIGABRT) {
@@ -178,7 +188,7 @@ static void generic_debug_handler(int sig, siginfo_t *info, void *ucontext) {
   crash_dump_write(ucontext);
   print_backtrace();
   kill_main();
-  _exit(EXIT_FAILURE);
+  _exit(get_exit_code_from_signal(sig));
 }
 
 static void ksignal_ext(int sig, void (*handler)(int), int sa_flags) {
@@ -224,7 +234,8 @@ void ksignal_intr(int sig, void (*info)(int, siginfo_t *, void *)) {
 }
 
 
-void set_debug_handlers() {
+void set_debug_handlers(bool save_signal_in_exit_code_) {
+  save_signal_in_exit_code = save_signal_in_exit_code_;
   stack_t stack;
   int res = sigaltstack(nullptr, &stack);
   if (res < 0) {

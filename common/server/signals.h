@@ -15,7 +15,7 @@ extern int daemonize;
 void print_backtrace();
 void ksignal(int sig, void (*handler)(int));
 void ksignal_intr(int sig, void (*handler)(int));
-void set_debug_handlers();
+void set_debug_handlers(bool save_signal_in_exit_code = false);
 void setup_delayed_handlers();
 int is_signal_pending(int sig);
 
