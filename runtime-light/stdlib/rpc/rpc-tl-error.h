@@ -7,7 +7,7 @@
 #include <cstdint>
 
 #include "runtime-core/runtime-core.h"
-#include "runtime-light/tl/tl-rpc-function.h"
+#include "runtime-light/stdlib/rpc/rpc-tl-function.h"
 
 struct TlRpcError {
   int32_t error_code{0};

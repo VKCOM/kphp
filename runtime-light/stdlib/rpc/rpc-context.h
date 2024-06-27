@@ -11,9 +11,9 @@
 #include "runtime-core/memory-resource/memory_resource.h"
 #include "runtime-core/runtime-core.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"
+#include "runtime-light/stdlib/rpc/rpc-tl-defs.h"
+#include "runtime-light/stdlib/rpc/rpc-tl-query.h"
 #include "runtime-light/streams/component-stream.h"
-#include "runtime-light/tl/tl-defs.h"
-#include "runtime-light/tl/tl-rpc-query.h"
 
 struct RpcComponentContext final : private vk::not_copyable {
   class FetchState {

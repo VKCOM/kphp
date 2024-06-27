@@ -9,4 +9,7 @@ prepend(RUNTIME_STDLIB_SRC ${BASE_DIR}/runtime-light/stdlib/
         rpc/rpc-context.cpp
         rpc/rpc-extra-headers.cpp
         rpc/rpc-extra-info.cpp
+        rpc/rpc-tl-error.cpp
+        rpc/rpc-tl-query.cpp
+        rpc/rpc-tl-request.cpp
 )

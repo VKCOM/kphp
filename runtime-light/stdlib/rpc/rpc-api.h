@@ -11,9 +11,9 @@
 #include "runtime-core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"
-#include "runtime-light/tl/tl-kphp-rpc-request.h"
-#include "runtime-light/tl/tl-rpc-error.h"
-#include "runtime-light/tl/tl-rpc-function.h"
+#include "runtime-light/stdlib/rpc/rpc-tl-error.h"
+#include "runtime-light/stdlib/rpc/rpc-tl-function.h"
+#include "runtime-light/stdlib/rpc/rpc-tl-kphp-request.h"
 
 constexpr int64_t RPC_VALID_QUERY_ID_RANGE_START = 0;
 constexpr int64_t RPC_INVALID_QUERY_ID = -1;

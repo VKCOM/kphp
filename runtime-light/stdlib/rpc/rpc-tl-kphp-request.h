@@ -9,8 +9,8 @@
 
 #include "runtime-core/allocator/script-allocator-managed.h"
 #include "runtime-light/stdlib/rpc/rpc-context.h"
-#include "runtime-light/tl/tl-defs.h"
-#include "runtime-light/tl/tl-rpc-request.h"
+#include "runtime-light/stdlib/rpc/rpc-tl-defs.h"
+#include "runtime-light/stdlib/rpc/rpc-tl-request.h"
 
 namespace tl_rpc_request_impl_ {
 // use template, because t_ReqResult_ is unknown on runtime compilation

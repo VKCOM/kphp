@@ -12,9 +12,9 @@
 #include "runtime-core/runtime-core.h"
 #include "runtime-light/stdlib/rpc/rpc-api.h"
 #include "runtime-light/stdlib/rpc/rpc-context.h"
-#include "runtime-light/tl/tl-defs.h"
-#include "runtime-light/tl/tl-kphp-rpc-request.h"
-#include "runtime-light/tl/tl-rpc-function.h"
+#include "runtime-light/stdlib/rpc/rpc-tl-defs.h"
+#include "runtime-light/stdlib/rpc/rpc-tl-function.h"
+#include "runtime-light/stdlib/rpc/rpc-tl-kphp-request.h"
 #include "runtime-light/utils/php_assert.h"
 
 // TODO: get rid of it here

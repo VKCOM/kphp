@@ -6,7 +6,7 @@
 
 #include "runtime-core/allocator/script-allocator-managed.h"
 #include "runtime-core/runtime-core.h"
-#include "runtime-light/tl/tl-rpc-function.h"
+#include "runtime-light/stdlib/rpc/rpc-tl-function.h"
 
 struct tl_func_base : ScriptAllocatorManaged {
   virtual mixed fetch() = 0;

@@ -8,8 +8,8 @@
 
 #include "runtime-core/allocator/script-allocator-managed.h"
 #include "runtime-core/runtime-core.h"
-#include "runtime-light/tl/tl-func-base.h"
-#include "runtime-light/tl/tl-rpc-function.h"
+#include "runtime-light/stdlib/rpc/rpc-tl-func-base.h"
+#include "runtime-light/stdlib/rpc/rpc-tl-function.h"
 
 class RpcRequestResult : public ScriptAllocatorManaged {
 public:

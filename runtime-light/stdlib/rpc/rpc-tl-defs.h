@@ -7,8 +7,8 @@
 #include <memory>
 
 #include "runtime-core/runtime-core.h"
-#include "runtime-light/tl/tl-func-base.h"
-#include "runtime-light/tl/tl-rpc-function.h"
+#include "runtime-light/stdlib/rpc/rpc-tl-func-base.h"
+#include "runtime-light/stdlib/rpc/rpc-tl-function.h"
 #include "runtime-light/utils/php_assert.h"
 
 using tl_undefined_php_type = std::nullptr_t;

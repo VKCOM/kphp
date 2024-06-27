@@ -2,7 +2,7 @@
 //  Copyright (c) 2024 LLC «V Kontakte»
 //  Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-light/tl/tl-rpc-error.h"
+#include "runtime-light/stdlib/rpc/rpc-tl-error.h"
 
 #include <tuple>
 
