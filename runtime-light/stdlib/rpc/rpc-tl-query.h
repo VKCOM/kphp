@@ -28,6 +28,8 @@ struct CurrentTlQuery {
   uint32_t get_last_stored_tl_function_magic() const noexcept;
   const string &get_current_tl_function_name() const noexcept;
 
+  static CurrentTlQuery &get() noexcept;
+
 private:
   string current_tl_function_name;
   uint32_t last_stored_tl_function_magic{0};

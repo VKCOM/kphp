@@ -6,6 +6,7 @@
 
 #include <array>
 
+#include "runtime-light/stdlib/rpc/rpc-context.h"
 #include "runtime-light/utils/php_assert.h"
 
 void CurrentTlQuery::reset() noexcept {
@@ -77,4 +78,8 @@ uint32_t CurrentTlQuery::get_last_stored_tl_function_magic() const noexcept {
 
 const string &CurrentTlQuery::get_current_tl_function_name() const noexcept {
   return current_tl_function_name;
+}
+
+CurrentTlQuery &CurrentTlQuery::get() noexcept {
+  return RpcComponentContext::current().current_query;
 }
