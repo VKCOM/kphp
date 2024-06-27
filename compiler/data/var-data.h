@@ -32,6 +32,7 @@ public:
   std::string name;
   tinf::VarNode tinf_node;
   VertexPtr init_val;
+  bool had_user_assigned_val = false;
   FunctionPtr holder_func;
   ClassPtr class_id;
   std::unordered_set<VarPtr> *bad_vars = nullptr;

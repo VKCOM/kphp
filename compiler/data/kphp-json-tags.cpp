@@ -403,7 +403,7 @@ FieldJsonSettings merge_and_inherit_json_tags(const ClassMemberInstanceField &fi
 
   // for 'public int $id;' — no default and non-nullable type — set 'required' so that decode() would fire unless exists
   // it could be overridden with `@kphp-json required = false`
-  if (field.type_hint && !field.var->init_val && !does_type_hint_allow_null(field.type_hint)) {
+  if (field.type_hint && !field.var->init_val && !field.var->had_user_assigned_val && !does_type_hint_allow_null(field.type_hint)) {
     s.required = true;
   }
 
