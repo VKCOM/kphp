@@ -159,10 +159,10 @@ struct t_Vector {
     : elem_state(std::move(param_type)) {}
 
   void store(const mixed &v) {
-    const auto &cq{RpcComponentContext::current().current_query};
+    const auto &cur_query{CurrentTlQuery::get()};
 
     if (!v.is_array()) {
-      cq.raise_storing_error("Expected array, got %s", v.get_type_c_str());
+      cur_query.raise_storing_error("Expected array, got %s", v.get_type_c_str());
       return;
     }
 
@@ -171,7 +171,7 @@ struct t_Vector {
     f$store_int(n);
     for (int64_t i = 0; i < n; ++i) {
       if (!a.isset(i)) {
-        cq.raise_storing_error("Vector[%ld] not set", i);
+        cur_query.raise_storing_error("Vector[%ld] not set", i);
         return;
       }
       store_magic_if_not_bare(inner_magic);
@@ -181,10 +181,9 @@ struct t_Vector {
 
   array<mixed> fetch() {
     //    CHECK_EXCEPTION(return array<mixed>());
-    auto &rpc_ctx{RpcComponentContext::current()};
     const auto size{f$fetch_int()};
     if (size < 0) {
-      rpc_ctx.current_query.raise_fetching_error("Vector size is negative");
+      CurrentTlQuery::get().raise_fetching_error("Vector size is negative");
       return {};
     }
 
@@ -203,8 +202,6 @@ struct t_Vector {
   using PhpElemT = typename T::PhpType;
 
   void typed_store(const PhpType &v) {
-    const auto &cq{RpcComponentContext::current().current_query};
-
     int64_t n = v.count();
     f$store_int(n);
 
@@ -215,7 +212,7 @@ struct t_Vector {
 
     for (int64_t i = 0; i < n; ++i) {
       if (!v.isset(i)) {
-        cq.raise_storing_error("Vector[%" PRIi64 "] not set", i);
+        CurrentTlQuery::get().raise_storing_error("Vector[%" PRIi64 "] not set", i);
         return;
       }
       store_magic_if_not_bare(inner_magic);
@@ -225,10 +222,9 @@ struct t_Vector {
 
   void typed_fetch_to(PhpType &out) {
     //    CHECK_EXCEPTION(return);
-    auto &rpc_ctx{RpcComponentContext::current()};
     const auto size{f$fetch_int()};
     if (size < 0) {
-      rpc_ctx.current_query.raise_fetching_error("Vector size is negative");
+      CurrentTlQuery::get().raise_fetching_error("Vector size is negative");
       return;
     }
 
@@ -267,13 +263,12 @@ struct t_Maybe {
       store_magic_if_not_bare(inner_magic);
       elem_state.store(tl_arr_get(v, string{"result"}, 1, string_hash("result", 6)));
     } else {
-      RpcComponentContext::current().current_query.raise_storing_error("Constructor %s of type Maybe was not found in TL scheme", name.c_str());
+      CurrentTlQuery::get().raise_storing_error("Constructor %s of type Maybe was not found in TL scheme", name.c_str());
     }
   }
 
   mixed fetch() {
     //    CHECK_EXCEPTION(return mixed());
-    auto &rpc_ctx{RpcComponentContext::current()};
     const auto magic{static_cast<uint32_t>(f$fetch_int())};
     switch (magic) {
       case TL_MAYBE_FALSE:
@@ -282,7 +277,7 @@ struct t_Maybe {
         fetch_magic_if_not_bare(inner_magic, "Incorrect magic of inner type of type Maybe");
         return elem_state.fetch();
       default:
-        rpc_ctx.current_query.raise_fetching_error("Incorrect magic of type Maybe: 0x%08x", magic);
+        CurrentTlQuery::get().raise_fetching_error("Incorrect magic of type Maybe: 0x%08x", magic);
         return -1;
     }
   }
@@ -306,7 +301,6 @@ struct t_Maybe {
 
   void typed_fetch_to(PhpType &out) {
     //    CHECK_EXCEPTION(return);
-    auto &rpc_ctx{RpcComponentContext::current()};
     const auto magic{static_cast<uint32_t>(f$fetch_int())};
     switch (magic) {
       case TL_MAYBE_FALSE:
@@ -319,7 +313,7 @@ struct t_Maybe {
         elem_state.typed_fetch_to(get_serialization_target_from_optional_field<T, FieldAccessType::write>(out));
         break;
       default:
-        rpc_ctx.current_query.raise_fetching_error("Incorrect magic of type Maybe: 0x%08x", magic);
+        CurrentTlQuery::get().raise_fetching_error("Incorrect magic of type Maybe: 0x%08x", magic);
         return;
     }
   }
@@ -334,7 +328,7 @@ struct tl_Dictionary_impl {
 
   void store(const mixed &v) {
     if (!v.is_array()) {
-      RpcComponentContext::current().current_query.raise_storing_error("Expected array (dictionary), got something strange");
+      CurrentTlQuery::get().raise_storing_error("Expected array (dictionary), got something strange");
       return;
     }
 
@@ -349,10 +343,9 @@ struct tl_Dictionary_impl {
 
   array<mixed> fetch() {
     //    CHECK_EXCEPTION(return array<mixed>());
-    auto &rpc_ctx{RpcComponentContext::current()};
     const auto size{f$fetch_int()};
     if (size < 0) {
-      rpc_ctx.current_query.raise_fetching_error("Dictionary size is negative");
+      CurrentTlQuery::get().raise_fetching_error("Dictionary size is negative");
       return {};
     }
 
@@ -386,10 +379,9 @@ struct tl_Dictionary_impl {
 
   void typed_fetch_to(PhpType &out) {
     //    CHECK_EXCEPTION(return);
-    auto &rpc_ctx{RpcComponentContext::current()};
     const auto size{f$fetch_int()};
     if (size < 0) {
-      rpc_ctx.current_query.raise_fetching_error("Dictionary size is negative");
+      CurrentTlQuery::get().raise_fetching_error("Dictionary size is negative");
       return;
     }
 
@@ -425,17 +417,17 @@ struct t_Tuple {
     , size(size) {}
 
   void store(const mixed &v) {
-    const auto &cq{RpcComponentContext::current().current_query};
+    const auto &cur_query{CurrentTlQuery::get()};
 
     if (!v.is_array()) {
-      cq.raise_storing_error("Expected tuple, got %s", v.get_type_c_str());
+      cur_query.raise_storing_error("Expected tuple, got %s", v.get_type_c_str());
       return;
     }
 
     const array<mixed> &a = v.as_array();
     for (int64_t i = 0; i < size; ++i) {
       if (!a.isset(i)) {
-        cq.raise_storing_error("Tuple[%ld] not set", i);
+        cur_query.raise_storing_error("Tuple[%ld] not set", i);
         return;
       }
       store_magic_if_not_bare(inner_magic);
@@ -463,7 +455,7 @@ struct t_Tuple {
 
     for (int64_t i = 0; i < size; ++i) {
       if (!v.isset(i)) {
-        RpcComponentContext::current().current_query.raise_storing_error("Tuple[%ld] not set", i);
+        CurrentTlQuery::get().raise_storing_error("Tuple[%ld] not set", i);
         return;
       }
       store_magic_if_not_bare(inner_magic);
@@ -500,17 +492,17 @@ struct tl_array {
     , cell(std::move(cell)) {}
 
   void store(const mixed &v) {
-    const auto &cq{RpcComponentContext::current().current_query};
+    const auto &cur_query{CurrentTlQuery::get()};
 
     if (!v.is_array()) {
-      cq.raise_storing_error("Expected array, got %s", v.get_type_c_str());
+      cur_query.raise_storing_error("Expected array, got %s", v.get_type_c_str());
       return;
     }
 
     const array<mixed> &a = v.as_array();
     for (int64_t i = 0; i < size; ++i) {
       if (!a.isset(i)) {
-        cq.raise_storing_error("Array[%ld] not set", i);
+        cur_query.raise_storing_error("Array[%ld] not set", i);
         return;
       }
       store_magic_if_not_bare(inner_magic);
@@ -539,7 +531,7 @@ struct tl_array {
 
     for (int64_t i = 0; i < size; ++i) {
       if (!v.isset(i)) {
-        RpcComponentContext::current().current_query.raise_storing_error("Array[%ld] not set", i);
+        CurrentTlQuery::get().raise_storing_error("Array[%ld] not set", i);
         return;
       }
       store_magic_if_not_bare(inner_magic);

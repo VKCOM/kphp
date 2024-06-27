@@ -24,22 +24,20 @@ bool tl_parse_restore_pos(int32_t pos) {
 }
 
 mixed tl_arr_get(const mixed &arr, const string &str_key, int64_t num_key, int64_t precomputed_hash) {
-  auto &rpc_ctx{RpcComponentContext::current()};
+  auto &cur_query{CurrentTlQuery::get()};
   if (!arr.is_array()) {
-    rpc_ctx.current_query.raise_storing_error("Array expected, when trying to access field #%" PRIi64 " : %s", num_key, str_key.c_str());
+    cur_query.raise_storing_error("Array expected, when trying to access field #%" PRIi64 " : %s", num_key, str_key.c_str());
     return {};
   }
 
-  const mixed &num_v = arr.get_value(num_key);
-  if (!num_v.is_null()) {
-    return num_v;
+  if (const auto &elem{arr.get_value(num_key)}; !elem.is_null()) {
+    return elem;
   }
-  const mixed &str_v = (precomputed_hash == 0 ? arr.get_value(str_key) : arr.get_value(str_key, precomputed_hash));
-  if (!str_v.is_null()) {
-    return str_v;
+  if (const auto &elem{precomputed_hash == 0 ? arr.get_value(str_key) : arr.get_value(str_key, precomputed_hash)}; !elem.is_null()) {
+    return elem;
   }
 
-  rpc_ctx.current_query.raise_storing_error("Field %s (#%" PRIi64 ") not found", str_key.c_str(), num_key);
+  cur_query.raise_storing_error("Field %s (#%" PRIi64 ") not found", str_key.c_str(), num_key);
   return {};
 }
 
@@ -51,10 +49,9 @@ void store_magic_if_not_bare(uint32_t inner_magic) {
 
 void fetch_magic_if_not_bare(uint32_t inner_magic, const char *error_msg) {
   if (static_cast<bool>(inner_magic)) {
-    auto &rpc_ctx{RpcComponentContext::current()};
     const auto actual_magic = static_cast<uint32_t>(f$fetch_int());
     if (actual_magic != inner_magic) {
-      rpc_ctx.current_query.raise_fetching_error("%s\nExpected 0x%08x, but fetched 0x%08x", error_msg, inner_magic, actual_magic);
+      CurrentTlQuery::get().raise_fetching_error("%s\nExpected 0x%08x, but fetched 0x%08x", error_msg, inner_magic, actual_magic);
     }
   }
 }
@@ -166,7 +163,6 @@ void t_Bool::store(const mixed &tl_object) {
 
 bool t_Bool::fetch() {
   //    CHECK_EXCEPTION(return false);
-  auto &rpc_ctx{RpcComponentContext::current()};
   const auto magic = static_cast<uint32_t>(f$fetch_int());
   switch (magic) {
     case TL_BOOL_FALSE:
@@ -174,7 +170,7 @@ bool t_Bool::fetch() {
     case TL_BOOL_TRUE:
       return true;
     default: {
-      rpc_ctx.current_query.raise_fetching_error("Incorrect magic of type Bool: 0x%08x", magic);
+      CurrentTlQuery::get().raise_fetching_error("Incorrect magic of type Bool: 0x%08x", magic);
       return false;
     }
   }
@@ -186,10 +182,9 @@ void t_Bool::typed_store(const t_Bool::PhpType &v) {
 
 void t_Bool::typed_fetch_to(t_Bool::PhpType &out) {
   //    CHECK_EXCEPTION(return);
-  auto &rpc_ctx{RpcComponentContext::current()};
   const auto magic = static_cast<uint32_t>(f$fetch_int());
   if (magic != TL_BOOL_TRUE && magic != TL_BOOL_FALSE) {
-    rpc_ctx.current_query.raise_fetching_error("Incorrect magic of type Bool: 0x%08x", magic);
+    CurrentTlQuery::get().raise_fetching_error("Incorrect magic of type Bool: 0x%08x", magic);
     return;
   }
   out = magic == TL_BOOL_TRUE;

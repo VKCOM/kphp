@@ -72,9 +72,7 @@ std::optional<T> fetch_trivial() noexcept {
 
 array<mixed> fetch_function_untyped(const class_instance<RpcTlQuery> &rpc_query) noexcept {
   php_assert(!rpc_query.is_null());
-  auto &rpc_ctx{RpcComponentContext::current()};
-
-  rpc_ctx.current_query.set_current_tl_function(rpc_query);
+  CurrentTlQuery::get().set_current_tl_function(rpc_query);
   auto fetcher{rpc_query.get()->result_fetcher->extract_untyped_fetcher()};
   php_assert(fetcher);
 
@@ -86,9 +84,7 @@ array<mixed> fetch_function_untyped(const class_instance<RpcTlQuery> &rpc_query)
 
 class_instance<C$VK$TL$RpcResponse> fetch_function_typed(const class_instance<RpcTlQuery> &rpc_query, const RpcErrorFactory &error_factory) noexcept {
   php_assert(!rpc_query.is_null());
-  auto &rpc_ctx{RpcComponentContext::current()};
-
-  rpc_ctx.current_query.set_current_tl_function(rpc_query);
+  CurrentTlQuery::get().set_current_tl_function(rpc_query);
   // check if the response is error
   if (const auto rpc_error{error_factory.fetch_error_if_possible()}; !rpc_error.is_null()) {
     return rpc_error;
@@ -109,22 +105,22 @@ class_instance<RpcTlQuery> store_function(const mixed &tl_object) noexcept {
   using rpc_request_result_untyped_t = RpcRequestResultUntyped;
   static_assert(std::is_base_of_v<ScriptAllocatorManaged, rpc_request_result_untyped_t>);
 
-  auto &rpc_ctx{RpcComponentContext::current()};
+  auto &cur_query{CurrentTlQuery::get()};
   const auto &rpc_image_state{RpcImageState::current()};
 
   const auto fun_name{mixed_array_get_value(tl_object, string{"_"}, 0).to_string()}; // TODO: constexpr ctor for string{"_"}
   if (!rpc_image_state.tl_storers_ht.has_key(fun_name)) {
-    rpc_ctx.current_query.raise_storing_error("Function \"%s\" not found in tl-scheme", fun_name.c_str());
+    cur_query.raise_storing_error("Function \"%s\" not found in tl-scheme", fun_name.c_str());
     return {};
   }
 
   auto rpc_tl_query{make_instance<RpcTlQuery>()};
   rpc_tl_query.get()->tl_function_name = fun_name;
 
-  rpc_ctx.current_query.set_current_tl_function(fun_name);
+  cur_query.set_current_tl_function(fun_name);
   const auto &untyped_storer = rpc_image_state.tl_storers_ht.get_value(fun_name);
   rpc_tl_query.get()->result_fetcher = std::make_unique<rpc_request_result_untyped_t>(untyped_storer(tl_object));
-  rpc_ctx.current_query.reset();
+  cur_query.reset();
   return rpc_tl_query;
 }
 
