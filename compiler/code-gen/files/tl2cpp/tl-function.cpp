@@ -44,10 +44,11 @@ void TlFunctionDecl::compile(CodeGenerator &W) const {
 void TlFunctionDef::compile(CodeGenerator &W) const {
   const bool needs_typed_fetch_store = TlFunctionDecl::does_tl_function_need_typed_fetch_store(f);
   std::string struct_name = cpp_tl_struct_name("f_", f->name);
+  std::string make_unique_prefix = G->is_output_mode_k2_component() ? "make_unique<" : "make_unique_on_script_memory<";
 
   if (G->get_untyped_rpc_tl_used()) {
     FunctionSignatureGenerator(W) << "std::unique_ptr<tl_func_base> " << struct_name << "::store(const mixed& tl_object) " << BEGIN;
-    W << "auto tl_func_state = make_unique_on_script_memory<" << struct_name << ">();" << NL;
+    W << "auto tl_func_state = " << make_unique_prefix << struct_name << ">();" << NL;
     W << CombinatorStore(f, CombinatorPart::LEFT, false);
     W << "return std::move(tl_func_state);" << NL;
     W << END << NL << NL;
@@ -58,7 +59,7 @@ void TlFunctionDef::compile(CodeGenerator &W) const {
   }
   if (needs_typed_fetch_store) {
     FunctionSignatureGenerator(W) << "std::unique_ptr<tl_func_base> " << struct_name << "::typed_store(const " << get_php_runtime_type(f) << " *tl_object) " << BEGIN;
-    W << "auto tl_func_state = make_unique_on_script_memory<" << struct_name << ">();" << NL;
+    W << "auto tl_func_state = " << make_unique_prefix << struct_name << ">();" << NL;
     W << CombinatorStore(f, CombinatorPart::LEFT, true);
     W << "return std::move(tl_func_state);" << NL;
     W << END << NL << NL;

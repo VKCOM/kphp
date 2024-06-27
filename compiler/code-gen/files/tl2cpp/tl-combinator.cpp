@@ -100,17 +100,18 @@ void CombinatorStore::gen_arg_processing(CodeGenerator &W, const std::unique_ptr
     auto *as_type_var = arg->type_expr->as<vk::tlo_parsing::type_var>();
     kphp_assert(as_type_var);
     if (!typed_mode) {
+      const auto *k2_tl_storers_prefix = G->is_output_mode_k2_component() ? "RpcImageState::get()." : "";
       W << "auto _cur_arg = "
         << fmt_format("tl_arr_get(tl_object, {}, {}, {}L)", tl2cpp::register_tl_const_str(arg->name), arg->idx, tl2cpp::hash_tl_const_str(arg->name))
         << ";" << NL;
       W << "string target_f_name = "
         << fmt_format("tl_arr_get(_cur_arg, {}, 0, {}L).as_string()", tl2cpp::register_tl_const_str("_"), tl2cpp::hash_tl_const_str("_"))
         << ";" << NL;
-      W << "if (!tl_storers_ht.has_key(target_f_name)) " << BEGIN
+      W << fmt_format("if (!{}tl_storers_ht.has_key(target_f_name)) ", k2_tl_storers_prefix) << BEGIN
         << "CurrentProcessingQuery::get().raise_storing_error(\"Function %s not found in tl-scheme\", target_f_name.c_str());" << NL
         << "return {};" << NL
         << END << NL;
-      W << "const auto &storer_kv = tl_storers_ht.get_value(target_f_name);" << NL;
+      W << fmt_format("const auto &storer_kv = {}tl_storers_ht.get_value(target_f_name);", k2_tl_storers_prefix) << NL;
       W << "tl_func_state->" << combinator->get_var_num_arg(as_type_var->var_num)->name << ".fetcher = storer_kv(_cur_arg);" << NL;
     } else {
       W << "if (tl_object->$" << arg->name << ".is_null()) " << BEGIN

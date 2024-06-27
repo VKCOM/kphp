@@ -112,7 +112,7 @@ void TypeFetch::compile(CodeGenerator &W) const {
   if (default_constructor != nullptr) {
     W << "int pos = tl_parse_save_pos();" << NL;
   }
-  W << "auto magic = static_cast<unsigned int>(rpc_fetch_int());" << NL;
+  W << "auto magic = static_cast<unsigned int>(f$fetch_int());" << NL;
   W << "switch(magic) " << BEGIN;
   for (const auto &c : type->constructors) {
     if (c.get() == default_constructor) {
