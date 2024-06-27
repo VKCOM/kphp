@@ -34,8 +34,7 @@ struct ComponentState {
     runtime_allocator(INIT_RUNTIME_ALLOCATOR_SIZE, 0),
     kphp_fork_context(runtime_allocator.memory_resource),
     php_script_mutable_globals_singleton(runtime_allocator.memory_resource),
-    opened_streams(unordered_set<uint64_t>::allocator_type{runtime_allocator.memory_resource}),
-    timer_callbacks(unordered_map<uint64_t, std::function<void()>>::allocator_type{runtime_allocator.memory_resource}),
+    opened_descriptors(unordered_map<uint64_t, DescriptorRuntimeStatus>::allocator_type{runtime_allocator.memory_resource}),
     incoming_pending_queries(deque<uint64_t>::allocator_type{runtime_allocator.memory_resource}){}
 
   ~ComponentState() = default;
@@ -49,9 +48,10 @@ struct ComponentState {
   void init_script_execution();
 
   RuntimeAllocator runtime_allocator;
-
-  KphpForkContext kphp_fork_context;
   KphpCoreContext kphp_core_context;
+  KphpForkContext kphp_fork_context;
+
+
   Response response;
   PhpScriptMutableGlobals php_script_mutable_globals_singleton;
 

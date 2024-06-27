@@ -5,7 +5,7 @@
 #pragma once
 
 #include <coroutine>
-#include "runtime-light/core/runtime_types/optional.h"
+#include "runtime-core/runtime-core.h"
 
 #include "runtime-light/component/component.h"
 #include "runtime-light/utils/logs.h"

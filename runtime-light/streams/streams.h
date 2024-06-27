@@ -11,7 +11,7 @@
 
 #include "runtime-light/coroutine/task.h"
 
-enum DescriptorRuntimeStatus {
+enum class DescriptorRuntimeStatus {
   Stream,
   Timer
 };

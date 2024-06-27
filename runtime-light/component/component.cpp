@@ -29,6 +29,8 @@ void ComponentState::process_new_input_stream(uint64_t stream_d) {
 }
 
 void ComponentState::init_script_execution() {
+  kphp_core_context.init();
+
   light_fork main_fork = light_fork();
   init_php_scripts_in_each_worker(php_script_mutable_globals_singleton, main_fork.task);
   main_fork.handle = main_fork.task.get_handle();
