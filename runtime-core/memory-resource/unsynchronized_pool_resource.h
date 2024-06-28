@@ -141,7 +141,7 @@ private:
   extra_memory_pool *extra_memory_head_{nullptr};
   extra_memory_pool extra_memory_tail_{sizeof(extra_memory_pool)};
 
-  static constexpr size_t MAX_CHUNK_BLOCK_SIZE_{static_cast<const size_t>(16U * 1024U)};
+  static constexpr size_t MAX_CHUNK_BLOCK_SIZE_{static_cast<size_t>(16U * 1024U)};
   std::array<details::memory_chunk_list, details::get_chunk_id(MAX_CHUNK_BLOCK_SIZE_)> free_chunks_;
 };
 
