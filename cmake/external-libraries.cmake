@@ -9,18 +9,6 @@ function(handle_missing_library LIB_NAME)
     endif()
 endfunction()
 
-find_package(fmt QUIET)
-if(NOT fmt_FOUND)
-    handle_missing_library("fmtlib")
-    FetchContent_Declare(
-            fmt
-            GIT_REPOSITORY https://github.com/fmtlib/fmt
-            GIT_TAG        7.0.3
-    )
-    FetchContent_MakeAvailable(fmt)
-    include_directories(${fmt_SOURCE_DIR}/include)
-    message(STATUS "---------------------")
-endif()
 
 if(KPHP_TESTS)
     find_package(GTest QUIET)
