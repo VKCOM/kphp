@@ -6,6 +6,7 @@
 
 #include <coroutine>
 #include <csetjmp>
+#include <cstddef>
 #include <functional>
 #include <queue>
 
@@ -26,7 +27,7 @@ struct ComponentState {
   using unordered_map = memory_resource::stl::unordered_map<Key, Value, memory_resource::unsynchronized_pool_resource>;
   template<typename T>
   using deque = memory_resource::stl::deque<T, memory_resource::unsynchronized_pool_resource>;
-  static constexpr int INIT_RUNTIME_ALLOCATOR_SIZE = 16 * 1024u;
+  static constexpr auto INIT_RUNTIME_ALLOCATOR_SIZE = static_cast<const size_t>(32 * 1024U);
 
   ComponentState()
     : runtime_allocator(INIT_RUNTIME_ALLOCATOR_SIZE, 0)
@@ -39,7 +40,7 @@ struct ComponentState {
 
   ~ComponentState() = default;
 
-  inline bool not_finished() const noexcept {
+  bool not_finished() const noexcept {
     return poll_status != PollStatus::PollFinishedOk && poll_status != PollStatus::PollFinishedError;
   }
 

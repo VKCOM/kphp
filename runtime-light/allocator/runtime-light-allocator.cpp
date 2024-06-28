@@ -2,26 +2,29 @@
 // Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include <cstddef>
+#include <cstring>
+
 #include "runtime-core/runtime-core.h"
 #include "runtime-light/component/component.h"
 #include "runtime-light/utils/panic.h"
 
-static constexpr size_t MIN_REQ_EXTRA_MEM_SIZE = 16 * 1024u;
-
 namespace {
+
+constexpr auto MIN_EXTRA_MEM_SIZE = static_cast<const size_t>(32 * 1024U);
+
 bool is_script_allocator_available() {
   return get_component_context() != nullptr;
 }
 
 void request_extra_memory(size_t requested_size) {
-  ComponentState &rt_ctx = *get_component_context();
-  size_t extra_mem_size = std::max(MIN_REQ_EXTRA_MEM_SIZE, requested_size); // extra mem size should be greater than max chunk block size
-  void *extra_mem = get_platform_context()->allocator.alloc(extra_mem_size);
-  if (extra_mem == nullptr) {
-    php_error("script OOM");
-  }
-  rt_ctx.runtime_allocator.memory_resource.add_extra_memory(new (extra_mem) memory_resource::extra_memory_pool{extra_mem_size});
+  const size_t extra_mem_size = std::max(MIN_EXTRA_MEM_SIZE, requested_size); // extra mem size should be greater than max chunk block size
+  auto &rt_alloc = RuntimeAllocator::current();
+  auto *extra_mem = static_cast<memory_resource::extra_memory_pool *>(rt_alloc.alloc_global_memory(extra_mem_size));
+  rt_alloc.memory_resource.add_extra_memory(new (extra_mem) memory_resource::extra_memory_pool{extra_mem_size});
+  rt_alloc.init(extra_mem->memory_begin(), extra_mem->get_pool_payload_size(), 0);
 }
+
 } // namespace
 
 RuntimeAllocator::RuntimeAllocator(size_t script_mem_size, size_t oom_handling_mem_size) {
@@ -104,7 +107,7 @@ void RuntimeAllocator::free_script_memory(void *mem, size_t size) noexcept {
   php_assert(size);
 
   ComponentState &rt_ctx = *get_component_context();
-  return rt_ctx.runtime_allocator.memory_resource.deallocate(mem, size);
+  rt_ctx.runtime_allocator.memory_resource.deallocate(mem, size);
 }
 
 void *RuntimeAllocator::alloc_global_memory(size_t size) noexcept {
@@ -120,7 +123,7 @@ void *RuntimeAllocator::alloc0_global_memory(size_t size) noexcept {
   if (unlikely(ptr == nullptr)) {
     critical_error_handler();
   }
-  memset(ptr, 0, size);
+  std::memset(ptr, 0, size);
   return ptr;
 }
 
