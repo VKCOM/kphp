@@ -5,7 +5,6 @@
 #include "compiler/code-gen/files/tl2cpp/tl2cpp.h"
 
 #include <algorithm>
-#include <execution>
 #include <numeric>
 
 #include "common/tlo-parsing/tlo-parsing.h"
@@ -151,7 +150,7 @@ void write_tl_query_handlers(CodeGenerator &W) {
     // it's passed to the runtime just like the fetch wrapper
     W << "array<tl_storer_ptr> gen$tl_storers_ht;" << NL;
     // count the number of TL storers
-    int32_t tl_storers_num = std::transform_reduce(std::execution::unseq, modules_with_functions.cbegin(), modules_with_functions.cend(), 0, std::plus{},
+    int32_t tl_storers_num = std::transform_reduce(modules_with_functions.cbegin(), modules_with_functions.cend(), 0, std::plus{},
                                                    [](const auto &module_name) { return modules[module_name].target_functions.size(); });
     FunctionSignatureGenerator(W) << "void fill_tl_storers_ht() " << BEGIN;
     W << fmt_format("gen$tl_storers_ht.reserve({}, false);", tl_storers_num) << NL;
