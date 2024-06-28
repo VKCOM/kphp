@@ -11,7 +11,7 @@
 
 namespace {
 
-constexpr auto MIN_EXTRA_MEM_SIZE = static_cast<const size_t>(32 * 1024U);
+constexpr auto MIN_EXTRA_MEM_SIZE = static_cast<size_t>(32 * 1024U);
 
 bool is_script_allocator_available() {
   return get_component_context() != nullptr;
