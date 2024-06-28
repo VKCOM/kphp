@@ -759,7 +759,7 @@ int64_t rpc_send_impl(const class_instance<C$RpcConnection> &conn, double timeou
   double send_timestamp = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
 
   cur->resumable_id = register_forked_resumable(new rpc_resumable(q_id));
-  cur->function_magic = CurrentProcessingQuery::get().get_last_stored_tl_function_magic();
+  cur->function_magic = CurrentTlQuery::get().get_last_stored_tl_function_magic();
   cur->actor_or_port = conn.get()->actor_id > 0 ? conn.get()->actor_id : -conn.get()->port;
   cur->timer = nullptr;
 
@@ -1128,21 +1128,21 @@ bool try_fetch_rpc_error(array<mixed> &out_if_error) {
 class_instance<RpcTlQuery> store_function(const mixed &tl_object) {
   php_assert(CurException.is_null());
   if (!tl_object.is_array()) {
-    CurrentProcessingQuery::get().raise_storing_error("Not an array passed to function rpc_tl_query");
+    CurrentTlQuery::get().raise_storing_error("Not an array passed to function rpc_tl_query");
     return {};
   }
   string fun_name = tl_arr_get(tl_object, tl_str_underscore, 0).to_string();
   if (!tl_storers_ht.has_key(fun_name)) {
-    CurrentProcessingQuery::get().raise_storing_error("Function \"%s\" not found in tl-scheme", fun_name.c_str());
+    CurrentTlQuery::get().raise_storing_error("Function \"%s\" not found in tl-scheme", fun_name.c_str());
     return {};
   }
   class_instance<RpcTlQuery> rpc_query;
   rpc_query.alloc();
   rpc_query.get()->tl_function_name = fun_name;
-  CurrentProcessingQuery::get().set_current_tl_function(fun_name);
+  CurrentTlQuery::get().set_current_tl_function(fun_name);
   const auto &untyped_storer = tl_storers_ht.get_value(fun_name);
   rpc_query.get()->result_fetcher = make_unique_on_script_memory<RpcRequestResultUntyped>(untyped_storer(tl_object));
-  CurrentProcessingQuery::get().reset();
+  CurrentTlQuery::get().reset();
   return rpc_query;
 }
 
@@ -1152,11 +1152,11 @@ array<mixed> fetch_function(const class_instance<RpcTlQuery> &rpc_query) {
     return new_tl_object;       // this object carries an error (see tl_fetch_error())
   }
   php_assert(!rpc_query.is_null());
-  CurrentProcessingQuery::get().set_current_tl_function(rpc_query);
+  CurrentTlQuery::get().set_current_tl_function(rpc_query);
   auto stored_fetcher = rpc_query.get()->result_fetcher->extract_untyped_fetcher();
   php_assert(stored_fetcher);
   new_tl_object = tl_fetch_wrapper(std::move(stored_fetcher));
-  CurrentProcessingQuery::get().reset();
+  CurrentTlQuery::get().reset();
   if (!CurException.is_null()) {
     array<mixed> result = tl_fetch_error(CurException->$message, TL_ERROR_SYNTAX);
     CurException = Optional<bool>{};
@@ -1480,7 +1480,7 @@ static void reset_rpc_global_vars() {
 void init_rpc_lib() {
   php_assert (timeout_wakeup_id != -1);
 
-  CurrentProcessingQuery::get().reset();
+  CurrentTlQuery::get().reset();
   RpcPendingQueries::get().hard_reset();
   CurrentRpcServerQuery::get().reset();
   reset_rpc_global_vars();
@@ -1500,7 +1500,7 @@ void init_rpc_lib() {
 void free_rpc_lib() {
   reset_rpc_global_vars();
   RpcPendingQueries::get().hard_reset();
-  CurrentProcessingQuery::get().reset();
+  CurrentTlQuery::get().reset();
 }
 
 int64_t f$rpc_queue_create() {
