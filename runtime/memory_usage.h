@@ -176,7 +176,7 @@ inline int64_t f$memory_get_static_usage() {
   return static_cast<int64_t>(dl::get_heap_memory_used());
 }
 
-inline int64_t f$memory_get_peak_usage(bool real_usage) {
+inline int64_t f$memory_get_peak_usage(bool real_usage = false) {
   if (real_usage) {
     return static_cast<int64_t>(dl::get_script_memory_stats().max_real_memory_used);
   } else {
@@ -184,7 +184,7 @@ inline int64_t f$memory_get_peak_usage(bool real_usage) {
   }
 }
 
-inline int64_t f$memory_get_usage(bool real_usage __attribute__((unused))) {
+inline int64_t f$memory_get_usage(bool real_usage __attribute__((unused)) = false) {
   return static_cast<int64_t>(dl::get_script_memory_stats().memory_used);
 }
 
