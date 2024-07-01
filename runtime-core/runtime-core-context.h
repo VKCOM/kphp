@@ -34,7 +34,10 @@ struct RuntimeAllocator {
 };
 
 struct KphpCoreContext {
-
+  /**
+   * KphpCoreContext is used in @see init_php_scripts_once_in_master
+   * before the init() function is called, so its default parameters should be as follows
+   **/
   static KphpCoreContext& current() noexcept;
 
   void init();
