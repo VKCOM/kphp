@@ -843,7 +843,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
       W << FunctionForkName(func);
     } else {
       if (func->is_interruptible) {
-        W << "co_await ";
+        W << "(co_await ";
       }
       W << FunctionName(func);
     }
@@ -869,6 +869,9 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
 
   W << JoinValues(args, ", ");
   W << ")";
+  if (func->is_interruptible && mode != func_call_mode::fork_call) {
+    W << ")";
+  }
 }
 
 void compile_func_call_fast(VertexAdaptor<op_func_call> root, CodeGenerator &W) {
