@@ -554,11 +554,18 @@ class CalcBadVars {
     }
   }
 
+  static void calc_start_resumable_chain(const FuncCallGraph &call_graph, const std::vector<DepData> &dep_data) {
+    for (int i = 0; i < call_graph.n; i++) {
+      for (const auto &fork : dep_data[i].forks) {
+        fork->is_start_resumable_chain = true;
+      }
+    }
+  }
+
   static void calc_resumable(const FuncCallGraph &call_graph, const std::vector<DepData> &dep_data) {
     for (int i = 0; i < call_graph.n; i++) {
       for (const auto &fork : dep_data[i].forks) {
         fork->is_resumable = true;
-        fork->is_start_resumable_chain = true;
       }
     }
     IdMap<char> from_resumable(call_graph.n); // char to prevent std::vector<bool> inside
@@ -692,7 +699,10 @@ public:
     {
       FuncCallGraph call_graph(std::move(functions), dep_datas);
       calc_resumable(call_graph, dep_datas);
-      calc_interruptible(call_graph);
+      if (G->is_output_mode_k2_component()) {
+        calc_interruptible(call_graph);
+        calc_start_resumable_chain(call_graph, dep_datas);
+      }
       generate_bad_vars(call_graph, dep_datas);
       check_func_colors(call_graph);
       save_func_dep(call_graph);

@@ -215,5 +215,5 @@ struct InternalOptionalType<Optional<T>> {
 };
 
 template<typename T>
-using internal_optional_type = InternalOptionalType<T>::type;
+using internal_optional_type = typename InternalOptionalType<T>::type;
 
