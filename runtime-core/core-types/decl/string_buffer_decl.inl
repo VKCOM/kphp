@@ -63,8 +63,9 @@ public:
   friend inline bool operator!=(const string_buffer &lhs, const string_buffer &rhs);
 };
 
+
 struct string_buffer_lib_context {
-  string::size_type MIN_BUFFER_LEN;
-  string::size_type MAX_BUFFER_LEN;
+  string::size_type MIN_BUFFER_LEN = 266175;
+  string::size_type MAX_BUFFER_LEN = (1 << 24);
   int error_flag = 0;
 };
