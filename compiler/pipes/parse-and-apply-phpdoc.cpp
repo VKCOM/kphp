@@ -282,6 +282,9 @@ private:
           } else if (token == "tl_common_h_dep") {
             f_->tl_common_h_dep = true;
           } else if (token == "interruptible") {
+            if (!G->is_output_mode_k2_component()) {
+              kphp_error(0, "@kphp-extern-func-info interruptible supported only for in k2 components");
+            }
             f_->is_interruptible = true;
           } else {
             kphp_error(0, fmt_format("Unknown @kphp-extern-func-info {}", token));
