@@ -156,12 +156,13 @@ function setup_die_timer() {
     global $scenario;
     $type = $scenario["die"]["type"];
     if ($type === "NoDie") {
-        return;
+        return true;
     }
     $timeout = intval($scenario["die"]["time_ms"]);
-    set_timer($timeout, function() {
+    sched_yield_sleep($timeout * 1e6);
     warning("die");
-    die();});
+    die();
+    return false;
 }
 
 
@@ -359,6 +360,6 @@ if (is_null($scenario_query)) {
 $str = component_client_get_result($scenario_query);
 $scenario = json_decode($str);
 // warning(var_export($scenario, true));
-setup_die_timer();
-
+$future = fork(setup_die_timer());
 main();
+wait($future);

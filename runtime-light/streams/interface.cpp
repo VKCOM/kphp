@@ -27,6 +27,8 @@ task_t<class_instance<C$ComponentQuery>> f$component_client_send_query(const str
     php_warning("cannot open stream");
     co_return query;
   }
+
+  get_component_context()->opened_descriptors[stream_d] = DescriptorRuntimeStatus::Stream;
   int writed = co_await write_all_to_stream(stream_d, message.c_str(), message.size());
   ptx.shutdown_write(stream_d);
   php_debug("send %d bytes from %d to \"%s\" on stream %lu", writed, message.size(), name.c_str(), stream_d);
@@ -46,9 +48,9 @@ task_t<string> f$component_client_get_result(class_instance<C$ComponentQuery> qu
   auto [buffer, size] = co_await read_all_from_stream(stream_d);
   string result;
   result.assign(buffer, size);
+  php_debug("read %d bytes from stream %lu", size, stream_d);
   free_descriptor(stream_d);
   query.get()->stream_d = 0;
-  php_debug("read %d bytes from stream %lu", size, stream_d);
   co_return result;
 }
 
@@ -100,7 +102,7 @@ class_instance<C$ComponentStream> f$component_open_stream(const string &name) {
     php_warning("cannot open stream");
     return query;
   }
-  ctx.opened_streams[stream_d] = StreamRuntimeStatus::NotBlocked;
+  ctx.opened_descriptors[stream_d] = DescriptorRuntimeStatus::Stream;
   query.alloc();
   query.get()->stream_d = stream_d;
   php_debug("open stream %lu to %s", stream_d, name.c_str());

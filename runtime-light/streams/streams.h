@@ -11,7 +11,10 @@
 
 #include "runtime-light/coroutine/task.h"
 
-enum class StreamRuntimeStatus { WBlocked, RBlocked, NotBlocked, Timer };
+enum class DescriptorRuntimeStatus {
+  Stream,
+  Timer
+};
 
 task_t<std::pair<char *, int>> read_all_from_stream(uint64_t stream_d);
 std::pair<char *, int> read_nonblock_from_stream(uint64_t stream_d);
