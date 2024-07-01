@@ -187,7 +187,7 @@ struct t_Vector {
       return {};
     }
 
-    array<mixed> res{array_size{std::min(size, static_cast<int64_t>(10000)), true}};
+    array<mixed> res{array_size{size, true}};
     for (int64_t i = 0; i < size; ++i) {
       fetch_magic_if_not_bare(inner_magic, "Incorrect magic of inner type of type Vector");
       const mixed &elem{elem_state.fetch()};
@@ -349,7 +349,7 @@ struct tl_Dictionary_impl {
       return {};
     }
 
-    array<mixed> res{};
+    array<mixed> res{array_size{size, false}};
     for (int64_t i = 0; i < size; ++i) {
       const auto &key{KeyT().fetch()};
       fetch_magic_if_not_bare(inner_value_magic, "Incorrect magic of inner type of some Dictionary");
@@ -385,6 +385,7 @@ struct tl_Dictionary_impl {
       return;
     }
 
+    out.reserve(size, false);
     for (int64_t i = 0; i < size; ++i) {
       typename KeyT::PhpType key;
       KeyT().typed_fetch_to(key);
@@ -437,7 +438,7 @@ struct t_Tuple {
 
   array<mixed> fetch() {
     //    CHECK_EXCEPTION(return array<mixed>());
-    array<mixed> res(array_size(size, true));
+    array<mixed> res{array_size{size, true}};
     for (int64_t i = 0; i < size; ++i) {
       fetch_magic_if_not_bare(inner_magic, "Incorrect magic of inner type of type Tuple");
       res.push_back(elem_state.fetch());
@@ -511,7 +512,7 @@ struct tl_array {
   }
 
   array<mixed> fetch() {
-    array<mixed> result(array_size(size, true));
+    array<mixed> result{array_size{size, true}};
     //    CHECK_EXCEPTION(return result);
     for (int64_t i = 0; i < size; ++i) {
       fetch_magic_if_not_bare(inner_magic, "Incorrect magic of inner type of tl array");
