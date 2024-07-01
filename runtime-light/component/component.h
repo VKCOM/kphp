@@ -27,7 +27,7 @@ struct ComponentState {
   using unordered_map = memory_resource::stl::unordered_map<Key, Value, memory_resource::unsynchronized_pool_resource>;
   template<typename T>
   using deque = memory_resource::stl::deque<T, memory_resource::unsynchronized_pool_resource>;
-  static constexpr auto INIT_RUNTIME_ALLOCATOR_SIZE = static_cast<const size_t>(32 * 1024U);
+  static constexpr auto INIT_RUNTIME_ALLOCATOR_SIZE = static_cast<size_t>(0x80000); // 512KB
 
   ComponentState()
     : runtime_allocator(INIT_RUNTIME_ALLOCATOR_SIZE, 0)
