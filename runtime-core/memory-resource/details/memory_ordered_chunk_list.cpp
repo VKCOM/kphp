@@ -5,13 +5,15 @@
 #include "runtime-core/memory-resource/details/memory_ordered_chunk_list.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <functional>
 
 namespace memory_resource {
 namespace details {
 
-memory_ordered_chunk_list::memory_ordered_chunk_list(char *memory_resource_begin) noexcept:
-  memory_resource_begin_(memory_resource_begin) {
+memory_ordered_chunk_list::memory_ordered_chunk_list(char *memory_resource_begin, char *memory_resource_end) noexcept
+  : memory_resource_begin_(memory_resource_begin)
+  , memory_resource_end_(memory_resource_end) {
   static_assert(sizeof(list_node) == 8, "8 bytes expected");
 }
 
@@ -33,7 +35,12 @@ void memory_ordered_chunk_list::add_from_array(list_node **first, list_node **la
     return;
   }
 
+  last = std::partition(first, last, [this](const auto *mem) {
+    return reinterpret_cast<uintptr_t>(mem) >= reinterpret_cast<uintptr_t>(this->memory_resource_begin_)
+           && reinterpret_cast<uintptr_t>(mem) < reinterpret_cast<uintptr_t>(this->memory_resource_end_);
+  });
   std::sort(first, last, std::greater<>{});
+
   if (!head_) {
     head_ = *first++;
   } else if (reinterpret_cast<char *>(head_) < reinterpret_cast<char *>(*first)) {

@@ -24,11 +24,11 @@ void RpcPendingQueries::hard_reset() {
   hard_reset_var(queries_);
 }
 
-void CurrentProcessingQuery::reset() {
+void CurrentTlQuery::reset() {
   current_tl_function_name_ = string();
 }
 
-void CurrentProcessingQuery::set_current_tl_function(const string &tl_function_name) {
+void CurrentTlQuery::set_current_tl_function(const string &tl_function_name) {
   // It can be not empty in the following case:
   // 1. Timeout is raised in the middle of serialization (when current TL function is still not reset).
   // 2. Then shutdown functions called from timeout.
@@ -37,11 +37,11 @@ void CurrentProcessingQuery::set_current_tl_function(const string &tl_function_n
   current_tl_function_name_ = tl_function_name;
 }
 
-void CurrentProcessingQuery::set_current_tl_function(const class_instance<RpcTlQuery> &current_query) {
+void CurrentTlQuery::set_current_tl_function(const class_instance<RpcTlQuery> &current_query) {
   current_tl_function_name_ = current_query.get()->tl_function_name;
 }
 
-void CurrentProcessingQuery::raise_fetching_error(const char *format, ...) {
+void CurrentTlQuery::raise_fetching_error(const char *format, ...) {
   php_assert(!current_tl_function_name_.empty());
   if (CurException.is_null()) {
     constexpr size_t BUFF_SZ = 1024;
@@ -58,7 +58,7 @@ void CurrentProcessingQuery::raise_fetching_error(const char *format, ...) {
   }
 }
 
-void CurrentProcessingQuery::raise_storing_error(const char *format, ...) {
+void CurrentTlQuery::raise_storing_error(const char *format, ...) {
   const char *function_name = current_tl_function_name_.empty() ? "_unknown_" : current_tl_function_name_.c_str();
   if (CurException.is_null()) {
     constexpr size_t BUFF_SZ = 1024;

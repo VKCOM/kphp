@@ -59,9 +59,9 @@ private:
         RETURN(error_factory_.make_error(last_rpc_error_message_get(), last_rpc_error_code_get()));
       }
 
-      CurrentProcessingQuery::get().set_current_tl_function(query_);
+      CurrentTlQuery::get().set_current_tl_function(query_);
       auto rpc_result = fetch_result(std::move(query_.get()->result_fetcher), error_factory_);
-      CurrentProcessingQuery::get().reset();
+      CurrentTlQuery::get().reset();
       rpc_parse_restore_previous();
       RETURN(rpc_result);
     RESUMABLE_END
@@ -243,7 +243,7 @@ array<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_synchronous
 }
 
 void free_typed_rpc_lib() {
-  CurrentProcessingQuery::get().reset();
+  CurrentTlQuery::get().reset();
   RpcPendingQueries::get().hard_reset();
   CurrentRpcServerQuery::get().reset();
 }

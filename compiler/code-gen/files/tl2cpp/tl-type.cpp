@@ -20,7 +20,7 @@ void TypeStore::compile(CodeGenerator &W) const {
 
   if (typed_mode) {
     W << "if (tl_object.is_null()) " << BEGIN
-      << "CurrentProcessingQuery::get().raise_storing_error(\"Instance expected, but false given while storing tl type\");" << NL
+      << "CurrentTlQuery::get().raise_storing_error(\"Instance expected, but false given while storing tl type\");" << NL
       << "return;" << NL
       << END << NL;
   }
@@ -48,7 +48,7 @@ void TypeStore::compile(CodeGenerator &W) const {
       W << cpp_tl_struct_name("c_", c->name, template_str) << "::" << store_call << NL << END;
     }
     W << (first ? "" : " else ") << BEGIN
-      << "CurrentProcessingQuery::get().raise_storing_error(\"Invalid constructor %s of type %s\", "
+      << "CurrentTlQuery::get().raise_storing_error(\"Invalid constructor %s of type %s\", "
       << "tl_object.get_class(), \"" << type->name << "\");" << NL
       << END << NL;
 
@@ -68,7 +68,7 @@ void TypeStore::compile(CodeGenerator &W) const {
       W << cpp_tl_struct_name("c_", c->name, template_str) << "::" << store_call << NL << END;
     }
     W << (first ? "" : " else ") << BEGIN
-      << "CurrentProcessingQuery::get().raise_storing_error(\"Invalid constructor %s of type %s\", "
+      << "CurrentTlQuery::get().raise_storing_error(\"Invalid constructor %s of type %s\", "
       << "c_name.c_str(), \"" << type->name << "\");" << NL
       << END << NL;
   }
@@ -112,7 +112,7 @@ void TypeFetch::compile(CodeGenerator &W) const {
   if (default_constructor != nullptr) {
     W << "int pos = tl_parse_save_pos();" << NL;
   }
-  W << "auto magic = static_cast<unsigned int>(rpc_fetch_int());" << NL;
+  W << "auto magic = static_cast<unsigned int>(f$fetch_int());" << NL;
   W << "switch(magic) " << BEGIN;
   for (const auto &c : type->constructors) {
     if (c.get() == default_constructor) {
@@ -150,7 +150,7 @@ void TypeFetch::compile(CodeGenerator &W) const {
       W << "tl_object = result;" << NL;
     }
   } else {
-    W << "CurrentProcessingQuery::get().raise_fetching_error(\"Incorrect magic of type " << type->name << ": 0x%08x\", magic);" << NL;
+    W << "CurrentTlQuery::get().raise_fetching_error(\"Incorrect magic of type " << type->name << ": 0x%08x\", magic);" << NL;
   }
   W << END << NL;
   W << END << NL;

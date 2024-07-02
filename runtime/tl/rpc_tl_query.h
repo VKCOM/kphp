@@ -37,10 +37,10 @@ private:
   array<class_instance<RpcTlQuery>> queries_;
 };
 
-class CurrentProcessingQuery {
+class CurrentTlQuery {
 public:
-  static CurrentProcessingQuery &get() {
-    static CurrentProcessingQuery context;
+  static CurrentTlQuery &get() {
+    static CurrentTlQuery context;
     return context;
   }
 
