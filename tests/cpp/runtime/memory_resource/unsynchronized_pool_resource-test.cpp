@@ -295,14 +295,14 @@ TEST(unsynchronized_pool_resource_test, test_auto_defragmentation_small_piece) {
 }
 
 TEST(unsynchronized_pool_resource_test, test_auto_defragmentation_with_extra_memory_pool) {
-  std::array<char, static_cast<size_t>(16 * 1024)> some_memory{};
+  std::array<char, static_cast<size_t>(18 * 1024)> some_memory{};
   memory_resource::unsynchronized_pool_resource resource;
   resource.init(some_memory.data(), some_memory.size());
 
   std::array<char, static_cast<size_t>(32 * 1024) + sizeof(memory_resource::extra_memory_pool)> extra_memory{};
   resource.add_extra_memory(new (extra_memory.data()) memory_resource::extra_memory_pool{extra_memory.size()});
 
-  std::array<void *, 48> pieces1024{};
+  std::array<void *, 50> pieces1024{};
   for (auto &mem : pieces1024) {
     mem = resource.allocate(1024);
   }
@@ -319,7 +319,7 @@ TEST(unsynchronized_pool_resource_test, test_auto_defragmentation_with_extra_mem
   ASSERT_EQ(mem_stats.memory_limit, some_memory.size());
   ASSERT_EQ(mem_stats.defragmentation_calls, 0);
   ASSERT_EQ(mem_stats.huge_memory_pieces, 0);
-  ASSERT_EQ(mem_stats.small_memory_pieces, 47);
+  ASSERT_EQ(mem_stats.small_memory_pieces, 49);
 
   // auto defragmentation
   void *mem2048 = resource.allocate(2048);
@@ -330,7 +330,7 @@ TEST(unsynchronized_pool_resource_test, test_auto_defragmentation_with_extra_mem
   ASSERT_EQ(mem_stats.max_memory_used, some_memory.size() + extra_memory.size() - sizeof(memory_resource::extra_memory_pool));
   ASSERT_EQ(mem_stats.memory_limit, some_memory.size());
   ASSERT_EQ(mem_stats.defragmentation_calls, 1);
-  ASSERT_EQ(mem_stats.huge_memory_pieces, 1);
+  ASSERT_EQ(mem_stats.huge_memory_pieces, 0);
   ASSERT_EQ(mem_stats.small_memory_pieces, 0);
 
   resource.deallocate(mem2048, 2048);

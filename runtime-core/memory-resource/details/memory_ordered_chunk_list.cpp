@@ -5,6 +5,7 @@
 #include "runtime-core/memory-resource/details/memory_ordered_chunk_list.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <functional>
 
 namespace memory_resource {
@@ -34,17 +35,11 @@ void memory_ordered_chunk_list::add_from_array(list_node **first, list_node **la
     return;
   }
 
+  last = std::partition(first, last, [this](const auto *mem) {
+    return reinterpret_cast<uintptr_t>(mem) >= reinterpret_cast<uintptr_t>(this->memory_resource_begin_)
+           && reinterpret_cast<uintptr_t>(mem) < reinterpret_cast<uintptr_t>(this->memory_resource_end_);
+  });
   std::sort(first, last, std::greater<>{});
-  { // skip memory that does not belong to the main memory resource, for example, skip memory from extra memory pools
-    const auto [minAddr, maxAddr]{std::minmax(memory_resource_begin_, memory_resource_end_)};
-    while (first != last) {
-      const auto *mem{reinterpret_cast<const char *>(*first)};
-      if (mem >= minAddr || mem < maxAddr) {
-        break;
-      }
-      ++first;
-    }
-  }
 
   if (!head_) {
     head_ = *first++;
