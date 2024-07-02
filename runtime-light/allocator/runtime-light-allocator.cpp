@@ -10,19 +10,18 @@
 #include "runtime-light/utils/panic.h"
 
 namespace {
-
-constexpr auto MIN_EXTRA_MEM_SIZE = static_cast<size_t>(32 * 1024U);
+// TODO: make it depend on max chunk size, e.g. MIN_EXTRA_MEM_SIZE = f(MAX_CHUNK_SIZE);
+constexpr auto MIN_EXTRA_MEM_SIZE = static_cast<size_t>(32 * 1024U); // extra mem size should be greater than max chunk block size
 
 bool is_script_allocator_available() {
   return get_component_context() != nullptr;
 }
 
 void request_extra_memory(size_t requested_size) {
-  const size_t extra_mem_size = std::max(MIN_EXTRA_MEM_SIZE, requested_size); // extra mem size should be greater than max chunk block size
+  const size_t extra_mem_size = std::max(MIN_EXTRA_MEM_SIZE, requested_size);
   auto &rt_alloc = RuntimeAllocator::current();
-  auto *extra_mem = static_cast<memory_resource::extra_memory_pool *>(rt_alloc.alloc_global_memory(extra_mem_size));
+  auto *extra_mem = rt_alloc.alloc_global_memory(extra_mem_size);
   rt_alloc.memory_resource.add_extra_memory(new (extra_mem) memory_resource::extra_memory_pool{extra_mem_size});
-  rt_alloc.init(extra_mem->memory_begin(), extra_mem->get_pool_payload_size(), 0);
 }
 
 } // namespace
