@@ -26,10 +26,7 @@ memory_ordered_chunk_list::list_node *memory_ordered_chunk_list::flush() noexcep
 }
 
 void memory_ordered_chunk_list::save_next(list_node *node, const list_node *next) const noexcept {
-  // save next iff node and next belong to the same memory resource
-  if (reinterpret_cast<const char *>(next) >= memory_resource_begin_ && reinterpret_cast<const char *>(next) < memory_resource_end_) {
-    node->next_chunk_offset_ = static_cast<uint32_t>(reinterpret_cast<const char *>(next) - memory_resource_begin_);
-  }
+  node->next_chunk_offset_ = static_cast<uint32_t>(reinterpret_cast<const char *>(next) - memory_resource_begin_);
 }
 
 void memory_ordered_chunk_list::add_from_array(list_node **first, list_node **last) noexcept {
@@ -38,6 +35,11 @@ void memory_ordered_chunk_list::add_from_array(list_node **first, list_node **la
   }
 
   std::sort(first, last, std::greater<>{});
+  // skip memory that does not belong to the main memory resource, for example, skip memory from extra memory pools
+  while (first != last && (reinterpret_cast<const char *>(*first) < memory_resource_begin_ || reinterpret_cast<const char *>(*first) >= memory_resource_end_)) {
+    ++first;
+  }
+
   if (!head_) {
     head_ = *first++;
   } else if (reinterpret_cast<char *>(head_) < reinterpret_cast<char *>(*first)) {
