@@ -17,7 +17,7 @@
 #include <stdint.h>
 #endif
 
-#define K2_PLATFORM_HEADER_H_VERSION 5
+#define K2_PLATFORM_HEADER_H_VERSION 6
 
 // Always check that enum value is a valid value!
 
@@ -94,7 +94,7 @@ struct PlatformCtx {
 
   /*
    * Immediately abort component execution.
-   * Function is [[noreturn]]
+   * Function is `[[noreturn]]`
    */
   void (*abort)();
 
@@ -210,7 +210,7 @@ struct PlatformCtx {
    * If a component has not read all updates during a `poll` iteration, the
    * platform is guaranteed to reschedule it.
    */
-  char (*take_update)(uint64_t *update_d);
+  uint8_t (*take_update)(uint64_t *update_d);
   /*
    * Only utf-8 string supported.
    * Possible `level` values:
@@ -241,9 +241,9 @@ enum PollStatus {
   PollBlocked = 0,
   // there is some cpu work to do; platform will reschedule component
   PollReschedule = 1,
-  // component decide to shutdown
+  // component decide to shutdown normally
   PollFinishedOk = 2,
-  // component decide to shutdown
+  // component decide to shutdown unexpectedly
   PollFinishedError = 3,
 };
 
@@ -255,6 +255,10 @@ struct ImageInfo {
   uint64_t build_timestamp;
   uint64_t header_h_version;
   uint8_t commit_hash[40];
+  // TODO: more informative?
+  uint8_t compiler_hash[64];
+  // bool
+  uint8_t is_oneshot;
 };
 
 // Every image should provide these symbols
