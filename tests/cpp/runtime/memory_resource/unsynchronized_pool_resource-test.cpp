@@ -254,7 +254,7 @@ TEST(unsynchronized_pool_resource_test, test_auto_defragmentation_huge_piece) {
 
 
 TEST(unsynchronized_pool_resource_test, test_auto_defragmentation_small_piece) {
-  std::array<char, 1024*32> some_memory{};
+  std::array<char, static_cast<size_t>(1024 * 32)> some_memory{};
   memory_resource::unsynchronized_pool_resource resource;
 
   resource.init(some_memory.data(), some_memory.size());
