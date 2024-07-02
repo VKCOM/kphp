@@ -284,7 +284,10 @@ void ComponentInfoFile::compile(CodeGenerator &W) const {
     << "static ImageInfo imageInfo {\"" << G->settings().k2_component_name.get() << "\"" << ","
                                         << std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count() << ","
                                         << "K2_PLATFORM_HEADER_H_VERSION, "
-                                        << "{" << "}};" << NL //todo:k2 add commit hash
+                                        << "{}," //todo:k2 add commit hash
+                                        << "{}," //todo:k2 add compiler hash?
+                                        << (G->settings().k2_component_is_oneshot.get() ? "1" : "0")
+                                        << "};" << NL
     << "return &imageInfo;" << NL
     << END;
   W << CloseFile();

@@ -149,6 +149,8 @@ public:
   KphpOption<std::string> php_code_version;
   KphpOption<std::string> k2_component_name;
 
+  KphpOption<bool> k2_component_is_oneshot;
+
   KphpOption<std::string> cxx;
   KphpOption<std::string> cxx_toolchain_dir;
   KphpOption<std::string> extra_cxx_flags;

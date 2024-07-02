@@ -212,7 +212,7 @@ int main(int argc, char *argv[]) {
   parser.add("Path to kphp source", settings->kphp_src_path,
              's', "source-path", "KPHP_PATH", get_default_kphp_path());
   parser.add("Internal file with the list of supported PHP functions", settings->functions_file,
-             'f', "functions-file", "KPHP_FUNCTIONS", "${KPHP_PATH}/builtin-functions/kphp-full/_functions.txt");
+             'f', "functions-file", "KPHP_FUNCTIONS");
   parser.add("File with kphp runtime sha256 hash", settings->runtime_sha256_file,
              "runtime-sha256", "KPHP_RUNTIME_SHA256", "${KPHP_PATH}/objs/php_lib_version.sha256");
   parser.add("The output binary type: server, k2-component, cli or lib", settings->mode,
@@ -295,6 +295,8 @@ int main(int argc, char *argv[]) {
              "require-class-typing", "KPHP_REQUIRE_CLASS_TYPING");
   parser.add("Define k2 component name. Default is \"KPHP\"", settings->k2_component_name,
              "k2-component-name", "KPHP_K2_COMPONENT_NAME", "KPHP");
+  parser.add("Enable oneshot mode to k2 component", settings->k2_component_is_oneshot,
+             "oneshot", "KPHP_K2_COMPONENT_IS_ONESHOT");
 
   parser.add_implicit_option("Linker flags", settings->ld_flags);
   parser.add_implicit_option("Incremental linker flags", settings->incremental_linker_flags);

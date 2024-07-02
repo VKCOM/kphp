@@ -34,16 +34,16 @@ void f$debug_print_string(const string &s) {
 Optional<int64_t> f$byte_to_int(const string &s) {
   if (s.size() != 1) {
     php_warning("Cannot convert non-byte string to int");
-    return false;
+    return Optional<int64_t>();
   }
   return *s.c_str();
 }
 
 Optional<string> f$int_to_byte(int64_t v) {
-  if (v > 127 || v < -128) {
-    php_warning("Cannot convert too big int to byte %ld", v);
-    return false;
-  }
+//  if (v > 127 || v < -128) {
+//    php_warning("Cannot convert too big int to byte %ld", v);
+//    return false;
+//  }
   char c = v;
   string result(&c, 1);
   return result;
