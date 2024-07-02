@@ -35,9 +35,15 @@ void memory_ordered_chunk_list::add_from_array(list_node **first, list_node **la
   }
 
   std::sort(first, last, std::greater<>{});
-  // skip memory that does not belong to the main memory resource, for example, skip memory from extra memory pools
-  while (first != last && (reinterpret_cast<const char *>(*first) < memory_resource_begin_ || reinterpret_cast<const char *>(*first) >= memory_resource_end_)) {
-    ++first;
+  { // skip memory that does not belong to the main memory resource, for example, skip memory from extra memory pools
+    const auto [minAddr, maxAddr]{std::minmax(memory_resource_begin_, memory_resource_end_)};
+    while (first != last) {
+      const auto *mem{reinterpret_cast<const char *>(*first)};
+      if (mem >= minAddr || mem < maxAddr) {
+        break;
+      }
+      ++first;
+    }
   }
 
   if (!head_) {

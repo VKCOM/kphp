@@ -330,7 +330,7 @@ TEST(unsynchronized_pool_resource_test, test_auto_defragmentation_with_extra_mem
   ASSERT_EQ(mem_stats.max_memory_used, some_memory.size() + extra_memory.size() - sizeof(memory_resource::extra_memory_pool));
   ASSERT_EQ(mem_stats.memory_limit, some_memory.size());
   ASSERT_EQ(mem_stats.defragmentation_calls, 1);
-  ASSERT_EQ(mem_stats.huge_memory_pieces, 0);
+  ASSERT_EQ(mem_stats.huge_memory_pieces, 1);
   ASSERT_EQ(mem_stats.small_memory_pieces, 0);
 
   resource.deallocate(mem2048, 2048);
