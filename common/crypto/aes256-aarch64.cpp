@@ -97,7 +97,7 @@ void crypto_aarch64_aes256_cbc_encrypt(vk_aes_ctx_t *vk_ctx, const uint8_t *in, 
 
   asm volatile("mov x9, %[iv]  ;"       // move IV address in x9
                "mov x10, %[out] ;"      // move out address in x10
-               "mov x11, %[size] ;"     // move size value in x11
+               "mov x11, %x[size] ;"    // move size value in x11
                "mov x12, %[in] ;"       // move plaintext address in x12
                "mov x13, %[key] ;"      // move key address in x13
                "ld1 {v25.16b}, [x9] ;"  // load IV to v0.16b
@@ -167,7 +167,7 @@ void crypto_aarch64_aes256_cbc_decrypt(vk_aes_ctx_t *vk_ctx, const uint8_t *in, 
 
   asm volatile("mov x9, %[iv]  ;"       // move IV address in x9
                "mov x10, %[out] ;"      // move out address in x10
-               "mov x11, %[size] ;"     // move size value in x11
+               "mov x11, %x[size] ;"    // move size value in x11
                "mov x12, %[in] ;"       // move ciphertext address in x12
                "mov x13, %[key] ;"      // move key address in x13
                "ld1 {v25.16b}, [x9] ;"  // load IV to v25.16b
@@ -238,7 +238,7 @@ void crypto_aarch64_aes256_ige_encrypt(vk_aes_ctx_t *vk_ctx, const uint8_t *in, 
 
   asm volatile("mov x9, %[iv]  ;"             // move IGE IV address in x9
                "mov x10, %[out] ;"            // move out address in x10
-               "mov x11, %[size] ;"           // move size value in x11
+               "mov x11, %x[size] ;"          // move size value in x11
                "mov x12, %[in] ;"             // move plaintext address in x12
                "mov x13, %[key] ;"            // move key address in x13
                "ld1 {v25.16b}, [x9], #16 ;"   // load IGE IV Y to v25.16b
@@ -313,7 +313,7 @@ void crypto_aarch64_aes256_ige_decrypt(vk_aes_ctx_t *vk_ctx, const uint8_t *in, 
 
   asm volatile("mov x9, %[iv]  ;"           // move IGE IV address in x9
                "mov x10, %[out] ;"          // move out address in x10
-               "mov x11, %[size] ;"         // move size value in x11
+               "mov x11, %x[size] ;"        // move size value in x11
                "mov x12, %[in] ;"           // move cyphertext address in x12
                "mov x13, %[key] ;"          // move key address in x13
                "ld1 {v25.16b}, [x9], #16 ;" // load IGE IV Y to v25.16b
@@ -435,8 +435,8 @@ static inline void crypto_aarch64_aes256_encrypt_single_block(vk_aes_ctx_t *vk_c
 }
 
 static inline void crypto_aarch64_aes256_encrypt_n_blocks(vk_aes_ctx_t *vk_ctx, const uint8_t *in, uint8_t *out, uint8_t iv[16], int n) {
-  asm volatile("mov x9, %[out] ;"      // move out address in x9
-               "mov x10, %[in] ;"       // move plaintext address in x10
+  asm volatile("mov x9, %[out] ;"       // move out address in x9
+               "mov x10, %x[in] ;"      // move plaintext address in x10
                "mov x11, %[key] ;"      // move key address in x11
                "mov x12, %[iv]  ;"      // move IV address in x12
                "mov x13, %[n] ;"        // move n value in x11
