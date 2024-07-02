@@ -36,10 +36,10 @@ void unsynchronized_pool_resource::unfreeze_oom_handling_memory() noexcept {
 
 void unsynchronized_pool_resource::perform_defragmentation() noexcept {
   memory_debug("perform memory defragmentation\n");
-  details::memory_ordered_chunk_list mem_list{memory_begin_};
+  details::memory_ordered_chunk_list mem_list{memory_begin_, memory_end_};
 
   huge_pieces_.flush_to(mem_list);
-  if (const size_t fallback_resource_left_size = fallback_resource_.size()) {
+  if (const auto fallback_resource_left_size = fallback_resource_.size(); fallback_resource_left_size > 0) {
     mem_list.add_memory(fallback_resource_.memory_current(), fallback_resource_left_size);
     fallback_resource_.init(nullptr, 0);
   }
@@ -75,7 +75,7 @@ void *unsynchronized_pool_resource::allocate_small_piece_from_fallback_resource(
   details::memory_chunk_tree::tree_node *smallest_huge_piece = huge_pieces_.extract_smallest();
   if (!smallest_huge_piece) {
     perform_defragmentation();
-    if ((mem = try_allocate_small_piece(aligned_size))) {
+    if (mem = try_allocate_small_piece(aligned_size); mem != nullptr) {
       return mem;
     }
     smallest_huge_piece = huge_pieces_.extract_smallest();

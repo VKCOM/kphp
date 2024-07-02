@@ -10,8 +10,9 @@
 namespace memory_resource {
 namespace details {
 
-memory_ordered_chunk_list::memory_ordered_chunk_list(char *memory_resource_begin) noexcept:
-  memory_resource_begin_(memory_resource_begin) {
+memory_ordered_chunk_list::memory_ordered_chunk_list(char *memory_resource_begin, char *memory_resource_end) noexcept
+  : memory_resource_begin_(memory_resource_begin)
+  , memory_resource_end_(memory_resource_end) {
   static_assert(sizeof(list_node) == 8, "8 bytes expected");
 }
 
@@ -25,7 +26,10 @@ memory_ordered_chunk_list::list_node *memory_ordered_chunk_list::flush() noexcep
 }
 
 void memory_ordered_chunk_list::save_next(list_node *node, const list_node *next) const noexcept {
-  node->next_chunk_offset_ = static_cast<uint32_t>(reinterpret_cast<const char *>(next) - memory_resource_begin_);
+  // save next iff node and next belong to the same memory resource
+  if (reinterpret_cast<const char *>(next) >= memory_resource_begin_ && reinterpret_cast<const char *>(next) < memory_resource_end_) {
+    node->next_chunk_offset_ = static_cast<uint32_t>(reinterpret_cast<const char *>(next) - memory_resource_begin_);
+  }
 }
 
 void memory_ordered_chunk_list::add_from_array(list_node **first, list_node **last) noexcept {
