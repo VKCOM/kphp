@@ -6,6 +6,7 @@ set(KEYWORDS_GPERF ${KPHP_COMPILER_DIR}/keywords.gperf)
 prepend(RUNTIME_BUILD_INFO ${KPHP_COMPILER_AUTO_DIR}/
         common_sources.h
         runtime_sources.h
+        runtime_core_sources.h
         runtime_compile_flags.h)
 
 prepend(KPHP_COMPILER_COMMON ${COMMON_DIR}/
