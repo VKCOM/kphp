@@ -1,8 +1,13 @@
 include_guard(GLOBAL)
 
-prepend(LIGHT_COMMON_SOURCES ${COMMON_DIR}/
+set(LIGHT_COMMON_SOURCES
         algorithms/simd-int-to-string.cpp
 )
+
+set(COMMON_SOURCES_FOR_COMP "${LIGHT_COMMON_SOURCES}")
+configure_file(${BASE_DIR}/compiler/common_sources.h.in ${AUTO_DIR}/compiler/common_sources.h)
+
+prepend(LIGHT_COMMON_SOURCES ${COMMON_DIR}/ ${LIGHT_COMMON_SOURCES})
 
 prepend(POPULAR_COMMON_SOURCES ${COMMON_DIR}/
         resolver.cpp
@@ -36,6 +41,9 @@ endif()
 
 vk_add_library(light_common OBJECT ${LIGHT_COMMON_SOURCES})
 set_property(TARGET light_common PROPERTY POSITION_INDEPENDENT_CODE ON)
+target_compile_options(light_common PUBLIC -stdlib=libc++)
+target_link_options(light_common PUBLIC -stdlib=libc++ -static-libstdc++)
+
 vk_add_library(popular_common OBJECT ${POPULAR_COMMON_SOURCES} ${LIGHT_COMMON_SOURCES})
 set_property(TARGET popular_common PROPERTY POSITION_INDEPENDENT_CODE ON)
 

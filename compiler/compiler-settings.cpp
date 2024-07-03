@@ -316,6 +316,12 @@ void CompilerSettings::init() {
     #error unsupported __cplusplus value
   #endif
 
+  if (mode.get() == "k2-component") {
+    // for now k2-component must be compiled with clang and statically linked libc++
+    ss << " -stdlib=libc++";
+  } else {
+    kphp_error(!rt_from_sources.get(), "Building runtime from sources is available only for 'k2-component' mode");
+  }
   std::string cxx_default_flags = ss.str();
 
   cxx_toolchain_option.value_ = !cxx_toolchain_dir.value_.empty() ? ("-B" + cxx_toolchain_dir.value_) : "";

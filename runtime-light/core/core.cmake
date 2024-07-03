@@ -1,7 +1,7 @@
-prepend(RUNTIME_LANGUAGE_SRC ${BASE_DIR}/runtime-light/core/globals/
+prepend(RUNTIME_LANGUAGE_SRC core/globals/
         php-script-globals.cpp)
 
-prepend(RUNTIME_KPHP_CORE_CONTEXT_SRC ${BASE_DIR}/runtime-light/core/kphp-core-impl/
+prepend(RUNTIME_KPHP_CORE_CONTEXT_SRC core/kphp-core-impl/
         kphp-core-context.cpp)
 
 

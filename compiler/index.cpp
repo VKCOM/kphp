@@ -146,9 +146,47 @@ int Index::scan_dir_callback(const char *fpath, const struct stat *sb, int typef
 void Index::sync_with_dir(const std::string &dir) {
   kphp_assert(files_prev_launch.empty() && files_only_cur_launch.empty() && this->dir.empty());
   set_dir(dir);
-  current_index = this;
+  current_index = this; // Presence of this global variable is strange. Used for traversal callback in NFTW function
   int err = nftw(dir.c_str(), scan_dir_callback, 10, FTW_PHYS/*ignore symbolic links*/);
   kphp_assert_msg(err == 0, fmt_format("ftw [{}] failed", dir));
+}
+
+void Index::filter_with_whitelist(const std::vector<std::string> &white_list) {
+  subdirs.clear();
+
+  std::unordered_set<vk::string_view> white_set;
+  white_set.reserve(white_list.size());
+  for (const auto &allowed : white_list) {
+    white_set.insert(allowed);
+  }
+
+  for (auto it = files_prev_launch.begin(); it != files_prev_launch.end();) {
+    File *file = it->second;
+    if (!white_set.contains(file->name)) {
+      delete file;
+      it = files_prev_launch.erase(it);
+    } else {
+      if (!file->subdir.empty()) {
+        subdirs.insert(file->subdir);
+      }
+      ++it;
+    }
+  }
+}
+
+void Index::del_all_files() {
+  for (File *file : get_files()) {
+    if (G->settings().verbosity.get() > 1) {
+      fprintf(stderr, "unlink %s\n", file->path.c_str());
+    }
+    int err = unlink(file->path.c_str());
+    if (err != 0) {
+      kphp_error (0, fmt_format("Failed to unlink file {}: {}", file->path, strerror(errno)));
+      kphp_fail();
+    }
+
+    delete file;
+  }
 }
 
 void Index::del_extra_files() {
@@ -181,7 +219,7 @@ void Index::create_subdir(vk::string_view subdir) {
     return;
   }
   std::string full_path = get_dir() + subdir;
-  int ret = mkdir(full_path.c_str(), 0777);
+  int ret = mkdir_recursive(full_path.c_str(), 0777);
   kphp_assert_msg(ret != -1 || errno == EEXIST, full_path);
   if (errno == EEXIST && !is_dir(full_path)) {
     kphp_error (0, fmt_format("[{}] is not a directory", full_path.c_str()));
@@ -224,7 +262,7 @@ File *Index::insert_file(std::string path) {
   }
 //  printf("%s not found in index, creating\n", file_name.c_str());
 
-  std::lock_guard<std::mutex> guard{mutex_rw_cur_launch};
+  std::lock_guard<std::mutex> guard{mutex_rw_cur_launch}; // It's reasonable only for Php2Cpp
 
   f = new File(path);
   f->calc_name_ext_and_others(get_dir());
