@@ -1,4 +1,4 @@
-prepend(RUNTIME_STDLIB_SRC ${BASE_DIR}/runtime-light/stdlib/
+prepend(RUNTIME_STDLIB_SRC stdlib/
         interface.cpp
         misc.cpp
         output-control.cpp
