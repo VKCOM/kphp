@@ -1,1 +1,1 @@
-set(RUNTIME_ALLOCATOR_SRC allocator/allocator.cpp)
+set(RUNTIME_ALLOCATOR_SRC allocator/runtime-light-allocator.cpp)

@@ -448,13 +448,14 @@ static std::string get_light_runtime_compiler_options() {
 }
 
 static std::vector<File *> build_runtime_and_common_from_sources(const std::string &compiler_flags, MakeSetup &make, Index &obj_dir) {
-  const Index & runtime_dir = G->get_runtime_index();
-  const Index & common_dir = G->get_common_index();
+  const Index &runtime_core_dir = G->get_runtime_core_index();
+  const Index &runtime_dir = G->get_runtime_index();
+  const Index &common_dir = G->get_common_index();
 
   std::vector<File*> objs;
   objs.reserve(runtime_dir.get_files_count() + common_dir.get_files_count());
 
-  for (const auto *dir : std::vector<const Index*>{&runtime_dir, &common_dir}) {
+  for (const auto *dir : std::vector<const Index*>{&runtime_core_dir, &runtime_dir, &common_dir}) {
     for (File *cpp_file : dir->get_files()) {
       File *obj_file = obj_dir.insert_file(static_cast<std::string>(cpp_file->name_without_ext) + ".o");
       make.create_cpp_target(cpp_file);

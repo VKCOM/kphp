@@ -20,6 +20,7 @@
 #include "compiler/data/src-dir.h"
 #include "compiler/data/src-file.h"
 #include "compiler/name-gen.h"
+#include "compiler/runtime_build_info.h"
 
 namespace {
 
@@ -638,6 +639,10 @@ const Index &CompilerCore::get_runtime_index() {
   return runtime_sources_index;
 }
 
+const Index &CompilerCore::get_runtime_core_index() {
+  return runtime_core_sources_index;
+}
+
 const Index &CompilerCore::get_common_index() {
   return common_sources_index;
 }
@@ -656,21 +661,36 @@ void CompilerCore::init_dest_dir() {
   cpp_dir = cpp_index.get_dir();
 }
 
-static std::vector<std::string> get_runtime_sources() {
-#ifdef RUNTIME_SOURCES
-  return split(RUNTIME_SOURCES, ';');
-#endif
+static std::vector<std::string> get_runtime_core_sources() {
+#if defined(RUNTIME_CORE_SOURCES)
+  return split(RUNTIME_CORE_SOURCES, ';');
+#else
   return {};
+#endif
+}
+
+static std::vector<std::string> get_runtime_sources() {
+#if defined(RUNTIME_SOURCES)
+  return split(RUNTIME_SOURCES, ';');
+#else
+  return {};
+#endif
 }
 
 static std::vector<std::string> get_common_sources() {
 #ifdef COMMON_SOURCES
   return split(COMMON_SOURCES, ';');
-#endif
+#else
   return {};
+#endif
 }
 
 void CompilerCore::init_runtime_and_common_srcs_dir() {
+  runtime_core_sources_dir = settings().runtime_and_common_src.get() + "runtime-core/";
+  runtime_core_sources_index.sync_with_dir(runtime_core_sources_dir);
+  runtime_core_sources_dir = runtime_core_sources_index.get_dir();
+  runtime_core_sources_index.filter_with_whitelist(get_runtime_core_sources());
+
   runtime_sources_dir = settings().runtime_and_common_src.get() + "runtime-light/";
   runtime_sources_index.sync_with_dir(runtime_sources_dir);
   runtime_sources_dir = runtime_sources_index.get_dir(); // As in init_dest_dir, IDK what is it for
