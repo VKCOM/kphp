@@ -60,7 +60,7 @@ inline ClassMemberStaticField::ClassMemberStaticField(ClassPtr klass, VertexAdap
   std::string global_var_name = replace_backslashes(klass->name) + "$$" + root->get_string();
   var = G->get_global_var(global_var_name, def_val);
   root->var_id = var;
-  var->init_val = def_val;
+  var->init_val = def_val; // here is default val. It is not updated???
   var->class_id = klass;
 }
 

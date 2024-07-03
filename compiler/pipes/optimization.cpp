@@ -80,7 +80,13 @@ void explicit_cast_array_type(VertexPtr &type_acceptor, const TypeData *required
     return;
   }
   if (type_acceptor->extra_type == op_ex_var_const) {
+    fmt_print("explicit cast of {} to {}\n", type_acceptor->get_string(), required_type->as_human_readable());
+    if (!type_acceptor.try_lock()) {
+      kphp_error(false, "Failed to lock in explicit_cast_array_type");
+    }
     auto var_id = cast_const_array_type(type_acceptor, required_type);
+    type_acceptor.unlock();
+    fmt_print("after cast of {} to {}\n", type_acceptor->get_string(), required_type->as_human_readable());
     if (new_var_out) {
       new_var_out->emplace(var_id);
     }
@@ -337,6 +343,7 @@ bool OptimizationPass::user_recursion(VertexPtr root) {
         kphp_assert(var_init_expression_optimization_depth_ > 0);
         --var_init_expression_optimization_depth_;
         if (!var->is_constant()) {
+          fmt_print("do a job for {}!\n", var->as_human_readable());
           explicit_cast_array_type(var->init_val, tinf::get_type(var));
         }
       }

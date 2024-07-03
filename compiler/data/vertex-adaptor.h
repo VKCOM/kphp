@@ -8,6 +8,7 @@
 #include "common/wrappers/fmt_format.h"
 
 #include "compiler/location.h"
+#include "compiler/threading/locks.h"
 #include "compiler/operation.h"
 
 template<Operation Op>
@@ -21,7 +22,7 @@ using VertexPtr = VertexAdaptor<meta_op_base>;
 VertexPtr clone_vertex(VertexPtr);
 
 template<Operation Op>
-class VertexAdaptor {
+class VertexAdaptor : public Lockable {
   vertex_inner<Op> *impl_{nullptr};
 
   template<Operation Op2>

@@ -31,7 +31,7 @@ public:
   int param_i = -1;
   std::string name;
   tinf::VarNode tinf_node;
-  VertexPtr init_val;
+  VertexPtr init_val; // it's used by different threads without synchronization
   FunctionPtr holder_func;
   ClassPtr class_id;
   std::unordered_set<VarPtr> *bad_vars = nullptr;

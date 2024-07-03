@@ -40,9 +40,13 @@ void GlobalVarsReset::compile_globals_reset_part(CodeGenerator &W, const Globals
     // todo probably, inline hard_reset_var() body, since it uses new(&)?
     W << "// " << var->as_human_readable() << NL;
     W << "hard_reset_var(" << GlobalVarInPhpGlobals(var);
+    if (!var->init_val.try_lock()) {
+      kphp_error(false, "Failed to lock when codegen hard_reset_var");
+    }
     if (var->init_val) {
       W << ", " << var->init_val;
     }
+    var->init_val.unlock();
     W << ");" << NL;
   }
 

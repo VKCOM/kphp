@@ -6,6 +6,7 @@
 
 #include <cassert>
 #include <unistd.h>
+#include "compiler/kphp_assert.h"
 
 template<class T>
 bool try_lock(T);
@@ -31,7 +32,12 @@ inline void lock(volatile int *locker) {
 }
 
 inline void unlock(volatile int *locker) {
-  assert(*locker == 1);
+  if (*locker != 1) {
+    std::string s = "Real value when unlock = " + std::to_string(*locker);
+    fprintf(stdout, "%s\n", s.c_str());
+    fflush(stdout);
+    abort();
+  }
   __sync_lock_release(locker);
 }
 
@@ -46,6 +52,10 @@ public:
 
   void lock() {
     ::lock(&x);
+  }
+
+  bool try_lock() {
+    return ::try_lock(&x);
   }
 
   void unlock() {
