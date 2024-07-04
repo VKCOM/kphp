@@ -8,8 +8,6 @@ RUN apt-get update && \
     echo "deb https://archive.debian.org/debian buster-backports main" >> /etc/apt/sources.list && \
     wget -qO /etc/apt/trusted.gpg.d/vkpartner.asc https://artifactory-external.vkpartner.ru/artifactory/api/gpg/key/public && \
     echo "deb https://artifactory-external.vkpartner.ru/artifactory/kphp buster main" >> /etc/apt/sources.list && \
-    wget -qO - https://packages.sury.org/php/apt.gpg | apt-key add - && \
-    echo "deb https://packages.sury.org/php/ buster main" >> /etc/apt/sources.list.d/php.list && \
     TEMP_DEB="$(mktemp)" && \
     wget -O "$TEMP_DEB" 'https://dev.mysql.com/get/mysql-apt-config_0.8.29-1_all.deb' && \
     dpkg -i "$TEMP_DEB" && \
