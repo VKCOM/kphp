@@ -4,12 +4,13 @@
 
 #include "compiler/make/make.h"
 
-#include <ftw.h>
+#include <dirent.h>
 #include <forward_list>
+#include <ftw.h>
 #include <queue>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <unordered_map>
-#include <dirent.h>
 
 #include "common/wrappers/mkdir_recursive.h"
 #include "common/wrappers/pathname.h"
@@ -216,7 +217,12 @@ File *prepare_precompiled_header(Index *obj_dir, MakeSetup &make, File &runtime_
 
   struct stat sb_pch_dir;
   int stat_res = stat(flags.pch_dir.get().c_str(), &sb_pch_dir);
-  long long pch_dir_mtime = sb_pch_dir.st_mtime * 1000000000LL + sb_pch_dir.st_mtim.tv_nsec;
+  long long pch_dir_mtime = sb_pch_dir.st_mtime * 1000000000LL +
+#ifdef __APPLE__
+    sb_pch_dir.st_mtimespec.tv_nsec;
+#else
+    sb_pch_dir.st_mtim.tv_nsec;
+#endif
   if (stat_res != -1 && runtime_headers_h.mtime > pch_dir_mtime) { // check for mtime because compiler fails when .h file has bigger mtime than .gch
     rm_rf(flags.pch_dir.get().c_str());
   }
