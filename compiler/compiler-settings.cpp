@@ -319,6 +319,7 @@ void CompilerSettings::init() {
   if (mode.get() == "k2-component") {
     // for now k2-component must be compiled with clang and statically linked libc++
     ss << " -stdlib=libc++";
+    
   } else {
     kphp_error(!rt_from_sources.get(), "Building runtime from sources is available only for 'k2-component' mode");
   }
