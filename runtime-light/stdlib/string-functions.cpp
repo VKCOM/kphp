@@ -40,10 +40,10 @@ Optional<int64_t> f$byte_to_int(const string &s) {
 }
 
 Optional<string> f$int_to_byte(int64_t v) {
-//  if (v > 127 || v < -128) {
-//    php_warning("Cannot convert too big int to byte %ld", v);
-//    return false;
-//  }
+  if (v > 127 || v < -128) {
+    php_warning("Cannot convert too big int to byte %ld", v);
+    return false;
+  }
   char c = v;
   string result(&c, 1);
   return result;
