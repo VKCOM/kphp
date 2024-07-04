@@ -662,7 +662,7 @@ void CompilerCore::init_dest_dir() {
 }
 
 static std::vector<std::string> get_runtime_core_sources() {
-#if defined(RUNTIME_CORE_SOURCES)
+#ifdef RUNTIME_LIGHT
   return split(RUNTIME_CORE_SOURCES, ';');
 #else
   return {};
@@ -670,7 +670,7 @@ static std::vector<std::string> get_runtime_core_sources() {
 }
 
 static std::vector<std::string> get_runtime_sources() {
-#if defined(RUNTIME_SOURCES)
+#ifdef RUNTIME_LIGHT
   return split(RUNTIME_SOURCES, ';');
 #else
   return {};
@@ -678,7 +678,7 @@ static std::vector<std::string> get_runtime_sources() {
 }
 
 static std::vector<std::string> get_common_sources() {
-#ifdef COMMON_SOURCES
+#ifdef RUNTIME_LIGHT
   return split(COMMON_SOURCES, ';');
 #else
   return {};

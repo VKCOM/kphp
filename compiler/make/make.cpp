@@ -430,6 +430,7 @@ static std::forward_list<Index> collect_imported_headers() {
 static std::string get_light_runtime_compiler_options() {
   std::stringstream s;
 
+#ifdef RUNTIME_LIGHT
   std::vector<std::string> black_list_substrings = {"debug-prefix-map"};
   std::vector<std::string> options = split(RUNTIME_COMPILER_FLAGS, ';');
 
@@ -443,6 +444,7 @@ static std::string get_light_runtime_compiler_options() {
   s << "-iquote " << G->settings().runtime_and_common_src.get() << " ";
   s << "-fpic ";
   s << "-stdlib=libc++ ";
+#endif
 
   return s.str();
 }

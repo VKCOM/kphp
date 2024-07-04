@@ -162,7 +162,7 @@ void Index::filter_with_whitelist(const std::vector<std::string> &white_list) {
 
   for (auto it = files_prev_launch.begin(); it != files_prev_launch.end();) {
     File *file = it->second;
-    if (!white_set.contains(file->name)) {
+    if (white_set.count(file->name) == 0) {
       delete file;
       it = files_prev_launch.erase(it);
     } else {
