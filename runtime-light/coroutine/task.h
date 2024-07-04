@@ -150,7 +150,7 @@ struct task_t : public task_base_t {
     if constexpr (!std::is_void<T>{}) {
       T *t = std::launder(reinterpret_cast<T *>(get_handle().promise().bytes));
       const vk::final_action final_action([t] { t->~T(); });
-      return std::move(*t); // FIXME ???
+      return *t;
     }
   }
 
