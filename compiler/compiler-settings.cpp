@@ -224,6 +224,18 @@ void CompilerSettings::init() {
     }
   }
   link_file.value_ = get_full_path(link_file.get());
+  if (functions_file.value_.empty()) {
+    if (mode.get() == "k2-component") {
+      functions_file.value_ = kphp_src_path.get() + "/builtin-functions/kphp-light/functions.txt";
+    } else {
+      functions_file.value_ = kphp_src_path.get() + "/builtin-functions/kphp-full/_functions.txt";
+    }
+  }
+  functions_file.value_ = get_full_path(functions_file.get());
+
+  if (k2_component_name.get() != "KPHP" || k2_component_is_oneshot.get()) {
+    kphp_error(mode.get() == "k2-component", "Options \"k2-component-name\" and \"oneshot\" available only fore k2-component mode");
+  }
 
   if (mode.get() == "lib") {
     if (!tl_schema_file.get().empty()) {

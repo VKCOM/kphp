@@ -34,7 +34,7 @@ void f$debug_print_string(const string &s) {
 Optional<int64_t> f$byte_to_int(const string &s) {
   if (s.size() != 1) {
     php_warning("Cannot convert non-byte string to int");
-    return false;
+    return Optional<int64_t>();
   }
   return *s.c_str();
 }
