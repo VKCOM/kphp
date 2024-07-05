@@ -8,8 +8,9 @@ RUN apt-get update && \
     echo "deb https://archive.debian.org/debian buster-backports main" >> /etc/apt/sources.list && \
     wget -qO /etc/apt/trusted.gpg.d/vkpartner.asc https://artifactory-external.vkpartner.ru/artifactory/api/gpg/key/public && \
     echo "deb https://artifactory-external.vkpartner.ru/artifactory/kphp buster main" >> /etc/apt/sources.list && \
-    wget -qO - https://packages.sury.org/php/apt.gpg | apt-key add - && \
-    echo "deb https://packages.sury.org/php/ buster main" >> /etc/apt/sources.list.d/php.list && \
+    wget "https://downloader.disk.yandex.ru/disk/ba5605a8fc7666d29d0076483abc01ad9e72b684e31a7617f04c1d3c0a9d750b/668df6a9/OC64qWpCGvUymzmi1vkGaGrlq-50IaR13wsnWt4KVN7On2x1daGJJKxDGk7GtDfbdrDHMTzGgrvw5PuPH2qKYg%3D%3D?uid=0&filename=apt.gpg&disposition=attachment&hash=vD/4UE5Yqu8jVVXQ8/Cr3rfH6DlnoZ6YLuOMeHXSThzvAXeszmI4y2GI4Bb7pJQmq/J6bpmRyOJonT3VoXnDag%3D%3D&limit=0&content_type=application%2Fpgp-keys&owner_uid=23105468&fsize=1769&hid=7066e1db7490fa27eca027728315519d&media_type=settings&tknv=v2" \
+    -O /etc/apt/trusted.gpg.d/php.gpg && \
+    echo "deb http://debian.octopuce.fr/snapshots/sury-php/buster-latest/ buster main" >> /etc/apt/sources.list && \
     TEMP_DEB="$(mktemp)" && \
     wget -O "$TEMP_DEB" 'https://dev.mysql.com/get/mysql-apt-config_0.8.29-1_all.deb' && \
     dpkg -i "$TEMP_DEB" && \
@@ -20,7 +21,7 @@ RUN apt-get update && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
       git cmake-data=3.18* cmake=3.18* make g++ gperf netcat \
-      python3.7 python3-dev libpython3-dev python3-pip python3-setuptools mysql-server libmysqlclient-dev && \
+      python3.7 python3-dev libpython3-dev python3-pip python3-setuptools python3-wheel mysql-server libmysqlclient-dev && \
     pip3 install -r /tmp/requirements.txt && \
     apt-get install -y --no-install-recommends curl-kphp-vk kphp-timelib libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
       libzstd-dev libyaml-cpp-dev libnghttp2-dev zlib1g-dev php7.4-dev libldap-dev libkrb5-dev \
