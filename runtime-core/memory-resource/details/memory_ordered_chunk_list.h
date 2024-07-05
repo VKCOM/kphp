@@ -34,7 +34,7 @@ public:
     uint32_t chunk_size_{0};
   };
 
-  explicit memory_ordered_chunk_list(char *memory_resource_begin) noexcept;
+  explicit memory_ordered_chunk_list(char *memory_resource_begin, char *memory_resource_end) noexcept;
 
   list_node *get_next(const list_node *node) const noexcept {
     return node->has_next() ? reinterpret_cast<list_node *>(memory_resource_begin_ + node->next_chunk_offset_) : nullptr;
@@ -56,6 +56,7 @@ private:
   void add_from_array(list_node **first, list_node **last) noexcept;
 
   char *memory_resource_begin_{nullptr};
+  char *memory_resource_end_{nullptr};
   list_node *head_{nullptr};
   size_t tmp_buffer_size_{0};
   std::array<list_node *, 4096> tmp_buffer_;

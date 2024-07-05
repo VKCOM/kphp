@@ -66,7 +66,7 @@ void CombinatorStore::gen_before_args_processing(CodeGenerator &W) const {
   W << "(void)tl_object;" << NL;
   if (combinator->is_function()) {
     W << fmt_format("f$store_int({:#010x});", static_cast<unsigned int>(combinator->id)) << NL;
-    W << fmt_format("CurrentProcessingQuery::get().set_last_stored_tl_function_magic({:#010x});", static_cast<unsigned int>(combinator->id)) << NL;
+    W << fmt_format("CurrentTlQuery::get().set_last_stored_tl_function_magic({:#010x});", static_cast<unsigned int>(combinator->id)) << NL;
   }
 }
 
@@ -84,7 +84,7 @@ void CombinatorStore::gen_arg_processing(CodeGenerator &W, const std::unique_ptr
       if (!value_check.empty()) {
         W << "if (" << value_check << ") " << BEGIN;
         W
-          << fmt_format(R"(CurrentProcessingQuery::get().raise_storing_error("Optional field %s of %s is not set, but corresponding fields mask bit is set", "{}", "{}");)",
+          << fmt_format(R"(CurrentTlQuery::get().raise_storing_error("Optional field %s of %s is not set, but corresponding fields mask bit is set", "{}", "{}");)",
                         arg->name, combinator->name) << NL;
         W << "return" << (combinator->is_function() ? " {};" : ";") << NL;
         W << END << NL;
@@ -100,21 +100,22 @@ void CombinatorStore::gen_arg_processing(CodeGenerator &W, const std::unique_ptr
     auto *as_type_var = arg->type_expr->as<vk::tlo_parsing::type_var>();
     kphp_assert(as_type_var);
     if (!typed_mode) {
+      const auto *k2_tl_storers_prefix = G->is_output_mode_k2_component() ? "RpcImageState::get()." : "";
       W << "auto _cur_arg = "
         << fmt_format("tl_arr_get(tl_object, {}, {}, {}L)", tl2cpp::register_tl_const_str(arg->name), arg->idx, tl2cpp::hash_tl_const_str(arg->name))
         << ";" << NL;
       W << "string target_f_name = "
         << fmt_format("tl_arr_get(_cur_arg, {}, 0, {}L).as_string()", tl2cpp::register_tl_const_str("_"), tl2cpp::hash_tl_const_str("_"))
         << ";" << NL;
-      W << "if (!tl_storers_ht.has_key(target_f_name)) " << BEGIN
-        << "CurrentProcessingQuery::get().raise_storing_error(\"Function %s not found in tl-scheme\", target_f_name.c_str());" << NL
+      W << fmt_format("if (!{}tl_storers_ht.has_key(target_f_name)) ", k2_tl_storers_prefix) << BEGIN
+        << "CurrentTlQuery::get().raise_storing_error(\"Function %s not found in tl-scheme\", target_f_name.c_str());" << NL
         << "return {};" << NL
         << END << NL;
-      W << "const auto &storer_kv = tl_storers_ht.get_value(target_f_name);" << NL;
+      W << fmt_format("const auto &storer_kv = {}tl_storers_ht.get_value(target_f_name);", k2_tl_storers_prefix) << NL;
       W << "tl_func_state->" << combinator->get_var_num_arg(as_type_var->var_num)->name << ".fetcher = storer_kv(_cur_arg);" << NL;
     } else {
       W << "if (tl_object->$" << arg->name << ".is_null()) " << BEGIN
-        << R"(CurrentProcessingQuery::get().raise_storing_error("Field \")" << arg->name << R"(\" not found in tl object");)" << NL
+        << R"(CurrentTlQuery::get().raise_storing_error("Field \")" << arg->name << R"(\" not found in tl object");)" << NL
         << "return {};" << NL
         << END << NL;
       W << "tl_func_state->" << combinator->get_var_num_arg(as_type_var->var_num)->name << ".fetcher = "

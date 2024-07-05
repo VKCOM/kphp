@@ -106,9 +106,9 @@ public:
 
   std::unique_ptr<RpcRequestResult> store_request() const final {
     php_assert(CurException.is_null());
-    CurrentProcessingQuery::get().set_current_tl_function(tl_function_name());
+    CurrentTlQuery::get().set_current_tl_function(tl_function_name());
     std::unique_ptr<tl_func_base> stored_fetcher = storing_function_.get()->store();
-    CurrentProcessingQuery::get().reset();
+    CurrentTlQuery::get().reset();
     if (!CurException.is_null()) {
       CurException = Optional<bool>{};
       return {};

@@ -6,8 +6,8 @@
 
 #include <array>
 #include <cassert>
-#include <cinttypes>
 #include <cstddef>
+#include <cstdint>
 
 #include "common/mixin/not_copyable.h"
 
@@ -24,8 +24,8 @@ public:
   }
 
   bool is_memory_from_this_pool(const void *mem, size_t mem_size) noexcept {
-    return memory_begin() <= static_cast<const uint8_t *>(mem) &&
-           static_cast<const uint8_t *>(mem) + mem_size <= memory_begin() + get_pool_payload_size();
+    return reinterpret_cast<uintptr_t>(memory_begin()) <= reinterpret_cast<uintptr_t>(mem)
+           && reinterpret_cast<uintptr_t>(mem) + mem_size <= reinterpret_cast<uintptr_t>(memory_begin()) + get_pool_payload_size();
   }
 
   static size_t get_pool_payload_size(size_t buffer_size) noexcept {

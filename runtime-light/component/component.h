@@ -6,6 +6,7 @@
 
 #include <coroutine>
 #include <csetjmp>
+#include <cstddef>
 #include <functional>
 #include <queue>
 
@@ -16,6 +17,7 @@
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/output-control.h"
+#include "runtime-light/stdlib/rpc/rpc-context.h"
 #include "runtime-light/stdlib/superglobals.h"
 #include "runtime-light/streams/streams.h"
 #include "runtime-light/utils/context.h"
@@ -25,7 +27,7 @@ struct ComponentState {
   using unordered_map = memory_resource::stl::unordered_map<Key, Value, memory_resource::unsynchronized_pool_resource>;
   template<typename T>
   using deque = memory_resource::stl::deque<T, memory_resource::unsynchronized_pool_resource>;
-  static constexpr int INIT_RUNTIME_ALLOCATOR_SIZE = 16 * 1024u;
+  static constexpr auto INIT_RUNTIME_ALLOCATOR_SIZE = static_cast<size_t>(512U * 1024U); // 512KB
 
   ComponentState()
     : runtime_allocator(INIT_RUNTIME_ALLOCATOR_SIZE, 0)
@@ -33,11 +35,12 @@ struct ComponentState {
     , opened_streams(unordered_map<uint64_t, StreamRuntimeStatus>::allocator_type{runtime_allocator.memory_resource})
     , awaiting_coroutines(unordered_map<uint64_t, std::coroutine_handle<>>::allocator_type{runtime_allocator.memory_resource})
     , timer_callbacks(unordered_map<uint64_t, std::function<void()>>::allocator_type{runtime_allocator.memory_resource})
-    , incoming_pending_queries(deque<uint64_t>::allocator_type{runtime_allocator.memory_resource}) {}
+    , incoming_pending_queries(deque<uint64_t>::allocator_type{runtime_allocator.memory_resource})
+    , rpc_component_context(runtime_allocator.memory_resource) {}
 
   ~ComponentState() = default;
 
-  inline bool not_finished() const noexcept {
+  bool not_finished() const noexcept {
     return poll_status != PollStatus::PollFinishedOk && poll_status != PollStatus::PollFinishedError;
   }
 
@@ -67,6 +70,7 @@ struct ComponentState {
   deque<uint64_t> incoming_pending_queries;
 
   KphpCoreContext kphp_core_context;
+  RpcComponentContext rpc_component_context;
 
 private:
   bool is_stream_timer(uint64_t stream_d);

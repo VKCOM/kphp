@@ -41,9 +41,8 @@ protected:
     stats_.real_memory_used = static_cast<size_t>(memory_current_ - memory_begin_);
   }
 
-  bool check_memory_piece(void *mem, size_t size) const noexcept {
-    return memory_begin_ <= static_cast<char *>(mem) &&
-           static_cast<char *>(mem) + size <= memory_current_;
+  bool check_memory_piece_was_used(void *mem, size_t size) const noexcept {
+    return memory_begin_ <= static_cast<char *>(mem) && static_cast<char *>(mem) + size <= memory_current_;
   }
 
   MemoryStats stats_;
@@ -98,7 +97,7 @@ public:
   }
 
   bool put_memory_back(void *mem, size_t size) noexcept {
-    if (unlikely(!check_memory_piece(mem, size))) {
+    if (unlikely(!check_memory_piece_was_used(mem, size))) {
       critical_dump(mem, size);
     }
 
