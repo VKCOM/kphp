@@ -10,43 +10,17 @@
 #include "common/mixin/not_copyable.h"
 #include "runtime-core/memory-resource/resource_allocator.h"
 #include "runtime-core/runtime-core.h"
+#include "runtime-light/stdlib/rpc/rpc-buffer.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-defs.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-query.h"
 #include "runtime-light/streams/component-stream.h"
 
 struct RpcComponentContext final : private vk::not_copyable {
-  class FetchState {
-    size_t m_pos{0};
-    size_t m_remaining{0};
-
-  public:
-    constexpr FetchState() = default;
-
-    constexpr size_t remaining() const noexcept {
-      return m_remaining;
-    }
-
-    constexpr size_t pos() const noexcept {
-      return m_pos;
-    }
-
-    constexpr void reset(size_t pos, size_t len) noexcept {
-      m_pos = pos;
-      m_remaining = len;
-    }
-
-    constexpr void adjust(size_t len) noexcept {
-      m_pos += len;
-      m_remaining -= len;
-    }
-  };
-
   template<typename Key, typename Value>
   using unordered_map = memory_resource::stl::unordered_map<Key, Value, memory_resource::unsynchronized_pool_resource>;
 
-  string_buffer buffer;
-  FetchState fetch_state;
+  RpcBuffer rpc_buffer;
   int64_t current_query_id{0};
   CurrentTlQuery current_query;
   unordered_map<int64_t, class_instance<C$ComponentQuery>> pending_component_queries;
@@ -57,6 +31,8 @@ struct RpcComponentContext final : private vk::not_copyable {
 
   static RpcComponentContext &get() noexcept;
 };
+
+// ================================================================================================
 
 struct RpcImageState final : private vk::not_copyable {
   array<tl_storer_ptr> tl_storers_ht;
