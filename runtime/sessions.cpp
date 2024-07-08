@@ -57,7 +57,7 @@ constexpr static auto C_SECURE = "cookie_secure";
 constexpr static auto C_HTTPONLY = "cookie_httponly";
 
 // TO-DO: reconsider it
-const auto skeys = vk::to_array<std::pair<const char *, mixed>>({
+const auto skeys = vk::to_array<std::pair<const char *, const mixed>>({
 	{S_READ_CLOSE, false},
 	{S_DIR, string(getenv("TMPDIR")).append("sessions/")},
 	{S_NAME, string("PHPSESSID")},
@@ -355,7 +355,7 @@ static int session_gc(const bool &immediate = false) {
 			continue;
 		} else if (is_opened) {
 	 		// TO-DO: fix the bug with always opened tags in the session files
-	 		// continue;
+	 		continue;
 		}
 
 		if (session_expired(path)) {
@@ -509,6 +509,14 @@ bool f$session_destroy() {
 	}
 	sessions::session_close();
 	return true;
+}
+
+Optional<string> f$session_id() {
+	// if (sessions::get_sparam(sessions::S_STATUS).to_bool()) {
+	// 	php_warning("Session ID cannot be changed when a session is active");
+	// 	return Optional<string>{false};
+	// }
+	return Optional<string>{sessions::get_sparam(sessions::S_ID).to_string()};
 }
 
 // TO-DO: implement function for changing id of existing session
