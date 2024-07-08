@@ -7,6 +7,7 @@
 #include <array>
 #include <chrono>
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <utility>
 
@@ -350,19 +351,15 @@ bool f$store_string(const string &v) noexcept { // TODO: support large strings
   string::size_type string_len{v.size()};
   string::size_type size_len{};
   if (string_len <= rpc_impl_::SMALL_STRING_MAX_LEN) {
-    buffer << static_cast<uint8_t>(string_len);
+    buffer << static_cast<char>(string_len);
     size_len = 1;
   } else if (string_len <= rpc_impl_::MEDIUM_STRING_MAX_LEN) {
-    buffer << static_cast<uint8_t>(rpc_impl_::MEDIUM_STRING_MAGIC) << static_cast<uint8_t>(string_len & 0xff) << static_cast<uint8_t>((string_len >> 8) & 0xff)
-           << static_cast<uint8_t>((string_len >> 16) & 0xff);
+    buffer << static_cast<char>(rpc_impl_::MEDIUM_STRING_MAGIC) << static_cast<char>(string_len & 0xff) << static_cast<char>((string_len >> 8) & 0xff)
+           << static_cast<char>((string_len >> 16) & 0xff);
     size_len = 4;
   } else {
-    buffer << static_cast<uint8_t>(rpc_impl_::LARGE_STRING_MAGIC) << static_cast<uint8_t>(string_len & 0xff) << static_cast<uint8_t>((string_len >> 8) & 0xff)
-           << static_cast<uint8_t>((string_len >> 16) & 0xff) << static_cast<uint8_t>((string_len >> 24) & 0xff);
-//    buffer << static_cast<uint8_t>(rpc_impl_::LARGE_STRING_MAGIC) << static_cast<uint8_t>(string_len & 0xff) << static_cast<uint8_t>((string_len >> 8) & 0xff)
-//           << static_cast<uint8_t>((string_len >> 16) & 0xff) << static_cast<uint8_t>((string_len >> 24) & 0xff)
-//           << static_cast<uint8_t>((string_len >> 32) & 0xff) << static_cast<uint8_t>((string_len >> 40) & 0xff)
-//           << static_cast<uint8_t>((string_len >> 48) & 0xff);
+    buffer << static_cast<char>(rpc_impl_::LARGE_STRING_MAGIC) << static_cast<char>(string_len & 0xff) << static_cast<char>((string_len >> 8) & 0xff)
+           << static_cast<char>((string_len >> 16) & 0xff) << static_cast<char>((string_len >> 24) & 0xff);
     size_len = 8;
   }
   buffer.append(v.c_str(), static_cast<size_t>(string_len));
