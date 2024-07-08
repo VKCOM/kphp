@@ -4,6 +4,8 @@
 
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"
 
+#include "common/algorithms/hashes.h"
+#include "common/wrappers/string_view.h"
 #include "runtime-light/stdlib/rpc/rpc-context.h"
 
 const char *C$KphpRpcRequestsExtraInfo::get_class() const noexcept {

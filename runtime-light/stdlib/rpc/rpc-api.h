@@ -6,7 +6,6 @@
 
 #include <concepts>
 #include <cstdint>
-#include <memory>
 
 #include "runtime-core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"

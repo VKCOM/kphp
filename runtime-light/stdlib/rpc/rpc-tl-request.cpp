@@ -4,7 +4,7 @@
 
 #include "runtime-light/stdlib/rpc/rpc-tl-request.h"
 
-#include "runtime-light/utils/php_assert.h"
+#include "runtime-core/utils/kphp-assert-core.h"
 
 RpcRequestResult::RpcRequestResult(bool is_typed, std::unique_ptr<tl_func_base> &&result_fetcher)
   : is_typed(is_typed)
