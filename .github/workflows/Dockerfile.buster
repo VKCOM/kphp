@@ -8,9 +8,7 @@ RUN apt-get update && \
     echo "deb https://archive.debian.org/debian buster-backports main" >> /etc/apt/sources.list && \
     wget -qO /etc/apt/trusted.gpg.d/vkpartner.asc https://artifactory-external.vkpartner.ru/artifactory/api/gpg/key/public && \
     echo "deb https://artifactory-external.vkpartner.ru/artifactory/kphp buster main" >> /etc/apt/sources.list && \
-    wget "https://downloader.disk.yandex.ru/disk/ba5605a8fc7666d29d0076483abc01ad9e72b684e31a7617f04c1d3c0a9d750b/668df6a9/OC64qWpCGvUymzmi1vkGaGrlq-50IaR13wsnWt4KVN7On2x1daGJJKxDGk7GtDfbdrDHMTzGgrvw5PuPH2qKYg%3D%3D?uid=0&filename=apt.gpg&disposition=attachment&hash=vD/4UE5Yqu8jVVXQ8/Cr3rfH6DlnoZ6YLuOMeHXSThzvAXeszmI4y2GI4Bb7pJQmq/J6bpmRyOJonT3VoXnDag%3D%3D&limit=0&content_type=application%2Fpgp-keys&owner_uid=23105468&fsize=1769&hid=7066e1db7490fa27eca027728315519d&media_type=settings&tknv=v2" \
-    -O /etc/apt/trusted.gpg.d/php.gpg && \
-    echo "deb http://debian.octopuce.fr/snapshots/sury-php/buster-latest/ buster main" >> /etc/apt/sources.list && \
+    echo "deb [trusted=yes] http://debian.octopuce.fr/snapshots/sury-php/buster-latest/ buster main" >> /etc/apt/sources.list && \
     TEMP_DEB="$(mktemp)" && \
     wget -O "$TEMP_DEB" 'https://dev.mysql.com/get/mysql-apt-config_0.8.29-1_all.deb' && \
     dpkg -i "$TEMP_DEB" && \
