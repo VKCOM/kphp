@@ -4,8 +4,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 COPY tests/python/requirements.txt /tmp/
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends apt-utils ca-certificates gnupg wget lsb-release curl && \
-    curl icanhazip.com && \
+    apt-get install -y --no-install-recommends apt-utils ca-certificates gnupg wget lsb-release && \
     echo "deb https://archive.debian.org/debian buster-backports main" >> /etc/apt/sources.list && \
     wget -qO /etc/apt/trusted.gpg.d/vkpartner.asc https://artifactory-external.vkpartner.ru/artifactory/api/gpg/key/public && \
     echo "deb https://artifactory-external.vkpartner.ru/artifactory/kphp buster main" >> /etc/apt/sources.list && \
