@@ -319,9 +319,10 @@ void CompilerSettings::init() {
   if (mode.get() == "k2-component") {
     // for now k2-component must be compiled with clang and statically linked libc++
     ss << " -stdlib=libc++";
-    
   } else {
-    kphp_error(!rt_from_sources.get(), "Building runtime from sources is available only for 'k2-component' mode");
+    // default value is false
+    // when we build using full runtime, we should force to use runtime as static lib
+    force_link_runtime.set_option_arg_value("1");
   }
   std::string cxx_default_flags = ss.str();
 
