@@ -7,8 +7,6 @@
 #include <cstdint>
 #include <tuple>
 
-#include "common/algorithms/hashes.h"
-#include "common/wrappers/string_view.h"
 #include "runtime-core/class-instance/refcountable-php-classes.h"
 #include "runtime-core/runtime-core.h"
 

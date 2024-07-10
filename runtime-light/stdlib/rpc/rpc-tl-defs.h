@@ -7,9 +7,9 @@
 #include <memory>
 
 #include "runtime-core/runtime-core.h"
+#include "runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-func-base.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-function.h"
-#include "runtime-light/utils/php_assert.h"
 
 using tl_undefined_php_type = std::nullptr_t;
 using tl_storer_ptr = std::unique_ptr<tl_func_base> (*)(const mixed &);

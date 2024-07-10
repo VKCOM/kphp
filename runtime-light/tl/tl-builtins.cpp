@@ -11,15 +11,15 @@ void register_tl_storers_table_and_fetcher(const array<tl_storer_ptr> &gen$ht, t
 }
 
 int32_t tl_parse_save_pos() {
-  return static_cast<int32_t>(RpcComponentContext::get().fetch_state.pos());
+  return static_cast<int32_t>(RpcComponentContext::get().rpc_buffer.pos());
 }
 
 bool tl_parse_restore_pos(int32_t pos) {
-  auto &rpc_ctx{RpcComponentContext::get()};
-  if (pos < 0 || pos > rpc_ctx.fetch_state.pos()) {
+  auto &rpc_buf{RpcComponentContext::get().rpc_buffer};
+  if (pos < 0 || pos > rpc_buf.pos()) {
     return false;
   }
-  rpc_ctx.fetch_state.reset(static_cast<size_t>(pos), rpc_ctx.fetch_state.remaining() + rpc_ctx.fetch_state.pos() - pos);
+  rpc_buf.reset(pos);
   return true;
 }
 
