@@ -98,7 +98,7 @@ class_instance<RpcTlQuery> store_function(const mixed &tl_object) noexcept {
   return rpc_tl_query;
 }
 
-task_t<RpcQueryInfo> rpc_send_impl(const string &actor, double timeout, bool ignore_answer) noexcept {
+task_t<RpcQueryInfo> rpc_send_impl(string actor, double timeout, bool ignore_answer) noexcept {
   if (timeout <= 0 || timeout > MAX_TIMEOUT_S) { // TODO: handle timeouts
     //    timeout = conn.get()->timeout_ms * 0.001;
   }
@@ -137,7 +137,7 @@ task_t<RpcQueryInfo> rpc_send_impl(const string &actor, double timeout, bool ign
   co_return RpcQueryInfo{.id = query_id, .request_size = request_size, .timestamp = timestamp};
 }
 
-task_t<RpcQueryInfo> rpc_tl_query_one_impl(const string &actor, mixed tl_object, double timeout, bool collect_resp_extra_info, bool ignore_answer) noexcept {
+task_t<RpcQueryInfo> rpc_tl_query_one_impl(string actor, mixed tl_object, double timeout, bool collect_resp_extra_info, bool ignore_answer) noexcept {
   auto &rpc_ctx{RpcComponentContext::get()};
 
   if (!tl_object.is_array()) {
@@ -163,7 +163,7 @@ task_t<RpcQueryInfo> rpc_tl_query_one_impl(const string &actor, mixed tl_object,
   co_return query_info;
 }
 
-task_t<RpcQueryInfo> typed_rpc_tl_query_one_impl(const string &actor, const RpcRequest &rpc_request, double timeout, bool collect_responses_extra_info,
+task_t<RpcQueryInfo> typed_rpc_tl_query_one_impl(string actor, const RpcRequest &rpc_request, double timeout, bool collect_responses_extra_info,
                                                  bool ignore_answer) noexcept {
   auto &rpc_ctx{RpcComponentContext::get()};
 
