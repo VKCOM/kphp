@@ -18,44 +18,32 @@ jobs:
     strategy:
       matrix:
         include:
-          # - os: buster
-          #   compiler: g++
-          #   cpp: 17
-          #   asan: off
-          #   ubsan: off
-          #   light_runtime: off
-          # - os: buster
-          #   compiler: g++
-          #   cpp: 17
-          #   asan: off
-          #   ubsan: off
-          #   light_runtime: on
-          - os: focal
-            compiler: clang++
-            cpp: 17
-            asan: off
-            ubsan: on
-            light_runtime: off
-          - os: focal
-            compiler: clang++
-            cpp: 17
-            asan: off
-            ubsan: on
-            light_runtime: on
-          - os: focal
-            compiler: g++-10
-            cpp: 20
-            asan: on
-            ubsan: off
-            light_runtime: off
-          - os: focal
-            compiler: g++-10
-            cpp: 20
-            asan: on
-            ubsan: off
-            light_runtime: on
-          - os: jammy
+          - os: buster
             compiler: g++
+            cpp: 17
+            asan: off
+            ubsan: off
+            light_runtime: off
+          - os: buster
+            compiler: g++
+            cpp: 17
+            asan: off
+            ubsan: off
+            light_runtime: on
+          - os: buster
+            compiler: clang++
+            cpp: 17
+            asan: off
+            ubsan: off
+            light_runtime: on
+          - os: focal
+            compiler: clang++
+            cpp: 17
+            asan: off
+            ubsan: on
+            light_runtime: off
+          - os: focal
+            compiler: g++-10
             cpp: 20
             asan: on
             ubsan: off
@@ -65,7 +53,7 @@ jobs:
             cpp: 20
             asan: on
             ubsan: off
-            light_runtime: on
+            light_runtime: off
             
     name: "${{matrix.os}}/${{matrix.compiler}}/c++${{matrix.cpp}}/asan=${{matrix.asan}}/ubsan=${{matrix.ubsan}}/light_runtime=${{matrix.light_runtime}}"
 

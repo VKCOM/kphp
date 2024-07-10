@@ -28,6 +28,12 @@ jobs:
             asan: off
             ubsan: off
             light_runtime: on
+          - os: buster
+            compiler: clang++
+            cpp: 17
+            asan: off
+            ubsan: off
+            light_runtime: on
 
     name: "${{matrix.os}}/${{matrix.compiler}}/c++${{matrix.cpp}}/asan=${{matrix.asan}}/ubsan=${{matrix.ubsan}}/light_runtime=${{matrix.light_runtime}}"
 
