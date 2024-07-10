@@ -119,7 +119,7 @@ public:
   KphpOption<std::string> link_file;
   KphpOption<std::vector<std::string>> includes;
   KphpOption<std::string> runtime_and_common_src;
-  KphpOption<bool> rt_from_sources;
+  KphpOption<bool> force_link_runtime;
 
   KphpOption<std::string> dest_dir;
   KphpOption<std::string> user_binary_path;

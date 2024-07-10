@@ -157,7 +157,7 @@ static std::forward_list<File *> collect_imported_libs() {
   stage::die_if_global_errors();
 
   std::forward_list<File *> imported_libs;
-  if (!G->settings().rt_from_sources.get()) {
+  if (G->settings().force_link_runtime.get()) {
     imported_libs.emplace_front(new File{G->settings().link_file.get()});
   }
   for (const auto &lib: G->get_libs()) {
@@ -505,7 +505,7 @@ static std::vector<File *> run_pre_make(OutputMode output_mode, const CompilerSe
 
   std::vector<File *> response;
 
-  if (settings.rt_from_sources.get()) {
+  if (!settings.force_link_runtime.get()) {
     std::string obj_dir = get_parent_dir(obj_index.get_dir()) + "/runtime_and_common_objs/";
     obj_rt_index.sync_with_dir(obj_dir);
     response = build_runtime_and_common_from_sources(get_light_runtime_compiler_options(), make, obj_rt_index);
@@ -574,7 +574,7 @@ void run_make() {
   stage::die_if_global_errors();
   obj_index.del_extra_files();
 
-  if (G->settings().rt_from_sources.get()) {
+  if (!G->settings().force_link_runtime.get()) {
     // It's hard to track dependencies for all .h/.cpp/.inl files of common and runtime
     // To optimize time of compilation, you may use ccache/nocc
     obj_rt_index.del_all_files();

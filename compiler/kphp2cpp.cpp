@@ -219,8 +219,8 @@ int main(int argc, char *argv[]) {
              'M', "mode", "KPHP_MODE", "server", {"server", "k2-component", "cli", "lib"});
   parser.add("A runtime library for building the output binary", settings->link_file,
              'l', "link-with", "KPHP_LINK_FILE");
-  parser.add("Build runtime from sources", settings->rt_from_sources,
-             "rt-from-sources", "KPHP_RT_FROM_SOURCES");
+  parser.add("Build runtime from sources", settings->force_link_runtime,
+             "force-link-runtime", "KPHP_FORCE_LINK_RUNTIME");
   parser.add("Path to runtime sources", settings->runtime_and_common_src, "rt-path", "KPHP_RT_PATH", get_default_kphp_path());
   parser.add("Directory where php files will be searched", settings->includes,
              'I', "include-dir", "KPHP_INCLUDE_DIR");
