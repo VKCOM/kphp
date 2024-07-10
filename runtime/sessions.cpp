@@ -72,7 +72,6 @@ const auto skeys = vk::to_array<std::pair<const char *, const mixed>>({
 });
 
 static void initialize_sparams(const array<mixed> &options) noexcept {
-	reset_sparams();
 	for (const auto& it : skeys) {
 		if (options.isset(string(it.first))) {
 			set_sparam(it.first, options.get_value(string(it.first)));
@@ -316,7 +315,7 @@ static bool session_expired(const string &path) {
 	if (ret_ctime < 0 or ret_lifetime < 0) {
 		php_warning("Failed to get metadata of the file on path: %s", path.c_str());
 		return false;
-	} 
+	}
 
 	int now = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 	if (ctime + lifetime <= now) {
@@ -414,6 +413,8 @@ static bool session_start() {
 				}
 			}
 		}
+	} else if (strpbrk(get_sparam(S_ID).to_string().c_str(), "\r\n\t <>'\"\\")) {
+		set_sparam(S_ID, false);
 	}
 
 	if (!session_initialize()) {
@@ -501,35 +502,25 @@ array<mixed> f$session_get_cookie_params() {
 	return sessions::session_get_cookie_params();
 }
 
-// TO-DO: is this correct?
-bool f$session_destroy() {
-	if (!sessions::get_sparam(sessions::S_STATUS).to_bool()) {
-		php_warning("Trying to destroy uninitialized session");
-		return false;
-	}
-	sessions::session_close();
-	return true;
-}
-
-Optional<string> f$session_id() {
-	// if (sessions::get_sparam(sessions::S_STATUS).to_bool()) {
-	// 	php_warning("Session ID cannot be changed when a session is active");
-	// 	return Optional<string>{false};
-	// }
-	return Optional<string>{sessions::get_sparam(sessions::S_ID).to_string()};
-}
-
-// TO-DO: implement function for changing id of existing session
-/*
-Optional<string> f$session_id(Optional<string> id) {
+Optional<string> f$session_id(const Optional<string> &id) {
 	if (id.has_value() && sessions::get_sparam(sessions::S_STATUS).to_bool()) {
 		php_warning("Session ID cannot be changed when a session is active");
 		return Optional<string>{false};
 	}
-	// TO-DO: check headers_sent()
+
+	mixed prev_id = sessions::get_sparam(sessions::S_ID);
 	if (id.has_value()) {
-		sessions::set_sparam(sessions::S_ID, string(id));
+		sessions::set_sparam(sessions::S_ID, id.val());
 	}
-	return Optional<string>{sessions::get_sparam(sessions::S_ID).to_string()};
+	return (prev_id.is_bool()) ? Optional<string>{false} : Optional<string>(prev_id.as_string());
 }
-*/
+
+// TO-DO
+// bool f$session_destroy() {
+// 	if (!sessions::get_sparam(sessions::S_STATUS).to_bool()) {
+// 		php_warning("Trying to destroy uninitialized session");
+// 		return false;
+// 	}
+// 	sessions::session_close();
+// 	return true;
+// }
