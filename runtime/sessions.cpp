@@ -1,6 +1,7 @@
 #include <chrono>
 #include <sys/stat.h>
 #include <sys/xattr.h>
+#include <unistd.h>
 
 #include "runtime/sessions.h"
 #include "runtime/files.h"
@@ -41,7 +42,6 @@ constexpr static auto S_READ_CLOSE = "read_and_close";
 constexpr static auto S_ID = "session_id";
 constexpr static auto S_FD = "handler";
 constexpr static auto S_STATUS = "session_status";
-constexpr static auto S_OPENED = "is_opened";
 constexpr static auto S_DIR = "save_path";
 constexpr static auto S_PATH = "session_path";
 constexpr static auto S_NAME = "name";
@@ -70,6 +70,22 @@ const auto skeys = vk::to_array<std::pair<const char *, const mixed>>({
 	{C_SECURE, false},
 	{C_HTTPONLY, false}
 });
+
+static int set_tag(const char *path, const char *name, void *value, const size_t size) {
+#if defined(__APPLE__)
+	return setxattr(path, name, value, size, 0, 0);
+#else
+	return setxattr(path, name, value, size, 0);
+#endif
+}
+
+static int get_tag(const char *path, const char *name, void *value, const size_t size) {
+#if defined(__APPLE__)
+	return getxattr(path, name, value, size, 0, 0);
+#else
+	return getxattr(path, name, value, size);
+#endif
+}
 
 static void initialize_sparams(const array<mixed> &options) noexcept {
 	for (const auto& it : skeys) {
@@ -174,11 +190,7 @@ static bool session_decode(const string &data) {
 }
 
 static bool session_open() {
-	if (get_sparam(S_FD).to_bool()) {
-		/* 
-			if we close the file for reopening it, 
-			the other worker may open it faster and the current process will stop
-		*/
+	if (get_sparam(S_FD).to_bool() && (fcntl(get_sparam(S_FD).to_int(), F_GETFD) != -1 || errno != EBADF)) {
 		return true;
 	}
 
@@ -188,6 +200,8 @@ static bool session_open() {
 
 	set_sparam(S_PATH, string(get_sparam(S_DIR).to_string()).append(get_sparam(S_ID).to_string()));
 	bool is_new = (!f$file_exists(get_sparam(S_PATH).to_string())) ? 1 : 0;
+	
+	// the interprocessor lock does not work
 	set_sparam(S_FD, open_safe(get_sparam(S_PATH).to_string().c_str(), O_RDWR | O_CREAT, 0777));
 
 	if (get_sparam(S_FD).to_int() < 0) {
@@ -195,36 +209,40 @@ static bool session_open() {
 		return false;
 	}
 
-	if (flock(get_sparam(S_FD).to_int(), LOCK_EX) < 0) {
-		php_warning("Failed to lock the file %s", get_sparam(S_PATH).to_string().c_str());
-		return false;
-	}
+	struct flock lock;
+	lock.l_type = F_WRLCK; // Exclusive write lock
+    lock.l_whence = SEEK_SET;
+    lock.l_start = 0;
+    lock.l_len = 0;
+    lock.l_pid = getpid();
+
+    int ret = fcntl(get_sparam(S_FD).to_int(), F_SETLKW, &lock);
+
+    if (ret < 0 && errno == EDEADLK) {
+    	php_warning("Attempt to lock alredy locked session file, path: %s", get_sparam(S_PATH).to_string().c_str());
+    	return false;
+    }
 
 	// set new metadata to the file
-	int ret_ctime = getxattr(get_sparam(S_PATH).to_string().c_str(), S_CTIME, NULL, 0, 0, 0);
-	int ret_gc_lifetime = getxattr(get_sparam(S_PATH).to_string().c_str(), S_LIFETIME, NULL, 0, 0, 0);
+	int ret_ctime = get_tag(get_sparam(S_PATH).to_string().c_str(), S_CTIME, NULL, 0);
+	int ret_gc_lifetime = get_tag(get_sparam(S_PATH).to_string().c_str(), S_LIFETIME, NULL, 0);
 	if (is_new or ret_ctime < 0) {
 		// add the creation data to metadata of file
 		int ctime = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-		setxattr(get_sparam(S_PATH).to_string().c_str(), S_CTIME, &ctime, sizeof(int), 0, 0);
+		set_tag(get_sparam(S_PATH).to_string().c_str(), S_CTIME, &ctime, sizeof(int));
 	}
 	if (ret_gc_lifetime < 0) {
 		int gc_maxlifetime = get_sparam(S_LIFETIME).to_int();
-		setxattr(get_sparam(S_PATH).to_string().c_str(), S_LIFETIME, &gc_maxlifetime, sizeof(int), 0, 0);
+		set_tag(get_sparam(S_PATH).to_string().c_str(), S_LIFETIME, &gc_maxlifetime, sizeof(int));
 	}
-
-	int is_opened = 1;
-	setxattr(get_sparam(S_PATH).to_string().c_str(), S_OPENED, &is_opened, sizeof(int), 0, 0);
 
 	return true;
 }
 
 static void session_close() {
-	if (get_sparam(S_FD).to_bool()) {
+	if (get_sparam(S_FD).to_bool() && (fcntl(get_sparam(S_FD).to_int(), F_GETFD) != -1 || errno != EBADF)) {
 		close_safe(get_sparam(S_FD).to_int());
 	}
-	int is_opened = 0;
-	setxattr(get_sparam(S_PATH).to_string().c_str(), S_OPENED, &is_opened, sizeof(int), 0, 0);
 	reset_sparams();
 }
 
@@ -262,7 +280,7 @@ static bool session_read() {
 static bool session_write() {
 	session_open();
 	string data = f$serialize(v$_SESSION.as_array());
-	ssize_t n = write_safe(get_sparam("handler").to_int(), data.c_str(), data.size(), get_sparam("file_path").to_string());
+	ssize_t n = write_safe(get_sparam(S_FD).to_int(), data.c_str(), data.size(), get_sparam(S_PATH).to_string());
 	if (n < data.size()) {
 		if (n == -1) {
 			php_warning("Write failed");
@@ -310,8 +328,8 @@ static bool session_reset_id() {
 
 static bool session_expired(const string &path) {
 	int ctime, lifetime;
-	int ret_ctime = getxattr(path.c_str(), S_CTIME, &ctime, sizeof(int), 0, 0);
-	int ret_lifetime = getxattr(path.c_str(), S_LIFETIME, &lifetime, sizeof(int), 0, 0);
+	int ret_ctime = get_tag(path.c_str(), S_CTIME, &ctime, sizeof(int));
+	int ret_lifetime = get_tag(path.c_str(), S_LIFETIME, &lifetime, sizeof(int));
 	if (ret_ctime < 0 or ret_lifetime < 0) {
 		php_warning("Failed to get metadata of the file on path: %s", path.c_str());
 		return false;
@@ -337,6 +355,13 @@ static int session_gc(const bool &immediate = false) {
 		return -1;
 	}
 
+	struct flock lock;
+	lock.l_type = F_UNLCK;
+	lock.l_whence = SEEK_SET;
+	lock.l_start = 0;
+	lock.l_len = 0;
+	lock.l_pid = getpid();
+
 	int result = 0;
 	for (auto s = s_list.as_array().begin(); s != s_list.as_array().end(); ++s) {
 		string path = s.get_value().to_string();
@@ -347,14 +372,15 @@ static int session_gc(const bool &immediate = false) {
 		if (path == get_sparam(S_PATH).to_string()) {
 			continue;
 		}
-		int is_opened;
-		int ret_code = getxattr(path.c_str(), S_OPENED, &is_opened, sizeof(int), 0, 0);
-		if (ret_code < 0) {
-			php_warning("Failed to get metadata of the file on path: %s", path.c_str());
+		
+		int fd;
+		if ((fd = open(path.c_str(), O_RDWR, 0777)) < 0) {
+			php_warning("Failed to open file on path: %s", path.c_str());
 			continue;
-		} else if (is_opened) {
-	 		// TO-DO: fix the bug with always opened tags in the session files
-	 		continue;
+		}
+
+		if (fcntl(fd, F_SETLK, &lock) < 0) {
+			continue;
 		}
 
 		if (session_expired(path)) {
@@ -507,7 +533,6 @@ Optional<string> f$session_id(const Optional<string> &id) {
 		php_warning("Session ID cannot be changed when a session is active");
 		return Optional<string>{false};
 	}
-
 	mixed prev_id = sessions::get_sparam(sessions::S_ID);
 	if (id.has_value()) {
 		sessions::set_sparam(sessions::S_ID, id.val());
