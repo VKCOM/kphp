@@ -21,6 +21,8 @@ int64_t f$mb_strlen(const string &str, const Optional<string> &encoding=false);
 
 string f$mb_substr(const string &str, const int64_t start, const Optional<int64_t> &length=0, const Optional<string> &encoding=false);
 
+mixed f$mb_substitute_character(const mixed &substitute_character);
+
 int64_t f$mb_substr_count(const string &haystack, const string &needle, const Optional<string> &encoding=false);
 
 string f$mb_strtoupper(const string &str, const Optional<string> &encoding=false);
@@ -44,6 +46,16 @@ Optional<string> f$mb_strstr(const string &haystack, const string &needle, const
 Optional<string> f$mb_strrchr(const string &haystack, const string &needle, const bool before_needle, const Optional<string> &encoding=false);
 
 Optional<string> f$mb_strrichr(const string &haystack, const string &needle, const bool before_needle, const Optional<string> &encoding=false);
+
+string f$mb_strimwidth(const string &str, const int64_t start, const int64_t width, const string &trim_marker, const Optional<string> &encoding=false);
+
+Optional<string> f$mb_scrub(const string &str, const Optional<string> &encoding=false);
+
+//mixed f$mb_regex_encoding(const Optional<string> &encoding=false);
+
+string f$mb_regex_set_options(const Optional<string> &options=false);
+
+bool f$mb_ereg_match(const string &pattern, const string &str, const Optional<string> &options=false);
 
 #else
 

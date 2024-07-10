@@ -1650,6 +1650,7 @@ function getenv(string $varname = '', bool $local_only = false): mixed;
 function mb_check_encoding(array|string $value, ?string $encoding = null): bool;
 function mb_convert_encoding(array|string $string, string $to_encoding, array|string|null $from_encoding = null): array|string|false;
 function mb_substr(string $string, int $start, ?int $length = null, ?string $encoding = null): string;
+function mb_substitute_character(string|int|null $substitute_character = null): string|int|false;
 function mb_strlen(string $string, ?string $encoding = null): int;
 function mb_substr_count(string $haystack, string $needle, ?string $encoding = null): int;
 function mb_strtolower(string $string, ?string $encoding = null): string;
@@ -1663,3 +1664,8 @@ function mb_stristr(string $haystack, string $needle, bool $before_needle = fals
 function mb_strrchr(string $haystack, string $needle, bool $before_needle = false, ?string $encoding = null): string|false;
 function mb_strrichr(string $haystack, string $needle, bool $before_needle = false, ?string $encoding = null): string|false;
 function mb_strstr(string $haystack, string $needle, bool $before_needle = false, ?string $encoding = null): string|false;
+function mb_strimwidth(string $string, int $start, int $width, string $trim_marker = "", ?string $encoding = null): string;
+function mb_scrub(string $string, ?string $encoding = null): string;
+function mb_regex_encoding(?string $encoding = null): string|false;
+function mb_regex_set_options(?string $options = null): string;
+function mb_ereg_match(string $pattern, string $string, ?string $options = null): bool;

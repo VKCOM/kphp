@@ -55,7 +55,7 @@ function test_mb_strlen_long_string() {
 test_mb_strlen_basic_ascii();
 test_mb_strlen_basic_utf_8();
 test_mb_strlen_empty_string();
-test_mb_strlen_null_encoding(); // doesn't put null through for some reason
+test_mb_strlen_null_encoding();
 test_mb_strlen_utf_16_encoding();
 test_mb_strlen_html_entities();
 test_mb_strlen_whitespaces();

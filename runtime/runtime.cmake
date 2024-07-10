@@ -151,6 +151,7 @@ target_include_directories(kphp_runtime PUBLIC ${BASE_DIR} /opt/curl7600/include
 add_dependencies(kphp_runtime kphp-timelib)
 if (MBFL)
     add_dependencies(kphp_runtime libmbfl)
+    add_dependencies(kphp_runtime onig)
 endif()
 
 
@@ -173,6 +174,7 @@ endif()
 
 if (MBFL)
     list(APPEND RUNTIME_LINK_TEST_LIBS libmbfl)
+    list(APPEND RUNTIME_LINK_TEST_LIBS onig)
 endif()
 
 file(GLOB_RECURSE KPHP_RUNTIME_ALL_HEADERS

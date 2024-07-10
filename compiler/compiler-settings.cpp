@@ -342,6 +342,11 @@ void CompilerSettings::init() {
   ld_flags.value_ += " -L" LIBMBFL_LIB_DIR;
 #endif
 
+#ifdef ONIG_LIB_DIR
+  external_static_libs.emplace_back("onig");
+  ld_flags.value_ += " -lonig";
+#endif
+
 #ifdef KPHP_H3_LIB_DIR
   ld_flags.value_ += " -L" KPHP_H3_LIB_DIR;
 #else

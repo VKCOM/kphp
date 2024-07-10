@@ -19,6 +19,19 @@ if(MBFL)
     include_directories(${libmbfl_SOURCE_DIR}/include)
     add_definitions(-DLIBMBFL_LIB_DIR="${libmbfl_SOURCE_DIR}/objs")
     add_link_options(-L${libmbfl_SOURCE_DIR}/objs)
+
+    find_package(onig QUIET)
+    if(NOT onig_FOUND)
+        handle_missing_library("onig")
+        FetchContent_Declare(
+                onig
+                GIT_REPOSITORY https://github.com/kkos/oniguruma/
+                GIT_TAG        v6.9.9
+        )
+        FetchContent_MakeAvailable(onig)
+        include_directories(${onig_SOURCE_DIR}/src)
+        message(STATUS "---------------------")
+    endif()
 endif()
 
 find_package(fmt QUIET)

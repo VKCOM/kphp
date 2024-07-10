@@ -92,4 +92,17 @@ TEST(mbstring_test, test_mb_strrichr) {
   ASSERT_STREQ(f$mb_strrichr(string("This is a test string"), string("test"), false, string("UTF-8")).val().c_str(), "test string");
 }
 
+TEST(mbstring_test, test_mb_strimwidth) {
+  ASSERT_STREQ(f$mb_strimwidth(string("This is a very long string that needs to be trimmed"), 0, 20, string("...")).c_str(), "This is a very lo...");
+}
+
+TEST(mbstring_test, test_mb_regex_set_options) {
+  ASSERT_STREQ(f$mb_regex_set_options("xpu").c_str(), "pr");
+  ASSERT_STREQ(f$mb_regex_set_options("npj").c_str(), "xpu");
+}
+
+TEST(mbstring_test, test_mb_ereg_match) {
+  ASSERT_TRUE(f$mb_ereg_match(string("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"), string("dachman@gmail.com")));
+}
+
 #endif

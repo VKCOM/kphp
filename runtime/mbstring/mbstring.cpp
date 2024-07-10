@@ -58,6 +58,8 @@ extern "C" {
 #include <kphp/libmbfl/mbfl/mbfilter_wchar.h>
 }
 
+#include <oniguruma.h>
+
 #define KPHP_UNICODE_CASE_UPPER        0
 #define KPHP_UNICODE_CASE_LOWER        1
 #define KPHP_UNICODE_CASE_TITLE        2
@@ -68,7 +70,16 @@ extern "C" {
 #define KPHP_UNICODE_CASE_FOLD_SIMPLE  7
 #define KPHP_UNICODE_CASE_MODE_MAX     7
 
-static const char * DEFAULT_ENCODING = "UTF-8" ;
+#define MBFL_OUTPUTFILTER_ILLEGAL_MODE_NONE 0
+#define MBFL_OUTPUTFILTER_ILLEGAL_MODE_CHAR 1
+#define MBFL_OUTPUTFILTER_ILLEGAL_MODE_LONG 2
+#define MBFL_OUTPUTFILTER_ILLEGAL_MODE_ENTITY 3
+#define MBFL_OUTPUTFILTER_ILLEGAL_MODE_BADUTF8 4
+
+static const char * DEFAULT_ENCODING = "UTF-8";
+
+int current_filter_illegal_mode = MBFL_OUTPUTFILTER_ILLEGAL_MODE_CHAR;
+int current_filter_illegal_substchar = '?';
 
 static inline int mbfl_is_error(size_t len) {
   return len >= (size_t) -16;
@@ -94,6 +105,8 @@ mbfl_string *convert_encoding(const char *str, const char *to, const char *from)
 
 	/* converting */
 	convd = mbfl_buffer_converter_new(from_encoding, to_encoding, 0);
+  mbfl_buffer_converter_illegal_mode(convd, current_filter_illegal_mode);
+  mbfl_buffer_converter_illegal_substchar(convd, current_filter_illegal_substchar);
 	ret = mbfl_buffer_converter_feed_result(convd, &_string, &result);
 	mbfl_buffer_converter_delete(convd);
 
@@ -255,6 +268,73 @@ string f$mb_substr(const string &str, const int64_t start, const Optional<int64_
   ret = mbfl_substr(&_string, &result, real_start, real_len);
   php_assert(ret != NULL);
   return string((const char*) ret->val, ret->len);
+}
+
+static inline int php_mb_check_code_point(long cp)
+{
+  if (cp <= 0 || cp >= 0x110000) {
+    return 0;
+  }
+
+  if (cp >= 0xd800 && cp <= 0xdfff) {
+    return 0;
+  }
+
+  return 1;
+}
+
+//static uint8_t is_numeric_string_ex(const char *str, size_t length, zend_long *lval,
+//                                                       double *dval)
+//{
+//  if (*str > '9') {
+//    return 0;
+//  }
+//  return _is_numeric_string_ex(str, length, lval, dval, allow_errors, oflow_info, trailing_data);
+//}
+//
+//long convert_to_long(string *op)
+//{
+//  long lval;
+//  double dval;
+//  if (0 == is_numeric_string(op->c_str(), op->size(), &lval, &dval)) {
+//    return 0;
+//  } else {
+//    return (long)lval;
+//  }
+//}
+
+mixed f$mb_substitute_character(const mixed &substitute_character){
+  if (!substitute_character) {
+    if (current_filter_illegal_mode == MBFL_OUTPUTFILTER_ILLEGAL_MODE_NONE) {
+      return string("none", 4);
+    } else if (current_filter_illegal_mode == MBFL_OUTPUTFILTER_ILLEGAL_MODE_LONG) {
+      return string("long", 4);
+    } else if (current_filter_illegal_mode == MBFL_OUTPUTFILTER_ILLEGAL_MODE_ENTITY) {
+      return string("entity", 6);
+    } else {
+      return current_filter_illegal_substchar;
+    }
+  } else {
+    if (substitute_character.is_string()) {
+      if (strncasecmp("none", substitute_character.to_string().c_str(), substitute_character.to_string().size()) == 0) {
+        current_filter_illegal_mode = MBFL_OUTPUTFILTER_ILLEGAL_MODE_NONE;
+      } else if (strncasecmp("long", substitute_character.to_string().c_str(), substitute_character.to_string().size()) == 0) {
+        current_filter_illegal_mode = MBFL_OUTPUTFILTER_ILLEGAL_MODE_LONG;
+      } else if (strncasecmp("entity", substitute_character.to_string().c_str(), substitute_character.to_string().size()) == 0) {
+        current_filter_illegal_mode = MBFL_OUTPUTFILTER_ILLEGAL_MODE_ENTITY;
+      }
+    } else {
+//      long substitute_char = convert_to_long(substitute_character);
+//      if (php_mb_check_code_point(substitute_char)) {
+//        current_filter_illegal_mode = MBFL_OUTPUTFILTER_ILLEGAL_MODE_CHAR;
+//        current_filter_illegal_substchar = substitute_char;
+//      } else {
+        php_warning("Unknown character");
+        return false;
+//      }
+    }
+    return true;
+  }
 }
 
 int64_t f$mb_substr_count(const string &haystack, const string &needle, const Optional<string> &encoding){
@@ -712,6 +792,596 @@ Optional<string> f$mb_strrichr(const string &haystack, const string &needle, con
     }
   }
   return false;
+}
+
+string f$mb_strimwidth(const string &str, const int64_t start, const int64_t width, const string &trim_marker, const Optional<string> &encoding){
+  const mbfl_encoding *enc = mb_get_encoding(encoding);
+
+  if (!enc) {
+    php_critical_error ("encoding \"%s\" isn't supported in mb_strrpos", encoding.val().c_str());
+  }
+
+  mbfl_string _string, result, _trim_marker, *ret;
+  int64_t from = start;
+  int64_t swidth = 0;
+
+  mbfl_string_init(&_string);
+  _string.no_encoding = enc->no_encoding;
+  _string.len = str.size();
+  _string.val = (unsigned char*) str.c_str();
+
+  mbfl_string_init(&_trim_marker);
+  _trim_marker.no_encoding = enc->no_encoding;
+  _trim_marker.len = 0;
+  _trim_marker.val = NULL;
+
+  if ((from < 0) || (width < 0)) {
+    swidth = mbfl_strwidth(&_string);
+  }
+
+  if (from < 0) {
+    from += swidth;
+  }
+
+  if (from < 0 || (size_t)from > str.size()) {
+    php_critical_error ("Start position is out of range");
+  }
+
+  if (width < 0) {
+    swidth = swidth + width - from;
+  }
+
+  if (swidth < 0) {
+    php_critical_error ("Width is out of range");
+  }
+
+  if (trim_marker.size() > 0) {
+    _trim_marker.len = trim_marker.size();
+    _trim_marker.val = (unsigned char*) trim_marker.c_str();
+  }
+
+  ret = mbfl_strimwidth(&_string, &_trim_marker, &result, from, width);
+
+  if (ret == NULL) {
+    php_critical_error ("Internal error");
+  }
+
+  return string((const char*) ret->val, ret->len);
+
+}
+
+Optional<string> f$mb_scrub(const string &str, const Optional<string> &encoding){
+
+  const mbfl_encoding *enc = mb_get_encoding(encoding);
+
+  if (!enc) {
+    return false;
+  }
+
+  mbfl_string *ret = convert_encoding(str.c_str(), val(encoding).c_str(), val(encoding).c_str());
+
+  if (ret == NULL) {
+    return false;
+  }
+
+  return string((const char*)ret->val, ret->len);
+}
+
+///*            REGEXPS           */
+//
+///*
+// * encoding name resolver
+// */
+typedef struct _kphp_mb_regex_enc_name_map_t {
+  const char *names;
+  OnigEncoding code;
+} kphp_mb_regex_enc_name_map_t;
+
+static const kphp_mb_regex_enc_name_map_t enc_name_map[] = {
+#ifdef ONIG_ENCODING_EUC_JP
+  {
+    "EUC-JP\0EUCJP\0X-EUC-JP\0UJIS\0EUCJP\0EUCJP-WIN\0",
+    ONIG_ENCODING_EUC_JP
+  },
+#endif
+#ifdef ONIG_ENCODING_UTF8
+  {
+    "UTF-8\0UTF8\0",
+    ONIG_ENCODING_UTF8
+  },
+#endif
+#ifdef ONIG_ENCODING_UTF16_BE
+  {
+    "UTF-16\0UTF-16BE\0",
+    ONIG_ENCODING_UTF16_BE
+  },
+#endif
+#ifdef ONIG_ENCODING_UTF16_LE
+  {
+    "UTF-16LE\0",
+    ONIG_ENCODING_UTF16_LE
+  },
+#endif
+#ifdef ONIG_ENCODING_UTF32_BE
+  {
+    "UCS-4\0UTF-32\0UTF-32BE\0",
+    ONIG_ENCODING_UTF32_BE
+  },
+#endif
+#ifdef ONIG_ENCODING_UTF32_LE
+  {
+    "UCS-4LE\0UTF-32LE\0",
+    ONIG_ENCODING_UTF32_LE
+  },
+#endif
+#ifdef ONIG_ENCODING_SJIS
+  {
+    "SJIS\0CP932\0MS932\0SHIFT_JIS\0SJIS-WIN\0WINDOWS-31J\0",
+    ONIG_ENCODING_SJIS
+  },
+#endif
+#ifdef ONIG_ENCODING_BIG5
+  {
+    "BIG5\0BIG-5\0BIGFIVE\0CN-BIG5\0BIG-FIVE\0",
+    ONIG_ENCODING_BIG5
+  },
+#endif
+#ifdef ONIG_ENCODING_EUC_CN
+  {
+    "EUC-CN\0EUCCN\0EUC_CN\0GB-2312\0GB2312\0",
+    ONIG_ENCODING_EUC_CN
+  },
+#endif
+#ifdef ONIG_ENCODING_EUC_TW
+  {
+    "EUC-TW\0EUCTW\0EUC_TW\0",
+    ONIG_ENCODING_EUC_TW
+  },
+#endif
+#ifdef ONIG_ENCODING_EUC_KR
+  {
+    "EUC-KR\0EUCKR\0EUC_KR\0",
+    ONIG_ENCODING_EUC_KR
+  },
+#endif
+#if defined(ONIG_ENCODING_KOI8) && !PHP_ONIG_BAD_KOI8_ENTRY
+  {
+    "KOI8\0KOI-8\0",
+    ONIG_ENCODING_KOI8
+  },
+#endif
+#ifdef ONIG_ENCODING_KOI8_R
+  {
+    "KOI8R\0KOI8-R\0KOI-8R\0",
+    ONIG_ENCODING_KOI8_R
+  },
+#endif
+#ifdef ONIG_ENCODING_ISO_8859_1
+  {
+    "ISO-8859-1\0ISO8859-1\0",
+    ONIG_ENCODING_ISO_8859_1
+  },
+#endif
+#ifdef ONIG_ENCODING_ISO_8859_2
+  {
+    "ISO-8859-2\0ISO8859-2\0",
+    ONIG_ENCODING_ISO_8859_2
+  },
+#endif
+#ifdef ONIG_ENCODING_ISO_8859_3
+  {
+    "ISO-8859-3\0ISO8859-3\0",
+    ONIG_ENCODING_ISO_8859_3
+  },
+#endif
+#ifdef ONIG_ENCODING_ISO_8859_4
+  {
+    "ISO-8859-4\0ISO8859-4\0",
+    ONIG_ENCODING_ISO_8859_4
+  },
+#endif
+#ifdef ONIG_ENCODING_ISO_8859_5
+  {
+    "ISO-8859-5\0ISO8859-5\0",
+    ONIG_ENCODING_ISO_8859_5
+  },
+#endif
+#ifdef ONIG_ENCODING_ISO_8859_6
+  {
+    "ISO-8859-6\0ISO8859-6\0",
+    ONIG_ENCODING_ISO_8859_6
+  },
+#endif
+#ifdef ONIG_ENCODING_ISO_8859_7
+  {
+    "ISO-8859-7\0ISO8859-7\0",
+    ONIG_ENCODING_ISO_8859_7
+  },
+#endif
+#ifdef ONIG_ENCODING_ISO_8859_8
+  {
+    "ISO-8859-8\0ISO8859-8\0",
+    ONIG_ENCODING_ISO_8859_8
+  },
+#endif
+#ifdef ONIG_ENCODING_ISO_8859_9
+  {
+    "ISO-8859-9\0ISO8859-9\0",
+    ONIG_ENCODING_ISO_8859_9
+  },
+#endif
+#ifdef ONIG_ENCODING_ISO_8859_10
+  {
+    "ISO-8859-10\0ISO8859-10\0",
+    ONIG_ENCODING_ISO_8859_10
+  },
+#endif
+#ifdef ONIG_ENCODING_ISO_8859_11
+  {
+    "ISO-8859-11\0ISO8859-11\0",
+    ONIG_ENCODING_ISO_8859_11
+  },
+#endif
+#ifdef ONIG_ENCODING_ISO_8859_13
+  {
+    "ISO-8859-13\0ISO8859-13\0",
+    ONIG_ENCODING_ISO_8859_13
+  },
+#endif
+#ifdef ONIG_ENCODING_ISO_8859_14
+  {
+    "ISO-8859-14\0ISO8859-14\0",
+    ONIG_ENCODING_ISO_8859_14
+  },
+#endif
+#ifdef ONIG_ENCODING_ISO_8859_15
+  {
+    "ISO-8859-15\0ISO8859-15\0",
+    ONIG_ENCODING_ISO_8859_15
+  },
+#endif
+#ifdef ONIG_ENCODING_ISO_8859_16
+  {
+    "ISO-8859-16\0ISO8859-16\0",
+    ONIG_ENCODING_ISO_8859_16
+  },
+#endif
+#ifdef ONIG_ENCODING_ASCII
+  {
+    "ASCII\0US-ASCII\0US_ASCII\0ISO646\0",
+    ONIG_ENCODING_ASCII
+  },
+#endif
+  { NULL, ONIG_ENCODING_UNDEF }
+};
+
+OnigEncoding default_mbctype = ONIG_ENCODING_UTF8;
+OnigEncoding current_mbctype = ONIG_ENCODING_UTF8;
+mbfl_no_encoding current_mbctype_mbfl_encoding = mbfl_no_encoding_utf8;
+
+OnigOptionType regex_default_options = ONIG_OPTION_MULTILINE | ONIG_OPTION_SINGLELINE;
+OnigSyntaxType *regex_default_syntax = ONIG_SYNTAX_RUBY;
+
+long regex_stack_limit = 100000;
+long regex_retry_limit = 1000000;
+
+//static OnigEncoding _kphp_mb_regex_name2mbctype(const char *pname)
+//{
+//  const char *p;
+//  const kphp_mb_regex_enc_name_map_t *mapping;
+//
+//  if (pname == NULL || !*pname) {
+//    return ONIG_ENCODING_UNDEF;
+//  }
+//
+//  for (mapping = enc_name_map; mapping->names != NULL; mapping++) {
+//    for (p = mapping->names; *p != '\0'; p += (strlen(p) + 1)) {
+//      if (strcasecmp(p, pname) == 0) {
+//        return mapping->code;
+//      }
+//    }
+//  }
+//
+//  return ONIG_ENCODING_UNDEF;
+//}
+//
+//
+//static const char *_kphp_mb_regex_mbctype2name(OnigEncoding mbctype)
+//{
+//  const kphp_mb_regex_enc_name_map_t *mapping;
+//
+//  for (mapping = enc_name_map; mapping->names != NULL; mapping++) {
+//    if (mapping->code == mbctype) {
+//      return mapping->names;
+//    }
+//  }
+//
+//  return NULL;
+//}
+
+//mixed f$mb_regex_encoding(const Optional<string> &encoding){
+//  if (!encoding.has_value()) {
+//    const char *retval = _kphp_mb_regex_mbctype2name(current_mbctype);
+//    if (retval != NULL){
+//      return string(retval);
+//    }
+//    return NULL;
+//  } else {
+//    OnigEncoding mbctype = _kphp_mb_regex_name2mbctype(val(encoding).c_str());
+//    if (mbctype == ONIG_ENCODING_UNDEF) {
+//      php_critical_error ("must be a valid encoding, \"%s\" given", encoding.val().c_str());
+//    }
+//    current_mbctype = mbctype;
+//    current_mbctype_mbfl_encoding = mb_get_encoding(encoding)->no_encoding;
+//    return true;
+//  }
+//}
+
+static bool _kphp_mb_regex_init_options(const char *parg, size_t narg, OnigOptionType *option, OnigSyntaxType **syntax)
+{
+  size_t n;
+  char c;
+  OnigOptionType optm = 0;
+
+  *syntax = ONIG_SYNTAX_RUBY;
+
+  if (parg != NULL) {
+    n = 0;
+    while(n < narg) {
+      c = parg[n++];
+      switch (c) {
+        case 'i':
+          optm |= ONIG_OPTION_IGNORECASE;
+          break;
+        case 'x':
+          optm |= ONIG_OPTION_EXTEND;
+          break;
+        case 'm':
+          optm |= ONIG_OPTION_MULTILINE;
+          break;
+        case 's':
+          optm |= ONIG_OPTION_SINGLELINE;
+          break;
+        case 'p':
+          optm |= ONIG_OPTION_MULTILINE | ONIG_OPTION_SINGLELINE;
+          break;
+        case 'l':
+          optm |= ONIG_OPTION_FIND_LONGEST;
+          break;
+        case 'n':
+          optm |= ONIG_OPTION_FIND_NOT_EMPTY;
+          break;
+        case 'j':
+          *syntax = ONIG_SYNTAX_JAVA;
+          break;
+        case 'u':
+          *syntax = ONIG_SYNTAX_GNU_REGEX;
+          break;
+        case 'g':
+          *syntax = ONIG_SYNTAX_GREP;
+          break;
+        case 'c':
+          *syntax = ONIG_SYNTAX_EMACS;
+          break;
+        case 'r':
+          *syntax = ONIG_SYNTAX_RUBY;
+          break;
+        case 'z':
+          *syntax = ONIG_SYNTAX_PERL;
+          break;
+        case 'b':
+          *syntax = ONIG_SYNTAX_POSIX_BASIC;
+          break;
+        case 'd':
+          *syntax = ONIG_SYNTAX_POSIX_EXTENDED;
+          break;
+        default:
+          return false;
+      }
+    }
+    if (option != NULL) *option|=optm;
+  }
+  return true;
+}
+
+static void _kphp_mb_regex_set_options(OnigOptionType options, OnigSyntaxType *syntax, OnigOptionType *prev_options, OnigSyntaxType **prev_syntax)
+{
+  if (prev_options != NULL) {
+    *prev_options = regex_default_options;
+  }
+  if (prev_syntax != NULL) {
+    *prev_syntax = regex_default_syntax;
+  }
+  regex_default_options = options;
+  regex_default_syntax = syntax;
+}
+
+static size_t _kphp_mb_regex_get_option_string(char *str, size_t len, OnigOptionType option, OnigSyntaxType *syntax)
+{
+  size_t len_left = len;
+  size_t len_req = 0;
+  char *p = str;
+  char c;
+
+  if ((option & ONIG_OPTION_IGNORECASE) != 0) {
+    if (len_left > 0) {
+      --len_left;
+      *(p++) = 'i';
+    }
+    ++len_req;
+  }
+
+  if ((option & ONIG_OPTION_EXTEND) != 0) {
+    if (len_left > 0) {
+      --len_left;
+      *(p++) = 'x';
+    }
+    ++len_req;
+  }
+
+  if ((option & (ONIG_OPTION_MULTILINE | ONIG_OPTION_SINGLELINE)) ==
+      (ONIG_OPTION_MULTILINE | ONIG_OPTION_SINGLELINE)) {
+    if (len_left > 0) {
+      --len_left;
+      *(p++) = 'p';
+    }
+    ++len_req;
+  } else {
+    if ((option & ONIG_OPTION_MULTILINE) != 0) {
+      if (len_left > 0) {
+        --len_left;
+        *(p++) = 'm';
+      }
+      ++len_req;
+    }
+
+    if ((option & ONIG_OPTION_SINGLELINE) != 0) {
+      if (len_left > 0) {
+        --len_left;
+        *(p++) = 's';
+      }
+      ++len_req;
+    }
+  }
+  if ((option & ONIG_OPTION_FIND_LONGEST) != 0) {
+    if (len_left > 0) {
+      --len_left;
+      *(p++) = 'l';
+    }
+    ++len_req;
+  }
+  if ((option & ONIG_OPTION_FIND_NOT_EMPTY) != 0) {
+    if (len_left > 0) {
+      --len_left;
+      *(p++) = 'n';
+    }
+    ++len_req;
+  }
+
+  c = 0;
+
+  if (syntax == ONIG_SYNTAX_JAVA) {
+    c = 'j';
+  } else if (syntax == ONIG_SYNTAX_GNU_REGEX) {
+    c = 'u';
+  } else if (syntax == ONIG_SYNTAX_GREP) {
+    c = 'g';
+  } else if (syntax == ONIG_SYNTAX_EMACS) {
+    c = 'c';
+  } else if (syntax == ONIG_SYNTAX_RUBY) {
+    c = 'r';
+  } else if (syntax == ONIG_SYNTAX_PERL) {
+    c = 'z';
+  } else if (syntax == ONIG_SYNTAX_POSIX_BASIC) {
+    c = 'b';
+  } else if (syntax == ONIG_SYNTAX_POSIX_EXTENDED) {
+    c = 'd';
+  }
+
+  if (c != 0) {
+    if (len_left > 0) {
+      --len_left;
+      *(p++) = c;
+    }
+    ++len_req;
+  }
+
+
+  if (len_left > 0) {
+    --len_left;
+    *(p++) = '\0';
+  }
+  ++len_req;
+  if (len < len_req) {
+    return len_req;
+  }
+
+  return 0;
+}
+
+string f$mb_regex_set_options(const Optional<string> &options){
+  OnigOptionType opt, prev_opt;
+  OnigSyntaxType *syntax, *prev_syntax;
+  char buf[16];
+
+  if (options.has_value()) {
+    opt = 0;
+    syntax = NULL;
+    if (!_kphp_mb_regex_init_options(val(options).c_str(), val(options).size(), &opt, &syntax)) {
+      php_critical_error("Wrong regex options.");
+    }
+    _kphp_mb_regex_set_options(opt, syntax, &prev_opt, &prev_syntax);
+    opt = prev_opt;
+    syntax = prev_syntax;
+  } else {
+    opt = regex_default_options;
+    syntax = regex_default_syntax;
+  }
+
+  _kphp_mb_regex_get_option_string(buf, sizeof(buf), opt, syntax);
+  return string((const char *) buf, sizeof(buf));
+}
+
+static regex_t *kphp_mbregex_compile_pattern(const char *pattern, size_t patlen, OnigOptionType options, OnigSyntaxType *syntax)
+{
+  // TODO: hashing
+  int err_code = 0;
+  regex_t *retval = NULL;
+  OnigErrorInfo err_info;
+  OnigUChar err_str[ONIG_MAX_ERROR_MESSAGE_LEN];
+  OnigEncoding enc = current_mbctype;
+
+  if ((err_code = onig_new(&retval, (OnigUChar *)pattern, (OnigUChar *)(pattern + patlen), options, enc, syntax, &err_info)) != ONIG_NORMAL) {
+    onig_error_code_to_str(err_str, err_code, &err_info);
+    php_warning("mbregex compile err: %s", err_str);
+    return NULL;
+  }
+
+  return retval;
+}
+
+bool f$mb_ereg_match(const string &pattern, const string &str, const Optional<string> &options){
+  regex_t *re;
+  OnigSyntaxType *syntax;
+  OnigOptionType option = 0;
+  int err;
+  OnigMatchParam *mp;
+
+  if (options.has_value()) {
+      if(!_kphp_mb_regex_init_options(val(options).c_str(), val(options).size(), &option, &syntax)) {
+        php_critical_error("Wrong regex options.");
+      }
+  } else {
+      option |= regex_default_options;
+      syntax = regex_default_syntax;
+  }
+
+  if (!f$mb_check_encoding(str, DEFAULT_ENCODING)) {
+    return false;
+  }
+
+  if ((re = kphp_mbregex_compile_pattern(pattern.c_str(), pattern.size(), option, syntax)) == NULL) {
+    return false;
+  }
+
+  mp = onig_new_match_param();
+  onig_initialize_match_param(mp);
+
+  if (regex_stack_limit > 0 && regex_stack_limit < UINT_MAX) {
+    onig_set_match_stack_limit_size_of_match_param(mp, (unsigned int) regex_stack_limit);
+  }
+  if (regex_retry_limit > 0 && regex_retry_limit < UINT_MAX) {
+    onig_set_retry_limit_in_match_of_match_param(mp, (unsigned int) regex_retry_limit);
+  }
+  /* match */
+  err = onig_match_with_param(re, (OnigUChar *) str.c_str(), (OnigUChar *)(str.c_str() + str.size()), (OnigUChar *) str.c_str(), NULL, 0, mp); // error is here
+  onig_free_match_param(mp);
+
+  if (err >= 0) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 #else
