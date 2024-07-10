@@ -2,7 +2,7 @@ include(${RUNTIME_LIGHT_DIR}/allocator/allocator.cmake)
 include(${RUNTIME_LIGHT_DIR}/core/core.cmake)
 include(${RUNTIME_LIGHT_DIR}/stdlib/stdlib.cmake)
 include(${RUNTIME_LIGHT_DIR}/streams/streams.cmake)
-include(${BASE_DIR}/runtime-light/tl/tl.cmake)
+include(${RUNTIME_LIGHT_DIR}/tl/tl.cmake)
 include(${RUNTIME_LIGHT_DIR}/utils/utils.cmake)
 include(${RUNTIME_LIGHT_DIR}/component/component.cmake)
 include(${RUNTIME_LIGHT_DIR}/memory-resource-impl/memory-resource-impl.cmake)
@@ -13,7 +13,7 @@ set(RUNTIME_LIGHT_SRC ${RUNTIME_CORE_SRC}
                 ${RUNTIME_COROUTINE_SRC}
                 ${RUNTIME_COMPONENT_SRC}
                 ${RUNTIME_STREAMS_SRC}
-                ${RUNTIME_TL_SRC}
+#                ${RUNTIME_TL_SRC}
                 ${RUNTIME_UTILS_SRC}
                 ${RUNTIME_LANGUAGE_SRC}
                 ${RUNTIME_MEMORY_RESOURCE_IMPL_SRC}
