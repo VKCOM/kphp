@@ -21,39 +21,18 @@ jobs:
             cpp: 17
             asan: off
             ubsan: off
-            light_runtime: off
-          - os: jammy
-            compiler: g++
-            cpp: 17
-            asan: off
-            ubsan: off
-            light_runtime: on
           - os: focal
             compiler: clang++
             cpp: 17
             asan: off
             ubsan: on
-            light_runtime: off
-          - os: focal
-            compiler: clang++
-            cpp: 17
-            asan: off
-            ubsan: on
-            light_runtime: on
           - os: focal
             compiler: g++-10
             cpp: 20
             asan: on
             ubsan: off
-            light_runtime: off
-          - os: focal
-            compiler: g++-10
-            cpp: 20
-            asan: on
-            ubsan: off
-            light_runtime: on
 
-    name: "${{matrix.os}}/${{matrix.compiler}}/c++${{matrix.cpp}}/asan=${{matrix.asan}}/ubsan=${{matrix.ubsan}}/light_runtime=${{matrix.light_runtime}}"
+    name: "${{matrix.os}}/${{matrix.compiler}}/c++${{matrix.cpp}}/asan=${{matrix.asan}}/ubsan=${{matrix.ubsan}}"
 
     steps:
     - uses: actions/checkout@v3
