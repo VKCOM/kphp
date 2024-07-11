@@ -21,7 +21,7 @@ task_t<void> f$component_get_http_query() {
 task_t<class_instance<C$ComponentQuery>> f$component_client_send_query(const string &name, const string &message) {
   class_instance<C$ComponentQuery> query;
   const PlatformCtx &ptx = *get_platform_context();
-  uint64_t stream_d;
+  uint64_t stream_d{};
   OpenStreamResult res = ptx.open(name.size(), name.c_str(), &stream_d);
   if (res != OpenStreamOk) {
     php_warning("cannot open stream");
@@ -94,7 +94,7 @@ class_instance<C$ComponentStream> f$component_open_stream(const string &name) {
   class_instance<C$ComponentStream> query;
   const PlatformCtx &ptx = *get_platform_context();
   ComponentState &ctx = *get_component_context();
-  uint64_t stream_d;
+  uint64_t stream_d{};
   OpenStreamResult res = ptx.open(name.size(), name.c_str(), &stream_d);
   if (res != OpenStreamOk) {
     php_warning("cannot open stream");

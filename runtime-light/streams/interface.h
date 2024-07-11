@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/streams/component-stream.h"
 
