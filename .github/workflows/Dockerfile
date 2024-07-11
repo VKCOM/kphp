@@ -1,8 +1,6 @@
 FROM debian:buster
 ARG DEBIAN_FRONTEND=noninteractive
 
-COPY tests/python/requirements.txt /tmp/
-
 RUN apt-get update && \
     apt-get install -y --no-install-recommends apt-utils ca-certificates gnupg wget lsb-release && \
     wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -  && \
@@ -24,10 +22,10 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       git cmake-data=3.18* cmake=3.18* make g++ clang-17 libclang-rt-17-dev gperf netcat \
       python3.7 python3-dev libpython3-dev python3-pip python3-setuptools python3-wheel mysql-server libmysqlclient-dev && \
-    pip3 install -r /tmp/requirements.txt && \
+    pip3 install jsonschema && \
     apt-get install -y --no-install-recommends curl-kphp-vk kphp-timelib libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
       libzstd-dev libyaml-cpp-dev libnghttp2-dev zlib1g-dev php7.4-dev libldap-dev libkrb5-dev \
-      postgresql postgresql-server-dev-all libnuma-dev composer libstdc++6 libc++-6-dev && \
+      postgresql postgresql-server-dev-all libnuma-dev composer libstdc++6 && \
     rm -rf /var/lib/apt/lists/* && \
     update-alternatives --set php /usr/bin/php7.4
 
