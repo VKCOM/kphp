@@ -7,6 +7,8 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <iterator>
 #include <ostream>
@@ -31,6 +33,10 @@ public:
   static constexpr auto npos = std::string::npos;
 
   string_view(const char *data, size_t count) : _data{data}, _count{count} {}
+
+  string_view(const char *data, int64_t count) : _data{data}, _count{static_cast<size_t>(count)} {
+    assert(count >= 0);
+  }
 
   string_view(const char *data, const char *data_end) : _data{data}, _count{static_cast<size_t>(data_end - data)} {}
 
