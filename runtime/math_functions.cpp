@@ -2,10 +2,11 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include <chrono>
-#include <random>
-#include <cstring>
 #include <cerrno>
+#include <chrono>
+#include <cinttypes>
+#include <cstring>
+#include <random>
 #include <sys/time.h>
 
 #if defined(__APPLE__)
@@ -326,7 +327,7 @@ string f$base_convert(const string &number, int64_t frombase, int64_t tobase) {
   for (string::size_type i = 0; i < len; i++) {
     const char *s = (const char *)memchr(digits, tolower(number[i + f]), 36);
     if (s == nullptr || s - digits >= frombase) {
-      php_warning("Wrong character '%c' at position %u in parameter number (%s) in function base_convert", number[i + f], i + f, number.c_str());
+      php_warning("Wrong character '%c' at position %" PRIu64 " in parameter number (%s) in function base_convert", number[i + f], i + f, number.c_str());
       return number;
     }
     n[i] = (char)(s - digits);
@@ -348,7 +349,7 @@ string f$base_convert(const string &number, int64_t frombase, int64_t tobase) {
   }
 
   string::size_type i = f;
-  int64_t j = int64_t{result.size()} - 1;
+  int64_t j = static_cast<int64_t>(result.size()) - 1;
   while (i < j) {
     swap(result[i++], result[static_cast<string::size_type>(j--)]);
   }

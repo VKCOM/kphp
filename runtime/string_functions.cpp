@@ -4,9 +4,10 @@
 
 #include "runtime/string_functions.h"
 
+#include <cctype>
+#include <cinttypes>
 #include <clocale>
 #include <sys/types.h>
-#include <cctype>
 
 #include "common/macos-ports.h"
 #include "common/unicode/unicode-utils.h"
@@ -579,7 +580,8 @@ int64_t f$levenshtein(const string &str1, const string &str2) {
 
   const string::size_type MAX_LEN = 16384;
   if (len1 > MAX_LEN || len2 > MAX_LEN) {
-    php_warning("Too long strings of length %u and %u supplied for function levenshtein. Maximum allowed length is %u.", len1, len2, MAX_LEN);
+    php_warning("Too long strings of length %" PRIu64 " and %" PRIu64 " supplied for function levenshtein. Maximum allowed length is %" PRIu64 ".", len1, len2,
+                MAX_LEN);
     if (len1 > MAX_LEN) {
       len1 = MAX_LEN;
     }
@@ -1674,7 +1676,7 @@ int64_t f$strncmp(const string &lhs, const string &rhs, int64_t len) {
   if (len < 0) {
     return 0;
   }
-  return memcmp(lhs.c_str(), rhs.c_str(), min(int64_t{min(lhs.size(), rhs.size())} + 1, len));
+  return memcmp(lhs.c_str(), rhs.c_str(), min(static_cast<int64_t>(min(lhs.size(), rhs.size())) + 1, len));
 }
 
 /*
@@ -1866,7 +1868,7 @@ Optional<int64_t> f$strpos(const string &haystack, const string &needle, int64_t
     php_warning("Wrong offset = %" PRIi64 " in function strpos", offset);
     return false;
   }
-  if (offset > int64_t{haystack.size()}) {
+  if (offset > static_cast<int64_t>(haystack.size())) {
     return false;
   }
   if (needle.size() <= 1) {
@@ -2819,8 +2821,8 @@ string f$wordwrap(const string &str, int64_t width, const string &brk, bool cut)
   }
 
   string result;
-  string::size_type first = 0;
-  const string::size_type n = str.size();
+  int64_t first = 0;
+  const auto n = static_cast<int64_t>(str.size());
   int64_t last_space = -1;
   for (string::size_type i = 0; i < n; i++) {
     if (str[i] == ' ') {
@@ -2832,7 +2834,7 @@ string f$wordwrap(const string &str, int64_t width, const string &brk, bool cut)
         first = i;
       } else {
         result.append(str, first, static_cast<string::size_type>(last_space) - first);
-        first = static_cast<string::size_type>(last_space + 1);
+        first = last_space + 1;
       }
       result.append(brk);
     }

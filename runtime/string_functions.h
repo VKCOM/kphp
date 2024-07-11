@@ -4,8 +4,9 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "runtime-core/runtime-core.h"
-#include <type_traits>
 
 extern const string COLON;
 extern const string CP1251;

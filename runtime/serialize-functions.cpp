@@ -127,8 +127,8 @@ int do_unserialize(const char *s, int s_len, mixed &out_var_value) noexcept {
     case 's':
       if (s[1] == ':') {
         s += 2;
-        uint32_t j = 0;
-        uint32_t len = 0;
+        string::size_type j = 0;
+        string::size_type len = 0;
         while ('0' <= s[j] && s[j] <= '9') {
           len = len * 10 + s[j++] - '0';
         }
@@ -205,8 +205,8 @@ int do_unserialize(const char *s, int s_len, mixed &out_var_value) noexcept {
               }
             } else if (s[0] == 's' && s[1] == ':') {
               s += 2;
-              uint32_t k = 0;
-              uint32_t str_len = 0;
+              string::size_type k = 0;
+              string::size_type str_len = 0;
               while ('0' <= s[k] && s[k] <= '9') {
                 str_len = str_len * 10 + s[k++] - '0';
               }

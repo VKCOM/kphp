@@ -5,11 +5,11 @@
 #pragma once
 
 #include <cctype>
+#include <cstdint>
 
 #include "common/algorithms/simd-int-to-string.h"
-
-#include "runtime-core/utils/migration-php8.h"
 #include "runtime-core/core-types/definition/string_cache.h"
+#include "runtime-core/utils/migration-php8.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
   #error "this file must be included only from runtime-core.h"
@@ -648,7 +648,7 @@ string &string::assign(size_type n, bool b __attribute__((unused))) {
 
 
 void string::assign_raw(const char *s) {
-  static_assert (sizeof(string_inner) == 12u, "need 12 bytes");
+  static_assert (sizeof(string_inner) == 20U, "sizeof(string_inner) expected to be equal to 20U");
   p = const_cast <char *> (s + sizeof(string_inner));
 }
 
@@ -965,12 +965,11 @@ int64_t string::compare(const string &str) const {
 }
 
 bool string::isset(int64_t index) const {
-  return index >= 0 && index < size();
+  return index >= 0 && index < static_cast<int64_t>(size());
 }
 
-
 int64_t string::get_correct_index(int64_t index) const {
-  return index >= 0 ? index : index + int64_t{size()};
+  return index >= 0 ? index : index + static_cast<int64_t>(size());
 }
 
 int64_t string::get_correct_offset(size_type size, int64_t offset) {

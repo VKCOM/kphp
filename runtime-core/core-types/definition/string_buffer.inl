@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cinttypes>
+
 #include "common/algorithms/simd-int-to-string.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
@@ -20,7 +22,7 @@ inline void string_buffer::resize(string::size_type new_buffer_len) noexcept {
         sb_context.error_flag = STRING_BUFFER_ERROR_FLAG_FAILED;
         return;
       } else {
-        php_critical_error ("maximum buffer size exceeded. buffer_len = %u, new_buffer_len = %u", buffer_len, new_buffer_len);
+        php_critical_error ("maximum buffer size exceeded. buffer_len = %" PRIu64 ", new_buffer_len = %" PRIu64, buffer_len, new_buffer_len);
       }
     }
   }
@@ -106,6 +108,12 @@ string_buffer &operator<<(string_buffer &sb, uint32_t x) {
 string_buffer &operator<<(string_buffer &sb, int64_t x) {
   sb.reserve_at_least(20);
   sb.buffer_end = simd_int64_to_string(x, sb.buffer_end);
+  return sb;
+}
+
+string_buffer &operator<<(string_buffer &sb, uint64_t x) {
+  sb.reserve_at_least(20);
+  sb.buffer_end = simd_uint64_to_string(x, sb.buffer_end);
   return sb;
 }
 

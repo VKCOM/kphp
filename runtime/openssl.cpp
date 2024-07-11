@@ -5,6 +5,8 @@
 #include "runtime/openssl.h"
 
 #include <cerrno>
+#include <cinttypes>
+#include <cstdint>
 #include <memory>
 #include <netdb.h>
 #include <openssl/asn1.h>
@@ -1740,16 +1742,14 @@ private:
       return true;
     }
     if (iv.size() < iv_required_len) {
-      php_warning("IV passed is only %d bytes long, cipher expects an IV of precisely %zd bytes, padding with \\0",
-                  iv.size(), iv_required_len);
+      php_warning("IV passed is only %" PRIu64 " bytes long, cipher expects an IV of precisely %zd bytes, padding with \\0", iv.size(), iv_required_len);
       critical_section.leave_critical_section();
       iv.append(static_cast<string::size_type>(iv_required_len - iv.size()), '\0');
       critical_section.enter_critical_section();
       return true;
     }
     // iv.size() > iv_required_len
-    php_warning("IV passed is %d bytes long which is longer than the %zd expected by selected cipher, truncating",
-                iv.size(), iv_required_len);
+    php_warning("IV passed is %" PRIu64 " bytes long which is longer than the %zd expected by selected cipher, truncating", iv.size(), iv_required_len);
     critical_section.leave_critical_section();
     iv.shrink(static_cast<string::size_type>(iv_required_len));
     critical_section.enter_critical_section();

@@ -76,7 +76,7 @@ int64_t regexp::skip_utf8_subsequent_bytes(int64_t offset, const string &subject
   // all multibyte utf8 runes consist of subsequent bytes,
   // these subsequent bytes start with 10 bit pattern
   // 0xc0 selects the two most significant bits, then we compare it to 0x80 (0b10000000)
-  while (offset < int64_t{subject.size()} && ((static_cast<unsigned char>(subject[offset])) & 0xc0) == 0x80) {
+  while (offset < static_cast<int64_t>(subject.size()) && ((static_cast<unsigned char>(subject[offset])) & 0xc0) == 0x80) {
     offset++;
   }
   return offset;
@@ -684,7 +684,7 @@ Optional<int64_t> regexp::match(const string &subject, bool all_matches) const {
 
   int64_t result = 0;
   int64_t offset = 0;
-  while (offset <= int64_t{subject.size()}) {
+  while (offset <= static_cast<int64_t>(subject.size())) {
     if (exec(subject, offset, second_try) == 0) {
       if (second_try) {
         second_try = false;
@@ -754,7 +754,7 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, bool all_
     return false;
   }
 
-  while (offset <= int64_t{subject.size()}) {
+  while (offset <= static_cast<int64_t>(subject.size())) {
     const int64_t count = exec(subject, offset, second_try);
 
     if (count == 0) {
@@ -875,7 +875,7 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, int64_t f
     return false;
   }
 
-  while (offset <= int64_t{subject.size()}) {
+  while (offset <= static_cast<int64_t>(subject.size())) {
     const int64_t count = exec(subject, offset, second_try);
 
     if (count == 0) {
@@ -988,7 +988,7 @@ Optional<array<mixed>> regexp::split(const string &subject, int64_t limit, int64
   bool second_try = false;
 
   array<mixed> result;
-  while (offset <= int64_t{subject.size()} && limit > 1) {
+  while (offset <= static_cast<int64_t>(subject.size()) && limit > 1) {
     int64_t count = exec(subject, offset, second_try);
 
     if (count == 0) {
@@ -1036,7 +1036,7 @@ Optional<array<mixed>> regexp::split(const string &subject, int64_t limit, int64
     offset = submatch[1];
   }
 
-  if (last_match < int64_t{subject.size()} || !no_empty) {
+  if (last_match < static_cast<int64_t>(subject.size()) || !no_empty) {
     string match_str(subject.c_str() + last_match, static_cast<string::size_type>(subject.size() - last_match));
 
     if (offset_capture) {

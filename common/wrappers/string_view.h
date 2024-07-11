@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
-#include <cstdint>
 #include <cstring>
 #include <iterator>
 #include <ostream>
@@ -33,10 +32,6 @@ public:
   static constexpr auto npos = std::string::npos;
 
   string_view(const char *data, size_t count) : _data{data}, _count{count} {}
-
-  string_view(const char *data, int64_t count) : _data{data}, _count{static_cast<size_t>(count)} {
-    assert(count >= 0);
-  }
 
   string_view(const char *data, const char *data_end) : _data{data}, _count{static_cast<size_t>(data_end - data)} {}
 
@@ -202,7 +197,7 @@ public:
   }
 
   size_t rfind(char c, size_t pos = npos) const noexcept {
-    return rfind(string_view{std::addressof(c), 1}, pos);
+    return rfind(string_view{std::addressof(c), static_cast<size_t>(1)}, pos);
   }
 
   size_t find_first_of(string_view str, size_t pos = 0) const noexcept {

@@ -1,10 +1,11 @@
 #pragma once
 
+#include <cstdint>
 #ifndef INCLUDED_FROM_KPHP_CORE
   #error "this file must be included only from runtime-core.h"
 #endif
 
-using string_size_type = uint32_t;
+using string_size_type = uint64_t;
 
 inline bool string_to_bool(const char *s, string_size_type size) {
   return size >= 2 || (size == 1 && s[0] != '0');
@@ -36,16 +37,16 @@ struct ArrayBucketDummyStrTag;
 class string {
 public:
   using size_type = string_size_type;
-  static constexpr size_type npos = (size_type)-1;
+  static constexpr size_type npos = static_cast<size_type>(-1);
 
 private:
   char *p;
 
-private:
+#pragma pack(push, 1)
   struct string_inner {
     size_type size;
     size_type capacity;
-    int ref_count;
+    int32_t ref_count;
 
     inline bool is_shared() const;
     inline void set_length_and_sharable(size_type n);
@@ -67,6 +68,7 @@ private:
 
     inline char *clone(size_type requested_cap);
   };
+#pragma pack(pop)
 
   inline string_inner *inner() const;
 
@@ -83,7 +85,7 @@ private:
 
 public:
   static constexpr size_type max_size() noexcept {
-    return ((size_type)-1 - sizeof(string_inner) - 1) / 4;
+    return (static_cast<size_type>(-1) - sizeof(string_inner) - 1) / 4;
   }
 
   static size_type unsafe_cast_to_size_type(int64_t size) noexcept {
@@ -251,7 +253,7 @@ inline string materialize_tmp_string(tmp_string s) {
 inline bool operator==(const string &lhs, const string &rhs);
 
 #define CONST_STRING(const_str) string (const_str, sizeof (const_str) - 1)
-#define STRING_EQUALS(str, const_str) (str.size() + 1 == sizeof (const_str) && !strcmp (str.c_str(), const_str))
+#define STRING_EQUALS(str, const_str) ((str).size() + 1 == sizeof (const_str) && !strcmp ((str).c_str(), const_str))
 
 inline bool operator!=(const string &lhs, const string &rhs);
 

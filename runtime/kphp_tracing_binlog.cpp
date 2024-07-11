@@ -4,9 +4,11 @@
 
 #include "runtime/kphp_tracing_binlog.h"
 
-#include <unordered_map>
+#include <cinttypes>
+#include <cstdint>
 #include <forward_list>
 #include <unistd.h>
+#include <unordered_map>
 #include <vector>
 
 #include "runtime/critical_section.h"
@@ -151,7 +153,7 @@ void tracing_binary_buffer::write_float64(double v) {
 
 int tracing_binary_buffer::register_string_in_table(const string &v) {
   if (unlikely(v.size() > 255)) {
-    php_warning("too large string for register_string_in_table, len %d", v.size());
+    php_warning("too large string for register_string_in_table, len %" PRIu64, v.size());
     return 0;
   }
 

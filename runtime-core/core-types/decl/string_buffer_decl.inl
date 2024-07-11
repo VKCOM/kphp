@@ -31,6 +31,7 @@ public:
   friend inline string_buffer &operator<<(string_buffer &sb, int32_t x);
   friend inline string_buffer &operator<<(string_buffer &sb, uint32_t x);
   friend inline string_buffer &operator<<(string_buffer &sb, int64_t x);
+  friend inline string_buffer &operator<<(string_buffer &sb, uint64_t x);
 
   inline string_buffer &append(const char *str, size_t len) noexcept;
   inline void write(const char *str, int len) noexcept;

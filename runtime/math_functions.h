@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "runtime-core/runtime-core.h"
 
 int64_t f$bindec(const string &number) noexcept;

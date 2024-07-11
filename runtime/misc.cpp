@@ -4,7 +4,8 @@
 
 #include "runtime/misc.h"
 
-#include <errno.h>
+#include <cerrno>
+#include <cinttypes>
 #include <iconv.h>
 #include <pwd.h>
 #include <sys/stat.h>
@@ -684,7 +685,7 @@ void f$var_dump(const mixed &v) {
   if (run_once && f$ob_get_level() == 0) {
     const string &to_print = f$ob_get_contents();
     if (to_print.size() != write(kstdout, to_print.c_str(), to_print.size())) {
-      php_warning("Couldn't write %u bytes to stdout in var_dump", to_print.size());
+      php_warning("Couldn't write %" PRIu64 " bytes to stdout in var_dump", to_print.size());
     }
     f$ob_clean();
   }

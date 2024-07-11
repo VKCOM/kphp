@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <pcre.h>
 
 #include "common/mixin/not_copyable.h"
@@ -295,7 +296,7 @@ Optional<string> regexp::replace(const T &replace_val, const string &subject, in
   bool second_try = false;
 
   string result;
-  while (offset <= int64_t{subject.size()} && limit > 0) {
+  while (offset <= static_cast<int64_t>(subject.size()) && limit > 0) {
     int64_t count = exec(subject, offset, second_try);
 
 //    fprintf (stderr, "Found %d submatches at %d:%d from pos %d, pcre_last_error = %d\n", count, submatch[0], submatch[1], offset, pcre_last_error);
@@ -304,7 +305,8 @@ Optional<string> regexp::replace(const T &replace_val, const string &subject, in
         second_try = false;
         do {
           offset++;
-        } while (is_utf8 && offset < int64_t{subject.size()} && (static_cast<unsigned char>(subject[static_cast<string::size_type>(offset)]) & 0xc0) == 0x80);
+        } while (is_utf8 && offset < static_cast<int64_t>(subject.size())
+                 && (static_cast<unsigned char>(subject[static_cast<string::size_type>(offset)]) & 0xc0) == 0x80);
         continue;
       }
 

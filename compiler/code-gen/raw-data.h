@@ -4,14 +4,19 @@
 
 #pragma once
 
+#include <cstdint>
+#include <cstring>
 #include <string>
-#include <utility>
+#include <tuple>
 
 #include "common/php-functions.h"
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
 #include "compiler/vertex.h"
 #include "compiler/data/var-data.h"
+
+static constexpr auto STRING_INNER_SIZE = 2 * sizeof(uint64_t) + sizeof(int32_t); // len + cap + ref_count
+static_assert(STRING_INNER_SIZE == 20U);
 
 struct DepLevelContainer {
   DepLevelContainer() {
@@ -89,11 +94,11 @@ std::vector<int> compile_arrays_raw_representation(const DepLevelContainer &cons
 
 //returns len of raw string representation or -1 on error
 inline int string_raw_len(int src_len) {
-  if (src_len < 0 || src_len >= (1 << 30) - 13) {
+  if (src_len < 0 || src_len >= (1 << 30) - STRING_INNER_SIZE - 1) { // -1 to also reserve space for '\0' at the end of the string
     return -1;
   }
 
-  return src_len + 13;
+  return src_len + STRING_INNER_SIZE + 1;
 }
 
 //returns len of raw string representation and writes it to dest or returns -1 on error
@@ -102,12 +107,11 @@ inline int string_raw(char *dest, int dest_len, const char *src, int src_len) {
   if (raw_len == -1 || raw_len > dest_len) {
     return -1;
   }
-  int *dest_int = reinterpret_cast <int *> (dest);
-  dest_int[0] = src_len;
-  dest_int[1] = src_len;
-  dest_int[2] = ExtraRefCnt::for_global_const;
-  memcpy(dest + 3 * sizeof(int), src, src_len);
-  dest[3 * sizeof(int) + src_len] = '\0';
+  *reinterpret_cast<uint64_t *>(dest) = static_cast<uint64_t>(src_len);
+  *reinterpret_cast<uint64_t *>(dest + sizeof(uint64_t)) = static_cast<uint64_t>(src_len);
+  *reinterpret_cast<int32_t *>(dest + 2 * sizeof(uint64_t)) = static_cast<int32_t>(ExtraRefCnt::for_global_const);
+  std::memcpy(dest + STRING_INNER_SIZE, src, src_len);
+  dest[STRING_INNER_SIZE + src_len] = '\0';
 
   return raw_len;
 }
