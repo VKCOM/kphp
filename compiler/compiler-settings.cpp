@@ -322,7 +322,7 @@ void CompilerSettings::init() {
   } else {
     // default value is false
     // when we build using full runtime, we should force to use runtime as static lib
-    force_link_runtime.set_option_arg_value("1");
+    force_link_runtime.value_ = true;
   }
   std::string cxx_default_flags = ss.str();
 
