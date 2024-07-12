@@ -342,15 +342,10 @@ bool f$store_string(const string &v) noexcept {
     rpc_buf.store_trivial(static_cast<uint8_t>((string_len >> 8) & 0xff));
     rpc_buf.store_trivial(static_cast<uint8_t>((string_len >> 16) & 0xff));
   } else {
-    size_len = rpc_impl_::LARGE_STRING_SIZE_LEN + 1;
-    rpc_buf.store_trivial(static_cast<uint8_t>(rpc_impl_::LARGE_STRING_MAGIC));
-    rpc_buf.store_trivial(static_cast<uint8_t>(string_len & 0xff));
-    rpc_buf.store_trivial(static_cast<uint8_t>((string_len >> 8) & 0xff));
-    rpc_buf.store_trivial(static_cast<uint8_t>((string_len >> 16) & 0xff));
-    rpc_buf.store_trivial(static_cast<uint8_t>((string_len >> 24) & 0xff));
-    rpc_buf.store_trivial(static_cast<uint8_t>((string_len >> 32) & 0xff));
-    rpc_buf.store_trivial(static_cast<uint8_t>((string_len >> 40) & 0xff));
-    rpc_buf.store_trivial(static_cast<uint8_t>((string_len >> 48) & 0xff));
+    php_warning("large strings aren't supported");
+    size_len = rpc_impl_::SMALL_STRING_SIZE_LEN;
+    string_len = 0;
+    rpc_buf.store_trivial(static_cast<uint8_t>(string_len));
   }
   rpc_buf.store(v.c_str(), string_len);
 
@@ -410,7 +405,7 @@ string f$fetch_string() noexcept {
 
       const auto total_len_with_padding{(size_len + string_len + 3) & ~static_cast<uint64_t>(3)};
       rpc_buf.adjust(total_len_with_padding - size_len);
-      php_warning("fetch of large strings is not supported");
+      php_warning("large strings aren't supported");
       return {};
     }
     case rpc_impl_::MEDIUM_STRING_MAGIC: {
