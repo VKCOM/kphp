@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 function inverse($x) {
     if (!$x) {

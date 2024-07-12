@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /Invalid php2c conversion: int\|false -> int64_t/
 <?php
 

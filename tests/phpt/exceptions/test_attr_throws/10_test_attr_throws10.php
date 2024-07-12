@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 
 class Exception1 extends Exception {}

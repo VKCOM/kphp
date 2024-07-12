@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 
 function ensure_int(int $x) {}

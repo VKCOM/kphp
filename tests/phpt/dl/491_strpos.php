@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
   $str = "abacaba asdas nasdn ansdn andsn d";
   var_dump (mb_strtolower($str, 'UTF-8'));

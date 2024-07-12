@@ -1,4 +1,4 @@
-@kphp_runtime_should_warn
+@kphp_runtime_should_warn k2_skip
 /Warning: /: Corner case in json conversion, \[\] could be easy transformed to \{\}/
 /Warning: /\['nested'\]\[.\]: Corner case in json conversion, \[\] could be easy transformed to \{\}/
 /Warning: /: strange double inf in function json_encode/

@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /php-serialized-field is required for field: x/
 <?php
 

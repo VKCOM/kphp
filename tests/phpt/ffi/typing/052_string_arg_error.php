@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /\$ptr argument is FFI\\CData_uint16\*, expected a C string compatible type/
 <?php
 

@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 /* Prototype  : int strnatcmp  ( string $str1  , string $str2  )
  * Description: String comparisons using a "natural order" algorithm

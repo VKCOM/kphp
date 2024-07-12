@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /forking void functions is forbidden, return null at least/
 <?php
 

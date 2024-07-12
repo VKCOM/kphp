@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 
 // https://github.com/VKCOM/kphp/issues/145

@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /Field WithTuple::\$tupe is @var tuple\(int, string\), it's incompatible with json/
 /Field WithShape::\$shape is @var shape\(a:int, b:string\), it's incompatible with json/
 /Field WithBuiltin::\$ex is @var \?ArgumentCountError, it's incompatible with json/

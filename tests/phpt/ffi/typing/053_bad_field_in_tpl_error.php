@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /Field \$value not found in class cdata\$cdef\$u(\w+)_0\\Bar/
 <?php
 

@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 // important! this file is saved as utf-8
 require_once 'kphp_tester_include.php';

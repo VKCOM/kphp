@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /You may not serialize classes which has a parent with fields/
 <?php
 

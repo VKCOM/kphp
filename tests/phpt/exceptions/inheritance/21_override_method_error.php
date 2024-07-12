@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /You cannot override final method: MyException::getLine/
 <?php
 

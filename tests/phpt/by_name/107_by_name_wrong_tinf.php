@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 KPHP_SHOW_ALL_TYPE_ERRORS=1
 /in callByName<A>/
 /pass string to argument \$a of A::sf/

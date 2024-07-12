@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 $input = "Alien";
 echo str_pad($input, 10);                      // выводит "Alien     "

@@ -1,4 +1,4 @@
-@kphp_runtime_should_warn
+@kphp_runtime_should_warn k2_skip
 /DateTime::modify\(\): Failed to parse time string \(\+1 day \+four month\) at position 7 \(\+\): Unexpected character/
 /DateTimeImmutable::modify\(\): Failed to parse time string \(\+1 day \+four month\) at position 7 \(\+\): Unexpected character/
 <?php

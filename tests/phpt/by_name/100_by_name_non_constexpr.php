@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /Syntax 'new \$class_name' works only if \$class_name is compile-time known/
 /Syntax '\$class_name::method\(\)' works only if \$class_name is compile-time known/
 /Syntax '\$class_name::CONST' works only if \$class_name is compile-time known/
