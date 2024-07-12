@@ -241,6 +241,13 @@ static bool session_open() {
 
 static void session_close() {
 	if (get_sparam(S_FD).to_bool() && (fcntl(get_sparam(S_FD).to_int(), F_GETFD) != -1 || errno != EBADF)) {
+		struct flock lock;
+		lock.l_type = F_UNLCK;
+		lock.l_whence = SEEK_SET;
+		lock.l_start = 0;
+		lock.l_len = 0;
+		lock.l_pid = getpid();
+		fcntl(get_sparam(S_FD).to_int(), F_SETLKW, &lock);
 		close_safe(get_sparam(S_FD).to_int());
 	}
 	reset_sparams();
@@ -278,7 +285,19 @@ static bool session_read() {
 }
 
 static bool session_write() {
-	session_open();
+	// rewind the S_FD of the session file
+	struct flock lock;
+	lock.l_type = F_UNLCK;
+	lock.l_whence = SEEK_SET;
+	lock.l_start = 0;
+	lock.l_len = 0;
+	lock.l_pid = getpid();
+	fcntl(get_sparam(S_FD).to_int(), F_SETLKW, &lock);
+	close_safe(get_sparam(S_FD).to_int());
+	set_sparam(S_FD, open_safe(get_sparam(S_PATH).to_string().c_str(), O_RDWR, 0777));
+	lock.l_type = F_WRLCK;
+	fcntl(get_sparam(S_FD).to_int(), F_SETLKW, &lock);
+
 	string data = f$serialize(v$_SESSION.as_array());
 	ssize_t n = write_safe(get_sparam(S_FD).to_int(), data.c_str(), data.size(), get_sparam(S_PATH).to_string());
 	if (n < data.size()) {
