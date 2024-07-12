@@ -169,6 +169,7 @@ static bool session_generate_id() {
 }
 
 static bool session_abort() {
+	fprintf(stderr, "[%d]->sessions::session_abort()\n", getpid());
 	if (get_sparam(S_STATUS).to_bool()) {
 		session_close();
 		return true;
@@ -177,12 +178,16 @@ static bool session_abort() {
 }
 
 static string session_encode() {
+	fprintf(stderr, "[%d]->sessions::session_encode()\n", getpid());
 	return f$serialize(v$_SESSION.as_array());
 }
 
 static bool session_decode(const string &data) {
+	fprintf(stderr, "[%d]->sessions::session_decode()\n", getpid());
+	fprintf(stderr, "[%d]\tsession_decode(): Call unserialize() for session file %s\n", getpid(), get_sparam(S_PATH).to_string().c_str());
 	mixed buf = f$unserialize(data);
 	if (buf.is_bool()) {
+		fprintf(stderr, "[%d]\tsession_decode(): unserialize() returned false\n", getpid());
 		return false;
 	}
 	v$_SESSION = buf.as_array();
@@ -190,7 +195,9 @@ static bool session_decode(const string &data) {
 }
 
 static bool session_open() {
+	fprintf(stderr, "[%d]->sessions::session_open()\n", getpid());
 	if (get_sparam(S_FD).to_bool() && (fcntl(get_sparam(S_FD).to_int(), F_GETFD) != -1 || errno != EBADF)) {
+		fprintf(stderr, "[%d]\tSession id already opened, skip: %s\n", getpid(), get_sparam(S_PATH).to_string().c_str());
 		return true;
 	}
 
@@ -201,13 +208,15 @@ static bool session_open() {
 	set_sparam(S_PATH, string(get_sparam(S_DIR).to_string()).append(get_sparam(S_ID).to_string()));
 	bool is_new = (!f$file_exists(get_sparam(S_PATH).to_string())) ? 1 : 0;
 	
-	// the interprocessor lock does not work
+	fprintf(stderr, "[%d]\tOpening the session file %s\n", getpid(), get_sparam(S_PATH).to_string().c_str());
 	set_sparam(S_FD, open_safe(get_sparam(S_PATH).to_string().c_str(), O_RDWR | O_CREAT, 0777));
 
 	if (get_sparam(S_FD).to_int() < 0) {
 		php_warning("Failed to open the file %s", get_sparam(S_PATH).to_string().c_str());
+		fprintf(stderr, "[%d]\tFailed to open the session file %s\n", getpid(), get_sparam(S_PATH).to_string().c_str());
 		return false;
 	}
+	fprintf(stderr, "[%d]\tSuccessfully opened the session file %s\n", getpid(), get_sparam(S_PATH).to_string().c_str());
 
 	struct flock lock;
 	lock.l_type = F_WRLCK; // Exclusive write lock
@@ -216,12 +225,15 @@ static bool session_open() {
     lock.l_len = 0;
     lock.l_pid = getpid();
 
+    fprintf(stderr, "[%d]\tLocking the session file %s\n", getpid(), get_sparam(S_PATH).to_string().c_str());
     int ret = fcntl(get_sparam(S_FD).to_int(), F_SETLKW, &lock);
 
     if (ret < 0 && errno == EDEADLK) {
     	php_warning("Attempt to lock alredy locked session file, path: %s", get_sparam(S_PATH).to_string().c_str());
+    	fprintf(stderr, "[%d]\tFailed to lock the session file %s\n", getpid(), get_sparam(S_PATH).to_string().c_str());
     	return false;
     }
+    fprintf(stderr, "[%d]\tSuccessfully lock the session file %s\n", getpid(), get_sparam(S_PATH).to_string().c_str());
 
 	// set new metadata to the file
 	int ret_ctime = get_tag(get_sparam(S_PATH).to_string().c_str(), S_CTIME, NULL, 0);
@@ -240,13 +252,27 @@ static bool session_open() {
 }
 
 static void session_close() {
+	fprintf(stderr, "[%d]->sessions::session_close()\n", getpid());
 	if (get_sparam(S_FD).to_bool() && (fcntl(get_sparam(S_FD).to_int(), F_GETFD) != -1 || errno != EBADF)) {
+		struct flock lock;
+		lock.l_type = F_UNLCK;
+		lock.l_whence = SEEK_SET;
+		lock.l_start = 0;
+		lock.l_len = 0;
+		lock.l_pid = getpid();
+
+		fprintf(stderr, "[%d]\tUnlocking the session file %s\n", getpid(), get_sparam(S_PATH).to_string().c_str());
+		fcntl(get_sparam(S_FD).to_int(), F_SETLKW, &lock);
+		fprintf(stderr, "[%d]\tUnlocked the session file %s\n", getpid(), get_sparam(S_PATH).to_string().c_str());
+		fprintf(stderr, "[%d]\tNow closing the session file %s\n\n", getpid(), get_sparam(S_PATH).to_string().c_str());
 		close_safe(get_sparam(S_FD).to_int());
 	}
+	set_sparam(S_STATUS, false);
 	reset_sparams();
 }
 
 static bool session_read() {
+	fprintf(stderr, "[%d]->sessions::session_read()\n", getpid());
 	session_open();
 	struct stat buf;
 	if (fstat(get_sparam(S_FD).to_int(), &buf) < 0) {
@@ -269,6 +295,8 @@ static bool session_read() {
 		}
 		return false;
 	}
+
+	fprintf(stderr, "[%d]\tsession_read(): Successfully read the session file, result:\n\t%s\n", getpid(), string(result, n).c_str());
 	
 	if (!session_decode(string(result, n))) {
 		php_warning("Failed to unzerialize the data");
@@ -278,8 +306,33 @@ static bool session_read() {
 }
 
 static bool session_write() {
-	session_open();
+	fprintf(stderr, "[%d]->sessions::session_write()\n", getpid());
+
+	// rewind the fd
+	fprintf(stderr, "[%d]\trewinding the S_FD\n", getpid());
+	struct flock lock;
+	lock.l_type = F_UNLCK;
+    lock.l_whence = SEEK_SET;
+    lock.l_start = 0;
+    lock.l_len = 0;
+    lock.l_pid = getpid();
+    fprintf(stderr, "[%d]\t(rewinding) Unlocking the file before closing\n", getpid());
+	fcntl(get_sparam(S_FD).to_int(), F_SETLKW, &lock);
+	fprintf(stderr, "[%d]\t(rewinding) Unlocked the file before closing\n", getpid());
+	close_safe(get_sparam(S_FD).to_int());
+	fprintf(stderr, "[%d]\t(rewinding) Closed the file\n", getpid());
+	
+	fprintf(stderr, "[%d]\t(rewinding) Opening the file\n", getpid());
+	set_sparam(S_FD, open_safe(get_sparam(S_PATH).to_string().c_str(), O_RDWR, 0777));
+	fprintf(stderr, "[%d]\t(rewinding) Opened the file\n", getpid());
+    lock.l_type = F_WRLCK;
+    fprintf(stderr, "[%d]\t(rewinding) Locking the file\n", getpid());
+    fcntl(get_sparam(S_FD).to_int(), F_SETLKW, &lock);
+    fprintf(stderr, "[%d]\t(rewinding) Locked the file\n", getpid());
+    fprintf(stderr, "[%d]\tSuccessfully rewind the S_FD: %s\n", getpid(), get_sparam(S_ID).to_string().c_str());
+
 	string data = f$serialize(v$_SESSION.as_array());
+
 	ssize_t n = write_safe(get_sparam(S_FD).to_int(), data.c_str(), data.size(), get_sparam(S_PATH).to_string());
 	if (n < data.size()) {
 		if (n == -1) {
@@ -289,6 +342,7 @@ static bool session_write() {
 		}
 		return false;
 	}
+	fprintf(stderr, "[%d]\tsession_write() completed\n", getpid());
 	return true;
 }
 
@@ -392,6 +446,7 @@ static int session_gc(const bool &immediate = false) {
 }
 
 static bool session_initialize() {
+	fprintf(stderr, "[%d]->sessions::session_initialize()\n", getpid());
 	set_sparam(S_STATUS, true);
 
 	if (!get_sparam(S_ID).to_bool()) {
@@ -418,6 +473,7 @@ static bool session_initialize() {
 }
 
 static bool session_start() {
+	fprintf(stderr, "[%d]->sessions::session_start()\n", getpid());
 	if (get_sparam(S_STATUS).to_bool()) {
 		php_warning("Ignoring session_start() because a session is already active");
 		return false;
@@ -453,6 +509,7 @@ static bool session_start() {
 }
 
 static bool session_flush() {
+	fprintf(stderr, "[%d]->sessions::session_flush()\n", getpid());
 	if (!get_sparam(S_STATUS).to_bool()) {
 		return false;
 	}
@@ -465,6 +522,7 @@ static bool session_flush() {
 } // namespace sessions
 
 bool f$session_start(const array<mixed> &options) {
+	fprintf(stderr, "[%d]->f$session_start()\n", getpid());
 	if (sessions::get_sparam(sessions::S_STATUS).to_bool()) {
 		php_warning("Ignoring session_start() because a session is already active");
 		return false;
@@ -480,6 +538,7 @@ bool f$session_start(const array<mixed> &options) {
 }
 
 bool f$session_abort() {
+	fprintf(stderr, "[%d]->f$session_abort()\n", getpid());
 	if (!sessions::get_sparam(sessions::S_STATUS).to_bool()) {
 		return false;
 	}
@@ -488,6 +547,7 @@ bool f$session_abort() {
 }
 
 Optional<int64_t> f$session_gc() {
+	fprintf(stderr, "[%d]->f$session_gc()\n", getpid());
 	if (!sessions::get_sparam(sessions::S_STATUS).to_bool()) {
 		php_warning("Session cannot be garbage collected when there is no active session");
 		return false;
@@ -505,6 +565,7 @@ bool f$session_write_close() {
 }
 
 bool f$session_commit() {
+	fprintf(stderr, "[%d]->f$session_commit()\n", getpid());
 	return f$session_write_close();
 }
 
@@ -517,6 +578,7 @@ Optional<string> f$session_encode() {
 }
 
 bool f$session_decode(const string &data) {
+	fprintf(stderr, "[%d]->f$session_decode()\n", getpid());
 	if (!sessions::get_sparam(sessions::S_STATUS).to_bool()) {
 		php_warning("Session data cannot be decoded when there is no active session");
 		return false;
@@ -529,15 +591,18 @@ array<mixed> f$session_get_cookie_params() {
 }
 
 Optional<string> f$session_id(const Optional<string> &id) {
+	fprintf(stderr, "[%d]->f$session_id()\n", getpid());
 	if (id.has_value() && sessions::get_sparam(sessions::S_STATUS).to_bool()) {
 		php_warning("Session ID cannot be changed when a session is active");
 		return Optional<string>{false};
 	}
 	mixed prev_id = sessions::get_sparam(sessions::S_ID);
 	if (id.has_value()) {
+		fprintf(stderr, "[%d]\tGot an id: %s\n", getpid(), id.val().c_str());
 		sessions::set_sparam(sessions::S_ID, id.val());
+		fprintf(stderr, "[%d]\tSet the id: %s\n", getpid(), sessions::get_sparam(sessions::S_ID).to_string().c_str());
 	}
-	return (prev_id.is_bool()) ? Optional<string>{false} : Optional<string>(prev_id.as_string());
+	return (prev_id.is_bool()) ? Optional<string>{false} : Optional<string>(prev_id.to_string());
 }
 
 // TO-DO
