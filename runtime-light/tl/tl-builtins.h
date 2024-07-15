@@ -10,12 +10,9 @@
 #include "common/php-functions.h"
 #include "common/tl/constants/common.h"
 #include "runtime-core/runtime-core.h"
+#include "runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/stdlib/rpc/rpc-api.h"
-#include "runtime-light/stdlib/rpc/rpc-context.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-defs.h"
-#include "runtime-light/stdlib/rpc/rpc-tl-function.h"
-#include "runtime-light/stdlib/rpc/rpc-tl-kphp-request.h"
-#include "runtime-light/utils/php_assert.h"
 
 // TODO: get rid of it here
 #define CHECK_EXCEPTION(action)

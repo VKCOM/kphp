@@ -6,7 +6,6 @@
 
 #include <concepts>
 #include <cstdint>
-#include <memory>
 
 #include "runtime-core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
@@ -27,7 +26,7 @@ struct RpcQueryInfo {
   double timestamp{0.0};
 };
 
-task_t<RpcQueryInfo> typed_rpc_tl_query_one_impl(const string &actor, const RpcRequest &rpc_request, double timeout, bool collect_responses_extra_info,
+task_t<RpcQueryInfo> typed_rpc_tl_query_one_impl(string actor, const RpcRequest &rpc_request, double timeout, bool collect_responses_extra_info,
                                                  bool ignore_answer) noexcept;
 
 task_t<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_one_impl(int64_t query_id, const RpcErrorFactory &error_factory) noexcept;

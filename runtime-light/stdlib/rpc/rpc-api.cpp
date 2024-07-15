@@ -6,25 +6,28 @@
 
 #include <array>
 #include <chrono>
-#include <coroutine>
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <utility>
 
 #include "common/algorithms/find.h"
 #include "common/rpc-error-codes.h"
-#include "common/tl/constants/common.h"
+#include "runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/allocator/allocator.h"
+#include "runtime-light/stdlib/rpc/rpc-buffer.h"
 #include "runtime-light/stdlib/rpc/rpc-context.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-headers.h"
 #include "runtime-light/streams/interface.h"
-#include "runtime-light/utils/concepts.h"
 
 namespace rpc_impl_ {
 
 constexpr int32_t MAX_TIMEOUT_S = 86400;
 
-// TODO: change uint64_t to string::size_type after moving it from uint32_t to uint64_t
+constexpr auto SMALL_STRING_SIZE_LEN = 1;
+constexpr auto MEIDUM_STRING_SIZE_LEN = 3;
+constexpr auto LARGE_STRING_SIZE_LEN = 7;
+
 constexpr uint64_t SMALL_STRING_MAX_LEN = 253;
 constexpr uint64_t MEDIUM_STRING_MAX_LEN = (static_cast<uint64_t>(1) << 24) - 1;
 [[maybe_unused]] constexpr uint64_t LARGE_STRING_MAX_LEN = (static_cast<uint64_t>(1) << 56) - 1;
@@ -46,27 +49,11 @@ mixed mixed_array_get_value(const mixed &arr, const string &str_key, int64_t num
   return {};
 }
 
-bool rpc_fetch_remaining_enough(size_t len) noexcept {
-  return RpcComponentContext::get().fetch_state.remaining() >= len;
-}
-
 array<mixed> make_fetch_error(string &&error_msg, int32_t error_code) {
   array<mixed> res;
   res.set_value(string{"__error", 7}, std::move(error_msg));
   res.set_value(string{"__error_code", 12}, error_code);
   return res;
-}
-
-template<standard_layout T>
-std::optional<T> fetch_trivial() noexcept {
-  if (!rpc_fetch_remaining_enough(sizeof(T))) {
-    return {}; // TODO: error handling
-  }
-
-  auto &rpc_ctx{RpcComponentContext::get()};
-  const auto v{*reinterpret_cast<const T *>(rpc_ctx.buffer.c_str() + rpc_ctx.fetch_state.pos())};
-  rpc_ctx.fetch_state.adjust(sizeof(T));
-  return v;
 }
 
 array<mixed> fetch_function_untyped(const class_instance<RpcTlQuery> &rpc_query) noexcept {
@@ -94,12 +81,6 @@ class_instance<C$VK$TL$RpcResponse> fetch_function_typed(const class_instance<Rp
   return res;
 }
 
-template<standard_layout T>
-bool store_trivial(T v) noexcept {
-  RpcComponentContext::get().buffer.append(reinterpret_cast<const char *>(&v), sizeof(T));
-  return true;
-}
-
 class_instance<RpcTlQuery> store_function(const mixed &tl_object) noexcept {
   auto &cur_query{CurrentTlQuery::get()};
   const auto &rpc_image_state{RpcImageState::get()};
@@ -120,27 +101,26 @@ class_instance<RpcTlQuery> store_function(const mixed &tl_object) noexcept {
   return rpc_tl_query;
 }
 
-task_t<RpcQueryInfo> rpc_send_impl(const string &actor, double timeout, bool ignore_answer) noexcept {
-  auto &rpc_ctx = RpcComponentContext::get();
-
+task_t<RpcQueryInfo> rpc_send_impl(string actor, double timeout, bool ignore_answer) noexcept {
   if (timeout <= 0 || timeout > MAX_TIMEOUT_S) { // TODO: handle timeouts
     //    timeout = conn.get()->timeout_ms * 0.001;
   }
 
+  auto &rpc_ctx = RpcComponentContext::get();
   string request_buf{};
-  size_t request_size{rpc_ctx.buffer.size()};
+  size_t request_size{rpc_ctx.rpc_buffer.size()};
 
   // 'request_buf' will look like this:
   //    [ RpcExtraHeaders (optional) ] [ payload ]
-  if (const auto [opt_new_extra_header, cur_extra_header_size]{regularize_extra_headers(rpc_ctx.buffer.c_str(), ignore_answer)}; opt_new_extra_header) {
+  if (const auto [opt_new_extra_header, cur_extra_header_size]{regularize_extra_headers(rpc_ctx.rpc_buffer.data(), ignore_answer)}; opt_new_extra_header) {
     const auto new_extra_header{opt_new_extra_header.value()};
     const auto new_extra_header_size{sizeof(std::decay_t<decltype(new_extra_header)>)};
     request_size = request_size - cur_extra_header_size + new_extra_header_size;
 
     request_buf.append(reinterpret_cast<const char *>(&new_extra_header), new_extra_header_size);
-    request_buf.append(rpc_ctx.buffer.c_str() + cur_extra_header_size, rpc_ctx.buffer.size() - cur_extra_header_size);
+    request_buf.append(rpc_ctx.rpc_buffer.data() + cur_extra_header_size, rpc_ctx.rpc_buffer.size() - cur_extra_header_size);
   } else {
-    request_buf.append(rpc_ctx.buffer.c_str(), request_size);
+    request_buf.append(rpc_ctx.rpc_buffer.data(), request_size);
   }
 
   // get timestamp before co_await to also count the time we were waiting for runtime to resume this coroutine
@@ -160,7 +140,7 @@ task_t<RpcQueryInfo> rpc_send_impl(const string &actor, double timeout, bool ign
   co_return RpcQueryInfo{.id = query_id, .request_size = request_size, .timestamp = timestamp};
 }
 
-task_t<RpcQueryInfo> rpc_tl_query_one_impl(const string &actor, mixed tl_object, double timeout, bool collect_resp_extra_info, bool ignore_answer) noexcept {
+task_t<RpcQueryInfo> rpc_tl_query_one_impl(string actor, mixed tl_object, double timeout, bool collect_resp_extra_info, bool ignore_answer) noexcept {
   auto &rpc_ctx{RpcComponentContext::get()};
 
   if (!tl_object.is_array()) {
@@ -168,7 +148,7 @@ task_t<RpcQueryInfo> rpc_tl_query_one_impl(const string &actor, mixed tl_object,
     co_return RpcQueryInfo{};
   }
 
-  rpc_ctx.buffer.clean();
+  rpc_ctx.rpc_buffer.clean();
   auto rpc_tl_query{store_function(tl_object)}; // TODO: exception handling
   if (rpc_tl_query.is_null()) {
     co_return RpcQueryInfo{};
@@ -186,7 +166,7 @@ task_t<RpcQueryInfo> rpc_tl_query_one_impl(const string &actor, mixed tl_object,
   co_return query_info;
 }
 
-task_t<RpcQueryInfo> typed_rpc_tl_query_one_impl(const string &actor, const RpcRequest &rpc_request, double timeout, bool collect_responses_extra_info,
+task_t<RpcQueryInfo> typed_rpc_tl_query_one_impl(string actor, const RpcRequest &rpc_request, double timeout, bool collect_responses_extra_info,
                                                  bool ignore_answer) noexcept {
   auto &rpc_ctx{RpcComponentContext::get()};
 
@@ -195,7 +175,7 @@ task_t<RpcQueryInfo> typed_rpc_tl_query_one_impl(const string &actor, const RpcR
     co_return RpcQueryInfo{};
   }
 
-  rpc_ctx.buffer.clean();
+  rpc_ctx.rpc_buffer.clean();
   auto fetcher{rpc_request.store_request()};
   if (!static_cast<bool>(fetcher)) {
     rpc_ctx.current_query.raise_storing_error("could not store rpc request");
@@ -263,9 +243,8 @@ task_t<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) noexcept {
     it_response_extra_info->second.first = rpc_response_extra_info_status_t::READY;
   }
 
-  rpc_ctx.fetch_state.reset(0, data.size());
-  rpc_ctx.buffer.clean();
-  rpc_ctx.buffer.append(data.c_str(), data.size());
+  rpc_ctx.rpc_buffer.clean();
+  rpc_ctx.rpc_buffer.store(data.c_str(), data.size());
 
   co_return fetch_function_untyped(rpc_query);
 }
@@ -315,9 +294,8 @@ task_t<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_one_impl(i
     it_response_extra_info->second.first = rpc_response_extra_info_status_t::READY;
   }
 
-  rpc_ctx.fetch_state.reset(0, data.size());
-  rpc_ctx.buffer.clean();
-  rpc_ctx.buffer.append(data.c_str(), data.size());
+  rpc_ctx.rpc_buffer.clean();
+  rpc_ctx.rpc_buffer.store(data.c_str(), data.size());
 
   co_return fetch_function_typed(rpc_query, error_factory);
 }
@@ -330,130 +308,135 @@ bool f$store_int(int64_t v) noexcept {
   if (unlikely(is_int32_overflow(v))) {
     php_warning("Got int32 overflow on storing '%" PRIi64 "', the value will be casted to '%d'", v, static_cast<int32_t>(v));
   }
-  return rpc_impl_::store_trivial(static_cast<int32_t>(v));
+  RpcComponentContext::get().rpc_buffer.store_trivial(static_cast<int32_t>(v));
+  return true;
 }
 
 bool f$store_long(int64_t v) noexcept {
-  return rpc_impl_::store_trivial(v);
+  RpcComponentContext::get().rpc_buffer.store_trivial(v);
+  return true;
 }
 
 bool f$store_float(double v) noexcept {
-  return rpc_impl_::store_trivial(static_cast<float>(v));
+  RpcComponentContext::get().rpc_buffer.store_trivial(static_cast<float>(v));
+  return true;
 }
 
 bool f$store_double(double v) noexcept {
-  return rpc_impl_::store_trivial(v);
+  RpcComponentContext::get().rpc_buffer.store_trivial(v);
+  return true;
 }
 
-bool f$store_string(const string &v) noexcept { // TODO: support large strings
-  auto &buffer{RpcComponentContext::get().buffer};
+bool f$store_string(const string &v) noexcept {
+  auto &rpc_buf{RpcComponentContext::get().rpc_buffer};
 
-  string::size_type string_len{v.size()};
-  string::size_type size_len{};
+  uint8_t size_len{};
+  uint64_t string_len{v.size()};
   if (string_len <= rpc_impl_::SMALL_STRING_MAX_LEN) {
-    buffer << static_cast<uint8_t>(string_len);
-    size_len = 1;
+    size_len = rpc_impl_::SMALL_STRING_SIZE_LEN;
+    rpc_buf.store_trivial(static_cast<uint8_t>(string_len));
   } else if (string_len <= rpc_impl_::MEDIUM_STRING_MAX_LEN) {
-    buffer << static_cast<uint8_t>(rpc_impl_::MEDIUM_STRING_MAGIC) << static_cast<uint8_t>(string_len & 0xff) << static_cast<uint8_t>((string_len >> 8) & 0xff)
-           << static_cast<uint8_t>((string_len >> 16) & 0xff);
-    size_len = 4;
+    size_len = rpc_impl_::MEIDUM_STRING_SIZE_LEN + 1;
+    rpc_buf.store_trivial(static_cast<uint8_t>(rpc_impl_::MEDIUM_STRING_MAGIC));
+    rpc_buf.store_trivial(static_cast<uint8_t>(string_len & 0xff));
+    rpc_buf.store_trivial(static_cast<uint8_t>((string_len >> 8) & 0xff));
+    rpc_buf.store_trivial(static_cast<uint8_t>((string_len >> 16) & 0xff));
   } else {
-    buffer << static_cast<uint8_t>(rpc_impl_::LARGE_STRING_MAGIC) << static_cast<uint8_t>(string_len & 0xff) << static_cast<uint8_t>((string_len >> 8) & 0xff)
-           << static_cast<uint8_t>((string_len >> 16) & 0xff) << static_cast<uint8_t>((string_len >> 24) & 0xff);
-//    buffer << static_cast<uint8_t>(rpc_impl_::LARGE_STRING_MAGIC) << static_cast<uint8_t>(string_len & 0xff) << static_cast<uint8_t>((string_len >> 8) & 0xff)
-//           << static_cast<uint8_t>((string_len >> 16) & 0xff) << static_cast<uint8_t>((string_len >> 24) & 0xff)
-//           << static_cast<uint8_t>((string_len >> 32) & 0xff) << static_cast<uint8_t>((string_len >> 40) & 0xff)
-//           << static_cast<uint8_t>((string_len >> 48) & 0xff);
-    size_len = 8;
+    php_warning("large strings aren't supported");
+    size_len = rpc_impl_::SMALL_STRING_SIZE_LEN;
+    string_len = 0;
+    rpc_buf.store_trivial(static_cast<uint8_t>(string_len));
   }
-  buffer.append(v.c_str(), static_cast<size_t>(string_len));
+  rpc_buf.store(v.c_str(), string_len);
 
   const auto total_len{size_len + string_len};
   const auto total_len_with_padding{(total_len + 3) & ~static_cast<string::size_type>(3)};
   const auto padding{total_len_with_padding - total_len};
 
   std::array padding_array{'\0', '\0', '\0', '\0'};
-  buffer.append(padding_array.data(), padding);
+  rpc_buf.store(padding_array.data(), padding);
   return true;
 }
 
 // === Rpc Fetch ==================================================================================
 
 int64_t f$fetch_int() noexcept {
-  const auto opt{rpc_impl_::fetch_trivial<int32_t>()};
-  return opt.value_or(0);
+  return static_cast<int64_t>(RpcComponentContext::get().rpc_buffer.fetch_trivial<int32_t>().value_or(0));
 }
 
 int64_t f$fetch_long() noexcept {
-  const auto opt{rpc_impl_::fetch_trivial<int64_t>()};
-  return opt.value_or(0);
+  return RpcComponentContext::get().rpc_buffer.fetch_trivial<int64_t>().value_or(0);
 }
 
 double f$fetch_double() noexcept {
-  const auto opt{rpc_impl_::fetch_trivial<double>()};
-  return opt.value_or(0.0);
+  return RpcComponentContext::get().rpc_buffer.fetch_trivial<double>().value_or(0.0);
 }
 
 double f$fetch_float() noexcept {
-  const auto opt{rpc_impl_::fetch_trivial<float>()};
-  return static_cast<double>(opt.value_or(0.0));
+  return static_cast<double>(RpcComponentContext::get().rpc_buffer.fetch_trivial<float>().value_or(0.0));
 }
 
 string f$fetch_string() noexcept {
+  auto &rpc_buf{RpcComponentContext::get().rpc_buffer};
+
   uint8_t first_byte{};
-  if (const auto opt_first_byte{rpc_impl_::fetch_trivial<uint8_t>()}; opt_first_byte) {
+  if (const auto opt_first_byte{rpc_buf.fetch_trivial<uint8_t>()}; opt_first_byte) {
     first_byte = opt_first_byte.value();
   } else {
     return {}; // TODO: error handling
   }
 
-  string::size_type string_len{};
-  string::size_type size_len{};
+  uint8_t size_len{};
+  uint64_t string_len{};
   switch (first_byte) {
-    case rpc_impl_::LARGE_STRING_MAGIC: { // next 7 bytes are string's length // TODO: support large strings
-      // static_assert(sizeof(string::size_type) >= 8, "string's length doesn't fit platform size");
-      if (!rpc_impl_::rpc_fetch_remaining_enough(7)) {
+    case rpc_impl_::LARGE_STRING_MAGIC: {
+      if (rpc_buf.remaining() < rpc_impl_::LARGE_STRING_SIZE_LEN) {
         return {}; // TODO: error handling
       }
-      const auto first{static_cast<uint64_t>(rpc_impl_::fetch_trivial<uint8_t>().value())};
-      const auto second{static_cast<uint64_t>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 8};
-      const auto third{static_cast<uint64_t>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 16};
-      const auto fourth{static_cast<uint64_t>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 24};
-      const auto fifth{static_cast<uint64_t>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 32};
-      const auto sixth{static_cast<uint64_t>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 40};
-      const auto seventh{static_cast<uint64_t>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 48};
+      size_len = rpc_impl_::LARGE_STRING_SIZE_LEN + 1;
+      const auto first{static_cast<uint64_t>(rpc_buf.fetch_trivial<uint8_t>().value())};
+      const auto second{static_cast<uint64_t>(rpc_buf.fetch_trivial<uint8_t>().value()) << 8};
+      const auto third{static_cast<uint64_t>(rpc_buf.fetch_trivial<uint8_t>().value()) << 16};
+      const auto fourth{static_cast<uint64_t>(rpc_buf.fetch_trivial<uint8_t>().value()) << 24};
+      const auto fifth{static_cast<uint64_t>(rpc_buf.fetch_trivial<uint8_t>().value()) << 32};
+      const auto sixth{static_cast<uint64_t>(rpc_buf.fetch_trivial<uint8_t>().value()) << 40};
+      const auto seventh{static_cast<uint64_t>(rpc_buf.fetch_trivial<uint8_t>().value()) << 48};
       string_len = first | second | third | fourth | fifth | sixth | seventh;
-      if (string_len < (1 << 24)) {
-        php_warning("long string's length is less than 1 << 24");
-      }
-      size_len = 8;
+
+      const auto total_len_with_padding{(size_len + string_len + 3) & ~static_cast<uint64_t>(3)};
+      rpc_buf.adjust(total_len_with_padding - size_len);
+      php_warning("large strings aren't supported");
+      return {};
     }
-    case rpc_impl_::MEDIUM_STRING_MAGIC: { // next 3 bytes are string's length
-      if (!rpc_impl_::rpc_fetch_remaining_enough(3)) {
+    case rpc_impl_::MEDIUM_STRING_MAGIC: {
+      if (rpc_buf.remaining() < rpc_impl_::MEIDUM_STRING_SIZE_LEN) {
         return {}; // TODO: error handling
       }
-      const auto first{static_cast<uint64_t>(rpc_impl_::fetch_trivial<uint8_t>().value())};
-      const auto second{static_cast<uint64_t>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 8};
-      const auto third{static_cast<uint64_t>(rpc_impl_::fetch_trivial<uint8_t>().value()) << 16};
+      size_len = rpc_impl_::MEIDUM_STRING_SIZE_LEN + 1;
+      const auto first{static_cast<uint64_t>(rpc_buf.fetch_trivial<uint8_t>().value())};
+      const auto second{static_cast<uint64_t>(rpc_buf.fetch_trivial<uint8_t>().value()) << 8};
+      const auto third{static_cast<uint64_t>(rpc_buf.fetch_trivial<uint8_t>().value()) << 16};
       string_len = first | second | third;
-      if (string_len <= 253) {
+
+      if (string_len <= rpc_impl_::SMALL_STRING_MAX_LEN) {
         php_warning("long string's length is less than 254");
       }
-      size_len = 4;
+      break;
     }
-    default:
-      string_len = static_cast<string::size_type>(first_byte);
-      size_len = 1;
+    default: {
+      size_len = rpc_impl_::SMALL_STRING_SIZE_LEN;
+      string_len = static_cast<uint64_t>(first_byte);
+      break;
+    }
   }
 
-  const auto total_len_with_padding{(size_len + string_len + 3) & ~static_cast<string::size_type>(3)};
-  if (!rpc_impl_::rpc_fetch_remaining_enough(total_len_with_padding - size_len)) {
+  const auto total_len_with_padding{(size_len + string_len + 3) & ~static_cast<uint64_t>(3)};
+  if (rpc_buf.remaining() < total_len_with_padding - size_len) {
     return {}; // TODO: error handling
   }
 
-  auto &rpc_ctx{RpcComponentContext::get()};
-  string res{rpc_ctx.buffer.c_str() + rpc_ctx.fetch_state.pos(), string_len};
-  rpc_ctx.fetch_state.adjust(total_len_with_padding - size_len);
+  string res{rpc_buf.data() + rpc_buf.pos(), static_cast<string::size_type>(string_len)};
+  rpc_buf.adjust(total_len_with_padding - size_len);
   return res;
 }
 
@@ -492,9 +475,7 @@ task_t<array<array<mixed>>> f$rpc_tl_query_result(array<int64_t> query_ids) noex
 // === Rpc Misc ==================================================================================
 
 void f$rpc_clean() noexcept {
-  auto &rpc_ctx{RpcComponentContext::get()};
-  rpc_ctx.buffer.clean();
-  rpc_ctx.fetch_state.reset(0, 0);
+  RpcComponentContext::get().rpc_buffer.clean();
 }
 
 // === Misc =======================================================================================
@@ -508,15 +489,15 @@ bool is_int32_overflow(int64_t v) noexcept {
 }
 
 void store_raw_vector_double(const array<double> &vector) noexcept { // TODO: didn't we forget vector's length?
-  RpcComponentContext::get().buffer.append(reinterpret_cast<const char *>(vector.get_const_vector_pointer()), sizeof(double) * vector.count());
+  RpcComponentContext::get().rpc_buffer.store(reinterpret_cast<const char *>(vector.get_const_vector_pointer()), sizeof(double) * vector.count());
 }
 
 void fetch_raw_vector_double(array<double> &vector, int64_t num_elems) noexcept {
+  auto &rpc_buf{RpcComponentContext::get().rpc_buffer};
   const auto len_bytes{sizeof(double) * num_elems};
-  if (!rpc_impl_::rpc_fetch_remaining_enough(len_bytes)) {
+  if (rpc_buf.remaining() < len_bytes) {
     return; // TODO: error handling
   }
-  auto &rpc_ctx{RpcComponentContext::get()};
-  vector.memcpy_vector(num_elems, rpc_ctx.buffer.c_str() + rpc_ctx.fetch_state.pos());
-  rpc_ctx.fetch_state.adjust(len_bytes);
+  vector.memcpy_vector(num_elems, rpc_buf.data() + rpc_buf.pos());
+  rpc_buf.adjust(len_bytes);
 }
