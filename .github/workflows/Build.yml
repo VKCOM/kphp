@@ -43,7 +43,7 @@ jobs:
             ubsan: off
             light_runtime: off
           - os: focal
-            compiler: g++-10
+            compiler: g++-11
             cpp: 20
             asan: off
             ubsan: off
