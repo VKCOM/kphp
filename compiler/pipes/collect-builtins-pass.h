@@ -21,6 +21,9 @@ public:
       }
       if (call->func_id->is_extern()) {
         auto fun_name = call->func_id->as_human_readable();
+        if (fun_name == "instance_cache_fetch") {
+          fun_name += ":" + call->get_location().as_human_readable();
+        }
         {
           std::unique_lock guard(G->bu_mutex);
           G->builtin_usages[fun_name]++;
