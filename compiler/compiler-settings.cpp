@@ -312,6 +312,7 @@ void CompilerSettings::init() {
     ss << " -std=c++17";
   #elif __cplusplus <= 202002L
     ss << " -std=c++20";
+    ss << " -fcoroutines";
   #else
     #error unsupported __cplusplus value
   #endif
