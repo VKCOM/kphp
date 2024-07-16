@@ -43,7 +43,7 @@ jobs:
             ubsan: off
             light_runtime: off
           - os: focal
-            compiler: g++-11
+            compiler: g++-10
             cpp: 20
             asan: off
             ubsan: off
@@ -67,7 +67,7 @@ jobs:
         path: 'kphp-polyfills'
 
     - name: Cache docker image
-      uses: actions/cache@v3
+      uses: actions/cache@v1
       id: docker-image-cache
       with:
         path: /tmp/docker-save
@@ -76,7 +76,7 @@ jobs:
     - name: Build and save docker image
       if: steps.docker-image-cache.outputs.cache-hit != 'true'
       run: |
-        docker build -f $GITHUB_WORKSPACE/.github/workflows/Dockerfile.${{matrix.os}} $GITHUB_WORKSPACE -t kphp-build-img-${{matrix.os}} --cache-from=type=local,src=kphp-build-img-${{matrix.os}}-cache
+        docker build -f $GITHUB_WORKSPACE/.github/workflows/Dockerfile.${{matrix.os}} -t kphp-build-img-${{matrix.os}} --cache-from=type=local,src=kphp-build-img-${{matrix.os}}-cache
         docker tag kphp-build-img-${{matrix.os}} kphp-build-img-${{matrix.os}}-cache && mkdir -p /tmp/docker-save && docker save kphp-build-img-${{matrix.os}}-cache -o /tmp/docker-save/kphp-build-env-${{matrix.os}}.tar && ls -lh /tmp/docker-save
         
     - name: Load docker image from cache
