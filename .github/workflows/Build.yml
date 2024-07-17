@@ -70,24 +70,24 @@ jobs:
       uses: actions/cache@v1
       id: docker-image-cache
       with:
-        path: /tmp/docker-save
+        path: /tmp/docker-save-${{matrix.os}}
         key: docker-save-${{matrix.os}}-${{ hashFiles('.github/workflows/Dockerfile.*', 'tests/python/requirements.txt') }}
-  
+
     - name: Build and save docker image
       if: steps.docker-image-cache.outputs.cache-hit != 'true'
       run: |
-        docker build -f $GITHUB_WORKSPACE/.github/workflows/Dockerfile.${{matrix.os}} $GITHUB_WORKSPACE -t kphp-build-img-${{matrix.os}} --cache-from=kphp-build-img-${{matrix.os}}-cache
-        docker tag kphp-build-img-${{matrix.os}} kphp-build-img-${{matrix.os}}-cache && mkdir -p /tmp/docker-save && docker save kphp-build-img-${{matrix.os}}-cache -o /tmp/docker-save/kphp-build-env-${{matrix.os}}.tar && ls -lh /tmp/docker-save
+        docker build -f $GITHUB_WORKSPACE/.github/workflows/Dockerfile.${{matrix.os}} $GITHUB_WORKSPACE -t kphp-build-img-${{matrix.os}} --cache-from=type=local,src=kphp-build-img-${{matrix.os}}-cache
+        docker tag kphp-build-img-${{matrix.os}} kphp-build-img-${{matrix.os}}-cache && mkdir -p /tmp/docker-save-${{matrix.os}} && docker save kphp-build-img-${{matrix.os}}-cache -o /tmp/docker-save-${{matrix.os}}/kphp-build-env-${{matrix.os}}.tar && ls -lh /tmp/docker-save-${{matrix.os}}
         
     - name: Load docker image from cache
       if: steps.docker-image-cache.outputs.cache-hit == 'true'
-      run: docker load --input /tmp/docker-save/kphp-build-env-${{matrix.os}}.tar
+      run: docker load --input /tmp/docker-save-${{matrix.os}}/kphp-build-env-${{matrix.os}}.tar
 
     - name: Start docker container
       run: |
-        docker run -dt --name kphp-build-container-${{matrix.os}} kphp-build-img-${{matrix.os}}
+        docker run -dt --name kphp-build-container-${{matrix.os}} kphp-build-img-${{matrix.os}}-cache
         docker cp $GITHUB_WORKSPACE/. kphp-build-container-${{matrix.os}}:${{env.kphp_root_dir}}
-
+  
     - name: Add git safe directory
       run: docker exec kphp-build-container-${{matrix.os}} bash -c
               "git config --global --add safe.directory ${{env.kphp_root_dir}}"
@@ -114,27 +114,27 @@ jobs:
       run: docker exec kphp-build-container-${{matrix.os}} bash -c
               "composer install -d ${{env.kphp_polyfills_dir}}"
 
-    # - name: Run python tests
-    #   if: ${{!matrix.light_runtime}}
-    #   id: python_tests
-    #   continue-on-error: true
-    #   run: docker exec kphp-build-container-${{matrix.os}} bash -c
-    #           "chown -R kitten /home && su kitten -c 'GITHUB_ACTIONS=1 KPHP_TESTS_POLYFILLS_REPO=${{env.kphp_polyfills_dir}} KPHP_CXX=${{matrix.compiler}} python3.7 -m pytest --tb=native -n$(nproc) ${{env.kphp_root_dir}}/tests/python/'"
+    - name: Run python tests
+      if: matrix.light_runtime == 'off'
+      id: python_tests
+      continue-on-error: true
+      run: docker exec kphp-build-container-${{matrix.os}} bash -c
+              "chown -R kitten /home && su kitten -c 'GITHUB_ACTIONS=1 KPHP_TESTS_POLYFILLS_REPO=${{env.kphp_polyfills_dir}} KPHP_CXX=${{matrix.compiler}} python3.7 -m pytest --tb=native -n$(nproc) ${{env.kphp_root_dir}}/tests/python/'"
 
-    # - name: Prepare python tests artifacts
-    #   if: ${{ (steps.python_tests.outcome == 'failure') && (!matrix.light_runtime) }}
-    #   run: docker cp kphp-build-container-${{matrix.os}}:${{env.kphp_root_dir}}/tests/python/_tmp/ ${{runner.temp}} &&
-    #        rm -rf ${{runner.temp}}/_tmp/*/working_dir
+    - name: Prepare python tests artifacts
+      if: ${{ (steps.python_tests.outcome == 'failure') && matrix.light_runtime == 'off' }}
+      run: docker cp kphp-build-container-${{matrix.os}}:${{env.kphp_root_dir}}/tests/python/_tmp/ ${{runner.temp}} &&
+           rm -rf ${{runner.temp}}/_tmp/*/working_dir
 
-    # - name: Upload python tests artifacts
-    #   uses: actions/upload-artifact@v3
-    #   if: ${{ (steps.python_tests.outcome == 'failure') && (!matrix.light_runtime) }}
-    #   with:
-    #     path: ${{runner.temp}}/_tmp/
+    - name: Upload python tests artifacts
+      uses: actions/upload-artifact@v3
+      if: ${{ (steps.python_tests.outcome == 'failure') && matrix.light_runtime == 'off' }}
+      with:
+        path: ${{runner.temp}}/_tmp/
 
-    # - name: Fail pipeline if python tests failed
-    #   if: ${{ (steps.python_tests.outcome == 'failure') && (!matrix.light_runtime) }}
-    #   run: exit 1
+    - name: Fail pipeline if python tests failed
+      if: ${{ (steps.python_tests.outcome == 'failure') && matrix.light_runtime == 'off' }}
+      run: exit 1
 
     - name: Remove docker container
       run: docker rm -f kphp-build-container-${{matrix.os}}
