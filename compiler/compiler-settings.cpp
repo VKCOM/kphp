@@ -312,7 +312,9 @@ void CompilerSettings::init() {
     ss << " -std=c++17";
   #elif __cplusplus <= 202002L
     ss << " -std=c++20";
-    ss << " -fcoroutines";
+    #if (defined(__GNUC__) && !defined(__clang__))
+      ss << " -fcoroutines";
+    #endif
   #else
     #error unsupported __cplusplus value
   #endif
