@@ -7,12 +7,12 @@
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/fork-context.h"
 
-template<typename T, bool is_php_runtime_type = true>
+template<typename T, bool is_php_runtime_type = true> requires (is_optional<T>::value)
 task_t<T> f$wait(int64_t fork_id, double timeout = -1.0) {
   co_return co_await wait_fork_t<internal_optional_type<T>>{fork_id, timeout};
 }
 
-template<typename T>
+template<typename T> requires (is_optional<T>::value)
 task_t<T> f$wait(Optional<int64_t> resumable_id, double timeout = -1.0) {
   co_return co_await f$wait<internal_optional_type<T>>(resumable_id.val(), timeout);
 }
