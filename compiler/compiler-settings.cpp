@@ -312,7 +312,7 @@ void CompilerSettings::init() {
     ss << " -std=c++17";
   #elif __cplusplus <= 202002L
     ss << " -std=c++20";
-    ss << " -Wno-unused-result -Wno-type-limits -Wno-attributes -Wno-ignored-attributes";
+    ss << " -Wno-type-limits -Wno-attributes -Wno-ignored-attributes";
   #else
     #error unsupported __cplusplus value
   #endif
