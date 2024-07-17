@@ -101,12 +101,12 @@ jobs:
               "make -C ${{env.kphp_build_dir}} -j$(nproc) test"
 
     - name: Compile dummy PHP script
-      if: ${{matrix.light_runtime}} == off
+      if: matrix.light_runtime == 'off'
       run: docker exec kphp-build-container-${{matrix.os}} bash -c 
               "cd ${{env.kphp_build_dir}} && echo 'hello world' > demo.php && ${{env.kphp_root_dir}}/objs/bin/kphp2cpp --cxx ${{matrix.compiler}} demo.php && kphp_out/server -o --user kitten"
 
     - name: Compile dummy PHP script
-      if: ${{matrix.light_runtime}} == on
+      if: matrix.light_runtime == 'on'
       run: docker exec kphp-build-container-${{matrix.os}} bash -c 
               "cd ${{env.kphp_build_dir}} && echo "${{matrix.light_runtime}}" && echo 'hello world' > demo.php && ${{env.kphp_root_dir}}/objs/bin/kphp2cpp --mode k2-component --cxx ${{matrix.compiler}} demo.php"
 
