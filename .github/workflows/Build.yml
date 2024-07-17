@@ -95,7 +95,7 @@ jobs:
     - name: Check formatting in light runtime folder
       if: ${{ matrix.os == 'focal'  && matrix.light_runtime == 'on' }}
       run:  docker exec kphp-build-container-${{matrix.os}} bash -c
-              "find ${{env.kphp_root_dir}}/runtime-light/ -iname '*.h' -o -iname '*.cpp' | xargs clang-format-18 -—dry-run -Werror"
+              "find ${{env.kphp_root_dir}}/runtime-light/ -iname '*.h' -o -iname '*.cpp' | xargs clang-format-18 --dry-run -Werror"
     
     - name: Build all
       run: docker exec kphp-build-container-${{matrix.os}} bash -c 
