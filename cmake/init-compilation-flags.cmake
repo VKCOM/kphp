@@ -106,7 +106,6 @@ endif()
 add_compile_options(-Werror -Wall -Wextra -Wunused-function -Wfloat-conversion -Wno-sign-compare
                     -Wuninitialized -Wno-redundant-move -Wno-missing-field-initializers)
 if(COMPILE_RUNTIME_LIGHT)
-    add_compile_options(-fPIC)
     add_compile_options(-Wno-unused-result -Wno-type-limits -Wno-attributes -Wno-ignored-attributes)
     add_compile_options(-Wno-vla-extension)
 endif()

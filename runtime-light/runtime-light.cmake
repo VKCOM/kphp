@@ -30,7 +30,10 @@ set_target_properties(runtime-light PROPERTIES
 
 vk_add_library(kphp-light-runtime STATIC)
 target_link_libraries(kphp-light-runtime PUBLIC vk::light_common vk::runtime-light vk::runtime-core)
-set_target_properties(kphp-light-runtime PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${OBJS_DIR})
+set_target_properties(kphp-light-runtime PROPERTIES
+        ARCHIVE_OUTPUT_DIRECTORY ${OBJS_DIR}
+        POSITION_INDEPENDENT_CODE ON
+)
 
 file(GLOB_RECURSE KPHP_RUNTIME_ALL_HEADERS
         RELATIVE ${BASE_DIR}
