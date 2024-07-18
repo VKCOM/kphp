@@ -5,8 +5,8 @@
 #pragma once
 #include <type_traits>
 
-#include "runtime/include.h"
-#include "runtime/kphp_core.h"
+#include "runtime-core/include.h"
+#include "runtime-core/runtime-core.h"
 
 namespace impl_ {
 

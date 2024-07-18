@@ -280,7 +280,7 @@ class KphpCompilerAutoTestCase(BaseTestCase):
 
     def __init__(self, method_name):
         super().__init__(method_name)
-        self.require_php8 = False
+        self.php_version = "php7.4"
 
     @classmethod
     def extra_class_setup(cls):
@@ -318,7 +318,7 @@ class KphpCompilerAutoTestCase(BaseTestCase):
             php_script_path=os.path.join(self.test_dir, php_script_path),
             artifacts_dir=self.kphp_server_working_dir,
             working_dir=self.kphp_build_working_dir,
-            php_bin=search_php_bin(php8_require=self.require_php8),
+            php_bin=search_php_bin(php_version=self.php_version),
             use_nocc=self.should_use_nocc(),
         )
         self.once_runner_trash_bin.append(once_runner)

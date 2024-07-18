@@ -9,6 +9,7 @@
 #include <sys/time.h>
 #include <chrono>
 
+#include "runtime/context/runtime-context.h"
 #include "runtime/critical_section.h"
 #include "runtime/datetime/timelib_wrapper.h"
 #include "runtime/string_functions.h"
@@ -116,7 +117,7 @@ void iso_week_number(int y, int doy, int weekday, int &iw, int &iy) {
 
 
 static string date(const string &format, const tm &t, int64_t timestamp, bool local) {
-  string_buffer &SB = static_SB_spare;
+  string_buffer &SB = kphp_runtime_context.static_SB_spare;
 
   int year = t.tm_year + 1900;
   int month = t.tm_mon + 1;
@@ -387,7 +388,11 @@ array<mixed> f$getdate(int64_t timestamp) {
   }
   tm t;
   time_t timestamp_t = timestamp;
-  localtime_r(&timestamp_t, &t);
+  tm * tp = localtime_r(&timestamp_t, &t);
+  if (tp == nullptr) {
+    php_warning("Error \"%s\" in getdate with timestamp %" PRId64, strerror(errno), timestamp);
+    memset(&t, 0, sizeof(tm));
+  }
 
   array<mixed> result(array_size(11, false));
 

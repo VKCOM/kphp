@@ -59,9 +59,9 @@ private:
         RETURN(error_factory_.make_error(last_rpc_error_message_get(), last_rpc_error_code_get()));
       }
 
-      CurrentProcessingQuery::get().set_current_tl_function(query_);
+      CurrentTlQuery::get().set_current_tl_function(query_);
       auto rpc_result = fetch_result(std::move(query_.get()->result_fetcher), error_factory_);
-      CurrentProcessingQuery::get().reset();
+      CurrentTlQuery::get().reset();
       rpc_parse_restore_previous();
       RETURN(rpc_result);
     RESUMABLE_END
@@ -137,13 +137,9 @@ private:
 };
 } // namespace
 
-int64_t typed_rpc_tl_query_impl(const class_instance<C$RpcConnection> &connection,
-                                const RpcRequest &req,
-                                double timeout,
-                                bool ignore_answer,
-                                bool bytes_estimating,
-                                size_t &bytes_sent,
-                                bool flush) {
+int64_t
+typed_rpc_tl_query_impl(const class_instance<C$RpcConnection> &connection, const RpcRequest &req, double timeout, rpc_request_extra_info_t &req_extra_info,
+                        bool collect_resp_extra_info, bool ignore_answer, bool bytes_estimating, size_t &bytes_sent, bool flush) {
   f$rpc_clean();
   if (req.empty()) {
     php_warning("Writing rpc query error: query function is null");
@@ -158,7 +154,9 @@ int64_t typed_rpc_tl_query_impl(const class_instance<C$RpcConnection> &connectio
   if (bytes_estimating) {
     estimate_and_flush_overflow(bytes_sent);
   }
-  const int64_t query_id = rpc_send(connection, timeout, ignore_answer);
+
+  const int64_t query_id = rpc_send_impl(connection, timeout, req_extra_info, collect_resp_extra_info, ignore_answer);
+
   if (query_id <= 0) {
     return 0;
   }
@@ -245,7 +243,7 @@ array<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_synchronous
 }
 
 void free_typed_rpc_lib() {
-  CurrentProcessingQuery::get().reset();
+  CurrentTlQuery::get().reset();
   RpcPendingQueries::get().hard_reset();
   CurrentRpcServerQuery::get().reset();
 }

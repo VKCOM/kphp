@@ -33,3 +33,6 @@ cmake_print_variables(KPHP_TESTS)
 
 option(KPHP_CUSTOM_CMAKE "Use CMakeLists.txt of custom php project" OFF)
 cmake_print_variables(KPHP_CUSTOM_CMAKE)
+
+option(COMPILE_RUNTIME_LIGHT "Compile runtime-light (it require c++20)" OFF)
+cmake_print_variables(COMPILE_RUNTIME_LIGHT)

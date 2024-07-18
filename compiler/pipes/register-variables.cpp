@@ -12,7 +12,7 @@
 #include "compiler/utils/string-utils.h"
 
 VarPtr RegisterVariablesPass::create_global_var(const std::string &name) {
-  VarPtr var = G->get_global_var(name, VarData::var_global_t, VertexPtr());
+  VarPtr var = G->get_global_var(name, VertexPtr());
   auto it = registred_vars.insert(make_pair(name, var));
   if (it.second == false) {
     VarPtr old_var = it.first->second;

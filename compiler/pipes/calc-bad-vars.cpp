@@ -531,6 +531,22 @@ class CalcBadVars {
     }
   }
 
+  static void calc_interruptible(const FuncCallGraph &call_graph) {
+    IdMap<char> into_interruptible(call_graph.n);
+    IdMap<FunctionPtr> to_parents(call_graph.n);
+
+    for (const auto &func : call_graph.functions) {
+      if (func->is_interruptible) {
+        mark(call_graph.rev_graph, into_interruptible, func, to_parents);
+      }
+    }
+
+    for (const auto &func : call_graph.functions) {
+      if (into_interruptible[func]) {
+        func->is_interruptible = true;
+      }
+    }
+  }
 
   static void calc_resumable(const FuncCallGraph &call_graph, const std::vector<DepData> &dep_data) {
     for (int i = 0; i < call_graph.n; i++) {
@@ -588,7 +604,7 @@ class CalcBadVars {
       function->dep = std::move(call_graph.graph[function]);
     }
 
-    if (!G->settings().is_static_lib_mode()) {
+    if (!G->is_output_mode_lib()) {
       return;
     }
 
@@ -668,6 +684,7 @@ public:
 
     {
       FuncCallGraph call_graph(std::move(functions), dep_datas);
+      calc_interruptible(call_graph);
       calc_resumable(call_graph, dep_datas);
       generate_bad_vars(call_graph, dep_datas);
       check_func_colors(call_graph);

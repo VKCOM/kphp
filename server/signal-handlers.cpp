@@ -12,6 +12,7 @@
 #include "common/server/signals.h"
 #include "runtime/critical_section.h"
 #include "runtime/interface.h"
+#include "runtime/php_assert.h"
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
 #include "server/server-log.h"

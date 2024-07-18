@@ -6,6 +6,7 @@
 
 #include <array>
 #include <climits>
+#include <string>
 #include <yaml-cpp/yaml.h>
 
 #include "common/mixin/not_copyable.h"
@@ -21,6 +22,10 @@ public:
     return statsd_prefix_.data();
   }
 
+  const std::string &get_environment() const {
+    return environment_;
+  }
+
   const char *set_cluster_name(const char *cluster_name, bool deprecated) noexcept;
 
   int init_from_config(const char *config_path) noexcept;
@@ -34,4 +39,5 @@ private:
 
   std::array<char, NAME_MAX> cluster_name_;
   std::array<char, NAME_MAX> statsd_prefix_;
+  std::string environment_;
 };

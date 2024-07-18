@@ -22,6 +22,7 @@
 #include <sys/un.h>
 #include <time.h>
 #include <unistd.h>
+#include <cstring>
 
 #include "common/rpc-headers.h"
 #include "common/crc32.h"
@@ -1353,11 +1354,22 @@ static int rpc_write(struct rpc_connection *c, long long qid, double timeout, bo
     return -1;
   }
 
-  RpcExtraHeaders extra_headers{};
-  size_t extra_headers_size = fill_extra_headers_if_needed(extra_headers, *reinterpret_cast<int *>(outbuf->rptr), c->default_actor_id, ignore_answer);
+  const auto [opt_new_wrapper, cur_wrapper_size, opt_actor_id_warning_info, opt_ignore_result_warning_msg]{
+          regularize_wrappers(outbuf->rptr, c->default_actor_id, ignore_answer)};
 
-  outbuf->rptr -= extra_headers_size;
-  memcpy(outbuf->rptr, &extra_headers, extra_headers_size);
+  if (opt_actor_id_warning_info.has_value()) {
+    const auto [msg, cur_wrapper_actor_id, new_wrapper_actor_id]{opt_actor_id_warning_info.value()};
+    php_error_docref(nullptr, E_WARNING, msg, cur_wrapper_actor_id, new_wrapper_actor_id);
+  }
+  if (opt_ignore_result_warning_msg != nullptr) {
+    php_error_docref(nullptr, E_WARNING, opt_ignore_result_warning_msg);
+  }
+
+  if (opt_new_wrapper.has_value()) {
+    const auto [new_wrapper, new_wrapper_size]{opt_new_wrapper.value()};
+    outbuf->rptr -= new_wrapper_size - cur_wrapper_size;
+    std::memcpy(outbuf->rptr, &new_wrapper, new_wrapper_size);
+  }
 
   unsigned crc32 = 0;
   int len = sizeof(RpcHeaders) + sizeof(crc32) + (outbuf->wptr - outbuf->rptr);

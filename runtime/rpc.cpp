@@ -5,12 +5,14 @@
 #include "runtime/rpc.h"
 
 #include <cstdarg>
+#include <cstring>
 #include <chrono>
 
 #include "common/rpc-error-codes.h"
 #include "common/rpc-headers.h"
 #include "common/tl/constants/common.h"
 
+#include "runtime/context/runtime-context.h"
 #include "runtime/critical_section.h"
 #include "runtime/exception.h"
 #include "runtime/kphp_tracing.h"
@@ -665,7 +667,8 @@ static void process_rpc_timeout(kphp_event_timer *timer) {
   return process_rpc_timeout(timer->wakeup_extra, false);
 }
 
-int64_t rpc_send(const class_instance<C$RpcConnection> &conn, double timeout, bool ignore_answer) {
+int64_t rpc_send_impl(const class_instance<C$RpcConnection> &conn, double timeout, rpc_request_extra_info_t &req_extra_info, bool collect_resp_extra_info,
+                      bool ignore_answer) {
   if (unlikely (conn.is_null() || conn.get()->host_num < 0)) {
     php_warning("Wrong RpcConnection specified");
     return -1;
@@ -678,22 +681,44 @@ int64_t rpc_send(const class_instance<C$RpcConnection> &conn, double timeout, bo
   store_int(-1); // reserve for crc32
   php_assert (data_buf.size() % sizeof(int) == 0);
 
-  const char *rpc_payload_start = data_buf.c_str() + sizeof(RpcHeaders);
-  size_t rpc_payload_size = data_buf.size() - sizeof(RpcHeaders);
-  uint32_t function_magic = CurrentProcessingQuery::get().get_last_stored_tl_function_magic();
-  RpcExtraHeaders extra_headers{};
-  size_t extra_headers_size = fill_extra_headers_if_needed(extra_headers, function_magic, conn.get()->actor_id, ignore_answer);
+  const auto [opt_new_wrapper, cur_wrapper_size, opt_actor_id_warning_info, opt_ignore_result_warning_msg]{
+          regularize_wrappers(data_buf.c_str() + sizeof(RpcHeaders), conn.get()->actor_id, ignore_answer)};
 
-  const auto request_size = static_cast<size_t>(data_buf.size() + extra_headers_size);
-  char *p = static_cast<char *>(dl::allocate(request_size));
+  if (opt_actor_id_warning_info.has_value()) {
+    const auto [msg, cur_wrapper_actor_id, new_wrapper_actor_id]{opt_actor_id_warning_info.value()};
+    php_warning(msg, cur_wrapper_actor_id, new_wrapper_actor_id);
+  }
+  if (opt_ignore_result_warning_msg != nullptr) {
+    php_warning("%s", opt_ignore_result_warning_msg);
+  }
 
-  // Memory will look like this:
+  char *request_buf{nullptr};
+  std::size_t request_size{0};
+
+  // 'request_buf' will look like this:
   //    [ RpcHeaders (reserved in f$rpc_clean) ] [ RpcExtraHeaders (optional) ] [ payload ]
-  memcpy(p, data_buf.c_str(), sizeof(RpcHeaders));
-  memcpy(p + sizeof(RpcHeaders), &extra_headers, extra_headers_size);
-  memcpy(p + sizeof(RpcHeaders) + extra_headers_size, rpc_payload_start, rpc_payload_size);
+  if (opt_new_wrapper.has_value()) {
+    const auto [new_wrapper, new_wrapper_size]{opt_new_wrapper.value()};
+    request_size = data_buf.size() - cur_wrapper_size + new_wrapper_size;
+    request_buf = static_cast<char *>(dl::allocate(request_size));
 
-  slot_id_t q_id = rpc_send_query(conn.get()->host_num, p, static_cast<int>(request_size), timeout_convert_to_ms(timeout));
+    std::memcpy(request_buf, data_buf.c_str(), sizeof(RpcHeaders));
+    std::memcpy(request_buf + sizeof(RpcHeaders), &new_wrapper, new_wrapper_size);
+    std::memcpy(request_buf + sizeof(RpcHeaders) + new_wrapper_size,
+                data_buf.c_str() + sizeof(RpcHeaders) + cur_wrapper_size,
+                data_buf.size() - sizeof(RpcHeaders) - cur_wrapper_size);
+  } else {
+    request_size = data_buf.size();
+    request_buf = static_cast<char *>(dl::allocate(request_size));
+
+    std::memcpy(request_buf, data_buf.c_str(), request_size);
+  }
+
+  slot_id_t q_id = rpc_send_query(conn.get()->host_num, request_buf, static_cast<int>(request_size), timeout_convert_to_ms(timeout));
+
+  // request's statistics
+  req_extra_info = rpc_request_extra_info_t{request_size};
+
   if (q_id <= 0) {
     return -1;
   }
@@ -722,7 +747,10 @@ int64_t rpc_send(const class_instance<C$RpcConnection> &conn, double timeout, bo
              sizeof(rpc_request) * (rpc_requests_size - (rpc_first_unfinished_request_id - rpc_first_array_request_id)));
       rpc_first_array_request_id = rpc_first_unfinished_request_id;
     } else {
-      rpc_requests = static_cast <rpc_request *> (dl::reallocate(rpc_requests, sizeof(rpc_request) * 2 * rpc_requests_size, sizeof(rpc_request) * rpc_requests_size));
+      rpc_requests = static_cast<rpc_request *>(dl::reallocate(
+              rpc_requests,
+              sizeof(rpc_request) * 2 * rpc_requests_size,
+              sizeof(rpc_request) * rpc_requests_size));
       rpc_requests_size *= 2;
     }
   }
@@ -731,12 +759,17 @@ int64_t rpc_send(const class_instance<C$RpcConnection> &conn, double timeout, bo
   double send_timestamp = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
 
   cur->resumable_id = register_forked_resumable(new rpc_resumable(q_id));
-  cur->function_magic = function_magic;
+  cur->function_magic = CurrentTlQuery::get().get_last_stored_tl_function_magic();
   cur->actor_or_port = conn.get()->actor_id > 0 ? conn.get()->actor_id : -conn.get()->port;
   cur->timer = nullptr;
 
   if (kphp_tracing::is_turned_on()) {
     kphp_tracing::on_rpc_query_send(q_id, cur->actor_or_port, cur->function_magic, static_cast<int>(request_size), send_timestamp, ignore_answer);
+  }
+
+  // response's metrics
+  if (collect_resp_extra_info) {
+    rpc_responses_extra_info_map.emplace_value(cur->resumable_id, rpc_response_extra_info_status_t::NOT_READY, rpc_response_extra_info_t{0, send_timestamp});
   }
 
   if (ignore_answer) {
@@ -766,7 +799,8 @@ void f$rpc_flush() {
 }
 
 int64_t f$rpc_send(const class_instance<C$RpcConnection> &conn, double timeout) {
-  int64_t request_id = rpc_send(conn, timeout);
+  rpc_request_extra_info_t _{};
+  int64_t request_id = rpc_send_impl(conn, timeout, _, false);
   if (request_id <= 0) {
     return 0;
   }
@@ -776,13 +810,16 @@ int64_t f$rpc_send(const class_instance<C$RpcConnection> &conn, double timeout) 
 }
 
 int64_t f$rpc_send_noflush(const class_instance<C$RpcConnection> &conn, double timeout) {
-  int64_t request_id = rpc_send(conn, timeout);
+  rpc_request_extra_info_t _{};
+  int64_t request_id = rpc_send_impl(conn, timeout, _, false);
   if (request_id <= 0) {
     return 0;
   }
 
   return request_id;
 }
+
+
 
 void process_rpc_answer(int32_t request_id, char *result, int32_t result_len) {
   rpc_request *request = get_rpc_request(request_id);
@@ -800,6 +837,15 @@ void process_rpc_answer(int32_t request_id, char *result, int32_t result_len) {
 
   int64_t resumable_id = request->resumable_id;
   request->resumable_id = -1;
+
+  { // response's metrics
+    const auto resp_timestamp = std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count();
+    if (rpc_responses_extra_info_map.isset(resumable_id)) {
+      auto &resp_extra_info = rpc_responses_extra_info_map[resumable_id];
+      resp_extra_info.second = {result_len, resp_timestamp - std::get<1>(resp_extra_info.second)};
+      resp_extra_info.first = rpc_response_extra_info_status_t::READY;
+    }
+  }
 
   if (request->timer) {
     remove_event_timer(request->timer);
@@ -1082,21 +1128,21 @@ bool try_fetch_rpc_error(array<mixed> &out_if_error) {
 class_instance<RpcTlQuery> store_function(const mixed &tl_object) {
   php_assert(CurException.is_null());
   if (!tl_object.is_array()) {
-    CurrentProcessingQuery::get().raise_storing_error("Not an array passed to function rpc_tl_query");
+    CurrentTlQuery::get().raise_storing_error("Not an array passed to function rpc_tl_query");
     return {};
   }
   string fun_name = tl_arr_get(tl_object, tl_str_underscore, 0).to_string();
   if (!tl_storers_ht.has_key(fun_name)) {
-    CurrentProcessingQuery::get().raise_storing_error("Function \"%s\" not found in tl-scheme", fun_name.c_str());
+    CurrentTlQuery::get().raise_storing_error("Function \"%s\" not found in tl-scheme", fun_name.c_str());
     return {};
   }
   class_instance<RpcTlQuery> rpc_query;
   rpc_query.alloc();
   rpc_query.get()->tl_function_name = fun_name;
-  CurrentProcessingQuery::get().set_current_tl_function(fun_name);
+  CurrentTlQuery::get().set_current_tl_function(fun_name);
   const auto &untyped_storer = tl_storers_ht.get_value(fun_name);
   rpc_query.get()->result_fetcher = make_unique_on_script_memory<RpcRequestResultUntyped>(untyped_storer(tl_object));
-  CurrentProcessingQuery::get().reset();
+  CurrentTlQuery::get().reset();
   return rpc_query;
 }
 
@@ -1106,11 +1152,11 @@ array<mixed> fetch_function(const class_instance<RpcTlQuery> &rpc_query) {
     return new_tl_object;       // this object carries an error (see tl_fetch_error())
   }
   php_assert(!rpc_query.is_null());
-  CurrentProcessingQuery::get().set_current_tl_function(rpc_query);
+  CurrentTlQuery::get().set_current_tl_function(rpc_query);
   auto stored_fetcher = rpc_query.get()->result_fetcher->extract_untyped_fetcher();
   php_assert(stored_fetcher);
   new_tl_object = tl_fetch_wrapper(std::move(stored_fetcher));
-  CurrentProcessingQuery::get().reset();
+  CurrentTlQuery::get().reset();
   if (!CurException.is_null()) {
     array<mixed> result = tl_fetch_error(CurException->$message, TL_ERROR_SYNTAX);
     CurException = Optional<bool>{};
@@ -1123,7 +1169,8 @@ array<mixed> fetch_function(const class_instance<RpcTlQuery> &rpc_query) {
   return new_tl_object;
 }
 
-int64_t rpc_tl_query_impl(const class_instance<C$RpcConnection> &c, const mixed &tl_object, double timeout, bool ignore_answer, bool bytes_estimating, size_t &bytes_sent, bool flush) {
+int64_t rpc_tl_query_impl(const class_instance<C$RpcConnection> &c, const mixed &tl_object, double timeout, rpc_request_extra_info_t &req_extra_info,
+                          bool collect_resp_extra_info, bool ignore_answer, bool bytes_estimating, size_t &bytes_sent, bool flush) {
   f$rpc_clean();
 
   class_instance<RpcTlQuery> rpc_query = store_function(tl_object);
@@ -1131,6 +1178,7 @@ int64_t rpc_tl_query_impl(const class_instance<C$RpcConnection> &c, const mixed 
     rpc_query.destroy();
     CurException = Optional<bool>{};
   }
+
   if (rpc_query.is_null()) {
     return 0;
   }
@@ -1138,31 +1186,38 @@ int64_t rpc_tl_query_impl(const class_instance<C$RpcConnection> &c, const mixed 
   if (bytes_estimating) {
     estimate_and_flush_overflow(bytes_sent);
   }
-  int64_t query_id = rpc_send(c, timeout, ignore_answer);
+
+  int64_t query_id = rpc_send_impl(c, timeout, req_extra_info, collect_resp_extra_info, ignore_answer);
   if (query_id <= 0) {
     return 0;
   }
+
   if (unlikely(kphp_tracing::cur_trace_level >= 2)) {
     kphp_tracing::on_rpc_query_provide_details_after_send({}, tl_object);
   }
+
   if (flush) {
     f$rpc_flush();
   }
+
   if (ignore_answer) {
     return -1;
   }
+
   if (dl::query_num != rpc_tl_results_last_query_num) {
     rpc_tl_results_last_query_num = dl::query_num;
   }
+  
   rpc_query.get()->query_id = query_id;
   RpcPendingQueries::get().save(rpc_query);
-  
+
   return query_id;
 }
 
 int64_t f$rpc_tl_query_one(const class_instance<C$RpcConnection> &c, const mixed &tl_object, double timeout) {
   size_t bytes_sent = 0;
-  return rpc_tl_query_impl(c, tl_object, timeout, false, false, bytes_sent, true);
+  rpc_request_extra_info_t _{};
+  return rpc_tl_query_impl(c, tl_object, timeout, _, false, false, false, bytes_sent, true);
 }
 
 int64_t f$rpc_tl_pending_queries_count() {
@@ -1208,18 +1263,35 @@ bool f$rpc_mc_parse_raw_wildcard_with_flags_to_array(const string &raw_result, a
   return true;
 }
 
-array<int64_t> f$rpc_tl_query(const class_instance<C$RpcConnection> &c, const array<mixed> &tl_objects, double timeout, bool ignore_answer) {
-  array<int64_t> result(tl_objects.size());
-  size_t bytes_sent = 0;
-  for (auto it = tl_objects.begin(); it != tl_objects.end(); ++it) {
-    int64_t query_id = rpc_tl_query_impl(c, it.get_value(), timeout, ignore_answer, true, bytes_sent, false);
-    result.set_value(it.get_key(), query_id);
+array<int64_t> f$rpc_tl_query(const class_instance<C$RpcConnection> &c, const array<mixed> &tl_objects, double timeout, bool ignore_answer,
+                              class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info, bool need_responses_extra_info) {
+  if (ignore_answer && need_responses_extra_info) {
+    php_warning("Both $ignore_answer and $need_responses_extra_info are 'true'. Can't collect metrics for ignored answers");
   }
+
+  size_t bytes_sent = 0;
+  bool collect_resp_extra_info = !ignore_answer && need_responses_extra_info;
+  array<int64_t> queries{tl_objects.size()};
+  array<rpc_request_extra_info_t> req_extra_info_arr{tl_objects.size()};
+
+  for (auto it = tl_objects.begin(); it != tl_objects.end(); ++it) {
+    rpc_request_extra_info_t req_ei{};
+
+    int64_t query_id = rpc_tl_query_impl(c, it.get_value(), timeout, req_ei, collect_resp_extra_info, ignore_answer, true, bytes_sent, false);
+
+    queries.set_value(it.get_key(), query_id);
+    req_extra_info_arr.set_value(it.get_key(), std::move(req_ei));
+  }
+
   if (bytes_sent > 0) {
     f$rpc_flush();
   }
 
-  return result;
+  if (!requests_extra_info.is_null()) {
+    requests_extra_info->extra_info_arr_ = std::move(req_extra_info_arr);
+  }
+
+  return queries;
 }
 
 
@@ -1324,9 +1396,9 @@ protected:
         int64_t query_id = it.get_value();
         if (!tl_objects_unsorted.isset(query_id)) {
           if (query_id <= 0) {
-            tl_objects[it.get_key()] = tl_fetch_error((static_SB.clean() << "Very wrong query_id " << query_id).str(), TL_ERROR_WRONG_QUERY_ID);
+            tl_objects[it.get_key()] = tl_fetch_error((kphp_runtime_context.static_SB.clean() << "Very wrong query_id " << query_id).str(), TL_ERROR_WRONG_QUERY_ID);
           } else {
-            tl_objects[it.get_key()] = tl_fetch_error((static_SB.clean() << "No answer received or duplicate/wrong query_id "
+            tl_objects[it.get_key()] = tl_fetch_error((kphp_runtime_context.static_SB.clean() << "No answer received or duplicate/wrong query_id "
                                                                          << query_id).str(), TL_ERROR_WRONG_QUERY_ID);
           }
         } else {
@@ -1377,9 +1449,9 @@ array<array<mixed>> f$rpc_tl_query_result_synchronously(const array<int64_t> &qu
     int64_t query_id = it.get_value();
     if (!tl_objects_unsorted.isset(query_id)) {
       if (query_id <= 0) {
-        tl_objects[it.get_key()] = tl_fetch_error((static_SB.clean() << "Very wrong query_id " << query_id).str(), TL_ERROR_WRONG_QUERY_ID);
+        tl_objects[it.get_key()] = tl_fetch_error((kphp_runtime_context.static_SB.clean() << "Very wrong query_id " << query_id).str(), TL_ERROR_WRONG_QUERY_ID);
       } else {
-        tl_objects[it.get_key()] = tl_fetch_error((static_SB.clean() << "No answer received or duplicate/wrong query_id "
+        tl_objects[it.get_key()] = tl_fetch_error((kphp_runtime_context.static_SB.clean() << "No answer received or duplicate/wrong query_id "
                                                                      << query_id).str(), TL_ERROR_WRONG_QUERY_ID);
       }
     } else {
@@ -1402,12 +1474,13 @@ static void reset_rpc_global_vars() {
   hard_reset_var(rpc_data_copy_backup);
   hard_reset_var(rpc_request_need_timer);
   fail_rpc_on_int32_overflow = false;
+  hard_reset_var(rpc_responses_extra_info_map);
 }
 
 void init_rpc_lib() {
   php_assert (timeout_wakeup_id != -1);
 
-  CurrentProcessingQuery::get().reset();
+  CurrentTlQuery::get().reset();
   RpcPendingQueries::get().hard_reset();
   CurrentRpcServerQuery::get().reset();
   reset_rpc_global_vars();
@@ -1427,7 +1500,7 @@ void init_rpc_lib() {
 void free_rpc_lib() {
   reset_rpc_global_vars();
   RpcPendingQueries::get().hard_reset();
-  CurrentProcessingQuery::get().reset();
+  CurrentTlQuery::get().reset();
 }
 
 int64_t f$rpc_queue_create() {

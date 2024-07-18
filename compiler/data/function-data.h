@@ -117,6 +117,7 @@ public:
   bool cpp_template_call = false;
   bool cpp_variadic_call = false;
   bool is_resumable = false;
+  bool is_interruptible = false;
   bool can_be_implicitly_interrupted_by_other_resumable = false;
   bool is_virtual_method = false;
   bool is_overridden_method = false;
@@ -124,6 +125,7 @@ public:
   bool has_lambdas_inside = false;      // used for optimization after cloning (not to launch CloneNestedLambdasPass)
   bool has_var_tags_inside = false;     // used for optimization (not to traverse body if no @var inside)
   bool has_commentTs_inside = false;    // used for optimization (not to traverse body if no /*<...>*/ inside)
+  bool has_global_vars_inside = false;  // used for codegeneration; true if function body refs any mutable php globals/superglobals (after cfg pass)
   bool warn_unused_result = false;
   bool is_flatten = false;
   bool is_pure = false;

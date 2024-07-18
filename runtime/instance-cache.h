@@ -18,10 +18,9 @@
 
 #include "common/mixin/not_copyable.h"
 
+#include "runtime-core/runtime-core.h"
 #include "runtime/instance-copy-processor.h"
-#include "runtime/kphp_core.h"
 #include "runtime/memory_usage.h"
-#include "runtime/shape.h"
 #include "server/statshouse/statshouse-manager.h"
 
 enum class InstanceCacheOpStatus;
@@ -119,8 +118,12 @@ ClassInstanceType f$instance_cache_fetch(const string &class_name, const string 
       return result;
     } else {
       send_extended_instance_cache_stats_if_enabled("fetch", InstanceCacheOpStatus::failed, key, ClassInstanceType{});
-      php_warning("Trying to fetch incompatible instance class: expect '%s', got '%s'",
-                  class_name.c_str(), base_wrapper->get_class());
+      if constexpr (std::is_polymorphic_v<ClassInstanceType>) {
+        php_warning("Trying to fetch polymorphic instance class '%s' that was stored by base type", base_wrapper->get_class());
+      } else {
+        php_warning("Trying to fetch incompatible instance class: expect '%s', got '%s'",
+                    class_name.c_str(), base_wrapper->get_class());
+      }
     }
   } else {
     send_extended_instance_cache_stats_if_enabled("fetch", InstanceCacheOpStatus::not_found, key, ClassInstanceType{});

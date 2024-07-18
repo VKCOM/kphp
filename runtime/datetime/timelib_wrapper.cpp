@@ -8,6 +8,8 @@
 
 #include "common/containers/final_action.h"
 #include "common/smart_ptrs/singleton.h"
+#include "runtime/allocator.h"
+#include "runtime/context/runtime-context.h"
 #include "server/php-engine-vars.h"
 #include "server/php-runner.h"
 
@@ -431,7 +433,7 @@ string php_timelib_date_format(const string &format, timelib_time *t, bool local
 
   auto script_guard = make_malloc_replacement_with_script_allocator();
 
-  string_buffer &SB = static_SB_spare;
+  string_buffer &SB = kphp_runtime_context.static_SB_spare;
   SB.clean();
 
   timelib_time_offset *offset = localtime ? create_time_offset(t, script_guard) : nullptr;
@@ -859,7 +861,7 @@ string php_timelib_date_interval_format(const string &format, timelib_rel_time *
     return {};
   }
 
-  string_buffer &SB = static_SB_spare;
+  string_buffer &SB = kphp_runtime_context.static_SB_spare;
   SB.clean();
 
   // php implementation has 33 bytes buffer capacity, we have 128 bytes as well as php_timelib_date_format()

@@ -4,26 +4,33 @@
 
 #include "server/confdata-binlog-replay.h"
 
+#include <array>
 #include <bitset>
 #include <chrono>
 #include <cinttypes>
 #include <cmath>
+#include <cstdint>
 #include <forward_list>
 #include <map>
 #include <optional>
+#include <unistd.h>
+#include <vector>
 
 #include "common/binlog/binlog-replayer.h"
+#include "common/binlog/binlog-snapshot.h"
 #include "common/dl-utils-lite.h"
-#include "common/precise-time.h"
+#include "common/kfs/kfs.h"
 #include "common/server/engine-settings.h"
 #include "common/server/init-binlog.h"
 #include "common/server/init-snapshot.h"
+#include "common/tl/methods/string.h"
 #include "common/wrappers/string_view.h"
 #include "common/kfs/kfs.h"
 
+#include "runtime-core/runtime-core.h"
 #include "runtime/allocator.h"
 #include "runtime/confdata-global-manager.h"
-#include "runtime/kphp_core.h"
+#include "runtime-core/runtime-core.h"
 #include "server/confdata-binlog-events.h"
 #include "server/confdata-stats.h"
 #include "server/server-log.h"
@@ -116,34 +123,16 @@ public:
     return dot_pos;
   }
 
-  int load_index() noexcept {
-    if (!Snapshot) {
-      jump_log_ts = 0;
-      jump_log_pos = 0;
-      jump_log_crc32 = 0;
-      return 0;
-    }
-    index_header header;
-    kfs_read_file_assert (Snapshot, &header, sizeof(index_header));
-    if (header.magic != PMEMCACHED_INDEX_MAGIC) {
-      fprintf(stderr, "index file is not for confdata\n");
-      return -1;
-    }
-    jump_log_ts = header.log_timestamp;
-    jump_log_pos = header.log_pos1;
-    jump_log_crc32 = header.log_pos1_crc32;
-
-    const int nrecords = header.nrecords;
-    vkprintf(2, "%d records readed\n", nrecords);
-    auto index_offset = std::make_unique<int64_t[]>(nrecords + 1);
+  int process_confdata_snapshot_entries(index_header &header) noexcept {
+    const auto index_offset = std::make_unique<int64_t[]>(header.nrecords + 1);
     assert (index_offset);
 
-    kfs_read_file_assert (Snapshot, index_offset.get(), sizeof(index_offset[0]) * (nrecords + 1));
-    vkprintf(1, "index_offset[%d]=%" PRId64 "\n", nrecords, index_offset[nrecords]);
+    kfs_read_file_assert(Snapshot, index_offset.get(), sizeof(index_offset[0]) * (header.nrecords + 1));
+    vkprintf(1, "index_offset[%d]=%" PRId64 "\n", header.nrecords, index_offset[header.nrecords]);
 
-    auto index_binary_data = std::make_unique<char[]>(index_offset[nrecords]);
+    const auto index_binary_data = std::make_unique<char[]>(index_offset[header.nrecords]);
     assert (index_binary_data);
-    kfs_read_file_assert (Snapshot, index_binary_data.get(), index_offset[nrecords]);
+    kfs_read_file_assert(Snapshot, index_binary_data.get(), index_offset[header.nrecords]);
 
     using entry_type = lev_confdata_store_wrapper<index_entry, pmct_set>;
 
@@ -151,7 +140,7 @@ public:
     vk::string_view last_two_dots_key;
     array_size one_dot_elements_counter;
     array_size two_dots_elements_counter;
-    for (int i = 0; i < nrecords; i++) {
+    for (auto i = 0; i < header.nrecords; i++) {
       const auto &element = reinterpret_cast<const entry_type &>(index_binary_data[index_offset[i]]);
       const vk::string_view key{element.data, static_cast<size_t>(std::max(element.key_len, short{0}))};
       if (key.empty() || key_blacklist_.is_blacklisted(key)) {
@@ -168,7 +157,7 @@ public:
 
     // disable the blacklist because we checked the keys during the previous step
     blacklist_enabled_ = false;
-    for (int i = 0; i < nrecords; i++) {
+    for (auto i = 0; i < header.nrecords; i++) {
       if (index_offset[i] >= 0) {
         store_element(reinterpret_cast<const entry_type &>(index_binary_data[index_offset[i]]));
       }
@@ -182,6 +171,161 @@ public:
     }
 
     return 0;
+  }
+
+  int process_old_confdata_snapshot() noexcept {
+    index_header header;
+    kfs_read_file_assert(Snapshot, &header, sizeof(index_header));
+
+    if (header.magic != kphp::tl::PMEMCACHED_OLD_INDEX_MAGIC) {
+      fprintf(stderr, kphp::tl::UNEXPECTED_TL_MAGIC_ERROR_FORMAT, header.magic, kphp::tl::PMEMCACHED_OLD_INDEX_MAGIC);
+      return -1;
+    }
+
+    jump_log_ts = header.log_timestamp;
+    jump_log_pos = header.log_pos1;
+    jump_log_crc32 = header.log_pos1_crc32;
+
+    return process_confdata_snapshot_entries(header);
+  }
+
+  int process_barsic_common_header() noexcept {
+    std::array<std::byte, kphp::tl::COMMON_HEADER_META_SIZE> header_meta{};
+    kfs_read_file_assert(Snapshot, header_meta.data(), header_meta.size());
+
+    int32_t magic{};
+    vk::tl::fetch_from_buffer(reinterpret_cast<const char *>(header_meta.data()), header_meta.size(), magic);
+    if (magic != kphp::tl::BARSIC_SNAPSHOT_HEADER_MAGIC) {
+      fprintf(stderr, kphp::tl::UNEXPECTED_TL_MAGIC_ERROR_FORMAT, magic, kphp::tl::BARSIC_SNAPSHOT_HEADER_MAGIC);
+      return -1;
+    }
+
+    int64_t tl_body_len{};
+    vk::tl::fetch_from_buffer(reinterpret_cast<const char *>(header_meta.data() + sizeof(int32_t)), header_meta.size() - sizeof(int32_t),
+                              tl_body_len);
+
+    std::vector<std::byte> buffer{static_cast<size_t>(tl_body_len + kphp::tl::COMMON_HEADER_HASH_SIZE)};
+    kfs_read_file_assert(Snapshot, buffer.data(), buffer.size());
+
+    kphp::tl::BarsicSnapshotHeader bsh{};
+    vk::tl::fetch_from_buffer(reinterpret_cast<const char *>(buffer.data()), buffer.size(), bsh);
+    // TODO: compute xxhash
+
+    jump_log_pos = bsh.payload_offset;
+    return 0;
+  }
+
+  int process_confdata_engine_header() noexcept {
+    std::array<std::byte, kphp::tl::COMMON_HEADER_META_SIZE> header_meta{};
+    kfs_read_file_assert(Snapshot, header_meta.data(), header_meta.size());
+
+    int32_t magic{};
+    vk::tl::fetch_from_buffer(reinterpret_cast<const char *>(header_meta.data()), header_meta.size(), magic);
+    if (magic != kphp::tl::TL_ENGINE_SNAPSHOT_HEADER_MAGIC) {
+      fprintf(stderr, kphp::tl::UNEXPECTED_TL_MAGIC_ERROR_FORMAT, magic, kphp::tl::TL_ENGINE_SNAPSHOT_HEADER_MAGIC);
+      return -1;
+    }
+
+    int64_t tl_body_len{};
+    vk::tl::fetch_from_buffer(reinterpret_cast<const char *>(header_meta.data() + sizeof(int32_t)), header_meta.size() - sizeof(int32_t),
+                              tl_body_len);
+
+    std::vector<std::byte> buffer{static_cast<size_t>(tl_body_len + kphp::tl::COMMON_HEADER_HASH_SIZE)};
+    kfs_read_file_assert(Snapshot, buffer.data(), buffer.size());
+
+    kphp::tl::TlEngineSnapshotHeader esh{};
+    vk::tl::fetch_from_buffer(reinterpret_cast<const char *>(buffer.data()), buffer.size(), esh);
+    // TODO: compute xxhash
+
+    jump_log_ts = esh.binlog_time_sec;
+    jump_log_crc32 = esh.file_binlog_crc.value_or(0);
+    return 0;
+  }
+
+  int skip_persistent_config() noexcept {
+    int32_t magic{};
+    kfs_read_file_assert(Snapshot, &magic, sizeof(int32_t));
+    if (magic != kphp::tl::PERSISTENT_CONFIG_V2_SNAPSHOT_BLOCK) {
+      fprintf(stderr, kphp::tl::UNEXPECTED_TL_MAGIC_ERROR_FORMAT, magic, kphp::tl::PERSISTENT_CONFIG_V2_SNAPSHOT_BLOCK);
+      return -1;
+    }
+
+    int32_t num_sizes{};
+    kfs_read_file_assert(Snapshot, &num_sizes, sizeof(int32_t));
+
+    std::vector<int64_t> sizes(num_sizes);
+    kfs_read_file_assert(Snapshot, reinterpret_cast<std::byte *>(sizes.data()), sizes.size() * sizeof(int64_t));
+
+    // use sizeof(int32_t) as initial value for accumulate since persistent config ends with crc32
+    ::lseek(Snapshot->fd, std::accumulate(sizes.cbegin(), sizes.cend(), static_cast<int64_t>(sizeof(int32_t))), SEEK_CUR);
+    return 0;
+  }
+
+  int skip_persistent_queries() noexcept {
+    int32_t size{};
+    kfs_read_file_assert(Snapshot, &size, sizeof(int32_t));
+    if (size != 0) {
+      fprintf(stderr, "unexpected non-zero size of persistent queries: %d\n", size);
+      return -1;
+    }
+    // skip hash
+    ::lseek(Snapshot->fd, kphp::tl::COMMON_HEADER_HASH_SIZE, SEEK_CUR);
+    return 0;
+  }
+
+  int process_snapshot() noexcept {
+    if (!Snapshot) {
+      jump_log_ts = 0;
+      jump_log_pos = 0;
+      jump_log_crc32 = 0;
+      return 0;
+    }
+
+    int32_t header_magic{};
+    kfs_read_file_assert(Snapshot, &header_magic, sizeof(int32_t));
+    // move cursor back so old index reader can safely read a header it expects
+    ::lseek(Snapshot->fd, -sizeof(int32_t), SEEK_CUR);
+
+    if (header_magic == kphp::tl::PMEMCACHED_OLD_INDEX_MAGIC) {
+      return process_old_confdata_snapshot();
+    } else if (header_magic == kphp::tl::BARSIC_SNAPSHOT_HEADER_MAGIC) {
+      if (process_barsic_common_header() != 0) { return -1; }
+      if (process_confdata_engine_header() != 0) { return -1; }
+      if (skip_persistent_config() != 0) { return -1; }
+
+      kfs_read_file_assert(Snapshot, &header_magic, sizeof(int32_t));
+      if (header_magic == kphp::tl::RPC_QUERIES_SNAPSHOT_QUERY_COMMON) {
+        // PMC code may write persistent query, but confdata should not have any
+        fprintf(stderr, "active persistent query (magic 0x%x) are not supported in confdata snapshots", kphp::tl::RPC_QUERIES_SNAPSHOT_QUERY_COMMON);
+        return -1;
+      }
+
+      // engine code always writes this section, but it doesn't make any sense for confdata.
+      // Don't do strict check in case this section disappears
+      if (header_magic == kphp::tl::SNAPSHOT_MAGIC) {
+        if (skip_persistent_queries() != 0) { return -1; }
+      } else {
+        // move cursor back to let the next read take the whole index_header.
+        ::lseek(Snapshot->fd, -sizeof(int32_t), SEEK_CUR);
+      }
+
+      kfs_read_file_assert(Snapshot, &header_magic, sizeof(int32_t));
+      if (header_magic != kphp::tl::COMMON_INFO_END) {
+        fprintf(stderr, kphp::tl::UNEXPECTED_TL_MAGIC_ERROR_FORMAT, header_magic, kphp::tl::COMMON_INFO_END);
+        return -1;
+      }
+
+      index_header idx_header{};
+      kfs_read_file_assert(Snapshot, &idx_header, sizeof(index_header));
+      if (idx_header.magic != kphp::tl::PMEMCACHED_INDEX_RAM_MAGIC_G3) {
+        fprintf(stderr, kphp::tl::UNEXPECTED_TL_MAGIC_ERROR_FORMAT, idx_header.magic, kphp::tl::PMEMCACHED_INDEX_RAM_MAGIC_G3);
+        return -1;
+      }
+      return process_confdata_snapshot_entries(idx_header);
+    }
+
+    fprintf(stderr, "unexpected header magic: 0x%x\n", header_magic);
+    return -1;
   }
 
   OperationStatus delete_element(const char *key, short key_len) noexcept {
@@ -851,6 +995,10 @@ void set_confdata_soft_oom_ratio(double soft_oom_ratio) noexcept {
   confdata_settings.soft_oom_threshold_ratio = soft_oom_ratio;
 }
 
+void set_confdata_hard_oom_ratio(double hard_oom_ratio) noexcept {
+  confdata_settings.hard_oom_threshold_ratio = hard_oom_ratio;
+}
+
 void set_confdata_binlog_mask(const char *mask) noexcept {
   confdata_settings.binlog_mask = mask;
 }
@@ -895,7 +1043,7 @@ void init_confdata_binlog_reader() noexcept {
   static engine_settings_t settings = {};
   settings.name = NAME_VERSION;
   settings.load_index = []() {
-    return ConfdataBinlogReplayer::get().load_index();
+    return ConfdataBinlogReplayer::get().process_snapshot();
   };
   settings.replay_logevent = [](const lev_generic *E, int size) {
     return ConfdataBinlogReplayer::get().replay(E, size);
@@ -930,6 +1078,7 @@ void init_confdata_binlog_reader() noexcept {
   auto &confdata_binlog_replayer = ConfdataBinlogReplayer::get();
   confdata_binlog_replayer.init(confdata_manager.get_resource());
   engine_default_load_index(confdata_settings.binlog_mask);
+
   update_confdata_state_from_binlog(true, 10 * confdata_settings.confdata_update_timeout_sec);
   if (confdata_binlog_replayer.current_memory_status() != ConfdataBinlogReplayer::MemoryStatus::NORMAL) {
     confdata_binlog_replayer.raise_confdata_oom_error("Can't read confdata binlog on start");

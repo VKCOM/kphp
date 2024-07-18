@@ -7,6 +7,7 @@
 #include "common/algorithms/compare.h"
 
 #include "compiler/code-gen/common.h"
+#include "compiler/code-gen/const-globals-batched-mem.h"
 #include "compiler/code-gen/files/json-encoder-tags.h"
 #include "compiler/code-gen/files/tl2cpp/tl2cpp-utils.h"
 #include "compiler/code-gen/includes.h"
@@ -25,10 +26,6 @@
 #include "compiler/inferring/type-data.h"
 #include "compiler/tl-classes.h"
 
-VarDeclaration VarExternDeclaration(VarPtr var) {
-  return {var, true, false};
-}
-
 VarDeclaration VarPlainDeclaration(VarPtr var) {
   return {var, false, false};
 }
@@ -41,10 +38,6 @@ VarDeclaration::VarDeclaration(VarPtr var, bool extern_flag, bool defval_flag) :
 
 void VarDeclaration::compile(CodeGenerator &W) const {
   const TypeData *type = tinf::get_type(var);
-
-  if (var->is_builtin_global()) {
-    W << CloseNamespace();
-  }
 
   kphp_assert(type->ptype() != tp_void);
 
@@ -64,10 +57,6 @@ void VarDeclaration::compile(CodeGenerator &W) const {
         "decltype(const_begin(" << VarName(var) << "))" << " " << VarName(var) << name << ";" << NL;
     }
   }
-
-  if (var->is_builtin_global()) {
-    W << OpenNamespace();
-  }
 }
 
 FunctionDeclaration::FunctionDeclaration(FunctionPtr function, bool in_header, gen_out_style style) :
@@ -83,7 +72,11 @@ void FunctionDeclaration::compile(CodeGenerator &W) const {
   switch (style) {
     case gen_out_style::tagger:
     case gen_out_style::cpp: {
-      FunctionSignatureGenerator(W) << ret_type_gen << " " << FunctionName(function) << "(" << params_gen << ")";
+      if (function->is_interruptible) {
+        FunctionSignatureGenerator(W) << "task_t<" << ret_type_gen << ">" << " " << FunctionName(function) << "(" << params_gen << ")";
+      } else {
+        FunctionSignatureGenerator(W) << ret_type_gen << " " << FunctionName(function) << "(" << params_gen << ")";
+      }
       break;
     }
     case gen_out_style::txt: {
@@ -441,18 +434,6 @@ ClassDeclaration::ClassDeclaration(ClassPtr klass) :
   klass(klass) {
 }
 
-void ClassDeclaration::declare_all_variables(VertexPtr vertex, CodeGenerator &W) const {
-  if (!vertex) {
-    return;
-  }
-  for (auto child: *vertex) {
-    declare_all_variables(child, W);
-  }
-  if (auto var = vertex.try_as<op_var>()) {
-    W << VarExternDeclaration(var->var_id);
-  }
-}
-
 std::unique_ptr<TlDependentTypesUsings> ClassDeclaration::detect_if_needs_tl_usings() const {
   if (tl2cpp::is_php_class_a_tl_constructor(klass) && !tl2cpp::is_php_class_a_tl_array_item(klass)) {
     const auto &scheme = G->get_tl_classes().get_scheme();
@@ -480,11 +461,13 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
     tl_dep_usings->compile_dependencies(W);
   }
 
-  klass->members.for_each([&](const ClassMemberInstanceField &f) {
+  ConstantsExternCollector c_mem_extern;
+  klass->members.for_each([&c_mem_extern](const ClassMemberInstanceField &f) {
     if (f.var->init_val) {
-      declare_all_variables(f.var->init_val, W);
+      c_mem_extern.add_extern_from_init_val(f.var->init_val);
     }
   });
+  W << c_mem_extern << NL;
 
   auto get_all_interfaces = [klass = this->klass] {
     auto transform_to_src_name = [](CodeGenerator &W, InterfacePtr i) { W << i->src_name.c_str(); };
@@ -932,7 +915,7 @@ void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr
       // for kphp_instance_cache_value_size statshouse metrics
       klass->need_instance_cache_visitors) {
     W << NL;
-    compile_accept_visitor(W, klass, "InstanceMemoryEstimateVisitor");
+    compile_accept_visitor(W, klass, "CommonMemoryEstimateVisitor");
   }
 
   if (klass->need_instance_cache_visitors) {
@@ -1092,7 +1075,7 @@ void ClassMembersDefinition::compile(CodeGenerator &W) const {
       // for kphp_instance_cache_value_size statshouse metrics
       klass->need_instance_cache_visitors) {
     W << NL;
-    compile_generic_accept_instantiations(W, klass, "InstanceMemoryEstimateVisitor");
+    compile_generic_accept_instantiations(W, klass, "CommonMemoryEstimateVisitor");
   }
 
   if (klass->need_instance_cache_visitors) {

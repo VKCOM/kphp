@@ -6,15 +6,15 @@
 
 #include <utility>
 
+#include "common/algorithms/hashes.h"
+#include "common/wrappers/string_view.h"
+#include "runtime-core/runtime-core.h"
 #include "runtime/dummy-visitor-methods.h"
 #include "runtime/exception.h"
-#include "runtime/kphp_core.h"
 #include "runtime/memory_usage.h"
 #include "runtime/net_events.h"
 #include "runtime/resumable.h"
 #include "runtime/rpc.h"
-#include "common/algorithms/hashes.h"
-#include "common/wrappers/string_view.h"
 
 void init_memcache_lib();
 void free_memcache_lib();
@@ -31,7 +31,7 @@ constexpr int64_t MEMCACHE_COMPRESSED = 2;
 
 struct C$Memcache : public abstract_refcountable_php_interface {
 public:
-  virtual void accept(InstanceMemoryEstimateVisitor &) = 0;
+  virtual void accept(CommonMemoryEstimateVisitor &) = 0;
   virtual const char *get_class() const = 0;
   virtual int32_t get_hash() const = 0;
 };
@@ -51,8 +51,8 @@ public:
 
   using DummyVisitorMethods::accept;
 
-  void accept(InstanceMemoryEstimateVisitor &visitor) final {
-    visitor("", hosts);
+  void accept(CommonMemoryEstimateVisitor &visitor [[maybe_unused]]) final {
+    visitor("", array<int64_t>{});
   }
 
   const char *get_class() const final {
@@ -61,10 +61,6 @@ public:
 
   int32_t get_hash() const final {
     return static_cast<int32_t>(vk::std_hash(vk::string_view(C$McMemcache::get_class())));
-  }
-
-  friend inline int32_t f$estimate_memory_usage(const C$McMemcache::host &) {
-    return 0;
   }
 
   virtual C$McMemcache* virtual_builtin_clone() const noexcept {

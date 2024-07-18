@@ -6,8 +6,8 @@
 
 #include <utility>
 
+#include "runtime-core/runtime-core.h"
 #include "runtime/exception.h"
-#include "runtime/kphp_core.h"
 
 extern const char *last_wait_error;
 

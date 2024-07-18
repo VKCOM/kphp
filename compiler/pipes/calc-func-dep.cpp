@@ -55,8 +55,9 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex) {
     // .dep is used to
     // 1) build call graph — we actually need only user-defined function
     // 2) build resumable call graph — to propagate resumable state and to calc resumable chains
+    // 3) build interruptible call graph - calc interruptible chains
     // adding all built-in calls won't affect codegen, it will just overhead call graphs and execution time
-    if (!other_function->is_extern() || other_function->is_resumable || other_function->is_imported_from_static_lib()) {
+    if (!other_function->is_extern() || other_function->is_resumable || other_function->is_imported_from_static_lib() || other_function->is_interruptible) {
       data.dep.push_back(other_function);
     }
     calls.push_back(other_function);

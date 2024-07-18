@@ -6,8 +6,6 @@
 
 #include <string>
 
-#include "common/type_traits/list_of_types.h"
-
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/gen-out-style.h"
 #include "compiler/data/function-data.h"
@@ -220,31 +218,8 @@ struct VarName {
   void compile(CodeGenerator &W) const {
     if (!name.empty()) {
       W << name;
-      return;
+    } else {
+      W << "v$" << var->name;
     }
-
-    if (var->is_function_static_var()) {
-      W << FunctionName(var->holder_func) << "$";
-    }
-
-    W << "v$" << var->name;
   }
-};
-
-struct GlobalVarsResetFuncName {
-  explicit GlobalVarsResetFuncName(FunctionPtr main_func, int part = -1) :
-    main_func_(main_func),
-    part_(part) {}
-
-  void compile(CodeGenerator &W) const {
-    W << FunctionName(main_func_) << "$global_vars_reset";
-    if (part_ >= 0) {
-      W << std::to_string(part_);
-    }
-    W << "()";
-  }
-
-private:
-  const FunctionPtr main_func_;
-  const int part_{-1};
 };

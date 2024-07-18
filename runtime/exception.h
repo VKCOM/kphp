@@ -4,14 +4,16 @@
 
 #pragma once
 
+#include <type_traits>
+
 #include "common/algorithms/hashes.h"
 #include "common/wrappers/string_view.h"
+#include "runtime-core/class-instance/refcountable-php-classes.h"
+#include "runtime-core/runtime-core.h"
 #include "runtime/dummy-visitor-methods.h"
 #include "runtime/instance-copy-processor.h"
-#include "runtime/to-array-processor.h"
-#include "runtime/kphp_core.h"
 #include "runtime/memory_usage.h"
-#include "runtime/refcountable_php_classes.h"
+#include "runtime/to-array-processor.h"
 
 array<array<string>> f$debug_backtrace();
 
@@ -36,7 +38,7 @@ struct C$Throwable : public refcountable_polymorphic_php_classes_virt<> {
     }
   }
 
-  virtual void accept(InstanceMemoryEstimateVisitor &visitor) noexcept {
+  virtual void accept(CommonMemoryEstimateVisitor &visitor) noexcept {
     generic_accept(visitor);
   }
 
@@ -157,6 +159,22 @@ Exception new_Exception(const string &file, int64_t line, const string &message 
 
 Exception f$err(const string &file, int64_t line, const string &code, const string &desc = string());
 
+template <typename T>
+inline class_instance<T> make_throwable(const string &file, int64_t line, int64_t code, const string &desc) noexcept {
+  static_assert(
+    std::is_base_of_v<C$Throwable, T>,
+    "Template argument must be a subtype of C$Throwable");
+
+  auto ci = make_instance<T>();
+
+  auto *ins_ptr = ci.get();
+  ins_ptr->$file = file;
+  ins_ptr->$line = line;
+  ins_ptr->$code = code;
+  ins_ptr->$message = desc;
+
+  return ci;
+}
 
 string f$Exception$$getMessage(const Exception &e);
 string f$Error$$getMessage(const Error &e);
@@ -264,4 +282,8 @@ struct C$UnderflowException : public C$RuntimeException {
 
 struct C$UnexpectedValueException : public C$RuntimeException {
   const char *get_class() const noexcept override { return "UnexpectedValueException"; }
+};
+
+struct C$Random$RandomException : public C$Exception {
+  const char *get_class() const noexcept override { return "Random\\RandomException"; }
 };

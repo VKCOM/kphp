@@ -5,8 +5,9 @@
 #pragma once
 
 #include "common/smart_ptrs/singleton.h"
-
-#include "runtime/kphp_core.h"
+#include "common/mixin/not_copyable.h"
+#include "runtime-core/runtime-core.h"
+#include "runtime/allocator.h"
 
 using curl_easy = int64_t;
 

@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "common/functional/identity.h"
 #include "common/smart_iterators/transform_iterator.h"
 #include "common/wrappers/string_view.h"

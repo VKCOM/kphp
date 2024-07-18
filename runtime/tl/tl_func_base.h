@@ -3,8 +3,9 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
-#include "runtime/kphp_core.h"
+#include "runtime-core/runtime-core.h"
 #include "runtime/tl/rpc_function.h"
+#include "runtime/allocator.h"
 
 struct tl_func_base : ManagedThroughDlAllocator {
   virtual mixed fetch() = 0;

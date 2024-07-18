@@ -4,11 +4,12 @@
 #include <unistd.h>
 
 #include "runtime/sessions.h"
+#include "runtime/interface.h"
+#include "runtime/php-script-globals.h"
 #include "runtime/files.h"
 #include "runtime/serialize-functions.h"
 #include "runtime/misc.h"
 #include "common/wrappers/to_array.h"
-#include "runtime/interface.h"
 #include "runtime/url.h"
 #include "runtime/math_functions.h"
 
@@ -99,7 +100,7 @@ static void initialize_sparams(const array<mixed> &options) noexcept {
 
 static array<mixed> session_get_cookie_params() {
 	array<mixed> result;
-	if (v$_KPHPSESSARR.as_array().empty()) {
+	if (PhpScriptMutableGlobals::current().get_superglobals().v$_KPHPSESSARR.as_array().empty()) {
 		php_warning("Session cookie params cannot be received when there is no active session. Returned the default params");
 		result.emplace_value(string(C_PATH), skeys[6].second);
 		result.emplace_value(string(C_LIFETIME), skeys[7].second);
@@ -117,7 +118,7 @@ static array<mixed> session_get_cookie_params() {
 }
 
 static void reset_sparams() noexcept {
-	v$_KPHPSESSARR.as_array().clear();
+	PhpScriptMutableGlobals::current().get_superglobals().v$_KPHPSESSARR.as_array().clear();
 }
 
 static mixed get_sparam(const char *key) noexcept {
@@ -125,10 +126,11 @@ static mixed get_sparam(const char *key) noexcept {
 }
 
 static mixed get_sparam(const string &key) noexcept {
-	if (!v$_KPHPSESSARR.as_array().isset(key)) {
+	PhpScriptMutableGlobals &php_globals = PhpScriptMutableGlobals::current();
+	if (!php_globals.get_superglobals().v$_KPHPSESSARR.as_array().isset(key)) {
 		return false;
 	}
-	return v$_KPHPSESSARR.as_array().get_value(key);
+	return php_globals.get_superglobals().v$_KPHPSESSARR.as_array().get_value(key);
 }
 
 static void set_sparam(const char *key, const mixed &value) noexcept {
@@ -136,7 +138,7 @@ static void set_sparam(const char *key, const mixed &value) noexcept {
 }
 
 static void set_sparam(const string &key, const mixed &value) noexcept {
-	v$_KPHPSESSARR.as_array().emplace_value(key, value);
+	PhpScriptMutableGlobals::current().get_superglobals().v$_KPHPSESSARR.as_array().emplace_value(key, value);
 }
 
 static bool session_valid_id(const string &id) {
@@ -177,7 +179,7 @@ static bool session_abort() {
 }
 
 static string session_encode() {
-	return f$serialize(v$_SESSION.as_array());
+	return f$serialize(PhpScriptMutableGlobals::current().get_superglobals().v$_SESSION.as_array());
 }
 
 static bool session_decode(const string &data) {
@@ -185,7 +187,7 @@ static bool session_decode(const string &data) {
 	if (buf.is_bool()) {
 		return false;
 	}
-	v$_SESSION = buf.as_array();
+	PhpScriptMutableGlobals::current().get_superglobals().v$_SESSION = buf.as_array();
 	return true;
 }
 
@@ -262,7 +264,7 @@ static bool session_read() {
 	}
 
 	if (buf.st_size == 0) {
-		v$_SESSION.as_array().clear();
+		PhpScriptMutableGlobals::current().get_superglobals().v$_SESSION.as_array().clear();
 		return true;
 	}
 
@@ -298,7 +300,7 @@ static bool session_write() {
 	lock.l_type = F_WRLCK;
 	fcntl(get_sparam(S_FD).to_int(), F_SETLKW, &lock);
 
-	string data = f$serialize(v$_SESSION.as_array());
+	string data = f$serialize(PhpScriptMutableGlobals::current().get_superglobals().v$_SESSION.as_array());
 	ssize_t n = write_safe(get_sparam(S_FD).to_int(), data.c_str(), data.size(), get_sparam(S_PATH).to_string());
 	if (n < data.size()) {
 		if (n == -1) {
@@ -446,8 +448,9 @@ static bool session_start() {
 
 	if (!get_sparam(S_ID).to_bool()) {
 		mixed id = false;
-		if (v$_COOKIE.as_array().isset(get_sparam(S_NAME).to_string())) {
-			id = v$_COOKIE.as_array().get_value(get_sparam(S_NAME).to_string()).to_string();
+		PhpScriptMutableGlobals &php_globals = PhpScriptMutableGlobals::current();
+		if (php_globals.get_superglobals().v$_COOKIE.as_array().isset(get_sparam(S_NAME).to_string())) {
+			id = php_globals.get_superglobals().v$_COOKIE.as_array().get_value(get_sparam(S_NAME).to_string()).to_string();
 		}
 
 		if (id.to_bool() && !id.to_string().empty()) {

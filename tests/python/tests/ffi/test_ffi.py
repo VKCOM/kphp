@@ -65,7 +65,7 @@ class TestFFI(KphpCompilerAutoTestCase):
             full_name = os.path.join(path, f)
             if not os.path.isdir(full_name):
                 continue
-            if f.startswith('o_vars_'):
+            if f.startswith('o_globals_') or f.startswith('o_const_'):
                 continue
             for f2 in os.listdir(full_name):
                 with open(os.path.join(full_name, f2), 'r') as cpp_file:

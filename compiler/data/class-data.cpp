@@ -114,7 +114,7 @@ FunctionPtr ClassData::add_virt_clone() {
   std::string virt_clone_f_name = replace_backslashes(name) + "$$" + NAME_OF_VIRT_CLONE;
 
   auto param_list = VertexAdaptor<op_func_param_list>::create(gen_param_this({}));
-  auto body = !modifiers.is_abstract()
+  auto body = !is_interface()
               ? VertexAdaptor<op_seq>::create(VertexAdaptor<op_return>::create(clone_this))
               : VertexAdaptor<op_seq>::create();
   auto v_op_function = VertexAdaptor<op_function>::create(param_list, body);

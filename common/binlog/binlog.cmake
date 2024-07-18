@@ -3,6 +3,7 @@ prepend(BINLOG_SOURCES ${COMMON_DIR}/binlog/
         binlog-buffer.cpp
         binlog-buffer-aio.cpp
         binlog-buffer-rotation-points.cpp
-        binlog-buffer-replay.cpp)
+        binlog-buffer-replay.cpp
+        binlog-snapshot.cpp)
 
 vk_add_library(binlog_src OBJECT ${BINLOG_SOURCES})

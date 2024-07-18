@@ -64,6 +64,7 @@ public:
 
   std::vector<T> get_all() {
     std::vector<T> res;
+    res.reserve(used_size);
     for (int i = 0; i < N; i++) {
       if (nodes[i].hash != 0) {
         res.push_back(nodes[i].data);

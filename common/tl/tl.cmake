@@ -4,7 +4,7 @@ include(${COMMON_DIR}/tl2php/tl2php.cmake)
 
 install(TARGETS tl-compiler tl2php
         COMPONENT TL_TOOLS
-        RUNTIME DESTINATION bin)
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 install(DIRECTORY ${COMMON_DIR}/tl-files
         COMPONENT TL_TOOLS

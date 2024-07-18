@@ -4,12 +4,10 @@
 
 #include "common/kernel-version.h"
 
-#include <sys/utsname.h>
-
 #include "common/kprintf.h"
 #include "common/stats/provider.h"
 
-static struct utsname* cached_uname() {
+utsname* cached_uname() {
   static struct utsname kernel_version;
   static int got_kernel_version = 0;
   if (got_kernel_version == 0) {

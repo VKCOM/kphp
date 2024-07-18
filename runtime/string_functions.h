@@ -4,8 +4,8 @@
 
 #pragma once
 
+#include "runtime-core/runtime-core.h"
 #include <type_traits>
-#include "runtime/kphp_core.h"
 
 extern const string COLON;
 extern const string CP1251;

@@ -58,7 +58,7 @@ inline ClassMemberStaticField::ClassMemberStaticField(ClassPtr klass, VertexAdap
   type_hint(type_hint) {
 
   std::string global_var_name = replace_backslashes(klass->name) + "$$" + root->get_string();
-  var = G->get_global_var(global_var_name, VarData::var_global_t, def_val);
+  var = G->get_global_var(global_var_name, def_val);
   root->var_id = var;
   var->init_val = def_val;
   var->class_id = klass;

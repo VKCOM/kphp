@@ -4,9 +4,9 @@
 
 #pragma once
 
+#include "runtime-core/class-instance/refcountable-php-classes.h"
 #include "runtime/datetime/timelib_wrapper.h"
 #include "runtime/dummy-visitor-methods.h"
-#include "runtime/refcountable_php_classes.h"
 
 struct C$DateInterval: public refcountable_php_classes<C$DateInterval>, private DummyVisitorMethods  {
   using DummyVisitorMethods::accept;

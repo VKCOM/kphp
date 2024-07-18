@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <unistd.h>
 
 #include "compiler/data/data_ptr.h"

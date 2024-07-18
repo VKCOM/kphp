@@ -29,6 +29,7 @@
 #include "common/wrappers/to_array.h"
 
 #include "runtime/array_functions.h"
+#include "runtime/allocator.h"
 #include "runtime/critical_section.h"
 #include "runtime/datetime/datetime_functions.h"
 #include "runtime/files.h"
@@ -515,11 +516,11 @@ static const EVP_MD *openssl_algo_to_evp_md(openssl_algo algo) {
 }
 
 static const char *ssl_get_error_string() {
-  static_SB.clean();
+  kphp_runtime_context.static_SB.clean();
   while (unsigned long error_code = ERR_get_error()) {
-    static_SB << "Error " << (int)error_code << ": [" << ERR_error_string(error_code, nullptr) << "]\n";
+    kphp_runtime_context.static_SB << "Error " << (int)error_code << ": [" << ERR_error_string(error_code, nullptr) << "]\n";
   }
-  return static_SB.c_str();
+  return kphp_runtime_context.static_SB.c_str();
 }
 
 bool f$openssl_sign(const string &data, string &signature, const string &priv_key_id, int64_t algo) {
@@ -601,7 +602,7 @@ Optional<string> f$openssl_random_pseudo_bytes(int64_t length) {
   if (length <= 0 || length > string::max_size()) {
     return false;
   }
-  string buffer(static_cast<string::size_type>(length), ' ');
+  string buffer{static_cast<string::size_type>(length), false};
   timeval tv{};
   gettimeofday(&tv, nullptr);
 
@@ -610,7 +611,7 @@ Optional<string> f$openssl_random_pseudo_bytes(int64_t length) {
   if (RAND_bytes(reinterpret_cast<unsigned char *>(buffer.buffer()), static_cast<int32_t>(length)) <= 0) {
     return false;
   }
-  return std::move(buffer);
+  return buffer;
 }
 
 

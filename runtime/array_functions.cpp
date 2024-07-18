@@ -257,3 +257,6 @@ string implode_string_vector(const string &s, const array<string> &a) {
   }
   return result.finish_append();
 }
+
+static_assert(sizeof(array<Unknown>) == SIZEOF_ARRAY_ANY, "sizeof(array) at runtime doesn't match compile-time");
+

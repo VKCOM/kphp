@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime/kphp_core.h"
+#include "runtime-core/runtime-core.h"
 
 string f$vk_utf8_to_win(const string &text, int64_t max_len = 0, bool exit_on_error = false);
 

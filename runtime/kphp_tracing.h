@@ -6,9 +6,10 @@
 
 #include <functional>
 
+#include "runtime-core/class-instance/refcountable-php-classes.h"
+#include "runtime-core/runtime-core.h"
 #include "runtime/critical_section.h"
-#include "runtime/kphp_core.h"
-#include "runtime/refcountable_php_classes.h"
+#include "runtime/dummy-visitor-methods.h"
 
 // for detailed comments about tracing in general, see kphp_tracing.cpp
 
@@ -109,7 +110,9 @@ void on_php_script_finish_terminated();
 
 // class KphpDiv
 
-struct C$KphpDiv : public refcountable_php_classes<C$KphpDiv> {
+struct C$KphpDiv : public refcountable_php_classes<C$KphpDiv>, private DummyVisitorMethods {
+  using DummyVisitorMethods::accept;
+
   double start_timestamp{0.0};  // all fields are inaccessible from PHP code
   double end_timestamp{0.0};    // (PHP code can only call f$KphpDiv$$ functions)
   int64_t trace_id{0};
@@ -129,7 +132,9 @@ int64_t f$KphpDiv$$assignTraceCtx(class_instance<C$KphpDiv> v$this, int64_t int1
 
 // class KphpSpan
 
-struct C$KphpSpan : public refcountable_php_classes<C$KphpSpan> {
+struct C$KphpSpan : public refcountable_php_classes<C$KphpSpan>, private DummyVisitorMethods {
+  using DummyVisitorMethods::accept;
+
   int span_id{0};
 
   C$KphpSpan() = default;

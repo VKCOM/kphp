@@ -73,7 +73,7 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set(CMAKE_INSTALL_PREFIX "/." CACHE PATH "install prefix" FORCE)
 endif()
 
-set(VK_INSTALL_DIR usr/share/vkontakte)
+set(VK_INSTALL_DIR /usr/share/vkontakte)
 set(INSTALL_KPHP_SOURCE ${VK_INSTALL_DIR}/kphp_source)
 
 set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})

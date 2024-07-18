@@ -8,7 +8,7 @@
 
 #include "common/tl/constants/common.h"
 
-#include "runtime/include.h"
+#include "runtime-core/include.h"
 #include "runtime/interface.h"
 #include "runtime/rpc.h"
 #include "runtime/tl/rpc_function.h"
@@ -45,7 +45,7 @@ using tl_storer_ptr = std::unique_ptr<tl_func_base>(*)(const mixed &);
 
 inline mixed tl_arr_get(const mixed &arr, const string &str_key, int64_t num_key, int64_t precomputed_hash = 0) {
   if (!arr.is_array()) {
-    CurrentProcessingQuery::get().raise_storing_error("Array expected, when trying to access field #%" PRIi64 " : %s", num_key, str_key.c_str());
+    CurrentTlQuery::get().raise_storing_error("Array expected, when trying to access field #%" PRIi64 " : %s", num_key, str_key.c_str());
     return {};
   }
   const mixed &num_v = arr.get_value(num_key);
@@ -56,7 +56,7 @@ inline mixed tl_arr_get(const mixed &arr, const string &str_key, int64_t num_key
   if (!str_v.is_null()) {
     return str_v;
   }
-  CurrentProcessingQuery::get().raise_storing_error("Field %s (#%" PRIi64 ") not found", str_key.c_str(), num_key);
+  CurrentTlQuery::get().raise_storing_error("Field %s (#%" PRIi64 ") not found", str_key.c_str(), num_key);
   return {};
 }
 
@@ -70,7 +70,7 @@ inline void fetch_magic_if_not_bare(unsigned int inner_magic, const char *error_
   if (inner_magic) {
     auto actual_magic = static_cast<unsigned int>(rpc_fetch_int());
     if (actual_magic != inner_magic) {
-      CurrentProcessingQuery::get().raise_fetching_error("%s\nExpected 0x%08x, but fetched 0x%08x", error_msg, inner_magic, actual_magic);
+      CurrentTlQuery::get().raise_fetching_error("%s\nExpected 0x%08x, but fetched 0x%08x", error_msg, inner_magic, actual_magic);
     }
   }
 }
@@ -164,10 +164,10 @@ struct t_Int {
     auto v32 = static_cast<int32_t>(v);
     if (unlikely(is_int32_overflow(v))) {
       if (fail_rpc_on_int32_overflow) {
-        CurrentProcessingQuery::get().raise_storing_error("Got int32 overflow with value '%" PRIi64 "'. Serialization will fail.", v);
+        CurrentTlQuery::get().raise_storing_error("Got int32 overflow with value '%" PRIi64 "'. Serialization will fail.", v);
       } else {
         php_warning("Got int32 overflow on storing %s: the value '%" PRIi64 "' will be casted to '%d'. Serialization will succeed.",
-                    CurrentProcessingQuery::get().get_current_tl_function_name().c_str(), v, v32);
+                    CurrentTlQuery::get().get_current_tl_function_name().c_str(), v, v32);
       }
     }
     return v32;
@@ -276,7 +276,7 @@ struct t_Bool {
       case TL_BOOL_TRUE:
         return true;
       default: {
-        CurrentProcessingQuery::get().raise_fetching_error("Incorrect magic of type Bool: 0x%08x", magic);
+        CurrentTlQuery::get().raise_fetching_error("Incorrect magic of type Bool: 0x%08x", magic);
         return -1;
       }
     }
@@ -292,7 +292,7 @@ struct t_Bool {
     CHECK_EXCEPTION(return);
     auto magic = static_cast<unsigned int>(rpc_fetch_int());
     if (magic != TL_BOOL_TRUE && magic != TL_BOOL_FALSE) {
-      CurrentProcessingQuery::get().raise_fetching_error("Incorrect magic of type Bool: 0x%08x", magic);
+      CurrentTlQuery::get().raise_fetching_error("Incorrect magic of type Bool: 0x%08x", magic);
       return;
     }
     out = magic == TL_BOOL_TRUE;
@@ -325,7 +325,7 @@ struct t_Vector {
 
   void store(const mixed &v) {
     if (!v.is_array()) {
-      CurrentProcessingQuery::get().raise_storing_error("Expected array, got %s", v.get_type_c_str());
+      CurrentTlQuery::get().raise_storing_error("Expected array, got %s", v.get_type_c_str());
       return;
     }
     const array<mixed> &a = v.as_array();
@@ -333,7 +333,7 @@ struct t_Vector {
     f$store_int(n);
     for (int64_t i = 0; i < n; ++i) {
       if (!a.isset(i)) {
-        CurrentProcessingQuery::get().raise_storing_error("Vector[%ld] not set", i);
+        CurrentTlQuery::get().raise_storing_error("Vector[%ld] not set", i);
         return;
       }
       store_magic_if_not_bare(inner_magic);
@@ -345,7 +345,7 @@ struct t_Vector {
     CHECK_EXCEPTION(return array<mixed>());
     int n = rpc_fetch_int();
     if (n < 0) {
-      CurrentProcessingQuery::get().raise_fetching_error("Vector size is negative");
+      CurrentTlQuery::get().raise_fetching_error("Vector size is negative");
       return {};
     }
     array<mixed> result(array_size(std::min(n, 10000), true));
@@ -372,7 +372,7 @@ struct t_Vector {
 
     for (int64_t i = 0; i < n; ++i) {
       if (!v.isset(i)) {
-        CurrentProcessingQuery::get().raise_storing_error("Vector[%" PRIi64 "] not set", i);
+        CurrentTlQuery::get().raise_storing_error("Vector[%" PRIi64 "] not set", i);
         return;
       }
       store_magic_if_not_bare(inner_magic);
@@ -384,7 +384,7 @@ struct t_Vector {
     CHECK_EXCEPTION(return);
     int n = rpc_fetch_int();
     if (n < 0) {
-      CurrentProcessingQuery::get().raise_fetching_error("Vector size is negative");
+      CurrentTlQuery::get().raise_fetching_error("Vector size is negative");
       return;
     }
     out.reserve(n, true);
@@ -422,7 +422,7 @@ struct t_Maybe {
       store_magic_if_not_bare(inner_magic);
       elem_state.store(tl_arr_get(v, tl_str_result, 1, tl_str_result_hash));
     } else {
-      CurrentProcessingQuery::get().raise_storing_error("Constructor %s of type Maybe was not found in TL scheme", name.c_str());
+      CurrentTlQuery::get().raise_storing_error("Constructor %s of type Maybe was not found in TL scheme", name.c_str());
       return;
     }
   }
@@ -439,7 +439,7 @@ struct t_Maybe {
         return elem_state.fetch();
       }
       default: {
-        CurrentProcessingQuery::get().raise_fetching_error("Incorrect magic of type Maybe: 0x%08x", magic);
+        CurrentTlQuery::get().raise_fetching_error("Incorrect magic of type Maybe: 0x%08x", magic);
         return -1;
       }
     }
@@ -478,7 +478,7 @@ struct t_Maybe {
         break;
       }
       default: {
-        CurrentProcessingQuery::get().raise_fetching_error("Incorrect magic of type Maybe: 0x%08x", magic);
+        CurrentTlQuery::get().raise_fetching_error("Incorrect magic of type Maybe: 0x%08x", magic);
         return;
       }
     }
@@ -494,7 +494,7 @@ struct tl_Dictionary_impl {
 
   void store(const mixed &v) {
     if (!v.is_array()) {
-      CurrentProcessingQuery::get().raise_storing_error("Expected array (dictionary), got something strange");
+      CurrentTlQuery::get().raise_storing_error("Expected array (dictionary), got something strange");
       return;
     }
     int64_t n = v.count();
@@ -511,7 +511,7 @@ struct tl_Dictionary_impl {
     array<mixed> result;
     int32_t n = rpc_fetch_int();
     if (n < 0) {
-      CurrentProcessingQuery::get().raise_fetching_error("Dictionary size is negative");
+      CurrentTlQuery::get().raise_fetching_error("Dictionary size is negative");
       return result;
     }
     for (int32_t i = 0; i < n; ++i) {
@@ -544,7 +544,7 @@ struct tl_Dictionary_impl {
     CHECK_EXCEPTION(return);
     int32_t n = rpc_fetch_int();
     if (n < 0) {
-      CurrentProcessingQuery::get().raise_fetching_error("Dictionary size is negative");
+      CurrentTlQuery::get().raise_fetching_error("Dictionary size is negative");
       return;
     }
     for (int32_t i = 0; i < n; ++i) {
@@ -579,13 +579,13 @@ struct t_Tuple {
 
   void store(const mixed &v) {
     if (!v.is_array()) {
-      CurrentProcessingQuery::get().raise_storing_error("Expected tuple, got %s", v.get_type_c_str());
+      CurrentTlQuery::get().raise_storing_error("Expected tuple, got %s", v.get_type_c_str());
       return;
     }
     const array<mixed> &a = v.as_array();
     for (int64_t i = 0; i < size; ++i) {
       if (!a.isset(i)) {
-        CurrentProcessingQuery::get().raise_storing_error("Tuple[%ld] not set", i);
+        CurrentTlQuery::get().raise_storing_error("Tuple[%ld] not set", i);
         return;
       }
       store_magic_if_not_bare(inner_magic);
@@ -613,7 +613,7 @@ struct t_Tuple {
 
     for (int64_t i = 0; i < size; ++i) {
       if (!v.isset(i)) {
-        CurrentProcessingQuery::get().raise_storing_error("Tuple[%ld] not set", i);
+        CurrentTlQuery::get().raise_storing_error("Tuple[%ld] not set", i);
         return;
       }
       store_magic_if_not_bare(inner_magic);
@@ -651,13 +651,13 @@ struct tl_array {
 
   void store(const mixed &v) {
     if (!v.is_array()) {
-      CurrentProcessingQuery::get().raise_storing_error("Expected array, got %s", v.get_type_c_str());
+      CurrentTlQuery::get().raise_storing_error("Expected array, got %s", v.get_type_c_str());
       return;
     }
     const array<mixed> &a = v.as_array();
     for (int64_t i = 0; i < size; ++i) {
       if (!a.isset(i)) {
-        CurrentProcessingQuery::get().raise_storing_error("Array[%ld] not set", i);
+        CurrentTlQuery::get().raise_storing_error("Array[%ld] not set", i);
         return;
       }
       store_magic_if_not_bare(inner_magic);
@@ -686,7 +686,7 @@ struct tl_array {
 
     for (int64_t i = 0; i < size; ++i) {
       if (!v.isset(i)) {
-        CurrentProcessingQuery::get().raise_storing_error("Array[%ld] not set", i);
+        CurrentTlQuery::get().raise_storing_error("Array[%ld] not set", i);
         return;
       }
       store_magic_if_not_bare(inner_magic);

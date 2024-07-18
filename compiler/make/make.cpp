@@ -22,6 +22,7 @@
 #include "compiler/make/make-runner.h"
 #include "compiler/make/objs-to-bin-target.h"
 #include "compiler/make/objs-to-obj-target.h"
+#include "compiler/make/objs-to-k2-component-target.h"
 #include "compiler/make/objs-to-static-lib-target.h"
 #include "compiler/stage.h"
 #include "compiler/threading/profiler.h"
@@ -96,6 +97,10 @@ public:
 
   Target *create_objs2static_lib_target(std::vector<File *> objs, File *lib) {
     return create_target(new Objs2StaticLibTarget, to_targets(std::move(objs)), lib);
+  }
+
+  Target *create_objs2k2_component_target(std::vector<File *> objs, File *lib) {
+    return create_target(new Objs2K2ComponentTarget, to_targets(std::move(objs)), lib);
   }
 
   bool make_target(File *bin, const std::string &build_message, int jobs_count) {
@@ -176,6 +181,7 @@ static long long get_imported_header_mtime(const std::string &header_path, const
   kphp_error(false, fmt_format("Can't file lib header file '{}'", header_path));
   return 0;
 }
+
 
 // prepare dir kphp_out/objs/pch_{flags} and make a target runtime-headers.h.gch inside it
 // in production, there will be two pch_ folders: with debug symbols and without them
@@ -388,7 +394,7 @@ static std::forward_list<Index> collect_imported_headers() {
   return imported_headers;
 }
 
-static std::vector<File *> run_pre_make(const CompilerSettings &settings, FILE *make_stats_file, MakeSetup &make, Index &obj_index, File &bin_file) {
+static std::vector<File *> run_pre_make(OutputMode output_mode, const CompilerSettings &settings, FILE *make_stats_file, MakeSetup &make, Index &obj_index, File &bin_file) {
   AutoProfiler profiler{get_profiler("Prepare Targets For Build")};
 
   G->del_extra_files();
@@ -405,12 +411,13 @@ static std::vector<File *> run_pre_make(const CompilerSettings &settings, FILE *
   }
 
   auto lib_header_dirs = collect_imported_headers();
-  return settings.is_static_lib_mode() ? kphp_make_static_lib_target(obj_index, G->get_index(), lib_header_dirs, make)
-                                       : kphp_make_target(obj_index, G->get_index(), lib_header_dirs, make);
+  return output_mode == OutputMode::lib ? kphp_make_static_lib_target(obj_index, G->get_index(), lib_header_dirs, make)
+                                        : kphp_make_target(obj_index, G->get_index(), lib_header_dirs, make);
 }
 
 void run_make() {
   const auto &settings = G->settings();
+  OutputMode output_mode = G->get_output_mode();
   FILE *make_stats_file = nullptr;
   if (!settings.stats_file.get().empty()) {
     make_stats_file = fopen(settings.stats_file.get().c_str(), "w");
@@ -425,11 +432,13 @@ void run_make() {
   kphp_assert(bin_file.read_stat() >= 0);
 
   MakeSetup make{make_stats_file, settings};
-  auto objs = run_pre_make(settings, make_stats_file, make, obj_index, bin_file);
+  auto objs = run_pre_make(output_mode, settings, make_stats_file, make, obj_index, bin_file);
   stage::die_if_global_errors();
 
-  if (settings.is_static_lib_mode()) {
+  if (output_mode == OutputMode::lib) {
     make.create_objs2static_lib_target(objs, &bin_file);
+  } else if (output_mode == OutputMode::k2_component) {
+    make.create_objs2k2_component_target(objs, &bin_file);
   } else {
     const std::string build_stage{"Compiling"};
     AutoProfiler profiler{get_profiler(build_stage)};
@@ -440,7 +449,7 @@ void run_make() {
   }
   stage::die_if_global_errors();
 
-  const std::string build_stage{settings.is_static_lib_mode() ? "Compiling" : "Linking"};
+  const std::string build_stage{output_mode == OutputMode::lib ? "Compiling" : "Linking"};
   AutoProfiler profiler{get_profiler(build_stage)};
 
   bool ok = make.make_target(&bin_file, build_stage, settings.jobs_count.get());
@@ -459,7 +468,7 @@ void run_make() {
   if (!settings.user_binary_path.get().empty()) {
     hard_link_or_copy(bin_file.path, settings.user_binary_path.get());
   }
-  if (settings.is_static_lib_mode()) {
+  if (output_mode == OutputMode::lib) {
     copy_static_lib_to_out_dir(std::move(bin_file));
   }
 }

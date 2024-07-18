@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
+#include "runtime-core/runtime-core.h"
 #include "runtime/array_functions.h"
-#include "runtime/kphp_core.h"
 
 class ArrayIntStringKeysCollision : public testing::Test {
 protected:

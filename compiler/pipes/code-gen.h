@@ -18,7 +18,7 @@ class CodeGenF final : public SyncPipeF<FunctionPtr, std::unique_ptr<CodeGenRoot
 
   void prepare_generate_function(FunctionPtr func);
   std::string calc_subdir_for_function(FunctionPtr func);
-  size_t calc_count_of_parts(size_t cnt_global_vars);
+  std::string shorten_occurence_of_class_in_file_name(ClassPtr occuring_class, const std::string &file_name);
 
 public:
   void execute(FunctionPtr function, DataStream<std::unique_ptr<CodeGenRootCmd>> &unused_os) final;

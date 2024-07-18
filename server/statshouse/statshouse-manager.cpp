@@ -57,7 +57,11 @@ StatsHouseManager::StatsHouseManager(const std::string &ip, int port)
   : client(ip, port){};
 
 void StatsHouseManager::set_common_tags() {
-  client.set_tag_cluster(vk::singleton<ServerConfig>::get().get_cluster_name());
+  const auto &config = vk::singleton<ServerConfig>::get();
+  if (!config.get_environment().empty()) {
+    client.set_environment(config.get_environment());
+  }
+  client.set_tag_cluster(config.get_cluster_name());
   client.set_tag_host(kdb_gethostname());
 }
 

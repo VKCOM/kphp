@@ -50,6 +50,7 @@
 #include "net/net-tcp-rpc-client.h"
 #include "net/net-tcp-rpc-server.h"
 
+#include "runtime/memory_resource_impl/memory_resource_stats.h"
 #include "runtime/confdata-global-manager.h"
 #include "runtime/instance-cache.h"
 #include "runtime/thread-pool.h"
@@ -960,7 +961,11 @@ std::string php_master_prepare_stats(bool add_worker_pids) {
     // engine_tag may be ended with "["
     oss << "kphp_version\t" << atoll(engine_tag) << "\n";
   }
-  oss << "cluster_name\t" << vk::singleton<ServerConfig>::get().get_cluster_name() << "\n"
+  const auto &config = vk::singleton<ServerConfig>::get();
+  if (!config.get_environment().empty()) {
+    oss << "environment\t" << config.get_environment() << "\n";
+  }
+  oss << "cluster_name\t" << config.get_cluster_name() << "\n"
       << "master_name\t" << vk::singleton<MasterName>::get().get_master_name() << "\n"
       << "min_worker_uptime\t" << min_uptime << "\n"
       << "max_worker_uptime\t" << max_uptime << "\n"
@@ -1144,7 +1149,7 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, stats_tag_kphp_server) {
   stats->add_gauge_stat("server.total_json_logs_count", std::get<0>(total_workers_json_count) + master_json_logs_count);
   stats->add_gauge_stat("server.total_json_traces_count", std::get<1>(total_workers_json_count));
 
-  instance_cache_get_memory_stats().write_stats_to(stats, "instance_cache");
+  write_memory_stats_to(instance_cache_get_memory_stats(), stats, "instance_cache");
   stats->add_gauge_stat("instance_cache.memory.buffer_swaps_ok", instance_cache_memory_swaps_ok);
   stats->add_gauge_stat("instance_cache.memory.buffer_swaps_fail", instance_cache_memory_swaps_fail);
 

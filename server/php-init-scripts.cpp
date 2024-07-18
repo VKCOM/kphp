@@ -10,6 +10,6 @@ script_t *get_script() {
   return main_script;
 }
 
-void set_script(void (*run)(), void (*clear)()) {
+void set_script(void (*run)(), void (*clear)(PhpScriptMutableGlobals &php_globals)) {
   main_script = new script_t{run, clear};
 }

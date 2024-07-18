@@ -24,6 +24,7 @@
 #include "runtime/array_functions.h"
 #include "runtime/bcmath.h"
 #include "runtime/confdata-functions.h"
+#include "runtime/context/runtime-context.h"
 #include "runtime/critical_section.h"
 #include "runtime/curl.h"
 #include "runtime/datetime/datetime_functions.h"
@@ -35,6 +36,7 @@
 #include "runtime/job-workers/server-functions.h"
 #include "runtime/json-processor-utils.h"
 #include "runtime/kphp-backtrace.h"
+#include "runtime/kphp_ml/kphp_ml_init.h"
 #include "runtime/kphp_tracing.h"
 #include "runtime/math_functions.h"
 #include "runtime/memcache.h"
@@ -373,29 +375,29 @@ void f$send_http_103_early_hints(const array<string> & headers) {
 void f$setrawcookie(const string &name, const string &value, int64_t expire, const string &path, const string &domain, bool secure, bool http_only) {
   string date = f$gmdate(HTTP_DATE, expire);
 
-  static_SB_spare.clean() << "Set-Cookie: " << name << '=';
+  kphp_runtime_context.static_SB_spare.clean() << "Set-Cookie: " << name << '=';
   if (value.empty()) {
-    static_SB_spare << "DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT";
+    kphp_runtime_context.static_SB_spare << "DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT";
   } else {
-    static_SB_spare << value;
+    kphp_runtime_context.static_SB_spare << value;
 
     if (expire != 0) {
-      static_SB_spare << "; expires=" << date;
+      kphp_runtime_context.static_SB_spare << "; expires=" << date;
     }
   }
   if (!path.empty()) {
-    static_SB_spare << "; path=" << path;
+    kphp_runtime_context.static_SB_spare << "; path=" << path;
   }
   if (!domain.empty()) {
-    static_SB_spare << "; domain=" << domain;
+    kphp_runtime_context.static_SB_spare << "; domain=" << domain;
   }
   if (secure) {
-    static_SB_spare << "; secure";
+    kphp_runtime_context.static_SB_spare << "; secure";
   }
   if (http_only) {
-    static_SB_spare << "; HttpOnly";
+    kphp_runtime_context.static_SB_spare << "; HttpOnly";
   }
-  header(static_SB_spare.c_str(), (int)static_SB_spare.size(), false);
+  header(kphp_runtime_context.static_SB_spare.c_str(), (int)kphp_runtime_context.static_SB_spare.size(), false);
 }
 
 void f$setcookie(const string &name, const string &value, int64_t expire, const string &path, const string &domain, bool secure, bool http_only) {
@@ -485,32 +487,32 @@ static inline const char *http_get_error_msg_text(int *code) {
 }
 
 static void set_content_length_header(int content_length) {
-  static_SB_spare.clean() << "Content-Length: " << content_length;
-  header(static_SB_spare.c_str(), (int)static_SB_spare.size());
+  kphp_runtime_context.static_SB_spare.clean() << "Content-Length: " << content_length;
+  header(kphp_runtime_context.static_SB_spare.c_str(), (int)kphp_runtime_context.static_SB_spare.size());
 }
 
-static const string_buffer *get_headers() {//can't use static_SB, returns pointer to static_SB_spare
+static const string_buffer *get_headers() {//can't use static_SB, returns pointer to kphp_runtime_context.static_SB_spare
   string date = f$gmdate(HTTP_DATE);
-  static_SB_spare.clean() << "Date: " << date;
-  header(static_SB_spare.c_str(), (int)static_SB_spare.size());
+  kphp_runtime_context.static_SB_spare.clean() << "Date: " << date;
+  header(kphp_runtime_context.static_SB_spare.c_str(), (int)kphp_runtime_context.static_SB_spare.size());
 
   php_assert (dl::query_num == header_last_query_num);
 
-  static_SB_spare.clean();
+  kphp_runtime_context.static_SB_spare.clean();
   if (!http_status_line.empty()) {
-    static_SB_spare << http_status_line << "\r\n";
+    kphp_runtime_context.static_SB_spare << http_status_line << "\r\n";
   } else {
     const char *message = http_get_error_msg_text(&http_return_code);
-    static_SB_spare << "HTTP/1.1 " << http_return_code << " " << message << "\r\n";
+    kphp_runtime_context.static_SB_spare << "HTTP/1.1 " << http_return_code << " " << message << "\r\n";
   }
 
   const array<string> *arr = headers;
   for (array<string>::const_iterator p = arr->begin(); p != arr->end(); ++p) {
-    static_SB_spare << p.get_value();
+    kphp_runtime_context.static_SB_spare << p.get_value();
   }
-  static_SB_spare << "\r\n";
+  kphp_runtime_context.static_SB_spare << "\r\n";
 
-  return &static_SB_spare;
+  return &kphp_runtime_context.static_SB_spare;
 }
 
 constexpr uint32_t MAX_SHUTDOWN_FUNCTIONS = 256;
@@ -570,7 +572,7 @@ void f$flush() {
   http_send_immediate_response(http_headers ? http_headers->buffer() : nullptr, http_headers ? http_headers->size() : 0,
                                http_body->buffer(), http_body->size());
   oub[ob_system_level].clean();
-  static_SB_spare.clean();
+  kphp_runtime_context.static_SB_spare.clean();
 }
 
 void f$fastcgi_finish_request(int64_t exit_code) {
@@ -594,7 +596,7 @@ void f$fastcgi_finish_request(int64_t exit_code) {
       write_safe(1, oub[ob_total_buffer].buffer(), oub[ob_total_buffer].size(), {});
 
       //TODO move to finish_script
-      free_runtime_environment();
+      free_runtime_environment(PhpScriptMutableGlobals::current().get_superglobals());
 
       break;
     }
@@ -765,14 +767,14 @@ double f$thread_pool_test_load(int64_t size, int64_t n, double a, double b) {
 }
 
 string f$long2ip(int64_t num) {
-  static_SB.clean().reserve(100);
+  kphp_runtime_context.static_SB.clean().reserve(100);
   for (int i = 3; i >= 0; i--) {
-    static_SB << ((num >> (i * 8)) & 255);
+    kphp_runtime_context.static_SB << ((num >> (i * 8)) & 255);
     if (i) {
-      static_SB.append_char('.');
+      kphp_runtime_context.static_SB.append_char('.');
     }
   }
-  return static_SB.str();
+  return kphp_runtime_context.static_SB.str();
 }
 
 Optional<array<string>> f$gethostbynamel(const string &name) {
@@ -865,8 +867,6 @@ bool f$get_magic_quotes_gpc() {
   return false;
 }
 
-string v$d$PHP_SAPI __attribute__ ((weak));
-
 
 static string php_sapi_name() {
   switch (query_type) {
@@ -889,22 +889,8 @@ static string php_sapi_name() {
 }
 
 string f$php_sapi_name() {
-  return v$d$PHP_SAPI;
+  return PhpScriptMutableGlobals::current().get_superglobals().v$d$PHP_SAPI;
 }
-
-
-mixed v$_SERVER  __attribute__ ((weak));
-mixed v$_GET     __attribute__ ((weak));
-mixed v$_POST    __attribute__ ((weak));
-mixed v$_FILES   __attribute__ ((weak));
-mixed v$_COOKIE  __attribute__ ((weak));
-mixed v$_REQUEST __attribute__ ((weak));
-mixed v$_ENV     __attribute__ ((weak));
-mixed v$_SESSION __attribute__ ((weak));
-mixed v$_KPHPSESSARR __attribute__ ((weak));
-
-mixed v$argc  __attribute__ ((weak));
-mixed v$argv  __attribute__ ((weak));
 
 static std::aligned_storage_t<sizeof(array<bool>), alignof(array<bool>)> uploaded_files_storage;
 static array<bool> *uploaded_files = reinterpret_cast<array<bool> *> (&uploaded_files_storage);
@@ -1177,7 +1163,7 @@ public:
   }
 };
 
-static int parse_multipart_one(post_reader &data, int i) {
+static int parse_multipart_one(post_reader &data, int i, mixed &v$_POST, mixed &v$_FILES) {
   string content_type("text/plain", 10);
   string name;
   string filename;
@@ -1353,7 +1339,7 @@ static int parse_multipart_one(post_reader &data, int i) {
   return i;
 }
 
-static bool parse_multipart(const char *post, int post_len, const string &boundary) {
+static bool parse_multipart(const char *post, int post_len, const string &boundary, mixed &v$_POST, mixed &v$_FILES) {
   static const int MAX_BOUNDARY_LENGTH = 70;
 
   if (boundary.empty() || (int)boundary.size() > MAX_BOUNDARY_LENGTH) {
@@ -1365,7 +1351,7 @@ static bool parse_multipart(const char *post, int post_len, const string &bounda
 
   for (int i = 0; i < post_len; i++) {
 //    fprintf (stderr, "!!!! %d\n", i);
-    i = parse_multipart_one(data, i);
+    i = parse_multipart_one(data, i, v$_POST, v$_FILES);
 
 //    fprintf (stderr, "???? %d\n", i);
     while (!data.is_boundary(i)) {
@@ -1462,18 +1448,18 @@ void arg_add(const char *value) {
   arg_vars->push_back(string(value));
 }
 
-static void reset_superglobals() {
+static void reset_superglobals(PhpScriptBuiltInSuperGlobals &superglobals) {
   dl::enter_critical_section();
 
-  hard_reset_var(v$_SERVER, array<mixed>());
-  hard_reset_var(v$_GET, array<mixed>());
-  hard_reset_var(v$_POST, array<mixed>());
-  hard_reset_var(v$_FILES, array<mixed>());
-  hard_reset_var(v$_REQUEST, array<mixed>());
-  hard_reset_var(v$_ENV, array<mixed>());
-  hard_reset_var(v$_COOKIE, array<mixed>());
-  hard_reset_var(v$_SESSION, array<mixed>());
-  hard_reset_var(v$_KPHPSESSARR, array<mixed>());
+  hard_reset_var(superglobals.v$_SERVER, array<mixed>());
+  hard_reset_var(superglobals.v$_GET, array<mixed>());
+  hard_reset_var(superglobals.v$_POST, array<mixed>());
+  hard_reset_var(superglobals.v$_ENV, array<mixed>());
+  hard_reset_var(superglobals.v$_FILES, array<mixed>());
+  hard_reset_var(superglobals.v$_COOKIE, array<mixed>());
+  hard_reset_var(superglobals.v$_REQUEST, array<mixed>());
+  hard_reset_var(superglobals.v$_SESSION, array<mixed>());
+  hard_reset_var(superglobals.v$_KPHPSESSARR, array<mixed>());
 
   dl::leave_critical_section();
 }
@@ -1481,7 +1467,7 @@ static void reset_superglobals() {
 // RFC link: https://tools.ietf.org/html/rfc2617#section-2
 // Header example:
 //  Authorization: Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==
-static void parse_http_authorization_header(const string &header_value) {
+static void parse_http_authorization_header(const string &header_value, mixed &v$_SERVER) {
   array<string> header_parts = explode(' ', header_value);
   if (header_parts.count() != 2) {
     return;
@@ -1504,7 +1490,7 @@ static void parse_http_authorization_header(const string &header_value) {
   v$_SERVER.set_value(string("AUTH_TYPE"), auth_scheme);
 }
 
-static void save_rpc_query_headers(const tl_query_header_t &header) {
+static void save_rpc_query_headers(const tl_query_header_t &header, mixed &v$_SERVER) {
   namespace flag = vk::tl::common::rpc_invoke_req_extra_flags;
 
   if (header.actor_id) {
@@ -1549,37 +1535,37 @@ static void save_rpc_query_headers(const tl_query_header_t &header) {
   }
 }
 
-static void init_superglobals_impl(const http_query_data &http_data, const rpc_query_data &rpc_data, const job_query_data &job_data) {
+static void init_superglobals_impl(const http_query_data &http_data, const rpc_query_data &rpc_data, const job_query_data &job_data, PhpScriptBuiltInSuperGlobals &superglobals) {
   rpc_parse(rpc_data.data.data(), rpc_data.data.size());
 
-  reset_superglobals();
+  reset_superglobals(superglobals);
 
   if (query_type == QUERY_TYPE_JOB) {
-    v$_SERVER.set_value(string("JOB_ID"), job_data.job_request->job_id);
+    superglobals.v$_SERVER.set_value(string("JOB_ID"), job_data.job_request->job_id);
     init_job_server_interface_lib(job_data);
   }
 
   string uri_str;
   if (http_data.uri_len) {
     uri_str.assign(http_data.uri, http_data.uri_len);
-    v$_SERVER.set_value(string("PHP_SELF"), uri_str);
-    v$_SERVER.set_value(string("SCRIPT_URL"), uri_str);
-    v$_SERVER.set_value(string("SCRIPT_NAME"), uri_str);
+    superglobals.v$_SERVER.set_value(string("PHP_SELF"), uri_str);
+    superglobals.v$_SERVER.set_value(string("SCRIPT_URL"), uri_str);
+    superglobals.v$_SERVER.set_value(string("SCRIPT_NAME"), uri_str);
   }
 
   string get_str;
   if (http_data.get_len) {
     get_str.assign(http_data.get, http_data.get_len);
-    f$parse_str(get_str, v$_GET);
+    f$parse_str(get_str, superglobals.v$_GET);
 
-    v$_SERVER.set_value(string("QUERY_STRING"), get_str);
+    superglobals.v$_SERVER.set_value(string("QUERY_STRING"), get_str);
   }
 
   if (http_data.uri) {
     if (http_data.get_len) {
-      v$_SERVER.set_value(string("REQUEST_URI"), (static_SB.clean() << uri_str << '?' << get_str).str());
+      superglobals.v$_SERVER.set_value(string("REQUEST_URI"), (kphp_runtime_context.static_SB.clean() << uri_str << '?' << get_str).str());
     } else {
-      v$_SERVER.set_value(string("REQUEST_URI"), uri_str);
+      superglobals.v$_SERVER.set_value(string("REQUEST_URI"), uri_str);
     }
   }
 
@@ -1627,13 +1613,13 @@ static void init_superglobals_impl(const http_query_data &http_data, const rpc_q
         for (int t = 0; t < (int)cookie.count(); t++) {
           array<string> cur_cookie = explode('=', f$trim(cookie[t]), 2);
           if ((int)cur_cookie.count() == 2) {
-            parse_str_set_value(v$_COOKIE, cur_cookie[0], f$urldecode(cur_cookie[1]));
+            parse_str_set_value(superglobals.v$_COOKIE, cur_cookie[0], f$urldecode(cur_cookie[1]));
           }
         }
       } else if (!strcmp(header_name.c_str(), "host")) {
-        v$_SERVER.set_value(string("SERVER_NAME"), header_value);
+        superglobals.v$_SERVER.set_value(string("SERVER_NAME"), header_value);
       } else if (!strcmp(header_name.c_str(), "authorization")) {
-        parse_http_authorization_header(header_value);
+        parse_http_authorization_header(header_value, superglobals.v$_SERVER);
       }
 
       if (!strcmp(header_name.c_str(), "content-type")) {
@@ -1662,7 +1648,7 @@ static void init_superglobals_impl(const http_query_data &http_data, const rpc_q
           key[2] = 'T';
           key[3] = 'P';
           key[4] = '_';
-          v$_SERVER.set_value(key, header_value);
+          superglobals.v$_SERVER.set_value(key, header_value);
         } else {
 //          fprintf (stderr, "%s : %s\n", header_name.c_str(), header_value.c_str());
         }
@@ -1673,12 +1659,12 @@ static void init_superglobals_impl(const http_query_data &http_data, const rpc_q
   string HTTP_X_REAL_SCHEME("HTTP_X_REAL_SCHEME", 18);
   string HTTP_X_REAL_HOST("HTTP_X_REAL_HOST", 16);
   string HTTP_X_REAL_REQUEST("HTTP_X_REAL_REQUEST", 19);
-  if (v$_SERVER.isset(HTTP_X_REAL_SCHEME) && v$_SERVER.isset(HTTP_X_REAL_HOST) && v$_SERVER.isset(HTTP_X_REAL_REQUEST)) {
-    string script_uri(v$_SERVER.get_value(HTTP_X_REAL_SCHEME).to_string());
+  if (superglobals.v$_SERVER.isset(HTTP_X_REAL_SCHEME) && superglobals.v$_SERVER.isset(HTTP_X_REAL_HOST) && superglobals.v$_SERVER.isset(HTTP_X_REAL_REQUEST)) {
+    string script_uri(superglobals.v$_SERVER.get_value(HTTP_X_REAL_SCHEME).to_string());
     script_uri.append("://", 3);
-    script_uri.append(v$_SERVER.get_value(HTTP_X_REAL_HOST).to_string());
-    script_uri.append(v$_SERVER.get_value(HTTP_X_REAL_REQUEST).to_string());
-    v$_SERVER.set_value(string("SCRIPT_URI"), script_uri);
+    script_uri.append(superglobals.v$_SERVER.get_value(HTTP_X_REAL_HOST).to_string());
+    script_uri.append(superglobals.v$_SERVER.get_value(HTTP_X_REAL_REQUEST).to_string());
+    superglobals.v$_SERVER.set_value(string("SCRIPT_URI"), script_uri);
   }
 
   if (http_data.post_len > 0) {
@@ -1690,7 +1676,7 @@ static void init_superglobals_impl(const http_query_data &http_data, const rpc_q
         raw_post_data.assign(http_data.post, http_data.post_len);
         dl::leave_critical_section();
 
-        f$parse_str(raw_post_data, v$_POST);
+        f$parse_str(raw_post_data, superglobals.v$_POST);
       }
     } else if (strstr(content_type_lower.c_str(), "multipart/form-data")) {
       const char *p = strstr(content_type_lower.c_str(), "boundary");
@@ -1706,7 +1692,7 @@ static void init_superglobals_impl(const http_query_data &http_data, const rpc_q
             end_p--;
           }
 //          fprintf (stderr, "!%s!\n", p);
-          is_parsed |= parse_multipart(http_data.post, http_data.post_len, string(p, static_cast<string::size_type>(end_p - p)));
+          is_parsed |= parse_multipart(http_data.post, http_data.post_len, string(p, static_cast<string::size_type>(end_p - p)), superglobals.v$_POST, superglobals.v$_FILES);
         }
       }
     } else {
@@ -1726,51 +1712,51 @@ static void init_superglobals_impl(const http_query_data &http_data, const rpc_q
       }
     }
 
-    v$_SERVER.set_value(string("CONTENT_TYPE"), content_type);
+    superglobals.v$_SERVER.set_value(string("CONTENT_TYPE"), content_type);
   }
 
   double cur_time = microtime();
-  v$_SERVER.set_value(string("GATEWAY_INTERFACE"), string("CGI/1.1"));
+  superglobals.v$_SERVER.set_value(string("GATEWAY_INTERFACE"), string("CGI/1.1"));
   if (http_data.ip) {
-    v$_SERVER.set_value(string("REMOTE_ADDR"), f$long2ip(static_cast<int>(http_data.ip)));
+    superglobals.v$_SERVER.set_value(string("REMOTE_ADDR"), f$long2ip(static_cast<int>(http_data.ip)));
   }
   if (http_data.port) {
-    v$_SERVER.set_value(string("REMOTE_PORT"), static_cast<int>(http_data.port));
+    superglobals.v$_SERVER.set_value(string("REMOTE_PORT"), static_cast<int>(http_data.port));
   }
   if (rpc_data.header.qid) {
-    v$_SERVER.set_value(string("RPC_REQUEST_ID"), f$strval(static_cast<int64_t>(rpc_data.header.qid)));
-    save_rpc_query_headers(rpc_data.header);
-    v$_SERVER.set_value(string("RPC_REMOTE_IP"), static_cast<int>(rpc_data.remote_pid.ip));
-    v$_SERVER.set_value(string("RPC_REMOTE_PORT"), static_cast<int>(rpc_data.remote_pid.port));
-    v$_SERVER.set_value(string("RPC_REMOTE_PID"), static_cast<int>(rpc_data.remote_pid.pid));
-    v$_SERVER.set_value(string("RPC_REMOTE_UTIME"), rpc_data.remote_pid.utime);
+    superglobals.v$_SERVER.set_value(string("RPC_REQUEST_ID"), f$strval(static_cast<int64_t>(rpc_data.header.qid)));
+    save_rpc_query_headers(rpc_data.header, superglobals.v$_SERVER);
+    superglobals.v$_SERVER.set_value(string("RPC_REMOTE_IP"), static_cast<int>(rpc_data.remote_pid.ip));
+    superglobals.v$_SERVER.set_value(string("RPC_REMOTE_PORT"), static_cast<int>(rpc_data.remote_pid.port));
+    superglobals.v$_SERVER.set_value(string("RPC_REMOTE_PID"), static_cast<int>(rpc_data.remote_pid.pid));
+    superglobals.v$_SERVER.set_value(string("RPC_REMOTE_UTIME"), rpc_data.remote_pid.utime);
   }
   is_head_query = false;
   if (http_data.request_method_len) {
-    v$_SERVER.set_value(string("REQUEST_METHOD"), string(http_data.request_method, http_data.request_method_len));
+    superglobals.v$_SERVER.set_value(string("REQUEST_METHOD"), string(http_data.request_method, http_data.request_method_len));
     if (http_data.request_method_len == 4 && !strncmp(http_data.request_method, "HEAD", http_data.request_method_len)) {
       is_head_query = true;
     }
   }
-  v$_SERVER.set_value(string("REQUEST_TIME"), int(cur_time));
-  v$_SERVER.set_value(string("REQUEST_TIME_FLOAT"), cur_time);
-  v$_SERVER.set_value(string("SERVER_PORT"), string("80"));
-  v$_SERVER.set_value(string("SERVER_PROTOCOL"), string("HTTP/1.1"));
-  v$_SERVER.set_value(string("SERVER_SIGNATURE"), (static_SB.clean() << "Apache/2.2.9 (Debian) PHP/5.2.6-1<<lenny10 with Suhosin-Patch Server at "
-                                                                         << v$_SERVER[string("SERVER_NAME")] << " Port 80").str());
-  v$_SERVER.set_value(string("SERVER_SOFTWARE"), string("Apache/2.2.9 (Debian) PHP/5.2.6-1+lenny10 with Suhosin-Patch"));
+  superglobals.v$_SERVER.set_value(string("REQUEST_TIME"), int(cur_time));
+  superglobals.v$_SERVER.set_value(string("REQUEST_TIME_FLOAT"), cur_time);
+  superglobals.v$_SERVER.set_value(string("SERVER_PORT"), string("80"));
+  superglobals.v$_SERVER.set_value(string("SERVER_PROTOCOL"), string("HTTP/1.1"));
+  superglobals.v$_SERVER.set_value(string("SERVER_SIGNATURE"), (kphp_runtime_context.static_SB.clean() << "Apache/2.2.9 (Debian) PHP/5.2.6-1<<lenny10 with Suhosin-Patch Server at "
+                                                                         << superglobals.v$_SERVER[string("SERVER_NAME")] << " Port 80").str());
+  superglobals.v$_SERVER.set_value(string("SERVER_SOFTWARE"), string("Apache/2.2.9 (Debian) PHP/5.2.6-1+lenny10 with Suhosin-Patch"));
 
   if (environ != nullptr) {
     for (int i = 0; environ[i] != nullptr; i++) {
       const char *s = strchr(environ[i], '=');
       php_assert (s != nullptr);
-      v$_ENV.set_value(string(environ[i], static_cast<string::size_type>(s - environ[i])), string(s + 1));
+      superglobals.v$_ENV.set_value(string(environ[i], static_cast<string::size_type>(s - environ[i])), string(s + 1));
     }
   }
 
-  v$_REQUEST.as_array("") += v$_GET.to_array();
-  v$_REQUEST.as_array("") += v$_POST.to_array();
-  v$_REQUEST.as_array("") += v$_COOKIE.to_array();
+  superglobals.v$_REQUEST.as_array("") += superglobals.v$_GET.to_array();
+  superglobals.v$_REQUEST.as_array("") += superglobals.v$_POST.to_array();
+  superglobals.v$_REQUEST.as_array("") += superglobals.v$_COOKIE.to_array();
 
   if (http_data.uri != nullptr) {
     if (http_data.keep_alive) {
@@ -1785,45 +1771,45 @@ static void init_superglobals_impl(const http_query_data &http_data, const rpc_q
       array<mixed> argv_array(array_size(1, true));
       argv_array.push_back(get_str);
 
-      v$argv = argv_array;
-      v$argc = 1;
+      superglobals.v$argv = argv_array;
+      superglobals.v$argc = 1;
     } else {
-      v$argv = array<mixed>();
-      v$argc = 0;
+      superglobals.v$argv = array<mixed>();
+      superglobals.v$argc = 0;
     }
   } else {
-    v$argc = int64_t{arg_vars->count()};
-    v$argv = *arg_vars;
+    superglobals.v$argc = int64_t{arg_vars->count()};
+    superglobals.v$argv = *arg_vars;
   }
 
-  v$_SERVER.set_value(string("argv"), v$argv);
-  v$_SERVER.set_value(string("argc"), v$argc);
+  superglobals.v$_SERVER.set_value(string("argv"), superglobals.v$argv);
+  superglobals.v$_SERVER.set_value(string("argc"), superglobals.v$argc);
 
-  v$d$PHP_SAPI = php_sapi_name();
+  superglobals.v$d$PHP_SAPI = php_sapi_name();
 }
 
 static http_query_data empty_http_data;
 static rpc_query_data empty_rpc_data;
 static job_query_data empty_job_data;
 
-void init_superglobals(const php_query_data_t &data) {
+void init_superglobals(const php_query_data_t &data, PhpScriptBuiltInSuperGlobals &superglobals) {
   // init superglobals depending on the request type
   std::visit(overloaded{
-    [](const rpc_query_data &rpc_data) {
+    [&superglobals](const rpc_query_data &rpc_data) {
       query_type = QUERY_TYPE_RPC;
-      init_superglobals_impl(empty_http_data, rpc_data, empty_job_data);
+      init_superglobals_impl(empty_http_data, rpc_data, empty_job_data, superglobals);
     },
-    [](const http_query_data &http_data) {
+    [&superglobals](const http_query_data &http_data) {
       query_type = QUERY_TYPE_HTTP;
-      init_superglobals_impl(http_data, empty_rpc_data, empty_job_data);
+      init_superglobals_impl(http_data, empty_rpc_data, empty_job_data, superglobals);
     },
-    [](const job_query_data &job_data) {
+    [&superglobals](const job_query_data &job_data) {
       query_type = QUERY_TYPE_JOB;
-      init_superglobals_impl(empty_http_data, empty_rpc_data, job_data);
+      init_superglobals_impl(empty_http_data, empty_rpc_data, job_data, superglobals);
     },
-    [](const null_query_data &) {
+    [&superglobals](const null_query_data &) {
       query_type = QUERY_TYPE_CONSOLE;
-      init_superglobals_impl(empty_http_data, empty_rpc_data, empty_job_data);
+      init_superglobals_impl(empty_http_data, empty_rpc_data, empty_job_data, superglobals);
     }
   }, data);
 }
@@ -2274,17 +2260,17 @@ static void global_init_interface_lib() {
   register_stream_functions(&php_stream_functions, false);
 }
 
-static void reset_global_interface_vars() {
+static void reset_global_interface_vars(PhpScriptBuiltInSuperGlobals &superglobals) {
   dl::enter_critical_section();
 
   hard_reset_var(http_status_line);
 
   mixed::reset_empty_values();
 
-  hard_reset_var(v$argc);
-  hard_reset_var(v$argv);
+  hard_reset_var(superglobals.v$argc);
+  hard_reset_var(superglobals.v$argv);
 
-  hard_reset_var(v$d$PHP_SAPI);
+  hard_reset_var(superglobals.v$d$PHP_SAPI);
 
   hard_reset_var(raw_post_data);
 
@@ -2323,8 +2309,8 @@ static void init_interface_lib() {
   php_assert (http_return_code == 200);
   header("Server: nginx/0.3.33", 20);
   string date = f$gmdate(HTTP_DATE);
-  static_SB_spare.clean() << "Date: " << date;
-  header(static_SB_spare.c_str(), (int)static_SB_spare.size());
+  kphp_runtime_context.static_SB_spare.clean() << "Date: " << date;
+  header(kphp_runtime_context.static_SB_spare.c_str(), (int)kphp_runtime_context.static_SB_spare.size());
   if (is_utf8_enabled) {
     header("Content-Type: text/html; charset=utf-8", 38);
   } else {
@@ -2348,8 +2334,6 @@ static void init_runtime_libs() {
   init_math_functions();
   kphp_tracing::init_tracing_lib();
   init_slot_factories();
-
-  init_string_buffer_lib(static_cast<int>(static_buffer_length_limit));
 
   init_interface_lib();
 }
@@ -2402,7 +2386,6 @@ static void free_runtime_libs() {
   free_instance_cache_lib();
   free_kphp_backtrace();
 
-  free_migration_php8();
   free_use_updated_gmmktime();
   free_detect_incorrect_encoding_names();
 
@@ -2440,18 +2423,18 @@ void global_init_script_allocator() {
   dl::global_init_script_allocator();
 }
 
-void init_runtime_environment(const php_query_data_t &data, void *mem, size_t script_mem_size, size_t oom_handling_mem_size) {
-  dl::init_script_allocator(mem, script_mem_size, oom_handling_mem_size);
-  reset_global_interface_vars();
+void init_runtime_environment(const php_query_data_t &data, PhpScriptBuiltInSuperGlobals &superglobals, void *mem, size_t script_mem_size, size_t oom_handling_mem_size) {
+  kphp_runtime_context.init(mem, script_mem_size, oom_handling_mem_size);
+  reset_global_interface_vars(superglobals);
   init_runtime_libs();
-  init_superglobals(data);
+  init_superglobals(data, superglobals);
 }
 
-void free_runtime_environment() {
-  reset_superglobals();
+void free_runtime_environment(PhpScriptBuiltInSuperGlobals &superglobals) {
+  reset_superglobals(superglobals);
   free_runtime_libs();
-  reset_global_interface_vars();
-  dl::free_script_allocator();
+  reset_global_interface_vars(superglobals);
+  kphp_runtime_context.free();
 }
 
 void worker_global_init(WorkerType worker_type) noexcept {
@@ -2459,6 +2442,8 @@ void worker_global_init(WorkerType worker_type) noexcept {
   vk::singleton<JsonLogger>::get().reset_json_logs_count();
   worker_global_init_handlers(worker_type);
   vk::singleton<ThreadPool>::get().init();
+  init_kphp_ml_runtime_in_worker();
+  init_php_scripts_in_each_worker(PhpScriptMutableGlobals::current());
 }
 
 void read_engine_tag(const char *file_name) {
