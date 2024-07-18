@@ -343,8 +343,7 @@ void CompilerSettings::init() {
 #endif
 
 #ifdef ONIG_LIB_DIR
-  external_static_libs.emplace_back("onig");
-  ld_flags.value_ += " -lonig";
+  ld_flags.value_ += " -L " ONIG_LIB_DIR " -lonig";
 #endif
 
 #ifdef KPHP_H3_LIB_DIR

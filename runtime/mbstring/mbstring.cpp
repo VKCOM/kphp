@@ -55,10 +55,9 @@ static bool is_detect_incorrect_encoding_names_warning{false};
 #ifdef MBFL
 extern "C" {
 	#include <kphp/libmbfl/mbfl/mbfilter.h>
-#include <kphp/libmbfl/mbfl/mbfilter_wchar.h>
+  #include <kphp/libmbfl/mbfl/mbfilter_wchar.h>
+  #include <oniguruma.h>
 }
-
-#include <oniguruma.h>
 
 #define KPHP_UNICODE_CASE_UPPER        0
 #define KPHP_UNICODE_CASE_LOWER        1
