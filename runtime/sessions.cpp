@@ -204,7 +204,7 @@ static bool session_open() {
 	bool is_new = (!f$file_exists(get_sparam(S_PATH).to_string())) ? 1 : 0;
 	
 	// the interprocessor lock does not work
-	set_sparam(S_FD, open_safe(get_sparam(S_PATH).to_string().c_str(), O_RDWR | O_CREAT, 0777));
+	set_sparam(S_FD, open_safe(get_sparam(S_PATH).to_string().c_str(), O_RDWR | O_CREAT, 0666));
 
 	if (get_sparam(S_FD).to_int() < 0) {
 		php_warning("Failed to open the file %s", get_sparam(S_PATH).to_string().c_str());
@@ -230,6 +230,9 @@ static bool session_open() {
 	int ret_gc_lifetime = get_tag(get_sparam(S_PATH).to_string().c_str(), S_LIFETIME, NULL, 0);
 	if (is_new or ret_ctime < 0) {
 		// add the creation data to metadata of file
+		int is_session = 1; // to filter sessions from other files in session_gc()
+		set_tag(get_sparam(S_PATH).to_string().c_str(), "is_session", &is_session, sizeof(int));
+
 		int ctime = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 		set_tag(get_sparam(S_PATH).to_string().c_str(), S_CTIME, &ctime, sizeof(int));
 	}
@@ -297,7 +300,7 @@ static bool session_write() {
 	lock.l_pid = getpid();
 	fcntl(get_sparam(S_FD).to_int(), F_SETLKW, &lock);
 	close_safe(get_sparam(S_FD).to_int());
-	set_sparam(S_FD, open_safe(get_sparam(S_PATH).to_string().c_str(), O_RDWR, 0777));
+	set_sparam(S_FD, open_safe(get_sparam(S_PATH).to_string().c_str(), O_RDWR, 0666));
 	lock.l_type = F_WRLCK;
 	fcntl(get_sparam(S_FD).to_int(), F_SETLKW, &lock);
 
@@ -377,6 +380,9 @@ static int session_gc(const bool &immediate = false) {
 		return -1;
 	}
 
+	// reset the fd before changing the session directory
+	close_safe(get_sparam(S_FD).to_int());
+
 	struct flock lock;
 	lock.l_type = F_UNLCK;
 	lock.l_whence = SEEK_SET;
@@ -387,16 +393,23 @@ static int session_gc(const bool &immediate = false) {
 	int result = 0;
 	for (auto s = s_list.as_array().begin(); s != s_list.as_array().end(); ++s) {
 		string path = s.get_value().to_string();
-		if (path == string(".") or path == string("..")) {
+		if (path[0] == '.') {
 			continue;
 		}
 		path = string(get_sparam(S_DIR).to_string()).append(path);
 		if (path == get_sparam(S_PATH).to_string()) {
 			continue;
 		}
+
+		{ // filter session files from others
+			int is_session, ret_is_session = get_tag(path.c_str(), "is_session", &is_session, sizeof(int));
+			if (ret_is_session < 0) {
+				continue;
+			}
+		}
 		
 		int fd;
-		if ((fd = open(path.c_str(), O_RDWR, 0777)) < 0) {
+		if ((fd = open_safe(path.c_str(), O_RDWR, 0666)) < 0) {
 			php_warning("Failed to open file on path: %s", path.c_str());
 			continue;
 		}
@@ -410,6 +423,17 @@ static int session_gc(const bool &immediate = false) {
 			++result;
 		}
 	}
+
+	lock.l_type = F_WRLCK;
+	lock.l_pid = getpid();
+	set_sparam(S_FD, open_safe(get_sparam(S_PATH).to_string().c_str(), O_RDWR, 0666));
+	if (get_sparam(S_FD).to_int() < 0) {
+		php_warning("Failed to reopen the file %s after session_gc()", get_sparam(S_PATH).to_string().c_str());
+		session_abort();
+	} else {
+		fcntl(get_sparam(S_FD).to_int(), F_SETLKW, &lock);
+	}
+
 	return result;
 }
 
