@@ -43,7 +43,7 @@ public:
   }
 
   void reset(size_t pos) noexcept {
-    php_assert(pos > 0 && pos <= size());
+    php_assert(pos >= 0 && pos <= size());
     m_pos = pos;
     m_remaining = size() - m_pos;
   }

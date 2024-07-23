@@ -7,7 +7,6 @@
 #include <array>
 #include <cassert>
 #include <cinttypes>
-#include <tuple>
 #include <errno.h>
 #include <execinfo.h>
 #include <fcntl.h>
@@ -50,9 +49,9 @@ double dl_time() {
 }
 
 void dl_print_backtrace(void **trace, int trace_size) {
-  std::ignore = write (2, "\n------- Stack Backtrace -------\n", 33);
+  write (2, "\n------- Stack Backtrace -------\n", 33);
   backtrace_symbols_fd (trace, trace_size, 2);
-  std::ignore = write (2, "-------------------------------\n", 32);
+  write (2, "-------------------------------\n", 32);
 }
 
 void dl_print_backtrace() {
@@ -72,7 +71,7 @@ void dl_print_backtrace_gdb() {
     name_buf[res] = 0;
     int child_pid = fork();
     if (child_pid < 0) {
-      std::ignore = write (2, "Can't fork() to run gdb\n", 24);
+      write (2, "Can't fork() to run gdb\n", 24);
       _exit (0);
     }
     if (!child_pid) {
@@ -84,7 +83,7 @@ void dl_print_backtrace_gdb() {
       waitpid (child_pid, nullptr, 0);
     }
   } else {
-    std::ignore = write (2, "can't get name of executable file to pass to gdb\n", 49);
+    write (2, "can't get name of executable file to pass to gdb\n", 49);
   }
 }
 

@@ -106,12 +106,7 @@ endif()
 add_compile_options(-Werror -Wall -Wextra -Wunused-function -Wfloat-conversion -Wno-sign-compare
                     -Wuninitialized -Wno-redundant-move -Wno-missing-field-initializers)
 if(COMPILE_RUNTIME_LIGHT)
-    if(COMPILER_GCC)
-        add_compile_options(-Wno-vla-cxx-extension)
-    elseif(COMPILER_CLANG)
-        add_compile_options(-Wvla-cxx-extension)
-    endif()
-    add_compile_options(-Wno-dangling-reference)
+    add_compile_options(-Wno-vla-cxx-extension)
 endif()
 
 if(NOT APPLE)
@@ -131,6 +126,7 @@ add_compile_options(-fdebug-prefix-map="${CMAKE_BINARY_DIR}=${CMAKE_SOURCE_DIR}"
 if(COMPILE_RUNTIME_LIGHT)
     get_directory_property(TRY_COMPILE_COMPILE_OPTIONS COMPILE_OPTIONS)
     string (REPLACE ";" " " TRY_COMPILE_COMPILE_OPTIONS "${TRY_COMPILE_COMPILE_OPTIONS}")
+    cmake_print_variables(TRY_COMPILE_COMPILE_OPTIONS)
     file(WRITE "${PROJECT_BINARY_DIR}/check_coroutine_include.cpp"
             "#include<coroutine>\n"
             "int main() {}\n")

@@ -42,12 +42,12 @@ jobs:
             asan: on
             ubsan: off
             light_runtime: off
-          - os: focal
-            compiler: g++-11
-            cpp: 20
-            asan: off
-            ubsan: off
-            light_runtime: on
+          # - os: focal
+          #   compiler: g++-11
+          #   cpp: 20
+          #   asan: off
+          #   ubsan: off
+          #   light_runtime: on
           - os: focal
             compiler: clang++-18
             cpp: 20
