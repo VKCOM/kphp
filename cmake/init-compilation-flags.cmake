@@ -107,6 +107,9 @@ add_compile_options(-Werror -Wall -Wextra -Wunused-function -Wfloat-conversion -
                     -Wuninitialized -Wno-redundant-move -Wno-missing-field-initializers)
 if(COMPILE_RUNTIME_LIGHT)
     add_compile_options(-Wno-vla-cxx-extension)
+    if(COMPILER_GCC)
+        add_compile_options(-Wno-dangling-pointer)
+    endif()
 endif()
 
 if(NOT APPLE)
