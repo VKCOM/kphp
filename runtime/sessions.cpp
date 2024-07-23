@@ -56,6 +56,7 @@ constexpr static auto C_LIFETIME = "cookie_lifetime";
 constexpr static auto C_DOMAIN = "cookie_domain";
 constexpr static auto C_SECURE = "cookie_secure";
 constexpr static auto C_HTTPONLY = "cookie_httponly";
+constexpr static auto C_SAMESITE = "cookie_samesite";
 
 // TO-DO: reconsider it
 const auto skeys = vk::to_array<std::pair<const char *, const mixed>>({
@@ -69,7 +70,8 @@ const auto skeys = vk::to_array<std::pair<const char *, const mixed>>({
 	{C_LIFETIME, 0},
 	{C_DOMAIN, string("")},
 	{C_SECURE, false},
-	{C_HTTPONLY, false}
+	{C_HTTPONLY, false},
+	{C_SAMESITE, string("")}
 });
 
 static int set_tag(const char *path, const char *name, void *value, const size_t size) {
@@ -107,12 +109,14 @@ static array<mixed> session_get_cookie_params() {
 		result.emplace_value(string(C_DOMAIN), skeys[8].second);
 		result.emplace_value(string(C_SECURE), skeys[9].second);
 		result.emplace_value(string(C_HTTPONLY), skeys[10].second);
+		result.emplace_value(string(C_SAMESITE), skeys[11].second);
 	} else {
 		result.emplace_value(string(C_PATH), get_sparam(C_PATH));
 		result.emplace_value(string(C_LIFETIME), get_sparam(C_LIFETIME));
 		result.emplace_value(string(C_DOMAIN), get_sparam(C_DOMAIN));
 		result.emplace_value(string(C_SECURE), get_sparam(C_SECURE));
 		result.emplace_value(string(C_HTTPONLY), get_sparam(C_HTTPONLY));
+		result.emplace_value(string(C_SAMESITE), get_sparam(C_SAMESITE));
 	}
 	return result;
 }
@@ -297,14 +301,19 @@ static bool session_send_cookie() {
 	if (expire > 0) {
 		expire += std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 	}
-	string domain = get_sparam(C_DOMAIN).to_string();
-	bool secure = get_sparam(C_SECURE).to_bool();
-	bool httponly = get_sparam(C_HTTPONLY).to_bool();
-	string sid = f$urlencode(get_sparam(S_ID).to_string());
-	string path = get_sparam(C_PATH).to_string();
-	string name = get_sparam(S_NAME).to_string();
 
-	f$setcookie(name, sid, expire, path, domain, secure, httponly);
+	array<mixed> cookie_options;
+	cookie_options.emplace_value(string("expires"), expire);
+	cookie_options.emplace_value(string("path"), get_sparam(C_PATH).to_string());
+	cookie_options.emplace_value(string("domain"), get_sparam(C_DOMAIN).to_string());
+	cookie_options.emplace_value(string("secure"), get_sparam(C_SECURE).to_bool());
+	cookie_options.emplace_value(string("httponly"), get_sparam(C_HTTPONLY).to_bool());
+	cookie_options.emplace_value(string("samesite"), get_sparam(S_NAME).to_string());
+
+	string name = get_sparam(S_NAME).to_string();
+	string sid = f$urlencode(get_sparam(S_ID).to_string());
+
+	setrawcookie_array(name, sid, cookie_options);
 	return true;
 }
 
@@ -440,7 +449,7 @@ static bool session_start() {
 		if (php_globals.get_superglobals().v$_COOKIE.as_array().isset(get_sparam(S_NAME).to_string())) {
 			id = php_globals.get_superglobals().v$_COOKIE.as_array().get_value(get_sparam(S_NAME).to_string()).to_string();
 		}
-
+		
 		if (id.to_bool() && !id.to_string().empty()) {
 			if (!strpbrk(id.to_string().c_str(), "\r\n\t <>'\"\\")) {
 				if (f$file_exists(string(get_sparam(S_DIR).to_string()).append(id.to_string()))) {

@@ -56,6 +56,8 @@ void f$setcookie(const string &name, const string &value, int64_t expire = 0, co
 
 void f$setrawcookie(const string &name, const string &value, int64_t expire = 0, const string &path = string(), const string &domain = string(), bool secure = false, bool http_only = false);
 
+void setrawcookie_array(const string &name, const string &value, const array<mixed> &options = array<mixed>());
+
 int64_t f$ignore_user_abort(Optional<bool> enable = Optional<bool>());
 
 enum class ShutdownType {

@@ -372,7 +372,7 @@ void f$send_http_103_early_hints(const array<string> & headers) {
   http_send_immediate_response(header.c_str(), header.size(), "\r\n", 2);
 }
 
-void f$setrawcookie(const string &name, const string &value, int64_t expire, const string &path, const string &domain, bool secure, bool http_only) {
+void setrawcookie_impl(const string &name, const string &value, int64_t expire, const string &path, const string &domain, bool secure, bool http_only, const string &samesite) {
   string date = f$gmdate(HTTP_DATE, expire);
 
   kphp_runtime_context.static_SB_spare.clean() << "Set-Cookie: " << name << '=';
@@ -397,7 +397,43 @@ void f$setrawcookie(const string &name, const string &value, int64_t expire, con
   if (http_only) {
     kphp_runtime_context.static_SB_spare << "; HttpOnly";
   }
+  if (!samesite.empty()) {
+    kphp_runtime_context.static_SB_spare << "; SameSite=" << samesite;
+  }
   header(kphp_runtime_context.static_SB_spare.c_str(), (int)kphp_runtime_context.static_SB_spare.size(), false);
+}
+
+void setrawcookie_array(const string &name, const string &value, const array<mixed> &options) {
+  int64_t expire = 0;
+  string path = string();
+  string domain = string();
+  string samesite = string();
+  bool secure = false, http_only = false;
+
+  for (auto it = options.begin(); it != options.end(); ++it) {
+    string key = it.get_key().to_string();
+    if (key == string("expires")) {
+      expire = it.get_value().to_int();
+    } else if (key == string("path")) {
+      path = it.get_value().to_string();
+    } else if (key == string("domain")) {
+      domain = it.get_value().to_string();
+    } else if (key == string("samesite")) {
+      samesite = it.get_value().to_string();
+    } else if (key == string("secure")) {
+      secure = it.get_value().to_bool();
+    } else if (key == string("httponly")) {
+      http_only = it.get_value().to_bool();
+    } else {
+      php_warning("setcookie(): option \"%s\" is invalid", it.get_key().to_string().c_str());
+      return;
+    }
+  }
+  setrawcookie_impl(name, value, expire, path, domain, secure, http_only, samesite);
+}
+
+void f$setrawcookie(const string &name, const string &value, int64_t expire, const string &path, const string &domain, bool secure, bool http_only) {
+  setrawcookie_impl(name, value, expire, path, domain, secure, http_only, string(""));
 }
 
 void f$setcookie(const string &name, const string &value, int64_t expire, const string &path, const string &domain, bool secure, bool http_only) {
