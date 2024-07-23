@@ -111,6 +111,7 @@ if(COMPILE_RUNTIME_LIGHT)
     elseif(COMPILER_CLANG)
         add_compile_options(-Wvla-cxx-extension)
     endif()
+    add_compile_options(-Wno-dangling-reference)
 endif()
 
 if(NOT APPLE)
