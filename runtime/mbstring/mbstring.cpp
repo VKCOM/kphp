@@ -80,6 +80,10 @@ static const char * DEFAULT_ENCODING = "UTF-8";
 int current_filter_illegal_mode = MBFL_OUTPUTFILTER_ILLEGAL_MODE_CHAR;
 int current_filter_illegal_substchar = '?';
 
+static inline array<string> get_supported_encodings();
+
+static const array<string> supported_encodings_list = get_supported_encodings();
+
 static inline int mbfl_is_error(size_t len) {
   return len >= (size_t) -16;
 }
@@ -201,6 +205,84 @@ static const mbfl_encoding *mb_get_encoding(const Optional<string> &enc_name) {
   return mbfl_name2encoding(DEFAULT_ENCODING); // change if we are going to use current encoding
 }
 
+array<string> f$mb_encoding_aliases(const string &encoding) {
+  const mbfl_encoding *enc = mb_get_encoding(encoding);
+  if (!enc) {
+    php_critical_error("encoding \"%s\" isn't supported in mb_encoding_aliases", encoding.c_str());
+  }
+
+  array<string> result;
+  if (enc->aliases) {
+    const char *(*aliases)[] = enc->aliases;
+    for (int i = 0; (*aliases)[i]; ++i) {
+      result.push_back(string((*aliases)[i]));
+    }
+  }
+  return result;
+}
+
+static inline array<string> get_supported_encodings() {
+  array<string> result;
+  for (const mbfl_encoding **encodings = mbfl_get_supported_encodings(); *encodings; ++encodings) {
+    result.push_back(string((*encodings)->name));
+  }
+  return result;
+}
+
+array<string> f$mb_list_encodings() {
+  return supported_encodings_list;
+}
+
+Optional<string> f$mb_preferred_mime_name(const string &enc_name) {
+  const mbfl_encoding *encoding;
+  encoding = mbfl_name2encoding(enc_name.c_str());
+  if (!encoding) {
+    php_critical_error("encoding must be a valid encoding, \"%s\" given", enc_name.c_str());
+  }
+  const char *preferred_name = (encoding->mime_name && encoding->mime_name[0] != '\0') ? encoding->mime_name : NULL;
+  if (preferred_name == NULL || *preferred_name == '\0') {
+    php_warning("No MIME preferred name corresponding to \"%s\"", enc_name.c_str());
+    return false;
+  } else {
+    return string(preferred_name);
+  }
+}
+
+array<string> f$mb_str_split(const string &str, const int64_t &length, const Optional<string> &encoding){
+  if (length <= 0) {
+    php_critical_error("length argument must be greater than 0");
+  } else if (length > INT_MAX / 4) {
+    php_critical_error("length argument is too large");
+  }
+
+  const mbfl_encoding *enc = mb_get_encoding(encoding);
+  if (!enc) {
+    php_critical_error("encoding \"%s\" isn't supported in mb_strlen", encoding.val().c_str());
+  }
+
+  array<string> result = array<string>();
+
+  if (!str.size()) {
+    return result;
+  }
+
+  mbfl_string _string;
+  mbfl_string_init(&_string);
+  _string.no_encoding = enc->no_encoding;
+  _string.len = str.size();
+  _string.val = (unsigned char*)str.c_str();
+
+  size_t n = mbfl_strlen(&_string);     // take into account the number of bytes in the encoding character
+  size_t char_length = _string.len / n; // get the number of bytes of a character
+  size_t chunk_length = char_length * (size_t)length;
+
+  for (auto i = 0; i < _string.len; i += chunk_length) {
+    result.push_back(str.substr(i, chunk_length));
+    // result.push_back(string(reinterpret_cast<const char*>(_string.val) + i, chunk_length));
+  }
+  return result;
+}
+
 int64_t f$mb_strlen(const string &str, const Optional<string> &enc_name){
   const mbfl_encoding *encoding = mb_get_encoding(enc_name);
   if (!encoding) {
@@ -220,6 +302,51 @@ int64_t f$mb_strlen(const string &str, const Optional<string> &enc_name){
 
   return (int64_t) n;
 
+}
+
+string f$mb_strcut(const string &str, const int64_t start, const Optional<int64_t> &length, const Optional<string> &encoding){
+  int64_t _start, _length;
+  bool len_is_null = !length.has_value();
+  const mbfl_encoding *enc = mb_get_encoding(encoding);
+
+  if (!enc) {
+    php_critical_error ("encoding \"%s\" isn't supported in mb_strcut", encoding.val().c_str());
+  }
+
+  mbfl_string _string, result, *ret;
+  mbfl_string_init(&_string);
+  _string.no_encoding = enc->no_encoding;
+  _string.len = str.size();
+  _string.val = (unsigned char*)str.c_str();
+
+  if (len_is_null) {
+    _length = _string.len;
+  } else {
+    _length = length.val();
+  }
+
+  _start = start;
+  if (start < 0) {
+    _start = _string.len + start;
+    if (_start < 0) {
+      _start = 0;
+    }
+  }
+
+  if (_length < 0) {
+    _length = (_string.len - _start) + _length;
+    if (_length < 0) {
+      _length = 0;
+    }
+  }
+
+  if (_start > _length) {
+    return string();
+  }
+
+  ret = mbfl_strcut(&_string, &result, _start, _length);
+  php_assert(ret != NULL);
+  return string((const char*) ret->val, ret->len);
 }
 
 
