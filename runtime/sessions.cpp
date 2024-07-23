@@ -192,7 +192,7 @@ static bool session_decode(const string &data) {
 }
 
 static bool session_open() {
-	if (get_sparam(S_FD).to_bool() && (fcntl(get_sparam(S_FD).to_int(), F_GETFD) != -1 || errno != EBADF)) {
+	if (get_sparam(S_FD).to_bool()) {
 		return true;
 	}
 
@@ -203,7 +203,6 @@ static bool session_open() {
 	set_sparam(S_PATH, string(get_sparam(S_DIR).to_string()).append(get_sparam(S_ID).to_string()));
 	bool is_new = (!f$file_exists(get_sparam(S_PATH).to_string())) ? 1 : 0;
 	
-	// the interprocessor lock does not work
 	set_sparam(S_FD, open_safe(get_sparam(S_PATH).to_string().c_str(), O_RDWR | O_CREAT, 0666));
 
 	if (get_sparam(S_FD).to_int() < 0) {
@@ -211,25 +210,12 @@ static bool session_open() {
 		return false;
 	}
 
-	struct flock lock;
-	lock.l_type = F_WRLCK; // Exclusive write lock
-    lock.l_whence = SEEK_SET;
-    lock.l_start = 0;
-    lock.l_len = 0;
-    lock.l_pid = getpid();
-
-    int ret = fcntl(get_sparam(S_FD).to_int(), F_SETLKW, &lock);
-
-    if (ret < 0 && errno == EDEADLK) {
-    	php_warning("Attempt to lock alredy locked session file, path: %s", get_sparam(S_PATH).to_string().c_str());
-    	return false;
-    }
+	lockf(get_sparam(S_FD).to_int(), F_LOCK, 0);
 
 	// set new metadata to the file
 	int ret_ctime = get_tag(get_sparam(S_PATH).to_string().c_str(), S_CTIME, NULL, 0);
 	int ret_gc_lifetime = get_tag(get_sparam(S_PATH).to_string().c_str(), S_LIFETIME, NULL, 0);
-	if (is_new or ret_ctime < 0) {
-		// add the creation data to metadata of file
+	if (is_new or ret_ctime < 0) { // add the creation data to metadata of file
 		int is_session = 1; // to filter sessions from other files in session_gc()
 		set_tag(get_sparam(S_PATH).to_string().c_str(), "is_session", &is_session, sizeof(int));
 
@@ -245,14 +231,8 @@ static bool session_open() {
 }
 
 static void session_close() {
-	if (get_sparam(S_FD).to_bool() && (fcntl(get_sparam(S_FD).to_int(), F_GETFD) != -1 || errno != EBADF)) {
-		struct flock lock;
-		lock.l_type = F_UNLCK;
-		lock.l_whence = SEEK_SET;
-		lock.l_start = 0;
-		lock.l_len = 0;
-		lock.l_pid = getpid();
-		fcntl(get_sparam(S_FD).to_int(), F_SETLKW, &lock);
+	if (get_sparam(S_FD).to_bool()) {
+		lockf(get_sparam(S_FD).to_int(), F_ULOCK, 0);
 		close_safe(get_sparam(S_FD).to_int());
 	}
 	set_sparam(S_STATUS, false);
@@ -291,18 +271,8 @@ static bool session_read() {
 }
 
 static bool session_write() {
-	// rewind the S_FD of the session file
-	struct flock lock;
-	lock.l_type = F_UNLCK;
-	lock.l_whence = SEEK_SET;
-	lock.l_start = 0;
-	lock.l_len = 0;
-	lock.l_pid = getpid();
-	fcntl(get_sparam(S_FD).to_int(), F_SETLKW, &lock);
-	close_safe(get_sparam(S_FD).to_int());
-	set_sparam(S_FD, open_safe(get_sparam(S_PATH).to_string().c_str(), O_RDWR, 0666));
-	lock.l_type = F_WRLCK;
-	fcntl(get_sparam(S_FD).to_int(), F_SETLKW, &lock);
+	// rewind the fd of the session file
+	lseek(get_sparam(S_FD).to_int(), 0, SEEK_SET);
 
 	string data = f$serialize(PhpScriptMutableGlobals::current().get_superglobals().v$_SESSION.as_array());
 	ssize_t n = write_safe(get_sparam(S_FD).to_int(), data.c_str(), data.size(), get_sparam(S_PATH).to_string());
@@ -383,13 +353,6 @@ static int session_gc(const bool &immediate = false) {
 	// reset the fd before changing the session directory
 	close_safe(get_sparam(S_FD).to_int());
 
-	struct flock lock;
-	lock.l_type = F_UNLCK;
-	lock.l_whence = SEEK_SET;
-	lock.l_start = 0;
-	lock.l_len = 0;
-	lock.l_pid = getpid();
-
 	int result = 0;
 	for (auto s = s_list.as_array().begin(); s != s_list.as_array().end(); ++s) {
 		string path = s.get_value().to_string();
@@ -414,24 +377,24 @@ static int session_gc(const bool &immediate = false) {
 			continue;
 		}
 
-		if (fcntl(fd, F_SETLK, &lock) < 0) {
+		if (lockf(fd, F_TEST, 0) < 0) {
+			close_safe(fd);
 			continue;
 		}
 
+		close_safe(fd);
 		if (session_expired(path)) {
 			f$unlink(path);
 			++result;
 		}
 	}
 
-	lock.l_type = F_WRLCK;
-	lock.l_pid = getpid();
 	set_sparam(S_FD, open_safe(get_sparam(S_PATH).to_string().c_str(), O_RDWR, 0666));
 	if (get_sparam(S_FD).to_int() < 0) {
 		php_warning("Failed to reopen the file %s after session_gc()", get_sparam(S_PATH).to_string().c_str());
 		session_abort();
 	} else {
-		fcntl(get_sparam(S_FD).to_int(), F_SETLKW, &lock);
+		lockf(get_sparam(S_FD).to_int(), F_LOCK, 0);
 	}
 
 	return result;
