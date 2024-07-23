@@ -108,7 +108,7 @@ add_compile_options(-Werror -Wall -Wextra -Wunused-function -Wfloat-conversion -
 if(COMPILE_RUNTIME_LIGHT)
     add_compile_options(-Wno-vla-cxx-extension)
     if(COMPILER_GCC)
-        add_compile_options(-Wno-dangling-pointer)
+        add_compile_options(-Wno-dangling-pointer -Wno-attributes)
     endif()
 endif()
 
