@@ -106,7 +106,11 @@ endif()
 add_compile_options(-Werror -Wall -Wextra -Wunused-function -Wfloat-conversion -Wno-sign-compare
                     -Wuninitialized -Wno-redundant-move -Wno-missing-field-initializers)
 if(COMPILE_RUNTIME_LIGHT)
-    add_compile_options(-Wno-vla-cxx-extension)
+    if(COMPILER_GCC)
+        add_compile_options(-Wno-vla-cxx-extension)
+    elseif(COMPILER_CLANG)
+        add_compile_options(-Wvla-cxx-extension)
+    endif()
 endif()
 
 if(NOT APPLE)
