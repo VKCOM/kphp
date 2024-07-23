@@ -17,7 +17,9 @@
 // === SimpleCoroutineScheduler ==============================================================================
 
 SimpleCoroutineScheduler::SimpleCoroutineScheduler(memory_resource::unsynchronized_pool_resource &memory_resource) noexcept
-  : awaiting_for_update_coros(unordered_map<uint64_t, std::coroutine_handle<>>::allocator_type{memory_resource}) {}
+  : yield_coros(deque<std::coroutine_handle<>>::allocator_type{memory_resource})
+  , awaiting_for_stream_coros(deque<std::coroutine_handle<>>::allocator_type{memory_resource})
+  , awaiting_for_update_coros(unordered_map<uint64_t, std::coroutine_handle<>>::allocator_type{memory_resource}) {}
 
 SimpleCoroutineScheduler &SimpleCoroutineScheduler::get() noexcept {
   return get_component_context()->scheduler;
@@ -53,16 +55,16 @@ ScheduleStatus SimpleCoroutineScheduler::scheduleOnIncomingStream() noexcept {
 
 ScheduleStatus SimpleCoroutineScheduler::scheduleOnStreamUpdate(uint64_t descriptor) noexcept {
   if (descriptor == INVALID_PLATFORM_DESCRIPTOR) {
-    php_warning("scheduleOnDescriptorUpdate: update on invalid descriptor %" PRIu64, descriptor);
+    php_warning("scheduleOnStreamUpdate: update on invalid descriptor %" PRIu64, descriptor);
     return ScheduleStatus::Error;
   } else if (const auto it_coro{awaiting_for_update_coros.find(descriptor)}; it_coro != awaiting_for_update_coros.cend()) {
     const auto coro{it_coro->second};
     awaiting_for_update_coros.erase(it_coro);
     coro();
-    php_debug("scheduleOnDescriptorUpdate: scheduled on %" PRIu64, descriptor);
+    php_debug("scheduleOnStreamUpdate: scheduled on %" PRIu64, descriptor);
     return ScheduleStatus::Resumed;
   } else {
-    php_debug("scheduleOnDescriptorUpdate: skipped on %" PRIu64, descriptor);
+    php_debug("scheduleOnStreamUpdate: skipped on %" PRIu64, descriptor);
     return ScheduleStatus::Skipped;
   }
 }
