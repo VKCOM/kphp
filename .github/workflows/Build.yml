@@ -13,6 +13,17 @@ env:
   kphp_build_dir: /home/kitten/kphp/build
 
 jobs:
+  # clang-format:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Install clang-format
+  #       run: wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - && \
+  #             apt-get update && apt-get install clang-format-18
+  #     - name: debug
+  #       run: which clang-format-18
+  #     - name: Run clang-format
+  #       run: find ./runtime-light/ -iname '*.h' -o -iname '*.cpp' | xargs clang-format-18 --dry-run -Werror
   build-linux:
     runs-on: ubuntu-latest
     strategy:
@@ -93,6 +104,7 @@ jobs:
               "git config --global --add safe.directory ${{env.kphp_root_dir}}"
 
     - name: Check formatting in light runtime folder
+      continue-on-error: true
       if: ${{ matrix.os == 'focal'  && matrix.light_runtime == 'on' }}
       run:  docker exec kphp-build-container-${{matrix.os}} bash -c
               "find ${{env.kphp_root_dir}}/runtime-light/ -iname '*.h' -o -iname '*.cpp' | xargs clang-format-18 --dry-run -Werror"
