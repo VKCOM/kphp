@@ -54,6 +54,8 @@ constexpr static auto S_DIVISOR = "gc_divisor";
 constexpr static auto S_SEND_COOKIE = "send_cookie";
 constexpr static auto S_STRICT_MODE = "use_strict_mode";
 constexpr static auto S_ID_LENGTH = "sid_length";
+constexpr static auto S_LAZY_WRITE = "lazy_write";
+constexpr static auto S_VARS = "session_buffered_variables";
 constexpr static auto C_PATH = "cookie_path";
 constexpr static auto C_LIFETIME = "cookie_lifetime";
 constexpr static auto C_DOMAIN = "cookie_domain";
@@ -73,6 +75,7 @@ const auto skeys = vk::to_array<std::pair<const char *, const mixed>>({
 	{S_DIVISOR, 100},
 	{S_STRICT_MODE, false},
 	{S_ID_LENGTH, 32},
+	{S_LAZY_WRITE, true},
 	{C_PATH, string("/")},
 	{C_LIFETIME, 0},
 	{C_DOMAIN, string("")},
@@ -116,12 +119,12 @@ static array<mixed> session_get_cookie_params() {
 	array<mixed> result;
 	if (PhpScriptMutableGlobals::current().get_superglobals().v$_KPHPSESSARR.as_array().empty()) {
 		php_warning("Session cookie params cannot be received when there is no active session. Returned the default params");
-		result.emplace_value(string(C_PATH), skeys[8].second);
-		result.emplace_value(string(C_LIFETIME), skeys[9].second);
-		result.emplace_value(string(C_DOMAIN), skeys[10].second);
-		result.emplace_value(string(C_SECURE), skeys[11].second);
-		result.emplace_value(string(C_HTTPONLY), skeys[12].second);
-		result.emplace_value(string(C_SAMESITE), skeys[13].second);
+		result.emplace_value(string(C_PATH), skeys[9].second);
+		result.emplace_value(string(C_LIFETIME), skeys[10].second);
+		result.emplace_value(string(C_DOMAIN), skeys[11].second);
+		result.emplace_value(string(C_SECURE), skeys[12].second);
+		result.emplace_value(string(C_HTTPONLY), skeys[13].second);
+		result.emplace_value(string(C_SAMESITE), skeys[14].second);
 	} else {
 		result.emplace_value(string(C_PATH), get_sparam(C_PATH));
 		result.emplace_value(string(C_LIFETIME), get_sparam(C_LIFETIME));
@@ -284,8 +287,13 @@ static bool session_read() {
 		}
 		return false;
 	}
+
+	string read_data(result, n);
+	if (get_sparam(S_LAZY_WRITE).to_bool()) {
+		set_sparam(S_VARS, read_data);
+	}
 	
-	if (!session_decode(string(result, n))) {
+	if (!session_decode(read_data)) {
 		php_warning("Failed to unzerialize the data");
 		return false;
 	}
@@ -297,6 +305,10 @@ static bool session_write() {
 	lseek(get_sparam(S_FD).to_int(), 0, SEEK_SET);
 
 	string data = f$serialize(PhpScriptMutableGlobals::current().get_superglobals().v$_SESSION.as_array());
+	if (get_sparam(S_LAZY_WRITE).to_bool() && get_sparam(S_VARS).to_string() == data) {
+		return true;
+	}
+
 	ssize_t n = write_safe(get_sparam(S_FD).to_int(), data.c_str(), data.size(), get_sparam(S_PATH).to_string());
 	if (n < data.size()) {
 		if (n == -1) {
