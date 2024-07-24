@@ -18,3 +18,8 @@ bool f$session_unset();
 
 // TO-DO:
 // bool f$session_destroy();
+// bool f$set_cookie_params();
+// bool f$session_set_cookie_params();
+// void f$session_register_shutdown();
+// bool f$session_regenerate_id();
+// bool f$session_create_id();
