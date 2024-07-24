@@ -217,6 +217,7 @@ static bool session_decode(const string &data) {
 
 static bool session_open() {
 	if (get_sparam(S_FD).to_bool()) {
+		lseek(get_sparam(S_FD).to_int(), 0, SEEK_SET);
 		return true;
 	}
 
@@ -302,7 +303,7 @@ static bool session_read() {
 
 static bool session_write() {
 	// rewind the fd of the session file
-	lseek(get_sparam(S_FD).to_int(), 0, SEEK_SET);
+	session_open();
 
 	string data = f$serialize(PhpScriptMutableGlobals::current().get_superglobals().v$_SESSION.as_array());
 	if (get_sparam(S_LAZY_WRITE).to_bool() && get_sparam(S_VARS).to_string() == data) {
@@ -590,5 +591,31 @@ bool f$session_destroy() {
 		return false;
 	}
 	sessions::session_close();
+	return true;
+}
+
+bool f$session_reset() {
+	return (sessions::get_sparam(sessions::S_STATUS).to_bool() && sessions::session_initialize());
+}
+
+Optional<string> f$session_save_path(const Optional<string> &path) {
+	if (path.has_value() && sessions::get_sparam(sessions::S_STATUS).to_bool()) {
+		php_warning("Session save path cannot be changed when a session is active");
+		return Optional<string>{false};
+	}
+
+	Optional<string> prev_path(sessions::get_sparam(sessions::S_DIR).to_string());
+	if (path.has_value() && !path.val().to_string().empty()) {
+		sessions::set_sparam(sessions::S_DIR, path.val());
+	}
+	return prev_path;
+}
+
+bool f$session_unset() {
+	if (!sessions::get_sparam(sessions::S_STATUS).to_bool()) {
+		return false;
+	}
+
+	PhpScriptMutableGlobals::current().get_superglobals().v$_SESSION.as_array().clear();
 	return true;
 }

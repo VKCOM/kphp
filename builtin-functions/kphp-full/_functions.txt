@@ -786,6 +786,9 @@ function session_destroy() ::: bool;
 function session_encode() ::: string | false;
 function session_decode($data ::: string) ::: bool;
 function session_get_cookie_params() ::: array;
+function session_reset() ::: bool;
+function session_save_path($path ::: ?string = null) ::: string | false;
+function session_unset() ::: bool;
 
 define('PHP_ROUND_HALF_UP', 123423141);
 define('PHP_ROUND_HALF_DOWN', 123423144);

@@ -13,3 +13,6 @@ bool f$session_decode(const string &data);
 array<mixed> f$session_get_cookie_params();
 Optional<string> f$session_id(const Optional<string> &id = Optional<string>());
 bool f$session_destroy();
+bool f$session_reset();
+Optional<string> f$session_save_path(const Optional<string> &path = Optional<string>());
+bool f$session_unset();
