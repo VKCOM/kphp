@@ -12,6 +12,7 @@
 #include "common/wrappers/to_array.h"
 #include "runtime/url.h"
 #include "runtime/math_functions.h"
+#include "runtime/string_functions.h"
 
 namespace sessions {
 
@@ -52,12 +53,15 @@ constexpr static auto S_PROBABILITY = "gc_probability";
 constexpr static auto S_DIVISOR = "gc_divisor";
 constexpr static auto S_SEND_COOKIE = "send_cookie";
 constexpr static auto S_STRICT_MODE = "use_strict_mode";
+constexpr static auto S_ID_LENGTH = "sid_length";
 constexpr static auto C_PATH = "cookie_path";
 constexpr static auto C_LIFETIME = "cookie_lifetime";
 constexpr static auto C_DOMAIN = "cookie_domain";
 constexpr static auto C_SECURE = "cookie_secure";
 constexpr static auto C_HTTPONLY = "cookie_httponly";
 constexpr static auto C_SAMESITE = "cookie_samesite";
+
+constexpr static auto MAX_SID_LENGTH = 256;
 
 // TO-DO: reconsider it
 const auto skeys = vk::to_array<std::pair<const char *, const mixed>>({
@@ -68,6 +72,7 @@ const auto skeys = vk::to_array<std::pair<const char *, const mixed>>({
 	{S_PROBABILITY, 1},
 	{S_DIVISOR, 100},
 	{S_STRICT_MODE, false},
+	{S_ID_LENGTH, 32},
 	{C_PATH, string("/")},
 	{C_LIFETIME, 0},
 	{C_DOMAIN, string("")},
@@ -100,18 +105,23 @@ static void initialize_sparams(const array<mixed> &options) noexcept {
 		}
 		set_sparam(it.first, mixed(it.second));
 	}
+
+	if (get_sparam(S_ID_LENGTH).to_int() < 22 || get_sparam(S_ID_LENGTH).to_int() > MAX_SID_LENGTH) {
+		set_sparam(S_ID_LENGTH, 32);
+		php_warning("session.configuration \"session.sid_length\" must be between 22 and 256. The default value is set");
+	}
 }
 
 static array<mixed> session_get_cookie_params() {
 	array<mixed> result;
 	if (PhpScriptMutableGlobals::current().get_superglobals().v$_KPHPSESSARR.as_array().empty()) {
 		php_warning("Session cookie params cannot be received when there is no active session. Returned the default params");
-		result.emplace_value(string(C_PATH), skeys[7].second);
-		result.emplace_value(string(C_LIFETIME), skeys[8].second);
-		result.emplace_value(string(C_DOMAIN), skeys[9].second);
-		result.emplace_value(string(C_SECURE), skeys[10].second);
-		result.emplace_value(string(C_HTTPONLY), skeys[11].second);
-		result.emplace_value(string(C_SAMESITE), skeys[12].second);
+		result.emplace_value(string(C_PATH), skeys[8].second);
+		result.emplace_value(string(C_LIFETIME), skeys[9].second);
+		result.emplace_value(string(C_DOMAIN), skeys[10].second);
+		result.emplace_value(string(C_SECURE), skeys[11].second);
+		result.emplace_value(string(C_HTTPONLY), skeys[12].second);
+		result.emplace_value(string(C_SAMESITE), skeys[13].second);
 	} else {
 		result.emplace_value(string(C_PATH), get_sparam(C_PATH));
 		result.emplace_value(string(C_LIFETIME), get_sparam(C_LIFETIME));
@@ -153,7 +163,7 @@ static bool session_valid_id(const string &id) {
 	}
 
 	bool result = true;
-	for (auto i = (string("sess_").size()); i < id.size(); ++i) {
+	for (auto i = 0; i < id.size(); ++i) {
 		if (!((id[i] >= 'a' && id[i] <= 'z')
 				|| (id[i] >= 'A' && id[i] <= 'Z')
 				|| (id[i] >= '0' && id[i] <= '9')
@@ -163,16 +173,21 @@ static bool session_valid_id(const string &id) {
 			break;
 		}
 	}
+
 	return result;
 }
 
 static bool session_generate_id() {
-	string id = f$uniqid(string("sess_"));
-	if (!session_valid_id(id)) {
+	Optional<string> id = f$random_bytes(get_sparam(S_ID_LENGTH).to_int() / 2);
+	for (uint i = 0; i < 3 && (id.is_false() || !session_valid_id(f$bin2hex(id.val()))); ++i) {
+		id = f$random_bytes(get_sparam(S_ID_LENGTH).to_int() / 2);
+	}
+
+	if (id.is_false() || !session_valid_id(f$bin2hex(id.val()))) {
 		php_warning("Failed to create new ID\n");
 		return false;
 	}
-	set_sparam(S_ID, id);
+	set_sparam(S_ID, f$bin2hex(id.val()));
 	return true;
 }
 
@@ -202,8 +217,9 @@ static bool session_open() {
 		return true;
 	}
 
-	if (!f$file_exists(get_sparam(S_DIR).to_string())) {
-		f$mkdir(get_sparam(S_DIR).to_string());
+	if (!f$file_exists(get_sparam(S_DIR).to_string()) && !f$mkdir(get_sparam(S_DIR).to_string())) {
+		php_warning("Failed to create session directory on path %s", get_sparam(S_DIR).to_string().c_str());
+		return false;
 	}
 
 	set_sparam(S_PATH, string(get_sparam(S_DIR).to_string()).append(get_sparam(S_ID).to_string()));
@@ -428,7 +444,7 @@ static bool session_initialize() {
 		set_sparam(S_SEND_COOKIE, true);
 	}
 
-	if (!session_reset_id() || !session_open() || !session_read()) {
+	if (!session_open() || !session_reset_id() || !session_read()) {
 		session_abort();
 		return false;
 	}
