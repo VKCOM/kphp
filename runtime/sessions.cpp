@@ -585,15 +585,6 @@ Optional<string> f$session_id(const Optional<string> &id) {
 	return (prev_id.is_bool()) ? Optional<string>{false} : Optional<string>(prev_id.as_string());
 }
 
-bool f$session_destroy() {
-	if (!sessions::get_sparam(sessions::S_STATUS).to_bool()) {
-		php_warning("Trying to destroy uninitialized session");
-		return false;
-	}
-	sessions::session_close();
-	return true;
-}
-
 bool f$session_reset() {
 	return (sessions::get_sparam(sessions::S_STATUS).to_bool() && sessions::session_initialize());
 }
@@ -619,3 +610,14 @@ bool f$session_unset() {
 	PhpScriptMutableGlobals::current().get_superglobals().v$_SESSION.as_array().clear();
 	return true;
 }
+
+/* TO-DO:
+bool f$session_destroy() {
+	if (!sessions::get_sparam(sessions::S_STATUS).to_bool()) {
+		php_warning("Trying to destroy uninitialized session");
+		return false;
+	}
+	sessions::session_close();
+	return true;
+}
+*/
