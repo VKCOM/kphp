@@ -556,12 +556,11 @@ Optional<string> f$session_id(const Optional<string> &id) {
 	return (prev_id.is_bool()) ? Optional<string>{false} : Optional<string>(prev_id.as_string());
 }
 
-// TO-DO
-// bool f$session_destroy() {
-// 	if (!sessions::get_sparam(sessions::S_STATUS).to_bool()) {
-// 		php_warning("Trying to destroy uninitialized session");
-// 		return false;
-// 	}
-// 	sessions::session_close();
-// 	return true;
-// }
+bool f$session_destroy() {
+	if (!sessions::get_sparam(sessions::S_STATUS).to_bool()) {
+		php_warning("Trying to destroy uninitialized session");
+		return false;
+	}
+	sessions::session_close();
+	return true;
+}

@@ -12,6 +12,4 @@ Optional<string> f$session_encode();
 bool f$session_decode(const string &data);
 array<mixed> f$session_get_cookie_params();
 Optional<string> f$session_id(const Optional<string> &id = Optional<string>());
-
-// TO-DO
-// bool f$session_destroy();
+bool f$session_destroy();
