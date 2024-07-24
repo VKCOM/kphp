@@ -51,6 +51,7 @@ constexpr static auto S_LIFETIME = "gc_maxlifetime";
 constexpr static auto S_PROBABILITY = "gc_probability";
 constexpr static auto S_DIVISOR = "gc_divisor";
 constexpr static auto S_SEND_COOKIE = "send_cookie";
+constexpr static auto S_STRICT_MODE = "use_strict_mode";
 constexpr static auto C_PATH = "cookie_path";
 constexpr static auto C_LIFETIME = "cookie_lifetime";
 constexpr static auto C_DOMAIN = "cookie_domain";
@@ -66,6 +67,7 @@ const auto skeys = vk::to_array<std::pair<const char *, const mixed>>({
 	{S_LIFETIME, 1440},
 	{S_PROBABILITY, 1},
 	{S_DIVISOR, 100},
+	{S_STRICT_MODE, false},
 	{C_PATH, string("/")},
 	{C_LIFETIME, 0},
 	{C_DOMAIN, string("")},
@@ -104,12 +106,12 @@ static array<mixed> session_get_cookie_params() {
 	array<mixed> result;
 	if (PhpScriptMutableGlobals::current().get_superglobals().v$_KPHPSESSARR.as_array().empty()) {
 		php_warning("Session cookie params cannot be received when there is no active session. Returned the default params");
-		result.emplace_value(string(C_PATH), skeys[6].second);
-		result.emplace_value(string(C_LIFETIME), skeys[7].second);
-		result.emplace_value(string(C_DOMAIN), skeys[8].second);
-		result.emplace_value(string(C_SECURE), skeys[9].second);
-		result.emplace_value(string(C_HTTPONLY), skeys[10].second);
-		result.emplace_value(string(C_SAMESITE), skeys[11].second);
+		result.emplace_value(string(C_PATH), skeys[7].second);
+		result.emplace_value(string(C_LIFETIME), skeys[8].second);
+		result.emplace_value(string(C_DOMAIN), skeys[9].second);
+		result.emplace_value(string(C_SECURE), skeys[10].second);
+		result.emplace_value(string(C_HTTPONLY), skeys[11].second);
+		result.emplace_value(string(C_SAMESITE), skeys[12].second);
 	} else {
 		result.emplace_value(string(C_PATH), get_sparam(C_PATH));
 		result.emplace_value(string(C_LIFETIME), get_sparam(C_LIFETIME));
@@ -412,7 +414,8 @@ static int session_gc(const bool &immediate = false) {
 static bool session_initialize() {
 	set_sparam(S_STATUS, true);
 
-	if (!get_sparam(S_ID).to_bool()) {
+	if (!get_sparam(S_ID).to_bool()
+		|| (get_sparam(S_STRICT_MODE).to_bool() && !session_valid_id(get_sparam(S_ID).to_string()))) {
 		if (!session_generate_id()) {
 			php_warning(
 				"Failed to create session ID: %s (path: %s)", 
@@ -425,7 +428,7 @@ static bool session_initialize() {
 		set_sparam(S_SEND_COOKIE, true);
 	}
 
-	if (!session_open() or !session_reset_id() or !session_read()) {
+	if (!session_reset_id() || !session_open() || !session_read()) {
 		session_abort();
 		return false;
 	}
@@ -443,22 +446,16 @@ static bool session_start() {
 
 	set_sparam(S_SEND_COOKIE, true);
 
-	if (!get_sparam(S_ID).to_bool()) {
+	if (!get_sparam(S_ID).to_bool()) { // Check session id in cookie values
 		mixed id = false;
 		PhpScriptMutableGlobals &php_globals = PhpScriptMutableGlobals::current();
 		if (php_globals.get_superglobals().v$_COOKIE.as_array().isset(get_sparam(S_NAME).to_string())) {
 			id = php_globals.get_superglobals().v$_COOKIE.as_array().get_value(get_sparam(S_NAME).to_string()).to_string();
+			set_sparam(S_ID, id.to_string());
 		}
-		
-		if (id.to_bool() && !id.to_string().empty()) {
-			if (!strpbrk(id.to_string().c_str(), "\r\n\t <>'\"\\")) {
-				if (f$file_exists(string(get_sparam(S_DIR).to_string()).append(id.to_string()))) {
-					set_sparam(S_SEND_COOKIE, false);
-					set_sparam(S_ID, id.to_string());
-				}
-			}
-		}
-	} else if (strpbrk(get_sparam(S_ID).to_string().c_str(), "\r\n\t <>'\"\\")) {
+	} 
+
+	if (get_sparam(S_ID).to_bool() && (get_sparam(S_ID).to_string().empty() || strpbrk(get_sparam(S_ID).to_string().c_str(), "\r\n\t <>'\"\\"))) {
 		set_sparam(S_ID, false);
 	}
 
