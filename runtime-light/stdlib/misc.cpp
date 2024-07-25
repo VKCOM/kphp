@@ -4,73 +4,74 @@
 
 #include "runtime-light/stdlib/misc.h"
 
+#include <cstdint>
+
 #include "runtime-light/component/component.h"
 #include "runtime-light/coroutine/awaitable.h"
-#include "runtime-light/utils/json-functions.h"
+#include "runtime-light/header.h"
+#include "runtime-light/stdlib/superglobals.h"
+#include "runtime-light/streams/streams.h"
+#include "runtime-light/utils/context.h"
 #include "runtime-light/utils/panic.h"
 
-static int ob_merge_buffers() {
+namespace {
+
+int32_t ob_merge_buffers() {
   Response &response = get_component_context()->response;
   php_assert(response.current_buffer >= 0);
-  int ob_first_not_empty = 0;
+  int32_t ob_first_not_empty = 0;
   while (ob_first_not_empty < response.current_buffer && response.output_buffers[ob_first_not_empty].size() == 0) {
     ob_first_not_empty++;
   }
-  for (int i = ob_first_not_empty + 1; i <= response.current_buffer; i++) {
+  for (auto i = ob_first_not_empty + 1; i <= response.current_buffer; i++) {
     response.output_buffers[ob_first_not_empty].append(response.output_buffers[i].c_str(), response.output_buffers[i].size());
   }
   return ob_first_not_empty;
 }
 
-task_t<void> parse_input_query(QueryType query_type) {
-  ComponentState &ctx = *get_component_context();
-  php_assert(ctx.standard_stream == 0);
-  co_await wait_incoming_query_t{};
-  ctx.standard_stream = ctx.incoming_pending_queries.front();
-  ctx.incoming_pending_queries.pop_front();
-  ctx.opened_streams[ctx.standard_stream] = StreamRuntimeStatus::NotBlocked;
+} // namespace
 
-  if (query_type == QueryType::HTTP) {
-    auto [buffer, size] = co_await read_all_from_stream(ctx.standard_stream);
-    init_http_superglobals(buffer, size);
-    get_platform_context()->allocator.free(buffer);
-  } else if (query_type == QueryType::COMPONENT) {
-    // Processing takes place in the calling function
-  } else {
-    php_critical_error("unexpected query type %d in parse_input_query", static_cast<int>(query_type));
+task_t<uint64_t> wait_and_process_incoming_stream(QueryType query_type) {
+  const auto incoming_stream_d{co_await wait_for_incoming_stream_t{}};
+  switch (query_type) {
+    case QueryType::HTTP: {
+      const auto [buffer, size] = co_await read_all_from_stream(incoming_stream_d);
+      init_http_superglobals(buffer, size);
+      get_platform_context()->allocator.free(buffer);
+      break;
+    }
+    case QueryType::COMPONENT: { // processing takes place in a component
+      break;
+    }
   }
-  co_return;
+  co_return incoming_stream_d;
 }
 
-task_t<void> finish(int64_t exit_code, bool from_exit) {
+task_t<void> finish(int64_t exit_code, bool from_exit) { // TODO: use exit code
   (void)from_exit;
   (void)exit_code;
-  // todo:k2 use exit_code
-  ComponentState &ctx = *get_component_context();
-  if (ctx.standard_stream == 0) {
+  auto &component_ctx{*get_component_context()};
+  const auto standard_stream{component_ctx.standard_stream()};
+  if (standard_stream == INVALID_PLATFORM_DESCRIPTOR) {
+    component_ctx.poll_status = PollStatus::PollFinishedError;
     co_return;
   }
-  int ob_total_buffer = ob_merge_buffers();
-  Response &response = ctx.response;
-  auto &buffer = response.output_buffers[ob_total_buffer];
-  bool ok = co_await write_all_to_stream(ctx.standard_stream, buffer.c_str(), buffer.size());
-  if (!ok) {
-    php_warning("cannot write component result to input stream %lu", ctx.standard_stream);
-  }
-  free_all_descriptors();
-  ctx.poll_status = PollStatus::PollFinishedOk;
-  co_return;
-}
 
-task_t<void> f$testyield() {
-  co_await test_yield_t{};
+  const auto ob_total_buffer = ob_merge_buffers();
+  Response &response = component_ctx.response;
+  auto &buffer = response.output_buffers[ob_total_buffer];
+  if (co_await write_all_to_stream(standard_stream, buffer.c_str(), buffer.size())) {
+    php_warning("can't write component result to stream %" PRIu64, standard_stream);
+  }
+  component_ctx.release_all_streams();
+  component_ctx.poll_status = PollStatus::PollFinishedOk;
 }
 
 void f$check_shutdown() {
-  const PlatformCtx &ptx = *get_platform_context();
-  if (get_platform_context()->please_graceful_shutdown.load()) {
+  const auto &platform_ctx{*get_platform_context()};
+  if (static_cast<bool>(get_platform_context()->please_graceful_shutdown.load())) {
     php_notice("script was graceful shutdown");
-    ptx.abort();
+    platform_ctx.abort();
   }
 }
 

@@ -198,8 +198,6 @@ function instance_cast(object $instance, $to_type ::: string) ::: instance<^2>;
 
 function make_clone ($x ::: any) ::: ^1;
 
-/** @kphp-extern-func-info interruptible */
-function testyield() ::: void;
 function check_shutdown() ::: void;
 
 function warning($message ::: string) ::: void;
