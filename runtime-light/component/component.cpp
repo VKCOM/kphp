@@ -3,64 +3,164 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "runtime-light/component/component.h"
+
+#include <chrono>
+#include <cstdint>
+
+#include "runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/core/globals/php-init-scripts.h"
+#include "runtime-light/header.h"
+#include "runtime-light/scheduler/scheduler.h"
+#include "runtime-light/utils/context.h"
 
-void ComponentState::resume_if_was_rescheduled() {
-  if (poll_status == PollStatus::PollReschedule) {
-    // If component was suspended by please yield and there is no awaitable streams
-    main_thread();
-  }
-}
-
-bool ComponentState::is_stream_already_being_processed(uint64_t stream_d) {
-  return opened_streams.contains(stream_d);
-}
-
-void ComponentState::resume_if_wait_stream(uint64_t stream_d, StreamStatus status) {
-  if (is_stream_timer(stream_d)) {
-    process_timer(stream_d);
-  } else {
-    process_stream(stream_d, status);
-  }
-}
-
-void ComponentState::process_new_input_stream(uint64_t stream_d) {
-  bool already_pending = std::find(incoming_pending_queries.begin(), incoming_pending_queries.end(), stream_d) != incoming_pending_queries.end();
-  if (!already_pending) {
-    php_debug("got new pending query %lu", stream_d);
-    incoming_pending_queries.push_back(stream_d);
-  }
-  if (wait_incoming_stream) {
-    php_debug("start process pending query %lu", stream_d);
-    main_thread();
-  }
-}
-
-void ComponentState::init_script_execution() {
+void ComponentState::init_script_execution() noexcept {
   kphp_core_context.init();
   init_php_scripts_in_each_worker(php_script_mutable_globals_singleton, k_main);
-  main_thread = k_main.get_handle();
+  scheduler.wait_for_reschedule(k_main.get_handle());
 }
 
-bool ComponentState::is_stream_timer(uint64_t stream_d) {
-  return timer_callbacks.contains(stream_d);
-}
+void ComponentState::process_platform_updates() noexcept {
+  const auto &platform_ctx{*get_platform_context()};
 
-void ComponentState::process_timer(uint64_t stream_d) {
-  get_platform_context()->free_descriptor(stream_d);
-  timer_callbacks[stream_d]();
-  timer_callbacks.erase(stream_d);
-  opened_streams.erase(stream_d);
-}
+  for (;;) {
+    // check if platform asked for yield
+    if (static_cast<bool>(platform_ctx.please_yield.load())) { // tell the scheduler that we are about to yield
+      const auto schedule_status{scheduler.schedule(ScheduleEvent::Yield{})};
+      poll_status = schedule_status == ScheduleStatus::Error ? PollStatus::PollFinishedError : PollStatus::PollReschedule;
+      return;
+    }
 
-void ComponentState::process_stream(uint64_t stream_d, StreamStatus status) {
-  auto expected_status = opened_streams[stream_d];
-  if ((expected_status == StreamRuntimeStatus::WBlocked && status.write_status != IOBlocked)
-      || (expected_status == StreamRuntimeStatus::RBlocked && status.read_status != IOBlocked)) {
-    php_debug("resume on waited query %lu", stream_d);
-    auto suspend_point = awaiting_coroutines[stream_d];
-    awaiting_coroutines.erase(stream_d);
-    php_assert(awaiting_coroutines.empty());
-    suspend_point();
+    // try taking update from the platform
+    if (uint64_t stream_d{}; static_cast<bool>(platform_ctx.take_update(std::addressof(stream_d)))) {
+      if (opened_streams_.contains(stream_d)) { // update on opened stream
+        switch (scheduler.schedule(ScheduleEvent::UpdateOnStream{.stream_d = stream_d})) {
+          case ScheduleStatus::Resumed: { // scheduler's resumed a coroutine waiting for update
+            break;
+          }
+          case ScheduleStatus::Skipped: { // no one is waiting for the event yet, so just save it
+            pending_updates_.insert(stream_d);
+            break;
+          }
+          case ScheduleStatus::Error: { // something bad's happened, stop execution
+            poll_status = PollStatus::PollFinishedError;
+            return;
+          }
+        }
+      } else { // update on incoming stream
+        if (standard_stream_ != INVALID_PLATFORM_DESCRIPTOR) {
+          php_warning("previous incoming stream is not closed, force closing it");
+          release_stream(standard_stream_);
+        } // TODO: multiple incoming streams (except for http queries)
+        standard_stream_ = stream_d;
+        opened_streams_.insert(stream_d);
+        switch (scheduler.schedule(ScheduleEvent::IncomingStream{.stream_d = stream_d})) {
+          case ScheduleStatus::Resumed: { // scheduler's resumed a coroutine waiting for incoming stream
+            break;
+          }
+          case ScheduleStatus::Skipped: { // no one is waiting for incoming stream, so just save it
+            incoming_streams_.push_back(stream_d);
+            break;
+          }
+          case ScheduleStatus::Error: { // something bad's happened, stop execution
+            poll_status = PollStatus::PollFinishedError;
+            return;
+          }
+        }
+      }
+    } else { // we'are out of updates so let the scheduler do whatever it wants
+      switch (scheduler.schedule(ScheduleEvent::NoEvent{})) {
+        case ScheduleStatus::Resumed: { // scheduler's resumed some coroutine, so let's continue scheduling
+          break;
+        }
+        case ScheduleStatus::Skipped: { // scheduler's done nothing, so it's either scheduled all coroutines or is waiting for events
+          poll_status = scheduler.done() ? PollStatus::PollFinishedOk : PollStatus::PollBlocked;
+          return;
+        }
+        case ScheduleStatus::Error: { // something bad's happened, stop execution
+          poll_status = PollStatus::PollFinishedError;
+          return;
+        }
+      }
+    }
   }
+  // unreachable code
+  poll_status = PollStatus::PollFinishedError;
+}
+
+bool ComponentState::stream_updated(uint64_t stream_d) const noexcept {
+  return pending_updates_.contains(stream_d);
+}
+
+const decltype(std::declval<ComponentState>().opened_streams_) &ComponentState::opened_streams() const noexcept {
+  return opened_streams_;
+}
+
+const decltype(std::declval<ComponentState>().incoming_streams_) &ComponentState::incoming_streams() const noexcept {
+  return incoming_streams_;
+}
+
+uint64_t ComponentState::standard_stream() const noexcept {
+  return standard_stream_;
+}
+
+uint64_t ComponentState::take_incoming_stream() noexcept {
+  if (incoming_streams_.empty()) {
+    php_warning("can't take incoming stream cause we don't have them");
+    return INVALID_PLATFORM_DESCRIPTOR;
+  }
+  const auto stream_d{incoming_streams_.front()};
+  incoming_streams_.pop_front();
+  php_debug("take incoming stream %" PRIu64, stream_d);
+  return stream_d;
+}
+
+uint64_t ComponentState::open_stream(const string &component_name) noexcept {
+  uint64_t stream_d{};
+  if (const auto open_stream_res{get_platform_context()->open(component_name.size(), component_name.c_str(), std::addressof(stream_d))};
+      open_stream_res != OpenStreamResult::OpenStreamOk) {
+    php_warning("can't open stream to %s", component_name.c_str());
+    return INVALID_PLATFORM_DESCRIPTOR;
+  }
+  opened_streams_.insert(stream_d);
+  php_debug("opened a stream %" PRIu64 " to %s", stream_d, component_name.c_str());
+  return stream_d;
+}
+
+uint64_t ComponentState::set_timer(std::chrono::nanoseconds duration) noexcept {
+  uint64_t timer_d{};
+  if (const auto set_timer_res{get_platform_context()->set_timer(std::addressof(timer_d), static_cast<uint64_t>(duration.count()))};
+      set_timer_res != SetTimerResult::SetTimerOk) {
+    php_warning("can't set timer for %.9f sec", std::chrono::duration<double>(duration).count());
+    return INVALID_PLATFORM_DESCRIPTOR;
+  }
+  opened_streams_.insert(timer_d);
+  php_debug("set timer %" PRIu64 " for %.9f sec", timer_d, std::chrono::duration<double>(duration).count());
+  return timer_d;
+}
+
+void ComponentState::release_stream(uint64_t stream_d) noexcept {
+  const auto it_stream{opened_streams_.find(stream_d)};
+  if (it_stream == opened_streams_.cend()) {
+    php_warning("can't release stream %" PRIu64, stream_d);
+    return;
+  }
+  if (stream_d == standard_stream_) {
+    standard_stream_ = INVALID_PLATFORM_DESCRIPTOR;
+  }
+  opened_streams_.erase(it_stream);
+  pending_updates_.erase(stream_d); // also erase pending updates if exists
+  get_platform_context()->free_descriptor(stream_d);
+  php_debug("released a stream %" PRIu64, stream_d);
+}
+
+void ComponentState::release_all_streams() noexcept {
+  const auto &platform_ctx{*get_platform_context()};
+  standard_stream_ = INVALID_PLATFORM_DESCRIPTOR;
+  for (const auto stream_d : opened_streams_) {
+    platform_ctx.free_descriptor(stream_d);
+    php_debug("released a stream %" PRIu64, stream_d);
+  }
+  opened_streams_.clear();
+  pending_updates_.clear();
+  incoming_streams_.clear();
 }

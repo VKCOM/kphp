@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <cstddef>
+#include "runtime-light/coroutine/task.h"
 
 class PhpScriptMutableGlobals;
 
