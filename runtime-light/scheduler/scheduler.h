@@ -12,12 +12,12 @@
 #include "runtime-core/memory-resource/unsynchronized_pool_resource.h"
 
 /**
- * Supported types of updates from the platform:
+ * Supported types of updates:
  * 1. NoEvent: there was not an update event, so it's up to scheduler what to do;
- * 2. IncomingStream: there is a new stream;
+ * 2. IncomingStream(uint64_t): there is a new stream;
  * 3. UpdateOnStream(uint64_t): there is an update on some stream;
- * 4. UpdateOnTimer(uint64_t): there is an update event on platform timer;
- * 5. Yield: platform asked for yield, so scheduler may want to save some state for next vk_k2_poll.
+ * 4. UpdateOnTimer(uint64_t): there is an update event on timer;
+ * 5. Yield: request to yield execution received.
  */
 namespace ScheduleEvent {
 
@@ -59,7 +59,7 @@ template<class scheduler_t>
 concept CoroutineSchedulerConcept = std::constructible_from<scheduler_t, memory_resource::unsynchronized_pool_resource &>
                                     && requires(scheduler_t && s, ScheduleEvent::EventT schedule_event, std::coroutine_handle<> coro, uint64_t event_id) {
   { scheduler_t::get() } noexcept -> std::same_as<scheduler_t &>;
-  { s.finished() } noexcept -> std::same_as<bool>;
+  { s.done() } noexcept -> std::convertible_to<bool>;
   { s.schedule(schedule_event) } noexcept -> std::same_as<ScheduleStatus>;
   { s.wait_for_update(coro, event_id) } noexcept -> std::same_as<void>;
   { s.wait_for_incoming_stream(coro) } noexcept -> std::same_as<void>;
@@ -92,7 +92,7 @@ public:
 
   static SimpleCoroutineScheduler &get() noexcept;
 
-  bool finished() const noexcept;
+  bool done() const noexcept;
 
   ScheduleStatus schedule(ScheduleEvent::EventT) noexcept;
 

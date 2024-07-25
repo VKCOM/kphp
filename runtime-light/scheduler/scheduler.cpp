@@ -25,52 +25,54 @@ SimpleCoroutineScheduler &SimpleCoroutineScheduler::get() noexcept {
   return get_component_context()->scheduler;
 }
 
-bool SimpleCoroutineScheduler::finished() const noexcept {
-  return yield_coros.empty() && awaiting_for_stream_coros.empty() && awaiting_for_update_coros.empty();
+bool SimpleCoroutineScheduler::done() const noexcept {
+  const auto finished_{yield_coros.empty() && awaiting_for_stream_coros.empty() && awaiting_for_update_coros.empty()};
+  php_debug("SimpleCoroutineScheduler: done - %s", finished_ ? "true" : "false");
+  return finished_;
 }
 
 ScheduleStatus SimpleCoroutineScheduler::scheduleOnNoEvent() noexcept {
   if (yield_coros.empty()) {
-    php_debug("scheduleOnNoEvent: skipped");
+    php_debug("SimpleCoroutineScheduler: scheduleOnNoEvent skipped");
     return ScheduleStatus::Skipped;
   }
+  php_debug("SimpleCoroutineScheduler: scheduleOnNoEvent resumed");
   const auto coro{yield_coros.front()};
   yield_coros.pop_front();
-  coro();
-  php_debug("scheduleOnNoEvent: resumed");
+  coro.resume();
   return ScheduleStatus::Resumed;
 }
 
 ScheduleStatus SimpleCoroutineScheduler::scheduleOnIncomingStream() noexcept {
   if (awaiting_for_stream_coros.empty()) {
-    php_debug("scheduleOnIncomingStream: skipped");
+    php_debug("SimpleCoroutineScheduler: scheduleOnIncomingStream skipped");
     return ScheduleStatus::Skipped;
   }
+  php_debug("SimpleCoroutineScheduler: scheduleOnIncomingStream resumed");
   const auto coro{awaiting_for_stream_coros.front()};
   awaiting_for_stream_coros.pop_front();
-  coro();
-  php_debug("scheduleOnIncomingStream: resumed");
+  coro.resume();
   return ScheduleStatus::Resumed;
 }
 
-ScheduleStatus SimpleCoroutineScheduler::scheduleOnStreamUpdate(uint64_t descriptor) noexcept {
-  if (descriptor == INVALID_PLATFORM_DESCRIPTOR) {
-    php_warning("scheduleOnStreamUpdate: update on invalid descriptor %" PRIu64, descriptor);
+ScheduleStatus SimpleCoroutineScheduler::scheduleOnStreamUpdate(uint64_t stream_d) noexcept {
+  if (stream_d == INVALID_PLATFORM_DESCRIPTOR) {
+    php_warning("SimpleCoroutineScheduler: scheduleOnStreamUpdate invalid stream %" PRIu64, stream_d);
     return ScheduleStatus::Error;
-  } else if (const auto it_coro{awaiting_for_update_coros.find(descriptor)}; it_coro != awaiting_for_update_coros.cend()) {
+  } else if (const auto it_coro{awaiting_for_update_coros.find(stream_d)}; it_coro != awaiting_for_update_coros.cend()) {
+    php_debug("SimpleCoroutineScheduler: scheduleOnStreamUpdate scheduled on %" PRIu64, stream_d);
     const auto coro{it_coro->second};
     awaiting_for_update_coros.erase(it_coro);
-    coro();
-    php_debug("scheduleOnStreamUpdate: scheduled on %" PRIu64, descriptor);
+    coro.resume();
     return ScheduleStatus::Resumed;
   } else {
-    php_debug("scheduleOnStreamUpdate: skipped on %" PRIu64, descriptor);
+    php_debug("SimpleCoroutineScheduler: scheduleOnStreamUpdate skipped on %" PRIu64, stream_d);
     return ScheduleStatus::Skipped;
   }
 }
 
 ScheduleStatus SimpleCoroutineScheduler::scheduleOnYield() noexcept {
-  php_debug("scheduleOnYield: skipped");
+  php_debug("SimpleCoroutineScheduler: scheduleOnYield skipped");
   return ScheduleStatus::Skipped;
 }
 
@@ -96,16 +98,16 @@ ScheduleStatus SimpleCoroutineScheduler::schedule(ScheduleEvent::EventT event) n
 }
 
 void SimpleCoroutineScheduler::wait_for_update(std::coroutine_handle<> coro, uint64_t event_id) noexcept {
-  php_debug("wait_for_update: register await on %" PRIu64, event_id);
+  php_debug("SimpleCoroutineScheduler: registered await on %" PRIu64, event_id);
   awaiting_for_update_coros.emplace(event_id, coro);
 }
 
 void SimpleCoroutineScheduler::wait_for_incoming_stream(std::coroutine_handle<> coro) noexcept {
-  php_debug("wait_for_incoming_stream: register await for incoming stream");
+  php_debug("SimpleCoroutineScheduler: register await for incoming stream");
   awaiting_for_stream_coros.push_back(coro);
 }
 
 void SimpleCoroutineScheduler::wait_for_reschedule(std::coroutine_handle<> coro) noexcept {
-  php_debug("wait_for_reschedule: yield a coroutine");
+  php_debug("SimpleCoroutineScheduler: register wait for reschedule");
   yield_coros.push_back(coro);
 }
