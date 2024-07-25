@@ -9,7 +9,6 @@
 #include "common/mixin/not_copyable.h"
 #include "runtime-core/runtime-core.h"
 
-
 constexpr int64_t JSON_UNESCAPED_UNICODE = 1;
 constexpr int64_t JSON_FORCE_OBJECT = 16;
 constexpr int64_t JSON_PRETTY_PRINT = 128; // TODO: add actual support to untyped
@@ -22,7 +21,7 @@ constexpr int64_t JSON_AVAILABLE_FLAGS_TYPED = JSON_PRETTY_PRINT | JSON_PRESERVE
 struct JsonPath {
   constexpr static int MAX_DEPTH = 8;
 
-  std::array<const char*, MAX_DEPTH> arr;
+  std::array<const char *, MAX_DEPTH> arr;
   unsigned depth = 0;
 
   void enter(const char *key) noexcept {
@@ -47,31 +46,31 @@ class JsonEncoder : vk::not_copyable {
 public:
   JsonEncoder(int64_t options, bool simple_encode, const char *json_obj_magic_key = nullptr) noexcept;
 
-  //todo:k2 change static_SB everywhere to string_buffer arg
-  bool encode(bool b, string_buffer & sb) noexcept;
-  bool encode(int64_t i, string_buffer & sb) noexcept;
-  bool encode(const string &s, string_buffer & sb) noexcept;
-  bool encode(double d, string_buffer & sb) noexcept;
-  bool encode(const mixed &v, string_buffer & sb) noexcept;
+  // todo:k2 change static_SB everywhere to string_buffer arg
+  bool encode(bool b, string_buffer &sb) noexcept;
+  bool encode(int64_t i, string_buffer &sb) noexcept;
+  bool encode(const string &s, string_buffer &sb) noexcept;
+  bool encode(double d, string_buffer &sb) noexcept;
+  bool encode(const mixed &v, string_buffer &sb) noexcept;
 
   template<class T>
-  bool encode(const array<T> &arr, string_buffer & sb) noexcept;
+  bool encode(const array<T> &arr, string_buffer &sb) noexcept;
 
   template<class T>
-  bool encode(const Optional<T> &opt, string_buffer & sb) noexcept;
+  bool encode(const Optional<T> &opt, string_buffer &sb) noexcept;
 
 private:
-  bool encode_null(string_buffer & sb) const noexcept;
+  bool encode_null(string_buffer &sb) const noexcept;
 
   JsonPath json_path_;
   const int64_t options_{0};
-  //todo:k2 use simple_encode
+  // todo:k2 use simple_encode
   [[maybe_unused]] const bool simple_encode_{false};
   const char *json_obj_magic_key_{nullptr};
 };
 
 template<class T>
-bool JsonEncoder::encode(const array<T> &arr, string_buffer & sb) noexcept {
+bool JsonEncoder::encode(const array<T> &arr, string_buffer &sb) noexcept {
   bool is_vector = arr.is_vector();
   const bool force_object = static_cast<bool>(JSON_FORCE_OBJECT & options_);
   if (!force_object && !is_vector && arr.is_pseudo_vector()) {
@@ -142,7 +141,7 @@ bool JsonEncoder::encode(const array<T> &arr, string_buffer & sb) noexcept {
 }
 
 template<class T>
-bool JsonEncoder::encode(const Optional<T> &opt, string_buffer & sb) noexcept {
+bool JsonEncoder::encode(const Optional<T> &opt, string_buffer &sb) noexcept {
   switch (opt.value_state()) {
     case OptionalState::has_value:
       return encode(opt.val(), sb);
@@ -170,7 +169,7 @@ Optional<string> f$json_encode(const T &v, int64_t options = 0, bool simple_enco
   return sb.c_str();
 }
 
-//todo:k2 implement string f$vk_json_encode_safe(const T &v, bool simple_encode = true) noexcept
+// todo:k2 implement string f$vk_json_encode_safe(const T &v, bool simple_encode = true) noexcept
 
 template<class T>
 inline Optional<string> f$vk_json_encode(const T &v) noexcept {
