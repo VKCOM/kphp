@@ -63,7 +63,10 @@ jobs:
         docker build -f $GITHUB_WORKSPACE/.github/workflows/Dockerfile.${{matrix.os}} $GITHUB_WORKSPACE \
               -t kphp-build-img-${{matrix.os}} \
               --cache-from=type=local,src=kphp-build-img-${{matrix.os}}-cache
-        docker tag kphp-build-img-${{matrix.os}} kphp-build-img-${{matrix.os}}-cache && mkdir -p /tmp/docker-save-${{matrix.os}} && docker save kphp-build-img-${{matrix.os}}-cache -o /tmp/docker-save-${{matrix.os}}/kphp-build-env-${{matrix.os}}.tar && ls -lh /tmp/docker-save-${{matrix.os}}
+        docker tag kphp-build-img-${{matrix.os}} kphp-build-img-${{matrix.os}}-cache \
+        mkdir -p /tmp/docker-save-${{matrix.os}} \
+        docker save kphp-build-img-${{matrix.os}}-cache -o /tmp/docker-save-${{matrix.os}}/kphp-build-env-${{matrix.os}}.tar \
+        ls -lh /tmp/docker-save-${{matrix.os}}
         
     - name: Load docker image from cache
       if: steps.docker-image-cache.outputs.cache-hit == 'true'
