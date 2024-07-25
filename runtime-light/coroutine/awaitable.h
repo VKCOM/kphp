@@ -4,75 +4,106 @@
 
 #pragma once
 
+#include <chrono>
+#include <concepts>
 #include <coroutine>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <utility>
 
+#include "runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/component/component.h"
-#include "runtime-light/utils/logs.h"
+#include "runtime-light/header.h"
+#include "runtime-light/utils/context.h"
 
-struct blocked_operation_t {
-  uint64_t awaited_stream;
-
-  blocked_operation_t(uint64_t stream_d)
-    : awaited_stream(stream_d) {}
-
-  constexpr bool await_ready() const noexcept {
-    return false;
-  }
-
-  void await_resume() const noexcept {
-    ComponentState &ctx = *get_component_context();
-    ctx.opened_streams[awaited_stream] = StreamRuntimeStatus::NotBlocked;
-  }
+template<class T>
+concept Awaitable = requires(T && awaitable, std::coroutine_handle<> coro) {
+  { awaitable.await_ready() } noexcept -> std::convertible_to<bool>;
+  { awaitable.await_suspend(coro) } noexcept;
+  { awaitable.await_resume() } noexcept;
 };
 
-struct read_blocked_t : blocked_operation_t {
-  void await_suspend(std::coroutine_handle<> h) const noexcept {
-    php_debug("blocked read on stream %lu", awaited_stream);
-    ComponentState &ctx = *get_component_context();
-    ctx.poll_status = PollStatus::PollBlocked;
-    ctx.opened_streams[awaited_stream] = StreamRuntimeStatus::RBlocked;
-    ctx.awaiting_coroutines[awaited_stream] = h;
-  }
+template<class T>
+concept CancellableAwaitable = Awaitable<T> && requires(T && awaitable) {
+  { awaitable.cancel() } noexcept -> std::same_as<void>;
 };
 
-struct write_blocked_t : blocked_operation_t {
-  void await_suspend(std::coroutine_handle<> h) const noexcept {
-    php_debug("blocked write on stream %lu", awaited_stream);
-    ComponentState &ctx = *get_component_context();
-    ctx.poll_status = PollStatus::PollBlocked;
-    ctx.opened_streams[awaited_stream] = StreamRuntimeStatus::WBlocked;
-    ctx.awaiting_coroutines[awaited_stream] = h;
-  }
-};
+// === Awaitables =================================================================================
 
-struct test_yield_t {
+struct wait_for_update_t {
+  uint64_t stream_d;
+
+  explicit wait_for_update_t(uint64_t stream_d_)
+    : stream_d(stream_d_) {}
+
   bool await_ready() const noexcept {
-    return !get_platform_context()->please_yield.load();
+    return get_component_context()->stream_updated(stream_d);
   }
 
   void await_suspend(std::coroutine_handle<> h) const noexcept {
-    ComponentState &ctx = *get_component_context();
-    ctx.poll_status = PollStatus::PollReschedule;
-    ctx.main_thread = h;
+    CoroutineScheduler::get().wait_for_update(h, stream_d);
   }
 
   constexpr void await_resume() const noexcept {}
 };
 
-struct wait_incoming_query_t {
+// ================================================================================================
+
+struct wait_for_incoming_stream_t {
   bool await_ready() const noexcept {
-    return !get_component_context()->incoming_pending_queries.empty();
+    return !get_component_context()->incoming_streams().empty();
   }
 
   void await_suspend(std::coroutine_handle<> h) const noexcept {
-    ComponentState &ctx = *get_component_context();
-    php_assert(ctx.standard_stream == 0);
-    ctx.main_thread = h;
-    ctx.wait_incoming_stream = true;
-    ctx.poll_status = PollBlocked;
+    CoroutineScheduler::get().wait_for_incoming_stream(h);
   }
 
-  void await_resume() const noexcept {
-    get_component_context()->wait_incoming_stream = false;
+  uint64_t await_resume() const noexcept {
+    const auto incoming_stream_d{get_component_context()->take_incoming_stream()};
+    php_assert(incoming_stream_d != INVALID_PLATFORM_DESCRIPTOR);
+    return incoming_stream_d;
+  }
+};
+
+// ================================================================================================
+
+struct wait_for_reschedule_t {
+  constexpr bool await_ready() const noexcept {
+    return false;
+  }
+
+  void await_suspend(std::coroutine_handle<> h) const noexcept {
+    CoroutineScheduler::get().wait_for_reschedule(h);
+  }
+
+  constexpr void await_resume() const noexcept {}
+};
+
+// ================================================================================================
+
+template<std::invocable callback_t>
+class wait_for_timer_t {
+  uint64_t timer_d{};
+  callback_t callback;
+
+public:
+  explicit wait_for_timer_t(
+    std::chrono::nanoseconds duration, callback_t &&callback_ = [] {}) noexcept
+    : timer_d(get_component_context()->set_timer(duration))
+    , callback(std::move(callback_)) {}
+
+  bool await_ready() const noexcept {
+    TimePoint tp{};
+    return timer_d == INVALID_PLATFORM_DESCRIPTOR || get_platform_context()->get_timer_status(timer_d, std::addressof(tp)) == TimerStatus::TimerStatusElapsed;
+  }
+
+  void await_suspend(std::coroutine_handle<> h) const noexcept {
+    CoroutineScheduler::get().wait_for_update(h, timer_d);
+  }
+
+  auto await_resume() const noexcept {
+    get_component_context()->release_stream(timer_d);
+    return std::invoke(std::move(callback));
   }
 };
