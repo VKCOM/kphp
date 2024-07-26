@@ -13,6 +13,7 @@
 #include "compiler/data/function-data.h"
 #include "compiler/data/generics-mixins.h"
 #include "compiler/data/kphp-json-tags.h"
+#include "compiler/data/kphp-msgpack-tags.h"
 #include "compiler/data/kphp-tracing-tags.h"
 #include "compiler/data/src-file.h"
 #include "compiler/phpdoc.h"
@@ -663,9 +664,12 @@ public:
         kphp_error(f.type_hint, fmt_format("Failed to parse @var of {}", f.var->as_human_readable()));
       }
 
-      if (f.phpdoc && f.phpdoc->has_tag(PhpDocType::kphp_json)) {
-        f.kphp_json_tags = kphp_json::KphpJsonTagList::create_from_phpdoc(klass->get_holder_function(), f.phpdoc, ClassPtr{});
-      }
+    if (f.phpdoc && f.phpdoc->has_tag(PhpDocType::kphp_json)) {
+      f.kphp_json_tags = kphp_json::KphpJsonTagList::create_from_phpdoc(klass->get_holder_function(), f.phpdoc, ClassPtr{});
+    }
+    if (f.phpdoc && f.phpdoc->has_tag(PhpDocType::kphp_msgpack)) {
+      f.kphp_msgpack_tags = kphp_msgpack::KphpMsgPackTagList::create_from_phpdoc(klass->get_holder_function(), f.phpdoc, ClassPtr{});
+    }
     });
 
     klass->members.for_each([&](ClassMemberStaticField &f) {
@@ -676,7 +680,7 @@ public:
         kphp_error(f.type_hint, fmt_format("Failed to parse @var of {}", f.var->as_human_readable()));
       }
       if (f.phpdoc) {
-        kphp_error_return(!f.phpdoc->has_tag(PhpDocType::kphp_json), "@kphp-json is allowed only for instance fields");
+        kphp_error_return(!(f.phpdoc->has_tag(PhpDocType::kphp_json) || f.phpdoc->has_tag(PhpDocType::kphp_msgpack)), "@kphp-json or @kphp-msgpack are allowed only for instance fields");
       }
     });
 
@@ -772,6 +776,12 @@ private:
       case PhpDocType::kphp_json:
         if (!klass->kphp_json_tags) { // meeting the first @kphp-json, parse them all
           klass->kphp_json_tags = kphp_json::KphpJsonTagList::create_from_phpdoc(klass->get_holder_function(), klass->phpdoc, klass);
+        }
+        break;
+
+      case PhpDocType::kphp_msgpack:
+        if (!klass->kphp_msgpack_tags) { // meeting the first @kphp-msgpack, parse them all
+          klass->kphp_msgpack_tags = kphp_msgpack::KphpMsgPackTagList::create_from_phpdoc(klass->get_holder_function(), klass->phpdoc, klass);
         }
         break;
 

@@ -36,6 +36,7 @@
 class TypeData;
 class ClassMembersContainer;
 namespace kphp_json { class KphpJsonTagList; }
+namespace kphp_msgpack { class KphpMsgPackTagList; }
 
 struct ClassMemberStaticMethod {
   FunctionPtr function;
@@ -87,6 +88,7 @@ struct ClassMemberInstanceField {
   VarPtr var;
   const PhpDocComment *phpdoc{nullptr};
   const kphp_json::KphpJsonTagList *kphp_json_tags{nullptr};
+  const kphp_msgpack::KphpMsgPackTagList *kphp_msgpack_tags{nullptr};
   const TypeHint *type_hint{nullptr};  // from @var / php 7.4 type hint / default value
   int8_t serialization_tag = -1;
   bool serialize_as_float32{false};

@@ -46,6 +46,7 @@ enum class PhpDocType {
   kphp_serialized_field,
   kphp_serialized_float32,
   kphp_json,
+  kphp_msgpack,
   kphp_profile,
   kphp_profile_allow_inline,
   kphp_strict_types_enable, // TODO: remove when strict_types=1 are enabled by default

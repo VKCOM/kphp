@@ -18,6 +18,7 @@
 #include "compiler/data/function-data.h"
 #include "compiler/data/ffi-data.h"
 #include "compiler/data/kphp-json-tags.h"
+#include "compiler/data/kphp-msgpack-tags.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/var-data.h"

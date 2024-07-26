@@ -62,6 +62,7 @@ public:
 
   const PhpDocComment *phpdoc{nullptr};
   const kphp_json::KphpJsonTagList *kphp_json_tags{nullptr};
+  const kphp_msgpack::KphpMsgPackTagList *kphp_msgpack_tags{nullptr};
 
   bool can_be_php_autoloaded{false};
   bool is_immutable{false};

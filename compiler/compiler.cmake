@@ -40,6 +40,7 @@ prepend(KPHP_COMPILER_DATA_SOURCES data/
         lib-data.cpp
         generics-mixins.cpp
         kphp-json-tags.cpp
+        kphp-msgpack-tags.cpp
         kphp-tracing-tags.cpp
         modulite-data.cpp
         performance-inspections.cpp
