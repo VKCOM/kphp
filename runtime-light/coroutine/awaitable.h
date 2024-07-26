@@ -18,6 +18,7 @@
 #include "runtime-light/fork/fork-context.h"
 #include "runtime-light/fork/fork.h"
 #include "runtime-light/header.h"
+#include "runtime-light/scheduler/scheduler.h"
 #include "runtime-light/utils/context.h"
 
 template<class T>
@@ -45,7 +46,7 @@ struct wait_for_update_t {
   }
 
   void await_suspend(std::coroutine_handle<> h) const noexcept {
-    CoroutineScheduler::get().wait_for_update(h, stream_d);
+    CoroutineScheduler::get().suspend(h, WaitEvent::UpdateOnStream{.stream_d = stream_d});
   }
 
   constexpr void await_resume() const noexcept {}
@@ -59,7 +60,7 @@ struct wait_for_incoming_stream_t {
   }
 
   void await_suspend(std::coroutine_handle<> h) const noexcept {
-    CoroutineScheduler::get().wait_for_incoming_stream(h);
+    CoroutineScheduler::get().suspend(h, WaitEvent::IncomingStream{});
   }
 
   uint64_t await_resume() const noexcept {
@@ -77,7 +78,7 @@ struct wait_for_reschedule_t {
   }
 
   void await_suspend(std::coroutine_handle<> h) const noexcept {
-    CoroutineScheduler::get().wait_for_reschedule(h);
+    CoroutineScheduler::get().suspend(h, WaitEvent::Rechedule{});
   }
 
   constexpr void await_resume() const noexcept {}
@@ -102,7 +103,7 @@ public:
   }
 
   void await_suspend(std::coroutine_handle<> h) const noexcept {
-    CoroutineScheduler::get().wait_for_update(h, timer_d);
+    CoroutineScheduler::get().suspend(h, WaitEvent::UpdateOnTimer{.timer_d = timer_d});
   }
 
   auto await_resume() const noexcept {
@@ -127,7 +128,7 @@ public:
   }
 
   std::coroutine_handle<> await_suspend(std::coroutine_handle<> h) noexcept {
-    CoroutineScheduler::get().wait_for_reschedule(h);
+    CoroutineScheduler::get().suspend(h, WaitEvent::Rechedule{});
     return coro;
   }
 

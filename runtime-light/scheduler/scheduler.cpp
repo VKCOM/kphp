@@ -97,17 +97,23 @@ ScheduleStatus SimpleCoroutineScheduler::schedule(ScheduleEvent::EventT event) n
     event);
 }
 
-void SimpleCoroutineScheduler::wait_for_update(std::coroutine_handle<> coro, uint64_t event_id) noexcept {
-  php_debug("SimpleCoroutineScheduler: registered await on %" PRIu64, event_id);
-  awaiting_for_update_coros.emplace(event_id, coro);
-}
-
-void SimpleCoroutineScheduler::wait_for_incoming_stream(std::coroutine_handle<> coro) noexcept {
-  php_debug("SimpleCoroutineScheduler: register await for incoming stream");
-  awaiting_for_stream_coros.push_back(coro);
-}
-
-void SimpleCoroutineScheduler::wait_for_reschedule(std::coroutine_handle<> coro) noexcept {
-  php_debug("SimpleCoroutineScheduler: register wait for reschedule");
-  yield_coros.push_back(coro);
+void SimpleCoroutineScheduler::suspend(std::coroutine_handle<> coro, WaitEvent::EventT event) noexcept {
+  std::visit(
+    [this, coro](auto &&event) {
+      using event_t = std::remove_cvref_t<decltype(event)>;
+      if constexpr (std::is_same_v<event_t, WaitEvent::NoEvent>) {
+        php_debug("SimpleCoroutineScheduler: register wait for rechedule");
+        yield_coros.push_back(coro);
+      } else if constexpr (std::is_same_v<event_t, WaitEvent::IncomingStream>) {
+        php_debug("SimpleCoroutineScheduler: register wait for incoming stream");
+        awaiting_for_stream_coros.push_back(coro);
+      } else if constexpr (std::is_same_v<event_t, WaitEvent::UpdateOnStream>) {
+        php_debug("SimpleCoroutineScheduler: register wait on stream %" PRIu64, event.stream_d);
+        awaiting_for_update_coros.emplace(event.stream_d, coro);
+      } else if constexpr (std::is_same_v<event_t, WaitEvent::UpdateOnTimer>) {
+        php_debug("SimpleCoroutineScheduler: register wait on timer %" PRIu64, event.timer_d);
+        awaiting_for_update_coros.emplace(event.timer_d, coro);
+      }
+    },
+    event);
 }

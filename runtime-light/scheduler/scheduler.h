@@ -44,6 +44,31 @@ using EventT = std::variant<NoEvent, IncomingStream, UpdateOnStream, UpdateOnTim
 enum class ScheduleStatus : uint8_t { Resumed, Skipped, Error };
 
 /**
+ * Supported types of awaitable events:
+ * 1. Reschedule: yield execution, it's up to scheduler when the coroutine will continue its execution;
+ * 2. IncomingStream: wait for incoming stream;
+ * 3. UpdateOnStream(uint64_t): wait for update on specified stream;
+ * 4. UpdateOnTimer(uint64_t): wait for update on specified timer.
+ */
+namespace WaitEvent {
+
+struct Rechedule {};
+
+struct IncomingStream {};
+
+struct UpdateOnStream {
+  uint64_t stream_d{};
+};
+
+struct UpdateOnTimer {
+  uint64_t timer_d{};
+};
+
+using EventT = std::variant<Rechedule, IncomingStream, UpdateOnStream, UpdateOnTimer>;
+
+}; // namespace WaitEvent
+
+/**
  * Coroutine scheduler concept.
  *
  * Any type that is supposed to be used as a coroutine scheduler should conform to following interface:
@@ -56,14 +81,13 @@ enum class ScheduleStatus : uint8_t { Resumed, Skipped, Error };
  * 6. have 'wait_for_reschedule' method that blocks a coroutine for better times.
  */
 template<class scheduler_t>
-concept CoroutineSchedulerConcept = std::constructible_from<scheduler_t, memory_resource::unsynchronized_pool_resource &>
-                                    && requires(scheduler_t && s, ScheduleEvent::EventT schedule_event, std::coroutine_handle<> coro, uint64_t event_id) {
+concept CoroutineSchedulerConcept =
+  std::constructible_from<scheduler_t, memory_resource::unsynchronized_pool_resource &>
+  && requires(scheduler_t && s, ScheduleEvent::EventT schedule_event, std::coroutine_handle<> coro, WaitEvent::EventT wait_event) {
   { scheduler_t::get() } noexcept -> std::same_as<scheduler_t &>;
   { s.done() } noexcept -> std::convertible_to<bool>;
   { s.schedule(schedule_event) } noexcept -> std::same_as<ScheduleStatus>;
-  { s.wait_for_update(coro, event_id) } noexcept -> std::same_as<void>;
-  { s.wait_for_incoming_stream(coro) } noexcept -> std::same_as<void>;
-  { s.wait_for_reschedule(coro) } noexcept -> std::same_as<void>;
+  { s.suspend(coro, wait_event) } noexcept -> std::same_as<void>;
 };
 
 // === SimpleCoroutineScheduler ===================================================================
@@ -80,11 +104,8 @@ class SimpleCoroutineScheduler {
   unordered_map<uint64_t, std::coroutine_handle<>> awaiting_for_update_coros;
 
   ScheduleStatus scheduleOnNoEvent() noexcept;
-
   ScheduleStatus scheduleOnIncomingStream() noexcept;
-
   ScheduleStatus scheduleOnStreamUpdate(uint64_t) noexcept;
-
   ScheduleStatus scheduleOnYield() noexcept;
 
 public:
@@ -96,9 +117,5 @@ public:
 
   ScheduleStatus schedule(ScheduleEvent::EventT) noexcept;
 
-  void wait_for_update(std::coroutine_handle<>, uint64_t) noexcept;
-
-  void wait_for_incoming_stream(std::coroutine_handle<>) noexcept;
-
-  void wait_for_reschedule(std::coroutine_handle<>) noexcept;
+  void suspend(std::coroutine_handle<>, WaitEvent::EventT) noexcept;
 };
