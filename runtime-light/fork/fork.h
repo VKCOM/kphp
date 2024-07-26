@@ -21,7 +21,7 @@ public:
   }
 
   template<typename T>
-  T get() const noexcept {
+  T get_result() noexcept {
     return *storage.get<T>();
   }
 };

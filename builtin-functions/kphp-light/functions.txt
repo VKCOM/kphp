@@ -76,6 +76,11 @@ function get_hash_of_class (object $klass) ::: int;
 
 function strlen ($str ::: string) ::: int;
 
+// === Fork =======================================================================================
+
+/** @kphp-extern-func-info interruptible cpp_template_call */
+function wait(future<any> | false $id, float $timeout = -1.0) ::: ^1[*] | null;
+
 // === Rpc ========================================================================================
 
 /** @kphp-tl-class */
