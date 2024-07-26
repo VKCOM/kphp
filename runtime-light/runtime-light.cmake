@@ -1,5 +1,7 @@
+<<<<<<< HEAD
 include(${RUNTIME_LIGHT_DIR}/allocator/allocator.cmake)
 include(${RUNTIME_LIGHT_DIR}/core/core.cmake)
+include(${RUNTIME_LIGHT_DIR}/fork/fork.cmake)
 include(${RUNTIME_LIGHT_DIR}/scheduler/scheduler.cmake)
 include(${RUNTIME_LIGHT_DIR}/stdlib/stdlib.cmake)
 include(${RUNTIME_LIGHT_DIR}/streams/streams.cmake)
@@ -11,6 +13,7 @@ include(${RUNTIME_LIGHT_DIR}/memory-resource-impl/memory-resource-impl.cmake)
 set(RUNTIME_LIGHT_SRC
     ${RUNTIME_CORE_SRC}
     ${RUNTIME_STDLIB_SRC}
+    ${RUNTIME_FORK_SRC}
     ${RUNTIME_SCHEDULER_SRC}
     ${RUNTIME_ALLOCATOR_SRC}
     ${RUNTIME_COROUTINE_SRC}

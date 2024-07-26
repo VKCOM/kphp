@@ -15,8 +15,8 @@
 
 void ComponentState::init_script_execution() noexcept {
   kphp_core_context.init();
-  init_php_scripts_in_each_worker(php_script_mutable_globals_singleton, k_main);
-  scheduler.wait_for_reschedule(k_main.get_handle());
+  init_php_scripts_in_each_worker(php_script_mutable_globals_singleton, main_task);
+  scheduler.wait_for_reschedule(main_task.get_handle());
 }
 
 void ComponentState::process_platform_updates() noexcept {

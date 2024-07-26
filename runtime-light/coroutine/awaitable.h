@@ -14,6 +14,9 @@
 
 #include "runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/component/component.h"
+#include "runtime-light/coroutine/task.h"
+#include "runtime-light/fork/fork-context.h"
+#include "runtime-light/fork/fork.h"
 #include "runtime-light/header.h"
 #include "runtime-light/utils/context.h"
 
@@ -34,7 +37,7 @@ concept CancellableAwaitable = Awaitable<T> && requires(T && awaitable) {
 struct wait_for_update_t {
   uint64_t stream_d;
 
-  explicit wait_for_update_t(uint64_t stream_d_)
+  explicit wait_for_update_t(uint64_t stream_d_) noexcept
     : stream_d(stream_d_) {}
 
   bool await_ready() const noexcept {
@@ -105,5 +108,30 @@ public:
   auto await_resume() const noexcept {
     get_component_context()->release_stream(timer_d);
     return std::invoke(std::move(callback));
+  }
+};
+
+// ================================================================================================
+
+class start_fork_and_reschedule_t {
+  std::coroutine_handle<> coro;
+  int64_t fork_id{};
+
+public:
+  explicit start_fork_and_reschedule_t(task_t<fork_result> &&task_) noexcept
+    : coro(task_.get_handle())
+    , fork_id(ForkComponentContext::get().register_fork(std::move(task_))) {}
+
+  constexpr bool await_ready() const noexcept {
+    return false;
+  }
+
+  std::coroutine_handle<> await_suspend(std::coroutine_handle<> h) noexcept {
+    CoroutineScheduler::get().wait_for_reschedule(h);
+    return coro;
+  }
+
+  int64_t await_resume() const noexcept {
+    return fork_id;
   }
 };

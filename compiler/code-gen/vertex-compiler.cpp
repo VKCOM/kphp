@@ -844,7 +844,11 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
 
 
     if (mode == func_call_mode::fork_call) {
-      W << FunctionForkName(func);
+      if (func->is_interruptible) {
+        W << "(co_await start_fork_and_reschedule_t{" << FunctionName(func);
+      } else {
+        W << FunctionForkName(func);
+      }
     } else {
       if (func->is_interruptible) {
         W << "(" << "co_await ";
@@ -874,6 +878,9 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
   W << JoinValues(args, ", ");
   W << ")";
   if (func->is_interruptible) {
+    if (mode == func_call_mode::fork_call) {
+      W << "}";
+    }
     W << ")";
   }
 }
@@ -1461,7 +1468,7 @@ void compile_function(VertexAdaptor<op_function> func_root, CodeGenerator &W) {
   W.get_context().resumable_flag = func->is_resumable;
   W.get_context().interruptible_flag = func->is_interruptible;
 
-  if (func->is_resumable) {
+  if (func->is_resumable && !func->is_interruptible) {
     compile_function_resumable(func_root, W);
     return;
   }

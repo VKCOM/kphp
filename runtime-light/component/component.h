@@ -14,6 +14,7 @@
 #include "runtime-core/runtime-core.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/coroutine/task.h"
+#include "runtime-light/fork/fork-context.h"
 #include "runtime-light/header.h"
 #include "runtime-light/scheduler/scheduler.h"
 #include "runtime-light/stdlib/output-control.h"
@@ -35,6 +36,7 @@ struct ComponentState {
   ComponentState() noexcept
     : runtime_allocator(INIT_RUNTIME_ALLOCATOR_SIZE, 0)
     , scheduler(runtime_allocator.memory_resource)
+    , fork_component_context(runtime_allocator.memory_resource)
     , php_script_mutable_globals_singleton(runtime_allocator.memory_resource)
     , rpc_component_context(runtime_allocator.memory_resource)
     , incoming_streams_(deque<uint64_t>::allocator_type{runtime_allocator.memory_resource})
@@ -58,8 +60,8 @@ struct ComponentState {
 
   RuntimeAllocator runtime_allocator;
 
-  task_t<void> k_main;
   CoroutineScheduler scheduler;
+  ForkComponentContext fork_component_context;
   PollStatus poll_status = PollStatus::PollReschedule;
 
   Response response;
@@ -69,6 +71,8 @@ struct ComponentState {
   RpcComponentContext rpc_component_context;
 
 private:
+  task_t<void> main_task;
+
   uint64_t standard_stream_{INVALID_PLATFORM_DESCRIPTOR};
   deque<uint64_t> incoming_streams_;
   unordered_set<uint64_t> opened_streams_;
