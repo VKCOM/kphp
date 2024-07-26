@@ -6,6 +6,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <utility>
 
 #include "runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/core/globals/php-init-scripts.h"
@@ -16,7 +17,7 @@
 void ComponentState::init_script_execution() noexcept {
   kphp_core_context.init();
   init_php_scripts_in_each_worker(php_script_mutable_globals_singleton, main_task);
-  scheduler.suspend(main_task.get_handle(), WaitEvent::Rechedule{});
+  scheduler.suspend(std::make_pair(main_task.get_handle(), WaitEvent::Rechedule{}));
 }
 
 void ComponentState::process_platform_updates() noexcept {

@@ -46,7 +46,7 @@ struct wait_for_update_t {
   }
 
   void await_suspend(std::coroutine_handle<> h) const noexcept {
-    CoroutineScheduler::get().suspend(h, WaitEvent::UpdateOnStream{.stream_d = stream_d});
+    CoroutineScheduler::get().suspend(std::make_pair(h, WaitEvent::UpdateOnStream{.stream_d = stream_d}));
   }
 
   constexpr void await_resume() const noexcept {}
@@ -60,7 +60,7 @@ struct wait_for_incoming_stream_t {
   }
 
   void await_suspend(std::coroutine_handle<> h) const noexcept {
-    CoroutineScheduler::get().suspend(h, WaitEvent::IncomingStream{});
+    CoroutineScheduler::get().suspend(std::make_pair(h, WaitEvent::IncomingStream{}));
   }
 
   uint64_t await_resume() const noexcept {
@@ -78,7 +78,7 @@ struct wait_for_reschedule_t {
   }
 
   void await_suspend(std::coroutine_handle<> h) const noexcept {
-    CoroutineScheduler::get().suspend(h, WaitEvent::Rechedule{});
+    CoroutineScheduler::get().suspend(std::make_pair(h, WaitEvent::Rechedule{}));
   }
 
   constexpr void await_resume() const noexcept {}
@@ -103,7 +103,7 @@ public:
   }
 
   void await_suspend(std::coroutine_handle<> h) const noexcept {
-    CoroutineScheduler::get().suspend(h, WaitEvent::UpdateOnTimer{.timer_d = timer_d});
+    CoroutineScheduler::get().suspend(std::make_pair(h, WaitEvent::UpdateOnTimer{.timer_d = timer_d}));
   }
 
   auto await_resume() const noexcept {
@@ -128,7 +128,7 @@ public:
   }
 
   std::coroutine_handle<> await_suspend(std::coroutine_handle<> h) noexcept {
-    CoroutineScheduler::get().suspend(h, WaitEvent::Rechedule{});
+    CoroutineScheduler::get().suspend(std::make_pair(h, WaitEvent::Rechedule{}));
     return coro;
   }
 

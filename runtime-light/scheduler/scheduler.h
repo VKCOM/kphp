@@ -7,6 +7,7 @@
 #include <concepts>
 #include <coroutine>
 #include <cstdint>
+#include <utility>
 #include <variant>
 
 #include "runtime-core/memory-resource/unsynchronized_pool_resource.h"
@@ -69,6 +70,11 @@ using EventT = std::variant<Rechedule, IncomingStream, UpdateOnStream, UpdateOnT
 }; // namespace WaitEvent
 
 /**
+ * SuspendableToken type that binds an event and a coroutine waiting for that event.
+ */
+using SuspendableToken = std::pair<std::coroutine_handle<>, WaitEvent::EventT>;
+
+/**
  * Coroutine scheduler concept.
  *
  * Any type that is supposed to be used as a coroutine scheduler should conform to following interface:
@@ -76,16 +82,17 @@ using EventT = std::variant<Rechedule, IncomingStream, UpdateOnStream, UpdateOnT
  * 2. have static `get` function that returns a reference to scheduler instance;
  * 3. have `done` method that returns whether scheduler's scheduled all coroutines;
  * 4. have `schedule` method that takes an event and schedules coroutines for execution;
- * 5. have `suspend` method that suspends specified coroutine.
+ * 5. have `suspend` method that suspends specified coroutine;
+ * 6. have `cancel` method that cancels specified suspendable token.
  */
 template<class scheduler_t>
-concept CoroutineSchedulerConcept =
-  std::constructible_from<scheduler_t, memory_resource::unsynchronized_pool_resource &>
-  && requires(scheduler_t && s, ScheduleEvent::EventT schedule_event, std::coroutine_handle<> coro, WaitEvent::EventT wait_event) {
+concept CoroutineSchedulerConcept = std::constructible_from<scheduler_t, memory_resource::unsynchronized_pool_resource &>
+                                    && requires(scheduler_t && s, ScheduleEvent::EventT schedule_event, SuspendableToken token) {
   { scheduler_t::get() } noexcept -> std::same_as<scheduler_t &>;
   { s.done() } noexcept -> std::convertible_to<bool>;
   { s.schedule(schedule_event) } noexcept -> std::same_as<ScheduleStatus>;
-  { s.suspend(coro, wait_event) } noexcept -> std::same_as<void>;
+  { s.suspend(token) } noexcept -> std::same_as<void>;
+  { s.cancel(token) } noexcept -> std::same_as<void>;
 };
 
 // === SimpleCoroutineScheduler ===================================================================
@@ -115,5 +122,7 @@ public:
 
   ScheduleStatus schedule(ScheduleEvent::EventT) noexcept;
 
-  void suspend(std::coroutine_handle<>, WaitEvent::EventT) noexcept;
+  void suspend(SuspendableToken) noexcept;
+
+  void cancel(SuspendableToken) noexcept;
 };

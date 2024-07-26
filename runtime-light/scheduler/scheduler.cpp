@@ -4,6 +4,7 @@
 
 #include "runtime-light/scheduler/scheduler.h"
 
+#include <algorithm>
 #include <cinttypes>
 #include <coroutine>
 #include <cstdint>
@@ -97,11 +98,12 @@ ScheduleStatus SimpleCoroutineScheduler::schedule(ScheduleEvent::EventT event) n
     event);
 }
 
-void SimpleCoroutineScheduler::suspend(std::coroutine_handle<> coro, WaitEvent::EventT event) noexcept {
+void SimpleCoroutineScheduler::suspend(SuspendableToken token) noexcept {
+  const auto [coro, event]{token};
   std::visit(
     [this, coro](auto &&event) {
       using event_t = std::remove_cvref_t<decltype(event)>;
-      if constexpr (std::is_same_v<event_t, WaitEvent::NoEvent>) {
+      if constexpr (std::is_same_v<event_t, WaitEvent::Rechedule>) {
         php_debug("SimpleCoroutineScheduler: register wait for rechedule");
         yield_coros.push_back(coro);
       } else if constexpr (std::is_same_v<event_t, WaitEvent::IncomingStream>) {
@@ -113,6 +115,28 @@ void SimpleCoroutineScheduler::suspend(std::coroutine_handle<> coro, WaitEvent::
       } else if constexpr (std::is_same_v<event_t, WaitEvent::UpdateOnTimer>) {
         php_debug("SimpleCoroutineScheduler: register wait on timer %" PRIu64, event.timer_d);
         awaiting_for_update_coros.emplace(event.timer_d, coro);
+      }
+    },
+    event);
+}
+
+void SimpleCoroutineScheduler::cancel(SuspendableToken token) noexcept {
+  const auto [coro, event]{token};
+  std::visit(
+    [this, coro](auto &&event) {
+      using event_t = std::remove_cvref_t<decltype(event)>;
+      if constexpr (std::is_same_v<event_t, WaitEvent::Rechedule>) {
+        php_debug("SimpleCoroutineScheduler: cancel wait for rechedule");
+        yield_coros.erase(std::find(yield_coros.cbegin(), yield_coros.cbegin(), coro));
+      } else if constexpr (std::is_same_v<event_t, WaitEvent::IncomingStream>) {
+        php_debug("SimpleCoroutineScheduler: cancel wait for incoming stream");
+        awaiting_for_stream_coros.erase(std::find(awaiting_for_stream_coros.cbegin(), awaiting_for_stream_coros.cend(), coro));
+      } else if constexpr (std::is_same_v<event_t, WaitEvent::UpdateOnStream>) {
+        php_debug("SimpleCoroutineScheduler: cancel wait on stream %" PRIu64, event.stream_d);
+        awaiting_for_update_coros.erase(event.stream_d);
+      } else if constexpr (std::is_same_v<event_t, WaitEvent::UpdateOnTimer>) {
+        php_debug("SimpleCoroutineScheduler: cancel wait on timer %" PRIu64, event.timer_d);
+        awaiting_for_update_coros.erase(event.timer_d);
       }
     },
     event);
