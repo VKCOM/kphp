@@ -74,11 +74,9 @@ using EventT = std::variant<Rechedule, IncomingStream, UpdateOnStream, UpdateOnT
  * Any type that is supposed to be used as a coroutine scheduler should conform to following interface:
  * 1. be constructible from `memory_resource::unsyncrhonized_pool_resource&`;
  * 2. have static `get` function that returns a reference to scheduler instance;
- * 3. have `schedule` method that takes an event and schedules coroutines for execution and returning `ScheduleResult`
- *    signaling the status of current `vk_k2_poll` call;
- * 4. have `wait_for_update` method that blocks a coroutine until update on specified stream happens;
- * 5. have `wait_for_incoming_stream` that blocks a coroutine until incoming stream is accepted;
- * 6. have 'wait_for_reschedule' method that blocks a coroutine for better times.
+ * 3. have `done` method that returns whether scheduler's scheduled all coroutines;
+ * 4. have `schedule` method that takes an event and schedules coroutines for execution;
+ * 5. have `suspend` method that suspends specified coroutine.
  */
 template<class scheduler_t>
 concept CoroutineSchedulerConcept =
