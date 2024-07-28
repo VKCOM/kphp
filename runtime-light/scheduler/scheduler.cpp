@@ -25,8 +25,7 @@ SimpleCoroutineScheduler &SimpleCoroutineScheduler::get() noexcept {
 }
 
 bool SimpleCoroutineScheduler::done() const noexcept {
-  const auto finished_{yield_coros.empty() && awaiting_for_stream_coros.empty() && awaiting_for_update_coros.empty()};
-  return finished_;
+  return yield_coros.empty() && awaiting_for_stream_coros.empty() && awaiting_for_update_coros.empty();
 }
 
 ScheduleStatus SimpleCoroutineScheduler::scheduleOnNoEvent() noexcept {
