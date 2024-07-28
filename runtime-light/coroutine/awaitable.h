@@ -55,10 +55,6 @@ public:
 
   constexpr void await_resume() const noexcept {}
 
-  SuspendToken suspend_token() const noexcept {
-    return suspend_token_;
-  }
-
   void cancel() const noexcept {
     CoroutineScheduler::get().cancel(suspend_token_);
   }
@@ -85,10 +81,6 @@ public:
     return incoming_stream_d;
   }
 
-  SuspendToken suspend_token() const noexcept {
-    return suspend_token_;
-  }
-
   void cancel() const noexcept {
     CoroutineScheduler::get().cancel(suspend_token_);
   }
@@ -110,10 +102,6 @@ public:
   }
 
   constexpr void await_resume() const noexcept {}
-
-  SuspendToken suspend_token() const noexcept {
-    return suspend_token_;
-  }
 
   void cancel() const noexcept {
     CoroutineScheduler::get().cancel(suspend_token_);
@@ -143,10 +131,6 @@ public:
 
   void await_resume() const noexcept {
     get_component_context()->release_stream(timer_d);
-  }
-
-  SuspendToken suspend_token() const noexcept {
-    return suspend_token_;
   }
 
   void cancel() const noexcept {
@@ -206,8 +190,7 @@ public:
   }
 
   Optional<T> await_resume() noexcept {
-    auto &coro_scheduler{CoroutineScheduler::get()};
-    if (coro_scheduler.contains(timer_awaiter.suspend_token())) {
+    if (task.done()) {
       timer_awaiter.cancel();
       return {fork_awaiter.await_resume().get_result<T>()};
     } else {

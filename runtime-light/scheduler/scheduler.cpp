@@ -29,26 +29,6 @@ bool SimpleCoroutineScheduler::done() const noexcept {
   return finished_;
 }
 
-bool SimpleCoroutineScheduler::contains(SuspendToken token) const noexcept {
-  const auto [coro, event]{token};
-  return std::visit(
-    [this, coro](auto &&event) {
-      using event_t = std::remove_cvref_t<decltype(event)>;
-      if constexpr (std::is_same_v<event_t, WaitEvent::Rechedule>) {
-        return std::find(yield_coros.cbegin(), yield_coros.cend(), coro) != yield_coros.cend();
-      } else if constexpr (std::is_same_v<event_t, WaitEvent::IncomingStream>) {
-        return std::find(awaiting_for_stream_coros.cbegin(), awaiting_for_stream_coros.cend(), coro) != awaiting_for_stream_coros.cend();
-      } else if constexpr (std::is_same_v<event_t, WaitEvent::UpdateOnStream>) {
-        return awaiting_for_update_coros.contains(event.stream_d);
-      } else if constexpr (std::is_same_v<event_t, WaitEvent::UpdateOnTimer>) {
-        return awaiting_for_update_coros.contains(event.timer_d);
-      } else {
-        static_assert(false, "non-exhaustive visitor");
-      }
-    },
-    event);
-}
-
 ScheduleStatus SimpleCoroutineScheduler::scheduleOnNoEvent() noexcept {
   if (yield_coros.empty()) {
     return ScheduleStatus::Skipped;
