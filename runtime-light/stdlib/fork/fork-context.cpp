@@ -2,7 +2,7 @@
 // Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-light/fork/fork-context.h"
+#include "runtime-light/stdlib/fork/fork-context.h"
 
 #include <cstdint>
 #include <optional>
@@ -12,7 +12,7 @@
 #include "runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/component/component.h"
 #include "runtime-light/coroutine/task.h"
-#include "runtime-light/fork/fork.h"
+#include "runtime-light/stdlib/fork/fork.h"
 #include "runtime-light/utils/context.h"
 
 ForkComponentContext::ForkComponentContext(memory_resource::unsynchronized_pool_resource &memory_resource) noexcept
