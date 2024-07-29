@@ -53,13 +53,12 @@ void ComponentState::process_platform_updates() noexcept {
           release_stream(standard_stream_);
         } // TODO: multiple incoming streams (except for http queries)
         standard_stream_ = stream_d;
+        incoming_streams_.push_back(stream_d);
         opened_streams_.insert(stream_d);
         switch (scheduler.schedule(ScheduleEvent::IncomingStream{.stream_d = stream_d})) {
-          case ScheduleStatus::Resumed: { // scheduler's resumed a coroutine waiting for incoming stream
-            break;
-          }
-          case ScheduleStatus::Skipped: { // no one is waiting for incoming stream, so just save it
-            incoming_streams_.push_back(stream_d);
+          case ScheduleStatus::Resumed: {
+          }                               // scheduler's resumed a coroutine waiting for incoming stream
+          case ScheduleStatus::Skipped: { // no one is waiting for incoming stream, so just keep it saved in `incoming_streams_`
             break;
           }
           case ScheduleStatus::Error: { // something bad's happened, stop execution

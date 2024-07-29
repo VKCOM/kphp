@@ -64,10 +64,8 @@ task_t<void> f$component_server_send_result(string message) {
 }
 
 task_t<string> f$component_server_get_query() {
-  auto &component_ctx = *get_component_context();
   const auto incoming_stream_d{co_await wait_and_process_incoming_stream(QueryType::COMPONENT)};
   const auto [buffer, size] = co_await read_all_from_stream(incoming_stream_d);
-  component_ctx.release_stream(incoming_stream_d);
   string result{buffer, static_cast<string::size_type>(size)};
   get_platform_context()->allocator.free(buffer);
   co_return result;
@@ -132,4 +130,5 @@ void f$component_finish_stream_processing(const class_instance<C$ComponentStream
     return;
   }
   component_ctx.release_stream(component_ctx.standard_stream());
+  stream.get()->stream_d = INVALID_PLATFORM_DESCRIPTOR;
 }
