@@ -125,7 +125,7 @@ class KphpRunOnce(KphpBuilder):
 
         return kphp_server_proc.returncode == 0
 
-    def compare_php_and_kphp_stdout(self):
+    def compare_php_and_kphp_stdout(self, binary=False):
         if self._kphp_server_stdout == self._php_stdout:
             return True
 
@@ -143,7 +143,7 @@ class KphpRunOnce(KphpBuilder):
                 # just open and read the file - it's easier than messing with popen, etc.
                 with open(diff_artifact.file, 'r') as f:
                     print('diff: ' + f.read())
-        with open(diff_artifact.file, 'r') as f:
+        with open(diff_artifact.file, 'rb' if binary else 'r') as f:
             print(f.read())
 
         return False
