@@ -55,16 +55,9 @@ void ComponentState::process_platform_updates() noexcept {
         standard_stream_ = stream_d;
         incoming_streams_.push_back(stream_d);
         opened_streams_.insert(stream_d);
-        switch (scheduler.schedule(ScheduleEvent::IncomingStream{.stream_d = stream_d})) {
-          case ScheduleStatus::Resumed: {
-          }                               // scheduler's resumed a coroutine waiting for incoming stream
-          case ScheduleStatus::Skipped: { // no one is waiting for incoming stream, so just keep it saved in `incoming_streams_`
-            break;
-          }
-          case ScheduleStatus::Error: { // something bad's happened, stop execution
-            poll_status = PollStatus::PollFinishedError;
-            return;
-          }
+        if (const auto schedule_status{scheduler.schedule(ScheduleEvent::IncomingStream{.stream_d = stream_d})}; schedule_status == ScheduleStatus::Error) {
+          poll_status = PollStatus::PollFinishedError;
+          return;
         }
       }
     } else { // we'are out of updates so let the scheduler do whatever it wants
