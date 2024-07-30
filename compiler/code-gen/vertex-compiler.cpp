@@ -14,6 +14,7 @@
 #include "compiler/code-gen/const-globals-batched-mem.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/files/json-encoder-tags.h"
+#include "compiler/code-gen/files/msgpack-encoder-tags.h"
 #include "compiler/code-gen/files/tracing-autogen.h"
 #include "compiler/code-gen/naming.h"
 #include "compiler/code-gen/raw-data.h"
@@ -783,10 +784,15 @@ enum class func_call_mode {
   fork_call // call using fork
 };
 
-// to_json_impl() and from_json_impl() are represented in AST as `impl($json_encoder, ...args)`
-// but we want them to be codegenerated as `f$impl(JsonEncoderTag{}, ...args)`
+enum class patcher_kind {
+    json_patcher = 0, // JsonEncoder substitution
+    msgpack_patcher   // MsgPackEncoder substitution
+};
+
+// to_json_impl()/to_msgpack_impl() and from_json_impl()/from_msgpack_impl() are represented in AST as `impl($encoder, ...args)`
+// but we want them to be codegenerated as `f$impl(XXXEncoderTag{}, ...args)`
 // here we shift call args by one and manually output cpp struct tag{} as the first argument
-VertexAdaptor<op_func_call> patch_compiling_json_impl_call(CodeGenerator &W, VertexAdaptor<op_func_call> call) noexcept {
+VertexAdaptor<op_func_call> patch_compiling_serialization_impl_call(CodeGenerator &W, VertexAdaptor<op_func_call> call, patcher_kind kind) noexcept {
   auto args = call->args();
   auto first_arg = args.begin();
   auto v_encoder = VertexUtil::get_actual_value(*first_arg);
@@ -798,7 +804,13 @@ VertexAdaptor<op_func_call> patch_compiling_json_impl_call(CodeGenerator &W, Ver
   new_call->str_val = call->str_val;
   new_call->func_id = call->func_id;
 
-  W << JsonEncoderTags::get_cppStructTag_name(v_encoder->get_string()) << "{}, ";
+  if (kind == patcher_kind::json_patcher) {
+    W << JsonEncoderTags::get_cppStructTag_name(v_encoder->get_string()) << "{}, ";
+  }
+
+  if (kind == patcher_kind::msgpack_patcher) {
+    W << MsgPackEncoderTags::get_cppStructTag_name(v_encoder->get_string()) << "{}, ";
+  }
   return new_call;
 }
 
@@ -859,7 +871,11 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
   W << "(";
 
   if (func && func->is_extern() && vk::any_of_equal(func->name, "JsonEncoder$$to_json_impl", "JsonEncoder$$from_json_impl")) {
-    root = patch_compiling_json_impl_call(W, root);
+    root = patch_compiling_serialization_impl_call(W, root, patcher_kind::json_patcher);
+  }
+
+  if (func && func->is_extern() && vk::any_of_equal(func->name, "MsgPackEncoder$$to_msgpack_impl", "MsgPackEncoder$$from_msgpack_impl")) {
+    root = patch_compiling_serialization_impl_call(W, root, patcher_kind::msgpack_patcher);
   }
 
   auto args = root->args();

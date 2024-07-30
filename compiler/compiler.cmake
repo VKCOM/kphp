@@ -82,6 +82,7 @@ prepend(KPHP_COMPILER_CODEGEN_SOURCES code-gen/
         files/global-vars-reset.cpp
         files/init-scripts.cpp
         files/json-encoder-tags.cpp
+        files/msgpack-encoder-tags.cpp
         files/lib-header.cpp
         files/tl2cpp/tl-combinator.cpp
         files/tl2cpp/tl-constructor.cpp

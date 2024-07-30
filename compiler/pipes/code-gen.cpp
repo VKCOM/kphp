@@ -17,6 +17,7 @@
 #include "compiler/code-gen/files/global-vars-reset.h"
 #include "compiler/code-gen/files/init-scripts.h"
 #include "compiler/code-gen/files/json-encoder-tags.h"
+#include "compiler/code-gen/files/msgpack-encoder-tags.h"
 #include "compiler/code-gen/files/lib-header.h"
 #include "compiler/code-gen/files/shape-keys.h"
 #include "compiler/code-gen/files/tl2cpp/tl2cpp.h"
@@ -55,6 +56,7 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
   std::forward_list<FunctionPtr> all_functions = tmp_stream.flush();   // functions to codegen, order doesn't matter
   const std::vector<ClassPtr> &all_classes = G->get_classes();
   std::set<ClassPtr> all_json_encoders;
+  std::set<ClassPtr> all_msgpack_encoders;
 
   std::vector<VarPtr> all_globals = G->get_global_vars();
   for (FunctionPtr f : all_functions) {
@@ -73,6 +75,9 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
   for (ClassPtr c : all_classes) {
     if (c->kphp_json_tags && G->get_class("JsonEncoder")->is_parent_of(c)) {
       all_json_encoders.insert(c);
+    }
+    if (c->kphp_msgpack_tags && G->get_class("MsgPackEncoder")->is_parent_of(c)) {
+      all_msgpack_encoders.insert(c);
     }
     if (!c->does_need_codegen()) {
       continue;
@@ -123,6 +128,7 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
     }
     code_gen_start_root_task(os, std::make_unique<ShapeKeys>(TypeHintShape::get_all_registered_keys()));
     code_gen_start_root_task(os, std::make_unique<JsonEncoderTags>(std::move(all_json_encoders)));
+    code_gen_start_root_task(os, std::make_unique<MsgPackEncoderTags>(std::move(all_msgpack_encoders)));
     code_gen_start_root_task(os, std::make_unique<CmakeListsTxt>());
   }
 
