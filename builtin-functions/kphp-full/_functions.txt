@@ -1581,6 +1581,21 @@ class JsonEncoder {
   static function from_json_impl(string $encoder_tag, string $json, string $class_name) ::: instance<^3>;
 }
 
+class MsgPackEncoder {
+  private function __construct();
+
+  public static function encode(object $instance, int $flags = 0, array $more = []) : string;
+  public static function decode(string $msgpack, string $class_name) : instance<^2>;
+  public static function getLastError() : string;
+
+  // MsgPackEncoderOrChild::encode(...) is actually replaced by MsgPackEncoder::to_msgpack_impl('MsgPackEncoderOrChild', ...)
+  static function to_msgpack_impl(string $encoder_tag, object $instance, int $flags = 0, array $more = []) ::: string;
+
+  // MsgPackEncoderOrChild::decode(...) is actually replaced by MsgPackEncoder::from_msgpack_impl('MsgPackEncoderOrChild', ...)
+  /** @kphp-extern-func-info cpp_template_call */
+  static function from_msgpack_impl(string $encoder_tag, string $msgpack, string $class_name) ::: instance<^3>;
+}
+
 class DateTimeZone {
   /** @kphp-extern-func-info can_throw */
   public function __construct(string $timezone);
