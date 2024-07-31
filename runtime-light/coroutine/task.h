@@ -172,7 +172,7 @@ struct task_t : public task_base_t {
     explicit awaiter_t(task_t *task)
       : task{task} {}
 
-    bool await_ready() const noexcept {
+    constexpr bool await_ready() const noexcept {
       return false;
     }
 
