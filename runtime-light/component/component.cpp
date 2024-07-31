@@ -49,8 +49,9 @@ void ComponentState::process_platform_updates() noexcept {
         }
       } else { // update on incoming stream
         if (standard_stream_ != INVALID_PLATFORM_DESCRIPTOR) {
-          php_warning("previous incoming stream is not closed, force closing it");
-          release_stream(standard_stream_);
+          php_warning("skip new incoming stream since previous one is not closed");
+          release_stream(stream_d);
+          continue;
         } // TODO: multiple incoming streams (except for http queries)
         standard_stream_ = stream_d;
         incoming_streams_.push_back(stream_d);
@@ -132,15 +133,10 @@ uint64_t ComponentState::set_timer(std::chrono::nanoseconds duration) noexcept {
 }
 
 void ComponentState::release_stream(uint64_t stream_d) noexcept {
-  const auto it_stream{opened_streams_.find(stream_d)};
-  if (it_stream == opened_streams_.cend()) {
-    php_warning("can't release stream %" PRIu64, stream_d);
-    return;
-  }
   if (stream_d == standard_stream_) {
     standard_stream_ = INVALID_PLATFORM_DESCRIPTOR;
   }
-  opened_streams_.erase(it_stream);
+  opened_streams_.erase(stream_d);
   pending_updates_.erase(stream_d); // also erase pending updates if exists
   get_platform_context()->free_descriptor(stream_d);
   php_debug("released a stream %" PRIu64, stream_d);
