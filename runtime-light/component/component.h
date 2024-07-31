@@ -48,10 +48,18 @@ struct ComponentState {
   void init_script_execution() noexcept;
   void process_platform_updates() noexcept;
 
-  bool stream_updated(uint64_t) const noexcept;
-  const unordered_set<uint64_t> &opened_streams() const noexcept;
-  const deque<uint64_t> &incoming_streams() const noexcept;
-  uint64_t standard_stream() const noexcept;
+  bool stream_updated(uint64_t stream_d) const noexcept {
+    return pending_updates_.contains(stream_d);
+  }
+  const unordered_set<uint64_t> &opened_streams() const noexcept {
+    return opened_streams_;
+  }
+  const deque<uint64_t> &incoming_streams() const noexcept {
+    return incoming_streams_;
+  }
+  uint64_t standard_stream() const noexcept {
+    return standard_stream_;
+  }
   uint64_t take_incoming_stream() noexcept;
   uint64_t open_stream(const string &) noexcept;
   uint64_t set_timer(std::chrono::nanoseconds) noexcept;

@@ -116,15 +116,18 @@ class SimpleCoroutineScheduler {
   ScheduleStatus scheduleOnYield() noexcept;
 
 public:
-  explicit SimpleCoroutineScheduler(memory_resource::unsynchronized_pool_resource &) noexcept;
+  explicit SimpleCoroutineScheduler(memory_resource::unsynchronized_pool_resource &memory_resource) noexcept
+    : yield_coros(deque<std::coroutine_handle<>>::allocator_type{memory_resource})
+    , awaiting_for_stream_coros(deque<std::coroutine_handle<>>::allocator_type{memory_resource})
+    , awaiting_for_update_coros(unordered_map<uint64_t, std::coroutine_handle<>>::allocator_type{memory_resource}) {}
 
   static SimpleCoroutineScheduler &get() noexcept;
 
-  bool done() const noexcept;
+  bool done() const noexcept {
+    return yield_coros.empty() && awaiting_for_stream_coros.empty() && awaiting_for_update_coros.empty();
+  }
 
   ScheduleStatus schedule(ScheduleEvent::EventT) noexcept;
-
   void suspend(SuspendToken) noexcept;
-
   void cancel(SuspendToken) noexcept;
 };

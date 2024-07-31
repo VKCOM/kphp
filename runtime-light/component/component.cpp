@@ -81,22 +81,6 @@ void ComponentState::process_platform_updates() noexcept {
   poll_status = PollStatus::PollFinishedError;
 }
 
-bool ComponentState::stream_updated(uint64_t stream_d) const noexcept {
-  return pending_updates_.contains(stream_d);
-}
-
-const decltype(std::declval<ComponentState>().opened_streams_) &ComponentState::opened_streams() const noexcept {
-  return opened_streams_;
-}
-
-const decltype(std::declval<ComponentState>().incoming_streams_) &ComponentState::incoming_streams() const noexcept {
-  return incoming_streams_;
-}
-
-uint64_t ComponentState::standard_stream() const noexcept {
-  return standard_stream_;
-}
-
 uint64_t ComponentState::take_incoming_stream() noexcept {
   if (incoming_streams_.empty()) {
     php_warning("can't take incoming stream cause we don't have them");

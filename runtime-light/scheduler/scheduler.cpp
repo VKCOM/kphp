@@ -15,17 +15,8 @@
 
 // === SimpleCoroutineScheduler ===================================================================
 
-SimpleCoroutineScheduler::SimpleCoroutineScheduler(memory_resource::unsynchronized_pool_resource &memory_resource) noexcept
-  : yield_coros(deque<std::coroutine_handle<>>::allocator_type{memory_resource})
-  , awaiting_for_stream_coros(deque<std::coroutine_handle<>>::allocator_type{memory_resource})
-  , awaiting_for_update_coros(unordered_map<uint64_t, std::coroutine_handle<>>::allocator_type{memory_resource}) {}
-
 SimpleCoroutineScheduler &SimpleCoroutineScheduler::get() noexcept {
   return get_component_context()->scheduler;
-}
-
-bool SimpleCoroutineScheduler::done() const noexcept {
-  return yield_coros.empty() && awaiting_for_stream_coros.empty() && awaiting_for_update_coros.empty();
 }
 
 ScheduleStatus SimpleCoroutineScheduler::scheduleOnNoEvent() noexcept {
