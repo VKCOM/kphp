@@ -1471,7 +1471,7 @@ void compile_function(VertexAdaptor<op_function> func_root, CodeGenerator &W) {
   W.get_context().resumable_flag = func->is_resumable;
   W.get_context().interruptible_flag = func->is_interruptible;
 
-  if (func->is_resumable && !func->is_interruptible) {
+  if (func->is_resumable) {
     compile_function_resumable(func_root, W);
     return;
   }
