@@ -697,8 +697,8 @@ public:
     {
       FuncCallGraph call_graph(std::move(functions), dep_datas);
       if (G->is_output_mode_k2_component()) {
+        calc_k2_fork(call_graph, dep_datas);
         calc_interruptible(call_graph);
-	calc_k2_fork(call_graph, dep_datas);
       } else {
         calc_resumable(call_graph, dep_datas);
       }
