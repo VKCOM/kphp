@@ -512,7 +512,11 @@ void compile_binary_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W) {
   const auto *rhs_tp = tinf::get_type(rhs);
 
   if (auto instanceof = root.try_as<op_instanceof>()) {
-    W << "f$is_a<" << instanceof->derived_class->src_name << ">(" << lhs << ")";
+    if (lhs_tp->ptype() == tp_mixed && !instanceof->derived_class->may_be_mixed.load(std::memory_order_relaxed)) {
+      W << "(false)";
+    } else {
+      W << "f$is_a<" << instanceof->derived_class->src_name << ">(" << lhs << ")";
+    }
     return;
   }
 
