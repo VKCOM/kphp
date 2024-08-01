@@ -5,8 +5,10 @@
 #pragma once
 
 #include "common/algorithms/find.h"
+#include "common/smart_ptrs/intrusive_ptr.h"
 
 #include "runtime-core/utils/migration-php8.h"
+#include "runtime-core/class-instance/refcountable-php-classes.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
   #error "this file must be included only from runtime-core.h"
@@ -1739,7 +1741,7 @@ inline bool mixed::is_reference_counter(ExtraRefCnt ref_cnt_value) const noexcep
     case type::ARRAY:
       return as_array().is_reference_counter(ref_cnt_value);
     case type::OBJECT:
-      return as_object()->get_refcnt() == ref_cnt_value;
+      return static_cast<int>(as_object()->get_refcnt()) == ref_cnt_value;
     default:
       __builtin_unreachable();
   }

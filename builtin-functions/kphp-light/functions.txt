@@ -212,3 +212,6 @@ function byte_to_int($str ::: string) ::: ?int;
 function int_to_byte($v ::: int) ::: ?string;
 
 function set_timer(int $timeout, callable():void $callback) ::: void;
+
+// builtin that allows to store objects inside a mixed
+function to_mixed(object $instance) ::: mixed;

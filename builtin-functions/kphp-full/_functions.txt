@@ -1679,6 +1679,5 @@ class DateTimeImmutable implements DateTimeInterface {
 
 function getenv(string $varname = '', bool $local_only = false): mixed;
 
-// builtins that allow to store objects inside a mixed
-
+// builtin that allows to store objects inside a mixed
 function to_mixed(object $instance) ::: mixed;

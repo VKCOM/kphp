@@ -5,7 +5,8 @@
 #pragma once
 
 #include "common/smart_ptrs/intrusive_ptr.h"
-#include "runtime/refcountable_php_classes.h"
+#include "runtime-core/class-instance/refcountable-php-classes.h"
+
 
 #ifndef INCLUDED_FROM_KPHP_CORE
   #error "this file must be included only from runtime-core.h"

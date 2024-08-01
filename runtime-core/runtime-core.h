@@ -32,6 +32,7 @@
 #include "runtime-core/core-types/decl/mixed_decl.inl"
 #include "runtime-core/core-types/decl/string_buffer_decl.inl"
 
+#include "runtime-core/allocator/runtime-allocator.h"
 #include "runtime-core/runtime-core-context.h"
 
 #include "runtime-core/core-types/definition/string.inl"
