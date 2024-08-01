@@ -1,4 +1,4 @@
-@ok php8
+@ok php8 k2_skip
 <?php
 
 function test_random_int() {
