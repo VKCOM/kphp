@@ -21,6 +21,8 @@ constexpr double WAIT_FORK_MAX_TIMEOUT = 86400.0;
 
 constexpr int64_t INVALID_FORK_ID = -1;
 
+int64_t f$get_running_fork_id() noexcept;
+
 template<typename T>
 requires(is_optional<T>::value) task_t<T> f$wait(int64_t fork_id, double timeout = -1.0) noexcept {
   if (timeout < 0.0) {
