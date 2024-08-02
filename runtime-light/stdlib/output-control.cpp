@@ -6,6 +6,7 @@
 
 #include "runtime-light/component/component.h"
 #include "runtime-light/stdlib/string-functions.h"
+#include "runtime-light/utils/context.h"
 
 static constexpr int system_level_buffer = 0;
 
@@ -41,7 +42,7 @@ string f$ob_get_content() {
 
 void f$ob_start(const string &callback) {
   Response &httpResponse = get_component_context()->response;
-  if (httpResponse.current_buffer + 1 == httpResponse.ob_max_buffers) {
+  if (httpResponse.current_buffer + 1 == Response::ob_max_buffers) {
     php_warning("Maximum nested level of output buffering reached. Can't do ob_start(%s)", callback.c_str());
     return;
   }

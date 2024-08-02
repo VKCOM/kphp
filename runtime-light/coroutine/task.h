@@ -10,6 +10,7 @@
 #include <utility>
 
 #include "common/containers/final_action.h"
+#include "runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/utils/context.h"
 
 #if __clang_major__ > 7
@@ -108,7 +109,7 @@ struct task_t : public task_base_t {
     std::exception_ptr exception;
 
     static task_t get_return_object_on_allocation_failure() {
-      throw std::bad_alloc();
+      php_critical_error("cannot allocate memory for task_t");
     }
 
     template<typename... Args>
@@ -143,14 +144,14 @@ struct task_t : public task_base_t {
     get_handle().resume();
   }
 
-  T get_result() {
+  T get_result() noexcept {
     if (get_handle().promise().exception) {
       std::rethrow_exception(std::move(get_handle().promise().exception));
     }
     if constexpr (!std::is_void<T>{}) {
       T *t = std::launder(reinterpret_cast<T *>(get_handle().promise().bytes));
       const vk::final_action final_action([t] { t->~T(); });
-      return *t;
+      return std::move(*t);
     }
   }
 
@@ -171,7 +172,7 @@ struct task_t : public task_base_t {
     explicit awaiter_t(task_t *task)
       : task{task} {}
 
-    bool await_ready() const {
+    constexpr bool await_ready() const noexcept {
       return false;
     }
 
@@ -181,7 +182,7 @@ struct task_t : public task_base_t {
 #else
     bool
 #endif
-    await_suspend(std::coroutine_handle<PromiseType> h) {
+    await_suspend(std::coroutine_handle<PromiseType> h) noexcept {
 #ifdef CPPCORO_COMPILER_SUPPORTS_SYMMETRIC_TRANSFER
       task->get_handle().promise().next = h.address();
       return task->get_handle();
@@ -197,8 +198,12 @@ struct task_t : public task_base_t {
 #endif
     }
 
-    T await_resume() {
+    T await_resume() noexcept {
       return task->get_result();
+    }
+
+    void cancel() const noexcept {
+      task->get_handle().promise().next = nullptr;
     }
 
     task_t *task;

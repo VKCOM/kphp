@@ -5,6 +5,7 @@
 #include "runtime-light/stdlib/string-functions.h"
 
 #include "runtime-light/component/component.h"
+#include "runtime-light/utils/context.h"
 
 void print(const char *s, size_t s_len) {
   Response &response = get_component_context()->response;

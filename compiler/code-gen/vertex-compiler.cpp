@@ -844,7 +844,11 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
 
 
     if (mode == func_call_mode::fork_call) {
-      W << FunctionForkName(func);
+      if (func->is_interruptible) {
+        W << "(co_await start_fork_and_reschedule_t{" << FunctionName(func);
+      } else {
+        W << FunctionForkName(func);
+      }
     } else {
       if (func->is_interruptible) {
         W << "(" << "co_await ";
@@ -874,7 +878,13 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
   W << JoinValues(args, ", ");
   W << ")";
   if (func->is_interruptible) {
-    W << ")";
+    if (mode == func_call_mode::fork_call) {
+      W << "})";
+    } else if (func->is_k2_fork) { // k2 fork's return type is 'task_t<fork_result>' so we need to unpack actual result from fork_result
+      W << ").get_result<" << TypeName(tinf::get_type(root)) << ">()";
+    } else {
+      W << ")";
+    }
   }
 }
 

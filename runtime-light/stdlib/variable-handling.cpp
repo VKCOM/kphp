@@ -7,7 +7,7 @@
 #include "runtime-core/runtime-core.h"
 #include "runtime-light/component/component.h"
 #include "runtime-light/stdlib/output-control.h"
-#include "runtime-light/utils/php_assert.h"
+#include "runtime-light/utils/context.h"
 
 void do_print_r(const mixed &v, int depth) {
   if (depth == 10) {

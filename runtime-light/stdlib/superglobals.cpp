@@ -5,6 +5,7 @@
 #include "runtime-light/stdlib/superglobals.h"
 
 #include "runtime-light/component/component.h"
+#include "runtime-light/utils/context.h"
 #include "runtime-light/utils/json-functions.h"
 
 void init_http_superglobals(const char *buffer, int size) {

@@ -226,7 +226,7 @@ void InitScriptsCpp::compile(CodeGenerator &W) const {
   W << GlobalsResetFunction(main_file_id->main_function) << NL;
 
   if (G->is_output_mode_k2_component()) {
-    FunctionSignatureGenerator(W) << "void init_php_scripts_in_each_worker(" << PhpMutableGlobalsRefArgument() << ", task_t<void>&run" ")" << BEGIN;
+    FunctionSignatureGenerator(W) << "void init_php_scripts_in_each_worker(" << PhpMutableGlobalsRefArgument() << ", task_t<void> &run" ")" << BEGIN;
   } else {
     FunctionSignatureGenerator(W) << "void init_php_scripts_in_each_worker(" << PhpMutableGlobalsRefArgument() << ")" << BEGIN;
   }

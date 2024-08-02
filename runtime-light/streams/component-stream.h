@@ -4,41 +4,26 @@
 
 #pragma once
 
-#include "common/algorithms/hashes.h"
-#include "common/wrappers/string_view.h"
 #include "runtime-core/class-instance/refcountable-php-classes.h"
-#include "runtime-light/streams/streams.h"
 
 struct C$ComponentStream final : public refcountable_php_classes<C$ComponentStream> {
   uint64_t stream_d{};
 
-  const char *get_class() const noexcept {
-    return "ComponentStream";
-  }
+  const char *get_class() const noexcept;
 
-  int32_t get_hash() const noexcept {
-    return static_cast<int32_t>(vk::std_hash(vk::string_view(C$ComponentStream::get_class())));
-  }
+  int32_t get_hash() const noexcept;
 
-  ~C$ComponentStream() {
-    free_descriptor(stream_d);
-  }
+  ~C$ComponentStream();
 };
 
 struct C$ComponentQuery final : public refcountable_php_classes<C$ComponentQuery> {
   uint64_t stream_d{};
 
-  const char *get_class() const noexcept {
-    return "ComponentQuery";
-  }
+  const char *get_class() const noexcept;
 
-  int32_t get_hash() const noexcept {
-    return static_cast<int32_t>(vk::std_hash(vk::string_view(C$ComponentQuery::get_class())));
-  }
+  int32_t get_hash() const noexcept;
 
-  ~C$ComponentQuery() {
-    free_descriptor(stream_d);
-  }
+  ~C$ComponentQuery();
 };
 
 bool f$ComponentStream$$is_read_closed(const class_instance<C$ComponentStream> &stream);

@@ -5,6 +5,7 @@
 #include "php-script-globals.h"
 
 #include "runtime-light/component/component.h"
+#include "runtime-light/utils/context.h"
 
 PhpScriptMutableGlobals &PhpScriptMutableGlobals::current() noexcept {
   return get_component_context()->php_script_mutable_globals_singleton;

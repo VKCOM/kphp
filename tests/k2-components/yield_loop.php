@@ -1,5 +1,5 @@
 <?php
 
 while(true) {
-    testyield();
+    sched_yield();
 }

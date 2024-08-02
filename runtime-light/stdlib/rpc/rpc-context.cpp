@@ -6,6 +6,7 @@
 
 #include "runtime-light/component/component.h"
 #include "runtime-light/component/image.h"
+#include "runtime-light/utils/context.h"
 
 RpcComponentContext::RpcComponentContext(memory_resource::unsynchronized_pool_resource &memory_resource)
   : current_query()

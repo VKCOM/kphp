@@ -76,6 +76,17 @@ function get_hash_of_class (object $klass) ::: int;
 
 function strlen ($str ::: string) ::: int;
 
+// === Fork =======================================================================================
+
+/** @kphp-extern-func-info interruptible cpp_template_call */
+function wait(future<any> | false $id, float $timeout = -1.0) ::: ^1[*] | null;
+
+/** @kphp-extern-func-info interruptible */
+function sched_yield() ::: void;
+
+/** @kphp-extern-func-info interruptible */
+function sched_yield_sleep($timeout_ns ::: int) ::: void;
+
 // === Rpc ========================================================================================
 
 /** @kphp-tl-class */
@@ -198,8 +209,6 @@ function instance_cast(object $instance, $to_type ::: string) ::: instance<^2>;
 
 function make_clone ($x ::: any) ::: ^1;
 
-/** @kphp-extern-func-info interruptible */
-function testyield() ::: void;
 function check_shutdown() ::: void;
 
 function warning($message ::: string) ::: void;
@@ -211,4 +220,5 @@ function debug_print_string($str ::: string) ::: void;
 function byte_to_int($str ::: string) ::: ?int;
 function int_to_byte($v ::: int) ::: ?string;
 
+/** @kphp-extern-func-info interruptible */
 function set_timer(int $timeout, callable():void $callback) ::: void;

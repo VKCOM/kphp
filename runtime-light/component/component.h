@@ -4,78 +4,87 @@
 
 #pragma once
 
-#include <coroutine>
+#include <chrono>
 #include <csetjmp>
 #include <cstddef>
-#include <functional>
-#include <queue>
+#include <cstdint>
 
 #include "runtime-core/memory-resource/resource_allocator.h"
 #include "runtime-core/memory-resource/unsynchronized_pool_resource.h"
 #include "runtime-core/runtime-core.h"
-
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/coroutine/task.h"
+#include "runtime-light/header.h"
+#include "runtime-light/scheduler/scheduler.h"
+#include "runtime-light/stdlib/fork/fork-context.h"
 #include "runtime-light/stdlib/output-control.h"
 #include "runtime-light/stdlib/rpc/rpc-context.h"
-#include "runtime-light/stdlib/superglobals.h"
-#include "runtime-light/streams/streams.h"
-#include "runtime-light/utils/context.h"
+
+constexpr uint64_t INVALID_PLATFORM_DESCRIPTOR = 0;
+
+// Coroutine scheduler type. Change it here if you want to use another scheduler
+using CoroutineScheduler = SimpleCoroutineScheduler;
+static_assert(CoroutineSchedulerConcept<CoroutineScheduler>);
 
 struct ComponentState {
-  template<typename Key, typename Value>
-  using unordered_map = memory_resource::stl::unordered_map<Key, Value, memory_resource::unsynchronized_pool_resource>;
+  template<typename T>
+  using unordered_set = memory_resource::stl::unordered_set<T, memory_resource::unsynchronized_pool_resource>;
+
   template<typename T>
   using deque = memory_resource::stl::deque<T, memory_resource::unsynchronized_pool_resource>;
-  static constexpr auto INIT_RUNTIME_ALLOCATOR_SIZE = static_cast<size_t>(512U * 1024U); // 512KB
 
-  ComponentState()
+  ComponentState() noexcept
     : runtime_allocator(INIT_RUNTIME_ALLOCATOR_SIZE, 0)
+    , scheduler(runtime_allocator.memory_resource)
+    , fork_component_context(runtime_allocator.memory_resource)
     , php_script_mutable_globals_singleton(runtime_allocator.memory_resource)
-    , opened_streams(unordered_map<uint64_t, StreamRuntimeStatus>::allocator_type{runtime_allocator.memory_resource})
-    , awaiting_coroutines(unordered_map<uint64_t, std::coroutine_handle<>>::allocator_type{runtime_allocator.memory_resource})
-    , timer_callbacks(unordered_map<uint64_t, std::function<void()>>::allocator_type{runtime_allocator.memory_resource})
-    , incoming_pending_queries(deque<uint64_t>::allocator_type{runtime_allocator.memory_resource})
-    , rpc_component_context(runtime_allocator.memory_resource) {}
+    , rpc_component_context(runtime_allocator.memory_resource)
+    , incoming_streams_(deque<uint64_t>::allocator_type{runtime_allocator.memory_resource})
+    , opened_streams_(unordered_set<uint64_t>::allocator_type{runtime_allocator.memory_resource})
+    , pending_updates_(unordered_set<uint64_t>::allocator_type{runtime_allocator.memory_resource}) {}
 
   ~ComponentState() = default;
 
-  bool not_finished() const noexcept {
-    return poll_status != PollStatus::PollFinishedOk && poll_status != PollStatus::PollFinishedError;
+  void init_script_execution() noexcept;
+  void process_platform_updates() noexcept;
+
+  bool stream_updated(uint64_t stream_d) const noexcept {
+    return pending_updates_.contains(stream_d);
   }
-
-  void resume_if_was_rescheduled();
-
-  bool is_stream_already_being_processed(uint64_t stream_d);
-
-  void resume_if_wait_stream(uint64_t stream_d, StreamStatus status);
-
-  void process_new_input_stream(uint64_t stream_d);
-
-  void init_script_execution();
+  const unordered_set<uint64_t> &opened_streams() const noexcept {
+    return opened_streams_;
+  }
+  const deque<uint64_t> &incoming_streams() const noexcept {
+    return incoming_streams_;
+  }
+  uint64_t standard_stream() const noexcept {
+    return standard_stream_;
+  }
+  uint64_t take_incoming_stream() noexcept;
+  uint64_t open_stream(const string &) noexcept;
+  uint64_t set_timer(std::chrono::nanoseconds) noexcept;
+  void release_stream(uint64_t) noexcept;
+  void release_all_streams() noexcept;
 
   RuntimeAllocator runtime_allocator;
-  task_t<void> k_main;
+
+  CoroutineScheduler scheduler;
+  ForkComponentContext fork_component_context;
+  PollStatus poll_status = PollStatus::PollReschedule;
+
   Response response;
   PhpScriptMutableGlobals php_script_mutable_globals_singleton;
-
-  PollStatus poll_status = PollStatus::PollReschedule;
-  uint64_t standard_stream = 0;
-  std::coroutine_handle<> main_thread;
-  bool wait_incoming_stream = false;
-
-  unordered_map<uint64_t, StreamRuntimeStatus> opened_streams; // подумать про необходимость opened_streams. Объединить с awaiting_coroutines
-  unordered_map<uint64_t, std::coroutine_handle<>> awaiting_coroutines;
-  unordered_map<uint64_t, std::function<void()>> timer_callbacks;
-  deque<uint64_t> incoming_pending_queries;
 
   KphpCoreContext kphp_core_context;
   RpcComponentContext rpc_component_context;
 
 private:
-  bool is_stream_timer(uint64_t stream_d);
+  task_t<void> main_task;
 
-  void process_timer(uint64_t stream_d);
+  uint64_t standard_stream_{INVALID_PLATFORM_DESCRIPTOR};
+  deque<uint64_t> incoming_streams_;
+  unordered_set<uint64_t> opened_streams_;
+  unordered_set<uint64_t> pending_updates_;
 
-  void process_stream(uint64_t stream_d, StreamStatus status);
+  static constexpr auto INIT_RUNTIME_ALLOCATOR_SIZE = static_cast<size_t>(512U * 1024U); // 512KB
 };
