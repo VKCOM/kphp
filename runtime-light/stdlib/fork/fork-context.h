@@ -17,10 +17,11 @@ class ForkComponentContext {
   template<hashable Key, typename Value>
   using unordered_map = memory_resource::stl::unordered_map<Key, Value, memory_resource::unsynchronized_pool_resource>;
 
-  static constexpr auto FORK_ID_INIT = 1;
+  static constexpr auto FORK_ID_INIT = 0;
 
   unordered_map<int64_t, task_t<fork_result>> forks_;
   int64_t next_fork_id_{FORK_ID_INIT};
+  ino64_t running_fork_id_{FORK_ID_INIT};
 
 public:
   explicit ForkComponentContext(memory_resource::unsynchronized_pool_resource &memory_resource) noexcept
@@ -28,8 +29,17 @@ public:
 
   static ForkComponentContext &get() noexcept;
 
+  int64_t get_running_fork_id() const noexcept {
+    return running_fork_id_;
+  }
+
+  void set_running_fork_id(int64_t running_fork_id) noexcept {
+    running_fork_id_ = running_fork_id;
+    php_debug("ForkComponentContext: execute fork %lu", running_fork_id_);
+  }
+
   int64_t push_fork(task_t<fork_result> &&task) noexcept {
-    const auto fork_id{next_fork_id_++};
+    const auto fork_id{++next_fork_id_};
     forks_.emplace(fork_id, std::move(task));
     php_debug("ForkComponentContext: push fork %" PRId64, fork_id);
     return fork_id;

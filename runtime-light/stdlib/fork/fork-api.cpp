@@ -11,6 +11,10 @@
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"
 
+int64_t f$get_running_fork_id() noexcept {
+  return ForkComponentContext::get().get_running_fork_id();
+}
+
 task_t<void> f$sched_yield() noexcept {
   co_await wait_for_reschedule_t{};
 }

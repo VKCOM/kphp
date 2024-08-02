@@ -57,6 +57,7 @@ ScheduleStatus SimpleCoroutineScheduler::scheduleOnYield() noexcept {
 }
 
 ScheduleStatus SimpleCoroutineScheduler::schedule(ScheduleEvent::EventT event) noexcept {
+  php_debug("Scheduler: schedule event type %lu", event.index());
   return std::visit(
     [this](auto &&event) {
       using event_t = std::remove_cvref_t<decltype(event)>;
