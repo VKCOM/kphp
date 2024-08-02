@@ -113,7 +113,7 @@ void ConstVarsInit::compile_const_init_part(CodeGenerator &W, const ConstantsBat
     for (VarPtr var: other_const_vars.vars_by_dep_level(dep_level)) {
       W << InitConstVar(var);
       const TypeData *type_data = var->tinf_node.get_type();
-      if (vk::any_of_equal(type_data->ptype(), tp_array, tp_mixed, tp_string)) {
+      if (vk::any_of_equal(type_data->ptype(), tp_array, tp_mixed, tp_string, tp_Class)) {
         W << var->name;
         if (type_data->use_optional()) {
           W << ".val()";
