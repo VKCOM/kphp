@@ -135,8 +135,7 @@ task_t<RpcQueryInfo> rpc_send_impl(string actor, double timeout, bool ignore_ans
                                                        co_return co_await f$component_client_get_result(std::move(comp_query));
                                                      }(std::move(comp_query)),
                                                      start_fork_t::execution::self}};
-    auto response_opt{co_await wait_fork_t<string>{fetcher_fork_id, timeout}};
-    const auto response{response_opt.has_value() ? std::move(response_opt.val()) : string{}};
+    const auto response{(co_await wait_fork_t<string>{fetcher_fork_id, timeout}).val()};
     // update response extra info if needed
     if (collect_responses_extra_info) {
       auto &extra_info_map{RpcComponentContext::get().rpc_responses_extra_info};
@@ -246,8 +245,7 @@ task_t<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) noexcept {
   }
 
   const auto timeout{std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{MAX_TIMEOUT_S})};
-  auto data_opt{co_await wait_fork_t<string>{response_waiter_fork_id, timeout}};
-  const auto data{data_opt.has_value() ? std::move(data_opt.val()) : string{}};
+  const auto data{(co_await wait_fork_t<string>{response_waiter_fork_id, timeout}).val()};
   if (data.empty()) {
     co_return make_fetch_error(string{"rpc response timeout"}, TL_ERROR_QUERY_TIMEOUT);
   }
@@ -296,8 +294,7 @@ task_t<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_one_impl(i
   }
 
   const auto timeout{std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{MAX_TIMEOUT_S})};
-  auto data_opt{co_await wait_fork_t<string>{response_waiter_fork_id, timeout}};
-  const auto data{data_opt.has_value() ? std::move(data_opt.val()) : string{}};
+  const auto data{(co_await wait_fork_t<string>{response_waiter_fork_id, timeout}).val()};
   if (data.empty()) {
     co_return error_factory.make_error(string{"rpc response timeout"}, TL_ERROR_QUERY_TIMEOUT);
   }
