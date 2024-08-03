@@ -155,7 +155,7 @@ task_t<RpcQueryInfo> rpc_send_impl(string actor, double timeout, bool ignore_ans
   if (ignore_answer) {
     co_return RpcQueryInfo{.id = RPC_IGNORED_ANSWER_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
   }
-  rpc_ctx.response_waiters_forks.emplace(query_id, waiter_fork_id);
+  rpc_ctx.response_waiter_forks.emplace(query_id, waiter_fork_id);
   co_return RpcQueryInfo{.id = query_id, .request_size = request_size, .timestamp = timestamp};
 }
 
@@ -218,14 +218,14 @@ task_t<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) noexcept {
 
   {
     const auto it_rpc_query{rpc_ctx.response_fetcher_instances.find(query_id)};
-    const auto it_response_fetcher_fork_id{rpc_ctx.response_waiters_forks.find(query_id)};
+    const auto it_response_fetcher_fork_id{rpc_ctx.response_waiter_forks.find(query_id)};
 
     vk::final_action finalizer{[&rpc_ctx, it_rpc_query, it_response_fetcher_fork_id]() {
       rpc_ctx.response_fetcher_instances.erase(it_rpc_query);
-      rpc_ctx.response_waiters_forks.erase(it_response_fetcher_fork_id);
+      rpc_ctx.response_waiter_forks.erase(it_response_fetcher_fork_id);
     }};
 
-    if (it_rpc_query == rpc_ctx.response_fetcher_instances.end() || it_response_fetcher_fork_id == rpc_ctx.response_waiters_forks.end()) {
+    if (it_rpc_query == rpc_ctx.response_fetcher_instances.end() || it_response_fetcher_fork_id == rpc_ctx.response_waiter_forks.end()) {
       co_return make_fetch_error(string{"unexpectedly could not find query in pending queries"}, TL_ERROR_INTERNAL);
     }
     rpc_query = std::move(it_rpc_query->second);
@@ -268,14 +268,14 @@ task_t<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_one_impl(i
 
   {
     const auto it_rpc_query{rpc_ctx.response_fetcher_instances.find(query_id)};
-    const auto it_response_fetcher_fork_id{rpc_ctx.response_waiters_forks.find(query_id)};
+    const auto it_response_fetcher_fork_id{rpc_ctx.response_waiter_forks.find(query_id)};
 
     vk::final_action finalizer{[&rpc_ctx, it_rpc_query, it_response_fetcher_fork_id]() {
       rpc_ctx.response_fetcher_instances.erase(it_rpc_query);
-      rpc_ctx.response_waiters_forks.erase(it_response_fetcher_fork_id);
+      rpc_ctx.response_waiter_forks.erase(it_response_fetcher_fork_id);
     }};
 
-    if (it_rpc_query == rpc_ctx.response_fetcher_instances.end() || it_response_fetcher_fork_id == rpc_ctx.response_waiters_forks.end()) {
+    if (it_rpc_query == rpc_ctx.response_fetcher_instances.end() || it_response_fetcher_fork_id == rpc_ctx.response_waiter_forks.end()) {
       co_return error_factory.make_error(string{"unexpectedly could not find query in pending queries"}, TL_ERROR_INTERNAL);
     }
     rpc_query = std::move(it_rpc_query->second);
