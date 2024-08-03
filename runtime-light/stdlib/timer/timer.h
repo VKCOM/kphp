@@ -25,5 +25,6 @@ task_t<void> f$set_timer(int64_t timeout_ms, T &&on_timer_callback) noexcept {
     co_return 0;
   }}; // TODO: someone should pop that fork from ForkComponentContext since it will stay there unless we perform f$wait on fork
   const auto duration_ms{std::chrono::milliseconds{static_cast<uint64_t>(timeout_ms)}};
-  co_await start_fork_and_reschedule_t(fork_f(std::chrono::duration_cast<std::chrono::nanoseconds>(duration_ms), std::forward<T>(on_timer_callback)));
+  co_await start_fork_t{fork_f(std::chrono::duration_cast<std::chrono::nanoseconds>(duration_ms), std::forward<T>(on_timer_callback)),
+                        start_fork_t::execution::fork};
 }
