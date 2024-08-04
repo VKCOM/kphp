@@ -15,20 +15,23 @@
 
 namespace fork_api_impl_ {
 
-constexpr double WAIT_FORK_MAX_TIMEOUT = 86400.0;
+constexpr double MAX_TIMEOUT_S = 86400.0;
+constexpr double DEFAULT_TIMEOUT_S = MAX_TIMEOUT_S;
+constexpr auto MAX_TIMEOUT_NS = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{MAX_TIMEOUT_S});
+constexpr auto DEFAULT_TIMEOUT_NS = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{DEFAULT_TIMEOUT_S});
 
 } // namespace fork_api_impl_
 
 template<typename T>
 requires(is_optional<T>::value) task_t<T> f$wait(int64_t fork_id, double timeout = -1.0) noexcept {
-  if (timeout < 0.0) {
-    timeout = fork_api_impl_::WAIT_FORK_MAX_TIMEOUT;
-  }
   if (!ForkComponentContext::get().contains(fork_id)) {
     php_warning("can't find fork %" PRId64, fork_id);
     co_return T{};
   }
-  const auto timeout_ns{std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout})};
+  // normalize timeout
+  const auto timeout_ns{timeout > 0 && timeout <= fork_api_impl_::MAX_TIMEOUT_S
+                          ? std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout})
+                          : fork_api_impl_::DEFAULT_TIMEOUT_NS};
   co_return co_await wait_fork_t<internal_optional_type_t<T>>{fork_id, timeout_ns};
 }
 

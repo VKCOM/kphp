@@ -26,7 +26,9 @@
 namespace rpc_impl_ {
 
 constexpr double MAX_TIMEOUT_S = 86400.0;
-constexpr double DEFAULT_TIMEOUT_S = 0.4;
+constexpr double DEFAULT_TIMEOUT_S = 0.3;
+constexpr auto MAX_TIMEOUT_NS = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{MAX_TIMEOUT_S});
+constexpr auto DEFAULT_TIMEOUT_NS = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{DEFAULT_TIMEOUT_S});
 
 mixed mixed_array_get_value(const mixed &arr, const string &str_key, int64_t num_key) noexcept {
   if (!arr.is_array()) {
@@ -126,8 +128,8 @@ task_t<RpcQueryInfo> rpc_send_impl(string actor, double timeout, bool ignore_ans
     rpc_ctx.rpc_responses_extra_info.emplace(query_id, std::make_pair(rpc_response_extra_info_status_t::NOT_READY, rpc_response_extra_info_t{0, timestamp}));
   }
   // normalize timeout
-  timeout = timeout > 0 && timeout <= MAX_TIMEOUT_S ? timeout : DEFAULT_TIMEOUT_S;
-  const auto timeout_ns{std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout})};
+  const auto timeout_ns{timeout > 0 && timeout <= MAX_TIMEOUT_S ? std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout})
+                                                                : DEFAULT_TIMEOUT_NS};
   // create fork to wait for RPC response. we need to do it even if 'ignore_answer' is 'true' to make sure
   // that the stream will not be closed too early. otherwise, platform may even not send RPC request
   auto waiter_task{[](int64_t query_id, auto comp_query, std::chrono::nanoseconds timeout, bool collect_responses_extra_info) noexcept -> task_t<fork_result> {
@@ -244,8 +246,7 @@ task_t<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) noexcept {
     co_return make_fetch_error(string{"can't find fetcher fork"}, TL_ERROR_INTERNAL);
   }
 
-  const auto timeout{std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{MAX_TIMEOUT_S})};
-  const auto data{(co_await wait_fork_t<string>{response_waiter_fork_id, timeout}).val()};
+  const auto data{(co_await wait_fork_t<string>{response_waiter_fork_id, MAX_TIMEOUT_NS}).val()};
   if (data.empty()) {
     co_return make_fetch_error(string{"rpc response timeout"}, TL_ERROR_QUERY_TIMEOUT);
   }
@@ -293,8 +294,7 @@ task_t<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_one_impl(i
     co_return error_factory.make_error(string{"can't find fetcher fork"}, TL_ERROR_INTERNAL);
   }
 
-  const auto timeout{std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{MAX_TIMEOUT_S})};
-  const auto data{(co_await wait_fork_t<string>{response_waiter_fork_id, timeout}).val()};
+  const auto data{(co_await wait_fork_t<string>{response_waiter_fork_id, MAX_TIMEOUT_NS}).val()};
   if (data.empty()) {
     co_return error_factory.make_error(string{"rpc response timeout"}, TL_ERROR_QUERY_TIMEOUT);
   }
