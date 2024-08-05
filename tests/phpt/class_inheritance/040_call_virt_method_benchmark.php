@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 # It's auto-generated file, please use `print_large_hierarchy.py`
 

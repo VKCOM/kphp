@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /pass &cdata\$example\\Bar to argument \$bar of f/
 /declared as @param cdata\$example\\Bar/
 <?php

@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 
 // PHP defines 4 protected props for the Exception class:

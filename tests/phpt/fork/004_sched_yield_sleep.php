@@ -1,4 +1,4 @@
-@ok non-idempotent
+@ok non-idempotent k2_skip
 <?php
 #ifndef KPHP
 ?>

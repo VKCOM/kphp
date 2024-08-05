@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /Invalid php2c conversion: const FFI\\CData_int32\* -> int32_t\*/
 <?php
 

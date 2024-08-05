@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /Too many arguments in callback, expected 0, have 1/
 <?php
 

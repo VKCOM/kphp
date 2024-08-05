@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 
 date_default_timezone_set('Europe/Moscow');

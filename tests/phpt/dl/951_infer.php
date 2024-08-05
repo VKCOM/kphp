@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 define ('A', 1);
 define ('B', A + 1);

@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
   for ($i = 0; $i < 256; $i++)
     $s_full .= chr ($i);

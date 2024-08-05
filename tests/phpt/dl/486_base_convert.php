@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
   var_dump($x = base_convert("adj7sdf7d", 35, 9));
   var_dump(base_convert($x, 11, 23));

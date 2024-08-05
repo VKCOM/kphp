@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /Syntax 'new \$class_name' not resolved: __construct\(\) not found in I/
 /Syntax '\$class_name::method\(\)' not resolved: method unexistingSm not found in class A/
 /Syntax '\$class_name::method\(\)' works only for static methods, but A::im is an instance method/

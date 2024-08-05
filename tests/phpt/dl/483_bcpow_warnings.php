@@ -1,4 +1,4 @@
-@kphp_runtime_should_warn
+@kphp_runtime_should_warn k2_skip
 /First parameter "9\.0E\-5" in function bcpow is not a number/
 /First parameter "1\.0E\+14" in function bcpow is not a number/
 /First parameter "abcd" in function bcpow is not a number/

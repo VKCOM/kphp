@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 
 // Test that we can override the constructor in the custom Exception,

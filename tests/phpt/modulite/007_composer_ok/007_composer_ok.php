@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 KPHP_COMPOSER_ROOT={dir}
 <?php
 require_once __DIR__ . '/vendor/autoload.php';

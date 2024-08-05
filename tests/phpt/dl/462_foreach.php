@@ -1,4 +1,4 @@
-@ok benchmark
+@ok benchmark k2_skip
 <?php
   function hash2($n) {
     for ($i = 0; $i < $n; $i++) {

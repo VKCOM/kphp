@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 
 $ads_public_key = <<<EOF

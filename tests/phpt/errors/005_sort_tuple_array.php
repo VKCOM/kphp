@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /tuple\(int, int\) is not comparable and cannot be sorted/
 /shape\(x:int\) is not comparable and cannot be sorted/
 /C is not comparable and cannot be sorted/

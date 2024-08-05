@@ -1,4 +1,4 @@
-@kphp_should_warn
+@kphp_should_warn k2_skip
 /Dangerous undefined behaviour \+, \[var = \$x\]/
 <?php
 

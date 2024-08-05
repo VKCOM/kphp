@@ -1,4 +1,4 @@
-@ok ok_old_php
+@ok ok_old_php k2_skip
 <?php
   for ($i = 0; $i < 3; ++$i) {
     $str = 'test<br>test';

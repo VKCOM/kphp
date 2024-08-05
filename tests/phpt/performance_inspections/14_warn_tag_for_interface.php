@@ -1,4 +1,4 @@
-@kphp_should_warn
+@kphp_should_warn k2_skip
 /variable \$y1 can be reserved with array_reserve functions family out of loop/
 /Performance inspection 'array\-reserve' enabled by: TestInterface::interface_function \-> TestInterfaceImpl1::interface_function/
 /expression \$x = array_merge\(\$x, <...>\) can be replaced with array_merge_into\(\$x, <...>\)/
