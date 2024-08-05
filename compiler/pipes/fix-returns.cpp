@@ -20,6 +20,9 @@ VertexPtr FixReturnsPass::on_enter_vertex(VertexPtr root) {
       FunctionPtr fun = call->func_id;
       kphp_error(0, fmt_format("Using result of void function {}", fun->as_human_readable()));
     } else {
+      if (root->type() == op_throw) {
+        kphp_error(false, TermStringFormat::paint("throw expression ", TermStringFormat::blue) + "isn't supported");
+      }
       kphp_error(0, "Using result of void expression");
     }
   }
