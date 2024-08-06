@@ -202,6 +202,10 @@ struct task_t : public task_base_t {
       return task->get_result();
     }
 
+    bool done() const noexcept {
+      return task->done();
+    }
+
     void cancel() const noexcept {
       task->get_handle().promise().next = nullptr;
     }
