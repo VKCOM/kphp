@@ -133,11 +133,8 @@ task_t<RpcQueryInfo> rpc_send_impl(string actor, double timeout, bool ignore_ans
   // create fork to wait for RPC response. we need to do it even if 'ignore_answer' is 'true' to make sure
   // that the stream will not be closed too early. otherwise, platform may even not send RPC request
   auto waiter_task{[](int64_t query_id, auto comp_query, std::chrono::nanoseconds timeout, bool collect_responses_extra_info) noexcept -> task_t<fork_result> {
-    const auto fetcher_fork_id{co_await start_fork_t{[](auto comp_query) noexcept -> task_t<fork_result> {
-                                                       co_return co_await f$component_client_get_result(std::move(comp_query));
-                                                     }(std::move(comp_query)),
-                                                     start_fork_t::execution::self}};
-    const auto response{(co_await wait_fork_t<string>{fetcher_fork_id, timeout}).val()};
+    auto fetch_task{f$component_client_get_result(std::move(comp_query))};
+    const auto response{(co_await wait_with_timeout_t{task_t<string>::awaiter_t{std::addressof(fetch_task)}, timeout}).value_or(string{})};
     // update response extra info if needed
     if (collect_responses_extra_info) {
       auto &extra_info_map{RpcComponentContext::get().rpc_responses_extra_info};
@@ -151,6 +148,7 @@ task_t<RpcQueryInfo> rpc_send_impl(string actor, double timeout, bool ignore_ans
     }
     co_return response;
   }(query_id, std::move(comp_query), timeout_ns, collect_responses_extra_info)};
+  // start waiter fork
   const auto waiter_fork_id{co_await start_fork_t{std::move(waiter_task), start_fork_t::execution::self}};
 
   if (ignore_answer) {
@@ -246,11 +244,10 @@ task_t<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) noexcept {
     co_return make_fetch_error(string{"can't find fetcher fork"}, TL_ERROR_INTERNAL);
   }
 
-  const auto data{(co_await wait_fork_t<string>{response_waiter_fork_id, MAX_TIMEOUT_NS}).val()};
+  const auto data{(co_await wait_with_timeout_t{wait_fork_t<string>{response_waiter_fork_id}, MAX_TIMEOUT_NS}).value()};
   if (data.empty()) {
     co_return make_fetch_error(string{"rpc response timeout"}, TL_ERROR_QUERY_TIMEOUT);
   }
-
   rpc_ctx.rpc_buffer.clean();
   rpc_ctx.rpc_buffer.store_bytes(data.c_str(), data.size());
   co_return fetch_function_untyped(rpc_query);
@@ -294,11 +291,10 @@ task_t<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_one_impl(i
     co_return error_factory.make_error(string{"can't find fetcher fork"}, TL_ERROR_INTERNAL);
   }
 
-  const auto data{(co_await wait_fork_t<string>{response_waiter_fork_id, MAX_TIMEOUT_NS}).val()};
+  const auto data{(co_await wait_with_timeout_t{wait_fork_t<string>{response_waiter_fork_id}, MAX_TIMEOUT_NS}).value()};
   if (data.empty()) {
     co_return error_factory.make_error(string{"rpc response timeout"}, TL_ERROR_QUERY_TIMEOUT);
   }
-
   rpc_ctx.rpc_buffer.clean();
   rpc_ctx.rpc_buffer.store_bytes(data.c_str(), data.size());
   co_return fetch_function_typed(rpc_query, error_factory);
