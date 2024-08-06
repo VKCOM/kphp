@@ -19,6 +19,26 @@ SimpleCoroutineScheduler &SimpleCoroutineScheduler::get() noexcept {
   return get_component_context()->scheduler;
 }
 
+bool SimpleCoroutineScheduler::contains(SuspendToken token) const noexcept {
+  const auto [coro, event]{token};
+  return std::visit(
+    [this, coro](auto &&event) noexcept {
+      using event_t = std::remove_cvref_t<decltype(event)>;
+      if constexpr (std::is_same_v<event_t, WaitEvent::Rechedule>) {
+        return std::find(yield_coros.cbegin(), yield_coros.cend(), coro) != yield_coros.cend();
+      } else if constexpr (std::is_same_v<event_t, WaitEvent::IncomingStream>) {
+        return std::find(awaiting_for_stream_coros.cbegin(), awaiting_for_stream_coros.cend(), coro) != awaiting_for_stream_coros.cend();
+      } else if constexpr (std::is_same_v<event_t, WaitEvent::UpdateOnStream>) {
+        return awaiting_for_update_coros.contains(event.stream_d);
+      } else if constexpr (std::is_same_v<event_t, WaitEvent::UpdateOnTimer>) {
+        return awaiting_for_update_coros.contains(event.timer_d);
+      } else {
+        static_assert(false, "non-exhaustive visitor");
+      }
+    },
+    event);
+}
+
 ScheduleStatus SimpleCoroutineScheduler::scheduleOnNoEvent() noexcept {
   if (yield_coros.empty()) {
     return ScheduleStatus::Skipped;
@@ -58,7 +78,7 @@ ScheduleStatus SimpleCoroutineScheduler::scheduleOnYield() noexcept {
 
 ScheduleStatus SimpleCoroutineScheduler::schedule(ScheduleEvent::EventT event) noexcept {
   return std::visit(
-    [this](auto &&event) {
+    [this](auto &&event) noexcept {
       using event_t = std::remove_cvref_t<decltype(event)>;
       if constexpr (std::is_same_v<event_t, ScheduleEvent::NoEvent>) {
         return scheduleOnNoEvent();
@@ -80,7 +100,7 @@ ScheduleStatus SimpleCoroutineScheduler::schedule(ScheduleEvent::EventT event) n
 void SimpleCoroutineScheduler::suspend(SuspendToken token) noexcept {
   const auto [coro, event]{token};
   std::visit(
-    [this, coro](auto &&event) {
+    [this, coro](auto &&event) noexcept {
       using event_t = std::remove_cvref_t<decltype(event)>;
       if constexpr (std::is_same_v<event_t, WaitEvent::Rechedule>) {
         yield_coros.push_back(coro);
@@ -106,7 +126,7 @@ void SimpleCoroutineScheduler::suspend(SuspendToken token) noexcept {
 void SimpleCoroutineScheduler::cancel(SuspendToken token) noexcept {
   const auto [coro, event]{token};
   std::visit(
-    [this, coro](auto &&event) {
+    [this, coro](auto &&event) noexcept {
       using event_t = std::remove_cvref_t<decltype(event)>;
       if constexpr (std::is_same_v<event_t, WaitEvent::Rechedule>) {
         yield_coros.erase(std::find(yield_coros.cbegin(), yield_coros.cend(), coro));

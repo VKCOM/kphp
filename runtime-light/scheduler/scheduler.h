@@ -84,8 +84,9 @@ using SuspendToken = std::pair<std::coroutine_handle<>, WaitEvent::EventT>;
  * 2. have static `get` function that returns a reference to scheduler instance;
  * 3. have `done` method that returns whether scheduler's scheduled all coroutines;
  * 4. have `schedule` method that takes an event and schedules coroutines for execution;
- * 5. have `suspend` method that suspends specified coroutine;
- * 6. have `cancel` method that cancels specified SuspendToken.
+ * 5. have `contains` method returns whether specified SuspendToken is in schedule queue;
+ * 6. have `suspend` method that suspends specified coroutine;
+ * 7. have `cancel` method that cancels specified SuspendToken.
  */
 template<class scheduler_t>
 concept CoroutineSchedulerConcept = std::constructible_from<scheduler_t, memory_resource::unsynchronized_pool_resource &>
@@ -93,6 +94,7 @@ concept CoroutineSchedulerConcept = std::constructible_from<scheduler_t, memory_
   { scheduler_t::get() } noexcept -> std::same_as<scheduler_t &>;
   { s.done() } noexcept -> std::convertible_to<bool>;
   { s.schedule(schedule_event) } noexcept -> std::same_as<ScheduleStatus>;
+  { s.contains(token) } noexcept -> std::convertible_to<bool>;
   { s.suspend(token) } noexcept -> std::same_as<void>;
   { s.cancel(token) } noexcept -> std::same_as<void>;
 };
@@ -128,6 +130,7 @@ public:
   }
 
   ScheduleStatus schedule(ScheduleEvent::EventT) noexcept;
+  bool contains(SuspendToken) const noexcept;
   void suspend(SuspendToken) noexcept;
   void cancel(SuspendToken) noexcept;
 };
