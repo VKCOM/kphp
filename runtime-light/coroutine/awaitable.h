@@ -31,7 +31,10 @@ concept Awaitable = requires(T awaitable, const T const_awaitable, std::coroutin
 
 template<class T>
 concept CancellableAwaitable = Awaitable<T> && requires(T awaitable, const T const_awaitable) {
+  // semantics: awaitable has really done its job, e.g. timer suspended and resumed, task finished etc
   { const_awaitable.done() } noexcept -> std::convertible_to<bool>;
+  // semantics: following resume of the awaitable should not have any effect on the awaiter.
+  // semantics (optional): stop useless calculations.
   { awaitable.cancel() } noexcept -> std::same_as<void>;
 };
 
