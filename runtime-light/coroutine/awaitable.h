@@ -31,7 +31,6 @@ concept Awaitable = requires(T awaitable, const T const_awaitable, std::coroutin
 
 template<class T>
 concept CancellableAwaitable = Awaitable<T> && requires(T awaitable, const T const_awaitable) {
-  // the result of 'done' is only valid after a call to awaitable's 'await_suspend'
   { const_awaitable.done() } noexcept -> std::convertible_to<bool>;
   { awaitable.cancel() } noexcept -> std::same_as<void>;
 };
@@ -41,6 +40,7 @@ concept CancellableAwaitable = Awaitable<T> && requires(T awaitable, const T con
 class wait_for_update_t {
   uint64_t stream_d;
   SuspendToken suspend_token;
+  bool was_suspended{false};
 
 public:
   explicit wait_for_update_t(uint64_t stream_d_) noexcept
@@ -66,6 +66,7 @@ public:
   }
 
   void await_suspend(std::coroutine_handle<> coro) noexcept {
+    was_suspended = true;
     suspend_token.first = coro;
     CoroutineScheduler::get().suspend(suspend_token);
   }
@@ -73,7 +74,7 @@ public:
   constexpr void await_resume() const noexcept {}
 
   bool done() const noexcept {
-    return !CoroutineScheduler::get().contains(suspend_token);
+    return was_suspended && !CoroutineScheduler::get().contains(suspend_token);
   }
 
   void cancel() const noexcept {
@@ -85,6 +86,7 @@ public:
 
 class wait_for_incoming_stream_t {
   SuspendToken suspend_token{std::noop_coroutine(), WaitEvent::IncomingStream{}};
+  bool was_suspended{false};
 
 public:
   wait_for_incoming_stream_t() noexcept = default;
@@ -107,6 +109,7 @@ public:
   }
 
   void await_suspend(std::coroutine_handle<> coro) noexcept {
+    was_suspended = true;
     suspend_token.first = coro;
     CoroutineScheduler::get().suspend(suspend_token);
   }
@@ -118,7 +121,7 @@ public:
   }
 
   bool done() const noexcept {
-    return !CoroutineScheduler::get().contains(suspend_token);
+    return was_suspended && !CoroutineScheduler::get().contains(suspend_token);
   }
 
   void cancel() const noexcept {
@@ -130,6 +133,7 @@ public:
 
 class wait_for_reschedule_t {
   SuspendToken suspend_token{std::noop_coroutine(), WaitEvent::Rechedule{}};
+  bool was_suspended{false};
 
 public:
   wait_for_reschedule_t() noexcept = default;
@@ -152,6 +156,7 @@ public:
   }
 
   void await_suspend(std::coroutine_handle<> coro) noexcept {
+    was_suspended = true;
     suspend_token.first = coro;
     CoroutineScheduler::get().suspend(suspend_token);
   }
@@ -159,7 +164,7 @@ public:
   constexpr void await_resume() const noexcept {}
 
   bool done() const noexcept {
-    return !CoroutineScheduler::get().contains(suspend_token);
+    return was_suspended && !CoroutineScheduler::get().contains(suspend_token);
   }
 
   void cancel() const noexcept {
@@ -172,6 +177,7 @@ public:
 class wait_for_timer_t {
   uint64_t timer_d{};
   SuspendToken suspend_token;
+  bool was_suspended{false};
 
 public:
   explicit wait_for_timer_t(std::chrono::nanoseconds duration) noexcept
@@ -201,6 +207,7 @@ public:
   }
 
   void await_suspend(std::coroutine_handle<> coro) noexcept {
+    was_suspended = true;
     suspend_token.first = coro;
     CoroutineScheduler::get().suspend(suspend_token);
   }
@@ -210,7 +217,7 @@ public:
   }
 
   bool done() const noexcept {
-    return !CoroutineScheduler::get().contains(suspend_token);
+    return was_suspended && !CoroutineScheduler::get().contains(suspend_token);
   }
 
   void cancel() const noexcept {
