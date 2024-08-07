@@ -171,10 +171,9 @@ class SimpleCoroutineScheduler {
   template<typename T>
   using deque = memory_resource::stl::deque<T, memory_resource::unsynchronized_pool_resource>;
 
-  deque<std::coroutine_handle<>> yield_coros;
-  deque<std::coroutine_handle<>> awaiting_for_stream_coros;
-  unordered_map<uint64_t, std::coroutine_handle<>> awaiting_for_update_coros;
-
+  deque<SuspendToken> yield_tokens;
+  deque<SuspendToken> awaiting_for_stream_tokens;
+  unordered_map<uint64_t, SuspendToken> awaiting_for_update_tokens;
   unordered_set<SuspendToken> suspend_tokens;
 
   ScheduleStatus scheduleOnNoEvent() noexcept;
@@ -184,9 +183,9 @@ class SimpleCoroutineScheduler {
 
 public:
   explicit SimpleCoroutineScheduler(memory_resource::unsynchronized_pool_resource &memory_resource) noexcept
-    : yield_coros(deque<std::coroutine_handle<>>::allocator_type{memory_resource})
-    , awaiting_for_stream_coros(deque<std::coroutine_handle<>>::allocator_type{memory_resource})
-    , awaiting_for_update_coros(unordered_map<uint64_t, std::coroutine_handle<>>::allocator_type{memory_resource})
+    : yield_tokens(deque<SuspendToken>::allocator_type{memory_resource})
+    , awaiting_for_stream_tokens(deque<SuspendToken>::allocator_type{memory_resource})
+    , awaiting_for_update_tokens(unordered_map<uint64_t, SuspendToken>::allocator_type{memory_resource})
     , suspend_tokens(unordered_set<SuspendToken>::allocator_type{memory_resource}) {}
 
   static SimpleCoroutineScheduler &get() noexcept;

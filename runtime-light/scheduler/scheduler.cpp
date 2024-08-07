@@ -21,35 +21,35 @@ SimpleCoroutineScheduler &SimpleCoroutineScheduler::get() noexcept {
 }
 
 ScheduleStatus SimpleCoroutineScheduler::scheduleOnNoEvent() noexcept {
-  if (yield_coros.empty()) {
+  if (yield_tokens.empty()) {
     return ScheduleStatus::Skipped;
   }
-  const auto coro{yield_coros.front()};
-  yield_coros.pop_front();
-  suspend_tokens.erase(std::make_pair(coro, WaitEvent::Rechedule{}));
-  coro.resume();
+  const auto token{yield_tokens.front()};
+  yield_tokens.pop_front();
+  suspend_tokens.erase(token);
+  token.first.resume();
   return ScheduleStatus::Resumed;
 }
 
 ScheduleStatus SimpleCoroutineScheduler::scheduleOnIncomingStream() noexcept {
-  if (awaiting_for_stream_coros.empty()) {
+  if (awaiting_for_stream_tokens.empty()) {
     return ScheduleStatus::Skipped;
   }
-  const auto coro{awaiting_for_stream_coros.front()};
-  awaiting_for_stream_coros.pop_front();
-  suspend_tokens.erase(std::make_pair(coro, WaitEvent::IncomingStream{}));
-  coro.resume();
+  const auto token{awaiting_for_stream_tokens.front()};
+  awaiting_for_stream_tokens.pop_front();
+  suspend_tokens.erase(token);
+  token.first.resume();
   return ScheduleStatus::Resumed;
 }
 
 ScheduleStatus SimpleCoroutineScheduler::scheduleOnStreamUpdate(uint64_t stream_d) noexcept {
   if (stream_d == INVALID_PLATFORM_DESCRIPTOR) {
     return ScheduleStatus::Error;
-  } else if (const auto it_coro{awaiting_for_update_coros.find(stream_d)}; it_coro != awaiting_for_update_coros.cend()) {
-    const auto coro{it_coro->second};
-    awaiting_for_update_coros.erase(it_coro);
-    suspend_tokens.erase(std::make_pair(coro, WaitEvent::UpdateOnStream{.stream_d = stream_d}));
-    coro.resume();
+  } else if (const auto it_token{awaiting_for_update_tokens.find(stream_d)}; it_token != awaiting_for_update_tokens.cend()) {
+    const auto token{it_token->second};
+    awaiting_for_update_tokens.erase(it_token);
+    suspend_tokens.erase(token);
+    token.first.resume();
     return ScheduleStatus::Resumed;
   } else {
     return ScheduleStatus::Skipped;
@@ -83,48 +83,46 @@ ScheduleStatus SimpleCoroutineScheduler::schedule(ScheduleEvent::EventT event) n
 
 void SimpleCoroutineScheduler::suspend(SuspendToken token) noexcept {
   suspend_tokens.emplace(token);
-  const auto [coro, event]{token};
   std::visit(
-    [this, coro](auto &&event) noexcept {
+    [this, token](auto &&event) noexcept {
       using event_t = std::remove_cvref_t<decltype(event)>;
       if constexpr (std::is_same_v<event_t, WaitEvent::Rechedule>) {
-        yield_coros.push_back(coro);
+        yield_tokens.push_back(token);
       } else if constexpr (std::is_same_v<event_t, WaitEvent::IncomingStream>) {
-        awaiting_for_stream_coros.push_back(coro);
+        awaiting_for_stream_tokens.push_back(token);
       } else if constexpr (std::is_same_v<event_t, WaitEvent::UpdateOnStream>) {
         if (event.stream_d == INVALID_PLATFORM_DESCRIPTOR) {
           return;
         }
-        awaiting_for_update_coros.emplace(event.stream_d, coro);
+        awaiting_for_update_tokens.emplace(event.stream_d, token);
       } else if constexpr (std::is_same_v<event_t, WaitEvent::UpdateOnTimer>) {
         if (event.timer_d == INVALID_PLATFORM_DESCRIPTOR) {
           return;
         }
-        awaiting_for_update_coros.emplace(event.timer_d, coro);
+        awaiting_for_update_tokens.emplace(event.timer_d, token);
       } else {
         static_assert(false, "non-exhaustive visitor");
       }
     },
-    event);
+    token.second);
 }
 
 void SimpleCoroutineScheduler::cancel(SuspendToken token) noexcept {
   suspend_tokens.erase(token);
-  const auto [coro, event]{token};
   std::visit(
-    [this, coro](auto &&event) noexcept {
+    [this, token](auto &&event) noexcept {
       using event_t = std::remove_cvref_t<decltype(event)>;
       if constexpr (std::is_same_v<event_t, WaitEvent::Rechedule>) {
-        yield_coros.erase(std::find(yield_coros.cbegin(), yield_coros.cend(), coro));
+        yield_tokens.erase(std::find(yield_tokens.cbegin(), yield_tokens.cend(), token));
       } else if constexpr (std::is_same_v<event_t, WaitEvent::IncomingStream>) {
-        awaiting_for_stream_coros.erase(std::find(awaiting_for_stream_coros.cbegin(), awaiting_for_stream_coros.cend(), coro));
+        awaiting_for_stream_tokens.erase(std::find(awaiting_for_stream_tokens.cbegin(), awaiting_for_stream_tokens.cend(), token));
       } else if constexpr (std::is_same_v<event_t, WaitEvent::UpdateOnStream>) {
-        awaiting_for_update_coros.erase(event.stream_d);
+        awaiting_for_update_tokens.erase(event.stream_d);
       } else if constexpr (std::is_same_v<event_t, WaitEvent::UpdateOnTimer>) {
-        awaiting_for_update_coros.erase(event.timer_d);
+        awaiting_for_update_tokens.erase(event.timer_d);
       } else {
         static_assert(false, "non-exhaustive visitor");
       }
     },
-    event);
+    token.second);
 }
