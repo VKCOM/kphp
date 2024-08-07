@@ -184,6 +184,11 @@ function json_encode ($v ::: mixed, $options ::: int = 0) ::: string | false;
 
 function json_decode ($v ::: string, $assoc ::: bool = false) ::: mixed;
 
+// === Crypto======================================================================================
+
+/** @kphp-extern-func-info interruptible */
+function openssl_random_pseudo_bytes ($length ::: int) ::: string | false;
+
 // === Misc =======================================================================================
 
 /** @kphp-extern-func-info cpp_template_call */
