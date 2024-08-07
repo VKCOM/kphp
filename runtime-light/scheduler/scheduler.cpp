@@ -8,6 +8,7 @@
 #include <coroutine>
 #include <cstdint>
 #include <type_traits>
+#include <utility>
 #include <variant>
 
 #include "runtime-light/component/component.h"
@@ -19,32 +20,13 @@ SimpleCoroutineScheduler &SimpleCoroutineScheduler::get() noexcept {
   return get_component_context()->scheduler;
 }
 
-bool SimpleCoroutineScheduler::contains(SuspendToken token) const noexcept {
-  const auto [coro, event]{token};
-  return std::visit(
-    [this, coro](auto &&event) noexcept {
-      using event_t = std::remove_cvref_t<decltype(event)>;
-      if constexpr (std::is_same_v<event_t, WaitEvent::Rechedule>) {
-        return std::find(yield_coros.cbegin(), yield_coros.cend(), coro) != yield_coros.cend();
-      } else if constexpr (std::is_same_v<event_t, WaitEvent::IncomingStream>) {
-        return std::find(awaiting_for_stream_coros.cbegin(), awaiting_for_stream_coros.cend(), coro) != awaiting_for_stream_coros.cend();
-      } else if constexpr (std::is_same_v<event_t, WaitEvent::UpdateOnStream>) {
-        return awaiting_for_update_coros.contains(event.stream_d);
-      } else if constexpr (std::is_same_v<event_t, WaitEvent::UpdateOnTimer>) {
-        return awaiting_for_update_coros.contains(event.timer_d);
-      } else {
-        static_assert(false, "non-exhaustive visitor");
-      }
-    },
-    event);
-}
-
 ScheduleStatus SimpleCoroutineScheduler::scheduleOnNoEvent() noexcept {
   if (yield_coros.empty()) {
     return ScheduleStatus::Skipped;
   }
   const auto coro{yield_coros.front()};
   yield_coros.pop_front();
+  suspend_tokens.erase(std::make_pair(coro, WaitEvent::Rechedule{}));
   coro.resume();
   return ScheduleStatus::Resumed;
 }
@@ -55,6 +37,7 @@ ScheduleStatus SimpleCoroutineScheduler::scheduleOnIncomingStream() noexcept {
   }
   const auto coro{awaiting_for_stream_coros.front()};
   awaiting_for_stream_coros.pop_front();
+  suspend_tokens.erase(std::make_pair(coro, WaitEvent::IncomingStream{}));
   coro.resume();
   return ScheduleStatus::Resumed;
 }
@@ -65,6 +48,7 @@ ScheduleStatus SimpleCoroutineScheduler::scheduleOnStreamUpdate(uint64_t stream_
   } else if (const auto it_coro{awaiting_for_update_coros.find(stream_d)}; it_coro != awaiting_for_update_coros.cend()) {
     const auto coro{it_coro->second};
     awaiting_for_update_coros.erase(it_coro);
+    suspend_tokens.erase(std::make_pair(coro, WaitEvent::UpdateOnStream{.stream_d = stream_d}));
     coro.resume();
     return ScheduleStatus::Resumed;
   } else {
@@ -98,6 +82,7 @@ ScheduleStatus SimpleCoroutineScheduler::schedule(ScheduleEvent::EventT event) n
 }
 
 void SimpleCoroutineScheduler::suspend(SuspendToken token) noexcept {
+  suspend_tokens.emplace(token);
   const auto [coro, event]{token};
   std::visit(
     [this, coro](auto &&event) noexcept {
@@ -124,6 +109,7 @@ void SimpleCoroutineScheduler::suspend(SuspendToken token) noexcept {
 }
 
 void SimpleCoroutineScheduler::cancel(SuspendToken token) noexcept {
+  suspend_tokens.erase(token);
   const auto [coro, event]{token};
   std::visit(
     [this, coro](auto &&event) noexcept {
