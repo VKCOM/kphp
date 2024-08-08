@@ -15,11 +15,12 @@
 #include "runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/component/component.h"
 #include "runtime-light/coroutine/task.h"
-#include "runtime-light/stdlib/fork/fork-context.h"
-#include "runtime-light/stdlib/fork/fork.h"
 #include "runtime-light/header.h"
 #include "runtime-light/scheduler/scheduler.h"
+#include "runtime-light/stdlib/fork/fork-context.h"
+#include "runtime-light/stdlib/fork/fork.h"
 #include "runtime-light/utils/context.h"
+#include "runtime-light/stdlib/fork/wait-queue-context.h"
 
 template<class T>
 concept Awaitable = requires(T && awaitable, std::coroutine_handle<> coro) {
@@ -195,6 +196,44 @@ public:
       return {fork_awaiter.await_resume().get_result<T>()};
     } else {
       fork_awaiter.cancel();
+      return {};
+    }
+  }
+};
+
+// ================================================================================================
+
+class wait_queue_next_t {
+  int64_t queue_id;
+  wait_for_timer_t timer_awaiter;
+
+public:
+  explicit wait_queue_next_t(int64_t queue_id_, std::chrono::nanoseconds timeout_) noexcept
+    : queue_id(queue_id_)
+    , timer_awaiter(timeout_) {}
+
+  bool await_ready() const noexcept {
+    if (auto queue = WaitQueueContext::get().get_queue(queue_id); queue.has_value()) {
+      return queue.val()->empty() || queue.val()->has_ready_fork();
+    }
+    return true;
+  }
+
+  void await_suspend(std::coroutine_handle<> coro) noexcept {
+    auto queue = WaitQueueContext::get().get_queue(queue_id);
+    queue.val()->push_coro_handle(coro);
+    timer_awaiter.await_suspend(coro);
+  }
+
+  Optional<int64_t> await_resume() noexcept {
+    auto queue = WaitQueueContext::get().get_queue(queue_id);
+    queue.val()->pop_coro_handle();
+    auto ready_fork = queue.val()->pop_fork();
+    if (ready_fork.has_value()) {
+      timer_awaiter.cancel();
+      // todo set here info about prev fork_id
+      return ForkComponentContext::get().push_fork(std::move(ready_fork.val().second));
+    } else {
       return {};
     }
   }
