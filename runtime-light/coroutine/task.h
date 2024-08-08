@@ -50,6 +50,11 @@ protected:
   void *handle_address{nullptr};
 };
 
+/**
+ * Please, read following documents before trying to understand what's going on here:
+ * 1. C++20 coroutines — https://en.cppreference.com/w/cpp/language/coroutines;
+ * 2. C++ coroutines — understanding symmetric stransfer - https://lewissbaker.github.io/2020/05/11/understanding_symmetric_transfer.
+ */
 template<typename T>
 struct task_t : public task_base_t {
   template<std::same_as<T> F>
