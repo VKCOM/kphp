@@ -14,6 +14,7 @@
 
 int64_t f$rand() {
   std::random_device rd;
-  int64_t dice_roll = rd();
+  std::uniform_int_distribution<> dis(0, rd.max());
+  int64_t dice_roll = dis(rd);
   return dice_roll;
 }

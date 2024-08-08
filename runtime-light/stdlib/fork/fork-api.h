@@ -11,7 +11,6 @@
 #include "runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"
-#include "runtime-light/stdlib/fork/fork-context.h"
 
 namespace fork_api_impl_ {
 
@@ -45,3 +44,11 @@ requires(is_optional<T>::value) task_t<T> f$wait(Optional<int64_t> fork_id_opt, 
 task_t<void> f$sched_yield() noexcept;
 
 task_t<void> f$sched_yield_sleep(int64_t duration_ns) noexcept;
+
+int64_t f$wait_queue_create(array<Optional<int64_t>> fork_ids) noexcept;
+
+void f$wait_queue_push(int64_t queue, Optional<int64_t> fork_id) noexcept;
+
+bool f$wait_queue_empty(int64_t queue_id) noexcept;
+
+task_t<Optional<int64_t>> f$wait_queue_next(int64_t queue, double timeout = -1.0) noexcept;
