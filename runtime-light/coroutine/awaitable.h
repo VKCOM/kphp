@@ -200,7 +200,7 @@ public:
       cancel();
     }
     if (timer_d != INVALID_PLATFORM_DESCRIPTOR) {
-      get_platform_context()->free_descriptor(timer_d);
+      get_component_context()->release_stream(timer_d);
     }
   }
 
@@ -215,9 +215,7 @@ public:
     CoroutineScheduler::get().suspend(suspend_token);
   }
 
-  void await_resume() const noexcept {
-    get_component_context()->release_stream(timer_d);
-  }
+  constexpr void await_resume() const noexcept {}
 
   bool done() const noexcept {
     return was_suspended && !CoroutineScheduler::get().contains(suspend_token);
