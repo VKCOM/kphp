@@ -9,6 +9,7 @@
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/const-globals-batched-mem.h"
 #include "compiler/code-gen/files/json-encoder-tags.h"
+#include "compiler/code-gen/files/msgpack-encoder-tags.h"
 #include "compiler/code-gen/files/tl2cpp/tl2cpp-utils.h"
 #include "compiler/code-gen/includes.h"
 #include "compiler/code-gen/namespace.h"
@@ -396,6 +397,9 @@ void InterfaceDeclaration::compile(CodeGenerator &W) const {
   if (!interface->json_encoders.empty()) {
     includes.add_raw_filename_include(JsonEncoderTags::all_tags_file_);
   }
+  if (!interface->msgpack_encoders.empty()) {
+    includes.add_raw_filename_include(MsgPackEncoderTags::all_tags_file_);
+  }
   W << includes;
 
   W << OpenNamespace() << NL;
@@ -765,6 +769,16 @@ void ClassDeclaration::compile_generic_accept(CodeGenerator &W, ClassPtr klass) 
   do_compile_generic_accept(W, klass, true);
 }
 
+static void compile_msgpack_visitor_call(CodeGenerator &W, ClassPtr msgpack_encoder, ClassPtr klass, const ClassMemberInstanceField &field, bool to_encode) noexcept {
+  (void)msgpack_encoder;
+  (void)klass;
+  (void)field;
+  (void)to_encode;
+  //  auto props = kphp_json::merge_and_inherit_json_tags(field, klass, json_encoder);
+
+    W << "HIA: 1 " << BEGIN;
+    W << END << NL;
+}
 // generate `visitor("json_key", $field_name);`, wrapped with `if ($field_name != default)` if skip_if_default, etc.
 static void compile_json_visitor_call(CodeGenerator &W, ClassPtr json_encoder, ClassPtr klass, const ClassMemberInstanceField &field, bool to_encode) noexcept {
   auto props = kphp_json::merge_and_inherit_json_tags(field, klass, json_encoder);
@@ -804,12 +818,83 @@ static void compile_json_visitor_call(CodeGenerator &W, ClassPtr json_encoder, C
 }
 
 static void do_compile_accept_msgpack_visitor(CodeGenerator &W, ClassPtr klass, bool to_encode, ClassPtr msgpack_encoder, bool compile_declaration_only) {
-  (void)klass;
-  (void)to_encode;
-  (void)msgpack_encoder;
-  (void)compile_declaration_only;
-  W << BEGIN << NL;
-  W << "HIA" << NL;
+  bool parent_has_method = false;
+  if (ClassPtr parent = klass->parent_class) {
+    parent_has_method |= parent->msgpack_encoders.end() != std::find(parent->msgpack_encoders.begin(), parent->msgpack_encoders.end(), std::pair{msgpack_encoder, to_encode});
+  }
+  for (InterfacePtr parent : klass->implements) {
+    parent_has_method |= parent->msgpack_encoders.end() != std::find(parent->msgpack_encoders.begin(), parent->msgpack_encoders.end(), std::pair{msgpack_encoder, to_encode});
+  }
+
+  const bool has_derived = !klass->derived_classes.empty();
+  const bool is_pure_virtual = klass->is_interface();
+
+  // todo chain methods are copy-pasted, because the code like
+  // `FunctionSignatureGenerator &&signature = FunctionSignatureGenerator(W)... << fmt_format; std::move(signature)<<BEGIN;`
+  // why ever, triggers an asan error (but correctly works without asan)
+  // we could not figure out why, probably it's asan's false positive, but for now, we decided just to leave a copy-paste
+  if (is_pure_virtual) {
+    if (!compile_declaration_only) {
+      return;
+    }
+    FunctionSignatureGenerator(W)
+      .set_is_virtual(is_pure_virtual || has_derived)
+      .set_final(parent_has_method && !has_derived)
+      .set_overridden(parent_has_method && has_derived)
+      .set_pure_virtual(is_pure_virtual)
+      .set_definition(!compile_declaration_only)
+      << fmt_format("void accept({}<{}> &visitor)", to_encode ? "ToMsgPackVisitor" : "FromMsgPackVisitor", MsgPackEncoderTags::get_cppStructTag_name(msgpack_encoder->name))
+      << SemicolonAndNL{};
+    return;
+  } else {
+    const std::string class_name = compile_declaration_only ? "" : klass->src_name + "::";
+    FunctionSignatureGenerator(W)
+      .set_is_virtual(is_pure_virtual || has_derived)
+      .set_final(parent_has_method && !has_derived)
+      .set_overridden(parent_has_method && has_derived)
+      .set_pure_virtual(is_pure_virtual)
+      .set_definition(!compile_declaration_only)
+      << fmt_format("void {}accept({}<{}> &visitor)", class_name, to_encode ? "ToMsgPackVisitor" : "FromMsgPackVisitor",
+                    MsgPackEncoderTags::get_cppStructTag_name(msgpack_encoder->name));
+    if (compile_declaration_only) {
+      W << SemicolonAndNL{};
+      return;
+    }
+    W << BEGIN;
+  }
+// generates `visitor("json_key", $field_name)` calls in appropriate order
+  auto compile_visitor_calls_for_class_fields = [](CodeGenerator &W, ClassPtr klass, ClassPtr msgpack_encoder, bool to_encode) {
+  // if @kphp-msgpack 'fields' exists above a class, we use it to output fields in that order
+//  if (klass->kphp_msgpack_tags) {
+//    const kphp_msgpack::KphpMsgPackTag *tag_fields = klass->kphp_msgpack_tags->find_tag([msgpack_encoder](const kphp_msgpack::KphpMsgPackTag &tag) {
+//    return tag.attr_type == kphp_msgpack::json_attr_fields && (!tag.for_encoder || tag.for_encoder == json_encoder);
+//    });
+//    if (tag_fields) {
+//      for (vk::string_view field_name : split_skipping_delimeters(tag_fields->fields, ",")) {
+//        compile_json_visitor_call(W, json_encoder, klass, *klass->members.get_instance_field(field_name), to_encode);
+//      }
+//      return;
+//    }
+//  }
+  // otherwise, we output fields in an order they are declared
+  klass->members.for_each([&W, msgpack_encoder, klass, to_encode](const ClassMemberInstanceField &field) {
+    compile_msgpack_visitor_call(W, msgpack_encoder, klass, field, to_encode);
+  });
+  };
+
+  if (!klass->parent_class) {
+    compile_visitor_calls_for_class_fields(W, klass, msgpack_encoder, to_encode);
+  } else {
+    // in final json we want parent fields to appear first
+    std::forward_list<ClassPtr> parents;
+    for (auto cur_klass = klass; cur_klass; cur_klass = cur_klass->parent_class) {
+      parents.emplace_front(cur_klass);
+    }
+    for (auto parent : parents) {
+      compile_visitor_calls_for_class_fields(W, parent, msgpack_encoder, to_encode);
+    }
+  }
+
   W << END << NL;
 }
 
@@ -1000,6 +1085,9 @@ IncludesCollector ClassDeclaration::compile_front_includes(CodeGenerator &W) con
   if (!klass->json_encoders.empty()) {
     includes.add_raw_filename_include(JsonEncoderTags::all_tags_file_);
   }
+  if (!klass->msgpack_encoders.empty()) {
+    includes.add_raw_filename_include(MsgPackEncoderTags::all_tags_file_);
+  }
 
   W << includes;
 
@@ -1135,7 +1223,7 @@ void ClassMembersDefinition::compile_accept_json_visitor(CodeGenerator &W, Class
 }
 
 void ClassMembersDefinition::compile_accept_msgpack_visitor(CodeGenerator &W, ClassPtr klass) {
-  for (auto[encoder, to_encode] : klass->json_encoders) {
+  for (auto[encoder, to_encode] : klass->msgpack_encoders) {
     W << NL;
     do_compile_accept_msgpack_visitor(W, klass, to_encode, encoder, false);
   }
