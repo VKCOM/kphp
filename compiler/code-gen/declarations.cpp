@@ -803,6 +803,16 @@ static void compile_json_visitor_call(CodeGenerator &W, ClassPtr json_encoder, C
   }
 }
 
+static void do_compile_accept_msgpack_visitor(CodeGenerator &W, ClassPtr klass, bool to_encode, ClassPtr msgpack_encoder, bool compile_declaration_only) {
+  (void)klass;
+  (void)to_encode;
+  (void)msgpack_encoder;
+  (void)compile_declaration_only;
+  W << BEGIN << NL;
+  W << "HIA" << NL;
+  W << END << NL;
+}
+
 static void do_compile_accept_json_visitor(CodeGenerator &W, ClassPtr klass, bool to_encode, ClassPtr json_encoder, bool compile_declaration_only) {
   bool parent_has_method = false;
   if (ClassPtr parent = klass->parent_class) {
@@ -889,6 +899,13 @@ void ClassDeclaration::compile_accept_json_visitor(CodeGenerator &W, ClassPtr kl
   for (auto [encoder, to_encode] : klass->json_encoders) {
     W << NL;
     do_compile_accept_json_visitor(W, klass, to_encode, encoder, true);
+  }
+}
+
+void ClassDeclaration::compile_accept_msgpack_visitor(CodeGenerator &W, ClassPtr klass) {
+  for (auto [encoder, to_encode] : klass->msgpack_encoders) {
+    W << NL;
+    do_compile_accept_msgpack_visitor(W, klass, to_encode, encoder, true);
   }
 }
 
@@ -1049,7 +1066,7 @@ void ClassMembersDefinition::compile(CodeGenerator &W) const {
     klass->need_instance_cache_visitors ||
     klass->need_instance_memory_estimate_visitor;
 
-  if (!need_generic_accept && !klass->is_serializable && klass->json_encoders.empty()) {
+  if (!need_generic_accept && !klass->is_serializable && klass->json_encoders.empty() && klass->msgpack_encoders.empty()) {
     return;
   }
 
@@ -1091,6 +1108,8 @@ void ClassMembersDefinition::compile(CodeGenerator &W) const {
   W << NL;
   compile_accept_json_visitor(W, klass);
   W << NL;
+  compile_accept_msgpack_visitor(W, klass);
+  W << NL;
   compile_msgpack_serialize(W, klass);
   W << NL;
   compile_msgpack_deserialize(W, klass);
@@ -1112,6 +1131,13 @@ void ClassMembersDefinition::compile_accept_json_visitor(CodeGenerator &W, Class
   for (auto[encoder, to_encode] : klass->json_encoders) {
     W << NL;
     do_compile_accept_json_visitor(W, klass, to_encode, encoder, false);
+  }
+}
+
+void ClassMembersDefinition::compile_accept_msgpack_visitor(CodeGenerator &W, ClassPtr klass) {
+  for (auto[encoder, to_encode] : klass->json_encoders) {
+    W << NL;
+    do_compile_accept_msgpack_visitor(W, klass, to_encode, encoder, false);
   }
 }
 

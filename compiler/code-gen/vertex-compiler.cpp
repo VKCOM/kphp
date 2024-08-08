@@ -784,11 +784,6 @@ enum class func_call_mode {
   fork_call // call using fork
 };
 
-enum class patcher_kind {
-    json_patcher = 0, // JsonEncoder substitution
-    msgpack_patcher   // MsgPackEncoder substitution
-};
-
 // to_json_impl()/to_msgpack_impl() and from_json_impl()/from_msgpack_impl() are represented in AST as `impl($encoder, ...args)`
 // but we want them to be codegenerated as `f$impl(XXXEncoderTag{}, ...args)`
 // here we shift call args by one and manually output cpp struct tag{} as the first argument

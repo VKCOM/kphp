@@ -42,6 +42,18 @@ static bool is_class_JsonEncoder_or_child(ClassPtr class_id) {
   return false;
 }
 
+static bool is_class_MsgPackEncoder_or_child(ClassPtr class_id) {
+  ClassPtr klass_MsgPackEncoder = G->get_class("MsgPackEncoder");
+  if (klass_MsgPackEncoder && klass_MsgPackEncoder->is_parent_of(class_id)) {
+    // when a class is first time detected as json encoder, parse and validate all constants, and store them
+    //if (!class_id->kphp_msgpack_tags) {
+    //  class_id->kphp_msgpack_tags = kphp_msgpack::convert_encoder_constants_to_tags(class_id);
+    //}
+    return true;
+  }
+  return false;
+}
+
 // `new $c(...)` is stored as `_by_name_construct($c, ...)` in AST
 // here we replace `_by_name_construct('A', ...args)` => `A::__construct(op_alloc, ...args)`
 static VertexPtr replace_by_name_construct(VertexAdaptor<op_func_call> call) {
@@ -164,6 +176,15 @@ static VertexPtr replace_JsonEncoder_decode(VertexAdaptor<op_func_call> call) {
   return VertexUtil::add_call_arg(v_encoder_name, call, true);
 }
 
+// `MsgPackEncoderOrChild::decode($msgpack, $class_name)` => `MsgPackEncoder::from_msgpack_impl('MsgPackEncoderOrChild', $msgpack, $class_name)`
+static VertexPtr replace_MsgPackEncoder_decode(VertexAdaptor<op_func_call> call) {
+  auto v_encoder_name = VertexAdaptor<op_string>::create().set_location(call->location);
+  v_encoder_name->str_val = call->func_id->class_id->name;
+  call->str_val = "MsgPackEncoder$$from_msgpack_impl";
+  call->func_id = G->get_function(call->str_val);
+  return VertexUtil::add_call_arg(v_encoder_name, call, true);
+}
+
 // `JsonEncoderOrChild::encode($instance)` => `JsonEncoder::to_json_impl('JsonEncoderOrChild', $instance)`
 static VertexPtr replace_JsonEncoder_encode(VertexAdaptor<op_func_call> call) {
   auto v_encoder_name = VertexAdaptor<op_string>::create().set_location(call->location);
@@ -173,9 +194,25 @@ static VertexPtr replace_JsonEncoder_encode(VertexAdaptor<op_func_call> call) {
   return VertexUtil::add_call_arg(v_encoder_name, call, true);
 }
 
+// `MsgPackEncoderOrChild::encode($instance)` => `MsgPackEncoder::to_msgpack_impl('MsgPackEncoderOrChild', $instance)`
+static VertexPtr replace_MsgPackEncoder_encode(VertexAdaptor<op_func_call> call) {
+  auto v_encoder_name = VertexAdaptor<op_string>::create().set_location(call->location);
+  v_encoder_name->str_val = call->func_id->class_id->name;
+  call->str_val = "MsgPackEncoder$$to_msgpack_impl";
+  call->func_id = G->get_function(call->str_val);
+  return VertexUtil::add_call_arg(v_encoder_name, call, true);
+}
+
 // `JsonEncoderOrChild::getLastError()` => `JsonEncoder::getLastError()`
 static VertexPtr replace_JsonEncoder_getLastError(VertexAdaptor<op_func_call> call) {
   call->str_val = "JsonEncoder$$getLastError";
+  call->func_id = G->get_function(call->str_val);
+  return call;
+}
+
+// `MsgPackEncoderOrChild::getLastError()` => `MsgPackEncoder::getLastError()`
+static VertexPtr replace_MsgPackEncoder_getLastError(VertexAdaptor<op_func_call> call) {
+  call->str_val = "MsgPackEncoder$$getLastError";
   call->func_id = G->get_function(call->str_val);
   return call;
 }
@@ -216,11 +253,20 @@ VertexPtr maybe_replace_extern_func_call(FunctionPtr current_function, VertexAda
     if (local_name == "decode" && is_class_JsonEncoder_or_child(f_called->class_id) && n_args >= 2) {
       return replace_JsonEncoder_decode(call.clone());
     }
+    if (local_name == "decode" && is_class_MsgPackEncoder_or_child(f_called->class_id) && n_args >= 2) {
+      return replace_MsgPackEncoder_decode(call.clone());
+    }
     if (local_name == "encode" && is_class_JsonEncoder_or_child(f_called->class_id) && n_args >= 1) {
       return replace_JsonEncoder_encode(call.clone());
     }
+    if (local_name == "encode" && is_class_MsgPackEncoder_or_child(f_called->class_id) && n_args >= 1) {
+      return replace_MsgPackEncoder_encode(call.clone());
+    }
     if (local_name == "getLastError" && is_class_JsonEncoder_or_child(f_called->class_id) && n_args == 0) {
       return replace_JsonEncoder_getLastError(call.clone());
+    }
+    if (local_name == "getLastError" && is_class_MsgPackEncoder_or_child(f_called->class_id) && n_args == 0) {
+      return replace_MsgPackEncoder_getLastError(call.clone());
     }
   }
 

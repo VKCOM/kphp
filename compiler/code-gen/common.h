@@ -99,6 +99,11 @@ enum class join_mode {
   multiple_lines
 };
 
+enum class patcher_kind {
+  json_patcher = 0, // JsonEncoder substitution
+  msgpack_patcher   // MsgPackEncoder substitution
+};
+
 template<typename T>
 struct ValueSelfGen {
   using element_type = decltype(*std::begin(std::declval<T>()));

@@ -99,6 +99,7 @@ public:
   // if JsonEncoder::encode() and MyJsonEncoder::decode() were called for this class,
   // this field will contain [ {JsonEncoder,true}, {MyJsonEncoder,false} ]
   std::forward_list<std::pair<ClassPtr, bool>> json_encoders;
+  std::forward_list<std::pair<ClassPtr, bool>> msgpack_encoders;
 
   static const char *NAME_OF_VIRT_CLONE;
   static const char *NAME_OF_CLONE;

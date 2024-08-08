@@ -256,24 +256,67 @@ void store_json_encoder(ClassPtr klass, ClassPtr json_encoder, bool to_encode) n
   }
 }
 
-ClassPtr extract_json_encoder_from_call(VertexAdaptor<op_func_call> call) noexcept {
+void store_msgpack_encoder(ClassPtr klass, ClassPtr msgpack_encoder, bool to_encode) noexcept {
+  {
+    AutoLocker<Lockable *> lock{&(*klass)};
+    auto it = std::find(klass->msgpack_encoders.begin(), klass->msgpack_encoders.end(), std::pair{msgpack_encoder, to_encode});
+    if (it != klass->msgpack_encoders.end()) {
+      return;
+    }
+    // maintain a list sorted to keep codegen stable
+    klass->msgpack_encoders.emplace_front(msgpack_encoder, to_encode);
+    klass->msgpack_encoders.sort();
+  }
+
+  // we allow encoding interfaces and base classes (just generate a virtual accept for all inheritors),
+  // but for decoding we allow only leaf classes (it's conceptual, msgpack strings don't contain class names)
+  // check this and print an appropriate error message
+  if (!to_encode) {
+    if (klass->is_interface()) {
+      kphp_error(0, fmt_format("Msgpack decoding for {} is unavailable, because it's an interface", klass->as_human_readable()));
+    } else if (klass->modifiers.is_abstract()) {
+      kphp_error(0, fmt_format("Msgpack decoding for {} is unavailable, because it's at abstract class", klass->as_human_readable()));
+    }
+  }
+
+  for (ClassPtr derived : klass->derived_classes) {
+    store_msgpack_encoder(derived, msgpack_encoder, to_encode);
+  }
+}
+
+
+ClassPtr extract_encoder_from_call(VertexAdaptor<op_func_call> call) noexcept {
   auto v_encoder = VertexUtil::get_actual_value(call->args().front());
   kphp_assert(v_encoder->type() == op_string);  // it's const string of a class name (JsonEncoder of inheritors)
   return G->get_class(v_encoder->get_string());
 }
 
 void check_to_json_impl_call(VertexAdaptor<op_func_call> call) noexcept {
-  auto encoder = extract_json_encoder_from_call(call);
+  auto encoder = extract_encoder_from_call(call);
   const auto *type = tinf::get_type(call->args()[1]);
   kphp_assert(type->ptype() == tp_Class);
   store_json_encoder(type->class_type(), encoder, true);
 }
 
 void check_from_json_impl_call(VertexAdaptor<op_func_call> call) noexcept {
-  auto encoder = extract_json_encoder_from_call(call);
+  auto encoder = extract_encoder_from_call(call);
   const auto *type = tinf::get_type(call);
   kphp_assert(type->ptype() == tp_Class);
   store_json_encoder(type->class_type(), encoder, false);
+}
+
+void check_to_msgpack_impl_call(VertexAdaptor<op_func_call> call) noexcept {
+  auto encoder = extract_encoder_from_call(call);
+  const auto *type = tinf::get_type(call->args()[1]);
+  kphp_assert(type->ptype() == tp_Class);
+  store_msgpack_encoder(type->class_type(), encoder, true);
+}
+
+void check_from_msgpack_impl_call(VertexAdaptor<op_func_call> call) noexcept {
+  auto encoder = extract_encoder_from_call(call);
+  const auto *type = tinf::get_type(call);
+  kphp_assert(type->ptype() == tp_Class);
+  store_msgpack_encoder(type->class_type(), encoder, false);
 }
 
 void check_instance_serialize_call(VertexAdaptor<op_func_call> call) {
@@ -840,6 +883,10 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
       check_to_json_impl_call(call);
     } else if (function_name == "JsonEncoder$$from_json_impl") {
       check_from_json_impl_call(call);
+    } else if (function_name == "MsgPackEncoder$$to_msgpack_impl") {
+      check_to_msgpack_impl_call(call);
+    } else if (function_name == "MsgPackEncoder$$from_msgpack_impl") {
+      check_from_msgpack_impl_call(call);
     } else if (function_name == "instance_serialize") {
       check_instance_serialize_call(call);
     } else if (function_name == "instance_deserialize") {
