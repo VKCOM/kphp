@@ -26,6 +26,7 @@ void ComponentState::process_platform_updates() noexcept {
   for (;;) {
     // check if platform asked for yield
     if (static_cast<bool>(platform_ctx.please_yield.load())) { // tell the scheduler that we are about to yield
+      php_debug("platform asked for yield");
       const auto schedule_status{scheduler.schedule(ScheduleEvent::Yield{})};
       poll_status = schedule_status == ScheduleStatus::Error ? PollStatus::PollFinishedError : PollStatus::PollReschedule;
       return;
@@ -34,6 +35,7 @@ void ComponentState::process_platform_updates() noexcept {
     // try taking update from the platform
     if (uint64_t stream_d{}; static_cast<bool>(platform_ctx.take_update(std::addressof(stream_d)))) {
       if (opened_streams_.contains(stream_d)) { // update on opened stream
+        php_debug("took update on stream %" PRIu64, stream_d);
         switch (scheduler.schedule(ScheduleEvent::UpdateOnStream{.stream_d = stream_d})) {
           case ScheduleStatus::Resumed: { // scheduler's resumed a coroutine waiting for update
             break;
@@ -48,6 +50,7 @@ void ComponentState::process_platform_updates() noexcept {
           }
         }
       } else { // update on incoming stream
+        php_debug("got new incoming stream %" PRIu64, stream_d);
         if (standard_stream_ != INVALID_PLATFORM_DESCRIPTOR) {
           php_warning("skip new incoming stream since previous one is not closed");
           release_stream(stream_d);

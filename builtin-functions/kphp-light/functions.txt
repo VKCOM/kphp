@@ -78,6 +78,8 @@ function strlen ($str ::: string) ::: int;
 
 // === Fork =======================================================================================
 
+function get_running_fork_id() ::: future <void>;
+
 /** @kphp-extern-func-info interruptible cpp_template_call */
 function wait(future<any> | false $id, float $timeout = -1.0) ::: ^1[*] | null;
 
