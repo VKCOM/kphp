@@ -21,7 +21,7 @@ class ForkComponentContext {
 
   unordered_map<int64_t, task_t<fork_result>> forks_;
   int64_t next_fork_id_{FORK_ID_INIT};
-  ino64_t running_fork_id_{FORK_ID_INIT};
+  int64_t running_fork_id_{FORK_ID_INIT};
 
 public:
   explicit ForkComponentContext(memory_resource::unsynchronized_pool_resource &memory_resource) noexcept
@@ -34,8 +34,10 @@ public:
   }
 
   void set_running_fork_id(int64_t running_fork_id) noexcept {
+    if (running_fork_id_ != running_fork_id) {
+      php_debug("ForkComponentContext: execute fork %lu", running_fork_id);
+    }
     running_fork_id_ = running_fork_id;
-    php_debug("ForkComponentContext: execute fork %lu", running_fork_id_);
   }
 
   int64_t push_fork(task_t<fork_result> &&task) noexcept {
