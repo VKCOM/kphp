@@ -358,6 +358,7 @@ void OptimizationPass::on_finish() {
 
         if (can_init_value_be_removed(class_field.var->init_val, class_field.var)) {
           class_field.var->init_val = {};
+          class_field.var->had_user_assigned_val = true;
         } else {
           explicit_cast_array_type(class_field.var->init_val, tinf::get_type(class_field.var));
         }
