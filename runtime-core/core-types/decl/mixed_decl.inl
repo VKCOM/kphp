@@ -4,6 +4,10 @@
 
 #pragma once
 
+#include "common/smart_ptrs/intrusive_ptr.h"
+#include "runtime-core/class-instance/refcountable-php-classes.h"
+
+
 #ifndef INCLUDED_FROM_KPHP_CORE
   #error "this file must be included only from runtime-core.h"
 #endif
@@ -16,6 +20,10 @@ template<typename T>
 struct is_type_acceptable_for_mixed<array<T>> : is_constructible_or_unknown<mixed, T> {
 };
 
+template<typename T>
+struct is_type_acceptable_for_mixed<class_instance<T>> : std::is_base_of<may_be_mixed_base, T> {
+};
+
 class mixed {
 public:
   enum class type {
@@ -25,6 +33,7 @@ public:
     FLOAT,
     STRING,
     ARRAY,
+    OBJECT,
   };
 
   mixed(const void *) = delete; // deprecate conversion from pointer to boolean
@@ -154,6 +163,29 @@ public:
   inline array<mixed> &as_array() __attribute__((always_inline));
   inline const array<mixed> &as_array() const __attribute__((always_inline));
 
+  inline vk::intrusive_ptr<may_be_mixed_base> as_object() __attribute__((always_inline));
+  inline const vk::intrusive_ptr<may_be_mixed_base> as_object() const __attribute__((always_inline));
+
+
+  // TODO is it ok to return pointer to mutable from const method?
+  // I need it just to pass such a pointer into class_instance. Mutability is needed because
+  // class_instance do ref-counting
+  template <typename InstanceClass, typename T = typename InstanceClass::ClassType>
+  inline T *as_object_ptr() const {
+    auto ptr_to_object = vk::dynamic_pointer_cast<T>(*reinterpret_cast<const vk::intrusive_ptr<may_be_mixed_base> *>(&storage_));
+    return ptr_to_object.get();
+  }
+
+  template <typename ObjType>
+  inline bool is_a() const {
+    if (type_ != type::OBJECT) {
+      return false;
+    }
+
+    auto ptr = *reinterpret_cast<const vk::intrusive_ptr<may_be_mixed_base>*>(&storage_);
+    return static_cast<bool>(vk::dynamic_pointer_cast<ObjType>(ptr));
+  }
+
   inline int64_t safe_to_int() const;
 
   inline void convert_to_numeric();
@@ -184,9 +216,11 @@ public:
   inline bool is_float() const;
   inline bool is_string() const;
   inline bool is_array() const;
+  inline bool is_object() const;
 
   inline const string get_type_str() const;
   inline const char *get_type_c_str() const;
+  inline const char *get_type_or_class_name() const;
 
   inline bool empty() const;
   inline int64_t count() const;
@@ -230,6 +264,8 @@ private:
   auto get_type_and_value_ptr(const int       &) { return std::make_pair(type::INTEGER, &as_int()); }
   auto get_type_and_value_ptr(const double    &) { return std::make_pair(type::FLOAT  , &as_double()); }
   auto get_type_and_value_ptr(const string    &) { return std::make_pair(type::STRING , &as_string()); }
+  template<typename InstanceClass>
+  auto get_type_and_value_ptr(const InstanceClass   &) {return std::make_pair(type::OBJECT, as_object_ptr<InstanceClass>()); }
 
   template<typename T>
   static T &empty_value() noexcept;
@@ -238,3 +274,19 @@ private:
   uint64_t storage_{0};
 };
 
+template<class InputClass>
+inline mixed f$to_mixed(const class_instance<InputClass> &instance) noexcept {
+  mixed m;
+  m = instance;
+  return m;
+}
+
+template<class ResultClass>
+inline ResultClass from_mixed(const mixed &m, const string &) noexcept {
+  if constexpr (!std::is_polymorphic_v<typename ResultClass::ClassType>) {
+    php_error("Internal error. Class inside a mixed is not polymorphic");
+    return {};
+  } else {
+    return ResultClass::create_from_base_raw_ptr(dynamic_cast<abstract_refcountable_php_interface *>(m.as_object_ptr<ResultClass>()));
+  }
+}

@@ -12,6 +12,11 @@ void mixed::destroy() noexcept {
     case type::ARRAY:
       as_array().~array<mixed>();
       break;
+    case type::OBJECT: {
+      reinterpret_cast<vk::intrusive_ptr<may_be_mixed_base>*>(&storage_)->~intrusive_ptr<may_be_mixed_base>();
+      storage_ = 0;
+      break;
+    }
     default: {
     }
   }

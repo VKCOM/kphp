@@ -222,3 +222,6 @@ function int_to_byte($v ::: int) ::: ?string;
 
 /** @kphp-extern-func-info interruptible */
 function set_timer(int $timeout, callable():void $callback) ::: void;
+
+// builtin that allows to store objects inside a mixed
+function to_mixed(object $instance) ::: mixed;

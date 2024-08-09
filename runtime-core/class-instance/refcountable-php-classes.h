@@ -15,7 +15,7 @@ public:
   virtual ~abstract_refcountable_php_interface() noexcept __attribute__((always_inline)) = default;
   virtual void add_ref() noexcept = 0;
   virtual void release() noexcept = 0;
-  virtual uint32_t get_refcnt() noexcept = 0;
+  virtual uint32_t get_refcnt() const noexcept = 0;
   virtual void set_refcnt(uint32_t new_refcnt) noexcept = 0;
 
   virtual void *get_instance_data_raw_ptr() noexcept = 0;
@@ -30,7 +30,7 @@ public:
     }
   }
 
-  uint32_t get_refcnt() noexcept final {
+  uint32_t get_refcnt() const noexcept final {
     return refcnt;
   }
 
@@ -72,7 +72,7 @@ public:
     }
   }
 
-  uint32_t get_refcnt() noexcept final {
+  uint32_t get_refcnt() const noexcept final {
     return refcnt;
   }
 
@@ -106,7 +106,7 @@ public:
     }
   }
 
-  uint32_t get_refcnt() noexcept {
+  uint32_t get_refcnt() const noexcept {
     return refcnt;
   }
 
@@ -141,4 +141,9 @@ class refcountable_empty_php_classes {
 public:
   static void add_ref() noexcept {}
   static void release() noexcept {}
+};
+
+struct may_be_mixed_base : public virtual abstract_refcountable_php_interface {
+  virtual ~may_be_mixed_base() = default;
+  virtual const char *get_class() const noexcept = 0;
 };

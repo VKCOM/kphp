@@ -60,6 +60,9 @@ void impl_::PhpSerializer::serialize(const mixed &v) noexcept {
       return serialize(v.as_string());
     case mixed::type::ARRAY:
       return serialize(v.as_array());
+    case mixed::type::OBJECT:
+      php_warning("Cannot serialize object of type %s", v.get_type_or_class_name());
+      return;
     default:
       __builtin_unreachable();
   }

@@ -42,6 +42,9 @@ template<typename T>
 struct is_class_instance<class_instance<T>> : std::true_type {
 };
 
+template <typename T>
+inline constexpr bool is_class_instance_v = is_class_instance<T>::value;
+
 template<typename T>
 struct is_class_instance_inside : is_class_instance<T> {
 };
