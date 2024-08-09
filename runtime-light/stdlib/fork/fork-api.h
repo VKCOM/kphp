@@ -27,13 +27,14 @@ requires(is_optional<T>::value) task_t<T> f$wait(int64_t fork_id, double timeout
   auto &fork_ctx{ForkComponentContext::get()};
   if (!fork_ctx.contains(fork_id)) {
     php_warning("can't find fork %" PRId64, fork_id);
-    co_return internal_optional_type_t<T>{};
+    co_return T{};
   }
   // normalize timeout
   const auto timeout_ns{timeout > 0 && timeout <= fork_api_impl_::MAX_TIMEOUT_S
                           ? std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout})
                           : fork_api_impl_::DEFAULT_TIMEOUT_NS};
-  co_return(co_await wait_with_timeout_t{wait_fork_t<internal_optional_type_t<T>>{fork_id}, timeout_ns}).value_or(internal_optional_type_t<T>{});
+  auto result_opt{co_await wait_with_timeout_t{wait_fork_t<internal_optional_type_t<T>>{fork_id}, timeout_ns}};
+  co_return result_opt.has_value() ? T{std::move(result_opt.value())} : T{};
 }
 
 template<typename T>
