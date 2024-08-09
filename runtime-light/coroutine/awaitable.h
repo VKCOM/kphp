@@ -38,7 +38,8 @@ concept CancellableAwaitable = Awaitable<T> && requires(T && awaitable) {
 class wait_for_update_t {
   uint64_t stream_d;
   SuspendToken suspend_token_;
-  int64_t suspend_fork_id{ForkComponentContext::get().get_running_fork_id()};
+  int64_t suspend_fork_id{ForkComponentContext::get().running_fork_id};
+  bool was_suspend{false};
 
 public:
   explicit wait_for_update_t(uint64_t stream_d_) noexcept
@@ -52,10 +53,14 @@ public:
   void await_suspend(std::coroutine_handle<> coro) noexcept {
     suspend_token_.first = coro;
     CoroutineScheduler::get().suspend(suspend_token_);
+    was_suspend = true;
   }
 
   void await_resume() const noexcept {
-    ForkComponentContext::get().set_running_fork_id(suspend_fork_id);
+    if (was_suspend) {
+      ForkComponentContext::get().running_fork_id = suspend_fork_id;
+      php_debug("resume fork %" PRId64, suspend_fork_id);
+    }
   }
 
   void cancel() const noexcept {
@@ -67,7 +72,8 @@ public:
 
 class wait_for_incoming_stream_t {
   SuspendToken suspend_token_{std::noop_coroutine(), WaitEvent::IncomingStream{}};
-  int64_t suspend_fork_id{ForkComponentContext::get().get_running_fork_id()};
+  int64_t suspend_fork_id{ForkComponentContext::get().running_fork_id};
+  bool was_suspend{false};
 
 public:
   bool await_ready() const noexcept {
@@ -77,10 +83,14 @@ public:
   void await_suspend(std::coroutine_handle<> coro) noexcept {
     suspend_token_.first = coro;
     CoroutineScheduler::get().suspend(suspend_token_);
+    was_suspend = true;
   }
 
   uint64_t await_resume() const noexcept {
-    ForkComponentContext::get().set_running_fork_id(suspend_fork_id);
+    if (was_suspend) {
+      ForkComponentContext::get().running_fork_id = suspend_fork_id;
+      php_debug("resume fork %" PRId64, suspend_fork_id);
+    }
     const auto incoming_stream_d{get_component_context()->take_incoming_stream()};
     php_assert(incoming_stream_d != INVALID_PLATFORM_DESCRIPTOR);
     return incoming_stream_d;
@@ -95,7 +105,8 @@ public:
 
 class wait_for_reschedule_t {
   SuspendToken suspend_token_{std::noop_coroutine(), WaitEvent::Rechedule{}};
-  int64_t suspend_fork_id{ForkComponentContext::get().get_running_fork_id()};
+  int64_t suspend_fork_id{ForkComponentContext::get().running_fork_id};
+  bool was_suspend{false};
 
 public:
   constexpr bool await_ready() const noexcept {
@@ -105,10 +116,14 @@ public:
   void await_suspend(std::coroutine_handle<> coro) noexcept {
     suspend_token_.first = coro;
     CoroutineScheduler::get().suspend(suspend_token_);
+    was_suspend = true;
   }
 
   void await_resume() const noexcept {
-    ForkComponentContext::get().set_running_fork_id(suspend_fork_id);
+    if (was_suspend) {
+      ForkComponentContext::get().running_fork_id = suspend_fork_id;
+      php_debug("resume fork %" PRId64, suspend_fork_id);
+    }
   }
 
   void cancel() const noexcept {
@@ -121,7 +136,8 @@ public:
 class wait_for_timer_t {
   uint64_t timer_d{};
   SuspendToken suspend_token_;
-  int64_t suspend_fork_id{ForkComponentContext::get().get_running_fork_id()};
+  int64_t suspend_fork_id{ForkComponentContext::get().running_fork_id};
+  bool was_suspend{false};
 
 public:
   explicit wait_for_timer_t(std::chrono::nanoseconds duration) noexcept
@@ -136,10 +152,14 @@ public:
   void await_suspend(std::coroutine_handle<> coro) noexcept {
     suspend_token_.first = coro;
     CoroutineScheduler::get().suspend(suspend_token_);
+    was_suspend = true;
   }
 
   void await_resume() const noexcept {
-    ForkComponentContext::get().set_running_fork_id(suspend_fork_id);
+    if (was_suspend) {
+      ForkComponentContext::get().running_fork_id = suspend_fork_id;
+      php_debug("resume fork %" PRId64, suspend_fork_id);
+    }
     get_component_context()->release_stream(timer_d);
   }
 
@@ -155,7 +175,8 @@ class start_fork_and_reschedule_t {
   std::coroutine_handle<> fork_coro;
   int64_t fork_id{};
   SuspendToken suspend_token_{std::noop_coroutine(), WaitEvent::Rechedule{}};
-  int64_t suspend_fork_id{ForkComponentContext::get().get_running_fork_id()};
+  int64_t suspend_fork_id{ForkComponentContext::get().running_fork_id};
+  bool was_suspend{false};
 
 public:
   explicit start_fork_and_reschedule_t(task_t<fork_result> &&task_) noexcept
@@ -169,12 +190,17 @@ public:
   std::coroutine_handle<> await_suspend(std::coroutine_handle<> current_coro) noexcept {
     suspend_token_.first = current_coro;
     CoroutineScheduler::get().suspend(suspend_token_);
-    ForkComponentContext::get().set_running_fork_id(fork_id);
+    ForkComponentContext::get().running_fork_id = fork_id;
+    php_debug("start fork %" PRId64, fork_id);
+    was_suspend = true;
     return fork_coro;
   }
 
   int64_t await_resume() const noexcept {
-    ForkComponentContext::get().set_running_fork_id(suspend_fork_id);
+    if (was_suspend) {
+      ForkComponentContext::get().running_fork_id = suspend_fork_id;
+      php_debug("resume fork %" PRId64, suspend_fork_id);
+    }
     return fork_id;
   }
 };
@@ -186,7 +212,8 @@ class wait_fork_t {
   task_t<fork_result> task;
   wait_for_timer_t timer_awaiter;
   task_t<fork_result>::awaiter_t fork_awaiter;
-  int64_t suspend_fork_id{ForkComponentContext::get().get_running_fork_id()};
+  int64_t suspend_fork_id{ForkComponentContext::get().running_fork_id};
+  bool was_suspend{false};
 
 public:
   wait_fork_t(task_t<fork_result> &&task_, std::chrono::nanoseconds timeout_) noexcept
@@ -201,10 +228,14 @@ public:
   void await_suspend(std::coroutine_handle<> coro) noexcept {
     fork_awaiter.await_suspend(coro);
     timer_awaiter.await_suspend(coro);
+    was_suspend = true;
   }
 
   Optional<T> await_resume() noexcept {
-    ForkComponentContext::get().set_running_fork_id(suspend_fork_id);
+    if (was_suspend) {
+      ForkComponentContext::get().running_fork_id = suspend_fork_id;
+      php_debug("resume fork %" PRId64, suspend_fork_id);
+    }
     if (task.done()) {
       timer_awaiter.cancel();
       return {fork_awaiter.await_resume().get_result<T>()};

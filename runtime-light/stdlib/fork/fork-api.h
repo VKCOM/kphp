@@ -22,7 +22,7 @@ constexpr double WAIT_FORK_MAX_TIMEOUT = 86400.0;
 constexpr int64_t INVALID_FORK_ID = -1;
 
 inline int64_t f$get_running_fork_id() noexcept {
-  return ForkComponentContext::get().get_running_fork_id();
+  return ForkComponentContext::get().running_fork_id;
 }
 
 template<typename T>
