@@ -20,7 +20,7 @@ struct RpcComponentContext final : private vk::not_copyable {
   template<typename Key, typename Value>
   using unordered_map = memory_resource::stl::unordered_map<Key, Value, memory_resource::unsynchronized_pool_resource>;
 
-  tl_core::TLBuffer rpc_buffer;
+  tl::TLBuffer rpc_buffer;
   int64_t current_query_id{0};
   CurrentTlQuery current_query;
   unordered_map<int64_t, class_instance<C$ComponentQuery>> pending_component_queries;

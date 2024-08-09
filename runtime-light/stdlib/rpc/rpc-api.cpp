@@ -4,7 +4,6 @@
 
 #include "runtime-light/stdlib/rpc/rpc-api.h"
 
-#include <array>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -297,22 +296,22 @@ bool f$store_int(int64_t v) noexcept {
   if (unlikely(is_int32_overflow(v))) {
     php_warning("Got int32 overflow on storing '%" PRIi64 "', the value will be casted to '%d'", v, static_cast<int32_t>(v));
   }
-  RpcComponentContext::get().rpc_buffer.store_i32(v);
+  RpcComponentContext::get().rpc_buffer.store_trivial<int32_t>(v);
   return true;
 }
 
 bool f$store_long(int64_t v) noexcept {
-  RpcComponentContext::get().rpc_buffer.store_i64(v);
+  RpcComponentContext::get().rpc_buffer.store_trivial<int64_t>(v);
   return true;
 }
 
 bool f$store_float(double v) noexcept {
-  RpcComponentContext::get().rpc_buffer.store_f32(v);
+  RpcComponentContext::get().rpc_buffer.store_trivial<float>(v);
   return true;
 }
 
 bool f$store_double(double v) noexcept {
-  RpcComponentContext::get().rpc_buffer.store_f64(v);
+  RpcComponentContext::get().rpc_buffer.store_trivial<double>(v);
   return true;
 }
 
@@ -324,24 +323,24 @@ bool f$store_string(const string &v) noexcept {
 // === Rpc Fetch ==================================================================================
 
 int64_t f$fetch_int() noexcept {
-  return static_cast<int64_t>(RpcComponentContext::get().rpc_buffer.fetch_i32().value_or(0));
+  return static_cast<int64_t>(RpcComponentContext::get().rpc_buffer.fetch_trivial<int32_t>().value_or(0));
 }
 
 int64_t f$fetch_long() noexcept {
-  return RpcComponentContext::get().rpc_buffer.fetch_i64().value_or(0);
+  return RpcComponentContext::get().rpc_buffer.fetch_trivial<int64_t>().value_or(0);
 }
 
 double f$fetch_double() noexcept {
-  return RpcComponentContext::get().rpc_buffer.fetch_f64().value_or(0.0);
+  return RpcComponentContext::get().rpc_buffer.fetch_trivial<double>().value_or(0.0);
 }
 
 double f$fetch_float() noexcept {
-  return static_cast<double>(RpcComponentContext::get().rpc_buffer.fetch_f32().value_or(0));
+  return static_cast<double>(RpcComponentContext::get().rpc_buffer.fetch_trivial<float>().value_or(0));
 }
 
 string f$fetch_string() noexcept {
-  const auto [str_buf, str_len] = RpcComponentContext::get().rpc_buffer.fetch_string();
-  return string(str_buf, str_len);
+  const std::string_view str{RpcComponentContext::get().rpc_buffer.fetch_string()};
+  return {str.data(), static_cast<string::size_type>(str.length())};
 }
 
 // === Rpc Query ==================================================================================

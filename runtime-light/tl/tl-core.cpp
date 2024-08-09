@@ -4,23 +4,23 @@
 
 #include "runtime-light/tl/tl-core.h"
 
-namespace tl_core {
+namespace tl {
 void TLBuffer::store_string(const char *str_buf, size_t str_len) noexcept {
   uint8_t size_len{};
   if (str_len <= SMALL_STRING_MAX_LEN) {
     size_len = SMALL_STRING_SIZE_LEN;
-    store_trivial(static_cast<uint8_t>(str_len));
+    store_trivial<uint8_t>(str_len);
   } else if (str_len <= MEDIUM_STRING_MAX_LEN) {
     size_len = MEDIUM_STRING_SIZE_LEN + 1;
-    store_trivial(static_cast<uint8_t>(MEDIUM_STRING_MAGIC));
-    store_trivial(static_cast<uint8_t>(str_len & 0xff));
-    store_trivial(static_cast<uint8_t>((str_len >> 8) & 0xff));
-    store_trivial(static_cast<uint8_t>((str_len >> 16) & 0xff));
+    store_trivial<uint8_t>(MEDIUM_STRING_MAGIC);
+    store_trivial<uint8_t>(str_len & 0xff);
+    store_trivial<uint8_t>((str_len >> 8) & 0xff);
+    store_trivial<uint8_t>((str_len >> 16) & 0xff);
   } else {
     php_warning("large strings aren't supported");
     size_len = SMALL_STRING_SIZE_LEN;
     str_len = 0;
-    store_trivial(static_cast<uint8_t>(str_len));
+    store_trivial<uint8_t>(str_len);
   }
   store_bytes(str_buf, str_len);
 
@@ -32,7 +32,7 @@ void TLBuffer::store_string(const char *str_buf, size_t str_len) noexcept {
   store_bytes(padding_array.data(), padding);
 }
 
-std::pair<const char *, size_t> TLBuffer::fetch_string() noexcept {
+std::string_view TLBuffer::fetch_string() noexcept {
   uint8_t first_byte{};
   if (const auto opt_first_byte{fetch_trivial<uint8_t>()}; opt_first_byte) {
     first_byte = opt_first_byte.value();
@@ -88,7 +88,7 @@ std::pair<const char *, size_t> TLBuffer::fetch_string() noexcept {
     return {}; // TODO: error handling
   }
 
-  std::pair response = {data() + m_pos, static_cast<size_t>(string_len)};
+  std::string_view response{data() + m_pos, static_cast<size_t>(string_len)};
   adjust(total_len_with_padding - size_len);
   return response;
 }
