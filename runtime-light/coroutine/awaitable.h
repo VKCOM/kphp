@@ -39,6 +39,9 @@ concept CancellableAwaitable = Awaitable<T> && requires(T awaitable, const T con
 };
 
 // === Awaitables =================================================================================
+//
+// ***Important***
+// Below awaitables are not supposed to be co_awaited on more than once.
 
 class wait_for_update_t {
   uint64_t stream_d;
@@ -279,6 +282,9 @@ public:
       }
     }
     CoroutineScheduler::get().suspend(suspend_token);
+    // reset fork_coro and suspend_token to guarantee that the same fork will be started only once
+    fork_coro = std::noop_coroutine();
+    suspend_token = std::make_pair(std::noop_coroutine(), WaitEvent::Rechedule{});
     return continuation;
   }
 
