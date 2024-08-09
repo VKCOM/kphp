@@ -774,9 +774,10 @@ static void compile_msgpack_visitor_call(CodeGenerator &W, ClassPtr msgpack_enco
   (void)klass;
   (void)field;
   (void)to_encode;
-  //  auto props = kphp_json::merge_and_inherit_json_tags(field, klass, json_encoder);
+   auto props = kphp_msgpack::merge_and_inherit_msgpack_tags(field, klass, msgpack_encoder);
 
     W << "HIA: 1 " << BEGIN;
+    W << props.msgpack_key << NL;
     W << END << NL;
 }
 // generate `visitor("json_key", $field_name);`, wrapped with `if ($field_name != default)` if skip_if_default, etc.

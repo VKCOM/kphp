@@ -120,6 +120,6 @@ struct FieldMsgPackSettings {
 
 //std::string transform_json_name_to(RenamePolicy policy, vk::string_view name) noexcept;
 const KphpMsgPackTagList *convert_encoder_constants_to_tags(ClassPtr msgpack_encoder);
-FieldMsgPackSettings merge_and_inherit_json_tags(const ClassMemberInstanceField &field, ClassPtr klass, ClassPtr msgpack_encoder);
+FieldMsgPackSettings merge_and_inherit_msgpack_tags(const ClassMemberInstanceField &field, ClassPtr klass, ClassPtr msgpack_encoder);
 
 } // namespace kphp_json

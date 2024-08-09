@@ -420,8 +420,12 @@ const KphpMsgPackTagList *KphpMsgPackTagList::create_from_phpdoc(FunctionPtr res
 //  return contants_as_tags;
 //}
 
-//FieldMsgPackSettings merge_and_inherit_msgpack_tags(const ClassMemberInstanceField &field, ClassPtr klass, ClassPtr msgpack_encoder) {
-//  FieldMsgPackSettings s;
+FieldMsgPackSettings merge_and_inherit_msgpack_tags(const ClassMemberInstanceField &field, ClassPtr klass, ClassPtr msgpack_encoder) {
+  (void)field;
+  (void)klass;
+  (void)msgpack_encoder;
+  FieldMsgPackSettings s;
+
 //
 //  // for 'public int $id;' — no default and non-nullable type — set 'required' so that decode() would fire unless exists
 //  // it could be overridden with `@kphp-msgpack required = false`
@@ -521,7 +525,7 @@ const KphpMsgPackTagList *KphpMsgPackTagList::create_from_phpdoc(FunctionPtr res
 //    }
 //  }
 //
-//  return s;
-//}
+  return s;
+}
 
 } // namespace kphp_json
