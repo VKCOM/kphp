@@ -9,6 +9,8 @@ prepend(
   superglobals.cpp
   fork/fork-api.cpp
   fork/fork-context.cpp
+  fork/wait-queue-context.cpp
+  fork/wait-queue.cpp
   rpc/rpc-api.cpp
   rpc/rpc-context.cpp
   rpc/rpc-extra-headers.cpp
