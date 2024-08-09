@@ -249,6 +249,17 @@ public:
     , fork_coro(task_.get_handle())
     , fork_id(ForkComponentContext::get().push_fork(std::move(task_))) {}
 
+  start_fork_t(start_fork_t &&other) noexcept
+    : exec_policy(other.exec_policy)
+    , fork_coro(std::exchange(other.fork_coro, std::noop_coroutine()))
+    , fork_id(std::exchange(other.fork_id, INVALID_FORK_ID))
+    , suspend_token(std::exchange(other.suspend_token, std::make_pair(std::noop_coroutine(), WaitEvent::Rechedule{}))) {}
+
+  start_fork_t(const start_fork_t &) = delete;
+  start_fork_t &operator=(const start_fork_t &) = delete;
+  start_fork_t &operator=(start_fork_t &&) = delete;
+  ~start_fork_t() = default;
+
   constexpr bool await_ready() const noexcept {
     return false;
   }
