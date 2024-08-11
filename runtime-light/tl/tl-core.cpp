@@ -5,7 +5,9 @@
 #include "runtime-light/tl/tl-core.h"
 
 namespace tl {
-void TLBuffer::store_string(const char *str_buf, size_t str_len) noexcept {
+void TLBuffer::store_string(std::string_view str) noexcept {
+  const char *str_buf{str.data()};
+  size_t str_len{str.size()};
   uint8_t size_len{};
   if (str_len <= SMALL_STRING_MAX_LEN) {
     size_len = SMALL_STRING_SIZE_LEN;

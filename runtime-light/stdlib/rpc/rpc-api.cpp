@@ -316,7 +316,7 @@ bool f$store_double(double v) noexcept {
 }
 
 bool f$store_string(const string &v) noexcept {
-  RpcComponentContext::get().rpc_buffer.store_string(v.c_str(), v.size());
+  RpcComponentContext::get().rpc_buffer.store_string(std::string_view{v.c_str(), v.size()});
   return true;
 }
 

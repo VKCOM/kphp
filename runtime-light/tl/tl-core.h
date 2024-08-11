@@ -80,7 +80,7 @@ public:
     store_bytes(reinterpret_cast<const char *>(std::addressof(t)), sizeof(T));
   }
 
-  void store_string(const char *str_buf, size_t str_len) noexcept;
+  void store_string(std::string_view s) noexcept;
 
   template<standard_layout T>
   std::optional<T> fetch_trivial() noexcept {
