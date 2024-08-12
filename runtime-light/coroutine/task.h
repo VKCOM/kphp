@@ -207,7 +207,7 @@ struct task_t : public task_base_t {
       return task->get_result();
     }
 
-    bool done() const noexcept {
+    bool resumable() const noexcept {
       return task->done();
     }
 
