@@ -6,12 +6,15 @@
 
 #include <concepts>
 #include <coroutine>
+#include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <utility>
 #include <variant>
 
 #include "runtime-core/memory-resource/resource_allocator.h"
 #include "runtime-core/memory-resource/unsynchronized_pool_resource.h"
+#include "runtime-core/utils/hash.h"
 #include "runtime-light/utils/concepts.h"
 
 /**
@@ -55,26 +58,83 @@ enum class ScheduleStatus : uint8_t { Resumed, Skipped, Error };
  */
 namespace WaitEvent {
 
-struct Rechedule {};
+struct Rechedule {
+  static constexpr size_t HASH_VALUE = 4001;
+  bool operator==([[maybe_unused]] const Rechedule &other) const noexcept {
+    return true;
+  }
+};
 
-struct IncomingStream {};
+struct IncomingStream {
+  static constexpr size_t HASH_VALUE = 4003;
+  bool operator==([[maybe_unused]] const IncomingStream &other) const noexcept {
+    return true;
+  }
+};
 
 struct UpdateOnStream {
   uint64_t stream_d{};
+
+  bool operator==(const UpdateOnStream &other) const noexcept {
+    return stream_d == other.stream_d;
+  }
 };
 
 struct UpdateOnTimer {
   uint64_t timer_d{};
+
+  bool operator==(const UpdateOnTimer &other) const noexcept {
+    return timer_d == other.timer_d;
+  }
 };
 
 using EventT = std::variant<Rechedule, IncomingStream, UpdateOnStream, UpdateOnTimer>;
 
 }; // namespace WaitEvent
 
+// std::hash specializations for WaitEvent types
+
+template<>
+struct std::hash<WaitEvent::Rechedule> {
+  size_t operator()([[maybe_unused]] const WaitEvent::Rechedule &v) const noexcept {
+    return WaitEvent::Rechedule::HASH_VALUE;
+  }
+};
+
+template<>
+struct std::hash<WaitEvent::IncomingStream> {
+  size_t operator()([[maybe_unused]] const WaitEvent::IncomingStream &v) const noexcept {
+    return WaitEvent::IncomingStream::HASH_VALUE;
+  }
+};
+
+template<>
+struct std::hash<WaitEvent::UpdateOnStream> {
+  size_t operator()(const WaitEvent::UpdateOnStream &v) const noexcept {
+    return v.stream_d;
+  }
+};
+
+template<>
+struct std::hash<WaitEvent::UpdateOnTimer> {
+  size_t operator()(const WaitEvent::UpdateOnTimer &v) const noexcept {
+    return v.timer_d;
+  }
+};
+
 /**
  * SuspendToken type that binds an event and a coroutine waiting for that event.
  */
 using SuspendToken = std::pair<std::coroutine_handle<>, WaitEvent::EventT>;
+
+template<>
+struct std::hash<SuspendToken> {
+  size_t operator()(const SuspendToken &token) const noexcept {
+    size_t suspend_token_hash{std::hash<std::coroutine_handle<>>{}(token.first)};
+    hash_combine(suspend_token_hash, token.second);
+    return suspend_token_hash;
+  }
+};
 
 /**
  * Coroutine scheduler concept.
@@ -84,8 +144,9 @@ using SuspendToken = std::pair<std::coroutine_handle<>, WaitEvent::EventT>;
  * 2. have static `get` function that returns a reference to scheduler instance;
  * 3. have `done` method that returns whether scheduler's scheduled all coroutines;
  * 4. have `schedule` method that takes an event and schedules coroutines for execution;
- * 5. have `suspend` method that suspends specified coroutine;
- * 6. have `cancel` method that cancels specified SuspendToken.
+ * 5. have `contains` method returns whether specified SuspendToken is in schedule queue;
+ * 6. have `suspend` method that suspends specified coroutine;
+ * 7. have `cancel` method that cancels specified SuspendToken.
  */
 template<class scheduler_t>
 concept CoroutineSchedulerConcept = std::constructible_from<scheduler_t, memory_resource::unsynchronized_pool_resource &>
@@ -93,22 +154,29 @@ concept CoroutineSchedulerConcept = std::constructible_from<scheduler_t, memory_
   { scheduler_t::get() } noexcept -> std::same_as<scheduler_t &>;
   { s.done() } noexcept -> std::convertible_to<bool>;
   { s.schedule(schedule_event) } noexcept -> std::same_as<ScheduleStatus>;
+  { s.contains(token) } noexcept -> std::convertible_to<bool>;
   { s.suspend(token) } noexcept -> std::same_as<void>;
   { s.cancel(token) } noexcept -> std::same_as<void>;
 };
 
 // === SimpleCoroutineScheduler ===================================================================
 
+// This scheduler doesn't support waiting for the same event from multiple coroutines.
+// We need to finalize our decision whether we allow to do it from PHP code or not.
 class SimpleCoroutineScheduler {
   template<hashable Key, typename Value>
   using unordered_map = memory_resource::stl::unordered_map<Key, Value, memory_resource::unsynchronized_pool_resource>;
 
-  template<typename Value>
-  using deque = memory_resource::stl::deque<Value, memory_resource::unsynchronized_pool_resource>;
+  template<hashable T>
+  using unordered_set = memory_resource::stl::unordered_set<T, memory_resource::unsynchronized_pool_resource>;
 
-  deque<std::coroutine_handle<>> yield_coros;
-  deque<std::coroutine_handle<>> awaiting_for_stream_coros;
-  unordered_map<uint64_t, std::coroutine_handle<>> awaiting_for_update_coros;
+  template<typename T>
+  using deque = memory_resource::stl::deque<T, memory_resource::unsynchronized_pool_resource>;
+
+  deque<SuspendToken> yield_tokens;
+  deque<SuspendToken> awaiting_for_stream_tokens;
+  unordered_map<uint64_t, SuspendToken> awaiting_for_update_tokens;
+  unordered_set<SuspendToken> suspend_tokens;
 
   ScheduleStatus scheduleOnNoEvent() noexcept;
   ScheduleStatus scheduleOnIncomingStream() noexcept;
@@ -117,17 +185,22 @@ class SimpleCoroutineScheduler {
 
 public:
   explicit SimpleCoroutineScheduler(memory_resource::unsynchronized_pool_resource &memory_resource) noexcept
-    : yield_coros(deque<std::coroutine_handle<>>::allocator_type{memory_resource})
-    , awaiting_for_stream_coros(deque<std::coroutine_handle<>>::allocator_type{memory_resource})
-    , awaiting_for_update_coros(unordered_map<uint64_t, std::coroutine_handle<>>::allocator_type{memory_resource}) {}
+    : yield_tokens(deque<SuspendToken>::allocator_type{memory_resource})
+    , awaiting_for_stream_tokens(deque<SuspendToken>::allocator_type{memory_resource})
+    , awaiting_for_update_tokens(unordered_map<uint64_t, SuspendToken>::allocator_type{memory_resource})
+    , suspend_tokens(unordered_set<SuspendToken>::allocator_type{memory_resource}) {}
 
   static SimpleCoroutineScheduler &get() noexcept;
 
   bool done() const noexcept {
-    return yield_coros.empty() && awaiting_for_stream_coros.empty() && awaiting_for_update_coros.empty();
+    return suspend_tokens.empty();
   }
 
   ScheduleStatus schedule(ScheduleEvent::EventT) noexcept;
+
+  bool contains(SuspendToken token) const noexcept {
+    return suspend_tokens.contains(token);
+  }
   void suspend(SuspendToken) noexcept;
   void cancel(SuspendToken) noexcept;
 };

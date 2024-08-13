@@ -46,9 +46,9 @@ task_t<string> f$component_client_get_result(class_instance<C$ComponentQuery> qu
   const auto [buffer, size]{co_await read_all_from_stream(stream_d)};
   string result{buffer, static_cast<string::size_type>(size)};
   get_platform_context()->allocator.free(buffer);
+  php_debug("read %d bytes from stream %" PRIu64, size, stream_d);
   get_component_context()->release_stream(stream_d);
   query.get()->stream_d = INVALID_PLATFORM_DESCRIPTOR;
-  php_debug("read %d bytes from stream %" PRIu64, size, stream_d);
   co_return result;
 }
 
