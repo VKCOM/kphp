@@ -680,7 +680,7 @@ public:
         kphp_error(f.type_hint, fmt_format("Failed to parse @var of {}", f.var->as_human_readable()));
       }
       if (f.phpdoc) {
-        kphp_error_return(!(f.phpdoc->has_tag(PhpDocType::kphp_json) || f.phpdoc->has_tag(PhpDocType::kphp_msgpack)), "@kphp-json or @kphp-msgpack are allowed only for instance fields");
+        kphp_error_return(!(f.phpdoc->has_tag(PhpDocType::kphp_json) || !(f.phpdoc->has_tag(PhpDocType::kphp_msgpack))), "@kphp-json or @kphp-msgpack are allowed only for instance fields");
       }
     });
 
@@ -780,6 +780,7 @@ private:
         break;
 
       case PhpDocType::kphp_msgpack:
+        fprintf(stderr, "HIA: msgpack");
         if (!klass->kphp_msgpack_tags) { // meeting the first @kphp-msgpack, parse them all
           klass->kphp_msgpack_tags = kphp_msgpack::KphpMsgPackTagList::create_from_phpdoc(klass->get_holder_function(), klass->phpdoc, klass);
         }

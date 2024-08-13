@@ -11,6 +11,7 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/define-data.h"
 #include "compiler/data/kphp-json-tags.h"
+#include "compiler/data/kphp-msgpack-tags.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/kphp-tracing-tags.h"
 #include "compiler/vertex-util.h"
@@ -46,9 +47,9 @@ static bool is_class_MsgPackEncoder_or_child(ClassPtr class_id) {
   ClassPtr klass_MsgPackEncoder = G->get_class("MsgPackEncoder");
   if (klass_MsgPackEncoder && klass_MsgPackEncoder->is_parent_of(class_id)) {
     // when a class is first time detected as json encoder, parse and validate all constants, and store them
-    //if (!class_id->kphp_msgpack_tags) {
-    //  class_id->kphp_msgpack_tags = kphp_msgpack::convert_encoder_constants_to_tags(class_id);
-    //}
+    if (!class_id->kphp_msgpack_tags) {
+      class_id->kphp_msgpack_tags = kphp_msgpack::convert_encoder_constants_to_tags(class_id);
+    }
     return true;
   }
   return false;

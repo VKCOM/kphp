@@ -387,8 +387,9 @@ const KphpMsgPackTagList *KphpMsgPackTagList::create_from_phpdoc(FunctionPtr res
 // a PHP class MsgPackEncoder (and its custom inheritors) have `const visibility_policy` and others
 // their values have exactly the same format as could be written in @kphp-msgpack above jsonable classes
 // this function converts constants (all of them surely exist) into the same structure
-//const KphpMsgPackTagList *convert_encoder_constants_to_tags(ClassPtr msgpack_encoder) {
-//  auto *contants_as_tags = new KphpMsgPackTagList;
+const KphpMsgPackTagList *convert_encoder_constants_to_tags(ClassPtr msgpack_encoder) {
+  (void)msgpack_encoder;
+  auto *contants_as_tags = new KphpMsgPackTagList;
 //  KphpMsgPackTag from_const{.attr_type = msgpack_attr_unknown, .for_encoder = ClassPtr{}};
 //  std::string s_const;
 //  VertexPtr v_const;
@@ -417,8 +418,8 @@ const KphpMsgPackTagList *KphpMsgPackTagList::create_from_phpdoc(FunctionPtr res
 //  from_const.float_precision = parse_float_precision(s_const);
 //  contants_as_tags->add_tag(from_const);
 
-//  return contants_as_tags;
-//}
+  return contants_as_tags;
+}
 
 FieldMsgPackSettings merge_and_inherit_msgpack_tags(const ClassMemberInstanceField &field, ClassPtr klass, ClassPtr msgpack_encoder) {
   (void)field;
