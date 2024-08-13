@@ -136,6 +136,7 @@ class KphpBuilder:
             env.setdefault("KPHP_CXX", nocc_prepend_to_cxx(self._cxx_name))
             env.update(nocc_make_env())
         else:
+            env.setdefault("KPHP_CXX", self._cxx_name)
             env.setdefault("KPHP_JOBS_COUNT", "2")
 
         # TODO kphp writes error into stdout and info into stderr
