@@ -161,6 +161,8 @@ concept CoroutineSchedulerConcept = std::constructible_from<scheduler_t, memory_
 
 // === SimpleCoroutineScheduler ===================================================================
 
+// This scheduler doesn't support waiting for the same event from multiple coroutines.
+// We need to finalize our decision whether we allow to do it from PHP code or not.
 class SimpleCoroutineScheduler {
   template<hashable Key, typename Value>
   using unordered_map = memory_resource::stl::unordered_map<Key, Value, memory_resource::unsynchronized_pool_resource>;
