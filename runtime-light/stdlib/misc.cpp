@@ -6,13 +6,13 @@
 
 #include <cstdint>
 
+#include "runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/component/component.h"
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/header.h"
 #include "runtime-light/stdlib/superglobals.h"
 #include "runtime-light/streams/streams.h"
 #include "runtime-light/utils/context.h"
-#include "runtime-light/utils/panic.h"
 
 namespace {
 

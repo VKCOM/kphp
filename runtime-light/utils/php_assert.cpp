@@ -2,9 +2,6 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-light/utils/php_assert.h"
-
-#include <algorithm>
 #include <csignal>
 #include <cstdarg>
 #include <cstdio>
@@ -16,7 +13,10 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include "runtime-light/utils/panic.h"
+#include "runtime-core/utils/kphp-assert-core.h"
+#include "runtime-light/header.h"
+#include "runtime-light/utils/context.h"
+#include "runtime-light/utils/logs.h"
 
 static void php_warning_impl(bool out_of_memory, int error_type, char const *message, va_list args) {
   (void)out_of_memory;
