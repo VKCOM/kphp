@@ -2,16 +2,15 @@
 // Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#pragma once
-
 #include <csetjmp>
 
-#include "context.h"
+#include "runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/component/component.h"
 #include "runtime-light/header.h"
+#include "runtime-light/utils/context.h"
 #include "runtime-light/utils/logs.h"
 
-inline void critical_error_handler() {
+void critical_error_handler() {
   constexpr const char *message = "script panic";
   const auto &platform_ctx = *get_platform_context();
   auto &component_ctx = *get_component_context();
