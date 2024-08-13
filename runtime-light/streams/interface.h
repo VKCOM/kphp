@@ -6,6 +6,7 @@
 
 #include <cstdint>
 
+#include "runtime-core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/streams/component-stream.h"
 
