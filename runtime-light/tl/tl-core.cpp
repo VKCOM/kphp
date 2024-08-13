@@ -94,4 +94,4 @@ std::string_view TLBuffer::fetch_string() noexcept {
   adjust(total_len_with_padding - size_len);
   return response;
 }
-} // namespace tl_core
+} // namespace tl
