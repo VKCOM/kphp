@@ -5,6 +5,7 @@
 #include "runtime-light/stdlib/fork/wait-queue-context.h"
 
 #include "runtime-light/component/component.h"
+#include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/stdlib/fork/fork-context.h"
 
 WaitQueueContext &WaitQueueContext::get() noexcept {
@@ -13,17 +14,15 @@ WaitQueueContext &WaitQueueContext::get() noexcept {
 
 int64_t WaitQueueContext::create_queue(const array<Optional<int64_t>> &fork_ids) noexcept {
   auto &memory_resource{get_component_context()->runtime_allocator.memory_resource};
-  unordered_map<int64_t, task_t<fork_result>> forks(unordered_map<int64_t, task_t<fork_result>>::allocator_type{memory_resource});
-  std::for_each(fork_ids.begin(), fork_ids.end(), [&forks](const auto &it) {
+  unordered_set<int64_t> forks_ids(unordered_set<int64_t>::allocator_type{memory_resource});
+  std::for_each(fork_ids.begin(), fork_ids.end(), [&forks_ids](const auto &it) {
     Optional<int64_t> fork_id = it.get_value();
     if (fork_id.has_value()) {
-      if (auto task = ForkComponentContext::get().pop_fork(fork_id.val()); task.has_value()) {
-        forks[fork_id.val()] = std::move(task.val());
-      }
+      forks_ids.insert(fork_id.val());
     }
   });
   int64_t queue_id{++next_wait_queue_id};
-  wait_queues.emplace(queue_id, WaitQueue(memory_resource, std::move(forks)));
+  wait_queues.emplace(queue_id, wait_queue_t(memory_resource, std::move(forks_ids)));
   php_debug("WaitQueueContext: create queue %ld with %ld forks", queue_id, fork_ids.size().size);
   return queue_id;
 }

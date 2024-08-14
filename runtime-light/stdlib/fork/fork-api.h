@@ -45,10 +45,21 @@ task_t<void> f$sched_yield() noexcept;
 
 task_t<void> f$sched_yield_sleep(int64_t duration_ns) noexcept;
 
-int64_t f$wait_queue_create(array<Optional<int64_t>> fork_ids) noexcept;
+inline int64_t f$wait_queue_create(array<Optional<int64_t>> fork_ids) noexcept {
+  return WaitQueueContext::get().create_queue(fork_ids);
+}
 
-void f$wait_queue_push(int64_t queue, Optional<int64_t> fork_id) noexcept;
+inline void f$wait_queue_push(int64_t queue_id, Optional<int64_t> fork_id) noexcept {
+  if (auto queue = WaitQueueContext::get().get_queue(queue_id); queue.has_value() && fork_id.has_value()) {
+    queue.val()->push(fork_id.val());
+  }
+}
 
-bool f$wait_queue_empty(int64_t queue_id) noexcept;
+inline bool f$wait_queue_empty(int64_t queue_id) noexcept {
+  if (auto queue = WaitQueueContext::get().get_queue(queue_id); queue.has_value()) {
+    return queue.val()->empty();
+  }
+  return false;
+}
 
 task_t<Optional<int64_t>> f$wait_queue_next(int64_t queue, double timeout = -1.0) noexcept;
