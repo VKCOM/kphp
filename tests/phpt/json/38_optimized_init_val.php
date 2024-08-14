@@ -1,3 +1,4 @@
+@ok
 <?php
 
 class User {
