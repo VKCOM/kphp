@@ -1,4 +1,4 @@
-@kphp_runtime_should_warn
+@k2_skip kphp_runtime_should_warn
 /Comparison \(operator ==\) results in PHP 7 and PHP 8 are different for 0 and "" \(PHP7: true, PHP8: false\)/
 <?php
 
