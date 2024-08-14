@@ -9,7 +9,7 @@
 #include <type_traits>
 #include <utility>
 
-#include "runtime-core/runtime-core.h"
+#include "runtime-core/allocator/runtime-allocator.h"
 
 template<size_t limit>
 union small_object_storage {
