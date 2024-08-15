@@ -5,6 +5,7 @@
 #include "server/statshouse/statshouse-manager.h"
 
 #include <chrono>
+#include <string>
 
 #include "common/precise-time.h"
 #include "common/resolver.h"
@@ -181,7 +182,7 @@ void StatsHouseManager::add_common_master_stats(const workers_stats_t &workers_s
                                                 double cpu_s_usage, double cpu_u_usage,
                                                 long long int instance_cache_memory_swaps_ok, long long int instance_cache_memory_swaps_fail) {
   if (engine_tag) {
-    client.metric("kphp_version").write_value(atoll(engine_tag));
+    client.metric("kphp_version").tag(std::to_string(engine_tag_number)).write_count(1);
   }
 
   client.metric("kphp_uptime").write_value(get_uptime());
