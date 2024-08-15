@@ -11,6 +11,8 @@
 #include "runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"
+#include "runtime-light/stdlib/fork/fork-context.h"
+#include "runtime-light/stdlib/fork/wait-queue-context.h"
 
 namespace fork_api_impl_ {
 
