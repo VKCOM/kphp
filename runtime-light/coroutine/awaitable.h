@@ -19,7 +19,6 @@
 #include "runtime-light/header.h"
 #include "runtime-light/scheduler/scheduler.h"
 #include "runtime-light/stdlib/fork/fork-context.h"
-#include "runtime-light/stdlib/fork/fork.h"
 #include "runtime-light/utils/context.h"
 
 template<class T>
@@ -277,7 +276,7 @@ private:
   SuspendToken suspend_token{std::noop_coroutine(), WaitEvent::Rechedule{}};
 
 public:
-  explicit start_fork_t(task_t<fork_result> &&task_, execution exec_policy_) noexcept
+  explicit start_fork_t(task_t<void> task_, execution exec_policy_) noexcept
     : exec_policy(exec_policy_)
     , fork_coro(task_.get_handle())
     , fork_id(ForkComponentContext::get().push_fork(std::move(task_))) {}
@@ -328,13 +327,16 @@ public:
 template<typename T>
 class wait_fork_t {
   int64_t fork_id;
-  task_t<fork_result> fork_task;
-  task_t<fork_result>::awaiter_t fork_awaiter;
+  task_t<T> fork_task;
+  task_t<T>::awaiter_t fork_awaiter;
+
+  using fork_resume_t = decltype(fork_awaiter.await_resume());
+  using await_resume_t = fork_resume_t;
 
 public:
   explicit wait_fork_t(int64_t fork_id_) noexcept
     : fork_id(fork_id_)
-    , fork_task(ForkComponentContext::get().pop_fork(fork_id))
+    , fork_task(static_cast<task_t<T>>(ForkComponentContext::get().pop_fork(fork_id)))
     , fork_awaiter(std::addressof(fork_task)) {}
 
   wait_fork_t(wait_fork_t &&other) noexcept
@@ -355,8 +357,12 @@ public:
     fork_awaiter.await_suspend(coro);
   }
 
-  T await_resume() noexcept {
-    return fork_awaiter.await_resume().get_result<T>();
+  await_resume_t await_resume() noexcept {
+    if constexpr (std::is_void_v<await_resume_t>) {
+      fork_awaiter.await_resume();
+    } else {
+      return fork_awaiter.await_resume();
+    }
   }
 
   constexpr bool resumable() const noexcept {
