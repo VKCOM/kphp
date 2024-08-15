@@ -61,7 +61,7 @@ inline bool f$wait_queue_empty(int64_t queue_id) noexcept {
   if (auto queue = WaitQueueContext::get().get_queue(queue_id); queue.has_value()) {
     return queue.val()->empty();
   }
-  return false;
+  return true;
 }
 
 task_t<Optional<int64_t>> f$wait_queue_next(int64_t queue, double timeout = -1.0) noexcept;
