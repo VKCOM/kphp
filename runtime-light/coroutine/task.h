@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cassert>
+#include <concepts>
 #include <coroutine>
 #include <optional>
 #include <utility>
@@ -62,7 +63,6 @@ struct task_t : public task_base_t {
   struct promise_void_t;
 
   using promise_type = std::conditional_t<!std::is_void<T>{}, promise_non_void_t<T>, promise_void_t>;
-
   using task_base_t::task_base_t;
 
   struct promise_base_t {
@@ -224,5 +224,17 @@ struct task_t : public task_base_t {
 
   std::coroutine_handle<promise_type> get_handle() {
     return std::coroutine_handle<promise_type>::from_address(handle_address);
+  }
+
+  // conversion functions
+  //
+  // erase type
+  explicit operator task_t<void>() && noexcept {
+    return task_t<void>{std::coroutine_handle<>::from_address(std::exchange(handle_address, nullptr))};
+  }
+  // restore erased type
+  template<typename U>
+  requires(std::same_as<void, T>) explicit operator task_t<U>() && noexcept {
+    return task_t<U>{std::coroutine_handle<>::from_address(std::exchange(handle_address, nullptr))};
   }
 };
