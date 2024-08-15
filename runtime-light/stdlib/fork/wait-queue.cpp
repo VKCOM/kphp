@@ -22,7 +22,7 @@ void wait_queue_t::push(int64_t fork_id) noexcept {
   }
 }
 
-void wait_queue_t::insert_awaiter(awaiter_t awaiter) noexcept {
+void wait_queue_t::insert_awaiter(const awaiter_t &awaiter) noexcept {
   if (awaiters.empty()) {
     std::for_each(forks_ids.begin(), forks_ids.end(), [&](int64_t fork_id) {
       task_t<fork_result>::awaiter_t task_awaiter{std::addressof(ForkComponentContext::get().forks[fork_id].first)};
@@ -32,7 +32,7 @@ void wait_queue_t::insert_awaiter(awaiter_t awaiter) noexcept {
   awaiters.push_back(awaiter);
 }
 
-void wait_queue_t::erase_awaiter(awaiter_t awaiter) noexcept {
+void wait_queue_t::erase_awaiter(const awaiter_t &awaiter) noexcept {
   auto it = std::find(awaiters.begin(), awaiters.end(), awaiter);
   if (it != awaiters.end()) {
     awaiters.erase(it);

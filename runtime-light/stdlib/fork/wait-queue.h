@@ -46,7 +46,7 @@ public:
       wait_queue->erase_awaiter(*this);
     }
 
-    bool operator==(const awaiter_t & other) const {
+    bool operator==(const awaiter_t &other) const {
       return awaited_handle == other.awaited_handle;
     }
   };
@@ -75,8 +75,8 @@ private:
   unordered_set<int64_t> forks_ids;
   deque<awaiter_t> awaiters;
 
-  void insert_awaiter(awaiter_t awaiter) noexcept;
-  void erase_awaiter(awaiter_t awaiter) noexcept;
+  void insert_awaiter(const awaiter_t &awaiter) noexcept;
+  void erase_awaiter(const awaiter_t &awaiter) noexcept;
   int64_t pop_ready_fork() noexcept;
   bool has_ready_fork() const noexcept;
 };
