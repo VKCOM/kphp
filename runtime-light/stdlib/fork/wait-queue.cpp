@@ -2,8 +2,11 @@
 // Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include <algorithm>
+
 #include "runtime-light/stdlib/fork/wait-queue.h"
 
+#include "runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/stdlib/fork/fork-context.h"
 
 wait_queue_t::wait_queue_t(memory_resource::unsynchronized_pool_resource &memory_resource, unordered_set<int64_t> &&forks_ids_) noexcept
