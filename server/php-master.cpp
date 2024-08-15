@@ -959,7 +959,7 @@ std::string php_master_prepare_stats(bool add_worker_pids) {
   oss << "uptime\t" << get_uptime() << "\n";
   if (engine_tag) {
     // engine_tag may be ended with "["
-    oss << "kphp_version\t" << atoll(engine_tag) << "\n";
+    oss << "kphp_version\t" << engine_tag_number << "\n";
   }
   const auto &config = vk::singleton<ServerConfig>::get();
   if (!config.get_environment().empty()) {
@@ -1105,7 +1105,7 @@ static long long int instance_cache_memory_swaps_fail = 0;
 
 STATS_PROVIDER_TAGGED(kphp_stats, 100, stats_tag_kphp_server) {
   if (engine_tag) {
-    stats->add_gauge_stat("kphp_version", atoll(engine_tag));
+    stats->add_gauge_stat("kphp_version", engine_tag_number);
   }
 
   stats->add_gauge_stat("uptime", get_uptime());

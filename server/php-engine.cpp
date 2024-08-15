@@ -1834,6 +1834,7 @@ int main_args_handler(int i, const char *long_option) {
     }
     case 'E': {
       read_engine_tag(optarg);
+      engine_tag_number = atoll(engine_tag);
       return 0;
     }
     case 'm': {
