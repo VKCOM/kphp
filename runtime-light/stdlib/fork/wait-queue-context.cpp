@@ -22,7 +22,7 @@ int64_t WaitQueueContext::create_queue(const array<Optional<int64_t>> &fork_ids)
     }
   });
   int64_t queue_id{++next_wait_queue_id};
-  wait_queues.emplace(queue_id, wait_queue_t(memory_resource, std::move(forks_ids)));
+  wait_queues.emplace(std::piecewise_construct, std::forward_as_tuple(queue_id), std::forward_as_tuple(memory_resource, std::move(forks_ids)));
   php_debug("WaitQueueContext: create queue %ld with %ld forks", queue_id, fork_ids.size().size);
   return queue_id;
 }

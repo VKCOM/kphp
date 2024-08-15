@@ -52,12 +52,9 @@ public:
   };
 
   wait_queue_t(const wait_queue_t &) = delete;
+  wait_queue_t(wait_queue_t &&other) = delete;
   wait_queue_t &operator=(const wait_queue_t &) = delete;
   wait_queue_t &operator=(wait_queue_t &&) = delete;
-
-  wait_queue_t(wait_queue_t &&other) noexcept
-    : forks_ids(std::move(other.forks_ids))
-    , awaiters(std::move(other.awaiters)) {}
 
   explicit wait_queue_t(memory_resource::unsynchronized_pool_resource &memory_resource, unordered_set<int64_t> &&forks_ids_) noexcept;
 
