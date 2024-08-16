@@ -1151,8 +1151,8 @@ void ClassMembersDefinition::compile_msgpack_serialize(CodeGenerator &W, ClassPt
   uint16_t cnt_fields = 0;
 
   ClassPtr the_klass = klass;
-  W << "// " << the_klass->src_name << NL;
 
+  // Put class' fields along with all parent's fields.
   while (the_klass) {
     std::vector<std::string> body_inner;
     the_klass->members.for_each([&](ClassMemberInstanceField &field) {
@@ -1198,7 +1198,8 @@ void ClassMembersDefinition::compile_msgpack_deserialize(CodeGenerator &W, Class
   cases.emplace_front("default: break;");
 
   ClassPtr the_klass = klass;
-  W << "// " << the_klass->src_name << NL;
+
+  // Put class' fields along with all parent's fields.
   while (the_klass) {
     std::vector<std::string> cases_inner;
     the_klass->members.for_each([&](ClassMemberInstanceField &field) {
