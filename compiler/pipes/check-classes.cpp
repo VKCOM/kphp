@@ -48,10 +48,6 @@ inline void CheckClassesPass::analyze_class(ClassPtr klass) {
                fmt_format("class {} can be autoloaded, but its file contains some logic (maybe, require_once files with global vars?)\n",
                           klass->as_human_readable()));
   }
-//  if (klass->is_serializable) {
-//    kphp_error(!klass->parent_class || !klass->parent_class->members.has_any_instance_var(),
-//               "You may not serialize classes which has a parent with fields");
-//  }
 }
 
 /*
