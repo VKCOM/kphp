@@ -46,7 +46,7 @@ public:
   }
 
   static constexpr size_t max_value_type_size() {
-    return 128U;
+    return 256U;
   }
 
   friend inline bool operator==(const resource_allocator &lhs, const resource_allocator &rhs) noexcept {
