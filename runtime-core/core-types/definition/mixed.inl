@@ -185,6 +185,92 @@ inline string_buffer &operator<<(string_buffer &sb, const Optional<T> &v) {
   return call_fun_on_optional_value(write_lambda, v);
 }
 
+
+template <typename Arg1, typename Arg2>
+inline const char *conversion_php_warning_string() {
+  return "";
+}
+
+template<>
+inline const char *conversion_php_warning_string<int64_t, string>() {
+  return "Comparison (operator <) results in PHP 7 and PHP 8 are different for %" PRIi64 " and \"%s\" (PHP7: %s, PHP8: %s)";
+}
+
+template<>
+inline const char *conversion_php_warning_string<double, string>() {
+  return "Comparison (operator <) results in PHP 7 and PHP 8 are different for %lf and \"%s\" (PHP7: %s, PHP8: %s)";
+}
+
+template<>
+inline const char *conversion_php_warning_string<string, int64_t>() {
+  return "Comparison (operator <) results in PHP 7 and PHP 8 are different for \"%s\" and %" PRIi64 " (PHP7: %s, PHP8: %s)";
+}
+
+template<>
+inline const char *conversion_php_warning_string<string, double>() {
+  return "Comparison (operator <) results in PHP 7 and PHP 8 are different for \"%s\" and %lf (PHP7: %s, PHP8: %s)";
+}
+
+template <typename T>
+inline bool less_number_string_as_php8_impl(T lhs, const string &rhs) {
+  auto rhs_float = 0.0;
+  const auto rhs_is_string_number = rhs.try_to_float(&rhs_float);
+
+  if (rhs_is_string_number) {
+    return lhs < rhs_float;
+  } else {
+    return compare_strings_php_order(string(lhs), rhs) < 0;
+  }
+}
+
+template <typename T>
+inline bool less_string_number_as_php8_impl(const string &lhs, T rhs) {
+  auto lhs_float = 0.0;
+  const auto lhs_is_string_number = lhs.try_to_float(&lhs_float);
+
+  if (lhs_is_string_number) {
+    return lhs_float < rhs;
+  } else {
+    return compare_strings_php_order(lhs, string(rhs)) < 0;
+  }
+}
+
+template <typename T>
+inline bool less_number_string_as_php8(bool php7_result, T lhs, const string &rhs) {
+  if (KphpCoreContext::current().show_migration_php8_warning & MIGRATION_PHP8_STRING_COMPARISON_FLAG) {
+    const auto php8_result = less_number_string_as_php8_impl(lhs, rhs);
+    if (php7_result == php8_result) {
+      return php7_result;
+    }
+
+    php_warning(conversion_php_warning_string<typename std::decay<decltype(lhs)>::type, typename std::decay<decltype(rhs)>::type>(),
+                lhs,
+                rhs.c_str(),
+                php7_result ? "true" : "false",
+                php8_result ? "true" : "false");
+  }
+
+  return php7_result;
+}
+
+template <typename T>
+inline bool less_string_number_as_php8(bool php7_result, const string &lhs, T rhs) {
+  if (KphpCoreContext::current().show_migration_php8_warning & MIGRATION_PHP8_STRING_COMPARISON_FLAG) {
+    const auto php8_result = less_string_number_as_php8_impl(lhs, rhs);
+    if (php7_result == php8_result) {
+      return php7_result;
+    }
+
+    php_warning(conversion_php_warning_string<typename std::decay<decltype(lhs)>::type, typename std::decay<decltype(rhs)>::type>(),
+                lhs.c_str(),
+                rhs,
+                php7_result ? "true" : "false",
+                php8_result ? "true" : "false");
+  }
+
+  return php7_result;
+}
+
 template<class InputClass>
 inline mixed f$to_mixed(const class_instance<InputClass> &instance) noexcept {
   mixed m;
