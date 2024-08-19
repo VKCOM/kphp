@@ -5,7 +5,6 @@
 #include "runtime-light/stdlib/fork/fork-api.h"
 
 #include <chrono>
-#include <cstdint>
 
 #include "runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/awaitable.h"
@@ -15,10 +14,10 @@ task_t<void> f$sched_yield() noexcept {
   co_await wait_for_reschedule_t{};
 }
 
-task_t<void> f$sched_yield_sleep(int64_t duration_ns) noexcept {
-  if (duration_ns < 0) {
-    php_warning("can't sleep for negative duration %" PRId64, duration_ns);
+task_t<void> f$sched_yield_sleep(double duration) noexcept {
+  if (duration <= 0) {
+    php_warning("can't sleep for negative or zero duration %.9f", duration);
     co_return;
   }
-  co_await wait_for_timer_t{std::chrono::nanoseconds{static_cast<uint64_t>(duration_ns)}};
+  co_await wait_for_timer_t{std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{duration})};
 }

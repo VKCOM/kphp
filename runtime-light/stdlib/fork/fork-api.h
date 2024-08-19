@@ -46,4 +46,4 @@ requires(is_optional<T>::value || std::same_as<T, mixed>) task_t<T> f$wait(Optio
 
 task_t<void> f$sched_yield() noexcept;
 
-task_t<void> f$sched_yield_sleep(int64_t duration_ns) noexcept;
+task_t<void> f$sched_yield_sleep(double duration) noexcept;

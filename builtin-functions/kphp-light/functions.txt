@@ -85,7 +85,7 @@ function wait(future<any> | false $id, float $timeout = -1.0) ::: ^1[*] | null;
 function sched_yield() ::: void;
 
 /** @kphp-extern-func-info interruptible */
-function sched_yield_sleep($timeout_ns ::: int) ::: void;
+function sched_yield_sleep($duration ::: float) ::: void;
 
 // === Rpc ========================================================================================
 
