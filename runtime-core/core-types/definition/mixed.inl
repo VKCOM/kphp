@@ -88,7 +88,7 @@ mixed &mixed::operator=(Optional<T> &&v) noexcept {
 }
 
 template<class T1, class T2>
-inline int64_t spaceship(const T1 &lhs, const T2 &rhs);
+int64_t spaceship(const T1 &lhs, const T2 &rhs);
 
 template <class ...MaybeHash>
 bool mixed::isset(const string &string_key, MaybeHash ...maybe_hash) const {
@@ -180,14 +180,14 @@ inline void mixed::reset_empty_values() noexcept {
 }
 
 template<class T>
-inline string_buffer &operator<<(string_buffer &sb, const Optional<T> &v) {
+string_buffer &operator<<(string_buffer &sb, const Optional<T> &v) {
   auto write_lambda = [&sb](const auto &v) -> string_buffer& { return sb << v; };
   return call_fun_on_optional_value(write_lambda, v);
 }
 
 
 template <typename Arg1, typename Arg2>
-inline const char *conversion_php_warning_string() {
+const char *conversion_php_warning_string() {
   return "";
 }
 
@@ -212,7 +212,7 @@ inline const char *conversion_php_warning_string<string, double>() {
 }
 
 template <typename T>
-inline bool less_number_string_as_php8_impl(T lhs, const string &rhs) {
+bool less_number_string_as_php8_impl(T lhs, const string &rhs) {
   auto rhs_float = 0.0;
   const auto rhs_is_string_number = rhs.try_to_float(&rhs_float);
 
@@ -224,7 +224,7 @@ inline bool less_number_string_as_php8_impl(T lhs, const string &rhs) {
 }
 
 template <typename T>
-inline bool less_string_number_as_php8_impl(const string &lhs, T rhs) {
+bool less_string_number_as_php8_impl(const string &lhs, T rhs) {
   auto lhs_float = 0.0;
   const auto lhs_is_string_number = lhs.try_to_float(&lhs_float);
 
@@ -236,7 +236,7 @@ inline bool less_string_number_as_php8_impl(const string &lhs, T rhs) {
 }
 
 template <typename T>
-inline bool less_number_string_as_php8(bool php7_result, T lhs, const string &rhs) {
+bool less_number_string_as_php8(bool php7_result, T lhs, const string &rhs) {
   if (KphpCoreContext::current().show_migration_php8_warning & MIGRATION_PHP8_STRING_COMPARISON_FLAG) {
     const auto php8_result = less_number_string_as_php8_impl(lhs, rhs);
     if (php7_result == php8_result) {
@@ -254,7 +254,7 @@ inline bool less_number_string_as_php8(bool php7_result, T lhs, const string &rh
 }
 
 template <typename T>
-inline bool less_string_number_as_php8(bool php7_result, const string &lhs, T rhs) {
+bool less_string_number_as_php8(bool php7_result, const string &lhs, T rhs) {
   if (KphpCoreContext::current().show_migration_php8_warning & MIGRATION_PHP8_STRING_COMPARISON_FLAG) {
     const auto php8_result = less_string_number_as_php8_impl(lhs, rhs);
     if (php7_result == php8_result) {
@@ -272,14 +272,14 @@ inline bool less_string_number_as_php8(bool php7_result, const string &lhs, T rh
 }
 
 template<class InputClass>
-inline mixed f$to_mixed(const class_instance<InputClass> &instance) noexcept {
+mixed f$to_mixed(const class_instance<InputClass> &instance) noexcept {
   mixed m;
   m = instance;
   return m;
 }
 
 template<class ResultClass>
-inline ResultClass from_mixed(const mixed &m, const string &) noexcept {
+ResultClass from_mixed(const mixed &m, const string &) noexcept {
   if constexpr (!std::is_polymorphic_v<typename ResultClass::ClassType>) {
     php_error("Internal error. Class inside a mixed is not polymorphic");
     return {};

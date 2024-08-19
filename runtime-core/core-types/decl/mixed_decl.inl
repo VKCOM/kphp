@@ -148,23 +148,23 @@ public:
   const string to_string() const;
   const array<mixed> to_array() const;
 
-  inline bool &as_bool() __attribute__((always_inline)) { return *reinterpret_cast<bool *>(&storage_); }
-  inline const bool &as_bool() const __attribute__((always_inline)) { return *reinterpret_cast<const bool *>(&storage_); }
+  bool &as_bool() __attribute__((always_inline)) { return *reinterpret_cast<bool *>(&storage_); }
+  const bool &as_bool() const __attribute__((always_inline)) { return *reinterpret_cast<const bool *>(&storage_); }
 
-  inline int64_t &as_int() __attribute__((always_inline)) { return *reinterpret_cast<int64_t *>(&storage_); }
-  inline const int64_t &as_int() const __attribute__((always_inline)) { return *reinterpret_cast<const int64_t *>(&storage_); }
+  int64_t &as_int() __attribute__((always_inline)) { return *reinterpret_cast<int64_t *>(&storage_); }
+  const int64_t &as_int() const __attribute__((always_inline)) { return *reinterpret_cast<const int64_t *>(&storage_); }
 
-  inline double &as_double() __attribute__((always_inline)) { return *reinterpret_cast<double *>(&storage_); }
-  inline const double &as_double() const __attribute__((always_inline)) { return *reinterpret_cast<const double *>(&storage_); }
+  double &as_double() __attribute__((always_inline)) { return *reinterpret_cast<double *>(&storage_); }
+  const double &as_double() const __attribute__((always_inline)) { return *reinterpret_cast<const double *>(&storage_); }
 
-  inline string &as_string() __attribute__((always_inline)) { return *reinterpret_cast<string *>(&storage_); }
-  inline const string &as_string() const __attribute__((always_inline)) { return *reinterpret_cast<const string *>(&storage_); }
+  string &as_string() __attribute__((always_inline)) { return *reinterpret_cast<string *>(&storage_); }
+  const string &as_string() const __attribute__((always_inline)) { return *reinterpret_cast<const string *>(&storage_); }
 
-  inline array<mixed> &as_array() __attribute__((always_inline)) { return *reinterpret_cast<array<mixed> *>(&storage_); }
-  inline const array<mixed> &as_array() const __attribute__((always_inline)) { return *reinterpret_cast<const array<mixed> *>(&storage_); }
+  array<mixed> &as_array() __attribute__((always_inline)) { return *reinterpret_cast<array<mixed> *>(&storage_); }
+  const array<mixed> &as_array() const __attribute__((always_inline)) { return *reinterpret_cast<const array<mixed> *>(&storage_); }
 
-  inline vk::intrusive_ptr<may_be_mixed_base> as_object() __attribute__((always_inline)) { return *reinterpret_cast<vk::intrusive_ptr<may_be_mixed_base>*>(&storage_); }
-  inline const vk::intrusive_ptr<may_be_mixed_base> as_object() const __attribute__((always_inline)) {  return *reinterpret_cast<const vk::intrusive_ptr<may_be_mixed_base>*>(&storage_);  }
+  vk::intrusive_ptr<may_be_mixed_base> as_object() __attribute__((always_inline)) { return *reinterpret_cast<vk::intrusive_ptr<may_be_mixed_base>*>(&storage_); }
+  const vk::intrusive_ptr<may_be_mixed_base> as_object() const __attribute__((always_inline)) {  return *reinterpret_cast<const vk::intrusive_ptr<may_be_mixed_base>*>(&storage_);  }
 
 
   // TODO is it ok to return pointer to mutable from const method?
@@ -287,11 +287,19 @@ int64_t operator>>(const mixed &lhs, const mixed &rhs);
 bool operator<(const mixed &lhs, const mixed &rhs);
 bool operator<=(const mixed &lhs, const mixed &rhs);
 void swap(mixed &lhs, mixed &rhs);
+
 string_buffer &operator<<(string_buffer &sb, const mixed &v);
 
+template <typename T>
+bool less_number_string_as_php8_impl(T lhs, const string &rhs);
+template <typename T>
+bool less_string_number_as_php8_impl(const string &lhs, T rhs);
+template <typename T>
+bool less_number_string_as_php8(bool php7_result, T lhs, const string &rhs);
+template <typename T>
+inline bool less_string_number_as_php8(bool php7_result, const string &lhs, T rhs);
 
 template<class InputClass>
-inline mixed f$to_mixed(const class_instance<InputClass> &instance) noexcept;
-
+mixed f$to_mixed(const class_instance<InputClass> &instance) noexcept;
 template<class ResultClass>
-inline ResultClass from_mixed(const mixed &m, const string &) noexcept;
+ResultClass from_mixed(const mixed &m, const string &) noexcept;
