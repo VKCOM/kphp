@@ -888,6 +888,7 @@ bool &mixed::as_bool(const char *function) {
   switch (get_type()) {
     case type::NUL:
       convert_to_bool();
+      [[fallthrough]];
     case type::BOOLEAN:
       return as_bool();
     default:
@@ -899,10 +900,14 @@ bool &mixed::as_bool(const char *function) {
 int64_t &mixed::as_int(const char *function) {
   switch (get_type()) {
     case type::NUL:
+      [[fallthrough]];
     case type::BOOLEAN:
+      [[fallthrough]];
     case type::FLOAT:
+      [[fallthrough]];
     case type::STRING:
       convert_to_int();
+      [[fallthrough]];
     case type::INTEGER:
       return as_int();
     default:
@@ -914,10 +919,14 @@ int64_t &mixed::as_int(const char *function) {
 double &mixed::as_float(const char *function) {
   switch (get_type()) {
     case type::NUL:
+      [[fallthrough]];
     case type::BOOLEAN:
+      [[fallthrough]];
     case type::INTEGER:
+      [[fallthrough]];
     case type::STRING:
       convert_to_float();
+      [[fallthrough]];
     case type::FLOAT:
       return as_double();
     default:
@@ -929,10 +938,14 @@ double &mixed::as_float(const char *function) {
 string &mixed::as_string(const char *function) {
   switch (get_type()) {
     case type::NUL:
+      [[fallthrough]];
     case type::BOOLEAN:
+      [[fallthrough]];
     case type::INTEGER:
+      [[fallthrough]];
     case type::FLOAT:
       convert_to_string();
+      [[fallthrough]];
     case type::STRING:
       return as_string();
     default:
@@ -955,6 +968,7 @@ array<mixed> &mixed::as_array(const char *function) {
 bool mixed::is_numeric() const {
   switch (get_type()) {
     case type::INTEGER:
+      [[fallthrough]];
     case type::FLOAT:
       return true;
     case type::STRING:
