@@ -86,7 +86,14 @@ void CheckClassesPass::check_serialized_fields(ClassPtr klass) {
       return;
     }
 
-    kphp_error_return(klass->is_serializable, fmt_format("you may not use @kphp-serialized-field inside non-serializable klass: {}", klass->name));
+    auto the_klass = klass;
+
+    // This loop finishes unconditionally since there is NULL klass->parent_class if there is no base class.
+    while (the_klass) {
+      kphp_error_return(the_klass->is_serializable, fmt_format("Class {} and all its ancestors must be @kphp-serializable since field {} is @kphp-serialized-field. Class {} is not.", klass->name, f.local_name(), the_klass->name));
+      the_klass = the_klass->parent_class;
+    }
+
     if (kphp_serialized_field_tag->value.starts_with("none")) {
       return;
     }
