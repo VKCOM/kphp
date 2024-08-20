@@ -153,9 +153,7 @@ class KphpRunOnce(KphpBuilder):
         self._kphp_server_stdout, _kphp_server_stderr = self._wait_proc(k2_runtime_proc)
 
         ignore_stderr = error_can_be_ignored(
-            ignore_patterns=[
-                "^\\[\\d{4}\\-\\d{2}\\-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z INFO {2}main].+$"
-            ],
+            ignore_patterns=[],
             binary_error_text=_kphp_server_stderr)
 
         if not ignore_stderr:
