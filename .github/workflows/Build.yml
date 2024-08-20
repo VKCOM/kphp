@@ -50,12 +50,12 @@ jobs:
         repository: 'VKCOM/kphp-polyfills'
         path: 'kphp-polyfills'
 
-    - name: Cache docker image
-      uses: actions/cache@v3
-      id: docker-image-cache
-      with:
-        path: kphp-build-env-${{matrix.os}}.tar
-        key: docker-image-cache-${{matrix.os}}-${{ hashFiles('.github/workflows/Dockerfile.*', 'tests/python/requirements.txt') }}
+#    - name: Cache docker image
+#      uses: actions/cache@v3
+#      id: docker-image-cache
+#      with:
+#        path: kphp-build-env-${{matrix.os}}.tar
+#        key: docker-image-cache-${{matrix.os}}-${{ hashFiles('.github/workflows/Dockerfile.*', 'tests/python/requirements.txt') }}
 
     - name: Build and save docker image
       if: steps.docker-image-cache.outputs.cache-hit != 'true'
