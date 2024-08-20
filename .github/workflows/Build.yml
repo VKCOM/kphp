@@ -66,9 +66,9 @@ jobs:
         docker tag kphp-build-img-${{matrix.os}} kphp-build-img-${{matrix.os}}-cache
         docker save kphp-build-img-${{matrix.os}}-cache -o kphp-build-env-${{matrix.os}}.tar
         
-    - name: Load docker image from cache
-      if: steps.docker-image-cache.outputs.cache-hit == 'true'
-      run: docker load --input kphp-build-env-${{matrix.os}}.tar
+#    - name: Load docker image from cache
+#      if: steps.docker-image-cache.outputs.cache-hit == 'true'
+#      run: docker load --input kphp-build-env-${{matrix.os}}.tar
 
     - name: Start docker container
       run: |
