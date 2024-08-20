@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /ffi_array_set index type must be int, float used instead/
 <?php
 

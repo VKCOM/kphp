@@ -8,38 +8,49 @@
 /*** Core ***/
 //Consists mostly of functions that require synchronization
 
-#include <map>
 #include <string>
 #include <vector>
 
 #include "common/algorithms/hashes.h"
 
+#include "compiler/compiler-settings.h"
+#include "compiler/composer.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/ffi-data.h"
-#include "compiler/compiler-settings.h"
+#include "compiler/function-colors.h"
 #include "compiler/index.h"
 #include "compiler/stats.h"
 #include "compiler/threading/data-stream.h"
 #include "compiler/threading/hash-table.h"
 #include "compiler/tl-classes.h"
-#include "compiler/composer.h"
-#include "compiler/function-colors.h"
+
+enum class OutputMode {
+  server,   // -M server
+  cli,      // -M cli
+  lib,      // -M lib
+  k2_component // -M k2-component
+};
 
 class CompilerCore {
 private:
   Index cpp_index;
+  Index runtime_core_sources_index;
+  Index runtime_sources_index;
+  Index common_sources_index;
   TSHashTable<SrcFilePtr> file_ht;
   TSHashTable<SrcDirPtr> dirs_ht;
   TSHashTable<FunctionPtr> functions_ht;
   TSHashTable<ClassPtr> classes_ht;
   TSHashTable<DefinePtr> defines_ht;
-  TSHashTable<VarPtr,2'000'000> global_vars_ht;
+  TSHashTable<VarPtr,2'000'000> constants_ht;   // auto-collected constants (const strings / arrays / regexps / pure func calls); are inited once in a master process
+  TSHashTable<VarPtr> globals_ht;               // mutable globals (vars in global scope, class static fields); are reset for each php script inside worker processes
   TSHashTable<LibPtr, 1000> libs_ht;
   TSHashTable<ModulitePtr, 1000> modulites_ht;
   TSHashTable<ComposerJsonPtr, 1000> composer_json_ht;
   SrcFilePtr main_file;
   CompilerSettings *settings_;
   ComposerAutoloader composer_class_loader;
+  OutputMode output_mode;
   FFIRoot ffi;
   ClassPtr memcache_class;
   TlClasses tl_classes;
@@ -52,6 +63,11 @@ private:
 
 public:
   std::string cpp_dir;
+
+  // Don't like that, handle in another way
+  std::string runtime_core_sources_dir;
+  std::string runtime_sources_dir;
+  std::string common_sources_dir;
 
   CompilerCore();
   void start();
@@ -67,6 +83,7 @@ public:
   SrcDirPtr register_dir(vk::string_view full_dir_name);
 
   FFIRoot &get_ffi_root();
+  OutputMode get_output_mode() const;
 
   void register_main_file(const std::string &file_name, DataStream<SrcFilePtr> &os);
   SrcFilePtr require_file(const std::string &file_name, LibPtr owner_lib, DataStream<SrcFilePtr> &os, bool error_if_not_exists = true, bool builtin = false);
@@ -103,11 +120,13 @@ public:
   DefinePtr get_define(std::string_view name);
 
   VarPtr create_var(const std::string &name, VarData::Type type);
-  VarPtr get_global_var(const std::string &name, VarData::Type type, VertexPtr init_val, bool *is_new_inserted = nullptr);
+  VarPtr get_global_var(const std::string &name, VertexPtr init_val);
+  VarPtr get_constant_var(const std::string &name, VertexPtr init_val, bool *is_new_inserted = nullptr);
   VarPtr create_local_var(FunctionPtr function, const std::string &name, VarData::Type type);
 
   SrcFilePtr get_main_file() { return main_file; }
   std::vector<VarPtr> get_global_vars();
+  std::vector<VarPtr> get_constants_vars();
   std::vector<ClassPtr> get_classes();
   std::vector<InterfacePtr> get_interfaces();
   std::vector<DefinePtr> get_defines();
@@ -119,9 +138,13 @@ public:
   void load_index();
   void save_index();
   const Index &get_index();
+  const Index &get_runtime_core_index();
+  const Index &get_runtime_index();
+  const Index &get_common_index();
   File *get_file_info(std::string &&file_name);
   void del_extra_files();
   void init_dest_dir();
+  void init_runtime_and_common_srcs_dir();
 
   void try_load_tl_classes();
   void init_composer_class_loader();
@@ -152,6 +175,22 @@ public:
 
   bool get_functions_txt_parsed() const {
     return is_functions_txt_parsed;
+  }
+
+  bool is_output_mode_server() const {
+    return output_mode == OutputMode::server;
+  }
+
+  bool is_output_mode_cli() const {
+    return output_mode == OutputMode::cli;
+  }
+
+  bool is_output_mode_lib() const {
+    return output_mode == OutputMode::lib;
+  }
+
+  bool is_output_mode_k2_component() const {
+    return output_mode == OutputMode::k2_component;
   }
 
   Stats stats;

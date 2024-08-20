@@ -35,8 +35,8 @@ set_target_properties(flex_data_shared flex_data_static
 
 install(TARGETS flex_data_shared flex_data_static
         COMPONENT FLEX
-        LIBRARY DESTINATION usr/lib
-        ARCHIVE DESTINATION usr/lib)
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 set(CPACK_DEBIAN_FLEX_PACKAGE_BREAKS "engine-kphp-runtime (<< 20190917), php5-vkext (<< 20190917), php7-vkext (<< 20190917)")
 set(CPACK_DEBIAN_FLEX_PACKAGE_NAME "vk-flex-data")

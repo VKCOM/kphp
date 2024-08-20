@@ -72,7 +72,6 @@ inline void CheckClassesPass::check_static_fields_inited(ClassPtr klass) {
 }
 
 inline void CheckClassesPass::check_instance_fields_inited(ClassPtr klass) {
-  // TODO KPHP-221: the old code is kept for now (check for Unknown)
   klass->members.for_each([](const ClassMemberInstanceField &f) {
     PrimitiveType ptype = f.var->tinf_node.get_type()->get_real_ptype();
     kphp_error(ptype != tp_any,

@@ -14,7 +14,6 @@
 #include "compiler/data/kphp-tracing-tags.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
-#include "compiler/data/vars-collector.h"
 #include "compiler/vertex-util.h"
 #include "compiler/type-hint.h"
 
@@ -289,6 +288,17 @@ void check_instance_deserialize_call(VertexAdaptor<op_func_call> call) {
   kphp_error(type->class_type()->is_serializable, fmt_format("Called instance_deserialize() for class {}, but it's not marked with @kphp-serializable", type->class_type()->name));
 }
 
+void to_mixed_on_class(ClassPtr klass) {
+  klass->deeply_require_may_be_mixed_base();
+}
+
+void check_to_mixed_call(VertexAdaptor<op_func_call> call) {
+  const auto *type = tinf::get_type(call->args().front());
+  kphp_assert(type->ptype() == tp_Class);
+
+  to_mixed_on_class(type->class_type());
+}
+
 void check_estimate_memory_usage_call(VertexAdaptor<op_func_call> call) {
   const auto *type = tinf::get_type(call->args()[0]);
   std::unordered_set<ClassPtr> classes_inside;
@@ -324,23 +334,12 @@ void check_register_shutdown_functions(VertexAdaptor<op_func_call> call) {
                         vk::join(throws, ", "), callback->func_id->get_throws_call_chain()));
 }
 
-void mark_global_vars_for_memory_stats() {
-  if (!G->settings().enable_global_vars_memory_stats.get()) {
-    return;
-  }
-
-  static std::atomic<bool> vars_marked{false};
-  if (vars_marked.exchange(true)) {
-    return;
-  }
-
+void mark_global_vars_for_memory_stats(const std::vector<VarPtr> &vars_list) {
   std::unordered_set<ClassPtr> classes_inside;
-  VarsCollector vars_collector{0, [&classes_inside](VarPtr variable) {
-    tinf::get_type(variable)->get_all_class_types_inside(classes_inside);
-    return false;
-  }};
-  vars_collector.collect_global_and_static_vars_from(G->get_main_file()->main_function);
-  for (auto klass: classes_inside) {
+  for (VarPtr var : vars_list) {
+    tinf::get_type(var)->get_all_class_types_inside(classes_inside);
+  }
+  for (ClassPtr klass: classes_inside) {
     klass->deeply_require_instance_memory_estimate_visitor();
   }
 }
@@ -559,7 +558,15 @@ void check_php2c_conv(VertexAdaptor<op_ffi_php2c_conv> conv) {
 } // namespace
 
 void FinalCheckPass::on_start() {
-  mark_global_vars_for_memory_stats();
+  if (G->settings().enable_global_vars_memory_stats.get()) {
+    static std::atomic<bool> globals_marked{false};
+    if (!globals_marked.exchange(true)) {
+      mark_global_vars_for_memory_stats(G->get_global_vars());
+    }
+    if (!current_function->static_var_ids.empty()) {
+      mark_global_vars_for_memory_stats(current_function->static_var_ids);
+    }
+  }
 
   if (current_function->type == FunctionData::func_class_holder) {
     check_class_immutableness(current_function->class_id);
@@ -725,6 +732,9 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     kphp_error(lhs_type->ptype() == tp_Class,
                fmt_format("Accessing ->property of non-instance {}", lhs_type->as_human_readable()));
   }
+  if (auto instanceof = vertex.try_as<op_instanceof>()) {
+    instanceof->derived_class->mark_as_used();
+  }
 
   if (vertex->type() == op_throw) {
     const TypeData *thrown_type = tinf::get_type(vertex.as<op_throw>()->exception());
@@ -784,7 +794,7 @@ void FinalCheckPass::check_instanceof(VertexAdaptor<op_instanceof> instanceof_ve
     return;
   }
 
-  kphp_error(instanceof_var_type->class_type(), fmt_format("left operand of 'instanceof' should be an instance, but passed {}", instanceof_var_type->as_human_readable()));
+  kphp_error(instanceof_var_type->class_type() || instanceof_var_type->ptype() == tp_mixed, fmt_format("left operand of 'instanceof' should be an instance or mixed, but passed {}", instanceof_var_type->as_human_readable()));
 }
 
 static void check_indexing_violation(vk::string_view allowed_types_string, const std::vector<PrimitiveType> &allowed_types, vk::string_view what_indexing,
@@ -859,6 +869,8 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
       kphp_error(arg_type->can_store_null(), fmt_format("is_null() will be always false for {}", arg_type->as_human_readable()));
     } else if (function_name == "register_shutdown_function") {
       check_register_shutdown_functions(call);
+    } else if (function_name == "to_mixed") {
+      check_to_mixed_call(call);
     } else if (vk::string_view{function_name}.starts_with("rpc_tl_query")) {
       G->set_untyped_rpc_tl_used();
     } else if (vk::string_view{function_name}.starts_with("FFI$$")) {

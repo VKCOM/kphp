@@ -2,7 +2,7 @@
 
 #include <string_view>
 
-#include "runtime/kphp_core.h"
+#include "runtime-core/runtime-core.h"
 
 // php_timelib wraps the https://github.com/derickr/timelib library
 // which is used in PHP to implement several datetime lib functions.

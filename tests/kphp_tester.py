@@ -9,7 +9,7 @@ import sys
 from functools import partial
 from multiprocessing.dummy import Pool as ThreadPool
 
-from python.lib.colors import red, green, yellow, blue
+from python.lib.colors import red, green, yellow, blue, cyan
 from python.lib.file_utils import search_php_bin
 from python.lib.nocc_for_kphp_tester import nocc_start_daemon_in_background
 from python.lib.kphp_run_once import KphpRunOnce
@@ -23,6 +23,7 @@ class TestFile:
         self.env_vars = env_vars
         self.out_regexps = out_regexps
         self.forbidden_regexps = forbidden_regexps
+        self.php_version = next((tag for tag in tags if tag.startswith("php")), "php7.4")
 
     def is_ok(self):
         return "ok" in self.tags
@@ -43,20 +44,33 @@ class TestFile:
         return "kphp_runtime_should_not_warn" in self.tags
 
     def is_php8(self):
-        return "php8" in self.tags
+        return self.php_version.startswith("php8")
 
-    def make_kphp_once_runner(self, use_nocc, cxx_name):
+    def is_available_for_k2(self):
+        return "k2_skip" not in self.tags
+
+    def make_kphp_once_runner(self, use_nocc, cxx_name, k2_bin):
         tester_dir = os.path.abspath(os.path.dirname(__file__))
         return KphpRunOnce(
             php_script_path=self.file_path,
             working_dir=os.path.abspath(os.path.join(self.test_tmp_dir, "working_dir")),
             artifacts_dir=os.path.abspath(os.path.join(self.test_tmp_dir, "artifacts")),
-            php_bin=search_php_bin(php8_require=self.is_php8()),
+            php_bin=search_php_bin(php_version=self.php_version),
             extra_include_dirs=[os.path.join(tester_dir, "php_include")],
             vkext_dir=os.path.abspath(os.path.join(tester_dir, os.path.pardir, "objs", "vkext")),
             use_nocc=use_nocc,
             cxx_name=cxx_name,
+            k2_bin=k2_bin
         )
+
+    def set_up_env_for_k2(self):
+        self.env_vars["KPHP_MODE"] = "k2-component"
+        self.env_vars["KPHP_USER_BINARY_PATH"] = "component.so"
+        self.env_vars["KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS"] = "0"
+        self.env_vars["KPHP_PROFILER"] = "0"
+        self.env_vars["KPHP_CXX"] = "clang++"
+        self.env_vars["KPHP_K2_COMPONENT_IS_ONESHOT"] = "1"
+        self.env_vars["KPHP_FORCE_LINK_RUNTIME"] = "1"
 
 
 def make_test_file(file_path, test_tmp_dir, test_tags):
@@ -161,7 +175,11 @@ class TestResult:
     def skipped(test_file):
         return TestResult(yellow("skipped"), test_file, None, None)
 
-    def __init__(self, status, test_file, artifacts, failed_stage):
+    @staticmethod
+    def k2_skipped(test_file):
+        return TestResult(cyan("k2-skipped"), test_file, None, None, True)
+
+    def __init__(self, status, test_file, artifacts, failed_stage, started_with_k2 = False):
         self.status = status
         self.test_file_path = test_file.file_path
         self.artifacts = None
@@ -172,6 +190,8 @@ class TestResult:
         self.failed_stage_msg = None
         if failed_stage:
             self.failed_stage_msg = red("({})".format(failed_stage))
+
+        self.started_with_k2 = started_with_k2
 
     def _print_artifacts(self):
         if self.artifacts:
@@ -206,6 +226,9 @@ class TestResult:
 
     def is_skipped(self):
         return self.artifacts is None
+
+    def is_k2_skipped(self):
+        return self.artifacts is None and self.started_with_k2
 
     def is_failed(self):
         return self.failed_stage_msg is not None
@@ -260,6 +283,7 @@ def run_warn_test(test: TestFile, runner):
     runner.kphp_build_stderr_artifact.error_priority = -1
     return TestResult.passed(test, runner.artifacts)
 
+
 def run_runtime_not_warn_test(test: TestFile, runner):
     if not runner.compile_with_kphp(test.env_vars):
         return TestResult.failed(test, runner.artifacts, "got kphp build error")
@@ -275,6 +299,7 @@ def run_runtime_not_warn_test(test: TestFile, runner):
 
     return TestResult.passed(test, runner.artifacts)
 
+
 def run_runtime_warn_test(test: TestFile, runner):
     if not runner.compile_with_kphp(test.env_vars):
         return TestResult.failed(test, runner.artifacts, "got kphp build error")
@@ -282,9 +307,14 @@ def run_runtime_warn_test(test: TestFile, runner):
     if not runner.run_with_kphp():
         return TestResult.failed(test, runner.artifacts, "got kphp run error")
 
+    if runner.k2_bin is not None:
+        warning_pattern = "WARN {2}component-log"
+    else:
+        warning_pattern = "Warning: "
+
     with open(runner.kphp_runtime_stderr.file) as f:
         stderr_log = f.read()
-        if not re.search("Warning: ", stderr_log):
+        if not re.search(warning_pattern, stderr_log):
             return TestResult.failed(test, runner.artifacts, "can't find kphp runtime warnings")
         for index, msg_regex in enumerate(test.out_regexps, start=1):
             if not msg_regex.search(stderr_log):
@@ -315,14 +345,18 @@ def run_ok_test(test: TestFile, runner):
     return TestResult.passed(test, runner.artifacts)
 
 
-def run_test(use_nocc, cxx_name, test: TestFile):
+def run_test(use_nocc, cxx_name, k2_bin, test: TestFile):
     if not os.path.exists(test.file_path):
         return TestResult.failed(test, None, "can't find test file")
 
-    runner = test.make_kphp_once_runner(use_nocc, cxx_name)
+    runner = test.make_kphp_once_runner(use_nocc, cxx_name, k2_bin)
     runner.remove_artifacts_dir()
+    if k2_bin is not None:
+        test.set_up_env_for_k2()
 
-    if test.is_php8() and runner._php_bin is None:      # if php8 doesn't exist on a machine
+    if k2_bin is not None and not test.is_available_for_k2():
+        test_result = TestResult.k2_skipped(test)
+    elif test.is_php8() and runner._php_bin is None:  # if php8 doesn't exist on a machine
         test_result = TestResult.skipped(test)
     elif test.is_kphp_should_fail():
         test_result = run_fail_test(test, runner)
@@ -342,7 +376,7 @@ def run_test(use_nocc, cxx_name, test: TestFile):
     return test_result
 
 
-def run_all_tests(tests_dir, jobs, test_tags, no_report, passed_list, test_list, use_nocc, cxx_name):
+def run_all_tests(tests_dir, jobs, test_tags, no_report, passed_list, test_list, use_nocc, cxx_name, k2_bin):
     hack_reference_exit = []
     signal.signal(signal.SIGINT, lambda sig, frame: hack_reference_exit.append(1))
 
@@ -356,7 +390,7 @@ def run_all_tests(tests_dir, jobs, test_tags, no_report, passed_list, test_list,
     results = []
     with ThreadPool(jobs) as pool:
         tests_completed = 0
-        for test_result in pool.imap_unordered(partial(run_test, use_nocc, cxx_name), tests):
+        for test_result in pool.imap_unordered(partial(run_test, use_nocc, cxx_name, k2_bin), tests):
             if hack_reference_exit:
                 print(yellow("Testing process was interrupted"), flush=True)
                 break
@@ -368,9 +402,12 @@ def run_all_tests(tests_dir, jobs, test_tags, no_report, passed_list, test_list,
 
     skipped = len(tests) - len(results)
     failed = 0
+    k2_skipped = 0
     passed = []
     for test_result in results:
-        if test_result.is_skipped():
+        if test_result.is_k2_skipped():
+            k2_skipped = k2_skipped + 1
+        elif test_result.is_skipped():
             skipped = skipped + 1
         elif test_result.is_failed():
             failed = failed + 1
@@ -383,6 +420,8 @@ def run_all_tests(tests_dir, jobs, test_tags, no_report, passed_list, test_list,
             with open(passed_list, "w") as f:
                 passed.sort()
                 f.writelines("{}\n".format(l) for l in passed)
+    if k2_bin is not None and k2_skipped:
+        print("  {}{}".format(cyan("k2-skipped: "), k2_skipped))
     if skipped:
         print("  {}{}".format(yellow("skipped: "), skipped))
     if failed:
@@ -455,6 +494,14 @@ def parse_args():
         default="g++",
         help="specify cxx compiler, default g++")
 
+    parser.add_argument(
+        "--k2-bin",
+        type=str,
+        dest='k2_bin',
+        default=None,
+        help="specify the path to the k2-run-once binary file to be used for tests"
+    )
+
     return parser.parse_args()
 
 
@@ -483,7 +530,8 @@ def main():
                   passed_list=args.passed_list,
                   test_list=args.test_list,
                   use_nocc=args.use_nocc,
-                  cxx_name=args.cxx_name)
+                  cxx_name=args.cxx_name,
+                  k2_bin=args.k2_bin)
 
 
 if __name__ == "__main__":

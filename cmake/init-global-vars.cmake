@@ -6,6 +6,8 @@ set(OBJS_DIR ${BASE_DIR}/objs)
 set(BIN_DIR ${OBJS_DIR}/bin)
 set(GENERATED_DIR "${OBJS_DIR}/generated")
 set(AUTO_DIR "${GENERATED_DIR}/auto")
+set(RUNTIME_LIGHT_DIR "${BASE_DIR}/runtime-light")
+set(RUNTIME_CORE_DIR "${BASE_DIR}/runtime-core")
 
 if(APPLE)
     set(CURL_LIB curl)
@@ -73,7 +75,7 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set(CMAKE_INSTALL_PREFIX "/." CACHE PATH "install prefix" FORCE)
 endif()
 
-set(VK_INSTALL_DIR usr/share/vkontakte)
+set(VK_INSTALL_DIR /usr/share/vkontakte)
 set(INSTALL_KPHP_SOURCE ${VK_INSTALL_DIR}/kphp_source)
 
 set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})

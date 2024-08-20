@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 
 function test_constructor_valid_date() {

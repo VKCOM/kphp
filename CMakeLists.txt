@@ -19,6 +19,7 @@ include(CMakePrintHelpers)
 include(CheckCXXCompilerFlag)
 include(AddFileDependencies)
 include(FetchContent)
+include(GNUInstallDirs)
 
 # Global includes must be before all other includes/add_subdirectories
 include(cmake/utils.cmake)
@@ -41,31 +42,50 @@ include(${COMMON_DIR}/common.cmake)
 include(${COMMON_DIR}/tl/tl.cmake)
 include(${COMMON_DIR}/unicode/unicode.cmake)
 
-include(${BASE_DIR}/runtime/runtime.cmake)
-include(${BASE_DIR}/server/server.cmake)
+include(${BASE_DIR}/runtime-core/runtime-core.cmake)
+if(COMPILE_RUNTIME_LIGHT)
+    include(${BASE_DIR}/runtime-light/runtime-light.cmake)
+    file(GLOB EXCLUDE_FILES "runtime/*")
+else()
+    include(${BASE_DIR}/runtime/runtime.cmake)
+    include(${BASE_DIR}/server/server.cmake)
+    file(GLOB EXCLUDE_FILES "runtime-light/*")
+endif()
 include(${BASE_DIR}/compiler/compiler.cmake)
-
 include(${BASE_DIR}/tests/tests.cmake)
+
 
 if(KPHP_CUSTOM_CMAKE AND EXISTS ${OBJS_DIR}/custom_php_project.cmake)
     include(${OBJS_DIR}/custom_php_project.cmake)
 endif()
 
 add_custom_target(kphp ALL DEPENDS ${OBJS_DIR}/php_lib_version.sha256)
-add_dependencies(kphp kphp2cpp kphp-full-runtime)
+
+if (COMPILE_RUNTIME_LIGHT)
+    add_dependencies(kphp kphp2cpp kphp-light-runtime)
+else ()
+    add_dependencies(kphp kphp2cpp kphp-full-runtime)
+endif ()
 
 install(TARGETS kphp2cpp
         COMPONENT KPHP
         RUNTIME DESTINATION ${VK_INSTALL_DIR}/bin/)
 install_symlink(${VK_INSTALL_DIR}/bin/kphp2cpp bin/kphp KPHP)
 
-install(TARGETS kphp-full-runtime
-        COMPONENT KPHP
-        LIBRARY DESTINATION ${INSTALL_KPHP_SOURCE}/objs
-        ARCHIVE DESTINATION ${INSTALL_KPHP_SOURCE}/objs)
+if (COMPILE_RUNTIME_LIGHT)
+    install(TARGETS kphp-light-runtime
+            COMPONENT KPHP
+            LIBRARY DESTINATION ${INSTALL_KPHP_SOURCE}/objs)
+else ()
+    install(TARGETS kphp-full-runtime
+            COMPONENT KPHP
+            LIBRARY DESTINATION ${INSTALL_KPHP_SOURCE}/objs
+            ARCHIVE DESTINATION ${INSTALL_KPHP_SOURCE}/objs)
+endif ()
 
 install(DIRECTORY ${COMMON_DIR}
                   ${BASE_DIR}/runtime
+                  ${BASE_DIR}/runtime-core
                   ${BASE_DIR}/server
                   ${BASE_DIR}/third-party
         COMPONENT KPHP

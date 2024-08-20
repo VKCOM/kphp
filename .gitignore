@@ -8,6 +8,8 @@
 .DS_Store
 
 .idea
+.vscode
+.cache
 build
 *.iml
 /cmake-build-*

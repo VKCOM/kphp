@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "runtime/kphp_core.h"
-#include "runtime/json-writer.h"
+#include "runtime-core/runtime-core.h"
 #include "runtime/json-processor-utils.h"
+#include "runtime/json-writer.h"
 
 template <class Tag>
 class ToJsonVisitor {
@@ -98,6 +98,9 @@ private:
         break;
       case mixed::type::ARRAY:
         process_impl(value.as_array());
+        break;
+      case mixed::type::OBJECT:
+        php_warning("Objects (%s) in mixed cannot be written in JSON", value.get_type_or_class_name());
         break;
     }
   }

@@ -59,7 +59,7 @@ struct CombinatorGen {
       auto _cur_arg = tl_arr_get(tl_object, tl_str$query, 4, 1563700686);
       string target_f_name = tl_arr_get(_cur_arg, tl_str$_, 0, -2147483553).as_string();
       if (!tl_storers_ht.has_key(target_f_name)) {
-        CurrentProcessingQuery::get().raise_storing_error("Function %s not found in tl-scheme", target_f_name.c_str());
+        CurrentTlQuery::get().raise_storing_error("Function %s not found in tl-scheme", target_f_name.c_str());
         return {};
       }
       const auto &storer_kv = tl_storers_ht.get_value(target_f_name);

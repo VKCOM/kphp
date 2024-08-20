@@ -5,6 +5,7 @@
 #include "server/confdata-stats.h"
 
 #include "common/algorithms/contains.h"
+#include "runtime/memory_resource_impl/memory_resource_stats.h"
 
 namespace {
 
@@ -84,7 +85,7 @@ const memory_resource::MemoryStats &ConfdataStats::get_memory_stats() const noex
 
 void ConfdataStats::write_stats_to(stats_t *stats) const noexcept {
   const auto &memory_stats = get_memory_stats();
-  memory_stats.write_stats_to(stats, "confdata");
+  write_memory_stats_to(memory_stats, stats, "confdata");
 
   stats->add_gauge_stat("confdata.initial_loading_duration", to_seconds(initial_loading_time));
   stats->add_gauge_stat("confdata.total_updating_time", to_seconds(total_updating_time));

@@ -1,9 +1,7 @@
 #include <gtest/gtest.h>
 
-
-#include "runtime/kphp_core.h"
-#include "runtime/kphp_type_traits.h"
-#include "runtime/refcountable_php_classes.h"
+#include "runtime-core/class-instance/refcountable-php-classes.h"
+#include "runtime-core/runtime-core.h"
 
 struct Stub : refcountable_php_classes<Stub> {
 };

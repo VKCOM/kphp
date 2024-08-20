@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /kphp-serialized-field\(-10\) must be >=0 and < than 127/
 /kphp-serialized-field\(128\) must be >=0 and < than 127/
 <?php

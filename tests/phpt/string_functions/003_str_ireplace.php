@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 
 $strings = ["hello", "Hello world", "Hello World hello"];

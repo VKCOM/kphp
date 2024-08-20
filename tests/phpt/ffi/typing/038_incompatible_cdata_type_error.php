@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /assign FFI\\CData_int64 to Foo::\$int32/
 /declared as @var FFI\\CData_int32/
 <?php

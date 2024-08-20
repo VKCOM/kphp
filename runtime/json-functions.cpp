@@ -14,12 +14,12 @@
 namespace {
 
 void json_append_one_char(unsigned int c) noexcept {
-  static_SB.append_char('\\');
-  static_SB.append_char('u');
-  static_SB.append_char("0123456789abcdef"[c >> 12]);
-  static_SB.append_char("0123456789abcdef"[(c >> 8) & 15]);
-  static_SB.append_char("0123456789abcdef"[(c >> 4) & 15]);
-  static_SB.append_char("0123456789abcdef"[c & 15]);
+  kphp_runtime_context.static_SB.append_char('\\');
+  kphp_runtime_context.static_SB.append_char('u');
+  kphp_runtime_context.static_SB.append_char("0123456789abcdef"[c >> 12]);
+  kphp_runtime_context.static_SB.append_char("0123456789abcdef"[(c >> 8) & 15]);
+  kphp_runtime_context.static_SB.append_char("0123456789abcdef"[(c >> 4) & 15]);
+  kphp_runtime_context.static_SB.append_char("0123456789abcdef"[c & 15]);
 }
 
 bool json_append_char(unsigned int c) noexcept {
@@ -41,54 +41,54 @@ bool json_append_char(unsigned int c) noexcept {
 
 
 bool do_json_encode_string_php(const JsonPath &json_path, const char *s, int len, int64_t options) noexcept {
-  int begin_pos = static_SB.size();
+  int begin_pos = kphp_runtime_context.static_SB.size();
   if (options & JSON_UNESCAPED_UNICODE) {
-    static_SB.reserve(2 * len + 2);
+    kphp_runtime_context.static_SB.reserve(2 * len + 2);
   } else {
-    static_SB.reserve(6 * len + 2);
+    kphp_runtime_context.static_SB.reserve(6 * len + 2);
   }
-  static_SB.append_char('"');
+  kphp_runtime_context.static_SB.append_char('"');
 
   auto fire_error = [json_path, begin_pos](int pos) {
     php_warning("%s: Not a valid utf-8 character at pos %d in function json_encode", json_path.to_string().c_str(), pos);
-    static_SB.set_pos(begin_pos);
-    static_SB.append("null", 4);
+    kphp_runtime_context.static_SB.set_pos(begin_pos);
+    kphp_runtime_context.static_SB.append("null", 4);
     return false;
   };
 
   for (int pos = 0; pos < len; pos++) {
     switch (s[pos]) {
       case '"':
-        static_SB.append_char('\\');
-        static_SB.append_char('"');
+        kphp_runtime_context.static_SB.append_char('\\');
+        kphp_runtime_context.static_SB.append_char('"');
         break;
       case '\\':
-        static_SB.append_char('\\');
-        static_SB.append_char('\\');
+        kphp_runtime_context.static_SB.append_char('\\');
+        kphp_runtime_context.static_SB.append_char('\\');
         break;
       case '/':
-        static_SB.append_char('\\');
-        static_SB.append_char('/');
+        kphp_runtime_context.static_SB.append_char('\\');
+        kphp_runtime_context.static_SB.append_char('/');
         break;
       case '\b':
-        static_SB.append_char('\\');
-        static_SB.append_char('b');
+        kphp_runtime_context.static_SB.append_char('\\');
+        kphp_runtime_context.static_SB.append_char('b');
         break;
       case '\f':
-        static_SB.append_char('\\');
-        static_SB.append_char('f');
+        kphp_runtime_context.static_SB.append_char('\\');
+        kphp_runtime_context.static_SB.append_char('f');
         break;
       case '\n':
-        static_SB.append_char('\\');
-        static_SB.append_char('n');
+        kphp_runtime_context.static_SB.append_char('\\');
+        kphp_runtime_context.static_SB.append_char('n');
         break;
       case '\r':
-        static_SB.append_char('\\');
-        static_SB.append_char('r');
+        kphp_runtime_context.static_SB.append_char('\\');
+        kphp_runtime_context.static_SB.append_char('r');
         break;
       case '\t':
-        static_SB.append_char('\\');
-        static_SB.append_char('t');
+        kphp_runtime_context.static_SB.append_char('\\');
+        kphp_runtime_context.static_SB.append_char('t');
         break;
       case 0 ... 7:
       case 11:
@@ -110,8 +110,8 @@ bool do_json_encode_string_php(const JsonPath &json_path, const char *s, int len
             return fire_error(pos);
           }
           if (options & JSON_UNESCAPED_UNICODE) {
-            static_SB.append_char(static_cast<char>(a));
-            static_SB.append_char(static_cast<char>(b));
+            kphp_runtime_context.static_SB.append_char(static_cast<char>(a));
+            kphp_runtime_context.static_SB.append_char(static_cast<char>(b));
           } else if (!json_append_char(((a & 0x1f) << 6) | (b & 0x3f))) {
             return fire_error(pos);
           }
@@ -127,9 +127,9 @@ bool do_json_encode_string_php(const JsonPath &json_path, const char *s, int len
             return fire_error(pos);
           }
           if (options & JSON_UNESCAPED_UNICODE) {
-            static_SB.append_char(static_cast<char>(a));
-            static_SB.append_char(static_cast<char>(b));
-            static_SB.append_char(static_cast<char>(c));
+            kphp_runtime_context.static_SB.append_char(static_cast<char>(a));
+            kphp_runtime_context.static_SB.append_char(static_cast<char>(b));
+            kphp_runtime_context.static_SB.append_char(static_cast<char>(c));
           } else if (!json_append_char(((a & 0x0f) << 12) | ((b & 0x3f) << 6) | (c & 0x3f))) {
             return fire_error(pos);
           }
@@ -145,10 +145,10 @@ bool do_json_encode_string_php(const JsonPath &json_path, const char *s, int len
             return fire_error(pos);
           }
           if (options & JSON_UNESCAPED_UNICODE) {
-            static_SB.append_char(static_cast<char>(a));
-            static_SB.append_char(static_cast<char>(b));
-            static_SB.append_char(static_cast<char>(c));
-            static_SB.append_char(static_cast<char>(d));
+            kphp_runtime_context.static_SB.append_char(static_cast<char>(a));
+            kphp_runtime_context.static_SB.append_char(static_cast<char>(b));
+            kphp_runtime_context.static_SB.append_char(static_cast<char>(c));
+            kphp_runtime_context.static_SB.append_char(static_cast<char>(d));
           } else if (!json_append_char(((a & 0x07) << 18) | ((b & 0x3f) << 12) | ((c & 0x3f) << 6) | (d & 0x3f))) {
             return fire_error(pos);
           }
@@ -158,57 +158,57 @@ bool do_json_encode_string_php(const JsonPath &json_path, const char *s, int len
         return fire_error(pos);
       }
       default:
-        static_SB.append_char(s[pos]);
+        kphp_runtime_context.static_SB.append_char(s[pos]);
         break;
     }
   }
 
-  static_SB.append_char('"');
+  kphp_runtime_context.static_SB.append_char('"');
   return true;
 }
 
 bool do_json_encode_string_vkext(const char *s, int len) noexcept {
-  static_SB.reserve(2 * len + 2);
-  if (static_SB.string_buffer_error_flag == STRING_BUFFER_ERROR_FLAG_FAILED) {
+  kphp_runtime_context.static_SB.reserve(2 * len + 2);
+  if (kphp_runtime_context.sb_lib_context.error_flag == STRING_BUFFER_ERROR_FLAG_FAILED) {
     return false;
   }
 
-  static_SB.append_char('"');
+  kphp_runtime_context.static_SB.append_char('"');
 
   for (int pos = 0; pos < len; pos++) {
     char c = s[pos];
     if (unlikely (static_cast<unsigned int>(c) < 32u)) {
       switch (c) {
         case '\b':
-          static_SB.append_char('\\');
-          static_SB.append_char('b');
+          kphp_runtime_context.static_SB.append_char('\\');
+          kphp_runtime_context.static_SB.append_char('b');
           break;
         case '\f':
-          static_SB.append_char('\\');
-          static_SB.append_char('f');
+          kphp_runtime_context.static_SB.append_char('\\');
+          kphp_runtime_context.static_SB.append_char('f');
           break;
         case '\n':
-          static_SB.append_char('\\');
-          static_SB.append_char('n');
+          kphp_runtime_context.static_SB.append_char('\\');
+          kphp_runtime_context.static_SB.append_char('n');
           break;
         case '\r':
-          static_SB.append_char('\\');
-          static_SB.append_char('r');
+          kphp_runtime_context.static_SB.append_char('\\');
+          kphp_runtime_context.static_SB.append_char('r');
           break;
         case '\t':
-          static_SB.append_char('\\');
-          static_SB.append_char('t');
+          kphp_runtime_context.static_SB.append_char('\\');
+          kphp_runtime_context.static_SB.append_char('t');
           break;
       }
     } else {
       if (c == '"' || c == '\\' || c == '/') {
-        static_SB.append_char('\\');
+        kphp_runtime_context.static_SB.append_char('\\');
       }
-      static_SB.append_char(c);
+      kphp_runtime_context.static_SB.append_char(c);
     }
   }
 
-  static_SB.append_char('"');
+  kphp_runtime_context.static_SB.append_char('"');
 
   return true;
 }
@@ -254,20 +254,20 @@ JsonEncoder::JsonEncoder(int64_t options, bool simple_encode, const char *json_o
 
 bool JsonEncoder::encode(bool b) noexcept {
   if (b) {
-    static_SB.append("true", 4);
+    kphp_runtime_context.static_SB.append("true", 4);
   } else {
-    static_SB.append("false", 5);
+    kphp_runtime_context.static_SB.append("false", 5);
   }
   return true;
 }
 
 bool JsonEncoder::encode_null() const noexcept {
-  static_SB.append("null", 4);
+  kphp_runtime_context.static_SB.append("null", 4);
   return true;
 }
 
 bool JsonEncoder::encode(int64_t i) noexcept {
-  static_SB << i;
+  kphp_runtime_context.static_SB << i;
   return true;
 }
 
@@ -275,12 +275,12 @@ bool JsonEncoder::encode(double d) noexcept {
   if (vk::any_of_equal(std::fpclassify(d), FP_INFINITE, FP_NAN)) {
     php_warning("%s: strange double %lf in function json_encode", json_path_.to_string().c_str(), d);
     if (options_ & JSON_PARTIAL_OUTPUT_ON_ERROR) {
-      static_SB.append("0", 1);
+      kphp_runtime_context.static_SB.append("0", 1);
     } else {
       return false;
     }
   } else {
-    static_SB << (simple_encode_ ? f$number_format(d, 6, string{"."}, string{}) : string{d});
+    kphp_runtime_context.static_SB << (simple_encode_ ? f$number_format(d, 6, string{"."}, string{}) : string{d});
   }
   return true;
 }
@@ -303,6 +303,9 @@ bool JsonEncoder::encode(const mixed &v) noexcept {
       return encode(v.as_string());
     case mixed::type::ARRAY:
       return encode(v.as_array());
+    case mixed::type::OBJECT:
+      php_warning("Objects (%s) are not supported in JsonEncoder", v.get_type_or_class_name());
+      return false;
     default:
       __builtin_unreachable();
   }

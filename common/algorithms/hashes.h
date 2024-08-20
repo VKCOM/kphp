@@ -6,6 +6,7 @@
 #define ENGINE_HASHES_H
 
 #include <array>
+#include <cstdint>
 #include <functional>
 #include <iterator>
 #include <numeric>

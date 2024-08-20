@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "runtime/kphp_core.h"
-#include "runtime/refcountable_php_classes.h"
+#include "runtime-core/class-instance/refcountable-php-classes.h"
+#include "runtime-core/runtime-core.h"
 #include "runtime/tl/rpc_function.h"
 
 class RpcErrorFactory {

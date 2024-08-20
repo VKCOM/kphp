@@ -5,6 +5,7 @@
 #include "compiler/code-gen/files/function-header.h"
 
 #include "compiler/code-gen/common.h"
+#include "compiler/code-gen/const-globals-batched-mem.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/files/function-source.h"
 #include "compiler/code-gen/includes.h"
@@ -25,9 +26,12 @@ void FunctionH::compile(CodeGenerator &W) const {
   W << includes;
 
   W << OpenNamespace();
-  for (auto const_var : function->explicit_header_const_var_ids) {
-    W << VarExternDeclaration(const_var) << NL;
+
+  ConstantsExternCollector c_mem_extern;
+  for (VarPtr var : function->explicit_header_const_var_ids) {
+    c_mem_extern.add_extern_from_var(var);
   }
+  W << c_mem_extern << NL;
 
   if (function->is_inline) {
     W << "inline ";
@@ -53,9 +57,7 @@ void FunctionH::compile(CodeGenerator &W) const {
     W << includes;
     W << OpenNamespace();
 
-    declare_global_vars(function, W);
     declare_const_vars(function, W);
-    declare_static_vars(function, W);
     W << UnlockComments();
     W << function->root << NL;
     W << LockComments();

@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime/kphp_core.h"
+#include "runtime-core/runtime-core.h"
 #include "runtime/pdo/abstract_pdo_statement.h"
 
 namespace database_drivers {

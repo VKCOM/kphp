@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 
 function test_int_keys($hint, $key, $arr) {

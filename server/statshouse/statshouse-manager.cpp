@@ -5,6 +5,7 @@
 #include "server/statshouse/statshouse-manager.h"
 
 #include <chrono>
+#include <string>
 
 #include "common/precise-time.h"
 #include "common/resolver.h"
@@ -57,7 +58,11 @@ StatsHouseManager::StatsHouseManager(const std::string &ip, int port)
   : client(ip, port){};
 
 void StatsHouseManager::set_common_tags() {
-  client.set_tag_cluster(vk::singleton<ServerConfig>::get().get_cluster_name());
+  const auto &config = vk::singleton<ServerConfig>::get();
+  if (!config.get_environment().empty()) {
+    client.set_environment(config.get_environment());
+  }
+  client.set_tag_cluster(config.get_cluster_name());
   client.set_tag_host(kdb_gethostname());
 }
 
@@ -177,7 +182,7 @@ void StatsHouseManager::add_common_master_stats(const workers_stats_t &workers_s
                                                 double cpu_s_usage, double cpu_u_usage,
                                                 long long int instance_cache_memory_swaps_ok, long long int instance_cache_memory_swaps_fail) {
   if (engine_tag) {
-    client.metric("kphp_version").write_value(atoll(engine_tag));
+    client.metric("kphp_version").tag(std::to_string(engine_tag_number)).write_count(1);
   }
 
   client.metric("kphp_uptime").write_value(get_uptime());

@@ -3,8 +3,11 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
-#include "runtime/kphp_core.h"
-#include "runtime/refcountable_php_classes.h"
+
+#include <memory>
+
+#include "runtime-core/class-instance/refcountable-php-classes.h"
+#include "runtime-core/runtime-core.h"
 
 class RpcRequestResult;
 
@@ -34,10 +37,10 @@ private:
   array<class_instance<RpcTlQuery>> queries_;
 };
 
-class CurrentProcessingQuery {
+class CurrentTlQuery {
 public:
-  static CurrentProcessingQuery &get() {
-    static CurrentProcessingQuery context;
+  static CurrentTlQuery &get() {
+    static CurrentTlQuery context;
     return context;
   }
 

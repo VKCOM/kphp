@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 
 for ($shift = 0; $shift < 7; $shift++) {

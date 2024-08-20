@@ -200,7 +200,7 @@ int main(int argc, char *argv[]) {
 #endif
 
   init_version_string("kphp2cpp");
-  set_debug_handlers();
+  set_debug_handlers(true);
 
   auto settings = std::make_unique<CompilerSettings>();
 
@@ -212,13 +212,16 @@ int main(int argc, char *argv[]) {
   parser.add("Path to kphp source", settings->kphp_src_path,
              's', "source-path", "KPHP_PATH", get_default_kphp_path());
   parser.add("Internal file with the list of supported PHP functions", settings->functions_file,
-             'f', "functions-file", "KPHP_FUNCTIONS", "${KPHP_PATH}/builtin-functions/_functions.txt");
+             'f', "functions-file", "KPHP_FUNCTIONS");
   parser.add("File with kphp runtime sha256 hash", settings->runtime_sha256_file,
              "runtime-sha256", "KPHP_RUNTIME_SHA256", "${KPHP_PATH}/objs/php_lib_version.sha256");
-  parser.add("The output binary type: server, cli or lib", settings->mode,
-             'M', "mode", "KPHP_MODE", "server", {"server", "cli", "lib"});
+  parser.add("The output binary type: server, k2-component, cli or lib", settings->mode,
+             'M', "mode", "KPHP_MODE", "server", {"server", "k2-component", "cli", "lib"});
   parser.add("A runtime library for building the output binary", settings->link_file,
-             'l', "link-with", "KPHP_LINK_FILE", "${KPHP_PATH}/objs/libkphp-full-runtime.a");
+             'l', "link-with", "KPHP_LINK_FILE");
+  parser.add("Build runtime from sources", settings->force_link_runtime,
+             "force-link-runtime", "KPHP_FORCE_LINK_RUNTIME");
+  parser.add("Path to runtime sources", settings->runtime_and_common_src, "rt-path", "KPHP_RT_PATH", get_default_kphp_path());
   parser.add("Directory where php files will be searched", settings->includes,
              'I', "include-dir", "KPHP_INCLUDE_DIR");
   parser.add("Destination directory", settings->dest_dir,
@@ -235,8 +238,6 @@ int main(int argc, char *argv[]) {
              'j', "jobs-num", "KPHP_JOBS_COUNT", std::to_string(get_default_threads_count()));
   parser.add("Threads number for the transpilation", settings->threads_count,
              't', "threads-count", "KPHP_THREADS_COUNT", std::to_string(get_default_threads_count()));
-  parser.add("Count of global variables per dedicated .cpp file. Lowering it could decrease compilation time", settings->globals_split_count,
-             "globals-split-count", "KPHP_GLOBALS_SPLIT_COUNT", "1024");
   parser.add("Builtin tl schema. Incompatible with lib mode", settings->tl_schema_file,
              'T', "tl-schema", "KPHP_TL_SCHEMA");
   parser.add("Generate storers and fetchers for internal tl functions", settings->gen_tl_internals,
@@ -295,6 +296,10 @@ int main(int argc, char *argv[]) {
              "require-functions-typing", "KPHP_REQUIRE_FUNCTIONS_TYPING");
   parser.add("Require class typing (1 - @var / default value is mandatory, 0 - auto infer or check if exists)", settings->require_class_typing,
              "require-class-typing", "KPHP_REQUIRE_CLASS_TYPING");
+  parser.add("Define k2 component name. Default is \"KPHP\"", settings->k2_component_name,
+             "k2-component-name", "KPHP_K2_COMPONENT_NAME", "KPHP");
+  parser.add("Enable oneshot mode to k2 component", settings->k2_component_is_oneshot,
+             "oneshot", "KPHP_K2_COMPONENT_IS_ONESHOT");
 
   parser.add_implicit_option("Linker flags", settings->ld_flags);
   parser.add_implicit_option("Incremental linker flags", settings->incremental_linker_flags);

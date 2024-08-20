@@ -2,13 +2,16 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include <queue>
 #include "compiler/pipes/calc-bad-vars.h"
+
+#include <queue>
+#include <vector>
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/function-pass.h"
+#include "compiler/pipes/calc-func-dep.h"
 #include "compiler/utils/idmap.h"
 
 /*** Common algorithm ***/
@@ -531,6 +534,31 @@ class CalcBadVars {
     }
   }
 
+  static void calc_interruptible(const FuncCallGraph &call_graph) {
+    IdMap<char> into_interruptible(call_graph.n);
+    IdMap<FunctionPtr> to_parents(call_graph.n);
+
+    for (const auto &func : call_graph.functions) {
+      if (func->is_interruptible) {
+        mark(call_graph.rev_graph, into_interruptible, func, to_parents);
+      }
+    }
+
+    for (const auto &func : call_graph.functions) {
+      if (into_interruptible[func]) {
+        func->is_interruptible = true;
+      }
+    }
+  }
+
+  static void calc_k2_fork(const FuncCallGraph &call_graph, const std::vector<DepData> &dep_data) {
+    for (int i = 0; i < call_graph.n; ++i) {
+      for (const auto &fork : dep_data[i].forks) {
+        fork->is_interruptible = true;
+        fork->is_k2_fork = true;
+      }
+    }
+  }
 
   static void calc_resumable(const FuncCallGraph &call_graph, const std::vector<DepData> &dep_data) {
     for (int i = 0; i < call_graph.n; i++) {
@@ -588,7 +616,7 @@ class CalcBadVars {
       function->dep = std::move(call_graph.graph[function]);
     }
 
-    if (!G->settings().is_static_lib_mode()) {
+    if (!G->is_output_mode_lib()) {
       return;
     }
 
@@ -668,7 +696,12 @@ public:
 
     {
       FuncCallGraph call_graph(std::move(functions), dep_datas);
-      calc_resumable(call_graph, dep_datas);
+      if (G->is_output_mode_k2_component()) {
+        calc_k2_fork(call_graph, dep_datas);
+        calc_interruptible(call_graph);
+      } else {
+        calc_resumable(call_graph, dep_datas);
+      }
       generate_bad_vars(call_graph, dep_datas);
       check_func_colors(call_graph);
       save_func_dep(call_graph);

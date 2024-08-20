@@ -1,4 +1,4 @@
-@ok fixme
+@ok fixme k2_skip
 <?php
 
 function test() {

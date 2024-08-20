@@ -94,8 +94,6 @@ struct lev_pmemcached_touch {
 
 #pragma pack(pop)
 
-#define PMEMCACHED_INDEX_MAGIC 0x53407fa0
-
 // snapshot structures
 typedef struct {
 /* strange numbers */
@@ -107,7 +105,6 @@ typedef struct {
   int log_timestamp;
   unsigned int log_pos0_crc32;
   unsigned int log_pos1_crc32;
-
   int nrecords;
 } index_header;
 

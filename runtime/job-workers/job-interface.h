@@ -7,10 +7,10 @@
 #include "common/algorithms/hashes.h"
 #include "common/wrappers/string_view.h"
 
+#include "runtime-core/class-instance/refcountable-php-classes.h"
+#include "runtime-core/runtime-core.h"
 #include "runtime/instance-copy-processor.h"
 #include "runtime/to-array-processor.h"
-#include "runtime/kphp_core.h"
-#include "runtime/refcountable_php_classes.h"
 
 class InstanceReferencesCountingVisitor;
 

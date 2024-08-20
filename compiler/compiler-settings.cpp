@@ -205,18 +205,6 @@ void CompilerSettings::option_as_dir(KphpOption<std::string> &path_option) noexc
   path_option.value_ = as_dir(path_option.value_);
 }
 
-bool CompilerSettings::is_static_lib_mode() const {
-  return mode.get() == "lib";
-}
-
-bool CompilerSettings::is_server_mode() const {
-  return mode.get() == "server";
-}
-
-bool CompilerSettings::is_cli_mode() const {
-  return mode.get() == "cli";
-}
-
 bool CompilerSettings::is_composer_enabled() const {
   return !composer_root.get().empty();
 }
@@ -229,9 +217,28 @@ void CompilerSettings::init() {
   option_as_dir(kphp_src_path);
   functions_file.value_ = get_full_path(functions_file.get());
   runtime_sha256_file.value_ = get_full_path(runtime_sha256_file.get());
+  if (link_file.value_.empty()) {
+    if (mode.get() == "k2-component") {
+      link_file.value_ = kphp_src_path.get() + "/objs/libkphp-light-runtime.a";
+    } else {
+      link_file.value_ = kphp_src_path.get() + "/objs/libkphp-full-runtime.a";
+    }
+  }
   link_file.value_ = get_full_path(link_file.get());
+  if (functions_file.value_.empty()) {
+    if (mode.get() == "k2-component") {
+      functions_file.value_ = kphp_src_path.get() + "/builtin-functions/kphp-light/functions.txt";
+    } else {
+      functions_file.value_ = kphp_src_path.get() + "/builtin-functions/kphp-full/_functions.txt";
+    }
+  }
+  functions_file.value_ = get_full_path(functions_file.get());
 
-  if (is_static_lib_mode()) {
+  if (k2_component_name.get() != "KPHP" || k2_component_is_oneshot.get()) {
+    kphp_error(mode.get() == "k2-component", "Options \"k2-component-name\" and \"oneshot\" available only fore k2-component mode");
+  }
+
+  if (mode.get() == "lib") {
     if (!tl_schema_file.get().empty()) {
       throw std::runtime_error{"Option " + tl_schema_file.get_env_var() + " is forbidden for static lib mode"};
     }
@@ -265,10 +272,6 @@ void CompilerSettings::init() {
     throw std::runtime_error{"Option " + threads_count.get_env_var() + " is expected to be <= " + std::to_string(MAX_THREADS_COUNT)};
   }
 
-  if (globals_split_count.get() == 0) {
-    throw std::runtime_error{"globals-split-count may not be equal to zero"};
-  }
-
   for (std::string &include : includes.value_) {
     include = as_dir(include);
   }
@@ -300,7 +303,7 @@ void CompilerSettings::init() {
   if (!no_pch.get()) {
     ss << " -Winvalid-pch -fpch-preprocess";
   }
-  if (dynamic_incremental_linkage.get()) {
+  if (mode.get() == "k2-component" ||  dynamic_incremental_linkage.get()) {
     ss << " -fPIC";
   }
   if (vk::contains(cxx.get(), "clang")) {
@@ -314,6 +317,14 @@ void CompilerSettings::init() {
     #error unsupported __cplusplus value
   #endif
 
+  if (mode.get() == "k2-component") {
+    // for now k2-component must be compiled with clang and statically linked libc++
+    ss << " -stdlib=libc++";
+  } else {
+    // default value is false
+    // when we build using full runtime, we should force to use runtime as static lib
+    force_link_runtime.value_ = true;
+  }
   std::string cxx_default_flags = ss.str();
 
   cxx_toolchain_option.value_ = !cxx_toolchain_dir.value_.empty() ? ("-B" + cxx_toolchain_dir.value_) : "";
@@ -403,7 +414,11 @@ void CompilerSettings::init() {
   option_as_dir(dest_dir);
   dest_cpp_dir.value_ = dest_dir.get() + "kphp/";
   dest_objs_dir.value_ = dest_dir.get() + "objs/";
-  binary_path.value_ = dest_dir.get() + mode.get();
+  if (mode.get() == "k2-component") {
+    binary_path.value_ = dest_dir.get() + k2_component_name.get() + ".so";
+  } else {
+    binary_path.value_ = dest_dir.get() + mode.get();
+  }
   performance_analyze_report_path.value_ = dest_dir.get() + "performance_issues.json";
   generated_runtime_path.value_ = kphp_src_path.get() + "objs/generated/auto/runtime/";
 

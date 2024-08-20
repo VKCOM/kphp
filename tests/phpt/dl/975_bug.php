@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 echo 3.7;
 echo 2 . 3.7;

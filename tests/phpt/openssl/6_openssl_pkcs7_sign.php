@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 
 function get_cert_data() : string {

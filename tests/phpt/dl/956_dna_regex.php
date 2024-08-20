@@ -1,4 +1,4 @@
-@ok benchmark_but_too_long
+@ok benchmark_but_too_long k2_skip
 <?php
 #
 # The Computer Language Shootout

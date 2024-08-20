@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 
 $p1 = unpack("P3", pack ('P*', 123, '8589934592', PHP_INT_MAX));

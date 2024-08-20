@@ -37,18 +37,18 @@ string f$uniqid(const string &prefix, bool more_entropy) {
 
   size_t buf_size = 30;
   char buf[buf_size];
-  static_SB.clean() << prefix;
+  kphp_runtime_context.static_SB.clean() << prefix;
 
   if (more_entropy) {
     snprintf(buf, buf_size, "%08x%05x%.8f", sec, usec, f$lcg_value() * 10);
-    static_SB.append(buf, 23);
+    kphp_runtime_context.static_SB.append(buf, 23);
   } else {
     snprintf(buf, buf_size, "%08x%05x", sec, usec);
-    static_SB.append(buf, 13);
+    kphp_runtime_context.static_SB.append(buf, 13);
   }
 
   dl::leave_critical_section();
-  return static_SB.str();
+  return kphp_runtime_context.static_SB.str();
 }
 
 
@@ -533,6 +533,11 @@ void do_print_r(const mixed &v, int depth) {
       *coub << shift << ")\n";
       break;
     }
+    case mixed::type::OBJECT: {
+      php_warning("print_r used on object");
+      *coub << v.as_object()->get_class();
+      break;
+    }
     default:
       __builtin_unreachable();
   }
@@ -577,6 +582,12 @@ void do_var_dump(const mixed &v, int depth) {
       }
 
       *coub << shift << "}";
+      break;
+    }
+    case mixed::type::OBJECT: {
+      php_warning("var_dump used on object");
+      auto s = string(v.as_object()->get_class(), (string::size_type)strlen(v.as_object()->get_class()));
+      *coub << shift << "string(" << (int)s.size() << ") \"" << s << '"';
       break;
     }
     default:
@@ -654,6 +665,10 @@ void do_var_export(const mixed &v, int depth, char endc = 0) {
       *coub << shift << ")";
       break;
     }
+    case mixed::type::OBJECT: {
+      *coub << shift << v.get_type_or_class_name();
+      break;
+    }
     default:
       __builtin_unreachable();
   }
@@ -710,10 +725,10 @@ string f$cp1251(const string &utf8_string) {
 
 void f$kphp_set_context_on_error(const array<mixed> &tags, const array<mixed> &extra_info, const string& env) {
   auto &json_logger = vk::singleton<JsonLogger>::get();
-  static_SB.clean();
+  kphp_runtime_context.static_SB.clean();
 
-  const auto get_json_string_from_SB_without_brackets = [] {
-    vk::string_view json_str{static_SB.c_str(), static_SB.size()};
+  const auto get_json_string_from_SB_without_brackets = [&] {
+    vk::string_view json_str{kphp_runtime_context.static_SB.c_str(), kphp_runtime_context.static_SB.size()};
     php_assert(json_str.size() >= 2 && json_str.front() == '{' && json_str.back() == '}');
     json_str.remove_prefix(1);
     json_str.remove_suffix(1);
@@ -725,14 +740,14 @@ void f$kphp_set_context_on_error(const array<mixed> &tags, const array<mixed> &e
     dl::CriticalSectionGuard critical_section;
     json_logger.set_tags(tags_json);
   }
-  static_SB.clean();
+  kphp_runtime_context.static_SB.clean();
 
   if (impl_::JsonEncoder(JSON_FORCE_OBJECT, false).encode(extra_info)) {
     auto extra_info_json = get_json_string_from_SB_without_brackets();
     dl::CriticalSectionGuard critical_section;
     json_logger.set_extra_info(extra_info_json);
   }
-  static_SB.clean();
+  kphp_runtime_context.static_SB.clean();
 
   dl::CriticalSectionGuard critical_section;
   json_logger.set_env({env.c_str(), env.size()});

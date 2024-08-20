@@ -3,6 +3,8 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
+
+#include <cstdint>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -116,6 +118,8 @@ public:
   KphpOption<std::string> mode;
   KphpOption<std::string> link_file;
   KphpOption<std::vector<std::string>> includes;
+  KphpOption<std::string> runtime_and_common_src;
+  KphpOption<bool> force_link_runtime;
 
   KphpOption<std::string> dest_dir;
   KphpOption<std::string> user_binary_path;
@@ -128,7 +132,6 @@ public:
   KphpOption<bool> no_make;
   KphpOption<uint64_t> jobs_count;
   KphpOption<uint64_t> threads_count;
-  KphpOption<uint64_t> globals_split_count;
 
   KphpOption<bool> require_functions_typing;
   KphpOption<bool> require_class_typing;
@@ -146,6 +149,9 @@ public:
   KphpOption<std::string> compilation_metrics_file;
   KphpOption<std::string> override_kphp_version;
   KphpOption<std::string> php_code_version;
+  KphpOption<std::string> k2_component_name;
+
+  KphpOption<bool> k2_component_is_oneshot;
 
   KphpOption<std::string> cxx;
   KphpOption<std::string> cxx_toolchain_dir;
@@ -185,9 +191,6 @@ public:
   KphpImplicitOption tl_classname_prefix;
 
   std::string get_version() const;
-  bool is_static_lib_mode() const;
-  bool is_server_mode() const;
-  bool is_cli_mode() const;
   bool is_composer_enabled() const; // reports whether composer compatibility mode is on
   color_settings get_color_settings() const;
 

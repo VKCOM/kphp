@@ -1,12 +1,19 @@
 <?php
 
+#ifndef KPHP
 require_once 'lib_autoload.php';
+#endif
 
+/**
+ * @kphp-lib-export
+ */
+function example1_run() {
 echo "[example1] index: global run\n";
 
 echo "[example1] index: require_once 'srcfile.php'\n";
 require_once 'srcfile.php';
 require_once 'srcfile2.php';
+}
 
 /**
  * @kphp-lib-export

@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 
   function dec2hex($dec) {

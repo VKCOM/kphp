@@ -1,4 +1,4 @@
-@ok benchmark
+@ok benchmark k2_skip
 <?php
 #ifndef KPHP
 function create_vector ($n, $x) {

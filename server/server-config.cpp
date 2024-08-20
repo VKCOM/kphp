@@ -55,6 +55,9 @@ int ServerConfig::init_from_config(const char *config_path) noexcept {
     if (auto err_msg = set_cluster_name(cluster_name.data(), false)) {
       throw std::runtime_error(err_msg);
     }
+    if (auto environment = node["environment"]) {
+      environment_ = environment.as<std::string>();
+    }
   } catch (const std::exception &e) {
     kprintf("--server-config, incorrect server config: '%s'\n%s\n", config_path, e.what());
     return -1;

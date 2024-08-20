@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 KPHP_COMPOSER_ROOT={dir}
 /restricted to call VK\\Strings\\Internals123\\Append123::notExportedF\(\), it's internal in #vk\/strings\/@internals/
 /in VK\\RPC\\Rpc123::callToStringsInternals/

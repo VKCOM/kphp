@@ -20,6 +20,7 @@
 #include "compiler/data/src-dir.h"
 #include "compiler/data/src-file.h"
 #include "compiler/name-gen.h"
+#include "compiler/runtime_build_info.h"
 
 namespace {
 
@@ -121,6 +122,16 @@ void CompilerCore::finish() {
 void CompilerCore::register_settings(CompilerSettings *settings) {
   kphp_assert (settings_ == nullptr);
   settings_ = settings;
+
+  if (settings->mode.get() == "cli") {
+    output_mode = OutputMode::cli;
+  } else if (settings->mode.get() == "lib") {
+    output_mode = OutputMode::lib;
+  } else if (settings->mode.get() == "k2-component") {
+    output_mode = OutputMode::k2_component;
+  } else {
+    output_mode = OutputMode::server;
+  }
 }
 
 const CompilerSettings &CompilerCore::settings() const {
@@ -196,6 +207,11 @@ std::string CompilerCore::search_required_file(const std::string &file_name) con
 FFIRoot &CompilerCore::get_ffi_root() {
   return ffi;
 }
+
+OutputMode CompilerCore::get_output_mode() const {
+  return output_mode;
+}
+
 
 vk::string_view CompilerCore::calc_relative_name(SrcFilePtr file, bool builtin) const {
   vk::string_view full_file_name = file->file_name;
@@ -463,59 +479,72 @@ VarPtr CompilerCore::create_var(const std::string &name, VarData::Type type) {
   return var;
 }
 
-VarPtr CompilerCore::get_global_var(const std::string &name, VarData::Type type,
-                                    VertexPtr init_val, bool *is_new_inserted) {
-  auto *node = global_vars_ht.at(vk::std_hash(name));
+VarPtr CompilerCore::get_global_var(const std::string &name, VertexPtr init_val) {
+  auto *node = globals_ht.at(vk::std_hash(name));
+
+  if (!node->data) {
+    AutoLocker<Lockable *> locker(node);
+    if (!node->data) {
+      node->data = create_var(name, VarData::var_global_t);
+      node->data->init_val = init_val;
+      node->data->is_builtin_runtime = VarData::does_name_eq_any_builtin_runtime(name);
+    }
+  }
+
+  return node->data;
+}
+
+VarPtr CompilerCore::get_constant_var(const std::string &name, VertexPtr init_val, bool *is_new_inserted) {
+  auto *node = constants_ht.at(vk::std_hash(name));
   VarPtr new_var;
   if (!node->data) {
     AutoLocker<Lockable *> locker(node);
     if (!node->data) {
-      new_var = create_var(name, type);
+      new_var = create_var(name, VarData::var_const_t);
       new_var->init_val = init_val;
       node->data = new_var;
     }
   }
 
-  if (init_val) {
+  // when a string 'str' meets in several places in php code (same for [1,2,3] and other consts)
+  // it's created by a thread that first found it, and all others just ref to the same node
+  // here we make var->init_val->location stable, as it's sometimes used in code generation (locations of regexps, for example)
+  if (!new_var) {
     AutoLocker<Lockable *> locker(node);
-    // to avoid of unstable locations, order them
-    if (node->data->init_val && node->data->init_val->get_location() < init_val->get_location()) {
+    if (node->data->init_val->get_location() < init_val->get_location()) {
       std::swap(node->data->init_val, init_val);
     }
   }
 
-  VarPtr var = node->data;
   if (is_new_inserted) {
     *is_new_inserted = static_cast<bool>(new_var);
   }
+
+  VarPtr var = node->data;
+  // assert that one and the same init_val leads to one and the same var
   if (!new_var) {
+    kphp_assert(init_val);
+    kphp_assert(var->init_val->type() == init_val->type());
     kphp_assert_msg(var->name == name, fmt_format("bug in compiler (hash collision) {} {}", var->name, name));
-    if (init_val) {
-      kphp_assert(var->init_val->type() == init_val->type());
-      switch (init_val->type()) {
-        case op_string:
-          kphp_assert(var->init_val->get_string() == init_val->get_string());
-          break;
-        case op_conv_regexp: {
-          std::string &new_regexp = init_val.as<op_conv_regexp>()->expr().as<op_string>()->str_val;
-          std::string &hashed_regexp = var->init_val.as<op_conv_regexp>()->expr().as<op_string>()->str_val;
-          std::string msg = "hash collision: " + new_regexp + "; " + hashed_regexp;
 
-          kphp_assert_msg(hashed_regexp == new_regexp, msg.c_str());
-          break;
-        }
-        case op_array: {
-          std::string new_array_repr = VertexPtrFormatter::to_string(init_val);
-          std::string hashed_array_repr = VertexPtrFormatter::to_string(var->init_val);
-
-          std::string msg = "hash collision: " + new_array_repr + "; " + hashed_array_repr;
-
-          kphp_assert_msg(new_array_repr == hashed_array_repr, msg.c_str());
-          break;
-        }
-        default:
-          break;
+    switch (init_val->type()) {
+      case op_string:
+        kphp_assert(var->init_val->get_string() == init_val->get_string());
+        break;
+      case op_conv_regexp: {
+        const std::string &new_regexp = init_val.as<op_conv_regexp>()->expr().as<op_string>()->str_val;
+        const std::string &hashed_regexp = var->init_val.as<op_conv_regexp>()->expr().as<op_string>()->str_val;
+        kphp_assert_msg(hashed_regexp == new_regexp, fmt_format("hash collision of regexp: {} vs {}", new_regexp, hashed_regexp));
+        break;
       }
+      case op_array: {
+        std::string new_array_repr = VertexPtrFormatter::to_string(init_val);
+        std::string hashed_array_repr = VertexPtrFormatter::to_string(var->init_val);
+        kphp_assert_msg(new_array_repr == hashed_array_repr, fmt_format("hash collision of arrays: {} vs {}", new_array_repr, hashed_array_repr));
+        break;
+      }
+      default:
+        break;
     }
   }
   return var;
@@ -544,11 +573,20 @@ VarPtr CompilerCore::create_local_var(FunctionPtr function, const std::string &n
 }
 
 std::vector<VarPtr> CompilerCore::get_global_vars() {
-  // static class variables are registered as globals, but if they're unused,
-  // then their types were never calculated; we don't need to export them to vars.cpp
-  return global_vars_ht.get_all_if([](VarPtr v) {
-    return v->tinf_node.was_recalc_finished_at_least_once();
+  return globals_ht.get_all_if([](VarPtr v) {
+    // traits' static vars are added at the moment of parsing (class-members.cpp)
+    // but later never used, and tinf never executed for them
+    if (v->is_class_static_var() && v->class_id->is_trait()) {
+      return false;
+    }
+    // static vars for classes that are unused, are also present here
+    // probably, in the future, we'll detect unused globals and don't export them to C++ even as Unknown
+    return true;
   });
+}
+
+std::vector<VarPtr> CompilerCore::get_constants_vars() {
+  return constants_ht.get_all();
 }
 
 std::vector<ClassPtr> CompilerCore::get_classes() {
@@ -597,6 +635,18 @@ const Index &CompilerCore::get_index() {
   return cpp_index;
 }
 
+const Index &CompilerCore::get_runtime_index() {
+  return runtime_sources_index;
+}
+
+const Index &CompilerCore::get_runtime_core_index() {
+  return runtime_core_sources_index;
+}
+
+const Index &CompilerCore::get_common_index() {
+  return common_sources_index;
+}
+
 File *CompilerCore::get_file_info(std::string &&file_name) {
   return cpp_index.insert_file(std::move(file_name));
 }
@@ -609,6 +659,48 @@ void CompilerCore::init_dest_dir() {
   cpp_dir = settings().dest_cpp_dir.get();
   cpp_index.sync_with_dir(cpp_dir);
   cpp_dir = cpp_index.get_dir();
+}
+
+static std::vector<std::string> get_runtime_core_sources() {
+#ifdef RUNTIME_LIGHT
+  return split(RUNTIME_CORE_SOURCES, ';');
+#else
+  return {};
+#endif
+}
+
+static std::vector<std::string> get_runtime_sources() {
+#ifdef RUNTIME_LIGHT
+  return split(RUNTIME_SOURCES, ';');
+#else
+  return {};
+#endif
+}
+
+static std::vector<std::string> get_common_sources() {
+#ifdef RUNTIME_LIGHT
+  return split(COMMON_SOURCES, ';');
+#else
+  return {};
+#endif
+}
+
+void CompilerCore::init_runtime_and_common_srcs_dir() {
+  runtime_core_sources_dir = settings().runtime_and_common_src.get() + "runtime-core/";
+  runtime_core_sources_index.sync_with_dir(runtime_core_sources_dir);
+  runtime_core_sources_dir = runtime_core_sources_index.get_dir();
+  runtime_core_sources_index.filter_with_whitelist(get_runtime_core_sources());
+
+  runtime_sources_dir = settings().runtime_and_common_src.get() + "runtime-light/";
+  runtime_sources_index.sync_with_dir(runtime_sources_dir);
+  runtime_sources_dir = runtime_sources_index.get_dir(); // As in init_dest_dir, IDK what is it for
+  runtime_sources_index.filter_with_whitelist(get_runtime_sources());
+
+
+  common_sources_dir = settings().runtime_and_common_src.get() + "common/";
+  common_sources_index.sync_with_dir(common_sources_dir);
+  common_sources_dir = common_sources_index.get_dir(); // As in init_dest_dir, IDK what is it for
+  common_sources_index.filter_with_whitelist(get_common_sources());
 }
 
 bool CompilerCore::try_require_file(SrcFilePtr file) {

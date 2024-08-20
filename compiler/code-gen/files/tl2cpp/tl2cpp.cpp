@@ -4,8 +4,9 @@
 
 #include "compiler/code-gen/files/tl2cpp/tl2cpp.h"
 
-#include "common/tlo-parsing/tlo-parsing.h"
+#include <sstream>
 
+#include "common/tlo-parsing/tlo-parsing.h"
 #include "compiler/code-gen/files/tl2cpp/tl-module.h"
 #include "compiler/code-gen/files/tl2cpp/tl2cpp-utils.h"
 #include "compiler/code-gen/naming.h"
@@ -89,7 +90,7 @@ void write_rpc_server_functions(CodeGenerator &W) {
   W << deps << NL;
   W << ExternInclude{G->settings().runtime_headers.get()} << NL;
   FunctionSignatureGenerator(W) << "class_instance<C$VK$TL$RpcFunction> f$rpc_server_fetch_request() " << BEGIN;
-  W << "auto function_magic = static_cast<unsigned int>(rpc_fetch_int());" << NL;
+  W << "auto function_magic = static_cast<unsigned int>(f$fetch_int());" << NL;
   W << "switch(function_magic) " << BEGIN;
   for (const auto &f : kphp_functions) {
     W << fmt_format("case {:#010x}: ", static_cast<unsigned int>(f->id)) << BEGIN;
@@ -147,13 +148,20 @@ void write_tl_query_handlers(CodeGenerator &W) {
     // a hash table that contains all TL functions;
     // it's passed to the runtime just like the fetch wrapper
     W << "array<tl_storer_ptr> gen$tl_storers_ht;" << NL;
+    // count the number of TL storers
+
     FunctionSignatureGenerator(W) << "void fill_tl_storers_ht() " << BEGIN;
+    std::stringstream ss{}; // TODO: use std::transform_reduce or something like that
+    int32_t tl_storers_nums = 0;
     for (const auto &module_name : modules_with_functions) {
+      tl_storers_nums += modules[module_name].target_functions.size();
       for (const auto &f : modules[module_name].target_functions) {
-        W << "gen$tl_storers_ht.set_value(" << register_tl_const_str(f->name) << ", " << "&" << cpp_tl_struct_name("f_", f->name) << "::store, "
-          << hash_tl_const_str(f->name) << "L);" << NL;
+        ss << "gen$tl_storers_ht.set_value(" << register_tl_const_str(f->name) << ", " << "&" << cpp_tl_struct_name("f_", f->name) << "::store, "
+           << hash_tl_const_str(f->name) << "L);\n";
       }
     }
+    W << fmt_format("gen$tl_storers_ht.reserve({}, false);", tl_storers_nums) << NL;
+    W << ss.str();
     W << END << NL;
     W << CloseFile();
   }

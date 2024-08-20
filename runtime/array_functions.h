@@ -10,7 +10,8 @@
 #include "common/type_traits/function_traits.h"
 #include "common/vector-product.h"
 
-#include "runtime/kphp_core.h"
+#include "runtime-core/runtime-core.h"
+#include "runtime/context/runtime-context.h"
 #include "runtime/math_functions.h"
 #include "runtime/string_functions.h"
 
@@ -323,7 +324,7 @@ string f$implode(const string &s, const array<T> &a) {
 
   // fallback to the generic iterator + string_buffer solution
 
-  string_buffer &SB = static_SB;
+  string_buffer &SB = kphp_runtime_context.static_SB;
   SB.clean();
 
   auto it = a.begin(), it_end = a.end();

@@ -6,6 +6,7 @@
 
 #include "common/fast-backtrace.h"
 
+#include "runtime/context/runtime-context.h"
 #include "runtime/critical_section.h"
 #include "runtime/string_functions.h"
 
@@ -85,18 +86,17 @@ Exception new_Exception(const string &file, int64_t line, const string &message,
   return f$_exception_set_location(f$Exception$$__construct(Exception().alloc(), message, code), file, line);
 }
 
-
 Exception f$err(const string &file, int64_t line, const string &code, const string &desc) {
-  return new_Exception(file, line, (static_SB.clean() << "ERR_" << code << ": " << desc).str(), 0);
+  return new_Exception(file, line, (kphp_runtime_context.static_SB.clean() << "ERR_" << code << ": " << desc).str(), 0);
 }
 
 string exception_trace_as_string(const Throwable &e) {
-  static_SB.clean();
+  kphp_runtime_context.static_SB.clean();
   for (int64_t i = 0; i < e->trace.count(); i++) {
     array<string> current = e->trace.get_value(i);
-    static_SB << '#' << i << ' ' << current.get_value(string("file", 4)) << ": " << current.get_value(string("function", 8)) << "\n";
+    kphp_runtime_context.static_SB << '#' << i << ' ' << current.get_value(string("file", 4)) << ": " << current.get_value(string("function", 8)) << "\n";
   }
-  return static_SB.str();
+  return kphp_runtime_context.static_SB.str();
 }
 
 void exception_initialize(const Throwable &e, const string &message, int64_t code) {

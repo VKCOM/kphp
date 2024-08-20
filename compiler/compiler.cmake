@@ -3,6 +3,14 @@ set(KPHP_COMPILER_DIR ${BASE_DIR}/compiler)
 set(KPHP_COMPILER_AUTO_DIR ${AUTO_DIR}/compiler)
 set(KEYWORDS_SET ${KPHP_COMPILER_AUTO_DIR}/keywords_set.hpp)
 set(KEYWORDS_GPERF ${KPHP_COMPILER_DIR}/keywords.gperf)
+if (COMPILE_RUNTIME_LIGHT)
+    prepend(RUNTIME_BUILD_INFO ${KPHP_COMPILER_AUTO_DIR}/
+        common_sources.h
+        runtime_sources.h
+        runtime_core_sources.h
+        runtime_compile_flags.h)
+endif()
+
 
 prepend(KPHP_COMPILER_COMMON ${COMMON_DIR}/
         dl-utils-lite.cpp
@@ -46,8 +54,7 @@ prepend(KPHP_COMPILER_DATA_SOURCES data/
         src-dir.cpp
         src-file.cpp
         var-data.cpp
-        ffi-data.cpp
-        vars-collector.cpp)
+        ffi-data.cpp)
 
 prepend(KPHP_COMPILER_INFERRING_SOURCES inferring/
         expr-node.cpp
@@ -72,11 +79,14 @@ prepend(KPHP_COMPILER_INFERRING_SOURCES inferring/
 prepend(KPHP_COMPILER_CODEGEN_SOURCES code-gen/
         code-gen-task.cpp
         code-generator.cpp
+        const-globals-batched-mem.cpp
         declarations.cpp
         files/cmake-lists-txt.cpp
+        files/const-vars-init.cpp
         files/function-header.cpp
         files/function-source.cpp
-        files/global_vars_memory_stats.cpp
+        files/global-vars-memory-stats.cpp
+        files/global-vars-reset.cpp
         files/init-scripts.cpp
         files/json-encoder-tags.cpp
         files/lib-header.cpp
@@ -91,8 +101,6 @@ prepend(KPHP_COMPILER_CODEGEN_SOURCES code-gen/
         files/shape-keys.cpp
         files/tracing-autogen.cpp
         files/type-tagger.cpp
-        files/vars-cpp.cpp
-        files/vars-reset.cpp
         includes.cpp
         raw-data.cpp
         vertex-compiler.cpp
@@ -224,6 +232,7 @@ endif()
 list(APPEND KPHP_COMPILER_SOURCES
      ${KPHP_COMPILER_COMMON}
      ${KEYWORDS_SET}
+     ${RUNTIME_BUILD_INFO}
      ${AUTO_DIR}/compiler/rewrite-rules/early_opt.cpp)
 
 vk_add_library(kphp2cpp_src OBJECT ${KPHP_COMPILER_SOURCES})
@@ -275,3 +284,7 @@ target_link_options(kphp2cpp PRIVATE ${NO_PIE})
 set_target_properties(kphp2cpp PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${BIN_DIR})
 
 add_dependencies(kphp2cpp_src auto_vertices_generation_target)
+if(COMPILE_RUNTIME_LIGHT)
+    add_compile_definitions(RUNTIME_LIGHT)
+    add_dependencies(kphp2cpp php_lib_version_sha_256)
+endif()

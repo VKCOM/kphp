@@ -5,7 +5,8 @@
 #pragma once
 
 #include <sys/cdefs.h>
+#include <sys/utsname.h>
 
+utsname* cached_uname();
 int epoll_exclusive_supported();
 int madvise_madv_free_supported();
-

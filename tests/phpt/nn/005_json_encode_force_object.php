@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
   $empty = array();
   var_dump(json_encode($empty));

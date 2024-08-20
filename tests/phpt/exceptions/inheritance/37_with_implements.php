@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 
 // Test classes that both extend Exception and implement some PHP interface.

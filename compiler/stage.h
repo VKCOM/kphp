@@ -4,7 +4,10 @@
 
 #pragma once
 
+#include <cstdint>
 #include <unistd.h>
+
+#include "common/exit-codes.h"
 
 #include "compiler/data/data_ptr.h"
 #include "compiler/kphp_assert.h"
@@ -23,6 +26,7 @@ struct StageInfo {
   Location location;
   bool global_error_flag{false};
   uint32_t cnt_errors{0};
+  ExitCode exit_code = ExitCode::KPHP_TO_CPP_STAGE;
 };
 
 StageInfo *get_stage_info_ptr();
@@ -40,6 +44,9 @@ void print_current_location_on_error(FILE *f);
 
 void set_name(std::string &&name);
 const std::string &get_name();
+
+void set_exit_code(ExitCode code);
+ExitCode get_exit_code();
 
 void set_file(SrcFilePtr file);
 void set_function(FunctionPtr function);

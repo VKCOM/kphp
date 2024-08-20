@@ -19,6 +19,7 @@ struct CGContext {
   std::vector<int> catch_label_used;
   FunctionPtr parent_func;
   bool resumable_flag{false};
+  bool interruptible_flag{false};
   bool namespace_opened{false};
   int inside_macro{0};
   size_t inside_null_coalesce_fallback{0};

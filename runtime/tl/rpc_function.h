@@ -4,9 +4,11 @@
 
 #pragma once
 
-#include "runtime/refcountable_php_classes.h"
+#include <memory>
+
 #include "common/algorithms/hashes.h"
 #include "common/wrappers/string_view.h"
+#include "runtime-core/class-instance/refcountable-php-classes.h"
 
 struct tl_func_base;
 

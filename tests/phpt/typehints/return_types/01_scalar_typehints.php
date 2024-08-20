@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 const INT_VAL = 10;
 const FLOAT_VAL = 10.5;

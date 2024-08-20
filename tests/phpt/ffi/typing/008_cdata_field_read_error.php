@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /Field \$cdata not found in class FFI\\CData_int32/
 <?php
 

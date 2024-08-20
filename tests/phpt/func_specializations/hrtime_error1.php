@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /pass mixed to argument \$x of ensure_array/
 <?php
 

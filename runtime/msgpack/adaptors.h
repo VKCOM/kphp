@@ -7,7 +7,7 @@
 
 #include <stdexcept>
 
-#include "runtime/kphp_core.h"
+#include "runtime-core/runtime-core.h"
 #include "runtime/msgpack/adaptor_base.h"
 #include "runtime/msgpack/check_instance_depth.h"
 #include "runtime/msgpack/object.h"
@@ -497,6 +497,9 @@ struct pack<mixed> {
         break;
       case mixed::type::ARRAY:
         packer.pack(v.as_array());
+        break;
+      case mixed::type::OBJECT:
+        php_warning("Objects (%s) are not supported in msgpack", v.get_type_or_class_name());
         break;
       default:
         __builtin_unreachable();

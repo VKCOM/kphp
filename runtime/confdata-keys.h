@@ -9,12 +9,13 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <memory>
 
 #include "common/mixin/not_copyable.h"
 #include "common/wrappers/iterator_range.h"
 #include "common/wrappers/string_view.h"
 
-#include "runtime/kphp_core.h"
+#include "runtime-core/runtime-core.h"
 
 enum class ConfdataFirstKeyType {
   simple_key,

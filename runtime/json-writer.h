@@ -4,7 +4,8 @@
 
 #pragma once
 
-#include "runtime/kphp_core.h"
+#include "common/mixin/not_copyable.h"
+#include "runtime-core/runtime-core.h"
 
 #include <string_view>
 

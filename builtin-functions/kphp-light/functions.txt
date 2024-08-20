@@ -1,0 +1,227 @@
+<?php
+
+define('PHP_INT_MIN', -9223372036854775808);
+define('PHP_INT_SIZE', 8);
+define('PHP_EOL', "\n");
+
+/** @var mixed $_SERVER */
+global $_SERVER;
+/** @var mixed $_GET */
+global $_GET;
+/** @var mixed $_POST */
+global $_POST;
+/** @var mixed $_FILES */
+global $_FILES;
+/** @var mixed $_COOKIE */
+global $_COOKIE;
+/** @var mixed $_REQUEST */
+global $_REQUEST;
+/** @var mixed $_ENV */
+global $_ENV;
+/** @var mixed $argc */
+global $argc;
+/** @var mixed $argv */
+global $argv;
+
+function boolval ($v ::: any) ::: bool;
+function intval ($v ::: mixed) ::: int;
+function floatval ($v ::: mixed) ::: float;
+function strval ($v ::: mixed) ::: string;
+
+/** @kphp-extern-func-info interruptible */
+function exit($code = 0) ::: void;
+
+function die($code = 0) ::: void;
+
+function ob_clean() ::: void;
+function ob_end_clean() ::: bool;
+function ob_get_clean() ::: string | false;
+function ob_get_contents() ::: string;
+function ob_start ($x ::: string = "") ::: void;
+function ob_flush () ::: void;
+function ob_end_flush () ::: bool;
+function ob_get_flush () ::: string | false;
+function ob_get_length () ::: int | false;
+function ob_get_level () ::: int;
+
+function print_r ($v ::: any, $buffered ::: bool = false) ::: string;
+function var_export ($v ::: any, $buffered ::: bool = false) ::: string;
+function print ($v ::: string) ::: int;
+function echo ($v ::: string) ::: void;
+function dbg_echo ($v ::: string) ::: void;
+function var_dump ($v ::: any) ::: void;
+
+function empty ($val ::: any) ::: bool;
+function count ($val ::: any) ::: int;
+function sizeof ($val ::: any) ::: int;
+function gettype ($v ::: any) ::: string;
+function is_scalar ($v ::: any) ::: bool;
+function is_numeric ($v ::: mixed) ::: bool;
+function is_null ($v ::: any) ::: bool;
+function is_bool ($v ::: mixed) ::: bool;
+function is_int ($v ::: mixed) ::: bool;
+function is_integer ($v ::: mixed) ::: bool;
+function is_long ($v ::: mixed) ::: bool;
+function is_finite ($v ::: float) ::: bool;
+function is_infinite ($v ::: float) ::: bool;
+function is_nan ($v ::: float) ::: bool;
+function is_float ($v ::: mixed) ::: bool;
+function is_double ($v ::: mixed) ::: bool;
+function is_real ($v ::: mixed) ::: bool;
+function is_string ($v ::: mixed) ::: bool;
+function is_array ($v ::: any) ::: bool;
+function is_object ($v ::: any) ::: bool;
+function get_class ($v ::: any) ::: string;
+function get_hash_of_class (object $klass) ::: int;
+
+function strlen ($str ::: string) ::: int;
+
+// === Fork =======================================================================================
+
+/** @kphp-extern-func-info interruptible cpp_template_call */
+function wait(future<any> | false $id, float $timeout = -1.0) ::: ^1[*] | null;
+
+/** @kphp-extern-func-info interruptible */
+function sched_yield() ::: void;
+
+/** @kphp-extern-func-info interruptible */
+function sched_yield_sleep($timeout_ns ::: int) ::: void;
+
+// === Rpc ========================================================================================
+
+/** @kphp-tl-class */
+interface RpcFunction {
+  public function getTLFunctionName() : string;
+}
+
+/** @kphp-tl-class */
+interface RpcFunctionReturnResult {}
+
+// type ReqResult <=> RpcResponse
+/** @kphp-tl-class */
+interface RpcResponse {
+  public function getResult() : @tl\RpcFunctionReturnResult;
+  public function getHeader() : @tl\_common\Types\rpcResponseHeader;
+  public function getError() : @tl\_common\Types\rpcResponseError;
+  public function isError() : bool;
+}
+
+/**
+ * 'KphpRpcRequestsExtraInfo' is a builtin KPHP class. It may accumulate extra information
+ * about RPC requests sent in both typed and untyped versions of rpc_tl_query builtins.
+ */
+final class KphpRpcRequestsExtraInfo {
+    /**
+    * 'get' returns an array of extra information (request size) about sent RPC requests.
+    *
+    * @return tuple(int)[]
+    */
+    public function get ();
+}
+
+/** @kphp-extern-func-info interruptible */
+function rpc_tl_query($actor ::: string, $arr ::: array, $timeout ::: float = -1.0, $ignore_answer ::: bool = false, \KphpRpcRequestsExtraInfo $requests_extra_info = null, $need_responses_extra_info ::: bool = false) ::: int[];
+
+/** @kphp-extern-func-info interruptible */
+function typed_rpc_tl_query($actor ::: string, @tl\RpcFunction[] $query_functions, $timeout ::: float = -1.0, $ignore_answer ::: bool = false, \KphpRpcRequestsExtraInfo $requests_extra_info = null, $need_responses_extra_info ::: bool = false) ::: int[];
+
+/** @kphp-extern-func-info interruptible */
+function rpc_tl_query_result($query_ids ::: array) ::: mixed[][];
+
+/** @kphp-extern-func-info interruptible */
+function typed_rpc_tl_query_result(int[] $query_ids) ::: @tl\RpcResponse[];
+
+
+// === Component ==================================================================================
+
+class ComponentQuery {
+    private function __construct() ::: \ComponentQuery;
+}
+
+/** @kphp-extern-func-info interruptible */
+function component_get_http_query() ::: void;
+
+/** @kphp-extern-func-info interruptible */
+function component_client_send_query($name ::: string, $message ::: string) ::: ComponentQuery;
+/** @kphp-extern-func-info interruptible */
+function component_client_get_result($query ::: ComponentQuery) ::: string;
+
+/** @kphp-extern-func-info interruptible */
+function component_server_get_query() ::: string;
+/** @kphp-extern-func-info interruptible */
+function component_server_send_result($message ::: string) ::: void;
+
+class ComponentStream {
+    private function __construct() ::: \ComponentStream;
+
+    public function is_read_closed() ::: bool;
+    public function is_write_closed() ::: bool;
+    public function is_please_shutdown_write() ::: bool;
+
+    public function shutdown_write() ::: void;
+    public function please_shutdown_write() ::: void;
+}
+
+function component_open_stream($name ::: string) ::: ComponentStream;
+/** @kphp-extern-func-info interruptible */
+function component_accept_stream() ::: ComponentStream;
+
+function component_stream_write_nonblock($stream ::: ComponentStream, $message ::: string) ::: int;
+function component_stream_read_nonblock($stream ::: ComponentStream) ::: string;
+/** @kphp-extern-func-info interruptible */
+function component_stream_write_exact($stream ::: ComponentStream, $message ::: string) ::: int;
+/** @kphp-extern-func-info interruptible */
+function component_stream_read_exact($stream ::: ComponentStream, $len ::: int) ::: string;
+
+function component_close_stream($stream ::: ComponentStream) ::: void;
+function component_finish_stream_processing($stream ::: ComponentStream) ::: void;
+
+// === Json =======================================================================================
+
+class JsonEncoder {
+  const rename_policy = 'none';
+  const visibility_policy = 'all';
+  const skip_if_default = false;
+  const float_precision = 0;
+
+  private function __construct();
+
+  public static function encode(object $instance, int $flags = 0, array $more = []) : string;
+  public static function decode(string $json, string $class_name) : instance<^2>;
+  public static function getLastError() : string;
+
+  // JsonEncoderOrChild::encode(...) is actually replaced by JsonEncoder::to_json_impl('JsonEncoderOrChild', ...)
+  static function to_json_impl(string $encoder_tag, object $instance, int $flags = 0, array $more = []) ::: string;
+
+  // JsonEncoderOrChild::decode(...) is actually replaced by JsonEncoder::from_json_impl('JsonEncoderOrChild', ...)
+  /** @kphp-extern-func-info cpp_template_call */
+  static function from_json_impl(string $encoder_tag, string $json, string $class_name) ::: instance<^3>;
+}
+
+function json_encode ($v ::: mixed, $options ::: int = 0) ::: string | false;
+
+function json_decode ($v ::: string, $assoc ::: bool = false) ::: mixed;
+
+// === Misc =======================================================================================
+
+/** @kphp-extern-func-info cpp_template_call */
+function instance_cast(object $instance, $to_type ::: string) ::: instance<^2>;
+
+function make_clone ($x ::: any) ::: ^1;
+
+function check_shutdown() ::: void;
+
+function warning($message ::: string) ::: void;
+/** @kphp-no-return */
+function critical_error($message ::: string) ::: void;
+
+function debug_print_string($str ::: string) ::: void;
+
+function byte_to_int($str ::: string) ::: ?int;
+function int_to_byte($v ::: int) ::: ?string;
+
+/** @kphp-extern-func-info interruptible */
+function set_timer(int $timeout, callable():void $callback) ::: void;
+
+// builtin that allows to store objects inside a mixed
+function to_mixed(object $instance) ::: mixed;

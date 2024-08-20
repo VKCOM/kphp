@@ -6,8 +6,6 @@
 
 #include <string>
 
-#include "common/type_traits/list_of_types.h"
-
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/gen-out-style.h"
 #include "compiler/data/function-data.h"
@@ -97,6 +95,11 @@ public:
     return std::move(*this);
   }
 
+  FunctionSignatureGenerator &&set_noexcept(bool new_value = true) && noexcept {
+    noexcept_ = new_value;
+    return std::move(*this);
+  }
+
   FunctionSignatureGenerator &&set_const_this(bool new_value = true) && noexcept {
     const_this_ = new_value;
     return std::move(*this);
@@ -125,6 +128,18 @@ public:
   FunctionSignatureGenerator &&set_definition(bool new_value = true) && noexcept {
     definition_ = new_value;
     return std::move(*this);
+  }
+
+  FunctionSignatureGenerator &&clear_all() &&noexcept {
+    return std::move(*this)
+      .set_is_virtual(false)
+      .set_noexcept(false)
+      .set_const_this(false)
+      .set_overridden(false)
+      .set_final(false)
+      .set_pure_virtual(false)
+      .set_inline(false)
+      .set_definition(false);
   }
 
 private:
@@ -166,7 +181,7 @@ private:
 
   bool virtual_ = false;
   bool const_this_ = false;
-  const bool noexcept_ = true;
+  bool noexcept_ = true;
   bool overridden_ = false;
   bool final_ = false;
   bool pure_virtual_ = false;
@@ -220,31 +235,8 @@ struct VarName {
   void compile(CodeGenerator &W) const {
     if (!name.empty()) {
       W << name;
-      return;
+    } else {
+      W << "v$" << var->name;
     }
-
-    if (var->is_function_static_var()) {
-      W << FunctionName(var->holder_func) << "$";
-    }
-
-    W << "v$" << var->name;
   }
-};
-
-struct GlobalVarsResetFuncName {
-  explicit GlobalVarsResetFuncName(FunctionPtr main_func, int part = -1) :
-    main_func_(main_func),
-    part_(part) {}
-
-  void compile(CodeGenerator &W) const {
-    W << FunctionName(main_func_) << "$global_vars_reset";
-    if (part_ >= 0) {
-      W << std::to_string(part_);
-    }
-    W << "()";
-  }
-
-private:
-  const FunctionPtr main_func_;
-  const int part_{-1};
 };

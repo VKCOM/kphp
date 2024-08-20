@@ -7,6 +7,7 @@
 #include "common/algorithms/compare.h"
 
 #include "compiler/code-gen/common.h"
+#include "compiler/code-gen/const-globals-batched-mem.h"
 #include "compiler/code-gen/files/json-encoder-tags.h"
 #include "compiler/code-gen/files/tl2cpp/tl2cpp-utils.h"
 #include "compiler/code-gen/includes.h"
@@ -25,10 +26,6 @@
 #include "compiler/inferring/type-data.h"
 #include "compiler/tl-classes.h"
 
-VarDeclaration VarExternDeclaration(VarPtr var) {
-  return {var, true, false};
-}
-
 VarDeclaration VarPlainDeclaration(VarPtr var) {
   return {var, false, false};
 }
@@ -41,10 +38,6 @@ VarDeclaration::VarDeclaration(VarPtr var, bool extern_flag, bool defval_flag) :
 
 void VarDeclaration::compile(CodeGenerator &W) const {
   const TypeData *type = tinf::get_type(var);
-
-  if (var->is_builtin_global()) {
-    W << CloseNamespace();
-  }
 
   kphp_assert(type->ptype() != tp_void);
 
@@ -64,10 +57,6 @@ void VarDeclaration::compile(CodeGenerator &W) const {
         "decltype(const_begin(" << VarName(var) << "))" << " " << VarName(var) << name << ";" << NL;
     }
   }
-
-  if (var->is_builtin_global()) {
-    W << OpenNamespace();
-  }
 }
 
 FunctionDeclaration::FunctionDeclaration(FunctionPtr function, bool in_header, gen_out_style style) :
@@ -83,7 +72,13 @@ void FunctionDeclaration::compile(CodeGenerator &W) const {
   switch (style) {
     case gen_out_style::tagger:
     case gen_out_style::cpp: {
-      FunctionSignatureGenerator(W) << ret_type_gen << " " << FunctionName(function) << "(" << params_gen << ")";
+      if (function->is_k2_fork) {
+        FunctionSignatureGenerator(W) << "task_t<fork_result> " << FunctionName(function) << "(" << params_gen << ")";
+      } else if (function->is_interruptible) {
+        FunctionSignatureGenerator(W) << "task_t<" << ret_type_gen << ">" << " " << FunctionName(function) << "(" << params_gen << ")";
+      } else {
+        FunctionSignatureGenerator(W) << ret_type_gen << " " << FunctionName(function) << "(" << params_gen << ")";
+      }
       break;
     }
     case gen_out_style::txt: {
@@ -122,7 +117,8 @@ void FunctionParams::declare_cpp_param(CodeGenerator &W, VertexAdaptor<op_var> v
   auto var_ptr = var->var_id;
   if (var->ref_flag) {
     W << "&";
-  } else if (var_ptr->marked_as_const || (!function->has_variadic_param && var_ptr->is_read_only)) {
+  } else if (!function->is_k2_fork && (var_ptr->marked_as_const || (!function->has_variadic_param && var_ptr->is_read_only))) {
+    // the top of k2 fork must take arguments by value (see C++ avoid reference parameters in coroutines)
     W << (!type.type->is_primitive_type() ? "const &" : "");
   }
   W << VarName(var_ptr);
@@ -416,7 +412,7 @@ void InterfaceDeclaration::compile(CodeGenerator &W) const {
     auto transform_to_src_name = [](CodeGenerator &W, const InterfacePtr &i) { W << i->src_name; };
     W << JoinValues(interface->implements, ", public ", join_mode::one_line, transform_to_src_name);
   } else {
-    W << (interface->need_virtual_modifier() ? "virtual " : "") << "abstract_refcountable_php_interface";
+    W << (interface->need_virtual_modifier() ? "virtual " : "") << (interface->may_be_mixed ? "may_be_mixed_base" : "abstract_refcountable_php_interface");
   }
   W << " " << BEGIN;
 
@@ -439,18 +435,6 @@ void InterfaceDeclaration::compile(CodeGenerator &W) const {
 
 ClassDeclaration::ClassDeclaration(ClassPtr klass) :
   klass(klass) {
-}
-
-void ClassDeclaration::declare_all_variables(VertexPtr vertex, CodeGenerator &W) const {
-  if (!vertex) {
-    return;
-  }
-  for (auto child: *vertex) {
-    declare_all_variables(child, W);
-  }
-  if (auto var = vertex.try_as<op_var>()) {
-    W << VarExternDeclaration(var->var_id);
-  }
 }
 
 std::unique_ptr<TlDependentTypesUsings> ClassDeclaration::detect_if_needs_tl_usings() const {
@@ -480,11 +464,13 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
     tl_dep_usings->compile_dependencies(W);
   }
 
-  klass->members.for_each([&](const ClassMemberInstanceField &f) {
+  ConstantsExternCollector c_mem_extern;
+  klass->members.for_each([&c_mem_extern](const ClassMemberInstanceField &f) {
     if (f.var->init_val) {
-      declare_all_variables(f.var->init_val, W);
+      c_mem_extern.add_extern_from_init_val(f.var->init_val);
     }
   });
+  W << c_mem_extern << NL;
 
   auto get_all_interfaces = [klass = this->klass] {
     auto transform_to_src_name = [](CodeGenerator &W, InterfacePtr i) { W << i->src_name.c_str(); };
@@ -509,10 +495,13 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
     W << ": public refcountable_polymorphic_php_classes<" << get_all_interfaces() << ">";
   } else if (!klass->derived_classes.empty()) {
     if (klass->need_virtual_modifier()) {
-      W << ": public refcountable_polymorphic_php_classes_virt<>";
+      W << ": public refcountable_polymorphic_php_classes_virt<>" << (klass->may_be_mixed ? ", virtual may_be_mixed_base" : "");
     } else {
-      W << ": public refcountable_polymorphic_php_classes<abstract_refcountable_php_interface>";
+      W << ": public refcountable_polymorphic_php_classes<" <<
+        (klass->may_be_mixed ? "may_be_mixed_base" : "abstract_refcountable_php_interface") << ">";
     }
+  } else if(klass->may_be_mixed) {
+    W << ": public refcountable_polymorphic_php_classes<may_be_mixed_base>";
   } else { // not polymorphic
     W << ": public refcountable_php_classes<" << klass->src_name << ">";
   }
@@ -524,7 +513,7 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
 
   compile_fields(W, klass);
 
-  if (!klass->derived_classes.empty()) {
+  if (klass->may_be_mixed || !klass->derived_classes.empty()) {
     W << "virtual ~" << klass->src_name << "() = default;" << NL;
   }
 
@@ -553,6 +542,10 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
   W << CloseFile();
 }
 
+static bool is_may_be_mixed_virtual_method(vk::string_view method_signature) {
+  return method_signature == "const char *get_class()";
+}
+
 template<class ReturnValueT>
 void ClassDeclaration::compile_class_method(FunctionSignatureGenerator &&W, ClassPtr klass, vk::string_view method_signature, const ReturnValueT &return_value) {
   const bool has_parent = (klass->parent_class && klass->parent_class->does_need_codegen()) ||
@@ -561,6 +554,12 @@ void ClassDeclaration::compile_class_method(FunctionSignatureGenerator &&W, Clas
   const bool is_overridden = has_parent && has_derived;
   const bool is_final = has_parent && !has_derived;
   const bool is_pure_virtual = klass->class_type == ClassType::interface;
+  const bool may_be_mixed = klass->may_be_mixed;
+
+  if (klass->is_interface() && may_be_mixed && is_may_be_mixed_virtual_method(method_signature)) {
+    std::move(W).clear_all();
+    return;
+  }
 
   FunctionSignatureGenerator &&signature = std::move(W)
     .set_is_virtual(is_pure_virtual || has_derived)

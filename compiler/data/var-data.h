@@ -32,6 +32,7 @@ public:
   std::string name;
   tinf::VarNode tinf_node;
   VertexPtr init_val;
+  bool had_user_assigned_val = false;
   FunctionPtr holder_func;
   ClassPtr class_id;
   std::unordered_set<VarPtr> *bad_vars = nullptr;
@@ -44,7 +45,10 @@ public:
   bool marked_as_const = false;
   bool is_read_only = true;
   bool is_foreach_reference = false;
-  int dependency_level = 0;
+  bool is_builtin_runtime = false;        // $_SERVER, $argv, etc., see PhpScriptBuiltInSuperGlobals in runtime
+  int dependency_level = 0;               // for constants only (c_str$, c_arr$, etc)
+  int offset_in_linear_mem = -1;          // for globals only (offset in g_linear_mem)
+  int batch_idx = -1;                     // for constants and globals, a number [0;N), see const-globals-batched-mem.h
 
   void set_uninited_flag(bool f);
   bool get_uninited_flag();
@@ -79,12 +83,9 @@ public:
     return type_ == var_const_t;
   }
 
-  inline bool is_builtin_global() const {
-    return type_ == var_global_t && does_name_eq_any_builtin_global(name);
-  }
-
   const ClassMemberStaticField *as_class_static_field() const;
   const ClassMemberInstanceField *as_class_instance_field() const;
 
-  static bool does_name_eq_any_builtin_global(const std::string &name);
+  static bool does_name_eq_any_language_superglobal(const std::string &name);
+  static bool does_name_eq_any_builtin_runtime(const std::string &name);
 };

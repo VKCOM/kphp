@@ -5,20 +5,24 @@
 #include "compiler/pipes/calc-locations.h"
 
 #include "compiler/data/class-data.h"
+#include "compiler/data/var-data.h"
 
 void CalcLocationsPass::on_start() {
   if (current_function->type == FunctionData::func_class_holder) {
-    current_function->class_id->members.for_each([](ClassMemberInstanceField &f) {
-      stage::set_line(f.root->location.line);
-      f.root->location = stage::get_location();
+    current_function->class_id->members.for_each([this](ClassMemberInstanceField &f) {
+      f.root->location = Location{current_function->file_id, current_function, f.root->location.line};
+      if (f.var->init_val) {
+        f.var->init_val.set_location_recursively(f.root->location);
+      }
     });
-    current_function->class_id->members.for_each([](ClassMemberStaticField &f) {
-      stage::set_line(f.root->location.line);
-      f.root->location = stage::get_location();
+    current_function->class_id->members.for_each([this](ClassMemberStaticField &f) {
+      f.root->location = Location{current_function->file_id, current_function, f.root->location.line};
+      if (f.var->init_val) {
+        f.var->init_val.set_location_recursively(f.root->location);
+      }
     });
-    current_function->class_id->members.for_each([](ClassMemberConstant &c) {
-      stage::set_line(c.value->location.line);
-      c.value.set_location(stage::get_location());
+    current_function->class_id->members.for_each([this](ClassMemberConstant &c) {
+      c.value.set_location_recursively(Location{current_function->file_id, current_function, c.value->location.line});
     });
   }
 }
