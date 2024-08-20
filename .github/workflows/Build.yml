@@ -60,8 +60,11 @@ jobs:
     - name: Build and save docker image
       if: steps.docker-image-cache.outputs.cache-hit != 'true'
       run: |
-        docker build -f $GITHUB_WORKSPACE/.github/workflows/Dockerfile.${{matrix.os}} $GITHUB_WORKSPACE -t kphp-build-img-${{matrix.os}}
-        docker save --output kphp-build-env-${{matrix.os}}.tar kphp-build-img-${{matrix.os}}
+        docker build -f $GITHUB_WORKSPACE/.github/workflows/Dockerfile.${{matrix.os}} $GITHUB_WORKSPACE \
+              -t kphp-build-img-${{matrix.os}} \
+              --cache-from=type=local,src=kphp-build-img-${{matrix.os}}-cache
+        docker tag kphp-build-img-${{matrix.os}} kphp-build-img-${{matrix.os}}-cache
+        docker save kphp-build-img-${{matrix.os}}-cache -o kphp-build-env-${{matrix.os}}.tar
         
     - name: Load docker image from cache
       if: steps.docker-image-cache.outputs.cache-hit == 'true'
@@ -69,7 +72,7 @@ jobs:
 
     - name: Start docker container
       run: |
-        docker run -dt --name kphp-build-container-${{matrix.os}} kphp-build-img-${{matrix.os}}
+        docker run -dt --name kphp-build-container-${{matrix.os}} kphp-build-img-${{matrix.os}}-cache
         docker cp $GITHUB_WORKSPACE/. kphp-build-container-${{matrix.os}}:${{env.kphp_root_dir}}
 
     - name: Add git safe directory
