@@ -99,10 +99,15 @@ private:
     static constexpr uint32_t MAX_HASHTABLE_SIZE = (1 << 26);
     //empty hash_entry identified by (next == EMPTY_POINTER)
     static constexpr entry_pointer_type EMPTY_POINTER = 0;
+    static constexpr size_t ENTRIES_OFFSET = offsetof(array_inner, head_entry_marker);
 
-    array_bucket entries[KPHP_ARRAY_TAIL_SIZE];
+    // we need it because of automatic padding
+    array_bucket head_entry_marker;
 
     inline bool is_vector() const noexcept __attribute__ ((always_inline));
+
+    inline array_bucket* entries() noexcept __attribute__ ((always_inline));
+    inline const array_bucket* entries() const noexcept __attribute__ ((always_inline));
 
     inline list_hash_entry *get_entry(entry_pointer_type pointer) const __attribute__ ((always_inline));
     inline entry_pointer_type get_pointer(list_hash_entry *entry) const __attribute__ ((always_inline));
@@ -111,7 +116,6 @@ private:
     inline const array_bucket *next(const array_bucket *ptr) const __attribute__ ((always_inline)) ubsan_supp("alignment");
     inline const array_bucket *prev(const array_bucket *ptr) const __attribute__ ((always_inline)) ubsan_supp("alignment");
     inline const array_bucket *end() const __attribute__ ((always_inline)) ubsan_supp("alignment");
-
     inline array_bucket *begin() __attribute__ ((always_inline)) ubsan_supp("alignment");
     inline array_bucket *next(array_bucket *ptr) __attribute__ ((always_inline)) ubsan_supp("alignment");
     inline array_bucket *prev(array_bucket *ptr) __attribute__ ((always_inline)) ubsan_supp("alignment");

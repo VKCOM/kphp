@@ -133,6 +133,15 @@ bool array<T>::array_inner::is_vector() const noexcept {
   return is_vector_internal;
 }
 
+template<class T>
+typename array<T>::array_bucket *array<T>::array_inner::entries() noexcept {
+  return reinterpret_cast<array_bucket *>(reinterpret_cast<char *>(this) + ENTRIES_OFFSET);
+}
+
+template<class T>
+const typename array<T>::array_bucket *array<T>::array_inner::entries() const noexcept {
+  return reinterpret_cast<const array_bucket *>(reinterpret_cast<const char *>(this) + ENTRIES_OFFSET);
+}
 
 template<class T>
 typename array<T>::list_hash_entry *array<T>::array_inner::get_entry(entry_pointer_type pointer) const {
@@ -272,7 +281,7 @@ void array<T>::array_inner::dispose() {
     if (ref_cnt <= -1) {
       if (is_vector()) {
         for (uint32_t i = 0; i < size; i++) {
-          ((T *)entries)[i].~T();
+          ((T *)entries())[i].~T();
         }
 
         RuntimeAllocator::current().free_script_memory((void *)this, sizeof_vector(buf_size));
@@ -307,10 +316,10 @@ template<class ...Args>
 inline T &array<T>::array_inner::emplace_back_vector_value(Args &&... args) noexcept {
   static_assert(std::is_constructible<T, Args...>{}, "should be constructible");
   php_assert (size < buf_size);
-  new(&((T *)entries)[size]) T(std::forward<Args>(args)...);
+  new(&((T *)entries())[size]) T(std::forward<Args>(args)...);
   max_key++;
   size++;
-  return reinterpret_cast<T *>(entries)[max_key];
+  return reinterpret_cast<T *>(entries())[max_key];
 }
 
 template<class T>
@@ -320,19 +329,19 @@ T &array<T>::array_inner::push_back_vector_value(const T &v) {
 
 template<class T>
 T &array<T>::array_inner::get_vector_value(int64_t int_key) {
-  return reinterpret_cast<T *>(entries)[int_key];
+  return reinterpret_cast<T *>(entries())[int_key];
 }
 
 template<class T>
 const T &array<T>::array_inner::get_vector_value(int64_t int_key) const {
-  return reinterpret_cast<const T *>(entries)[int_key];
+  return reinterpret_cast<const T *>(entries())[int_key];
 }
 
 template<class T>
 template<class ...Args>
 T &array<T>::array_inner::emplace_vector_value(int64_t int_key, Args &&... args) noexcept {
   static_assert(std::is_constructible<T, Args...>{}, "should be constructible");
-  reinterpret_cast<T *>(entries)[int_key] = T(std::forward<Args>(args)...);
+  reinterpret_cast<T *>(entries())[int_key] = T(std::forward<Args>(args)...);
   return get_vector_value(int_key);
 }
 
@@ -346,24 +355,24 @@ template<class ...Args>
 T &array<T>::array_inner::emplace_int_key_map_value(overwrite_element policy, int64_t int_key, Args &&... args) noexcept {
   static_assert(std::is_constructible<T, Args...>{}, "should be constructible");
   uint32_t bucket = choose_bucket(int_key);
-  while (entries[bucket].next != EMPTY_POINTER &&
-         (entries[bucket].int_key != int_key || !entries[bucket].string_key.is_dummy_string())) {
+  while (entries()[bucket].next != EMPTY_POINTER &&
+         (entries()[bucket].int_key != int_key || !entries()[bucket].string_key.is_dummy_string())) {
     if (unlikely(++bucket == buf_size)) {
       bucket = 0;
     }
   }
 
-  if (entries[bucket].next == EMPTY_POINTER) {
-    entries[bucket].int_key = int_key;
-    new(&entries[bucket].string_key) string{ArrayBucketDummyStrTag{}};
+  if (entries()[bucket].next == EMPTY_POINTER) {
+    entries()[bucket].int_key = int_key;
+    new(&entries()[bucket].string_key) string{ArrayBucketDummyStrTag{}};
 
-    entries[bucket].prev = end()->prev;
-    get_entry(end()->prev)->next = get_pointer(&entries[bucket]);
+    entries()[bucket].prev = end()->prev;
+    get_entry(end()->prev)->next = get_pointer(&entries()[bucket]);
 
-    entries[bucket].next = get_pointer(end());
-    end()->prev = get_pointer(&entries[bucket]);
+    entries()[bucket].next = get_pointer(end());
+    end()->prev = get_pointer(&entries()[bucket]);
 
-    new(&entries[bucket].value) T(std::forward<Args>(args)...);
+    new(&entries()[bucket].value) T(std::forward<Args>(args)...);
 
     size++;
 
@@ -371,10 +380,10 @@ T &array<T>::array_inner::emplace_int_key_map_value(overwrite_element policy, in
       max_key = int_key;
     }
   } else if (policy == overwrite_element::YES) {
-    entries[bucket].value = T(std::forward<Args>(args)...);
+    entries()[bucket].value = T(std::forward<Args>(args)...);
   }
 
-  return entries[bucket].value;
+  return entries()[bucket].value;
 }
 
 template<class T>
@@ -385,30 +394,30 @@ T &array<T>::array_inner::set_map_value(overwrite_element policy, int64_t int_ke
 template<class T>
 T array<T>::array_inner::unset_vector_value() {
   --size;
-  T res = std::move(reinterpret_cast<T *>(entries)[max_key--]);
+  T res = std::move(reinterpret_cast<T *>(entries())[max_key--]);
   return res;
 }
 
 template<class T>
 T array<T>::array_inner::unset_map_value(int64_t int_key) {
   uint32_t bucket = choose_bucket(int_key);
-  while (entries[bucket].next != EMPTY_POINTER &&
-         (entries[bucket].int_key != int_key || !entries[bucket].string_key.is_dummy_string())) {
+  while (entries()[bucket].next != EMPTY_POINTER &&
+         (entries()[bucket].int_key != int_key || !entries()[bucket].string_key.is_dummy_string())) {
     if (unlikely (++bucket == buf_size)) {
       bucket = 0;
     }
   }
 
-  if (entries[bucket].next != EMPTY_POINTER) {
-    entries[bucket].int_key = 0;
+  if (entries()[bucket].next != EMPTY_POINTER) {
+    entries()[bucket].int_key = 0;
 
-    get_entry(entries[bucket].prev)->next = entries[bucket].next;
-    get_entry(entries[bucket].next)->prev = entries[bucket].prev;
+    get_entry(entries()[bucket].prev)->next = entries()[bucket].next;
+    get_entry(entries()[bucket].next)->prev = entries()[bucket].prev;
 
-    entries[bucket].next = EMPTY_POINTER;
-    entries[bucket].prev = EMPTY_POINTER;
+    entries()[bucket].next = EMPTY_POINTER;
+    entries()[bucket].prev = EMPTY_POINTER;
 
-    T res = std::move(entries[bucket].value);
+    T res = std::move(entries()[bucket].value);
 
     size--;
 
@@ -417,15 +426,15 @@ T array<T>::array_inner::unset_map_value(int64_t int_key) {
     uint32_t j, rj, ri = bucket;
     for (j = bucket + 1; 1; j++) {
       rj = FIXD(j);
-      if (entries[rj].next == EMPTY_POINTER) {
+      if (entries()[rj].next == EMPTY_POINTER) {
         break;
       }
 
-      uint32_t bucket_j = choose_bucket(entries[rj].int_key);
+      uint32_t bucket_j = choose_bucket(entries()[rj].int_key);
       uint32_t wnt = FIXU(bucket_j, bucket);
 
       if (wnt > j || wnt <= bucket) {
-        list_hash_entry *ei = entries + ri, *ej = entries + rj;
+        list_hash_entry *ei = entries() + ri, *ej = entries() + rj;
         memcpy(ei, ej, sizeof(array_bucket));
         ej->next = EMPTY_POINTER;
 
@@ -447,14 +456,14 @@ template<class T>
 template<class S>
 auto &array<T>::array_inner::find_map_entry(S &self, int64_t int_key) noexcept {
   uint32_t bucket = self.choose_bucket(int_key);
-  while (self.entries[bucket].next != EMPTY_POINTER &&
-         (self.entries[bucket].int_key != int_key || !self.entries[bucket].string_key.is_dummy_string())) {
+  while (self.entries()[bucket].next != EMPTY_POINTER &&
+         (self.entries()[bucket].int_key != int_key || !self.entries()[bucket].string_key.is_dummy_string())) {
     if (unlikely (++bucket == self.buf_size)) {
       bucket = 0;
     }
   }
 
-  return self.entries[bucket];
+  return self.entries()[bucket];
 }
 
 template<class T>
@@ -469,7 +478,7 @@ auto &array<T>::array_inner::find_map_entry(S &self, const char *key, string::si
   static const auto str_not_eq = [](const string &lhs, const char *rhs, string::size_type rhs_size) {
     return lhs.size() != rhs_size || string::compare(lhs, rhs, rhs_size) != 0;
   };
-  auto *string_entries = self.entries;
+  auto *string_entries = self.entries();
   uint32_t bucket = self.choose_bucket(precomputed_hash);
   while (string_entries[bucket].next != EMPTY_POINTER &&
          (string_entries[bucket].int_key != precomputed_hash || string_entries[bucket].string_key.is_dummy_string() || str_not_eq(string_entries[bucket].string_key, key, key_size))) {
@@ -503,7 +512,7 @@ template<class STRING, class ...Args>
 std::pair<T &, bool> array<T>::array_inner::emplace_string_key_map_value(overwrite_element policy, int64_t int_key, STRING &&string_key, Args &&... args) noexcept {
   static_assert(std::is_same<std::decay_t<STRING>, string>::value, "string_key should be string");
 
-  array_bucket *string_entries = entries;
+  array_bucket *string_entries = entries();
   auto &fields = fields_for_map();
   uint32_t bucket = choose_bucket(fields, int_key);
   while (string_entries[bucket].next != EMPTY_POINTER &&
@@ -544,7 +553,7 @@ T &array<T>::array_inner::set_map_value(overwrite_element policy, int64_t int_ke
 
 template<class T>
 T array<T>::array_inner::unset_map_value(const string &string_key, int64_t precomputed_hash) {
-  array_bucket *string_entries = entries;
+  array_bucket *string_entries = entries();
   auto &fields = fields_for_map();
   uint32_t bucket = choose_bucket(fields, precomputed_hash);
   while (string_entries[bucket].next != EMPTY_POINTER &&
@@ -663,7 +672,7 @@ bool array<T>::mutate_to_size_if_vector_shared(int64_t int_size) {
     array_inner *new_array = array_inner::create(int_size, true);
 
     const auto size = static_cast<uint32_t>(p->size);
-    T *it = (T *)p->entries;
+    T *it = (T *)p->entries();
 
     for (uint32_t i = 0; i < size; i++) {
       new_array->push_back_vector_value(it[i]);
@@ -766,7 +775,7 @@ void array<T>::reserve(int64_t int_size, bool make_vector_if_possible) {
 
       if (is_vector()) {
         for (uint32_t it = 0; it != p->size; it++) {
-          new_array->set_map_value(overwrite_element::YES, it, ((T *)p->entries)[it]);
+          new_array->set_map_value(overwrite_element::YES, it, ((T *)p->entries())[it]);
         }
         php_assert (new_array->max_key == p->max_key);
       } else {
@@ -840,7 +849,7 @@ template<class T>
 void array<T>::convert_to_map() {
   array_inner *new_array = array_inner::create(p->size + 4, false);
 
-  T *elements = reinterpret_cast<T *>(p->entries);
+  T *elements = reinterpret_cast<T *>(p->entries());
   const bool move_values = p->ref_cnt == 0;
   if (move_values) {
     for (uint32_t it = 0; it != p->size; it++) {
@@ -870,7 +879,7 @@ void array<T>::copy_from(const array<T1> &other) {
 
   if (new_array->is_vector()) {
     uint32_t size = other.p->size;
-    T1 *it = reinterpret_cast<T1 *>(other.p->entries);
+    T1 *it = reinterpret_cast<T1 *>(other.p->entries());
     for (uint32_t i = 0; i < size; i++) {
       new_array->push_back_vector_value(convert_to<T>::convert(it[i]));
     }
@@ -907,7 +916,7 @@ void array<T>::move_from(array<T1> &&other) noexcept {
 
   if (new_array->is_vector()) {
     uint32_t size = other.p->size;
-    T1 *it = reinterpret_cast<T1 *>(other.p->entries);
+    T1 *it = reinterpret_cast<T1 *>(other.p->entries());
     for (uint32_t i = 0; i < size; i++) {
       new_array->emplace_back_vector_value(convert_to<T>::convert(std::move(it[i])));
     }
@@ -1114,7 +1123,7 @@ T &array<T>::operator[](double double_key) {
 template<class T>
 T &array<T>::operator[](const const_iterator &it) noexcept {
   if (it.self_->is_vector()) {
-    const auto key = static_cast<int64_t>(reinterpret_cast<const T *>(it.entry_) - reinterpret_cast<const T *>(it.self_->entries));
+    const auto key = static_cast<int64_t>(reinterpret_cast<const T *>(it.entry_) - reinterpret_cast<const T *>(it.self_->entries()));
     return operator[](key);
   }
   auto *entry = reinterpret_cast<const array_bucket *>(it.entry_);
@@ -1281,7 +1290,7 @@ void array<T>::set_value(const Optional<OptionalT> &key, const T &value) noexcep
 template<class T>
 void array<T>::set_value(const const_iterator &it) noexcept {
   if (it.self_->is_vector()) {
-    const auto key = static_cast<int64_t>(reinterpret_cast<const T *>(it.entry_) - reinterpret_cast<const T *>(it.self_->entries));
+    const auto key = static_cast<int64_t>(reinterpret_cast<const T *>(it.entry_) - reinterpret_cast<const T *>(it.self_->entries()));
     emplace_value(key, *reinterpret_cast<const T *>(it.entry_));
     return;
   }
@@ -1358,7 +1367,7 @@ const T *array<T>::find_value(double double_key) const noexcept {
 template<class T>
 const T *array<T>::find_value(const const_iterator &it) const noexcept {
   if (it.self_->is_vector()) {
-    const auto key = static_cast<int64_t>(reinterpret_cast<const T *>(it.entry_) - reinterpret_cast<const T *>(it.self_->entries));
+    const auto key = static_cast<int64_t>(reinterpret_cast<const T *>(it.entry_) - reinterpret_cast<const T *>(it.self_->entries()));
     return find_value(key);
   } else {
     auto *entry = reinterpret_cast<const array_bucket *>(it.entry_);
@@ -1594,7 +1603,7 @@ const array<T> array<T>::operator+(const array<T> &other) const {
 
   if (is_vector()) {
     uint32_t size = p->size;
-    T *it = (T *)p->entries;
+    T *it = (T *)p->entries();
 
     if (result.is_vector()) {
       for (uint32_t i = 0; i < size; i++) {
@@ -1617,7 +1626,7 @@ const array<T> array<T>::operator+(const array<T> &other) const {
 
   if (other.is_vector()) {
     uint32_t size = other.p->size;
-    T *it = (T *)other.p->entries;
+    T *it = (T *)other.p->entries();
 
     if (result.is_vector()) {
       for (uint32_t i = p->size; i < size; i++) {
@@ -1649,11 +1658,11 @@ array<T> &array<T>::operator+=(const array<T> &other) {
   if (is_vector()) {
     if (other.is_vector()) {
       uint32_t size = other.p->size;
-      T *it = (T *)other.p->entries;
+      T *it = (T *)other.p->entries();
 
       if (p->ref_cnt > 0) {
         uint32_t my_size = p->size;
-        T *my_it = (T *)p->entries;
+        T *my_it = (T *)p->entries();
 
         array_inner *new_array = array_inner::create(max(size, my_size), true);
 
@@ -1680,7 +1689,7 @@ array<T> &array<T>::operator+=(const array<T> &other) {
       return *this;
     } else {
       array_inner *new_array = array_inner::create(p->size + other.p->size + 4, false);
-      T *it = (T *)p->entries;
+      T *it = (T *)p->entries();
 
       for (uint32_t i = 0; i != p->size; i++) {
         new_array->set_map_value(overwrite_element::YES, i, it[i]);
@@ -1714,7 +1723,7 @@ array<T> &array<T>::operator+=(const array<T> &other) {
 
   if (other.is_vector()) {
     uint32_t size = other.p->size;
-    T *it = (T *)other.p->entries;
+    T *it = (T *)other.p->entries();
 
     for (uint32_t i = 0; i < size; i++) {
       p->set_map_value(overwrite_element::NO, i, it[i]);
@@ -1826,7 +1835,7 @@ void array<T>::swap_int_keys(int64_t idx1, int64_t idx2) noexcept {
   // this function is supposed to be used for vector optimization, else branch is just to be on the safe side
   if (is_vector() && idx1 >= 0 && idx2 >= 0 && idx1 < p->size && idx2 < p->size) {
     mutate_if_vector_shared();
-    std::swap(reinterpret_cast<T *>(p->entries)[idx1], reinterpret_cast<T *>(p->entries)[idx2]);
+    std::swap(reinterpret_cast<T *>(p->entries())[idx1], reinterpret_cast<T *>(p->entries())[idx2]);
   } else {
     if (auto *v1 = find_value(idx1)) {
       if (auto *v2 = find_value(idx2)) {
@@ -1842,7 +1851,7 @@ template<class T>
 void array<T>::fill_vector(int64_t num, const T &value) {
   php_assert(is_vector() && p->size == 0 && num <= p->buf_size);
 
-  std::uninitialized_fill((T *)p->entries, (T *)p->entries + num, value);
+  std::uninitialized_fill((T *)p->entries(), (T *)p->entries() + num, value);
   p->max_key = num - 1;
   p->size = static_cast<uint32_t>(num);
 }
@@ -1853,7 +1862,7 @@ void array<T>::memcpy_vector(int64_t num __attribute__((unused)), const void *sr
     php_assert(is_vector() && p->size == 0 && num <= p->buf_size);
     mutate_if_vector_shared();
 
-    memcpy(reinterpret_cast<T *>(p->entries), src_buf, num * sizeof(T));
+    memcpy(reinterpret_cast<T *>(p->entries()), src_buf, num * sizeof(T));
     p->max_key = num - 1;
     p->size = static_cast<uint32_t>(num);
   } else {
@@ -1894,7 +1903,7 @@ void array<T>::sort(const T1 &compare, bool renumber) {
       [&compare](const T &lhs, const T &rhs) {
         return compare(lhs, rhs) > 0;
       };
-    T *begin = reinterpret_cast<T *>(p->entries);
+    T *begin = reinterpret_cast<T *>(p->entries());
     dl::sort<T, decltype(elements_cmp)>(begin, begin + n, elements_cmp);
     return;
   }
@@ -1954,7 +1963,7 @@ void array<T>::ksort(const T1 &compare) {
     keys.p->push_back_vector_value(it->get_key());
   }
 
-  key_type *keysp = (key_type *)keys.p->entries;
+  key_type *keysp = (key_type *)keys.p->entries();
   dl::sort<key_type, T1>(keysp, keysp + n, compare);
 
   list_hash_entry *prev = (list_hash_entry *)p->end();
@@ -1963,16 +1972,16 @@ void array<T>::ksort(const T1 &compare) {
     if (is_int_key(keysp[j])) {
       int64_t int_key = keysp[j].to_int();
       uint32_t bucket = p->choose_bucket(int_key);
-      while (p->entries[bucket].int_key != int_key || !p->entries[bucket].string_key.is_dummy_string()) {
+      while (p->entries()[bucket].int_key != int_key || !p->entries()[bucket].string_key.is_dummy_string()) {
         if (unlikely (++bucket == p->buf_size)) {
           bucket = 0;
         }
       }
-      cur = (list_hash_entry * ) & p->entries[bucket];
+      cur = (list_hash_entry * ) &p->entries()[bucket];
     } else {
       string string_key = keysp[j].to_string();
       int64_t int_key = string_key.hash();
-      array_bucket *string_entries = p->entries;
+      array_bucket *string_entries = p->entries();
       uint32_t bucket = p->choose_bucket(int_key);
       while ((string_entries[bucket].int_key != int_key || string_entries[bucket].string_key.is_dummy_string() || string_entries[bucket].string_key != string_key)) {
         if (unlikely (++bucket == p->buf_size)) {
@@ -2033,7 +2042,7 @@ T array<T>::shift() {
   if (is_vector()) {
     mutate_if_vector_shared();
 
-    T *it = (T *)p->entries;
+    T *it = (T *)p->entries();
     T res = *it;
 
     it->~T();
@@ -2076,7 +2085,7 @@ int64_t array<T>::unshift(const T &val) {
   if (is_vector()) {
     mutate_if_vector_needs_space();
 
-    T *it = (T *)p->entries;
+    T *it = (T *)p->entries();
     memmove((void *)(it + 1), it, p->size++ * sizeof(T));
     p->max_key++;
     new(it) T(val);
@@ -2162,7 +2171,7 @@ void array<T>::force_destroy(ExtraRefCnt expected_ref_cnt) noexcept {
 template<class T>
 typename array<T>::iterator array<T>::begin_no_mutate() {
   if (is_vector()) {
-    return typename array<T>::iterator(p, p->entries);
+    return typename array<T>::iterator(p, p->entries());
   }
   return typename array<T>::iterator(p, p->begin());
 }

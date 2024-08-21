@@ -49,7 +49,7 @@ public:
 
   inline key_type get_key() const noexcept __attribute__ ((always_inline)) {
     if (self_->is_vector()) {
-      return key_type{static_cast<int64_t>(reinterpret_cast<value_type *>(entry_) - reinterpret_cast<value_type *>(self_->entries))};
+      return key_type{static_cast<int64_t>(reinterpret_cast<value_type *>(entry_) - reinterpret_cast<value_type *>(self_->entries()))};
     }
 
     if (is_string_key()) {
@@ -112,7 +112,7 @@ public:
   static inline array_iterator make_begin(std::add_const_t<array_type> &arr) noexcept __attribute__ ((always_inline)) {
     static_assert(std::is_const<T>{}, "expected to be const");
     return arr.is_vector()
-           ? array_iterator{arr.p, arr.p->entries}
+           ? array_iterator{arr.p, arr.p->entries()}
            : array_iterator{arr.p, arr.p->begin()};
   }
 
@@ -120,7 +120,7 @@ public:
     static_assert(!std::is_const<T>{}, "expected to be mutable");
     if (arr.is_vector()) {
       arr.mutate_if_vector_shared();
-      return array_iterator{arr.p, arr.p->entries};
+      return array_iterator{arr.p, arr.p->entries()};
     }
 
     arr.mutate_if_map_shared();
@@ -129,7 +129,7 @@ public:
 
   static inline array_iterator make_end(array_type &arr) noexcept __attribute__ ((always_inline)) {
     return arr.is_vector()
-           ? array_iterator{arr.p, reinterpret_cast<list_hash_type *>(reinterpret_cast<value_type *>(arr.p->entries) + arr.p->size)}
+           ? array_iterator{arr.p, reinterpret_cast<list_hash_type *>(reinterpret_cast<value_type *>(arr.p->entries()) + arr.p->size)}
            : array_iterator{arr.p, arr.p->end()};
   }
 
@@ -147,7 +147,7 @@ public:
         return make_end(arr);
       }
 
-      return array_iterator{arr.p, reinterpret_cast<list_hash_type *>(reinterpret_cast<value_type *>(arr.p->entries) + n)};
+      return array_iterator{arr.p, reinterpret_cast<list_hash_type *>(reinterpret_cast<value_type *>(arr.p->entries()) + n)};
     }
 
     if (n < -l / 2) {
