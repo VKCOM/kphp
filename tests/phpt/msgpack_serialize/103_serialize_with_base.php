@@ -1,5 +1,5 @@
 @kphp_should_fail k2_skip
-/Class A and all its ancestors must be @kphp-serializable since field x is @kphp-serialized-field. Class Base is not./
+/Class A and all its ancestors must be @kphp-serializable if there are instance fields. Class Base is not./
 <?php
 
 require_once 'kphp_tester_include.php';

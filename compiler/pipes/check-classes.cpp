@@ -90,7 +90,12 @@ void CheckClassesPass::check_serialized_fields(ClassPtr klass) {
 
     // This loop finishes unconditionally since there is NULL klass->parent_class if there is no base class.
     while (the_klass) {
-      kphp_error_return(the_klass->is_serializable, fmt_format("Class {} and all its ancestors must be @kphp-serializable since field {} is @kphp-serialized-field. Class {} is not.", klass->name, f.local_name(), the_klass->name));
+      // Inheritance with serialization is allowed if
+      // * parent class has ho instance field
+      // * if there are instance fields, class should be marked with kphp-serializable
+      kphp_error_return(
+        (the_klass->members.has_any_instance_var() && the_klass->is_serializable) || (!the_klass->members.has_any_instance_var()),
+        fmt_format("Class {} and all its ancestors must be @kphp-serializable if there are instance fields. Class {} is not.", klass->name, the_klass->name));
       the_klass = the_klass->parent_class;
     }
 
