@@ -358,7 +358,10 @@ void check_func_call_params(VertexAdaptor<op_func_call> call) {
     auto param = func_params[i].as<op_func_param>();
     bool is_callback_passed_to_extern = f->is_extern() && param->type_hint && param->type_hint->try_as<TypeHintCallable>();
     if (!is_callback_passed_to_extern) {
-      kphp_error(call_params[i]->type() != op_callback_of_builtin, "Unexpected function pointer");
+      if (call_params[i]->type() == op_callback_of_builtin) {
+        kphp_notice(fmt_format("function {} is extern {}", f->name, f->is_extern()));
+        kphp_error(call_params[i]->type() != op_callback_of_builtin, "Unexpected function pointer");
+      }
       continue;
     }
     const auto *type_hint_callable = param->type_hint->try_as<TypeHintCallable>();

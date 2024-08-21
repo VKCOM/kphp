@@ -1362,6 +1362,14 @@ bool compile_tracing_profiler(FunctionPtr func, CodeGenerator &W) {
   return true;
 }
 
+void compile_generated_stub(VertexAdaptor<op_function> func_root, CodeGenerator &W) {
+  FunctionPtr func = func_root->func_id;
+  W << FunctionDeclaration(func, false) << " " <<
+    BEGIN;
+  W << "php_critical_error(\"call to unsupported function\");" << NL;
+  W << END << NL;
+}
+
 void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenerator &W) {
   FunctionPtr func = func_root->func_id;
   W << "//RESUMABLE FUNCTION IMPLEMENTATION" << NL;
@@ -1472,6 +1480,11 @@ void compile_function(VertexAdaptor<op_function> func_root, CodeGenerator &W) {
   W.get_context().parent_func = func;
   W.get_context().resumable_flag = func->is_resumable;
   W.get_context().interruptible_flag = func->is_interruptible;
+
+  if (func->need_generated_stub) {
+    compile_generated_stub(func_root, W);
+    return;
+  }
 
   if (func->is_resumable) {
     compile_function_resumable(func_root, W);

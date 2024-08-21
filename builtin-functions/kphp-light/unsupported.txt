@@ -1,0 +1,1740 @@
+<?php
+
+/** @kphp-extern-func-info unsupported-stub */
+function is_finite ($v ::: float) ::: bool;
+/** @kphp-extern-func-info unsupported-stub */
+function is_infinite ($v ::: float) ::: bool;
+/** @kphp-extern-func-info unsupported-stub */
+function is_nan ($v ::: float) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function header ($str ::: string, $replace ::: bool = true, $http_response_code ::: int = 0) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function headers_list () ::: string[];
+
+/** @kphp-extern-func-info unsupported-stub */
+function send_http_103_early_hints($headers ::: string[]) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function setcookie ($name ::: string, $value ::: string, $expire ::: int = 0, $path ::: string = '', $domain ::: string = '', $secure ::: bool = false, $http_only ::: bool = false) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function setrawcookie ($name ::: string, $value ::: string, $expire ::: int = 0, $path ::: string = '', $domain ::: string = '', $secure ::: bool = false, $http_only ::: bool = false) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function register_shutdown_function (callable():void $function) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function ignore_user_abort ($enable ::: ?bool = null) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function flush() ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+  function fastcgi_finish_request() ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function error_get_last() ::: mixed;
+
+/** @kphp-extern-func-info unsupported-stub */
+function error_reporting ($e ::: int = TODO) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function register_kphp_on_warning_callback(callable(string $warning_message, string[] $stacktrace):void $stacktrace) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function kphp_set_context_on_error(mixed[] $tags, mixed $extra_info, string $env = "") ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function kphp_get_runtime_config() ::: mixed;
+
+/** @kphp-extern-func-info unsupported-stub */
+function kphp_backtrace($pretty ::: bool = true) ::: string[];
+
+/** @kphp-extern-func-info unsupported-stub */
+function register_kphp_on_oom_callback(callable():void $callback) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function ini_get ($s ::: string) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function ini_set ($s ::: string, $v ::: string) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function memory_get_usage ($real_usage ::: bool = false) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function memory_get_peak_usage ($real_usage ::: bool = false) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function memory_get_total_usage() ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function memory_get_static_usage() ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function memory_get_detailed_stats() ::: int[];
+
+/** @kphp-extern-func-info unsupported-stub */
+function memory_get_allocations() ::: tuple(int, int);
+
+/** @kphp-extern-func-info unsupported-stub */
+function estimate_memory_usage($value ::: any) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function get_global_vars_memory_stats(int $lower_bound = 0) ::: int[];
+
+/** @kphp-extern-func-info unsupported-stub */
+function get_net_time() ::: float;
+
+/** @kphp-extern-func-info unsupported-stub */
+function get_script_time() ::: float;
+
+/** @kphp-extern-func-info unsupported-stub */
+function get_net_queries_count() ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function get_engine_uptime() ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function get_engine_version() ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function get_engine_workers_number() ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function get_kphp_cluster_name(): string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function get_webserver_stats() ::: tuple(int, int, int, int);
+
+define('SORT_REGULAR', 0);
+define('SORT_NUMERIC', 1);
+define('SORT_STRING', 2);
+
+/** @kphp-extern-func-info unsupported-stub */
+function getKeyByPos ($a ::: array, $n ::: int) ::: mixed;
+
+/** @kphp-extern-func-info unsupported-stub */
+function getValueByPos ($a ::: array, $n ::: int) ::: ^1[*];
+
+/** @kphp-extern-func-info unsupported-stub */
+function create_vector ($n ::: int, $x ::: any) ::: ^2[];
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_first_key ($a ::: array) ::: mixed;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_key_first($a ::: array): mixed;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_first_value ($a ::: array) ::: ^1[*];
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_last_key ($a ::: array) ::: mixed;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_key_last($a ::: array): mixed;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_last_value ($a ::: array) ::: ^1[*];
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_swap_int_keys (&$a ::: array, $idx1 ::: int, $idx2 ::: int) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function implode ($s ::: string, $v ::: array) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function explode ($delimiter ::: string, $str ::: string, $limit ::: int = PHP_INT_MAX) ::: string[];
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_chunk ($a ::: array, $chunk_size ::: int, $preserve_keys ::: bool = false) ::: ^1[];
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_splice (&$a ::: array, $offset ::: int, $length ::: int, $replacement ::: array = array()) ::: ^1;
+
+/** @kphp-extern-func-info unsupported-stub cpp_template_call */
+function array_merge ($a1 ::: array, $a2  ::: array = array(), $a3  ::: array = array(),
+            $a4 ::: array = array(), $a5  ::: array = array(), $a6  ::: array = array(),
+            $a7 ::: array = array(), $a8  ::: array = array(), $a9  ::: array = array(),
+           $a10 ::: array = array(), $a11 ::: array = array(), $a12 ::: array = array())
+                ::: ^1 | ^2 | ^3 | ^4 | ^5 | ^6 | ^7 | ^8 | ^9 | ^10 | ^11 | ^12;
+
+/**
+ * @kphp-extern-func-info unsupported-stub cpp_template_call cpp_variadic_call
+ * @kphp-pure-function
+ */
+function array_merge_recursive (...$a) ::: mixed[];
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_merge_into (&$a ::: array, $another_array ::: array) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub cpp_template_call */
+function array_merge_spread ($a1 ::: array, $a2  ::: array = array(), $a3  ::: array = array(),
+            $a4 ::: array = array(), $a5  ::: array = array(), $a6  ::: array = array(),
+            $a7 ::: array = array(), $a8  ::: array = array(), $a9  ::: array = array(),
+           $a10 ::: array = array(), $a11 ::: array = array(), $a12 ::: array = array())
+                ::: ^1 | ^2 | ^3 | ^4 | ^5 | ^6 | ^7 | ^8 | ^9 | ^10 | ^11 | ^12;
+
+/** @kphp-extern-func-info unsupported-stub cpp_template_call */
+function array_replace ($base_array ::: array,
+            $replacements_1 ::: array = array(), $replacements_2  ::: array = array(), $replacements_3  ::: array = array(),
+            $replacements_4 ::: array = array(), $replacements_5  ::: array = array(), $replacements_6  ::: array = array(),
+            $replacements_7 ::: array = array(), $replacements_8  ::: array = array(), $replacements_9  ::: array = array(),
+            $replacements_10 ::: array = array(), $replacements_11 ::: array = array())
+                ::: ^1 | ^2 | ^3 | ^4 | ^5 | ^6 | ^7 | ^8 | ^9 | ^10 | ^11 | ^12;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_intersect_key ($a1 ::: array, $a2 ::: array) ::: ^1;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_intersect ($a1 ::: array, $a2 ::: array) ::: ^1;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_intersect_assoc ($a1 ::: array, $a2 ::: array, $a3 ::: array = TODO) ::: ^1;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_diff_key ($a1 ::: array, $a2 ::: array) ::: ^1;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_diff ($a1 ::: array, $a2 ::: array, $a3 ::: array = TODO) ::: ^1;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_diff_assoc ($a1 ::: array, $a2 ::: array, $a3 ::: array = TODO) ::: ^1;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_reverse ($a ::: array, $preserve_keys ::: bool = false) ::: ^1;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_shift (&$a ::: array) ::: ^1[*];
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_unshift (&$a ::: array, $val ::: any) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_key_exists ($v ::: any, $a ::: array) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_search ($val ::: any, $a ::: array, $strict ::: bool = false) ::: mixed;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_find ($val ::: array, callable(^1[*] $x):bool $callback) ::: tuple(mixed, ^1[*]);
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_rand ($a ::: array, $num ::: int = 1) ::: mixed;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_keys ($a ::: array) ::: mixed[];
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_keys_as_strings ($a ::: array) ::: string[];
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_keys_as_ints ($a ::: array) ::: int[];
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_values ($a ::: array) ::: ^1;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_unique ($a ::: array, int $flags = SORT_STRING) ::: ^1;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_count_values ($a ::: array) ::: int[];
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_flip ($a ::: array) ::: mixed[];
+
+/** @kphp-extern-func-info unsupported-stub */
+function in_array ($value ::: any, $a ::: array, $strict ::: bool = false) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_fill ($start_index ::: int, $num ::: int, $value ::: any) ::: ^3[];
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_fill_keys ($a ::: array, $value ::: any) ::: ^2[];
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_combine ($keys ::: array, $values ::: array) ::: ^2;
+
+/** @kphp-extern-func-info unsupported-stub */
+function range ($from, $to, $step ::: int = 1) ::: mixed[];//TODO
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_push (&$a ::: array, $val2 ::: any, $val3 ::: any = TODO, $val4 ::: any = TODO, $val5 ::: any = TODO, $val6 ::: any = TODO) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_pop (&$a ::: array) ::: ^1[*];
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_sum ($a ::: array) ::: float;//TODO
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_slice ($a ::: array, $offset ::: int, $length = null, $preserve_keys ::: bool = false) ::: ^1;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_pad ($a ::: array, $size ::: int, $value ::: any) ::: array< ^1[*] | ^3 >;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_column ($a ::: array, $column_key, $index_key = null) ::: array< ^1[*][*] > | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_unset (&$a ::: array, any $key) ::: ^1[*];
+
+/**
+ * @kphp-extern-func-info unsupported-stub cpp_template_call cpp_variadic_call
+ * @kphp-pure-function
+ */
+function min (...$a) ::: ^1[*];
+
+/**
+ * @kphp-extern-func-info unsupported-stub cpp_template_call cpp_variadic_call
+ * @kphp-pure-function
+ */
+function max (...$a) ::: ^1[*];
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_filter ($a ::: array, callable(^1[*] $x):bool $callback = TODO) ::: ^1;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_filter_by_key ($a ::: array, callable(mixed $key):bool $callback) ::: ^1;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_map (callable(^2[*] $x):any $callback, $a ::: array) ::: ^1() [];
+
+/** @kphp-extern-func-info unsupported-stub cpp_template_call */
+function array_reduce ($a ::: array, callable(^3 | ^2() $carry, ^1[*] $item):any $callback, $initial ::: any) ::: ^2() | ^3;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_reserve (&$a ::: array, $int_size ::: int, $string_size ::: int, $make_vector_if_possible ::: bool) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_reserve_vector (&$a ::: array, $size ::: int) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_reserve_map_int_keys (&$a ::: array, $size ::: int) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_reserve_map_string_keys (&$a ::: array, $size ::: int) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_reserve_from (&$a ::: array, $base ::: array) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_is_vector ($a ::: array) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function array_is_list ($a ::: array) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function checkdate ($month ::: int, $day ::: int, $year ::: int) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function date ($format ::: string, $timestamp ::: int = PHP_INT_MIN) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function date_default_timezone_set ($s ::: string) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function date_default_timezone_get() ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function getdate ($timestamp ::: int = PHP_INT_MIN) ::: mixed[];
+
+/** @kphp-extern-func-info unsupported-stub */
+function gmdate ($format ::: string, $timestamp ::: int = PHP_INT_MIN) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function gmmktime ($h ::: int = PHP_INT_MIN, $m ::: int = PHP_INT_MIN, $s ::: int = PHP_INT_MIN, $month ::: int = PHP_INT_MIN, $day ::: int = PHP_INT_MIN, $year ::: int = PHP_INT_MIN) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function localtime ($timestamp ::: int = PHP_INT_MIN, $is_associative ::: bool = false) ::: mixed[];
+
+/** @kphp-extern-func-info unsupported-stub */
+function microtime ($get_as_float ::: bool = false) ::: mixed;
+
+/** @kphp-extern-func-info unsupported-stub */
+function mktime ($h ::: int = PHP_INT_MIN, $m ::: int = PHP_INT_MIN, $s ::: int = PHP_INT_MIN, $month ::: int = PHP_INT_MIN, $day ::: int = PHP_INT_MIN, $year ::: int = PHP_INT_MIN) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function strftime ($format ::: string, $timestamp ::: int = PHP_INT_MIN) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function strtotime ($time ::: string, $timestamp ::: int = PHP_INT_MIN) ::: int | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function date_parse ($time ::: string) : mixed[];
+
+/** @kphp-extern-func-info unsupported-stub */
+function date_parse_from_format ($format ::: string, $time ::: string) : mixed[];
+
+/** @kphp-extern-func-info unsupported-stub */
+function time() ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function hrtime (bool $as_number = false): mixed; // int[]|int
+
+/** @kphp-extern-func-info unsupported-stub */
+function debug_backtrace() ::: string[][];
+
+/** @kphp-extern-func-info unsupported-stub */
+function posix_getpid() ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function posix_getuid() ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function posix_getpwuid($uid ::: int) ::: mixed[] | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function getopt ($options ::: string, $longopt ::: array = array(), ?int &$rest_index = null) ::: mixed[] | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function gethostbynamel ($name ::: string) ::: string[] | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function inet_pton ($address ::: string) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function pack ($pattern ::: string, ...$args) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function unpack ($pattern ::: string, $data ::: string) ::: mixed[] | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function serialize($v ::: mixed) ::: string;
+
+/**
+ * @kphp-extern-func-info unsupported-stub
+ * @kphp-pure-function
+ */
+function unserialize ($v ::: string) ::: mixed;
+
+/** @kphp-extern-func-info unsupported-stub */
+function msgpack_serialize($v ::: mixed) ::: string | null;
+
+/** @kphp-extern-func-info unsupported-stub */
+function msgpack_deserialize($v ::: string) ::: mixed;
+
+/** @kphp-extern-func-info unsupported-stub */
+function msgpack_serialize_safe($v ::: mixed) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function msgpack_deserialize_safe($v ::: string) ::: mixed;
+
+/** @kphp-extern-func-info unsupported-stub */
+function preg_match ($regex ::: regexp, $subject ::: string, &$matches ::: mixed = TODO, $flags ::: int = 0, $offset ::: int = 0) ::: int | false;//TODO
+
+/** @kphp-extern-func-info unsupported-stub */
+function preg_match_all ($regex ::: regexp, $subject ::: string, &$matches ::: mixed = TODO, $flags ::: int = 0, $offset ::: int = 0) ::: int | false;//TODO
+
+/** @kphp-extern-func-info unsupported-stub */
+function preg_replace ($regex ::: regexp, $replace_val, $subject, $limit ::: int = -1, &$replace_count ::: int = TODO) ::: ^3|string|null|false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function preg_replace_callback ($regex ::: regexp, callable(string[] $x):string $callback, $subject, $limit ::: int = -1, &$replace_count ::: int = TODO) ::: ^3|string|null;
+
+/** @kphp-extern-func-info unsupported-stub */
+function preg_quote ($str ::: string, $delimiter ::: string = '') ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function preg_last_error() ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function preg_split ($pattern ::: regexp, $subject ::: string, $limit ::: int = -1, $flags ::: int = 0) ::: mixed[] | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function shuffle (&$a ::: array) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function sort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function rsort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function usort (&$a ::: array, callable(^1[*] $x, ^1[*] $y):int $callback) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function asort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function arsort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function uasort (&$a ::: array, callable(^1[*] $x, ^1[*] $y):int $callback) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function ksort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function krsort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function uksort (&$a ::: array, callable(mixed $x, mixed $y):int $callback) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function natsort (&$a ::: array) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function lcg_value() ::: float;
+
+/** @kphp-extern-func-info unsupported-stub */
+function uniqid ($prefix ::: string = '', $more_entropy ::: bool = false) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function srand ($seed ::: int = PHP_INT_MIN) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function rand ($l ::: int = TODO_OVERLOAD, $r ::: int = TODO_OVERLOAD) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function getrandmax() ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function mt_srand ($seed ::: int = PHP_INT_MIN) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function mt_rand ($l ::: int = TODO_OVERLOAD, $r ::: int = TODO_OVERLOAD) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function mt_getrandmax() ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function random_int($l ::: int, $r ::: int) ::: int | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function random_bytes($length ::: int) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function hash_algos () ::: string[];
+
+/** @kphp-extern-func-info unsupported-stub */
+function hash_hmac_algos () ::: string[];
+
+/** @kphp-extern-func-info unsupported-stub */
+function hash ($algo ::: string, $data ::: string, $raw_output ::: bool = false) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function hash_hmac ($algo ::: string, $data ::: string, $key ::: string, $raw_output ::: bool = false) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function sha1 ($s ::: string, $raw_output ::: bool = false) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function md5 ($s ::: string, $raw_output ::: bool = false) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function md5_file ($s ::: string, $raw_output ::: bool = false) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function crc32 ($s ::: string) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function crc32_file ($s ::: string) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function hash_equals(string $known_string, string $user_string) ::: bool;
+
+/**
+ * @kphp-extern-func-info unsupported-stub
+ * @kphp-pure-function
+ */
+function cp1251 ($utf8_string ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function openssl_public_encrypt ($data ::: string, &$result ::: mixed, $key ::: string) ::: bool;
+/** @kphp-extern-func-info unsupported-stub */
+function openssl_private_decrypt ($data ::: string, &$result ::: mixed, $key ::: string) ::: bool;
+/** @kphp-extern-func-info unsupported-stub */
+function openssl_pkey_get_private ($key ::: string, $passphrase ::: string = '') ::: string | false;
+/** @kphp-extern-func-info unsupported-stub */
+function openssl_pkey_get_public ($key ::: string) ::: string | false;
+/** @kphp-extern-func-info unsupported-stub */
+function openssl_sign ($data ::: string, &$signature ::: string, $priv_key_id ::: string, $signature_alg ::: int = 1) ::: bool;
+/** @kphp-extern-func-info unsupported-stub */
+function openssl_verify ($data ::: string, $signature ::: string, $pub_key_id ::: string, $signature_alg ::: int = 1) ::: int;
+/** @kphp-extern-func-info unsupported-stub */
+function openssl_random_pseudo_bytes ($length ::: int) ::: string | false;
+/** @kphp-extern-func-info unsupported-stub */
+function openssl_x509_parse ($x509cert ::: string, $shortnames ::: bool = true) ::: mixed[] | false;
+/** @kphp-extern-func-info unsupported-stub */
+function openssl_x509_verify ($x509cert ::: string, $public_key ::: string) ::: int;
+/** @kphp-extern-func-info unsupported-stub */
+function openssl_x509_checkpurpose ($x509cert ::: string, $purpose ::: int) ::: mixed;
+
+define('PKCS7_TEXT', 0x1);
+define('PKCS7_NOCERTS', 0x2);
+define('PKCS7_NOSIGS', 0x4);
+define('PKCS7_NOCHAIN', 0x8);
+define('PKCS7_NOINTERN', 0x10);
+define('PKCS7_NOVERIFY', 0x20);
+define('PKCS7_BINARY', 0x80);
+define('PKCS7_DETACHED', 0x40);
+define('PKCS7_NOATTR', 0x100);
+
+/** @kphp-extern-func-info unsupported-stub */
+function openssl_pkcs7_sign($infile ::: string, $outfile ::: string,
+                            $sign_cert ::: string, $priv_key ::: string,
+                            string[] $headers, $flags ::: int = PKCS7_DETACHED, $extra_certs ::: string = "") ::: bool;
+/** @kphp-extern-func-info unsupported-stub */
+function openssl_get_cipher_methods($aliases ::: bool = false) ::: string[];
+/** @kphp-extern-func-info unsupported-stub */
+function openssl_cipher_iv_length($method ::: string) ::: int | false;
+/** @kphp-extern-func-info unsupported-stub */
+function openssl_encrypt($data ::: string, $method ::: string, $key ::: string,  $options ::: int = 0, $iv ::: string  = '',
+                         string &$tag = TODO, $aad ::: string = '', $tag_length ::: int = 16) ::: string | false;
+/** @kphp-extern-func-info unsupported-stub */
+function openssl_decrypt($data ::: string, $method ::: string, $key ::: string, $options ::: int = 0, $iv ::: string  = '',
+                        $tag ::: string = '', $aad ::: string = '') ::: string | false;
+
+define('ZLIB_ENCODING_RAW', -0x0f);
+define('ZLIB_ENCODING_DEFLATE', 0x0f);
+define('ZLIB_ENCODING_GZIP', 0x1f);
+
+define('ZLIB_NO_FLUSH', 0);
+define('ZLIB_PARTIAL_FLUSH', 1);
+define('ZLIB_SYNC_FLUSH', 2);
+define('ZLIB_FULL_FLUSH', 3);
+define('ZLIB_FINISH', 4);
+define('ZLIB_BLOCK', 5);
+define('ZLIB_TREES', 6);
+
+define('ZLIB_FILTERED', 1);
+define('ZLIB_HUFFMAN_ONLY', 2);
+define('ZLIB_RLE', 3);
+define('ZLIB_FIXED', 4);
+define('ZLIB_DEFAULT_STRATEGY', 0);
+
+define('PHP_QUERY_RFC1738', 1);
+define('PHP_QUERY_RFC3986', 2);
+
+/** @kphp-extern-func-info unsupported-stub */
+function deflate_init(int $encoding, array $options = []) ::: ?DeflateContext;
+
+/** @kphp-extern-func-info unsupported-stub */
+function deflate_add(DeflateContext $context, string $data, int $flush_mode = ZLIB_SYNC_FLUSH) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function gzencode ($str ::: string, $level ::: int = -1) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function gzdecode ($str ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function gzcompress ($str ::: string, $level ::: int = -1) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function gzuncompress ($str ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function gzdeflate ($str ::: string, $level ::: int = -1) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function gzinflate ($str ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function base64_decode ($str ::: string, $strict ::: bool = false) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function base64_encode ($str ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function http_build_query ($str ::: array, $numeric_prefix ::: string = '', $arg_separator ::: string = '&', $enc_type ::: int = PHP_QUERY_RFC1738) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function rawurldecode ($str ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function rawurlencode ($str ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function urldecode ($str ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function urlencode ($str ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function parse_url ($str ::: string, $component ::: int = -1) ::: mixed;
+
+/**
+ * @kphp-extern-func-info unsupported-stub
+ */
+function abs ($v ::: mixed) ::: mixed; // diff with _functions.txt
+
+/** 
+ * @kphp-extern-func-info unsupported-stub
+ * @kphp-pure-function 
+ */
+function acos ($v ::: float) ::: float;
+/** 
+ * @kphp-extern-func-info unsupported-stub
+ * @kphp-pure-function 
+ */
+function acosh ($v ::: float) ::: float;
+/** 
+ * @kphp-extern-func-info unsupported-stub
+ * @kphp-pure-function 
+ */
+function asin ($v ::: float) ::: float;
+/** 
+ * @kphp-extern-func-info unsupported-stub
+ * @kphp-pure-function 
+ */
+function asinh ($v ::: float) ::: float;
+/** 
+ * @kphp-extern-func-info unsupported-stub
+ * @kphp-pure-function 
+ */
+function atan ($v ::: float) ::: float;
+/** 
+ * @kphp-extern-func-info unsupported-stub
+ * @kphp-pure-function 
+ */
+function atan2 ($y ::: float, $x ::: float) ::: float;
+/** 
+ * @kphp-extern-func-info unsupported-stub
+ * @kphp-pure-function 
+ */
+function base_convert ($number ::: string, $frombase ::: int, $tobase ::: int) ::: string;
+/** 
+ * @kphp-extern-func-info unsupported-stub
+ * @kphp-pure-function 
+ */
+function ceil ($v ::: float) ::: float;
+/** 
+ * @kphp-extern-func-info unsupported-stub
+ * @kphp-pure-function 
+ */
+function cos ($v ::: float) ::: float;
+/** 
+ * @kphp-extern-func-info unsupported-stub
+ * @kphp-pure-function 
+ */
+function cosh ($v ::: float) ::: float;
+/** 
+ * @kphp-extern-func-info unsupported-stub
+ * @kphp-pure-function 
+ */
+function deg2rad ($v ::: float) ::: float;
+/** 
+ * @kphp-extern-func-info unsupported-stub
+ * @kphp-pure-function 
+ */
+function exp ($v ::: float) ::: float;
+/** 
+ * @kphp-extern-func-info unsupported-stub
+ * @kphp-pure-function 
+ */
+function floor ($v ::: float) ::: float;
+/** 
+ * @kphp-extern-func-info unsupported-stub
+ * @kphp-pure-function 
+ */
+function log ($v ::: float, $base ::: float = 2.7182818284590452353602874713527) ::: float;
+/** 
+ * @kphp-extern-func-info unsupported-stub
+ * @kphp-pure-function 
+ */
+function fmod ($x ::: float, $y ::: float) ::: float;
+/** 
+ * @kphp-extern-func-info unsupported-stub
+ * @kphp-pure-function 
+ */
+function pi() ::: float;
+/** 
+ * @kphp-extern-func-info unsupported-stub
+ * @kphp-pure-function 
+ */
+function round ($v ::: float, $precision ::: int = 0) ::: float;
+/** 
+ * @kphp-extern-func-info unsupported-stub
+ * @kphp-pure-function 
+ */
+function sin ($v ::: float) ::: float;
+/** 
+ * @kphp-extern-func-info unsupported-stub
+ * @kphp-pure-function 
+ */
+function sinh ($v ::: float) ::: float;
+/** 
+ * @kphp-extern-func-info unsupported-stub
+ * @kphp-pure-function 
+ */
+function sqrt ($v ::: float) ::: float;
+/** 
+ * @kphp-extern-func-info unsupported-stub
+ * @kphp-pure-function 
+ */
+function tan ($v ::: float) ::: float;
+/** 
+ * @kphp-extern-func-info unsupported-stub
+ * @kphp-pure-function 
+ */
+function rad2deg ($v ::: float) ::: float;
+
+define('ENT_HTML401', 0);
+define('ENT_COMPAT', 0);
+define('ENT_QUOTES', 1);
+define('ENT_NOQUOTES', 2);
+
+/** @kphp-extern-func-info unsupported-stub */
+function addcslashes ($str ::: string, $what ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function addslashes ($str ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function bindec ($number ::: string) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function bin2hex ($str ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function chr ($v ::: int) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function convert_cyr_string ($str ::: string, $from ::: string, $to ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function count_chars ($str ::: string, $mode ::: int = 0) ::: mixed;
+
+/** @kphp-extern-func-info unsupported-stub */
+function decbin ($number ::: int) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function dechex ($number ::: int) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function hex2bin ($str ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function hexdec ($number ::: string) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function htmlentities ($str ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function html_entity_decode ($str ::: string, $flags ::: int = ENT_COMPAT, $encoding ::: string = "cp1251") ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function htmlspecialchars ($str ::: string, $flags ::: int = ENT_COMPAT) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function htmlspecialchars_decode ($str ::: string, $flags ::: int = ENT_COMPAT) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function levenshtein ($str1 ::: string, $str2 ::: string) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function mysql_escape_string ($str ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function nl2br ($str ::: string, $is_xhtml = true) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function number_format ($number ::: float, $decimals ::: int = 0, $dec_point = '.', $thousands_sep = ',') ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function parse_str ($str ::: string, &$arr ::: mixed) ::: void; // TODO: why no ::: array? // TODO because it is an output parameter, input can have any type and it's ok.
+
+/** @kphp-extern-func-info unsupported-stub */
+function ord ($c ::: string) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function strcasecmp ($str1 ::: string, $str2 ::: string) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function strcmp ($str1 ::: string, $str2 ::: string) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function stripcslashes ($str ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function stripslashes ($str ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function strip_tags ($str ::: string, $allow ::: string|string[] = "") ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function strncmp ($str1 ::: string, $str2 ::: string, $len ::: int) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function strnatcmp ($str1 ::: string, $str2 ::: string) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function wordwrap ($str ::: string, $width ::: int = 75, $break ::: string = '\n', $cut ::: bool = false) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function ip2long ($ip ::: string) ::: int | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function ip2ulong ($ip ::: string) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function long2ip ($ip ::: int) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function thread_pool_test_load($size ::: int, $n ::: int, $a ::: float, $b ::: float) ::: float;
+
+/** @kphp-extern-func-info unsupported-stub */
+function get_magic_quotes_gpc() ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function php_sapi_name() ::: string;
+
+define('STR_PAD_LEFT', 0);
+define('STR_PAD_RIGHT', 1);
+define('STR_PAD_BOTH', 2);
+
+/** @kphp-extern-func-info unsupported-stub */
+function str_pad ($input ::: string, $len ::: int, $pad_str ::: string = " ", $pad_type ::: int = STR_PAD_RIGHT) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function str_repeat ($s ::: string, $multiplier ::: int) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function lcfirst ($str ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function ucfirst ($str ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function ucwords ($str ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function vprintf ($format ::: string, $args ::: array) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function printf ($format ::: string, ...$args) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function vsprintf ($format ::: string, $args ::: array) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function sprintf ($format ::: string, ...$args) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function vfprintf ($stream, $format ::: string, $args ::: array) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function fprintf ($stream, $format ::: string, ...$args) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function fputcsv ($stream, $fields ::: array, $delimiter = ",", $enclosure = "\"", $escape = "\\") ::: int | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function fgetcsv ($stream, $length = 0, $delimiter = ",", $enclosure = "\"", $escape = "\\") ::: mixed[] | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function strtr ($subject ::: string, $replace_pairs, $third = TODO) ::: string;//TODO
+
+/** @kphp-extern-func-info unsupported-stub */
+function str_replace ($search, $replace, $subject, &$count ::: int = TODO) ::: ^3 | string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function str_ireplace ($search, $replace, $subject, &$count ::: int = TODO) ::: ^3 | string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function str_split ($str ::: string, $split_length ::: int = 1) ::: string[];
+
+/** @kphp-extern-func-info unsupported-stub */
+function strspn ($haystack ::: string, $char_list ::: string, $offset ::: int = 0) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function strcspn ($haystack ::: string, $char_list ::: string, $offset ::: int = 0) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function strpbrk ($haystack ::: string, $char_list ::: string) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function strpos ($haystack ::: string, $needle, $offset ::: int = 0) ::: int | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function stripos ($haystack ::: string, $needle, $offset ::: int = 0) ::: int | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function strrpos ($haystack ::: string, $needle, $offset ::: int = 0) ::: int | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function strripos ($haystack ::: string, $needle, $offset ::: int = 0) ::: int | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function strstr ($haystack ::: string, $needle, $before_needle ::: bool = false) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function stristr ($haystack ::: string, $needle, $before_needle ::: bool = false) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function strrchr ($haystack ::: string, $needle ::: string) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function strrev ($str ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function strtolower ($str ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function strtoupper ($str ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function substr ($str ::: string, $start ::: int, $length ::: int = PHP_INT_MAX) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function substr_count ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $length ::: int = PHP_INT_MAX) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function substr_replace (string $str, string $replacement, $start ::: int, $length ::: int = PHP_INT_MAX) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function substr_compare ($main_str ::: string, $str ::: string, $offset ::: int, $length ::: int = PHP_INT_MAX, $case_insensitivity ::: bool = false) ::: int | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function str_starts_with ($haystack ::: string, $needle ::: string) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function str_ends_with ($haystack ::: string, $needle ::: string) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function trim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function ltrim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function rtrim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function xor_strings ($s ::: string, $t ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function similar_text ($first ::: string, $second ::: string, float &$percent = TODO) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function extension_loaded(string $extension): bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function ctype_alnum(mixed $text): bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function ctype_alpha(mixed $text): bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function ctype_cntrl(mixed $text): bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function ctype_digit(mixed $text): bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function ctype_graph(mixed $text): bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function ctype_lower(mixed $text): bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function ctype_print(mixed $text): bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function ctype_punct(mixed $text): bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function ctype_space(mixed $text): bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function ctype_upper(mixed $text): bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function ctype_xdigit(mixed $text): bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function setlocale ($category ::: int, $locale ::: string) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function iconv ($input_encoding ::: string, $output_encoding ::: string, $input_str ::: string) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function mb_check_encoding ($str ::: string, $encoding ::: string = "cp1251") ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function mb_strlen ($str ::: string, $encoding ::: string = "cp1251") ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function mb_strpos ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $encoding ::: string = "cp1251") ::: int | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function mb_stripos ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $encoding ::: string = "cp1251") ::: int | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function mb_strtolower ($str ::: string, $encoding ::: string = "cp1251") ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function mb_strtoupper ($str ::: string, $encoding ::: string = "cp1251") ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function mb_substr ($str ::: string, $start ::: int, $length ::: mixed = PHP_INT_MAX, $encoding ::: string = "cp1251") ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function bcscale ($scale ::: int) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function bcdiv ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function bcmod ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function bcpow ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function bcadd ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function bcsub ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function bcmul ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function bccomp ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function bcsqrt($num ::: string, $scale ::: int = PHP_INT_MIN): string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function mysqli_errno(\mysqli $dn) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function mysqli_error(\mysqli $dn) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function mysqli_affected_rows(\mysqli $dn) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function mysqli_fetch_array($query_id ::: int, $result_type ::: int) ::: mixed[] | null;
+
+/** @kphp-extern-func-info unsupported-stub */
+function mysqli_insert_id(\mysqli $dn) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function mysqli_num_rows($query_id ::: int) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function mysqli_query(\mysqli $dn, $query ::: string) ::: mixed;
+
+/** @kphp-extern-func-info unsupported-stub */
+function mysqli_connect($host ::: string, $username ::: string, $password ::: string, $db_name ::: string, $port ::: int) ::: \mysqli;
+
+/** @kphp-extern-func-info unsupported-stub */
+function mysqli_select_db(\mysqli $dn, $name ::: string) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function function_exists ($func_name ::: mixed) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function basename ($name ::: string, $suffix ::: string = '') ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function chmod ($name ::: string, $mode ::: int) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function clearstatcache() ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function copy ($from ::: string, $to ::: string) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function dirname ($name ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function file ($name ::: string) ::: string[] | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function file_get_contents ($name ::: string) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function file_put_contents ($name ::: string, $content ::: mixed, $flags ::: int = 0) ::: int | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function file_exists ($name ::: string) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function filesize ($name ::: string) ::: int | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function filectime ($name ::: string) ::: int | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function filemtime ($name ::: string) ::: int | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function is_dir ($name ::: string) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function is_file ($name ::: string) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function is_readable ($name ::: string) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function is_writeable ($name ::: string) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function mkdir ($name ::: string, $mode ::: int = 0777, $recursive ::: bool = false) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function php_uname ($mode ::: string = "a") ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function rename ($oldname ::: string, $newname ::: string) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function realpath ($path ::: string) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function tempnam ($dir ::: string, $prefix ::: string) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function unlink ($name ::: string) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function scandir ($directory ::: string) ::: string[] | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function sleep ($seconds ::: int) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function usleep ($micro_seconds ::: int) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function getimagesize ($name ::: string) ::: mixed;
+
+/** @kphp-extern-func-info unsupported-stub */
+function vk_utf8_to_win ($text ::: string, $max_len ::: int = 0, $exit_on_error ::: bool = false) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function vk_win_to_utf8 ($text ::: string, $escape ::: bool = true) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function vk_flex ($name ::: string, $case_name ::: string, $sex ::: int, $type ::: string, $lang_id ::: int = 0) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function vk_json_encode ($v ::: mixed) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function vk_json_encode_safe ($v ::: mixed) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function vk_whitespace_pack ($str ::: string, $html_opt ::: bool = false) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function vk_sp_simplify ($str ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function vk_sp_full_simplify ($str ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function vk_sp_deunicode ($str ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function vk_sp_to_upper ($str ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function vk_sp_to_lower ($str ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function vk_sp_to_sort ($str ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function vk_sp_remove_repeats ($str ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function vk_sp_to_cyrillic ($str ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function vk_sp_words_only ($str ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function vk_stats_hll_merge($str ::: mixed) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function vk_stats_hll_count($hll ::: string) ::: float | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function vk_stats_hll_create($a ::: array = array(), $size ::: int = 256) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function vk_stats_hll_add($hll ::: string, $a ::: array) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function vk_stats_hll_pack($hll ::: string) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function vk_stats_hll_unpack($hll ::: string) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function vk_stats_hll_is_packed($hll ::: string) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub cpp_template_call */
+function vk_dot_product ($a ::: array, $b ::: array) ::: ^1[*] | ^2[*];
+
+/** @kphp-extern-func-info unsupported-stub */
+function likely ($x ::: bool) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function unlikely ($x ::: bool) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function err ($file ::: string, $line ::: int, $code ::: string, $desc ::: string = '') ::: Exception;
+
+/** @kphp-extern-func-info unsupported-stub */
+function fetch_int () ::: int;
+/** @kphp-extern-func-info unsupported-stub */
+function fetch_long () ::: int;
+/** @kphp-extern-func-info unsupported-stub */
+function fetch_double () ::: float;
+/** @kphp-extern-func-info unsupported-stub */
+function fetch_float () ::: float;
+/** @kphp-extern-func-info unsupported-stub */
+function fetch_string () ::: string;
+/** @kphp-extern-func-info unsupported-stub */
+function fetch_string_as_int () ::: int;
+/** @kphp-extern-func-info unsupported-stub */
+function fetch_memcache_value () ::: mixed;
+/** @kphp-extern-func-info unsupported-stub */
+function fetch_eof () ::: bool;
+/** @kphp-extern-func-info unsupported-stub */
+function fetch_end () ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function fetch_lookup_int () ::: int;
+/** @kphp-extern-func-info unsupported-stub */
+function fetch_lookup_data ($x4_bytes_length ::: int) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function rpc_parse ($data) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function extract_kphp_rpc_response_extra_info ($resumable_id ::: int) ::: ?tuple(int, float);
+
+/** @kphp-extern-func-info unsupported-stub */
+function new_rpc_connection ($str ::: string, $port ::: int, $actor_id ::: mixed = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: \RpcConnection; // TODO: make actor_id int
+
+/** @kphp-extern-func-info unsupported-stub */
+function store_gzip_pack_threshold ($pack_threshold_bytes ::: int) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function store_start_gzip_pack() ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function store_finish_gzip_pack ($pack_threshold_bytes ::: int) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function rpc_clean() ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function store_header ($actor_id ::: mixed, $flags ::: int = 0) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function store_error ($error_code ::: int, $error_text ::: string) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function store_raw ($v ::: string) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function set_fail_rpc_on_int32_overflow ($fail_rpc ::: bool) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function store_int ($v ::: int) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function store_long ($v ::: int) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function store_double ($v ::: float) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function store_float ($v ::: float) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function store_string ($v ::: string) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function store_many (...$args) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function store_finish() ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function rpc_send (\RpcConnection $rpc_conn, $timeout ::: float = -1.0) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function rpc_send_noflush (\RpcConnection $rpc_conn, $timeout ::: float = -1.0) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function rpc_flush () ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function rpc_get ($request_id ::: int) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function rpc_get_synchronously ($request_id ::: int) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function rpc_get_and_parse ($request_id ::: int) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function rpc_queue_create ($request_ids ::: mixed = TODO) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function rpc_queue_push ($queue_id ::: int, $request_ids ::: mixed) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function rpc_queue_empty ($queue_id ::: int) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function rpc_queue_next ($queue_id ::: int, $timeout ::: float = -1.0) ::: int | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function rpc_queue_next_synchronously ($queue_id ::: int) ::: int | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function rpc_wait ($request_id ::: int) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function rpc_wait_concurrently ($request_id ::: int) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function rpc_mc_parse_raw_wildcard_with_flags_to_array ($raw_result ::: string, &$result ::: array) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function rpc_tl_query_one (\RpcConnection $rpc_conn, $arr ::: mixed, $timeout ::: float = -1.0) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function rpc_tl_query_result_one ($query_id ::: int) ::: mixed[];
+
+/** @kphp-extern-func-info unsupported-stub */
+function rpc_tl_query_result_synchronously ($query_ids ::: array) ::: mixed[][];
+
+/** @kphp-extern-func-info unsupported-stub */
+function rpc_tl_pending_queries_count () ::: int;
+
+/** @kphp-extern-func-info unsupported-stub tl_common_h_dep */
+function typed_rpc_tl_query_one (\RpcConnection $connection, @tl\RpcFunction $query_function, $timeout ::: float = -1.0) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub tl_common_h_dep */
+function typed_rpc_tl_query_result_one (int $query_id) ::: @tl\RpcResponse;
+
+/** @kphp-extern-func-info unsupported-stub tl_common_h_dep */
+function typed_rpc_tl_query_result_synchronously (int[] $query_ids) ::: @tl\RpcResponse[];
+
+/** @kphp-extern-func-info unsupported-stub */
+function rpc_server_fetch_request() ::: @tl\RpcFunction;
+
+/** @kphp-extern-func-info unsupported-stub */
+function rpc_server_store_response(@tl\RpcFunctionReturnResult $response) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub cpp_template_call */
+function wait_multi (future<any>[] $resumables) ::: (^1[*][*] | null)[];
+
+/** @kphp-extern-func-info unsupported-stub cpp_template_call */
+function wait_synchronously (future<any> | false $id) ::: ^1[*] | null;
+
+/** @kphp-extern-func-info unsupported-stub */
+function wait_concurrently ($id ::: future<any>) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function wait_queue_create (array< future<any> | false > $request_ids = []) ::: future_queue<^1[*][*]>;
+
+/** @kphp-extern-func-info unsupported-stub */
+function wait_queue_push (future_queue<any> &$queue_id, future<any> | false $request_ids) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function wait_queue_empty (future_queue<any> $queue_id) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function wait_queue_next (future_queue<any> $queue_id, $timeout ::: float = -1.0) ::: future<^1[*]> | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function wait_queue_next_synchronously (future_queue<any> $queue_id) ::: future<^1[*]> | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function get_running_fork_id() ::: future <void>;
+
+/** @kphp-extern-func-info unsupported-stub */
+function get_fork_stat(future<any> $fork) ::: mixed[] | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function query_x2 ($x ::: int) ::: int;
+
+define('SEEK_SET', 0);
+define('SEEK_END', 1);
+define('SEEK_CUR', 2);
+
+/** @kphp-extern-func-info unsupported-stub */
+function fopen ($filename ::: string, $mode ::: string) ::: mixed;
+
+/** @kphp-extern-func-info unsupported-stub */
+function fwrite ($stream, $text ::: string) ::: int | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function fseek ($stream, $offset ::: int, $whence ::: int = SEEK_SET) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function rewind ($stream) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function ftell ($stream) ::: int | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function fread ($stream, $length ::: int) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function fgetc ($stream) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function fgets ($stream, $length ::: int = -1) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function fpassthru ($stream) ::: int | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function fflush ($stream) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function feof ($stream) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function fclose ($stream) ::: bool;
+
+define('STREAM_CLIENT_CONNECT', 1);
+define('DEFAULT_SOCKET_TIMEOUT', 60);
+
+/** @kphp-extern-func-info unsupported-stub */
+function stream_context_create ($options ::: mixed = array()) ::: mixed;
+
+/** @kphp-extern-func-info unsupported-stub */
+function stream_context_set_option (&$context, $options_or_wrapper_name ::: mixed, $option ::: string = TODO, $value ::: mixed = TODO) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function stream_socket_client ($url ::: string, &$error_number ::: mixed = TODO, &$error_description ::: mixed = TODO, $timeout ::: float = DEFAULT_SOCKET_TIMEOUT, $flags ::: int = STREAM_CLIENT_CONNECT, $context = null) ::: mixed;
+
+/** @kphp-extern-func-info unsupported-stub */
+function stream_set_blocking ($stream, $mode ::: bool) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function stream_set_write_buffer ($stream, $size ::: int) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function stream_set_read_buffer ($stream, $size ::: int) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function stream_select (&$read, &$write, &$except, $tv_sec, $tv_usec ::: int = 0) ::: int | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function is_uploaded_file ($filename ::: string) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function move_uploaded_file ($oldname ::: string, $newname ::: string) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function mail ($to ::: string, $subject ::: string, $message ::: string, $additional_headers ::: string = "") ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function curl_init ($url ::: string = "") ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function curl_reset ($curl_handle ::: int) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function curl_setopt ($curl_handle ::: int, $option ::: int, $value ::: mixed) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function curl_setopt_array ($curl_handle ::: int, $options ::: array) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function curl_exec ($curl_handle ::: int) ::: mixed;
+
+/** @kphp-extern-func-info unsupported-stub */
+function curl_getinfo ($curl_handle ::: int, $option ::: int = 0) ::: mixed;
+
+/** @kphp-extern-func-info unsupported-stub */
+function curl_error ($curl_handle ::: int) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function curl_errno ($curl_handle ::: int) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function curl_close ($curl_handle ::: int) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function curl_exec_concurrently($curl_handle ::: int, $timeout ::: float = 1.0): string|false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function curl_multi_init () ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function curl_multi_add_handle ($multi_handle ::: int, $curl_handle ::: int) ::: int|false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function curl_multi_getcontent ($curl_handle ::: int ) ::: string|false|null;
+
+/** @kphp-extern-func-info unsupported-stub */
+function curl_multi_setopt ($multi_handle ::: int, $option ::: int, $value ::: int) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function curl_multi_exec ($multi_handle ::: int, &$still_running ::: int) ::: int|false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function curl_multi_select ($multi_handle ::: int, $timeout ::: float = 1.0) ::: int|false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function curl_multi_info_read ($multi_handle ::: int, &$msgs_in_queue ::: int = TODO) ::: int[]|false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function curl_multi_remove_handle ($multi_handle ::: int, $curl_handle ::: int) ::: int|false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function curl_multi_errno ($multi_handle ::: int) ::: int|false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function curl_multi_close ($multi_handle ::: int) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function curl_multi_strerror ($errornum ::: int) ::: string|null;
+
+/** @kphp-extern-func-info unsupported-stub */
+function get_reference_counter ($v) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function prepare_search_query ($query ::: string) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function exec($command ::: string, &$output ::: mixed = [], int &$result_code = 0): string|false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function system($command ::: string, int &$result_code = 0): int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function passthru($command ::: string, int &$result_code = 0): false|null;
+
+/** @kphp-extern-func-info unsupported-stub */
+function escapeshellarg($arg ::: string): string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function escapeshellcmd($cmd ::: string): string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function raise_sigsegv () ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function instance_to_array(object $instance, $with_class_names ::: bool = false) ::: mixed[];
+
+/** @kphp-extern-func-info unsupported-stub */
+function to_array_debug(any $instance, bool $with_class_names = false) ::: mixed[];
+
+/** @kphp-extern-func-info unsupported-stub cpp_template_call */
+function instance_cache_fetch(string $type, string $key, bool $even_if_expired = false) ::: instance<^1>;
+
+/** @kphp-extern-func-info unsupported-stub */
+function instance_cache_store(string $key, object $value, int $ttl = 0) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function instance_cache_update_ttl(string $key, int $ttl = 0) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function instance_cache_delete(string $key) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function instance_serialize(object $instance) ::: string | null;
+
+/** @kphp-extern-func-info unsupported-stub */
+function instance_serialize_safe(object $instance) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub cpp_template_call */
+function instance_deserialize($serialized ::: string, $to_type ::: string) ::: instance<^2>;
+
+/** @kphp-extern-func-info unsupported-stub cpp_template_call */
+function instance_deserialize_safe($serialized ::: string, $to_type ::: string) ::: instance<^2>;
+
+/** @kphp-extern-func-info unsupported-stub */
+function is_confdata_loaded() ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function confdata_get_value($key ::: string) ::: mixed;
+
+/** @kphp-extern-func-info unsupported-stub */
+function confdata_get_values_by_any_wildcard($wildcard ::: string) ::: mixed[];
+
+/** @kphp-extern-func-info unsupported-stub */
+function confdata_get_values_by_predefined_wildcard($wildcard ::: string) ::: mixed[];
+
+/** @kphp-extern-func-info unsupported-stub */
+function profiler_set_log_suffix($suffix ::: string) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function profiler_set_function_label($label ::: string) ::: void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function profiler_is_enabled() ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function classof(object $object) ::: string;
+
+/** @kphp-extern-func-info unsupported-stub */
+function kphp_job_worker_start(KphpJobWorkerRequest $request, float $timeout) ::: future<KphpJobWorkerResponse> | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function kphp_job_worker_start_no_reply(KphpJobWorkerRequest $request, float $timeout) ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function kphp_job_worker_start_multi(KphpJobWorkerRequest[] $request, float $timeout) ::: (future<KphpJobWorkerResponse> | false)[];
+
+/** @kphp-extern-func-info unsupported-stub */
+function kphp_job_worker_fetch_request() ::: KphpJobWorkerRequest;
+
+/** @kphp-extern-func-info unsupported-stub */
+function kphp_job_worker_store_response(KphpJobWorkerResponse $response) ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function is_kphp_job_workers_enabled() ::: bool;
+
+/** @kphp-extern-func-info unsupported-stub */
+function get_job_workers_number() ::: int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function zstd_compress(string $data, int $level = 3) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function zstd_uncompress(string $data) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function zstd_compress_dict(string $data, string $dict) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function zstd_uncompress_dict(string $data, string $dict) ::: string | false;
+
+/** @kphp-extern-func-info unsupported-stub */
+function reset_array_iterator(ArrayIterator $iter, $array ::: mixed[]) : ArrayIterator;
+
+/** @kphp-extern-func-info unsupported-stub */
+function ffi_memcpy_string(\FFI\CData $dst, string $src, int $size);
+
+/** @kphp-extern-func-info unsupported-stub */
+function ffi_cast_addr2ptr(int $addr);
+
+/** @kphp-extern-func-info unsupported-stub */
+function ffi_cast_ptr2addr(\FFI\CData $ptr);
+
+/** @kphp-extern-func-info unsupported-stub */
+function ffi_array_set(\FFI\CData $arr, int $index, $value): void;
+
+/** @kphp-extern-func-info unsupported-stub */
+function ffi_array_get(\FFI\CData $arr, int $index);
+
+/** @kphp-extern-func-info unsupported-stub */
+function numa_get_bound_node(): int;
+
+/** @kphp-extern-func-info unsupported-stub */
+function getenv(string $varname = '', bool $local_only = false): mixed;
+

@@ -1,8 +1,15 @@
 <?php
 
+define('TODO', -1);
+define('TODO_OVERLOAD', -1);
+
+define('PHP_INT_MAX', 9223372036854775807);
 define('PHP_INT_MIN', -9223372036854775808);
 define('PHP_INT_SIZE', 8);
 define('PHP_EOL', "\n");
+
+require_once __DIR__ . '/unsupported.txt';
+
 
 /** @var mixed $_SERVER */
 global $_SERVER;
@@ -63,9 +70,6 @@ function is_bool ($v ::: mixed) ::: bool;
 function is_int ($v ::: mixed) ::: bool;
 function is_integer ($v ::: mixed) ::: bool;
 function is_long ($v ::: mixed) ::: bool;
-function is_finite ($v ::: float) ::: bool;
-function is_infinite ($v ::: float) ::: bool;
-function is_nan ($v ::: float) ::: bool;
 function is_float ($v ::: mixed) ::: bool;
 function is_double ($v ::: mixed) ::: bool;
 function is_real ($v ::: mixed) ::: bool;
