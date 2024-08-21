@@ -104,8 +104,8 @@ static void do_var_dump(const mixed &v, int depth) {
     }
     case mixed::type::OBJECT: {
       php_warning("var_dump used on object");
-      auto s = string(v.as_object()->get_class(), (string::size_type)strlen(v.as_object()->get_class()));
-      *coub << shift << "string(" << (int)s.size() << ") \"" << s << '"';
+      auto s = string(v.as_object()->get_class(), static_cast<string::size_type>(strlen(v.as_object()->get_class())));
+      *coub << shift << "string(" << static_cast<int>(s.size()) << ") \"" << s << '"';
       break;
     }
     default:
