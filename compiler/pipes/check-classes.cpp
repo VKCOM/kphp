@@ -126,6 +126,19 @@ void CheckClassesPass::check_serialized_fields(ClassPtr klass) {
       }
       f.serialization_tag = kphp_serialized_field;
       f.serialize_as_float32 = f.phpdoc->has_tag(PhpDocType::kphp_serialized_float32);
+
+      auto f_tag = f.serialization_tag;
+      the_klass = klass->parent_class;
+      while (the_klass) {
+        auto same_numbered_field = the_klass->members.find_member([&f_tag](const ClassMemberInstanceField &f) {
+          return f.serialization_tag == f_tag;
+        });
+        if (same_numbered_field) {
+          kphp_error_return(false, fmt_format("kphp-serialized-field: field with number {} found in both classes {} and {}", f_tag, the_klass->name, klass->name));
+        }
+        the_klass = the_klass->parent_class;
+      }
+
       used_serialization_tags_for_fields[kphp_serialized_field] = true;
     } catch (std::logic_error &) {
       kphp_error_return(false, fmt_format("bad kphp-serialized-field: '{}'", value));
