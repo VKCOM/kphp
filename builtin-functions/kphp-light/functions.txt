@@ -205,7 +205,7 @@ function json_decode ($v ::: string, $assoc ::: bool = false) ::: mixed;
 // === Misc =======================================================================================
 
 /** @kphp-extern-func-info cpp_template_call */
-function instance_cast(object $instance, $to_type ::: string) ::: instance<^2>;
+function instance_cast(any $instance, $to_type ::: string) ::: instance<^2>;
 
 function make_clone ($x ::: any) ::: ^1;
 
