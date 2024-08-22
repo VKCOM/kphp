@@ -185,7 +185,7 @@ private:
     inline array_inner &operator=(const array_inner &other) = delete;
 
   private:
-    inline array_inner()
+    inline array_inner() noexcept
       : is_vector_internal(true)
       , ref_cnt(ExtraRefCnt::for_global_const)
       , max_key(-1)
