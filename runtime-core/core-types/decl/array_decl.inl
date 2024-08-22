@@ -99,8 +99,8 @@ private:
     uint32_t size;
     uint32_t buf_size;
 
-    // we need it because of automatic padding
-    [[deprecated("The use of this variable is prohibited. See entries()")]] alignas(array_bucket) std::byte head_entry_marker[sizeof(array_bucket)];
+    /// we need it because of automatic padding, don't use it. See entries()
+    alignas(array_bucket) std::byte head_entry_marker[sizeof(array_bucket)];
 
     inline bool is_vector() const noexcept __attribute__ ((always_inline));
 
