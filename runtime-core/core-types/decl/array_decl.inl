@@ -52,15 +52,6 @@ struct array_list_hash_entry {
 
 struct ArrayBucketDummyStrTag{};
 
-struct array_inner_control {
-  bool is_vector_internal;
-  int ref_cnt;
-  int64_t max_key;
-  array_list_hash_entry last;
-  uint32_t size;
-  uint32_t buf_size;
-};
-
 template<class T>
 class array {
 public:
@@ -95,14 +86,21 @@ private:
     uint32_t string_size{0};
   };
 
-  struct array_inner : array_inner_control {
+  struct array_inner {
     static constexpr uint32_t MAX_HASHTABLE_SIZE = (1 << 26);
     //empty hash_entry identified by (next == EMPTY_POINTER)
     static constexpr entry_pointer_type EMPTY_POINTER = 0;
     static constexpr size_t ENTRIES_OFFSET = offsetof(array_inner, head_entry_marker);
 
+    bool is_vector_internal;
+    int ref_cnt;
+    int64_t max_key;
+    array_list_hash_entry last;
+    uint32_t size;
+    uint32_t buf_size;
+
     // we need it because of automatic padding
-    array_bucket head_entry_marker;
+    [[deprecated("The use of this variable is prohibited. See entries()")]] alignas(array_bucket) std::byte head_entry_marker[sizeof(array_bucket)];
 
     inline bool is_vector() const noexcept __attribute__ ((always_inline));
 
