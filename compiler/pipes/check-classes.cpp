@@ -127,6 +127,7 @@ void CheckClassesPass::check_serialized_fields(ClassPtr klass) {
       f.serialization_tag = kphp_serialized_field;
       f.serialize_as_float32 = f.phpdoc->has_tag(PhpDocType::kphp_serialized_float32);
 
+      // Check if there is a field with the same number available above in hierarchy
       auto f_tag = f.serialization_tag;
       the_klass = klass->parent_class;
       while (the_klass) {
