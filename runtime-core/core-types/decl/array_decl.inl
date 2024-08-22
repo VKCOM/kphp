@@ -192,7 +192,7 @@ private:
       , last({0, 0})
       , size(0)
       , buf_size(2)
-      , head_entry_marker(std::byte{0}) {}
+      , head_entry_marker() {}
   };
 
   inline bool mutate_if_vector_shared(uint32_t mul = 1);

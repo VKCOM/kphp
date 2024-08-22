@@ -105,8 +105,11 @@ bool array<T>::is_int_key(const typename array<T>::key_type &key) {
 
 template<>
 inline typename array<Unknown>::array_inner *array<Unknown>::array_inner::empty_array() {
-  static array<Unknown>::array_inner empty_array;
-  return &empty_array;
+  // We need this hack to suppress false positive error
+  // when accessing `fields_for_map` that are allocated
+  // just in front of `array_inner` instance object
+  static array<Unknown>::array_inner empty_array[2];
+  return &empty_array[1];
 }
 
 template<class T>
