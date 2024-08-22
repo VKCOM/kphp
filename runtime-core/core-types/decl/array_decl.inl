@@ -100,7 +100,7 @@ private:
     uint32_t buf_size;
 
     /// we need it because of automatic padding, don't use it. See entries()
-    alignas(array_bucket) std::byte head_entry_marker[sizeof(array_bucket)];
+    alignas(array_bucket) std::byte head_entry_marker = std::byte{0};
 
     inline bool is_vector() const noexcept __attribute__ ((always_inline));
 
@@ -183,6 +183,16 @@ private:
 
     inline array_inner(const array_inner &other) = delete;
     inline array_inner &operator=(const array_inner &other) = delete;
+
+  private:
+    inline array_inner()
+      : is_vector_internal(true)
+      , ref_cnt(ExtraRefCnt::for_global_const)
+      , max_key(-1)
+      , last({0, 0})
+      , size(0)
+      , buf_size(2)
+      , head_entry_marker(std::byte{0}) {}
   };
 
   inline bool mutate_if_vector_shared(uint32_t mul = 1);
