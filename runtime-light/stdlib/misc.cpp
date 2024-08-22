@@ -6,13 +6,13 @@
 
 #include <cstdint>
 
+#include "runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/component/component.h"
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/header.h"
 #include "runtime-light/stdlib/superglobals.h"
 #include "runtime-light/streams/streams.h"
 #include "runtime-light/utils/context.h"
-#include "runtime-light/utils/panic.h"
 
 namespace {
 
@@ -60,7 +60,7 @@ task_t<void> finish(int64_t exit_code, bool from_exit) { // TODO: use exit code
   const auto ob_total_buffer = ob_merge_buffers();
   Response &response = component_ctx.response;
   auto &buffer = response.output_buffers[ob_total_buffer];
-  if (co_await write_all_to_stream(standard_stream, buffer.c_str(), buffer.size())) {
+  if ((co_await write_all_to_stream(standard_stream, buffer.c_str(), buffer.size())) != buffer.size()) {
     php_warning("can't write component result to stream %" PRIu64, standard_stream);
   }
   component_ctx.release_all_streams();

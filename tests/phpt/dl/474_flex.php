@@ -1,4 +1,4 @@
-@ok benchmark
+@ok k2_skip benchmark
 <?php
 
 $langs = array (0, 1, 2, 8, 11, 19, 21, 51, 52, 91, 100, 777, 888, 999);

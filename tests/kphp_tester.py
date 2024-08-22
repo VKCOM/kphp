@@ -60,7 +60,7 @@ class TestFile:
             vkext_dir=os.path.abspath(os.path.join(tester_dir, os.path.pardir, "objs", "vkext")),
             use_nocc=use_nocc,
             cxx_name=cxx_name,
-            k2_bin=k2_bin
+            k2_bin=os.path.abspath(k2_bin)
         )
 
     def set_up_env_for_k2(self, cxx_name="clang++"):
@@ -68,7 +68,6 @@ class TestFile:
         self.env_vars["KPHP_USER_BINARY_PATH"] = "component.so"
         self.env_vars["KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS"] = "0"
         self.env_vars["KPHP_PROFILER"] = "0"
-        self.env_vars["KPHP_CXX"] = cxx_name
         self.env_vars["KPHP_K2_COMPONENT_IS_ONESHOT"] = "1"
         self.env_vars["KPHP_FORCE_LINK_RUNTIME"] = "1"
 

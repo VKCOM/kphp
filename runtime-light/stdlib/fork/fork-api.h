@@ -5,9 +5,11 @@
 #pragma once
 
 #include <chrono>
+#include <concepts>
 #include <cstdint>
 
 #include "runtime-core/core-types/decl/optional.h"
+#include "runtime-core/runtime-core.h"
 #include "runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"
@@ -23,7 +25,7 @@ constexpr auto DEFAULT_TIMEOUT_NS = std::chrono::duration_cast<std::chrono::nano
 } // namespace fork_api_impl_
 
 template<typename T>
-requires(is_optional<T>::value) task_t<T> f$wait(int64_t fork_id, double timeout = -1.0) noexcept {
+requires(is_optional<T>::value || std::same_as<T, mixed>) task_t<T> f$wait(int64_t fork_id, double timeout = -1.0) noexcept {
   auto &fork_ctx{ForkComponentContext::get()};
   if (!fork_ctx.contains(fork_id)) {
     php_warning("can't find fork %" PRId64, fork_id);
@@ -38,10 +40,10 @@ requires(is_optional<T>::value) task_t<T> f$wait(int64_t fork_id, double timeout
 }
 
 template<typename T>
-requires(is_optional<T>::value) task_t<T> f$wait(Optional<int64_t> fork_id_opt, double timeout = -1.0) noexcept {
+requires(is_optional<T>::value || std::same_as<T, mixed>) task_t<T> f$wait(Optional<int64_t> fork_id_opt, double timeout = -1.0) noexcept {
   co_return co_await f$wait<T>(fork_id_opt.has_value() ? fork_id_opt.val() : INVALID_FORK_ID, timeout);
 }
 
 task_t<void> f$sched_yield() noexcept;
 
-task_t<void> f$sched_yield_sleep(int64_t duration_ns) noexcept;
+task_t<void> f$sched_yield_sleep(double duration) noexcept;

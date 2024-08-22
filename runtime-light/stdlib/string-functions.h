@@ -1,7 +1,6 @@
 #pragma once
 
 #include "runtime-core/runtime-core.h"
-#include <type_traits>
 
 void print(const char *s, size_t s_len);
 
