@@ -90,7 +90,7 @@ private:
     static constexpr uint32_t MAX_HASHTABLE_SIZE = (1 << 26);
     //empty hash_entry identified by (next == EMPTY_POINTER)
     static constexpr entry_pointer_type EMPTY_POINTER = 0;
-    static constexpr size_t ENTRIES_OFFSET = (sizeof(array_inner) + alignof(array_bucket) - 1) / alignof(array_bucket) * alignof(array_bucket);
+    static constexpr size_t ENTRIES_OFFSET = sizeof(array_inner);
     bool is_vector_internal;
     int ref_cnt;
     int64_t max_key;
