@@ -105,8 +105,8 @@ bool array<T>::is_int_key(const typename array<T>::key_type &key) {
 
 template<>
 inline typename array<Unknown>::array_inner *array<Unknown>::array_inner::empty_array() {
-  static array<Unknown>::array_inner empty_array;
-  return &empty_array;
+  static array<Unknown>::array_inner empty_array[2];
+  return &empty_array[1];
 }
 
 template<class T>
@@ -209,14 +209,14 @@ const typename array<T>::array_inner_fields_for_map &array<T>::array_inner::fiel
 
 template<class T>
 size_t array<T>::array_inner::sizeof_vector(uint32_t int_size) noexcept {
-  return (sizeof(array_inner) - sizeof(std::byte)) // head_entry_marker byte
+  return sizeof(array_inner)
          + int_size * sizeof(T);
 }
 
 template<class T>
 size_t array<T>::array_inner::sizeof_map(uint32_t int_size) noexcept {
   return sizeof(array_inner_fields_for_map)
-         + (sizeof(array_inner) - sizeof(std::byte)) // head_entry_marker byte
+         + sizeof(array_inner)
          + int_size * sizeof(array_bucket);
 }
 

@@ -90,18 +90,13 @@ private:
     static constexpr uint32_t MAX_HASHTABLE_SIZE = (1 << 26);
     //empty hash_entry identified by (next == EMPTY_POINTER)
     static constexpr entry_pointer_type EMPTY_POINTER = 0;
-    static constexpr size_t ENTRIES_OFFSET = offsetof(array_inner, head_entry_marker);
-
+    static constexpr size_t ENTRIES_OFFSET = ((offsetof(array_inner, buf_size) + sizeof(uint32_t)) + alignof(array_bucket) - 1) / alignof(array_bucket) * alignof(array_bucket);
     bool is_vector_internal;
     int ref_cnt;
     int64_t max_key;
     array_list_hash_entry last;
     uint32_t size;
     uint32_t buf_size;
-
-    /// we need it because of automatic padding, don't use it. See entries()
-    alignas(array_bucket) std::byte head_entry_marker = std::byte{0};
-
     inline bool is_vector() const noexcept __attribute__ ((always_inline));
 
     inline array_bucket* entries() noexcept __attribute__ ((always_inline));
@@ -191,8 +186,7 @@ private:
       , max_key(-1)
       , last({0, 0})
       , size(0)
-      , buf_size(2)
-      , head_entry_marker() {}
+      , buf_size(2) {}
   };
 
   inline bool mutate_if_vector_shared(uint32_t mul = 1);
