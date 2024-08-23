@@ -105,11 +105,8 @@ bool array<T>::is_int_key(const typename array<T>::key_type &key) {
 
 template<>
 inline typename array<Unknown>::array_inner *array<Unknown>::array_inner::empty_array() {
-  // We need this hack to suppress false positive error
-  // when accessing `fields_for_map` that are allocated
-  // just in front of `array_inner` instance object
-  static array<Unknown>::array_inner empty_array[2];
-  return &empty_array[1];
+  static array<Unknown>::array_inner empty_array;
+  return &empty_array;
 }
 
 template<class T>
@@ -212,12 +209,15 @@ const typename array<T>::array_inner_fields_for_map &array<T>::array_inner::fiel
 
 template<class T>
 size_t array<T>::array_inner::sizeof_vector(uint32_t int_size) noexcept {
-  return sizeof(array_inner) + int_size * sizeof(T);
+  return (sizeof(array_inner) - sizeof(std::byte)) // head_entry_marker byte
+         + int_size * sizeof(T);
 }
 
 template<class T>
 size_t array<T>::array_inner::sizeof_map(uint32_t int_size) noexcept {
-  return sizeof(array_inner_fields_for_map) + sizeof(array_inner) + int_size * sizeof(array_bucket);
+  return sizeof(array_inner_fields_for_map)
+         + (sizeof(array_inner) - sizeof(std::byte)) // head_entry_marker byte
+         + int_size * sizeof(array_bucket);
 }
 
 template<class T>
@@ -295,7 +295,7 @@ void array<T>::array_inner::dispose() {
       }
 
       php_assert(this != empty_array());
-      auto shifted_this = reinterpret_cast<char *>(this) - sizeof(array_inner_fields_for_map);
+      auto shifted_this = std::launder(reinterpret_cast<char *>(this)) - sizeof(array_inner_fields_for_map);
       RuntimeAllocator::current().free_script_memory(shifted_this, sizeof_map(buf_size));
     }
   }
