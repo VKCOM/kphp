@@ -153,10 +153,10 @@ function component_client_fetch_response($query ::: ComponentQuery) ::: string;
 function component_server_accept_query() ::: ComponentQuery;
 
 /** @kphp-extern-func-info interruptible */
-function component_server_fetch_request() ::: string;
+function component_server_fetch_request($query ::: ComponentQuery) ::: string;
 
 /** @kphp-extern-func-info interruptible */
-function component_server_send_response($message ::: string) ::: void;
+function component_server_send_response($query ::: ComponentQuery, $message ::: string) ::: void;
 
 // === Json =======================================================================================
 
