@@ -31,6 +31,7 @@ function strval ($v ::: mixed) ::: string;
 /** @kphp-extern-func-info interruptible */
 function exit($code = 0) ::: void;
 
+/** @kphp-extern-func-info interruptible */
 function die($code = 0) ::: void;
 
 function ob_clean() ::: void;
@@ -76,12 +77,14 @@ function get_hash_of_class (object $klass) ::: int;
 
 function strlen ($str ::: string) ::: int;
 
-// === Fork =======================================================================================
+// === Future =====================================================================================
 
 function get_running_fork_id() ::: future <void>;
 
 /** @kphp-extern-func-info interruptible cpp_template_call */
 function wait(future<any> | false $id, float $timeout = -1.0) ::: ^1[*] | null;
+
+// === Fork =======================================================================================
 
 /** @kphp-extern-func-info interruptible */
 function sched_yield() ::: void;
@@ -145,6 +148,9 @@ function component_client_send_request($name ::: string, $message ::: string) ::
 
 /** @kphp-extern-func-info interruptible */
 function component_client_fetch_response($query ::: ComponentQuery) ::: string;
+
+/** @kphp-extern-func-info interruptible */
+function component_server_accept_query() ::: ComponentQuery;
 
 /** @kphp-extern-func-info interruptible */
 function component_server_fetch_request() ::: string;

@@ -43,10 +43,9 @@ task_t<void> shutdown_script() noexcept {
   if ((co_await write_all_to_stream(standard_stream, buffer.buffer(), buffer.size())) != buffer.size()) {
     php_warning("can't write component result to stream %" PRIu64, standard_stream);
   }
-  component_ctx.release_all_streams();
 }
 
-task_t<void> f$exit(const mixed &v) noexcept {
+task_t<void> f$exit(const mixed &v) noexcept { // TODO: make it synchronous
   int64_t exit_code{};
   if (v.is_string()) {
     Response &response{get_component_context()->response};
@@ -59,7 +58,10 @@ task_t<void> f$exit(const mixed &v) noexcept {
     exit_code = 1;
   }
   co_await shutdown_script();
-  get_component_context()->poll_status = exit_code == 0 ? PollStatus::PollFinishedOk : PollStatus::PollFinishedError;
+  auto &component_ctx{*get_component_context()};
+  component_ctx.poll_status =
+    component_ctx.poll_status != PollStatus::PollFinishedError && exit_code == 0 ? PollStatus::PollFinishedOk : PollStatus::PollFinishedError;
+  component_ctx.release_all_streams();
   get_platform_context()->abort();
 }
 
