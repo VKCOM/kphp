@@ -185,7 +185,7 @@ private:
 };
 
 template<class T, class ...Args>
-class_instance<T> make_instance(Args &&...args) noexcept {
+constexpr class_instance<T> make_instance(Args &&...args) noexcept {
   class_instance<T> instance;
   instance.alloc(std::forward<Args>(args)...);
   return instance;

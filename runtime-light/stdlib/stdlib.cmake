@@ -1,12 +1,11 @@
 prepend(
   RUNTIME_STDLIB_SRC
   stdlib/
-  interface.cpp
-  misc.cpp
   output-control.cpp
   string-functions.cpp
   variable-handling.cpp
-  superglobals.cpp
+  component/component-api.cpp
+  exit/exit.cpp
   fork/fork-api.cpp
   fork/fork-context.cpp
   rpc/rpc-api.cpp

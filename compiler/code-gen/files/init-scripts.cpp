@@ -118,8 +118,8 @@ struct RunInterruptedFunction {
      * 1) Start when the request came in
      * 2) Collecting output buffer after script finished
      **/
-    std::string script_start = G->settings().k2_component_is_oneshot.get() ? "co_await f$component_get_http_query();" : "";
-    std::string script_finish = G->settings().k2_component_is_oneshot.get() ? "co_await finish(0, false);" : "";
+    std::string script_start = G->settings().k2_component_is_oneshot.get() ? "co_await accept_initial_stream();" : "";
+    std::string script_finish = G->settings().k2_component_is_oneshot.get() ? "co_await shutdown_script();" : "";
     FunctionSignatureGenerator(W) << "task_t<void> " << FunctionName(function) << "$run() " << BEGIN
                                   << script_start << NL
                                   << await_prefix << FunctionName(function) << "();" << NL
