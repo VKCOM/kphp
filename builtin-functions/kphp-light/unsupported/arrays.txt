@@ -1,0 +1,117 @@
+<?php
+
+function create_vector ($n ::: int, $x ::: any) ::: ^2[];
+
+function getKeyByPos ($a ::: array, $n ::: int) ::: mixed;
+function getValueByPos ($a ::: array, $n ::: int) ::: ^1[*];
+
+function array_first_key ($a ::: array) ::: mixed;
+function array_key_first($a ::: array): mixed;
+function array_first_value ($a ::: array) ::: ^1[*];
+function array_last_key ($a ::: array) ::: mixed;
+function array_key_last($a ::: array): mixed;
+function array_last_value ($a ::: array) ::: ^1[*];
+function array_swap_int_keys (&$a ::: array, $idx1 ::: int, $idx2 ::: int) ::: void;
+
+function array_chunk ($a ::: array, $chunk_size ::: int, $preserve_keys ::: bool = false) ::: ^1[];
+
+function array_splice (&$a ::: array, $offset ::: int, $length ::: int, $replacement ::: array = array()) ::: ^1;
+/** @kphp-extern-func-info cpp_template_call */
+function array_merge ($a1 ::: array, $a2  ::: array = array(), $a3  ::: array = array(),
+            $a4 ::: array = array(), $a5  ::: array = array(), $a6  ::: array = array(),
+            $a7 ::: array = array(), $a8  ::: array = array(), $a9  ::: array = array(),
+           $a10 ::: array = array(), $a11 ::: array = array(), $a12 ::: array = array())
+                ::: ^1 | ^2 | ^3 | ^4 | ^5 | ^6 | ^7 | ^8 | ^9 | ^10 | ^11 | ^12;
+/**
+ * @kphp-extern-func-info cpp_template_call cpp_variadic_call
+ * @kphp-pure-function
+ */
+function array_merge_recursive (...$a) ::: mixed[];
+function array_merge_into (&$a ::: array, $another_array ::: array) ::: void;
+/** @kphp-extern-func-info cpp_template_call */
+function array_merge_spread ($a1 ::: array, $a2  ::: array = array(), $a3  ::: array = array(),
+            $a4 ::: array = array(), $a5  ::: array = array(), $a6  ::: array = array(),
+            $a7 ::: array = array(), $a8  ::: array = array(), $a9  ::: array = array(),
+           $a10 ::: array = array(), $a11 ::: array = array(), $a12 ::: array = array())
+                ::: ^1 | ^2 | ^3 | ^4 | ^5 | ^6 | ^7 | ^8 | ^9 | ^10 | ^11 | ^12;
+/** @kphp-extern-func-info cpp_template_call */
+function array_replace ($base_array ::: array,
+            $replacements_1 ::: array = array(), $replacements_2  ::: array = array(), $replacements_3  ::: array = array(),
+            $replacements_4 ::: array = array(), $replacements_5  ::: array = array(), $replacements_6  ::: array = array(),
+            $replacements_7 ::: array = array(), $replacements_8  ::: array = array(), $replacements_9  ::: array = array(),
+            $replacements_10 ::: array = array(), $replacements_11 ::: array = array())
+                ::: ^1 | ^2 | ^3 | ^4 | ^5 | ^6 | ^7 | ^8 | ^9 | ^10 | ^11 | ^12;
+function array_intersect_key ($a1 ::: array, $a2 ::: array) ::: ^1;
+function array_intersect ($a1 ::: array, $a2 ::: array) ::: ^1;
+function array_intersect_assoc ($a1 ::: array, $a2 ::: array, $a3 ::: array = TODO) ::: ^1;
+function array_diff_key ($a1 ::: array, $a2 ::: array) ::: ^1;
+function array_diff ($a1 ::: array, $a2 ::: array, $a3 ::: array = TODO) ::: ^1;
+function array_diff_assoc ($a1 ::: array, $a2 ::: array, $a3 ::: array = TODO) ::: ^1;
+function array_reverse ($a ::: array, $preserve_keys ::: bool = false) ::: ^1;
+function array_shift (&$a ::: array) ::: ^1[*];
+function array_unshift (&$a ::: array, $val ::: any) ::: int;
+function array_key_exists ($v ::: any, $a ::: array) ::: bool;
+function array_search ($val ::: any, $a ::: array, $strict ::: bool = false) ::: mixed;
+function array_find ($val ::: array, callable(^1[*] $x):bool $callback) ::: tuple(mixed, ^1[*]);
+function array_rand ($a ::: array, $num ::: int = 1) ::: mixed;
+function array_keys ($a ::: array) ::: mixed[];
+function array_keys_as_strings ($a ::: array) ::: string[];
+function array_keys_as_ints ($a ::: array) ::: int[];
+function array_values ($a ::: array) ::: ^1;
+function array_unique ($a ::: array, int $flags = SORT_STRING) ::: ^1;
+function array_count_values ($a ::: array) ::: int[];
+function array_flip ($a ::: array) ::: mixed[];
+function in_array ($value ::: any, $a ::: array, $strict ::: bool = false) ::: bool;
+function array_fill ($start_index ::: int, $num ::: int, $value ::: any) ::: ^3[];
+function array_fill_keys ($a ::: array, $value ::: any) ::: ^2[];
+function array_combine ($keys ::: array, $values ::: array) ::: ^2;
+function range ($from, $to, $step ::: int = 1) ::: mixed[];//TODO
+function array_push (&$a ::: array, $val2 ::: any, $val3 ::: any = TODO, $val4 ::: any = TODO, $val5 ::: any = TODO, $val6 ::: any = TODO) ::: int;
+function array_pop (&$a ::: array) ::: ^1[*];
+function array_sum ($a ::: array) ::: float;//TODO
+function array_slice ($a ::: array, $offset ::: int, $length = null, $preserve_keys ::: bool = false) ::: ^1;
+/** @kphp-extern-func-info cpp_template_call */
+function array_pad ($a ::: array, $size ::: int, $value ::: any) ::: array< ^1[*] | ^3 >;
+function array_column ($a ::: array, $column_key, $index_key = null) ::: array< ^1[*][*] > | false;
+function array_unset (&$a ::: array, any $key) ::: ^1[*];
+
+function array_filter ($a ::: array, callable(^1[*] $x):bool $callback = TODO) ::: ^1;
+function array_filter_by_key ($a ::: array, callable(mixed $key):bool $callback) ::: ^1;
+function array_map (callable(^2[*] $x):any $callback, $a ::: array) ::: ^1() [];
+/** @kphp-extern-func-info cpp_template_call */
+function array_reduce ($a ::: array, callable(^3 | ^2() $carry, ^1[*] $item):any $callback, $initial ::: any) ::: ^2() | ^3;
+function array_reserve (&$a ::: array, $int_size ::: int, $string_size ::: int, $make_vector_if_possible ::: bool) ::: void;
+function array_reserve_vector (&$a ::: array, $size ::: int) ::: void;
+function array_reserve_map_int_keys (&$a ::: array, $size ::: int) ::: void;
+function array_reserve_map_string_keys (&$a ::: array, $size ::: int) ::: void;
+function array_reserve_from (&$a ::: array, $base ::: array) ::: void;
+function array_is_vector ($a ::: array) ::: bool;
+function array_is_list ($a ::: array) ::: bool;
+
+define('SORT_REGULAR', 0);
+define('SORT_NUMERIC', 1);
+define('SORT_STRING', 2);
+
+function asort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
+function arsort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
+function ksort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
+function krsort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
+function natsort (&$a ::: array) ::: void;
+function rsort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
+function shuffle (&$a ::: array) ::: void;
+function sort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
+function uasort (&$a ::: array, callable(^1[*] $x, ^1[*] $y):int $callback) ::: void;
+function uksort (&$a ::: array, callable(mixed $x, mixed $y):int $callback) ::: void;
+function usort (&$a ::: array, callable(^1[*] $x, ^1[*] $y):int $callback) ::: void;
+
+
+/** @kphp-extern-func-info cpp_template_call */
+function vk_dot_product ($a ::: array, $b ::: array) ::: ^1[*] | ^2[*];
+
+
+function to_array_debug(any $instance, bool $with_class_names = false) ::: mixed[];
+
+function implode ($s ::: string, $v ::: array) ::: string;
+
+/** @kphp-extern-func-info generate-stub */
+function explode ($delimiter ::: string, $str ::: string, $limit ::: int = PHP_INT_MAX) ::: string[];

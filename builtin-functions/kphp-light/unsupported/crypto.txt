@@ -1,0 +1,46 @@
+<?php
+
+
+define('X509_PURPOSE_SSL_CLIENT'    ,     1);
+define('X509_PURPOSE_SSL_SERVER'    ,     2);
+define('X509_PURPOSE_NS_SSL_SERVER' ,     3);
+define('X509_PURPOSE_SMIME_SIGN'    ,     4);
+define('X509_PURPOSE_SMIME_ENCRYPT' ,     5);
+define('X509_PURPOSE_CRL_SIGN'      ,     6);
+define('X509_PURPOSE_ANY'           ,     7);
+define('X509_PURPOSE_OCSP_HELPER'   ,     8);
+define('X509_PURPOSE_TIMESTAMP_SIGN',     9);
+
+define('OPENSSL_ALGO_SHA1'  ,  1);
+define('OPENSSL_ALGO_MD5'   ,  2);
+define('OPENSSL_ALGO_MD4'   ,  3);
+define('OPENSSL_ALGO_MD2'   ,  4);
+define('OPENSSL_ALGO_DSS1'  ,  5);
+define('OPENSSL_ALGO_SHA224',  6);
+define('OPENSSL_ALGO_SHA256',  7);
+define('OPENSSL_ALGO_SHA384',  8);
+define('OPENSSL_ALGO_SHA512',  9);
+define('OPENSSL_ALGO_RMD160', 10);
+
+define('OPENSSL_RAW_DATA', 1);
+define('OPENSSL_ZERO_PADDING', 2);
+define('OPENSSL_DONT_ZERO_PAD_KEY', 4);
+
+/** @kphp-extern-func-info generate-stub */
+function openssl_public_encrypt ($data ::: string, &$result ::: mixed, $key ::: string) ::: bool;
+/** @kphp-extern-func-info generate-stub */
+function openssl_private_decrypt ($data ::: string, &$result ::: mixed, $key ::: string) ::: bool;
+/** @kphp-extern-func-info generate-stub */
+function openssl_pkey_get_private ($key ::: string, $passphrase ::: string = '') ::: string | false;
+/** @kphp-extern-func-info generate-stub */
+function openssl_pkey_get_public ($key ::: string) ::: string | false;
+/** @kphp-extern-func-info generate-stub */
+function openssl_sign ($data ::: string, &$signature ::: string, $priv_key_id ::: string, $signature_alg ::: int = 1) ::: bool;
+/** @kphp-extern-func-info generate-stub */
+function openssl_verify ($data ::: string, $signature ::: string, $pub_key_id ::: string, $signature_alg ::: int = 1) ::: int;
+/** @kphp-extern-func-info generate-stub */
+function openssl_random_pseudo_bytes ($length ::: int) ::: string | false;
+/** @kphp-extern-func-info generate-stub */
+function openssl_x509_parse ($x509cert ::: string, $shortnames ::: bool = true) ::: mixed[] | false;
+/** @kphp-extern-func-info generate-stub */
+function openssl_x509_verify ($x509cert ::: string, $public_key ::: string) ::: int;

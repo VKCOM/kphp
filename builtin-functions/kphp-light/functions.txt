@@ -8,8 +8,6 @@ define('PHP_INT_MIN', -9223372036854775808);
 define('PHP_INT_SIZE', 8);
 define('PHP_EOL', "\n");
 
-require_once __DIR__ . '/unsupported.txt';
-
 
 /** @var mixed $_SERVER */
 global $_SERVER;
@@ -206,3 +204,7 @@ function set_timer(int $timeout, callable():void $callback) ::: void;
 
 // builtin that allows to store objects inside a mixed
 function to_mixed(object $instance) ::: mixed;
+
+// === Unsupported =======================================================================================
+
+require_once __DIR__ . '/unsupported-functions.txt';

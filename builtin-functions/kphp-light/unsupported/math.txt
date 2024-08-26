@@ -1,0 +1,137 @@
+<?php
+
+/**
+ * @kphp-extern-func-info generate-stub
+ * @kphp-pure-function
+ */
+function abs ($v ::: mixed) :::  mixed;
+/**
+ * @kphp-extern-func-info generate-stub
+ * @kphp-pure-function
+ */
+function acos ($v ::: float) ::: float;
+/**
+ * @kphp-extern-func-info generate-stub
+ * @kphp-pure-function
+ */
+function atan ($v ::: float) ::: float;
+/**
+ * @kphp-extern-func-info generate-stub
+ * @kphp-pure-function
+ */
+function atan2 ($y ::: float, $x ::: float) ::: float;
+/**
+ * @kphp-extern-func-info generate-stub
+ * @kphp-pure-function
+ */
+function ceil ($v ::: float) ::: float;
+/**
+ * @kphp-extern-func-info generate-stub
+ * @kphp-pure-function
+ */
+function cos ($v ::: float) ::: float;
+/**
+ * @kphp-extern-func-info generate-stub
+ * @kphp-pure-function
+ */
+function deg2rad ($v ::: float) ::: float;
+/**
+ * @kphp-extern-func-info generate-stub
+ * @kphp-pure-function
+ */
+function exp ($v ::: float) ::: float;
+/**
+ * @kphp-extern-func-info generate-stub
+ * @kphp-pure-function
+ */
+function floor ($v ::: float) ::: float;
+/**
+ * @kphp-extern-func-info generate-stub
+ * @kphp-pure-function
+ */
+function fmod ($x ::: float, $y ::: float) ::: float;
+/**
+ * @kphp-extern-func-info generate-stub
+ * @kphp-pure-function
+ */
+function log ($v ::: float, $base ::: float = 2.7182818284590452353602874713527) ::: float;
+/**
+ * @kphp-extern-func-info generate-stub
+ * @kphp-pure-function
+ */
+function round ($v ::: float, $precision ::: int = 0) ::: float;
+/**
+ * @kphp-extern-func-info generate-stub
+ * @kphp-pure-function
+ */
+function sin ($v ::: float) ::: float;
+/**
+ * @kphp-extern-func-info generate-stub
+ * @kphp-pure-function
+ */
+function sqrt ($v ::: float) ::: float;
+/**
+ * @kphp-extern-func-info generate-stub
+ * @kphp-pure-function
+ */
+function tan ($v ::: float) ::: float;
+
+
+/** @kphp-extern-func-info generate-stub */
+function lcg_value() ::: float;
+/** @kphp-extern-func-info generate-stub */
+function levenshtein ($str1 ::: string, $str2 ::: string) ::: int;
+/** @kphp-extern-func-info generate-stub */
+function mt_srand ($seed ::: int = PHP_INT_MIN) ::: void;
+/** @kphp-extern-func-info generate-stub */
+function mt_rand ($l ::: int = TODO_OVERLOAD, $r ::: int = TODO_OVERLOAD) ::: int;
+/** @kphp-extern-func-info generate-stub */
+function mt_getrandmax() ::: int;
+
+/** @kphp-extern-func-info generate-stub */
+function uniqid ($prefix ::: string = '', $more_entropy ::: bool = false) ::: string;
+
+/** @kphp-extern-func-info generate-stub */
+function rand ($l ::: int = TODO_OVERLOAD, $r ::: int = TODO_OVERLOAD) ::: int;
+
+
+/**
+ * @kphp-extern-func-info cpp_template_call cpp_variadic_call
+ * @kphp-pure-function
+ */
+function min (...$a) ::: ^1[*];
+/**
+ * @kphp-extern-func-info cpp_template_call cpp_variadic_call
+ * @kphp-pure-function
+ */
+function max (...$a) ::: ^1[*];
+
+
+
+
+/** @kphp-extern-func-info generate-stub */
+function bcadd ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
+/** @kphp-extern-func-info generate-stub */
+function bccomp ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: int;
+/** @kphp-extern-func-info generate-stub */
+function bcdiv ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
+/** @kphp-extern-func-info generate-stub */
+function bcmod ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
+/** @kphp-extern-func-info generate-stub */
+function bcpow ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
+/** @kphp-extern-func-info generate-stub */
+function bcmul ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
+/** @kphp-extern-func-info generate-stub */
+function bcscale ($scale ::: int) ::: void;
+/** @kphp-extern-func-info generate-stub */
+function bcsqrt($num ::: string, $scale ::: int = PHP_INT_MIN): string;
+/** @kphp-extern-func-info generate-stub */
+function bcsub ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
+
+/** @kphp-extern-func-info generate-stub */
+function is_finite ($v ::: float) ::: bool;
+/** @kphp-extern-func-info generate-stub */
+function is_infinite ($v ::: float) ::: bool;
+/** @kphp-extern-func-info generate-stub */
+function is_nan ($v ::: float) ::: bool;
+

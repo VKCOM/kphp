@@ -1,0 +1,81 @@
+<?php
+
+/** @kphp-extern-func-info generate-stub */
+function addcslashes ($str ::: string, $what ::: string) ::: string;
+/** @kphp-extern-func-info generate-stub */
+function addslashes ($str ::: string) ::: string;
+/** @kphp-extern-func-info generate-stub */
+function chr ($v ::: int) ::: string;
+/** @kphp-extern-func-info generate-stub */
+function bindec ($number ::: string) ::: int;
+/** @kphp-extern-func-info generate-stub */
+function bin2hex ($str ::: string) ::: string;
+/** @kphp-extern-func-info generate-stub */
+function count_chars ($str ::: string, $mode ::: int = 0) ::: mixed;
+/** @kphp-extern-func-info generate-stub */
+function decbin ($number ::: int) ::: string;
+/** @kphp-extern-func-info generate-stub */
+function dechex ($number ::: int) ::: string;
+/** @kphp-extern-func-info generate-stub */
+function hex2bin ($str ::: string) ::: string;
+/** @kphp-extern-func-info generate-stub */
+function hexdec ($number ::: string) ::: int;
+/** @kphp-extern-func-info generate-stub */
+function htmlentities ($str ::: string) ::: string;
+/** @kphp-extern-func-info generate-stub */
+function html_entity_decode ($str ::: string, $flags ::: int = ENT_COMPAT, $encoding ::: string = "cp1251") ::: string;
+/** @kphp-extern-func-info generate-stub */
+function htmlspecialchars ($str ::: string, $flags ::: int = ENT_COMPAT) ::: string;
+/** @kphp-extern-func-info generate-stub */
+function htmlspecialchars_decode ($str ::: string, $flags ::: int = ENT_COMPAT) ::: string;
+/** @kphp-extern-func-info generate-stub */
+function nl2br ($str ::: string, $is_xhtml = true) ::: string;
+/** @kphp-extern-func-info generate-stub */
+function number_format ($number ::: float, $decimals ::: int = 0, $dec_point = '.', $thousands_sep = ',') ::: string;
+/** @kphp-extern-func-info generate-stub */
+function ord ($c ::: string) ::: int;
+
+
+/** @kphp-extern-func-info generate-stub */
+function crc32 ($s ::: string) ::: int;
+
+/** @kphp-extern-func-info generate-stub */
+function sleep ($seconds ::: int) ::: void;
+/** @kphp-extern-func-info generate-stub */
+function usleep ($micro_seconds ::: int) ::: void;
+
+/** @kphp-extern-func-info generate-stub */
+function system($command ::: string, int &$result_code = 0): int;
+
+/** @kphp-extern-func-info generate-stub */
+function php_sapi_name() ::: string;
+
+function pack ($pattern ::: string, ...$args) ::: string
+function unpack ($pattern ::: string, $data ::: string) ::: mixed[] | false;
+
+/** @kphp-extern-func-info generate-stub */
+function function_exists ($func_name ::: mixed) ::: bool;
+
+/** @kphp-extern-func-info generate-stub */
+function ctype_alnum(mixed $text): bool;
+/** @kphp-extern-func-info generate-stub */
+function ctype_digit(mixed $text): bool;
+/** @kphp-extern-func-info generate-stub */
+function ctype_xdigit(mixed $text): bool;
+
+/**
+ * @kphp-immutable-class
+ */
+class CompileTimeLocation {
+  public string $file;
+  public string $function;
+  public int $line;
+
+  public function __construct($file, $function, $line) ::: CompileTimeLocation;
+
+  static public function calculate(?CompileTimeLocation $passed) ::: CompileTimeLocation;
+}
+
+/** @kphp-extern-func-info cpp_template_call */
+function instance_cast(any $instance, $to_type ::: string) ::: instance<^2>;
+
