@@ -76,6 +76,3 @@ class CompileTimeLocation {
   static public function calculate(?CompileTimeLocation $passed) ::: CompileTimeLocation;
 }
 
-/** @kphp-extern-func-info cpp_template_call */
-function instance_cast(any $instance, $to_type ::: string) ::: instance<^2>;
-

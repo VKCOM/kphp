@@ -99,6 +99,11 @@ f$typed_rpc_tl_query_result(array<query_id_t> query_ids) noexcept {
   co_return res;
 }
 
+template<class T>
+array<array<mixed>> f$rpc_tl_query_result_synchronously(const array<T> &) {
+  php_critical_error("call to unsupported function");
+}
+
 // === Rpc Misc ===================================================================================
 
 void f$rpc_clean() noexcept;
@@ -110,3 +115,8 @@ bool is_int32_overflow(int64_t v) noexcept;
 void store_raw_vector_double(const array<double> &vector) noexcept;
 
 void fetch_raw_vector_double(array<double> &vector, int64_t num_elems) noexcept;
+
+template<typename T>
+bool f$rpc_parse(T) {
+  php_critical_error("call to unsupported function");
+}

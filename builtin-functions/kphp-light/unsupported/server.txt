@@ -11,12 +11,6 @@ function get_webserver_stats() ::: tuple(int, int, int, int);
 /** @kphp-extern-func-info generate-stub */
 function numa_get_bound_node(): int;
 
-
-
-
-
-
-
 /** @kphp-extern-func-info generate-stub */
 function iconv ($input_encoding ::: string, $output_encoding ::: string, $input_str ::: string) ::: string | false;
 
@@ -27,9 +21,9 @@ function ini_get ($s ::: string) ::: string | false;
 function ini_set ($s ::: string, $v ::: string) ::: bool;
 
 
-/** @kphp-extern-func-info generate-stub cpp_template_call */
+
 function instance_cache_fetch(string $type, string $key, bool $even_if_expired = false) ::: instance<^1>;
-/** @kphp-extern-func-info generate-stub */
+
 function instance_cache_store(string $key, object $value, int $ttl = 0) ::: bool;
 /** @kphp-extern-func-info generate-stub */
 function instance_cache_update_ttl(string $key, int $ttl = 0) ::: bool;

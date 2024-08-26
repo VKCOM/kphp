@@ -1,7 +1,7 @@
 <?php
 
 
-/** @kphp-extern-func-info generate-stub */
+
 function _exception_set_location($e, string $filename, int $line): ^1;
 
 
