@@ -9,6 +9,7 @@
 #include "runtime-core/runtime-core.h"
 #include "runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/component/component.h"
+#include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/streams/streams.h"
 #include "runtime-light/utils/context.h"
@@ -44,6 +45,10 @@ task_t<string> f$component_client_fetch_response(class_instance<C$ComponentQuery
 }
 
 // === component query server interface ===========================================================
+
+task_t<class_instance<C$ComponentQuery>> f$component_server_accept_query() noexcept {
+  co_return make_instance<C$ComponentQuery>(co_await wait_for_incoming_stream_t{});
+}
 
 task_t<string> f$component_server_fetch_request(class_instance<C$ComponentQuery> query) noexcept {
   uint64_t stream_d{query.is_null() ? INVALID_PLATFORM_DESCRIPTOR : query.get()->stream_d};
