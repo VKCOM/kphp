@@ -11,4 +11,6 @@ task_t<void> shutdown_script() noexcept;
 
 task_t<void> f$exit(const mixed &v = 0) noexcept;
 
-task_t<void> f$die(const mixed &v = 0) noexcept;
+inline task_t<void> f$die(const mixed &v = 0) noexcept {
+  co_await f$exit(v);
+}

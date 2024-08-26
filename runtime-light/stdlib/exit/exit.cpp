@@ -64,7 +64,3 @@ task_t<void> f$exit(const mixed &v) noexcept { // TODO: make it synchronous
   component_ctx.release_all_streams();
   get_platform_context()->abort();
 }
-
-task_t<void> f$die(const mixed &v) noexcept {
-  co_await f$exit(v);
-}
