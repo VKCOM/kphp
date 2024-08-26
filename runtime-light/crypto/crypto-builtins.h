@@ -4,7 +4,6 @@
 
 #pragma once
 
-
 #include "runtime-core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
 

@@ -4,11 +4,10 @@
 
 #include "runtime-light/crypto/crypto-builtins.h"
 
-#include "runtime-light/stdlib/rpc/rpc-buffer.h"
+#include "runtime-light/tl/tl-core.h"
 #include "runtime-light/streams/interface.h"
 
 // Crypto-Specific TL magics
-
 constexpr uint32_t TL_GET_CRYPTOSECURE_PSEUDORANDOM_BYTES = 0x2491'b81d;
 
 task_t<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length) {
@@ -16,9 +15,9 @@ task_t<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length) {
     co_return false;
   }
 
-  RpcBuffer buffer;
-  buffer.store_trivial(static_cast<uint32_t>(TL_GET_CRYPTOSECURE_PSEUDORANDOM_BYTES));
-  buffer.store_trivial(static_cast<int32_t>(length));
+  tl::TLBuffer buffer;
+  buffer.store_trivial<uint32_t>(TL_GET_CRYPTOSECURE_PSEUDORANDOM_BYTES);
+  buffer.store_trivial<int32_t>(length);
 
 
   string request_buf{};
