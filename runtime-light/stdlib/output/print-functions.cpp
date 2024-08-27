@@ -2,7 +2,7 @@
 // Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-light/stdlib/output/print.h"
+#include "runtime-light/stdlib/output/print-functions.h"
 
 #include <cstdint>
 
