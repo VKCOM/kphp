@@ -46,9 +46,18 @@ namespace awaitable_impl_ {
 
 enum class State : uint8_t { Init, Suspend, Ready, End };
 
+class fork_id_watcher_t {
+  int64_t fork_id{ForkComponentContext::get().running_fork_id};
+
+protected:
+  void await_resume() const noexcept {
+    ForkComponentContext::get().running_fork_id = fork_id;
+  }
+};
+
 } // namespace awaitable_impl_
 
-class wait_for_update_t {
+class wait_for_update_t : public awaitable_impl_::fork_id_watcher_t {
   uint64_t stream_d;
   SuspendToken suspend_token;
   awaitable_impl_::State state{awaitable_impl_::State::Init};
@@ -86,6 +95,7 @@ public:
   }
 
   constexpr void await_resume() noexcept {
+    fork_id_watcher_t::await_resume();
     state = awaitable_impl_::State::End;
   }
 
@@ -101,7 +111,7 @@ public:
 
 // ================================================================================================
 
-class wait_for_incoming_stream_t {
+class wait_for_incoming_stream_t : awaitable_impl_::fork_id_watcher_t {
   SuspendToken suspend_token{std::noop_coroutine(), WaitEvent::IncomingStream{}};
   awaitable_impl_::State state{awaitable_impl_::State::Init};
 
@@ -135,6 +145,7 @@ public:
   }
 
   uint64_t await_resume() noexcept {
+    fork_id_watcher_t::await_resume();
     state = awaitable_impl_::State::End;
     const auto incoming_stream_d{get_component_context()->take_incoming_stream()};
     php_assert(incoming_stream_d != INVALID_PLATFORM_DESCRIPTOR);
@@ -153,7 +164,7 @@ public:
 
 // ================================================================================================
 
-class wait_for_reschedule_t {
+class wait_for_reschedule_t : awaitable_impl_::fork_id_watcher_t {
   SuspendToken suspend_token{std::noop_coroutine(), WaitEvent::Rechedule{}};
   awaitable_impl_::State state{awaitable_impl_::State::Init};
 
@@ -186,6 +197,7 @@ public:
   }
 
   constexpr void await_resume() noexcept {
+    fork_id_watcher_t::await_resume();
     state = awaitable_impl_::State::End;
   }
 
@@ -201,7 +213,7 @@ public:
 
 // ================================================================================================
 
-class wait_for_timer_t {
+class wait_for_timer_t : awaitable_impl_::fork_id_watcher_t {
   std::chrono::nanoseconds duration;
   uint64_t timer_d{INVALID_PLATFORM_DESCRIPTOR};
   SuspendToken suspend_token{std::noop_coroutine(), WaitEvent::Rechedule{}};
@@ -245,6 +257,7 @@ public:
   }
 
   constexpr void await_resume() noexcept {
+    fork_id_watcher_t::await_resume();
     state = awaitable_impl_::State::End;
   }
 
@@ -260,7 +273,7 @@ public:
 
 // ================================================================================================
 
-class start_fork_t {
+class start_fork_t : awaitable_impl_::fork_id_watcher_t {
 public:
   /**
    * Fork start policy:
@@ -302,6 +315,7 @@ public:
       case execution::fork: {
         suspend_token.first = current_coro;
         continuation = fork_coro;
+        ForkComponentContext::get().running_fork_id = fork_id;
         break;
       }
       case execution::self: {
@@ -317,7 +331,8 @@ public:
     return continuation;
   }
 
-  constexpr int64_t await_resume() const noexcept {
+  int64_t await_resume() const noexcept {
+    fork_id_watcher_t::await_resume();
     return fork_id;
   }
 };
@@ -325,7 +340,7 @@ public:
 // ================================================================================================
 
 template<typename T>
-class wait_fork_t {
+class wait_fork_t : awaitable_impl_::fork_id_watcher_t {
   int64_t fork_id;
   task_t<T> fork_task;
   task_t<T>::awaiter_t fork_awaiter;
@@ -358,6 +373,7 @@ public:
   }
 
   await_resume_t await_resume() noexcept {
+    fork_id_watcher_t::await_resume();
     if constexpr (std::is_void_v<await_resume_t>) {
       fork_awaiter.await_resume();
     } else {

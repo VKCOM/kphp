@@ -42,6 +42,8 @@ class ForkComponentContext {
   friend class wait_fork_t;
 
 public:
+  int64_t running_fork_id{FORK_ID_INIT};
+
   explicit ForkComponentContext(memory_resource::unsynchronized_pool_resource &memory_resource) noexcept
     : forks(unordered_map<int64_t, task_t<void>>::allocator_type{memory_resource}) {}
 

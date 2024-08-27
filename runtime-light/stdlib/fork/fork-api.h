@@ -24,6 +24,9 @@ constexpr auto DEFAULT_TIMEOUT_NS = std::chrono::duration_cast<std::chrono::nano
 
 } // namespace fork_api_impl_
 
+
+// === Blocking API ================================================================================
+
 template<typename T>
 requires(is_optional<T>::value || std::same_as<T, mixed>) task_t<T> f$wait(int64_t fork_id, double timeout = -1.0) noexcept {
   auto &fork_ctx{ForkComponentContext::get()};
@@ -42,6 +45,12 @@ requires(is_optional<T>::value || std::same_as<T, mixed>) task_t<T> f$wait(int64
 template<typename T>
 requires(is_optional<T>::value || std::same_as<T, mixed>) task_t<T> f$wait(Optional<int64_t> fork_id_opt, double timeout = -1.0) noexcept {
   co_return co_await f$wait<T>(fork_id_opt.has_value() ? fork_id_opt.val() : INVALID_FORK_ID, timeout);
+}
+
+// === Non-blocking API ============================================================================
+
+inline int64_t f$get_running_fork_id() noexcept {
+  return ForkComponentContext::get().running_fork_id;
 }
 
 task_t<void> f$sched_yield() noexcept;
