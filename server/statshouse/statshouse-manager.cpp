@@ -192,9 +192,16 @@ void StatsHouseManager::add_common_master_stats(const workers_stats_t &workers_s
   client.metric("kphp_workers_general_processes").tag("working_but_waiting").write_value(general_worker_group.waiting_workers);
   client.metric("kphp_workers_general_processes").tag("ready_for_accept").write_value(general_worker_group.ready_for_accept_workers);
 
+  client.metric("kphp_by_host_workers_general_processes", true).tag("working").write_value(general_worker_group.running_workers);
+  client.metric("kphp_by_host_workers_general_processes", true).tag("working_but_waiting").write_value(general_worker_group.waiting_workers);
+  client.metric("kphp_by_host_workers_general_processes", true).tag("ready_for_accept").write_value(general_worker_group.ready_for_accept_workers);
+
   const auto job_worker_group = vk::singleton<ServerStats>::get().collect_workers_stat(WorkerType::job_worker);
   client.metric("kphp_workers_job_processes").tag("working").write_value(job_worker_group.running_workers);
   client.metric("kphp_workers_job_processes").tag("working_but_waiting").write_value(job_worker_group.waiting_workers);
+
+  client.metric("kphp_by_host_workers_job_processes", true).tag("working").write_value(job_worker_group.running_workers);
+  client.metric("kphp_by_host_workers_job_processes", true).tag("working_but_waiting").write_value(job_worker_group.waiting_workers);
 
   client.metric("kphp_server_workers").tag("started").write_value(workers_stats.tot_workers_started);
   client.metric("kphp_server_workers").tag("dead").write_value(workers_stats.tot_workers_dead);
