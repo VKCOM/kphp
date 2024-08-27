@@ -18,11 +18,16 @@
 
 task_t<class_instance<C$ComponentQuery>> f$component_client_send_request(string name, string message) noexcept {
   const auto stream_d{get_component_context()->open_stream(name)};
+  if (stream_d == INVALID_PLATFORM_DESCRIPTOR) {
+    co_return class_instance<C$ComponentQuery>{};
+  }
+
   int32_t written{co_await write_all_to_stream(stream_d, message.c_str(), message.size())};
   if (written != message.size()) {
     php_warning("can't send request to component '%s'", name.c_str());
     co_return class_instance<C$ComponentQuery>{};
   }
+
   get_platform_context()->shutdown_write(stream_d);
   php_debug("sent %d bytes from %d to '%s' on stream %" PRIu64, written, message.size(), name.c_str(), stream_d);
   co_return make_instance<C$ComponentQuery>(stream_d);
