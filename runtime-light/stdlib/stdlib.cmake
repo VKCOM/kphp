@@ -1,7 +1,6 @@
 prepend(
   RUNTIME_STDLIB_SRC
   stdlib/
-  string-functions.cpp
   component/component-api.cpp
   exit/exit.cpp
   fork/fork-api.cpp
@@ -14,4 +13,5 @@ prepend(
   rpc/rpc-extra-info.cpp
   rpc/rpc-tl-error.cpp
   rpc/rpc-tl-query.cpp
-  rpc/rpc-tl-request.cpp)
+  rpc/rpc-tl-request.cpp
+  string/concat.cpp)
