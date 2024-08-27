@@ -50,8 +50,9 @@ class fork_id_watcher_t {
   int64_t fork_id{ForkComponentContext::get().running_fork_id};
 
 protected:
-
-  void await_resume() const noexcept { ForkComponentContext::get().running_fork_id = fork_id; }
+  void await_resume() const noexcept {
+    ForkComponentContext::get().running_fork_id = fork_id;
+  }
 };
 
 } // namespace awaitable_impl_
@@ -392,7 +393,7 @@ public:
 // ================================================================================================
 
 template<CancellableAwaitable T>
-class wait_with_timeout_t : awaitable_impl_::fork_id_watcher_t {
+class wait_with_timeout_t {
   T awaitable;
   wait_for_timer_t timer_awaitable;
 
@@ -441,7 +442,6 @@ public:
   }
 
   await_resume_return_t await_resume() noexcept {
-    fork_id_watcher_t::await_resume();
     if (awaitable.resumable()) {
       timer_awaitable.cancel();
       if constexpr (!std::is_void_v<await_resume_return_t>) {
