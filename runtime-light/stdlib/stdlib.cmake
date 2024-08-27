@@ -2,12 +2,12 @@ prepend(
   RUNTIME_STDLIB_SRC
   stdlib/
   string-functions.cpp
-  variable-handling.cpp
   component/component-api.cpp
   exit/exit.cpp
   fork/fork-api.cpp
   fork/fork-context.cpp
   output/output-buffer.cpp
+  output/print.cpp
   rpc/rpc-api.cpp
   rpc/rpc-context.cpp
   rpc/rpc-extra-headers.cpp
