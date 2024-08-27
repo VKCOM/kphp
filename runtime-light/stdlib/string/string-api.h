@@ -6,6 +6,6 @@
 
 #include "runtime-core/runtime-core.h"
 
-inline int64_t f$strlen(const string &s) {
+inline int64_t f$strlen(const string &s) noexcept {
   return s.size();
 }
