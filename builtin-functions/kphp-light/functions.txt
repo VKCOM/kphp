@@ -189,6 +189,9 @@ function json_decode ($v ::: string, $assoc ::: bool = false) ::: mixed;
 /** @kphp-extern-func-info interruptible */
 function openssl_random_pseudo_bytes ($length ::: int) ::: string | false;
 
+/** @kphp-extern-func-info interruptible */
+function openssl_x509_parse ($x509cert ::: string, $shortnames ::: bool = true) ::: mixed[] | false;
+
 // === Misc =======================================================================================
 
 /** @kphp-extern-func-info cpp_template_call */

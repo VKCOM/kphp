@@ -8,3 +8,4 @@
 #include "runtime-light/coroutine/task.h"
 
 task_t<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length);
+task_t<Optional<array<mixed>>> f$openssl_x509_parse(const string &data, bool shortnames = true);
