@@ -14,7 +14,7 @@
 
 namespace {
 
-int32_t ob_merge_buffers() {
+int32_t ob_merge_buffers() noexcept {
   Response &response{get_component_context()->response};
   php_assert(response.current_buffer >= 0);
 
@@ -38,8 +38,7 @@ task_t<void> shutdown_script() noexcept {
     co_return;
   }
 
-  const auto ob_total_buffer{ob_merge_buffers()};
-  const auto &buffer{component_ctx.response.output_buffers[ob_total_buffer]};
+  const auto &buffer{component_ctx.response.output_buffers[ob_merge_buffers()]};
   if ((co_await write_all_to_stream(standard_stream, buffer.buffer(), buffer.size())) != buffer.size()) {
     php_warning("can't write component result to stream %" PRIu64, standard_stream);
   }
