@@ -2,8 +2,9 @@
 // Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#pragma once
+#include <cstdint>
+#include <random>
 
-enum class QueryType { HTTP, COMPONENT };
-
-void init_http_superglobals(const char *buffer, int size);
+inline int64_t f$rand() noexcept {
+  return static_cast<int64_t>(std::random_device{}());
+}

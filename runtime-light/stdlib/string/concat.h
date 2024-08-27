@@ -1,35 +1,10 @@
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2024 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
 #pragma once
 
 #include "runtime-core/runtime-core.h"
-
-void print(const char *s, size_t s_len);
-
-void print(const char *s);
-
-void print(const string &s);
-
-void print(const string_buffer &sb);
-
-inline void f$echo(const string &s) {
-  print(s);
-}
-
-inline int64_t f$print(const string &s) {
-  print(s);
-  return 1;
-}
-
-inline int64_t f$strlen(const string &s) {
-  return s.size();
-}
-
-void f$debug_print_string(const string &s);
-
-string f$increment_byte(const string &s);
-
-Optional<int64_t> f$byte_to_int(const string &s);
-
-Optional<string> f$int_to_byte(int64_t v);
 
 // str_concat_arg generalizes both tmp_string and string arguments;
 // it can be constructed from both of them, so concat functions can operate

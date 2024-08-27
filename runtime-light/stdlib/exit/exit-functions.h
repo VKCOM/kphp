@@ -7,9 +7,10 @@
 #include "runtime-core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
 
-int64_t f$rand();
+task_t<void> shutdown_script() noexcept;
 
-template<class T>
-T f$make_clone(const T &x) {
-  return x;
+task_t<void> f$exit(const mixed &v = 0) noexcept;
+
+inline task_t<void> f$die(const mixed &v = 0) noexcept {
+  co_await f$exit(v);
 }

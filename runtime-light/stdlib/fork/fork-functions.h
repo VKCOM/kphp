@@ -24,7 +24,6 @@ constexpr auto DEFAULT_TIMEOUT_NS = std::chrono::duration_cast<std::chrono::nano
 
 } // namespace fork_api_impl_
 
-
 // === Blocking API ================================================================================
 
 template<typename T>
@@ -47,12 +46,20 @@ requires(is_optional<T>::value || std::same_as<T, mixed>) task_t<T> f$wait(Optio
   co_return co_await f$wait<T>(fork_id_opt.has_value() ? fork_id_opt.val() : INVALID_FORK_ID, timeout);
 }
 
+inline task_t<void> f$sched_yield() noexcept {
+  co_await wait_for_reschedule_t{};
+}
+
+inline task_t<void> f$sched_yield_sleep(double duration) noexcept {
+  if (duration <= 0) {
+    php_warning("can't sleep for negative or zero duration %.9f", duration);
+    co_return;
+  }
+  co_await wait_for_timer_t{std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{duration})};
+}
+
 // === Non-blocking API ============================================================================
 
 inline int64_t f$get_running_fork_id() noexcept {
   return ForkComponentContext::get().running_fork_id;
 }
-
-task_t<void> f$sched_yield() noexcept;
-
-task_t<void> f$sched_yield_sleep(double duration) noexcept;
