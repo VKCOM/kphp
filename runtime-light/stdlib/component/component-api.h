@@ -21,9 +21,10 @@ struct C$ComponentQuery final : public refcountable_php_classes<C$ComponentQuery
 
   explicit constexpr C$ComponentQuery(uint64_t stream_d_) noexcept
     : stream_d(stream_d_) {}
-  constexpr C$ComponentQuery(const C$ComponentQuery &) noexcept = default;
   constexpr C$ComponentQuery(C$ComponentQuery &&other) noexcept
     : stream_d(std::exchange(other.stream_d, INVALID_PLATFORM_DESCRIPTOR)) {};
+
+  C$ComponentQuery(const C$ComponentQuery &) = delete;
   C$ComponentQuery &operator=(const C$ComponentQuery &) = delete;
   C$ComponentQuery &operator=(C$ComponentQuery &&other) = delete;
 
