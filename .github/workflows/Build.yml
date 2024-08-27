@@ -14,12 +14,24 @@ env:
 
 jobs:
   clang-format:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
-      - name: Install clang-format
-        run: wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - && \
-              apt-get update && apt-get install clang-format-18
+      - name: Add LLVM GPG key
+        run: |
+          sudo wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/llvm.gpg
+        shell: bash
+
+      - name: Add LLVM repository
+        run: |
+          echo "deb [signed-by=/etc/apt/trusted.gpg.d/llvm.gpg] http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main" | sudo tee /etc/apt/sources.list.d/llvm.list
+        shell: bash
+
+      - name: Update and Install LLVM
+        run: |
+          sudo apt update
+          sudo apt install -y clang-format-18
+        shell: bash
       - name: debug
         run: which clang-format-18
       - name: Run clang-format
