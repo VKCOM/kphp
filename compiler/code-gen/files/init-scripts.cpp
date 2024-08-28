@@ -113,8 +113,17 @@ struct RunInterruptedFunction {
 
   void compile(CodeGenerator &W) const {
     std::string await_prefix = function->is_interruptible ? "co_await " : "";
+    /**
+     * Oneshot components work the same way as php scripts:
+     * 1) Start when the request came in
+     * 2) Collecting output buffer after script finished
+     **/
+    std::string script_start = G->settings().k2_component_is_oneshot.get() ? "co_await accept_initial_stream();" : "";
+    std::string script_finish = G->settings().k2_component_is_oneshot.get() ? "co_await shutdown_script();" : "";
     FunctionSignatureGenerator(W) << "task_t<void> " << FunctionName(function) << "$run() " << BEGIN
+                                  << script_start << NL
                                   << await_prefix << FunctionName(function) << "();" << NL
+                                  << script_finish << NL
                                   << "co_return;"
                                   << END;
     W << NL;
@@ -226,7 +235,7 @@ void InitScriptsCpp::compile(CodeGenerator &W) const {
   W << GlobalsResetFunction(main_file_id->main_function) << NL;
 
   if (G->is_output_mode_k2_component()) {
-    FunctionSignatureGenerator(W) << "void init_php_scripts_in_each_worker(" << PhpMutableGlobalsRefArgument() << ", task_t<void>&run" ")" << BEGIN;
+    FunctionSignatureGenerator(W) << "void init_php_scripts_in_each_worker(" << PhpMutableGlobalsRefArgument() << ", task_t<void> &run" ")" << BEGIN;
   } else {
     FunctionSignatureGenerator(W) << "void init_php_scripts_in_each_worker(" << PhpMutableGlobalsRefArgument() << ")" << BEGIN;
   }

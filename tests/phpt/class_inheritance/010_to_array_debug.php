@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 
 require_once '008_two_level_inheritance.php';

@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 KPHP_REQUIRE_FUNCTIONS_TYPING=1
 <?php
 

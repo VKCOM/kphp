@@ -6,7 +6,7 @@
 
 #include <cstddef>
 
-#include "runtime-core/runtime-core.h"
+#include "runtime-core/allocator/runtime-allocator.h"
 
 class ScriptAllocatorManaged {
 public:

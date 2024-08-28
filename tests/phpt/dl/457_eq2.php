@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 # THIS FILE IS GENERATED. DON'T EDIT IT. EDIT 457_eq2_gen.py
 var_dump (array ("result" => array ("result" => 1, "_" => "resultTrue"), "_" => "_") === array ("result" => array ("result" => 2, "_" => "resultTrue"), "_" => "_"));

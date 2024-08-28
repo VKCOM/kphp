@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 
 var_dump(array_pad(array(), 0, 0));

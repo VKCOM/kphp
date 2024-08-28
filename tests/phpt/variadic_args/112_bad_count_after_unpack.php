@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /Too many arguments in call to f\(\), expected 2, have 4/
 /Too many arguments in call to f\(\), expected 2, have 5/
 /Too few arguments in call to g\(\), expected 2, have 1/

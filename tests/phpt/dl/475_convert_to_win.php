@@ -1,4 +1,4 @@
-@ok benchmark
+@ok benchmark k2_skip
 <?php
 $str = "мама мыла раму!!! asfmklasdfasdgbsfbvdf buydfbdvbdfb vdfv dfv";
 

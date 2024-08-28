@@ -14,6 +14,10 @@ void CppDestDirInitializer::initialize_sync() noexcept {
   AutoProfiler prof{*cache};
   G->init_dest_dir();
   G->load_index();
+
+  if (!G->settings().force_link_runtime.get()) {
+    G->init_runtime_and_common_srcs_dir();
+  }
 }
 
 void CppDestDirInitializer::initialize_async(int32_t thread_id) noexcept {

@@ -203,3 +203,16 @@ using enable_if_t_is_optional_t2 = std::enable_if_t<std::is_same<T, Optional<T2>
 
 template<class T>
 using enable_if_t_is_optional_string = enable_if_t_is_optional_t2<T, string>;
+
+template<typename T>
+struct InternalOptionalType {
+  using type = T;
+};
+
+template<typename T>
+struct InternalOptionalType<Optional<T>> {
+  using type = T;
+};
+
+template<typename T>
+using internal_optional_type_t = typename InternalOptionalType<T>::type;

@@ -32,6 +32,8 @@
 #include "server/php-engine-vars.h"
 
 const char *engine_tag = "[";
+long long engine_tag_number = 0;
+
 const char *engine_pid = "] ";
 
 int php_disable_warnings = 0;

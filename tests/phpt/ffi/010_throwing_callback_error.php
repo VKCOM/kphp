@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /FFI callback should not throw/
 /Throw chain: function\(\$id\) -> callable\(\):int -> function\(\) -> function\(\) -> throwing/
 <?php

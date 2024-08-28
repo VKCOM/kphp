@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /Too few arguments in call to scope\\example::f\(\), expected 2, have 1/
 <?php
 

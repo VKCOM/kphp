@@ -1,5 +1,7 @@
 <?php
 
+$query = component_server_accept_query();
+
 while(true) {
-    testyield();
+    sched_yield();
 }

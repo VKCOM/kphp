@@ -512,7 +512,11 @@ void compile_binary_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W) {
   const auto *rhs_tp = tinf::get_type(rhs);
 
   if (auto instanceof = root.try_as<op_instanceof>()) {
-    W << "f$is_a<" << instanceof->derived_class->src_name << ">(" << lhs << ")";
+    if (lhs_tp->ptype() == tp_mixed && !instanceof->derived_class->may_be_mixed.load(std::memory_order_relaxed)) {
+      W << "(false)";
+    } else {
+      W << "f$is_a<" << instanceof->derived_class->src_name << ">(" << lhs << ")";
+    }
     return;
   }
 
@@ -844,7 +848,11 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
 
 
     if (mode == func_call_mode::fork_call) {
-      W << FunctionForkName(func);
+      if (func->is_interruptible) {
+        W << "(co_await start_fork_t{static_cast<task_t<void>>(" << FunctionName(func);
+      } else {
+        W << FunctionForkName(func);
+      }
     } else {
       if (func->is_interruptible) {
         W << "(" << "co_await ";
@@ -874,7 +882,11 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
   W << JoinValues(args, ", ");
   W << ")";
   if (func->is_interruptible) {
-    W << ")";
+    if (mode == func_call_mode::fork_call) {
+      W << "), start_fork_t::execution::fork})";
+    } else {
+      W << ")";
+    }
   }
 }
 

@@ -110,6 +110,7 @@ if(COMPILE_RUNTIME_LIGHT)
     if(COMPILER_GCC)
         add_compile_options(-Wno-dangling-pointer -Wno-attributes)
     endif()
+    add_compile_options(-Wno-vla-extension)
 endif()
 
 if(NOT APPLE)

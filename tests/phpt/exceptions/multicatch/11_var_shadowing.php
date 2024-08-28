@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /\$e is not an instance or it can't be detected/
 <?php
 

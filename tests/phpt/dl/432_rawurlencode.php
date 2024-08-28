@@ -1,4 +1,4 @@
-@ok benchmark
+@ok benchmark k2_skip
 <?php
   $strs = array (" ", "\n", "", " \n", "\r ", "    aasddsd", "asdasdasd     ", "\n\n\n\n\r  asdas  d s   d  \0  fasd    \0\0\0\0\0", "asdasdasdasdasdasdasdas", "A",
                  "%aba", "%%%", "%xyz", "%", "%+asa", "+%aba", "++++");

@@ -166,7 +166,6 @@ public:
   template<class T>
   inline string &append_unsafe(const Optional<T> &v) __attribute__((always_inline));
 
-
   inline void push_back(char c);
 
   inline string &assign(const string &str);

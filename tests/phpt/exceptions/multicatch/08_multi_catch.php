@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 
 class MyException1 extends \Exception {

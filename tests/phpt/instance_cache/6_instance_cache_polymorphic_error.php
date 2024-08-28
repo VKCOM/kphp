@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /Can not store polymorphic type A with mutable derived class D/
 <?php
 

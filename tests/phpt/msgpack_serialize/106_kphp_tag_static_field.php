@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /kphp-serialized-field is allowed only for instance fields: y/
 <?php
 

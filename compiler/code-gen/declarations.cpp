@@ -115,7 +115,8 @@ void FunctionParams::declare_cpp_param(CodeGenerator &W, VertexAdaptor<op_var> v
   auto var_ptr = var->var_id;
   if (var->ref_flag) {
     W << "&";
-  } else if (var_ptr->marked_as_const || (!function->has_variadic_param && var_ptr->is_read_only)) {
+  } else if (!function->is_k2_fork && (var_ptr->marked_as_const || (!function->has_variadic_param && var_ptr->is_read_only))) {
+    // the top of k2 fork must take arguments by value (see C++ avoid reference parameters in coroutines)
     W << (!type.type->is_primitive_type() ? "const &" : "");
   }
   W << VarName(var_ptr);
@@ -409,7 +410,7 @@ void InterfaceDeclaration::compile(CodeGenerator &W) const {
     auto transform_to_src_name = [](CodeGenerator &W, const InterfacePtr &i) { W << i->src_name; };
     W << JoinValues(interface->implements, ", public ", join_mode::one_line, transform_to_src_name);
   } else {
-    W << (interface->need_virtual_modifier() ? "virtual " : "") << "abstract_refcountable_php_interface";
+    W << (interface->need_virtual_modifier() ? "virtual " : "") << (interface->may_be_mixed ? "may_be_mixed_base" : "abstract_refcountable_php_interface");
   }
   W << " " << BEGIN;
 
@@ -492,10 +493,13 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
     W << ": public refcountable_polymorphic_php_classes<" << get_all_interfaces() << ">";
   } else if (!klass->derived_classes.empty()) {
     if (klass->need_virtual_modifier()) {
-      W << ": public refcountable_polymorphic_php_classes_virt<>";
+      W << ": public refcountable_polymorphic_php_classes_virt<>" << (klass->may_be_mixed ? ", virtual may_be_mixed_base" : "");
     } else {
-      W << ": public refcountable_polymorphic_php_classes<abstract_refcountable_php_interface>";
+      W << ": public refcountable_polymorphic_php_classes<" <<
+        (klass->may_be_mixed ? "may_be_mixed_base" : "abstract_refcountable_php_interface") << ">";
     }
+  } else if(klass->may_be_mixed) {
+    W << ": public refcountable_polymorphic_php_classes<may_be_mixed_base>";
   } else { // not polymorphic
     W << ": public refcountable_php_classes<" << klass->src_name << ">";
   }
@@ -507,7 +511,7 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
 
   compile_fields(W, klass);
 
-  if (!klass->derived_classes.empty()) {
+  if (klass->may_be_mixed || !klass->derived_classes.empty()) {
     W << "virtual ~" << klass->src_name << "() = default;" << NL;
   }
 
@@ -536,6 +540,10 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
   W << CloseFile();
 }
 
+static bool is_may_be_mixed_virtual_method(vk::string_view method_signature) {
+  return method_signature == "const char *get_class()";
+}
+
 template<class ReturnValueT>
 void ClassDeclaration::compile_class_method(FunctionSignatureGenerator &&W, ClassPtr klass, vk::string_view method_signature, const ReturnValueT &return_value) {
   const bool has_parent = (klass->parent_class && klass->parent_class->does_need_codegen()) ||
@@ -544,6 +552,12 @@ void ClassDeclaration::compile_class_method(FunctionSignatureGenerator &&W, Clas
   const bool is_overridden = has_parent && has_derived;
   const bool is_final = has_parent && !has_derived;
   const bool is_pure_virtual = klass->class_type == ClassType::interface;
+  const bool may_be_mixed = klass->may_be_mixed;
+
+  if (klass->is_interface() && may_be_mixed && is_may_be_mixed_virtual_method(method_signature)) {
+    std::move(W).clear_all();
+    return;
+  }
 
   FunctionSignatureGenerator &&signature = std::move(W)
     .set_is_virtual(is_pure_virtual || has_derived)

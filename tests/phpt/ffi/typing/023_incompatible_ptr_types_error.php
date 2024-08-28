@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /Invalid php2c conversion: FFI\\CData_int8\* -> int16_t\*/
 <?php
 

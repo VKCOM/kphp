@@ -29,7 +29,7 @@ class Objs2K2ComponentTarget : public Target {
 public:
   std::string get_cmd() final {
     std::stringstream ss;
-    ss << settings->cxx.get() << " -shared -o " << target() << " ";
+    ss << settings->cxx.get() << " -static-libgcc -stdlib=libc++ -static-libstdc++ -shared -o " << target() << " ";
 
     for (size_t i = 0; i + 1 < deps.size(); ++i) {
       ss << deps[i]->get_name() << " ";
@@ -38,7 +38,11 @@ public:
     // the last dep is runtime lib
     // todo:k2 think about kphp-libraries
     assert(deps.size() >= 1 && "There are should be at least one dependency. It's the runtime lib");
-    ss << load_all_symbols_pre() << deps.back()->get_name() << load_all_symbols_post();
+    if (G->settings().force_link_runtime.get()) {
+      ss << load_all_symbols_pre() << deps.back()->get_name() << load_all_symbols_post();
+    } else {
+      ss << deps.back()->get_name() << " ";
+    }
     return ss.str();
   }
 };

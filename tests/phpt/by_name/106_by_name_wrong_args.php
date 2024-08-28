@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /in callByName<A>/
 /\$class_name::sf\(\);/
 /Too few arguments in call to A::sf\(\), expected 1, have 0/

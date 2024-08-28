@@ -4,36 +4,31 @@
 
 #include "runtime-light/stdlib/rpc/rpc-api.h"
 
-#include <array>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
-#include <optional>
+#include <memory>
 #include <utility>
 
 #include "common/algorithms/find.h"
 #include "common/rpc-error-codes.h"
+#include "runtime-core/runtime-core.h"
 #include "runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/allocator/allocator.h"
-#include "runtime-light/stdlib/rpc/rpc-buffer.h"
+#include "runtime-light/coroutine/awaitable.h"
+#include "runtime-light/coroutine/task.h"
+#include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/rpc/rpc-context.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-headers.h"
-#include "runtime-light/streams/interface.h"
+#include "runtime-light/stdlib/rpc/rpc-extra-info.h"
+#include "runtime-light/tl/tl-core.h"
 
 namespace rpc_impl_ {
 
-constexpr int32_t MAX_TIMEOUT_S = 86400;
-
-constexpr auto SMALL_STRING_SIZE_LEN = 1;
-constexpr auto MEIDUM_STRING_SIZE_LEN = 3;
-constexpr auto LARGE_STRING_SIZE_LEN = 7;
-
-constexpr uint64_t SMALL_STRING_MAX_LEN = 253;
-constexpr uint64_t MEDIUM_STRING_MAX_LEN = (static_cast<uint64_t>(1) << 24) - 1;
-[[maybe_unused]] constexpr uint64_t LARGE_STRING_MAX_LEN = (static_cast<uint64_t>(1) << 56) - 1;
-
-constexpr uint8_t LARGE_STRING_MAGIC = 0xff;
-constexpr uint8_t MEDIUM_STRING_MAGIC = 0xfe;
+constexpr double MAX_TIMEOUT_S = 86400.0;
+constexpr double DEFAULT_TIMEOUT_S = 0.3;
+constexpr auto MAX_TIMEOUT_NS = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{MAX_TIMEOUT_S});
+constexpr auto DEFAULT_TIMEOUT_NS = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{DEFAULT_TIMEOUT_S});
 
 mixed mixed_array_get_value(const mixed &arr, const string &str_key, int64_t num_key) noexcept {
   if (!arr.is_array()) {
@@ -101,42 +96,65 @@ class_instance<RpcTlQuery> store_function(const mixed &tl_object) noexcept {
   return rpc_tl_query;
 }
 
-task_t<RpcQueryInfo> rpc_send_impl(string actor, double timeout, bool ignore_answer) noexcept {
-  if (timeout <= 0 || timeout > MAX_TIMEOUT_S) { // TODO: handle timeouts
-    //    timeout = conn.get()->timeout_ms * 0.001;
-  }
-
-  auto &rpc_ctx = RpcComponentContext::get();
+task_t<RpcQueryInfo> rpc_send_impl(string actor, double timeout, bool ignore_answer, bool collect_responses_extra_info) noexcept {
+  auto &rpc_ctx{RpcComponentContext::get()};
+  // prepare RPC request
   string request_buf{};
   size_t request_size{rpc_ctx.rpc_buffer.size()};
-
   // 'request_buf' will look like this:
   //    [ RpcExtraHeaders (optional) ] [ payload ]
   if (const auto [opt_new_extra_header, cur_extra_header_size]{regularize_extra_headers(rpc_ctx.rpc_buffer.data(), ignore_answer)}; opt_new_extra_header) {
     const auto new_extra_header{opt_new_extra_header.value()};
-    const auto new_extra_header_size{sizeof(std::decay_t<decltype(new_extra_header)>)};
+    const auto new_extra_header_size{sizeof(std::remove_cvref_t<decltype(new_extra_header)>)};
     request_size = request_size - cur_extra_header_size + new_extra_header_size;
 
-    request_buf.append(reinterpret_cast<const char *>(&new_extra_header), new_extra_header_size);
+    request_buf.reserve_at_least(request_size);
+    request_buf.append(reinterpret_cast<const char *>(std::addressof(new_extra_header)), new_extra_header_size);
     request_buf.append(rpc_ctx.rpc_buffer.data() + cur_extra_header_size, rpc_ctx.rpc_buffer.size() - cur_extra_header_size);
   } else {
     request_buf.append(rpc_ctx.rpc_buffer.data(), request_size);
   }
-
-  // get timestamp before co_await to also count the time we were waiting for runtime to resume this coroutine
+  // send RPC request
+  const auto query_id{rpc_ctx.current_query_id++};
   const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
-
-  auto comp_query{co_await f$component_client_send_query(actor, request_buf)};
+  auto comp_query{co_await f$component_client_send_request(actor, request_buf)};
   if (comp_query.is_null()) {
-    php_error("could not send rpc query to %s", actor.c_str());
+    php_warning("can't send rpc query to %s", actor.c_str());
     co_return RpcQueryInfo{.id = RPC_INVALID_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
   }
 
-  if (ignore_answer) { // TODO: wait for answer in a separate coroutine and keep returning RPC_IGNORED_ANSWER_QUERY_ID
+  // create response extra info
+  if (collect_responses_extra_info) {
+    rpc_ctx.rpc_responses_extra_info.emplace(query_id, std::make_pair(rpc_response_extra_info_status_t::NOT_READY, rpc_response_extra_info_t{0, timestamp}));
+  }
+  // normalize timeout
+  const auto timeout_ns{timeout > 0 && timeout <= MAX_TIMEOUT_S ? std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout})
+                                                                : DEFAULT_TIMEOUT_NS};
+  // create fork to wait for RPC response. we need to do it even if 'ignore_answer' is 'true' to make sure
+  // that the stream will not be closed too early. otherwise, platform may even not send RPC request
+  auto waiter_task{[](int64_t query_id, auto comp_query, std::chrono::nanoseconds timeout, bool collect_responses_extra_info) noexcept -> task_t<string> {
+    auto fetch_task{f$component_client_fetch_response(std::move(comp_query))};
+    const auto response{(co_await wait_with_timeout_t{task_t<string>::awaiter_t{std::addressof(fetch_task)}, timeout}).value_or(string{})};
+    // update response extra info if needed
+    if (collect_responses_extra_info) {
+      auto &extra_info_map{RpcComponentContext::get().rpc_responses_extra_info};
+      if (const auto it_extra_info{extra_info_map.find(query_id)}; it_extra_info != extra_info_map.end()) {
+        const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
+        it_extra_info->second.second = std::make_tuple(response.size(), timestamp - std::get<1>(it_extra_info->second.second));
+        it_extra_info->second.first = rpc_response_extra_info_status_t::READY;
+      } else {
+        php_warning("can't find extra info for RPC query %" PRId64, query_id);
+      }
+    }
+    co_return response;
+  }(query_id, std::move(comp_query), timeout_ns, collect_responses_extra_info)};
+  // start waiter fork
+  const auto waiter_fork_id{co_await start_fork_t{static_cast<task_t<void>>(std::move(waiter_task)), start_fork_t::execution::self}};
+
+  if (ignore_answer) {
     co_return RpcQueryInfo{.id = RPC_IGNORED_ANSWER_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
   }
-  const auto query_id{rpc_ctx.current_query_id++};
-  rpc_ctx.pending_component_queries.emplace(query_id, std::move(comp_query));
+  rpc_ctx.response_waiter_forks.emplace(query_id, waiter_fork_id);
   co_return RpcQueryInfo{.id = query_id, .request_size = request_size, .timestamp = timestamp};
 }
 
@@ -154,15 +172,10 @@ task_t<RpcQueryInfo> rpc_tl_query_one_impl(string actor, mixed tl_object, double
     co_return RpcQueryInfo{};
   }
 
-  const auto query_info{co_await rpc_send_impl(actor, timeout, ignore_answer)};
+  const auto query_info{co_await rpc_send_impl(actor, timeout, ignore_answer, collect_resp_extra_info)};
   if (!ignore_answer) {
-    rpc_ctx.pending_rpc_queries.emplace(query_info.id, std::move(rpc_tl_query));
+    rpc_ctx.response_fetcher_instances.emplace(query_info.id, std::move(rpc_tl_query));
   }
-  if (collect_resp_extra_info) {
-    rpc_ctx.rpc_responses_extra_info.emplace(query_info.id,
-                                             std::make_pair(rpc_response_extra_info_status_t::NOT_READY, rpc_response_extra_info_t{0, query_info.timestamp}));
-  }
-
   co_return query_info;
 }
 
@@ -182,19 +195,14 @@ task_t<RpcQueryInfo> typed_rpc_tl_query_one_impl(string actor, const RpcRequest 
     co_return RpcQueryInfo{};
   }
 
-  const auto query_info{co_await rpc_send_impl(actor, timeout, ignore_answer)};
+  const auto query_info{co_await rpc_send_impl(actor, timeout, ignore_answer, collect_responses_extra_info)};
   if (!ignore_answer) {
     auto rpc_tl_query{make_instance<RpcTlQuery>()};
     rpc_tl_query.get()->result_fetcher = std::move(fetcher);
     rpc_tl_query.get()->tl_function_name = rpc_request.tl_function_name();
 
-    rpc_ctx.pending_rpc_queries.emplace(query_info.id, std::move(rpc_tl_query));
+    rpc_ctx.response_fetcher_instances.emplace(query_info.id, std::move(rpc_tl_query));
   }
-  if (collect_responses_extra_info) {
-    rpc_ctx.rpc_responses_extra_info.emplace(query_info.id,
-                                             std::make_pair(rpc_response_extra_info_status_t::NOT_READY, rpc_response_extra_info_t{0, query_info.timestamp}));
-  }
-
   co_return query_info;
 }
 
@@ -205,22 +213,22 @@ task_t<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) noexcept {
 
   auto &rpc_ctx{RpcComponentContext::get()};
   class_instance<RpcTlQuery> rpc_query{};
-  class_instance<C$ComponentQuery> component_query{};
+  int64_t response_waiter_fork_id{INVALID_FORK_ID};
 
   {
-    const auto it_rpc_query{rpc_ctx.pending_rpc_queries.find(query_id)};
-    const auto it_component_query{rpc_ctx.pending_component_queries.find(query_id)};
+    const auto it_rpc_query{rpc_ctx.response_fetcher_instances.find(query_id)};
+    const auto it_response_fetcher_fork_id{rpc_ctx.response_waiter_forks.find(query_id)};
 
-    vk::final_action finalizer{[&rpc_ctx, it_rpc_query, it_component_query]() {
-      rpc_ctx.pending_rpc_queries.erase(it_rpc_query);
-      rpc_ctx.pending_component_queries.erase(it_component_query);
+    vk::final_action finalizer{[&rpc_ctx, it_rpc_query, it_response_fetcher_fork_id]() {
+      rpc_ctx.response_fetcher_instances.erase(it_rpc_query);
+      rpc_ctx.response_waiter_forks.erase(it_response_fetcher_fork_id);
     }};
 
-    if (it_rpc_query == rpc_ctx.pending_rpc_queries.end() || it_component_query == rpc_ctx.pending_component_queries.end()) {
+    if (it_rpc_query == rpc_ctx.response_fetcher_instances.end() || it_response_fetcher_fork_id == rpc_ctx.response_waiter_forks.end()) {
       co_return make_fetch_error(string{"unexpectedly could not find query in pending queries"}, TL_ERROR_INTERNAL);
     }
     rpc_query = std::move(it_rpc_query->second);
-    component_query = std::move(it_component_query->second);
+    response_waiter_fork_id = it_response_fetcher_fork_id->second;
   }
 
   if (rpc_query.is_null()) {
@@ -232,20 +240,16 @@ task_t<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) noexcept {
   if (rpc_query.get()->result_fetcher->is_typed) {
     co_return make_fetch_error(string{"can't get untyped result from typed TL query. Use consistent API for that"}, TL_ERROR_INTERNAL);
   }
-
-  const auto data{co_await f$component_client_get_result(component_query)};
-
-  // TODO: subscribe to rpc response event?
-  // update rpc response extra info
-  if (const auto it_response_extra_info{rpc_ctx.rpc_responses_extra_info.find(query_id)}; it_response_extra_info != rpc_ctx.rpc_responses_extra_info.end()) {
-    const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
-    it_response_extra_info->second.second = {data.size(), timestamp - std::get<1>(it_response_extra_info->second.second)};
-    it_response_extra_info->second.first = rpc_response_extra_info_status_t::READY;
+  if (response_waiter_fork_id == INVALID_FORK_ID) {
+    co_return make_fetch_error(string{"can't find fetcher fork"}, TL_ERROR_INTERNAL);
   }
 
+  const auto data{(co_await wait_with_timeout_t{wait_fork_t<string>{response_waiter_fork_id}, MAX_TIMEOUT_NS}).value()};
+  if (data.empty()) {
+    co_return make_fetch_error(string{"rpc response timeout"}, TL_ERROR_QUERY_TIMEOUT);
+  }
   rpc_ctx.rpc_buffer.clean();
-  rpc_ctx.rpc_buffer.store(data.c_str(), data.size());
-
+  rpc_ctx.rpc_buffer.store_bytes(data.c_str(), data.size());
   co_return fetch_function_untyped(rpc_query);
 }
 
@@ -256,22 +260,22 @@ task_t<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_one_impl(i
 
   auto &rpc_ctx{RpcComponentContext::get()};
   class_instance<RpcTlQuery> rpc_query{};
-  class_instance<C$ComponentQuery> component_query{};
+  int64_t response_waiter_fork_id{INVALID_FORK_ID};
 
   {
-    const auto it_rpc_query{rpc_ctx.pending_rpc_queries.find(query_id)};
-    const auto it_component_query{rpc_ctx.pending_component_queries.find(query_id)};
+    const auto it_rpc_query{rpc_ctx.response_fetcher_instances.find(query_id)};
+    const auto it_response_fetcher_fork_id{rpc_ctx.response_waiter_forks.find(query_id)};
 
-    vk::final_action finalizer{[&rpc_ctx, it_rpc_query, it_component_query]() {
-      rpc_ctx.pending_rpc_queries.erase(it_rpc_query);
-      rpc_ctx.pending_component_queries.erase(it_component_query);
+    vk::final_action finalizer{[&rpc_ctx, it_rpc_query, it_response_fetcher_fork_id]() {
+      rpc_ctx.response_fetcher_instances.erase(it_rpc_query);
+      rpc_ctx.response_waiter_forks.erase(it_response_fetcher_fork_id);
     }};
 
-    if (it_rpc_query == rpc_ctx.pending_rpc_queries.end() || it_component_query == rpc_ctx.pending_component_queries.end()) {
+    if (it_rpc_query == rpc_ctx.response_fetcher_instances.end() || it_response_fetcher_fork_id == rpc_ctx.response_waiter_forks.end()) {
       co_return error_factory.make_error(string{"unexpectedly could not find query in pending queries"}, TL_ERROR_INTERNAL);
     }
     rpc_query = std::move(it_rpc_query->second);
-    component_query = std::move(it_component_query->second);
+    response_waiter_fork_id = it_response_fetcher_fork_id->second;
   }
 
   if (rpc_query.is_null()) {
@@ -283,20 +287,16 @@ task_t<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_one_impl(i
   if (!rpc_query.get()->result_fetcher->is_typed) {
     co_return error_factory.make_error(string{"can't get typed result from untyped TL query. Use consistent API for that"}, TL_ERROR_INTERNAL);
   }
-
-  const auto data{co_await f$component_client_get_result(component_query)};
-
-  // TODO: subscribe to rpc response event?
-  // update rpc response extra info
-  if (const auto it_response_extra_info{rpc_ctx.rpc_responses_extra_info.find(query_id)}; it_response_extra_info != rpc_ctx.rpc_responses_extra_info.end()) {
-    const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
-    it_response_extra_info->second.second = {data.size(), timestamp - std::get<1>(it_response_extra_info->second.second)};
-    it_response_extra_info->second.first = rpc_response_extra_info_status_t::READY;
+  if (response_waiter_fork_id == INVALID_FORK_ID) {
+    co_return error_factory.make_error(string{"can't find fetcher fork"}, TL_ERROR_INTERNAL);
   }
 
+  const auto data{(co_await wait_with_timeout_t{wait_fork_t<string>{response_waiter_fork_id}, MAX_TIMEOUT_NS}).value()};
+  if (data.empty()) {
+    co_return error_factory.make_error(string{"rpc response timeout"}, TL_ERROR_QUERY_TIMEOUT);
+  }
   rpc_ctx.rpc_buffer.clean();
-  rpc_ctx.rpc_buffer.store(data.c_str(), data.size());
-
+  rpc_ctx.rpc_buffer.store_bytes(data.c_str(), data.size());
   co_return fetch_function_typed(rpc_query, error_factory);
 }
 
@@ -308,53 +308,27 @@ bool f$store_int(int64_t v) noexcept {
   if (unlikely(is_int32_overflow(v))) {
     php_warning("Got int32 overflow on storing '%" PRIi64 "', the value will be casted to '%d'", v, static_cast<int32_t>(v));
   }
-  RpcComponentContext::get().rpc_buffer.store_trivial(static_cast<int32_t>(v));
+  RpcComponentContext::get().rpc_buffer.store_trivial<int32_t>(v);
   return true;
 }
 
 bool f$store_long(int64_t v) noexcept {
-  RpcComponentContext::get().rpc_buffer.store_trivial(v);
+  RpcComponentContext::get().rpc_buffer.store_trivial<int64_t>(v);
   return true;
 }
 
 bool f$store_float(double v) noexcept {
-  RpcComponentContext::get().rpc_buffer.store_trivial(static_cast<float>(v));
+  RpcComponentContext::get().rpc_buffer.store_trivial<float>(v);
   return true;
 }
 
 bool f$store_double(double v) noexcept {
-  RpcComponentContext::get().rpc_buffer.store_trivial(v);
+  RpcComponentContext::get().rpc_buffer.store_trivial<double>(v);
   return true;
 }
 
 bool f$store_string(const string &v) noexcept {
-  auto &rpc_buf{RpcComponentContext::get().rpc_buffer};
-
-  uint8_t size_len{};
-  uint64_t string_len{v.size()};
-  if (string_len <= rpc_impl_::SMALL_STRING_MAX_LEN) {
-    size_len = rpc_impl_::SMALL_STRING_SIZE_LEN;
-    rpc_buf.store_trivial(static_cast<uint8_t>(string_len));
-  } else if (string_len <= rpc_impl_::MEDIUM_STRING_MAX_LEN) {
-    size_len = rpc_impl_::MEIDUM_STRING_SIZE_LEN + 1;
-    rpc_buf.store_trivial(static_cast<uint8_t>(rpc_impl_::MEDIUM_STRING_MAGIC));
-    rpc_buf.store_trivial(static_cast<uint8_t>(string_len & 0xff));
-    rpc_buf.store_trivial(static_cast<uint8_t>((string_len >> 8) & 0xff));
-    rpc_buf.store_trivial(static_cast<uint8_t>((string_len >> 16) & 0xff));
-  } else {
-    php_warning("large strings aren't supported");
-    size_len = rpc_impl_::SMALL_STRING_SIZE_LEN;
-    string_len = 0;
-    rpc_buf.store_trivial(static_cast<uint8_t>(string_len));
-  }
-  rpc_buf.store(v.c_str(), string_len);
-
-  const auto total_len{size_len + string_len};
-  const auto total_len_with_padding{(total_len + 3) & ~static_cast<string::size_type>(3)};
-  const auto padding{total_len_with_padding - total_len};
-
-  std::array padding_array{'\0', '\0', '\0', '\0'};
-  rpc_buf.store(padding_array.data(), padding);
+  RpcComponentContext::get().rpc_buffer.store_string(std::string_view{v.c_str(), v.size()});
   return true;
 }
 
@@ -373,71 +347,12 @@ double f$fetch_double() noexcept {
 }
 
 double f$fetch_float() noexcept {
-  return static_cast<double>(RpcComponentContext::get().rpc_buffer.fetch_trivial<float>().value_or(0.0));
+  return static_cast<double>(RpcComponentContext::get().rpc_buffer.fetch_trivial<float>().value_or(0));
 }
 
 string f$fetch_string() noexcept {
-  auto &rpc_buf{RpcComponentContext::get().rpc_buffer};
-
-  uint8_t first_byte{};
-  if (const auto opt_first_byte{rpc_buf.fetch_trivial<uint8_t>()}; opt_first_byte) {
-    first_byte = opt_first_byte.value();
-  } else {
-    return {}; // TODO: error handling
-  }
-
-  uint8_t size_len{};
-  uint64_t string_len{};
-  switch (first_byte) {
-    case rpc_impl_::LARGE_STRING_MAGIC: {
-      if (rpc_buf.remaining() < rpc_impl_::LARGE_STRING_SIZE_LEN) {
-        return {}; // TODO: error handling
-      }
-      size_len = rpc_impl_::LARGE_STRING_SIZE_LEN + 1;
-      const auto first{static_cast<uint64_t>(rpc_buf.fetch_trivial<uint8_t>().value())};
-      const auto second{static_cast<uint64_t>(rpc_buf.fetch_trivial<uint8_t>().value()) << 8};
-      const auto third{static_cast<uint64_t>(rpc_buf.fetch_trivial<uint8_t>().value()) << 16};
-      const auto fourth{static_cast<uint64_t>(rpc_buf.fetch_trivial<uint8_t>().value()) << 24};
-      const auto fifth{static_cast<uint64_t>(rpc_buf.fetch_trivial<uint8_t>().value()) << 32};
-      const auto sixth{static_cast<uint64_t>(rpc_buf.fetch_trivial<uint8_t>().value()) << 40};
-      const auto seventh{static_cast<uint64_t>(rpc_buf.fetch_trivial<uint8_t>().value()) << 48};
-      string_len = first | second | third | fourth | fifth | sixth | seventh;
-
-      const auto total_len_with_padding{(size_len + string_len + 3) & ~static_cast<uint64_t>(3)};
-      rpc_buf.adjust(total_len_with_padding - size_len);
-      php_warning("large strings aren't supported");
-      return {};
-    }
-    case rpc_impl_::MEDIUM_STRING_MAGIC: {
-      if (rpc_buf.remaining() < rpc_impl_::MEIDUM_STRING_SIZE_LEN) {
-        return {}; // TODO: error handling
-      }
-      size_len = rpc_impl_::MEIDUM_STRING_SIZE_LEN + 1;
-      const auto first{static_cast<uint64_t>(rpc_buf.fetch_trivial<uint8_t>().value())};
-      const auto second{static_cast<uint64_t>(rpc_buf.fetch_trivial<uint8_t>().value()) << 8};
-      const auto third{static_cast<uint64_t>(rpc_buf.fetch_trivial<uint8_t>().value()) << 16};
-      string_len = first | second | third;
-
-      if (string_len <= rpc_impl_::SMALL_STRING_MAX_LEN) {
-        php_warning("long string's length is less than 254");
-      }
-      break;
-    }
-    default: {
-      size_len = rpc_impl_::SMALL_STRING_SIZE_LEN;
-      string_len = static_cast<uint64_t>(first_byte);
-      break;
-    }
-  }
-
-  const auto total_len_with_padding{(size_len + string_len + 3) & ~static_cast<uint64_t>(3)};
-  if (rpc_buf.remaining() < total_len_with_padding - size_len) {
-    return {}; // TODO: error handling
-  }
-
-  string res{rpc_buf.data() + rpc_buf.pos(), static_cast<string::size_type>(string_len)};
-  rpc_buf.adjust(total_len_with_padding - size_len);
-  return res;
+  const std::string_view str{RpcComponentContext::get().rpc_buffer.fetch_string()};
+  return {str.data(), static_cast<string::size_type>(str.length())};
 }
 
 // === Rpc Query ==================================================================================
@@ -489,7 +404,7 @@ bool is_int32_overflow(int64_t v) noexcept {
 }
 
 void store_raw_vector_double(const array<double> &vector) noexcept { // TODO: didn't we forget vector's length?
-  RpcComponentContext::get().rpc_buffer.store(reinterpret_cast<const char *>(vector.get_const_vector_pointer()), sizeof(double) * vector.count());
+  RpcComponentContext::get().rpc_buffer.store_bytes(reinterpret_cast<const char *>(vector.get_const_vector_pointer()), sizeof(double) * vector.count());
 }
 
 void fetch_raw_vector_double(array<double> &vector, int64_t num_elems) noexcept {

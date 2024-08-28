@@ -4,6 +4,10 @@
 
 #pragma once
 
+#include "common/smart_ptrs/intrusive_ptr.h"
+#include "runtime-core/class-instance/refcountable-php-classes.h"
+
+
 #ifndef INCLUDED_FROM_KPHP_CORE
   #error "this file must be included only from runtime-core.h"
 #endif
@@ -16,6 +20,10 @@ template<typename T>
 struct is_type_acceptable_for_mixed<array<T>> : is_constructible_or_unknown<mixed, T> {
 };
 
+template<typename T>
+struct is_type_acceptable_for_mixed<class_instance<T>> : std::is_base_of<may_be_mixed_base, T> {
+};
+
 class mixed {
 public:
   enum class type {
@@ -25,157 +33,181 @@ public:
     FLOAT,
     STRING,
     ARRAY,
+    OBJECT,
   };
 
   mixed(const void *) = delete; // deprecate conversion from pointer to boolean
-  inline mixed() = default;
-  inline mixed(const Unknown &u) noexcept;
-  inline mixed(const char *s, string::size_type len) noexcept;
-  inline mixed(const mixed &v) noexcept;
-  inline mixed(mixed &&v) noexcept;
+  mixed() = default;
+  mixed(const Unknown &u) noexcept;
+  mixed(const char *s, string::size_type len) noexcept;
+  mixed(const mixed &v) noexcept;
+  mixed(mixed &&v) noexcept;
 
   template<typename T, typename = std::enable_if_t<is_type_acceptable_for_mixed<std::decay_t<T>>::value>>
-  inline mixed(T &&v) noexcept;
+  mixed(T &&v) noexcept;
   template<typename T, typename = std::enable_if_t<is_type_acceptable_for_mixed<T>::value>>
-  inline mixed(const Optional<T> &v) noexcept;
+  mixed(const Optional<T> &v) noexcept;
   template<typename T, typename = std::enable_if_t<is_type_acceptable_for_mixed<T>::value>>
-  inline mixed(Optional<T> &&v) noexcept;
+  mixed(Optional<T> &&v) noexcept;
 
-  inline mixed &operator=(const mixed &other) noexcept;
-  inline mixed &operator=(mixed &&other) noexcept;
+  mixed &operator=(const mixed &other) noexcept;
+  mixed &operator=(mixed &&other) noexcept;
 
   template<typename T, typename = std::enable_if_t<is_type_acceptable_for_mixed<std::decay_t<T>>::value>>
-  inline mixed &operator=(T &&v) noexcept;
+  mixed &operator=(T &&v) noexcept;
   template<typename T, typename = std::enable_if_t<is_type_acceptable_for_mixed<T>::value>>
-  inline mixed &operator=(const Optional<T> &v) noexcept;
+  mixed &operator=(const Optional<T> &v) noexcept;
   template<typename T, typename = std::enable_if_t<is_type_acceptable_for_mixed<T>::value>>
-  inline mixed &operator=(Optional<T> &&v) noexcept;
+  mixed &operator=(Optional<T> &&v) noexcept;
 
-  inline mixed &assign(const char *other, string::size_type len);
+  mixed &assign(const char *other, string::size_type len);
 
-  inline const mixed operator-() const;
-  inline const mixed operator+() const;
+  const mixed operator-() const;
+  const mixed operator+() const;
 
-  inline int64_t operator~() const;
+  int64_t operator~() const;
 
-  inline mixed &operator+=(const mixed &other);
-  inline mixed &operator-=(const mixed &other);
-  inline mixed &operator*=(const mixed &other);
-  inline mixed &operator/=(const mixed &other);
-  inline mixed &operator%=(const mixed &other);
+  mixed &operator+=(const mixed &other);
+  mixed &operator-=(const mixed &other);
+  mixed &operator*=(const mixed &other);
+  mixed &operator/=(const mixed &other);
+  mixed &operator%=(const mixed &other);
 
-  inline mixed &operator&=(const mixed &other);
-  inline mixed &operator|=(const mixed &other);
-  inline mixed &operator^=(const mixed &other);
-  inline mixed &operator<<=(const mixed &other);
-  inline mixed &operator>>=(const mixed &other);
+  mixed &operator&=(const mixed &other);
+  mixed &operator|=(const mixed &other);
+  mixed &operator^=(const mixed &other);
+  mixed &operator<<=(const mixed &other);
+  mixed &operator>>=(const mixed &other);
 
-  inline mixed &operator++();
-  inline const mixed operator++(int);
+  mixed &operator++();
+  const mixed operator++(int);
 
-  inline mixed &operator--();
-  inline const mixed operator--(int);
+  mixed &operator--();
+  const mixed operator--(int);
 
-  inline bool operator!() const;
+  bool operator!() const;
 
-  inline mixed &append(const string &v);
-  inline mixed &append(tmp_string v);
+  mixed &append(const string &v);
+  mixed &append(tmp_string v);
 
-  inline mixed &operator[](int64_t int_key);
-  inline mixed &operator[](int32_t key) { return (*this)[int64_t{key}]; }
-  inline mixed &operator[](const string &string_key);
-  inline mixed &operator[](tmp_string string_key);
-  inline mixed &operator[](const mixed &v);
-  inline mixed &operator[](double double_key);
-  inline mixed &operator[](const array<mixed>::const_iterator &it);
-  inline mixed &operator[](const array<mixed>::iterator &it);
+  mixed &operator[](int64_t int_key);
+  mixed &operator[](int32_t key) { return (*this)[int64_t{key}]; }
+  mixed &operator[](const string &string_key);
+  mixed &operator[](tmp_string string_key);
+  mixed &operator[](const mixed &v);
+  mixed &operator[](double double_key);
+  mixed &operator[](const array<mixed>::const_iterator &it);
+  mixed &operator[](const array<mixed>::iterator &it);
 
-  inline void set_value(int64_t int_key, const mixed &v);
-  inline void set_value(int32_t key, const mixed &value) { set_value(int64_t{key}, value); }
-  inline void set_value(const string &string_key, const mixed &v);
-  inline void set_value(const string &string_key, const mixed &v, int64_t precomuted_hash);
-  inline void set_value(tmp_string string_key, const mixed &v);
-  inline void set_value(const mixed &v, const mixed &value);
-  inline void set_value(double double_key, const mixed &value);
-  inline void set_value(const array<mixed>::const_iterator &it);
-  inline void set_value(const array<mixed>::iterator &it);
+  void set_value(int64_t int_key, const mixed &v);
+  void set_value(int32_t key, const mixed &value) { set_value(int64_t{key}, value); }
+  void set_value(const string &string_key, const mixed &v);
+  void set_value(const string &string_key, const mixed &v, int64_t precomuted_hash);
+  void set_value(tmp_string string_key, const mixed &v);
+  void set_value(const mixed &v, const mixed &value);
+  void set_value(double double_key, const mixed &value);
+  void set_value(const array<mixed>::const_iterator &it);
+  void set_value(const array<mixed>::iterator &it);
 
-  inline const mixed get_value(int64_t int_key) const;
-  inline const mixed get_value(int32_t key) const { return get_value(int64_t{key}); }
-  inline const mixed get_value(const string &string_key) const;
-  inline const mixed get_value(const string &string_key, int64_t precomuted_hash) const;
-  inline const mixed get_value(tmp_string string_key) const;
-  inline const mixed get_value(const mixed &v) const;
-  inline const mixed get_value(double double_key) const;
-  inline const mixed get_value(const array<mixed>::const_iterator &it) const;
-  inline const mixed get_value(const array<mixed>::iterator &it) const;
+  const mixed get_value(int64_t int_key) const;
+  const mixed get_value(int32_t key) const { return get_value(int64_t{key}); }
+  const mixed get_value(const string &string_key) const;
+  const mixed get_value(const string &string_key, int64_t precomuted_hash) const;
+  const mixed get_value(tmp_string string_key) const;
+  const mixed get_value(const mixed &v) const;
+  const mixed get_value(double double_key) const;
+  const mixed get_value(const array<mixed>::const_iterator &it) const;
+  const mixed get_value(const array<mixed>::iterator &it) const;
 
-  inline void push_back(const mixed &v);
-  inline const mixed push_back_return(const mixed &v);
+  void push_back(const mixed &v);
+  const mixed push_back_return(const mixed &v);
 
-  inline bool isset(int64_t int_key) const;
-  inline bool isset(int32_t key) const { return isset(int64_t{key}); }
+  bool isset(int64_t int_key) const;
+  bool isset(int32_t key) const { return isset(int64_t{key}); }
   template <class ...MaybeHash>
-  inline bool isset(const string &string_key, MaybeHash ...maybe_hash) const;
-  inline bool isset(const mixed &v) const;
-  inline bool isset(double double_key) const;
+  bool isset(const string &string_key, MaybeHash ...maybe_hash) const;
+  bool isset(const mixed &v) const;
+  bool isset(double double_key) const;
 
-  inline void unset(int64_t int_key);
-  inline void unset(int32_t key) { unset(int64_t{key}); }
+  void unset(int64_t int_key);
+  void unset(int32_t key) { unset(int64_t{key}); }
   template <class ...MaybeHash>
-  inline void unset(const string &string_key, MaybeHash ...maybe_hash);
-  inline void unset(const mixed &v);
-  inline void unset(double double_key);
+  void unset(const string &string_key, MaybeHash ...maybe_hash);
+  void unset(const mixed &v);
+  void unset(double double_key);
 
   void destroy() noexcept;
   ~mixed() noexcept;
 
   void clear() noexcept;
 
-  inline const mixed to_numeric() const;
-  inline bool to_bool() const;
-  inline int64_t to_int() const;
-  inline double to_float() const;
-  inline const string to_string() const;
-  inline const array<mixed> to_array() const;
+  const mixed to_numeric() const;
+  bool to_bool() const;
+  int64_t to_int() const;
+  double to_float() const;
+  const string to_string() const;
+  const array<mixed> to_array() const;
 
-  inline bool &as_bool() __attribute__((always_inline));
-  inline const bool &as_bool() const __attribute__((always_inline));
+  bool &as_bool() __attribute__((always_inline)) { return *reinterpret_cast<bool *>(&storage_); }
+  const bool &as_bool() const __attribute__((always_inline)) { return *reinterpret_cast<const bool *>(&storage_); }
 
-  inline int64_t &as_int() __attribute__((always_inline));
-  inline const int64_t &as_int() const __attribute__((always_inline));
+  int64_t &as_int() __attribute__((always_inline)) { return *reinterpret_cast<int64_t *>(&storage_); }
+  const int64_t &as_int() const __attribute__((always_inline)) { return *reinterpret_cast<const int64_t *>(&storage_); }
 
-  inline double &as_double() __attribute__((always_inline));
-  inline const double &as_double() const __attribute__((always_inline));
+  double &as_double() __attribute__((always_inline)) { return *reinterpret_cast<double *>(&storage_); }
+  const double &as_double() const __attribute__((always_inline)) { return *reinterpret_cast<const double *>(&storage_); }
 
-  inline string &as_string() __attribute__((always_inline));
-  inline const string &as_string() const __attribute__((always_inline));
+  string &as_string() __attribute__((always_inline)) { return *reinterpret_cast<string *>(&storage_); }
+  const string &as_string() const __attribute__((always_inline)) { return *reinterpret_cast<const string *>(&storage_); }
 
-  inline array<mixed> &as_array() __attribute__((always_inline));
-  inline const array<mixed> &as_array() const __attribute__((always_inline));
+  array<mixed> &as_array() __attribute__((always_inline)) { return *reinterpret_cast<array<mixed> *>(&storage_); }
+  const array<mixed> &as_array() const __attribute__((always_inline)) { return *reinterpret_cast<const array<mixed> *>(&storage_); }
 
-  inline int64_t safe_to_int() const;
+  vk::intrusive_ptr<may_be_mixed_base> as_object() __attribute__((always_inline)) { return *reinterpret_cast<vk::intrusive_ptr<may_be_mixed_base>*>(&storage_); }
+  const vk::intrusive_ptr<may_be_mixed_base> as_object() const __attribute__((always_inline)) {  return *reinterpret_cast<const vk::intrusive_ptr<may_be_mixed_base>*>(&storage_);  }
 
-  inline void convert_to_numeric();
-  inline void convert_to_bool();
-  inline void convert_to_int();
-  inline void convert_to_float();
-  inline void convert_to_string();
 
-  inline const bool &as_bool(const char *function) const;
-  inline const int64_t &as_int(const char *function) const;
-  inline const double &as_float(const char *function) const;
-  inline const string &as_string(const char *function) const;
-  inline const array<mixed> &as_array(const char *function) const;
+  // TODO is it ok to return pointer to mutable from const method?
+  // I need it just to pass such a pointer into class_instance. Mutability is needed because
+  // class_instance do ref-counting
+  template <typename InstanceClass, typename T = typename InstanceClass::ClassType>
+  T *as_object_ptr() const {
+    auto ptr_to_object = vk::dynamic_pointer_cast<T>(*reinterpret_cast<const vk::intrusive_ptr<may_be_mixed_base> *>(&storage_));
+    return ptr_to_object.get();
+  }
 
-  inline bool &as_bool(const char *function);
-  inline int64_t &as_int(const char *function);
-  inline double &as_float(const char *function);
-  inline string &as_string(const char *function);
-  inline array<mixed> &as_array(const char *function);
+  template <typename ObjType>
+  bool is_a() const {
+    if (type_ != type::OBJECT) {
+      return false;
+    }
 
-  inline bool is_numeric() const;
-  inline bool is_scalar() const;
+    auto ptr = *reinterpret_cast<const vk::intrusive_ptr<may_be_mixed_base>*>(&storage_);
+    return static_cast<bool>(vk::dynamic_pointer_cast<ObjType>(ptr));
+  }
+
+  int64_t safe_to_int() const;
+
+  void convert_to_numeric();
+  void convert_to_bool();
+  void convert_to_int();
+  void convert_to_float();
+  void convert_to_string();
+
+  const bool &as_bool(const char *function) const;
+  const int64_t &as_int(const char *function) const;
+  const double &as_float(const char *function) const;
+  const string &as_string(const char *function) const;
+  const array<mixed> &as_array(const char *function) const;
+
+  bool &as_bool(const char *function);
+  int64_t &as_int(const char *function);
+  double &as_float(const char *function);
+  string &as_string(const char *function);
+  array<mixed> &as_array(const char *function);
+
+  bool is_numeric() const;
+  bool is_scalar() const;
 
   inline type get_type() const;
   inline bool is_null() const;
@@ -184,43 +216,45 @@ public:
   inline bool is_float() const;
   inline bool is_string() const;
   inline bool is_array() const;
+  inline bool is_object() const;
 
-  inline const string get_type_str() const;
-  inline const char *get_type_c_str() const;
+  const string get_type_str() const;
+  const char *get_type_c_str() const;
+  const char *get_type_or_class_name() const;
 
-  inline bool empty() const;
-  inline int64_t count() const;
-  inline int64_t compare(const mixed &rhs) const;
+  bool empty() const;
+  int64_t count() const;
+  int64_t compare(const mixed &rhs) const;
 
-  inline array<mixed>::const_iterator begin() const;
-  inline array<mixed>::const_iterator end() const;
+  array<mixed>::const_iterator begin() const;
+  array<mixed>::const_iterator end() const;
 
-  inline array<mixed>::iterator begin();
-  inline array<mixed>::iterator end();
+  array<mixed>::iterator begin();
+  array<mixed>::iterator end();
 
   inline void swap(mixed &other);
 
-  inline int64_t get_reference_counter() const;
+  int64_t get_reference_counter() const;
 
-  inline void set_reference_counter_to(ExtraRefCnt ref_cnt_value) noexcept;
-  inline bool is_reference_counter(ExtraRefCnt ref_cnt_value) const noexcept;
-  inline void force_destroy(ExtraRefCnt expected_ref_cnt) noexcept;
+  void set_reference_counter_to(ExtraRefCnt ref_cnt_value) noexcept;
+  bool is_reference_counter(ExtraRefCnt ref_cnt_value) const noexcept;
+  void force_destroy(ExtraRefCnt expected_ref_cnt) noexcept;
 
-  inline size_t estimate_memory_usage() const;
+  size_t estimate_memory_usage() const;
 
   static inline void reset_empty_values() noexcept;
 
 private:
-  inline void copy_from(const mixed &other);
-  inline void copy_from(mixed &&other);
+  void copy_from(const mixed &other);
+  void copy_from(mixed &&other);
 
   template<typename T>
   inline void init_from(T &&v);
-  inline void init_from(mixed v) { copy_from(std::move(v)); }
+  void init_from(mixed v) { copy_from(std::move(v)); }
 
   template<typename T>
   inline mixed &assign_from(T &&v);
-  inline mixed &assign_from(mixed v) { return (*this = std::move(v)); }
+  mixed &assign_from(mixed v) { return (*this = std::move(v)); }
 
   template<typename T>
   auto get_type_and_value_ptr(const array<T>  &) { return std::make_pair(type::ARRAY  , &as_array());  }
@@ -230,6 +264,8 @@ private:
   auto get_type_and_value_ptr(const int       &) { return std::make_pair(type::INTEGER, &as_int()); }
   auto get_type_and_value_ptr(const double    &) { return std::make_pair(type::FLOAT  , &as_double()); }
   auto get_type_and_value_ptr(const string    &) { return std::make_pair(type::STRING , &as_string()); }
+  template<typename InstanceClass>
+  auto get_type_and_value_ptr(const InstanceClass   &) {return std::make_pair(type::OBJECT, as_object_ptr<InstanceClass>()); }
 
   template<typename T>
   static T &empty_value() noexcept;
@@ -238,3 +274,32 @@ private:
   uint64_t storage_{0};
 };
 
+mixed operator+(const mixed &lhs, const mixed &rhs);
+mixed operator-(const mixed &lhs, const mixed &rhs);
+mixed operator*(const mixed &lhs, const mixed &rhs);
+mixed operator-(const string &lhs);
+mixed operator+(const string &lhs);
+int64_t operator&(const mixed &lhs, const mixed &rhs);
+int64_t operator|(const mixed &lhs, const mixed &rhs);
+int64_t operator^(const mixed &lhs, const mixed &rhs);
+int64_t operator<<(const mixed &lhs, const mixed &rhs);
+int64_t operator>>(const mixed &lhs, const mixed &rhs);
+bool operator<(const mixed &lhs, const mixed &rhs);
+bool operator<=(const mixed &lhs, const mixed &rhs);
+void swap(mixed &lhs, mixed &rhs);
+
+string_buffer &operator<<(string_buffer &sb, const mixed &v);
+
+template <typename T>
+bool less_number_string_as_php8_impl(T lhs, const string &rhs);
+template <typename T>
+bool less_string_number_as_php8_impl(const string &lhs, T rhs);
+template <typename T>
+bool less_number_string_as_php8(bool php7_result, T lhs, const string &rhs);
+template <typename T>
+inline bool less_string_number_as_php8(bool php7_result, const string &lhs, T rhs);
+
+template<class InputClass>
+mixed f$to_mixed(const class_instance<InputClass> &instance) noexcept;
+template<class ResultClass>
+ResultClass from_mixed(const mixed &m, const string &) noexcept;

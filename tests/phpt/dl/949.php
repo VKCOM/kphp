@@ -1,4 +1,4 @@
-@ok benchmark
+@ok benchmark k2_skip
 <?php
 
 function my_throw ($msg, $code) {

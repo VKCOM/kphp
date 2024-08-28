@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 
 function test_create_interval_from_date_string() {

@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 
 function test_array_combine_empty() {

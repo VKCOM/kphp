@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
   $a = array (-1 => 1, 1 => false, 3 => null);
   $b = array (1, false, null);

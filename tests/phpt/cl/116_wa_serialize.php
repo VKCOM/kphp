@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 require_once 'kphp_tester_include.php';
 require_once 'kphp_tester_include.php';

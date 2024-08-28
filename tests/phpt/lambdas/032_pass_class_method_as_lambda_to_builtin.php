@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 
 define('A_method', 'increment_by_value');

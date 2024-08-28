@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 
 $s = str_repeat(".", (1 << 24) * 10); 
