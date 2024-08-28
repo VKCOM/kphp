@@ -26,6 +26,9 @@ constexpr uint64_t MEDIUM_STRING_MAX_LEN = (static_cast<uint64_t>(1) << 24) - 1;
 constexpr uint8_t LARGE_STRING_MAGIC = 0xff;
 constexpr uint8_t MEDIUM_STRING_MAGIC = 0xfe;
 
+constexpr uint32_t TL_ZERO = 0x0000'0000;
+
+
 class TLBuffer : private vk::not_copyable {
   string_buffer m_buffer;
   size_t m_pos{0};

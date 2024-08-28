@@ -4,13 +4,12 @@
 
 #include "runtime-light/crypto/crypto-builtins.h"
 
-#include "runtime-light/streams/interface.h"
+#include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/tl/tl-core.h"
 
 namespace {
 
 // Crypto-Specific TL magics
-constexpr uint32_t TL_ZERO = 0x0000'0000;
 constexpr uint32_t TL_BOOL_FALSE = 0xbc79'9737;
 constexpr uint32_t TL_BOOL_TRUE = 0x9972'75b5;
 
@@ -29,7 +28,7 @@ constexpr uint32_t TL_GET_PEM_CERT_INFO = 0xa50c'fd6c;
 constexpr uint32_t TL_GET_CRYPTOSECURE_PSEUDORANDOM_BYTES = 0x2491'b81d;
 } // namespace
 
-task_t<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length) {
+task_t<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length) noexcept {
   if (length <= 0 || length > string::max_size()) {
     co_return false;
   }
@@ -43,21 +42,21 @@ task_t<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length) {
   string request_buf;
   request_buf.append(buffer.data(), buffer.size());
 
-  auto query = f$component_client_send_query(string("crypto"), request_buf);
-  string resp = co_await f$component_client_get_result(co_await query);
+  auto query = f$component_client_send_request(string("crypto"), request_buf);
+  string resp = co_await f$component_client_fetch_response(co_await query);
 
   buffer.clean();
   buffer.store_bytes(resp.c_str(), resp.size());
 
   std::optional<uint32_t> magic = buffer.fetch_trivial<uint32_t>();
-  if (!magic || *magic != TL_RESULT_TRUE) {
+  if (!magic.has_value() || *magic != TL_RESULT_TRUE) {
     co_return false;
   }
   std::string_view str_view = buffer.fetch_string();
   co_return string(str_view.data(), str_view.size());
 }
 
-task_t<Optional<array<mixed>>> f$openssl_x509_parse(const string &data, bool shortnames) {
+task_t<Optional<array<mixed>>> f$openssl_x509_parse(const string &data, bool shortnames) noexcept {
   tl::TLBuffer buffer;
   buffer.store_trivial<uint32_t>(TL_GET_PEM_CERT_INFO);
   buffer.store_trivial<uint32_t>(shortnames ? TL_BOOL_TRUE : TL_BOOL_FALSE);
@@ -66,22 +65,22 @@ task_t<Optional<array<mixed>>> f$openssl_x509_parse(const string &data, bool sho
   string request_buf;
   request_buf.append(buffer.data(), buffer.size());
 
-  auto query = f$component_client_send_query(string("crypto"), request_buf);
-  string resp_from_platform = co_await f$component_client_get_result(co_await query);
+  auto query = f$component_client_send_request(string("crypto"), request_buf);
+  string resp_from_platform = co_await f$component_client_fetch_response(co_await query);
 
   buffer.clean();
   buffer.store_bytes(resp_from_platform.c_str(), resp_from_platform.size());
 
-  if (const auto magic = buffer.fetch_trivial<uint32_t>(); magic.value_or(TL_ZERO) != TL_RESULT_TRUE) {
+  if (const auto magic = buffer.fetch_trivial<uint32_t>(); magic.value_or(tl::TL_ZERO) != TL_RESULT_TRUE) {
     co_return false;
   }
 
-  if (const auto magic = buffer.fetch_trivial<uint32_t>(); magic.value_or(TL_ZERO) != TL_DICTIONARY) {
+  if (const auto magic = buffer.fetch_trivial<uint32_t>(); magic.value_or(tl::TL_ZERO) != TL_DICTIONARY) {
     co_return false;
   }
 
   const std::optional<uint32_t> size = buffer.fetch_trivial<uint32_t>();
-  if (!size) {
+  if (!size.has_value()) {
     co_return false;
   }
 
@@ -93,20 +92,20 @@ task_t<Optional<array<mixed>>> f$openssl_x509_parse(const string &data, bool sho
       co_return false;
     }
 
-    string key(key_view.data(), key_view.length());
+    const auto key = string(key_view.data(), key_view.length());
 
     const std::optional<uint32_t> magic = buffer.fetch_trivial<uint32_t>();
-    if (!magic) {
+    if (!magic.has_value()) {
       co_return false;
     }
 
     switch (*magic) {
       case TL_CERT_INFO_ITEM_LONG: {
-        const std::optional<int64_t> value = buffer.fetch_trivial<int64_t>();
-        if (!value) {
+        const std::optional<int64_t> val = buffer.fetch_trivial<int64_t>();
+        if (!val.has_value()) {
           co_return false;
         }
-        response[key] = *value;
+        response[key] = *val;
         break;
       }
       case TL_CERT_INFO_ITEM_STR: {
@@ -123,7 +122,7 @@ task_t<Optional<array<mixed>>> f$openssl_x509_parse(const string &data, bool sho
         auto sub_array = array<string>::create();
         const std::optional<uint32_t> sub_size = buffer.fetch_trivial<uint32_t>();
 
-        if (!sub_size) {
+        if (!sub_size.has_value()) {
           co_return false;
         }
 
