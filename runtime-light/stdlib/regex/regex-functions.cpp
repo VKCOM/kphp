@@ -7,5 +7,5 @@
 #include "runtime-light/component/component.h"
 
 RegexComponentState &RegexComponentState::get() noexcept {
-  return get_component_context()->regexp_context;
+  return get_component_context()->regex_component_context;
 }
