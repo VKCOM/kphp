@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <unistd.h>
 
-#include "common/mixin/not_copyable.h"
 #include "common/wrappers/likely.h"
+#include "common/mixin/not_copyable.h"
 
 #include "runtime-core/utils/kphp-assert-core.h"
