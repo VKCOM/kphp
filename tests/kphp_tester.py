@@ -60,7 +60,7 @@ class TestFile:
             vkext_dir=os.path.abspath(os.path.join(tester_dir, os.path.pardir, "objs", "vkext")),
             use_nocc=use_nocc,
             cxx_name=cxx_name,
-            k2_bin=os.path.abspath(k2_bin)
+            k2_bin=None if k2_bin is None else os.path.abspath(k2_bin)
         )
 
     def set_up_env_for_k2(self, cxx_name="clang++"):
