@@ -74,8 +74,7 @@ public:
   }
 
   template<standard_layout T, standard_layout U>
-    requires std::convertible_to<U, T>
-  void store_trivial(const U &t) noexcept {
+  requires std::convertible_to<U, T> void store_trivial(const U &t) noexcept {
     // Here we rely on that endianness of architecture is Little Endian
     store_bytes(reinterpret_cast<const char *>(std::addressof(t)), sizeof(T));
   }
