@@ -137,7 +137,7 @@ class KphpRunOnce(KphpBuilder):
 
         k2_runtime_bin = self.k2_bin
 
-        cmd = [k2_runtime_bin, "--image", os.path.join(self._kphp_build_tmp_dir, "component.so"), "--runs-count={}".format(runs_cnt)] + args
+        cmd = [k2_runtime_bin, "--image", os.path.join(self._kphp_build_tmp_dir, "component.so"), "--runs-count={}".format(runs_cnt), "--crypto"] + args
 
         if not os.getuid():
             cmd += ["-u", "root", "-g", "root"]
