@@ -14,6 +14,3 @@ function wait_queue_push (future_queue<any> &$queue_id, future<any> | false $req
 function wait_queue_empty (future_queue<any> $queue_id) ::: bool;
 /** @kphp-extern-func-info generate-stub */
 function wait_queue_next (future_queue<any> $queue_id, $timeout ::: float = -1.0) ::: future<^1[*]> | false;
-
-/** @kphp-extern-func-info generate-stub */
-function get_running_fork_id() ::: future <void>;

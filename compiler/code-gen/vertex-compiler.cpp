@@ -1366,7 +1366,7 @@ void compile_generated_stub(VertexAdaptor<op_function> func_root, CodeGenerator 
   FunctionPtr func = func_root->func_id;
   W << FunctionDeclaration(func, false) << " " <<
     BEGIN;
-  W << "php_critical_error(\"call to unsupported function\");" << NL;
+  W << "php_critical_error(\"call to unsupported function : " << func->name << "\");" << NL;
   W << END << NL;
 }
 
