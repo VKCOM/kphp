@@ -4,21 +4,13 @@
 
 #include "runtime-light/crypto/crypto-builtins.h"
 
+#include "common/tl/constants/common.h"
 #include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/tl/tl-core.h"
 
 namespace {
 
 // Crypto-Specific TL magics
-constexpr uint32_t TL_BOOL_FALSE = 0xbc79'9737;
-constexpr uint32_t TL_BOOL_TRUE = 0x9972'75b5;
-
-[[maybe_unused]] constexpr uint32_t TL_RESULT_FALSE = 0x2793'0a7b;
-constexpr uint32_t TL_RESULT_TRUE = 0x3f9c'8ef8;
-
-[[maybe_unused]] constexpr uint32_t TL_VECTOR = 0x1cb5'c415;
-[[maybe_unused]] constexpr uint32_t TL_TUPLE = 0x9770'768a;
-constexpr uint32_t TL_DICTIONARY = 0x1f4c'618f;
 
 constexpr uint32_t TL_CERT_INFO_ITEM_LONG = 0x533f'f89f;
 constexpr uint32_t TL_CERT_INFO_ITEM_STR = 0xc427'feef;
@@ -49,7 +41,7 @@ task_t<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length) noexcept 
   buffer.store_bytes(resp.c_str(), resp.size());
 
   std::optional<uint32_t> magic = buffer.fetch_trivial<uint32_t>();
-  if (!magic.has_value() || *magic != TL_RESULT_TRUE) {
+  if (!magic.has_value() || *magic != TL_MAYBE_TRUE) {
     co_return false;
   }
   std::string_view str_view = buffer.fetch_string();
@@ -71,11 +63,11 @@ task_t<Optional<array<mixed>>> f$openssl_x509_parse(const string &data, bool sho
   buffer.clean();
   buffer.store_bytes(resp_from_platform.c_str(), resp_from_platform.size());
 
-  if (const auto magic = buffer.fetch_trivial<uint32_t>(); magic.value_or(tl::TL_ZERO) != TL_RESULT_TRUE) {
+  if (const auto magic = buffer.fetch_trivial<uint32_t>(); magic.value_or(TL_ZERO) != TL_MAYBE_TRUE) {
     co_return false;
   }
 
-  if (const auto magic = buffer.fetch_trivial<uint32_t>(); magic.value_or(tl::TL_ZERO) != TL_DICTIONARY) {
+  if (const auto magic = buffer.fetch_trivial<uint32_t>(); magic.value_or(TL_ZERO) != TL_DICTIONARY) {
     co_return false;
   }
 
