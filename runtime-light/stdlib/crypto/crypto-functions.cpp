@@ -2,7 +2,7 @@
 //  Copyright (c) 2024 LLC «V Kontakte»
 //  Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-light/crypto/crypto-builtins.h"
+#include "runtime-light/stdlib/crypto/crypto-functions.h"
 
 #include "common/tl/constants/common.h"
 #include "runtime-light/stdlib/component/component-api.h"
