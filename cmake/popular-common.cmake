@@ -45,8 +45,10 @@ vk_add_library(light_common OBJECT ${LIGHT_COMMON_SOURCES})
 set_property(TARGET light_common PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 if (COMPILE_RUNTIME_LIGHT)
-    target_compile_options(light_common PUBLIC -stdlib=libc++)
-    target_link_options(light_common PUBLIC -stdlib=libc++ -static-libstdc++)
+    if(CMAKE_CXX_COMPILER_ID MATCHES Clang)
+        target_compile_options(light_common PUBLIC -stdlib=libc++)
+        target_link_options(light_common PUBLIC -stdlib=libc++ -static-libstdc++)
+    endif()
 endif()
 
 vk_add_library(popular_common OBJECT ${POPULAR_COMMON_SOURCES} ${LIGHT_COMMON_SOURCES})
