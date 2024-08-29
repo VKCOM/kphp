@@ -110,6 +110,7 @@ function vk_dot_product ($a ::: array, $b ::: array) ::: ^1[*] | ^2[*];
 
 
 function to_array_debug(any $instance, bool $with_class_names = false) ::: mixed[];
+function instance_to_array(object $instance, $with_class_names ::: bool = false) ::: mixed[];
 
 function implode ($s ::: string, $v ::: array) ::: string;
 
