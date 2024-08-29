@@ -1,3 +1,7 @@
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2024 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
 #ifndef K2_PLATFORM_HEADER_H
 #define K2_PLATFORM_HEADER_H
 
@@ -113,8 +117,7 @@ struct PlatformCtx {
    * `stream_d` will be assigned `0`.
    * however `stream_d=0` itself is not an error marker
    */
-  enum OpenStreamResult (*open)(size_t name_len, const char *name,
-                                uint64_t *stream_d);
+  enum OpenStreamResult (*open)(size_t name_len, const char *name, uint64_t *stream_d);
   /*
    * If the write or read status is `Blocked` - then the platform ensures that
    * the component receives this `stream_d` via `take_update` when the status is
@@ -124,8 +127,7 @@ struct PlatformCtx {
    * `new_status` will be assigned as
    * `{.read_status = 0, .write_status = 0, .please_shutdown = 0}`.
    */
-  enum GetStatusResult (*get_stream_status)(uint64_t stream_d,
-                                            struct StreamStatus *new_status);
+  enum GetStatusResult (*get_stream_status)(uint64_t stream_d, struct StreamStatus *new_status);
   /*
    * Return processed bytes (written or read).
    * Guaranteed to return `0` if  the stream is `Closed`, `Blocked` or
@@ -201,8 +203,7 @@ struct PlatformCtx {
    *
    * `deadline` will be assigned `0` if `timer_d` invalid
    */
-  enum TimerStatus (*get_timer_status)(uint64_t timer_d,
-                                       struct TimePoint *deadline);
+  enum TimerStatus (*get_timer_status)(uint64_t timer_d, struct TimePoint *deadline);
   /*
    * Return: `bool`.
    * If `True`: the update was successfully received.
@@ -278,17 +279,13 @@ struct ImageInfo {
 };
 
 // Every image should provide these symbols
-enum PollStatus vk_k2_poll(const struct ImageState *image_state,
-                           const struct PlatformCtx *pt_ctx,
-                           struct ComponentState *component_ctx);
+enum PollStatus vk_k2_poll(const struct ImageState *image_state, const struct PlatformCtx *pt_ctx, struct ComponentState *component_ctx);
 
 /*
  * platform_ctx without IO stuff (nullptr instead io-functions)
  * for now, returning nullptr will indicate error
  */
-struct ComponentState *
-vk_k2_create_component_state(const struct ImageState *image_state,
-                             const struct PlatformCtx *pt_ctx);
+struct ComponentState *vk_k2_create_component_state(const struct ImageState *image_state, const struct PlatformCtx *pt_ctx);
 struct ImageState *vk_k2_create_image_state(const struct PlatformCtx *pt_ctx);
 
 const struct ImageInfo *vk_k2_describe();
