@@ -51,12 +51,12 @@ void ComponentState::process_platform_updates() noexcept {
         }
       } else { // update on incoming stream
         php_debug("got new incoming stream %" PRIu64, stream_d);
-        if (standard_stream_ != INVALID_PLATFORM_DESCRIPTOR) {
+        if (output_stream_ != INVALID_PLATFORM_DESCRIPTOR) {
           php_warning("skip new incoming stream since previous one is not closed");
           release_stream(stream_d);
           continue;
         } // TODO: multiple incoming streams (except for http queries)
-        standard_stream_ = stream_d;
+        output_stream_ = stream_d;
         incoming_streams_.push_back(stream_d);
         opened_streams_.insert(stream_d);
         if (const auto schedule_status{scheduler.schedule(ScheduleEvent::IncomingStream{.stream_d = stream_d})}; schedule_status == ScheduleStatus::Error) {
@@ -120,8 +120,8 @@ uint64_t ComponentState::set_timer(std::chrono::nanoseconds duration) noexcept {
 }
 
 void ComponentState::release_stream(uint64_t stream_d) noexcept {
-  if (stream_d == standard_stream_) {
-    standard_stream_ = INVALID_PLATFORM_DESCRIPTOR;
+  if (stream_d == output_stream_) {
+    output_stream_ = INVALID_PLATFORM_DESCRIPTOR;
   }
   opened_streams_.erase(stream_d);
   pending_updates_.erase(stream_d); // also erase pending updates if exists
@@ -131,7 +131,7 @@ void ComponentState::release_stream(uint64_t stream_d) noexcept {
 
 void ComponentState::release_all_streams() noexcept {
   const auto &platform_ctx{*get_platform_context()};
-  standard_stream_ = INVALID_PLATFORM_DESCRIPTOR;
+  output_stream_ = INVALID_PLATFORM_DESCRIPTOR;
   for (const auto stream_d : opened_streams_) {
     platform_ctx.free_descriptor(stream_d);
     php_debug("released a stream %" PRIu64, stream_d);
