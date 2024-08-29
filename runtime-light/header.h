@@ -1,7 +1,3 @@
-// Compiler for PHP (aka KPHP)
-// Copyright (c) 2024 LLC «V Kontakte»
-// Distributed under the GPL v3 License, see LICENSE.notice.txt
-
 #ifndef K2_PLATFORM_HEADER_H
 #define K2_PLATFORM_HEADER_H
 
@@ -17,7 +13,7 @@
 #include <stdint.h>
 #endif
 
-#define K2_PLATFORM_HEADER_H_VERSION 6
+#define K2_PLATFORM_HEADER_H_VERSION 7
 
 // Always check that enum value is a valid value!
 
@@ -64,16 +60,20 @@ enum TimerStatus {
 
 enum OpenStreamResult {
   OpenStreamOk = 0,
-  // TODO: really need error? MB it's better to open and immediately close
-  // channel with corresponding error
+  /*
+   * TODO: really need error? MB it's better to open and immediately close
+   * channel with corresponding error
+   */
   OpenStreamErrorInvalidName = 1,
   OpenStreamErrorUnknownComponent = 3,
   OpenStreamErrorComponentUnavailable = 4,
   OpenStreamErrorLimitExceeded = 5,
 };
 
-// This time point is valid only within the component.
-// Similar to c++ `std::chrono::steady_clock::time_point`
+/*
+ * This time point is valid only within the component.
+ * Similar to c++ `std::chrono::steady_clock::time_point`
+ */
 struct TimePoint {
   uint64_t time_point_ns;
 };
@@ -95,7 +95,13 @@ struct PlatformCtx {
   /*
    * Immediately abort component execution.
    * Function is `[[noreturn]]`
+   * Note: `exit_code` used just as indicator for now.
+   * `exit_code` == 0 => FinishedOk,
+   * `exit_code` != 0 => FinishedError,
    */
+  void (*exit)(int32_t exit_code);
+
+  // Deprecated; Synonym for `exit(255)`;
   void (*abort)();
 
   struct Allocator allocator;
@@ -133,6 +139,7 @@ struct PlatformCtx {
    */
   size_t (*write)(uint64_t stream_d, size_t data_len, const void *data);
   size_t (*read)(uint64_t stream_d, size_t data_len, void *data);
+
   /*
    * Sets `StreamStatus.please_whutdown_write=true` for the component on the
    * opposite side (does not affect `StreamStatus` on your side).
@@ -141,6 +148,7 @@ struct PlatformCtx {
    * as long as `read_status != IOClosed`.
    */
   void (*please_shutdown_write)(uint64_t stream_d);
+
   /*
    * Disables the ability to write to a stream.
    * Data written to the stream buffer is still available for reading on the
@@ -150,6 +158,7 @@ struct PlatformCtx {
    * TODO: design information errors.
    */
   void (*shutdown_write)(uint64_t stream_d);
+
   /*
    * "Free" associated descriptor.
    * All future uses of this `descriptor` will be invalid.
@@ -175,6 +184,7 @@ struct PlatformCtx {
 
   // Coordinated with timers. Monotonical, for timeouts, measurements, etc..
   void (*get_time)(struct TimePoint *time_point);
+
   /*
    * In case of `result == Ok` timer_d will be NonZero
    * In case of `result != Ok` timer_d will be `0`
@@ -183,6 +193,7 @@ struct PlatformCtx {
    * Use `free_descriptor` to cancel
    */
   enum SetTimerResult (*set_timer)(uint64_t *timer_d, uint64_t duration_ns);
+
   /*
    * It is guaranteed that if `TimerStatusElapsed` is returned
    * then `deadline <= get_time()`
@@ -211,6 +222,7 @@ struct PlatformCtx {
    * platform is guaranteed to reschedule it.
    */
   uint8_t (*take_update)(uint64_t *update_d);
+
   /*
    * Only utf-8 string supported.
    * Possible `level` values:
@@ -220,19 +232,23 @@ struct PlatformCtx {
    *    4 => Debug
    *    5 => Trace
    * Any other value will cause the log to be skipped
-   */
-  void (*log)(size_t level, size_t len, const char *str);
-  /*
    * if `level` > `log_level_enabled()` log will be skipped
    */
+  void (*log)(size_t level, size_t len, const char *str);
+
+  // Use for optimization, see `log`
   size_t (*log_level_enabled)();
+
+  // Note: prefer to use only as seed generator for pseudo-random
+  void (*os_rnd)(size_t len, void *bytes);
 };
 
 struct ComponentState;
+
 /*
- * Image state created once on library load
- * shared between all component [instances].
- * designed to prevent heavy `_init` section of dlib
+ * Image state created once on library load.
+ * Shared between all component [instances].
+ * Designed to prevent heavy `_init` section of dlib
  */
 struct ImageState;
 
@@ -266,14 +282,13 @@ enum PollStatus vk_k2_poll(const struct ImageState *image_state,
                            const struct PlatformCtx *pt_ctx,
                            struct ComponentState *component_ctx);
 
-// platform_ctx without IO stuff (nullptr instead io-functions)
-// for now, returning nullptr will indicate error
+/*
+ * platform_ctx without IO stuff (nullptr instead io-functions)
+ * for now, returning nullptr will indicate error
+ */
 struct ComponentState *
 vk_k2_create_component_state(const struct ImageState *image_state,
                              const struct PlatformCtx *pt_ctx);
-
-// platform_ctx without IO stuff (nullptr instead io-functions)
-// for now, returning nullptr will indicate error
 struct ImageState *vk_k2_create_image_state(const struct PlatformCtx *pt_ctx);
 
 const struct ImageInfo *vk_k2_describe();
