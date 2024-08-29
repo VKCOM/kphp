@@ -1,0 +1,22 @@
+<?php
+
+require_once __DIR__ . '/unsupported/arrays.txt';
+require_once __DIR__ . '/unsupported/crypto.txt';
+require_once __DIR__ . '/unsupported/curl.txt';
+require_once __DIR__ . '/unsupported/error.txt';
+require_once __DIR__ . '/unsupported/file.txt';
+require_once __DIR__ . '/unsupported/fork.txt';
+require_once __DIR__ . '/unsupported/hash.txt';
+require_once __DIR__ . '/unsupported/job-worker.txt';
+require_once __DIR__ . '/unsupported/kml.txt';
+require_once __DIR__ . '/unsupported/kphp-toggles.txt';
+require_once __DIR__ . '/unsupported/kphp-tracing.txt';
+require_once __DIR__ . '/unsupported/kphp_internal.txt';
+require_once __DIR__ . '/unsupported/math.txt';
+require_once __DIR__ . '/unsupported/regex.txt';
+require_once __DIR__ . '/unsupported/rpc.txt';
+require_once __DIR__ . '/unsupported/serialize.txt';
+require_once __DIR__ . '/unsupported/server.txt';
+require_once __DIR__ . '/unsupported/string.txt';
+require_once __DIR__ . '/unsupported/time.txt';
+require_once __DIR__ . '/unsupported/vkext.txt';

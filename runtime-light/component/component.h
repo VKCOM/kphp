@@ -18,6 +18,7 @@
 #include "runtime-light/scheduler/scheduler.h"
 #include "runtime-light/stdlib/fork/fork-context.h"
 #include "runtime-light/stdlib/output/output-buffer.h"
+#include "runtime-light/stdlib/regex/regex-functions.h"
 #include "runtime-light/stdlib/rpc/rpc-context.h"
 
 constexpr uint64_t INVALID_PLATFORM_DESCRIPTOR = 0;
@@ -77,6 +78,8 @@ struct ComponentState {
 
   KphpCoreContext kphp_core_context;
   RpcComponentContext rpc_component_context;
+
+  RegexComponentState regex_component_context;
 
 private:
   task_t<void> main_task;

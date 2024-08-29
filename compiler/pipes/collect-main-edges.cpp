@@ -328,7 +328,6 @@ void CollectMainEdgesPass::on_func_call(VertexAdaptor<op_func_call> call) {
     VertexPtr arg = call->args()[i];
     auto param = function_params[i].as<op_func_param>();
     bool is_cast_param = !stage::get_function()->file_id->is_strict_types && param->is_cast_param;
-
     // call an extern function having a callback type description, like 'callable(^1[*]) : bool'
     if (function->is_extern() && param->type_hint && param->type_hint->try_as<TypeHintCallable>()) {
       // for FFI calls, php2c(null) is used to express a null function pointer

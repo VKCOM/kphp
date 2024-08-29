@@ -1,0 +1,41 @@
+<?php
+
+/** @kphp-extern-func-info generate-stub */
+function gzencode ($str ::: string, $level ::: int = -1) ::: string;
+/** @kphp-extern-func-info generate-stub */
+function gzdecode ($str ::: string) ::: string;
+/** @kphp-extern-func-info generate-stub */
+function gzcompress ($str ::: string, $level ::: int = -1) ::: string;
+/** @kphp-extern-func-info generate-stub */
+function gzuncompress ($str ::: string) ::: string;
+/** @kphp-extern-func-info generate-stub */
+function gzdeflate ($str ::: string, $level ::: int = -1) ::: string;
+/** @kphp-extern-func-info generate-stub */
+function gzinflate ($str ::: string) ::: string;
+
+
+function hash_hmac_algos () ::: string[];
+/** @kphp-extern-func-info generate-stub */
+function hash ($algo ::: string, $data ::: string, $raw_output ::: bool = false) ::: string;
+/** @kphp-extern-func-info generate-stub */
+function hash_hmac ($algo ::: string, $data ::: string, $key ::: string, $raw_output ::: bool = false) ::: string;
+/** @kphp-extern-func-info generate-stub */
+function hash_equals(string $known_string, string $user_string) ::: bool;
+/** @kphp-extern-func-info generate-stub */
+function md5 ($s ::: string, $raw_output ::: bool = false) ::: string;
+/** @kphp-extern-func-info generate-stub */
+function md5_file ($s ::: string, $raw_output ::: bool = false) ::: string | false;
+/** @kphp-extern-func-info generate-stub */
+function sha1 ($s ::: string, $raw_output ::: bool = false) ::: string;
+
+
+define('ZLIB_SYNC_FLUSH', 2);
+
+/** @kphp-extern-func-info generate-stub */
+function deflate_init(int $encoding, array $options = []) ::: ?DeflateContext;
+/** @kphp-extern-func-info generate-stub */
+function deflate_add(DeflateContext $context, string $data, int $flush_mode = ZLIB_SYNC_FLUSH) ::: string | false;
+/** @kphp-extern-func-info generate-stub */
+function base64_decode ($str ::: string, $strict ::: bool = false) ::: string | false;
+/** @kphp-extern-func-info generate-stub */
+function base64_encode ($str ::: string) ::: string;

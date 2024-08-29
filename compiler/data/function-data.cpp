@@ -295,9 +295,10 @@ VarPtr FunctionData::find_var_by_name(const std::string &var_name) {
 }
 
 bool FunctionData::does_need_codegen() const {
-  return type != FunctionData::func_class_holder &&
+  return need_generated_stub ||
+        (type != FunctionData::func_class_holder &&
          type != FunctionData::func_extern &&
-         (body_seq != body_value::empty || G->get_main_file()->main_function == get_self() || is_lambda());
+         (body_seq != body_value::empty || G->get_main_file()->main_function == get_self() || is_lambda()));
 }
 
 bool operator<(FunctionPtr a, FunctionPtr b) {
