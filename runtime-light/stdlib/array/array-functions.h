@@ -60,6 +60,18 @@ array<T> f$array_filter_by_key(const array<T> &a, const T1 &callback) noexcept {
   php_critical_error("call to unsupported function");
 }
 
+
+template<class T, class CallbackT, class R = typename std::invoke_result_t<std::decay_t<CallbackT>, T>>
+array<R> f$array_map(const CallbackT &callback, const array<T> &a) {
+  php_critical_error("call to unsupported function");
+}
+
+
+template<class R, class T, class CallbackT, class InitialT>
+R f$array_reduce(const array<T> &a, const CallbackT &callback, InitialT initial) {
+  php_critical_error("call to unsupported function");
+}
+
 template<class T>
 T f$array_merge_spread(const T &a1) {
   php_critical_error("call to unsupported function");
@@ -89,6 +101,11 @@ T f$array_merge(const T &a1, const T &a2) {
 template<class T>
 T f$array_merge(const T &a1, const T &a2, const T &a3, const T &a4 = T(), const T &a5 = T(), const T &a6 = T(), const T &a7 = T(), const T &a8 = T(),
                 const T &a9 = T(), const T &a10 = T(), const T &a11 = T(), const T &a12 = T()) {
+  php_critical_error("call to unsupported function");
+}
+
+template<class ReturnT, class ...Args>
+ReturnT f$array_merge_recursive(const Args &...args) {
   php_critical_error("call to unsupported function");
 }
 
@@ -426,5 +443,51 @@ T f$array_last_value(const array<T> &a) {
 
 template<class T>
 void f$array_swap_int_keys(array<T> &a, int64_t idx1, int64_t idx2) noexcept {
+  php_critical_error("call to unsupported function");
+}
+
+
+template<class T>
+array<mixed> f$to_array_debug(const class_instance<T> &klass, bool with_class_names = false) {
+  php_critical_error("call to unsupported function");
+}
+
+template<class... Args>
+array<mixed> f$to_array_debug(const std::tuple<Args...> &tuple, bool with_class_names = false) {
+  php_critical_error("call to unsupported function");
+}
+
+template<size_t... Indexes, typename... T>
+array<mixed> f$to_array_debug(const shape<std::index_sequence<Indexes...>, T...> &shape, bool with_class_names = false) {
+  php_critical_error("call to unsupported function");
+}
+
+template<class T>
+array<mixed> f$instance_to_array(const class_instance<T> &klass, bool with_class_names = false) {
+  php_critical_error("call to unsupported function");
+}
+
+template<class... Args>
+array<mixed> f$instance_to_array(const std::tuple<Args...> &tuple, bool with_class_names = false) {
+  php_critical_error("call to unsupported function");
+}
+
+template<size_t... Indexes, typename... T>
+array<mixed> f$instance_to_array(const shape<std::index_sequence<Indexes...>, T...> &shape, bool with_class_names = false) {
+  php_critical_error("call to unsupported function");
+}
+
+template<class T>
+T f$array_unset(array<T> &arr, int64_t key) {
+  php_critical_error("call to unsupported function");
+}
+
+template<class T>
+T f$array_unset(array<T> &arr, const string &key) {
+  php_critical_error("call to unsupported function");
+}
+
+template<class T>
+T f$array_unset(array<T> &arr, const mixed &key) {
   php_critical_error("call to unsupported function");
 }

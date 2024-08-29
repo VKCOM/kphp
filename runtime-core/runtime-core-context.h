@@ -25,6 +25,7 @@ struct KphpCoreContext {
   void free();
 
   int show_migration_php8_warning = 0;
+  int php_disable_warnings = 0;
   uint32_t empty_obj_count = 0;
   string_buffer_lib_context sb_lib_context;
 };
