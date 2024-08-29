@@ -6,16 +6,19 @@ COPY tests/python/requirements.txt /tmp/
 RUN apt-get update && \
     apt-get install -y --no-install-recommends apt-utils ca-certificates gnupg wget pkg-config software-properties-common && \
     wget -qO /etc/apt/trusted.gpg.d/vkpartner.asc https://artifactory-external.vkpartner.ru/artifactory/api/gpg/key/public && \
+    wget -qO - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - && \
+    add-apt-repository ppa:ubuntu-toolchain-r/test && \
+    echo "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-18 main" >> /etc/apt/sources.list && \
     echo "deb https://artifactory-external.vkpartner.ru/artifactory/kphp focal main" >> /etc/apt/sources.list && \
     echo "deb http://apt.postgresql.org/pub/repos/apt focal-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
     wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
     add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-      git cmake make clang g++ g++-10 gperf netcat \
-      python3.7 python3-pip python3.7-distutils python3.7-dev libpython3.7-dev python3-jsonschema python3-setuptools mysql-server libmysqlclient-dev && \
+      git cmake make clang g++ g++-10 g++-11 clang-18 libclang-rt-18-dev gperf netcat \
+      python3.7 python3-pip python3.7-distutils python3.7-dev libpython3.7-dev python3-jsonschema python3-setuptools python3-wheel mysql-server libmysqlclient-dev libc++-dev libc++abi-dev && \
     python3.7 -m pip install pip && python3.7 -m pip install -r /tmp/requirements.txt && \
-    apt-get install -y --no-install-recommends curl-kphp-vk kphp-timelib libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
+    apt-get install -y --no-install-recommends curl-kphp-vk=20240315.focal.63.build.50 kphp-timelib libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
       libzstd-dev libyaml-cpp-dev libnghttp2-dev zlib1g-dev php7.4-dev libldap-dev libkrb5-dev \
       postgresql postgresql-server-dev-all libnuma-dev composer unzip && \
     rm -rf /var/lib/apt/lists/*

@@ -10,7 +10,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES Clang)
     set(COMPILER_CLANG True)
 elseif(CMAKE_CXX_COMPILER_ID MATCHES GNU)
     if (COMPILE_RUNTIME_LIGHT)
-        check_compiler_version(gcc 10.1.0)
+        check_compiler_version(gcc 11.4.0)
     else()
         check_compiler_version(gcc 8.3.0)
     endif()
@@ -126,6 +126,7 @@ add_compile_options(-fdebug-prefix-map="${CMAKE_BINARY_DIR}=${CMAKE_SOURCE_DIR}"
 if(COMPILE_RUNTIME_LIGHT)
     get_directory_property(TRY_COMPILE_COMPILE_OPTIONS COMPILE_OPTIONS)
     string (REPLACE ";" " " TRY_COMPILE_COMPILE_OPTIONS "${TRY_COMPILE_COMPILE_OPTIONS}")
+    cmake_print_variables(TRY_COMPILE_COMPILE_OPTIONS)
     file(WRITE "${PROJECT_BINARY_DIR}/check_coroutine_include.cpp"
             "#include<coroutine>\n"
             "int main() {}\n")
@@ -134,6 +135,7 @@ if(COMPILE_RUNTIME_LIGHT)
             "${PROJECT_BINARY_DIR}/tmp"
             "${PROJECT_BINARY_DIR}/check_coroutine_include.cpp"
             COMPILE_DEFINITIONS "${TRY_COMPILE_COMPILE_OPTIONS}"
+            CXX_STANDARD 20
     )
     if(NOT HAS_COROUTINE)
         message(FATAL_ERROR "Compiler or libstdc++ does not support coroutines")
