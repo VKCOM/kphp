@@ -45,6 +45,7 @@ void ClassData::set_name_and_src_name(const std::string &full_name) {
 
   this->can_be_php_autoloaded = file_id && namespace_name == file_id->namespace_name && class_name == file_id->short_file_name;
   this->can_be_php_autoloaded |= this->is_builtin();
+  this->can_be_php_autoloaded |= need_generated_stub;
 
   this->is_lambda = vk::string_view{full_name}.starts_with("Lambda$") || vk::string_view{full_name}.starts_with("ITyped$");
 }
@@ -354,8 +355,7 @@ bool ClassData::has_polymorphic_member_dfs(std::unordered_set<ClassPtr> &checked
 }
 
 bool ClassData::does_need_codegen() const {
-  return !is_builtin() && !is_trait() &&
-         (really_used || is_tl_class);
+  return (is_builtin() && need_generated_stub) || (!is_builtin() && !is_trait() && (really_used || is_tl_class));
 }
 
 bool operator<(const ClassPtr &lhs, const ClassPtr &rhs) {
