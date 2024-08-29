@@ -1,5 +1,6 @@
 <?php
 
+/** @kphp-generate-stub-class */
 interface Throwable {
     public function getMessage () ::: string;
     public function getCode () ::: int;
@@ -9,6 +10,8 @@ interface Throwable {
     public function getTraceAsString () ::: string;
 }
 
+
+/** @kphp-generate-stub-class */
 class Exception implements Throwable {
     protected $message = '';
     protected $code = 0;
@@ -17,18 +20,27 @@ class Exception implements Throwable {
     /** @var int */
     protected $line;
 
+    /** @kphp-extern-func-info generate-stub */
     public function __construct($message ::: string = '', $code ::: int = 0) ::: Exception;
+    /** @kphp-extern-func-info generate-stub */
     final public function getMessage () ::: string;
+    /** @kphp-extern-func-info generate-stub */
     final public function getCode () ::: int;
+    /** @kphp-extern-func-info generate-stub */
     final public function getFile () ::: string;
+    /** @kphp-extern-func-info generate-stub */
     final public function getLine () ::: int;
+    /** @kphp-extern-func-info generate-stub */
     final public function getTrace () ::: string[][];
+    /** @kphp-extern-func-info generate-stub */
     final public function getTraceAsString () ::: string;
 
+    /** @kphp-extern-func-info generate-stub */
     final private function __clone() ::: void;
 }
 
 
+/** @kphp-generate-stub-class */
 class Error implements Throwable {
     protected $message = '';
     protected $code = 0;
@@ -37,14 +49,22 @@ class Error implements Throwable {
     /** @var int */
     protected $line;
 
+    /** @kphp-extern-func-info generate-stub */
     public function __construct($message ::: string = '', $code ::: int = 0) ::: Error;
+    /** @kphp-extern-func-info generate-stub */
     final public function getMessage () ::: string;
+    /** @kphp-extern-func-info generate-stub */
     final public function getCode () ::: int;
+    /** @kphp-extern-func-info generate-stub */
     final public function getFile () ::: string;
+    /** @kphp-extern-func-info generate-stub */
     final public function getLine () ::: int;
+    /** @kphp-extern-func-info generate-stub */
     final public function getTrace () ::: string[][];
+    /** @kphp-extern-func-info generate-stub */
     final public function getTraceAsString () ::: string;
 
+    /** @kphp-extern-func-info generate-stub */
     final private function __clone() ::: void;
 }
 

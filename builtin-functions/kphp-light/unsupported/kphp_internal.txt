@@ -7,6 +7,18 @@ function _exception_set_location($e, string $filename, int $line): ^1;
 
 /**
  * @kphp-extern-func-info generate-stub
+ * @kphp-internal-result-indexing
+ */
+function _explode_nth($delimiter ::: string, $str ::: string, int $index): string;
+
+/**
+ * @kphp-extern-func-info generate-stub
+ * @kphp-internal-result-indexing
+ */
+function _explode_1($delimiter ::: string, $str ::: string): string;
+
+/**
+ * @kphp-extern-func-info generate-stub
  * @kphp-internal-result-array2tuple
  */
 function _explode_tuple2($delimiter ::: string, $str ::: string, int $mask, $limit ::: int = 2+1): tuple(string, string);

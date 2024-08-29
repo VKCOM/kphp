@@ -1,18 +1,24 @@
 <?php
 
+/** @kphp-generate-stub-class */
 class DateInterval {
-  /** @kphp-extern-func-info can_throw */
+  /** @kphp-extern-func-info can_throw generate-stub */
   public function __construct(string $duration);
+  /** @kphp-extern-func-info generate-stub */
   public static function createFromDateString(string $datetime): ?DateInterval;
+  /** @kphp-extern-func-info generate-stub */
   public function format(string $format): string;
 }
 
+/** @kphp-generate-stub-class */
 class DateTimeZone {
-  /** @kphp-extern-func-info can_throw */
+  /** @kphp-extern-func-info can_throw generate-stub */
   public function __construct(string $timezone);
+  /** @kphp-extern-func-info generate-stub */
   public function getName(): string;
 }
 
+/** @kphp-generate-stub-class */
 interface DateTimeInterface {
   /* Constants */
   const ATOM = "Y-m-d\TH:i:sP";
@@ -48,53 +54,95 @@ interface DateTimeInterface {
   public function getTimestamp(): int;
 }
 
+/** @kphp-generate-stub-class */
 class DateTime implements DateTimeInterface {
-  /** @kphp-extern-func-info can_throw */
+  /** @kphp-extern-func-info can_throw generate-stub */
   public function __construct(string $datetime = "now", ?DateTimeZone $timezone = null);
+  /** @kphp-extern-func-info generate-stub */
   public function add(DateInterval $interval): DateTime;
+  /** @kphp-extern-func-info generate-stub */
   public static function createFromFormat(string $format, string $datetime, ?DateTimeZone $timezone = null): ?DateTime;
+  /** @kphp-extern-func-info generate-stub */
   public static function createFromImmutable(DateTimeImmutable $object): DateTime;
+  /** @kphp-extern-func-info generate-stub */
   public static function getLastErrors(): array|false;
+  /** @kphp-extern-func-info generate-stub */
   public function modify(string $modifier): ?DateTime;
+  /** @kphp-extern-func-info generate-stub */
   public function setDate(int $year, int $month, int $day): DateTime;
+  /** @kphp-extern-func-info generate-stub */
   public function setISODate(int $year, int $week, int $dayOfWeek = 1): DateTime;
+  /** @kphp-extern-func-info generate-stub */
   public function setTime(
       int $hour,
       int $minute,
       int $second = 0,
       int $microsecond = 0
   ): DateTime;
+  /** @kphp-extern-func-info generate-stub */
   public function setTimestamp(int $timestamp): DateTime;
+  /** @kphp-extern-func-info generate-stub */
   public function sub(DateInterval $interval): DateTime;
+  /** @kphp-extern-func-info generate-stub */
   public function diff(DateTimeInterface $targetObject, bool $absolute = false): DateInterval;
+  /** @kphp-extern-func-info generate-stub */
   public function format(string $format): string;
+  /** @kphp-extern-func-info generate-stub */
   public function getOffset(): int;
+  /** @kphp-extern-func-info generate-stub */
   public function getTimestamp(): int;
 }
 
+/** @kphp-generate-stub-class */
 class DateTimeImmutable implements DateTimeInterface {
-  /** @kphp-extern-func-info can_throw */
+  /** @kphp-extern-func-info can_throw generate-stub */
   public function __construct(string $datetime = "now", ?DateTimeZone $timezone = null);
+  /** @kphp-extern-func-info generate-stub */
   public function add(DateInterval $interval): DateTimeImmutable;
+  /** @kphp-extern-func-info generate-stub */
   public static function createFromFormat(string $format, string $datetime, ?DateTimeZone $timezone = null): ?DateTimeImmutable;
+  /** @kphp-extern-func-info generate-stub */
   public static function createFromMutable(DateTime $object): DateTimeImmutable;
+  /** @kphp-extern-func-info generate-stub */
   public static function getLastErrors(): array|false;
+  /** @kphp-extern-func-info generate-stub */
   public function modify(string $modifier): ?DateTimeImmutable;
+  /** @kphp-extern-func-info generate-stub */
   public function setDate(int $year, int $month, int $day): DateTimeImmutable;
+  /** @kphp-extern-func-info generate-stub */
   public function setISODate(int $year, int $week, int $dayOfWeek = 1): DateTimeImmutable;
+  /** @kphp-extern-func-info generate-stub */
   public function setTime(
       int $hour,
       int $minute,
       int $second = 0,
       int $microsecond = 0
   ): DateTimeImmutable;
+  /** @kphp-extern-func-info generate-stub */
   public function setTimestamp(int $timestamp): DateTimeImmutable;
+  /** @kphp-extern-func-info generate-stub */
   public function sub(DateInterval $interval): DateTimeImmutable;
+  /** @kphp-extern-func-info generate-stub */
   public function diff(DateTimeInterface $targetObject, bool $absolute = false): DateInterval;
+  /** @kphp-extern-func-info generate-stub */
   public function format(string $format): string;
+  /** @kphp-extern-func-info generate-stub */
   public function getOffset(): int;
+  /** @kphp-extern-func-info generate-stub */
   public function getTimestamp(): int;
 }
+
+define('DATE_ATOM', "Y-m-d\TH:i:sP");
+define('DATE_COOKIE', "l, d-M-y H:i:s T");
+define('DATE_ISO8601', "Y-m-d\TH:i:sO");
+define('DATE_RFC822', "D, d M y H:i:s O");
+define('DATE_RFC850', "l, d-M-y H:i:s T");
+define('DATE_RFC1036', "D, d M y H:i:s O");
+define('DATE_RFC1123', "D, d M Y H:i:s O");
+define('DATE_RFC2822', "D, d M Y H:i:s O");
+define('DATE_RFC3339', "Y-m-d\TH:i:sP");
+define('DATE_RSS', "D, d M Y H:i:s O");
+define('DATE_W3C', "Y-m-d\TH:i:sP");
 
 /** @kphp-extern-func-info generate-stub */
 function date ($format ::: string, $timestamp ::: int = PHP_INT_MIN) ::: string;

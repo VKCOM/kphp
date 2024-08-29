@@ -1,11 +1,17 @@
 <?php
 
-/** @kphp-immutable-class */
+/**
+ * @kphp-immutable-class
+ * @kphp-generate-stub-class
+ */
 interface KphpJobWorkerSharedMemoryPiece {}
 
+/** @kphp-generate-stub-class */
 interface KphpJobWorkerRequest {}
+/** @kphp-generate-stub-class */
 interface KphpJobWorkerResponse {}
 
+/** @kphp-generate-stub-class */
 class KphpJobWorkerResponseError implements KphpJobWorkerResponse {
   // Job script execution errors:
   const JOB_MEMORY_LIMIT_ERROR = -101;
@@ -22,7 +28,9 @@ class KphpJobWorkerResponseError implements KphpJobWorkerResponse {
   const JOB_STORE_RESPONSE_TOO_BIG_ERROR = -3002;
   const JOB_STORE_RESPONSE_CANT_SEND_ERROR = -3003;
 
+  /** @kphp-extern-func-info generate-stub */
   public function getError() ::: string;
+  /** @kphp-extern-func-info generate-stub */
   public function getErrorCode() ::: int; // returns one of listed above error codes
 }
 
