@@ -167,7 +167,7 @@ void IncludesCollector::compile(CodeGenerator &W) const {
     if (klass->ffi_class_mixin) {
       // FFI CData classes (structs really) are defined at their scope class header
       class_to_include = G->get_class(FFIRoot::scope_class_name(klass->ffi_class_mixin->scope_name));
-    } else if (!klass->is_builtin()) {
+    } else if (!klass->is_builtin() || klass->need_generated_stub) { // add include for generated internal class
       class_to_include = klass;
     }
     if (class_to_include && !prev_classes_.count(class_to_include)) {

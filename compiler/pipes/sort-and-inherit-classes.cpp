@@ -384,7 +384,7 @@ void SortAndInheritClassesF::check_on_finish(DataStream<FunctionPtr> &os) {
       );
     }
 
-    if (!c->is_builtin() && c->is_polymorphic_class()) {
+    if ((!c->is_builtin() || c->need_generated_stub) && c->is_polymorphic_class()) {
       if (vk::any_of(c->get_all_derived_classes(), [](ClassPtr c) { return c->is_class(); })) {
         auto virt_clone = c->add_virt_clone();
         G->register_and_require_function(virt_clone, generated_self_methods, true);
