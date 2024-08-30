@@ -30,20 +30,10 @@ void init_http_superglobals(const string &http_query) noexcept {
   component_ctx.php_script_mutable_globals_singleton.get_superglobals().v$_POST = f$json_decode(http_query, true);
 }
 
-/**
- * 1. Wait for incoming stream
- * 2. Return its descriptor
- */
 task_t<uint64_t> init_kphp_cli_component() noexcept {
   co_return co_await wait_for_incoming_stream_t{};
 }
 
-/**
- * 1. Wait for incoming stream
- * 2. Determine request type (http, job worker)
- * 3. Init superglobals
- * 4. Return stream descriptor
- */
 task_t<uint64_t> init_kphp_server_component() noexcept {
   uint32_t magic{};
   const auto stream_d{co_await wait_for_incoming_stream_t{}};
@@ -71,7 +61,7 @@ void ComponentState::init_script_execution() noexcept {
 }
 
 template<ComponentKind kind>
-task_t<void> ComponentState::init_component() noexcept {
+task_t<void> ComponentState::run_component_prologue() noexcept {
   static_assert(kind != ComponentKind::Invalid);
 
   component_kind_ = kind;
@@ -82,10 +72,10 @@ task_t<void> ComponentState::init_component() noexcept {
   }
 }
 
-template task_t<void> ComponentState::init_component<ComponentKind::CLI>();
-template task_t<void> ComponentState::init_component<ComponentKind::Server>();
-template task_t<void> ComponentState::init_component<ComponentKind::Oneshot>();
-template task_t<void> ComponentState::init_component<ComponentKind::Multishot>();
+template task_t<void> ComponentState::run_component_prologue<ComponentKind::CLI>();
+template task_t<void> ComponentState::run_component_prologue<ComponentKind::Server>();
+template task_t<void> ComponentState::run_component_prologue<ComponentKind::Oneshot>();
+template task_t<void> ComponentState::run_component_prologue<ComponentKind::Multishot>();
 
 void ComponentState::process_platform_updates() noexcept {
   const auto &platform_ctx{*get_platform_context()};

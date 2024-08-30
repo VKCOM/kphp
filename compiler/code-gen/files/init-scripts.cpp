@@ -119,7 +119,7 @@ struct RunInterruptedFunction {
                                  : G->is_output_mode_k2_multishot() ? "ComponentKind::Multishot"
                                                                     : "ComponentKind::Invalid";
 
-    std::string script_start = "co_await get_component_context()->init_component<" + component_kind + ">();";
+    std::string script_start = "co_await get_component_context()->run_component_prologue<" + component_kind + ">();";
     std::string script_finish = "co_await shutdown_script();";
     FunctionSignatureGenerator(W) << "task_t<void> " << FunctionName(function) << "$run() " << BEGIN << script_start << NL << await_prefix
                                   << FunctionName(function) << "();" << NL << script_finish << NL << "co_return;" << END;

@@ -30,9 +30,9 @@ static_assert(CoroutineSchedulerConcept<CoroutineScheduler>);
 /**
  * Supported kinds of KPHP components:
  * 1. CLI — works the same way as regular PHP script does
- * 2. Server — automatically accepts a stream and expects it to contain either http or job worker request.
- * 3. Oneshot can accept one incoming stream only.
- * 4. Multishot — can accept any number of incoming streams.
+ * 2. Server — automatically accepts a stream and expects it to contain either http or job worker request
+ * 3. Oneshot — can only accept one incoming stream
+ * 4. Multishot — can accept any number of incoming streams
  */
 enum class ComponentKind : uint8_t { Invalid, CLI, Server, Oneshot, Multishot };
 
@@ -58,7 +58,7 @@ struct ComponentState {
   void init_script_execution() noexcept;
 
   template<ComponentKind CompKind>
-  task_t<void> init_component() noexcept;
+  task_t<void> run_component_prologue() noexcept;
 
   ComponentKind component_kind() const noexcept {
     return component_kind_;
