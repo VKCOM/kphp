@@ -217,7 +217,7 @@ void CompilerSettings::init() {
   functions_file.value_ = get_full_path(functions_file.get());
   runtime_sha256_file.value_ = get_full_path(runtime_sha256_file.get());
 
-  bool is_k2_mode = mode.get().starts_with("k2-");
+  bool is_k2_mode = mode.get().substr(0, 3) == "k2-";
   if (link_file.value_.empty()) {
     if (is_k2_mode) {
       link_file.value_ = kphp_src_path.get() + "/objs/libkphp-light-runtime.a";
