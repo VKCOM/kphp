@@ -25,10 +25,13 @@
 #include "compiler/tl-classes.h"
 
 enum class OutputMode {
-  server,   // -M server
-  cli,      // -M cli
-  lib,      // -M lib
-  k2_component // -M k2-component
+  server,       // -M server
+  cli,          // -M cli
+  lib,          // -M lib
+  k2_cli,       // -M k2-cli
+  k2_server,    // -M k2-server
+  k2_oneshot,   // -M k2-oneshot
+  k2_multishot, // -M k2-multishot
 };
 
 class CompilerCore {
@@ -189,8 +192,24 @@ public:
     return output_mode == OutputMode::lib;
   }
 
-  bool is_output_mode_k2_component() const {
-    return output_mode == OutputMode::k2_component;
+  bool is_output_mode_k2_cli() const {
+    return output_mode == OutputMode::k2_cli;
+  }
+
+  bool is_output_mode_k2_server() const {
+    return output_mode == OutputMode::k2_server;
+  }
+
+  bool is_output_mode_k2_oneshot() const {
+    return output_mode == OutputMode::k2_oneshot;
+  }
+
+  bool is_output_mode_k2_multishot() const {
+    return output_mode == OutputMode::k2_multishot;
+  }
+
+  bool is_output_mode_k2() const {
+    return is_output_mode_k2_cli() || is_output_mode_k2_server() || is_output_mode_k2_oneshot() || is_output_mode_k2_multishot();
   }
 
   Stats stats;

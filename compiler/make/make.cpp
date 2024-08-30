@@ -548,10 +548,10 @@ void run_make() {
   auto objs = run_pre_make(output_mode, settings, make_stats_file, make, obj_index, bin_file, obj_rt_index);
   stage::die_if_global_errors();
 
-  if (output_mode == OutputMode::lib) {
+  if (G->is_output_mode_lib()) {
     // todo:k2 think about kphp libraries
     make.create_objs2static_lib_target(objs, &bin_file);
-  } else if (output_mode == OutputMode::k2_component) {
+  } else if (G->is_output_mode_k2()) {
     make.create_objs2k2_component_target(objs, &bin_file);
   } else {
     const std::string build_stage{"Compiling"};
