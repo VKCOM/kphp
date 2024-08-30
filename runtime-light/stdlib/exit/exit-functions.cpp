@@ -36,15 +36,15 @@ task_t<void> shutdown_script() noexcept {
     co_return;
   }
 
-  const auto output_stream{component_ctx.output_stream()};
-  if (output_stream == INVALID_PLATFORM_DESCRIPTOR) {
+  const auto standard_stream{component_ctx.standard_stream()};
+  if (standard_stream == INVALID_PLATFORM_DESCRIPTOR) {
     component_ctx.poll_status = PollStatus::PollFinishedError;
     co_return;
   }
 
   const auto &buffer{component_ctx.response.output_buffers[ob_merge_buffers()]};
-  if ((co_await write_all_to_stream(output_stream, buffer.buffer(), buffer.size())) != buffer.size()) {
-    php_warning("can't write component result to stream %" PRIu64, output_stream);
+  if ((co_await write_all_to_stream(standard_stream, buffer.buffer(), buffer.size())) != buffer.size()) {
+    php_warning("can't write component result to stream %" PRIu64, standard_stream);
   }
 }
 

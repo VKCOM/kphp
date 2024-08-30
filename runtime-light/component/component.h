@@ -75,8 +75,8 @@ struct ComponentState {
   const deque<uint64_t> &incoming_streams() const noexcept {
     return incoming_streams_;
   }
-  uint64_t output_stream() const noexcept {
-    return output_stream_;
+  uint64_t standard_stream() const noexcept {
+    return standard_stream_;
   }
   uint64_t take_incoming_stream() noexcept;
   uint64_t open_stream(const string &) noexcept;
@@ -102,7 +102,7 @@ private:
   task_t<void> main_task;
 
   ComponentKind component_kind_{ComponentKind::Invalid};
-  uint64_t output_stream_{INVALID_PLATFORM_DESCRIPTOR};
+  uint64_t standard_stream_{INVALID_PLATFORM_DESCRIPTOR};
   deque<uint64_t> incoming_streams_;
   unordered_set<uint64_t> opened_streams_;
   unordered_set<uint64_t> pending_updates_;

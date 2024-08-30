@@ -66,9 +66,9 @@ task_t<void> ComponentState::run_component_prologue() noexcept {
 
   component_kind_ = kind;
   if constexpr (kind == ComponentKind::CLI) {
-    output_stream_ = co_await init_kphp_cli_component();
+    standard_stream_ = co_await init_kphp_cli_component();
   } else if constexpr (kind == ComponentKind::Server) {
-    output_stream_ = co_await init_kphp_server_component();
+    standard_stream_ = co_await init_kphp_server_component();
   }
 }
 
@@ -171,8 +171,8 @@ uint64_t ComponentState::set_timer(std::chrono::nanoseconds duration) noexcept {
 }
 
 void ComponentState::release_stream(uint64_t stream_d) noexcept {
-  if (stream_d == output_stream_) {
-    output_stream_ = INVALID_PLATFORM_DESCRIPTOR;
+  if (stream_d == standard_stream_) {
+    standard_stream_ = INVALID_PLATFORM_DESCRIPTOR;
   }
   opened_streams_.erase(stream_d);
   pending_updates_.erase(stream_d); // also erase pending updates if exists
@@ -182,7 +182,7 @@ void ComponentState::release_stream(uint64_t stream_d) noexcept {
 
 void ComponentState::release_all_streams() noexcept {
   const auto &platform_ctx{*get_platform_context()};
-  output_stream_ = INVALID_PLATFORM_DESCRIPTOR;
+  standard_stream_ = INVALID_PLATFORM_DESCRIPTOR;
   for (const auto stream_d : opened_streams_) {
     platform_ctx.free_descriptor(stream_d);
     php_debug("released a stream %" PRIu64, stream_d);
