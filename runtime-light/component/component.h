@@ -27,6 +27,15 @@ constexpr uint64_t INVALID_PLATFORM_DESCRIPTOR = 0;
 using CoroutineScheduler = SimpleCoroutineScheduler;
 static_assert(CoroutineSchedulerConcept<CoroutineScheduler>);
 
+/**
+ * Supported kinds of KPHP components:
+ * 1. CLI — works the same way as regular PHP script does
+ * 2. Server — automatically accepts a stream and expects it to contain either http or job worker request.
+ * 3. Oneshot can accept one incoming stream only.
+ * 4. Multishot — can accept any number of incoming streams.
+ */
+enum class ComponentKind : uint8_t { Invalid, CLI, Server, Oneshot, Multishot };
+
 struct ComponentState {
   template<typename T>
   using unordered_set = memory_resource::stl::unordered_set<T, memory_resource::unsynchronized_pool_resource>;
@@ -47,6 +56,14 @@ struct ComponentState {
   ~ComponentState() = default;
 
   void init_script_execution() noexcept;
+
+  template<ComponentKind CompKind>
+  task_t<void> init_component() noexcept;
+
+  ComponentKind component_kind() const noexcept {
+    return component_kind_;
+  }
+
   void process_platform_updates() noexcept;
 
   bool stream_updated(uint64_t stream_d) const noexcept {
@@ -84,6 +101,7 @@ struct ComponentState {
 private:
   task_t<void> main_task;
 
+  ComponentKind component_kind_{ComponentKind::Invalid};
   uint64_t output_stream_{INVALID_PLATFORM_DESCRIPTOR};
   deque<uint64_t> incoming_streams_;
   unordered_set<uint64_t> opened_streams_;

@@ -32,6 +32,10 @@ int32_t ob_merge_buffers() noexcept {
 
 task_t<void> shutdown_script() noexcept {
   auto &component_ctx{*get_component_context()};
+  if (component_ctx.component_kind() != ComponentKind::CLI && component_ctx.component_kind() != ComponentKind::Server) {
+    co_return;
+  }
+
   const auto output_stream{component_ctx.output_stream()};
   if (output_stream == INVALID_PLATFORM_DESCRIPTOR) {
     component_ctx.poll_status = PollStatus::PollFinishedError;

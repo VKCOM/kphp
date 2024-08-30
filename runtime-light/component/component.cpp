@@ -6,19 +6,86 @@
 
 #include <chrono>
 #include <cstdint>
+#include <memory>
 #include <utility>
 
 #include "runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/core/globals/php-init-scripts.h"
+#include "runtime-light/coroutine/awaitable.h"
+#include "runtime-light/coroutine/task.h"
 #include "runtime-light/header.h"
 #include "runtime-light/scheduler/scheduler.h"
+#include "runtime-light/streams/streams.h"
 #include "runtime-light/utils/context.h"
+#include "runtime-light/utils/json-functions.h"
+
+namespace {
+
+constexpr uint32_t K2_INVOKE_HTTP_MAGIC = 0xd909efe8;
+constexpr uint32_t K2_INVOKE_JOB_WORKER_MAGIC = 0x437d7312;
+
+void init_http_superglobals(const string &http_query) noexcept {
+  auto &component_ctx{*get_component_context()};
+  component_ctx.php_script_mutable_globals_singleton.get_superglobals().v$_SERVER.set_value(string{"QUERY_TYPE"}, string{"http"});
+  component_ctx.php_script_mutable_globals_singleton.get_superglobals().v$_POST = f$json_decode(http_query, true);
+}
+
+/**
+ * 1. Wait for incoming stream
+ * 2. Return its descriptor
+ */
+task_t<uint64_t> init_kphp_cli_component() noexcept {
+  co_return co_await wait_for_incoming_stream_t{};
+}
+
+/**
+ * 1. Wait for incoming stream
+ * 2. Determine request type (http, job worker)
+ * 3. Init superglobals
+ * 4. Return stream descriptor
+ */
+task_t<uint64_t> init_kphp_server_component() noexcept {
+  uint32_t magic{};
+  const auto stream_d{co_await wait_for_incoming_stream_t{}};
+  const auto read{co_await read_exact_from_stream(stream_d, reinterpret_cast<char *>(std::addressof(magic)), sizeof(uint32_t))};
+  php_assert(read == sizeof(uint32_t));
+  if (magic == K2_INVOKE_HTTP_MAGIC) {
+    const auto [buffer, size]{co_await read_all_from_stream(stream_d)};
+    init_http_superglobals(string{buffer, static_cast<string::size_type>(size)});
+    get_platform_context()->allocator.free(buffer);
+  } else if (magic == K2_INVOKE_JOB_WORKER_MAGIC) {
+    php_error("not implemented");
+  } else {
+    php_error("server got unexpected type of request: 0x%x", magic);
+  }
+
+  co_return stream_d;
+}
+
+} // namespace
 
 void ComponentState::init_script_execution() noexcept {
   kphp_core_context.init();
   init_php_scripts_in_each_worker(php_script_mutable_globals_singleton, main_task);
   scheduler.suspend(std::make_pair(main_task.get_handle(), WaitEvent::Rechedule{}));
 }
+
+template<ComponentKind kind>
+task_t<void> ComponentState::init_component() noexcept {
+  static_assert(kind != ComponentKind::Invalid);
+
+  component_kind_ = kind;
+  if constexpr (kind == ComponentKind::CLI) {
+    output_stream_ = co_await init_kphp_cli_component();
+  } else if constexpr (kind == ComponentKind::Server) {
+    output_stream_ = co_await init_kphp_server_component();
+  }
+}
+
+template task_t<void> ComponentState::init_component<ComponentKind::CLI>();
+template task_t<void> ComponentState::init_component<ComponentKind::Server>();
+template task_t<void> ComponentState::init_component<ComponentKind::Oneshot>();
+template task_t<void> ComponentState::init_component<ComponentKind::Multishot>();
 
 void ComponentState::process_platform_updates() noexcept {
   const auto &platform_ctx{*get_platform_context()};
@@ -51,12 +118,6 @@ void ComponentState::process_platform_updates() noexcept {
         }
       } else { // update on incoming stream
         php_debug("got new incoming stream %" PRIu64, stream_d);
-        if (output_stream_ != INVALID_PLATFORM_DESCRIPTOR) {
-          php_warning("skip new incoming stream since previous one is not closed");
-          release_stream(stream_d);
-          continue;
-        } // TODO: multiple incoming streams (except for http queries)
-        output_stream_ = stream_d;
         incoming_streams_.push_back(stream_d);
         opened_streams_.insert(stream_d);
         if (const auto schedule_status{scheduler.schedule(ScheduleEvent::IncomingStream{.stream_d = stream_d})}; schedule_status == ScheduleStatus::Error) {

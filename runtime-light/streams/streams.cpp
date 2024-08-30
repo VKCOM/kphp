@@ -9,31 +9,11 @@
 #include <memory>
 #include <utility>
 
-#include "runtime-core/runtime-core.h"
 #include "runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/header.h"
 #include "runtime-light/utils/context.h"
-#include "runtime-light/utils/json-functions.h"
-
-namespace {
-
-void init_http_superglobals(const string &http_query) {
-  auto &component_ctx{*get_component_context()};
-  component_ctx.php_script_mutable_globals_singleton.get_superglobals().v$_SERVER.set_value(string{"QUERY_TYPE"}, string{"http"});
-  component_ctx.php_script_mutable_globals_singleton.get_superglobals().v$_POST = f$json_decode(http_query, true);
-}
-
-} // namespace
-
-task_t<uint64_t> accept_initial_stream() noexcept {
-  const auto incoming_stream_d{co_await wait_for_incoming_stream_t{}};
-  const auto [buffer, size]{co_await read_all_from_stream(incoming_stream_d)};
-  init_http_superglobals(string{buffer, static_cast<string::size_type>(size)});
-  get_platform_context()->allocator.free(buffer);
-  co_return incoming_stream_d;
-}
 
 task_t<std::pair<char *, int32_t>> read_all_from_stream(uint64_t stream_d) noexcept {
   const auto &platform_ctx = *get_platform_context();

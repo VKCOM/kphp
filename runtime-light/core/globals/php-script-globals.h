@@ -33,7 +33,7 @@ class PhpScriptMutableGlobals {
   PhpScriptBuiltInSuperGlobals superglobals;
 
 public:
-  PhpScriptMutableGlobals(memory_resource::unsynchronized_pool_resource &resource)
+  explicit PhpScriptMutableGlobals(memory_resource::unsynchronized_pool_resource &resource)
     : libs_linear_mem(unordered_map<int64_t, char *>::allocator_type{resource}) {}
 
   static PhpScriptMutableGlobals &current() noexcept;
