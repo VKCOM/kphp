@@ -64,11 +64,10 @@ class TestFile:
         )
 
     def set_up_env_for_k2(self, cxx_name="clang++"):
-        self.env_vars["KPHP_MODE"] = "k2-component"
+        self.env_vars["KPHP_MODE"] = "k2-cli"
         self.env_vars["KPHP_USER_BINARY_PATH"] = "component.so"
         self.env_vars["KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS"] = "0"
         self.env_vars["KPHP_PROFILER"] = "0"
-        self.env_vars["KPHP_K2_COMPONENT_IS_ONESHOT"] = "1"
         self.env_vars["KPHP_FORCE_LINK_RUNTIME"] = "1"
 
 
