@@ -70,8 +70,8 @@ int32_t merge_output_buffers(ComponentState &component_ctx) noexcept {
 
 void ComponentState::init_script_execution() noexcept {
   kphp_core_context.init();
-  init_php_scripts_in_each_worker(php_script_mutable_globals_singleton, main_task);
-  scheduler.suspend(std::make_pair(main_task.get_handle(), WaitEvent::Rechedule{}));
+  init_php_scripts_in_each_worker(php_script_mutable_globals_singleton, main_task_);
+  scheduler.suspend(std::make_pair(main_task_.get_handle(), WaitEvent::Rechedule{}));
 }
 
 template<ComponentKind kind>

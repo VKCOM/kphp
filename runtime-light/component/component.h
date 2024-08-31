@@ -97,7 +97,7 @@ struct ComponentState {
   RegexComponentState regex_component_context;
 
 private:
-  task_t<void> main_task;
+  task_t<void> main_task_;
 
   ComponentKind component_kind_{ComponentKind::Invalid};
   uint64_t standard_stream_{INVALID_PLATFORM_DESCRIPTOR};
