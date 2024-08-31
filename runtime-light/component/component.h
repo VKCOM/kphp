@@ -57,12 +57,10 @@ struct ComponentState {
 
   void init_script_execution() noexcept;
 
-  template<ComponentKind CompKind>
+  template<ComponentKind>
   task_t<void> run_component_prologue() noexcept;
 
-  ComponentKind component_kind() const noexcept {
-    return component_kind_;
-  }
+  task_t<void> run_component_epilogue() noexcept;
 
   void process_platform_updates() noexcept;
 

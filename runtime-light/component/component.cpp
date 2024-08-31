@@ -52,6 +52,20 @@ task_t<uint64_t> init_kphp_server_component() noexcept {
   co_return stream_d;
 }
 
+int32_t merge_output_buffers(ComponentState &component_ctx) noexcept {
+  Response &response{component_ctx.response};
+  php_assert(response.current_buffer >= 0);
+
+  int32_t ob_first_not_empty{};
+  while (ob_first_not_empty < response.current_buffer && response.output_buffers[ob_first_not_empty].size() == 0) {
+    ++ob_first_not_empty; // TODO: optimize by precomputing final buffer's size to reserve enough space
+  }
+  for (auto i = ob_first_not_empty + 1; i <= response.current_buffer; i++) {
+    response.output_buffers[ob_first_not_empty].append(response.output_buffers[i].c_str(), response.output_buffers[i].size());
+  }
+  return ob_first_not_empty;
+}
+
 } // namespace
 
 void ComponentState::init_script_execution() noexcept {
@@ -76,6 +90,21 @@ template task_t<void> ComponentState::run_component_prologue<ComponentKind::CLI>
 template task_t<void> ComponentState::run_component_prologue<ComponentKind::Server>();
 template task_t<void> ComponentState::run_component_prologue<ComponentKind::Oneshot>();
 template task_t<void> ComponentState::run_component_prologue<ComponentKind::Multishot>();
+
+task_t<void> ComponentState::run_component_epilogue() noexcept {
+  if (component_kind_ == ComponentKind::Oneshot || component_kind_ == ComponentKind::Multishot) {
+    co_return;
+  }
+  if (standard_stream() == INVALID_PLATFORM_DESCRIPTOR) {
+    poll_status = PollStatus::PollFinishedError;
+    co_return;
+  }
+
+  const auto &buffer{response.output_buffers[merge_output_buffers(*this)]};
+  if ((co_await write_all_to_stream(standard_stream(), buffer.buffer(), buffer.size())) != buffer.size()) {
+    php_warning("can't write component result to stream %" PRIu64, standard_stream());
+  }
+}
 
 void ComponentState::process_platform_updates() noexcept {
   const auto &platform_ctx{*get_platform_context()};
