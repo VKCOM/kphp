@@ -27,5 +27,5 @@ task_t<void> f$exit(const mixed &v) noexcept { // TODO: make it synchronous
   component_ctx.poll_status =
     component_ctx.poll_status != PollStatus::PollFinishedError && exit_code == 0 ? PollStatus::PollFinishedOk : PollStatus::PollFinishedError;
   component_ctx.release_all_streams();
-  get_platform_context()->abort(); // TODO: use platform exit
+  get_platform_context()->exit(static_cast<int32_t>(exit_code));
 }
