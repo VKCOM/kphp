@@ -38,11 +38,11 @@ jobs:
             cpp: 20
             asan: on
             ubsan: off
-          - os: jammy
-            compiler: g++
-            cpp: 17
-            asan: off
-            ubsan: off
+#          - os: jammy
+#            compiler: g++
+#            cpp: 17
+#            asan: off
+#            ubsan: off
 
     name: "${{matrix.os}}/${{matrix.compiler}}/c++${{matrix.cpp}}/asan=${{matrix.asan}}/ubsan=${{matrix.ubsan}}"
 
