@@ -24,12 +24,12 @@ jobs:
             asan: off
             ubsan: off
           - os: focal
-            compiler: clang++
+            compiler: g++
             cpp: 17
             asan: off
             ubsan: on
-          - os: focal
-            compiler: g++-10
+          - os: jammy
+            compiler: clang++-17
             cpp: 20
             asan: on
             ubsan: off
