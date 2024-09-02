@@ -54,11 +54,14 @@ void do_print_r(const mixed &v, int32_t depth) noexcept {
       coub << shift << ")\n";
       break;
     }
+<<<<<<< HEAD:runtime-light/stdlib/output/print-functions.cpp
     case mixed::type::OBJECT: {
       php_warning("print_r used on object");
       coub << v.as_object()->get_class();
       break;
     }
+=======
+>>>>>>> parent of a5ae8f4a ( Fix objects in mixed in light runtime (#1075)):runtime-light/stdlib/variable-handling.cpp
     default:
       php_critical_error("non-exhaustive switch");
   }
@@ -106,12 +109,15 @@ void do_var_dump(const mixed &v, int32_t depth) noexcept {
       coub << shift << "}";
       break;
     }
+<<<<<<< HEAD:runtime-light/stdlib/output/print-functions.cpp
     case mixed::type::OBJECT: {
       php_warning("var_dump used on object");
       auto s = string(v.as_object()->get_class(), static_cast<string::size_type>(strlen(v.as_object()->get_class())));
       coub << shift << "string(" << static_cast<int32_t>(s.size()) << ") \"" << s << '"';
       break;
     }
+=======
+>>>>>>> parent of a5ae8f4a ( Fix objects in mixed in light runtime (#1075)):runtime-light/stdlib/variable-handling.cpp
     default:
       php_critical_error("non-exhaustive switch");
   }
@@ -190,10 +196,13 @@ void do_var_export(const mixed &v, int32_t depth, char endc = 0) noexcept {
       coub << shift << ")";
       break;
     }
+<<<<<<< HEAD:runtime-light/stdlib/output/print-functions.cpp
     case mixed::type::OBJECT: {
       coub << shift << v.get_type_or_class_name();
       break;
     }
+=======
+>>>>>>> parent of a5ae8f4a ( Fix objects in mixed in light runtime (#1075)):runtime-light/stdlib/variable-handling.cpp
     default:
       php_critical_error("non-exhaustive switch");
   }

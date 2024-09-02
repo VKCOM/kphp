@@ -197,7 +197,7 @@ function openssl_x509_parse ($x509cert ::: string, $shortnames ::: bool = true) 
 // === Misc =======================================================================================
 
 /** @kphp-extern-func-info cpp_template_call */
-function instance_cast(any $instance, $to_type ::: string) ::: instance<^2>;
+function instance_cast(object $instance, $to_type ::: string) ::: instance<^2>;
 
 function make_clone ($x ::: any) ::: ^1;
 

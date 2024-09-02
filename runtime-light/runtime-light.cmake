@@ -34,7 +34,6 @@ set_target_properties(runtime-light PROPERTIES LIBRARY_OUTPUT_DIRECTORY
                                                ${BASE_DIR}/objs)
 target_compile_options(runtime-light PUBLIC -stdlib=libc++)
 target_link_options(runtime-light PUBLIC -stdlib=libc++ -static-libstdc++)
-target_compile_options(runtime-light PUBLIC -fPIC)
 
 vk_add_library(kphp-light-runtime STATIC)
 target_link_libraries(
