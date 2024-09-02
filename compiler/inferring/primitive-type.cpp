@@ -20,6 +20,7 @@ const char *ptype_name(PrimitiveType id) {
     case tp_int:           return "int";
     case tp_float:         return "float";
     case tp_array:         return "array";
+    case tp_iterable:      return "iterable";
     case tp_string:        return "string";
     case tp_tmp_string:    return "tmp_string";
     case tp_mixed:         return "mixed";

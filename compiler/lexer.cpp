@@ -170,6 +170,7 @@ void LexerData::hack_last_tokens() {
       {tok_object, tok_conv_object},
       {tok_bool,   tok_conv_bool},
       {tok_boolean, tok_conv_bool},
+      {tok_iterable, tok_conv_iterable},
     };
     for (auto &cast : casts) {
       // check the middle token, the one that goes before ')'
@@ -417,6 +418,7 @@ bool TokenLexerNum::parse(LexerData *lexer_data) const {
     finish,
     hex,
     binary,
+    octal,
   } state = before_dot;
 
   if (s[0] == '0' && s[1] == 'x') {
@@ -425,6 +427,12 @@ bool TokenLexerNum::parse(LexerData *lexer_data) const {
   } else if (s[0] == '0' && s[1] == 'b') {
     t += 2;
     state = binary;
+  } else if (s[0] == '0' && (s[1] == 'o' || s[1] == 'O' || is_digit(s[1]))) { // 0123 or 0o123 or 0O123
+    t++;
+    if (s[1] == 'o' || s[1] == 'O') {
+      t++;
+    }
+    state = octal;
   }
 
   bool with_separator = false;
@@ -454,6 +462,17 @@ bool TokenLexerNum::parse(LexerData *lexer_data) const {
         switch(*t) {
           case '0':
           case '1':
+            t++;
+            break;
+          default:
+            state = finish;
+            break;
+        }
+        break;
+      }
+      case octal: {
+        switch(*t) {
+          case '0' ... '7':
             t++;
             break;
           default:
@@ -555,16 +574,6 @@ bool TokenLexerNum::parse(LexerData *lexer_data) const {
 
       case finish: {
         assert (0);
-      }
-    }
-  }
-
-  if (!is_float) {
-    if (s[0] == '0' && s[1] != 'x' && s[1] != 'b') {
-      for (int i = 0; i < t - s; i++) {
-        if (s[i] < '0' || s[i] > '7') {
-          return TokenLexerError("Bad octal number").parse(lexer_data);
-        }
       }
     }
   }

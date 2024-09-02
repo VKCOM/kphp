@@ -19,6 +19,9 @@ VertexPtr ConvertListAssignmentsPass::process_list_assignment(VertexAdaptor<op_l
       while (expr->type() == op_index) {
         expr = expr.as<op_index>()->array();
       }
+      if (expr->type() == op_addr) {
+        kphp_error(false, "Links in list() isn't supported");
+      }
       auto var_in_list = expr.try_as<op_var>();
       if (var_in_list) {
         if (var_in_list->str_val == list->array().as<op_var>()->str_val) {

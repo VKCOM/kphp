@@ -16,6 +16,7 @@ enum PrimitiveType {
   tp_string,
   tp_tmp_string,
   tp_array,
+  tp_iterable,
   tp_mixed,
   tp_void,
   tp_tuple,

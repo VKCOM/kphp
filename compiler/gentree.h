@@ -66,6 +66,7 @@ public:
   VertexPtr get_expression();
   VertexPtr get_statement(const PhpDocComment *phpdoc = nullptr);
   VertexAdaptor<op_catch> get_catch();
+  VertexAdaptor<op_finally> get_finally();
   void get_instance_var_list(const PhpDocComment *phpdoc, FieldModifiers modifiers, const TypeHint *type_hint);
   void get_traits_uses();
   void get_use();
@@ -92,6 +93,7 @@ public:
   template<Operation Op, Operation EmptyOp, class FuncT, class ResultType = typename vk::function_traits<FuncT>::ResultType>
   VertexAdaptor<op_seq> get_multi_call(FuncT &&f, bool parenthesis = false);
   VertexAdaptor<op_return> get_return();
+  VertexAdaptor<op_yield> get_yield();
   template<Operation Op>
   VertexAdaptor<Op> get_break_or_continue();
   VertexAdaptor<op_foreach> get_foreach();
@@ -152,4 +154,3 @@ private:
   FunctionPtr cur_function;         // = functions_stack.back()
   SrcFilePtr processing_file;
 };
-

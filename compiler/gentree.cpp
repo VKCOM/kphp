@@ -534,14 +534,25 @@ VertexPtr GenTree::get_expr_top(bool was_arrow, const PhpDocComment *phpdoc) {
       break;
     }
     case tok_varg: {
-      bool good_prefix = cur != tokens.begin() && vk::any_of_equal(std::prev(cur)->type(), tok_comma, tok_oppar, tok_opbrk);
+      auto prev_tok_type = std::prev(cur)->type();
+      bool good_prefix = cur != tokens.begin() && vk::any_of_equal(prev_tok_type, tok_comma, tok_oppar, tok_opbrk);
       CE (!kphp_error(good_prefix, "It's not allowed using `...` in this place"));
 
       next_cur();
+      auto next_tok_type = cur->type(); // next relative to tok_varg
       res = get_expression();
       // since the argument for the spread operator can be anything,
       // we do not check the type of the expression here
-      res = VertexAdaptor<op_varg>::create(res).set_location(res);
+      if (res) {
+        res = VertexAdaptor<op_varg>::create(res).set_location(res);
+      } else {
+        if (prev_tok_type == tok_oppar && next_tok_type == tok_clpar) { // f(...) - only this syntax is possible
+          res = VertexAdaptor<op_ellipsis>::create();
+          kphp_error(0, "First class callable syntax is not supported");
+        } else {
+          kphp_error(0, "Сan not parse first class callable syntax");
+        }
+      }
       break;
     }
     case tok_str:
@@ -625,6 +636,12 @@ VertexPtr GenTree::get_expr_top(bool was_arrow, const PhpDocComment *phpdoc) {
       return_flag = was_arrow;
       break;
     }
+    case tok_yield: {
+      next_cur();
+      res = get_yield();
+      kphp_error(false, "yield isn't supported");
+      break;
+    }
     case tok_static:
       next_cur();
       res = get_lambda_function(phpdoc, FunctionModifiers::static_lambda());
@@ -687,6 +704,14 @@ VertexPtr GenTree::get_expr_top(bool was_arrow, const PhpDocComment *phpdoc) {
     case tok_clone: {
       next_cur();
       res = VertexAdaptor<op_clone>::create(get_expr_top(false)).set_location(auto_location());
+      break;
+    }
+    case tok_throw: {
+      auto location = auto_location();
+      next_cur();
+      auto throw_expr = get_expression();
+      CE (!kphp_error(throw_expr, "Empty expression in throw"));
+      res = VertexAdaptor<op_throw>::create(throw_expr).set_location(location);
       break;
     }
     default:
@@ -1009,7 +1034,8 @@ VertexAdaptor<op_return> GenTree::get_return() {
   auto location = auto_location();
   next_cur();
   skip_phpdoc_tokens();
-  VertexPtr return_val = get_expression();
+  VertexPtr return_val;
+  return_val = get_expression();
   if (!return_val && cur_function->is_main_function()) {
     return_val = VertexAdaptor<op_null>::create();
   }
@@ -1024,10 +1050,33 @@ VertexAdaptor<op_return> GenTree::get_return() {
     }
     ret = VertexAdaptor<op_return>::create(return_val);
   }
+
   CE (expect(tok_semicolon, "';'"));
   return ret.set_location(location);
 }
 
+VertexAdaptor<op_yield> GenTree::get_yield() {
+  auto location = auto_location();
+  next_cur();
+
+  bool is_yield_from = test_expect(tok_from); // processing the construction "yield from ..."
+  if (is_yield_from) {
+    next_cur();
+  }
+
+  VertexPtr yield_val = get_expression();
+  if (!yield_val) {
+    yield_val = VertexAdaptor<op_null>::create();
+  }
+
+  VertexAdaptor<op_yield> yield;
+  if (is_yield_from) {
+    yield = VertexAdaptor<op_yield_from>::create(yield_val);
+  } else {
+    yield = VertexAdaptor<op_yield>::create(yield_val);
+  }
+  return yield.set_location(location);
+}
 
 template<Operation Op>
 VertexAdaptor<Op> GenTree::get_break_or_continue() {
@@ -1669,15 +1718,21 @@ void GenTree::parse_extends_implements() {
 
 VertexPtr GenTree::get_class(const PhpDocComment *phpdoc, ClassType class_type) {
   ClassModifiers modifiers;
-  if (test_expect(tok_abstract)) {
-    modifiers.set_abstract();
-  } else if (test_expect(tok_final)) {
-    modifiers.set_final();
+
+  while (vk::any_of_equal(cur->type(), tok_final, tok_abstract, tok_readonly)) {
+    if (test_expect(tok_abstract)) {
+      modifiers.set_abstract();
+    } else if (test_expect(tok_final)) {
+      modifiers.set_final();
+    } else if (test_expect(tok_readonly)) {
+      cur_class->is_immutable = true;
+      kphp_error(0, "`readonly` classes is not supported");
+    }
+    next_cur();
   }
 
-  if (modifiers.is_abstract() || modifiers.is_final()) {
-    next_cur();
-    CE(!kphp_error(cur->type() == tok_class, "`class` epxtected after abstract/final keyword"));
+  if (modifiers.is_abstract() || modifiers.is_final() || cur_class->is_immutable) {
+    CE(!kphp_error(cur->type() == tok_class, "`class` epxtected after abstract/final/readonly keyword"));
   }
 
   CE(vk::any_of_equal(cur->type(), tok_class, tok_interface, tok_trait));
@@ -1720,7 +1775,7 @@ VertexPtr GenTree::get_class(const PhpDocComment *phpdoc, ClassType class_type) 
   cur_class->file_id = processing_file;
   cur_class->set_name_and_src_name(full_class_name);    // with full namespaces and slashes
   cur_class->phpdoc = phpdoc;
-  cur_class->is_immutable = phpdoc && phpdoc->has_tag(PhpDocType::kphp_immutable_class);
+  cur_class->is_immutable = cur_class->is_immutable  || (phpdoc && phpdoc->has_tag(PhpDocType::kphp_immutable_class));
   cur_class->location_line_num = line_num;
 
   bool registered = G->register_class(cur_class);
@@ -1991,10 +2046,19 @@ GenericsInstantiationPhpComment *GenTree::parse_php_commentTs(vk::string_view st
 }
 
 VertexAdaptor<op_catch> GenTree::get_catch() {
+  auto location = auto_location();
+
   CE (expect(tok_catch, "'catch'"));
   CE (expect(tok_oppar, "'('"));
   auto exception_class = cur->str_val;
   CE (expect(tok_func_name, "type that implements Throwable"));
+  bool is_multiple_exception_types = false;
+  while (cur->type() == tok_or) { // processing catching multiple exception types (ExceptionType1 | ExceptionType2 | ...)
+    expect(tok_or, "union types");
+    CE (expect(tok_func_name, "type that implements Throwable"));
+    is_multiple_exception_types = true;
+  }
+  kphp_error(!is_multiple_exception_types, "Catching multiple exception types isn't supported");
   auto exception_var_name = get_expression();
   CE (!kphp_error(exception_var_name, "Cannot parse catch"));
   CE (!kphp_error(exception_var_name->type() == op_var, "Expected variable name in 'catch'"));
@@ -2003,10 +2067,22 @@ VertexAdaptor<op_catch> GenTree::get_catch() {
   auto catch_body = get_statement();
   CE (!kphp_error(catch_body, "Cannot parse catch block"));
 
-  auto catch_op = VertexAdaptor<op_catch>::create(exception_var_name.as<op_var>(), VertexUtil::embrace(catch_body));
+  auto catch_op = VertexAdaptor<op_catch>::create(exception_var_name.as<op_var>(), VertexUtil::embrace(catch_body)).set_location(location);
   catch_op->type_declaration = resolve_uses(cur_function, static_cast<std::string>(exception_class));
 
   return catch_op;
+}
+
+VertexAdaptor<op_finally> GenTree::get_finally() {
+  auto location = auto_location();
+
+  CE (expect(tok_finally, "'finally'"));
+  auto finally_body = get_statement();
+  CE (!kphp_error(finally_body, "Cannot parse finally block"));
+
+  auto finally_op = VertexAdaptor<op_finally>::create(finally_body.as<op_seq>()).set_location(location);
+
+  return finally_op;
 }
 
 VertexPtr GenTree::get_statement(const PhpDocComment *phpdoc) {
@@ -2024,6 +2100,11 @@ VertexPtr GenTree::get_statement(const PhpDocComment *phpdoc) {
     }
     case tok_return:
       return get_return();
+    case tok_yield: {
+      auto res = get_yield();
+      CE(expect(tok_semicolon, "';'"));
+      return res;
+    }
     case tok_continue:
       return get_break_or_continue<op_continue>();
     case tok_break:
@@ -2064,6 +2145,9 @@ VertexPtr GenTree::get_statement(const PhpDocComment *phpdoc) {
     case tok_public:
     case tok_private:
       if (std::next(cur, 1)->type() == tok_const) {
+        if (cur_class->class_type == ClassType::trait) {
+          kphp_error(0, "`const` member is not supported in trait");
+        }
         next_cur();
 
         auto access = AccessModifiers::public_;
@@ -2075,11 +2159,12 @@ VertexPtr GenTree::get_statement(const PhpDocComment *phpdoc) {
         return get_const_after_explicit_access_modifier(access);
       }
     // fall through
+    case tok_readonly:
     case tok_final:
     case tok_abstract:
       if (cur_function->type == FunctionData::func_class_holder) {
         return get_class_member(phpdoc);
-      } else if (vk::any_of_equal(cur->type(), tok_final, tok_abstract)) {
+      } else if (vk::any_of_equal(cur->type(), tok_final, tok_abstract, tok_readonly)) {
         return get_class(phpdoc, ClassType::klass);
       }
       next_cur();
@@ -2179,12 +2264,17 @@ VertexPtr GenTree::get_statement(const PhpDocComment *phpdoc) {
       while (test_expect(tok_catch)) {
         auto catch_op = get_catch();
         CE (!kphp_error(catch_op, "Cannot parse catch statement"));
-        catch_op.set_location(location);
         catch_list.emplace_back(catch_op);
       }
       CE (!kphp_error(!catch_list.empty(), "Expected at least 1 'catch' statement"));
 
-      return VertexAdaptor<op_try>::create(VertexUtil::embrace(try_body), std::move(catch_list)).set_location(location);
+      VertexPtr finally_op = VertexAdaptor<op_empty>::create();
+      if (test_expect(tok_finally)) {
+        finally_op = get_finally();
+        CE(!kphp_error(finally_op, "Cannot parse finally statement"));
+      }
+
+      return VertexAdaptor<op_try>::create(VertexUtil::embrace(try_body), std::move(catch_list), finally_op).set_location(location);
     }
     case tok_inline_html: {
       auto html_code = VertexAdaptor<op_string>::create().set_location(auto_location());
