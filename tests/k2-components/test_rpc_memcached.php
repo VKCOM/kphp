@@ -28,9 +28,9 @@ function do_untyped_rpc() {
   return true;
 }
 
-$query = component_server_accept_query();
+component_server_get_query();
 if (do_untyped_rpc()) {
-  component_server_send_response($query, "OK");
+  component_server_send_result("OK");
 } else {
-  component_server_send_response($query, "FAIL");
+  component_server_send_result("FAIL");
 }

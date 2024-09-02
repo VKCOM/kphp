@@ -1,13 +1,13 @@
-@ok non-idempotent
+@ok non-idempotent k2_skip
 <?php
 #ifndef KPHP
 ?>
 1
 2
 3
-waited 0.03
-waited 0.01
-waited 0.02
+waited 1123456789
+waited 1123456790
+waited 1123456791
 <?php
 exit;
 #endif
@@ -15,12 +15,11 @@ exit;
 /**
  * @param float $x
  * @param int $y
- * @return float
  */
 function f($x, $y) {
   sched_yield_sleep($x);
   echo $y . "\n";
-  return $x;
+  return null;
 }
 
 $ids = [];
@@ -29,5 +28,6 @@ $ids[] = fork(f(0.01, 1));
 $ids[] = fork(f(0.02, 2));
 
 foreach ($ids as $id) {
-  echo "waited ". wait($id) ."\n";
+  wait($id);
+  echo "waited ".(int)$id."\n";
 }

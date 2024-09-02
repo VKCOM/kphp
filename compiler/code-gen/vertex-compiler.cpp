@@ -849,7 +849,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
 
     if (mode == func_call_mode::fork_call) {
       if (func->is_interruptible) {
-        W << "(co_await start_fork_t{static_cast<task_t<void>>(" << FunctionName(func);
+        W << "(co_await start_fork_t{" << FunctionName(func);
       } else {
         W << FunctionForkName(func);
       }
@@ -883,7 +883,9 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
   W << ")";
   if (func->is_interruptible) {
     if (mode == func_call_mode::fork_call) {
-      W << "), start_fork_t::execution::fork})";
+      W << ", start_fork_t::execution::fork})";
+    } else if (func->is_k2_fork) { // k2 fork's return type is 'task_t<fork_result>' so we need to unpack actual result from fork_result
+      W << ").get_result<" << TypeName(tinf::get_type(root)) << ">()";
     } else {
       W << ")";
     }
@@ -1362,14 +1364,6 @@ bool compile_tracing_profiler(FunctionPtr func, CodeGenerator &W) {
   return true;
 }
 
-void compile_generated_stub(VertexAdaptor<op_function> func_root, CodeGenerator &W) {
-  FunctionPtr func = func_root->func_id;
-  W << FunctionDeclaration(func, false) << " " <<
-    BEGIN;
-  W << "php_critical_error(\"call to unsupported function : " << func->name << "\");" << NL;
-  W << END << NL;
-}
-
 void compile_function_resumable(VertexAdaptor<op_function> func_root, CodeGenerator &W) {
   FunctionPtr func = func_root->func_id;
   W << "//RESUMABLE FUNCTION IMPLEMENTATION" << NL;
@@ -1480,11 +1474,6 @@ void compile_function(VertexAdaptor<op_function> func_root, CodeGenerator &W) {
   W.get_context().parent_func = func;
   W.get_context().resumable_flag = func->is_resumable;
   W.get_context().interruptible_flag = func->is_interruptible;
-
-  if (func->need_generated_stub) {
-    compile_generated_stub(func_root, W);
-    return;
-  }
 
   if (func->is_resumable) {
     compile_function_resumable(func_root, W);

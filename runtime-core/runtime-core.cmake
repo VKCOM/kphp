@@ -29,7 +29,3 @@ endif()
 
 prepend(KPHP_CORE_SRC ${RUNTIME_CORE_DIR}/ "${KPHP_CORE_SRC}")
 vk_add_library(runtime-core OBJECT ${KPHP_CORE_SRC})
-
-if (COMPILE_RUNTIME_LIGHT)
-    target_compile_options(runtime-core PUBLIC -fPIC)
-endif()

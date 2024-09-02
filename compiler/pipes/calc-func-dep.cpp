@@ -57,8 +57,7 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex) {
     // 2) build resumable call graph — to propagate resumable state and to calc resumable chains
     // 3) build interruptible call graph - calc interruptible chains
     // adding all built-in calls won't affect codegen, it will just overhead call graphs and execution time
-    if (!other_function->is_extern() || other_function->is_resumable || other_function->is_imported_from_static_lib()
-      || other_function->is_interruptible || other_function->need_generated_stub) {
+    if (!other_function->is_extern() || other_function->is_resumable || other_function->is_imported_from_static_lib() || other_function->is_interruptible) {
       data.dep.push_back(other_function);
     }
     calls.push_back(other_function);

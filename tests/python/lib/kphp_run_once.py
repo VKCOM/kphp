@@ -137,7 +137,7 @@ class KphpRunOnce(KphpBuilder):
 
         k2_runtime_bin = self.k2_bin
 
-        cmd = [k2_runtime_bin, "--image", os.path.join(self._kphp_build_tmp_dir, "component.so"), "--runs-count={}".format(runs_cnt), "--crypto"] + args
+        cmd = [k2_runtime_bin, "--image", os.path.join(self._kphp_build_tmp_dir, "component.so"), "--runs-count={}".format(runs_cnt)] + args
 
         if not os.getuid():
             cmd += ["-u", "root", "-g", "root"]
@@ -153,7 +153,9 @@ class KphpRunOnce(KphpBuilder):
         self._kphp_server_stdout, _kphp_server_stderr = self._wait_proc(k2_runtime_proc)
 
         ignore_stderr = error_can_be_ignored(
-            ignore_patterns=[],
+            ignore_patterns=[
+                "^\\[\\d{4}\\-\\d{2}\\-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z INFO {2}main].+$"
+            ],
             binary_error_text=_kphp_server_stderr)
 
         if not ignore_stderr:

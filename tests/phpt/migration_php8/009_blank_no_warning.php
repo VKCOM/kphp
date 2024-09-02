@@ -1,4 +1,4 @@
-@ok k2_skip kphp_runtime_should_not_warn
+@ok kphp_runtime_should_not_warn
 <?php
 
 require_once 'kphp_tester_include.php';

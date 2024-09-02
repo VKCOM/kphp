@@ -105,11 +105,6 @@ endif()
 
 add_compile_options(-Werror -Wall -Wextra -Wunused-function -Wfloat-conversion -Wno-sign-compare
                     -Wuninitialized -Wno-redundant-move -Wno-missing-field-initializers)
-
-if(CMAKE_CXX_COMPILER_ID MATCHES Clang AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "18")
-    add_compile_options(-Wno-vla-cxx-extension)
-endif()
-
 if(COMPILE_RUNTIME_LIGHT)
     add_compile_options(-Wno-vla-extension)
 endif()

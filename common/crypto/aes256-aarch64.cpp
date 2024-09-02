@@ -436,10 +436,10 @@ static inline void crypto_aarch64_aes256_encrypt_single_block(vk_aes_ctx_t *vk_c
 
 static inline void crypto_aarch64_aes256_encrypt_n_blocks(vk_aes_ctx_t *vk_ctx, const uint8_t *in, uint8_t *out, uint8_t iv[16], int n) {
   asm volatile("mov x9, %[out] ;"       // move out address in x9
-               "mov x10, %[in] ;"       // move plaintext address in x10
+               "mov x10, %x[in] ;"      // move plaintext address in x10
                "mov x11, %[key] ;"      // move key address in x11
                "mov x12, %[iv]  ;"      // move IV address in x12
-               "mov x13, %x[n] ;"       // move n value in x11
+               "mov x13, %[n] ;"        // move n value in x11
                "ld1 {v26.16b}, [x12] ;" // load IV to v0.16b
                "eor v25.16b, v25.16b, v25.16b ;"
                "mov w15, #1 ;"
@@ -504,19 +504,10 @@ static inline void crypto_aarch64_aes256_encrypt_n_blocks(vk_aes_ctx_t *vk_ctx, 
   ;
 }
 
-#if defined(__GNUC__)
-#   if defined(__clang__) && defined(__has_warning)
-#       if __has_warning("-Wmaybe-uninitialized")
-#           define MAYBE_UNINITIALIZED
-#       endif
-#   elif !defined(__clang__)
-#           define MAYBE_UNINITIALIZED
-#   endif
-#endif
 void crypto_aarch64_aes256_ctr_encrypt(vk_aes_ctx_t *vk_ctx, const uint8_t *in, uint8_t *out, int size, uint8_t iv[16], uint64_t offset) {
-#if defined(MAYBE_UNINITIALIZED)
-#   pragma GCC diagnostic push
-#   pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
   unsigned char iv_copy[16], u[16];
   memcpy(iv_copy, iv, 16);
@@ -549,7 +540,7 @@ void crypto_aarch64_aes256_ctr_encrypt(vk_aes_ctx_t *vk_ctx, const uint8_t *in, 
       *out++ = (*in++) ^ u[i++];
     } while (i < l);
   }
-#if defined(MAYBE_UNINITIALIZED)
-#   pragma GCC diagnostic pop
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
 #endif
 }

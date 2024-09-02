@@ -1,25 +1,33 @@
 @ok
 <?php
 
-/** @return string|false */
-function get_random_bytes($num)  {
+function is_kphp() {
 #ifndef KPHP
-  try {
-    $res = openssl_random_pseudo_bytes($num);
-  } catch (\Throwable $e) {
     return false;
-  }
-  return $res;
 #endif
-  return openssl_random_pseudo_bytes($num);
+    return true;
 }
 
 function test_openssl_random_pseudo_bytes() {
-  var_dump(get_random_bytes(-100) === false);
-  var_dump(get_random_bytes(-1) === false);
-  var_dump(get_random_bytes(0) === false);
-  var_dump(get_random_bytes(1) !== false);
-  var_dump(get_random_bytes(20) != get_random_bytes(20));
-}
+  for ($i = -300; $i < 2048; $i += 273) {
+    $res = "";
 
-test_openssl_random_pseudo_bytes();
+    if (is_kphp()) {
+      $res = openssl_random_pseudo_bytes($i);
+      if ($res === false && $i < 1) {
+        print("error");
+      }
+    } else {
+      try {
+        $res = openssl_random_pseudo_bytes($i);
+      } catch (Exception $e) {
+        if ($i < 1) {
+          print("error");
+        } else {
+          critical_error("unexpected exception");
+        }
+      }
+    }
+    var_dump($res);
+  }
+}

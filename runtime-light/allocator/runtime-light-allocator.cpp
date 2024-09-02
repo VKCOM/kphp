@@ -5,8 +5,9 @@
 #include <cstddef>
 #include <cstring>
 
-#include "runtime-core/utils/kphp-assert-core.h"
+#include "runtime-core/runtime-core.h"
 #include "runtime-light/component/component.h"
+#include "runtime-light/utils/panic.h"
 
 namespace {
 // TODO: make it depend on max chunk size, e.g. MIN_EXTRA_MEM_SIZE = f(MAX_CHUNK_SIZE);

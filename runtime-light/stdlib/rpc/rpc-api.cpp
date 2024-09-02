@@ -17,10 +17,10 @@
 #include "runtime-light/allocator/allocator.h"
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"
-#include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/rpc/rpc-context.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-headers.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"
+#include "runtime-light/streams/interface.h"
 #include "runtime-light/tl/tl-core.h"
 
 namespace rpc_impl_ {
@@ -117,9 +117,9 @@ task_t<RpcQueryInfo> rpc_send_impl(string actor, double timeout, bool ignore_ans
   // send RPC request
   const auto query_id{rpc_ctx.current_query_id++};
   const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
-  auto comp_query{co_await f$component_client_send_request(actor, request_buf)};
+  auto comp_query{co_await f$component_client_send_query(actor, request_buf)};
   if (comp_query.is_null()) {
-    php_warning("can't send rpc query to %s", actor.c_str());
+    php_error("can't send rpc query to %s", actor.c_str());
     co_return RpcQueryInfo{.id = RPC_INVALID_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
   }
 
@@ -132,8 +132,8 @@ task_t<RpcQueryInfo> rpc_send_impl(string actor, double timeout, bool ignore_ans
                                                                 : DEFAULT_TIMEOUT_NS};
   // create fork to wait for RPC response. we need to do it even if 'ignore_answer' is 'true' to make sure
   // that the stream will not be closed too early. otherwise, platform may even not send RPC request
-  auto waiter_task{[](int64_t query_id, auto comp_query, std::chrono::nanoseconds timeout, bool collect_responses_extra_info) noexcept -> task_t<string> {
-    auto fetch_task{f$component_client_fetch_response(std::move(comp_query))};
+  auto waiter_task{[](int64_t query_id, auto comp_query, std::chrono::nanoseconds timeout, bool collect_responses_extra_info) noexcept -> task_t<fork_result> {
+    auto fetch_task{f$component_client_get_result(std::move(comp_query))};
     const auto response{(co_await wait_with_timeout_t{task_t<string>::awaiter_t{std::addressof(fetch_task)}, timeout}).value_or(string{})};
     // update response extra info if needed
     if (collect_responses_extra_info) {
@@ -149,7 +149,7 @@ task_t<RpcQueryInfo> rpc_send_impl(string actor, double timeout, bool ignore_ans
     co_return response;
   }(query_id, std::move(comp_query), timeout_ns, collect_responses_extra_info)};
   // start waiter fork
-  const auto waiter_fork_id{co_await start_fork_t{static_cast<task_t<void>>(std::move(waiter_task)), start_fork_t::execution::self}};
+  const auto waiter_fork_id{co_await start_fork_t{std::move(waiter_task), start_fork_t::execution::self}};
 
   if (ignore_answer) {
     co_return RpcQueryInfo{.id = RPC_IGNORED_ANSWER_QUERY_ID, .request_size = request_size, .timestamp = timestamp};

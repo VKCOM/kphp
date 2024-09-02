@@ -1,4 +1,4 @@
-@k2_skip kphp_runtime_should_warn
+@kphp_runtime_should_warn
 /is_numeric\('100 '\) result in PHP 7 and PHP 8 are different \(PHP7: false, PHP8: true\)/
 /is_numeric\('100 \t\t'\) result in PHP 7 and PHP 8 are different \(PHP7: false, PHP8: true\)/
 <?php

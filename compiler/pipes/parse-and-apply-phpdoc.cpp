@@ -283,8 +283,6 @@ private:
             f_->tl_common_h_dep = true;
           } else if (token == "interruptible") {
             f_->is_interruptible = true;
-          } else if (token == "generate-stub") {
-            f_->need_generated_stub = true;
           } else {
             kphp_error(0, fmt_format("Unknown @kphp-extern-func-info {}", token));
           }

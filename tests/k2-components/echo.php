@@ -6,8 +6,7 @@ function process_work($arg) {
     $arr[] = $arg;
 }
 
-$query = component_server_accept_query();
-$str = component_server_fetch_request($query);
+$str = component_server_get_query();
 process_work($str);
 process_work('123213');
-component_server_send_response($query, $str);
+component_server_send_result($str);

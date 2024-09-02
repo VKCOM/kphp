@@ -119,7 +119,6 @@ public:
   bool is_resumable = false;
   bool is_interruptible = false;
   bool is_k2_fork = false;
-  bool need_generated_stub = false;
   bool can_be_implicitly_interrupted_by_other_resumable = false;
   bool is_virtual_method = false;
   bool is_overridden_method = false;

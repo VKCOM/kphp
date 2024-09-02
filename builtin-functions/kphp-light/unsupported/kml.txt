@@ -1,6 +1,0 @@
-<?php
-
-/** @kphp-extern-func-info generate-stub */
-function kml_get_custom_property(string $model_name, string $property_name): ?string;
-/** @kphp-extern-func-info generate-stub */
-function kml_xgboost_predict_matrix(string $model_name, float[][] $features_map_matrix): ?float[];

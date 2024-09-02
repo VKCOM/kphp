@@ -56,7 +56,7 @@ void IncludesCollector::add_function_body_depends(const FunctionPtr &function) {
       const auto source_full_path = G->settings().dest_cpp_dir.get() + function->header_full_name;
       auto relative_path = make_relative_path(source_full_path, to_include->header_full_name);
       lib_headers_.emplace(to_include->header_full_name, std::move(relative_path));
-    } else if (!to_include->is_extern() || to_include->need_generated_stub) {
+    } else if (!to_include->is_extern()) {
       kphp_assert(!to_include->header_full_name.empty());
       internal_headers_.emplace(to_include->header_full_name);
     }
