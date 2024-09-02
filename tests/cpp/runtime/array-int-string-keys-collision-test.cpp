@@ -1,3 +1,16 @@
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2024 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
+// gcc10 and newer complains (only in this file)
+// about out-of-bounds access to an array of zero size
+#if defined(__GNUC__) && __GNUC__ >= 10
+#  define ARRAY_BOUNDS
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Warray-bounds"
+#endif
+
+
 #include <gtest/gtest.h>
 
 #include "runtime-core/runtime-core.h"
@@ -110,3 +123,7 @@ TEST_F(ArrayIntStringKeysCollision, ksort_string_int_collision) {
   ASSERT_FALSE(it.is_string_key());
   ASSERT_EQ(it.get_int_key(), int_key);
 }
+
+#ifdef ARRAY_BOUNDS
+#   pragma GCC diagnostic pop
+#endif

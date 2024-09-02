@@ -38,6 +38,11 @@ jobs:
             cpp: 20
             asan: on
             ubsan: off
+          - os: jammy
+            compiler: g++
+            cpp: 17
+            asan: off
+            ubsan: off
 
     name: "${{matrix.os}}/${{matrix.compiler}}/c++${{matrix.cpp}}/asan=${{matrix.asan}}/ubsan=${{matrix.ubsan}}"
 
@@ -63,7 +68,7 @@ jobs:
         docker build -f $GITHUB_WORKSPACE/.github/workflows/Dockerfile.${{matrix.os}} $GITHUB_WORKSPACE \
               -t kphp-build-img-${{matrix.os}} \
               --cache-from=type=local,src=kphp-build-img-${{matrix.os}}-cache
-        docker tag kphp-build-img-${{matrix.os}} kphp-build-img-${{matrix.os}}-cache
+        docker tag kphp-build-img-${{matrix.os}} kphp-build-img-${{matrix.os}}
         docker save kphp-build-img-${{matrix.os}}-cache -o kphp-build-env-${{matrix.os}}.tar
         
     - name: Load docker image from cache
