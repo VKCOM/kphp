@@ -7,7 +7,6 @@ prepend(COMMON_MAIN_SOURCES ${COMMON_DIR}/
         server/init-binlog.cpp
         server/init-snapshot.cpp
 
-        sha1.cpp
         allocators/freelist.cpp
         md5.cpp
         allocators/lockfree-slab.cpp

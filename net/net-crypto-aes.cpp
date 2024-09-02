@@ -4,16 +4,17 @@
 
 #include "net/net-crypto-aes.h"
 
-#include <assert.h>
+#include <cassert>
 #include <fcntl.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
 #include <unistd.h>
 
+#include "common/crypto/openssl-evp-digest.h"
 #include "common/cycleclock.h"
 #include "common/kprintf.h"
 #include "common/md5.h"
@@ -21,7 +22,6 @@
 #include "common/precise-time.h"
 #include "common/secure-bzero.h"
 #include "common/server/signals.h"
-#include "common/sha1.h"
 #include "common/wrappers/memory-utils.h"
 
 #include "net/net-aes-keys.h"
@@ -70,7 +70,7 @@ int aes_crypto_encrypt_output (struct connection *c) {
     assert (P.len0 >= 0 && P.len1 >= 0);
     if (P.len0 >= 16) {
       // AES_cbc_encrypt ((unsigned char *)P.ptr0, (unsigned char *)P.ptr0, P.len0 & -16, &T->write_aeskey, T->write_iv, AES_ENCRYPT);
-      T->write_aeskey.cbc_crypt (&T->write_aeskey, (unsigned char *)P.ptr0, (unsigned char *)P.ptr0, P.len0 & -16, T->write_iv);
+      T->write_aeskey.cbc_crypt (&T->write_aeskey, reinterpret_cast<unsigned char *>(P.ptr0), reinterpret_cast<unsigned char *>(P.ptr0), P.len0 & -16, T->write_iv);
       nb_advance_process (&P, P.len0 & -16);
     } else {
       static unsigned char tmpbuf[16];
@@ -105,7 +105,7 @@ int aes_crypto_decrypt_input (struct connection *c) {
     assert (P.len0 >= 0 && P.len1 >= 0);
     if (P.len0 >= 16) {
       // AES_cbc_encrypt ((unsigned char *)P.ptr0, (unsigned char *)P.ptr0, P.len0 & -16, &T->read_aeskey, T->read_iv, AES_DECRYPT);
-      T->read_aeskey.cbc_crypt (&T->read_aeskey, (unsigned char *)P.ptr0, (unsigned char *)P.ptr0, P.len0 & -16, T->read_iv);
+      T->read_aeskey.cbc_crypt (&T->read_aeskey, reinterpret_cast<unsigned char *>(P.ptr0), reinterpret_cast<unsigned char *>(P.ptr0), P.len0 & -16, T->read_iv);
       nb_advance_process (&P, P.len0 & -16);
     } else {
       static unsigned char tmpbuf[16];
@@ -161,13 +161,13 @@ static int initialize_pseudo_random() {
     close(fd);
   }
 
-  *(long *) rand_buf ^= lrand48();
-  srand48(*(long *) rand_buf);
+  *reinterpret_cast<long *>(rand_buf) ^= lrand48();
+  srand48(*reinterpret_cast<long *>(rand_buf));
 
   return 1;
 }
 
-static const char* aes_pwd_path = NULL;
+static const char* aes_pwd_path = nullptr;
 
 SAVE_STRING_OPTION_PARSER(OPT_NETWORK, "aes-pwd", aes_pwd_path, "sets pwd file");
 
@@ -185,16 +185,16 @@ int aes_load_keys() {
 }
 
 int aes_generate_nonce (char res[16]) {
-  *(int *)(rand_buf + 16) = lrand48 ();
-  *(int *)(rand_buf + 20) = lrand48 ();
-  *(long long *)(rand_buf + 24) = cycleclock_now();
+  *reinterpret_cast<int *>(rand_buf + 16) = lrand48();
+  *reinterpret_cast<int *>(rand_buf + 20) = lrand48();
+  *reinterpret_cast<long long *>(rand_buf + 24) = cycleclock_now();
   struct timespec T;
   assert (clock_gettime(CLOCK_REALTIME, &T) >= 0);
-  *(int *)(rand_buf + 32) = T.tv_sec;
-  *(int *)(rand_buf + 36) = T.tv_nsec;
-  (*(int *)(rand_buf + 40))++;
+  *reinterpret_cast<int *>(rand_buf + 32) = T.tv_sec;
+  *reinterpret_cast<int *>(rand_buf + 36) = T.tv_nsec;
+  (*reinterpret_cast<int *>(rand_buf + 40))++;
 
-  md5 ((unsigned char *)rand_buf, 44, (unsigned char *)res);
+  vk::md5({reinterpret_cast<uint8_t *>(rand_buf), 44}, {reinterpret_cast<uint8_t *>(res), 16});
   return 0;
 } 
 
@@ -206,24 +206,24 @@ int aes_generate_nonce (char res[16]) {
 int aes_create_keys(aes_key_t *key, struct aes_session_key *R, int am_client, const char nonce_server[16], const char nonce_client[16], int client_timestamp,
                     unsigned server_ip, unsigned short server_port, const unsigned char server_ipv6[16], unsigned client_ip, unsigned short client_port,
                     const unsigned char client_ipv6[16]) {
-  unsigned char str[16 + 16 + 4 + 4 + 2 + 6 + 4 + 2 + AES_KEY_MAX_LEN + 16 + 16 + 4 + 16 * 2];
-  int str_len;
+  uint8_t str[16 + 16 + 4 + 4 + 2 + 6 + 4 + 2 + AES_KEY_MAX_LEN + 16 + 16 + 4 + 16 * 2];
+  size_t str_len;
 
   if (!key) {
     return -1;
   }
 
   const int pwd_len = key->len;
-  char *pwd_buf = (char *) key->key;
+  char *pwd_buf = reinterpret_cast<char *>(key->key);
 
   memcpy(str, nonce_server, 16);
   memcpy(str + 16, nonce_client, 16);
-  *((int *) (str + 32)) = client_timestamp;
-  *((unsigned *) (str + 36)) = server_ip;
-  *((unsigned short *) (str + 40)) = client_port;
+  *(reinterpret_cast<int *>(str + 32)) = client_timestamp;
+  *(reinterpret_cast<unsigned *>(str + 36)) = server_ip;
+  *(reinterpret_cast<unsigned short *>(str + 40)) = client_port;
   memcpy(str + 42, am_client ? "CLIENT" : "SERVER", 6);
-  *((unsigned *) (str + 48)) = client_ip;
-  *((unsigned short *) (str + 52)) = server_port;
+  *(reinterpret_cast<unsigned *>(str + 48)) = client_ip;
+  *(reinterpret_cast<unsigned short *>(str + 52)) = server_port;
   memcpy(str + 54, pwd_buf, pwd_len);
   memcpy(str + 54 + pwd_len, nonce_server, 16);
   str_len = 70 + pwd_len;
@@ -240,15 +240,16 @@ int aes_create_keys(aes_key_t *key, struct aes_session_key *R, int am_client, co
   memcpy(str + str_len, nonce_client, 16);
   str_len += 16;
 
-  md5(str + 1, str_len - 1, R->write_key);
-  sha1(str, str_len, R->write_key + 12);
-  md5(str + 2, str_len - 2, R->write_iv);
+  vk::md5({str + 1, str_len - 1}, R->write_key);
+  vk::sha1({str, str_len}, {&R->write_key[12], 20});
+  // gen_key(str, str_len, R->write_key);
+  vk::md5({str + 2, str_len - 2}, R->write_iv);
 
   memcpy(str + 42, !am_client ? "CLIENT" : "SERVER", 6);
 
-  md5(str + 1, str_len - 1, R->read_key);
-  sha1(str, str_len, R->read_key + 12);
-  md5(str + 2, str_len - 2, R->read_iv);
+  vk::md5({str + 1, str_len - 1}, R->read_key);
+  vk::sha1({str, str_len}, {&R->read_key[12], 20});
+  vk::md5({str + 2, str_len - 2}, R->read_iv);
 
   secure_bzero(str, str_len);
 
@@ -262,15 +263,15 @@ int aes_create_keys(aes_key_t *key, struct aes_session_key *R, int am_client, co
 // iv  := MD5(str+2)
 
 int aes_create_udp_keys (const aes_key_t* key, aes_udp_session_key_t *R, const process_id_t *local_pid, const process_id_t *remote_pid, int generation) {
-  unsigned char str[16 + 16 + 4 + 4 + 2 + 6 + 4 + 2 + AES_KEY_MAX_LEN + 16 + 16 + 4 + 16 * 2];
-  int str_len;
+  uint8_t str[16 + 16 + 4 + 4 + 2 + 6 + 4 + 2 + AES_KEY_MAX_LEN + 16 + 16 + 4 + 16 * 2];
+  size_t str_len;
 
   if (!key) {
     return -1;
   }
 
   const int pwd_len = key->len;
-  char* pwd_buf = (char*) key->key;
+  char* pwd_buf = reinterpret_cast<char*>(key->key);
 
   memcpy (str, local_pid, 12);
   memcpy (str + 12, pwd_buf, pwd_len);
@@ -278,14 +279,14 @@ int aes_create_udp_keys (const aes_key_t* key, aes_udp_session_key_t *R, const p
   memcpy (str + 24 + pwd_len, &generation, 4);
   str_len = 28 + pwd_len;
 
-  md5 (str + 1, str_len - 1, R->write_key);
-  sha1 (str, str_len, R->write_key + 12);
+  vk::md5({str + 1, str_len - 1}, R->write_key);
+  vk::sha1({str, str_len}, {&R->write_key[12], 20});
 
   memcpy (str, remote_pid, 12);
   memcpy (str + 12 + pwd_len, local_pid, 12);
 
-  md5 (str + 1, str_len - 1, R->read_key);
-  sha1 (str, str_len, R->read_key + 12);
+  vk::md5({str + 1, str_len - 1}, R->read_key);
+  vk::sha1({str, str_len}, {&R->read_key[12], 20});
 
   secure_bzero(str, str_len);
 

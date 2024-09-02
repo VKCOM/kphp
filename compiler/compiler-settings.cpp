@@ -11,6 +11,7 @@
 
 #include "common/algorithms/contains.h"
 #include "common/algorithms/find.h"
+#include "common/crypto/openssl-evp-digest.h"
 #include "common/version-string.h"
 #include "common/wrappers/fmt_format.h"
 #include "common/wrappers/mkdir_recursive.h"
@@ -164,19 +165,20 @@ void append_apple_options(std::string &cxx_flags, std::string &ld_flags) noexcep
 #endif
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
 std::string calc_cxx_flags_sha256(vk::string_view cxx, vk::string_view cxx_flags_line) noexcept {
-  SHA256_CTX sha256;
-  SHA256_Init(&sha256);
+//  SHA256_CTX sha256;
+//  SHA256_Init(&sha256);
 
-  SHA256_Update(&sha256, cxx.data(), cxx.size());
-  SHA256_Update(&sha256, cxx_flags_line.data(), cxx_flags_line.size());
+//  SHA256_Update(&sha256, cxx.data(), cxx.size());
+//  SHA256_Update(&sha256, cxx_flags_line.data(), cxx_flags_line.size());
 
+  size_t hash_data_size = cxx.size() + cxx_flags_line.size();
+  auto *hash_data = static_cast<uint8_t *>(malloc(hash_data_size));
+  memcpy(hash_data, cxx.data(), cxx.size());
+  memcpy(hash_data + cxx.size(), cxx_flags_line.data(), cxx_flags_line.size());
   unsigned char hash[SHA256_DIGEST_LENGTH] = {0};
-  SHA256_Final(hash, &sha256);
-
+//  SHA256_Final(hash, &sha256);
+  vk::sha256({hash_data, hash_data_size}, hash);
   std::string hash_str;
   hash_str.reserve(SHA256_DIGEST_LENGTH * 2);
   for (auto hash_symb : hash) {
@@ -184,8 +186,6 @@ std::string calc_cxx_flags_sha256(vk::string_view cxx, vk::string_view cxx_flags
   }
   return hash_str;
 }
-
-#pragma GCC diagnostic pop
 
 } // namespace
 

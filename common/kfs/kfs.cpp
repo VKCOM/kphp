@@ -27,7 +27,6 @@
 #include "common/kprintf.h"
 #include "common/options.h"
 #include "common/precise-time.h"
-#include "common/sha1.h"
 #include "common/wrappers/likely.h"
 #include "common/wrappers/pathname.h"
 
