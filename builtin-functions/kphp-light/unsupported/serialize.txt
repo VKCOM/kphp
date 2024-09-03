@@ -25,5 +25,25 @@ function instance_deserialize($serialized ::: string, $to_type ::: string) ::: i
 /** @kphp-extern-func-info cpp_template_call can_throw */
 function instance_deserialize_safe($serialized ::: string, $to_type ::: string) ::: instance<^2>;
 
+/** @kphp-generate-stub-class */
+class JsonEncoder {
+  const rename_policy = 'none';
+  const visibility_policy = 'all';
+  const skip_if_default = false;
+  const float_precision = 0;
 
+  private function __construct();
+
+  public static function encode(object $instance, int $flags = 0, array $more = []) : string;
+  public static function decode(string $json, string $class_name) : instance<^2>;
+  /** @kphp-extern-func-info generate-stub */
+  public static function getLastError() : string;
+
+  // JsonEncoderOrChild::encode(...) is actually replaced by JsonEncoder::to_json_impl('JsonEncoderOrChild', ...)
+  static function to_json_impl(string $encoder_tag, object $instance, int $flags = 0, array $more = []) ::: string;
+
+  // JsonEncoderOrChild::decode(...) is actually replaced by JsonEncoder::from_json_impl('JsonEncoderOrChild', ...)
+  /** @kphp-extern-func-info cpp_template_call */
+  static function from_json_impl(string $encoder_tag, string $json, string $class_name) ::: instance<^3>;
+}
 
