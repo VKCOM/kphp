@@ -88,7 +88,6 @@ function setlocale ($category ::: int, $locale ::: string) ::: string | false;
 /** @kphp-extern-func-info generate-stub */
 function debug_backtrace() ::: string[][];
 
-/** @kphp-extern-func-info generate-stub */
 function estimate_memory_usage($value ::: any) ::: int;
 
 /** @kphp-extern-func-info generate-stub */
