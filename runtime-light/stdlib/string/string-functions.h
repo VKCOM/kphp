@@ -41,3 +41,12 @@ inline Optional<string> f$substr(const string &str, int64_t start, int64_t lengt
 inline Optional<string> f$substr(tmp_string, int64_t start, int64_t length = std::numeric_limits<int64_t>::max()) {
   php_critical_error("call to unsupported function");
 }
+
+
+inline string f$pack(const string &pattern, const array<mixed> &a) {
+  php_critical_error("call to unsupported function");
+}
+
+inline Optional<array<mixed>> f$unpack(const string &pattern, const string &data) {
+  php_critical_error("call to unsupported function");
+}
