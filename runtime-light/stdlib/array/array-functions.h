@@ -491,3 +491,33 @@ template<class T>
 T f$array_unset(array<T> &arr, const mixed &key) {
   php_critical_error("call to unsupported function");
 }
+
+template<class T>
+Optional<array<class_instance<T>>> f$array_column(const array<array<class_instance<T>>> &a, const mixed &column_key) {
+  php_critical_error("call to unsupported function");
+}
+
+template<class T>
+Optional<array<class_instance<T>>> f$array_column(const array<Optional<array<class_instance<T>>>> &a, const mixed &column_key) {
+  php_critical_error("call to unsupported function");
+}
+
+template<class T>
+Optional<array<T>> f$array_column(const array<array<T>> &a, const mixed &column_key, const mixed &index_key = {}) {
+  php_critical_error("call to unsupported function");
+}
+
+template<class T>
+Optional<array<T>> f$array_column(const array<Optional<array<T>>> &a, const mixed &column_key, const mixed &index_key = {}) {
+  php_critical_error("call to unsupported function");
+}
+
+inline Optional<array<mixed>> f$array_column(const array<mixed> &a, const mixed &column_key, const mixed &index_key = {}) {
+  php_critical_error("call to unsupported function");
+}
+
+template<class T>
+auto f$array_column(const Optional<T> &a, const mixed &column_key, const mixed &index_key = {}) -> decltype(f$array_column(std::declval<T>(), column_key, index_key)) {
+  php_critical_error("call to unsupported function");
+}
+
