@@ -7,7 +7,6 @@
 #include <cstddef>
 #include <optional>
 #include <string_view>
-#include <type_traits>
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-core/runtime-core.h"
@@ -15,6 +14,7 @@
 #include "runtime-light/utils/concepts.h"
 
 namespace tl {
+
 constexpr auto SMALL_STRING_SIZE_LEN = 1;
 constexpr auto MEDIUM_STRING_SIZE_LEN = 3;
 constexpr auto LARGE_STRING_SIZE_LEN = 7;
@@ -74,8 +74,7 @@ public:
   }
 
   template<standard_layout T, standard_layout U>
-    requires std::convertible_to<U, T>
-  void store_trivial(const U &t) noexcept {
+  requires std::convertible_to<U, T> void store_trivial(const U &t) noexcept {
     // Here we rely on that endianness of architecture is Little Endian
     store_bytes(reinterpret_cast<const char *>(std::addressof(t)), sizeof(T));
   }
