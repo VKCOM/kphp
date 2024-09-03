@@ -243,7 +243,7 @@ function curl_init ($url ::: string = "") ::: int;
 function curl_reset ($curl_handle ::: int) ::: void;
 /** @kphp-extern-func-info generate-stub */
 function curl_setopt ($curl_handle ::: int, $option ::: int, $value ::: mixed) ::: bool;
-/** @kphp-extern-func-info generate-stub */
+
 function curl_setopt_array ($curl_handle ::: int, $options ::: array) ::: bool;
 /** @kphp-extern-func-info generate-stub */
 function curl_exec ($curl_handle ::: int) ::: mixed;
@@ -270,7 +270,7 @@ function curl_multi_setopt ($multi_handle ::: int, $option ::: int, $value ::: i
 function curl_multi_exec ($multi_handle ::: int, &$still_running ::: int) ::: int|false;
 /** @kphp-extern-func-info generate-stub */
 function curl_multi_select ($multi_handle ::: int, $timeout ::: float = 1.0) ::: int|false;
-/** @kphp-extern-func-info generate-stub */
+
 function curl_multi_info_read ($multi_handle ::: int, &$msgs_in_queue ::: int = TODO) ::: int[]|false;
 /** @kphp-extern-func-info generate-stub */
 function curl_multi_remove_handle ($multi_handle ::: int, $curl_handle ::: int) ::: int|false;
