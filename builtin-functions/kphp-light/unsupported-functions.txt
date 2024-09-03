@@ -20,4 +20,5 @@ require_once __DIR__ . '/unsupported/serialize.txt';
 require_once __DIR__ . '/unsupported/server.txt';
 require_once __DIR__ . '/unsupported/string.txt';
 require_once __DIR__ . '/unsupported/time.txt';
+require_once __DIR__ . '/unsupported/uberh3.txt';
 require_once __DIR__ . '/unsupported/vkext.txt';
