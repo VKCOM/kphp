@@ -70,23 +70,22 @@ inline void f$echo(const string &s) noexcept {
   print(s);
 }
 
-inline Optional<int64_t> f$fprintf(const mixed &stream, const string &format, const array<mixed> &args) {
+inline Optional<int64_t> f$fprintf(const mixed &, const string &, const array<mixed> &) {
   php_critical_error("call to unsupported function");
 }
 
-inline Optional<int64_t> f$fputcsv(const mixed &stream, const array<mixed> &fields, string delimiter = string(",", 1),
-                            string enclosure = string("\"", 1), string escape_char = string("\\", 1)) {
+inline Optional<int64_t> f$fputcsv(const mixed &, const array<mixed> &, string = string(",", 1), string = string("\"", 1), string = string("\\", 1)) {
   php_critical_error("call to unsupported function");
 }
 
-inline int64_t f$printf(const string &format, const array<mixed> &a) {
+inline int64_t f$printf(const string &, const array<mixed> &) {
   php_critical_error("call to unsupported function");
 }
 
-inline string f$sprintf(const string &format, const array<mixed> &a) {
+inline string f$sprintf(const string &, const array<mixed> &) {
   php_critical_error("call to unsupported function");
 }
 
-inline string f$vsprintf(const string &format, const array<mixed> &args) {
+inline string f$vsprintf(const string &, const array<mixed> &) {
   php_critical_error("call to unsupported function");
 }

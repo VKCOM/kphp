@@ -181,12 +181,12 @@ std::pair<mixed, bool> json_decode(const string &v, const char *json_obj_magic_k
 mixed f$json_decode(const string &v, bool assoc = false) noexcept;
 
 template<class Tag, class T, class U = Unknown>
-string f$JsonEncoder$$to_json_impl(Tag /*tag*/, const class_instance<T> &klass, int64_t flags = 0, const array<U> &more = {}) noexcept {
+string f$JsonEncoder$$to_json_impl(Tag /*tag*/, const class_instance<T> &, int64_t = 0, const array<U> & = {}) noexcept {
   php_critical_error("call to unsupported function");
 }
 
 template<class ClassName, class Tag>
-ClassName f$JsonEncoder$$from_json_impl(Tag /*tag*/, const string &json_string, const string &/*class_mame*/) noexcept {
+ClassName f$JsonEncoder$$from_json_impl(Tag /*tag*/, const string &, const string & /*class_mame*/) noexcept {
   php_critical_error("call to unsupported function");
 }
 
