@@ -95,7 +95,7 @@ private:
     uint32_t string_size{0};
   };
 
-  struct alignas(array_bucket) array_inner : array_inner_control{
+  struct alignas(array_bucket) array_inner : array_inner_control {
     static constexpr uint32_t MAX_HASHTABLE_SIZE = (1 << 26);
     //empty hash_entry identified by (next == EMPTY_POINTER)
     static constexpr entry_pointer_type EMPTY_POINTER = 0;
