@@ -2,6 +2,7 @@ prepend(
         RUNTIME_STDLIB_SRC
         stdlib/
         component/component-api.cpp
+        curl/curl.cpp
         exit/exit-functions.cpp
         fork/fork-context.cpp
         output/output-buffer.cpp
