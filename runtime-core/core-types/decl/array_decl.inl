@@ -26,13 +26,6 @@ struct array_size {
   inline array_size &min(const array_size &other) noexcept;
 };
 
-#if defined(__clang__) || (defined(__GNUC__) && __GNUC__ < 10)
-// clang complains about 'flexible array member x of type T[] with non-trivial destruction'
-#define KPHP_ARRAY_TAIL_SIZE 0
-#else
-// gcc10 complains about out-of-bounds access to an array of zero size
-#define KPHP_ARRAY_TAIL_SIZE
-#endif
 
 namespace dl {
 template<class T, class TT, class T1>
