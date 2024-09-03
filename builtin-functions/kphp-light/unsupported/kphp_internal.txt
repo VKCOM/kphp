@@ -35,13 +35,11 @@ function _explode_tuple4($delimiter ::: string, $str ::: string, int $mask, $lim
 
 
 /**
- * @kphp-extern-func-info generate-stub
  * @kphp-internal-param-readonly $str
  */
 function _tmp_substr($str ::: string, $start ::: int, $length ::: int = PHP_INT_MAX): _tmp_string;
 
 /**
- * @kphp-extern-func-info generate-stub
  * @kphp-internal-param-readonly $str
  */
 function _tmp_trim($str ::: string, $what ::: string = " \n\r\t\v\0"): _tmp_string;
