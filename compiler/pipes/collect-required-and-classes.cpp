@@ -66,7 +66,7 @@ private:
     }
 
     for (const auto &dep : cur_class->get_str_dependents()) {
-      if (!cur_class->is_builtin() && dep.class_name == "Throwable" && cur_class->need_generated_stub) {
+      if (!cur_class->is_builtin() && dep.class_name == "Throwable")  {
         if (cur_class->is_interface()) {
           kphp_error(false, fmt_format("Interface {} cannot extend Throwable", cur_class->name));
         } else {
