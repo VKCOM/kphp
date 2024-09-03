@@ -52,6 +52,15 @@ struct array_list_hash_entry {
 
 struct ArrayBucketDummyStrTag{};
 
+struct array_inner_control {
+  bool is_vector_internal;
+  int ref_cnt;
+  int64_t max_key;
+  array_list_hash_entry last;
+  uint32_t size;
+  uint32_t buf_size;
+};
+
 template<class T>
 class array {
 public:
@@ -86,17 +95,12 @@ private:
     uint32_t string_size{0};
   };
 
-  struct alignas(array_bucket) array_inner {
+  struct alignas(array_bucket) array_inner : array_inner_control{
     static constexpr uint32_t MAX_HASHTABLE_SIZE = (1 << 26);
     //empty hash_entry identified by (next == EMPTY_POINTER)
     static constexpr entry_pointer_type EMPTY_POINTER = 0;
     static constexpr size_t ENTRIES_OFFSET = sizeof(array_inner);
-    bool is_vector_internal;
-    int ref_cnt;
-    int64_t max_key;
-    array_list_hash_entry last;
-    uint32_t size;
-    uint32_t buf_size;
+
     inline bool is_vector() const noexcept __attribute__ ((always_inline));
 
     inline array_bucket* entries() noexcept __attribute__ ((always_inline));
@@ -178,15 +182,6 @@ private:
 
     inline array_inner(const array_inner &other) = delete;
     inline array_inner &operator=(const array_inner &other) = delete;
-
-  private:
-    inline array_inner() noexcept
-      : is_vector_internal(true)
-      , ref_cnt(ExtraRefCnt::for_global_const)
-      , max_key(-1)
-      , last({0, 0})
-      , size(0)
-      , buf_size(2) {}
   };
 
   inline bool mutate_if_vector_shared(uint32_t mul = 1);
