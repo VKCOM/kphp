@@ -166,4 +166,6 @@ function is_infinite ($v ::: float) ::: bool;
 function is_nan ($v ::: float) ::: bool;
 /** @kphp-extern-func-info generate-stub */
 function random_int($l ::: int, $r ::: int) ::: int | false;
+/** @kphp-extern-func-info generate-stub */
+function random_bytes($length ::: int) ::: string | false;
 

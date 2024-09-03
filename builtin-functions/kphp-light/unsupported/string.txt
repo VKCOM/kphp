@@ -61,7 +61,8 @@ function strtolower ($str ::: string) ::: string;
 function strtoupper ($str ::: string) ::: string;
 /** @kphp-extern-func-info generate-stub */
 function wordwrap ($str ::: string, $width ::: int = 75, $break ::: string = '\n', $cut ::: bool = false) ::: string;
-
+/** @kphp-extern-func-info generate-stub */
+function str_getcsv($str ::: string, string $delimiter ::: string = ",", string $enclosure ::: string = "\"", string $escape ::: string = "\\") ::: mixed[] | false;
 
 
 /**
