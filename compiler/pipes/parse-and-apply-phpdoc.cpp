@@ -266,7 +266,8 @@ private:
       }
 
       case PhpDocType::kphp_extern_func_info: {
-        kphp_error(f_->is_extern(), "@kphp-extern-func-info used for regular function");
+        // This is temporary solution for generate-stub
+        bool doc_is_generated_stub = false;
         std::istringstream is(tag.value_as_string());
         std::string token;
         while (is >> token) {
@@ -285,10 +286,12 @@ private:
             f_->is_interruptible = true;
           } else if (token == "generate-stub") {
             f_->need_generated_stub = true;
+            doc_is_generated_stub = true;
           } else {
             kphp_error(0, fmt_format("Unknown @kphp-extern-func-info {}", token));
           }
         }
+        kphp_error(f_->is_extern() || (f_->is_constructor() && doc_is_generated_stub), "@kphp-extern-func-info used for regular function");
         break;
       }
 

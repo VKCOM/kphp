@@ -26,6 +26,16 @@ define('OPENSSL_RAW_DATA', 1);
 define('OPENSSL_ZERO_PADDING', 2);
 define('OPENSSL_DONT_ZERO_PAD_KEY', 4);
 
+define('PKCS7_TEXT', 0x1);
+define('PKCS7_NOCERTS', 0x2);
+define('PKCS7_NOSIGS', 0x4);
+define('PKCS7_NOCHAIN', 0x8);
+define('PKCS7_NOINTERN', 0x10);
+define('PKCS7_NOVERIFY', 0x20);
+define('PKCS7_BINARY', 0x80);
+define('PKCS7_DETACHED', 0x40);
+define('PKCS7_NOATTR', 0x100);
+
 /** @kphp-extern-func-info generate-stub */
 function openssl_public_encrypt ($data ::: string, &$result ::: mixed, $key ::: string) ::: bool;
 /** @kphp-extern-func-info generate-stub */

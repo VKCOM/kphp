@@ -27,7 +27,7 @@ inline constexpr auto DEFAULT_TIMEOUT_NS = std::chrono::duration_cast<std::chron
 // === Blocking API ================================================================================
 
 template<typename T>
-requires(is_optional<T>::value || std::same_as<T, mixed>) task_t<T> f$wait(int64_t fork_id, double timeout = -1.0) noexcept {
+requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>::value) task_t<T> f$wait(int64_t fork_id, double timeout = -1.0) noexcept {
   auto &fork_ctx{ForkComponentContext::get()};
   if (!fork_ctx.contains(fork_id)) {
     php_warning("can't find fork %" PRId64, fork_id);
@@ -62,4 +62,24 @@ inline task_t<void> f$sched_yield_sleep(double duration) noexcept {
 
 inline int64_t f$get_running_fork_id() noexcept {
   return ForkComponentContext::get().running_fork_id;
+}
+
+inline int64_t f$wait_queue_create() {
+  php_critical_error("call to unsupported function");
+}
+
+inline int64_t f$wait_queue_create(const mixed &resumable_ids) {
+  php_critical_error("call to unsupported function");
+}
+
+inline int64_t f$wait_queue_push(int64_t queue_id, const mixed &resumable_ids) {
+  php_critical_error("call to unsupported function");
+}
+
+inline bool f$wait_queue_empty(int64_t queue_id) {
+  php_critical_error("call to unsupported function");
+}
+
+inline Optional<int64_t> f$wait_queue_next(int64_t queue_id, double timeout = -1.0) {
+  php_critical_error("call to unsupported function");
 }

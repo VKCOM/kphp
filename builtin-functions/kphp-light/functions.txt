@@ -10,6 +10,9 @@ define('PHP_INT_MIN', -9223372036854775808);
 define('PHP_INT_SIZE', 8);
 define('PHP_EOL', "\n");
 
+if (0) {
+  define('PHP_SAPI', php_sapi_name());//"Defined in source code"
+}
 
 /** @var mixed $_SERVER */
 global $_SERVER;
@@ -35,10 +38,16 @@ function intval ($v ::: mixed) ::: int;
 function floatval ($v ::: mixed) ::: float;
 function strval ($v ::: mixed) ::: string;
 
-/** @kphp-extern-func-info interruptible */
+/**
+ * @kphp-no-return
+ * @kphp-extern-func-info interruptible
+ */
 function exit($code = 0) ::: void;
 
-/** @kphp-extern-func-info interruptible */
+/**
+ * @kphp-no-return
+ * @kphp-extern-func-info interruptible
+ */
 function die($code = 0) ::: void;
 
 function ob_clean() ::: void;

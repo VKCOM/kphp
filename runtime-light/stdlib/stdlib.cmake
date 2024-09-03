@@ -3,7 +3,7 @@ prepend(
   stdlib/
   component/component-api.cpp
   crypto/crypto-functions.cpp
-  curl/curl.cpp
+  curl/curl-context.cpp
   exit/exit-functions.cpp
   fork/fork-context.cpp
   job-worker/job-worker-api.cpp
@@ -18,4 +18,6 @@ prepend(
   rpc/rpc-tl-error.cpp
   rpc/rpc-tl-query.cpp
   rpc/rpc-tl-request.cpp
-  string/concat.cpp)
+  string/concat.cpp
+  string/string-context.cpp
+  file/file-stream-context.cpp)
