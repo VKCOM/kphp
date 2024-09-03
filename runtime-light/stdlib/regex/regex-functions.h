@@ -104,3 +104,77 @@ template<class T>
 mixed f$preg_replace_callback(const mixed &, const T &, const mixed &, int64_t = -1, int64_t & = RegexComponentState::get().preg_replace_count_dummy) {
   php_critical_error("call to unsupported function");
 }
+
+
+inline Optional<int64_t> f$preg_match(const regexp &regex, const string &subject) {
+  php_critical_error("call to unsupported function");
+}
+
+inline Optional<int64_t> f$preg_match_all(const regexp &regex, const string &subject) {
+  php_critical_error("call to unsupported function");
+}
+
+inline Optional<int64_t> f$preg_match(const regexp &regex, const string &subject, mixed &matches) {
+  php_critical_error("call to unsupported function");
+}
+
+inline Optional<int64_t> f$preg_match_all(const regexp &regex, const string &subject, mixed &matches) {
+  php_critical_error("call to unsupported function");
+}
+
+inline Optional<int64_t> f$preg_match(const regexp &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset = 0) {
+  php_critical_error("call to unsupported function");
+}
+
+inline Optional<int64_t> f$preg_match_all(const regexp &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset = 0) {
+  php_critical_error("call to unsupported function");
+}
+
+inline Optional<int64_t> f$preg_match(const string &regex, const string &subject) {
+  php_critical_error("call to unsupported function");
+}
+
+inline Optional<int64_t> f$preg_match_all(const string &regex, const string &subject) {
+  php_critical_error("call to unsupported function");
+}
+
+inline Optional<int64_t> f$preg_match(const string &regex, const string &subject, mixed &matches) {
+  php_critical_error("call to unsupported function");
+}
+
+inline Optional<int64_t> f$preg_match_all(const string &regex, const string &subject, mixed &matches) {
+  php_critical_error("call to unsupported function");
+}
+
+inline Optional<int64_t> f$preg_match(const string &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset = 0) {
+  php_critical_error("call to unsupported function");
+}
+
+inline Optional<int64_t> f$preg_match_all(const string &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset = 0) {
+  php_critical_error("call to unsupported function");
+}
+
+inline Optional<int64_t> f$preg_match(const mixed &regex, const string &subject) {
+  php_critical_error("call to unsupported function");
+}
+
+inline Optional<int64_t> f$preg_match_all(const mixed &regex, const string &subject) {
+  php_critical_error("call to unsupported function");
+}
+
+inline Optional<int64_t> f$preg_match(const mixed &regex, const string &subject, mixed &matches) {
+  php_critical_error("call to unsupported function");
+}
+
+inline Optional<int64_t> f$preg_match_all(const mixed &regex, const string &subject, mixed &matches) {
+  php_critical_error("call to unsupported function");
+}
+
+inline Optional<int64_t> f$preg_match(const mixed &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset = 0) {
+  php_critical_error("call to unsupported function");
+}
+
+inline Optional<int64_t> f$preg_match_all(const mixed &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset = 0) {
+  php_critical_error("call to unsupported function");
+}
+

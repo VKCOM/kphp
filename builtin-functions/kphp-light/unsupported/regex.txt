@@ -14,9 +14,9 @@ define('PREG_SPLIT_NO_EMPTY', 8);
 define('PREG_SPLIT_DELIM_CAPTURE', 16);
 define('PREG_SPLIT_OFFSET_CAPTURE', 32);
 
-/** @kphp-extern-func-info generate-stub */
+
 function preg_match ($regex ::: regexp, $subject ::: string, &$matches ::: mixed = TODO, $flags ::: int = 0, $offset ::: int = 0) ::: int | false;//TODO
-/** @kphp-extern-func-info generate-stub */
+
 function preg_match_all ($regex ::: regexp, $subject ::: string, &$matches ::: mixed = TODO, $flags ::: int = 0, $offset ::: int = 0) ::: int | false;//TODO
 
 function preg_replace ($regex ::: regexp, $replace_val, $subject, $limit ::: int = -1, &$replace_count ::: int = TODO) ::: ^3|string|null|false;
