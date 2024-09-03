@@ -1496,7 +1496,7 @@ void compile_function(VertexAdaptor<op_function> func_root, CodeGenerator &W) {
     W << PhpMutableGlobalsAssignCurrent() << NL;
   }
 
-  if (func->kphp_tracing) {
+  if (func->kphp_tracing && !G->is_output_mode_k2_component()) {
     TracingAutogen::codegen_runtime_func_guard_declaration(W, func);
     TracingAutogen::codegen_runtime_func_guard_start(W, func);
   }
