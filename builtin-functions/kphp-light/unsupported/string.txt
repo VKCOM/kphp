@@ -56,7 +56,6 @@ function wordwrap ($str ::: string, $width ::: int = 75, $break ::: string = '\n
 
 
 /**
- * @kphp-extern-func-info generate-stub
  * @kphp-internal-param-readonly $str
  */
 function substr ($str ::: string, $start ::: int, $length ::: int = PHP_INT_MAX) ::: string | false;
@@ -79,7 +78,6 @@ function str_repeat ($s ::: string, $multiplier ::: int) ::: string;
 
 
 /**
- * @kphp-extern-func-info generate-stub
  * @kphp-internal-param-readonly $s
  */
 function trim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;
