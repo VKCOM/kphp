@@ -32,17 +32,17 @@ function str_ireplace ($search, $replace, $subject, &$count ::: int = TODO) ::: 
 /** @kphp-extern-func-info generate-stub */
 function str_split ($str ::: string, $split_length ::: int = 1) ::: string[];
 /** @kphp-extern-func-info generate-stub */
-function strpos ($haystack ::: string, $needle, $offset ::: int = 0) ::: int | false;
+function strpos ($haystack ::: string, $needle ::: string, $offset ::: int = 0) ::: int | false;
 /** @kphp-extern-func-info generate-stub */
-function stripos ($haystack ::: string, $needle, $offset ::: int = 0) ::: int | false;
+function stripos ($haystack ::: string, $needle ::: string, $offset ::: int = 0) ::: int | false;
 /** @kphp-extern-func-info generate-stub */
-function strrpos ($haystack ::: string, $needle, $offset ::: int = 0) ::: int | false;
+function strrpos ($haystack ::: string, $needle ::: string, $offset ::: int = 0) ::: int | false;
 /** @kphp-extern-func-info generate-stub */
-function strripos ($haystack ::: string, $needle, $offset ::: int = 0) ::: int | false;
+function strripos ($haystack ::: string, $needle ::: string, $offset ::: int = 0) ::: int | false;
 /** @kphp-extern-func-info generate-stub */
-function strstr ($haystack ::: string, $needle, $before_needle ::: bool = false) ::: string | false;
+function strstr ($haystack ::: string, $needle ::: string, $before_needle ::: bool = false) ::: string | false;
 /** @kphp-extern-func-info generate-stub */
-function stristr ($haystack ::: string, $needle, $before_needle ::: bool = false) ::: string | false;
+function stristr ($haystack ::: string, $needle ::: string, $before_needle ::: bool = false) ::: string | false;
 function strrchr ($haystack ::: string, $needle ::: string) ::: string | false;
 /** @kphp-extern-func-info generate-stub */
 function strrev ($str ::: string) ::: string;
