@@ -4,6 +4,13 @@
 
 function _exception_set_location($e, string $filename, int $line): ^1;
 
+// microtime(false) specialization
+/** @kphp-extern-func-info generate-stub */
+function _microtime_string(): string;
+// microtime(true) specialization
+/** @kphp-extern-func-info generate-stub */
+function _microtime_float(): float;
+
 
 /**
  * @kphp-extern-func-info generate-stub
