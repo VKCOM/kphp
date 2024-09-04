@@ -63,3 +63,23 @@ inline task_t<void> f$sched_yield_sleep(double duration) noexcept {
 inline int64_t f$get_running_fork_id() noexcept {
   return ForkComponentContext::get().running_fork_id;
 }
+
+inline int64_t f$wait_queue_create() {
+  php_critical_error("call to unsupported function");
+}
+
+inline int64_t f$wait_queue_create(const mixed &resumable_ids) {
+  php_critical_error("call to unsupported function");
+}
+
+inline int64_t f$wait_queue_push(int64_t queue_id, const mixed &resumable_ids) {
+  php_critical_error("call to unsupported function");
+}
+
+inline bool f$wait_queue_empty(int64_t queue_id) {
+  php_critical_error("call to unsupported function");
+}
+
+inline Optional<int64_t> f$wait_queue_next(int64_t queue_id, double timeout = -1.0) {
+  php_critical_error("call to unsupported function");
+}
