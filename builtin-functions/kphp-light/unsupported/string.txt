@@ -31,9 +31,8 @@ function str_starts_with ($haystack ::: string, $needle ::: string) ::: bool;
 /** @kphp-extern-func-info generate-stub */
 function str_ends_with ($haystack ::: string, $needle ::: string) ::: bool;
 
-
 /** @kphp-extern-func-info generate-stub */
-function strtr ($subject ::: string, $replace_pairs, $third = TODO) ::: string;//TODO
+function strtr ($subject ::: string, $replace_pairs ::: mixed, $third ::: mixed = TODO) ::: string;//TODO
 /** @kphp-extern-func-info generate-stub */
 function str_replace ($search, $replace, $subject, &$count ::: int = TODO) ::: ^3 | string;
 /** @kphp-extern-func-info generate-stub */
