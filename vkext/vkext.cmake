@@ -56,7 +56,7 @@ prepend(VKEXT_SOURCES ${VKEXT_DIR}/
         vkext-stats.cpp
         vkext-sp.cpp)
 
-foreach(PHP_VERSION IN ITEMS "" "7.4" "8.0" "8.1" "8.2")
+foreach(PHP_VERSION IN ITEMS "" "7.4" "8.0" "8.1" "8.2" "8.3")
     find_program(PHP_CONFIG_EXEC${PHP_VERSION} php-config${PHP_VERSION})
     set(PHP_CONFIG_EXEC ${PHP_CONFIG_EXEC${PHP_VERSION}})
     if(PHP_CONFIG_EXEC)
