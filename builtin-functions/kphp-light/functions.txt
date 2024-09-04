@@ -8,6 +8,9 @@ define('PHP_INT_MIN', -9223372036854775808);
 define('PHP_INT_SIZE', 8);
 define('PHP_EOL', "\n");
 
+if (0) {
+  define('PHP_SAPI', php_sapi_name());//"Defined in source code"
+}
 
 /** @var mixed $_SERVER */
 global $_SERVER;

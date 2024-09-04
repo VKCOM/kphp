@@ -9,7 +9,7 @@
 
 #define THROW_EXCEPTION(e) {php_critical_error("Exceptions unsupported");}
 
-#define CHECK_EXCEPTION(action) if (false) {action;}
+#define CHECK_EXCEPTION(action)
 
 #ifdef __clang__
   #define TRY_CALL_RET_(x) x
@@ -34,5 +34,5 @@ TRY_CALL_RET_(x_tmp___);                \
 
 template<typename T>
 T f$_exception_set_location(const T &e, const string &file, int64_t line) {
-  php_critical_error("call to unsupported function : _exception_set_location");
+  php_critical_error("call to unsupported function");
 }

@@ -266,7 +266,8 @@ private:
       }
 
       case PhpDocType::kphp_extern_func_info: {
-        kphp_error(f_->is_extern(), "@kphp-extern-func-info used for regular function");
+        // todo:k2 remove f_->is_constructor() from condition. This is temporary solution for generate-stub
+        kphp_error(f_->is_extern() || f_->is_constructor(), "@kphp-extern-func-info used for regular function");
         std::istringstream is(tag.value_as_string());
         std::string token;
         while (is >> token) {
