@@ -48,8 +48,13 @@ define('ZLIB_RLE', 3);
 define('ZLIB_FIXED', 4);
 define('ZLIB_DEFAULT_STRATEGY', 0);
 
+/** @kphp-generate-stub-class */
+final class DeflateContext {
+    private function __construct() ::: DeflateContext;
+}
+
 /** @kphp-extern-func-info generate-stub */
-function deflate_init(int $encoding, array $options = []) ::: ?DeflateContext;
+function deflate_init(int $encoding, mixed $options = []) ::: ?DeflateContext;
 /** @kphp-extern-func-info generate-stub */
 function deflate_add(DeflateContext $context, string $data, int $flush_mode = ZLIB_SYNC_FLUSH) ::: string | false;
 /** @kphp-extern-func-info generate-stub */
