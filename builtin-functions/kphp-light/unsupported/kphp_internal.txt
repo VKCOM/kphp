@@ -11,6 +11,22 @@ function _microtime_string(): string;
 /** @kphp-extern-func-info generate-stub */
 function _microtime_float(): float;
 
+// hrtime(true) specialization
+/** @kphp-extern-func-info generate-stub */
+function _hrtime_int(): int;
+// hrtime(false) specialization
+/** @kphp-extern-func-info generate-stub */
+function _hrtime_array(): int[];
+
+// `new $c(...)` => `_by_name_construct($c, ...)`
+function _by_name_construct(string $class_name, ...$args) ::: instance<^1>;
+// `$c::method()` => `_by_name_call_method($c, 'method')`
+function _by_name_call_method(string $class_name, string $method_name, ...$args);
+// `$c::CONST` => `_by_name_get_const($c, 'CONST')`
+function _by_name_get_const(string $class_name, string $constant);
+// `$c::$field` => `_by_name_get_field($c, 'field')`
+function _by_name_get_field(string $class_name, string $field);
+
 
 /**
  * @kphp-extern-func-info generate-stub
