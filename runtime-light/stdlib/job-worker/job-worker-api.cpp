@@ -59,7 +59,7 @@ task_t<int64_t> kphp_job_worker_start_impl(string request, double timeout, bool 
       ? std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout})
       : std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(std::clamp(timeout, MIN_TIMEOUT_S, MAX_TIMEOUT_S)))};
   // create fork to wait for job worker response. we need to do it even if 'ignore_answer' is 'true' to make sure
-  // that the stream will not be closed too early. otherwise, platform may even not send RPC request
+  // that the stream will not be closed too early. otherwise, platform may even not send job worker request
   auto waiter_task{[](auto comp_query, std::chrono::nanoseconds timeout) noexcept -> task_t<string> {
     auto fetch_task{f$component_client_fetch_response(std::move(comp_query))};
     const string response{(co_await wait_with_timeout_t{task_t<string>::awaiter_t{std::addressof(fetch_task)}, timeout}).value_or(string{})};
