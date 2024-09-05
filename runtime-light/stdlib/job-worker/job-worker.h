@@ -12,6 +12,9 @@
 #include "runtime-core/class-instance/refcountable-php-classes.h"
 #include "runtime-core/runtime-core.h"
 
+constexpr int64_t JOB_WORKER_VALID_JOB_ID_RANGE_START = 0;
+constexpr int64_t JOB_WORKER_INVALID_JOB_ID = -1;
+
 namespace job_worker_impl_ {
 
 struct SendableBase : virtual abstract_refcountable_php_interface {
@@ -23,12 +26,12 @@ struct SendableBase : virtual abstract_refcountable_php_interface {
   ~SendableBase() override = default;
 };
 
-enum class error_t : int16_t {
+} // namespace job_worker_impl_
+
+enum class JobWorkerError : int16_t {
   store_response_incorrect_call_error = -3000,
   store_response_cant_send_error = -3003,
 };
-
-} // namespace job_worker_impl_
 
 // === KphpJobWorkerSharedMemoryPiece =============================================================
 

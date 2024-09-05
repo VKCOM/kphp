@@ -10,49 +10,18 @@
 #include <utility>
 
 #include "runtime-core/utils/kphp-assert-core.h"
+#include "runtime-light/component/init-functions.h"
 #include "runtime-light/core/globals/php-init-scripts.h"
-#include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/header.h"
 #include "runtime-light/scheduler/scheduler.h"
 #include "runtime-light/streams/streams.h"
 #include "runtime-light/utils/context.h"
-#include "runtime-light/utils/json-functions.h"
 
 namespace {
 
-constexpr uint32_t K2_INVOKE_HTTP_MAGIC = 0xd909efe8;
-constexpr uint32_t K2_INVOKE_JOB_WORKER_MAGIC = 0x437d7312;
-
-void init_http_superglobals(const string &http_query) noexcept {
+int32_t merge_output_buffers() noexcept {
   auto &component_ctx{*get_component_context()};
-  component_ctx.php_script_mutable_globals_singleton.get_superglobals().v$_SERVER.set_value(string{"QUERY_TYPE"}, string{"http"});
-  component_ctx.php_script_mutable_globals_singleton.get_superglobals().v$_POST = f$json_decode(http_query, true);
-}
-
-task_t<uint64_t> init_kphp_cli_component() noexcept {
-  co_return co_await wait_for_incoming_stream_t{};
-}
-
-task_t<uint64_t> init_kphp_server_component() noexcept {
-  uint32_t magic{};
-  const auto stream_d{co_await wait_for_incoming_stream_t{}};
-  const auto read{co_await read_exact_from_stream(stream_d, reinterpret_cast<char *>(std::addressof(magic)), sizeof(uint32_t))};
-  php_assert(read == sizeof(uint32_t));
-  if (magic == K2_INVOKE_HTTP_MAGIC) {
-    const auto [buffer, size]{co_await read_all_from_stream(stream_d)};
-    init_http_superglobals(string{buffer, static_cast<string::size_type>(size)});
-    get_platform_context()->allocator.free(buffer);
-  } else if (magic == K2_INVOKE_JOB_WORKER_MAGIC) {
-    php_error("not implemented");
-  } else {
-    php_error("server got unexpected type of request: 0x%x", magic);
-  }
-
-  co_return stream_d;
-}
-
-int32_t merge_output_buffers(ComponentState &component_ctx) noexcept {
   Response &response{component_ctx.response};
   php_assert(response.current_buffer >= 0);
 
@@ -95,12 +64,16 @@ task_t<void> ComponentState::run_component_epilogue() noexcept {
   if (component_kind_ == ComponentKind::Oneshot || component_kind_ == ComponentKind::Multishot) {
     co_return;
   }
+  // do not flush output buffers if we are in job worker context
+  if (component_kind_ == ComponentKind::Server && job_worker_server_component_context.job_id != JOB_WORKER_INVALID_JOB_ID) {
+    co_return;
+  }
   if (standard_stream() == INVALID_PLATFORM_DESCRIPTOR) {
     poll_status = PollStatus::PollFinishedError;
     co_return;
   }
 
-  const auto &buffer{response.output_buffers[merge_output_buffers(*this)]};
+  const auto &buffer{response.output_buffers[merge_output_buffers()]};
   if ((co_await write_all_to_stream(standard_stream(), buffer.buffer(), buffer.size())) != buffer.size()) {
     php_warning("can't write component result to stream %" PRIu64, standard_stream());
   }

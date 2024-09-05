@@ -160,6 +160,21 @@ function component_server_fetch_request($query ::: ComponentQuery) ::: string;
 /** @kphp-extern-func-info interruptible */
 function component_server_send_response($query ::: ComponentQuery, $message ::: string) ::: void;
 
+// === Job Worker =================================================================================
+
+/** @kphp-extern-func-info interruptible */
+function kphp_job_worker_start(string $request, float $timeout) ::: future<string> | false;
+
+/** @kphp-extern-func-info interruptible */
+function kphp_job_worker_fetch_request() ::: string;
+
+/** @kphp-extern-func-info interruptible */
+function kphp_job_worker_store_response(string $response) ::: int;
+
+function is_kphp_job_workers_enabled() ::: bool;
+
+function get_job_workers_number() ::: int;
+
 // === Json =======================================================================================
 
 function json_encode ($v ::: mixed, $options ::: int = 0) ::: string | false;
