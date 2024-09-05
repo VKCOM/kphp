@@ -51,6 +51,7 @@ function strripos ($haystack ::: string, $needle ::: string, $offset ::: int = 0
 function strstr ($haystack ::: string, $needle ::: string, $before_needle ::: bool = false) ::: string | false;
 /** @kphp-extern-func-info generate-stub */
 function stristr ($haystack ::: string, $needle ::: string, $before_needle ::: bool = false) ::: string | false;
+/** @kphp-extern-func-info generate-stub */
 function strrchr ($haystack ::: string, $needle ::: string) ::: string | false;
 /** @kphp-extern-func-info generate-stub */
 function strrev ($str ::: string) ::: string;
