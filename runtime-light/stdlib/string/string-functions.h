@@ -10,6 +10,7 @@
 
 struct StringComponentState {
   int64_t str_replace_count_dummy{};
+  double default_similar_text_percent_stub{};
 
   static StringComponentState &get() noexcept;
 };
@@ -81,7 +82,7 @@ SubjectT f$str_replace(const T1 &search, const T2 &replace, const SubjectT &subj
   return f$str_replace(search, replace, subject.val(), replace_count);
 }
 
-string f$str_ireplace(const string &search, const string &replace, const string &subject, int64_t &replace_count = StringComponentState::get().str_replace_count_dummy) {
+inline string f$str_ireplace(const string &search, const string &replace, const string &subject, int64_t &replace_count = StringComponentState::get().str_replace_count_dummy) {
   php_critical_error("call to unsupported function");
 }
 
@@ -90,7 +91,7 @@ string f$str_ireplace(const array<T1> &search, const array<T2> &replace, const s
   php_critical_error("call to unsupported function");
 }
 
-string f$str_ireplace(const mixed &search, const mixed &replace, const string &subject, int64_t &replace_count = StringComponentState::get().str_replace_count_dummy) {
+inline string f$str_ireplace(const mixed &search, const mixed &replace, const string &subject, int64_t &replace_count = StringComponentState::get().str_replace_count_dummy) {
   php_critical_error("call to unsupported function");
 }
 
@@ -99,6 +100,10 @@ SubjectT f$str_ireplace(const T1 &search, const T2 &replace, const SubjectT &sub
   return f$str_ireplace(search, replace, subject.val(), replace_count);
 }
 
-mixed f$str_ireplace(const mixed &search, const mixed &replace, const mixed &subject, int64_t &replace_count = StringComponentState::get().str_replace_count_dummy) {
+inline mixed f$str_ireplace(const mixed &search, const mixed &replace, const mixed &subject, int64_t &replace_count = StringComponentState::get().str_replace_count_dummy) {
+  php_critical_error("call to unsupported function");
+}
+
+inline int64_t f$similar_text(const string &first, const string &second, double &percent = StringComponentState::get().default_similar_text_percent_stub) {
   php_critical_error("call to unsupported function");
 }

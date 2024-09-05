@@ -94,7 +94,7 @@ function ltrim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;
 /** @kphp-extern-func-info generate-stub */
 function rtrim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;
 
-/** @kphp-extern-func-info generate-stub */
+
 function similar_text ($first ::: string, $second ::: string, float &$percent = TODO) ::: int;
 
 
@@ -147,7 +147,7 @@ define('DEFAULT_SOCKET_TIMEOUT', 60);
 /** @kphp-extern-func-info generate-stub */
 function stream_context_create ($options ::: mixed = array()) ::: mixed;
 /** @kphp-extern-func-info generate-stub */
-function stream_socket_client ($url ::: string, &$error_number ::: mixed = TODO, &$error_description ::: mixed = TODO, $timeout ::: float = DEFAULT_SOCKET_TIMEOUT, $flags ::: int = STREAM_CLIENT_CONNECT, $context = null) ::: mixed;
+function stream_socket_client ($url ::: string, &$error_number ::: mixed = TODO, &$error_description ::: mixed = TODO, $timeout ::: float = DEFAULT_SOCKET_TIMEOUT, $flags ::: int = STREAM_CLIENT_CONNECT, $context ::: mixed = null) ::: mixed;
 
 
 /** @kphp-extern-func-info generate-stub */

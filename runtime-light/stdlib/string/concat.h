@@ -7,11 +7,6 @@
 #include "runtime-core/runtime-core.h"
 
 template<class T>
-string f$strtr(const string &, const array<T> &) {
-  php_critical_error("call to unsupported function");
-}
-
-template<class T>
 Optional<int64_t> f$strpos(const string &, const Optional<T> &, int64_t = 0) {
   php_critical_error("call to unsupported function");
 }
