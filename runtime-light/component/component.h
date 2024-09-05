@@ -16,11 +16,12 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/header.h"
 #include "runtime-light/scheduler/scheduler.h"
+#include "runtime-light/stdlib/curl/curl.h"
 #include "runtime-light/stdlib/fork/fork-context.h"
 #include "runtime-light/stdlib/output/output-buffer.h"
 #include "runtime-light/stdlib/regex/regex-functions.h"
-#include "runtime-light/stdlib/curl/curl.h"
 #include "runtime-light/stdlib/rpc/rpc-context.h"
+#include "runtime-light/stdlib/string/string-functions.h"
 
 constexpr uint64_t INVALID_PLATFORM_DESCRIPTOR = 0;
 
@@ -82,6 +83,7 @@ struct ComponentState {
 
   RegexComponentState regex_component_context;
   CurlComponentState curl_component_state;
+  StringComponentState string_component_state;
 
 private:
   task_t<void> main_task;

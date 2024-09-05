@@ -15,4 +15,5 @@ prepend(
         rpc/rpc-tl-query.cpp
         rpc/rpc-tl-request.cpp
         string/concat.cpp
+        string/string-functions.cpp
         regex/regex-functions.cpp)
