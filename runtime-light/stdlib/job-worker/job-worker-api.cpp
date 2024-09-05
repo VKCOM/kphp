@@ -90,6 +90,15 @@ task_t<bool> f$kphp_job_worker_start_no_reply(string request, double timeout) no
   co_return fork_id != INVALID_FORK_ID;
 }
 
+task_t<array<Optional<int64_t>>> f$kphp_job_worker_start_multi(array<string> requests, double timeout) noexcept {
+  array<Optional<int64_t>> fork_ids{requests.size()};
+  for (const auto &it : requests) {
+    const auto fork_id{co_await kphp_job_worker_start_impl(it.get_value(), timeout, false)};
+    fork_ids.set_value(it.get_key(), fork_id != INVALID_FORK_ID ? fork_id : false);
+  }
+  co_return fork_ids;
+}
+
 // ================================================================================================
 
 task_t<string> f$kphp_job_worker_fetch_request() noexcept {
