@@ -27,7 +27,7 @@ constexpr auto DEFAULT_TIMEOUT_NS = std::chrono::duration_cast<std::chrono::nano
 // === Blocking API ================================================================================
 
 template<typename T>
-requires(is_optional<T>::value || std::same_as<T, mixed>) task_t<T> f$wait(int64_t fork_id, double timeout = -1.0) noexcept {
+requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>::value) task_t<T> f$wait(int64_t fork_id, double timeout = -1.0) noexcept {
   auto &fork_ctx{ForkComponentContext::get()};
   if (!fork_ctx.contains(fork_id)) {
     php_warning("can't find fork %" PRId64, fork_id);
