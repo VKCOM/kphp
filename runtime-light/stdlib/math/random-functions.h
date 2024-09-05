@@ -5,6 +5,3 @@
 #include <cstdint>
 #include <random>
 
-inline int64_t f$rand() noexcept {
-  return static_cast<int64_t>(std::random_device{}());
-}
