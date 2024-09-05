@@ -215,8 +215,8 @@ int main(int argc, char *argv[]) {
              'f', "functions-file", "KPHP_FUNCTIONS");
   parser.add("File with kphp runtime sha256 hash", settings->runtime_sha256_file,
              "runtime-sha256", "KPHP_RUNTIME_SHA256", "${KPHP_PATH}/objs/php_lib_version.sha256");
-  parser.add("The output binary type: server, k2-component, cli or lib", settings->mode,
-             'M', "mode", "KPHP_MODE", "server", {"server", "k2-component", "cli", "lib"});
+  parser.add("The output binary type: server, cli, lib, k2-cli, k2-server, k2-oneshot, k2-multishot", settings->mode, 'M', "mode", "KPHP_MODE", "server",
+             {"server", "cli", "lib", "k2-cli", "k2-server", "k2-oneshot", "k2-multishot"});
   parser.add("A runtime library for building the output binary", settings->link_file,
              'l', "link-with", "KPHP_LINK_FILE");
   parser.add("Build runtime from sources", settings->force_link_runtime,
@@ -298,8 +298,6 @@ int main(int argc, char *argv[]) {
              "require-class-typing", "KPHP_REQUIRE_CLASS_TYPING");
   parser.add("Define k2 component name. Default is \"KPHP\"", settings->k2_component_name,
              "k2-component-name", "KPHP_K2_COMPONENT_NAME", "KPHP");
-  parser.add("Enable oneshot mode to k2 component", settings->k2_component_is_oneshot,
-             "oneshot", "KPHP_K2_COMPONENT_IS_ONESHOT");
 
   parser.add_implicit_option("Linker flags", settings->ld_flags);
   parser.add_implicit_option("Incremental linker flags", settings->incremental_linker_flags);

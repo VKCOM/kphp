@@ -120,15 +120,22 @@ void CompilerCore::finish() {
 }
 
 void CompilerCore::register_settings(CompilerSettings *settings) {
-  kphp_assert (settings_ == nullptr);
+  kphp_assert(settings_ == nullptr);
   settings_ = settings;
+  const auto mode = settings->mode.get();
 
-  if (settings->mode.get() == "cli") {
+  if (mode == "cli") {
     output_mode = OutputMode::cli;
-  } else if (settings->mode.get() == "lib") {
+  } else if (mode == "lib") {
     output_mode = OutputMode::lib;
-  } else if (settings->mode.get() == "k2-component") {
-    output_mode = OutputMode::k2_component;
+  } else if (mode == "k2-cli") {
+    output_mode = OutputMode::k2_cli;
+  } else if (mode == "k2-server") {
+    output_mode = OutputMode::k2_server;
+  } else if (mode == "k2-oneshot") {
+    output_mode = OutputMode::k2_oneshot;
+  } else if (mode == "k2-multishot") {
+    output_mode = OutputMode::k2_multishot;
   } else {
     output_mode = OutputMode::server;
   }

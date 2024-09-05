@@ -100,7 +100,7 @@ void CombinatorStore::gen_arg_processing(CodeGenerator &W, const std::unique_ptr
     auto *as_type_var = arg->type_expr->as<vk::tlo_parsing::type_var>();
     kphp_assert(as_type_var);
     if (!typed_mode) {
-      const auto *k2_tl_storers_prefix = G->is_output_mode_k2_component() ? "RpcImageState::get()." : "";
+      const auto *k2_tl_storers_prefix = G->is_output_mode_k2() ? "RpcImageState::get()." : "";
       W << "auto _cur_arg = "
         << fmt_format("tl_arr_get(tl_object, {}, {}, {}L)", tl2cpp::register_tl_const_str(arg->name), arg->idx, tl2cpp::hash_tl_const_str(arg->name))
         << ";" << NL;

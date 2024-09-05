@@ -216,8 +216,10 @@ void CompilerSettings::init() {
   option_as_dir(kphp_src_path);
   functions_file.value_ = get_full_path(functions_file.get());
   runtime_sha256_file.value_ = get_full_path(runtime_sha256_file.get());
+
+  bool is_k2_mode = mode.get().substr(0, 3) == "k2-";
   if (link_file.value_.empty()) {
-    if (mode.get() == "k2-component") {
+    if (is_k2_mode) {
       link_file.value_ = kphp_src_path.get() + "/objs/libkphp-light-runtime.a";
     } else {
       link_file.value_ = kphp_src_path.get() + "/objs/libkphp-full-runtime.a";
@@ -225,7 +227,7 @@ void CompilerSettings::init() {
   }
   link_file.value_ = get_full_path(link_file.get());
   if (functions_file.value_.empty()) {
-    if (mode.get() == "k2-component") {
+    if (is_k2_mode) {
       functions_file.value_ = kphp_src_path.get() + "/builtin-functions/kphp-light/functions.txt";
     } else {
       functions_file.value_ = kphp_src_path.get() + "/builtin-functions/kphp-full/_functions.txt";
@@ -233,8 +235,8 @@ void CompilerSettings::init() {
   }
   functions_file.value_ = get_full_path(functions_file.get());
 
-  if (k2_component_name.get() != "KPHP" || k2_component_is_oneshot.get()) {
-    kphp_error(mode.get() == "k2-component", "Options \"k2-component-name\" and \"oneshot\" available only fore k2-component mode");
+  if (k2_component_name.get() != "KPHP") {
+    kphp_error(is_k2_mode, "Option \"k2-component-name\" is only available for k2 component modes");
   }
 
   if (mode.get() == "lib") {
@@ -302,7 +304,7 @@ void CompilerSettings::init() {
   if (!no_pch.get()) {
     ss << " -Winvalid-pch -fpch-preprocess";
   }
-  if (mode.get() == "k2-component" ||  dynamic_incremental_linkage.get()) {
+  if (is_k2_mode ||  dynamic_incremental_linkage.get()) {
     ss << " -fPIC";
   }
   if (vk::contains(cxx.get(), "clang")) {
@@ -316,7 +318,7 @@ void CompilerSettings::init() {
     #error unsupported __cplusplus value
   #endif
 
-  if (mode.get() == "k2-component") {
+  if (is_k2_mode) {
     // for now k2-component must be compiled with clang and statically linked libc++
     ss << " -stdlib=libc++";
   } else {
@@ -413,7 +415,7 @@ void CompilerSettings::init() {
   option_as_dir(dest_dir);
   dest_cpp_dir.value_ = dest_dir.get() + "kphp/";
   dest_objs_dir.value_ = dest_dir.get() + "objs/";
-  if (mode.get() == "k2-component") {
+  if (is_k2_mode) {
     binary_path.value_ = dest_dir.get() + k2_component_name.get() + ".so";
   } else {
     binary_path.value_ = dest_dir.get() + mode.get();
