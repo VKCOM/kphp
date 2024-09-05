@@ -82,6 +82,14 @@ function getopt ($options ::: string, $longopt ::: array = array(), ?int &$rest_
 /** @kphp-extern-func-info generate-stub */
 function profiler_set_function_label($label ::: string) ::: void;
 
+define('LC_ALL', 6);
+define('LC_COLLATE', 3);
+define('LC_CTYPE', 0);
+define('LC_MONETARY', 4);
+define('LC_NUMERIC', 1);
+define('LC_TIME', 2);
+define('LC_MESSAGES', 5);
+
 /** @kphp-extern-func-info generate-stub */
 function setlocale ($category ::: int, $locale ::: string) ::: string | false;
 
