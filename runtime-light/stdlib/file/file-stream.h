@@ -15,8 +15,8 @@ struct FileStreamComponentState {
   static FileStreamComponentState &get() noexcept;
 };
 
-inline mixed f$stream_socket_client(const string &url, mixed &error_number = FileStreamComponentState::get().error_number_dummy,
-                                    mixed &error_description = FileStreamComponentState::get().error_description_dummy, double timeout = -1, int64_t flags = 1,
-                                    const mixed &context = mixed()) {
+inline mixed f$stream_socket_client(const string &, mixed & = FileStreamComponentState::get().error_number_dummy,
+                                    mixed & = FileStreamComponentState::get().error_description_dummy, double = -1, int64_t = 1,
+                                    const mixed & = mixed()) {
   php_critical_error("call to unsupported function");
 }
