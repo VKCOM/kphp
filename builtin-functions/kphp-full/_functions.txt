@@ -739,6 +739,8 @@ function rtrim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;
 function xor_strings ($s ::: string, $t ::: string) ::: string;
 function similar_text ($first ::: string, $second ::: string, float &$percent = TODO) ::: int;
 
+function str_getcsv($str ::: string, string $delimiter = ",", string $enclosure = "\"", string $escape = "\\") ::: mixed[] | false;
+
 function extension_loaded(string $extension): bool;
 
 function ctype_alnum(mixed $text): bool;

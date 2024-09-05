@@ -263,6 +263,9 @@ string f$vsprintf(const string &format, const array<mixed> &args);
 
 string f$wordwrap(const string &str, int64_t width = 75, const string &brk = NEW_LINE, bool cut = false);
 
+Optional<array<mixed>> f$str_getcsv(const string &s, const string &delimiter = string(1, ','),
+                                    const string &enclosure = string(1, '\"'), const string &escape = string(1, '\\'));
+
 /*
  *
  *     IMPLEMENTATION

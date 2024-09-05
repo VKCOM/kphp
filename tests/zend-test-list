@@ -659,6 +659,8 @@ ext/standard/tests/strings/vsprintf_basic8.phpt
 ext/standard/tests/strings/vsprintf_basic9.phpt
 ext/standard/tests/strings/wordwrap_basic.phpt
 ext/standard/tests/strings/wordwrap_variation5.phpt
+ext/standard/tests/strings/str_getcsv_001.phpt
+ext/standard/tests/strings/str_getcsv_002.phpt
 ext/standard/tests/url/base64_decode_basic_001.phpt
 ext/standard/tests/url/base64_decode_basic_002.phpt
 ext/standard/tests/url/base64_encode_basic_001.phpt
