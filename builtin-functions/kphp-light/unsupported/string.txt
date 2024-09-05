@@ -140,16 +140,6 @@ function zstd_compress(string $data, int $level = 3) ::: string | false;
 /** @kphp-extern-func-info generate-stub */
 function zstd_uncompress(string $data) ::: string | false;
 
-
-define('STREAM_CLIENT_CONNECT', 1);
-define('DEFAULT_SOCKET_TIMEOUT', 60);
-
-/** @kphp-extern-func-info generate-stub */
-function stream_context_create ($options ::: mixed = array()) ::: mixed;
-/** @kphp-extern-func-info generate-stub */
-function stream_socket_client ($url ::: string, &$error_number ::: mixed = TODO, &$error_description ::: mixed = TODO, $timeout ::: float = DEFAULT_SOCKET_TIMEOUT, $flags ::: int = STREAM_CLIENT_CONNECT, $context ::: mixed = null) ::: mixed;
-
-
 /** @kphp-extern-func-info generate-stub */
 function getimagesize ($name ::: string) ::: mixed;
 

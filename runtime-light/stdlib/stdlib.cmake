@@ -16,4 +16,5 @@ prepend(
         rpc/rpc-tl-request.cpp
         string/concat.cpp
         string/string-functions.cpp
+        file/file-stream.cpp
         regex/regex-functions.cpp)

@@ -17,6 +17,7 @@
 #include "runtime-light/header.h"
 #include "runtime-light/scheduler/scheduler.h"
 #include "runtime-light/stdlib/curl/curl.h"
+#include "runtime-light/stdlib/file/file-stream.h"
 #include "runtime-light/stdlib/fork/fork-context.h"
 #include "runtime-light/stdlib/output/output-buffer.h"
 #include "runtime-light/stdlib/regex/regex-functions.h"
@@ -84,6 +85,7 @@ struct ComponentState {
   RegexComponentState regex_component_context;
   CurlComponentState curl_component_state;
   StringComponentState string_component_state;
+  FileStreamComponentState file_stream_component_state;
 
 private:
   task_t<void> main_task;
