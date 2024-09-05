@@ -238,3 +238,16 @@ struct task_t : public task_base_t {
     return task_t<U>{std::coroutine_handle<>::from_address(std::exchange(handle_address, nullptr))};
   }
 };
+
+template<typename T>
+struct InternalTaskType {
+  using type = T;
+};
+
+template<typename T>
+struct InternalTaskType<task_t<T>> {
+  using type = T;
+};
+
+template<typename T>
+using internal_task_type_t = typename InternalTaskType<T>::type;

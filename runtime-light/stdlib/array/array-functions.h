@@ -61,7 +61,7 @@ array<T> f$array_filter_by_key(const array<T> &a, const T1 &callback) noexcept {
 }
 
 
-template<class T, class CallbackT, class R = typename std::invoke_result_t<std::decay_t<CallbackT>, T>>
+template<class T, class CallbackT, class R = internal_task_type_t<std::invoke_result_t<std::decay_t<CallbackT>, T>>>
 array<R> f$array_map(const CallbackT &callback, const array<T> &a) {
   php_critical_error("call to unsupported function");
 }
