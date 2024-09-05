@@ -521,3 +521,12 @@ auto f$array_column(const Optional<T> &a, const mixed &column_key, const mixed &
   php_critical_error("call to unsupported function");
 }
 
+template<class T>
+mixed f$array_key_first(const array<T> &a) {
+  php_critical_error("call to unsupported function");
+}
+
+template<class T>
+mixed f$array_key_last(const array<T> &a) {
+  php_critical_error("call to unsupported function");
+}
