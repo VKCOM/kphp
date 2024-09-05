@@ -530,3 +530,8 @@ template<class T>
 mixed f$array_key_last(const array<T> &a) {
   php_critical_error("call to unsupported function");
 }
+
+template<class T, class T1>
+std::tuple<typename array<T>::key_type, T> f$array_find(const array<T> &a,  const T1 &callback) {
+  php_critical_error("call to unsupported function");
+}
