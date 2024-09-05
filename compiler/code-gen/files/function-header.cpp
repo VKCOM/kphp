@@ -37,9 +37,6 @@ void FunctionH::compile(CodeGenerator &W) const {
     W << "inline ";
   }
   W << FunctionDeclaration(function, true);
-  if (function->is_no_return) {
-    W << " __attribute__((noreturn))";
-  }
   if (function->is_flatten) {
     W << " __attribute__((flatten))";
   }

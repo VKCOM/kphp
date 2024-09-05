@@ -41,6 +41,9 @@ void FunctionCpp::compile(CodeGenerator &W) const {
   W << includes;
 
   W << OpenNamespace();
+  if (function->is_no_return) {
+    W << "[[noreturn]] ";
+  }
   declare_const_vars(function, W);
 
   W << UnlockComments();
