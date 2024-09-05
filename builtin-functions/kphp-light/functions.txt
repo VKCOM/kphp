@@ -36,10 +36,16 @@ function intval ($v ::: mixed) ::: int;
 function floatval ($v ::: mixed) ::: float;
 function strval ($v ::: mixed) ::: string;
 
-/** @kphp-extern-func-info interruptible */
+/**
+ * @kphp-no-return
+ * @kphp-extern-func-info interruptible
+ */
 function exit($code = 0) ::: void;
 
-/** @kphp-extern-func-info interruptible */
+/**
+ * @kphp-no-return
+ * @kphp-extern-func-info interruptible
+ */
 function die($code = 0) ::: void;
 
 function ob_clean() ::: void;
