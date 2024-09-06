@@ -354,7 +354,7 @@ bool ClassData::has_polymorphic_member_dfs(std::unordered_set<ClassPtr> &checked
 }
 
 bool ClassData::does_need_codegen() const {
-  return (is_builtin() && need_generated_stub) || (!is_builtin() && !is_trait() && (really_used || is_tl_class));
+  return need_generated_stub || (!is_builtin() && !is_trait() && (really_used || is_tl_class));
 }
 
 bool operator<(const ClassPtr &lhs, const ClassPtr &rhs) {

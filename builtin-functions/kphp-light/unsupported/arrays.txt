@@ -66,7 +66,7 @@ function array_fill ($start_index ::: int, $num ::: int, $value ::: any) ::: ^3[
 function array_fill_keys ($a ::: array, $value ::: any) ::: ^2[];
 function array_combine ($keys ::: array, $values ::: array) ::: ^2;
 /** @kphp-extern-func-info generate-stub */
-function range ($from ::: mixed, $to ::: mixed, $step ::: int = 1) ::: mixed[];//TODO
+function range ($from ::: mixed, $to ::: mixed, $step ::: int = 1) ::: mixed[];
 function array_push (&$a ::: array, $val2 ::: any, $val3 ::: any = TODO, $val4 ::: any = TODO, $val5 ::: any = TODO, $val6 ::: any = TODO) ::: int;
 function array_pop (&$a ::: array) ::: ^1[*];
 function array_sum ($a ::: array) ::: float;//TODO
