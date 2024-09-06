@@ -125,7 +125,7 @@ task_t<int64_t> f$kphp_job_worker_store_response(string response) noexcept {
   }
 
   tl::TLBuffer tlb{};
-  tl::K2JobWorkerResponse jw_response{.flags = 0x0, .job_id = jw_server_ctx.job_id, .body = std::move(response)};
+  tl::K2JobWorkerResponse jw_response{.job_id = jw_server_ctx.job_id, .body = std::move(response)};
   jw_response.store(tlb);
   jw_server_ctx.job_id = JOB_WORKER_INVALID_JOB_ID; // prevent multiple stores
 
