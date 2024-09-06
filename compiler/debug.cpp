@@ -200,12 +200,8 @@ std::string debugTokenName(TokenType t) {
   // hint: insert that entry into the right position
   static_assert(name_pairs.size() - 1 == tok_end,"name_pairs needs to be updated");
 
-#if __cplusplus > 201703
-  static_assert(std::is_sorted(name_pairs.begin(), name_pairs.end()), "name_pairs should be sorted");
-#else
   static bool sorted = std::is_sorted(name_pairs.begin(), name_pairs.end());
   kphp_assert(sorted);
-#endif
 
   return name_pairs.at(t).second;
 }
