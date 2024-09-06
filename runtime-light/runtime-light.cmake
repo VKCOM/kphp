@@ -80,6 +80,25 @@ add_custom_command(
 add_custom_target(php_lib_version_sha_256
                   DEPENDS ${OBJS_DIR}/php_lib_version.sha256)
 
+# Light runtime uses C++20 coroutines heavily, so they are required
+if(COMPILE_RUNTIME_LIGHT)
+    get_property(TRY_COMPILE_COMPILE_OPTIONS TARGET runtime-light PROPERTY COMPILE_OPTIONS)
+    string (REPLACE ";" " " TRY_COMPILE_COMPILE_OPTIONS "${TRY_COMPILE_COMPILE_OPTIONS}")
+    file(WRITE "${PROJECT_BINARY_DIR}/check_coroutine_include.cpp"
+            "#include<coroutine>\n"
+            "int main() {}\n")
+    try_compile(
+            HAS_COROUTINE
+            "${PROJECT_BINARY_DIR}/tmp"
+            "${PROJECT_BINARY_DIR}/check_coroutine_include.cpp"
+            COMPILE_DEFINITIONS "${TRY_COMPILE_COMPILE_OPTIONS}"
+    )
+    if(NOT HAS_COROUTINE)
+        message(FATAL_ERROR "Compiler or libstdc++ does not support coroutines")
+    endif()
+    file(REMOVE "${PROJECT_BINARY_DIR}/check_coroutine_include.cpp")
+endif()
+
 get_property(
   RUNTIME_COMPILE_FLAGS
   TARGET runtime-light

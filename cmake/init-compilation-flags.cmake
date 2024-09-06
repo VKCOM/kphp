@@ -126,22 +126,3 @@ add_link_options(-rdynamic -L/usr/local/lib -ggdb)
 add_definitions(-D_GNU_SOURCE)
 # prevents the `build` directory to be appeared in symbols, it's necessary for remote debugging with path mappings
 add_compile_options(-fdebug-prefix-map="${CMAKE_BINARY_DIR}=${CMAKE_SOURCE_DIR}")
-
-# Light runtime uses C++20 coroutines heavily, so they are required
-if(COMPILE_RUNTIME_LIGHT)
-    get_property(TRY_COMPILE_COMPILE_OPTIONS TARGET runtime-light PROPERTY COMPILE_OPTIONS)
-    string (REPLACE ";" " " TRY_COMPILE_COMPILE_OPTIONS "${TRY_COMPILE_COMPILE_OPTIONS}")
-    file(WRITE "${PROJECT_BINARY_DIR}/check_coroutine_include.cpp"
-            "#include<coroutine>\n"
-            "int main() {}\n")
-    try_compile(
-            HAS_COROUTINE
-            "${PROJECT_BINARY_DIR}/tmp"
-            "${PROJECT_BINARY_DIR}/check_coroutine_include.cpp"
-            COMPILE_DEFINITIONS "${TRY_COMPILE_COMPILE_OPTIONS}"
-    )
-    if(NOT HAS_COROUTINE)
-        message(FATAL_ERROR "Compiler or libstdc++ does not support coroutines")
-    endif()
-    file(REMOVE "${PROJECT_BINARY_DIR}/check_coroutine_include.cpp")
-endif()
