@@ -99,6 +99,11 @@ task_t<array<Optional<int64_t>>> f$kphp_job_worker_start_multi(array<string> req
 // ================================================================================================
 
 task_t<string> f$kphp_job_worker_fetch_request() noexcept {
+  if (!f$is_kphp_job_workers_enabled()) {
+    php_warning("couldn't fetch job worker request: job workers are disabled");
+    co_return string{};
+  }
+
   auto &jw_server_ctx{JobWorkerServerComponentContext::get()};
   if (jw_server_ctx.job_id == JOB_WORKER_INVALID_JOB_ID || jw_server_ctx.body.empty()) {
     php_warning("couldn't fetch job worker request");
@@ -113,12 +118,15 @@ task_t<int64_t> f$kphp_job_worker_store_response(string response) noexcept {
   if (response.empty()) {
     php_warning("couldn't store job worker response: it shouldn't be empty");
     co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
+  } else if (!f$is_kphp_job_workers_enabled()) {
+    php_warning("couldn't store job worker response: job workers are disabled");
+    co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
   } else if (component_ctx.standard_stream() == INVALID_PLATFORM_DESCRIPTOR) {
     php_warning("couldn't store job worker response: no standard stream");
-    co_return static_cast<int64_t>(JobWorkerError::store_response_cant_send_error);
+    co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
   } else if (jw_server_ctx.job_id == JOB_WORKER_INVALID_JOB_ID) {
     php_warning("couldn't store job worker response: not in a job worker or already sent it");
-    co_return static_cast<int64_t>(JobWorkerError::store_response_cant_send_error);
+    co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
   }
 
   tl::TLBuffer tlb{};
