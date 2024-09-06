@@ -4,13 +4,7 @@
 
 #pragma once
 
-#include "runtime-core/runtime-core.h"
-
-struct CurlComponentState {
-  int64_t curl_multi_info_read_msgs_in_queue_stub{};
-
-  static CurlComponentState &get() noexcept;
-};
+#include "runtime-light/stdlib/curl/curl-context.h"
 
 inline Optional<array<int64_t>> f$curl_multi_info_read(int64_t, int64_t & = CurlComponentState::get().curl_multi_info_read_msgs_in_queue_stub) {
   php_critical_error("call to unsupported function : curl_multi_info_read");

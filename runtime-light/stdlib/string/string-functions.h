@@ -6,14 +6,7 @@
 
 #include <cstdint>
 
-#include "runtime-core/runtime-core.h"
-
-struct StringComponentState {
-  int64_t str_replace_count_dummy{};
-  double default_similar_text_percent_stub{};
-
-  static StringComponentState &get() noexcept;
-};
+#include "runtime-light/stdlib/string/string-context.h"
 
 inline int64_t f$strlen(const string &s) noexcept {
   return s.size();

@@ -4,13 +4,7 @@
 
 #pragma once
 
-#include "runtime-core/runtime-core.h"
-
-struct RegexComponentState {
-  int64_t preg_replace_count_dummy{};
-
-  static RegexComponentState &get() noexcept;
-};
+#include "runtime-light/stdlib/regex/regex-context.h"
 
 class regexp : vk::not_copyable {
 public:

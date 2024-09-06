@@ -16,13 +16,13 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/header.h"
 #include "runtime-light/scheduler/scheduler.h"
-#include "runtime-light/stdlib/curl/curl.h"
-#include "runtime-light/stdlib/file/file-stream.h"
+#include "runtime-light/stdlib/curl/curl-context.h"
+#include "runtime-light/stdlib/file/file-stream-context.h"
 #include "runtime-light/stdlib/fork/fork-context.h"
 #include "runtime-light/stdlib/output/output-buffer.h"
-#include "runtime-light/stdlib/regex/regex-functions.h"
+#include "runtime-light/stdlib/regex/regex-context.h"
 #include "runtime-light/stdlib/rpc/rpc-context.h"
-#include "runtime-light/stdlib/string/string-functions.h"
+#include "runtime-light/stdlib/string/string-context.h"
 
 constexpr uint64_t INVALID_PLATFORM_DESCRIPTOR = 0;
 
@@ -82,10 +82,10 @@ struct ComponentState {
   KphpCoreContext kphp_core_context;
   RpcComponentContext rpc_component_context;
 
-  RegexComponentState regex_component_context;
-  CurlComponentState curl_component_state;
-  StringComponentState string_component_state;
-  FileStreamComponentState file_stream_component_state;
+  RegexComponentContext regex_component_context;
+  CurlComponentContext curl_component_context;
+  StringComponentContext string_component_context;
+  FileStreamComponentContext file_stream_component_context;
 
 private:
   task_t<void> main_task;
