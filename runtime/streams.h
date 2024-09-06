@@ -15,6 +15,7 @@ constexpr int64_t STREAM_SET_READ_BUFFER_OPTION = 2;
 
 constexpr int64_t FILE_APPEND = 1;
 
+constexpr int PHP_CSV_NO_ESCAPE = EOF;
 
 struct stream_functions {
   string name;
@@ -88,6 +89,8 @@ Optional<int64_t> f$vfprintf(const Stream &stream, const string &format, const a
 
 Optional<int64_t> f$fputcsv(const Stream &stream, const array<mixed> &fields, string delimiter = string(",", 1),
                             string enclosure = string("\"", 1), string escape_char = string("\\", 1));
+
+Optional<array<mixed>> getcsv(const Stream &stream, string buffer, char delimiter, char enclosure, char escape);
 
 Optional<array<mixed>> f$fgetcsv(const Stream &stream, int64_t length = 0, string delimiter = string(",", 1),
                               string enclosure = string("\"", 1), string escape_char = string("\\", 1));

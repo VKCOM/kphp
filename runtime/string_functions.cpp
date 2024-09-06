@@ -14,6 +14,9 @@
 #include "runtime/context/runtime-context.h"
 #include "runtime/interface.h"
 
+// For "f$str_getcsv" support
+#include "runtime/streams.h"
+
 const string COLON(",", 1);
 const string CP1251("cp1251");
 const string DOT(".", 1);
@@ -2949,4 +2952,41 @@ string str_concat(str_concat_arg s1, str_concat_arg s2, str_concat_arg s3, str_c
 string str_concat(str_concat_arg s1, str_concat_arg s2, str_concat_arg s3, str_concat_arg s4, str_concat_arg s5) {
   auto new_size = s1.size + s2.size + s3.size + s4.size + s5.size;
   return string(new_size, true).append_unsafe(s1.as_tmp_string()).append_unsafe(s2.as_tmp_string()).append_unsafe(s3.as_tmp_string()).append_unsafe(s4.as_tmp_string()).append_unsafe(s5.as_tmp_string()).finish_append();
+}
+
+// Based on `getcsv` from `streams`
+Optional<array<mixed>> f$str_getcsv(const string &str, const string &delimiter, const string &enclosure, const string &escape) {
+  char delimiter_char = ',';
+  char enclosure_char = '"';
+  char escape_char = PHP_CSV_NO_ESCAPE;
+  /*
+   * By PHP Manual: delimiter, enclosure, escape -- one single-byte character only
+   * We make it a warning
+   * Since PHP 8.3.11 it should return false
+   */
+  const auto del_size = delimiter.size();
+  if (del_size > 1) {
+    php_warning("Delimiter must be a single character");
+  }
+  if (del_size != 0) {
+    delimiter_char = delimiter[0];
+  }
+
+  const auto enc_size = enclosure.size();
+  if (enc_size > 1) {
+    php_warning("Enclosure must be a single character");
+  }
+  if (enc_size != 0) {
+    enclosure_char = enclosure[0];
+  }
+
+  const auto esc_size = escape.size();
+  if (esc_size > 1) {
+    php_warning("Escape must be a single character");
+  }
+  if (esc_size != 0) {
+    escape_char = escape[0];
+  }
+
+  return getcsv(mixed() /* null */, str, delimiter_char, enclosure_char, escape_char);
 }
