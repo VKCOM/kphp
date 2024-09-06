@@ -60,9 +60,6 @@
 #define f$likely likely
 #define f$unlikely unlikely
 
-
-
-
 template<typename T, typename ...Args>
 void hard_reset_var(T &var, Args &&... args) noexcept {
   new(&var) T(std::forward<Args>(args)...);

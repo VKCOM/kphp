@@ -12,7 +12,7 @@ struct RegexComponentState {
   static RegexComponentState &get() noexcept;
 };
 
-class regexp : vk::not_copyable {
+class regexp final : private vk::not_copyable {
 public:
   regexp() = default;
 
