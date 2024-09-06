@@ -69,3 +69,23 @@ void f$var_dump(const class_instance<T> &v) noexcept {
 inline void f$echo(const string &s) noexcept {
   print(s);
 }
+
+inline Optional<int64_t> f$fprintf(const mixed &, const string &, const array<mixed> &) {
+  php_critical_error("call to unsupported function");
+}
+
+inline Optional<int64_t> f$fputcsv(const mixed &, const array<mixed> &, string = string(",", 1), string = string("\"", 1), string = string("\\", 1)) {
+  php_critical_error("call to unsupported function");
+}
+
+inline int64_t f$printf(const string &, const array<mixed> &) {
+  php_critical_error("call to unsupported function");
+}
+
+inline string f$sprintf(const string &, const array<mixed> &) {
+  php_critical_error("call to unsupported function");
+}
+
+inline string f$vsprintf(const string &, const array<mixed> &) {
+  php_critical_error("call to unsupported function");
+}

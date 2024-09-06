@@ -14,6 +14,7 @@ function gzdeflate ($str ::: string, $level ::: int = -1) ::: string;
 function gzinflate ($str ::: string) ::: string;
 
 
+/** @kphp-extern-func-info generate-stub */
 function hash_hmac_algos () ::: string[];
 /** @kphp-extern-func-info generate-stub */
 function hash ($algo ::: string, $data ::: string, $raw_output ::: bool = false) ::: string;

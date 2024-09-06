@@ -1,5 +1,10 @@
 <?php
 
+define('ENT_HTML401', 0);
+define('ENT_COMPAT', 0);
+define('ENT_QUOTES', 1);
+define('ENT_NOQUOTES', 2);
+
 /** @kphp-extern-func-info generate-stub */
 function addcslashes ($str ::: string, $what ::: string) ::: string;
 /** @kphp-extern-func-info generate-stub */
@@ -29,7 +34,7 @@ function htmlspecialchars ($str ::: string, $flags ::: int = ENT_COMPAT) ::: str
 /** @kphp-extern-func-info generate-stub */
 function htmlspecialchars_decode ($str ::: string, $flags ::: int = ENT_COMPAT) ::: string;
 /** @kphp-extern-func-info generate-stub */
-function nl2br ($str ::: string, $is_xhtml = true) ::: string;
+function nl2br ($str ::: string, $is_xhtml ::: bool = true) ::: string;
 /** @kphp-extern-func-info generate-stub */
 function number_format ($number ::: float, $decimals ::: int = 0, $dec_point = '.', $thousands_sep = ',') ::: string;
 /** @kphp-extern-func-info generate-stub */
@@ -50,7 +55,7 @@ function system($command ::: string, int &$result_code = 0): int;
 /** @kphp-extern-func-info generate-stub */
 function php_sapi_name() ::: string;
 
-function pack ($pattern ::: string, ...$args) ::: string
+function pack ($pattern ::: string, ...$args) ::: string;
 function unpack ($pattern ::: string, $data ::: string) ::: mixed[] | false;
 
 /** @kphp-extern-func-info generate-stub */
@@ -64,6 +69,7 @@ function ctype_digit(mixed $text): bool;
 function ctype_xdigit(mixed $text): bool;
 
 /**
+ * @kphp-generate-stub-class
  * @kphp-immutable-class
  */
 class CompileTimeLocation {
@@ -71,8 +77,9 @@ class CompileTimeLocation {
   public string $function;
   public int $line;
 
-  public function __construct($file, $function, $line) ::: CompileTimeLocation;
-
+  /** @kphp-extern-func-info generate-stub */
+  public function __construct($file ::: string, $function ::: string, $line ::: int) ::: CompileTimeLocation;
+  /** @kphp-extern-func-info generate-stub */
   static public function calculate(?CompileTimeLocation $passed) ::: CompileTimeLocation;
 }
 

@@ -807,7 +807,7 @@ void DeduceImplicitTypesAndCastsPass::on_clone(VertexAdaptor<op_clone> v_clone) 
   kphp_error_return(v_clone->class_id, "`clone` keyword can be used only with instances");
   kphp_error(!v_clone->class_id->is_lambda_class(), "It's forbidden to `clone` lambdas");
   kphp_error(!v_clone->class_id->is_typed_callable_interface(), "It's forbidden to `clone` lambdas");
-  kphp_error(!v_clone->class_id->is_builtin() || v_clone->class_id->is_ffi_cdata(), "It's forbidden to `clone` built-in classes");
+  kphp_error(!v_clone->class_id->is_builtin() || v_clone->class_id->need_generated_stub || v_clone->class_id->is_ffi_cdata(), "It's forbidden to `clone` built-in classes");
 }
 
 // handle `throw $ex`, calc assumptions to be used later

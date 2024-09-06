@@ -42,7 +42,7 @@ struct KnownPhpDocTag {
 };
 
 class AllDocTags {
-  static constexpr int N_TAGS = 41;
+  static constexpr int N_TAGS = 42;
   static const KnownPhpDocTag ALL_TAGS[N_TAGS];
 
 public:
@@ -92,6 +92,7 @@ const KnownPhpDocTag AllDocTags::ALL_TAGS[] = {
   KnownPhpDocTag("@kphp-memcache-class", PhpDocType::kphp_memcache_class),
   KnownPhpDocTag("@kphp-immutable-class", PhpDocType::kphp_immutable_class),
   KnownPhpDocTag("@kphp-tl-class", PhpDocType::kphp_tl_class),
+  KnownPhpDocTag("@kphp-generate-stub-class", PhpDocType::kphp_generated_stub_class),
   KnownPhpDocTag("@kphp-const", PhpDocType::kphp_const),
   KnownPhpDocTag("@kphp-no-return", PhpDocType::kphp_noreturn),
   KnownPhpDocTag("@kphp-warn-unused-result", PhpDocType::kphp_warn_unused_result),

@@ -22,6 +22,7 @@ function ini_set ($s ::: string, $v ::: string) ::: bool;
 
 
 
+/** @kphp-extern-func-info cpp_template_call */
 function instance_cache_fetch(string $type, string $key, bool $even_if_expired = false) ::: instance<^1>;
 
 function instance_cache_store(string $key, object $value, int $ttl = 0) ::: bool;
@@ -87,7 +88,6 @@ function setlocale ($category ::: int, $locale ::: string) ::: string | false;
 /** @kphp-extern-func-info generate-stub */
 function debug_backtrace() ::: string[][];
 
-/** @kphp-extern-func-info generate-stub */
 function estimate_memory_usage($value ::: any) ::: int;
 
 /** @kphp-extern-func-info generate-stub */

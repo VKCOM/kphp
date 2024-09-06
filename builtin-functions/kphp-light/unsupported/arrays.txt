@@ -65,7 +65,8 @@ function in_array ($value ::: any, $a ::: array, $strict ::: bool = false) ::: b
 function array_fill ($start_index ::: int, $num ::: int, $value ::: any) ::: ^3[];
 function array_fill_keys ($a ::: array, $value ::: any) ::: ^2[];
 function array_combine ($keys ::: array, $values ::: array) ::: ^2;
-function range ($from, $to, $step ::: int = 1) ::: mixed[];//TODO
+/** @kphp-extern-func-info generate-stub */
+function range ($from ::: mixed, $to ::: mixed, $step ::: int = 1) ::: mixed[];
 function array_push (&$a ::: array, $val2 ::: any, $val3 ::: any = TODO, $val4 ::: any = TODO, $val5 ::: any = TODO, $val6 ::: any = TODO) ::: int;
 function array_pop (&$a ::: array) ::: ^1[*];
 function array_sum ($a ::: array) ::: float;//TODO
@@ -110,6 +111,7 @@ function vk_dot_product ($a ::: array, $b ::: array) ::: ^1[*] | ^2[*];
 
 
 function to_array_debug(any $instance, bool $with_class_names = false) ::: mixed[];
+function instance_to_array(object $instance, $with_class_names ::: bool = false) ::: mixed[];
 
 function implode ($s ::: string, $v ::: array) ::: string;
 

@@ -1,5 +1,14 @@
 <?php
 
+define('PHP_URL_SCHEME', 0);
+define('PHP_URL_HOST', 1);
+define('PHP_URL_PORT', 2);
+define('PHP_URL_USER', 3);
+define('PHP_URL_PASS', 4);
+define('PHP_URL_PATH', 5);
+define('PHP_URL_QUERY', 6);
+define('PHP_URL_FRAGMENT', 7);
+
 /** @kphp-extern-func-info generate-stub */
 function parse_str ($str ::: string, &$arr ::: mixed) ::: void; // TODO: why no ::: array? // TODO because it is an output parameter, input can have any type and it's ok.
 /** @kphp-extern-func-info generate-stub */
@@ -32,17 +41,17 @@ function str_ireplace ($search, $replace, $subject, &$count ::: int = TODO) ::: 
 /** @kphp-extern-func-info generate-stub */
 function str_split ($str ::: string, $split_length ::: int = 1) ::: string[];
 /** @kphp-extern-func-info generate-stub */
-function strpos ($haystack ::: string, $needle, $offset ::: int = 0) ::: int | false;
+function strpos ($haystack ::: string, $needle ::: string, $offset ::: int = 0) ::: int | false;
 /** @kphp-extern-func-info generate-stub */
-function stripos ($haystack ::: string, $needle, $offset ::: int = 0) ::: int | false;
+function stripos ($haystack ::: string, $needle ::: string, $offset ::: int = 0) ::: int | false;
 /** @kphp-extern-func-info generate-stub */
-function strrpos ($haystack ::: string, $needle, $offset ::: int = 0) ::: int | false;
+function strrpos ($haystack ::: string, $needle ::: string, $offset ::: int = 0) ::: int | false;
 /** @kphp-extern-func-info generate-stub */
-function strripos ($haystack ::: string, $needle, $offset ::: int = 0) ::: int | false;
+function strripos ($haystack ::: string, $needle ::: string, $offset ::: int = 0) ::: int | false;
 /** @kphp-extern-func-info generate-stub */
-function strstr ($haystack ::: string, $needle, $before_needle ::: bool = false) ::: string | false;
+function strstr ($haystack ::: string, $needle ::: string, $before_needle ::: bool = false) ::: string | false;
 /** @kphp-extern-func-info generate-stub */
-function stristr ($haystack ::: string, $needle, $before_needle ::: bool = false) ::: string | false;
+function stristr ($haystack ::: string, $needle ::: string, $before_needle ::: bool = false) ::: string | false;
 function strrchr ($haystack ::: string, $needle ::: string) ::: string | false;
 /** @kphp-extern-func-info generate-stub */
 function strrev ($str ::: string) ::: string;
@@ -56,7 +65,6 @@ function wordwrap ($str ::: string, $width ::: int = 75, $break ::: string = '\n
 
 
 /**
- * @kphp-extern-func-info generate-stub
  * @kphp-internal-param-readonly $str
  */
 function substr ($str ::: string, $start ::: int, $length ::: int = PHP_INT_MAX) ::: string | false;
@@ -79,7 +87,6 @@ function str_repeat ($s ::: string, $multiplier ::: int) ::: string;
 
 
 /**
- * @kphp-extern-func-info generate-stub
  * @kphp-internal-param-readonly $s
  */
 function trim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;

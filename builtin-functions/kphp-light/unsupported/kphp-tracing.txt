@@ -1,38 +1,63 @@
 <?php
 
+/** @kphp-generate-stub-class */
 final class KphpDiv {
+  /** @kphp-extern-func-info generate-stub */
   private function __construct();
 
+  /** @kphp-extern-func-info generate-stub */
   function generateTraceCtxForChild(int $div_id, int $trace_flags): tuple(int, int);
+  /** @kphp-extern-func-info generate-stub */
   function assignTraceCtx(int $int1, int $int2, ?int $override_div_id): int;
+  /** @kphp-extern-func-info generate-stub */
   function getStartTimestamp(): float;
+  /** @kphp-extern-func-info generate-stub */
   function getEndTimestamp(): float;
 }
 
+/** @kphp-generate-stub-class */
 final class KphpSpan {
+  /** @kphp-extern-func-info generate-stub */
   private function __construct();
 
+  /** @kphp-extern-func-info generate-stub */
   function addAttributeString(string $key, string $value);
+  /** @kphp-extern-func-info generate-stub */
   function addAttributeInt(string $key, int $value);
+  /** @kphp-extern-func-info generate-stub */
   function addAttributeFloat(string $key, float $value);
+  /** @kphp-extern-func-info generate-stub */
   function addAttributeBool(string $key, bool $value);
+  /** @kphp-extern-func-info generate-stub */
   function addAttributeEnum(string $key, int $enum_id, int $value);
 
+  /** @kphp-extern-func-info generate-stub */
   function addEvent(string $name, ?float $timestamp = null): KphpSpanEvent;
+  /** @kphp-extern-func-info generate-stub */
   function addLink(KphpSpan $another);
 
+  /** @kphp-extern-func-info generate-stub */
   function updateName(string $title, string $short_desc);
+  /** @kphp-extern-func-info generate-stub */
   function finish(?float $end_timestamp = null);
+  /** @kphp-extern-func-info generate-stub */
   function finishWithError(int $error_code, string $error_msg, ?float $end_timestamp = null);
+  /** @kphp-extern-func-info generate-stub */
   function exclude();
 }
 
+/** @kphp-generate-stub-class */
 final class KphpSpanEvent {
+  /** @kphp-extern-func-info generate-stub */
   private function __construct();
 
+  /** @kphp-extern-func-info generate-stub */
   function addAttributeString(string $key, string $value);
+  /** @kphp-extern-func-info generate-stub */
   function addAttributeInt(string $key, int $value);
+  /** @kphp-extern-func-info generate-stub */
   function addAttributeFloat(string $key, float $value);
+  /** @kphp-extern-func-info generate-stub */
   function addAttributeBool(string $key, bool $value);
 }
 
