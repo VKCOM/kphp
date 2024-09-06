@@ -129,7 +129,7 @@ add_compile_options(-fdebug-prefix-map="${CMAKE_BINARY_DIR}=${CMAKE_SOURCE_DIR}"
 
 # Light runtime uses C++20 coroutines heavily, so they are required
 if(COMPILE_RUNTIME_LIGHT)
-    get_directory_property(TRY_COMPILE_COMPILE_OPTIONS COMPILE_OPTIONS)
+    get_property(TRY_COMPILE_COMPILE_OPTIONS TARGET runtime-light PROPERTY COMPILE_OPTIONS)
     string (REPLACE ";" " " TRY_COMPILE_COMPILE_OPTIONS "${TRY_COMPILE_COMPILE_OPTIONS}")
     file(WRITE "${PROJECT_BINARY_DIR}/check_coroutine_include.cpp"
             "#include<coroutine>\n"
