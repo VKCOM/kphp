@@ -163,17 +163,20 @@ function component_server_send_response($query ::: ComponentQuery, $message ::: 
 // === Job Worker =================================================================================
 
 /** @kphp-extern-func-info interruptible */
-function kphp_job_worker_start(string $request, float $timeout) ::: future<string> | false;
+function kphp_job_worker_start(string $request, float $timeout): future<string> | false;
 
 /** @kphp-extern-func-info interruptible */
-function kphp_job_worker_fetch_request() ::: string;
+function kphp_job_worker_start_no_reply(string $request, float $timeout): bool;
 
 /** @kphp-extern-func-info interruptible */
-function kphp_job_worker_store_response(string $response) ::: int;
+function kphp_job_worker_fetch_request(): string;
 
-function is_kphp_job_workers_enabled() ::: bool;
+/** @kphp-extern-func-info interruptible */
+function kphp_job_worker_store_response(string $response): int;
 
-function get_job_workers_number() ::: int;
+function is_kphp_job_workers_enabled(): bool;
+
+function get_job_workers_number(): int;
 
 // === Json =======================================================================================
 

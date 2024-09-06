@@ -6,11 +6,6 @@
 
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"
-#include "runtime-light/tl/tl-core.h"
-
-inline void process_k2_invoke_http([[maybe_unused]] tl::TLBuffer &tlb) noexcept {}
-
-void process_k2_invoke_job_worker(tl::TLBuffer &tlb) noexcept;
 
 // Returns a stream descriptor that is supposed to be a stream to stdout
 inline task_t<uint64_t> init_kphp_cli_component() noexcept {

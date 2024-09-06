@@ -17,6 +17,8 @@ constexpr uint32_t K2_INVOKE_JOB_WORKER_MAGIC = 0x437d7312;
 struct K2InvokeJobWorker final {
   uint64_t image_id{};
   int64_t job_id{};
+  bool ignore_answer{};
+  uint64_t timeout_ns{};
   string body;
 
   bool fetch(TLBuffer &tlb) noexcept;

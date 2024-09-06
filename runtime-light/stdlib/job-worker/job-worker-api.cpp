@@ -38,10 +38,20 @@ task_t<int64_t> kphp_job_worker_start_impl(string request, double timeout, bool 
     co_return INVALID_FORK_ID;
   }
 
+  // normalize timeout
+  const auto timeout_ns{
+    timeout >= MIN_TIMEOUT_S && timeout <= MAX_TIMEOUT_S
+      ? std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout})
+      : std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(std::clamp(timeout, MIN_TIMEOUT_S, MAX_TIMEOUT_S)))};
+
   auto &jw_client_ctx{JobWorkerClientComponentContext::get()};
   // prepare JW component request
   tl::TLBuffer tlb{};
-  const tl::K2InvokeJobWorker invoke_jw{.image_id = vk_k2_describe()->build_timestamp, .job_id = jw_client_ctx.current_job_id++, .body = std::move(request)};
+  const tl::K2InvokeJobWorker invoke_jw{.image_id = vk_k2_describe()->build_timestamp,
+                                        .job_id = jw_client_ctx.current_job_id++,
+                                        .ignore_answer = ignore_answer,
+                                        .timeout_ns = static_cast<uint64_t>(timeout_ns.count()),
+                                        .body = std::move(request)};
   invoke_jw.store(tlb);
 
   // send JW request
@@ -50,11 +60,6 @@ task_t<int64_t> kphp_job_worker_start_impl(string request, double timeout, bool 
     php_warning("couldn't start job worker");
     co_return INVALID_FORK_ID;
   }
-  // normalize timeout
-  const auto timeout_ns{
-    timeout >= MIN_TIMEOUT_S && timeout <= MAX_TIMEOUT_S
-      ? std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout})
-      : std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(std::clamp(timeout, MIN_TIMEOUT_S, MAX_TIMEOUT_S)))};
   // create fork to wait for job worker response. we need to do it even if 'ignore_answer' is 'true' to make sure
   // that the stream will not be closed too early. otherwise, platform may even not send job worker request
   auto waiter_task{[](auto comp_query, std::chrono::nanoseconds timeout) noexcept -> task_t<string> {
@@ -115,17 +120,20 @@ task_t<string> f$kphp_job_worker_fetch_request() noexcept {
 task_t<int64_t> f$kphp_job_worker_store_response(string response) noexcept {
   auto &component_ctx{*get_component_context()};
   auto &jw_server_ctx{JobWorkerServerComponentContext::get()};
-  if (response.empty()) {
-    php_warning("couldn't store job worker response: it shouldn't be empty");
-    co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
-  } else if (!f$is_kphp_job_workers_enabled()) {
+  if (!f$is_kphp_job_workers_enabled()) {
     php_warning("couldn't store job worker response: job workers are disabled");
+    co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
+  } else if (jw_server_ctx.kind != JobWorkerServerComponentContext::Kind::Regular) {
+    php_warning("couldn't store job worker response: we are either in no reply job worker or not in a job worker at all");
     co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
   } else if (component_ctx.standard_stream() == INVALID_PLATFORM_DESCRIPTOR) {
     php_warning("couldn't store job worker response: no standard stream");
     co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
   } else if (jw_server_ctx.job_id == JOB_WORKER_INVALID_JOB_ID) {
-    php_warning("couldn't store job worker response: not in a job worker or already sent it");
+    php_warning("couldn't store job worker response: multiple stores are forbidden");
+    co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
+  } else if (response.empty()) {
+    php_warning("couldn't store job worker response: it shouldn't be empty");
     co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
   }
 

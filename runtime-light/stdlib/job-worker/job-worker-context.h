@@ -11,6 +11,9 @@
 #include "runtime-light/stdlib/job-worker/job-worker.h"
 
 struct JobWorkerServerComponentContext final : private vk::not_copyable {
+  enum class Kind : uint8_t { Invalid, Regular, NoReply };
+
+  Kind kind{Kind::Invalid};
   int64_t job_id{JOB_WORKER_INVALID_JOB_ID};
   string body;
 
