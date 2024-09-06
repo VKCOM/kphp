@@ -12,14 +12,14 @@
 #include <ostream>
 #include <string>
 
-#if __cplusplus > 201703
-#include <string_view>
-namespace vk { using std::string_view; }
-
-inline std::string operator+(std::string s, std::string_view sv) {
-  return s += sv;
-}
-#else
+// #if __cplusplus > 201703
+// #include <string_view>
+// namespace vk { using std::string_view; }
+//
+// inline std::string operator+(std::string s, std::string_view sv) {
+//   return s += sv;
+// }
+// #else
 namespace vk {
 class string_view {
 public:
@@ -260,6 +260,6 @@ namespace std {
     }
   };
 } // namespace std
-#endif // __cplusplus > 201703
+// #endif // __cplusplus > 201703
 
 #endif // ENGINE_STRING_VIEW_H
