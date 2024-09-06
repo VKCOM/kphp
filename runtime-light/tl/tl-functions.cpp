@@ -23,7 +23,6 @@ bool K2InvokeJobWorker::fetch(TLBuffer &tlb) noexcept {
     return false;
   }
 
-  flags = *tlb.fetch_trivial<uint32_t>();
   image_id = *tlb.fetch_trivial<uint64_t>();
   job_id = *tlb.fetch_trivial<int64_t>();
   const std::string_view body_view{tlb.fetch_string()};
@@ -33,7 +32,6 @@ bool K2InvokeJobWorker::fetch(TLBuffer &tlb) noexcept {
 
 void K2InvokeJobWorker::store(TLBuffer &tlb) const noexcept {
   tlb.store_trivial<uint32_t>(K2_INVOKE_JOB_WORKER_MAGIC);
-  tlb.store_trivial<uint32_t>(flags);
   tlb.store_trivial<uint64_t>(image_id);
   tlb.store_trivial<int64_t>(job_id);
   tlb.store_string({body.c_str(), body.size()});

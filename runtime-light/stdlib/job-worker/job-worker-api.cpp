@@ -41,10 +41,7 @@ task_t<int64_t> kphp_job_worker_start_impl(string request, double timeout, bool 
   auto &jw_client_ctx{JobWorkerClientComponentContext::get()};
   // prepare JW component request
   tl::TLBuffer tlb{};
-  const tl::K2InvokeJobWorker invoke_jw{.flags = 0x0,
-                                        .image_id = vk_k2_describe()->build_timestamp,
-                                        .job_id = jw_client_ctx.current_job_id++,
-                                        .body = std::move(request)};
+  const tl::K2InvokeJobWorker invoke_jw{.image_id = vk_k2_describe()->build_timestamp, .job_id = jw_client_ctx.current_job_id++, .body = std::move(request)};
   invoke_jw.store(tlb);
 
   // send JW request
