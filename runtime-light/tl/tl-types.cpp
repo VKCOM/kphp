@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <string_view>
+#include <tuple>
 
 #include "runtime-light/tl/tl-core.h"
 
@@ -23,6 +24,7 @@ bool K2JobWorkerResponse::fetch(TLBuffer &tlb) noexcept {
     return false;
   }
 
+  std::ignore = tlb.fetch_trivial<uint32_t>(); // ignore flags
   job_id = *tlb.fetch_trivial<int64_t>();
   const std::string_view body_view{tlb.fetch_string()};
   body = string{body_view.data(), static_cast<string::size_type>(body_view.size())};
@@ -31,6 +33,7 @@ bool K2JobWorkerResponse::fetch(TLBuffer &tlb) noexcept {
 
 void K2JobWorkerResponse::store(TLBuffer &tlb) const noexcept {
   tlb.store_trivial<uint32_t>(K2_JOB_WORKER_RESPONSE_MAGIC);
+  tlb.store_trivial<uint32_t>(0x0); // flags
   tlb.store_trivial<int64_t>(job_id);
   tlb.store_string({body.c_str(), body.size()});
 }
