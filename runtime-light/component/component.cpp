@@ -15,6 +15,7 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/header.h"
 #include "runtime-light/scheduler/scheduler.h"
+#include "runtime-light/stdlib/job-worker/job-worker-context.h"
 #include "runtime-light/streams/streams.h"
 #include "runtime-light/utils/context.h"
 
@@ -65,7 +66,7 @@ task_t<void> ComponentState::run_component_epilogue() noexcept {
     co_return;
   }
   // do not flush output buffers if we are in job worker context
-  if (component_kind_ == ComponentKind::Server && job_worker_server_component_context.job_id != JOB_WORKER_INVALID_JOB_ID) {
+  if (JobWorkerServerComponentContext::get().kind != JobWorkerServerComponentContext::Kind::Invalid) {
     co_return;
   }
   if (standard_stream() == INVALID_PLATFORM_DESCRIPTOR) {
