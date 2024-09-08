@@ -33,6 +33,10 @@ constexpr double MIN_TIMEOUT_S = 0.05;
 constexpr double MAX_TIMEOUT_S = 86400.0;
 
 task_t<int64_t> kphp_job_worker_start_impl(string request, double timeout, bool ignore_answer) noexcept {
+  if (!f$is_kphp_job_workers_enabled()) {
+    php_warning("can't start job worker: job workers are disabled");
+    co_return INVALID_FORK_ID;
+  }
   if (request.empty()) {
     php_warning("job worker request is empty");
     co_return INVALID_FORK_ID;
