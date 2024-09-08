@@ -148,5 +148,6 @@ task_t<int64_t> f$kphp_job_worker_store_response(string response) noexcept {
     php_warning("couldn't store job worker response");
     co_return static_cast<int64_t>(JobWorkerError::store_response_cant_send_error);
   }
+  jw_server_ctx.state = JobWorkerServerComponentContext::State::Replied;
   co_return 0;
 }
