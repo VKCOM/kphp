@@ -65,7 +65,7 @@ task_t<void> ComponentState::run_component_epilogue() noexcept {
   if (component_kind_ == ComponentKind::Oneshot || component_kind_ == ComponentKind::Multishot) {
     co_return;
   }
-  // do not flush output buffers if we are in job worker context
+  // do not flush output buffers if we are in job worker
   if (JobWorkerServerComponentContext::get().kind != JobWorkerServerComponentContext::Kind::Invalid) {
     co_return;
   }

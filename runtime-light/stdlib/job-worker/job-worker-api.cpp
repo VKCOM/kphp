@@ -124,19 +124,19 @@ task_t<string> f$kphp_job_worker_fetch_request() noexcept {
 task_t<int64_t> f$kphp_job_worker_store_response(string response) noexcept {
   auto &component_ctx{*get_component_context()};
   auto &jw_server_ctx{JobWorkerServerComponentContext::get()};
-  if (!f$is_kphp_job_workers_enabled()) {
+  if (!f$is_kphp_job_workers_enabled()) { // workers are enabled
     php_warning("couldn't store job worker response: job workers are disabled");
     co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
-  } else if (jw_server_ctx.kind != JobWorkerServerComponentContext::Kind::Regular) {
+  } else if (jw_server_ctx.kind != JobWorkerServerComponentContext::Kind::Regular) { // we're in regular worker
     php_warning("couldn't store job worker response: we are either in no reply job worker or not in a job worker at all");
     co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
-  } else if (component_ctx.standard_stream() == INVALID_PLATFORM_DESCRIPTOR) {
-    php_warning("couldn't store job worker response: no standard stream");
-    co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
-  } else if (jw_server_ctx.job_id == JOB_WORKER_INVALID_JOB_ID) {
+  } else if (jw_server_ctx.state == JobWorkerServerComponentContext::State::Replied) { // it's the first attempt to reply
     php_warning("couldn't store job worker response: multiple stores are forbidden");
     co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
-  } else if (response.empty()) {
+  } else if (component_ctx.standard_stream() == INVALID_PLATFORM_DESCRIPTOR) { // we have a stream to write into
+    php_warning("couldn't store job worker response: no standard stream");
+    co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
+  } else if (response.empty()) { // we have a response to reply
     php_warning("couldn't store job worker response: it shouldn't be empty");
     co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
   }
@@ -144,8 +144,6 @@ task_t<int64_t> f$kphp_job_worker_store_response(string response) noexcept {
   tl::TLBuffer tlb{};
   tl::K2JobWorkerResponse jw_response{.job_id = jw_server_ctx.job_id, .body = std::move(response)};
   jw_response.store(tlb);
-  jw_server_ctx.job_id = JOB_WORKER_INVALID_JOB_ID; // prevent multiple stores
-
   if ((co_await write_all_to_stream(component_ctx.standard_stream(), tlb.data(), tlb.size())) != tlb.size()) {
     php_warning("couldn't store job worker response");
     co_return static_cast<int64_t>(JobWorkerError::store_response_cant_send_error);

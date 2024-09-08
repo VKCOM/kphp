@@ -29,6 +29,7 @@ void process_k2_invoke_job_worker(tl::TLBuffer &tlb) noexcept {
 
   auto &jw_server_ctx{JobWorkerServerComponentContext::get()};
   jw_server_ctx.kind = invoke_jw.ignore_answer ? JobWorkerServerComponentContext::Kind::NoReply : JobWorkerServerComponentContext::Kind::Regular;
+  jw_server_ctx.state = JobWorkerServerComponentContext::State::Working;
   jw_server_ctx.job_id = invoke_jw.job_id;
   jw_server_ctx.body = std::move(invoke_jw.body);
   get_component_context()->php_script_mutable_globals_singleton.get_superglobals().v$_SERVER.set_value(string{"JOB_ID"}, invoke_jw.job_id);

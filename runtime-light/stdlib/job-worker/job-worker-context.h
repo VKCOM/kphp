@@ -12,8 +12,10 @@
 
 struct JobWorkerServerComponentContext final : private vk::not_copyable {
   enum class Kind : uint8_t { Invalid, Regular, NoReply };
+  enum class State : uint8_t { Invalid, Working, Replied };
 
   Kind kind{Kind::Invalid};
+  State state{State::Invalid};
   int64_t job_id{JOB_WORKER_INVALID_JOB_ID};
   string body;
 
