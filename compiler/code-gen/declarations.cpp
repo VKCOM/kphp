@@ -1147,7 +1147,7 @@ void ClassMembersDefinition::compile_msgpack_serialize(CodeGenerator &W, ClassPt
   //   packer.pack(field_1);
   //   ...
   //}
-  std::list<std::string> body;
+  std::forward_list<std::string> body;
   uint16_t cnt_fields = 0;
 
   ClassPtr the_klass = klass;
@@ -1193,7 +1193,7 @@ void ClassMembersDefinition::compile_msgpack_deserialize(CodeGenerator &W, Class
   //}
   //
 
-  std::list<std::string> cases;
+  std::forward_list<std::string> cases;
 
   cases.emplace_front("default: break;");
 
