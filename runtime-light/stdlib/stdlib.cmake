@@ -2,6 +2,7 @@ prepend(
   RUNTIME_STDLIB_SRC
   stdlib/
   component/component-api.cpp
+  crypto/crypto-functions.cpp
   curl/curl.cpp
   exit/exit-functions.cpp
   fork/fork-context.cpp
@@ -9,6 +10,7 @@ prepend(
   job-worker/job-worker-context.cpp
   output/output-buffer.cpp
   output/print-functions.cpp
+  regex/regex-functions.cpp
   rpc/rpc-api.cpp
   rpc/rpc-context.cpp
   rpc/rpc-extra-headers.cpp
@@ -16,5 +18,4 @@ prepend(
   rpc/rpc-tl-error.cpp
   rpc/rpc-tl-query.cpp
   rpc/rpc-tl-request.cpp
-  string/concat.cpp
-  regex/regex-functions.cpp)
+  string/concat.cpp)
