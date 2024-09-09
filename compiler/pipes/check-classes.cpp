@@ -86,19 +86,6 @@ void CheckClassesPass::check_serialized_fields(ClassPtr klass) {
       return;
     }
 
-    auto the_klass = klass;
-
-    // This loop finishes unconditionally since there is NULL klass->parent_class if there is no base class.
-    while (the_klass) {
-      // Inheritance with serialization is allowed if
-      // * parent class has ho instance field
-      // * if there are instance fields, class should be marked with kphp-serializable
-      kphp_error_return(
-        (the_klass->members.has_any_instance_var() && the_klass->is_serializable) || (!the_klass->members.has_any_instance_var()),
-        fmt_format("Class {} and all its ancestors must be @kphp-serializable if there are instance fields. Class {} is not.", klass->name, the_klass->name));
-      the_klass = the_klass->parent_class;
-    }
-
     if (kphp_serialized_field_tag->value.starts_with("none")) {
       return;
     }
@@ -126,19 +113,6 @@ void CheckClassesPass::check_serialized_fields(ClassPtr klass) {
       }
       f.serialization_tag = kphp_serialized_field;
       f.serialize_as_float32 = f.phpdoc->has_tag(PhpDocType::kphp_serialized_float32);
-
-      // Check if there is a field with the same number available above in hierarchy
-      auto f_tag = f.serialization_tag;
-      the_klass = klass->parent_class;
-      while (the_klass) {
-        auto same_numbered_field = the_klass->members.find_member([&f_tag](const ClassMemberInstanceField &f) {
-          return f.serialization_tag == f_tag;
-        });
-        if (same_numbered_field) {
-          kphp_error_return(false, fmt_format("kphp-serialized-field: field with number {} found in both classes {} and {}", f_tag, the_klass->name, klass->name));
-        }
-        the_klass = the_klass->parent_class;
-      }
 
       used_serialization_tags_for_fields[kphp_serialized_field] = true;
     } catch (std::logic_error &) {
