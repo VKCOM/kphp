@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail
 /Class MySharedMemoryData must be immutable \(@kphp-immutable-class\) as it implements KphpJobWorkerSharedMemoryPiece/
 <?php
 

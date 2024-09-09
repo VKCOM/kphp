@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail
 /Class ExtendedJobRequest must have at most 1 member implementing KphpJobWorkerSharedMemoryPiece, but 2 found/
 <?php
 
