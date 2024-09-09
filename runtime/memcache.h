@@ -28,6 +28,7 @@ bool mc_is_immediate_query(const string &key);
 
 constexpr int64_t MEMCACHE_SERIALIZED = 1;
 constexpr int64_t MEMCACHE_COMPRESSED = 2;
+constexpr int64_t MEMCACHE_JSON_SERIALIZED = 8;
 
 struct C$Memcache : public abstract_refcountable_php_interface {
 public:
