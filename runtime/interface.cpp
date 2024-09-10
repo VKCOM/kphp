@@ -523,6 +523,7 @@ int shutdown_functions_count = 0;
 char shutdown_function_storage[MAX_SHUTDOWN_FUNCTIONS * sizeof(shutdown_function_type)];
 shutdown_function_type *const shutdown_functions = reinterpret_cast<shutdown_function_type *>(shutdown_function_storage);
 shutdown_functions_status shutdown_functions_status_value = shutdown_functions_status::not_executed;
+header_custom_handler_function_type header_custom_handler_function;
 jmp_buf timeout_exit;
 bool finished = false;
 
@@ -562,7 +563,10 @@ static int ob_merge_buffers() {
 
 void f$flush() {
   php_assert(ob_cur_buffer >= 0 && php_worker.has_value());
-
+  // Run custom header handler before body processing 
+  if (header_custom_handler_function) {
+    header_custom_handler_function();
+  }
   string_buffer const * http_body = compress_http_query_body(&oub[ob_system_level]);
   string_buffer const * http_headers = nullptr;
   if (!php_worker->flushed_http_connection) {
@@ -601,6 +605,10 @@ void f$fastcgi_finish_request(int64_t exit_code) {
       break;
     }
     case QUERY_TYPE_HTTP: {
+      // Run custom header handler before body processing
+      if (header_custom_handler_function) {
+        header_custom_handler_function();
+      }
       const string_buffer *compressed = compress_http_query_body(&oub[ob_total_buffer]);
       if (!is_head_query) {
         set_content_length_header(compressed->size());
@@ -688,6 +696,14 @@ void register_shutdown_function_impl(shutdown_function_type &&f) {
   dl::CriticalSectionGuard critical_section;
   // I really need this, because this memory can contain random trash, if previouse script failed
   new(&shutdown_functions[shutdown_functions_count++]) shutdown_function_type{std::move(f)};
+}
+
+void register_header_handler_impl(header_custom_handler_function_type &&f) {
+  dl::CriticalSectionGuard critical_section;
+  // Move assignment leads to lhs object invalidation and fires memory releasing mechanism
+  // But memory is already released by destructor after previous run
+  // Therefore we need to use placement new
+  new(&header_custom_handler_function) header_custom_handler_function_type{std::move(f)};
 }
 
 void finish(int64_t exit_code, bool from_exit) {
@@ -2344,9 +2360,15 @@ static void free_shutdown_functions() {
   shutdown_functions_count = 0;
 }
 
+static void free_header_handler_function() {
+  header_custom_handler_function.~header_custom_handler_function_type();
+}
+
+
 static void free_interface_lib() {
   dl::enter_critical_section();//OK
   free_shutdown_functions();
+  free_header_handler_function();
   if (dl::query_num == uploaded_files_last_query_num) {
     const array<bool> *const_uploaded_files = uploaded_files;
     for (auto p = const_uploaded_files->begin(); p != const_uploaded_files->end(); ++p) {

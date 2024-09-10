@@ -17,6 +17,7 @@
 
 extern string_buffer *coub;//TODO static
 using shutdown_function_type = std::function<void()>;
+using header_custom_handler_function_type = std::function<void()>;
 
 enum class shutdown_functions_status {
   not_executed,
@@ -78,6 +79,14 @@ void f$register_shutdown_function(F &&f) {
   // std::function sometimes uses heap, when constructed from captured lambda. So it must be constructed under critical section only.
   dl::CriticalSectionGuard heap_guard;
   register_shutdown_function_impl(shutdown_function_type{std::forward<F>(f)});
+}
+
+void register_header_handler_impl(header_custom_handler_function_type &&f);
+
+template <typename F>
+bool f$header_register_callback(F &&f) {
+  register_header_handler_impl(header_custom_handler_function_type{std::forward<F>(f)});
+  return true;
 }
 
 void f$fastcgi_finish_request(int64_t exit_code = 0);

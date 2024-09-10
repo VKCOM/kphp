@@ -149,6 +149,7 @@ function setrawcookie ($name ::: string, $value ::: string, $expire ::: int = 0,
 function register_shutdown_function (callable():void $function) ::: void;
 function ignore_user_abort ($enable ::: ?bool = null) ::: int;
 function flush() ::: void;
+function header_register_callback (callable():void $callback) ::: bool;
 /* // removed because it's not working now.
   function fastcgi_finish_request() ::: void;
 */
