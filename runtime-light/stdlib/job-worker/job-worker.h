@@ -12,8 +12,8 @@
 #include "runtime-core/class-instance/refcountable-php-classes.h"
 #include "runtime-core/runtime-core.h"
 
-constexpr int64_t JOB_WORKER_VALID_JOB_ID_RANGE_START = 0;
-constexpr int64_t JOB_WORKER_INVALID_JOB_ID = -1;
+inline constexpr int64_t JOB_WORKER_VALID_JOB_ID_RANGE_START = 0;
+inline constexpr int64_t JOB_WORKER_INVALID_JOB_ID = -1;
 
 namespace job_worker_impl_ {
 

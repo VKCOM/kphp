@@ -14,9 +14,9 @@
 #include "runtime-light/stdlib/rpc/rpc-tl-function.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-kphp-request.h"
 
-constexpr int64_t RPC_VALID_QUERY_ID_RANGE_START = 0;
-constexpr int64_t RPC_INVALID_QUERY_ID = -1;
-constexpr int64_t RPC_IGNORED_ANSWER_QUERY_ID = -2;
+inline constexpr int64_t RPC_VALID_QUERY_ID_RANGE_START = 0;
+inline constexpr int64_t RPC_INVALID_QUERY_ID = -1;
+inline constexpr int64_t RPC_IGNORED_ANSWER_QUERY_ID = -2;
 
 namespace rpc_impl_ {
 

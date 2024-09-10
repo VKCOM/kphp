@@ -12,7 +12,7 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/utils/concepts.h"
 
-constexpr int64_t INVALID_FORK_ID = -1;
+inline constexpr int64_t INVALID_FORK_ID = -1;
 
 class ForkComponentContext {
   template<hashable Key, typename Value>

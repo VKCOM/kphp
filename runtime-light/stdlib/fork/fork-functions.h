@@ -17,10 +17,10 @@
 
 namespace fork_api_impl_ {
 
-constexpr double MAX_TIMEOUT_S = 86400.0;
-constexpr double DEFAULT_TIMEOUT_S = MAX_TIMEOUT_S;
-constexpr auto MAX_TIMEOUT_NS = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{MAX_TIMEOUT_S});
-constexpr auto DEFAULT_TIMEOUT_NS = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{DEFAULT_TIMEOUT_S});
+inline constexpr double MAX_TIMEOUT_S = 86400.0;
+inline constexpr double DEFAULT_TIMEOUT_S = MAX_TIMEOUT_S;
+inline constexpr auto MAX_TIMEOUT_NS = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{MAX_TIMEOUT_S});
+inline constexpr auto DEFAULT_TIMEOUT_NS = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{DEFAULT_TIMEOUT_S});
 
 } // namespace fork_api_impl_
 
