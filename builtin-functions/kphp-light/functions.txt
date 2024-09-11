@@ -6,6 +6,10 @@ require_once __DIR__ . '/crypto.txt';
 require_once __DIR__ . '/hash.txt';
 require_once __DIR__ . '/job-workers.txt';
 
+/** defined in runtime-core.h **/
+function likely ($x ::: bool) ::: bool;
+function unlikely ($x ::: bool) ::: bool;
+
 define('TODO', -1);
 define('TODO_OVERLOAD', -1);
 
