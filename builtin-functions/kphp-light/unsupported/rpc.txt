@@ -29,7 +29,8 @@ function store_finish() ::: bool;
 /** @kphp-extern-func-info generate-stub */
 function set_fail_rpc_on_int32_overflow ($fail_rpc ::: bool) ::: bool;
 
-
+/** @kphp-extern-func-info generate-stub */
+function rpc_tl_query_one (\RpcConnection $rpc_conn, $arr ::: mixed, $timeout ::: float = -1.0) ::: int;
 
 /** @kphp-extern-func-info can_throw generate-stub */
 function rpc_server_fetch_request() ::: @tl\RpcFunction;
