@@ -79,4 +79,4 @@ function kphp_tracing_get_root_span(): KphpSpan;
 /** @kphp-extern-func-info generate-stub */
 function kphp_tracing_get_current_active_span(): KphpSpan;
 /** @kphp-extern-func-info generate-stub */
-function kphp_tracing_func_enter_branch(int $branch_num);
+function kphp_tracing_func_enter_branch(int $branch_num) ::: void;
