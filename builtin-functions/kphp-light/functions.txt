@@ -146,10 +146,10 @@ final class KphpRpcRequestsExtraInfo {
 }
 
 /** @kphp-extern-func-info interruptible */
-function rpc_tl_query($actor ::: string, $arr ::: array, $timeout ::: float = -1.0, $ignore_answer ::: bool = false, \KphpRpcRequestsExtraInfo $requests_extra_info = null, $need_responses_extra_info ::: bool = false) ::: int[];
+function rpc_tl_query (\RpcConnection $rpc_conn, $arr ::: array, $timeout ::: float = -1.0, $ignore_answer ::: bool = false, \KphpRpcRequestsExtraInfo $requests_extra_info = null, $need_responses_extra_info ::: bool = false) ::: int[];
 
 /** @kphp-extern-func-info interruptible */
-function typed_rpc_tl_query($actor ::: string, @tl\RpcFunction[] $query_functions, $timeout ::: float = -1.0, $ignore_answer ::: bool = false, \KphpRpcRequestsExtraInfo $requests_extra_info = null, $need_responses_extra_info ::: bool = false) ::: int[];
+function typed_rpc_tl_query (\RpcConnection $connection, @tl\RpcFunction[] $query_functions, $timeout ::: float = -1.0, $ignore_answer ::: bool = false, \KphpRpcRequestsExtraInfo $requests_extra_info = null, $need_responses_extra_info ::: bool = false) ::: int[];
 
 /** @kphp-extern-func-info interruptible */
 function rpc_tl_query_result($query_ids ::: array) ::: mixed[][];
