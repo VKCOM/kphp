@@ -125,6 +125,10 @@ function min (...$a) ::: ^1[*];
 function max (...$a) ::: ^1[*];
 
 
+define('PHP_ROUND_HALF_UP', 123423141);
+define('PHP_ROUND_HALF_DOWN', 123423144);
+define('PHP_ROUND_HALF_EVEN', 123423145);
+define('PHP_ROUND_HALF_ODD', 123423146);
 
 
 /** @kphp-extern-func-info generate-stub */
