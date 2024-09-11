@@ -22,7 +22,7 @@ define('M_EULER', 0.57721566490153286061);
  * @kphp-extern-func-info generate-stub
  * @kphp-pure-function
  */
-function abs ($v ::: mixed) :::  mixed;
+function abs ($v ::: mixed) ::: ^1 | int;
 /**
  * @kphp-extern-func-info generate-stub
  * @kphp-pure-function
