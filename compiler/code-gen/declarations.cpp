@@ -1148,12 +1148,7 @@ void ClassMembersDefinition::compile_msgpack_serialize(CodeGenerator &W, ClassPt
   //   ...
   //}
 
-  // We use forward list here since we want lines to be sorted in natural order,
-  // but due to processing nature their order is reverse.
-  // We push values to the list and later pull it.
-  // Stack can't be used here since it doesn't confirm JoinValues interface.
-  // Vector makes things much more complicated here.
-  std::forward_list<std::string> body;
+  std::vector<std::string> body;
   uint16_t cnt_fields = 0;
 
   ClassPtr the_klass = klass;
@@ -1168,11 +1163,13 @@ void ClassMembersDefinition::compile_msgpack_serialize(CodeGenerator &W, ClassPt
         cnt_fields += 2;
       }
     });
-    for (auto it = body_inner.rbegin(); it != body_inner.rend(); ++it) {
-      body.push_front(std::move(*it));
+    for (auto &i : body_inner) {
+      body.emplace_back(std::move(i));
     }
     the_klass = the_klass->parent_class;
   }
+
+  std::reverse(body.begin(), body.end());
 
   FunctionSignatureGenerator(W).set_const_this()
     << "void " << klass->src_name << "::msgpack_pack(vk::msgpack::packer<string_buffer> &packer)" << BEGIN
@@ -1200,9 +1197,9 @@ void ClassMembersDefinition::compile_msgpack_deserialize(CodeGenerator &W, Class
   //
 
   // See `compile_msgpack_serialize()` note for forward_list.
-  std::forward_list<std::string> cases;
+  std::vector<std::string> cases;
 
-  cases.emplace_front("default: break;");
+  cases.emplace_back("default: break;");
 
   ClassPtr the_klass = klass;
 
@@ -1214,11 +1211,15 @@ void ClassMembersDefinition::compile_msgpack_deserialize(CodeGenerator &W, Class
       cases_inner.emplace_back(fmt_format("case {}: elem.convert(${}); break;", field.serialization_tag, field.var->name));
     }
     });
-    for (auto it = cases_inner.rbegin(); it != cases_inner.rend(); ++it) {
-      cases.emplace_front(std::move(*it));
+
+    for (auto &i : cases_inner) {
+      cases.emplace_back(std::move(i));
     }
+
     the_klass = the_klass->parent_class;
   }
+
+  std::reverse(cases.begin(), cases.end());
 
   W << "void " << klass->src_name << "::msgpack_unpack(const vk::msgpack::object &msgpack_o) " << BEGIN
     << "if (msgpack_o.type != vk::msgpack::stored_type::ARRAY) { throw vk::msgpack::type_error{}; }" << NL
