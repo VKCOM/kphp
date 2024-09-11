@@ -93,6 +93,11 @@ function sqrt ($v ::: float) ::: float;
  * @kphp-pure-function
  */
 function tan ($v ::: float) ::: float;
+/**
+ * @kphp-extern-func-info generate-stub
+ * @kphp-pure-function
+ */
+function pi() ::: float;
 
 
 /** @kphp-extern-func-info generate-stub */
