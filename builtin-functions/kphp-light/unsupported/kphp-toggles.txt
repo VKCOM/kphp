@@ -1,7 +1,7 @@
 <?php
 
 /** @kphp-extern-func-info generate-stub */
-function kphp_turn_on_host_tag_in_inner_statshouse_metrics_toggle();
+function kphp_turn_on_host_tag_in_inner_statshouse_metrics_toggle() ::: void;
 
 /** @kphp-extern-func-info generate-stub */
 function set_detect_incorrect_encoding_names_warning(bool $show) ::: void;
