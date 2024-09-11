@@ -1100,7 +1100,7 @@ void FinalCheckPass::check_serialized_fields_hierarchy(ClassPtr klass) {
     the_klass = klass->parent_class;
     while (the_klass) {
       auto same_numbered_field = the_klass->members.find_member([&f_tag](const ClassMemberInstanceField &f) {
-        return f.serialization_tag == f_tag;
+        return (f.serialization_tag == f_tag) && (f_tag != -1);
       });
 
       if (same_numbered_field) {
