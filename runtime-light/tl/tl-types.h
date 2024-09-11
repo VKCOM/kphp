@@ -11,7 +11,7 @@
 
 namespace tl {
 
-constexpr uint32_t K2_JOB_WORKER_RESPONSE_MAGIC = 0x3afb3a08;
+inline constexpr uint32_t K2_JOB_WORKER_RESPONSE_MAGIC = 0x3afb3a08;
 
 struct K2JobWorkerResponse final {
   int64_t job_id{};
