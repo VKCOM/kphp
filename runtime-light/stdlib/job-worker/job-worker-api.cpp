@@ -8,6 +8,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <utility>
 
 #include "runtime-core/runtime-core.h"
 #include "runtime-core/utils/kphp-assert-core.h"
@@ -114,7 +115,7 @@ task_t<string> f$kphp_job_worker_fetch_request() noexcept {
     php_warning("couldn't fetch job worker request");
     co_return string{};
   }
-  co_return std::move(jw_server_ctx.body);
+  co_return std::exchange(jw_server_ctx.body, string{});
 }
 
 task_t<int64_t> f$kphp_job_worker_store_response(string response) noexcept {
