@@ -113,7 +113,6 @@ void CheckClassesPass::check_serialized_fields(ClassPtr klass) {
       }
       f.serialization_tag = kphp_serialized_field;
       f.serialize_as_float32 = f.phpdoc->has_tag(PhpDocType::kphp_serialized_float32);
-
       used_serialization_tags_for_fields[kphp_serialized_field] = true;
     } catch (std::logic_error &) {
       kphp_error_return(false, fmt_format("bad kphp-serialized-field: '{}'", value));
