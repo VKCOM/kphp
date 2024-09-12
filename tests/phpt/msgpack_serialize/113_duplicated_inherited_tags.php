@@ -1,27 +1,27 @@
 @kphp_should_fail k2_skip
-/Class A and all its ancestors must be @kphp-serializable if there are instance fields. Class Base is not./
+/kphp-serialized-field: field with number 1 found in both classes A and B/
 <?php
 
 require_once 'kphp_tester_include.php';
 
-class Base {
-    public $b = 10;
-}
-
 /** @kphp-serializable */
-class A extends Base {
+class A {
     /**
      * @kphp-serialized-field 1
      * @var int
      */
     public $x = 10;
 
+}
+
+/** @kphp-serializable */
+class B extends A {
     /**
-     * @kphp-serialized-field 2
+     * @kphp-serialized-field 1
      * @var int
      */
     public $y = 10;
 }
 
-$a = new A();
-instance_serialize($a);
+$b = new B();
+instance_serialize($b);

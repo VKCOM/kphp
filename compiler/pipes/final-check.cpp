@@ -16,6 +16,7 @@
 #include "compiler/data/var-data.h"
 #include "compiler/vertex-util.h"
 #include "compiler/type-hint.h"
+#include "compiler/phpdoc.h"
 
 namespace {
 void check_class_immutableness(ClassPtr klass) {
@@ -570,6 +571,7 @@ void FinalCheckPass::on_start() {
 
   if (current_function->type == FunctionData::func_class_holder) {
     check_class_immutableness(current_function->class_id);
+    check_serialized_fields_hierarchy(current_function->class_id);
     process_job_worker_class(current_function->class_id);
   }
 
@@ -1062,4 +1064,41 @@ void FinalCheckPass::check_magic_tostring_method(FunctionPtr fun) {
 void FinalCheckPass::check_magic_clone_method(FunctionPtr fun) {
   kphp_error(!fun->is_resumable, fmt_format("{} method has to be not resumable", fun->as_human_readable()));
   kphp_error(!fun->can_throw(), fmt_format("{} method should not throw exception", fun->as_human_readable()));
+}
+
+
+void FinalCheckPass::check_serialized_fields_hierarchy(ClassPtr klass) {
+  auto the_klass = klass;
+  // This loop finishes unconditionally since there is NULL klass->parent_class if there is no base class.
+  while (the_klass) {
+
+    // Inheritance with serialization is allowed if
+    // * parent class has ho instance field
+    // * if there are instance fields, class should be marked with kphp-serializable
+    if (klass->is_serializable) {
+      kphp_error_return(
+        (the_klass->members.has_any_instance_var() && the_klass->is_serializable) || !the_klass->members.has_any_instance_var(),
+        fmt_format("Class {} and all its ancestors must be @kphp-serializable if there are instance fields. Class {} is not.", klass->name, the_klass->name));
+
+    }
+    the_klass = the_klass->parent_class;
+  }
+
+  klass->members.for_each([&](ClassMemberInstanceField &f) {
+    // Check if there is a field with the same number available above in hierarchy
+    auto f_tag = f.serialization_tag;
+    the_klass = klass->parent_class;
+
+    while (the_klass) {
+      auto same_numbered_field = the_klass->members.find_member([&f_tag](const ClassMemberInstanceField &f) {
+        return (f.serialization_tag == f_tag) && (f_tag != -1);
+      });
+
+      if (same_numbered_field) {
+        kphp_error_return(false, fmt_format("kphp-serialized-field: field with number {} found in both classes {} and {}", f_tag, the_klass->name, klass->name));
+      }
+
+      the_klass = the_klass->parent_class;
+    }
+  });
 }

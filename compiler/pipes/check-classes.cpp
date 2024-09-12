@@ -48,10 +48,6 @@ inline void CheckClassesPass::analyze_class(ClassPtr klass) {
                fmt_format("class {} can be autoloaded, but its file contains some logic (maybe, require_once files with global vars?)\n",
                           klass->as_human_readable()));
   }
-  if (klass->is_serializable) {
-    kphp_error(!klass->parent_class || !klass->parent_class->members.has_any_instance_var(),
-               "You may not serialize classes which has a parent with fields");
-  }
 }
 
 /*
@@ -90,7 +86,6 @@ void CheckClassesPass::check_serialized_fields(ClassPtr klass) {
       return;
     }
 
-    kphp_error_return(klass->is_serializable, fmt_format("you may not use @kphp-serialized-field inside non-serializable klass: {}", klass->name));
     if (kphp_serialized_field_tag->value.starts_with("none")) {
       return;
     }
