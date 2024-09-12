@@ -21,7 +21,7 @@ public:
   virtual void *get_instance_data_raw_ptr() noexcept = 0;
 };
 
-template<class ...Bases>
+template<class... Bases>
 class refcountable_polymorphic_php_classes : public Bases... {
 public:
   void add_ref() noexcept final {
@@ -55,7 +55,7 @@ private:
   uint32_t refcnt{0};
 };
 
-template<class ...Interfaces>
+template<class... Interfaces>
 class refcountable_polymorphic_php_classes_virt : public virtual abstract_refcountable_php_interface, public Interfaces... {
 public:
   refcountable_polymorphic_php_classes_virt() __attribute__((always_inline)) = default;
@@ -98,7 +98,7 @@ private:
 };
 
 template<class Derived>
-class refcountable_php_classes  : public ScriptAllocatorManaged {
+class refcountable_php_classes : public ScriptAllocatorManaged {
 public:
   void add_ref() noexcept {
     if (refcnt < ExtraRefCnt::for_global_const) {
@@ -133,6 +133,7 @@ public:
   void *get_instance_data_raw_ptr() noexcept {
     return this;
   }
+
 private:
   uint32_t refcnt{0};
 };
@@ -144,6 +145,6 @@ public:
 };
 
 struct may_be_mixed_base : public virtual abstract_refcountable_php_interface {
-  virtual ~may_be_mixed_base() = default;
+  ~may_be_mixed_base() override = default;
   virtual const char *get_class() const noexcept = 0;
 };

@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/job-workers.txt';
+
 define('TODO', -1);
 define('TODO_OVERLOAD', -1);
 
@@ -137,7 +139,6 @@ function rpc_tl_query_result($query_ids ::: array) ::: mixed[][];
 
 /** @kphp-extern-func-info interruptible */
 function typed_rpc_tl_query_result(int[] $query_ids) ::: @tl\RpcResponse[];
-
 
 // === Component ==================================================================================
 
