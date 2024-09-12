@@ -42,13 +42,9 @@ task_t<int64_t> kphp_job_worker_start_impl(string request, double timeout, bool 
     co_return INVALID_FORK_ID;
   }
 
-  // normalize timeout
-  const auto timeout_ns{
-    timeout >= MIN_TIMEOUT_S && timeout <= MAX_TIMEOUT_S
-      ? std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout})
-      : std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(std::clamp(timeout, MIN_TIMEOUT_S, MAX_TIMEOUT_S)))};
-
   auto &jw_client_ctx{JobWorkerClientComponentContext::get()};
+  // normalize timeout
+  const auto timeout_ns{std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(std::clamp(timeout, MIN_TIMEOUT_S, MAX_TIMEOUT_S)))};
   // prepare JW component request
   tl::TLBuffer tlb{};
   const tl::K2InvokeJobWorker invoke_jw{.image_id = vk_k2_describe()->build_timestamp,
