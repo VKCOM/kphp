@@ -1151,25 +1151,25 @@ void ClassMembersDefinition::compile_msgpack_serialize(CodeGenerator &W, ClassPt
   std::vector<std::string> body;
   uint16_t cnt_fields = 0;
 
+  std::vector<ClassPtr> klasses;
   ClassPtr the_klass = klass;
 
-  // Put class' fields along with all parent's fields.
   while (the_klass) {
-    std::vector<std::string> body_inner;
-    the_klass->members.for_each([&](ClassMemberInstanceField &field) {
-      if (field.serialization_tag != -1) {
-        auto func_name = fmt_format("vk::msgpack::packer_float32_decorator::pack_value{}", field.serialize_as_float32 ? "_float32" : "");
-        body_inner.emplace_back(fmt_format("packer.pack({}); {}(packer, ${});", field.serialization_tag, func_name, field.var->name));
-        cnt_fields += 2;
-      }
-    });
-    for (auto &i : body_inner) {
-      body.emplace_back(std::move(i));
-    }
+    klasses.push_back(the_klass);
     the_klass = the_klass->parent_class;
   }
 
-  std::reverse(body.begin(), body.end());
+  std::reverse(klasses.begin(), klasses.end());
+
+  for (auto &k : klasses) {
+    k->members.for_each([&](ClassMemberInstanceField &field) {
+      if (field.serialization_tag != -1) {
+        auto func_name = fmt_format("vk::msgpack::packer_float32_decorator::pack_value{}", field.serialize_as_float32 ? "_float32" : "");
+        body.emplace_back(fmt_format("packer.pack({}); {}(packer, ${});", field.serialization_tag, func_name, field.var->name));
+        cnt_fields += 2;
+      }
+    });
+  }
 
   FunctionSignatureGenerator(W).set_const_this()
     << "void " << klass->src_name << "::msgpack_pack(vk::msgpack::packer<string_buffer> &packer)" << BEGIN
@@ -1196,30 +1196,27 @@ void ClassMembersDefinition::compile_msgpack_deserialize(CodeGenerator &W, Class
   //}
   //
 
-  // See `compile_msgpack_serialize()` note for forward_list.
   std::vector<std::string> cases;
-
-  cases.emplace_back("default: break;");
+  std::vector<ClassPtr> klasses;
 
   ClassPtr the_klass = klass;
 
   // Put class' fields along with all parent's fields.
   while (the_klass) {
-    std::vector<std::string> cases_inner;
-    the_klass->members.for_each([&](ClassMemberInstanceField &field) {
-    if (field.serialization_tag != -1) {
-      cases_inner.emplace_back(fmt_format("case {}: elem.convert(${}); break;", field.serialization_tag, field.var->name));
-    }
-    });
-
-    for (auto &i : cases_inner) {
-      cases.emplace_back(std::move(i));
-    }
-
+    klasses.push_back(the_klass);
     the_klass = the_klass->parent_class;
   }
 
-  std::reverse(cases.begin(), cases.end());
+  std::reverse(klasses.begin(), klasses.end());
+
+  for (auto &k : klasses) {
+    k->members.for_each([&](ClassMemberInstanceField &field) {
+      if (field.serialization_tag != -1) {
+        cases.emplace_back(fmt_format("case {}: elem.convert(${}); break;", field.serialization_tag, field.var->name));
+      }
+    });
+  }
+  cases.emplace_back("default: break;");
 
   W << "void " << klass->src_name << "::msgpack_unpack(const vk::msgpack::object &msgpack_o) " << BEGIN
     << "if (msgpack_o.type != vk::msgpack::stored_type::ARRAY) { throw vk::msgpack::type_error{}; }" << NL

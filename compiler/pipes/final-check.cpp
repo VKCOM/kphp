@@ -1068,36 +1068,27 @@ void FinalCheckPass::check_magic_clone_method(FunctionPtr fun) {
 
 
 void FinalCheckPass::check_serialized_fields_hierarchy(ClassPtr klass) {
-  // Protect from multiple error reporting for class hierarchy
-  bool instance_fields_error_reported = false;
+  auto the_klass = klass;
+  // This loop finishes unconditionally since there is NULL klass->parent_class if there is no base class.
+  while (the_klass) {
+
+    // Inheritance with serialization is allowed if
+    // * parent class has ho instance field
+    // * if there are instance fields, class should be marked with kphp-serializable
+    if (klass->is_serializable) {
+      kphp_error_return(
+        (the_klass->members.has_any_instance_var() && the_klass->is_serializable) || !the_klass->members.has_any_instance_var(),
+        fmt_format("Class {} and all its ancestors must be @kphp-serializable if there are instance fields. Class {} is not.", klass->name, the_klass->name));
+
+    }
+    the_klass = the_klass->parent_class;
+  }
 
   klass->members.for_each([&](ClassMemberInstanceField &f) {
-    auto the_klass = klass;
-
-    // This loop finishes unconditionally since there is NULL klass->parent_class if there is no base class.
-    while (the_klass) {
-
-      // Inheritance with serialization is allowed if
-      // * parent class has ho instance field
-      // * if there are instance fields, class should be marked with kphp-serializable
-      if (klass->is_serializable && !instance_fields_error_reported) {
-
-        bool hierarchy_condition = (the_klass->members.has_any_instance_var() && the_klass->is_serializable) || !the_klass->members.has_any_instance_var();
-        if (!hierarchy_condition) {
-          instance_fields_error_reported = true;
-        }
-
-        kphp_error_return(
-          hierarchy_condition,
-          fmt_format("Class {} and all its ancestors must be @kphp-serializable if there are instance fields. Class {} is not.", klass->name, the_klass->name));
-
-      }
-      the_klass = the_klass->parent_class;
-    }
-
     // Check if there is a field with the same number available above in hierarchy
     auto f_tag = f.serialization_tag;
     the_klass = klass->parent_class;
+
     while (the_klass) {
       auto same_numbered_field = the_klass->members.find_member([&f_tag](const ClassMemberInstanceField &f) {
         return (f.serialization_tag == f_tag) && (f_tag != -1);
