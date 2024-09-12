@@ -12,8 +12,8 @@
 
 namespace {
 
-// magic + flags + status_code + job_id + minimum string size length
-constexpr auto K2_JOB_WORKER_RESPONSE_MIN_SIZE = 2 * sizeof(uint32_t) + 2 * sizeof(int64_t) + tl::SMALL_STRING_SIZE_LEN;
+// magic + flags + job_id + minimum string size length
+constexpr auto K2_JOB_WORKER_RESPONSE_MIN_SIZE = sizeof(uint32_t) + sizeof(uint32_t) + sizeof(int64_t) + tl::SMALL_STRING_SIZE_LEN;
 
 } // namespace
 

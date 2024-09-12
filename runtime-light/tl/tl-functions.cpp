@@ -12,7 +12,7 @@
 namespace {
 
 // magic + flags + image_id + job_id + minimum string size length
-constexpr auto K2_INVOKE_JW_MIN_SIZE = 2 * sizeof(uint32_t) + sizeof(uint64_t) + sizeof(int64_t) + tl::SMALL_STRING_SIZE_LEN;
+constexpr auto K2_INVOKE_JW_MIN_SIZE = sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(int64_t) + sizeof(uint64_t) + tl::SMALL_STRING_SIZE_LEN;
 
 constexpr auto K2_JOB_WORKER_IGNORE_ANSWER_FLAG = static_cast<uint32_t>(1U << 0U);
 
