@@ -4,7 +4,13 @@
 
 #pragma once
 
+#include <concepts>
+#include <functional>
+#include <type_traits>
+#include <utility>
+
 #include "runtime-core/runtime-core.h"
+#include "runtime-light/coroutine/task.h"
 
 inline constexpr int64_t SORT_REGULAR = 0;
 inline constexpr int64_t SORT_NUMERIC = 1;
@@ -60,9 +66,17 @@ array<T> f$array_filter_by_key(const array<T> &a, const T1 &callback) noexcept {
   php_critical_error("call to unsupported function");
 }
 
-template<class T, class CallbackT, class R = typename std::invoke_result_t<std::decay_t<CallbackT>, T>>
-array<R> f$array_map(const CallbackT &callback, const array<T> &a) {
-  php_critical_error("call to unsupported function");
+template<class A, std::invocable<A> F, class R = async_function_unwrapped_return_type_t<F, A>>
+task_t<array<R>> f$array_map(F &&f, const array<A> &arr) {
+  array<R> result{arr.size()};
+  for (const auto &it : arr) {
+    if constexpr (is_async_function_v<F, A>) {
+      result.set_value(it.get_key(), co_await std::invoke(std::forward<F>(f), it.get_value()));
+    } else {
+      result.set_value(it.get_key(), std::invoke(std::forward<F>(f), it.get_value()));
+    }
+  }
+  co_return result;
 }
 
 template<class R, class T, class CallbackT, class InitialT>

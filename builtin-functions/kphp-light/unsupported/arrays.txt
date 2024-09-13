@@ -78,7 +78,6 @@ function array_unset (&$a ::: array, any $key) ::: ^1[*];
 
 function array_filter ($a ::: array, callable(^1[*] $x):bool $callback = TODO) ::: ^1;
 function array_filter_by_key ($a ::: array, callable(mixed $key):bool $callback) ::: ^1;
-function array_map (callable(^2[*] $x):any $callback, $a ::: array) ::: ^1() [];
 /** @kphp-extern-func-info cpp_template_call */
 function array_reduce ($a ::: array, callable(^3 | ^2() $carry, ^1[*] $item):any $callback, $initial ::: any) ::: ^2() | ^3;
 function array_reserve (&$a ::: array, $int_size ::: int, $string_size ::: int, $make_vector_if_possible ::: bool) ::: void;
