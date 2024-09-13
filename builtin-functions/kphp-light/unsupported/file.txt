@@ -1,0 +1,90 @@
+<?php
+
+/** @kphp-extern-func-info generate-stub */
+function basename ($name ::: string, $suffix ::: string = '') ::: string;
+/** @kphp-extern-func-info generate-stub */
+function chmod ($name ::: string, $mode ::: int) ::: bool;
+/** @kphp-extern-func-info generate-stub */
+function copy ($from ::: string, $to ::: string) ::: bool;
+/** @kphp-extern-func-info generate-stub */
+function dirname ($name ::: string) ::: string;
+/** @kphp-extern-func-info generate-stub */
+function file ($name ::: string) ::: string[] | false;
+/** @kphp-extern-func-info generate-stub */
+function file_get_contents ($name ::: string) ::: string | false;
+/** @kphp-extern-func-info generate-stub */
+function file_put_contents ($name ::: string, $content ::: mixed, $flags ::: int = 0) ::: int | false;
+/** @kphp-extern-func-info generate-stub */
+function file_exists ($name ::: string) ::: bool;
+/** @kphp-extern-func-info generate-stub */
+function filesize ($name ::: string) ::: int | false;
+/** @kphp-extern-func-info generate-stub */
+function filectime ($name ::: string) ::: int | false;
+/** @kphp-extern-func-info generate-stub */
+function filemtime ($name ::: string) ::: int | false;
+/** @kphp-extern-func-info generate-stub */
+function is_dir ($name ::: string) ::: bool;
+/** @kphp-extern-func-info generate-stub */
+function is_file ($name ::: string) ::: bool;
+/** @kphp-extern-func-info generate-stub */
+function is_readable ($name ::: string) ::: bool;
+/** @kphp-extern-func-info generate-stub */
+function mkdir ($name ::: string, $mode ::: int = 0777, $recursive ::: bool = false) ::: bool;
+/** @kphp-extern-func-info generate-stub */
+function php_uname ($mode ::: string = "a") ::: string;
+/** @kphp-extern-func-info generate-stub */
+function realpath ($path ::: string) ::: string | false;
+/** @kphp-extern-func-info generate-stub */
+function rename ($oldname ::: string, $newname ::: string) ::: bool;
+/** @kphp-extern-func-info generate-stub */
+function scandir ($directory ::: string) ::: string[] | false;
+/** @kphp-extern-func-info generate-stub */
+function tempnam ($dir ::: string, $prefix ::: string) ::: string | false;
+/** @kphp-extern-func-info generate-stub */
+function unlink ($name ::: string) ::: bool;
+
+
+ /** @kphp-extern-func-info generate-stub */
+function fgetcsv ($stream, $length = 0, $delimiter = ",", $enclosure = "\"", $escape = "\\") ::: mixed[] | false;
+
+define('STDIN', 'php://stdin');
+define('STDOUT', 'php://stdout');
+define('STDERR', 'php://stderr');
+
+
+define('SEEK_SET', 0);
+define('SEEK_END', 1);
+define('SEEK_CUR', 2);
+
+ /** @kphp-extern-func-info generate-stub */
+function fopen ($filename ::: string, $mode ::: string) ::: mixed;
+ /** @kphp-extern-func-info generate-stub */
+function fwrite ($stream, $text ::: string) ::: int | false;
+ /** @kphp-extern-func-info generate-stub */
+function fseek ($stream, $offset ::: int, $whence ::: int = SEEK_SET) ::: int;
+ /** @kphp-extern-func-info generate-stub */
+function rewind ($stream) ::: bool;
+ /** @kphp-extern-func-info generate-stub */
+function ftell ($stream) ::: int | false;
+ /** @kphp-extern-func-info generate-stub */
+function fread ($stream, $length ::: int) ::: string | false;
+ /** @kphp-extern-func-info generate-stub */
+function fgetc ($stream) ::: string | false;
+ /** @kphp-extern-func-info generate-stub */
+function fpassthru ($stream) ::: int | false;
+ /** @kphp-extern-func-info generate-stub */
+function fgets ($stream, $length ::: int = -1) ::: string | false;
+ /** @kphp-extern-func-info generate-stub */
+function fflush ($stream) ::: bool;
+ /** @kphp-extern-func-info generate-stub */
+function feof ($stream) ::: bool;
+ /** @kphp-extern-func-info generate-stub */
+function fclose ($stream) ::: bool;
+
+
+
+function fprintf ($stream, $format ::: string, ...$args) ::: int;
+function fputcsv ($stream, $fields ::: array, $delimiter = ",", $enclosure = "\"", $escape = "\\") ::: int | false;
+function printf ($format ::: string, ...$args) ::: int;
+function sprintf ($format ::: string, ...$args) ::: string;
+function vsprintf ($format ::: string, $args ::: array) ::: string;

@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /pass \?string to argument \$s of ensure_string/
 <?php
 

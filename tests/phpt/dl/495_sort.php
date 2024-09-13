@@ -1,4 +1,4 @@
-@ok benchmark callback
+@ok benchmark callback k2_skip
 <?php
 echo "*** Testing sort() : basic functionality ***\n";
 

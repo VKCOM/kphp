@@ -12,8 +12,6 @@
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
 
-constexpr int PHP_CSV_NO_ESCAPE = EOF;
-
 static string::size_type max_wrapper_name_size = 0;
 
 static array<const stream_functions *> wrappers;
@@ -505,43 +503,15 @@ static const char *fgetcsv_lookup_trailing_spaces(const char *ptr, size_t len) {
   return ptr;
 }
 
-
-Optional<array<mixed>> f$fgetcsv(const Stream &stream, int64_t length, string delimiter, string enclosure, string escape) {
-  if (delimiter.empty()) {
-    php_warning("delimiter must be a character");
-    return false;
-  } else if (delimiter.size() > 1) {
-    php_warning("delimiter must be a single character");
-  }
-  if (enclosure.empty()) {
-    php_warning("enclosure must be a character");
-    return false;
-  } else if (enclosure.size() > 1) {
-    php_warning("enclosure must be a single character");
-  }
-  int escape_char = PHP_CSV_NO_ESCAPE;
-  if (!escape.empty()) {
-    escape_char = static_cast<int>(escape[0]);
-  } else if (escape.size() > 1) {
-    php_warning("escape_char must be a single character");
-  }
-  char delimiter_char = delimiter[0];
-  char enclosure_char = enclosure[0];
-  if (length < 0) {
-    php_warning("Length parameter may not be negative");
-    return false;
-  } else if (length == 0) {
-    length = -1;
-  }
-  Optional<string> buf_optional = length < 0 ? f$fgets(stream) : f$fgets(stream, length + 1);
-  if (!buf_optional.has_value()) {
-    return false;
-  }
-  string buffer = buf_optional.val();
+// Common csv-parsing functionality for
+// * fgetcsv
+// * str_getcsv
+// The function is similar to `php_fgetcsv` function from https://github.com/php/php-src/blob/master/ext/standard/file.c
+Optional<array<mixed>> getcsv(const Stream &stream, string buffer, char delimiter, char enclosure, char escape) {
   array<mixed> answer;
   int current_id = 0;
   string_buffer tmp_buffer;
-  // this part is imported from https://github.com/php/php-src/blob/master/ext/standard/file.c, function php_fgetcsv
+  // Following part is imported from `php_fgetcsv`
   char const *buf = buffer.c_str();
   char const *bptr = buf;
   size_t buf_len = buffer.size();
@@ -557,10 +527,10 @@ Optional<array<mixed>> f$fgetcsv(const Stream &stream, int64_t length, string de
     inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mblen(bptr, limit - bptr)) : 0);
     if (inc_len == 1) {
       char const *tmp = bptr;
-      while ((*tmp != delimiter_char) && isspace((int)*(unsigned char *)tmp)) {
+      while ((*tmp != delimiter) && isspace((int)*(unsigned char *)tmp)) {
         tmp++;
       }
-      if (*tmp == enclosure_char) {
+      if (*tmp == enclosure) {
         bptr = tmp;
       }
     }
@@ -571,7 +541,7 @@ Optional<array<mixed>> f$fgetcsv(const Stream &stream, int64_t length, string de
     }
     first_field = false;
     /* 2. Read field, leaving bptr pointing at start of next field */
-    if (inc_len != 0 && *bptr == enclosure_char) {
+    if (inc_len != 0 && *bptr == enclosure) {
       int state = 0;
 
       bptr++;        /* move on to first character in field */
@@ -641,7 +611,7 @@ Optional<array<mixed>> f$fgetcsv(const Stream &stream, int64_t length, string de
                 state = 0;
                 break;
               case 2: /* embedded enclosure ? let's check it */
-                if (*bptr != enclosure_char) {
+                if (*bptr != enclosure) {
                   /* real enclosure */
                   tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin - 1));
                   hunk_begin = bptr;
@@ -653,9 +623,9 @@ Optional<array<mixed>> f$fgetcsv(const Stream &stream, int64_t length, string de
                 state = 0;
                 break;
               default:
-                if (*bptr == enclosure_char) {
+                if (*bptr == enclosure) {
                   state = 2;
-                } else if (escape_char != PHP_CSV_NO_ESCAPE && *bptr == escape_char) {
+                } else if (escape != PHP_CSV_NO_ESCAPE && *bptr == escape) {
                   state = 1;
                 }
                 bptr++;
@@ -697,7 +667,7 @@ Optional<array<mixed>> f$fgetcsv(const Stream &stream, int64_t length, string de
             inc_len = 1;
             /* fallthrough */
           case 1:
-            if (*bptr == delimiter_char) {
+            if (*bptr == delimiter) {
               goto quit_loop_3;
             }
             break;
@@ -725,7 +695,7 @@ Optional<array<mixed>> f$fgetcsv(const Stream &stream, int64_t length, string de
             inc_len = 1;
             /* fallthrough */
           case 1:
-            if (*bptr == delimiter_char) {
+            if (*bptr == delimiter) {
               goto quit_loop_4;
             }
             break;
@@ -740,7 +710,7 @@ Optional<array<mixed>> f$fgetcsv(const Stream &stream, int64_t length, string de
 
       char const *comp_end = (char *)fgetcsv_lookup_trailing_spaces(tmp_buffer.c_str(), tmp_buffer.size());
       tmp_buffer.set_pos(comp_end - tmp_buffer.c_str());
-      if (*bptr == delimiter_char) {
+      if (*bptr == delimiter) {
         bptr++;
       }
     }
@@ -751,6 +721,40 @@ Optional<array<mixed>> f$fgetcsv(const Stream &stream, int64_t length, string de
   } while (inc_len > 0);
 
   return answer;
+}
+
+Optional<array<mixed>> f$fgetcsv(const Stream &stream, int64_t length, string delimiter, string enclosure, string escape) {
+  if (delimiter.empty()) {
+    php_warning("delimiter must be a character");
+    return false;
+  } else if (delimiter.size() > 1) {
+    php_warning("delimiter must be a single character");
+  }
+  if (enclosure.empty()) {
+    php_warning("enclosure must be a character");
+    return false;
+  } else if (enclosure.size() > 1) {
+    php_warning("enclosure must be a single character");
+  }
+  int escape_char = PHP_CSV_NO_ESCAPE;
+  if (!escape.empty()) {
+    escape_char = static_cast<int>(escape[0]);
+  } else if (escape.size() > 1) {
+    php_warning("escape_char must be a single character");
+  }
+  char delimiter_char = delimiter[0];
+  char enclosure_char = enclosure[0];
+  if (length < 0) {
+    php_warning("Length parameter may not be negative");
+    return false;
+  } else if (length == 0) {
+    length = -1;
+  }
+  Optional<string> buf_optional = length < 0 ? f$fgets(stream) : f$fgets(stream, length + 1);
+  if (!buf_optional.has_value()) {
+    return false;
+  }
+  return getcsv(stream, buf_optional.val(), delimiter_char, enclosure_char, escape_char);
 }
 
 Optional<string> f$file_get_contents(const string &stream) {

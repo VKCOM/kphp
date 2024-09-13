@@ -1,4 +1,4 @@
-@ok benchmark
+@ok benchmark k2_skip
 <?php
   header('WWW-Authenticate: Negotiate');
   header('WWW-Authenticate: NTLM', false);

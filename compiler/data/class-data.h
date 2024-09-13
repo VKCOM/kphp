@@ -65,6 +65,7 @@ public:
 
   bool can_be_php_autoloaded{false};
   bool is_immutable{false};
+  bool need_generated_stub{false};
   std::atomic<SubtreeImmutableType> is_subtree_immutable{SubtreeImmutableType::not_visited};
   std::atomic<bool> process_fields_ic_compatibility{false};
   bool really_used{false};
@@ -84,6 +85,8 @@ public:
   std::atomic<bool> need_instance_cache_visitors{false};
   std::atomic<bool> need_instance_memory_estimate_visitor{false};
   std::atomic<bool> need_virtual_builtin_functions{false};
+  std::atomic<bool> may_be_mixed{false};
+
   // need_json_visitors doesn't exist: instead, we use json_encoders with a list of classes
 
   ClassModifiers modifiers;
@@ -124,7 +127,7 @@ public:
 
 
   bool is_polymorphic_class() const {
-    return !derived_classes.empty() || !implements.empty() || parent_class;
+    return !derived_classes.empty() || !implements.empty() || parent_class || may_be_mixed;
   }
 
   bool is_empty_class() const {
@@ -201,6 +204,7 @@ public:
   void deeply_require_instance_cache_visitor();
   void deeply_require_instance_memory_estimate_visitor();
   void deeply_require_virtual_builtin_functions();
+  void deeply_require_may_be_mixed_base();
 
   void add_str_dependent(FunctionPtr cur_function, ClassType type, vk::string_view class_name);
   const std::vector<StrDependence> &get_str_dependents() const {
@@ -232,7 +236,7 @@ private:
   }
 
   template<std::atomic<bool> ClassData:: *field_ptr>
-  void set_atomic_field_deeply();
+  void set_atomic_field_deeply(bool on_fields = true);
 
   // extends/implements/use trait during the parsing (before ptr is assigned)
   std::vector<StrDependence> str_dependents;

@@ -3,6 +3,14 @@ set(KPHP_COMPILER_DIR ${BASE_DIR}/compiler)
 set(KPHP_COMPILER_AUTO_DIR ${AUTO_DIR}/compiler)
 set(KEYWORDS_SET ${KPHP_COMPILER_AUTO_DIR}/keywords_set.hpp)
 set(KEYWORDS_GPERF ${KPHP_COMPILER_DIR}/keywords.gperf)
+if (COMPILE_RUNTIME_LIGHT)
+    prepend(RUNTIME_BUILD_INFO ${KPHP_COMPILER_AUTO_DIR}/
+        common_sources.h
+        runtime_sources.h
+        runtime_core_sources.h
+        runtime_compile_flags.h)
+endif()
+
 
 prepend(KPHP_COMPILER_COMMON ${COMMON_DIR}/
         dl-utils-lite.cpp
@@ -224,6 +232,7 @@ endif()
 list(APPEND KPHP_COMPILER_SOURCES
      ${KPHP_COMPILER_COMMON}
      ${KEYWORDS_SET}
+     ${RUNTIME_BUILD_INFO}
      ${AUTO_DIR}/compiler/rewrite-rules/early_opt.cpp)
 
 vk_add_library(kphp2cpp_src OBJECT ${KPHP_COMPILER_SOURCES})
@@ -275,3 +284,7 @@ target_link_options(kphp2cpp PRIVATE ${NO_PIE})
 set_target_properties(kphp2cpp PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${BIN_DIR})
 
 add_dependencies(kphp2cpp_src auto_vertices_generation_target)
+if(COMPILE_RUNTIME_LIGHT)
+    add_compile_definitions(RUNTIME_LIGHT)
+    add_dependencies(kphp2cpp php_lib_version_sha_256)
+endif()

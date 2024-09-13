@@ -1,15 +1,21 @@
-prepend(RUNTIME_STDLIB_SRC ${BASE_DIR}/runtime-light/stdlib/
-        interface.cpp
-        misc.cpp
-        output-control.cpp
-        string-functions.cpp
-        variable-handling.cpp
-        superglobals.cpp
-        rpc/rpc-api.cpp
-        rpc/rpc-context.cpp
-        rpc/rpc-extra-headers.cpp
-        rpc/rpc-extra-info.cpp
-        rpc/rpc-tl-error.cpp
-        rpc/rpc-tl-query.cpp
-        rpc/rpc-tl-request.cpp
-)
+prepend(
+  RUNTIME_STDLIB_SRC
+  stdlib/
+  component/component-api.cpp
+  crypto/crypto-functions.cpp
+  curl/curl.cpp
+  exit/exit-functions.cpp
+  fork/fork-context.cpp
+  job-worker/job-worker-api.cpp
+  job-worker/job-worker-context.cpp
+  output/output-buffer.cpp
+  output/print-functions.cpp
+  regex/regex-functions.cpp
+  rpc/rpc-api.cpp
+  rpc/rpc-context.cpp
+  rpc/rpc-extra-headers.cpp
+  rpc/rpc-extra-info.cpp
+  rpc/rpc-tl-error.cpp
+  rpc/rpc-tl-query.cpp
+  rpc/rpc-tl-request.cpp
+  string/concat.cpp)

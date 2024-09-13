@@ -1,4 +1,4 @@
-@kphp_runtime_should_warn
+@kphp_runtime_should_warn k2_skip
 /bcsqrt\(\): Square root of negative number/
 /bcsqrt\(\): Square root of negative number/
 /bcsqrt\(\): Square root of negative number/

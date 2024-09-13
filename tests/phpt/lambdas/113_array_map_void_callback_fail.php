@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /function\(\$x\) should return something, but it is void/
 <?php
 

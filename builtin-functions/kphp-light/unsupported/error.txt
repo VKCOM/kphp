@@ -1,0 +1,81 @@
+<?php
+
+/** @kphp-generate-stub-class */
+interface Throwable {
+    public function getMessage () ::: string;
+    public function getCode () ::: int;
+    public function getFile () ::: string;
+    public function getLine () ::: int;
+    public function getTrace () ::: string[][];
+    public function getTraceAsString () ::: string;
+}
+
+
+/** @kphp-generate-stub-class */
+class Exception implements Throwable {
+    protected $message = '';
+    protected $code = 0;
+    /** @var string */
+    protected $file;
+    /** @var int */
+    protected $line;
+
+    /** @kphp-extern-func-info generate-stub */
+    public function __construct($message ::: string = '', $code ::: int = 0) ::: Exception;
+    /** @kphp-extern-func-info generate-stub */
+    final public function getMessage () ::: string;
+    /** @kphp-extern-func-info generate-stub */
+    final public function getCode () ::: int;
+    /** @kphp-extern-func-info generate-stub */
+    final public function getFile () ::: string;
+    /** @kphp-extern-func-info generate-stub */
+    final public function getLine () ::: int;
+    /** @kphp-extern-func-info generate-stub */
+    final public function getTrace () ::: string[][];
+    /** @kphp-extern-func-info generate-stub */
+    final public function getTraceAsString () ::: string;
+
+    /** @kphp-extern-func-info generate-stub */
+    final private function __clone() ::: void;
+}
+
+
+/** @kphp-generate-stub-class */
+class Error implements Throwable {
+    protected $message = '';
+    protected $code = 0;
+    /** @var string */
+    protected $file;
+    /** @var int */
+    protected $line;
+
+    /** @kphp-extern-func-info generate-stub */
+    public function __construct($message ::: string = '', $code ::: int = 0) ::: Error;
+    /** @kphp-extern-func-info generate-stub */
+    final public function getMessage () ::: string;
+    /** @kphp-extern-func-info generate-stub */
+    final public function getCode () ::: int;
+    /** @kphp-extern-func-info generate-stub */
+    final public function getFile () ::: string;
+    /** @kphp-extern-func-info generate-stub */
+    final public function getLine () ::: int;
+    /** @kphp-extern-func-info generate-stub */
+    final public function getTrace () ::: string[][];
+    /** @kphp-extern-func-info generate-stub */
+    final public function getTraceAsString () ::: string;
+
+    /** @kphp-extern-func-info generate-stub */
+    final private function __clone() ::: void;
+}
+
+/** @kphp-extern-func-info generate-stub */
+function err ($file ::: string, $line ::: int, $code ::: string, $desc ::: string = '') ::: Exception;
+/** @kphp-extern-func-info generate-stub */
+function error_get_last() ::: mixed;
+/** @kphp-extern-func-info generate-stub */
+function error_reporting ($e ::: int = TODO) ::: int;
+/** @kphp-extern-func-info generate-stub */
+function kphp_backtrace($pretty ::: bool = true) ::: string[];
+/** @kphp-extern-func-info generate-stub */
+function kphp_set_context_on_error(mixed[] $tags, mixed $extra_info, string $env = "") ::: void;
+

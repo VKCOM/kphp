@@ -105,7 +105,13 @@ After having deleted the field, you must specify its index in `@kphp-reserved-fi
 * Deleting is ok, but don't forget about *@kphp-reserved-fields*
 * **Types of fields can't be changed!** Old binary data would not map to the new structure
 ```
+## Inheritance
+It is allowed to inherit classes with `@kphp-serializable` annotation, but there are restrictions:
 
+```tip
+* Class with instance field must be marked with `@kphp-serializable`
+* Within annotation `@kphp-serialized-field {index}` index must be unique across whole inheritance hierarchy.
+```
 
 ## Serializing floats
 

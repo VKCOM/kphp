@@ -1,4 +1,4 @@
-@kphp_should_warn
+@kphp_should_warn k2_skip
 /string building 'hello '.\$x.\$z\[floor\(sin\(\$x\)\)\] can be saved in a separate variable out of loop/
 /array element \$z\[floor\(sin\(\$x\)\)\] can be saved in a separate variable out of loop/
 /function call floor\(sin\(\$y2\[\$x\]\)\) can be saved in a separate variable out of loop/

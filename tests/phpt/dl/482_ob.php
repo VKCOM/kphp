@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
   ob_start();
   echo "1:blah\n";

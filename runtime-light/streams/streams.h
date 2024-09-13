@@ -7,19 +7,26 @@
 #include <cstdint>
 #include <utility>
 
-#include "runtime-core/runtime-core.h"
-
 #include "runtime-light/coroutine/task.h"
 
-enum class StreamRuntimeStatus { WBlocked, RBlocked, NotBlocked, Timer };
+/**
+ * **Oneshot component only**
+ * Wait for initial stream and process it. There can be 2 types of initial (or starter) streams: 1. http; 2. job worker.
+ */
+task_t<uint64_t> accept_initial_stream() noexcept;
 
-task_t<std::pair<char *, int>> read_all_from_stream(uint64_t stream_d);
-std::pair<char *, int> read_nonblock_from_stream(uint64_t stream_d);
-task_t<int> read_exact_from_stream(uint64_t stream_d, char *buffer, int len);
+// === read =======================================================================================
 
-task_t<int> write_all_to_stream(uint64_t stream_d, const char *buffer, int len);
-int write_nonblock_to_stream(uint64_t stream_d, const char *buffer, int len);
-task_t<int> write_exact_to_stream(uint64_t stream_d, const char *buffer, int len);
+task_t<std::pair<char *, int32_t>> read_all_from_stream(uint64_t stream_d) noexcept;
 
-void free_all_descriptors();
-void free_descriptor(uint64_t stream_d);
+std::pair<char *, int32_t> read_nonblock_from_stream(uint64_t stream_d) noexcept;
+
+task_t<int32_t> read_exact_from_stream(uint64_t stream_d, char *buffer, int32_t len) noexcept;
+
+// === write ======================================================================================
+
+task_t<int32_t> write_all_to_stream(uint64_t stream_d, const char *buffer, int32_t len) noexcept;
+
+int32_t write_nonblock_to_stream(uint64_t stream_d, const char *buffer, int32_t len) noexcept;
+
+task_t<int32_t> write_exact_to_stream(uint64_t stream_d, const char *buffer, int32_t len) noexcept;

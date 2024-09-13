@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /Invalid php2c conversion in this context: FFI\\CData_char\* -> uint8_t/
 <?php
 

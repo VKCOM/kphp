@@ -741,6 +741,8 @@ function rtrim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;
 function xor_strings ($s ::: string, $t ::: string) ::: string;
 function similar_text ($first ::: string, $second ::: string, float &$percent = TODO) ::: int;
 
+function str_getcsv($str ::: string, string $delimiter ::: string = ",", string $enclosure ::: string = "\"", string $escape ::: string = "\\") ::: mixed[] | false;
+
 function extension_loaded(string $extension): bool;
 
 function ctype_alnum(mixed $text): bool;
@@ -1395,7 +1397,7 @@ function raise_sigsegv () ::: void;
 function make_clone ($x ::: any) ::: ^1;
 
 /** @kphp-extern-func-info cpp_template_call */
-function instance_cast(object $instance, $to_type ::: string) ::: instance<^2>;
+function instance_cast(any $instance, $to_type ::: string) ::: instance<^2>;
 
 function instance_to_array(object $instance, $with_class_names ::: bool = false) ::: mixed[];
 function to_array_debug(any $instance, bool $with_class_names = false) ::: mixed[];
@@ -1695,3 +1697,6 @@ class DateTimeImmutable implements DateTimeInterface {
 }
 
 function getenv(string $varname = '', bool $local_only = false): mixed;
+
+// builtin that allows to store objects inside a mixed
+function to_mixed(object $instance) ::: mixed;

@@ -16,6 +16,7 @@
 #include "compiler/data/var-data.h"
 #include "compiler/vertex-util.h"
 #include "compiler/type-hint.h"
+#include "compiler/phpdoc.h"
 
 namespace {
 void check_class_immutableness(ClassPtr klass) {
@@ -286,6 +287,17 @@ void check_instance_deserialize_call(VertexAdaptor<op_func_call> call) {
   const auto *type = tinf::get_type(call);
   kphp_assert(type->ptype() == tp_Class);
   kphp_error(type->class_type()->is_serializable, fmt_format("Called instance_deserialize() for class {}, but it's not marked with @kphp-serializable", type->class_type()->name));
+}
+
+void to_mixed_on_class(ClassPtr klass) {
+  klass->deeply_require_may_be_mixed_base();
+}
+
+void check_to_mixed_call(VertexAdaptor<op_func_call> call) {
+  const auto *type = tinf::get_type(call->args().front());
+  kphp_assert(type->ptype() == tp_Class);
+
+  to_mixed_on_class(type->class_type());
 }
 
 void check_estimate_memory_usage_call(VertexAdaptor<op_func_call> call) {
@@ -559,6 +571,7 @@ void FinalCheckPass::on_start() {
 
   if (current_function->type == FunctionData::func_class_holder) {
     check_class_immutableness(current_function->class_id);
+    check_serialized_fields_hierarchy(current_function->class_id);
     process_job_worker_class(current_function->class_id);
   }
 
@@ -721,6 +734,9 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     kphp_error(lhs_type->ptype() == tp_Class,
                fmt_format("Accessing ->property of non-instance {}", lhs_type->as_human_readable()));
   }
+  if (auto instanceof = vertex.try_as<op_instanceof>()) {
+    instanceof->derived_class->mark_as_used();
+  }
 
   if (vertex->type() == op_throw) {
     const TypeData *thrown_type = tinf::get_type(vertex.as<op_throw>()->exception());
@@ -780,7 +796,7 @@ void FinalCheckPass::check_instanceof(VertexAdaptor<op_instanceof> instanceof_ve
     return;
   }
 
-  kphp_error(instanceof_var_type->class_type(), fmt_format("left operand of 'instanceof' should be an instance, but passed {}", instanceof_var_type->as_human_readable()));
+  kphp_error(instanceof_var_type->class_type() || instanceof_var_type->ptype() == tp_mixed, fmt_format("left operand of 'instanceof' should be an instance or mixed, but passed {}", instanceof_var_type->as_human_readable()));
 }
 
 static void check_indexing_violation(vk::string_view allowed_types_string, const std::vector<PrimitiveType> &allowed_types, vk::string_view what_indexing,
@@ -855,6 +871,8 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
       kphp_error(arg_type->can_store_null(), fmt_format("is_null() will be always false for {}", arg_type->as_human_readable()));
     } else if (function_name == "register_shutdown_function") {
       check_register_shutdown_functions(call);
+    } else if (function_name == "to_mixed") {
+      check_to_mixed_call(call);
     } else if (vk::string_view{function_name}.starts_with("rpc_tl_query")) {
       G->set_untyped_rpc_tl_used();
     } else if (vk::string_view{function_name}.starts_with("FFI$$")) {
@@ -1046,4 +1064,41 @@ void FinalCheckPass::check_magic_tostring_method(FunctionPtr fun) {
 void FinalCheckPass::check_magic_clone_method(FunctionPtr fun) {
   kphp_error(!fun->is_resumable, fmt_format("{} method has to be not resumable", fun->as_human_readable()));
   kphp_error(!fun->can_throw(), fmt_format("{} method should not throw exception", fun->as_human_readable()));
+}
+
+
+void FinalCheckPass::check_serialized_fields_hierarchy(ClassPtr klass) {
+  auto the_klass = klass;
+  // This loop finishes unconditionally since there is NULL klass->parent_class if there is no base class.
+  while (the_klass) {
+
+    // Inheritance with serialization is allowed if
+    // * parent class has ho instance field
+    // * if there are instance fields, class should be marked with kphp-serializable
+    if (klass->is_serializable) {
+      kphp_error_return(
+        (the_klass->members.has_any_instance_var() && the_klass->is_serializable) || !the_klass->members.has_any_instance_var(),
+        fmt_format("Class {} and all its ancestors must be @kphp-serializable if there are instance fields. Class {} is not.", klass->name, the_klass->name));
+
+    }
+    the_klass = the_klass->parent_class;
+  }
+
+  klass->members.for_each([&](ClassMemberInstanceField &f) {
+    // Check if there is a field with the same number available above in hierarchy
+    auto f_tag = f.serialization_tag;
+    the_klass = klass->parent_class;
+
+    while (the_klass) {
+      auto same_numbered_field = the_klass->members.find_member([&f_tag](const ClassMemberInstanceField &f) {
+        return (f.serialization_tag == f_tag) && (f_tag != -1);
+      });
+
+      if (same_numbered_field) {
+        kphp_error_return(false, fmt_format("kphp-serialized-field: field with number {} found in both classes {} and {}", f_tag, the_klass->name, klass->name));
+      }
+
+      the_klass = the_klass->parent_class;
+    }
+  });
 }

@@ -1,4 +1,4 @@
-@kphp_should_warn
+@kphp_should_warn k2_skip
 /expression \$x = array_merge\(\$x, <...>\) can be replaced with array_merge_into\(\$x, <...>\)/
 /expression \$y\['hello'\] = array_merge\(\$y\['hello'\], <...>\) can be replaced with array_merge_into\(\$y\['hello'\], <...>\)/
 /expression \$z\['x'\]\[\$y\['hello'\]\[0\]\] = array_merge\(\$z\['x'\]\[\$y\['hello'\]\[0\]\], <...>\) can be replaced with array_merge_into\(\$z\['x'\]\[\$y\['hello'\]\[0\]\], <...>\)/

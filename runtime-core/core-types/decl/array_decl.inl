@@ -26,13 +26,6 @@ struct array_size {
   inline array_size &min(const array_size &other) noexcept;
 };
 
-#if defined(__clang__) || (defined(__GNUC__) && __GNUC__ < 10)
-// clang complains about 'flexible array member x of type T[] with non-trivial destruction'
-#define KPHP_ARRAY_TAIL_SIZE 0
-#else
-// gcc10 complains about out-of-bounds access to an array of zero size
-#define KPHP_ARRAY_TAIL_SIZE
-#endif
 
 namespace dl {
 template<class T, class TT, class T1>
@@ -95,14 +88,16 @@ private:
     uint32_t string_size{0};
   };
 
-  struct array_inner : array_inner_control {
+  struct alignas(array_bucket) array_inner : array_inner_control {
     static constexpr uint32_t MAX_HASHTABLE_SIZE = (1 << 26);
     //empty hash_entry identified by (next == EMPTY_POINTER)
     static constexpr entry_pointer_type EMPTY_POINTER = 0;
-
-    array_bucket entries[KPHP_ARRAY_TAIL_SIZE];
+    static constexpr size_t ENTRIES_OFFSET = sizeof(array_inner);
 
     inline bool is_vector() const noexcept __attribute__ ((always_inline));
+
+    inline array_bucket* entries() noexcept __attribute__ ((always_inline));
+    inline const array_bucket* entries() const noexcept __attribute__ ((always_inline));
 
     inline list_hash_entry *get_entry(entry_pointer_type pointer) const __attribute__ ((always_inline));
     inline entry_pointer_type get_pointer(list_hash_entry *entry) const __attribute__ ((always_inline));
@@ -111,7 +106,6 @@ private:
     inline const array_bucket *next(const array_bucket *ptr) const __attribute__ ((always_inline)) ubsan_supp("alignment");
     inline const array_bucket *prev(const array_bucket *ptr) const __attribute__ ((always_inline)) ubsan_supp("alignment");
     inline const array_bucket *end() const __attribute__ ((always_inline)) ubsan_supp("alignment");
-
     inline array_bucket *begin() __attribute__ ((always_inline)) ubsan_supp("alignment");
     inline array_bucket *next(array_bucket *ptr) __attribute__ ((always_inline)) ubsan_supp("alignment");
     inline array_bucket *prev(array_bucket *ptr) __attribute__ ((always_inline)) ubsan_supp("alignment");

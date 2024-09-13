@@ -1,5 +1,5 @@
-@kphp_should_fail
-/You may not serialize classes which has a parent with fields/
+@kphp_should_fail k2_skip
+/Class A and all its ancestors must be @kphp-serializable if there are instance fields. Class Base is not./
 <?php
 
 require_once 'kphp_tester_include.php';

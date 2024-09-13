@@ -167,6 +167,10 @@ stage::StageInfo *stage::get_stage_info_ptr() {
   return &*stage_info;
 }
 
+void stage::set_exit_code(ExitCode code) {
+  get_stage_info_ptr()->exit_code = code;
+}
+
 void stage::set_name(std::string &&name) {
   get_stage_info_ptr()->name = std::move(name);
   get_stage_info_ptr()->cnt_errors = 0;
@@ -193,12 +197,16 @@ bool stage::has_global_error() {
 void stage::die_if_global_errors() {
   if (stage::has_global_error()) {
     fmt_print("Compilation terminated due to errors\n");
-    exit(1);
+    exit(static_cast<int>(stage::get_exit_code()));
   }
 }
 
 const std::string &stage::get_name() {
   return get_stage_info_ptr()->name;
+}
+
+ExitCode stage::get_exit_code() {
+  return get_stage_info_ptr()->exit_code;
 }
 
 Location *stage::get_location_ptr() {

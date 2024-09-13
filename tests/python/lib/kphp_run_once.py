@@ -9,7 +9,7 @@ from .file_utils import error_can_be_ignored
 
 class KphpRunOnce(KphpBuilder):
     def __init__(self, php_script_path, artifacts_dir, working_dir, php_bin,
-                 extra_include_dirs=None, vkext_dir=None, use_nocc=False, cxx_name="g++"):
+                 extra_include_dirs=None, vkext_dir=None, use_nocc=False, cxx_name="g++", k2_bin=None):
         super(KphpRunOnce, self).__init__(
             php_script_path=php_script_path,
             artifacts_dir=artifacts_dir,
@@ -26,6 +26,7 @@ class KphpRunOnce(KphpBuilder):
             self._include_dirs.extend(extra_include_dirs)
         self._vkext_dir = vkext_dir
         self._php_bin = php_bin
+        self.k2_bin = k2_bin
 
     def _get_extensions(self):
         if sys.platform == "darwin":
@@ -94,6 +95,12 @@ class KphpRunOnce(KphpBuilder):
         return php_proc.returncode == 0
 
     def run_with_kphp(self, runs_cnt=1, args=[]):
+        if self.k2_bin is not None:
+            return self.run_with_kphp_and_k2(runs_cnt=runs_cnt, args=args)
+        else:
+            return self.run_with_kphp_server(runs_cnt=runs_cnt, args=args)
+
+    def run_with_kphp_server(self, runs_cnt=1, args=[]):
         self._clear_working_dir(self._kphp_runtime_tmp_dir)
 
         sanitizer_log_name = "kphp_runtime_sanitizer_log"
@@ -124,6 +131,37 @@ class KphpRunOnce(KphpBuilder):
                 content=kphp_runtime_stderr)
 
         return kphp_server_proc.returncode == 0
+
+    def run_with_kphp_and_k2(self, runs_cnt=1, args=[]):
+        self._clear_working_dir(self._kphp_runtime_tmp_dir)
+
+        k2_runtime_bin = self.k2_bin
+
+        cmd = [k2_runtime_bin, "--image", os.path.join(self._kphp_build_tmp_dir, "component.so"), "--runs-count={}".format(runs_cnt), "--crypto"] + args
+
+        if not os.getuid():
+            cmd += ["-u", "root", "-g", "root"]
+
+        env = {"RUST_LOG": "Warn"}
+
+        k2_runtime_proc = subprocess.Popen(cmd,
+                                           cwd=self._kphp_runtime_tmp_dir,
+                                           env=env,
+                                           stdout=subprocess.PIPE,
+                                           stderr=subprocess.PIPE)
+
+        self._kphp_server_stdout, _kphp_server_stderr = self._wait_proc(k2_runtime_proc)
+
+        ignore_stderr = error_can_be_ignored(
+            ignore_patterns=[],
+            binary_error_text=_kphp_server_stderr)
+
+        if not ignore_stderr:
+            self._kphp_runtime_stderr = self._move_to_artifacts(
+                "k2_runtime_stderr",
+                k2_runtime_proc.returncode,
+                content=_kphp_server_stderr)
+        return k2_runtime_proc.returncode == 0
 
     def compare_php_and_kphp_stdout(self):
         if self._kphp_server_stdout == self._php_stdout:

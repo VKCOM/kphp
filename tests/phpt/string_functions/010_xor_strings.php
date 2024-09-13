@@ -1,11 +1,11 @@
 @ok
 <?php
 
-function is_kphp() {
+function xor_impl(string $s1, string $s2) {
 #ifndef KPHP
-    return false;
+    return $s1 ^ $s2;
 #endif
-    return true;
+    return xor_strings($s1, $s2);
 }
 
 function test_xor_strings() {
@@ -13,12 +13,9 @@ function test_xor_strings() {
 
   foreach ($strings as $str1) {
     foreach($strings as $str2) {
-      if (is_kphp()) {
-        $res = xor_strings($str1, $str2);
-      } else {
-        $res = $str1 ^ $str2;
-      }
-      var_dump($res);
+      var_dump(xor_impl($str1, $str2));
     }
   }
 }
+
+test_xor_strings();

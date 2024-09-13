@@ -5,11 +5,13 @@
 #pragma once
 
 #include <cassert>
+#include <concepts>
 #include <coroutine>
 #include <optional>
 #include <utility>
 
 #include "common/containers/final_action.h"
+#include "runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/utils/context.h"
 
 #if __clang_major__ > 7
@@ -49,6 +51,11 @@ protected:
   void *handle_address{nullptr};
 };
 
+/**
+ * Please, read following documents before trying to understand what's going on here:
+ * 1. C++20 coroutines — https://en.cppreference.com/w/cpp/language/coroutines
+ * 2. C++ coroutines: understanding symmetric stransfer — https://lewissbaker.github.io/2020/05/11/understanding_symmetric_transfer
+ */
 template<typename T>
 struct task_t : public task_base_t {
   template<std::same_as<T> F>
@@ -56,7 +63,6 @@ struct task_t : public task_base_t {
   struct promise_void_t;
 
   using promise_type = std::conditional_t<!std::is_void<T>{}, promise_non_void_t<T>, promise_void_t>;
-
   using task_base_t::task_base_t;
 
   struct promise_base_t {
@@ -108,7 +114,7 @@ struct task_t : public task_base_t {
     std::exception_ptr exception;
 
     static task_t get_return_object_on_allocation_failure() {
-      throw std::bad_alloc();
+      php_critical_error("cannot allocate memory for task_t");
     }
 
     template<typename... Args>
@@ -143,14 +149,14 @@ struct task_t : public task_base_t {
     get_handle().resume();
   }
 
-  T get_result() {
+  T get_result() noexcept {
     if (get_handle().promise().exception) {
       std::rethrow_exception(std::move(get_handle().promise().exception));
     }
     if constexpr (!std::is_void<T>{}) {
       T *t = std::launder(reinterpret_cast<T *>(get_handle().promise().bytes));
       const vk::final_action final_action([t] { t->~T(); });
-      return *t;
+      return std::move(*t);
     }
   }
 
@@ -171,7 +177,7 @@ struct task_t : public task_base_t {
     explicit awaiter_t(task_t *task)
       : task{task} {}
 
-    bool await_ready() const {
+    constexpr bool await_ready() const noexcept {
       return false;
     }
 
@@ -181,7 +187,7 @@ struct task_t : public task_base_t {
 #else
     bool
 #endif
-    await_suspend(std::coroutine_handle<PromiseType> h) {
+    await_suspend(std::coroutine_handle<PromiseType> h) noexcept {
 #ifdef CPPCORO_COMPILER_SUPPORTS_SYMMETRIC_TRANSFER
       task->get_handle().promise().next = h.address();
       return task->get_handle();
@@ -197,8 +203,16 @@ struct task_t : public task_base_t {
 #endif
     }
 
-    T await_resume() {
+    T await_resume() noexcept {
       return task->get_result();
+    }
+
+    bool resumable() const noexcept {
+      return task->done();
+    }
+
+    void cancel() const noexcept {
+      task->get_handle().promise().next = nullptr;
     }
 
     task_t *task;
@@ -210,5 +224,17 @@ struct task_t : public task_base_t {
 
   std::coroutine_handle<promise_type> get_handle() {
     return std::coroutine_handle<promise_type>::from_address(handle_address);
+  }
+
+  // conversion functions
+  //
+  // erase type
+  explicit operator task_t<void>() && noexcept {
+    return task_t<void>{std::coroutine_handle<>::from_address(std::exchange(handle_address, nullptr))};
+  }
+  // restore erased type
+  template<typename U>
+  requires(std::same_as<void, T>) explicit operator task_t<U>() && noexcept {
+    return task_t<U>{std::coroutine_handle<>::from_address(std::exchange(handle_address, nullptr))};
   }
 };

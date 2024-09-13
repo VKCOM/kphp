@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 
 function do_similar_text_test(string $hint, string $first, string $second) {

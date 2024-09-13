@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /It's forbidden to `clone` built-in classes/
 <?php
 

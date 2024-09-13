@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /Field ix of immutable class Y has mutable derived X12/
 <?php
 

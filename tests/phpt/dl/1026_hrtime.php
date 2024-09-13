@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 
 // We can't test the exact values, but we can try to

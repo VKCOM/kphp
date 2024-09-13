@@ -25,15 +25,21 @@
 #include "compiler/tl-classes.h"
 
 enum class OutputMode {
-  server,   // -M server
-  cli,      // -M cli
-  lib,      // -M lib
-  k2_component // -M k2-component
+  server,       // -M server
+  cli,          // -M cli
+  lib,          // -M lib
+  k2_cli,       // -M k2-cli
+  k2_server,    // -M k2-server
+  k2_oneshot,   // -M k2-oneshot
+  k2_multishot, // -M k2-multishot
 };
 
 class CompilerCore {
 private:
   Index cpp_index;
+  Index runtime_core_sources_index;
+  Index runtime_sources_index;
+  Index common_sources_index;
   TSHashTable<SrcFilePtr> file_ht;
   TSHashTable<SrcDirPtr> dirs_ht;
   TSHashTable<FunctionPtr> functions_ht;
@@ -60,6 +66,11 @@ private:
 
 public:
   std::string cpp_dir;
+
+  // Don't like that, handle in another way
+  std::string runtime_core_sources_dir;
+  std::string runtime_sources_dir;
+  std::string common_sources_dir;
 
   CompilerCore();
   void start();
@@ -130,9 +141,13 @@ public:
   void load_index();
   void save_index();
   const Index &get_index();
+  const Index &get_runtime_core_index();
+  const Index &get_runtime_index();
+  const Index &get_common_index();
   File *get_file_info(std::string &&file_name);
   void del_extra_files();
   void init_dest_dir();
+  void init_runtime_and_common_srcs_dir();
 
   void try_load_tl_classes();
   void init_composer_class_loader();
@@ -177,8 +192,24 @@ public:
     return output_mode == OutputMode::lib;
   }
 
-  bool is_output_mode_k2_component() const {
-    return output_mode == OutputMode::k2_component;
+  bool is_output_mode_k2_cli() const {
+    return output_mode == OutputMode::k2_cli;
+  }
+
+  bool is_output_mode_k2_server() const {
+    return output_mode == OutputMode::k2_server;
+  }
+
+  bool is_output_mode_k2_oneshot() const {
+    return output_mode == OutputMode::k2_oneshot;
+  }
+
+  bool is_output_mode_k2_multishot() const {
+    return output_mode == OutputMode::k2_multishot;
+  }
+
+  bool is_output_mode_k2() const {
+    return is_output_mode_k2_cli() || is_output_mode_k2_server() || is_output_mode_k2_oneshot() || is_output_mode_k2_multishot();
   }
 
   Stats stats;

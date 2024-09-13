@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /in a lambda inside castO2ToTypeofO1<BB, D1>/
 /classof\(\) used incorrectly: it's a keyword to be used only for a single variable which is a generic parameter/
 <?php

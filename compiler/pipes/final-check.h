@@ -44,4 +44,5 @@ private:
   static void check_instanceof(VertexAdaptor<op_instanceof> instanceof_vertex);
   static void check_indexing(VertexPtr array, VertexPtr key) noexcept;
   static void check_array_literal(VertexAdaptor<op_array> vertex) noexcept;
+  static void check_serialized_fields_hierarchy(ClassPtr klass);
 };

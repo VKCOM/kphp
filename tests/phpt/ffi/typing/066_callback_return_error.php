@@ -1,4 +1,4 @@
-@kphp_should_fail
+@kphp_should_fail k2_skip
 /return int from function/
 /declared as @return void/
 <?php

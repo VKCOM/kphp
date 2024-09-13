@@ -115,7 +115,8 @@ void FunctionParams::declare_cpp_param(CodeGenerator &W, VertexAdaptor<op_var> v
   auto var_ptr = var->var_id;
   if (var->ref_flag) {
     W << "&";
-  } else if (var_ptr->marked_as_const || (!function->has_variadic_param && var_ptr->is_read_only)) {
+  } else if (!function->is_k2_fork && (var_ptr->marked_as_const || (!function->has_variadic_param && var_ptr->is_read_only))) {
+    // the top of k2 fork must take arguments by value (see C++ avoid reference parameters in coroutines)
     W << (!type.type->is_primitive_type() ? "const &" : "");
   }
   W << VarName(var_ptr);
@@ -409,7 +410,7 @@ void InterfaceDeclaration::compile(CodeGenerator &W) const {
     auto transform_to_src_name = [](CodeGenerator &W, const InterfacePtr &i) { W << i->src_name; };
     W << JoinValues(interface->implements, ", public ", join_mode::one_line, transform_to_src_name);
   } else {
-    W << (interface->need_virtual_modifier() ? "virtual " : "") << "abstract_refcountable_php_interface";
+    W << (interface->need_virtual_modifier() ? "virtual " : "") << (interface->may_be_mixed ? "may_be_mixed_base" : "abstract_refcountable_php_interface");
   }
   W << " " << BEGIN;
 
@@ -492,10 +493,13 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
     W << ": public refcountable_polymorphic_php_classes<" << get_all_interfaces() << ">";
   } else if (!klass->derived_classes.empty()) {
     if (klass->need_virtual_modifier()) {
-      W << ": public refcountable_polymorphic_php_classes_virt<>";
+      W << ": public refcountable_polymorphic_php_classes_virt<>" << (klass->may_be_mixed ? ", virtual may_be_mixed_base" : "");
     } else {
-      W << ": public refcountable_polymorphic_php_classes<abstract_refcountable_php_interface>";
+      W << ": public refcountable_polymorphic_php_classes<" <<
+        (klass->may_be_mixed ? "may_be_mixed_base" : "abstract_refcountable_php_interface") << ">";
     }
+  } else if(klass->may_be_mixed) {
+    W << ": public refcountable_polymorphic_php_classes<may_be_mixed_base>";
   } else { // not polymorphic
     W << ": public refcountable_php_classes<" << klass->src_name << ">";
   }
@@ -507,7 +511,7 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
 
   compile_fields(W, klass);
 
-  if (!klass->derived_classes.empty()) {
+  if (klass->may_be_mixed || !klass->derived_classes.empty()) {
     W << "virtual ~" << klass->src_name << "() = default;" << NL;
   }
 
@@ -536,6 +540,10 @@ void ClassDeclaration::compile(CodeGenerator &W) const {
   W << CloseFile();
 }
 
+static bool is_may_be_mixed_virtual_method(vk::string_view method_signature) {
+  return method_signature == "const char *get_class()";
+}
+
 template<class ReturnValueT>
 void ClassDeclaration::compile_class_method(FunctionSignatureGenerator &&W, ClassPtr klass, vk::string_view method_signature, const ReturnValueT &return_value) {
   const bool has_parent = (klass->parent_class && klass->parent_class->does_need_codegen()) ||
@@ -544,6 +552,12 @@ void ClassDeclaration::compile_class_method(FunctionSignatureGenerator &&W, Clas
   const bool is_overridden = has_parent && has_derived;
   const bool is_final = has_parent && !has_derived;
   const bool is_pure_virtual = klass->class_type == ClassType::interface;
+  const bool may_be_mixed = klass->may_be_mixed;
+
+  if (klass->is_interface() && may_be_mixed && is_may_be_mixed_virtual_method(method_signature)) {
+    std::move(W).clear_all();
+    return;
+  }
 
   FunctionSignatureGenerator &&signature = std::move(W)
     .set_is_virtual(is_pure_virtual || has_derived)
@@ -892,6 +906,10 @@ void ClassDeclaration::compile_accept_json_visitor(CodeGenerator &W, ClassPtr kl
 }
 
 void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr klass) {
+  if (G->is_output_mode_k2()) {
+    // The current version of runtime-light does not support visitors
+    return;
+  }
   bool need_generic_accept =
     klass->need_to_array_debug_visitor ||
     klass->need_instance_cache_visitors ||
@@ -1043,6 +1061,10 @@ void ClassDeclaration::compile_job_worker_shared_memory_piece_methods(CodeGenera
 }
 
 void ClassMembersDefinition::compile(CodeGenerator &W) const {
+  if (G->is_output_mode_k2()) {
+    // The current version of runtime-light does not support visitors
+    return;
+  }
   bool need_generic_accept =
     klass->need_to_array_debug_visitor ||
     klass->need_instance_cache_visitors ||
@@ -1125,16 +1147,29 @@ void ClassMembersDefinition::compile_msgpack_serialize(CodeGenerator &W, ClassPt
   //   packer.pack(field_1);
   //   ...
   //}
+
   std::vector<std::string> body;
   uint16_t cnt_fields = 0;
 
-  klass->members.for_each([&](ClassMemberInstanceField &field) {
-    if (field.serialization_tag != -1) {
-      auto func_name = fmt_format("vk::msgpack::packer_float32_decorator::pack_value{}", field.serialize_as_float32 ? "_float32" : "");
-      body.emplace_back(fmt_format("packer.pack({}); {}(packer, ${});", field.serialization_tag, func_name, field.var->name));
-      cnt_fields += 2;
-    }
-  });
+  std::vector<ClassPtr> klasses;
+  ClassPtr the_klass = klass;
+
+  while (the_klass) {
+    klasses.push_back(the_klass);
+    the_klass = the_klass->parent_class;
+  }
+
+  std::reverse(klasses.begin(), klasses.end());
+
+  for (auto &k : klasses) {
+    k->members.for_each([&](ClassMemberInstanceField &field) {
+      if (field.serialization_tag != -1) {
+        auto func_name = fmt_format("vk::msgpack::packer_float32_decorator::pack_value{}", field.serialize_as_float32 ? "_float32" : "");
+        body.emplace_back(fmt_format("packer.pack({}); {}(packer, ${});", field.serialization_tag, func_name, field.var->name));
+        cnt_fields += 2;
+      }
+    });
+  }
 
   FunctionSignatureGenerator(W).set_const_this()
     << "void " << klass->src_name << "::msgpack_pack(vk::msgpack::packer<string_buffer> &packer)" << BEGIN
@@ -1162,12 +1197,25 @@ void ClassMembersDefinition::compile_msgpack_deserialize(CodeGenerator &W, Class
   //
 
   std::vector<std::string> cases;
-  klass->members.for_each([&](ClassMemberInstanceField &field) {
-    if (field.serialization_tag != -1) {
-      cases.emplace_back(fmt_format("case {}: elem.convert(${}); break;", field.serialization_tag, field.var->name));
-    }
-  });
+  std::vector<ClassPtr> klasses;
 
+  ClassPtr the_klass = klass;
+
+  // Put class' fields along with all parent's fields.
+  while (the_klass) {
+    klasses.push_back(the_klass);
+    the_klass = the_klass->parent_class;
+  }
+
+  std::reverse(klasses.begin(), klasses.end());
+
+  for (auto &k : klasses) {
+    k->members.for_each([&](ClassMemberInstanceField &field) {
+      if (field.serialization_tag != -1) {
+        cases.emplace_back(fmt_format("case {}: elem.convert(${}); break;", field.serialization_tag, field.var->name));
+      }
+    });
+  }
   cases.emplace_back("default: break;");
 
   W << "void " << klass->src_name << "::msgpack_unpack(const vk::msgpack::object &msgpack_o) " << BEGIN

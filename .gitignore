@@ -9,6 +9,7 @@
 
 .idea
 .vscode
+.cache
 build
 *.iml
 /cmake-build-*

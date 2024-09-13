@@ -118,6 +118,8 @@ public:
   KphpOption<std::string> mode;
   KphpOption<std::string> link_file;
   KphpOption<std::vector<std::string>> includes;
+  KphpOption<std::string> runtime_and_common_src;
+  KphpOption<bool> force_link_runtime;
 
   KphpOption<std::string> dest_dir;
   KphpOption<std::string> user_binary_path;
@@ -147,9 +149,8 @@ public:
   KphpOption<std::string> compilation_metrics_file;
   KphpOption<std::string> override_kphp_version;
   KphpOption<std::string> php_code_version;
-  KphpOption<std::string> k2_component_name;
 
-  KphpOption<bool> k2_component_is_oneshot;
+  KphpOption<std::string> k2_component_name;
 
   KphpOption<std::string> cxx;
   KphpOption<std::string> cxx_toolchain_dir;

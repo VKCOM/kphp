@@ -1,3 +1,2 @@
-prepend(RUNTIME_TL_SRC ${BASE_DIR}/runtime-light/tl/
-        tl-builtins.cpp
-)
+prepend(RUNTIME_TL_SRC tl/ tl-builtins.cpp tl-core.cpp tl-functions.cpp
+        tl-types.cpp)

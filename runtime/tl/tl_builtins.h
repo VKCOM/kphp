@@ -4,12 +4,11 @@
 
 #pragma once
 
+#include <cstdint>
 #include <memory>
 
 #include "common/tl/constants/common.h"
-
-#include "runtime-core/include.h"
-#include "runtime/interface.h"
+#include "runtime-core/runtime-core.h"
 #include "runtime/rpc.h"
 #include "runtime/tl/rpc_function.h"
 #include "runtime/tl/rpc_tl_query.h"
@@ -508,12 +507,12 @@ struct tl_Dictionary_impl {
 
   array<mixed> fetch() {
     CHECK_EXCEPTION(return array<mixed>());
-    array<mixed> result;
     int32_t n = rpc_fetch_int();
     if (n < 0) {
       CurrentTlQuery::get().raise_fetching_error("Dictionary size is negative");
-      return result;
+      return {};
     }
+    array<mixed> result{array_size{n, false}};
     for (int32_t i = 0; i < n; ++i) {
       const auto &key = KeyT().fetch();
       fetch_magic_if_not_bare(inner_value_magic, "Incorrect magic of inner type of some Dictionary");
@@ -547,6 +546,7 @@ struct tl_Dictionary_impl {
       CurrentTlQuery::get().raise_fetching_error("Dictionary size is negative");
       return;
     }
+    out.reserve(n, false);
     for (int32_t i = 0; i < n; ++i) {
       typename KeyT::PhpType key;
       KeyT().typed_fetch_to(key);

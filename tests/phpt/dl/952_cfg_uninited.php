@@ -1,4 +1,4 @@
-@kphp_should_warn
+@kphp_should_warn k2_skip
 /Variable \$a1 may be used uninitialized/
 /Variable \$a2 may be used uninitialized/
 /Variable \$b2 may be used uninitialized/

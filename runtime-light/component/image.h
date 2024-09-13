@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include "runtime-light/header.h"
 #include "runtime-light/stdlib/rpc/rpc-context.h"
 
 struct ImageState {

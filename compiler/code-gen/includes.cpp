@@ -56,7 +56,7 @@ void IncludesCollector::add_function_body_depends(const FunctionPtr &function) {
       const auto source_full_path = G->settings().dest_cpp_dir.get() + function->header_full_name;
       auto relative_path = make_relative_path(source_full_path, to_include->header_full_name);
       lib_headers_.emplace(to_include->header_full_name, std::move(relative_path));
-    } else if (!to_include->is_extern()) {
+    } else if (!to_include->is_extern() || to_include->need_generated_stub) {
       kphp_assert(!to_include->header_full_name.empty());
       internal_headers_.emplace(to_include->header_full_name);
     }
@@ -167,7 +167,7 @@ void IncludesCollector::compile(CodeGenerator &W) const {
     if (klass->ffi_class_mixin) {
       // FFI CData classes (structs really) are defined at their scope class header
       class_to_include = G->get_class(FFIRoot::scope_class_name(klass->ffi_class_mixin->scope_name));
-    } else if (!klass->is_builtin()) {
+    } else if (!klass->is_builtin() || klass->need_generated_stub) { // add include for generated internal class
       class_to_include = klass;
     }
     if (class_to_include && !prev_classes_.count(class_to_include)) {

@@ -2,9 +2,11 @@
 // Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include "runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/component/component.h"
 #include "runtime-light/component/image.h"
 #include "runtime-light/core/globals/php-init-scripts.h"
+#include "runtime-light/utils/context.h"
 
 ImageState *vk_k2_create_image_state(const struct PlatformCtx *pt_ctx) {
   // Note that in vk_k2_create_image_state available only allocator and logs from pt_ctx
@@ -47,26 +49,10 @@ PollStatus vk_k2_poll(const ImageState *image_state, const PlatformCtx *pt_ctx, 
   platformCtx = pt_ctx;
   componentState = component_ctx;
 
-  componentState->resume_if_was_rescheduled();
-  uint64_t stream_d = 0;
-  while (platformCtx->take_update(&stream_d) && componentState->not_finished()) {
-    php_debug("take update on stream %lu", stream_d);
-    StreamStatus status;
-    GetStatusResult res = platformCtx->get_stream_status(stream_d, &status);
-    if (res != GetStatusOk) {
-      php_warning("get stream status %d", res);
-    }
-    php_debug("stream status %d, %d, %d", status.read_status, status.write_status, status.please_shutdown_write);
-    php_debug("opened_streams size %zu", componentState->opened_streams.size());
-    if (componentState->is_stream_already_being_processed(stream_d)) {
-      php_debug("update on processed stream %lu", stream_d);
-      componentState->resume_if_wait_stream(stream_d, status);
-    } else {
-      componentState->process_new_input_stream(stream_d);
-    }
-  }
-
-  PollStatus poll_status = componentState->poll_status;
+  php_debug("vk_k2_poll started...");
+  componentState->process_platform_updates();
+  const auto poll_status = componentState->poll_status;
+  php_debug("vk_k2_poll finished with status: %d", poll_status);
   reset_thread_locals();
   return poll_status;
 }

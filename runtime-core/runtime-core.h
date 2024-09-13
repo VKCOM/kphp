@@ -32,6 +32,7 @@
 #include "runtime-core/core-types/decl/mixed_decl.inl"
 #include "runtime-core/core-types/decl/string_buffer_decl.inl"
 
+#include "runtime-core/allocator/runtime-allocator.h"
 #include "runtime-core/runtime-core-context.h"
 
 #include "runtime-core/core-types/definition/string.inl"
@@ -53,8 +54,8 @@
 #define SAFE_SET_VALUE(a, b, b_type, c, c_type) ({b_type b_tmp___ = b; c_type c_tmp___ = c; (a).set_value (b_tmp___, c_tmp___);})
 #define SAFE_PUSH_BACK(a, b, b_type) ({b_type b_tmp___ = b; a.push_back (b_tmp___);})
 #define SAFE_PUSH_BACK_RETURN(a, b, b_type) ({b_type b_tmp___ = b; a.push_back_return (b_tmp___);})
-#define NOERR(a, a_type) ({php_disable_warnings++; a_type a_tmp___ = a; php_disable_warnings--; a_tmp___;})
-#define NOERR_VOID(a) ({php_disable_warnings++; a; php_disable_warnings--;})
+#define NOERR(a, a_type) ({KphpCoreContext::current().php_disable_warnings++; a_type a_tmp___ = a; KphpCoreContext::current().php_disable_warnings--; a_tmp___;})
+#define NOERR_VOID(a) ({KphpCoreContext::current().php_disable_warnings++; a; KphpCoreContext::current().php_disable_warnings--;})
 
 #define f$likely likely
 #define f$unlikely unlikely
@@ -375,9 +376,19 @@ inline bool f$is_a(const class_instance<Base> &base) {
   return base.template is_a<Derived>();
 }
 
+template<class Derived>
+inline bool f$is_a(const mixed &base) {
+  return base.is_a<Derived>();
+}
+
 template<class ClassInstanceDerived, class Base>
 inline ClassInstanceDerived f$instance_cast(const class_instance<Base> &base, const string &) {
   return base.template cast_to<typename ClassInstanceDerived::ClassType>();
+}
+
+template<class ClassInstanceDerived>
+inline ClassInstanceDerived f$instance_cast(const mixed &base, const string &s) {
+    return from_mixed<ClassInstanceDerived>(base, s);
 }
 
 inline const char *get_type_c_str(bool);

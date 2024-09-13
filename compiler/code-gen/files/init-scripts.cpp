@@ -40,12 +40,12 @@ void StaticInit::compile(CodeGenerator &W) const {
     W << "extern array<tl_storer_ptr> gen$tl_storers_ht;" << NL;
     FunctionSignatureGenerator(W) << "void fill_tl_storers_ht()" << SemicolonAndNL() << NL;
   }
-  if (!G->is_output_mode_k2_component()) {
+  if (!G->is_output_mode_k2()) {
     FunctionSignatureGenerator(W) << ("const char *get_php_scripts_version()") << BEGIN << "return " << RawString(G->settings().php_code_version.get()) << ";"
                                   << NL << END << NL << NL;
   }
 
-  if (!G->is_output_mode_k2_component()) {
+  if (!G->is_output_mode_k2()) {
     FunctionSignatureGenerator(W) << ("char **get_runtime_options([[maybe_unused]] int *count)") << BEGIN;
 
     const auto &runtime_opts = G->get_kphp_runtime_opts();
@@ -113,10 +113,16 @@ struct RunInterruptedFunction {
 
   void compile(CodeGenerator &W) const {
     std::string await_prefix = function->is_interruptible ? "co_await " : "";
-    FunctionSignatureGenerator(W) << "task_t<void> " << FunctionName(function) << "$run() " << BEGIN
-                                  << await_prefix << FunctionName(function) << "();" << NL
-                                  << "co_return;"
-                                  << END;
+    std::string component_kind = G->is_output_mode_k2_cli()         ? "ComponentKind::CLI"
+                                 : G->is_output_mode_k2_server()    ? "ComponentKind::Server"
+                                 : G->is_output_mode_k2_oneshot()   ? "ComponentKind::Oneshot"
+                                 : G->is_output_mode_k2_multishot() ? "ComponentKind::Multishot"
+                                                                    : "ComponentKind::Invalid";
+
+    std::string script_start = "co_await get_component_context()->run_component_prologue<" + component_kind + ">();";
+    std::string script_finish = "co_await get_component_context()->run_component_epilogue();";
+    FunctionSignatureGenerator(W) << "task_t<void> " << FunctionName(function) << "$run() " << BEGIN << script_start << NL << await_prefix
+                                  << FunctionName(function) << "();" << NL << script_finish << NL << "co_return;" << END;
     W << NL;
   }
 };
@@ -198,7 +204,7 @@ void InitScriptsCpp::compile(CodeGenerator &W) const {
   W << OpenFile("init_php_scripts.cpp", "", false);
 
   W << ExternInclude(G->settings().runtime_headers.get());
-  if (!G->is_output_mode_k2_component()) {
+  if (!G->is_output_mode_k2()) {
      W << ExternInclude("server/php-init-scripts.h");
   }
 
@@ -218,15 +224,15 @@ void InitScriptsCpp::compile(CodeGenerator &W) const {
     return;
   }
 
-  if (G->is_output_mode_k2_component()) {
+  if (G->is_output_mode_k2()) {
     W << RunInterruptedFunction(main_file_id->main_function) << NL;
   } else {
     W << RunFunction(main_file_id->main_function) << NL;
   }
   W << GlobalsResetFunction(main_file_id->main_function) << NL;
 
-  if (G->is_output_mode_k2_component()) {
-    FunctionSignatureGenerator(W) << "void init_php_scripts_in_each_worker(" << PhpMutableGlobalsRefArgument() << ", task_t<void>&run" ")" << BEGIN;
+  if (G->is_output_mode_k2()) {
+    FunctionSignatureGenerator(W) << "void init_php_scripts_in_each_worker(" << PhpMutableGlobalsRefArgument() << ", task_t<void> &run" ")" << BEGIN;
   } else {
     FunctionSignatureGenerator(W) << "void init_php_scripts_in_each_worker(" << PhpMutableGlobalsRefArgument() << ")" << BEGIN;
   }
@@ -240,7 +246,7 @@ void InitScriptsCpp::compile(CodeGenerator &W) const {
 
   W << FunctionName(main_file_id->main_function) << "$globals_reset(php_globals);" << NL;
 
-  if (G->is_output_mode_k2_component()) {
+  if (G->is_output_mode_k2()) {
     W << "run = " << FunctionName(main_file_id->main_function) << "$run();" << NL;
   } else {
     W << "set_script ("
@@ -274,20 +280,16 @@ void CppMainFile::compile(CodeGenerator &W) const {
 }
 
 void ComponentInfoFile::compile(CodeGenerator &W) const {
-  kphp_assert(G->is_output_mode_k2_component());
+  kphp_assert(G->is_output_mode_k2());
   G->settings().get_version();
   auto now = std::chrono::system_clock::now();
   W << OpenFile("image_info.cpp");
   W << ExternInclude(G->settings().runtime_headers.get());
-  W << "const ImageInfo *vk_k2_describe() " << BEGIN
-    << "static ImageInfo imageInfo {\"" << G->settings().k2_component_name.get() << "\"" << ","
-                                        << std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count() << ","
-                                        << "K2_PLATFORM_HEADER_H_VERSION, "
-                                        << "{}," //todo:k2 add commit hash
-                                        << "{}," //todo:k2 add compiler hash?
-                                        << (G->settings().k2_component_is_oneshot.get() ? "1" : "0")
-                                        << "};" << NL
-    << "return &imageInfo;" << NL
-    << END;
+  W << "const ImageInfo *vk_k2_describe() " << BEGIN << "static ImageInfo imageInfo {\"" << G->settings().k2_component_name.get() << "\"" << ","
+    << std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count() << ","
+    << "K2_PLATFORM_HEADER_H_VERSION, "
+    << "{}," // todo:k2 add commit hash
+    << "{}," // todo:k2 add compiler hash?
+    << (G->is_output_mode_k2_multishot() ? "0" : "1") << "};" << NL << "return &imageInfo;" << NL << END;
   W << CloseFile();
 }

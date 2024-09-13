@@ -15,13 +15,13 @@ public:
   virtual ~abstract_refcountable_php_interface() noexcept __attribute__((always_inline)) = default;
   virtual void add_ref() noexcept = 0;
   virtual void release() noexcept = 0;
-  virtual uint32_t get_refcnt() noexcept = 0;
+  virtual uint32_t get_refcnt() const noexcept = 0;
   virtual void set_refcnt(uint32_t new_refcnt) noexcept = 0;
 
   virtual void *get_instance_data_raw_ptr() noexcept = 0;
 };
 
-template<class ...Bases>
+template<class... Bases>
 class refcountable_polymorphic_php_classes : public Bases... {
 public:
   void add_ref() noexcept final {
@@ -30,7 +30,7 @@ public:
     }
   }
 
-  uint32_t get_refcnt() noexcept final {
+  uint32_t get_refcnt() const noexcept final {
     return refcnt;
   }
 
@@ -55,7 +55,7 @@ private:
   uint32_t refcnt{0};
 };
 
-template<class ...Interfaces>
+template<class... Interfaces>
 class refcountable_polymorphic_php_classes_virt : public virtual abstract_refcountable_php_interface, public Interfaces... {
 public:
   refcountable_polymorphic_php_classes_virt() __attribute__((always_inline)) = default;
@@ -72,7 +72,7 @@ public:
     }
   }
 
-  uint32_t get_refcnt() noexcept final {
+  uint32_t get_refcnt() const noexcept final {
     return refcnt;
   }
 
@@ -98,7 +98,7 @@ private:
 };
 
 template<class Derived>
-class refcountable_php_classes  : public ScriptAllocatorManaged {
+class refcountable_php_classes : public ScriptAllocatorManaged {
 public:
   void add_ref() noexcept {
     if (refcnt < ExtraRefCnt::for_global_const) {
@@ -106,7 +106,7 @@ public:
     }
   }
 
-  uint32_t get_refcnt() noexcept {
+  uint32_t get_refcnt() const noexcept {
     return refcnt;
   }
 
@@ -133,6 +133,7 @@ public:
   void *get_instance_data_raw_ptr() noexcept {
     return this;
   }
+
 private:
   uint32_t refcnt{0};
 };
@@ -141,4 +142,9 @@ class refcountable_empty_php_classes {
 public:
   static void add_ref() noexcept {}
   static void release() noexcept {}
+};
+
+struct may_be_mixed_base : public virtual abstract_refcountable_php_interface {
+  ~may_be_mixed_base() override = default;
+  virtual const char *get_class() const noexcept = 0;
 };

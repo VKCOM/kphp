@@ -1,8 +1,15 @@
 <?php
 
+require_once __DIR__ . '/job-workers.txt';
+
+define('TODO', -1);
+define('TODO_OVERLOAD', -1);
+
+define('PHP_INT_MAX', 9223372036854775807);
 define('PHP_INT_MIN', -9223372036854775808);
 define('PHP_INT_SIZE', 8);
 define('PHP_EOL', "\n");
+
 
 /** @var mixed $_SERVER */
 global $_SERVER;
@@ -31,6 +38,7 @@ function strval ($v ::: mixed) ::: string;
 /** @kphp-extern-func-info interruptible */
 function exit($code = 0) ::: void;
 
+/** @kphp-extern-func-info interruptible */
 function die($code = 0) ::: void;
 
 function ob_clean() ::: void;
@@ -62,9 +70,6 @@ function is_bool ($v ::: mixed) ::: bool;
 function is_int ($v ::: mixed) ::: bool;
 function is_integer ($v ::: mixed) ::: bool;
 function is_long ($v ::: mixed) ::: bool;
-function is_finite ($v ::: float) ::: bool;
-function is_infinite ($v ::: float) ::: bool;
-function is_nan ($v ::: float) ::: bool;
 function is_float ($v ::: mixed) ::: bool;
 function is_double ($v ::: mixed) ::: bool;
 function is_real ($v ::: mixed) ::: bool;
@@ -75,6 +80,21 @@ function get_class ($v ::: any) ::: string;
 function get_hash_of_class (object $klass) ::: int;
 
 function strlen ($str ::: string) ::: int;
+
+// === Future =====================================================================================
+
+function get_running_fork_id() ::: future <void>;
+
+/** @kphp-extern-func-info interruptible cpp_template_call */
+function wait(future<any> | false $id, float $timeout = -1.0) ::: ^1[*] | null;
+
+// === Fork =======================================================================================
+
+/** @kphp-extern-func-info interruptible */
+function sched_yield() ::: void;
+
+/** @kphp-extern-func-info interruptible */
+function sched_yield_sleep($duration ::: float) ::: void;
 
 // === Rpc ========================================================================================
 
@@ -120,7 +140,6 @@ function rpc_tl_query_result($query_ids ::: array) ::: mixed[][];
 /** @kphp-extern-func-info interruptible */
 function typed_rpc_tl_query_result(int[] $query_ids) ::: @tl\RpcResponse[];
 
-
 // === Component ==================================================================================
 
 class ComponentQuery {
@@ -128,87 +147,53 @@ class ComponentQuery {
 }
 
 /** @kphp-extern-func-info interruptible */
-function component_get_http_query() ::: void;
+function component_client_send_request($name ::: string, $message ::: string) ::: ComponentQuery;
 
 /** @kphp-extern-func-info interruptible */
-function component_client_send_query($name ::: string, $message ::: string) ::: ComponentQuery;
-/** @kphp-extern-func-info interruptible */
-function component_client_get_result($query ::: ComponentQuery) ::: string;
+function component_client_fetch_response($query ::: ComponentQuery) ::: string;
 
 /** @kphp-extern-func-info interruptible */
-function component_server_get_query() ::: string;
+function component_server_accept_query() ::: ComponentQuery;
+
 /** @kphp-extern-func-info interruptible */
-function component_server_send_result($message ::: string) ::: void;
+function component_server_fetch_request($query ::: ComponentQuery) ::: string;
 
-class ComponentStream {
-    private function __construct() ::: \ComponentStream;
-
-    public function is_read_closed() ::: bool;
-    public function is_write_closed() ::: bool;
-    public function is_please_shutdown_write() ::: bool;
-
-    public function shutdown_write() ::: void;
-    public function please_shutdown_write() ::: void;
-}
-
-function component_open_stream($name ::: string) ::: ComponentStream;
 /** @kphp-extern-func-info interruptible */
-function component_accept_stream() ::: ComponentStream;
-
-function component_stream_write_nonblock($stream ::: ComponentStream, $message ::: string) ::: int;
-function component_stream_read_nonblock($stream ::: ComponentStream) ::: string;
-/** @kphp-extern-func-info interruptible */
-function component_stream_write_exact($stream ::: ComponentStream, $message ::: string) ::: int;
-/** @kphp-extern-func-info interruptible */
-function component_stream_read_exact($stream ::: ComponentStream, $len ::: int) ::: string;
-
-function component_close_stream($stream ::: ComponentStream) ::: void;
-function component_finish_stream_processing($stream ::: ComponentStream) ::: void;
+function component_server_send_response($query ::: ComponentQuery, $message ::: string) ::: void;
 
 // === Json =======================================================================================
-
-class JsonEncoder {
-  const rename_policy = 'none';
-  const visibility_policy = 'all';
-  const skip_if_default = false;
-  const float_precision = 0;
-
-  private function __construct();
-
-  public static function encode(object $instance, int $flags = 0, array $more = []) : string;
-  public static function decode(string $json, string $class_name) : instance<^2>;
-  public static function getLastError() : string;
-
-  // JsonEncoderOrChild::encode(...) is actually replaced by JsonEncoder::to_json_impl('JsonEncoderOrChild', ...)
-  static function to_json_impl(string $encoder_tag, object $instance, int $flags = 0, array $more = []) ::: string;
-
-  // JsonEncoderOrChild::decode(...) is actually replaced by JsonEncoder::from_json_impl('JsonEncoderOrChild', ...)
-  /** @kphp-extern-func-info cpp_template_call */
-  static function from_json_impl(string $encoder_tag, string $json, string $class_name) ::: instance<^3>;
-}
 
 function json_encode ($v ::: mixed, $options ::: int = 0) ::: string | false;
 
 function json_decode ($v ::: string, $assoc ::: bool = false) ::: mixed;
 
+// === Crypto======================================================================================
+
+/** @kphp-extern-func-info interruptible */
+function openssl_random_pseudo_bytes ($length ::: int) ::: string | false;
+
+/** @kphp-extern-func-info interruptible */
+function openssl_x509_parse ($x509cert ::: string, $shortnames ::: bool = true) ::: mixed[] | false;
+
 // === Misc =======================================================================================
 
 /** @kphp-extern-func-info cpp_template_call */
-function instance_cast(object $instance, $to_type ::: string) ::: instance<^2>;
+function instance_cast(any $instance, $to_type ::: string) ::: instance<^2>;
 
 function make_clone ($x ::: any) ::: ^1;
 
-/** @kphp-extern-func-info interruptible */
-function testyield() ::: void;
 function check_shutdown() ::: void;
 
 function warning($message ::: string) ::: void;
 /** @kphp-no-return */
 function critical_error($message ::: string) ::: void;
 
-function debug_print_string($str ::: string) ::: void;
-
-function byte_to_int($str ::: string) ::: ?int;
-function int_to_byte($v ::: int) ::: ?string;
-
+/** @kphp-extern-func-info interruptible */
 function set_timer(int $timeout, callable():void $callback) ::: void;
+
+// builtin that allows to store objects inside a mixed
+function to_mixed(object $instance) ::: mixed;
+
+// === Unsupported =======================================================================================
+
+require_once __DIR__ . '/unsupported-functions.txt';
