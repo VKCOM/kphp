@@ -1993,8 +1993,9 @@ void compile_callback_of_builtin(VertexAdaptor<op_callback_of_builtin> root, Cod
    *       return lambda$xxx(captured1, std::forward<decltype(args)>(args)...);
    *   }, const_array);
    * or in K2 mode:
-   *   co_await array_map([captured1 = $extern] (auto &&... args) [task_t<*inner lambda return type*>] {
-   *       [co]return lambda$xxx(captured1, std::forward<decltype(args)>(args)...);
+   *   co_await array_map([captured1 = $extern] (auto &&... args) [[-> task_t<lambda's return type>]]? {
+   *       [[return lambda$xxx(captured1, std::forward<decltype(args)>(args)...);
+   *       | co_return(co_await lambda$xxx(captured1, std::forward<decltype(args)>(args)...))]]
    *   }, const_array);
    * Where the body calls a lambda function:
    *    int lambda$xxx(int $extern, int $x) { return $xx + $extern; }
