@@ -206,6 +206,8 @@ static string http_status_line;
 static char headers_storage[sizeof(array<string>)];
 static array<string> *headers = reinterpret_cast <array<string> *> (headers_storage);
 static long long header_last_query_num = -1;
+bool headers_sent = false;
+headers_custom_handler_function_type headers_custom_handler_function;
 
 static bool check_status_line_int(const char *str, int str_len, int *pos) {
   if (*pos != str_len && str[*pos] == '0') {
@@ -523,7 +525,6 @@ int shutdown_functions_count = 0;
 char shutdown_function_storage[MAX_SHUTDOWN_FUNCTIONS * sizeof(shutdown_function_type)];
 shutdown_function_type *const shutdown_functions = reinterpret_cast<shutdown_function_type *>(shutdown_function_storage);
 shutdown_functions_status shutdown_functions_status_value = shutdown_functions_status::not_executed;
-header_custom_handler_function_type header_custom_handler_function;
 jmp_buf timeout_exit;
 bool finished = false;
 
@@ -563,10 +564,7 @@ static int ob_merge_buffers() {
 
 void f$flush() {
   php_assert(ob_cur_buffer >= 0 && php_worker.has_value());
-  // Run custom header handler before body processing 
-  if (header_custom_handler_function) {
-    header_custom_handler_function();
-  }
+
   string_buffer const * http_body = compress_http_query_body(&oub[ob_system_level]);
   string_buffer const * http_headers = nullptr;
   if (!php_worker->flushed_http_connection) {
@@ -580,7 +578,7 @@ void f$flush() {
 }
 
 void f$fastcgi_finish_request(int64_t exit_code) {
-  int const ob_total_buffer = ob_merge_buffers();
+  int ob_total_buffer = ob_merge_buffers();
   if (php_worker.has_value() && php_worker->flushed_http_connection) {
     string const raw_response = oub[ob_total_buffer].str();
     http_set_result(nullptr, 0, raw_response.c_str(), raw_response.size(), static_cast<int32_t>(exit_code));
@@ -605,9 +603,19 @@ void f$fastcgi_finish_request(int64_t exit_code) {
       break;
     }
     case QUERY_TYPE_HTTP: {
-      // Run custom header handler before body processing
-      if (header_custom_handler_function) {
-        header_custom_handler_function();
+      // Run custom headers handler before body processing
+      if (headers_custom_handler_function && !headers_sent) {
+        headers_sent = true;
+        headers_custom_handler_function();
+        // In `headers_custom_handler_function` might be happened `f$flush` invocation
+        // First of all, we have to accumulate response data from buffers
+        ob_total_buffer = ob_merge_buffers();
+        // If a flushing is happened, send response without headers
+        if (php_worker.has_value() && php_worker->flushed_http_connection) {
+          string const raw_response = oub[ob_total_buffer].str();
+          http_set_result(nullptr, 0, raw_response.c_str(), raw_response.size(), static_cast<int32_t>(exit_code));
+          php_assert (0);
+        }
       }
       const string_buffer *compressed = compress_http_query_body(&oub[ob_total_buffer]);
       if (!is_head_query) {
@@ -698,12 +706,12 @@ void register_shutdown_function_impl(shutdown_function_type &&f) {
   new(&shutdown_functions[shutdown_functions_count++]) shutdown_function_type{std::move(f)};
 }
 
-void register_header_handler_impl(header_custom_handler_function_type &&f) {
+void register_header_handler_impl(headers_custom_handler_function_type &&f) {
   dl::CriticalSectionGuard critical_section;
   // Move assignment leads to lhs object invalidation and fires memory releasing mechanism
   // But memory is already released by destructor after previous run
   // Therefore we need to use placement new
-  new(&header_custom_handler_function) header_custom_handler_function_type{std::move(f)};
+  new(&headers_custom_handler_function) headers_custom_handler_function_type{std::move(f)};
 }
 
 void finish(int64_t exit_code, bool from_exit) {
@@ -2293,6 +2301,8 @@ static void reset_global_interface_vars(PhpScriptBuiltInSuperGlobals &supergloba
 }
 
 static void init_interface_lib() {
+  headers_sent = false;
+
   shutdown_functions_count = 0;
   shutdown_functions_status_value = shutdown_functions_status::not_executed;
   finished = false;
@@ -2361,7 +2371,9 @@ static void free_shutdown_functions() {
 }
 
 static void free_header_handler_function() {
-  header_custom_handler_function.~header_custom_handler_function_type();
+  headers_custom_handler_function.~headers_custom_handler_function_type();
+  new(&headers_custom_handler_function) headers_custom_handler_function_type{};
+  headers_sent = false;
 }
 
 
