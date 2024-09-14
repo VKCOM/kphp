@@ -155,12 +155,15 @@ ClassPtr Assumption::extract_instance_from_type_hint(const TypeHint *a) {
     // between them, so we can call a more expensive get_common_base_or_interface() method here;
     // the method below is somewhat conservative, but it's good enough in the usual cases
     ClassPtr result;
-    ClassPtr first = as_pipe->items[0]->try_as<TypeHintInstance>()->resolve();
-    for (int i = 1; i < as_pipe->items.size(); ++i) {
-      if (as_pipe->items[i]->try_as<TypeHintPrimitive>()) {
+    ClassPtr first;
+    for (const auto *item : as_pipe->items) {
+      if (item->try_as<TypeHintPrimitive>()) {
         continue; // we know that it's tp_Null
       }
-      ClassPtr other = extract_instance_from_type_hint(as_pipe->items[i]);
+      if (!first) {
+        first = item->try_as<TypeHintInstance>()->resolve();
+      }
+      ClassPtr other = extract_instance_from_type_hint(item);
       const auto common_bases = first->get_common_base_or_interface(other);
       if (common_bases.size() != 1) {
         return ClassPtr{};
