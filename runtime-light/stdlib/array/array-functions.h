@@ -66,13 +66,13 @@ array<T> f$array_filter_by_key(const array<T> &a, const T1 &callback) noexcept {
 }
 
 template<class A, std::invocable<A> F, class R = async_function_unwrapped_return_type_t<F, A>>
-task_t<array<R>> f$array_map(F &&f, array<A> arr) {
+task_t<array<R>> f$array_map(F f, array<A> arr) {
   array<R> result{arr.size()};
   for (const auto &it : arr) {
     if constexpr (is_async_function_v<F, A>) {
-      result.set_value(it.get_key(), co_await std::invoke(std::forward<F>(f), it.get_value()));
+      result.set_value(it.get_key(), co_await std::invoke(f, it.get_value()));
     } else {
-      result.set_value(it.get_key(), std::invoke(std::forward<F>(f), it.get_value()));
+      result.set_value(it.get_key(), std::invoke(f, it.get_value()));
     }
   }
   co_return result;
