@@ -6,7 +6,6 @@
 
 #include <concepts>
 #include <functional>
-#include <type_traits>
 #include <utility>
 
 #include "runtime-core/runtime-core.h"
@@ -67,7 +66,7 @@ array<T> f$array_filter_by_key(const array<T> &a, const T1 &callback) noexcept {
 }
 
 template<class A, std::invocable<A> F, class R = async_function_unwrapped_return_type_t<F, A>>
-task_t<array<R>> f$array_map(F &&f, const array<A> &arr) {
+task_t<array<R>> f$array_map(F &&f, array<A> arr) {
   array<R> result{arr.size()};
   for (const auto &it : arr) {
     if constexpr (is_async_function_v<F, A>) {
