@@ -5,7 +5,7 @@ $sync_func_str = "sync function result";
 
 /** @kphp-required */
 function async_func(string $str): string {
-  sched_yield_sleep(0.1);
+  sched_yield_sleep(0.005);
   global $async_func_str;
   return $async_func_str;
 }
