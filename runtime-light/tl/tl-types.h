@@ -11,7 +11,9 @@
 
 namespace tl {
 
-inline constexpr uint32_t K2_JOB_WORKER_RESPONSE_MAGIC = 0x3afb3a08;
+// ===== JOB WORKERS =====
+
+inline constexpr uint32_t K2_JOB_WORKER_RESPONSE_MAGIC = 0x3afb'3a08;
 
 struct K2JobWorkerResponse final {
   int64_t job_id{};
@@ -20,6 +22,22 @@ struct K2JobWorkerResponse final {
   bool fetch(TLBuffer &tlb) noexcept;
 
   void store(TLBuffer &tlb) const noexcept;
+};
+
+// ===== CRYPTO =====
+
+enum CertInfoItem : uint32_t {
+  LONG_MAGIC = 0x533f'f89f,
+  STR_MAGIC = 0xc427'feef,
+  DICT_MAGIC = 0x1ea8'a774
+};
+
+// Actually it's "Maybe (Dictionary CertInfoItem)"
+// But I now want to have this logic separately
+struct GetPemCertInfoResponse {
+  array<mixed> data;
+
+  bool fetch(TLBuffer &tlb) noexcept;
 };
 
 } // namespace tl
