@@ -8,6 +8,7 @@
 #include <string_view>
 #include <tuple>
 
+#include "common/tl/constants/common.h"
 #include "runtime-light/tl/tl-core.h"
 
 namespace {
@@ -53,6 +54,8 @@ bool GetPemCertInfoResponse::fetch(TLBuffer &tlb) noexcept {
   }
 
   auto response = array<mixed>::create();
+  constexpr size_t RESPONSE_SIZE = 10; // not more than
+  response.reserve(RESPONSE_SIZE, false);
 
   for (uint32_t i = 0; i < *size; ++i) {
     const auto key_view = tlb.fetch_string();

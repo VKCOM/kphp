@@ -17,9 +17,7 @@ task_t<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length) noexcept 
 
   // TODO think about performance when transferring data
 
-  tl::GetCryptosecurePseudorandomBytes request {
-    .size = static_cast<int32_t>(length)
-  };
+  tl::GetCryptosecurePseudorandomBytes request{.size = static_cast<int32_t>(length)};
 
   tl::TLBuffer buffer;
   request.store(buffer);
@@ -27,7 +25,7 @@ task_t<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length) noexcept 
   string request_buf;
   request_buf.append(buffer.data(), buffer.size());
 
-  auto query = f$component_client_send_request(string("crypto"), request_buf);
+  auto query = f$component_client_send_request(string("crypto"), string{buffer.data(), static_cast<string::size_type>(buffer.size())});
   string resp = co_await f$component_client_fetch_response(co_await query);
 
   buffer.clean();
@@ -43,10 +41,7 @@ task_t<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length) noexcept 
 }
 
 task_t<Optional<array<mixed>>> f$openssl_x509_parse(const string &data, bool shortnames) noexcept {
-  tl::GetPemCertInfo request {
-    .is_short = shortnames,
-    .bytes = data
-  };
+  tl::GetPemCertInfo request{.is_short = shortnames, .bytes = data};
 
   tl::TLBuffer buffer;
   request.store(buffer);
