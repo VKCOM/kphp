@@ -950,7 +950,7 @@ void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr
 
 void ClassDeclaration::compile_msgpack_declarations(CodeGenerator &W, ClassPtr klass) {
   if (G->is_output_mode_k2()) {
-    // The current version of runtime-light does not support visitores
+    // The current version of runtime-light does not support visitors
     return;
   }
   if (!klass->is_serializable) {

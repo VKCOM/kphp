@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <cstdint>
-
 #include "runtime-core/runtime-core.h"
 
 struct FileStreamComponentContext {
