@@ -119,6 +119,25 @@ if (isset($_SERVER["JOB_ID"])) {
         flush();
         sleep(2);
         throw new Exception('Exception');
+     case "flush_and_header_register_callback_flush_inside_callback":
+        echo "Zero ";
+        header_register_callback(function () {
+            echo "Two ";
+            flush();
+            sleep(2);
+            echo "Three ";
+        });
+        echo "One ";
+        return;
+     case 'flush_and_header_register_callback_callback_after_flush':
+        echo "Zero ";
+        header_register_callback(function () {
+        	echo "Unreachable ";
+        });
+        flush();
+        sleep(2);
+        echo "One ";
+        return;
     }
 
     echo "OK";
