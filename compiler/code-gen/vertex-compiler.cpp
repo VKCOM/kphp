@@ -2004,9 +2004,9 @@ void compile_callback_of_builtin(VertexAdaptor<op_callback_of_builtin> root, Cod
   W << LockComments{};
 
   int idx = 0;
-  W << "["
-    << JoinValues(*root, ", ", join_mode::one_line, [&idx](CodeGenerator &W, VertexPtr cpp_captured) { W << "captured" << (++idx) << " = " << cpp_captured; })
-    << "]";
+  W << "[" << JoinValues(*root, ", ", join_mode::one_line, [&idx](CodeGenerator &W, VertexPtr cpp_captured) {
+    W << "captured" << (++idx) << " = " << cpp_captured;
+  }) << "]";
 
   const bool k2_async_callback = G->is_output_mode_k2() && root->func_id->is_interruptible;
 
